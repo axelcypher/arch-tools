@@ -2,7 +2,7 @@
   "name": "arch-tools",
   "private": true,
   "type": "module",
-  "description": "Werkzeuge für die Flächen- und Nutzungsberechnung: Flächenrechner (DIN 277, WoFlV), GRZ/GFZ-Nachweis, Kostenermittlung (DIN 276) und Projektordner",
+  "description": "Werkzeuge für die Flächen- und Nutzungsberechnung: Flächenrechner (DIN 277, WoFlV), GRZ/GFZ-Nachweis, Kostenermittlung (DIN 276), Projektordner und Entzerrung von Fotos",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -12,13 +12,15 @@
     "dev:grz": "npm run dev -w grz-nachweis",
     "dev:kosten": "npm run dev -w kostenermittlung",
     "dev:ordner": "npm run dev -w projektordner",
-    "build": "npm run build -w flaechenrechner -w grz-nachweis -w kostenermittlung -w projektordner",
+    "dev:entzerrung": "npm run dev -w entzerrung",
+    "build": "npm run build -w flaechenrechner -w grz-nachweis -w kostenermittlung -w projektordner -w entzerrung",
     "test": "vitest run",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "tauri:dev": "npm run tauri:dev -w flaechenrechner",
     "tauri:dev:grz": "npm run tauri:dev -w grz-nachweis",
     "tauri:dev:kosten": "npm run tauri:dev -w kostenermittlung",
-    "tauri:dev:ordner": "npm run tauri:dev -w projektordner"
+    "tauri:dev:ordner": "npm run tauri:dev -w projektordner",
+    "tauri:dev:entzerrung": "npm run tauri:dev -w entzerrung"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.0",

@@ -1,7 +1,7 @@
 # arch-tools
 
-Werkzeuge für Architekturbüros: vier Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau, die alle
-dieselbe Projektdatei (`.oap`/`.akhp`) öffnen.
+Werkzeuge für Architekturbüros: fünf Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau. Flächenrechner,
+GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`/`.akhp`).
 
 | App | Zweck | Dokumentation |
 |---|---|---|
@@ -9,6 +9,7 @@ dieselbe Projektdatei (`.oap`/`.akhp`) öffnen.
 | **GRZ-Nachweis** | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
 | **Kostenermittlung** | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
 | **Projektordner** | Projektordner nach einheitlichem Schema anlegen und prüfen | [docs/projektordner.md](docs/projektordner.md) |
+| **Entzerrung** | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 
 ## Flächenrechner
 
@@ -90,7 +91,7 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 
 ## Aufbau des Repositorys
 
-Ein Repository mit npm-Workspaces, vier Apps und einem gemeinsamen Unterbau:
+Ein Repository mit npm-Workspaces, fünf Apps und einem gemeinsamen Unterbau:
 
 ```
 packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als @core/… eingebunden)
@@ -104,10 +105,11 @@ apps/flaechenrechner/  Flächenrechner (dieses Tool): Zeichenfläche, Bericht, E
 apps/grz/              GRZ/GFZ-Nachweis: Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md
 apps/kosten/           Kostenermittlung nach DIN 276: Mengen, Kennwerte, Kostenstände, Druck, Excel – siehe docs/kosten.md
 apps/ordner/           Projektordner anlegen und prüfen: Struktur, Vorlagen, Stammdaten – siehe docs/projektordner.md
+apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
 ```
 
 Jede App hat ihre eigene Tauri-Hülle (`apps/<app>/src-tauri`), eigenen Installer und eigene Releases.
-Alle öffnen dieselbe Projektdatei (`.oap`/`.akhp`): Der Flächenrechner liefert Gebäude, Geschosse und
+Flächenrechner, GRZ-Nachweis und Kostenermittlung öffnen dieselbe Projektdatei (`.oap`/`.akhp`): Der Flächenrechner liefert Gebäude, Geschosse und
 Flächen, der GRZ-Nachweis pflegt Lageplan und Festsetzungen, die Kostenermittlung Positionen, Kennwerte und
 Kostenstände. Was eine App nicht kennt, bewahrt sie beim Speichern. Weil jede App mit ihrer eigenen
 Kopie arbeitet, liest sie beim Speichern die Zieldatei neu und führt zusammen (`packages/core/src/zusammenfuehren.ts`):
@@ -128,6 +130,7 @@ npm run dev              # Flächenrechner unter http://localhost:1420
 npm run dev:grz          # GRZ-Nachweis unter http://localhost:1430
 npm run dev:kosten       # Kostenermittlung unter http://localhost:1440
 npm run dev:ordner       # Projektordner unter http://localhost:1450
+npm run dev:entzerrung   # Entzerrung unter http://localhost:1460
 npm test                 # alle Tests (Unterbau und Apps, vitest)
 npm run typecheck        # TypeScript für alle Workspaces
 npm run build            # Web-Builds aller Apps nach apps/<app>/dist/
@@ -136,13 +139,14 @@ npm run tauri:dev        # Flächenrechner als Desktop-App
 npm run tauri:dev:grz    # GRZ-Nachweis als Desktop-App
 npm run tauri:dev:kosten # Kostenermittlung als Desktop-App
 npm run tauri:dev:ordner # Projektordner als Desktop-App
+npm run tauri:dev:entzerrung # Entzerrung als Desktop-App
 npm run tauri:build -w flaechenrechner   # Windows-Installer unter apps/<app>/src-tauri/target/release/bundle/
 ```
 
 Der Workflow **Build & Release** (GitHub Actions) baut je App die Windows-Installer und veröffentlicht ein
 GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` erhöht wird:
 Flächenrechner als `v<version>`, GRZ-Nachweis als `grz-v<version>`, Kostenermittlung als `kosten-v<version>`,
-Projektordner als `ordner-v<version>`.
+Projektordner als `ordner-v<version>`, Entzerrung als `entzerrung-v<version>`.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.
 Manuell gestartet wird die gewählte App in ihrer aktuellen Version (neu) gebaut. Die CI prüft zusätzlich
