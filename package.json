@@ -1,5 +1,5 @@
 {
-  "name": "akh-werkzeuge",
+  "name": "arch-tools",
   "private": true,
   "type": "module",
   "description": "Werkzeuge für die Flächen- und Nutzungsberechnung: Flächenrechner (DIN 277, WoFlV), GRZ/GFZ-Nachweis, Kostenermittlung (DIN 276) und Projektordner",

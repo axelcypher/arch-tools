@@ -1,4 +1,16 @@
-# Flächenrechner (arch-flaechen-tool)
+# arch-tools
+
+Werkzeuge für Architekturbüros: vier Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau, die alle
+dieselbe Projektdatei (`.oap`/`.akhp`) öffnen.
+
+| App | Zweck | Dokumentation |
+|---|---|---|
+| **Flächenrechner** | Flächen- und Rauminhaltsberechnung nach DIN 277 und WoFlV | unten |
+| **GRZ-Nachweis** | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
+| **Kostenermittlung** | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
+| **Projektordner** | Projektordner nach einheitlichem Schema anlegen und prüfen | [docs/projektordner.md](docs/projektordner.md) |
+
+## Flächenrechner
 
 Visuell gestützte Flächenberechnung für Gebäude. Grundrisse werden direkt gezeichnet oder auf einem
 kalibrierten Planbild nachgezeichnet; die Anwendung ermittelt daraus:
@@ -15,7 +27,7 @@ Anrechnungsfaktoren WoFlV: lichte Höhe ≥ 2 m → 100 %, 1–2 m → 50 %, < 1
 Wintergärten/Schwimmbäder → 50 %, Balkone/Loggien/Dachgärten/Terrassen → i. d. R. 25 % (Projektstandard
 einstellbar, max. 50 %) sowie ein individueller Faktor.
 
-## Funktionen
+### Funktionen
 
 - **IFC-Import** (Archicad, Revit, …): Geschosse, Zonen → Räume (inkl. Putzabzug und WoFlV-Faktor aus den
   Raumhöhen), BGF-Umrisse aus den Bauteilen und Dachhaut für den BRI – siehe [docs/archicad-ifc.md](docs/archicad-ifc.md)
@@ -62,7 +74,7 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
   Originaldateien der Importe (IFC, DXF, PDF) und die Excel-Vorlage – auf einem anderen Rechner vollständig
   wieder zu öffnen, inkl. IFC-Modell in der 3D-Ansicht. Ältere `*.flaeche.json` lassen sich weiter öffnen.
 
-### Tastenkürzel
+#### Tastenkürzel
 
 | Taste | Funktion |
 |---|---|
@@ -154,7 +166,7 @@ aktualisieren sich nicht selbst.
 - Versionen ohne Updater (Flächenrechner bis 0.9.4, GRZ-Nachweis bis 0.2.3, Kostenermittlung 0.1.0) müssen
   einmal von Hand über den Installer aktualisiert werden.
 
-## Hinweise zur Normanwendung
+## Hinweise zur Normanwendung (Flächenrechner)
 
 - Die Unterscheidung R/S erfolgt je Fläche manuell (Eigenschaften rechts).
 - KGF wird rechnerisch als BGF − NRF ermittelt; sie ist nur aussagekräftig, wenn alle Räume erfasst sind.

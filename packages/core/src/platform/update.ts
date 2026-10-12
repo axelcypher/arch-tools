@@ -39,7 +39,7 @@ let laut = false;
 const FRIST_SUCHE = 20_000;
 const FRIST_LADEN = 10 * 60_000;
 
-export const RELEASE_SEITE = 'https://github.com/axelcypher/arch-flaechen-tool/releases';
+export const RELEASE_SEITE = 'https://github.com/axelcypher/arch-tools/releases';
 
 const meldung = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
