@@ -63,7 +63,7 @@ describe('Speichern', () => {
   it('ohne Weiterarbeiten: gespeicherter Stand wird Basis, Projekt ist gespeichert', () => {
     const { p } = laden();
     const gespeichert = { ...p, name: 'Haus (mit Änderung einer anderen App)' };
-    useEditor.getState().markSaved(gespeichert, 'C:/Projekte/Haus.oap', p);
+    useEditor.getState().markSaved(gespeichert, 'C:/Projekte/Haus.oap', p, useEditor.getState().dokument);
     const s = useEditor.getState();
     expect(s.project).toBe(gespeichert);
     expect(s.basis).toBe(gespeichert);
@@ -78,7 +78,7 @@ describe('Speichern', () => {
     useEditor.getState().update((x) => mapShape(x, eg.id, b.id, (s) => ({ ...s, name: 'Wohnen/Essen' })));
     // gespeichert wurde „vorher“ – zusammengeführt mit einer Änderung des GRZ-Nachweises
     const gespeichert = { ...vorher, massNutzung: { grz: 0.4 } };
-    useEditor.getState().markSaved(gespeichert, 'C:/Projekte/Haus Neu.oap', vorher);
+    useEditor.getState().markSaved(gespeichert, 'C:/Projekte/Haus Neu.oap', vorher, useEditor.getState().dokument);
     const s = useEditor.getState();
     expect(s.dirty).toBe(true);
     expect(s.basis).toBe(gespeichert);
@@ -123,5 +123,34 @@ describe('Kopieren, Einfügen, Duplizieren, Pfeiltasten', () => {
     expect(useEditor.getState().past.length).toBe(schritte + 1);
     useEditor.getState().undo();
     expect(useEditor.getState().project.storeys[0].shapes[3].points[0].x).toBeCloseTo(b.points[0].x + 0.5, 9);
+  });
+});
+
+describe('Speichern und Dokumentwechsel', () => {
+  it('ein Speichern, das erst nach „Neu“/„Öffnen“ fertig wird, ändert das neue Dokument nicht', () => {
+    const { p } = laden();
+    const dokument = useEditor.getState().dokument;
+    // während des Speicherns: neues Projekt
+    useEditor.getState().newProject();
+    const neu = useEditor.getState().project;
+    useEditor.getState().markSaved(p, 'C:/Projekte/Haus.oap', p, dokument);
+    const s = useEditor.getState();
+    expect(s.project).toBe(neu);
+    expect(s.datei).toBeNull();
+    expect(s.basis).toBeNull();
+  });
+});
+
+describe('Pfeiltasten nach Rückgängig', () => {
+  it('ein Schritt direkt nach Rückgängig ist ein eigener, rückgängig zu machender Schritt', async () => {
+    const { auswahlVerschieben } = await import('./store');
+    const { b } = laden();
+    useEditor.getState().select(b.id);
+    auswahlVerschieben(0.01, 0);
+    useEditor.getState().undo();
+    auswahlVerschieben(0, 0.01);
+    expect(useEditor.getState().project.storeys[0].shapes.find((s) => s.id === b.id)!.points[0]).toEqual({ x: b.points[0].x, y: b.points[0].y + 0.01 });
+    useEditor.getState().undo();
+    expect(useEditor.getState().project.storeys[0].shapes.find((s) => s.id === b.id)!.points[0]).toEqual(b.points[0]);
   });
 });

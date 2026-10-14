@@ -129,7 +129,18 @@ fn write_atomic(path: &std::path::Path, contents: &[u8]) -> std::io::Result<()> 
         f.write_all(contents)?;
         f.sync_all()?;
         drop(f);
-        std::fs::rename(&tmp, path)
+        // Windows: Virenscanner oder Indexdienst halten die Zieldatei kurz offen – einige Male erneut versuchen
+        let mut versuch = 0;
+        loop {
+            match std::fs::rename(&tmp, path) {
+                Ok(()) => return Ok(()),
+                Err(e) if versuch < 5 && e.kind() == std::io::ErrorKind::PermissionDenied => {
+                    versuch += 1;
+                    std::thread::sleep(std::time::Duration::from_millis(100 * versuch));
+                }
+                Err(e) => return Err(e),
+            }
+        }
     })();
     if result.is_err() {
         let _ = std::fs::remove_file(&tmp);

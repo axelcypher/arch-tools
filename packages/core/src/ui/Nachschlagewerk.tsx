@@ -124,16 +124,6 @@ export function Nachschlagewerk({ app }: { app: RegelApp }) {
   const [nurKontext, setNurKontext] = useState(true);
   const [gewaehlt, setGewaehlt] = useState<string | null>(null);
   const suchfeld = useRef<HTMLInputElement>(null);
-  const dialog = useRef<HTMLDivElement>(null);
-
-  // Fokus: beim Öffnen ins Suchfeld, beim Schließen zurück dorthin, wo er vorher war (z. B. der ?-Knopf)
-  useEffect(() => {
-    if (!offen) return;
-    const vorher = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    return () => {
-      if (vorher?.isConnected) vorher.focus();
-    };
-  }, [offen]);
 
   useEffect(() => {
     if (!offen) return;
@@ -157,26 +147,10 @@ export function Nachschlagewerk({ app }: { app: RegelApp }) {
   return (
     <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && schliessen()}>
       <div
-        ref={dialog}
         className="modal nachschlagewerk"
         role="dialog"
         aria-modal="true"
         aria-label="Berechnungsregeln"
-        onKeyDown={(e) => {
-          // Tab bleibt im Dialog
-          if (e.key !== 'Tab' || !dialog.current) return;
-          const ziele = [...dialog.current.querySelectorAll<HTMLElement>('button, input, a[href], [tabindex]:not([tabindex="-1"])')].filter((el) => !el.hasAttribute('disabled'));
-          if (!ziele.length) return;
-          const erstes = ziele[0];
-          const letztes = ziele[ziele.length - 1];
-          if (e.shiftKey && document.activeElement === erstes) {
-            e.preventDefault();
-            letztes.focus();
-          } else if (!e.shiftKey && document.activeElement === letztes) {
-            e.preventDefault();
-            erstes.focus();
-          }
-        }}
       >
         <div className="nw-kopf">
           <h3>Berechnungsregeln</h3>

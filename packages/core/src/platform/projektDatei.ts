@@ -92,6 +92,16 @@ export async function projektSpeichern(o: {
 }
 
 async function speichernIntern(o: Parameters<typeof projektSpeichern>[0]): Promise<ProjektGespeichert | null> {
+  // Arten der Dateien, die erst fuerDatei ergänzt (nicht Teil des Projekts in der App)
+  const eigeneIds = new Set((o.project.dateien ?? []).map((d) => d.id));
+  const zusatzArten = new Set(((o.fuerDatei ? o.fuerDatei(o.project) : o.project).dateien ?? []).filter((d) => !eigeneIds.has(d.id)).map((d) => d.art));
+  const ohneZusatz = (p: Project): Project => {
+    if (!zusatzArten.size) return p;
+    const dateien = (p.dateien ?? []).filter((d) => !zusatzArten.has(d.art) || eigeneIds.has(d.id));
+    const { dateien: _weg, ...rest } = p;
+    void _weg;
+    return dateien.length ? { ...rest, dateien } : (rest as Project);
+  };
   const bisher = o.datei && /\.oap$/i.test(o.datei) ? o.datei : null;
   const vorschlag = bisher ? dateiname(bisher) : `${safeFileName(o.datei ? ohneEndung(dateiname(o.datei)) : o.project.name)}.${ARCHIV_ENDUNG}`;
   let project = o.project;
@@ -111,7 +121,10 @@ async function speichernIntern(o: Parameters<typeof projektSpeichern>[0]): Promi
           const aufPlatte = readProjectFile(vorhanden);
           if (gleichesProjekt(o.basis, aufPlatte)) {
             project = zusammenfuehren(o.basis, o.project, aufPlatte);
-            zusammengefuehrt = !gleich(project, o.project);
+            // nur Ergänzungen für die Datei (z. B. die globale Excel-Vorlage aus dem letzten Speichern) zählen nicht
+            // als Änderung – sonst ginge nach jedem Speichern der Verlauf (Rückgängig) verloren
+            zusammengefuehrt = !gleich(ohneZusatz(project), ohneZusatz(o.project));
+            if (!zusammengefuehrt) project = o.project;
             if (zusammengefuehrt) log.info('Änderungen anderer Apps aus der Datei übernommen', { name: o.project.name });
           }
         } catch (e) {

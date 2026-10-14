@@ -302,7 +302,14 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
   // Stand der übernommenen Werte merken – für den Abgleich beim erneuten Import (ifcAbgleich.ts)
   for (const st of storeys) {
     st.ifcStand = ifcStandVon(st, STOCKWERK_FELDER);
-    for (const sh of st.shapes) sh.ifcStand = ifcStandVon(sh, sh.kind === 'room' ? RAUM_FELDER : UMRISS_FELDER);
+    for (const sh of st.shapes) {
+      sh.ifcStand = ifcStandVon(sh, sh.kind === 'room' ? RAUM_FELDER : UMRISS_FELDER);
+      // Wohnfläche nur dann Teil des Stands, wenn dieser Import sie abgeleitet hat (Option „Wohnfläche“)
+      if (sh.kind === 'room') {
+        if (o.wohnflaeche) sh.ifcStand[WOFL_ABGELEITET] = true;
+        else delete sh.ifcStand.wofl;
+      }
+    }
   }
   for (const f of lageplan?.flaechen ?? []) f.ifcStand = ifcStandVon(f, LAGEPLAN_FELDER);
   // Geländeoberfläche als Höhenfeld: Gelände und Geländeelemente sowie Bauteile des Lageplan-Geschosses
@@ -319,6 +326,8 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
 
 /** Felder, die aus der IFC kommen und beim erneuten Import abgeglichen werden */
 export const STOCKWERK_FELDER = ['name', 'elevation', 'hoehe', 'sohle'] as const;
+/** Merker im Stand eines Raums: Die Wohnfläche stammt aus dem Import (sonst ist sie eine Angabe des Nutzers) */
+export const WOFL_ABGELEITET = 'woflAusImport';
 export const RAUM_FELDER = ['points', 'name', 'nummer', 'nutzung', 'putzabzug', 'versatz', 'wofl', 'bemerkung'] as const;
 export const UMRISS_FELDER = ['points', 'dach'] as const;
 export const LAGEPLAN_FELDER = ['points', 'name', 'nutzung', 'versiegelung', 'hoehe', 'nachbar'] as const;

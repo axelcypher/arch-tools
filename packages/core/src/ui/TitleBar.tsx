@@ -6,6 +6,7 @@ import type { ThemeWahl } from '../platform/theme';
 import { UpdateKnopf } from './UpdateKnopf';
 import type { RegelApp } from '../regeln/regelwerk';
 import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
+import { dialogVerhaltenEinrichten } from './dialoge';
 
 const log = logger('fenster');
 
@@ -49,6 +50,9 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln }: TitleBarProps)
       off?.();
     };
   }, [desktop]);
+
+  // Dialoge: aria-modal, Fokus hinein und zurück, Tab bleibt im Dialog (einmal je App)
+  useEffect(() => dialogVerhaltenEinrichten(), []);
 
   // F1: Nachschlagewerk
   useEffect(() => {

@@ -217,3 +217,76 @@ describe('IFC erneut importieren: von Hand Gezeichnetes', () => {
     expect(Math.max(...e.points.map((q) => q.x))).toBeCloseTo(10.2, 9);
   });
 });
+
+describe('IFC erneut importieren: Wohnfläche nur, wo sie abgeleitet wurde', () => {
+  it('Import ohne Wohnfläche, Abgleich mit Wohnfläche (Kostenermittlung): Räume bekommen keine geratene Wohnfläche', () => {
+    const erst = importErgebnis();
+    for (const sh of erst.storeys[0].shapes) if (sh.kind === 'room') delete sh.ifcStand!.wofl; // wie buildFromIfc ohne Option
+    const p = projektAusIfc('Haus', structuredClone(erst));
+    const neu = importErgebnis();
+    for (const sh of neu.storeys[0].shapes) if (sh.kind === 'room') sh.wofl = { kategorie: 'voll', wohnung: 'Erdgeschoss' };
+    const r = ifcAbgleichen(p, neu, { ...alle, wohnflaeche: true });
+    expect(raum(r.project, 'R-WOHNEN')!.wofl).toEqual({ kategorie: 'keine', wohnung: '' });
+    expect(raum(r.project, 'R-BAD')!.wofl).toEqual({ kategorie: 'keine', wohnung: '' });
+  });
+
+  it('Import mit Wohnfläche: eine geänderte Ableitung kommt beim Abgleich mit Wohnfläche an', async () => {
+    const { WOFL_ABGELEITET } = await import('./ifcImport');
+    const erst = importErgebnis();
+    for (const sh of erst.storeys[0].shapes)
+      if (sh.kind === 'room') {
+        sh.wofl = { kategorie: 'voll', wohnung: 'Erdgeschoss' };
+        sh.ifcStand = { ...ifcStandVon(sh, RAUM_FELDER), [WOFL_ABGELEITET]: true };
+      }
+    const p = projektAusIfc('Haus', structuredClone(erst));
+    const neu = importErgebnis();
+    for (const sh of neu.storeys[0].shapes) if (sh.kind === 'room') sh.wofl = { kategorie: 'individuell', faktor: 0.8, wohnung: 'Erdgeschoss' };
+    const r = ifcAbgleichen(p, neu, { ...alle, wohnflaeche: true });
+    expect(raum(r.project, 'R-WOHNEN')!.wofl).toEqual({ kategorie: 'individuell', faktor: 0.8, wohnung: 'Erdgeschoss' });
+    expect(raum(r.project, 'R-WOHNEN')!.ifcStand?.[WOFL_ABGELEITET]).toBe(true);
+  });
+});
+
+describe('IFC erneut importieren: Löschungen bleiben', () => {
+  it('ein von Hand gelöschter BGF-Umriss kommt nicht wieder', () => {
+    const p = projektAusIfc('Haus', importErgebnis());
+    expect(p.ifcUmrisse).toHaveLength(1);
+    p.storeys[0].shapes = p.storeys[0].shapes.filter((s) => s.kind !== 'outline');
+    const r = ifcAbgleichen(p, importErgebnis(), alle);
+    expect(r.project.storeys[0].shapes.some((s) => s.kind === 'outline')).toBe(false);
+    expect(r.zaehler.uebersprungen).toBe(1);
+    // und auch beim übernächsten Abgleich nicht
+    expect(ifcAbgleichen(r.project, importErgebnis(), alle).project.storeys[0].shapes.some((s) => s.kind === 'outline')).toBe(false);
+  });
+
+  it('ein Abgleich ohne Räume vergisst gelöschte Räume nicht', () => {
+    const p = projektAusIfc('Haus', importErgebnis());
+    p.storeys[0].shapes = p.storeys[0].shapes.filter((s) => s.ifcId !== 'R-BAD');
+    // Teil-Import ohne Räume (z. B. nur Umrisse und Dach)
+    const ohneRaeume = importErgebnis();
+    ohneRaeume.storeys[0].shapes = ohneRaeume.storeys[0].shapes.filter((s) => s.kind !== 'room');
+    const r1 = ifcAbgleichen(p, ohneRaeume, { ...alle, raeume: false });
+    const r2 = ifcAbgleichen(r1.project, importErgebnis(), alle);
+    expect(raum(r2.project, 'R-BAD')).toBeUndefined();
+  });
+});
+
+describe('IFC erneut importieren: Raum wandert in ein gelöschtes Geschoss', () => {
+  it('der Raum bleibt im bisherigen Geschoss', () => {
+    const erst = importErgebnis();
+    const og: Storey = { ...createStorey('Obergeschoss', 3), elevation: 3, ifcId: 'ST-OG' };
+    og.ifcStand = ifcStandVon(og, STOCKWERK_FELDER);
+    erst.storeys.push(og);
+    const p = projektAusIfc('Haus', structuredClone(erst));
+    p.storeys = p.storeys.filter((s) => s.ifcId !== 'ST-OG'); // OG von Hand gelöscht
+    raum(p, 'R-BAD')!.nutzung = 'NUF4';
+    const neu = structuredClone(erst);
+    const b = neu.storeys[0].shapes.find((s) => s.ifcId === 'R-BAD')!;
+    neu.storeys[0].shapes = neu.storeys[0].shapes.filter((s) => s !== b);
+    neu.storeys[1].shapes.push(b);
+    const r = ifcAbgleichen(p, neu, alle);
+    expect(r.project.storeys).toHaveLength(1);
+    expect(raum(r.project, 'R-BAD')?.nutzung).toBe('NUF4');
+    expect(r.bericht.some((x) => x.includes('bleibt im bisherigen Geschoss'))).toBe(true);
+  });
+});

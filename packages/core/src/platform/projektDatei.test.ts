@@ -94,3 +94,18 @@ describe('Exportnamen', () => {
     expect(exportDateiname({ datei: 'Haus.oap', projektName: 'X', zusatz: 'Kosten Kostenberechnung', endung: 'xlsx' })).toBe('Haus Kosten Kostenberechnung.xlsx');
   });
 });
+
+describe('Speichern mit Ergänzungen für die Datei', () => {
+  it('die beim letzten Speichern ergänzte Vorlage gilt nicht als Änderung einer anderen App', async () => {
+    const { addDatei } = await import('../model');
+    const mitVorlage = (p: Project) => (p.dateien?.some((d) => d.art === 'vorlage') ? p : addDatei(p, 'Vorlage.xlsx', 'vorlage', new Uint8Array([80, 75])).project);
+    const p = createProject('Haus');
+    const r1 = await projektSpeichern({ project: p, basis: p, datei: 'C:/P/Haus.oap', app: 'test', fuerDatei: mitVorlage });
+    expect(r1?.zusammengefuehrt).toBe(false);
+    const r2 = await projektSpeichern({ project: r1!.project, basis: r1!.project, datei: 'C:/P/Haus.oap', app: 'test', fuerDatei: mitVorlage });
+    expect(r2?.zusammengefuehrt).toBe(false);
+    expect(r2?.project).toBe(r1!.project);
+    // die Datei enthält die Vorlage weiterhin
+    expect(readProjectFile(platte.get('C:/P/Haus.oap')!).dateien?.some((d) => d.art === 'vorlage')).toBe(true);
+  });
+});

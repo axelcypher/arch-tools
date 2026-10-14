@@ -23,7 +23,11 @@ Graphisoft und lassen sich außerhalb von Archicad nicht lesen. Der verlässlich
 Die Fußbodenhöhe eines Geschosses ist der flächengewichtete Median der Zonenunterseiten (die Höhe, auf der der größere Teil der Zonenfläche liegt). Liegt eine
 Zone mindestens 5 cm tiefer oder höher, erhält der Raum eine **Höhenlage** (z. B. −0,60 m); der Import
 meldet das. Im Flächenrechner lässt sich die Höhenlage auch von Hand eintragen – nach oben wie nach unten,
-für Räume und Umrisse.
+für Räume und Umrisse. Ein Raum ohne eigene Höhenlage liegt auf dem Fußboden des Umrisses, in dem er liegt
+(0,000 heißt ausdrücklich: auf dem Geschossfußboden).
+
+Über einem Geschoss darunter (z. B. Keller) verschiebt eine Absenkung nur die Grenze zwischen den Geschossen –
+dieser Rauminhalt steckt schon im Geschoss darunter und wird nicht doppelt gezählt.
 
 Der **BRI** reicht nach DIN 277 bis zur Unterseite der konstruktiven Bodenplatte. Die BGF steht dagegen auf
 OK Fußboden. Der Flächenrechner rechnet deshalb unter dem Geschossfußboden eigene BRI-Teilkörper:
@@ -46,6 +50,20 @@ Lageplan-Flächen zugeordnet (Projekte aus älteren Importen über Nummer/Name b
 - unverändert seit dem letzten Import → neuer Wert aus dem IFC,
 - von Hand geändert → bleibt; hat sich auch der IFC-Wert geändert, meldet der Bericht einen Konflikt,
 - im IFC neu → wird angelegt; im IFC entfallen → wird entfernt, außer er wurde von Hand geändert (dann bleibt er und der Bericht nennt ihn).
+
+Weitere Regeln:
+
+- **Von Hand Gelöschtes bleibt gelöscht:** Das Projekt merkt sich die GlobalIds und BGF-Umrisse des letzten Imports.
+  Was dort steht, im Projekt aber fehlt, wird nicht wieder angelegt (auch nach Teil-Importen, z. B. ohne Räume).
+- **Raum wechselt das Geschoss:** Liegt eine Zone in der IFC jetzt in einem anderen Geschoss, wandert der Raum mit –
+  samt Nutzung, Wohnfläche und Bemerkung. Wurde das Zielgeschoss von Hand gelöscht, bleibt er, wo er war.
+- **Wohnfläche:** Nur wenn sie beim ersten Import abgeleitet wurde (Option „Wohnfläche“) und der neue Import sie
+  ebenfalls ableitet, wird sie abgeglichen; sonst ist sie eine Angabe des Nutzers und bleibt unberührt. So setzt
+  z. B. die Kostenermittlung keine geratenen Wohnflächen in ein Projekt, das ohne Wohnfläche importiert wurde.
+- **Projekte älterer Versionen** (ohne Vergleichsstand): Räume werden über Nummer und Name bzw. die Überdeckung
+  zugeordnet, Umrisse über die Überdeckung; jedes so übernommene Feld steht im Bericht. In neueren Projekten
+  bleiben Flächen ohne IFC-Herkunft (von Hand gezeichnet) immer unberührt.
+- **Kopien** (Strg+C/V, Strg+D) verlieren ihre IFC-Herkunft – sie sind eigene Flächen.
 
 Die gespeicherte IFC-Datei im Projektarchiv wird durch die neue ersetzt.
 

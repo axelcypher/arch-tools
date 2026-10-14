@@ -60,11 +60,11 @@ export function Toolbar() {
 
   const onSave = async (unter = false) => {
     eingabeAbschliessen();
-    const { project: p, basis, datei } = useEditor.getState();
+    const { project: p, basis, datei, dokument } = useEditor.getState();
     try {
       const r = await projektSpeichern({ project: p, basis, datei, unter, app: __APP_VERSION__, filterName: 'Flächenprojekt', fuerDatei: mitVorlage });
       // während des Speicherns weitergezeichnet? Dann bleibt der neue Stand ungespeichert (mit den Änderungen aus der Datei).
-      if (r) useEditor.getState().markSaved(r.project, r.datei, p);
+      if (r) useEditor.getState().markSaved(r.project, r.datei, p, dokument);
     } catch (e) {
       log.error('Speichern fehlgeschlagen', e);
       alert(`Speichern fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);

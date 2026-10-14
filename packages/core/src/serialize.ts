@@ -87,6 +87,14 @@ export function parseProjectData(raw: unknown): Project {
   if (isObj(raw.dachModell) && Array.isArray(raw.dachModell.triangles)) {
     project.dachModell = { name: str(raw.dachModell.name, 'Modell'), triangles: raw.dachModell.triangles.filter((v): v is number => typeof v === 'number') };
   }
+  if (Array.isArray(raw.ifcUmrisse)) {
+    const u = raw.ifcUmrisse
+      .filter(isObj)
+      .filter((x) => typeof x.geschoss === 'string' && Array.isArray(x.points))
+      .map((x) => ({ geschoss: x.geschoss as string, points: (x.points as unknown[]).filter(isObj).map((q) => ({ x: Number(q.x) || 0, y: Number(q.y) || 0 })) }))
+      .filter((x) => x.points.length >= 3);
+    if (u.length) project.ifcUmrisse = u;
+  }
   if (Array.isArray(raw.ifcBekannt)) {
     const ids = raw.ifcBekannt.filter((v): v is string => typeof v === 'string' && v.length > 0);
     if (ids.length) project.ifcBekannt = ids;
@@ -262,7 +270,8 @@ function normalizeShape(s: Record<string, unknown>): Shape | null {
     subtract: s.subtract === true,
     umschliessung: s.umschliessung === 'S' ? ('S' as const) : ('R' as const),
     bemerkung: typeof s.bemerkung === 'string' ? s.bemerkung : undefined,
-    ...(typeof s.versatz === 'number' && Number.isFinite(s.versatz) && s.versatz !== 0 ? { versatz: s.versatz } : {}),
+    // Raum: 0 heißt „auf dem Geschossfußboden“ (leer: auf dem Fußboden des Umrisses); Umriss: 0 = keine Angabe
+    ...(typeof s.versatz === 'number' && Number.isFinite(s.versatz) && (s.versatz !== 0 || s.kind === 'room') ? { versatz: s.versatz } : {}),
     ...(typeof s.ifcId === 'string' && s.ifcId ? { ifcId: s.ifcId } : {}),
     ...(isObj(s.ifcStand) ? { ifcStand: s.ifcStand } : {}),
   };

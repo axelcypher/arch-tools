@@ -28,7 +28,7 @@ const WERKZEUGE: { id: Werkzeug; label: string; taste: string; hint: string }[] 
     id: 'auswahl',
     label: 'Auswahl',
     taste: 'V',
-    hint: 'Klicken: auswählen · Umschalt+Klick/-Rahmen: mehrere · Strg+A: alle · Pfeiltasten: verschieben (Umschalt: 10 cm) · Strg+C/V/D: kopieren/einfügen/duplizieren · Ziehen: verschieben · Punkt ziehen: ändern (Umschalt während des Ziehens: entlang der Gebäudeachse) · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: löschen',
+    hint: 'Klicken: auswählen · Umschalt+Klick/-Rahmen: mehrere · Strg+A: alle · Tab: nächste Fläche · Pfeiltasten: verschieben (Umschalt: 10 cm) · Strg+C/V/D: kopieren/einfügen/duplizieren · Ziehen: verschieben · Punkt ziehen: ändern (Umschalt während des Ziehens: entlang der Gebäudeachse) · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: löschen',
   },
   { id: 'polygon', label: 'Polygon', taste: 'P', hint: 'Klicken: nächster Punkt · Enter/Doppelklick/Startpunkt: schließen · Umschalt: entlang der Gebäudeachse · Rück: letzten Punkt löschen · Esc: abbrechen' },
   { id: 'rechteck', label: 'Rechteck', taste: 'R', hint: 'Erste Ecke setzen, dann Gegenecke klicken – ausgerichtet an der Gebäudeachse' },
@@ -299,7 +299,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   // Tastatur wie im Flächenrechner
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!zeichenKuerzelErlaubt(e)) return;
+      if (!zeichenKuerzelErlaubt(e, svgRef.current)) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && werkzeug === 'auswahl') {
         e.preventDefault();
         st.selectMany(flaechen.map((f) => f.id));
@@ -317,6 +317,14 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const sel = useGrz.getState().selectedIds;
+      // Tab / Umschalt+Tab: nächste bzw. vorige Fläche (nur, wenn kein Bedienelement den Fokus hat)
+      if (e.key === 'Tab' && werkzeug === 'auswahl' && !draft.length && flaechen.length && (document.activeElement === document.body || document.activeElement === null)) {
+        e.preventDefault();
+        const i = flaechen.findIndex((f) => f.id === useGrz.getState().selected);
+        const n = i < 0 ? (e.shiftKey ? flaechen.length - 1 : 0) : (i + (e.shiftKey ? -1 : 1) + flaechen.length) % flaechen.length;
+        st.select(flaechen[n].id);
+        return;
+      }
       // Pfeiltasten: Auswahl um 1 cm, mit Umschalt um 10 cm verschieben (Bildschirmrichtung)
       if (werkzeug === 'auswahl' && !draft.length && e.key.startsWith('Arrow') && sel.length) {
         e.preventDefault();

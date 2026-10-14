@@ -254,8 +254,9 @@ describe('Überlagerungen, Gelände am Hang, Split-Level', () => {
     const dg = p.storeys.find((s) => s.name === 'DG')!;
     const zimmer = dg.shapes.find((s) => s.name === 'Zimmer I')!;
     const vorher = massNachweis(p).raeume.find((r) => r.name.includes('Zimmer I'))!.anteil;
-    zimmer.versatz = -0.6;
-    const nachher = massNachweis(p).raeume.find((r) => r.name.includes('Zimmer I'))!;
+    // unveränderlich ändern wie in der App (die Berechnung hält Zwischenergebnisse je Geschoss-Objekt)
+    const p2 = { ...p, storeys: p.storeys.map((s) => (s === dg ? { ...dg, shapes: dg.shapes.map((x) => (x === zimmer ? { ...x, versatz: -0.6 } : x)) } : s)) };
+    const nachher = massNachweis(p2).raeume.find((r) => r.name.includes('Zimmer I'))!;
     expect(nachher.anteil).toBeGreaterThanOrEqual(vorher);
     expect(nachher.maxHoehe).toBeGreaterThan(5.3);
   });

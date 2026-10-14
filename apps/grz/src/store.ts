@@ -22,6 +22,8 @@ interface GrzState {
   /** Projekt beim letzten Öffnen/Speichern – Grundlage fürs Zusammenführen mit der Datei (siehe zusammenfuehren.ts) */
   basis: Project | null;
   dirty: boolean;
+  /** zählt bei jedem Laden/Neu weiter – ein Speichern, das erst danach fertig wird, gehört zum alten Dokument */
+  dokument: number;
   past: Project[];
   future: Project[];
   /** zuletzt gewählte Lageplan-Fläche (Eigenschaften, Eckpunkte) */
@@ -38,7 +40,7 @@ interface GrzState {
   redo: () => void;
   /** nach dem Speichern: Dateiname und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
   /** nach dem Speichern: Datei, gespeichertes Projekt und der Stand, der gespeichert wurde */
-  markSaved: (datei: string, gespeichert: Project, vorher: Project) => void;
+  markSaved: (datei: string, gespeichert: Project, vorher: Project, dokument: number) => void;
   select: (id: string | null) => void;
   /** Umschalt+Klick: Fläche zur Auswahl hinzufügen bzw. daraus entfernen */
   toggleSelect: (id: string) => void;
@@ -46,7 +48,7 @@ interface GrzState {
   setWerkzeug: (w: Werkzeug) => void;
 }
 
-let letzteAenderung: { schluessel?: string; zeit: number } = { zeit: 0 };
+let letzteAenderung: { schluessel?: string; zeit: number; ergebnis?: Project } = { zeit: 0 };
 
 export const useGrz = create<GrzState>()((set, get) => ({
   project: createProject('Neues Projekt'),
@@ -54,6 +56,7 @@ export const useGrz = create<GrzState>()((set, get) => ({
   basis: null,
   dirty: false,
   past: [],
+  dokument: 0,
   future: [],
   selected: null,
   selectedIds: [],
@@ -61,15 +64,17 @@ export const useGrz = create<GrzState>()((set, get) => ({
 
   load: (p, datei = null, basis = null) => {
     log.info(`Projekt geladen: ${p.name}`, { geschosse: p.storeys.length, lageplan: p.lageplan?.flaechen.length ?? 0 });
-    set({ project: p, datei, basis, dirty: false, past: [], future: [], selected: null, selectedIds: [], werkzeug: 'auswahl' });
+    set({ project: p, datei, basis, dirty: false, dokument: get().dokument + 1, past: [], future: [], selected: null, selectedIds: [], werkzeug: 'auswahl' });
   },
   update: (fn, zusammenfassen) => {
     const { project, past } = get();
     const next = fn(project);
     if (next === project) return;
     const jetzt = Date.now();
-    const anschluss = zusammenfassen !== undefined && letzteAenderung.schluessel === zusammenfassen && jetzt - letzteAenderung.zeit < 800 && past.length > 0;
-    letzteAenderung = { schluessel: zusammenfassen, zeit: jetzt };
+    // zusammenhängend nur, wenn seitdem nichts anderes geschah (auch kein Rückgängig)
+    const anschluss =
+      zusammenfassen !== undefined && letzteAenderung.schluessel === zusammenfassen && jetzt - letzteAenderung.zeit < 800 && letzteAenderung.ergebnis === project && past.length > 0;
+    letzteAenderung = { schluessel: zusammenfassen, zeit: jetzt, ergebnis: next };
     set({ project: next, past: anschluss ? past : [...past, project].slice(-HISTORY), future: [], dirty: true });
     auswahlBereinigen(set, get);
   },
@@ -85,7 +90,12 @@ export const useGrz = create<GrzState>()((set, get) => ({
     set({ project: future[0], past: [...past, project], future: future.slice(1), dirty: true });
     auswahlBereinigen(set, get);
   },
-  markSaved: (datei, gespeichert, vorher) => {
+  markSaved: (datei, gespeichert, vorher, dokument) => {
+    // inzwischen ein anderes Projekt geladen: Ergebnis nicht auf das neue Dokument übertragen
+    if (dokument !== get().dokument) {
+      log.info('Speichern beendet, inzwischen anderes Projekt geöffnet – Ergebnis gehört zum vorigen', { datei });
+      return;
+    }
     // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
     const n = standNachSpeichern(get().project, vorher, gespeichert);
     if (n.verlaufVerwerfen) set({ past: [], future: [] });

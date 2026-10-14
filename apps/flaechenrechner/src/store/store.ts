@@ -50,6 +50,8 @@ interface EditorState {
   future: Project[];
   /** true, wenn seit dem letzten Speichern geändert */
   dirty: boolean;
+  /** zählt bei jedem Laden/Neu weiter – ein Speichern, das erst danach fertig wird, gehört zum alten Dokument */
+  dokument: number;
   activeStoreyId: string;
   /** zuletzt gewählte Fläche (Eigenschaften, Eckpunkte) */
   selectedShapeId: string | null;
@@ -78,7 +80,7 @@ interface EditorState {
   loadProject: (p: Project, basis?: Project | null, datei?: string | null) => void;
   newProject: () => void;
   /** nach dem Speichern: Datei und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
-  markSaved: (gespeichert: Project, datei: string, vorher: Project) => void;
+  markSaved: (gespeichert: Project, datei: string, vorher: Project, dokument: number) => void;
 
   setActiveStorey: (id: string) => void;
   select: (id: string | null) => void;
@@ -106,6 +108,7 @@ export const useEditor = create<EditorState>((set, get) => {
     past: [],
     future: [],
     dirty: false,
+    dokument: 0,
     activeStoreyId: initial.storeys[0].id,
     selectedShapeId: null,
     selectedIds: [],
@@ -164,6 +167,7 @@ export const useEditor = create<EditorState>((set, get) => {
         past: [],
         future: [],
         dirty: false,
+        dokument: get().dokument + 1,
         activeStoreyId: p.storeys[0].id,
         selectedShapeId: null,
         selectedIds: [],
@@ -173,7 +177,12 @@ export const useEditor = create<EditorState>((set, get) => {
       });
     },
     newProject: () => get().loadProject(createProject()),
-    markSaved: (gespeichert, datei, vorher) => {
+    markSaved: (gespeichert, datei, vorher, dokument) => {
+      // inzwischen ein anderes Projekt geladen: Ergebnis nicht auf das neue Dokument übertragen
+      if (dokument !== get().dokument) {
+        log.info('Speichern beendet, inzwischen anderes Projekt geöffnet – Ergebnis gehört zum vorigen', { datei });
+        return;
+      }
       // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr;
       // während des Speicherns weitergearbeitet: Änderungen aus der Datei in den aktuellen Stand übernehmen
       const n = standNachSpeichern(get().project, vorher, gespeichert);
@@ -484,15 +493,20 @@ export function flaechenDuplizieren(): number {
   return neu.length;
 }
 
-/** Gewählte Flächen verschieben (Pfeiltasten) – zusammenhängende Schritte ergeben einen Undo-Schritt */
+/**
+ * Gewählte Flächen verschieben (Pfeiltasten) – zusammenhängende Schritte ergeben einen Undo-Schritt. Zusammenhängend
+ * heißt: kurz hintereinander und das Projekt ist noch das Ergebnis des letzten Schritts (kein Rückgängig dazwischen).
+ */
 let letzterSchritt = 0;
+let nachSchritt: Project | null = null;
 export function auswahlVerschieben(dx: number, dy: number): void {
   const { storey, shapes } = gewaehlteFlaechen();
   if (!shapes.length) return;
   const ids = new Set(shapes.map((s) => s.id));
   const st = useEditor.getState();
   const jetzt = Date.now();
-  if (jetzt - letzterSchritt > 800) st.checkpoint();
+  if (jetzt - letzterSchritt > 800 || st.project !== nachSchritt) st.checkpoint();
   letzterSchritt = jetzt;
   st.updateSilent((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.map((x) => (ids.has(x.id) ? { ...x, points: x.points.map((q) => ({ x: q.x + dx, y: q.y + dy })) } : x)) })));
+  nachSchritt = useEditor.getState().project;
 }

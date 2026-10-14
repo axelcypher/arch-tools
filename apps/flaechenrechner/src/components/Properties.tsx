@@ -110,7 +110,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
             : 'gegenüber dem Geschoss, negativ = tiefer (Split-Level). Der Körper beginnt tiefer, seine Oberkante bleibt.'
         }
       >
-        <NumberField value={shape.versatz} allowEmpty min={-20} max={20} digits={3} placeholder="0,000" onChange={(v) => upd((s) => ({ ...s, versatz: v || undefined }))} />
+        <NumberField value={shape.versatz} allowEmpty min={-20} max={20} digits={3} placeholder={shape.kind === 'room' ? 'wie Umriss' : '0,000'} onChange={(v) => upd((s) => ({ ...s, versatz: s.kind === 'room' ? v : v || undefined }))} />
       </Field>
 
       {shape.kind === 'outline' && (
@@ -315,7 +315,7 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
         </select>
       </Field>
       <Field label="Höhenlage Fußboden [m]" hint="gegenüber dem Geschoss, negativ = tiefer (Split-Level)">
-        <NumberField value={versatz} allowEmpty min={-20} max={20} digits={3} placeholder="unterschiedlich" onChange={(v) => v !== undefined && updAll((s) => ({ ...s, versatz: v || undefined }))} />
+        <NumberField value={versatz} allowEmpty min={-20} max={20} digits={3} placeholder="unterschiedlich" onChange={(v) => v !== undefined && updAll((s) => ({ ...s, versatz: s.kind === 'room' ? v : v || undefined }))} />
       </Field>
 
       {rooms.length > 0 && (

@@ -1,5 +1,5 @@
 import type { IfcImportResult } from './ifcImport';
-import { ifcStandVon, LAGEPLAN_FELDER, RAUM_FELDER, STOCKWERK_FELDER, UMRISS_FELDER } from './ifcImport';
+import { ifcStandVon, LAGEPLAN_FELDER, RAUM_FELDER, STOCKWERK_FELDER, UMRISS_FELDER, WOFL_ABGELEITET } from './ifcImport';
 import type { IfcStand, LageplanFlaeche, OutlineShape, Project, RoomShape, Shape, Storey } from './model';
 import { createProject } from './model';
 import { areaMP, intersectMP, unionAll } from './polygon';
@@ -47,6 +47,13 @@ function idsImProjekt(p: Project): Set<string> {
   return new Set(ifcIdsVon({ storeys: p.storeys, lageplan: p.lageplan }));
 }
 
+const geschossSchluessel = (s: Storey) => s.ifcId ?? s.name;
+
+/** BGF-Umrisse eines Imports je Geschoss – erkennt beim nächsten Abgleich von Hand gelöschte Umrisse */
+export function ifcUmrisseVon(storeys: Storey[]): NonNullable<Project['ifcUmrisse']> {
+  return storeys.flatMap((s) => s.shapes.filter((x) => x.kind === 'outline').map((x) => ({ geschoss: geschossSchluessel(s), points: x.points })));
+}
+
 /** Neues Projekt aus einem IFC-Import (Geschosse, Dach- und Geländemodell, Lageplan) */
 export function projektAusIfc(name: string, r: IfcImportResult): Project {
   const p = createProject(name);
@@ -56,6 +63,8 @@ export function projektAusIfc(name: string, r: IfcImportResult): Project {
   if (r.lageplan) p.lageplan = r.lageplan;
   const ids = ifcIdsVon(r);
   if (ids.length) p.ifcBekannt = ids;
+  const u = ifcUmrisseVon(r.storeys);
+  if (u.length) p.ifcUmrisse = u;
   return p;
 }
 
@@ -69,6 +78,7 @@ export function ifcHinzufuegen(p: Project, r: IfcImportResult): Project {
     gelaendeModell: r.gelaendeModell ?? p.gelaendeModell,
     lageplan: r.lageplan ? { flaechen: [...(p.lageplan?.flaechen ?? []), ...r.lageplan.flaechen] } : p.lageplan,
     ...(ids.length ? { ifcBekannt: ids } : {}),
+    ifcUmrisse: [...(p.ifcUmrisse ?? []), ...ifcUmrisseVon(r.storeys)],
   };
 }
 
@@ -91,8 +101,10 @@ interface Kontext {
   raumOrt: Map<string, Storey>;
   /** GlobalIds der Räume in abgeglichenen Geschossen des Projekts (dort werden sie zugeordnet, nicht neu angelegt) */
   altIds: Set<string>;
+  /** BGF-Umrisse des letzten Imports (siehe Project.ifcUmrisse) */
+  altUmrisse: NonNullable<Project['ifcUmrisse']>;
   /** in ein anderes Geschoss gewanderte Räume je IFC-Zielgeschoss */
-  verschoben: Map<Storey, Shape[]>;
+  verschoben: Map<Storey, { raum: Shape; herkunft: Storey; text: string }[]>;
   /**
    * Projekt aus einem Import älterer Versionen (ohne Vergleichsstand): Flächen ohne Stand werden über Nummer/Name
    * bzw. Überdeckung zugeordnet. Sonst sind Flächen ohne Stand von Hand gezeichnet und bleiben unberührt.
@@ -100,11 +112,21 @@ interface Kontext {
   altimport: boolean;
 }
 
-/** Stand nach dem Abgleich: abgeglichene Felder aus der IFC, nicht abgeleitete wie bisher */
+/** Stand nach dem Abgleich: abgeglichene Felder aus der IFC, nicht abgeglichene wie bisher */
 function neuerStand(nr: object, felder: readonly string[], alle: readonly string[], bisher: IfcStand | undefined): IfcStand {
   const st = ifcStandVon(nr, felder);
   for (const k of alle) if (!felder.includes(k) && bisher && k in bisher) st[k] = bisher[k];
+  if (felder.includes('wofl')) st[WOFL_ABGELEITET] = true;
+  else if (bisher?.[WOFL_ABGELEITET]) st[WOFL_ABGELEITET] = true;
   return st;
+}
+
+/**
+ * Felder eines Raums für den Abgleich: Die Wohnfläche nur, wenn dieser Import sie ableitet und sie auch beim
+ * letzten Import abgeleitet wurde – sonst ist sie eine Angabe des Nutzers (bzw. eines Imports ohne Wohnfläche).
+ */
+function raumFelderFuer(k: Kontext, stand: IfcStand | undefined): readonly string[] {
+  return stand && !stand[WOFL_ABGELEITET] ? k.raumFelder.filter((f) => f !== 'wofl') : k.raumFelder;
 }
 
 /** Dreiwegeabgleich je Feld; liefert das zusammengeführte Objekt und die Felder mit Konflikt */
@@ -183,6 +205,7 @@ export function ifcAbgleichen(p: Project, r: IfcImportResult, o: AbgleichOptione
     raumFelder: o.wohnflaeche === false ? RAUM_FELDER.filter((f) => f !== 'wofl') : RAUM_FELDER,
     raumOrt,
     altIds: new Set(),
+    altUmrisse: p.ifcUmrisse ?? [],
     verschoben: new Map(),
     altimport: !p.ifcBekannt && !p.storeys.some((s) => s.ifcStand || s.shapes.some((x) => x.ifcStand)) && !(p.lageplan?.flaechen ?? []).some((f) => f.ifcStand),
   };
@@ -252,8 +275,18 @@ export function ifcAbgleichen(p: Project, r: IfcImportResult, o: AbgleichOptione
   }
   // in der IFC in ein anderes Geschoss gewanderte Räume dort einfügen – mit ihren Angaben von Hand
   for (const [ns, formen] of k.verschoben) {
-    const ziel = ergebnis.get(ns);
-    if (ziel) ziel.shapes = [...ziel.shapes, ...formen];
+    for (const f of formen) {
+      const ziel = ergebnis.get(ns);
+      if (ziel) {
+        ziel.shapes = [...ziel.shapes, f.raum];
+        bericht.push(`${f.text} – verschoben.`);
+        continue;
+      }
+      // Zielgeschoss von Hand gelöscht: Raum bleibt, wo er war, statt mit seinen Angaben zu verschwinden
+      const bleibt = ergebnis.get(f.herkunft);
+      if (bleibt) bleibt.shapes = [...bleibt.shapes, f.raum];
+      bericht.push(`${f.text}, das Geschoss wurde aber von Hand gelöscht – Raum bleibt im bisherigen Geschoss.`);
+    }
   }
 
   let project: Project = { ...p, storeys };
@@ -262,10 +295,18 @@ export function ifcAbgleichen(p: Project, r: IfcImportResult, o: AbgleichOptione
     if (r.gelaendeModell) project.gelaendeModell = r.gelaendeModell;
   }
   if (o.lageplan && r.lageplan) project = { ...project, lageplan: { flaechen: lageplanAbgleichen(p.lageplan?.flaechen ?? [], r.lageplan.flaechen, k) } };
-  // bekannt bleibt: alles aus diesem Import (auch Gelöschtes – es bleibt gelöscht) und was das Projekt noch enthält
-  const bekannt = [...new Set([...ifcIdsVon(r), ...idsImProjekt(project)])];
+  // bekannt bleibt: alles schon Bekannte (auch aus Teil-Importen, z. B. ohne Räume), alles aus diesem Import und
+  // was das Projekt enthält – Gelöschtes bleibt so gelöscht
+  const bekannt = [...new Set([...(p.ifcBekannt ?? []), ...ifcIdsVon(r), ...idsImProjekt(project)])];
   if (bekannt.length) project.ifcBekannt = bekannt;
   else delete project.ifcBekannt;
+  if (o.umrisse) {
+    // Umrisse dieses Imports; Geschosse, die nicht abgeglichen wurden, behalten ihre bisherigen
+    const neueGeschosse = new Set(r.storeys.map(geschossSchluessel));
+    const u = [...(p.ifcUmrisse ?? []).filter((x) => !neueGeschosse.has(x.geschoss)), ...ifcUmrisseVon(r.storeys)];
+    if (u.length) project.ifcUmrisse = u;
+    else delete project.ifcUmrisse;
+  }
 
   bericht.unshift(
     `Abgleich mit der IFC: ${z.aktualisiert} aktualisiert, ${z.neu} neu, ${z.entfernt} entfernt${z.behalten ? `, ${z.behalten} von Hand geänderte behalten` : ''}${z.konflikte ? `, ${z.konflikte} mit Konflikt (Ihre Angabe bleibt)` : ''}${z.uebersprungen ? `, ${z.uebersprungen} von Hand gelöschte nicht wieder angelegt` : ''}.`,
@@ -314,16 +355,25 @@ function formenAbgleichen(os: Storey, ns: Storey, k: Kontext): Shape[] {
       if (zielGeschoss && zielGeschoss !== ns) {
         // in der IFC in ein anderes Geschoss gewandert: dorthin mitnehmen, Abgleich wie sonst
         const nz = zielGeschoss.shapes.find((x): x is RoomShape => x.kind === 'room' && x.ifcId === s.ifcId)!;
-        const m = felderAbgleichen(s, nz, raumFelder, s.ifcStand);
+        const fz = raumFelderFuer(k, s.ifcStand);
+        const m = felderAbgleichen(s, nz, fz, s.ifcStand);
         z.aktualisiert++;
-        bericht.push(`Raum „${[s.nummer, s.name].filter(Boolean).join(' ')}“ liegt in der IFC jetzt im Geschoss „${zielGeschoss.name}“ (bisher „${os.name}“) – verschoben.`);
+        const name = [s.nummer, s.name].filter(Boolean).join(' ');
+        if (m.konflikte.length) {
+          z.konflikte++;
+          bericht.push(`${os.name}: Raum „${name}“ – ${felderText(m.konflikte)} von Hand geändert und auch in der IFC anders; Ihre Angabe bleibt.`);
+        }
         const liste = k.verschoben.get(zielGeschoss) ?? [];
-        liste.push({ ...m.obj, ifcStand: neuerStand(nz, raumFelder, RAUM_FELDER, s.ifcStand) });
+        liste.push({
+          raum: { ...m.obj, ifcStand: neuerStand(nz, fz, RAUM_FELDER, s.ifcStand) },
+          herkunft: ns,
+          text: `Raum „${name}“ liegt in der IFC jetzt im Geschoss „${zielGeschoss.name}“ (bisher „${os.name}“)`,
+        });
         k.verschoben.set(zielGeschoss, liste);
         continue;
       }
       if (!nr) {
-        if (vonHandGeaendert(s, raumFelder, s.ifcStand)) {
+        if (vonHandGeaendert(s, raumFelderFuer(k, s.ifcStand), s.ifcStand)) {
           out.push(s);
           z.behalten++;
           bericht.push(`${os.name}: Raum „${[s.nummer, s.name].filter(Boolean).join(' ')}“ fehlt in der IFC, wurde aber von Hand geändert – behalten.`);
@@ -334,13 +384,14 @@ function formenAbgleichen(os: Storey, ns: Storey, k: Kontext): Shape[] {
         continue;
       }
       raumVerwendet.add(nr);
-      const m = felderAbgleichen(s, nr, raumFelder, s.ifcStand);
+      const felder = raumFelderFuer(k, s.ifcStand);
+      const m = felderAbgleichen(s, nr, felder, s.ifcStand);
       if (m.geaendert) z.aktualisiert++;
       if (m.konflikte.length) {
         z.konflikte++;
         bericht.push(`${os.name}: Raum „${[s.nummer, s.name].filter(Boolean).join(' ')}“ – ${felderText(m.konflikte)} von Hand geändert und auch in der IFC anders; Ihre Angabe bleibt.`);
       }
-      out.push({ ...m.obj, ifcStand: neuerStand(nr, raumFelder, RAUM_FELDER, s.ifcStand) });
+      out.push({ ...m.obj, ifcStand: neuerStand(nr, felder, RAUM_FELDER, s.ifcStand) });
       continue;
     }
     // BGF-Umriss: nur solche aus der IFC (mit Stand) werden abgeglichen; ältere Importe ohne Stand über die Überdeckung
@@ -401,8 +452,17 @@ function formenAbgleichen(os: Storey, ns: Storey, k: Kontext): Shape[] {
     }
   }
   if (o.umrisse) {
+    // von Hand gelöschte Umrisse: im letzten Import vorhanden, im Projekt nicht mehr
+    const schluessel = geschossSchluessel(ns);
+    const frueher = k.altUmrisse.filter((x) => x.geschoss === schluessel).map((x) => x.points);
+    const geloescht = frueher.filter((q) => !os.shapes.some((s) => s.kind === 'outline' && ueberdeckung(s.points, q) > 0.5));
     for (const nu of neueUmrisse) {
       if (umrissVerwendet.has(nu)) continue;
+      if (geloescht.some((q) => ueberdeckung(q, nu.points) > 0.5)) {
+        z.uebersprungen++;
+        bericht.push(`${os.name}: BGF-Umriss „${nu.name}“ wurde von Hand gelöscht – nicht wieder angelegt.`);
+        continue;
+      }
       out.push(nu);
       z.neu++;
     }

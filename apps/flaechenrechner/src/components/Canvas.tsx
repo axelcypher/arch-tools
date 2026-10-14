@@ -327,7 +327,7 @@ export function Canvas() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (!zeichenKuerzelErlaubt(e)) return;
+      if (!zeichenKuerzelErlaubt(e, svgRef.current)) return;
       const st = useEditor.getState();
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key.toLowerCase() === 'z' && !e.shiftKey) {
@@ -358,6 +358,18 @@ export function Canvas() {
         if (k === 'c' || k === 'v' || k === 'd') return;
       }
       if (ctrl) return;
+      // Tab / Umschalt+Tab: nächste bzw. vorige Fläche wählen (nur, wenn kein Bedienelement den Fokus hat)
+      if (e.key === 'Tab' && tool === 'select' && !draft.length && (document.activeElement === document.body || document.activeElement === null)) {
+        const v = st.view;
+        const liste = storey.shapes.filter((s) => (s.kind === 'outline' ? v.showOutlines : v.showRooms));
+        if (liste.length) {
+          e.preventDefault();
+          const i = liste.findIndex((s) => s.id === st.selectedShapeId);
+          const n = i < 0 ? (e.shiftKey ? liste.length - 1 : 0) : (i + (e.shiftKey ? -1 : 1) + liste.length) % liste.length;
+          st.select(liste[n].id);
+        }
+        return;
+      }
       // Pfeiltasten: Auswahl um 1 cm, mit Umschalt um 10 cm verschieben (Bildschirmrichtung: y nach unten)
       if (tool === 'select' && !draft.length && e.key.startsWith('Arrow') && (st.selectedIds.length || st.selectedShapeId)) {
         e.preventDefault();
@@ -858,7 +870,7 @@ export function Canvas() {
       hint =
         selectedIds.length > 1
           ? `${selectedIds.length} Flächen gewählt · Ziehen oder Pfeiltasten: alle verschieben (Umschalt während des Ziehens: entlang der Gebäudeachse) · Strg+C/D: kopieren/duplizieren · Umschalt+Klick: hinzufügen/entfernen · Entf: löschen · Esc: Auswahl aufheben`
-          : 'Klicken: auswählen · Pfeiltasten: verschieben (Umschalt: 10 cm) · Strg+C/V/D: kopieren/einfügen/duplizieren · Umschalt+Klick/-Rahmen: mehrere · Ziehen: verschieben · Punkt ziehen: ändern (fängt an Kantenverlängerungen; Umschalt während des Ziehens: entlang der Gebäudeachse) · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen';
+          : 'Klicken: auswählen · Tab: nächste Fläche · Pfeiltasten: verschieben (Umschalt: 10 cm) · Strg+C/V/D: kopieren/einfügen/duplizieren · Umschalt+Klick/-Rahmen: mehrere · Ziehen: verschieben · Punkt ziehen: ändern (fängt an Kantenverlängerungen; Umschalt während des Ziehens: entlang der Gebäudeachse) · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen';
       break;
     case 'polygon':
       hint = draft.length

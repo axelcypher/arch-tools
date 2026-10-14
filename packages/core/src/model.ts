@@ -323,6 +323,11 @@ export interface Project {
    * Projekt, wurde es von Hand gelöscht – ein erneuter Import legt es dann nicht wieder an.
    */
   ifcBekannt?: string[];
+  /**
+   * BGF-Umrisse des letzten IFC-Imports (je Geschoss: GlobalId bzw. Name). Umrisse haben keine eigene GlobalId –
+   * ein Umriss, der hier steht, aber im Projekt fehlt, wurde von Hand gelöscht und kommt nicht wieder.
+   */
+  ifcUmrisse?: { geschoss: string; points: Point[] }[];
   /** Originaldateien der Importe (IFC, DXF, PDF) und die Excel-Vorlage */
   dateien?: ProjektDatei[];
   /** Lageplan des Grundstücks (GRZ/GFZ-Nachweis) */

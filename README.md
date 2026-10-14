@@ -103,6 +103,7 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 | `Strg+A` | alle Flächen des Geschosses wählen |
 | `Strg+C` / `Strg+V` / `Strg+D` | Flächen kopieren / einfügen (in ein anderes Geschoss deckungsgleich) / duplizieren |
 | Pfeiltasten (`Umschalt`) | Auswahl um 1 cm (10 cm) verschieben |
+| `Tab` / `Umschalt+Tab` | nächste / vorige Fläche wählen |
 | `Strg+S` / `Strg+Shift+S` / `Strg+O` | Speichern / Speichern unter / Öffnen |
 | `F1` | Nachschlagewerk der Berechnungsregeln |
 | `F` | alles zeigen |

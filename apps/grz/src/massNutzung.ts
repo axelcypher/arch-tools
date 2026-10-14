@@ -155,7 +155,7 @@ function geschossFlaeche(st: Storey, nurR: boolean): MultiPolygon {
  * dort entsprechend größer. Die Höhenfunktionen werden einmal je Umriss aufgebaut.
  */
 function hoehenFunktion(project: Project, st: Storey, floorZ: number): (p: Point) => { h: number; schraeg: boolean } | null {
-  const raeume = st.shapes.filter((r): r is RoomShape => r.kind === 'room' && !r.subtract && !!r.versatz && r.points.length >= 3);
+  const raeume = st.shapes.filter((r): r is RoomShape => r.kind === 'room' && !r.subtract && r.versatz !== undefined && r.points.length >= 3);
   const teile = outlinesOf(st)
     .filter((s) => !s.subtract)
     .map((s) => {
@@ -280,7 +280,19 @@ export interface RaumPruefung {
 }
 
 /** Räume eines Geschosses nach Nutzung und lichter Höhe prüfen */
+/** Zwischenspeicher je Geschoss: hängt von Geschossen, Dachmodell und den Prüfparametern ab */
+const raeumeCache = new WeakMap<Storey, { storeys: Storey[]; dach: Project['dachModell']; schluessel: string; out: RaumPruefung[] }>();
+
 function raeumePruefen(project: Project, st: Storey, floorZ: number, bauo: BauOFassung, aufbau: number, keller: boolean, kleinesWohngebaeude: boolean): RaumPruefung[] {
+  const schluessel = [floorZ, bauo, aufbau, keller, kleinesWohngebaeude].join('|');
+  const c = raeumeCache.get(st);
+  if (c && c.storeys === project.storeys && c.dach === project.dachModell && c.schluessel === schluessel) return c.out;
+  const out = raeumePruefenRechnen(project, st, floorZ, bauo, aufbau, keller, kleinesWohngebaeude);
+  raeumeCache.set(st, { storeys: project.storeys, dach: project.dachModell, schluessel, out });
+  return out;
+}
+
+function raeumePruefenRechnen(project: Project, st: Storey, floorZ: number, bauo: BauOFassung, aufbau: number, keller: boolean, kleinesWohngebaeude: boolean): RaumPruefung[] {
   const hoehe = hoehenFunktion(project, st, floorZ);
   return st.shapes
     .filter((r): r is RoomShape => r.kind === 'room' && !r.subtract && r.points.length >= 3)
@@ -324,7 +336,23 @@ function raeumePruefen(project: Project, st: Storey, floorZ: number, bauo: BauOF
  * Fläche der Aufenthaltsräume einschließlich zugehöriger Treppenräume und ihrer Umfassungswände:
  * Räume um die Wanddicke erweitert (Raster 5 cm), begrenzt auf den Geschossgrundriss.
  */
+/** Zwischenspeicher je Geschoss (unveränderlich): Wandzuschlag und gezählte Räume als Schlüssel */
+const aufenthaltCache = new WeakMap<Storey, { schluessel: string; flaeche: number }>();
+
 function aufenthaltsFlaeche(st: Storey, grundriss: MultiPolygon, wand: number, pruefung: RaumPruefung[]): number {
+  const schluessel = `${wand}|${pruefung
+    .filter((x) => x.ergebnis !== 'nein')
+    .map((x) => x.roomId)
+    .sort()
+    .join(',')}`;
+  const c = aufenthaltCache.get(st);
+  if (c && c.schluessel === schluessel) return c.flaeche;
+  const flaeche = aufenthaltsFlaecheRechnen(st, grundriss, wand, pruefung);
+  aufenthaltCache.set(st, { schluessel, flaeche });
+  return flaeche;
+}
+
+function aufenthaltsFlaecheRechnen(st: Storey, grundriss: MultiPolygon, wand: number, pruefung: RaumPruefung[]): number {
   const zaehlt = new Set(pruefung.filter((x) => x.ergebnis !== 'nein').map((x) => x.roomId));
   const rooms = st.shapes.filter((s): s is RoomShape => s.kind === 'room' && zaehlt.has(s.id));
   if (!rooms.length || !grundriss.length) return 0;
