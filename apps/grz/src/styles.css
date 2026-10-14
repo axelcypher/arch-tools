@@ -282,3 +282,49 @@ button.link:hover {
     break-inside: avoid;
   }
 }
+
+/* 3D-Ansicht */
+.grz-3d {
+  position: relative;
+  height: min(62vh, 640px);
+  min-height: 360px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.grz-3d-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.grz-3d-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.grz-3d-legende {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--overlay-bg);
+}
+
+.grz-3d-legende i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+.lp-mehrere strong {
+  display: block;
+  margin-bottom: 6px;
+}

@@ -5,6 +5,7 @@ import { briRechenweg } from '@core/rechenweg';
 import { fmt2 } from '@core/format';
 import { anschriftEinzeilig, flurText } from '@core/model';
 import { NUF_IDS, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
+import { druckenAls } from '@core/platform/projektDatei';
 import { useEditor } from '../store/store';
 import { PlanFigure } from './PlanFigure';
 
@@ -46,7 +47,7 @@ export function Report() {
             <input type="checkbox" checked={showBackground} disabled={!showPlans} onChange={(e) => setShowBackground(e.target.checked)} />
             Hintergrundplan
           </label>
-          <button onClick={() => window.print()}>Drucken / PDF</button>
+          <button onClick={() => druckenAls({ datei: useEditor.getState().datei, projektName: project.name, zusatz: 'WoFl+BGF+BRI' })}>Drucken / PDF</button>
           <button className="primary" onClick={() => setOpen(false)}>
             Schließen
           </button>

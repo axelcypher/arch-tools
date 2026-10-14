@@ -4,6 +4,8 @@ import { getEntries, logger, logVersion, subscribe } from '../platform/log';
 import { useTheme } from '../platform/theme';
 import type { ThemeWahl } from '../platform/theme';
 import { UpdateKnopf } from './UpdateKnopf';
+import type { RegelApp } from '../regeln/regelwerk';
+import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 
 const log = logger('fenster');
 
@@ -22,9 +24,11 @@ export interface TitleBarProps {
   /** ungespeicherte Änderungen */
   dirty: boolean;
   onOpenLog: () => void;
+  /** Nachschlagewerk der Berechnungsregeln dieser App anbieten */
+  regeln?: RegelApp;
 }
 
-export function TitleBar({ app, name, dirty, onOpenLog }: TitleBarProps) {
+export function TitleBar({ app, name, dirty, onOpenLog, regeln }: TitleBarProps) {
   const desktop = isTauri();
   const [win, setWin] = useState<AppWindow | null>(null);
   const [maximized, setMaximized] = useState(false);
@@ -45,6 +49,18 @@ export function TitleBar({ app, name, dirty, onOpenLog }: TitleBarProps) {
       off?.();
     };
   }, [desktop]);
+
+  // F1: Nachschlagewerk
+  useEffect(() => {
+    if (!regeln) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'F1') return;
+      e.preventDefault();
+      useHilfe.getState().oeffnen();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [regeln]);
 
   // Fehler seit dem letzten Öffnen des Protokolls
   const version = useSyncExternalStore(subscribe, logVersion);
@@ -74,6 +90,12 @@ export function TitleBar({ app, name, dirty, onOpenLog }: TitleBarProps) {
       <span className="titlebar-drag" data-tauri-drag-region />
       {desktop && <UpdateKnopf app={app} dirty={dirty} />}
       <ThemeMenu />
+      {regeln && (
+        <button className="titlebar-btn" title="Berechnungsregeln nachschlagen – mit Quellen und Suche (F1)" onClick={() => useHilfe.getState().oeffnen()}>
+          <span aria-hidden>§</span> Regeln
+        </button>
+      )}
+      {regeln && <Nachschlagewerk app={regeln} />}
       <button
         className="titlebar-btn"
         title="Protokoll (Fehlersuche)"

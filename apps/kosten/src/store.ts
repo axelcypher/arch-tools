@@ -5,7 +5,7 @@ import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 
 /**
- * Zustand der Kostenermittlung: das Projekt im gemeinsamen Format (.oap/.akhp) – Gebäude, Geschosse und
+ * Zustand der Kostenermittlung: das Projekt im gemeinsamen Format (.oap) – Gebäude, Geschosse und
  * Flächen kommen aus dem Flächenrechner bzw. der IFC, Kostenpositionen und Kostenstände pflegt dieses Tool.
  */
 

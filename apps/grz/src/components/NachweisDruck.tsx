@@ -6,9 +6,10 @@ import { nutzungLabel, VERSIEGELUNGEN, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
 import { anschriftEinzeilig, flurText } from '@core/model';
 import type { Kennzahl, Nachweis } from '../massNutzung';
-import { baunvoLabel, bauoLabel, istAufenthaltsraum, massNachweis } from '../massNutzung';
+import { baunvoLabel, bauoLabel, massNachweis } from '../massNutzung';
+import { druckenAls } from '@core/platform/projektDatei';
 import { useGrz } from '../store';
-import { ANRECHNUNG, AUFENTHALT, GF_ART, HAFTUNG, roemisch, STATUS, zahl } from '../texte';
+import { ANRECHNUNG, AUFENTHALT, GELAENDE_QUELLE, GF_ART, HAFTUNG, roemisch, STATUS, zahl } from '../texte';
 
 /** Druckbarer Nachweis des Maßes der baulichen Nutzung (GRZ, GFZ, Vollgeschosse) – über den Druckdialog auch als PDF. */
 export function NachweisDruck({ onClose }: { onClose: () => void }) {
@@ -38,7 +39,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
               Aufenthaltsräume
             </label>
           )}
-          <button onClick={() => window.print()}>Drucken / PDF</button>
+          <button onClick={() => druckenAls({ datei: useGrz.getState().datei, projektName: project.name, zusatz: 'GRZ+GFZ' })}>Drucken / PDF</button>
           <button className="primary" onClick={onClose}>
             Schließen
           </button>
@@ -101,7 +102,8 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
             <tr>
               <td>Geländeoberfläche</td>
               <td>
-                {fmt2(n.gelaende.hoehe)} m über ±0,00 ({n.gelaende.quelle === 'festgelegt' ? 'festgelegt' : n.gelaende.quelle === 'lageplan' ? 'aus dem Lageplan' : 'angenommen'})
+                {fmt2(n.gelaende.hoehe)} m über ±0,00 ({GELAENDE_QUELLE[n.gelaende.quelle]}
+                {n.gelaende.min !== undefined && n.gelaende.max !== undefined && n.gelaende.max - n.gelaende.min > 0.05 ? `, ${fmt2(n.gelaende.min)} bis ${fmt2(n.gelaende.max)} m am Gebäude` : ''})
               </td>
             </tr>
           </tbody>
@@ -154,7 +156,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
               <th>Nutzung</th>
               <th>Versiegelung</th>
               <th className="num">Fläche [m²]</th>
-              <th className="num">außerhalb Gebäude [m²]</th>
+              <th className="num" title="außerhalb des Gebäudes, Überlagerungen nur einmal gezählt">angerechnet [m²]</th>
               <th>Anrechnung</th>
             </tr>
           </thead>
@@ -175,10 +177,20 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
                 <td>{nutzungLabel(l.nutzung)}</td>
                 <td>{versiegelungInfo(l.versiegelung).label}</td>
                 <td className="num">{fmt2(l.flaeche)}</td>
-                <td className="num">{fmt2(l.flaecheAussen)}</td>
+                <td className="num">
+                  {fmt2(l.flaecheEindeutig)}
+                  {l.ueberlagert > 0.05 && <div className="report-note">{fmt2(l.ueberlagert)} überlagert</div>}
+                </td>
                 <td>{ANRECHNUNG[l.anrechnung]}</td>
               </tr>
             ))}
+            <tr className="subtotal">
+              <td />
+              <td colSpan={3}>Summe Lageplan-Flächen (jede Stelle einmal)</td>
+              <td />
+              <td className="num">{fmt2(eigene.reduce((a, l) => a + l.flaecheEindeutig, 0))}</td>
+              <td />
+            </tr>
           </tbody>
         </table>
 
@@ -187,6 +199,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           <thead>
             <tr>
               <th>Geschoss</th>
+              <th className="num">Gelände</th>
               <th className="num">über Gelände</th>
               <th className="num">Anteil</th>
               <th>Ergebnis</th>
@@ -197,6 +210,14 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
             {n.geschosse.map((g) => (
               <tr key={g.storeyId}>
                 <td>{g.name}</td>
+                <td className="num">
+                  {fmt2(g.gelaende.mittel)} m
+                  {g.gelaende.max - g.gelaende.min > 0.05 && (
+                    <div className="report-note">
+                      {fmt2(g.gelaende.min)} bis {fmt2(g.gelaende.max)}
+                    </div>
+                  )}
+                </td>
                 <td className="num">{fmt2(g.ueberGelaende)} m</td>
                 <td className="num">{g.oberirdisch ? `${Math.round(g.anteil * 100)} %` : '–'}</td>
                 <td className="strong">
@@ -243,14 +264,15 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
                 </tr>
               </thead>
               <tbody>
-                {aufenthalt.map(({ geschoss, r }) => (
+                {aufenthalt.map(({ geschoss, r, pr }) => (
                   <tr key={r.id}>
                     <td>{geschoss}</td>
                     <td>{[r.nummer, r.name].filter(Boolean).join(' ')}</td>
                     <td className="num">{fmt2(polygonArea(r.points))}</td>
                     <td>
-                      {AUFENTHALT[istAufenthaltsraum(r)]}
+                      {AUFENTHALT[pr.ergebnis]}
                       {r.aufenthalt ? ' (festgelegt)' : ''}
+                      <div className="report-note">{pr.anforderung.text}</div>
                     </td>
                   </tr>
                 ))}
@@ -332,13 +354,14 @@ function KennzahlZeile({ titel, k, flaeche }: { titel: string; k: Kennzahl; flae
   );
 }
 
-/** Räume der Nicht-Vollgeschosse (vor 1990 maßgebend für die Geschossfläche) */
-function aufenthaltsraeume(project: Project, n: Nachweis): { geschoss: string; r: RoomShape }[] {
-  return n.geschosse
-    .filter((g) => !g.vollgeschoss)
-    .flatMap((g) => {
-      const s = project.storeys.find((x) => x.id === g.storeyId);
-      return (s?.shapes ?? []).filter((r): r is RoomShape => r.kind === 'room' && !r.subtract && istAufenthaltsraum(r) !== 'nein').map((r) => ({ geschoss: g.name, r }));
+/** Aufenthalts- und Treppenräume der Nicht-Vollgeschosse (vor 1990 maßgebend für die Geschossfläche) – wie im Nachweis geprüft */
+function aufenthaltsraeume(project: Project, n: Nachweis): { geschoss: string; r: RoomShape; pr: Nachweis['raeume'][number] }[] {
+  return n.raeume
+    .filter((pr) => pr.ergebnis !== 'nein')
+    .flatMap((pr) => {
+      const s = project.storeys.find((x) => x.id === pr.storeyId);
+      const r = s?.shapes.find((x): x is RoomShape => x.id === pr.roomId && x.kind === 'room');
+      return r && s ? [{ geschoss: s.name, r, pr }] : [];
     });
 }
 

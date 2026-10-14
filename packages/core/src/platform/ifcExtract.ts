@@ -54,7 +54,12 @@ export function extractIfc(api: IfcAPI, T: IfcTypeCodes, data: Uint8Array, onPro
     const storeysRaw = storeyIds.map((id) => {
       const l = api.GetLine(m, id);
       const e = val(l.Elevation);
-      return { expressId: id, name: storeyName(str(l.Name), str(l.LongName)) || `Geschoss ${id}`, elevation: typeof e === 'number' ? e * scale : NaN };
+      return {
+        expressId: id,
+        ...(str(l.GlobalId) ? { globalId: str(l.GlobalId) } : {}),
+        name: storeyName(str(l.Name), str(l.LongName)) || `Geschoss ${id}`,
+        elevation: typeof e === 'number' ? e * scale : NaN,
+      };
     });
 
     // Zuordnung Bauteil → Geschoss (direkt oder über übergeordnete Bauteile/Zonen)
@@ -199,6 +204,7 @@ export function extractIfc(api: IfcAPI, T: IfcTypeCodes, data: Uint8Array, onPro
         const l = api.GetLine(m, id);
         return {
           expressId: id,
+          ...(str(l.GlobalId) ? { globalId: str(l.GlobalId) } : {}),
           name: str(l.Name),
           longName: str(l.LongName),
           storey: resolveStorey(id),

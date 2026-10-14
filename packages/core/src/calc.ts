@@ -1,6 +1,8 @@
 import type { Point } from './geometry';
-import { distanceToEdges, pointInPolygon, polygonArea } from './geometry';
-import type { Nutzungsgruppe, OutlineShape, Project, Raumumschliessung, Storey, WoflKategorie } from './model';
+import { distanceToEdges, labelPoint, pointInPolygon, polygonArea } from './geometry';
+import type { Nutzungsgruppe, OutlineShape, Project, Raumumschliessung, RoomShape, Storey, WoflKategorie } from './model';
+import type { MultiPolygon } from './polygon';
+import { areaMP, diffMP, unionAll } from './polygon';
 import { roomArea, storeyElevations } from './model';
 import { gaubenVolumen } from './gaube';
 import { roofStats } from './roof';
@@ -123,8 +125,8 @@ export function modellRoofParams(project: Project, storey: Storey, s: OutlineSha
   };
 }
 
-/** Rauminhalt eines BGF-Umrisses (ohne Vorzeichen): Fläche × Höhe bzw. bis zur Dachhaut */
-export function outlineVolume(s: OutlineShape, storey: Storey, project: Project): number {
+/** Rauminhalt eines BGF-Umrisses über dem Geschossfußboden (ohne Vorzeichen): Fläche × Höhe bzw. bis zur Dachhaut */
+export function koerperVolume(s: OutlineShape, storey: Storey, project: Project): number {
   const h = s.hoehe ?? storey.hoehe;
   if (!s.dach) return polygonArea(s.points) * h;
   if (s.dach.typ === 'modell') {
@@ -133,6 +135,96 @@ export function outlineVolume(s: OutlineShape, storey: Storey, project: Project)
     return meshRoofStats(project.dachModell, s.points, r.floorZ, h, r.cap).volumen;
   }
   return Math.abs(roofStats(s.dach, s.points).volumen) + gaubenVolumen(s.dach);
+}
+
+/** Teil des Rauminhalts unterhalb des Geschossfußbodens (bzw. Abzug bei höher liegendem Fußboden) */
+export interface UnterbauTeil {
+  art: 'versatz' | 'absenkung' | 'sohle';
+  bezeichnung: string;
+  flaeche: number;
+  /** Höhe; negativ bei einem höher liegenden Fußboden (Abzug) */
+  hoehe: number;
+  /** Raum, dessen Absenkung gemeint ist */
+  raumId?: string;
+}
+
+/**
+ * Rauminhalt unter dem Geschossfußboden eines BGF-Umrisses (DIN 277: BRI ab Unterseite der konstruktiven Sohle):
+ *  - versatz:   der ganze Umriss liegt tiefer (höher) als das Geschoss → Fläche × Versatz
+ *  - absenkung: Räume im Umriss liegen tiefer als dessen Fußboden (Split-Level) → Raumfläche (Polygon) × Absenkung
+ *  - sohle:     Bodenplatte des Geschosses → Teil des Umrisses ohne Geschoss darunter × Sohlendicke
+ */
+export function unterbau(s: OutlineShape, storey: Storey, project: Project): UnterbauTeil[] {
+  const out: UnterbauTeil[] = [];
+  const A = polygonArea(s.points);
+  const v = s.versatz ?? 0;
+  if (Math.abs(v) > 1e-9) {
+    out.push({ art: 'versatz', bezeichnung: v < 0 ? 'Fußboden tiefer (Split-Level)' : 'Fußboden höher (Split-Level)', flaeche: A, hoehe: -v });
+  }
+  if (!s.subtract) {
+    for (const r of storey.shapes) {
+      if (r.kind !== 'room' || r.subtract || r.points.length < 3) continue;
+      const tiefe = v - (r.versatz ?? 0);
+      if (tiefe <= 1e-9 || !pointInPolygon(labelPoint(r.points), s.points)) continue;
+      out.push({ art: 'absenkung', bezeichnung: `Absenkung ${raumText(r)}`, flaeche: polygonArea(r.points), hoehe: tiefe, raumId: r.id });
+    }
+  }
+  const sohle = storey.sohle ?? 0;
+  if (sohle > 1e-9) {
+    const frei = sohlenFlaeche(s, storey, project);
+    if (frei > 1e-6) out.push({ art: 'sohle', bezeichnung: 'Bodenplatte (UK Sohle bis Fußboden)', flaeche: frei, hoehe: sohle });
+  }
+  return out;
+}
+
+function raumText(r: RoomShape) {
+  return [r.nummer, r.name].filter(Boolean).join(' ') || 'Raum';
+}
+
+/** Teil eines Umrisses, unter dem kein Geschoss (mit BGF) liegt – dort sitzt die Bodenplatte */
+export function sohlenFlaeche(s: OutlineShape, storey: Storey, project: Project): number {
+  return areaMP(sohlenPolygon(s, storey, project));
+}
+
+/** Grundriss der Bodenplatte unter einem Umriss (Teil ohne Geschoss darunter) – schmale Reststreifen entfallen */
+export function sohlenPolygon(s: OutlineShape, storey: Storey, project: Project): MultiPolygon {
+  const elev = storeyElevations(project);
+  const floorZ = elev[project.storeys.indexOf(storey)] ?? 0;
+  // nächstes Geschoss darunter (nach Höhe)
+  let below = -1;
+  elev.forEach((e, i) => {
+    if (e < floorZ - 1e-6 && (below < 0 || e > elev[below])) below = i;
+  });
+  const ganz = unionAll([s.points]);
+  if (below < 0) return ganz;
+  const unten = project.storeys[below].shapes.filter((x): x is OutlineShape => x.kind === 'outline');
+  const plus = unionAll(unten.filter((x) => !x.subtract).map((x) => x.points));
+  if (!plus.length) return ganz;
+  try {
+    const decke = diffMP(plus, unionAll(unten.filter((x) => x.subtract).map((x) => x.points)));
+    const frei = diffMP(ganz, decke);
+    // schmale Streifen aus leicht abweichend gezeichneten Umrissen zählen nicht (≤ UMRISS_TOLERANZ breit)
+    return areaMP(frei) < sliverGrenze(s.points) ? [] : frei;
+  } catch {
+    return ganz;
+  }
+}
+
+/** Fläche eines Randstreifens mit UMRISS_TOLERANZ Breite – darunter gilt eine Restfläche als Zeichenungenauigkeit */
+function sliverGrenze(pts: Point[]): number {
+  let u = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    u += Math.hypot(b.x - a.x, b.y - a.y);
+  }
+  return u * UMRISS_TOLERANZ;
+}
+
+/** Rauminhalt eines BGF-Umrisses (ohne Vorzeichen): Körper über dem Fußboden + Unterbau (Split-Level, Bodenplatte) */
+export function outlineVolume(s: OutlineShape, storey: Storey, project: Project): number {
+  const unten = unterbau(s, storey, project).reduce((a, t) => a + t.flaeche * t.hoehe, 0);
+  return Math.max(0, koerperVolume(s, storey, project) + unten);
 }
 
 export function computeStorey(storey: Storey, project: Project): StoreyResult {

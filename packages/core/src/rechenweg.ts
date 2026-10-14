@@ -1,4 +1,4 @@
-import { modellRoofParams, outlineVolume } from './calc';
+import { modellRoofParams, outlineVolume, unterbau } from './calc';
 import type { Point } from './geometry';
 import { polygonArea } from './geometry';
 import type { OutlineShape, Project, Storey } from './model';
@@ -44,6 +44,8 @@ export interface BriSchritt {
   dach?: boolean;
   /** Teilkörper ist eine Gaube */
   gaube?: Gaube;
+  /** Teil unterhalb des Geschossfußbodens: Bodenplatte, Split-Level-Absenkung bzw. -Versatz */
+  unterbau?: 'versatz' | 'absenkung' | 'sohle';
 }
 
 type Teil = Omit<BriSchritt, 'geschossId' | 'geschoss' | 'umrissId' | 'umriss' | 'umschliessung' | 'nr' | 'volumen' | 'formel'>;
@@ -69,8 +71,20 @@ function formel(t: Teil): string {
   return `${n}${base} × ${f3(t.hoehe)}${faktorText(t.faktor)}`;
 }
 
-/** Teilkörper eines Umrisses (ohne Vorzeichen für Abzugsflächen) */
+/** Teilkörper eines Umrisses (ohne Vorzeichen für Abzugsflächen): Körper über dem Fußboden, dann Unterbau */
 export function outlineTeile(s: OutlineShape, storey: Storey, project: Project): Teil[] {
+  const unten: Teil[] = unterbau(s, storey, project).map((u) => ({
+    bezeichnung: u.bezeichnung,
+    anzahl: u.hoehe < 0 ? -1 : 1,
+    flaeche: u.flaeche,
+    hoehe: Math.abs(u.hoehe),
+    faktor: 1,
+    unterbau: u.art,
+  }));
+  return [...koerperTeile(s, storey, project), ...unten];
+}
+
+function koerperTeile(s: OutlineShape, storey: Storey, project: Project): Teil[] {
   const pts = s.points;
   const A = polygonArea(pts);
   const h = s.hoehe ?? storey.hoehe;
@@ -193,8 +207,10 @@ function umrissTeile(s: OutlineShape, st: Storey, project: Project): Teil[] {
   const teile = outlineTeile(s, st, project);
   const soll = outlineVolume(s, st, project);
   const ist = teile.reduce((a, t) => a + t.anzahl * t.flaeche * t.hoehe * t.faktor, 0);
-  if (teile.length && Math.abs(soll - ist) > 1e-9) {
-    const last = teile[teile.length - 1];
+  // Rest dem letzten Körperteil zuschlagen (nicht Bodenplatte/Absenkung – die sind exakt)
+  const koerper = teile.filter((t) => !t.unterbau);
+  if (koerper.length && Math.abs(soll - ist) > 1e-9) {
+    const last = koerper[koerper.length - 1];
     const per = last.anzahl * last.flaeche * last.faktor;
     if (Math.abs(per) > 1e-12) last.hoehe += (soll - ist) / per;
   }
@@ -426,7 +442,6 @@ export function briKoerper(project: Project): BriKoerper[] {
       if (s.kind !== 'outline' || s.points.length < 3) continue;
       const teile = umrissTeile(s, st, project);
       const sign = s.subtract ? -1 : 1;
-      const minus = s.subtract ? '− ' : '';
       const base = {
         geschossId: st.id,
         geschoss: st.name,
@@ -438,6 +453,9 @@ export function briKoerper(project: Project): BriKoerper[] {
       for (const t of teile.filter((x) => !x.dach && !x.gaube)) {
         const rect = t.laenge !== undefined && t.breite !== undefined;
         const formel = rect ? 'L × B × H' : 'A × H';
+        // Abzug: Abzugsfläche oder höher liegender Fußboden (negative Anzahl)
+        const vz = sign * Math.sign(t.anzahl || 1);
+        const minus = vz < 0 ? '− ' : '';
         out.push({
           ...base,
           nr: ++nr,
@@ -457,7 +475,7 @@ export function briKoerper(project: Project): BriKoerper[] {
           ),
           formel,
           rechnung: minus + einsetzen(formel, rect ? { L: t.laenge!, B: t.breite!, H: t.hoehe } : { A: t.flaeche, H: t.hoehe }),
-          flaeche: sign * t.flaeche,
+          flaeche: vz * t.flaeche,
           hoehe: t.hoehe,
           laenge: t.laenge,
           breite: t.breite,

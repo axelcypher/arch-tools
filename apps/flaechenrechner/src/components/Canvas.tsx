@@ -4,17 +4,17 @@ import {
   bounds,
   distance,
   labelPoint,
-  orthoConstrain,
   pointInPolygon,
   polygonArea,
   projectOnSegment,
-  rectPoints,
   roundTo,
   snapToGrid,
   translate,
 } from '@core/geometry';
 import { fmt2, parseNum } from '@core/format';
 import { NumberField } from '@core/ui/fields';
+import type { Hilfslinie } from '@core/fang';
+import { achsBeschraenkt, achsRechteck, achsRichtungen, eckpunktHilfslinien, gebaeudeAchse, hilfslinienFang, zeichenHilfslinien } from '@core/fang';
 import type { Shape, Storey } from '@core/model';
 import { createOutline, createRoom, shapeArea } from '@core/model';
 import { nutzungInfo } from '@core/norms';
@@ -35,15 +35,24 @@ interface Viewport {
   ty: number;
 }
 
-type SnapKind = 'vertex' | 'edge' | 'grid' | 'ortho' | 'none';
+type SnapKind = 'vertex' | 'edge' | 'guide' | 'grid' | 'ortho' | 'none';
+
+interface SnapResult {
+  p: Point;
+  kind: SnapKind;
+  /** aktive Hilfslinien (Anzeige) */
+  linien?: Hilfslinie[];
+}
 
 type Drag =
   | { kind: 'pan'; sx: number; sy: number; tx: number; ty: number }
-  | { kind: 'vertex'; shapeId: string; index: number; started: boolean; sx: number; sy: number }
-  | { kind: 'move'; shapeId: string; start: Point; orig: Point[]; started: boolean; sx: number; sy: number };
+  | { kind: 'vertex'; shapeId: string; index: number; orig: Point[]; started: boolean; sx: number; sy: number }
+  | { kind: 'move'; start: Point; orig: Map<string, Point[]>; started: boolean; sx: number; sy: number; shapeId: string }
+  | { kind: 'box'; start: Point; cur: Point; add: boolean };
 
 const VERTEX_SNAP_PX = 10;
 const EDGE_SNAP_PX = 7;
+const GUIDE_SNAP_PX = 8;
 
 
 function isTypingTarget(t: EventTarget | null) {
@@ -60,13 +69,15 @@ export function Canvas() {
   const drawKind = useEditor((s) => s.drawKind);
   const view = useEditor((s) => s.view);
   const selectedId = useEditor((s) => s.selectedShapeId);
+  const selectedIds = useEditor((s) => s.selectedIds);
   const fitRequest = useEditor((s) => s.fitRequest);
   const { update, updateSilent, checkpoint, select, setTool } = useEditor.getState();
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
   const [vp, setVp] = useState<Viewport>({ scale: 40, tx: 60, ty: 60 });
-  const [cursor, setCursor] = useState<{ p: Point; kind: SnapKind } | null>(null);
+  const [cursor, setCursor] = useState<SnapResult | null>(null);
+  const [box, setBox] = useState<[Point, Point] | null>(null);
   const [draft, setDraft] = useState<Point[]>([]);
   const [numBuf, setNumBuf] = useState('');
   const [measure, setMeasure] = useState<[Point, Point] | null>(null);
@@ -78,7 +89,10 @@ export function Canvas() {
   const gridStep = project.settings.gridStep;
   const storeyIndex = project.storeys.findIndex((s) => s.id === storey.id);
   const ghost: Storey | null = view.showGhost && storeyIndex > 0 ? project.storeys[storeyIndex - 1] : null;
-  const selected = storey.shapes.find((s) => s.id === selectedId) ?? null;
+  // Bearbeitungsgriffe nur bei genau einer gewählten Fläche
+  const selected = selectedIds.length <= 1 ? (storey.shapes.find((s) => s.id === selectedId) ?? null) : null;
+  // Gebäudeachse (genordete Pläne: Gebäude stehen schräg) – für Hilfslinien, Umschalt und Rechtecke
+  const theta = useMemo(() => gebaeudeAchse([...storey.shapes, ...(ghost?.shapes ?? [])].map((s) => s.points)), [storey.shapes, ghost]);
 
   const toScreen = useCallback((p: Point) => ({ x: p.x * vp.scale + vp.tx, y: p.y * vp.scale + vp.ty }), [vp]);
   const toWorld = useCallback((sx: number, sy: number) => ({ x: (sx - vp.tx) / vp.scale, y: (sy - vp.ty) / vp.scale }), [vp]);
@@ -167,16 +181,13 @@ export function Canvas() {
   );
 
   const snap = useCallback(
-    (raw: Point, mods: { alt: boolean; shift: boolean }, origin: Point | null, exclude?: { shapeId: string; index: number }) => {
+    (raw: Point, mods: { alt: boolean; shift: boolean }, origin: Point | null, exclude?: { shapeId: string; index: number }, guides: Hilfslinie[] = []): SnapResult => {
       if (mods.alt) return { p: raw, kind: 'none' as SnapKind };
       if (origin && mods.shift) {
-        const o = orthoConstrain(origin, raw);
-        if (view.snapGrid) {
-          if (o.y === origin.y) o.x = origin.x + roundTo(o.x - origin.x, gridStep);
-          else o.y = origin.y + roundTo(o.y - origin.y, gridStep);
-        }
-        return { p: o, kind: 'ortho' as SnapKind };
+        // rechtwinklig zur Gebäudeachse (bei waagerecht/senkrecht stehenden Gebäuden wie bisher)
+        return { p: achsBeschraenkt(origin, raw, theta, view.snapGrid ? gridStep : 0), kind: 'ortho' as SnapKind };
       }
+      const hilfs = view.snapGuides && guides.length ? hilfslinienFang(raw, guides, GUIDE_SNAP_PX / vp.scale, view.snapGrid ? gridStep : 0) : null;
       if (view.snapVertices) {
         const vTol = VERTEX_SNAP_PX / vp.scale;
         let best: Point | null = null;
@@ -202,6 +213,8 @@ export function Canvas() {
           consider({ x: x2, y: y2 });
         }
         if (best) return { p: { ...(best as Point) }, kind: 'vertex' as SnapKind };
+        // Schnittpunkt zweier Hilfslinien hat Vorrang vor Kanten
+        if (hilfs && hilfs.linien.length > 1) return { p: hilfs.p, kind: 'guide', linien: hilfs.linien };
 
         const eTol = EDGE_SNAP_PX / vp.scale;
         let bestE: Point | null = null;
@@ -228,13 +241,20 @@ export function Canvas() {
         }
         if (bestE) {
           const e = bestE as Point;
+          // Kante und Hilfslinie zugleich: auf deren Schnittpunkt
+          if (hilfs) {
+            const l = hilfs.linien[0];
+            const s = kanteSchnitt(e, raw, l, snapCandidates, vectorGrid, eTol);
+            if (s) return { p: s, kind: 'guide', linien: hilfs.linien };
+          }
           return { p: { x: roundTo(e.x, 1e-4), y: roundTo(e.y, 1e-4) }, kind: 'edge' as SnapKind };
         }
       }
+      if (hilfs) return { p: hilfs.p, kind: 'guide', linien: hilfs.linien };
       if (view.snapGrid) return { p: snapToGrid(raw, gridStep), kind: 'grid' as SnapKind };
       return { p: raw, kind: 'none' as SnapKind };
     },
-    [view.snapGrid, view.snapVertices, gridStep, vp.scale, snapCandidates, draft, vectorGrid],
+    [view.snapGrid, view.snapVertices, view.snapGuides, gridStep, vp.scale, snapCandidates, draft, vectorGrid, theta],
   );
 
   /* ---------- Formen anlegen ---------- */
@@ -294,13 +314,16 @@ export function Canvas() {
       const w = parseNum(parts[0]);
       const h = parseNum(parts[1]);
       if (w === null || h === null) return false;
-      const sx = cur.x < last.x ? -1 : 1;
-      const sy = cur.y < last.y ? -1 : 1;
-      finishShape(rectPoints(last, { x: last.x + sx * w, y: last.y + sy * h }));
+      // Breite entlang der Gebäudeachse, Tiefe rechtwinklig dazu – Richtung wie die Maus
+      const [ax, ay] = achsRichtungen(theta);
+      const v = { x: cur.x - last.x, y: cur.y - last.y };
+      const sx = v.x * ax.x + v.y * ax.y < 0 ? -1 : 1;
+      const sy = v.x * ay.x + v.y * ay.y < 0 ? -1 : 1;
+      finishShape(achsRechteck(last, { x: last.x + sx * w * ax.x + sy * h * ay.x, y: last.y + sx * w * ax.y + sy * h * ay.y }, theta));
       return true;
     }
     return false;
-  }, [numBuf, draft, cursor, tool, finishShape]);
+  }, [numBuf, draft, cursor, tool, finishShape, theta]);
 
   /* ---------- Tastatur ---------- */
 
@@ -317,6 +340,13 @@ export function Canvas() {
       if (ctrl && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
         e.preventDefault();
         st.redo();
+        return;
+      }
+      if (ctrl && e.key.toLowerCase() === 'a' && tool === 'select') {
+        // alle sichtbaren Flächen des Geschosses
+        e.preventDefault();
+        const v = st.view;
+        st.selectMany(storey.shapes.filter((s) => (s.kind === 'outline' ? v.showOutlines : v.showRooms)).map((s) => s.id));
         return;
       }
       if (ctrl) return;
@@ -346,7 +376,7 @@ export function Canvas() {
         case 'Backspace':
           if (numBuf) setNumBuf((b) => b.slice(0, -1));
           else if (draft.length) setDraft((d) => d.slice(0, -1));
-          else if (st.selectedShapeId) deleteSelected();
+          else if (st.selectedIds.length) deleteSelected();
           e.preventDefault();
           break;
         case 'Delete':
@@ -391,9 +421,9 @@ export function Canvas() {
     };
     function deleteSelected() {
       const st = useEditor.getState();
-      const id = st.selectedShapeId;
-      if (!id) return;
-      st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.filter((x) => x.id !== id) })));
+      const ids = st.selectedIds.length ? st.selectedIds : st.selectedShapeId ? [st.selectedShapeId] : [];
+      if (!ids.length) return;
+      st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.filter((x) => !ids.includes(x.id)) })));
       st.select(null);
     }
     window.addEventListener('keydown', onKeyDown);
@@ -402,7 +432,7 @@ export function Canvas() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [draft, tool, numBuf, calib, applyNumeric, finishShape, storey.id, setTool]);
+  }, [draft, tool, numBuf, calib, applyNumeric, finishShape, storey.id, storey.shapes, setTool]);
 
   /* ---------- Maus ---------- */
 
@@ -427,7 +457,8 @@ export function Canvas() {
     const { sx, sy } = localPos(e);
     const raw = toWorld(sx, sy);
     const origin = draft.length ? draft[draft.length - 1] : null;
-    const { p } = snap(raw, { alt: e.altKey, shift: e.shiftKey }, origin);
+    const zeichnen = tool === 'polygon' || tool === 'rect';
+    const { p } = snap(raw, { alt: e.altKey, shift: e.shiftKey }, origin, undefined, zeichnen ? zeichenHilfslinien(draft, theta) : []);
 
     const now = performance.now();
     const isDouble = now - lastClick.current.t < 350 && Math.hypot(sx - lastClick.current.x, sy - lastClick.current.y) < 5;
@@ -435,6 +466,13 @@ export function Canvas() {
 
     switch (tool) {
       case 'select':
+        if (e.shiftKey) {
+          // Umschalt + Ziehen im Leeren: Rahmenauswahl (ergänzt die bisherige Auswahl)
+          drag.current = { kind: 'box', start: raw, cur: raw, add: true };
+          setBox([raw, raw]);
+          svgRef.current!.setPointerCapture(e.pointerId);
+          break;
+        }
         select(null);
         startPan(e);
         break;
@@ -454,7 +492,7 @@ export function Canvas() {
       }
       case 'rect':
         if (!draft.length) setDraft([p]);
-        else finishShape(rectPoints(draft[0], p));
+        else finishShape(achsRechteck(draft[0], p, theta));
         break;
       case 'measure':
         if (draft.length === 0) {
@@ -540,9 +578,18 @@ export function Canvas() {
   const onShapePointerDown = (e: React.PointerEvent, shape: Shape) => {
     if (tool !== 'select' || e.button !== 0 || spaceDown) return;
     e.stopPropagation();
-    select(shape.id);
+    const st = useEditor.getState();
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      // Umschalt/Strg + Klick: Fläche zur Auswahl hinzufügen bzw. entfernen
+      st.toggleSelect(shape.id);
+      return;
+    }
+    // Klick in eine bereits gewählte Gruppe verschiebt die ganze Gruppe
+    const ids = st.selectedIds.includes(shape.id) ? st.selectedIds : [shape.id];
+    if (!st.selectedIds.includes(shape.id)) select(shape.id);
+    const orig = new Map(storey.shapes.filter((s) => ids.includes(s.id)).map((s) => [s.id, s.points] as const));
     const { sx, sy } = localPos(e);
-    drag.current = { kind: 'move', shapeId: shape.id, start: toWorld(sx, sy), orig: shape.points, started: false, sx, sy };
+    drag.current = { kind: 'move', start: toWorld(sx, sy), orig, started: false, sx, sy, shapeId: shape.id };
     svgRef.current!.setPointerCapture(e.pointerId);
   };
 
@@ -550,7 +597,7 @@ export function Canvas() {
     if (e.button !== 0) return;
     e.stopPropagation();
     const { sx, sy } = localPos(e);
-    drag.current = { kind: 'vertex', shapeId: shape.id, index, started: false, sx, sy };
+    drag.current = { kind: 'vertex', shapeId: shape.id, index, orig: shape.points, started: false, sx, sy };
     svgRef.current!.setPointerCapture(e.pointerId);
   };
 
@@ -565,7 +612,7 @@ export function Canvas() {
     update((p) => setShapePoints(p, storey.id, shape.id, pts));
     const { sx, sy } = localPos(e);
     // Einfügen ist bereits ein Undo-Schritt, das anschließende Ziehen gehört dazu
-    drag.current = { kind: 'vertex', shapeId: shape.id, index: index + 1, started: true, sx, sy };
+    drag.current = { kind: 'vertex', shapeId: shape.id, index: index + 1, orig: pts, started: true, sx, sy };
     svgRef.current!.setPointerCapture(e.pointerId);
   };
 
@@ -595,7 +642,8 @@ export function Canvas() {
       const shape = storey.shapes.find((s) => s.id === d.shapeId);
       if (!shape) return;
       const n = shape.points.length;
-      const s = snap(raw, mods, shape.points[(d.index - 1 + n) % n], { shapeId: d.shapeId, index: d.index });
+      // Hilfslinien: Verlängerung der angrenzenden Kanten (wie vor dem Ziehen), Gebäudeachsen, Fluchten
+      const s = snap(raw, mods, shape.points[(d.index - 1 + n) % n], { shapeId: d.shapeId, index: d.index }, eckpunktHilfslinien(d.orig, d.index, theta));
       setCursor(s);
       const pts = shape.points.map((q, i) => (i === d.index ? s.p : q));
       updateSilent((p) => setShapePoints(p, storey.id, d.shapeId, pts));
@@ -610,22 +658,46 @@ export function Canvas() {
       let dx = raw.x - d.start.x;
       let dy = raw.y - d.start.y;
       if (e.shiftKey) {
-        if (Math.abs(dx) > Math.abs(dy)) dy = 0;
-        else dx = 0;
-      }
-      if (view.snapGrid && !e.altKey) {
+        // entlang der Gebäudeachse
+        const q = achsBeschraenkt(d.start, raw, theta, view.snapGrid && !e.altKey ? gridStep : 0);
+        dx = q.x - d.start.x;
+        dy = q.y - d.start.y;
+      } else if (view.snapGrid && !e.altKey) {
         dx = roundTo(dx, gridStep);
         dy = roundTo(dy, gridStep);
       }
-      const pts = translate(d.orig, dx, dy);
-      updateSilent((p) => setShapePoints(p, storey.id, d.shapeId, pts));
+      updateSilent((p) => {
+        let next = p;
+        for (const [id, pts] of d.orig) next = setShapePoints(next, storey.id, id, translate(pts, dx, dy));
+        return next;
+      });
+      return;
+    }
+    if (d?.kind === 'box') {
+      d.cur = raw;
+      setBox([d.start, raw]);
       return;
     }
     const origin = draft.length ? draft[draft.length - 1] : null;
-    setCursor(snap(raw, mods, tool === 'select' ? null : origin));
+    const zeichnen = tool === 'polygon' || tool === 'rect';
+    setCursor(snap(raw, mods, tool === 'select' ? null : origin, undefined, zeichnen ? zeichenHilfslinien(draft, theta) : []));
   };
 
   const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    const d = drag.current;
+    if (d?.kind === 'box') {
+      // Flächen, die ganz im Rahmen liegen (nur sichtbare)
+      const x0 = Math.min(d.start.x, d.cur.x);
+      const x1 = Math.max(d.start.x, d.cur.x);
+      const y0 = Math.min(d.start.y, d.cur.y);
+      const y1 = Math.max(d.start.y, d.cur.y);
+      const drin = [...outlines, ...rooms].filter((s) => s.points.every((q) => q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1)).map((s) => s.id);
+      const st = useEditor.getState();
+      st.selectMany(d.add ? [...st.selectedIds, ...drin.filter((id) => !st.selectedIds.includes(id))] : drin);
+      setBox(null);
+    }
+    // Klick ohne Ziehen auf eine Fläche einer Mehrfachauswahl: nur diese Fläche wählen
+    if (d?.kind === 'move' && !d.started && d.orig.size > 1) select(d.shapeId);
     drag.current = null;
     if (svgRef.current?.hasPointerCapture(e.pointerId)) svgRef.current.releasePointerCapture(e.pointerId);
   };
@@ -684,7 +756,7 @@ export function Canvas() {
   }, [storey.shapes, view.showRooms]);
 
   const shapeStyle = (s: Shape): React.SVGProps<SVGPathElement> => {
-    const isSel = s.id === selectedId;
+    const isSel = selectedIds.includes(s.id);
     if (s.subtract) {
       return { fill: 'url(#hatch-subtract)', stroke: isSel ? 'var(--sel)' : '#c0392b', strokeWidth: isSel ? 2.5 : 1.5, strokeDasharray: '6 3' };
     }
@@ -767,11 +839,14 @@ export function Canvas() {
   let hint = '';
   switch (tool) {
     case 'select':
-      hint = 'Klicken: auswählen · Ziehen: verschieben · Punkt ziehen: ändern · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen';
+      hint =
+        selectedIds.length > 1
+          ? `${selectedIds.length} Flächen gewählt · Ziehen: alle verschieben · Umschalt+Klick: hinzufügen/entfernen · Entf: löschen · Esc: Auswahl aufheben`
+          : 'Klicken: auswählen · Umschalt+Klick/-Rahmen: mehrere · Ziehen: verschieben · Punkt ziehen: ändern (fängt an Kantenverlängerungen) · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen';
       break;
     case 'polygon':
       hint = draft.length
-        ? 'Klicken: nächster Punkt · Zahl + Enter: Länge in Mausrichtung · dx;dy + Enter: relativ · Enter/Doppelklick/Startpunkt: schließen · ⇧ orthogonal'
+        ? 'Klicken: nächster Punkt · Zahl + Enter: Länge in Mausrichtung · dx;dy + Enter: relativ · Enter/Doppelklick/Startpunkt: schließen · ⇧ entlang der Gebäudeachse'
         : `Ersten Punkt setzen (${drawKind === 'outline' ? 'BGF-Umriss' : 'Raum'})`;
       break;
     case 'rect':
@@ -888,8 +963,8 @@ export function Canvas() {
             )}
             {tool === 'rect' && preview && (
               <>
-                <path d={pathOf(rectPoints(draft[0], preview))} className="draft draft-fill" />
-                {renderDimensions(rectPoints(draft[0], preview).slice(0, 3), false)}
+                <path d={pathOf(achsRechteck(draft[0], preview, theta))} className="draft draft-fill" />
+                {renderDimensions(achsRechteck(draft[0], preview, theta).slice(0, 3), false)}
               </>
             )}
             {draft.map((p, i) => {
@@ -921,8 +996,38 @@ export function Canvas() {
           </g>
         )}
 
+        {/* Hilfslinien des aktuellen Fangs */}
+        {cursor?.linien && (
+          <g pointerEvents="none">
+            {cursor.linien.map((l, i) => {
+              const L = (size.w + size.h) / vp.scale;
+              const a = toScreen({ x: cursor.p.x - l.d.x * L, y: cursor.p.y - l.d.y * L });
+              const b = toScreen({ x: cursor.p.x + l.d.x * L, y: cursor.p.y + l.d.y * L });
+              const q = toScreen(l.p);
+              return (
+                <g key={i}>
+                  <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} className={`guide-line guide-${l.art}`} />
+                  <circle cx={q.x} cy={q.y} r={3} className="guide-anchor" />
+                </g>
+              );
+            })}
+          </g>
+        )}
+
+        {/* Rahmenauswahl */}
+        {box && (
+          <rect
+            className="select-box"
+            pointerEvents="none"
+            x={Math.min(toScreen(box[0]).x, toScreen(box[1]).x)}
+            y={Math.min(toScreen(box[0]).y, toScreen(box[1]).y)}
+            width={Math.abs(toScreen(box[1]).x - toScreen(box[0]).x)}
+            height={Math.abs(toScreen(box[1]).y - toScreen(box[0]).y)}
+          />
+        )}
+
         {/* Fangsymbol */}
-        {cursor && tool !== 'select' && (
+        {cursor && (tool !== 'select' || drag.current?.kind === 'vertex') && (
           <g pointerEvents="none">
             {(() => {
               const s = toScreen(cursor.p);
@@ -931,6 +1036,8 @@ export function Canvas() {
                   return <rect x={s.x - 6} y={s.y - 6} width={12} height={12} className="snap-marker" />;
                 case 'edge':
                   return <path d={`M${s.x},${s.y - 7}L${s.x + 7},${s.y}L${s.x},${s.y + 7}L${s.x - 7},${s.y}Z`} className="snap-marker" />;
+                case 'guide':
+                  return <circle cx={s.x} cy={s.y} r={6} className="snap-marker" />;
                 default:
                   return <path d={`M${s.x - 7},${s.y}H${s.x + 7}M${s.x},${s.y - 7}V${s.y + 7}`} className="snap-cross" />;
               }
@@ -943,7 +1050,7 @@ export function Canvas() {
         <span className="hud-coords">
           {cursor ? `X ${fmt2(cursor.p.x)}  Y ${fmt2(cursor.p.y)} m` : '—'}
           {cursor && cursor.kind !== 'none' && cursor.kind !== 'grid' && tool !== 'select' && (
-            <em> · Fang: {{ vertex: 'Punkt', edge: 'Kante', ortho: 'orthogonal', grid: 'Raster', none: '' }[cursor.kind]}</em>
+            <em> · Fang: {{ vertex: 'Punkt', edge: 'Kante', guide: 'Hilfslinie', ortho: 'Achse', grid: 'Raster', none: '' }[cursor.kind]}</em>
           )}
           {origin && preview && tool === 'polygon' && <em> · Segment {fmt2(distance(origin, preview))} m</em>}
         </span>
@@ -959,6 +1066,10 @@ export function Canvas() {
         <label className="toggle">
           <input type="checkbox" checked={view.snapVertices} onChange={(e) => useEditor.getState().setView({ snapVertices: e.target.checked })} />
           Punktfang
+        </label>
+        <label className="toggle" title="Fang an der Verlängerung bestehender Kanten und an den Gebäudeachsen (auch bei schräg stehenden, genordeten Plänen)">
+          <input type="checkbox" checked={view.snapGuides} onChange={(e) => useEditor.getState().setView({ snapGuides: e.target.checked })} />
+          Hilfslinien
         </label>
         <button className="small" onClick={() => fitRef.current()} title="Alles zeigen (F)">
           ⤢ Alles
@@ -1049,4 +1160,45 @@ function CalibrationDialog({ measured, onApply, onCancel }: { measured: number; 
       </form>
     </div>
   );
+}
+
+/**
+ * Schnitt einer Hilfslinie mit der Kante, auf die gefangen wurde (`e` = Lotfußpunkt auf dieser Kante):
+ * die Kante wird über die nächstgelegenen Kanten der Flächen bzw. des Plans in Reichweite gesucht.
+ */
+function kanteSchnitt(
+  e: Point,
+  raw: Point,
+  l: Hilfslinie,
+  shapes: Shape[],
+  vectorGrid: ReturnType<typeof vectorSegmentGrid> | null,
+  tol: number,
+): Point | null {
+  const segs: [Point, Point][] = [];
+  for (const s of shapes) {
+    const n = s.points.length;
+    for (let i = 0; i < n; i++) {
+      const a = s.points[i];
+      const b = s.points[(i + 1) % n];
+      if (projectOnSegment(e, a, b).dist < 1e-6) segs.push([a, b]);
+    }
+  }
+  if (vectorGrid) {
+    for (const i of vectorGrid.query(e.x - 1e-6, e.y - 1e-6, e.x + 1e-6, e.y + 1e-6)) {
+      const [x1, y1, x2, y2] = vectorGrid.seg(i);
+      if (projectOnSegment(e, { x: x1, y: y1 }, { x: x2, y: y2 }).dist < 1e-6) segs.push([{ x: x1, y: y1 }, { x: x2, y: y2 }]);
+    }
+  }
+  for (const [a, b] of segs) {
+    const d = { x: b.x - a.x, y: b.y - a.y };
+    const len = Math.hypot(d.x, d.y);
+    if (len < 1e-9) continue;
+    const den = l.d.x * d.y - l.d.y * d.x;
+    if (Math.abs(den) < 1e-9 * len) continue;
+    const t = ((a.x - l.p.x) * d.y - (a.y - l.p.y) * d.x) / den;
+    const s = { x: l.p.x + l.d.x * t, y: l.p.y + l.d.y * t };
+    const pr = projectOnSegment(s, a, b);
+    if (pr.dist < 1e-6 && Math.hypot(s.x - raw.x, s.y - raw.y) <= tol * 1.5) return s;
+  }
+  return null;
 }

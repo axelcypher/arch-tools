@@ -10,6 +10,7 @@ import { DACH_TYPEN, defaultDach, roofFrame, roofStats, solidFaces } from '@core
 import { meshRoofStats } from '@core/roofMesh';
 import { dachAusModell } from '@core/roofFit';
 import { Field, NumberField } from '@core/ui/fields';
+import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
 
 /** Dach / oberer Abschluss eines BGF-Umrisses. */
 export function RoofEditor({
@@ -79,7 +80,10 @@ export function RoofEditor({
 
   return (
     <div className="roof-editor">
-      <h3>Dach / oberer Abschluss</h3>
+      <h3>
+        Dach / oberer Abschluss
+        <HilfeKnopf thema="dach" titel="Dach" />
+      </h3>
       <div className="roof-grid">
         <button className={!d ? 'roof-choice active' : 'roof-choice'} onClick={() => choose('kein')} title="Kein Dach: Fläche × Höhe">
           <RoofIcon typ={null} />

@@ -5,7 +5,7 @@ import { nutzungLabel, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
 import type { Kennzahl, Nachweis } from '../massNutzung';
 import { baunvoLabel, bauoLabel, istAufenthaltsraum, massNachweis } from '../massNutzung';
-import { ANRECHNUNG, AUFENTHALT, GF_ART, HAFTUNG, roemisch, STATUS } from '../texte';
+import { ANRECHNUNG, AUFENTHALT, GELAENDE_QUELLE, GF_ART, HAFTUNG, roemisch, STATUS } from '../texte';
 
 /**
  * Datengrundlage für Excel-Export und Vorlagen des GRZ-Nachweises (Syntax siehe docs/excel-vorlagen.md).
@@ -65,7 +65,7 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     'grundstueck.flaeche_nachweis': opt(G, r2),
     'grundstueck.quelle': n.grundstueck.quelle === 'lageplan' ? 'aus dem Lageplan' : n.grundstueck.quelle === 'projektdaten' ? 'Projektdaten' : 'fehlt',
     gelaende: r2(n.gelaende.hoehe),
-    'gelaende.quelle': n.gelaende.quelle === 'festgelegt' ? 'festgelegt' : n.gelaende.quelle === 'lageplan' ? 'aus dem Lageplan' : 'angenommen (±0,00)',
+    'gelaende.quelle': GELAENDE_QUELLE[n.gelaende.quelle],
     'grz.bezeichnung': n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ',
     'grz.ii.bezeichnung': n.grz2 ? 'GRZ II (§ 19 Abs. 4)' : '',
     'aufenthalt.titel': n.recht.baunvo === '1990' ? '' : 'Aufenthaltsräume in Nicht-Vollgeschossen',
@@ -98,6 +98,9 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
       nr: i + 1,
       name: g.name,
       ueber_gelaende: r2(g.ueberGelaende),
+      gelaende: r2(g.gelaende.mittel),
+      gelaende_min: r2(g.gelaende.min),
+      gelaende_max: r2(g.gelaende.max),
       oberirdisch: g.oberirdisch ? 'ja' : '',
       anteil: g.oberirdisch ? r4(g.anteil) : '',
       anteil_soll: r4(g.anteilSoll),
@@ -124,6 +127,8 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
       versiegelung: versiegelungInfo(l.versiegelung).label,
       flaeche: r2(l.flaeche),
       flaeche_aussen: r2(l.flaecheAussen),
+      flaeche_eindeutig: r2(l.flaecheEindeutig),
+      ueberlagert: r2(l.ueberlagert),
       anrechnung: l.nachbar ? 'Nachbar' : ANRECHNUNG[l.anrechnung],
       nachbar: l.nachbar ? 'ja' : '',
       hoehe: f?.hoehe !== undefined ? r2(f.hoehe) : '',
@@ -139,7 +144,9 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
       s.shapes
         .filter((r): r is RoomShape => r.kind === 'room' && !r.subtract)
         .map((r) => {
-          const a = istAufenthaltsraum(r);
+          // vor 1990 aus der Prüfung nach Nutzung und lichter Höhe, sonst nach Nutzung
+          const pr = n.raeume.find((x) => x.roomId === r.id);
+          const a = pr?.ergebnis ?? istAufenthaltsraum(r);
           return {
             _geschossId: s.id,
             _aufenthalt: a,
@@ -153,6 +160,8 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
             flaeche: r2(polygonArea(r.points)),
             aufenthalt: AUFENTHALT[a],
             festlegung: r.aufenthalt ? 'festgelegt' : 'automatisch',
+            begruendung: pr?.begruendung ?? '',
+            hoehenlage: r.versatz ? r2(r.versatz) : '',
           };
         }),
     );
@@ -219,6 +228,7 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
     keys: [
       ['geschoss.nr, geschoss.name', 'laufende Nummer, Bezeichnung'],
       ['geschoss.ueber_gelaende, geschoss.oberirdisch', 'Deckenoberkante über Gelände im Mittel [m]; „ja“ bei oberirdischen Geschossen'],
+      ['geschoss.gelaende, geschoss.gelaende_min, geschoss.gelaende_max', 'Geländeoberfläche entlang der Außenwände des Geschosses: Mittel, tiefster und höchster Punkt [m]'],
       ['geschoss.anteil, geschoss.anteil_soll, geschoss.hoehe_soll', 'Anteil mit der geforderten Höhe, geforderter Anteil, geforderte Höhe [m]'],
       ['geschoss.flaeche_hoch, geschoss.bezugsflaeche', 'Fläche mit der geforderten Höhe, Bezugsfläche [m²]'],
       ['geschoss.vollgeschoss, geschoss.ergebnis, geschoss.festlegung', '„ja“ bei Vollgeschossen; Ergebnis als Text; automatisch oder festgelegt'],
@@ -231,6 +241,7 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
     keys: [
       ['lageplan.nr, lageplan.name, lageplan.nutzung, lageplan.versiegelung', 'laufende Nummer, Bezeichnung, Nutzung, Versiegelung'],
       ['lageplan.flaeche, lageplan.flaeche_aussen', 'Fläche und davon außerhalb des Gebäudes [m²]'],
+      ['lageplan.flaeche_eindeutig, lageplan.ueberlagert', 'nur dieser Fläche zugeordnet (Summen zählen Überlagerungen einmal) bzw. von anderen Flächen schon abgedeckt [m²]'],
       ['lageplan.anrechnung', 'Anrechnung auf die Grundfläche (zählt, GRZ II, bis 0,1 frei, zählt nicht, prüfen, Nachbar)'],
       ['lageplan.nachbar, lageplan.hoehe', '„ja“ bei Nachbargrundstücken; Höhe der Oberfläche [m]'],
     ],
@@ -241,6 +252,8 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['raum.nr, raum.geschoss, raum.nummer, raum.name, raum.flaeche', 'Raumangaben, Fläche ohne Putzabzug [m²]'],
       ['raum.vollgeschoss', '„ja“, wenn der Raum in einem Vollgeschoss liegt'],
       ['raum.aufenthalt, raum.festlegung', 'Aufenthaltsraum, Treppenraum oder kein Aufenthaltsraum; automatisch oder festgelegt'],
+      ['raum.begruendung', 'Prüfung nach Nutzung und lichter Höhe (vor 1990, Nicht-Vollgeschosse)'],
+      ['raum.hoehenlage', 'Höhenlage des Fußbodens gegenüber dem Geschoss [m] (Split-Level)'],
       ['hinweis.nr, hinweis.text', 'Zeile je Hinweis'],
     ],
   },

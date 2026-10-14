@@ -20,6 +20,8 @@ export interface IfcMeshPart {
 
 export interface IfcSpaceData {
   expressId: number;
+  /** IFC-GlobalId (bleibt bei erneutem Export gleich) */
+  globalId?: string;
   /** Archicad: Zonennummer */
   name: string;
   /** Archicad: Zonenname */
@@ -33,7 +35,7 @@ export interface IfcSpaceData {
 export interface IfcExtract {
   schema: string;
   projectName: string;
-  storeys: { name: string; elevation: number; expressId: number }[];
+  storeys: { name: string; elevation: number; expressId: number; globalId?: string }[];
   spaces: IfcSpaceData[];
   elements: IfcMeshPart[];
   /** Versatz, um den das Modell in die Nähe des Ursprungs verschoben wurde */

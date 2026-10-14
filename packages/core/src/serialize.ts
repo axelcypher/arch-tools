@@ -87,6 +87,9 @@ export function parseProjectData(raw: unknown): Project {
   if (isObj(raw.dachModell) && Array.isArray(raw.dachModell.triangles)) {
     project.dachModell = { name: str(raw.dachModell.name, 'Modell'), triangles: raw.dachModell.triangles.filter((v): v is number => typeof v === 'number') };
   }
+  if (isObj(raw.gelaendeModell) && Array.isArray(raw.gelaendeModell.triangles)) {
+    project.gelaendeModell = { name: str(raw.gelaendeModell.name, 'Gelände'), triangles: raw.gelaendeModell.triangles.filter((v): v is number => typeof v === 'number') };
+  }
   return project;
 }
 
@@ -134,6 +137,8 @@ function normalizeFlaeche(f: Record<string, unknown>): LageplanFlaeche | null {
     versiegelung: oneOf<Versiegelung>(f.versiegelung, ['voll', 'teil', 'gruen'], 'voll'),
     ...(f.nachbar === true ? { nachbar: true } : {}),
     ...(typeof f.hoehe === 'number' && Number.isFinite(f.hoehe) ? { hoehe: f.hoehe } : {}),
+    ...(typeof f.ifcId === 'string' && f.ifcId ? { ifcId: f.ifcId } : {}),
+    ...(isObj(f.ifcStand) ? { ifcStand: f.ifcStand } : {}),
   };
 }
 
@@ -232,6 +237,9 @@ function normalizeStorey(s: Record<string, unknown>): Storey {
   if (typeof s.dachgeschoss === 'boolean') storey.dachgeschoss = s.dachgeschoss;
   if (s.geschosshoeheBegrenzt === true) storey.geschosshoeheBegrenzt = true;
   if (typeof s.vollgeschoss === 'boolean') storey.vollgeschoss = s.vollgeschoss;
+  if (typeof s.sohle === 'number' && Number.isFinite(s.sohle) && s.sohle > 0) storey.sohle = s.sohle;
+  if (typeof s.ifcId === 'string' && s.ifcId) storey.ifcId = s.ifcId;
+  if (isObj(s.ifcStand)) storey.ifcStand = s.ifcStand;
   const bg = normalizeBackground(s.background);
   if (bg) storey.background = bg;
   return storey;
@@ -250,6 +258,9 @@ function normalizeShape(s: Record<string, unknown>): Shape | null {
     subtract: s.subtract === true,
     umschliessung: s.umschliessung === 'S' ? ('S' as const) : ('R' as const),
     bemerkung: typeof s.bemerkung === 'string' ? s.bemerkung : undefined,
+    ...(typeof s.versatz === 'number' && Number.isFinite(s.versatz) && s.versatz !== 0 ? { versatz: s.versatz } : {}),
+    ...(typeof s.ifcId === 'string' && s.ifcId ? { ifcId: s.ifcId } : {}),
+    ...(isObj(s.ifcStand) ? { ifcStand: s.ifcStand } : {}),
   };
   if (s.kind === 'outline') {
     return { ...common, kind: 'outline', hoehe: typeof s.hoehe === 'number' ? s.hoehe : undefined, dach: normalizeDach(s.dach) };

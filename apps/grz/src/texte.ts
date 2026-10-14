@@ -1,4 +1,4 @@
-import type { Anrechnung, Nachweis, Status } from './massNutzung';
+import type { Anrechnung, GelaendeQuelle, Nachweis, Status } from './massNutzung';
 
 /** Bezeichnungen für Ansicht, Druck und Excel */
 
@@ -15,6 +15,13 @@ export const ANRECHNUNG: Record<Anrechnung, string> = {
   garage01: 'bis 0,1 frei',
   nein: 'zählt nicht',
   pruefen: 'prüfen',
+};
+
+export const GELAENDE_QUELLE: Record<GelaendeQuelle, string> = {
+  festgelegt: 'festgelegte Höhe',
+  modell: 'Geländemodell der IFC',
+  lageplan: 'Lageplan-Flächen mit Höhe',
+  annahme: 'angenommen (±0,00)',
 };
 
 export const AUFENTHALT = { ja: 'Aufenthaltsraum', nein: 'kein Aufenthaltsraum', treppe: 'Treppenraum' } as const;

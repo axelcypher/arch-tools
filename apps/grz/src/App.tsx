@@ -6,7 +6,7 @@ import { TitleBar } from '@core/ui/TitleBar';
 import { ExcelDialog } from './components/ExcelDialog';
 import { GrzGfzView } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
-import { oeffnen, speichern } from './datei';
+import { ifcAktualisierenWaehlen, oeffnen, speichern } from './datei';
 import { useGrz } from './store';
 
 const log = logger('app');
@@ -30,7 +30,7 @@ export function App() {
   const onOpen = async () => {
     if (useGrz.getState().dirty && !window.confirm('Ungespeicherte Änderungen verwerfen?')) return;
     try {
-      const r = await oeffnen(setBusy);
+      const r = await oeffnen(setBusy, useGrz.getState().datei);
       if (r) {
         useGrz.getState().load(r.project, r.datei, r.basis);
         setBericht(r.bericht);
@@ -43,14 +43,29 @@ export function App() {
     }
   };
 
-  const onSave = async () => {
+  const onIfcAktualisieren = async () => {
+    try {
+      const { project, datei } = useGrz.getState();
+      const r = await ifcAktualisierenWaehlen(project, datei, setBusy);
+      if (r) {
+        useGrz.getState().update(() => r.project);
+        setBericht(r.bericht);
+      }
+    } catch (e) {
+      log.error('IFC-Aktualisierung fehlgeschlagen', e);
+      alert(`IFC konnte nicht übernommen werden: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onSave = async (unter = false) => {
     const { project, datei, basis } = useGrz.getState();
     try {
-      const r = await speichern(project, datei, basis);
+      const r = await speichern(project, datei, basis, unter);
       if (r) {
         // während des Dialogs weitergearbeitet? Dann bleibt der neue Stand ungespeichert.
         if (useGrz.getState().project === project) useGrz.getState().markSaved(r.datei, r.project);
-        if (r.zusammengefuehrt) alert('In der Datei standen Änderungen aus einer anderen App. Sie wurden übernommen, nicht überschrieben.');
       }
     } catch (e) {
       log.error('Speichern fehlgeschlagen', e instanceof Error ? e.message : String(e));
@@ -64,7 +79,7 @@ export function App() {
       const k = e.key.toLowerCase();
       if (k === 's') {
         e.preventDefault();
-        void onSave();
+        void onSave(e.shiftKey);
       } else if (k === 'o') {
         e.preventDefault();
         void onOpen();
@@ -93,14 +108,26 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="GRZ-Nachweis" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} />
+      <TitleBar app="GRZ-Nachweis" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" />
       <div className="toolbar">
         <div className="tb-group">
-          <button onClick={onOpen} title="Projekt des Flächenrechners (.oap/.akhp) oder IFC-Modell öffnen (Strg+O)">
+          <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
             Öffnen
           </button>
-          <button onClick={onSave} title={isTauri() ? 'Projekt speichern (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
+          <button onClick={() => void onSave()} title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
             Speichern{dirty ? ' •' : ''}
+          </button>
+          {isTauri() && (
+            <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
+              Speichern unter …
+            </button>
+          )}
+          <button
+            onClick={() => void onIfcAktualisieren()}
+            disabled={!hatGebaeude}
+            title="Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Ihre Änderungen bleiben"
+          >
+            IFC aktualisieren …
           </button>
         </div>
         <div className="tb-group">
@@ -139,7 +166,7 @@ export function App() {
           <div className="grz-leer">
             <h2>GRZ-Nachweis</h2>
             <p>
-              Ein Projekt des Flächenrechners (<code>.oap</code>/<code>.akhp</code>) oder direkt ein IFC-Modell öffnen. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus
+              Ein Projekt des Flächenrechners (<code>.oap</code>) oder direkt ein IFC-Modell öffnen. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus
               dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei.
             </p>
             <button className="primary" onClick={onOpen}>

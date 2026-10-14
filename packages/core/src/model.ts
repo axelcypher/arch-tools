@@ -43,7 +43,24 @@ interface ShapeBase {
   subtract: boolean;
   umschliessung: Raumumschliessung;
   bemerkung?: string;
+  /**
+   * Höhenlage des Fußbodens gegenüber dem Geschossfußboden in m (Split-Level): negativ = tiefer, positiv = höher.
+   * Umriss: Der Körper beginnt um diesen Betrag tiefer bzw. höher, die Oberkante bleibt.
+   * Raum: Ein tiefer liegender Raum vergrößert den BRI des Umrisses, in dem er liegt, um Raumfläche × Absenkung.
+   */
+  versatz?: number;
+  /** IFC-GlobalId der Quelle (Zone bzw. Geschoss) – für den erneuten Import */
+  ifcId?: string;
+  /** Werte, wie sie beim letzten IFC-Import kamen – erkennt beim erneuten Import, was seitdem von Hand geändert wurde */
+  ifcStand?: IfcStand;
 }
+
+/**
+ * Stand eines aus der IFC übernommenen Elements beim letzten Import (nur die aus der IFC stammenden Felder).
+ * Beim erneuten Import gilt je Feld: unverändert seit dem Import → neuer Wert aus der IFC; von Hand geändert →
+ * bleibt (siehe ifcAbgleich.ts).
+ */
+export type IfcStand = Record<string, unknown>;
 
 export interface OutlineShape extends ShapeBase {
   kind: 'outline';
@@ -84,6 +101,9 @@ export interface LageplanFlaeche {
   nachbar?: boolean;
   /** mittlere Höhe der Oberfläche über ±0,00 in m (aus dem Modell) – für die Geländeoberfläche */
   hoehe?: number;
+  /** Herkunft aus der IFC (GlobalId des Bauteils, ggf. mit Teilnummer) – für den erneuten Import */
+  ifcId?: string;
+  ifcStand?: IfcStand;
 }
 
 /**
@@ -174,6 +194,15 @@ export interface Storey {
   dachgeschoss?: boolean;
   /** Vollgeschoss für GFZ und Zahl der Vollgeschosse (GRZ/GFZ-Nachweis); ohne Angabe nach der Bauordnung geprüft */
   vollgeschoss?: boolean;
+  /**
+   * Bodenplatte: Abstand UK Sohle bis zum Geschossfußboden in m. Der BRI rechnet ab der Unterseite der Sohle
+   * (DIN 277) – für alle Teile des Geschosses, unter denen kein anderes Geschoss liegt.
+   */
+  sohle?: number;
+  /** IFC-GlobalId des Geschosses (IfcBuildingStorey) – für den erneuten Import */
+  ifcId?: string;
+  /** Werte beim letzten IFC-Import (Name, Kote, Höhe, Sohle) */
+  ifcStand?: IfcStand;
   shapes: Shape[];
   background?: Background;
 }
@@ -286,6 +315,8 @@ export interface Project {
   storeys: Storey[];
   /** Dachhaut aus einem importierten Gebäudemodell (IFC) für Dächer vom Typ "modell" */
   dachModell?: DachModell;
+  /** Geländeoberfläche aus dem Modell (IFC-Gelände, nach oben zeigende Dreiecke) – für die Geschossigkeit */
+  gelaendeModell?: DachModell;
   /** Originaldateien der Importe (IFC, DXF, PDF) und die Excel-Vorlage */
   dateien?: ProjektDatei[];
   /** Lageplan des Grundstücks (GRZ/GFZ-Nachweis) */

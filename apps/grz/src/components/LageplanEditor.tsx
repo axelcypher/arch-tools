@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Hilfslinie } from '@core/fang';
+import { achsBeschraenkt, achsRechteck, eckpunktHilfslinien, gebaeudeAchse, hilfslinienFang, zeichenHilfslinien } from '@core/fang';
 import type { Point } from '@core/geometry';
 import { bounds, pointInPolygon, polygonArea } from '@core/geometry';
 import { nutzungLabel, versiegelungInfo } from '@core/lageplan';
@@ -25,17 +27,19 @@ const WERKZEUGE: { id: Werkzeug; label: string; taste: string; hint: string }[] 
     id: 'auswahl',
     label: 'Auswahl',
     taste: 'V',
-    hint: 'Klicken: auswählen · Ziehen: verschieben · Punkt ziehen: ändern · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: Fläche löschen',
+    hint: 'Klicken: auswählen · Umschalt+Klick/-Rahmen: mehrere · Strg+A: alle · Ziehen: verschieben · Punkt ziehen: ändern · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: löschen',
   },
-  { id: 'polygon', label: 'Polygon', taste: 'P', hint: 'Klicken: nächster Punkt · Enter/Doppelklick/Startpunkt: schließen · Rück: letzten Punkt löschen · Esc: abbrechen' },
-  { id: 'rechteck', label: 'Rechteck', taste: 'R', hint: 'Erste Ecke setzen, dann Gegenecke klicken' },
+  { id: 'polygon', label: 'Polygon', taste: 'P', hint: 'Klicken: nächster Punkt · Enter/Doppelklick/Startpunkt: schließen · Umschalt: entlang der Gebäudeachse · Rück: letzten Punkt löschen · Esc: abbrechen' },
+  { id: 'rechteck', label: 'Rechteck', taste: 'R', hint: 'Erste Ecke setzen, dann Gegenecke klicken – ausgerichtet an der Gebäudeachse' },
 ];
 
 type Ziehen =
   | { art: 'pan'; sx: number; sy: number; vb: Ausschnitt }
   /** Punkt (bei ◇ bereits eingefügt) oder ganze Fläche; die Punkte werden erst beim Loslassen übernommen */
   | { art: 'punkt'; id: string; index: number; orig: Point[]; eingefuegt: boolean; sx: number; sy: number; started: boolean }
-  | { art: 'flaeche'; id: string; start: Point; orig: Point[]; sx: number; sy: number; started: boolean };
+  /** gewählte Flächen gemeinsam verschieben */
+  | { art: 'flaeche'; id: string; start: Point; orig: Map<string, Point[]>; sx: number; sy: number; started: boolean }
+  | { art: 'rahmen'; start: Point; cur: Point };
 
 /**
  * Lageplan: Gebäude (Hauptanlage), Grundstück und Lageplan-Flächen. Bedienung wie im Flächenrechner:
@@ -45,15 +49,18 @@ type Ziehen =
 export function LageplanEditor({ n }: { n: Nachweis }) {
   const project = useGrz((s) => s.project);
   const selected = useGrz((s) => s.selected);
+  const selectedIds = useGrz((s) => s.selectedIds);
   const werkzeug = useGrz((s) => s.werkzeug);
   const st = useGrz.getState();
   const flaechen = project.lageplan?.flaechen ?? [];
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<Point[]>([]);
   const [cursor, setCursor] = useState<Point | null>(null);
+  const [linien, setLinien] = useState<Hilfslinie[]>([]);
+  const [rahmen, setRahmen] = useState<[Point, Point] | null>(null);
   const ziehen = useRef<Ziehen | null>(null);
-  // Vorschau beim Ziehen (Punkte der gezogenen Fläche)
-  const [vorschau, setVorschau] = useState<{ id: string; pts: Point[] } | null>(null);
+  // Vorschau beim Ziehen (Punkte der gezogenen Flächen)
+  const [vorschau, setVorschau] = useState<Map<string, Point[]> | null>(null);
   const [leertaste, setLeertaste] = useState(false);
 
   // Ausschnitt: eingepasst auf Gebäude und Flächen; neu beim Öffnen eines anderen Projekts
@@ -96,19 +103,32 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const toWorld = (e: { clientX: number; clientY: number }): Point => weltpunkt(vb, svgRef.current?.getBoundingClientRect(), e.clientX, e.clientY);
 
   const fangpunkte = useMemo(() => [...n.hauptanlagePolygone.flat(), ...flaechen.flatMap((f) => f.points)], [n.hauptanlagePolygone, flaechen]);
-  /** nächster Punkt von Gebäude, Flächen und Entwurf im Fangradius; `ohne` wird übergangen (der gezogene Punkt) */
-  const fang = (p: Point, ohne?: Point): Point => {
+  // Gebäudeachse (genordete Pläne: Gebäude stehen schräg) für Hilfslinien, Umschalt und Rechtecke
+  const theta = useMemo(() => gebaeudeAchse([...n.hauptanlagePolygone, ...flaechen.map((f) => f.points)]), [n.hauptanlagePolygone, flaechen]);
+  /**
+   * Fang: nächster Punkt von Gebäude, Flächen und Entwurf im Fangradius, sonst Hilfslinien (Kantenverlängerung,
+   * Gebäudeachsen); `ohne` wird übergangen (der gezogene Punkt). Alt schaltet den Fang aus.
+   */
+  const fang = (p: Point, o: { ohne?: Point; hilfslinien?: Hilfslinie[]; alt?: boolean } = {}): Point => {
+    setLinien([]);
+    if (o.alt) return p;
     let best: Point | null = null;
     let d = FANG_PX * skala();
     for (const q of [...fangpunkte, ...draft]) {
-      if (q === ohne) continue;
+      if (q === o.ohne) continue;
       const dd = Math.hypot(q.x - p.x, q.y - p.y);
       if (dd < d) {
         d = dd;
         best = q;
       }
     }
-    return best ? { ...best } : p;
+    if (best) return { ...best };
+    const h = o.hilfslinien?.length ? hilfslinienFang(p, o.hilfslinien, FANG_PX * skala()) : null;
+    if (h) {
+      setLinien(h.linien);
+      return h.p;
+    }
+    return p;
   };
 
   const fertig = (pts: Point[]) => {
@@ -135,11 +155,29 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     if (e.button !== 0 || werkzeug !== 'auswahl') return;
     const p = toWorld(e);
     const hit = [...flaechen].reverse().find((f) => pointInPolygon(p, f.points));
-    st.select(hit?.id ?? null);
-    if (hit) {
-      ziehen.current = { art: 'flaeche', id: hit.id, start: p, orig: hit.points, sx: e.clientX, sy: e.clientY, started: false };
+    const zusatz = e.shiftKey || e.ctrlKey || e.metaKey;
+    if (hit && zusatz) {
+      st.toggleSelect(hit.id);
+      return;
+    }
+    if (!hit && e.shiftKey) {
+      // Umschalt + Ziehen im Leeren: Rahmenauswahl
+      ziehen.current = { art: 'rahmen', start: p, cur: p };
+      setRahmen([p, p]);
       svgRef.current?.setPointerCapture?.(e.pointerId);
-    } else panStarten(e);
+      return;
+    }
+    if (!hit) {
+      st.select(null);
+      panStarten(e);
+      return;
+    }
+    // Klick in eine gewählte Gruppe verschiebt die ganze Gruppe
+    const ids = useGrz.getState().selectedIds.includes(hit.id) ? useGrz.getState().selectedIds : [hit.id];
+    if (!useGrz.getState().selectedIds.includes(hit.id)) st.select(hit.id);
+    const orig = new Map(flaechen.filter((f) => ids.includes(f.id)).map((f) => [f.id, f.points] as const));
+    ziehen.current = { art: 'flaeche', id: hit.id, start: p, orig, sx: e.clientX, sy: e.clientY, started: false };
+    svgRef.current?.setPointerCapture?.(e.pointerId);
   };
 
   const onPunktDown = (e: React.PointerEvent, id: string, pts: Point[], index: number, einfuegen: boolean) => {
@@ -150,7 +188,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       const a = pts[index];
       const b = pts[(index + 1) % pts.length];
       orig = [...pts.slice(0, index + 1), { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, ...pts.slice(index + 1)];
-      setVorschau({ id, pts: orig });
+      setVorschau(new Map([[id, orig]]));
     }
     ziehen.current = { art: 'punkt', id, index: einfuegen ? index + 1 : index, orig, eingefuegt: einfuegen, sx: e.clientX, sy: e.clientY, started: false };
     svgRef.current?.setPointerCapture?.(e.pointerId);
@@ -171,23 +209,37 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       setVb({ ...z.vb, x: z.vb.x - (e.clientX - z.sx) * k, y: z.vb.y - (e.clientY - z.sy) * k });
       return;
     }
+    if (z?.art === 'rahmen') {
+      z.cur = toWorld(e);
+      setRahmen([z.start, z.cur]);
+      return;
+    }
     if (z) {
       if (!z.started) {
         if (Math.hypot(e.clientX - z.sx, e.clientY - z.sy) < ZIEH_PX) return;
         z.started = true;
       }
       if (z.art === 'punkt') {
-        const p = fang(toWorld(e), z.orig[z.index]);
-        setVorschau({ id: z.id, pts: z.orig.map((q, i) => (i === z.index ? p : q)) });
+        const n0 = z.orig.length;
+        const roh = toWorld(e);
+        const p = e.shiftKey
+          ? achsBeschraenkt(z.orig[(z.index - 1 + n0) % n0], roh, theta)
+          : fang(roh, { ohne: z.orig[z.index], hilfslinien: eckpunktHilfslinien(z.orig, z.index, theta), alt: e.altKey });
+        setVorschau(new Map([[z.id, z.orig.map((q, i) => (i === z.index ? p : q))]]));
       } else {
-        const p = toWorld(e);
+        const roh = toWorld(e);
+        const p = e.shiftKey ? achsBeschraenkt(z.start, roh, theta) : roh;
         const dx = p.x - z.start.x;
         const dy = p.y - z.start.y;
-        setVorschau({ id: z.id, pts: z.orig.map((q) => ({ x: q.x + dx, y: q.y + dy })) });
+        setVorschau(new Map([...z.orig].map(([id, pts]) => [id, pts.map((q) => ({ x: q.x + dx, y: q.y + dy }))] as const)));
       }
       return;
     }
-    if (werkzeug !== 'auswahl') setCursor(fang(toWorld(e)));
+    if (werkzeug !== 'auswahl') {
+      const roh = toWorld(e);
+      const letzter = draft[draft.length - 1];
+      setCursor(e.shiftKey && letzter ? achsBeschraenkt(letzter, roh, theta) : fang(roh, { hilfslinien: zeichenHilfslinien(draft, theta), alt: e.altKey }));
+    }
   };
 
   const onPointerUp = () => {
@@ -195,17 +247,39 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     ziehen.current = null;
     const v = vorschau;
     setVorschau(null);
-    if (!z || z.art === 'pan') return;
+    setLinien([]);
+    if (z?.art === 'rahmen') {
+      const x0 = Math.min(z.start.x, z.cur.x);
+      const x1 = Math.max(z.start.x, z.cur.x);
+      const y0 = Math.min(z.start.y, z.cur.y);
+      const y1 = Math.max(z.start.y, z.cur.y);
+      const drin = flaechen.filter((f) => f.points.every((q) => q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1)).map((f) => f.id);
+      const bisher = useGrz.getState().selectedIds;
+      st.selectMany([...bisher, ...drin.filter((id) => !bisher.includes(id))]);
+      setRahmen(null);
+      return;
+    }
+    // Klick ohne Ziehen auf eine Fläche einer Mehrfachauswahl: nur diese Fläche wählen
+    if (z?.art === 'flaeche' && !z.started && z.orig.size > 1) st.select(z.id);
+    if (!z || z.art === 'pan' || !v) return;
     // ein Undo-Schritt je Ziehen; ◇ ohne Bewegung fügt den Mittelpunkt ein
-    if (v && v.id === z.id && (z.started || (z.art === 'punkt' && z.eingefuegt))) setzePunkte(z.id, v.pts);
+    if (z.started || (z.art === 'punkt' && z.eingefuegt)) {
+      st.update((p) => {
+        let next = p;
+        for (const [id, pts] of v) next = mapFlaeche(next, id, (f) => ({ ...f, points: pts }));
+        return next;
+      });
+    }
   };
 
   const onClick = (e: React.MouseEvent) => {
     if (e.button !== 0 || leertaste || werkzeug === 'auswahl') return;
-    const p = fang(toWorld(e));
+    const roh = toWorld(e);
+    const letzter = draft[draft.length - 1];
+    const p = e.shiftKey && letzter ? achsBeschraenkt(letzter, roh, theta) : fang(roh, { hilfslinien: zeichenHilfslinien(draft, theta), alt: e.altKey });
     if (werkzeug === 'rechteck') {
       if (!draft.length) setDraft([p]);
-      else fertig(rechteck(draft[0], p));
+      else fertig(achsRechteck(draft[0], p, theta));
       return;
     }
     // Polygon: Klick auf den ersten Punkt schließt
@@ -222,8 +296,13 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && werkzeug === 'auswahl') {
+        e.preventDefault();
+        st.selectMany(flaechen.map((f) => f.id));
+        return;
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const sel = useGrz.getState().selected;
+      const sel = useGrz.getState().selectedIds;
       switch (e.key) {
         case ' ':
           setLeertaste(true);
@@ -239,11 +318,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           break;
         case 'Backspace':
           if (draft.length) setDraft(draft.slice(0, -1));
-          else if (sel) st.update((p) => removeFlaeche(p, sel));
+          else if (sel.length) st.update((p) => removeFlaeche(p, sel));
           e.preventDefault();
           break;
         case 'Delete':
-          if (sel) st.update((p) => removeFlaeche(p, sel));
+          if (sel.length) st.update((p) => removeFlaeche(p, sel));
           break;
         case 'f':
         case 'F':
@@ -268,9 +347,10 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
 
   const k = skala();
   const d = (pts: Point[], zu = true) => `M${pts.map((p) => `${p.x} ${p.y}`).join('L')}${zu ? 'Z' : ''}`;
-  const punkteVon = (id: string, pts: Point[]) => (vorschau?.id === id ? vorschau.pts : pts);
-  const entwurf = draft.length && cursor ? (werkzeug === 'rechteck' ? rechteck(draft[0], cursor) : [...draft, cursor]) : draft;
-  const sel = werkzeug === 'auswahl' ? flaechen.find((f) => f.id === selected) : undefined;
+  const punkteVon = (id: string, pts: Point[]) => vorschau?.get(id) ?? pts;
+  const entwurf = draft.length && cursor ? (werkzeug === 'rechteck' ? achsRechteck(draft[0], cursor, theta) : [...draft, cursor]) : draft;
+  // Eckpunkte nur bei genau einer gewählten Fläche
+  const sel = werkzeug === 'auswahl' && selectedIds.length <= 1 ? flaechen.find((f) => f.id === selected) : undefined;
   const selPts = sel ? punkteVon(sel.id, sel.points) : [];
   const cursorStil = ziehen.current?.art === 'pan' || leertaste ? 'grabbing' : werkzeug === 'auswahl' ? 'default' : 'crosshair';
 
@@ -314,8 +394,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             d={d(punkteVon(f.id, f.points))}
             fill={versiegelungInfo(f.versiegelung).color}
             fillOpacity={f.nachbar ? 0.15 : 0.55}
-            stroke={f.id === selected ? 'var(--sel)' : f.nachbar ? '#9aa0a6' : '#5b6068'}
-            strokeWidth={k * (f.id === selected ? 3 : 1)}
+            stroke={selectedIds.includes(f.id) ? 'var(--sel)' : f.nachbar ? '#9aa0a6' : '#5b6068'}
+            strokeWidth={k * (selectedIds.includes(f.id) ? 3 : 1)}
             strokeDasharray={f.nachbar ? `${k * 4} ${k * 3}` : undefined}
           >
             <title>{`${f.name} · ${nutzungLabel(f.nutzung)} · ${versiegelungInfo(f.versiegelung).label}${f.nachbar ? ' · Nachbar' : ''}`}</title>
@@ -367,6 +447,33 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           </g>
         )}
         {cursor && werkzeug !== 'auswahl' && <circle cx={cursor.x} cy={cursor.y} r={k * 3} fill="var(--sel)" pointerEvents="none" />}
+        {linien.map((l, i) => {
+          const L = Math.max(vb.w, vb.h) * 2;
+          const o = l.p;
+          return (
+            <line
+              key={`hl${i}`}
+              x1={o.x - l.d.x * L}
+              y1={o.y - l.d.y * L}
+              x2={o.x + l.d.x * L}
+              y2={o.y + l.d.y * L}
+              className={`guide-line guide-${l.art}`}
+              style={{ strokeWidth: k, strokeDasharray: `${k * 6} ${k * 4}` }}
+              pointerEvents="none"
+            />
+          );
+        })}
+        {rahmen && (
+          <rect
+            className="select-box"
+            x={Math.min(rahmen[0].x, rahmen[1].x)}
+            y={Math.min(rahmen[0].y, rahmen[1].y)}
+            width={Math.abs(rahmen[1].x - rahmen[0].x)}
+            height={Math.abs(rahmen[1].y - rahmen[0].y)}
+            style={{ strokeWidth: k, strokeDasharray: `${k * 4} ${k * 3}` }}
+            pointerEvents="none"
+          />
+        )}
       </svg>
     </div>
   );
@@ -380,8 +487,4 @@ function weltpunkt(vb: Ausschnitt, r: DOMRect | undefined, clientX: number, clie
   const x0 = vb.x - (wPx * s - vb.w) / 2;
   const y0 = vb.y - (hPx * s - vb.h) / 2;
   return { x: x0 + (clientX - (r?.left ?? 0)) * s, y: y0 + (clientY - (r?.top ?? 0)) * s };
-}
-
-function rechteck(a: Point, b: Point): Point[] {
-  return [a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }];
 }

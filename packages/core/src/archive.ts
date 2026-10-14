@@ -5,13 +5,14 @@ import { benutzteDateien, istVorlage } from './model';
 import { parseProject, parseProjectData, ProjectFormatError } from './serialize';
 
 /**
- * Projektarchiv (.oap bzw. .akhp – beide Endungen, gleiches Format): ein ZIP mit dem Projekt und allem,
+ * Projektarchiv (.oap): ein ZIP mit dem Projekt und allem,
  * was dazugehört, damit es auf einem anderen Rechner vollständig wieder geöffnet werden kann.
  *
  *   manifest.json            Formatkennung, Version, Inhaltsverzeichnis
  *   projekt.json             das Projekt; Planbilder, Dachmodell und Dateien nur als Verweis
  *   plaene/…                 Planbilder (PNG/JPG, gerenderte PDF-Seiten) unkomprimiert, wie sie sind
  *   modell/dach.bin          Dachhaut aus dem IFC-Modell (Float64, little endian)
+ *   modell/gelaende.bin      Geländeoberfläche aus dem IFC-Modell (Float64, little endian)
  *   quellen/<id>/<name>      Originaldateien der Importe (IFC, DXF, PDF) und die Excel-Vorlage
  *
  * Reine JSON-Projektdateien früherer Versionen lassen sich weiterhin öffnen.
@@ -19,12 +20,15 @@ import { parseProject, parseProjectData, ProjectFormatError } from './serialize'
 
 export const ARCHIV_FORMAT = 'arch-flaechen-tool-archiv';
 export const ARCHIV_VERSION = 1;
-/** gleichwertige Dateiendungen; die erste ist der Standard beim Speichern */
-export const ARCHIV_ENDUNGEN = ['oap', 'akhp'] as const;
+/** Dateiendung des Projektarchivs */
+export const ARCHIV_ENDUNG = 'oap';
+/** @deprecated nur noch eine Endung – ARCHIV_ENDUNG verwenden */
+export const ARCHIV_ENDUNGEN = [ARCHIV_ENDUNG] as const;
 
 const MANIFEST = 'manifest.json';
 const PROJEKT = 'projekt.json';
 const DACH = 'modell/dach.bin';
+const GELAENDE = 'modell/gelaende.bin';
 
 interface Manifest {
   format: string;
@@ -72,6 +76,12 @@ export function writeArchive(p: Project, opts: { app?: string; date?: Date } = {
     dachModell = { name: p.dachModell.name, datei: DACH };
   }
 
+  let gelaendeModell: unknown = p.gelaendeModell;
+  if (p.gelaendeModell) {
+    add(GELAENDE, float64ToBytes(p.gelaendeModell.triangles), 'gelaendemodell', p.gelaendeModell.name);
+    gelaendeModell = { name: p.gelaendeModell.name, datei: GELAENDE };
+  }
+
   const dateien = benutzteDateien(p).map((d) => {
     const pfad = `quellen/${d.id}/${safeName(d.name)}`;
     // PDF und Excel sind bereits komprimiert
@@ -80,7 +90,7 @@ export function writeArchive(p: Project, opts: { app?: string; date?: Date } = {
     return { ...rest, pfad };
   });
 
-  const projekt = { ...p, storeys, dachModell, dateien: dateien.length ? dateien : undefined };
+  const projekt = { ...p, storeys, dachModell, gelaendeModell, dateien: dateien.length ? dateien : undefined };
   const manifest: Manifest = {
     format: ARCHIV_FORMAT,
     version: ARCHIV_VERSION,
@@ -96,7 +106,7 @@ export function writeArchive(p: Project, opts: { app?: string; date?: Date } = {
   });
 }
 
-/** Liest ein Archiv (.oap/.akhp) oder eine JSON-Projektdatei. */
+/** Liest ein Projektarchiv (.oap) oder eine JSON-Projektdatei früherer Versionen. */
 export function readProjectFile(bytes: Uint8Array): Project {
   if (!isZip(bytes)) return parseProject(strFromU8(bytes));
   let zip: Unzipped;
@@ -128,6 +138,10 @@ export function readProjectFile(bytes: Uint8Array): Project {
   if (isObj(raw.dachModell) && typeof raw.dachModell.datei === 'string') {
     const data = zip[raw.dachModell.datei];
     raw.dachModell = data ? { name: raw.dachModell.name, triangles: Array.from(bytesToFloat64(data)) } : undefined;
+  }
+  if (isObj(raw.gelaendeModell) && typeof raw.gelaendeModell.datei === 'string') {
+    const data = zip[raw.gelaendeModell.datei];
+    raw.gelaendeModell = data ? { name: raw.gelaendeModell.name, triangles: Array.from(bytesToFloat64(data)) } : undefined;
   }
   if (Array.isArray(raw.dateien)) {
     raw.dateien = raw.dateien.filter(isObj).map((d) => ({ ...d, daten: typeof d.pfad === 'string' ? zip[d.pfad] : undefined }));

@@ -10,7 +10,7 @@ und Regionalfaktor.
 
 ## Arbeitsweise
 
-- **Öffnen:** ein Projekt des Flächenrechners (`.oap`/`.akhp`, auch ältere `.json`) oder direkt ein IFC-Modell
+- **Öffnen:** ein Projekt des Flächenrechners (`.oap`, auch ältere `.json`) oder direkt ein IFC-Modell
   (derselbe Import wie im Flächenrechner). Ohne Gebäudemodell lassen sich die Mengen von Hand eintragen.
 - **Pflegen:** Stufe und Preisstand, Faktoren, Mengen, Positionen mit Kennwerten, Kostenstände.
 - **Speichern:** in dieselbe Projektdatei. Flächenrechner und GRZ-Nachweis zeigen die Kostenermittlung nicht
@@ -19,7 +19,11 @@ und Regionalfaktor.
   beim nächsten Öffnen mit. Beim Speichern
   liest jede App die Zieldatei neu und übernimmt, was eine andere App dort inzwischen gespeichert hat, statt es
   mit ihrem eigenen, älteren Stand zu überschreiben (ab Flächenrechner 0.11.0, GRZ-Nachweis 0.4.0,
-  Kostenermittlung 0.4.0).
+  Kostenermittlung 0.4.0). „Speichern“ (Strg+S) schreibt in die geöffnete Datei, „Speichern unter …“
+  (Strg+Shift+S) fragt nach einem neuen Namen.
+- **IFC aktualisieren …:** ein neuer Export desselben Modells wird über die IFC-GlobalIds in das bestehende Projekt
+  eingelesen; Positionen, Kennwerte und von Hand geänderte Werte bleiben erhalten, die Mengen rechnen sich neu.
+- **Regeln nachschlagen:** „§ Regeln“ bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
 
 ## Mengen
 
@@ -166,6 +170,8 @@ Mengen. So wird sichtbar, was eine Planänderung kostet.
 - **Kosten drucken** (Strg+P): Kostenermittlung auf A4 hoch – Grundlagen, Kostenübersicht nach Kostengruppen
   mit Bandbreite, Kennwerte des Bauwerks (€/m² BGF, €/m³ BRI …), Positionen mit Menge und Kennwert, Mengen
   mit Ermittlung, Kostenstände, Hinweise und Unterschriftszeile. Über den Druckdialog auch als PDF.
+- **Dateinamen:** Druck/PDF und Excel schlagen `<Projektdatei> Kosten <Stufe>` vor, z. B.
+  „Musterhaus Kosten Kostenberechnung“, im Ordner der Projektdatei.
 - **Excel …**: Standardlayout (Blatt „Kosten“ mit Summenformeln) oder eigene Vorlage mit Platzhaltern wie
   `{{gesamt.brutto}}`, `{{kg300}}` und den Sammlungen `kg`, `kg2`, `position`, `menge`, `stand`, `hinweis` –
   siehe [Excel-Vorlagen](excel-vorlagen.md#kostenermittlung). Die Vorlage wird im Projekt mitgespeichert,

@@ -3,7 +3,7 @@
 Der Excel-Export (Schaltfläche **Excel**) erzeugt entweder das Standardlayout oder füllt eine eigene
 Vorlage. Eine Vorlage ist eine normale `.xlsx`-Datei – mit Logo, Kopf, Schriften, Rahmen, Zahlenformaten
 und eigenen Formeln – in die Platzhalter geschrieben werden. Sie wird im Projekt gespeichert (und im
-Projektarchiv `.oap`/`.akhp` mitgenommen) und zusätzlich in der Anwendung als Standard für weitere Projekte
+Projektarchiv `.oap` mitgenommen) und zusätzlich in der Anwendung als Standard für weitere Projekte
 hinterlegt. **Muster-Vorlage herunterladen** liefert eine Beispieldatei mit den Blättern Wohnflächen, BGF,
 BRI (Normalgeschosse/Dachgeschoss), BRI Teilkörper, Räume und einer Platzhalter-Übersicht.
 
@@ -201,6 +201,14 @@ Geschosseigenschaften lässt sich das je Geschoss neu zuordnen („automatisch n
 Die vollständige Liste steht im Excel-Dialog unter **Platzhalter anzeigen** und im Blatt „Platzhalter“
 der Muster-Vorlage.
 
+Neu im Flächenrechner: `{{raum.hoehenlage}}` (Höhenversatz eines Raums gegenüber seinem Geschoss, negativ =
+tiefer), `{{geschoss.sohle}}` (Dicke der Bodenplatte, ab deren Unterseite der BRI zählt) und `{{bri.unterbau}}`
+(„Bodenplatte“ bzw. „Split-Level“ bei BRI-Teilkörpern unter dem Geschossfußboden).
+
+Der Export schlägt als Dateinamen den Namen der Projektdatei mit Zusatz vor: `… WoFl+BGF+BRI.xlsx`
+(Flächenrechner), `… GRZ+GFZ.xlsx` (GRZ-Nachweis), `… Kosten Kostenberechnung.xlsx` (Kostenermittlung, mit der
+gewählten Stufe).
+
 ## GRZ-Nachweis
 
 Der GRZ-Nachweis (`apps/grz`) nutzt dieselbe Vorlagen-Engine mit eigenen Werten. Seine Vorlage wird getrennt
@@ -216,7 +224,10 @@ Schlüssel); ein Projekt kann also beide Vorlagen enthalten. Das Standardlayout 
 | `{{bilanz.gebaeude}}`, `{{bilanz.vollversiegelt}}` … | Flächenbilanz |
 | `{{geschoss.name}}`, `{{geschoss.begruendung}}`, `{{geschoss.gf}}` | Zeile je Geschoss; Filter `[vollgeschoss]`, `[!vollgeschoss]` |
 | `{{lageplan[eigen].name}}`, `{{lageplan.anrechnung}}` | Zeile je Lageplan-Fläche; Filter `[eigen]`, `[nachbar]`, `[pruefen]`, `[teil]` … |
+| `{{geschoss.gelaende}}`, `{{geschoss.gelaende_min}}`, `{{geschoss.gelaende_max}}`, `{{gelaende.quelle}}` | Geländeoberfläche entlang der Außenwände des Geschosses (Mittel, tiefster, höchster Punkt) und ihre Quelle |
+| `{{lageplan.flaeche_eindeutig}}`, `{{lageplan.ueberlagert}}` | eindeutig dieser Fläche zugeordneter Anteil bzw. von anderen Flächen überlagerter Rest – Überlagerungen zählen nur einmal |
 | `{{raum[gf].name}}` | Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume vor 1990 zur Geschossfläche zählen |
+| `{{raum.begruendung}}`, `{{raum.hoehenlage}}` | Ergebnis der Raumprüfung nach Nutzung und lichter Höhe; Höhenversatz des Fußbodens (Split-Level) |
 | `{{hinweis.text}}` | Zeile je Hinweis |
 
 Projektangaben (`projekt.*`, `grundstueck.*`, `bauherr.*`, `datum`) sind in allen Apps gleich.

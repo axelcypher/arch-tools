@@ -82,7 +82,7 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
   if (fremd.length) befunde.push({ art: 'hinweis', titel: `${fremd.length} Ordner ${fremd.length === 1 ? 'steht' : 'stehen'} nicht in der Struktur`, text: 'Auf Ebenen, die die Struktur vorgibt, liegen zusätzliche Ordner.', pfade: fremd });
 
   /* lose Dateien im Stamm */
-  const erlaubtImStamm = /\.(oap|akhp|md|lnk|url)$/i;
+  const erlaubtImStamm = /\.(oap|md|lnk|url)$/i;
   const lose = dateien.map((e) => e.pfad).filter((p) => !p.includes('/') && p.toLowerCase() !== PROJEKT_DATEI && !erlaubtImStamm.test(p));
   if (lose.length) befunde.push({ art: 'hinweis', titel: `${lose.length} ${lose.length === 1 ? 'Datei liegt' : 'Dateien liegen'} lose im Projektordner`, text: 'Dateien gehören in einen Ordner der Struktur.', pfade: lose });
 

@@ -51,7 +51,7 @@ describe('GRZ-Nachweis', () => {
     expect(text).not.toContain('Projekt oder IFC öffnen');
     expect(text).toContain('automatisch (BauNVO 1962)');
     expect(text).toContain('Vollgeschosse nach BauO NW 1962/1970');
-    expect(text).toContain('Aufenthaltsräume in Nicht-Vollgeschossen');
+    expect(text).toContain('Räume in Nicht-Vollgeschossen');
     expect(host.querySelectorAll('.grz-skizze path').length).toBeGreaterThan(2);
     expect(host.querySelectorAll('.kpi').length).toBe(3); // vor 1990: eine GRZ
   });

@@ -1,13 +1,22 @@
-import { ARCHIV_ENDUNGEN, readProjectFile, writeArchive } from '../archive';
+import { ARCHIV_ENDUNG, readProjectFile, writeArchive } from '../archive';
 import type { Project } from '../model';
 import { gleich, gleichesProjekt, zusammenfuehren } from '../zusammenfuehren';
-import { saveMergedFile } from './files';
+import type { GewaehlteDatei } from './files';
+import { dateiname, istPfad, ohneEndung, openFileWithPath, ordnerVon, saveMergedFile } from './files';
 import { logger } from './log';
 
 const log = logger('datei');
 
+/**
+ * Projektdatei der Apps (Flächenrechner, GRZ-Nachweis, Kostenermittlung): Öffnen, Speichern und
+ * Speichern unter, Dateinamen für Exporte.
+ *
+ * `datei` ist auf dem Desktop der vollständige Pfad der geöffneten bzw. zuletzt gespeicherten Datei –
+ * „Speichern“ schreibt dann ohne Rückfrage dorthin. Im Browser ist es nur der Dateiname (Download).
+ */
+
 export interface ProjektGespeichert {
-  /** Dateiname (ohne Ordner) */
+  /** vollständiger Pfad (Desktop) bzw. Dateiname (Browser) */
   datei: string;
   /** das gespeicherte Projekt – mit den Änderungen, die eine andere App inzwischen in der Datei gespeichert hat */
   project: Project;
@@ -15,34 +24,51 @@ export interface ProjektGespeichert {
   zusammengefuehrt: boolean;
 }
 
-function safeFileName(name: string) {
+export function safeFileName(name: string) {
   return name.replace(/[\\/:*?"<>|]+/g, '_').trim() || 'Projekt';
 }
 
+/** Projektdatei bzw. IFC-Modell öffnen (Desktop: nativer Dialog mit Pfad) */
+export function projektDateiWaehlen(o: { mitIfc?: boolean; datei?: string | null } = {}): Promise<GewaehlteDatei | null> {
+  return openFileWithPath({
+    filterName: o.mitIfc ? 'Projekt oder IFC-Modell' : 'Projekt',
+    extensions: [ARCHIV_ENDUNG, 'json', ...(o.mitIfc ? ['ifc'] : [])],
+    defaultDir: ordnerVon(o.datei),
+  });
+}
+
 /**
- * Speichert das Projekt als Archiv (.oap/.akhp). Steht in der Zieldatei bereits dasselbe Projekt, werden die
- * Änderungen anderer Apps übernommen statt überschrieben (siehe zusammenfuehren.ts). `basis` ist das Projekt,
- * wie es zuletzt geöffnet bzw. gespeichert wurde; ohne Basis wird die Datei ersetzt.
+ * Speichert das Projekt als Archiv (.oap). Mit bekanntem Pfad, Basis und ohne `unter` direkt in diese Datei,
+ * sonst über den Speichern-Dialog (Vorschlag: bisheriger Dateiname im bisherigen Ordner, sonst der
+ * Projektname). Steht in der Zieldatei bereits dasselbe Projekt, werden Änderungen anderer Apps
+ * übernommen statt überschrieben (siehe zusammenfuehren.ts). `basis` ist das Projekt, wie es zuletzt
+ * geöffnet bzw. gespeichert wurde; ohne Basis wird die Datei ersetzt.
  */
 export async function projektSpeichern(o: {
   project: Project;
   basis: Project | null;
-  /** zuletzt verwendeter Dateiname */
+  /** Pfad bzw. Name der geöffneten/zuletzt gespeicherten Datei */
   datei?: string | null;
+  /** „Speichern unter …“: immer den Dialog zeigen */
+  unter?: boolean;
   /** App und Version fürs Manifest */
   app: string;
   filterName?: string;
   /** Ergänzungen nur für die Datei (z. B. die im Browser hinterlegte Excel-Vorlage) */
   fuerDatei?: (p: Project) => Project;
 }): Promise<ProjektGespeichert | null> {
-  const name = o.datei && /\.(oap|akhp)$/i.test(o.datei) ? o.datei : `${safeFileName(o.project.name)}.${ARCHIV_ENDUNGEN[0]}`;
+  const bisher = o.datei && /\.oap$/i.test(o.datei) ? o.datei : null;
+  const vorschlag = bisher ? dateiname(bisher) : `${safeFileName(o.datei ? ohneEndung(dateiname(o.datei)) : o.project.name)}.${ARCHIV_ENDUNG}`;
   let project = o.project;
   let zusammengefuehrt = false;
   const datei = await saveMergedFile({
-    defaultName: name,
+    defaultName: vorschlag,
+    defaultDir: ordnerVon(o.datei),
+    // ohne Rückfrage nur in eine Datei, aus der das Projekt stammt (basis) – ein neues Projekt (z. B. aus
+    // einer IFC übernommen) könnte sonst eine fremde Datei gleichen Namens überschreiben
+    pfad: !o.unter && o.basis && bisher && istPfad(bisher) ? bisher : null,
     filterName: o.filterName ?? 'Projekt',
-    extension: ARCHIV_ENDUNGEN[0],
-    moreExtensions: ARCHIV_ENDUNGEN.slice(1),
+    extension: ARCHIV_ENDUNG,
     mime: 'application/zip',
     build: (vorhanden) => {
       if (vorhanden && o.basis) {
@@ -51,7 +77,7 @@ export async function projektSpeichern(o: {
           if (gleichesProjekt(o.basis, aufPlatte)) {
             project = zusammenfuehren(o.basis, o.project, aufPlatte);
             zusammengefuehrt = !gleich(project, o.project);
-            if (zusammengefuehrt) log.info('Änderungen aus der Datei übernommen', { name: o.project.name });
+            if (zusammengefuehrt) log.info('Änderungen anderer Apps aus der Datei übernommen', { name: o.project.name });
           }
         } catch (e) {
           // vorhandene Datei unlesbar oder kein Projekt – sie wird ersetzt
@@ -61,5 +87,37 @@ export async function projektSpeichern(o: {
       return writeArchive(o.fuerDatei ? o.fuerDatei(project) : project, { app: o.app });
     },
   });
+  if (datei) log.info('Projekt gespeichert', { datei, zusammengefuehrt });
   return datei ? { datei, project, zusammengefuehrt } : null;
+}
+
+/**
+ * Vorschlag für Exportdateien: „<Dateiname des Projekts> <Zusatz>.<Endung>“, z. B.
+ * „Haus Müller WoFl+BGF+BRI.xlsx“. Ohne gespeicherte Projektdatei gilt der Projektname.
+ */
+export function exportDateiname(o: { datei?: string | null; projektName: string; zusatz: string; endung: string }): string {
+  const basis = o.datei ? ohneEndung(dateiname(o.datei)) : o.projektName;
+  return `${safeFileName(basis)} ${o.zusatz}.${o.endung}`.replace(/\s+/g, ' ');
+}
+
+/** Ordner, in dem Export-Dialoge starten: der Ordner der Projektdatei (nur Desktop) */
+export function exportOrdner(datei?: string | null): string | null {
+  return ordnerVon(datei);
+}
+
+/**
+ * Drucken bzw. „Als PDF speichern“: Der Druckdialog schlägt den Dokumenttitel als Dateinamen vor –
+ * für die Dauer des Drucks wird er auf den Exportnamen gesetzt (ohne Endung).
+ */
+export function druckenAls(o: { datei?: string | null; projektName: string; zusatz: string }) {
+  const vorher = document.title;
+  document.title = ohneEndung(exportDateiname({ ...o, endung: 'pdf' }));
+  const zurueck = () => {
+    document.title = vorher;
+    window.removeEventListener('afterprint', zurueck);
+  };
+  window.addEventListener('afterprint', zurueck);
+  window.print();
+  // Browser ohne afterprint-Ereignis: spätestens nach dem (blockierenden) Druckaufruf zurücksetzen
+  setTimeout(zurueck, 1000);
 }

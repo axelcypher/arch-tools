@@ -5,7 +5,7 @@ import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 
 /**
- * Zustand des GRZ-Nachweises: das Projekt im gemeinsamen Format (.oap/.akhp) – Gebäude und Geschosse
+ * Zustand des GRZ-Nachweises: das Projekt im gemeinsamen Format (.oap) – Gebäude und Geschosse
  * kommen aus dem Flächenrechner bzw. der IFC, Lageplan und Festsetzungen pflegt dieses Tool.
  */
 
@@ -23,8 +23,10 @@ interface GrzState {
   dirty: boolean;
   past: Project[];
   future: Project[];
-  /** ausgewählte Lageplan-Fläche */
+  /** zuletzt gewählte Lageplan-Fläche (Eigenschaften, Eckpunkte) */
   selected: string | null;
+  /** alle gewählten Lageplan-Flächen (Mehrfachauswahl mit Umschalt) – enthält selected */
+  selectedIds: string[];
   werkzeug: Werkzeug;
 
   /** basis: Stand der Datei, aus der das Projekt stammt (null bei IFC-Import bzw. neuem Projekt) */
@@ -35,6 +37,9 @@ interface GrzState {
   /** nach dem Speichern: Dateiname und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
   markSaved: (datei: string, gespeichert: Project) => void;
   select: (id: string | null) => void;
+  /** Umschalt+Klick: Fläche zur Auswahl hinzufügen bzw. daraus entfernen */
+  toggleSelect: (id: string) => void;
+  selectMany: (ids: string[]) => void;
   setWerkzeug: (w: Werkzeug) => void;
 }
 
@@ -46,38 +51,54 @@ export const useGrz = create<GrzState>()((set, get) => ({
   past: [],
   future: [],
   selected: null,
+  selectedIds: [],
   werkzeug: 'auswahl',
 
   load: (p, datei = null, basis = null) => {
     log.info(`Projekt geladen: ${p.name}`, { geschosse: p.storeys.length, lageplan: p.lageplan?.flaechen.length ?? 0 });
-    set({ project: p, datei, basis, dirty: false, past: [], future: [], selected: null, werkzeug: 'auswahl' });
+    set({ project: p, datei, basis, dirty: false, past: [], future: [], selected: null, selectedIds: [], werkzeug: 'auswahl' });
   },
   update: (fn) => {
     const { project, past } = get();
     const next = fn(project);
     if (next === project) return;
     set({ project: next, past: [...past, project].slice(-HISTORY), future: [], dirty: true });
-    const sel = get().selected;
-    if (sel && !next.lageplan?.flaechen.some((f) => f.id === sel)) set({ selected: null });
+    auswahlBereinigen(set, get);
   },
   undo: () => {
     const { past, project, future } = get();
     if (!past.length) return;
     set({ project: past[past.length - 1], past: past.slice(0, -1), future: [project, ...future], dirty: true });
+    auswahlBereinigen(set, get);
   },
   redo: () => {
     const { past, project, future } = get();
     if (!future.length) return;
     set({ project: future[0], past: [...past, project], future: future.slice(1), dirty: true });
+    auswahlBereinigen(set, get);
   },
   markSaved: (datei, gespeichert) => {
     // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
     if (gespeichert !== get().project) set({ project: gespeichert, past: [], future: [] });
     set({ dirty: false, datei, basis: gespeichert });
   },
-  select: (id) => set({ selected: id }),
+  select: (id) => set({ selected: id, selectedIds: id ? [id] : [] }),
+  toggleSelect: (id) => {
+    const ids = get().selectedIds;
+    const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+    set({ selectedIds: next, selected: next.length ? next[next.length - 1] : null });
+  },
+  selectMany: (ids) => set({ selectedIds: ids, selected: ids.length ? ids[ids.length - 1] : null }),
   setWerkzeug: (w) => set({ werkzeug: w }),
 }));
+
+/** gewählte Flächen, die es nicht mehr gibt (gelöscht, Rückgängig), aus der Auswahl nehmen */
+function auswahlBereinigen(set: (s: Partial<GrzState>) => void, get: () => GrzState) {
+  const { project, selected, selectedIds } = get();
+  const da = new Set((project.lageplan?.flaechen ?? []).map((f) => f.id));
+  const ids = selectedIds.filter((id) => da.has(id));
+  if (ids.length !== selectedIds.length || (selected && !da.has(selected))) set({ selectedIds: ids, selected: selected && da.has(selected) ? selected : (ids[ids.length - 1] ?? null) });
+}
 
 /* ---------- Änderungen am Projekt ---------- */
 
@@ -96,8 +117,9 @@ export function addFlaeche(p: Project, f: LageplanFlaeche): Project {
   return { ...p, lageplan: { ...p.lageplan, flaechen: [...(p.lageplan?.flaechen ?? []), f] } };
 }
 
-export function removeFlaeche(p: Project, id: string): Project {
-  return { ...p, lageplan: { ...p.lageplan, flaechen: (p.lageplan?.flaechen ?? []).filter((f) => f.id !== id) } };
+export function removeFlaeche(p: Project, id: string | string[]): Project {
+  const weg = new Set(Array.isArray(id) ? id : [id]);
+  return { ...p, lageplan: { ...p.lageplan, flaechen: (p.lageplan?.flaechen ?? []).filter((f) => !weg.has(f.id)) } };
 }
 
 /* ---------- Zwischenspeicher (IndexedDB) ---------- */

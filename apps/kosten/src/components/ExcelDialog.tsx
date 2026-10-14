@@ -7,6 +7,7 @@ import { vorlage } from '../vorlage';
 /** Excel-Export der Kostenermittlung: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
 export function ExcelDialog({ onClose }: { onClose: () => void }) {
   const project = useKosten((s) => s.project);
+  const datei = useKosten((s) => s.datei);
   return (
     <Dialog
       project={project}
@@ -23,7 +24,8 @@ export function ExcelDialog({ onClose }: { onClose: () => void }) {
         </>
       }
       docs={KOSTEN_PLACEHOLDER_DOCS}
-      dateiName={(p) => `${p.name} ${stufeLabel(p.kosten?.stufe ?? 'schaetzung')}`}
+      datei={datei}
+      zusatz={(p) => `Kosten ${stufeLabel(p.kosten?.stufe ?? 'schaetzung')}`}
       musterName="Kosten-Vorlage.xlsx"
       exportDefault={async (p) => (await import('../export/excel')).exportDefault(p)}
       exportWithTemplate={async (t, p) => (await import('../export/excel')).exportWithTemplate(t, p)}

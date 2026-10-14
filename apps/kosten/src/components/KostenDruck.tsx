@@ -6,6 +6,7 @@ import { istKg, kg1, KG_ERSTE_EBENE, kgName } from '../din276';
 import type { PositionErgebnis } from '../kosten';
 import { berechne, bezugLabel, euro, HAFTUNG, katalogText, stufeLabel } from '../kosten';
 import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
+import { druckenAls } from '@core/platform/projektDatei';
 import { useKosten } from '../store';
 import { useBauteile } from '../bauteile';
 
@@ -45,7 +46,7 @@ export function KostenDruck({ onClose }: { onClose: () => void }) {
               Kostenstände
             </label>
           )}
-          <button onClick={() => window.print()}>Drucken / PDF</button>
+          <button onClick={() => druckenAls({ datei: useKosten.getState().datei, projektName: project.name, zusatz: `Kosten ${stufeLabel(project.kosten?.stufe ?? 'schaetzung')}` })}>Drucken / PDF</button>
           <button className="primary" onClick={onClose}>
             Schließen
           </button>

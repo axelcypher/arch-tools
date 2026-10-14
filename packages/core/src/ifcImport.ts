@@ -4,7 +4,7 @@ import { distanceToEdges, pointInPolygon, polygonArea, signedArea } from './geom
 import { nutzungAusText, versiegelungAusText } from './lageplan';
 import { clipHalfPlane } from './roof';
 import type { IfcExtract, IfcMeshPart } from './ifcData';
-import type { DxfPolyline, Lageplan, LageplanFlaeche, Nutzungsgruppe, OutlineShape, Storey, VectorBackground } from './model';
+import type { DxfPolyline, IfcStand, Lageplan, LageplanFlaeche, Nutzungsgruppe, OutlineShape, Storey, VectorBackground } from './model';
 import { createLageplanFlaeche, createOutline, createProject, createRoom, createStorey } from './model';
 import { modellRoofParams } from './calc';
 import type { DachModell } from './roofMesh';
@@ -33,6 +33,8 @@ export interface IfcImportOptions {
 export interface IfcImportResult {
   storeys: Storey[];
   dachModell?: DachModell;
+  /** Geländeoberfläche (IFC-Gelände und Geländeelemente, Lageplan-Geschoss) – für die Geschossigkeit */
+  gelaendeModell?: DachModell;
   /** Flächen aus dem Geschoss „Lageplan“ und dem IFC-Gelände (für den GRZ/GFZ-Nachweis) */
   lageplan?: Lageplan;
   report: string[];
@@ -95,6 +97,7 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
     }
     const st = createStorey(s.name, round(Math.max(h, 0.1), 3));
     st.elevation = round(s.elevation, 3);
+    if (s.globalId) st.ifcId = s.globalId;
     storeys.push(st);
     storeyByIfcIndex.set(s.i, st);
   });
@@ -105,6 +108,16 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
     report.push('Keine Geschosse (IfcBuildingStorey) gefunden – alles wurde einem Geschoss zugeordnet.');
   }
   const storeyFor = (i: number) => storeyByIfcIndex.get(i) ?? storeys[0];
+
+  // Bodenplatte des untersten Geschosses: BRI ab UK Sohle (DIN 277)
+  if (order.length) {
+    const unten = order[0];
+    const sohle = sohlenDicke(x.elements, unten.elevation);
+    if (sohle !== undefined) {
+      storeyFor(unten.i).sohle = sohle;
+      report.push(`${storeyFor(unten.i).name}: Bodenplatte ${fmt(sohle, 3)} m (UK Sohle bis Fußboden) – der BRI rechnet ab Unterseite der Sohle.`);
+    } else report.push(`${storeyFor(unten.i).name}: keine Bodenplatte gefunden – Dicke im Geschoss eintragen, damit der BRI ab UK Sohle rechnet.`);
+  }
 
   // Geschossschnitt als hinterlegter Plan
   if (o.planSchnitthoehe && o.planSchnitthoehe > 0) {
@@ -121,6 +134,25 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
   }
 
   // Räume
+  // üblicher Fußboden je Geschoss: Median der Zonenunterseiten (nach Fläche) – Abweichungen sind Split-Level
+  const bodenJeGeschoss = new Map<number, number>();
+  for (const i of new Set(x.spaces.map((sp) => sp.storey))) {
+    const werte = x.spaces
+      .filter((sp) => sp.storey === i)
+      .map((sp) => ({ z: raumBoden(sp.tris), a: Math.max(polygonArea(footprintFromTriangles(sp.tris) ?? []), 0.01) }))
+      .filter((v): v is { z: number; a: number } => v.z !== undefined)
+      .sort((a, b) => a.z - b.z);
+    const summe = werte.reduce((s, v) => s + v.a, 0);
+    let acc = 0;
+    for (const v of werte) {
+      acc += v.a;
+      if (acc >= summe / 2) {
+        bodenJeGeschoss.set(i, v.z);
+        break;
+      }
+    }
+  }
+  const splitLevel: string[] = [];
   if (o.rooms) {
     let n = 0;
     let putz = 0;
@@ -134,6 +166,14 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
       }
       const st = storeyFor(sp.storey);
       const room = createRoom(pts, sp.name, sp.longName || sp.name);
+      if (sp.globalId) room.ifcId = sp.globalId;
+      // Split-Level: Fußboden des Raums gegenüber dem üblichen Fußboden der Zonen dieses Geschosses
+      const boden = raumBoden(sp.tris);
+      const ueblich = bodenJeGeschoss.get(sp.storey);
+      if (boden !== undefined && ueblich !== undefined && Math.abs(boden - ueblich) >= SPLIT_LEVEL_MIN) {
+        room.versatz = round(boden - ueblich, 3);
+        splitLevel.push(`${room.nummer} ${room.name} ${room.versatz > 0 ? '+' : ''}${fmt(room.versatz, 2)} m`);
+      }
       room.nutzung = guessNutzung(room.name);
       const geo = polygonArea(pts);
       const notes: string[] = [];
@@ -163,6 +203,7 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
       n++;
     }
     report.push(`${n} Räume aus IFC-Zonen übernommen.`);
+    if (splitLevel.length) report.push(`Split-Level erkannt (Fußboden gegenüber dem Geschoss): ${splitLevel.join(', ')} – im BRI berücksichtigt.`);
     if (o.wohnflaeche && keineWofl) report.push(`${keineWofl} Räume nicht als Wohnfläche angerechnet (Keller, Technik, Treppenhaus, Garage, Dachboden …) – bei Bedarf im Raum ändern.`);
     if (putz) report.push(`${putz} Räume mit Putzabzug aus Archicad (Nettofläche aus Rohbaumaßen) übernommen.`);
   }
@@ -240,7 +281,91 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
   }
 
   const lageplan = lageplanAusIfc(x, lageplanIdx, storeys, report);
-  return { storeys, dachModell, lageplan, report };
+  // Stand der übernommenen Werte merken – für den Abgleich beim erneuten Import (ifcAbgleich.ts)
+  for (const st of storeys) {
+    st.ifcStand = ifcStandVon(st, STOCKWERK_FELDER);
+    for (const sh of st.shapes) sh.ifcStand = ifcStandVon(sh, sh.kind === 'room' ? RAUM_FELDER : UMRISS_FELDER);
+  }
+  for (const f of lageplan?.flaechen ?? []) f.ifcStand = ifcStandVon(f, LAGEPLAN_FELDER);
+  // Geländeoberfläche als Höhenfeld: Gelände und Geländeelemente sowie Bauteile des Lageplan-Geschosses
+  const gelaendeTeile = x.elements.filter(
+    (e) => (istGelaendeElement(e) || lageplanIdx.has(e.storey)) && !e.type.startsWith('IFCFURNISHING') && e.type !== 'IFCOPENINGELEMENT',
+  );
+  const gelaendeTris = upwardTriangles(gelaendeTeile);
+  const gelaendeModell = gelaendeTris.length ? { name: 'IFC-Gelände', triangles: gelaendeTris } : undefined;
+  if (gelaendeModell) report.push('Geländeoberfläche aus dem Modell übernommen – der GRZ-Nachweis prüft die Geschossigkeit am tatsächlichen Geländeverlauf.');
+  return { storeys, dachModell, gelaendeModell, lageplan, report };
+}
+
+/* ---------- Stand für den erneuten Import ---------- */
+
+/** Felder, die aus der IFC kommen und beim erneuten Import abgeglichen werden */
+export const STOCKWERK_FELDER = ['name', 'elevation', 'hoehe', 'sohle'] as const;
+export const RAUM_FELDER = ['points', 'name', 'nummer', 'nutzung', 'putzabzug', 'versatz', 'wofl', 'bemerkung'] as const;
+export const UMRISS_FELDER = ['points', 'dach'] as const;
+export const LAGEPLAN_FELDER = ['points', 'name', 'nutzung', 'versiegelung', 'hoehe', 'nachbar'] as const;
+
+/** Kopie der genannten Felder (ohne undefined), unabhängig vom Objekt */
+export function ifcStandVon(o: object, felder: readonly string[]): IfcStand {
+  const out: IfcStand = {};
+  for (const k of felder) {
+    const v = (o as Record<string, unknown>)[k];
+    if (v !== undefined) out[k] = structuredClone(v);
+  }
+  return out;
+}
+
+/* ---------- Höhenlagen ---------- */
+
+/** kleinster Höhenunterschied, ab dem ein Raum als tiefer/höher liegend gilt (Split-Level) */
+const SPLIT_LEVEL_MIN = 0.05;
+
+/** Fußboden eines Raumkörpers: Höhe der größten nach unten zeigenden Fläche (sonst tiefster Punkt) */
+export function raumBoden(t: ArrayLike<number>): number | undefined {
+  const flaeche = new Map<number, number>();
+  let min = Infinity;
+  for (let i = 0; i + 8 < t.length; i += 9) {
+    const z0 = t[i + 2];
+    const z1 = t[i + 5];
+    const z2 = t[i + 8];
+    min = Math.min(min, z0, z1, z2);
+    if (Math.max(z0, z1, z2) - Math.min(z0, z1, z2) > 0.01) continue;
+    const a = Math.abs((t[i + 3] - t[i]) * (t[i + 7] - t[i + 1]) - (t[i + 6] - t[i]) * (t[i + 4] - t[i + 1])) / 2;
+    const k = Math.round(((z0 + z1 + z2) / 3) * 100);
+    flaeche.set(k, (flaeche.get(k) ?? 0) + a);
+  }
+  if (!Number.isFinite(min)) return undefined;
+  // waagerechte Flächen von unten nach oben: die unterste mit nennenswerter Fläche ist der Boden
+  const ebenen = [...flaeche.entries()].sort((a, b) => a[0] - b[0]);
+  const gross = Math.max(0, ...ebenen.map(([, a]) => a));
+  const boden = ebenen.find(([, a]) => a >= 0.25 * gross);
+  return boden ? boden[0] / 100 : min;
+}
+
+/**
+ * Dicke der Bodenplatte unter dem untersten Geschoss: Abstand Fußboden (Geschosskote) bis Unterseite der
+ * größten Decke/Bodenplatte, deren Oberseite in Höhe des Fußbodens liegt. Fundamente zählen nicht.
+ */
+export function sohlenDicke(elements: IfcMeshPart[], fussboden: number): number | undefined {
+  let best: { flaeche: number; unten: number } | undefined;
+  for (const e of elements) {
+    if (e.type !== 'IFCSLAB' || e.predefinedType === 'ROOF' || e.predefinedType === 'LANDING') continue;
+    let oben = -Infinity;
+    let unten = Infinity;
+    let flaeche = 0;
+    const t = e.tris;
+    for (let i = 0; i + 8 < t.length; i += 9) {
+      oben = Math.max(oben, t[i + 2], t[i + 5], t[i + 8]);
+      unten = Math.min(unten, t[i + 2], t[i + 5], t[i + 8]);
+      flaeche += Math.abs((t[i + 3] - t[i]) * (t[i + 7] - t[i + 1]) - (t[i + 6] - t[i]) * (t[i + 4] - t[i + 1])) / 2;
+    }
+    // Oberseite höchstens 60 cm unter bzw. 5 cm über dem Fußboden (Rohfußboden oder Fertigfußboden als Kote)
+    if (oben < fussboden - 0.6 || oben > fussboden + 0.05 || unten >= fussboden - 0.03) continue;
+    if (!best || flaeche > best.flaeche) best = { flaeche, unten };
+  }
+  if (!best) return undefined;
+  const d = round(fussboden - best.unten, 3);
+  return d >= 0.05 && d <= 1.5 ? d : undefined;
 }
 
 /* ---------- Lageplan ---------- */
@@ -252,18 +377,18 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
  * Flächen ohne Verbindung zum Gebäude (auch über andere Flächen) gelten als Nachbargrundstück.
  */
 function lageplanAusIfc(x: IfcExtract, lageplanIdx: Set<number>, storeys: Storey[], report: string[]): Lageplan | undefined {
-  const quellen: { name: string; text: string; tris: ArrayLike<number> }[] = [];
+  const quellen: { id: string; name: string; text: string; tris: ArrayLike<number> }[] = [];
   let ausAnderenGeschossen = 0;
   for (const e of x.elements) {
     const gelaende = istGelaendeElement(e);
     if (!(lageplanIdx.has(e.storey) || gelaende)) continue;
     if (e.type.startsWith('IFCFURNISHING') || e.type === 'IFCOPENINGELEMENT') continue;
     if (gelaende && e.storey >= 0 && !lageplanIdx.has(e.storey)) ausAnderenGeschossen++;
-    quellen.push({ name: e.name || (gelaende ? 'Gelände' : e.type), text: `${e.name} ${e.predefinedType} ${gelaende ? '' : e.type}`, tris: e.tris });
+    quellen.push({ id: e.globalId ?? `#${e.expressId}`, name: e.name || (gelaende ? 'Gelände' : e.type), text: `${e.name} ${e.predefinedType} ${gelaende ? '' : e.type}`, tris: e.tris });
   }
   for (const sp of x.spaces) {
     if (!lageplanIdx.has(sp.storey)) continue;
-    quellen.push({ name: sp.longName || sp.name, text: `${sp.name} ${sp.longName}`, tris: sp.tris });
+    quellen.push({ id: sp.globalId ?? `#${sp.expressId}`, name: sp.longName || sp.name, text: `${sp.name} ${sp.longName}`, tris: sp.tris });
   }
   if (!quellen.length) return undefined;
 
@@ -271,11 +396,14 @@ function lageplanAusIfc(x: IfcExtract, lageplanIdx: Set<number>, storeys: Storey
   for (const q of quellen) {
     const tris = Float32Array.from(q.tris as ArrayLike<number>);
     const hoehe = oberflaechenHoehe(tris);
+    let teil = 0;
     for (const pts of outlinesFromParts([tris])) {
       if (polygonArea(pts) < 0.2) continue;
       const nutzung = nutzungAusText(q.text);
       flaechen.push({
         ...createLageplanFlaeche(pts, q.name),
+        // ein Bauteil kann mehrere getrennte Flächen ergeben: Teilnummer an die GlobalId
+        ifcId: `${q.id}/${teil++}`,
         nutzung,
         versiegelung: versiegelungAusText(q.text, nutzung),
         ...(hoehe !== undefined ? { hoehe: round(hoehe, 3) } : {}),

@@ -32,6 +32,8 @@ export interface ViewOptions {
   showDimensions: boolean;
   snapGrid: boolean;
   snapVertices: boolean;
+  /** Hilfslinien: Verlängerung bestehender Kanten und Gebäudeachsen */
+  snapGuides: boolean;
 }
 
 const HISTORY_LIMIT = 200;
@@ -41,12 +43,17 @@ interface EditorState {
   project: Project;
   /** Projekt beim letzten Öffnen/Speichern – Grundlage fürs Zusammenführen mit der Datei (siehe zusammenfuehren.ts) */
   basis: Project | null;
+  /** Pfad (Desktop) bzw. Name (Browser) der geöffneten/zuletzt gespeicherten Projektdatei */
+  datei: string | null;
   past: Project[];
   future: Project[];
   /** true, wenn seit dem letzten Speichern geändert */
   dirty: boolean;
   activeStoreyId: string;
+  /** zuletzt gewählte Fläche (Eigenschaften, Eckpunkte) */
   selectedShapeId: string | null;
+  /** alle gewählten Flächen des aktiven Geschosses (Mehrfachauswahl mit Umschalt) – enthält selectedShapeId */
+  selectedIds: string[];
   tool: Tool;
   drawKind: ShapeKind;
   view: ViewOptions;
@@ -66,14 +73,18 @@ interface EditorState {
   undo: () => void;
   redo: () => void;
 
-  /** basis: Stand der Datei, aus der das Projekt stammt (null bei neuem Projekt) */
-  loadProject: (p: Project, basis?: Project | null) => void;
+  /** basis: Stand der Datei, aus der das Projekt stammt (null bei neuem Projekt); datei: deren Pfad bzw. Name */
+  loadProject: (p: Project, basis?: Project | null, datei?: string | null) => void;
   newProject: () => void;
-  /** nach dem Speichern: das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
-  markSaved: (gespeichert: Project) => void;
+  /** nach dem Speichern: Datei und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
+  markSaved: (gespeichert: Project, datei: string) => void;
 
   setActiveStorey: (id: string) => void;
   select: (id: string | null) => void;
+  /** Umschalt+Klick: Fläche zur Auswahl hinzufügen bzw. daraus entfernen */
+  toggleSelect: (id: string) => void;
+  /** Mehrfachauswahl setzen (z. B. Rahmen, Strg+A) */
+  selectMany: (ids: string[]) => void;
   setTool: (t: Tool) => void;
   setDrawKind: (k: ShapeKind) => void;
   setView: (v: Partial<ViewOptions>) => void;
@@ -90,11 +101,13 @@ export const useEditor = create<EditorState>((set, get) => {
   return {
     project: initial,
     basis: null,
+    datei: null,
     past: [],
     future: [],
     dirty: false,
     activeStoreyId: initial.storeys[0].id,
     selectedShapeId: null,
+    selectedIds: [],
     tool: 'select',
     drawKind: 'outline',
     view: {
@@ -105,6 +118,7 @@ export const useEditor = create<EditorState>((set, get) => {
       showDimensions: true,
       snapGrid: true,
       snapVertices: true,
+      snapGuides: true,
     },
     fitRequest: 1,
     reportOpen: false,
@@ -141,30 +155,38 @@ export const useEditor = create<EditorState>((set, get) => {
       fixSelection(set, get);
     },
 
-    loadProject: (p, basis = null) => {
+    loadProject: (p, basis = null, datei = null) => {
       set({
         project: p,
         basis,
+        datei,
         past: [],
         future: [],
         dirty: false,
         activeStoreyId: p.storeys[0].id,
         selectedShapeId: null,
+        selectedIds: [],
         tool: 'select',
         fitRequest: get().fitRequest + 1,
         ifcModel: null,
       });
     },
     newProject: () => get().loadProject(createProject()),
-    markSaved: (gespeichert) => {
+    markSaved: (gespeichert, datei) => {
       // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
       if (gespeichert !== get().project) set({ project: gespeichert, past: [], future: [] });
-      set({ basis: gespeichert, dirty: false });
+      set({ basis: gespeichert, datei, dirty: false });
       fixSelection(set, get);
     },
 
-    setActiveStorey: (id) => set({ activeStoreyId: id, selectedShapeId: null }),
-    select: (id) => set({ selectedShapeId: id }),
+    setActiveStorey: (id) => set({ activeStoreyId: id, selectedShapeId: null, selectedIds: [] }),
+    select: (id) => set({ selectedShapeId: id, selectedIds: id ? [id] : [] }),
+    toggleSelect: (id) => {
+      const ids = get().selectedIds;
+      const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+      set({ selectedIds: next, selectedShapeId: next.length ? next[next.length - 1] : null });
+    },
+    selectMany: (ids) => set({ selectedIds: ids, selectedShapeId: ids.length ? ids[ids.length - 1] : null }),
     setTool: (t) => set({ tool: t }),
     setDrawKind: (k) => set({ drawKind: k }),
     setView: (v) => set({ view: { ...get().view, ...v } }),
@@ -186,11 +208,14 @@ export const useEditor = create<EditorState>((set, get) => {
 });
 
 function fixSelection(set: (s: Partial<EditorState>) => void, get: () => EditorState) {
-  const { project, activeStoreyId, selectedShapeId } = get();
+  const { project, activeStoreyId, selectedShapeId, selectedIds } = get();
   const storey = project.storeys.find((s) => s.id === activeStoreyId) ?? project.storeys[0];
   const patch: Partial<EditorState> = {};
   if (storey.id !== activeStoreyId) patch.activeStoreyId = storey.id;
-  if (selectedShapeId && !storey.shapes.some((s) => s.id === selectedShapeId)) patch.selectedShapeId = null;
+  const vorhanden = new Set(storey.shapes.map((s) => s.id));
+  const ids = selectedIds.filter((id) => vorhanden.has(id));
+  if (ids.length !== selectedIds.length) patch.selectedIds = ids;
+  if (selectedShapeId && !vorhanden.has(selectedShapeId)) patch.selectedShapeId = ids.length ? ids[ids.length - 1] : null;
   if (Object.keys(patch).length) set(patch);
 }
 
@@ -198,6 +223,15 @@ function fixSelection(set: (s: Partial<EditorState>) => void, get: () => EditorS
 
 export function useActiveStorey(): Storey {
   return useEditor((s) => s.project.storeys.find((st) => st.id === s.activeStoreyId) ?? s.project.storeys[0]);
+}
+
+/** alle gewählten Flächen des aktiven Geschosses */
+export function useSelectedShapes(): Shape[] {
+  const project = useEditor((s) => s.project);
+  const activeStoreyId = useEditor((s) => s.activeStoreyId);
+  const ids = useEditor((s) => s.selectedIds);
+  const st = project.storeys.find((x) => x.id === activeStoreyId);
+  return st ? st.shapes.filter((sh) => ids.includes(sh.id)) : [];
 }
 
 export function useSelectedShape(): Shape | null {
@@ -342,9 +376,9 @@ if (typeof indexedDB !== 'undefined') {
       const st = useEditor.getState();
       if (!raw || st.past.length || st.dirty) return;
       // bis 0.2 als JSON-Text, bis 0.10 als Projekt, seither mit Basis fürs Zusammenführen
-      const mitBasis = typeof raw === 'object' && raw !== null && 'project' in raw ? (raw as { project: unknown; basis: unknown }) : null;
+      const mitBasis = typeof raw === 'object' && raw !== null && 'project' in raw ? (raw as { project: unknown; basis: unknown; datei?: unknown }) : null;
       const p = typeof raw === 'string' ? parseProject(raw) : parseProjectData(mitBasis ? mitBasis.project : raw);
-      st.loadProject(p, mitBasis?.basis ? parseProjectData(mitBasis.basis) : null);
+      st.loadProject(p, mitBasis?.basis ? parseProjectData(mitBasis.basis) : null, typeof mitBasis?.datei === 'string' ? mitBasis.datei : null);
       void restoreIfcModel(p);
       log.info('Zwischenstand wiederhergestellt', { name: p.name, geschosse: p.storeys.length });
     })
@@ -356,11 +390,11 @@ if (typeof indexedDB !== 'undefined') {
 
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
 useEditor.subscribe((s, prev) => {
-  if (s.project === prev.project && s.basis === prev.basis) return;
+  if (s.project === prev.project && s.basis === prev.basis && s.datei === prev.datei) return;
   clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(() => {
-    const { project, basis } = useEditor.getState();
-    idbSet(AUTOSAVE_KEY, { project, basis })
+    const { project, basis, datei } = useEditor.getState();
+    idbSet(AUTOSAVE_KEY, { project, basis, datei })
       .then(() => {
         try {
           localStorage.removeItem(AUTOSAVE_KEY);

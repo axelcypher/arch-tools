@@ -5,14 +5,13 @@ import type { VorlagenSpeicher } from '../excel/vorlage';
 import type { Project } from '../model';
 import { pickFile, saveBinaryFile } from '../platform/files';
 import { logger } from '../platform/log';
+import { exportDateiname, exportOrdner } from '../platform/projektDatei';
 
 const log = logger('excel');
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-export function safeFileName(name: string) {
-  return name.replace(/[\\/:*?"<>|]+/g, '_').trim() || 'Projekt';
-}
+export { safeFileName } from '../platform/projektDatei';
 
 export interface ExcelDialogProps {
   project: Project;
@@ -25,8 +24,10 @@ export interface ExcelDialogProps {
   /** Hinweis zu den Wiederholungszeilen (Sammlungen der App) */
   hilfe: ReactNode;
   docs: PlaceholderDocs;
-  /** Dateiname ohne Endung, z. B. „Projekt Flächen“ */
-  dateiName: (p: Project) => string;
+  /** Projektdatei (Pfad bzw. Name) – Grundlage für Dateiname und Ordner des Exports */
+  datei: string | null;
+  /** Zusatz zum Dateinamen, z. B. „WoFl+BGF+BRI“ → „<Projektdatei> WoFl+BGF+BRI.xlsx“ */
+  zusatz: (p: Project) => string;
   musterName: string;
   exportDefault: (p: Project) => Promise<Uint8Array>;
   exportWithTemplate: (template: Uint8Array, p: Project) => Promise<Uint8Array>;
@@ -69,7 +70,7 @@ export function ExcelDialog(props: ExcelDialogProps) {
   const downloadSample = async () => {
     setBusy(true);
     try {
-      await saveBinaryFile({ defaultName: props.musterName, data: await props.buildSampleTemplate(), filterName: 'Excel-Arbeitsmappe', extension: 'xlsx', mime: XLSX_MIME });
+      await saveBinaryFile({ defaultName: props.musterName, defaultDir: exportOrdner(props.datei), data: await props.buildSampleTemplate(), filterName: 'Excel-Arbeitsmappe', extension: 'xlsx', mime: XLSX_MIME });
     } catch (e) {
       log.error('Muster-Vorlage fehlgeschlagen', e);
       setError(String(e));
@@ -85,7 +86,14 @@ export function ExcelDialog(props: ExcelDialogProps) {
       const done = log.time(mode === 'template' && template ? `Export mit Vorlage „${template.name}“` : 'Export Standardlayout');
       const data = mode === 'template' && template ? await props.exportWithTemplate(template.daten, project) : await props.exportDefault(project);
       done({ bytes: data.byteLength });
-      const ok = await saveBinaryFile({ defaultName: `${safeFileName(props.dateiName(project))}.xlsx`, data, filterName: 'Excel-Arbeitsmappe', extension: 'xlsx', mime: XLSX_MIME });
+      const ok = await saveBinaryFile({
+        defaultName: exportDateiname({ datei: props.datei, projektName: project.name, zusatz: props.zusatz(project), endung: 'xlsx' }),
+        defaultDir: exportOrdner(props.datei),
+        data,
+        filterName: 'Excel-Arbeitsmappe',
+        extension: 'xlsx',
+        mime: XLSX_MIME,
+      });
       if (ok) onClose();
     } catch (e) {
       log.error('Excel-Export fehlgeschlagen', e);

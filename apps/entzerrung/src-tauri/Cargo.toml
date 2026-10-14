@@ -1,6 +1,6 @@
 [package]
 name = "entzerrung"
-version = "0.1.0"
+version = "0.1.1"
 description = "Fotos perspektivisch entzerren und darin messen"
 authors = ["Tobias Pendzialek"]
 license = "MIT"
@@ -16,6 +16,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
 tauri-plugin-log = "2"
 tauri-plugin-process = "2"
 tauri-plugin-updater = "2"

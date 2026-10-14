@@ -4,6 +4,8 @@ import { fmt2 } from '@core/format';
 import type { IfcExtract } from '@core/ifcData';
 import type { IfcImportOptions } from '@core/ifcImport';
 import { buildFromIfc } from '@core/ifcImport';
+import { hatIfcHerkunft, ifcAbgleichen } from '@core/ifcAbgleich';
+import { ifcDateiErsetzen } from '@core/platform/ifcAktualisieren';
 import { addDatei, createProject } from '@core/model';
 import { pickFile } from '@core/platform/files';
 import { useEditor } from '../store/store';
@@ -20,15 +22,16 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   /** Originaldatei – wird im Projektarchiv mitgespeichert */
   const original = useRef<Uint8Array | null>(null);
-  const [opts, setOpts] = useState<IfcImportOptions & { replace: boolean }>({
+  // Projekt mit Flächen aus einem früheren IFC-Import: standardmäßig abgleichen statt neu aufsetzen
+  const [opts, setOpts] = useState<IfcImportOptions & { modus: 'neu' | 'hinzufuegen' | 'aktualisieren' }>(() => ({
     rooms: true,
     outlines: true,
     roof: true,
     wohnflaeche: false,
     planSchnitthoehe: 1,
     dachform: true,
-    replace: true,
-  });
+    modus: hatIfcHerkunft(useEditor.getState().project) ? 'aktualisieren' : 'neu',
+  }));
 
   const choose = async () => {
     setError(null);
@@ -59,7 +62,19 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
     try {
       const r = buildFromIfc(x, opts);
       const st = useEditor.getState();
-      if (opts.replace) {
+      if (opts.modus === 'aktualisieren') {
+        // Abgleich über die IFC-GlobalIds: Änderungen von Hand bleiben, das Modell wird ersetzt
+        const a = ifcAbgleichen(st.project, r, { raeume: opts.rooms, umrisse: opts.outlines, modelle: opts.roof, lageplan: true, plaene: !!opts.planSchnitthoehe });
+        st.update(() => {
+          return original.current ? ifcDateiErsetzen(a.project, file, original.current) : a.project;
+        });
+        const { ifcReference } = await import('@core/platform/ifc');
+        st.setIfcModel(ifcReference(x, file));
+        log.info('IFC abgeglichen', { datei: file, ...a.zaehler });
+        setStep({ kind: 'done', report: [...a.bericht, ...r.report.filter((z) => !/übernommen\.$/.test(z))] });
+        return;
+      }
+      if (opts.modus === 'neu') {
         if (st.dirty && !window.confirm('Ungespeicherte Änderungen am aktuellen Projekt verwerfen?')) {
           setStep({ kind: 'options', x, file });
           return;
@@ -67,6 +82,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
         const p = createProject(x.projectName || file.replace(/\.ifc$/i, ''));
         p.storeys = r.storeys;
         p.dachModell = r.dachModell;
+        if (r.gelaendeModell) p.gelaendeModell = r.gelaendeModell;
         // Lageplan (Geschoss „Lageplan“, IFC-Gelände) für den GRZ/GFZ-Nachweis mitnehmen
         if (r.lageplan) p.lageplan = r.lageplan;
         st.loadProject(original.current ? addDatei(p, file, 'ifc', original.current).project : p);
@@ -76,6 +92,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
             ...p,
             storeys: [...p.storeys, ...r.storeys],
             dachModell: r.dachModell ?? p.dachModell,
+            gelaendeModell: r.gelaendeModell ?? p.gelaendeModell,
             lageplan: r.lageplan ? { flaechen: [...(p.lageplan?.flaechen ?? []), ...r.lageplan.flaechen] } : p.lageplan,
           };
           return original.current ? addDatei(next, file, 'ifc', original.current).project : next;
@@ -174,18 +191,22 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
               </label>
             )}
             <hr />
+            <label className="toggle block" title="Räume über die IFC-GlobalId zuordnen: neue Geometrie aus der IFC, von Hand geänderte Angaben bleiben, neue Zonen kommen hinzu">
+              <input type="radio" checked={opts.modus === 'aktualisieren'} onChange={() => setOpts({ ...opts, modus: 'aktualisieren' })} />
+              aktuelles Projekt aktualisieren (erneuter Export desselben Modells – Ihre Änderungen bleiben)
+            </label>
             <label className="toggle block">
-              <input type="radio" checked={opts.replace} onChange={() => setOpts({ ...opts, replace: true })} />
+              <input type="radio" checked={opts.modus === 'neu'} onChange={() => setOpts({ ...opts, modus: 'neu' })} />
               als neues Projekt öffnen
             </label>
             <label className="toggle block">
-              <input type="radio" checked={!opts.replace} onChange={() => setOpts({ ...opts, replace: false })} />
+              <input type="radio" checked={opts.modus === 'hinzufuegen'} onChange={() => setOpts({ ...opts, modus: 'hinzufuegen' })} />
               Geschosse zum aktuellen Projekt hinzufügen
             </label>
             <div className="dialog-buttons">
               <button onClick={onClose}>Abbrechen</button>
               <button className="primary" onClick={() => doImport(step.x, step.file)}>
-                Importieren
+                {opts.modus === 'aktualisieren' ? 'Aktualisieren' : 'Importieren'}
               </button>
             </div>
           </>

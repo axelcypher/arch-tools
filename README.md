@@ -1,7 +1,7 @@
 # arch-tools
 
 Werkzeuge für Architekturbüros: fünf Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau. Flächenrechner,
-GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`/`.akhp`).
+GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 
 | App | Zweck | Dokumentation |
 |---|---|---|
@@ -19,7 +19,7 @@ kalibrierten Planbild nachgezeichnet; die Anwendung ermittelt daraus:
 | Kennwert | Grundlage | Ermittlung |
 |---|---|---|
 | **BGF** – Brutto-Grundfläche | DIN 277 | Σ BGF-Umrisse je Geschoss, getrennt nach Raumumschließung **R** (Regelfall) und **S** (Sonderfall) |
-| **BRI** – Brutto-Rauminhalt | DIN 277 | Σ Umrissfläche × Geschosshöhe bzw. Volumen vom Fußboden bis zur Dachhaut (Dachform oder Dach aus IFC) |
+| **BRI** – Brutto-Rauminhalt | DIN 277 | Σ Umrissfläche × Geschosshöhe bzw. Volumen vom Fußboden bis zur Dachhaut (Dachform oder Dach aus IFC), unten ab **UK Bodenplatte** (Sohle) inkl. tiefer liegender Bereiche |
 | **NRF** – Netto-Raumfläche | DIN 277 | Σ Räume = NUF 1–7 + TF 8 + VF 9 |
 | **KGF** – Konstruktions-Grundfläche | DIN 277 | BGF − NRF (rechnerisch) |
 | **WoFl** – Wohnfläche | WoFlV § 4 | Σ Raumfläche × Anrechnungsfaktor, gruppiert nach Wohnung |
@@ -49,7 +49,16 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
     Kanten werden auf dem Originalbild subpixelgenau an die Wandkante geschoben
 - **Hintergrundpläne**: **PDF** (Seite wählbar, direkte Maßstabseingabe 1:M), **DXF** (Layer ein-/ausblenden,
   Einheit aus `$INSUNITS`, Blöcke, Bemaßungen, Texte) sowie **PNG/JPG**; Kalibrierung über eine bekannte Strecke
-- **Fang** auf Raster, Eckpunkte und Kanten (auch DXF-Geometrie und darunterliegendes Geschoss), **Shift** = orthogonal, **Alt** = Fang aus
+- **Fang** auf Raster, Eckpunkte und Kanten (auch DXF-Geometrie und darunterliegendes Geschoss), **Alt** = Fang aus
+- **Hilfslinienfang** für schräg stehende (genordete) Gebäude: Verlängerungen der Nachbarkanten, Gebäudeachsen
+  und Fluchten bestehender Eckpunkte; **Shift** hält die Linie auf der Gebäudeachse, Rechtecke richten sich an ihr aus
+- **Mehrfachauswahl**: Shift+Klick, Shift+Aufziehen, `Strg+A`; gemeinsam verschieben, löschen und gemeinsame Felder bearbeiten
+- **Höhenlage / Split-Level**: Räume und Umrisse lassen sich nach oben und unten versetzen; tiefer liegende Räume
+  (aus IFC automatisch erkannt) und die Bodenplatte gehen als eigene Posten in den BRI ein
+- **IFC aktualisieren**: erneuter Import in ein bestehendes Projekt über die stabilen IFC-GlobalIds – von Hand
+  geänderte Werte bleiben erhalten, Konflikte werden gemeldet
+- **Nachschlagewerk** der Berechnungsregeln (`F1` bzw. „§ Regeln“, `?` an den Abschnitten) mit Zitaten,
+  Quellenangaben, Links und Suche – zentral und je Funktion gefiltert
 - **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ, Rechteck `4,5x3,2`
 - Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Punkt löschen, Koordinaten-Tabelle
 - **Abzugsflächen** (Innenhof, Schacht, Treppenloch, Schornstein …)
@@ -60,6 +69,9 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
   Maßstabsleiste, Legende, optional mit Hintergrundplan) und Raumliste je Geschoss
 - **Excel-Export** (.xlsx) im Standardlayout oder mit **eigener Vorlage** – siehe [docs/excel-vorlagen.md](docs/excel-vorlagen.md)
 - **CSV-Export** (Excel, Dezimalkomma)
+- **Dateinamen**: „Speichern“ (`Strg+S`) schreibt in die geöffnete Datei, „Speichern unter“ (`Strg+Shift+S`) fragt neu;
+  Exporte heißen `<Projektdatei> WoFl+BGF+BRI`, `<Projektdatei> GRZ+GFZ` bzw. `<Projektdatei> Kosten <Stufe>`
+  und landen vorgeschlagen im Ordner der Projektdatei
 - **GRZ/GFZ-Nachweis** als eigene App im selben Repository (`apps/grz`), die dieselbe Projektdatei öffnet –
   siehe [docs/grz-gfz.md](docs/grz-gfz.md)
 - **Massen- und Kostenermittlung nach DIN 276** als eigene App (`apps/kosten`): Mengen aus dem Projekt mit
@@ -71,7 +83,7 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 - **Projektdaten** (Projektcode, Adresse, Grundstück mit Gemarkung/Flur/Flurstück, Bauherr mit beliebig vielen
   E-Mail-Adressen und Telefonnummern) im Dialog; als Platzhalter für Excel-Vorlagen (`{{bauherr.name}}` …)
 - Rückgängig/Wiederholen, automatische Zwischenspeicherung (IndexedDB)
-- **Projektarchiv** `*.oap` bzw. `*.akhp` (gleiches Format, ZIP): Projekt, Planbilder, Dachmodell sowie die
+- **Projektarchiv** `*.oap` (ZIP): Projekt, Planbilder, Dachmodell sowie die
   Originaldateien der Importe (IFC, DXF, PDF) und die Excel-Vorlage – auf einem anderen Rechner vollständig
   wieder zu öffnen, inkl. IFC-Modell in der 3D-Ansicht. Ältere `*.flaeche.json` lassen sich weiter öffnen.
 
@@ -84,7 +96,11 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 | `Enter` | Polygon schließen bzw. Zahleneingabe übernehmen |
 | `Backspace` | letzten Punkt bzw. letzte Ziffer entfernen |
 | `Esc` | Abbrechen / Auswahl aufheben |
-| `Entf` | ausgewählte Fläche löschen |
+| `Entf` | ausgewählte Fläche(n) löschen |
+| `Shift`+Klick / `Shift`+Ziehen | Mehrfachauswahl / Auswahlrahmen |
+| `Strg+A` | alle Flächen des Geschosses wählen |
+| `Strg+S` / `Strg+Shift+S` / `Strg+O` | Speichern / Speichern unter / Öffnen |
+| `F1` | Nachschlagewerk der Berechnungsregeln |
 | `F` | alles zeigen |
 | `Strg+Z` / `Strg+Y` | Rückgängig / Wiederholen |
 | Mausrad / mittlere Maustaste / `Leertaste`+Ziehen | Zoomen / Verschieben |
@@ -95,7 +111,7 @@ Ein Repository mit npm-Workspaces, fünf Apps und einem gemeinsamen Unterbau:
 
 ```
 packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als @core/… eingebunden)
-  src/               Geometrie, Projektformat (.oap/.akhp), IFC-Import, Dachformen und Gauben, DIN-277-
+  src/               Geometrie, Projektformat (.oap), IFC-Import, Dachformen und Gauben, DIN-277-
                      Berechnung, Lageplan-Flächen
   src/excel/         Excel-Vorlagen-Engine (Platzhalter, Blöcke, Formeln), Vorlagenspeicher
   src/platform/      Speichern/Öffnen (Tauri-Dialog bzw. Download), web-ifc, Protokoll, Farbschema
@@ -109,7 +125,7 @@ apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Ve
 ```
 
 Jede App hat ihre eigene Tauri-Hülle (`apps/<app>/src-tauri`), eigenen Installer und eigene Releases.
-Flächenrechner, GRZ-Nachweis und Kostenermittlung öffnen dieselbe Projektdatei (`.oap`/`.akhp`): Der Flächenrechner liefert Gebäude, Geschosse und
+Flächenrechner, GRZ-Nachweis und Kostenermittlung öffnen dieselbe Projektdatei (`.oap`): Der Flächenrechner liefert Gebäude, Geschosse und
 Flächen, der GRZ-Nachweis pflegt Lageplan und Festsetzungen, die Kostenermittlung Positionen, Kennwerte und
 Kostenstände. Was eine App nicht kennt, bewahrt sie beim Speichern. Weil jede App mit ihrer eigenen
 Kopie arbeitet, liest sie beim Speichern die Zieldatei neu und führt zusammen (`packages/core/src/zusammenfuehren.ts`):

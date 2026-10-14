@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { computeProject } from '@core/calc';
 import { projectToCsv } from '../core/export';
-import { ARCHIV_ENDUNGEN, readProjectFile } from '@core/archive';
+import { readProjectFile } from '@core/archive';
 import { ProjectFormatError } from '@core/serialize';
-import { isTauri, pickFile, saveTextFile } from '@core/platform/files';
-import { projektSpeichern } from '@core/platform/projektDatei';
+import { isTauri, saveTextFile } from '@core/platform/files';
+import { exportDateiname, exportOrdner, projektDateiWaehlen, projektSpeichern } from '@core/platform/projektDatei';
 import { mitVorlage } from '../platform/vorlage';
 import type { Tool } from '../store/store';
 import { restoreIfcModel, useEditor } from '../store/store';
@@ -21,10 +21,6 @@ const TOOLS: { id: Tool; label: string; key: string; icon: string }[] = [
   { id: 'measure', label: 'Messen', key: 'M', icon: '📏' },
   { id: 'calibrate', label: 'Kalibrieren', key: '', icon: '⇔' },
 ];
-
-function safeFileName(name: string) {
-  return name.replace(/[\\/:*?"<>|]+/g, '_').trim() || 'Projekt';
-}
 
 export function Toolbar() {
   const tool = useEditor((s) => s.tool);
@@ -44,41 +40,58 @@ export function Toolbar() {
 
   const onOpen = async () => {
     if (!confirmDiscard()) return;
-    const f = await pickFile(`${ARCHIV_ENDUNGEN.map((e) => `.${e}`).join(',')},.json,application/json`);
-    if (!f) return;
+    let name = '';
     try {
-      const done = log.time(`Öffnen: ${f.name}`);
-      const p = readProjectFile(new Uint8Array(await f.arrayBuffer()));
-      st.loadProject(p, p);
-      done({ bytes: f.size, geschosse: p.storeys.length, dateien: p.dateien?.length ?? 0 });
+      const f = await projektDateiWaehlen({ datei: useEditor.getState().datei });
+      if (!f) return;
+      name = f.pfad ?? f.name;
+      const done = log.time(`Öffnen: ${name}`);
+      const p = readProjectFile(f.bytes);
+      st.loadProject(p, p, name);
+      done({ bytes: f.bytes.byteLength, geschosse: p.storeys.length, dateien: p.dateien?.length ?? 0 });
       void restoreIfcModel(p);
     } catch (e) {
-      log.error(`Öffnen fehlgeschlagen: ${f.name}`, e);
-      alert(e instanceof ProjectFormatError ? e.message : `Datei konnte nicht geladen werden: ${String(e)}`);
+      log.error(`Öffnen fehlgeschlagen: ${name}`, e);
+      alert(e instanceof ProjectFormatError ? e.message : `Datei konnte nicht geladen werden: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
-  const onSave = async () => {
-    const { project: p, basis } = useEditor.getState();
+  const onSave = async (unter = false) => {
+    const { project: p, basis, datei } = useEditor.getState();
     try {
-      const r = await projektSpeichern({ project: p, basis, app: __APP_VERSION__, filterName: 'Flächenprojekt', fuerDatei: mitVorlage });
-      if (r) {
-        // während des Dialogs weitergezeichnet? Dann bleibt der neue Stand ungespeichert.
-        if (useEditor.getState().project === p) useEditor.getState().markSaved(r.project);
-        log.info('Projekt gespeichert', { name: p.name, zusammengefuehrt: r.zusammengefuehrt });
-        if (r.zusammengefuehrt) alert('In der Datei standen Änderungen aus einer anderen App (z. B. GRZ-Nachweis oder Kostenermittlung). Sie wurden übernommen, nicht überschrieben.');
-      }
+      const r = await projektSpeichern({ project: p, basis, datei, unter, app: __APP_VERSION__, filterName: 'Flächenprojekt', fuerDatei: mitVorlage });
+      // während des Dialogs weitergezeichnet? Dann bleibt der neue Stand ungespeichert.
+      if (r && useEditor.getState().project === p) useEditor.getState().markSaved(r.project, r.datei);
+      else if (r) useEditor.setState({ datei: r.datei, basis: r.project });
     } catch (e) {
       log.error('Speichern fehlgeschlagen', e);
-      alert(`Speichern fehlgeschlagen: ${String(e)}`);
+      alert(`Speichern fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
+  // Strg+S / Strg+Umschalt+S / Strg+O
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === 's') {
+        e.preventDefault();
+        void onSave(e.shiftKey);
+      } else if (k === 'o') {
+        e.preventDefault();
+        void onOpen();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   const onCsv = async () => {
-    const p = useEditor.getState().project;
+    const { project: p, datei } = useEditor.getState();
     try {
       await saveTextFile({
-        defaultName: `${safeFileName(p.name)} Flächen.csv`,
+        defaultName: exportDateiname({ datei, projektName: p.name, zusatz: 'WoFl+BGF+BRI', endung: 'csv' }),
+        defaultDir: exportOrdner(datei),
         contents: projectToCsv(p, computeProject(p)),
         filterName: 'CSV (Excel)',
         extension: 'csv',
@@ -96,12 +109,17 @@ export function Toolbar() {
         <button onClick={onNew} title="Neues Projekt">
           Neu
         </button>
-        <button onClick={onOpen} title="Projekt öffnen">
+        <button onClick={() => void onOpen()} title="Projekt öffnen (Strg+O)">
           Öffnen
         </button>
-        <button onClick={onSave} title={isTauri() ? 'Projekt speichern' : 'Projekt als Datei herunterladen'}>
+        <button onClick={() => void onSave()} title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
           Speichern{dirty ? ' •' : ''}
         </button>
+        {isTauri() && (
+          <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
+            Speichern unter …
+          </button>
+        )}
         <button onClick={() => setIfcOpen(true)} title="Gebäudemodell aus Archicad, Revit & Co. importieren">
           IFC-Import
         </button>

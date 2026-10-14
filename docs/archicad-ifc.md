@@ -13,6 +13,41 @@ Graphisoft und lassen sich außerhalb von Archicad nicht lesen. Der verlässlich
 | Wände, Stützen, Fenster, Türen, Vorhangfassaden | Bauteilgeometrie | BGF-Außenumriss je Geschoss, exakt auf die Bauteilkanten eingepasst |
 | Dach, Dachdecken | `IfcRoof`, `IfcSlab` (ROOF) | Dachhaut für den BRI („Dach aus Modell“) |
 | gesamtes Modell | Bauteilgeometrie | Geschossschnitt (Standard 1,00 m über Fußboden) als hinterlegter Vektorplan je Geschoss |
+| Fußbodenhöhe der Zone | 3D-Geometrie der Zone | Höhenlage des Raums (Split-Level), wenn er mindestens 5 cm vom Geschossfußboden abweicht |
+| Bodenplatte | `IfcSlab` am Fußboden des untersten Geschosses (Oberseite höchstens 0,60 m darunter) | Bodenplatte (Sohle) des untersten Geschosses – der BRI zählt ab ihrer Unterseite |
+| Gelände, Lageplan-Bauteile | `IfcSite`, `IfcGeographicElement`, Bauteile des Lageplan-Geschosses | Lageplan-Flächen und Geländemodell (Höhenfeld) |
+| GlobalId | `IfcRoot.GlobalId` | Zuordnung beim erneuten Import („IFC aktualisieren“) |
+
+## Split-Level und Bodenplatte
+
+Die Fußbodenhöhe eines Geschosses ist das flächengewichtete Mittel (Median) der Zonenunterseiten. Liegt eine
+Zone mindestens 5 cm tiefer oder höher, erhält der Raum eine **Höhenlage** (z. B. −0,60 m); der Import
+meldet das. Im Flächenrechner lässt sich die Höhenlage auch von Hand eintragen – nach oben wie nach unten,
+für Räume und Umrisse.
+
+Der **BRI** reicht nach DIN 277 bis zur Unterseite der konstruktiven Bodenplatte. Die BGF steht dagegen auf
+OK Fußboden. Der Flächenrechner rechnet deshalb unter dem Geschossfußboden eigene BRI-Teilkörper:
+
+- **Bodenplatte:** Umriss des untersten Geschosses (bzw. der Teil eines Geschosses, unter dem kein anderes liegt)
+  × Dicke der Bodenplatte. Die Dicke wird aus den Platten unter dem untersten Geschoss erkannt und lässt sich je
+  Geschoss unter „Bodenplatte“ eintragen.
+- **Split-Level:** tiefer liegende Räume bzw. Umrisse mit ihrer Fläche × Versatz.
+
+Rechenweg, Excel (`{{bri.unterbau}}`) und 3D-Ansicht weisen diese Teile gesondert aus.
+
+## IFC aktualisieren
+
+Ein neuer Export desselben Modells lässt sich in ein bestehendes Projekt einlesen (Import-Dialog, Modus
+„aktualisieren“; im GRZ-Nachweis und in der Kostenermittlung „IFC aktualisieren …“). Archicad behält die
+GlobalIds von Geschossen, Zonen und Bauteilen über Exporte hinweg bei; darüber werden Geschosse, Räume und
+Lageplan-Flächen zugeordnet (Projekte aus älteren Importen über Nummer/Name bzw. Überdeckung, Umrisse über
+Überdeckung). Je Feld gilt:
+
+- unverändert seit dem letzten Import → neuer Wert aus dem IFC,
+- von Hand geändert → bleibt; hat sich auch der IFC-Wert geändert, meldet der Bericht einen Konflikt,
+- im IFC neu → wird angelegt; im IFC entfallen → wird entfernt, außer er wurde von Hand geändert (dann bleibt er und der Bericht nennt ihn).
+
+Die gespeicherte IFC-Datei im Projektarchiv wird durch die neue ersetzt.
 
 ## BGF-Umriss aus den Bauteilen
 
@@ -100,7 +135,7 @@ Raumflächen identisch mit den Archicad-Nettoflächen, Wohnfläche der Galerie i
 
 - Innenhöfe/Lichthöfe werden als Teil der BGF erkannt – bei Bedarf als Abzugsfläche ergänzen.
 - Balkone und auskragende Decken werden nicht automatisch als BGF (S) angelegt.
-- Der unterste Geschoss-BRI beginnt an der Fußbodenhöhe des Geschosses; die Bodenplatte bei Bedarf
-  über die Geschosshöhe berücksichtigen.
+- Die Bodenplatte wird nur erkannt, wenn sie als Platte unter dem untersten Geschoss exportiert wird; sonst
+  ihre Dicke unter „Bodenplatte“ eintragen.
 - Ein direkter Live-Abgleich mit dem laufenden Archicad (JSON-/Python-Schnittstelle) wäre möglich,
   ist aber noch nicht umgesetzt.
