@@ -1,3 +1,4 @@
+import { standNachSpeichern } from '@core/platform/projektDatei';
 import { create } from 'zustand';
 import type { Kosten, KostenPosition, Project } from '@core/model';
 import { createProject } from '@core/model';
@@ -28,7 +29,8 @@ interface KostenState {
   undo: () => void;
   redo: () => void;
   /** nach dem Speichern: Dateiname und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
-  markSaved: (datei: string, gespeichert: Project) => void;
+  /** nach dem Speichern: Datei, gespeichertes Projekt und der Stand, der gespeichert wurde */
+  markSaved: (datei: string, gespeichert: Project, vorher: Project) => void;
 }
 
 export const useKosten = create<KostenState>()((set, get) => ({
@@ -59,10 +61,11 @@ export const useKosten = create<KostenState>()((set, get) => ({
     if (!future.length) return;
     set({ project: future[0], past: [...past, project], future: future.slice(1), dirty: true });
   },
-  markSaved: (datei, gespeichert) => {
+  markSaved: (datei, gespeichert, vorher) => {
     // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
-    if (gespeichert !== get().project) set({ project: gespeichert, past: [], future: [] });
-    set({ dirty: false, datei, basis: gespeichert });
+    const n = standNachSpeichern(get().project, vorher, gespeichert);
+    if (n.verlaufVerwerfen) set({ past: [], future: [] });
+    set({ project: n.project, dirty: n.dirty, datei, basis: gespeichert });
   },
 }));
 

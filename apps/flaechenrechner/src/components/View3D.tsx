@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { computeProject } from '@core/calc';
+import { computeProject, raumBodenVersatz } from '@core/calc';
 import { disposeGroup, facesToGeometry, fitCamera, outlineFaces, prismaGeometrie, unterbauKoerper } from '@core/ui/three3d';
 import { fmt2 } from '@core/format';
 import { storeyElevations } from '@core/model';
@@ -123,7 +123,7 @@ export default function View3D() {
       for (const s of storey.shapes) {
         if (s.points.length < 3) continue;
         if (s.kind === 'outline') {
-          const faces = outlineFaces(s, project, elev[i], storey.hoehe);
+          const faces = outlineFaces(s, project, elev[i], storey.hoehe, storey);
           const color = s.subtract ? 0xc0392b : s.umschliessung === 'S' ? 0x2fa39a : 0x2a5bd7;
           const sel = s.id === selectedId;
           const geo = facesToGeometry(faces, z0);
@@ -167,7 +167,7 @@ export default function View3D() {
           const shape = new THREE.Shape(s.points.map((p) => new THREE.Vector2(p.x, p.y)));
           const geo = new THREE.ShapeGeometry(shape);
           geo.rotateX(Math.PI / 2); // (x, y, 0) → (x, 0, y)
-          geo.translate(0, z0 + (s.versatz ?? 0) + 0.02, 0);
+          geo.translate(0, z0 + raumBodenVersatz(s, storey) + 0.02, 0);
           const mat = new THREE.MeshStandardMaterial({
             color: s.subtract ? 0xc0392b : nutzungInfo(s.nutzung).color,
             side: THREE.DoubleSide,

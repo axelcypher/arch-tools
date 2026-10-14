@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useDeferredValue, useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import { LAGEPLAN_NUTZUNGEN, VERSIEGELUNGEN } from '@core/lageplan';
 import type { BauNVOFassung, BauOFassung, LageplanFlaeche, LageplanNutzung, MassNutzung, RoomShape, Versiegelung } from '@core/model';
@@ -22,7 +22,9 @@ export function GrzGfzView() {
   const selected = useGrz((s) => s.selected);
   const selectedIds = useGrz((s) => s.selectedIds);
   const [ansicht, setAnsicht] = useState<'plan' | '3d'>('plan');
-  const n = useMemo(() => massNachweis(project), [project]);
+  // Nachweis nachrangig rechnen: Ziehen und Tippen bleiben flüssig, die Kennzahlen folgen einen Augenblick später
+  const nachweisStand = useDeferredValue(project);
+  const n = useMemo(() => massNachweis(nachweisStand), [nachweisStand]);
   const m = project.massNutzung ?? {};
   const st = useGrz.getState();
   const setM = (patch: Partial<MassNutzung>) => st.update((p) => setMassNutzung(p, patch));

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useDeferredValue, useMemo } from 'react';
 import { computeProject, computeStorey, unterbau } from '@core/calc';
 import { fmt2 } from '@core/format';
 import { isSelfIntersecting, perimeter } from '@core/geometry';
@@ -106,7 +106,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
         label="Höhenlage Fußboden [m]"
         hint={
           shape.kind === 'room'
-            ? 'gegenüber dem Geschoss, negativ = tiefer (Split-Level). Ein tiefer liegender Raum vergrößert den BRI des Umrisses um Raumfläche × Absenkung.'
+            ? 'gegenüber dem Geschoss, negativ = tiefer (Split-Level); leer = auf dem Fußboden des Umrisses. Ein tiefer liegender Raum vergrößert den BRI um Raumfläche × Absenkung (wo kein Geschoss darunter liegt).'
             : 'gegenüber dem Geschoss, negativ = tiefer (Split-Level). Der Körper beginnt tiefer, seine Oberkante bleibt.'
         }
       >
@@ -467,8 +467,10 @@ function StoreyProperties() {
 }
 
 function Summary() {
-  const project = useEditor((s) => s.project);
-  const storey = useActiveStorey();
+  // nachrangig rechnen: beim Ziehen bleibt die Zeichenfläche flüssig, die Summen folgen einen Augenblick später
+  const project = useDeferredValue(useEditor((s) => s.project));
+  const activeId = useEditor((s) => s.activeStoreyId);
+  const storey = project.storeys.find((s) => s.id === activeId) ?? project.storeys[0];
   const sr = useMemo(() => computeStorey(storey, project), [storey, project]);
   const pr = useMemo(() => computeProject(project), [project]);
 

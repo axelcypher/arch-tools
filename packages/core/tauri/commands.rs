@@ -110,12 +110,31 @@ async fn write_binary_file(path: String, contents_base64: String) -> Result<(), 
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(contents_base64.as_bytes())
         .map_err(|e| format!("Ungültige Daten: {e}"))?;
-    std::fs::write(&path, &bytes).map_err(|e| {
+    write_atomic(std::path::Path::new(&path), &bytes).map_err(|e| {
         log::error!("Speichern fehlgeschlagen: {}: {}", path, e);
         format!("{}: {}", path, e)
     })?;
     log::info!("Gespeichert: {} ({} Bytes)", path, bytes.len());
     Ok(())
+}
+
+/// Schreibt erst in eine temporäre Datei daneben und ersetzt dann das Ziel – ein Abbruch (Absturz, Datenträger
+/// voll) hinterlässt nie eine halb geschriebene Projektdatei.
+fn write_atomic(path: &std::path::Path, contents: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let tmp = path.with_file_name(format!(".{name}.{}.tmp", std::process::id()));
+    let result = (|| {
+        let mut f = std::fs::File::create(&tmp)?;
+        f.write_all(contents)?;
+        f.sync_all()?;
+        drop(f);
+        std::fs::rename(&tmp, path)
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    result
 }
 
 fn save_bytes(
@@ -137,7 +156,7 @@ fn save_bytes(
         return Ok(None);
     };
     let path = file_path.into_path().map_err(|e| e.to_string())?;
-    std::fs::write(&path, contents).map_err(|e| {
+    write_atomic(&path, contents).map_err(|e| {
         log::error!("Speichern fehlgeschlagen: {}: {}", path.display(), e);
         format!("{}: {}", path.display(), e)
     })?;

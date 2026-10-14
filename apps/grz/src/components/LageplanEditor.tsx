@@ -1,3 +1,4 @@
+import { zeichenKuerzelErlaubt } from '@core/platform/eingabe';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Hilfslinie } from '@core/fang';
 import { achsBeschraenkt, achsRechteck, eckpunktHilfslinien, gebaeudeAchse, hilfslinienFang, zeichenHilfslinien } from '@core/fang';
@@ -6,7 +7,7 @@ import { bounds, pointInPolygon, polygonArea } from '@core/geometry';
 import { nutzungLabel, versiegelungInfo } from '@core/lageplan';
 import { createLageplanFlaeche } from '@core/model';
 import type { Nachweis } from '../massNutzung';
-import { addFlaeche, mapFlaeche, removeFlaeche, useGrz } from '../store';
+import { addFlaeche, auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapFlaeche, removeFlaeche, useGrz } from '../store';
 import type { Werkzeug } from '../store';
 
 interface Ausschnitt {
@@ -27,7 +28,7 @@ const WERKZEUGE: { id: Werkzeug; label: string; taste: string; hint: string }[] 
     id: 'auswahl',
     label: 'Auswahl',
     taste: 'V',
-    hint: 'Klicken: auswählen · Umschalt+Klick/-Rahmen: mehrere · Strg+A: alle · Ziehen: verschieben · Punkt ziehen: ändern · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: löschen',
+    hint: 'Klicken: auswählen · Umschalt+Klick/-Rahmen: mehrere · Strg+A: alle · Pfeiltasten: verschieben (Umschalt: 10 cm) · Strg+C/V/D: kopieren/einfügen/duplizieren · Ziehen: verschieben · Punkt ziehen: ändern (Umschalt während des Ziehens: entlang der Gebäudeachse) · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: löschen',
   },
   { id: 'polygon', label: 'Polygon', taste: 'P', hint: 'Klicken: nächster Punkt · Enter/Doppelklick/Startpunkt: schließen · Umschalt: entlang der Gebäudeachse · Rück: letzten Punkt löschen · Esc: abbrechen' },
   { id: 'rechteck', label: 'Rechteck', taste: 'R', hint: 'Erste Ecke setzen, dann Gegenecke klicken – ausgerichtet an der Gebäudeachse' },
@@ -104,7 +105,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
 
   const fangpunkte = useMemo(() => [...n.hauptanlagePolygone.flat(), ...flaechen.flatMap((f) => f.points)], [n.hauptanlagePolygone, flaechen]);
   // Gebäudeachse (genordete Pläne: Gebäude stehen schräg) für Hilfslinien, Umschalt und Rechtecke
-  const theta = useMemo(() => gebaeudeAchse([...n.hauptanlagePolygone, ...flaechen.map((f) => f.points)]), [n.hauptanlagePolygone, flaechen]);
+  // während des Ziehens fest – sonst drehte sich die Achse mit der gezogenen Kante
+  const thetaAktuell = useMemo(() => gebaeudeAchse([...n.hauptanlagePolygone, ...flaechen.map((f) => f.points)]), [n.hauptanlagePolygone, flaechen]);
+  const thetaFest = useRef(thetaAktuell);
+  if (!ziehen.current) thetaFest.current = thetaAktuell;
+  const theta = thetaFest.current;
   /**
    * Fang: nächster Punkt von Gebäude, Flächen und Entwurf im Fangradius, sonst Hilfslinien (Kantenverlängerung,
    * Gebäudeachsen); `ohne` wird übergangen (der gezogene Punkt). Alt schaltet den Fang aus.
@@ -294,15 +299,32 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   // Tastatur wie im Flächenrechner
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+      if (!zeichenKuerzelErlaubt(e)) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && werkzeug === 'auswahl') {
         e.preventDefault();
         st.selectMany(flaechen.map((f) => f.id));
         return;
       }
+      if ((e.ctrlKey || e.metaKey) && werkzeug === 'auswahl' && !e.shiftKey && !e.altKey) {
+        const k = e.key.toLowerCase();
+        if (k === 'c' && flaechenKopieren()) e.preventDefault();
+        else if (k === 'v' && flaechenEinfuegen()) e.preventDefault();
+        else if (k === 'd') {
+          e.preventDefault();
+          flaechenDuplizieren();
+        }
+        if (k === 'c' || k === 'v' || k === 'd') return;
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const sel = useGrz.getState().selectedIds;
+      // Pfeiltasten: Auswahl um 1 cm, mit Umschalt um 10 cm verschieben (Bildschirmrichtung)
+      if (werkzeug === 'auswahl' && !draft.length && e.key.startsWith('Arrow') && sel.length) {
+        e.preventDefault();
+        const schritt = e.shiftKey ? 0.1 : 0.01;
+        const r = { ArrowLeft: [-schritt, 0], ArrowRight: [schritt, 0], ArrowUp: [0, -schritt], ArrowDown: [0, schritt] }[e.key as 'ArrowLeft'];
+        if (r) auswahlVerschieben(r[0], r[1]);
+        return;
+      }
       switch (e.key) {
         case ' ':
           setLeertaste(true);

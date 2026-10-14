@@ -45,7 +45,9 @@ function usePendingCommit(commit: () => void) {
 
 /**
  * Zahleneingabe mit Dezimalkomma. Übernimmt den Wert bei Enter oder Fokusverlust,
- * damit nicht jeder Tastendruck einen Undo-Schritt erzeugt.
+ * damit nicht jeder Tastendruck einen Undo-Schritt erzeugt. Nur wirklich bearbeitete Eingaben werden
+ * übernommen – Hinein- und Herausklicken rundet keinen gespeicherten Wert auf die angezeigten Stellen.
+ * Esc verwirft die Eingabe.
  */
 export function NumberField({
   value,
@@ -70,10 +72,13 @@ export function NumberField({
   const [text, setText] = useState(format(value));
   const textRef = useRef(text);
   textRef.current = text;
+  const bearbeitet = useRef(false);
   useEffect(() => setText(format(value)), [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commit = () => {
     pending.done();
+    if (!bearbeitet.current) return;
+    bearbeitet.current = false;
     const text = textRef.current;
     const v = parseNum(text);
     if (v === null) {
@@ -99,11 +104,15 @@ export function NumberField({
       placeholder={placeholder}
       title={title}
       inputMode="decimal"
-      onChange={(e) => setText(e.target.value)}
+      onChange={(e) => {
+        bearbeitet.current = true;
+        setText(e.target.value);
+      }}
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
         if (e.key === 'Escape') {
+          bearbeitet.current = false;
           textRef.current = format(value);
           setText(textRef.current);
           (e.target as HTMLInputElement).blur();

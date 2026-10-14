@@ -47,6 +47,7 @@ interface ShapeBase {
    * Höhenlage des Fußbodens gegenüber dem Geschossfußboden in m (Split-Level): negativ = tiefer, positiv = höher.
    * Umriss: Der Körper beginnt um diesen Betrag tiefer bzw. höher, die Oberkante bleibt.
    * Raum: Ein tiefer liegender Raum vergrößert den BRI des Umrisses, in dem er liegt, um Raumfläche × Absenkung.
+   * Ohne Angabe liegt ein Raum auf dem Fußboden des Umrisses, in dem er liegt (bei abgesenktem Umriss also mit ihm).
    */
   versatz?: number;
   /** IFC-GlobalId der Quelle (Zone bzw. Geschoss) – für den erneuten Import */
@@ -317,6 +318,11 @@ export interface Project {
   dachModell?: DachModell;
   /** Geländeoberfläche aus dem Modell (IFC-Gelände, nach oben zeigende Dreiecke) – für die Geschossigkeit */
   gelaendeModell?: DachModell;
+  /**
+   * IFC-GlobalIds aus dem letzten Import (Geschosse, Räume, Lageplan-Flächen). Fehlt ein solches Element im
+   * Projekt, wurde es von Hand gelöscht – ein erneuter Import legt es dann nicht wieder an.
+   */
+  ifcBekannt?: string[];
   /** Originaldateien der Importe (IFC, DXF, PDF) und die Excel-Vorlage */
   dateien?: ProjektDatei[];
   /** Lageplan des Grundstücks (GRZ/GFZ-Nachweis) */

@@ -271,3 +271,45 @@ describe('Überlagerungen, Gelände am Hang, Split-Level', () => {
     expect(r.ergebnis).toBe('nein');
   });
 });
+
+describe('Gelände aus dem 3D-Modell', () => {
+  it('Hanglage aus dem Geländemodell: Gelände je Geschoss aus dem Höhenfeld, Mittel entlang der Wände', () => {
+    const p = haus('2020-01-01');
+    delete p.massNutzung!.gelaende;
+    // Gelände fällt in y-Richtung von 0,0 (y = 11,25) auf −3,0 (y = 0) und weiter
+    const z = (y: number) => -3 + (3 * y) / 11.25;
+    const tri: number[] = [];
+    for (let x = -10; x < 22; x += 2)
+      for (let y = -10; y < 22; y += 2) tri.push(x, y, z(y), x + 2, y, z(y), x + 2, y + 2, z(y + 2), x, y, z(y), x + 2, y + 2, z(y + 2), x, y + 2, z(y + 2));
+    p.gelaendeModell = { name: 'IFC-Gelände', triangles: tri };
+    const n = massNachweis(p);
+    const ug = n.geschosse.find((g) => g.name === 'UG')!;
+    expect(ug.gelaende.quelle).toBe('modell');
+    // Mittel entlang der Wände ≈ −1,5 (Gefälle über die Hauslänge), tiefster Punkt talseitig
+    expect(ug.gelaende.mittel).toBeCloseTo(-1.5, 1);
+    expect(ug.gelaende.min).toBeLessThan(-3);
+    // UG-Decke ±0,00 im Mittel 1,5 m über Gelände → nicht oberirdisch (≤ 1,60 m)
+    expect(ug.oberirdisch).toBe(false);
+  });
+});
+
+describe('Lageplan: Kopieren und Pfeiltasten', () => {
+  it('Duplizieren und Verschieben mit Pfeiltasten (ein Undo-Schritt)', async () => {
+    const { auswahlVerschieben, flaechenDuplizieren, useGrz } = await import('./store');
+    const p = haus();
+    lageplan(p, { ...flaeche(12, 0, 16, 5, { name: 'Zufahrt', nutzung: 'zufahrt' }), ifcId: 'G-1' });
+    useGrz.getState().load(p);
+    const id = p.lageplan!.flaechen[0].id;
+    useGrz.getState().select(id);
+    expect(flaechenDuplizieren()).toBe(1);
+    const fl = useGrz.getState().project.lageplan!.flaechen;
+    expect(fl).toHaveLength(2);
+    expect(fl[1].ifcId).toBeUndefined();
+    expect(fl[1].points[0]).toEqual({ x: 12.5, y: 0.5 });
+    const schritte = useGrz.getState().past.length;
+    auswahlVerschieben(0.1, 0);
+    auswahlVerschieben(0.1, 0);
+    expect(useGrz.getState().project.lageplan!.flaechen[1].points[0].x).toBeCloseTo(12.7, 9);
+    expect(useGrz.getState().past.length).toBe(schritte + 1);
+  });
+});

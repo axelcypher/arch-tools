@@ -1,5 +1,5 @@
 import { strToU8 } from 'fflate';
-import { ARCHIV_ENDUNGEN, writeArchive } from '@core/archive';
+import { ARCHIV_ENDUNG, writeArchive } from '@core/archive';
 import type { Dateisystem, Eintrag } from './dateisystem';
 import { nameAus } from './nummer';
 import type { Stammdaten } from './stammdaten';
@@ -124,7 +124,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
 
   if (struktur.flaechenprojekt.trim()) {
     let pfad = zielPfad(struktur.flaechenprojekt, werte);
-    if (pfad && !new RegExp(`\\.(${ARCHIV_ENDUNGEN.join('|')})$`, 'i').test(pfad)) pfad += `.${ARCHIV_ENDUNGEN[0]}`;
+    if (pfad && !new RegExp(`\\.${ARCHIV_ENDUNG}$`, 'i').test(pfad)) pfad += `.${ARCHIV_ENDUNG}`;
     if (pfad) datei(pfad, 'flaechen', async () => writeArchive(alsProject(s), { app: `Projektordner ${__APP_VERSION__}`, date }));
   }
 

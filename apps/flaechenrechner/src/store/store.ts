@@ -1,3 +1,4 @@
+import { standNachSpeichern } from '@core/platform/projektDatei';
 import { create } from 'zustand';
 import type { Point } from '@core/geometry';
 import type { Project, Shape, ShapeKind, Storey } from '@core/model';
@@ -77,7 +78,7 @@ interface EditorState {
   loadProject: (p: Project, basis?: Project | null, datei?: string | null) => void;
   newProject: () => void;
   /** nach dem Speichern: Datei und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
-  markSaved: (gespeichert: Project, datei: string) => void;
+  markSaved: (gespeichert: Project, datei: string, vorher: Project) => void;
 
   setActiveStorey: (id: string) => void;
   select: (id: string | null) => void;
@@ -172,10 +173,12 @@ export const useEditor = create<EditorState>((set, get) => {
       });
     },
     newProject: () => get().loadProject(createProject()),
-    markSaved: (gespeichert, datei) => {
-      // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
-      if (gespeichert !== get().project) set({ project: gespeichert, past: [], future: [] });
-      set({ basis: gespeichert, datei, dirty: false });
+    markSaved: (gespeichert, datei, vorher) => {
+      // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr;
+      // während des Speicherns weitergearbeitet: Änderungen aus der Datei in den aktuellen Stand übernehmen
+      const n = standNachSpeichern(get().project, vorher, gespeichert);
+      if (n.verlaufVerwerfen) set({ past: [], future: [] });
+      set({ project: n.project, basis: gespeichert, datei, dirty: n.dirty });
       fixSelection(set, get);
     },
 
@@ -243,12 +246,29 @@ export function useSelectedShape(): Shape | null {
 
 /* ---------- Reine Projekt-Transformationen ---------- */
 
+/** Geschoss ändern; ohne Änderung (oder unbekanntes Geschoss) bleibt das Projekt dasselbe Objekt – kein Undo-Schritt */
 export function mapStorey(p: Project, storeyId: string, fn: (s: Storey) => Storey): Project {
-  return { ...p, storeys: p.storeys.map((s) => (s.id === storeyId ? fn(s) : s)) };
+  let geaendert = false;
+  const storeys = p.storeys.map((s) => {
+    if (s.id !== storeyId) return s;
+    const n = fn(s);
+    if (n !== s) geaendert = true;
+    return n;
+  });
+  return geaendert ? { ...p, storeys } : p;
 }
 
 export function mapShape(p: Project, storeyId: string, shapeId: string, fn: (s: Shape) => Shape): Project {
-  return mapStorey(p, storeyId, (st) => ({ ...st, shapes: st.shapes.map((sh) => (sh.id === shapeId ? fn(sh) : sh)) }));
+  return mapStorey(p, storeyId, (st) => {
+    let geaendert = false;
+    const shapes = st.shapes.map((sh) => {
+      if (sh.id !== shapeId) return sh;
+      const n = fn(sh);
+      if (n !== sh) geaendert = true;
+      return n;
+    });
+    return geaendert ? { ...st, shapes } : st;
+  });
 }
 
 export function setShapePoints(p: Project, storeyId: string, shapeId: string, points: Point[]): Project {
@@ -408,3 +428,71 @@ useEditor.subscribe((s, prev) => {
       });
   }, 600);
 });
+
+/* ---------- Kopieren, Einfügen, Duplizieren, mit Pfeiltasten verschieben ---------- */
+
+/** Zwischenablage für Flächen (innerhalb der App; Geschoss der Quelle, um beim Einfügen zu versetzen) */
+let ablage: { storeyId: string; shapes: Shape[] } | null = null;
+
+function gewaehlteFlaechen(): { storey: Storey; shapes: Shape[] } {
+  const st = useEditor.getState();
+  const storey = st.project.storeys.find((s) => s.id === st.activeStoreyId) ?? st.project.storeys[0];
+  const ids = st.selectedIds.length ? st.selectedIds : st.selectedShapeId ? [st.selectedShapeId] : [];
+  return { storey, shapes: storey.shapes.filter((s) => ids.includes(s.id)) };
+}
+
+/** Kopie mit neuer Kennung, ohne IFC-Herkunft (eine Kopie ist kein Element des Modells), optional versetzt */
+function kopie(s: Shape, dx = 0, dy = 0): Shape {
+  const c = structuredClone(s);
+  c.id = newId(s.kind === 'room' ? 'room' : 'ol');
+  delete c.ifcId;
+  delete c.ifcStand;
+  c.points = c.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+  return c;
+}
+
+/** Gewählte Flächen in die Zwischenablage (Strg+C); liefert die Anzahl */
+export function flaechenKopieren(): number {
+  const { storey, shapes } = gewaehlteFlaechen();
+  if (!shapes.length) return 0;
+  ablage = { storeyId: storey.id, shapes: structuredClone(shapes) };
+  return shapes.length;
+}
+
+/** Ablage ins aktive Geschoss einfügen (Strg+V): in ein anderes Geschoss deckungsgleich, ins selbe um 0,50 m versetzt */
+export function flaechenEinfuegen(): number {
+  if (!ablage?.shapes.length) return 0;
+  const st = useEditor.getState();
+  const storey = st.project.storeys.find((s) => s.id === st.activeStoreyId) ?? st.project.storeys[0];
+  const d = storey.id === ablage.storeyId ? 0.5 : 0;
+  const neu = ablage.shapes.map((s) => kopie(s, d, d));
+  // mehrfaches Einfügen ins selbe Geschoss staffelt weiter
+  if (d) ablage = { storeyId: storey.id, shapes: neu.map((s) => structuredClone(s)) };
+  st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: [...s.shapes, ...neu] })));
+  st.selectMany(neu.map((s) => s.id));
+  return neu.length;
+}
+
+/** Gewählte Flächen duplizieren (Strg+D), um 0,50 m versetzt */
+export function flaechenDuplizieren(): number {
+  const { storey, shapes } = gewaehlteFlaechen();
+  if (!shapes.length) return 0;
+  const neu = shapes.map((s) => kopie(s, 0.5, 0.5));
+  const st = useEditor.getState();
+  st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: [...s.shapes, ...neu] })));
+  st.selectMany(neu.map((s) => s.id));
+  return neu.length;
+}
+
+/** Gewählte Flächen verschieben (Pfeiltasten) – zusammenhängende Schritte ergeben einen Undo-Schritt */
+let letzterSchritt = 0;
+export function auswahlVerschieben(dx: number, dy: number): void {
+  const { storey, shapes } = gewaehlteFlaechen();
+  if (!shapes.length) return;
+  const ids = new Set(shapes.map((s) => s.id));
+  const st = useEditor.getState();
+  const jetzt = Date.now();
+  if (jetzt - letzterSchritt > 800) st.checkpoint();
+  letzterSchritt = jetzt;
+  st.updateSilent((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.map((x) => (ids.has(x.id) ? { ...x, points: x.points.map((q) => ({ x: q.x + dx, y: q.y + dy })) } : x)) })));
+}

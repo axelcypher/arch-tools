@@ -24,6 +24,27 @@ export interface ProjektGespeichert {
   zusammengefuehrt: boolean;
 }
 
+/**
+ * Stand nach dem Speichern. `vorher` ist das Projekt, das gespeichert wurde, `gespeichert` das tatsächlich
+ * geschriebene (ggf. mit Änderungen anderer Apps), `aktuell` der Stand jetzt. Wurde während des Speicherns
+ * (Dialog, Schreiben) weitergearbeitet, werden die Änderungen aus der Datei in den aktuellen Stand übernommen –
+ * sonst würde das nächste Speichern sie mit dem älteren eigenen Stand wieder überschreiben.
+ */
+export function standNachSpeichern(aktuell: Project, vorher: Project, gespeichert: Project): { project: Project; dirty: boolean; verlaufVerwerfen: boolean } {
+  if (aktuell === vorher) return { project: gespeichert, dirty: false, verlaufVerwerfen: gespeichert !== aktuell };
+  if (gespeichert === vorher) return { project: aktuell, dirty: true, verlaufVerwerfen: false };
+  const project = zusammenfuehren(vorher, aktuell, gespeichert);
+  const neu = !gleich(project, aktuell);
+  return { project: neu ? project : aktuell, dirty: true, verlaufVerwerfen: neu };
+}
+
+let speichertGerade = false;
+
+/** Läuft gerade ein Speichervorgang? (ein zweites Strg+S wartet nicht, es wird ignoriert) */
+export function speichernLaeuft(): boolean {
+  return speichertGerade;
+}
+
 export function safeFileName(name: string) {
   return name.replace(/[\\/:*?"<>|]+/g, '_').trim() || 'Projekt';
 }
@@ -57,6 +78,20 @@ export async function projektSpeichern(o: {
   /** Ergänzungen nur für die Datei (z. B. die im Browser hinterlegte Excel-Vorlage) */
   fuerDatei?: (p: Project) => Project;
 }): Promise<ProjektGespeichert | null> {
+  // zweites Speichern während des ersten (Strg+S doppelt): würde die halb geschriebene Datei lesen
+  if (speichertGerade) {
+    log.info('Speichern läuft bereits – ignoriert');
+    return null;
+  }
+  speichertGerade = true;
+  try {
+    return await speichernIntern(o);
+  } finally {
+    speichertGerade = false;
+  }
+}
+
+async function speichernIntern(o: Parameters<typeof projektSpeichern>[0]): Promise<ProjektGespeichert | null> {
   const bisher = o.datei && /\.oap$/i.test(o.datei) ? o.datei : null;
   const vorschlag = bisher ? dateiname(bisher) : `${safeFileName(o.datei ? ohneEndung(dateiname(o.datei)) : o.project.name)}.${ARCHIV_ENDUNG}`;
   let project = o.project;

@@ -6,7 +6,8 @@ import { clipHalfPlane } from './roof';
 import type { IfcExtract, IfcMeshPart } from './ifcData';
 import type { DxfPolyline, IfcStand, Lageplan, LageplanFlaeche, Nutzungsgruppe, OutlineShape, Storey, VectorBackground } from './model';
 import { createLageplanFlaeche, createOutline, createProject, createRoom, createStorey } from './model';
-import { modellRoofParams } from './calc';
+import { modellRoofParams, sohlenPolygon } from './calc';
+import { inMP } from './polygon';
 import type { DachModell } from './roofMesh';
 import { meshRoofStats } from './roofMesh';
 import { dachAusModell } from './roofFit';
@@ -280,6 +281,23 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
     } else report.push('Keine Dachbauteile (IfcRoof, IfcSlab.ROOF) gefunden – Dachform bei Bedarf manuell wählen.');
   }
 
+  // Bodenplatte höherer Geschosse dort, wo kein Geschoss darunter liegt (nicht unterkellerter Anbau, Erker):
+  // Platte am Fußboden dieses Geschosses, deren Grundriss in diesem Teil liegt
+  if (o.outlines) {
+    const tmp = createProject('tmp');
+    tmp.storeys = storeys;
+    for (const st of storeys) {
+      if (st.sohle !== undefined || st.elevation === undefined) continue;
+      const frei = st.shapes.filter((s): s is OutlineShape => s.kind === 'outline' && !s.subtract).map((s) => sohlenPolygon(s, st, tmp)).flat();
+      if (!frei.length || storeys.indexOf(st) === 0) continue;
+      const d = sohlenDicke(x.elements, st.elevation, (p) => inMP(p, frei));
+      if (d !== undefined) {
+        st.sohle = d;
+        report.push(`${st.name}: Bodenplatte ${fmt(d, 3)} m unter dem nicht unterkellerten Teil – zählt dort zum BRI.`);
+      }
+    }
+  }
+
   const lageplan = lageplanAusIfc(x, lageplanIdx, storeys, report);
   // Stand der übernommenen Werte merken – für den Abgleich beim erneuten Import (ifcAbgleich.ts)
   for (const st of storeys) {
@@ -346,7 +364,7 @@ export function raumBoden(t: ArrayLike<number>): number | undefined {
  * Dicke der Bodenplatte unter dem untersten Geschoss: Abstand Fußboden (Geschosskote) bis Unterseite der
  * größten Decke/Bodenplatte, deren Oberseite in Höhe des Fußbodens liegt. Fundamente zählen nicht.
  */
-export function sohlenDicke(elements: IfcMeshPart[], fussboden: number): number | undefined {
+export function sohlenDicke(elements: IfcMeshPart[], fussboden: number, imBereich?: (p: Point) => boolean): number | undefined {
   let best: { flaeche: number; unten: number } | undefined;
   for (const e of elements) {
     if (e.type !== 'IFCSLAB' || e.predefinedType === 'ROOF' || e.predefinedType === 'LANDING') continue;
@@ -354,6 +372,17 @@ export function sohlenDicke(elements: IfcMeshPart[], fussboden: number): number 
     let unten = Infinity;
     let flaeche = 0;
     const t = e.tris;
+    // nur Platten, deren Mitte im gesuchten Bereich liegt (z. B. Teil ohne Geschoss darunter)
+    if (imBereich && t.length >= 9) {
+      let sx = 0;
+      let sy = 0;
+      const n = t.length / 3;
+      for (let i = 0; i < t.length; i += 3) {
+        sx += t[i];
+        sy += t[i + 1];
+      }
+      if (!imBereich({ x: sx / n, y: sy / n })) continue;
+    }
     for (let i = 0; i + 8 < t.length; i += 9) {
       oben = Math.max(oben, t[i + 2], t[i + 5], t[i + 8]);
       unten = Math.min(unten, t[i + 2], t[i + 5], t[i + 8]);

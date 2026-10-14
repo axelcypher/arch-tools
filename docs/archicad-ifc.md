@@ -20,7 +20,7 @@ Graphisoft und lassen sich außerhalb von Archicad nicht lesen. Der verlässlich
 
 ## Split-Level und Bodenplatte
 
-Die Fußbodenhöhe eines Geschosses ist das flächengewichtete Mittel (Median) der Zonenunterseiten. Liegt eine
+Die Fußbodenhöhe eines Geschosses ist der flächengewichtete Median der Zonenunterseiten (die Höhe, auf der der größere Teil der Zonenfläche liegt). Liegt eine
 Zone mindestens 5 cm tiefer oder höher, erhält der Raum eine **Höhenlage** (z. B. −0,60 m); der Import
 meldet das. Im Flächenrechner lässt sich die Höhenlage auch von Hand eintragen – nach oben wie nach unten,
 für Räume und Umrisse.

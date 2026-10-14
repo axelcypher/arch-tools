@@ -5,7 +5,7 @@ import { versiegelungInfo } from '@core/lageplan';
 import type { Project } from '@core/model';
 import { storeyElevations } from '@core/model';
 import { useTheme } from '@core/platform/theme';
-import { disposeGroup, facesToGeometry, fitCamera, outlineFaces, prismaGeometrie } from '@core/ui/three3d';
+import { disposeGroup, facesToGeometry, fitCamera, outlineFaces, prismaGeometrie, unterbauKoerper } from '@core/ui/three3d';
 import type { Nachweis } from '../massNutzung';
 import { useGrz } from '../store';
 
@@ -17,7 +17,17 @@ import { useGrz } from '../store';
  */
 export default function Gelaende3D({ project, n }: { project: Project; n: Nachweis }) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const three = useRef<{ renderer: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.PerspectiveCamera; controls: OrbitControls; content: THREE.Group; fitted: boolean } | null>(null);
+  const three = useRef<{
+    renderer: THREE.WebGLRenderer;
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    controls: OrbitControls;
+    content: THREE.Group;
+    fitted: boolean;
+    /** neu zeichnen (nur bei Änderungen – spart Rechenzeit und Akku) */
+    neu: () => void;
+  } | null>(null);
+  const [fehler, setFehler] = useState<string | null>(null);
   const dunkel = useTheme((s) => s.theme) === 'dunkel';
   const selectedIds = useGrz((s) => s.selectedIds);
   const [ebene, setEbene] = useState(true);
@@ -25,7 +35,13 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
 
   useEffect(() => {
     const host = hostRef.current!;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    } catch (e) {
+      setFehler(e instanceof Error ? e.message : String(e));
+      return;
+    }
     renderer.setPixelRatio(window.devicePixelRatio);
     host.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
@@ -39,26 +55,36 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
     scene.add(sun);
     const content = new THREE.Group();
     scene.add(content);
-    three.current = { renderer, scene, camera, controls, content, fitted: false };
+    let zeichnen = true;
+    const neu = () => {
+      zeichnen = true;
+    };
+    controls.addEventListener('change', neu);
+    three.current = { renderer, scene, camera, controls, content, fitted: false, neu };
     const resize = () => {
       const w = host.clientWidth;
       const h = host.clientHeight;
       renderer.setSize(w, h);
       camera.aspect = w / Math.max(h, 1);
       camera.updateProjectionMatrix();
+      zeichnen = true;
     };
     const ro = new ResizeObserver(resize);
     ro.observe(host);
     resize();
     let raf = 0;
     const loop = () => {
-      controls.update();
-      renderer.render(scene, camera);
+      // update() meldet Bewegung (auch das Ausrollen der Dämpfung); gezeichnet wird nur bei Änderungen
+      if (controls.update() || zeichnen) {
+        zeichnen = false;
+        renderer.render(scene, camera);
+      }
       raf = requestAnimationFrame(loop);
     };
     loop();
     return () => {
       cancelAnimationFrame(raf);
+      controls.removeEventListener('change', neu);
       ro.disconnect();
       controls.dispose();
       disposeGroup(content);
@@ -70,6 +96,7 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
 
   useEffect(() => {
     three.current?.renderer.setClearColor(dunkel ? 0x1a1d22 : 0xf4f5f7);
+    three.current?.neu();
   }, [dunkel]);
 
   useEffect(() => {
@@ -87,7 +114,7 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
         const farbe = g.vollgeschoss ? 0x2e9d58 : 0x8a8f99;
         for (const s of st.shapes) {
           if (s.kind !== 'outline' || s.points.length < 3) continue;
-          const geo = facesToGeometry(outlineFaces(s, project, elev[i], st.hoehe), elev[i]);
+          const geo = facesToGeometry(outlineFaces(s, project, elev[i], st.hoehe, st), elev[i]);
           const mat = new THREE.MeshStandardMaterial({
             color: s.subtract ? 0xc0392b : farbe,
             transparent: true,
@@ -100,6 +127,17 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
           mesh.renderOrder = 3;
           t.content.add(mesh);
           t.content.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 25), new THREE.LineBasicMaterial({ color: g.vollgeschoss ? 0x1d6b3b : 0x5b6068 })));
+          // unter dem Fußboden: abgesenkte Bereiche (Split-Level) und Bodenplatte – wie im BRI
+          if (s.subtract) continue;
+          for (const u of unterbauKoerper(s, st, project)) {
+            const ug = prismaGeometrie(u.polygone, elev[i] + u.unten, elev[i] + u.oben);
+            const um = new THREE.Mesh(
+              ug,
+              new THREE.MeshStandardMaterial({ color: u.art === 'sohle' ? 0x5b6068 : farbe, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false, roughness: 0.9 }),
+            );
+            um.renderOrder = 3;
+            t.content.add(um);
+          }
         }
       });
     }
@@ -162,7 +200,16 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
       fitCamera(t.camera, t.controls, box);
       t.fitted = true;
     }
+    t.neu();
   }, [project, n, ebene, gebaeude, selectedIds]);
+
+  if (fehler) {
+    return (
+      <div className="grz-3d">
+        <p className="muted grz-3d-fehler">3D-Ansicht nicht verfügbar: Dieser Rechner bzw. Browser unterstützt WebGL nicht ({fehler}). Der Nachweis ist davon nicht betroffen.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grz-3d">
@@ -183,6 +230,7 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
             if (!t) return;
             const box = new THREE.Box3().setFromObject(t.content);
             if (!box.isEmpty()) fitCamera(t.camera, t.controls, box);
+            t.neu();
           }}
         >
           ⤢ Alles

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { rectPoints } from './geometry';
 import type { IfcImportResult } from './ifcImport';
 import { ifcStandVon, LAGEPLAN_FELDER, RAUM_FELDER, STOCKWERK_FELDER, UMRISS_FELDER } from './ifcImport';
-import { ifcAbgleichen } from './ifcAbgleich';
+import { ifcAbgleichen, projektAusIfc } from './ifcAbgleich';
 import type { OutlineShape, RoomShape, Storey } from './model';
 import { createLageplanFlaeche, createOutline, createProject, createRoom, createStorey } from './model';
 
@@ -116,11 +116,17 @@ describe('IFC erneut importieren', () => {
 
   it('Projekte aus älteren Versionen (ohne GlobalId): Räume über Nummer und Name', () => {
     const p = projektAus(importErgebnis());
+    // Projekt eines älteren Imports: nirgends GlobalIds oder Vergleichsstände
+    delete p.storeys[0].ifcId;
+    delete p.storeys[0].ifcStand;
     for (const s of p.storeys[0].shapes) {
       delete s.ifcId;
       delete s.ifcStand;
     }
-    raum(p, undefined as never);
+    for (const f of p.lageplan?.flaechen ?? []) {
+      delete f.ifcId;
+      delete f.ifcStand;
+    }
     const w = p.storeys[0].shapes.find((s): s is RoomShape => s.kind === 'room' && s.name === 'Wohnen')!;
     w.nutzung = 'NUF2';
     const r = ifcAbgleichen(p, importErgebnis({ wohnenBreite: 6.5 }), alle);
@@ -131,5 +137,83 @@ describe('IFC erneut importieren', () => {
     expect(w2.ifcId).toBe('R-WOHNEN');
     expect(w2.nutzung).toBe('NUF2');
     expect(Math.max(...w2.points.map((q) => q.x))).toBeCloseTo(6.5, 9);
+  });
+
+  it('ohne Option „Wohnfläche“ bleibt die Wohnfläche unberührt, auch wenn sie aus einem früheren Import stammt', () => {
+    // erster Import mit Wohnfläche (Flächenrechner)
+    const erst = importErgebnis();
+    for (const sh of erst.storeys[0].shapes) {
+      if (sh.kind !== 'room') continue;
+      sh.wofl = { kategorie: 'voll', wohnung: 'Erdgeschoss' };
+      sh.ifcStand = ifcStandVon(sh, RAUM_FELDER);
+    }
+    const p = projektAusIfc('Haus', structuredClone(erst));
+    // erneuter Import ohne Wohnfläche (GRZ-Nachweis): Räume tragen keine Wohnfläche
+    const r = ifcAbgleichen(p, importErgebnis({ wohnenBreite: 6.5 }), { ...alle, wohnflaeche: false });
+    const w = raum(r.project, 'R-WOHNEN')!;
+    expect(w.wofl).toEqual({ kategorie: 'voll', wohnung: 'Erdgeschoss' });
+    expect(Math.max(...w.points.map((q) => q.x))).toBeCloseTo(6.5, 9);
+    // der Stand der Wohnfläche bleibt der des ersten Imports: ein späterer Import mit Wohnfläche gleicht weiter ab
+    expect(w.ifcStand?.wofl).toEqual({ kategorie: 'voll', wohnung: 'Erdgeschoss' });
+    expect(r.zaehler.konflikte).toBe(0);
+  });
+
+  it('von Hand gelöschte Elemente werden nicht wieder angelegt', () => {
+    const p = projektAusIfc('Haus', importErgebnis());
+    expect(p.ifcBekannt).toEqual(expect.arrayContaining(['ST-EG', 'R-WOHNEN', 'R-BAD', 'GEO-1/0']));
+    p.storeys[0].shapes = p.storeys[0].shapes.filter((s) => s.ifcId !== 'R-BAD');
+    p.lageplan = { flaechen: [] };
+    const r = ifcAbgleichen(p, importErgebnis(), alle);
+    expect(raum(r.project, 'R-BAD')).toBeUndefined();
+    expect(r.project.lageplan?.flaechen).toHaveLength(0);
+    expect(r.zaehler.uebersprungen).toBe(2);
+    expect(r.zaehler.neu).toBe(0);
+    // bleibt auch beim nächsten Abgleich gelöscht
+    const r2 = ifcAbgleichen(r.project, importErgebnis(), alle);
+    expect(raum(r2.project, 'R-BAD')).toBeUndefined();
+    expect(r2.zaehler.uebersprungen).toBe(2);
+  });
+
+  it('ein gelöschtes Geschoss kommt samt Räumen nicht wieder', () => {
+    const p = projektAusIfc('Haus', importErgebnis());
+    p.storeys = [];
+    const r = ifcAbgleichen(p, importErgebnis(), alle);
+    expect(r.project.storeys).toHaveLength(0);
+    expect(r.bericht.some((b) => b.includes('Geschoss „Erdgeschoss“ wurde von Hand gelöscht'))).toBe(true);
+  });
+});
+
+describe('IFC erneut importieren: Räume wechseln das Geschoss', () => {
+  it('ein in der IFC ins OG verschobener Raum wandert mit seinen Angaben von Hand mit – ohne Doppel', () => {
+    const erst = importErgebnis();
+    const og: Storey = { ...createStorey('Obergeschoss', 3), elevation: 3, ifcId: 'ST-OG' };
+    og.ifcStand = ifcStandVon(og, STOCKWERK_FELDER);
+    erst.storeys.push(og);
+    const p = projektAusIfc('Haus', structuredClone(erst));
+    const bad = raum(p, 'R-BAD')!;
+    bad.nutzung = 'NUF4';
+    // neuer Export: Bad liegt im OG
+    const neu = structuredClone(erst);
+    const b = neu.storeys[0].shapes.find((s) => s.ifcId === 'R-BAD')!;
+    neu.storeys[0].shapes = neu.storeys[0].shapes.filter((s) => s !== b);
+    neu.storeys[1].shapes.push(b);
+    const r = ifcAbgleichen(p, neu, alle);
+    const alleBaeder = r.project.storeys.flatMap((s) => s.shapes.filter((x) => x.ifcId === 'R-BAD').map((x) => ({ st: s.name, x })));
+    expect(alleBaeder).toHaveLength(1);
+    expect(alleBaeder[0].st).toBe('Obergeschoss');
+    expect((alleBaeder[0].x as RoomShape).nutzung).toBe('NUF4');
+    expect(alleBaeder[0].x.id).toBe(bad.id);
+  });
+});
+
+describe('IFC erneut importieren: von Hand Gezeichnetes', () => {
+  it('ein von Hand gezeichneter Umriss ohne Stand folgt nicht der IFC, auch wenn er sie überdeckt', () => {
+    const p = projektAusIfc('Haus', importErgebnis());
+    const eigen = createOutline(rectPoints({ x: 0, y: 0 }, { x: 10.2, y: 8 }));
+    // IFC-Umriss weg, eigener daneben
+    p.storeys[0].shapes = [...p.storeys[0].shapes.filter((s) => s.kind !== 'outline'), eigen];
+    const r = ifcAbgleichen(p, importErgebnis(), alle);
+    const e = r.project.storeys[0].shapes.find((s) => s.id === eigen.id)!;
+    expect(Math.max(...e.points.map((q) => q.x))).toBeCloseTo(10.2, 9);
   });
 });

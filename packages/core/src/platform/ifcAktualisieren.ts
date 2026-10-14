@@ -32,7 +32,7 @@ export async function ifcAktualisieren(
   const x = await loadIfc(f.bytes.slice(), o.onProgress);
   o.onProgress?.('Abgleich mit dem Projekt …');
   const r = buildFromIfc(x, o.optionen);
-  const a = ifcAbgleichen(p, r, { raeume: o.optionen.rooms, umrisse: o.optionen.outlines, modelle: o.optionen.roof, lageplan: true, plaene: false });
+  const a = ifcAbgleichen(p, r, { raeume: o.optionen.rooms, umrisse: o.optionen.outlines, modelle: o.optionen.roof, lageplan: true, plaene: false, wohnflaeche: o.optionen.wohnflaeche });
   log.info(`IFC abgeglichen: ${f.name}`, a.zaehler);
   return { project: ifcDateiErsetzen(a.project, f.name, f.bytes), bericht: a.bericht, extract: x };
 }

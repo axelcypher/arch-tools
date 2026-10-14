@@ -1,6 +1,7 @@
 import type { Point } from './geometry';
 import { pointInPolygon, polygonArea } from './geometry';
 import type { Project } from './model';
+import type { DachModell } from './roofMesh';
 import type { MultiPolygon } from './polygon';
 import { inMP } from './polygon';
 import { roofHeightField } from './roofMesh';
@@ -17,22 +18,7 @@ export function gelaendeHoeheFn(project: Project, bereich?: { minX: number; minY
     .map((f) => ({ f, a: polygonArea(f.points) }))
     .sort((a, b) => a.a - b.a)
     .map((x) => x.f);
-  let feld: ReturnType<typeof roofHeightField> | null = null;
-  if (m && m.triangles.length >= 9) {
-    // Höhenfeld nur über dem benötigten Bereich (mit Rand), Raster 10 cm
-    const b = bereich ?? dreieckBereich(m.triangles);
-    const rand = 2;
-    feld = roofHeightField(
-      m,
-      [
-        { x: b.minX - rand, y: b.minY - rand },
-        { x: b.maxX + rand, y: b.minY - rand },
-        { x: b.maxX + rand, y: b.maxY + rand },
-        { x: b.minX - rand, y: b.maxY + rand },
-      ],
-      0.1,
-    );
-  }
+  const feld = m && m.triangles.length >= 9 ? hoehenfeld(m, bereich ?? dreieckBereich(m.triangles)) : null;
   return (p) => {
     if (feld) {
       const i = Math.floor((p.x - feld.minX) / feld.res);
@@ -45,6 +31,38 @@ export function gelaendeHoeheFn(project: Project, bereich?: { minX: number; minY
     for (const f of flaechen) if (pointInPolygon(p, f.points)) return f.hoehe;
     return undefined;
   };
+}
+
+type Feld = ReturnType<typeof roofHeightField>;
+/** Höhenfelder je Geländemodell und Bereich – das Modell ist unveränderlich, das Raster teuer */
+const feldCache = new WeakMap<DachModell, Map<string, Feld>>();
+
+/** Höhenfeld nur über dem benötigten Bereich (mit Rand), Raster 10 cm */
+function hoehenfeld(m: DachModell, b: { minX: number; minY: number; maxX: number; maxY: number }): Feld {
+  const rand = 2;
+  const key = [b.minX, b.minY, b.maxX, b.maxY].map((v) => v.toFixed(2)).join(';');
+  let c = feldCache.get(m);
+  if (!c) {
+    c = new Map();
+    feldCache.set(m, c);
+  }
+  let feld = c.get(key);
+  if (!feld) {
+    feld = roofHeightField(
+      m,
+      [
+        { x: b.minX - rand, y: b.minY - rand },
+        { x: b.maxX + rand, y: b.minY - rand },
+        { x: b.maxX + rand, y: b.maxY + rand },
+        { x: b.minX - rand, y: b.maxY + rand },
+      ],
+      0.1,
+    );
+    // nur wenige Bereiche je Modell vorhalten (Gebäude wird verschoben/geändert)
+    if (c.size > 8) c.clear();
+    c.set(key, feld);
+  }
+  return feld;
 }
 
 function dreieckBereich(t: number[]) {

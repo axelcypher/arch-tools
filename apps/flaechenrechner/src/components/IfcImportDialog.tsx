@@ -4,9 +4,9 @@ import { fmt2 } from '@core/format';
 import type { IfcExtract } from '@core/ifcData';
 import type { IfcImportOptions } from '@core/ifcImport';
 import { buildFromIfc } from '@core/ifcImport';
-import { hatIfcHerkunft, ifcAbgleichen } from '@core/ifcAbgleich';
+import { hatIfcHerkunft, ifcAbgleichen, ifcHinzufuegen, projektAusIfc } from '@core/ifcAbgleich';
 import { ifcDateiErsetzen } from '@core/platform/ifcAktualisieren';
-import { addDatei, createProject } from '@core/model';
+import { addDatei } from '@core/model';
 import { pickFile } from '@core/platform/files';
 import { useEditor } from '../store/store';
 import { NumberField } from '@core/ui/fields';
@@ -64,7 +64,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
       const st = useEditor.getState();
       if (opts.modus === 'aktualisieren') {
         // Abgleich über die IFC-GlobalIds: Änderungen von Hand bleiben, das Modell wird ersetzt
-        const a = ifcAbgleichen(st.project, r, { raeume: opts.rooms, umrisse: opts.outlines, modelle: opts.roof, lageplan: true, plaene: !!opts.planSchnitthoehe });
+        const a = ifcAbgleichen(st.project, r, { raeume: opts.rooms, umrisse: opts.outlines, modelle: opts.roof, lageplan: true, plaene: !!opts.planSchnitthoehe, wohnflaeche: opts.wohnflaeche });
         st.update(() => {
           return original.current ? ifcDateiErsetzen(a.project, file, original.current) : a.project;
         });
@@ -79,22 +79,12 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
           setStep({ kind: 'options', x, file });
           return;
         }
-        const p = createProject(x.projectName || file.replace(/\.ifc$/i, ''));
-        p.storeys = r.storeys;
-        p.dachModell = r.dachModell;
-        if (r.gelaendeModell) p.gelaendeModell = r.gelaendeModell;
-        // Lageplan (Geschoss „Lageplan“, IFC-Gelände) für den GRZ/GFZ-Nachweis mitnehmen
-        if (r.lageplan) p.lageplan = r.lageplan;
+        // samt Lageplan (Geschoss „Lageplan“, IFC-Gelände) für den GRZ/GFZ-Nachweis
+        const p = projektAusIfc(x.projectName || file.replace(/\.ifc$/i, ''), r);
         st.loadProject(original.current ? addDatei(p, file, 'ifc', original.current).project : p);
       } else {
         st.update((p) => {
-          const next = {
-            ...p,
-            storeys: [...p.storeys, ...r.storeys],
-            dachModell: r.dachModell ?? p.dachModell,
-            gelaendeModell: r.gelaendeModell ?? p.gelaendeModell,
-            lageplan: r.lageplan ? { flaechen: [...(p.lageplan?.flaechen ?? []), ...r.lageplan.flaechen] } : p.lageplan,
-          };
+          const next = ifcHinzufuegen(p, r);
           return original.current ? addDatei(next, file, 'ifc', original.current).project : next;
         });
       }

@@ -1,6 +1,7 @@
+import { standNachSpeichern } from '@core/platform/projektDatei';
 import { create } from 'zustand';
 import type { LageplanFlaeche, MassNutzung, Project } from '@core/model';
-import { createProject } from '@core/model';
+import { createProject, newId } from '@core/model';
 import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 
@@ -31,17 +32,21 @@ interface GrzState {
 
   /** basis: Stand der Datei, aus der das Projekt stammt (null bei IFC-Import bzw. neuem Projekt) */
   load: (p: Project, datei?: string | null, basis?: Project | null) => void;
-  update: (fn: (p: Project) => Project) => void;
+  /** zusammenfassen: aufeinanderfolgende Änderungen mit gleichem Schlüssel (z. B. Pfeiltasten) = ein Undo-Schritt */
+  update: (fn: (p: Project) => Project, zusammenfassen?: string) => void;
   undo: () => void;
   redo: () => void;
   /** nach dem Speichern: Dateiname und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
-  markSaved: (datei: string, gespeichert: Project) => void;
+  /** nach dem Speichern: Datei, gespeichertes Projekt und der Stand, der gespeichert wurde */
+  markSaved: (datei: string, gespeichert: Project, vorher: Project) => void;
   select: (id: string | null) => void;
   /** Umschalt+Klick: Fläche zur Auswahl hinzufügen bzw. daraus entfernen */
   toggleSelect: (id: string) => void;
   selectMany: (ids: string[]) => void;
   setWerkzeug: (w: Werkzeug) => void;
 }
+
+let letzteAenderung: { schluessel?: string; zeit: number } = { zeit: 0 };
 
 export const useGrz = create<GrzState>()((set, get) => ({
   project: createProject('Neues Projekt'),
@@ -58,11 +63,14 @@ export const useGrz = create<GrzState>()((set, get) => ({
     log.info(`Projekt geladen: ${p.name}`, { geschosse: p.storeys.length, lageplan: p.lageplan?.flaechen.length ?? 0 });
     set({ project: p, datei, basis, dirty: false, past: [], future: [], selected: null, selectedIds: [], werkzeug: 'auswahl' });
   },
-  update: (fn) => {
+  update: (fn, zusammenfassen) => {
     const { project, past } = get();
     const next = fn(project);
     if (next === project) return;
-    set({ project: next, past: [...past, project].slice(-HISTORY), future: [], dirty: true });
+    const jetzt = Date.now();
+    const anschluss = zusammenfassen !== undefined && letzteAenderung.schluessel === zusammenfassen && jetzt - letzteAenderung.zeit < 800 && past.length > 0;
+    letzteAenderung = { schluessel: zusammenfassen, zeit: jetzt };
+    set({ project: next, past: anschluss ? past : [...past, project].slice(-HISTORY), future: [], dirty: true });
     auswahlBereinigen(set, get);
   },
   undo: () => {
@@ -77,10 +85,11 @@ export const useGrz = create<GrzState>()((set, get) => ({
     set({ project: future[0], past: [...past, project], future: future.slice(1), dirty: true });
     auswahlBereinigen(set, get);
   },
-  markSaved: (datei, gespeichert) => {
+  markSaved: (datei, gespeichert, vorher) => {
     // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
-    if (gespeichert !== get().project) set({ project: gespeichert, past: [], future: [] });
-    set({ dirty: false, datei, basis: gespeichert });
+    const n = standNachSpeichern(get().project, vorher, gespeichert);
+    if (n.verlaufVerwerfen) set({ past: [], future: [] });
+    set({ project: n.project, dirty: n.dirty, datei, basis: gespeichert });
   },
   select: (id) => set({ selected: id, selectedIds: id ? [id] : [] }),
   toggleSelect: (id) => {
@@ -168,4 +177,63 @@ if (typeof indexedDB !== 'undefined') {
         .catch(() => undefined);
     }, 600);
   });
+}
+
+/* ---------- Kopieren, Einfügen, Duplizieren, Pfeiltasten ---------- */
+
+let ablage: LageplanFlaeche[] = [];
+
+function gewaehlt(): LageplanFlaeche[] {
+  const st = useGrz.getState();
+  const ids = new Set(st.selectedIds.length ? st.selectedIds : st.selected ? [st.selected] : []);
+  return (st.project.lageplan?.flaechen ?? []).filter((f) => ids.has(f.id));
+}
+
+/** Kopie mit neuer Kennung und ohne IFC-Herkunft, versetzt */
+function kopie(f: LageplanFlaeche, d: number): LageplanFlaeche {
+  const c = structuredClone(f);
+  c.id = newId('lp');
+  delete c.ifcId;
+  delete c.ifcStand;
+  c.points = c.points.map((p) => ({ x: p.x + d, y: p.y + d }));
+  return c;
+}
+
+function einsetzen(neu: LageplanFlaeche[]) {
+  const st = useGrz.getState();
+  st.update((p) => ({ ...p, lageplan: { flaechen: [...(p.lageplan?.flaechen ?? []), ...neu] } }));
+  st.selectMany(neu.map((f) => f.id));
+}
+
+/** Strg+C */
+export function flaechenKopieren(): number {
+  ablage = structuredClone(gewaehlt());
+  return ablage.length;
+}
+
+/** Strg+V: um 0,50 m versetzt (mehrfaches Einfügen staffelt weiter) */
+export function flaechenEinfuegen(): number {
+  if (!ablage.length) return 0;
+  const neu = ablage.map((f) => kopie(f, 0.5));
+  ablage = structuredClone(neu);
+  einsetzen(neu);
+  return neu.length;
+}
+
+/** Strg+D */
+export function flaechenDuplizieren(): number {
+  const g = gewaehlt();
+  if (!g.length) return 0;
+  einsetzen(g.map((f) => kopie(f, 0.5)));
+  return g.length;
+}
+
+/** Pfeiltasten: Auswahl verschieben; zusammenhängende Schritte = ein Undo-Schritt */
+export function auswahlVerschieben(dx: number, dy: number): void {
+  const ids = new Set(gewaehlt().map((f) => f.id));
+  if (!ids.size) return;
+  useGrz.getState().update(
+    (p) => ({ ...p, lageplan: { flaechen: (p.lageplan?.flaechen ?? []).map((f) => (ids.has(f.id) ? { ...f, points: f.points.map((q) => ({ x: q.x + dx, y: q.y + dy })) } : f)) } }),
+    'pfeil',
+  );
 }

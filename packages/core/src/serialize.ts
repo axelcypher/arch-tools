@@ -87,6 +87,10 @@ export function parseProjectData(raw: unknown): Project {
   if (isObj(raw.dachModell) && Array.isArray(raw.dachModell.triangles)) {
     project.dachModell = { name: str(raw.dachModell.name, 'Modell'), triangles: raw.dachModell.triangles.filter((v): v is number => typeof v === 'number') };
   }
+  if (Array.isArray(raw.ifcBekannt)) {
+    const ids = raw.ifcBekannt.filter((v): v is string => typeof v === 'string' && v.length > 0);
+    if (ids.length) project.ifcBekannt = ids;
+  }
   if (isObj(raw.gelaendeModell) && Array.isArray(raw.gelaendeModell.triangles)) {
     project.gelaendeModell = { name: str(raw.gelaendeModell.name, 'Gelände'), triangles: raw.gelaendeModell.triangles.filter((v): v is number => typeof v === 'number') };
   }

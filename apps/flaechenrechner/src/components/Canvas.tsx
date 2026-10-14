@@ -1,3 +1,4 @@
+import { zeichenKuerzelErlaubt } from '@core/platform/eingabe';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Point } from '@core/geometry';
 import {
@@ -22,7 +23,7 @@ import { bgWorldBounds, scaleAround, vectorSegmentGrid } from '../core/backgroun
 import { detectRegion } from '@core/detect';
 import { SegmentGrid } from '@core/spatial';
 import { loadImage, rasterEdgeRefiner, rasterMaskProvider } from '../platform/rasterMask';
-import { mapStorey, nextRoomNumber, setShapePoints, useActiveStorey, useEditor } from '../store/store';
+import { auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapStorey, nextRoomNumber, setShapePoints, useActiveStorey, useEditor } from '../store/store';
 import { BackgroundLayer } from './BackgroundLayer';
 import { logger } from '@core/platform/log';
 
@@ -55,13 +56,6 @@ const EDGE_SNAP_PX = 7;
 const GUIDE_SNAP_PX = 8;
 
 
-function isTypingTarget(t: EventTarget | null) {
-  const el = t as HTMLElement | null;
-  if (!el) return false;
-  if (el.tagName === 'INPUT') return !['checkbox', 'radio', 'range', 'button'].includes((el as HTMLInputElement).type);
-  return el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable;
-}
-
 export function Canvas() {
   const storey = useActiveStorey();
   const project = useEditor((s) => s.project);
@@ -92,7 +86,11 @@ export function Canvas() {
   // Bearbeitungsgriffe nur bei genau einer gewählten Fläche
   const selected = selectedIds.length <= 1 ? (storey.shapes.find((s) => s.id === selectedId) ?? null) : null;
   // Gebäudeachse (genordete Pläne: Gebäude stehen schräg) – für Hilfslinien, Umschalt und Rechtecke
-  const theta = useMemo(() => gebaeudeAchse([...storey.shapes, ...(ghost?.shapes ?? [])].map((s) => s.points)), [storey.shapes, ghost]);
+  // Während des Ziehens bleibt sie fest – sonst drehte sich die Achse mit der gezogenen Kante unter dem Cursor.
+  const thetaAktuell = useMemo(() => gebaeudeAchse([...storey.shapes, ...(ghost?.shapes ?? [])].map((s) => s.points)), [storey.shapes, ghost]);
+  const thetaFest = useRef(thetaAktuell);
+  if (!drag.current) thetaFest.current = thetaAktuell;
+  const theta = thetaFest.current;
 
   const toScreen = useCallback((p: Point) => ({ x: p.x * vp.scale + vp.tx, y: p.y * vp.scale + vp.ty }), [vp]);
   const toWorld = useCallback((sx: number, sy: number) => ({ x: (sx - vp.tx) / vp.scale, y: (sy - vp.ty) / vp.scale }), [vp]);
@@ -329,7 +327,7 @@ export function Canvas() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target)) return;
+      if (!zeichenKuerzelErlaubt(e)) return;
       const st = useEditor.getState();
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key.toLowerCase() === 'z' && !e.shiftKey) {
@@ -349,7 +347,25 @@ export function Canvas() {
         st.selectMany(storey.shapes.filter((s) => (s.kind === 'outline' ? v.showOutlines : v.showRooms)).map((s) => s.id));
         return;
       }
+      if (ctrl && tool === 'select' && !e.shiftKey && !e.altKey) {
+        const k = e.key.toLowerCase();
+        if (k === 'c' && flaechenKopieren()) e.preventDefault();
+        else if (k === 'v' && flaechenEinfuegen()) e.preventDefault();
+        else if (k === 'd') {
+          e.preventDefault();
+          flaechenDuplizieren();
+        }
+        if (k === 'c' || k === 'v' || k === 'd') return;
+      }
       if (ctrl) return;
+      // Pfeiltasten: Auswahl um 1 cm, mit Umschalt um 10 cm verschieben (Bildschirmrichtung: y nach unten)
+      if (tool === 'select' && !draft.length && e.key.startsWith('Arrow') && (st.selectedIds.length || st.selectedShapeId)) {
+        e.preventDefault();
+        const schritt = e.shiftKey ? 0.1 : 0.01;
+        const [dx, dy] = { ArrowLeft: [-schritt, 0], ArrowRight: [schritt, 0], ArrowUp: [0, -schritt], ArrowDown: [0, schritt] }[e.key as 'ArrowLeft'] ?? [0, 0];
+        auswahlVerschieben(dx, dy);
+        return;
+      }
       if (e.key === ' ') {
         setSpaceDown(true);
         e.preventDefault();
@@ -841,8 +857,8 @@ export function Canvas() {
     case 'select':
       hint =
         selectedIds.length > 1
-          ? `${selectedIds.length} Flächen gewählt · Ziehen: alle verschieben · Umschalt+Klick: hinzufügen/entfernen · Entf: löschen · Esc: Auswahl aufheben`
-          : 'Klicken: auswählen · Umschalt+Klick/-Rahmen: mehrere · Ziehen: verschieben · Punkt ziehen: ändern (fängt an Kantenverlängerungen) · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen';
+          ? `${selectedIds.length} Flächen gewählt · Ziehen oder Pfeiltasten: alle verschieben (Umschalt während des Ziehens: entlang der Gebäudeachse) · Strg+C/D: kopieren/duplizieren · Umschalt+Klick: hinzufügen/entfernen · Entf: löschen · Esc: Auswahl aufheben`
+          : 'Klicken: auswählen · Pfeiltasten: verschieben (Umschalt: 10 cm) · Strg+C/V/D: kopieren/einfügen/duplizieren · Umschalt+Klick/-Rahmen: mehrere · Ziehen: verschieben · Punkt ziehen: ändern (fängt an Kantenverlängerungen; Umschalt während des Ziehens: entlang der Gebäudeachse) · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen';
       break;
     case 'polygon':
       hint = draft.length

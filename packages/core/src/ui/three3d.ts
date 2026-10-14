@@ -4,7 +4,7 @@ import { sohlenPolygon, unterbau } from '../calc';
 import type { Point } from '../geometry';
 import type { OutlineShape, Project, Storey } from '../model';
 import { modellSolidFaces } from '../modellSolid';
-import { polygoneOf } from '../polygon';
+import { intersectMP, polygoneOf, unionAll } from '../polygon';
 import type { Point3 } from '../roof';
 import { solidFaces } from '../roof';
 
@@ -15,10 +15,10 @@ import { solidFaces } from '../roof';
  */
 
 /** Körperflächen eines Umrisses; bei Dach aus Modell als Höhenfeld */
-export function outlineFaces(s: OutlineShape, project: Project, floorZ: number, storeyH: number) {
+export function outlineFaces(s: OutlineShape, project: Project, floorZ: number, storeyH: number, geschoss?: Storey) {
   const h = s.hoehe ?? storeyH;
   if (s.dach?.typ === 'modell' && project.dachModell) {
-    const storey = project.storeys.find((st) => st.shapes.includes(s));
+    const storey = geschoss ?? project.storeys.find((st) => st.shapes.includes(s));
     return modellSolidFaces(project, storey, s, floorZ);
   }
   return solidFaces(s.points, s.dach, h);
@@ -66,15 +66,16 @@ export interface UnterbauKoerper {
 export function unterbauKoerper(s: OutlineShape, storey: Storey, project: Project): UnterbauKoerper[] {
   const out: UnterbauKoerper[] = [];
   const v = s.versatz ?? 0;
-  const ganz = [{ aussen: s.points, loecher: [] as Point[][] }];
-  // ein höher liegender Fußboden verkleinert den Körper – das zeigt der Hauptkörper nicht; nur Absenkungen darstellen
-  if (v < 0) out.push({ art: 'versatz', polygone: ganz, unten: v, oben: 0 });
+  // wie im BRI nur dort, wo kein Geschoss darunter liegt (darüber steckt die Absenkung im Geschoss darunter)
+  const frei = sohlenPolygon(s, storey, project);
   for (const t of unterbau(s, storey, project)) {
-    if (t.art === 'absenkung' && t.raumId) {
+    // ein höher liegender Fußboden verkleinert den Körper – das zeigt der Hauptkörper nicht; nur Absenkungen darstellen
+    if (t.art === 'versatz' && v < 0) out.push({ art: 'versatz', polygone: polygoneOf(frei), unten: v, oben: 0 });
+    else if (t.art === 'absenkung' && t.raumId) {
       const r = storey.shapes.find((x) => x.id === t.raumId);
-      if (r) out.push({ art: 'absenkung', polygone: [{ aussen: r.points, loecher: [] }], unten: r.versatz ?? 0, oben: v });
+      if (r) out.push({ art: 'absenkung', polygone: polygoneOf(intersectMP(unionAll([r.points]), frei)), unten: r.versatz ?? 0, oben: v });
     } else if (t.art === 'sohle') {
-      const sp = polygoneOf(sohlenPolygon(s, storey, project));
+      const sp = polygoneOf(frei);
       const tiefe = Math.min(v, 0);
       if (sp.length) out.push({ art: 'sohle', polygone: sp, unten: tiefe - t.hoehe, oben: tiefe });
     }

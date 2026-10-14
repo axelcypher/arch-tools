@@ -2,7 +2,7 @@ import type { Point } from './geometry';
 import { distanceToEdges, labelPoint, pointInPolygon, polygonArea } from './geometry';
 import type { Nutzungsgruppe, OutlineShape, Project, Raumumschliessung, RoomShape, Storey, WoflKategorie } from './model';
 import type { MultiPolygon } from './polygon';
-import { areaMP, diffMP, unionAll } from './polygon';
+import { areaMP, diffMP, intersectMP, oeffnen, unionAll } from './polygon';
 import { roomArea, storeyElevations } from './model';
 import { gaubenVolumen } from './gaube';
 import { roofStats } from './roof';
@@ -148,33 +148,77 @@ export interface UnterbauTeil {
   raumId?: string;
 }
 
+/** Beschriftungspunkt je Punktliste (teuer; Punktlisten sind unveränderlich) */
+const labelCache = new WeakMap<readonly Point[], Point>();
+function labelVon(pts: readonly Point[]): Point {
+  let p = labelCache.get(pts);
+  if (!p) {
+    p = labelPoint(pts);
+    labelCache.set(pts, p);
+  }
+  return p;
+}
+
 /**
  * Rauminhalt unter dem Geschossfußboden eines BGF-Umrisses (DIN 277: BRI ab Unterseite der konstruktiven Sohle):
  *  - versatz:   der ganze Umriss liegt tiefer (höher) als das Geschoss → Fläche × Versatz
  *  - absenkung: Räume im Umriss liegen tiefer als dessen Fußboden (Split-Level) → Raumfläche (Polygon) × Absenkung
  *  - sohle:     Bodenplatte des Geschosses → Teil des Umrisses ohne Geschoss darunter × Sohlendicke
+ * Versatz und Absenkung zählen nur dort, wo kein Geschoss darunter liegt: Über einem Keller verschiebt ein tiefer
+ * liegender Fußboden nur die Grenze zwischen den Geschossen – der Rauminhalt steckt bereits im Geschoss darunter
+ * (es reicht bis zum Fußboden des Geschosses darüber).
  */
 export function unterbau(s: OutlineShape, storey: Storey, project: Project): UnterbauTeil[] {
   const out: UnterbauTeil[] = [];
-  const A = polygonArea(s.points);
   const v = s.versatz ?? 0;
-  if (Math.abs(v) > 1e-9) {
-    out.push({ art: 'versatz', bezeichnung: v < 0 ? 'Fußboden tiefer (Split-Level)' : 'Fußboden höher (Split-Level)', flaeche: A, hoehe: -v });
-  }
+  const absenkungen: { r: RoomShape; tiefe: number }[] = [];
   if (!s.subtract) {
     for (const r of storey.shapes) {
       if (r.kind !== 'room' || r.subtract || r.points.length < 3) continue;
-      const tiefe = v - (r.versatz ?? 0);
-      if (tiefe <= 1e-9 || !pointInPolygon(labelPoint(r.points), s.points)) continue;
-      out.push({ art: 'absenkung', bezeichnung: `Absenkung ${raumText(r)}`, flaeche: polygonArea(r.points), hoehe: tiefe, raumId: r.id });
+      // ohne eigene Höhenlage liegt der Raum auf dem Fußboden des Umrisses
+      const tiefe = v - (r.versatz ?? v);
+      if (tiefe <= 1e-9 || !pointInPolygon(labelVon(r.points), s.points)) continue;
+      absenkungen.push({ r, tiefe });
     }
   }
   const sohle = storey.sohle ?? 0;
-  if (sohle > 1e-9) {
-    const frei = sohlenFlaeche(s, storey, project);
-    if (frei > 1e-6) out.push({ art: 'sohle', bezeichnung: 'Bodenplatte (UK Sohle bis Fußboden)', flaeche: frei, hoehe: sohle });
+  if (Math.abs(v) <= 1e-9 && !absenkungen.length && sohle <= 1e-9) return out;
+  const frei = sohlenPolygon(s, storey, project);
+  const freiFlaeche = areaMP(frei);
+  if (Math.abs(v) > 1e-9 && freiFlaeche > 1e-6) {
+    out.push({ art: 'versatz', bezeichnung: v < 0 ? 'Fußboden tiefer (Split-Level)' : 'Fußboden höher (Split-Level)', flaeche: freiFlaeche, hoehe: -v });
   }
+  for (const { r, tiefe } of absenkungen) {
+    const f = freiFlaeche > 1e-6 ? flaecheImFreien(r.points, frei) : 0;
+    if (f > 1e-6) out.push({ art: 'absenkung', bezeichnung: `Absenkung ${raumText(r)}`, flaeche: f, hoehe: tiefe, raumId: r.id });
+  }
+  if (sohle > 1e-9 && freiFlaeche > 1e-6) out.push({ art: 'sohle', bezeichnung: 'Bodenplatte (UK Sohle bis Fußboden)', flaeche: freiFlaeche, hoehe: sohle });
   return out;
+}
+
+const freiCache = new WeakMap<readonly Point[], { frei: MultiPolygon; f: number }>();
+
+/** Höhenlage des Fußbodens eines Raums gegenüber dem Geschoss: eigene Angabe, sonst die des Umrisses, in dem er liegt */
+export function raumBodenVersatz(r: RoomShape, storey: Storey): number {
+  if (r.versatz !== undefined) return r.versatz;
+  if (r.points.length < 3) return 0;
+  const p = labelVon(r.points);
+  const o = storey.shapes.find((s): s is OutlineShape => s.kind === 'outline' && !s.subtract && pointInPolygon(p, s.points));
+  return o?.versatz ?? 0;
+}
+
+/** Teil eines Raums ohne Geschoss darunter (zwischengespeichert je Raumgeometrie und Bodenplatten-Grundriss) */
+function flaecheImFreien(pts: Point[], frei: MultiPolygon): number {
+  const c = freiCache.get(pts);
+  if (c && c.frei === frei) return c.f;
+  let f: number;
+  try {
+    f = areaMP(intersectMP(unionAll([pts]), frei));
+  } catch {
+    f = polygonArea(pts);
+  }
+  freiCache.set(pts, { frei, f });
+  return f;
 }
 
 function raumText(r: RoomShape) {
@@ -186,39 +230,49 @@ export function sohlenFlaeche(s: OutlineShape, storey: Storey, project: Project)
   return areaMP(sohlenPolygon(s, storey, project));
 }
 
+/**
+ * Zwischenspeicher je Umriss: Das Ergebnis hängt nur vom Umriss, seiner Fußbodenhöhe und den Umrissen des Geschosses
+ * darunter ab. Flächen und Flächenlisten sind unveränderlich – gleiche Objekte heißen gleicher Inhalt.
+ */
+const sohlenCache = new WeakMap<OutlineShape, { floorZ: number; unten: Storey['shapes'] | null; untenZ: number; mp: MultiPolygon }>();
+
 /** Grundriss der Bodenplatte unter einem Umriss (Teil ohne Geschoss darunter) – schmale Reststreifen entfallen */
 export function sohlenPolygon(s: OutlineShape, storey: Storey, project: Project): MultiPolygon {
   const elev = storeyElevations(project);
   const floorZ = elev[project.storeys.indexOf(storey)] ?? 0;
-  // nächstes Geschoss darunter (nach Höhe)
+  const below = geschossDarunter(elev, floorZ);
+  const unten = below < 0 ? null : project.storeys[below].shapes;
+  const untenZ = below < 0 ? 0 : elev[below];
+  const c = sohlenCache.get(s);
+  if (c && c.floorZ === floorZ && c.unten === unten && c.untenZ === untenZ) return c.mp;
+  const mp = sohlenPolygonRechnen(s, unten);
+  sohlenCache.set(s, { floorZ, unten, untenZ, mp });
+  return mp;
+}
+
+/** nächstes Geschoss darunter (nach Höhe), -1 wenn keins */
+function geschossDarunter(elev: number[], floorZ: number): number {
   let below = -1;
   elev.forEach((e, i) => {
     if (e < floorZ - 1e-6 && (below < 0 || e > elev[below])) below = i;
   });
+  return below;
+}
+
+function sohlenPolygonRechnen(s: OutlineShape, untenShapes: Storey['shapes'] | null): MultiPolygon {
   const ganz = unionAll([s.points]);
-  if (below < 0) return ganz;
-  const unten = project.storeys[below].shapes.filter((x): x is OutlineShape => x.kind === 'outline');
+  if (!untenShapes) return ganz;
+  const unten = untenShapes.filter((x): x is OutlineShape => x.kind === 'outline');
   const plus = unionAll(unten.filter((x) => !x.subtract).map((x) => x.points));
   if (!plus.length) return ganz;
   try {
     const decke = diffMP(plus, unionAll(unten.filter((x) => x.subtract).map((x) => x.points)));
-    const frei = diffMP(ganz, decke);
-    // schmale Streifen aus leicht abweichend gezeichneten Umrissen zählen nicht (≤ UMRISS_TOLERANZ breit)
-    return areaMP(frei) < sliverGrenze(s.points) ? [] : frei;
+    // schmale Streifen aus leicht abweichend gezeichneten Umrissen zählen nicht (≤ 2 · UMRISS_TOLERANZ breit),
+    // auch wenn sie an eine echte nicht unterkellerte Fläche anschließen
+    return oeffnen(diffMP(ganz, decke), UMRISS_TOLERANZ);
   } catch {
     return ganz;
   }
-}
-
-/** Fläche eines Randstreifens mit UMRISS_TOLERANZ Breite – darunter gilt eine Restfläche als Zeichenungenauigkeit */
-function sliverGrenze(pts: Point[]): number {
-  let u = 0;
-  for (let i = 0; i < pts.length; i++) {
-    const a = pts[i];
-    const b = pts[(i + 1) % pts.length];
-    u += Math.hypot(b.x - a.x, b.y - a.y);
-  }
-  return u * UMRISS_TOLERANZ;
 }
 
 /** Rauminhalt eines BGF-Umrisses (ohne Vorzeichen): Körper über dem Fußboden + Unterbau (Split-Level, Bodenplatte) */

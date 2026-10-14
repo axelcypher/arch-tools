@@ -1,7 +1,8 @@
 import { ARCHIV_ENDUNG, readProjectFile } from '@core/archive';
 import { buildFromIfc } from '@core/ifcImport';
+import { projektAusIfc } from '@core/ifcAbgleich';
 import type { Project } from '@core/model';
-import { addDatei, createProject } from '@core/model';
+import { addDatei } from '@core/model';
 import type { ProjektGespeichert } from '@core/platform/projektDatei';
 import { projektDateiWaehlen, projektSpeichern, safeFileName } from '@core/platform/projektDatei';
 import { ifcAktualisieren } from '@core/platform/ifcAktualisieren';
@@ -33,11 +34,7 @@ export async function oeffnen(onProgress?: (msg: string) => void, bisher?: strin
     const x = await loadIfc(bytes.slice(), onProgress);
     onProgress?.('Gebäude und Lageplan werden ermittelt …');
     const r = buildFromIfc(x, { rooms: true, outlines: true, roof: true, wohnflaeche: false, dachform: true });
-    let p = createProject(x.projectName || f.name.replace(/\.ifc$/i, ''));
-    p.storeys = r.storeys;
-    p.dachModell = r.dachModell;
-    if (r.gelaendeModell) p.gelaendeModell = r.gelaendeModell;
-    if (r.lageplan) p.lageplan = r.lageplan;
+    let p = projektAusIfc(x.projectName || f.name.replace(/\.ifc$/i, ''), r);
     p = addDatei(p, f.name, 'ifc', bytes).project;
     log.info(`IFC übernommen: ${f.name}`, r.report);
     // noch keine Projektdatei (basis null): „Speichern“ fragt nach – Vorschlag im Ordner der IFC-Datei

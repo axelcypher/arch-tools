@@ -53,6 +53,8 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 - **Hilfslinienfang** für schräg stehende (genordete) Gebäude: Verlängerungen der Nachbarkanten, Gebäudeachsen
   und Fluchten bestehender Eckpunkte; **Shift** hält die Linie auf der Gebäudeachse, Rechtecke richten sich an ihr aus
 - **Mehrfachauswahl**: Shift+Klick, Shift+Aufziehen, `Strg+A`; gemeinsam verschieben, löschen und gemeinsame Felder bearbeiten
+- **Kopieren, Einfügen, Duplizieren** (`Strg+C/V/D`) – auch in ein anderes Geschoss (Regelgeschosse) – und
+  Verschieben mit den Pfeiltasten (1 cm, mit Umschalt 10 cm)
 - **Höhenlage / Split-Level**: Räume und Umrisse lassen sich nach oben und unten versetzen; tiefer liegende Räume
   (aus IFC automatisch erkannt) und die Bodenplatte gehen als eigene Posten in den BRI ein
 - **IFC aktualisieren**: erneuter Import in ein bestehendes Projekt über die stabilen IFC-GlobalIds – von Hand
@@ -99,6 +101,8 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 | `Entf` | ausgewählte Fläche(n) löschen |
 | `Shift`+Klick / `Shift`+Ziehen | Mehrfachauswahl / Auswahlrahmen |
 | `Strg+A` | alle Flächen des Geschosses wählen |
+| `Strg+C` / `Strg+V` / `Strg+D` | Flächen kopieren / einfügen (in ein anderes Geschoss deckungsgleich) / duplizieren |
+| Pfeiltasten (`Umschalt`) | Auswahl um 1 cm (10 cm) verschieben |
 | `Strg+S` / `Strg+Shift+S` / `Strg+O` | Speichern / Speichern unter / Öffnen |
 | `F1` | Nachschlagewerk der Berechnungsregeln |
 | `F` | alles zeigen |

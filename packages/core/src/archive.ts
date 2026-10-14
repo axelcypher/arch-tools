@@ -22,8 +22,6 @@ export const ARCHIV_FORMAT = 'arch-flaechen-tool-archiv';
 export const ARCHIV_VERSION = 1;
 /** Dateiendung des Projektarchivs */
 export const ARCHIV_ENDUNG = 'oap';
-/** @deprecated nur noch eine Endung – ARCHIV_ENDUNG verwenden */
-export const ARCHIV_ENDUNGEN = [ARCHIV_ENDUNG] as const;
 
 const MANIFEST = 'manifest.json';
 const PROJEKT = 'projekt.json';

@@ -1,3 +1,4 @@
+import { eingabeAbschliessen } from '@core/platform/eingabe';
 import { useEffect, useState } from 'react';
 import { computeProject } from '@core/calc';
 import { projectToCsv } from '../core/export';
@@ -39,6 +40,7 @@ export function Toolbar() {
   };
 
   const onOpen = async () => {
+    eingabeAbschliessen();
     if (!confirmDiscard()) return;
     let name = '';
     try {
@@ -57,12 +59,12 @@ export function Toolbar() {
   };
 
   const onSave = async (unter = false) => {
+    eingabeAbschliessen();
     const { project: p, basis, datei } = useEditor.getState();
     try {
       const r = await projektSpeichern({ project: p, basis, datei, unter, app: __APP_VERSION__, filterName: 'Flächenprojekt', fuerDatei: mitVorlage });
-      // während des Dialogs weitergezeichnet? Dann bleibt der neue Stand ungespeichert.
-      if (r && useEditor.getState().project === p) useEditor.getState().markSaved(r.project, r.datei);
-      else if (r) useEditor.setState({ datei: r.datei, basis: r.project });
+      // während des Speicherns weitergezeichnet? Dann bleibt der neue Stand ungespeichert (mit den Änderungen aus der Datei).
+      if (r) useEditor.getState().markSaved(r.project, r.datei, p);
     } catch (e) {
       log.error('Speichern fehlgeschlagen', e);
       alert(`Speichern fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);

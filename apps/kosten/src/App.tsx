@@ -1,3 +1,4 @@
+import { eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { useEffect, useState } from 'react';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
@@ -42,6 +43,7 @@ export function App() {
   }, [name, dirty]);
 
   const onOpen = async () => {
+    eingabeAbschliessen();
     if (useKosten.getState().dirty && !window.confirm('Ungespeicherte Änderungen verwerfen?')) return;
     try {
       const r = await oeffnen(setBusy, useKosten.getState().datei);
@@ -74,13 +76,12 @@ export function App() {
   };
 
   const onSave = async (unter = false) => {
+    eingabeAbschliessen();
     const { project, datei, basis } = useKosten.getState();
     try {
       const r = await speichern(project, datei, basis, unter);
-      if (r) {
-        // während des Dialogs weitergearbeitet? Dann bleibt der neue Stand ungespeichert.
-        if (useKosten.getState().project === project) useKosten.getState().markSaved(r.datei, r.project);
-      }
+      // während des Speicherns weitergearbeitet? Dann bleibt der neue Stand ungespeichert (mit den Änderungen aus der Datei).
+      if (r) useKosten.getState().markSaved(r.datei, r.project, project);
     } catch (e) {
       log.error('Speichern fehlgeschlagen', e instanceof Error ? e.message : String(e));
       alert(`Speichern fehlgeschlagen: ${String(e)}`);
@@ -100,6 +101,8 @@ export function App() {
       } else if (k === 'p' && hatPositionen) {
         e.preventDefault();
         setDruckOpen(true);
+      } else if (istEingabeZiel(e.target) && (k === 'z' || k === 'y')) {
+        // im Feld: Rückgängig des Browsers für den Text
       } else if (k === 'z' && !e.shiftKey) {
         e.preventDefault();
         useKosten.getState().undo();

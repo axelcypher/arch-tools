@@ -473,7 +473,6 @@ export function massNachweis(project: Project): Nachweis {
 
   // Vollgeschossprüfung
   const pruefungen: VollgeschossPruefung[] = [];
-  let bezugDarunter = 0;
   geschosse.forEach(({ st, e }, idx) => {
     const gr = grundriss.get(st.id)!;
     const A = areaMP(gr);
@@ -481,12 +480,14 @@ export function massNachweis(project: Project): Nachweis {
     const decke = next ? next.e : e + st.hoehe;
     const gel = gelaendeVon(gr);
     const ueber = decke - gel.mittel;
-    const darunter = idx > 0 ? bezugDarunter : A;
-    bezugDarunter = A;
+    // Geschoss darunter: alle Geschosse der nächsttieferen Ebene (gleich hohe Geschosse nebeneinander zählen zusammen)
+    const tiefer = geschosse.filter((x) => x.e < e - 1e-6);
+    const eUnten = tiefer.length ? Math.max(...tiefer.map((x) => x.e)) : undefined;
+    const darunter = eUnten === undefined ? A : areaMP(unionMP(...tiefer.filter((x) => Math.abs(x.e - eUnten) < 1e-6).map((x) => grundriss.get(x.st.id)!)));
     // Höhenraster über dem Grundriss
     const samples = rasterHoehen(project, st, e, gr);
     const schraeg = samples.some((s) => s.schraeg);
-    const staffel = idx > 0 && A < darunter - 1 && !schraeg;
+    const staffel = eUnten !== undefined && A < darunter - 1 && !schraeg;
     const anteilVon = (soll: number, licht: boolean, bezug: number) => {
       const hoch = samples.filter((s) => (licht ? s.h - aufbau : s.h) >= soll - 1e-9).length * (samples[0]?.zelle ?? 0);
       return { hoch, anteil: bezug > 0 ? hoch / bezug : 0 };
@@ -735,11 +736,27 @@ export function massNachweis(project: Project): Nachweis {
 }
 
 /** Höhen über dem Grundriss eines Geschosses in einem Raster (Zellgröße je nach Fläche, mind. 10 cm) */
-function rasterHoehen(project: Project, st: Storey, floorZ: number, gr: MultiPolygon): { h: number; schraeg: boolean; zelle: number }[] {
+type Probe = { h: number; schraeg: boolean; zelle: number };
+/**
+ * Raster je Geschoss zwischenspeichern: Es hängt nur von den Geschossen (Liste unverändert = Inhalt unverändert),
+ * dem Dachmodell und der Fußbodenhöhe ab – Änderungen an Lageplan oder Festsetzungen rechnen es nicht neu.
+ */
+const rasterCache = new WeakMap<Storey, { storeys: Storey[]; dach: Project['dachModell']; floorZ: number; out: Probe[] }>();
+
+function rasterHoehen(project: Project, st: Storey, floorZ: number, gr: MultiPolygon): Probe[] {
+  const c = rasterCache.get(st);
+  if (c && c.storeys === project.storeys && c.dach === project.dachModell && c.floorZ === floorZ) return c.out;
+  const out = rasterRechnen(project, st, floorZ, gr);
+  rasterCache.set(st, { storeys: project.storeys, dach: project.dachModell, floorZ, out });
+  return out;
+}
+
+function rasterRechnen(project: Project, st: Storey, floorZ: number, gr: MultiPolygon): Probe[] {
   if (!gr.length) return [];
   const b = bounds(ringsOf(gr).flat());
-  const res = Math.max(0.1, Math.sqrt((b.maxX - b.minX) * (b.maxY - b.minY)) / 150);
-  const out: { h: number; schraeg: boolean; zelle: number }[] = [];
+  // etwa 120 × 120 Proben, mindestens 10 cm – genau genug für Flächenanteile von Prozent
+  const res = Math.max(0.1, Math.sqrt((b.maxX - b.minX) * (b.maxY - b.minY)) / 120);
+  const out: Probe[] = [];
   const hoehe = hoehenFunktion(project, st, floorZ);
   for (let y = b.minY + res / 2; y < b.maxY; y += res) {
     for (let x = b.minX + res / 2; x < b.maxX; x += res) {

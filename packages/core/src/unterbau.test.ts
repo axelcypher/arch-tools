@@ -49,7 +49,57 @@ describe('BRI unter dem Geschossfußboden', () => {
     const r = createRoom(rectPoints({ x: 1, y: 1 }, { x: 3, y: 3 }), '0.01', 'Lager');
     r.versatz = -0.5; // liegt auf dem Fußboden des Umrisses → keine weitere Absenkung
     eg.shapes.push(r);
-    expect(outlineVolume(ol as never, eg, p)).toBeCloseTo(112 * 3.5, 9);
+    // über dem Keller steckt die Absenkung schon im KG – nur der nicht unterkellerte Teil (4 × 8) wächst
+    expect(outlineVolume(ol as never, eg, p)).toBeCloseTo(112 * 3 + 32 * 0.5, 9);
+  });
+
+  it('Split-Level über einem Keller zählt nicht doppelt', () => {
+    const p = createProject();
+    const kg = createStorey('KG', 2.8);
+    const eg = createStorey('EG', 3);
+    kg.shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    eg.shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    const r = createRoom(rectPoints({ x: 1, y: 1 }, { x: 5, y: 5 }), '0.01', 'Wohnen');
+    r.versatz = -0.6;
+    eg.shapes.push(r);
+    p.storeys = [kg, eg];
+    expect(unterbau(eg.shapes[0] as never, eg, p)).toHaveLength(0);
+    expect(computeProject(p).total.bri.total).toBeCloseTo(80 * 2.8 + 80 * 3, 9);
+  });
+
+  it('Split-Level teils über dem Keller: nur der Teil ohne Geschoss darunter', () => {
+    const { p, eg } = haus();
+    const r = createRoom(rectPoints({ x: 8, y: 0 }, { x: 12, y: 8 }), '0.01', 'Wohnen');
+    r.versatz = -0.6;
+    eg.shapes.push(r);
+    const t = unterbau(eg.shapes[0] as never, eg, p);
+    expect(t).toHaveLength(1);
+    expect(t[0].flaeche).toBeCloseTo(2 * 8, 6);
+  });
+
+  it('kleiner, nicht unterkellerter Erker behält seine Bodenplatte; schmale Zeichenstreifen nicht', () => {
+    const p = createProject();
+    const kg = createStorey('KG', 2.8);
+    const eg = createStorey('EG', 3);
+    kg.shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 20, y: 12 })));
+    // EG 1 cm breiter gezeichnet als das KG, dazu ein 1 × 1 m Erker
+    eg.shapes.push(
+      createOutline([
+        { x: 0, y: 0 },
+        { x: 20.01, y: 0 },
+        { x: 20.01, y: 5 },
+        { x: 21, y: 5 },
+        { x: 21, y: 6 },
+        { x: 20.01, y: 6 },
+        { x: 20.01, y: 12 },
+        { x: 0, y: 12 },
+      ]),
+    );
+    eg.sohle = 0.3;
+    p.storeys = [kg, eg];
+    const t = unterbau(eg.shapes[0] as never, eg, p);
+    expect(t).toHaveLength(1);
+    expect(t[0].flaeche).toBeCloseTo(1, 2); // Erker 20,00–21,00 × 1 m ohne den Streifen daneben
   });
 
   it('höher liegender Umriss verkleinert den Körper', () => {
@@ -70,5 +120,18 @@ describe('BRI unter dem Geschossfußboden', () => {
     expect(rw.reduce((a, s) => a + s.volumen, 0)).toBeCloseTo(bri, 6);
     expect(rw.filter((s) => s.unterbau).map((s) => s.unterbau)).toEqual(['sohle', 'absenkung', 'sohle']);
     expect(briKoerper(p).reduce((a, k) => a + k.volumen, 0)).toBeCloseTo(bri, 6);
+  });
+});
+
+describe('Höhenlage von Räumen in abgesenkten Umrissen', () => {
+  it('ein Raum ohne eigene Höhenlage liegt auf dem Fußboden seines Umrisses', async () => {
+    const { raumBodenVersatz } = await import('./calc');
+    const { p, eg } = haus();
+    eg.shapes[0].versatz = -0.5;
+    const r = createRoom(rectPoints({ x: 11, y: 1 }, { x: 13, y: 3 }), '0.01', 'Lager');
+    eg.shapes.push(r);
+    expect(raumBodenVersatz(r, eg)).toBe(-0.5);
+    // keine zusätzliche Absenkung und kein Abzug: BRI nur aus dem abgesenkten Umriss
+    expect(unterbau(eg.shapes[0] as never, eg, p).map((t) => t.art)).toEqual(['versatz']);
   });
 });
