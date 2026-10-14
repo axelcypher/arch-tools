@@ -55,15 +55,21 @@ Weitere Regeln:
 
 - **Von Hand Gelöschtes bleibt gelöscht:** Das Projekt merkt sich die GlobalIds und BGF-Umrisse des letzten Imports.
   Was dort steht, im Projekt aber fehlt, wird nicht wieder angelegt (auch nach Teil-Importen, z. B. ohne Räume).
+  Ein von Hand neu gezeichneter Umriss an der Stelle eines gelöschten ersetzt diesen – die IFC-Fassung kommt nicht
+  dazu. Projekte, die vor Flächenrechner 0.12.0 importiert wurden, kennen ihre Umrisse noch nicht: Ein dort gelöschter
+  Umriss kommt beim ersten Abgleich einmal wieder. Gelöschtes zurückholen: Rückgängig (Strg+Z) oder neu importieren
+  (Modus „neu“).
+- **Kopierte Geschosse und Flächen** („Geschoss duplizieren“, Strg+C/V, Strg+D) tragen keine IFC-Herkunft. Steht
+  dieselbe GlobalId (aus älteren Versionen) mehrfach im Projekt, wird der Raum nicht verschoben, sondern gemeldet.
 - **Raum wechselt das Geschoss:** Liegt eine Zone in der IFC jetzt in einem anderen Geschoss, wandert der Raum mit –
   samt Nutzung, Wohnfläche und Bemerkung. Wurde das Zielgeschoss von Hand gelöscht, bleibt er, wo er war.
-- **Wohnfläche:** Nur wenn sie beim ersten Import abgeleitet wurde (Option „Wohnfläche“) und der neue Import sie
+- **Wohnfläche:** Der Abgleich leitet sie ab, wenn der bisherige Import es tat – unabhängig davon, in welcher App
+  er ausgeführt wird. Abgeglichen wird sie nur, wenn sie beim ersten Import abgeleitet wurde (Option „Wohnfläche“) und der neue Import sie
   ebenfalls ableitet, wird sie abgeglichen; sonst ist sie eine Angabe des Nutzers und bleibt unberührt. So setzt
   z. B. die Kostenermittlung keine geratenen Wohnflächen in ein Projekt, das ohne Wohnfläche importiert wurde.
 - **Projekte älterer Versionen** (ohne Vergleichsstand): Räume werden über Nummer und Name bzw. die Überdeckung
   zugeordnet, Umrisse über die Überdeckung; jedes so übernommene Feld steht im Bericht. In neueren Projekten
   bleiben Flächen ohne IFC-Herkunft (von Hand gezeichnet) immer unberührt.
-- **Kopien** (Strg+C/V, Strg+D) verlieren ihre IFC-Herkunft – sie sind eigene Flächen.
 
 Die gespeicherte IFC-Datei im Projektarchiv wird durch die neue ersetzt.
 

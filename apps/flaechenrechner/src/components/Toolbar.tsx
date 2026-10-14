@@ -5,7 +5,7 @@ import { projectToCsv } from '../core/export';
 import { readProjectFile } from '@core/archive';
 import { ProjectFormatError } from '@core/serialize';
 import { isTauri, saveTextFile } from '@core/platform/files';
-import { exportDateiname, exportOrdner, projektDateiWaehlen, projektSpeichern } from '@core/platform/projektDatei';
+import { exportDateiname, exportOrdner, projektDateiWaehlen, projektSpeichern, speichernAbwarten } from '@core/platform/projektDatei';
 import { mitVorlage } from '../platform/vorlage';
 import type { Tool } from '../store/store';
 import { restoreIfcModel, useEditor } from '../store/store';
@@ -60,6 +60,7 @@ export function Toolbar() {
 
   const onSave = async (unter = false) => {
     eingabeAbschliessen();
+    await speichernAbwarten(); // Strg+S während eines Speicherns: danach den aktuellen Stand speichern
     const { project: p, basis, datei, dokument } = useEditor.getState();
     try {
       const r = await projektSpeichern({ project: p, basis, datei, unter, app: __APP_VERSION__, filterName: 'Flächenprojekt', fuerDatei: mitVorlage });

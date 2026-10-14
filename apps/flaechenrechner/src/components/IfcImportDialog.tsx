@@ -4,7 +4,7 @@ import { fmt2 } from '@core/format';
 import type { IfcExtract } from '@core/ifcData';
 import type { IfcImportOptions } from '@core/ifcImport';
 import { buildFromIfc } from '@core/ifcImport';
-import { hatIfcHerkunft, ifcAbgleichen, ifcHinzufuegen, projektAusIfc } from '@core/ifcAbgleich';
+import { hatIfcHerkunft, ifcAbgleichen, ifcHinzufuegen, projektAusIfc, wohnflaecheAusProjekt } from '@core/ifcAbgleich';
 import { ifcDateiErsetzen } from '@core/platform/ifcAktualisieren';
 import { addDatei } from '@core/model';
 import { pickFile } from '@core/platform/files';
@@ -27,7 +27,8 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
     rooms: true,
     outlines: true,
     roof: true,
-    wohnflaeche: false,
+    // beim Abgleich wie beim bisherigen Import
+    wohnflaeche: wohnflaecheAusProjekt(useEditor.getState().project) ?? false,
     planSchnitthoehe: 1,
     dachform: true,
     modus: hatIfcHerkunft(useEditor.getState().project) ? 'aktualisieren' : 'neu',

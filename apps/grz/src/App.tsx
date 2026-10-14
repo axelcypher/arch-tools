@@ -1,3 +1,4 @@
+import { speichernAbwarten } from '@core/platform/projektDatei';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { useEffect, useState } from 'react';
 import { isTauri } from '@core/platform/files';
@@ -63,6 +64,7 @@ export function App() {
 
   const onSave = async (unter = false) => {
     eingabeAbschliessen();
+    await speichernAbwarten(); // Strg+S während eines Speicherns: danach den aktuellen Stand speichern
     const { project, datei, basis, dokument } = useGrz.getState();
     try {
       const r = await speichern(project, datei, basis, unter);

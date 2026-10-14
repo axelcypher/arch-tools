@@ -1,4 +1,5 @@
 import type { AreaTotals, ProjectResult } from '@core/calc';
+import { raumBodenVersatz } from '@core/calc';
 import { polygonArea } from '@core/geometry';
 import type { Project } from '@core/model';
 import { istDachgeschoss } from '@core/model';
@@ -78,7 +79,12 @@ export function buildExportContext(project: Project, result: ProjectResult, date
         flaeche: r2(r.area),
         flaeche_roh: r2(roh),
         putzabzug: sh?.kind === 'room' && sh.putzabzug ? sh.putzabzug : '',
-        hoehenlage: sh?.versatz ? r3(sh.versatz) : '',
+        hoehenlage: (() => {
+          // auch die vom Umriss geerbte Höhenlage; leer auf Geschossniveau
+          const st = project.storeys.find((x) => x.id === s.storeyId);
+          const v = sh?.kind === 'room' && st ? raumBodenVersatz(sh, st) : 0;
+          return v ? r3(v) : '';
+        })(),
         wohnflaeche: wofl ? 'ja' : '',
         wofl_kategorie: wofl ? (WOFL_KATEGORIEN.find((k) => k.id === r.woflKategorie)?.label ?? '') : '',
         wofl_faktor: wofl ? r2(r.woflFaktor) : '',

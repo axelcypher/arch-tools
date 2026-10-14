@@ -317,8 +317,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const sel = useGrz.getState().selectedIds;
-      // Tab / Umschalt+Tab: nächste bzw. vorige Fläche (nur, wenn kein Bedienelement den Fokus hat)
-      if (e.key === 'Tab' && werkzeug === 'auswahl' && !draft.length && flaechen.length && (document.activeElement === document.body || document.activeElement === null)) {
+      // Tab / Umschalt+Tab: nächste bzw. vorige Fläche (nur, wenn der Lageplan den Fokus hat)
+      if (e.key === 'Tab' && werkzeug === 'auswahl' && !draft.length && flaechen.length && document.activeElement === svgRef.current) {
         e.preventDefault();
         const i = flaechen.findIndex((f) => f.id === useGrz.getState().selected);
         const n = i < 0 ? (e.shiftKey ? flaechen.length - 1 : 0) : (i + (e.shiftKey ? -1 : 1) + flaechen.length) % flaechen.length;
@@ -408,6 +408,10 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         onClick={onClick}
         onDoubleClick={onDoubleClick}
         onPointerDown={onPointerDown}
+        // fokussierbar: Tab wählt dann die nächste Fläche; sonst bleibt Tab die normale Bedienung der Oberfläche
+        tabIndex={0}
+        aria-label="Lageplan"
+        onPointerDownCapture={() => svgRef.current?.focus({ preventScroll: true })}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={() => setCursor(null)}

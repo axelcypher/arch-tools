@@ -1,7 +1,7 @@
 import type { IfcExtract } from '../ifcData';
 import type { IfcImportOptions } from '../ifcImport';
 import { buildFromIfc } from '../ifcImport';
-import { ifcAbgleichen } from '../ifcAbgleich';
+import { ifcAbgleichen, wohnflaecheAusProjekt } from '../ifcAbgleich';
 import type { Project } from '../model';
 import { addDatei } from '../model';
 import { openFileWithPath, ordnerVon } from './files';
@@ -31,8 +31,10 @@ export async function ifcAktualisieren(
   const { loadIfc } = await import('./ifc');
   const x = await loadIfc(f.bytes.slice(), o.onProgress);
   o.onProgress?.('Abgleich mit dem Projekt …');
-  const r = buildFromIfc(x, o.optionen);
-  const a = ifcAbgleichen(p, r, { raeume: o.optionen.rooms, umrisse: o.optionen.outlines, modelle: o.optionen.roof, lageplan: true, plaene: false, wohnflaeche: o.optionen.wohnflaeche });
+  // Wohnfläche wie beim bisherigen Import (sonst entschiede die App, die den Abgleich ausführt)
+  const optionen = { ...o.optionen, wohnflaeche: wohnflaecheAusProjekt(p) ?? o.optionen.wohnflaeche };
+  const r = buildFromIfc(x, optionen);
+  const a = ifcAbgleichen(p, r, { raeume: optionen.rooms, umrisse: optionen.outlines, modelle: optionen.roof, lageplan: true, plaene: false, wohnflaeche: optionen.wohnflaeche });
   log.info(`IFC abgeglichen: ${f.name}`, a.zaehler);
   return { project: ifcDateiErsetzen(a.project, f.name, f.bytes), bericht: a.bericht, extract: x };
 }

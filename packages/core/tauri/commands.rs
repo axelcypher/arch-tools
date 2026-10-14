@@ -110,11 +110,17 @@ async fn write_binary_file(path: String, contents_base64: String) -> Result<(), 
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(contents_base64.as_bytes())
         .map_err(|e| format!("Ungültige Daten: {e}"))?;
-    write_atomic(std::path::Path::new(&path), &bytes).map_err(|e| {
-        log::error!("Speichern fehlgeschlagen: {}: {}", path, e);
-        format!("{}: {}", path, e)
-    })?;
-    log::info!("Gespeichert: {} ({} Bytes)", path, bytes.len());
+    // Schreiben (mit möglichen Wiederholungen) nicht im asynchronen Befehl blockieren
+    let ziel = path.clone();
+    let laenge = bytes.len();
+    tauri::async_runtime::spawn_blocking(move || write_atomic(std::path::Path::new(&ziel), &bytes))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| {
+            log::error!("Speichern fehlgeschlagen: {}: {}", path, e);
+            format!("{}: {}", path, e)
+        })?;
+    log::info!("Gespeichert: {} ({} Bytes)", path, laenge);
     Ok(())
 }
 
@@ -134,7 +140,8 @@ fn write_atomic(path: &std::path::Path, contents: &[u8]) -> std::io::Result<()> 
         loop {
             match std::fs::rename(&tmp, path) {
                 Ok(()) => return Ok(()),
-                Err(e) if versuch < 5 && e.kind() == std::io::ErrorKind::PermissionDenied => {
+                // Zugriff verweigert bzw. Freigabe-/Sperrverletzung (Windows-Fehler 32 und 33)
+                Err(e) if versuch < 5 && (e.kind() == std::io::ErrorKind::PermissionDenied || matches!(e.raw_os_error(), Some(32) | Some(33))) => {
                     versuch += 1;
                     std::thread::sleep(std::time::Duration::from_millis(100 * versuch));
                 }

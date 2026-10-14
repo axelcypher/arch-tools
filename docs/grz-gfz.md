@@ -75,7 +75,8 @@ Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Ein
 - **Mehrfachauswahl:** Shift+Klick nimmt Flächen hinzu bzw. heraus, Shift+Ziehen auf freier Fläche zieht einen
   Auswahlrahmen auf, Strg+A wählt alle. Mehrere Flächen werden gemeinsam verschoben, gelöscht und in Nutzung,
   Versiegelung, Nachbar und Höhe gemeinsam bearbeitet. Strg+C/V/D kopiert, fügt ein bzw. dupliziert (um 0,50 m
-  versetzt), die Pfeiltasten verschieben die Auswahl um 1 cm (mit Umschalt 10 cm).
+  versetzt), die Pfeiltasten verschieben die Auswahl um 1 cm (mit Umschalt 10 cm). Nach einem Klick in den Lageplan
+  wählt Tab bzw. Umschalt+Tab die nächste bzw. vorige Fläche.
 - **Hilfslinienfang:** Beim Zeichnen und Punkteziehen fängt der Cursor auf den Verlängerungen der Nachbarkanten,
   den Achsen des (genordet schräg stehenden) Gebäudes und den Fluchten vorhandener Eckpunkte. Shift hält die
   Linie auf der Gebäudeachse, Rechtecke richten sich an ihr aus. Alt schaltet den Fang aus.

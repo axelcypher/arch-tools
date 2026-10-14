@@ -290,7 +290,10 @@ export function addStorey(p: Project, name: string): { project: Project; id: str
   return { project: { ...p, storeys: [...p.storeys, st] }, id: st.id };
 }
 
-/** Kopiert ein Geschoss inkl. aller Flächen (neue IDs), z. B. für Regelgeschosse. */
+/**
+ * Kopiert ein Geschoss inkl. aller Flächen (neue IDs), z. B. für Regelgeschosse. Die Kopie ist kein Element des
+ * IFC-Modells: ohne GlobalId und Vergleichsstand – sonst hielte ein späterer Abgleich sie für das Original.
+ */
 export function duplicateStorey(p: Project, storeyId: string): { project: Project; id: string } {
   const idx = p.storeys.findIndex((s) => s.id === storeyId);
   if (idx < 0) return { project: p, id: storeyId };
@@ -300,7 +303,14 @@ export function duplicateStorey(p: Project, storeyId: string): { project: Projec
     id: newId('st'),
     name: `${src.name} (Kopie)`,
   };
-  copy.shapes = copy.shapes.map((s) => ({ ...s, id: newId('sh') }));
+  delete copy.ifcId;
+  delete copy.ifcStand;
+  copy.shapes = copy.shapes.map((s) => {
+    const { ifcId: _id, ifcStand: _stand, ...rest } = s;
+    void _id;
+    void _stand;
+    return { ...rest, id: newId('sh') } as Shape;
+  });
   const storeys = [...p.storeys];
   storeys.splice(idx + 1, 0, copy);
   return { project: { ...p, storeys }, id: copy.id };

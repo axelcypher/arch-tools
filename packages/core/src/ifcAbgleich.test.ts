@@ -290,3 +290,46 @@ describe('IFC erneut importieren: Raum wandert in ein gelöschtes Geschoss', () 
     expect(r.bericht.some((x) => x.includes('bleibt im bisherigen Geschoss'))).toBe(true);
   });
 });
+
+describe('IFC erneut importieren: Umriss gelöscht und neu gezeichnet, kopierte Geschosse', () => {
+  it('ein von Hand neu gezeichneter Umriss ersetzt den gelöschten – die IFC-Fassung kommt nicht dazu', () => {
+    const p = projektAusIfc('Haus', importErgebnis());
+    const eigen = createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 7.6 }));
+    p.storeys[0].shapes = [...p.storeys[0].shapes.filter((s) => s.kind !== 'outline'), eigen];
+    const r = ifcAbgleichen(p, importErgebnis(), alle);
+    const umrisse = r.project.storeys[0].shapes.filter((s) => s.kind === 'outline');
+    expect(umrisse.map((u) => u.id)).toEqual([eigen.id]);
+  });
+
+  it('Räume mit derselben GlobalId (Geschoss einer älteren Version kopiert) werden nicht verschoben', () => {
+    const erst = importErgebnis();
+    const p = projektAusIfc('Haus', structuredClone(erst));
+    // alte Version von „Geschoss duplizieren“: Kopie behält GlobalIds
+    const kopie: Storey = { ...structuredClone(p.storeys[0]), id: 'st-kopie', name: 'OG', elevation: 3, ifcId: undefined, ifcStand: undefined };
+    kopie.shapes = kopie.shapes.map((s, i) => ({ ...s, id: `k${i}` }));
+    p.storeys.push(kopie);
+    const neu = structuredClone(erst);
+    const og: Storey = { ...createStorey('OG', 3), elevation: 3, ifcId: 'ST-OG' };
+    const r3 = createRoom(rectPoints({ x: 1, y: 1 }, { x: 4, y: 4 }), '3', 'Schlafen');
+    r3.ifcId = 'R-3';
+    og.shapes.push(r3);
+    neu.storeys.push(og);
+    const r = ifcAbgleichen(p, neu, alle);
+    const eg = r.project.storeys.find((s) => s.name === 'Erdgeschoss')!;
+    expect(eg.shapes.filter((s) => s.ifcId === 'R-WOHNEN')).toHaveLength(1);
+    expect(r.bericht.some((b) => b.includes('mehrfach'))).toBe(true);
+  });
+});
+
+describe('Wohnfläche beim erneuten Import folgt dem Projekt', () => {
+  it('wohnflaecheAusProjekt erkennt, ob der bisherige Import sie abgeleitet hat', async () => {
+    const { wohnflaecheAusProjekt } = await import('./ifcAbgleich');
+    const { WOFL_ABGELEITET } = await import('./ifcImport');
+    expect(wohnflaecheAusProjekt(createProject('leer'))).toBeUndefined();
+    const ohne = projektAusIfc('Haus', importErgebnis());
+    expect(wohnflaecheAusProjekt(ohne)).toBe(false);
+    const mit = projektAusIfc('Haus', importErgebnis());
+    for (const sh of mit.storeys[0].shapes) if (sh.kind === 'room') sh.ifcStand = { ...sh.ifcStand, [WOFL_ABGELEITET]: true };
+    expect(wohnflaecheAusProjekt(mit)).toBe(true);
+  });
+});

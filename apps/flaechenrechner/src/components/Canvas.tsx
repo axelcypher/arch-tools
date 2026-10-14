@@ -358,8 +358,8 @@ export function Canvas() {
         if (k === 'c' || k === 'v' || k === 'd') return;
       }
       if (ctrl) return;
-      // Tab / Umschalt+Tab: nächste bzw. vorige Fläche wählen (nur, wenn kein Bedienelement den Fokus hat)
-      if (e.key === 'Tab' && tool === 'select' && !draft.length && (document.activeElement === document.body || document.activeElement === null)) {
+      // Tab / Umschalt+Tab: nächste bzw. vorige Fläche wählen (nur, wenn die Zeichenfläche den Fokus hat)
+      if (e.key === 'Tab' && tool === 'select' && !draft.length && document.activeElement === svgRef.current) {
         const v = st.view;
         const liste = storey.shapes.filter((s) => (s.kind === 'outline' ? v.showOutlines : v.showRooms));
         if (liste.length) {
@@ -902,6 +902,10 @@ export function Canvas() {
         className="canvas"
         style={{ cursor: cursorStyle }}
         onPointerDown={onPointerDown}
+        // fokussierbar: Tab wählt dann die nächste Fläche; sonst bleibt Tab die normale Bedienung der Oberfläche
+        tabIndex={0}
+        aria-label="Zeichenfläche"
+        onPointerDownCapture={() => svgRef.current?.focus({ preventScroll: true })}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={() => !drag.current && setCursor(null)}

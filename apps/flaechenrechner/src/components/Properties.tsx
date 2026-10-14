@@ -1,5 +1,5 @@
 import { useDeferredValue, useMemo } from 'react';
-import { computeProject, computeStorey, unterbau } from '@core/calc';
+import { computeProject, computeStorey, raumBodenVersatz, unterbau } from '@core/calc';
 import { fmt2 } from '@core/format';
 import { isSelfIntersecting, perimeter } from '@core/geometry';
 import type { Nutzungsgruppe, OutlineShape, Raumumschliessung, Shape, WoflKategorie } from '@core/model';
@@ -264,7 +264,8 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
   const kategorie = gemeinsam(rooms.map((r) => r.wofl.kategorie));
   const wohnung = gemeinsam(rooms.map((r) => r.wofl.wohnung));
   const umschliessung = gemeinsam(shapes.map((s) => s.umschliessung));
-  const versatz = gemeinsam(shapes.map((s) => s.versatz ?? 0));
+  // Räume ohne eigene Höhenlage: die des Umrisses, in dem sie liegen
+  const versatz = gemeinsam(shapes.map((s) => (s.kind === 'room' ? raumBodenVersatz(s, storey) : (s.versatz ?? 0))));
   const abzug = gemeinsam(shapes.map((s) => s.subtract));
 
   return (

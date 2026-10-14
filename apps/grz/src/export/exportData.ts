@@ -1,3 +1,4 @@
+import { raumBodenVersatz } from '@core/calc';
 import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
 import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
 import { polygonArea } from '@core/geometry';
@@ -161,7 +162,7 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
             aufenthalt: AUFENTHALT[a],
             festlegung: r.aufenthalt ? 'festgelegt' : 'automatisch',
             begruendung: pr?.begruendung ?? '',
-            hoehenlage: r.versatz ? r2(r.versatz) : '',
+            hoehenlage: raumBodenVersatz(r, s) ? r2(raumBodenVersatz(r, s)) : '',
           };
         }),
     );

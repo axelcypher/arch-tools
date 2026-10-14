@@ -154,3 +154,23 @@ describe('Pfeiltasten nach Rückgängig', () => {
     expect(useEditor.getState().project.storeys[0].shapes.find((s) => s.id === b.id)!.points[0]).toEqual(b.points[0]);
   });
 });
+
+describe('Geschoss duplizieren', () => {
+  it('die Kopie trägt keine IFC-Herkunft', async () => {
+    const { duplicateStorey } = await import('./store');
+    const p = createProject('Haus');
+    p.storeys[0].ifcId = 'ST-EG';
+    p.storeys[0].ifcStand = { name: 'EG' };
+    const r = createRoom(rectPoints({ x: 0, y: 0 }, { x: 2, y: 2 }), '1', 'Bad');
+    r.ifcId = 'R-1';
+    r.ifcStand = { name: 'Bad' };
+    p.storeys[0].shapes.push(r);
+    const d = duplicateStorey(p, p.storeys[0].id);
+    const kopie = d.project.storeys[1];
+    expect(kopie.ifcId).toBeUndefined();
+    expect(kopie.ifcStand).toBeUndefined();
+    expect(kopie.shapes[0].ifcId).toBeUndefined();
+    expect(kopie.shapes[0].ifcStand).toBeUndefined();
+    expect(p.storeys[0].shapes[0].ifcId).toBe('R-1');
+  });
+});

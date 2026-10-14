@@ -109,3 +109,33 @@ describe('Speichern mit Ergänzungen für die Datei', () => {
     expect(readProjectFile(platte.get('C:/P/Haus.oap')!).dateien?.some((d) => d.art === 'vorlage')).toBe(true);
   });
 });
+
+describe('Speichern: Vorlage eines Kollegen', () => {
+  it('eine andere projektbezogene Vorlage in der Datei bleibt erhalten', async () => {
+    const { addDatei } = await import('../model');
+    const global = (p: Project) => (p.dateien?.some((d) => d.art === 'vorlage') ? p : addDatei(p, 'Büro.xlsx', 'vorlage', new Uint8Array([1, 2])).project);
+    const basis = createProject('Haus');
+    // Kollege speichert mit eigener Vorlage
+    const kollege = addDatei(structuredClone(basis), 'Kollege.xlsx', 'vorlage', new Uint8Array([9, 9, 9])).project;
+    platte.set('C:/P/Haus.oap', writeArchive(kollege, { app: 'test' }));
+    const r = await projektSpeichern({ project: basis, basis, datei: 'C:/P/Haus.oap', app: 'test', fuerDatei: global });
+    expect(r?.zusammengefuehrt).toBe(true);
+    const v = readProjectFile(platte.get('C:/P/Haus.oap')!).dateien?.filter((d) => d.art === 'vorlage');
+    expect(v?.map((d) => d.name)).toEqual(['Kollege.xlsx']);
+  });
+});
+
+describe('Strg+S während eines Speicherns', () => {
+  it('speichernAbwarten wartet auf das laufende Speichern', async () => {
+    const { speichernAbwarten, speichernLaeuft } = await import('./projektDatei');
+    const p = createProject('Haus');
+    const erstes = projektSpeichern({ project: p, basis: p, datei: 'C:/P/Haus.oap', app: 'test' });
+    expect(speichernLaeuft()).toBe(true);
+    await speichernAbwarten();
+    expect(speichernLaeuft()).toBe(false);
+    expect((await erstes)?.datei).toBe('C:/P/Haus.oap');
+    const zweites = await projektSpeichern({ project: { ...p, name: 'Haus 2' }, basis: p, datei: 'C:/P/Haus.oap', app: 'test' });
+    expect(zweites?.datei).toBe('C:/P/Haus.oap');
+    expect(readProjectFile(platte.get('C:/P/Haus.oap')!).name).toBe('Haus 2');
+  });
+});

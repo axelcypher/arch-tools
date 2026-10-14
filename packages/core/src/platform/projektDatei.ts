@@ -39,10 +39,19 @@ export function standNachSpeichern(aktuell: Project, vorher: Project, gespeicher
 }
 
 let speichertGerade = false;
+let laufend: Promise<unknown> = Promise.resolve();
 
-/** Läuft gerade ein Speichervorgang? (ein zweites Strg+S wartet nicht, es wird ignoriert) */
+/** Läuft gerade ein Speichervorgang? */
 export function speichernLaeuft(): boolean {
   return speichertGerade;
+}
+
+/**
+ * Wartet, bis ein laufendes Speichern fertig ist. Die Apps rufen das vor dem Speichern auf: Ein zweites Strg+S
+ * während des ersten speichert danach den dann aktuellen Stand (statt verworfen zu werden).
+ */
+export async function speichernAbwarten(): Promise<void> {
+  while (speichertGerade) await laufend.catch(() => undefined);
 }
 
 export function safeFileName(name: string) {
@@ -84,20 +93,25 @@ export async function projektSpeichern(o: {
     return null;
   }
   speichertGerade = true;
+  const p = speichernIntern(o);
+  laufend = p;
   try {
-    return await speichernIntern(o);
+    return await p;
   } finally {
     speichertGerade = false;
   }
 }
 
 async function speichernIntern(o: Parameters<typeof projektSpeichern>[0]): Promise<ProjektGespeichert | null> {
-  // Arten der Dateien, die erst fuerDatei ergänzt (nicht Teil des Projekts in der App)
+  // Dateien, die erst fuerDatei ergänzt (z. B. die globale Excel-Vorlage) – nicht Teil des Projekts in der App.
+  // Gleich heißt: gleiche Art, gleicher Name, gleicher Inhalt; eine andere Vorlage (etwa die projektbezogene eines
+  // Kollegen) ist eine echte Änderung und bleibt erhalten.
   const eigeneIds = new Set((o.project.dateien ?? []).map((d) => d.id));
-  const zusatzArten = new Set(((o.fuerDatei ? o.fuerDatei(o.project) : o.project).dateien ?? []).filter((d) => !eigeneIds.has(d.id)).map((d) => d.art));
+  const zusatz = ((o.fuerDatei ? o.fuerDatei(o.project) : o.project).dateien ?? []).filter((d) => !eigeneIds.has(d.id));
+  const istZusatz = (d: NonNullable<Project['dateien']>[number]) => !eigeneIds.has(d.id) && zusatz.some((z) => z.art === d.art && z.name === d.name && gleich(z.daten, d.daten));
   const ohneZusatz = (p: Project): Project => {
-    if (!zusatzArten.size) return p;
-    const dateien = (p.dateien ?? []).filter((d) => !zusatzArten.has(d.art) || eigeneIds.has(d.id));
+    if (!zusatz.length) return p;
+    const dateien = (p.dateien ?? []).filter((d) => !istZusatz(d));
     const { dateien: _weg, ...rest } = p;
     void _weg;
     return dateien.length ? { ...rest, dateien } : (rest as Project);

@@ -1356,3 +1356,8 @@ code {
 .nw-fuss {
   margin: 0;
 }
+
+/* fokussierbare Zeichenflächen (Tab wählt Flächen): kein Fokusrahmen bei Mausbedienung */
+svg[tabindex]:focus:not(:focus-visible) {
+  outline: none;
+}

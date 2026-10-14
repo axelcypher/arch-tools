@@ -99,6 +99,8 @@ interface Kontext {
   raumFelder: readonly string[];
   /** IFC-Geschoss je Raum-GlobalId – findet Räume, die in der IFC in ein anderes Geschoss gewandert sind */
   raumOrt: Map<string, Storey>;
+  /** GlobalIds, die im Projekt mehrfach an Räumen stehen (z. B. kopierte Geschosse älterer Versionen) – nicht verschieben */
+  doppelt: Set<string>;
   /** GlobalIds der Räume in abgeglichenen Geschossen des Projekts (dort werden sie zugeordnet, nicht neu angelegt) */
   altIds: Set<string>;
   /** BGF-Umrisse des letzten Imports (siehe Project.ifcUmrisse) */
@@ -205,6 +207,12 @@ export function ifcAbgleichen(p: Project, r: IfcImportResult, o: AbgleichOptione
     raumFelder: o.wohnflaeche === false ? RAUM_FELDER.filter((f) => f !== 'wofl') : RAUM_FELDER,
     raumOrt,
     altIds: new Set(),
+    doppelt: (() => {
+      const gesehen = new Set<string>();
+      const d = new Set<string>();
+      for (const s of p.storeys) for (const x of s.shapes) if (x.kind === 'room' && x.ifcId) (gesehen.has(x.ifcId) ? d : gesehen).add(x.ifcId);
+      return d;
+    })(),
     altUmrisse: p.ifcUmrisse ?? [],
     verschoben: new Map(),
     altimport: !p.ifcBekannt && !p.storeys.some((s) => s.ifcStand || s.shapes.some((x) => x.ifcStand)) && !(p.lageplan?.flaechen ?? []).some((f) => f.ifcStand),
@@ -352,6 +360,13 @@ function formenAbgleichen(os: Storey, ns: Storey, k: Kontext): Shape[] {
       }
       const nr = neueRaeume.find((x) => x.ifcId === s.ifcId);
       const zielGeschoss = !nr ? k.raumOrt.get(s.ifcId) : undefined;
+      if (zielGeschoss && zielGeschoss !== ns && k.doppelt.has(s.ifcId)) {
+        // dieselbe GlobalId an mehreren Räumen: nicht eindeutig – unverändert lassen und melden
+        out.push(s);
+        z.behalten++;
+        bericht.push(`${os.name}: Raum „${[s.nummer, s.name].filter(Boolean).join(' ')}“ – die IFC-Zone steht im Projekt mehrfach (z. B. kopiertes Geschoss); nicht abgeglichen.`);
+        continue;
+      }
       if (zielGeschoss && zielGeschoss !== ns) {
         // in der IFC in ein anderes Geschoss gewandert: dorthin mitnehmen, Abgleich wie sonst
         const nz = zielGeschoss.shapes.find((x): x is RoomShape => x.kind === 'room' && x.ifcId === s.ifcId)!;
@@ -455,7 +470,8 @@ function formenAbgleichen(os: Storey, ns: Storey, k: Kontext): Shape[] {
     // von Hand gelöschte Umrisse: im letzten Import vorhanden, im Projekt nicht mehr
     const schluessel = geschossSchluessel(ns);
     const frueher = k.altUmrisse.filter((x) => x.geschoss === schluessel).map((x) => x.points);
-    const geloescht = frueher.filter((q) => !os.shapes.some((s) => s.kind === 'outline' && ueberdeckung(s.points, q) > 0.5));
+    // nur Umrisse aus der IFC zählen als „noch da“ – ein von Hand neu gezeichneter Umriss ersetzt den gelöschten
+    const geloescht = frueher.filter((q) => !os.shapes.some((s) => s.kind === 'outline' && !!s.ifcStand && ueberdeckung(s.points, q) > 0.5));
     for (const nu of neueUmrisse) {
       if (umrissVerwendet.has(nu)) continue;
       if (geloescht.some((q) => ueberdeckung(q, nu.points) > 0.5)) {
@@ -521,6 +537,21 @@ function lageplanAbgleichen(alt: LageplanFlaeche[], neu: LageplanFlaeche[], k: K
     z.neu++;
   }
   return out;
+}
+
+/**
+ * Wurde die Wohnfläche beim bisherigen Import abgeleitet? true/false aus den Räumen mit IFC-Herkunft; undefined, wenn
+ * das Projekt keine solchen Räume hat. Ein erneuter Import folgt dem Projekt – nicht der App, die ihn ausführt.
+ */
+export function wohnflaecheAusProjekt(p: Project): boolean | undefined {
+  let ifcRaeume = 0;
+  for (const s of p.storeys)
+    for (const x of s.shapes) {
+      if (x.kind !== 'room' || !x.ifcStand) continue;
+      if (x.ifcStand[WOFL_ABGELEITET]) return true;
+      ifcRaeume++;
+    }
+  return ifcRaeume ? false : undefined;
 }
 
 /** Enthält das Projekt Elemente aus einem IFC-Import, die sich abgleichen lassen? */
