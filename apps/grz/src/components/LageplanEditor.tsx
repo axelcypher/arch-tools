@@ -319,9 +319,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       const sel = useGrz.getState().selectedIds;
       // Tab / Umschalt+Tab: nächste bzw. vorige Fläche (nur, wenn der Lageplan den Fokus hat)
       if (e.key === 'Tab' && werkzeug === 'auswahl' && !draft.length && flaechen.length && document.activeElement === svgRef.current) {
-        e.preventDefault();
         const i = flaechen.findIndex((f) => f.id === useGrz.getState().selected);
-        const n = i < 0 ? (e.shiftKey ? flaechen.length - 1 : 0) : (i + (e.shiftKey ? -1 : 1) + flaechen.length) % flaechen.length;
+        const n = i < 0 ? (e.shiftKey ? flaechen.length - 1 : 0) : i + (e.shiftKey ? -1 : 1);
+        // am Ende der Liste geht Tab normal weiter – der Lageplan hält den Fokus nicht fest
+        if (n < 0 || n >= flaechen.length) return;
+        e.preventDefault();
         st.select(flaechen[n].id);
         return;
       }

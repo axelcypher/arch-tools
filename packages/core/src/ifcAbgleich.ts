@@ -462,6 +462,7 @@ function formenAbgleichen(os: Storey, ns: Storey, k: Kontext): Shape[] {
         bericht.push(`${os.name}: Raum „${[nr.nummer, nr.name].filter(Boolean).join(' ')}“ wurde von Hand gelöscht – nicht wieder angelegt.`);
         continue;
       }
+      warnenBeiUeberlagerung(os, nr, k);
       out.push(nr);
       z.neu++;
     }
@@ -479,11 +480,25 @@ function formenAbgleichen(os: Storey, ns: Storey, k: Kontext): Shape[] {
         bericht.push(`${os.name}: BGF-Umriss „${nu.name}“ wurde von Hand gelöscht – nicht wieder angelegt.`);
         continue;
       }
+      warnenBeiUeberlagerung(os, nu, k);
       out.push(nu);
       z.neu++;
     }
   }
   return out;
+}
+
+/**
+ * Neue Fläche aus der IFC liegt (fast) deckungsgleich auf einer von Hand gezeichneten (z. B. Platzhalter-Geschoss,
+ * kopiertes Regelgeschoss): beide bleiben – von Hand Gezeichnetes wird nie angefasst –, aber der Bericht warnt,
+ * damit BGF bzw. NRF nicht unbemerkt doppelt zählen.
+ */
+function flaechenBezeichnung(s: Shape) {
+  return s.kind === 'room' ? `Raum „${[s.nummer, s.name].filter(Boolean).join(' ') || 'Raum'}“` : 'BGF-Umriss';
+}
+function warnenBeiUeberlagerung(os: Storey, neu: Shape, k: Kontext) {
+  const eigen = os.shapes.find((s) => s.kind === neu.kind && !s.ifcId && !s.ifcStand && ueberdeckung(s.points, neu.points) > 0.8);
+  if (eigen) k.bericht.push(`${os.name}: ${flaechenBezeichnung(neu)} aus der IFC liegt auf einer von Hand gezeichneten Fläche (z. B. Platzhalter oder kopiertes Geschoss) – bitte prüfen und eine davon löschen, sonst zählt sie doppelt.`);
 }
 
 function lageplanAbgleichen(alt: LageplanFlaeche[], neu: LageplanFlaeche[], k: Kontext): LageplanFlaeche[] {

@@ -362,12 +362,12 @@ export function Canvas() {
       if (e.key === 'Tab' && tool === 'select' && !draft.length && document.activeElement === svgRef.current) {
         const v = st.view;
         const liste = storey.shapes.filter((s) => (s.kind === 'outline' ? v.showOutlines : v.showRooms));
-        if (liste.length) {
-          e.preventDefault();
-          const i = liste.findIndex((s) => s.id === st.selectedShapeId);
-          const n = i < 0 ? (e.shiftKey ? liste.length - 1 : 0) : (i + (e.shiftKey ? -1 : 1) + liste.length) % liste.length;
-          st.select(liste[n].id);
-        }
+        const i = liste.findIndex((s) => s.id === st.selectedShapeId);
+        const n = i < 0 ? (e.shiftKey ? liste.length - 1 : 0) : i + (e.shiftKey ? -1 : 1);
+        // am Ende der Liste geht Tab normal weiter – die Zeichenfläche hält den Fokus nicht fest
+        if (n < 0 || n >= liste.length) return;
+        e.preventDefault();
+        st.select(liste[n].id);
         return;
       }
       // Pfeiltasten: Auswahl um 1 cm, mit Umschalt um 10 cm verschieben (Bildschirmrichtung: y nach unten)

@@ -57,16 +57,19 @@ Weitere Regeln:
   Was dort steht, im Projekt aber fehlt, wird nicht wieder angelegt (auch nach Teil-Importen, z. B. ohne Räume).
   Ein von Hand neu gezeichneter Umriss an der Stelle eines gelöschten ersetzt diesen – die IFC-Fassung kommt nicht
   dazu. Projekte, die vor Flächenrechner 0.12.0 importiert wurden, kennen ihre Umrisse noch nicht: Ein dort gelöschter
-  Umriss kommt beim ersten Abgleich einmal wieder. Gelöschtes zurückholen: Rückgängig (Strg+Z) oder neu importieren
-  (Modus „neu“).
+  Umriss kommt beim ersten Abgleich einmal wieder. Gelöschtes zurückholen: Rückgängig (Strg+Z) oder neu zeichnen; ein Neu-Import
+  (Modus „neu“) setzt das ganze Projekt neu auf – Angaben von Hand gehen dabei verloren.
 - **Kopierte Geschosse und Flächen** („Geschoss duplizieren“, Strg+C/V, Strg+D) tragen keine IFC-Herkunft. Steht
   dieselbe GlobalId (aus älteren Versionen) mehrfach im Projekt, wird der Raum nicht verschoben, sondern gemeldet.
 - **Raum wechselt das Geschoss:** Liegt eine Zone in der IFC jetzt in einem anderen Geschoss, wandert der Raum mit –
   samt Nutzung, Wohnfläche und Bemerkung. Wurde das Zielgeschoss von Hand gelöscht, bleibt er, wo er war.
 - **Wohnfläche:** Der Abgleich leitet sie ab, wenn der bisherige Import es tat – unabhängig davon, in welcher App
-  er ausgeführt wird. Abgeglichen wird sie nur, wenn sie beim ersten Import abgeleitet wurde (Option „Wohnfläche“) und der neue Import sie
-  ebenfalls ableitet, wird sie abgeglichen; sonst ist sie eine Angabe des Nutzers und bleibt unberührt. So setzt
-  z. B. die Kostenermittlung keine geratenen Wohnflächen in ein Projekt, das ohne Wohnfläche importiert wurde.
+  er ausgeführt wird. Abgeglichen wird sie nur bei Räumen, deren Wohnfläche beim ersten Import abgeleitet wurde
+  (Option „Wohnfläche“); sonst ist sie eine Angabe des Nutzers und bleibt unberührt. So setzt z. B. die
+  Kostenermittlung keine geratenen Wohnflächen in ein Projekt, das ohne Wohnfläche importiert wurde.
+- **Platzhalter-Geschosse:** Ein von Hand gezeichnetes oder kopiertes Geschoss, das später in der IFC modelliert wird,
+  behält seine Flächen; die Flächen aus der IFC kommen hinzu. Liegen sie deckungsgleich, warnt der Bericht – dann die
+  Platzhalter löschen, sonst zählen BGF und NRF doppelt.
 - **Projekte älterer Versionen** (ohne Vergleichsstand): Räume werden über Nummer und Name bzw. die Überdeckung
   zugeordnet, Umrisse über die Überdeckung; jedes so übernommene Feld steht im Bericht. In neueren Projekten
   bleiben Flächen ohne IFC-Herkunft (von Hand gezeichnet) immer unberührt.

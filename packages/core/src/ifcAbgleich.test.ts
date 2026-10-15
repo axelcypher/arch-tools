@@ -333,3 +333,19 @@ describe('Wohnfläche beim erneuten Import folgt dem Projekt', () => {
     expect(wohnflaecheAusProjekt(mit)).toBe(true);
   });
 });
+
+describe('IFC erneut importieren: Platzhalter-Geschoss', () => {
+  it('neue IFC-Flächen auf von Hand gezeichneten werden gemeldet', () => {
+    const p = projektAusIfc('Haus', importErgebnis());
+    // Platzhalter von Hand: OG mit Umriss wie das EG
+    const og: Storey = { ...createStorey('OG', 3), elevation: 3 };
+    og.shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    p.storeys.push(og);
+    const neu = importErgebnis();
+    const ifcOg: Storey = { ...createStorey('OG', 3), elevation: 3, ifcId: 'ST-OG' };
+    ifcOg.shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    neu.storeys.push(ifcOg);
+    const r = ifcAbgleichen(p, neu, alle);
+    expect(r.bericht.some((b) => b.startsWith('OG: BGF-Umriss aus der IFC liegt auf einer von Hand gezeichneten'))).toBe(true);
+  });
+});
