@@ -5,7 +5,7 @@ import type { Point } from '../geometry';
 import type { OutlineShape, Project, Storey } from '../model';
 import { modellSolidFaces } from '../modellSolid';
 import { intersectMP, polygoneOf, unionAll } from '../polygon';
-import type { Point3 } from '../roof';
+import type { Point3, SolidFaces } from '../roof';
 import { solidFaces } from '../roof';
 
 /**
@@ -14,14 +14,24 @@ import { solidFaces } from '../roof';
  * Koordinaten: Grundriss (x, y) + Höhe z → three.js (x, z, y), y-Achse nach oben.
  */
 
-/** Körperflächen eines Umrisses; bei Dach aus Modell als Höhenfeld */
-export function outlineFaces(s: OutlineShape, project: Project, floorZ: number, storeyH: number, geschoss?: Storey) {
+/**
+ * Körperflächen eines Umrisses, Höhen relativ zum Geschossfußboden (floorZ); bei Dach aus Modell als Höhenfeld.
+ * Der Höhenversatz verschiebt den ganzen Körper.
+ */
+export function outlineFaces(s: OutlineShape, project: Project, floorZ: number, storeyH: number, geschoss?: Storey): SolidFaces {
   const h = s.hoehe ?? storeyH;
+  const v = s.versatz ?? 0;
   if (s.dach?.typ === 'modell' && project.dachModell) {
     const storey = geschoss ?? project.storeys.find((st) => st.shapes.includes(s));
-    return modellSolidFaces(project, storey, s, floorZ);
+    return verschoben(modellSolidFaces(project, storey, s, floorZ + v), v);
   }
-  return solidFaces(s.points, s.dach, h);
+  return verschoben(solidFaces(s.points, s.dach, h), v);
+}
+
+function verschoben(f: SolidFaces, dz: number): SolidFaces {
+  if (!dz) return f;
+  const p = (q: Point3): Point3 => ({ ...q, z: q.z + dz });
+  return { ...f, tops: f.tops.map((t) => t.map(p)), sides: f.sides.map((t) => t.map(p)), bottom: f.bottom.map(p) };
 }
 
 export function facesToGeometry(f: { tops: Point3[][]; sides: Point3[][]; bottom: Point3[] }, z0: number): THREE.BufferGeometry {
@@ -55,29 +65,27 @@ export function facesToGeometry(f: { tops: Point3[][]; sides: Point3[][]; bottom
 }
 
 export interface UnterbauKoerper {
-  art: 'versatz' | 'absenkung' | 'sohle';
+  art: 'absenkung' | 'sohle';
   polygone: { aussen: Point[]; loecher: Point[][] }[];
   /** Höhen relativ zum Geschossfußboden */
   unten: number;
   oben: number;
 }
 
-/** Körper unter dem Geschossfußboden – dieselben Teile wie im BRI (calc.unterbau) */
+/** Körper unter der Unterkante des Umriss-Körpers – dieselben Teile wie im BRI (calc.unterbau) */
 export function unterbauKoerper(s: OutlineShape, storey: Storey, project: Project): UnterbauKoerper[] {
   const out: UnterbauKoerper[] = [];
   const v = s.versatz ?? 0;
   // wie im BRI nur dort, wo kein Geschoss darunter liegt (darüber steckt die Absenkung im Geschoss darunter)
   const frei = sohlenPolygon(s, storey, project);
   for (const t of unterbau(s, storey, project)) {
-    // ein höher liegender Fußboden verkleinert den Körper – das zeigt der Hauptkörper nicht; nur Absenkungen darstellen
-    if (t.art === 'versatz' && v < 0) out.push({ art: 'versatz', polygone: polygoneOf(frei), unten: v, oben: 0 });
-    else if (t.art === 'absenkung' && t.raumId) {
+    if (t.art === 'absenkung' && t.raumId) {
       const r = storey.shapes.find((x) => x.id === t.raumId);
       if (r) out.push({ art: 'absenkung', polygone: polygoneOf(intersectMP(unionAll([r.points]), frei)), unten: r.versatz ?? 0, oben: v });
     } else if (t.art === 'sohle') {
+      // Bodenplatte unter der Unterkante des Körpers (wie im BRI)
       const sp = polygoneOf(frei);
-      const tiefe = Math.min(v, 0);
-      if (sp.length) out.push({ art: 'sohle', polygone: sp, unten: tiefe - t.hoehe, oben: tiefe });
+      if (sp.length) out.push({ art: 'sohle', polygone: sp, unten: v - t.hoehe, oben: v });
     }
   }
   return out;

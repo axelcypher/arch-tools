@@ -22,9 +22,10 @@ Graphisoft und lassen sich außerhalb von Archicad nicht lesen. Der verlässlich
 
 Die Fußbodenhöhe eines Geschosses ist der flächengewichtete Median der Zonenunterseiten (die Höhe, auf der der größere Teil der Zonenfläche liegt). Liegt eine
 Zone mindestens 5 cm tiefer oder höher, erhält der Raum eine **Höhenlage** (z. B. −0,60 m); der Import
-meldet das. Im Flächenrechner lässt sich die Höhenlage auch von Hand eintragen – nach oben wie nach unten,
-für Räume und Umrisse. Ein Raum ohne eigene Höhenlage liegt auf dem Fußboden des Umrisses, in dem er liegt
-(0,000 heißt ausdrücklich: auf dem Geschossfußboden).
+meldet das. Im Flächenrechner lässt sich die Höhenlage auch von Hand eintragen – nach oben wie nach unten.
+Bei Umrissen heißt sie **Höhenversatz Körper**: Sie verschiebt den ganzen Körper samt Dach, seine
+**Körperhöhe** (leer = Geschosshöhe) bleibt. Ein Raum ohne eigene Höhenlage liegt auf der Unterkante des
+Umrisses, in dem er liegt (0,000 heißt ausdrücklich: auf dem Geschossfußboden).
 
 Über einem Geschoss darunter (z. B. Keller) verschiebt eine Absenkung nur die Grenze zwischen den Geschossen –
 dieser Rauminhalt steckt schon im Geschoss darunter und wird nicht doppelt gezählt.
@@ -35,7 +36,8 @@ OK Fußboden. Der Flächenrechner rechnet deshalb unter dem Geschossfußboden ei
 - **Bodenplatte:** Umriss des untersten Geschosses (bzw. der Teil eines Geschosses, unter dem kein anderes liegt)
   × Dicke der Bodenplatte. Die Dicke wird aus den Platten unter dem untersten Geschoss erkannt und lässt sich je
   Geschoss unter „Bodenplatte“ eintragen.
-- **Split-Level:** tiefer liegende Räume bzw. Umrisse mit ihrer Fläche × Versatz.
+- **Split-Level:** Räume, die tiefer liegen als der Körper ihres Umrisses, mit ihrer Fläche × Absenkung.
+  Ein verschobener Umriss-Körper behält seinen Rauminhalt; die Bodenplatte liegt unter seiner Unterkante.
 
 Rechenweg, Excel (`{{bri.unterbau}}`) und 3D-Ansicht weisen diese Teile gesondert aus.
 

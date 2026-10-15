@@ -151,15 +151,18 @@ function geschossFlaeche(st: Storey, nurR: boolean): MultiPolygon {
 
 /**
  * Höhe bis zur Dachhaut bzw. bis OK Fußboden darüber, gemessen vom Fußboden an dieser Stelle, je Punkt eines
- * Geschosses. Split-Level: Liegt der Fußboden eines Umrisses oder Raums tiefer (versatz < 0), ist die Höhe
- * dort entsprechend größer. Die Höhenfunktionen werden einmal je Umriss aufgebaut.
+ * Geschosses. Split-Level: Ein Höhenversatz verschiebt den ganzen Körper eines Umrisses (Höhe bleibt); liegt der
+ * Fußboden eines Raums tiefer als der Körper, ist die Höhe dort entsprechend größer. Die Höhenfunktionen werden
+ * einmal je Umriss aufgebaut.
  */
 function hoehenFunktion(project: Project, st: Storey, floorZ: number): (p: Point) => { h: number; schraeg: boolean } | null {
   const raeume = st.shapes.filter((r): r is RoomShape => r.kind === 'room' && !r.subtract && r.versatz !== undefined && r.points.length >= 3);
   const teile = outlinesOf(st)
     .filter((s) => !s.subtract)
     .map((s) => {
+      // Höhen ab Unterkante des Körpers
       const hs = s.hoehe ?? st.hoehe;
+      const versatz = s.versatz ?? 0;
       const d = s.dach;
       let f: (p: Point) => { h: number; schraeg: boolean };
       if (!d || (d.typ === 'modell' && !project.dachModell)) f = () => ({ h: hs, schraeg: false });
@@ -167,7 +170,7 @@ function hoehenFunktion(project: Project, st: Storey, floorZ: number): (p: Point
         const r = modellRoofParams(project, st, s);
         f = (p) => {
           const cap = typeof r.cap === 'function' ? r.cap(p) : r.cap;
-          const v = meshRoofHeightAt(project.dachModell!, s.points, floorZ, p);
+          const v = meshRoofHeightAt(project.dachModell!, s.points, floorZ + versatz, p);
           const h = Math.min(Number.isNaN(v) ? hs : Math.max(v, 0), cap);
           return { h, schraeg: h < hs - 0.05 };
         };
@@ -176,7 +179,7 @@ function hoehenFunktion(project: Project, st: Storey, floorZ: number): (p: Point
         const fr = d.gauben?.length ? roofFrame(d, s.points) : null;
         f = (p) => ({ h: fr ? Math.max(roof(p), gaubenHoeheAt(d, fr, p)) : roof(p), schraeg: d.typ !== 'flach' });
       }
-      return { pts: s.points, f, versatz: s.versatz ?? 0 };
+      return { pts: s.points, f, versatz };
     });
   return (p) => {
     for (const t of teile) {
@@ -184,7 +187,7 @@ function hoehenFunktion(project: Project, st: Storey, floorZ: number): (p: Point
       const r = t.f(p);
       const raum = raeume.find((x) => pointInPolygon(p, x.points));
       const boden = raum ? raum.versatz! : t.versatz;
-      return { h: r.h - boden, schraeg: r.schraeg };
+      return { h: r.h + t.versatz - boden, schraeg: r.schraeg };
     }
     return null;
   };

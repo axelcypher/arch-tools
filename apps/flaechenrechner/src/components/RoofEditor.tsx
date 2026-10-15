@@ -107,12 +107,12 @@ export function RoofEditor({
         )}
       </div>
 
-      {!d && <p className="muted small-text">BRI = Fläche × {shape.hoehe !== undefined ? 'abweichende Höhe' : 'Geschosshöhe'}. Für das oberste Geschoss hier die Dachform wählen.</p>}
+      {!d && <p className="muted small-text">BRI = Fläche × {shape.hoehe !== undefined ? 'Körperhöhe' : 'Geschosshöhe'}. Für das oberste Geschoss hier die Dachform wählen.</p>}
 
       {d && d.typ !== 'modell' && (
         <>
           <div className="field-row">
-            <Field label="Traufhöhe [m]" hint="OK Dachhaut an der Außenwand über Fußboden">
+            <Field label="Traufhöhe [m]" hint="OK Dachhaut an der Außenwand über der Unterkante des Körpers">
               <NumberField value={d.traufhoehe} min={0} onChange={(v) => v !== undefined && set({ traufhoehe: v })} />
             </Field>
             {d.typ !== 'flach' && d.typ !== 'tonne' && d.typ !== 'shed' && (

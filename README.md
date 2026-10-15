@@ -55,8 +55,9 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 - **Mehrfachauswahl**: Shift+Klick, Shift+Aufziehen, `Strg+A`; gemeinsam verschieben, löschen und gemeinsame Felder bearbeiten
 - **Kopieren, Einfügen, Duplizieren** (`Strg+C/V/D`) – auch in ein anderes Geschoss (Regelgeschosse) – und
   Verschieben mit den Pfeiltasten (1 cm, mit Umschalt 10 cm)
-- **Höhenlage / Split-Level**: Räume und Umrisse lassen sich nach oben und unten versetzen; tiefer liegende Räume
-  (aus IFC automatisch erkannt) und die Bodenplatte gehen als eigene Posten in den BRI ein
+- **Höhenlage / Split-Level**: Räume (Höhenlage Fußboden) und Umriss-Körper (Höhenversatz, ganzer Körper samt
+  Dach) lassen sich nach oben und unten versetzen; tiefer liegende Räume (aus IFC automatisch erkannt) und die
+  Bodenplatte gehen als eigene Posten in den BRI ein
 - **IFC aktualisieren**: erneuter Import in ein bestehendes Projekt über die stabilen IFC-GlobalIds – von Hand
   geänderte Werte bleiben erhalten, Konflikte werden gemeldet
 - **Nachschlagewerk** der Berechnungsregeln (`F1` bzw. „§ Regeln“, `?` an den Abschnitten) mit Zitaten,

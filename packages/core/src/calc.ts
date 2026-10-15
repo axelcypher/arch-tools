@@ -13,7 +13,7 @@ import { nutzungInfo, woflFaktor } from './norms';
  * Flächen- und Rauminhaltsberechnung.
  *
  *  BGF  = Σ Umrissflächen (R/S getrennt), Abzugsflächen negativ
- *  BRI  = Σ Umrissfläche × Höhe (Geschosshöhe oder abweichende Höhe je Umriss)
+ *  BRI  = Σ Umrissfläche × Höhe (Geschosshöhe oder Körperhöhe je Umriss)
  *  NRF  = NUF + TF + VF (Σ Raumflächen je Nutzungsgruppe)
  *  KGF  = BGF − NRF
  *  WoFl = Σ Raumfläche × Anrechnungsfaktor (WoFlV § 4)
@@ -89,7 +89,7 @@ function emptyTotals(): AreaTotals {
 }
 
 /**
- * Dach aus Modell: Fußbodenhöhe und Höhenbegrenzung eines Umrisses.
+ * Dach aus Modell: Fußbodenhöhe (Unterkante des Körpers, mit Höhenversatz) und Höhenbegrenzung eines Umrisses.
  * Ohne feste Begrenzung (maxHoehe) reicht der Körper bis zum Fußboden des nächsten Geschosses –
  * aber nur dort, wo dieses Geschoss BGF hat (Umriss, abzüglich Abzugsflächen). Sonst bis zur Dachhaut:
  * so wird z. B. die Dachspitze über einem DG erfasst, auch wenn sie als eigenes Geschoss ohne BGF modelliert ist.
@@ -100,13 +100,15 @@ export const UMRISS_TOLERANZ = 0.02;
 export function modellRoofParams(project: Project, storey: Storey, s: OutlineShape): { floorZ: number; cap: number | ((p: Point) => number) } {
   const elev = storeyElevations(project);
   const idx = project.storeys.indexOf(storey);
-  const floorZ = elev[idx] ?? 0;
+  const geschossZ = elev[idx] ?? 0;
+  // der Höhenversatz verschiebt den ganzen Körper: Höhen gelten ab seiner Unterkante, die Dachhaut bleibt, wo sie ist
+  const floorZ = geschossZ + (s.versatz ?? 0);
   if (s.dach?.maxHoehe !== undefined) return { floorZ, cap: s.dach.maxHoehe };
   if (storey.geschosshoeheBegrenzt) return { floorZ, cap: s.hoehe ?? storey.hoehe };
   // nächstes Geschoss darüber (nach Höhe, nicht nach Listenreihenfolge)
   let above = -1;
   elev.forEach((e, i) => {
-    if (e > floorZ + 1e-6 && (above < 0 || e < elev[above])) above = i;
+    if (e > geschossZ + 1e-6 && (above < 0 || e < elev[above])) above = i;
   });
   if (above < 0) return { floorZ, cap: Infinity };
   const upper = project.storeys[above].shapes.filter((x) => x.kind === 'outline');
@@ -125,7 +127,7 @@ export function modellRoofParams(project: Project, storey: Storey, s: OutlineSha
   };
 }
 
-/** Rauminhalt eines BGF-Umrisses über dem Geschossfußboden (ohne Vorzeichen): Fläche × Höhe bzw. bis zur Dachhaut */
+/** Rauminhalt des Körpers eines BGF-Umrisses (ohne Vorzeichen): Fläche × Körperhöhe bzw. bis zur Dachhaut – unabhängig vom Höhenversatz */
 export function koerperVolume(s: OutlineShape, storey: Storey, project: Project): number {
   const h = s.hoehe ?? storey.hoehe;
   if (!s.dach) return polygonArea(s.points) * h;
@@ -137,12 +139,11 @@ export function koerperVolume(s: OutlineShape, storey: Storey, project: Project)
   return Math.abs(roofStats(s.dach, s.points).volumen) + gaubenVolumen(s.dach);
 }
 
-/** Teil des Rauminhalts unterhalb des Geschossfußbodens (bzw. Abzug bei höher liegendem Fußboden) */
+/** Teil des Rauminhalts unterhalb der Unterkante des Körpers */
 export interface UnterbauTeil {
-  art: 'versatz' | 'absenkung' | 'sohle';
+  art: 'absenkung' | 'sohle';
   bezeichnung: string;
   flaeche: number;
-  /** Höhe; negativ bei einem höher liegenden Fußboden (Abzug) */
   hoehe: number;
   /** Raum, dessen Absenkung gemeint ist */
   raumId?: string;
@@ -160,13 +161,14 @@ function labelVon(pts: readonly Point[]): Point {
 }
 
 /**
- * Rauminhalt unter dem Geschossfußboden eines BGF-Umrisses (DIN 277: BRI ab Unterseite der konstruktiven Sohle):
- *  - versatz:   der ganze Umriss liegt tiefer (höher) als das Geschoss → Fläche × Versatz
+ * Rauminhalt unter dem Körper eines BGF-Umrisses (DIN 277: BRI ab Unterseite der konstruktiven Sohle):
  *  - absenkung: Räume im Umriss liegen tiefer als dessen Fußboden (Split-Level) → Raumfläche (Polygon) × Absenkung
  *  - sohle:     Bodenplatte des Geschosses → Teil des Umrisses ohne Geschoss darunter × Sohlendicke
- * Versatz und Absenkung zählen nur dort, wo kein Geschoss darunter liegt: Über einem Keller verschiebt ein tiefer
- * liegender Fußboden nur die Grenze zwischen den Geschossen – der Rauminhalt steckt bereits im Geschoss darunter
+ * Beides zählt nur dort, wo kein Geschoss darunter liegt: Über einem Keller verschiebt ein tiefer liegender
+ * Fußboden nur die Grenze zwischen den Geschossen – der Rauminhalt steckt bereits im Geschoss darunter
  * (es reicht bis zum Fußboden des Geschosses darüber).
+ * Ein Höhenversatz des Umrisses verschiebt den ganzen Körper und ändert seinen Rauminhalt nicht; Absenkungen
+ * und Bodenplatte liegen unter seiner Unterkante.
  */
 export function unterbau(s: OutlineShape, storey: Storey, project: Project): UnterbauTeil[] {
   const out: UnterbauTeil[] = [];
@@ -182,12 +184,9 @@ export function unterbau(s: OutlineShape, storey: Storey, project: Project): Unt
     }
   }
   const sohle = storey.sohle ?? 0;
-  if (Math.abs(v) <= 1e-9 && !absenkungen.length && sohle <= 1e-9) return out;
+  if (!absenkungen.length && sohle <= 1e-9) return out;
   const frei = sohlenPolygon(s, storey, project);
   const freiFlaeche = areaMP(frei);
-  if (Math.abs(v) > 1e-9 && freiFlaeche > 1e-6) {
-    out.push({ art: 'versatz', bezeichnung: v < 0 ? 'Fußboden tiefer (Split-Level)' : 'Fußboden höher (Split-Level)', flaeche: freiFlaeche, hoehe: -v });
-  }
   for (const { r, tiefe } of absenkungen) {
     const f = freiFlaeche > 1e-6 ? flaecheImFreien(r.points, frei) : 0;
     if (f > 1e-6) out.push({ art: 'absenkung', bezeichnung: `Absenkung ${raumText(r)}`, flaeche: f, hoehe: tiefe, raumId: r.id });
@@ -275,7 +274,7 @@ function sohlenPolygonRechnen(s: OutlineShape, untenShapes: Storey['shapes'] | n
   }
 }
 
-/** Rauminhalt eines BGF-Umrisses (ohne Vorzeichen): Körper über dem Fußboden + Unterbau (Split-Level, Bodenplatte) */
+/** Rauminhalt eines BGF-Umrisses (ohne Vorzeichen): Körper + Unterbau (Split-Level-Absenkungen, Bodenplatte) */
 export function outlineVolume(s: OutlineShape, storey: Storey, project: Project): number {
   const unten = unterbau(s, storey, project).reduce((a, t) => a + t.flaeche * t.hoehe, 0);
   return Math.max(0, koerperVolume(s, storey, project) + unten);

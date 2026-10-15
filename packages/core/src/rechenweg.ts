@@ -44,8 +44,8 @@ export interface BriSchritt {
   dach?: boolean;
   /** Teilkörper ist eine Gaube */
   gaube?: Gaube;
-  /** Teil unterhalb des Geschossfußbodens: Bodenplatte, Split-Level-Absenkung bzw. -Versatz */
-  unterbau?: 'versatz' | 'absenkung' | 'sohle';
+  /** Teil unterhalb der Unterkante des Körpers: Bodenplatte bzw. Split-Level-Absenkung */
+  unterbau?: 'absenkung' | 'sohle';
 }
 
 type Teil = Omit<BriSchritt, 'geschossId' | 'geschoss' | 'umrissId' | 'umriss' | 'umschliessung' | 'nr' | 'volumen' | 'formel'>;
@@ -71,13 +71,13 @@ function formel(t: Teil): string {
   return `${n}${base} × ${f3(t.hoehe)}${faktorText(t.faktor)}`;
 }
 
-/** Teilkörper eines Umrisses (ohne Vorzeichen für Abzugsflächen): Körper über dem Fußboden, dann Unterbau */
+/** Teilkörper eines Umrisses (ohne Vorzeichen für Abzugsflächen): Körper, dann Unterbau */
 export function outlineTeile(s: OutlineShape, storey: Storey, project: Project): Teil[] {
   const unten: Teil[] = unterbau(s, storey, project).map((u) => ({
     bezeichnung: u.bezeichnung,
-    anzahl: u.hoehe < 0 ? -1 : 1,
+    anzahl: 1,
     flaeche: u.flaeche,
-    hoehe: Math.abs(u.hoehe),
+    hoehe: u.hoehe,
     faktor: 1,
     unterbau: u.art,
   }));

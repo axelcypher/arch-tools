@@ -103,18 +103,18 @@ function ShapeProperties({ shape }: { shape: Shape }) {
       </label>
 
       <Field
-        label="Höhenlage Fußboden [m]"
+        label={shape.kind === 'room' ? 'Höhenlage Fußboden [m]' : 'Höhenversatz Körper [m]'}
         hint={
           shape.kind === 'room'
-            ? 'gegenüber dem Geschoss, negativ = tiefer (Split-Level); leer = auf dem Fußboden des Umrisses. Ein tiefer liegender Raum vergrößert den BRI um Raumfläche × Absenkung (wo kein Geschoss darunter liegt).'
-            : 'gegenüber dem Geschoss, negativ = tiefer (Split-Level). Der Körper beginnt tiefer, seine Oberkante bleibt.'
+            ? 'gegenüber dem Geschoss, negativ = tiefer (Split-Level); leer = auf dem Fußboden des Umrisses. Liegt der Raum tiefer als der Körper seines Umrisses, vergrößert sich der BRI um Raumfläche × Absenkung (wo kein Geschoss darunter liegt).'
+            : 'verschiebt den ganzen Körper samt Dach gegenüber dem Geschossfußboden, negativ = tiefer (Split-Level); seine Höhe bleibt. Räume ohne eigene Höhenlage liegen auf seiner Unterkante.'
         }
       >
         <NumberField value={shape.versatz} allowEmpty min={-20} max={20} digits={3} placeholder={shape.kind === 'room' ? 'wie Umriss' : '0,000'} onChange={(v) => upd((s) => ({ ...s, versatz: s.kind === 'room' ? v : v || undefined }))} />
       </Field>
 
       {shape.kind === 'outline' && (
-        <Field label="Abweichende Höhe für BRI [m]" hint={`Oberkante über dem Geschossfußboden; leer = Geschosshöhe (${fmt2(storey.hoehe)} m)`}>
+        <Field label="Körperhöhe für BRI [m]" hint={`Unterkante bis Oberkante des Körpers (ohne Dach); leer = Geschosshöhe (${fmt2(storey.hoehe)} m)`}>
           <NumberField value={shape.hoehe} allowEmpty min={0} onChange={(v) => upd((s) => ({ ...s, hoehe: v }))} placeholder={fmt2(storey.hoehe)} />
         </Field>
       )}
@@ -315,7 +315,10 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
           <option value="ja">ja (wird abgezogen)</option>
         </select>
       </Field>
-      <Field label="Höhenlage Fußboden [m]" hint="gegenüber dem Geschoss, negativ = tiefer (Split-Level)">
+      <Field
+        label={rooms.length && outlines.length ? 'Höhenlage Fußboden / Höhenversatz Körper [m]' : rooms.length ? 'Höhenlage Fußboden [m]' : 'Höhenversatz Körper [m]'}
+        hint={`gegenüber dem Geschoss, negativ = tiefer (Split-Level)${outlines.length ? '; Umrisse: verschiebt den ganzen Körper' : ''}`}
+      >
         <NumberField value={versatz} allowEmpty min={-20} max={20} digits={3} placeholder="unterschiedlich" onChange={(v) => v !== undefined && updAll((s) => ({ ...s, versatz: s.kind === 'room' ? v : v || undefined }))} />
       </Field>
 

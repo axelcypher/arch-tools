@@ -44,9 +44,11 @@ interface ShapeBase {
   umschliessung: Raumumschliessung;
   bemerkung?: string;
   /**
-   * Höhenlage des Fußbodens gegenüber dem Geschossfußboden in m (Split-Level): negativ = tiefer, positiv = höher.
-   * Umriss: Der Körper beginnt um diesen Betrag tiefer bzw. höher, die Oberkante bleibt.
-   * Raum: Ein tiefer liegender Raum vergrößert den BRI des Umrisses, in dem er liegt, um Raumfläche × Absenkung.
+   * Höhenlage gegenüber dem Geschossfußboden in m (Split-Level): negativ = tiefer, positiv = höher.
+   * Umriss („Höhenversatz Körper“): Der ganze Körper – Unterkante, Oberkante, Dach – wird um diesen Betrag
+   * verschoben; seine Höhe (hoehe bzw. Geschosshöhe) bleibt.
+   * Raum („Höhenlage Fußboden“): Ein Raum, der tiefer liegt als der Körper seines Umrisses, vergrößert den BRI
+   * um Raumfläche × Absenkung.
    * Ohne Angabe liegt ein Raum auf dem Fußboden des Umrisses, in dem er liegt (bei abgesenktem Umriss also mit ihm).
    */
   versatz?: number;
@@ -65,7 +67,7 @@ export type IfcStand = Record<string, unknown>;
 
 export interface OutlineShape extends ShapeBase {
   kind: 'outline';
-  /** abweichende Höhe für BRI (z. B. Galerie, Luftraum); sonst Geschosshöhe */
+  /** Körperhöhe für den BRI (Unter- bis Oberkante des Körpers, z. B. Galerie, Luftraum); sonst Geschosshöhe */
   hoehe?: number;
   /** Dach/oberer Abschluss: BRI dieses Umrisses = Volumen vom Fußboden bis zur Dachhaut */
   dach?: Dach;
