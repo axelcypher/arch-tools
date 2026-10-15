@@ -1,6 +1,7 @@
-import pc from 'polygon-clipping';
-import type { MultiPolygon, Polygon } from 'polygon-clipping';
 import { modellRoofParams } from '@core/calc';
+import { gelaendeAmUmfang, gelaendeHoeheFn } from '@core/gelaende';
+import type { MultiPolygon } from '@core/polygon';
+import { areaMP, diffMP, inMP, intersectMP, ringsOf, unionAll, unionMP } from '@core/polygon';
 import { gaubenHoeheAt } from '@core/gaube';
 import type { Point } from '@core/geometry';
 import { bounds, pointInPolygon } from '@core/geometry';
@@ -8,7 +9,6 @@ import type {
   BauNVOFassung,
   BauOFassung,
   Einstufung,
-  LageplanFlaeche,
   LageplanNutzung,
   MassNutzung,
   OutlineShape,
@@ -131,56 +131,9 @@ export function anrechnung(n: LageplanNutzung, f: BauNVOFassung, einstufung?: Pa
   return 'pruefen';
 }
 
-/* ---------- Polygone ---------- */
+/* ---------- Polygone (gemeinsamer Unterbau: überlagernde Flächen zählen nie doppelt) ---------- */
 
-const toPoly = (pts: Point[]): Polygon => [pts.map((p) => [p.x, p.y] as [number, number])];
-
-function unionAll(polys: Point[][]): MultiPolygon {
-  const valid = polys.filter((p) => p.length >= 3);
-  if (!valid.length) return [];
-  return pc.union(toPoly(valid[0]), ...valid.slice(1).map(toPoly));
-}
-
-function unionMP(...mps: MultiPolygon[]): MultiPolygon {
-  const valid = mps.filter((m) => m.length);
-  if (!valid.length) return [];
-  return pc.union(valid[0], ...valid.slice(1));
-}
-
-function diffMP(a: MultiPolygon, ...b: MultiPolygon[]): MultiPolygon {
-  const valid = b.filter((m) => m.length);
-  if (!a.length || !valid.length) return a;
-  return pc.difference(a, ...valid);
-}
-
-function ringArea(r: [number, number][]): number {
-  let s = 0;
-  for (let i = 0; i < r.length; i++) {
-    const [x1, y1] = r[i];
-    const [x2, y2] = r[(i + 1) % r.length];
-    s += x1 * y2 - x2 * y1;
-  }
-  return Math.abs(s) / 2;
-}
-
-export function areaMP(mp: MultiPolygon): number {
-  return mp.reduce((a, poly) => a + ringArea(poly[0]) - poly.slice(1).reduce((h, r) => h + ringArea(r), 0), 0);
-}
-
-function inMP(p: Point, mp: MultiPolygon): boolean {
-  for (const poly of mp) {
-    const ring = poly[0].map(([x, y]) => ({ x, y }));
-    if (!pointInPolygon(p, ring)) continue;
-    if (poly.slice(1).some((h) => pointInPolygon(p, h.map(([x, y]) => ({ x, y }))))) continue;
-    return true;
-  }
-  return false;
-}
-
-/** Außenringe eines MultiPolygons als Punktlisten (für die Darstellung) */
-export function ringsOf(mp: MultiPolygon): Point[][] {
-  return mp.flatMap((poly) => poly.map((r) => r.map(([x, y]) => ({ x, y }))));
-}
+export { areaMP, ringsOf };
 
 /* ---------- Geschosse ---------- */
 
@@ -197,10 +150,12 @@ function geschossFlaeche(st: Storey, nurR: boolean): MultiPolygon {
 }
 
 /**
- * Höhe bis zur Dachhaut bzw. bis OK Fußboden darüber (über dem Fußboden) je Punkt eines Geschosses;
- * die Höhenfunktionen werden einmal je Umriss aufgebaut.
+ * Höhe bis zur Dachhaut bzw. bis OK Fußboden darüber, gemessen vom Fußboden an dieser Stelle, je Punkt eines
+ * Geschosses. Split-Level: Liegt der Fußboden eines Umrisses oder Raums tiefer (versatz < 0), ist die Höhe
+ * dort entsprechend größer. Die Höhenfunktionen werden einmal je Umriss aufgebaut.
  */
 function hoehenFunktion(project: Project, st: Storey, floorZ: number): (p: Point) => { h: number; schraeg: boolean } | null {
+  const raeume = st.shapes.filter((r): r is RoomShape => r.kind === 'room' && !r.subtract && r.versatz !== undefined && r.points.length >= 3);
   const teile = outlinesOf(st)
     .filter((s) => !s.subtract)
     .map((s) => {
@@ -221,17 +176,27 @@ function hoehenFunktion(project: Project, st: Storey, floorZ: number): (p: Point
         const fr = d.gauben?.length ? roofFrame(d, s.points) : null;
         f = (p) => ({ h: fr ? Math.max(roof(p), gaubenHoeheAt(d, fr, p)) : roof(p), schraeg: d.typ !== 'flach' });
       }
-      return { pts: s.points, f };
+      return { pts: s.points, f, versatz: s.versatz ?? 0 };
     });
   return (p) => {
-    for (const t of teile) if (pointInPolygon(p, t.pts)) return t.f(p);
+    for (const t of teile) {
+      if (!pointInPolygon(p, t.pts)) continue;
+      const r = t.f(p);
+      const raum = raeume.find((x) => pointInPolygon(p, x.points));
+      const boden = raum ? raum.versatz! : t.versatz;
+      return { h: r.h - boden, schraeg: r.schraeg };
+    }
     return null;
   };
 }
 
+export type GelaendeQuelle = 'festgelegt' | 'modell' | 'lageplan' | 'annahme';
+
 export interface VollgeschossPruefung {
   storeyId: string;
   name: string;
+  /** Geländeoberfläche entlang der Außenwände dieses Geschosses (über ±0,00) */
+  gelaende: { mittel: number; min: number; max: number; quelle: GelaendeQuelle };
   /** Deckenoberkante über der Geländeoberfläche im Mittel [m] */
   ueberGelaende: number;
   oberirdisch: boolean;
@@ -266,12 +231,130 @@ export function istAufenthaltsraum(r: RoomShape): 'ja' | 'nein' | 'treppe' {
   return r.nutzung === 'NUF1' || r.nutzung === 'NUF2' ? 'ja' : 'nein';
 }
 
+/** Anforderung der Bauordnung an die lichte Höhe von Aufenthaltsräumen */
+export interface AufenthaltAnforderung {
+  /** geforderte lichte Höhe [m] */
+  hoehe: number;
+  /** über welchen Anteil der Raumfläche (0 … 1) */
+  anteil: number;
+  /** Raumteile unter dieser lichten Höhe bleiben außer Betracht (BauO NRW: 1,50 m im Dachraum) */
+  ohneUnter: number;
+  text: string;
+}
+
+/**
+ * Lichte Höhe von Aufenthaltsräumen nach der maßgebenden Bauordnung:
+ *  - BauO NW 1962/1970 (§ 59): 2,50 m, in Einfamilienhäusern und im Dachraum 2,30 m
+ *  - BauO NRW 2000/2018 (§ 48 bzw. § 46): 2,40 m; im Dachraum und Kellergeschoss 2,20 m über mindestens die
+ *    Hälfte der Netto-Raumfläche, Raumteile bis 1,50 m bleiben außer Betracht; Wohngebäude der
+ *    Gebäudeklassen 1 und 2: 2,30 m kann gestattet werden
+ */
+export function aufenthaltAnforderung(bauo: BauOFassung, o: { dachraumOderKeller: boolean; kleinesWohngebaeude: boolean }): AufenthaltAnforderung {
+  if (bauo === 'nw1962') {
+    const h = o.dachraumOderKeller || o.kleinesWohngebaeude ? 2.3 : 2.5;
+    return { hoehe: h, anteil: o.dachraumOderKeller ? 2 / 3 : 0.95, ohneUnter: 0, text: `lichte Höhe ${fmtM(h)} (BauO NW 1962/1970 § 59${o.dachraumOderKeller ? ', Dachraum' : o.kleinesWohngebaeude ? ', Einfamilienhaus' : ''})` };
+  }
+  if (o.dachraumOderKeller) {
+    return { hoehe: 2.2, anteil: 0.5, ohneUnter: 1.5, text: 'lichte Höhe 2,20 m über mindestens die Hälfte der Netto-Raumfläche, Raumteile bis 1,50 m außer Betracht (Dachraum/Kellergeschoss)' };
+  }
+  const h = o.kleinesWohngebaeude ? 2.3 : 2.4;
+  return { hoehe: h, anteil: 0.95, ohneUnter: 0, text: `lichte Höhe ${fmtM(h)}${o.kleinesWohngebaeude ? ' (Wohngebäude Gebäudeklasse 1/2)' : ''}` };
+}
+
+export interface RaumPruefung {
+  storeyId: string;
+  roomId: string;
+  name: string;
+  /** Vorschlag nach Name und Nutzung */
+  nachName: 'ja' | 'nein' | 'treppe';
+  anforderung: AufenthaltAnforderung;
+  /** Anteil der (maßgebenden) Raumfläche mit der geforderten lichten Höhe */
+  anteil: number;
+  /** größte lichte Höhe im Raum [m] */
+  maxHoehe: number;
+  erfuellt: boolean;
+  /** Ergebnis: Angabe am Raum, sonst Vorschlag (Aufenthaltsraum nur, wenn die lichte Höhe erfüllt ist) */
+  ergebnis: 'ja' | 'nein' | 'treppe';
+  automatisch: boolean;
+  begruendung: string;
+}
+
+/** Räume eines Geschosses nach Nutzung und lichter Höhe prüfen */
+/** Zwischenspeicher je Geschoss: hängt von Geschossen, Dachmodell und den Prüfparametern ab */
+const raeumeCache = new WeakMap<Storey, { storeys: Storey[]; dach: Project['dachModell']; schluessel: string; out: RaumPruefung[] }>();
+
+function raeumePruefen(project: Project, st: Storey, floorZ: number, bauo: BauOFassung, aufbau: number, keller: boolean, kleinesWohngebaeude: boolean): RaumPruefung[] {
+  const schluessel = [floorZ, bauo, aufbau, keller, kleinesWohngebaeude].join('|');
+  const c = raeumeCache.get(st);
+  if (c && c.storeys === project.storeys && c.dach === project.dachModell && c.schluessel === schluessel) return c.out;
+  const out = raeumePruefenRechnen(project, st, floorZ, bauo, aufbau, keller, kleinesWohngebaeude);
+  raeumeCache.set(st, { storeys: project.storeys, dach: project.dachModell, schluessel, out });
+  return out;
+}
+
+function raeumePruefenRechnen(project: Project, st: Storey, floorZ: number, bauo: BauOFassung, aufbau: number, keller: boolean, kleinesWohngebaeude: boolean): RaumPruefung[] {
+  const hoehe = hoehenFunktion(project, st, floorZ);
+  return st.shapes
+    .filter((r): r is RoomShape => r.kind === 'room' && !r.subtract && r.points.length >= 3)
+    .map((r) => {
+      const b = bounds(r.points);
+      const res = Math.max(0.1, Math.sqrt((b.maxX - b.minX) * (b.maxY - b.minY)) / 40);
+      const hs: { h: number; schraeg: boolean }[] = [];
+      for (let y = b.minY + res / 2; y < b.maxY; y += res) {
+        for (let x = b.minX + res / 2; x < b.maxX; x += res) {
+          const p = { x, y };
+          if (!pointInPolygon(p, r.points)) continue;
+          const v = hoehe(p);
+          // lichte Höhe: bis UK Decke bzw. Dachhaut abzüglich Aufbau
+          if (v) hs.push({ h: v.h - aufbau, schraeg: v.schraeg });
+        }
+      }
+      const dach = hs.some((x) => x.schraeg);
+      const anf = aufenthaltAnforderung(bauo, { dachraumOderKeller: dach || keller, kleinesWohngebaeude });
+      const massgebend = hs.filter((x) => x.h >= anf.ohneUnter - 1e-9);
+      const anteil = massgebend.length ? massgebend.filter((x) => x.h >= anf.hoehe - 1e-9).length / massgebend.length : 0;
+      const erfuellt = hs.length > 0 && anteil >= anf.anteil - 1e-9;
+      const nachName = istAufenthaltsraum({ ...r, aufenthalt: undefined });
+      const vorschlag = nachName === 'ja' && !erfuellt ? 'nein' : nachName;
+      const ergebnis = r.aufenthalt ?? vorschlag;
+      const maxHoehe = hs.length ? Math.max(...hs.map((x) => x.h)) : 0;
+      const name = [r.nummer, r.name].filter(Boolean).join(' ') || 'Raum';
+      const begruendung = r.aufenthalt
+        ? 'festgelegt'
+        : nachName === 'ja'
+          ? erfuellt
+            ? `Aufenthaltsraum nach Nutzung; ${anf.text} auf ${pct(anteil)} erfüllt`
+            : `nach Nutzung Aufenthaltsraum, aber ${anf.text} nur auf ${pct(anteil)} – kein Aufenthaltsraum im Sinne der Bauordnung`
+          : nachName === 'treppe'
+            ? 'Treppenraum'
+            : 'kein Aufenthaltsraum nach Nutzung';
+      return { storeyId: st.id, roomId: r.id, name, nachName, anforderung: anf, anteil, maxHoehe, erfuellt, ergebnis, automatisch: !r.aufenthalt, begruendung };
+    });
+}
+
 /**
  * Fläche der Aufenthaltsräume einschließlich zugehöriger Treppenräume und ihrer Umfassungswände:
  * Räume um die Wanddicke erweitert (Raster 5 cm), begrenzt auf den Geschossgrundriss.
  */
-function aufenthaltsFlaeche(st: Storey, grundriss: MultiPolygon, wand: number): number {
-  const rooms = st.shapes.filter((s): s is RoomShape => s.kind === 'room' && !s.subtract && istAufenthaltsraum(s) !== 'nein');
+/** Zwischenspeicher je Geschoss (unveränderlich): Wandzuschlag und gezählte Räume als Schlüssel */
+const aufenthaltCache = new WeakMap<Storey, { schluessel: string; flaeche: number }>();
+
+function aufenthaltsFlaeche(st: Storey, grundriss: MultiPolygon, wand: number, pruefung: RaumPruefung[]): number {
+  const schluessel = `${wand}|${pruefung
+    .filter((x) => x.ergebnis !== 'nein')
+    .map((x) => x.roomId)
+    .sort()
+    .join(',')}`;
+  const c = aufenthaltCache.get(st);
+  if (c && c.schluessel === schluessel) return c.flaeche;
+  const flaeche = aufenthaltsFlaecheRechnen(st, grundriss, wand, pruefung);
+  aufenthaltCache.set(st, { schluessel, flaeche });
+  return flaeche;
+}
+
+function aufenthaltsFlaecheRechnen(st: Storey, grundriss: MultiPolygon, wand: number, pruefung: RaumPruefung[]): number {
+  const zaehlt = new Set(pruefung.filter((x) => x.ergebnis !== 'nein').map((x) => x.roomId));
+  const rooms = st.shapes.filter((s): s is RoomShape => s.kind === 'room' && zaehlt.has(s.id));
   if (!rooms.length || !grundriss.length) return 0;
   const b = bounds(ringsOf(grundriss).flat());
   const res = 0.05;
@@ -321,6 +404,13 @@ export interface LageplanPosten {
   flaeche: number;
   /** davon außerhalb des Gebäudes */
   flaecheAussen: number;
+  /**
+   * davon nur dieser Fläche zugeordnet: ohne Gebäude und ohne Teile, die eine andere Fläche mit höherem Rang
+   * (Anrechnung) bereits abdeckt – Summen über diese Spalte zählen Überlagerungen nie doppelt
+   */
+  flaecheEindeutig: number;
+  /** Fläche, die andere Lageplan-Flächen schon abdecken [m²] */
+  ueberlagert: number;
   anrechnung: Anrechnung;
   /** Regel ohne Festlegung (für die Anzeige „prüfen“) */
   regel: Anrechnung;
@@ -330,7 +420,8 @@ export interface LageplanPosten {
 export interface Nachweis {
   recht: Recht;
   grundstueck: { flaeche?: number; ausLageplan?: number; quelle: 'projektdaten' | 'lageplan' | 'fehlt' };
-  gelaende: { hoehe: number; quelle: 'festgelegt' | 'lageplan' | 'annahme' };
+  /** Geländeoberfläche im Mittel rund um das Gebäude */
+  gelaende: { hoehe: number; quelle: GelaendeQuelle; min?: number; max?: number };
   hauptanlage: number;
   hauptanlagePolygone: Point[][];
   grundstueckPolygone: Point[][];
@@ -348,6 +439,10 @@ export interface Nachweis {
   /** Geschossfläche je Geschoss (R-Umrisse der Vollgeschosse bzw. Aufenthaltsräume) */
   gfJeGeschoss: { storeyId: string; name: string; flaeche: number; art: 'vollgeschoss' | 'aufenthalt' | 'keine' }[];
   lageplan: LageplanPosten[];
+  /** Räume der Nicht-Vollgeschosse (vor 1990): Aufenthaltsraum nach Nutzung und lichter Höhe */
+  raeume: RaumPruefung[];
+  /** sich überlagernde Lageplan-Flächen (b liegt teilweise auf a, a wird zuerst gezählt) */
+  ueberlagerungen: { a: string; b: string; flaeche: number }[];
   bilanz: { gebaeude: number; voll: number; teil: number; gruen: number; summe: number; differenz?: number };
   hinweise: string[];
 }
@@ -361,36 +456,6 @@ function kennzahl(flaeche: number, g: number | undefined, zul: number | undefine
     status = wert > zul + 1e-9 ? 'ueberschritten' : mit !== undefined && mit > zul + 1e-9 ? 'pruefen' : 'ok';
   }
   return { wert, mitOffenen: mit !== undefined && Math.abs(mit - wert) > 1e-9 ? mit : undefined, zulaessig: zul, reserve: g && zul !== undefined ? zul * g - flaeche : undefined, status };
-}
-
-/**
- * Geländeoberfläche im Mittel aus den Lageplan-Flächen entlang der Außenwände – nur wenn die Flächen
- * mindestens die Hälfte des Umfangs säumen (eine einzelne Garagenzufahrt sagt nichts über das Gelände).
- */
-function gelaendeAusLageplan(haupt: MultiPolygon, flaechen: LageplanFlaeche[]): number | undefined {
-  const mitHoehe = flaechen.filter((f) => !f.nachbar && f.hoehe !== undefined);
-  if (!mitHoehe.length) return undefined;
-  const hs: number[] = [];
-  let proben = 0;
-  for (const ring of ringsOf(haupt)) {
-    for (let i = 0; i < ring.length; i++) {
-      const a = ring[i];
-      const b = ring[(i + 1) % ring.length];
-      const len = Math.hypot(b.x - a.x, b.y - a.y);
-      if (len < 1e-6) continue;
-      const nx = (b.y - a.y) / len;
-      const ny = -(b.x - a.x) / len;
-      for (let t = 0.25; t < len; t += 0.5) {
-        const m = { x: a.x + ((b.x - a.x) * t) / len, y: a.y + ((b.y - a.y) * t) / len };
-        let p = { x: m.x + nx * 0.4, y: m.y + ny * 0.4 };
-        if (inMP(p, haupt)) p = { x: m.x - nx * 0.4, y: m.y - ny * 0.4 };
-        proben++;
-        const f = mitHoehe.find((x) => pointInPolygon(p, x.points));
-        if (f) hs.push(f.hoehe!);
-      }
-    }
-  }
-  return hs.length && hs.length >= 0.5 * proben ? hs.reduce((a, v) => a + v, 0) / hs.length : undefined;
 }
 
 export function massNachweis(project: Project): Nachweis {
@@ -411,33 +476,46 @@ export function massNachweis(project: Project): Nachweis {
   const grundriss = new Map(geschosse.map(({ st }) => [st.id, geschossFlaeche(st, false)]));
   const alleGeschosse = unionMP(...grundriss.values());
 
-  // Geländeoberfläche
+  // Geländeoberfläche: festgelegt, sonst aus dem Geländemodell (IFC) bzw. den Lageplan-Flächen mit Höhe –
+  // je Geschoss entlang seiner eigenen Außenwände (Hanglage: das Gelände steigt oder fällt am Gebäude)
+  const b = ringsOf(alleGeschosse).flat();
+  const hFn = gelaendeHoeheFn(project, b.length ? boundsOf(b) : undefined);
+  const quelleModell: GelaendeQuelle = project.gelaendeModell ? 'modell' : 'lageplan';
   let gelaende: Nachweis['gelaende'];
   if (m.gelaende !== undefined) gelaende = { hoehe: m.gelaende, quelle: 'festgelegt' };
   else {
-    const g = gelaendeAusLageplan(alleGeschosse, eigene);
-    if (g !== undefined) gelaende = { hoehe: g, quelle: 'lageplan' };
+    const u = gelaendeAmUmfang(alleGeschosse, hFn);
+    // ohne ausreichend Stützstellen (z. B. nur eine Zufahrt) sagt der Lageplan nichts über das Gelände
+    if (u && u.abdeckung >= 0.5) gelaende = { hoehe: u.mittel, quelle: quelleModell, min: u.min, max: u.max };
     else {
       gelaende = { hoehe: 0, quelle: 'annahme' };
-      hinweise.push('Geländeoberfläche unbekannt: ±0,00 angenommen. Höhe eintragen oder den Lageplan rund um das Gebäude mit Flächen (mit Höhe) vervollständigen.');
+      hinweise.push('Geländeoberfläche unbekannt: ±0,00 angenommen. Höhe eintragen, das Gelände mit der IFC übernehmen oder den Lageplan rund um das Gebäude mit Flächen (mit Höhe) vervollständigen.');
     }
   }
+  const gelaendeVon = (gr: MultiPolygon): VollgeschossPruefung['gelaende'] => {
+    if (gelaende.quelle === 'festgelegt' || gelaende.quelle === 'annahme') return { mittel: gelaende.hoehe, min: gelaende.hoehe, max: gelaende.hoehe, quelle: gelaende.quelle };
+    const u = gelaendeAmUmfang(gr, hFn);
+    if (u && u.abdeckung >= 0.5) return { mittel: u.mittel, min: u.min, max: u.max, quelle: quelleModell };
+    return { mittel: gelaende.hoehe, min: gelaende.min ?? gelaende.hoehe, max: gelaende.max ?? gelaende.hoehe, quelle: gelaende.quelle };
+  };
 
   // Vollgeschossprüfung
   const pruefungen: VollgeschossPruefung[] = [];
-  let bezugDarunter = 0;
   geschosse.forEach(({ st, e }, idx) => {
     const gr = grundriss.get(st.id)!;
     const A = areaMP(gr);
     const next = geschosse.slice(idx + 1).find((x) => x.e > e + 1e-6);
     const decke = next ? next.e : e + st.hoehe;
-    const ueber = decke - gelaende.hoehe;
-    const darunter = idx > 0 ? bezugDarunter : A;
-    bezugDarunter = A;
+    const gel = gelaendeVon(gr);
+    const ueber = decke - gel.mittel;
+    // Geschoss darunter: alle Geschosse der nächsttieferen Ebene (gleich hohe Geschosse nebeneinander zählen zusammen)
+    const tiefer = geschosse.filter((x) => x.e < e - 1e-6);
+    const eUnten = tiefer.length ? Math.max(...tiefer.map((x) => x.e)) : undefined;
+    const darunter = eUnten === undefined ? A : areaMP(unionMP(...tiefer.filter((x) => Math.abs(x.e - eUnten) < 1e-6).map((x) => grundriss.get(x.st.id)!)));
     // Höhenraster über dem Grundriss
     const samples = rasterHoehen(project, st, e, gr);
     const schraeg = samples.some((s) => s.schraeg);
-    const staffel = idx > 0 && A < darunter - 1 && !schraeg;
+    const staffel = eUnten !== undefined && A < darunter - 1 && !schraeg;
     const anteilVon = (soll: number, licht: boolean, bezug: number) => {
       const hoch = samples.filter((s) => (licht ? s.h - aufbau : s.h) >= soll - 1e-9).length * (samples[0]?.zelle ?? 0);
       return { hoch, anteil: bezug > 0 ? hoch / bezug : 0 };
@@ -447,6 +525,7 @@ export function massNachweis(project: Project): Nachweis {
       const ob = ueber > 1.6;
       const { hoch, anteil } = anteilVon(2.3, true, darunter);
       p = {
+        gelaende: gel,
         ueberGelaende: ueber,
         oberirdisch: ob,
         anteil,
@@ -467,6 +546,7 @@ export function massNachweis(project: Project): Nachweis {
       const { hoch, anteil } = anteilVon(2.3, false, bezug);
       const vgHoehe = soll === 0 ? samples.length > 0 && samples.every((s) => s.h >= 2.3 - 1e-9) : anteil > soll;
       p = {
+        gelaende: gel,
         ueberGelaende: ueber,
         oberirdisch: ob,
         anteil,
@@ -487,12 +567,13 @@ export function massNachweis(project: Project): Nachweis {
               : `Geschosshöhe ${vgHoehe ? '≥' : '<'} 2,30 m`,
       };
     } else {
-      // BauO NW 1962/1970
-      const vollUeber = e >= gelaende.hoehe - 0.005;
+      // BauO NW 1962/1970: „vollständig über der festgelegten Geländeoberfläche“ – auch am höchsten Punkt des Geländes
+      const vollUeber = e >= gel.max - 0.005;
       const soll = schraeg || m.einfamilienhaus ? 2.3 : 2.5;
       const { hoch, anteil } = anteilVon(soll, true, A);
       const keller = !vollUeber && ueber > 1.4;
       p = {
+        gelaende: gel,
         ueberGelaende: ueber,
         oberirdisch: vollUeber,
         anteil,
@@ -508,7 +589,7 @@ export function massNachweis(project: Project): Nachweis {
           ? `lichte Höhe ≥ ${fmtM(soll)} auf ${pct(anteil)} der eigenen Grundfläche (mindestens zwei Drittel gefordert)`
           : keller
             ? `Kellergeschoss ragt im Mittel ${fmtM(ueber)} über Gelände (mehr als 1,40 m): wird angerechnet`
-            : `nicht vollständig über der festgelegten Geländeoberfläche, im Mittel ${fmtM(ueber)} darüber: kein Vollgeschoss`,
+            : `nicht vollständig über der Geländeoberfläche (Fußboden ${fmtM(e - gel.max)} unter dem höchsten Geländepunkt), Decke im Mittel ${fmtM(ueber)} darüber: kein Vollgeschoss`,
       };
     }
     const { vg, ...rest } = p;
@@ -533,11 +614,42 @@ export function massNachweis(project: Project): Nachweis {
       versiegelung: f.versiegelung,
       flaeche: areaMP(mp),
       flaecheAussen: areaMP(diffMP(mp, haupt)),
+      flaecheEindeutig: 0,
+      ueberlagert: 0,
       anrechnung: f.nachbar ? 'nein' : anrechnung(f.nutzung, re.baunvo, m.einstufung),
       regel: f.nachbar ? 'nein' : anrechnungRegel(f.nutzung, re.baunvo),
       nachbar: !!f.nachbar,
     };
   });
+  // Überlagerungen eindeutig zuordnen: Flächen nach Rang der Anrechnung, gleiche Ränge in Listenfolge
+  const RANG: Record<Anrechnung, number> = { hauptanlage: 0, grz2: 1, garage01: 2, pruefen: 3, nein: 4 };
+  const reihenfolge = flaechen
+    .map((f, i) => ({ f, i, post: posten[i] }))
+    .sort((a, b) => Number(a.post.nachbar) - Number(b.post.nachbar) || RANG[a.post.anrechnung] - RANG[b.post.anrechnung] || a.i - b.i);
+  let belegt: MultiPolygon = haupt;
+  const ueberlagerungen: Nachweis['ueberlagerungen'] = [];
+  for (const { f, post } of reihenfolge) {
+    const mp = unionAll([f.points]);
+    const rest = diffMP(mp, belegt);
+    post.flaecheEindeutig = areaMP(rest);
+    post.ueberlagert = Math.max(0, post.flaecheAussen - post.flaecheEindeutig);
+    if (post.ueberlagert > 0.05 && !post.nachbar) {
+      // mit welchen Flächen?
+      for (const g of reihenfolge) {
+        if (g.f === f) break;
+        if (g.post.nachbar) continue;
+        const a = areaMP(intersectMP(diffMP(mp, haupt), unionAll([g.f.points])));
+        if (a > 0.05) ueberlagerungen.push({ a: g.f.name || 'Fläche', b: f.name || 'Fläche', flaeche: a });
+      }
+    }
+    belegt = unionMP(belegt, mp);
+  }
+  if (ueberlagerungen.length) {
+    hinweise.push(
+      `Lageplan-Flächen überlagern sich (${ueberlagerungen.map((u) => `${u.b} mit ${u.a}: ${fmtA(u.flaeche)}`).join('; ')}). Gerechnet wird jede Stelle nur einmal – mit der Fläche, die stärker angerechnet wird.`,
+    );
+  }
+
   const polys = (pred: (p: LageplanPosten) => boolean) => unionAll(flaechen.filter((f) => pred(posten.find((x) => x.id === f.id)!)).map((f) => f.points));
   const unterirdischAnr = anrechnung('unterirdisch', re.baunvo, m.einstufung);
 
@@ -581,11 +693,18 @@ export function massNachweis(project: Project): Nachweis {
   // Geschossfläche
   const vorher1990 = re.baunvo !== '1990';
   const wand = m.wandzuschlag ?? 0.25;
+  // Räume der Nicht-Vollgeschosse nach Nutzung und lichter Höhe (nur vor 1990 für die Geschossfläche maßgebend)
+  const raeume: RaumPruefung[] = vorher1990
+    ? geschosse.flatMap(({ st, e }) => {
+        const pr = pruefungen.find((x) => x.storeyId === st.id)!;
+        return pr.vollgeschoss ? [] : raeumePruefen(project, st, e, re.bauo, aufbau, !pr.oberirdisch, !!m.einfamilienhaus);
+      })
+    : [];
   const gfJeGeschoss: Nachweis['gfJeGeschoss'] = geschosse.map(({ st }) => {
     const pr = pruefungen.find((x) => x.storeyId === st.id)!;
     if (pr.vollgeschoss) return { storeyId: st.id, name: st.name, flaeche: areaMP(geschossFlaeche(st, true)), art: 'vollgeschoss' as const };
     if (vorher1990) {
-      const a = aufenthaltsFlaeche(st, grundriss.get(st.id)!, wand);
+      const a = aufenthaltsFlaeche(st, grundriss.get(st.id)!, wand, raeume.filter((x) => x.storeyId === st.id));
       if (a > 0) return { storeyId: st.id, name: st.name, flaeche: a, art: 'aufenthalt' as const };
     }
     return { storeyId: st.id, name: st.name, flaeche: 0, art: 'keine' as const };
@@ -637,17 +756,35 @@ export function massNachweis(project: Project): Nachweis {
     geschosse: pruefungen,
     gfJeGeschoss,
     lageplan: posten,
+    ueberlagerungen,
+    raeume,
     bilanz,
     hinweise,
   };
 }
 
 /** Höhen über dem Grundriss eines Geschosses in einem Raster (Zellgröße je nach Fläche, mind. 10 cm) */
-function rasterHoehen(project: Project, st: Storey, floorZ: number, gr: MultiPolygon): { h: number; schraeg: boolean; zelle: number }[] {
+type Probe = { h: number; schraeg: boolean; zelle: number };
+/**
+ * Raster je Geschoss zwischenspeichern: Es hängt nur von den Geschossen (Liste unverändert = Inhalt unverändert),
+ * dem Dachmodell und der Fußbodenhöhe ab – Änderungen an Lageplan oder Festsetzungen rechnen es nicht neu.
+ */
+const rasterCache = new WeakMap<Storey, { storeys: Storey[]; dach: Project['dachModell']; floorZ: number; out: Probe[] }>();
+
+function rasterHoehen(project: Project, st: Storey, floorZ: number, gr: MultiPolygon): Probe[] {
+  const c = rasterCache.get(st);
+  if (c && c.storeys === project.storeys && c.dach === project.dachModell && c.floorZ === floorZ) return c.out;
+  const out = rasterRechnen(project, st, floorZ, gr);
+  rasterCache.set(st, { storeys: project.storeys, dach: project.dachModell, floorZ, out });
+  return out;
+}
+
+function rasterRechnen(project: Project, st: Storey, floorZ: number, gr: MultiPolygon): Probe[] {
   if (!gr.length) return [];
   const b = bounds(ringsOf(gr).flat());
-  const res = Math.max(0.1, Math.sqrt((b.maxX - b.minX) * (b.maxY - b.minY)) / 150);
-  const out: { h: number; schraeg: boolean; zelle: number }[] = [];
+  // etwa 120 × 120 Proben, mindestens 10 cm – genau genug für Flächenanteile von Prozent
+  const res = Math.max(0.1, Math.sqrt((b.maxX - b.minX) * (b.maxY - b.minY)) / 120);
+  const out: Probe[] = [];
   const hoehe = hoehenFunktion(project, st, floorZ);
   for (let y = b.minY + res / 2; y < b.maxY; y += res) {
     for (let x = b.minX + res / 2; x < b.maxX; x += res) {
@@ -664,3 +801,6 @@ const fmtM = (v: number) => `${(Math.round(v * 100) / 100).toLocaleString('de-DE
 const fmtA = (v: number) => `${(Math.round(v * 100) / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`;
 const pct = (v: number) => `${Math.round(v * 100)} %`;
 
+function boundsOf(pts: Point[]) {
+  return bounds(pts);
+}

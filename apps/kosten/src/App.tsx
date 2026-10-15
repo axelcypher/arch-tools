@@ -1,3 +1,5 @@
+import { speichernAbwarten } from '@core/platform/projektDatei';
+import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { useEffect, useState } from 'react';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
@@ -9,7 +11,7 @@ import { KostenDruck } from './components/KostenDruck';
 import { KostenView } from './components/KostenView';
 import { MengenView } from './components/MengenView';
 import { bauteileLaden } from './bauteile';
-import { oeffnen, speichern } from './datei';
+import { ifcAktualisierenWaehlen, oeffnen, speichern } from './datei';
 import type { MengenBezug } from './mengen';
 import { useKosten } from './store';
 
@@ -42,9 +44,10 @@ export function App() {
   }, [name, dirty]);
 
   const onOpen = async () => {
+    eingabeAbschliessen();
     if (useKosten.getState().dirty && !window.confirm('Ungespeicherte Änderungen verwerfen?')) return;
     try {
-      const r = await oeffnen(setBusy);
+      const r = await oeffnen(setBusy, useKosten.getState().datei);
       if (r) {
         useKosten.getState().load(r.project, r.datei, r.basis);
         setBericht(r.bericht);
@@ -57,15 +60,30 @@ export function App() {
     }
   };
 
-  const onSave = async () => {
-    const { project, datei, basis } = useKosten.getState();
+  const onIfcAktualisieren = async () => {
     try {
-      const r = await speichern(project, datei, basis);
+      const { project, datei } = useKosten.getState();
+      const r = await ifcAktualisierenWaehlen(project, datei, setBusy);
       if (r) {
-        // während des Dialogs weitergearbeitet? Dann bleibt der neue Stand ungespeichert.
-        if (useKosten.getState().project === project) useKosten.getState().markSaved(r.datei, r.project);
-        if (r.zusammengefuehrt) alert('In der Datei standen Änderungen aus einer anderen App. Sie wurden übernommen, nicht überschrieben.');
+        useKosten.getState().update(() => r.project);
+        setBericht(r.bericht);
       }
+    } catch (e) {
+      log.error('IFC-Aktualisierung fehlgeschlagen', e);
+      alert(`IFC konnte nicht übernommen werden: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onSave = async (unter = false) => {
+    eingabeAbschliessen();
+    await speichernAbwarten(); // Strg+S während eines Speicherns: danach den aktuellen Stand speichern
+    const { project, datei, basis, dokument } = useKosten.getState();
+    try {
+      const r = await speichern(project, datei, basis, unter);
+      // während des Speicherns weitergearbeitet? Dann bleibt der neue Stand ungespeichert (mit den Änderungen aus der Datei).
+      if (r) useKosten.getState().markSaved(r.datei, r.project, project, dokument);
     } catch (e) {
       log.error('Speichern fehlgeschlagen', e instanceof Error ? e.message : String(e));
       alert(`Speichern fehlgeschlagen: ${String(e)}`);
@@ -78,13 +96,15 @@ export function App() {
       const k = e.key.toLowerCase();
       if (k === 's') {
         e.preventDefault();
-        void onSave();
+        void onSave(e.shiftKey);
       } else if (k === 'o') {
         e.preventDefault();
         void onOpen();
       } else if (k === 'p' && hatPositionen) {
         e.preventDefault();
         setDruckOpen(true);
+      } else if ((istEingabeZiel(e.target) || dialogOffen()) && (k === 'z' || k === 'y')) {
+        // im Feld: Rückgängig des Browsers für den Text; hinter einem Dialog nichts am Projekt ändern
       } else if (k === 'z' && !e.shiftKey) {
         e.preventDefault();
         useKosten.getState().undo();
@@ -107,14 +127,26 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Kostenermittlung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} />
+      <TitleBar app="Kostenermittlung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="kosten" />
       <div className="toolbar">
         <div className="tb-group">
-          <button onClick={onOpen} title="Projekt des Flächenrechners (.oap/.akhp) oder IFC-Modell öffnen (Strg+O)">
+          <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
             Öffnen
           </button>
-          <button onClick={onSave} title={isTauri() ? 'Projekt speichern (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
+          <button onClick={() => void onSave()} title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
             Speichern{dirty ? ' •' : ''}
+          </button>
+          {isTauri() && (
+            <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
+              Speichern unter …
+            </button>
+          )}
+          <button
+            onClick={() => void onIfcAktualisieren()}
+            disabled={!hatGebaeude}
+            title="Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Ihre Änderungen bleiben"
+          >
+            IFC aktualisieren …
           </button>
         </div>
         <div className="tb-group">
@@ -171,7 +203,7 @@ export function App() {
           <div className="ko-leer">
             <h2>Kostenermittlung nach DIN 276</h2>
             <p>
-              Ein Projekt des Flächenrechners (<code>.oap</code>/<code>.akhp</code>) oder direkt ein IFC-Modell öffnen. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe
+              Ein Projekt des Flächenrechners (<code>.oap</code>) oder direkt ein IFC-Modell öffnen. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe
               Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und Kostenstände pflegt dieses Tool. Gespeichert wird in dieselbe Projektdatei.
             </p>
             <p className="muted small-text">Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen.</p>

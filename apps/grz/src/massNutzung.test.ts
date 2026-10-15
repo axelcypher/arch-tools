@@ -188,3 +188,129 @@ describe('Maß der baulichen Nutzung: Speichern', () => {
     }
   });
 });
+
+describe('Überlagerungen, Gelände am Hang, Split-Level', () => {
+  it('überlagernde Lageplan-Flächen zählen nur einmal – mit der stärkeren Anrechnung', () => {
+    const p = haus('2020-01-01');
+    // Zufahrt (GRZ II) 20 m², darauf ein Stellplatz (GRZ II) und eine Grünfläche, die zur Hälfte darunter liegt
+    lageplan(
+      p,
+      flaeche(12, 0, 16, 5, { name: 'Zufahrt', nutzung: 'zufahrt', versiegelung: 'teil' }),
+      flaeche(12, 0, 14, 5, { name: 'Stellplatz', nutzung: 'stellplatz', versiegelung: 'voll' }),
+      flaeche(14, 0, 18, 5, { name: 'Garten', nutzung: 'garten', versiegelung: 'gruen' }),
+    );
+    const n = massNachweis(p);
+    const summe = n.lageplan.reduce((a, l) => a + l.flaecheEindeutig, 0);
+    // Vereinigung 6 × 5 = 30 m², obwohl die Einzelflächen 20 + 10 + 20 = 50 m² haben
+    expect(summe).toBeCloseTo(30, 6);
+    const garten = n.lageplan.find((l) => l.name === 'Garten')!;
+    expect(garten.flaecheEindeutig).toBeCloseTo(10, 6);
+    expect(garten.ueberlagert).toBeCloseTo(10, 6);
+    expect(n.ueberlagerungen.length).toBeGreaterThan(0);
+    expect(n.grz2!.wert * 612.5).toBeCloseTo(135 + 20, 6);
+  });
+
+  it('Hanglage: Gelände je Geschoss entlang der Außenwände aus den Lageplan-Flächen', () => {
+    const p = haus('2020-01-01');
+    delete p.massNutzung!.gelaende;
+    // talseitig (y < 0) liegt das Gelände bei −2,5, bergseitig (y > 11,25) bei 0,0; seitlich gestaffelt
+    lageplan(
+      p,
+      flaeche(-5, -5, 17, 0, { name: 'Tal', hoehe: -2.5 }),
+      flaeche(-5, 11.25, 17, 16, { name: 'Berg', hoehe: 0 }),
+      flaeche(-5, 0, 0, 11.25, { name: 'West', hoehe: -1.25 }),
+      flaeche(12, 0, 17, 11.25, { name: 'Ost', hoehe: -1.25 }),
+    );
+    const n = massNachweis(p);
+    const ug = n.geschosse.find((g) => g.name === 'UG')!;
+    expect(ug.gelaende.min).toBeCloseTo(-2.5, 6);
+    expect(ug.gelaende.max).toBeCloseTo(0, 6);
+    // Mittel längengewichtet: 12 m × −2,5 + 12 m × 0 + 2 × 11,25 m × −1,25 → ≈ −1,25
+    expect(ug.gelaende.mittel).toBeCloseTo(-1.25, 1);
+    // UG-Decke (±0,00) im Mittel 1,25 m über Gelände → kein oberirdisches Geschoss (≤ 1,60 m)
+    expect(ug.oberirdisch).toBe(false);
+  });
+
+  it('BauO NW 1962: „vollständig über der Geländeoberfläche“ gilt am höchsten Geländepunkt', () => {
+    const p = haus('1967-03-14');
+    delete p.massNutzung!.gelaende;
+    // Gelände rundum −0,2, nur bergseitig +0,3 über dem EG-Fußboden
+    lageplan(
+      p,
+      flaeche(-5, -5, 17, 0, { hoehe: -0.2 }),
+      flaeche(-5, 11.25, 17, 16, { hoehe: 0.3 }),
+      flaeche(-5, 0, 0, 11.25, { hoehe: -0.2 }),
+      flaeche(12, 0, 17, 11.25, { hoehe: -0.2 }),
+    );
+    const eg = massNachweis(p).geschosse.find((g) => g.name === 'EG')!;
+    // nicht vollständig über dem Gelände → wie ein Kellergeschoss: zählt, weil es im Mittel mehr als 1,40 m herausragt
+    expect(eg.oberirdisch).toBe(false);
+    expect(eg.begruendung).toContain('Kellergeschoss ragt im Mittel');
+    expect(eg.vollgeschoss).toBe(true);
+  });
+
+  it('tiefer liegender Raum (Split-Level) zählt mit größerer lichter Höhe', () => {
+    const p = haus('1967-03-14');
+    const dg = p.storeys.find((s) => s.name === 'DG')!;
+    const zimmer = dg.shapes.find((s) => s.name === 'Zimmer I')!;
+    const vorher = massNachweis(p).raeume.find((r) => r.name.includes('Zimmer I'))!.anteil;
+    // unveränderlich ändern wie in der App (die Berechnung hält Zwischenergebnisse je Geschoss-Objekt)
+    const p2 = { ...p, storeys: p.storeys.map((s) => (s === dg ? { ...dg, shapes: dg.shapes.map((x) => (x === zimmer ? { ...x, versatz: -0.6 } : x)) } : s)) };
+    const nachher = massNachweis(p2).raeume.find((r) => r.name.includes('Zimmer I'))!;
+    expect(nachher.anteil).toBeGreaterThanOrEqual(vorher);
+    expect(nachher.maxHoehe).toBeGreaterThan(5.3);
+  });
+
+  it('Aufenthaltsraum ohne die geforderte lichte Höhe wird nicht als solcher vorgeschlagen', () => {
+    const p = haus('1967-03-14');
+    const dg = p.storeys.find((s) => s.name === 'DG')!;
+    // schmaler Raum am Rand unter der Dachschräge: kaum lichte Höhe
+    dg.shapes.push(createRoom(rectPoints({ x: 0.2, y: 4 }, { x: 1.2, y: 7 }), '3', 'Kinderzimmer'));
+    const r = massNachweis(p).raeume.find((x) => x.name.includes('Kinderzimmer'))!;
+    expect(r.nachName).toBe('ja');
+    expect(r.erfuellt).toBe(false);
+    expect(r.ergebnis).toBe('nein');
+  });
+});
+
+describe('Gelände aus dem 3D-Modell', () => {
+  it('Hanglage aus dem Geländemodell: Gelände je Geschoss aus dem Höhenfeld, Mittel entlang der Wände', () => {
+    const p = haus('2020-01-01');
+    delete p.massNutzung!.gelaende;
+    // Gelände fällt in y-Richtung von 0,0 (y = 11,25) auf −3,0 (y = 0) und weiter
+    const z = (y: number) => -3 + (3 * y) / 11.25;
+    const tri: number[] = [];
+    for (let x = -10; x < 22; x += 2)
+      for (let y = -10; y < 22; y += 2) tri.push(x, y, z(y), x + 2, y, z(y), x + 2, y + 2, z(y + 2), x, y, z(y), x + 2, y + 2, z(y + 2), x, y + 2, z(y + 2));
+    p.gelaendeModell = { name: 'IFC-Gelände', triangles: tri };
+    const n = massNachweis(p);
+    const ug = n.geschosse.find((g) => g.name === 'UG')!;
+    expect(ug.gelaende.quelle).toBe('modell');
+    // Mittel entlang der Wände ≈ −1,5 (Gefälle über die Hauslänge), tiefster Punkt talseitig
+    expect(ug.gelaende.mittel).toBeCloseTo(-1.5, 1);
+    expect(ug.gelaende.min).toBeLessThan(-3);
+    // UG-Decke ±0,00 im Mittel 1,5 m über Gelände → nicht oberirdisch (≤ 1,60 m)
+    expect(ug.oberirdisch).toBe(false);
+  });
+});
+
+describe('Lageplan: Kopieren und Pfeiltasten', () => {
+  it('Duplizieren und Verschieben mit Pfeiltasten (ein Undo-Schritt)', async () => {
+    const { auswahlVerschieben, flaechenDuplizieren, useGrz } = await import('./store');
+    const p = haus();
+    lageplan(p, { ...flaeche(12, 0, 16, 5, { name: 'Zufahrt', nutzung: 'zufahrt' }), ifcId: 'G-1' });
+    useGrz.getState().load(p);
+    const id = p.lageplan!.flaechen[0].id;
+    useGrz.getState().select(id);
+    expect(flaechenDuplizieren()).toBe(1);
+    const fl = useGrz.getState().project.lageplan!.flaechen;
+    expect(fl).toHaveLength(2);
+    expect(fl[1].ifcId).toBeUndefined();
+    expect(fl[1].points[0]).toEqual({ x: 12.5, y: 0.5 });
+    const schritte = useGrz.getState().past.length;
+    auswahlVerschieben(0.1, 0);
+    auswahlVerschieben(0.1, 0);
+    expect(useGrz.getState().project.lageplan!.flaechen[1].points[0].x).toBeCloseTo(12.7, 9);
+    expect(useGrz.getState().past.length).toBe(schritte + 1);
+  });
+});

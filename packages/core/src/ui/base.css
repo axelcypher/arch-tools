@@ -1199,3 +1199,165 @@ code {
   white-space: pre-wrap;
   color: var(--danger);
 }
+
+.unterbau-liste {
+  margin: 2px 0 0;
+  padding-left: 16px;
+  color: var(--muted);
+}
+
+/* Hilfslinien und Rahmenauswahl auf Zeichenflächen */
+.guide-line {
+  stroke: #d6005c;
+  stroke-width: 1;
+  stroke-dasharray: 6 4;
+  opacity: 0.75;
+}
+
+.guide-line.guide-flucht {
+  stroke: #7a2ed6;
+}
+
+.guide-anchor {
+  fill: none;
+  stroke: #d6005c;
+  stroke-width: 1.2;
+}
+
+.select-box {
+  fill: rgba(42, 91, 215, 0.08);
+  stroke: #2a5bd7;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+/* ---------- Nachschlagewerk ---------- */
+
+.hilfe-knopf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: 6px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+  background: transparent;
+  vertical-align: middle;
+}
+
+.hilfe-knopf:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.nachschlagewerk {
+  width: min(1100px, 94vw);
+  height: min(760px, 88vh);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.nw-kopf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nw-kopf h3 {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.nw-suche {
+  flex: 1;
+}
+
+.nw-inhalt {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  gap: 12px;
+}
+
+.nw-liste {
+  overflow: auto;
+  border-right: 1px solid var(--border);
+  padding-right: 8px;
+}
+
+.nw-gruppe {
+  margin-bottom: 10px;
+}
+
+.nw-gruppe-titel {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 4px 0;
+}
+
+.nw-eintrag {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-color: transparent;
+  background: transparent;
+  padding: 4px 6px;
+}
+
+.nw-eintrag.active {
+  background: var(--accent-soft);
+}
+
+.nw-text {
+  overflow: auto;
+  padding-right: 6px;
+  line-height: 1.5;
+}
+
+.regel h3 {
+  margin: 0 0 4px;
+}
+
+.regel-kurz {
+  color: var(--muted);
+  margin-top: 0;
+}
+
+.regel-zitat {
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--code-bg);
+  font-style: italic;
+}
+
+.regel-zitat footer {
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.regel-quellen a {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.nw-fuss {
+  margin: 0;
+}
+
+/* fokussierbare Zeichenflächen (Tab wählt Flächen): kein Fokusrahmen bei Mausbedienung */
+svg[tabindex]:focus:not(:focus-visible) {
+  outline: none;
+}

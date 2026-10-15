@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { computeProject } from '@core/calc';
+import { computeProject, raumBodenVersatz } from '@core/calc';
+import { disposeGroup, facesToGeometry, fitCamera, outlineFaces, prismaGeometrie, unterbauKoerper } from '@core/ui/three3d';
 import { fmt2 } from '@core/format';
-import type { OutlineShape, Project } from '@core/model';
 import { storeyElevations } from '@core/model';
 import { nutzungInfo } from '@core/norms';
-import type { Point3 } from '@core/roof';
-import { solidFaces } from '@core/roof';
-import { modellSolidFaces } from '@core/modellSolid';
 import { useTheme } from '@core/platform/theme';
 import { useEditor } from '../store/store';
 
@@ -126,7 +123,7 @@ export default function View3D() {
       for (const s of storey.shapes) {
         if (s.points.length < 3) continue;
         if (s.kind === 'outline') {
-          const faces = outlineFaces(s, project, elev[i], storey.hoehe);
+          const faces = outlineFaces(s, project, elev[i], storey.hoehe, storey);
           const color = s.subtract ? 0xc0392b : s.umschliessung === 'S' ? 0x2fa39a : 0x2a5bd7;
           const sel = s.id === selectedId;
           const geo = facesToGeometry(faces, z0);
@@ -148,11 +145,29 @@ export default function View3D() {
             new THREE.LineBasicMaterial({ color: sel ? 0xb35900 : s.subtract ? 0x8e2b20 : 0x1d3f96 }),
           );
           t.content.add(edges);
+          // Unterbau: Split-Level-Absenkungen und Bodenplatte unter dem Fußboden
+          for (const u of unterbauKoerper(s, storey, project)) {
+            const ug = prismaGeometrie(u.polygone, z0 + u.unten, z0 + u.oben);
+            const um = new THREE.MeshStandardMaterial({
+              color: u.art === 'sohle' ? 0x8a8f99 : color,
+              transparent: true,
+              opacity: active ? 0.45 : 0.25,
+              side: THREE.DoubleSide,
+              depthWrite: false,
+              roughness: 0.9,
+            });
+            const umesh = new THREE.Mesh(ug, um);
+            umesh.userData = { shapeId: s.id, storeyId: storey.id };
+            umesh.renderOrder = 2;
+            t.content.add(umesh);
+            t.pickables.push(umesh);
+            t.content.add(new THREE.LineSegments(new THREE.EdgesGeometry(ug, 25), new THREE.LineBasicMaterial({ color: u.art === 'sohle' ? 0x5b6068 : 0x1d3f96 })));
+          }
         } else if (showRooms) {
           const shape = new THREE.Shape(s.points.map((p) => new THREE.Vector2(p.x, p.y)));
           const geo = new THREE.ShapeGeometry(shape);
           geo.rotateX(Math.PI / 2); // (x, y, 0) → (x, 0, y)
-          geo.translate(0, z0 + 0.02, 0);
+          geo.translate(0, z0 + raumBodenVersatz(s, storey) + 0.02, 0);
           const mat = new THREE.MeshStandardMaterial({
             color: s.subtract ? 0xc0392b : nutzungInfo(s.nutzung).color,
             side: THREE.DoubleSide,
@@ -271,71 +286,3 @@ export default function View3D() {
     </div>
   );
 }
-
-/** Körperflächen eines Umrisses; bei Dach aus Modell als Höhenfeld */
-function outlineFaces(s: OutlineShape, project: Project, floorZ: number, storeyH: number) {
-  const h = s.hoehe ?? storeyH;
-  if (s.dach?.typ === 'modell' && project.dachModell) {
-    const storey = project.storeys.find((st) => st.shapes.includes(s));
-    return modellSolidFaces(project, storey, s, floorZ);
-  }
-  return solidFaces(s.points, s.dach, h);
-}
-
-function facesToGeometry(f: { tops: Point3[][]; sides: Point3[][]; bottom: Point3[] }, z0: number): THREE.BufferGeometry {
-  const pos: number[] = [];
-  const push = (p: Point3) => pos.push(p.x, p.z + z0, p.y);
-  const addPoly = (poly: Point3[], proj: (p: Point3) => THREE.Vector2) => {
-    if (poly.length < 3) return;
-    const tris = THREE.ShapeUtils.triangulateShape(poly.map(proj), []);
-    for (const [a, b, c] of tris) {
-      push(poly[a]);
-      push(poly[b]);
-      push(poly[c]);
-    }
-  };
-  const xy = (p: Point3) => new THREE.Vector2(p.x, p.y);
-  for (const t of f.tops) addPoly(t, xy);
-  addPoly(f.bottom, xy);
-  for (const s of f.sides) {
-    // senkrechte Fläche: in (Länge entlang der Wand, Höhe) triangulieren
-    const a = s[0];
-    const b = s[s.length - 1];
-    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-    const ux = (b.x - a.x) / len;
-    const uy = (b.y - a.y) / len;
-    addPoly(s, (p) => new THREE.Vector2((p.x - a.x) * ux + (p.y - a.y) * uy, p.z));
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.computeVertexNormals();
-  return geo;
-}
-
-function fitCamera(camera: THREE.PerspectiveCamera, controls: OrbitControls, box: THREE.Box3) {
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  const r = Math.max(size.length() / 2, 2);
-  const dist = r / Math.sin((camera.fov * Math.PI) / 360);
-  const dir = new THREE.Vector3(1, 0.75, 1.2).normalize();
-  camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
-  camera.near = dist / 100;
-  camera.far = dist * 20;
-  camera.updateProjectionMatrix();
-  controls.target.copy(center);
-  controls.update();
-}
-
-function disposeGroup(g: THREE.Group) {
-  for (const o of [...g.children]) {
-    g.remove(o);
-    o.traverse((c) => {
-      const m = c as THREE.Mesh;
-      m.geometry?.dispose();
-      const mat = m.material as THREE.Material | THREE.Material[] | undefined;
-      if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
-      else mat?.dispose();
-    });
-  }
-}
-

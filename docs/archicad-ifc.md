@@ -13,6 +13,68 @@ Graphisoft und lassen sich außerhalb von Archicad nicht lesen. Der verlässlich
 | Wände, Stützen, Fenster, Türen, Vorhangfassaden | Bauteilgeometrie | BGF-Außenumriss je Geschoss, exakt auf die Bauteilkanten eingepasst |
 | Dach, Dachdecken | `IfcRoof`, `IfcSlab` (ROOF) | Dachhaut für den BRI („Dach aus Modell“) |
 | gesamtes Modell | Bauteilgeometrie | Geschossschnitt (Standard 1,00 m über Fußboden) als hinterlegter Vektorplan je Geschoss |
+| Fußbodenhöhe der Zone | 3D-Geometrie der Zone | Höhenlage des Raums (Split-Level), wenn er mindestens 5 cm vom Geschossfußboden abweicht |
+| Bodenplatte | `IfcSlab` am Fußboden des untersten Geschosses (Oberseite höchstens 0,60 m darunter) | Bodenplatte (Sohle) des untersten Geschosses – der BRI zählt ab ihrer Unterseite |
+| Gelände, Lageplan-Bauteile | `IfcSite`, `IfcGeographicElement`, Bauteile des Lageplan-Geschosses | Lageplan-Flächen und Geländemodell (Höhenfeld) |
+| GlobalId | `IfcRoot.GlobalId` | Zuordnung beim erneuten Import („IFC aktualisieren“) |
+
+## Split-Level und Bodenplatte
+
+Die Fußbodenhöhe eines Geschosses ist der flächengewichtete Median der Zonenunterseiten (die Höhe, auf der der größere Teil der Zonenfläche liegt). Liegt eine
+Zone mindestens 5 cm tiefer oder höher, erhält der Raum eine **Höhenlage** (z. B. −0,60 m); der Import
+meldet das. Im Flächenrechner lässt sich die Höhenlage auch von Hand eintragen – nach oben wie nach unten,
+für Räume und Umrisse. Ein Raum ohne eigene Höhenlage liegt auf dem Fußboden des Umrisses, in dem er liegt
+(0,000 heißt ausdrücklich: auf dem Geschossfußboden).
+
+Über einem Geschoss darunter (z. B. Keller) verschiebt eine Absenkung nur die Grenze zwischen den Geschossen –
+dieser Rauminhalt steckt schon im Geschoss darunter und wird nicht doppelt gezählt.
+
+Der **BRI** reicht nach DIN 277 bis zur Unterseite der konstruktiven Bodenplatte. Die BGF steht dagegen auf
+OK Fußboden. Der Flächenrechner rechnet deshalb unter dem Geschossfußboden eigene BRI-Teilkörper:
+
+- **Bodenplatte:** Umriss des untersten Geschosses (bzw. der Teil eines Geschosses, unter dem kein anderes liegt)
+  × Dicke der Bodenplatte. Die Dicke wird aus den Platten unter dem untersten Geschoss erkannt und lässt sich je
+  Geschoss unter „Bodenplatte“ eintragen.
+- **Split-Level:** tiefer liegende Räume bzw. Umrisse mit ihrer Fläche × Versatz.
+
+Rechenweg, Excel (`{{bri.unterbau}}`) und 3D-Ansicht weisen diese Teile gesondert aus.
+
+## IFC aktualisieren
+
+Ein neuer Export desselben Modells lässt sich in ein bestehendes Projekt einlesen (Import-Dialog, Modus
+„aktualisieren“; im GRZ-Nachweis und in der Kostenermittlung „IFC aktualisieren …“). Archicad behält die
+GlobalIds von Geschossen, Zonen und Bauteilen über Exporte hinweg bei; darüber werden Geschosse, Räume und
+Lageplan-Flächen zugeordnet (Projekte aus älteren Importen über Nummer/Name bzw. Überdeckung, Umrisse über
+Überdeckung). Je Feld gilt:
+
+- unverändert seit dem letzten Import → neuer Wert aus dem IFC,
+- von Hand geändert → bleibt; hat sich auch der IFC-Wert geändert, meldet der Bericht einen Konflikt,
+- im IFC neu → wird angelegt; im IFC entfallen → wird entfernt, außer er wurde von Hand geändert (dann bleibt er und der Bericht nennt ihn).
+
+Weitere Regeln:
+
+- **Von Hand Gelöschtes bleibt gelöscht:** Das Projekt merkt sich die GlobalIds und BGF-Umrisse des letzten Imports.
+  Was dort steht, im Projekt aber fehlt, wird nicht wieder angelegt (auch nach Teil-Importen, z. B. ohne Räume).
+  Ein von Hand neu gezeichneter Umriss an der Stelle eines gelöschten ersetzt diesen – die IFC-Fassung kommt nicht
+  dazu. Projekte, die vor Flächenrechner 0.12.0 importiert wurden, kennen ihre Umrisse noch nicht: Ein dort gelöschter
+  Umriss kommt beim ersten Abgleich einmal wieder. Gelöschtes zurückholen: Rückgängig (Strg+Z) oder neu zeichnen; ein Neu-Import
+  (Modus „neu“) setzt das ganze Projekt neu auf – Angaben von Hand gehen dabei verloren.
+- **Kopierte Geschosse und Flächen** („Geschoss duplizieren“, Strg+C/V, Strg+D) tragen keine IFC-Herkunft. Steht
+  dieselbe GlobalId (aus älteren Versionen) mehrfach im Projekt, wird der Raum nicht verschoben, sondern gemeldet.
+- **Raum wechselt das Geschoss:** Liegt eine Zone in der IFC jetzt in einem anderen Geschoss, wandert der Raum mit –
+  samt Nutzung, Wohnfläche und Bemerkung. Wurde das Zielgeschoss von Hand gelöscht, bleibt er, wo er war.
+- **Wohnfläche:** Der Abgleich leitet sie ab, wenn der bisherige Import es tat – unabhängig davon, in welcher App
+  er ausgeführt wird. Abgeglichen wird sie nur bei Räumen, deren Wohnfläche beim ersten Import abgeleitet wurde
+  (Option „Wohnfläche“); sonst ist sie eine Angabe des Nutzers und bleibt unberührt. So setzt z. B. die
+  Kostenermittlung keine geratenen Wohnflächen in ein Projekt, das ohne Wohnfläche importiert wurde.
+- **Platzhalter-Geschosse:** Ein von Hand gezeichnetes oder kopiertes Geschoss, das später in der IFC modelliert wird,
+  behält seine Flächen; die Flächen aus der IFC kommen hinzu. Liegen sie deckungsgleich, warnt der Bericht – dann die
+  Platzhalter löschen, sonst zählen BGF und NRF doppelt.
+- **Projekte älterer Versionen** (ohne Vergleichsstand): Räume werden über Nummer und Name bzw. die Überdeckung
+  zugeordnet, Umrisse über die Überdeckung; jedes so übernommene Feld steht im Bericht. In neueren Projekten
+  bleiben Flächen ohne IFC-Herkunft (von Hand gezeichnet) immer unberührt.
+
+Die gespeicherte IFC-Datei im Projektarchiv wird durch die neue ersetzt.
 
 ## BGF-Umriss aus den Bauteilen
 
@@ -100,7 +162,7 @@ Raumflächen identisch mit den Archicad-Nettoflächen, Wohnfläche der Galerie i
 
 - Innenhöfe/Lichthöfe werden als Teil der BGF erkannt – bei Bedarf als Abzugsfläche ergänzen.
 - Balkone und auskragende Decken werden nicht automatisch als BGF (S) angelegt.
-- Der unterste Geschoss-BRI beginnt an der Fußbodenhöhe des Geschosses; die Bodenplatte bei Bedarf
-  über die Geschosshöhe berücksichtigen.
+- Die Bodenplatte wird nur erkannt, wenn sie als Platte unter dem untersten Geschoss exportiert wird; sonst
+  ihre Dicke unter „Bodenplatte“ eintragen.
 - Ein direkter Live-Abgleich mit dem laufenden Archicad (JSON-/Python-Schnittstelle) wäre möglich,
   ist aber noch nicht umgesetzt.

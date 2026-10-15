@@ -38,7 +38,26 @@ function project() {
   return p;
 }
 
-describe('Projektarchiv (.oap/.akhp)', () => {
+describe('Projektarchiv (.oap)', () => {
+  it('Geländemodell, Split-Level, Bodenplatte und IFC-Herkunft überstehen Speichern und Öffnen', () => {
+    const p = createProject('Hang');
+    const o = createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 }));
+    o.versatz = -0.45;
+    o.ifcStand = { points: o.points };
+    p.storeys[0].shapes.push(o);
+    p.storeys[0].sohle = 0.25;
+    p.storeys[0].ifcId = '2eyxpyOx95m90jmsXLOuR0';
+    p.gelaendeModell = { name: 'IFC-Gelände', triangles: [0, 0, -0.5, 20, 0, -0.2, 0, 20, 0.3] };
+    p.ifcBekannt = ['2eyxpyOx95m90jmsXLOuR0', 'R-1'];
+    const zip = writeArchive(p, { app: 'test' });
+    expect(Object.keys(unzipSync(zip))).toContain('modell/gelaende.bin');
+    const back = readProjectFile(zip);
+    expect(back.gelaendeModell).toEqual(p.gelaendeModell);
+    expect(back.ifcBekannt).toEqual(p.ifcBekannt);
+    expect(back.storeys[0]).toMatchObject({ sohle: 0.25, ifcId: '2eyxpyOx95m90jmsXLOuR0' });
+    expect(back.storeys[0].shapes[0]).toMatchObject({ versatz: -0.45, ifcStand: { points: o.points } });
+  });
+
   it('speichert Pläne, Dachmodell und Originaldateien und liest sie verlustfrei zurück', () => {
     const p = project();
     const zip = writeArchive(p, { app: '9.9.9' });

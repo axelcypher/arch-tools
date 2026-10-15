@@ -13,11 +13,12 @@ use tauri_plugin_dialog::DialogExt;
 async fn save_file(
     app: tauri::AppHandle,
     default_name: String,
+    default_dir: Option<String>,
     contents: String,
     filter_name: String,
     extensions: Vec<String>,
 ) -> Result<Option<String>, String> {
-    save_bytes(&app, &default_name, contents.as_bytes(), &filter_name, &extensions)
+    save_bytes(&app, &default_name, default_dir.as_deref(), contents.as_bytes(), &filter_name, &extensions)
 }
 
 /// Wie `save_file`, aber für Binärdaten (z. B. Excel, Projektarchiv), Base64-kodiert übertragen.
@@ -25,6 +26,7 @@ async fn save_file(
 async fn save_binary_file(
     app: tauri::AppHandle,
     default_name: String,
+    default_dir: Option<String>,
     contents_base64: String,
     filter_name: String,
     extensions: Vec<String>,
@@ -32,7 +34,7 @@ async fn save_binary_file(
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(contents_base64.as_bytes())
         .map_err(|e| format!("Ungültige Daten: {e}"))?;
-    save_bytes(&app, &default_name, &bytes, &filter_name, &extensions)
+    save_bytes(&app, &default_name, default_dir.as_deref(), &bytes, &filter_name, &extensions)
 }
 
 /// Speichern-Dialog ohne Schreiben: liefert den gewählten Pfad oder `None` bei Abbruch. Zusammen mit
@@ -42,21 +44,51 @@ async fn save_binary_file(
 async fn pick_save_path(
     app: tauri::AppHandle,
     default_name: String,
+    default_dir: Option<String>,
     filter_name: String,
     extensions: Vec<String>,
 ) -> Result<Option<String>, String> {
     let exts: Vec<&str> = extensions.iter().map(String::as_str).collect();
-    let picked = app
-        .dialog()
-        .file()
-        .set_file_name(&default_name)
-        .add_filter(&filter_name, &exts)
-        .blocking_save_file();
-    let Some(file_path) = picked else {
+    let mut dialog = app.dialog().file().set_file_name(&default_name).add_filter(&filter_name, &exts);
+    if let Some(dir) = existing_dir(default_dir.as_deref()) {
+        dialog = dialog.set_directory(dir);
+    }
+    let Some(file_path) = dialog.blocking_save_file() else {
         return Ok(None);
     };
     let path = file_path.into_path().map_err(|e| e.to_string())?;
     Ok(Some(path.display().to_string()))
+}
+
+/// Öffnen-Dialog: liefert den Pfad der gewählten Datei oder `None` bei Abbruch. Mit dem Pfad kann
+/// „Speichern“ später ohne Rückfrage in dieselbe Datei schreiben.
+#[tauri::command]
+async fn pick_open_path(
+    app: tauri::AppHandle,
+    default_dir: Option<String>,
+    filter_name: String,
+    extensions: Vec<String>,
+) -> Result<Option<String>, String> {
+    let exts: Vec<&str> = extensions.iter().map(String::as_str).collect();
+    let mut dialog = app.dialog().file().add_filter(&filter_name, &exts);
+    if let Some(dir) = existing_dir(default_dir.as_deref()) {
+        dialog = dialog.set_directory(dir);
+    }
+    let Some(file_path) = dialog.blocking_pick_file() else {
+        return Ok(None);
+    };
+    let path = file_path.into_path().map_err(|e| e.to_string())?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// Vorgabeordner für Dialoge – nur wenn es ihn (noch) gibt
+fn existing_dir(dir: Option<&str>) -> Option<std::path::PathBuf> {
+    let p = std::path::PathBuf::from(dir?);
+    if p.is_dir() {
+        Some(p)
+    } else {
+        None
+    }
 }
 
 /// Inhalt einer Datei (Base64) oder `None`, wenn es sie nicht gibt.
@@ -78,34 +110,71 @@ async fn write_binary_file(path: String, contents_base64: String) -> Result<(), 
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(contents_base64.as_bytes())
         .map_err(|e| format!("Ungültige Daten: {e}"))?;
-    std::fs::write(&path, &bytes).map_err(|e| {
-        log::error!("Speichern fehlgeschlagen: {}: {}", path, e);
-        format!("{}: {}", path, e)
-    })?;
-    log::info!("Gespeichert: {} ({} Bytes)", path, bytes.len());
+    // Schreiben (mit möglichen Wiederholungen) nicht im asynchronen Befehl blockieren
+    let ziel = path.clone();
+    let laenge = bytes.len();
+    tauri::async_runtime::spawn_blocking(move || write_atomic(std::path::Path::new(&ziel), &bytes))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| {
+            log::error!("Speichern fehlgeschlagen: {}: {}", path, e);
+            format!("{}: {}", path, e)
+        })?;
+    log::info!("Gespeichert: {} ({} Bytes)", path, laenge);
     Ok(())
+}
+
+/// Schreibt erst in eine temporäre Datei daneben und ersetzt dann das Ziel – ein Abbruch (Absturz, Datenträger
+/// voll) hinterlässt nie eine halb geschriebene Projektdatei.
+fn write_atomic(path: &std::path::Path, contents: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let tmp = path.with_file_name(format!(".{name}.{}.tmp", std::process::id()));
+    let result = (|| {
+        let mut f = std::fs::File::create(&tmp)?;
+        f.write_all(contents)?;
+        f.sync_all()?;
+        drop(f);
+        // Windows: Virenscanner oder Indexdienst halten die Zieldatei kurz offen – einige Male erneut versuchen
+        let mut versuch = 0;
+        loop {
+            match std::fs::rename(&tmp, path) {
+                Ok(()) => return Ok(()),
+                // Zugriff verweigert bzw. Freigabe-/Sperrverletzung (Windows-Fehler 32 und 33)
+                Err(e) if versuch < 5 && (e.kind() == std::io::ErrorKind::PermissionDenied || matches!(e.raw_os_error(), Some(32) | Some(33))) => {
+                    versuch += 1;
+                    std::thread::sleep(std::time::Duration::from_millis(100 * versuch));
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    result
 }
 
 fn save_bytes(
     app: &tauri::AppHandle,
     default_name: &str,
+    default_dir: Option<&str>,
     contents: &[u8],
     filter_name: &str,
     extensions: &[String],
 ) -> Result<Option<String>, String> {
     let exts: Vec<&str> = extensions.iter().map(String::as_str).collect();
-    let picked = app
-        .dialog()
-        .file()
-        .set_file_name(default_name)
-        .add_filter(filter_name, &exts)
-        .blocking_save_file();
+    let mut dialog = app.dialog().file().set_file_name(default_name).add_filter(filter_name, &exts);
+    if let Some(dir) = existing_dir(default_dir) {
+        dialog = dialog.set_directory(dir);
+    }
+    let picked = dialog.blocking_save_file();
 
     let Some(file_path) = picked else {
         return Ok(None);
     };
     let path = file_path.into_path().map_err(|e| e.to_string())?;
-    std::fs::write(&path, contents).map_err(|e| {
+    write_atomic(&path, contents).map_err(|e| {
         log::error!("Speichern fehlgeschlagen: {}: {}", path.display(), e);
         format!("{}: {}", path.display(), e)
     })?;

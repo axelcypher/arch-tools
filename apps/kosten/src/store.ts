@@ -1,3 +1,4 @@
+import { standNachSpeichern } from '@core/platform/projektDatei';
 import { create } from 'zustand';
 import type { Kosten, KostenPosition, Project } from '@core/model';
 import { createProject } from '@core/model';
@@ -5,7 +6,7 @@ import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 
 /**
- * Zustand der Kostenermittlung: das Projekt im gemeinsamen Format (.oap/.akhp) – Gebäude, Geschosse und
+ * Zustand der Kostenermittlung: das Projekt im gemeinsamen Format (.oap) – Gebäude, Geschosse und
  * Flächen kommen aus dem Flächenrechner bzw. der IFC, Kostenpositionen und Kostenstände pflegt dieses Tool.
  */
 
@@ -19,6 +20,8 @@ interface KostenState {
   /** Projekt beim letzten Öffnen/Speichern – Grundlage fürs Zusammenführen mit der Datei (siehe zusammenfuehren.ts) */
   basis: Project | null;
   dirty: boolean;
+  /** zählt bei jedem Laden/Neu weiter – ein Speichern, das erst danach fertig wird, gehört zum alten Dokument */
+  dokument: number;
   past: Project[];
   future: Project[];
 
@@ -28,7 +31,8 @@ interface KostenState {
   undo: () => void;
   redo: () => void;
   /** nach dem Speichern: Dateiname und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
-  markSaved: (datei: string, gespeichert: Project) => void;
+  /** nach dem Speichern: Datei, gespeichertes Projekt und der Stand, der gespeichert wurde */
+  markSaved: (datei: string, gespeichert: Project, vorher: Project, dokument: number) => void;
 }
 
 export const useKosten = create<KostenState>()((set, get) => ({
@@ -37,11 +41,12 @@ export const useKosten = create<KostenState>()((set, get) => ({
   basis: null,
   dirty: false,
   past: [],
+  dokument: 0,
   future: [],
 
   load: (p, datei = null, basis = null) => {
     log.info(`Projekt geladen: ${p.name}`, { geschosse: p.storeys.length, positionen: p.kosten?.positionen.length ?? 0 });
-    set({ project: p, datei, basis, dirty: false, past: [], future: [] });
+    set({ project: p, datei, basis, dirty: false, dokument: get().dokument + 1, past: [], future: [] });
   },
   update: (fn) => {
     const { project, past } = get();
@@ -59,10 +64,16 @@ export const useKosten = create<KostenState>()((set, get) => ({
     if (!future.length) return;
     set({ project: future[0], past: [...past, project], future: future.slice(1), dirty: true });
   },
-  markSaved: (datei, gespeichert) => {
+  markSaved: (datei, gespeichert, vorher, dokument) => {
+    // inzwischen ein anderes Projekt geladen: Ergebnis nicht auf das neue Dokument übertragen
+    if (dokument !== get().dokument) {
+      log.info('Speichern beendet, inzwischen anderes Projekt geöffnet – Ergebnis gehört zum vorigen', { datei });
+      return;
+    }
     // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
-    if (gespeichert !== get().project) set({ project: gespeichert, past: [], future: [] });
-    set({ dirty: false, datei, basis: gespeichert });
+    const n = standNachSpeichern(get().project, vorher, gespeichert);
+    if (n.verlaufVerwerfen) set({ past: [], future: [] });
+    set({ project: n.project, dirty: n.dirty, datei, basis: gespeichert });
   },
 }));
 

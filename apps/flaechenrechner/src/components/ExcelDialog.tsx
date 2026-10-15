@@ -8,6 +8,7 @@ import { useEditor } from '../store/store';
 export function ExcelDialog() {
   const setOpen = useEditor((s) => s.setExcelOpen);
   const project = useEditor((s) => s.project);
+  const datei = useEditor((s) => s.datei);
   return (
     <Dialog
       project={project}
@@ -24,7 +25,8 @@ export function ExcelDialog() {
         </>
       }
       docs={PLACEHOLDER_DOCS}
-      dateiName={(p) => `${p.name} Flächen`}
+      datei={datei}
+      zusatz={() => 'WoFl+BGF+BRI'}
       musterName="Flächen-Vorlage.xlsx"
       exportDefault={async (p) => (await import('../platform/excel')).exportDefault(p, computeProject(p))}
       exportWithTemplate={async (t, p) => (await import('../platform/excel')).exportWithTemplate(t, p, computeProject(p))}

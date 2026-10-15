@@ -1,6 +1,8 @@
 import type { Point } from './geometry';
-import { distanceToEdges, pointInPolygon, polygonArea } from './geometry';
-import type { Nutzungsgruppe, OutlineShape, Project, Raumumschliessung, Storey, WoflKategorie } from './model';
+import { distanceToEdges, labelPoint, pointInPolygon, polygonArea } from './geometry';
+import type { Nutzungsgruppe, OutlineShape, Project, Raumumschliessung, RoomShape, Storey, WoflKategorie } from './model';
+import type { MultiPolygon } from './polygon';
+import { areaMP, diffMP, intersectMP, oeffnen, unionAll } from './polygon';
 import { roomArea, storeyElevations } from './model';
 import { gaubenVolumen } from './gaube';
 import { roofStats } from './roof';
@@ -123,8 +125,8 @@ export function modellRoofParams(project: Project, storey: Storey, s: OutlineSha
   };
 }
 
-/** Rauminhalt eines BGF-Umrisses (ohne Vorzeichen): Fläche × Höhe bzw. bis zur Dachhaut */
-export function outlineVolume(s: OutlineShape, storey: Storey, project: Project): number {
+/** Rauminhalt eines BGF-Umrisses über dem Geschossfußboden (ohne Vorzeichen): Fläche × Höhe bzw. bis zur Dachhaut */
+export function koerperVolume(s: OutlineShape, storey: Storey, project: Project): number {
   const h = s.hoehe ?? storey.hoehe;
   if (!s.dach) return polygonArea(s.points) * h;
   if (s.dach.typ === 'modell') {
@@ -133,6 +135,150 @@ export function outlineVolume(s: OutlineShape, storey: Storey, project: Project)
     return meshRoofStats(project.dachModell, s.points, r.floorZ, h, r.cap).volumen;
   }
   return Math.abs(roofStats(s.dach, s.points).volumen) + gaubenVolumen(s.dach);
+}
+
+/** Teil des Rauminhalts unterhalb des Geschossfußbodens (bzw. Abzug bei höher liegendem Fußboden) */
+export interface UnterbauTeil {
+  art: 'versatz' | 'absenkung' | 'sohle';
+  bezeichnung: string;
+  flaeche: number;
+  /** Höhe; negativ bei einem höher liegenden Fußboden (Abzug) */
+  hoehe: number;
+  /** Raum, dessen Absenkung gemeint ist */
+  raumId?: string;
+}
+
+/** Beschriftungspunkt je Punktliste (teuer; Punktlisten sind unveränderlich) */
+const labelCache = new WeakMap<readonly Point[], Point>();
+function labelVon(pts: readonly Point[]): Point {
+  let p = labelCache.get(pts);
+  if (!p) {
+    p = labelPoint(pts);
+    labelCache.set(pts, p);
+  }
+  return p;
+}
+
+/**
+ * Rauminhalt unter dem Geschossfußboden eines BGF-Umrisses (DIN 277: BRI ab Unterseite der konstruktiven Sohle):
+ *  - versatz:   der ganze Umriss liegt tiefer (höher) als das Geschoss → Fläche × Versatz
+ *  - absenkung: Räume im Umriss liegen tiefer als dessen Fußboden (Split-Level) → Raumfläche (Polygon) × Absenkung
+ *  - sohle:     Bodenplatte des Geschosses → Teil des Umrisses ohne Geschoss darunter × Sohlendicke
+ * Versatz und Absenkung zählen nur dort, wo kein Geschoss darunter liegt: Über einem Keller verschiebt ein tiefer
+ * liegender Fußboden nur die Grenze zwischen den Geschossen – der Rauminhalt steckt bereits im Geschoss darunter
+ * (es reicht bis zum Fußboden des Geschosses darüber).
+ */
+export function unterbau(s: OutlineShape, storey: Storey, project: Project): UnterbauTeil[] {
+  const out: UnterbauTeil[] = [];
+  const v = s.versatz ?? 0;
+  const absenkungen: { r: RoomShape; tiefe: number }[] = [];
+  if (!s.subtract) {
+    for (const r of storey.shapes) {
+      if (r.kind !== 'room' || r.subtract || r.points.length < 3) continue;
+      // ohne eigene Höhenlage liegt der Raum auf dem Fußboden des Umrisses
+      const tiefe = v - (r.versatz ?? v);
+      if (tiefe <= 1e-9 || !pointInPolygon(labelVon(r.points), s.points)) continue;
+      absenkungen.push({ r, tiefe });
+    }
+  }
+  const sohle = storey.sohle ?? 0;
+  if (Math.abs(v) <= 1e-9 && !absenkungen.length && sohle <= 1e-9) return out;
+  const frei = sohlenPolygon(s, storey, project);
+  const freiFlaeche = areaMP(frei);
+  if (Math.abs(v) > 1e-9 && freiFlaeche > 1e-6) {
+    out.push({ art: 'versatz', bezeichnung: v < 0 ? 'Fußboden tiefer (Split-Level)' : 'Fußboden höher (Split-Level)', flaeche: freiFlaeche, hoehe: -v });
+  }
+  for (const { r, tiefe } of absenkungen) {
+    const f = freiFlaeche > 1e-6 ? flaecheImFreien(r.points, frei) : 0;
+    if (f > 1e-6) out.push({ art: 'absenkung', bezeichnung: `Absenkung ${raumText(r)}`, flaeche: f, hoehe: tiefe, raumId: r.id });
+  }
+  if (sohle > 1e-9 && freiFlaeche > 1e-6) out.push({ art: 'sohle', bezeichnung: 'Bodenplatte (UK Sohle bis Fußboden)', flaeche: freiFlaeche, hoehe: sohle });
+  return out;
+}
+
+const freiCache = new WeakMap<readonly Point[], { frei: MultiPolygon; f: number }>();
+
+/** Höhenlage des Fußbodens eines Raums gegenüber dem Geschoss: eigene Angabe, sonst die des Umrisses, in dem er liegt */
+export function raumBodenVersatz(r: RoomShape, storey: Storey): number {
+  if (r.versatz !== undefined) return r.versatz;
+  if (r.points.length < 3) return 0;
+  const p = labelVon(r.points);
+  const o = storey.shapes.find((s): s is OutlineShape => s.kind === 'outline' && !s.subtract && pointInPolygon(p, s.points));
+  return o?.versatz ?? 0;
+}
+
+/** Teil eines Raums ohne Geschoss darunter (zwischengespeichert je Raumgeometrie und Bodenplatten-Grundriss) */
+function flaecheImFreien(pts: Point[], frei: MultiPolygon): number {
+  const c = freiCache.get(pts);
+  if (c && c.frei === frei) return c.f;
+  let f: number;
+  try {
+    f = areaMP(intersectMP(unionAll([pts]), frei));
+  } catch {
+    f = polygonArea(pts);
+  }
+  freiCache.set(pts, { frei, f });
+  return f;
+}
+
+function raumText(r: RoomShape) {
+  return [r.nummer, r.name].filter(Boolean).join(' ') || 'Raum';
+}
+
+/** Teil eines Umrisses, unter dem kein Geschoss (mit BGF) liegt – dort sitzt die Bodenplatte */
+export function sohlenFlaeche(s: OutlineShape, storey: Storey, project: Project): number {
+  return areaMP(sohlenPolygon(s, storey, project));
+}
+
+/**
+ * Zwischenspeicher je Umriss: Das Ergebnis hängt nur vom Umriss, seiner Fußbodenhöhe und den Umrissen des Geschosses
+ * darunter ab. Flächen und Flächenlisten sind unveränderlich – gleiche Objekte heißen gleicher Inhalt.
+ */
+const sohlenCache = new WeakMap<OutlineShape, { floorZ: number; unten: Storey['shapes'] | null; untenZ: number; mp: MultiPolygon }>();
+
+/** Grundriss der Bodenplatte unter einem Umriss (Teil ohne Geschoss darunter) – schmale Reststreifen entfallen */
+export function sohlenPolygon(s: OutlineShape, storey: Storey, project: Project): MultiPolygon {
+  const elev = storeyElevations(project);
+  const floorZ = elev[project.storeys.indexOf(storey)] ?? 0;
+  const below = geschossDarunter(elev, floorZ);
+  const unten = below < 0 ? null : project.storeys[below].shapes;
+  const untenZ = below < 0 ? 0 : elev[below];
+  const c = sohlenCache.get(s);
+  if (c && c.floorZ === floorZ && c.unten === unten && c.untenZ === untenZ) return c.mp;
+  const mp = sohlenPolygonRechnen(s, unten);
+  sohlenCache.set(s, { floorZ, unten, untenZ, mp });
+  return mp;
+}
+
+/** nächstes Geschoss darunter (nach Höhe), -1 wenn keins */
+function geschossDarunter(elev: number[], floorZ: number): number {
+  let below = -1;
+  elev.forEach((e, i) => {
+    if (e < floorZ - 1e-6 && (below < 0 || e > elev[below])) below = i;
+  });
+  return below;
+}
+
+function sohlenPolygonRechnen(s: OutlineShape, untenShapes: Storey['shapes'] | null): MultiPolygon {
+  const ganz = unionAll([s.points]);
+  if (!untenShapes) return ganz;
+  const unten = untenShapes.filter((x): x is OutlineShape => x.kind === 'outline');
+  const plus = unionAll(unten.filter((x) => !x.subtract).map((x) => x.points));
+  if (!plus.length) return ganz;
+  try {
+    const decke = diffMP(plus, unionAll(unten.filter((x) => x.subtract).map((x) => x.points)));
+    // schmale Streifen aus leicht abweichend gezeichneten Umrissen zählen nicht (≤ 2 · UMRISS_TOLERANZ breit),
+    // auch wenn sie an eine echte nicht unterkellerte Fläche anschließen
+    return oeffnen(diffMP(ganz, decke), UMRISS_TOLERANZ);
+  } catch {
+    return ganz;
+  }
+}
+
+/** Rauminhalt eines BGF-Umrisses (ohne Vorzeichen): Körper über dem Fußboden + Unterbau (Split-Level, Bodenplatte) */
+export function outlineVolume(s: OutlineShape, storey: Storey, project: Project): number {
+  const unten = unterbau(s, storey, project).reduce((a, t) => a + t.flaeche * t.hoehe, 0);
+  return Math.max(0, koerperVolume(s, storey, project) + unten);
 }
 
 export function computeStorey(storey: Storey, project: Project): StoreyResult {

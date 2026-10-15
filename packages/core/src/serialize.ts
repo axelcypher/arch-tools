@@ -87,6 +87,21 @@ export function parseProjectData(raw: unknown): Project {
   if (isObj(raw.dachModell) && Array.isArray(raw.dachModell.triangles)) {
     project.dachModell = { name: str(raw.dachModell.name, 'Modell'), triangles: raw.dachModell.triangles.filter((v): v is number => typeof v === 'number') };
   }
+  if (Array.isArray(raw.ifcUmrisse)) {
+    const u = raw.ifcUmrisse
+      .filter(isObj)
+      .filter((x) => typeof x.geschoss === 'string' && Array.isArray(x.points))
+      .map((x) => ({ geschoss: x.geschoss as string, points: (x.points as unknown[]).filter(isObj).map((q) => ({ x: Number(q.x) || 0, y: Number(q.y) || 0 })) }))
+      .filter((x) => x.points.length >= 3);
+    if (u.length) project.ifcUmrisse = u;
+  }
+  if (Array.isArray(raw.ifcBekannt)) {
+    const ids = raw.ifcBekannt.filter((v): v is string => typeof v === 'string' && v.length > 0);
+    if (ids.length) project.ifcBekannt = ids;
+  }
+  if (isObj(raw.gelaendeModell) && Array.isArray(raw.gelaendeModell.triangles)) {
+    project.gelaendeModell = { name: str(raw.gelaendeModell.name, 'Gelände'), triangles: raw.gelaendeModell.triangles.filter((v): v is number => typeof v === 'number') };
+  }
   return project;
 }
 
@@ -134,6 +149,8 @@ function normalizeFlaeche(f: Record<string, unknown>): LageplanFlaeche | null {
     versiegelung: oneOf<Versiegelung>(f.versiegelung, ['voll', 'teil', 'gruen'], 'voll'),
     ...(f.nachbar === true ? { nachbar: true } : {}),
     ...(typeof f.hoehe === 'number' && Number.isFinite(f.hoehe) ? { hoehe: f.hoehe } : {}),
+    ...(typeof f.ifcId === 'string' && f.ifcId ? { ifcId: f.ifcId } : {}),
+    ...(isObj(f.ifcStand) ? { ifcStand: f.ifcStand } : {}),
   };
 }
 
@@ -232,6 +249,9 @@ function normalizeStorey(s: Record<string, unknown>): Storey {
   if (typeof s.dachgeschoss === 'boolean') storey.dachgeschoss = s.dachgeschoss;
   if (s.geschosshoeheBegrenzt === true) storey.geschosshoeheBegrenzt = true;
   if (typeof s.vollgeschoss === 'boolean') storey.vollgeschoss = s.vollgeschoss;
+  if (typeof s.sohle === 'number' && Number.isFinite(s.sohle) && s.sohle > 0) storey.sohle = s.sohle;
+  if (typeof s.ifcId === 'string' && s.ifcId) storey.ifcId = s.ifcId;
+  if (isObj(s.ifcStand)) storey.ifcStand = s.ifcStand;
   const bg = normalizeBackground(s.background);
   if (bg) storey.background = bg;
   return storey;
@@ -250,6 +270,10 @@ function normalizeShape(s: Record<string, unknown>): Shape | null {
     subtract: s.subtract === true,
     umschliessung: s.umschliessung === 'S' ? ('S' as const) : ('R' as const),
     bemerkung: typeof s.bemerkung === 'string' ? s.bemerkung : undefined,
+    // Raum: 0 heißt „auf dem Geschossfußboden“ (leer: auf dem Fußboden des Umrisses); Umriss: 0 = keine Angabe
+    ...(typeof s.versatz === 'number' && Number.isFinite(s.versatz) && (s.versatz !== 0 || s.kind === 'room') ? { versatz: s.versatz } : {}),
+    ...(typeof s.ifcId === 'string' && s.ifcId ? { ifcId: s.ifcId } : {}),
+    ...(isObj(s.ifcStand) ? { ifcStand: s.ifcStand } : {}),
   };
   if (s.kind === 'outline') {
     return { ...common, kind: 'outline', hoehe: typeof s.hoehe === 'number' ? s.hoehe : undefined, dach: normalizeDach(s.dach) };

@@ -6,7 +6,7 @@ Bebauungsplan gilt.
 
 ## Arbeitsweise
 
-- **Öffnen:** ein Projekt des Flächenrechners (`.oap`/`.akhp`, auch ältere `.json`) oder direkt ein IFC-Modell.
+- **Öffnen:** ein Projekt des Flächenrechners (`.oap`, auch ältere `.json`) oder direkt ein IFC-Modell.
   Gebäudeumrisse, Geschosse, Räume und Dach kommen aus dem Projekt bzw. dem IFC-Import (derselbe Import wie im
   Flächenrechner, mit Dachform- und Gaubenerkennung).
 - **Pflegen:** Festsetzungen, Lageplan-Flächen (zeichnen als Polygon oder Rechteck, Nutzung, Versiegelung,
@@ -15,7 +15,16 @@ Bebauungsplan gilt.
   bewahrt sie aber beim Speichern; umgekehrt bewahrt der GRZ-Nachweis alles, was der Flächenrechner pflegt. Beim Speichern
   liest jede App die Zieldatei neu und übernimmt, was eine andere App dort inzwischen gespeichert hat, statt es
   mit ihrem eigenen, älteren Stand zu überschreiben (ab Flächenrechner 0.11.0, GRZ-Nachweis 0.4.0,
-  Kostenermittlung 0.4.0).
+  Kostenermittlung 0.4.0). „Speichern“ (Strg+S) schreibt in die geöffnete Datei, „Speichern unter …“
+  (Strg+Shift+S) fragt nach einem neuen Namen.
+- **IFC aktualisieren …:** ein neuer Export desselben Modells wird in das bestehende Projekt eingelesen, ohne es
+  neu aufzusetzen. Geschosse, Räume und Lageplan-Flächen werden über ihre IFC-GlobalId zugeordnet (ältere Projekte
+  über Nummer/Name bzw. Überdeckung). Felder, die seit dem letzten Import nicht von Hand geändert wurden, übernehmen
+  den neuen IFC-Wert; von Hand geänderte bleiben erhalten – hat sich auch das IFC geändert, meldet der Bericht
+  einen Konflikt. Festsetzungen, Einstufungen und Nutzungen bleiben unberührt.
+- **Regeln nachschlagen:** „§ Regeln“ in der Titelleiste bzw. F1 öffnet das Nachschlagewerk mit den
+  angewandten Vorschriften (Zitat, Fundstelle, Link, Suche); die `?`-Knöpfe an den Abschnitten zeigen nur die
+  dort maßgebenden Regeln.
 
 ## Welches Recht gilt
 
@@ -63,6 +72,17 @@ ziehen ändert sie, ◇ in der Kantenmitte ziehen fügt einen Punkt ein, Rechtsk
 (mindestens drei bleiben), Entf/Rück löscht die Fläche. Mausrad zoomt (nur den Plan), mittlere Maustaste,
 Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Einpassen“ (F) zeigt alles.
 
+- **Mehrfachauswahl:** Shift+Klick nimmt Flächen hinzu bzw. heraus, Shift+Ziehen auf freier Fläche zieht einen
+  Auswahlrahmen auf, Strg+A wählt alle. Mehrere Flächen werden gemeinsam verschoben, gelöscht und in Nutzung,
+  Versiegelung, Nachbar und Höhe gemeinsam bearbeitet. Strg+C/V/D kopiert, fügt ein bzw. dupliziert (um 0,50 m
+  versetzt), die Pfeiltasten verschieben die Auswahl um 1 cm (mit Umschalt 10 cm). Nach einem Klick in den Lageplan
+  wählt Tab bzw. Umschalt+Tab die nächste bzw. vorige Fläche.
+- **Hilfslinienfang:** Beim Zeichnen und Punkteziehen fängt der Cursor auf den Verlängerungen der Nachbarkanten,
+  den Achsen des (genordet schräg stehenden) Gebäudes und den Fluchten vorhandener Eckpunkte. Shift hält die
+  Linie auf der Gebäudeachse, Rechtecke richten sich an ihr aus. Alt schaltet den Fang aus.
+- **3D-Ansicht:** Umschalter „Plan / 3D“ – Gebäude nach Geschossen (Vollgeschoss farbig hervorgehoben),
+  Geländemodell bzw. Lageplan-Flächen in ihrer Höhe und je Geschoss die maßgebende mittlere Geländeoberfläche.
+
 ### IFC-Import
 
 - Ein Geschoss, dessen Name „Lageplan“ enthält, wird kein Gebäudegeschoss, sondern der Lageplan – unabhängig
@@ -76,20 +96,29 @@ Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Ein
   IFC stehen. Archicad ordnet sie beim Export nach ihrer Höhe zu (meist dem UG), nicht dem Geschoss „Lageplan“.
   Sie zählen nie zum Gebäude.
 - Flächen ohne Verbindung zum Gebäude – auch nicht über andere Flächen – werden als Nachbargrundstück markiert.
+- Die nach oben gerichteten Flächen von Gelände und Lageplan-Bauteilen werden als **Geländemodell** gespeichert
+  (Höhenfeld für die Vollgeschossprüfung und die 3D-Ansicht).
 
 ### Grundstück und Gelände
 
 - **Grundstücksfläche:** aus den Projektdaten; fehlt sie, aus den eigenen Lageplan-Flächen zusammen mit dem
   Gebäude. Weichen beide voneinander ab, weist der Nachweis darauf hin.
-- **Geländeoberfläche:** eingetragener Wert (vor 1985: die festgelegte Geländeoberfläche) oder das Mittel der
-  Flächenhöhen entlang der Außenwände – nur wenn Lageplan-Flächen mindestens die Hälfte des Umfangs säumen.
-  Sonst wird ±0,00 angenommen.
+- **Geländeoberfläche:** eingetragener Wert (vor 1985: die festgelegte Geländeoberfläche). Sonst wird das Gelände
+  **je Geschoss** entlang seiner eigenen Außenwände abgetastet (alle 0,4 m, 0,5 m vor der Wand) – aus dem
+  Geländemodell des IFC, ersatzweise aus den Höhen der Lageplan-Flächen. Bei Hanglage hat damit jedes Geschoss
+  sein eigenes Mittel, Minimum und Maximum; die Quelle steht im Nachweis. Säumt das Gelände weniger als die Hälfte
+  des Umfangs, wird ±0,00 angenommen und darauf hingewiesen. Nach BauO NW 1962/1970 („vollständig über der
+  Geländeoberfläche“) zählt der höchste Geländepunkt am Geschoss.
 
 ## Berechnung
 
 - **Hauptanlage:** Vereinigung aller Geschossgrundrisse (BGF-Umrisse abzüglich Abzugsflächen) der Geschosse, deren
   Decke über dem Gelände liegt – als Überdeckung, nicht als Summe. Nach BauNVO 1968/1977 ohne S-Umrisse
   (Balkone, Loggien, Terrassen).
+- **Überlagerungen:** Überlagern sich Lageplan-Flächen untereinander oder mit dem Gebäude, wird jeder Quadratmeter
+  nur einmal angerechnet. Die Überdeckung wird der Fläche mit dem höheren Rang zugeschlagen (Gebäude vor Garage
+  vor Zufahrt/Stellplatz vor Nebenanlage …); Tabelle und Druck zeigen je Fläche den eindeutigen Anteil und den
+  überlagerten Rest, der Nachweis weist auf jede Überlagerung hin.
 - **Anrechnung der Lageplan-Flächen** je Fassung (siehe Tabelle oben). Wo die Fassung keine eindeutige Antwort gibt
   (z. B. Terrassen nach 1990, Zufahrten vor 1990), steht „prüfen“: Die GRZ wird ohne und mit diesen Flächen angegeben,
   und im Tab lässt sich je Nutzung festlegen, ob sie zählt. Keller-Grundflächen außerhalb der Hauptanlage gelten als
@@ -98,6 +127,11 @@ Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Ein
   Aufenthaltsräume samt zugehörigen Treppenräumen hinzu, erweitert um die Umfassungswände (Wandzuschlag, Standard
   0,25 m) und begrenzt auf den Grundriss. Ob ein Raum Aufenthaltsraum oder Treppenraum ist, ergibt sich aus Name und
   Nutzungsgruppe und lässt sich je Raum festlegen.
+- **Räume in Nicht-Vollgeschossen** werden nach der maßgebenden Bauordnung geprüft: Ein Aufenthaltsraum braucht
+  nach BauO NW 1962/1970 2,50 m lichte Höhe (2,30 m im Dachraum und im Einfamilienhaus), nach späteren Fassungen
+  2,40 m bzw. im Dachraum/Kellergeschoss 2,20 m über mindestens der Hälfte der Grundfläche (Teile unter 1,50 m
+  zählen nicht), in kleinen Wohngebäuden 2,30 m. Die Tabelle zeigt je Raum Einstufung, Höhenlage und Begründung;
+  Räume mit Höhenversatz (Split-Level) werden mit ihrer eigenen Fußbodenhöhe gerechnet.
 - **Höhen:** Das Tool rechnet auf einem Raster über dem Grundriss mit der Höhe bis zur Dachhaut (Dachform mit Gauben
   bzw. IFC-Modell) oder bis zum Fußboden darüber. Lichte Höhe = diese Höhe minus Dachaufbau (Standard 0,30 m,
   einstellbar).
@@ -109,7 +143,8 @@ Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Ein
 - **Nachweis drucken** (Strg+P): Nachweis auf A4 hoch – Grundlagen und Festsetzungen, Ergebnis-Tabelle, Lageplan
   mit nummerierten Flächen, Grundfläche je Fläche mit Anrechnung, Vollgeschossprüfung mit Begründung,
   Geschossfläche, vor 1990 die Aufenthaltsräume in Nicht-Vollgeschossen, Flächenbilanz, Hinweise und
-  Unterschriftszeile. Über den Druckdialog auch als PDF.
+  Unterschriftszeile. Über den Druckdialog auch als PDF; der vorgeschlagene Dateiname ist
+  `<Projektdatei> GRZ+GFZ`.
 - **Excel …**: Standardlayout (Blatt „GRZ GFZ“ mit Summenformeln) oder eigene Vorlage mit Platzhaltern wie
   `{{grz}}`, `{{gfz}}`, `{{vollgeschosse}}`, `{{bilanz.*}}` und den Sammlungen `geschoss`, `lageplan`, `raum`,
   `hinweis` – siehe [Excel-Vorlagen](excel-vorlagen.md#grz-nachweis). Die Vorlage wird wie im Flächenrechner im
@@ -124,4 +159,5 @@ Entwurfsverfasserin bzw. dem Entwurfsverfasser.
 - Frühere Fassungen: [BauNVO 1962](https://www.planertreff.de/recht/baunvo/baunvo-1962.html), [BauNVO 1968](https://www.planertreff.de/recht/baunvo/baunvo-1968.html), [BauNVO 1977](https://www.planertreff.de/recht/baunvo/baunvo-1977.html)
 - [Stadt Meschede: Vollgeschossbegriff in den Bauordnungen NRW 1962 bis 2018](https://www.meschede.de/fileadmin/Mediendatenbank/Downloads/Planen_und_Bauen/Bauleitplanung/Rechtskraeftige_Bebauungsplaene/Vollgeschoss_Begriff_Vollgeschossigkeit.pdf)
 - [AKNW-Rechtstipp zum alten Bauordnungsrecht](https://www.aknw.de/recht/rechtstipps-und-urteile/details/news/rechtstipp-nach-welchen-grundlagen-ermittle-ich-fuer-ein-staffelgeschoss-ob-es-sich-um-ein-vollgeschoss-handelt-wenn-der-bebauungsplan-von-1978-ist-1)
+- [IK-Bau NRW: Synopse BauO NRW 2018/2023](https://ikbaunrw.de/kammer-wAssets/docs/Recht/Synopsen_BauO-NRW/IK-Bau-NRW-Synopse-BauO-NRW-2023.pdf) (§ 2 Abs. 5, § 46)
 - [BauO NRW 2018](https://recht.nrw.de/lrgv/gesetz/01092026-landesbauordnung-2018-bauo-nrw-2018/)

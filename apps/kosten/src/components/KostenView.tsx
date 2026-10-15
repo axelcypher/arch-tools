@@ -11,6 +11,7 @@ import type { MengenBezug } from '../mengen';
 import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 import { addPositionen, mapPosition, removePosition, setKosten, useKosten } from '../store';
 import { useBauteile } from '../bauteile';
+import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 
@@ -26,7 +27,10 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
   return (
     <div className="ko-view">
       <section className="ko-col">
-        <h2>Grundlagen</h2>
+        <h2>
+          Grundlagen
+          <HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />
+        </h2>
         <Field label="Projekt">
           <TextField value={project.name} onChange={(v) => st.update((p) => (v.trim() && v.trim() !== p.name ? { ...p, name: v.trim() } : p))} />
         </Field>
@@ -76,7 +80,10 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
           )}
         </p>
 
-        <h2>Mengen</h2>
+        <h2>
+          Mengen
+          <HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />
+        </h2>
         <table className="ko-table">
           <tbody>
             {MENGEN_BEZUEGE.map((b) => (
@@ -91,7 +98,10 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
       </section>
 
       <section className="ko-col ko-positionen">
-        <h2>Positionen</h2>
+        <h2>
+          Positionen
+          <HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />
+        </h2>
         <div className="button-row">
           <button className="small" onClick={() => st.update((p) => addPositionen(p, [neuePosition('300')]))}>
             + Position

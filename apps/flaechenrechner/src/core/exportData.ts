@@ -1,4 +1,5 @@
 import type { AreaTotals, ProjectResult } from '@core/calc';
+import { raumBodenVersatz } from '@core/calc';
 import { polygonArea } from '@core/geometry';
 import type { Project } from '@core/model';
 import { istDachgeschoss } from '@core/model';
@@ -78,6 +79,12 @@ export function buildExportContext(project: Project, result: ProjectResult, date
         flaeche: r2(r.area),
         flaeche_roh: r2(roh),
         putzabzug: sh?.kind === 'room' && sh.putzabzug ? sh.putzabzug : '',
+        hoehenlage: (() => {
+          // auch die vom Umriss geerbte Höhenlage; leer auf Geschossniveau
+          const st = project.storeys.find((x) => x.id === s.storeyId);
+          const v = sh?.kind === 'room' && st ? raumBodenVersatz(sh, st) : 0;
+          return v ? r3(v) : '';
+        })(),
         wohnflaeche: wofl ? 'ja' : '',
         wofl_kategorie: wofl ? (WOFL_KATEGORIEN.find((k) => k.id === r.woflKategorie)?.label ?? '') : '',
         wofl_faktor: wofl ? r2(r.woflFaktor) : '',
@@ -101,6 +108,10 @@ export function buildExportContext(project: Project, result: ProjectResult, date
       dachgeschoss: dg.get(s.storeyId) ?? '',
       art: dg.get(s.storeyId) ? 'Dachgeschoss' : 'Normalgeschoss',
       hoehe: r2(s.hoehe),
+      sohle: (() => {
+        const st = project.storeys.find((x) => x.id === s.storeyId);
+        return st?.sohle ? r3(st.sohle) : '';
+      })(),
       anzahl_raeume: s.rooms.length,
       ...totalsRow(s),
       wofl_roh: sumBy(rooms, 'wofl_roh'),
@@ -140,6 +151,7 @@ export function buildExportContext(project: Project, result: ProjectResult, date
     faktor: r6(b.faktor),
     volumen: r2(b.volumen),
     formel: b.formel,
+    unterbau: b.unterbau === 'sohle' ? 'Bodenplatte' : b.unterbau ? 'Split-Level' : '',
   }));
 
   const koerper: Row[] = briKoerper(project).map((k) => ({
@@ -203,6 +215,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['nebenflaeche', 'Summe der Räume ohne Wohnflächenanrechnung [m²]'],
       ['anzahl_raeume', 'Anzahl Räume'],
       ['name, hoehe, nr', 'nur geschoss.*: Bezeichnung, Geschosshöhe, laufende Nr.'],
+      ['sohle', 'nur geschoss.*: Bodenplatte UK Sohle bis Fußboden [m] (BRI ab Unterseite der Sohle)'],
       ['dachgeschoss, art', 'nur geschoss.*: „ja“ bei Dachgeschossen; „Dachgeschoss“ bzw. „Normalgeschoss“'],
     ],
   },
@@ -219,6 +232,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['raum.flaeche', 'Grundfläche [m²] abzüglich Putzabzug (Abzugsflächen negativ)'],
       ['raum.flaeche_roh', 'Grundfläche ohne Putzabzug [m²]'],
       ['raum.putzabzug', 'Putzabzug in %'],
+      ['raum.hoehenlage', 'Höhenlage des Fußbodens gegenüber dem Geschoss [m] (Split-Level, negativ = tiefer)'],
       ['raum.wohnflaeche', '„ja“, wenn auf die Wohnfläche angerechnet'],
       ['raum.wofl_kategorie', 'Anrechnung nach WoFlV'],
       ['raum.wofl_faktor', 'Anrechnungsfaktor'],
@@ -241,6 +255,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['bri.faktor', 'Formfaktor (1 Quader, 0,5 Prisma/Keil, 0,333 Pyramide …)'],
       ['bri.volumen', 'anzahl × flaeche × hoehe × faktor [m³]'],
       ['bri.formel', 'Rechenweg als Text, z. B. „12,00 × 9,00 × 3,151 × ½“'],
+      ['bri.unterbau', '„Bodenplatte“ bzw. „Split-Level“ bei Teilen unter dem Geschossfußboden, sonst leer'],
     ],
   },
   {

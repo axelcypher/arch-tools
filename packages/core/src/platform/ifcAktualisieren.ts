@@ -1,0 +1,40 @@
+import type { IfcExtract } from '../ifcData';
+import type { IfcImportOptions } from '../ifcImport';
+import { buildFromIfc } from '../ifcImport';
+import { ifcAbgleichen, wohnflaecheAusProjekt } from '../ifcAbgleich';
+import type { Project } from '../model';
+import { addDatei } from '../model';
+import { openFileWithPath, ordnerVon } from './files';
+import { logger } from './log';
+
+const log = logger('ifc');
+
+/** Ersetzt die mitgespeicherte IFC-Datei (gleicher Name bzw. die einzige vorhandene) durch die neue */
+export function ifcDateiErsetzen(p: Project, name: string, daten: Uint8Array): Project {
+  const ifcs = (p.dateien ?? []).filter((d) => d.art === 'ifc');
+  const gleicherName = ifcs.filter((d) => d.name === name);
+  const weg = gleicherName.length ? gleicherName : ifcs.length === 1 ? ifcs : [];
+  return addDatei({ ...p, dateien: (p.dateien ?? []).filter((d) => !weg.includes(d)) }, name, 'ifc', daten).project;
+}
+
+/**
+ * IFC-Datei wählen und das Projekt damit aktualisieren (Abgleich über die GlobalIds, siehe ifcAbgleich.ts) –
+ * für GRZ-Nachweis und Kostenermittlung. Liefert null bei Abbruch.
+ */
+export async function ifcAktualisieren(
+  p: Project,
+  o: { optionen: IfcImportOptions; datei?: string | null; onProgress?: (msg: string) => void },
+): Promise<{ project: Project; bericht: string[]; extract: IfcExtract } | null> {
+  const f = await openFileWithPath({ filterName: 'IFC-Modell', extensions: ['ifc'], defaultDir: ordnerVon(o.datei) });
+  if (!f) return null;
+  o.onProgress?.('IFC-Modell wird gelesen …');
+  const { loadIfc } = await import('./ifc');
+  const x = await loadIfc(f.bytes.slice(), o.onProgress);
+  o.onProgress?.('Abgleich mit dem Projekt …');
+  // Wohnfläche wie beim bisherigen Import (sonst entschiede die App, die den Abgleich ausführt)
+  const optionen = { ...o.optionen, wohnflaeche: wohnflaecheAusProjekt(p) ?? o.optionen.wohnflaeche };
+  const r = buildFromIfc(x, optionen);
+  const a = ifcAbgleichen(p, r, { raeume: optionen.rooms, umrisse: optionen.outlines, modelle: optionen.roof, lageplan: true, plaene: false, wohnflaeche: optionen.wohnflaeche });
+  log.info(`IFC abgeglichen: ${f.name}`, a.zaehler);
+  return { project: ifcDateiErsetzen(a.project, f.name, f.bytes), bericht: a.bericht, extract: x };
+}

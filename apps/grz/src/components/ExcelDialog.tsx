@@ -6,6 +6,7 @@ import { vorlage } from '../vorlage';
 /** Excel-Export des GRZ-Nachweises: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
 export function ExcelDialog({ onClose }: { onClose: () => void }) {
   const project = useGrz((s) => s.project);
+  const datei = useGrz((s) => s.datei);
   return (
     <Dialog
       project={project}
@@ -22,7 +23,8 @@ export function ExcelDialog({ onClose }: { onClose: () => void }) {
         </>
       }
       docs={GRZ_PLACEHOLDER_DOCS}
-      dateiName={(p) => `${p.name} GRZ-Nachweis`}
+      datei={datei}
+      zusatz={() => 'GRZ+GFZ'}
       musterName="GRZ-Vorlage.xlsx"
       exportDefault={async (p) => (await import('../export/excel')).exportDefault(p)}
       exportWithTemplate={async (t, p) => (await import('../export/excel')).exportWithTemplate(t, p)}

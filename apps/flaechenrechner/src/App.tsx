@@ -39,7 +39,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Flächenrechner" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} />
+      <TitleBar app="Flächenrechner" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="flaechen" />
       <Toolbar />
       <div className="workspace">
         <Sidebar />

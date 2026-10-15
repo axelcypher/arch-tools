@@ -1,7 +1,7 @@
 {
   "name": "grz-nachweis",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0",
   "type": "module",
   "description": "GRZ/GFZ-Nachweis nach BauNVO (1962 bis heute) und Vollgeschossbegriff der BauO NRW",
   "scripts": {
@@ -21,6 +21,7 @@
     "polygon-clipping": "^0.15.7",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "three": "^0.186.1",
     "zustand": "^5.0.15"
   }
 }
