@@ -73,4 +73,30 @@ describe('Grafiken der Vorlage', () => {
     await wb.xlsx.load(zipSync(out).buffer as ArrayBuffer);
     expect(wb.getWorksheet('Wohnflächen')!.getCell('B4').value).toBe('Wohnen');
   });
+
+  it('ersetzt Platzhalter in Textfeldern, auch wenn Excel sie auf mehrere Läufe verteilt', async () => {
+    const files = unzipSync(await template());
+    const draw = Object.keys(files).find((k) => /^xl\/drawings\/drawing\d+\.xml$/.test(k))!;
+    // Textfeld neben dem Logo, wie Excel es speichert: Projektname fett und auf zwei Läufe verteilt, darunter die Adresse
+    const textfeld =
+      '<xdr:twoCellAnchor><xdr:from><xdr:col>1</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>' +
+      '<xdr:to><xdr:col>3</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>2</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>' +
+      '<xdr:sp macro="" textlink=""><xdr:nvSpPr><xdr:cNvPr id="3" name="Textfeld 2"/><xdr:cNvSpPr txBox="1"/></xdr:nvSpPr>' +
+      '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2000000" cy="400000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>' +
+      '<xdr:txBody><a:bodyPr wrap="square" rtlCol="0"/><a:lstStyle/>' +
+      '<a:p><a:r><a:rPr lang="de-DE" sz="1100" b="1"/><a:t>{{projekt.</a:t></a:r><a:r><a:rPr lang="de-DE" sz="1100" b="1"/><a:t>name}}</a:t></a:r></a:p>' +
+      '<a:p><a:pPr algn="l"/><a:r><a:rPr lang="de-DE" sz="1100"/><a:t>{{projekt.adresse}}</a:t></a:r><a:endParaRPr lang="de-DE" sz="1100"/></a:p>' +
+      '</xdr:txBody></xdr:sp><xdr:clientData/></xdr:twoCellAnchor>';
+    files[draw] = strToU8(strFromU8(files[draw]).replace(/<\/xdr:wsDr>\s*$/, `${textfeld}</xdr:wsDr>`));
+
+    const p = createProject('EFH Sander');
+    p.meta.adresse = { strasse: 'Deiringser Weg 7a', plz: '59494', ort: 'Soest' };
+    const out = unzipSync(await exportWithTemplate(zipSync(files), p, computeProject(p)));
+    const rels = strFromU8(out['xl/worksheets/_rels/sheet1.xml.rels']);
+    const drawPath = `xl/worksheets/${/Type="[^"]*\/drawing" Target="([^"]+)"/.exec(rels)![1]}`.replace('worksheets/../', '');
+    const xml = strFromU8(out[drawPath]);
+    expect(xml).toContain('<a:t>EFH Sander</a:t>');
+    expect(xml).toContain('<a:t>Deiringser Weg 7a, 59494 Soest</a:t>');
+    expect(xml).not.toContain('{{');
+  });
 });

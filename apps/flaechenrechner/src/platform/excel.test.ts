@@ -168,13 +168,40 @@ describe('Excel-Export mit Vorlage', () => {
     expect(hf.oddFooter).toMatch(/^&LStand 28\.9\.2026 · BRI [\d.,]+ m³ · \{\{gibtsnicht\}\}&RSeite &P\/&N$/);
   });
 
+  it('BGF: Teilflächen je Geschoss mit Zwischen- und Gesamtsumme', async () => {
+    const p = project();
+    p.storeys[1].shapes.push({ ...createOutline(rectPoints({ x: 10, y: 0 }, { x: 13, y: 2 }), 'Wintergarten'), umschliessung: 'S' });
+    p.storeys.push(createStorey('Spitzboden', 1.5)); // ohne BGF → Block entfällt
+    const wb = await load(await exportWithTemplate(await buildSampleTemplate(), p, computeProject(p)));
+    const ws = wb.getWorksheet('BGF')!;
+    const zeile = (r: number) => [1, 2, 3, 4].map((c) => {
+      const v = ws.getCell(r, c).value as unknown;
+      return v && typeof v === 'object' && 'formula' in v ? `=${(v as { formula: string }).formula}` : v;
+    });
+    expect([11, 12, 13, 14, 15, 16, 17, 18].map(zeile)).toEqual([
+      ['KG', 'BGF', 80, null],
+      [null, null, null, '=SUM(C11:C11)'],
+      ['EG', 'BGF', 80, null],
+      [null, 'Wintergarten', 6, null],
+      [null, null, null, '=SUM(C13:C14)'],
+      ['DG', 'BGF', 80, null],
+      [null, null, null, '=SUM(C16:C16)'],
+      ['Bruttogrundfläche gesamt', null, null, '=SUM(D12,D15,D17)'],
+    ]);
+    expect((ws.getCell('D18').value as { result: number }).result).toBe(246);
+  });
+
   it('erzeugt das Standardlayout inkl. BRI-Rechenweg', async () => {
     const p = project();
     const wb = await load(await exportDefault(p, computeProject(p)));
-    expect(wb.worksheets.map((w) => w.name)).toEqual(['DIN 277', 'NRF Nutzungsgruppen', 'Raumliste', 'Wohnflächen', 'BRI-Rechenweg']);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(['DIN 277', 'BGF-Teilflächen', 'NRF Nutzungsgruppen', 'Raumliste', 'Wohnflächen', 'BRI-Rechenweg']);
     const ws = wb.getWorksheet('DIN 277')!;
     expect(ws.getCell('A6').value).toBe('KG');
     expect(ws.getCell('E6').value).toBe(80);
+    const teile = wb.getWorksheet('BGF-Teilflächen')!;
+    expect([1, 2, 3, 4, 5, 6, 7].map((c) => teile.getCell(6, c).value)).toEqual(['KG', 1, 'BGF', 'R', 10, 8, 80]);
+    expect(teile.getCell('A9').value).toBe('Summe');
+    expect(formula(teile, 'G9')).toBe('SUM(G6:G8)');
     const bri = wb.getWorksheet('BRI-Rechenweg')!;
     expect(bri.getCell('C6').value).toBe('Quader');
     expect(formula(bri, 'J6')).toBe('D6*G6*H6*I6');

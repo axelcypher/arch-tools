@@ -14,7 +14,8 @@ type Collection = string;
  *  - Eine Zeile mit einem Platzhalter einer noch nicht gebundenen Sammlung ({{raum.name}}) wird je
  *    Datensatz wiederholt – innerhalb eines Blocks nur für die zugehörigen Datensätze.
  *  - Filter: {{raum[wofl].name}}; Modifikator |einmal: nur in der ersten Wiederholungszeile.
- *  - Blockinstanzen, deren Wiederholungszeilen leer bleiben, entfallen.
+ *  - Leere Blockinstanzen entfallen: Wiederholungszeilen und verschachtelte Blöcke liefern keinen Datensatz,
+ *    bzw. – ohne solche – alle Zahlenwerte des Blockdatensatzes sind 0 (laufende Nummern zählen nicht).
  *  - Formeln werden auf die erzeugten Zeilen umgeschrieben (siehe translateFormula).
  */
 
@@ -209,41 +210,71 @@ function itemsFor(coll: Collection, filter: string | undefined, bound: Bindings,
   });
 }
 
+/** Felder, die einen Datensatz nur bezeichnen – zählen nicht als Wert eines Blocks */
+const KENNUNGEN = new Set(['nr', 'kg']);
+
+/** Inhalt einer Blockinstanz – entscheidet, ob sie leer ist und entfällt */
+interface Inhalt {
+  /** Wiederholungszeilen und verschachtelte Blöcke */
+  repeats: number;
+  /** davon erzeugte Datensätze */
+  produced: number;
+  /** Zahlenwerte des Blockdatensatzes in den übrigen Zeilen, davon ungleich 0 */
+  values: number;
+  nonzero: number;
+}
+
+const leer = (c: Inhalt) => (c.repeats > 0 ? c.produced === 0 : c.values > 0 && c.nonzero === 0);
+
+/** Zahlenwerte des Blockdatensatzes (Sammlung `coll`) in einer Zeile zählen */
+function zaehleWerte(row: TemplateRow, coll: Collection, ctx: ExportContext, b: Bindings, c: Inhalt) {
+  for (const v of row.cells.values()) {
+    const t = cellText(v);
+    if (!t) continue;
+    for (const m of t.matchAll(PH())) {
+      const k = parseKey(m[1], ctx);
+      if (k.coll !== coll || !k.field || KENNUNGEN.has(k.field)) continue;
+      const val = lookup(k, ctx, b);
+      if (typeof val !== 'number') continue;
+      c.values++;
+      if (Math.abs(val) > 1e-9) c.nonzero++;
+    }
+  }
+}
+
 export function expandTemplate(rows: TemplateRow[], ctx: ExportContext): OutputRow[] {
   const { nodes, blocksOfRow } = parseStructure(rows, ctx);
   const metas: OutMeta[] = [];
 
-  // liefert: Anzahl Wiederholungszeilen und davon erzeugte Datensatzzeilen (für „leere Blöcke entfallen“)
-  const expand = (list: Node[], bound: Bindings, inst: Map<number, number>, topLevel: boolean): { repeats: number; produced: number } => {
-    let repeats = 0;
-    let produced = 0;
+  // `coll`: Sammlung des umgebenden Blocks – dessen Zahlenwerte entscheiden mit, ob die Instanz leer ist
+  const expand = (list: Node[], bound: Bindings, inst: Map<number, number>, topLevel: boolean, coll?: Collection): Inhalt => {
+    const c: Inhalt = { repeats: 0, produced: 0, values: 0, nonzero: 0 };
     for (const n of list) {
       if (n.kind === 'row') {
         const rep = rowRepeat(n.row, bound, ctx);
         if (!rep) {
           metas.push({ src: n.row.r, inst, bindings: bound, first: true });
+          if (coll) zaehleWerte(n.row, coll, ctx, bound, c);
           continue;
         }
-        repeats++;
+        c.repeats++;
         const items = itemsFor(rep.coll, rep.filter, bound, ctx);
         items.forEach((it, i) => metas.push({ src: n.row.r, inst, bindings: { ...bound, [rep.coll]: it }, first: i === 0 }));
-        produced += items.length;
+        c.produced += items.length;
         // außerhalb von Blöcken bleibt eine leere Zeile stehen, damit das Layout erhalten bleibt
         if (!items.length && topLevel) metas.push({ src: n.row.r, inst, bindings: bound, first: true, empty: true });
       } else {
-        const items = itemsFor(n.coll, n.filter, bound, ctx);
-        items.forEach((it, i) => {
+        c.repeats++;
+        itemsFor(n.coll, n.filter, bound, ctx).forEach((it, i) => {
           const mark = metas.length;
           const childInst = new Map(inst);
           childInst.set(n.id, i);
-          const r = expand(n.children, { ...bound, [n.coll]: it }, childInst, false);
-          if (r.repeats > 0 && r.produced === 0) metas.length = mark; // leere Instanz verwerfen
-          produced += r.produced;
-          repeats += r.repeats;
+          if (leer(expand(n.children, { ...bound, [n.coll]: it }, childInst, false, n.coll))) metas.length = mark; // leere Instanz verwerfen
+          else c.produced++;
         });
       }
     }
-    return { repeats, produced };
+    return c;
   };
   expand(nodes, {}, new Map(), true);
 

@@ -50,6 +50,39 @@ export async function exportDefault(project: Project, result: ProjectResult): Pr
     ws.views = [{ state: 'frozen', ySplit: h }];
   }
 
+  // BGF-Teilflächen (je BGF-Umriss)
+  {
+    const ws = wb.addWorksheet('BGF-Teilflächen');
+    title(ws, 'Brutto-Grundfläche – Teilflächen', project);
+    ws.addRow([]);
+    const cols: [string, string, number][] = [
+      ['Geschoss', 'geschoss', 12],
+      ['Nr.', 'nr', 6],
+      ['Teilfläche', 'name', 26],
+      ['R/S', 'umschliessung', 6],
+      ['Länge [m]', 'laenge', 10],
+      ['Breite [m]', 'breite', 10],
+      ['BGF [m²]', 'flaeche', 12],
+      ['BRI [m³]', 'bri', 12],
+      ['Abzug', 'abzug', 8],
+      ['Bemerkung', 'bemerkung', 30],
+    ];
+    const h = ws.addRow(cols.map((c) => c[0])).number;
+    styleHeader(ws, h);
+    for (const b of ctx.collections.bgf) ws.addRow(cols.map((c) => toCellValue(b[c[1]])));
+    const n = ctx.collections.bgf.length;
+    if (n) {
+      const sum = ws.addRow(cols.map((c, i) => (i === 0 ? 'Summe' : c[1] === 'flaeche' || c[1] === 'bri' ? { formula: `SUM(${colLetter(i + 1)}${h + 1}:${colLetter(i + 1)}${h + n})` } : null)));
+      styleSum(ws, sum.number);
+    }
+    cols.forEach((c, i) => {
+      ws.getColumn(i + 1).width = c[2];
+      if (c[1] === 'laenge' || c[1] === 'breite') ws.getColumn(i + 1).numFmt = '#,##0.000';
+      if (c[1] === 'flaeche' || c[1] === 'bri') ws.getColumn(i + 1).numFmt = NUM;
+    });
+    ws.views = [{ state: 'frozen', ySplit: h }];
+  }
+
   // Nutzungsgruppen
   {
     const ws = wb.addWorksheet('NRF Nutzungsgruppen');
@@ -226,18 +259,20 @@ export async function buildSampleTemplate(): Promise<Uint8Array> {
     put(24, ['Brutto-Nebenflächen gesamt', null, null, { formula: 'SUM(D22:D22)' }], { bold: true, fmt: true, top: true, bottom: true });
   }
 
-  /* BGF je Geschoss */
+  /* BGF je Geschoss mit Teilflächen (BGF-Umrisse), Zwischensumme je Geschoss */
   {
     const ws = wb.addWorksheet('BGF');
     sampleHeader(ws, 'Bruttogrundflächen-Berechnung');
     ws.getRow(10).values = ['Bruttogrundfläche', null, 'BGF', 'BGF Summe'];
     ws.getRow(10).font = { bold: true };
-    ws.getRow(11).values = [null, '{{geschoss.name}}', '{{geschoss.bgf}}'];
+    ws.getRow(11).values = ['{{#geschoss}}{{geschoss.name|einmal}}', '{{bgf.name}}', '{{bgf.flaeche}}'];
+    ws.getCell('A11').font = { bold: true };
     ws.getCell('C11').numFmt = M2;
     ws.getCell('D12').value = { formula: 'SUM(C11:C11)' } as never;
     ws.getCell('D12').numFmt = M2;
     ws.getCell('D12').font = { bold: true };
-    ws.getRow(14).values = ['Bruttogrundfläche gesamt', null, null, { formula: 'D12' } as never];
+    ws.getCell('A13').value = '{{/geschoss}}';
+    ws.getRow(14).values = ['Bruttogrundfläche gesamt', null, null, { formula: 'SUM(D12:D12)' } as never];
     ws.getRow(14).font = { bold: true };
     ws.getCell('D14').numFmt = M2;
     ['A', 'B', 'C', 'D'].forEach((c) => (ws.getCell(`${c}14`).border = { top: MEDIUM, bottom: THIN }));
@@ -340,7 +375,7 @@ export async function buildSampleTemplate(): Promise<Uint8Array> {
     platzhalterBlatt(
       wb,
       PLACEHOLDER_DOCS,
-      'Platzhalter in doppelten geschweiften Klammern werden beim Export ersetzt. Zeilen mit raum.*, geschoss.*, wohnung.*, nutzung.*, bri.* oder koerper.* werden je Datensatz wiederholt, #geschoss … /geschoss wiederholt ganze Zeilenblöcke. Formeln (z. B. SUMME über eine Wiederholungszeile) werden automatisch auf die erzeugten Zeilen erweitert. Steht nur ein Platzhalter in der Zelle, wird eine Zahl eingetragen und das Zellformat der Vorlage bleibt erhalten. Dieses Blatt kann gelöscht werden.',
+      'Platzhalter in doppelten geschweiften Klammern werden beim Export ersetzt. Zeilen mit raum.*, geschoss.*, bgf.*, wohnung.*, nutzung.*, bri.* oder koerper.* werden je Datensatz wiederholt, #geschoss … /geschoss wiederholt ganze Zeilenblöcke; leere Blöcke entfallen. Formeln (z. B. SUMME über eine Wiederholungszeile) werden automatisch auf die erzeugten Zeilen erweitert. Steht nur ein Platzhalter in der Zelle, wird eine Zahl eingetragen und das Zellformat der Vorlage bleibt erhalten. Dieses Blatt kann gelöscht werden.',
     );
   }
 

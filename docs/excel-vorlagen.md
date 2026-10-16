@@ -4,8 +4,9 @@ Der Excel-Export (Schaltfläche **Excel**) erzeugt entweder das Standardlayout o
 Vorlage. Eine Vorlage ist eine normale `.xlsx`-Datei – mit Logo, Kopf, Schriften, Rahmen, Zahlenformaten
 und eigenen Formeln – in die Platzhalter geschrieben werden. Sie wird im Projekt gespeichert (und im
 Projektarchiv `.oap` mitgenommen) und zusätzlich in der Anwendung als Standard für weitere Projekte
-hinterlegt. **Muster-Vorlage herunterladen** liefert eine Beispieldatei mit den Blättern Wohnflächen, BGF,
-BRI (Normalgeschosse/Dachgeschoss), BRI Teilkörper, Räume und einer Platzhalter-Übersicht.
+hinterlegt. **Muster-Vorlage herunterladen** liefert eine Beispieldatei mit den Blättern Wohnflächen, BGF
+(Teilflächen je Geschoss), BRI (Normalgeschosse/Dachgeschoss), BRI Teilkörper, Räume und einer
+Platzhalter-Übersicht.
 
 ## Grundprinzip
 
@@ -13,7 +14,7 @@ BRI (Normalgeschosse/Dachgeschoss), BRI Teilkörper, Räume und einer Platzhalte
 |---|---|
 | `{{projekt.name}}`, `{{projekt.code}}`, `{{datum}}`, `{{summe.bgf}}` | Einzelwert |
 | `{{geschoss:EG.bri}}`, `{{wohnung:WE 01.wofl}}` | Wert eines bestimmten Geschosses / einer Wohnung |
-| `{{raum.name}}` in einer Zeile | **Zeile** wird je Raum wiederholt (ebenso `geschoss`, `wohnung`, `nutzung`, `bri`, `koerper`) |
+| `{{raum.name}}` in einer Zeile | **Zeile** wird je Raum wiederholt (ebenso `geschoss`, `bgf`, `wohnung`, `nutzung`, `bri`, `koerper`) |
 | `{{#geschoss}}` … `{{/geschoss}}` | **Zeilenblock** wird je Geschoss wiederholt; Blöcke lassen sich verschachteln |
 | `{{raum[wofl].name}}` | Wiederholung mit **Filter** |
 | `{{geschoss.name\|einmal}}` | Wert nur in der **ersten** Zeile einer Wiederholung |
@@ -32,12 +33,21 @@ Ein Block beginnt mit `{{#geschoss}}` und endet mit `{{/geschoss}}`. Die Markier
 - **allein in einer Zeile** stehen – diese Steuerzeile erscheint nicht in der Ausgabe, oder
 - **in der ersten bzw. letzten Zeile des Blocks** vor/hinter anderem Inhalt, z. B. `{{#geschoss}}{{geschoss.name|einmal}}`.
 
-Innerhalb eines Geschossblocks laufen `{{raum.…}}`- und `{{bri.…}}`-Zeilen nur über die Räume bzw.
-Teilkörper **dieses** Geschosses. Geschosse, für die eine Wiederholungszeile im Block keinen Datensatz
-liefert (z. B. ein Kellergeschoss ohne Wohnfläche im Abschnitt „Wohnflächen“), **entfallen**.
+Innerhalb eines Geschossblocks laufen `{{raum.…}}`-, `{{bgf.…}}`- und `{{bri.…}}`-Zeilen nur über die
+Räume, BGF-Teilflächen bzw. Teilkörper **dieses** Geschosses.
 
-Weitere Blockarten: `{{#wohnung}}` (Räume je Wohnung), `{{#nutzung}}` (Räume je Nutzungsgruppe),
-`{{#raum}}` (mehrzeilige Angaben je Raum), `{{#koerper}}` (mehrzeilige Angaben je BRI-Körper).
+**Leere Blöcke entfallen** – mit allen ihren Zeilen, auch Zwischensummen:
+
+- Enthält der Block Wiederholungszeilen oder innere Blöcke, entfällt er, wenn keine davon einen Datensatz
+  liefert (z. B. ein Kellergeschoss ohne Wohnfläche im Abschnitt „Wohnflächen“, ein Geschoss ohne
+  BGF-Teilfläche).
+- Sonst entfällt er, wenn alle Zahlenwerte des Blockdatensatzes 0 sind – etwa
+  `{{#geschoss}}{{geschoss.name|einmal}}` … `{{geschoss.bgf_r}}` für ein Geschoss ohne BGF im Regelfall.
+  Laufende Nummern (`nr`) zählen dabei nicht; Blöcke ganz ohne Zahlenwerte (nur Namen) bleiben stehen.
+
+Weitere Blockarten: `{{#bgf}}` (mehrzeilige Angaben je BGF-Teilfläche, darin `bri`/`koerper` dieser
+Teilfläche), `{{#wohnung}}` (Räume je Wohnung), `{{#nutzung}}` (Räume je Nutzungsgruppe), `{{#raum}}`
+(mehrzeilige Angaben je Raum), `{{#koerper}}` (mehrzeilige Angaben je BRI-Körper).
 
 ### Beispiel: Wohnflächen mit Haupt- und Nebenflächen
 
@@ -65,6 +75,23 @@ Zwischensummen, und die Bezüge darunter (`D16`, `D17`) rutschen mit.
 > **Putzabzug:** Übernimmt der Import einen Putzabzug je Raum (z. B. 3 % aus Archicad), enthalten
 > `raum.flaeche` und `raum.wofl` diesen bereits. Wird der Abzug – wie oben – in Excel gerechnet,
 > `raum.flaeche_roh` bzw. `raum.wofl_roh` verwenden, sonst würde doppelt abgezogen.
+
+### Beispiel: BGF mit Teilflächen
+
+Die Sammlung `bgf` enthält je **BGF-Umriss** (Teilfläche) eine Zeile: `bgf.name`, `bgf.flaeche`
+(Abzugsflächen negativ), `bgf.umschliessung`, `bgf.bgf_r`/`bgf.bgf_s`, bei Rechtecken `bgf.laenge` und
+`bgf.breite`, `bgf.bri`, `bgf.abzug`, `bgf.bemerkung`. Die Summe der Teilflächen eines Geschosses ist dessen
+`geschoss.bgf`. Blatt „BGF“ der Muster-Vorlage:
+
+| | A | B | C | D |
+|---|---|---|---|---|
+| 10 | Bruttogrundfläche | | BGF | BGF Summe |
+| 11 | `{{#geschoss}}{{geschoss.name\|einmal}}` | `{{bgf.name}}` | `{{bgf.flaeche}}` | |
+| 12 | | | | `=SUMME(C11:C11)` |
+| 13 | `{{/geschoss}}` | | | |
+| 14 | Bruttogrundfläche gesamt | | | `=SUMME(D12:D12)` |
+
+Nur Regel- bzw. Sonderfall: `{{bgf[r].name}}` / `{{bgf[s].name}}`; ohne Abzugsflächen: `{{bgf[!abzug].name}}`.
 
 ## Formeln
 
@@ -100,7 +127,7 @@ trägt – ein „Dach aus Modell“ zählt dafür nicht (es steht oft auch übe
 Geschosse). Ein Körper „bis zur Dachhaut aus dem Modell“ erscheint als Grundkörper mit mittlerer Höhe,
 also im Normalgeschoss-Block als Höhe × BGF.
 In den Geschosseigenschaften lässt sich das unter **Geschossart** festlegen (automatisch / Normalgeschoss /
-Dachgeschoss). Der Filter wirkt auf `geschoss`, `raum`, `bri` und `koerper`.
+Dachgeschoss). Der Filter wirkt auf `geschoss`, `raum`, `bgf`, `bri` und `koerper`.
 
 | Dachform (Rechteck L × B, L in Firstrichtung) | `koerper.formel` |
 |---|---|
@@ -180,8 +207,8 @@ Text (z. B. `12,00 × 9,00 × 3,151 × ½`). Beispiel (Blatt „BRI Teilkörper�
 | `dach` / `gaube` / `grundkoerper` | nur `koerper`: Dachkörper, Gauben bzw. Grundkörper |
 | `hnf` / `nnf` | NUF 1–6 bzw. NUF 7 |
 | `nuf` / `tf` / `vf` | Nutzungsfläche, Technikfläche, Verkehrsfläche |
-| `r` / `s` | Raumumschließung Regel- bzw. Sonderfall |
-| `abzug` | Abzugsflächen |
+| `r` / `s` | Raumumschließung Regel- bzw. Sonderfall (`raum`, `bgf`) |
+| `abzug` | Abzugsflächen (`raum`, `bgf`) |
 | `feld=wert`, `feld!=wert` | beliebiges Feld, z. B. `raum[geschoss=EG]`, `raum[wohnung=WE 01]` |
 | `!filter` | Verneinung, z. B. `raum[!abzug]` |
 

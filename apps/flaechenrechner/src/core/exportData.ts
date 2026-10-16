@@ -1,11 +1,11 @@
 import type { AreaTotals, ProjectResult } from '@core/calc';
-import { raumBodenVersatz } from '@core/calc';
+import { outlineVolume, raumBodenVersatz } from '@core/calc';
 import { polygonArea } from '@core/geometry';
-import type { Project } from '@core/model';
+import type { OutlineShape, Project } from '@core/model';
 import { istDachgeschoss } from '@core/model';
 import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
 import { NUF_IDS, NUTZUNGSGRUPPEN, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
-import { briKoerper, briRechenweg } from '@core/rechenweg';
+import { briKoerper, briRechenweg, rechteckMasse } from '@core/rechenweg';
 import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
 
 /**
@@ -14,16 +14,16 @@ import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/con
  *   {{projekt.name}}              Einzelwert
  *   {{summe.bgf}}                 Projektsumme
  *   {{geschoss:EG.bgf}}           Wert eines bestimmten Geschosses (über den Namen)
- *   {{raum.flaeche}}              Zeile wird je Raum wiederholt (ebenso geschoss, wohnung, nutzung, bri)
+ *   {{raum.flaeche}}              Zeile wird je Raum wiederholt (ebenso geschoss, bgf, wohnung, nutzung, bri, koerper)
  *   {{raum[wofl].name}}           mit Filter (hier: nur Räume mit Wohnflächenanrechnung)
- *   {{#geschoss}} … {{/geschoss}} Zeilenblock je Geschoss; raum-/bri-Zeilen darin nur für dieses Geschoss
+ *   {{#geschoss}} … {{/geschoss}} Zeilenblock je Geschoss; raum-/bgf-/bri-Zeilen darin nur für dieses Geschoss
  *   {{geschoss.name|einmal}}      nur in der ersten Zeile der jeweiligen Wiederholung
  */
 
 export type { ExportContext, Row, Value } from '@core/excel/context';
 export { hasPlaceholder, repeatCollection, resolveText, shiftFormulaForInsert, shiftRelativeRows } from '@core/excel/context';
 
-export const COLLECTIONS = ['geschoss', 'raum', 'wohnung', 'nutzung', 'bri', 'koerper'] as const;
+export const COLLECTIONS = ['geschoss', 'raum', 'bgf', 'wohnung', 'nutzung', 'bri', 'koerper'] as const;
 export type Collection = (typeof COLLECTIONS)[number];
 
 /** Kontext des Flächenrechners: alle Sammlungen sind immer vorhanden */
@@ -119,6 +119,36 @@ export function buildExportContext(project: Project, result: ProjectResult, date
     };
   });
 
+  // BGF-Teilflächen: je Umriss eine Zeile (Abzugsflächen negativ)
+  const bgf: Row[] = project.storeys.flatMap((st) => {
+    let n = 0;
+    return st.shapes
+      .filter((s): s is OutlineShape => s.kind === 'outline' && s.points.length >= 3)
+      .map((s) => {
+        const sign = s.subtract ? -1 : 1;
+        const a = r2(sign * polygonArea(s.points));
+        const m = rechteckMasse(s.points);
+        return {
+          _geschossId: st.id,
+          _id: s.id,
+          nr: ++n,
+          geschoss: st.name,
+          dachgeschoss: dg.get(st.id) ?? '',
+          name: s.name,
+          umschliessung: s.umschliessung,
+          flaeche: a,
+          bgf_r: s.umschliessung === 'R' ? a : '',
+          bgf_s: s.umschliessung === 'S' ? a : '',
+          laenge: m ? r3(m.laenge) : '',
+          breite: m ? r3(m.breite) : '',
+          bri: r2(sign * outlineVolume(s, st, project)),
+          hoehenlage: s.versatz ? r3(s.versatz) : '',
+          abzug: s.subtract ? 'Abzug' : '',
+          bemerkung: s.bemerkung ?? '',
+        };
+      });
+  });
+
   const sum = totalsRow(result.total);
   sum.anzahl_raeume = raum.length;
   sum.wofl_roh = sumBy(raum, 'wofl_roh');
@@ -137,6 +167,7 @@ export function buildExportContext(project: Project, result: ProjectResult, date
 
   const bri: Row[] = briRechenweg(project).map((b) => ({
     _geschossId: b.geschossId,
+    _umrissId: b.umrissId,
     geschoss: b.geschoss,
     dachgeschoss: dg.get(b.geschossId) ?? '',
     umriss: b.umriss,
@@ -156,6 +187,7 @@ export function buildExportContext(project: Project, result: ProjectResult, date
 
   const koerper: Row[] = briKoerper(project).map((k) => ({
     _geschossId: k.geschossId,
+    _umrissId: k.umrissId,
     geschoss: k.geschoss,
     dachgeschoss: dg.get(k.geschossId) ?? '',
     umriss: k.umriss,
@@ -176,7 +208,7 @@ export function buildExportContext(project: Project, result: ProjectResult, date
 
   return {
     scalars,
-    collections: { geschoss, raum, wohnung, nutzung, bri, koerper },
+    collections: { geschoss, raum, bgf, wohnung, nutzung, bri, koerper },
     byName: {
       geschoss: new Map(geschoss.map((g) => [String(g.name), g])),
       wohnung: new Map(wohnung.map((w) => [String(w.name), w])),
@@ -191,11 +223,12 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
   {
     group: 'Blöcke, Filter, Modifikatoren',
     keys: [
-      ['#geschoss … /geschoss', 'Zeilenblock je Geschoss (Markierung in eigener Zeile oder in der ersten/letzten Blockzeile); ebenso #wohnung, #nutzung, #raum, #koerper'],
-      ['raum-/bri-/koerper-Zeilen im Block', 'laufen nur über die Räume bzw. Körper des aktuellen Geschosses; leere Blöcke entfallen'],
+      ['#geschoss … /geschoss', 'Zeilenblock je Geschoss (Markierung in eigener Zeile oder in der ersten/letzten Blockzeile); ebenso #bgf, #wohnung, #nutzung, #raum, #koerper'],
+      ['raum-/bgf-/bri-/koerper-Zeilen im Block', 'laufen nur über die Räume, BGF-Teilflächen bzw. Körper des aktuellen Geschosses (im #bgf-Block: bri/koerper dieser Teilfläche)'],
+      ['leere Blöcke', 'entfallen: Wiederholungszeilen und innere Blöcke liefern nichts bzw. alle Zahlenwerte des Blocks sind 0'],
       ['raum[wofl] / raum[nebenflaeche]', 'Filter: Räume mit bzw. ohne Wohnflächenanrechnung'],
       ['raum[hnf] / raum[nnf] / [nuf] [tf] [vf]', 'Filter nach Nutzungsgruppe (HNF = NUF 1–6, NNF = NUF 7)'],
-      ['geschoss[dg] / geschoss[normal]', 'Filter: Dachgeschosse bzw. Normalgeschosse (gilt ebenso für raum, bri, koerper)'],
+      ['geschoss[dg] / geschoss[normal]', 'Filter: Dachgeschosse bzw. Normalgeschosse (gilt ebenso für raum, bgf, bri, koerper)'],
       ['koerper[dach] / [gaube] / [grundkoerper]', 'Filter: Dachkörper, Gauben bzw. Grundkörper (Quader)'],
       ['[r] [s] [abzug] [feld=wert] [!filter]', 'weitere Filter, mehrere mit Komma: raum[wofl,geschoss=EG]'],
       ['…|einmal', 'Wert nur in der ersten Zeile der Wiederholung, z. B. geschoss.name|einmal'],
@@ -241,6 +274,22 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['raum.wohnung', 'Wohnungszuordnung'],
       ['raum.abzug', '„Abzug“ bei Abzugsflächen, sonst leer'],
       ['raum.bemerkung', 'Bemerkung'],
+    ],
+  },
+  {
+    group: 'bgf.* (BGF-Teilflächen, Zeile je BGF-Umriss)',
+    keys: [
+      ['bgf.geschoss, bgf.nr', 'Geschoss, laufende Nummer im Geschoss'],
+      ['bgf.name', 'Bezeichnung der Teilfläche (Name des BGF-Umrisses)'],
+      ['bgf.umschliessung', 'R oder S'],
+      ['bgf.flaeche', 'Fläche [m²] (negativ bei Abzugsflächen)'],
+      ['bgf.bgf_r, bgf.bgf_s', 'Fläche im Regel- bzw. Sonderfall, sonst leer [m²]'],
+      ['bgf.laenge, bgf.breite', 'Länge und Breite – bei rechteckigen Teilflächen [m]'],
+      ['bgf.bri', 'Brutto-Rauminhalt der Teilfläche [m³]'],
+      ['bgf.hoehenlage', 'Höhenversatz des Körpers gegenüber dem Geschoss [m], sonst leer'],
+      ['bgf.abzug', '„Abzug“ bei Abzugsflächen, sonst leer'],
+      ['bgf.bemerkung, bgf.dachgeschoss', 'Bemerkung; „ja“ im Dachgeschoss'],
+      ['bgf[r] / bgf[s] / bgf[abzug] / bgf[!abzug]', 'Filter wie bei raum'],
     ],
   },
   {
@@ -328,7 +377,7 @@ const NAMED_FILTERS: Record<string, (r: Row) => boolean> = {
 function zugehoerig(child: string, row: Row, parent: string, p: Row, ctx: ExportContext): boolean {
   const raeume = ctx.collections.raum ?? [];
   if (parent === 'geschoss') {
-    if (child === 'raum' || child === 'bri' || child === 'koerper') return row._geschossId === p._id;
+    if (child === 'raum' || child === 'bgf' || child === 'bri' || child === 'koerper') return row._geschossId === p._id;
     if (child === 'wohnung') return raeume.some((r) => r._geschossId === p._id && r.wohnung === row.name);
   }
   if (parent === 'wohnung') {
@@ -336,6 +385,12 @@ function zugehoerig(child: string, row: Row, parent: string, p: Row, ctx: Export
     if (child === 'geschoss') return raeume.some((r) => r._geschossId === row._id && r.wohnung === p.name);
   }
   if (parent === 'nutzung' && child === 'raum') return row.nutzung === p.gruppe;
-  if ((parent === 'raum' || parent === 'bri' || parent === 'koerper') && child === 'geschoss') return row._id === p._geschossId;
+  if (parent === 'bgf') {
+    // Körper dieser Teilfläche; Räume des Geschosses (ohne Zuordnung zu einzelnen Teilflächen)
+    if (child === 'bri' || child === 'koerper') return row._umrissId === p._id;
+    if (child === 'raum') return row._geschossId === p._geschossId;
+  }
+  if (child === 'bgf' && (parent === 'bri' || parent === 'koerper')) return row._id === p._umrissId;
+  if ((parent === 'raum' || parent === 'bgf' || parent === 'bri' || parent === 'koerper') && child === 'geschoss') return row._id === p._geschossId;
   return true;
 }

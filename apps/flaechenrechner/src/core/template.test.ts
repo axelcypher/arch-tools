@@ -126,3 +126,101 @@ describe('Vorlagen-Engine', () => {
     expect(out[3].cells.get(2)).toEqual({ formula: 'SUM(B1:B1)' });
   });
 });
+
+describe('BGF-Teilflächen und leere Blöcke', () => {
+  function projekt() {
+    const p = createProject('BGF');
+    const eg = p.storeys[0];
+    eg.name = 'EG';
+    const og = createStorey('OG', 2.8);
+    const sb = createStorey('Spitzboden', 2);
+    const gl = createStorey('Gelände', 0);
+    p.storeys.push(og, sb, gl);
+    const umriss = (st: typeof eg, name: string, w: number, h: number, extra: Partial<ReturnType<typeof createOutline>> = {}) =>
+      st.shapes.push({ ...createOutline(rectPoints({ x: 0, y: 0 }, { x: w, y: h }), name), ...extra });
+    umriss(eg, 'Haupthaus', 10, 8); // 80
+    umriss(eg, 'Anbau', 4, 3); // 12
+    umriss(eg, 'Treppenauge', 2, 1, { subtract: true }); // −2
+    umriss(og, 'Haupthaus', 10, 8); // 80
+    umriss(og, 'Balkon', 3, 2, { umschliessung: 'S' }); // 6 S
+    umriss(sb, 'Spitzboden', 5, 4, { umschliessung: 'S' }); // 20 S, kein Regelfall
+    return p; // Gelände ohne BGF
+  }
+  const p = projekt();
+  const ctx = buildExportContext(p, computeProject(p));
+  const grid = (out: ReturnType<typeof expandTemplate>, cols: number[]) =>
+    out.map((r) =>
+      cols.map((c) => {
+        const v = r.cells.get(c);
+        return v && typeof v === 'object' && 'formula' in v ? `=${v.formula}` : (v ?? '');
+      }),
+    );
+
+  it('Teilflächen je Geschoss mit Namen, Abzug negativ, Summe = BGF des Geschosses', () => {
+    const tpl = rowsOf([
+      ['{{#geschoss}}{{geschoss.name|einmal}}', '{{bgf.name}}', '{{bgf.flaeche}}', '{{bgf.umschliessung}}'],
+      ['', 'Summe', F('SUM(C1:C1)'), '{{geschoss.bgf}}'],
+      ['{{/geschoss}}'],
+    ]);
+    expect(grid(expandTemplate(tpl, ctx), [1, 2, 3, 4])).toEqual([
+      ['EG', 'Haupthaus', 80, 'R'],
+      ['', 'Anbau', 12, 'R'],
+      ['', 'Treppenauge', -2, 'R'],
+      ['', 'Summe', '=SUM(C1:C3)', 90],
+      ['OG', 'Haupthaus', 80, 'R'],
+      ['', 'Balkon', 6, 'S'],
+      ['', 'Summe', '=SUM(C5:C6)', 86],
+      ['Spitzboden', 'Spitzboden', 20, 'S'],
+      ['', 'Summe', '=SUM(C8:C8)', 20],
+      // Gelände ohne Teilfläche entfällt
+    ]);
+    const anbau = ctx.collections.bgf.find((b) => b.name === 'Anbau')!;
+    expect([anbau.geschoss, anbau.nr, anbau.laenge, anbau.breite, anbau.bgf_r, anbau.bgf_s, anbau.abzug]).toEqual(['EG', 2, 4, 3, 12, '', '']);
+    expect(ctx.collections.bgf.find((b) => b.name === 'Treppenauge')!.abzug).toBe('Abzug');
+    expect(expandTemplate(rowsOf([['{{bgf[abzug].name}}', '{{bgf[abzug].bri}}']]), ctx).map((r) => r.cells.get(2))).toEqual([-6]);
+  });
+
+  it('Block entfällt, wenn alle Zahlenwerte 0 sind', () => {
+    const tpl = rowsOf([
+      ['{{#geschoss}}{{geschoss.name|einmal}}', '', '{{name}}', '', '{{geschoss.bgf_r}}'],
+      ['', '', '', '', F('SUM(E1:E1)')],
+      ['{{/geschoss}}'],
+    ]);
+    // Spitzboden (nur Sonderfall) und Gelände (keine BGF) entfallen; unbekannte Platzhalter bleiben sichtbar
+    expect(grid(expandTemplate(tpl, ctx), [1, 3, 5])).toEqual([
+      ['EG', '{{name}}', 90],
+      ['', '', '=SUM(E1:E1)'],
+      ['OG', '{{name}}', 80],
+      ['', '', '=SUM(E3:E3)'],
+    ]);
+    // laufende Nummern zählen nicht als Wert
+    const nr = rowsOf([['{{#geschoss}}{{geschoss.nr}}', '{{geschoss.bgf_s}}'], ['{{/geschoss}}']]);
+    expect(expandTemplate(nr, ctx).map((r) => r.cells.get(2))).toEqual([6, 20]);
+  });
+
+  it('Blöcke nur mit Text bleiben; ein innerer Block ohne Datensatz leert den äußeren', () => {
+    const text = rowsOf([['{{#geschoss}}{{geschoss.name}}{{/geschoss}}']]);
+    expect(expandTemplate(text, ctx).map((r) => r.cells.get(1))).toEqual(['EG', 'OG', 'Spitzboden', 'Gelände']);
+
+    const verschachtelt = rowsOf([['{{#geschoss}}{{geschoss.name}}'], ['{{#bgf[s]}}', '{{bgf.name}}'], ['{{/bgf}}'], ['{{/geschoss}}']]);
+    expect(grid(expandTemplate(verschachtelt, ctx), [1, 2])).toEqual([
+      ['OG', ''],
+      ['', 'Balkon'],
+      ['Spitzboden', ''],
+      ['', 'Spitzboden'],
+    ]);
+  });
+
+  it('im #bgf-Block laufen BRI-Körper nur über die Teilfläche', () => {
+    const tpl = rowsOf([['{{#bgf[geschoss=EG]}}{{bgf.name}}', '{{bgf.bri}}'], ['', '{{koerper.bezeichnung}}', '{{koerper.volumen}}'], ['{{/bgf}}']]);
+    const out = grid(expandTemplate(tpl, ctx), [1, 2, 3]);
+    expect(out).toEqual([
+      ['Haupthaus', 240, ''],
+      ['', 'Quader', 240],
+      ['Anbau', 36, ''],
+      ['', 'Quader', 36],
+      ['Treppenauge', -6, ''],
+      ['', 'Quader', -6],
+    ]);
+  });
+});

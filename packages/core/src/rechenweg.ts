@@ -141,6 +141,12 @@ function grundkoerper(label: string, pts: Point[], A: number, h: number, angle: 
   return { bezeichnung: label, anzahl: 1, flaeche: A, hoehe: h, faktor: 1 };
 }
 
+/** Länge × Breite eines rechteckigen Umrisses (wie beim Quader im Rechenweg); sonst null */
+export function rechteckMasse(pts: Point[]): { laenge: number; breite: number } | null {
+  const t = grundkoerper('', pts, polygonArea(pts), 0, autoFirstrichtung(pts));
+  return t.laenge !== undefined && t.breite !== undefined ? { laenge: t.laenge, breite: t.breite } : null;
+}
+
 /** Klassische Formeln für Dachkörper über einem Rechteck L (Firstrichtung) × B; null = keine geschlossene Formel */
 function rechteckDach(d: Dach, L: number, B: number, label: string): Teil[] | null {
   const t = Math.tan(rad(Math.min(Math.max(d.neigung, 0), 89)));
