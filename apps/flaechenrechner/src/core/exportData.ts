@@ -17,6 +17,7 @@ import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/con
  *   {{raum.flaeche}}              Zeile wird je Raum wiederholt (ebenso geschoss, wohnung, nutzung, bri)
  *   {{raum[wofl].name}}           mit Filter (hier: nur Räume mit Wohnflächenanrechnung)
  *   {{#geschoss}} … {{/geschoss}} Zeilenblock je Geschoss; raum-/bri-Zeilen darin nur für dieses Geschoss
+ *   {{#wenn raum[wofl]}} … {{/wenn}} Zeilen nur, wenn es passende Datensätze gibt ({{#wenn !…}}: nur, wenn nicht)
  *   {{geschoss.name|einmal}}      nur in der ersten Zeile der jeweiligen Wiederholung
  */
 
@@ -192,6 +193,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
     group: 'Blöcke, Filter, Modifikatoren',
     keys: [
       ['#geschoss … /geschoss', 'Zeilenblock je Geschoss (Markierung in eigener Zeile oder in der ersten/letzten Blockzeile); ebenso #wohnung, #nutzung, #raum, #koerper'],
+      ['#wenn … /wenn', 'Zeilen nur ausgeben, wenn es passende Datensätze gibt (z. B. #wenn raum[nebenflaeche]; im Block je Datensatz) bzw. der Wert nicht leer ist; #wenn ! … nur, wenn nicht'],
       ['raum-/bri-/koerper-Zeilen im Block', 'laufen nur über die Räume bzw. Körper des aktuellen Geschosses; leere Blöcke entfallen'],
       ['raum[wofl] / raum[nebenflaeche]', 'Filter: Räume mit bzw. ohne Wohnflächenanrechnung'],
       ['raum[hnf] / raum[nnf] / [nuf] [tf] [vf]', 'Filter nach Nutzungsgruppe (HNF = NUF 1–6, NNF = NUF 7)'],
