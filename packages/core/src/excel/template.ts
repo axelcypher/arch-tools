@@ -15,6 +15,8 @@ type Collection = string;
  *    Datensatz wiederholt – innerhalb eines Blocks nur für die zugehörigen Datensätze.
  *  - Filter: {{raum[wofl].name}}; Modifikator |einmal: nur in der ersten Wiederholungszeile.
  *  - Blockinstanzen, deren Wiederholungszeilen leer bleiben, entfallen.
+ *  - {{#wenn raum[nebenflaeche]}} … {{/wenn}} gibt die Zeilen nur aus, wenn es passende Datensätze gibt
+ *    (im Block: für diesen Datensatz), {{#wenn !…}} nur, wenn nicht; auch für Werte: {{#wenn grz.ii}}.
  *  - Formeln werden auf die erzeugten Zeilen umgeschrieben (siehe translateFormula).
  */
 
@@ -37,6 +39,8 @@ export interface OutputRow {
 const PH = () => /\{\{\s*([^{}]+?)\s*\}\}/g;
 const BLOCK_START = /^#\s*([a-z]+)\s*(?:\[([^\]]*)\])?$/i;
 const BLOCK_END = /^\/\s*([a-z]+)\s*$/i;
+const WENN_START = /^#\s*wenn\s+(!?)\s*(.+?)\s*$/i;
+const WENN_END = /^\/\s*wenn\s*$/i;
 
 interface KeyInfo {
   coll?: Collection;
@@ -110,23 +114,30 @@ interface BlockNode {
   filter?: string;
   children: Node[];
 }
+interface CondNode {
+  kind: 'cond';
+  /** Bedingung: Sammlung mit Filter (z. B. raum[wofl]) oder Wert (z. B. grz.ii) */
+  test: string;
+  neg: boolean;
+  children: Node[];
+}
 interface RowNode {
   kind: 'row';
   row: TemplateRow;
   /** Blöcke, in denen die Zeile liegt (außen → innen) */
   blocks: number[];
 }
-type Node = BlockNode | RowNode;
+type Node = BlockNode | CondNode | RowNode;
 
 function parseStructure(rows: TemplateRow[], ctx: ExportContext): { nodes: Node[]; blocksOfRow: Map<number, number[]> } {
   const root: Node[] = [];
-  const stack: BlockNode[] = [];
+  const stack: (BlockNode | CondNode)[] = [];
   const blocksOfRow = new Map<number, number[]>();
   let nextId = 1;
   const current = () => (stack.length ? stack[stack.length - 1].children : root);
 
   for (const row of rows) {
-    let start: { coll: Collection; filter?: string } | null = null;
+    let start: { coll: Collection; filter?: string } | { test: string; neg: boolean } | null = null;
     let end = false;
     let content = false;
     const cells = new Map(row.cells);
@@ -141,7 +152,14 @@ function parseStructure(rows: TemplateRow[], ctx: ExportContext): { nodes: Node[
         const inner = m[1].trim();
         const s = BLOCK_START.exec(inner);
         const e = BLOCK_END.exec(inner);
-        if (s && isCollection(ctx, s[1].toLowerCase())) {
+        const ws = WENN_START.exec(inner);
+        if (ws) {
+          start = { test: ws[2], neg: ws[1] === '!' };
+          rest = rest.replace(m[0], '');
+        } else if (WENN_END.test(inner)) {
+          end = true;
+          rest = rest.replace(m[0], '');
+        } else if (s && isCollection(ctx, s[1].toLowerCase())) {
           start = { coll: s[1].toLowerCase(), filter: s[2] };
           rest = rest.replace(m[0], '');
         } else if (e && isCollection(ctx, e[1].toLowerCase())) {
@@ -156,13 +174,15 @@ function parseStructure(rows: TemplateRow[], ctx: ExportContext): { nodes: Node[
       if (rest.trim() !== '') content = true;
     }
     if (start) {
-      const b: BlockNode = { kind: 'block', id: nextId++, coll: start.coll, filter: start.filter, children: [] };
+      const b: BlockNode | CondNode =
+        'test' in start ? { kind: 'cond', test: start.test, neg: start.neg, children: [] } : { kind: 'block', id: nextId++, coll: start.coll, filter: start.filter, children: [] };
       current().push(b);
       stack.push(b);
     }
     // Zeilen, die nur aus einer Markierung bestehen, erscheinen nicht in der Ausgabe
     if (content || (!start && !end)) {
-      const blocks = stack.map((b) => b.id);
+      // Bedingungen sind keine Wiederholungen – für Formelbezüge zählen nur die Blöcke
+      const blocks = stack.filter((b): b is BlockNode => b.kind === 'block').map((b) => b.id);
       blocksOfRow.set(row.r, blocks);
       current().push({ kind: 'row', row: { r: row.r, cells }, blocks });
     }
@@ -209,6 +229,18 @@ function itemsFor(coll: Collection, filter: string | undefined, bound: Bindings,
   });
 }
 
+/**
+ * Bedingung eines {{#wenn …}}-Blocks: Sammlung (mit Filter) → gibt es passende Datensätze (im Block nur die
+ * zugehörigen)? Sonst Wert (z. B. grz.ii, geschoss.dachgeschoss) → nicht leer, nicht 0, nicht „nein“.
+ */
+function bedingung(test: string, bound: Bindings, ctx: ExportContext): boolean {
+  const c = /^([a-z]+)(?:\[([^\]]*)\])?$/i.exec(test.trim());
+  if (c && isCollection(ctx, c[1].toLowerCase())) return itemsFor(c[1].toLowerCase(), c[2], bound, ctx).length > 0;
+  const v = lookup(parseKey(test, ctx), ctx, bound);
+  if (v === undefined || v === null || v === '' || v === 0) return false;
+  return !(typeof v === 'string' && /^(nein|0|false)$/i.test(v.trim()));
+}
+
 export function expandTemplate(rows: TemplateRow[], ctx: ExportContext): OutputRow[] {
   const { nodes, blocksOfRow } = parseStructure(rows, ctx);
   const metas: OutMeta[] = [];
@@ -230,6 +262,11 @@ export function expandTemplate(rows: TemplateRow[], ctx: ExportContext): OutputR
         produced += items.length;
         // außerhalb von Blöcken bleibt eine leere Zeile stehen, damit das Layout erhalten bleibt
         if (!items.length && topLevel) metas.push({ src: n.row.r, inst, bindings: bound, first: true, empty: true });
+      } else if (n.kind === 'cond') {
+        if (bedingung(n.test, bound, ctx) === n.neg) continue; // Bedingung nicht erfüllt: Zeilen entfallen
+        const r = expand(n.children, bound, inst, topLevel);
+        repeats += r.repeats;
+        produced += r.produced;
       } else {
         const items = itemsFor(n.coll, n.filter, bound, ctx);
         items.forEach((it, i) => {
@@ -280,7 +317,7 @@ export function expandTemplate(rows: TemplateRow[], ctx: ExportContext): OutputR
 function findRowNode(nodes: Node[], r: number): RowNode | undefined {
   for (const n of nodes) {
     if (n.kind === 'row' && n.row.r === r) return n;
-    if (n.kind === 'block') {
+    if (n.kind !== 'row') {
       const f = findRowNode(n.children, r);
       if (f) return f;
     }

@@ -154,6 +154,25 @@ describe('Excel-Export mit Vorlage', () => {
     expect((sum[5] as { result: number }).result).toBeCloseTo(res.total.bri.total, 1);
   });
 
+  it('Bedingungsblock: Abschnitt ohne Daten entfällt in der Excel-Datei, Formel darunter rutscht mit', async () => {
+    const p = project();
+    const tpl = new ExcelJS.Workbook();
+    const ws = tpl.addWorksheet('Test');
+    ws.getCell('A1').value = '{{#wenn raum[abzug]}}Abzugsflächen';
+    ws.getCell('B2').value = '{{raum[abzug].name}}';
+    ws.getCell('C2').value = '{{raum[abzug].flaeche}}';
+    ws.getCell('A3').value = 'Summe{{/wenn}}';
+    ws.getCell('C3').value = { formula: 'SUM(C2:C2)' };
+    ws.getCell('A4').value = '{{#wenn !raum[abzug]}}keine Abzugsflächen{{/wenn}}';
+    ws.getCell('A5').value = 'Ende';
+    ws.getCell('C5').value = { formula: 'C3+1' };
+    const wb = await load(await exportWithTemplate(new Uint8Array(await tpl.xlsx.writeBuffer()), p, computeProject(p)));
+    const out = wb.getWorksheet('Test')!;
+    expect(out.getCell('A1').value).toBe('keine Abzugsflächen');
+    expect(out.getCell('A2').value).toBe('Ende');
+    expect((out.getCell('C2').value as { formula: string }).formula).toBe('0+1');
+  });
+
   it('ersetzt Platzhalter in Kopf- und Fußzeile', async () => {
     const tpl = new ExcelJS.Workbook();
     const ws0 = tpl.addWorksheet('Kopf');

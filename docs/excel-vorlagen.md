@@ -66,6 +66,29 @@ Zwischensummen, und die Bezüge darunter (`D16`, `D17`) rutschen mit.
 > `raum.flaeche` und `raum.wofl` diesen bereits. Wird der Abzug – wie oben – in Excel gerechnet,
 > `raum.flaeche_roh` bzw. `raum.wofl_roh` verwenden, sonst würde doppelt abgezogen.
 
+## Bedingte Abschnitte
+
+`{{#wenn …}}` … `{{/wenn}}` gibt die Zeilen dazwischen nur aus, wenn die Bedingung erfüllt ist – so entfallen
+Überschrift, Zeilen und Summen eines Abschnitts, für den es keine Daten gibt. Die Markierungen stehen wie bei
+Blöcken allein in einer Zeile oder am Anfang bzw. Ende einer Inhaltszeile.
+
+| Bedingung | erfüllt, wenn |
+|---|---|
+| `{{#wenn raum[nebenflaeche]}}` | es mindestens einen passenden Datensatz gibt (beliebige Sammlung mit Filtern, siehe unten) |
+| `{{#wenn !raum[abzug]}}` | es **keinen** passenden Datensatz gibt – z. B. für eine Zeile „keine Abzugsflächen“ |
+| `{{#wenn projekt.code}}`, `{{#wenn grz.ii}}` | der Wert nicht leer ist (und nicht 0 bzw. „nein“) |
+
+Innerhalb eines Blocks gilt die Bedingung für dessen Datensatz: `{{#geschoss}}` … `{{#wenn raum[wofl]}}` fragt
+nur die Räume dieses Geschosses ab. Formeln, die auf entfallene Zeilen verweisen, rechnen dort mit 0; Bezüge
+auf Zeilen darunter rutschen mit.
+
+| | A | B | C |
+|---|---|---|---|
+| 20 | `{{#wenn raum[nebenflaeche]}}Neben-Nutzflächen` | | |
+| 21 | | `{{raum[nebenflaeche].name}}` | `{{raum[nebenflaeche].flaeche_roh}}` |
+| 22 | `Brutto-Nebenflächen gesamt{{/wenn}}` | | `=SUMME(C21:C21)` |
+| 23 | `{{#wenn !raum[nebenflaeche]}}keine Neben-Nutzflächen{{/wenn}}` | | |
+
 ## Formeln
 
 Formeln der Vorlage bleiben erhalten und werden auf die erzeugten Zeilen umgeschrieben:

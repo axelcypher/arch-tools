@@ -1,6 +1,6 @@
 [package]
 name = "grz-nachweis"
-version = "0.5.2"
+version = "0.6.0"
 description = "GRZ/GFZ-Nachweis nach BauNVO und BauO NRW"
 authors = ["Tobias Pendzialek"]
 license = "MIT"
