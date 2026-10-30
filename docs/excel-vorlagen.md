@@ -107,6 +107,10 @@ sonst entfallen sie – z. B. eine Überschrift mit den Geschossblöcken darunte
 | `raum[nebenflaeche]`, `bgf[s]`, `geschoss[dg]` | die Sammlung (mit Filter) mindestens einen Datensatz hat |
 | `summe.nebenflaeche`, `geschoss:OG.wofl`, `projekt.code` | der Wert nicht 0 und nicht leer ist |
 | `raum[wofl].wohnung` | das Feld bei mindestens einem Datensatz gefüllt ist |
+| `summe.wofl>100`, `geschoss.sohle!=0`, `projekt.code=2417` | der Vergleich zutrifft (`= != > < >= <=`) |
+| `raum[wofl]>=3` | die Sammlung mindestens so viele Datensätze hat |
+| `raum.flaeche>20` | mindestens ein Datensatz den Vergleich erfüllt |
+| `[nebenflaeche!=0]`, `[dg]` | der umgebende Datensatz den Filter erfüllt – auf oberster Ebene die Projektsummen `summe.*`, also hier `summe.nebenflaeche` |
 | `!raum[nebenflaeche]` | umgekehrt – z. B. für „keine Nebenflächen vorhanden“ |
 
 Ein Bedingungsblock bindet keinen Datensatz und kann in anderen Blöcken stehen; dort gilt die Bedingung für
@@ -234,6 +238,7 @@ Text (z. B. `12,00 × 9,00 × 3,151 × ½`). Beispiel (Blatt „BRI Teilkörper�
 | `r` / `s` | Raumumschließung Regel- bzw. Sonderfall (`raum`, `bgf`) |
 | `abzug` | Abzugsflächen (`raum`, `bgf`) |
 | `feld=wert`, `feld!=wert` | beliebiges Feld, z. B. `raum[geschoss=EG]`, `raum[wohnung=WE 01]` |
+| `feld>wert`, `feld<wert`, `feld>=wert`, `feld<=wert` | Zahlenvergleich, z. B. `geschoss[wofl>0]`, `raum[flaeche>=10]`; leere Felder zählen als 0 |
 | `!filter` | Verneinung, z. B. `raum[!abzug]` |
 
 Mehrere Filter mit Komma: `{{raum[wofl,!abzug].name}}`. Filter gelten auch für Blöcke: `{{#geschoss[name!=Spitzboden]}}`.

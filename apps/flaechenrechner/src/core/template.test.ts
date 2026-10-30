@@ -225,6 +225,21 @@ describe('BGF-Teilflächen und leere Blöcke', () => {
   });
 });
 
+describe('Filter mit Vergleich', () => {
+  const p = project();
+  const ctx = buildExportContext(p, computeProject(p));
+  const namen = (spec: string) => expandTemplate(rowsOf([[spec]]), ctx).map((r) => r.cells.get(1));
+  it('> < >= <= numerisch, leere Felder zählen als 0', () => {
+    expect(namen('{{geschoss[wofl>0].name}}')).toEqual(['EG', 'OG']);
+    expect(namen('{{geschoss[wofl>6].name}}')).toEqual(['EG']);
+    expect(namen('{{geschoss[wofl<=6,bgf>=80].name}}')).toEqual(['KG', 'OG']);
+    expect(namen('{{raum[flaeche>2,flaeche<6].name}}')).toEqual(['Flur']);
+    // raum.wofl ist bei Nebenflächen leer → zählt nicht als ungleich 0
+    expect(namen('{{raum[wofl!=0].name}}')).toEqual(['Flur', 'Küche', 'Bad']);
+    expect(namen('{{raum[geschoss=eg].name}}')).toEqual(['Flur', 'Küche', 'Abstellraum']);
+  });
+});
+
 describe('Bedingungsblock {{#wenn …}}', () => {
   const p = project();
   const ctx = buildExportContext(p, computeProject(p));
@@ -277,6 +292,15 @@ describe('Bedingungsblock {{#wenn …}}', () => {
     expect(zeilen([['{{#geschoss}}{{geschoss.name}}'], ['{{#wenn raum[wofl]}}mit Wohnfläche{{/wenn}}'], ['{{/geschoss}}']])).toEqual(['KG', 'EG', 'mit Wohnfläche', 'OG', 'mit Wohnfläche']);
     expect(zeilen([['{{#wenn raum[wofl].wohnung}}Wohnungen vorhanden{{/wenn}}'], ['{{#wenn geschoss:OG.wofl}}OG bewohnt{{/wenn}}']])).toEqual(['Wohnungen vorhanden', 'OG bewohnt']);
     expect(zeilen([['{{#wenn summe.gibtsnicht}}x{{/wenn}}'], ['danach']])).toEqual(['danach']);
+    // ohne Leerzeichen und mit Filter auf den umgebenden Datensatz bzw. oben auf die Projektsummen (summe.*)
+    expect(zeilen([['{{#wenn[nebenflaeche!=0]}}Neben-Nutzflächen{{/wenn}}']])).toEqual(['Neben-Nutzflächen']);
+    expect(zeilen([['{{#wenn[nebenflaeche!=0]}}Neben-Nutzflächen{{/wenn}}'], ['danach']], ohneNebenflaechen())).toEqual(['danach']);
+    expect(zeilen([['{{#geschoss}}{{geschoss.name}}'], ['{{#wenn [nebenflaeche>0]}}mit Nebenfläche{{/wenn}}'], ['{{/geschoss}}']])).toEqual(['KG', 'mit Nebenfläche', 'EG', 'mit Nebenfläche', 'OG']);
+    expect(zeilen([['{{#wenn[wofl>20,!gibtsnicht]}}a{{/wenn}}'], ['{{#wenn[gibtsnicht]}}b{{/wenn}}']])).toEqual(['a']);
+    // Vergleiche: Wert, Anzahl der Datensätze, mindestens ein Datensatz, Text
+    const ja = (bed: string) => zeilen([[`{{#wenn ${bed}}}ja{{/wenn}}`]]).length === 1;
+    expect(['summe.nebenflaeche>20', 'summe.nebenflaeche >= 22', 'summe.wofl<=27', 'raum[wofl]=3', 'raum.flaeche>19', 'projekt.name=efh sander', 'geschoss:OG.wofl=6'].filter((b) => !ja(b))).toEqual([]);
+    expect(['summe.nebenflaeche>22', 'raum[wofl]>3', 'raum.flaeche>20', 'projekt.name!=EFH Sander', '!summe.wofl>0'].filter(ja)).toEqual([]);
     // ein {{/wenn}} ohne Anfang (Bedingung vergessen) schließt nicht den Geschossblock
     expect(zeilen([['{{#geschoss}}{{geschoss.name}}'], ['{{#wenn}}', 'x'], ['{{/wenn}}'], ['{{raum[wofl].name}}'], ['{{/geschoss}}']])).toEqual(['EG', '{{#wenn}}', 'Flur', 'Küche', 'OG', '{{#wenn}}', 'Bad']);
   });

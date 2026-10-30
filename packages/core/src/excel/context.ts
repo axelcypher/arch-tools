@@ -27,7 +27,30 @@ export function belongsTo(child: string, row: Row, parent: string, p: Row, ctx: 
   return ctx.belongsTo ? ctx.belongsTo(child, row, parent, p, ctx) : true;
 }
 
-export function parseFilters(spec: string | undefined, named: Record<string, (r: Row) => boolean> = {}): ((r: Row) => boolean)[] {
+/**
+ * Vergleich eines Feldwerts mit einem Wert aus der Vorlage: Zahlen numerisch (leeres Feld = 0, Komma oder Punkt),
+ * sonst als Text ohne Groß-/Kleinschreibung (dann nur = und !=).
+ */
+export function vergleiche(v: Value | undefined, op: string, soll: string): boolean {
+  const s = soll.trim();
+  const t = v === undefined ? '' : String(v).trim();
+  const a = typeof v === 'number' ? v : t === '' ? 0 : Number(t.replace(',', '.'));
+  const b = s === '' ? NaN : Number(s.replace(',', '.'));
+  if (Number.isFinite(a) && Number.isFinite(b)) {
+    if (op === '=') return Math.abs(a - b) < 1e-9;
+    if (op === '!=') return Math.abs(a - b) >= 1e-9;
+    if (op === '>') return a > b + 1e-9;
+    if (op === '>=') return a > b - 1e-9;
+    if (op === '<') return a < b - 1e-9;
+    return a < b + 1e-9; // <=
+  }
+  if (op === '=') return t.toLowerCase() === s.toLowerCase();
+  if (op === '!=') return t.toLowerCase() !== s.toLowerCase();
+  return false;
+}
+
+/** Filter wie raum[wofl,geschoss=EG,flaeche>10]; `unbekannt`: Ergebnis für unbekannte benannte Filter */
+export function parseFilters(spec: string | undefined, named: Record<string, (r: Row) => boolean> = {}, unbekannt = true): ((r: Row) => boolean)[] {
   if (!spec) return [];
   return spec
     .split(',')
@@ -37,12 +60,11 @@ export function parseFilters(spec: string | undefined, named: Record<string, (r:
       const neg = f.startsWith('!');
       const name = neg ? f.slice(1).trim() : f;
       let fn: (r: Row) => boolean;
-      const eq = /^([a-z0-9_]+)\s*(!?=)\s*(.*)$/i.exec(name);
+      const eq = /^([a-z0-9_]+)\s*(!=|>=|<=|=|>|<)\s*(.*)$/i.exec(name);
       if (eq) {
         const [, k, op, v] = eq;
-        const want = v.trim().toLowerCase();
-        fn = (r) => (String(r[k] ?? '').trim().toLowerCase() === want) === (op === '=');
-      } else fn = named[name.toLowerCase()] ?? (() => true);
+        fn = (r) => vergleiche(r[k], op, v);
+      } else fn = named[name.toLowerCase()] ?? (() => unbekannt);
       return neg ? (r: Row) => !fn(r) : fn;
     });
 }

@@ -1,5 +1,5 @@
 import type { ExportContext, Row, Value } from './context';
-import { belongsTo, isCollection, lookupNamed, parseFilters } from './context';
+import { belongsTo, isCollection, lookupNamed, parseFilters, vergleiche } from './context';
 
 type Collection = string;
 
@@ -39,7 +39,9 @@ export interface OutputRow {
 const PH = () => /\{\{\s*([^{}]+?)\s*\}\}/g;
 const BLOCK_START = /^#\s*([a-z]+)\s*(?:\[([^\]]*)\])?$/i;
 const BLOCK_END = /^\/\s*([a-z]+)\s*$/i;
-const WENN_START = /^#\s*wenn\s+(.+)$/i;
+const WENN_START = /^#\s*wenn\b\s*(.+)$/i;
+/** Vergleich in einer Bedingung, Operator außerhalb eckiger Klammern: summe.wofl>100, raum[wofl]>=3 */
+const VERGLEICH = /^((?:[^[\]=!<>]|\[[^\]]*\])+?)\s*(!=|>=|<=|=|>|<)\s*(.*)$/;
 
 interface KeyInfo {
   coll?: Collection;
@@ -247,21 +249,37 @@ const gefuellt = (v: Value | undefined) => (typeof v === 'number' ? Math.abs(v) 
  *  - Sammlung, auch gefiltert (raum[nebenflaeche], bgf[s]): es gibt mindestens einen Datensatz
  *  - Wert (summe.wofl, geschoss.sohle, geschoss:EG.wofl, projekt.code): nicht 0 und nicht leer;
  *    Feld einer nicht gebundenen Sammlung (raum[wofl].wofl): bei mindestens einem Datensatz
+ *  - mit Vergleich (summe.wofl>100, raum[wofl]>=3 = Anzahl, raum.flaeche>20 = mindestens ein Datensatz)
+ *  - [nebenflaeche!=0, dg]: Filter auf den umgebenden Datensatz, auf oberster Ebene auf die Projektsummen (summe.*)
  *  - „!“ davor kehrt die Bedingung um; Unbekanntes gilt als nicht erfüllt
  */
 function bedingung(expr: string, ctx: ExportContext, b: Bindings): boolean {
   let e = expr.trim();
   const neg = e.startsWith('!');
   if (neg) e = e.slice(1).trim();
-  const coll = /^([a-z]+)(?:\[([^\]]*)\])?$/i.exec(e);
-  let ok: boolean;
-  if (coll && isCollection(ctx, coll[1].toLowerCase())) ok = itemsFor(coll[1].toLowerCase(), coll[2], b, ctx).length > 0;
-  else {
-    const k = parseKey(e, ctx);
-    if (k.coll && k.field && !b[k.coll]) ok = itemsFor(k.coll, k.filter, b, ctx).some((r) => !k.field!.startsWith('_') && gefuellt(r[k.field!]));
-    else ok = gefuellt(lookup(k, ctx, b));
+  return erfuellt(e, ctx, b) !== neg;
+}
+
+function erfuellt(e: string, ctx: ExportContext, b: Bindings): boolean {
+  const bereich = /^\[([^\]]*)\]$/.exec(e);
+  if (bereich) {
+    // innerster Datensatz zuletzt, damit seine Felder gelten
+    const r: Row = {};
+    for (const [k, v] of Object.entries(ctx.scalars)) if (k.startsWith('summe.')) r[k.slice(6)] = v;
+    for (const row of Object.values(b)) if (row) Object.assign(r, row);
+    return parseFilters(bereich[1], ctx.filters, false).every((p) => p(r));
   }
-  return ok !== neg;
+  const vgl = VERGLEICH.exec(e);
+  const links = vgl ? vgl[1].trim() : e;
+  const test = (v: Value | undefined) => (vgl ? vergleiche(v, vgl[2], vgl[3]) : gefuellt(v));
+  const coll = /^([a-z]+)(?:\[([^\]]*)\])?$/i.exec(links);
+  if (coll && isCollection(ctx, coll[1].toLowerCase())) {
+    const n = itemsFor(coll[1].toLowerCase(), coll[2], b, ctx).length;
+    return vgl ? vergleiche(n, vgl[2], vgl[3]) : n > 0;
+  }
+  const k = parseKey(links, ctx);
+  if (k.coll && k.field && !b[k.coll]) return !k.field.startsWith('_') && itemsFor(k.coll, k.filter, b, ctx).some((r) => test(r[k.field!]));
+  return test(lookup(k, ctx, b));
 }
 
 /** Zahlenwerte des Blockdatensatzes (Sammlung `coll`) in einer Zeile zählen */

@@ -226,12 +226,12 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['#geschoss … /geschoss', 'Zeilenblock je Geschoss (Markierung in eigener Zeile oder in der ersten/letzten Blockzeile); ebenso #bgf, #wohnung, #nutzung, #raum, #koerper'],
       ['raum-/bgf-/bri-/koerper-Zeilen im Block', 'laufen nur über die Räume, BGF-Teilflächen bzw. Körper des aktuellen Geschosses (im #bgf-Block: bri/koerper dieser Teilfläche)'],
       ['leere Blöcke', 'entfallen: Wiederholungszeilen und innere Blöcke liefern nichts bzw. alle Zahlenwerte des Blocks sind 0'],
-      ['#wenn … /wenn', 'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn raum[nebenflaeche]}} (Datensätze vorhanden), {{#wenn summe.wofl}} (Wert nicht 0/leer), {{#wenn !…}} umgekehrt; im Block je Datensatz'],
+      ['#wenn … /wenn', 'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn raum[nebenflaeche]}} (Datensätze vorhanden), {{#wenn summe.wofl}} (Wert nicht 0/leer), {{#wenn summe.wofl>100}} / {{#wenn raum[wofl]>=3}} (Vergleich, Anzahl), {{#wenn[nebenflaeche!=0]}} (Filter auf den umgebenden Datensatz, oben auf summe.*), {{#wenn !…}} umgekehrt; im Block je Datensatz'],
       ['raum[wofl] / raum[nebenflaeche]', 'Filter: Räume mit bzw. ohne Wohnflächenanrechnung'],
       ['raum[hnf] / raum[nnf] / [nuf] [tf] [vf]', 'Filter nach Nutzungsgruppe (HNF = NUF 1–6, NNF = NUF 7)'],
       ['geschoss[dg] / geschoss[normal]', 'Filter: Dachgeschosse bzw. Normalgeschosse (gilt ebenso für raum, bgf, bri, koerper)'],
       ['koerper[dach] / [gaube] / [grundkoerper]', 'Filter: Dachkörper, Gauben bzw. Grundkörper (Quader)'],
-      ['[r] [s] [abzug] [feld=wert] [!filter]', 'weitere Filter, mehrere mit Komma: raum[wofl,geschoss=EG]'],
+      ['[r] [s] [abzug] [feld=wert] [feld>wert] [!filter]', 'weitere Filter, mehrere mit Komma: raum[wofl,geschoss=EG], geschoss[wofl>0]; Vergleiche = != > < >= <= (leere Felder = 0)'],
       ['…|einmal', 'Wert nur in der ersten Zeile der Wiederholung, z. B. geschoss.name|einmal'],
     ],
   },
@@ -348,7 +348,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
 
 const NUF_HNF = new Set(['NUF 1', 'NUF 2', 'NUF 3', 'NUF 4', 'NUF 5', 'NUF 6']);
 
-/** vordefinierte Filter; sonst „feld=wert“ */
+/** vordefinierte Filter; sonst „feld=wert“, „feld>wert“ … */
 const NAMED_FILTERS: Record<string, (r: Row) => boolean> = {
   wofl: (r) => r.wohnflaeche === 'ja',
   wohnflaeche: (r) => r.wohnflaeche === 'ja',
