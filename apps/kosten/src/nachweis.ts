@@ -1,4 +1,3 @@
-import pc from 'polygon-clipping';
 import type { ProjectResult } from '@core/calc';
 import { computeProject, modellRoofParams, outlineVolume } from '@core/calc';
 import { fmt2 } from '@core/format';
@@ -6,6 +5,7 @@ import type { Point } from '@core/geometry';
 import { distanceToEdges, perimeter, pointInPolygon, polygonArea } from '@core/geometry';
 import type { OutlineShape, Project, RoomShape, Storey } from '@core/model';
 import { roomArea, storeyElevations } from '@core/model';
+import { diffMP } from '@core/polygon';
 import { heightFieldSolid, modellSolidFaces } from '@core/modellSolid';
 import { nutzungInfo, woflFaktor } from '@core/norms';
 import type { Point3, SolidFaces } from '@core/roof';
@@ -372,7 +372,7 @@ function berechneNachweis(project: Project, result: ProjectResult, waende: IfcWa
           continue;
         }
         try {
-          const rest = pc.difference([ring(flach)], ...oben.map((q) => [ring(q)]));
+          const rest = diffMP([[ring(flach)]], ...oben.map((q) => [[ring(q)]]));
           const vorher = dach.length;
           for (const poly of rest) {
             const [aussen, ...loecher] = poly.map((r) => r.slice(0, -1).map(([x, y]) => ({ x, y, z })));

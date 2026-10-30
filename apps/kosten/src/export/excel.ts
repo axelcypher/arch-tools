@@ -160,7 +160,7 @@ async function vorlage(mitHilfe: boolean): Promise<Uint8Array> {
     platzhalterBlatt(
       wb,
       KOSTEN_PLACEHOLDER_DOCS,
-      'Platzhalter in doppelten geschweiften Klammern werden beim Export ersetzt. Zeilen mit kg.*, kg2.*, position.*, menge.*, stand.* oder hinweis.* werden je Datensatz wiederholt, #kg … /kg wiederholt ganze Zeilenblöcke je Kostengruppe. Formeln (z. B. SUMME über eine Wiederholungszeile) werden automatisch auf die erzeugten Zeilen erweitert. Steht nur ein Platzhalter in der Zelle, wird eine Zahl eingetragen und das Zellformat der Vorlage bleibt erhalten. Dieses Blatt kann gelöscht werden.',
+      'Platzhalter in doppelten geschweiften Klammern werden beim Export ersetzt. Zeilen mit kg.*, kg2.*, position.*, menge.*, stand.* oder hinweis.* werden je Datensatz wiederholt, #kg … /kg wiederholt ganze Zeilenblöcke je Kostengruppe. #wenn … /wenn gibt Zeilen nur aus, wenn es passende Datensätze gibt (#wenn ! … nur, wenn nicht). Formeln (z. B. SUMME über eine Wiederholungszeile) werden automatisch auf die erzeugten Zeilen erweitert. Steht nur ein Platzhalter in der Zelle, wird eine Zahl eingetragen und das Zellformat der Vorlage bleibt erhalten. Dieses Blatt kann gelöscht werden.',
     );
   return new Uint8Array(await wb.xlsx.writeBuffer());
 }

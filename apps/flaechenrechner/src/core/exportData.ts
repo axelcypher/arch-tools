@@ -17,6 +17,7 @@ import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/con
  *   {{raum.flaeche}}              Zeile wird je Raum wiederholt (ebenso geschoss, bgf, wohnung, nutzung, bri, koerper)
  *   {{raum[wofl].name}}           mit Filter (hier: nur Räume mit Wohnflächenanrechnung)
  *   {{#geschoss}} … {{/geschoss}} Zeilenblock je Geschoss; raum-/bgf-/bri-Zeilen darin nur für dieses Geschoss
+ *   {{#wenn raum[wofl]}} … {{/wenn}} Zeilen nur, wenn die Bedingung zutrifft ({{#wenn !…}}: nur, wenn nicht)
  *   {{geschoss.name|einmal}}      nur in der ersten Zeile der jeweiligen Wiederholung
  */
 

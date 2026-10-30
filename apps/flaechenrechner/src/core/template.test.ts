@@ -125,6 +125,69 @@ describe('Vorlagen-Engine', () => {
     expect(out.map((r) => r.cells.get(1) ?? null)).toEqual(['WE 1', 'Bad', null, 'Ende']);
     expect(out[3].cells.get(2)).toEqual({ formula: 'SUM(B1:B1)' });
   });
+
+  describe('Bedingungsblöcke {{#wenn}}', () => {
+    const grid = (out: ReturnType<typeof expandTemplate>) =>
+      out.map((r) =>
+        [1, 2, 3, 4].map((c) => {
+          const v = r.cells.get(c);
+          return v && typeof v === 'object' && 'formula' in v ? `=${v.formula}` : (v ?? '');
+        }),
+      );
+
+    it('Abschnitt samt Überschrift und Summe nur, wenn es Datensätze gibt; Formeln darunter rutschen mit', () => {
+      const tpl = rowsOf([
+        ['{{#wenn raum[abzug]}}'], // 1 – kein Raum ist Abzugsfläche
+        ['Abzugsflächen'], // 2
+        ['', '{{raum[abzug].name}}', '{{raum[abzug].flaeche}}'], // 3
+        ['Summe Abzug', '', F('SUM(C3:C3)')], // 4
+        ['{{/wenn}}'], // 5
+        ['{{#wenn raum[wofl]}}Wohnflächen'], // 6 – Start in Inhaltszeile
+        ['', '{{raum[wofl].name}}', '{{raum[wofl].wofl}}'], // 7
+        ['Summe WoFl{{/wenn}}', '', F('SUM(C7:C7)')], // 8 – Ende in Inhaltszeile
+        ['Gesamt', '', F('C4+C8')], // 9
+      ]);
+      expect(grid(expandTemplate(tpl, ctx))).toEqual([
+        ['Wohnflächen', '', '', ''],
+        ['', 'Flur', 3, ''],
+        ['', 'Küche', 18, ''],
+        ['', 'Bad', 6, ''],
+        ['Summe WoFl', '', '=SUM(C2:C4)', ''],
+        ['Gesamt', '', '=0+C5', ''],
+      ]);
+    });
+
+    it('Verneinung: Hinweiszeile nur, wenn es keine Datensätze gibt', () => {
+      const tpl = rowsOf([['{{#wenn !raum[abzug]}}keine Abzugsflächen{{/wenn}}'], ['{{#wenn !raum[wofl]}}keine Wohnfläche{{/wenn}}'], ['Ende']]);
+      expect(grid(expandTemplate(tpl, ctx)).map((r) => r[0])).toEqual(['keine Abzugsflächen', 'Ende']);
+    });
+
+    it('im Geschossblock gilt die Bedingung je Geschoss', () => {
+      const tpl = rowsOf([
+        ['{{#geschoss}}'],
+        ['{{geschoss.name}}'],
+        ['{{#wenn raum[nebenflaeche]}}', 'Nebenflächen vorhanden'],
+        ['{{/wenn}}'],
+        ['{{/geschoss}}'],
+      ]);
+      expect(grid(expandTemplate(tpl, ctx))).toEqual([
+        ['KG', '', '', ''],
+        ['', 'Nebenflächen vorhanden', '', ''],
+        ['EG', '', '', ''],
+        ['', 'Nebenflächen vorhanden', '', ''],
+        ['OG', '', '', ''],
+      ]);
+    });
+
+    it('Bedingung auf einen Wert', () => {
+      const q = project();
+      q.meta.projektcode = '2417';
+      const c = buildExportContext(q, computeProject(q));
+      const tpl = rowsOf([['{{#wenn projekt.code}}Projekt {{projekt.code}}{{/wenn}}'], ['{{#wenn !projekt.code}}ohne Code{{/wenn}}']]);
+      expect(grid(expandTemplate(tpl, c)).map((r) => r[0])).toEqual(['Projekt 2417']);
+      expect(grid(expandTemplate(tpl, ctx)).map((r) => r[0])).toEqual(['ohne Code']);
+    });
+  });
 });
 
 describe('BGF-Teilflächen und leere Blöcke', () => {

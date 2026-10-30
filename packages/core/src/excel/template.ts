@@ -242,12 +242,14 @@ interface Inhalt {
 
 const leer = (c: Inhalt) => (c.repeats > 0 ? c.produced === 0 : c.values > 0 && c.nonzero === 0);
 
-const gefuellt = (v: Value | undefined) => (typeof v === 'number' ? Math.abs(v) > 1e-9 : typeof v === 'string' && v.trim() !== '');
+/** Wert für eine Bedingung: nicht 0, nicht leer und nicht „nein“, „0“ oder „false“ */
+const gefuellt = (v: Value | undefined) =>
+  typeof v === 'number' ? Math.abs(v) > 1e-9 : typeof v === 'string' && v.trim() !== '' && !/^(nein|0|false)$/i.test(v.trim());
 
 /**
  * Bedingung eines {{#wenn …}}-Blocks, ausgewertet im umgebenden Block:
  *  - Sammlung, auch gefiltert (raum[nebenflaeche], bgf[s]): es gibt mindestens einen Datensatz
- *  - Wert (summe.wofl, geschoss.sohle, geschoss:EG.wofl, projekt.code): nicht 0 und nicht leer;
+ *  - Wert (summe.wofl, geschoss.sohle, geschoss:EG.wofl, projekt.code): nicht 0, nicht leer, nicht „nein“;
  *    Feld einer nicht gebundenen Sammlung (raum[wofl].wofl): bei mindestens einem Datensatz
  *  - mit Vergleich (summe.wofl>100, raum[wofl]>=3 = Anzahl, raum.flaeche>20 = mindestens ein Datensatz)
  *  - [nebenflaeche!=0, dg]: Filter auf den umgebenden Datensatz, auf oberster Ebene auf die Projektsummen (summe.*)

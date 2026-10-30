@@ -105,13 +105,13 @@ sonst entfallen sie – z. B. eine Überschrift mit den Geschossblöcken darunte
 | Bedingung | trifft zu, wenn |
 |---|---|
 | `raum[nebenflaeche]`, `bgf[s]`, `geschoss[dg]` | die Sammlung (mit Filter) mindestens einen Datensatz hat |
-| `summe.nebenflaeche`, `geschoss:OG.wofl`, `projekt.code` | der Wert nicht 0 und nicht leer ist |
+| `summe.nebenflaeche`, `geschoss:OG.wofl`, `projekt.code`, `grz.ii` | der Wert nicht 0, nicht leer und nicht „nein“ ist |
 | `raum[wofl].wohnung` | das Feld bei mindestens einem Datensatz gefüllt ist |
 | `summe.wofl>100`, `geschoss.sohle!=0`, `projekt.code=2417` | der Vergleich zutrifft (`= != > < >= <=`) |
 | `raum[wofl]>=3` | die Sammlung mindestens so viele Datensätze hat |
 | `raum.flaeche>20` | mindestens ein Datensatz den Vergleich erfüllt |
 | `[nebenflaeche!=0]`, `[dg]` | der umgebende Datensatz den Filter erfüllt – auf oberster Ebene die Projektsummen `summe.*`, also hier `summe.nebenflaeche` |
-| `!raum[nebenflaeche]` | umgekehrt – z. B. für „keine Nebenflächen vorhanden“ |
+| `!raum[nebenflaeche]`, `!raum[abzug]` | umgekehrt – z. B. für eine Zeile „keine Abzugsflächen“ |
 
 Ein Bedingungsblock bindet keinen Datensatz und kann in anderen Blöcken stehen; dort gilt die Bedingung für
 den jeweiligen Datensatz: `{{#wenn raum[wofl]}}` in einem `{{#geschoss}}`-Block fragt nach Wohnflächen
@@ -120,6 +120,16 @@ gilt als nicht erfüllt – der Abschnitt fehlt dann.
 
 Ein `{{#geschoss}}` innerhalb eines Geschossblocks liefert nur dasselbe Geschoss – für „Überschrift einmal,
 darunter je Geschoss“ also `{{#wenn …}}` außen und `{{#geschoss}}` innen verwenden.
+
+Die Markierungen stehen wie bei Blöcken allein in einer Zeile oder am Anfang bzw. Ende einer Inhaltszeile.
+Formeln, die auf entfallene Zeilen verweisen, rechnen dort mit 0; Bezüge auf Zeilen darunter rutschen mit.
+
+| | A | B | C |
+|---|---|---|---|
+| 20 | `{{#wenn raum[nebenflaeche]}}Neben-Nutzflächen` | | |
+| 21 | | `{{raum[nebenflaeche].name}}` | `{{raum[nebenflaeche].flaeche_roh}}` |
+| 22 | `Brutto-Nebenflächen gesamt{{/wenn}}` | | `=SUMME(C21:C21)` |
+| 23 | `{{#wenn !raum[nebenflaeche]}}keine Neben-Nutzflächen{{/wenn}}` | | |
 
 ## Formeln
 
