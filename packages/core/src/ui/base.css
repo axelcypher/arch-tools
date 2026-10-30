@@ -1200,6 +1200,24 @@ code {
   color: var(--danger);
 }
 
+/* Zwischenstand beim Start ausgesetzt (Startschutz) */
+.zwischenstand-hinweis {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(760px, calc(100vw - 32px));
+  padding: 8px 12px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border: 1px solid var(--warn-border);
+  border-radius: 6px;
+}
+
 .unterbau-liste {
   margin: 2px 0 0;
   padding-left: 16px;

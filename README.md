@@ -87,7 +87,8 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
   Ordner prüfen – siehe [docs/projektordner.md](docs/projektordner.md)
 - **Projektdaten** (Projektcode, Adresse, Grundstück mit Gemarkung/Flur/Flurstück, Bauherr mit beliebig vielen
   E-Mail-Adressen und Telefonnummern) im Dialog; als Platzhalter für Excel-Vorlagen (`{{bauherr.name}}` …)
-- Rückgängig/Wiederholen, automatische Zwischenspeicherung (IndexedDB)
+- Rückgängig/Wiederholen, automatische Zwischenspeicherung (IndexedDB); stürzt eine App kurz nach dem Laden des
+  Zwischenstands ab, startet sie beim nächsten Mal ohne ihn und bietet „Trotzdem laden“ an (alle Apps)
 - **Projektarchiv** `*.oap` (ZIP): Projekt, Planbilder, Dachmodell sowie die
   Originaldateien der Importe (IFC, DXF, PDF) und die Excel-Vorlage – auf einem anderen Rechner vollständig
   wieder zu öffnen, inkl. IFC-Modell in der 3D-Ansicht. Ältere `*.flaeche.json` lassen sich weiter öffnen.

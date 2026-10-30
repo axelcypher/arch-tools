@@ -5,6 +5,7 @@ import type { Project, Shape, ShapeKind, Storey } from '@core/model';
 import { createProject, createStorey, newId } from '@core/model';
 import { parseProject, parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
+import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 
 const log = logger('autosave');
 
@@ -39,6 +40,8 @@ export interface ViewOptions {
 
 const HISTORY_LIMIT = 200;
 const AUTOSAVE_KEY = 'arch-flaechen-tool:autosave';
+/** Startschutz: nach einem Absturz beim letzten Laden wird der Zwischenstand nicht erneut geladen */
+const APP = 'arch-flaechen-tool';
 
 interface EditorState {
   project: Project;
@@ -401,15 +404,19 @@ async function idbSet(key: string, value: unknown): Promise<void> {
 
 function loadAutosave(): Project | null {
   // Altbestand aus localStorage (Version 0.1) – wird beim nächsten Speichern nach IndexedDB übernommen
+  if (!zwischenstandLadenErlaubt(APP)) return null;
   try {
     const raw = localStorage.getItem(AUTOSAVE_KEY);
-    return raw ? parseProject(raw) : null;
+    if (!raw) return null;
+    const p = parseProject(raw);
+    zwischenstandWirdGeladen(APP);
+    return p;
   } catch {
     return null;
   }
 }
 
-if (typeof indexedDB !== 'undefined') {
+if (typeof indexedDB !== 'undefined' && zwischenstandLadenErlaubt(APP)) {
   idbGet(AUTOSAVE_KEY)
     .then((raw) => {
       const st = useEditor.getState();
@@ -417,7 +424,9 @@ if (typeof indexedDB !== 'undefined') {
       // bis 0.2 als JSON-Text, bis 0.10 als Projekt, seither mit Basis fürs Zusammenführen
       const mitBasis = typeof raw === 'object' && raw !== null && 'project' in raw ? (raw as { project: unknown; basis: unknown; datei?: unknown }) : null;
       const p = typeof raw === 'string' ? parseProject(raw) : parseProjectData(mitBasis ? mitBasis.project : raw);
-      st.loadProject(p, mitBasis?.basis ? parseProjectData(mitBasis.basis) : null, typeof mitBasis?.datei === 'string' ? mitBasis.datei : null);
+      const basis = mitBasis?.basis ? parseProjectData(mitBasis.basis) : null;
+      zwischenstandWirdGeladen(APP);
+      st.loadProject(p, basis, typeof mitBasis?.datei === 'string' ? mitBasis.datei : null);
       void restoreIfcModel(p);
       log.info('Zwischenstand wiederhergestellt', { name: p.name, geschosse: p.storeys.length });
     })
@@ -435,6 +444,7 @@ useEditor.subscribe((s, prev) => {
     const { project, basis, datei } = useEditor.getState();
     idbSet(AUTOSAVE_KEY, { project, basis, datei })
       .then(() => {
+        zwischenstandErsetzt(APP);
         try {
           localStorage.removeItem(AUTOSAVE_KEY);
         } catch {

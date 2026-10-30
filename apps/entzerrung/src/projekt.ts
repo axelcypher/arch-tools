@@ -1,4 +1,5 @@
 import { logger } from '@core/platform/log';
+import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 import { pickFile, saveMergedFile } from '@core/platform/files';
 import { fotoEinlesen } from './bilder';
 import { ENDUNG, entpacken, packen } from './datei';
@@ -88,10 +89,14 @@ export async function ablegen(dateien: File[]) {
   return fotosHinzufuegen(dateien);
 }
 
+/** Startschutz: nach einem Absturz beim letzten Laden wird der Zwischenstand nicht erneut geladen */
+const APP = 'entzerrung';
+
 /** Zwischenstand laden und danach jede Änderung zwischenspeichern */
 export async function zwischenspeicherStarten(): Promise<() => void> {
-  const z = await standLesen();
+  const z = zwischenstandLadenErlaubt(APP) ? await standLesen() : null;
   if (z && z.stand.doc.fotos.length) {
+    zwischenstandWirdGeladen(APP);
     useEntz.getState().laden(z.stand.doc, z.bilder, z.stand.dateiname, z.stand.dirty);
     log.info('Zwischenstand wiederhergestellt', { fotos: z.stand.doc.fotos.length });
   }
@@ -101,7 +106,7 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
     clearTimeout(timer);
     timer = setTimeout(() => {
       const a = useEntz.getState();
-      void standSchreiben({ doc: a.doc, dateiname: a.dateiname, dirty: a.dirty });
+      void standSchreiben({ doc: a.doc, dateiname: a.dateiname, dirty: a.dirty }).then(() => zwischenstandErsetzt(APP));
     }, 600);
   });
 }

@@ -4,6 +4,7 @@ import type { Kosten, KostenPosition, Project } from '@core/model';
 import { createProject } from '@core/model';
 import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
+import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 
 /**
  * Zustand der Kostenermittlung: das Projekt im gemeinsamen Format (.oap) – Gebäude, Geschosse und
@@ -117,24 +118,29 @@ function db(): Promise<IDBDatabase> {
 }
 
 if (typeof indexedDB !== 'undefined') {
-  void db()
-    .then(
-      (d) =>
-        new Promise<unknown>((resolve, reject) => {
-          const req = d.transaction(STORE, 'readonly').objectStore(STORE).get(KEY);
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        }),
-    )
-    .then((raw) => {
-      const st = useKosten.getState();
-      if (!raw || st.dirty || st.past.length) return;
-      const r = raw as { project: unknown; datei: string | null; basis?: unknown };
-      st.load(parseProjectData(r.project), r.datei, r.basis ? parseProjectData(r.basis) : null);
-    })
-    .catch(() => {
-      // kein Zwischenstand
-    });
+  // nach einem Absturz beim letzten Laden nicht erneut laden (Startschutz)
+  if (zwischenstandLadenErlaubt(DB))
+    void db()
+      .then(
+        (d) =>
+          new Promise<unknown>((resolve, reject) => {
+            const req = d.transaction(STORE, 'readonly').objectStore(STORE).get(KEY);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          }),
+      )
+      .then((raw) => {
+        const st = useKosten.getState();
+        if (!raw || st.dirty || st.past.length) return;
+        const r = raw as { project: unknown; datei: string | null; basis?: unknown };
+        const project = parseProjectData(r.project);
+        const basis = r.basis ? parseProjectData(r.basis) : null;
+        zwischenstandWirdGeladen(DB);
+        st.load(project, r.datei, basis);
+      })
+      .catch(() => {
+        // kein Zwischenstand
+      });
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   useKosten.subscribe((s, prev) => {
@@ -143,7 +149,10 @@ if (typeof indexedDB !== 'undefined') {
     timer = setTimeout(() => {
       const { project, datei, basis } = useKosten.getState();
       void db()
-        .then((d) => d.transaction(STORE, 'readwrite').objectStore(STORE).put({ project, datei, basis }, KEY))
+        .then((d) => {
+          d.transaction(STORE, 'readwrite').objectStore(STORE).put({ project, datei, basis }, KEY);
+          zwischenstandErsetzt(DB);
+        })
         .catch(() => undefined);
     }, 600);
   });
