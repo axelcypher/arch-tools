@@ -126,6 +126,7 @@ export const KOSTEN_PLACEHOLDER_DOCS: PlaceholderDocs = [
     group: 'Blöcke, Filter, Modifikatoren',
     keys: [
       ['#kg … /kg', 'Zeilenblock je Kostengruppe der 1. Ebene; position- und kg2-Zeilen darin nur für diese Kostengruppe'],
+      ['#wenn … /wenn', 'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn position[aus]}} (Datensätze vorhanden), {{#wenn kg500}} (Wert nicht 0/leer), {{#wenn !…}} umgekehrt; im Block je Datensatz'],
       ['#kg2 … /kg2', 'Zeilenblock je Kostengruppe der 2. Ebene (auch innerhalb von #kg)'],
       ['position[aktiv] / position[aus]', 'Filter: gerechnete bzw. ausgeschaltete Positionen'],
       ['menge[festgelegt]', 'Filter: von Hand festgelegte Mengen'],

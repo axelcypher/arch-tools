@@ -168,6 +168,19 @@ describe('Excel-Export mit Vorlage', () => {
     expect(hf.oddFooter).toMatch(/^&LStand 28\.9\.2026 · BRI [\d.,]+ m³ · \{\{gibtsnicht\}\}&RSeite &P\/&N$/);
   });
 
+  it('Wohnflächen: Abschnitt Nebenflächen nur, wenn es welche gibt', async () => {
+    const p = project();
+    p.storeys[0].shapes = p.storeys[0].shapes.filter((s) => s.kind !== 'room'); // Keller war die einzige Nebenfläche
+    const wb = await load(await exportWithTemplate(await buildSampleTemplate(), p, computeProject(p)));
+    const ws = wb.getWorksheet('Wohnflächen')!;
+    const texte: unknown[] = [];
+    ws.eachRow((row) => row.eachCell((c) => texte.push(c.value)));
+    expect(texte).toContain('Netto-Wohnflächen gesamt');
+    expect(texte).not.toContain('Neben-Nutzflächen');
+    expect(texte).not.toContain('Brutto-Nebenflächen gesamt');
+    expect(texte.filter((t) => typeof t === 'string' && t.includes('{{'))).toEqual([]);
+  });
+
   it('BGF: Teilflächen je Geschoss mit Zwischen- und Gesamtsumme', async () => {
     const p = project();
     p.storeys[1].shapes.push({ ...createOutline(rectPoints({ x: 10, y: 0 }, { x: 13, y: 2 }), 'Wintergarten'), umschliessung: 'S' });

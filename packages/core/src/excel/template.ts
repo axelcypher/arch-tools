@@ -14,6 +14,7 @@ type Collection = string;
  *  - Eine Zeile mit einem Platzhalter einer noch nicht gebundenen Sammlung ({{raum.name}}) wird je
  *    Datensatz wiederholt – innerhalb eines Blocks nur für die zugehörigen Datensätze.
  *  - Filter: {{raum[wofl].name}}; Modifikator |einmal: nur in der ersten Wiederholungszeile.
+ *  - {{#wenn raum[nebenflaeche]}} … {{/wenn}} gibt den Block einmal aus, wenn die Bedingung zutrifft (siehe bedingung).
  *  - Leere Blockinstanzen entfallen: Wiederholungszeilen und verschachtelte Blöcke liefern keinen Datensatz,
  *    bzw. – ohne solche – alle Zahlenwerte des Blockdatensatzes sind 0 (laufende Nummern zählen nicht).
  *  - Formeln werden auf die erzeugten Zeilen umgeschrieben (siehe translateFormula).
@@ -38,6 +39,7 @@ export interface OutputRow {
 const PH = () => /\{\{\s*([^{}]+?)\s*\}\}/g;
 const BLOCK_START = /^#\s*([a-z]+)\s*(?:\[([^\]]*)\])?$/i;
 const BLOCK_END = /^\/\s*([a-z]+)\s*$/i;
+const WENN_START = /^#\s*wenn\s+(.+)$/i;
 
 interface KeyInfo {
   coll?: Collection;
@@ -109,6 +111,8 @@ interface BlockNode {
   id: number;
   coll: Collection;
   filter?: string;
+  /** Bedingungsblock {{#wenn …}}: einmal ausgeben, wenn die Bedingung zutrifft (bindet keinen Datensatz) */
+  wenn?: string;
   children: Node[];
 }
 interface RowNode {
@@ -127,8 +131,9 @@ function parseStructure(rows: TemplateRow[], ctx: ExportContext): { nodes: Node[
   const current = () => (stack.length ? stack[stack.length - 1].children : root);
 
   for (const row of rows) {
-    let start: { coll: Collection; filter?: string } | null = null;
+    let start: { coll: Collection; filter?: string; wenn?: string } | null = null;
     let end = false;
+    let endWenn = false;
     let content = false;
     const cells = new Map(row.cells);
     for (const [col, v] of row.cells) {
@@ -140,13 +145,20 @@ function parseStructure(rows: TemplateRow[], ctx: ExportContext): { nodes: Node[
       let rest = t;
       for (const m of t.matchAll(PH())) {
         const inner = m[1].trim();
+        const w = WENN_START.exec(inner);
         const s = BLOCK_START.exec(inner);
         const e = BLOCK_END.exec(inner);
-        if (s && isCollection(ctx, s[1].toLowerCase())) {
+        if (w) {
+          start = { coll: '', wenn: w[1].trim() };
+          rest = rest.replace(m[0], '');
+        } else if (s && isCollection(ctx, s[1].toLowerCase())) {
           start = { coll: s[1].toLowerCase(), filter: s[2] };
           rest = rest.replace(m[0], '');
         } else if (e && isCollection(ctx, e[1].toLowerCase())) {
           end = true;
+          rest = rest.replace(m[0], '');
+        } else if (e && e[1].toLowerCase() === 'wenn') {
+          endWenn = true;
           rest = rest.replace(m[0], '');
         }
       }
@@ -157,17 +169,19 @@ function parseStructure(rows: TemplateRow[], ctx: ExportContext): { nodes: Node[
       if (rest.trim() !== '') content = true;
     }
     if (start) {
-      const b: BlockNode = { kind: 'block', id: nextId++, coll: start.coll, filter: start.filter, children: [] };
+      const b: BlockNode = { kind: 'block', id: nextId++, coll: start.coll, filter: start.filter, wenn: start.wenn, children: [] };
       current().push(b);
       stack.push(b);
     }
     // Zeilen, die nur aus einer Markierung bestehen, erscheinen nicht in der Ausgabe
-    if (content || (!start && !end)) {
+    if (content || (!start && !end && !endWenn)) {
       const blocks = stack.map((b) => b.id);
       blocksOfRow.set(row.r, blocks);
       current().push({ kind: 'row', row: { r: row.r, cells }, blocks });
     }
     if (end && stack.length) stack.pop();
+    // {{/wenn}} schließt nur einen Bedingungsblock – ein verwaistes Ende lässt den umgebenden Block offen
+    if (endWenn && stack.length && stack[stack.length - 1].wenn !== undefined) stack.pop();
   }
   return { nodes: root, blocksOfRow };
 }
@@ -226,6 +240,30 @@ interface Inhalt {
 
 const leer = (c: Inhalt) => (c.repeats > 0 ? c.produced === 0 : c.values > 0 && c.nonzero === 0);
 
+const gefuellt = (v: Value | undefined) => (typeof v === 'number' ? Math.abs(v) > 1e-9 : typeof v === 'string' && v.trim() !== '');
+
+/**
+ * Bedingung eines {{#wenn …}}-Blocks, ausgewertet im umgebenden Block:
+ *  - Sammlung, auch gefiltert (raum[nebenflaeche], bgf[s]): es gibt mindestens einen Datensatz
+ *  - Wert (summe.wofl, geschoss.sohle, geschoss:EG.wofl, projekt.code): nicht 0 und nicht leer;
+ *    Feld einer nicht gebundenen Sammlung (raum[wofl].wofl): bei mindestens einem Datensatz
+ *  - „!“ davor kehrt die Bedingung um; Unbekanntes gilt als nicht erfüllt
+ */
+function bedingung(expr: string, ctx: ExportContext, b: Bindings): boolean {
+  let e = expr.trim();
+  const neg = e.startsWith('!');
+  if (neg) e = e.slice(1).trim();
+  const coll = /^([a-z]+)(?:\[([^\]]*)\])?$/i.exec(e);
+  let ok: boolean;
+  if (coll && isCollection(ctx, coll[1].toLowerCase())) ok = itemsFor(coll[1].toLowerCase(), coll[2], b, ctx).length > 0;
+  else {
+    const k = parseKey(e, ctx);
+    if (k.coll && k.field && !b[k.coll]) ok = itemsFor(k.coll, k.filter, b, ctx).some((r) => !k.field!.startsWith('_') && gefuellt(r[k.field!]));
+    else ok = gefuellt(lookup(k, ctx, b));
+  }
+  return ok !== neg;
+}
+
 /** Zahlenwerte des Blockdatensatzes (Sammlung `coll`) in einer Zeile zählen */
 function zaehleWerte(row: TemplateRow, coll: Collection, ctx: ExportContext, b: Bindings, c: Inhalt) {
   for (const v of row.cells.values()) {
@@ -263,6 +301,16 @@ export function expandTemplate(rows: TemplateRow[], ctx: ExportContext): OutputR
         c.produced += items.length;
         // außerhalb von Blöcken bleibt eine leere Zeile stehen, damit das Layout erhalten bleibt
         if (!items.length && topLevel) metas.push({ src: n.row.r, inst, bindings: bound, first: true, empty: true });
+      } else if (n.wenn !== undefined) {
+        // Bedingungsblock: zählt nicht als Wiederholung, sein Inhalt gehört zum umgebenden Block
+        if (!bedingung(n.wenn, ctx, bound)) continue;
+        const childInst = new Map(inst);
+        childInst.set(n.id, 0);
+        const r = expand(n.children, bound, childInst, topLevel, coll);
+        c.repeats += r.repeats;
+        c.produced += r.produced;
+        c.values += r.values;
+        c.nonzero += r.nonzero;
       } else {
         c.repeats++;
         itemsFor(n.coll, n.filter, bound, ctx).forEach((it, i) => {

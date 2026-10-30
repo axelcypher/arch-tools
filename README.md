@@ -71,7 +71,8 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 - **Flächenaufstellung** zum Drucken/PDF mit **Grundriss je Geschoss** (farbig nach Nutzungsgruppe, beschriftet,
   Maßstabsleiste, Legende, optional mit Hintergrundplan) und Raumliste je Geschoss
 - **Excel-Export** (.xlsx) im Standardlayout oder mit **eigener Vorlage** – siehe [docs/excel-vorlagen.md](docs/excel-vorlagen.md);
-  BGF auch je Teilfläche (`{{bgf.name}}`, `{{bgf.flaeche}}` …), leere Blöcke entfallen
+  BGF auch je Teilfläche (`{{bgf.name}}`, `{{bgf.flaeche}}` …), leere Blöcke entfallen, bedingte Abschnitte
+  mit `{{#wenn raum[nebenflaeche]}}` … `{{/wenn}}`
 - **CSV-Export** (Excel, Dezimalkomma)
 - **Dateinamen**: „Speichern“ (`Strg+S`) schreibt in die geöffnete Datei, „Speichern unter“ (`Strg+Shift+S`) fragt neu;
   Exporte heißen `<Projektdatei> WoFl+BGF+BRI`, `<Projektdatei> GRZ+GFZ` bzw. `<Projektdatei> Kosten <Stufe>`

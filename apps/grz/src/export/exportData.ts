@@ -184,6 +184,7 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
     group: 'Blöcke, Filter, Modifikatoren',
     keys: [
       ['#geschoss … /geschoss', 'Zeilenblock je Geschoss; raum-Zeilen darin nur für dieses Geschoss'],
+      ['#wenn … /wenn', 'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn lageplan[nachbar]}} (Datensätze vorhanden), {{#wenn grz.ii}} (Wert nicht 0/leer), {{#wenn !…}} umgekehrt; im Block je Datensatz'],
       ['geschoss[vollgeschoss] / geschoss[!vollgeschoss] / [oberirdisch]', 'Filter: Vollgeschosse, Nicht-Vollgeschosse, oberirdische Geschosse'],
       ['lageplan[eigen] / lageplan[nachbar]', 'Filter: Flächen des eigenen Grundstücks bzw. der Nachbarn'],
       ['lageplan[zaehlt] / [grz2] / [pruefen]', 'Filter nach Anrechnung auf die Grundfläche'],

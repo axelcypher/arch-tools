@@ -224,3 +224,60 @@ describe('BGF-Teilflächen und leere Blöcke', () => {
     ]);
   });
 });
+
+describe('Bedingungsblock {{#wenn …}}', () => {
+  const p = project();
+  const ctx = buildExportContext(p, computeProject(p));
+  const nebenflaechen = rowsOf([
+    ['Wohnflächen'], // 1
+    ['{{#wenn raum[nebenflaeche]}}Neben-Nutzflächen'], // 2 Überschrift nur bei Nebenflächen
+    ['{{#geschoss}}{{geschoss.name|einmal}}', '{{raum[nebenflaeche].name}}', '{{raum[nebenflaeche].flaeche}}'], // 3
+    ['', '', '', F('SUM(C3:C3)')], // 4
+    ['{{/geschoss}}'], // 5
+    ['Nebenflächen gesamt', '', '', F('SUM(D4:D4)')], // 6
+    ['{{/wenn}}'], // 7
+    ['Ende', '', '', F('D6')], // 8
+  ]);
+  const ohneNebenflaechen = () => {
+    const q = project();
+    for (const st of q.storeys) st.shapes = st.shapes.filter((s) => s.kind !== 'room' || s.wofl.kategorie !== 'keine');
+    return buildExportContext(q, computeProject(q));
+  };
+  const zellen = (out: ReturnType<typeof expandTemplate>) =>
+    out.map((r) => [1, 2, 3, 4].map((c) => {
+      const v = r.cells.get(c);
+      return v && typeof v === 'object' && 'formula' in v ? `=${v.formula}` : (v ?? '');
+    }));
+
+  it('Überschrift einmal, darunter die Nebenflächen je Geschoss', () => {
+    expect(zellen(expandTemplate(nebenflaechen, ctx))).toEqual([
+      ['Wohnflächen', '', '', ''],
+      ['Neben-Nutzflächen', '', '', ''],
+      ['KG', 'Keller', 20, ''],
+      ['', '', '', '=SUM(C3:C3)'],
+      ['EG', 'Abstellraum', 2, ''],
+      ['', '', '', '=SUM(C5:C5)'],
+      ['Nebenflächen gesamt', '', '', '=SUM(D4,D6)'],
+      ['Ende', '', '', '=D7'],
+    ]);
+  });
+
+  it('ohne Nebenflächen entfällt der ganze Abschnitt samt Überschrift und Summe', () => {
+    expect(zellen(expandTemplate(nebenflaechen, ohneNebenflaechen()))).toEqual([
+      ['Wohnflächen', '', '', ''],
+      ['Ende', '', '', '=0'],
+    ]);
+  });
+
+  it('Werte, Verneinung, Bedingung je Geschoss, Unbekanntes', () => {
+    const zeilen = (spec: (CellValue | undefined)[][], c = ctx) => expandTemplate(rowsOf(spec), c).map((r) => r.cells.get(1) ?? null);
+    expect(zeilen([['{{#wenn summe.nebenflaeche}}ja{{/wenn}}'], ['{{#wenn !summe.nebenflaeche}}keine Nebenflächen{{/wenn}}']])).toEqual(['ja']);
+    expect(zeilen([['{{#wenn summe.nebenflaeche}}ja{{/wenn}}'], ['{{#wenn !raum[nebenflaeche]}}keine Nebenflächen{{/wenn}}']], ohneNebenflaechen())).toEqual(['keine Nebenflächen']);
+    // im Geschossblock gilt die Bedingung je Geschoss: „mit Wohnfläche“ nur bei EG und OG
+    expect(zeilen([['{{#geschoss}}{{geschoss.name}}'], ['{{#wenn raum[wofl]}}mit Wohnfläche{{/wenn}}'], ['{{/geschoss}}']])).toEqual(['KG', 'EG', 'mit Wohnfläche', 'OG', 'mit Wohnfläche']);
+    expect(zeilen([['{{#wenn raum[wofl].wohnung}}Wohnungen vorhanden{{/wenn}}'], ['{{#wenn geschoss:OG.wofl}}OG bewohnt{{/wenn}}']])).toEqual(['Wohnungen vorhanden', 'OG bewohnt']);
+    expect(zeilen([['{{#wenn summe.gibtsnicht}}x{{/wenn}}'], ['danach']])).toEqual(['danach']);
+    // ein {{/wenn}} ohne Anfang (Bedingung vergessen) schließt nicht den Geschossblock
+    expect(zeilen([['{{#geschoss}}{{geschoss.name}}'], ['{{#wenn}}', 'x'], ['{{/wenn}}'], ['{{raum[wofl].name}}'], ['{{/geschoss}}']])).toEqual(['EG', '{{#wenn}}', 'Flur', 'Küche', 'OG', '{{#wenn}}', 'Bad']);
+  });
+});

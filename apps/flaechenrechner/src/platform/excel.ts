@@ -251,12 +251,14 @@ export async function buildSampleTemplate(): Promise<Uint8Array> {
     put(16, ['Brutto-Wohnflächen gesamt', null, null, { formula: 'SUM(D13:D13)' }], { bold: true, fmt: true, top: true });
     put(17, ['Abzug 3% Ausbau, Putz etc.', null, null, { formula: '-ROUND(D16*0.03,2)' }], { bold: true, fmt: true });
     put(18, ['Netto-Wohnflächen gesamt', null, null, { formula: 'D16+D17' }], { bold: true, fmt: true, top: true, bottom: true });
-    put(20, ['Neben-Nutzflächen'], { bold: true });
+    // Abschnitt nur, wenn es Nebenflächen gibt
+    put(20, ['{{#wenn raum[nebenflaeche]}}Neben-Nutzflächen'], { bold: true });
     put(21, ['{{#geschoss}}{{geschoss.name|einmal}}', '{{raum[nebenflaeche].name}}', '{{raum[nebenflaeche].flaeche_roh}}', null], { fmt: true });
     ws.getCell('A21').font = { bold: true };
     put(22, [null, null, null, { formula: 'SUM(C21:C21)' }], { bold: true, fmt: true });
     put(23, ['{{/geschoss}}']);
     put(24, ['Brutto-Nebenflächen gesamt', null, null, { formula: 'SUM(D22:D22)' }], { bold: true, fmt: true, top: true, bottom: true });
+    put(25, ['{{/wenn}}']);
   }
 
   /* BGF je Geschoss mit Teilflächen (BGF-Umrisse), Zwischensumme je Geschoss */
@@ -375,7 +377,7 @@ export async function buildSampleTemplate(): Promise<Uint8Array> {
     platzhalterBlatt(
       wb,
       PLACEHOLDER_DOCS,
-      'Platzhalter in doppelten geschweiften Klammern werden beim Export ersetzt. Zeilen mit raum.*, geschoss.*, bgf.*, wohnung.*, nutzung.*, bri.* oder koerper.* werden je Datensatz wiederholt, #geschoss … /geschoss wiederholt ganze Zeilenblöcke; leere Blöcke entfallen. Formeln (z. B. SUMME über eine Wiederholungszeile) werden automatisch auf die erzeugten Zeilen erweitert. Steht nur ein Platzhalter in der Zelle, wird eine Zahl eingetragen und das Zellformat der Vorlage bleibt erhalten. Dieses Blatt kann gelöscht werden.',
+      'Platzhalter in doppelten geschweiften Klammern werden beim Export ersetzt. Zeilen mit raum.*, geschoss.*, bgf.*, wohnung.*, nutzung.*, bri.* oder koerper.* werden je Datensatz wiederholt, #geschoss … /geschoss wiederholt ganze Zeilenblöcke; leere Blöcke entfallen; #wenn … /wenn gibt einen Abschnitt nur unter einer Bedingung aus. Formeln (z. B. SUMME über eine Wiederholungszeile) werden automatisch auf die erzeugten Zeilen erweitert. Steht nur ein Platzhalter in der Zelle, wird eine Zahl eingetragen und das Zellformat der Vorlage bleibt erhalten. Dieses Blatt kann gelöscht werden.',
     );
   }
 

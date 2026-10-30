@@ -18,6 +18,7 @@ Platzhalter-Übersicht.
 | `{{#geschoss}}` … `{{/geschoss}}` | **Zeilenblock** wird je Geschoss wiederholt; Blöcke lassen sich verschachteln |
 | `{{raum[wofl].name}}` | Wiederholung mit **Filter** |
 | `{{geschoss.name\|einmal}}` | Wert nur in der **ersten** Zeile einer Wiederholung |
+| `{{#wenn raum[nebenflaeche]}}` … `{{/wenn}}` | Abschnitt **einmal**, nur wenn die **Bedingung** zutrifft |
 
 Platzhalter für Einzelwerte funktionieren auch in **Kopf-/Fußzeilen** (Seite einrichten) und in
 **Textfeldern/Formen**.
@@ -62,13 +63,16 @@ Teilfläche), `{{#wohnung}}` (Räume je Wohnung), `{{#nutzung}}` (Räume je Nutz
 | 16 | Brutto-Wohnflächen gesamt | | | `=SUMME(D13:D13)` |
 | 17 | Abzug 3% Ausbau, Putz etc. | | | `=-RUNDEN(D16*0,03;2)` |
 | 18 | Netto-Wohnflächen gesamt | | | `=D16+D17` |
-| 20 | Neben-Nutzflächen | | | |
+| 20 | `{{#wenn raum[nebenflaeche]}}Neben-Nutzflächen` | | | |
 | 21 | `{{#geschoss}}{{geschoss.name\|einmal}}` | `{{raum[nebenflaeche].name}}` | `{{raum[nebenflaeche].flaeche_roh}}` | |
 | 22 | | | | `=SUMME(C21:C21)` |
 | 23 | `{{/geschoss}}` | | | |
 | 24 | Brutto-Nebenflächen gesamt | | | `=SUMME(D22:D22)` |
+| 25 | `{{/wenn}}` | | | |
 
-Ergebnis: je Geschoss steht der Name einmal links, darunter alle Räume, dann die Zwischensumme.
+Ergebnis: je Geschoss steht der Name einmal links, darunter alle Räume, dann die Zwischensumme. Der
+Abschnitt „Neben-Nutzflächen“ samt Überschrift und Summe erscheint nur, wenn es Nebenflächen gibt
+(siehe [Bedingte Abschnitte](#bedingte-abschnitte)).
 `=SUMME(C12:C12)` wird je Geschoss auf dessen Raumzeilen erweitert, `=SUMME(D13:D13)` auf alle
 Zwischensummen, und die Bezüge darunter (`D16`, `D17`) rutschen mit.
 
@@ -92,6 +96,26 @@ Die Sammlung `bgf` enthält je **BGF-Umriss** (Teilfläche) eine Zeile: `bgf.nam
 | 14 | Bruttogrundfläche gesamt | | | `=SUMME(D12:D12)` |
 
 Nur Regel- bzw. Sonderfall: `{{bgf[r].name}}` / `{{bgf[s].name}}`; ohne Abzugsflächen: `{{bgf[!abzug].name}}`.
+
+### Bedingte Abschnitte
+
+`{{#wenn BEDINGUNG}}` … `{{/wenn}}` gibt die Zeilen dazwischen **einmal** aus, wenn die Bedingung zutrifft,
+sonst entfallen sie – z. B. eine Überschrift mit den Geschossblöcken darunter und der Summe:
+
+| Bedingung | trifft zu, wenn |
+|---|---|
+| `raum[nebenflaeche]`, `bgf[s]`, `geschoss[dg]` | die Sammlung (mit Filter) mindestens einen Datensatz hat |
+| `summe.nebenflaeche`, `geschoss:OG.wofl`, `projekt.code` | der Wert nicht 0 und nicht leer ist |
+| `raum[wofl].wohnung` | das Feld bei mindestens einem Datensatz gefüllt ist |
+| `!raum[nebenflaeche]` | umgekehrt – z. B. für „keine Nebenflächen vorhanden“ |
+
+Ein Bedingungsblock bindet keinen Datensatz und kann in anderen Blöcken stehen; dort gilt die Bedingung für
+den jeweiligen Datensatz: `{{#wenn raum[wofl]}}` in einem `{{#geschoss}}`-Block fragt nach Wohnflächen
+**dieses** Geschosses, `{{#wenn geschoss.sohle}}` nach dessen Bodenplatte. Eine unbekannte Bedingung (Tippfehler)
+gilt als nicht erfüllt – der Abschnitt fehlt dann.
+
+Ein `{{#geschoss}}` innerhalb eines Geschossblocks liefert nur dasselbe Geschoss – für „Überschrift einmal,
+darunter je Geschoss“ also `{{#wenn …}}` außen und `{{#geschoss}}` innen verwenden.
 
 ## Formeln
 
