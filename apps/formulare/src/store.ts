@@ -10,13 +10,20 @@ import { felderDerSeite } from './forma/felder';
 import type { Formular } from './forma/formular';
 import { formularBytes, istAngekreuzt, memoText, parseFormular, setzeAngekreuzt, setzeMemoText } from './forma/formular';
 import type { PkWert, Projektkarte } from './forma/projektkarte';
-import { istWahl, pkAnzeige, pkEintrag, pkSchluessel, pkWertPasst, pkWertVon } from './forma/projektkarte';
+import { istWahl, pkAnzeige, pkEintrag, pkSchluessel, pkWert, pkWertPasst, pkWertVon } from './forma/projektkarte';
 import type { Sperre, SperrBewertung, SperrProbe } from './forma/sperre';
 import { bewerten, sperreLesen, sperreSchreiben, sperrPfad, zeitstempel } from './forma/sperre';
 import { istEigeneSperre, sperreVergessen, sperreVermerken, verwaisteEigeneSperrenAufraeumen } from './eigeneSperren';
 import { finde } from './forma/dfm';
 import type { FormularEintrag, Projekt } from './projekte';
 import { formulareDesProjekts, projekteSuchen } from './projekte';
+import type { Adresse } from './adressbuch';
+import { adressenAusKarte, zusammenfuehren } from './adressbuch';
+import { xlsxAendern, xlsxLesen } from './dokumente/xlsx';
+import type { Angabe, ProjektdatenEintrag } from './projektdaten';
+import { IN_PROJEKTKARTE, projektdatenLesen, zellwert } from './projektdaten';
+import type { FormularProfil } from './profil';
+import { bereinigt as profilBereinigt, istLeer as profilLeer } from './profil';
 import type { FeldAenderung, Verlauf } from './verlauf';
 import { eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
 
@@ -32,7 +39,7 @@ import { eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererV
 const log = logger('formulare');
 
 export type Ansicht = 'felder' | 'seite';
-export type Hauptansicht = 'formular' | 'projektkarte' | 'datei';
+export type Hauptansicht = 'formular' | 'projektkarte' | 'datei' | 'einstellungen';
 
 /** Dokumente aus dem Projektordner, die die App selbst zeigt (und teils bearbeitet) */
 export type DateiArt = 'pdf' | 'excel' | 'word' | 'bild';
@@ -67,6 +74,8 @@ const EINSTELLUNGEN = 'formulare:einstellungen';
 const ENTWUERFE = 'formulare:entwuerfe';
 const VERLAEUFE = 'formulare:verlauf';
 const PK_ENTWUERFE = 'formulare:projektkarten';
+const PROFILE = 'formulare:profile';
+const ADRESSBUCH = 'formulare:adressbuch';
 /** so viele Formulare behalten ihren Verlauf */
 const MAX_VERLAEUFE = 60;
 
@@ -83,6 +92,10 @@ interface Gespeichert {
   leisteBreite: number;
   verlaufOffen: boolean;
   gliederungOffen: boolean;
+  /** Stammdaten: Vorgabe je Rolle (Gruppe der Projektkarte) → Schlüssel einer Adresse im Adressbuch */
+  rollenVorgaben: Record<string, string>;
+  /** Vorlage für eine neue Projektdaten.xlsx (vollständiger Pfad); leer = keine anlegen */
+  projektdatenVorlage: string;
   /** angezeigte Pfade im echten Projektordner: Vorgabe und je Projektkürzel */
   vorgabeAuswahl: string[];
   auswahl: Record<string, string[]>;
@@ -153,6 +166,16 @@ interface FormulareState extends Gespeichert {
   datei: OffeneDatei | null;
   /** ungespeicherte Bearbeitungen je Dokument (`root|pfad`), nur für diese Sitzung */
   dateiEntwuerfe: Record<string, unknown>;
+  /** Formularprofile (Gliederung, Füllstand) je Formular und Stand */
+  profile: Record<string, FormularProfil>;
+  /** Adressen aus den Projektkarten aller FORMA-Projekte (zwischengespeichert) */
+  adressbuch: { adressen: Adresse[]; stand: number } | null;
+  /** Einlesen läuft: so weit */
+  adressbuchLaeuft: { fertig: number; gesamt: number } | null;
+  /** Projektdaten.xlsx des gewählten Projekts; 'fehlt' = keine gefunden, null = nicht gesucht */
+  projektdaten: ProjektdatenDatei | 'fehlt' | null;
+  /** Bereich der Einstellungen */
+  einstellungsBereich: EinstellungsBereich;
   /** echte Projektordner (erste und zweite Ebene) */
   ablage: AblageOrdner[];
   ablageFehler: string[];
@@ -216,6 +239,30 @@ interface FormulareState extends Gespeichert {
   /** neue Fassung speichern – vorher prüfen, dass die Datei seit dem Öffnen unverändert ist */
   dateiSpeichern: (neu: Uint8Array) => Promise<boolean>;
   setDateiEntwurf: (wert: unknown) => void;
+  /** Profil eines Formulars setzen; null = wieder die Vorgabe */
+  profilSetzen: (schluessel: string, profil: FormularProfil | null) => void;
+  einstellungenOeffnen: (bereich?: EinstellungsBereich) => void;
+  setRollenVorgabe: (gruppe: number, schluessel: string | null) => void;
+  setProjektdatenVorlage: (pfad: string) => void;
+  /** Adressbuch aus allen FORMA-Projekten neu einlesen */
+  adressbuchLaden: () => Promise<void>;
+  /** Adressen ins Adressbuch aufnehmen (z. B. eine eben als Vorgabe festgelegte) */
+  adressbuchErgaenzen: (adressen: Adresse[]) => void;
+  /** Projektdaten.xlsx des gewählten Projekts suchen und lesen */
+  projektdatenLaden: () => Promise<void>;
+  /** Angaben aus der Projektdaten.xlsx in die Projektkarte übernehmen (ein Schritt) */
+  projektdatenUebernehmen: (angaben: Angabe[]) => void;
+}
+
+export type EinstellungsBereich = 'ordner' | 'stammdaten' | 'adressbuch' | 'formulare' | 'projektdaten';
+
+export interface ProjektdatenDatei {
+  /** Projektordner (absolut) */
+  root: string;
+  pfad: string;
+  bytes: Uint8Array;
+  eintraege: ProjektdatenEintrag[];
+  inOffice: boolean;
 }
 
 /* ---------- lokaler Speicher ---------- */
@@ -253,6 +300,8 @@ function ladeEinstellungen(): Gespeichert {
     leisteBreite: typeof o.leisteBreite === 'number' ? Math.min(600, Math.max(220, o.leisteBreite)) : 300,
     verlaufOffen: o.verlaufOffen === true,
     gliederungOffen: o.gliederungOffen !== false,
+    rollenVorgaben: o.rollenVorgaben && typeof o.rollenVorgaben === 'object' ? Object.fromEntries(Object.entries(o.rollenVorgaben).filter(([, v]) => typeof v === 'string')) : {},
+    projektdatenVorlage: typeof o.projektdatenVorlage === 'string' ? o.projektdatenVorlage : '',
     vorgabeAuswahl: Array.isArray(o.vorgabeAuswahl) ? strings(o.vorgabeAuswahl) : VORGABE_AUSWAHL,
     auswahl,
   };
@@ -520,6 +569,52 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     return neu;
   };
 
+  /**
+   * Nach dem Speichern der Projektkarte: geänderte Angaben auch in die Projektdaten.xlsx im Ordner „Organisation“
+   * schreiben (nur die Wertzellen). Fehlt die Datei und ist eine Vorlage eingestellt, wird sie daraus angelegt.
+   */
+  const projektdatenNachtragen = async (projekt: Projekt, karte: Projektkarte, geaendert: string[]) => {
+    const ds = get().ds;
+    if (!ds || get().projekt !== projekt) return;
+    const angaben = (Object.entries(IN_PROJEKTKARTE) as [Angabe, { gruppe: number; id: number }][]).filter(([, z]) => geaendert.includes(pkSchluessel(z.gruppe, z.id)));
+    if (!angaben.length) return;
+    let pd = get().projektdaten;
+    try {
+      const vorlage = get().projektdatenVorlage;
+      const ablage = ablageVon(get(), projekt);
+      if (pd === 'fehlt' && vorlage && ablage) {
+        const i = Math.max(vorlage.lastIndexOf('\\'), vorlage.lastIndexOf('/'));
+        const bytes = await ds.lies(vorlage.slice(0, i), vorlage.slice(i + 1));
+        if (!bytes) throw new Error(`Vorlage ${vorlage} nicht gefunden`);
+        await ds.dokumentAnlegen(verbinde(ablage.root, ablage.pfad), `Organisation/${projekt.ordner} Projektdaten.xlsx`, bytes);
+        await get().projektdatenLaden();
+        pd = get().projektdaten;
+      }
+      if (!pd || pd === 'fehlt') return;
+      if (pd.inOffice || (await ds.inOffice(pd.root, pd.pfad))) {
+        set({ meldung: { art: 'fehler', text: 'Projektdaten.xlsx ist in Excel geöffnet – dort nicht nachgetragen.' } });
+        return;
+      }
+      const neu = new Map<Angabe, string>();
+      for (const [a, z] of angaben) neu.set(a, pkWert(karte, z.gruppe, z.id));
+      const zellen = new Map<number, Map<string, string>>();
+      for (const e of pd.eintraege) {
+        if (!neu.has(e.angabe)) continue;
+        const w = zellwert(pd.eintraege, e, neu);
+        if (w === e.wert && !pd.eintraege.some((x) => x !== e && x.zelle === e.zelle)) continue;
+        zellen.set(e.blatt, (zellen.get(e.blatt) ?? new Map()).set(e.zelle, w));
+      }
+      if (![...zellen.values()].some((m) => m.size)) return;
+      const aktuell = await ds.lies(pd.root, pd.pfad);
+      if (!aktuell || !gleich(aktuell, pd.bytes)) throw new Error('die Datei wurde inzwischen geändert');
+      await ds.dokumentErsetzen(pd.root, pd.pfad, xlsxAendern(pd.bytes, zellen));
+      await get().projektdatenLaden();
+      set({ meldung: { art: 'info', text: `Projektkarte gespeichert – Projektdaten.xlsx mitgeführt (${[...zellen.values()].reduce((n, m) => n + m.size, 0)} Wert(e)).` } });
+    } catch (e) {
+      fehler('Projektdaten.xlsx nicht mitgeführt', e);
+    }
+  };
+
   /** Neuer Stand der Projektkarte: übernehmen und lokal sichern (Entwurf und Verlauf) */
   const karteAktualisieren = (k: OffeneKarte) => {
     const neu = { ...k, gesichert: sichernUnter(PK_ENTWUERFE, karteSchluessel(k.projekt), k.aenderungen, k.verlauf) };
@@ -539,6 +634,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     karte: null,
     datei: null,
     dateiEntwuerfe: {},
+    profile: lesen<Record<string, FormularProfil>>(PROFILE, {}),
+    adressbuch: lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null),
+    adressbuchLaeuft: null,
+    projektdaten: null,
+    einstellungsBereich: 'ordner',
     ablage: [],
     ablageFehler: [],
     konflikt: false,
@@ -616,7 +716,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     projektWaehlen: async (projekt) => {
       await get().schliessen();
-      set({ projekt, formulare: [], karte: null, datei: null, haupt: 'formular' });
+      set({ projekt, formulare: [], karte: null, datei: null, projektdaten: null, haupt: 'formular' });
       const ds = get().ds;
       if (!projekt || !ds) return;
       try {
@@ -624,6 +724,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       } catch (e) {
         fehler(`Formulare von ${projekt.ordner} nicht lesbar`, e);
       }
+      void get().projektdatenLaden();
     },
 
     formularOeffnen: async (eintrag) => {
@@ -944,6 +1045,95 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       }
     },
 
+    einstellungenOeffnen: (bereich) => set({ haupt: 'einstellungen', ...(bereich ? { einstellungsBereich: bereich } : {}) }),
+
+    setRollenVorgabe: (gruppe, schluessel) => {
+      const rollenVorgaben = { ...get().rollenVorgaben };
+      if (schluessel) rollenVorgaben[String(gruppe)] = schluessel;
+      else delete rollenVorgaben[String(gruppe)];
+      set({ rollenVorgaben });
+    },
+
+    setProjektdatenVorlage: (projektdatenVorlage) => set({ projektdatenVorlage: projektdatenVorlage.trim() }),
+
+    adressbuchLaden: async () => {
+      const { ds, projekte } = get();
+      if (!ds || get().adressbuchLaeuft) return;
+      const gesammelt: Adresse[] = [];
+      set({ adressbuchLaeuft: { fertig: 0, gesamt: projekte.length } });
+      try {
+        for (const [i, p] of projekte.entries()) {
+          try {
+            const pk = await ds.projektkarteLesen(p.root, `${p.ordner}/sj_prokarte.sdb`);
+            if (pk) gesammelt.push(...adressenAusKarte(p.ordner, pk));
+          } catch {
+            // eine unlesbare Projektkarte überspringen
+          }
+          set({ adressbuchLaeuft: { fertig: i + 1, gesamt: projekte.length } });
+        }
+        const adressbuch = { adressen: zusammenfuehren(gesammelt), stand: Date.now() };
+        schreiben(ADRESSBUCH, adressbuch);
+        set({ adressbuch });
+        log.info(`Adressbuch: ${adressbuch.adressen.length} Adressen aus ${projekte.length} Projekten`);
+      } finally {
+        set({ adressbuchLaeuft: null });
+      }
+    },
+
+    adressbuchErgaenzen: (adressen) => {
+      const alt = get().adressbuch?.adressen ?? [];
+      const neu = adressen.filter((a) => !alt.some((x) => x.schluessel === a.schluessel));
+      if (!neu.length) return;
+      const adressbuch = { adressen: zusammenfuehren([...alt, ...neu]), stand: get().adressbuch?.stand ?? Date.now() };
+      schreiben(ADRESSBUCH, adressbuch);
+      set({ adressbuch });
+    },
+
+    projektdatenLaden: async () => {
+      const { ds, projekt } = get();
+      const ablage = ablageVon(get(), projekt);
+      if (!ds || !projekt || !ablage) return;
+      const root = verbinde(ablage.root, ablage.pfad);
+      try {
+        const eintraege = await ds.liste(verbinde(root, 'Organisation'), 1).catch(() => []);
+        const kandidaten = eintraege.filter((e) => !e.ordner && /projektdaten.*\.xlsx$/i.test(e.pfad) && !e.pfad.startsWith('~$'));
+        const datei = kandidaten.find((e) => e.pfad.toLowerCase().startsWith(projekt.ordner.toLowerCase())) ?? kandidaten[0];
+        if (!datei) {
+          if (get().projekt === projekt) set({ projektdaten: 'fehlt' });
+          return;
+        }
+        const pfad = `Organisation/${datei.pfad}`;
+        const bytes = await ds.lies(root, pfad);
+        if (!bytes) throw new Error('nicht lesbar');
+        const inOffice = await ds.inOffice(root, pfad).catch(() => false);
+        if (get().projekt === projekt) set({ projektdaten: { root, pfad, bytes, eintraege: projektdatenLesen(xlsxLesen(bytes)), inOffice } });
+      } catch (e) {
+        log.warn(`Projektdaten.xlsx von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}`);
+        if (get().projekt === projekt) set({ projektdaten: 'fehlt' });
+      }
+    },
+
+    projektdatenUebernehmen: (angaben) => {
+      const pd = get().projektdaten;
+      if (!pd || pd === 'fehlt') return;
+      const werte: KartenWert[] = [];
+      for (const a of angaben) {
+        const ziel = IN_PROJEKTKARTE[a];
+        const e = pd.eintraege.find((x) => x.angabe === a);
+        if (ziel && e) werte.push({ gruppe: ziel.gruppe, id: ziel.id, wert: e.wert });
+      }
+      get().karteMehrere(werte, 'Aus Projektdaten.xlsx übernommen');
+    },
+
+    profilSetzen: (schluessel, profil) => {
+      const profile = { ...get().profile };
+      const sauber = profil && profilBereinigt(profil);
+      if (sauber && !profilLeer(sauber)) profile[schluessel] = sauber;
+      else delete profile[schluessel];
+      schreiben(PROFILE, profile);
+      set({ profile });
+    },
+
     setDateiEntwurf: (wert) => {
       const d = get().datei;
       if (!d) return;
@@ -964,7 +1154,9 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         const frisch = await ds.projektkarteLesen(k.projekt.root, pfad);
         if (!frisch) throw new Error('Projektkarte nach dem Speichern nicht lesbar');
         karteAktualisieren({ ...k, karte: frisch, aenderungen: {} });
+        // die Projektdaten.xlsx im Projektordner gleich mitführen
         set({ meldung: { art: 'info', text: `Projektkarte von ${k.projekt.ordner} gespeichert.` } });
+        await projektdatenNachtragen(k.projekt, frisch, aenderungen.map((a) => pkSchluessel(a.gruppe, a.id)));
         log.info(`Projektkarte gespeichert: ${pfad} (${aenderungen.length} Einträge)`);
       } catch (e) {
         fehler('Projektkarte nicht gespeichert', e);
@@ -988,6 +1180,8 @@ useFormulare.subscribe((s) => {
     leisteBreite: s.leisteBreite,
     verlaufOffen: s.verlaufOffen,
     gliederungOffen: s.gliederungOffen,
+    rollenVorgaben: s.rollenVorgaben,
+    projektdatenVorlage: s.projektdatenVorlage,
     vorgabeAuswahl: s.vorgabeAuswahl,
     auswahl: s.auswahl,
   };

@@ -3,10 +3,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PkEintrag, PkGruppe, PkWert } from '../forma/projektkarte';
 import { pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWertVon } from '../forma/projektkarte';
 import { anschrift, aufbau, einheit, feldTitel, gruppenReihen, istAdresse, pruefung, zusammenfassung } from '../projektkarteAufbau';
+import type { Adresse } from '../adressbuch';
+import { adressName, adressOrt, adressSchluessel, adressenAusKarte, inRolle } from '../adressbuch';
+import type { Angabe } from '../projektdaten';
+import { IN_PROJEKTKARTE } from '../projektdaten';
 import type { Stammadresse } from '../stammdaten';
-import { stammadresseMerken, stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
+import { stammdatenLaden } from '../stammdaten';
+import { Symbol } from './Symbol';
 import type { KartenWert, OffeneKarte } from '../store';
-import { karteText, karteWert, useFormulare } from '../store';
+import { karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
 
 /** zuletzt gewählte Gruppe je Projekt (bleibt beim Wechsel zwischen Formular und Projektkarte) */
 const gewaehlt = new Map<string, number>();
@@ -67,8 +72,9 @@ function Karte({ karte }: { karte: OffeneKarte }) {
   const alle = reihen.flatMap((r) => r.gruppen);
   const [gruppeId, setGruppeId] = useState<number>(() => gewaehlt.get(projektKey) ?? alle[0]?.id ?? 0);
   const [suche, setSuche] = useState('');
-  const [stamm, setStamm] = useState<Stammadresse[]>(stammdatenLaden);
-  const gruppe = alle.find((g) => g.id === gruppeId) ?? alle[0];
+  const [stamm] = useState<Stammadresse[]>(stammdatenLaden);
+  /** -1 = Abgleich mit der Projektdaten.xlsx */
+  const gruppe = gruppeId === PROJEKTDATEN ? null : (alle.find((g) => g.id === gruppeId) ?? alle[0]);
 
   const waehle = (id: number, eintrag?: string) => {
     gewaehlt.set(projektKey, id);
@@ -87,24 +93,29 @@ function Karte({ karte }: { karte: OffeneKarte }) {
     return () => window.removeEventListener('formulare:pk-sprung', beiSprung);
   });
 
-  if (!gruppe) return <div className="fo-leer">Die Projektkarte enthält keine Einträge.</div>;
+  if (!alle.length) return <div className="fo-leer">Die Projektkarte enthält keine Einträge.</div>;
 
   return (
     <div className="pk">
-      <Navigation karte={karte} reihen={reihen} aktiv={gruppe.id} suche={suche} setSuche={setSuche} onWahl={waehle} />
-      <GruppenEditor
-        key={gruppe.id}
-        karte={karte}
-        gruppe={gruppe}
-        alleGruppen={alle}
-        stamm={stamm}
-        onStamm={(liste) => {
-          stammdatenSpeichern(liste);
-          setStamm(liste);
-        }}
-      />
+      <Navigation karte={karte} reihen={reihen} aktiv={gruppe?.id ?? PROJEKTDATEN} suche={suche} setSuche={setSuche} onWahl={waehle} />
+      {gruppe ? <GruppenEditor key={gruppe.id} karte={karte} gruppe={gruppe} alleGruppen={alle} stamm={stamm} /> : <ProjektdatenAbgleich karte={karte} />}
     </div>
   );
+}
+
+/** Kennung des Abgleichs mit der Projektdaten.xlsx in der Navigation */
+const PROJEKTDATEN = -1;
+
+/** Leere Adressgruppen mit den Vorgaben der Stammdaten füllen */
+function vorgabenFuer(karte: OffeneKarte, adressen: Adresse[], vorgaben: Record<string, string>): KartenWert[] {
+  const out: KartenWert[] = [];
+  for (const g of karte.karte.gruppen.filter(istAdresse)) {
+    if (karteText(karte, g.id, 40).trim()) continue;
+    const a = adressen.find((x) => x.schluessel === vorgaben[String(g.id)]);
+    if (!a) continue;
+    for (const e of karte.karte.eintraege.filter((x) => x.gruppe === g.id)) if (String(e.id) in a.werte) out.push({ gruppe: g.id, id: e.id, wert: a.werte[String(e.id)] });
+  }
+  return out;
 }
 
 /* ---------- Navigation ---------- */
@@ -133,9 +144,31 @@ function Navigation({
       .slice(0, 60);
   }, [karte, q]);
 
+  const adressbuch = useFormulare((s) => s.adressbuch);
+  const vorgaben = useFormulare((s) => s.rollenVorgaben);
+  const projektdaten = useFormulare((s) => s.projektdaten);
+  const { karteMehrere, setMeldung } = useFormulare.getState();
+  const vorschlag = adressbuch ? vorgabenFuer(karte, adressbuch.adressen, vorgaben) : [];
+  const vorgabeGruppen = new Set(vorschlag.map((v) => v.gruppe)).size;
+
   return (
     <nav className="pk-nav" aria-label="Gruppen der Projektkarte">
+      <div className="pk-nav-kopf">
+        <Symbol name="karte" /> Projektkarte <strong>{karte.projekt.ordner}</strong>
+      </div>
       <input type="search" className="pk-suche" placeholder="Projektkarte durchsuchen …" value={suche} onChange={(e) => setSuche(e.target.value)} />
+      {vorgabeGruppen > 0 && !q && (
+        <button
+          className="pk-vorgaben"
+          title="Leere Gruppen mit den Vorgaben aus „Büro & Stammdaten“ füllen"
+          onClick={() => {
+            karteMehrere(vorschlag, 'Vorgaben eingetragen');
+            setMeldung({ art: 'info', text: `Vorgaben in ${vorgabeGruppen} Gruppe(n) eingetragen – Strg+Z nimmt es zurück.` });
+          }}
+        >
+          <Symbol name="buero" /> Vorgaben eintragen ({vorgabeGruppen})
+        </button>
+      )}
       {q ? (
         <div className="pk-treffer">
           {treffer.map(({ e, g, text }) => (
@@ -157,6 +190,17 @@ function Navigation({
             ))}
           </div>
         ))
+      )}
+      {!q && projektdaten !== null && (
+        <div className="pk-nav-reihe">
+          <div className="pk-nav-titel">Projektordner</div>
+          <button className={`pk-nav-eintrag${aktiv === PROJEKTDATEN ? ' aktiv' : ''}${projektdaten === 'fehlt' ? ' leer' : ''}`} onClick={() => onWahl(PROJEKTDATEN)}>
+            <span className="pk-nav-name">
+              <Symbol name="tabelle" /> Projektdaten.xlsx
+            </span>
+            <span className="pk-nav-kurz">{projektdaten === 'fehlt' ? 'nicht gefunden' : `${projektdaten.eintraege.length} Angaben erkannt`}</span>
+          </button>
+        </div>
       )}
     </nav>
   );
@@ -190,15 +234,17 @@ function GruppenEditor({
   gruppe,
   alleGruppen,
   stamm,
-  onStamm,
 }: {
   karte: OffeneKarte;
   gruppe: PkGruppe;
   alleGruppen: PkGruppe[];
   stamm: Stammadresse[];
-  onStamm: (liste: Stammadresse[]) => void;
 }) {
-  const { karteMehrere, setMeldung } = useFormulare.getState();
+  const { karteMehrere, setMeldung, setRollenVorgabe, adressbuchErgaenzen, einstellungenOeffnen } = useFormulare.getState();
+  const adressbuch = useFormulare((s) => s.adressbuch);
+  const vorgabeSchluessel = useFormulare((s) => s.rollenVorgaben[String(gruppe.id)]);
+  const vorgabe = adressbuch?.adressen.find((a) => a.schluessel === vorgabeSchluessel);
+  const inDieserRolle = adressbuch ? inRolle(adressbuch.adressen, gruppe.id).filter((a) => a !== vorgabe).slice(0, 15) : [];
   const eintraege = useMemo(() => karte.karte.eintraege.filter((e) => e.gruppe === gruppe.id), [karte.karte, gruppe.id]);
   const abschnitte = useMemo(() => aufbau(gruppe, eintraege), [gruppe, eintraege]);
   const text = (id: number) => karteText(karte, gruppe.id, id);
@@ -215,6 +261,11 @@ function GruppenEditor({
       const quelle = Number(name);
       von = alleGruppen.find((g) => g.id === quelle)?.text ?? '';
       werte = eintraege.filter((e) => pkEintrag(karte.karte, quelle, e.id)).map((e) => ({ gruppe: gruppe.id, id: e.id, wert: karteWert(karte, quelle, e.id) }));
+    } else if (art === 'a:') {
+      const a = adressbuch?.adressen.find((x) => x.schluessel === name);
+      if (!a) return;
+      von = adressName(a);
+      werte = eintraege.filter((e) => String(e.id) in a.werte).map((e) => ({ gruppe: gruppe.id, id: e.id, wert: a.werte[String(e.id)] }));
     } else {
       const s = stamm.find((x) => x.name === name);
       if (!s) return;
@@ -225,13 +276,15 @@ function GruppenEditor({
     setMeldung({ art: 'info', text: `${gruppe.text}: Angaben von „${von}“ übernommen – Strg+Z nimmt es zurück.` });
   };
 
-  const merken = () => {
-    const name = [text(40), text(30)].map((x) => x.trim()).filter(Boolean).join(', ') || gruppe.text;
-    const werte: Record<string, PkWert> = {};
-    for (const e of eintraege) werte[String(e.id)] = karteWert(karte, e.gruppe, e.id);
-    onStamm(stammadresseMerken(stamm, { name, werte }));
-    setMeldung({ art: 'info', text: `„${name}“ als Bürostammdaten gemerkt – in anderen Projekten über „Übernehmen“ einsetzbar.` });
+  /** diese Adresse als Vorgabe für die Rolle festlegen (und ins Adressbuch aufnehmen, falls neu) */
+  const alsVorgabe = () => {
+    const [a] = adressenAusKarte(karte.projekt.ordner, karteMitAenderungen(karte)).filter((x) => x.verwendungen[0].gruppe === gruppe.id);
+    if (!a) return;
+    adressbuchErgaenzen([a]);
+    setRollenVorgabe(gruppe.id, a.schluessel);
+    setMeldung({ art: 'info', text: `„${adressName(a)}“ ist jetzt die Vorgabe für ${gruppe.text} (Einstellungen → Büro & Stammdaten).` });
   };
+  const istVorgabe = !!vorgabeSchluessel && vorgabeSchluessel === adressSchluessel(Object.fromEntries(eintraege.map((e) => [String(e.id), text(e.id)])));
 
   const leeren = () => {
     karteMehrere(
@@ -261,9 +314,16 @@ function GruppenEditor({
           <span className="muted">{zusammenfassung(gruppe, text) || (gefuellt ? '' : 'Noch keine Angaben')}</span>
         </div>
         <div className="pk-aktionen">
-          {adresse && (quellen.length > 0 || stamm.length > 0) && (
-            <select className="pk-uebernehmen" aria-label="Angaben übernehmen" value="" onChange={(e) => e.target.value && uebernehmen(e.target.value)}>
+          {adresse && (
+            <select className="pk-uebernehmen" aria-label="Angaben übernehmen" value="" onChange={(e) => (e.target.value === 'mehr' ? einstellungenOeffnen('adressbuch') : e.target.value && uebernehmen(e.target.value))}>
               <option value="">Übernehmen von …</option>
+              {vorgabe && (
+                <optgroup label="Vorgabe (Stammdaten)">
+                  <option value={`a:${vorgabe.schluessel}`}>
+                    {adressName(vorgabe)} · {adressOrt(vorgabe)}
+                  </option>
+                </optgroup>
+              )}
               {quellen.length > 0 && (
                 <optgroup label="Aus diesem Projekt">
                   {quellen.map((g) => (
@@ -274,8 +334,18 @@ function GruppenEditor({
                   ))}
                 </optgroup>
               )}
+              {inDieserRolle.length > 0 && (
+                <optgroup label={`Adressbuch: bisher als ${gruppe.text}`}>
+                  {inDieserRolle.map((a) => (
+                    <option key={a.schluessel} value={`a:${a.schluessel}`}>
+                      {adressName(a)} · {adressOrt(a)}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <option value="mehr">{adressbuch ? 'Adressbuch öffnen …' : 'Adressbuch einlesen …'}</option>
               {stamm.length > 0 && (
-                <optgroup label="Bürostammdaten">
+                <optgroup label="Früher in der App gemerkt">
                   {stamm.map((s) => (
                     <option key={s.name} value={`s:${s.name}`}>
                       {s.name}
@@ -285,10 +355,15 @@ function GruppenEditor({
               )}
             </select>
           )}
-          {adresse && gefuellt && (
-            <button title="Diese Adresse für andere Projekte merken" onClick={merken}>
-              Als Stammdaten merken
+          {adresse && gefuellt && !istVorgabe && (
+            <button title={`Diese Adresse in neuen Projektkarten als ${gruppe.text} vorschlagen`} onClick={alsVorgabe}>
+              Als Vorgabe festlegen
             </button>
+          )}
+          {adresse && istVorgabe && (
+            <span className="pk-marke" title="Diese Adresse ist die Vorgabe für die Rolle">
+              <Symbol name="haken" /> Vorgabe
+            </span>
           )}
           {gefuellt && (
             <button title="Alle Angaben dieser Gruppe entfernen (Strg+Z nimmt es zurück)" onClick={leeren}>
@@ -412,7 +487,7 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
       <Zelle breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck}>
         <div className="pk-optionen" role="radiogroup" aria-label={titel}>
           {moeglich.map((m, i) => (
-            <button key={i} role="radio" aria-checked={wert === i} data-pk={i === 0 ? s : undefined} className={wert === i ? 'aktiv' : ''} onClick={() => setzen(wert === i ? null : i)}>
+            <button key={i} role="radio" aria-checked={wert === i} data-pk={i === 0 ? s : undefined} className={wert === i ? 'active' : ''} onClick={() => setzen(wert === i ? null : i)}>
               {m}
             </button>
           ))}
@@ -460,5 +535,104 @@ function Kreuze({ karte, eintraege }: { karte: OffeneKarte; eintraege: PkEintrag
         ))}
       </div>
     </Zelle>
+  );
+}
+
+/**
+ * Abgleich mit der Projektdaten.xlsx im Projektordner: erkannte Angaben neben den Werten der Projektkarte, mit
+ * Übernehmen je Angabe oder für alle abweichenden. Beim Speichern der Projektkarte trägt die App geänderte
+ * Angaben in die Datei nach.
+ */
+function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
+  const pd = useFormulare((s) => s.projektdaten);
+  const vorlage = useFormulare((s) => s.projektdatenVorlage);
+  const { projektdatenUebernehmen, dateiAnsehen, projektdatenLaden, einstellungenOeffnen } = useFormulare.getState();
+  if (!pd || pd === 'fehlt') {
+    return (
+      <section className="pk-editor">
+        <header className="pk-kopf">
+          <div className="pk-kopf-text">
+            <h2>Projektdaten.xlsx</h2>
+            <span className="muted">Im Ordner „Organisation“ des Projektordners nicht gefunden.</span>
+          </div>
+          <div className="pk-aktionen">
+            <button onClick={() => void projektdatenLaden()}>Erneut suchen</button>
+          </div>
+        </header>
+        <p className="muted pk-text">
+          {vorlage ? (
+            <>Beim nächsten Speichern der Projektkarte wird sie aus der Vorlage angelegt ({vorlage}).</>
+          ) : (
+            <>
+              Ist in den <button className="es-verweis" onClick={() => einstellungenOeffnen('projektdaten')}>Einstellungen</button> eine Vorlage eingestellt, legt die App sie
+              beim Speichern der Projektkarte an.
+            </>
+          )}
+        </p>
+      </section>
+    );
+  }
+  const zeilen = pd.eintraege
+    .map((e) => {
+      const ziel = IN_PROJEKTKARTE[e.angabe];
+      const inKarte = ziel ? karteText(karte, ziel.gruppe, ziel.id) : '';
+      return { e, ziel, inKarte, gleich: !!ziel && inKarte.trim() === e.wert.trim() };
+    })
+    .filter((z) => z.ziel);
+  const abweichend = zeilen.filter((z) => !z.gleich && z.e.wert.trim()).map((z) => z.e.angabe as Angabe);
+  return (
+    <section className="pk-editor">
+      <header className="pk-kopf">
+        <div className="pk-kopf-text">
+          <h2>Projektdaten.xlsx</h2>
+          <span className="muted">{pd.pfad}</span>
+        </div>
+        <div className="pk-aktionen">
+          <button disabled={!abweichend.length} onClick={() => projektdatenUebernehmen(abweichend)}>
+            Abweichende übernehmen ({abweichend.length})
+          </button>
+          <button onClick={() => void dateiAnsehen(pd.root, pd.pfad)}>Datei ansehen</button>
+        </div>
+      </header>
+      <p className="muted pk-text">
+        Beim Speichern der Projektkarte werden geänderte Angaben in die Datei nachgetragen (nur die Wertzellen).
+        {pd.inOffice && ' Die Datei ist gerade in Excel geöffnet – nachgetragen wird erst, wenn sie dort geschlossen ist.'}
+      </p>
+      <table className="pk-abgleich">
+        <thead>
+          <tr>
+            <th>Angabe</th>
+            <th>Projektdaten.xlsx</th>
+            <th>Projektkarte</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {zeilen.map(({ e, ziel, inKarte, gleich }) => (
+            <tr key={e.angabe} className={gleich ? 'gleich' : ''}>
+              <td>
+                {ziel!.titel}
+                <span className="muted small-text"> ({e.beschriftung.replace(/:\s*$/, '')}, {e.zelle})</span>
+              </td>
+              <td>{e.wert || <span className="muted">leer</span>}</td>
+              <td>{inKarte || <span className="muted">leer</span>}</td>
+              <td>
+                {gleich ? (
+                  <span className="pk-marke">
+                    <Symbol name="haken" /> gleich
+                  </span>
+                ) : (
+                  e.wert.trim() && (
+                    <button className="small" onClick={() => projektdatenUebernehmen([e.angabe])}>
+                      Übernehmen
+                    </button>
+                  )
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }

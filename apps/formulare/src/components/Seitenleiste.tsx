@@ -3,9 +3,10 @@ import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
 import { AblageBaum } from './AblageBaum';
+import { Symbol } from './Symbol';
 
-/** Aufklappbarer Block der Seitenleiste; der Zustand bleibt je Block erhalten */
-function Block({ id, titel, kopf, children, start = true }: { id: string; titel: ReactNode; kopf?: ReactNode; children: ReactNode; start?: boolean }) {
+/** Aufklappbarer Abschnitt der Navigation; der Zustand bleibt je Abschnitt erhalten */
+function Abschnitt({ id, titel, kopf, children, start = true }: { id: string; titel: ReactNode; kopf?: ReactNode; children: ReactNode; start?: boolean }) {
   const schluessel = `formulare:block:${id}`;
   const [auf, setAuf] = useState(() => {
     try {
@@ -24,22 +25,23 @@ function Block({ id, titel, kopf, children, start = true }: { id: string; titel:
     }
   };
   return (
-    <section className="fo-block">
-      <div className="fo-block-kopf">
-        <button className="fo-block-titel" aria-expanded={auf} onClick={umschalten}>
-          <span className="fo-baum-pfeil" aria-hidden>
-            {auf ? '▾' : '▸'}
-          </span>{' '}
+    <section className="nav-abschnitt">
+      <div className="nav-kopf">
+        <button className="nav-kopf-titel" aria-expanded={auf} onClick={umschalten}>
+          <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} />
           {titel}
         </button>
-        {kopf}
+        <span className="nav-kopf-knoepfe">{kopf}</span>
       </div>
-      {auf && <div className="fo-block-inhalt">{children}</div>}
+      {auf && <div className="nav-inhalt">{children}</div>}
     </section>
   );
 }
 
-/** Links die Navigation der App: Projekt, Projektkarte, Formulare und der echte Projektordner */
+/**
+ * Links die Navigation der App – auf eigenem Hintergrund, damit sie sich klar vom Inhalt abhebt: Projekt,
+ * Projektkarte, Formulare und der echte Projektordner.
+ */
 export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { onSchnellwahl: () => void; onEinstellungen: () => void; onSperren: () => void }) {
   const projektordner = useFormulare((s) => s.projektordner);
   const projekte = useFormulare((s) => s.projekte);
@@ -78,10 +80,10 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
   };
 
   return (
-    <aside className="fo-leiste" style={{ width: breite }}>
-      <div className="fo-leiste-inhalt">
+    <aside className="nav" style={{ width: breite }} aria-label="Navigation">
+      <div className="nav-rollbereich">
         {!projektordner.length && (
-          <div className="fo-hinweis-karte">
+          <div className="nav-hinweis">
             <p>Noch kein Ordner mit FORMA-Projekten eingestellt.</p>
             <button className="primary" onClick={onEinstellungen}>
               Einstellungen …
@@ -92,136 +94,135 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
         {projekt ? (
           <div className="fo-projektkopf">
             <div className="fo-projektkopf-text" title={verbinde(projekt.root, projekt.ordner)}>
+              <span className="nav-klein">Projekt</span>
               <strong>{projekt.ordner}</strong>
-              {projekt.titel && <span className="muted">{projekt.titel}</span>}
+              {projekt.titel && <span className="fo-projektkopf-titel">{projekt.titel}</span>}
             </div>
-            <button title="Anderes Projekt (Strg+K)" onClick={onSchnellwahl}>
-              Wechseln
-            </button>
-            <button className="fo-klein" title="Projekt schließen" onClick={() => void projektWaehlen(null)}>
-              ×
-            </button>
+            <div className="fo-projektkopf-knoepfe">
+              <button className="small" title="Anderes Projekt (Strg+K)" onClick={onSchnellwahl}>
+                Wechseln
+              </button>
+              <button className="icon" title="Projekt schließen" aria-label="Projekt schließen" onClick={() => void projektWaehlen(null)}>
+                <Symbol name="schliessen" />
+              </button>
+            </div>
           </div>
         ) : (
           projektordner.length > 0 && (
-            <Block
+            <Abschnitt
               id="projekte"
-              titel={<>Projekte {sucht && <span className="muted small-text">(werden gesucht …)</span>}</>}
+              titel={<>Projekte {sucht && <span className="nav-klein">(werden gesucht …)</span>}</>}
               kopf={
-                <button className="fo-klein" title="Projekte neu einlesen" disabled={sucht} onClick={() => void projekteLaden()}>
-                  ↻
+                <button className="icon" title="Projekte neu einlesen" aria-label="Projekte neu einlesen" disabled={sucht} onClick={() => void projekteLaden()}>
+                  <Symbol name="verlauf" />
                 </button>
               }
             >
-              <input type="search" placeholder="Kürzel oder Titel …" value={suche} onChange={(e) => setSuche(e.target.value)} autoFocus />
-              <div className="fo-liste" role="list">
+              <input type="search" className="nav-suche" placeholder="Kürzel oder Titel …" value={suche} onChange={(e) => setSuche(e.target.value)} autoFocus />
+              <div className="nav-liste" role="list">
                 {gefiltert.map((p) => (
-                  <button key={`${p.root}|${p.ordner}`} role="listitem" className="fo-eintrag" title={verbinde(p.root, p.ordner)} onClick={() => void projektWaehlen(p)}>
+                  <button key={`${p.root}|${p.ordner}`} role="listitem" className="nav-eintrag zweizeilig" title={verbinde(p.root, p.ordner)} onClick={() => void projektWaehlen(p)}>
                     <strong>{p.ordner}</strong>
-                    {p.titel && <span className="muted">{p.titel}</span>}
+                    {p.titel && <span className="nav-unter">{p.titel}</span>}
                   </button>
                 ))}
-                {!sucht && !gefiltert.length && <p className="muted small-text">Keine FORMA-Projekte gefunden.</p>}
+                {!sucht && !gefiltert.length && <p className="nav-leer">Keine FORMA-Projekte gefunden.</p>}
               </div>
               {suchfehler.map((f) => (
                 <p key={f} className="warning small-text">
                   {f}
                 </p>
               ))}
-            </Block>
+            </Abschnitt>
           )
         )}
 
         {projekt && (
           <>
-            <Block
+            <Abschnitt
               id="formulare"
-              titel="Formulare"
+              titel="FORMA"
               kopf={
                 <>
-                  <button className="fo-klein" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren" onClick={onSperren}>
-                    🔒
+                  <button className="icon" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren" onClick={onSperren}>
+                    <Symbol name="schloss" />
                   </button>
-                  <button className="fo-klein" title="FORMA-Projektordner im Explorer zeigen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
-                    ↗
+                  <button className="icon" title="FORMA-Projektordner im Explorer zeigen" aria-label="FORMA-Projektordner zeigen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
+                    <Symbol name="extern" />
                   </button>
                 </>
               }
             >
-              <div className="fo-liste" role="list">
+              <div className="nav-liste" role="list">
                 <button
                   role="listitem"
-                  className={`fo-eintrag fo-eintrag-karte${haupt === 'projektkarte' ? ' active' : ''}`}
+                  className={`nav-eintrag fo-eintrag-karte${haupt === 'projektkarte' ? ' aktiv' : ''}`}
+                  aria-current={haupt === 'projektkarte' ? 'page' : undefined}
                   onClick={() => setHaupt('projektkarte')}
                   title="Projektdaten, Beteiligte, Grundstück – daraus werden Formulare ausgefüllt"
                 >
-                  <span>
-                    🗂 Projektkarte
-                    {karte && Object.keys(karte.aenderungen).length > 0 && <span className="fo-ungespeichert"> ●</span>}
-                  </span>
+                  <Symbol name="karte" />
+                  <span className="nav-text">Projektkarte</span>
+                  {karte && Object.keys(karte.aenderungen).length > 0 && <span className="fo-ungespeichert">●</span>}
                 </button>
                 {formulare.map((f) => {
                   const aktiv = offen?.pfad === f.pfad;
                   const ungespeichert = aktiv ? istGeaendert(offen) : hatEntwurf(projekt, f.pfad);
                   const fremd = f.gesperrt && !(aktiv && offen?.sperre.art === 'eigen');
+                  const gezeigt = aktiv && haupt === 'formular';
                   return (
                     <button
                       key={f.pfad}
                       role="listitem"
-                      className={`fo-eintrag${aktiv && haupt === 'formular' ? ' active' : ''}`}
+                      className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
+                      aria-current={gezeigt ? 'page' : undefined}
                       title={f.name}
                       onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
                     >
-                      <span className="fo-eintrag-name">
-                        {fremd && (
-                          <span title="Anderswo geöffnet (Sperrdatei vorhanden)" aria-label="gesperrt">
-                            🔒{' '}
-                          </span>
-                        )}
-                        {f.name}
-                        {ungespeichert && (
-                          <span className="fo-ungespeichert" title="Nicht gespeicherte Eingaben">
-                            {' '}
-                            ●
-                          </span>
-                        )}
-                      </span>
+                      <Symbol name="formular" />
+                      <span className="nav-text">{f.name}</span>
+                      {fremd && (
+                        <span className="nav-schloss" title="Anderswo geöffnet (Sperrdatei vorhanden)" aria-label="gesperrt">
+                          <Symbol name="schloss" />
+                        </span>
+                      )}
+                      {ungespeichert && (
+                        <span className="fo-ungespeichert" title="Nicht gespeicherte Eingaben">
+                          ●
+                        </span>
+                      )}
                     </button>
                   );
                 })}
-                {!formulare.length && <p className="muted small-text">Keine Formulare in diesem Projekt.</p>}
+                {!formulare.length && <p className="nav-leer">Keine Formulare in diesem Projekt.</p>}
               </div>
-            </Block>
+            </Abschnitt>
+
             {ablageordner > 0 && (
-              <Block
+              <Abschnitt
                 id="ablage"
                 titel="Projektordner"
                 kopf={
                   <>
-                    <button className={`fo-klein${pfadeBearbeiten ? ' active' : ''}`} title="Angezeigte Pfade für dieses Projekt" onClick={() => setPfadeBearbeiten(!pfadeBearbeiten)}>
-                      ⚙
+                    <button className={`icon${pfadeBearbeiten ? ' active' : ''}`} title="Angezeigte Pfade für dieses Projekt" aria-label="Angezeigte Pfade" onClick={() => setPfadeBearbeiten(!pfadeBearbeiten)}>
+                      <Symbol name="zahnrad" />
                     </button>
                     {ablage && (
-                      <button className="fo-klein" title="Im Explorer zeigen" onClick={() => void oeffnePfad(verbinde(ablage.root, ablage.pfad)).catch(() => undefined)}>
-                        ↗
+                      <button className="icon" title="Im Explorer zeigen" aria-label="Projektordner zeigen" onClick={() => void oeffnePfad(verbinde(ablage.root, ablage.pfad)).catch(() => undefined)}>
+                        <Symbol name="extern" />
                       </button>
                     )}
                   </>
                 }
               >
                 {pfadeBearbeiten && (
-                  <div className="fo-pfade">
+                  <div className="nav-pfade">
                     <label className="small-text">
                       Angezeigte Pfade für {projekt.ordner} (je Zeile, Platzhalter * und ?)
-                      <textarea
-                        rows={4}
-                        defaultValue={auswahl.join('\n')}
-                        key={auswahl.join('\n')}
-                        onBlur={(e) => setAuswahl(projekt.ordner, e.target.value.split('\n'))}
-                      />
+                      <textarea rows={4} defaultValue={auswahl.join('\n')} key={auswahl.join('\n')} onBlur={(e) => setAuswahl(projekt.ordner, e.target.value.split('\n'))} />
                     </label>
                     {eigeneAuswahl && (
-                      <button className="fo-klein" onClick={() => setAuswahl(projekt.ordner, null)}>
+                      <button className="small" onClick={() => setAuswahl(projekt.ordner, null)}>
                         Vorgabe verwenden
                       </button>
                     )}
@@ -229,20 +230,20 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
                 )}
                 {ablage ? (
                   <>
-                    <p className="muted small-text fo-ablage-name" title={verbinde(ablage.root, ablage.pfad)}>
+                    <p className="nav-ablage-name" title={verbinde(ablage.root, ablage.pfad)}>
                       {ablage.pfad}
                     </p>
                     <AblageBaum key={`${ablage.root}|${ablage.pfad}`} ordner={ablage} auswahl={auswahl} />
                   </>
                 ) : (
-                  <p className="muted small-text">Kein Projektordner mit dem Kürzel „{projekt.ordner}“ gefunden.</p>
+                  <p className="nav-leer">Kein Projektordner mit dem Kürzel „{projekt.ordner}“ gefunden.</p>
                 )}
-              </Block>
+              </Abschnitt>
             )}
           </>
         )}
       </div>
-      <div className="fo-leiste-griff" onPointerDown={ziehen} title="Breite ändern" role="separator" aria-orientation="vertical" />
+      <div className="nav-griff" onPointerDown={ziehen} title="Breite ändern" role="separator" aria-orientation="vertical" />
     </aside>
   );
 }

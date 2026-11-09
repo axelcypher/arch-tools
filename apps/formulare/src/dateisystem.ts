@@ -55,6 +55,8 @@ export interface Dateisystem {
   dokumentErsetzen(root: string, pfad: string, daten: Uint8Array): Promise<void>;
   /** Ist das Dokument gerade in Excel oder Word geöffnet? */
   inOffice(root: string, pfad: string): Promise<boolean>;
+  /** Neues Dokument anlegen (Ordner wird angelegt); vorhandene werden nie überschrieben */
+  dokumentAnlegen(root: string, pfad: string, daten: Uint8Array): Promise<void>;
   /** Projektkarte (`sj_prokarte.sdb`) lesen; `null`, wenn es keine gibt */
   projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null>;
   /** Einträge der Projektkarte ändern – alle oder keiner; Fehler, wenn einer inzwischen anders lautet */
@@ -129,6 +131,7 @@ export const tauriDateisystem: Dateisystem = {
   prozess: (pid) => invoke<string | null>('process_info', { pid }),
   dokumentErsetzen: (root, pfad, daten) => invoke<void>('doc_replace', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   inOffice: (root, pfad) => invoke<boolean>('doc_in_office', { root, pfad }),
+  dokumentAnlegen: (root, pfad, daten) => invoke<void>('doc_create', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   rechner: () => invoke<Rechner>('machine_info'),
 };
 
@@ -238,6 +241,13 @@ export class SpeicherDateisystem implements Dateisystem {
     const ordner = p.slice(0, p.lastIndexOf('/') + 1);
     const name = p.slice(ordner.length);
     return this.dateien.has(`${ordner}~$${name}`) || this.dateien.has(`${ordner}~$${name.slice(2)}`);
+  }
+
+  async dokumentAnlegen(root: string, pfad: string, daten: Uint8Array): Promise<void> {
+    const p = this.pfad(root, pfad);
+    if (this.dateien.has(p)) throw new Error(`${pfad}: Die Datei gibt es schon`);
+    this.dateien.set(p, daten);
+    this.schreibvorgaenge.push(`neu ${pfad}`);
   }
 
   async dokumentErsetzen(root: string, pfad: string, daten: Uint8Array): Promise<void> {

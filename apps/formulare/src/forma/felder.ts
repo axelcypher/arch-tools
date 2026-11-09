@@ -110,7 +110,17 @@ function beschriftungFuer(feld: Kasten, geschwister: Kasten[]): string {
 function rahmenTitel(rahmen: Kasten, alle: Kasten[]): string {
   const labels = alle.filter((k) => k.eltern === rahmen && BESCHRIFTUNGEN.has(k.o.klasse) && beschriftungsText(k));
   const kandidat = naechste(labels.filter(fett), (l) => l.y * 10000 + l.x) ?? naechste(labels, (l) => l.y * 10000 + l.x);
-  return kandidat ? beschriftungsText(kandidat) : '';
+  if (!kandidat) return '';
+  const titel = beschriftungsText(kandidat);
+  // nur eine Nummer („2.“, „2.1“): mit der Beschriftung rechts daneben auf derselben Zeile verbinden
+  if (/^[\d.]+$/.test(titel)) {
+    const daneben = naechste(
+      labels.filter((l) => l !== kandidat && l.x > kandidat.x && Math.abs(l.y - kandidat.y) <= 4),
+      (l) => l.x,
+    );
+    if (daneben) return `${titel} ${beschriftungsText(daneben)}`;
+  }
+  return titel;
 }
 
 export function felderDerSeite(seite: Seite, index: number): Feld[] {

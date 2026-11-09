@@ -10,8 +10,12 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 
 ## Bedienung
 
-- **Einstellungen (⚙):** wo die FORMA-Projekte liegen (mehrere Ordner möglich), wo die echten Projektordner
-  liegen (z. B. `Z:\Projekte`) und welche Pfade daraus links angezeigt werden.
+- **Aufbau der Oberfläche:** Links die **Navigation** (Projekt, Projektkarte, Formulare, Projektordner) auf
+  eigenem, dunklerem Grund wie die Titelleiste; der gewählte Eintrag ist hell hinterlegt und links markiert.
+  Rechts der **Inhalt**. Was zum Dokument gehört – Gliederung, Verlauf, Formularfläche –, steht im Grau der
+  Formularfläche.
+- **Einstellungen (⚙)** als eigene Ansicht mit Ebenen: **Ordner** (FORMA-Projekte, Projektordner, angezeigte
+  Pfade), **Büro & Stammdaten**, **Adressbuch**, **Formulare** und **Projektdaten.xlsx** (siehe unten).
 - **Projekt wählen:** links in der Liste (Suche nach Kürzel oder Titel) oder von überall mit
   <kbd>Strg</kbd>+<kbd>K</kbd> (Schnellwahl: Kürzel tippen, Enter). Ein gewähltes Projekt steht oben links;
   „Wechseln“ öffnet die Schnellwahl.
@@ -22,9 +26,15 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   oder 75–200 %). So werden sie auch gedruckt.
 - **Ansicht „Felder“:** dieselben Felder im Aufbau des Formulars – nebeneinanderliegende Abschnitte auch hier
   nebeneinander, Felder einer Zeile in einer Zeile –, groß und durchsuchbar, Filter „Leere“ und „Geänderte“.
-- **Gliederung:** eigener Bereich direkt am Formular („Inhalt des Formulars“, im Ton der Formularfläche – getrennt
-  von der Navigation links): Seiten und Abschnitte mit Füllstand (z. B. 3/5); ein Klick springt hin. Ein- und
-  ausblenden über „Gliederung“ in der Werkzeugleiste.
+- **Gliederung:** eigener Bereich direkt am Formular („Inhalt des Formulars“, im Grau der Formularfläche – getrennt
+  von der Navigation links): Seiten und Abschnitte mit Füllstand (z. B. 3/5, ✓ wenn vollständig) und Balken für
+  das ganze Formular; ein Klick springt hin. Ein- und ausblenden über „Gliederung“ in der Werkzeugleiste.
+  Gezählt wird in Einheiten: jedes Textfeld für sich, Kästchen einer Zeile gemeinsam als eine Auswahl. Abschnitte,
+  die nur aus einer Nummer bestehen („2.“), bekommen den Text daneben dazu („2. Bauvorlagen, wenn …“).
+- **Gliederung anpassen** (✎ im Kopf der Gliederung), je Formular und Stand – gilt in allen Projekten: Abschnitte
+  aus- und einblenden (Auge), eigene Titel vergeben, und nach dem Aufklappen eines Abschnitts einzelne Felder vom
+  Füllstand ausnehmen (z. B. Felder, die die Behörde ausfüllt). „Vorgabe wiederherstellen“ setzt zurück; eine
+  Übersicht steht in den Einstellungen unter „Formulare“.
 - **Tastatur:** <kbd>Tab</kbd> und <kbd>Enter</kbd> (in einzeiligen Feldern) gehen in Lesereihenfolge zum nächsten
   Feld – auf dem Papier von oben nach unten, nebeneinanderliegende Rahmen von links nach rechts.
 - **Speichern** (<kbd>Strg</kbd>+<kbd>S</kbd>) schreibt die geänderten Felder in die FORMA-Datei. Vorher wird sie
@@ -61,8 +71,17 @@ Anschrift, wie sie in Formularen steht.
   Titel (Besondere Auflagen). Die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat.
 - **Übernehmen von …:** alle Angaben einer anderen Adressgruppe dieses Projekts (z. B. Eigentümer = Bauherr) oder
   aus den Bürostammdaten – in einem Schritt, der sich rückgängig machen lässt. „Leeren“ entfernt alle Angaben.
-- **Bürostammdaten:** Eine Adresse (z. B. das eigene Büro als Entwurfsverfasser) mit „Als Stammdaten merken“
-  speichern; verwalten in den Einstellungen. Sie liegen in der App, nicht im FORMA-Projekt.
+- **Adressbuch** (Einstellungen): alle Adressen aus den Projektkarten aller FORMA-Projekte – Bauherren,
+  Entwurfsverfasser, Behörden, Fachplaner –, gleiche Adressen einmal mit allen Verwendungen („BS5 ·
+  Bauaufsichtsbehörde“). Gepflegt wird in FORMA bzw. in der Projektkarte, nicht doppelt; „Neu einlesen“ liest alle
+  Projektkarten. Die zentrale Adressdatenbank von SJ OFFICE ist noch nicht angebunden (Ort unbekannt).
+- **Büro & Stammdaten** (Einstellungen): je Rolle (Entwurfsverfasser, Bauvorlageberechtigter,
+  Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
+  Adressen zuerst. In der Projektkarte: „Als Vorgabe festlegen“ bei einer Adresse, **„Vorgaben eintragen“** füllt
+  alle leeren Rollen auf einmal, und „Übernehmen von …“ bietet die Vorgabe und die bisherigen Adressen der Rolle an.
+- **Projektdaten.xlsx** (in der Projektkarte unter „Projektordner“): Abgleich der erkannten Angaben mit der
+  Projektkarte, „Übernehmen“ je Angabe oder „Abweichende übernehmen“. Beim Speichern der Projektkarte werden
+  geänderte Angaben in die Datei nachgetragen; fehlt sie und ist eine Vorlage eingestellt, wird sie angelegt.
 - **Suche** über alle Einträge; ein Treffer springt in seine Gruppe.
 - **Hinweise auf Tippfehler** (Postleitzahl, E-Mail, IBAN-Prüfziffer, Telefonnummer) – nur Hinweise, gespeichert
   wird trotzdem. Zeichen, die es in Windows-1252 nicht gibt (z. B. Emojis), werden abgelehnt.
@@ -84,6 +103,16 @@ schon als PDF vorliegen, welche Berechnungen es gibt); dort wird nichts geschrie
   Einstellungen, je Projekt lässt sie sich über ⚙ ändern. Ordner werden erst beim Aufklappen gelesen.
 - **Klick** auf eine PDF-, Excel-, Word- oder Bilddatei zeigt sie in der App (siehe unten), **Doppelklick** öffnet
   sie mit ihrem Programm, ↗ zeigt einen Ordner im Explorer. Besitzerdateien von Office (`~$…`) werden ausgeblendet.
+
+### Projektdaten.xlsx
+
+Im Projektordner liegt unter `Organisation\<Kürzel> Projektdaten.xlsx` eine Übersicht der Projektdaten. Ihr
+Aufbau ist nicht vorgegeben; die App liest allgemein: Beschriftung und Wert in der nächsten gefüllten Zelle rechts
+daneben (mehrere Paare je Zeile möglich, „PLZ / Ort“ in einer Zelle wird geteilt). Überschriften ohne Wert wie
+„Bauherr“ oder „Grundstück“ bestimmen, wozu Straße, PLZ und Ort darunter gehören. Erkannt werden Bauvorhaben,
+Aktenzeichen, Grundstück (Straße, Ort, Gemarkung, Flur, Flurstück, Fläche) und Bauherr (Name, Vorname, Straße, PLZ,
+Ort, Telefon, E-Mail) – jeweils mit Gegenstück in der Projektkarte. Geschrieben wird nur in die Wertzellen, nicht
+solange die Datei in Excel geöffnet ist, und nicht, wenn sie seit dem Lesen geändert wurde.
 
 ### Dokumente ansehen und bearbeiten
 
@@ -264,7 +293,8 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
   es auch bei FORMA die Prozessnummer, erkennt die App verwaiste FORMA-Sperren auf demselben Rechner sicher.
   Zu prüfen: Hält FORMA seine Sperrdatei offen (dann zeigt die App sie als „In Gebrauch“)?
 - **Neue Formulare und neue Formularfassungen:** brauchen die Formularbibliothek von FORMA (Vorlagen).
-- **`Projektdaten.xlsx`** im echten Projektordner (`Organisation/<Kürzel> Projektdaten.xlsx`) lesen und beim
-  Eintragen mitschreiben – Aufbau der Datei noch unbekannt.
+- **Adressdatenbank von SJ OFFICE:** Ort und Aufbau unbekannt; bis dahin kommt das Adressbuch aus den Projektkarten.
+- **`Projektdaten.xlsx`:** gelesen wird allgemein; mit einer echten Datei bzw. der Vorlage des Büros prüfen und
+  die Erkennung bei Bedarf anpassen.
 - **Vorgabe der angezeigten Pfade** an die Ordnerstruktur des Büros anpassen.
 - **Beschriftungen in Tabellen** (z. B. „1-fach / 3-fach“-Spalten) sind aus der Lage nur unvollständig ableitbar.

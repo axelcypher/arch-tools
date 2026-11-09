@@ -61,13 +61,13 @@ export function Schnellwahl({ onClose }: { onClose: () => void }) {
             e.preventDefault();
           }}
         />
-        <div className="fo-liste" role="listbox">
+        <div className="sw-liste" role="listbox">
           {treffer.map((t, i) => (
             <button
               key={`${t.art}|${t.titel}|${t.unter}`}
               role="option"
               aria-selected={i === markiert}
-              className={`fo-eintrag${i === markiert ? ' active' : ''}`}
+              className={`sw-eintrag${i === markiert ? ' active' : ''}`}
               onMouseEnter={() => setMarkiert(i)}
               onClick={() => waehle(t)}
             >

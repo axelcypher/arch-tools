@@ -268,6 +268,27 @@ async fn doc_replace(app: tauri::AppHandle, root: String, pfad: String, contents
     Ok(())
 }
 
+/// Legt ein neues Dokument (PDF, Excel, Word) an, z. B. die Projektdaten.xlsx aus einer Vorlage. Fehlt der
+/// Ordner, wird er angelegt; eine vorhandene Datei wird nie überschrieben.
+#[tauri::command]
+async fn doc_create(root: String, pfad: String, contents_base64: String) -> Result<(), String> {
+    let p = unterhalb(&root, &pfad)?;
+    if !DOKUMENTE.iter().any(|e| endung_ist(&p, e)) {
+        return Err(format!("{}: Nur PDF-, Excel- und Word-Dateien dürfen hier angelegt werden", p.display()));
+    }
+    if let Some(ordner) = p.parent() {
+        std::fs::create_dir_all(ordner).map_err(|e| format!("{}: {}", ordner.display(), e))?;
+    }
+    let bytes = base64_lesen(&contents_base64)?;
+    let mut f = std::fs::OpenOptions::new().write(true).create_new(true).open(&p).map_err(|e| match e.kind() {
+        std::io::ErrorKind::AlreadyExists => format!("{}: Die Datei gibt es schon", p.display()),
+        _ => format!("{}: {}", p.display(), e),
+    })?;
+    f.write_all(&bytes).and_then(|_| f.sync_all()).map_err(|e| format!("{}: {}", p.display(), e))?;
+    log::info!("Dokument angelegt: {}", p.display());
+    Ok(())
+}
+
 /// Ist das Dokument gerade in Excel oder Word geöffnet?
 #[tauri::command]
 async fn doc_in_office(root: String, pfad: String) -> Result<bool, String> {
@@ -656,6 +677,7 @@ pub fn run() {
             lock_release,
             lock_probe,
             doc_replace,
+            doc_create,
             doc_in_office,
             process_info,
             prokarte_read,

@@ -60,6 +60,13 @@ const ANFANG = {
   auswahl: {},
   verlaufOffen: false,
   gliederungOffen: true,
+  adressbuch: null,
+  adressbuchLaeuft: null,
+  rollenVorgaben: {},
+  profile: {},
+  projektdaten: null,
+  datei: null,
+  dateiEntwuerfe: {},
   konflikt: false,
   meldung: null,
   ansicht: 'felder' as const,
@@ -430,7 +437,7 @@ describe('Formulare', () => {
     expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);
   });
 
-  it('Projektkarte: Angaben von einer anderen Gruppe und aus den Bürostammdaten übernehmen', async () => {
+  it('Projektkarte: Angaben von einer anderen Gruppe übernehmen; eine Adresse als Vorgabe festlegen und eintragen', async () => {
     const host = await render();
     await klick(knopf(host, 'BS9'));
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
@@ -444,14 +451,21 @@ describe('Formulare', () => {
     await warte();
     expect(kartenFeld(host, 'Name/Firma').value).toBe('');
 
-    // Bauherr als Bürostammdaten merken und beim Eigentümer einsetzen
+    // Bauherr als Vorgabe der Rolle festlegen: landet im Adressbuch und in den Stammdaten
     await gruppeWaehlen(host, 'Bauherr');
-    await klick(knopfGenau(host, 'Als Stammdaten merken'));
-    expect(host.textContent).toContain('„Mustermann, Max“ als Bürostammdaten gemerkt');
-    await gruppeWaehlen(host, 'Eigentümer');
-    waehle(host.querySelector<HTMLSelectElement>('.pk-uebernehmen')!, 's:Mustermann, Max');
-    await warte();
-    expect(kartenFeld(host, 'Vorname').value).toBe('Max');
+    await klick(knopfGenau(host, 'Als Vorgabe festlegen'));
+    expect(host.textContent).toContain('„Mustermann, Max“ ist jetzt die Vorgabe für Bauherr');
+    expect(useFormulare.getState().rollenVorgaben['201']).toBe(useFormulare.getState().adressbuch!.adressen[0].schluessel);
+    expect(host.querySelector('.pk-marke')!.textContent).toContain('Vorgabe');
+
+    // leere Gruppen bekommen die Vorgabe mit „Vorgaben eintragen“ (ein Schritt)
+    await klick(knopfGenau(host, 'Leeren'));
+    expect(kartenFeld(host, 'Name/Firma').value).toBe('');
+    await klick(knopf(host, 'Vorgaben eintragen (1)'));
+    expect(kartenFeld(host, 'Name/Firma').value).toBe('Mustermann');
+    expect(kartenFeld(host, 'Straße/Nr.').value).toBe('Musterweg 1');
+    // in der Auswahl „Übernehmen von …“ steht die Vorgabe obenan
+    expect([...host.querySelectorAll('.pk-uebernehmen optgroup')].map((g) => g.getAttribute('label'))[0]).toBe('Vorgabe (Stammdaten)');
   });
 
   it('Projektkarte durchsuchen: ein Treffer springt in seine Gruppe', async () => {
@@ -495,7 +509,7 @@ describe('Formulare', () => {
     const host = await render();
     await klick(knopf(host, 'BS9'));
     await warte();
-    const block = host.querySelector('.fo-baum')!.closest('.fo-block')!;
+    const block = host.querySelector('.fo-baum')!.closest('.nav-abschnitt')!;
     expect(block.textContent).toContain('BS9 Musterstraße 9');
     expect(knopf(block, 'Organisation')).toBeDefined();
     expect(knopf(block, 'Fotos')).toBeUndefined();

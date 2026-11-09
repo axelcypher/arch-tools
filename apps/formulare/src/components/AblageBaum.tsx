@@ -4,16 +4,18 @@ import { dateiArt, sichtbarkeit } from '../ablage';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
+import type { SymbolName } from './Symbol';
+import { Symbol } from './Symbol';
 
-const SYMBOL: Record<ReturnType<typeof dateiArt>, string> = {
-  pdf: '📕',
-  berechnung: '🧮',
-  tabelle: '📊',
-  text: '📄',
-  plan: '📐',
-  bild: '🖼',
-  formular: '📝',
-  sonst: '📄',
+const SYMBOL: Record<ReturnType<typeof dateiArt>, SymbolName> = {
+  pdf: 'datei',
+  berechnung: 'tabelle',
+  tabelle: 'tabelle',
+  text: 'datei',
+  plan: 'datei',
+  bild: 'bild',
+  formular: 'formular',
+  sonst: 'datei',
 };
 
 const sortiere = (a: Eintrag, b: Eintrag) => Number(b.ordner) - Number(a.ordner) || a.pfad.localeCompare(b.pfad, 'de', { numeric: true, sensitivity: 'base' });
@@ -67,12 +69,15 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
           <li key={x.pfad} role="treeitem" aria-selected={false}>
             <button
               className={`fo-baum-zeile${offen === x.pfad ? ' aktiv' : ''}`}
-              style={{ paddingLeft: tiefe * 14 + 16 }}
+              style={{ paddingLeft: tiefe * 14 + 18 }}
               title={dateiArtVon(x.e.pfad) ? `${x.e.pfad} – Klick: hier ansehen, Doppelklick: im Programm öffnen` : `${x.e.pfad} – Doppelklick öffnet`}
               onClick={() => dateiArtVon(x.e.pfad) && void dateiAnsehen(basis, x.pfad)}
               onDoubleClick={() => void oeffnePfad(verbinde(basis, x.pfad)).catch(() => undefined)}
             >
-              <span aria-hidden>{SYMBOL[dateiArt(x.e.pfad)]}</span> <span className="fo-baum-name">{x.e.pfad}</span>
+              <span className={`fo-baum-symbol ${dateiArt(x.e.pfad)}`}>
+                <Symbol name={SYMBOL[dateiArt(x.e.pfad)]} />
+              </span>
+              <span className="fo-baum-name">{x.e.pfad}</span>
               {`${basis}|${x.pfad}` in entwuerfe && <span className="fo-ungespeichert"> ●</span>}
             </button>
           </li>
@@ -88,13 +93,16 @@ function OrdnerKnoten({ basis, pfad, name, auswahl, ganz, tiefe }: { basis: stri
     <li role="treeitem" aria-expanded={auf} aria-selected={false}>
       <div className="fo-baum-knoten">
         <button className="fo-baum-zeile" style={{ paddingLeft: tiefe * 14 }} onClick={() => setAuf(!auf)} title={name}>
-          <span className="fo-baum-pfeil" aria-hidden>
-            {auf ? '▾' : '▸'}
-          </span>{' '}
-          <span aria-hidden>📁</span> <span className="fo-baum-name">{name}</span>
+          <span className="fo-baum-pfeil">
+            <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} />
+          </span>
+          <span className="fo-baum-symbol ordner">
+            <Symbol name={auf ? 'ordnerOffen' : 'ordner'} />
+          </span>
+          <span className="fo-baum-name">{name}</span>
         </button>
-        <button className="fo-klein fo-baum-oeffnen" title="Im Explorer zeigen" onClick={() => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined)}>
-          ↗
+        <button className="icon fo-baum-oeffnen" title="Im Explorer zeigen" aria-label={`${name} im Explorer zeigen`} onClick={() => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined)}>
+          <Symbol name="extern" />
         </button>
       </div>
       {auf && <Ebene basis={basis} rel={pfad} auswahl={auswahl} ganz={ganz} tiefe={tiefe + 1} />}

@@ -3,8 +3,9 @@ import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
 import { anzahlZugeordnet } from './ausfuellen';
 import { AusfuellenDialog } from './components/AusfuellenDialog';
-import { Einstellungen } from './components/Einstellungen';
+import { EinstellungenAnsicht } from './components/Einstellungen';
 import { DateiAnsicht } from './components/dokumente/DateiAnsicht';
+import { Symbol } from './components/Symbol';
 import { FelderAnsicht } from './components/FelderAnsicht';
 import { Gliederung } from './components/Gliederung';
 import { ProjektkarteAnsicht } from './components/ProjektkarteAnsicht';
@@ -68,12 +69,12 @@ export function App() {
   const konflikt = useFormulare((s) => s.konflikt);
   const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen, setGliederungOffen, karteSpeichern, karteVerwerfen, karteRueckgaengig, karteWiederholen, sperreNeuPruefen, sperreAufheben } =
     useFormulare.getState();
-  const [dialog, setDialog] = useState<'log' | 'einstellungen' | 'schnellwahl' | 'ausfuellen' | 'aufheben' | 'sperren' | null>(null);
+  const [dialog, setDialog] = useState<'log' | 'schnellwahl' | 'ausfuellen' | 'aufheben' | 'sperren' | null>(null);
   const kartenansicht = haupt === 'projektkarte' && !!projekt;
   const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
   const grund = offen ? sperrgrund(offen) : null;
   const name =
-    haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
+    haupt === 'einstellungen' ? 'Einstellungen' : haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
   const zugeordnet = useMemo(() => (offen ? anzahlZugeordnet(offen) : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
   const formularSichtbar = !!offen && haupt === 'formular';
 
@@ -131,7 +132,7 @@ export function App() {
         {formularSichtbar && (
           <div className="tb-group">
             <button className={gliederungOffen ? 'active' : ''} title="Gliederung des Formulars ein- oder ausblenden" onClick={() => setGliederungOffen(!gliederungOffen)}>
-              Gliederung
+              <Symbol name="liste" /> Gliederung
             </button>
           </div>
         )}
@@ -147,10 +148,10 @@ export function App() {
         {formularSichtbar && (
           <div className="tb-group">
             <button disabled={!kannZurueck(offen) || !!grund} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeige(rueckgaengig())}>
-              ↶
+              <Symbol name="rueckgaengig" />
             </button>
             <button disabled={!kannVor(offen) || !!grund} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeige(wiederholen())}>
-              ↷
+              <Symbol name="wiederholen" />
             </button>
             <button className="primary" disabled={!geaendert || !!grund || konflikt} title="In die FORMA-Datei speichern (Strg+S)" onClick={() => void speichern()}>
               {ds ? 'Speichern' : 'Herunterladen'}
@@ -190,20 +191,20 @@ export function App() {
         {formularSichtbar && (
           <div className="tb-group">
             <button title="Drucken oder als PDF speichern (Strg+P)" onClick={() => void drucken()}>
-              Drucken
+              <Symbol name="drucken" /> Drucken
             </button>
             <button className={verlaufOffen ? 'active' : ''} title="Verlauf der Eingaben" onClick={() => setVerlaufOffen(!verlaufOffen)}>
-              Verlauf
+              <Symbol name="verlauf" /> Verlauf
             </button>
           </div>
         )}
         {kartenansicht && karte && (
           <div className="tb-group">
             <button disabled={!kannRueckgaengig(karte.verlauf)} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeigeKarte(karteRueckgaengig())}>
-              ↶
+              <Symbol name="rueckgaengig" />
             </button>
             <button disabled={!kannWiederholen(karte.verlauf)} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeigeKarte(karteWiederholen())}>
-              ↷
+              <Symbol name="wiederholen" />
             </button>
             <button className="primary" disabled={!geaendert} title="In die Projektkarte des FORMA-Projekts speichern (Strg+S)" onClick={() => void karteSpeichern()}>
               Projektkarte speichern
@@ -235,10 +236,10 @@ export function App() {
         {ds && (
           <div className="tb-group">
             <button title="Projekt oder Formular suchen (Strg+K)" onClick={() => setDialog('schnellwahl')}>
-              Suchen …
+              <Symbol name="suche" /> Suchen …
             </button>
-            <button title="Einstellungen" aria-label="Einstellungen" onClick={() => setDialog('einstellungen')}>
-              ⚙
+            <button className={haupt === 'einstellungen' ? 'active' : ''} title="Einstellungen: Ordner, Stammdaten, Adressbuch, Formulare" aria-label="Einstellungen" onClick={() => useFormulare.getState().einstellungenOeffnen()}>
+              <Symbol name="zahnrad" />
             </button>
           </div>
         )}
@@ -275,10 +276,12 @@ export function App() {
         </>
       )}
       <main className="fo-main">
-        {ds && <Seitenleiste onSchnellwahl={() => setDialog('schnellwahl')} onEinstellungen={() => setDialog('einstellungen')} onSperren={() => setDialog('sperren')} />}
+        {ds && <Seitenleiste onSchnellwahl={() => setDialog('schnellwahl')} onEinstellungen={() => useFormulare.getState().einstellungenOeffnen('ordner')} onSperren={() => setDialog('sperren')} />}
         {formularSichtbar && gliederungOffen && <Gliederung offen={offen} />}
         <section className={`fo-inhalt${formularSichtbar && ansicht === 'seite' ? ' fo-inhalt-papier' : ''}`}>
-          {haupt === 'projektkarte' && projekt ? (
+          {haupt === 'einstellungen' ? (
+            <EinstellungenAnsicht />
+          ) : haupt === 'projektkarte' && projekt ? (
             <ProjektkarteAnsicht />
           ) : haupt === 'datei' && datei ? (
             <DateiAnsicht />
@@ -289,13 +292,12 @@ export function App() {
               <SeitenAnsicht offen={offen} gesperrt={!!grund} />
             )
           ) : (
-            <Leer desktop={!!ds} onEinstellungen={() => setDialog('einstellungen')} />
+            <Leer desktop={!!ds} onEinstellungen={() => useFormulare.getState().einstellungenOeffnen('ordner')} />
           )}
         </section>
         {formularSichtbar && verlaufOffen && <VerlaufLeiste offen={offen} />}
       </main>
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
-      {dialog === 'einstellungen' && <Einstellungen onClose={() => setDialog(null)} />}
       {dialog === 'schnellwahl' && <Schnellwahl onClose={() => setDialog(null)} />}
       {dialog === 'ausfuellen' && offen && <AusfuellenDialog offen={offen} onClose={() => setDialog(null)} />}
       {dialog === 'sperren' && <SperrenDialog onClose={() => setDialog(null)} />}

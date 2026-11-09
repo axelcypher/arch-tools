@@ -1,0 +1,243 @@
+// @vitest-environment happy-dom
+import ExcelJS from 'exceljs';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { App } from './App';
+import { SpeicherDateisystem } from './dateisystem';
+import { xlsxLesen } from './dokumente/xlsx';
+import { cp1252Schreiben } from './forma/cp1252';
+import type { Projektkarte } from './forma/projektkarte';
+import { useFormulare } from './store';
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const MUSTER = new Uint8Array(readFileSync(path.resolve(__dirname, '__fixtures__/muster.frmsjf')));
+const ORDNER = 'Z:/Projekte/BS9 Musterstraße 9';
+const PD = `${ORDNER}/Organisation/BS9 Projektdaten.xlsx`;
+
+const adresse = (gruppe: number, werte: Record<number, string>) =>
+  Object.entries({ 30: '', 40: '', 70: '', 90: '', 110: '', ...werte }).map(([id, text]) => ({ gruppe, id: Number(id), typ: 1, titel: '', text, zahl: null }));
+const karte = (bauherr: string, behoerde: string): Projektkarte => ({
+  gruppen: [
+    { id: 101, typ: 4, text: 'Projektdaten' },
+    { id: 201, typ: 1, text: 'Bauherr' },
+    { id: 231, typ: 1, text: 'Bauaufsichtsbehörde' },
+    { id: 301, typ: 16, text: 'Baugrundstücksdaten' },
+  ],
+  eintraege: [
+    { gruppe: 101, id: 30, typ: 2, titel: 'Bezeichnung der Baumaßnahme:', text: '', zahl: null },
+    ...adresse(201, { 40: bauherr, 110: 'Musterstadt' }),
+    ...adresse(231, behoerde ? { 40: behoerde, 70: 'Hoher Weg 1', 110: 'Soest' } : {}),
+    { gruppe: 301, id: 40, typ: 1, titel: 'Gemarkung:', text: '', zahl: null },
+    { gruppe: 301, id: 50, typ: 1, titel: 'Flur:', text: '', zahl: null },
+    { gruppe: 301, id: 60, typ: 1, titel: 'Flurstück:', text: '', zahl: null },
+  ],
+});
+
+async function projektdaten(): Promise<Uint8Array> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Projekt');
+  [
+    ['Bauvorhaben:', 'Umbau Wohnhaus'],
+    ['Gemarkung', 'Musterhausen'],
+    ['Flur', '3'],
+    ['Flurstück', '123'],
+    ['Bauherr', null],
+    ['Name:', 'Mustermann'],
+  ].forEach((z, i) => z.forEach((v, j) => v !== null && (ws.getCell(i + 1, j + 1).value = v)));
+  return new Uint8Array(await wb.xlsx.writeBuffer());
+}
+
+let ds: SpeicherDateisystem;
+let root: ReturnType<typeof createRoot> | null = null;
+
+beforeEach(() => {
+  localStorage.clear();
+  ds = new SpeicherDateisystem({ benutzer: 't.test', computer: 'HELEN', prozess: 4242 });
+  for (const [k, titel, pk] of [
+    ['BS9', 'Musterstraße 9', karte('Mustermann', 'Kreis Soest')],
+    ['H24', 'Höggenstraße 24', karte('Beispiel', 'Kreis Soest')],
+  ] as const) {
+    ds.dateien.set(`C:/FORMA/${k}/001-Muster.frmsjf`, MUSTER);
+    ds.dateien.set(`C:/FORMA/${k}/sj_office.ini`, cp1252Schreiben(`[Allgemeines]\r\nText=${titel}\r\n\r\n`));
+    ds.dateien.set(`C:/FORMA/${k}/sj_prokarte.sdb`, new Uint8Array([1]));
+    ds.projektkarten.set(`C:/FORMA/${k}/sj_prokarte.sdb`, structuredClone(pk));
+  }
+  ds.dateien.set(`${ORDNER}/Planung/plan.pdf`, new Uint8Array([1]));
+  useFormulare.setState({
+    ds,
+    projektordner: ['C:/FORMA'],
+    ablageordner: ['Z:/Projekte'],
+    vorgabeAuswahl: ['*'],
+    auswahl: {},
+    projekte: [],
+    projekt: null,
+    formulare: [],
+    offen: null,
+    karte: null,
+    datei: null,
+    dateiEntwuerfe: {},
+    haupt: 'formular',
+    ansicht: 'seite',
+    gliederungOffen: true,
+    adressbuch: null,
+    adressbuchLaeuft: null,
+    rollenVorgaben: {},
+    profile: {},
+    projektdaten: null,
+    projektdatenVorlage: '',
+    einstellungsBereich: 'ordner',
+    meldung: null,
+  });
+});
+afterEach(() => {
+  act(() => root?.unmount());
+  root = null;
+  document.body.innerHTML = '';
+});
+
+const warte = () => act(async () => new Promise((r) => setTimeout(r, 0)));
+const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(text)) as HTMLButtonElement;
+const knopfMit = (host: Element, label: string) => host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
+const klick = async (el: HTMLElement) => {
+  act(() => el.click());
+  await warte();
+};
+const eingabe = (el: HTMLInputElement, value: string) =>
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+const verlassen = (el: HTMLElement) => act(() => void el.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+const waehle = (el: HTMLSelectElement, value: string) =>
+  act(() => {
+    el.value = value;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+
+async function render(): Promise<HTMLElement> {
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  act(() => {
+    root = createRoot(host);
+    root.render(createElement(App));
+  });
+  await warte();
+  return host;
+}
+
+describe('Gliederung je Formular', () => {
+  it('Abschnitte ausblenden und umbenennen, Felder vom Füllstand ausnehmen – gilt für das Formular in allen Projekten', async () => {
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await klick(knopf(host, '001-Muster'));
+    const gl = () => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
+    const abschnitte = () => [...gl().querySelectorAll('.fo-gl-abschnitt')].map((b) => b.querySelector('.fo-gl-titel')!.textContent);
+    const vorher = abschnitte();
+    expect(vorher[0]).toBe('Bauherrschaft');
+
+    await klick(knopfMit(host, 'Gliederung anpassen'));
+    const zeile = gl().querySelector('.fo-gl-anpassen')!;
+    const titel = zeile.querySelector('input')!;
+    eingabe(titel, 'Bauherr und Grundstück');
+    verlassen(titel);
+    await warte();
+    // Felder aufklappen und das erste vom Füllstand ausnehmen
+    await klick(zeile.querySelector<HTMLButtonElement>('button[aria-label="Felder"]')!);
+    const kaestchen = gl().querySelector<HTMLInputElement>('.fo-gl-feld input')!;
+    act(() => kaestchen.click());
+    await warte();
+    // zweiten Abschnitt ausblenden
+    const zweite = gl().querySelectorAll('.fo-gl-anpassen')[1];
+    if (zweite) await klick(zweite.querySelector<HTMLButtonElement>('button[aria-label="In der Gliederung ausblenden"]')!);
+    await klick(knopfMit(host, 'Gliederung anpassen'));
+
+    expect(abschnitte()[0]).toBe('Bauherr und Grundstück');
+    if (zweite) expect(abschnitte()).toHaveLength(vorher.length - 1);
+    const profil = Object.values(useFormulare.getState().profile)[0];
+    expect(Object.keys(useFormulare.getState().profile)).toEqual(['nw019999|2026A']);
+    expect(Object.values(profil.zaehlt)).toEqual([false]);
+
+    // im anderen Projekt gilt dasselbe Profil
+    await klick(knopfMit(host, 'Projekt schließen'));
+    await klick(knopf(host, 'H24'));
+    await klick(knopf(host, '001-Muster'));
+    expect(abschnitte()[0]).toBe('Bauherr und Grundstück');
+  });
+});
+
+describe('Einstellungen', () => {
+  it('Adressbuch aus allen FORMA-Projekten, Stammdaten als Vorgabe je Rolle', async () => {
+    const host = await render();
+    await klick(knopfMit(host, 'Einstellungen'));
+    expect(host.querySelector('.es-nav')).not.toBeNull();
+    await klick(knopf(host, 'Adressbuch'));
+    await klick(knopf(host, 'Adressbuch einlesen'));
+    await warte();
+    const namen = [...host.querySelectorAll('.es-adress-eintrag strong')].map((s) => s.textContent);
+    expect(namen).toEqual(['Beispiel', 'Kreis Soest', 'Mustermann']);
+    // die Behörde aus beiden Projekten erscheint einmal, mit beiden Verwendungen
+    await klick([...host.querySelectorAll<HTMLButtonElement>('.es-adress-eintrag')].find((b) => b.textContent?.includes('Kreis Soest'))!);
+    expect([...host.querySelectorAll('.es-verwendungen li')].map((l) => l.textContent)).toEqual(['BS9 · Bauaufsichtsbehörde', 'H24 · Bauaufsichtsbehörde']);
+
+    await klick(knopf(host, 'Büro & Stammdaten'));
+    const auswahl = host.querySelector<HTMLSelectElement>('select[aria-label="Vorgabe für Bauaufsichtsbehörde"]')!;
+    const kreis = [...auswahl.options].find((o) => o.textContent?.startsWith('Kreis Soest'))!;
+    expect(kreis.textContent).toContain('(2×)');
+    waehle(auswahl, kreis.value);
+    await warte();
+    expect(useFormulare.getState().rollenVorgaben['231']).toBe(kreis.value);
+    expect(host.querySelector('.es-adresse')!.textContent).toContain('Hoher Weg 1');
+  });
+});
+
+describe('Projektdaten.xlsx', () => {
+  it('abgleichen, übernehmen und beim Speichern der Projektkarte mitführen', async () => {
+    ds.dateien.set(PD, await projektdaten());
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await warte();
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await warte();
+    const pdEintrag = knopf(host, 'Projektdaten.xlsx');
+    expect(pdEintrag.textContent).toContain('5 Angaben erkannt');
+    await klick(pdEintrag);
+    const zeilen = [...host.querySelectorAll('.pk-abgleich tbody tr')];
+    expect(zeilen.map((z) => z.querySelector('td')!.firstChild!.textContent)).toEqual(['Bezeichnung der Baumaßnahme', 'Gemarkung', 'Flur', 'Flurstück', 'Bauherr: Name/Firma']);
+    // Name stimmt schon, die übrigen weichen ab
+    expect(zeilen[4].classList.contains('gleich')).toBe(true);
+    await klick(knopf(host, 'Abweichende übernehmen (4)'));
+    expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '101:30': 'Umbau Wohnhaus', '301:40': 'Musterhausen', '301:50': '3', '301:60': '123' });
+
+    // in der Projektkarte den Namen ändern und speichern: die xlsx wird mitgeführt
+    act(() => useFormulare.getState().karteSetzen(201, 40, 'Musterfrau'));
+    await warte();
+    await klick(knopf(host, 'Projektkarte speichern'));
+    await warte();
+    const neu = xlsxLesen(ds.dateien.get(PD)!).blaetter[0].zellen;
+    expect(neu.get('B6')!.anzeige).toBe('Musterfrau');
+    // aus der xlsx übernommene Werte bleiben dort unverändert
+    expect(neu.get('B1')!.anzeige).toBe('Umbau Wohnhaus');
+    expect(host.textContent).toContain('Projektdaten.xlsx mitgeführt (1 Wert(e))');
+    expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (5)', 'dokument Organisation/BS9 Projektdaten.xlsx']);
+  });
+
+  it('fehlt die Datei, wird sie beim Speichern aus der Vorlage angelegt', async () => {
+    ds.dateien.set('Z:/Vorlagen/Projektdaten.xlsx', await projektdaten());
+    useFormulare.setState({ projektdatenVorlage: 'Z:/Vorlagen/Projektdaten.xlsx' });
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await warte();
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await warte();
+    act(() => useFormulare.getState().karteSetzen(201, 40, 'Neue Bauherrin'));
+    await warte();
+    await klick(knopf(host, 'Projektkarte speichern'));
+    await warte();
+    expect(ds.schreibvorgaenge.slice(1, 2)).toEqual(['neu Organisation/BS9 Projektdaten.xlsx']);
+    expect(xlsxLesen(ds.dateien.get(PD)!).blaetter[0].zellen.get('B6')!.anzeige).toBe('Neue Bauherrin');
+  });
+});
