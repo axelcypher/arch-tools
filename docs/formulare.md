@@ -5,27 +5,70 @@ Die App **Formulare** (`apps/formulare`, eigene App mit eigenem Installer) füll
 Formularmasken des Originals.
 
 Grundsatz: **Das Originalprogramm muss jede Datei weiter lesen können**, denn im Büro arbeiten alle anderen
-weiter mit FORMA. Geändert wird nur der Inhalt von Feldern, nie das Layout, und alles Unveränderte bleibt
-Byte für Byte erhalten. Was sich nicht verlustfrei zurückschreiben lässt, wird nur angezeigt.
+weiter mit FORMA. Geändert wird nur der Inhalt von Feldern und Projektkarten-Einträgen, nie das Layout, und alles
+Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurückschreiben lässt, wird nur angezeigt.
 
 ## Bedienung
 
-- **Projektordner:** Links die Ordner, in denen die FORMA-Projekte liegen – es können mehrere sein (z. B. ein
-  Ordner je Standort oder Jahrgang). Sie werden einmal hinzugefügt und bleiben eingestellt; „×“ entfernt einen
-  Ordner nur aus der Liste.
-- **Projekte:** Jeder Unterordner mit Formularen (`.frmsjf`) oder Projektkarte (`sj_prokarte.sdb`) ist ein
-  Projekt. Angezeigt werden Ordnername und Projekttitel; die Suche filtert nach beidem.
-- **Formulare:** die Formulare des gewählten Projekts, ohne die alten Fassungen in `_archiv`. 🔒 heißt: Das
-  Formular ist anderswo geöffnet. ● heißt: Es gibt nicht gespeicherte Eingaben.
-- **Ansicht „Felder“:** alle Textfelder und Kästchen nach Seiten und Abschnitten, mit Suche über Beschriftung
-  und Inhalt. Geänderte Felder sind links orange markiert.
-- **Ansicht „Seite“:** die Seiten so, wie FORMA sie zeigt (aus den Positionen in der Datei) – zur Kontrolle.
-  Die Felder sind dieselben Eingaben wie in der Feldansicht.
-- **Speichern** (Strg+S) schreibt die geänderten Felder in die Datei. Vorher wird sie frisch eingelesen: Hat
-  sie seit dem Öffnen jemand geändert (z. B. in FORMA gespeichert), wird nicht gespeichert. „Neu laden“ liest
-  die neue Fassung und trägt die eigenen Eingaben wieder ein; danach kann gespeichert werden.
-- **Entwürfe:** Nicht gespeicherte Eingaben bleiben im Speicher der App erhalten – auch beim Wechsel des
-  Formulars oder nach dem Schließen. Beim nächsten Öffnen werden sie wieder eingetragen.
+- **Einstellungen (⚙):** wo die FORMA-Projekte liegen (mehrere Ordner möglich), wo die echten Projektordner
+  liegen (z. B. `Z:\Projekte`) und welche Pfade daraus links angezeigt werden.
+- **Projekt wählen:** links in der Liste (Suche nach Kürzel oder Titel) oder von überall mit
+  <kbd>Strg</kbd>+<kbd>K</kbd> (Schnellwahl: Kürzel tippen, Enter). Ein gewähltes Projekt steht oben links;
+  „Wechseln“ öffnet die Schnellwahl.
+- **Formulare:** die Formulare des Projekts, ohne die alten Fassungen in `_archiv`. 🔒 heißt: anderswo geöffnet.
+  ● heißt: nicht gespeicherte Eingaben.
+- **Ansicht „Formular“:** die Seiten wie auf Papier – weiß, in den Schriften und an den Stellen aus der Datei
+  (Textfelder in Courier New wie in FORMA), mit Zoom (Seitenbreite oder 75–200 %). So werden sie auch gedruckt.
+- **Ansicht „Felder“:** dieselben Felder im Aufbau des Formulars – nebeneinanderliegende Abschnitte auch hier
+  nebeneinander, Felder einer Zeile in einer Zeile –, groß und durchsuchbar, Filter „Leere“ und „Geänderte“.
+- **Gliederung:** links Seiten und Abschnitte des offenen Formulars mit Füllstand (z. B. 3/5); ein Klick springt hin.
+- **Tastatur:** <kbd>Tab</kbd> und <kbd>Enter</kbd> (in einzeiligen Feldern) gehen in Lesereihenfolge zum nächsten
+  Feld – auf dem Papier von oben nach unten, nebeneinanderliegende Rahmen von links nach rechts.
+- **Speichern** (<kbd>Strg</kbd>+<kbd>S</kbd>) schreibt die geänderten Felder in die FORMA-Datei. Vorher wird sie
+  frisch eingelesen: Hat sie seit dem Öffnen jemand geändert (z. B. in FORMA gespeichert), wird nicht gespeichert.
+  „Neu laden“ liest die neue Fassung und trägt die eigenen Eingaben wieder ein; danach kann gespeichert werden.
+- **Drucken** (<kbd>Strg</kbd>+<kbd>P</kbd>): die Formularansicht in Originalgröße, eine Seite je Blatt (A4); über
+  „Als PDF speichern“ entsteht ein PDF.
+
+### Zwischenspeichern, Rückgängig, Verlauf
+
+Jede Eingabe wird sofort **lokal gesichert** (im Speicher der App, nicht im Projektordner) – mit **Verlauf**, der
+Neustarts übersteht. In die FORMA-Datei kommt sie erst mit „Speichern“; Kollegen sehen also nie halbe Zwischenstände.
+
+- <kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd> (oder ↶ ↷) nehmen Eingaben zurück bzw. stellen sie
+  wieder her und springen zum betroffenen Feld. Weitertippen im selben Feld ist ein Schritt; „Aus Projektkarte
+  ausfüllen“ ist ein Schritt für alle Felder.
+- **Verlauf** (rechts): alle Schritte mit Zeit, Feld und „alt → neu“, auch aus früheren Sitzungen. Ein Klick stellt
+  den Stand nach diesem Schritt her; „Anfang“ nimmt alles zurück.
+- Auch nach dem Speichern bleibt der Verlauf: Rückgängig ergibt dann wieder eine ungespeicherte Änderung.
+- Je Formular bleiben die letzten 500 Schritte, für die 60 zuletzt bearbeiteten Formulare.
+
+### Projektkarte und Stammdaten
+
+Die **Projektkarte** (links über den Formularen) zeigt alle Gruppen des Projekts – Projektdaten, Bauherr,
+Entwurfsverfasser, Behörden, Grundstück … – mit Suche und „nur gefüllte“. „Projektkarte speichern“ schreibt die
+geänderten Einträge in die Projektkarte des FORMA-Projekts; FORMA liest dieselben Einträge.
+
+- **Aus Projektkarte ausfüllen …** (im Formular): Vorschau aller Felder, die sich dadurch ändern würden. Leere
+  Felder sind vorgewählt, Felder mit eigenem Inhalt nur auf Wunsch (sie können von Hand angepasst sein).
+  Noch nicht gespeicherte Änderungen der Projektkarte zählen schon mit.
+- **Bürostammdaten:** Eine Adressgruppe (z. B. das eigene Büro als Entwurfsverfasser) mit „Merken“ speichern und
+  in anderen Projekten über „Aus Stammdaten …“ übernehmen. Die Stammdaten liegen in der App, nicht im FORMA-Projekt.
+- Zeichen, die es in Windows-1252 nicht gibt (z. B. Emojis), werden abgelehnt – FORMA zeigt sie nicht zuverlässig an.
+- Ist die Projektkarte gerade in FORMA geöffnet (Datenbank gesperrt), kommt eine Meldung; nichts wird geschrieben.
+
+### Projektordner (Server)
+
+Neben den FORMA-Projekten lassen sich die **echten Projektordner** anbinden – nur zum Nachsehen (welche Formulare
+schon als PDF vorliegen, welche Berechnungen es gibt); dort wird nichts geschrieben.
+
+- Zuordnung über das **Kürzel**: Der FORMA-Projektordner heißt „BS5“, der echte Ordner beginnt damit
+  („BS5 Birkenstraße 5“) oder hat ein Wort davor („JJ H24 …“). Gesucht wird **zwei Ebenen** tief (auch in
+  Unterordnern wie der Akquise); ein Treffer auf der obersten Ebene geht vor.
+- Links erscheint der Ordner als Baum, beschränkt auf die **ausgewählten Pfade**: je Zeile ein Pfad
+  (`Organisation`, `03 Berechnungen/Flächen`), Platzhalter `*` und `?` je Ebene. Die Vorgabe steht in den
+  Einstellungen, je Projekt lässt sie sich über ⚙ ändern. Ordner werden erst beim Aufklappen gelesen.
+- Doppelklick öffnet eine Datei mit ihrem Programm, ↗ zeigt einen Ordner im Explorer.
 
 ### Sperren
 
@@ -41,7 +84,8 @@ genauso:
 ### Web-Version
 
 Ohne Desktop-App gibt es keinen Zugriff auf Ordner: Die Web-Version öffnet ein einzelnes Formular über den
-Dateidialog, und „Herunterladen“ liefert die geänderte Fassung als Datei. Sperrdateien gibt es dort nicht.
+Dateidialog, und „Herunterladen“ liefert die geänderte Fassung als Datei. Sperrdateien, Projektkarte und
+Projektordner gibt es dort nicht.
 
 ## Dateiformat
 
@@ -51,7 +95,7 @@ Ein FORMA-Projekt ist ein Ordner:
 |---|---|
 | `*.frmsjf` | ein Formular je Datei (Text, ASCII, CRLF) |
 | `_archiv/` | ältere Fassungen eines Formulars (z. B. Anlage I-3 von 2024, als die von 2026 kam) |
-| `sj_prokarte.sdb` | Projektkarte (SQLite): Projektdaten, Beteiligte, Grundstück … – `.bak` ist die Sicherung |
+| `sj_prokarte.sdb` | Projektkarte (SQLite, Texte UTF-8): Projektdaten, Beteiligte, Grundstück … – `.bak` ist die Sicherung |
 | `sj_office.ini` | Projekttitel (`[Allgemeines]`, `Text=`, Windows-1252) |
 | `*.frmtmp` | Sperrdatei, solange das Formular geöffnet ist (INI, Windows-1252) |
 
@@ -83,18 +127,42 @@ end
   berechnet: Jede Eigenschaft behält ihre Originalzeilen, nur geänderte werden neu erzeugt.
 - In Textfeldern mit Zeilenumbruch speichert FORMA jede *angezeigte* Zeile einzeln – ein langer Name kann
   also auf zwei Zeilen verteilt sein.
-- Eine versteckte Liste `lstbxProkarte` ordnet Textfeldern Einträge der Projektkarte zu (z. B.
-  `Memo8=0201aedt070` → Gruppe 201 „Bauherr“, Eintrag 70); daraus füllt FORMA Felder automatisch.
+- Alle bekannten Seiten sind 700 Pixel breit. Beschriftungen in Arial, Textfelder in Courier New; gedrehte
+  Beschriftungen (`TExtendedLabel`, `Angle = 90/270`) geben Breite und Höhe ungedreht an. Bilder (`TImage`)
+  stehen als `Picture.Data` in der Datei (Klassenname, bei `TBitmap` Länge + Windows-BMP).
+
+### Projektkarte (`sj_prokarte.sdb`)
+
+SQLite (`PRAGMA encoding = UTF-8`), Tabellen `Allgemeines` (Kennung `[*SJ_PJK (w) by SJ GmbH Aachen#]`),
+`Gruppe` (`GruppeID`, `GruppeTyp`, `GruppeText` – z. B. 101 Projektdaten, 201 Bauherr, 202 Entwurfsverfasser,
+206 Bauvorlageberechtigter, 231 Bauaufsichtsbehörde, 301 Baugrundstücksdaten) und `Inhalte` (`GruppeID`,
+`InhalteID`, `InhalteTyp`, `Titel`, `Texte`, …). Adressgruppen (Typ 1) haben dieselben Einträge: 10 Branche,
+20 Titel, 30 Vorname, 40 Name/Firma, 70 Straße/Nr., 80 Postfach, 90 PLZ, 110 Ort, 130 Telefon, 170 E-Mail …
+
+Jede Formularseite enthält eine versteckte Liste **`lstbxProkarte`**, die Textfeldern Einträge zuordnet:
+
+```
+Memo7=K0201aedt040;0201aedt030                 → „Name, Vorname“ des Bauherrn
+Memo2=K0201aedt010;L0201aedt030;R0201aedt040;K0201aedt070;"Postfach ";K0201aedt080;L0201aedt090;0201aedt110
+```
+
+Teile sind durch `;` getrennt: `<Trenner><Gruppe 4-stellig><Art><Eintrag 3-stellig>` oder ein Text in
+Anführungszeichen. Die Trenner stehen hinter einem *gefüllten* Wert: `K` = „, “, `L` = Leerzeichen, `R` = neue
+Zeile (in einzeiligen Feldern ein Leerzeichen). Ein Text erscheint nur, wenn der Wert danach gefüllt ist. Die App
+lässt Trenner am Ende weg (FORMA lässt dort manchmal ein Komma stehen).
 
 ### Umsetzung
 
 `src/forma/` ist der Formatkern: `dfm.ts` liest DFM-Text verlustfrei, `delphi.ts` schreibt Zeichenketten
 wie Delphi, `formular.ts` liest und schreibt Formulardateien und ändert Textfelder und Kästchen,
-`felder.ts` leitet Beschriftung und Abschnitt eines Felds aus der Lage ab (FORMA kennt keine Verknüpfung),
-`sperre.ts` liest und schreibt Sperrdateien.
+`felder.ts` leitet Beschriftung, Abschnitt und Zeilen eines Felds aus der Lage ab (FORMA kennt keine Verknüpfung),
+`darstellung.ts` Farben, Maße, Drehung und Bilder für die Formularansicht, `projektkarte.ts` die Zuordnung
+Feld → Projektkarte, `sperre.ts` liest und schreibt Sperrdateien. `verlauf.ts` ist der Verlauf, `ablage.ts` die
+Zuordnung der echten Projektordner.
 
-Die Tauri-Hülle (`src-tauri/src/lib.rs`) ersetzt nur vorhandene `.frmsjf` (atomar über eine temporäre Datei)
-und legt nur `.frmtmp` an bzw. löscht sie – sonst schreibt sie nichts.
+Die Tauri-Hülle (`src-tauri/src/lib.rs`) ersetzt nur vorhandene `.frmsjf` (atomar über eine temporäre Datei),
+legt nur `.frmtmp` an bzw. löscht sie und ändert in `sj_prokarte.sdb` nur vorhandene Einträge – in einer
+Transaktion, und nur, wenn jeder noch den Wert hat, von dem die Änderung ausgeht. Sonst schreibt sie nichts.
 
 ## Kompatibilitätstests
 
@@ -106,19 +174,26 @@ hat FORMA geschrieben. `formular.test.ts` prüft für jede Datei,
 - dass jedes Textfeld nach Leeren und erneutem Füllen und jedes Kästchen nach Umschalten und Zurückschalten
   wieder die Originaldatei ergibt (damit stimmen auch die Einfügepositionen).
 
+`projektkarte.test.ts` liest die echte Projektkarte (über `node:sqlite`) und prüft, dass die von FORMA
+ausgefüllten Felder sich aus ihr ergeben (im Referenzprojekt 29 von 37; die übrigen sind von Hand geändert).
+Die Rust-Tests der Hülle (`cargo test`, mit `SJFORMA_REF`) schreiben eine Kopie jeder echten Projektkarte
+unverändert zurück und prüfen „alle oder keiner“.
+
 Versioniert ist nur eine anonymisierte Musterdatei (`src/__fixtures__/muster.frmsjf`). Echte Projekte mit
 Kundendaten gehören nach `.ref/` im Repository (nicht eingecheckt) oder in den Ordner aus `SJFORMA_REF`:
 
 ```bash
 SJFORMA_REF=/pfad/zu/forma-projekten npx vitest run --project formulare
+SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/src-tauri/Cargo.toml
 ```
 
 ## Offen
 
-- **Gegenprobe in FORMA:** eine hier gespeicherte Datei in FORMA öffnen, prüfen und dort wieder speichern –
-  schreibt FORMA dieselben Bytes, ist der Nachweis vollständig.
-- **`InGebrauch` in der Sperrdatei:** Bedeutung unbekannt; die App trägt ihre Prozessnummer ein. Zu prüfen:
-  Was zeigt FORMA, wenn die App ein Formular gesperrt hat?
-- **Projektkarte:** wird noch nicht gelesen. Mit der Zuordnung aus `lstbxProkarte` ließen sich Felder aus der
-  Projektkarte (oder aus `projekt.json` der Projektordner-App) vorbelegen.
+- **Gegenprobe in FORMA:** eine hier gespeicherte Datei und Projektkarte in FORMA öffnen, prüfen und dort wieder
+  speichern.
+- **`InGebrauch` in der Sperrdatei:** Bedeutung unbekannt; die App trägt ihre Prozessnummer ein.
+- **Neue Formulare und neue Formularfassungen:** brauchen die Formularbibliothek von FORMA (Vorlagen).
+- **`Projektdaten.xlsx`** im echten Projektordner (`Organisation/<Kürzel> Projektdaten.xlsx`) lesen und beim
+  Eintragen mitschreiben – Aufbau der Datei noch unbekannt.
+- **Vorgabe der angezeigten Pfade** an die Ordnerstruktur des Büros anpassen.
 - **Beschriftungen in Tabellen** (z. B. „1-fach / 3-fach“-Spalten) sind aus der Lage nur unvollständig ableitbar.

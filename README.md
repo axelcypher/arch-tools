@@ -132,7 +132,7 @@ apps/grz/              GRZ/GFZ-Nachweis: Lageplan, Nachweis zum Drucken, Excel �
 apps/kosten/           Kostenermittlung nach DIN 276: Mengen, Kennwerte, Kostenstände, Druck, Excel – siehe docs/kosten.md
 apps/ordner/           Projektordner anlegen und prüfen: Struktur, Vorlagen, Stammdaten – siehe docs/projektordner.md
 apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
-apps/formulare/        FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Feld- und Seitenansicht, Sperrdateien – siehe docs/formulare.md
+apps/formulare/        FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
 ```
 
 Jede App hat ihre eigene Tauri-Hülle (`apps/<app>/src-tauri`), eigenen Installer und eigene Releases.

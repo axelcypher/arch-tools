@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
+import type { Projektkarte } from './forma/projektkarte';
 import { mitAenderungen, useFormulare } from './store';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -14,19 +15,52 @@ import { mitAenderungen, useFormulare } from './store';
 const MUSTER = new Uint8Array(readFileSync(path.resolve(__dirname, '__fixtures__/muster.frmsjf')));
 const FORMULAR = 'C:/FORMA/BS9/001-Muster.frmsjf';
 const SPERRE = 'C:/FORMA/BS9/001-Muster.frmtmp';
+const KARTE = 'C:/FORMA/BS9/sj_prokarte.sdb';
+
+const projektkarte = (): Projektkarte => ({
+  gruppen: [
+    { id: 201, typ: 1, text: 'Bauherr' },
+    { id: 232, typ: 1, text: 'Gemeinde' },
+  ],
+  eintraege: [
+    { gruppe: 201, id: 30, typ: 1, titel: 'Vorname:', text: 'Max' },
+    { gruppe: 201, id: 40, typ: 1, titel: 'Name/Firma:', text: 'Mustermann' },
+    { gruppe: 232, id: 90, typ: 1, titel: 'PLZ Straße:', text: '' },
+    { gruppe: 232, id: 110, typ: 1, titel: 'Ort:', text: 'Musterstadt' },
+  ],
+});
 
 let ds: SpeicherDateisystem;
 let root: ReturnType<typeof createRoot> | null = null;
+
+const ANFANG = {
+  projektordner: ['C:/FORMA'],
+  ablageordner: [] as string[],
+  projekte: [],
+  projekt: null,
+  formulare: [],
+  offen: null,
+  karte: null,
+  haupt: 'formular' as const,
+  ablage: [],
+  vorgabeAuswahl: ['*'],
+  auswahl: {},
+  verlaufOffen: false,
+  konflikt: false,
+  meldung: null,
+  ansicht: 'felder' as const,
+};
 
 beforeEach(() => {
   localStorage.clear();
   ds = new SpeicherDateisystem({ benutzer: 't.test', computer: 'HELEN', prozess: 4242 });
   ds.dateien.set(FORMULAR, MUSTER);
   ds.dateien.set('C:/FORMA/BS9/sj_office.ini', cp1252Schreiben('[Allgemeines]\r\nText=Musterstraße 9\r\n\r\n'));
-  ds.dateien.set('C:/FORMA/BS9/sj_prokarte.sdb', new Uint8Array([1]));
+  ds.dateien.set(KARTE, new Uint8Array([1]));
+  ds.projektkarten.set(KARTE, projektkarte());
   ds.dateien.set('C:/FORMA/BS9/_archiv/000-Alt.frmsjf', MUSTER);
   ds.dateien.set('C:/FORMA/Sonstiges/notiz.txt', new Uint8Array([1]));
-  useFormulare.setState({ ds, projektordner: ['C:/FORMA'], projekte: [], projekt: null, formulare: [], offen: null, konflikt: false, meldung: null, ansicht: 'felder' });
+  useFormulare.setState({ ds, ...ANFANG });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -48,7 +82,18 @@ async function render(): Promise<HTMLElement> {
   return host;
 }
 
-const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(text)) as HTMLButtonElement;
+/** App „neu starten“: Oberfläche weg, Zustand bis auf Einstellungen zurück */
+async function neustart(): Promise<HTMLElement> {
+  act(() => root?.unmount());
+  document.body.innerHTML = '';
+  useFormulare.setState({ projekt: null, formulare: [], offen: null, karte: null, meldung: null });
+  return render();
+}
+
+const knoepfe = (host: Element) => [...host.querySelectorAll('button')];
+const knopf = (host: Element, text: string) => knoepfe(host).find((b) => b.textContent?.includes(text)) as HTMLButtonElement;
+const knopfGenau = (host: Element, text: string) => knoepfe(host).find((b) => b.textContent?.trim() === text) as HTMLButtonElement;
+const knopfMit = (host: Element, label: string) => host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"], button[title="${label}"]`)!;
 const klick = async (el: HTMLElement) => {
   act(() => el.click());
   await warte();
@@ -61,12 +106,20 @@ const eingabe = (el: HTMLInputElement | HTMLTextAreaElement, value: string) => {
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
 };
+const taste = (el: EventTarget, key: string, mehr: KeyboardEventInit = {}) =>
+  act(() => {
+    el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...mehr }));
+  });
 const feld = (host: Element, label: string, n = 0) => host.querySelectorAll<HTMLInputElement>(`[aria-label="${label}"]`)[n];
 const kreuz = (host: Element, beschriftung: string) =>
   [...host.querySelectorAll('label.fo-kreuz')].find((l) => l.textContent === beschriftung)!.querySelector('input') as HTMLInputElement;
+const kartenFeld = (host: Element, titel: string, gruppe: string) => {
+  const g = [...host.querySelectorAll('.fo-karte-gruppe')].find((x) => x.querySelector('h3')?.textContent === gruppe)!;
+  return [...g.querySelectorAll('label')].find((l) => l.querySelector('.field-label')?.textContent === titel)!.querySelector('input') as HTMLInputElement;
+};
 
-async function oeffneMuster(): Promise<HTMLElement> {
-  const host = await render();
+async function oeffneMuster(host?: HTMLElement): Promise<HTMLElement> {
+  host ??= await render();
   await klick(knopf(host, 'BS9'));
   await klick(knopf(host, '001-Muster'));
   return host;
@@ -78,8 +131,10 @@ describe('Formulare', () => {
     expect(knopf(host, 'BS9').textContent).toContain('Musterstraße 9');
     expect(knopf(host, 'Sonstiges')).toBeUndefined();
     await klick(knopf(host, 'BS9'));
+    expect(host.querySelector('.fo-projektkopf')?.textContent).toContain('BS9');
     expect(knopf(host, '001-Muster')).toBeDefined();
     expect(knopf(host, '000-Alt')).toBeUndefined();
+    expect(knopf(host, 'Projektkarte')).toBeDefined();
   });
 
   it('sperrt beim Öffnen, speichert nur die geänderten Wertzeilen und entsperrt beim Schließen', async () => {
@@ -92,18 +147,19 @@ describe('Formulare', () => {
     act(() => kreuz(host, 'Sonderbau').click());
     act(() => kreuz(host, 'Wohngebäude').click());
     expect(host.textContent).toContain('3 Feld(er) geändert');
+    expect(host.textContent).toContain('lokal gesichert');
     expect(ds.dateien.get(FORMULAR)).toBe(MUSTER);
 
-    await klick(knopf(host, 'Speichern'));
+    await klick(knopfGenau(host, 'Speichern'));
     const gespeichert = ds.dateien.get(FORMULAR)!;
     expect(gespeichert).toEqual(mitAenderungen(MUSTER, { '0:Memo2': 'Musterweg 7', '0:CheckBox2': true, '0:CheckBox1': false }));
     const text = new TextDecoder().decode(gespeichert);
     expect(text).toContain("          Lines.Strings = (\r\n            'Musterweg 7')\r\n          ParentFont = False");
     expect(gespeichert.length - MUSTER.length).toBe("          Lines.Strings = (\r\n            'Musterweg 7')\r\n".length);
     expect(host.textContent).toContain('gespeichert');
-    expect(knopf(host, 'Speichern').disabled).toBe(true);
+    expect(knopfGenau(host, 'Speichern').disabled).toBe(true);
 
-    await klick(knopf(host, 'BS9'));
+    await klick(knopfMit(host, 'Projekt schließen'));
     expect(ds.dateien.has(SPERRE)).toBe(false);
     expect(ds.schreibvorgaenge).toEqual(['sperre BS9/001-Muster.frmtmp', 'ersetze BS9/001-Muster.frmsjf', 'entsperre BS9/001-Muster.frmtmp']);
   });
@@ -114,8 +170,8 @@ describe('Formulare', () => {
     const host = await oeffneMuster();
     expect(host.textContent).toContain('Nur ansehen: Das Formular ist bei kollegin auf CAD02 geöffnet (seit 09.11.2026 10:17:12).');
     expect(feld(host, 'Bauherrschaft', 1).disabled).toBe(true);
-    expect(knopf(host, 'Speichern').disabled).toBe(true);
-    await klick(knopf(host, 'BS9'));
+    expect(knopfGenau(host, 'Speichern').disabled).toBe(true);
+    await klick(knopfMit(host, 'Projekt schließen'));
     expect(ds.dateien.get(SPERRE)).toBe(fremd);
     expect(ds.schreibvorgaenge).toEqual([]);
   });
@@ -126,40 +182,154 @@ describe('Formulare', () => {
     const vonFORMA = mitAenderungen(MUSTER, { '0:CheckBox4': true });
     ds.dateien.set(FORMULAR, vonFORMA);
 
-    await klick(knopf(host, 'Speichern'));
+    await klick(knopfGenau(host, 'Speichern'));
     expect(ds.dateien.get(FORMULAR)).toBe(vonFORMA);
     expect(host.textContent).toContain('seit dem Öffnen außerhalb geändert');
 
-    await klick(knopf(host, 'Neu laden'));
+    await klick(knopfGenau(host, 'Neu laden'));
     expect(feld(host, 'Bauherrschaft', 1).value).toBe('Musterweg 7');
-    await klick(knopf(host, 'Speichern'));
+    await klick(knopfGenau(host, 'Speichern'));
     expect(ds.dateien.get(FORMULAR)).toEqual(mitAenderungen(MUSTER, { '0:CheckBox4': true, '0:Memo2': 'Musterweg 7' }));
   });
 
-  it('nicht gespeicherte Eingaben bleiben als Entwurf erhalten', async () => {
+  it('nicht gespeicherte Eingaben und der Verlauf überstehen einen Neustart', async () => {
     let host = await oeffneMuster();
     eingabe(feld(host, 'Bauherrschaft', 1), 'Musterweg 7');
+    act(() => kreuz(host, 'Sonderbau').click());
+    await klick(knopfMit(host, 'Projekt schließen'));
     await klick(knopf(host, 'BS9'));
     expect(knopf(host, '001-Muster').textContent).toContain('●');
-    act(() => root?.unmount());
-    document.body.innerHTML = '';
 
-    useFormulare.setState({ projekt: null, formulare: [], offen: null, meldung: null });
-    host = await oeffneMuster();
+    host = await oeffneMuster(await neustart());
     expect(feld(host, 'Bauherrschaft', 1).value).toBe('Musterweg 7');
-    expect(host.textContent).toContain('1 nicht gespeicherte Eingabe(n) vom letzten Mal wiederhergestellt');
+    expect(host.textContent).toContain('2 nicht gespeicherte Eingabe(n) vom letzten Mal wiederhergestellt');
     expect(ds.dateien.get(FORMULAR)).toBe(MUSTER);
+
+    // Rückgängig über den Neustart hinweg – erst das Kästchen, dann die Straße
+    await klick(knopfMit(host, 'Rückgängig'));
+    expect(kreuz(host, 'Sonderbau').checked).toBe(false);
+    await klick(knopfMit(host, 'Rückgängig'));
+    expect(feld(host, 'Bauherrschaft', 1).value).toBe('');
+    expect(knopfGenau(host, 'Speichern').disabled).toBe(true);
+    expect(knopfMit(host, 'Rückgängig').disabled).toBe(true);
+    await klick(knopfMit(host, 'Wiederholen'));
+    expect(feld(host, 'Bauherrschaft', 1).value).toBe('Musterweg 7');
   });
 
-  it('Seitenansicht zeigt alle Felder an ihrer Stelle', async () => {
+  it('Strg+Z und Strg+Y nehmen Eingaben zurück und stellen sie wieder her; der Verlauf zeigt jeden Schritt', async () => {
     const host = await oeffneMuster();
-    await klick(knopf(host, 'Seite'));
+    eingabe(feld(host, 'Bauherrschaft', 1), 'Musterweg 7');
+    taste(window, 'z', { ctrlKey: true });
+    expect(feld(host, 'Bauherrschaft', 1).value).toBe('');
+    taste(window, 'y', { ctrlKey: true });
+    expect(feld(host, 'Bauherrschaft', 1).value).toBe('Musterweg 7');
+
+    await klick(knopfGenau(host, 'Verlauf'));
+    const schritte = host.querySelectorAll('.fo-verlauf-liste .fo-verlauf-schritt');
+    expect(schritte).toHaveLength(1);
+    expect(schritte[0].textContent).toContain('Bauherrschaft');
+    expect(schritte[0].textContent).toContain('(leer) → Musterweg 7');
+    // Klick auf „Anfang“ nimmt alles zurück
+    await klick(knopf(host, 'Anfang (vor der ersten Eingabe)'));
+    expect(feld(host, 'Bauherrschaft', 1).value).toBe('');
+  });
+
+  it('Formularansicht: Felder an ihrer Stelle auf weißem Papier, dieselben Eingaben wie in der Feldansicht', async () => {
+    const host = await oeffneMuster();
+    await klick(knopfGenau(host, 'Formular'));
+    expect(host.querySelectorAll('.fo-papier')).toHaveLength(2);
     expect(host.querySelectorAll('textarea.fo-memo')).toHaveLength(3);
     expect(host.querySelectorAll('label.fo-check input')).toHaveLength(4);
     const memo = host.querySelector<HTMLTextAreaElement>('textarea.fo-memo')!;
     expect([memo.style.left, memo.style.top, memo.value]).toEqual(['5px', '40px', 'Mustermann, Max']);
+    expect(memo.style.fontFamily).toContain('Courier New');
     eingabe(memo, 'Musterfrau, Erika');
-    await klick(knopf(host, 'Felder'));
+    await klick(knopfGenau(host, 'Felder'));
     expect(feld(host, 'Bauherrschaft', 0).value).toBe('Musterfrau, Erika');
+  });
+
+  it('Enter in einzeiligen Feldern springt zum nächsten Feld', async () => {
+    const host = await oeffneMuster();
+    const erstes = feld(host, 'Bauherrschaft', 0);
+    act(() => erstes.focus());
+    taste(erstes, 'Enter');
+    expect(document.activeElement).toBe(feld(host, 'Bauherrschaft', 1));
+  });
+
+  it('Projektkarte bearbeiten und speichern – nur geänderte Einträge, mit dem alten Wert als Prüfung', async () => {
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    expect(kartenFeld(host, 'Name/Firma', 'Bauherr').value).toBe('Mustermann');
+
+    eingabe(kartenFeld(host, 'Name/Firma', 'Bauherr'), 'Musterfrau');
+    expect(host.textContent).toContain('1 Eintrag/Einträge geändert');
+    // in der Zwischenzeit ändert jemand in FORMA einen anderen Eintrag – das stört nicht
+    ds.projektkarten.get(KARTE)!.eintraege[3].text = 'Neustadt';
+    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    expect(ds.projektkarten.get(KARTE)!.eintraege.map((e) => e.text)).toEqual(['Max', 'Musterfrau', '', 'Neustadt']);
+    expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);
+    expect(kartenFeld(host, 'Ort', 'Gemeinde').value).toBe('Neustadt');
+
+    // derselbe Eintrag inzwischen anders: nichts wird geschrieben
+    eingabe(kartenFeld(host, 'Name/Firma', 'Bauherr'), 'Beispiel');
+    ds.projektkarten.get(KARTE)!.eintraege[1].text = 'von FORMA';
+    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    expect(host.textContent).toContain('inzwischen geändert');
+    expect(ds.projektkarten.get(KARTE)!.eintraege[1].text).toBe('von FORMA');
+  });
+
+  it('füllt das Formular aus der Projektkarte – leere Felder vorgewählt, in einem rückgängig zu machenden Schritt', async () => {
+    const host = await oeffneMuster();
+    // Projektkarte vorher ändern (noch nicht gespeichert): zählt beim Ausfüllen mit
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    eingabe(kartenFeld(host, 'PLZ Straße', 'Gemeinde'), '12345');
+    await klick(knopf(host, '001-Muster'));
+
+    await klick(knopf(host, 'Aus Projektkarte ausfüllen'));
+    const zeilen = [...host.querySelectorAll('.fo-ausfuellen-zeile')];
+    // Memo2 (leer) → „12345 Musterstadt“; Memo1 hat eigenen Inhalt → nicht vorgewählt
+    expect(zeilen.map((z) => [z.querySelector('strong')!.textContent, z.querySelector('input')!.checked])).toEqual([
+      ['Bauherrschaft', false],
+      ['Bauherrschaft', true],
+    ]);
+    expect(zeilen[1].textContent).toContain('12345 Musterstadt');
+    await klick(knopf(host, '1 Feld(er) übernehmen'));
+    expect(feld(host, 'Bauherrschaft', 1).value).toBe('12345 Musterstadt');
+    expect(feld(host, 'Bauherrschaft', 0).value).toBe('Mustermann, Max');
+
+    await klick(knopfMit(host, 'Rückgängig'));
+    expect(feld(host, 'Bauherrschaft', 1).value).toBe('');
+  });
+
+  it('zeigt den echten Projektordner zum Kürzel, beschränkt auf die ausgewählten Pfade', async () => {
+    ds.dateien.set('Z:/Projekte/BS9 Musterstraße 9/Organisation/BS9 Projektdaten.xlsx', new Uint8Array([1]));
+    ds.dateien.set('Z:/Projekte/BS9 Musterstraße 9/Organisation/Vertrag.pdf', new Uint8Array([1]));
+    ds.dateien.set('Z:/Projekte/BS9 Musterstraße 9/Fotos/a.jpg', new Uint8Array([1]));
+    ds.dateien.set('Z:/Projekte/_Akquise/XY1 Anfrage/a.txt', new Uint8Array([1]));
+    useFormulare.setState({ ablageordner: ['Z:/Projekte'], vorgabeAuswahl: ['Organisation'] });
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await warte();
+    const block = host.querySelector('.fo-baum')!.closest('.fo-block')!;
+    expect(block.textContent).toContain('BS9 Musterstraße 9');
+    expect(knopf(block, 'Organisation')).toBeDefined();
+    expect(knopf(block, 'Fotos')).toBeUndefined();
+    await klick(knopf(block, 'Organisation'));
+    await warte();
+    expect(knopf(block, 'BS9 Projektdaten.xlsx')).toBeDefined();
+    expect(knopf(block, 'Vertrag.pdf')).toBeDefined();
+  });
+
+  it('Schnellwahl mit Strg+K: Kürzel tippen, Enter öffnet das Projekt', async () => {
+    const host = await render();
+    taste(window, 'k', { ctrlKey: true });
+    await warte();
+    const suche = host.querySelector<HTMLInputElement>('.fo-schnellwahl input')!;
+    eingabe(suche, 'bs9');
+    taste(suche, 'Enter');
+    await warte();
+    expect(host.querySelector('.fo-schnellwahl')).toBeNull();
+    expect(useFormulare.getState().projekt?.ordner).toBe('BS9');
   });
 });

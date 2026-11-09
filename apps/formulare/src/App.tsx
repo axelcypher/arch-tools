@@ -1,16 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
+import { anzahlZugeordnet } from './ausfuellen';
+import { AusfuellenDialog } from './components/AusfuellenDialog';
+import { Einstellungen } from './components/Einstellungen';
 import { FelderAnsicht } from './components/FelderAnsicht';
+import { ProjektkarteAnsicht } from './components/ProjektkarteAnsicht';
+import { Schnellwahl } from './components/Schnellwahl';
 import { SeitenAnsicht } from './components/SeitenAnsicht';
 import { Seitenleiste } from './components/Seitenleiste';
+import { VerlaufLeiste } from './components/VerlaufLeiste';
 import { kennung, stand } from './forma/formular';
+import { springeZuFeld } from './navigation';
 import type { Ansicht, OffenesFormular } from './store';
-import { istGeaendert, useFormulare } from './store';
+import { ZOOMSTUFEN, istGeaendert, kannVor, kannZurueck, useFormulare } from './store';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
-  { id: 'felder', label: 'Felder', title: 'Alle Felder aufgeräumt nach Abschnitten – zum schnellen Ausfüllen' },
-  { id: 'seite', label: 'Seite', title: 'Die Seiten so, wie FORMA sie zeigt – zur Kontrolle' },
+  { id: 'seite', label: 'Formular', title: 'Die Seiten wie auf Papier – so werden sie gedruckt' },
+  { id: 'felder', label: 'Felder', title: 'Die Felder im Aufbau des Formulars, groß und durchsuchbar' },
 ];
 
 /** Warum nicht bearbeitet werden kann – sonst null */
@@ -22,17 +29,39 @@ function sperrgrund(o: OffenesFormular): string | null {
   return `Nur ansehen: Das Formular ist bei ${wer} geöffnet${s.angemeldet ? ` (seit ${s.angemeldet})` : ''}.`;
 }
 
+const uhrzeit = (ms: number) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+/** Formular drucken (auch als PDF): immer die Formularansicht, in Originalgröße */
+async function drucken() {
+  const { ansicht, setAnsicht } = useFormulare.getState();
+  if (ansicht !== 'seite') {
+    setAnsicht('seite');
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  window.print();
+  if (ansicht !== 'seite') setAnsicht(ansicht);
+}
+
+/** Feld nach Rückgängig/Wiederholen zeigen */
+const zeige = (schluessel: string | null) => schluessel && requestAnimationFrame(() => springeZuFeld(schluessel));
+
 export function App() {
   const ds = useFormulare((s) => s.ds);
   const offen = useFormulare((s) => s.offen);
+  const projekt = useFormulare((s) => s.projekt);
+  const haupt = useFormulare((s) => s.haupt);
   const ansicht = useFormulare((s) => s.ansicht);
+  const zoom = useFormulare((s) => s.zoom);
+  const verlaufOffen = useFormulare((s) => s.verlaufOffen);
   const meldung = useFormulare((s) => s.meldung);
   const konflikt = useFormulare((s) => s.konflikt);
-  const { setAnsicht, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden } = useFormulare.getState();
-  const [logOpen, setLogOpen] = useState(false);
+  const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen } = useFormulare.getState();
+  const [dialog, setDialog] = useState<'log' | 'einstellungen' | 'schnellwahl' | 'ausfuellen' | null>(null);
   const geaendert = istGeaendert(offen);
   const grund = offen ? sperrgrund(offen) : null;
-  const name = offen?.name ?? 'Kein Formular geöffnet';
+  const name = haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
+  const zugeordnet = useMemo(() => (offen ? anzahlZugeordnet(offen) : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
+  const formularSichtbar = !!offen && haupt === 'formular';
 
   useEffect(() => {
     document.title = `${geaendert ? '● ' : ''}${name} – Formulare`;
@@ -42,54 +71,130 @@ export function App() {
     void projekteLaden();
   }, [projekteLaden]);
 
-  // Strg+S speichert
+  // Tastenkürzel
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const s = useFormulare.getState();
+      const taste = e.key.toLowerCase();
+      if (taste === 's') {
         e.preventDefault();
-        void useFormulare.getState().speichern();
+        void (s.haupt === 'projektkarte' ? s.karteSpeichern() : s.speichern());
+      } else if (taste === 'k') {
+        e.preventDefault();
+        setDialog('schnellwahl');
+      } else if (taste === 'p' && s.offen && s.haupt === 'formular') {
+        e.preventDefault();
+        void drucken();
+      } else if (s.offen && s.haupt === 'formular' && ((taste === 'z' && !e.shiftKey) || taste === 'y' || (taste === 'z' && e.shiftKey))) {
+        // eigener Verlauf statt des Rückgängig der Eingabefelder (das kennt die Feldwechsel nicht)
+        e.preventDefault();
+        zeige(taste === 'z' && !e.shiftKey ? s.rueckgaengig() : s.wiederholen());
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  const zoomStufe = (richtung: 1 | -1) => {
+    const aktuell = zoom || 1;
+    const i = ZOOMSTUFEN.findIndex((z) => z >= aktuell);
+    const n = Math.max(0, Math.min(ZOOMSTUFEN.length - 1, (i < 0 ? ZOOMSTUFEN.length - 1 : i) + richtung));
+    setZoom(ZOOMSTUFEN[n]);
+  };
+
   return (
     <div className="app">
-      <TitleBar app="Formulare" name={name} dirty={geaendert} onOpenLog={() => setLogOpen(true)} />
+      <TitleBar app="Formulare" name={name} dirty={geaendert} onOpenLog={() => setDialog('log')} />
       <div className="toolbar">
-        <div className="tb-group">
-          {ANSICHTEN.map((a) => (
-            <button key={a.id} className={ansicht === a.id ? 'active' : ''} title={a.title} onClick={() => setAnsicht(a.id)}>
-              {a.label}
+        {formularSichtbar && (
+          <div className="tb-group">
+            {ANSICHTEN.map((a) => (
+              <button key={a.id} className={ansicht === a.id ? 'active' : ''} title={a.title} onClick={() => setAnsicht(a.id)}>
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {formularSichtbar && (
+          <div className="tb-group">
+            <button disabled={!kannZurueck(offen) || !!grund} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeige(rueckgaengig())}>
+              ↶
             </button>
-          ))}
-        </div>
-        <div className="tb-group">
-          <button className="primary" disabled={!geaendert || !!grund || konflikt} title="Speichern (Strg+S)" onClick={() => void speichern()}>
-            {ds ? 'Speichern' : 'Herunterladen'}
-          </button>
-          {konflikt && (
-            <button title="Datei neu einlesen; deine Eingaben werden wieder eingetragen" onClick={() => void neuLaden()}>
-              Neu laden
+            <button disabled={!kannVor(offen) || !!grund} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeige(wiederholen())}>
+              ↷
             </button>
-          )}
-        </div>
+            <button className="primary" disabled={!geaendert || !!grund || konflikt} title="In die FORMA-Datei speichern (Strg+S)" onClick={() => void speichern()}>
+              {ds ? 'Speichern' : 'Herunterladen'}
+            </button>
+            {konflikt && (
+              <button title="Datei neu einlesen; deine Eingaben werden wieder eingetragen" onClick={() => void neuLaden()}>
+                Neu laden
+              </button>
+            )}
+          </div>
+        )}
+        {formularSichtbar && ds && projekt && zugeordnet > 0 && (
+          <div className="tb-group">
+            <button disabled={!!grund} title={`${zugeordnet} Felder dieses Formulars kommen aus der Projektkarte`} onClick={() => setDialog('ausfuellen')}>
+              Aus Projektkarte ausfüllen …
+            </button>
+          </div>
+        )}
+        {formularSichtbar && ansicht === 'seite' && (
+          <div className="tb-group fo-zoom">
+            <button title="Verkleinern" aria-label="Verkleinern" onClick={() => zoomStufe(-1)}>
+              −
+            </button>
+            <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
+              <option value={0}>Seitenbreite</option>
+              {ZOOMSTUFEN.map((z) => (
+                <option key={z} value={z}>
+                  {Math.round(z * 100)} %
+                </option>
+              ))}
+            </select>
+            <button title="Vergrößern" aria-label="Vergrößern" onClick={() => zoomStufe(1)}>
+              +
+            </button>
+          </div>
+        )}
+        {formularSichtbar && (
+          <div className="tb-group">
+            <button title="Drucken oder als PDF speichern (Strg+P)" onClick={() => void drucken()}>
+              Drucken
+            </button>
+            <button className={verlaufOffen ? 'active' : ''} title="Verlauf der Eingaben" onClick={() => setVerlaufOffen(!verlaufOffen)}>
+              Verlauf
+            </button>
+          </div>
+        )}
         {!ds && (
           <div className="tb-group">
             <button onClick={() => void dateiOeffnen()}>Formular öffnen …</button>
           </div>
         )}
         <span className="tb-spacer" />
-        {offen && (
-          <span className="muted small-text">
+        {formularSichtbar && (
+          <span className="muted small-text fo-status">
             {[kennung(offen.formular), stand(offen.formular) && `Stand ${stand(offen.formular)}`].filter(Boolean).join(' · ')}
             {geaendert && ` · ${Object.keys(offen.aenderungen).length} Feld(er) geändert`}
+            {geaendert && offen.gesichert && ` · lokal gesichert ${uhrzeit(offen.gesichert)}`}
           </span>
         )}
+        {ds && (
+          <div className="tb-group">
+            <button title="Projekt oder Formular suchen (Strg+K)" onClick={() => setDialog('schnellwahl')}>
+              Suchen …
+            </button>
+            <button title="Einstellungen" aria-label="Einstellungen" onClick={() => setDialog('einstellungen')}>
+              ⚙
+            </button>
+          </div>
+        )}
       </div>
-      {(meldung || grund) && (
-        <div className={`fo-meldung ${meldung?.art === 'fehler' ? 'fehler' : grund ? 'hinweis' : 'info'}`} role="status">
+      {(meldung || (formularSichtbar && grund)) && (
+        <div className={`fo-meldung ${meldung?.art === 'fehler' ? 'fehler' : meldung ? 'info' : 'hinweis'}`} role="status">
           <span>{meldung?.text ?? grund}</span>
           {meldung && (
             <button className="fo-klein" title="Schließen" onClick={() => setMeldung(null)}>
@@ -99,25 +204,31 @@ export function App() {
         </div>
       )}
       <main className="fo-main">
-        {ds && <Seitenleiste />}
-        <section className="fo-inhalt">
-          {offen ? (
+        {ds && <Seitenleiste onSchnellwahl={() => setDialog('schnellwahl')} onEinstellungen={() => setDialog('einstellungen')} />}
+        <section className={`fo-inhalt${formularSichtbar && ansicht === 'seite' ? ' fo-inhalt-papier' : ''}`}>
+          {haupt === 'projektkarte' && projekt ? (
+            <ProjektkarteAnsicht />
+          ) : offen ? (
             ansicht === 'felder' ? (
               <FelderAnsicht offen={offen} gesperrt={!!grund} />
             ) : (
               <SeitenAnsicht offen={offen} gesperrt={!!grund} />
             )
           ) : (
-            <Leer desktop={!!ds} />
+            <Leer desktop={!!ds} onEinstellungen={() => setDialog('einstellungen')} />
           )}
         </section>
+        {formularSichtbar && verlaufOffen && <VerlaufLeiste offen={offen} />}
       </main>
-      {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
+      {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
+      {dialog === 'einstellungen' && <Einstellungen onClose={() => setDialog(null)} />}
+      {dialog === 'schnellwahl' && <Schnellwahl onClose={() => setDialog(null)} />}
+      {dialog === 'ausfuellen' && offen && <AusfuellenDialog offen={offen} onClose={() => setDialog(null)} />}
     </div>
   );
 }
 
-function Leer({ desktop }: { desktop: boolean }) {
+function Leer({ desktop, onEinstellungen }: { desktop: boolean; onEinstellungen: () => void }) {
   const ordner = useFormulare((s) => s.projektordner.length);
   const projekt = useFormulare((s) => s.projekt);
   return (
@@ -129,12 +240,21 @@ function Leer({ desktop }: { desktop: boolean }) {
           direktes Speichern gibt es nur in der Desktop-App.
         </p>
       )}
-      {desktop && !ordner && <p>Füge links den Ordner hinzu, in dem eure FORMA-Projekte liegen. Es können mehrere sein.</p>}
-      {desktop && ordner > 0 && !projekt && <p>Wähle links ein Projekt.</p>}
-      {desktop && projekt && <p>Wähle links ein Formular.</p>}
+      {desktop && !ordner && (
+        <p>
+          Stelle zuerst ein, wo eure FORMA-Projekte liegen. <button onClick={onEinstellungen}>Einstellungen …</button>
+        </p>
+      )}
+      {desktop && ordner > 0 && !projekt && (
+        <p>
+          Wähle links ein Projekt – oder suche mit <kbd>Strg</kbd>+<kbd>K</kbd> nach Kürzel oder Titel.
+        </p>
+      )}
+      {desktop && projekt && <p>Wähle links ein Formular oder die Projektkarte.</p>}
       <p className="muted small-text">
-        Geändert wird nur der Inhalt der Felder – Layout und alles andere bleiben Byte für Byte erhalten, damit FORMA die Dateien weiter liest. Ist ein Formular in FORMA
-        geöffnet, lässt es sich hier nur ansehen.
+        Jede Eingabe wird sofort lokal gesichert, mit Verlauf (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>). In die FORMA-Datei kommt sie mit „Speichern“ (
+        <kbd>Strg</kbd>+<kbd>S</kbd>) – geändert wird nur der Inhalt der Felder, Layout und alles andere bleiben Byte für Byte erhalten. Ist ein Formular in FORMA geöffnet, lässt
+        es sich hier nur ansehen.
       </p>
     </div>
   );

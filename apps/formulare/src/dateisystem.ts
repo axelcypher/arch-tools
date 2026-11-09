@@ -1,10 +1,12 @@
 import { base64ToBytes, bytesToBase64, isTauri } from '@core/platform/files';
+import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
+import type { Projektkarte } from './forma/projektkarte';
 
 /**
  * Zugriff auf die FORMA-Projektordner. In der Desktop-App über eigene Befehle der Tauri-Hülle, die nur
- * vorhandene Formulare ersetzen (atomar) und nur Sperrdateien anlegen oder löschen – sonst wird nichts
- * geschrieben. Im Browser gibt es keinen Ordnerzugriff: Dort wird ein einzelnes Formular geöffnet und die
- * geänderte Fassung heruntergeladen.
+ * vorhandene Formulare ersetzen (atomar), nur Sperrdateien anlegen oder löschen und in der Projektkarte nur
+ * vorhandene Einträge ändern – sonst wird nichts geschrieben. Im Browser gibt es keinen Ordnerzugriff: Dort wird
+ * ein einzelnes Formular geöffnet und die geänderte Fassung heruntergeladen.
  *
  * Pfade sind relativ zum Projektordner (dem Ordner, in dem die FORMA-Projekte liegen), mit „/“ getrennt.
  */
@@ -21,6 +23,14 @@ export interface Rechner {
   prozess: number;
 }
 
+/** Änderung eines Projektkarten-Eintrags; geschrieben wird nur, wenn er noch `alt` enthält */
+export interface PkAenderung {
+  gruppe: number;
+  id: number;
+  alt: string;
+  neu: string;
+}
+
 export interface Dateisystem {
   /** Ordner und Dateien unter `root` bis zur Tiefe `tiefe` (1 = nur direkt enthaltene) */
   liste(root: string, tiefe: number): Promise<Eintrag[]>;
@@ -32,6 +42,10 @@ export interface Dateisystem {
   sperreSetzen(root: string, pfad: string, daten: Uint8Array): Promise<boolean>;
   /** Löscht die Sperrdatei, aber nur wenn sie noch genau `daten` enthält (also die eigene ist) */
   sperreLoesen(root: string, pfad: string, daten: Uint8Array): Promise<boolean>;
+  /** Projektkarte (`sj_prokarte.sdb`) lesen; `null`, wenn es keine gibt */
+  projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null>;
+  /** Einträge der Projektkarte ändern – alle oder keiner; Fehler, wenn einer inzwischen anders lautet */
+  projektkarteSchreiben(root: string, pfad: string, aenderungen: PkAenderung[]): Promise<void>;
   rechner(): Promise<Rechner>;
 }
 
@@ -39,6 +53,38 @@ async function invoke<T>(befehl: string, args: Record<string, unknown> = {}): Pr
   const api = await import('@tauri-apps/api/core');
   return api.invoke<T>(befehl, args);
 }
+
+interface PkRoh {
+  gruppen: { id: number; typ: number; text: number[] }[];
+  inhalte: { gruppe: number; id: number; typ: number; titel: number[]; texte: number[] }[];
+}
+
+/**
+ * Text aus der Projektkarte: FORMA speichert UTF-8 (`PRAGMA encoding`). Ungültige Bytes – etwa aus einer
+ * älteren Fassung in Windows-1252 – werden als Windows-1252 gelesen statt verworfen.
+ */
+export function pkText(b: number[] | Uint8Array): string {
+  const bytes = b instanceof Uint8Array ? b : new Uint8Array(b);
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return cp1252Lesen(bytes);
+  }
+}
+
+/**
+ * Text für die Projektkarte (UTF-8). Zeichen, die es in Windows-1252 nicht gibt (z. B. Emojis), werden
+ * abgelehnt: FORMA zeigt in seinen Formularen nur diesen Zeichensatz zuverlässig an.
+ */
+export function pkBytes(s: string): number[] {
+  if (cp1252Lesen(cp1252Schreiben(s)) !== s) {
+    const falsch = [...s].filter((c) => cp1252Lesen(cp1252Schreiben(c)) !== c);
+    throw new Error(`Diese Zeichen kann FORMA nicht darstellen: ${[...new Set(falsch)].join(' ')}`);
+  }
+  return [...new TextEncoder().encode(s)];
+}
+
+const text = pkText;
 
 export const tauriDateisystem: Dateisystem = {
   liste: (root, tiefe) => invoke<Eintrag[]>('fs_list', { root, tiefe }),
@@ -49,6 +95,16 @@ export const tauriDateisystem: Dateisystem = {
   ersetze: (root, pfad, daten) => invoke<void>('fs_replace', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   sperreSetzen: (root, pfad, daten) => invoke<boolean>('lock_create', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   sperreLoesen: (root, pfad, daten) => invoke<boolean>('lock_release', { root, pfad, contentsBase64: bytesToBase64(daten) }),
+  projektkarteLesen: async (root, pfad) => {
+    const roh = await invoke<PkRoh | null>('prokarte_read', { root, pfad });
+    if (!roh) return null;
+    return {
+      gruppen: roh.gruppen.map((g) => ({ id: g.id, typ: g.typ, text: text(g.text) })),
+      eintraege: roh.inhalte.map((e) => ({ gruppe: e.gruppe, id: e.id, typ: e.typ, titel: text(e.titel), text: text(e.texte) })),
+    };
+  },
+  projektkarteSchreiben: (root, pfad, aenderungen) =>
+    invoke<void>('prokarte_write', { root, pfad, aenderungen: aenderungen.map((a) => ({ gruppe: a.gruppe, id: a.id, alt: pkBytes(a.alt), neu: pkBytes(a.neu) })) }),
   rechner: () => invoke<Rechner>('machine_info'),
 };
 
@@ -58,8 +114,9 @@ export async function waehleOrdner(titel: string): Promise<string | null> {
   return invoke<string | null>('pick_folder', { title: titel });
 }
 
-export async function oeffneOrdner(pfad: string): Promise<void> {
-  await invoke<void>('open_folder', { pfad });
+/** Zeigt einen Ordner im Explorer bzw. öffnet eine Datei mit dem zugehörigen Programm */
+export async function oeffnePfad(pfad: string): Promise<void> {
+  await invoke<void>('open_path', { pfad });
 }
 
 /** Pfad aus Ordner und relativem Teil – mit dem Trenner, den der Ordner schon verwendet */
@@ -75,6 +132,8 @@ const gleich = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.ever
 /** Dateisystem im Speicher: Schlüssel sind vollständige Pfade mit „/“; Ordner entstehen implizit */
 export class SpeicherDateisystem implements Dateisystem {
   readonly dateien = new Map<string, Uint8Array>();
+  /** Projektkarten je vollständigem Pfad der .sdb (die Datei selbst muss in `dateien` stehen) */
+  readonly projektkarten = new Map<string, Projektkarte>();
   /** Protokoll der schreibenden Aufrufe */
   readonly schreibvorgaenge: string[] = [];
 
@@ -126,6 +185,25 @@ export class SpeicherDateisystem implements Dateisystem {
     this.dateien.delete(p);
     this.schreibvorgaenge.push(`entsperre ${pfad}`);
     return true;
+  }
+
+  async projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null> {
+    const pk = this.projektkarten.get(this.pfad(root, pfad));
+    return pk ? structuredClone(pk) : null;
+  }
+
+  async projektkarteSchreiben(root: string, pfad: string, aenderungen: PkAenderung[]): Promise<void> {
+    const pk = this.projektkarten.get(this.pfad(root, pfad));
+    if (!pk) throw new Error(`${pfad}: nicht gefunden`);
+    for (const a of aenderungen) pkBytes(a.neu);
+    const ziele = aenderungen.map((a) => {
+      const e = pk.eintraege.find((x) => x.gruppe === a.gruppe && x.id === a.id);
+      if (!e) throw new Error(`Eintrag ${a.gruppe}/${a.id} gibt es nicht`);
+      if (e.text !== a.alt) throw new Error(`Die Projektkarte wurde inzwischen geändert (${e.titel})`);
+      return { e, neu: a.neu };
+    });
+    for (const { e, neu } of ziele) e.text = neu;
+    this.schreibvorgaenge.push(`projektkarte ${pfad} (${aenderungen.length})`);
   }
 
   async rechner(): Promise<Rechner> {

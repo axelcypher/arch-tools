@@ -39,6 +39,8 @@ export interface Feld {
 export interface Abschnitt {
   titel: string;
   felder: Feld[];
+  /** umgebender Rahmen (TPanel) */
+  rahmen: Kasten | null;
 }
 
 export const feldSchluessel = (seite: number, name: string) => `${seite}:${name}`;
@@ -152,9 +154,43 @@ export function abschnitte(felder: Feld[]): Abschnitt[] {
     const letzter = out[out.length - 1];
     const gleicherRahmen = letzter && rahmenVon(letzter.felder[0]) === rahmen;
     if (gleicherRahmen) letzter.felder.push(f);
-    else out.push({ titel: f.abschnitt, felder: [f] });
+    else out.push({ titel: f.abschnitt, felder: [f], rahmen });
   }
   return out;
+}
+
+/** senkrechte Überlappung zweier Bereiche, mit etwas Toleranz für knapp aneinanderstoßende */
+const nebeneinander = (a: { y: number; h: number }, b: { y: number; h: number }) => a.y < b.y + b.h - 2 && b.y < a.y + a.h - 2;
+
+/**
+ * Felder eines Abschnitts in Zeilen wie auf dem Papier: Felder, die sich senkrecht überlappen, stehen
+ * nebeneinander (z. B. Gemarkung | Flur | Flurstück), von links nach rechts.
+ */
+export function zeilen(felder: Feld[]): Feld[][] {
+  const out: { y: number; h: number; felder: Feld[] }[] = [];
+  for (const f of [...felder].sort((a, b) => a.kasten.y - b.kasten.y || a.kasten.x - b.kasten.x)) {
+    const z = out.find((z) => nebeneinander(z, f.kasten));
+    if (z) {
+      z.felder.push(f);
+      const unten = Math.max(z.y + z.h, f.kasten.y + f.kasten.h);
+      z.h = unten - z.y;
+    } else {
+      out.push({ y: f.kasten.y, h: f.kasten.h, felder: [f] });
+    }
+  }
+  return out.map((z) => z.felder.sort((a, b) => a.kasten.x - b.kasten.x));
+}
+
+/** Abschnitte, deren Rahmen auf dem Papier nebeneinander stehen (z. B. Bauherrschaft | Entwurfsverfasser) */
+export function abschnittsReihen(liste: Abschnitt[]): Abschnitt[][] {
+  const out: Abschnitt[][] = [];
+  for (const a of liste) {
+    const reihe = out[out.length - 1];
+    const r = a.rahmen;
+    if (reihe && r && reihe.every((b) => b.rahmen && nebeneinander(b.rahmen, r) && b.rahmen.x !== r.x)) reihe.push(a);
+    else out.push([a]);
+  }
+  return out.map((r) => r.sort((a, b) => (a.rahmen?.x ?? 0) - (b.rahmen?.x ?? 0)));
 }
 
 function rahmenVon(f: Feld): Kasten | null {
