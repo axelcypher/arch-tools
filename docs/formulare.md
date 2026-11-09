@@ -22,7 +22,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   oder 75–200 %). So werden sie auch gedruckt.
 - **Ansicht „Felder“:** dieselben Felder im Aufbau des Formulars – nebeneinanderliegende Abschnitte auch hier
   nebeneinander, Felder einer Zeile in einer Zeile –, groß und durchsuchbar, Filter „Leere“ und „Geänderte“.
-- **Gliederung:** links Seiten und Abschnitte des offenen Formulars mit Füllstand (z. B. 3/5); ein Klick springt hin.
+- **Gliederung:** eigener Bereich direkt am Formular („Inhalt des Formulars“, im Ton der Formularfläche – getrennt
+  von der Navigation links): Seiten und Abschnitte mit Füllstand (z. B. 3/5); ein Klick springt hin. Ein- und
+  ausblenden über „Gliederung“ in der Werkzeugleiste.
 - **Tastatur:** <kbd>Tab</kbd> und <kbd>Enter</kbd> (in einzeiligen Feldern) gehen in Lesereihenfolge zum nächsten
   Feld – auf dem Papier von oben nach unten, nebeneinanderliegende Rahmen von links nach rechts.
 - **Speichern** (<kbd>Strg</kbd>+<kbd>S</kbd>) schreibt die geänderten Felder in die FORMA-Datei. Vorher wird sie
@@ -87,11 +89,25 @@ schon als PDF vorliegen, welche Berechnungen es gibt); dort wird nichts geschrie
 FORMA legt neben jedes geöffnete Formular eine Sperrdatei (gleicher Name, Endung `.frmtmp`). Die App hält es
 genauso:
 
-- Liegt beim Öffnen schon eine Sperrdatei da, ist das Formular anderswo geöffnet – es wird **nur angezeigt**,
-  mit Benutzer, Rechner und Zeitpunkt aus der Sperrdatei.
-- Sonst legt die App eine eigene Sperrdatei im selben Format an und entfernt sie beim Schließen des Formulars
-  bzw. beim Beenden – aber nur, solange sie noch genau den eigenen Inhalt hat.
-- Bleibt eine Sperrdatei nach einem Absturz liegen, muss sie von Hand gelöscht werden (wie bei FORMA).
+- Ist das Formular frei, legt die App eine eigene Sperrdatei im selben Format an (`InGebrauch` = ihre
+  Prozessnummer) und **hält sie offen**, solange das Formular geöffnet ist (andere dürfen lesen, nicht löschen).
+  Beim Schließen bzw. Beenden wird sie entfernt – nur, solange sie noch genau den eigenen Inhalt hat.
+- **Nach einem Absturz:** Jede eigene Sperre ist im Speicher der App vermerkt. Beim nächsten Start (und beim
+  Öffnen des Formulars) wird sie gelöscht, wenn sie noch den eigenen Inhalt hat und kein Programm sie offen hält.
+- Liegt beim Öffnen eine fremde Sperrdatei da, wird das Formular **nur angezeigt**. Die App prüft, ob die Sperre
+  noch in Gebrauch ist, und zeigt das Ergebnis mit Benutzer, Rechner und Zeitpunkt:
+  - **In Gebrauch:** Ein Programm hält die Datei offen (diese App tut das immer, FORMA womöglich auch) – oder
+    auf diesem Rechner läuft das Programm mit der eingetragenen Prozessnummer noch (FORMA/SJ OFFICE, Formulare).
+  - **Verwaist:** Auf diesem Rechner läuft kein Programm mit der Nummer mehr bzw. die Nummer gehört einem
+    anderen Programm – oder die Sperre eines anderen Rechners ist älter als 12 Stunden und nicht offen gehalten.
+  - **Nicht prüfbar:** Sperre eines anderen Rechners, jünger als 12 Stunden – ob das Formular dort noch offen ist,
+    lässt sich von hier nicht feststellen.
+- **Erneut prüfen** bewertet die Sperre neu; ist sie inzwischen weg, wird das Formular zum Bearbeiten geöffnet.
+- **Sperre aufheben …** löscht die Sperrdatei nach einer Bestätigung (mit Warnung, wenn sie nicht sicher verwaist
+  ist) und öffnet das Formular zum Bearbeiten. Hält ein Programm die Datei offen, geht das nicht. Gelöscht wird
+  nur, wenn die Datei noch genau den angezeigten Inhalt hat.
+- **Übersicht** (🔒 über den Formularen): alle Sperrdateien des Projekts, auch solche ohne Formular, mit
+  Bewertung und „Aufheben …“.
 
 ### Web-Version
 
@@ -184,7 +200,8 @@ wie Delphi, `formular.ts` liest und schreibt Formulardateien und ändert Textfel
 Feld → Projektkarte, `sperre.ts` liest und schreibt Sperrdateien. `verlauf.ts` ist der Verlauf, `ablage.ts` die
 Zuordnung der echten Projektordner.
 
-Die Tauri-Hülle (`src-tauri/src/lib.rs`) ersetzt nur vorhandene `.frmsjf` (atomar über eine temporäre Datei),
+Die Tauri-Hülle (`src-tauri/src/lib.rs`) ersetzt nur vorhandene `.frmsjf` (atomar über eine temporäre Datei), prüft
+Sperrdateien (offen gehalten? Prozess auf diesem Rechner?),
 legt nur `.frmtmp` an bzw. löscht sie und ändert in `sj_prokarte.sdb` nur vorhandene Einträge – in einer
 Transaktion, und nur, wenn jeder noch den Wert hat, von dem die Änderung ausgeht. Sonst schreibt sie nichts.
 
@@ -215,7 +232,9 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
 
 - **Gegenprobe in FORMA:** eine hier gespeicherte Datei und Projektkarte in FORMA öffnen, prüfen und dort wieder
   speichern – insbesondere eine hier gewählte Anrede (Zählweise der Auswahlliste).
-- **`InGebrauch` in der Sperrdatei:** Bedeutung unbekannt; die App trägt ihre Prozessnummer ein.
+- **`InGebrauch` in der Sperrdatei:** Bedeutung bei FORMA unbekannt; die App trägt ihre Prozessnummer ein. Ist
+  es auch bei FORMA die Prozessnummer, erkennt die App verwaiste FORMA-Sperren auf demselben Rechner sicher.
+  Zu prüfen: Hält FORMA seine Sperrdatei offen (dann zeigt die App sie als „In Gebrauch“)?
 - **Neue Formulare und neue Formularfassungen:** brauchen die Formularbibliothek von FORMA (Vorlagen).
 - **`Projektdaten.xlsx`** im echten Projektordner (`Organisation/<Kürzel> Projektdaten.xlsx`) lesen und beim
   Eintragen mitschreiben – Aufbau der Datei noch unbekannt.

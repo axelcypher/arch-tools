@@ -21,9 +21,54 @@ const MAX_LESEN: u64 = 64 * 1024 * 1024;
 /// Obergrenze der Einträge beim Auflisten (Schutz vor versehentlich gewählten Laufwerken)
 const MAX_EINTRAEGE: usize = 50_000;
 
-/// Sperrdateien, die diese App angelegt hat, mit ihrem Inhalt
+/// Sperrdateien, die diese App angelegt hat: Inhalt und ein offener Griff darauf. Solange der Griff offen ist,
+/// kann kein anderes Programm die Datei löschen oder exklusiv öffnen – daran erkennt jeder Rechner im Netz, dass
+/// die Sperre benutzt wird. Stürzt die App ab, schließt Windows den Griff: Die Datei bleibt, gilt aber als frei.
 #[derive(Default)]
-struct EigeneSperren(Mutex<HashMap<PathBuf, Vec<u8>>>);
+struct EigeneSperren(Mutex<HashMap<PathBuf, (Vec<u8>, std::fs::File)>>);
+
+#[derive(serde::Serialize)]
+struct SperrProbe {
+    /// Inhalt der Sperrdatei (Base64)
+    inhalt: String,
+    /// ein Programm hält die Datei offen (nur unter Windows prüfbar)
+    offen: bool,
+    /// von dieser App in diesem Lauf angelegt
+    eigen: bool,
+    /// letzte Änderung (ms seit 1970)
+    geaendert: u64,
+}
+
+/// Lesegriff, der anderen nur das Lesen erlaubt (FORMA zeigt an, wer das Formular geöffnet hat)
+fn griff_oeffnen(p: &Path) -> std::io::Result<std::fs::File> {
+    let mut o = std::fs::OpenOptions::new();
+    o.read(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        o.share_mode(0x0000_0001); // FILE_SHARE_READ
+    }
+    o.open(p)
+}
+
+/// Hält ein anderes Programm die Datei offen? Probe: exklusiv öffnen – scheitert das an der gemeinsamen
+/// Nutzung, ist sie in Gebrauch. Ohne Windows lässt sich das nicht feststellen.
+fn wird_benutzt(p: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        // 32 = ERROR_SHARING_VIOLATION, 33 = ERROR_LOCK_VIOLATION
+        matches!(
+            std::fs::OpenOptions::new().read(true).share_mode(0).open(p),
+            Err(e) if matches!(e.raw_os_error(), Some(32) | Some(33))
+        )
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = p;
+        false
+    }
+}
 
 #[derive(serde::Serialize)]
 struct Eintrag {
@@ -179,8 +224,11 @@ async fn lock_create(
     // create_new: schlägt fehl, wenn die Datei existiert – nie eine fremde Sperre überschreiben
     match std::fs::OpenOptions::new().write(true).create_new(true).open(&p) {
         Ok(mut f) => {
-            f.write_all(&bytes).map_err(|e| format!("{}: {}", p.display(), e))?;
-            sperren.0.lock().map_err(|e| e.to_string())?.insert(p.clone(), bytes);
+            f.write_all(&bytes).and_then(|_| f.flush()).map_err(|e| format!("{}: {}", p.display(), e))?;
+            drop(f);
+            // offen halten, solange das Formular geöffnet ist (nur lesend – FORMA darf die Sperre lesen)
+            let griff = griff_oeffnen(&p).map_err(|e| format!("{}: {}", p.display(), e))?;
+            sperren.0.lock().map_err(|e| e.to_string())?.insert(p.clone(), (bytes, griff));
             log::info!("Gesperrt: {}", p.display());
             Ok(true)
         }
@@ -189,11 +237,79 @@ async fn lock_create(
     }
 }
 
+/// Zustand einer Sperrdatei: Inhalt, ob ein Programm sie offen hält, ob sie von dieser App stammt, Alter.
+/// `None`, wenn es sie nicht gibt.
+#[tauri::command]
+async fn lock_probe(sperren: tauri::State<'_, EigeneSperren>, root: String, pfad: String) -> Result<Option<SperrProbe>, String> {
+    let p = unterhalb(&root, &pfad)?;
+    if !endung_ist(&p, "frmtmp") {
+        return Err(format!("{}: Keine Sperrdatei (.frmtmp)", p.display()));
+    }
+    let eigen = sperren.0.lock().map_err(|e| e.to_string())?.contains_key(&p);
+    let ziel = p.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let p = ziel;
+        let inhalt = match std::fs::read(&p) {
+            Ok(b) => b,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(e) => return Err(format!("{}: {}", p.display(), e)),
+        };
+        let geaendert = std::fs::metadata(&p)
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        Ok(Some(SperrProbe {
+            inhalt: base64::engine::general_purpose::STANDARD.encode(inhalt),
+            offen: wird_benutzt(&p),
+            eigen,
+            geaendert,
+        }))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Name des Programms mit dieser Prozessnummer auf diesem Rechner; `None`, wenn keins läuft.
+#[tauri::command]
+async fn process_info(pid: u32) -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || prozess_name(pid)).await.map_err(|e| e.to_string())
+}
+
+fn prozess_name(pid: u32) -> Option<String> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // CSV ohne Kopf: "Name.exe","1234",… – ohne Treffer nur eine Hinweiszeile ohne Anführungszeichen
+        let aus = std::process::Command::new("tasklist")
+            .args(["/FI", &format!("PID eq {pid}"), "/FO", "CSV", "/NH"])
+            .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
+            .output()
+            .ok()?;
+        let text = String::from_utf8_lossy(&aus.stdout);
+        let zeile = text.lines().find(|z| z.starts_with('"'))?;
+        let mut felder = zeile.split("\",\"");
+        let name = felder.next()?.trim_start_matches('"').to_string();
+        let nummer = felder.next()?.trim_end_matches('"');
+        (nummer == pid.to_string()).then_some(name)
+    }
+    #[cfg(not(windows))]
+    {
+        let aus = std::process::Command::new("ps").args(["-p", &pid.to_string(), "-o", "comm="]).output().ok()?;
+        let name = String::from_utf8_lossy(&aus.stdout).trim().to_string();
+        (!name.is_empty()).then_some(name)
+    }
+}
+
 /// Löscht eine Sperrdatei, wenn sie noch genau `inhalt` enthält.
 fn sperre_entfernen(p: &Path, inhalt: &[u8]) -> Result<bool, String> {
     match std::fs::read(p) {
         Ok(jetzt) if jetzt == inhalt => {
-            std::fs::remove_file(p).map_err(|e| format!("{}: {}", p.display(), e))?;
+            std::fs::remove_file(p).map_err(|e| match e.raw_os_error() {
+                Some(32) | Some(33) => format!("{}: Die Sperre wird gerade von einem anderen Programm benutzt", p.display()),
+                _ => format!("{}: {}", p.display(), e),
+            })?;
             log::info!("Entsperrt: {}", p.display());
             Ok(true)
         }
@@ -206,7 +322,9 @@ fn sperre_entfernen(p: &Path, inhalt: &[u8]) -> Result<bool, String> {
     }
 }
 
-/// Löscht eine eigene Sperrdatei – nur wenn sie noch genau den übergebenen Inhalt hat.
+/// Löscht eine Sperrdatei – nur wenn sie noch genau den übergebenen Inhalt hat. Das gilt für die eigene beim
+/// Schließen ebenso wie für eine verwaiste, die der Benutzer ausdrücklich aufhebt. Hält ein anderes Programm sie
+/// offen, scheitert das Löschen.
 #[tauri::command]
 async fn lock_release(
     sperren: tauri::State<'_, EigeneSperren>,
@@ -470,6 +588,8 @@ pub fn run() {
             fs_replace,
             lock_create,
             lock_release,
+            lock_probe,
+            process_info,
             prokarte_read,
             prokarte_write,
             machine_info,
@@ -487,7 +607,8 @@ pub fn run() {
         if let tauri::RunEvent::Exit = event {
             let sperren = handle.state::<EigeneSperren>();
             let offen: Vec<_> = sperren.0.lock().map(|mut m| m.drain().collect()).unwrap_or_default();
-            for (p, inhalt) in offen {
+            for (p, (inhalt, griff)) in offen {
+                drop(griff);
                 if let Err(e) = sperre_entfernen(&p, &inhalt) {
                     log::error!("Sperrdatei beim Beenden nicht entfernt: {e}");
                 }
@@ -577,6 +698,40 @@ mod tests {
         .unwrap();
         assert!(matches!(&a[0].wert, PkWert::Texte { alt, neu } if alt == b"M" && neu == b"N"));
         assert!(matches!(a[1].wert, PkWert::Ganzzahl { alt: None, neu: Some(2) }));
+    }
+
+    #[test]
+    fn offen_gehaltene_sperre_gilt_als_benutzt() {
+        let p = std::env::temp_dir().join(format!("formulare-test-{}.frmtmp", std::process::id()));
+        let _ = std::fs::remove_file(&p);
+        std::fs::write(&p, b"[Zugriff]
+").unwrap();
+        assert!(!wird_benutzt(&p));
+        let griff = griff_oeffnen(&p).unwrap();
+        // lesen dürfen andere (FORMA zeigt an, wer das Formular geöffnet hat) …
+        assert_eq!(std::fs::read(&p).unwrap(), b"[Zugriff]
+");
+        if cfg!(windows) {
+            // … aber nicht löschen; und jeder sieht, dass die Datei benutzt wird
+            assert!(wird_benutzt(&p));
+            let e = sperre_entfernen(&p, b"[Zugriff]
+").unwrap_err();
+            assert!(e.contains("gerade von einem anderen Programm benutzt"), "{e}");
+        }
+        // nach einem Absturz schließt das System den Griff: frei, löschbar
+        drop(griff);
+        assert!(!wird_benutzt(&p));
+        assert!(!sperre_entfernen(&p, b"anderer Inhalt").unwrap());
+        assert!(sperre_entfernen(&p, b"[Zugriff]
+").unwrap());
+        assert!(!p.exists());
+    }
+
+    #[test]
+    fn prozess_name_nur_fuer_laufende_prozesse() {
+        let eigener = prozess_name(std::process::id()).expect("eigener Prozess");
+        assert!(!eigener.is_empty());
+        assert_eq!(prozess_name(4_294_967_000), None);
     }
 
     /// Mit SJFORMA_REF: eine Kopie jeder echten Projektkarte lesen und unverändert zurückschreiben

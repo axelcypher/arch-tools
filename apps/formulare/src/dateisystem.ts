@@ -1,6 +1,7 @@
 import { base64ToBytes, bytesToBase64, isTauri } from '@core/platform/files';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
+import type { SperrProbe } from './forma/sperre';
 
 /**
  * Zugriff auf die FORMA-Projektordner. In der Desktop-App über eigene Befehle der Tauri-Hülle, die nur
@@ -41,8 +42,15 @@ export interface Dateisystem {
   ersetze(root: string, pfad: string, daten: Uint8Array): Promise<void>;
   /** Legt eine Sperrdatei (.frmtmp) an; `false`, wenn es schon eine gibt */
   sperreSetzen(root: string, pfad: string, daten: Uint8Array): Promise<boolean>;
-  /** Löscht die Sperrdatei, aber nur wenn sie noch genau `daten` enthält (also die eigene ist) */
+  /**
+   * Löscht die Sperrdatei, aber nur wenn sie noch genau `daten` enthält – die eigene beim Schließen oder eine
+   * verwaiste, die ausdrücklich aufgehoben wird. Fehler, wenn ein Programm sie gerade offen hält.
+   */
   sperreLoesen(root: string, pfad: string, daten: Uint8Array): Promise<boolean>;
+  /** Zustand einer Sperrdatei (Inhalt, offen gehalten, von dieser App, Alter); `null`, wenn es keine gibt */
+  sperrePruefen(root: string, pfad: string): Promise<SperrProbe | null>;
+  /** Name des Programms mit dieser Prozessnummer auf diesem Rechner; `null`, wenn keins läuft */
+  prozess(pid: number): Promise<string | null>;
   /** Projektkarte (`sj_prokarte.sdb`) lesen; `null`, wenn es keine gibt */
   projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null>;
   /** Einträge der Projektkarte ändern – alle oder keiner; Fehler, wenn einer inzwischen anders lautet */
@@ -110,6 +118,11 @@ export const tauriDateisystem: Dateisystem = {
       pfad,
       aenderungen: aenderungen.map((a) => (a.spalte === 'texte' ? { ...a, alt: [...new TextEncoder().encode(a.alt)], neu: pkBytes(a.neu) } : a)),
     }),
+  sperrePruefen: async (root, pfad) => {
+    const p = await invoke<{ inhalt: string; offen: boolean; eigen: boolean; geaendert: number } | null>('lock_probe', { root, pfad });
+    return p && { ...p, inhalt: base64ToBytes(p.inhalt) };
+  },
+  prozess: (pid) => invoke<string | null>('process_info', { pid }),
   rechner: () => invoke<Rechner>('machine_info'),
 };
 
@@ -141,6 +154,14 @@ export class SpeicherDateisystem implements Dateisystem {
   readonly projektkarten = new Map<string, Projektkarte>();
   /** Protokoll der schreibenden Aufrufe */
   readonly schreibvorgaenge: string[] = [];
+  /** Sperrdateien, die ein anderes Programm offen hält (vollständige Pfade) */
+  readonly offeneSperren = new Set<string>();
+  /** laufende Programme auf diesem Rechner: Prozessnummer → Name */
+  readonly prozesse = new Map<number, string>();
+  /** Änderungszeit von Dateien (ms), sonst „jetzt“ */
+  readonly geaendert = new Map<string, number>();
+  /** von „dieser App“ angelegte und offen gehaltene Sperren */
+  private readonly eigene = new Set<string>();
 
   constructor(readonly rechnerInfo: Rechner = { benutzer: 'test', computer: 'TEST-PC', prozess: 4242 }) {}
 
@@ -179,6 +200,7 @@ export class SpeicherDateisystem implements Dateisystem {
     const p = this.pfad(root, pfad);
     if (this.dateien.has(p)) return false;
     this.dateien.set(p, daten);
+    this.eigene.add(p);
     this.schreibvorgaenge.push(`sperre ${pfad}`);
     return true;
   }
@@ -186,10 +208,23 @@ export class SpeicherDateisystem implements Dateisystem {
   async sperreLoesen(root: string, pfad: string, daten: Uint8Array): Promise<boolean> {
     const p = this.pfad(root, pfad);
     const vorhanden = this.dateien.get(p);
+    this.eigene.delete(p);
     if (!vorhanden || !gleich(vorhanden, daten)) return false;
+    if (this.offeneSperren.has(p)) throw new Error(`${pfad}: Die Sperre wird gerade von einem anderen Programm benutzt`);
     this.dateien.delete(p);
     this.schreibvorgaenge.push(`entsperre ${pfad}`);
     return true;
+  }
+
+  async sperrePruefen(root: string, pfad: string): Promise<SperrProbe | null> {
+    const p = this.pfad(root, pfad);
+    const inhalt = this.dateien.get(p);
+    if (!inhalt) return null;
+    return { inhalt, offen: this.offeneSperren.has(p) || this.eigene.has(p), eigen: this.eigene.has(p), geaendert: this.geaendert.get(p) ?? Date.now() };
+  }
+
+  async prozess(pid: number): Promise<string | null> {
+    return this.prozesse.get(pid) ?? null;
   }
 
   async projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null> {

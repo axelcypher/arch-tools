@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
 import { AblageBaum } from './AblageBaum';
-import { Gliederung } from './Gliederung';
 
 /** Aufklappbarer Block der Seitenleiste; der Zustand bleibt je Block erhalten */
 function Block({ id, titel, kopf, children, start = true }: { id: string; titel: ReactNode; kopf?: ReactNode; children: ReactNode; start?: boolean }) {
@@ -40,8 +39,8 @@ function Block({ id, titel, kopf, children, start = true }: { id: string; titel:
   );
 }
 
-/** Links: Projekt, Projektkarte, Formulare, Gliederung des offenen Formulars und der echte Projektordner */
-export function Seitenleiste({ onSchnellwahl, onEinstellungen }: { onSchnellwahl: () => void; onEinstellungen: () => void }) {
+/** Links die Navigation der App: Projekt, Projektkarte, Formulare und der echte Projektordner */
+export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { onSchnellwahl: () => void; onEinstellungen: () => void; onSperren: () => void }) {
   const projektordner = useFormulare((s) => s.projektordner);
   const projekte = useFormulare((s) => s.projekte);
   const suchfehler = useFormulare((s) => s.suchfehler);
@@ -139,9 +138,14 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen }: { onSchnellwahl
               id="formulare"
               titel="Formulare"
               kopf={
-                <button className="fo-klein" title="FORMA-Projektordner im Explorer zeigen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
-                  ↗
-                </button>
+                <>
+                  <button className="fo-klein" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren" onClick={onSperren}>
+                    🔒
+                  </button>
+                  <button className="fo-klein" title="FORMA-Projektordner im Explorer zeigen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
+                    ↗
+                  </button>
+                </>
               }
             >
               <div className="fo-liste" role="list">
@@ -188,13 +192,6 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen }: { onSchnellwahl
                 {!formulare.length && <p className="muted small-text">Keine Formulare in diesem Projekt.</p>}
               </div>
             </Block>
-
-            {offen && haupt === 'formular' && (
-              <Block id="gliederung" titel="Gliederung">
-                <Gliederung offen={offen} />
-              </Block>
-            )}
-
             {ablageordner > 0 && (
               <Block
                 id="ablage"

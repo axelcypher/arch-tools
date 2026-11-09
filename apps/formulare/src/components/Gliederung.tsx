@@ -2,9 +2,12 @@ import { useMemo } from 'react';
 import { abschnitte } from '../forma/felder';
 import { springeZuFeld } from '../navigation';
 import type { OffenesFormular } from '../store';
-import { wertVon } from '../store';
+import { useFormulare, wertVon } from '../store';
 
-/** Gliederung des offenen Formulars: Seiten und Abschnitte mit Füllstand – ein Klick springt hin */
+/**
+ * Gliederung des offenen Formulars: Seiten und Abschnitte mit Füllstand – ein Klick springt hin. Sie steht als
+ * eigener Bereich direkt am Formular (nicht in der Navigation links) und gehört sichtbar zum Dokument.
+ */
 export function Gliederung({ offen }: { offen: OffenesFormular }) {
   const seiten = useMemo(
     () =>
@@ -24,8 +27,23 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
     [offen],
   );
 
+  const schliessen = () => useFormulare.getState().setGliederungOffen(false);
+  const gesamt = seiten.reduce((n, s) => n + s.abschnitte.reduce((m, a) => m + a.gesamt, 0), 0);
+  const gefuellt = seiten.reduce((n, s) => n + s.abschnitte.reduce((m, a) => m + a.gefuellt, 0), 0);
   return (
-    <nav className="fo-gliederung" aria-label="Gliederung">
+    <nav className="fo-gliederung" aria-label="Inhalt des Formulars">
+      <div className="fo-gl-kopf">
+        <div className="fo-gl-kopf-text">
+          <span className="fo-gl-art">Inhalt des Formulars</span>
+          <strong title={offen.name}>{offen.name}</strong>
+          <span className="muted small-text">
+            {gefuellt} von {gesamt} Feldern ausgefüllt
+          </span>
+        </div>
+        <button className="fo-klein" title="Gliederung ausblenden" aria-label="Gliederung ausblenden" onClick={schliessen}>
+          ×
+        </button>
+      </div>
       {seiten.map((s) => (
         <div key={s.i}>
           <button className="fo-gl-seite" onClick={() => document.querySelector(`[data-seite="${s.i}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })}>

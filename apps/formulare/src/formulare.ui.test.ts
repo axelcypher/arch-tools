@@ -8,6 +8,7 @@ import { App } from './App';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
+import { sperreVermerken } from './eigeneSperren';
 import { mitAenderungen, useFormulare } from './store';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -58,6 +59,7 @@ const ANFANG = {
   vorgabeAuswahl: ['*'],
   auswahl: {},
   verlaufOffen: false,
+  gliederungOffen: true,
   konflikt: false,
   meldung: null,
   ansicht: 'felder' as const,
@@ -196,6 +198,91 @@ describe('Formulare', () => {
     expect(ds.schreibvorgaenge).toEqual([]);
   });
 
+  it('nach einem Absturz liegen gebliebene eigene Sperren werden beim Start entfernt', async () => {
+    const alt = cp1252Schreiben('[Zugriff]\r\nUser=t.test\r\nComputer=HELEN\r\nAngemeldet=09.11.2026 08:00:00\r\nInGebrauch=1111\r\n\r\n');
+    ds.dateien.set(SPERRE, alt);
+    sperreVermerken('C:/FORMA', 'BS9/001-Muster.frmtmp', alt);
+    const host = await render();
+    expect(ds.dateien.has(SPERRE)).toBe(false);
+    expect(host.textContent).toContain('Nach einem Absturz liegen gebliebene Sperre(n) entfernt: 001-Muster.');
+    // fremde Sperren mit anderem Inhalt bleiben unberührt
+    const fremd = cp1252Schreiben('[Zugriff]\r\nUser=kollegin\r\nComputer=CAD02\r\nAngemeldet=09.11.2026 08:00:00\r\nInGebrauch=1111\r\n\r\n');
+    ds.dateien.set(SPERRE, fremd);
+    sperreVermerken('C:/FORMA', 'BS9/001-Muster.frmtmp', alt);
+    await neustart();
+    expect(ds.dateien.get(SPERRE)).toBe(fremd);
+  });
+
+  it('eine eigene verwaiste Sperre wird beim Öffnen ersetzt – aber nicht, solange ein Programm sie offen hält', async () => {
+    const host = await render();
+    const alt = cp1252Schreiben('[Zugriff]\r\nUser=t.test\r\nComputer=HELEN\r\nAngemeldet=09.11.2026 08:00:00\r\nInGebrauch=1111\r\n\r\n');
+    ds.dateien.set(SPERRE, alt);
+    sperreVermerken('C:/FORMA', 'BS9/001-Muster.frmtmp', alt);
+    ds.offeneSperren.add(SPERRE);
+    await oeffneMuster(host);
+    expect(host.textContent).toContain('In Gebrauch');
+    expect(feld(host, 'Bauherrschaft', 1).disabled).toBe(true);
+    expect(knopf(host, 'Sperre aufheben')).toBeUndefined();
+
+    // das andere Programm schließt die Datei: „Erneut prüfen“ ersetzt die verwaiste Sperre
+    ds.offeneSperren.delete(SPERRE);
+    await klick(knopfGenau(host, 'Erneut prüfen'));
+    expect(feld(host, 'Bauherrschaft', 1).disabled).toBe(false);
+    expect(cp1252Lesen(ds.dateien.get(SPERRE)!)).toContain('InGebrauch=4242');
+    expect(host.textContent).toContain('verwaiste Sperre dieser App');
+  });
+
+  it('eine verwaiste fremde Sperre auf diesem Rechner lässt sich aufheben – danach wird bearbeitet', async () => {
+    // FORMA auf diesem Rechner abgestürzt: Prozess 67802 läuft nicht mehr
+    ds.dateien.set(SPERRE, cp1252Schreiben('[Zugriff]\r\nUser=t.test\r\nComputer=HELEN\r\nAngemeldet=09.11.2026 10:17:12\r\nInGebrauch=67802\r\n\r\n'));
+    const host = await oeffneMuster();
+    expect(host.querySelector('.fo-meldung.hinweis')!.textContent).toContain('Verwaist');
+    expect(host.textContent).toContain('kein Programm mit der Nummer 67802 mehr');
+    await klick(knopf(host, 'Sperre aufheben'));
+    expect(host.querySelector('[aria-label="Sperre aufheben"]')!.textContent).toContain('t.test auf HELEN');
+    await klick(knopfGenau(host, 'Sperre aufheben und bearbeiten'));
+    expect(feld(host, 'Bauherrschaft', 1).disabled).toBe(false);
+    expect(cp1252Lesen(ds.dateien.get(SPERRE)!)).toContain('InGebrauch=4242');
+    expect(host.textContent).toContain('ist jetzt hier zum Bearbeiten geöffnet');
+    expect(ds.schreibvorgaenge).toEqual(['entsperre BS9/001-Muster.frmtmp', 'sperre BS9/001-Muster.frmtmp']);
+  });
+
+  it('läuft das Programm der Sperre noch, gilt sie als in Gebrauch; ist sie weg, öffnet „Erneut prüfen“ zum Bearbeiten', async () => {
+    ds.prozesse.set(67802, 'SJOffice.exe');
+    ds.dateien.set(SPERRE, cp1252Schreiben('[Zugriff]\r\nUser=t.test\r\nComputer=HELEN\r\nAngemeldet=09.11.2026 10:17:12\r\nInGebrauch=67802\r\n\r\n'));
+    const host = await oeffneMuster();
+    expect(host.textContent).toContain('Auf diesem Rechner läuft SJOffice.exe');
+    expect(host.querySelector('.fo-meldung.hinweis')!.textContent).toContain('In Gebrauch');
+    // FORMA schließt das Formular
+    ds.dateien.delete(SPERRE);
+    await klick(knopfGenau(host, 'Erneut prüfen'));
+    expect(feld(host, 'Bauherrschaft', 1).disabled).toBe(false);
+    expect(host.querySelector('.fo-meldung.hinweis')).toBeNull();
+  });
+
+  it('Übersicht der Sperren: auch Sperrdateien ohne Formular, aufheben nach Bestätigung', async () => {
+    const waise = 'C:/FORMA/BS9/002-Umbenannt.frmtmp';
+    ds.dateien.set(waise, cp1252Schreiben('[Zugriff]\r\nUser=kollegin\r\nComputer=CAD02\r\nAngemeldet=01.01.2026 09:00:00\r\nInGebrauch=1\r\n\r\n'));
+    ds.dateien.set(SPERRE, cp1252Schreiben('[Zugriff]\r\nUser=kollege\r\nComputer=CAD03\r\nAngemeldet=09.11.2026 10:17:12\r\nInGebrauch=2\r\n\r\n'));
+    ds.offeneSperren.add(SPERRE);
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await klick(knopfMit(host, 'Sperren'));
+    await warte();
+    const zeilen = [...host.querySelectorAll('.fo-sperr-zeile')];
+    expect(zeilen.map((z) => z.querySelector('strong')!.textContent)).toEqual(['001-Muster', '002-Umbenannt']);
+    expect(zeilen[0].textContent).toContain('In Gebrauch');
+    expect(knopf(zeilen[0], 'Aufheben').disabled).toBe(true);
+    expect(zeilen[1].textContent).toContain('(kein Formular dazu)');
+    expect(zeilen[1].textContent).toContain('Verwaist');
+    await klick(knopf(zeilen[1], 'Aufheben'));
+    await klick(knopfGenau(host, 'Sperre aufheben'));
+    await warte();
+    expect(ds.dateien.has(waise)).toBe(false);
+    expect(ds.dateien.has(SPERRE)).toBe(true);
+    expect(host.querySelectorAll('.fo-sperr-zeile')).toHaveLength(1);
+  });
+
   it('wurde die Datei inzwischen geändert, wird erst nach dem Neuladen gespeichert – mit beiden Änderungen', async () => {
     const host = await oeffneMuster();
     eingabe(feld(host, 'Bauherrschaft', 1), 'Musterweg 7');
@@ -266,6 +353,18 @@ describe('Formulare', () => {
     eingabe(memo, 'Musterfrau, Erika');
     await klick(knopfGenau(host, 'Felder'));
     expect(feld(host, 'Bauherrschaft', 0).value).toBe('Musterfrau, Erika');
+  });
+
+  it('die Gliederung gehört zum Formular: eigener Bereich neben dem Formular, nicht in der Navigation', async () => {
+    const host = await oeffneMuster();
+    const gl = host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
+    expect(gl.closest('.fo-leiste')).toBeNull();
+    expect(gl.textContent).toContain('001-Muster');
+    expect(gl.textContent).toContain('Bauherrschaft');
+    await klick(knopfMit(host, 'Gliederung ausblenden'));
+    expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).toBeNull();
+    await klick(knopfGenau(host, 'Gliederung'));
+    expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).not.toBeNull();
   });
 
   it('Enter in einzeiligen Feldern springt zum nächsten Feld', async () => {

@@ -5,11 +5,13 @@ import { anzahlZugeordnet } from './ausfuellen';
 import { AusfuellenDialog } from './components/AusfuellenDialog';
 import { Einstellungen } from './components/Einstellungen';
 import { FelderAnsicht } from './components/FelderAnsicht';
+import { Gliederung } from './components/Gliederung';
 import { ProjektkarteAnsicht } from './components/ProjektkarteAnsicht';
 import { Schnellwahl } from './components/Schnellwahl';
 import { SeitenAnsicht } from './components/SeitenAnsicht';
 import { zeigeEintrag } from './components/ProjektkarteAnsicht';
 import { Seitenleiste } from './components/Seitenleiste';
+import { SperreAufhebenDialog, SperrenDialog, ZustandMarke, wer } from './components/Sperren';
 import { VerlaufLeiste } from './components/VerlaufLeiste';
 import { kennung, stand } from './forma/formular';
 import { springeZuFeld } from './navigation';
@@ -27,8 +29,7 @@ function sperrgrund(o: OffenesFormular): string | null {
   if (o.nurLesen) return o.nurLesen;
   if (o.sperre.art !== 'fremd') return null;
   const s = o.sperre.sperre;
-  const wer = [s.benutzer, s.computer && `auf ${s.computer}`].filter(Boolean).join(' ') || 'jemand anderem';
-  return `Nur ansehen: Das Formular ist bei ${wer} geöffnet${s.angemeldet ? ` (seit ${s.angemeldet})` : ''}.`;
+  return `Nur ansehen: Das Formular ist bei ${wer(s)} geöffnet${s.angemeldet ? ` (seit ${s.angemeldet})` : ''}. ${o.sperre.bewertung.grund}`;
 }
 
 const uhrzeit = (ms: number) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -59,12 +60,13 @@ export function App() {
   const ansicht = useFormulare((s) => s.ansicht);
   const zoom = useFormulare((s) => s.zoom);
   const verlaufOffen = useFormulare((s) => s.verlaufOffen);
+  const gliederungOffen = useFormulare((s) => s.gliederungOffen);
   const karte = useFormulare((s) => s.karte);
   const meldung = useFormulare((s) => s.meldung);
   const konflikt = useFormulare((s) => s.konflikt);
-  const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen, karteSpeichern, karteVerwerfen, karteRueckgaengig, karteWiederholen } =
+  const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen, setGliederungOffen, karteSpeichern, karteVerwerfen, karteRueckgaengig, karteWiederholen, sperreNeuPruefen, sperreAufheben } =
     useFormulare.getState();
-  const [dialog, setDialog] = useState<'log' | 'einstellungen' | 'schnellwahl' | 'ausfuellen' | null>(null);
+  const [dialog, setDialog] = useState<'log' | 'einstellungen' | 'schnellwahl' | 'ausfuellen' | 'aufheben' | 'sperren' | null>(null);
   const kartenansicht = haupt === 'projektkarte' && !!projekt;
   const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
   const grund = offen ? sperrgrund(offen) : null;
@@ -122,6 +124,13 @@ export function App() {
     <div className="app">
       <TitleBar app="Formulare" name={name} dirty={geaendert} onOpenLog={() => setDialog('log')} />
       <div className="toolbar">
+        {formularSichtbar && (
+          <div className="tb-group">
+            <button className={gliederungOffen ? 'active' : ''} title="Gliederung des Formulars ein- oder ausblenden" onClick={() => setGliederungOffen(!gliederungOffen)}>
+              Gliederung
+            </button>
+          </div>
+        )}
         {formularSichtbar && (
           <div className="tb-group">
             {ANSICHTEN.map((a) => (
@@ -231,17 +240,39 @@ export function App() {
         )}
       </div>
       {(meldung || (formularSichtbar && grund)) && (
-        <div className={`fo-meldung ${meldung?.art === 'fehler' ? 'fehler' : meldung ? 'info' : 'hinweis'}`} role="status">
-          <span>{meldung?.text ?? grund}</span>
+        <>
           {meldung && (
-            <button className="fo-klein" title="Schließen" onClick={() => setMeldung(null)}>
-              ×
-            </button>
+            <div className={`fo-meldung ${meldung.art === 'fehler' ? 'fehler' : 'info'}`} role="status">
+              <span>{meldung.text}</span>
+              <button className="fo-klein" title="Schließen" onClick={() => setMeldung(null)}>
+                ×
+              </button>
+            </div>
           )}
-        </div>
+          {formularSichtbar && grund && (
+            <div className="fo-meldung hinweis" role="status">
+              <span>
+                {offen.sperre.art === 'fremd' && <ZustandMarke art={offen.sperre.bewertung.art} />} {grund}
+              </span>
+              {offen.sperre.art === 'fremd' && (
+                <span className="fo-meldung-knoepfe">
+                  <button className="fo-klein" title="Sperrdatei erneut prüfen; ist sie weg, wird das Formular zum Bearbeiten geöffnet" onClick={() => void sperreNeuPruefen()}>
+                    Erneut prüfen
+                  </button>
+                  {offen.sperre.bewertung.aufhebbar && (
+                    <button className="fo-klein" onClick={() => setDialog('aufheben')}>
+                      Sperre aufheben …
+                    </button>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
+        </>
       )}
       <main className="fo-main">
-        {ds && <Seitenleiste onSchnellwahl={() => setDialog('schnellwahl')} onEinstellungen={() => setDialog('einstellungen')} />}
+        {ds && <Seitenleiste onSchnellwahl={() => setDialog('schnellwahl')} onEinstellungen={() => setDialog('einstellungen')} onSperren={() => setDialog('sperren')} />}
+        {formularSichtbar && gliederungOffen && <Gliederung offen={offen} />}
         <section className={`fo-inhalt${formularSichtbar && ansicht === 'seite' ? ' fo-inhalt-papier' : ''}`}>
           {haupt === 'projektkarte' && projekt ? (
             <ProjektkarteAnsicht />
@@ -261,6 +292,10 @@ export function App() {
       {dialog === 'einstellungen' && <Einstellungen onClose={() => setDialog(null)} />}
       {dialog === 'schnellwahl' && <Schnellwahl onClose={() => setDialog(null)} />}
       {dialog === 'ausfuellen' && offen && <AusfuellenDialog offen={offen} onClose={() => setDialog(null)} />}
+      {dialog === 'sperren' && <SperrenDialog onClose={() => setDialog(null)} />}
+      {dialog === 'aufheben' && offen?.sperre.art === 'fremd' && (
+        <SperreAufhebenDialog name={offen.name} sperre={offen.sperre.sperre} bewertung={offen.sperre.bewertung} oeffnen onAufheben={sperreAufheben} onClose={() => setDialog(null)} />
+      )}
     </div>
   );
 }
