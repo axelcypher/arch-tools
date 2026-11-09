@@ -24,10 +24,13 @@ export interface PkGruppe {
 export interface PkEintrag {
   gruppe: number;
   id: number;
-  /** 1 Zeile, 2 mehrzeilig, 4 Auswahl, 8/16 weitere Arten aus FORMA */
+  /** 1 Text, 2 mehrzeilig, 4 Auswahlliste, 8 Optionen, 16 Kästchen */
   typ: number;
   titel: string;
+  /** Text (1/2), die Möglichkeiten zeilenweise (4/8) bzw. die Beschriftung des Kästchens (16) */
   text: string;
+  /** gewählte Möglichkeit (4/8, null oder −1 = keine) bzw. angekreuzt (16: 1) */
+  zahl: number | null;
 }
 
 export interface Projektkarte {
@@ -37,12 +40,73 @@ export interface Projektkarte {
 
 export const pkSchluessel = (gruppe: number, id: number) => `${gruppe}:${id}`;
 
-/** Wert eines Eintrags (leer, wenn es ihn nicht gibt) */
-export function pkWert(pk: Projektkarte, gruppe: number, id: number): string {
-  return pk.eintraege.find((e) => e.gruppe === gruppe && e.id === id)?.text ?? '';
+/**
+ * Art eines Eintrags. Auswahllisten (4) beginnen mit einer leeren Zeile – „nichts gewählt“ –, die bei der
+ * Nummer der Wahl mitzählt (Delphi: Items = Texte, ItemIndex = Ganzzahl); Optionen (8) haben keine.
+ */
+export type PkArt = 'text' | 'mehrzeilig' | 'auswahl' | 'optionen' | 'kreuz';
+
+export function pkArt(e: Pick<PkEintrag, 'typ'>): PkArt {
+  switch (e.typ) {
+    case 2:
+      return 'mehrzeilig';
+    case 4:
+      return 'auswahl';
+    case 8:
+      return 'optionen';
+    case 16:
+      return 'kreuz';
+    default:
+      return 'text';
+  }
 }
 
-/** Titel ohne den Doppelpunkt am Ende („Name/Firma:“ → „Name/Firma“) */
+export const istWahl = (e: Pick<PkEintrag, 'typ'>) => ['auswahl', 'optionen', 'kreuz'].includes(pkArt(e));
+
+/** Möglichkeiten einer Auswahl in der gespeicherten Reihenfolge (bei Auswahllisten mit der leeren ersten) */
+export const pkMoeglichkeiten = (e: PkEintrag) => (istWahl(e) && pkArt(e) !== 'kreuz' ? e.text.split(/\r\n|\r|\n/) : []);
+
+/**
+ * Wert eines Eintrags für die Oberfläche: Text mit \n als Zeilenumbruch, bei Auswahl die Nummer der gewählten
+ * Möglichkeit (null = keine), bei Kästchen 1 oder 0.
+ */
+export type PkWert = string | number | null;
+
+export function pkWertVon(e: PkEintrag): PkWert {
+  if (!istWahl(e)) return e.text.replace(/\r\n?/g, '\n');
+  if (pkArt(e) === 'kreuz') return e.zahl === 1 ? 1 : 0;
+  return e.zahl === null || e.zahl < 0 ? null : e.zahl;
+}
+
+/** Text eines Werts – so erscheint er in Formularen und Übersichten */
+export function pkAnzeige(e: PkEintrag, wert: PkWert): string {
+  switch (pkArt(e)) {
+    case 'kreuz':
+      return wert === 1 ? e.text : '';
+    case 'auswahl':
+    case 'optionen':
+      return typeof wert === 'number' ? (pkMoeglichkeiten(e)[wert] ?? '') : '';
+    default:
+      return typeof wert === 'string' ? wert : '';
+  }
+}
+
+/** Passt der Wert zur Art des Eintrags? (für gemerkte Werte und Entwürfe) */
+export function pkWertPasst(e: PkEintrag, wert: unknown): wert is PkWert {
+  if (!istWahl(e)) return typeof wert === 'string';
+  if (pkArt(e) === 'kreuz') return wert === 0 || wert === 1;
+  return wert === null || (typeof wert === 'number' && Number.isInteger(wert) && wert >= 0 && wert < pkMoeglichkeiten(e).length);
+}
+
+export const pkEintrag = (pk: Projektkarte, gruppe: number, id: number) => pk.eintraege.find((e) => e.gruppe === gruppe && e.id === id);
+
+/** Angezeigter Wert eines Eintrags (leer, wenn es ihn nicht gibt) */
+export function pkWert(pk: Projektkarte, gruppe: number, id: number): string {
+  const e = pkEintrag(pk, gruppe, id);
+  return e ? pkAnzeige(e, pkWertVon(e)) : '';
+}
+
+/** Titel ohne Doppelpunkt am Ende („Name/Firma:“ → „Name/Firma“) */
 export const pkTitel = (titel: string) => titel.replace(/\s*:\s*$/, '');
 
 /* ---------- Zuordnung Feld → Projektkarte ---------- */

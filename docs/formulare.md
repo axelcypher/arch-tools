@@ -17,8 +17,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   „Wechseln“ öffnet die Schnellwahl.
 - **Formulare:** die Formulare des Projekts, ohne die alten Fassungen in `_archiv`. 🔒 heißt: anderswo geöffnet.
   ● heißt: nicht gespeicherte Eingaben.
-- **Ansicht „Formular“:** die Seiten wie auf Papier – weiß, in den Schriften und an den Stellen aus der Datei
-  (Textfelder in Courier New wie in FORMA), mit Zoom (Seitenbreite oder 75–200 %). So werden sie auch gedruckt.
+- **Ansicht „Formular“:** die Seiten wie auf Papier – weiße A4-Blätter mit Rand, das Formular mittig, in den
+  Schriften und an den Stellen aus der Datei (Textfelder in Courier New wie in FORMA), mit Zoom (Seitenbreite
+  oder 75–200 %). So werden sie auch gedruckt.
 - **Ansicht „Felder“:** dieselben Felder im Aufbau des Formulars – nebeneinanderliegende Abschnitte auch hier
   nebeneinander, Felder einer Zeile in einer Zeile –, groß und durchsuchbar, Filter „Leere“ und „Geänderte“.
 - **Gliederung:** links Seiten und Abschnitte des offenen Formulars mit Füllstand (z. B. 3/5); ein Klick springt hin.
@@ -45,16 +46,27 @@ Neustarts übersteht. In die FORMA-Datei kommt sie erst mit „Speichern“; Kol
 
 ### Projektkarte und Stammdaten
 
-Die **Projektkarte** (links über den Formularen) zeigt alle Gruppen des Projekts – Projektdaten, Bauherr,
-Entwurfsverfasser, Behörden, Grundstück … – mit Suche und „nur gefüllte“. „Projektkarte speichern“ schreibt die
-geänderten Einträge in die Projektkarte des FORMA-Projekts; FORMA liest dieselben Einträge.
+Die **Projektkarte** (links über den Formularen) zeigt links die Gruppen – „Projekt“ (Projektdaten, Grundstück,
+Flächen, Nutzung, Umbau, Kosteneinflüsse) und „Beteiligte“ (Bauherr, Entwurfsverfasser, Behörden …) – jeweils mit
+Kurzfassung („Mustermann, Max · Welver“ oder „nicht ausgefüllt“), rechts die gewählte Gruppe als gegliedertes
+Formular: bei Adressen Name, Anschrift, Kontakt sowie Bank und Sonstiges (zugeklappt, solange leer), daneben die
+Anschrift, wie sie in Formularen steht.
 
-- **Aus Projektkarte ausfüllen …** (im Formular): Vorschau aller Felder, die sich dadurch ändern würden. Leere
-  Felder sind vorgewählt, Felder mit eigenem Inhalt nur auf Wunsch (sie können von Hand angepasst sein).
-  Noch nicht gespeicherte Änderungen der Projektkarte zählen schon mit.
-- **Bürostammdaten:** Eine Adressgruppe (z. B. das eigene Büro als Entwurfsverfasser) mit „Merken“ speichern und
-  in anderen Projekten über „Aus Stammdaten …“ übernehmen. Die Stammdaten liegen in der App, nicht im FORMA-Projekt.
-- Zeichen, die es in Windows-1252 nicht gibt (z. B. Emojis), werden abgelehnt – FORMA zeigt sie nicht zuverlässig an.
+- **Werkzeugleiste:** ↶ ↷ (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>), „Projektkarte speichern“
+  (<kbd>Strg</kbd>+<kbd>S</kbd>) und „Verwerfen“ (lässt sich rückgängig machen). Ungespeicherte Änderungen bleiben
+  lokal gesichert, auch über Neustarts. Geänderte Einträge sind orange markiert, ↺ setzt einen zurück.
+- **Auswahllisten und Optionen** wie in FORMA (Anrede, Land, Bodenklasse, Neigung …), Kästchen gesammelt unter einem
+  Titel (Besondere Auflagen). Die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat.
+- **Übernehmen von …:** alle Angaben einer anderen Adressgruppe dieses Projekts (z. B. Eigentümer = Bauherr) oder
+  aus den Bürostammdaten – in einem Schritt, der sich rückgängig machen lässt. „Leeren“ entfernt alle Angaben.
+- **Bürostammdaten:** Eine Adresse (z. B. das eigene Büro als Entwurfsverfasser) mit „Als Stammdaten merken“
+  speichern; verwalten in den Einstellungen. Sie liegen in der App, nicht im FORMA-Projekt.
+- **Suche** über alle Einträge; ein Treffer springt in seine Gruppe.
+- **Hinweise auf Tippfehler** (Postleitzahl, E-Mail, IBAN-Prüfziffer, Telefonnummer) – nur Hinweise, gespeichert
+  wird trotzdem. Zeichen, die es in Windows-1252 nicht gibt (z. B. Emojis), werden abgelehnt.
+- **Aus Projektkarte ausfüllen …** (im Formular): Vorschau aller Felder, die die Projektkarte füllen würde. Leere
+  Felder sind vorgewählt, Felder mit eigenem Inhalt nur auf Wunsch (sie können von Hand angepasst sein); Felder,
+  für die die Projektkarte nichts hat, bleiben unberührt. Ungespeicherte Änderungen der Projektkarte zählen mit.
 - Ist die Projektkarte gerade in FORMA geöffnet (Datenbank gesperrt), kommt eine Meldung; nichts wird geschrieben.
 
 ### Projektordner (Server)
@@ -136,8 +148,20 @@ end
 SQLite (`PRAGMA encoding = UTF-8`), Tabellen `Allgemeines` (Kennung `[*SJ_PJK (w) by SJ GmbH Aachen#]`),
 `Gruppe` (`GruppeID`, `GruppeTyp`, `GruppeText` – z. B. 101 Projektdaten, 201 Bauherr, 202 Entwurfsverfasser,
 206 Bauvorlageberechtigter, 231 Bauaufsichtsbehörde, 301 Baugrundstücksdaten) und `Inhalte` (`GruppeID`,
-`InhalteID`, `InhalteTyp`, `Titel`, `Texte`, …). Adressgruppen (Typ 1) haben dieselben Einträge: 10 Branche,
-20 Titel, 30 Vorname, 40 Name/Firma, 70 Straße/Nr., 80 Postfach, 90 PLZ, 110 Ort, 130 Telefon, 170 E-Mail …
+`InhalteID`, `InhalteTyp`, `Ganzzahl`, `Titel`, `Texte`, …; Schlüssel ist GruppeID + InhalteID + InhalteTyp).
+Adressgruppen (Typ 1) haben dieselben Einträge: 10 Branche, 20 Titel, 30 Vorname, 40 Name/Firma, 70 Straße/Nr.,
+80 Postfach, 90 PLZ, 110 Ort, 130 Telefon, 170 E-Mail, 210 Anrede, 220 Bevorzugter Kontakt …
+
+| `InhalteTyp` | Art | `Texte` | `Ganzzahl` |
+|---|---|---|---|
+| 1 / 2 | Text, einzeilig / mehrzeilig (CR LF) | der Text | – |
+| 4 | Auswahlliste | die Möglichkeiten zeilenweise, **erste Zeile leer** | Nummer der Wahl, die leere Zeile zählt mit (`NULL`/−1 = keine) |
+| 8 | Optionen | die Möglichkeiten zeilenweise | Nummer der Wahl ab 0 (−1 = keine) |
+| 16 | Kästchen | Beschriftung (z. B. „Wärmeschutz“) | 1 = angekreuzt |
+
+Bei Auswahl, Optionen und Kästchen schreibt die App nur `Ganzzahl`; die Möglichkeiten in `Texte` bleiben unverändert.
+Die Zählweise der Auswahlliste folgt aus den Daten (Delphi: `Items` = Texte, `ItemIndex` = Ganzzahl): Nummer 2 ergibt
+bei einem Ansprechpartner „Sehr geehrter Herr“ und als Kontakt „Telefon“.
 
 Jede Formularseite enthält eine versteckte Liste **`lstbxProkarte`**, die Textfeldern Einträge zuordnet:
 
@@ -190,7 +214,7 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
 ## Offen
 
 - **Gegenprobe in FORMA:** eine hier gespeicherte Datei und Projektkarte in FORMA öffnen, prüfen und dort wieder
-  speichern.
+  speichern – insbesondere eine hier gewählte Anrede (Zählweise der Auswahlliste).
 - **`InGebrauch` in der Sperrdatei:** Bedeutung unbekannt; die App trägt ihre Prozessnummer ein.
 - **Neue Formulare und neue Formularfassungen:** brauchen die Formularbibliothek von FORMA (Vorlagen).
 - **`Projektdaten.xlsx`** im echten Projektordner (`Organisation/<Kürzel> Projektdaten.xlsx`) lesen und beim

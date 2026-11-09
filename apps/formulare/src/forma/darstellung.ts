@@ -84,6 +84,23 @@ export function seitenMasse(kaesten: Kasten[]): { breite: number; hoehe: number 
   return { breite, hoehe };
 }
 
+/** A4 bei 96 dpi (CSS-Pixel), knapp darunter, damit der Druck auf genau ein Blatt passt */
+export const A4 = { breite: 793, hoehe: 1122 };
+/** Mindestrand rundum */
+const RAND = 24;
+
+/**
+ * Blatt für eine Seite: A4 mit dem Formular mittig, links und rechts gleicher Rand, oben so viel Rand wie
+ * Platz ist (höchstens 40 Pixel). Größere Formulare bekommen ein entsprechend größeres Blatt.
+ */
+export function blatt(masse: { breite: number; hoehe: number }): { breite: number; hoehe: number; links: number; oben: number } {
+  const breite = Math.max(A4.breite, masse.breite + 2 * RAND);
+  const hoehe = Math.max(A4.hoehe, masse.hoehe + 2 * RAND);
+  const links = Math.round((breite - masse.breite) / 2);
+  const oben = Math.round(Math.max(RAND, Math.min(40, (hoehe - masse.hoehe) / 2)));
+  return { breite, hoehe, links, oben };
+}
+
 /** Drehwinkel einer Beschriftung (TExtendedLabel: `Angle`), auf 0/90/180/270 gerundet */
 export function drehung(o: Objekt): 0 | 90 | 180 | 270 {
   const w = (((zahl(o, 'Angle') ?? 0) % 360) + 360) % 360;

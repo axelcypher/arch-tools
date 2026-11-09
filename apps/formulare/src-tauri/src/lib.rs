@@ -235,8 +235,12 @@ struct PkGruppe {
 struct PkInhalt {
     gruppe: i64,
     id: i64,
+    /// 1 Text, 2 mehrzeilig, 4 Auswahlliste, 8 Optionen, 16 Kästchen
     typ: i64,
+    /// gewählte Möglichkeit (Typ 4/8) bzw. angekreuzt (Typ 16)
+    ganzzahl: Option<i64>,
     titel: Vec<u8>,
+    /// Text (Typ 1/2), die Möglichkeiten zeilenweise (Typ 4/8) bzw. die Beschriftung (Typ 16)
     texte: Vec<u8>,
 }
 
@@ -246,12 +250,21 @@ struct PkRoh {
     inhalte: Vec<PkInhalt>,
 }
 
+/// Neuer Wert eines Eintrags mit dem Wert, von dem die Änderung ausgeht
+#[derive(serde::Deserialize)]
+#[serde(tag = "spalte", rename_all = "lowercase")]
+enum PkWert {
+    Texte { alt: Vec<u8>, neu: Vec<u8> },
+    Ganzzahl { alt: Option<i64>, neu: Option<i64> },
+}
+
 #[derive(serde::Deserialize)]
 struct PkAenderung {
     gruppe: i64,
     id: i64,
-    alt: Vec<u8>,
-    neu: Vec<u8>,
+    typ: i64,
+    #[serde(flatten)]
+    wert: PkWert,
 }
 
 /// Text einer Spalte als Bytes, wie gespeichert – FORMA schreibt UTF-8; ungültige Bytes sollen nicht verloren gehen
@@ -305,15 +318,16 @@ fn pk_lesen(p: &Path) -> Result<PkRoh, String> {
         })
         .map_err(|e| pk_fehler(p, e))?;
     let inhalte = db
-        .prepare("SELECT GruppeID, InhalteID, InhalteTyp, Titel, Texte FROM Inhalte ORDER BY GruppeID, InhalteID")
+        .prepare("SELECT GruppeID, InhalteID, InhalteTyp, Ganzzahl, Titel, Texte FROM Inhalte ORDER BY GruppeID, InhalteID, InhalteTyp")
         .and_then(|mut q| {
             q.query_map([], |r| {
                 Ok(PkInhalt {
                     gruppe: r.get(0)?,
                     id: r.get(1)?,
                     typ: r.get::<_, Option<i64>>(2)?.unwrap_or(0),
-                    titel: bytes_spalte(r, 3)?,
-                    texte: bytes_spalte(r, 4)?,
+                    ganzzahl: r.get::<_, Option<i64>>(3).unwrap_or(None),
+                    titel: bytes_spalte(r, 4)?,
+                    texte: bytes_spalte(r, 5)?,
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()
@@ -326,27 +340,51 @@ fn pk_schreiben(p: &Path, aenderungen: &[PkAenderung]) -> Result<(), String> {
     let mut db = pk_oeffnen(p, true)?;
     let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate).map_err(|e| pk_fehler(p, e))?;
     for a in aenderungen {
-        let jetzt = match tx.query_row(
-            "SELECT Texte FROM Inhalte WHERE GruppeID = ?1 AND InhalteID = ?2",
-            [a.gruppe, a.id],
-            |r| bytes_spalte(r, 0),
-        ) {
-            Ok(t) => t,
+        let schluessel = [a.gruppe, a.id, a.typ];
+        let jetzt = tx.query_row(
+            "SELECT Texte, Ganzzahl FROM Inhalte WHERE GruppeID = ?1 AND InhalteID = ?2 AND InhalteTyp = ?3",
+            schluessel,
+            |r| Ok((bytes_spalte(r, 0)?, r.get::<_, Option<i64>>(1).unwrap_or(None))),
+        );
+        let (texte, ganzzahl) = match jetzt {
+            Ok(w) => w,
             Err(rusqlite::Error::QueryReturnedNoRows) => {
                 return Err(format!("Eintrag {}/{} gibt es in der Projektkarte nicht", a.gruppe, a.id))
             }
             Err(e) => return Err(pk_fehler(p, e)),
         };
-        if jetzt != a.alt {
-            return Err(format!("Die Projektkarte wurde inzwischen geändert (Eintrag {}/{}) – bitte neu laden", a.gruppe, a.id));
+        let veraltet = || format!("Die Projektkarte wurde inzwischen geändert (Eintrag {}/{}) – bitte neu laden", a.gruppe, a.id);
+        match &a.wert {
+            PkWert::Texte { alt, neu } => {
+                if a.typ != 1 && a.typ != 2 {
+                    return Err(format!("Eintrag {}/{} ist kein Text", a.gruppe, a.id));
+                }
+                if texte != *alt {
+                    return Err(veraltet());
+                }
+                // als TEXT speichern, wie FORMA (nicht als BLOB)
+                let neu = rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Text(neu));
+                tx.execute(
+                    "UPDATE Inhalte SET Texte = ?1 WHERE GruppeID = ?2 AND InhalteID = ?3 AND InhalteTyp = ?4",
+                    rusqlite::params![neu, a.gruppe, a.id, a.typ],
+                )
+                .map_err(|e| pk_fehler(p, e))?;
+            }
+            PkWert::Ganzzahl { alt, neu } => {
+                if ![4, 8, 16].contains(&a.typ) {
+                    return Err(format!("Eintrag {}/{} ist keine Auswahl", a.gruppe, a.id));
+                }
+                if ganzzahl != *alt {
+                    return Err(veraltet());
+                }
+                // Die Möglichkeiten (Texte) bleiben, wie sie sind
+                tx.execute(
+                    "UPDATE Inhalte SET Ganzzahl = ?1 WHERE GruppeID = ?2 AND InhalteID = ?3 AND InhalteTyp = ?4",
+                    rusqlite::params![neu, a.gruppe, a.id, a.typ],
+                )
+                .map_err(|e| pk_fehler(p, e))?;
+            }
         }
-        // als TEXT speichern, wie FORMA (nicht als BLOB)
-        let neu = rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Text(&a.neu));
-        tx.execute(
-            "UPDATE Inhalte SET Texte = ?1 WHERE GruppeID = ?2 AND InhalteID = ?3",
-            rusqlite::params![neu, a.gruppe, a.id],
-        )
-        .map_err(|e| pk_fehler(p, e))?;
     }
     // ohne commit (bei jedem Fehler oben) rollt die Transaktion zurück
     tx.commit().map_err(|e| pk_fehler(p, e))
@@ -468,52 +506,77 @@ mod tests {
         let _ = std::fs::remove_file(&p);
         let db = rusqlite::Connection::open(&p).unwrap();
         db.execute_batch(
-            "CREATE TABLE Gruppe (GruppeID INTEGER, GruppeTyp INTEGER, GruppeText TEXT);
-             CREATE TABLE Inhalte (GruppeID INTEGER, InhalteID INTEGER, InhalteTyp INTEGER, Ganzzahl INTEGER,
-                                   Gleitkomma REAL, Titel TEXT, Texte TEXT, Rechenblatt BLOB, Container BLOB);
+            "CREATE TABLE Gruppe (GruppeID INTEGER NOT NULL, GruppeTyp INTEGER NOT NULL, GruppeText NVARCHAR(250) NOT NULL);
+             CREATE TABLE Inhalte (GruppeID INTEGER NOT NULL, InhalteID INTEGER NOT NULL, InhalteTyp INTEGER NOT NULL,
+                                   Ganzzahl INTEGER, Gleitkomma DOUBLE, Titel NVARCHAR(250) NOT NULL, Texte TEXT NOT NULL,
+                                   Rechenblatt TEXT, Container LONGVARBINARY);
              INSERT INTO Gruppe VALUES (201, 1, 'Bauherr');
-             INSERT INTO Inhalte (GruppeID, InhalteID, InhalteTyp, Titel, Texte) VALUES (201, 40, 1, 'Name/Firma:', 'Muster');",
+             INSERT INTO Inhalte (GruppeID, InhalteID, InhalteTyp, Titel, Texte) VALUES (201, 40, 1, 'Name/Firma:', 'Muster');
+             INSERT INTO Inhalte (GruppeID, InhalteID, InhalteTyp, Titel, Texte) VALUES (201, 70, 1, 'Straße/Nr.:', '');
+             INSERT INTO Inhalte (GruppeID, InhalteID, InhalteTyp, Ganzzahl, Titel, Texte)
+                    VALUES (201, 210, 4, NULL, 'Anrede:', char(13, 10) || 'Sehr geehrte Frau' || char(13, 10) || 'Sehr geehrter Herr');",
         )
         .unwrap();
-        let strasse = rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Text(b"Stra\xdfe:"));
-        db.execute("INSERT INTO Inhalte (GruppeID, InhalteID, InhalteTyp, Titel, Texte) VALUES (201, 70, 1, ?1, NULL)", [strasse])
-            .unwrap();
         p
     }
 
-    fn aenderung(id: i64, alt: &[u8], neu: &[u8]) -> PkAenderung {
-        PkAenderung { gruppe: 201, id, alt: alt.to_vec(), neu: neu.to_vec() }
+    fn text(id: i64, alt: &str, neu: &str) -> PkAenderung {
+        PkAenderung { gruppe: 201, id, typ: 1, wert: PkWert::Texte { alt: alt.as_bytes().to_vec(), neu: neu.as_bytes().to_vec() } }
+    }
+
+    fn auswahl(alt: Option<i64>, neu: Option<i64>) -> PkAenderung {
+        PkAenderung { gruppe: 201, id: 210, typ: 4, wert: PkWert::Ganzzahl { alt, neu } }
     }
 
     #[test]
-    fn liest_bytes_wie_gespeichert() {
+    fn liest_bytes_und_auswahl_wie_gespeichert() {
         let p = muster("lesen");
         let pk = pk_lesen(&p).unwrap();
         assert_eq!(pk.gruppen[0].text, b"Bauherr");
-        assert_eq!(pk.inhalte[1].titel, b"Stra\xdfe:");
+        assert_eq!(pk.inhalte[1].titel, "Straße/Nr.:".as_bytes());
         assert_eq!(pk.inhalte[1].texte, b"");
+        assert_eq!(pk.inhalte[2].ganzzahl, None);
+        assert_eq!(pk.inhalte[2].texte, b"\r\nSehr geehrte Frau\r\nSehr geehrter Herr");
     }
 
     #[test]
     fn schreibt_alle_oder_keinen() {
         let p = muster("schreiben");
-        pk_schreiben(&p, &[aenderung(40, b"Muster", b"M\xfcller"), aenderung(70, b"", b"Hauptstra\xdfe 1")]).unwrap();
+        pk_schreiben(&p, &[text(40, "Muster", "Müller"), text(70, "", "Hauptstraße 1"), auswahl(None, Some(2))]).unwrap();
         let pk = pk_lesen(&p).unwrap();
-        assert_eq!(pk.inhalte[0].texte, b"M\xfcller");
-        assert_eq!(pk.inhalte[1].texte, b"Hauptstra\xdfe 1");
-        // als TEXT gespeichert, wie FORMA
+        assert_eq!(pk.inhalte[0].texte, "Müller".as_bytes());
+        assert_eq!(pk.inhalte[1].texte, "Hauptstraße 1".as_bytes());
+        assert_eq!(pk.inhalte[2].ganzzahl, Some(2));
+        // die Möglichkeiten bleiben unverändert, Texte als TEXT wie bei FORMA
+        assert_eq!(pk.inhalte[2].texte, b"\r\nSehr geehrte Frau\r\nSehr geehrter Herr");
         let db = rusqlite::Connection::open(&p).unwrap();
         let typ: String = db.query_row("SELECT typeof(Texte) FROM Inhalte WHERE InhalteID = 40", [], |r| r.get(0)).unwrap();
         assert_eq!(typ, "text");
         drop(db);
 
-        // zweiter Eintrag inzwischen anders: nichts wird geschrieben, auch nicht der erste
-        let e = pk_schreiben(&p, &[aenderung(40, b"M\xfcller", b"Neu"), aenderung(70, b"veraltet", b"X")]).unwrap_err();
+        // ein Eintrag inzwischen anders: nichts wird geschrieben, auch nicht die anderen
+        let e = pk_schreiben(&p, &[text(40, "Müller", "Neu"), auswahl(None, Some(1))]).unwrap_err();
         assert!(e.contains("inzwischen geändert"), "{e}");
-        assert_eq!(pk_lesen(&p).unwrap().inhalte[0].texte, b"M\xfcller");
+        let pk = pk_lesen(&p).unwrap();
+        assert_eq!(pk.inhalte[0].texte, "Müller".as_bytes());
+        assert_eq!(pk.inhalte[2].ganzzahl, Some(2));
 
-        let e = pk_schreiben(&p, &[aenderung(999, b"", b"X")]).unwrap_err();
+        let e = pk_schreiben(&p, &[text(999, "", "X")]).unwrap_err();
         assert!(e.contains("gibt es in der Projektkarte nicht"), "{e}");
+        // Art des Werts muss zum Eintrag passen
+        let falsch = PkAenderung { gruppe: 201, id: 40, typ: 1, wert: PkWert::Ganzzahl { alt: None, neu: Some(1) } };
+        assert!(pk_schreiben(&p, &[falsch]).unwrap_err().contains("keine Auswahl"));
+    }
+
+    #[test]
+    fn liest_aenderungen_aus_der_oberflaeche() {
+        let a: Vec<PkAenderung> = serde_json::from_str(
+            r#"[{"gruppe":201,"id":40,"typ":1,"spalte":"texte","alt":[77],"neu":[78]},
+                {"gruppe":201,"id":210,"typ":4,"spalte":"ganzzahl","alt":null,"neu":2}]"#,
+        )
+        .unwrap();
+        assert!(matches!(&a[0].wert, PkWert::Texte { alt, neu } if alt == b"M" && neu == b"N"));
+        assert!(matches!(a[1].wert, PkWert::Ganzzahl { alt: None, neu: Some(2) }));
     }
 
     /// Mit SJFORMA_REF: eine Kopie jeder echten Projektkarte lesen und unverändert zurückschreiben
@@ -529,10 +592,23 @@ mod tests {
             std::fs::copy(&quelle, &kopie).unwrap();
             let pk = pk_lesen(&kopie).unwrap();
             assert!(pk.gruppen.len() > 10 && pk.inhalte.len() > 100);
-            let alle: Vec<_> = pk.inhalte.iter().map(|i| PkAenderung { gruppe: i.gruppe, id: i.id, alt: i.texte.clone(), neu: i.texte.clone() }).collect();
+            let alle: Vec<_> = pk
+                .inhalte
+                .iter()
+                .map(|i| PkAenderung {
+                    gruppe: i.gruppe,
+                    id: i.id,
+                    typ: i.typ,
+                    wert: if [4, 8, 16].contains(&i.typ) {
+                        PkWert::Ganzzahl { alt: i.ganzzahl, neu: i.ganzzahl }
+                    } else {
+                        PkWert::Texte { alt: i.texte.clone(), neu: i.texte.clone() }
+                    },
+                })
+                .collect();
             pk_schreiben(&kopie, &alle).unwrap();
             let wieder = pk_lesen(&kopie).unwrap();
-            assert!(pk.inhalte.iter().zip(&wieder.inhalte).all(|(a, b)| a.texte == b.texte));
+            assert!(pk.inhalte.iter().zip(&wieder.inhalte).all(|(a, b)| a.texte == b.texte && a.ganzzahl == b.ganzzahl));
             std::fs::remove_file(&kopie).unwrap();
         }
     }

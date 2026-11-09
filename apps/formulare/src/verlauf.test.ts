@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Verlauf } from './verlauf';
+import type { Verlauf, Wert } from './verlauf';
 import { MAX_SCHRITTE, ZUSAMMENFASSEN_MS, eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
 
 /** Werte nach Anwenden eines Sprungs auf einen Ausgangsstand */
-function anwenden(werte: Record<string, string | boolean>, v: Verlauf, ziel: number) {
+function anwenden(werte: Record<string, Wert>, v: Verlauf, ziel: number) {
   const r = springe(v, ziel);
   return { verlauf: r.verlauf, werte: { ...werte, ...Object.fromEntries(r.werte) } };
 }
@@ -39,7 +39,7 @@ describe('Verlauf', () => {
     v = eintragen(v, 'a', '', '1', 0);
     v = eintragen(v, 'b', false, true, 5000);
     v = eintragen(v, 'a', '1', '2', 10000);
-    let stand: Record<string, string | boolean> = { a: '2', b: true };
+    let stand: Record<string, Wert> = { a: '2', b: true };
 
     ({ verlauf: v, werte: stand } = anwenden(stand, v, 2));
     expect(stand).toEqual({ a: '1', b: true });
@@ -83,7 +83,7 @@ describe('Verlauf', () => {
   it('liest gespeicherte Verläufe und verwirft Unbrauchbares', () => {
     const v = eintragen(leererVerlauf(), 'a', '', '1', 0);
     expect(verlaufAus(JSON.parse(JSON.stringify(v)))).toEqual(v);
-    expect(verlaufAus({ schritte: [{ zeit: 1, aenderungen: [{ feld: 'a', vorher: 1, nachher: '' }] }, 'kaputt'], position: 7 })).toEqual({ schritte: [], position: 0 });
+    expect(verlaufAus({ schritte: [{ zeit: 1, aenderungen: [{ feld: 'a', vorher: {}, nachher: '' }] }, 'kaputt'], position: 7 })).toEqual({ schritte: [], position: 0 });
     expect(verlaufAus(null)).toEqual(leererVerlauf());
   });
 });

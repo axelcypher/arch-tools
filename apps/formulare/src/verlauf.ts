@@ -6,7 +6,7 @@
  * nach dem Speichern ergibt wieder eine ungespeicherte Änderung).
  */
 
-export type Wert = string | boolean;
+export type Wert = string | boolean | number | null;
 
 export interface FeldAenderung {
   /** Feldschlüssel `<Seite>:<Name>` */
@@ -79,7 +79,7 @@ export function springe(v: Verlauf, ziel: number): { verlauf: Verlauf; werte: Ma
   return { verlauf: { schritte: v.schritte, position }, werte };
 }
 
-const istWert = (w: unknown): w is Wert => typeof w === 'string' || typeof w === 'boolean';
+const istWert = (w: unknown): w is Wert => w === null || ['string', 'boolean', 'number'].includes(typeof w);
 const istAenderung = (a: unknown): a is FeldAenderung =>
   !!a && typeof a === 'object' && typeof (a as FeldAenderung).feld === 'string' && istWert((a as FeldAenderung).vorher) && istWert((a as FeldAenderung).nachher);
 

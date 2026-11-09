@@ -44,7 +44,8 @@ export function vorschlaege(o: OffenesFormular, pk: Projektkarte): Vorschlag[] {
       const neu = ausfuellen(teile, (g, id) => pkWert(pk, g, id), feld.einzeilig);
       const w = wertVon(o, feld);
       const aktuell = typeof w === 'string' ? w : '';
-      if (ohneLeerraum(neu) === ohneLeerraum(aktuell)) continue;
+      // nichts in der Projektkarte: Feld bleibt, wie es ist (kein Vorschlag zum Leeren)
+      if (!neu.trim() || ohneLeerraum(neu) === ohneLeerraum(aktuell)) continue;
       out.push({ feld, aktuell, neu, quelle: quelle(teile, pk) });
     }
   });

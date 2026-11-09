@@ -8,7 +8,7 @@ const zeit = (ms: number) => {
   return heute ? d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
-const kurz = (w: string | boolean) => (typeof w === 'boolean' ? (w ? '☒' : '☐') : w.trim() ? (w.length > 40 ? `${w.slice(0, 40).replace(/\n/g, ' ')}…` : w.replace(/\n/g, ' ')) : '(leer)');
+const kurz = (w: string | boolean | number | null) => (typeof w === 'boolean' ? (w ? '☒' : '☐') : typeof w !== 'string' ? String(w ?? '–') : w.trim() ? (w.length > 40 ? `${w.slice(0, 40).replace(/\n/g, ' ')}…` : w.replace(/\n/g, ' ')) : '(leer)');
 
 /**
  * Verlauf rechts: alle Eingaben dieses Formulars, neueste oben – auch von früheren Sitzungen. Ein Klick stellt

@@ -17,16 +17,28 @@ const FORMULAR = 'C:/FORMA/BS9/001-Muster.frmsjf';
 const SPERRE = 'C:/FORMA/BS9/001-Muster.frmtmp';
 const KARTE = 'C:/FORMA/BS9/sj_prokarte.sdb';
 
+const ANREDE = '\r\nSehr geehrte Frau\r\nSehr geehrter Herr\r\nSehr geehrte Damen und Herren,';
+const adresse = (gruppe: number, werte: Record<number, string>, anrede: number | null = null) => [
+  { gruppe, id: 30, typ: 1, titel: 'Vorname:', text: werte[30] ?? '', zahl: null },
+  { gruppe, id: 40, typ: 1, titel: 'Name/Firma:', text: werte[40] ?? '', zahl: null },
+  { gruppe, id: 70, typ: 1, titel: 'Straße/Nr.:', text: werte[70] ?? '', zahl: null },
+  { gruppe, id: 90, typ: 1, titel: 'PLZ Straße:', text: werte[90] ?? '', zahl: null },
+  { gruppe, id: 110, typ: 1, titel: 'Ort:', text: werte[110] ?? '', zahl: null },
+  { gruppe, id: 210, typ: 4, titel: 'Anrede:', text: ANREDE, zahl: anrede },
+];
 const projektkarte = (): Projektkarte => ({
   gruppen: [
+    { id: 101, typ: 4, text: 'Projektdaten' },
     { id: 201, typ: 1, text: 'Bauherr' },
+    { id: 205, typ: 1, text: 'Eigentümer des Baugrundstücks' },
     { id: 232, typ: 1, text: 'Gemeinde' },
   ],
   eintraege: [
-    { gruppe: 201, id: 30, typ: 1, titel: 'Vorname:', text: 'Max' },
-    { gruppe: 201, id: 40, typ: 1, titel: 'Name/Firma:', text: 'Mustermann' },
-    { gruppe: 232, id: 90, typ: 1, titel: 'PLZ Straße:', text: '' },
-    { gruppe: 232, id: 110, typ: 1, titel: 'Ort:', text: 'Musterstadt' },
+    { gruppe: 101, id: 30, typ: 2, titel: 'Bezeichnung der Baumaßnahme:', text: 'Neubau\r\nEinfamilienhaus', zahl: null },
+    { gruppe: 101, id: 60, typ: 4, titel: 'Land:', text: '\r\nBayern\r\nNordrhein-Westfalen', zahl: null },
+    ...adresse(201, { 30: 'Max', 40: 'Mustermann', 70: 'Musterweg 1', 90: '12345', 110: 'Musterstadt' }),
+    ...adresse(205, {}),
+    ...adresse(232, { 110: 'Musterstadt' }),
   ],
 });
 
@@ -113,10 +125,18 @@ const taste = (el: EventTarget, key: string, mehr: KeyboardEventInit = {}) =>
 const feld = (host: Element, label: string, n = 0) => host.querySelectorAll<HTMLInputElement>(`[aria-label="${label}"]`)[n];
 const kreuz = (host: Element, beschriftung: string) =>
   [...host.querySelectorAll('label.fo-kreuz')].find((l) => l.textContent === beschriftung)!.querySelector('input') as HTMLInputElement;
-const kartenFeld = (host: Element, titel: string, gruppe: string) => {
-  const g = [...host.querySelectorAll('.fo-karte-gruppe')].find((x) => x.querySelector('h3')?.textContent === gruppe)!;
-  return [...g.querySelectorAll('label')].find((l) => l.querySelector('.field-label')?.textContent === titel)!.querySelector('input') as HTMLInputElement;
-};
+/** Eingabe eines Eintrags der gerade gezeigten Gruppe der Projektkarte (nach dem Titel über dem Feld) */
+const kartenFeld = <T extends HTMLElement = HTMLInputElement>(host: Element, titel: string) =>
+  [...host.querySelectorAll('.pk-feld')].find((f) => f.querySelector('.pk-feld-titel')?.textContent === titel)!.querySelector('input, select, textarea') as unknown as T;
+const gruppeWaehlen = async (host: Element, name: string) =>
+  klick([...host.querySelectorAll<HTMLButtonElement>('.pk-nav-eintrag')].find((b) => b.querySelector('.pk-nav-name')?.textContent?.startsWith(name))!);
+const waehle = (el: HTMLSelectElement, value: string) =>
+  act(() => {
+    el.value = value;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+const karteVon = () => ds.projektkarten.get(KARTE)!;
+const pkText = (gruppe: number, id: number) => karteVon().eintraege.find((e) => e.gruppe === gruppe && e.id === id)!;
 
 async function oeffneMuster(host?: HTMLElement): Promise<HTMLElement> {
   host ??= await render();
@@ -256,44 +276,109 @@ describe('Formulare', () => {
     expect(document.activeElement).toBe(feld(host, 'Bauherrschaft', 1));
   });
 
-  it('Projektkarte bearbeiten und speichern – nur geänderte Einträge, mit dem alten Wert als Prüfung', async () => {
+  it('Projektkarte: Gruppen mit Kurzfassung, bearbeiten und speichern – nur geänderte Einträge, mit dem alten Wert als Prüfung', async () => {
     const host = await render();
     await klick(knopf(host, 'BS9'));
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
-    expect(kartenFeld(host, 'Name/Firma', 'Bauherr').value).toBe('Mustermann');
+    const nav = [...host.querySelectorAll('.pk-nav-eintrag')].map((b) => [b.querySelector('.pk-nav-name')!.textContent, b.querySelector('.pk-nav-kurz')!.textContent]);
+    expect(nav).toEqual([
+      ['Projektdaten', 'Neubau'],
+      ['Bauherr', 'Mustermann, Max · Musterstadt'],
+      ['Eigentümer des Baugrundstücks', 'nicht ausgefüllt'],
+      ['Gemeinde', 'Musterstadt'],
+    ]);
+    await gruppeWaehlen(host, 'Bauherr');
+    expect(kartenFeld(host, 'Name/Firma').value).toBe('Mustermann');
+    expect(host.querySelector('.pk-vorschau')!.textContent).toContain('Musterweg 1');
 
-    eingabe(kartenFeld(host, 'Name/Firma', 'Bauherr'), 'Musterfrau');
+    eingabe(kartenFeld(host, 'Name/Firma'), 'Musterfrau');
     expect(host.textContent).toContain('1 Eintrag/Einträge geändert');
+    expect(host.querySelector('.pk-feld.geaendert')).not.toBeNull();
     // in der Zwischenzeit ändert jemand in FORMA einen anderen Eintrag – das stört nicht
-    ds.projektkarten.get(KARTE)!.eintraege[3].text = 'Neustadt';
+    pkText(201, 110).text = 'Neustadt';
     await klick(knopfGenau(host, 'Projektkarte speichern'));
-    expect(ds.projektkarten.get(KARTE)!.eintraege.map((e) => e.text)).toEqual(['Max', 'Musterfrau', '', 'Neustadt']);
+    expect(pkText(201, 40).text).toBe('Musterfrau');
     expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);
-    expect(kartenFeld(host, 'Ort', 'Gemeinde').value).toBe('Neustadt');
+    expect(kartenFeld(host, 'Ort').value).toBe('Neustadt');
+    expect(host.textContent).toContain('Alles gespeichert');
 
     // derselbe Eintrag inzwischen anders: nichts wird geschrieben
-    eingabe(kartenFeld(host, 'Name/Firma', 'Bauherr'), 'Beispiel');
-    ds.projektkarten.get(KARTE)!.eintraege[1].text = 'von FORMA';
+    eingabe(kartenFeld(host, 'Name/Firma'), 'Beispiel');
+    pkText(201, 40).text = 'von FORMA';
     await klick(knopfGenau(host, 'Projektkarte speichern'));
     expect(host.textContent).toContain('inzwischen geändert');
-    expect(ds.projektkarten.get(KARTE)!.eintraege[1].text).toBe('von FORMA');
+    expect(pkText(201, 40).text).toBe('von FORMA');
+  });
+
+  it('Projektkarte: Auswahllisten speichern die Nummer der Wahl, Hinweise auf Tippfehler, Rückgängig', async () => {
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await gruppeWaehlen(host, 'Bauherr');
+    const anrede = kartenFeld<HTMLSelectElement>(host, 'Anrede');
+    // die leere erste Zeile ist „keine Angabe“ – angeboten werden die drei Anreden
+    expect([...anrede.options].map((o) => o.textContent)).toEqual(['– keine Angabe –', 'Sehr geehrte Frau', 'Sehr geehrter Herr', 'Sehr geehrte Damen und Herren,']);
+    waehle(anrede, '2');
+    eingabe(kartenFeld(host, 'PLZ Straße'), '1234');
+    expect(host.textContent).toContain('Postleitzahlen in Deutschland haben fünf Ziffern.');
+
+    await klick(knopfMit(host, 'Rückgängig'));
+    expect(kartenFeld(host, 'PLZ Straße').value).toBe('12345');
+    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    expect(pkText(201, 210).zahl).toBe(2);
+    // die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat
+    expect(pkText(201, 210).text).toBe(ANREDE);
+    expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);
+  });
+
+  it('Projektkarte: Angaben von einer anderen Gruppe und aus den Bürostammdaten übernehmen', async () => {
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await gruppeWaehlen(host, 'Eigentümer');
+    waehle(host.querySelector<HTMLSelectElement>('.pk-uebernehmen')!, 'g:201');
+    await warte();
+    expect(kartenFeld(host, 'Name/Firma').value).toBe('Mustermann');
+    expect(kartenFeld(host, 'Ort').value).toBe('Musterstadt');
+    // ein Schritt: Strg+Z nimmt die ganze Übernahme zurück
+    taste(window, 'z', { ctrlKey: true });
+    await warte();
+    expect(kartenFeld(host, 'Name/Firma').value).toBe('');
+
+    // Bauherr als Bürostammdaten merken und beim Eigentümer einsetzen
+    await gruppeWaehlen(host, 'Bauherr');
+    await klick(knopfGenau(host, 'Als Stammdaten merken'));
+    expect(host.textContent).toContain('„Mustermann, Max“ als Bürostammdaten gemerkt');
+    await gruppeWaehlen(host, 'Eigentümer');
+    waehle(host.querySelector<HTMLSelectElement>('.pk-uebernehmen')!, 's:Mustermann, Max');
+    await warte();
+    expect(kartenFeld(host, 'Vorname').value).toBe('Max');
+  });
+
+  it('Projektkarte durchsuchen: ein Treffer springt in seine Gruppe', async () => {
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    eingabe(host.querySelector<HTMLInputElement>('.pk-suche')!, 'musterweg');
+    const treffer = [...host.querySelectorAll<HTMLButtonElement>('.pk-treffer-zeile')];
+    expect(treffer.map((t) => t.querySelector('.pk-treffer-ort')!.textContent)).toEqual(['Bauherr › Straße/Nr.']);
+    await klick(treffer[0]);
+    expect(host.querySelector('.pk-kopf h2')!.textContent).toBe('Bauherr');
   });
 
   it('füllt das Formular aus der Projektkarte – leere Felder vorgewählt, in einem rückgängig zu machenden Schritt', async () => {
     const host = await oeffneMuster();
     // Projektkarte vorher ändern (noch nicht gespeichert): zählt beim Ausfüllen mit
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
-    eingabe(kartenFeld(host, 'PLZ Straße', 'Gemeinde'), '12345');
+    await gruppeWaehlen(host, 'Gemeinde');
+    eingabe(kartenFeld(host, 'PLZ Straße'), '12345');
     await klick(knopf(host, '001-Muster'));
 
     await klick(knopf(host, 'Aus Projektkarte ausfüllen'));
     const zeilen = [...host.querySelectorAll('.fo-ausfuellen-zeile')];
-    // Memo2 (leer) → „12345 Musterstadt“; Memo1 hat eigenen Inhalt → nicht vorgewählt
-    expect(zeilen.map((z) => [z.querySelector('strong')!.textContent, z.querySelector('input')!.checked])).toEqual([
-      ['Bauherrschaft', false],
-      ['Bauherrschaft', true],
-    ]);
-    expect(zeilen[1].textContent).toContain('12345 Musterstadt');
+    // Memo2 (leer) → „12345 Musterstadt“; Memo1 („Mustermann, Max“) bekäme den leeren Eintrag der Behörde – nicht angeboten
+    expect(zeilen.map((z) => [z.querySelector('strong')!.textContent, z.querySelector('input')!.checked])).toEqual([['Bauherrschaft', true]]);
+    expect(zeilen[0].textContent).toContain('12345 Musterstadt');
     await klick(knopf(host, '1 Feld(er) übernehmen'));
     expect(feld(host, 'Bauherrschaft', 1).value).toBe('12345 Musterstadt');
     expect(feld(host, 'Bauherrschaft', 0).value).toBe('Mustermann, Max');

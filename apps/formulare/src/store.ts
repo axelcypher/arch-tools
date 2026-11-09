@@ -3,14 +3,14 @@ import { pickFile, saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import type { AblageOrdner } from './ablage';
 import { VORGABE_AUSWAHL, ablageSuchen, auswahlBereinigt, zuordnen } from './ablage';
-import type { Dateisystem } from './dateisystem';
+import type { Dateisystem, PkAenderung } from './dateisystem';
 import { hatDateisystem, tauriDateisystem } from './dateisystem';
 import type { Feld } from './forma/felder';
 import { felderDerSeite } from './forma/felder';
 import type { Formular } from './forma/formular';
 import { formularBytes, istAngekreuzt, memoText, parseFormular, setzeAngekreuzt, setzeMemoText } from './forma/formular';
-import type { Projektkarte } from './forma/projektkarte';
-import { pkSchluessel } from './forma/projektkarte';
+import type { PkWert, Projektkarte } from './forma/projektkarte';
+import { istWahl, pkAnzeige, pkEintrag, pkSchluessel, pkWertPasst, pkWertVon } from './forma/projektkarte';
 import type { Sperre } from './forma/sperre';
 import { sperreLesen, sperreSchreiben, sperrPfad, zeitstempel } from './forma/sperre';
 import { finde } from './forma/dfm';
@@ -91,8 +91,18 @@ export interface OffenesFormular {
 export interface OffeneKarte {
   projekt: Projekt;
   karte: Projektkarte;
-  /** Schlüssel `<Gruppe>:<Eintrag>` → neuer Text */
-  aenderungen: Record<string, string>;
+  /** Schlüssel `<Gruppe>:<Eintrag>` → neuer Wert (Text, Nummer der Wahl, Kästchen 0/1) */
+  aenderungen: Record<string, PkWert>;
+  verlauf: Verlauf;
+  /** Zeitpunkt der letzten lokalen Sicherung (ms) */
+  gesichert: number | null;
+}
+
+/** Wert für einen Eintrag der Projektkarte */
+export interface KartenWert {
+  gruppe: number;
+  id: number;
+  wert: PkWert;
 }
 
 export interface Meldung {
@@ -148,7 +158,13 @@ interface FormulareState extends Gespeichert {
   /** Datei neu einlesen; eigene Änderungen bleiben erhalten */
   neuLaden: () => Promise<void>;
   karteLaden: () => Promise<void>;
-  karteSetzen: (gruppe: number, id: number, text: string) => void;
+  karteSetzen: (gruppe: number, id: number, wert: PkWert) => void;
+  /** mehrere Einträge in einem Schritt (Übernehmen, Leeren) */
+  karteMehrere: (werte: KartenWert[], titel: string) => void;
+  /** liefert den Schlüssel des betroffenen Eintrags (zum Hinspringen) */
+  karteRueckgaengig: () => string | null;
+  karteWiederholen: () => string | null;
+  /** alle ungespeicherten Änderungen zurücknehmen – als ein Schritt, der sich rückgängig machen lässt */
   karteVerwerfen: () => void;
   karteSpeichern: () => Promise<void>;
 }
@@ -195,7 +211,7 @@ function ladeEinstellungen(): Gespeichert {
 /* ---------- Entwürfe und Verlauf ---------- */
 
 const dokSchluessel = (o: Pick<OffenesFormular, 'projekt' | 'pfad'>) => (o.projekt ? `${o.projekt.root}|${o.pfad}` : `datei|${o.pfad}`);
-const karteSchluessel = (p: Projekt) => `${p.root}|${p.ordner}`;
+const karteSchluessel = (p: Projekt) => `karte|${p.root}|${p.ordner}`;
 
 const entwuerfe = () => lesen<Record<string, Record<string, Wert>>>(ENTWUERFE, {});
 
@@ -208,17 +224,20 @@ function verlaufLaden(schluessel: string): Verlauf {
   return verlaufAus(lesen<unknown>(verlaufSchluessel(schluessel), null));
 }
 
-/** Sichert Entwurf und Verlauf; liefert den Zeitpunkt oder null, wenn der Speicher nicht verfügbar ist */
+/** Sichert Entwurf und Verlauf eines Formulars bzw. einer Projektkarte; liefert den Zeitpunkt oder null */
 function sichern(o: OffenesFormular): number | null {
-  const k = dokSchluessel(o);
-  const alle = entwuerfe();
-  if (Object.keys(o.aenderungen).length) alle[k] = o.aenderungen;
+  return sichernUnter(ENTWUERFE, dokSchluessel(o), o.aenderungen, o.verlauf);
+}
+
+function sichernUnter(ablage: string, k: string, aenderungen: Record<string, unknown>, verlauf: Verlauf): number | null {
+  const alle = lesen<Record<string, unknown>>(ablage, {});
+  if (Object.keys(aenderungen).length) alle[k] = aenderungen;
   else delete alle[k];
   const jetzt = Date.now();
   const verzeichnis = lesen<Record<string, number>>(VERLAEUFE, {});
-  let ok = schreiben(ENTWUERFE, alle);
-  if (o.verlauf.schritte.length) {
-    ok = schreiben(verlaufSchluessel(k), o.verlauf) && ok;
+  let ok = schreiben(ablage, alle);
+  if (verlauf.schritte.length) {
+    ok = schreiben(verlaufSchluessel(k), verlauf) && ok;
     verzeichnis[k] = jetzt;
   } else {
     delete verzeichnis[k];
@@ -271,14 +290,14 @@ function bereinige(aenderungen: Record<string, Wert>, felder: Feld[][]): Record<
 }
 
 /** Werte eintragen: gleich dem Wert in der Datei → keine Änderung mehr */
-function mitWerten(o: OffenesFormular, werte: Map<string, Wert>): Record<string, Wert> {
+function mitWerten(o: OffenesFormular, werte: Map<string, unknown>): Record<string, Wert> {
   const aenderungen = { ...o.aenderungen };
   const felder = new Map(o.felder.flat().map((f) => [f.schluessel, f]));
   for (const [k, w] of werte) {
     const f = felder.get(k);
     if (!f || typeof w !== typeof f.original) continue;
     if (w === f.original) delete aenderungen[k];
-    else aenderungen[k] = w;
+    else aenderungen[k] = w as Wert;
   }
   return aenderungen;
 }
@@ -318,17 +337,61 @@ async function sperren(ds: Dateisystem, root: string, pfad: string): Promise<Spe
 
 /* ---------- Projektkarte ---------- */
 
-/** Zeilenumbrüche wie im Textfeld (FORMA speichert CR LF) */
-const normal = (s: string) => s.replace(/\r\n?/g, '\n');
-
-export const karteWert = (k: OffeneKarte, gruppe: number, id: number): string => {
+/** Aktueller Wert eines Eintrags (mit ungespeicherter Änderung); null, wenn es ihn nicht gibt */
+export function karteWert(k: OffeneKarte, gruppe: number, id: number): PkWert {
   const s = pkSchluessel(gruppe, id);
-  return s in k.aenderungen ? k.aenderungen[s] : normal(k.karte.eintraege.find((e) => e.gruppe === gruppe && e.id === id)?.text ?? '');
-};
+  if (s in k.aenderungen) return k.aenderungen[s];
+  const e = pkEintrag(k.karte, gruppe, id);
+  return e ? pkWertVon(e) : null;
+}
+
+/** Angezeigter Text eines Eintrags (mit ungespeicherter Änderung) */
+export function karteText(k: OffeneKarte, gruppe: number, id: number): string {
+  const e = pkEintrag(k.karte, gruppe, id);
+  return e ? pkAnzeige(e, karteWert(k, gruppe, id)) : '';
+}
 
 /** Projektkarte mit den eingetragenen Änderungen – Grundlage fürs Ausfüllen */
 export function karteMitAenderungen(k: OffeneKarte): Projektkarte {
-  return { gruppen: k.karte.gruppen, eintraege: k.karte.eintraege.map((e) => ({ ...e, text: karteWert(k, e.gruppe, e.id) })) };
+  return {
+    gruppen: k.karte.gruppen,
+    eintraege: k.karte.eintraege.map((e) => {
+      const s = pkSchluessel(e.gruppe, e.id);
+      if (!(s in k.aenderungen)) return e;
+      const w = k.aenderungen[s];
+      return istWahl(e) ? { ...e, zahl: typeof w === 'number' ? w : null } : { ...e, text: typeof w === 'string' ? w : '' };
+    }),
+  };
+}
+
+export const karteGeaendert = (k: OffeneKarte | null) => !!k && Object.keys(k.aenderungen).length > 0;
+
+/** Änderungen eintragen: gleich dem gespeicherten Wert → keine Änderung mehr; Unpassendes wird übergangen */
+function karteMitWerten(k: OffeneKarte, werte: Map<string, unknown>): Record<string, PkWert> {
+  const aenderungen = { ...k.aenderungen };
+  for (const [s, w] of werte) {
+    const [g, i] = s.split(':').map(Number);
+    const e = pkEintrag(k.karte, g, i);
+    if (!e || !pkWertPasst(e, w)) continue;
+    if (w === pkWertVon(e)) delete aenderungen[s];
+    else aenderungen[s] = w;
+  }
+  return aenderungen;
+}
+
+/** Änderungen für die Hülle: Texte mit CR LF wie bei FORMA, Auswahl als Nummer */
+function kartenAenderungen(k: OffeneKarte): PkAenderung[] {
+  return Object.entries(k.aenderungen).flatMap(([s, w]): PkAenderung[] => {
+    const [gruppe, id] = s.split(':').map(Number);
+    const e = pkEintrag(k.karte, gruppe, id);
+    if (!e) return [];
+    if (istWahl(e)) {
+      // „keine Wahl“: was vorher stand (leer oder −1) bleibt so, wenn es schon nichts war
+      const neu = typeof w === 'number' ? w : e.zahl === null ? null : -1;
+      return neu === e.zahl ? [] : [{ gruppe, id, typ: e.typ, spalte: 'ganzzahl', alt: e.zahl, neu }];
+    }
+    return [{ gruppe, id, typ: e.typ, spalte: 'texte', alt: e.text, neu: (typeof w === 'string' ? w : '').replace(/\n/g, '\r\n') }];
+  });
 }
 
 const fehlertext = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -362,6 +425,12 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     neu.gesichert = sichern(neu);
     set({ offen: neu });
     return neu;
+  };
+
+  /** Neuer Stand der Projektkarte: übernehmen und lokal sichern (Entwurf und Verlauf) */
+  const karteAktualisieren = (k: OffeneKarte) => {
+    const neu = { ...k, gesichert: sichernUnter(PK_ENTWUERFE, karteSchluessel(k.projekt), k.aenderungen, k.verlauf) };
+    set({ karte: neu });
   };
 
   return {
@@ -586,63 +655,85 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!ds || !projekt) return;
       try {
         const karte = await ds.projektkarteLesen(projekt.root, `${projekt.ordner}/sj_prokarte.sdb`);
+        if (get().projekt !== projekt) return;
         if (!karte) {
           set({ karte: null, meldung: { art: 'info', text: `${projekt.ordner} hat keine Projektkarte.` } });
           return;
         }
-        const entwurf = lesen<Record<string, Record<string, string>>>(PK_ENTWUERFE, {})[karteSchluessel(projekt)] ?? {};
-        const offen: OffeneKarte = { projekt, karte, aenderungen: {} };
-        // nur Entwürfe übernehmen, die noch von der Projektkarte abweichen
-        for (const [s, t] of Object.entries(entwurf)) {
-          const [g, i] = s.split(':').map(Number);
-          if (karte.eintraege.some((e) => e.gruppe === g && e.id === i && normal(e.text) !== t)) offen.aenderungen[s] = t;
-        }
-        if (get().projekt === projekt) set({ karte: offen });
+        const k = karteSchluessel(projekt);
+        const offen: OffeneKarte = { projekt, karte, aenderungen: {}, verlauf: verlaufLaden(k), gesichert: null };
+        // nur Entwürfe übernehmen, die zum Eintrag passen und noch vom gespeicherten Wert abweichen
+        const entwurf = lesen<Record<string, Record<string, unknown>>>(PK_ENTWUERFE, {})[k] ?? {};
+        offen.aenderungen = karteMitWerten(offen, new Map(Object.entries(entwurf)));
+        set({ karte: offen });
       } catch (e) {
         fehler(`Projektkarte von ${projekt.ordner} nicht lesbar`, e);
       }
     },
 
-    karteSetzen: (gruppe, id, text) => {
+    karteSetzen: (gruppe, id, wert) => {
       const k = get().karte;
       if (!k) return;
       const s = pkSchluessel(gruppe, id);
-      const original = normal(k.karte.eintraege.find((e) => e.gruppe === gruppe && e.id === id)?.text ?? '');
-      const aenderungen = { ...k.aenderungen };
-      if (text === original) delete aenderungen[s];
-      else aenderungen[s] = text;
-      const alle = lesen<Record<string, Record<string, string>>>(PK_ENTWUERFE, {});
-      if (Object.keys(aenderungen).length) alle[karteSchluessel(k.projekt)] = aenderungen;
-      else delete alle[karteSchluessel(k.projekt)];
-      schreiben(PK_ENTWUERFE, alle);
-      set({ karte: { ...k, aenderungen } });
+      const vorher = karteWert(k, gruppe, id);
+      if (vorher === wert) return;
+      const verlauf = eintragen(k.verlauf, s, vorher, wert, Date.now());
+      karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, new Map([[s, wert]])) });
+    },
+
+    karteMehrere: (werte, titel) => {
+      const k = get().karte;
+      if (!k) return;
+      const liste = werte.filter((w) => {
+        const e = pkEintrag(k.karte, w.gruppe, w.id);
+        return !!e && pkWertPasst(e, w.wert);
+      });
+      const aenderungen: FeldAenderung[] = liste.map((w) => ({ feld: pkSchluessel(w.gruppe, w.id), vorher: karteWert(k, w.gruppe, w.id), nachher: w.wert }));
+      const verlauf = eintragenMehrere(k.verlauf, aenderungen, titel, Date.now());
+      if (verlauf === k.verlauf) return;
+      karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, new Map(aenderungen.map((a) => [a.feld, a.nachher]))) });
+    },
+
+    karteRueckgaengig: () => {
+      const k = get().karte;
+      if (!k || !kannRueckgaengig(k.verlauf)) return null;
+      const schritt = k.verlauf.schritte[k.verlauf.position - 1];
+      const { verlauf, werte } = springe(k.verlauf, k.verlauf.position - 1);
+      karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, werte) });
+      return schritt.aenderungen[0]?.feld ?? null;
+    },
+
+    karteWiederholen: () => {
+      const k = get().karte;
+      if (!k || !kannWiederholen(k.verlauf)) return null;
+      const schritt = k.verlauf.schritte[k.verlauf.position];
+      const { verlauf, werte } = springe(k.verlauf, k.verlauf.position + 1);
+      karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, werte) });
+      return schritt.aenderungen[0]?.feld ?? null;
     },
 
     karteVerwerfen: () => {
       const k = get().karte;
-      if (!k) return;
-      const alle = lesen<Record<string, Record<string, string>>>(PK_ENTWUERFE, {});
-      delete alle[karteSchluessel(k.projekt)];
-      schreiben(PK_ENTWUERFE, alle);
-      set({ karte: { ...k, aenderungen: {} } });
+      if (!k || !karteGeaendert(k)) return;
+      const zurueck = Object.keys(k.aenderungen).map((s) => {
+        const [gruppe, id] = s.split(':').map(Number);
+        return { gruppe, id, wert: pkWertVon(pkEintrag(k.karte, gruppe, id)!) };
+      });
+      get().karteMehrere(zurueck, 'Änderungen verworfen');
+      set({ meldung: { art: 'info', text: 'Ungespeicherte Änderungen der Projektkarte verworfen – Strg+Z holt sie zurück.' } });
     },
 
     karteSpeichern: async () => {
       const { ds, karte: k } = get();
-      if (!ds || !k || !Object.keys(k.aenderungen).length) return;
+      if (!ds || !k || !karteGeaendert(k)) return;
       const pfad = `${k.projekt.ordner}/sj_prokarte.sdb`;
       try {
-        const aenderungen = Object.entries(k.aenderungen).map(([s, neu]) => {
-          const [gruppe, id] = s.split(':').map(Number);
-          const alt = k.karte.eintraege.find((e) => e.gruppe === gruppe && e.id === id)?.text ?? '';
-          return { gruppe, id, alt, neu: neu.replace(/\n/g, '\r\n') };
-        });
-        await ds.projektkarteSchreiben(k.projekt.root, pfad, aenderungen);
-        const alle = lesen<Record<string, Record<string, string>>>(PK_ENTWUERFE, {});
-        delete alle[karteSchluessel(k.projekt)];
-        schreiben(PK_ENTWUERFE, alle);
+        const aenderungen = kartenAenderungen(k);
+        if (aenderungen.length) await ds.projektkarteSchreiben(k.projekt.root, pfad, aenderungen);
         const frisch = await ds.projektkarteLesen(k.projekt.root, pfad);
-        set({ karte: frisch ? { ...k, karte: frisch, aenderungen: {} } : null, meldung: { art: 'info', text: `Projektkarte von ${k.projekt.ordner} gespeichert.` } });
+        if (!frisch) throw new Error('Projektkarte nach dem Speichern nicht lesbar');
+        karteAktualisieren({ ...k, karte: frisch, aenderungen: {} });
+        set({ meldung: { art: 'info', text: `Projektkarte von ${k.projekt.ordner} gespeichert.` } });
         log.info(`Projektkarte gespeichert: ${pfad} (${aenderungen.length} Einträge)`);
       } catch (e) {
         fehler('Projektkarte nicht gespeichert', e);

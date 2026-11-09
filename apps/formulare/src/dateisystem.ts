@@ -23,13 +23,14 @@ export interface Rechner {
   prozess: number;
 }
 
-/** Änderung eines Projektkarten-Eintrags; geschrieben wird nur, wenn er noch `alt` enthält */
-export interface PkAenderung {
-  gruppe: number;
-  id: number;
-  alt: string;
-  neu: string;
-}
+/**
+ * Änderung eines Projektkarten-Eintrags; geschrieben wird nur, wenn er noch `alt` enthält. Texte ändern den
+ * Text (Typ 1/2), Auswahl und Kästchen die Nummer der Wahl (Typ 4/8/16) – deren Möglichkeiten bleiben unverändert.
+ */
+export type PkAenderung = { gruppe: number; id: number; typ: number } & (
+  | { spalte: 'texte'; alt: string; neu: string }
+  | { spalte: 'ganzzahl'; alt: number | null; neu: number | null }
+);
 
 export interface Dateisystem {
   /** Ordner und Dateien unter `root` bis zur Tiefe `tiefe` (1 = nur direkt enthaltene) */
@@ -56,7 +57,7 @@ async function invoke<T>(befehl: string, args: Record<string, unknown> = {}): Pr
 
 interface PkRoh {
   gruppen: { id: number; typ: number; text: number[] }[];
-  inhalte: { gruppe: number; id: number; typ: number; titel: number[]; texte: number[] }[];
+  inhalte: { gruppe: number; id: number; typ: number; ganzzahl: number | null; titel: number[]; texte: number[] }[];
 }
 
 /**
@@ -100,11 +101,15 @@ export const tauriDateisystem: Dateisystem = {
     if (!roh) return null;
     return {
       gruppen: roh.gruppen.map((g) => ({ id: g.id, typ: g.typ, text: text(g.text) })),
-      eintraege: roh.inhalte.map((e) => ({ gruppe: e.gruppe, id: e.id, typ: e.typ, titel: text(e.titel), text: text(e.texte) })),
+      eintraege: roh.inhalte.map((e) => ({ gruppe: e.gruppe, id: e.id, typ: e.typ, titel: text(e.titel), text: text(e.texte), zahl: e.ganzzahl ?? null })),
     };
   },
   projektkarteSchreiben: (root, pfad, aenderungen) =>
-    invoke<void>('prokarte_write', { root, pfad, aenderungen: aenderungen.map((a) => ({ gruppe: a.gruppe, id: a.id, alt: pkBytes(a.alt), neu: pkBytes(a.neu) })) }),
+    invoke<void>('prokarte_write', {
+      root,
+      pfad,
+      aenderungen: aenderungen.map((a) => (a.spalte === 'texte' ? { ...a, alt: [...new TextEncoder().encode(a.alt)], neu: pkBytes(a.neu) } : a)),
+    }),
   rechner: () => invoke<Rechner>('machine_info'),
 };
 
@@ -195,14 +200,23 @@ export class SpeicherDateisystem implements Dateisystem {
   async projektkarteSchreiben(root: string, pfad: string, aenderungen: PkAenderung[]): Promise<void> {
     const pk = this.projektkarten.get(this.pfad(root, pfad));
     if (!pk) throw new Error(`${pfad}: nicht gefunden`);
-    for (const a of aenderungen) pkBytes(a.neu);
     const ziele = aenderungen.map((a) => {
-      const e = pk.eintraege.find((x) => x.gruppe === a.gruppe && x.id === a.id);
+      const e = pk.eintraege.find((x) => x.gruppe === a.gruppe && x.id === a.id && x.typ === a.typ);
       if (!e) throw new Error(`Eintrag ${a.gruppe}/${a.id} gibt es nicht`);
-      if (e.text !== a.alt) throw new Error(`Die Projektkarte wurde inzwischen geändert (${e.titel})`);
-      return { e, neu: a.neu };
+      if (a.spalte === 'texte') {
+        pkBytes(a.neu);
+        if (e.typ !== 1 && e.typ !== 2) throw new Error(`Eintrag ${a.gruppe}/${a.id} ist kein Text`);
+        if (e.text !== a.alt) throw new Error(`Die Projektkarte wurde inzwischen geändert (${e.titel})`);
+      } else {
+        if (![4, 8, 16].includes(e.typ)) throw new Error(`Eintrag ${a.gruppe}/${a.id} ist keine Auswahl`);
+        if (e.zahl !== a.alt) throw new Error(`Die Projektkarte wurde inzwischen geändert (${e.titel})`);
+      }
+      return { e, a };
     });
-    for (const { e, neu } of ziele) e.text = neu;
+    for (const { e, a } of ziele) {
+      if (a.spalte === 'texte') e.text = a.neu;
+      else e.zahl = a.neu;
+    }
     this.schreibvorgaenge.push(`projektkarte ${pfad} (${aenderungen.length})`);
   }
 

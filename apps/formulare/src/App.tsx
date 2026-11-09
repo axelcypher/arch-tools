@@ -8,12 +8,14 @@ import { FelderAnsicht } from './components/FelderAnsicht';
 import { ProjektkarteAnsicht } from './components/ProjektkarteAnsicht';
 import { Schnellwahl } from './components/Schnellwahl';
 import { SeitenAnsicht } from './components/SeitenAnsicht';
+import { zeigeEintrag } from './components/ProjektkarteAnsicht';
 import { Seitenleiste } from './components/Seitenleiste';
 import { VerlaufLeiste } from './components/VerlaufLeiste';
 import { kennung, stand } from './forma/formular';
 import { springeZuFeld } from './navigation';
 import type { Ansicht, OffenesFormular } from './store';
-import { ZOOMSTUFEN, istGeaendert, kannVor, kannZurueck, useFormulare } from './store';
+import { ZOOMSTUFEN, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
+import { kannRueckgaengig, kannWiederholen } from './verlauf';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
   { id: 'seite', label: 'Formular', title: 'Die Seiten wie auf Papier – so werden sie gedruckt' },
@@ -45,6 +47,10 @@ async function drucken() {
 /** Feld nach Rückgängig/Wiederholen zeigen */
 const zeige = (schluessel: string | null) => schluessel && requestAnimationFrame(() => springeZuFeld(schluessel));
 
+/** Eintrag der Projektkarte zeigen – liegt er in einer anderen Gruppe, wechselt die Ansicht dorthin */
+const zeigeKarte = (schluessel: string | null) =>
+  schluessel && requestAnimationFrame(() => zeigeEintrag(schluessel) || window.dispatchEvent(new CustomEvent('formulare:pk-sprung', { detail: schluessel })));
+
 export function App() {
   const ds = useFormulare((s) => s.ds);
   const offen = useFormulare((s) => s.offen);
@@ -53,11 +59,14 @@ export function App() {
   const ansicht = useFormulare((s) => s.ansicht);
   const zoom = useFormulare((s) => s.zoom);
   const verlaufOffen = useFormulare((s) => s.verlaufOffen);
+  const karte = useFormulare((s) => s.karte);
   const meldung = useFormulare((s) => s.meldung);
   const konflikt = useFormulare((s) => s.konflikt);
-  const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen } = useFormulare.getState();
+  const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen, karteSpeichern, karteVerwerfen, karteRueckgaengig, karteWiederholen } =
+    useFormulare.getState();
   const [dialog, setDialog] = useState<'log' | 'einstellungen' | 'schnellwahl' | 'ausfuellen' | null>(null);
-  const geaendert = istGeaendert(offen);
+  const kartenansicht = haupt === 'projektkarte' && !!projekt;
+  const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
   const grund = offen ? sperrgrund(offen) : null;
   const name = haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
   const zugeordnet = useMemo(() => (offen ? anzahlZugeordnet(offen) : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -86,10 +95,16 @@ export function App() {
       } else if (taste === 'p' && s.offen && s.haupt === 'formular') {
         e.preventDefault();
         void drucken();
-      } else if (s.offen && s.haupt === 'formular' && ((taste === 'z' && !e.shiftKey) || taste === 'y' || (taste === 'z' && e.shiftKey))) {
+      } else if (taste === 'z' || taste === 'y') {
         // eigener Verlauf statt des Rückgängig der Eingabefelder (das kennt die Feldwechsel nicht)
-        e.preventDefault();
-        zeige(taste === 'z' && !e.shiftKey ? s.rueckgaengig() : s.wiederholen());
+        const zurueck = taste === 'z' && !e.shiftKey;
+        if (s.haupt === 'projektkarte' && s.karte) {
+          e.preventDefault();
+          zeigeKarte(zurueck ? s.karteRueckgaengig() : s.karteWiederholen());
+        } else if (s.offen && s.haupt === 'formular') {
+          e.preventDefault();
+          zeige(zurueck ? s.rueckgaengig() : s.wiederholen());
+        }
       }
     };
     window.addEventListener('keydown', onKey);
@@ -169,12 +184,34 @@ export function App() {
             </button>
           </div>
         )}
+        {kartenansicht && karte && (
+          <div className="tb-group">
+            <button disabled={!kannRueckgaengig(karte.verlauf)} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeigeKarte(karteRueckgaengig())}>
+              ↶
+            </button>
+            <button disabled={!kannWiederholen(karte.verlauf)} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeigeKarte(karteWiederholen())}>
+              ↷
+            </button>
+            <button className="primary" disabled={!geaendert} title="In die Projektkarte des FORMA-Projekts speichern (Strg+S)" onClick={() => void karteSpeichern()}>
+              Projektkarte speichern
+            </button>
+            <button disabled={!geaendert} title="Alle ungespeicherten Änderungen zurücknehmen (Strg+Z holt sie zurück)" onClick={karteVerwerfen}>
+              Verwerfen
+            </button>
+          </div>
+        )}
         {!ds && (
           <div className="tb-group">
             <button onClick={() => void dateiOeffnen()}>Formular öffnen …</button>
           </div>
         )}
         <span className="tb-spacer" />
+        {kartenansicht && karte && (
+          <span className="muted small-text fo-status">
+            {geaendert ? `${Object.keys(karte.aenderungen).length} Eintrag/Einträge geändert` : 'Alles gespeichert'}
+            {geaendert && karte.gesichert && ` · lokal gesichert ${uhrzeit(karte.gesichert)}`}
+          </span>
+        )}
         {formularSichtbar && (
           <span className="muted small-text fo-status">
             {[kennung(offen.formular), stand(offen.formular) && `Stand ${stand(offen.formular)}`].filter(Boolean).join(' · ')}

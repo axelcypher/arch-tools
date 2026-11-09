@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { dateiname } from '@core/platform/files';
 import { waehleOrdner } from '../dateisystem';
+import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
 import { useFormulare } from '../store';
 
 function OrdnerListe({ ordner, onEntfernen }: { ordner: string[]; onEntfernen: (p: string) => void }) {
@@ -27,6 +29,12 @@ export function Einstellungen({ onClose }: { onClose: () => void }) {
   const vorgabe = useFormulare((s) => s.vorgabeAuswahl);
   const ablageFehler = useFormulare((s) => s.ablageFehler);
   const { ordnerHinzufuegen, ordnerEntfernen, ablageHinzufuegen, ablageEntfernen, setVorgabeAuswahl } = useFormulare.getState();
+  const [stamm, setStamm] = useState(stammdatenLaden);
+  const stammEntfernen = (name: string) => {
+    const liste = stamm.filter((s) => s.name !== name);
+    stammdatenSpeichern(liste);
+    setStamm(liste);
+  };
 
   const formaHinzu = async () => {
     const p = await waehleOrdner('Ordner mit FORMA-Projekten wählen');
@@ -66,6 +74,26 @@ export function Einstellungen({ onClose }: { onClose: () => void }) {
           <code>*</code> und <code>?</code> je Ebene. Je Projekt lässt sich das links über ⚙ ändern.
         </p>
         <textarea rows={5} defaultValue={vorgabe.join('\n')} onBlur={(e) => setVorgabeAuswahl(e.target.value.split('\n'))} aria-label="Angezeigte Pfade (Vorgabe)" />
+
+        <h4>Bürostammdaten</h4>
+        <p className="muted small-text">
+          Adressen für viele Projekte (z. B. das eigene Büro als Entwurfsverfasser). Gemerkt werden sie in der Projektkarte über „Als Stammdaten merken“, eingesetzt über
+          „Übernehmen von …“.
+        </p>
+        {stamm.length ? (
+          <div className="fo-ordnerliste">
+            {stamm.map((s) => (
+              <div key={s.name} className="fo-ordner">
+                <span className="fo-ordner-name">{s.name}</span>
+                <button className="fo-klein" title="Aus den Stammdaten entfernen" aria-label={`${s.name} entfernen`} onClick={() => stammEntfernen(s.name)}>
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted small-text">Noch keine gemerkt.</p>
+        )}
 
         <div className="dialog-buttons">
           <button className="primary" onClick={onClose}>

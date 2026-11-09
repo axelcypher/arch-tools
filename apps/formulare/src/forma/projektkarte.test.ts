@@ -6,7 +6,7 @@ import { pkText } from '../dateisystem';
 import { bezeichner, finde } from './dfm';
 import { memoText, parseFormular } from './formular';
 import type { Projektkarte } from './projektkarte';
-import { ausfuellen, pkWert, teileAus, zuordnungen } from './projektkarte';
+import { ausfuellen, pkAnzeige, pkArt, pkMoeglichkeiten, pkWert, pkWertPasst, pkWertVon, teileAus, zuordnungen } from './projektkarte';
 
 const wert = (werte: Record<string, string>) => (g: number, id: number) => werte[`${g}:${id}`] ?? '';
 
@@ -54,11 +54,11 @@ function pkLesen(datei: string): Projektkarte {
   try {
     const gruppen = db.prepare('SELECT GruppeID AS id, GruppeTyp AS typ, CAST(GruppeText AS BLOB) AS text FROM Gruppe ORDER BY GruppeID').all() as { id: number; typ: number; text: Uint8Array }[];
     const inhalte = db
-      .prepare('SELECT GruppeID AS gruppe, InhalteID AS id, InhalteTyp AS typ, CAST(Titel AS BLOB) AS titel, CAST(Texte AS BLOB) AS texte FROM Inhalte ORDER BY GruppeID, InhalteID')
-      .all() as { gruppe: number; id: number; typ: number; titel: Uint8Array; texte: Uint8Array }[];
+      .prepare('SELECT GruppeID AS gruppe, InhalteID AS id, InhalteTyp AS typ, Ganzzahl AS zahl, CAST(Titel AS BLOB) AS titel, CAST(Texte AS BLOB) AS texte FROM Inhalte ORDER BY GruppeID, InhalteID')
+      .all() as { gruppe: number; id: number; typ: number; zahl: number | null; titel: Uint8Array; texte: Uint8Array }[];
     return {
       gruppen: gruppen.map((g) => ({ id: g.id, typ: g.typ ?? 0, text: t(g.text) })),
-      eintraege: inhalte.map((e) => ({ gruppe: e.gruppe, id: e.id, typ: e.typ ?? 0, titel: t(e.titel), text: t(e.texte) })),
+      eintraege: inhalte.map((e) => ({ gruppe: e.gruppe, id: e.id, typ: e.typ ?? 0, titel: t(e.titel), text: t(e.texte), zahl: e.zahl ?? null })),
     };
   } finally {
     db.close();
@@ -73,6 +73,9 @@ describe.skipIf(!projekte.length)('Ausfüllen gegen echte FORMA-Projekte', () =>
     const pk = pkLesen(path.join(dir, 'sj_prokarte.sdb'));
     expect(pk.gruppen.length).toBeGreaterThan(10);
     expect(pkWert(pk, 101, 30)).not.toBe('');
+    // Auswahllisten liefern die gewählte Möglichkeit, nicht die Liste (Land ist hier nicht gewählt)
+    expect(pkWert(pk, 101, 60)).toBe('');
+    for (const e of pk.eintraege.filter((x) => x.typ === 4 || x.typ === 8)) expect(pkWert(pk, e.gruppe, e.id)).not.toMatch(/[\r\n]/);
 
     let gleich = 0;
     const abweichend: string[] = [];
@@ -94,5 +97,37 @@ describe.skipIf(!projekte.length)('Ausfüllen gegen echte FORMA-Projekte', () =>
     console.log(`${projekt}: ${gleich} gleich, ${abweichend.length} abweichend\n  ${abweichend.join('\n  ')}`);
     expect(gleich).toBeGreaterThan(0);
     expect(gleich / (gleich + abweichend.length)).toBeGreaterThan(0.6);
+  });
+});
+
+describe('Werte der Projektkarte', () => {
+  const eintrag = (typ: number, text: string, zahl: number | null) => ({ gruppe: 201, id: 210, typ, titel: 'Anrede:', text, zahl });
+  const anrede = eintrag(4, '\r\nSehr geehrte Frau\r\nSehr geehrter Herr\r\nSehr geehrte Damen und Herren,', 2);
+
+  it('Auswahlliste: die leere erste Zeile zählt mit (Delphi: Items = Texte, ItemIndex = Ganzzahl)', () => {
+    expect(pkArt(anrede)).toBe('auswahl');
+    expect(pkMoeglichkeiten(anrede)).toEqual(['', 'Sehr geehrte Frau', 'Sehr geehrter Herr', 'Sehr geehrte Damen und Herren,']);
+    expect(pkWertVon(anrede)).toBe(2);
+    expect(pkAnzeige(anrede, 2)).toBe('Sehr geehrter Herr');
+    expect(pkWertVon({ ...anrede, zahl: -1 })).toBeNull();
+    expect(pkWertVon({ ...anrede, zahl: null })).toBeNull();
+    expect(pkAnzeige(anrede, null)).toBe('');
+  });
+
+  it('Optionen ohne leere Zeile, Kästchen mit Beschriftung, Texte mit \n', () => {
+    const neigung = eintrag(8, 'eben\r\ngeneigt\r\nHanglage', 1);
+    expect(pkAnzeige(neigung, pkWertVon(neigung))).toBe('geneigt');
+    const kreuz = eintrag(16, 'Wärmeschutz', 0);
+    expect(pkWertVon(kreuz)).toBe(0);
+    expect(pkAnzeige(kreuz, 1)).toBe('Wärmeschutz');
+    expect(pkWertVon(eintrag(2, 'a\r\nb', null))).toBe('a\nb');
+  });
+
+  it('prüft, ob ein Wert zum Eintrag passt', () => {
+    expect(pkWertPasst(anrede, 3)).toBe(true);
+    expect(pkWertPasst(anrede, 4)).toBe(false);
+    expect(pkWertPasst(anrede, 'Herr')).toBe(false);
+    expect(pkWertPasst(eintrag(1, '', null), 'x')).toBe(true);
+    expect(pkWertPasst(eintrag(16, 'x', 0), 2)).toBe(false);
   });
 });

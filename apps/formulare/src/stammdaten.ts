@@ -4,13 +4,17 @@
  * und in andere Projektkarten übernommen. Sie liegen nur in dieser App (nicht im FORMA-Projekt).
  */
 
+import type { PkWert } from './forma/projektkarte';
+
 export interface Stammadresse {
   name: string;
-  /** Eintragsnummer der Adressgruppe (10 = Branche, 40 = Name/Firma, 70 = Straße …) → Text */
-  werte: Record<string, string>;
+  /** Eintragsnummer der Adressgruppe (10 = Branche, 40 = Name/Firma, 210 = Anrede …) → Wert */
+  werte: Record<string, PkWert>;
 }
 
 const SCHLUESSEL = 'formulare:stammdaten';
+
+const istWert = (v: unknown): v is PkWert => v === null || typeof v === 'string' || typeof v === 'number';
 
 export function stammdatenLaden(): Stammadresse[] {
   try {
@@ -18,7 +22,7 @@ export function stammdatenLaden(): Stammadresse[] {
     if (!Array.isArray(o)) return [];
     return o
       .filter((x): x is Stammadresse => !!x && typeof x === 'object' && typeof (x as Stammadresse).name === 'string' && !!(x as Stammadresse).werte)
-      .map((x) => ({ name: x.name, werte: Object.fromEntries(Object.entries(x.werte).filter(([, v]) => typeof v === 'string')) }));
+      .map((x) => ({ name: x.name, werte: Object.fromEntries(Object.entries(x.werte).filter(([, v]) => istWert(v))) }));
   } catch {
     return [];
   }

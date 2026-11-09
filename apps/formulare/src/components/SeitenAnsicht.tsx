@@ -3,7 +3,7 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'rea
 import { bezeichner, eigenschaft, text, zahl } from '../forma/dfm';
 import type { Feld, Kasten } from '../forma/felder';
 import { kaesten, ohneKuerzel } from '../forma/felder';
-import { bild, drehung, farbe, lage, seitenMasse } from '../forma/darstellung';
+import { bild, blatt, drehung, farbe, lage, seitenMasse } from '../forma/darstellung';
 import { feldTasten } from '../navigation';
 import type { OffenesFormular } from '../store';
 import { useFormulare, wertVon } from '../store';
@@ -21,7 +21,7 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
     () =>
       offen.formular.seiten.map((s, i) => {
         const k = kaesten(s);
-        return { i, kaesten: k, ...seitenMasse(k), felder: new Map(offen.felder[i].map((f) => [f.name, f])) };
+        return { i, kaesten: k, blatt: blatt(seitenMasse(k)), felder: new Map(offen.felder[i].map((f) => [f.name, f])) };
       }),
     [offen.formular, offen.felder],
   );
@@ -37,20 +37,23 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
     return () => ro.disconnect();
   }, []);
 
-  const papier = Math.max(...seiten.map((s) => s.breite));
-  const faktor = zoom > 0 ? zoom : breite > 0 ? Math.max(0.5, Math.min(2.5, (breite - 48) / papier)) : 1;
+  const papier = Math.max(...seiten.map((s) => s.blatt.breite));
+  const faktor = zoom > 0 ? zoom : breite > 0 ? Math.max(0.4, Math.min(2.5, (breite - 48) / papier)) : 1;
 
   return (
     <div className="fo-seiten" ref={huelle} onKeyDown={tasten}>
       {seiten.map((s) => (
         <section key={s.i} className="fo-blatt" data-seite={s.i}>
-          <div className="fo-blatt-kopf" style={{ width: s.breite * faktor }}>
+          <div className="fo-blatt-kopf" style={{ width: s.blatt.breite * faktor }}>
             Seite {s.i + 1} von {seiten.length}
           </div>
-          <div className="fo-papier" style={{ width: s.breite, height: s.hoehe, zoom: faktor }}>
-            {s.kaesten.map((k, n) => (
-              <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name))} gesperrt={gesperrt} />
-            ))}
+          <div className="fo-papier" style={{ width: s.blatt.breite, height: s.blatt.hoehe, zoom: faktor }}>
+            {/* das Formular selbst wird nicht beschnitten – nur das Blatt an seinem Rand */}
+            <div className="fo-satz" style={{ left: s.blatt.links, top: s.blatt.oben }}>
+              {s.kaesten.map((k, n) => (
+                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name))} gesperrt={gesperrt} />
+              ))}
+            </div>
           </div>
         </section>
       ))}
