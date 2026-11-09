@@ -850,6 +850,316 @@
   }
 }
 
+/* ---------- Dokumente aus dem Projektordner ---------- */
+
+.fo-baum-zeile.aktiv {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.dok {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.dok-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.dok-kopf-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.dok-kopf-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dok-kopf-text .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dok-art {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #fff;
+  background: var(--muted);
+}
+.dok-art.pdf {
+  background: #c0392b;
+}
+.dok-art.excel {
+  background: #1e7145;
+}
+.dok-art.word {
+  background: #2b579a;
+}
+.dok-kopf-knoepfe {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.dok-kopf-knoepfe select {
+  width: auto;
+}
+.dok-hinweis {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--muted);
+}
+.dok-fehler {
+  padding: 16px;
+}
+.dok-flaeche {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.dok-bild {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px;
+  background: color-mix(in srgb, var(--bg) 70%, #808080 30%);
+}
+.dok-bild img {
+  max-width: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* PDF */
+.pdf-flaeche {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px 40px;
+  background: color-mix(in srgb, var(--bg) 70%, #808080 30%);
+}
+.pdf-seite {
+  position: relative;
+  flex-shrink: 0;
+  background: #fff;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.25),
+    0 6px 18px rgba(0, 0, 0, 0.18);
+  color-scheme: light;
+}
+.pdf-seite canvas {
+  display: block;
+}
+.pdf-seite .annotationLayer .textWidgetAnnotation :is(input, textarea),
+.pdf-seite .annotationLayer .choiceWidgetAnnotation select {
+  background: rgba(42, 91, 215, 0.08);
+}
+.pdf-seite .annotationLayer .textWidgetAnnotation :is(input, textarea):focus {
+  background: rgba(42, 91, 215, 0.15);
+  outline: 1px solid var(--accent);
+}
+
+/* Excel */
+.xl-leiste {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.xl-adresse {
+  min-width: 56px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  border-right: 1px solid var(--border);
+  padding-right: 8px;
+}
+.xl-eingabe {
+  flex: 1;
+  font-family: Consolas, monospace;
+}
+.xl-flaeche {
+  background: #fff;
+  color: #000;
+  color-scheme: light;
+}
+.xl-tabelle {
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-family: Calibri, Arial, sans-serif;
+  font-size: 14px;
+}
+.xl-tabelle th {
+  position: sticky;
+  background: #f0f0f0;
+  color: #444;
+  font-weight: 400;
+  font-size: 12px;
+  border: 1px solid #d0d0d0;
+  z-index: 1;
+}
+.xl-tabelle thead th {
+  top: 0;
+  height: 22px;
+}
+.xl-tabelle tbody th {
+  left: 0;
+  text-align: center;
+}
+.xl-tabelle th.aktiv {
+  background: #d6e4f5;
+  color: #1e4f91;
+  font-weight: 600;
+}
+.xl-tabelle .xl-ecke {
+  left: 0;
+  z-index: 2;
+}
+.xl-tabelle td {
+  border: 1px solid #e3e3e3;
+  height: 22px;
+  padding: 0 4px;
+  overflow: hidden;
+  text-overflow: clip;
+  vertical-align: bottom;
+  cursor: cell;
+}
+.xl-tabelle td.gewaehlt {
+  outline: 2px solid #1e7145;
+  outline-offset: -2px;
+}
+.xl-tabelle td:focus {
+  outline: 2px solid #1e7145;
+  outline-offset: -2px;
+}
+.xl-tabelle td.geaendert {
+  box-shadow: inset 3px 0 0 var(--sel);
+  background-color: #fff6ec;
+}
+.xl-tabelle td.formel {
+  color: inherit;
+}
+.xl-zellen-eingabe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding: 0;
+  font: inherit;
+  background: #fff;
+  color: #000;
+  outline: none;
+}
+.xl-blaetter {
+  display: flex;
+  gap: 2px;
+  padding: 0 8px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  overflow-x: auto;
+}
+.xl-blaetter button {
+  border: none;
+  border-radius: 0 0 4px 4px;
+  background: none;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+.xl-blaetter button.aktiv {
+  background: var(--bg);
+  color: #1e7145;
+  font-weight: 600;
+  box-shadow: inset 0 2px 0 #1e7145;
+}
+
+/* Word */
+.wd-flaeche {
+  padding: 16px 24px 40px;
+  background: color-mix(in srgb, var(--bg) 70%, #808080 30%);
+}
+.wd-blatt {
+  max-width: 794px;
+  min-height: 1000px;
+  margin: 0 auto;
+  padding: 72px 76px;
+  background: #fff;
+  color: #000;
+  color-scheme: light;
+  font-family: Calibri, Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.35;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.25),
+    0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.wd-blatt p {
+  margin: 0 0 6pt;
+  white-space: pre-wrap;
+}
+.wd-ueberschrift {
+  font-weight: 700;
+  margin: 12pt 0 6pt;
+}
+.wd-ueberschrift.e1 {
+  font-size: 16pt;
+}
+.wd-ueberschrift.e2 {
+  font-size: 13pt;
+}
+.wd-ueberschrift.e3 {
+  font-size: 12pt;
+}
+.wd-liste::before {
+  content: '• ';
+}
+.wd-tab {
+  display: inline-block;
+  width: 3em;
+}
+.wd-bild {
+  color: #888;
+  font-style: italic;
+}
+.wd-tabelle {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 6pt 0;
+}
+.wd-tabelle td {
+  border: 1px solid #999;
+  padding: 3px 5px;
+  vertical-align: top;
+}
+.wd-tabelle td p {
+  margin: 0;
+}
+.wd-blatt.bearbeiten .wd-lauf {
+  outline: 1px dashed rgba(42, 91, 215, 0.35);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+.wd-blatt.bearbeiten .wd-lauf:focus {
+  outline: 2px solid var(--accent);
+  background: rgba(42, 91, 215, 0.06);
+}
+.wd-lauf.geaendert {
+  background: #fff1e0;
+}
+
 /* ---------- Sperren ---------- */
 
 .fo-meldung-knoepfe {

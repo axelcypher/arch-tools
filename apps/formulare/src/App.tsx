@@ -4,6 +4,7 @@ import { TitleBar } from '@core/ui/TitleBar';
 import { anzahlZugeordnet } from './ausfuellen';
 import { AusfuellenDialog } from './components/AusfuellenDialog';
 import { Einstellungen } from './components/Einstellungen';
+import { DateiAnsicht } from './components/dokumente/DateiAnsicht';
 import { FelderAnsicht } from './components/FelderAnsicht';
 import { Gliederung } from './components/Gliederung';
 import { ProjektkarteAnsicht } from './components/ProjektkarteAnsicht';
@@ -62,6 +63,7 @@ export function App() {
   const verlaufOffen = useFormulare((s) => s.verlaufOffen);
   const gliederungOffen = useFormulare((s) => s.gliederungOffen);
   const karte = useFormulare((s) => s.karte);
+  const datei = useFormulare((s) => s.datei);
   const meldung = useFormulare((s) => s.meldung);
   const konflikt = useFormulare((s) => s.konflikt);
   const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen, setGliederungOffen, karteSpeichern, karteVerwerfen, karteRueckgaengig, karteWiederholen, sperreNeuPruefen, sperreAufheben } =
@@ -70,7 +72,8 @@ export function App() {
   const kartenansicht = haupt === 'projektkarte' && !!projekt;
   const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
   const grund = offen ? sperrgrund(offen) : null;
-  const name = haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
+  const name =
+    haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
   const zugeordnet = useMemo(() => (offen ? anzahlZugeordnet(offen) : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
   const formularSichtbar = !!offen && haupt === 'formular';
 
@@ -90,7 +93,8 @@ export function App() {
       const taste = e.key.toLowerCase();
       if (taste === 's') {
         e.preventDefault();
-        void (s.haupt === 'projektkarte' ? s.karteSpeichern() : s.speichern());
+        if (s.haupt === 'datei') window.dispatchEvent(new Event('formulare:datei-speichern'));
+        else void (s.haupt === 'projektkarte' ? s.karteSpeichern() : s.speichern());
       } else if (taste === 'k') {
         e.preventDefault();
         setDialog('schnellwahl');
@@ -276,6 +280,8 @@ export function App() {
         <section className={`fo-inhalt${formularSichtbar && ansicht === 'seite' ? ' fo-inhalt-papier' : ''}`}>
           {haupt === 'projektkarte' && projekt ? (
             <ProjektkarteAnsicht />
+          ) : haupt === 'datei' && datei ? (
+            <DateiAnsicht />
           ) : offen ? (
             ansicht === 'felder' ? (
               <FelderAnsicht offen={offen} gesperrt={!!grund} />

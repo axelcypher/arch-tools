@@ -51,6 +51,10 @@ export interface Dateisystem {
   sperrePruefen(root: string, pfad: string): Promise<SperrProbe | null>;
   /** Name des Programms mit dieser Prozessnummer auf diesem Rechner; `null`, wenn keins läuft */
   prozess(pid: number): Promise<string | null>;
+  /** Vorhandenes Dokument (PDF, Excel, Word) ersetzen – mit Sicherungskopie; abgelehnt, wenn in Office geöffnet */
+  dokumentErsetzen(root: string, pfad: string, daten: Uint8Array): Promise<void>;
+  /** Ist das Dokument gerade in Excel oder Word geöffnet? */
+  inOffice(root: string, pfad: string): Promise<boolean>;
   /** Projektkarte (`sj_prokarte.sdb`) lesen; `null`, wenn es keine gibt */
   projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null>;
   /** Einträge der Projektkarte ändern – alle oder keiner; Fehler, wenn einer inzwischen anders lautet */
@@ -123,6 +127,8 @@ export const tauriDateisystem: Dateisystem = {
     return p && { ...p, inhalt: base64ToBytes(p.inhalt) };
   },
   prozess: (pid) => invoke<string | null>('process_info', { pid }),
+  dokumentErsetzen: (root, pfad, daten) => invoke<void>('doc_replace', { root, pfad, contentsBase64: bytesToBase64(daten) }),
+  inOffice: (root, pfad) => invoke<boolean>('doc_in_office', { root, pfad }),
   rechner: () => invoke<Rechner>('machine_info'),
 };
 
@@ -225,6 +231,22 @@ export class SpeicherDateisystem implements Dateisystem {
 
   async prozess(pid: number): Promise<string | null> {
     return this.prozesse.get(pid) ?? null;
+  }
+
+  async inOffice(root: string, pfad: string): Promise<boolean> {
+    const p = this.pfad(root, pfad);
+    const ordner = p.slice(0, p.lastIndexOf('/') + 1);
+    const name = p.slice(ordner.length);
+    return this.dateien.has(`${ordner}~$${name}`) || this.dateien.has(`${ordner}~$${name.slice(2)}`);
+  }
+
+  async dokumentErsetzen(root: string, pfad: string, daten: Uint8Array): Promise<void> {
+    const p = this.pfad(root, pfad);
+    if (!/\.(pdf|xlsx|xlsm|docx)$/i.test(pfad)) throw new Error(`${pfad}: Nur PDF-, Excel- und Word-Dateien dürfen hier gespeichert werden`);
+    if (!this.dateien.has(p)) throw new Error(`${pfad}: Datei nicht gefunden`);
+    if (await this.inOffice(root, pfad)) throw new Error(`${pfad}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen`);
+    this.dateien.set(p, daten);
+    this.schreibvorgaenge.push(`dokument ${pfad}`);
   }
 
   async projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null> {

@@ -3,7 +3,7 @@ import type { AblageOrdner } from '../ablage';
 import { dateiArt, sichtbarkeit } from '../ablage';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
-import { useFormulare } from '../store';
+import { dateiArtVon, useFormulare } from '../store';
 
 const SYMBOL: Record<ReturnType<typeof dateiArt>, string> = {
   pdf: '📕',
@@ -29,6 +29,9 @@ export function AblageBaum({ ordner, auswahl }: { ordner: AblageOrdner; auswahl:
 
 function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: string; auswahl: string[]; ganz: boolean; tiefe: number }) {
   const ds = useFormulare((s) => s.ds);
+  const offen = useFormulare((s) => (s.haupt === 'datei' && s.datei?.root === basis ? s.datei.pfad : null));
+  const entwuerfe = useFormulare((s) => s.dateiEntwuerfe);
+  const { dateiAnsehen } = useFormulare.getState();
   const [eintraege, setEintraege] = useState<Eintrag[] | null>(null);
   const [fehler, setFehler] = useState('');
 
@@ -47,6 +50,8 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
   if (!eintraege) return <p className="muted small-text fo-baum-zeile" style={{ paddingLeft: tiefe * 14 }}>…</p>;
 
   const sichtbar = eintraege
+    // Besitzerdateien von Office (~$…), Sperrdateien von LibreOffice und Systemdateien sind nur vorübergehend da
+    .filter((e) => !/^(~\$|\.~lock\.)/.test(e.pfad) && !/^(thumbs\.db|desktop\.ini)$/i.test(e.pfad))
     .map((e) => ({ e, pfad: rel ? `${rel}/${e.pfad}` : e.pfad }))
     .map((x) => ({ ...x, s: ganz ? ('ganz' as const) : sichtbarkeit(x.pfad, auswahl) }))
     // Dateien nur, wenn ihr Ordner ganz ausgewählt ist (oder sie selbst)
@@ -61,12 +66,14 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
         ) : (
           <li key={x.pfad} role="treeitem" aria-selected={false}>
             <button
-              className="fo-baum-zeile"
+              className={`fo-baum-zeile${offen === x.pfad ? ' aktiv' : ''}`}
               style={{ paddingLeft: tiefe * 14 + 16 }}
-              title={`${x.e.pfad} – Doppelklick öffnet`}
+              title={dateiArtVon(x.e.pfad) ? `${x.e.pfad} – Klick: hier ansehen, Doppelklick: im Programm öffnen` : `${x.e.pfad} – Doppelklick öffnet`}
+              onClick={() => dateiArtVon(x.e.pfad) && void dateiAnsehen(basis, x.pfad)}
               onDoubleClick={() => void oeffnePfad(verbinde(basis, x.pfad)).catch(() => undefined)}
             >
               <span aria-hidden>{SYMBOL[dateiArt(x.e.pfad)]}</span> <span className="fo-baum-name">{x.e.pfad}</span>
+              {`${basis}|${x.pfad}` in entwuerfe && <span className="fo-ungespeichert"> ●</span>}
             </button>
           </li>
         ),

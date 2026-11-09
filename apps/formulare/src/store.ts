@@ -32,7 +32,35 @@ import { eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererV
 const log = logger('formulare');
 
 export type Ansicht = 'felder' | 'seite';
-export type Hauptansicht = 'formular' | 'projektkarte';
+export type Hauptansicht = 'formular' | 'projektkarte' | 'datei';
+
+/** Dokumente aus dem Projektordner, die die App selbst zeigt (und teils bearbeitet) */
+export type DateiArt = 'pdf' | 'excel' | 'word' | 'bild';
+
+export function dateiArtVon(name: string): DateiArt | null {
+  const e = /\.([^.]+)$/.exec(name)?.[1].toLowerCase() ?? '';
+  if (e === 'pdf') return 'pdf';
+  if (e === 'xlsx' || e === 'xlsm') return 'excel';
+  if (e === 'docx') return 'word';
+  if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'].includes(e)) return 'bild';
+  return null;
+}
+
+/** Im Projektordner geöffnetes Dokument */
+export interface OffeneDatei {
+  /** Ordner des Projekts (absolut) */
+  root: string;
+  /** relativ dazu, mit „/“ */
+  pfad: string;
+  name: string;
+  art: DateiArt;
+  /** Inhalt beim Öffnen bzw. nach dem letzten Speichern */
+  bytes: Uint8Array;
+  /** in Excel/Word geöffnet – nur ansehen */
+  inOffice: boolean;
+  /** zählt bei jedem Neuladen/Speichern hoch (die Ansicht liest dann neu) */
+  stand: number;
+}
 type Wert = string | boolean;
 
 const EINSTELLUNGEN = 'formulare:einstellungen';
@@ -122,6 +150,9 @@ interface FormulareState extends Gespeichert {
   offen: OffenesFormular | null;
   haupt: Hauptansicht;
   karte: OffeneKarte | null;
+  datei: OffeneDatei | null;
+  /** ungespeicherte Bearbeitungen je Dokument (`root|pfad`), nur für diese Sitzung */
+  dateiEntwuerfe: Record<string, unknown>;
   /** echte Projektordner (erste und zweite Ebene) */
   ablage: AblageOrdner[];
   ablageFehler: string[];
@@ -178,6 +209,13 @@ interface FormulareState extends Gespeichert {
   /** alle ungespeicherten Änderungen zurücknehmen – als ein Schritt, der sich rückgängig machen lässt */
   karteVerwerfen: () => void;
   karteSpeichern: () => Promise<void>;
+  /** Dokument aus dem Projektordner in der App zeigen */
+  dateiAnsehen: (root: string, pfad: string) => Promise<void>;
+  /** Dokument neu einlesen (Bearbeitungen bleiben als Entwurf) */
+  dateiNeuLaden: () => Promise<void>;
+  /** neue Fassung speichern – vorher prüfen, dass die Datei seit dem Öffnen unverändert ist */
+  dateiSpeichern: (neu: Uint8Array) => Promise<boolean>;
+  setDateiEntwurf: (wert: unknown) => void;
 }
 
 /* ---------- lokaler Speicher ---------- */
@@ -499,6 +537,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     offen: null,
     haupt: 'formular',
     karte: null,
+    datei: null,
+    dateiEntwuerfe: {},
     ablage: [],
     ablageFehler: [],
     konflikt: false,
@@ -576,7 +616,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     projektWaehlen: async (projekt) => {
       await get().schliessen();
-      set({ projekt, formulare: [], karte: null, haupt: 'formular' });
+      set({ projekt, formulare: [], karte: null, datei: null, haupt: 'formular' });
       const ds = get().ds;
       if (!projekt || !ds) return;
       try {
@@ -860,6 +900,58 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       });
       get().karteMehrere(zurueck, 'Änderungen verworfen');
       set({ meldung: { art: 'info', text: 'Ungespeicherte Änderungen der Projektkarte verworfen – Strg+Z holt sie zurück.' } });
+    },
+
+    dateiAnsehen: async (root, pfad) => {
+      const ds = get().ds;
+      const name = pfad.split('/').pop()!;
+      const art = dateiArtVon(name);
+      if (!ds || !art) return;
+      try {
+        const bytes = await ds.lies(root, pfad);
+        if (!bytes) throw new Error('Datei nicht gefunden');
+        const inOffice = art === 'excel' || art === 'word' ? await ds.inOffice(root, pfad).catch(() => false) : false;
+        set({ datei: { root, pfad, name, art, bytes, inOffice, stand: (get().datei?.stand ?? 0) + 1 }, haupt: 'datei' });
+      } catch (e) {
+        fehler(`${name} lässt sich nicht öffnen`, e);
+      }
+    },
+
+    dateiNeuLaden: async () => {
+      const d = get().datei;
+      if (d) await get().dateiAnsehen(d.root, d.pfad);
+    },
+
+    dateiSpeichern: async (neu) => {
+      const { ds, datei: d } = get();
+      if (!ds || !d) return false;
+      try {
+        const aktuell = await ds.lies(d.root, d.pfad);
+        if (!aktuell || !gleich(aktuell, d.bytes)) {
+          set({ meldung: { art: 'fehler', text: `${d.name} wurde seit dem Öffnen außerhalb geändert – bitte neu laden (deine Bearbeitungen bleiben erhalten).` } });
+          return false;
+        }
+        await ds.dokumentErsetzen(d.root, d.pfad, neu);
+        const k = `${d.root}|${d.pfad}`;
+        const entwuerfe = { ...get().dateiEntwuerfe };
+        delete entwuerfe[k];
+        set({ datei: { ...d, bytes: neu, stand: d.stand + 1 }, dateiEntwuerfe: entwuerfe, meldung: { art: 'info', text: `${d.name} gespeichert (die vorige Fassung liegt als Sicherung im App-Ordner).` } });
+        log.info(`Dokument gespeichert: ${d.pfad}`);
+        return true;
+      } catch (e) {
+        fehler(`${d.name} nicht gespeichert`, e);
+        return false;
+      }
+    },
+
+    setDateiEntwurf: (wert) => {
+      const d = get().datei;
+      if (!d) return;
+      const k = `${d.root}|${d.pfad}`;
+      const entwuerfe = { ...get().dateiEntwuerfe };
+      if (wert === null || wert === undefined) delete entwuerfe[k];
+      else entwuerfe[k] = wert;
+      set({ dateiEntwuerfe: entwuerfe });
     },
 
     karteSpeichern: async () => {

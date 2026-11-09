@@ -82,7 +82,32 @@ schon als PDF vorliegen, welche Berechnungen es gibt); dort wird nichts geschrie
 - Links erscheint der Ordner als Baum, beschränkt auf die **ausgewählten Pfade**: je Zeile ein Pfad
   (`Organisation`, `03 Berechnungen/Flächen`), Platzhalter `*` und `?` je Ebene. Die Vorgabe steht in den
   Einstellungen, je Projekt lässt sie sich über ⚙ ändern. Ordner werden erst beim Aufklappen gelesen.
-- Doppelklick öffnet eine Datei mit ihrem Programm, ↗ zeigt einen Ordner im Explorer.
+- **Klick** auf eine PDF-, Excel-, Word- oder Bilddatei zeigt sie in der App (siehe unten), **Doppelklick** öffnet
+  sie mit ihrem Programm, ↗ zeigt einen Ordner im Explorer. Besitzerdateien von Office (`~$…`) werden ausgeblendet.
+
+### Dokumente ansehen und bearbeiten
+
+Dokumente aus dem Projektordner erscheinen in der App mit Kopfzeile (Art, Name, Ordner, „Neu laden“, „Extern
+öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde, in der Datei bleibt, wie es war:
+
+- **PDF:** alle Seiten, Zoom (Seitenbreite oder 50–200 %). Hat die PDF **Formularfelder**, lassen sie sich direkt
+  auf der Seite ausfüllen; gespeichert wird als **Nachtrag** ans Ende der Datei (inkrementell) – der ursprüngliche
+  Inhalt bleibt Byte für Byte erhalten.
+- **Excel** (`.xlsx`, `.xlsm`): Blätter mit Spalten- und Zeilenköpfen, Formaten (fett, kursiv, Füllung, Rahmen,
+  Zahl- und Datumsformate), verbundenen Zellen und Spaltenbreiten. Zelle wählen und tippen (oder Doppelklick, F2),
+  Enter/Tab übernimmt, Entf leert; Zahlen mit Komma, Formeln in Excel-Schreibweise mit „=“ (englische
+  Funktionsnamen, z. B. `=SUM(B2:B5)`). Gespeichert werden nur die geänderten Zellen; Diagramme, Makros und
+  alles andere bleiben. Excel rechnet beim nächsten Öffnen neu.
+- **Word** (`.docx`): das Dokument wie auf Papier (Absätze, Überschriften, Aufzählungen, Tabellen, Platzhalter für
+  Bilder). **Text bearbeiten** macht den vorhandenen Text direkt änderbar – für Korrekturen, Namen, Daten; neue
+  Absätze oder Formatierungen gibt es nicht. Gespeichert werden nur die geänderten Textstücke.
+- **Bilder** werden angezeigt.
+- Ist eine Datei in **Excel oder Word geöffnet** (Besitzerdatei `~$…`), wird sie nur angezeigt. Hat jemand sie
+  **seit dem Öffnen geändert**, wird nicht gespeichert – „Neu laden“ liest die neue Fassung, die eigenen
+  Bearbeitungen bleiben als Entwurf erhalten (bis zum Schließen der App; die Datei ist in der Seitenleiste mit ●
+  markiert).
+- Vor jedem Speichern legt die App eine **Sicherungskopie** der bisherigen Fassung im App-Ordner an
+  (`%LOCALAPPDATA%\de.pendzialek.formulare\Sicherungen`, die letzten 200).
 
 ### Sperren
 
@@ -197,10 +222,13 @@ lässt Trenner am Ende weg (FORMA lässt dort manchmal ein Komma stehen).
 wie Delphi, `formular.ts` liest und schreibt Formulardateien und ändert Textfelder und Kästchen,
 `felder.ts` leitet Beschriftung, Abschnitt und Zeilen eines Felds aus der Lage ab (FORMA kennt keine Verknüpfung),
 `darstellung.ts` Farben, Maße, Drehung und Bilder für die Formularansicht, `projektkarte.ts` die Zuordnung
-Feld → Projektkarte, `sperre.ts` liest und schreibt Sperrdateien. `verlauf.ts` ist der Verlauf, `ablage.ts` die
+Feld → Projektkarte, `sperre.ts` liest und schreibt Sperrdateien. `dokumente/` liest und ändert PDF (pdf.js),
+Excel und Word (eigener XML-Leser mit Lage im Quelltext, ZIP über fflate). `verlauf.ts` ist der Verlauf, `ablage.ts` die
 Zuordnung der echten Projektordner.
 
-Die Tauri-Hülle (`src-tauri/src/lib.rs`) ersetzt nur vorhandene `.frmsjf` (atomar über eine temporäre Datei), prüft
+Die Tauri-Hülle (`src-tauri/src/lib.rs`) ersetzt nur vorhandene `.frmsjf` sowie vorhandene PDF-, Excel- und
+Word-Dateien (atomar über eine temporäre Datei, Dokumente nur mit Sicherungskopie und nicht, solange Office sie
+geöffnet hat), prüft
 Sperrdateien (offen gehalten? Prozess auf diesem Rechner?),
 legt nur `.frmtmp` an bzw. löscht sie und ändert in `sj_prokarte.sdb` nur vorhandene Einträge – in einer
 Transaktion, und nur, wenn jeder noch den Wert hat, von dem die Änderung ausgeht. Sonst schreibt sie nichts.

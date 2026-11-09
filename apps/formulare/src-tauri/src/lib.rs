@@ -208,6 +208,72 @@ async fn fs_replace(root: String, pfad: String, contents_base64: String) -> Resu
     Ok(())
 }
 
+/// Dokumente, die die App bearbeiten darf (Vorschau mit Bearbeiten im Projektordner)
+const DOKUMENTE: [&str; 4] = ["pdf", "xlsx", "xlsm", "docx"];
+/// so viele Sicherungskopien bleiben im App-Ordner
+const MAX_SICHERUNGEN: usize = 200;
+
+/// Ist das Dokument gerade in Excel oder Word geöffnet? Office legt daneben eine Besitzerdatei „~$…“ an
+/// (bei langen Namen ohne die ersten beiden Zeichen).
+fn office_offen(p: &Path) -> bool {
+    let (Some(ordner), Some(name)) = (p.parent(), p.file_name().and_then(|n| n.to_str())) else { return false };
+    let kurz: String = name.chars().skip(2).collect();
+    ordner.join(format!("~${name}")).exists() || (!kurz.is_empty() && ordner.join(format!("~${kurz}")).exists())
+}
+
+/// Kopie der bisherigen Fassung im App-Ordner (Sicherungen), älteste werden gelöscht
+fn sicherung(app: &tauri::AppHandle, p: &Path) -> Result<PathBuf, String> {
+    let ordner = app.path().app_local_data_dir().map_err(|e| e.to_string())?.join("Sicherungen");
+    std::fs::create_dir_all(&ordner).map_err(|e| format!("{}: {}", ordner.display(), e))?;
+    let zeit = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+    let name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+    let ziel = ordner.join(format!("{zeit}-{name}"));
+    std::fs::copy(p, &ziel).map_err(|e| format!("Sicherung von {}: {}", p.display(), e))?;
+    if let Ok(eintraege) = std::fs::read_dir(&ordner) {
+        let mut alle: Vec<_> = eintraege.flatten().map(|e| e.path()).collect();
+        alle.sort();
+        let zuviel = alle.len().saturating_sub(MAX_SICHERUNGEN);
+        for alt in alle.into_iter().take(zuviel) {
+            let _ = std::fs::remove_file(alt);
+        }
+    }
+    Ok(ziel)
+}
+
+/// Ersetzt ein vorhandenes Dokument (PDF, Excel, Word) atomar – vorher mit Sicherungskopie im App-Ordner.
+/// Abgelehnt, wenn es in Excel/Word geöffnet ist; ist es in einem anderen Programm geöffnet, scheitert das Ersetzen.
+#[tauri::command]
+async fn doc_replace(app: tauri::AppHandle, root: String, pfad: String, contents_base64: String) -> Result<(), String> {
+    let p = unterhalb(&root, &pfad)?;
+    if !DOKUMENTE.iter().any(|e| endung_ist(&p, e)) {
+        return Err(format!("{}: Nur PDF-, Excel- und Word-Dateien dürfen hier gespeichert werden", p.display()));
+    }
+    if !p.is_file() {
+        return Err(format!("{}: Datei nicht gefunden", p.display()));
+    }
+    if office_offen(&p) {
+        return Err(format!("{}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen", p.display()));
+    }
+    let bytes = base64_lesen(&contents_base64)?;
+    let kopie = sicherung(&app, &p)?;
+    let ziel = p.clone();
+    tauri::async_runtime::spawn_blocking(move || write_atomic(&ziel, &bytes))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| match e.raw_os_error() {
+            Some(5) | Some(32) | Some(33) => format!("{}: Die Datei ist in einem anderen Programm geöffnet – bitte dort schließen", p.display()),
+            _ => format!("{}: {}", p.display(), e),
+        })?;
+    log::info!("Dokument gespeichert: {} (Sicherung: {})", p.display(), kopie.display());
+    Ok(())
+}
+
+/// Ist das Dokument gerade in Excel oder Word geöffnet?
+#[tauri::command]
+async fn doc_in_office(root: String, pfad: String) -> Result<bool, String> {
+    Ok(office_offen(&unterhalb(&root, &pfad)?))
+}
+
 /// Legt eine Sperrdatei (.frmtmp) an. `false`, wenn es schon eine gibt (das Formular ist anderswo geöffnet).
 #[tauri::command]
 async fn lock_create(
@@ -589,6 +655,8 @@ pub fn run() {
             lock_create,
             lock_release,
             lock_probe,
+            doc_replace,
+            doc_in_office,
             process_info,
             prokarte_read,
             prokarte_write,
@@ -725,6 +793,20 @@ mod tests {
         assert!(sperre_entfernen(&p, b"[Zugriff]
 ").unwrap());
         assert!(!p.exists());
+    }
+
+    #[test]
+    fn office_besitzerdatei_zeigt_geoeffnete_dokumente() {
+        let ordner = std::env::temp_dir().join(format!("formulare-test-office-{}", std::process::id()));
+        std::fs::create_dir_all(&ordner).unwrap();
+        let lang = ordner.join("Baubeschreibung.docx");
+        let kurz = ordner.join("BS5.xlsx");
+        assert!(!office_offen(&lang) && !office_offen(&kurz));
+        // Word kürzt lange Namen um die ersten beiden Zeichen, Excel stellt „~$“ voran
+        std::fs::write(ordner.join("~$ubeschreibung.docx"), b"x").unwrap();
+        std::fs::write(ordner.join("~$BS5.xlsx"), b"x").unwrap();
+        assert!(office_offen(&lang) && office_offen(&kurz));
+        std::fs::remove_dir_all(&ordner).unwrap();
     }
 
     #[test]
