@@ -9,3 +9,6 @@ dist/
 # IFC-Modelle aus Projekten (nur lokal zum Testen) – das kleine Test-Fixture bleibt versioniert
 *.ifc
 !packages/core/src/__fixtures__/*.ifc
+
+# Echte FORMA-Projekte mit Kundendaten (nur lokal für die Kompatibilitätstests)
+.ref/

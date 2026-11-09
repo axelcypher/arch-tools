@@ -9,6 +9,7 @@ name: Build & Release
 #   Kostenermittlung apps/kosten            Tag kosten-v<version>
 #   Projektordner    apps/ordner            Tag ordner-v<version>
 #   Entzerrung       apps/entzerrung        Tag entzerrung-v<version>
+#   Formulare        apps/formulare         Tag formulare-v<version>
 #
 # Automatische Updates: Die Installer werden signiert (Secrets TAURI_SIGNING_PRIVATE_KEY und
 # TAURI_SIGNING_PRIVATE_KEY_PASSWORD). Das Update-Manifest jeder App liegt als <app>.json im Release
@@ -25,7 +26,7 @@ on:
       app:
         description: App
         type: choice
-        options: [alle, flaechenrechner, grz, kosten, ordner, entzerrung]
+        options: [alle, flaechenrechner, grz, kosten, ordner, entzerrung, formulare]
         default: alle
 
 permissions:
@@ -51,7 +52,7 @@ jobs:
           PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
         run: |
           apps='[]'
-          for d in flaechenrechner grz kosten ordner entzerrung; do
+          for d in flaechenrechner grz kosten ordner entzerrung formulare; do
             # der öffentliche Schlüssel in der App muss zum Signierschlüssel passen, sonst lehnen die Apps jedes Update ab
             k=$(node -p "require('./apps/$d/src-tauri/tauri.conf.json').plugins.updater.pubkey")
             if [ -n "$PUBKEY" ] && [ "$k" != "$(printf '%s' "$PUBKEY" | tr -d '[:space:]')" ]; then
@@ -71,6 +72,7 @@ jobs:
               kosten) tag="$d-v$v"; name="Kostenermittlung"; web="kostenermittlung-web.zip" ;;
               ordner) tag="$d-v$v"; name="Projektordner"; web="projektordner-web.zip" ;;
               entzerrung) tag="$d-v$v"; name="Entzerrung"; web="entzerrung-web.zip" ;;
+              formulare) tag="$d-v$v"; name="Formulare"; web="formulare-web.zip" ;;
             esac
             if [ "$EVENT" = "workflow_dispatch" ]; then
               if [ "$WAHL" != "alle" ] && [ "$WAHL" != "$d" ]; then continue; fi

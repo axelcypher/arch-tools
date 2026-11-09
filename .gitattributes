@@ -1,0 +1,3 @@
+# FORMA-Formulare müssen byte-genau bleiben (CRLF, kein Zeilenende am Schluss)
+*.frmsjf -text
+*.frmtmp -text

@@ -1,0 +1,277 @@
+[*SJ_FORMULAR (w) by SJ GmbH Aachen#][*SJ_BEGIN#][*SJ_MODIFIED#]nw019999[*SJ_VERSION#]2026A[*SJ_END#][*S01#][*SJ_BEGIN#]object Form1: TFRMABSeiteForm
+  Tag = 1
+  Left = 130
+  Top = 130
+  HelpContext = 1000
+  Caption = 
+    'NRW - 2026 - Anlage I-3 - Antrag auf Genehmigungsfreistellung - ' +
+    'Seite 1 von 2'
+  ClientHeight = 1061
+  ClientWidth = 1493
+  Color = clBtnFace
+  Font.Charset = ANSI_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = 'Arial'
+  Font.Style = []
+  Scaled = False
+  WindowState = wsMaximized
+  OnCreate = FormCreate
+  TextHeight = 16
+  object Label0: TLabel
+        Left = 501
+        Top = 5
+        Width = 199
+        Height = 14
+        Alignment = taRightJustify
+        Caption = 'Musterformular zur VV BauPr'#252'fVO (Blatt 1)'
+        Font.Charset = ANSI_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Arial'
+        Font.Style = [fsBold]
+        ParentFont = False
+        Transparent = True
+      end
+      object Panel1: TPanel
+        Tag = 4
+        Left = 0
+        Top = 20
+        Width = 700
+        Height = 300
+        TabOrder = 0
+        object Label1: TLabel
+          Left = 5
+          Top = 1
+          Width = 166
+          Height = 16
+          Caption = 'Bauherrschaft'
+          Font.Charset = ANSI_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Arial'
+          Font.Style = [fsBold]
+          ParentFont = False
+          Transparent = True
+        end
+        object Memo1: TMemo
+          Left = 5
+          Top = 20
+          Width = 240
+          Height = 22
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clBlack
+          Font.Height = -13
+          Font.Name = 'Courier New'
+          Font.Style = []
+          Lines.Strings = (
+            'Mustermann, Max')
+          ParentFont = False
+          TabOrder = 0
+          WantReturns = False
+        end
+        object Memo2: TMemo
+          Tag = 2
+          Left = 5
+          Top = 45
+          Width = 240
+          Height = 22
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clBlack
+          Font.Height = -13
+          Font.Name = 'Courier New'
+          Font.Style = []
+          ParentFont = False
+          TabOrder = 1
+          WantReturns = False
+        end
+        object Memo3: TMemo
+          Left = 5
+          Top = 70
+          Width = 690
+          Height = 85
+          Hint = 'Bezeichnung des Vorhabens'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clBlack
+          Font.Height = -13
+          Font.Name = 'Courier New'
+          Font.Style = []
+          Lines.Strings = (
+            
+              'Neubau eines Einfamilienhauses mit Einliegerwohnung und Doppelga' +
+              'rage'
+            'Musterstra'#223'e 1, 12345 Musterstadt'
+            '')
+          ParentFont = False
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 2
+        end
+        object CheckBox1: TCheckBox
+          Left = 5
+          Top = 160
+          Width = 300
+          Height = 17
+          Caption = 'Wohngeb'#228'ude'
+          Checked = True
+          Font.Charset = ANSI_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Arial'
+          Font.Style = []
+          ParentFont = False
+          State = cbChecked
+          TabOrder = 3
+        end
+        object CheckBox2: TCheckBox
+          Left = 5
+          Top = 180
+          Width = 300
+          Height = 17
+          Caption = 'Sonderbau'
+          Font.Charset = ANSI_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Arial'
+          Font.Style = []
+          ParentFont = False
+          TabOrder = 4
+        end
+        object CheckBox3: TCheckBox
+          Tag = 7
+          Left = 320
+          Top = 160
+          Width = 17
+          Height = 17
+          Checked = True
+          State = cbChecked
+          TabOrder = 5
+        end
+        object CheckBox4: TCheckBox
+          Tag = 7
+          Left = 320
+          Top = 180
+          Width = 17
+          Height = 17
+          TabOrder = 6
+        end
+      end
+      object lstbxProkarte: TListBox
+        Left = 706
+        Top = 25
+        Width = 479
+        Height = 604
+        ItemHeight = 13
+        Items.Strings = (
+          
+            'Memo1=KR0231aedt010;K0231aedt020;K0231aedt030;K0231aedt040;"Abt.' +
+            ': ";K0231aedt050;"z.Hd.: ";K0231aedt060;0231aedt070'
+          'Memo2=L0232aedt090;0232aedt110'
+          'Memo4=0101aedt130'
+          'Memo6=0101aedt130'
+          'Memo7=K0201aedt040;0201aedt030'#11
+          ''
+          'Memo8=0201aedt070'
+          'Memo9=L0201aedt090;0201aedt110'
+          
+            'Memo10=K0203aedt040;L0203aedt020;L0203aedt030;R0203aedt010;K0203' +
+            'aedt070;L0203aedt090;0203aedt110'
+          'Memo11=0201aedt130'
+          'Memo12=0201aedt160'
+          'Memo13=0201aedt170'
+          'Memo14=K0202aedt040;0202aedt030'#11
+          ''
+          'Memo15=0202aedt070'
+          'Memo16=L0202aedt090;0202aedt110'
+          'Memo17=K0206aedt040;0206aedt030'
+          'Memo18=0101aedt140'
+          'Memo19=0202aedt130'
+          'Memo20=0202aedt160'
+          'Memo21=0202aedt170'
+          'Memo22=K0301aedt010;0301aedt020'
+          'Memo23=0301aedt040'
+          'Memo24=0301aedt050'
+          'Memo25=0301aedt060'
+          'Memo26=0101mmo030 ')
+        TabOrder = 11
+        Visible = False
+      end
+end
+[*SJ_END#][*S02#][*SJ_BEGIN#]object Form2: TFRMABSeiteForm
+  Tag = 2
+  Left = 156
+  Top = 156
+  HelpContext = 1000
+  Caption = 
+    'NRW - 2026 - Anlage I-3 - Antrag auf Genehmigungsfreistellung - ' +
+    'Seite 2 von 2'
+  ClientHeight = 1061
+  ClientWidth = 1214
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  Scaled = False
+  WindowState = wsMaximized
+  OnCreate = FormCreate
+  TextHeight = 15
+  object Image1: TImage
+    Left = 0
+    Top = 0
+    Width = 700
+    Height = 70
+    ParentShowHint = False
+    Picture.Data = {
+      07544269746D617006D32300424D06D32300000000003600000028000000B709
+      0000EC00000001002000}
+  end
+  object Label2: TExtendedLabel
+    Left = 680
+    Top = 80
+    Width = 15
+    Height = 120
+    Caption = 'Stand 2026'
+    Color = clWhite
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Arial'
+    Font.Style = []
+    ParentColor = False
+    ParentFont = False
+    Angle = 90
+  end
+      object Panel4: TPanel
+        Tag = 4
+        Left = 0
+        Top = 150
+        Width = 700
+        Height = 115
+        TabOrder = 0
+        object Label86: TLabel
+          Left = 5
+          Top = 28
+          Width = 655
+          Height = 80
+          AutoSize = False
+          Caption = 
+            'Nach '#167' 63 Absatz 3 Satz 4 BauO NRW 2018 darf einen Monat nach Ei' +
+            'ngang der erforderlichen'#13#10'Unterlagen bei der Bauaufsichtsbeh'#246'rde' +
+            ' mit dem Vorhaben begonnen werden. Mit dem Vorhaben'#13#10'kann unverz' +
+            #252'glich begonnen werden, wenn die Gemeinde der Bauherrschaft vor ' +
+            'Ablauf dieser Frist'#13#10'mitteilt, dass kein Genehmigungsverfahren d' +
+            'urchgef'#252'hrt werden soll und sie eine Untersagung'#13#10'nach '#167' 15 Absa' +
+            'tz 1 Satz 2 BauGB nicht beantragen wird. '
+          Font.Charset = ANSI_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Arial'
+          Font.Style = []
+          ParentFont = False
+          Transparent = True
+        end
+  end
+end
+[*SJ_END#]

@@ -28,6 +28,7 @@ jobs:
             apps/kosten/dist
             apps/ordner/dist
             apps/entzerrung/dist
+            apps/formulare/dist
 
   tauri:
     name: Tauri-Hülle prüfen (${{ matrix.app }})
@@ -46,6 +47,8 @@ jobs:
             pkg: projektordner
           - app: entzerrung
             pkg: entzerrung
+          - app: formulare
+            pkg: formulare
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
