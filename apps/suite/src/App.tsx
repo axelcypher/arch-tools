@@ -98,10 +98,7 @@ export function App() {
 
   const herausloesen = async (id: string) => {
     const info = appInfo(id)!;
-    const frage = info.zwischenstand
-      ? `${info.name}: Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt. Herauslösen?`
-      : `${info.name}: Ungespeicherte Änderungen gehen beim Herauslösen verloren – bitte vorher speichern. Trotzdem herauslösen?`;
-    if (status[id]?.dirty && !window.confirm(frage)) return;
+    if (status[id]?.dirty && !window.confirm(`${info.name}: ${info.beimUmzug} Herauslösen?`)) return;
     if (!desktop) {
       window.open(appAdresse(id, 'fenster'), `arch-tools-${id}`);
       herausgeloest(id);

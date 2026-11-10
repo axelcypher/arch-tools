@@ -4,17 +4,19 @@ export interface AppInfo {
   name: string;
   /** kurze Beschreibung für die Startseite */
   text: string;
-  /** sichert ungespeicherte Änderungen laufend als Zwischenstand (übersteht Herauslösen und Andocken) */
-  zwischenstand: boolean;
+  /** was beim Herauslösen bzw. Andocken (die App startet neu) aus ungespeicherten Änderungen wird */
+  beimUmzug: string;
 }
 
+const ZWISCHENSTAND = 'Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt.';
+
 export const APPS: AppInfo[] = [
-  { id: 'ordner', name: 'Projektordner', text: 'Projekte anlegen und ergänzen, Vorlagen, Ordner prüfen', zwischenstand: false },
-  { id: 'formulare', name: 'Formulare', text: 'Bauantragsformulare aus SJ FORMA ausfüllen', zwischenstand: false },
-  { id: 'flaechenrechner', name: 'Flächenrechner', text: 'Flächen und Rauminhalte nach DIN 277 und WoFlV', zwischenstand: true },
-  { id: 'grz', name: 'GRZ-Nachweis', text: 'GRZ/GFZ-Nachweis nach BauNVO und BauO NRW', zwischenstand: true },
-  { id: 'kosten', name: 'Kostenermittlung', text: 'Massen und Kosten nach DIN 276', zwischenstand: true },
-  { id: 'entzerrung', name: 'Entzerrung', text: 'Fotos entzerren und darin messen', zwischenstand: true },
+  { id: 'ordner', name: 'Projektordner', text: 'Projekte anlegen und ergänzen, Vorlagen, Ordner prüfen', beimUmzug: 'Ungespeicherte Änderungen gehen verloren – bitte vorher speichern.' },
+  { id: 'formulare', name: 'Formulare', text: 'Bauantragsformulare aus SJ FORMA ausfüllen', beimUmzug: 'Nicht gespeicherte Eingaben bleiben als Entwurf erhalten und erscheinen beim erneuten Öffnen des Formulars wieder; ungespeicherte Bearbeitungen in PDF-, Excel- und Word-Dokumenten der Dateiansicht gehen verloren.' },
+  { id: 'flaechenrechner', name: 'Flächenrechner', text: 'Flächen und Rauminhalte nach DIN 277 und WoFlV', beimUmzug: ZWISCHENSTAND },
+  { id: 'grz', name: 'GRZ-Nachweis', text: 'GRZ/GFZ-Nachweis nach BauNVO und BauO NRW', beimUmzug: ZWISCHENSTAND },
+  { id: 'kosten', name: 'Kostenermittlung', text: 'Massen und Kosten nach DIN 276', beimUmzug: ZWISCHENSTAND },
+  { id: 'entzerrung', name: 'Entzerrung', text: 'Fotos entzerren und darin messen', beimUmzug: ZWISCHENSTAND },
 ];
 
 export const appInfo = (id: string) => APPS.find((a) => a.id === id);

@@ -11,7 +11,9 @@ Programm und einem Fenster**. Sie kann nichts weiter, als zwischen den Apps zu w
 - **Herauslösen:** ⧉ am Tab öffnet die App in einem **eigenen Fenster** (z. B. auf dem zweiten Bildschirm) – mit
   eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App startet dabei neu:
   Flächenrechner, GRZ-Nachweis, Kostenermittlung und Entzerrung stellen ungespeicherte Eingaben aus ihrem
-  Zwischenstand wieder her; in Projektordner und Formulare vorher speichern (der Rahmen fragt nach). Jede App ist
+  Zwischenstand wieder her; Formulare behält nicht gespeicherte Eingaben als Entwurf und zeigt sie beim erneuten
+  Öffnen des Formulars wieder – nur ungespeicherte Bearbeitungen von PDF-, Excel- und Word-Dokumenten in der
+  Dateiansicht gehen verloren. Bei ungespeicherten Änderungen sagt der Rahmen vorher, was mit ihnen geschieht. Jede App ist
   höchstens einmal offen – ist sie herausgelöst, holt „+“ bzw. die Startseite ihr Fenster nach vorn.
 - **Sperrdateien der Formulare** (`.frmtmp`, für FORMA und die Kollegen) gibt der Rahmen frei, sobald der
   Formulare-Tab bzw. sein Fenster zu ist oder umzieht – nicht erst beim Beenden des Programms.
