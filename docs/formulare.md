@@ -136,6 +136,12 @@ Anschrift, wie sie in Formularen steht.
 Neben den FORMA-Projekten lassen sich die **echten Projektordner** anbinden – zum Nachsehen (welche Formulare
 schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports und für einfache Dateibefehle.
 
+- **Immer aktuell:** Nach allem, was die App selbst schreibt (Export, neue Fassung, Verknüpfen, Projektdatei,
+  Dateibefehle), liest der Baum neu. Was von außen dazukommt – neue Dokumente im Explorer oder von Kollegen, neue
+  Formulare und Sperren aus FORMA –, übernimmt die App, sobald das Fenster wieder in den Vordergrund kommt, und alle
+  15 Sekunden, solange es sichtbar ist (FORMA-Formulare, Projektordner, Antragsstatus; beim Zurückkommen auch die
+  Projektdatei und in der Übersicht die Liste der Projekte).
+
 - Zuordnung über das **Kürzel**: Der FORMA-Projektordner heißt „BS5“, der echte Ordner beginnt damit
   („BS5 Birkenstraße 5“) oder hat ein Wort davor („JJ H24 …“). Gesucht wird **zwei Ebenen** tief (auch in
   Unterordnern wie der Akquise); ein Treffer auf der obersten Ebene geht vor.

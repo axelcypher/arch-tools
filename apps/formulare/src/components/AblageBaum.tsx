@@ -86,6 +86,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
   const entwuerfe = useFormulare((s) => s.dateiEntwuerfe);
   const { dateiAnsehen } = useFormulare.getState();
   const stand = useDateiAktionen((s) => s.stand);
+  const ordnerStand = useFormulare((s) => s.ordnerStand);
   const [eintraege, setEintraege] = useState<Eintrag[] | null>(null);
   const [fehler, setFehler] = useState('');
 
@@ -93,12 +94,18 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
     if (!ds) return;
     let aktiv = true;
     ds.liste(rel ? verbinde(basis, rel) : basis, 1)
-      .then((e) => aktiv && setEintraege(e.sort(sortiere)))
+      .then((e) => {
+        if (!aktiv) return;
+        const neu = e.sort(sortiere);
+        // nur bei einer Änderung neu zeichnen (wird regelmäßig abgeglichen)
+        setEintraege((alt) => (alt && alt.length === neu.length && alt.every((a, i) => a.pfad === neu[i].pfad && a.ordner === neu[i].ordner) ? alt : neu));
+        setFehler('');
+      })
       .catch((e: unknown) => aktiv && setFehler(e instanceof Error ? e.message : String(e)));
     return () => {
       aktiv = false;
     };
-  }, [ds, basis, rel, stand]);
+  }, [ds, basis, rel, stand, ordnerStand]);
 
   if (fehler) return <p className="warning small-text">{fehler}</p>;
   if (!eintraege) return <p className="muted small-text fo-baum-zeile" style={{ paddingLeft: tiefe * 14 }}>…</p>;

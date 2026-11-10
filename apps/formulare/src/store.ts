@@ -206,6 +206,8 @@ interface FormulareState extends Gespeichert {
   stammdatenDialog: { grund: string; meta: ProjectMeta } | null;
   /** Dialog „Projektordner zuordnen“ (wählen oder im Stammordner anlegen) */
   ordnerDialog: { grund: string } | null;
+  /** zählt hoch, wenn sich Dateien im Projektordner geändert haben können – der Baum liest dann neu */
+  ordnerStand: number;
   /** von Hand zugeordnete Projektordner je Kürzel (vollständiger Pfad) – gemeinsam im Konfigurationsordner */
   ordnerWahl: Record<string, string>;
   /** Bereich der Einstellungen */
@@ -300,6 +302,10 @@ interface FormulareState extends Gespeichert {
   /** neuen Projektordner im Stammordner anlegen und zuordnen */
   projektordnerAnlegen: (stammordner: string, name: string) => Promise<void>;
   ordnerDialogSchliessen: () => void;
+  /** Projektordner-Baum neu lesen lassen */
+  ordnerNeuLesen: () => void;
+  /** Projektdatei neu lesen, wenn sie sich seitdem geändert hat (oder bisher fehlte) */
+  oapAuffrischen: () => Promise<void>;
   /** Projektdatei des gewählten Projekts suchen und lesen */
   oapLaden: () => Promise<void>;
   /** Angaben aus der Projektdatei in die Projektkarte übernehmen (ein Schritt) */
@@ -755,6 +761,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     stammdatenDialog: null,
     ordnerDialog: null,
     ordnerWahl: {},
+    ordnerStand: 0,
     einstellungsBereich: 'ordner',
     ablage: [],
     ablageFehler: [],
@@ -1258,6 +1265,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, 'Formulare'))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in der Projektkarte auswählen.`);
       log.info(`Projektdatei angelegt: ${pfad}`);
       set({ stammdatenDialog: null, meldung: { art: 'info', text: `Projektdatei angelegt: ${pfad}` } });
+      get().ordnerNeuLesen();
       await get().oapLaden();
       const weiter = nachAnlegen;
       nachAnlegen = null;
@@ -1267,6 +1275,20 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!get().projekt) return;
       nachAnlegen = danach ?? null;
       set({ ordnerDialog: { grund } });
+    },
+    ordnerNeuLesen: () => set((s) => ({ ordnerStand: s.ordnerStand + 1 })),
+    oapAuffrischen: async () => {
+      const { ds, oap: o } = get();
+      if (!ds || !get().projekt) return;
+      if (!o || o === 'fehlt') return get().oapLaden();
+      const ordner = o.pfad.includes('/') ? o.pfad.slice(0, o.pfad.lastIndexOf('/')) : '';
+      try {
+        const name = o.pfad.slice(ordner ? ordner.length + 1 : 0).toLowerCase();
+        const e = (await ds.liste(ordner ? verbinde(o.root, ordner) : o.root, 1)).find((x) => x.pfad.toLowerCase() === name);
+        if (!e || e.groesse !== o.stand.groesse || (e.geaendert ?? 0) !== o.stand.geaendert) await get().oapLaden();
+      } catch {
+        await get().oapLaden();
+      }
     },
     ordnerDialogSchliessen: () => {
       nachAnlegen = null;
@@ -1289,6 +1311,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!(await ds.projektordner.ordnerAnlegen(stammordner, sauber))) throw new Error(`${sauber}: Den Ordner gibt es schon – bitte „Vorhandenen Ordner wählen …“.`);
       log.info(`${projekt.ordner}: Projektordner angelegt: ${verbinde(stammordner, sauber)}`);
       await get().ablageLaden();
+      get().ordnerNeuLesen();
       await get().projektordnerWaehlen(verbinde(stammordner, sauber));
     },
     gemeinsamLaden: async () => {

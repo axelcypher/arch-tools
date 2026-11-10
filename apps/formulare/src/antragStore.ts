@@ -472,6 +472,8 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
       if (useFormulare.getState().projekt !== projekt) return;
       set({ dateien, quellen });
+      // nach Export, neuer Fassung, Verknüpfen … oder von außen: auch der Projektordner-Baum liest neu
+      useFormulare.getState().ordnerNeuLesen();
       // Formulare zerlegen (zwischengespeichert), dann rechnen
       const formulare = useFormulare.getState().formulare;
       await Promise.all(

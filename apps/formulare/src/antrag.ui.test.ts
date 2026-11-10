@@ -158,6 +158,31 @@ describe('Antragsfassung und Export', () => {
     expect(knopf(zweiter, 'Exportieren').disabled).toBe(true);
   });
 
+  it('die Seitenleiste zeigt neue Dateien: nach dem Export sofort, von außen beim Zurückkommen ins Fenster', async () => {
+    const host = await projektBS9();
+    const baum = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('.fo-baum-zeile')].find((b) => b.querySelector('.fo-baum-name')?.textContent === name);
+    // der Ordner der aktiven Fassung ist im Projektordner-Baum aufgeklappt
+    await klick(baum('TÖB')!);
+    await klick(baum('BAUA 2')!);
+    await klick(knopf(host, '001-Muster'));
+    await klick(knopf(host, 'PDF'));
+    await klick(menuePunkt('Als PDF exportieren'));
+    await klick(knopf(host.querySelector('[aria-label="Als PDF exportieren"]')!, 'Exportieren'));
+    await warte();
+    expect(baum(`BS9 GP ${jjmmtt(new Date())} Muster.pdf`)).toBeDefined();
+
+    // von außen: ein Dokument im Projektordner und ein neues Formular in FORMA
+    await klick(baum('Planung')!);
+    expect(baum('Neu.pdf')).toBeUndefined();
+    ds.dateien.set(`${PROJEKT}/Planung/Neu.pdf`, new Uint8Array([1]));
+    ds.dateien.set('C:/FORMA/BS9/004-Neues Formular.frmsjf', MUSTER);
+    act(() => void window.dispatchEvent(new Event('focus')));
+    await warte();
+    await warte();
+    expect(baum('Neu.pdf')).toBeDefined();
+    expect(knopf(host, '004-Neues Formular')).toBeDefined();
+  });
+
   it('anderer Ordner im Projekt', async () => {
     const host = await projektBS9();
     await klick(knopf(host, '001-Muster'));

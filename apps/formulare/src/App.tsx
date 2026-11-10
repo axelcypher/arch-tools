@@ -3,6 +3,7 @@ import { LogDialog } from '@core/ui/LogDialog';
 import { StammdatenDialog } from '@core/ui/Stammdaten';
 import { TitleBar } from '@core/ui/TitleBar';
 import { anzahlZugeordnet } from './ausfuellen';
+import { auffrischen } from './dateiAktionen';
 import { AusfuellenDialog } from './components/AusfuellenDialog';
 import { EinstellungenAnsicht } from './components/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
@@ -103,6 +104,20 @@ export function App() {
       .gemeinsamLaden()
       .then(() => projekteLaden());
   }, [projekteLaden]);
+
+  // von außen geänderte Dateien übernehmen: beim Zurückkommen ins Fenster und alle 15 s, solange es sichtbar ist
+  useEffect(() => {
+    const sichtbar = () => document.visibilityState !== 'hidden';
+    const zurueck = () => sichtbar() && void auffrischen(true);
+    const takt = setInterval(() => sichtbar() && void auffrischen(), 15_000);
+    window.addEventListener('focus', zurueck);
+    document.addEventListener('visibilitychange', zurueck);
+    return () => {
+      clearInterval(takt);
+      window.removeEventListener('focus', zurueck);
+      document.removeEventListener('visibilitychange', zurueck);
+    };
+  }, []);
 
   // Tastenkürzel
   useEffect(() => {
