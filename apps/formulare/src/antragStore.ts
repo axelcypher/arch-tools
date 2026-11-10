@@ -124,6 +124,8 @@ interface AntragState {
   merkmalSetzen: (name: string, wert: string) => Promise<void>;
   /** Abweichungen des gewählten Projekts; null = wieder die Vorgabe */
   setUeberschreibung: (u: ExportUeberschreibung | null) => void;
+  /** Einstellungen neu aus dem lokalen Speicher lesen (nach dem Einspielen einer Datei) und neu berechnen */
+  einstellungenNeuLesen: () => void;
   /** alles für das gewählte Projekt neu lesen */
   laden: () => Promise<void>;
   /** Dateien neu auflisten und Status berechnen */
@@ -268,6 +270,15 @@ export const useAntrag = create<AntragState>((set, get) => {
     dokumente: [],
     laedt: false,
 
+    einstellungenNeuLesen: () => {
+      set({
+        einstellungen: einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null)),
+        katalog: katalogAus(lesen<unknown>(KATALOG, null)),
+        merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
+        ueberschreibungen: lesen<Record<string, ExportUeberschreibung>>(UEBERSCHREIBUNGEN, {}),
+      });
+      void get().laden();
+    },
     setEinstellungen: (teil) => {
       const einstellungen = einstellungenAus({ ...get().einstellungen, ...teil });
       schreiben(EINSTELLUNGEN, einstellungen);

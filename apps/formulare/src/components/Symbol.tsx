@@ -43,6 +43,7 @@ const PFADE = {
   textfeld: 'M4 6V4h16v2M12 4v16M9 20h6',
   kreuz: 'M5 5h14v14H5zM8 8l8 8M16 8l-8 8',
   stapel: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5',
+  uebertragen: 'M7 4v14M3 14l4 4 4-4M17 20V6M13 10l4-4 4 4',
   /** Verzweigung: nur erforderlich, wenn … */
   bedingung: 'M7 4v10M17 8v1a5 5 0 0 1-5 5H7M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
 } as const;

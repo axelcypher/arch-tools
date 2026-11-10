@@ -205,6 +205,8 @@ interface FormulareState extends Gespeichert {
   /** Pfadliste für ein Projekt; `null` = wieder die Vorgabe */
   setAuswahl: (kuerzel: string, liste: string[] | null) => void;
   projekteLaden: () => Promise<void>;
+  /** Einstellungen und Gliederungen neu aus dem lokalen Speicher lesen (nach dem Einspielen einer Datei) */
+  einstellungenNeuLesen: () => Promise<void>;
   ablageLaden: () => Promise<void>;
   projektWaehlen: (p: Projekt | null) => Promise<void>;
   formularOeffnen: (e: FormularEintrag) => Promise<void>;
@@ -269,7 +271,7 @@ interface FormulareState extends Gespeichert {
   projektdatenUebernehmen: (angaben: Angabe[]) => void;
 }
 
-export type EinstellungsBereich = 'ordner' | 'stammdaten' | 'adressbuch' | 'formulare' | 'antrag' | 'projektdaten';
+export type EinstellungsBereich = 'ordner' | 'stammdaten' | 'adressbuch' | 'formulare' | 'antrag' | 'projektdaten' | 'sicherung';
 
 export interface OapDatei {
   /** Projektordner (absolut) */
@@ -749,6 +751,14 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         set({ sucht: false });
       }
       await get().ablageLaden();
+    },
+
+    einstellungenNeuLesen: async () => {
+      const ordner = (x: Pick<Gespeichert, 'projektordner' | 'ablageordner'>) => [...x.projektordner, '|', ...x.ablageordner].join('\n');
+      const vorher = ordner(get());
+      const neu = ladeEinstellungen();
+      set({ ...neu, profile: lesen<Record<string, FormularProfil>>(PROFILE, {}) });
+      if (ordner(neu) !== vorher) await get().projekteLaden();
     },
 
     ablageLaden: async () => {

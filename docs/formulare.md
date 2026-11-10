@@ -270,6 +270,28 @@ genauso:
 - **Übersicht** (🔒 über den Formularen): alle Sperrdateien des Projekts, auch solche ohne Formular, mit
   Bewertung und „Aufheben …“.
 
+### Einstellungen sichern und übertragen
+
+Die Einstellungen liegen im Speicher der App auf diesem Rechner. Unter **Einstellungen › Sichern & Übertragen**
+lassen sie sich als JSON-Datei exportieren (`Formulare-Einstellungen JJMMTT.json`) und wieder einspielen – zum
+Sichern, für einen anderen Rechner oder für Kolleginnen und Kollegen. Entwürfe, Verlauf und Formularinhalte
+gehören nicht dazu.
+
+| Bereich | Schlüssel | beim Einspielen |
+| --- | --- | --- |
+| Gliederung der Formulare (Titel, Gruppen, Bedingungen) | `formulare:profile` | ergänzt – gleiche Formulare ersetzt |
+| Projektmerkmale | `formulare:merkmale` | ersetzt |
+| Antragsdokumente (Katalog) | `formulare:katalog` | ersetzt |
+| Antrag & Export | `formulare:export` | ersetzt |
+| Antrag & Export: Abweichungen je Projekt | `formulare:export-projekte` | ergänzt – gleiche Projekte ersetzt |
+| Bürostammdaten | `formulare:stammdaten` | ersetzt |
+| Ordner, angezeigte Pfade, Projektdatei, Ansicht | `formulare:einstellungen` | ersetzt – zunächst nicht angehakt (Pfade dieses Rechners) |
+
+Beim Einspielen zeigt die App, was in der Datei steht, und übernimmt nur die angehakten Bereiche. Gliederungen
+werden dabei geprüft; Ungültiges fällt weg. Die Datei hat die Form
+`{ "art": "formulare-einstellungen", "version": 1, "app": "0.11.0", "erstellt": "…", "daten": { "<Schlüssel>": … } }`
+und eignet sich auch als Vorlage für die Vorgaben der App.
+
 ### Web-Version
 
 Ohne Desktop-App gibt es keinen Zugriff auf Ordner: Die Web-Version öffnet ein einzelnes Formular über den
