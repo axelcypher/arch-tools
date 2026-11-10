@@ -31,6 +31,8 @@ export default defineConfig({
   },
   test: {
     name: 'formulare',
+    // Windows-Runner im Release sind langsam: rechenintensive Tests (Archiv, Dach, IFC) brauchen dort mehr als 5 s
+    testTimeout: 30_000,
     environment: 'node',
     include: ['src/**/*.test.ts'],
   },
