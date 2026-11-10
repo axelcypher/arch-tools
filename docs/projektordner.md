@@ -18,9 +18,13 @@ Grundsätze:
 
 Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davor taugen.
 
-1. **Projekt:** „Neues Projekt anlegen“ oder **„Bestehendes Projekt ergänzen“** – aus der Liste der Projekte im
-   Stammordner (mit Suche) oder mit „Anderen Ordner wählen …“ an beliebiger Stelle. Der Ordner muss nicht nach dem
-   Schema heißen; ergänzt wird in genau diesem Ordner. Aus „Ordner prüfen“ führt „Projekt ergänzen …“ direkt hierher.
+1. **Projekt:** die **Projektübersicht** – dieselbe Startseite wie in den anderen Apps: vorne „Zuletzt geöffnet“
+   (je Benutzer, über alle Apps), darunter die Projektordner je Stammordner als Karten mit Nummer, Bezeichnung und
+   Leistungsphasen aus der Projektdatei (im Hintergrund nachgeladen) und der Marke „ohne Projektdatei“, mit Suche.
+   Ein Klick auf ein Projekt ergänzt es; **„Neues Projekt“** im Kopf beginnt ein neues, „Anderen Ordner …“ wählt
+   einen Projektordner an beliebiger Stelle. Der Ordner muss nicht nach dem Schema heißen; ergänzt wird in genau
+   diesem Ordner. Aus „Ordner prüfen“ führt „Projekt ergänzen …“ direkt hierher. Ohne eingestellten Stammordner
+   (und im Browser) stehen hier zwei Karten: neues Projekt bzw. Projektordner wählen.
 2. **Stammdaten:** Projektnummer, Kurzname, Bezeichnung, Adresse des Bauvorhabens, Grundstück, Aktenzeichen,
    Bauherr mit Kontakten.
    - Neues Projekt: Das Tool schlägt die nächste freie Nummer vor – die höchste laufende Nummer unter den Ordnern
@@ -253,7 +257,6 @@ Presets in der Struktur-Datei:
 ## Grenzen
 
 - Kein Archivieren (Projekt abschließen, als ZIP exportieren) und keine Obsidian-Projektnotiz.
-- Die Projektauswahl beim Ergänzen ist eine einfache Liste; die gemeinsame Projektübersicht aller Apps folgt.
 - Ob eine Vorlage vorhanden ist, entscheidet ihr Name im Projekt. Wurde eine ergänzte Datei später umbenannt,
   ergänzt der nächste Lauf sie erneut – der Trockenlauf zeigt es vorher, und sie lässt sich abwählen.
 - Die Planliste ist eine Vorlage, keine Verwaltung – Revisionen und Verteiler führt das Tool nicht.

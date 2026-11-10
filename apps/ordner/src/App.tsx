@@ -53,7 +53,7 @@ export function App() {
         <span className="muted small-text">Struktur: {struktur.name}</span>
       </div>
       <main className="po-main">
-        {ansicht === 'projekt' && <AssistentView key={start?.nr ?? 0} start={start?.ordner ?? null} />}
+        {ansicht === 'projekt' && <AssistentView key={start?.nr ?? 0} start={start?.ordner ?? null} onEinstellungen={() => setAnsicht('einstellungen')} />}
         {ansicht === 'pruefen' && (
           <PruefView
             onErgaenzen={(ordner) => {
