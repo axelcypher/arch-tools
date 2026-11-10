@@ -3745,3 +3745,47 @@ tr[data-ziehen='danach'] > td {
   margin: 6px 0 0;
   font-size: 12px;
 }
+.fo-ein-herkunft {
+  margin: -4px 0 8px;
+}
+.fo-ein-herkunft button {
+  margin-left: 4px;
+}
+/* Autofill: Wert aus der Projektkarte bzw. von Hand überschrieben */
+.fo-memo.auto {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent, #2f6fdf) 55%, transparent);
+}
+.fo-memo.fixiert {
+  box-shadow: inset 2px 0 0 #c77d00;
+}
+.fo-ausfuellen-haken {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin: 0 0 10px;
+}
+.fo-ausfuellen-haken input {
+  flex: 0 0 auto;
+  width: auto;
+}
+.fo-ausfuellen-art {
+  font-size: 11px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--bg-2, rgba(127, 127, 127, 0.12));
+}
+.fo-ausfuellen-zeile.manuell .fo-ausfuellen-art,
+.fo-ausfuellen-zeile.unbekannt .fo-ausfuellen-art {
+  background: rgba(199, 125, 0, 0.15);
+}
+.fo-unterlagen {
+  margin: 8px 0 12px;
+  padding-left: 18px;
+}
+.fo-unterlagen li {
+  margin: 3px 0;
+}
+.fo-menue-knopf {
+  padding-left: 4px;
+  padding-right: 4px;
+}

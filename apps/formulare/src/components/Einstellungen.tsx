@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { dateiname } from '@core/platform/files';
 import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
+import { hatVorgabe } from '../vorgabe';
+import { VORGABEN } from '../vorgaben';
 import type { Adresse } from '../adressbuch';
 import { adressName, adressOrt, inRolle, sucheAdressen } from '../adressbuch';
 import { waehleOrdner } from '../dateisystem';
@@ -382,6 +384,11 @@ function Formulare() {
         als eine Angabe zählen und wann etwas erforderlich ist – im Formular über „Einrichten“ in der Werkzeugleiste. Die Einstellung gilt für das Formular in
         allen Projekten.
       </p>
+      <p className="muted small-text">
+        {Object.keys(VORGABEN).length
+          ? `Für ${Object.keys(VORGABEN).length} Formular(e) bringt die App eine Vorgabe mit (Titel, Gruppen und Bedingungen nach BauO NRW / BauPrüfVO). Eigene Einstellungen gehen vor; gespeichert wird nur, was davon abweicht.`
+          : 'Eingebaute Vorgaben (Titel, Gruppen und Bedingungen nach BauO NRW / BauPrüfVO) folgen; eigene Einstellungen gehen ihnen dann vor.'}
+      </p>
       {!eintraege.length ? (
         <p className="muted small-text">Noch kein Formular angepasst.</p>
       ) : (
@@ -391,7 +398,8 @@ function Formulare() {
             const umbenannt = Object.values(p.abschnitte).filter((a) => a.titel).length;
             const ohne = Object.keys(p.zaehlt).length;
             const felder = Object.keys(p.feldTitel ?? {}).length;
-            const gruppen = (p.gruppen ?? []).length;
+            const gruppen = (p.gruppen ?? []).length + (p.ohneGruppen ?? []).length;
+            const bedingungen = Object.keys(p.bedingungen ?? {}).length + Object.values(p.abschnitte).filter((a) => a.bedingung !== undefined).length;
             return (
               <li key={k}>
                 <Symbol name="formular" />
@@ -404,12 +412,13 @@ function Formulare() {
                       felder && `${felder} Feld(er) umbenannt`,
                       ohne && `${ohne} Feld(er) zählen nicht`,
                       gruppen && `${gruppen} Gruppe(n)`,
+                      bedingungen && `${bedingungen} Bedingung(en)`,
                     ]
                       .filter(Boolean)
                       .join(' · ')}
                   </span>
                 </span>
-                <button onClick={() => profilSetzen(k, null)}>Zurücksetzen</button>
+                <button onClick={() => profilSetzen(k, null)}>{hatVorgabe(k) ? 'Auf Vorgabe zurücksetzen' : 'Zurücksetzen'}</button>
               </li>
             );
           })}

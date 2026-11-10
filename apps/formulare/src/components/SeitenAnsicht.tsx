@@ -11,7 +11,8 @@ import { hatBedingung } from '../bedingung';
 import { feldId, useEinrichten } from '../einrichten';
 import { useAntrag } from '../antragStore';
 import type { OffenesFormular } from '../store';
-import { useFormulare, wertVon } from '../store';
+import { formularDatei, useFormulare, useProfil, wertVon } from '../store';
+import { autofillFelder } from '../autofill';
 
 /**
  * Formularansicht: jede Seite wie auf Papier – weiß, in den Schriften und an den Stellen aus der Datei, so wie
@@ -20,7 +21,7 @@ import { useFormulare, wertVon } from '../store';
  */
 export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; gesperrt: boolean }) {
   const zoom = useFormulare((s) => s.zoom);
-  const profil = useFormulare((s) => s.profile[profilSchluessel(offen.formular, offen.name)]);
+  const profil = useProfil(profilSchluessel(offen.formular, offen.name));
   const feldTitel = profil?.feldTitel;
   const merkmale = useAntrag((s) => s.projektdatei?.merkmale);
   const markierung = useMarkierung((s) => s.markierung);
@@ -45,6 +46,13 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
     [offen.formular, offen.felder],
   );
   const tasten = useMemo(() => feldTasten(offen.felder.flat()), [offen.felder]);
+  // Autofill: Felder aus der Projektkarte und von Hand überschriebene
+  const zustand = useAntrag((s) => s.projektdatei?.felder?.[formularDatei(offen.pfad)]);
+  const autofill = useMemo(() => {
+    const m = new Map<string, 'auto' | 'fixiert'>();
+    for (const k of autofillFelder(offen.formular, offen.felder).keys()) m.set(k, zustand?.felder[k]?.manuell !== undefined && !zustand.ignorieren ? 'fixiert' : 'auto');
+    return m;
+  }, [offen.formular, offen.felder, zustand]);
   const markiert = useMemo(() => new Set(markierung?.felder), [markierung]);
   // Felder, die nach den Bedingungen (noch) nicht erforderlich sind – im Formular neutral statt farbig
   const entfallen = useMemo(() => {
@@ -124,7 +132,7 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
             {/* das Formular selbst wird nicht beschnitten – nur das Blatt an seinem Rand */}
             <div className="fo-satz" style={{ left: s.blatt.links, top: s.blatt.oben }}>
               {s.kaesten.map((k, n) => (
-                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel, entfallen)} gesperrt={gesperrt} />
+                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel, entfallen, autofill)} gesperrt={gesperrt} />
               ))}
               {(() => {
                 const r = umrandung(s);
@@ -281,7 +289,8 @@ function feldProps(
   markiert: Set<string>,
   titel: Record<string, string> | undefined,
   entfallen: Set<string>,
-): Pick<ElementProps, 'feld' | 'wert' | 'geaendert' | 'markiert' | 'titel' | 'entfaellt'> {
+  autofill: Map<string, 'auto' | 'fixiert'>,
+): Pick<ElementProps, 'feld' | 'wert' | 'geaendert' | 'markiert' | 'titel' | 'entfaellt' | 'autofill'> {
   return feld
     ? {
         feld,
@@ -290,6 +299,7 @@ function feldProps(
         markiert: markiert.has(feld.schluessel),
         titel: titel?.[feld.schluessel]?.trim() || feld.beschriftung,
         entfaellt: entfallen.has(feld.schluessel),
+        autofill: autofill.get(feld.schluessel),
       }
     : {};
 }
@@ -305,10 +315,14 @@ interface ElementProps {
   titel?: string;
   /** nach den Bedingungen (noch) nicht erforderlich */
   entfaellt?: boolean;
+  /** Wert aus der Projektkarte (auto) bzw. von Hand überschrieben (fixiert) */
+  autofill?: 'auto' | 'fixiert';
   gesperrt: boolean;
 }
 
-const Element = memo(function Element({ k, feld, wert, geaendert, markiert, titel, entfaellt, gesperrt }: ElementProps) {
+const AUTOFILL_TEXT = { auto: 'Wert aus der Projektkarte', fixiert: 'von Hand überschrieben (bleibt beim Aktualisieren)' };
+
+const Element = memo(function Element({ k, feld, wert, geaendert, markiert, titel, entfaellt, autofill, gesperrt }: ElementProps) {
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const l = lage(k);
   const pos: CSSProperties = { left: l.x, top: l.y, width: l.b, height: l.h };
@@ -346,11 +360,11 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
       if (!feld) return null;
       return (
         <textarea
-          className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}`}
+          className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${autofill ? ` ${autofill}` : ''}`}
           style={{ ...pos, ...schrift(k), textAlign: AUSRICHTUNG[bezeichner(k.o, 'Alignment') ?? ''] }}
           value={typeof wert === 'string' ? wert : ''}
           disabled={gesperrt}
-          title={titel}
+          title={autofill ? `${titel} – ${AUTOFILL_TEXT[autofill]}` : titel}
           aria-label={feld.beschriftung}
           data-feld={feld.schluessel}
           spellCheck={false}
@@ -358,6 +372,7 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           // wie in FORMA: in einzeiligen Feldern (WantReturns = False) erzeugt Enter keinen Zeilenumbruch
           onKeyDown={(e) => feld.einzeilig && e.key === 'Enter' && e.preventDefault()}
           onChange={(e) => wertSetzen(feld, e.target.value)}
+          onBlur={() => useFormulare.getState().feldVerlassen(feld)}
         />
       );
     }

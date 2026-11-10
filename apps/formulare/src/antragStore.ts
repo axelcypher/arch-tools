@@ -48,7 +48,9 @@ import type { FormularProfil } from './profil';
 import { leeresProfil, profilSchluessel } from './profil';
 import type { FormularEintrag, Projekt } from './projekte';
 import { formulareDesProjekts, projektSchluessel } from './projekte';
-import { ablageVon, entwurfVon, useFormulare, wertVon } from './store';
+import type { FormularZustand, Zustaende } from './autofill';
+import { autoWerte } from './autofill';
+import { ablageVon, autofillAnbindung, entwurfVon, karteMitAenderungen, mitAenderungen, profilFuer as wirksamesProfil, useFormulare, wertVon } from './store';
 
 const log = logger('formulare');
 
@@ -154,6 +156,8 @@ interface AntragState {
   vorlagenAuflisten: () => Promise<Vorlage[]>;
   /** Formular aus einer Vorlage geleert anlegen und öffnen; auf Wunsch in den Projektumfang aufnehmen */
   formularHinzufuegen: (v: Vorlage, inUmfang: boolean) => Promise<string | null>;
+  /** Autofill-Zustand von Formularen (Dateiname im FORMA-Projekt) in die Projektdatei – nur, wenn es eine gibt */
+  zustaendeSetzen: (neu: Zustaende) => Promise<void>;
 }
 
 /** Formular, das sich ins Projekt übernehmen lässt */
@@ -223,7 +227,7 @@ async function formularLesen(projekt: Projekt, pfad: string, eintrag: Eintrag | 
   return neu;
 }
 
-const profilFuer = (formular: Formular, name: string): FormularProfil => useFormulare.getState().profile[profilSchluessel(formular, name)] ?? leeresProfil();
+const profilFuer = (formular: Formular, name: string): FormularProfil => ({ ...leeresProfil(), ...wirksamesProfil(useFormulare.getState().profile, profilSchluessel(formular, name)) });
 
 /** Werte eines Formulars: im geöffneten die aktuellen Eingaben, sonst Datei plus ungespeicherter Entwurf */
 function werteVon(projekt: Projekt, pfad: string): { wert: (f: Feld) => string | boolean; entwurfZeit: number | null } {
@@ -278,6 +282,27 @@ function abschnittAusOap(): ProjektDatei | null {
   // Projektmerkmale stehen in meta (früher im Abschnitt – dann gilt der, bis zum nächsten Speichern)
   if (merkmale && Object.keys(merkmale).length) p.merkmale = { ...merkmale };
   return p;
+}
+
+/**
+ * Neues Formular mit Auto-Werten: leere Felder, die FORMA der Projektkarte zuordnet, werden gleich befüllt; der
+ * Zustand (Auto-Wert je Feld) kommt danach in die Projektdatei.
+ */
+const befuellt = (z: FormularZustand | null) => (z ? ` und mit ${Object.keys(z.felder).length} Angabe(n) aus der Projektkarte befüllt` : ' (leer)');
+
+async function mitAutofill(bytes: Uint8Array): Promise<{ bytes: Uint8Array; zustand: FormularZustand | null }> {
+  const f = useFormulare.getState();
+  if (!f.karte) await f.karteLaden();
+  const k = useFormulare.getState().karte;
+  if (!k) return { bytes, zustand: null };
+  const formular = parseFormular(bytes);
+  const felder = formular.seiten.map((seite, i) => felderDerSeite(seite, i));
+  const auto = [...autoWerte(formular, felder, karteMitAenderungen(k))].filter(([, a]) => !String(a.feld.original).trim());
+  if (!auto.length) return { bytes, zustand: null };
+  return {
+    bytes: mitAenderungen(bytes, Object.fromEntries(auto.map(([s, a]) => [s, a.wert]))),
+    zustand: { felder: Object.fromEntries(auto.map(([s, a]) => [s, { auto: a.wert }])) },
+  };
 }
 
 /** Angaben aus einer alten formulare.json einmalig in die Projektdatei übernehmen (die alte Datei bleibt liegen) */
@@ -681,7 +706,9 @@ export const useAntrag = create<AntragState>((set, get) => {
         if (!bytes) throw new Error(`${v.datei} nicht gefunden`);
         const name = neuerName(v.datei, s.formulare);
         const pfad = `${projekt.ordner}/${name}`;
-        await ds.formularAnlegen(projekt.root, pfad, geleert(bytes));
+        const neu = await mitAutofill(geleert(bytes));
+        await ds.formularAnlegen(projekt.root, pfad, neu.bytes);
+        if (neu.zustand) await get().zustaendeSetzen({ [name]: neu.zustand });
         log.info(`Formular angelegt: ${pfad} (Vorlage: ${v.herkunft}, ${v.pfad})`);
         const umfang = get().projektdatei?.umfang;
         if (inUmfang && umfang)
@@ -689,11 +716,39 @@ export const useAntrag = create<AntragState>((set, get) => {
         useFormulare.setState({ formulare: await formulareDesProjekts(ds, projekt) });
         const eintrag = useFormulare.getState().formulare.find((f) => f.pfad === pfad);
         if (eintrag) await useFormulare.getState().formularOeffnen(eintrag);
-        meldung('info', `„${name}“ aus ${v.herkunft} angelegt (leer). „Aus Projektkarte ausfüllen“ übernimmt die Projektdaten.`);
+        meldung('info', `„${name}“ aus ${v.herkunft} angelegt${befuellt(neu.zustand)}.`);
         return pfad;
       } catch (e) {
         fehler(`Formular „${v.name}“ hinzufügen`, e);
         return null;
+      }
+    },
+
+    zustaendeSetzen: async (neu) => {
+      const zusammen = (alt: Zustaende | undefined): Zustaende => {
+        const z = { ...alt };
+        for (const [datei, fz] of Object.entries(neu)) {
+          if (Object.keys(fz.felder).length || fz.ignorieren) z[datei] = fz;
+          else delete z[datei];
+        }
+        return z;
+      };
+      const pd = get().projektdatei ?? {};
+      set({ projektdatei: { ...pd, felder: zusammen(pd.felder) } });
+      const f = useFormulare.getState();
+      if (!f.ds || !f.projekt || !ablageVon(f, f.projekt)) return;
+      if (f.oap === null) await f.oapLaden();
+      const o = useFormulare.getState().oap;
+      // ohne Projektdatei gilt der Zustand nur bis zum Neuladen – kein Dialog dafür
+      if (!o || o === 'fehlt') return;
+      try {
+        await useFormulare.getState().oapAendern((roh) => {
+          const alt = projektDateiAus(roh.formulare ?? (roh.erweiterungen as Record<string, unknown> | undefined)?.formulare);
+          const merkmale = (roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale;
+          return mitAbschnitt(roh, { ...alt, ...(merkmale ? { merkmale } : {}), felder: zusammen(alt.felder) });
+        });
+      } catch (e) {
+        log.warn(`Autofill-Zustand nicht in die Projektdatei geschrieben: ${e instanceof Error ? e.message : String(e)}`);
       }
     },
 
@@ -707,14 +762,16 @@ export const useAntrag = create<AntragState>((set, get) => {
         if (!vorlage) throw new Error(`Keine Vorlage für „${u.titel}“ gefunden – bitte in den Einstellungen einen Vorlagenordner mit leeren FORMA-Formularen angeben`);
         const name = neuerName(vorlage.name, s.formulare);
         const pfad = `${projekt.ordner}/${name}`;
-        await ds.formularAnlegen(projekt.root, pfad, geleert(vorlage.bytes));
+        const neu = await mitAutofill(geleert(vorlage.bytes));
+        await ds.formularAnlegen(projekt.root, pfad, neu.bytes);
+        if (neu.zustand) await get().zustaendeSetzen({ [name]: neu.zustand });
         log.info(`Formular angelegt: ${pfad} (Vorlage: ${vorlage.herkunft})`);
         const umfang = get().projektdatei?.umfang ?? [];
         await projektdateiSchreiben({ ...(get().projektdatei ?? {}), umfang: umfang.map((x) => (x.id === u.id ? { ...x, formularDatei: name } : x)) });
         useFormulare.setState({ formulare: await formulareDesProjekts(ds, projekt) });
         const eintrag = useFormulare.getState().formulare.find((f) => f.pfad === pfad);
         if (eintrag) await useFormulare.getState().formularOeffnen(eintrag);
-        meldung('info', `„${name}“ aus ${vorlage.herkunft} angelegt (leer). „Aus Projektkarte ausfüllen“ übernimmt die Projektdaten.`);
+        meldung('info', `„${name}“ aus ${vorlage.herkunft} angelegt${befuellt(neu.zustand)}.`);
         return pfad;
       } catch (e) {
         fehler(`Formular für „${u.titel}“ anlegen`, e);
@@ -723,6 +780,9 @@ export const useAntrag = create<AntragState>((set, get) => {
     },
   };
 });
+
+autofillAnbindung.zustand = (datei) => useAntrag.getState().projektdatei?.felder?.[datei];
+autofillAnbindung.speichern = (datei, z) => void useAntrag.getState().zustaendeSetzen({ [datei]: z });
 
 /* ---------- Export ---------- */
 

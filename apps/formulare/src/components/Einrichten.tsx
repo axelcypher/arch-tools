@@ -30,8 +30,10 @@ import {
   REGELN,
   untergruppen,
 } from '../profil';
+import type { Eintrag } from '../vorgabe';
+import { herkunft, vorgabeFuer } from '../vorgabe';
 import type { OffenesFormular } from '../store';
-import { useFormulare, wertVon } from '../store';
+import { useFormulare, useProfil, wertVon } from '../store';
 import type { FeldWahl } from './BedingungEditor';
 import { BedingungEditor } from './BedingungEditor';
 import { Symbol } from './Symbol';
@@ -56,7 +58,8 @@ function vorschau(o: OffenesFormular, f: Feld): string {
 export function useAufbau(offen: OffenesFormular) {
   const schluessel = profilSchluessel(offen.formular, offen.name);
   const gespeichert = useFormulare((s) => s.profile[schluessel]);
-  const profil = useMemo(() => ({ ...leeresProfil(), ...gespeichert }), [gespeichert]);
+  const wirksames = useProfil(schluessel);
+  const profil = useMemo(() => ({ ...leeresProfil(), ...wirksames }), [wirksames]);
   const merkmalWerte = useAntrag((s) => s.projektdatei?.merkmale);
   const merkmale = useAntrag((s) => s.merkmalDefinitionen);
   const k = useMemo(() => formularKontext(merkmalWerte ?? {}, offen.felder.flat(), (f) => wertVon(offen, f)), [merkmalWerte, offen]);
@@ -81,6 +84,7 @@ export function useAufbau(offen: OffenesFormular) {
   return {
     schluessel,
     gespeichert,
+    vorgabe: vorgabeFuer(schluessel),
     profil,
     k,
     merkmale,
@@ -91,6 +95,21 @@ export function useAufbau(offen: OffenesFormular) {
 }
 
 type Aufbau = ReturnType<typeof useAufbau>;
+
+/** Woher die Einstellungen kommen: Vorgabe der App oder eigene Änderung (mit „Vorgabe wiederherstellen“) */
+function HerkunftZeile({ a, eintrag }: { a: Aufbau; eintrag: Eintrag }) {
+  const h = herkunft(a.vorgabe, a.gespeichert, eintrag);
+  if (h === 'vorgabe') return <p className="fo-ein-herkunft muted small-text">Vorgabe der App (nach BauO NRW / BauPrüfVO) – eigene Änderungen gehen vor</p>;
+  if (h !== 'eigen' || !a.vorgabe) return null;
+  return (
+    <p className="fo-ein-herkunft small-text">
+      Eigene Einstellung{' '}
+      <button className="small" onClick={() => useFormulare.getState().eigenesVerwerfen(a.schluessel, eintrag)}>
+        Vorgabe wiederherstellen
+      </button>
+    </p>
+  );
+}
 
 const erweitert = (e: ReactMouseEvent) => e.ctrlKey || e.metaKey || e.shiftKey;
 
@@ -398,6 +417,7 @@ function AbschnittEinstellungen({ a, ab, seite, editor }: { a: Aufbau; ab: Absch
           Seite {seite + 1} · {ab.felder.length} Felder
         </span>
       </div>
+      <HerkunftZeile a={a} eintrag={{ art: 'abschnitt', id }} />
       <Abschnitt_ titel="Titel in der Gliederung">
         <TitelFeld wert={p?.titel ?? ''} vorschlag={erkannt} label={`Titel für Abschnitt ${erkannt}`} onSetzen={(titel) => setzen({ titel })} />
       </Abschnitt_>
@@ -446,6 +466,7 @@ function GruppeEinstellungen({ a, g, editor, onFeld, onGruppe }: { a: Aufbau; g:
           {alle.length} Felder{unter.length ? ` in ${unter.length + (felder.length ? 1 : 0)} Teilen` : ''} zählen als eine Angabe
         </span>
       </div>
+      <HerkunftZeile a={a} eintrag={{ art: 'gruppe', id: g.id }} />
       <Abschnitt_ titel="Name">
         <TitelFeld wert={g.titel ?? ''} vorschlag={vorschlag} label="Name der Gruppe" onSetzen={(titel) => setzen({ titel })} />
       </Abschnitt_>
@@ -550,6 +571,7 @@ function FeldEinstellungen({ a, offen, f, ab, seite, editor, onGruppe }: { a: Au
           Seite {seite + 1} · {abschnittTitel(ab, a.profil)} · in FORMA „{f.name}“{inhalt ? ` · ${inhalt}` : ''}
         </span>
       </div>
+      <HerkunftZeile a={a} eintrag={{ art: 'feld', id: f.schluessel }} />
       <Abschnitt_ titel="Titel in der Gliederung">
         <TitelFeld
           wert={a.profil.feldTitel?.[f.schluessel] ?? ''}
