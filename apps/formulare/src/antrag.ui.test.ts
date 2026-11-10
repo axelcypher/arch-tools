@@ -416,7 +416,7 @@ describe('Projektübersicht', () => {
     const ab1 = host.querySelector('.pa-karte[data-projekt="AB1"]')!;
     expect(ab1.querySelector('.pa-titel')!.textContent).toBe('Am Bach 1');
     expect(ab1.querySelector('.pa-info')!.textContent).toContain('1 Formular');
-    expect(ab1.querySelector('.pa-marke.sperre')!.textContent).toContain('1 geöffnet');
+    expect(ab1.querySelector('.pa-marke.warnung')!.textContent).toContain('1 geöffnet');
     expect(ab1.querySelector('.pa-status-text')!.textContent).toContain('noch nicht geprüft');
     act(() => void suche.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
     await warte();
