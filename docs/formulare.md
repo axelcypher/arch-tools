@@ -10,8 +10,10 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 
 ## Bedienung
 
-- **Aufbau der Oberfläche:** Links die **Navigation** (Projekt, Projektkarte, Formulare, Projektordner) auf
-  eigenem, dunklerem Grund wie die Titelleiste; der gewählte Eintrag ist hell hinterlegt und links markiert.
+- **Aufbau der Oberfläche:** Links die **Navigation** (Projekt, Projektdaten, Formulare und – durch eine Linie
+  getrennt – Projektordner) auf eigenem, dunklerem Grund wie die Titelleiste; der gewählte Eintrag ist hell
+  hinterlegt und links markiert. **Projektdaten** (die Projektkarte aus FORMA) stehen hervorgehoben über den
+  Formularen, aus ihnen werden die Formulare ausgefüllt.
   Rechts der **Inhalt**. Was zum Dokument gehört – Gliederung, Verlauf, Formularfläche –, steht im Grau der
   Formularfläche.
 - **Einstellungen (⚙)** als eigene Ansicht mit Ebenen: **Ordner** (FORMA-Projekte, Projektordner, angezeigte
@@ -23,18 +25,28 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   ● heißt: nicht gespeicherte Eingaben.
 - **Ansicht „Formular“:** die Seiten wie auf Papier – weiße A4-Blätter mit Rand, das Formular mittig, in den
   Schriften und an den Stellen aus der Datei (Textfelder in Courier New wie in FORMA), mit Zoom (Seitenbreite
-  oder 75–200 %). So werden sie auch gedruckt.
+  oder 75–200 %). Die Felder sind farbig hinterlegt; gedruckt wird ohne Hinterlegung.
 - **Ansicht „Felder“:** dieselben Felder im Aufbau des Formulars – nebeneinanderliegende Abschnitte auch hier
   nebeneinander, Felder einer Zeile in einer Zeile –, groß und durchsuchbar, Filter „Leere“ und „Geänderte“.
 - **Gliederung:** eigener Bereich direkt am Formular („Inhalt des Formulars“, im Grau der Formularfläche – getrennt
   von der Navigation links): Seiten und Abschnitte mit Füllstand (z. B. 3/5, ✓ wenn vollständig) und Balken für
-  das ganze Formular; ein Klick springt hin. Ein- und ausblenden über „Gliederung“ in der Werkzeugleiste.
-  Gezählt wird in Einheiten: jedes Textfeld für sich, Kästchen einer Zeile gemeinsam als eine Auswahl. Abschnitte,
-  die nur aus einer Nummer bestehen („2.“), bekommen den Text daneben dazu („2. Bauvorlagen, wenn …“).
+  das ganze Formular; ein Klick springt hin. Zeigt man auf einen Eintrag, werden seine Felder im Formular wie mit
+  dem Textmarker hervorgehoben. Über den Pfeil rechts klappt ein Abschnitt seine einzelnen Angaben auf (mit ✓ für
+  ausgefüllte), auch sie springen und heben hervor. Ein- und ausblenden über „Gliederung“ in der Werkzeugleiste.
+  Gezählt wird in Einheiten: jedes Textfeld für sich, Kästchen einer Zeile gemeinsam als eine Auswahl, eigene
+  Gruppen als eine Angabe. Abschnitte, die nur aus einer Nummer bestehen („2.“), bekommen den Text daneben dazu
+  („2. Bauvorlagen, wenn …“).
 - **Gliederung anpassen** (✎ im Kopf der Gliederung), je Formular und Stand – gilt in allen Projekten: Abschnitte
-  aus- und einblenden (Auge), eigene Titel vergeben, und nach dem Aufklappen eines Abschnitts einzelne Felder vom
-  Füllstand ausnehmen (z. B. Felder, die die Behörde ausfüllt). „Vorgabe wiederherstellen“ setzt zurück; eine
-  Übersicht steht in den Einstellungen unter „Formulare“.
+  aus- und einblenden (Auge) und eigene Titel vergeben. Nach dem Aufklappen eines Abschnitts (Pfeil rechts):
+  - **Felder umbenennen** – der Name erscheint in den aufgeklappten Angaben und als Hinweis am Feld;
+  - **vom Füllstand ausnehmen** (✓ rechts, z. B. Felder, die die Behörde ausfüllt);
+  - **gruppieren:** Felder anhaken und „… als eine Angabe zählen“ – etwa eine Mehrfachauswahl über mehrere Zeilen,
+    die dann 1/1 statt 1/5 zählt. Eine Gruppe hat einen Namen und eine Regel: „eine genügt“ (ausgefüllt, sobald
+    eine Angabe gemacht ist), „alle nötig“ oder „zählt nicht“. ✕ nimmt ein Feld aus der Gruppe bzw. löst sie auf.
+
+  Verweilt man drei Sekunden auf einem Eintrag (Abschnitt, Gruppe oder Feld), wird er im Formular umrandet und ins
+  Bild geholt. „Vorgabe wiederherstellen“ setzt zurück; eine Übersicht steht in den Einstellungen unter
+  „Formulare“.
 - **Tastatur:** <kbd>Tab</kbd> und <kbd>Enter</kbd> (in einzeiligen Feldern) gehen in Lesereihenfolge zum nächsten
   Feld – auf dem Papier von oben nach unten, nebeneinanderliegende Rahmen von links nach rechts.
 - **Speichern** (<kbd>Strg</kbd>+<kbd>S</kbd>) schreibt die geänderten Felder in die FORMA-Datei. Vorher wird sie
@@ -58,7 +70,7 @@ Neustarts übersteht. In die FORMA-Datei kommt sie erst mit „Speichern“; Kol
 
 ### Projektkarte und Stammdaten
 
-Die **Projektkarte** (links über den Formularen) zeigt links die Gruppen – „Projekt“ (Projektdaten, Grundstück,
+Die **Projektkarte** (links über den Formularen als „Projektdaten“) zeigt links die Gruppen – „Projekt“ (Projektdaten, Grundstück,
 Flächen, Nutzung, Umbau, Kosteneinflüsse) und „Beteiligte“ (Bauherr, Entwurfsverfasser, Behörden …) – jeweils mit
 Kurzfassung („Mustermann, Max · Welver“ oder „nicht ausgefüllt“), rechts die gewählte Gruppe als gegliedertes
 Formular: bei Adressen Name, Anschrift, Kontakt sowie Bank und Sonstiges (zugeklappt, solange leer), daneben die

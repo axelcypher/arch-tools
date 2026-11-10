@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { SpeicherDateisystem } from './dateisystem';
 import { xlsxLesen } from './dokumente/xlsx';
@@ -147,9 +147,7 @@ describe('Gliederung je Formular', () => {
     await warte();
     // Felder aufklappen und das erste vom Füllstand ausnehmen
     await klick(zeile.querySelector<HTMLButtonElement>('button[aria-label="Felder"]')!);
-    const kaestchen = gl().querySelector<HTMLInputElement>('.fo-gl-feld input')!;
-    act(() => kaestchen.click());
-    await warte();
+    await klick(gl().querySelector<HTMLButtonElement>('.fo-gl-feld button[aria-label="Zählt für den Füllstand"]')!);
     // zweiten Abschnitt ausblenden
     const zweite = gl().querySelectorAll('.fo-gl-anpassen')[1];
     if (zweite) await klick(zweite.querySelector<HTMLButtonElement>('button[aria-label="In der Gliederung ausblenden"]')!);
@@ -166,6 +164,105 @@ describe('Gliederung je Formular', () => {
     await klick(knopf(host, 'H24'));
     await klick(knopf(host, '001-Muster'));
     expect(abschnitte()[0]).toBe('Bauherr und Grundstück');
+  });
+
+  it('Felder gruppieren und umbenennen: eine Auswahl über zwei Zeilen zählt als eine Angabe, die Untereinträge zeigen die Namen', async () => {
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await klick(knopf(host, '001-Muster'));
+    const gl = () => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
+    const zahl = () => gl().querySelector('.fo-gl-zahl')!.textContent;
+    // Muster: drei Textfelder (zwei gefüllt), zwei Zeilen mit Kästchen (eine angekreuzt)
+    expect(zahl()).toBe('3/5');
+
+    await klick(knopfMit(host, 'Gliederung anpassen'));
+    await klick(gl().querySelector<HTMLButtonElement>('button[aria-label="Felder"]')!);
+    for (const name of ['Wohngebäude', 'CheckBox3', 'Sonderbau', 'CheckBox4']) {
+      act(() => gl().querySelector<HTMLInputElement>(`input[aria-label="${name} auswählen"]`)!.click());
+    }
+    await warte();
+    await klick(knopf(gl() as HTMLElement, 'als eine Angabe zählen'));
+    // die Zahl am Abschnitt ändert sich sofort mit
+    expect(zahl()).toBe('3/4');
+    const gruppenName = gl().querySelector<HTMLInputElement>('input[aria-label="Name der Gruppe"]')!;
+    eingabe(gruppenName, 'Gebäudeart');
+    verlassen(gruppenName);
+    await warte();
+    const feldName = gl().querySelector<HTMLInputElement>('input[aria-label="Feldtitel für Bauherrschaft"]')!;
+    eingabe(feldName, 'Name');
+    verlassen(feldName);
+    await warte();
+    await klick(knopfMit(host, 'Gliederung anpassen'));
+
+    expect(zahl()).toBe('3/4');
+    await klick(knopfMit(host, 'Angaben in Bauherrschaft'));
+    const unter = [...gl().querySelectorAll('.fo-gl-einheit')];
+    expect(unter.map((u) => u.querySelector('.fo-gl-titel')!.textContent)).toEqual(['Name', 'Bauherrschaft', 'Bauherrschaft', 'Gebäudeart']);
+    expect(unter.map((u) => u.querySelector('.fo-gl-status')!.classList.contains('voll'))).toEqual([true, false, true, true]);
+    // eigener Name auch als Hinweis am Feld im Formular
+    expect(host.querySelector<HTMLElement>('.fo-papier [data-feld="0:Memo1"]')!.title).toBe('Name');
+
+    const profil = useFormulare.getState().profile['nw019999|2026A'];
+    expect(profil.feldTitel).toEqual({ '0:Memo1': 'Name' });
+    expect(profil.gruppen).toEqual([{ id: 'g1', titel: 'Gebäudeart', regel: 'eins', felder: ['0:CheckBox1', '0:CheckBox3', '0:CheckBox2', '0:CheckBox4'] }]);
+
+    // Regel „alle nötig“: zwei der vier Kästchen sind nicht angekreuzt
+    // im Anpassen-Modus bleibt der zuletzt aufgeklappte Abschnitt offen
+    await klick(knopfMit(host, 'Gliederung anpassen'));
+    waehle(gl().querySelector<HTMLSelectElement>('select[aria-label="Wann die Gruppe ausgefüllt ist"]')!, 'alle');
+    await warte();
+    expect(zahl()).toBe('2/4');
+    // auflösen: wieder einzeln gezählt
+    await klick(knopfMit(host, 'Gruppe auflösen'));
+    expect(zahl()).toBe('3/5');
+    expect(useFormulare.getState().profile['nw019999|2026A'].gruppen).toBeUndefined();
+  });
+
+  it('Zeigen auf einen Eintrag hebt seine Felder im Formular hervor; im Anpassen-Modus nach drei Sekunden umrandet', async () => {
+    const host = await render();
+    await klick(knopf(host, 'BS9'));
+    await klick(knopf(host, '001-Muster'));
+    const gl = () => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
+    const markiert = () => host.querySelectorAll('.fo-papier .markiert').length;
+    const zeigen = (el: Element) => act(() => void el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
+    const weg = (el: Element) => act(() => void el.dispatchEvent(new MouseEvent('mouseout', { bubbles: true })));
+
+    const abschnitt = gl().querySelector('.fo-gl-abschnitt')!;
+    zeigen(abschnitt);
+    expect(markiert()).toBe(7);
+    expect(host.querySelector('.fo-umrandung')).toBeNull();
+    weg(abschnitt);
+    expect(markiert()).toBe(0);
+
+    // Untereintrag: nur seine Felder
+    await klick(knopfMit(host, 'Angaben in Bauherrschaft'));
+    const auswahl = [...gl().querySelectorAll('.fo-gl-einheit')].at(-1)!;
+    zeigen(auswahl);
+    expect([...host.querySelectorAll('.fo-papier .markiert input')].map((i) => i.getAttribute('data-feld'))).toEqual(['0:CheckBox2', '0:CheckBox4']);
+    weg(auswahl);
+
+    await klick(knopfMit(host, 'Gliederung anpassen'));
+    vi.useFakeTimers();
+    try {
+      const zeile = gl().querySelector('.fo-gl-anpassen-zeile')!;
+      zeigen(zeile);
+      expect(markiert()).toBe(7);
+      act(() => void vi.advanceTimersByTime(2900));
+      expect(host.querySelector('.fo-umrandung')).toBeNull();
+      act(() => void vi.advanceTimersByTime(200));
+      expect(host.querySelector('.fo-umrandung')).not.toBeNull();
+      weg(zeile);
+      expect(host.querySelector('.fo-umrandung')).toBeNull();
+      expect(markiert()).toBe(0);
+      // wer vorher weggeht, sieht keine Umrandung
+      zeigen(zeile);
+      act(() => void vi.advanceTimersByTime(1500));
+      weg(zeile);
+      act(() => void vi.advanceTimersByTime(3000));
+      expect(host.querySelector('.fo-umrandung')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

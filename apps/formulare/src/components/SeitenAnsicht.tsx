@@ -4,16 +4,21 @@ import { bezeichner, eigenschaft, text, zahl } from '../forma/dfm';
 import type { Feld, Kasten } from '../forma/felder';
 import { kaesten, ohneKuerzel } from '../forma/felder';
 import { bild, blatt, drehung, farbe, lage, seitenMasse } from '../forma/darstellung';
+import { umgebend, useMarkierung } from '../markierung';
 import { feldTasten } from '../navigation';
+import { profilSchluessel } from '../profil';
 import type { OffenesFormular } from '../store';
 import { useFormulare, wertVon } from '../store';
 
 /**
  * Formularansicht: jede Seite wie auf Papier – weiß, in den Schriften und an den Stellen aus der Datei, so wie
- * sie gedruckt aussieht. Textfelder und Kästchen sind direkt beschreibbar.
+ * sie gedruckt aussieht. Textfelder und Kästchen sind direkt beschreibbar und farbig hinterlegt; was in der
+ * Gliederung gezeigt wird, ist hervorgehoben bzw. umrandet.
  */
 export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; gesperrt: boolean }) {
   const zoom = useFormulare((s) => s.zoom);
+  const feldTitel = useFormulare((s) => s.profile[profilSchluessel(offen.formular, offen.name)]?.feldTitel);
+  const markierung = useMarkierung((s) => s.markierung);
   const huelle = useRef<HTMLDivElement>(null);
   const [breite, setBreite] = useState(0);
 
@@ -21,11 +26,30 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
     () =>
       offen.formular.seiten.map((s, i) => {
         const k = kaesten(s);
-        return { i, kaesten: k, blatt: blatt(seitenMasse(k)), felder: new Map(offen.felder[i].map((f) => [f.name, f])) };
+        return {
+          i,
+          kaesten: k,
+          blatt: blatt(seitenMasse(k)),
+          felder: new Map(offen.felder[i].map((f) => [f.name, f])),
+          nachSchluessel: new Map(offen.felder[i].map((f) => [f.schluessel, f])),
+        };
       }),
     [offen.formular, offen.felder],
   );
   const tasten = useMemo(() => feldTasten(offen.felder.flat()), [offen.felder]);
+  const markiert = useMemo(() => new Set(markierung?.felder), [markierung]);
+
+  // umrandeter Bereich je Seite: der Rahmen des Abschnitts bzw. das Rechteck um die Felder
+  const umrandung = (s: (typeof seiten)[number]) => {
+    if (!markierung?.rahmen) return null;
+    if (markierung.bereich) return markierung.bereich.seite === s.i ? lage(markierung.bereich.kasten) : null;
+    return umgebend(markierung.felder.flatMap((m) => (s.nachSchluessel.has(m) ? [lage(s.nachSchluessel.get(m)!.kasten)] : [])));
+  };
+
+  // umrandeten Bereich ins Bild holen
+  useEffect(() => {
+    if (markierung?.rahmen) huelle.current?.querySelector('.fo-umrandung')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, [markierung]);
 
   // „an Breite anpassen“: verfügbare Breite beobachten
   useEffect(() => {
@@ -51,8 +75,12 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
             {/* das Formular selbst wird nicht beschnitten – nur das Blatt an seinem Rand */}
             <div className="fo-satz" style={{ left: s.blatt.links, top: s.blatt.oben }}>
               {s.kaesten.map((k, n) => (
-                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name))} gesperrt={gesperrt} />
+                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel)} gesperrt={gesperrt} />
               ))}
+              {(() => {
+                const r = umrandung(s);
+                return r && <div className="fo-el fo-umrandung" style={{ left: r.x - 4, top: r.y - 4, width: r.b + 8, height: r.h + 8 }} />;
+              })()}
             </div>
           </div>
         </section>
@@ -126,8 +154,15 @@ function Bild({ k, style }: { k: Kasten; style: CSSProperties }) {
 }
 
 /** Nur Felder hängen vom Formularzustand ab – so zeichnet ein Tastendruck nur das eine Element neu */
-function feldProps(o: OffenesFormular, feld: Feld | undefined): { feld?: Feld; wert?: string | boolean; geaendert?: boolean } {
-  return feld ? { feld, wert: wertVon(o, feld), geaendert: feld.schluessel in o.aenderungen } : {};
+function feldProps(
+  o: OffenesFormular,
+  feld: Feld | undefined,
+  markiert: Set<string>,
+  titel: Record<string, string> | undefined,
+): Pick<ElementProps, 'feld' | 'wert' | 'geaendert' | 'markiert' | 'titel'> {
+  return feld
+    ? { feld, wert: wertVon(o, feld), geaendert: feld.schluessel in o.aenderungen, markiert: markiert.has(feld.schluessel), titel: titel?.[feld.schluessel]?.trim() || feld.beschriftung }
+    : {};
 }
 
 interface ElementProps {
@@ -135,10 +170,14 @@ interface ElementProps {
   feld?: Feld;
   wert?: string | boolean;
   geaendert?: boolean;
+  /** in der Gliederung gezeigt */
+  markiert?: boolean;
+  /** Titel des Felds (eigener aus dem Profil oder die erkannte Beschriftung) */
+  titel?: string;
   gesperrt: boolean;
 }
 
-const Element = memo(function Element({ k, feld, wert, geaendert, gesperrt }: ElementProps) {
+const Element = memo(function Element({ k, feld, wert, geaendert, markiert, titel, gesperrt }: ElementProps) {
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const l = lage(k);
   const pos: CSSProperties = { left: l.x, top: l.y, width: l.b, height: l.h };
@@ -176,11 +215,11 @@ const Element = memo(function Element({ k, feld, wert, geaendert, gesperrt }: El
       if (!feld) return null;
       return (
         <textarea
-          className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}`}
+          className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}`}
           style={{ ...pos, ...schrift(k), textAlign: AUSRICHTUNG[bezeichner(k.o, 'Alignment') ?? ''] }}
           value={typeof wert === 'string' ? wert : ''}
           disabled={gesperrt}
-          title={feld.beschriftung}
+          title={titel}
           aria-label={feld.beschriftung}
           data-feld={feld.schluessel}
           spellCheck={false}
@@ -195,7 +234,7 @@ const Element = memo(function Element({ k, feld, wert, geaendert, gesperrt }: El
       if (!feld) return null;
       const rechts = bezeichner(k.o, 'Alignment') !== 'taLeftJustify';
       return (
-        <label className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${rechts ? '' : ' links'}`} style={{ ...pos, ...schrift(k) }} title={feld.beschriftung}>
+        <label className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${rechts ? '' : ' links'}`} style={{ ...pos, ...schrift(k) }} title={titel}>
           <input
             type="checkbox"
             checked={wert === true}

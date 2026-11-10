@@ -163,7 +163,10 @@ describe('Formulare', () => {
     expect(host.querySelector('.fo-projektkopf')?.textContent).toContain('BS9');
     expect(knopf(host, '001-Muster')).toBeDefined();
     expect(knopf(host, '000-Alt')).toBeUndefined();
-    expect(knopf(host, 'Projektkarte')).toBeDefined();
+    // Projektdaten (die Projektkarte aus FORMA) stehen hervorgehoben über den Formularen
+    const daten = host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!;
+    expect(daten.textContent).toContain('Projektdaten');
+    expect(daten.closest('[aria-label="Formulare"]')).toBeNull();
   });
 
   it('sperrt beim Öffnen, speichert nur die geänderten Wertzeilen und entsperrt beim Schließen', async () => {
@@ -511,6 +514,8 @@ describe('Formulare', () => {
     await warte();
     const block = host.querySelector('.fo-baum')!.closest('.nav-abschnitt')!;
     expect(block.textContent).toContain('BS9 Musterstraße 9');
+    // zwischen FORMA und Projektordner eine Trennlinie
+    expect(block.previousElementSibling?.classList.contains('nav-trenner')).toBe(true);
     expect(knopf(block, 'Organisation')).toBeDefined();
     expect(knopf(block, 'Fotos')).toBeUndefined();
     await klick(knopf(block, 'Organisation'));

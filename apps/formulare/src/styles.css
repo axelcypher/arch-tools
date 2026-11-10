@@ -183,6 +183,59 @@ button.icon.active {
 .nav-eintrag.aktiv .symbol {
   color: var(--accent);
 }
+.nav-trenner {
+  border: none;
+  border-top: 1px solid var(--nav-linie);
+  margin: 0 4px;
+}
+/* Projektdaten: hervorgehoben – daraus werden die Formulare ausgefüllt */
+.nav-eintrag.fo-eintrag-karte {
+  gap: 9px;
+  padding: 7px 10px;
+  margin-bottom: 4px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--nav-aktiv));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.nav-eintrag.fo-eintrag-karte .symbol {
+  font-size: 18px;
+  color: var(--accent);
+}
+.nav-eintrag.fo-eintrag-karte:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 16%, var(--nav-aktiv));
+}
+.nav-eintrag.fo-eintrag-karte.aktiv,
+.nav-eintrag.fo-eintrag-karte.aktiv:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.nav-eintrag.fo-eintrag-karte.aktiv:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.nav-eintrag.fo-eintrag-karte.aktiv .symbol,
+.nav-eintrag.fo-eintrag-karte.aktiv .fo-ungespeichert {
+  color: #fff;
+}
+.nav-eintrag.fo-eintrag-karte.aktiv .nav-unter {
+  color: rgba(255, 255, 255, 0.82);
+}
+.fo-eintrag-karte-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.fo-eintrag-karte-text > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fo-eintrag-karte-text strong {
+  font-size: 13px;
+}
 .nav-eintrag.zweizeilig {
   flex-direction: column;
   align-items: flex-start;
@@ -461,28 +514,169 @@ button.icon.active {
   font-size: 12px;
   padding: 2px 5px;
 }
+.fo-gl-zeile {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.fo-gl-zeile .fo-gl-abschnitt {
+  flex: 1;
+  min-width: 0;
+}
+.fo-gl-auf {
+  flex-shrink: 0;
+  width: 20px;
+}
+button.icon.fo-gl-auf {
+  min-width: 20px;
+  height: 20px;
+  padding: 0;
+}
+.fo-gl-unter {
+  display: flex;
+  flex-direction: column;
+  margin: 1px 22px 4px 12px;
+  border-left: 2px solid var(--border);
+}
+.fo-gl-einheit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  text-align: left;
+  padding: 2px 6px 2px 12px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.fo-gl-einheit:hover:not(:disabled) {
+  background: var(--panel);
+  color: var(--text);
+}
+.fo-gl-status {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: grid;
+  place-content: center;
+  font-size: 8.5px;
+  line-height: 1;
+}
+.fo-gl-status.voll {
+  border-color: #2e9e5b;
+  background: #2e9e5b;
+  color: #fff;
+  font-weight: 700;
+}
 .fo-gl-felder {
   display: flex;
   flex-direction: column;
-  margin: 2px 0 6px 26px;
+  gap: 1px;
+  margin: 2px 0 6px 8px;
 }
 .fo-gl-feld {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 1px 0;
+  gap: 4px;
+  padding: 1px 2px;
+  border-radius: 4px;
   font-size: 11.5px;
-  cursor: pointer;
 }
-.fo-gl-feld input {
+.fo-gl-feld:hover {
+  background: var(--panel);
+}
+.fo-gl-feld input[type='checkbox'] {
   width: auto;
   margin: 0;
+  flex-shrink: 0;
+}
+.fo-gl-einzug {
+  width: 13px;
+  flex-shrink: 0;
 }
 .fo-gl-feld-art {
   width: 12px;
+  flex-shrink: 0;
   text-align: center;
   color: var(--muted);
   font-size: 10px;
+}
+.fo-gl-feld-titel,
+.fo-gl-feldgruppe-kopf input {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  padding: 1px 4px;
+  border-color: transparent;
+  background: transparent;
+}
+.fo-gl-feld-titel:hover,
+.fo-gl-feld-titel:focus,
+.fo-gl-feldgruppe-kopf input:hover,
+.fo-gl-feldgruppe-kopf input:focus {
+  border-color: var(--border);
+  background: var(--input-bg);
+}
+.fo-gl-feld-titel::placeholder,
+.fo-gl-feldgruppe-kopf input::placeholder {
+  color: var(--text);
+  opacity: 0.72;
+}
+.fo-gl-feld.zaehlt-nicht .fo-gl-feld-titel,
+.fo-gl-feld.zaehlt-nicht .fo-gl-feld-art {
+  opacity: 0.55;
+}
+button.icon.fo-gl-zaehlt {
+  min-width: 20px;
+  height: 20px;
+  padding: 0;
+}
+button.icon.fo-gl-zaehlt.an {
+  color: #2e9e5b;
+}
+.fo-gl-feldgruppe {
+  margin: 2px 0 4px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.fo-gl-feldgruppe.zaehlt-nicht {
+  opacity: 0.7;
+}
+.fo-gl-feldgruppe-kopf {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 2px 2px;
+  color: var(--accent);
+}
+.fo-gl-feldgruppe-kopf input {
+  font-weight: 600;
+  color: var(--text);
+}
+.fo-gl-feldgruppe-kopf select {
+  flex-shrink: 0;
+  max-width: 92px;
+  font-size: 11px;
+  padding: 1px 2px;
+}
+.fo-gl-gruppieren {
+  margin: 4px 2px 2px;
+}
+.fo-gl-gruppieren button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.fo-gl-gruppieren .small-text {
+  font-size: 11px;
 }
 
 /* Ordnerbaum */
@@ -731,6 +925,14 @@ button.icon.active {
 }
 .fo-feld.geaendert {
   border-left-color: var(--sel);
+}
+.fo-feld.markiert {
+  background: color-mix(in srgb, #ffc400 24%, transparent);
+  border-radius: 0 4px 4px 0;
+}
+.fo-feld.umrandet {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .fo-kreuz {
   flex-direction: row;
@@ -1555,8 +1757,10 @@ button.icon.active {
   --p-papier: #ffffff;
   --p-text: #000000;
   --p-linie: #000000;
-  --p-feld: rgba(42, 91, 215, 0.06);
-  --p-feld-fokus: rgba(42, 91, 215, 0.12);
+  --p-feld: rgba(42, 91, 215, 0.11);
+  --p-feld-fokus: rgba(42, 91, 215, 0.2);
+  --p-markiert: rgba(255, 196, 0, 0.5);
+  --p-umrandung: #2a5bd7;
   --p-geaendert: #ff7a00;
   padding: 16px 24px 48px;
   display: flex;
@@ -1610,6 +1814,7 @@ button.icon.active {
   overflow: hidden;
   box-shadow: none;
   min-height: 0;
+  transition: background-color 0.12s;
 }
 .fo-papier .fo-memo:focus {
   overflow: auto;
@@ -1623,6 +1828,26 @@ button.icon.active {
 .fo-papier .fo-memo.geaendert,
 .fo-papier .fo-check.geaendert {
   box-shadow: inset 2px 0 0 var(--p-geaendert);
+}
+/* in der Gliederung gezeigt: wie mit dem Textmarker */
+.fo-papier .fo-memo.markiert,
+.fo-papier .fo-check.markiert {
+  background: var(--p-markiert);
+}
+/* nach längerem Verweilen im Anpassen-Modus: umrandet */
+.fo-umrandung {
+  border: 2px solid var(--p-umrandung);
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px rgba(42, 91, 215, 0.18);
+  pointer-events: none;
+  z-index: 5;
+  animation: fo-umrandung-ein 0.25s ease-out;
+}
+@keyframes fo-umrandung-ein {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
 }
 .fo-check {
   display: flex;
@@ -2068,8 +2293,12 @@ button.icon.active {
     margin: 0 auto;
   }
   .fo-papier .fo-memo,
+  .fo-check,
   .fo-check input {
     background: transparent !important;
+  }
+  .fo-umrandung {
+    display: none !important;
   }
   .fo-papier .fo-memo.geaendert,
   .fo-papier .fo-check.geaendert {

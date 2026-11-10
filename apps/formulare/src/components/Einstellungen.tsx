@@ -370,7 +370,8 @@ function Formulare() {
     <>
       <h2>Formulare</h2>
       <p className="muted">
-        Je Formular lässt sich einstellen, welche Abschnitte die Gliederung zeigt, wie sie heißen und welche Felder in den Füllstand eingehen – im Formular über die Gliederung
+        Je Formular lässt sich einstellen, welche Abschnitte die Gliederung zeigt, wie Abschnitte und Felder heißen, welche Felder in den Füllstand eingehen und welche zusammen
+        als eine Angabe zählen – im Formular über die Gliederung
         (<Symbol name="stift" /> Anpassen). Die Einstellung gilt für das Formular in allen Projekten.
       </p>
       {!eintraege.length ? (
@@ -381,13 +382,23 @@ function Formulare() {
             const versteckt = Object.values(p.abschnitte).filter((a) => a.sichtbar === false).length;
             const umbenannt = Object.values(p.abschnitte).filter((a) => a.titel).length;
             const ohne = Object.keys(p.zaehlt).length;
+            const felder = Object.keys(p.feldTitel ?? {}).length;
+            const gruppen = (p.gruppen ?? []).length;
             return (
               <li key={k}>
                 <Symbol name="formular" />
                 <span className="es-liste-text">
                   <strong>{k.replace(/\|/, ' · Stand ')}</strong>
                   <span className="muted small-text">
-                    {[versteckt && `${versteckt} Abschnitt(e) ausgeblendet`, umbenannt && `${umbenannt} umbenannt`, ohne && `${ohne} Feld(er) zählen nicht`].filter(Boolean).join(' · ')}
+                    {[
+                      versteckt && `${versteckt} Abschnitt(e) ausgeblendet`,
+                      umbenannt && `${umbenannt} umbenannt`,
+                      felder && `${felder} Feld(er) umbenannt`,
+                      ohne && `${ohne} Feld(er) zählen nicht`,
+                      gruppen && `${gruppen} Gruppe(n)`,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </span>
                 </span>
                 <button onClick={() => profilSetzen(k, null)}>Zurücksetzen</button>

@@ -40,7 +40,8 @@ function Abschnitt({ id, titel, kopf, children, start = true }: { id: string; ti
 
 /**
  * Links die Navigation der App – auf eigenem Hintergrund, damit sie sich klar vom Inhalt abhebt: Projekt,
- * Projektkarte, Formulare und der echte Projektordner.
+ * Projektdaten (die Projektkarte aus FORMA, hervorgehoben), Formulare und – durch eine Linie getrennt – der
+ * echte Projektordner.
  */
 export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { onSchnellwahl: () => void; onEinstellungen: () => void; onSperren: () => void }) {
   const projektordner = useFormulare((s) => s.projektordner);
@@ -153,18 +154,24 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
                 </>
               }
             >
-              <div className="nav-liste" role="list">
-                <button
-                  role="listitem"
-                  className={`nav-eintrag fo-eintrag-karte${haupt === 'projektkarte' ? ' aktiv' : ''}`}
-                  aria-current={haupt === 'projektkarte' ? 'page' : undefined}
-                  onClick={() => setHaupt('projektkarte')}
-                  title="Projektdaten, Beteiligte, Grundstück – daraus werden Formulare ausgefüllt"
-                >
-                  <Symbol name="karte" />
-                  <span className="nav-text">Projektkarte</span>
-                  {karte && Object.keys(karte.aenderungen).length > 0 && <span className="fo-ungespeichert">●</span>}
-                </button>
+              <button
+                className={`nav-eintrag fo-eintrag-karte${haupt === 'projektkarte' ? ' aktiv' : ''}`}
+                aria-current={haupt === 'projektkarte' ? 'page' : undefined}
+                onClick={() => setHaupt('projektkarte')}
+                title="Projektdaten aus der FORMA-Projektkarte – Vorhaben, Beteiligte, Grundstück; daraus werden die Formulare ausgefüllt"
+              >
+                <Symbol name="karte" />
+                <span className="fo-eintrag-karte-text">
+                  <strong>Projektdaten</strong>
+                  <span className="nav-unter">Vorhaben · Beteiligte · Grundstück</span>
+                </span>
+                {karte && Object.keys(karte.aenderungen).length > 0 && (
+                  <span className="fo-ungespeichert" title="Nicht gespeicherte Änderungen">
+                    ●
+                  </span>
+                )}
+              </button>
+              <div className="nav-liste" role="list" aria-label="Formulare">
                 {formulare.map((f) => {
                   const aktiv = offen?.pfad === f.pfad;
                   const ungespeichert = aktiv ? istGeaendert(offen) : hatEntwurf(projekt, f.pfad);
@@ -197,6 +204,8 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
                 {!formulare.length && <p className="nav-leer">Keine Formulare in diesem Projekt.</p>}
               </div>
             </Abschnitt>
+
+            {ablageordner > 0 && <hr className="nav-trenner" />}
 
             {ablageordner > 0 && (
               <Abschnitt

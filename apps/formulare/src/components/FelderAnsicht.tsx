@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Feld } from '../forma/felder';
 import { abschnitte, abschnittsReihen, zeilen } from '../forma/felder';
+import { useMarkierung } from '../markierung';
 import { feldTasten } from '../navigation';
 import type { OffenesFormular } from '../store';
 import { useFormulare, wertVon } from '../store';
@@ -21,6 +22,12 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const [suche, setSuche] = useState('');
   const [filter, setFilter] = useState<Filter>('alle');
   const q = suche.trim().toLowerCase();
+  const markierung = useMarkierung((s) => s.markierung);
+  const markiert = useMemo(() => new Set(markierung?.felder), [markierung]);
+  const huelle = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (markierung?.rahmen) huelle.current?.querySelector('.fo-feld.umrandet')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, [markierung]);
 
   const seiten = useMemo(
     () =>
@@ -38,7 +45,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const tasten = useMemo(() => feldTasten(offen.felder.flat()), [offen.felder]);
 
   return (
-    <div className="fo-felder" onKeyDown={tasten}>
+    <div className="fo-felder" ref={huelle} onKeyDown={tasten}>
       <div className="fo-felder-kopf">
         <input type="search" className="fo-feldsuche" placeholder="Felder durchsuchen (Beschriftung oder Inhalt) …" value={suche} onChange={(e) => setSuche(e.target.value)} />
         <div className="tb-group">
@@ -63,7 +70,14 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                   {zeilen(a.felder).map((z) => (
                     <div key={z[0].schluessel} className="fo-zeile">
                       {z.map((f) => (
-                        <FeldEingabe key={f.schluessel} feld={f} offen={offen} gesperrt={gesperrt} ohneBeschriftung={f.beschriftung === a.titel && f.art === 'text'} />
+                        <FeldEingabe
+                          key={f.schluessel}
+                          feld={f}
+                          offen={offen}
+                          gesperrt={gesperrt}
+                          ohneBeschriftung={f.beschriftung === a.titel && f.art === 'text'}
+                          markiert={markiert.has(f.schluessel) ? (markierung?.rahmen ? 'umrandet' : 'markiert') : null}
+                        />
                       ))}
                     </div>
                   ))}
@@ -77,11 +91,24 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   );
 }
 
-function FeldEingabe({ feld, offen, gesperrt, ohneBeschriftung }: { feld: Feld; offen: OffenesFormular; gesperrt: boolean; ohneBeschriftung: boolean }) {
+function FeldEingabe({
+  feld,
+  offen,
+  gesperrt,
+  ohneBeschriftung,
+  markiert,
+}: {
+  feld: Feld;
+  offen: OffenesFormular;
+  gesperrt: boolean;
+  ohneBeschriftung: boolean;
+  /** in der Gliederung gezeigt (umrandet: zusätzlich umrandet) */
+  markiert: 'markiert' | 'umrandet' | null;
+}) {
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const wert = wertVon(offen, feld);
   const geaendert = feld.schluessel in offen.aenderungen;
-  const klasse = `fo-feld${geaendert ? ' geaendert' : ''}`;
+  const klasse = `fo-feld${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${markiert === 'umrandet' ? ' umrandet' : ''}`;
   const breite = { flexGrow: Math.max(40, feld.kasten.b) };
 
   if (feld.art === 'kreuz') {
