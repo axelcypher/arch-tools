@@ -3,14 +3,14 @@ import { ARCHIV_ENDUNG, writeArchive } from '@core/archive';
 import type { Dateisystem, Eintrag } from './dateisystem';
 import { nameAus } from './nummer';
 import type { Stammdaten } from './stammdaten';
-import { alsProject, bereinigt, platzhalter, PROJEKT_DATEI, projektJson } from './stammdaten';
-import type { Struktur } from './struktur';
-import { normPfad, regelGilt, sichererName } from './struktur';
-import { fuelleVorlage } from './vorlagen';
+import { alsProject, bereinigt, isoDatum, platzhalter, PROJEKT_DATEI, projektJson } from './stammdaten';
+import type { Struktur, VorlagenEintrag } from './struktur';
+import { aktivePresets, normPfad, regelGilt, sichererName } from './struktur';
+import { alsDokument, fuelleVorlage, zielDateiname } from './vorlagen';
 
 /**
- * Plan für einen neuen Projektordner: erst zeigen, was passiert (Trockenlauf), dann ausführen.
- * Es wird nur neu angelegt – was es schon gibt, bleibt unverändert und ist im Plan als „vorhanden“ markiert.
+ * Plan für einen Projektordner – neu anzulegen oder zu ergänzen: erst zeigen, was passiert (Trockenlauf), dann
+ * ausführen. Es wird nur neu angelegt – was es schon gibt, bleibt unverändert und ist im Plan als „vorhanden“ markiert.
  */
 
 /** Datei im Vorlagenordner */
@@ -29,8 +29,12 @@ export interface Schritt {
   herkunft: Herkunft;
   /** bei Vorlagen: Pfad im Vorlagenordner */
   quelle?: string;
+  /** bei Vorlagen: das Preset, aus dem sie kommt */
+  preset?: string;
   /** gibt es schon – bleibt unverändert */
   vorhanden: boolean;
+  /** vorhanden unter anderem Namen (Datum im Dateinamen) */
+  vorhandenAls?: string;
   daten?: () => Promise<Uint8Array>;
 }
 
@@ -40,14 +44,36 @@ export interface Plan {
   schritte: Schritt[];
   /** verhindern das Anlegen (fehlende Angaben) */
   fehler: string[];
+  /** halten nicht auf, verdienen aber Aufmerksamkeit (z. B. Vorlagen, die im Vorlagenordner fehlen) */
+  warnungen: string[];
   hinweise: string[];
+  /** Presets, die angewendet werden */
+  presets: string[];
+}
+
+export interface PlanOptionen {
+  /** Name eines vorhandenen Projektordners (Aktualisieren) – sonst ergibt er sich aus dem Schema */
+  ordner?: string;
+  /** Jahr, in dem das Projekt angelegt wurde (für {jahr} in Namen) – sonst das laufende */
+  jahr?: number;
 }
 
 /** Dateien, die keine Vorlagen sind: Systemdateien, Sperrdateien von Office, die Anleitung im Stamm */
 const KEINE_VORLAGE = /(^|\/)(thumbs\.db|desktop\.ini|\.ds_store|~\$[^/]*|\.[^/]*)$/i;
 const ANLEITUNG = /^liesmich\.(txt|md)$/i;
 
-const kurzeWerte = (s: Stammdaten, date: Date) => ({ nummer: s.nummer, kurzname: s.kurzname, jahr: date.getFullYear() });
+/** Werte für Platzhalter in Datei- und Ordnernamen (aus bereinigten Stammdaten) */
+export const kurzeWerte = (s: Stammdaten, date: Date, jahr = date.getFullYear()): Record<string, string | number> => ({
+  nummer: s.nummer,
+  kurzname: s.kurzname,
+  jahr,
+  bearbeiter: s.bearbeiter,
+  datum: isoDatum(date),
+});
+
+/** steht im Dateinamen für {datum}, um Dateien mit anderem Datum als vorhanden zu erkennen */
+const DATUM_PLATZHALTER = '\uE000';
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Zielpfad: Platzhalter ersetzen, jeden Teil für das Dateisystem bereinigen */
 function zielPfad(pfad: string, werte: Record<string, string | number>): string {
@@ -58,27 +84,89 @@ function zielPfad(pfad: string, werte: Record<string, string | number>): string 
     .join('/');
 }
 
-export function ordnerName(stamm: Stammdaten, struktur: Struktur, date = new Date()): string {
+/** Datei im Vorlagenordner, die als Vorlage in Frage kommt */
+export interface VorlagenDatei {
+  vorlage: Vorlage;
+  /** Pfad im Vorlagenordner, vereinheitlicht */
+  pfad: string;
+}
+
+/** Dateien des Vorlagenordners ohne System- und Sperrdateien, sortiert */
+export function vorlagenDateien(vorlagen: Vorlage[]): VorlagenDatei[] {
+  return vorlagen
+    .map((vorlage) => ({ vorlage, pfad: normPfad(vorlage.pfad) }))
+    .filter((x) => x.pfad && !KEINE_VORLAGE.test(x.pfad))
+    .sort((a, b) => a.pfad.localeCompare(b.pfad, 'de', { numeric: true }));
+}
+
+export interface VorlagenZiel {
+  datei: VorlagenDatei;
+  /** Name der Vorlage im Vorlagenordner */
+  vorlageName: string;
+  /** Pfad im Projekt */
+  pfad: string;
+  /** Dateiname im Projekt */
+  name: string;
+  /** mit {datum} im Namen: erkennt dieselbe Datei mit anderem Datum */
+  muster?: RegExp;
+}
+
+/**
+ * Wohin die Dateien einer Zuordnung im Projekt kommen. Eine Datei-Quelle ergibt eine Datei im Zielordner, eine
+ * Ordner-Quelle (leer = der ganze Vorlagenordner) alle Dateien darin, mit ihren Unterordnern; eine Anleitung
+ * (LIESMICH.txt) direkt im Quellordner nicht. Leer, wenn es die Quelle im Vorlagenordner nicht gibt.
+ */
+export function zuordnungAufloesen(e: VorlagenEintrag, dateien: VorlagenDatei[], vorlagenname: string, werte: Record<string, string | number>): VorlagenZiel[] {
+  const q = normPfad(e.quelle);
+  const ql = q.toLowerCase();
+  const exakt = q ? dateien.filter((x) => x.pfad.toLowerCase() === ql) : [];
+  const treffer = exakt.length
+    ? exakt.map((datei) => ({ datei, rel: datei.pfad.split('/').pop()! }))
+    : dateien
+        .filter((x) => !q || x.pfad.toLowerCase().startsWith(`${ql}/`))
+        .map((datei) => ({ datei, rel: q ? datei.pfad.slice(q.length + 1) : datei.pfad }))
+        .filter((x) => !ANLEITUNG.test(x.rel));
+  const datumWerte = { ...werte, datum: DATUM_PLATZHALTER };
+  const out: VorlagenZiel[] = [];
+  for (const { datei, rel } of treffer) {
+    const teile = rel.split('/');
+    const vorlageName = teile.pop()!;
+    const ordner = [e.ziel, ...teile].join('/');
+    const name = zielDateiname(vorlageName, e.name, vorlagenname, werte);
+    if (!name) continue;
+    const zielOrdner = zielPfad(ordner, werte);
+    const pfad = zielOrdner ? `${zielOrdner}/${name}` : name;
+    const mitPlatzhalter = [zielPfad(ordner, datumWerte), zielDateiname(vorlageName, e.name, vorlagenname, datumWerte)].filter(Boolean).join('/');
+    const muster = mitPlatzhalter.includes(DATUM_PLATZHALTER) ? new RegExp(`^${escapeRe(mitPlatzhalter.toLowerCase()).split(DATUM_PLATZHALTER).join('\\d{4}-\\d{2}-\\d{2}')}$`) : undefined;
+    out.push({ datei, vorlageName, pfad, name, ...(muster ? { muster } : {}) });
+  }
+  return out;
+}
+
+export function ordnerName(stamm: Stammdaten, struktur: Struktur, date = new Date(), jahr?: number): string {
   const s = bereinigt(stamm);
-  return sichererName(nameAus(struktur.ordnername, kurzeWerte(s, date)));
+  return sichererName(nameAus(struktur.ordnername, kurzeWerte(s, date, jahr)));
 }
 
 /**
  * Stellt den Plan auf. `vorhandene` sind die Einträge, die es im Projektordner schon gibt (leer, wenn der
- * Ordner neu ist).
+ * Ordner neu ist). Vorlagen kommen über die Presets: die in den Stammdaten gewählten, ohne Auswahl die
+ * Standard-Presets der Struktur.
  */
-export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[], vorhandene: Eintrag[] = [], date = new Date()): Plan {
+export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[], vorhandene: Eintrag[] = [], date = new Date(), optionen: PlanOptionen = {}): Plan {
   const s = bereinigt(stamm);
-  const werte = kurzeWerte(s, date);
-  const ordner = ordnerName(s, struktur, date);
+  const werte = kurzeWerte(s, date, optionen.jahr);
+  const ordner = optionen.ordner ?? ordnerName(s, struktur, date, optionen.jahr);
   const fehler: string[] = [];
+  const warnungen: string[] = [];
   const hinweise: string[] = [];
   if (!s.nummer) fehler.push('Die Projektnummer fehlt.');
   if (!s.kurzname) fehler.push('Der Kurzname fehlt.');
   if (!ordner) fehler.push('Aus dem Schema für den Ordnernamen ergibt sich kein Name.');
-  if (/\{[^}]*\}/.test(ordner)) fehler.push(`Der Ordnername enthält einen unbekannten Platzhalter: ${ordner}`);
+  if (optionen.ordner === undefined && /\{[^}]*\}/.test(ordner)) fehler.push(`Der Ordnername enthält einen unbekannten Platzhalter: ${ordner}`);
 
   const da = new Map(vorhandene.map((e) => [e.pfad.toLowerCase(), e]));
+  const vorhandeneDateien = vorhandene.filter((e) => !e.ordner);
   const schritte = new Map<string, Schritt>();
   const ordnerSchritt = (pfad: string, herkunft: Herkunft) => {
     // Zwischenordner mit aufnehmen, damit der Plan vollständig zeigt, was entsteht
@@ -108,19 +196,27 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     }
   }
 
+  const { presets, unbekannt } = aktivePresets(struktur, s.presets);
+  for (const n of unbekannt) warnungen.push(`Das Preset „${n}“ gibt es in der Struktur „${struktur.name}“ nicht – es wird übergangen.`);
+
   const ctx = platzhalter(s, ordner, date);
-  const datei = (pfad: string, herkunft: Herkunft, daten: () => Promise<Uint8Array>, quelle?: string) => {
+  const datei = (pfad: string, herkunft: Herkunft, daten: () => Promise<Uint8Array>, extra: Partial<Schritt> = {}, muster?: RegExp) => {
     const k = pfad.toLowerCase();
-    if (schritte.has(k)) {
-      hinweise.push(`„${pfad}“ ergibt sich mehrfach – nur die erste Quelle wird verwendet.`);
+    const frueher = schritte.get(k);
+    if (frueher) {
+      // dieselbe Vorlage aus zwei Presets ist kein Widerspruch
+      if (!(extra.quelle && frueher.quelle === extra.quelle)) hinweise.push(`„${pfad}“ ergibt sich mehrfach – nur die erste Quelle wird verwendet.`);
       return;
     }
     const eltern = pfad.split('/').slice(0, -1).join('/');
     if (eltern) ordnerSchritt(eltern, herkunft);
-    schritte.set(k, { art: 'datei', pfad, herkunft, quelle, vorhanden: da.has(k), daten });
+    // mit Datum im Namen: eine Datei mit anderem Datum gilt als vorhanden
+    const als = da.has(k) ? undefined : muster && vorhandeneDateien.find((e) => muster.test(e.pfad.toLowerCase()))?.pfad;
+    schritte.set(k, { art: 'datei', pfad, herkunft, ...extra, vorhanden: da.has(k) || !!als, ...(als ? { vorhandenAls: als } : {}), daten });
   };
 
-  datei(PROJEKT_DATEI, 'stammdaten', async () => strToU8(projektJson(s, struktur, date)));
+  // projekt.json hält fest, welche Presets gewählt sind
+  datei(PROJEKT_DATEI, 'stammdaten', async () => strToU8(projektJson({ ...s, presets: presets.map((p) => p.name) }, struktur, date)));
 
   if (struktur.flaechenprojekt.trim()) {
     let pfad = zielPfad(struktur.flaechenprojekt, werte);
@@ -128,21 +224,35 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     if (pfad) datei(pfad, 'flaechen', async () => writeArchive(alsProject(s), { app: `Projektordner ${__APP_VERSION__}`, date }));
   }
 
+  // Vorlagen aus den Presets
+  const ausgeschlossenerOrdner = (pfad: string) => ausgeschlossen.some((a) => pfad.toLowerCase() === a || pfad.toLowerCase().startsWith(`${a}/`));
+  const dateien = vorlagenDateien(vorlagen);
   let uebersprungen = 0;
-  for (const v of [...vorlagen].sort((a, b) => a.pfad.localeCompare(b.pfad, 'de'))) {
-    const quelle = normPfad(v.pfad);
-    if (!quelle || KEINE_VORLAGE.test(quelle) || ANLEITUNG.test(quelle)) continue;
-    const pfad = zielPfad(quelle, werte);
-    if (!pfad) continue;
-    // Vorlagen in Ordnern nicht beauftragter Leistungsphasen bleiben weg
-    if (ausgeschlossen.some((a) => pfad.toLowerCase() === a || pfad.toLowerCase().startsWith(`${a}/`))) {
-      uebersprungen++;
-      continue;
+  let nachLph = 0;
+  for (const preset of presets) {
+    for (const e of preset.eintraege) {
+      if (!regelGilt(e, s.leistungsphasen)) {
+        nachLph++;
+        continue;
+      }
+      const ziele = zuordnungAufloesen(e, dateien, struktur.vorlagenname, werte);
+      if (!ziele.length) {
+        // ohne Vorlagenordner gibt es nichts zu bemängeln
+        if (vorlagen.length) warnungen.push(`Preset „${preset.name}“: ${e.quelle ? `„${e.quelle}“ gibt es im Vorlagenordner nicht` : 'der Vorlagenordner enthält keine Vorlagen'}.`);
+        continue;
+      }
+      for (const z of ziele) {
+        // Vorlagen in Ordnern nicht beauftragter Leistungsphasen bleiben weg
+        if (ausgeschlossenerOrdner(z.pfad)) {
+          uebersprungen++;
+          continue;
+        }
+        datei(z.pfad, 'vorlage', async () => fuelleVorlage(z.name, alsDokument(z.vorlageName, await z.datei.vorlage.lies()), ctx), { quelle: z.datei.pfad, preset: preset.name }, z.muster);
+      }
     }
-    const name = quelle.split('/').pop()!;
-    datei(pfad, 'vorlage', async () => fuelleVorlage(name, await v.lies(), ctx), quelle);
   }
   if (uebersprungen) hinweise.push(`${uebersprungen} ${uebersprungen === 1 ? 'Vorlage liegt' : 'Vorlagen liegen'} in Ordnern nicht beauftragter Leistungsphasen und ${uebersprungen === 1 ? 'wird' : 'werden'} nicht kopiert.`);
+  if (nachLph) hinweise.push(`${nachLph} ${nachLph === 1 ? 'Zuordnung gehört' : 'Zuordnungen gehören'} zu nicht beauftragten Leistungsphasen und ${nachLph === 1 ? 'entfällt' : 'entfallen'}.`);
 
   const liste = [...schritte.values()];
   const vorhanden = liste.filter((x) => x.vorhanden).length;
@@ -151,7 +261,15 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
   // als Baum: jeder Ordner vor seinem Inhalt, Dateien im Stamm zuletzt
   const schluessel = (x: Schritt) => (x.art === 'datei' && !x.pfad.includes('/') ? `￿${x.pfad}` : x.pfad);
   liste.sort((a, b) => schluessel(a).localeCompare(schluessel(b), 'de', { numeric: true }));
-  return { ordner, schritte: liste, fehler, hinweise };
+  return { ordner, schritte: liste, fehler, warnungen, hinweise, presets: presets.map((p) => p.name) };
+}
+
+/** Plan ohne die abgewählten Einträge – mit einem Ordner entfällt alles darin */
+export function ohne(plan: Plan, abgewaehlt: Iterable<string>): Plan {
+  const weg = [...abgewaehlt].map((p) => p.toLowerCase());
+  if (!weg.length) return plan;
+  const entfaellt = (pfad: string) => weg.some((w) => pfad.toLowerCase() === w || pfad.toLowerCase().startsWith(`${w}/`));
+  return { ...plan, schritte: plan.schritte.filter((x) => !entfaellt(x.pfad)) };
 }
 
 export interface Ergebnis {
@@ -160,22 +278,31 @@ export interface Ergebnis {
   meldung?: string;
 }
 
+export interface AusfuehrenOptionen {
+  fortschritt?: (fertig: number, gesamt: number) => void;
+  /** `root` ist der Projektordner selbst (Aktualisieren) – sonst der Stammordner, in dem er entsteht */
+  imProjektordner?: boolean;
+}
+
 /**
- * Führt den Plan unter `stammordner` aus. Fehler einzelner Schritte halten die übrigen nicht auf; jeder
- * Schritt meldet, ob er angelegt hat oder das Ziel schon vorhanden war.
+ * Führt den Plan unter `root` aus: im Stammordner (der Projektordner entsteht darin) oder – beim Aktualisieren –
+ * im Projektordner selbst. Vorhandenes bleibt unverändert; ausgeführt werden nur die Schritte, die im Plan noch
+ * fehlen. Fehler einzelner Schritte halten die übrigen nicht auf; jeder Schritt meldet, ob er angelegt hat oder
+ * das Ziel schon vorhanden war.
  */
-export async function ausfuehren(fs: Dateisystem, stammordner: string, plan: Plan, fortschritt?: (fertig: number, gesamt: number) => void): Promise<Ergebnis[]> {
+export async function ausfuehren(fs: Dateisystem, root: string, plan: Plan, optionen: AusfuehrenOptionen = {}): Promise<Ergebnis[]> {
   if (plan.fehler.length) throw new Error(plan.fehler.join(' '));
   const out: Ergebnis[] = [];
   for (const [i, schritt] of plan.schritte.entries()) {
-    const pfad = `${plan.ordner}/${schritt.pfad}`;
+    const pfad = optionen.imProjektordner ? schritt.pfad : `${plan.ordner}/${schritt.pfad}`;
     try {
-      const neu = schritt.art === 'ordner' ? await fs.ordnerAnlegen(stammordner, pfad) : await fs.dateiAnlegen(stammordner, pfad, await schritt.daten!());
+      // eine Datei mit anderem Datum im Namen gilt als vorhanden – nicht noch einmal anlegen
+      const neu = schritt.vorhandenAls ? false : schritt.art === 'ordner' ? await fs.ordnerAnlegen(root, pfad) : await fs.dateiAnlegen(root, pfad, await schritt.daten!());
       out.push({ schritt, status: neu ? 'angelegt' : 'vorhanden' });
     } catch (e) {
       out.push({ schritt, status: 'fehler', meldung: e instanceof Error ? e.message : String(e) });
     }
-    fortschritt?.(i + 1, plan.schritte.length);
+    optionen.fortschritt?.(i + 1, plan.schritte.length);
   }
   return out;
 }

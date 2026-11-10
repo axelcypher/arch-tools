@@ -4,25 +4,23 @@ import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, NumberField, TextField } from '@core/ui/fields';
 import type { Eintrag } from '../dateisystem';
-import { hatDateisystem, oeffneOrdner, SpeicherDateisystem, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
+import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, verbinde, waehleOrdner } from '../dateisystem';
 import { naechsteNummer } from '../nummer';
-import type { Ergebnis, Herkunft, Vorlage } from '../plan';
-import { ausfuehren, ladeVorlagen, planen } from '../plan';
+import type { Ergebnis } from '../plan';
+import { ausfuehren, ohne, planen } from '../plan';
 import type { Beteiligter } from '../stammdaten';
 import { LEISTUNGSPHASEN } from '../stammdaten';
 import { useOrdner } from '../store';
+import { ErgebnisAnzeige, PlanMeldungen, PlanTabelle, PresetAuswahl, VorlagenordnerZeile } from './gemeinsam';
 
 const log = logger('anlegen');
-
-const HERKUNFT: Record<Herkunft, string> = { struktur: 'Struktur', vorlage: 'Vorlage', stammdaten: 'Stammdaten', flaechen: 'leere Flächenberechnung' };
 
 /** Neues Projekt: Stammdaten links, rechts der Trockenlauf – was angelegt wird und was schon da ist */
 export function NeuView() {
   const desktop = hatDateisystem();
-  const { stamm, struktur, stammordner, vorlagenordner, setStamm, setStammordner, setVorlagenordner, neuesProjekt } = useOrdner();
-  const [vorlagen, setVorlagen] = useState<Vorlage[]>([]);
-  const [vorlagenName, setVorlagenName] = useState('');
+  const { stamm, struktur, stammordner, vorlagen, setStamm, setStammordner, neuesProjekt } = useOrdner();
   const [vorhandene, setVorhandene] = useState<Eintrag[]>([]);
+  const [abgewaehlt, setAbgewaehlt] = useState<Set<string>>(new Set());
   const [projektordner, setProjektordner] = useState<string[]>([]);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState<string | null>(null);
@@ -41,20 +39,6 @@ export function NeuView() {
     };
   }, [desktop, stammordner, ergebnis]);
 
-  // Vorlagen aus dem Vorlagenordner
-  useEffect(() => {
-    if (!desktop) return;
-    if (!vorlagenordner) return setVorlagen([]);
-    let aktuell = true;
-    ladeVorlagen(tauriDateisystem, vorlagenordner).then(
-      (v) => aktuell && setVorlagen(v),
-      (e) => aktuell && setFehler(`Vorlagenordner: ${e instanceof Error ? e.message : String(e)}`),
-    );
-    return () => {
-      aktuell = false;
-    };
-  }, [desktop, vorlagenordner]);
-
   const ordner = useMemo(() => planen(stamm, struktur, []).ordner, [stamm, struktur]);
 
   // was es im Projektordner schon gibt
@@ -71,25 +55,20 @@ export function NeuView() {
   }, [desktop, stammordner, ordner, projektordner]);
 
   const plan = useMemo(() => planen(stamm, struktur, vorlagen, vorhandene), [stamm, struktur, vorlagen, vorhandene]);
-  const neu = plan.schritte.filter((s) => !s.vorhanden);
+  const auszufuehren = useMemo(() => ohne(plan, abgewaehlt), [plan, abgewaehlt]);
+  const neu = auszufuehren.schritte.filter((s) => !s.vorhanden);
   const vorschlag = useMemo(() => naechsteNummer(struktur.nummernschema, projektordner), [struktur.nummernschema, projektordner]);
 
   const stammWaehlen = async () => {
     const p = await waehleOrdner('Stammordner für Projekte wählen');
     if (p) setStammordner(p);
   };
-  const vorlagenWaehlen = async () => {
-    setFehler(null);
-    if (desktop) {
-      const p = await waehleOrdner('Vorlagenordner wählen');
-      if (p) setVorlagenordner(p);
-      return;
-    }
-    const o = await waehleOrdnerImBrowser();
-    if (!o) return;
-    setVorlagen(o.eintraege.filter((e) => !e.ordner).map((e) => ({ pfad: e.pfad, lies: () => o.lies(e.pfad) })));
-    setVorlagenName(o.name);
-  };
+  const umschalten = (pfad: string) =>
+    setAbgewaehlt((alt) => {
+      const neu = new Set(alt);
+      if (!neu.delete(pfad)) neu.add(pfad);
+      return neu;
+    });
 
   const anlegen = async () => {
     setFehler(null);
@@ -97,13 +76,14 @@ export function NeuView() {
     try {
       if (desktop) {
         setLaeuft('Projektordner wird angelegt …');
-        const liste = await ausfuehren(tauriDateisystem, stammordner, plan, (i, n) => setLaeuft(`Projektordner wird angelegt … ${i} / ${n}`));
-        log.info(`Projektordner angelegt: ${plan.ordner}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, fehler: liste.filter((x) => x.status === 'fehler').length });
+        const liste = await ausfuehren(tauriDateisystem, stammordner, auszufuehren, { fortschritt: (i, n) => setLaeuft(`Projektordner wird angelegt … ${i} / ${n}`) });
+        log.info(`Projektordner angelegt: ${plan.ordner}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, fehler: liste.filter((x) => x.status === 'fehler').length, presets: plan.presets });
         setErgebnis({ ordner: verbinde(stammordner, plan.ordner), liste });
+        setAbgewaehlt(new Set());
       } else {
         setLaeuft('ZIP wird erstellt …');
         const fs = new SpeicherDateisystem();
-        const liste = await ausfuehren(fs, '/zip', plan);
+        const liste = await ausfuehren(fs, '/zip', auszufuehren);
         const ok = await saveBinaryFile({ defaultName: `${plan.ordner}.zip`, data: fs.alsZip('/zip'), filterName: 'ZIP-Archiv', extension: 'zip', mime: 'application/zip' });
         if (ok) setErgebnis({ ordner: '', liste });
       }
@@ -138,10 +118,6 @@ export function NeuView() {
     });
   const setBeteiligter = (i: number, patch: Partial<Beteiligter>) => setStamm({ beteiligte: stamm.beteiligte.map((b, k) => (k === i ? { ...b, ...patch } : b)) });
   const toggleLph = (nr: number) => setStamm({ leistungsphasen: stamm.leistungsphasen.includes(nr) ? stamm.leistungsphasen.filter((x) => x !== nr) : [...stamm.leistungsphasen, nr].sort() });
-
-  const angelegt = ergebnis?.liste.filter((x) => x.status === 'angelegt').length ?? 0;
-  const unveraendert = ergebnis?.liste.filter((x) => x.status === 'vorhanden').length ?? 0;
-  const fehlgeschlagen = ergebnis?.liste.filter((x) => x.status === 'fehler') ?? [];
 
   return (
     <div className="po-view">
@@ -282,26 +258,10 @@ export function NeuView() {
             </button>
           )}
         </div>
-        <div className="po-ort">
-          <div>
-            <span className="field-label">Vorlagenordner</span>
-            <code title={vorlagenordner}>{(desktop ? vorlagenordner : vorlagenName) || 'keiner – es entstehen nur Ordner, Stammdaten und die leere Flächenberechnung'}</code>
-          </div>
-          <button className="small" onClick={() => void vorlagenWaehlen()}>
-            Wählen …
-          </button>
-          {(desktop ? vorlagenordner : vorlagenName) && (
-            <button
-              className="small"
-              onClick={() => {
-                setVorlagenordner('');
-                setVorlagen([]);
-                setVorlagenName('');
-              }}
-            >
-              Ohne Vorlagen
-            </button>
-          )}
+        <VorlagenordnerZeile />
+        <div className="po-presets-neu">
+          <span className="field-label">Vorlagen-Presets</span>
+          <PresetAuswahl struktur={struktur} auswahl={stamm.presets} onChange={(presets) => setStamm({ presets })} />
         </div>
 
         <h3>
@@ -311,40 +271,9 @@ export function NeuView() {
             – {neu.filter((s) => s.art === 'ordner').length} Ordner und {neu.filter((s) => s.art === 'datei').length} Dateien werden angelegt
           </span>
         </h3>
-        {plan.fehler.map((f) => (
-          <p key={f} className="warning">
-            {f}
-          </p>
-        ))}
         {fehler && <p className="warning">{fehler}</p>}
-        <div className="po-plan">
-          <table className="po-table">
-            <tbody>
-              {plan.schritte.map((s) => {
-                const tiefe = s.pfad.split('/').length - 1;
-                return (
-                  <tr key={`${s.art}:${s.pfad}`} className={s.vorhanden ? 'vorhanden' : ''}>
-                    <td style={{ paddingLeft: 6 + tiefe * 16 }} title={s.pfad}>
-                      <span className={`po-art ${s.art}`} aria-hidden />
-                      {s.pfad.split('/').pop()}
-                    </td>
-                    <td className="muted small-text" title={s.quelle}>
-                      {s.art === 'datei' || s.herkunft === 'vorlage' ? HERKUNFT[s.herkunft] : ''}
-                    </td>
-                    <td className="po-status">{s.vorhanden ? 'vorhanden' : 'neu'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {plan.hinweise.length > 0 && (
-          <ul className="po-hinweise">
-            {plan.hinweise.map((h) => (
-              <li key={h}>{h}</li>
-            ))}
-          </ul>
-        )}
+        <PlanTabelle plan={plan} abgewaehlt={abgewaehlt} onUmschalten={umschalten} />
+        <PlanMeldungen plan={plan} />
         <div className="button-row">
           <button className="primary" disabled={!!laeuft || plan.fehler.length > 0 || (desktop && !stammordner) || !neu.length} onClick={() => void anlegen()}>
             {desktop ? 'Projektordner anlegen' : 'Als ZIP herunterladen'}
@@ -354,38 +283,17 @@ export function NeuView() {
         <p className="muted small-text">Es wird nur neu angelegt. Vorhandene Ordner und Dateien bleiben unverändert; nichts wird überschrieben, verschoben oder gelöscht.</p>
 
         {ergebnis && (
-          <div className={`po-ergebnis${fehlgeschlagen.length ? ' fehler' : ''}`}>
-            <strong>
-              {angelegt} angelegt{unveraendert ? `, ${unveraendert} schon vorhanden` : ''}
-              {fehlgeschlagen.length ? `, ${fehlgeschlagen.length} fehlgeschlagen` : ''}
-            </strong>
-            {ergebnis.ordner && <code>{ergebnis.ordner}</code>}
-            {fehlgeschlagen.length > 0 && (
-              <ul>
-                {fehlgeschlagen.map((f) => (
-                  <li key={f.schritt.pfad}>
-                    {f.schritt.pfad}: {f.meldung}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="button-row">
-              {ergebnis.ordner && (
-                <button className="small" onClick={() => void oeffneOrdner(ergebnis.ordner).catch((e) => setFehler(String(e)))}>
-                  Ordner öffnen
-                </button>
-              )}
-              <button
-                className="small"
-                onClick={() => {
-                  neuesProjekt();
-                  setErgebnis(null);
-                }}
-              >
-                Nächstes Projekt
-              </button>
-            </div>
-          </div>
+          <ErgebnisAnzeige ordner={ergebnis.ordner} liste={ergebnis.liste}>
+            <button
+              className="small"
+              onClick={() => {
+                neuesProjekt();
+                setErgebnis(null);
+              }}
+            >
+              Nächstes Projekt
+            </button>
+          </ErgebnisAnzeige>
         )}
       </section>
     </div>

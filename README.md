@@ -8,7 +8,7 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 | **Flächenrechner** | Flächen- und Rauminhaltsberechnung nach DIN 277 und WoFlV | unten |
 | **GRZ-Nachweis** | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
 | **Kostenermittlung** | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
-| **Projektordner** | Projektordner nach einheitlichem Schema anlegen und prüfen | [docs/projektordner.md](docs/projektordner.md) |
+| **Projektordner** | Projektordner nach einheitlichem Schema anlegen, mit Vorlagen-Presets bestücken, aktualisieren und prüfen | [docs/projektordner.md](docs/projektordner.md) |
 | **Entzerrung** | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 | **Formulare** | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
 
@@ -84,8 +84,10 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
   Nachweis im Grundriss und im 3D-Modell, Kennwerte mit Bandbreite, Kennwertkatalog, Kostenstände – siehe
   [docs/kosten.md](docs/kosten.md)
 - **Projektordner** als eigene App (`apps/ordner`): Projektordner nach einheitlicher, konfigurierbarer Struktur
-  anlegen (Trockenlauf, Vorlagen mit Platzhaltern, `projekt.json`, leere Flächenrechner-Datei) und vorhandene
-  Ordner prüfen – siehe [docs/projektordner.md](docs/projektordner.md)
+  anlegen (Trockenlauf, `projekt.json`, leere Flächenrechner-Datei), **Vorlagen-Presets** aus einem eigenen
+  Vorlagenordner (Datei oder Ordner → Zielordner, Dateiname nach dem Schema des Büros, `.dotx`/`.xltx` werden
+  Dokumente), vorhandene Projekte **aktualisieren** (nur Fehlendes ergänzen) und Ordner prüfen – siehe
+  [docs/projektordner.md](docs/projektordner.md)
 - **Projektdaten** (Projektcode, Adresse, Grundstück mit Gemarkung/Flur/Flurstück, Bauherr mit beliebig vielen
   E-Mail-Adressen und Telefonnummern) im Dialog; als Platzhalter für Excel-Vorlagen (`{{bauherr.name}}` …)
 - Rückgängig/Wiederholen, automatische Zwischenspeicherung (IndexedDB); stürzt eine App kurz nach dem Laden des
@@ -130,7 +132,7 @@ packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als
 apps/flaechenrechner/  Flächenrechner (dieses Tool): Zeichenfläche, Bericht, Excel, DXF/PDF, 3D
 apps/grz/              GRZ/GFZ-Nachweis: Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md
 apps/kosten/           Kostenermittlung nach DIN 276: Mengen, Kennwerte, Kostenstände, Druck, Excel – siehe docs/kosten.md
-apps/ordner/           Projektordner anlegen und prüfen: Struktur, Vorlagen, Stammdaten – siehe docs/projektordner.md
+apps/ordner/           Projektordner anlegen, aktualisieren und prüfen: Struktur, Vorlagen-Presets, Stammdaten – siehe docs/projektordner.md
 apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
 apps/formulare/        FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
 ```
