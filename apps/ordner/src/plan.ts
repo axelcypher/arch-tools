@@ -247,7 +247,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     datei(schonDa.pfad, 'projektdatei', async () => new Uint8Array());
     projektdatei = { pfad: schonDa.pfad, neu: false, teile: [] };
   } else {
-    const pfad = projektdateiPfad(optionen.oapPfad ?? VORGABE_OAP_PFAD, { nummer: s.nummer, kurzname: s.kurzname, jahr: werte.jahr });
+    const pfad = projektdateiPfad(optionen.oapPfad ?? VORGABE_OAP_PFAD, { nummer: s.nummer, kurzname: s.kurzname, vorhaben: s.bezeichnung, jahr: werte.jahr, datum: date });
     datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date }), { app: `Projektordner ${__APP_VERSION__}`, date }));
     projektdatei = { pfad, neu: true, teile: [] };
   }

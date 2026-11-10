@@ -126,7 +126,7 @@ export function ProjektWahl({
 
   const anlegen = async (ordner: string, meta: ProjectMeta) => {
     if (!fs || !allgemein) return;
-    const pfad = projektdateiPfad(allgemein.oapPfad, { nummer: meta.projektcode, kurzname: meta.kurzname });
+    const pfad = projektdateiPfad(allgemein.oapPfad, { nummer: meta.projektcode, kurzname: meta.kurzname, vorhaben: meta.vorhaben });
     const p = createProject(meta.vorhaben || meta.kurzname || meta.projektcode || ordnerName(ordner));
     p.meta = { ...meta, angelegt: isoHeute() };
     if (!(await projektdateiAnlegen(fs, ordner, pfad, p, app))) throw new Error(`Es gibt schon eine Datei ${pfad} – bitte das Projekt neu öffnen.`);
@@ -213,7 +213,7 @@ export function ProjektWahl({
       {dialog && (
         <StammdatenDialog
           titel="Projektdatei anlegen"
-          text={`Im Projektordner „${ordnerName(dialog.ordner)}“ liegt noch keine Projektdatei. Mit diesen Stammdaten wird sie angelegt (${projektdateiPfad(allgemein?.oapPfad ?? '', { nummer: dialog.meta.projektcode || '…', kurzname: dialog.meta.kurzname })}) und geöffnet.`}
+          text={`Im Projektordner „${ordnerName(dialog.ordner)}“ liegt noch keine Projektdatei. Mit diesen Stammdaten wird sie angelegt (${projektdateiPfad(allgemein?.oapPfad ?? '', { nummer: dialog.meta.projektcode || '…', kurzname: dialog.meta.kurzname, vorhaben: dialog.meta.vorhaben })}) und geöffnet.`}
           meta={dialog.meta}
           onSpeichern={(m) => anlegen(dialog.ordner, m)}
           onAbbrechen={() => setDialog(null)}

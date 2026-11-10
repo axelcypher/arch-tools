@@ -192,6 +192,11 @@ describe('Vorlagen', () => {
 });
 
 describe('Plan und Anlegen', () => {
+  it('Projektdatei: Platzhalter {Kürzel}, {Datum} (JJMMTT) und {Vorhaben} der gemeinsamen Einstellung', () => {
+    const plan = plane(stamm(), KLEIN, [], [], TAG, { oapPfad: 'Organisation/{Kürzel} {Datum} {Vorhaben}.oap' });
+    expect(plan.projektdatei?.pfad).toBe('Organisation/2026-014 261001 Neubau eines Einfamilienhauses.oap');
+  });
+
   it('Trockenlauf: Ordner nach Leistungsphasen, Projektdatei, Vorlagen', () => {
     const plan = plane(
       stamm(),

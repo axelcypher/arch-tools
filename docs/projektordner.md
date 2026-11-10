@@ -48,7 +48,8 @@ Angelegt bzw. ergänzt werden
 
 1. die **Ordner** der Struktur,
 2. die **Vorlagen** der gewählten Presets, umbenannt nach dem Schema des Büros und mit ersetzten Platzhaltern,
-3. die **Projektdatei** am eingestellten Ort (Vorgabe `03 Berechnungen/Flächen/{nummer} {kurzname}.oap`): neu als
+3. die **Projektdatei** am eingestellten Ort (Vorgabe `03 Berechnungen/Flächen/{nummer} {kurzname}.oap`; Platzhalter
+   `{Kürzel}` bzw. `{nummer}`, `{Kurzname}`, `{Vorhaben}`, `{Datum}` – hier als JJMMTT – und `{Jahr}`): neu als
    leere Flächenberechnung mit Stammdaten, Anlagedatum, Struktur und Presets – Flächenrechner, GRZ-Nachweis,
    Kostenermittlung und Formulare öffnen sie –, beim Ergänzen nur mit den geänderten Stammdaten (gegenüber dem
    Stand beim Einlesen; was eine andere App inzwischen eingetragen hat, bleibt) und den Presets. Hat jemand die

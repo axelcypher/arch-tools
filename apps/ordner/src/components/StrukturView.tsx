@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
-import { projektdateiPfad } from '@core/projektdatei';
+import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
 import { hatDateisystem, waehleOrdner } from '../dateisystem';
 import { dateimuster, nameAus, nummerAus } from '../nummer';
 import { useOrdner } from '../store';
@@ -192,9 +192,13 @@ function GemeinsameEinstellungen() {
           </button>
         </div>
       )}
-      <Field label="Projektdatei (.oap) in neuen Projekten" hint={`Pfad im Projektordner – {nummer}, {kurzname}, {jahr}. Beispiel: ${projektdateiPfad(allgemein.oapPfad, beispiel)}`}>
+      <Field
+        label="Projektdatei (.oap) in neuen Projekten"
+        hint={`Pfad im Projektordner – ${OAP_PLATZHALTER.map((p) => p.name).join(', ')} ({Datum} hier als JJMMTT). Beispiel: ${projektdateiPfad(allgemein.oapPfad, { ...beispiel, vorhaben: 'Neubau eines Einfamilienhauses' })}`}
+      >
         <TextField value={allgemein.oapPfad} onChange={(v) => setAllgemein({ oapPfad: v.trim() })} />
       </Field>
+      {unbekanntePlatzhalter(allgemein.oapPfad).length > 0 && <p className="warning">Unbekannt, bleibt so im Namen stehen: {unbekanntePlatzhalter(allgemein.oapPfad).join(', ')}</p>}
       <Field label="Fotoordner im Projekt" hint="Hier sucht die Entzerrung (auch in Unterordnern) nach Fotos; die .entz-Datei liegt beim Foto.">
         <TextField value={allgemein.fotoordner} onChange={(v) => setAllgemein({ fotoordner: v.trim() })} />
       </Field>
