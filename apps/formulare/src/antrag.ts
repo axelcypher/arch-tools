@@ -198,7 +198,7 @@ export interface KatalogEintrag {
   quelle?: string;
   /** Muster der Datei – Platzhalter * und ?, mehrere mit „;“ getrennt (sonst der Titel) */
   muster?: string;
-  /** in neuen Projekten vorgewählt */
+  /** früher: in neuen Projekten vorgewählt – heute bestimmen die Antragsvorlagen, was dazugehört (nur noch zum Übernehmen) */
   vorgewaehlt: boolean;
   /** nur erforderlich, wenn die Projektmerkmale zutreffen (z. B. Gebäudeklasse 3–5) */
   bedingung?: Bedingung;
@@ -217,7 +217,61 @@ export const VORGABE_KATALOG: KatalogEintrag[] = [
   { id: 'flaechen', titel: 'Flächenberechnung', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*Fläche*;*Flaeche*;*BRI*;*Wohnfl*', vorgewaehlt: true },
   { id: 'kosten', titel: 'Kostenermittlung', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*Kosten*', vorgewaehlt: true },
   { id: 'stellplaetze', titel: 'Stellplatznachweis', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*Stellpl*', vorgewaehlt: false },
+  { id: 'vorbescheid', titel: 'Antrag auf Vorbescheid', art: 'intern', formular: 'Vorbescheid', vorgewaehlt: false },
+  { id: 'denkmal', titel: 'Antrag auf denkmalrechtliche Erlaubnis', art: 'intern', formular: 'Denkmal', vorgewaehlt: false },
 ];
+
+/** Antragsvorlage: welche Dokumente des Katalogs zu einer Art von Antrag gehören (Reihenfolge wie im Katalog) */
+export interface AntragsVorlage {
+  id: string;
+  name: string;
+  /** Antragsart (BAUA, BAUVA, DENK …) – für Projekte, deren aktive Fassung diese Art hat, vorgeschlagen */
+  art?: string;
+  /** ids der Katalogeinträge */
+  dokumente: string[];
+}
+
+export const VORGABE_VORLAGEN: AntragsVorlage[] = [
+  { id: 'baua', name: 'Bauantrag', art: 'BAUA', dokumente: VORGABE_KATALOG.filter((k) => k.vorgewaehlt).map((k) => k.id) },
+  { id: 'bauva', name: 'Bauvoranfrage', art: 'BAUVA', dokumente: ['vorbescheid', 'lageplan', 'zeichnungen'] },
+  { id: 'denk', name: 'Denkmalrechtliche Erlaubnis', art: 'DENK', dokumente: ['denkmal', 'baubeschreibung', 'lageplan', 'zeichnungen'] },
+];
+
+/**
+ * Antragsvorlagen aus gespeicherten Daten. Gibt es noch keine, gelten die Vorgaben – der Bauantrag mit den bisher im
+ * Katalog vorgewählten Dokumenten (so bleibt eine eigene Auswahl erhalten).
+ */
+export function vorlagenAus(roh: unknown, katalog: KatalogEintrag[]): AntragsVorlage[] {
+  if (!Array.isArray(roh)) {
+    const vorgewaehlt = katalog.filter((k) => k.vorgewaehlt).map((k) => k.id);
+    return VORGABE_VORLAGEN.map((v) => (v.id === 'baua' && vorgewaehlt.length ? { ...v, dokumente: vorgewaehlt } : { ...v, dokumente: [...v.dokumente] }));
+  }
+  return roh
+    .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object' && typeof (v as { name?: unknown }).name === 'string')
+    .map((v, i) => ({
+      id: typeof v.id === 'string' && v.id ? v.id : `v${i + 1}`,
+      name: String(v.name),
+      ...(typeof v.art === 'string' && v.art.trim() ? { art: v.art.trim() } : {}),
+      dokumente: Array.isArray(v.dokumente) ? [...new Set(v.dokumente.filter((d): d is string => typeof d === 'string'))] : [],
+    }));
+}
+
+/** Die Dokumente einer Vorlage in der Reihenfolge des Katalogs */
+export const dokumenteDerVorlage = (katalog: KatalogEintrag[], v: AntragsVorlage) => katalog.filter((k) => v.dokumente.includes(k.id));
+
+/** Vorschlag für ein Projekt: die Vorlage zur Art der aktiven Antragsfassung, sonst die erste */
+export function vorlageFuer(vorlagen: AntragsVorlage[], art: string | undefined): AntragsVorlage | undefined {
+  return (art && vorlagen.find((v) => v.art?.toLowerCase() === art.toLowerCase())) || vorlagen[0];
+}
+
+/** Element `von` an die Stelle `nach` verschieben (nach dem Herausnehmen gezählt) */
+export function verschieben<T>(liste: T[], von: number, nach: number): T[] {
+  if (von === nach || von < 0 || von >= liste.length) return liste;
+  const neu = [...liste];
+  const [x] = neu.splice(von, 1);
+  neu.splice(Math.max(0, Math.min(nach, neu.length)), 0, x);
+  return neu;
+}
 
 export function katalogAus(roh: unknown): KatalogEintrag[] {
   if (!Array.isArray(roh)) return VORGABE_KATALOG;
@@ -287,10 +341,12 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
 }
 
 /** Projektumfang aus den vorgewählten Einträgen des Katalogs */
-export const umfangAusKatalog = (katalog: KatalogEintrag[]): UmfangEintrag[] =>
-  katalog
-    .filter((k) => k.vorgewaehlt)
-    .map(({ id, titel, art, formular, quelle, muster, bedingung }) => ({ id, titel, art, formular, quelle, muster, ...(bedingung?.length ? { bedingung } : {}) }));
+/** Projektumfang aus Katalogeinträgen (ohne Vorlage: die früher vorgewählten) */
+export const umfangAusKatalog = (katalog: KatalogEintrag[], vorlage?: AntragsVorlage): UmfangEintrag[] =>
+  (vorlage ? dokumenteDerVorlage(katalog, vorlage) : katalog.filter((k) => k.vorgewaehlt)).map(alsUmfang);
+
+/** Katalogeintrag als Dokument des Projektumfangs */
+export const alsUmfang = ({ id, titel, art, formular, quelle, muster, bedingung }: KatalogEintrag): UmfangEintrag => ({ id, titel, art, formular, quelle, muster, ...(bedingung?.length ? { bedingung } : {}) });
 
 /* ---------- Zuordnung von Dateien ---------- */
 

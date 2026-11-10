@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
-import { STATUS_TEXT, naechsteFassung, umfangAusKatalog } from '../antrag';
+import { STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer } from '../antrag';
 import { bedingungText } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
@@ -10,6 +10,7 @@ import { ablageVon, useFormulare } from '../store';
 import { useExportDialog } from './ExportDialog';
 import type { MenuePunkt } from './Menue';
 import { MenueKnopf, zeigeMenue } from './Menue';
+import { Griff, useSortieren } from './Sortieren';
 import { Symbol } from './Symbol';
 
 /** Farbpunkt für den Status eines Dokuments */
@@ -92,13 +93,20 @@ export function ProjektumfangAnsicht() {
   const projektdatei = useAntrag((s) => s.projektdatei);
   const dokumente = useAntrag((s) => s.dokumente);
   const katalog = useAntrag((s) => s.katalog);
+  const vorlagen = useAntrag((s) => s.vorlagen);
   const dateien = useAntrag((s) => s.dateien);
   const st = useAntrag();
   const { umfangSetzen, verknuepfen, formularAnlegen, aktualisieren, merkmalSetzen } = st;
   const merkmalWerte = st.projektdatei?.merkmale ?? {};
   const [bearbeiten, setBearbeiten] = useState<string | null>(null);
+  const [vorlageWahl, setVorlageWahl] = useState<string | null>(null);
+  const umfangJetzt = projektdatei?.umfang;
+  const sortieren = useSortieren(umfangJetzt?.length ?? 0, (von, nach) => umfangJetzt && void umfangSetzen(verschieben(umfangJetzt, von, nach)));
   if (!projekt || !ds) return null;
   const fassung = aktiveFassung(st, projekt);
+  // Vorschlag: die Vorlage zur Antragsart der aktiven Fassung („BAUA 2“ → BAUA)
+  const art = st.fassungen.find((f) => f.name === fassung)?.art ?? fassung.replace(/[\s_-]*\d+$/, '');
+  const vorlage = vorlagen.find((v) => v.id === vorlageWahl) ?? vorlageFuer(vorlagen, art);
   const ordner = antragsOrdner(st, projekt);
   const basis = ablage ? verbinde(ablage.root, ablage.pfad) : null;
   const umfang = projektdatei?.umfang;
@@ -111,9 +119,25 @@ export function ProjektumfangAnsicht() {
     ...fehlendeKatalog.map((k) => ({
       text: k.titel,
       symbol: (k.art === 'intern' ? 'formular' : 'datei') as 'formular' | 'datei',
-      aktion: () => void umfangSetzen([...(umfang ?? []), { id: k.id, titel: k.titel, art: k.art, formular: k.formular, quelle: k.quelle, muster: k.muster }]),
+      aktion: () => void umfangSetzen([...(umfang ?? []), alsUmfang(k)]),
     })),
     ...(fehlendeKatalog.length ? [{ trenner: true as const }] : []),
+    ...(vorlagen.length
+      ? [
+          {
+            text: 'Aus Vorlage ergänzen',
+            symbol: 'stapel' as const,
+            unter: vorlagen.map((v) => {
+              const fehlen = dokumenteDerVorlage(katalog, v).filter((k) => !umfang?.some((u) => u.id === k.id));
+              return {
+                text: `${v.name} (${fehlen.length ? `${fehlen.length} fehlen` : 'vollständig'})`,
+                deaktiviert: !fehlen.length,
+                aktion: () => void umfangSetzen([...(umfang ?? []), ...fehlen.map(alsUmfang)]),
+              };
+            }),
+          },
+        ]
+      : []),
     {
       text: 'Eigenes Dokument',
       symbol: 'plus',
@@ -145,7 +169,7 @@ export function ProjektumfangAnsicht() {
           <h2>Projektumfang</h2>
           <p className="muted small-text">
             Was zum Antrag gehört – geprüft im Ordner der aktiven Fassung <strong>{ordner}</strong>
-            {basis ? '' : ' (kein Projektordner gefunden)'}. Gespeichert im FORMA-Projekt, gilt für alle im Büro.
+            {basis ? '' : ' (kein Projektordner gefunden)'}. Gespeichert in der Projektdatei (.oap), gilt für alle im Büro.
           </p>
         </div>
         <div className="pu-kopf-knoepfe">
@@ -185,9 +209,23 @@ export function ProjektumfangAnsicht() {
             Für dieses Projekt ist noch kein Projektumfang festgelegt. Danach zeigt die Navigation an jedem Formular, ob es vollständig ausgefüllt ist und aktuell im
             Antragsordner liegt; fehlende Formulare lassen sich per Klick anlegen.
           </p>
-          <button className="primary" onClick={() => void umfangSetzen(umfangAusKatalog(katalog))}>
-            Aus dem Katalog festlegen ({katalog.filter((k) => k.vorgewaehlt).length} Dokumente)
-          </button>
+          <div className="pu-vorlage">
+            <label>
+              <span className="field-label">Antragsvorlage</span>
+              <select value={vorlage?.id ?? ''} aria-label="Antragsvorlage" onChange={(e) => setVorlageWahl(e.target.value)}>
+                {vorlagen.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                    {v.art ? ` (${v.art})` : ''} – {dokumenteDerVorlage(katalog, v).length} Dokumente
+                  </option>
+                ))}
+                {!vorlagen.length && <option value="">ganzer Katalog – {katalog.length} Dokumente</option>}
+              </select>
+            </label>
+            <button className="primary" onClick={() => void umfangSetzen(vorlage ? umfangAusKatalog(katalog, vorlage) : katalog.map(alsUmfang))}>
+              Projektumfang festlegen
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -211,13 +249,28 @@ export function ProjektumfangAnsicht() {
               {z.aktuell} von {z.gesamt} aktuell
             </strong>
           </div>
-          <div className="pu-liste" role="list">
-            {dokumente.map((d) => {
+          <div className="pu-liste" role="list" data-sortier-liste="">
+            {dokumente.map((d, i) => {
               const u = d.eintrag;
               const offen = bearbeiten === u.id;
               return (
-                <div key={u.id} role="listitem" className={`pu-zeile ${d.status}`} onContextMenu={(e) => zeigeMenue(e, [{ text: 'Bearbeiten', symbol: 'stift', aktion: () => setBearbeiten(u.id) }, { text: 'Aus dem Projektumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void umfangSetzen(umfang.filter((x) => x.id !== u.id)) }])}>
+                <div
+                  key={u.id}
+                  role="listitem"
+                  className={`pu-zeile ${d.status}`}
+                  {...sortieren.zeile(i)}
+                  onContextMenu={(e) =>
+                    zeigeMenue(e, [
+                      { text: 'Bearbeiten', symbol: 'stift', aktion: () => setBearbeiten(u.id) },
+                      { text: 'Nach oben', deaktiviert: i === 0, aktion: () => void umfangSetzen(verschieben(umfang, i, i - 1)) },
+                      { text: 'Nach unten', deaktiviert: i === umfang.length - 1, aktion: () => void umfangSetzen(verschieben(umfang, i, i + 1)) },
+                      { trenner: true },
+                      { text: 'Aus dem Projektumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void umfangSetzen(umfang.filter((x) => x.id !== u.id)) },
+                    ])
+                  }
+                >
                   <div className="pu-haupt">
+                    <Griff {...sortieren.griff(i, u.titel)} />
                     <StatusPunkt status={d.status} />
                     <input className="pu-nr" value={u.nr ?? ''} placeholder="Nr" aria-label={`Nummer von ${u.titel}`} onChange={(e) => setzen(u.id, { nr: e.target.value || undefined })} />
                     <div className="pu-text">

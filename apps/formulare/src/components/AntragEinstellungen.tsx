@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 import { Fragment, useState } from 'react';
-import type { KatalogEintrag } from '../antrag';
+import type { AntragsVorlage, KatalogEintrag } from '../antrag';
 import { VORGABE_MERKMALE, bedingungText } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
-import { PLATZHALTER, VORGABE_EXPORT, dateiname } from '../antrag';
+import { PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus } from '../antrag';
+import { Griff, useSortieren } from './Sortieren';
 import { useAntrag } from '../antragStore';
 import { waehleOrdner } from '../dateisystem';
 import { Symbol } from './Symbol';
@@ -29,7 +30,13 @@ export function AntragEinstellungen() {
   const e = useAntrag((s) => s.einstellungen);
   const katalog = useAntrag((s) => s.katalog);
   const merkmale = useAntrag((s) => s.merkmalDefinitionen);
-  const { setEinstellungen, setKatalog, setMerkmalDefinitionen } = useAntrag.getState();
+  const vorlagen = useAntrag((s) => s.vorlagen);
+  const { setEinstellungen, setKatalog, setMerkmalDefinitionen, setVorlagen } = useAntrag.getState();
+  const katalogSort = useSortieren(katalog.length, (von, nach) => setKatalog(verschieben(katalog, von, nach)));
+  const merkmalSort = useSortieren(merkmale.length, (von, nach) => setMerkmalDefinitionen(verschieben(merkmale, von, nach)));
+  const vorlagenSort = useSortieren(vorlagen.length, (von, nach) => setVorlagen(verschieben(vorlagen, von, nach)));
+  const vorlageSetzen = (id: string, teil: Partial<AntragsVorlage>) => setVorlagen(vorlagen.map((v) => (v.id === id ? { ...v, ...teil } : v)));
+  const inVorlage = (v: AntragsVorlage, kid: string, an: boolean) => vorlageSetzen(v.id, { dokumente: an ? [...v.dokumente.filter((d) => d !== kid), kid] : v.dokumente.filter((d) => d !== kid) });
   const [bedingungOffen, setBedingungOffen] = useState<string | null>(null);
   const beispiel = dateiname(e.namensvorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, kennung: 'nw010005', stand: '2026A' });
 
@@ -140,9 +147,10 @@ export function AntragEinstellungen() {
         titel="Projektmerkmale"
         text="Merkmale eines Projekts, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Der Wert wird je Projekt im Projektumfang gewählt und gilt für alle Formulare; Bedingungen stellst du in der Gliederung (Anpassen) und im Katalog ein."
       >
-        <table className="es-tabelle es-katalog">
+        <table className="es-tabelle es-katalog" data-sortier-liste="">
           <thead>
             <tr>
+              <th />
               <th>Merkmal</th>
               <th>Mögliche Werte (mit Komma getrennt)</th>
               <th />
@@ -150,7 +158,10 @@ export function AntragEinstellungen() {
           </thead>
           <tbody>
             {merkmale.map((m, i) => (
-              <tr key={i}>
+              <tr key={i} {...merkmalSort.zeile(i)}>
+                <td className="es-griff">
+                  <Griff {...merkmalSort.griff(i, m.name)} />
+                </td>
                 <td>
                   <input value={m.name} aria-label="Merkmal" onChange={(x) => setMerkmalDefinitionen(merkmale.map((y, n) => (n === i ? { ...y, name: x.target.value } : y)))} />
                 </td>
@@ -180,17 +191,75 @@ export function AntragEinstellungen() {
       </Karte>
 
       <Karte
-        titel="Antragsdokumente (Katalog)"
-        text="Grundlegende Dokumente eines Antrags. Vorgewählte kommen beim ersten Festlegen des Projektumfangs dazu, die übrigen lassen sich je Projekt hinzunehmen. Intern: Formular aus FORMA (Teil des Namens oder Kennung). Extern: Datei aus dem Projektordner (Ordner der Quelle und Muster mit * und ?, mehrere mit „;“)."
+        titel="Antragsvorlagen"
+        text="Zusammenstellungen der Antragsdokumente je Art von Antrag. Beim Festlegen des Projektumfangs wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen (z. B. BAUA → Bauantrag). Welche Dokumente dazugehören, kreuzt du unten im Katalog in der Spalte der Vorlage an; die Reihenfolge ist die des Katalogs."
       >
-        <table className="es-tabelle es-katalog">
+        <table className="es-tabelle es-katalog es-vorlagen" data-sortier-liste="">
           <thead>
             <tr>
+              <th />
+              <th>Vorlage</th>
+              <th title="für Projekte, deren aktive Antragsfassung diese Art hat">Antragsart</th>
+              <th>Dokumente</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {vorlagen.map((v, i) => (
+              <tr key={v.id} {...vorlagenSort.zeile(i)}>
+                <td className="es-griff">
+                  <Griff {...vorlagenSort.griff(i, `Vorlage ${v.name}`)} />
+                </td>
+                <td>
+                  <input value={v.name} aria-label="Vorlage" onChange={(x) => vorlageSetzen(v.id, { name: x.target.value })} />
+                </td>
+                <td>
+                  <select value={v.art ?? ''} aria-label={`Antragsart von ${v.name}`} onChange={(x) => vorlageSetzen(v.id, { art: x.target.value || undefined })}>
+                    <option value="">–</option>
+                    {[...new Set([...e.arten, ...(v.art ? [v.art] : [])])].map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td className="muted small-text">{katalog.filter((k) => v.dokumente.includes(k.id)).length} Dokumente</td>
+                <td>
+                  <button className="icon" aria-label={`${v.name} entfernen`} title="Entfernen" onClick={() => setVorlagen(vorlagen.filter((x) => x.id !== v.id))}>
+                    <Symbol name="muell" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="es-zeile">
+          <button onClick={() => setVorlagen([...vorlagen, { id: `v${Date.now().toString(36)}`, name: 'Neue Vorlage', dokumente: [] }])}>
+            <Symbol name="plus" /> Vorlage hinzufügen
+          </button>
+          {JSON.stringify(vorlagen) !== JSON.stringify(vorlagenAus(null, katalog)) && JSON.stringify(vorlagen) !== JSON.stringify(VORGABE_VORLAGEN) && (
+            <button onClick={() => setVorlagen(null)}>Vorgabe wiederherstellen</button>
+          )}
+        </div>
+      </Karte>
+
+      <Karte
+        titel="Antragsdokumente (Katalog)"
+        text="Alle Dokumente, die in einem Antrag vorkommen können – je Vorlage angekreuzt, was dazugehört; die übrigen lassen sich je Projekt hinzunehmen. Intern: Formular aus FORMA (Teil des Namens oder Kennung). Extern: Datei aus dem Projektordner (Ordner der Quelle und Muster mit * und ?, mehrere mit „;“). Die Reihenfolge gilt auch für den Projektumfang."
+      >
+        <table className="es-tabelle es-katalog" data-sortier-liste="">
+          <thead>
+            <tr>
+              <th />
               <th>Dokument</th>
               <th>Art</th>
               <th>Formular / Quelle</th>
               <th>Muster der Datei</th>
-              <th title="in neuen Projekten vorgewählt">Vorgewählt</th>
+              {vorlagen.map((v) => (
+                <th key={v.id} className="es-vorlage-spalte" title={`gehört zur Vorlage „${v.name}“`}>
+                  {v.name}
+                </th>
+              ))}
               <th title="nur erforderlich, wenn die Projektmerkmale zutreffen">Nur wenn</th>
               <th />
             </tr>
@@ -198,7 +267,10 @@ export function AntragEinstellungen() {
           <tbody>
             {katalog.map((k, i) => (
               <Fragment key={k.id}>
-                <tr>
+                <tr {...katalogSort.zeile(i)}>
+                  <td className="es-griff">
+                    <Griff {...katalogSort.griff(i, k.titel)} />
+                  </td>
                   <td>
                     <input value={k.titel} onChange={(x) => zeileSetzen(i, { titel: x.target.value })} aria-label="Dokument" />
                   </td>
@@ -218,9 +290,11 @@ export function AntragEinstellungen() {
                   <td>
                     <input value={k.muster ?? ''} placeholder={`*${k.titel}*`} onChange={(x) => zeileSetzen(i, { muster: x.target.value })} aria-label="Muster" />
                   </td>
-                  <td className="es-mitte">
-                    <input type="checkbox" checked={k.vorgewaehlt} onChange={(x) => zeileSetzen(i, { vorgewaehlt: x.target.checked })} aria-label="Vorgewählt" />
-                  </td>
+                  {vorlagen.map((v) => (
+                    <td key={v.id} className="es-mitte">
+                      <input type="checkbox" checked={v.dokumente.includes(k.id)} onChange={(x) => inVorlage(v, k.id, x.target.checked)} aria-label={`${k.titel} in ${v.name}`} />
+                    </td>
+                  ))}
                   <td>
                     <button
                       className={`small es-bedingung${k.bedingung?.length ? ' gesetzt' : ''}`}
@@ -239,7 +313,7 @@ export function AntragEinstellungen() {
                 </tr>
                 {bedingungOffen === k.id && (
                   <tr className="es-bedingung-zeile">
-                    <td colSpan={7}>
+                    <td colSpan={7 + vorlagen.length}>
                       <BedingungEditor wert={k.bedingung} merkmale={merkmale} onChange={(b) => zeileSetzen(i, { bedingung: b })} />
                     </td>
                   </tr>
