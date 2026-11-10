@@ -127,6 +127,36 @@ export async function formularLoeschen(f: FormularEintrag) {
   }
 }
 
+let frischt = false;
+
+/**
+ * Von außen geänderte Dateien übernehmen – neue Formulare (FORMA), neue Dokumente im Projektordner (Explorer,
+ * Kollegen), Sperren und den Antragsstatus. `voll` (wenn das Fenster wieder in den Vordergrund kommt): auch die
+ * Projektdatei und – in der Übersicht – die Liste der Projekte.
+ */
+export async function auffrischen(voll = false) {
+  const s = useFormulare.getState();
+  if (frischt || !s.ds) return;
+  frischt = true;
+  try {
+    const projekt = s.projekt;
+    if (projekt) {
+      const neu = await formulareDesProjekts(s.ds, projekt);
+      const st = useFormulare.getState();
+      if (st.projekt !== projekt) return;
+      // geänderte Liste: das Abo des Antrags gleicht danach selbst ab (samt Projektordner-Baum)
+      if (JSON.stringify(neu) !== JSON.stringify(st.formulare)) useFormulare.setState({ formulare: neu });
+      else await useAntrag.getState().aktualisieren();
+      if (voll) await useFormulare.getState().oapAuffrischen();
+    }
+    if (voll && (!projekt || s.haupt === 'projekte') && !s.sucht) await useFormulare.getState().projekteLaden();
+  } catch {
+    // beim nächsten Mal wieder
+  } finally {
+    frischt = false;
+  }
+}
+
 /** Kopierte Datei in einen Ordner einfügen (innerhalb desselben Projektordners) */
 export async function einfuegen(basis: string, ordner: string) {
   const ds = useFormulare.getState().ds;
