@@ -36,7 +36,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Export) und den Formularen der anderen FORMA-Projekte – je Formular (Name ohne Nummer und Jahr) eins: aus dem
   Vorlagenordner, sonst der neueste Stand. Angelegt wird eine Kopie mit geleerten Eingaben (schreibgeschützte
   Textfelder bleiben), mit der nächsten laufenden Nummer; sie wird geöffnet und auf Wunsch in den Projektumfang
-  aufgenommen. „Aus Projektkarte ausfüllen …“ trägt dann die Projektdaten ein.
+  aufgenommen. Leere Felder, die FORMA der Projektkarte zuordnet, werden dabei gleich befüllt (siehe Autofill).
 - **Ansicht „Formular“:** die Seiten wie auf Papier – weiße A4-Blätter mit Rand, das Formular mittig, in den
   Schriften und an den Stellen aus der Datei (Textfelder in Courier New wie in FORMA), mit Zoom (Seitenbreite
   oder 75–200 %). Die Felder sind farbig hinterlegt; gedruckt wird ohne Hinterlegung.
@@ -50,6 +50,11 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Gezählt wird in Einheiten: jedes Textfeld für sich, Kästchen einer Zeile gemeinsam als eine Auswahl, eigene
   Gruppen als eine Angabe. Abschnitte, die nur aus einer Nummer bestehen („2.“), bekommen den Text daneben dazu
   („2. Bauvorlagen, wenn …“).
+- **Vorgaben der App:** Für Formulare kann die App je Formular und Stand eine Vorgabe mitbringen (Titel der Felder
+  und Abschnitte, Gruppen, Bedingungen nach BauO NRW / BauPrüfVO; `src/vorgaben/`). Eigene Einstellungen liegen
+  darüber und gehen immer vor; gespeichert wird nur, was davon abweicht – alles andere folgt der Vorgabe, auch wenn
+  eine spätere Version sie verbessert. Beim Einrichten steht bei jedem Eintrag, ob er aus der Vorgabe stammt;
+  „Vorgabe wiederherstellen“ verwirft die eigene Änderung, „Alles auf die Vorgabe zurücksetzen“ alle des Formulars.
 - **Formular einrichten** („Einrichten“ in der Werkzeugleiste), je Formular und Stand – gilt in allen Projekten.
   Das Formular wird zur Fläche zum Auswählen: **Feld anklicken** (mit <kbd>Strg</kbd>/<kbd>Umschalt</kbd> mehrere),
   links zeigt die Gliederung den Aufbau als **Baum** (Abschnitte, Gruppen, Felder – mit Füllstand, Inhalt zum
@@ -101,8 +106,8 @@ Jede Eingabe wird sofort **lokal gesichert** (im Speicher der App, nicht im Proj
 Neustarts übersteht. In die FORMA-Datei kommt sie erst mit „Speichern“; Kollegen sehen also nie halbe Zwischenstände.
 
 - <kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd> (oder ↶ ↷) nehmen Eingaben zurück bzw. stellen sie
-  wieder her und springen zum betroffenen Feld. Weitertippen im selben Feld ist ein Schritt; „Aus Projektkarte
-  ausfüllen“ ist ein Schritt für alle Felder.
+  wieder her und springen zum betroffenen Feld. Weitertippen im selben Feld ist ein Schritt; „Daten
+  aktualisieren“ ist ein Schritt für alle Felder.
 - **Verlauf** (rechts): alle Schritte mit Zeit, Feld und „alt → neu“, auch aus früheren Sitzungen. Ein Klick stellt
   den Stand nach diesem Schritt her; „Anfang“ nimmt alles zurück.
 - Auch nach dem Speichern bleibt der Verlauf: Rückgängig ergibt dann wieder eine ungespeicherte Änderung.
@@ -138,9 +143,27 @@ Anschrift, wie sie in Formularen steht.
 - **Suche** über alle Einträge; ein Treffer springt in seine Gruppe.
 - **Hinweise auf Tippfehler** (Postleitzahl, E-Mail, IBAN-Prüfziffer, Telefonnummer) – nur Hinweise, gespeichert
   wird trotzdem. Zeichen, die es in Windows-1252 nicht gibt (z. B. Emojis), werden abgelehnt.
-- **Aus Projektkarte ausfüllen …** (im Formular): Vorschau aller Felder, die die Projektkarte füllen würde. Leere
-  Felder sind vorgewählt, Felder mit eigenem Inhalt nur auf Wunsch (sie können von Hand angepasst sein); Felder,
-  für die die Projektkarte nichts hat, bleiben unberührt. Ungespeicherte Änderungen der Projektkarte zählen mit.
+- **Autofill mit Zustand:** Felder, die FORMA einem Eintrag der Projektkarte zuordnet, bekommen ihren Text von
+  dort (Auto-Wert). Je Feld merkt sich die App in der Projektdatei (`.oap`, Abschnitt `formulare` → `felder`, je
+  Formulardatei) getrennt den zuletzt eingetragenen Auto-Wert und eine manuelle Überschreibung:
+  - **neue Formulare** (aus dem Projektumfang oder „Formular hinzufügen“): leere Felder mit Auto-Wert werden gleich
+    befüllt;
+  - wer den Auto-Text durch eigenen ersetzt, **fixiert die Überschreibung** (beim Speichern) – sie bleibt beim
+    Aktualisieren; im Formular ist ein Feld aus der Projektkarte links blau, ein überschriebenes orange markiert;
+  - ein **geleertes Feld** bekommt beim Verlassen wieder den Auto-Wert; **erzwungen leer** ist ein Feld mit einem
+    Leerzeichen;
+  - **Daten aktualisieren …** (Werkzeugleiste des Formulars, auch im Kontextmenü eines Formulars in der Navigation):
+    Vorschau aller Felder, die sich ändern würden – vorgewählt sind Felder mit dem bisherigen Auto-Wert und leere;
+    überschriebene und Felder mit anderem Inhalt ohne gespeicherten Zustand (z. B. in FORMA geändert) nur auf
+    Wunsch. Ausgefülltes wird nie geleert; hat die Projektkarte nichts, bleibt das Feld. Ungespeicherte Änderungen
+    der Projektkarte zählen mit. Im Kontextmenü wird ein nicht geöffnetes Formular gleich aktualisiert (mit
+    ungespeicherten Eingaben in diese, sonst in die Datei – mit Sperre, nicht, wenn es anderswo geöffnet ist);
+  - **Manuelle Überschreibungen ignorieren** (Haken im Menü ▾ neben „Daten aktualisieren“ und im Dialog, je
+    Formular): überall der Auto-Wert; die Überschreibungen bleiben gemerkt und kommen zurück, wenn der Haken weg ist;
+  - **nach dem Speichern der Projektkarte** fragt die App, ob die Unterlagen aktualisiert werden sollen – mit der
+    Liste der Formulare und wie viele Felder sich ändern. Erkannt werden auch Felder, die noch den alten Wert der
+    Projektkarte tragen, ohne dass es einen Zustand gab. Das geöffnete Formular bekommt die Werte als ungespeicherte
+    Eingaben, die anderen werden gleich geschrieben.
 - Ist die Projektkarte gerade in FORMA geöffnet (Datenbank gesperrt), kommt eine Meldung; nichts wird geschrieben.
 
 ### Projektordner (Server)
@@ -224,7 +247,7 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
 - In der **Navigation** trägt jedes Formular des Projektumfangs einen Farbpunkt; fehlende Formulare stehen grau
   hinterlegt darunter – ein **Klick legt das Formular an** (aus dem Vorlagenordner, sonst als Kopie des neuesten
   passenden Formulars aus einem anderen Projekt, jeweils mit geleerten Eingaben; schreibgeschützte Textfelder
-  bleiben) und öffnet es. „Aus Projektkarte ausfüllen …“ trägt dann die Projektdaten ein.
+  bleiben) und öffnet es – leere Felder mit Angaben aus der Projektkarte sind gleich befüllt.
 - Die **PDF** entsteht in der App aus dem Formular selbst – so, wie die Formularansicht es zeigt: A4-Blätter, Rahmen,
   Linien, Beschriftungen (auch gedreht), Feldinhalte und Kreuze, Bilder. Echter Text in den PDF-Standardschriften:
   Helvetica hat die Breiten von Arial, Courier die von Courier New – die Zeilen brechen an denselben Stellen um.
@@ -445,7 +468,10 @@ wie Delphi, `formular.ts` liest und schreibt Formulardateien und ändert Textfel
 `projektkarte.ts` die Zuordnung Feld → Projektkarte, `sperre.ts` liest und schreibt Sperrdateien.
 `antrag.ts` ist die Logik von Antrag und Export (Namensvorlage, Fassungen, Katalog, Zuordnung, Status),
 `antragStore.ts` der Zustand dazu (Einstellungen, Abschnitt `formulare` der Projektdatei, Export, Formular anlegen), `dateiAktionen.ts`
-die Dateibefehle des Kontextmenüs. `dokumente/` liest und ändert PDF (pdf.js),
+die Dateibefehle des Kontextmenüs. `autofill.ts` ist das Autofill mit Zustand (Auto-Wert, Überschreibung,
+Aktualisieren), `aktualisieren.ts` führt es in offenen und nicht geöffneten Formularen aus (Dialog, Rückfrage nach
+dem Speichern der Projektkarte). `vorgabe.ts` legt die Vorgaben der App (`vorgaben/`) unter die eigenen
+Einstellungen der Formulare und speichert nur die Abweichungen. `dokumente/` liest und ändert PDF (pdf.js),
 Excel und Word (eigener XML-Leser mit Lage im Quelltext, ZIP über fflate). `verlauf.ts` ist der Verlauf, `ablage.ts` die
 Zuordnung der echten Projektordner.
 

@@ -505,7 +505,7 @@ describe('Formulare', () => {
     eingabe(kartenFeld(host, 'PLZ Straße'), '12345');
     await klick(knopf(host, '001-Muster'));
 
-    await klick(knopf(host, 'Aus Projektkarte ausfüllen'));
+    await klick(knopf(host, 'Daten aktualisieren'));
     const zeilen = [...host.querySelectorAll('.fo-ausfuellen-zeile')];
     // Memo2 (leer) → „12345 Musterstadt“; Memo1 („Mustermann, Max“) bekäme den leeren Eintrag der Behörde – nicht angeboten
     expect(zeilen.map((z) => [z.querySelector('strong')!.textContent, z.querySelector('input')!.checked])).toEqual([['Bauherrschaft', true]]);

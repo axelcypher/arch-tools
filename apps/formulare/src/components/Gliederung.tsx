@@ -9,7 +9,7 @@ import { springeZuFeld } from '../navigation';
 import type { Einheit, FormularProfil } from '../profil';
 import { abschnittErforderlich, abschnittId, ausgefuellt, einheiten, einheitTitel, feldTitel, formularKontext, leeresProfil, profilSchluessel } from '../profil';
 import type { OffenesFormular } from '../store';
-import { useFormulare, wertVon } from '../store';
+import { useFormulare, useProfil, wertVon } from '../store';
 import { umfangZeigen } from './Antrag';
 import { EinrichtenBaum } from './Einrichten';
 import { Symbol } from './Symbol';
@@ -37,9 +37,9 @@ const schluesselVon = (felder: Feld[]) => felder.map((f) => f.schluessel);
  */
 export function Gliederung({ offen }: { offen: OffenesFormular }) {
   const schluessel = profilSchluessel(offen.formular, offen.name);
-  const gespeichert = useFormulare((s) => s.profile[schluessel]);
+  const wirksames = useProfil(schluessel);
   const { setGliederungOffen } = useFormulare.getState();
-  const profil: FormularProfil = gespeichert ?? leeresProfil();
+  const profil: FormularProfil = useMemo(() => ({ ...leeresProfil(), ...wirksames }), [wirksames]);
   const anpassen = useEinrichten((s) => s.aktiv);
   const [offeneAbschnitte, setOffeneAbschnitte] = useState<Set<string>>(() => new Set());
   const merkmalWerte = useAntrag((s) => s.projektdatei?.merkmale);

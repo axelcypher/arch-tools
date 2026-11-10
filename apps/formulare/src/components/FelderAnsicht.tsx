@@ -126,7 +126,15 @@ function FeldEingabe({
     <label className={klasse} title={feld.hinweis} style={breite}>
       {!ohneBeschriftung && <span className="field-label">{feld.beschriftung}</span>}
       {einzeilig ? (
-        <input type="text" value={text} disabled={gesperrt} aria-label={feld.beschriftung} data-feld={feld.schluessel} onChange={(e) => wertSetzen(feld, e.target.value)} />
+        <input
+          type="text"
+          value={text}
+          disabled={gesperrt}
+          aria-label={feld.beschriftung}
+          data-feld={feld.schluessel}
+          onChange={(e) => wertSetzen(feld, e.target.value)}
+          onBlur={() => useFormulare.getState().feldVerlassen(feld)}
+        />
       ) : (
         <textarea
           value={text}
@@ -135,6 +143,7 @@ function FeldEingabe({
           data-feld={feld.schluessel}
           rows={Math.max(2, Math.min(12, text.split('\n').length + 1, Math.round(feld.kasten.h / 18)))}
           onChange={(e) => wertSetzen(feld, e.target.value)}
+          onBlur={() => useFormulare.getState().feldVerlassen(feld)}
         />
       )}
     </label>

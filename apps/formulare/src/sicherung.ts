@@ -4,8 +4,8 @@
  * Kolleginnen und Kollegen oder als Vorlage für die Vorgaben der App.
  */
 
-import type { FormularProfil } from './profil';
-import { bereinigt, istLeer, leeresProfil } from './profil';
+import type { Abweichung } from './vorgabe';
+import { abweichungAus, istLeer } from './vorgabe';
 
 export const SICHERUNG_ART = 'formulare-einstellungen';
 
@@ -114,22 +114,11 @@ export function sicherungLesen(text: string): Sicherung {
 /** Bereiche, die in der Datei stehen */
 export const bereicheIn = (s: Sicherung) => SICHERUNG_BEREICHE.filter((b) => b.schluessel in s.daten);
 
-/** Ein Profil aus einer Datei: geprüft, sonst null */
-function profilAus(roh: unknown): FormularProfil | null {
-  if (!istObjekt(roh)) return null;
+/** Eigene Einstellungen eines Formulars aus einer Datei: geprüft, sonst null */
+function profilAus(roh: unknown): Abweichung | null {
   try {
-    const p = bereinigt({
-      ...leeresProfil(),
-      ...roh,
-      abschnitte: istObjekt(roh.abschnitte) ? (Object.fromEntries(Object.entries(roh.abschnitte).filter(([, v]) => istObjekt(v))) as FormularProfil['abschnitte']) : {},
-      zaehlt: istObjekt(roh.zaehlt) ? (roh.zaehlt as FormularProfil['zaehlt']) : {},
-      feldTitel: istObjekt(roh.feldTitel) ? (Object.fromEntries(Object.entries(roh.feldTitel).filter(([, v]) => typeof v === 'string')) as Record<string, string>) : {},
-      gruppen: Array.isArray(roh.gruppen)
-        ? (roh.gruppen.filter((g) => istObjekt(g) && typeof g.id === 'string' && Array.isArray(g.felder)).map((g) => ({ ...g, felder: (g.felder as unknown[]).filter((f) => typeof f === 'string') })) as FormularProfil['gruppen'])
-        : [],
-      bedingungen: istObjekt(roh.bedingungen) ? (roh.bedingungen as FormularProfil['bedingungen']) : {},
-    });
-    return istLeer(p) ? null : p;
+    const e = abweichungAus(roh);
+    return e && !istLeer(e) ? e : null;
   } catch {
     return null;
   }

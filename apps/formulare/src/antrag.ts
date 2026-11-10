@@ -8,6 +8,8 @@
  * Ziel des Exports. Unsere Dateien heißen `<Kürzel> <Phase> <JJMMTT> [Nr] <Name>`, z. B. „BS9 GP 261110 Bauantrag.pdf“.
  */
 
+import type { Zustaende } from './autofill';
+import { zustaendeAus } from './autofill';
 import type { Bedingung } from './bedingung';
 import { bedingungAus, erfuellt, hatBedingung, nurMerkmale } from './bedingung';
 import type { Eintrag } from './dateisystem';
@@ -315,6 +317,8 @@ export interface ProjektDatei {
   umfang?: UmfangEintrag[];
   /** Projektmerkmale (Gebäudeklasse, Sonderbau …): Name → Wert, gilt für alle Formulare */
   merkmale?: Record<string, string>;
+  /** Autofill: je Formulardatei Auto-Wert und manuelle Überschreibung der Felder (siehe autofill.ts) */
+  felder?: Zustaende;
 }
 
 export function projektDateiAus(roh: unknown): ProjektDatei {
@@ -337,6 +341,8 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
     const m = Object.fromEntries(Object.entries(o.merkmale as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string' && !!x[1]));
     if (Object.keys(m).length) out.merkmale = m;
   }
+  const felder = zustaendeAus(o.felder);
+  if (Object.keys(felder).length) out.felder = felder;
   return out;
 }
 

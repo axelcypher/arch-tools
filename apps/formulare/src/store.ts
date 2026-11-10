@@ -34,7 +34,10 @@ import { allgemeinAendern, konfigAendern, konfigLesen } from '@core/platform/kon
 import { ordnerName } from '@core/platform/projektordner';
 import { sichererDateiname } from '@core/projektdatei';
 import type { FormularProfil } from './profil';
-import { bereinigt as profilBereinigt, istLeer as profilLeer } from './profil';
+import type { FormularZustand } from './autofill';
+import { autoWerte, autofillFelder, zustandBeimSpeichern } from './autofill';
+import type { Abweichung, Eintrag } from './vorgabe';
+import { abweichung, abweichungAus, istLeer as abweichungLeer, ohneEigenes, vorgabeFuer, wirksam } from './vorgabe';
 import type { FeldAenderung, Verlauf } from './verlauf';
 import { eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
 
@@ -192,8 +195,8 @@ interface FormulareState extends Gespeichert {
   datei: OffeneDatei | null;
   /** ungespeicherte Bearbeitungen je Dokument (`root|pfad`), nur für diese Sitzung */
   dateiEntwuerfe: Record<string, unknown>;
-  /** Formularprofile (Gliederung, Füllstand) je Formular und Stand */
-  profile: Record<string, FormularProfil>;
+  /** eigene Einstellungen der Formulare (Gliederung, Füllstand, Bedingungen) je Formular und Stand – als Abweichung von der Vorgabe der App */
+  profile: Record<string, Abweichung>;
   /** Adressen aus den Projektkarten aller FORMA-Projekte (zwischengespeichert) */
   adressbuch: { adressen: Adresse[]; stand: number } | null;
   /** Einlesen läuft: so weit */
@@ -245,6 +248,10 @@ interface FormulareState extends Gespeichert {
   dateiOeffnen: () => Promise<void>;
   schliessen: () => Promise<void>;
   wertSetzen: (feld: Feld, wert: Wert) => void;
+  /** Feld verlassen: ein geleertes Feld mit Auto-Wert bekommt ihn wieder (erzwungen leer: ein Leerzeichen) */
+  feldVerlassen: (feld: Feld) => void;
+  /** nicht geöffnetes Formular ändern: in den Entwurf, falls es einen gibt, sonst in die Datei (mit Sperre) */
+  formularAendern: (pfad: string, werte: Record<string, Wert>) => Promise<'entwurf' | 'gespeichert' | 'gesperrt' | 'nurLesen'>;
   /** mehrere Felder in einem Schritt (Ausfüllen aus der Projektkarte) */
   werteSetzen: (werte: { feld: Feld; wert: Wert }[], titel: string) => void;
   /** liefert den Schlüssel des betroffenen Felds (zum Hinspringen) */
@@ -280,7 +287,10 @@ interface FormulareState extends Gespeichert {
   dateiSpeichern: (neu: Uint8Array) => Promise<boolean>;
   setDateiEntwurf: (wert: unknown) => void;
   /** Profil eines Formulars setzen; null = wieder die Vorgabe */
+  /** wirksames Profil speichern (gespeichert wird die Abweichung von der Vorgabe); null = alles auf die Vorgabe */
   profilSetzen: (schluessel: string, profil: FormularProfil | null) => void;
+  /** eigene Änderungen an einem Abschnitt, Feld oder einer Gruppe verwerfen – es gilt wieder die Vorgabe */
+  eigenesVerwerfen: (schluessel: string, eintrag: Eintrag) => void;
   einstellungenOeffnen: (bereich?: EinstellungsBereich) => void;
   setRollenVorgabe: (gruppe: number, schluessel: string | null) => void;
   setOapVorlage: (pfad: string) => void;
@@ -407,20 +417,30 @@ export function projektHatEntwuerfe(p: Pick<Projekt, 'root' | 'ordner'>): boolea
   return Object.keys(entwuerfe()).some((k) => k.startsWith(vorne)) || !!lesen<Record<string, unknown>>(PK_ENTWUERFE, {})[`karte|${p.root}|${p.ordner}`];
 }
 
-/** gespeicherte Formularprofile prüfen (frühere Bedingungen als Liste werden zur Und-Gruppe) */
-function profileAus(roh: unknown): Record<string, FormularProfil> {
+/** gespeicherte eigene Einstellungen der Formulare prüfen (frühere Bedingungen als Liste werden zur Und-Gruppe) */
+function profileAus(roh: unknown): Record<string, Abweichung> {
   if (!roh || typeof roh !== 'object') return {};
-  const out: Record<string, FormularProfil> = {};
+  const out: Record<string, Abweichung> = {};
   for (const [k, v] of Object.entries(roh as Record<string, unknown>)) {
-    if (!v || typeof v !== 'object') continue;
     try {
-      const p = v as Partial<FormularProfil>;
-      out[k] = profilBereinigt({ ...p, abschnitte: p.abschnitte ?? {}, zaehlt: p.zaehlt ?? {} } as FormularProfil);
+      const e = abweichungAus(v);
+      if (e && !abweichungLeer(e)) out[k] = e;
     } catch {
-      // unlesbares Profil: weglassen
+      // unlesbar: weglassen
     }
   }
   return out;
+}
+
+const wirksamCache = new Map<string, { e: Abweichung | undefined; p: FormularProfil }>();
+/** Wirksames Profil eines Formulars: Vorgabe der App, darüber die eigenen Einstellungen (gleiches Objekt, solange sich nichts ändert) */
+export function profilFuer(profile: Record<string, Abweichung>, schluessel: string): FormularProfil {
+  const e = profile[schluessel];
+  const c = wirksamCache.get(schluessel);
+  if (c && c.e === e) return c.p;
+  const p = wirksam(vorgabeFuer(schluessel), e);
+  wirksamCache.set(schluessel, { e, p });
+  return p;
 }
 
 function zuletztLaden(): ZuletztEintrag[] {
@@ -485,6 +505,26 @@ function sichernUnter(ablage: string, k: string, aenderungen: Record<string, unk
 export const istGeaendert = (o: OffenesFormular | null) => !!o && Object.keys(o.aenderungen).length > 0;
 
 export const wertVon = (o: OffenesFormular, f: Feld): Wert => (f.schluessel in o.aenderungen ? o.aenderungen[f.schluessel] : f.original);
+
+/**
+ * Anbindung des Autofill-Zustands (liegt im Abschnitt „formulare“ der Projektdatei, den antragStore verwaltet –
+ * so entsteht kein Kreis zwischen den Stores): antragStore trägt hier Lesen und Schreiben ein.
+ */
+export const autofillAnbindung: {
+  zustand: (datei: string) => FormularZustand | undefined;
+  speichern: (datei: string, z: FormularZustand) => void;
+  /** nach dem Speichern der Projektkarte (vorher/nachher) – fragt, ob die Unterlagen aktualisiert werden sollen */
+  karteGespeichert?: (alt: Projektkarte, neu: Projektkarte) => void;
+} = { zustand: () => undefined, speichern: () => undefined };
+
+/** Dateiname eines Formulars im FORMA-Projekt (Schlüssel des Autofill-Zustands) */
+export const formularDatei = (pfad: string) => pfad.split('/').pop() ?? pfad;
+
+/** Auto-Werte des offenen Formulars aus der Projektkarte (mit ihren ungespeicherten Änderungen); null, solange sie nicht gelesen ist */
+export function autoWerteVon(o: OffenesFormular, karte: OffeneKarte | null) {
+  if (!karte || !o.projekt || karte.projekt.ordner !== o.projekt.ordner || karte.projekt.root !== o.projekt.root) return null;
+  return autoWerte(o.formular, o.felder, karteMitAenderungen(karte));
+}
 
 export const kannZurueck = (o: OffenesFormular | null) => !!o && kannRueckgaengig(o.verlauf);
 export const kannVor = (o: OffenesFormular | null) => !!o && kannWiederholen(o.verlauf);
@@ -902,6 +942,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         // Zwischen Lesen und Sperren könnte FORMA gespeichert haben: mit Sperre noch einmal lesen
         const frisch = sperre.art === 'eigen' ? ((await ds.lies(projekt.root, eintrag.pfad)) ?? bytes) : bytes;
         await oeffnen(projekt, eintrag.pfad, eintrag.name, frisch, sperre);
+        const offen = get().offen;
+        if (offen && !get().karte && autofillFelder(offen.formular, offen.felder).size) void get().karteLaden();
         if (aufgeraeumt && !get().meldung) set({ meldung: { art: 'info', text: 'Eine verwaiste Sperre dieser App (nach einem Absturz) wurde entfernt.' } });
         log.info(`Geöffnet: ${eintrag.pfad}${sperre.art === 'fremd' ? ` (nur ansehen: ${sperre.bewertung.art})` : ''}`);
         set({ formulare: await formulareDesProjekts(ds, projekt) });
@@ -1018,6 +1060,41 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       aktualisieren({ ...o, verlauf, aenderungen: mitWerten(o, new Map([[feld.schluessel, wert]])) });
     },
 
+    feldVerlassen: (feld) => {
+      const o = get().offen;
+      if (!o || feld.art !== 'text' || wertVon(o, feld) !== '') return;
+      const auto = autoWerteVon(o, get().karte)?.get(feld.schluessel)?.wert ?? autofillAnbindung.zustand(formularDatei(o.pfad))?.felder[feld.schluessel]?.auto;
+      if (auto) get().wertSetzen(feld, auto);
+    },
+
+    formularAendern: async (pfad, werte) => {
+      const { ds, projekt } = get();
+      if (!ds || !projekt) return 'gesperrt';
+      const k = dokSchluessel({ projekt, pfad });
+      const alle = entwuerfe();
+      if (alle[k] && Object.keys(alle[k]).length) {
+        alle[k] = { ...alle[k], ...werte };
+        schreiben(ENTWUERFE, alle);
+        return 'entwurf';
+      }
+      const { zustand } = await sperren(ds, projekt.root, pfad);
+      if (zustand.art === 'fremd') return 'gesperrt';
+      const sp = sperrPfad(pfad);
+      try {
+        const bytes = await ds.lies(projekt.root, pfad);
+        if (!bytes) throw new Error(`${pfad} nicht gefunden`);
+        if (aufbereiten(bytes).nurLesen) return 'nurLesen';
+        await ds.ersetze(projekt.root, pfad, mitAenderungen(bytes, werte));
+        log.info(`Aktualisiert: ${pfad} (${Object.keys(werte).length} Feld(er))`);
+        return 'gespeichert';
+      } finally {
+        if (zustand.art === 'eigen') {
+          await ds.sperreLoesen(projekt.root, sp, zustand.daten).catch(() => false);
+          sperreVergessen(projekt.root, sp);
+        }
+      }
+    },
+
     werteSetzen: (werte, titel) => {
       const o = get().offen;
       if (!o) return;
@@ -1051,12 +1128,26 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     },
 
     speichern: async () => {
-      const { offen: o, ds, konflikt } = get();
+      const { ds, konflikt } = get();
+      let o = get().offen;
       if (!o || !istGeaendert(o)) return;
       if (o.nurLesen) return fehler(o.nurLesen);
       if (o.sperre.art === 'fremd') return fehler(`${o.name} ist bei ${o.sperre.sperre.benutzer || 'jemand anderem'} geöffnet – Speichern nicht möglich`);
       if (konflikt) return fehler('Die Datei wurde inzwischen geändert – bitte erst neu laden');
       try {
+        // Autofill: geleerte Felder bekommen den Auto-Wert (erzwungen leer ist ein Leerzeichen)
+        const datei = formularDatei(o.pfad);
+        const zustand = o.projekt ? autofillAnbindung.zustand(datei) : undefined;
+        const auto = autoWerteVon(o, get().karte);
+        const bezug = (k: string) => ({ aktuell: auto?.get(k)?.wert, zuletzt: zustand?.felder[k]?.auto });
+        const zugeordnet = autofillFelder(o.formular, o.felder);
+        const alt = o.aenderungen;
+        const aenderungen = { ...alt };
+        for (const [k, w] of Object.entries(aenderungen)) {
+          const b = bezug(k);
+          if (w === '' && zugeordnet.has(k) && (b.aktuell || b.zuletzt)) aenderungen[k] = (b.aktuell || b.zuletzt)!;
+        }
+        if (Object.keys(aenderungen).some((k) => aenderungen[k] !== alt[k])) o = aktualisieren({ ...o, aenderungen });
         const neu = mitAenderungen(o.bytes, o.aenderungen);
         if (o.projekt && ds) {
           const aktuell = await ds.lies(o.projekt.root, o.pfad);
@@ -1070,8 +1161,14 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           if (!ok) return;
         }
         const { formular, felder, nurLesen } = aufbereiten(neu);
+        const geaendert = Object.keys(o.aenderungen).filter((k) => zugeordnet.has(k));
         aktualisieren({ ...o, bytes: neu, formular, felder, nurLesen, aenderungen: {} });
         set({ meldung: { art: 'info', text: `${o.name} gespeichert.` } });
+        if (o.projekt && geaendert.length) {
+          const werte = o.aenderungen;
+          const z = zustandBeimSpeichern(zustand, geaendert, (k) => (typeof werte[k] === 'string' ? (werte[k] as string) : undefined), bezug);
+          if (JSON.stringify(z) !== JSON.stringify(zustand ?? { felder: {} })) autofillAnbindung.speichern(datei, z);
+        }
         log.info(`Gespeichert: ${o.pfad} (${Object.keys(o.aenderungen).length} Feld(er))`);
       } catch (e) {
         fehler(`${o.name} nicht gespeichert`, e);
@@ -1449,9 +1546,19 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     profilSetzen: (schluessel, profil) => {
       const profile = { ...get().profile };
-      const sauber = profil && profilBereinigt(profil);
-      if (sauber && !profilLeer(sauber)) profile[schluessel] = sauber;
+      const e = profil && abweichung(vorgabeFuer(schluessel), profil);
+      if (e && !abweichungLeer(e)) profile[schluessel] = e;
       else delete profile[schluessel];
+      schreiben(PROFILE, profile);
+      set({ profile });
+    },
+    eigenesVerwerfen: (schluessel, eintrag) => {
+      const e = get().profile[schluessel];
+      if (!e) return;
+      const profile = { ...get().profile };
+      const n = ohneEigenes(e, eintrag);
+      if (abweichungLeer(n)) delete profile[schluessel];
+      else profile[schluessel] = n;
       schreiben(PROFILE, profile);
       set({ profile });
     },
@@ -1477,6 +1584,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         if (!frisch) throw new Error('Projektkarte nach dem Speichern nicht lesbar');
         karteAktualisieren({ ...k, karte: frisch, aenderungen: {} });
         set({ meldung: { art: 'info', text: `Projektkarte von ${k.projekt.ordner} gespeichert.` } });
+        if (aenderungen.length) autofillAnbindung.karteGespeichert?.(k.karte, frisch);
         // die Projektdatei (.oap) im Projektordner gleich mitführen: geänderte Angaben mit Gegenstück
         const geaendert = new Set(aenderungen.map((a) => pkSchluessel(a.gruppe, a.id)));
         const werte = new Map<Angabe, string>();
@@ -1547,3 +1655,6 @@ useFormulare.subscribe((s) => {
   };
   schreiben(EINSTELLUNGEN, g);
 });
+
+/** Wirksames Profil eines Formulars (Vorgabe + eigene Einstellungen) */
+export const useProfil = (schluessel: string) => useFormulare((s) => profilFuer(s.profile, schluessel));

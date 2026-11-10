@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { LogDialog } from '@core/ui/LogDialog';
 import { StammdatenDialog } from '@core/ui/Stammdaten';
 import { TitleBar } from '@core/ui/TitleBar';
-import { anzahlZugeordnet } from './ausfuellen';
+import { autofillFelder } from './autofill';
+import { ignoriert, ignorierenSetzen, useAktualisieren } from './aktualisieren';
 import { auffrischen } from './dateiAktionen';
-import { AusfuellenDialog } from './components/AusfuellenDialog';
+import { AktualisierenDialog, UnterlagenDialog } from './components/AktualisierenDialog';
 import { EinstellungenAnsicht } from './components/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
 import { FormularHinzufuegenDialog, useHinzufuegenDialog } from './components/FormularHinzufuegen';
@@ -83,13 +84,15 @@ export function App() {
   const ordnerDialog = useFormulare((s) => s.ordnerDialog);
   const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen, setGliederungOffen, karteSpeichern, karteVerwerfen, karteRueckgaengig, karteWiederholen, sperreNeuPruefen, sperreAufheben } =
     useFormulare.getState();
-  const [dialog, setDialog] = useState<'log' | 'schnellwahl' | 'ausfuellen' | 'aufheben' | 'sperren' | null>(null);
+  const [dialog, setDialog] = useState<'log' | 'schnellwahl' | 'aufheben' | 'sperren' | null>(null);
+  const aktualisierenOffen = useAktualisieren((s) => s.dialog);
+  useAntrag((s) => s.projektdatei); // für den Haken „Manuelle Überschreibungen ignorieren“
   const kartenansicht = haupt === 'projektkarte' && !!projekt;
   const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
   const grund = offen ? sperrgrund(offen) : null;
   const name =
     haupt === 'einstellungen' ? 'Einstellungen' : ds && (!projekt || haupt === 'projekte') ? 'Projekte' : haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
-  const zugeordnet = useMemo(() => (offen ? anzahlZugeordnet(offen) : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
+  const zugeordnet = useMemo(() => (offen ? autofillFelder(offen.formular, offen.felder).size : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
   const formularSichtbar = !!offen && haupt === 'formular';
   const exportPfad = useExportDialog((s) => s.pfad);
   const hinzufuegen = useHinzufuegenDialog((s) => s.offen);
@@ -220,9 +223,24 @@ export function App() {
         )}
         {formularSichtbar && ds && projekt && zugeordnet > 0 && (
           <div className="tb-group">
-            <button disabled={!!grund} title={`${zugeordnet} Felder dieses Formulars kommen aus der Projektkarte`} onClick={() => setDialog('ausfuellen')}>
-              Aus Projektkarte ausfüllen …
+            <button disabled={!!grund} title={`${zugeordnet} Felder dieses Formulars kommen aus der Projektkarte`} onClick={() => useAktualisieren.getState().dialogOeffnen()}>
+              <Symbol name="neuLaden" /> Daten aktualisieren …
             </button>
+            <MenueKnopf
+              title="Formular"
+              className="fo-menue-knopf"
+              punkte={() => [
+                { text: 'Daten aktualisieren …', symbol: 'neuLaden', deaktiviert: !!grund, aktion: () => useAktualisieren.getState().dialogOeffnen() },
+                {
+                  text: 'Manuelle Überschreibungen ignorieren',
+                  symbol: offen && ignoriert(offen.pfad) ? 'haken' : undefined,
+                  deaktiviert: !!grund,
+                  aktion: () => offen && ignorierenSetzen(!ignoriert(offen.pfad)),
+                },
+              ]}
+            >
+              {''}
+            </MenueKnopf>
           </div>
         )}
         {formularSichtbar && ansicht === 'seite' && (
@@ -381,7 +399,8 @@ export function App() {
       <RueckfrageHost />
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
       {dialog === 'schnellwahl' && <Schnellwahl onClose={() => setDialog(null)} />}
-      {dialog === 'ausfuellen' && offen && <AusfuellenDialog offen={offen} onClose={() => setDialog(null)} />}
+      {aktualisierenOffen && offen && <AktualisierenDialog offen={offen} onClose={() => useAktualisieren.getState().dialogSchliessen()} />}
+      <UnterlagenDialog />
       {dialog === 'sperren' && <SperrenDialog onClose={() => setDialog(null)} />}
       {dialog === 'aufheben' && offen?.sperre.art === 'fremd' && (
         <SperreAufhebenDialog name={offen.name} sperre={offen.sperre.sperre} bewertung={offen.sperre.bewertung} oeffnen onAufheben={sperreAufheben} onClose={() => setDialog(null)} />

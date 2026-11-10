@@ -226,7 +226,7 @@ describe('Formular einrichten', () => {
     expect(unter.map((u) => u.querySelector('.fo-gl-titel')!.textContent)).toEqual(['Name', 'Bauherrschaft', 'Bauherrschaft', 'Gebäudeart']);
     expect(unter.map((u) => u.querySelector('.fo-gl-status')!.classList.contains('voll'))).toEqual([true, false, true, true]);
     // eigener Name auch als Hinweis am Feld im Formular
-    expect(host.querySelector<HTMLElement>('.fo-papier [data-feld="0:Memo1"]')!.title).toBe('Name');
+    expect(host.querySelector<HTMLElement>('.fo-papier [data-feld="0:Memo1"]')!.title).toBe('Name – Wert aus der Projektkarte');
     const profil = useFormulare.getState().profile['nw019999|2026A'];
     expect(profil.feldTitel).toEqual({ '0:Memo1': 'Name' });
     expect(profil.gruppen).toEqual([{ id: 'g1', titel: 'Gebäudeart', regel: 'eins', felder: ['0:CheckBox1', '0:CheckBox3', '0:CheckBox2', '0:CheckBox4'] }]);
@@ -484,5 +484,120 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     await klick(knopf(alt as HTMLElement, 'In die Projektkarte übernehmen (4)'));
     expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '101:30': 'Umbau Wohnhaus', '301:40': 'Musterhausen' });
     expect(ds.dateien.get(PD)).toBe(vorher);
+  });
+});
+
+describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => {
+  const OAP = `${ORDNER}/Planung/Berechnungen/BS9 Flächen.oap`;
+  const FORMULAR = 'C:/FORMA/BS9/001-Muster.frmsjf';
+  const memo1 = (host: Element) => host.querySelector<HTMLInputElement | HTMLTextAreaElement>('[data-feld="0:Memo1"]')!;
+  const tippen = (el: HTMLInputElement | HTMLTextAreaElement, value: string) =>
+    act(() => {
+      const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, value);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  const zustand = () => (readProjectFile(ds.dateien.get(OAP)!).formulare as { felder?: Record<string, unknown> } | undefined)?.felder?.['001-Muster.frmsjf'];
+  const speichern = () => act(() => useFormulare.getState().speichern());
+  const karteAendern = async (name: string) => {
+    act(() => useFormulare.getState().karteSetzen(231, 40, name));
+    await act(() => useFormulare.getState().karteSpeichern());
+    await warte();
+    await warte();
+  };
+  const dialog = (host: Element) => host.querySelector<HTMLElement>('.modal[aria-label="Daten aktualisieren"]');
+  const rueckfrage = () => document.querySelector<HTMLElement>('[role="dialog"][aria-label="Unterlagen aktualisieren"]');
+
+  it('übernehmen, leeren → Auto-Wert, Leerzeichen, Überschreibung fixiert, ignorieren, Rückfrage nach geänderten Projektdaten', async () => {
+    const p = createProject('EFH');
+    p.meta = { ...leereMeta(), projektcode: 'BS9' };
+    ds.dateien.set(OAP, writeArchive(p));
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await warte();
+    await klick(knopf(host, '001-Muster'));
+    await warte();
+    expect(memo1(host).value).toBe('Mustermann, Max');
+
+    // Daten aktualisieren: anderer Inhalt ohne Zustand – nur auf Wunsch
+    await klick(knopf(host, 'Daten aktualisieren'));
+    const zeile = dialog(host)!.querySelector<HTMLElement>('.fo-ausfuellen-zeile')!;
+    expect(zeile.textContent).toContain('anderer Inhalt (Herkunft unbekannt)');
+    expect(zeile.textContent).toContain('Kreis Soest, Hoher Weg 1');
+    expect(zeile.querySelector('input')!.checked).toBe(false);
+    await klick(zeile.querySelector('input')!);
+    await klick(knopf(dialog(host)!, '1 Feld(er) übernehmen'));
+    expect(memo1(host).value).toBe('Kreis Soest, Hoher Weg 1');
+    await speichern();
+    expect(zustand()).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Soest, Hoher Weg 1' } } });
+
+    // geleert → wieder der Auto-Wert; ein Leerzeichen bleibt (erzwungen leer)
+    tippen(memo1(host), '');
+    verlassen(memo1(host));
+    expect(memo1(host).value).toBe('Kreis Soest, Hoher Weg 1');
+    tippen(memo1(host), ' ');
+    verlassen(memo1(host));
+    expect(memo1(host).value).toBe(' ');
+
+    // eigener Text ersetzt den Auto-Text: beim Speichern fixiert
+    tippen(memo1(host), 'Bauaufsicht Soest');
+    verlassen(memo1(host));
+    await speichern();
+    expect(zustand()).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Soest, Hoher Weg 1', manuell: 'Bauaufsicht Soest' } } });
+    expect(memo1(host).title).toContain('von Hand überschrieben');
+
+    // Projektdaten geändert: die Überschreibung bleibt – nichts zu fragen
+    await karteAendern('Kreis Unna');
+    expect(rueckfrage()).toBeNull();
+    expect(memo1(host).value).toBe('Bauaufsicht Soest');
+
+    // Haken „Manuelle Überschreibungen ignorieren“ im Menü des Formulars: Auto-Wert; wieder weg: die Überschreibung
+    const menue = () => host.querySelector<HTMLButtonElement>('.fo-menue-knopf')!;
+    await klick(menue());
+    await klick(knopf(document.body, 'Manuelle Überschreibungen ignorieren'));
+    expect(memo1(host).value).toBe('Kreis Unna, Hoher Weg 1');
+    expect(zustand()).toMatchObject({ ignorieren: true });
+    await klick(menue());
+    await klick(knopf(document.body, 'Manuelle Überschreibungen ignorieren'));
+    expect(memo1(host).value).toBe('Bauaufsicht Soest');
+
+    // zurück zum Auto-Wert (leeren), speichern, schließen – dann aktualisiert die Rückfrage auch die Datei
+    tippen(memo1(host), '');
+    verlassen(memo1(host));
+    expect(memo1(host).value).toBe('Kreis Unna, Hoher Weg 1');
+    await speichern();
+    expect(zustand()).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Unna, Hoher Weg 1' } } });
+    await act(() => useFormulare.getState().schliessen());
+    await karteAendern('Kreis Hamm');
+    expect(rueckfrage()!.textContent).toContain('001-Muster');
+    expect(rueckfrage()!.textContent).toContain('1 Feld(er) aktualisieren');
+    await klick(knopf(rueckfrage()!, 'Unterlagen aktualisieren'));
+    await warte();
+    expect(rueckfrage()).toBeNull();
+    const { parseFormular } = await import('./forma/formular');
+    const { felderDerSeite } = await import('./forma/felder');
+    const f = parseFormular(ds.dateien.get(FORMULAR)!);
+    expect(felderDerSeite(f.seiten[0], 0).find((x) => x.name === 'Memo1')!.original).toBe('Kreis Hamm, Hoher Weg 1');
+    expect(zustand()).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Hamm, Hoher Weg 1' } } });
+  });
+
+  it('ein neues Formular wird gleich mit den Angaben aus der Projektkarte befüllt', async () => {
+    const p = createProject('EFH');
+    p.meta = { ...leereMeta(), projektcode: 'BS9' };
+    ds.dateien.set(OAP, writeArchive(p));
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await warte();
+    const { useAntrag } = await import('./antragStore');
+    await act(() => useAntrag.getState().formularHinzufuegen({ root: 'C:/FORMA', pfad: 'H24/001-Muster.frmsjf', datei: '001-Muster.frmsjf', name: 'Muster', herkunft: 'Projekt H24', geaendert: 0 }, false));
+    await warte();
+    const { parseFormular } = await import('./forma/formular');
+    const { felderDerSeite } = await import('./forma/felder');
+    const neu = felderDerSeite(parseFormular(ds.dateien.get('C:/FORMA/BS9/002-Muster.frmsjf')!).seiten[0], 0);
+    expect(neu.find((x) => x.name === 'Memo1')!.original).toBe('Kreis Soest, Hoher Weg 1');
+    // Felder ohne Angabe in der Projektkarte bleiben leer
+    expect(neu.find((x) => x.name === 'Memo3')!.original).toBe('');
+    expect((readProjectFile(ds.dateien.get(OAP)!).formulare as { felder: Record<string, unknown> }).felder['002-Muster.frmsjf']).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Soest, Hoher Weg 1' } } });
+    expect(useFormulare.getState().meldung?.text).toContain('mit 1 Angabe(n) aus der Projektkarte befüllt');
   });
 });

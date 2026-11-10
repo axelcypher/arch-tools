@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { formularAktualisieren } from '../aktualisieren';
 import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
@@ -76,6 +77,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     const zugeordnet = statusVon.get(f.pfad);
     return [
       { text: 'Öffnen', symbol: 'formular', aktion: () => void formularOeffnen(f) },
+      { text: 'Daten aktualisieren', symbol: 'neuLaden', aktion: () => void formularAktualisieren(f) },
       { text: 'Als PDF exportieren …', symbol: 'export', deaktiviert: !ablage, aktion: () => useExportDialog.getState().oeffnen(f.pfad) },
       { text: 'Speichern unter …', symbol: 'datei', aktion: () => void useAntrag.getState().speichernUnter(f.pfad) },
       { trenner: true },
