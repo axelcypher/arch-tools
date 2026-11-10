@@ -31,7 +31,7 @@ const neueOap = () => {
   return writeArchive(p);
 };
 /** Abschnitt „formulare“ der Projektdatei */
-const abschnitt = () => readProjectFile(ds.dateien.get(OAP)!).erweiterungen?.formulare as Record<string, unknown> | undefined;
+const abschnitt = () => readProjectFile(ds.dateien.get(OAP)!).formulare as Record<string, unknown> | undefined;
 const KATALOG = [
   { id: 'muster', titel: 'Musterformular', art: 'intern' as const, formular: 'Muster', vorgewaehlt: true },
   { id: 'bauantrag', titel: 'Bauantrag', art: 'intern' as const, formular: 'Bauantrag', vorgewaehlt: true },
@@ -369,7 +369,9 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
       gk.dispatchEvent(new Event('change', { bubbles: true }));
     });
     await warte();
-    expect(abschnitt()!.merkmale).toEqual({ Gebäudeklasse: '3' });
+    // Projektmerkmale gehören zum Projekt: meta.merkmale (für alle Apps), nicht der Abschnitt „formulare“
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.merkmale).toEqual({ Gebäudeklasse: '3' });
+    expect(abschnitt()?.merkmale).toBeUndefined();
 
     await klick(knopf(host, '001-Muster'));
     expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')).toBeNull();
@@ -505,7 +507,9 @@ describe('Angaben zum Antrag in der Projektdatei (.oap)', () => {
     ds.dateien.set('C:/FORMA/BS9/formulare.json', alt);
     const host = await projektBS9();
     await warte();
-    expect(abschnitt()).toEqual({ aktiveFassung: 'BAUA', merkmale: { Gebäudeklasse: '2' } });
+    expect(abschnitt()).toEqual({ aktiveFassung: 'BAUA' });
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.merkmale).toEqual({ Gebäudeklasse: '2' });
+    expect(useAntrag.getState().projektdatei?.merkmale).toEqual({ Gebäudeklasse: '2' });
     expect(ds.dateien.get('C:/FORMA/BS9/formulare.json')).toBe(alt);
     expect(useAntrag.getState().projektdatei).toMatchObject({ aktiveFassung: 'BAUA' });
     expect(host.textContent).toContain('in die Projektdatei übernommen');

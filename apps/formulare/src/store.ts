@@ -30,7 +30,7 @@ import { parseProjectData } from '@core/serialize';
 import { VORGABE_OAP_PFAD, projektdateiPfad } from '@core/projektdatei';
 import type { DateiStand } from '@core/platform/projektordner';
 import { projektdateiAnlegen, projektdateiLaden, projektdateiSchreiben } from '@core/platform/projektordner';
-import { allgemeinAendern, konfigLesen, konfigSchreiben } from '@core/platform/konfig';
+import { allgemeinAendern, konfigAendern, konfigLesen } from '@core/platform/konfig';
 import { ordnerName } from '@core/platform/projektordner';
 import { sichererDateiname } from '@core/projektdatei';
 import type { FormularProfil } from './profil';
@@ -1229,16 +1229,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const { ds } = get();
       const o = get().oap;
       if (!ds || !o || o === 'fehlt') return false;
-      // hat eine andere App die Datei gerade zwischen Lesen und Schreiben geändert, einmal neu versuchen
-      let geschrieben = false;
-      for (let versuch = 0; ; versuch++) {
-        try {
-          geschrieben = await projektdateiSchreiben(ds.projektordner, o.root, o.pfad, aendern);
-          break;
-        } catch (e) {
-          if (versuch > 0 || !/inzwischen geändert/.test(fehlertext(e))) throw e;
-        }
-      }
+      // liest frisch und versucht es erneut, wenn eine andere App die Datei zwischen Lesen und Schreiben geändert hat
+      const geschrieben = await projektdateiSchreiben(ds.projektordner, o.root, o.pfad, aendern);
       if (geschrieben) await get().oapLaden();
       return geschrieben;
     },
@@ -1490,8 +1482,7 @@ export function ablageVon(s: Pick<FormulareState, 'ablage' | 'ordnerWahl'>, p: P
 /** App-Bereich im gemeinsamen Konfigurationsordner gezielt ändern (frisch lesen, nur die übergebenen Angaben) */
 async function formulareKonfigAendern(patch: Record<string, unknown>) {
   try {
-    const roh = ((await konfigLesen('formulare')) ?? {}) as Record<string, unknown>;
-    await konfigSchreiben('formulare', { ...roh, ...patch });
+    await konfigAendern('formulare', (roh) => ({ ...((roh ?? {}) as Record<string, unknown>), ...patch }));
   } catch (e) {
     log.warn(`Einstellungen von Formulare nicht geschrieben: ${fehlertext(e)}`);
   }

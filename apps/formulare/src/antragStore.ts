@@ -248,18 +248,30 @@ function geleert(bytes: Uint8Array): Uint8Array {
 
 let dateienFormaProjekt: Eintrag[] = [];
 
-/** `projekt.json` mit dem Abschnitt „formulare“ (leer = ohne den Abschnitt) */
+/**
+ * `projekt.json` mit den Angaben der App: aktive Antragsfassung und Projektumfang im Abschnitt „formulare“ (leer =
+ * ohne den Abschnitt), die Projektmerkmale in `meta.merkmale` – sie gehören zum Projekt, nicht zu einer App.
+ */
 function mitAbschnitt(roh: Record<string, unknown>, neu: ProjektDatei): Record<string, unknown> {
+  const { merkmale, ...abschnitt } = neu;
   const { formulare: _alt, ...rest } = roh;
-  return Object.keys(neu).length ? { ...rest, formulare: neu } : rest;
+  const meta = { ...((roh.meta as Record<string, unknown> | undefined) ?? {}) };
+  if (merkmale && Object.keys(merkmale).length) meta.merkmale = merkmale;
+  else delete meta.merkmale;
+  return { ...rest, meta, ...(Object.keys(abschnitt).length ? { formulare: abschnitt } : {}) };
 }
 
-/** Abschnitt „formulare“ der geladenen Projektdatei; null, wenn es keine Projektdatei oder keinen Abschnitt gibt */
+/** Angaben der App aus der geladenen Projektdatei; null, wenn es keine Projektdatei gibt oder nichts darin steht */
 function abschnittAusOap(): ProjektDatei | null {
   const o = useFormulare.getState().oap;
   if (!o || o === 'fehlt') return null;
-  const roh = o.projekt.erweiterungen?.formulare;
-  return roh === undefined ? null : projektDateiAus(roh);
+  const roh = o.projekt.formulare ?? o.projekt.erweiterungen?.formulare;
+  const merkmale = o.projekt.meta.merkmale;
+  if (roh === undefined && !merkmale) return null;
+  const p = roh === undefined ? {} : projektDateiAus(roh);
+  // Projektmerkmale stehen in meta (früher im Abschnitt – dann gilt der, bis zum nächsten Speichern)
+  if (merkmale && Object.keys(merkmale).length) p.merkmale = { ...merkmale };
+  return p;
 }
 
 /** Angaben aus einer alten formulare.json einmalig in die Projektdatei übernehmen (die alte Datei bleibt liegen) */
@@ -270,7 +282,7 @@ async function uebernehmen(projekt: Projekt, alt: ProjektDatei) {
   const o = useFormulare.getState().oap;
   if (!o || o === 'fehlt' || abschnittAusOap() || useFormulare.getState().projekt !== projekt) return;
   try {
-    if (await useFormulare.getState().oapAendern((roh) => (roh.formulare === undefined ? mitAbschnitt(roh, alt) : roh))) {
+    if (await useFormulare.getState().oapAendern((roh) => (roh.formulare === undefined ? mitAbschnitt(roh, { ...alt, merkmale: { ...alt.merkmale, ...((roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale ?? {}) } }) : roh))) {
       log.info(`${projekt.ordner}: ${ALTE_PROJEKTDATEI} in die Projektdatei ${o.pfad} übernommen`);
       useFormulare.getState().setMeldung({ art: 'info', text: `Projektumfang und Antragsfassung aus ${ALTE_PROJEKTDATEI} in die Projektdatei übernommen – die alte Datei bleibt liegen.` });
     }

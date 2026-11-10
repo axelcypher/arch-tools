@@ -182,7 +182,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   für alle im Büro (siehe unten).
 - **Projektmerkmale** (oben im Projektumfang): Gebäudeklasse, Sonderbau, Verfahren … – je Projekt einmal gewählt,
   gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Projektumfang. Welche Merkmale es gibt
-  und ihre Werte, steht in Einstellungen › Antrag & Export. Gespeichert im Abschnitt `formulare` der Projektdatei.
+  und ihre Werte, steht in Einstellungen › Antrag & Export. Gespeichert in der Projektdatei unter `meta.merkmale` –
+  sie gehören zum Projekt und stehen damit auch den anderen Apps zur Verfügung.
 - **Dokumente mit Bedingung:** im Projektumfang (Bearbeiten) und im Katalog („Nur wenn“) – etwa ein Nachweis nur
   bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“: kein Farbpunkt, kein grauer
   „Anlegen“-Eintrag, es zählt nicht mit.
@@ -239,8 +240,8 @@ beschrieben.
   wird): einen vorhandenen Ordner wählen oder im Stammordner einen neuen anlegen (Vorschlag „Kürzel Titel“), danach
   folgt bei Bedarf der Stammdaten-Dialog. Die Zuordnung gilt für alle im Büro (gemeinsamer Konfigurationsordner,
   Bereich `formulare`, `ordnerWahl`).
-- **Angaben zum Antrag** (aktive Antragsfassung, Projektmerkmale, Projektumfang) stehen im Abschnitt `formulare`
-  von `projekt.json`. Eine alte `formulare.json` im FORMA-Projekt wird noch gelesen und einmalig in die
+- **Angaben zum Antrag** (aktive Antragsfassung, Projektumfang) stehen im Abschnitt `formulare` von `projekt.json`,
+  die Projektmerkmale unter `meta.merkmale`. Eine alte `formulare.json` im FORMA-Projekt wird noch gelesen und einmalig in die
   Projektdatei übernommen – sie selbst bleibt liegen und wird nicht mehr geschrieben.
 - **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
   Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann
