@@ -470,3 +470,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Startseite: gemeinsame Projektübersicht über die volle Höhe */
+.po-start-seite {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.po-start-seite > .warning,
+.po-start-seite > .busy {
+  margin: 8px 28px 0;
+}
+.po-start-seite > .pa {
+  flex: 1;
+}

@@ -269,3 +269,36 @@ describe('Projektordner', () => {
     expect(knopf(host, 'Projektordner wählen')).toBeTruthy();
   });
 });
+
+describe('Startseite mit der gemeinsamen Projektübersicht', () => {
+  it('Projektordner der Stammordner mit Stammdaten aus der Projektdatei, zuletzt geöffnet, Öffnen und Neues Projekt', async () => {
+    // dynamisch geladen: derselbe Modulstand wie die Komponente (ein Test oben setzt die Module zurück)
+    const { ProjektStart } = await import('./components/ProjektStart');
+    const { useOrdner: store } = await import('./store');
+    const { zuletztMerken } = await import('@core/platform/konfig');
+    const fs = new SpeicherDateisystem();
+    // ein Projekt mit Projektdatei, eines ohne
+    await ausfuehren(fs, 'P:/Projekte', planen({ ...leereStammdaten(), nummer: '2026-014', kurzname: 'EFH Musterweg', bezeichnung: 'Neubau EFH', leistungsphasen: [1, 2] }, STANDARD, [], [], new Date(2026, 9, 1)));
+    await fs.ordnerAnlegen('P:/Projekte', '2019-003 Altbau/Pläne');
+    await zuletztMerken('P:/Projekte/2019-003 Altbau', 'Formulare', 1000);
+    store.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['P:/Projekte'] }, struktur: STANDARD });
+    const geoeffnet: string[] = [];
+    let neu = 0;
+    const host = render(createElement(ProjektStart, { fs, entwurf: '', onNeu: () => neu++, onLeerNeu: () => {}, onOeffnen: (p: string) => geoeffnet.push(p), onAndererOrdner: () => {} }));
+    await warten();
+    await warten();
+    expect(host.textContent).toContain('Projekte');
+    // zuletzt geöffnet (auch aus einer anderen App) steht vorne, mit Marke ohne Projektdatei
+    expect(host.textContent).toContain('2019-003');
+    expect(host.textContent).toContain('ohne Projektdatei');
+    // Gruppe aufklappen: Titel aus der Projektdatei
+    act(() => knopf(host, 'Projekte').click());
+    expect(host.textContent).toContain('Neubau EFH');
+    expect(host.textContent).toContain('LPh 1, 2');
+    act(() => knopf(host, 'Neues Projekt').click());
+    expect(neu).toBe(1);
+    const karte = [...host.querySelectorAll('button, [role="button"], .pa-karte')].find((k) => k.textContent?.includes('Neubau EFH')) as HTMLElement;
+    act(() => karte.click());
+    expect(geoeffnet).toEqual(['P:/Projekte/2026-014 EFH Musterweg']);
+  });
+});

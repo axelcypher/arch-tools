@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { zuletztMerken } from '@core/platform/konfig';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { StammdatenFelder } from '@core/ui/Stammdaten';
@@ -14,6 +15,7 @@ import { formularMeta, leereStammdaten, stammAusMeta } from '../stammdaten';
 import { useOrdner } from '../store';
 import { aktivePresets } from '../struktur';
 import { ErgebnisAnzeige, PlanMeldungen, PlanTabelle, PresetAuswahl, VorlagenordnerZeile } from './gemeinsam';
+import { ProjektStart } from './ProjektStart';
 
 const log = logger('assistent');
 
@@ -42,7 +44,7 @@ const nurWasEtwasTut = (plan: Plan): Plan => ({ ...plan, schritte: plan.schritte
  * Umfang (Leistungsphasen, Beteiligte) und Vorlagen, zum Schluss der Trockenlauf. Alles landet in der
  * Projektdatei (.oap) des Projektordners; fehlt sie, wird sie angelegt. Gelöscht wird nichts.
  */
-export function AssistentView({ start }: { start?: GeladenerOrdner | null }) {
+export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrdner | null; onEinstellungen?: () => void }) {
   const desktop = hatDateisystem();
   const { stamm: entwurf, struktur, stammordner, vorlagen, allgemein, setStamm, setStammordner, neuesProjekt } = useOrdner();
   const [modus, setModus] = useState<Modus | null>(start ? 'ergaenzen' : null);
@@ -161,6 +163,8 @@ export function AssistentView({ start }: { start?: GeladenerOrdner | null }) {
     try {
       ergaenzenMit(await ladeProjektordner(pfad));
       setLesung((n) => n + 1);
+      // „Zuletzt geöffnet“ – je Benutzer, gemeinsam für alle Apps
+      void zuletztMerken(pfad, 'Projektordner').catch(() => undefined);
     } catch (e) {
       setFehler(e instanceof Error ? e.message : String(e));
     } finally {
@@ -200,6 +204,7 @@ export function AssistentView({ start }: { start?: GeladenerOrdner | null }) {
           const liste = await ausfuehren(tauriDateisystem, stammordner, auszufuehren, { fortschritt: (i, n) => setLaeuft(`Projektordner wird angelegt … ${i} / ${n}`) });
           log.info(`Projektordner angelegt: ${auszufuehren.ordner}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, fehler: liste.filter((x) => x.status === 'fehler').length, presets: auszufuehren.presets });
           setErgebnis({ ordner: verbinde(stammordner, auszufuehren.ordner), liste });
+          void zuletztMerken(verbinde(stammordner, auszufuehren.ordner), 'Projektordner').catch(() => undefined);
         } else {
           setLaeuft('ZIP wird erstellt …');
           const fs = new SpeicherDateisystem();
@@ -251,6 +256,28 @@ export function AssistentView({ start }: { start?: GeladenerOrdner | null }) {
   /* ---------- Darstellung ---------- */
 
   const gefiltert = suche.trim() ? projekte.filter((p) => p.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
+  const entwurfText = [entwurf.nummer, entwurf.kurzname].filter((x) => x.trim()).join(' ');
+
+  // Desktop mit Stammordnern: die gemeinsame Projektübersicht als Startseite
+  if (schritt === 'start' && desktop && allgemein.projekte.length > 0) {
+    return (
+      <div className="po-start-seite">
+        {(fehler || laeuft) && <p className={fehler ? 'warning' : 'busy'}>{fehler ?? laeuft}</p>}
+        <ProjektStart
+          fs={tauriDateisystem}
+          entwurf={entwurfText}
+          onNeu={neuBeginnen}
+          onLeerNeu={() => {
+            neuesProjekt();
+            neuBeginnen();
+          }}
+          onOeffnen={(pfad) => void ordnerLaden(pfad)}
+          onAndererOrdner={() => void ordnerWaehlen()}
+          onEinstellungen={onEinstellungen}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="po-view einspaltig po-assistent">
