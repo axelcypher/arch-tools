@@ -8,7 +8,8 @@
 
 import type { FormularProfil } from '../profil';
 import { zusammen } from './antrag';
-import { angekreuzt, fuer, gruppeV, istNicht, s, wenn, zaehltNicht } from './hilfen';
+import { keinEinfamilienhaus } from './grundlagen';
+import { angekreuzt, fuer, gruppeV, s, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
 const s1 = s(1);
@@ -92,8 +93,10 @@ export const nw010005_2026I: FormularProfil = zusammen({
     gruppeV('kosten', 'Nr. 2.5 Rauminhalt, Rohbaukosten oder Herstellungssumme', 'eins', s1('CheckBox15', 'CheckBox16', 'CheckBox17')),
   ],
   bedingungen: {
-    '1:CheckBox14': wenn(istNicht('Gebäudeart', 'Einfamilienhaus')),
+    '1:CheckBox14': keinEinfamilienhaus,
     '1:Memo1': wenn(angekreuzt('1:CheckBox17')),
     ...fuer(s1('CheckBox8'), wenn(ja)),
   },
 });
+
+export const vorgaben: Record<string, FormularProfil> = { 'nw010005|2026I': nw010005_2026I };

@@ -492,6 +492,39 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('4/5');
   });
 
+  it('entfallendes Feld: Info-Symbol nennt den Grund, ein Klick öffnet den Gesetzestext mit dem Absatz', async () => {
+    const bedingung = {
+      art: 'gruppe' as const,
+      op: 'und' as const,
+      teile: [{ art: 'feld' as const, feld: '0:CheckBox2', pruefung: 'ausgefuellt' as const }],
+      grund: 'Nur bei Sonderbauten.',
+      quellen: [{ gesetz: 'bauo-nrw', paragraf: '68', absatz: 2 }],
+    };
+    useFormulare.getState().profilSetzen('nw019999|2026A', { abschnitte: {}, zaehlt: {}, bedingungen: { '0:Memo2': bedingung } });
+    const host = await projektBS9();
+    await klick(knopf(host, '001-Muster'));
+    const info = () => host.querySelector<HTMLButtonElement>('.fo-papier .fo-entfall-info');
+    expect(info()).not.toBeNull();
+    expect(info()!.getAttribute('aria-label')).toContain('Nur bei Sonderbauten.');
+    expect(info()!.getAttribute('aria-label')).toContain('Rechtsgrundlage: § 68 Absatz 2 BauO NRW 2018');
+    // Zeigen: Hinweis außerhalb des Blatts
+    act(() => info()!.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, relatedTarget: document.body })));
+    expect(document.querySelector('.fo-tipp')?.textContent).toContain('Nur bei Sonderbauten.');
+    // Klick: Gesetzestext, der zitierte Absatz hervorgehoben
+    await klick(info()!);
+    for (let i = 0; i < 20 && !document.querySelector('.fo-gesetz-zeile'); i++) await warte();
+    const modal = document.querySelector('.fo-gesetz')!;
+    expect(modal.querySelector('h3')!.textContent).toContain('§ 68 BauO NRW 2018');
+    expect(modal.querySelector('.fo-gesetz-zeile.markiert')!.textContent).toMatch(/^\(2\)/);
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+    expect(document.querySelector('.fo-gesetz')).toBeNull();
+    // angekreuzt: Memo2 ist erforderlich, das Symbol verschwindet
+    const s = useFormulare.getState();
+    act(() => s.wertSetzen(s.offen!.felder[0].find((f) => f.name === 'CheckBox2')!, true));
+    await warte();
+    expect(info()).toBeNull();
+  });
+
   it('Dokumente des Projektumfangs mit Bedingung: entfallen bei GK 1, fehlen bei GK 3', async () => {
     const host = await projektBS9();
     await useAntrag.getState().merkmalSetzen('Gebäudeklasse', '1');

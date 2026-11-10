@@ -1,0 +1,111 @@
+{
+ "id": "baunvo",
+ "kurz": "BauNVO",
+ "titel": "Baunutzungsverordnung",
+ "fassung": "Stand 10.11.2026",
+ "url": "https://www.gesetze-im-internet.de/baunvo/",
+ "paragrafen": {
+  "16": {
+   "titel": "Bestimmung des Maßes der baulichen Nutzung",
+   "url": "https://www.gesetze-im-internet.de/baunvo/__16.html",
+   "text": [
+    "(1) Wird im Flächennutzungsplan das allgemeine Maß der baulichen Nutzung dargestellt, genügt die Angabe der Geschossflächenzahl, der Baumassenzahl oder der Höhe baulicher Anlagen.",
+    "(2) Im Bebauungsplan kann das Maß der baulichen Nutzung bestimmt werden durch Festsetzung",
+    "1.",
+    "der Grundflächenzahl oder der Größe der Grundflächen der baulichen Anlagen,",
+    "2.",
+    "der Geschossflächenzahl oder der Größe der Geschossfläche, der Baumassenzahl oder der Baumasse,",
+    "3.",
+    "der Zahl der Vollgeschosse,",
+    "4.",
+    "der Höhe baulicher Anlagen.",
+    "(3) Bei Festsetzung des Maßes der baulichen Nutzung im Bebauungsplan ist festzusetzen",
+    "1.",
+    "stets die Grundflächenzahl oder die Größe der Grundflächen der baulichen Anlagen,",
+    "2.",
+    "die Zahl der Vollgeschosse oder die Höhe baulicher Anlagen, wenn ohne ihre Festsetzung öffentliche Belange, insbesondere das Orts- und Landschaftsbild, beeinträchtigt werden können.",
+    "(4) Bei Festsetzung des Höchstmaßes für die Geschossflächenzahl oder die Größe der Geschossfläche, für die Zahl der Vollgeschosse und die Höhe baulicher Anlagen im Bebauungsplan kann zugleich ein Mindestmaß festgesetzt werden. Die Zahl der Vollgeschosse und die Höhe baulicher Anlagen können auch als zwingend festgesetzt werden.",
+    "(5) Im Bebauungsplan kann das Maß der baulichen Nutzung für Teile des Baugebiets, für einzelne Grundstücke oder Grundstücksteile und für Teile baulicher Anlagen unterschiedlich festgesetzt werden; die Festsetzungen können oberhalb und unterhalb der Geländeoberfläche getroffen werden.",
+    "(6) Im Bebauungsplan können nach Art und Umfang bestimmte Ausnahmen von dem festgesetzten Maß der baulichen Nutzung vorgesehen werden."
+   ]
+  },
+  "17": {
+   "titel": "Orientierungswerte für die Bestimmung des Maßes der baulichen Nutzung",
+   "url": "https://www.gesetze-im-internet.de/baunvo/__17.html",
+   "text": [
+    "Bei der Bestimmung des Maßes der baulichen Nutzung nach § 16 bestehen, auch wenn eine Geschossflächenzahl oder eine Baumassenzahl nicht dargestellt oder festgesetzt wird, folgende Orientierungswerte für Obergrenzen: 1234",
+    "BaugebietGrund-",
+    "flächenzahl (GRZ)Geschoss-",
+    "flächenzahl (GFZ)Bau-",
+    "massenzahl",
+    "(BMZ)",
+    "inKleinsiedlungsgebieten (WS)0,20,4–",
+    "inreinen Wohngebieten (WR)",
+    "allgemeinen Wohngebieten (WA)",
+    "Ferienhausgebieten",
+    "0,4",
+    "1,2",
+    "–",
+    "inbesonderen Wohngebieten (WB)0,61,6–",
+    "inDorfgebieten (MD)",
+    "Mischgebieten (MI)",
+    "dörflichen Wohngebieten (MDW)",
+    "0,6",
+    "1,2",
+    "–",
+    "inurbanen Gebieten (MU)0,83,0–",
+    "inKerngebieten (MK)1,03,0–",
+    "inGewerbegebieten (GE)",
+    "Industriegebieten (GI)",
+    "sonstigen Sondergebieten",
+    "0,8",
+    "2,4",
+    "10,0",
+    "inWochenendhausgebieten0,20,2–",
+    "In Wochenendhausgebieten und Ferienhausgebieten dürfen die Orientierungswerte für Obergrenzen nach Satz 1 nicht überschritten werden."
+   ]
+  },
+  "19": {
+   "titel": "Grundflächenzahl, zulässige Grundfläche",
+   "url": "https://www.gesetze-im-internet.de/baunvo/__19.html",
+   "text": [
+    "(1) Die Grundflächenzahl gibt an, wieviel Quadratmeter Grundfläche je Quadratmeter Grundstücksfläche im Sinne des Absatzes 3 zulässig sind.",
+    "(2) Zulässige Grundfläche ist der nach Absatz 1 errechnete Anteil des Baugrundstücks, der von baulichen Anlagen überdeckt werden darf.",
+    "(3) Für die Ermittlung der zulässigen Grundfläche ist die Fläche des Baugrundstücks maßgebend, die im Bauland und hinter der im Bebauungsplan festgesetzten Straßenbegrenzungslinie liegt. Ist eine Straßenbegrenzungslinie nicht festgesetzt, so ist die Fläche des Baugrundstücks maßgebend, die hinter der tatsächlichen Straßengrenze liegt oder die im Bebauungsplan als maßgebend für die Ermittlung der zulässigen Grundfläche festgesetzt ist.",
+    "(4) Bei der Ermittlung der Grundfläche sind die Grundflächen von",
+    "1.",
+    "Garagen und Stellplätzen mit ihren Zufahrten,",
+    "2.",
+    "Nebenanlagen im Sinne des § 14,",
+    "3.",
+    "baulichen Anlagen unterhalb der Geländeoberfläche, durch die das Baugrundstück lediglich unterbaut wird,",
+    "mitzurechnen. Die zulässige Grundfläche darf durch die Grundflächen der in Satz 1 bezeichneten Anlagen bis zu 50 vom Hundert überschritten werden, höchstens jedoch bis zu einer Grundflächenzahl von 0,8; weitere Überschreitungen in geringfügigem Ausmaß können zugelassen werden. Im Bebauungsplan können von Satz 2 abweichende Bestimmungen getroffen werden. Soweit der Bebauungsplan nichts anderes festsetzt, kann im Einzelfall von der Einhaltung der sich aus Satz 2 ergebenden Grenzen abgesehen werden",
+    "1.",
+    "bei Überschreitungen mit geringfügigen Auswirkungen auf die natürlichen Funktionen des Bodens oder",
+    "2.",
+    "wenn die Einhaltung der Grenzen zu einer wesentlichen Erschwerung der zweckentsprechenden Grundstücksnutzung führen würde.",
+    "(5) Soweit der Bebauungsplan nichts anderes festsetzt, darf die zulässige Grundfläche in Gewerbe-, Industrie- und sonstigen Sondergebieten durch die Grundflächen von Anlagen zur Erzeugung von Strom und Wärme aus solarer Strahlungsenergie und Windenergie überschritten werden."
+   ]
+  },
+  "20": {
+   "titel": "Vollgeschosse, Geschossflächenzahl, Geschossfläche",
+   "url": "https://www.gesetze-im-internet.de/baunvo/__20.html",
+   "text": [
+    "(1) Als Vollgeschosse gelten Geschosse, die nach landesrechtlichen Vorschriften Vollgeschosse sind oder auf ihre Zahl angerechnet werden.",
+    "(2) Die Geschossflächenzahl gibt an, wieviel Quadratmeter Geschossfläche je Quadratmeter Grundstücksfläche im Sinne des § 19 Absatz 3 zulässig sind.",
+    "(3) Die Geschossfläche ist nach den Außenmaßen der Gebäude in allen Vollgeschossen zu ermitteln. Im Bebauungsplan kann festgesetzt werden, dass die Flächen von Aufenthaltsräumen in anderen Geschossen einschließlich der zu ihnen gehörenden Treppenräume und einschließlich ihrer Umfassungswände ganz oder teilweise mitzurechnen oder ausnahmsweise nicht mitzurechnen sind.",
+    "(4) Bei der Ermittlung der Geschossfläche bleiben Nebenanlagen im Sinne des § 14, Balkone, Loggien, Terrassen sowie bauliche Anlagen, soweit sie nach Landesrecht in den Abstandsflächen (seitlicher Grenzabstand und sonstige Abstandsflächen) zulässig sind oder zugelassen werden können, unberücksichtigt."
+   ]
+  },
+  "21": {
+   "titel": "Baumassenzahl, Baumasse",
+   "url": "https://www.gesetze-im-internet.de/baunvo/__21.html",
+   "text": [
+    "(1) Die Baumassenzahl gibt an, wieviel Kubikmeter Baumasse je Quadratmeter Grundstücksfläche im Sinne des § 19 Absatz 3 zulässig sind.",
+    "(2) Die Baumasse ist nach den Außenmaßen der Gebäude vom Fußboden des untersten Vollgeschosses bis zur Decke des obersten Vollgeschosses zu ermitteln. Die Baumassen von Aufenthaltsräumen in anderen Geschossen einschließlich der zu ihnen gehörenden Treppenräume und einschließlich ihrer Umfassungswände und Decken sind mitzurechnen. Bei baulichen Anlagen, bei denen eine Berechnung der Baumasse nach Satz 1 nicht möglich ist, ist die tatsächliche Baumasse zu ermitteln.",
+    "(3) Bauliche Anlagen und Gebäudeteile im Sinne des § 20 Absatz 4 bleiben bei der Ermittlung der Baumasse unberücksichtigt.",
+    "(4) Ist im Bebauungsplan die Höhe baulicher Anlagen oder die Baumassenzahl nicht festgesetzt, darf bei Gebäuden, die Geschosse von mehr als 3,50 m Höhe haben, eine Baumassenzahl, die das Dreieinhalbfache der zulässigen Geschossflächenzahl beträgt, nicht überschritten werden."
+   ]
+  }
+ }
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseDfm } from './dfm';
-import { felderDerSeite, kaesten } from './felder';
+import { abschnitte, felderDerSeite, kaesten } from './felder';
 import { formularBytes, kennung, parseFormular, stand } from './formular';
 
 /** Formularseite aus Komponenten: [Klasse, Name, Left, Top, Width, Height, weitere Zeilen, Kinder] */
@@ -139,5 +139,13 @@ describe('FORMA-Dateien: Sonderfälle', () => {
     const f = parseFormular(datei('[*SJ_MODIFIED#]nw010005[*SJ_VERSION#]2026I', form));
     const [label] = kaesten(f.seiten[0]);
     expect([label.o.name, label.o.klasse]).toEqual(['', 'TLabel']);
+  });
+});
+
+describe('Abschnitte', () => {
+  it('Felder ohne Rahmen bilden je Seite einen Abschnitt, auch mit Rahmen dazwischen', () => {
+    const s = seite(['TMemo', 'Oben', 5, 0, 100, 22], ['TPanel', 'P', 0, 30, 700, 50, [], [['TMemo', 'Innen', 5, 5, 100, 22]]], ['TMemo', 'Unten', 5, 100, 100, 22]);
+    const a = abschnitte(felderDerSeite(s, 0));
+    expect(a.map((x) => x.felder.map((f) => f.name))).toEqual([['Oben', 'Unten'], ['Innen']]);
   });
 });

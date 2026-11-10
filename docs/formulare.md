@@ -55,23 +55,42 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   darüber und gehen immer vor; gespeichert wird nur, was davon abweicht – alles andere folgt der Vorgabe, auch wenn
   eine spätere Version sie verbessert. Beim Einrichten steht bei jedem Eintrag, ob er aus der Vorgabe stammt;
   „Vorgabe wiederherstellen“ verwirft die eigene Änderung, „Alles auf die Vorgabe zurücksetzen“ alle des Formulars.
-  Vorgaben gibt es für die Anlagen der VV BauPrüfVO NRW:
+  Vorgaben gibt es für alle NRW-Formulare der FORMA-Bibliothek (eine Datei je Formular, `src/vorgaben/nw*.ts`, sie
+  trägt sich selbst ein; gemeinsame Bausteine in `antrag.ts`, `vordruck2018.ts`, `sachverstaendige.ts`,
+  `pruefbericht.ts`, `verzeichnis.ts`, `statistik.ts`). Jede Datei nennt im Kopf ihre Regeln mit Quelle. Beispiele:
 
-  | Formular | Stand | Was die Vorgabe schaltet |
-  |---|---|---|
-  | I/1 Baugenehmigungsverfahren (`nw010001`) | 2026I | Unterlagen nur beim Bauantrag; Nr. 2 nur mit Bebauungsplan, Nr. 3 nur nach §§ 34/35 BauGB, Nr. 6 Baubeschreibung nicht beim Einfamilienhaus, Nr. 9 Betriebsbeschreibung bei Nichtwohngebäuden, Nr. 10 eine Kostenangabe; „Bei Vorbescheid“ nur beim Vorbescheid; Bindungen nur, wenn angekreuzt |
-  | I/2 vereinfachtes Verfahren (`nw010002`) | 2026I | wie I/1 (Nr. 7 Kosten); Nr. 8/9 nur für Sonderbauten, Nr. 11.2 Brandschutz-Bescheinigung bei Gebäudeklasse 4/5 ohne Sonderbau und Garagen über 100 m² |
-  | I/3 Genehmigungsfreistellung (`nw010005`) | 2026I | wie auf dem Vordruck: „ja“ → Nr. 2 bis 6, „nein“ → Nr. 1, 4 und 5; Nr. 2.4 nicht beim Einfamilienhaus |
-  | I/7 Baubeschreibung (`nw010010`) | 2024G, 2026I | Nr. 8 bis 10 nicht im vereinfachten Verfahren; Nr. 11 nur bei Ortssatzung/Denkmalschutz; Barrierefreiheit ab Gebäudeklasse 3 und bei Nichtwohngebäuden |
-  | I/10 Abweichung, Ausnahme, Befreiung (`nw010013`) | 2026I | Gemeinde nur bei Ausnahme oder Befreiung |
+  | Formulare | Was die Vorgabe schaltet |
+  |---|---|
+  | Bauanträge I/1, I/2 (auch Stand 2024D), I/3 | Unterlagen nur beim Bauantrag; Maß der baulichen Nutzung nur mit Bebauungsplan, Flurkarte nur nach §§ 34/35 BauGB, Baubeschreibung nicht beim Einfamilienhaus, eine Kostenangabe; Vorbescheid-Teil nur beim Vorbescheid; I/3 „ja“ → Nr. 2 bis 6, „nein“ → Nr. 1, 4, 5 |
+  | Baubeschreibung I/7 | Nr. 8 bis 10 nicht im vereinfachten Verfahren; Nr. 11 nur bei Ortssatzung/Denkmalschutz |
+  | Anzeigen (Baubeginn, Rohbau, Fertigstellung), I/2.1, I/6 | Nachweise nach § 68 BauO NRW 2018 nur, wo der Vordruck sie an Gebäudeklasse/Gebäudeart knüpft; Baugenehmigungsdatum nicht bei Freistellung |
+  | Werbeanlage I/4, Teilung I/5, Beseitigung I/6.1, Abweichung I/10 und 2018 | Auswahlen, Detailangaben nur beim angekreuzten Kästchen, Bindungen nur wenn vorhanden |
+  | Betriebsbeschreibungen I/8, I/9, Artenschutzprüfung | ja/nein-Fragen als Auswahl, Detailangaben nur bei „ja“ bzw. wenn Werte eingetragen sind |
+  | Statistikbögen | Neubau-/Bestandsteile und Wohn-/Nichtwohnangaben nach den Kästchen des Bogens; Ziffernkästchen als eine Angabe; Behördenfelder zählen nicht |
+  | Berechnungen, GEG-Anlagen, Rechenblatt | Kopfangaben zählen, Tabellenzeilen („Zeile n: …“) nicht; berechnete Felder nur mit Titel |
+  | Sachverständige (Prüfung, Kontrolle, Bescheinigung), Berichte II/2–II/4, Verzeichnisse | Angaben der Sachverständigen zählen; Alternativen als Auswahl; Mängelangaben nur bei „folgende Mängel“; Verzeichniszeilen zählen nicht |
 
   Überall: richtige Titel für alle Felder, Behördenfelder (Eingangsstempel, Aktenzeichen, Genehmigungsvermerk)
-  zählen nicht, Auswahlen (Gebäudeklasse, Antragsart …) als eine Angabe, bei Telefon/Mobil/E-Mail genügt eine.
+  und Unterschriftsfelder zählen nicht, bei Telefon/Telefax/E-Mail genügt eine Angabe. Bedingungen gibt es nur, wo der
+  Vordruck oder BauO NRW/BauPrüfVO sie hergeben – im Zweifel keine. `vorgaben.test.ts` prüft gegen die echten
+  Formulare unter `.ref/`, dass jeder Schlüssel existiert und dass jedes Formular dort eine Vorgabe hat.
+- **Warum entfällt ein Feld?** Entfällt ein Feld nach den Bedingungen, steht daran ein Info-Symbol (in der
+  Formular- und der Feldansicht). Zeigen nennt den Grund: die Begründung der Vorgabe, die Bedingung in Worten, noch
+  nicht festgelegte Projektmerkmale und die Rechtsgrundlage. Ein Klick öffnet den **Gesetzestext** als Fenster in der
+  App – der Paragraf mit dem zitierten Absatz hervorgehoben, darunter „Im Original öffnen“. Die Texte liefert die App
+  mit (amtliche Fassungen, lesbar ohne Netz): BauO NRW 2018 (gültig ab 01.09.2026) und BauPrüfVO (gültig ab
+  26.11.2024) vollständig von recht.nrw.de, dazu einzelne Paragrafen aus BauGB, BauNVO, BNatSchG und GEIG von
+  gesetze-im-internet.de. Neue Fassungen holt `node apps/formulare/scripts/recht-holen.mjs` (URL im Skript anpassen);
+  die Daten liegen in `src/recht/daten/`. In Vorgaben trägt eine Bedingung Begründung und Fundstellen
+  (`begruendet(bedingung, 'Grund', q('bauo-nrw', '68', 2, 3))`, gemeinsame in `vorgaben/grundlagen.ts`);
+  `vorgaben.test.ts` prüft, dass es jede Fundstelle samt Absatz im Text gibt. Eigene Bedingungen zeigen die
+  Bedingung in Worten, ohne Gesetzestext.
 - **Projektmerkmale der App:** Gebäudeklasse, Sonderbau, Verfahren, **Gebäudeart** (Einfamilienhaus,
   Zweifamilienhaus, Mehrfamilienhaus, Nichtwohngebäude, kein Gebäude), **Vorhaben** (Errichtung, Änderung,
   Nutzungsänderung, Beseitigung) und **Planungsrecht** (Bebauungsplan, Innenbereich, Außenbereich). Die Vorgaben
   bauen darauf auf; sie bleiben deshalb auch in einer eigenen Merkmalliste (fehlende werden ergänzt, auch fehlende
   Werte) und lassen sich weder umbenennen noch entfernen. Eigene Merkmale und Werte kommen dazu.
+- **Felder ohne Rahmen** bilden je Seite einen Abschnitt (Kennung `<Seite>:-`), auch wenn Rahmen dazwischen liegen.
 - **Formular einrichten** („Einrichten“ in der Werkzeugleiste), je Formular und Stand – gilt in allen Projekten.
   Das Formular wird zur Fläche zum Auswählen: **Feld anklicken** (mit <kbd>Strg</kbd>/<kbd>Umschalt</kbd> mehrere),
   links zeigt die Gliederung den Aufbau als **Baum** (Abschnitte, Gruppen, Felder – mit Füllstand, Inhalt zum
@@ -554,7 +573,12 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
 - **Projektdatei (.oap):** mit echten Projekten prüfen, welche Datei je Projekt die Stammdaten führen soll (bei
   mehreren Berechnungen) und ob die Zuordnung Grundstück/Ort zur Projektkarte so passt.
 - **Vorgabe der angezeigten Pfade** an die Ordnerstruktur des Büros anpassen.
-- **Weitere Vorgaben:** Statistikbögen, Bauanzeigen (Baubeginn, Fertigstellung), Vollmacht, Artenschutzprüfung,
-  Betriebsbeschreibungen und die Verzeichnisse der Prüfsachverständigen haben noch keine Vorgabe (dort gelten die
-  erkannten Beschriftungen und die eigenen Einstellungen).
+- **Baubeschreibung beim Einfamilienhaus:** Die Vorgabe lässt sie entfallen (Vorgabe des Büros). § 10 Absatz 1 Nr. 4
+  BauPrüfVO verlangt sie im vereinfachten Verfahren ohne Ausnahme; Grundlage ist nur § 5 Absatz 1 („soweit die
+  Angaben nicht bereits im Lageplan und in den Bauzeichnungen enthalten sind“) – im Hinweis so begründet.
+- **Vorgaben fachlich gegenlesen:** Einige Regeln sind Ermessen und sollten geprüft werden – etwa, wann
+  Fachplanende in den Bescheinigungen der Sachverständigen zählen, „Gebäude nach § 68 Absatz 2“ als Wohngebäude der
+  Gebäudeklassen 1 und 2, die Gebäudeeinmessung bei der Fertigstellung und der Fertigstellungsteil (Blatt 3) des
+  Statistikbogens Baugenehmigung, der nicht zählt. Merkmale wie „freistehend“, „Kellergeschoss“ oder „Tierhaltung“
+  gibt es nicht; die betroffenen Angaben zählen deshalb nicht bzw. immer.
 - **Beschriftungen in Tabellen** (z. B. „1-fach / 3-fach“-Spalten) sind aus der Lage nur unvollständig ableitbar.

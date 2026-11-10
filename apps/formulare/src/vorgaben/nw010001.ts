@@ -12,7 +12,8 @@
 
 import type { FormularProfil } from '../profil';
 import { blatt2, kopf, personen, unterschriften, zusammen } from './antrag';
-import { angekreuzt, gruppeV, ist, istNicht, s, wenn, zaehltNicht } from './hilfen';
+import { keinEinfamilienhaus, nurBebauungsplan, nurBetrieb, nurInnenAussen } from './grundlagen';
+import { angekreuzt, gruppeV, s, wenn, zaehltNicht } from './hilfen';
 
 const s1 = s(1);
 const bauantrag = angekreuzt('0:CheckBox1');
@@ -47,12 +48,14 @@ export const nw010001_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
   zaehlt: zaehltNicht('1:CheckBox8', '1:CheckBox37'),
   gruppen: [gruppeV('kosten', 'Nr. 10 Rauminhalt, Rohbaukosten oder Herstellungssumme', 'eins', s1('CheckBox34', 'CheckBox35', 'CheckBox36'))],
   bedingungen: {
-    '1:CheckBox2': wenn(ist('Planungsrecht', 'Bebauungsplan')),
-    '1:CheckBox3': wenn(ist('Planungsrecht', 'Innenbereich', 'Außenbereich')),
-    '1:CheckBox6': wenn(istNicht('Gebäudeart', 'Einfamilienhaus')),
-    '1:CheckBox9': wenn(ist('Gebäudeart', 'Nichtwohngebäude')),
+    '1:CheckBox2': nurBebauungsplan,
+    '1:CheckBox3': nurInnenAussen,
+    '1:CheckBox6': keinEinfamilienhaus,
+    '1:CheckBox9': nurBetrieb,
     '1:Memo4': wenn(angekreuzt('1:CheckBox36')),
     '2:CheckBox6': wenn(bauantrag),
     '2:CheckBox7': wenn(bauantrag),
   },
 });
+
+export const vorgaben: Record<string, FormularProfil> = { 'nw010001|2026I': nw010001_2026I };

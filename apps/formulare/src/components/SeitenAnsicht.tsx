@@ -6,12 +6,13 @@ import { abschnitte, kaesten, ohneKuerzel } from '../forma/felder';
 import { bild, blatt, drehung, farbe, lage, seitenMasse } from '../forma/darstellung';
 import { umgebend, useMarkierung } from '../markierung';
 import { feldTasten } from '../navigation';
-import { abschnittId, alleFelder, feldErforderlich, feldTitel, formularKontext, gruppeVon, leeresProfil, profilSchluessel } from '../profil';
+import { abschnittId, alleFelder, feldTitel, gruppeVon, leeresProfil, profilSchluessel } from '../profil';
 import { hatBedingung } from '../bedingung';
 import { feldId, useEinrichten } from '../einrichten';
 import { useAntrag } from '../antragStore';
 import type { OffenesFormular } from '../store';
 import { formularDatei, useFormulare, useProfil, wertVon } from '../store';
+import { EntfallInfo, useEntfallen } from './EntfallInfo';
 import { autofillFelder } from '../autofill';
 
 /**
@@ -23,7 +24,6 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const zoom = useFormulare((s) => s.zoom);
   const profil = useProfil(profilSchluessel(offen.formular, offen.name));
   const feldTitel = profil?.feldTitel;
-  const merkmale = useAntrag((s) => s.projektdatei?.merkmale);
   const markierung = useMarkierung((s) => s.markierung);
   const huelle = useRef<HTMLDivElement>(null);
   const [breite, setBreite] = useState(0);
@@ -54,15 +54,9 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
     return m;
   }, [offen.formular, offen.felder, zustand]);
   const markiert = useMemo(() => new Set(markierung?.felder), [markierung]);
-  // Felder, die nach den Bedingungen (noch) nicht erforderlich sind – im Formular neutral statt farbig
-  const entfallen = useMemo(() => {
-    const out = new Set<string>();
-    if (!profil) return out;
-    const p = { ...leeresProfil(), ...profil };
-    const k = formularKontext(merkmale ?? {}, offen.felder.flat(), (f) => wertVon(offen, f));
-    for (const seite of offen.felder) for (const a of abschnitte(seite)) for (const f of a.felder) if (!feldErforderlich(f, a, p, k)) out.add(f.schluessel);
-    return out;
-  }, [profil, merkmale, offen]);
+  // Felder, die nach den Bedingungen (noch) nicht erforderlich sind – im Formular neutral statt farbig, mit Hinweis warum
+  const entfall = useEntfallen(offen);
+  const entfallen = useMemo(() => new Set(entfall.gruende.keys()), [entfall]);
 
   // Einrichten: ausgewählte Felder (direkt, über ihre Gruppe oder ihren Abschnitt) und Abschnitte je Seite
   const abschnitteJeSeite = useMemo(() => offen.felder.map((f) => abschnitte(f)), [offen.felder]);
@@ -134,6 +128,15 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
               {s.kaesten.map((k, n) => (
                 <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel, entfallen, autofill)} gesperrt={gesperrt} />
               ))}
+              {!einrichten &&
+                offen.felder[s.i]
+                  .filter((f) => entfall.gruende.has(f.schluessel))
+                  .map((f) => {
+                    const l = lage(f.kasten);
+                    // Textfeld: oben rechts im Feld; Kästchen: hochgestellt rechts neben dem Kästchen
+                    const ort = f.art === 'kreuz' ? { left: l.x + 12, top: l.y - 7 } : { left: l.x + l.b - 14, top: l.y + 1 };
+                    return <EntfallInfo key={f.schluessel} className="fo-el" style={ort} gruende={entfall.gruende.get(f.schluessel)!} text={entfall.text(f.schluessel)} />;
+                  })}
               {(() => {
                 const r = umrandung(s);
                 return r && <div className="fo-el fo-umrandung" style={{ left: r.x - 4, top: r.y - 4, width: r.b + 8, height: r.h + 8 }} />;

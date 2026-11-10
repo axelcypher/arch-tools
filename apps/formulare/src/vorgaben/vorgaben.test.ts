@@ -12,6 +12,7 @@ import { abschnitte, felderDerSeite } from '../forma/felder';
 import { parseFormular } from '../forma/formular';
 import type { FormularProfil } from '../profil';
 import { abschnittId, bereinigt, feldErforderlich, formularKontext, profilSchluessel } from '../profil';
+import { gesetzBekannt, gesetzLaden } from '../recht';
 import { VORGABEN } from './index';
 
 function sammle(ordner: string, out: string[] = []): string[] {
@@ -31,11 +32,14 @@ function sammle(ordner: string, out: string[] = []): string[] {
 
 const REF = process.env.SJFORMA_REF ?? fileURLToPath(new URL('../../../../.ref', import.meta.url));
 const formulare = new Map<string, ReturnType<typeof parseFormular>>();
+/** Formulare unter .ref ohne Vorgabe (Schlüssel → Datei) */
+const ohneVorgabe = new Map<string, string>();
 for (const pfad of sammle(REF)) {
   try {
     const f = parseFormular(new Uint8Array(readFileSync(pfad)));
     const k = profilSchluessel(f, pfad);
     if (VORGABEN[k] && !formulare.has(k)) formulare.set(k, f);
+    else if (!VORGABEN[k]) ohneVorgabe.set(k, pfad);
   } catch {
     // keine FORMA-Datei
   }
@@ -46,6 +50,21 @@ const bedingungen = (v: FormularProfil): Bedingung[] =>
   [...Object.values(v.abschnitte).map((a) => a.bedingung), ...(v.gruppen ?? []).map((g) => g.bedingung), ...Object.values(v.bedingungen ?? {})].filter((b): b is Bedingung => !!b);
 
 describe('Vorgaben der App', () => {
+  it.each(Object.keys(VORGABEN))('%s: jede Rechtsgrundlage gibt es im Gesetzestext der App', async (k) => {
+    for (const b of bedingungen(VORGABEN[k])) {
+      for (const q of b.quellen ?? []) {
+        expect(gesetzBekannt(q.gesetz), q.gesetz).toBe(true);
+        const p = (await gesetzLaden(q.gesetz)).paragrafen[q.paragraf];
+        expect(p, `${q.gesetz} § ${q.paragraf}`).toBeDefined();
+        if (q.absatz)
+          expect(
+            p.text.some((z) => z.startsWith(`(${q.absatz})`)),
+            `${q.gesetz} § ${q.paragraf} Absatz ${q.absatz}`,
+          ).toBe(true);
+      }
+    }
+  });
+
   it.each(Object.keys(VORGABEN))('%s ist in sich stimmig', (k) => {
     const v = VORGABEN[k];
     // nichts geht beim Bereinigen verloren (gültige Bedingungen, jedes Feld in höchstens einer Gruppe …)
@@ -86,6 +105,10 @@ describe('Vorgaben der App', () => {
           .map((x) => x.schluessel),
       );
       expect((v.gruppen ?? []).flatMap((g) => g.felder).filter((x) => berechnet.has(x))).toEqual([]);
+    });
+
+    it('jedes Formular unter .ref hat eine Vorgabe', () => {
+      expect([...ohneVorgabe].map(([k, pfad]) => `${k} (${pfad})`)).toEqual([]);
     });
 
     it.skipIf(!formulare.has('nw010002|2026I'))('vereinfachtes Verfahren: Nr. 6 Baubeschreibung entfällt beim Einfamilienhaus', () => {

@@ -1,0 +1,525 @@
+{
+ "id": "baupruefvo",
+ "kurz": "BauPrüfVO",
+ "titel": "Verordnung über bautechnische Prüfungen (BauPrüfVO)",
+ "fassung": "gültig ab 26.11.2024",
+ "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1",
+ "paragrafen": {
+  "1": {
+   "titel": "Allgemeines",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-1-allgemeines",
+   "text": [
+    "(1) Bauvorlagen gemäß § 70 Absatz 2 Satz 1 der Landesbauordnung 2018 vom 21. Juli 2018 (GV. NRW. S. 421) in der jeweils geltenden Fassung (im Folgenden BauO NRW 2018 genannt) sind insbesondere",
+    "1. die Auszüge aus dem Liegenschaftskataster (§ 2),",
+    "2. der Lageplan (§ 3),",
+    "3. die Bauzeichnungen (§ 4),",
+    "4. die Baubeschreibung und bei gewerblichen oder landwirtschaftlichen Betrieben die Betriebsbeschreibung (§ 5),",
+    "5. die Berechnungen und Angaben zur Kostenermittlung (§ 6),",
+    "6. die Nachweise der Standsicherheit und des Schallschutzes (§ 8),",
+    "7. das Brandschutzkonzept (§ 9),",
+    "8. das Barrierefrei-Konzept (§ 9a).",
+    "(2) Der Inhalt der Bauvorlagen beschränkt sich auf das zur Beurteilung der jeweiligen Anträge und Vorhaben Erforderliche. Die Bauaufsichtsbehörde kann in zu begründenden Einzelfällen weitere Unterlagen fordern, wenn sie dies zur Beurteilung für erforderlich hält. Die Bauaufsichtsbehörde kann auf Bauvorlagen und einzelne Angaben in den Bauvorlagen sowie auf die Nachweise der Standsicherheit und des Schallschutzes einschließlich deren Prüfung und Bescheinigung durch staatlich anerkannte Sachverständige verzichten, soweit sie zur Beurteilung nicht erforderlich sind. Auf die Vorlage des Brandschutzkonzeptes bei Bauvorhaben großer Sonderbauten gemäß § 50 Absatz 2 BauO NRW 2018 (§ 11) darf nicht verzichtet werden. Die Bauvorlagen müssen aus dauerhaftem Papier lichtbeständig hergestellt sein. § 3a des Verwaltungsverfahrensgesetzes für das Land Nordrhein-Westfalen vom 12. November 1999 (GV. NRW. S. 602) in der jeweils geltenden Fassung bleibt unberührt.",
+    "(3) Für Anträge, die Vorlage an die Gemeinde in der Genehmigungsfreistellung und einzelne Bauvorlagen sind die von der obersten Bauaufsichtsbehörde in der Sammlung des Ministerialblattes unter Gliederungsnummer 23210 bekannt gemachten Vordrucke zu verwenden."
+   ]
+  },
+  "2": {
+   "titel": "Auszüge aus dem Liegenschaftskataster",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-2-auszuge-aus-dem-liegenschaftskataster",
+   "text": [
+    "(1) Auszüge aus dem Liegenschaftskataster sind die Standardausgaben in Form der Flurkarte oder der Amtlichen Basiskarte.",
+    "(2) Im Auszug aus der Flurkarte müssen das Baugrundstück und die benachbarten Grundstücke im Umkreis von 50 m um das Baugrundstück sowie der Standort des Bauvorhabens dargestellt sein. Der Auszug darf nicht älter als sechs Monate und muss amtlich beglaubigt sein. Ein Auszug nach Satz 1 ist nicht erforderlich, wenn ein amtlicher Lageplan nach § 3 Absatz 3, § 17 Satz 1 Nummer 1 oder § 18 vorgelegt wird.",
+    "(3) Im Auszug aus der Amtlichen Basiskarte müssen das Baugrundstück und seine Umgebung im Umkreis von 500 m sowie der Standort des Bauvorhabens dargestellt sein. Dabei ist ein Maßstab von mindestens 1:5 000 zu verwenden. Der Auszug darf nicht älter als sechs Monate sein."
+   ]
+  },
+  "3": {
+   "titel": "Lageplan",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-3-lageplan",
+   "text": [
+    "(1) Der Lageplan ist auf der Grundlage eines Auszugs aus dem Liegenschaftskataster (§ 2) zu erstellen. Dabei ist ein Maßstab von mindestens 1:500 zu verwenden. Ein größerer Maßstab ist zu wählen, wenn es für die Beurteilung des Vorhabens notwendig ist. Der Lageplan muss, soweit erforderlich, enthalten",
+    "1. seinen Maßstab und die Lage des Baugrundstücks zur Nordrichtung,",
+    "2. die Bezeichnung des Baugrundstücks und der benachbarten Grundstücke nach Straße, Hausnummer, Grundbuch und Liegenschaftskataster sowie die Angabe der Eigentümerin oder des Eigentümers des Baugrundstücks,",
+    "3. die rechtmäßigen Grenzen des Baugrundstücks und deren Längen sowie seinen Flächeninhalt,",
+    "4. die Höhenlage der Eckpunkte des Baugrundstücks und die Höhenlage des engeren Baufeldes bezogen auf das aktuelle amtliche Höhenbezugssystem,",
+    "5. die Breite und die Höhenlage angrenzender öffentlicher Verkehrsflächen bezogen auf das aktuelle amtliche Höhenbezugssystem,",
+    "6. die vorhandenen baulichen Anlagen auf dem Baugrundstück und auf den angrenzenden Grundstücken sowie die genehmigten oder nach § 63 Absatz 2 und 5 BauO NRW 2018 zulässigen, aber noch nicht ausgeführten baulichen Anlagen auf dem Baugrundstück, bei Gebäuden auch mit Angabe ihrer Geschosszahl, Wand- und Firsthöhen und deren Abstandsflächen mit Berechnung,",
+    "7. Denkmäler im Sinne des Denkmalschutzgesetzes vom 11. März 1980 (GV. NRW. S. 226, ber. S. 716) in der jeweils geltenden Fassung auf dem Baugrundstück und dessen engerer Umgebung sowie geschützte Baumbestände auf dem Baugrundstück,",
+    "8. Flächen auf dem Baugrundstück, die von Baulasten betroffen sind, sowie Flächen auf den angrenzenden Grundstücken, die von Baulasten zugunsten des Baugrundstücks betroffen sind,",
+    "9. Flächen auf dem Baugrundstück, die mit grundbuchlich gesicherten Dienstbarkeiten zu Gunsten der Träger von Hochspannungsleitungen und unterirdischen Leitungen für die Versorgung mit Elektrizität, Gas, Wärme und Wasser belegt sind,",
+    "10. Hydranten und andere Wasserentnahmestellen für Feuerlöschzwecke,",
+    "11. die Bezeichnung des Bebauungsplanes oder anderer Satzungen nach dem Baugesetzbuch in der Fassung der Bekanntmachung vom 3. November 2017 (BGBl. I S. 3634) in der jeweils geltenden Fassung mit den Festsetzungen über Art und Maß der baulichen Nutzung, die Bauweise, die Darstellung der Baulinien und Baugrenzen und der Flächen auf dem Baugrundstück, für die der Bebauungsplan oder eine andere Satzung besondere Festsetzungen trifft, sowie die Bezeichnung der örtlichen Bauvorschriften,",
+    "12. die geplanten baulichen Anlagen unter Angabe der Außenmaße, der Dachform, der Wand- und Firsthöhen, der Höhenlage der Eckpunkte der baulichen Anlage bezogen auf das aktuelle amtliche Höhenbezugssystem an der Geländeoberfläche, der Höhenlage des Erdgeschossfußbodens bezogen auf das aktuelle amtliche Höhenbezugssystem, der Grenzabstände, der Tiefe und Breite der Abstandflächen, der Abstände zu anderen baulichen Anlagen,",
+    "13. die Abstände der geplanten baulichen Anlage zu öffentlichen Verkehrsflächen, zu Grünflächen, zu Wasserflächen und zu Wäldern,",
+    "14. die Aufteilung der nicht überbauten Flächen auf dem Baugrundstück unter Angabe der Lage, Anzahl und Größe der Stellplätze für Kraftfahrzeuge, der Fahrradabstellplätze, der Zu- und Abfahrten, der Bewegungsflächen für die Feuerwehr, der Kinderspielplätze und der Flächen, die gärtnerisch angelegt werden beziehungsweise mit Bäumen bepflanzt werden sollen sowie",
+    "15. die Lage der Entwässerungsgrundleitungen bis zum öffentlichen Kanal oder die Lage der Abwasserbehandlungsanlage mit der Abwassereinleitung.",
+    "(2) Bei Vorhaben im Geltungsbereich eines Bebauungsplans oder anderer Satzungen nach dem Baugesetzbuch ist der Lageplan für bauliche Anlagen nach Absatz 1 Nummer 6 und geplante bauliche Anlagen auf dem Baugrundstück durch eine Berechnung ihrer Grundfläche, Geschossfläche, Zahl der Vollgeschosse und ihrer Baumasse zu ergänzen, mit der nachgewiesen wird, dass die festgesetzte Grundflächenzahl, Geschossflächenzahl, Zahl der Vollgeschosse oder Baumassenzahl eingehalten wird.",
+    "(3) Der Lageplan (Absatz 1) und die Berechnungen nach Absatz 2 müssen von einem Katasteramt angefertigt oder von einer Öffentlich bestellten Vermessungsingenieurin oder einem Öffentlich bestellten Vermessungsingenieur angefertigt und mit öffentlichem Glauben beurkundet werden (amtlicher Lageplan), wenn es beantragt wird oder",
+    "1. es sich bei den Außengrenzen des Baugrundstücks nicht um festgestellte Grenzen im Sinne des Vermessungs- und Katastergesetzes vom 1. März 2005 (GV. NRW. S. 174) in der jeweils geltenden Fassung handelt,",
+    "2. die Grenzen des Baugrundstücks und die vorhandenen baulichen Anlagen auf dem Baugrundstück und den angrenzenden Grundstücken so vermessen sind, dass für die Grenzpunkte Koordinaten in einem einheitlichen System nicht ermittelt werden können, oder",
+    "3. auf dem Baugrundstück oder von angrenzenden Grundstücken her Grenzüberbauungen vorliegen,",
+    "4. eine Baulast im Sinne von § 18 auf dem Baugrundstück oder eine das Baugrundstück betreffende Baulast auf den angrenzenden Grundstücken ruht.",
+    "Wenn besondere Grundstücksverhältnisse, insbesondere in Folge des unübersichtlichen Verlaufs der Grenzen des Baugrundstücks durch Grenzvorsprünge oder Grenzknicke, gegeben sind und die Voraussetzungen für die Anfertigung eines amtlichen Lageplanes nach Satz 1 nicht vorliegen, können der Lageplan nach Absatz 1 und die Berechnungen nach Absatz 2 auch von einer Vermessungsingenieurin oder einem Vermessungsingenieur, die oder der Mitglied einer Ingenieurkammer ist, angefertigt werden; die Mitgliedschaft in einer Ingenieurkammer ist auf Verlangen der Bauaufsichtsbehörde nachzuweisen. In allen anderen Fällen können diese Bauvorlagen auch von den Entwurfsverfassenden angefertigt werden.",
+    "(4) Personen, die in einem anderen Mitgliedstaat der Europäischen Union oder einem nach dem Recht der Europäischen Gemeinschaften gleichgestellten Staat als Vermessungsingenieurin oder Vermessungsingenieur niedergelassen sind und dort Lagepläne anfertigen dürfen, sind ohne Mitgliedschaft in einer Ingenieurkammer berechtigt, den Lageplan nach Absatz 3 Satz 2 anzufertigen.",
+    "(5) Für die Darstellungen im Lageplan sind die Zeichen und/oder Farben der Anlage zu dieser Verordnung und im Übrigen die Planzeichen der Verordnung über die Ausarbeitung der Bauleitpläne und die Darstellung des Planinhalts (Planzeichenverordnung 1990 – PlanzV 90) vom 18. Dezember 1990 (BGBl. I 1991 S. 58) in der jeweils geltenden Fassung zu verwenden. Die sonstigen Darstellungen sind, soweit erforderlich, durch Beschriftung zu kennzeichnen. Der Inhalt des Lageplanes ist auf besonderen Blättern darzustellen, wenn der Lageplan sonst unübersichtlich würde."
+   ]
+  },
+  "4": {
+   "titel": "Bauzeichnungen",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-4-bauzeichnungen",
+   "text": [
+    "(1) Für die Bauzeichnungen (Grundrisse, Schnitte, Ansichten) ist der Maßstab 1:100 zu verwenden. In den Bauzeichnungen sind anzugeben:",
+    "1. der Maßstab,",
+    "2. die Maße, auch die Maße der Öffnungen, in den Grundrissen und Schnitten,",
+    "3. das Brandverhalten der Baustoffe und die Feuerwiderstandsfähigkeit der Bauteile, soweit aus Gründen des Brandschutzes an diese Forderungen gestellt werden,",
+    "4. bei Änderung baulicher Anlagen die zu beseitigenden und die neuen Bauteile.",
+    "(2) In den Grundrissen, die für alle Geschosse anzufertigen sind, müssen insbesondere angegeben und eingezeichnet werden",
+    "1. die vorgesehene Nutzung der Räume,",
+    "2. die Treppen und Rampen mit ihrem Steigungsverhältnis,",
+    "3. Art und Anordnung sowie lichte Durchgangsmaße der Türen in und an Rettungswegen,",
+    "4. die Lage und Außenmaße der Abgasanlagen,",
+    "5. Räume für die Aufstellung von Feuerstätten und für die Brennstofflagerung,",
+    "6. ortsfeste Behälter für schädliche oder brennbare Flüssigkeiten oder für verflüssigte oder nicht verflüssigte Gase, soweit sie baugenehmigungsbedürftig sind,",
+    "7. Aufzugsschächte und die nutzbare Grundfläche der Fahrkörbe von Personenaufzügen,",
+    "8. Lüftungsleitungen und Installationsschächte, soweit sie baugenehmigungsbedürftig sind,",
+    "9. Feuermelde- und Feuerlöscheinrichtungen, sofern diese besonders vorgeschrieben sind, mit Angabe ihrer Art,",
+    "10. der Aufstellungsort von Maschinen und Apparaten.",
+    "(3) Aus den Schnitten muss insbesondere ersichtlich sein",
+    "1. die Höhenlage des Erdgeschossfußbodens bezogen auf das aktuelle amtliche Höhenbezugssystem,",
+    "2. der Anschnitt der vorhandenen und der geplanten Höhenlage der Geländeoberfläche bezogen auf das aktuelle amtliche Höhenbezugssystem sowie Aufschüttungen und Abgrabungen,",
+    "3. die Höhe der Fußbodenoberkante des höchstgelegenen Geschosses, in dem ein Aufenthaltsraum möglich ist, über der Geländeoberfläche im Mittel mit rechnerischem Nachweis (§ 2 Absatz 3 BauO NRW 2018),",
+    "4. die lichten Raumhöhen,",
+    "5. die Höhen der Firste über der Geländeoberfläche, die Dachneigungen sowie das Maß H je Außenwand in dem zur Bestimmung der Abstandsflächen erforderlichen Umfang (§ 6 Absatz 4 BauO NRW 2018).",
+    "(4) In den Ansichten müssen die geplanten baulichen Anlagen, bei Gebäuden auch das vorhandene und künftige Gelände mit Angabe seiner Höhenlage bezogen auf das aktuelle amtliche Höhenbezugssystem dargestellt werden. Soweit erforderlich, müssen geplante Gebäude zusammen mit den Gebäuden in der näheren Umgebung in einer Ansicht im Maßstab 1:200 dargestellt werden; anstelle dieser Ansicht ist auch ein farbiges Foto oder eine farbige Fotomontage zulässig.",
+    "(5) Für die Darstellung in den Bauzeichnungen sind die Zeichen und/oder Farben der Anlage zu dieser Verordnung zu verwenden; dies gilt nicht, wenn in den Bauzeichnungen nur vorgesehene Bauteile dargestellt werden. Einzelne Bauzeichnungen oder Teile hiervon können durch besondere Zeichnungen, Zeichen und Farben erläutert werden.",
+    "(6) In den Bauzeichnungen für Wohngebäude der Gebäudeklassen 1 bis 3 mit nicht mehr als zwei Wohnungen sind die Angaben und Einzeichnungen nach Absatz 1 Nummer 3, Absatz 2 Nummer 3, 5 und 8 sowie Absatz 3 Nummer 4 nicht erforderlich."
+   ]
+  },
+  "5": {
+   "titel": "Baubeschreibung und Betriebsbeschreibung",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-5-baubeschreibung-und-betriebsbeschreibung",
+   "text": [
+    "(1) Soweit die für die Prüfung des Antrags notwendigen Angaben nicht bereits im Lageplan und in den Bauzeichnungen enthalten sind, sind diese in einer Baubeschreibung darzulegen. In der Baubeschreibung sind das Vorhaben insbesondere hinsichtlich der Bauprodukte und Bauarten, die verwendet und angewandt werden sollen, seine äußere Gestaltung (Baustoffe, Farben) und seine Nutzung zu erläutern. Sie muss, soweit es das Bauvorhaben erfordert, die Angaben enthalten, die in dem nach § 1 Absatz 3 bekannt gemachten Vordruck beschrieben sind.",
+    "(2) Für gewerbliche Anlagen, die einer immissionsschutzrechtlichen Genehmigung oder einer Erlaubnis nach den aufgrund des Produktsicherheitsgesetzes vom 8. November 2011 (BGBl. I S. 2178, 2179; 2012 I S. 131) in der jeweils geltenden Fassung erlassenen Rechtsverordnungen nicht bedürfen, muss eine Betriebsbeschreibung Angaben enthalten über",
+    "1. die Art der gewerblichen Tätigkeit unter Angabe der Art und der Zahl der Maschinen oder Apparate, der Art der zu verwendenden Rohstoffe und der herzustellenden Erzeugnisse, der Art ihrer Lagerung, insbesondere soweit sie feuer-, explosions- oder gesundheitsgefährlich sind,",
+    "2. die Art, die Menge und der Verbleib der Abfälle und des besonders zu behandelnden Abwassers,",
+    "3. die Zahl der Beschäftigten.",
+    "(3) Für landwirtschaftliche Betriebe muss eine Betriebsbeschreibung insbesondere Angaben enthalten über",
+    "1. die Größe der Betriebsflächen, deren Nutzungsarten und Eigentumsverhältnisse,",
+    "2. Art und Umfang der Viehhaltung,",
+    "3. Art, Lagerung und Verbleib der tierischen Abgänge,",
+    "4. Art, Menge und Lagerung der Stoffe, die feuer-, explosions- oder gesundheitsgefährlich sind,",
+    "5. Art, Menge und Verbleib der Abfälle und des besonders zu behandelnden Abwassers,",
+    "6. Anzahl der Arbeitskräfte, ihre fachliche Eignung sowie Art und Umfang ihrer Tätigkeiten,",
+    "7. die Kosten und den Nutzen."
+   ]
+  },
+  "6": {
+   "titel": "Berechnungen und Angaben zur Kostenermittlung",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-6-berechnungen-und-angaben-zur-kostenermittlung",
+   "text": [
+    "Berechnungen und Angaben zur Kostenermittlung sind",
+    "1. bei Gebäuden eine nachprüfbare Berechnung des Brutto-Rauminhalts nach DIN 277-1:2016-01 oder für Gebäude, für die landesdurchschnittliche Rohbauwertsätze je m³ Brutto-Rauminhalt nicht festgelegt sind, die Berechnung der veranschlagten (geschätzten) Rohbaukosten,",
+    "2. bei den übrigen baulichen Anlagen sowie anderen Anlagen und Einrichtungen im Sinne von § 1 Absatz 1 Satz 2 BauO NRW 2018 Angaben über die veranschlagten (geschätzten) Herstellungskosten.",
+    "Zweiter Abschnitt",
+    "Anforderungen an bautechnische Nachweise"
+   ]
+  },
+  "7": {
+   "titel": "Übereinstimmungserklärung",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-7-ubereinstimmungserklarung",
+   "text": [
+    "Werden Bauvorlagen zu unterschiedlichen Zeitpunkten eingereicht oder während des Genehmigungsverfahrens geändert, haben die Entwurfsverfassenden jeweils zu erklären, dass die Bauvorlagen bezüglich ihres Planungs- und Bearbeitungsstandes übereinstimmen."
+   ]
+  },
+  "8": {
+   "titel": "Nachweise der Standsicherheit und des Schallschutzes",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-8-nachweise-der-standsicherheit-und-des-schallschutzes",
+   "text": [
+    "(1) Der Nachweis der Standsicherheit besteht aus einer Darstellung des gesamten statischen Systems einschließlich der Gründung, den erforderlichen Berechnungen, Konstruktionszeichnungen, Bewehrungs- und Schalungsplänen. Die statischen Berechnungen müssen die Standsicherheit der baulichen Anlagen und ihrer Teile nachweisen. Die Beschaffenheit des Baugrundes und seine Tragfähigkeit sind anzugeben. Der Standsicherheitsnachweis umfasst auch den Nachweis der Feuerwiderstandsfähigkeit der tragenden Bauteile.",
+    "(2) Von der Vorlage eines Nachweises der Standsicherheit kann im Einvernehmen mit der Bauaufsichtsbehörde abgesehen werden, wenn bauliche Anlagen oder ihre Teile nach Bauart, statischem System, baulicher Durchbildung und Abmessungen sowie hinsichtlich ihrer Beanspruchung einer bewährten Ausführung entsprechen.",
+    "(3) Einzelnachweise gemäß Absatz 1, die nach ihrem Inhalt erst vorgelegt werden können, wenn die Ausführungsplanung erstellt ist, dürfen nach Erteilung der Baugenehmigung, jedoch rechtzeitig vor der Bauausführung zur Prüfung eingereicht werden.",
+    "(4) Als Nachweis des Schallschutzes sind, soweit erforderlich, Einzelnachweise durch Zeichnung, Beschreibung, Berechnung, Prüfzeugnisse oder Gutachten vorzulegen."
+   ]
+  },
+  "9": {
+   "titel": "Brandschutzkonzept",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-9-brandschutzkonzept",
+   "text": [
+    "(1) Das Brandschutzkonzept ist eine zielorientierte Gesamtbewertung des baulichen und abwehrenden Brandschutzes bei Sonderbauten durch den in § 54 Absatz 3 BauO NRW 2018 bestimmten Personenkreis.",
+    "(2) Das Brandschutzkonzept muss insbesondere folgende Angaben enthalten:",
+    "1. Zu- und Durchfahrten sowie Aufstell- und Bewegungsflächen für die Feuerwehr,",
+    "2. den Nachweis der erforderlichen Löschwassermenge, den Nachweis der Löschwasserversorgung und die Angabe über die Hydrantenstandorte,",
+    "3. Bemessung, Lage und Anordnung der Löschwasser-Rückhalteanlagen,",
+    "4. das System der äußeren und der inneren Abschottungen in Brandabschnitte beziehungsweise Brandbekämpfungsabschnitte sowie der Rauchabschnitte mit Angaben zur Feuerwiderstandsfähigkeit der Bauteile und Anforderungen an das Brandverhalten der Baustoffe,",
+    "5. Lage, Anordnung, Bemessung (gegebenenfalls durch rechnerischen Nachweis) und Kennzeichnung der Rettungswege auf dem Baugrundstück und in Gebäuden mit Angaben zur Sicherheitsbeleuchtung, zu automatischen Schiebetüren und zu elektrischen Verriegelungen von Türen,",
+    "6. die höchstzulässige Zahl der Nutzer der baulichen Anlage, deren Mobilität und Grundzüge der Evakuierung,",
+    "7. Lage und Anordnung haustechnischer Anlagen, insbesondere der Leitungsanlagen, gegebenenfalls mit Angaben zum Brandverhalten im Bereich von Rettungswegen sowie von Aufzügen,",
+    "8. Lage und Anordnung der Lüftungsanlagen mit Angaben zur brandschutztechnischen Ausbildung,",
+    "9. Lage, Anordnung und Bemessung der Rauch- und Wärmeabzugsanlagen mit Eintragung der Querschnitte beziehungsweise Luftwechselraten sowie der Überdruckanlagen zur Rauchfreihaltung von Rettungswegen,",
+    "10. die Alarmierungseinrichtungen und Alarmierungsanlagen,",
+    "11. Lage, Anordnung und gegebenenfalls Bemessung von Anlagen, Einrichtungen und Geräten zur Brandbekämpfung (wie Feuerlöschanlagen, Steigeleitungen, Wandhydranten, Schlauchanschlussleitungen, Feuerlöschgeräte) mit Angaben zu Schutzbereichen und zur Bevorratung von Sonderlöschmitteln,",
+    "12. Sicherheitsstromversorgung mit Angaben zur Bemessung und zur Lage und brandschutztechnischen Ausbildung des Aufstellraums, der Ersatzstromversorgungsanlagen (Batterien, Stromerzeugungsaggregate) und zum Funktionserhalt der elektrischen Leitungsanlagen,",
+    "13. Lage und Anordnung von Brandmeldeanlagen mit Unterzentralen und Feuerwehrtableaus, Auslösestellen,",
+    "14. Grundzüge der funktionalen steuerungstechnischen Zusammenhänge,",
+    "15. Feuerwehrpläne,",
+    "16. betriebliche Maßnahmen zur Brandverhütung und Brandbekämpfung sowie zur Rettung von Personen (wie Werkfeuerwehr, Betriebsfeuerwehr, Hausfeuerwehr, Brandschutzordnung, Maßnahmen zur Räumung, Räumungssignale),",
+    "17. Angaben darüber, welchen materiellen Anforderungen der BauO NRW 2018 oder in Vorschriften auf Grund der BauO NRW 2018 nicht entsprochen wird und welche ausgleichenden Maßnahmen stattdessen vorgesehen werden,",
+    "18. Anwendung von Verfahren und Methoden des Brandschutzingenieurwesens.",
+    "Die Angaben sind in einem schriftlichen Erläuterungsbericht zu formulieren und durch zeichnerische Darstellung der baulichen Anforderungen unter Angabe der technischen Anforderungen zu ergänzen."
+   ]
+  },
+  "10": {
+   "titel": "Bauvorlagen zum Bauantragim vereinfachten Baugenehmigungsverfahren und bei referenzieller Baugenehmigung",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-10-bauvorlagen-zum-bauantragim-vereinfachten-baugenehmigungsverfahren-und-bei-referenzieller",
+   "text": [
+    "(1) Dem Bauantrag für die Errichtung oder Änderung baulicher Anlagen, die dem vereinfachten Baugenehmigungsverfahren unterliegen (§ 64 BauO NRW 2018), sind folgende Bauvorlagen in dreifacher Ausfertigung beizufügen:",
+    "1. bei Vorhaben nach den §§ 34 und 35 des Baugesetzbuches ein Auszug aus dem Liegenschaftskataster (§ 2 Absatz 1),",
+    "2. der Lageplan (§ 3),",
+    "3. die Bauzeichnungen (§ 4),",
+    "4. die Baubeschreibung und bei gewerblichen oder landwirtschaftlichen Betrieben die Betriebsbeschreibung (§ 5).",
+    "Die Berechnungen oder Angaben zur Kostenermittlung (§ 6) sind in zweifacher Ausfertigung beizufügen. Die Bauaufsichtsbehörde kann die Einreichung weiterer Ausfertigungen verlangen.",
+    "(2) Dem Bauantrag für die Änderung baulicher Anlagen brauchen die in Absatz 1 Satz 1 Nummer 1 und 2 genannten Bauvorlagen nicht beigefügt zu werden, wenn Länge und Höhe der den Nachbargrenzen zugekehrten Wände unverändert bleiben. Jedoch ist auf einem Übersichtsplan die zu ändernde bauliche Anlage kenntlich zu machen, wenn sich auf dem Baugrundstück mehrere bauliche Anlagen befinden und aus den sonstigen beizufügenden Bauvorlagen nicht ersichtlich ist, welche dieser baulichen Anlagen geändert werden sollen. Absatz 1 Satz 2 gilt entsprechend.",
+    "(3) Dem Bauantrag auf Erteilung einer Baugenehmigung für eine Nutzungsänderung sowie für die bei der Gemeinde einzureichende Anzeige der Nutzungsänderung gemäß § 64 Absatz 2 BauO NRW 2018 sind die in Absatz 1 Satz 1 Nummer 1 und 2 genannten Bauvorlagen beizufügen; hinsichtlich des Lageplanes ist § 3 Absatz 3 Satz 1 und 2 nicht anzuwenden. Art und Umfang der Nutzungsänderung sind anzugeben und erforderlichenfalls in Bauzeichnungen (§ 4) sowie in Bau- und Betriebsbeschreibungen kenntlich zu machen (§ 5). Sofern mit der Nutzungsänderung genehmigungsbedürftige bauliche Änderungen verbunden sind, sind dem Bauantrag auch die in Absatz 1 Nummer 3 und 4 genannten Bauvorlagen beizufügen. Absatz 1 Satz 2 gilt entsprechend.",
+    "(4) Für die Errichtung der Bezugsgebäude gemäß § 66 Absatz 5 Nummer 2 BauO NRW 2018 sind spätestens mit der Anzeige des Baubeginns folgende Bauvorlagen in einfacher Ausfertigung vorzulegen:",
+    "1. der Lageplan (§ 3),",
+    "2. die Bauzeichnungen (§ 4) und",
+    "3. die bautechnischen Nachweise (§ 68 BauO NRW 2018).",
+    "Die Bauaufsichtsbehörde kann die Einreichung weiterer Ausfertigungen verlangen."
+   ]
+  },
+  "11": {
+   "titel": "Bauvorlagen zum Bauantrag im Baugenehmigungsverfahren",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-11-bauvorlagen-zum-bauantrag-im-baugenehmigungsverfahren",
+   "text": [
+    "Dem Bauantrag für die Errichtung, Änderung und Nutzungsänderung von Bauvorhaben nach § 65 BauO NRW 2018 ist neben den Bauvorlagen nach § 10 das Brandschutzkonzept nach § 9 in dreifacher Ausfertigung beizufügen. Neben den Bauvorlagen nach Satz 1 ist dem Bauantrag für neu zu errichtende öffentlich zugängliche Gebäude gemäß § 49 Absatz 2 BauO NRW 2018, die große Sonderbauten gemäß § 50 Absatz 2 BauO NRW 2018 - mit Ausnahme von Gebäuden im Zuständigkeitsbereich von Polizei und Justiz - sind, ein Barrierefrei-Konzept nach § 9a in dreifacher Ausfertigung beizufügen."
+   ]
+  },
+  "12": {
+   "titel": "Zusätzliche Angaben undBauvorlagen für besondere Vorhaben",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-12-zusatzliche-angaben-undbauvorlagen-fur-besondere-vorhaben",
+   "text": [
+    "(1) Für Versammlungsstätten im Sinne der Sonderbauverordnung vom 2. Dezember 2016 (GV. NRW. 2017 S. 2, ber. S. 120) in der jeweils geltenden Fassung sind die Anordnung der Sitz- und Stehplätze, einschließlich der Plätze für Benutzerinnen und Benutzer von Rollstühlen, der Bühnen, Szenen- oder Spielflächen sowie der Verlauf und die erforderliche Breite der Rettungswege in einem Bestuhlungs- und Rettungswegeplan im Maßstab von mindestens 1:200 darzustellen. Sind verschiedene Anordnungen vorgesehen, so ist für jede ein besonderer Plan vorzulegen. Ist eine von § 1 Absatz 2 Satz 1 der Sonderbauverordnung abweichende höhere Anzahl von Besucherinnen und Besuchern je m² Grundfläche des Versammlungsraumes vorgesehen, sind die schnelle und sichere Erreichbarkeit der Ausgänge ins Freie und die Möglichkeit zur Durchführung wirksamer Lösch- und Rettungsmaßnahmen gesondert darzustellen.",
+    "(2) Für Beherbergungsstätten im Sinne der Sonderbauverordnung müssen die Bauvorlagen zusätzliche Angaben enthalten über die Anzahl der Gastbetten und ihre Zuordnung zu Beherbergungsräumen nach § 56 der Sonderbauverordnung. Für Beherbergungsstätten, für die ein Brandschutzkonzept nicht gefordert ist, müssen die Bauvorlagen Angaben enthalten über",
+    "1. die Sicherheitsbeleuchtung,",
+    "2. die Sicherheitsstromversorgung,",
+    "3. die Alarmierungseinrichtungen,",
+    "4. die Brandmeldeanlage und",
+    "5. die Rettungswege auf dem Grundstück.",
+    "(3) Für Verkaufsstätten im Sinne der Sonderbauverordnung müssen die Bauvorlagen ergänzt werden um",
+    "1. eine Berechnung der Flächen der Verkaufsräume und der Brandabschnitte und",
+    "2. eine Berechnung der erforderlichen Breiten der Ausgänge aus den Geschossen ins Freie oder in notwendige Treppenräume.",
+    "(4) Für Mittel- und Großgaragen im Sinne der Sonderbauverordnung müssen die Bauvorlagen Angaben enthalten über die Zahl, Abmessung und Kennzeichnung der Einstellplätze und Fahrgassen. In den Bauvorlagen für geschlossene Großgaragen mit nicht nur geringem Zu- und Abgangsverkehr sind Art und Lage der CO-Warnanlagen darzustellen.",
+    "(5) Für Betriebsräume gemäß § 143 der Sonderbauverordnung müssen die Bauvorlagen Angaben über die Lage des Betriebsraums und die Art der elektrischen Anlage enthalten.",
+    "(6) Für Krankenhäuser müssen die Bauvorlagen",
+    "1. Angaben über die Zahl der Betten und",
+    "2. eine Darstellung der Räume für Untersuchung und Behandlung mit ionisierenden Strahlen",
+    "enthalten."
+   ]
+  },
+  "13": {
+   "titel": "Bauvorlagen für Vorhaben in der Genehmigungsfreistellung",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-13-bauvorlagen-fur-vorhaben-der-genehmigungsfreistellung",
+   "text": [
+    "(1) Bei Vorhaben nach § 63 Absatz 2 und 5 BauO NRW 2018 sind der Gemeinde einzureichen:",
+    "1. der Lageplan (§ 3) und",
+    "2. die Bauzeichnungen (§ 4).",
+    "§ 10 Absatz 2 und 3 gilt entsprechend. Bei Gebäuden der Gebäudeklassen 1 und 2 ist eine Erklärung der Entwurfsverfassenden beizufügen, dass das Vorhaben den Anforderungen an den Brandschutz entspricht.",
+    "(2) Die Bauvorlagen nach Absatz 1 sind in einfacher Ausfertigung einzureichen. Hat die Bauherrschaft gemäß § 63 Absatz 6 Satz 4 BauO NRW 2018 ausdrücklich bestimmt, dass die Bauvorlagen im Falle der Erklärung der Gemeinde nach § 63 Absatz 2 Satz 1 Nummer 5 BauO NRW 2018 als Bauantrag zu behandeln sind, gilt § 10 Absatz 1 entsprechend. In diesem Fall sind auch die Baubeschreibungen (§ 5 Absatz 1) und die Berechnungen und Angaben zur Kostenermittlung (§ 6) in der nach § 10 Absatz 1 Satz 2 erforderlichen Anzahl von Ausfertigungen einzureichen."
+   ]
+  },
+  "14": {
+   "titel": "Bauvorlagen für Werbeanlagen",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-14-bauvorlagen-fur-werbeanlagen",
+   "text": [
+    "(1) Dem Bauantrag für die Errichtung, Aufstellung, Anbringung und Änderung von Werbeanlagen sind beizufügen:",
+    "1. der Auszug aus dem Liegenschaftskataster (§ 2 Absatz 1) mit Einzeichnung des Standorts der geplanten Werbeanlage und, soweit erforderlich, der Lageplan (§ 3), der nicht als Lageplan nach § 3 Absatz 3 angefertigt zu sein braucht,",
+    "2. die Zeichnung und die Beschreibung der Werbeanlage (Absatz 2),",
+    "3. ein farbiges Foto oder eine farbige Fotomontage (Absatz 3) und",
+    "4. Angaben über die veranschlagten Herstellungskosten.",
+    "(2) Die Zeichnung, für die ein Maßstab nicht kleiner als 1:50 zu verwenden ist, muss die Darstellung der geplanten Werbeanlage, ihre Maße, auch bezogen auf den Anbringungsort, sowie die Farben mit Angabe der Nummer und Hilfsbezeichnung aus dem RAL-Farbregister enthalten. In der Beschreibung sind die Art und die Werkstoffe der geplanten Werbeanlage anzugeben.",
+    "(3) Auf einem farbigen Foto oder einer farbigen Fotomontage sind wiederzugeben:",
+    "1. die Darstellung der geplanten Werbeanlage in Verbindung mit der baulichen Anlage, vor der oder in deren Nähe sie aufgestellt oder errichtet oder an der sie angebracht werden soll,",
+    "2. die Darstellung der vorhandenen Werbeanlagen auf dem Grundstück und den angrenzenden Grundstücken,",
+    "3. die Darstellung und Bezeichnung der Werbeanlagen, die beseitigt werden sollen.",
+    "(4) § 10 Absatz 1 gilt sinngemäß."
+   ]
+  },
+  "15": {
+   "titel": "Bauvorlagen für die Beseitigung von Anlagen",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-15-bauvorlagen-fur-die-beseitigung-von-anlagen",
+   "text": [
+    "(1) Der Anzeige der Beseitigung von Anlagen nach § 62 Absatz 3 Satz 3 BauO NRW 2018 sind unter Benennung des Grundstücks nach Straße und Hausnummer beizufügen:",
+    "1. ein Auszug aus der Flurkarte (§ 2 Absatz 2) mit der Darstellung der Lage des Beseitigungsvorhabens und",
+    "2. bei nicht freistehenden Gebäuden der Nachweis durch eine berechtigte Person nach § 54 Absatz 4 BauO NRW 2018, dass das Gebäude oder die Gebäude, an die das zu beseitigende Gebäude angebaut ist, während und nach der Beseitigung standsicher sind.",
+    "(2) Wird ein Baugenehmigungsverfahren nach § 62 Absatz 3 Satz 2 BauO NRW 2018 beantragt, sind neben den Unterlagen nach Absatz 1 beizufügen:",
+    "1. die Bezeichnung des Beseitigungsvorhabens,",
+    "2. eine Beschreibung der zu beseitigenden baulichen Anlagen nach ihrer wesentlichen Konstruktion und des vorgesehenen Beseitigungsvorgangs mit Angabe der erforderlichen Sicherungsmaßnahmen und",
+    "3. Angaben über den Verbleib des Beseitigungsmaterials.",
+    "(3) § 10 Absatz 1 Satz 3 gilt sinngemäß."
+   ]
+  },
+  "16": {
+   "titel": "Bauvorlagen beim Vorbescheid",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-16-bauvorlagen-beim-vorbescheid",
+   "text": [
+    "Dem Antrag auf Erteilung eines Vorbescheides sind die Bauvorlagen beizufügen, die zur Beurteilung der durch den Vorbescheid zu entscheidenden Fragen des Bauvorhabens erforderlich sind. § 10 Absatz 1 Satz 2 gilt sinngemäß."
+   ]
+  },
+  "17": {
+   "titel": "Bauvorlagen für die Genehmigung von Grundstücksteilungen",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-17-bauvorlagen-fur-die-genehmigung-von-grundstucksteilungen",
+   "text": [
+    "Dem Antrag auf Genehmigung einer Grundstücksteilung (§ 7 BauO NRW 2018) sind in zweifacher Ausfertigung beizufügen:",
+    "1. ein amtlicher Lageplan nach § 3 Absatz 3 mit den Angaben und Darstellungen",
+    "a) nach § 3 Absatz 1 Nummer 1, 2 und 8 sowie die rechtmäßigen Grenzen, bezogen auf das zu teilende Grundstück,",
+    "b) der vorhandenen baulichen Anlagen auf dem zu teilenden Grundstück,",
+    "c) der Grenzabstände, der Abstandflächen und der Abstände zu den nach Buchstabe b darzustellenden baulichen Anlagen auf dem zu teilenden Grundstück und",
+    "d) der farblich unterlegten neuen Grenzen (Teilungslinie) sowie",
+    "2. die Bauzeichnungen (§ 4) der in Nummer 1 Buchstabe b genannten baulichen Anlagen, soweit sie zur Beurteilung des Antrags erforderlich sind.",
+    "§ 10 Absatz 1 Satz 3 gilt sinngemäß."
+   ]
+  },
+  "18": {
+   "titel": "Eintragung von Baulasten",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-18-eintragung-von-baulasten",
+   "text": [
+    "Für die Eintragung von Baulasten nach § 4 Absatz 1 oder 2 und § 6 Absatz 2 BauO NRW 2018 sowie anderen Baulasten, die sich flächenmäßig auf Grundstücke oder auf Teile von Grundstücken beziehen, ist, sofern in der Verpflichtungserklärung (§ 85 Absatz 1 BauO NRW 2018) auf einen Lageplan Bezug genommen wird, dieser als amtlicher Lageplan nach § 3 Absatz 3 in zweifacher Ausfertigung beizufügen. Er muss mindestens enthalten",
+    "1. die Angaben nach § 3 Absatz 1 Nummer 1 bis 3, 6, 8 und 12 und",
+    "2. die Grundstücksflächen, die von der einzutragenden Baulast betroffen sind, entsprechend Nummer 1.12 der Anlage zu dieser Verordnung."
+   ]
+  },
+  "19": {
+   "titel": "Bauvorlagen für Typengenehmigungen",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-19-bauvorlagen-fur-typengenehmigungen",
+   "text": [
+    "(1) Dem Antrag auf Erteilung der Typengenehmigung nach § 66 Absatz 1 bis 4 BauO NRW 2018 brauchen nur die Bauzeichnungen (§ 4), die Baubeschreibung (§ 5 Absatz 1) und die Nachweise der Standsicherheit und des Schallschutzes (§ 8) sowie die Berechnung oder Angaben nach § 6 beigefügt zu werden.",
+    "(2) Die Bauvorlagen sind in dreifacher Ausfertigung einzureichen. § 10 Absatz 1 Satz 3 gilt sinngemäß."
+   ]
+  },
+  "20": {
+   "titel": "Bauvorlagen für die Ausführungsgenehmigung Fliegender Bauten",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-20-bauvorlagen-fur-die-ausfuhrungsgenehmigung-fliegender-bauten",
+   "text": [
+    "(1) Dem Antrag auf Erteilung der Ausführungsgenehmigung Fliegender Bauten nach § 78 BauO NRW 2018 sind beizufügen:",
+    "1. die Bauzeichnungen (§ 4), die auch im Maßstab 1:50 angefertigt sein können; bei",
+    "Zelten mit mehr als 400 Besucherplätzen sind in der Grundrisszeichnung (§ 4 Absatz 2) auch die Anordnung und Abmessungen der Rettungswege mit ihrem rechnerischen Nachweis darzustellen (Rettungswegeplan),",
+    "2. die Baubeschreibung (§ 5 Absatz 1) mit zusätzlichen Angaben über Aufbau, Abbau und Betrieb sowie Wartung,",
+    "3. die Nachweise der Standsicherheit (§ 8 Absatz 1) mit Konstruktionszeichnungen im Maßstab 1:10 oder 1:50 der tragenden Einzelteile und deren Verbindungen,",
+    "4. erforderlichenfalls Prinzip-Schaltpläne für elektrische, hydraulische oder pneumatische Anlagenteile oder Einrichtungen,",
+    "5. die Angaben nach § 6 Nummer 2.",
+    "(2) Die Bauvorlagen sind in zweifacher Ausfertigung bei der für die Erteilung der Ausführungsgenehmigung zuständigen Bauaufsichtsbehörde einzureichen.",
+    "(3) § 10 Absatz 1 Satz 3 gilt sinngemäß; die Bauzeichnungen müssen aus Papier auf Gewebe bestehen.",
+    "Zweiter Teil",
+    "Bautechnische Prüfung von Bauvorhaben",
+    "Erster Abschnitt",
+    "Prüfämter, Prüfingenieurinnen und Prüfingenieure"
+   ]
+  },
+  "21": {
+   "titel": "Prüfämter, Prüfingenieurinnen und Prüfingenieure",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-21-prufamter-prufingenieurinnen-und-prufingenieure",
+   "text": [
+    "(1) Die oberste Bauaufsichtsbehörde bestimmt die Prüfämter für Baustatik (Prüfämter). Die Prüfämter nehmen insbesondere folgende Aufgaben wahr:",
+    "1. Typenprüfungen nach § 68 Absatz 6 Satz 6 und 7 BauO NRW 2018,",
+    "2. Prüfung von schwierigen statischen Berechnungen in Sonderfällen und",
+    "3. Prüfung von schwierigen Bauvorhaben besonderer Art, zum Beispiel von Fliegenden Bauten.",
+    "(2) Die Prüfämter müssen mit geeigneten Ingenieurinnen oder Ingenieuren besetzt sein. Sie müssen von einer oder einem im Bauingenieurwesen besonders vorgebildeten und erfahrenen Beamtin oder Beamten des höheren bautechnischen Verwaltungsdienstes geleitet werden. Für Organisationen der Technischen Überwachung, die für bestimmte Aufgaben als Prüfämter für Baustatik anerkannt werden, kann die oberste Bauaufsichtsbehörde Ausnahmen von den Anforderungen nach Satz 2 gestatten.",
+    "(3) „Prüfingenieurin für Baustatik\", ,,Prüfingenieur für Baustatik\", „Prüfingenieurin für Brandschutz“ oder „Prüfingenieur für Brandschutz“ ist, wer als solche oder solcher von der obersten Bauaufsichtsbehörde oder einer von ihr bestimmten Behörde anerkannt ist. Personen, die die Anerkennung nicht besitzen, dürfen die Bezeichnung ,,Prüfingenieurin für Baustatik\", ,,Prüfingenieur für Baustatik\", „Prüfingenieurin für Brandschutz“ oder „Prüfingenieur für Brandschutz“ nicht führen.",
+    "(4) Die Prüfämter, die Prüfingenieurinnen und Prüfingenieure unterstehen der Fachaufsicht der obersten Bauaufsichtsbehörde oder einer von ihr bestimmten Behörde."
+   ]
+  },
+  "22": {
+   "titel": "Umfang der Anerkennung, Niederlassung",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-22-umfang-der-anerkennung-niederlassung",
+   "text": [
+    "(1) Die Anerkennung wird als Prüfingenieurin oder Prüfingenieur für Baustatik oder als Prüfingenieurin oder Prüfingenieur für Brandschutz ausgesprochen. Die Anerkennung als Prüfingenieurin oder Prüfingenieur für Baustatik wird für folgende Fachrichtungen ausgesprochen:",
+    "1. Metallbau,",
+    "2. Massivbau und",
+    "3. Holzbau.",
+    "Diese Anerkennung kann für eine oder mehrere Fachrichtungen ausgesprochen werden. Die Anerkennung für die Fachrichtungen Massivbau oder Metallbau schließt den Verbundbau ein.",
+    "(2) Die Anerkennung als Prüfingenieurin oder Prüfingenieur für Baustatik für eine Fachrichtung schließt die Berechtigung zur Prüfung einzelner Bauteile mit höchstens durchschnittlichem Schwierigkeitsgrad der anderen Fachrichtungen nicht aus.",
+    "(3) Die Anerkennung ist für eine bestimmte Niederlassung zu erteilen. Die Errichtung einer Zweitniederlassung in der Bundesrepublik Deutschland bedarf der Genehmigung durch die oberste Bauaufsichtsbehörde. Dem Antrag sind die für die Genehmigung erforderlichen Nachweise beizufügen. Die Genehmigung ist zu versagen, wenn wegen der Zahl der Mitarbeiter, die bei der Prüftätigkeit mithelfen sollen, der Entfernung zwischen den Niederlassungen oder aus anderen Gründen Bedenken gegen die ordnungsgemäße Aufgabenerledigung bestehen. Liegt die Zweitniederlassung in einem anderen Land, entscheidet die oberste Bauaufsichtsbehörde im Einvernehmen mit der Anerkennungsbehörde des anderen Landes. Für die Prüftätigkeit an der Zweitniederlassung gilt § 28 Absatz 2 Satz 1 entsprechend. Die Änderung der Anschrift ist der obersten Bauaufsichtsbehörde mitzuteilen. Die Prüfingenieurin oder der Prüfingenieur hat die Verlegung ihrer oder seiner Niederlassung in eine andere Gemeinde der obersten Bauaufsichtsbehörde mitzuteilen.",
+    "(4) Nach dieser Verordnung anerkannte Prüfingenieurinnen und Prüfingenieure für Baustatik werden auf Antrag von der Ingenieurkammer-Bau NRW als Sachverständige für die Prüfung der Standsicherheit in ihren Fachrichtungen anerkannt.",
+    "(5) Die von anderen Ländern der Bundesrepublik Deutschland anerkannten Prüfingenieurinnen und Prüfingenieure für Baustatik gelten auch in Nordrhein-Westfalen als anerkannt. Die von anderen Ländern der Bundesrepublik Deutschland anerkannten Prüfingenieurinnen und Prüfingenieure für Brandschutz gelten auch in Nordrhein-Westfalen als anerkannt, wenn die Prüfingenieurin oder der Prüfingenieur für Brandschutz mindestens zehn Jahre Erfahrung in der brandschutztechnischen Planung und Ausführung von Gebäuden, insbesondere von Sonderbauten unterschiedlicher Art mit höherem brandschutztechnischen Schwierigkeitsgrad, oder deren Prüfung hat.",
+    "(6) Die aufgrund der Verordnung über die bautechnische Prüfung von Bauvorhaben vom 19. Juli 1962 (GV. NRW. S. 470), die zuletzt durch Verordnung vom 24. Mai 1969 (GV. NRW. S. 281) geändert worden ist, oder aufgrund der Verordnung über bautechnische Prüfungen vom 6. Dezember 1984 (GV. NRW. S. 774), die zuletzt durch Gesetz vom 7. März 1995 (GV. NRW. S. 218) geändert worden ist, ausgesprochenen Anerkennungen als Prüfingenieurin oder Prüfingenieur für Baustatik gelten als Anerkennung im Sinne dieser Verordnung. Anerkennungen, die aufgrund des § 13 Absatz 4 der Verordnung über bautechnische Prüfungen befristet waren, können auf Antrag bis zur Vollendung des 77. Lebensjahres der Prüfingenieurin oder des Prüfingenieurs verlängert werden."
+   ]
+  },
+  "23": {
+   "titel": "Voraussetzungen der Anerkennung",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-23-voraussetzungen-der-anerkennung",
+   "text": [
+    "(1) Die nach der Verordnung über staatlich anerkannte Sachverständige nach der Landesbauordnung in der jeweils geltenden Fassung staatlich anerkannten Sachverständigen für die Prüfung der Standsicherheit der Fachrichtungen Massivbau, Metallbau und Holzbau, die auch die Anerkennung als staatlich anerkannte Sachverständige für Schall- und Wärmeschutz besitzen, und staatlich anerkannte Sachverständige für die Prüfung des Brandschutzes werden auf Antrag als Prüfingenieurin oder Prüfingenieur anerkannt.",
+    "(2) Die Anerkennung ist zu versagen, wenn die Antragstellerin oder der Antragsteller",
+    "1. die Anerkennungsvoraussetzungen nach Absatz 1 nicht nachgewiesen hat,",
+    "2. die Fähigkeit, öffentliche Ämter zu bekleiden, verloren hat,",
+    "3. in einem ordentlichen Strafverfahren wegen einer vorsätzlichen Tat rechtskräftig zu einer Freiheitsstrafe von mindestens sechs Monaten verurteilt worden ist und wenn sich aus dem der Verurteilung zugrundeliegenden Sachverhalt ergibt, dass die Antragstellerin oder der Antragsteller zur Erfüllung der Berufsaufgaben nach § 28 Absatz 1 nicht geeignet ist,",
+    "4. durch gerichtliche Anordnung in der Verfügung über ihr oder sein Vermögen beschränkt ist oder",
+    "5. nicht genügend Gewähr dafür bietet, dass sie oder er neben der Prüftätigkeit andere Tätigkeiten nur in solchem Umfang ausüben wird, dass die ordnungsgemäße Erfüllung ihrer oder seiner Pflichten als Prüfingenieurin oder Prüfingenieur, insbesondere ihrer oder seiner Überwachungspflicht nach § 28 Absatz 2 gewährleistet ist.",
+    "(3) Die Anerkennung kann bei Bewerbern, die nicht Deutsche im Sinne des Artikel 116 des Grundgesetzes sind, versagt werden, wenn die Gegenseitigkeit nicht gewahrt ist. Dies gilt nicht für Antragstellerinnen oder Antragsteller, welche die Staatsangehörigkeit eines Mitgliedstaates der Europäischen Union oder eines nach dem Recht der Europäischen Gemeinschaften gleichgestellten Staates besitzen."
+   ]
+  },
+  "24": {
+   "titel": "Anerkennungsverfahren",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-24-anerkennungsverfahren",
+   "text": [
+    "(1) Der Antrag auf Anerkennung ist in Textform an die oberste Bauaufsichtsbehörde oder an die von ihr bestimmte Behörde zu richten. In dem Antrag ist anzugeben, ob die Anerkennung als Prüfingenieurin oder Prüfingenieur für Baustatik oder als Prüfingenieurin oder Prüfingenieur für Brandschutz beantragt wird und in welcher Gemeinde die Antragstellerin oder der Antragsteller sich als Prüfingenieurin oder Prüfingenieur niederzulassen beabsichtigt. In Anträgen auf Anerkennung als Prüfingenieurin oder Prüfingenieur für Baustatik ist auch anzugeben, für welche Fachrichtung nach § 22 Absatz 1 die Anerkennung beantragt wird.",
+    "(2) Dem Antrag auf Anerkennung als Prüfingenieurin oder Prüfingenieur für Baustatik nach § 23 Absatz 1 sind beizufügen:",
+    "1. ein Lebenslauf mit lückenloser Angabe des fachlichen Werdeganges bis zum Zeitpunkt der Antragstellung,",
+    "2. der Nachweis, dass im Falle der Anerkennung eine Haftpflichtversicherung mit Mindestdeckungssummen von 500 000 Euro für Personenschäden und 250 000 Euro für Sach- und Vermögensschäden besteht,",
+    "3. Ablichtungen der Bescheide der Ingenieurkammer-Bau NRW über die Anerkennung als staatlich anerkannte Sachverständige oder staatlich anerkannter Sachverständiger für die Prüfung der Standsicherheit und über die Anerkennung als staatlich anerkannte Sachverständige oder staatlich anerkannter Sachverständiger für Schall- und Wärmeschutz.",
+    "(3) Dem Antrag auf Anerkennung als Prüfingenieurin oder Prüfingenieur für Brandschutz nach § 23 Absatz 1 sind beizufügen:",
+    "1. ein Lebenslauf mit lückenloser Angabe des fachlichen Werdeganges bis zum Zeitpunkt der Antragstellung,",
+    "2. der Nachweis, dass im Falle der Anerkennung eine Haftpflichtversicherung mit Mindestdeckungssummen von 500 000 Euro für Personenschäden und 250 000 Euro für Sach- und Vermögensschäden besteht,",
+    "3. der Nachweis über den Abschluss eines Studiengangs der Fachrichtung Architektur, Hochbau, Bauingenieurwesen oder eines Studiengangs mit Schwerpunkt Brandschutz an einer deutschen Hochschule oder eines gleichwertigen Studiums an einer ausländischen Hochschule oder über den Abschluss der Ausbildung für mindestens den gehobenen feuerwehrtechnischen Dienst,",
+    "4. die Ablichtung des Bescheides der Architektenkammer Nordrhein-Westfalen oder der Ingenieurkammer-Bau NRW über die Anerkennung als staatlich anerkannte Sachverständige oder staatlich anerkannter Sachverständiger für die Prüfung des Brandschutzes und",
+    "5. der Nachweis über mindestens fünf Jahre Erfahrung als staatlich anerkannte Sachverständige oder staatlich anerkannter Sachverständiger für die Prüfung des Brandschutzes in der brandschutztechnischen Planung und Ausführung von Gebäuden oder deren Prüfung, insbesondere von Sonderbauten unterschiedlicher Art mit höherem brandschutztechnischen Schwierigkeitsgrad.",
+    "(4) Die oberste Bauaufsichtsbehörde stellt eine Empfangsbestätigung nach § 71b Absatz 3 und 4 des Verwaltungsverfahrensgesetzes für das Land Nordrhein-Westfalen aus. Hat sie nicht innerhalb einer Frist von drei Monaten entschieden, gilt die Anerkennung als erteilt. Es gilt § 42a des Verwaltungsverfahrensgesetzes für das Land Nordrhein-Westfalen mit der Maßgabe, dass die Fristverlängerung zwei Monate nicht übersteigen darf. Verfahren nach den vorstehenden Absätzen können über eine einheitliche Stelle nach den Vorschriften des Verwaltungsverfahrensgesetzes für das Land Nordrhein-Westfalen abgewickelt werden."
+   ]
+  },
+  "25": {
+   "titel": "Gleichwertigkeit",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-25-gleichwertigkeit",
+   "text": [
+    "(1) Personen, die in einem anderen Mitgliedstaat der Europäischen Union oder einem nach dem Recht der Europäischen Gemeinschaften gleichgestellten Staat zur Wahrnehmung von Aufgaben im Sinne dieser Verordnung niedergelassen sind, sind berechtigt, Aufgaben des Prüfingenieurs nach dieser Verordnung auszuführen, wenn sie",
+    "1. hinsichtlich des Tätigkeitsbereiches eine vergleichbare Berechtigung besitzen,",
+    "2. dafür hinsichtlich der Anerkennungsvoraussetzungen und des Nachweises von Kenntnissen vergleichbare Anforderungen erfüllen mussten und",
+    "3. die deutsche Sprache in Wort und Schrift beherrschen.",
+    "Sie haben das erstmalige Tätigwerden vorher der obersten Bauaufsichtsbehörde anzuzeigen und dabei",
+    "1. eine Bescheinigung darüber, dass sie in einem Mitgliedstaat der Europäischen Union oder einem nach dem Recht der Europäischen Gemeinschaften gleichgestellten Staat rechtmäßig zur Wahrnehmung von Aufgaben im Sinne dieser Verordnung niedergelassen sind und ihnen die Ausübung dieser Tätigkeiten zum Zeitpunkt der Vorlage der Bescheinigung nicht, auch nicht vorübergehend, untersagt ist, und",
+    "2. einen Nachweis darüber, dass sie im Staat Ihrer Niederlassung dafür die Voraussetzungen des Satzes 1 Nummer 2 erfüllen mussten,",
+    "vorzulegen.",
+    "Die oberste Bauaufsichtsbehörde soll das Tätigwerden untersagen, wenn die Voraussetzungen des Satzes 1 nicht erfüllt sind; sie hat auf Antrag zu bestätigen, dass die Anzeige nach Satz 2 erfolgt ist.",
+    "(2) Personen, die in einem anderen Mitgliedstaat der Europäischen Union oder einem nach dem Recht der Europäischen Gemeinschaften gleichgestellten Staat zur Wahrnehmung von Aufgaben im Sinne dieser Verordnung niedergelassen sind, ohne im Sinne von Absatz 1 Satz 1 Nummer 2 vergleichbar zu sein, sind berechtigt, Aufgaben des Prüfingenieurs nach dieser Verordnung auszuführen, wenn ihnen die Anerkennungsbehörde bescheinigt hat, dass sie die Anforderungen hinsichtlich der Anerkennungsvoraussetzungen, des Nachweises von Kenntnissen und des Tätigkeitsbereiches nach dieser Verordnung erfüllen. Die Bescheinigung wird auf Antrag erteilt, dem die zur Beurteilung erforderlichen Unterlagen beizufügen sind. § 24 Absatz 4 Satz 1 bis 3 gilt entsprechend.",
+    "(3) Anzeigen und Bescheinigungen nach Absatz 1 und 2 sind nicht erforderlich, wenn bereits in einem anderen Land eine Anzeige erfolgt ist oder eine Bescheinigung erteilt wurde. Verfahren nach Absatz 1 und 2 können über eine einheitliche Stelle nach den Vorschriften des Verwaltungsverfahrensgesetzes für das Land Nordrhein-Westfalen in der jeweils geltenden Fassung abgewickelt werden."
+   ]
+  },
+  "26": {
+   "titel": "Erlöschen, Rücknahme und Widerruf der Anerkennung",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-26-erloschen-rucknahme-und-widerruf-der-anerkennung",
+   "text": [
+    "(1) Die Anerkennung erlischt",
+    "a) durch in Textform erklärten Verzicht gegenüber der obersten Bauaufsichtsbehörde oder der von ihr bestimmten Behörde,",
+    "b) wenn die Prüfingenieurin oder der Prüfingenieur das 77. Lebensjahr vollendet hat.",
+    "(2) Die Anerkennung ist zurückzunehmen, wenn nachträglich Gründe nach § 23 Absatz 3 bekannt werden, die eine Versagung der Anerkennung gerechtfertigt hätten.",
+    "(3) Die Anerkennung ist zu widerrufen, wenn",
+    "a) nachträglich Gründe nach § 23 Absatz 2 eintreten, die eine Versagung der Anerkennung rechtfertigen würden,",
+    "b) die Prüfingenieurin oder der Prüfingenieur in Folge geistiger oder körperlichen Gebrechen nicht mehr in der Lage ist, ihre oder seine Tätigkeit ordnungsgemäß auszuüben,",
+    "c) die Prüfingenieurin oder der Prüfingenieur ohne Genehmigung nach § 22 Absatz 3 Satz 2 an verschiedenen Orten Niederlassungen als Prüfingenieurin oder Prüfingenieur einrichtet,",
+    "d) die Prüfingenieurin oder der Prüfingenieur gegen die ihr oder ihm obliegenden Pflichten als Prüfingenieurin oder Prüfingenieur oder als staatlich anerkannte Sachverständige oder staatlich anerkannter Sachverständiger wiederholt oder gröblich verstoßen hat,",
+    "e) der nach § 24 Absatz 2 Nummer 2 oder Absatz 3 Nummer 2 geforderte Versicherungsschutz nicht mehr besteht.",
+    "(4) Die Anerkennung kann widerrufen werden, wenn die Prüfingenieurin oder der Prüfingenieur ihre oder seine Pflichten als Ingenieurin oder Ingenieur gröblich verletzt hat.",
+    "Zweiter Abschnitt",
+    "Bautechnische Prüfungen"
+   ]
+  },
+  "27": {
+   "titel": "Übertragung von Prüfaufgaben",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-27-ubertragung-von-prufaufgaben",
+   "text": [
+    "(1) Die untere Bauaufsichtsbehörde kann die erforderliche Prüfung der Standsicherheitsnachweise, der Nachweise des Brandverhaltens der Baustoffe und der Feuerwiderstandsfähigkeit der tragenden Bauteile und der Nachweise des Schallschutzes einem Prüfamt, einer Prüfingenieurin oder einem Prüfingenieur für Baustatik übertragen. Sie kann darüber hinaus die erforderliche Prüfung der Übereinstimmung eines Vorhabens mit den Brandschutzvorschriften ganz oder teilweise einer Prüfingenieurin oder einem Prüfingenieur für Brandschutz übertragen. Die oberste Bauaufsichtsbehörde oder die von ihr bestimmte Behörde kann anordnen, dass bestimmte Arten von Bauvorhaben nur durch ein Prüfamt oder durch bestimmte Prüfingenieurinnen oder Prüfingenieure geprüft werden dürfen.",
+    "(2) Die untere Bauaufsichtsbehörde kann ferner Teile der Bauüberwachung nach § 83 BauO NRW 2018 sowie Teile der Bauzustandsbesichtigungen nach § 84 BauO NRW 2018 einem Prüfamt, einer Prüfingenieurin oder einem Prüfingenieur übertragen. Die Übertragung beschränkt sich auf die in Absatz 1 genannten technischen Bereiche.",
+    "(3) Der Prüfauftrag wird von der unteren Bauaufsichtsbehörde erteilt. Sie darf einen Prüfauftrag für die Prüfung der Standsicherheitsnachweise, der Nachweise des Brandverhaltens der Baustoffe und der Feuerwiderstandsfähigkeit der tragenden Bauteile (statisch-konstruktiver Brandschutz) und der Nachweise des Schallschutzes nur einer Prüfingenieurin oder einem Prüfingenieur für Baustatik und nur in den Fachrichtungen erteilen, für die sie oder er anerkannt ist. Sie darf einen Prüfauftrag für die Prüfung der Übereinstimmung eines Vorhabens mit den Brandschutzvorschriften nur einer Prüfingenieurin oder einem Prüfingenieur für Brandschutz erteilen. Auf die Erteilung von Prüfaufträgen besteht kein Rechtsanspruch. Prüfaufträge dürfen nur aus zwingenden Gründen abgelehnt werden.",
+    "(4) Die untere Bauaufsichtsbehörde kann in begründeten Fällen, insbesondere wenn Prüfaufträge nicht rechtzeitig erledigt werden, den Prüfauftrag zurückziehen und die Unterlagen zurückfordern."
+   ]
+  },
+  "28": {
+   "titel": "Ausführung von Prüfaufträgen",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-28-ausfuhrung-von-prufauftragen",
+   "text": [
+    "(1) Die Prüfingenieurin oder der Prüfingenieur hat ihre oder seine Prüftätigkeit unparteiisch und gewissenhaft gemäß den bauaufsichtlichen Vorschriften und den allgemein anerkannten Regeln der Technik auszuüben.",
+    "(2) Die Prüfingenieurin oder der Prüfingenieur darf sich der Mithilfe von befähigten und zuverlässigen, fest angestellten Mitarbeiterinnen oder Mitarbeitern nur in einem solchen Umfang bedienen, dass sie oder er ihre Tätigkeit voll überwachen kann. Die Prüfingenieurin oder der Prüfingenieur für Baustatik darf sich nur durch eine andere Prüfingenieurin oder einen anderen Prüfingenieur für Baustatik derselben Fachrichtung vertreten lassen. Die Prüfingenieurin oder der Prüfingenieur für Brandschutz darf sich nur durch eine andere Prüfingenieurin oder einen anderen Prüfingenieur für Brandschutz vertreten lassen.",
+    "(3) Das Prüfamt, die Prüfingenieurin oder der Prüfingenieur für Baustatik hat die Vollständigkeit und Richtigkeit der Standsicherheitsnachweise, der übrigen bautechnischen Nachweise und der dazugehörigen Ausführungszeichnungen in einem Prüfbericht zu bescheinigen. In dem Prüfbericht ist die untere Bauaufsichtsbehörde auch auf Besonderheiten hinzuweisen, die bei der Erteilung der Baugenehmigung sowie bei der Bauüberwachung und den Bauzustandsbesichtigungen nach den §§ 83 und 84 BauO NRW 2018 sowie der Gebrauchsabnahme nach § 78 Absatz 7 BauO NRW 2018 zu beachten sind. Liegen den Standsicherheitsnachweisen und den übrigen bautechnischen Nachweisen Abweichungen von den nach § 3 Absatz 2 BauO NRW 2018 eingeführten technischen Baubestimmungen oder technischen Regeln zugrunde, so ist in dem Prüfbericht darzulegen, aus welchen Gründen die Abweichungen für gerechtfertigt gehalten werden.",
+    "(4) Die Prüfingenieurin oder der Prüfingenieur für Brandschutz prüft die Vollständigkeit und Richtigkeit des Brandschutzkonzeptes unter Beachtung der Leistungsfähigkeit der örtlichen Feuerwehr. Dabei hat sie oder er die zuständige Brandschutzdienststelle zu beteiligen und deren Anforderungen zu würdigen. Der Umfang und das Ergebnis der Prüfung sind in einem Prüfbericht niederzulegen. In dem Prüfbericht sind die Forderungen der Brandschutzdienststelle kenntlich zu machen. Liegen dem Brandschutzkonzept Abweichungen gemäß § 69 BauO NRW 2018 zugrunde, so ist in dem Prüfbericht darzulegen, aus welchen Gründen die Abweichungen für gerechtfertigt gehalten werden. Die Prüfingenieurin oder der Prüfingenieur für Brandschutz überwacht die ordnungsgemäße Bauausführung hinsichtlich des von ihr oder ihm geprüften Brandschutzkonzeptes.",
+    "(5) Prüfaufträge nach § 27 Absatz 2 dürfen nur von geeigneten Fachkräften des Prüfamtes, von der Prüfingenieurin oder dem Prüfingenieur persönlich ausgeführt werden. Absatz 2 gilt entsprechend. Umfang und Ergebnisse der Prüfungen sind in einem Bericht niederzulegen, der der unteren Bauaufsichtsbehörde zuzuleiten ist. Werden bei den Prüfungen festgestellte Mängel trotz Aufforderung durch das Prüfamt, die Prüfingenieurin oder den Prüfingenieur nicht beseitigt, hat es, sie oder er hiervon die untere Bauaufsichtsbehörde unverzüglich zu unterrichten. Dabei soll es, sie oder er auch Maßnahmen vorschlagen, die es, sie oder er für die Beseitigung der Mängel geeignet hält.",
+    "(6) Ergibt sich, dass die Prüfung wichtiger oder statisch schwieriger Teile einer baulichen Anlage zu einer Fachrichtung gehört, für die die mit der Prüfung beauftragte Prüfingenieurin oder der mit der Prüfung beauftragte Prüfingenieur für Baustatik nicht nach § 22 Absatz 1 anerkannt ist, so ist sie oder er verpflichtet, bei der unteren Bauaufsichtsbehörde, die ihr oder ihm den Auftrag erteilt hat, die Zuziehung einer Prüfingenieurin oder eines Prüfingenieurs zu veranlassen, die oder der für diese Fachrichtung anerkannt ist.",
+    "(7) Die Prüfingenieurin oder der Prüfingenieur darf die Prüfung nicht durchführen, wenn sie oder er oder eine oder einer ihrer oder seiner Mitarbeiterinnen oder Mitarbeiter den Entwurf, die Berechnung oder das Brandschutzkonzept aufgestellt oder dabei mitgewirkt hat.",
+    "(8) Das Prüfamt, die Prüfingenieurin oder der Prüfingenieur trägt gegenüber der unteren Bauaufsichtsbehörde die Verantwortung für die Vollständigkeit und Richtigkeit der Prüfung."
+   ]
+  },
+  "29": {
+   "titel": "Typenprüfung - Prüfung Fliegender Bauten",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-29-typenprufung-prufung-fliegender-bauten",
+   "text": [
+    "(1) Für bauliche Anlagen und Bauteile, die in gleicher Ausführung an mehreren Stellen errichtet oder verwendet werden, können mit dem Bauantrag bereits geprüfte Nachweise der Standsicherheit, des Brandverhaltens der Baustoffe und der Feuerwiderstandsfähigkeit der tragenden Bauteile und des Schallschutzes eingereicht werden; diese Nachweise müssen von einem Prüfamt allgemein geprüft sein (Typenprüfung).",
+    "(2) Die Geltungsdauer einer Typenprüfung ist unter dem Vorbehalt des Widerrufs auf höchstens fünf Jahre zu befristen. Sie kann auf in Textform gestellten Antrag um jeweils fünf Jahre verlängert werden.",
+    "(3) Die Nachweise der Standsicherheit Fliegender Bauten dürfen nur von den nach § 30 für die Erteilung von Ausführungsgenehmigungen für Fliegende Bauten zuständigen Behörden oder von einem Prüfamt geprüft werden.",
+    "Dritter Teil",
+    "Regelung von Zuständigkeiten"
+   ]
+  },
+  "30": {
+   "titel": "Übertragung von Zuständigkeiten fürAusführungsgenehmigungen für Fliegende Bauten",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-30-ubertragung-von-zustandigkeiten-furausfuhrungsgenehmigungen-fur-fliegende-bauten",
+   "text": [
+    "Für die Erteilung von Ausführungsgenehmigungen für Fliegende Bauten (§ 78 Absatz 2 und 3 BauO NRW 2018), für die Verlängerung der Gültigkeitsdauer von Ausführungsgenehmigungen (§ 78 Absatz 5 BauO NRW 2018) sowie für die Eintragung von Änderungen in das Prüfbuch (§ 78 Absatz 6 BauO NRW 2018) sind zuständig",
+    "1. die Stadt Dortmund",
+    "für den Regierungsbezirk Münster",
+    "sowie",
+    "für die kreisfreien Städte Bochum, Dortmund, Hagen, Hamm, Herne",
+    "und",
+    "für die Kreise Ennepe-Ruhr-Kreis und Unna des Regierungsbezirks Arnsberg,",
+    "2. die Stadt Essen",
+    "für den Regierungsbezirk Düsseldorf,",
+    "3. die Stadt Köln",
+    "für den Regierungsbezirk Köln,",
+    "4. die Stadt Soest",
+    "für den Regierungsbezirk Arnsberg, soweit nach Nummer 1 nicht die Stadt Dortmund zuständig ist und",
+    "5. die Stadt Bielefeld",
+    "für den Regierungsbezirk Detmold.",
+    "Vierter Teil",
+    "Schlussvorschriften"
+   ]
+  },
+  "31": {
+   "titel": "Inkrafttreten, Übergangsvorschriften",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-31-inkrafttreten-ubergangsvorschriften",
+   "text": [
+    "(1) Diese Verordnung tritt am 1. Januar 1996 in Kraft.",
+    "(2) Prüfingenieurinnen und Prüfingenieure, deren Anerkennung innerhalb des Jahres 2024 durch Vollendung des 70. Lebensjahres erloschen ist, werden auf Antrag ohne erneute Prüfung der Anerkennungsvoraussetzungen anerkannt.",
+    "Der Minister für Bauen und Wohnen",
+    "des Landes Nordrhein-Westfalen",
+    "Hinweis",
+    "Wiederherstellung des Verordnungsranges",
+    "(Artikel 196 des Dritten Befristungsgesetzes vom 5.4.2005 (GV. NRW. S. 306))",
+    "Die in diesem Gesetz erlassenen oder geänderten Rechtsverordnungen können aufgrund der jeweils einschlägigen Verordnungsermächtigungen durch Rechtsverordnung geändert werden.",
+    "Recherchierhilfe für elektronische Volltextsuche: Bauprüfverordnung",
+    "Zum Textanfang",
+    "Grundsätzliches",
+    "Redaktion",
+    "Kontakt",
+    "FAQ",
+    "Zum Seitenanfang",
+    "Zum Seitenanfang",
+    "© 2026 Ministerium des Innern des Landes Nordrhein-Westfalen",
+    "Cookie-Einstellungen",
+    "Barriere melden",
+    "Datenschutz",
+    "Impressum",
+    "{\"path\":{\"baseUrl\":\"\\/\",\"pathPrefix\":\"\",\"currentPath\":\"node\\/135760\",\"currentPathIsAdmin\":false,\"isFront\":false,\"currentLanguage\":\"de\"},\"pluralDelimiter\":\"\\u0003\",\"suppressDeprecationErrors\":true,\"klaro\":{\"config\":{\"elementId\":\"klaro\",\"storageMethod\":\"cookie\",\"cookieName\":\"klaro\",\"cookieExpiresAfterDays\":180,\"cookieDomain\":\"\",\"groupByPurpose\":false,\"acceptAll\":false,\"hideDeclineAll\":false,\"hideLearnMore\":true,\"learnMoreAsButton\":true,\"additionalClass\":\" learn-more-as-button klaro-theme-rnrw\",\"disablePoweredBy\":true,\"htmlTexts\":false,\"autoFocus\":true,\"noticeAsModal\":true,\"privacyPolicy\":\"\\/datenschutz\",\"lang\":\"de\",\"services\":[{\"name\":\"cms\",\"default\":true,\"title\":\"Funktional\",\"description\":\"Funktionale Cookies erm\\u00f6glichen grundlegende Funktionen der Website und sind notwendig, damit bestimmte Bereiche korrekt funktionieren.\",\"purposes\":[\"cms\"],\"callbackCode\":\"\",\"cookies\":[],\"required\":true,\"optOut\":false,\"onlyOnce\":false,\"contextualConsentOnly\":false,\"contextualConsentText\":\"\",\"wrapperIdentifier\":[],\"translations\":{\"de\":{\"title\":\"Funktional\"}}},{\"name\":\"klaro\",\"default\":true,\"title\":\"Analytische Cookies\",\"description\":\"Analytische Cookies helfen Website-Betreibern, das Nutzerverhalten zu verstehen und die Website zu optimieren. Sie liefern wertvolle Einblicke in die Nutzungsmuster und Pr\\u00e4ferenzen der Nutzer.\",\"purposes\":[\"analytics\"],\"callbackCode\":\"\",\"cookies\":[[\"^_pk_.*$\",\"\",\"\"],[\"^matomo.*$\",\"\",\"\"],[\"^mtm_.*$\",\"\",\"\"],[\"piwik_ignore\",\"\",\"\"]],\"required\":false,\"optOut\":false,\"onlyOnce\":false,\"contextualConsentOnly\":false,\"contextualConsentText\":\"\",\"wrapperIdentifier\":[],\"translations\":{\"de\":{\"title\":\"Analytische Cookies\"}}}],\"translations\":{\"de\":{\"consentModal\":{\"title\":\"Cookie-Einstellungen\",\"description\":\"Auf dieser Seite werden Cookies verwendet.\",\"privacyPolicy\":{\"name\":\"Datenschutzerkl\\u00e4rung\",\"text\":\"Sie k\\u00f6nnen entweder allen Cookies zustimmen, oder nur solchen, die f\\u00fcr die Verwendung der Seite zwingend erforderlich sind. Hier finden Sie die {privacyPolicy}.\\r\\n\"}},\"consentNotice\":{\"title\":\"Cookie-Einstellungen\",\"changeDescription\":\"Seit Ihrem letzten Besuch wurden \\u00c4nderungen vorgenommen. Bitte pr\\u00fcfen Sie Ihre Zustimmung. \",\"description\":\"Auf dieser Seite werden Cookies verwendet. Sie k\\u00f6nnen entweder allen Cookies zustimmen, oder nur solchen, die f\\u00fcr die Verwendung der Seite zwingend erforderlich sind. Hier finden Sie die {privacyPolicy}\",\"learnMore\":\"Anpassen\",\"privacyPolicy\":{\"name\":\"Datenschutzerkl\\u00e4rung\"}},\"ok\":\"Alle Cookies akzeptieren\",\"save\":\"Speichern\",\"decline\":\"Nur notwendige Cookies akzeptieren\",\"close\":\"Schlie\\u00dfen\",\"acceptAll\":\"Alle Cookies akzeptieren\",\"acceptSelected\":\"Ausgew\\u00e4hlte Cookies akzeptieren\",\"service\":{\"disableAll\":{\"title\":\"Alle Cookies akzeptieren\",\"description\":\"Bet\\u00e4tigen Sie diesen Schalter um alle Optionen auszuw\\u00e4hlen.\"},\"optOut\":{\"title\":\"(R\\u00fccktritt)\",\"description\":\"Diese Option ist standardm\\u00e4\\u00dfig aktiviert (R\\u00fccktritt ist m\\u00f6glich).\"},\"required\":{\"title\":\"(verpflichtend)\",\"description\":\"Diese Option ist verpflichtend.\"},\"purposes\":\"Zwecke\",\"purpose\":\"Zweck\"},\"contextualConsent\":{\"acceptAlways\":\"Immer akzeptieren\",\"acceptOnce\":\"Dieses Mal akzeptieren\",\"description\":\"Load external content supplied by {title}?\"},\"poweredBy\":\"\",\"purposeItem\":{\"service\":\"Service\",\"services\":\"Services\"},\"privacyPolicy\":{\"name\":\"Datenschutzerkl\\u00e4rung\",\"text\":\"Sie k\\u00f6nnen entweder allen Cookies zustimmen, oder nur solchen, die f\\u00fcr die Verwendung der Seite zwingend erforderlich sind. Hier finden Sie die {privacyPolicy}.\\r\\n\"},\"purposes\":{\"cms\":{\"title\":\"Funktional\",\"description\":\"\"},\"advertising\":{\"title\":\"Advertising and Marketing\",\"description\":\"\"},\"analytics\":{\"title\":\"Analytisch\",\"description\":\"\"},\"livechat\":{\"title\":\"Live chat\",\"description\":\"\"},\"security\":{\"title\":\"Sicherheit\",\"description\":\"\"},\"styling\":{\"title\":\"Styling\",\"description\":\"\"},\"external_content\":{\"title\":\"Embedded external content\",\"description\":\"\"}}}},\"showNoticeTitle\":true,\"styling\":{\"theme\":[\"light\"]}},\"dialog_mode\":\"notice_modal\",\"show_toggle_button\":false,\"toggle_button_icon\":null,\"show_close_button\":false,\"exclude_urls\":[\"^\\\\\\/datenschutz$\"],\"disable_urls\":[]},\"matomo\":{\"disableCookies\":false,\"trackMailto\":false},\"openSearch\":{\"node\":\"https:\\/\\/recht.nrw.de\\/search-middleware\",\"index\":\"opensearch_internet\"},\"mathjax\":{\"config_type\":0,\"config\":{\"tex2jax\":{\"inlineMath\":[[\"$\",\"$\"],[\"\\\\(\",\"\\\\)\"]],\"processEscapes\":\"true\"},\"showProcessingMessages\":\"false\",\"messageStyle\":\"none\"}},\"user\":{\"uid\":0,\"permissionsHash\":\"478af41f5f3eb871f1dad0d9938fd9a060892028953bc4bc037a7937bad156c4\"}}"
+   ]
+  },
+  "9a": {
+   "titel": "Barrierefrei-Konzept",
+   "url": "https://recht.nrw.de/lrgv/rechtsverordnung/26112024-verordnung-ueber-bautechnische-pruefungen-baupruefvo-1#ss-9a-barrierefrei-konzept",
+   "text": [
+    "(1) Den Bauvorlagen für neu zu errichtende öffentlich-zugängliche Gebäude gemäß § 49 Absatz 2 BauO NRW 2018, die große Sonderbauten gemäß § 50 Absatz 2 BauO NRW 2018 - mit Ausnahme von Gebäuden im Zuständigkeitsbereich von Polizei und Justiz - sind, ist ein Barrierefrei-Konzept beizufügen.",
+    "(2) Das Barrierefrei-Konzept ist eine schutzzielorientierte objektkonkrete Bewertung der baulichen, technischen und organisatorischen Anforderungen der Barrierefreiheit, die für die Prüfung im Genehmigungsverfahren relevant sind.",
+    "(3) Der Nachweis der Barrierefreiheit muss insbesondere folgende Angaben enthalten:",
+    "1. barrierefreie Erreichbarkeit der baulichen Anlage, barrierefreie Gebäudezugänge,",
+    "2. Ausführung der PKW-Stellplätze und deren Abmessungen,",
+    "3. Flurbreiten,",
+    "4. Türbreiten, Türschwellen, Türanschläge, Türöffnungsmöglichkeiten,",
+    "5. Aufzüge, Fahrtreppen,",
+    "6. Treppen, Handläufe,",
+    "7. Rampen einschließlich Neigungen, Gefälle,",
+    "8. Anordnung von Bedienelementen,",
+    "9. barrierefreie Sanitärräume, barrierefreie Anordnung Sanitärobjekte,",
+    "10. Abmessungen der Bewegungsflächen,",
+    "11. Orientierungshilfen sowie",
+    "12. Ausführungen zu § 49 Absatz 3 BauO NRW 2018.",
+    "Die Angaben sind in einem schriftlichen Erläuterungsbericht zu formulieren und durch zeichnerische Darstellung der baulichen Anforderungen unter Angabe der technischen Anforderungen zu ergänzen.",
+    "Dritter Abschnitt",
+    "Bauvorlagen für Verfahren und Vorhaben"
+   ]
+  }
+ }
+}

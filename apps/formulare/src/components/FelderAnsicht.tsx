@@ -3,10 +3,12 @@ import type { Feld } from '../forma/felder';
 import { abschnitte, abschnittsReihen, zeilen } from '../forma/felder';
 import { useMarkierung } from '../markierung';
 import { feldTasten } from '../navigation';
+import type { Entfall } from '../entfall';
 import type { FormularProfil } from '../profil';
 import { abschnittId, feldTitel, leeresProfil, profilSchluessel } from '../profil';
 import type { OffenesFormular } from '../store';
 import { useFormulare, useProfil, wertVon } from '../store';
+import { EntfallInfo, useEntfallen } from './EntfallInfo';
 
 type Filter = 'alle' | 'leer' | 'geaendert';
 
@@ -29,6 +31,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const huelle = useRef<HTMLDivElement>(null);
   const roh = useProfil(profilSchluessel(offen.formular, offen.name));
   const profil = useMemo(() => ({ ...leeresProfil(), ...roh }), [roh]);
+  const entfall = useEntfallen(offen);
   useEffect(() => {
     if (markierung?.rahmen) huelle.current?.querySelector('.fo-feld.umrandet')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
   }, [markierung]);
@@ -82,6 +85,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                             offen={offen}
                             gesperrt={gesperrt}
                             profil={profil}
+                            entfall={entfall.gruende.has(f.schluessel) ? { gruende: entfall.gruende.get(f.schluessel)!, text: entfall.text(f.schluessel) } : undefined}
                             ohneBeschriftung={feldTitel(f, profil) === titel && f.art === 'text'}
                             markiert={markiert.has(f.schluessel) ? (markierung?.rahmen ? 'umrandet' : 'markiert') : null}
                           />
@@ -104,6 +108,7 @@ function FeldEingabe({
   offen,
   gesperrt: gesperrtFormular,
   profil,
+  entfall,
   ohneBeschriftung,
   markiert,
 }: {
@@ -111,6 +116,8 @@ function FeldEingabe({
   offen: OffenesFormular;
   gesperrt: boolean;
   profil: FormularProfil;
+  /** entfällt nach den Bedingungen – mit Gründen und Hinweistext */
+  entfall?: { gruende: Entfall[]; text: string };
   ohneBeschriftung: boolean;
   /** in der Gliederung gezeigt (umrandet: zusätzlich umrandet) */
   markiert: 'markiert' | 'umrandet' | null;
@@ -118,7 +125,8 @@ function FeldEingabe({
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const wert = wertVon(offen, feld);
   const geaendert = feld.schluessel in offen.aenderungen;
-  const klasse = `fo-feld${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${markiert === 'umrandet' ? ' umrandet' : ''}`;
+  const klasse = `fo-feld${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${markiert === 'umrandet' ? ' umrandet' : ''}${entfall ? ' entfaellt' : ''}`;
+  const info = entfall && <EntfallInfo gruende={entfall.gruende} text={entfall.text} />;
   const breite = { flexGrow: Math.max(40, feld.kasten.b) };
   // von FORMA berechnete Felder trägt man nicht ein
   const gesperrt = gesperrtFormular || feld.berechnet;
@@ -130,6 +138,7 @@ function FeldEingabe({
       <label className={`${klasse} fo-kreuz`} title={hinweis} style={breite}>
         <input type="checkbox" checked={wert === true} disabled={gesperrt} data-feld={feld.schluessel} onChange={(e) => wertSetzen(feld, e.target.checked)} />
         <span>{titel}</span>
+        {info}
       </label>
     );
   }
@@ -138,7 +147,13 @@ function FeldEingabe({
   const einzeilig = feld.einzeilig && !text.includes('\n');
   return (
     <label className={klasse} title={hinweis} style={breite}>
-      {!ohneBeschriftung && <span className="field-label">{titel}</span>}
+      {!ohneBeschriftung && (
+        <span className="field-label">
+          {titel}
+          {info}
+        </span>
+      )}
+      {ohneBeschriftung && info}
       {einzeilig ? (
         <input
           type="text"

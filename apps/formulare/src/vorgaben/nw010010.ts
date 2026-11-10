@@ -11,11 +11,16 @@
 
 import type { FormularProfil } from '../profil';
 import { zusammen } from './antrag';
-import { angekreuzt, fuer, gruppeV, ist, istNicht, oder, s, wenn, zaehltNicht } from './hilfen';
+import { barrierefrei, nurBetrieb } from './grundlagen';
+import { angekreuzt, begruendet, fuer, gruppeV, istNicht, q, s, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
 const s1 = s(1);
-const nichtVereinfacht = wenn(istNicht('Verfahren', 'vereinfachtes Verfahren'));
+const nichtVereinfacht = begruendet(
+  wenn(istNicht('Verfahren', 'vereinfachtes Verfahren')),
+  'Im vereinfachten Baugenehmigungsverfahren sind Angaben zu den Ziffern 8 bis 10 nicht erforderlich (Hinweis auf dem Vordruck) – die Bauaufsichtsbehörde prüft dort nur eingeschränkt.',
+  q('bauo-nrw', '64', 1),
+);
 
 export const nw010010: FormularProfil = zusammen({
   abschnitte: {
@@ -133,7 +138,7 @@ export const nw010010: FormularProfil = zusammen({
     gruppeV('entwaesserung', 'Grundstücksentwässerung', 'eins', s0('CheckBox5', 'CheckBox6', 'CheckBox7')),
     gruppeV('kanal', 'Sammelkanalisation vorhanden oder fertiggestellt bis', 'eins', s0('CheckBox8', 'CheckBox9'), { bedingung: wenn(angekreuzt('0:CheckBox5')) }),
     gruppeV('barrierefrei', 'Barrierefreiheit eingehalten oder Mehraufwand', 'eins', s0('CheckBox10', 'CheckBox11', 'CheckBox12', 'CheckBox13', 'CheckBox14', 'CheckBox15'), {
-      bedingung: oder(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude')),
+      bedingung: barrierefrei,
     }),
     gruppeV('stellplaetze', 'Anzahl der notwendigen Stellplätze', 'eins', s0('Memo12', 'Memo13', 'Memo15', 'Memo16')),
     gruppeV('fahrrad', 'Anzahl der notwendigen Fahrradstellplätze', 'eins', s1('Memo3', 'Memo4', 'Memo6', 'Memo7')),
@@ -143,8 +148,10 @@ export const nw010010: FormularProfil = zusammen({
     '0:Memo7': wenn(angekreuzt('0:CheckBox2')),
     '0:Memo9': wenn(angekreuzt('0:CheckBox9')),
     '0:Memo10': wenn(angekreuzt('0:CheckBox7')),
-    '0:CheckBox1': wenn(ist('Gebäudeart', 'Nichtwohngebäude')),
+    '0:CheckBox1': nurBetrieb,
     ...fuer(s1('Memo15'), wenn(angekreuzt('1:CheckBox10'))),
     ...fuer(s1('Memo16'), wenn(angekreuzt('1:CheckBox11'))),
   },
 });
+
+export const vorgaben: Record<string, FormularProfil> = { 'nw010010|2024G': nw010010, 'nw010010|2026I': nw010010 };
