@@ -87,8 +87,23 @@ export async function konfigLesen(bereich: string): Promise<unknown> {
   return dateiLesen(verbinde(o.ordner, `${bereich}.json`));
 }
 
+/**
+ * Schreiben nacheinander: Zwei Änderungen kurz hintereinander (Lesen, Ändern, Schreiben) dürfen sich nicht
+ * überholen – sonst ginge die erste verloren.
+ */
+let kette: Promise<unknown> = Promise.resolve();
+function nacheinander<T>(f: () => Promise<T>): Promise<T> {
+  const p = kette.then(f, f);
+  kette = p.catch(() => undefined);
+  return p;
+}
+
 /** Bereich schreiben (ganz ersetzen) */
-export async function konfigSchreiben(bereich: string, wert: unknown): Promise<void> {
+export function konfigSchreiben(bereich: string, wert: unknown): Promise<void> {
+  return nacheinander(() => schreibenJetzt(bereich, wert));
+}
+
+async function schreibenJetzt(bereich: string, wert: unknown): Promise<void> {
   const o = await konfigOrt();
   if (!o) {
     try {
@@ -140,9 +155,11 @@ export async function allgemeinLaden(): Promise<AllgemeineEinstellungen> {
 }
 
 /** Gemeinsame Einstellungen ändern: frisch lesen, nur die übergebenen Angaben ersetzen (andere Apps schreiben mit) */
-export async function allgemeinAendern(patch: Partial<AllgemeineEinstellungen>): Promise<AllgemeineEinstellungen> {
-  const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
-  const neu = { ...roh, ...patch };
-  await konfigSchreiben('allgemein', neu);
-  return allgemeinAus(neu);
+export function allgemeinAendern(patch: Partial<AllgemeineEinstellungen>): Promise<AllgemeineEinstellungen> {
+  return nacheinander(async () => {
+    const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
+    const neu = { ...roh, ...patch };
+    await schreibenJetzt('allgemein', neu);
+    return allgemeinAus(neu);
+  });
 }

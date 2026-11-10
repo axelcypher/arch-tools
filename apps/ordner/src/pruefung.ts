@@ -1,12 +1,13 @@
 import type { Eintrag } from './dateisystem';
 import { dateimuster, nameAus } from './nummer';
-import type { ProjektDatei } from './stammdaten';
+import type { ProjektAngaben } from './stammdaten';
 import { PROJEKT_DATEI } from './stammdaten';
 import type { Struktur } from './struktur';
 import { normPfad, regelGilt, sichererName } from './struktur';
 
 /**
- * Prüfmodus: vorhandenen Projektordner mit der Struktur vergleichen und Abweichungen melden.
+ * Prüfmodus: vorhandenen Projektordner mit der Struktur vergleichen und Abweichungen melden – auch, ob er eine
+ * Projektdatei (.oap) hat.
  * Das Tool meldet nur – es verschiebt, benennt und löscht nichts. Fehlende Ordner lassen sich auf Wunsch
  * nachträglich anlegen.
  */
@@ -33,20 +34,41 @@ const SYSTEMDATEI = /^(thumbs\.db|desktop\.ini|\.ds_store|~\$.*|\..*)$/i;
 /** längere Pfade machen unter Windows Schwierigkeiten (Grenze 260 Zeichen einschließlich Laufwerk und Stammordner) */
 const PFAD_LANG = 200;
 
-export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struktur, projekt: ProjektDatei | null, projektFehler?: string): Pruefergebnis {
+/** Woher die Angaben zum Projekt stammen */
+export interface ProjektQuelle {
+  /** Pfad der Projektdatei (.oap) im Projektordner; fehlt, wenn es keine gibt */
+  pfad?: string;
+  /** die Angaben stammen (nur) aus der alten projekt.json */
+  alteProjektJson?: boolean;
+  /** Projektdatei vorhanden, aber nicht lesbar */
+  fehler?: string;
+}
+
+export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struktur, projekt: ProjektAngaben | null, quelle: ProjektQuelle = {}): Pruefergebnis {
   const befunde: Befund[] = [];
   const ordner = eintraege.filter((e) => e.ordner);
   const dateien = eintraege.filter((e) => !e.ordner && !SYSTEMDATEI.test(e.pfad.split('/').pop()!));
   const da = new Set(ordner.map((e) => e.pfad.toLowerCase()));
 
-  /* Stammdaten */
+  /* Projektdatei und Stammdaten */
+  const beschreibung = (p: ProjektAngaben) =>
+    `${p.nummer} ${p.kurzname}${p.angelegt ? `, angelegt am ${new Date(p.angelegt).toLocaleDateString('de-DE')}` : ''}${p.struktur ? `, Struktur „${p.struktur}“` : ''}`;
+  if (quelle.fehler) befunde.push({ art: 'fehler', titel: 'Die Projektdatei (.oap) ist nicht lesbar', text: quelle.fehler, ...(quelle.pfad ? { pfade: [quelle.pfad] } : {}) });
+  else if (projekt && quelle.pfad) befunde.push({ art: 'ok', titel: 'Projektdatei vorhanden', text: `${quelle.pfad} – ${beschreibung(projekt)}` });
+  else if (projekt && quelle.alteProjektJson)
+    befunde.push({
+      art: 'warnung',
+      titel: 'Projektdatei (.oap) fehlt – Stammdaten aus der alten projekt.json',
+      text: `${beschreibung(projekt)}. „Projekt ergänzen“ legt die Projektdatei mit diesen Stammdaten an; die ${PROJEKT_DATEI} bleibt liegen.`,
+    });
+  else befunde.push({ art: 'warnung', titel: 'Projektdatei (.oap) fehlt', text: 'Jedes Projekt hat eine Projektdatei mit den Stammdaten. „Projekt ergänzen“ legt sie an. Geprüft wird gegen die vollständige Struktur.' });
   if (projekt) {
-    befunde.push({ art: 'ok', titel: `${PROJEKT_DATEI} vorhanden`, text: `${projekt.nummer} ${projekt.kurzname}${projekt.angelegt ? `, angelegt am ${new Date(projekt.angelegt).toLocaleDateString('de-DE')}` : ''}${projekt.struktur ? `, Struktur „${projekt.struktur}“` : ''}` });
     const soll = sichererName(nameAus(struktur.ordnername, { nummer: projekt.nummer, kurzname: projekt.kurzname, jahr: projekt.angelegt.slice(0, 4) }));
-    if (soll && soll.toLowerCase() !== ordnerName.toLowerCase())
+    // ohne Kurzname (etwa eine Projektdatei aus der Formulare-App) lässt sich der Name nicht beurteilen
+    const vollstaendig = projekt.nummer && (projekt.kurzname || !/kurzname/i.test(struktur.ordnername));
+    if (soll && vollstaendig && soll.toLowerCase() !== ordnerName.toLowerCase())
       befunde.push({ art: 'warnung', titel: 'Der Ordnername weicht vom Schema ab', text: `Der Ordner heißt „${ordnerName}“, nach dem Schema „${struktur.ordnername}“ und den Stammdaten wäre es „${soll}“.` });
-  } else if (projektFehler) befunde.push({ art: 'fehler', titel: `${PROJEKT_DATEI} ist nicht lesbar`, text: projektFehler });
-  else befunde.push({ art: 'warnung', titel: `${PROJEKT_DATEI} fehlt`, text: 'Ohne Stammdaten gibt es keine zentrale Quelle für Projektnummer, Bauherr und Leistungsphasen. Geprüft wird gegen die vollständige Struktur.' });
+  }
 
   /* Ordner der Struktur */
   const lph = projekt?.leistungsphasen ?? [];
@@ -83,6 +105,7 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
 
   /* lose Dateien im Stamm */
   const erlaubtImStamm = /\.(oap|md|lnk|url)$/i;
+  // die alte projekt.json (bis 0.2) darf liegen bleiben – gelöscht wird nichts
   const lose = dateien.map((e) => e.pfad).filter((p) => !p.includes('/') && p.toLowerCase() !== PROJEKT_DATEI && !erlaubtImStamm.test(p));
   if (lose.length) befunde.push({ art: 'hinweis', titel: `${lose.length} ${lose.length === 1 ? 'Datei liegt' : 'Dateien liegen'} lose im Projektordner`, text: 'Dateien gehören in einen Ordner der Struktur.', pfade: lose });
 

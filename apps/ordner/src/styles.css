@@ -363,3 +363,110 @@
 .po-quellen .po-status button {
   padding: 0 8px;
 }
+
+/* Assistent */
+.po-view.po-assistent {
+  grid-template-columns: minmax(0, 940px);
+}
+.po-schritte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.po-schritte button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-color: transparent;
+  background: transparent;
+}
+.po-schritt-nr {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 11px;
+  background: #eef0f2;
+  color: var(--muted);
+}
+.po-schritte li.aktiv button {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.po-schritte li.aktiv .po-schritt-nr,
+.po-schritte li.erledigt .po-schritt-nr {
+  background: var(--accent);
+  color: #fff;
+}
+.po-kontext {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.po-start {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+}
+.po-karte {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: var(--bg);
+}
+.po-karte h3 {
+  margin: 0 0 4px !important;
+  font-size: 14px !important;
+}
+.po-projektliste {
+  max-height: 38vh;
+  overflow: auto;
+  margin: 6px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel);
+}
+.po-projektliste li {
+  cursor: pointer;
+  font-size: 12.5px;
+}
+.po-karte .po-suche {
+  width: 100%;
+  margin-top: 6px;
+}
+.po-hinweis {
+  padding: 6px 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.po-navigation {
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+.po-navigation .primary {
+  margin-left: auto;
+}
+
+/* Einstellungen */
+.po-stammordner li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.po-stammordner code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

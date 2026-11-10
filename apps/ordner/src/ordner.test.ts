@@ -1,16 +1,17 @@
 import ExcelJS from 'exceljs';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { readProjectFile } from '@core/archive';
+import { readProjectFile, writeArchive } from '@core/archive';
 import { ordnerAusDateien, SpeicherDateisystem, verbinde } from './dateisystem';
 import { dateimuster, naechsteNummer, nameAus, nummerAus } from './nummer';
-import type { Vorlage } from './plan';
+import type { PlanOptionen, Vorlage } from './plan';
 import { ausfuehren, ladeVorlagen, ohne, ordnerName, planen } from './plan';
 import { pruefe } from './pruefung';
 import type { Stammdaten } from './stammdaten';
-import { leereStammdaten, leseProjektJson, platzhalter, projektJson } from './stammdaten';
+import { projektEinlesen } from './projekt';
+import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
 import type { Struktur } from './struktur';
-import { aktivePresets, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
+import { aktivePresets, alterOapPfad, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
 import { alsDokument, fuelleDocx, fuelleText, fuelleVorlage, MUSTER_VORLAGEN, zielDateiname } from './vorlagen';
 
 const TAG = new Date(2026, 9, 1);
@@ -34,10 +35,15 @@ const KLEIN: Struktur = {
   ...STANDARD,
   name: 'Klein',
   ordner: [{ pfad: '00 Projekt' }, { pfad: '02 Pläne/Entwurf', dateischema: true }, { pfad: '02 Pläne/Ausführung', lph: [5], dateischema: true }, { pfad: '08 Bauleitung', lph: [8] }],
-  flaechenprojekt: '00 Projekt/{nummer} {kurzname}.oap',
   // Dateinamen der Vorlagen unverändert (wie vor den Presets)
   vorlagenname: '{name}',
 };
+
+/** Projektdatei der Testprojekte in „00 Projekt“ */
+const OAP = { oapPfad: '00 Projekt/{nummer} {kurzname}.oap' };
+const plane = (s: Stammdaten, struktur: Struktur, vorlagen: Vorlage[], vorhandene: Parameters<typeof planen>[3] = [], date = TAG, opt: PlanOptionen = {}) => planen(s, struktur, vorlagen, vorhandene, date, { ...OAP, ...opt });
+/** Projektordner im Speicher als eingelesener Ordner */
+const eingelesen = async (fs: SpeicherDateisystem, basis: string) => ({ pfad: basis, name: basis.split('/').pop()!, eintraege: await fs.liste(basis, 12), lies: (p: string) => fs.lies(basis, p) });
 
 const vorlage = (pfad: string, inhalt: string | Uint8Array): Vorlage => ({ pfad, lies: async () => (typeof inhalt === 'string' ? strToU8(inhalt) : inhalt) });
 
@@ -87,22 +93,38 @@ describe('Struktur', () => {
 
   it('Konfiguration als JSON: Hin und zurück, Vorgaben für fehlende Angaben, verständliche Fehler', () => {
     expect(strukturAusJson(strukturAlsJson(KLEIN))).toEqual(KLEIN);
-    const teil = strukturAusJson('{"name":"Büro","ordner":["A | LPh 2","B/C"],"flaechenprojekt":""}');
-    expect(teil).toMatchObject({ name: 'Büro', nummernschema: STANDARD.nummernschema, flaechenprojekt: '', ordner: [{ pfad: 'A', lph: [2] }, { pfad: 'B/C' }] });
+    const teil = strukturAusJson('{"name":"Büro","ordner":["A | LPh 2","B/C"],"flaechenprojekt":"03 Flächen/{nummer}.oap"}');
+    expect(teil).toMatchObject({ name: 'Büro', nummernschema: STANDARD.nummernschema, ordner: [{ pfad: 'A', lph: [2] }, { pfad: 'B/C' }] });
+    // der Ort der Projektdatei ist jetzt eine gemeinsame Einstellung aller Apps – aus älteren Strukturen übernommen
+    expect('flaechenprojekt' in teil).toBe(false);
+    expect(alterOapPfad({ flaechenprojekt: '03 Flächen\\{nummer}.oap' })).toBe('03 Flächen/{nummer}.oap');
+    expect(alterOapPfad({})).toBeNull();
     expect(() => strukturAusJson('kein json')).toThrow(/kein gültiges JSON/);
     expect(() => strukturAusJson('{"ordner":[1,2]}')).toThrow(/keinen gültigen Ordner/);
   });
 });
 
 describe('Stammdaten', () => {
-  it('projekt.json schreiben und lesen', () => {
-    const json = projektJson(stamm({ kurzname: ' EFH Musterweg ' }), KLEIN, TAG);
-    const p = leseProjektJson(json);
-    expect(p).toMatchObject({ format: 'projektordner', version: 1, nummer: '2026-014', kurzname: 'EFH Musterweg', angelegt: '2026-10-01', struktur: 'Klein', leistungsphasen: [1, 2, 3, 4] });
-    expect(p.bauherr.kontakte).toEqual([{ art: 'email', wert: 'b@example.org' }]);
-    expect(p.beteiligte).toEqual([{ rolle: 'Tragwerk', name: 'Büro Statik', kontakt: '0251 1234' }]);
+  it('Projektdatei: Stammdaten, Anlagedatum, Struktur und Presets hin und zurück', () => {
+    const p = alsProject(stamm({ kurzname: ' EFH Musterweg ', aktenzeichen: '63/1' }), { struktur: KLEIN, presets: ['Alle Vorlagen'], date: TAG });
+    expect(p.name).toBe('Neubau eines Einfamilienhauses');
+    expect(p.meta).toMatchObject({ projektcode: '2026-014', kurzname: 'EFH Musterweg', vorhaben: 'Neubau eines Einfamilienhauses', aktenzeichen: '63/1', leistungsphasen: [1, 2, 3, 4], angelegt: '2026-10-01' });
+    expect(p.projektordner).toEqual({ struktur: 'Klein', dateischema: KLEIN.dateischema, presets: ['Alle Vorlagen'] });
+    const a = angabenAusProjekt(readProjectFile(writeArchive(p)));
+    expect(a).toMatchObject({ nummer: '2026-014', kurzname: 'EFH Musterweg', angelegt: '2026-10-01', struktur: 'Klein', presets: ['Alle Vorlagen'] });
+    expect(a.bauherr.kontakte).toEqual([{ art: 'email', wert: 'b@example.org' }]);
+    expect(a.beteiligte).toEqual([{ rolle: 'Tragwerk', name: 'Büro Statik', kontakt: '0251 1234' }]);
+    expect(stammAusMeta(p.meta).bezeichnung).toBe('Neubau eines Einfamilienhauses');
+  });
+
+  it('alte projekt.json (bis 0.2) wird noch gelesen und füllt Lücken der Projektdatei', () => {
+    const alt = leseProjektJson(JSON.stringify({ format: 'projektordner', version: 1, nummer: '2025-007', kurzname: 'Kita', leistungsphasen: [1, 2], beteiligte: [{ rolle: 'Statik', name: 'X' }], angelegt: '2025-05-01', struktur: 'Alt' }));
+    expect(alt).toMatchObject({ nummer: '2025-007', kurzname: 'Kita', leistungsphasen: [1, 2], angelegt: '2025-05-01' });
     expect(() => leseProjektJson('{"name":"fremd"}')).toThrow(/keine Projektdatei/);
     expect(() => leseProjektJson('{')).toThrow(/kein gültiges JSON/);
+    // Projektdatei aus einer anderen App (ohne Kurzname, Leistungsphasen): Lücken aus der projekt.json
+    const ausOap = angabenAusProjekt(alsProject({ ...leereStammdaten(), nummer: '2025-007', bezeichnung: 'Kita am Park' }));
+    expect(mitAlterProjektJson(ausOap, alt)).toMatchObject({ nummer: '2025-007', kurzname: 'Kita', bezeichnung: 'Kita am Park', leistungsphasen: [1, 2], struktur: 'Alt' });
   });
 
   it('Platzhalter heißen wie in den anderen Werkzeugen', () => {
@@ -170,8 +192,8 @@ describe('Vorlagen', () => {
 });
 
 describe('Plan und Anlegen', () => {
-  it('Trockenlauf: Ordner nach Leistungsphasen, Stammdaten, leere Flächenberechnung, Vorlagen', () => {
-    const plan = planen(
+  it('Trockenlauf: Ordner nach Leistungsphasen, Projektdatei, Vorlagen', () => {
+    const plan = plane(
       stamm(),
       KLEIN,
       [vorlage('LIESMICH.txt', 'nicht kopieren'), vorlage('00 Projekt/{nummer} Projektblatt.md', '# {{projekt.nummer}}'), vorlage('08 Bauleitung/Bautagebuch.md', 'x'), vorlage('00 Projekt/~$gesperrt.docx', 'x'), vorlage('10 Sonstiges/Notiz.txt', 'x')],
@@ -182,31 +204,31 @@ describe('Plan und Anlegen', () => {
     expect(plan.fehler).toEqual([]);
     expect(plan.schritte.map((s) => `${s.art === 'ordner' ? 'D' : 'F'} ${s.pfad} [${s.herkunft}]`)).toEqual([
       'D 00 Projekt [struktur]',
-      'F 00 Projekt/2026-014 EFH Musterweg.oap [flaechen]',
+      'F 00 Projekt/2026-014 EFH Musterweg.oap [projektdatei]',
       'F 00 Projekt/2026-014 Projektblatt.md [vorlage]',
       'D 02 Pläne [struktur]',
       'D 02 Pläne/Entwurf [struktur]',
       'D 10 Sonstiges [vorlage]',
       'F 10 Sonstiges/Notiz.txt [vorlage]',
-      'F projekt.json [stammdaten]',
     ]);
+    expect(plan.projektdatei).toEqual({ pfad: '00 Projekt/2026-014 EFH Musterweg.oap', neu: true, teile: [] });
     // LPh 5 und 8 sind nicht beauftragt: zwei Ordner und eine Vorlage bleiben weg
     expect(plan.hinweise.join(' ')).toContain('2 Ordner gehören zu nicht beauftragten Leistungsphasen');
     expect(plan.hinweise.join(' ')).toContain('1 Vorlage liegt in Ordnern nicht beauftragter Leistungsphasen');
     // ohne Angabe von Leistungsphasen entsteht alles
-    expect(planen(stamm({ leistungsphasen: [] }), KLEIN, [], [], TAG).schritte.filter((s) => s.art === 'ordner')).toHaveLength(5);
+    expect(plane(stamm({ leistungsphasen: [] }), KLEIN, [], [], TAG).schritte.filter((s) => s.art === 'ordner')).toHaveLength(5);
   });
 
   it('Vorlagen in einem Ordner, dessen Unterordner alle an nicht beauftragten Leistungsphasen hängen, bleiben weg', () => {
     const vorlagen = [vorlage('08 Bauleitung/Bautagebuch.md', 'x'), vorlage('08 Bauleitung/Mängel/Liste.csv', 'x'), vorlage('02 Pläne/Planliste.csv', 'x')];
     // Standardstruktur: „08 Bauleitung“ selbst steht nicht in der Liste, nur seine Unterordner (LPh 8)
-    const ohneLph8 = planen(stamm({ leistungsphasen: [1, 2, 3, 4] }), STANDARD, vorlagen, [], TAG);
+    const ohneLph8 = plane(stamm({ leistungsphasen: [1, 2, 3, 4] }), STANDARD, vorlagen, [], TAG);
     expect(ohneLph8.schritte.map((s) => s.pfad).filter((p) => p.startsWith('08'))).toEqual([]);
     // Standardstruktur: Dateinamen nach dem Schema „{nummer} {name}“
     expect(ohneLph8.schritte.map((s) => s.pfad)).toContain('02 Pläne/2026-014 Planliste.csv');
     expect(ohneLph8.hinweise.join(' ')).toContain('2 Vorlagen liegen in Ordnern nicht beauftragter Leistungsphasen');
     // „02 Pläne“ bleibt: dort gibt es weiterhin beauftragte Unterordner
-    const mit = planen(stamm({ leistungsphasen: [8] }), STANDARD, vorlagen, [], TAG);
+    const mit = plane(stamm({ leistungsphasen: [8] }), STANDARD, vorlagen, [], TAG);
     expect(mit.schritte.map((s) => s.pfad).filter((p) => p.startsWith('08'))).toEqual([
       '08 Bauleitung',
       '08 Bauleitung/2026-014 Bautagebuch.md',
@@ -217,47 +239,48 @@ describe('Plan und Anlegen', () => {
   });
 
   it('fehlende Angaben verhindern das Anlegen', async () => {
-    const plan = planen(stamm({ nummer: ' ', kurzname: '' }), KLEIN, [], [], TAG);
+    const plan = plane(stamm({ nummer: ' ', kurzname: '' }), KLEIN, [], [], TAG);
     expect(plan.fehler).toEqual(['Die Projektnummer fehlt.', 'Der Kurzname fehlt.', 'Aus dem Schema für den Ordnernamen ergibt sich kein Name.']);
     await expect(ausfuehren(new SpeicherDateisystem(), '/p', plan)).rejects.toThrow(/Projektnummer fehlt/);
   });
 
-  it('legt an, füllt Vorlagen und schreibt Stammdaten und Flächenrechner-Datei', async () => {
+  it('legt an, füllt Vorlagen und schreibt die Projektdatei mit den Stammdaten', async () => {
     const fs = new SpeicherDateisystem();
-    const plan = planen(stamm(), KLEIN, [vorlage('00 Projekt/{nummer} Projektblatt.md', '# {{projekt.nummer}} – {{bauherr.name}}')], [], TAG);
+    const plan = plane(stamm(), KLEIN, [vorlage('00 Projekt/{nummer} Projektblatt.md', '# {{projekt.nummer}} – {{bauherr.name}}')], [], TAG);
     const ergebnis = await ausfuehren(fs, 'P:\\Projekte', plan);
     expect(ergebnis.every((e) => e.status === 'angelegt')).toBe(true);
     const basis = 'P:/Projekte/2026-014 EFH Musterweg';
     expect(fs.eintraege.get(`${basis}/02 Pläne/Entwurf`)).toBeNull();
     expect(strFromU8(fs.eintraege.get(`${basis}/00 Projekt/2026-014 Projektblatt.md`)!)).toBe('# 2026-014 – Familie Beispiel');
-    expect(leseProjektJson(strFromU8(fs.eintraege.get(`${basis}/projekt.json`)!)).kurzname).toBe('EFH Musterweg');
-    // die leere Flächenberechnung trägt die Projektdaten – Flächenrechner, GRZ-Nachweis und Kostenermittlung öffnen sie
+    // keine eigene projekt.json mehr – alles steht in der Projektdatei
+    expect(fs.eintraege.has(`${basis}/projekt.json`)).toBe(false);
+    // die Projektdatei öffnen Flächenrechner, GRZ-Nachweis, Kostenermittlung und Formulare
     const p = readProjectFile(fs.eintraege.get(`${basis}/00 Projekt/2026-014 EFH Musterweg.oap`)!);
     expect(p.name).toBe('Neubau eines Einfamilienhauses');
-    expect(p.meta).toMatchObject({ projektcode: '2026-014', bearbeiter: 'TP', adresse: { ort: 'Münster' }, bauherr: { name: 'Familie Beispiel' } });
+    expect(p.meta).toMatchObject({ projektcode: '2026-014', kurzname: 'EFH Musterweg', bearbeiter: 'TP', angelegt: '2026-10-01', leistungsphasen: [1, 2, 3, 4], adresse: { ort: 'Münster' }, bauherr: { name: 'Familie Beispiel' } });
+    expect(p.projektordner).toEqual({ struktur: 'Klein', dateischema: KLEIN.dateischema, presets: ['Alle Vorlagen'] });
     expect(p.storeys.length).toBeGreaterThan(0);
   });
 
   it('überschreibt nie: Vorhandenes bleibt, der Plan zeigt es vorher an', async () => {
     const fs = new SpeicherDateisystem();
-    await ausfuehren(fs, '/p', planen(stamm(), KLEIN, [], [], TAG));
+    await ausfuehren(fs, '/p', plane(stamm(), KLEIN, [], [], TAG));
     const basis = '/p/2026-014 EFH Musterweg';
-    // von Hand geändert
-    fs.eintraege.set(`${basis}/projekt.json`, strToU8('von Hand'));
+    // von Hand angelegt
+    await fs.dateiAnlegen(basis, '00 Projekt/Notiz.txt', strToU8('von Hand'));
     const vorhandene = await fs.liste(basis, 12);
-    // zweiter Lauf mit mehr Leistungsphasen und einer Vorlage
-    const plan = planen(stamm({ leistungsphasen: [1, 2, 3, 4, 5] }), KLEIN, [vorlage('00 Projekt/Notiz.txt', 'neu')], vorhandene, TAG);
-    expect(plan.schritte.filter((s) => !s.vorhanden).map((s) => s.pfad)).toEqual(['00 Projekt/Notiz.txt', '02 Pläne/Ausführung']);
+    // zweiter Lauf mit mehr Leistungsphasen und Vorlagen, eine davon gibt es schon
+    const plan = plane(stamm({ leistungsphasen: [1, 2, 3, 4, 5] }), KLEIN, [vorlage('00 Projekt/Notiz.txt', 'neu'), vorlage('00 Projekt/Liste.csv', 'neu')], vorhandene, TAG);
+    expect(plan.schritte.filter((s) => !s.vorhanden).map((s) => s.pfad)).toEqual(['00 Projekt/Liste.csv', '02 Pläne/Ausführung']);
     expect(plan.hinweise.join(' ')).toContain('5 Einträge sind schon vorhanden und bleiben unverändert');
     const ergebnis = await ausfuehren(fs, '/p', plan);
-    expect(ergebnis.filter((e) => e.status === 'angelegt').map((e) => e.schritt.pfad)).toEqual(['00 Projekt/Notiz.txt', '02 Pläne/Ausführung']);
-    expect(ergebnis.filter((e) => e.status === 'vorhanden')).toHaveLength(5);
-    expect(strFromU8(fs.eintraege.get(`${basis}/projekt.json`)!)).toBe('von Hand');
+    expect(ergebnis.filter((e) => e.status === 'angelegt').map((e) => e.schritt.pfad)).toEqual(['00 Projekt/Liste.csv', '02 Pläne/Ausführung']);
+    expect(strFromU8(fs.eintraege.get(`${basis}/00 Projekt/Notiz.txt`)!)).toBe('von Hand');
   });
 
   it('ein Fehler in einem Schritt hält die übrigen nicht auf', async () => {
     const fs = new SpeicherDateisystem();
-    const plan = planen(stamm(), KLEIN, [{ pfad: '00 Projekt/kaputt.md', lies: () => Promise.reject(new Error('Datei gesperrt')) }, vorlage('00 Projekt/gut.md', 'ok')], [], TAG);
+    const plan = plane(stamm(), KLEIN, [{ pfad: '00 Projekt/kaputt.md', lies: () => Promise.reject(new Error('Datei gesperrt')) }, vorlage('00 Projekt/gut.md', 'ok')], [], TAG);
     const ergebnis = await ausfuehren(fs, '/p', plan);
     expect(ergebnis.filter((e) => e.status === 'fehler').map((e) => [e.schritt.pfad, e.meldung])).toEqual([['00 Projekt/kaputt.md', 'Datei gesperrt']]);
     expect(fs.eintraege.has('/p/2026-014 EFH Musterweg/00 Projekt/gut.md')).toBe(true);
@@ -268,7 +291,7 @@ describe('Plan und Anlegen', () => {
     for (const m of MUSTER_VORLAGEN) await fs.dateiAnlegen('/vorlagen', m.pfad, strToU8(m.inhalt));
     const vorlagen = await ladeVorlagen(fs, '/vorlagen');
     expect(vorlagen).toHaveLength(MUSTER_VORLAGEN.length);
-    const plan = planen(stamm(), STANDARD, vorlagen, [], TAG);
+    const plan = plane(stamm(), STANDARD, vorlagen, [], TAG);
     await ausfuehren(fs, '/p', plan);
     const basis = '/p/2026-014 EFH Musterweg';
     expect(fs.eintraege.has(`${basis}/LIESMICH.txt`)).toBe(false);
@@ -280,7 +303,7 @@ describe('Plan und Anlegen', () => {
     // als ZIP (Browser): Ordner und Dateien unter dem Projektordner
     const zip = unzipSync(fs.alsZip('/p'));
     expect(Object.keys(zip)).toContain('2026-014 EFH Musterweg/09 Fotos/');
-    expect(Object.keys(zip)).toContain('2026-014 EFH Musterweg/projekt.json');
+    expect(Object.keys(zip)).toContain('2026-014 EFH Musterweg/00 Projekt/2026-014 EFH Musterweg.oap');
   });
 
   it('Pfade verbinden mit dem Trenner des Stammordners', () => {
@@ -345,7 +368,7 @@ describe('Vorlagen-Presets', () => {
 
   it('Presets ordnen Vorlagen aus einem eigenen Vorlagenordner zu – mit Namen nach dem Schema des Büros', () => {
     // ohne Auswahl gelten die Standard-Presets
-    const standard = planen(stamm(), MIT_PRESETS, BUERO, [], TAG);
+    const standard = plane(stamm(), MIT_PRESETS, BUERO, [], TAG);
     expect(standard.presets).toEqual(['Jedes Projekt']);
     expect(vorlagenIm(standard)).toEqual([
       '03 Berechnungen/Kosten/2026-014 Kostenschätzung.csv ← Excel/Kostenschätzung.csv [Jedes Projekt]',
@@ -354,38 +377,38 @@ describe('Vorlagen-Presets', () => {
     expect(standard.warnungen).toEqual([]);
 
     // Ordner-Quelle: alle Dateien darin mit ihren Unterordnern; Anleitung und Sperrdateien nicht
-    const beide = planen(stamm({ presets: ['Jedes Projekt', 'Bauantrag'] }), MIT_PRESETS, BUERO, [], TAG);
+    const beide = plane(stamm({ presets: ['Jedes Projekt', 'Bauantrag'] }), MIT_PRESETS, BUERO, [], TAG);
     expect(vorlagenIm(beide)).toContain('06 Genehmigung/2026-014 Bauantrag.pdf ← Bauantrag/Bauantrag.pdf [Bauantrag]');
     expect(vorlagenIm(beide)).toContain('06 Genehmigung/Anlagen/2026-014 Baubeschreibung.md ← Bauantrag/Anlagen/Baubeschreibung.md [Bauantrag]');
     expect(vorlagenIm(beide)).toHaveLength(4);
     expect(beide.warnungen).toEqual(['Preset „Bauantrag“: „Bauantrag/Fehlt.docx“ gibt es im Vorlagenordner nicht.']);
 
     // an LPh 4 gebunden: ohne Genehmigungsplanung entfällt die Zuordnung
-    const ohneLph4 = planen(stamm({ leistungsphasen: [1, 2, 3], presets: ['Bauantrag'] }), MIT_PRESETS, BUERO, [], TAG);
+    const ohneLph4 = plane(stamm({ leistungsphasen: [1, 2, 3], presets: ['Bauantrag'] }), MIT_PRESETS, BUERO, [], TAG);
     expect(vorlagenIm(ohneLph4)).toEqual([]);
     expect(ohneLph4.hinweise.join(' ')).toContain('1 Zuordnung gehört zu nicht beauftragten Leistungsphasen');
 
     // unbekanntes Preset (z. B. aus einer alten projekt.json) wird gemeldet
-    expect(planen(stamm({ presets: ['Gibt es nicht'] }), MIT_PRESETS, BUERO, [], TAG).warnungen).toEqual(['Das Preset „Gibt es nicht“ gibt es in der Struktur „Standard“ nicht – es wird übergangen.']);
+    expect(plane(stamm({ presets: ['Gibt es nicht'] }), MIT_PRESETS, BUERO, [], TAG).warnungen).toEqual(['Das Preset „Gibt es nicht“ gibt es in der Struktur „Standard“ nicht – es wird übergangen.']);
     // ohne Vorlagenordner keine Warnungen
-    expect(planen(stamm({ presets: ['Bauantrag'] }), MIT_PRESETS, [], [], TAG).warnungen).toEqual([]);
+    expect(plane(stamm({ presets: ['Bauantrag'] }), MIT_PRESETS, [], [], TAG).warnungen).toEqual([]);
     expect(aktivePresets(MIT_PRESETS, []).presets).toEqual([]);
   });
 
-  it('legt an: Office-Vorlage als Dokument gefüllt, Presets in der projekt.json vermerkt', async () => {
+  it('legt an: Office-Vorlage als Dokument gefüllt, Presets in der Projektdatei vermerkt', async () => {
     const fs = new SpeicherDateisystem();
-    await ausfuehren(fs, '/p', planen(stamm(), MIT_PRESETS, BUERO, [], TAG));
+    await ausfuehren(fs, '/p', plane(stamm(), MIT_PRESETS, BUERO, [], TAG));
     const basis = '/p/2026-014 EFH Musterweg';
     const brief = unzipSync(fs.eintraege.get(`${basis}/04 Schriftverkehr/Bauherr/2026-014 Brief Bauherr.docx`)!);
     expect(strFromU8(brief['word/document.xml'])).toBe('<w:t>Familie Beispiel</w:t>');
     expect(strFromU8(brief['[Content_Types].xml'])).toContain('wordprocessingml.document.main+xml');
     expect(strFromU8(fs.eintraege.get(`${basis}/03 Berechnungen/Kosten/2026-014 Kostenschätzung.csv`)!)).toBe('Projekt;2026-014');
-    expect(leseProjektJson(strFromU8(fs.eintraege.get(`${basis}/projekt.json`)!)).presets).toEqual(['Jedes Projekt']);
+    expect(readProjectFile(fs.eintraege.get(`${basis}/00 Projekt/2026-014 EFH Musterweg.oap`)!).projektordner?.presets).toEqual(['Jedes Projekt']);
   });
 
-  it('aktualisiert ein vorhandenes Projekt: nur Fehlendes, auch in einem umbenannten Ordner, nichts überschrieben', async () => {
+  it('ergänzt ein vorhandenes Projekt: nur Fehlendes, auch in einem umbenannten Ordner; die Projektdatei gezielt', async () => {
     const fs = new SpeicherDateisystem();
-    await ausfuehren(fs, '/p', planen(stamm(), MIT_PRESETS, BUERO, [], TAG));
+    await ausfuehren(fs, '/p', plane(stamm(), MIT_PRESETS, BUERO, [], TAG));
     // von Hand umbenannt und bearbeitet
     for (const [k, v] of [...fs.eintraege]) {
       fs.eintraege.delete(k);
@@ -393,34 +416,74 @@ describe('Vorlagen-Presets', () => {
     }
     const basis = '/p/2026-014 Musterweg (alt)';
     fs.eintraege.set(`${basis}/03 Berechnungen/Kosten/2026-014 Kostenschätzung.csv`, strToU8('von Hand'));
-    const projekt = leseProjektJson(strFromU8(fs.eintraege.get(`${basis}/projekt.json`)!));
+
+    // eingelesen wie im Assistenten
+    const g = await projektEinlesen(await eingelesen(fs, basis));
+    expect(g.quelle).toEqual({ pfad: '00 Projekt/2026-014 EFH Musterweg.oap' });
+    const { angelegt, struktur: _s, dateischema: _d, ...stammdaten } = g.angaben!;
+    expect(angelegt).toBe('2026-10-01');
+    expect(stammdaten.presets).toEqual(['Jedes Projekt']);
 
     // später: Bauantrag beauftragt, Preset dazu gewählt
-    const { format: _f, version: _v, angelegt: _a, struktur: _s, dateischema: _d, ...stammdaten } = projekt;
-    const plan = planen({ ...stammdaten, presets: [...(projekt.presets ?? []), 'Bauantrag'] }, MIT_PRESETS, BUERO, await fs.liste(basis, 12), new Date(2027, 0, 15), { ordner: '2026-014 Musterweg (alt)', jahr: 2026 });
+    const plan = plane({ ...stammdaten, leistungsphasen: [1, 2, 3, 4, 5], presets: ['Jedes Projekt', 'Bauantrag'] }, MIT_PRESETS, BUERO, (await eingelesen(fs, basis)).eintraege, new Date(2027, 0, 15), {
+      ordner: '2026-014 Musterweg (alt)',
+      jahr: 2026,
+      projektdatei: g.projektdatei,
+    });
     expect(plan.fehler).toEqual([]);
+    expect(plan.projektdatei).toEqual({ pfad: '00 Projekt/2026-014 EFH Musterweg.oap', neu: false, teile: ['Leistungsphasen', 'Vorlagen-Presets'] });
     const fehlt = plan.schritte.filter((x) => !x.vorhanden).map((x) => x.pfad);
-    expect(fehlt).toEqual(['06 Genehmigung/2026-014 Bauantrag.pdf', '06 Genehmigung/Anlagen', '06 Genehmigung/Anlagen/2026-014 Baubeschreibung.md']);
+    expect(fehlt).toEqual(['02 Pläne/Ausführung', '06 Genehmigung/2026-014 Bauantrag.pdf', '06 Genehmigung/Anlagen', '06 Genehmigung/Anlagen/2026-014 Baubeschreibung.md']);
 
     // einzelne Einträge abwählen: mit einem Ordner entfällt sein Inhalt
-    expect(ohne(plan, ['06 Genehmigung/Anlagen']).schritte.filter((x) => !x.vorhanden).map((x) => x.pfad)).toEqual(['06 Genehmigung/2026-014 Bauantrag.pdf']);
+    expect(ohne(plan, ['06 Genehmigung/Anlagen']).schritte.filter((x) => !x.vorhanden).map((x) => x.pfad)).toEqual(['02 Pläne/Ausführung', '06 Genehmigung/2026-014 Bauantrag.pdf']);
+
+    // inzwischen trägt die Formulare-App ein Aktenzeichen ein – das bleibt erhalten
+    const oap = `${basis}/00 Projekt/2026-014 EFH Musterweg.oap`;
+    const vonFormulare = readProjectFile(fs.eintraege.get(oap)!);
+    vonFormulare.meta.aktenzeichen = '63/123/27';
+    fs.setze(oap, writeArchive(vonFormulare));
 
     const ergebnis = await ausfuehren(fs, basis, plan, { imProjektordner: true });
     expect(ergebnis.filter((e) => e.status === 'angelegt').map((e) => e.schritt.pfad)).toEqual(fehlt);
-    expect(fs.eintraege.has(`${basis}/06 Genehmigung/Anlagen/2026-014 Baubeschreibung.md`)).toBe(true);
+    expect(ergebnis.filter((e) => e.status === 'ergaenzt').map((e) => e.schritt.pfad)).toEqual(['00 Projekt/2026-014 EFH Musterweg.oap']);
+    const nachher = readProjectFile(fs.eintraege.get(oap)!);
+    expect(nachher.meta).toMatchObject({ leistungsphasen: [1, 2, 3, 4, 5], aktenzeichen: '63/123/27', angelegt: '2026-10-01', kurzname: 'EFH Musterweg' });
+    expect(nachher.projektordner?.presets).toEqual(['Jedes Projekt', 'Bauantrag']);
     expect(strFromU8(fs.eintraege.get(`${basis}/03 Berechnungen/Kosten/2026-014 Kostenschätzung.csv`)!)).toBe('von Hand');
     // kein zweiter Projektordner unter dem Namen nach Schema
     expect([...fs.eintraege.keys()].some((k) => k.startsWith('/p/2026-014 EFH Musterweg'))).toBe(false);
+    // ein zweiter Lauf ändert nichts mehr
+    const g2 = await projektEinlesen(await eingelesen(fs, basis));
+    const { angelegt: _a2, struktur: _s2, dateischema: _d2, ...stamm2 } = g2.angaben!;
+    const plan2 = plane(stamm2, MIT_PRESETS, BUERO, (await eingelesen(fs, basis)).eintraege, new Date(2027, 0, 16), { ordner: '2026-014 Musterweg (alt)', jahr: 2026, projektdatei: g2.projektdatei });
+    expect(plan2.schritte.filter((x) => !x.vorhanden || x.aenderung?.teile.length)).toEqual([]);
+  });
+
+  it('Projektordner ohne Projektdatei: Stammdaten erfassen, die Projektdatei wird angelegt', async () => {
+    const fs = new SpeicherDateisystem();
+    await fs.ordnerAnlegen('/p', 'Altprojekt/00 Projekt');
+    await fs.dateiAnlegen('/p/Altprojekt', 'projekt.json', strToU8(JSON.stringify({ format: 'projektordner', version: 1, nummer: '2019-003', kurzname: 'Altbau', leistungsphasen: [8] })));
+    const g = await projektEinlesen(await eingelesen(fs, '/p/Altprojekt'));
+    expect(g.projektdatei).toBeNull();
+    expect(g.quelle).toEqual({ alteProjektJson: true });
+    expect(g.angaben).toMatchObject({ nummer: '2019-003', kurzname: 'Altbau', leistungsphasen: [8] });
+    const plan = plane(g.angaben!, KLEIN, [], (await eingelesen(fs, '/p/Altprojekt')).eintraege, TAG, { ordner: 'Altprojekt' });
+    expect(plan.projektdatei).toEqual({ pfad: '00 Projekt/2019-003 Altbau.oap', neu: true, teile: [] });
+    await ausfuehren(fs, '/p/Altprojekt', plan, { imProjektordner: true });
+    expect(readProjectFile(fs.eintraege.get('/p/Altprojekt/00 Projekt/2019-003 Altbau.oap')!).meta).toMatchObject({ projektcode: '2019-003', kurzname: 'Altbau', leistungsphasen: [8] });
+    // die alte projekt.json bleibt liegen
+    expect(fs.eintraege.has('/p/Altprojekt/projekt.json')).toBe(true);
   });
 
   it('Datum im Dateinamen: dieselbe Datei mit anderem Datum gilt beim Aktualisieren als vorhanden', async () => {
     const struktur: Struktur = { ...MIT_PRESETS, presets: [{ name: 'Kosten', standard: true, eintraege: [{ quelle: 'Excel/Kostenschätzung.csv', ziel: '03 Berechnungen/Kosten', name: '{nummer} Kostenschätzung {datum}' }] }] };
     const fs = new SpeicherDateisystem();
-    await ausfuehren(fs, '/p', planen(stamm(), struktur, BUERO, [], TAG));
+    await ausfuehren(fs, '/p', plane(stamm(), struktur, BUERO, [], TAG));
     const basis = '/p/2026-014 EFH Musterweg';
     expect(fs.eintraege.has(`${basis}/03 Berechnungen/Kosten/2026-014 Kostenschätzung 2026-10-01.csv`)).toBe(true);
 
-    const spaeter = planen(stamm(), struktur, BUERO, await fs.liste(basis, 12), new Date(2026, 10, 10));
+    const spaeter = plane(stamm(), struktur, BUERO, await fs.liste(basis, 12), new Date(2026, 10, 10));
     const datei = spaeter.schritte.find((x) => x.herkunft === 'vorlage')!;
     expect(datei).toMatchObject({ pfad: '03 Berechnungen/Kosten/2026-014 Kostenschätzung 2026-11-10.csv', vorhanden: true, vorhandenAls: '03 Berechnungen/Kosten/2026-014 Kostenschätzung 2026-10-01.csv' });
     const ergebnis = await ausfuehren(fs, '/p', spaeter);
@@ -436,11 +499,11 @@ describe('Vorlagen-Presets', () => {
         { name: 'B', standard: true, eintraege: [{ quelle: 'Excel/Kostenschätzung.csv', ziel: 'K' }, { quelle: 'Bauantrag/Bauantrag.pdf', ziel: 'K', name: '{nummer} Kostenschätzung.csv' }] },
       ],
     };
-    const plan = planen(stamm(), doppelt, BUERO, [], TAG);
+    const plan = plane(stamm(), doppelt, BUERO, [], TAG);
     expect(vorlagenIm(plan)).toEqual(['K/2026-014 Kostenschätzung.csv ← Excel/Kostenschätzung.csv [A]', 'K/2026-014 Kostenschätzung.csv.pdf ← Bauantrag/Bauantrag.pdf [B]']);
     expect(plan.hinweise.filter((h) => h.includes('mehrfach'))).toEqual([]);
     const gleich: Struktur = { ...doppelt, presets: [{ name: 'A', standard: true, eintraege: [{ quelle: 'Bauantrag/Bauantrag.pdf', ziel: 'K', name: 'X' }, { quelle: 'Bauantrag/Anlagen', ziel: 'K', name: 'X.pdf' }] }] };
-    expect(planen(stamm(), gleich, [...BUERO, vorlage('Bauantrag/Anlagen/Nachweis.pdf', 'x')], [], TAG).hinweise.join(' ')).toContain('„K/X.pdf“ ergibt sich mehrfach');
+    expect(plane(stamm(), gleich, [...BUERO, vorlage('Bauantrag/Anlagen/Nachweis.pdf', 'x')], [], TAG).hinweise.join(' ')).toContain('„K/X.pdf“ ergibt sich mehrfach');
   });
 
   it('Konfiguration: Presets hin und zurück; ältere Konfigurationen ohne Presets behalten das bisherige Verhalten', () => {
@@ -465,22 +528,23 @@ describe('Vorlagen-Presets', () => {
 describe('Prüfmodus', () => {
   async function angelegt() {
     const fs = new SpeicherDateisystem();
-    await ausfuehren(fs, '/p', planen(stamm(), KLEIN, [], [], TAG));
+    await ausfuehren(fs, '/p', plane(stamm(), KLEIN, [], [], TAG));
     const basis = '/p/2026-014 EFH Musterweg';
-    const projekt = leseProjektJson(strFromU8(fs.eintraege.get(`${basis}/projekt.json`)!));
-    return { fs, basis, projekt };
+    const g = await projektEinlesen(await eingelesen(fs, basis));
+    return { fs, basis, projekt: g.angaben, quelle: g.quelle };
   }
 
   it('frisch angelegter Ordner: keine Abweichungen', async () => {
-    const { fs, basis, projekt } = await angelegt();
-    const r = pruefe('2026-014 EFH Musterweg', await fs.liste(basis, 12), KLEIN, projekt);
+    const { fs, basis, projekt, quelle } = await angelegt();
+    const r = pruefe('2026-014 EFH Musterweg', await fs.liste(basis, 12), KLEIN, projekt, quelle);
     expect(r.befunde.map((b) => b.art)).toEqual(['ok', 'ok']);
+    expect(r.befunde[0].titel).toBe('Projektdatei vorhanden');
     expect(r.fehlendeOrdner).toEqual([]);
-    expect([r.ordner, r.dateien]).toEqual([3, 2]);
+    expect([r.ordner, r.dateien]).toEqual([3, 1]);
   });
 
   it('meldet fehlende und fremde Ordner, lose Dateien, Dateinamen, Ordnernamen – und ändert nichts', async () => {
-    const { fs, basis, projekt } = await angelegt();
+    const { fs, basis, projekt, quelle } = await angelegt();
     fs.eintraege.delete(`${basis}/02 Pläne/Entwurf`);
     await fs.ordnerAnlegen(basis, 'Diverses');
     await fs.ordnerAnlegen(basis, '02 Pläne/Alt');
@@ -489,10 +553,11 @@ describe('Prüfmodus', () => {
     await fs.dateiAnlegen(basis, '02 Pläne/Entwurf/Grundriss final neu.pdf', strToU8('x'));
     await fs.dateiAnlegen(basis, '02 Pläne/Entwurf/Thumbs.db', strToU8('x'));
     await fs.dateiAnlegen(basis, 'Angebot.pdf', strToU8('x'));
+    await fs.dateiAnlegen(basis, 'projekt.json', strToU8('{}'));
     fs.eintraege.delete(`${basis}/00 Projekt/2026-014 EFH Musterweg.oap`);
     fs.eintraege.delete(`${basis}/00 Projekt`);
     const vorher = new Map(fs.eintraege);
-    const r = pruefe('2026-14 Musterweg', await fs.liste(basis, 12), KLEIN, projekt);
+    const r = pruefe('2026-14 Musterweg', await fs.liste(basis, 12), KLEIN, projekt, quelle);
     expect(fs.eintraege).toEqual(vorher);
     expect(r.fehlendeOrdner).toEqual(['00 Projekt']);
     const t = r.befunde.map((b) => `${b.art}: ${b.titel}${b.pfade ? ` → ${b.pfade.join(', ')}` : ''}`);
@@ -502,17 +567,19 @@ describe('Prüfmodus', () => {
       'warnung: 1 von 2 Dateien folgt nicht dem Dateinamenschema → 02 Pläne/Entwurf/Grundriss final neu.pdf',
       'hinweis: 2 Ordner stehen nicht in der Struktur → 02 Pläne/Alt, Diverses',
       'hinweis: 1 Datei liegt lose im Projektordner → Angebot.pdf',
-      'ok: projekt.json vorhanden',
+      'ok: Projektdatei vorhanden',
     ]);
   });
 
-  it('ohne projekt.json: Warnung, Prüfung gegen die vollständige Struktur; kaputte Datei als Fehler', async () => {
+  it('ohne Projektdatei: Warnung, Prüfung gegen die vollständige Struktur; alte projekt.json und kaputte Datei', async () => {
     const { fs, basis } = await angelegt();
-    const eintraege = (await fs.liste(basis, 12)).filter((e) => e.pfad !== 'projekt.json');
+    const eintraege = (await fs.liste(basis, 12)).filter((e) => !e.pfad.endsWith('.oap'));
     const r = pruefe('2026-014 EFH Musterweg', eintraege, KLEIN, null);
-    expect(r.befunde[0]).toMatchObject({ art: 'warnung', titel: 'projekt.json fehlt' });
+    expect(r.befunde[0]).toMatchObject({ art: 'warnung', titel: 'Projektdatei (.oap) fehlt' });
     expect(r.fehlendeOrdner).toEqual(['02 Pläne/Ausführung', '08 Bauleitung']);
-    expect(pruefe('x', eintraege, KLEIN, null, 'kein gültiges JSON').befunde[0]).toMatchObject({ art: 'fehler', titel: 'projekt.json ist nicht lesbar' });
+    const alt = leseProjektJson(JSON.stringify({ format: 'projektordner', nummer: '2026-014', kurzname: 'EFH Musterweg', leistungsphasen: [1, 2, 3, 4] }));
+    expect(pruefe('2026-014 EFH Musterweg', eintraege, KLEIN, alt, { alteProjektJson: true }).befunde[0]).toMatchObject({ art: 'warnung', titel: 'Projektdatei (.oap) fehlt – Stammdaten aus der alten projekt.json' });
+    expect(pruefe('x', eintraege, KLEIN, null, { pfad: 'a.oap', fehler: 'Das Archiv ist beschädigt' }).befunde[0]).toMatchObject({ art: 'fehler', titel: 'Die Projektdatei (.oap) ist nicht lesbar' });
   });
 
   it('überlange Pfade', () => {

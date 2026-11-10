@@ -1,7 +1,15 @@
 /**
- * Struktur: die bürospezifische Konfiguration – Ordnerbaum, Namensschemata, Ort der Vorlagen. Sie gehört
- * nicht ins Tool, sondern in eine austauschbare JSON-Datei; die eingebaute Vorgabe ist neutral gehalten.
+ * Struktur: die bürospezifische Konfiguration – Ordnerbaum, Namensschemata, Vorlagen-Presets. Sie gehört
+ * nicht ins Tool, sondern in den gemeinsamen Konfigurationsordner (und lässt sich als JSON-Datei weitergeben);
+ * die eingebaute Vorgabe ist neutral gehalten. Wo die Projektdatei (.oap) liegt, ist eine Einstellung aller Apps
+ * (allgemein.json, siehe @core/platform/konfig).
  */
+
+/** Ort der Projektdatei aus einer älteren Struktur (bis 0.2: „flaechenprojekt“) – zum Übernehmen in die gemeinsamen Einstellungen */
+export function alterOapPfad(roh: unknown): string | null {
+  const o = roh && typeof roh === 'object' ? (roh as Record<string, unknown>) : {};
+  return typeof o.flaechenprojekt === 'string' && o.flaechenprojekt.trim() ? normPfad(o.flaechenprojekt) : null;
+}
 
 export interface OrdnerRegel {
   /** Pfad im Projektordner, mit „/“ getrennt */
@@ -44,8 +52,6 @@ export interface Struktur {
   /** Dateinamenschema für Pläne, z. B. „{nummer}_{plannummer}_{index}_{titel}“ */
   dateischema: string;
   ordner: OrdnerRegel[];
-  /** leere Flächenrechner-Datei (.oap) an diesem Pfad anlegen; leer = keine */
-  flaechenprojekt: string;
   /**
    * Dateinamen der Vorlagen im Projekt, z. B. „{nummer} {name}“ ({name} = Name der Vorlage ohne Endung).
    * Gilt nicht für Vorlagen, deren Name selbst Platzhalter enthält, und nicht, wo eine Zuordnung einen Namen vorgibt.
@@ -62,7 +68,6 @@ export const STANDARD: Struktur = {
   nummernschema: '{jahr}-{nr:3}',
   ordnername: '{nummer} {kurzname}',
   dateischema: '{nummer}_{plannummer}_{index}_{titel}',
-  flaechenprojekt: '03 Berechnungen/Flächen/{nummer} {kurzname}.oap',
   ordner: [
     { pfad: '00 Projekt' },
     { pfad: '01 Grundlagen/Bestand' },
@@ -224,7 +229,6 @@ export function strukturAusJson(json: string): Struktur {
     nummernschema: text(o.nummernschema, STANDARD.nummernschema),
     ordnername: text(o.ordnername, STANDARD.ordnername),
     dateischema: text(o.dateischema, STANDARD.dateischema),
-    flaechenprojekt: typeof o.flaechenprojekt === 'string' ? normPfad(o.flaechenprojekt) : STANDARD.flaechenprojekt,
     ordner: liste ? ordner : STANDARD.ordner,
     vorlagenname: text(o.vorlagenname, ohnePresets ? '{name}' : STANDARD.vorlagenname),
     presets: ohnePresets ? [GANZER_VORLAGENORDNER] : presetsAus(o.presets as unknown[]),

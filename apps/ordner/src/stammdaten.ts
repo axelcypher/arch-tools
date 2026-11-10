@@ -1,27 +1,24 @@
 import { projektWerte } from '@core/excel/projekt';
 import type { ExportContext, Row, Value } from '@core/excel/context';
-import type { Anschrift, Bauherr, Grundstueck, Kontakt, Project } from '@core/model';
-import { createProject, leereAnschrift } from '@core/model';
+import type { Anschrift, Bauherr, Beteiligter, Grundstueck, Kontakt, Project, ProjectMeta, ProjektordnerAngaben } from '@core/model';
+import { createProject, leereAnschrift, LEISTUNGSPHASEN } from '@core/model';
+import { gleich } from '@core/zusammenfuehren';
 import { sichererName } from './struktur';
 
+export type { Beteiligter };
+export { LEISTUNGSPHASEN };
+
 /**
- * Stammdaten eines Projekts – die zentrale Quelle für Ordnername, Vorlagen und projekt.json.
- * Adresse, Grundstück und Bauherr haben dieselbe Form wie im Flächenrechner, damit die leere
- * Flächenrechner-Datei gleich die richtigen Projektdaten trägt.
+ * Stammdaten eines Projekts – im Formular des Assistenten. Gespeichert werden sie in der Projektdatei (.oap) des
+ * Projektordners: unter `meta` (gemeinsam für alle Apps) und die Angaben dieses Tools unter `projektordner`.
  */
-
-export interface Beteiligter {
-  /** z. B. Tragwerksplanung, Vermessung, Bauamt */
-  rolle: string;
-  name: string;
-  kontakt: string;
-}
-
 export interface Stammdaten {
   nummer: string;
   kurzname: string;
-  /** ausführliche Bezeichnung des Vorhabens */
+  /** ausführliche Bezeichnung des Vorhabens (in der Projektdatei: `meta.vorhaben`) */
   bezeichnung: string;
+  /** Aktenzeichen der Bauaufsicht */
+  aktenzeichen?: string;
   adresse: Anschrift;
   grundstueck: Grundstueck;
   bauherr: Bauherr;
@@ -32,18 +29,6 @@ export interface Stammdaten {
   /** gewählte Vorlagen-Presets; nicht gesetzt = die Standard-Presets der Struktur */
   presets?: string[];
 }
-
-export const LEISTUNGSPHASEN: { nr: number; label: string }[] = [
-  { nr: 1, label: 'Grundlagenermittlung' },
-  { nr: 2, label: 'Vorplanung' },
-  { nr: 3, label: 'Entwurfsplanung' },
-  { nr: 4, label: 'Genehmigungsplanung' },
-  { nr: 5, label: 'Ausführungsplanung' },
-  { nr: 6, label: 'Vorbereitung der Vergabe' },
-  { nr: 7, label: 'Mitwirkung bei der Vergabe' },
-  { nr: 8, label: 'Objektüberwachung' },
-  { nr: 9, label: 'Objektbetreuung' },
-];
 
 export function leereStammdaten(): Stammdaten {
   return {
@@ -59,27 +44,171 @@ export function leereStammdaten(): Stammdaten {
   };
 }
 
-/* ---------- projekt.json ---------- */
+export const isoDatum = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-export const PROJEKT_DATEI = 'projekt.json';
-export const PROJEKT_FORMAT = 'projektordner';
-
-export interface ProjektDatei extends Stammdaten {
-  format: typeof PROJEKT_FORMAT;
-  version: 1;
-  /** ISO-Datum JJJJ-MM-TT */
+/** Angaben zu einem vorhandenen Projekt: Stammdaten und was dieses Tool dazu vermerkt hat */
+export interface ProjektAngaben extends Stammdaten {
+  /** JJJJ-MM-TT, leer wenn unbekannt */
   angelegt: string;
-  /** Name der Struktur, nach der der Ordner angelegt wurde */
+  /** Struktur, nach der der Ordner angelegt bzw. zuletzt ergänzt wurde */
   struktur: string;
   dateischema: string;
 }
 
-export const isoDatum = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-export function projektJson(s: Stammdaten, struktur: { name: string; dateischema: string }, date = new Date()): string {
-  const datei: ProjektDatei = { format: PROJEKT_FORMAT, version: 1, ...bereinigt(s), angelegt: isoDatum(date), struktur: struktur.name, dateischema: struktur.dateischema };
-  return `${JSON.stringify(datei, null, 2)}\n`;
+/** Stammdaten bereinigen: keine Leerzeichen an den Rändern, keine leeren Zeilen */
+export function bereinigt(s: Stammdaten): Stammdaten {
+  const t = (v: string) => v.trim();
+  const a = (x: Anschrift): Anschrift => ({ strasse: t(x.strasse), plz: t(x.plz), ort: t(x.ort) });
+  const vorname = s.bauherr.vorname?.trim();
+  return {
+    nummer: t(s.nummer),
+    kurzname: sichererName(s.kurzname),
+    bezeichnung: t(s.bezeichnung),
+    ...(s.aktenzeichen?.trim() ? { aktenzeichen: s.aktenzeichen.trim() } : {}),
+    adresse: a(s.adresse),
+    grundstueck: { gemarkung: t(s.grundstueck.gemarkung), flur: t(s.grundstueck.flur), flurstueck: t(s.grundstueck.flurstueck), ...(s.grundstueck.flaeche !== undefined ? { flaeche: s.grundstueck.flaeche } : {}) },
+    bauherr: {
+      name: t(s.bauherr.name),
+      ...(vorname ? { vorname } : {}),
+      adresse: a(s.bauherr.adresse),
+      kontakte: s.bauherr.kontakte.map((k) => ({ art: k.art, wert: t(k.wert) })).filter((k) => k.wert),
+    },
+    bearbeiter: t(s.bearbeiter),
+    leistungsphasen: [...new Set(s.leistungsphasen)].sort((x, y) => x - y),
+    beteiligte: s.beteiligte.map((b) => ({ rolle: t(b.rolle), name: t(b.name), kontakt: t(b.kontakt) })).filter((b) => b.rolle || b.name || b.kontakt),
+    ...(s.presets ? { presets: [...new Set(s.presets.map(t).filter(Boolean))] } : {}),
+  };
 }
+
+/* ---------- Projektdatei (.oap) ---------- */
+
+/** Stammdaten als `meta` der Projektdatei (ohne Anlagedatum) */
+export function metaAus(stamm: Stammdaten): ProjectMeta {
+  const s = bereinigt(stamm);
+  const m: ProjectMeta = {
+    projektcode: s.nummer,
+    adresse: { ...s.adresse },
+    grundstueck: { ...s.grundstueck },
+    bauherr: { ...s.bauherr, adresse: { ...s.bauherr.adresse }, kontakte: s.bauherr.kontakte.map((k) => ({ ...k })) },
+    bearbeiter: s.bearbeiter,
+  };
+  if (s.kurzname) m.kurzname = s.kurzname;
+  // die ausführliche Bezeichnung ist das Vorhaben (so steht es auch in der Projektkarte von FORMA)
+  if (s.bezeichnung) m.vorhaben = s.bezeichnung;
+  if (s.aktenzeichen) m.aktenzeichen = s.aktenzeichen;
+  if (s.leistungsphasen.length) m.leistungsphasen = [...s.leistungsphasen];
+  if (s.beteiligte.length) m.beteiligte = s.beteiligte.map((b) => ({ ...b }));
+  return m;
+}
+
+/** Stammdaten als `meta` für die Eingabefelder – unbereinigt (auch leere Zeilen, die gerade angelegt werden) */
+export function formularMeta(s: Stammdaten): ProjectMeta {
+  const m: ProjectMeta = { projektcode: s.nummer, adresse: s.adresse, grundstueck: s.grundstueck, bauherr: s.bauherr, bearbeiter: s.bearbeiter, leistungsphasen: s.leistungsphasen, beteiligte: s.beteiligte };
+  if (s.kurzname) m.kurzname = s.kurzname;
+  if (s.bezeichnung) m.vorhaben = s.bezeichnung;
+  if (s.aktenzeichen) m.aktenzeichen = s.aktenzeichen;
+  return m;
+}
+
+/** Stammdaten aus `meta` (und den Angaben dieses Tools) einer Projektdatei */
+export function stammAusMeta(m: ProjectMeta, angaben?: ProjektordnerAngaben): Stammdaten {
+  return {
+    nummer: m.projektcode,
+    kurzname: m.kurzname ?? '',
+    bezeichnung: m.vorhaben ?? '',
+    ...(m.aktenzeichen ? { aktenzeichen: m.aktenzeichen } : {}),
+    adresse: { ...m.adresse },
+    grundstueck: { ...m.grundstueck },
+    bauherr: { ...m.bauherr, adresse: { ...m.bauherr.adresse }, kontakte: m.bauherr.kontakte.map((k) => ({ ...k })) },
+    bearbeiter: m.bearbeiter,
+    leistungsphasen: [...(m.leistungsphasen ?? [])],
+    beteiligte: (m.beteiligte ?? []).map((b) => ({ ...b })),
+    ...(angaben?.presets ? { presets: [...angaben.presets] } : {}),
+  };
+}
+
+/** Angaben eines vorhandenen Projekts aus seiner Projektdatei */
+export function angabenAusProjekt(p: Project): ProjektAngaben {
+  return { ...stammAusMeta(p.meta, p.projektordner), angelegt: p.meta.angelegt ?? '', struktur: p.projektordner?.struktur ?? '', dateischema: p.projektordner?.dateischema ?? '' };
+}
+
+/**
+ * Neue Projektdatei: leere Flächenberechnung mit den Stammdaten, dem Anlagedatum und den Angaben dieses Tools
+ * (Struktur, Dateischema, gewählte Presets). Flächenrechner, GRZ-Nachweis, Kostenermittlung und Formulare öffnen sie.
+ */
+export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; dateischema: string }; presets?: string[]; date?: Date } = {}): Project {
+  const s = bereinigt(stamm);
+  const p = createProject(s.bezeichnung || s.kurzname || s.nummer || 'Neues Projekt');
+  p.meta = { ...metaAus(s), angelegt: isoDatum(o.date ?? new Date()) };
+  if (o.struktur || o.presets) {
+    p.projektordner = {
+      ...(o.struktur ? { struktur: o.struktur.name, ...(o.struktur.dateischema ? { dateischema: o.struktur.dateischema } : {}) } : {}),
+      ...(o.presets ? { presets: [...o.presets] } : {}),
+    };
+  }
+  return p;
+}
+
+const META_TEILE: [keyof ProjectMeta, string][] = [
+  ['projektcode', 'Projektnummer'],
+  ['kurzname', 'Kurzname'],
+  ['vorhaben', 'Bezeichnung'],
+  ['aktenzeichen', 'Aktenzeichen'],
+  ['adresse', 'Adresse'],
+  ['grundstueck', 'Grundstück'],
+  ['bauherr', 'Bauherr'],
+  ['bearbeiter', 'Bearbeitung'],
+  ['leistungsphasen', 'Leistungsphasen'],
+  ['beteiligte', 'Beteiligte'],
+];
+
+/** leere Liste und fehlender Wert gelten als gleich */
+const wert = (v: unknown) => (Array.isArray(v) && !v.length ? undefined : v === '' ? undefined : v);
+
+export interface ProjektdateiAenderung {
+  /** was sich ändert, in Worten („Leistungsphasen“, „Vorlagen-Presets“ …); leer = nichts */
+  teile: string[];
+  /** wendet die Änderung auf `projekt.json` (Rohdaten, frisch gelesen) an */
+  aendern: (roh: Record<string, unknown>) => Record<string, unknown>;
+}
+
+/**
+ * Was beim Ergänzen eines Projekts in seiner Projektdatei geändert wird: die Stammdaten, die im Assistenten
+ * geändert wurden (gegenüber dem Stand beim Laden – nicht alles, damit Änderungen anderer Apps in der Zwischenzeit
+ * erhalten bleiben), und die Angaben dieses Tools (Struktur, Dateischema, Presets). Gelöscht wird nichts außer
+ * dem, was im Assistenten geleert wurde.
+ */
+export function projektdateiAenderung(basis: { meta: ProjectMeta; projektordner?: ProjektordnerAngaben }, stamm: Stammdaten, ziel: { struktur: { name: string; dateischema: string }; presets: string[] }): ProjektdateiAenderung {
+  const neu = metaAus(stamm);
+  const geaendert = META_TEILE.filter(([k]) => !gleich(wert(basis.meta[k]), wert(neu[k])));
+  const po: ProjektordnerAngaben = { struktur: ziel.struktur.name, ...(ziel.struktur.dateischema ? { dateischema: ziel.struktur.dateischema } : {}), presets: [...ziel.presets] };
+  const alt = basis.projektordner ?? {};
+  const poGeaendert = (['struktur', 'dateischema', 'presets'] as const).filter((k) => !gleich(wert(alt[k]), wert(po[k])));
+  const teile = [...geaendert.map(([, t]) => t), ...(poGeaendert.includes('presets') ? ['Vorlagen-Presets'] : []), ...(poGeaendert.some((k) => k !== 'presets') ? ['Struktur'] : [])];
+  return {
+    teile,
+    aendern: (roh) => {
+      const meta = { ...((roh.meta && typeof roh.meta === 'object' ? roh.meta : {}) as Record<string, unknown>) };
+      for (const [k] of geaendert) {
+        if (neu[k] === undefined) delete meta[k];
+        else meta[k] = structuredClone(neu[k]);
+      }
+      const bisher = (roh.projektordner && typeof roh.projektordner === 'object' ? roh.projektordner : {}) as Record<string, unknown>;
+      const projektordner = { ...bisher };
+      for (const k of poGeaendert) {
+        if (po[k] === undefined) delete projektordner[k];
+        else projektordner[k] = structuredClone(po[k]);
+      }
+      return { ...roh, meta, ...(poGeaendert.length ? { projektordner } : {}) };
+    },
+  };
+}
+
+/* ---------- alte projekt.json (bis Version 0.2) – wird nur noch gelesen ---------- */
+
+/** Stammdaten lagen früher in einer eigenen Datei im Projektordner; sie bleibt liegen und wird nur gelesen */
+export const PROJEKT_DATEI = 'projekt.json';
+export const PROJEKT_FORMAT = 'projektordner';
 
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 const anschrift = (v: unknown): Anschrift => {
@@ -87,8 +216,8 @@ const anschrift = (v: unknown): Anschrift => {
   return { strasse: str(o.strasse), plz: str(o.plz), ort: str(o.ort) };
 };
 
-/** Liest eine projekt.json; wirft bei fremden oder kaputten Dateien */
-export function leseProjektJson(json: string): ProjektDatei {
+/** Liest eine alte projekt.json; wirft bei fremden oder kaputten Dateien */
+export function leseProjektJson(json: string): ProjektAngaben {
   let o: Record<string, unknown>;
   try {
     o = JSON.parse(json) as Record<string, unknown>;
@@ -99,8 +228,6 @@ export function leseProjektJson(json: string): ProjektDatei {
   const g = (o.grundstueck && typeof o.grundstueck === 'object' ? o.grundstueck : {}) as Record<string, unknown>;
   const b = (o.bauherr && typeof o.bauherr === 'object' ? o.bauherr : {}) as Record<string, unknown>;
   return {
-    format: PROJEKT_FORMAT,
-    version: 1,
     nummer: str(o.nummer),
     kurzname: str(o.kurzname),
     bezeichnung: str(o.bezeichnung),
@@ -130,33 +257,12 @@ export function leseProjektJson(json: string): ProjektDatei {
   };
 }
 
-/** Stammdaten ohne Leerzeichen an den Rändern und ohne leere Zeilen */
-export function bereinigt(s: Stammdaten): Stammdaten {
-  const t = (v: string) => v.trim();
-  const a = (x: Anschrift): Anschrift => ({ strasse: t(x.strasse), plz: t(x.plz), ort: t(x.ort) });
-  return {
-    nummer: t(s.nummer),
-    kurzname: sichererName(s.kurzname),
-    bezeichnung: t(s.bezeichnung),
-    adresse: a(s.adresse),
-    grundstueck: { gemarkung: t(s.grundstueck.gemarkung), flur: t(s.grundstueck.flur), flurstueck: t(s.grundstueck.flurstueck), ...(s.grundstueck.flaeche !== undefined ? { flaeche: s.grundstueck.flaeche } : {}) },
-    bauherr: { name: t(s.bauherr.name), adresse: a(s.bauherr.adresse), kontakte: s.bauherr.kontakte.map((k) => ({ art: k.art, wert: t(k.wert) })).filter((k) => k.wert) },
-    bearbeiter: t(s.bearbeiter),
-    leistungsphasen: [...new Set(s.leistungsphasen)].sort(),
-    beteiligte: s.beteiligte.map((b) => ({ rolle: t(b.rolle), name: t(b.name), kontakt: t(b.kontakt) })).filter((b) => b.rolle || b.name || b.kontakt),
-    ...(s.presets ? { presets: [...new Set(s.presets.map(t).filter(Boolean))] } : {}),
-  };
-}
-
-/* ---------- Übergabe an die anderen Werkzeuge ---------- */
-
-/** Projekt im gemeinsamen Format (.oap) mit den Stammdaten – als leere Flächenberechnung */
-export function alsProject(s: Stammdaten): Project {
-  const p = createProject(s.bezeichnung || s.kurzname || s.nummer || 'Neues Projekt');
-  p.meta = { projektcode: s.nummer, adresse: { ...s.adresse }, grundstueck: { ...s.grundstueck }, bauherr: { ...s.bauherr, adresse: { ...s.bauherr.adresse }, kontakte: s.bauherr.kontakte.map((k) => ({ ...k })) }, bearbeiter: s.bearbeiter };
-  // die ausführliche Bezeichnung ist das Vorhaben (so steht es auch in der Projektkarte von FORMA)
-  if (s.bezeichnung.trim()) p.meta.vorhaben = s.bezeichnung.trim();
-  return p;
+/** Lücken der Angaben aus der Projektdatei mit der alten projekt.json füllen (Übergang) */
+export function mitAlterProjektJson(a: ProjektAngaben, alt: ProjektAngaben): ProjektAngaben {
+  const leer = (v: unknown) => v === undefined || v === '' || (Array.isArray(v) && !v.length);
+  const out = { ...a } as Record<string, unknown>;
+  for (const [k, v] of Object.entries(alt)) if (leer(out[k]) && !leer(v)) out[k] = v;
+  return out as unknown as ProjektAngaben;
 }
 
 /* ---------- Platzhalter ---------- */
@@ -167,7 +273,7 @@ export function alsProject(s: Stammdaten): Project {
  */
 export function platzhalter(s: Stammdaten, ordner: string, date = new Date()): ExportContext {
   const scalars: Record<string, Value> = {
-    ...projektWerte(alsProject(s), date),
+    ...projektWerte(alsProject(s, { date }), date),
     'projekt.nummer': s.nummer,
     'projekt.kurzname': s.kurzname,
     'projekt.bezeichnung': s.bezeichnung,

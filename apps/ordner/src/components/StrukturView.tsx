@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
+import { projektdateiPfad } from '@core/projektdatei';
+import { hatDateisystem, waehleOrdner } from '../dateisystem';
 import { dateimuster, nameAus, nummerAus } from '../nummer';
 import { useOrdner } from '../store';
 import type { Struktur } from '../struktur';
@@ -9,7 +11,11 @@ import { ordnerAlsText, ordnerAusText, sichererName, STANDARD, strukturAlsJson, 
 
 const log = logger('struktur');
 
-/** Struktur des Büros: Ordnerbaum und Namensschemata – samt den Vorlagen-Presets als Datei speicher- und ladbar */
+/**
+ * Einstellungen: gemeinsame Einstellungen aller Apps (Konfigurationsordner, Stammordner der Projekte, Ort der
+ * Projektdatei, Fotoordner) und die Struktur des Büros – Ordnerbaum und Namensschemata, samt den Vorlagen-Presets
+ * als Datei speicher- und ladbar.
+ */
 export function StrukturView() {
   const struktur = useOrdner((s) => s.struktur);
   const setStruktur = useOrdner((s) => s.setStruktur);
@@ -50,6 +56,7 @@ export function StrukturView() {
   return (
     <div className="po-view">
       <section className="po-col">
+        <GemeinsameEinstellungen />
         <h2>Struktur</h2>
         <p className="muted small-text">
           Ordnerbaum und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur lässt sich als Datei speichern, weitergeben und auf einem anderen Rechner laden – samt
@@ -85,9 +92,6 @@ export function StrukturView() {
         >
           <TextField value={struktur.dateischema} onChange={(v) => set({ dateischema: v.trim() })} />
         </Field>
-        <Field label="Leere Flächenrechner-Datei" hint="Pfad im Projektordner; leer = keine. Die Datei öffnen Flächenrechner, GRZ-Nachweis und Kostenermittlung – die Projektdaten sind schon eingetragen.">
-          <TextField value={struktur.flaechenprojekt} onChange={(v) => set({ flaechenprojekt: v.trim() })} />
-        </Field>
 
       </section>
 
@@ -108,5 +112,92 @@ export function StrukturView() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** Gemeinsame Einstellungen aller Apps – im Konfigurationsordner (auf einem Server-Laufwerk für das ganze Büro) */
+function GemeinsameEinstellungen() {
+  const desktop = hatDateisystem();
+  const { konfig, konfigFehler, allgemein, setAllgemein, konfigOrdnerSetzen, struktur } = useOrdner();
+  const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
+  const beispiel = { nummer: nummerAus(struktur.nummernschema, 14), kurzname: 'EFH Musterweg', jahr: new Date().getFullYear() };
+
+  const konfigWaehlen = async (lokal: boolean) => {
+    setMeldung(null);
+    try {
+      const ziel = lokal ? null : await waehleOrdner('Gemeinsamen Konfigurationsordner wählen');
+      if (!lokal && !ziel) return;
+      const uebernommen = await konfigOrdnerSetzen(ziel);
+      setMeldung({
+        art: 'ok',
+        text: `${lokal ? 'Die Einstellungen liegen wieder auf diesem Rechner.' : `Konfigurationsordner: ${ziel}.`}${uebernommen.length ? ` Übernommen: ${uebernommen.join(', ')}.` : ' Was dort schon lag, gilt jetzt.'}`,
+      });
+    } catch (e) {
+      setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
+    }
+  };
+  const stammordnerHinzufuegen = async () => {
+    const p = await waehleOrdner('Stammordner mit Projektordnern wählen');
+    if (p && !allgemein.projekte.includes(p)) setAllgemein({ projekte: [...allgemein.projekte, p] });
+  };
+
+  return (
+    <>
+      <h2>Gemeinsame Einstellungen</h2>
+      <p className="muted small-text">Gelten für alle Apps (Projektordner, Formulare, Flächenrechner …). Liegt der Konfigurationsordner auf dem Server, gelten sie für das ganze Büro.</p>
+      {desktop ? (
+        <div className="po-ort">
+          <div>
+            <span className="field-label">Konfigurationsordner</span>
+            <code title={konfig?.ordner}>{konfig ? `${konfig.ordner}${konfig.gewaehlt ? '' : ' (auf diesem Rechner)'}` : 'wird gelesen …'}</code>
+          </div>
+          <button className="small" onClick={() => void konfigWaehlen(false)} title="Gemeinsamen Ordner wählen, z. B. auf dem Server – fehlende Einstellungen werden dorthin übernommen, vorhandene gelten">
+            Wählen …
+          </button>
+          {konfig?.gewaehlt && (
+            <button className="small" onClick={() => void konfigWaehlen(true)}>
+              Lokal
+            </button>
+          )}
+        </div>
+      ) : (
+        <p className="muted small-text">Im Browser liegen die Einstellungen im Speicher dieses Browsers.</p>
+      )}
+      {konfigFehler && <p className="warning">{konfigFehler}</p>}
+      {meldung && <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'}>{meldung.text}</p>}
+
+      <span className="field-label">Stammordner der Projekte</span>
+      <ul className="list po-stammordner">
+        {allgemein.projekte.map((p, i) => (
+          <li key={p}>
+            <code title={p}>{p}</code>
+            {i === 0 ? (
+              <span className="muted small-text">neue Projekte</span>
+            ) : (
+              <button className="small" title="Neue Projekte hier anlegen" onClick={() => setAllgemein({ projekte: [p, ...allgemein.projekte.filter((x) => x !== p)] })}>
+                für neue
+              </button>
+            )}
+            <button className="small" title="Aus der Liste nehmen – am Ordner ändert sich nichts" onClick={() => setAllgemein({ projekte: allgemein.projekte.filter((x) => x !== p) })}>
+              ×
+            </button>
+          </li>
+        ))}
+        {!allgemein.projekte.length && <li className="muted">noch keiner</li>}
+      </ul>
+      {desktop && (
+        <div className="button-row">
+          <button className="small" onClick={() => void stammordnerHinzufuegen()}>
+            + Stammordner
+          </button>
+        </div>
+      )}
+      <Field label="Projektdatei (.oap) in neuen Projekten" hint={`Pfad im Projektordner – {nummer}, {kurzname}, {jahr}. Beispiel: ${projektdateiPfad(allgemein.oapPfad, beispiel)}`}>
+        <TextField value={allgemein.oapPfad} onChange={(v) => setAllgemein({ oapPfad: v.trim() })} />
+      </Field>
+      <Field label="Fotoordner im Projekt" hint="Hier sucht die Entzerrung (auch in Unterordnern) nach Fotos; die .entz-Datei liegt beim Foto.">
+        <TextField value={allgemein.fotoordner} onChange={(v) => setAllgemein({ fotoordner: v.trim() })} />
+      </Field>
+    </>
   );
 }

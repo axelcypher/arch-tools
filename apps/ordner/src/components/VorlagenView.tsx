@@ -49,7 +49,7 @@ export function VorlagenView() {
     setLoeschen(false);
   };
 
-  // Beispielwerte für die Vorschau: das Projekt aus „Neues Projekt“, sonst ein Muster
+  // Beispielwerte für die Vorschau: das angefangene neue Projekt, sonst ein Muster
   const werte = useMemo(() => {
     const s = bereinigt(stamm);
     return kurzeWerte(s.nummer && s.kurzname ? s : { ...s, nummer: nummerAus(struktur.nummernschema, 14), kurzname: 'EFH Musterweg', bearbeiter: s.bearbeiter || 'TP' }, new Date());
@@ -151,7 +151,7 @@ export function VorlagenView() {
 
         <h2>Presets</h2>
         <p className="muted small-text">
-          Ein Preset fasst Vorlagen zusammen, etwa für jedes Projekt, für den Bauantrag oder die Ausschreibung. Unter „Neues Projekt“ und „Projekt aktualisieren“ wird gewählt,
+          Ein Preset fasst Vorlagen zusammen, etwa für jedes Projekt, für den Bauantrag oder die Ausschreibung. Im Assistenten (Projekt) wird gewählt,
           welche gelten; Presets mit „Standard“ sind bei neuen Projekten vorausgewählt. Die Presets gehören zur Struktur und werden mit ihr gespeichert.
         </p>
         <ul className="list po-presets">
@@ -235,7 +235,7 @@ export function VorlagenView() {
           <>
             <h2>Preset „{preset.name}“</h2>
             <div className="field-row">
-              <Field label="Name" hint="Projekte merken sich ihre Presets beim Namen (projekt.json)">
+              <Field label="Name" hint="Projekte merken sich ihre Presets beim Namen (in der Projektdatei)">
                 <TextField value={preset.name} onChange={umbenennen} />
               </Field>
               <label className="toggle po-standard" title="Bei neuen Projekten vorausgewählt">

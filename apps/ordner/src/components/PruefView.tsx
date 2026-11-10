@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { logger } from '@core/platform/log';
 import { hatDateisystem, oeffneOrdner, tauriDateisystem, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
+import type { GeladenerOrdner } from '../projekt';
+import { projektEinlesen } from '../projekt';
 import type { BefundArt, Pruefergebnis } from '../pruefung';
 import { pruefe } from '../pruefung';
-import type { ProjektDatei } from '../stammdaten';
-import { leseProjektJson, PROJEKT_DATEI } from '../stammdaten';
 import { useOrdner } from '../store';
-import type { GeladenerOrdner } from './AktualisierenView';
-import { ladeProjektordner } from './AktualisierenView';
+import { ladeProjektordner } from './AssistentView';
 
 const log = logger('pruefen');
 
@@ -15,32 +14,22 @@ const ART: Record<BefundArt, string> = { fehler: 'Fehler', warnung: 'Abweichung'
 const MAX_PFADE = 40;
 
 interface Geprueft extends GeladenerOrdner {
-  projekt: ProjektDatei | null;
   ergebnis: Pruefergebnis;
 }
 
 /** Prüfmodus: Projektordner einlesen und Abweichungen von der Struktur melden */
-export function PruefView({ onUebernommen, onAktualisieren }: { onUebernommen: () => void; onAktualisieren: (o: GeladenerOrdner) => void }) {
+export function PruefView({ onErgaenzen }: { onErgaenzen: (o: GeladenerOrdner) => void }) {
   const desktop = hatDateisystem();
   const struktur = useOrdner((s) => s.struktur);
   const [g, setG] = useState<Geprueft | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
 
-  const auswerten = async ({ pfad, name, eintraege, lies }: GeladenerOrdner) => {
-    let projekt: ProjektDatei | null = null;
-    let projektFehler: string | undefined;
-    const datei = eintraege.find((e) => !e.ordner && e.pfad.toLowerCase() === PROJEKT_DATEI);
-    if (datei) {
-      try {
-        projekt = leseProjektJson(new TextDecoder('utf-8').decode(await lies(datei.pfad)));
-      } catch (e) {
-        projektFehler = e instanceof Error ? e.message : String(e);
-      }
-    }
-    const ergebnis = pruefe(name, eintraege, struktur, projekt, projektFehler);
-    log.info(`Ordner geprüft: ${name}`, { ordner: ergebnis.ordner, dateien: ergebnis.dateien, befunde: ergebnis.befunde.filter((b) => b.art !== 'ok').length });
-    setG({ pfad, name, eintraege, lies, projekt, ergebnis });
+  const auswerten = async (o: GeladenerOrdner) => {
+    const g = await projektEinlesen(o);
+    const ergebnis = pruefe(o.name, o.eintraege, struktur, g.angaben, g.quelle);
+    log.info(`Ordner geprüft: ${o.name}`, { ordner: ergebnis.ordner, dateien: ergebnis.dateien, befunde: ergebnis.befunde.filter((b) => b.art !== 'ok').length });
+    setG({ ...o, ergebnis });
   };
 
   const pruefenPfad = async (pfad: string) => {
@@ -79,14 +68,6 @@ export function PruefView({ onUebernommen, onAktualisieren }: { onUebernommen: (
     }
   };
 
-  const uebernehmen = () => {
-    if (!g?.projekt) return;
-    const { format: _f, version: _v, angelegt: _a, struktur: _s, dateischema: _d, ...stamm } = g.projekt;
-    // ohne Presets in der projekt.json gelten die Standard-Presets – keine Auswahl vom vorigen Projekt stehen lassen
-    useOrdner.getState().setStamm({ ...stamm, presets: stamm.presets });
-    onUebernommen();
-  };
-
   const offen = g?.ergebnis.befunde.filter((b) => b.art !== 'ok').length ?? 0;
 
   return (
@@ -94,8 +75,8 @@ export function PruefView({ onUebernommen, onAktualisieren }: { onUebernommen: (
       <section className="po-col">
         <h2>Projektordner prüfen</h2>
         <p className="muted small-text">
-          Vergleicht einen vorhandenen Projektordner mit der Struktur „{struktur.name}“: fehlende und zusätzliche Ordner, Stammdaten ({PROJEKT_DATEI}), Dateinamen in den
-          Planordnern, lose Dateien und überlange Pfade. Das Tool meldet nur – es verschiebt, benennt und löscht nichts.
+          Vergleicht einen vorhandenen Projektordner mit der Struktur „{struktur.name}“: Projektdatei (.oap) mit den Stammdaten, fehlende und zusätzliche Ordner, Dateinamen
+          in den Planordnern, lose Dateien und überlange Pfade. Das Tool meldet nur – es verschiebt, benennt und löscht nichts.
           {!desktop && ' Im Browser werden leere Ordner nicht erkannt.'}
         </p>
         <div className="button-row">
@@ -149,14 +130,9 @@ export function PruefView({ onUebernommen, onAktualisieren }: { onUebernommen: (
                   {g.ergebnis.fehlendeOrdner.length} fehlende Ordner anlegen
                 </button>
               )}
-              <button onClick={() => onAktualisieren(g)} title="Fehlende Ordner, Vorlagen und Stammdaten nach Struktur und Presets ergänzen – vorhandene Dateien bleiben unverändert">
-                Projekt aktualisieren …
+              <button onClick={() => onErgaenzen(g)} title="Im Assistenten fehlende Ordner, Vorlagen und die Projektdatei ergänzen – vorhandene Dateien bleiben unverändert">
+                Projekt ergänzen …
               </button>
-              {g.projekt && (
-                <button onClick={uebernehmen} title="Stammdaten aus der projekt.json als Ausgangspunkt für ein neues Projekt in „Neues Projekt“ übernehmen">
-                  Stammdaten übernehmen
-                </button>
-              )}
             </div>
           </>
         )}
