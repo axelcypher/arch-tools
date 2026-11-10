@@ -54,6 +54,7 @@ const BEKANNTE_ABSCHNITTE = new Set([
   'massNutzung',
   'kosten',
   'projektordner',
+  'formulare',
   'erweiterungen',
 ]);
 
@@ -135,6 +136,8 @@ export function parseProjectData(raw: unknown): Project {
     const po = normalizeProjektordner(raw.projektordner);
     if (Object.keys(po).length) project.projektordner = po;
   }
+  // Abschnitt der Formulare-App: unverändert durchgereicht (die App prüft ihn selbst)
+  if (raw.formulare !== undefined && raw.formulare !== null) project.formulare = raw.formulare;
   // was diese Fassung nicht kennt, bleibt erhalten (neuere Fassungen, andere Apps)
   const fremd = Object.entries(raw).filter(([k, v]) => !BEKANNTE_ABSCHNITTE.has(k) && v !== undefined);
   if (fremd.length) project.erweiterungen = Object.fromEntries(fremd);
@@ -187,6 +190,10 @@ function normalizeMeta(v: unknown): ProjectMeta {
     if (bt.length) meta.beteiligte = bt;
   }
   if (typeof m.angelegt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.angelegt)) meta.angelegt = m.angelegt;
+  if (isObj(m.merkmale)) {
+    const mk = Object.entries(m.merkmale).filter((e): e is [string, string] => typeof e[1] === 'string' && !!e[0].trim());
+    if (mk.length) meta.merkmale = Object.fromEntries(mk);
+  }
   return meta;
 }
 

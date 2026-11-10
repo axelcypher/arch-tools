@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { readProjectFile, writeArchive } from './archive';
 import { createProject } from './model';
 import { allgemeinAus, VORGABE_ALLGEMEIN } from './platform/konfig';
-import { projektdateiAnlegen, projektdateiLaden, projektdateiSchreiben, SpeicherProjektordner, verbinde } from './platform/projektordner';
+import { projektdateiAbschnittSetzen, projektdateiAnlegen, projektdateiFinden, projektdateiKopf, projektdateiLaden, projektdateiSchreiben, projekteAuflisten, SpeicherProjektordner, verbinde } from './platform/projektordner';
 import { projektdateiAendern, projektdateiPfad, projektdateiWaehlen } from './projektdatei';
 
 const e = (pfad: string, geaendert = 0) => ({ pfad, ordner: false, groesse: 1, geaendert });
@@ -32,7 +32,7 @@ describe('Projektdatei im Projektordner', () => {
     const vorher = unzipSync(writeArchive(p));
     // eine andere App hat einen eigenen Abschnitt und eine eigene Datei hinterlegt
     const roh = JSON.parse(strFromU8(vorher['projekt.json'])) as Record<string, unknown>;
-    roh.formulare = { aktiveFassung: 'BAUA 2' };
+    roh.zukunft = { aktiveFassung: 'BAUA 2' };
     const bytes = zipSync({ ...vorher, 'projekt.json': strToU8(JSON.stringify(roh)), 'quellen/x/Plan.pdf': new Uint8Array([1, 2, 3]) });
     const neu = projektdateiAendern(bytes, (r) => ({ ...r, projektordner: { presets: ['A'] }, meta: { ...(r.meta as object), kurzname: 'Kita' } }))!;
     const z = unzipSync(neu);
@@ -41,7 +41,7 @@ describe('Projektdatei im Projektordner', () => {
     const gelesen = readProjectFile(neu);
     expect(gelesen.meta).toMatchObject({ projektcode: 'BS5', kurzname: 'Kita' });
     expect(gelesen.projektordner).toEqual({ presets: ['A'] });
-    expect(gelesen.erweiterungen).toEqual({ formulare: { aktiveFassung: 'BAUA 2' } });
+    expect(gelesen.erweiterungen).toEqual({ zukunft: { aktiveFassung: 'BAUA 2' } });
     expect(projektdateiAendern(neu, (r) => r)).toBeNull();
     expect(() => projektdateiAendern(strToU8('{"format":"arch-flaechen-tool"}'), (r) => r)).toThrow(/kein Archiv/);
   });
@@ -75,5 +75,60 @@ describe('Gemeinsame Einstellungen', () => {
   it('Vorgaben für Fehlendes, Listen bereinigt', () => {
     expect(allgemeinAus(null)).toEqual(VORGABE_ALLGEMEIN);
     expect(allgemeinAus({ projekte: [' P:\\Projekte ', 'P:\\Projekte', 3], oapPfad: '', fotoordner: '10 Fotos', fremd: 1 })).toEqual({ projekte: ['P:\\Projekte'], oapPfad: VORGABE_ALLGEMEIN.oapPfad, fotoordner: '10 Fotos' });
+  });
+});
+
+describe('Projektdatei: Abschnitte anderer Apps, gleichzeitiges Schreiben, Übersicht', () => {
+  it('Abschnitt „formulare“ wird unverändert durchgereicht; Projektmerkmale gehören zu den Stammdaten', () => {
+    const p = createProject('X');
+    p.formulare = { aktiveFassung: 'BAUA 2', umfang: [{ nr: '01' }] };
+    p.meta.merkmale = { gebaeudeklasse: '3', sonderbau: 'nein' };
+    const back = readProjectFile(writeArchive(p));
+    expect(back.formulare).toEqual({ aktiveFassung: 'BAUA 2', umfang: [{ nr: '01' }] });
+    expect(back.meta.merkmale).toEqual({ gebaeudeklasse: '3', sonderbau: 'nein' });
+    expect(back.erweiterungen).toBeUndefined();
+  });
+
+  it('ändert jemand die Datei zwischen Lesen und Schreiben, wird neu gelesen und noch einmal angewendet', async () => {
+    const fs = new SpeicherProjektordner();
+    const p = createProject('X');
+    await projektdateiAnlegen(fs, '/p', 'a.oap', p, 'Test');
+    // beim ersten Ersetzen schreibt „gleichzeitig“ eine andere App ihren Abschnitt
+    const ersetzen = fs.projektdateiErsetzen.bind(fs);
+    let erster = true;
+    fs.projektdateiErsetzen = async (root, pfad, daten, stand) => {
+      if (erster) {
+        erster = false;
+        const anders = readProjectFile((await fs.liesMitStand(root, pfad))!.daten);
+        anders.formulare = { aktiveFassung: 'BAUA 1' };
+        fs.setze('/p/a.oap', writeArchive(anders));
+      }
+      return ersetzen(root, pfad, daten, stand);
+    };
+    expect(await projektdateiAbschnittSetzen(fs, '/p', 'a.oap', 'projektordner', { presets: ['A'] })).toBe(true);
+    const ende = readProjectFile(fs.eintraege.get('/p/a.oap')!);
+    expect(ende.projektordner).toEqual({ presets: ['A'] });
+    expect(ende.formulare).toEqual({ aktiveFassung: 'BAUA 1' });
+  });
+
+  it('Projekte der Stammordner auflisten, Projektdatei finden, nur projekt.json lesen', async () => {
+    const fs = new SpeicherProjektordner();
+    const p = createProject('Kita');
+    p.meta.projektcode = '2025-007';
+    p.formulare = { aktiveFassung: 'BAUA' };
+    await fs.ordnerAnlegen('/p', '2025-007 Kita');
+    await projektdateiAnlegen(fs, '/p/2025-007 Kita', '03 Berechnungen/Flächen/2025-007.oap', p, 'Test');
+    await fs.ordnerAnlegen('/p', '2026-001 Leer');
+    await fs.ordnerAnlegen('/p', '.versteckt');
+    const { projekte, fehler } = await projekteAuflisten(fs, ['/p', '/gibt-es-nicht']);
+    expect(projekte.map((x) => x.name)).toEqual(['2025-007 Kita', '2026-001 Leer']);
+    expect(projekte[0].pfad).toBe('/p/2025-007 Kita');
+    expect(fehler).toEqual([]);
+    const datei = await projektdateiFinden(fs, '/p/2025-007 Kita');
+    expect(datei?.pfad).toBe('03 Berechnungen/Flächen/2025-007.oap');
+    expect(await projektdateiFinden(fs, '/p/2026-001 Leer')).toBeNull();
+    const kopf = (await projektdateiKopf(fs, '/p/2025-007 Kita', datei!.pfad))!;
+    expect(kopf).toMatchObject({ name: 'Kita', meta: { projektcode: '2025-007' }, formulare: { aktiveFassung: 'BAUA' } });
+    expect(await projektdateiKopf(fs, '/p/2025-007 Kita', 'fehlt.oap')).toBeNull();
   });
 });

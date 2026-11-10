@@ -822,6 +822,8 @@ pub fn run() {
             projekt_ordner_anlegen,
             projekt_datei_anlegen,
             projekt_oap_ersetzen,
+            projekt_dateien_suchen,
+            projekt_zip_eintrag,
             save_file,
             save_binary_file,
             pick_save_path,
