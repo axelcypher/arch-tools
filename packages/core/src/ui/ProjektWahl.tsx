@@ -6,7 +6,7 @@ import type { AllgemeineEinstellungen } from '../platform/konfig';
 import { allgemeinAendern, allgemeinLaden, zuletztMerken } from '../platform/konfig';
 import { logger } from '../platform/log';
 import type { ProjektordnerZugriff } from '../platform/projektordner';
-import { hatOrdnerzugriff, ordnerName, ordnerWaehlen, projektdateiAnlegen, projektdateiFinden, tauriProjektordner, verbinde } from '../platform/projektordner';
+import { hatOrdnerzugriff, ordnerName, ordnerWaehlen, projektdateiAnlegen, projektdateiFinden, projektdateiKopf, tauriProjektordner, verbinde } from '../platform/projektordner';
 import { projektdateiPfad } from '../projektdatei';
 import { ausOrdnernameEinfach, useProjektordnerListe } from './projektListe';
 import { ProjektUebersicht } from './ProjektUebersicht';
@@ -45,6 +45,7 @@ export function ProjektWahl({
   onSchliessen,
   onDateiOeffnen,
   fs: fsVorgabe,
+  nurOrdner = false,
 }: {
   /** Name der App – für „Zuletzt geöffnet“ und das Manifest neuer Projektdateien */
   app: string;
@@ -57,6 +58,11 @@ export function ProjektWahl({
   onDateiOeffnen?: () => void;
   /** Ordnerzugriff (Tests); Vorgabe: die gemeinsamen Befehle der Desktop-App */
   fs?: ProjektordnerZugriff;
+  /**
+   * nur den Projektordner wählen (z. B. Entzerrung): Die Projektdatei muss es geben (sonst wird sie angelegt),
+   * gelesen werden aber nur Name und Stammdaten – nicht Pläne und Modelle.
+   */
+  nurOrdner?: boolean;
 }) {
   const fs = fsVorgabe ?? (hatOrdnerzugriff() ? tauriProjektordner : null);
   const [allgemein, setAllgemein] = useState<AllgemeineEinstellungen | null>(null);
@@ -84,9 +90,16 @@ export function ProjektWahl({
 
   const geladen = async (ordner: string, pfad: string, neu: boolean) => {
     if (!fs) return;
-    const r = await fs.liesMitStand(ordner, pfad);
-    if (!r) throw new Error(`${pfad}: nicht gefunden`);
-    const project = readProjectFile(r.daten);
+    let project: Project;
+    if (nurOrdner) {
+      const kopf = await projektdateiKopf(fs, ordner, pfad);
+      if (!kopf) throw new Error(`${pfad}: nicht gefunden`);
+      project = { ...createProject(kopf.name), meta: kopf.meta };
+    } else {
+      const r = await fs.liesMitStand(ordner, pfad);
+      if (!r) throw new Error(`${pfad}: nicht gefunden`);
+      project = readProjectFile(r.daten);
+    }
     void zuletztMerken(ordner, app).catch(() => undefined);
     log.info(`Projekt geöffnet: ${verbinde(ordner, pfad)}`, { neu });
     onGewaehlt({ project, datei: verbinde(ordner, pfad), ordner, neu });

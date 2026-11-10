@@ -35,6 +35,21 @@ sich Strecken und Flächen messen lassen.
 Ein Foto kann mehrere **Ebenen** haben, jede mit eigener Referenz und eigenen Messungen, zum Beispiel beide
 Fassadenseiten an einer Gebäudeecke.
 
+## Projekt und Fotoordner
+
+In der Desktop-App beginnt die Entzerrung mit der **Projektübersicht** (wie die anderen Apps; auch über
+„Projekte“ in der Titelleiste): Ein Klick wählt den Projektordner. Hat er noch keine Projektdatei (.oap), werden
+die Stammdaten erfasst und die Projektdatei angelegt.
+
+Danach zeigt **„Fotos des Projekts“** alle Fotos (JPEG, PNG, WebP) im **Fotoordner** des Projekts – einer
+gemeinsamen Einstellung aller Apps, Vorgabe `09 Fotos` (in der App „Projektordner“ unter Einstellungen) – samt
+allen Unterordnern, gruppiert nach Ordner und mit Suche. „Anderer Ordner …“ wählt einen beliebigen Ordner.
+
+Die Entzerrung eines Fotos liegt **immer neben dem Foto**: gleicher Name, Endung `.entz`
+(`Fassade/Nord/IMG_0012.jpg` → `Fassade/Nord/IMG_0012.entz`). Fotos mit vorhandener Entzerrung sind markiert; ein
+Klick öffnet sie, sonst beginnt eine neue mit diesem Foto. „Speichern“ schreibt die `.entz` ohne Rückfrage neben
+das Foto. Öffnen und Speichern über den Dateidialog bleiben wie bisher.
+
 ## Genauigkeit
 
 - Gemessen werden kann nur **in der entzerrten Ebene**. Was davor oder dahinter liegt (Fensterbank, Gesims,

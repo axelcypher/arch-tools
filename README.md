@@ -90,7 +90,13 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 - **Gemeinsame Basis aller Apps** (`packages/core`): Konfigurationsordner für übergreifende Einstellungen
   (`platform/konfig.ts`), die Projektdatei im Projektordner finden, gezielt ergänzen und anlegen
   (`projektdatei.ts`, `platform/projektordner.ts`), Stammdaten-Dialog für Projektordner ohne Projektdatei
-  (`ui/Stammdaten.tsx`); unbekannte Abschnitte der Projektdatei bleiben erhalten
+  (`ui/Stammdaten.tsx`), Projektübersicht als Startseite (`ui/ProjektUebersicht.tsx`) und Projektwahl für
+  Flächenrechner, GRZ-Nachweis, Kostenermittlung und Entzerrung (`ui/ProjektWahl.tsx`: Projektordner wählen,
+  Projektdatei öffnen oder – wenn sie fehlt – mit den Stammdaten anlegen); unbekannte Abschnitte der Projektdatei
+  bleiben erhalten
+- **Projektübersicht** beim Start (Desktop, auch über „Projekte“ in der Titelleiste): Projektordner aus den
+  Stammordnern der gemeinsamen Einstellungen, zuletzt geöffnete vorne; ein Klick öffnet die Projektdatei des
+  Projekts – fehlt sie, werden die Stammdaten erfasst und sie wird angelegt. „Datei öffnen …“ bleibt
 - **Projektdaten** (Projektcode, Adresse, Grundstück mit Gemarkung/Flur/Flurstück, Bauherr mit beliebig vielen
   E-Mail-Adressen und Telefonnummern) im Dialog; als Platzhalter für Excel-Vorlagen (`{{bauherr.name}}` …)
 - Rückgängig/Wiederholen, automatische Zwischenspeicherung (IndexedDB); stürzt eine App kurz nach dem Laden des

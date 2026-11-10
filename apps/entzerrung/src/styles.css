@@ -313,3 +313,67 @@
 .ef-hinweis {
   margin-top: 10px;
 }
+
+/* Fotos des Projekts */
+.fw-kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 16px 28px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.fw-kopf > div {
+  display: flex;
+  flex-direction: column;
+  margin-right: auto;
+  min-width: 0;
+}
+.fw-kopf h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.fw-suche {
+  width: min(260px, 100%);
+}
+.fw-inhalt {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 28px 28px;
+}
+.fw-gruppe h3 {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.fw-gruppe ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px;
+}
+.fw-foto {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+.fw-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fw-marke {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}

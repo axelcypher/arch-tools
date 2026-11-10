@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
+import { isTauri } from '@core/platform/files';
+import { allgemeinLaden, VORGABE_ALLGEMEIN } from '@core/platform/konfig';
+import { tauriProjektordner } from '@core/platform/projektordner';
+import { ProjektWahl } from '@core/ui/ProjektWahl';
+import { FotoWahl } from './components/FotoWahl';
 import { abbrechen, abschliessen, auswahlLoeschen, letztenPunktEntfernen } from './aktionen';
 import { Arbeitsflaeche } from './components/Arbeitsflaeche';
 import { Eigenschaften, WerkzeugKnopf } from './components/Eigenschaften';
 import { FotoLeiste } from './components/FotoLeiste';
 import { entzerrung } from './geo/ebene';
-import { ablegen, fotosHinzufuegen, neu, oeffnen, speichern, zwischenspeicherStarten } from './projekt';
+import { ablegen, fotoImProjektOeffnen, fotosHinzufuegen, neu, oeffnen, speichern, zwischenspeicherStarten } from './projekt';
 import { aktuell, useEntz } from './store';
 
 export function App() {
@@ -19,6 +24,15 @@ export function App() {
   const kannZurueck = useEntz((s) => s.vergangenheit.length > 0);
   const kannVor = useEntz((s) => s.zukunft.length > 0);
   const [logOpen, setLogOpen] = useState(false);
+  // Desktop: beim Start Projekt wählen, dann seine Fotos (Fotoordner aus den gemeinsamen Einstellungen)
+  const [wahl, setWahl] = useState<'projekt' | 'fotos' | null>(() => (isTauri() ? 'projekt' : null));
+  const [projektordner, setProjektordner] = useState<string | null>(null);
+  const [fotoordner, setFotoordner] = useState(VORGABE_ALLGEMEIN.fotoordner);
+  useEffect(() => {
+    void allgemeinLaden()
+      .then((a) => setFotoordner(a.fotoordner || VORGABE_ALLGEMEIN.fotoordner))
+      .catch(() => undefined);
+  }, [wahl]);
   const [ziehtDatei, setZiehtDatei] = useState(false);
   const { foto, ebene } = aktuell({ doc, fotoId, ebeneId });
   const entzerrbar = useMemo(() => (foto && ebene ? entzerrung(foto, ebene).ok : false), [foto, ebene]);
@@ -97,7 +111,7 @@ export function App() {
         void ablegen([...e.dataTransfer.files]);
       }}
     >
-      <TitleBar app="Entzerrung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} />
+      <TitleBar app="Entzerrung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} onProjekte={() => setWahl(projektordner ? 'fotos' : 'projekt')} />
       <div className="toolbar">
         <div className="tb-group">
           <button onClick={neu} title="Neues Projekt">
@@ -111,6 +125,11 @@ export function App() {
           </button>
         </div>
         <div className="tb-group">
+          {isTauri() && (
+            <button onClick={() => setWahl(projektordner ? 'fotos' : 'projekt')} title="Fotos aus dem Fotoordner des Projekts">
+              Fotos des Projekts …
+            </button>
+          )}
           <button onClick={() => void fotosHinzufuegen()}>+ Foto</button>
         </div>
         <div className="tb-group">
@@ -168,6 +187,35 @@ export function App() {
         </main>
         <Eigenschaften />
       </div>
+      {wahl === 'projekt' && (
+        <ProjektWahl
+          app="Entzerrung"
+          nurOrdner
+          onGewaehlt={(g) => {
+            setProjektordner(g.ordner);
+            setWahl('fotos');
+          }}
+          onSchliessen={() => setWahl(null)}
+          onDateiOeffnen={() => {
+            setWahl(null);
+            void oeffnen();
+          }}
+        />
+      )}
+      {wahl === 'fotos' && projektordner && (
+        <FotoWahl
+          key={projektordner}
+          fs={tauriProjektordner}
+          projektordner={projektordner}
+          fotoordner={fotoordner}
+          onFoto={(root, pfad) => {
+            setWahl(null);
+            void fotoImProjektOeffnen(tauriProjektordner, root, pfad);
+          }}
+          onAnderesProjekt={() => setWahl('projekt')}
+          onSchliessen={() => setWahl(null)}
+        />
+      )}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
     </div>
   );

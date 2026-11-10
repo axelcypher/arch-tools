@@ -1,9 +1,11 @@
 import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
-import { pickFile, saveMergedFile } from '@core/platform/files';
+import { istPfad, pickFile, saveMergedFile } from '@core/platform/files';
+import type { ProjektordnerZugriff } from '@core/platform/projektordner';
+import { verbinde } from '@core/platform/projektordner';
 import { fotoEinlesen } from './bilder';
 import { ENDUNG, entpacken, packen } from './datei';
-import { neueId } from './model';
+import { neueId, neuesFoto } from './model';
 import { fotoSchreiben, standLesen, standSchreiben } from './speicher';
 import { useEntz } from './store';
 
@@ -44,6 +46,8 @@ export async function speichern() {
   const vorschlag = s.dateiname ?? `${s.doc.fotos[0].name}.${ENDUNG}`;
   try {
     const name = await saveMergedFile({
+      // neben dem Foto im Projekt: ohne Rückfrage in diese Datei (sie gehört der Entzerrung)
+      pfad: s.dateiname && istPfad(s.dateiname) ? s.dateiname : null,
       defaultName: vorschlag,
       filterName: 'Entzerrung',
       extension: ENDUNG,
@@ -79,6 +83,47 @@ export async function fotosHinzufuegen(dateien?: File[]) {
       log.error('Foto konnte nicht hinzugefügt werden', text);
       window.alert(text);
     }
+  }
+}
+
+/* ---------- Fotos im Projektordner ---------- */
+
+/** Fotos, die die Entzerrung lesen kann */
+export const FOTO_ENDUNG = /\.(jpe?g|png|webp)$/i;
+
+/** die Entzerrungsdatei eines Fotos: daneben, gleicher Name, Endung .entz */
+export const entzZuFoto = (fotoPfad: string) => `${fotoPfad.replace(/\.[^./\\]+$/, '')}.${ENDUNG}`;
+
+/**
+ * Foto aus dem Projekt öffnen: Gibt es daneben schon seine Entzerrung (.entz), wird sie geöffnet; sonst beginnt
+ * eine neue mit diesem Foto. „Speichern“ schreibt die .entz neben das Foto – ohne Rückfrage.
+ * `root` ist der Fotoordner, `pfad` das Foto darin.
+ */
+export async function fotoImProjektOeffnen(fs: ProjektordnerZugriff, root: string, pfad: string): Promise<void> {
+  if (!verwerfenOk()) return;
+  const entz = entzZuFoto(pfad);
+  const ziel = verbinde(root, entz);
+  try {
+    const vorhanden = await fs.liesMitStand(root, entz);
+    if (vorhanden) {
+      const { doc, fotos } = entpacken(vorhanden.daten);
+      useEntz.getState().laden(doc, fotos, ziel);
+      for (const [id, d] of Object.entries(fotos)) await fotoSchreiben(id, d);
+      log.info(`Geöffnet: ${ziel}`, { fotos: doc.fotos.length });
+      return;
+    }
+    const daten = await fs.lies(root, pfad);
+    const name = pfad.split('/').pop()!;
+    const b = await fotoEinlesen(new File([daten as BlobPart], name));
+    const id = neueId();
+    await fotoSchreiben(id, b.daten);
+    useEntz.getState().laden({ fotos: [neuesFoto(id, b.name, b.mime, b.breite, b.hoehe)] }, { [id]: b.daten }, ziel);
+    useEntz.getState().waehleFoto(id);
+    log.info(`Foto geöffnet: ${verbinde(root, pfad)}`, { breite: b.breite, hoehe: b.hoehe });
+  } catch (e) {
+    const text = e instanceof Error ? e.message : String(e);
+    log.error(`Öffnen fehlgeschlagen: ${pfad}`, text);
+    window.alert(text);
   }
 }
 
