@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { VORGABE_EXPORT } from './antrag';
 import { useAntrag } from './antragStore';
 import { VORGABE_MERKMALE } from './bedingung';
+import type { FormularProfil } from './profil';
 import { SicherungEinstellungen } from './components/SicherungEinstellungen';
 import { useFormulare } from './store';
 
@@ -21,7 +22,7 @@ vi.mock('@core/platform/files', async (original) => ({
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let root: ReturnType<typeof createRoot> | null = null;
-const PROFIL = { abschnitte: { '0:Panel1': { titel: 'Bauherrschaft', bedingung: [{ art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['3'] }] } }, zaehlt: {} };
+const PROFIL: FormularProfil = { abschnitte: { '0:Panel1': { titel: 'Bauherrschaft', bedingung: [{ art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['3'] }] } }, zaehlt: {} };
 
 beforeEach(() => {
   localStorage.clear();
