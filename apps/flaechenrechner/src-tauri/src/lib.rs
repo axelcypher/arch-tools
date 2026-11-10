@@ -14,6 +14,14 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
+            konfig_basis,
+            ordner_waehlen,
+            ordner_zeigen,
+            projekt_liste,
+            projekt_lesen,
+            projekt_ordner_anlegen,
+            projekt_datei_anlegen,
+            projekt_oap_ersetzen,
             save_file,
             save_binary_file,
             pick_save_path,

@@ -1,5 +1,6 @@
 import { zipSync } from 'fflate';
-import { base64ToBytes, bytesToBase64, isTauri } from '@core/platform/files';
+import { isTauri } from '@core/platform/files';
+import { ordnerWaehlen, ordnerZeigen, tauriProjektordner } from '@core/platform/projektordner';
 
 /**
  * Zugriff auf Ordner und Dateien. In der Desktop-App über eigene Befehle der Tauri-Hülle, die nur neu
@@ -24,27 +25,19 @@ export interface Dateisystem {
   dateiAnlegen(root: string, pfad: string, daten: Uint8Array): Promise<boolean>;
 }
 
-async function invoke<T>(befehl: string, args: Record<string, unknown>): Promise<T> {
-  const api = await import('@tauri-apps/api/core');
-  return api.invoke<T>(befehl, args);
-}
-
+/** Desktop: die gemeinsamen Befehle aller Apps (packages/core/tauri/commands.rs) */
 export const tauriDateisystem: Dateisystem = {
-  liste: (root, tiefe) => invoke<Eintrag[]>('fs_list', { root, tiefe }),
-  lies: async (root, pfad) => base64ToBytes(await invoke<string>('fs_read', { root, pfad })),
-  ordnerAnlegen: (root, pfad) => invoke<boolean>('fs_create_dir', { root, pfad }),
-  dateiAnlegen: (root, pfad, daten) => invoke<boolean>('fs_write_new', { root, pfad, contentsBase64: bytesToBase64(daten) }),
+  liste: (root, tiefe) => tauriProjektordner.liste(root, tiefe),
+  lies: (root, pfad) => tauriProjektordner.lies(root, pfad),
+  ordnerAnlegen: (root, pfad) => tauriProjektordner.ordnerAnlegen(root, pfad),
+  dateiAnlegen: (root, pfad, daten) => tauriProjektordner.dateiAnlegen(root, pfad, daten),
 };
 
 export const hatDateisystem = () => isTauri();
 
-export async function waehleOrdner(titel: string): Promise<string | null> {
-  return invoke<string | null>('pick_folder', { title: titel });
-}
+export const waehleOrdner = (titel: string): Promise<string | null> => ordnerWaehlen(titel);
 
-export async function oeffneOrdner(pfad: string): Promise<void> {
-  await invoke<void>('open_folder', { pfad });
-}
+export const oeffneOrdner = (pfad: string): Promise<void> => ordnerZeigen(pfad);
 
 /** Pfad aus Ordner und relativem Teil – mit dem Trenner, den der Ordner schon verwendet */
 export function verbinde(root: string, rel: string): string {

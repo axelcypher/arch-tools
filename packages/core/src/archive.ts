@@ -2,7 +2,7 @@ import type { Unzipped, ZipOptions } from 'fflate';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import type { Project } from './model';
 import { benutzteDateien, istVorlage } from './model';
-import { parseProject, parseProjectData, ProjectFormatError } from './serialize';
+import { mitErweiterungen, parseProject, parseProjectData, ProjectFormatError } from './serialize';
 
 /**
  * Projektarchiv (.oap): ein ZIP mit dem Projekt und allem,
@@ -88,7 +88,8 @@ export function writeArchive(p: Project, opts: { app?: string; date?: Date } = {
     return { ...rest, pfad };
   });
 
-  const projekt = { ...p, storeys, dachModell, gelaendeModell, dateien: dateien.length ? dateien : undefined };
+  // unbekannte Abschnitte (andere Apps, neuere Fassungen) wieder auf die oberste Ebene
+  const projekt = { ...mitErweiterungen(p), storeys, dachModell, gelaendeModell, dateien: dateien.length ? dateien : undefined };
   const manifest: Manifest = {
     format: ARCHIV_FORMAT,
     version: ARCHIV_VERSION,
