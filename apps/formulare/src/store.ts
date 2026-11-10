@@ -407,6 +407,22 @@ export function projektHatEntwuerfe(p: Pick<Projekt, 'root' | 'ordner'>): boolea
   return Object.keys(entwuerfe()).some((k) => k.startsWith(vorne)) || !!lesen<Record<string, unknown>>(PK_ENTWUERFE, {})[`karte|${p.root}|${p.ordner}`];
 }
 
+/** gespeicherte Formularprofile prüfen (frühere Bedingungen als Liste werden zur Und-Gruppe) */
+function profileAus(roh: unknown): Record<string, FormularProfil> {
+  if (!roh || typeof roh !== 'object') return {};
+  const out: Record<string, FormularProfil> = {};
+  for (const [k, v] of Object.entries(roh as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object') continue;
+    try {
+      const p = v as Partial<FormularProfil>;
+      out[k] = profilBereinigt({ ...p, abschnitte: p.abschnitte ?? {}, zaehlt: p.zaehlt ?? {} } as FormularProfil);
+    } catch {
+      // unlesbares Profil: weglassen
+    }
+  }
+  return out;
+}
+
 function zuletztLaden(): ZuletztEintrag[] {
   const roh = lesen<unknown>(ZULETZT, []);
   return Array.isArray(roh)
@@ -753,7 +769,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     karte: null,
     datei: null,
     dateiEntwuerfe: {},
-    profile: lesen<Record<string, FormularProfil>>(PROFILE, {}),
+    profile: profileAus(lesen<unknown>(PROFILE, {})),
     adressbuch: lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null),
     adressbuchLaeuft: null,
     projektdaten: null,
@@ -837,7 +853,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const ordner = (x: Pick<Gespeichert, 'projektordner' | 'ablageordner'>) => [...x.projektordner, '|', ...x.ablageordner].join('\n');
       const vorher = ordner(get());
       const neu = ladeEinstellungen();
-      set({ ...neu, profile: lesen<Record<string, FormularProfil>>(PROFILE, {}) });
+      set({ ...neu, profile: profileAus(lesen<unknown>(PROFILE, {})) });
       if (ordner(neu) !== vorher) await get().projekteLaden();
     },
 

@@ -22,7 +22,7 @@ vi.mock('@core/platform/files', async (original) => ({
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let root: ReturnType<typeof createRoot> | null = null;
-const PROFIL: FormularProfil = { abschnitte: { '0:Panel1': { titel: 'Bauherrschaft', bedingung: [{ art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['3'] }] } }, zaehlt: {} };
+const PROFIL: FormularProfil = { abschnitte: { '0:Panel1': { titel: 'Bauherrschaft', bedingung: { art: 'gruppe', op: 'oder', teile: [{ art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['3'] }] } } }, zaehlt: {} };
 
 beforeEach(() => {
   localStorage.clear();

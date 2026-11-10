@@ -47,8 +47,10 @@ export interface Gruppe {
   id: string;
   titel?: string;
   regel: Regel;
-  /** Feldschlüssel (`<Seite>:<Name>`) */
+  /** Feldschlüssel (`<Seite>:<Name>`) – die Felder direkt in dieser Gruppe */
   felder: string[];
+  /** übergeordnete Gruppe: diese Gruppe ist dort ein Teil (verschachtelt) */
+  in?: string;
   /** nur erforderlich, wenn die Bedingung zutrifft */
   bedingung?: Bedingung;
 }
@@ -105,11 +107,37 @@ export const feldTitel = (f: Feld, p: FormularProfil) => p.feldTitel?.[f.schlues
 /** Gruppe, zu der ein Feld gehört */
 export const gruppeVon = (p: FormularProfil, schluessel: string) => (p.gruppen ?? []).find((g) => g.felder.includes(schluessel));
 
-/** Gruppen, die Felder dieses Abschnitts enthalten – in der Reihenfolge ihres ersten Felds */
+/** Untergruppen einer Gruppe (direkt darin) */
+export const untergruppen = (p: FormularProfil, id: string) => (p.gruppen ?? []).filter((g) => g.in === id && g.id !== id);
+
+/** übergeordnete Gruppe, wenn es sie gibt */
+export const obereGruppe = (p: FormularProfil, g: Gruppe) => (g.in ? (p.gruppen ?? []).find((x) => x.id === g.in) : undefined);
+
+/** alle Felder einer Gruppe samt ihrer Untergruppen */
+export function alleFelder(p: FormularProfil, g: Gruppe, gesehen = new Set<string>()): string[] {
+  if (gesehen.has(g.id)) return [];
+  gesehen.add(g.id);
+  return [...g.felder, ...untergruppen(p, g.id).flatMap((u) => alleFelder(p, u, gesehen))];
+}
+
+/** Liegt die Gruppe `id` in `oben` (auf irgendeiner Ebene) oder ist sie es? */
+export function liegtIn(p: FormularProfil, id: string, oben: string): boolean {
+  const gesehen = new Set<string>();
+  let x: Gruppe | undefined = (p.gruppen ?? []).find((g) => g.id === id);
+  while (x && !gesehen.has(x.id)) {
+    if (x.id === oben) return true;
+    gesehen.add(x.id);
+    x = obereGruppe(p, x);
+  }
+  return false;
+}
+
+/** oberste Gruppen (ohne übergeordnete), die Felder dieses Abschnitts enthalten – in der Reihenfolge ihres ersten Felds */
 export function gruppenIm(a: Abschnitt, p: FormularProfil): Gruppe[] {
   const index = new Map(a.felder.map((f, i) => [f.schluessel, i]));
-  const erstes = (g: Gruppe) => Math.min(...g.felder.map((s) => index.get(s) ?? Infinity));
-  return (p.gruppen ?? []).filter((g) => g.felder.some((s) => index.has(s))).sort((x, y) => erstes(x) - erstes(y));
+  const felder = (g: Gruppe) => alleFelder(p, g);
+  const erstes = (g: Gruppe) => Math.min(...felder(g).map((s) => index.get(s) ?? Infinity));
+  return (p.gruppen ?? []).filter((g) => !obereGruppe(p, g) && felder(g).some((s) => index.has(s))).sort((x, y) => erstes(x) - erstes(y));
 }
 
 export interface Einheit {
@@ -120,7 +148,15 @@ export interface Einheit {
   /** `eins`: ausgefüllt, sobald ein Feld ausgefüllt ist; `alle`: erst wenn alle */
   regel: 'eins' | 'alle';
   gruppe?: Gruppe;
+  /** Gruppe: ihre Teile – Felder direkt darin und Untergruppen (verschachtelt) */
+  teile?: (EinheitFeld | Einheit)[];
   /** nach den Bedingungen (noch) nicht erforderlich – zählt nicht */
+  entfaellt?: boolean;
+}
+
+/** Feld als Teil einer Gruppe */
+export interface EinheitFeld {
+  feld: Feld;
   entfaellt?: boolean;
 }
 
@@ -132,12 +168,27 @@ export interface Einheit {
 export function einheiten(a: Abschnitt, profil: FormularProfil, k?: BedingungKontext): Einheit[] {
   const index = new Map(a.felder.map((f, i) => [f.schluessel, i]));
   const gruppen = gruppenIm(a, profil);
-  const gruppiert = new Set(gruppen.flatMap((g) => g.felder));
+  const gruppiert = new Set(gruppen.flatMap((g) => alleFelder(profil, g)));
   const out: Einheit[] = [];
+  // eine Gruppe mit ihren Teilen; Untergruppen, die nicht zählen, fallen weg
+  const gruppenEinheit = (g: Gruppe, gesehen: Set<string>): Einheit => {
+    gesehen.add(g.id);
+    const alle = new Set(alleFelder(profil, g));
+    const felder = a.felder.filter((f) => alle.has(f.schluessel));
+    const eigene: EinheitFeld[] = a.felder
+      .filter((f) => g.felder.includes(f.schluessel))
+      .map((feld) => ({ feld, ...(k && !erfuellt(profil.bedingungen?.[feld.schluessel], k) ? { entfaellt: true } : {}) }));
+    const unter = untergruppen(profil, g.id)
+      .filter((u) => u.regel !== 'nie' && !gesehen.has(u.id))
+      .map((u) => gruppenEinheit(u, gesehen))
+      .filter((e) => e.felder.length);
+    for (const u of unter) if (k && !erfuellt(u.gruppe!.bedingung, k)) u.entfaellt = true;
+    return { id: `g:${g.id}`, felder, art: 'gruppe', regel: g.regel === 'alle' ? 'alle' : 'eins', gruppe: g, teile: [...eigene, ...unter] };
+  };
   for (const g of gruppen) {
     if (g.regel === 'nie') continue;
-    const felder = a.felder.filter((f) => g.felder.includes(f.schluessel));
-    if (felder.length) out.push({ id: `g:${g.id}`, felder, art: 'gruppe', regel: g.regel, gruppe: g });
+    const e = gruppenEinheit(g, new Set());
+    if (e.felder.length) out.push(e);
   }
   const frei = a.felder.filter((f) => !gruppiert.has(f.schluessel) && profil.zaehlt[f.schluessel] !== false);
   for (const f of frei) if (f.art === 'text') out.push({ id: f.schluessel, felder: [f], art: 'text', regel: 'eins' });
@@ -158,26 +209,90 @@ export function einheitTitel(e: Einheit, p: FormularProfil): string {
 
 const gefuellt = (w: string | boolean) => w === true || (typeof w === 'string' && w.trim() !== '');
 
-/** Einheit ausgefüllt: je nach Regel ein bzw. alle Felder mit Text oder Kreuz */
+/**
+ * Einheit ausgefüllt: je nach Regel ein bzw. alle Teile – Felder mit Text oder Kreuz, Untergruppen nach ihrer eigenen
+ * Regel. Teile, deren Bedingung nicht zutrifft, zählen nicht mit.
+ */
 export function ausgefuellt(e: Einheit, wert: (f: Feld) => string | boolean): boolean {
+  if (e.teile) {
+    const zaehlen = e.teile.filter((t) => !t.entfaellt);
+    if (!zaehlen.length) return false;
+    const ok = (t: EinheitFeld | Einheit) => ('feld' in t ? gefuellt(wert(t.feld)) : ausgefuellt(t, wert));
+    return e.regel === 'alle' ? zaehlen.every(ok) : zaehlen.some(ok);
+  }
   return e.regel === 'alle' ? e.felder.every((f) => gefuellt(wert(f))) : e.felder.some((f) => gefuellt(wert(f)));
 }
 
-/** Neue Gruppe aus Feldern; sie werden aus ihren bisherigen Gruppen genommen (leere Gruppen entfallen) */
-export function gruppeBilden(p: FormularProfil, felder: string[], regel: Regel = 'eins'): FormularProfil {
+/** Gruppen ohne Felder und ohne Untergruppen entfallen (auch mehrstufig) */
+function ohneLeere(gruppen: Gruppe[]): Gruppe[] {
+  let liste = gruppen;
+  for (;;) {
+    const weg = liste.filter((g) => !g.felder.length && !liste.some((u) => u.in === g.id));
+    if (!weg.length) return liste;
+    liste = liste.filter((g) => !weg.includes(g));
+  }
+}
+
+/**
+ * Neue Gruppe aus Feldern und – verschachtelt – Gruppen. Die Felder kommen aus ihren bisherigen Gruppen, die Gruppen
+ * werden Teil der neuen. Liegt alles Gewählte in derselben Gruppe, wird die neue dort eingehängt. Leere Gruppen
+ * entfallen.
+ */
+export function gruppeBilden(p: FormularProfil, felder: string[], regel: Regel = 'eins', gruppen: string[] = []): FormularProfil {
   const neu = profilKopie(p);
   const ids = new Set(neu.gruppen!.map((g) => g.id));
   let n = neu.gruppen!.length + 1;
   while (ids.has(`g${n}`)) n++;
-  neu.gruppen = neu.gruppen!.map((g) => ({ ...g, felder: g.felder.filter((s) => !felder.includes(s)) })).filter((g) => g.felder.length);
-  neu.gruppen.push({ id: `g${n}`, regel, felder: [...new Set(felder)] });
+  const id = `g${n}`;
+  const eltern = new Set([...felder.map((s) => gruppeVon(p, s)?.id ?? ''), ...gruppen.map((gid) => (p.gruppen ?? []).find((g) => g.id === gid)?.in ?? '')]);
+  const oben = eltern.size === 1 ? [...eltern][0] : '';
+  neu.gruppen = neu.gruppen!.map((g) => ({ ...g, felder: g.felder.filter((s) => !felder.includes(s)), ...(gruppen.includes(g.id) ? { in: id } : {}) }));
+  neu.gruppen.push({ id, regel, felder: [...new Set(felder)], ...(oben && !gruppen.includes(oben) ? { in: oben } : {}) });
+  neu.gruppen = ohneLeere(neu.gruppen);
   return neu;
 }
 
-/** Feld aus seiner Gruppe nehmen; eine leere Gruppe entfällt */
+/** Feld aus seiner Gruppe nehmen – in die übergeordnete Gruppe, sonst zählt es wieder einzeln; leere Gruppen entfallen */
 export function ausGruppe(p: FormularProfil, schluessel: string): FormularProfil {
   const neu = profilKopie(p);
-  neu.gruppen = neu.gruppen!.map((g) => ({ ...g, felder: g.felder.filter((s) => s !== schluessel) })).filter((g) => g.felder.length);
+  const g = gruppeVon(neu, schluessel);
+  const oben = g && obereGruppe(neu, g);
+  neu.gruppen = neu.gruppen!.map((x) => ({ ...x, felder: x === g ? x.felder.filter((s) => s !== schluessel) : x === oben ? [...x.felder, schluessel] : x.felder }));
+  neu.gruppen = ohneLeere(neu.gruppen);
+  return neu;
+}
+
+/** Gruppe eine Ebene höher (aus ihrer übergeordneten Gruppe heraus) */
+export function gruppeHoch(p: FormularProfil, id: string): FormularProfil {
+  const neu = profilKopie(p);
+  neu.gruppen = ohneLeere(
+    neu.gruppen!.map((g) => {
+      if (g.id !== id) return g;
+      const oben = obereGruppe(neu, g);
+      const { in: _alt, ...rest } = g;
+      return oben?.in ? { ...rest, in: oben.in } : rest;
+    }),
+  );
+  return neu;
+}
+
+/** Gruppe auflösen: ihre Felder und Untergruppen kommen eine Ebene höher (ganz oben zählen die Felder einzeln) */
+export function gruppeAufloesen(p: FormularProfil, id: string): FormularProfil {
+  const neu = profilKopie(p);
+  const g = neu.gruppen!.find((x) => x.id === id);
+  if (!g) return neu;
+  const oben = g.in;
+  neu.gruppen = ohneLeere(
+    neu
+      .gruppen!.filter((x) => x.id !== id)
+      .map((x) => {
+        if (x.in === id) {
+          const { in: _alt, ...rest } = x;
+          return oben ? { ...rest, in: oben } : rest;
+        }
+        return x.id === oben ? { ...x, felder: [...x.felder, ...g.felder] } : x;
+      }),
+  );
   return neu;
 }
 
@@ -201,21 +316,28 @@ export function bereinigt(p: FormularProfil): FormularProfil {
   );
   if (Object.keys(titel).length) out.feldTitel = titel;
   const vergeben = new Set<string>();
-  const gruppen: Gruppe[] = [];
+  let gruppen: Gruppe[] = [];
+  const ids = new Set((p.gruppen ?? []).map((g) => g.id));
   for (const g of p.gruppen ?? []) {
-    const felder = g.felder.filter((s) => !vergeben.has(s) && vergeben.add(s));
-    if (!felder.length) continue;
+    const felder = (Array.isArray(g.felder) ? g.felder : []).filter((s) => !vergeben.has(s) && vergeben.add(s));
     const e: Gruppe = { id: g.id, regel: REGELN.some((r) => r.id === g.regel) ? g.regel : 'eins', felder };
     if (g.titel?.trim()) e.titel = g.titel.trim();
+    if (typeof g.in === 'string' && g.in !== g.id && ids.has(g.in)) e.in = g.in;
     const b = bedingungAus(g.bedingung);
     if (b) e.bedingung = b;
     gruppen.push(e);
   }
+  // Kreise auflösen: eine Gruppe, die (über andere) in sich selbst läge, kommt nach oben
+  const probe: FormularProfil = { abschnitte: {}, zaehlt: {}, gruppen };
+  gruppen = gruppen.map((g) => (g.in && liegtIn(probe, g.in, g.id) ? (({ in: _x, ...rest }) => rest)(g) : g));
+  gruppen = ohneLeere(gruppen);
   if (gruppen.length) out.gruppen = gruppen;
-  const bedingungen = Object.fromEntries(Object.entries(p.bedingungen ?? {}).flatMap(([k, v]) => {
-    const b = bedingungAus(v);
-    return b ? [[k, b]] : [];
-  }));
+  const bedingungen = Object.fromEntries(
+    Object.entries(p.bedingungen ?? {}).flatMap(([k, v]) => {
+      const b = bedingungAus(v);
+      return b ? [[k, b]] : [];
+    }),
+  );
   if (Object.keys(bedingungen).length) out.bedingungen = bedingungen;
   return out;
 }

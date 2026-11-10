@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
 import { STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer } from '../antrag';
-import { bedingungText } from '../bedingung';
+import { bedingungText, hatBedingung } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
 import { aktiveFassung, antragsOrdner, useAntrag, wirksameEinstellungen } from '../antragStore';
@@ -295,7 +295,7 @@ export function ProjektumfangAnsicht() {
                         )}
                         {' · '}
                         <span className="muted">{STATUS_TEXT[d.status]}</span>
-                        {u.bedingung?.length ? <span className="pu-bedingung"> · nur wenn {bedingungText(u.bedingung)}</span> : null}
+                        {hatBedingung(u.bedingung) ? <span className="pu-bedingung"> · nur wenn {bedingungText(u.bedingung)}</span> : null}
                       </span>
                     </div>
                     <div className="pu-knoepfe">

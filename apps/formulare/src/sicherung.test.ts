@@ -53,7 +53,8 @@ describe('Einstellungen sichern und übertragen', () => {
     expect(JSON.parse(localStorage.getItem('formulare:katalog')!)).toEqual([{ id: 'neu' }]);
     const profile = JSON.parse(localStorage.getItem('formulare:profile')!);
     expect(Object.keys(profile).sort()).toEqual(['eigenes', 'gleich', 'halb']);
-    expect(profile.gleich.abschnitte.a).toEqual({ titel: 'Neu', bedingung: gk345 });
+    // die frühere Form (Liste) wird beim Prüfen zur Und-Gruppe
+    expect(profile.gleich.abschnitte.a).toEqual({ titel: 'Neu', bedingung: { art: 'gruppe', op: 'und', teile: gk345 } });
     expect(profile.halb.abschnitte).toEqual({ b: { sichtbar: false } });
     // nicht angehakt: bleibt
     expect(JSON.parse(localStorage.getItem('formulare:einstellungen')!).projektordner).toEqual(['C:/FORMA']);
