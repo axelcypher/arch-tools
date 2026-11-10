@@ -1,6 +1,7 @@
 # arch-tools
 
-Werkzeuge für Architekturbüros: sechs Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau. Flächenrechner,
+Werkzeuge für Architekturbüros: sechs Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau – einzeln oder alle
+zusammen in der Rahmen-App „arch-tools“ (Tabs, herauslösbare Fenster). Flächenrechner,
 GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 
 | App | Zweck | Dokumentation |
@@ -11,6 +12,7 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 | **Projektordner** | Projekte mit einem Assistenten anlegen und ergänzen: Stammdaten in der Projektdatei, Ordner nach Schema, Vorlagen-Presets; Ordner prüfen | [docs/projektordner.md](docs/projektordner.md) |
 | **Entzerrung** | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 | **Formulare** | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
+| **arch-tools** | Rahmen-App: alle Apps in einem Fenster als Tabs, einzelne in eigene Fenster herauslösen | [docs/suite.md](docs/suite.md) |
 
 ## Flächenrechner
 
@@ -144,6 +146,7 @@ apps/kosten/           Kostenermittlung nach DIN 276: Mengen, Kennwerte, Kostens
 apps/ordner/           Projekt-Assistent (neu/ergänzen), Ordner prüfen: Struktur, Vorlagen-Presets, Projektdatei – siehe docs/projektordner.md
 apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
 apps/formulare/        FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
+apps/suite/            Rahmen-App „arch-tools“: alle Apps in einem Fenster (Tabs, herauslösbare Fenster) – siehe docs/suite.md
 ```
 
 Jede App hat ihre eigene Tauri-Hülle (`apps/<app>/src-tauri`), eigenen Installer und eigene Releases.
@@ -170,6 +173,7 @@ npm run dev:kosten       # Kostenermittlung unter http://localhost:1440
 npm run dev:ordner       # Projektordner unter http://localhost:1450
 npm run dev:entzerrung   # Entzerrung unter http://localhost:1460
 npm run dev:formulare    # Formulare unter http://localhost:1470
+npm run dev:suite        # Rahmen-App unter http://localhost:1480 (nach npm run build)
 npm test                 # alle Tests (Unterbau und Apps, vitest)
 npm run typecheck        # TypeScript für alle Workspaces
 npm run build            # Web-Builds aller Apps nach apps/<app>/dist/
@@ -180,13 +184,15 @@ npm run tauri:dev:kosten # Kostenermittlung als Desktop-App
 npm run tauri:dev:ordner # Projektordner als Desktop-App
 npm run tauri:dev:entzerrung # Entzerrung als Desktop-App
 npm run tauri:dev:formulare  # Formulare als Desktop-App
+npm run tauri:dev:suite      # Rahmen-App als Desktop-App
 npm run tauri:build -w flaechenrechner   # Windows-Installer unter apps/<app>/src-tauri/target/release/bundle/
 ```
 
 Der Workflow **Build & Release** (GitHub Actions) baut je App die Windows-Installer und veröffentlicht ein
 GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` erhöht wird:
 Flächenrechner als `v<version>`, GRZ-Nachweis als `grz-v<version>`, Kostenermittlung als `kosten-v<version>`,
-Projektordner als `ordner-v<version>`, Entzerrung als `entzerrung-v<version>`, Formulare als `formulare-v<version>`.
+Projektordner als `ordner-v<version>`, Entzerrung als `entzerrung-v<version>`, Formulare als `formulare-v<version>`,
+die Rahmen-App als `suite-v<version>`.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.
 Manuell gestartet wird die gewählte App in ihrer aktuellen Version (neu) gebaut. Die CI prüft zusätzlich

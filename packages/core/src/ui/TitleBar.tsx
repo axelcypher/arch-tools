@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { isTauri } from '../platform/files';
+import { andocken, anRahmenMelden, rahmenModus } from '../platform/rahmen';
 import { getEntries, logger, logVersion, subscribe } from '../platform/log';
 import { useTheme } from '../platform/theme';
 import type { ThemeWahl } from '../platform/theme';
@@ -32,7 +33,13 @@ export interface TitleBarProps {
 }
 
 export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte }: TitleBarProps) {
-  const desktop = isTauri();
+  // in der Rahmen-App: als Tab ohne eigene Fensterknöpfe, herausgelöst mit „Andocken“; Updates macht der Rahmen
+  const rahmen = rahmenModus();
+  const desktop = isTauri() && rahmen !== 'tab';
+  const ziehen = rahmen === 'tab' ? {} : { 'data-tauri-drag-region': true };
+
+  // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen)
+  useEffect(() => anRahmenMelden(app, name, dirty), [app, name, dirty]);
   const [win, setWin] = useState<AppWindow | null>(null);
   const [maximized, setMaximized] = useState(false);
 
@@ -81,9 +88,9 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte }: Ti
   };
 
   return (
-    <header className="titlebar" data-tauri-drag-region>
-      <img className="titlebar-icon" src="./favicon.svg" alt="" data-tauri-drag-region />
-      <span className="titlebar-app" data-tauri-drag-region>
+    <header className={`titlebar${rahmen === 'tab' ? ' titlebar-im-rahmen' : ''}`} {...ziehen}>
+      <img className="titlebar-icon" src="./favicon.svg" alt="" {...ziehen} />
+      <span className="titlebar-app" {...ziehen}>
         {app}
       </span>
       {onProjekte && (
@@ -91,15 +98,15 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte }: Ti
           Projekte
         </button>
       )}
-      <span className="titlebar-sep" data-tauri-drag-region>
+      <span className="titlebar-sep" {...ziehen}>
         ·
       </span>
-      <span className="titlebar-project" data-tauri-drag-region title={name}>
+      <span className="titlebar-project" {...ziehen} title={name}>
         {name}
         {dirty && <span className="titlebar-dirty" title="Ungespeicherte Änderungen"> ●</span>}
       </span>
-      <span className="titlebar-drag" data-tauri-drag-region />
-      {desktop && <UpdateKnopf app={app} dirty={dirty} />}
+      <span className="titlebar-drag" {...ziehen} />
+      {desktop && !rahmen && <UpdateKnopf app={app} dirty={dirty} />}
       <ThemeMenu />
       {regeln && (
         <button className="titlebar-btn" title="Berechnungsregeln nachschlagen – mit Quellen und Suche (F1)" onClick={() => useHilfe.getState().oeffnen()}>
@@ -118,6 +125,11 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte }: Ti
         <span aria-hidden>≡</span> Protokoll
         {errors > 0 && <span className="titlebar-badge">{errors}</span>}
       </button>
+      {rahmen === 'fenster' && isTauri() && (
+        <button className="titlebar-btn" title="Wieder als Tab in das Hauptfenster" onClick={() => void andocken().catch((e) => log.error('Andocken fehlgeschlagen', e))}>
+          Andocken
+        </button>
+      )}
       {desktop && win && (
         <div className="window-controls">
           <button className="wc-btn" title="Minimieren" aria-label="Minimieren" onClick={() => void win.minimize()}>

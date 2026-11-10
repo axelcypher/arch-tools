@@ -23,3 +23,7 @@
 .pw-leer h2 {
   margin-top: 0;
 }
+/* im Tab der Rahmen-App ist die Titelleiste schmaler */
+body:has(.titlebar-im-rahmen) .pw-ebene {
+  top: 30px;
+}

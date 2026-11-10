@@ -29,6 +29,7 @@ jobs:
             apps/ordner/dist
             apps/entzerrung/dist
             apps/formulare/dist
+            apps/suite/dist
 
   tauri:
     name: Tauri-Hülle prüfen (${{ matrix.app }})
@@ -49,6 +50,10 @@ jobs:
             pkg: entzerrung
           - app: formulare
             pkg: formulare
+          # die Rahmen-App bettet die Web-Builds aller Apps ein
+          - app: suite
+            pkg: arch-tools-suite
+            build: build:alle
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,5 +70,5 @@ jobs:
           workspaces: apps/${{ matrix.app }}/src-tauri
       - run: npm ci
       # generate_context! bettet das Web-Frontend ein – dist muss existieren
-      - run: npm run build -w ${{ matrix.pkg }}
+      - run: npm run ${{ matrix.build || 'build' }} -w ${{ matrix.pkg }}
       - run: cargo check --manifest-path apps/${{ matrix.app }}/src-tauri/Cargo.toml

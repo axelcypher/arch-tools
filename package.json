@@ -2,7 +2,7 @@
   "name": "arch-tools",
   "private": true,
   "type": "module",
-  "description": "Werkzeuge für die Flächen- und Nutzungsberechnung: Flächenrechner (DIN 277, WoFlV), GRZ/GFZ-Nachweis, Kostenermittlung (DIN 276), Projektordner, Entzerrung von Fotos und Bauantragsformulare (SJ FORMA)",
+  "description": "Werkzeuge für die Flächen- und Nutzungsberechnung: Flächenrechner (DIN 277, WoFlV), GRZ/GFZ-Nachweis, Kostenermittlung (DIN 276), Projektordner, Entzerrung von Fotos und Bauantragsformulare (SJ FORMA) – einzeln oder alle in einem Fenster (Rahmen-App)",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -14,7 +14,8 @@
     "dev:ordner": "npm run dev -w projektordner",
     "dev:entzerrung": "npm run dev -w entzerrung",
     "dev:formulare": "npm run dev -w formulare",
-    "build": "npm run build -w flaechenrechner -w grz-nachweis -w kostenermittlung -w projektordner -w entzerrung -w formulare",
+    "dev:suite": "npm run dev -w arch-tools-suite",
+    "build": "npm run build -w flaechenrechner -w grz-nachweis -w kostenermittlung -w projektordner -w entzerrung -w formulare && npm run build -w arch-tools-suite",
     "test": "vitest run",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "tauri:dev": "npm run tauri:dev -w flaechenrechner",
@@ -22,7 +23,8 @@
     "tauri:dev:kosten": "npm run tauri:dev -w kostenermittlung",
     "tauri:dev:ordner": "npm run tauri:dev -w projektordner",
     "tauri:dev:entzerrung": "npm run tauri:dev -w entzerrung",
-    "tauri:dev:formulare": "npm run tauri:dev -w formulare"
+    "tauri:dev:formulare": "npm run tauri:dev -w formulare",
+    "tauri:dev:suite": "npm run tauri:dev -w arch-tools-suite"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.0",

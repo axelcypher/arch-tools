@@ -1,0 +1,163 @@
+/* Rahmen-App (Grund-Styles: @core/ui/base.css) */
+
+.rahmen {
+  height: 100vh;
+}
+.rahmen-leiste {
+  gap: 4px;
+}
+.rahmen-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rahmen-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 0 4px 0 10px;
+  margin-top: 4px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: var(--muted);
+  cursor: default;
+  white-space: nowrap;
+}
+.rahmen-tab:hover {
+  background: var(--hover);
+}
+.rahmen-tab.aktiv {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+.rahmen-tab img {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+.rahmen-tab-name {
+  font-weight: 600;
+}
+.rahmen-tab-projekt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  font-size: 11.5px;
+}
+.rahmen-tab-dirty {
+  color: var(--accent);
+  font-size: 10px;
+}
+.rahmen-tab-knopf {
+  border: none;
+  background: transparent;
+  padding: 0 5px;
+  height: 20px;
+  line-height: 1;
+  color: var(--muted);
+  border-radius: 4px;
+}
+.rahmen-tab-knopf:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.rahmen-plus {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.rahmen-menue {
+  position: fixed;
+  top: 34px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.rahmen-menue button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 6px 8px;
+}
+.rahmen-menue button:hover {
+  background: var(--hover);
+}
+.rahmen-menue img,
+.rahmen-karte img {
+  width: 18px;
+  height: 18px;
+}
+.rahmen-inhalt {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg);
+}
+.rahmen-app {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  visibility: hidden;
+}
+.rahmen-app.aktiv {
+  visibility: visible;
+}
+.rahmen-start {
+  max-width: 880px;
+  margin: 48px auto;
+  padding: 0 16px;
+}
+.rahmen-start h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+.rahmen-karten {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.rahmen-karte {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  height: auto;
+}
+.rahmen-karte img {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+.rahmen-karte > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rahmen-karte,
+.rahmen-karte > span {
+  white-space: normal;
+  min-width: 0;
+}

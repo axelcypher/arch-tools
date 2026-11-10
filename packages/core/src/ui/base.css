@@ -1423,3 +1423,9 @@ svg[tabindex]:focus:not(:focus-visible) {
 .sd-dialog {
   width: min(680px, 94vw);
 }
+
+/* Titelleiste einer App im Tab der Rahmen-App: schmaler, ohne Fensterknöpfe */
+.titlebar-im-rahmen {
+  height: 30px;
+  flex-basis: 30px;
+}
