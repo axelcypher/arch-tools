@@ -179,13 +179,22 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   Antragsordner, Namensvorlage, Phase und Ziel abweichend einstellen (Projektkarte › Projektumfang › „Export für …“,
   „Vorgabe verwenden“ setzt zurück) – wie die angezeigten Pfade im Projektordner.
 - **Projektumfang** (eigener Reiter der Projektkarte unter „Antrag“ – gibt es in FORMA nicht): welche Dokumente zum
-  Antrag gehören. „Aus dem Katalog festlegen“ übernimmt die vorgewählten, „Dokument hinzufügen“ weitere aus dem
+  Antrag gehören. „Projektumfang festlegen“ übernimmt die Dokumente der gewählten Antragsvorlage, „Dokument hinzufügen“ weitere aus dem
   Katalog oder eigene. Je Dokument: Nummer (für `{Nr}`), Titel, **intern** (Formular aus FORMA – Teil des Namens
   oder Kennung) oder **extern** (Datei – Berechnung, Plan, fremde PDF; Ordner der Quelle und Muster mit `*`, `?`,
   mehrere mit `;`). Die Datei im Antragsordner wird nach Muster bzw. Titel gefunden oder ausdrücklich verknüpft (🔗,
   auch per Rechtsklick im Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Projektumfang
   und die aktive Fassung stehen im Abschnitt `formulare` der Projektdatei (`.oap`) im Projektordner und gelten damit
   für alle im Büro (siehe unten).
+- **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je
+  Antragsart – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Im Katalog
+  hat jede Vorlage eine Spalte zum Ankreuzen; die Reihenfolge ist die des Katalogs. Beim Festlegen des Projektumfangs
+  wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen („BAUA 2“ → Bauantrag), eine andere lässt sich
+  wählen; „Dokument hinzufügen › Aus Vorlage ergänzen“ nimmt die fehlenden Dokumente einer weiteren Vorlage dazu.
+  Die früheren „Vorgewählt“-Häkchen werden beim ersten Start zur Vorlage „Bauantrag“.
+- **Reihenfolge ändern:** am Griff ⠿ ziehen – oder den Griff wählen und mit ↑/↓ verschieben – im Katalog, bei den
+  Antragsvorlagen und Projektmerkmalen und im Projektumfang eines Projekts (dort auch per Rechtsklick „Nach oben“ /
+  „Nach unten“).
 - **Projektmerkmale** (oben im Projektumfang): Gebäudeklasse, Sonderbau, Verfahren … – je Projekt einmal gewählt,
   gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Projektumfang. Welche Merkmale es gibt
   und ihre Werte, steht in Einstellungen › Antrag & Export. Gespeichert in der Projektdatei unter `meta.merkmale` –

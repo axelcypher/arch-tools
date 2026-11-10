@@ -11,7 +11,7 @@
 import { create } from 'zustand';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
-import type { ExportEinstellungen, ExportUeberschreibung, Fassung, Fuellstand, KatalogEintrag, ProjektDatei, ProjektStatus, Status, UmfangEintrag } from './antrag';
+import type { AntragsVorlage, ExportEinstellungen, ExportUeberschreibung, Fassung, Fuellstand, KatalogEintrag, ProjektDatei, ProjektStatus, Status, UmfangEintrag } from './antrag';
 import {
   anzeigeName,
   dateiImAntrag,
@@ -32,6 +32,7 @@ import {
   standardFassung,
   UEBERSCHREIBBAR,
   umfangErforderlich,
+  vorlagenAus,
 } from './antrag';
 import type { Merkmal } from './bedingung';
 import { merkmaleAus } from './bedingung';
@@ -53,6 +54,7 @@ const log = logger('formulare');
 
 const EINSTELLUNGEN = 'formulare:export';
 const KATALOG = 'formulare:katalog';
+const VORLAGEN = 'formulare:vorlagen';
 const UEBERSCHREIBUNGEN = 'formulare:export-projekte';
 const MERKMALE = 'formulare:merkmale';
 const PROJEKTSTATUS = 'formulare:projektstatus';
@@ -105,6 +107,8 @@ export interface ExportZiel {
 interface AntragState {
   einstellungen: ExportEinstellungen;
   katalog: KatalogEintrag[];
+  /** Antragsvorlagen: welche Katalogdokumente zu welcher Art von Antrag gehören */
+  vorlagen: AntragsVorlage[];
   /** Projektmerkmale (Gebäudeklasse …) mit ihren möglichen Werten – für Bedingungen */
   merkmalDefinitionen: Merkmal[];
   /** je Projektkürzel */
@@ -124,6 +128,8 @@ interface AntragState {
 
   setEinstellungen: (e: Partial<ExportEinstellungen>) => void;
   setKatalog: (k: KatalogEintrag[] | null) => void;
+  /** null = wieder die Vorgabe */
+  setVorlagen: (v: AntragsVorlage[] | null) => void;
   setMerkmalDefinitionen: (m: Merkmal[] | null) => void;
   /** Wert eines Projektmerkmals im gewählten Projekt setzen (leer = entfernen) – in der Projektdatei */
   merkmalSetzen: (name: string, wert: string) => Promise<void>;
@@ -329,6 +335,7 @@ export const useAntrag = create<AntragState>((set, get) => {
   return {
     einstellungen: einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null)),
     katalog: katalogAus(lesen<unknown>(KATALOG, null)),
+    vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
     merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
     ueberschreibungen: lesen<Record<string, ExportUeberschreibung>>(UEBERSCHREIBUNGEN, {}),
     projektdatei: null,
@@ -344,6 +351,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       set({
         einstellungen: einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null)),
         katalog: katalogAus(lesen<unknown>(KATALOG, null)),
+        vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
         merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
         ueberschreibungen: lesen<Record<string, ExportUeberschreibung>>(UEBERSCHREIBUNGEN, {}),
       });
@@ -354,6 +362,16 @@ export const useAntrag = create<AntragState>((set, get) => {
       schreiben(EINSTELLUNGEN, einstellungen);
       set({ einstellungen });
       void get().laden();
+    },
+    setVorlagen: (v) => {
+      if (v) schreiben(VORLAGEN, v);
+      else
+        try {
+          localStorage.removeItem(VORLAGEN);
+        } catch {
+          // nichts zu löschen
+        }
+      set({ vorlagen: v ?? vorlagenAus(null, get().katalog) });
     },
     setKatalog: (k) => {
       const katalog = k ?? katalogAus(null);

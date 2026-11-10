@@ -38,6 +38,12 @@ const KATALOG = [
   { id: 'lageplan', titel: 'Lageplan', art: 'extern' as const, quelle: 'Planung', muster: '*Lageplan*', vorgewaehlt: true },
 ];
 
+/** Bauantrag: Muster, Bauantrag, Lageplan; Voranfrage: nur der Lageplan */
+const VORLAGEN = [
+  { id: 'baua', name: 'Bauantrag', art: 'BAUA', dokumente: ['muster', 'bauantrag', 'lageplan'] },
+  { id: 'bauva', name: 'Bauvoranfrage', art: 'BAUVA', dokumente: ['lageplan'] },
+];
+
 let ds: SpeicherDateisystem;
 let root: ReturnType<typeof createRoot> | null = null;
 
@@ -81,7 +87,7 @@ beforeEach(() => {
     stammdatenDialog: null,
     ordnerDialog: null,
   });
-  useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [], projektStatus: {} });
+  useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, vorlagen: VORLAGEN, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [], projektStatus: {} });
   useAufgeklappt.setState({ offen: [] });
 });
 afterEach(() => {
@@ -213,7 +219,7 @@ describe('Projektumfang und Vollständigkeit', () => {
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     await warte();
     // ohne Projektkarte (keine sj_prokarte.sdb) steht der Projektumfang direkt darunter
-    await klick(knopf(host, 'Aus dem Katalog festlegen'));
+    await klick(knopf(host, 'Projektumfang festlegen'));
     const datei = abschnitt() as { umfang: { id: string }[] };
     expect(datei.umfang.map((u: { id: string }) => u.id)).toEqual(['muster', 'bauantrag', 'lageplan']);
 
@@ -500,7 +506,7 @@ describe('Projektübersicht', () => {
     await klick(knopf(host, 'Wechseln'));
     await projektOeffnen(host, 'BS9');
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
-    await klick(knopf(host, 'Aus dem Katalog festlegen'));
+    await klick(knopf(host, 'Projektumfang festlegen'));
     await warte();
     expect(useAntrag.getState().projektStatus['C:/FORMA|BS9'].anzahl).toEqual({ unvollstaendig: 1, fehlt: 1, offen: 1 });
 
@@ -547,7 +553,7 @@ describe('Angaben zum Antrag in der Projektdatei (.oap)', () => {
     const host = await projektBS9();
     expect(knopf(host, 'Keine Projektdatei')).toBeDefined();
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
-    await klick(knopf(host, 'Aus dem Katalog festlegen'));
+    await klick(knopf(host, 'Projektumfang festlegen'));
     const sd = dialog('Projektdatei für BS9 anlegen')!;
     expect(sd).not.toBeNull();
     expect(ds.dateien.has(OAP)).toBe(false);
@@ -566,7 +572,7 @@ describe('Angaben zum Antrag in der Projektdatei (.oap)', () => {
     const host = await projektBS9();
     expect(knopf(host, 'Kein Projektordner')).toBeDefined();
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
-    await klick(knopf(host, 'Aus dem Katalog festlegen'));
+    await klick(knopf(host, 'Projektumfang festlegen'));
     const po = dialog('Projektordner für BS9')!;
     expect(po.querySelector<HTMLInputElement>('input[aria-label="Name des Projektordners"]')!.value).toBe('BS9 Musterstraße 9');
     await klick(knopf(po, 'Ordner anlegen'));
@@ -579,5 +585,77 @@ describe('Angaben zum Antrag in der Projektdatei (.oap)', () => {
     await warte();
     expect((abschnitt()!.umfang as unknown[]).length).toBe(3);
     expect(knopf(host, 'Kein Projektordner')).toBeUndefined();
+  });
+});
+
+describe('Antragsvorlagen und Reihenfolge', () => {
+  const ids = () => (abschnitt()!.umfang as { id: string }[]).map((u) => u.id);
+  const zeile = (host: HTMLElement, titel: string) => [...host.querySelectorAll<HTMLElement>('.pu-zeile')].find((z) => z.querySelector('strong')?.textContent === titel)!;
+  const taste = (el: HTMLElement, key: string) => act(() => void el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+
+  it('Projektumfang aus der Vorlage zur Antragsart, aus einer anderen Vorlage ergänzen, Reihenfolge ändern', async () => {
+    const host = await projektBS9();
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    // aktive Fassung „BAUA 2“ → Vorlage Bauantrag vorgeschlagen
+    const wahl = host.querySelector<HTMLSelectElement>('select[aria-label="Antragsvorlage"]')!;
+    expect(wahl.value).toBe('baua');
+    expect(wahl.selectedOptions[0].textContent).toBe('Bauantrag (BAUA) – 3 Dokumente');
+    // stattdessen die Voranfrage
+    act(() => {
+      wahl.value = 'bauva';
+      wahl.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await klick(knopf(host, 'Projektumfang festlegen'));
+    expect(ids()).toEqual(['lageplan']);
+
+    // fehlende Dokumente des Bauantrags ergänzen (in der Reihenfolge des Katalogs)
+    await klick(knopf(host, 'Dokument hinzufügen'));
+    await klick(menuePunkt('Aus Vorlage ergänzen'));
+    await klick(menuePunkt('Bauantrag (2 fehlen)'));
+    await warte();
+    expect(ids()).toEqual(['lageplan', 'muster', 'bauantrag']);
+
+    // Reihenfolge: per Kontextmenü und mit der Tastatur am Griff
+    await rechtsklick(zeile(host, 'Lageplan'));
+    expect(menuePunkt('Nach oben').disabled).toBe(true);
+    await klick(menuePunkt('Nach unten'));
+    await warte();
+    expect(ids()).toEqual(['muster', 'lageplan', 'bauantrag']);
+    taste(zeile(host, 'Bauantrag').querySelector<HTMLElement>('.sort-griff')!, 'ArrowUp');
+    await warte();
+    expect(ids()).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect([...host.querySelectorAll('.pu-zeile strong')].map((x) => x.textContent)).toEqual(['Musterformular', 'Bauantrag', 'Lageplan']);
+  });
+
+  it('Einstellungen: Vorlagen anlegen, Dokumente ankreuzen, Katalog und Vorlagen sortieren', async () => {
+    useFormulare.setState({ haupt: 'einstellungen', einstellungsBereich: 'antrag' });
+    const host = await render();
+    const katalogTitel = () => useAntrag.getState().katalog.map((k) => k.id);
+    // Spalten je Vorlage im Katalog
+    const kreuz = (dok: string, vorlage: string) => host.querySelector<HTMLInputElement>(`input[aria-label="${dok} in ${vorlage}"]`)!;
+    expect(kreuz('Lageplan', 'Bauvoranfrage').checked).toBe(true);
+    expect(kreuz('Bauantrag', 'Bauvoranfrage').checked).toBe(false);
+    act(() => kreuz('Bauantrag', 'Bauvoranfrage').click());
+    expect(useAntrag.getState().vorlagen.find((v) => v.id === 'bauva')!.dokumente).toEqual(['lageplan', 'bauantrag']);
+
+    // neue Vorlage mit Antragsart
+    await klick(knopf(host, 'Vorlage hinzufügen'));
+    const neu = useAntrag.getState().vorlagen[2];
+    expect(neu).toMatchObject({ name: 'Neue Vorlage', dokumente: [] });
+    const art = host.querySelector<HTMLSelectElement>('select[aria-label="Antragsart von Neue Vorlage"]')!;
+    act(() => {
+      art.value = 'DENK';
+      art.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(useAntrag.getState().vorlagen[2].art).toBe('DENK');
+    // gespeichert (und damit auch in der Einstellungsdatei)
+    expect(JSON.parse(localStorage.getItem('formulare:vorlagen')!)[2]).toMatchObject({ name: 'Neue Vorlage', art: 'DENK' });
+
+    // Katalog sortieren: Muster eine Zeile nach unten, Vorlage „Neue Vorlage“ nach oben
+    expect(katalogTitel()).toEqual(['muster', 'bauantrag', 'lageplan']);
+    taste(host.querySelector<HTMLElement>('button[aria-label="Musterformular verschieben"]')!, 'ArrowDown');
+    expect(katalogTitel()).toEqual(['bauantrag', 'muster', 'lageplan']);
+    taste(host.querySelector<HTMLElement>('button[aria-label="Vorlage Neue Vorlage verschieben"]')!, 'ArrowUp');
+    expect(useAntrag.getState().vorlagen.map((v) => v.name)).toEqual(['Bauantrag', 'Neue Vorlage', 'Bauvoranfrage']);
   });
 });

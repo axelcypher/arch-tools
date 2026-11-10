@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { UmfangEintrag } from './antrag';
-import { VORGABE_EXPORT, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt } from './antrag';
+import { VORGABE_EXPORT, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -109,5 +109,38 @@ describe('Antragsstatus für die Projektübersicht', () => {
       a: { anzahl: { aktuell: 2 }, fassung: 'BAUA', zeit: 1 },
     });
     expect(projektStatusLesen('kaputt')).toEqual({});
+  });
+});
+
+describe('Antragsvorlagen und Reihenfolge', () => {
+  it('verschieben: herausnehmen und an der neuen Stelle einsetzen', () => {
+    const l = ['a', 'b', 'c', 'd'];
+    expect(verschieben(l, 0, 2)).toEqual(['b', 'c', 'a', 'd']);
+    expect(verschieben(l, 3, 0)).toEqual(['d', 'a', 'b', 'c']);
+    expect(verschieben(l, 1, 1)).toBe(l);
+    expect(verschieben(l, 0, 9)).toEqual(['b', 'c', 'd', 'a']);
+  });
+
+  it('ohne gespeicherte Vorlagen: der Bauantrag übernimmt die bisher vorgewählten Dokumente', () => {
+    const katalog = VORGABE_KATALOG.map((k) => ({ ...k, vorgewaehlt: k.id === 'lageplan' || k.id === 'kosten' }));
+    const v = vorlagenAus(null, katalog);
+    expect(v.map((x) => [x.id, x.art])).toEqual([
+      ['baua', 'BAUA'],
+      ['bauva', 'BAUVA'],
+      ['denk', 'DENK'],
+    ]);
+    expect(v[0].dokumente).toEqual(['lageplan', 'kosten']);
+    expect(vorlagenAus([{ name: 'X', dokumente: ['a', 'a', 3] }, { titel: 'kaputt' }], katalog)).toEqual([{ id: 'v1', name: 'X', dokumente: ['a'] }]);
+  });
+
+  it('Projektumfang aus einer Vorlage in der Reihenfolge des Katalogs; Vorschlag nach Antragsart', () => {
+    const vorlagen = [
+      { id: 'a', name: 'Bauantrag', art: 'BAUA', dokumente: ['kosten', 'bauantrag'] },
+      { id: 'b', name: 'Voranfrage', art: 'BAUVA', dokumente: ['lageplan'] },
+    ];
+    expect(umfangAusKatalog(VORGABE_KATALOG, vorlagen[0]).map((u) => u.id)).toEqual(['bauantrag', 'kosten']);
+    expect(vorlageFuer(vorlagen, 'bauva')?.id).toBe('b');
+    expect(vorlageFuer(vorlagen, 'DENK')?.id).toBe('a');
+    expect(vorlageFuer([], 'BAUA')).toBeUndefined();
   });
 });

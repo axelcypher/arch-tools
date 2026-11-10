@@ -44,6 +44,7 @@ const PFADE = {
   kreuz: 'M5 5h14v14H5zM8 8l8 8M16 8l-8 8',
   stapel: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5',
   uebertragen: 'M7 4v14M3 14l4 4 4-4M17 20V6M13 10l4-4 4 4',
+  griff: 'M8 6h2M14 6h2M8 12h2M14 12h2M8 18h2M14 18h2',
   /** Verzweigung: nur erforderlich, wenn … */
   bedingung: 'M7 4v10M17 8v1a5 5 0 0 1-5 5H7M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
 } as const;
