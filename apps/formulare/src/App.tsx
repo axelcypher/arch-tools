@@ -15,6 +15,8 @@ import { DateiAnsicht } from './components/dokumente/DateiAnsicht';
 import { Symbol } from './components/Symbol';
 import { FelderAnsicht } from './components/FelderAnsicht';
 import { Gliederung } from './components/Gliederung';
+import { EinrichtenPanel } from './components/Einrichten';
+import { useEinrichten } from './einrichten';
 import { ProjektkarteAnsicht } from './components/ProjektkarteAnsicht';
 import { ProjektUebersicht } from './components/ProjektUebersicht';
 import { ProjektordnerDialog } from './components/ProjektordnerDialog';
@@ -72,6 +74,7 @@ export function App() {
   const zoom = useFormulare((s) => s.zoom);
   const verlaufOffen = useFormulare((s) => s.verlaufOffen);
   const gliederungOffen = useFormulare((s) => s.gliederungOffen);
+  const einrichten = useEinrichten((s) => s.aktiv);
   const karte = useFormulare((s) => s.karte);
   const datei = useFormulare((s) => s.datei);
   const meldung = useFormulare((s) => s.meldung);
@@ -92,6 +95,14 @@ export function App() {
   const hinzufuegen = useHinzufuegenDialog((s) => s.offen);
   // Export-Dialog gehört zum Projekt
   useEffect(() => useExportDialog.getState().schliessen(), [projekt]);
+  // Einrichten: auf dem Papier (dort lassen sich Felder anklicken); ein anderes Formular beginnt ohne Auswahl
+  useEffect(() => {
+    if (einrichten && ansicht !== 'seite') setAnsicht('seite');
+  }, [einrichten, ansicht, setAnsicht]);
+  useEffect(() => useEinrichten.getState().setAuswahl([]), [offen?.pfad, offen?.projekt]);
+  useEffect(() => {
+    if (!offen && einrichten) useEinrichten.getState().setAktiv(false);
+  }, [offen, einrichten]);
 
   useEffect(() => {
     document.title = `${geaendert ? '● ' : ''}${name} – Formulare`;
@@ -169,6 +180,14 @@ export function App() {
           <div className="tb-group">
             <button className={gliederungOffen ? 'active' : ''} title="Gliederung des Formulars ein- oder ausblenden" onClick={() => setGliederungOffen(!gliederungOffen)}>
               <Symbol name="liste" /> Gliederung
+            </button>
+            <button
+              className={einrichten ? 'active' : ''}
+              title="Formular einrichten: Titel, Füllstand, Gruppen und Bedingungen – Felder im Formular anklicken"
+              aria-pressed={einrichten}
+              onClick={() => useEinrichten.getState().setAktiv(!einrichten)}
+            >
+              <Symbol name="stift" /> Einrichten
             </button>
           </div>
         )}
@@ -324,7 +343,7 @@ export function App() {
       )}
       <main className="fo-main">
         {ds && projekt && haupt !== 'projekte' && <Seitenleiste onProjekte={() => useFormulare.getState().setHaupt('projekte')} onSperren={() => setDialog('sperren')} />}
-        {formularSichtbar && gliederungOffen && <Gliederung offen={offen} />}
+        {formularSichtbar && (gliederungOffen || einrichten) && <Gliederung offen={offen} />}
         <section className={`fo-inhalt${formularSichtbar && ansicht === 'seite' ? ' fo-inhalt-papier' : ''}`}>
           {haupt === 'einstellungen' ? (
             <EinstellungenAnsicht />
@@ -344,7 +363,7 @@ export function App() {
             <Leer desktop={!!ds} onEinstellungen={() => useFormulare.getState().einstellungenOeffnen('ordner')} />
           )}
         </section>
-        {formularSichtbar && verlaufOffen && <VerlaufLeiste offen={offen} />}
+        {formularSichtbar && einrichten ? <EinrichtenPanel offen={offen} /> : formularSichtbar && verlaufOffen && <VerlaufLeiste offen={offen} />}
       </main>
       {exportPfad && <ExportDialog formularPfad={exportPfad} onClose={() => useExportDialog.getState().schliessen()} />}
       {hinzufuegen && projekt && <FormularHinzufuegenDialog onClose={() => useHinzufuegenDialog.getState().setOffen(false)} />}

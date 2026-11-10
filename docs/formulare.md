@@ -50,25 +50,37 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Gezählt wird in Einheiten: jedes Textfeld für sich, Kästchen einer Zeile gemeinsam als eine Auswahl, eigene
   Gruppen als eine Angabe. Abschnitte, die nur aus einer Nummer bestehen („2.“), bekommen den Text daneben dazu
   („2. Bauvorlagen, wenn …“).
-- **Gliederung anpassen** (✎ im Kopf der Gliederung), je Formular und Stand – gilt in allen Projekten: Abschnitte
-  aus- und einblenden (Auge) und eigene Titel vergeben. Nach dem Aufklappen eines Abschnitts (Pfeil rechts):
-  - **Felder umbenennen** – der Name erscheint in den aufgeklappten Angaben und als Hinweis am Feld;
-  - **vom Füllstand ausnehmen** (✓ rechts, z. B. Felder, die die Behörde ausfüllt);
-  - **gruppieren:** Felder anhaken und „… als eine Angabe zählen“ – etwa eine Mehrfachauswahl über mehrere Zeilen,
-    die dann 1/1 statt 1/5 zählt. Eine Gruppe hat einen Namen und eine Regel: „eine genügt“ (ausgefüllt, sobald
-    eine Angabe gemacht ist), „alle nötig“ oder „zählt nicht“. ✕ nimmt ein Feld aus der Gruppe bzw. löst sie auf.
+- **Formular einrichten** („Einrichten“ in der Werkzeugleiste), je Formular und Stand – gilt in allen Projekten.
+  Das Formular wird zur Fläche zum Auswählen: **Feld anklicken** (mit <kbd>Strg</kbd>/<kbd>Umschalt</kbd> mehrere),
+  links zeigt die Gliederung den Aufbau als **Baum** (Abschnitte, Gruppen, Felder – mit Füllstand, Inhalt zum
+  Wiedererkennen und Zeichen für Bedingungen), rechts stehen **alle Einstellungen der Auswahl**:
+  - **Abschnitt:** Titel in der Gliederung, ein- oder ausblenden, Bedingung;
+  - **Feld:** Titel (erscheint in den aufgeklappten Angaben und als Hinweis am Feld), „Zählt für den Füllstand“
+    (z. B. Felder, die die Behörde ausfüllt), Bedingung – dazu wo es steht und wie es in FORMA heißt;
+  - **mehrere Felder/Gruppen:** „Gruppe bilden“ – sie zählen als eine Angabe (etwa eine Mehrfachauswahl über
+    mehrere Zeilen: 1/1 statt 1/5), zählen bzw. nicht zählen, gemeinsame Bedingung;
+  - **Gruppe:** Name, Regel („eine genügt“, „alle nötig“, „zählt nicht“), Felder und Untergruppen, Bedingung,
+    auflösen. **Gruppen lassen sich verschachteln:** Felder einer Gruppe bilden eine Untergruppe in ihr; im Baum
+    mit <kbd>Strg</kbd> gewählte Gruppen werden Untergruppen einer neuen; „Teil von“ hängt eine Gruppe in eine
+    andere ein oder nimmt sie heraus. Gezählt wird die oberste Gruppe als eine Angabe, ihre Untergruppen nach
+    ihrer eigenen Regel – etwa „Gebäudeart: eine genügt“ aus „Wohngebäude: alle nötig“ und weiteren Kästchen.
+    Beim Auflösen kommen Felder und Untergruppen eine Ebene höher.
 
-  - **Bedingungen** (Verzweigungs-Symbol an Abschnitt, Gruppe oder Feld): „nur erforderlich, wenn …“ – ein
-    **Projektmerkmal** hat einen der angekreuzten Werte (z. B. Gebäudeklasse 3, 4 oder 5) und/oder ein **anderes
-    Feld** des Formulars ist angekreuzt/ausgefüllt, leer oder hat einen bestimmten Wert. Mehrere Teile gelten
-    zusammen („und“). Trifft die Bedingung nicht zu, **entfällt** der Eintrag: Er zählt nicht, ist in der
-    Gliederung durchgestrichen bzw. „entfällt“, und seine Felder sind im Formular neutral statt blau hinterlegt.
-    Kreuzt man das auslösende Feld an, wird das abhängige Feld wieder erforderlich (blau). Fehlt im Projekt ein
-    Merkmal, von dem eine Bedingung abhängt, weist die Gliederung darauf hin („Festlegen …“).
-
-  Verweilt man drei Sekunden auf einem Eintrag (Abschnitt, Gruppe oder Feld), wird er im Formular umrandet und ins
-  Bild geholt. „Vorgabe wiederherstellen“ setzt zurück; eine Übersicht steht in den Einstellungen unter
+  Gewählte Felder, Gruppen und Abschnitte sind im Formular umrandet; Zeigen auf einen Eintrag im Baum hebt seine
+  Felder hervor. Im Einrichten-Modus wird nichts eingetippt. „Fertig“ beendet ihn; „Alles auf die Vorgabe
+  zurücksetzen“ (ohne Auswahl) setzt das Formular zurück; eine Übersicht steht in den Einstellungen unter
   „Formulare“.
+- **Bedingungen** („Erforderlich“ in den Einstellungen der Auswahl): „nur erforderlich, wenn …“. Eine Bedingung ist
+  eine Gruppe, deren Teile **alle** (und) oder **mindestens einer** (oder) zutreffen müssen; Teile sind Prüfungen
+  oder wieder Gruppen (bis vier Ebenen) – etwa „Gebäudeklasse 3–5 **und** (Sonderbau angekreuzt **oder** Verfahren
+  Baugenehmigungsverfahren)“. Prüfungen: ein **Projektmerkmal** ist bzw. ist nicht einer der angekreuzten Werte;
+  ein **anderes Feld** ist angekreuzt/ausgefüllt, leer, gleich oder ungleich einem Wert. Felder lassen sich in der
+  Liste oder mit „Feld im Formular wählen“ per Klick ins Formular wählen (<kbd>Esc</kbd> bricht ab). Darunter steht
+  die Bedingung in Worten und ob sie gerade zutrifft. Trifft sie nicht zu, **entfällt** der Eintrag: Er zählt nicht,
+  ist in der Gliederung durchgestrichen bzw. „entfällt“, seine Felder sind im Formular neutral statt blau
+  hinterlegt; in Gruppen zählen entfallene Teile nicht mit. Fehlt im Projekt ein Merkmal, von dem eine Bedingung
+  abhängt, weist die Gliederung darauf hin („Festlegen …“). Bedingungen aus früheren Versionen (eine Liste, alle
+  Teile müssen zutreffen) werden als Und-Gruppe übernommen.
 - **Tastatur:** <kbd>Tab</kbd> und <kbd>Enter</kbd> (in einzeiligen Feldern) gehen in Lesereihenfolge zum nächsten
   Feld – auf dem Papier von oben nach unten, nebeneinanderliegende Rahmen von links nach rechts.
 - **Speichern** (<kbd>Strg</kbd>+<kbd>S</kbd>) schreibt die geänderten Felder in die FORMA-Datei. Vorher wird sie
@@ -199,7 +211,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Projektumfang. Welche Merkmale es gibt
   und ihre Werte, steht in Einstellungen › Antrag & Export. Gespeichert in der Projektdatei unter `meta.merkmale` –
   sie gehören zum Projekt und stehen damit auch den anderen Apps zur Verfügung.
-- **Dokumente mit Bedingung:** im Projektumfang (Bearbeiten) und im Katalog („Nur wenn“) – etwa ein Nachweis nur
+- **Dokumente mit Bedingung:** im Projektumfang (Bearbeiten) und im Katalog („Nur wenn“; Projektmerkmale mit
+  und/oder wie oben) – etwa ein Nachweis nur
   bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“: kein Farbpunkt, kein grauer
   „Anlegen“-Eintrag, es zählt nicht mit.
 - **Status** – immer gegen die aktive Fassung:
@@ -249,8 +262,11 @@ beschrieben.
   Angaben ab, vorbelegt aus der Projektkarte, und legt sie an. Er erscheint, sobald die App die Datei braucht (beim
   Speichern der Projektkarte, beim Festlegen von Projektumfang, Antragsfassung oder Projektmerkmalen); im Projektkopf
   steht bis dahin „Keine Projektdatei – Stammdaten erfassen …“. Der Ort kommt aus den gemeinsamen Einstellungen
-  (`oapPfad`, Platzhalter `{nummer}` bzw. `{Kürzel}`, `{kurzname}`, `{jahr}`) und gilt für alle Apps; eine bisher
-  eigene Einstellung dieser App wird beim ersten Start dorthin übernommen.
+  (`oapPfad`) und gilt für alle Apps; eine bisher eigene Einstellung dieser App wird beim ersten Start dorthin
+  übernommen. Platzhalter (Groß-/Kleinschreibung egal): `{Kürzel}` (auch `{nummer}`), `{Kurzname}`, `{Vorhaben}`,
+  `{Datum}` (Tag des Anlegens als JJMMTT) und `{Jahr}` – etwa `Organisation/{Kürzel} {Datum} {Vorhaben}.oap` →
+  `Organisation/BS9 261110 Neubau EFH.oap`; leere Angaben fallen weg. Die Einstellungen (Projektdatei) fügen
+  Platzhalter per Knopf ein, zeigen ein Beispiel und warnen vor unbekannten Platzhaltern (sie blieben so im Namen).
 - **Fehlt der Projektordner:** „Kein Projektordner – zuordnen …“ im Projektkopf (und automatisch, wenn er gebraucht
   wird): einen vorhandenen Ordner wählen oder im Stammordner einen neuen anlegen (Vorschlag „Kürzel Titel“), danach
   folgt bei Bedarf der Stammdaten-Dialog. Die Zuordnung gilt für alle im Büro (gemeinsamer Konfigurationsordner,

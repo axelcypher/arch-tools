@@ -638,7 +638,7 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
       {oap === 'fehlt' && (
         <p className="pk-text">
           Im Projektordner gibt es noch keine Projektdatei. Der Stammdaten-Dialog legt sie an – vorbelegt mit den Angaben der Projektkarte, unter{' '}
-          <code>{projektdateiPfad(vorlage, { nummer: projekt.ordner, kurzname: projekt.titel })}</code>.{' '}
+          <code>{projektdateiPfad(vorlage, { nummer: projekt.ordner, kurzname: projekt.titel, vorhaben: karteText(karte, IN_PROJEKTKARTE.vorhaben!.gruppe, IN_PROJEKTKARTE.vorhaben!.id).trim() })}</code>.{' '}
           <button className="small primary" onClick={() => void stammdatenErfassen('Für dieses Projekt gibt es im Projektordner noch keine Projektdatei (.oap). Mit diesen Angaben wird sie angelegt.')}>
             Stammdaten erfassen …
           </button>

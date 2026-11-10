@@ -9,7 +9,7 @@
  */
 
 import type { Bedingung } from './bedingung';
-import { bedingungAus, erfuellt } from './bedingung';
+import { bedingungAus, erfuellt, hatBedingung, nurMerkmale } from './bedingung';
 import type { Eintrag } from './dateisystem';
 import type { Feld } from './forma/felder';
 import { abschnitte } from './forma/felder';
@@ -285,7 +285,7 @@ export function katalogAus(roh: unknown): KatalogEintrag[] {
       quelle: typeof e.quelle === 'string' ? e.quelle : undefined,
       muster: typeof e.muster === 'string' ? e.muster : undefined,
       vorgewaehlt: e.vorgewaehlt === true,
-      bedingung: bedingungAus(e.bedingung)?.filter((t) => t.art === 'merkmal'),
+      bedingung: nurMerkmale(bedingungAus(e.bedingung)),
     }));
 }
 
@@ -329,8 +329,8 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
         for (const k of ['formular', 'quelle', 'muster', 'nr', 'formularDatei'] as const) if (typeof e[k] === 'string' && e[k]) u[k] = e[k] as string;
         if (e.dateien && typeof e.dateien === 'object')
           u.dateien = Object.fromEntries(Object.entries(e.dateien as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string'));
-        const b = bedingungAus(e.bedingung)?.filter((t) => t.art === 'merkmal');
-        if (b?.length) u.bedingung = b;
+        const b = nurMerkmale(bedingungAus(e.bedingung));
+        if (b) u.bedingung = b;
         return u;
       });
   if (o.merkmale && typeof o.merkmale === 'object') {
@@ -346,7 +346,7 @@ export const umfangAusKatalog = (katalog: KatalogEintrag[], vorlage?: AntragsVor
   (vorlage ? dokumenteDerVorlage(katalog, vorlage) : katalog.filter((k) => k.vorgewaehlt)).map(alsUmfang);
 
 /** Katalogeintrag als Dokument des Projektumfangs */
-export const alsUmfang = ({ id, titel, art, formular, quelle, muster, bedingung }: KatalogEintrag): UmfangEintrag => ({ id, titel, art, formular, quelle, muster, ...(bedingung?.length ? { bedingung } : {}) });
+export const alsUmfang = ({ id, titel, art, formular, quelle, muster, bedingung }: KatalogEintrag): UmfangEintrag => ({ id, titel, art, formular, quelle, muster, ...(hatBedingung(bedingung) ? { bedingung } : {}) });
 
 /* ---------- Zuordnung von Dateien ---------- */
 

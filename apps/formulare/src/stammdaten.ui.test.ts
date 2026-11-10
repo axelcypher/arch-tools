@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { SpeicherDateisystem } from './dateisystem';
 import { readProjectFile, writeArchive } from '@core/archive';
@@ -139,35 +139,53 @@ async function projektOeffnen(host: HTMLElement, kuerzel: string) {
   await klick(karte()!);
 }
 
-describe('Gliederung je Formular', () => {
-  it('Abschnitte ausblenden und umbenennen, Felder vom Füllstand ausnehmen – gilt für das Formular in allen Projekten', async () => {
+describe('Formular einrichten', () => {
+  const gl = (host: Element) => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
+  const panel = (host: Element) => host.querySelector<HTMLElement>('aside[aria-label="Einstellungen der Auswahl"]')!;
+  const einrichten = (host: Element) => [...host.querySelectorAll<HTMLButtonElement>('.toolbar button')].find((b) => b.textContent?.includes('Einrichten'))!;
+  const imFormular = (host: Element, s: string) => host.querySelector<HTMLButtonElement>(`.fo-ein-feld[data-ein="${s}"]`)!;
+  const imBaum = (host: Element, id: string) => host.querySelector<HTMLButtonElement>(`.fo-ein-baum [data-auswahl="${id}"]`)!;
+  const strgKlick = async (el: Element) => {
+    act(() => void el.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
+    await warte();
+  };
+  const oeffnen = async () => {
     const host = await render();
     await projektOeffnen(host, 'BS9');
     await klick(knopf(host, '001-Muster'));
-    const gl = () => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
-    const abschnitte = () => [...gl().querySelectorAll('.fo-gl-abschnitt')].map((b) => b.querySelector('.fo-gl-titel')!.textContent);
+    return host;
+  };
+
+  it('Abschnitt umbenennen und ausblenden, ein Feld im Formular anklicken und vom Füllstand ausnehmen – gilt in allen Projekten', async () => {
+    const host = await oeffnen();
+    const abschnitte = () => [...gl(host).querySelectorAll('.fo-gl-abschnitt')].map((b) => b.querySelector('.fo-gl-titel')!.textContent);
     const vorher = abschnitte();
     expect(vorher[0]).toBe('Bauherrschaft');
 
-    await klick(knopfMit(host, 'Gliederung anpassen'));
-    const zeile = gl().querySelector('.fo-gl-anpassen')!;
-    const titel = zeile.querySelector('input')!;
+    await klick(einrichten(host));
+    // links der Baum, rechts die Einstellungen, im Formular Flächen zum Anklicken
+    expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
+    expect(panel(host).textContent).toContain('Feld im Formular anklicken');
+    await klick(imBaum(host, 'a:0:Panel1'));
+    const titel = panel(host).querySelector<HTMLInputElement>('input[aria-label="Titel für Abschnitt Bauherrschaft"]')!;
     eingabe(titel, 'Bauherr und Grundstück');
     verlassen(titel);
     await warte();
-    // Felder aufklappen und das erste vom Füllstand ausnehmen
-    await klick(zeile.querySelector<HTMLButtonElement>('button[aria-label="Felder"]')!);
-    await klick(gl().querySelector<HTMLButtonElement>('.fo-gl-feld button[aria-label="Zählt für den Füllstand"]')!);
-    // zweiten Abschnitt ausblenden
-    const zweite = gl().querySelectorAll('.fo-gl-anpassen')[1];
-    if (zweite) await klick(zweite.querySelector<HTMLButtonElement>('button[aria-label="In der Gliederung ausblenden"]')!);
-    await klick(knopfMit(host, 'Gliederung anpassen'));
+    await klick(imFormular(host, '0:Memo1'));
+    expect(panel(host).textContent).toContain('in FORMA „Memo1“');
+    await klick(panel(host).querySelector<HTMLInputElement>('input[aria-label="Zählt für den Füllstand"]')!);
+    const zweite = host.querySelectorAll<HTMLButtonElement>('.fo-ein-baum .fo-ein-titel')[1];
+    if (zweite) {
+      await klick(zweite);
+      await klick(panel(host).querySelector<HTMLInputElement>('input[role="switch"]')!);
+    }
+    await klick(knopf(panel(host), 'Fertig'));
+    expect(host.querySelector('.fo-ein-feld')).toBeNull();
 
     expect(abschnitte()[0]).toBe('Bauherr und Grundstück');
     if (zweite) expect(abschnitte()).toHaveLength(vorher.length - 1);
-    const profil = Object.values(useFormulare.getState().profile)[0];
     expect(Object.keys(useFormulare.getState().profile)).toEqual(['nw019999|2026A']);
-    expect(Object.values(profil.zaehlt)).toEqual([false]);
+    expect(Object.values(useFormulare.getState().profile['nw019999|2026A'].zaehlt)).toEqual([false]);
 
     // im anderen Projekt gilt dasselbe Profil
     await klick(knopfMit(host, 'Projekt schließen'));
@@ -176,103 +194,138 @@ describe('Gliederung je Formular', () => {
     expect(abschnitte()[0]).toBe('Bauherr und Grundstück');
   });
 
-  it('Felder gruppieren und umbenennen: eine Auswahl über zwei Zeilen zählt als eine Angabe, die Untereinträge zeigen die Namen', async () => {
-    const host = await render();
-    await projektOeffnen(host, 'BS9');
-    await klick(knopf(host, '001-Muster'));
-    const gl = () => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
-    const zahl = () => gl().querySelector('.fo-gl-zahl')!.textContent;
+  it('mehrere Felder im Formular wählen (Strg) und als eine Angabe zählen, umbenennen, Regel ändern, auflösen', async () => {
+    const host = await oeffnen();
+    const zahl = () => gl(host).querySelector('.fo-gl-zahl')!.textContent;
+    const zahlImBaum = () => gl(host).querySelector('.fo-ein-zahl')!.textContent;
     // Muster: drei Textfelder (zwei gefüllt), zwei Zeilen mit Kästchen (eine angekreuzt)
     expect(zahl()).toBe('3/5');
 
-    await klick(knopfMit(host, 'Gliederung anpassen'));
-    await klick(gl().querySelector<HTMLButtonElement>('button[aria-label="Felder"]')!);
-    for (const name of ['Wohngebäude', 'CheckBox3', 'Sonderbau', 'CheckBox4']) {
-      act(() => gl().querySelector<HTMLInputElement>(`input[aria-label="${name} auswählen"]`)!.click());
-    }
-    await warte();
-    await klick(knopf(gl() as HTMLElement, 'als eine Angabe zählen'));
-    // die Zahl am Abschnitt ändert sich sofort mit
-    expect(zahl()).toBe('3/4');
-    const gruppenName = gl().querySelector<HTMLInputElement>('input[aria-label="Name der Gruppe"]')!;
+    await klick(einrichten(host));
+    await klick(imFormular(host, '0:CheckBox1'));
+    for (const s of ['0:CheckBox3', '0:CheckBox2', '0:CheckBox4']) await strgKlick(imFormular(host, s));
+    expect(panel(host).textContent).toContain('4 Felder');
+    expect(['0:CheckBox1', '0:CheckBox3', '0:CheckBox2', '0:CheckBox4'].every((s) => imFormular(host, s).classList.contains('gewaehlt'))).toBe(true);
+    await klick(knopf(panel(host), 'Gruppe bilden'));
+    // der Füllstand im Baum ändert sich sofort mit; die neue Gruppe ist gewählt
+    expect(zahlImBaum()).toBe('3/4');
+    const gruppenName = panel(host).querySelector<HTMLInputElement>('input[aria-label="Name der Gruppe"]')!;
     eingabe(gruppenName, 'Gebäudeart');
     verlassen(gruppenName);
     await warte();
-    const feldName = gl().querySelector<HTMLInputElement>('input[aria-label="Feldtitel für Bauherrschaft"]')!;
+    await klick(imFormular(host, '0:Memo1'));
+    const feldName = panel(host).querySelector<HTMLInputElement>('input[aria-label="Feldtitel für Bauherrschaft"]')!;
     eingabe(feldName, 'Name');
     verlassen(feldName);
     await warte();
-    await klick(knopfMit(host, 'Gliederung anpassen'));
+    await klick(knopf(panel(host), 'Fertig'));
 
     expect(zahl()).toBe('3/4');
     await klick(knopfMit(host, 'Angaben in Bauherrschaft'));
-    const unter = [...gl().querySelectorAll('.fo-gl-einheit')];
+    const unter = [...gl(host).querySelectorAll('.fo-gl-einheit')];
     expect(unter.map((u) => u.querySelector('.fo-gl-titel')!.textContent)).toEqual(['Name', 'Bauherrschaft', 'Bauherrschaft', 'Gebäudeart']);
     expect(unter.map((u) => u.querySelector('.fo-gl-status')!.classList.contains('voll'))).toEqual([true, false, true, true]);
     // eigener Name auch als Hinweis am Feld im Formular
     expect(host.querySelector<HTMLElement>('.fo-papier [data-feld="0:Memo1"]')!.title).toBe('Name');
-
     const profil = useFormulare.getState().profile['nw019999|2026A'];
     expect(profil.feldTitel).toEqual({ '0:Memo1': 'Name' });
     expect(profil.gruppen).toEqual([{ id: 'g1', titel: 'Gebäudeart', regel: 'eins', felder: ['0:CheckBox1', '0:CheckBox3', '0:CheckBox2', '0:CheckBox4'] }]);
 
-    // Regel „alle nötig“: zwei der vier Kästchen sind nicht angekreuzt
-    // im Anpassen-Modus bleibt der zuletzt aufgeklappte Abschnitt offen
-    await klick(knopfMit(host, 'Gliederung anpassen'));
-    waehle(gl().querySelector<HTMLSelectElement>('select[aria-label="Wann die Gruppe ausgefüllt ist"]')!, 'alle');
-    await warte();
-    expect(zahl()).toBe('2/4');
+    // über ein Feld der Gruppe zur Gruppe; Regel „alle nötig“: zwei der vier Kästchen sind nicht angekreuzt
+    await klick(einrichten(host));
+    await klick(imFormular(host, '0:CheckBox3'));
+    expect(panel(host).textContent).toContain('Zählt über die Gruppe');
+    await klick(knopf(panel(host), '„Gebäudeart“'));
+    const alle = [...panel(host).querySelectorAll<HTMLLabelElement>('.fo-ein-regel')].find((l) => l.textContent?.includes('alle nötig'))!;
+    await klick(alle.querySelector('input')!);
+    expect(zahlImBaum()).toBe('2/4');
     // auflösen: wieder einzeln gezählt
-    await klick(knopfMit(host, 'Gruppe auflösen'));
-    expect(zahl()).toBe('3/5');
+    await klick(knopf(panel(host), 'Gruppe auflösen'));
+    expect(zahlImBaum()).toBe('3/5');
     expect(useFormulare.getState().profile['nw019999|2026A'].gruppen).toBeUndefined();
   });
 
-  it('Zeigen auf einen Eintrag hebt seine Felder im Formular hervor; im Anpassen-Modus nach drei Sekunden umrandet', async () => {
-    const host = await render();
-    await projektOeffnen(host, 'BS9');
-    await klick(knopf(host, '001-Muster'));
-    const gl = () => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
+  it('Gruppen verschachteln: Untergruppe aus Feldern einer Gruppe, „Teil von“, zwei Gruppen im Baum gruppieren und wieder auflösen', async () => {
+    const host = await oeffnen();
+    const gruppen = () => useFormulare.getState().profile['nw019999|2026A']?.gruppen;
+    await klick(einrichten(host));
+    // eine Gruppe aus den vier Kästchen
+    await klick(imFormular(host, '0:CheckBox1'));
+    for (const s of ['0:CheckBox3', '0:CheckBox2', '0:CheckBox4']) await strgKlick(imFormular(host, s));
+    await klick(knopf(panel(host), 'Gruppe bilden'));
+    // zwei davon als Untergruppe „alle nötig“ – sie hängt in der ersten
+    await klick(imFormular(host, '0:CheckBox1'));
+    await strgKlick(imFormular(host, '0:CheckBox3'));
+    waehle(panel(host).querySelector<HTMLSelectElement>('select[aria-label="Wann die neue Gruppe ausgefüllt ist"]')!, 'alle');
+    await klick(knopf(panel(host), 'Gruppe bilden'));
+    expect(gruppen()).toEqual([
+      { id: 'g1', regel: 'eins', felder: ['0:CheckBox2', '0:CheckBox4'] },
+      { id: 'g2', regel: 'alle', felder: ['0:CheckBox1', '0:CheckBox3'], in: 'g1' },
+    ]);
+    expect(panel(host).querySelector<HTMLSelectElement>('select[aria-label="Übergeordnete Gruppe"]')!.value).toBe('g1');
+    // im Baum: die Untergruppe eingerückt unter der oberen; im Formular sind beim Wählen der oberen alle vier umrandet
+    expect([...host.querySelectorAll('.fo-ein-baum .fo-ein-zeile.gruppe')].map((z) => z.getAttribute('data-auswahl'))).toEqual(['g:g1', 'g:g2']);
+    expect(imBaum(host, 'g:g2').style.paddingLeft).toBe('38px');
+    await klick(imBaum(host, 'g:g1'));
+    expect(['0:CheckBox1', '0:CheckBox2', '0:CheckBox3', '0:CheckBox4'].every((s) => imFormular(host, s).classList.contains('gewaehlt'))).toBe(true);
+    expect(panel(host).textContent).toContain('Untergruppen');
+    // Füllstand: die Untergruppe (beide angekreuzt) genügt der oberen („eine genügt“)
+    expect(gl(host).querySelector('.fo-ein-zahl')!.textContent).toBe('3/4');
+
+    // „Teil von“: die Untergruppe wird eigenständig
+    await klick(imBaum(host, 'g:g2'));
+    waehle(panel(host).querySelector<HTMLSelectElement>('select[aria-label="Übergeordnete Gruppe"]')!, '');
+    expect(gruppen()!.find((g) => g.id === 'g2')!.in).toBeUndefined();
+    // beide Gruppen im Baum (Strg) zu einer neuen übergeordneten zusammenfassen
+    await klick(imBaum(host, 'g:g1'));
+    await strgKlick(imBaum(host, 'g:g2'));
+    expect(panel(host).textContent).toContain('2 Gruppen');
+    await klick(knopf(panel(host), 'Gruppe bilden'));
+    expect(gruppen()!.map((g) => [g.id, g.in ?? null, g.felder.length])).toEqual([
+      ['g1', 'g3', 2],
+      ['g2', 'g3', 2],
+      ['g3', null, 0],
+    ]);
+    // auflösen: die beiden kommen wieder nach oben
+    await klick(knopf(panel(host), 'Gruppe auflösen'));
+    expect(gruppen()!.map((g) => [g.id, g.in ?? null])).toEqual([
+      ['g1', null],
+      ['g2', null],
+    ]);
+  });
+
+  it('Zeigen hebt Felder hervor; im Einrichten-Modus sind gewählte Felder und Abschnitte im Formular umrandet und im Baum markiert', async () => {
+    const host = await oeffnen();
     const markiert = () => host.querySelectorAll('.fo-papier .markiert').length;
     const zeigen = (el: Element) => act(() => void el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
     const weg = (el: Element) => act(() => void el.dispatchEvent(new MouseEvent('mouseout', { bubbles: true })));
 
-    const abschnitt = gl().querySelector('.fo-gl-abschnitt')!;
+    const abschnitt = gl(host).querySelector('.fo-gl-abschnitt')!;
     zeigen(abschnitt);
     expect(markiert()).toBe(7);
-    expect(host.querySelector('.fo-umrandung')).toBeNull();
     weg(abschnitt);
     expect(markiert()).toBe(0);
-
     // Untereintrag: nur seine Felder
     await klick(knopfMit(host, 'Angaben in Bauherrschaft'));
-    const auswahl = [...gl().querySelectorAll('.fo-gl-einheit')].at(-1)!;
+    const auswahl = [...gl(host).querySelectorAll('.fo-gl-einheit')].at(-1)!;
     zeigen(auswahl);
     expect([...host.querySelectorAll('.fo-papier .markiert input')].map((i) => i.getAttribute('data-feld'))).toEqual(['0:CheckBox2', '0:CheckBox4']);
     weg(auswahl);
 
-    await klick(knopfMit(host, 'Gliederung anpassen'));
-    vi.useFakeTimers();
-    try {
-      const zeile = gl().querySelector('.fo-gl-anpassen-zeile')!;
-      zeigen(zeile);
-      expect(markiert()).toBe(7);
-      act(() => void vi.advanceTimersByTime(2900));
-      expect(host.querySelector('.fo-umrandung')).toBeNull();
-      act(() => void vi.advanceTimersByTime(200));
-      expect(host.querySelector('.fo-umrandung')).not.toBeNull();
-      weg(zeile);
-      expect(host.querySelector('.fo-umrandung')).toBeNull();
-      expect(markiert()).toBe(0);
-      // wer vorher weggeht, sieht keine Umrandung
-      zeigen(zeile);
-      act(() => void vi.advanceTimersByTime(1500));
-      weg(zeile);
-      act(() => void vi.advanceTimersByTime(3000));
-      expect(host.querySelector('.fo-umrandung')).toBeNull();
-    } finally {
-      vi.useRealTimers();
-    }
+    await klick(einrichten(host));
+    const ab = imBaum(host, 'a:0:Panel1');
+    zeigen(ab);
+    expect(markiert()).toBe(7);
+    weg(ab);
+    await klick(ab);
+    expect(host.querySelector('.fo-ein-rahmen')).not.toBeNull();
+    // ein Feld im Formular: gewählt, im Baum markiert (sein Abschnitt klappt auf), der Abschnittsrahmen ist weg
+    await klick(imFormular(host, '0:CheckBox2'));
+    expect(imFormular(host, '0:CheckBox2').classList.contains('gewaehlt')).toBe(true);
+    expect(imBaum(host, 'f:0:CheckBox2').getAttribute('aria-selected')).toBe('true');
+    expect(host.querySelector('.fo-ein-rahmen')).toBeNull();
+    // im Einrichten-Modus wird nichts eingetippt: die Fläche liegt über dem Feld
+    expect(useFormulare.getState().offen!.aenderungen).toEqual({});
   });
 });
 
@@ -390,6 +443,34 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(knopf(host, 'Projektdatei (.oap)').textContent).toContain('BS9.oap');
     // der Ort neuer Projektdateien gilt für alle Apps
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!)).toMatchObject({ projekte: ['Z:/Projekte'], oapPfad: 'Planung/Berechnungen/{Kürzel}.oap' });
+  });
+
+  it('Ort neuer Projektdateien mit {Datum} und {Vorhaben} – Einstellungen zeigen Beispiel und unbekannte Platzhalter', async () => {
+    const d = new Date();
+    const heute = [d.getFullYear() % 100, d.getMonth() + 1, d.getDate()].map((n) => String(n).padStart(2, '0')).join('');
+    useFormulare.setState({ oapVorlage: 'Organisation/{Kürzel} {Datum} {Vorhaben}.oap' });
+    const host = await oeffnen();
+    act(() => useFormulare.getState().karteSetzen(101, 30, 'Neubau EFH'));
+    await warte();
+    await klick(knopf(host, 'Projektkarte speichern'));
+    await warte();
+    const dialog = document.querySelector('[role="dialog"][aria-label="Projektdatei für BS9 anlegen"]') as HTMLElement;
+    expect(useFormulare.getState().stammdatenDialog?.meta.vorhaben).toBe('Neubau EFH');
+    await klick(knopf(dialog, 'Projektdatei anlegen'));
+    await warte();
+    expect(ds.schreibvorgaenge).toContain(`neu Organisation/BS9 ${heute} Neubau EFH.oap`);
+
+    // Einstellungen › Projektdatei: Platzhalter einfügen, Beispiel, Warnung
+    act(() => useFormulare.getState().einstellungenOeffnen('projektdaten'));
+    await warte();
+    const beispiel = () => document.querySelector('[aria-label="Beispiel für den Pfad"]')!.textContent;
+    expect(beispiel()).toBe(`Beispiel: Organisation/BS9 ${heute} Neubau Einfamilienhaus.oap`);
+    act(() => useFormulare.getState().setOapVorlage('Organisation/{Kürzel} {Bauherr}.oap'));
+    await warte();
+    expect(document.querySelector('.warning')!.textContent).toContain('{Bauherr}');
+    await klick(knopf(document.body, '{Kurzname}'));
+    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{Kürzel} {Bauherr} {Kurzname}.oap');
+    expect(beispiel()).toBe('Beispiel: Organisation/BS9 {Bauherr} EFH Musterweg.oap');
   });
 
   it('eine alte Projektdaten.xlsx wird nur gelesen – ihre Angaben lassen sich in die Projektkarte übernehmen', async () => {

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Fragment, useState } from 'react';
 import type { AntragsVorlage, KatalogEintrag } from '../antrag';
-import { VORGABE_MERKMALE, bedingungText } from '../bedingung';
+import { VORGABE_MERKMALE, bedingungText, hatBedingung } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import { PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus } from '../antrag';
 import { Griff, useSortieren } from './Sortieren';
@@ -297,12 +297,12 @@ export function AntragEinstellungen() {
                   ))}
                   <td>
                     <button
-                      className={`small es-bedingung${k.bedingung?.length ? ' gesetzt' : ''}`}
+                      className={`small es-bedingung${hatBedingung(k.bedingung) ? ' gesetzt' : ''}`}
                       aria-label={`Bedingung für ${k.titel}`}
-                      title={k.bedingung?.length ? `Nur erforderlich, wenn ${bedingungText(k.bedingung)}` : 'Immer erforderlich – klicken für eine Bedingung'}
+                      title={hatBedingung(k.bedingung) ? `Nur erforderlich, wenn ${bedingungText(k.bedingung)}` : 'Immer erforderlich – klicken für eine Bedingung'}
                       onClick={() => setBedingungOffen(bedingungOffen === k.id ? null : k.id)}
                     >
-                      {k.bedingung?.length ? bedingungText(k.bedingung) : 'immer'}
+                      {hatBedingung(k.bedingung) ? bedingungText(k.bedingung) : 'immer'}
                     </button>
                   </td>
                   <td>

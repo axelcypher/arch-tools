@@ -380,7 +380,7 @@ describe('PDF: Text und Kreuze', { timeout: 30_000 }, () => {
 });
 
 describe('Bedingungen: Projektmerkmale und Felder', () => {
-  const GK345 = [{ art: 'merkmal' as const, merkmal: 'Gebäudeklasse', werte: ['3', '4', '5'] }];
+  const GK345 = { art: 'gruppe' as const, op: 'und' as const, teile: [{ art: 'merkmal' as const, merkmal: 'Gebäudeklasse', werte: ['3', '4', '5'] }] };
   const gl = (host: Element) => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
 
   it('ein Abschnitt nur bei Gebäudeklasse 3–5: entfällt, bis das Projekt GK 3 ist – das Merkmal gilt für alle Formulare', async () => {
@@ -410,18 +410,75 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
     expect(gl(host).querySelector('.fo-gl-merkmal')).toBeNull();
   });
 
-  it('Bedingung in der Gliederung bearbeiten: Projektmerkmal wählen und Wert ankreuzen', async () => {
+  it('Bedingung zusammenstellen: Projektmerkmal UND (Feld per Klick im Formular ODER anderes Merkmal) – in Worten und mit Zustand', async () => {
     const host = await projektBS9();
     await klick(knopf(host, '001-Muster'));
-    await klick(host.querySelector<HTMLButtonElement>('button[aria-label="Gliederung anpassen"]')!);
-    await klick(host.querySelector<HTMLButtonElement>('button[aria-label="Bedingung für Abschnitt Bauherrschaft"]')!);
-    await klick(knopf(gl(host) as HTMLElement, 'Projektmerkmal'));
-    await klick(gl(host).querySelector<HTMLInputElement>('input[aria-label="Gebäudeklasse 4"]')!);
-    expect(useFormulare.getState().profile['nw019999|2026A'].abschnitte['0:Panel1'].bedingung).toEqual([{ art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['4'] }]);
+    const einrichten = [...host.querySelectorAll<HTMLButtonElement>('.toolbar button')].find((b) => b.textContent?.includes('Einrichten'))!;
+    await klick(einrichten);
+    const panel = () => host.querySelector<HTMLElement>('aside[aria-label="Einstellungen der Auswahl"]')!;
+    const bedingung = () => useFormulare.getState().profile['nw019999|2026A']?.abschnitte['0:Panel1']?.bedingung;
+    // Abschnitt im Baum wählen; „immer erforderlich“ → nur bei Gebäudeklasse 4 oder 5
+    await klick(host.querySelector<HTMLButtonElement>('.fo-ein-baum [data-auswahl="a:0:Panel1"]')!);
+    expect(panel().textContent).toContain('Immer erforderlich');
+    await klick(knopf(panel(), 'Nur bei Projektmerkmal'));
+    await klick(panel().querySelector<HTMLInputElement>('input[aria-label="Gebäudeklasse 4"]')!);
+    await klick(panel().querySelector<HTMLInputElement>('input[aria-label="Gebäudeklasse 5"]')!);
+    expect(bedingung()).toEqual({ art: 'gruppe', op: 'und', teile: [{ art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['4', '5'] }] });
+
+    // Oder-Gruppe: ein Feld eines anderen Abschnitts per Klick ins Formular – hier gibt es nur einen, also das
+    // Kästchen der zweiten Seite, falls vorhanden, sonst ein Merkmal
+    await klick(knopf(panel(), 'Oder-Gruppe'));
+    const gruppe = panel().querySelector<HTMLElement>('.bd-gruppe.tiefe-1')!;
+    await klick(knopf(gruppe, 'Bedingung'));
+    const wofuer = gruppe.querySelector<HTMLSelectElement>('select[aria-label="Wovon es abhängt"]')!;
+    act(() => {
+      wofuer.value = 'm:Sonderbau';
+      wofuer.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await klick(gruppe.querySelector<HTMLInputElement>('input[aria-label="Sonderbau ja"]')!);
+    await klick(knopf(gruppe, 'Bedingung'));
+    const zweite = [...gruppe.querySelectorAll<HTMLSelectElement>('select[aria-label="Wovon es abhängt"]')][1];
+    act(() => {
+      zweite.value = 'm:Verfahren';
+      zweite.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await klick(gruppe.querySelector<HTMLInputElement>('input[aria-label="Verfahren Baugenehmigungsverfahren"]')!);
+    expect(bedingung()).toEqual({
+      art: 'gruppe',
+      op: 'und',
+      teile: [
+        { art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['4', '5'] },
+        {
+          art: 'gruppe',
+          op: 'oder',
+          teile: [
+            { art: 'merkmal', merkmal: 'Sonderbau', werte: ['ja'] },
+            { art: 'merkmal', merkmal: 'Verfahren', werte: ['Baugenehmigungsverfahren'] },
+          ],
+        },
+      ],
+    });
+    expect(panel().querySelector('.bd-satz')!.textContent).toBe('Erforderlich, wenn Gebäudeklasse 4 oder 5 und (Sonderbau ja oder Verfahren Baugenehmigungsverfahren)');
+    expect(panel().querySelector('.bd-jetzt')!.textContent).toBe('trifft gerade nicht zu');
+
+    // ein Feld durch Klick ins Formular wählen: Bedingung für das Feld Memo2 – „wenn Sonderbau (Kästchen) angekreuzt“
+    await klick(host.querySelector<HTMLButtonElement>('.fo-ein-feld[data-ein="0:Memo2"]')!);
+    await klick(knopf(panel(), 'Feld im Formular wählen'));
+    expect(panel().textContent).toContain('Im Formular auf das Feld klicken');
+    const ziel = host.querySelector<HTMLButtonElement>('.fo-ein-feld[data-ein="0:CheckBox2"]')!;
+    expect(ziel.getAttribute('aria-label')).toMatch(/wählen$/);
+    await klick(ziel);
+    expect(useFormulare.getState().profile['nw019999|2026A'].bedingungen?.['0:Memo2']).toEqual({ art: 'gruppe', op: 'und', teile: [{ art: 'feld', feld: '0:CheckBox2', pruefung: 'ausgefuellt' }] });
+    // die Auswahl blieb beim Feld, im Formular trägt es jetzt das Bedingungszeichen
+    expect(host.querySelector('.fo-ein-feld[data-ein="0:Memo2"]')!.classList.contains('bedingt')).toBe(true);
+    // „Mindestens eine“: Memo2 auch dann, wenn Gebäudeklasse 5
+    await klick(knopf(panel(), 'Bedingung'));
+    await klick(knopf(panel(), 'Mindestens eine'));
+    expect(useFormulare.getState().profile['nw019999|2026A'].bedingungen?.['0:Memo2']?.op).toBe('oder');
   });
 
   it('ein angekreuztes Feld schaltet ein weiteres erforderliches Feld frei – im Formular farbig statt neutral', async () => {
-    useFormulare.getState().profilSetzen('nw019999|2026A', { abschnitte: {}, zaehlt: {}, bedingungen: { '0:Memo2': [{ art: 'feld', feld: '0:CheckBox2', pruefung: 'ausgefuellt' }] } });
+    useFormulare.getState().profilSetzen('nw019999|2026A', { abschnitte: {}, zaehlt: {}, bedingungen: { '0:Memo2': { art: 'gruppe', op: 'und', teile: [{ art: 'feld', feld: '0:CheckBox2', pruefung: 'ausgefuellt' }] } } });
     const host = await projektBS9();
     await klick(knopf(host, '001-Muster'));
     const memo2 = () => host.querySelector('.fo-papier [data-feld="0:Memo2"]')!;

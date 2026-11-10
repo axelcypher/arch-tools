@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Abschnitt, Feld } from './forma/felder';
 import type { FormularProfil } from './profil';
-import { ausGruppe, ausgefuellt, bereinigt, einheiten, einheitTitel, gruppeBilden, istLeer, leeresProfil } from './profil';
+import { alleFelder, ausGruppe, ausgefuellt, bereinigt, einheiten, einheitTitel, gruppeAufloesen, gruppeBilden, gruppeHoch, gruppenIm, istLeer, leeresProfil } from './profil';
 
 /** Feld an einer Stelle auf dem Papier (nur was die Zählung braucht) */
 const feld = (name: string, art: 'text' | 'kreuz', y: number, x = 0): Feld =>
@@ -76,5 +76,79 @@ describe('Formularprofil: Gruppen', () => {
       ],
     });
     expect(istLeer(bereinigt({ ...leeresProfil(), feldTitel: { '0:Name': '' }, gruppen: [{ id: 'g1', regel: 'eins', felder: [] }] }))).toBe(true);
+  });
+});
+
+describe('Formularprofil: verschachtelte Gruppen', () => {
+  // Bauart (eine genügt) = Massiv oder Untergruppe „Holz und Stahl“ (alle nötig)
+  const verschachtelt = () => {
+    let p = gruppeBilden(leeresProfil(), ['0:Holz', '0:Stahl'], 'alle');
+    p = gruppeBilden(p, ['0:Massiv'], 'eins', ['g1']);
+    return p;
+  };
+
+  it('Gruppe aus Feldern und einer Gruppe: zählt als eine Angabe, die Untergruppe nach ihrer eigenen Regel', () => {
+    const p = verschachtelt();
+    expect(p.gruppen).toEqual([
+      { id: 'g1', regel: 'alle', felder: ['0:Holz', '0:Stahl'], in: 'g2' },
+      { id: 'g2', regel: 'eins', felder: ['0:Massiv'] },
+    ]);
+    expect(gruppenIm(abschnitt, p).map((g) => g.id)).toEqual(['g2']);
+    expect(alleFelder(p, p.gruppen![1])).toEqual(['0:Massiv', '0:Holz', '0:Stahl']);
+    expect(einheiten(abschnitt, p).map((e) => einheitTitel(e, p))).toEqual(['Name', 'Massiv / Holz / Stahl', 'Ort']);
+    // Holz angekreuzt, Stahl nicht: die Untergruppe (alle nötig) ist nicht ausgefüllt, Massiv auch nicht
+    expect(zaehlung(p)).toBe('1/3');
+    const mitStahl = (f: Feld) => (f.schluessel === '0:Stahl' ? true : wert(f));
+    const e = einheiten(abschnitt, p);
+    expect(e.filter((x) => ausgefuellt(x, mitStahl)).length).toBe(2);
+  });
+
+  it('Gruppe innerhalb einer Gruppe bilden, hochziehen und auflösen – die Teile kommen eine Ebene höher', () => {
+    let p = gruppeBilden(leeresProfil(), ['0:Massiv', '0:Holz', '0:Stahl']);
+    // zwei Felder derselben Gruppe → die neue Gruppe hängt darin
+    p = gruppeBilden(p, ['0:Holz', '0:Stahl'], 'alle');
+    expect(p.gruppen).toEqual([
+      { id: 'g1', regel: 'eins', felder: ['0:Massiv'] },
+      { id: 'g2', regel: 'alle', felder: ['0:Holz', '0:Stahl'], in: 'g1' },
+    ]);
+    // Feld aus der Untergruppe nehmen: es kommt in die übergeordnete
+    expect(ausGruppe(p, '0:Holz').gruppen!.find((g) => g.id === 'g1')!.felder).toEqual(['0:Massiv', '0:Holz']);
+    // hochziehen: eigene oberste Gruppe
+    expect(gruppeHoch(p, 'g2').gruppen!.find((g) => g.id === 'g2')!.in).toBeUndefined();
+    // die obere auflösen: die Untergruppe wird oberste, Massiv zählt einzeln
+    const q = gruppeAufloesen(p, 'g1');
+    expect(q.gruppen).toEqual([{ id: 'g2', regel: 'alle', felder: ['0:Holz', '0:Stahl'] }]);
+    expect(einheiten(abschnitt, q).map((e) => einheitTitel(e, q))).toEqual(['Name', 'Massiv', 'Holz / Stahl', 'Ort']);
+    // eine leere Gruppe mit Untergruppe bleibt, ohne entfällt sie
+    expect(ausGruppe(verschachtelt(), '0:Massiv').gruppen!.map((g) => g.id)).toEqual(['g1', 'g2']);
+  });
+
+  it('eine Untergruppe, deren Bedingung nicht zutrifft, zählt in der oberen nicht mit', () => {
+    const p = verschachtelt();
+    p.gruppen![0].bedingung = { art: 'gruppe', op: 'und', teile: [{ art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['5'] }] };
+    p.gruppen![1].regel = 'alle';
+    const alleKreuze = (f: Feld) => (f.art === 'kreuz' ? f.schluessel !== '0:Holz' : wert(f));
+    // GK 5: Massiv ✓, Untergruppe (Holz fehlt) ✗ → nicht ausgefüllt; GK 2: nur Massiv zählt → ausgefüllt
+    const gruppe = (gk: string) => einheiten(abschnitt, p, { merkmale: { Gebäudeklasse: gk } }).find((e) => e.gruppe)!;
+    expect(ausgefuellt(gruppe('5'), alleKreuze)).toBe(false);
+    expect(ausgefuellt(gruppe('2'), alleKreuze)).toBe(true);
+  });
+
+  it('bereinigt: übergeordnete Gruppe bleibt, Kreise und unbekannte Verweise werden aufgelöst', () => {
+    const p = bereinigt({
+      ...leeresProfil(),
+      gruppen: [
+        { id: 'a', regel: 'eins', felder: ['0:Massiv'], in: 'b' },
+        { id: 'b', regel: 'eins', felder: ['0:Holz'], in: 'a' },
+        { id: 'c', regel: 'alle', felder: ['0:Stahl'], in: 'weg' },
+        { id: 'd', regel: 'eins', felder: ['0:Ort'], in: 'c' },
+      ],
+    });
+    expect(p.gruppen!.map((g) => [g.id, g.in])).toEqual([
+      ['a', undefined],
+      ['b', undefined],
+      ['c', undefined],
+      ['d', 'c'],
+    ]);
   });
 });
