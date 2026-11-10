@@ -33,7 +33,8 @@ Angelegt werden
 3. **`projekt.json`** mit den Stammdaten im Projektordner – die zentrale Quelle für Nummer, Bauherr und
    Leistungsphasen,
 4. eine **leere Flächenrechner-Datei** (`.oap`) mit den Projektdaten. Flächenrechner, GRZ-Nachweis und
-   Kostenermittlung öffnen sie; Projektcode, Adresse, Grundstück und Bauherr sind schon eingetragen.
+   Kostenermittlung öffnen sie; Projektcode, Vorhaben (die Bezeichnung), Adresse, Grundstück und Bauherr sind schon
+   eingetragen. Die Formulare-App gleicht diese Stammdaten mit der Projektkarte von FORMA ab.
 
 ## Struktur
 

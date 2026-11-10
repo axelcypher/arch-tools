@@ -56,7 +56,7 @@ export interface Dateisystem {
   sperrePruefen(root: string, pfad: string): Promise<SperrProbe | null>;
   /** Name des Programms mit dieser Prozessnummer auf diesem Rechner; `null`, wenn keins läuft */
   prozess(pid: number): Promise<string | null>;
-  /** Vorhandenes Dokument (PDF, Excel, Word) ersetzen – mit Sicherungskopie; abgelehnt, wenn in Office geöffnet */
+  /** Vorhandenes Dokument (PDF, Excel, Word, Projektdatei .oap) ersetzen – mit Sicherungskopie; abgelehnt, wenn in Office geöffnet */
   dokumentErsetzen(root: string, pfad: string, daten: Uint8Array): Promise<void>;
   /** Ist das Dokument gerade in Excel oder Word geöffnet? */
   inOffice(root: string, pfad: string): Promise<boolean>;
@@ -293,7 +293,7 @@ export class SpeicherDateisystem implements Dateisystem {
 
   async dokumentErsetzen(root: string, pfad: string, daten: Uint8Array): Promise<void> {
     const p = this.pfad(root, pfad);
-    if (!/\.(pdf|xlsx|xlsm|docx)$/i.test(pfad)) throw new Error(`${pfad}: Nur PDF-, Excel- und Word-Dateien dürfen hier gespeichert werden`);
+    if (!/\.(pdf|xlsx|xlsm|docx|oap)$/i.test(pfad)) throw new Error(`${pfad}: Nur PDF-, Excel-, Word- und Projektdateien dürfen hier gespeichert werden`);
     if (!this.dateien.has(p)) throw new Error(`${pfad}: Datei nicht gefunden`);
     if (await this.inOffice(root, pfad)) throw new Error(`${pfad}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen`);
     this.dateien.set(p, daten);

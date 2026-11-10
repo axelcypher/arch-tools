@@ -19,6 +19,7 @@ export function ProjektInfo() {
       <div className="projekt-info">
         {m.projektcode && <div className="projekt-code">{m.projektcode}</div>}
         <div className="projekt-name">{project.name}</div>
+        {m.vorhaben && <div className="projekt-block">{m.vorhaben}</div>}
         {adresse(m.adresse).map((z, i) => (
           <div key={`a${i}`}>{z}</div>
         ))}
@@ -91,8 +92,12 @@ function ProjektDialog({ project, onClose }: { project: Project; onClose: () => 
           <Eingabe label="Projektcode" value={m.projektcode} onChange={(v) => setM({ ...m, projektcode: v })} />
           <Eingabe label="Bezeichnung" value={name} onChange={setName} wide />
         </div>
+        <Eingabe label="Vorhaben (Bezeichnung der Baumaßnahme)" value={m.vorhaben ?? ''} onChange={(v) => setM({ ...m, vorhaben: v })} />
         <AnschriftFelder a={m.adresse} onChange={setAdresse} />
-        <Eingabe label="Bearbeiter" value={m.bearbeiter} onChange={(v) => setM({ ...m, bearbeiter: v })} />
+        <div className="field-row">
+          <Eingabe label="Bearbeiter" value={m.bearbeiter} onChange={(v) => setM({ ...m, bearbeiter: v })} />
+          <Eingabe label="Aktenzeichen" value={m.aktenzeichen ?? ''} onChange={(v) => setM({ ...m, aktenzeichen: v })} wide />
+        </div>
 
         <h4>Grundstück</h4>
         <div className="field-row">
@@ -108,7 +113,10 @@ function ProjektDialog({ project, onClose }: { project: Project; onClose: () => 
         {flaecheFehler && <p className="warning small-text">Grundstücksfläche bitte als Zahl eingeben, z. B. 523,40.</p>}
 
         <h4>Bauherr</h4>
-        <Eingabe label="Name" value={m.bauherr.name} onChange={(v) => setBauherr({ name: v })} />
+        <div className="field-row">
+          <Eingabe label="Name / Firma" value={m.bauherr.name} onChange={(v) => setBauherr({ name: v })} wide />
+          <Eingabe label="Vorname" value={m.bauherr.vorname ?? ''} onChange={(v) => setBauherr({ vorname: v })} />
+        </div>
         <AnschriftFelder a={m.bauherr.adresse} onChange={setBauherrAdresse} />
         <span className="field-label">Kontakt</span>
         {kontakte.map((k, i) => (

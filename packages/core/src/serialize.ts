@@ -1,6 +1,7 @@
 import type {
   Anschrift,
   Background,
+  Bauherr,
   DateiArt,
   Grundstueck,
   KontaktArt,
@@ -118,19 +119,19 @@ function normalizeMeta(v: unknown): ProjectMeta {
   const b = isObj(m.bauherr) ? m.bauherr : {};
   const grundstueck: Grundstueck = { gemarkung: str(g.gemarkung, ''), flur: str(g.flur, ''), flurstueck: str(g.flurstueck, '') };
   if (typeof g.flaeche === 'number' && Number.isFinite(g.flaeche)) grundstueck.flaeche = g.flaeche;
-  return {
-    projektcode: str(m.projektcode, ''),
-    adresse: normalizeAnschrift(m.adresse),
-    grundstueck,
-    bauherr: {
-      name: str(b.name, ''),
-      adresse: normalizeAnschrift(b.adresse),
-      kontakte: (Array.isArray(b.kontakte) ? b.kontakte : [])
-        .filter(isObj)
-        .map((k) => ({ art: oneOf<KontaktArt>(k.art, ['email', 'telefon'], 'telefon'), wert: str(k.wert, '') })),
-    },
-    bearbeiter: str(m.bearbeiter, ''),
+  const bauherr: Bauherr = {
+    name: str(b.name, ''),
+    adresse: normalizeAnschrift(b.adresse),
+    kontakte: (Array.isArray(b.kontakte) ? b.kontakte : [])
+      .filter(isObj)
+      .map((k) => ({ art: oneOf<KontaktArt>(k.art, ['email', 'telefon'], 'telefon'), wert: str(k.wert, '') })),
   };
+  if (typeof b.vorname === 'string' && b.vorname) bauherr.vorname = b.vorname;
+  const meta: ProjectMeta = { projektcode: str(m.projektcode, ''), adresse: normalizeAnschrift(m.adresse), grundstueck, bauherr, bearbeiter: str(m.bearbeiter, '') };
+  // erst später ergänzt: nur, wenn vorhanden
+  if (typeof m.vorhaben === 'string' && m.vorhaben) meta.vorhaben = m.vorhaben;
+  if (typeof m.aktenzeichen === 'string' && m.aktenzeichen) meta.aktenzeichen = m.aktenzeichen;
+  return meta;
 }
 
 const NUTZUNGEN: LageplanNutzung[] = ['zufahrt', 'stellplatz', 'garage', 'terrasse', 'weg', 'nebenanlage', 'unterirdisch', 'garten', 'sonstige'];

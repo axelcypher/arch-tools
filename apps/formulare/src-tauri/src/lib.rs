@@ -224,8 +224,9 @@ async fn fs_replace(root: String, pfad: String, contents_base64: String) -> Resu
     Ok(())
 }
 
-/// Dokumente, die die App bearbeiten darf (Vorschau mit Bearbeiten im Projektordner)
-const DOKUMENTE: [&str; 4] = ["pdf", "xlsx", "xlsm", "docx"];
+/// Dokumente, die die App bearbeiten darf (Vorschau mit Bearbeiten im Projektordner) – und die Projektdatei
+/// (.oap) mit den Projektstammdaten
+const DOKUMENTE: [&str; 5] = ["pdf", "xlsx", "xlsm", "docx", "oap"];
 /// so viele Sicherungskopien bleiben im App-Ordner
 const MAX_SICHERUNGEN: usize = 200;
 
@@ -256,13 +257,13 @@ fn sicherung(app: &tauri::AppHandle, p: &Path) -> Result<PathBuf, String> {
     Ok(ziel)
 }
 
-/// Ersetzt ein vorhandenes Dokument (PDF, Excel, Word) atomar – vorher mit Sicherungskopie im App-Ordner.
+/// Ersetzt ein vorhandenes Dokument (PDF, Excel, Word, Projektdatei) atomar – vorher mit Sicherungskopie im App-Ordner.
 /// Abgelehnt, wenn es in Excel/Word geöffnet ist; ist es in einem anderen Programm geöffnet, scheitert das Ersetzen.
 #[tauri::command]
 async fn doc_replace(app: tauri::AppHandle, root: String, pfad: String, contents_base64: String) -> Result<(), String> {
     let p = unterhalb(&root, &pfad)?;
     if !DOKUMENTE.iter().any(|e| endung_ist(&p, e)) {
-        return Err(format!("{}: Nur PDF-, Excel- und Word-Dateien dürfen hier gespeichert werden", p.display()));
+        return Err(format!("{}: Nur PDF-, Excel-, Word- und Projektdateien dürfen hier gespeichert werden", p.display()));
     }
     if !p.is_file() {
         return Err(format!("{}: Datei nicht gefunden", p.display()));
@@ -284,13 +285,13 @@ async fn doc_replace(app: tauri::AppHandle, root: String, pfad: String, contents
     Ok(())
 }
 
-/// Legt ein neues Dokument (PDF, Excel, Word) an, z. B. die Projektdaten.xlsx aus einer Vorlage. Fehlt der
+/// Legt ein neues Dokument (PDF, Excel, Word) oder eine Projektdatei (.oap) an, z. B. eine exportierte PDF. Fehlt der
 /// Ordner, wird er angelegt; eine vorhandene Datei wird nie überschrieben.
 #[tauri::command]
 async fn doc_create(root: String, pfad: String, contents_base64: String) -> Result<(), String> {
     let p = unterhalb(&root, &pfad)?;
     if !DOKUMENTE.iter().any(|e| endung_ist(&p, e)) {
-        return Err(format!("{}: Nur PDF-, Excel- und Word-Dateien dürfen hier angelegt werden", p.display()));
+        return Err(format!("{}: Nur PDF-, Excel-, Word- und Projektdateien dürfen hier angelegt werden", p.display()));
     }
     if let Some(ordner) = p.parent() {
         std::fs::create_dir_all(ordner).map_err(|e| format!("{}: {}", ordner.display(), e))?;

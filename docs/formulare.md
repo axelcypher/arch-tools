@@ -17,7 +17,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Rechts der **Inhalt**. Was zum Dokument gehört – Gliederung, Verlauf, Formularfläche –, steht im Grau der
   Formularfläche.
 - **Einstellungen (⚙)** als eigene Ansicht mit Ebenen: **Ordner** (FORMA-Projekte, Projektordner, angezeigte
-  Pfade), **Büro & Stammdaten**, **Adressbuch**, **Formulare** und **Projektdaten.xlsx** (siehe unten).
+  Pfade), **Büro & Stammdaten**, **Adressbuch**, **Formulare**, **Antrag & Export** und **Projektdatei (.oap)** (siehe unten).
 - **Projekt wählen:** links in der Liste (Suche nach Kürzel oder Titel) oder von überall mit
   <kbd>Strg</kbd>+<kbd>K</kbd> (Schnellwahl: Kürzel tippen, Enter). Ein gewähltes Projekt steht oben links;
   „Wechseln“ öffnet die Schnellwahl.
@@ -97,9 +97,10 @@ Anschrift, wie sie in Formularen steht.
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
   Adressen zuerst. In der Projektkarte: „Als Vorgabe festlegen“ bei einer Adresse, **„Vorgaben eintragen“** füllt
   alle leeren Rollen auf einmal, und „Übernehmen von …“ bietet die Vorgabe und die bisherigen Adressen der Rolle an.
-- **Projektdaten.xlsx** (in der Projektkarte unter „Projektordner“): Abgleich der erkannten Angaben mit der
-  Projektkarte, „Übernehmen“ je Angabe oder „Abweichende übernehmen“. Beim Speichern der Projektkarte werden
-  geänderte Angaben in die Datei nachgetragen; fehlt sie und ist eine Vorlage eingestellt, wird sie angelegt.
+- **Projektdatei (.oap)** (in der Projektkarte unter „Projektordner“): Abgleich der Projektstammdaten mit der
+  Projektkarte in beide Richtungen – „Übernehmen“ (Projektdatei → Projektkarte) und „Eintragen“ (Projektkarte →
+  Projektdatei), je Angabe oder für alle abweichenden. Beim Speichern der Projektkarte werden geänderte Angaben in
+  die Projektdatei eingetragen; fehlt sie, wird sie angelegt (siehe unten).
 - **Suche** über alle Einträge; ein Treffer springt in seine Gruppe.
 - **Hinweise auf Tippfehler** (Postleitzahl, E-Mail, IBAN-Prüfziffer, Telefonnummer) – nur Hinweise, gespeichert
   wird trotzdem. Zeichen, die es in Windows-1252 nicht gibt (z. B. Emojis), werden abgelehnt.
@@ -167,15 +168,36 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   Helvetica hat die Breiten von Arial, Courier die von Courier New – die Zeilen brechen an denselben Stellen um.
   Zeichen außerhalb von Windows-1252 werden zu „?“.
 
-### Projektdaten.xlsx
+### Projektdatei (.oap) – die Projektstammdaten
 
-Im Projektordner liegt unter `Organisation\<Kürzel> Projektdaten.xlsx` eine Übersicht der Projektdaten. Ihr
-Aufbau ist nicht vorgegeben; die App liest allgemein: Beschriftung und Wert in der nächsten gefüllten Zelle rechts
-daneben (mehrere Paare je Zeile möglich, „PLZ / Ort“ in einer Zelle wird geteilt). Überschriften ohne Wert wie
-„Bauherr“ oder „Grundstück“ bestimmen, wozu Straße, PLZ und Ort darunter gehören. Erkannt werden Bauvorhaben,
-Aktenzeichen, Grundstück (Straße, Ort, Gemarkung, Flur, Flurstück, Fläche) und Bauherr (Name, Vorname, Straße, PLZ,
-Ort, Telefon, E-Mail) – jeweils mit Gegenstück in der Projektkarte. Geschrieben wird nur in die Wertzellen, nicht
-solange die Datei in Excel geöffnet ist, und nicht, wenn sie seit dem Lesen geändert wurde.
+Die Projektstammdaten liegen als JSON in der **Projektdatei (`.oap`)** im Projektordner – dem gemeinsamen
+Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner (ZIP mit `manifest.json` und
+`projekt.json`, die Stammdaten in `projekt.json` unter `meta`). Die frühere `Projektdaten.xlsx` wird nicht mehr
+beschrieben.
+
+| Projektkarte | Projektdatei (`meta`) |
+|---|---|
+| Bezeichnung der Baumaßnahme | `vorhaben` |
+| Aktenzeichen | `aktenzeichen` |
+| Grundstück: Straße/Nr., Ort | `adresse.strasse`, `adresse.ort` (bei „59494 Soest“ auch `adresse.plz`) |
+| Gemarkung, Flur, Flurstück, Grundstücksfläche | `grundstueck.gemarkung`, `.flur`, `.flurstueck`, `.flaeche` (Zahl in m²) |
+| Bauherr: Name/Firma, Vorname | `bauherr.name`, `bauherr.vorname` |
+| Bauherr: Straße/Nr., PLZ, Ort | `bauherr.adresse.strasse`, `.plz`, `.ort` |
+| Bauherr: Telefon, E-Mail | erster Eintrag der Art in `bauherr.kontakte` |
+
+- **Welche Datei:** gesucht wird bis vier Ebenen tief im Projektordner; bei mehreren gilt die im Ordner der
+  Berechnungen (Pfad enthält „Berechnung“), sonst die mit dem kürzesten Pfad, dann die zuletzt geänderte. In der
+  Projektkarte lässt sich je Projekt eine andere wählen.
+- **Schreiben:** frisch eingelesen und nur die geänderten Angaben in `meta` ersetzt – alles andere im Archiv
+  (Pläne, Modelle, Quelldateien, Manifest) bleibt unverändert; vorher wird eine Sicherungskopie angelegt. Steht
+  schon alles so in der Datei, wird nichts geschrieben. Hat der Flächenrechner das Projekt gerade offen, führt er
+  die Änderung beim nächsten Speichern mit seinen eigenen zusammen.
+- **Neue Projektdatei:** fehlt sie, legt die App sie beim Speichern der Projektkarte (oder mit „Jetzt anlegen“)
+  unter dem eingestellten Pfad an – Vorgabe `Planung/Berechnungen/{Kürzel}.oap`, leer = keine anlegen. Sie ist eine
+  leere Flächenberechnung mit den Stammdaten, wie sie auch die App „Projektordner“ anlegt.
+- **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
+  Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann
+  in der Projektdatei.
 
 ### Dokumente ansehen und bearbeiten
 
@@ -375,7 +397,7 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
 - **Katalog der Antragsdokumente:** Vorgabe an die Bauvorlagen des Büros anpassen (Muster der Dateinamen, Kennungen
   der Formulare).
 - **Adressdatenbank von SJ OFFICE:** Ort und Aufbau unbekannt; bis dahin kommt das Adressbuch aus den Projektkarten.
-- **`Projektdaten.xlsx`:** gelesen wird allgemein; mit einer echten Datei bzw. der Vorlage des Büros prüfen und
-  die Erkennung bei Bedarf anpassen.
+- **Projektdatei (.oap):** mit echten Projekten prüfen, welche Datei je Projekt die Stammdaten führen soll (bei
+  mehreren Berechnungen) und ob die Zuordnung Grundstück/Ort zur Projektkarte so passt.
 - **Vorgabe der angezeigten Pfade** an die Ordnerstruktur des Büros anpassen.
 - **Beschriftungen in Tabellen** (z. B. „1-fach / 3-fach“-Spalten) sind aus der Lage nur unvollständig ableitbar.

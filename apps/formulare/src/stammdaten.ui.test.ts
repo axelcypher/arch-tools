@@ -7,7 +7,8 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { SpeicherDateisystem } from './dateisystem';
-import { xlsxLesen } from './dokumente/xlsx';
+import { readProjectFile, writeArchive } from '@core/archive';
+import { createProject, leereMeta } from '@core/model';
 import { cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import { useFormulare } from './store';
@@ -88,7 +89,9 @@ beforeEach(() => {
     rollenVorgaben: {},
     profile: {},
     projektdaten: null,
-    projektdatenVorlage: '',
+    oapNeu: 'Planung/Berechnungen/{Kürzel}.oap',
+    oapWahl: {},
+    oap: null,
     einstellungsBereich: 'ordner',
     meldung: null,
   });
@@ -291,50 +294,95 @@ describe('Einstellungen', () => {
   });
 });
 
-describe('Projektdaten.xlsx', () => {
-  it('abgleichen, übernehmen und beim Speichern der Projektkarte mitführen', async () => {
-    ds.dateien.set(PD, await projektdaten());
+describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
+  const OAP = `${ORDNER}/Planung/Berechnungen/BS9 Flächen.oap`;
+  const projektdatei = () => {
+    const p = createProject('EFH Musterstraße');
+    p.meta = { ...leereMeta(), projektcode: 'BS9', vorhaben: 'Umbau Wohnhaus', grundstueck: { gemarkung: 'Musterhausen', flur: '3', flurstueck: '123' }, bauherr: { name: 'Mustermann', adresse: { strasse: '', plz: '', ort: '' }, kontakte: [] }, bearbeiter: 'TP' };
+    return writeArchive(p);
+  };
+  const oeffnen = async () => {
     const host = await render();
     await klick(knopf(host, 'BS9'));
     await warte();
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     await warte();
-    const pdEintrag = knopf(host, 'Projektdaten.xlsx');
-    expect(pdEintrag.textContent).toContain('5 Angaben erkannt');
-    await klick(pdEintrag);
-    const zeilen = [...host.querySelectorAll('.pk-abgleich tbody tr')];
-    expect(zeilen.map((z) => z.querySelector('td')!.firstChild!.textContent)).toEqual(['Bezeichnung der Baumaßnahme', 'Gemarkung', 'Flur', 'Flurstück', 'Bauherr: Name/Firma']);
-    // Name stimmt schon, die übrigen weichen ab
-    expect(zeilen[4].classList.contains('gleich')).toBe(true);
+    return host;
+  };
+
+  it('abgleichen in beide Richtungen und beim Speichern der Projektkarte mitführen – nur meta ändert sich', async () => {
+    ds.dateien.set(OAP, projektdatei());
+    ds.dateien.set(`${ORDNER}/Planung/Berechnungen/Variante.oap`, projektdatei());
+    const host = await oeffnen();
+    const eintrag = knopf(host, 'Projektdatei (.oap)');
+    expect(eintrag.textContent).toContain('BS9 Flächen.oap');
+    await klick(eintrag);
+    const zeilen = () => [...host.querySelectorAll('.pk-abgleich tbody tr')];
+    expect(zeilen().map((z) => z.querySelector('td')!.firstChild!.textContent)).toEqual([
+      'Bezeichnung der Baumaßnahme',
+      'Gemarkung',
+      'Flur',
+      'Flurstück',
+      'Bauherr: Name/Firma',
+      'Bauherr: Vorname',
+      'Bauherr: Straße/Nr.',
+      'Bauherr: PLZ',
+      'Bauherr: Ort',
+    ]);
+    // Name stimmt schon; Projektdatei → Projektkarte
+    expect(zeilen()[4].classList.contains('gleich')).toBe(true);
     await klick(knopf(host, 'Abweichende übernehmen (4)'));
     expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '101:30': 'Umbau Wohnhaus', '301:40': 'Musterhausen', '301:50': '3', '301:60': '123' });
+    // Projektkarte → Projektdatei: der Ort des Bauherrn
+    await klick(knopf(host, 'Abweichende eintragen (1)'));
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.bauherr.adresse.ort).toBe('Musterstadt');
 
-    // in der Projektkarte den Namen ändern und speichern: die xlsx wird mitgeführt
+    // in der Projektkarte den Namen ändern und speichern: die Projektdatei wird mitgeführt
     act(() => useFormulare.getState().karteSetzen(201, 40, 'Musterfrau'));
     await warte();
     await klick(knopf(host, 'Projektkarte speichern'));
     await warte();
-    const neu = xlsxLesen(ds.dateien.get(PD)!).blaetter[0].zellen;
-    expect(neu.get('B6')!.anzeige).toBe('Musterfrau');
-    // aus der xlsx übernommene Werte bleiben dort unverändert
-    expect(neu.get('B1')!.anzeige).toBe('Umbau Wohnhaus');
-    expect(host.textContent).toContain('Projektdaten.xlsx mitgeführt (1 Wert(e))');
-    expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (5)', 'dokument Organisation/BS9 Projektdaten.xlsx']);
+    const p = readProjectFile(ds.dateien.get(OAP)!);
+    expect(p.meta).toMatchObject({ projektcode: 'BS9', vorhaben: 'Umbau Wohnhaus', bearbeiter: 'TP', bauherr: { name: 'Musterfrau', adresse: { ort: 'Musterstadt' } } });
+    expect(p.name).toBe('EFH Musterstraße');
+    expect(host.textContent).toContain('Projektdatei mitgeführt (1 Angabe(n))');
+    expect(ds.schreibvorgaenge.filter((w) => !w.startsWith('sperre'))).toEqual([
+      'dokument Planung/Berechnungen/BS9 Flächen.oap',
+      'projektkarte BS9/sj_prokarte.sdb (5)',
+      'dokument Planung/Berechnungen/BS9 Flächen.oap',
+    ]);
+    // die andere Projektdatei bleibt unberührt; sie lässt sich je Projekt wählen
+    expect(readProjectFile(ds.dateien.get(`${ORDNER}/Planung/Berechnungen/Variante.oap`)!).meta.bauherr.name).toBe('Mustermann');
+    act(() => (host.querySelector<HTMLSelectElement>('select[aria-label="Projektdatei"]')!.value = 'Planung/Berechnungen/Variante.oap'));
+    act(() => void host.querySelector<HTMLSelectElement>('select[aria-label="Projektdatei"]')!.dispatchEvent(new Event('change', { bubbles: true })));
+    await warte();
+    expect(useFormulare.getState().oap).toMatchObject({ pfad: 'Planung/Berechnungen/Variante.oap' });
+    expect(useFormulare.getState().oapWahl).toEqual({ BS9: 'Planung/Berechnungen/Variante.oap' });
   });
 
-  it('fehlt die Datei, wird sie beim Speichern aus der Vorlage angelegt', async () => {
-    ds.dateien.set('Z:/Vorlagen/Projektdaten.xlsx', await projektdaten());
-    useFormulare.setState({ projektdatenVorlage: 'Z:/Vorlagen/Projektdaten.xlsx' });
-    const host = await render();
-    await klick(knopf(host, 'BS9'));
-    await warte();
-    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
-    await warte();
+  it('fehlt die Projektdatei, wird sie beim Speichern unter dem eingestellten Pfad angelegt', async () => {
+    const host = await oeffnen();
+    expect(knopf(host, 'Projektdatei (.oap)').textContent).toContain('nicht gefunden');
     act(() => useFormulare.getState().karteSetzen(201, 40, 'Neue Bauherrin'));
     await warte();
     await klick(knopf(host, 'Projektkarte speichern'));
     await warte();
-    expect(ds.schreibvorgaenge.slice(1, 2)).toEqual(['neu Organisation/BS9 Projektdaten.xlsx']);
-    expect(xlsxLesen(ds.dateien.get(PD)!).blaetter[0].zellen.get('B6')!.anzeige).toBe('Neue Bauherrin');
+    expect(ds.schreibvorgaenge.slice(1, 2)).toEqual(['neu Planung/Berechnungen/BS9.oap']);
+    const p = readProjectFile(ds.dateien.get(`${ORDNER}/Planung/Berechnungen/BS9.oap`)!);
+    expect(p.meta).toMatchObject({ projektcode: 'BS9', bauherr: { name: 'Neue Bauherrin' } });
+    expect(knopf(host, 'Projektdatei (.oap)').textContent).toContain('BS9.oap');
+  });
+
+  it('eine alte Projektdaten.xlsx wird nur gelesen – ihre Angaben lassen sich in die Projektkarte übernehmen', async () => {
+    ds.dateien.set(PD, await projektdaten());
+    ds.dateien.set(OAP, projektdatei());
+    const vorher = ds.dateien.get(PD);
+    const host = await oeffnen();
+    await klick(knopf(host, 'Projektdatei (.oap)'));
+    const alt = host.querySelector('.pk-alt')!;
+    expect(alt.textContent).toContain('Projektdaten.xlsx (bisher)');
+    await klick(knopf(alt as HTMLElement, 'In die Projektkarte übernehmen (4)'));
+    expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '101:30': 'Umbau Wohnhaus', '301:40': 'Musterhausen' });
+    expect(ds.dateien.get(PD)).toBe(vorher);
   });
 });

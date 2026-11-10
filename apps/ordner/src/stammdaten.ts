@@ -150,6 +150,8 @@ export function bereinigt(s: Stammdaten): Stammdaten {
 export function alsProject(s: Stammdaten): Project {
   const p = createProject(s.bezeichnung || s.kurzname || s.nummer || 'Neues Projekt');
   p.meta = { projektcode: s.nummer, adresse: { ...s.adresse }, grundstueck: { ...s.grundstueck }, bauherr: { ...s.bauherr, adresse: { ...s.bauherr.adresse }, kontakte: s.bauherr.kontakte.map((k) => ({ ...k })) }, bearbeiter: s.bearbeiter };
+  // die ausführliche Bezeichnung ist das Vorhaben (so steht es auch in der Projektkarte von FORMA)
+  if (s.bezeichnung.trim()) p.meta.vorhaben = s.bezeichnung.trim();
   return p;
 }
 

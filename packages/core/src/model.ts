@@ -240,15 +240,26 @@ export interface Grundstueck {
 }
 
 export interface Bauherr {
+  /** Name bzw. Firma */
   name: string;
+  /** Vorname (wie in der Projektkarte von FORMA getrennt geführt) */
+  vorname?: string;
   adresse: Anschrift;
   /** beliebig viele E-Mail-Adressen und Telefonnummern */
   kontakte: Kontakt[];
 }
 
+/**
+ * Projektstammdaten – gemeinsam für Flächenrechner, GRZ-Nachweis, Kostenermittlung, Projektordner und Formulare
+ * (die Formulare-App gleicht sie mit der Projektkarte von FORMA ab).
+ */
 export interface ProjectMeta {
   /** Projektcode / Projektnummer */
   projektcode: string;
+  /** Bezeichnung des Vorhabens bzw. der Baumaßnahme */
+  vorhaben?: string;
+  /** Aktenzeichen der Bauaufsicht */
+  aktenzeichen?: string;
   /** Adresse des Bauvorhabens */
   adresse: Anschrift;
   grundstueck: Grundstueck;

@@ -7,6 +7,7 @@ import type { Adresse } from '../adressbuch';
 import { adressName, adressOrt, adressSchluessel, adressenAusKarte, inRolle } from '../adressbuch';
 import type { Angabe } from '../projektdaten';
 import { IN_PROJEKTKARTE } from '../projektdaten';
+import { OAP_ANGABEN, angabenAus, oapPfad } from '../oap';
 import type { Stammadresse } from '../stammdaten';
 import { stammdatenLaden } from '../stammdaten';
 import { Symbol } from './Symbol';
@@ -78,7 +79,7 @@ function Karte({ karte }: { karte: OffeneKarte }) {
   const [gruppeId, setGruppeId] = useState<number>(() => gewaehlt.get(projektKey) ?? alle[0]?.id ?? 0);
   const [suche, setSuche] = useState('');
   const [stamm] = useState<Stammadresse[]>(stammdatenLaden);
-  /** -1 = Abgleich mit der Projektdaten.xlsx, -2 = Projektumfang */
+  /** -1 = Abgleich mit der Projektdatei (.oap), -2 = Projektumfang */
   const gruppe = gruppeId === PROJEKTDATEN || gruppeId === PROJEKTUMFANG ? null : (alle.find((g) => g.id === gruppeId) ?? alle[0]);
 
   const waehle = (id: number, eintrag?: string) => {
@@ -121,7 +122,7 @@ function Karte({ karte }: { karte: OffeneKarte }) {
   );
 }
 
-/** Kennung des Abgleichs mit der Projektdaten.xlsx in der Navigation */
+/** Kennung des Abgleichs mit der Projektdatei (.oap) in der Navigation */
 const PROJEKTDATEN = -1;
 /** Kennung des Projektumfangs (nicht aus FORMA) in der Navigation */
 const PROJEKTUMFANG = -2;
@@ -166,7 +167,7 @@ function Navigation({
 
   const adressbuch = useFormulare((s) => s.adressbuch);
   const vorgaben = useFormulare((s) => s.rollenVorgaben);
-  const projektdaten = useFormulare((s) => s.projektdaten);
+  const oap = useFormulare((s) => s.oap);
   const { karteMehrere, setMeldung } = useFormulare.getState();
   const vorschlag = adressbuch ? vorgabenFuer(karte, adressbuch.adressen, vorgaben) : [];
   const vorgabeGruppen = new Set(vorschlag.map((v) => v.gruppe)).size;
@@ -211,14 +212,14 @@ function Navigation({
           </div>
         ))
       )}
-      {!q && projektdaten !== null && (
+      {!q && oap !== null && (
         <div className="pk-nav-reihe">
           <div className="pk-nav-titel">Projektordner</div>
-          <button className={`pk-nav-eintrag${aktiv === PROJEKTDATEN ? ' aktiv' : ''}${projektdaten === 'fehlt' ? ' leer' : ''}`} onClick={() => onWahl(PROJEKTDATEN)}>
+          <button className={`pk-nav-eintrag${aktiv === PROJEKTDATEN ? ' aktiv' : ''}${oap === 'fehlt' ? ' leer' : ''}`} onClick={() => onWahl(PROJEKTDATEN)}>
             <span className="pk-nav-name">
-              <Symbol name="tabelle" /> Projektdaten.xlsx
+              <Symbol name="tabelle" /> Projektdatei (.oap)
             </span>
-            <span className="pk-nav-kurz">{projektdaten === 'fehlt' ? 'nicht gefunden' : `${projektdaten.eintraege.length} Angaben erkannt`}</span>
+            <span className="pk-nav-kurz">{oap === 'fehlt' ? 'nicht gefunden' : oap.pfad.split('/').pop()}</span>
           </button>
         </div>
       )}
@@ -578,100 +579,151 @@ function Kreuze({ karte, eintraege }: { karte: OffeneKarte; eintraege: PkEintrag
 }
 
 /**
- * Abgleich mit der Projektdaten.xlsx im Projektordner: erkannte Angaben neben den Werten der Projektkarte, mit
- * Übernehmen je Angabe oder für alle abweichenden. Beim Speichern der Projektkarte trägt die App geänderte
- * Angaben in die Datei nach.
+ * Abgleich mit der Projektdatei (.oap) im Projektordner – der gemeinsamen Quelle der Projektstammdaten von
+ * Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner: je Angabe der Wert dort und in der
+ * Projektkarte, Übernehmen in die eine oder andere Richtung. Beim Speichern der Projektkarte trägt die App
+ * geänderte Angaben selbst in die Projektdatei ein. Eine alte Projektdaten.xlsx lässt sich noch übernehmen.
  */
 function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
-  const pd = useFormulare((s) => s.projektdaten);
-  const vorlage = useFormulare((s) => s.projektdatenVorlage);
-  const { projektdatenUebernehmen, dateiAnsehen, projektdatenLaden, einstellungenOeffnen } = useFormulare.getState();
-  if (!pd || pd === 'fehlt') {
-    return (
-      <section className="pk-editor">
-        <header className="pk-kopf">
-          <div className="pk-kopf-text">
-            <h2>Projektdaten.xlsx</h2>
-            <span className="muted">Im Ordner „Organisation“ des Projektordners nicht gefunden.</span>
-          </div>
-          <div className="pk-aktionen">
-            <button onClick={() => void projektdatenLaden()}>Erneut suchen</button>
-          </div>
-        </header>
-        <p className="muted pk-text">
-          {vorlage ? (
-            <>Beim nächsten Speichern der Projektkarte wird sie aus der Vorlage angelegt ({vorlage}).</>
-          ) : (
-            <>
-              Ist in den <button className="es-verweis" onClick={() => einstellungenOeffnen('projektdaten')}>Einstellungen</button> eine Vorlage eingestellt, legt die App sie
-              beim Speichern der Projektkarte an.
-            </>
-          )}
-        </p>
-      </section>
-    );
-  }
-  const zeilen = pd.eintraege
-    .map((e) => {
-      const ziel = IN_PROJEKTKARTE[e.angabe];
-      const inKarte = ziel ? karteText(karte, ziel.gruppe, ziel.id) : '';
-      return { e, ziel, inKarte, gleich: !!ziel && inKarte.trim() === e.wert.trim() };
-    })
-    .filter((z) => z.ziel);
-  const abweichend = zeilen.filter((z) => !z.gleich && z.e.wert.trim()).map((z) => z.e.angabe as Angabe);
+  const oap = useFormulare((s) => s.oap);
+  const xlsx = useFormulare((s) => s.projektdaten);
+  const neu = useFormulare((s) => s.oapNeu);
+  const { oapUebernehmen, oapEintragen, oapLaden, oapWaehlen, projektdatenUebernehmen, dateiAnsehen, einstellungenOeffnen } = useFormulare.getState();
+  const projekt = karte.projekt;
+  const werte = oap && oap !== 'fehlt' ? angabenAus(oap.inhalt.meta) : null;
+  // nur Angaben, die es in dieser Projektkarte gibt
+  const zeilen = OAP_ANGABEN.filter(({ angabe }) => !!pkEintrag(karte.karte, IN_PROJEKTKARTE[angabe]!.gruppe, IN_PROJEKTKARTE[angabe]!.id)).map(({ angabe, feld }) => {
+    const ziel = IN_PROJEKTKARTE[angabe]!;
+    const inKarte = karteText(karte, ziel.gruppe, ziel.id);
+    const inDatei = werte?.get(angabe) ?? '';
+    return { angabe, feld, ziel, inKarte, inDatei, gleich: inKarte.trim() === inDatei.trim() };
+  });
+  const zurKarte = zeilen.filter((z) => !z.gleich && z.inDatei.trim()).map((z) => z.angabe);
+  const zurDatei = zeilen.filter((z) => !z.gleich && z.inKarte.trim()).map((z) => z.angabe);
+  // alte Projektdaten.xlsx: Angaben, die von der Projektkarte abweichen
+  const alt =
+    xlsx && xlsx !== 'fehlt'
+      ? xlsx.eintraege.filter((e) => {
+          const z = IN_PROJEKTKARTE[e.angabe];
+          return z && e.wert.trim() && karteText(karte, z.gruppe, z.id).trim() !== e.wert.trim();
+        })
+      : [];
+
   return (
     <section className="pk-editor">
       <header className="pk-kopf">
         <div className="pk-kopf-text">
-          <h2>Projektdaten.xlsx</h2>
-          <span className="muted">{pd.pfad}</span>
+          <h2>Projektdatei (.oap)</h2>
+          <span className="muted">{oap && oap !== 'fehlt' ? oap.pfad : oap === 'fehlt' ? 'im Projektordner nicht gefunden' : 'wird gesucht …'}</span>
         </div>
         <div className="pk-aktionen">
-          <button disabled={!abweichend.length} onClick={() => projektdatenUebernehmen(abweichend)}>
-            Abweichende übernehmen ({abweichend.length})
-          </button>
-          <button onClick={() => void dateiAnsehen(pd.root, pd.pfad)}>Datei ansehen</button>
+          {werte && (
+            <>
+              <button disabled={!zurKarte.length} title="Werte der Projektdatei in die Projektkarte übernehmen" onClick={() => oapUebernehmen(zurKarte)}>
+                Abweichende übernehmen ({zurKarte.length})
+              </button>
+              <button disabled={!zurDatei.length} title="Werte der Projektkarte in die Projektdatei eintragen" onClick={() => void oapEintragen(zurDatei)}>
+                Abweichende eintragen ({zurDatei.length})
+              </button>
+            </>
+          )}
+          <button onClick={() => void oapLaden()}>Neu lesen</button>
         </div>
       </header>
       <p className="muted pk-text">
-        Beim Speichern der Projektkarte werden geänderte Angaben in die Datei nachgetragen (nur die Wertzellen).
-        {pd.inOffice && ' Die Datei ist gerade in Excel geöffnet – nachgetragen wird erst, wenn sie dort geschlossen ist.'}
+        Die Projektdatei ist das gemeinsame Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner; die Projektstammdaten stehen darin unter
+        „meta“. Beim Speichern der Projektkarte werden geänderte Angaben dort mitgeführt – nur diese, alles andere in der Datei bleibt.
       </p>
+      {oap === 'fehlt' && (
+        <p className="pk-text">
+          {neu ? (
+            <>
+              Beim nächsten Speichern der Projektkarte wird sie unter <code>{oapPfad(neu, projekt.ordner)}</code> angelegt.{' '}
+              <button className="small" onClick={() => void oapEintragen(zeilen.filter((z) => z.inKarte.trim()).map((z) => z.angabe))}>
+                Jetzt anlegen
+              </button>
+            </>
+          ) : (
+            <>
+              Ist in den <button className="es-verweis" onClick={() => einstellungenOeffnen('projektdaten')}>Einstellungen</button> ein Pfad für neue Projektdateien eingestellt, legt die App
+              sie beim Speichern der Projektkarte an.
+            </>
+          )}
+        </p>
+      )}
+      {oap && oap !== 'fehlt' && oap.kandidaten.length > 1 && (
+        <label className="pk-text pk-oap-wahl">
+          <span className="field-label">Mehrere Projektdateien im Projektordner – verwendet wird:</span>
+          <select value={oap.pfad} onChange={(e) => void oapWaehlen(e.target.value)} aria-label="Projektdatei">
+            {oap.kandidaten.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <table className="pk-abgleich">
         <thead>
           <tr>
             <th>Angabe</th>
-            <th>Projektdaten.xlsx</th>
+            <th>Projektdatei</th>
             <th>Projektkarte</th>
             <th />
           </tr>
         </thead>
         <tbody>
-          {zeilen.map(({ e, ziel, inKarte, gleich }) => (
-            <tr key={e.angabe} className={gleich ? 'gleich' : ''}>
+          {zeilen.map((z) => (
+            <tr key={z.angabe} className={z.gleich ? 'gleich' : ''}>
               <td>
-                {ziel!.titel}
-                <span className="muted small-text"> ({e.beschriftung.replace(/:\s*$/, '')}, {e.zelle})</span>
+                {z.ziel.titel}
+                <span className="muted small-text"> ({z.feld})</span>
               </td>
-              <td>{e.wert || <span className="muted">leer</span>}</td>
-              <td>{inKarte || <span className="muted">leer</span>}</td>
-              <td>
-                {gleich ? (
+              <td>{werte ? z.inDatei || <span className="muted">leer</span> : <span className="muted">–</span>}</td>
+              <td>{z.inKarte || <span className="muted">leer</span>}</td>
+              <td className="pk-abgleich-knoepfe">
+                {z.gleich ? (
                   <span className="pk-marke">
                     <Symbol name="haken" /> gleich
                   </span>
                 ) : (
-                  e.wert.trim() && (
-                    <button className="small" onClick={() => projektdatenUebernehmen([e.angabe])}>
-                      Übernehmen
-                    </button>
-                  )
+                  <>
+                    {werte && z.inDatei.trim() && (
+                      <button className="small" title="In die Projektkarte übernehmen" onClick={() => oapUebernehmen([z.angabe])}>
+                        Übernehmen
+                      </button>
+                    )}
+                    {werte && z.inKarte.trim() && (
+                      <button className="small" title="In die Projektdatei eintragen" onClick={() => void oapEintragen([z.angabe])}>
+                        Eintragen
+                      </button>
+                    )}
+                  </>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      {xlsx && xlsx !== 'fehlt' && (
+        <div className="pk-alt">
+          <strong>Projektdaten.xlsx (bisher)</strong>
+          <span className="muted small-text">
+            {xlsx.pfad} – wird nicht mehr beschrieben.{' '}
+            {alt.length ? `${alt.length} Angabe(n) weichen von der Projektkarte ab.` : 'Alle erkannten Angaben stimmen mit der Projektkarte überein.'}
+          </span>
+          <span className="pk-alt-knoepfe">
+            {alt.length > 0 && (
+              <button className="small" title="Angaben der alten xlsx in die Projektkarte übernehmen – beim Speichern kommen sie in die Projektdatei" onClick={() => projektdatenUebernehmen(alt.map((e) => e.angabe as Angabe))}>
+                In die Projektkarte übernehmen ({alt.length})
+              </button>
+            )}
+            <button className="small" onClick={() => void dateiAnsehen(xlsx.root, xlsx.pfad)}>
+              Ansehen
+            </button>
+          </span>
+        </div>
+      )}
     </section>
   );
 }

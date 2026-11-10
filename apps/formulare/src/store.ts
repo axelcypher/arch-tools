@@ -3,7 +3,7 @@ import { pickFile, saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import type { AblageOrdner } from './ablage';
 import { VORGABE_AUSWAHL, ablageSuchen, auswahlBereinigt, zuordnen } from './ablage';
-import type { Dateisystem, PkAenderung } from './dateisystem';
+import type { Dateisystem, Eintrag, PkAenderung } from './dateisystem';
 import { hatDateisystem, tauriDateisystem, verbinde } from './dateisystem';
 import type { Feld } from './forma/felder';
 import { felderDerSeite } from './forma/felder';
@@ -19,9 +19,12 @@ import type { FormularEintrag, Projekt } from './projekte';
 import { formulareDesProjekts, projekteSuchen } from './projekte';
 import type { Adresse } from './adressbuch';
 import { adressenAusKarte, zusammenfuehren } from './adressbuch';
-import { xlsxAendern, xlsxLesen } from './dokumente/xlsx';
+import { xlsxLesen } from './dokumente/xlsx';
 import type { Angabe, ProjektdatenEintrag } from './projektdaten';
-import { IN_PROJEKTKARTE, projektdatenLesen, zellwert } from './projektdaten';
+import { IN_PROJEKTKARTE, projektdatenLesen } from './projektdaten';
+import type { OapInhalt } from './oap';
+import { OAP_ANGABEN, angabenAus, metaMit, neueOap, oapLesen, oapMetaSetzen, oapPfad } from './oap';
+import { leereMeta } from '@core/model';
 import type { FormularProfil } from './profil';
 import { bereinigt as profilBereinigt, istLeer as profilLeer } from './profil';
 import type { FeldAenderung, Verlauf } from './verlauf';
@@ -94,8 +97,10 @@ interface Gespeichert {
   gliederungOffen: boolean;
   /** Stammdaten: Vorgabe je Rolle (Gruppe der Projektkarte) → Schlüssel einer Adresse im Adressbuch */
   rollenVorgaben: Record<string, string>;
-  /** Vorlage für eine neue Projektdaten.xlsx (vollständiger Pfad); leer = keine anlegen */
-  projektdatenVorlage: string;
+  /** Pfad einer neuen Projektdatei (.oap) im Projektordner, `{Kürzel}` als Platzhalter; leer = keine anlegen */
+  oapNeu: string;
+  /** gewählte Projektdatei je Projektkürzel (Pfad relativ zum Projektordner) */
+  oapWahl: Record<string, string>;
   /** angezeigte Pfade im echten Projektordner: Vorgabe und je Projektkürzel */
   vorgabeAuswahl: string[];
   auswahl: Record<string, string[]>;
@@ -172,8 +177,10 @@ interface FormulareState extends Gespeichert {
   adressbuch: { adressen: Adresse[]; stand: number } | null;
   /** Einlesen läuft: so weit */
   adressbuchLaeuft: { fertig: number; gesamt: number } | null;
-  /** Projektdaten.xlsx des gewählten Projekts; 'fehlt' = keine gefunden, null = nicht gesucht */
+  /** Projektdaten.xlsx des gewählten Projekts (nur noch zum Übernehmen alter Angaben); 'fehlt' = keine, null = nicht gesucht */
   projektdaten: ProjektdatenDatei | 'fehlt' | null;
+  /** Projektdatei (.oap) des gewählten Projekts – Quelle der Projektstammdaten; 'fehlt' = keine gefunden */
+  oap: OapDatei | 'fehlt' | null;
   /** Bereich der Einstellungen */
   einstellungsBereich: EinstellungsBereich;
   /** echte Projektordner (erste und zweite Ebene) */
@@ -243,7 +250,15 @@ interface FormulareState extends Gespeichert {
   profilSetzen: (schluessel: string, profil: FormularProfil | null) => void;
   einstellungenOeffnen: (bereich?: EinstellungsBereich) => void;
   setRollenVorgabe: (gruppe: number, schluessel: string | null) => void;
-  setProjektdatenVorlage: (pfad: string) => void;
+  setOapNeu: (pfad: string) => void;
+  /** Projektdatei für das gewählte Projekt festlegen; null = wieder automatisch */
+  oapWaehlen: (pfad: string | null) => Promise<void>;
+  /** Projektdatei des gewählten Projekts suchen und lesen */
+  oapLaden: () => Promise<void>;
+  /** Angaben aus der Projektdatei in die Projektkarte übernehmen (ein Schritt) */
+  oapUebernehmen: (angaben: Angabe[]) => void;
+  /** Angaben der Projektkarte (mit ungespeicherten Änderungen) in die Projektdatei eintragen – legt sie an, wenn sie fehlt */
+  oapEintragen: (angaben: Angabe[]) => Promise<void>;
   /** Adressbuch aus allen FORMA-Projekten neu einlesen */
   adressbuchLaden: () => Promise<void>;
   /** Adressen ins Adressbuch aufnehmen (z. B. eine eben als Vorgabe festgelegte) */
@@ -255,6 +270,16 @@ interface FormulareState extends Gespeichert {
 }
 
 export type EinstellungsBereich = 'ordner' | 'stammdaten' | 'adressbuch' | 'formulare' | 'antrag' | 'projektdaten';
+
+export interface OapDatei {
+  /** Projektordner (absolut) */
+  root: string;
+  pfad: string;
+  bytes: Uint8Array;
+  inhalt: OapInhalt;
+  /** alle Projektdateien im Projektordner (für die Wahl) */
+  kandidaten: string[];
+}
 
 export interface ProjektdatenDatei {
   /** Projektordner (absolut) */
@@ -301,10 +326,31 @@ function ladeEinstellungen(): Gespeichert {
     verlaufOffen: o.verlaufOffen === true,
     gliederungOffen: o.gliederungOffen !== false,
     rollenVorgaben: o.rollenVorgaben && typeof o.rollenVorgaben === 'object' ? Object.fromEntries(Object.entries(o.rollenVorgaben).filter(([, v]) => typeof v === 'string')) : {},
-    projektdatenVorlage: typeof o.projektdatenVorlage === 'string' ? o.projektdatenVorlage : '',
+    oapNeu: typeof o.oapNeu === 'string' ? o.oapNeu : VORGABE_OAP,
+    oapWahl: o.oapWahl && typeof o.oapWahl === 'object' ? Object.fromEntries(Object.entries(o.oapWahl).filter(([, v]) => typeof v === 'string')) : {},
     vorgabeAuswahl: Array.isArray(o.vorgabeAuswahl) ? strings(o.vorgabeAuswahl) : VORGABE_AUSWAHL,
     auswahl,
   };
+}
+
+/** Vorgabe für eine neue Projektdatei: bei uns liegen Berechnungen unter Planung/Berechnungen */
+export const VORGABE_OAP = 'Planung/Berechnungen/{Kürzel}.oap';
+
+/**
+ * Projektdatei unter mehreren im Projektordner: gewählt, sonst im Ordner der Berechnungen, sonst die mit dem
+ * kürzesten Pfad, dann die zuletzt geänderte.
+ */
+export function oapAuswahl(dateien: Eintrag[], gewaehlt: string | undefined): Eintrag | null {
+  const oap = dateien.filter((e) => !e.ordner && /\.oap$/i.test(e.pfad) && !/(^|\/)~\$/.test(e.pfad));
+  const g = gewaehlt && oap.find((e) => e.pfad.toLowerCase() === gewaehlt.toLowerCase());
+  if (g) return g;
+  const rang = (e: Eintrag) => [/berechnung/i.test(e.pfad) ? 0 : 1, e.pfad.split('/').length, -(e.geaendert ?? 0)];
+  return (
+    oap.sort((a, b) => {
+      const [x, y] = [rang(a), rang(b)];
+      return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || a.pfad.localeCompare(b.pfad, 'de');
+    })[0] ?? null
+  );
 }
 
 /* ---------- Entwürfe und Verlauf ---------- */
@@ -578,49 +624,38 @@ export const useFormulare = create<FormulareState>()((set, get) => {
   };
 
   /**
-   * Nach dem Speichern der Projektkarte: geänderte Angaben auch in die Projektdaten.xlsx im Ordner „Organisation“
-   * schreiben (nur die Wertzellen). Fehlt die Datei und ist eine Vorlage eingestellt, wird sie daraus angelegt.
+   * Angaben in die Projektdatei (.oap) schreiben: frisch einlesen, nur die übergebenen Angaben in `meta` ändern,
+   * ersetzen (mit Sicherungskopie). Fehlt die Datei und ist ein Pfad für neue eingestellt, wird sie angelegt.
+   * Liefert eine Meldung oder null.
    */
-  const projektdatenNachtragen = async (projekt: Projekt, karte: Projektkarte, geaendert: string[]) => {
+  const inProjektdatei = async (projekt: Projekt, werte: Map<Angabe, string>): Promise<string | null> => {
     const ds = get().ds;
-    if (!ds || get().projekt !== projekt) return;
-    const angaben = (Object.entries(IN_PROJEKTKARTE) as [Angabe, { gruppe: number; id: number }][]).filter(([, z]) => geaendert.includes(pkSchluessel(z.gruppe, z.id)));
-    if (!angaben.length) return;
-    let pd = get().projektdaten;
-    try {
-      const vorlage = get().projektdatenVorlage;
-      const ablage = ablageVon(get(), projekt);
-      if (pd === 'fehlt' && vorlage && ablage) {
-        const i = Math.max(vorlage.lastIndexOf('\\'), vorlage.lastIndexOf('/'));
-        const bytes = await ds.lies(vorlage.slice(0, i), vorlage.slice(i + 1));
-        if (!bytes) throw new Error(`Vorlage ${vorlage} nicht gefunden`);
-        await ds.dokumentAnlegen(verbinde(ablage.root, ablage.pfad), `Organisation/${projekt.ordner} Projektdaten.xlsx`, bytes);
-        await get().projektdatenLaden();
-        pd = get().projektdaten;
-      }
-      if (!pd || pd === 'fehlt') return;
-      if (pd.inOffice || (await ds.inOffice(pd.root, pd.pfad))) {
-        set({ meldung: { art: 'fehler', text: 'Projektdaten.xlsx ist in Excel geöffnet – dort nicht nachgetragen.' } });
-        return;
-      }
-      const neu = new Map<Angabe, string>();
-      for (const [a, z] of angaben) neu.set(a, pkWert(karte, z.gruppe, z.id));
-      const zellen = new Map<number, Map<string, string>>();
-      for (const e of pd.eintraege) {
-        if (!neu.has(e.angabe)) continue;
-        const w = zellwert(pd.eintraege, e, neu);
-        if (w === e.wert && !pd.eintraege.some((x) => x !== e && x.zelle === e.zelle)) continue;
-        zellen.set(e.blatt, (zellen.get(e.blatt) ?? new Map()).set(e.zelle, w));
-      }
-      if (![...zellen.values()].some((m) => m.size)) return;
-      const aktuell = await ds.lies(pd.root, pd.pfad);
-      if (!aktuell || !gleich(aktuell, pd.bytes)) throw new Error('die Datei wurde inzwischen geändert');
-      await ds.dokumentErsetzen(pd.root, pd.pfad, xlsxAendern(pd.bytes, zellen));
-      await get().projektdatenLaden();
-      set({ meldung: { art: 'info', text: `Projektkarte gespeichert – Projektdaten.xlsx mitgeführt (${[...zellen.values()].reduce((n, m) => n + m.size, 0)} Wert(e)).` } });
-    } catch (e) {
-      fehler('Projektdaten.xlsx nicht mitgeführt', e);
+    const ablage = ablageVon(get(), projekt);
+    if (!ds || !ablage || !werte.size || get().projekt !== projekt) return null;
+    const o = get().oap;
+    if (o === 'fehlt') {
+      const vorlage = get().oapNeu;
+      if (!vorlage.trim()) return null;
+      const pfad = oapPfad(vorlage, projekt.ordner);
+      const meta = metaMit({ ...leereMeta(), projektcode: projekt.ordner }, werte);
+      await ds.dokumentAnlegen(verbinde(ablage.root, ablage.pfad), pfad, neueOap(werte.get('vorhaben')?.trim() || projekt.titel || projekt.ordner, meta));
+      log.info(`Projektdatei angelegt: ${pfad}`);
+      await get().oapLaden();
+      return `Projektdatei angelegt: ${pfad}`;
     }
+    if (!o) return null;
+    // frisch lesen: nur die eigenen Angaben ändern, was andere Apps inzwischen gespeichert haben, bleibt
+    const aktuell = await ds.lies(o.root, o.pfad);
+    if (!aktuell) throw new Error(`${o.pfad} nicht gefunden`);
+    const bisher = oapLesen(aktuell).meta;
+    // nur, was sich unterscheidet – steht schon alles so darin, bleibt die Datei unberührt
+    const vorher = angabenAus(bisher);
+    const geaendert = new Map([...werte].filter(([a, w]) => (vorher.get(a) ?? '').trim() !== w.trim()));
+    if (!geaendert.size) return null;
+    await ds.dokumentErsetzen(o.root, o.pfad, oapMetaSetzen(aktuell, metaMit(bisher, geaendert)));
+    log.info(`Projektdatei ${o.pfad}: ${[...geaendert.keys()].join(', ')}`);
+    await get().oapLaden();
+    return `Projektdatei mitgeführt (${geaendert.size} Angabe(n))`;
   };
 
   /** Neuer Stand der Projektkarte: übernehmen und lokal sichern (Entwurf und Verlauf) */
@@ -646,6 +681,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     adressbuch: lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null),
     adressbuchLaeuft: null,
     projektdaten: null,
+    oap: null,
     einstellungsBereich: 'ordner',
     ablage: [],
     ablageFehler: [],
@@ -724,7 +760,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     projektWaehlen: async (projekt) => {
       await get().schliessen();
-      set({ projekt, formulare: [], karte: null, datei: null, projektdaten: null, haupt: 'formular' });
+      set({ projekt, formulare: [], karte: null, datei: null, projektdaten: null, oap: null, haupt: 'formular' });
       const ds = get().ds;
       if (!projekt || !ds) return;
       try {
@@ -732,6 +768,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       } catch (e) {
         fehler(`Formulare von ${projekt.ordner} nicht lesbar`, e);
       }
+      void get().oapLaden();
       void get().projektdatenLaden();
     },
 
@@ -1062,7 +1099,64 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       set({ rollenVorgaben });
     },
 
-    setProjektdatenVorlage: (projektdatenVorlage) => set({ projektdatenVorlage: projektdatenVorlage.trim() }),
+    setOapNeu: (oapNeu) => set({ oapNeu: oapNeu.trim() }),
+    oapWaehlen: async (pfad) => {
+      const p = get().projekt;
+      if (!p) return;
+      const oapWahl = { ...get().oapWahl };
+      if (pfad) oapWahl[p.ordner] = pfad;
+      else delete oapWahl[p.ordner];
+      set({ oapWahl });
+      await get().oapLaden();
+    },
+    oapLaden: async () => {
+      const { ds, projekt } = get();
+      const ablage = ablageVon(get(), projekt);
+      if (!ds || !projekt || !ablage) return;
+      const root = verbinde(ablage.root, ablage.pfad);
+      try {
+        const alle = await ds.liste(root, 4);
+        const datei = oapAuswahl(alle, get().oapWahl[projekt.ordner]);
+        const kandidaten = alle.filter((e) => !e.ordner && /\.oap$/i.test(e.pfad)).map((e) => e.pfad);
+        if (!datei) {
+          if (get().projekt === projekt) set({ oap: 'fehlt' });
+          return;
+        }
+        const bytes = await ds.lies(root, datei.pfad);
+        if (!bytes) throw new Error('nicht lesbar');
+        if (get().projekt === projekt) set({ oap: { root, pfad: datei.pfad, bytes, inhalt: oapLesen(bytes), kandidaten } });
+      } catch (e) {
+        log.warn(`Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}`);
+        if (get().projekt === projekt) set({ oap: 'fehlt', meldung: { art: 'fehler', text: `Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}` } });
+      }
+    },
+    oapUebernehmen: (angaben) => {
+      const o = get().oap;
+      if (!o || o === 'fehlt') return;
+      const werte = angabenAus(o.inhalt.meta);
+      const neu: KartenWert[] = [];
+      const k = get().karte;
+      for (const a of angaben) {
+        const ziel = IN_PROJEKTKARTE[a];
+        if (ziel && werte.has(a) && k && pkEintrag(k.karte, ziel.gruppe, ziel.id)) neu.push({ gruppe: ziel.gruppe, id: ziel.id, wert: werte.get(a)! });
+      }
+      get().karteMehrere(neu, 'Aus der Projektdatei übernommen');
+    },
+    oapEintragen: async (angaben) => {
+      const { karte: k, projekt } = get();
+      if (!k || !projekt) return;
+      const werte = new Map<Angabe, string>();
+      for (const a of angaben) {
+        const ziel = IN_PROJEKTKARTE[a];
+        if (ziel && pkEintrag(k.karte, ziel.gruppe, ziel.id)) werte.set(a, karteText(k, ziel.gruppe, ziel.id));
+      }
+      try {
+        const text = await inProjektdatei(projekt, werte);
+        if (text) set({ meldung: { art: 'info', text } });
+      } catch (e) {
+        fehler('Nicht in die Projektdatei eingetragen', e);
+      }
+    },
 
     adressbuchLaden: async () => {
       const { ds, projekte } = get();
@@ -1162,9 +1256,20 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         const frisch = await ds.projektkarteLesen(k.projekt.root, pfad);
         if (!frisch) throw new Error('Projektkarte nach dem Speichern nicht lesbar');
         karteAktualisieren({ ...k, karte: frisch, aenderungen: {} });
-        // die Projektdaten.xlsx im Projektordner gleich mitführen
         set({ meldung: { art: 'info', text: `Projektkarte von ${k.projekt.ordner} gespeichert.` } });
-        await projektdatenNachtragen(k.projekt, frisch, aenderungen.map((a) => pkSchluessel(a.gruppe, a.id)));
+        // die Projektdatei (.oap) im Projektordner gleich mitführen: geänderte Angaben mit Gegenstück
+        const geaendert = new Set(aenderungen.map((a) => pkSchluessel(a.gruppe, a.id)));
+        const werte = new Map<Angabe, string>();
+        for (const { angabe } of OAP_ANGABEN) {
+          const z = IN_PROJEKTKARTE[angabe];
+          if (z && geaendert.has(pkSchluessel(z.gruppe, z.id))) werte.set(angabe, pkWert(frisch, z.gruppe, z.id));
+        }
+        try {
+          const text = await inProjektdatei(k.projekt, werte);
+          if (text) set({ meldung: { art: 'info', text: `Projektkarte gespeichert – ${text}.` } });
+        } catch (e) {
+          fehler('Projektkarte gespeichert, aber nicht in die Projektdatei übernommen', e);
+        }
         log.info(`Projektkarte gespeichert: ${pfad} (${aenderungen.length} Einträge)`);
       } catch (e) {
         fehler('Projektkarte nicht gespeichert', e);
@@ -1189,7 +1294,8 @@ useFormulare.subscribe((s) => {
     verlaufOffen: s.verlaufOffen,
     gliederungOffen: s.gliederungOffen,
     rollenVorgaben: s.rollenVorgaben,
-    projektdatenVorlage: s.projektdatenVorlage,
+    oapNeu: s.oapNeu,
+    oapWahl: s.oapWahl,
     vorgabeAuswahl: s.vorgabeAuswahl,
     auswahl: s.auswahl,
   };

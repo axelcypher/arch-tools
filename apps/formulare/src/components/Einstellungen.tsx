@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { dateiname, openFileWithPath } from '@core/platform/files';
+import { dateiname } from '@core/platform/files';
 import type { Adresse } from '../adressbuch';
 import { adressName, adressOrt, inRolle, sucheAdressen } from '../adressbuch';
 import { waehleOrdner } from '../dateisystem';
@@ -7,7 +7,8 @@ import { IN_PROJEKTKARTE } from '../projektdaten';
 import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
 import { AntragEinstellungen } from './AntragEinstellungen';
 import type { EinstellungsBereich } from '../store';
-import { useFormulare } from '../store';
+import { VORGABE_OAP, useFormulare } from '../store';
+import { OAP_ANGABEN } from '../oap';
 import type { SymbolName } from './Symbol';
 import { Symbol } from './Symbol';
 
@@ -17,7 +18,7 @@ const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; te
   { id: 'adressbuch', titel: 'Adressbuch', symbol: 'adressen', text: 'Adressen aus allen FORMA-Projekten' },
   { id: 'formulare', titel: 'Formulare', symbol: 'formular', text: 'Gliederung und Füllstand je Formular' },
   { id: 'antrag', titel: 'Antrag & Export', symbol: 'export', text: 'PDF-Export, Antragsfassungen, Antragsdokumente' },
-  { id: 'projektdaten', titel: 'Projektdaten.xlsx', symbol: 'tabelle', text: 'Abgleich mit dem Projektordner' },
+  { id: 'projektdaten', titel: 'Projektdatei (.oap)', symbol: 'tabelle', text: 'Projektstammdaten aus dem Projektordner' },
 ];
 
 /** Einträge einer Adressgruppe in der Projektkarte (für die Anzeige im Adressbuch) */
@@ -415,60 +416,37 @@ function Formulare() {
 }
 
 function Projektdaten() {
-  const vorlage = useFormulare((s) => s.projektdatenVorlage);
-  const { setProjektdatenVorlage } = useFormulare.getState();
+  const neu = useFormulare((s) => s.oapNeu);
+  const { setOapNeu } = useFormulare.getState();
   return (
     <>
-      <h2>Projektdaten.xlsx</h2>
+      <h2>Projektdatei (.oap)</h2>
       <p className="muted">
-        Im Projektordner liegt unter <code>Organisation\&lt;Kürzel&gt; Projektdaten.xlsx</code> eine Übersicht der Projektdaten. Die App liest sie allgemein – Beschriftung
-        und Wert rechts daneben; Überschriften wie „Bauherr“ oder „Grundstück“ bestimmen, wozu Straße, PLZ und Ort gehören. In der Projektkarte lassen sich die Angaben
-        übernehmen; beim Speichern der Projektkarte werden geänderte Angaben in die Datei nachgetragen (nur die Wertzellen).
+        Die Projektstammdaten kommen aus der Projektdatei im Projektordner – dem gemeinsamen Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und
+        Projektordner (die Daten stehen darin als JSON unter „meta“). Gesucht wird bis vier Ebenen tief; bei mehreren gilt die im Ordner der Berechnungen, sonst die
+        mit dem kürzesten Pfad – je Projekt lässt sich in der Projektkarte eine andere wählen. In der Projektkarte lassen sich die Angaben in beide Richtungen
+        abgleichen; beim Speichern der Projektkarte werden geänderte Angaben in die Projektdatei eingetragen, alles andere darin bleibt unverändert. Eine alte
+        Projektdaten.xlsx wird nur noch gelesen, um ihre Angaben zu übernehmen.
       </p>
-      <Karte titel="Vorlage für neue Projekte" text="Fehlt die Datei, wird sie beim Speichern der Projektkarte aus dieser Vorlage angelegt. Leer = keine anlegen.">
+      <Karte titel="Neue Projektdatei" text="Fehlt die Projektdatei, wird sie beim Speichern der Projektkarte hier angelegt (relativ zum Projektordner, {Kürzel} als Platzhalter). Leer = keine anlegen.">
         <div className="es-zeile">
-          <input value={vorlage} placeholder="z. B. Z:\Vorlagen\Projektdaten.xlsx" onChange={(e) => setProjektdatenVorlage(e.target.value)} aria-label="Vorlage für die Projektdaten.xlsx" />
-          <button
-            onClick={async () => {
-              const d = await openFileWithPath({ filterName: 'Excel-Mappe', extensions: ['xlsx'] });
-              if (d?.pfad) setProjektdatenVorlage(d.pfad);
-            }}
-          >
-            Durchsuchen …
-          </button>
+          <input value={neu} placeholder={VORGABE_OAP} onChange={(e) => setOapNeu(e.target.value)} aria-label="Pfad für neue Projektdateien" />
+          {neu !== VORGABE_OAP && <button onClick={() => setOapNeu(VORGABE_OAP)}>Vorgabe</button>}
         </div>
       </Karte>
-      <Karte titel="Erkannte Angaben">
+      <Karte titel="Angaben">
         <table className="es-tabelle">
           <thead>
             <tr>
               <th>In der Projektkarte</th>
-              <th>Beschriftung in der Projektdaten.xlsx (Beispiele)</th>
+              <th>In der Projektdatei</th>
             </tr>
           </thead>
           <tbody>
-            {(
-              [
-                ['vorhaben', 'Bauvorhaben, Projekt, Maßnahme'],
-                ['grundstueck.strasse', 'Straße / Nr. (unter „Grundstück“)'],
-                ['grundstueck.ort', 'Ort, PLZ / Ort'],
-                ['gemarkung', 'Gemarkung'],
-                ['flur', 'Flur'],
-                ['flurstueck', 'Flurstück, Flst.'],
-                ['grundstuecksflaeche', 'Grundstücksfläche'],
-                ['bauherr.name', 'Bauherr, Name, Firma'],
-                ['bauherr.vorname', 'Vorname'],
-                ['bauherr.strasse', 'Straße (unter „Bauherr“)'],
-                ['bauherr.plz', 'PLZ'],
-                ['bauherr.ort', 'Ort'],
-                ['bauherr.telefon', 'Telefon, Tel., Mobil'],
-                ['bauherr.email', 'E-Mail'],
-                ['aktenzeichen', 'Aktenzeichen'],
-              ] as const
-            ).map(([a, b]) => (
-              <tr key={a}>
-                <td>{IN_PROJEKTKARTE[a]?.titel}</td>
-                <td>{b}</td>
+            {OAP_ANGABEN.map(({ angabe, feld }) => (
+              <tr key={angabe}>
+                <td>{IN_PROJEKTKARTE[angabe]?.titel}</td>
+                <td>{feld}</td>
               </tr>
             ))}
           </tbody>
