@@ -12,6 +12,9 @@ import { verbinde } from './projektordner';
  * Welcher Ordner gilt, steht je Benutzer in %APPDATA%\arch-tools\konfig.json – derselbe Ort für alle Apps.
  * Ohne eigene Wahl ist der Konfigurationsordner dieser lokale Ordner selbst. Im Browser (ohne Dateizugriff) liegen
  * die Bereiche im lokalen Speicher.
+ *
+ * Was nur dem Benutzer gehört (z. B. „Zuletzt geöffnet“), liegt mit `{ lokal: true }` immer in diesem lokalen Ordner,
+ * nie im gemeinsamen.
  */
 
 export interface AllgemeineEinstellungen {
@@ -73,32 +76,63 @@ export function konfigOrt(): Promise<KonfigOrt | null> {
   return ort;
 }
 
+export interface KonfigOptionen {
+  /** nur für diesen Benutzer auf diesem Rechner (%APPDATA%\arch-tools), nicht im gemeinsamen Ordner */
+  lokal?: boolean;
+}
+
+const schluessel = (bereich: string, o: KonfigOptionen) => (o.lokal ? `arch-tools:lokal:${bereich}` : SPEICHER(bereich));
+
 /** Rohinhalt eines Bereichs; `null`, wenn es ihn (noch) nicht gibt */
-export async function konfigLesen(bereich: string): Promise<unknown> {
+export async function konfigLesen(bereich: string, optionen: KonfigOptionen = {}): Promise<unknown> {
   const o = await konfigOrt();
   if (!o) {
     try {
-      const roh = localStorage.getItem(SPEICHER(bereich));
+      const roh = localStorage.getItem(schluessel(bereich, optionen));
       return roh ? (JSON.parse(roh) as unknown) : null;
     } catch {
       return null;
     }
   }
-  return dateiLesen(verbinde(o.ordner, `${bereich}.json`));
+  return dateiLesen(verbinde(optionen.lokal ? o.basis : o.ordner, `${bereich}.json`));
+}
+
+/**
+ * Schreiben nacheinander: Zwei Änderungen kurz hintereinander (Lesen, Ändern, Schreiben) dürfen sich nicht
+ * überholen – sonst ginge die erste verloren.
+ */
+let kette: Promise<unknown> = Promise.resolve();
+function nacheinander<T>(f: () => Promise<T>): Promise<T> {
+  const p = kette.then(f, f);
+  kette = p.catch(() => undefined);
+  return p;
 }
 
 /** Bereich schreiben (ganz ersetzen) */
-export async function konfigSchreiben(bereich: string, wert: unknown): Promise<void> {
+export function konfigSchreiben(bereich: string, wert: unknown, optionen: KonfigOptionen = {}): Promise<void> {
+  return nacheinander(() => schreibenJetzt(bereich, wert, optionen));
+}
+
+async function schreibenJetzt(bereich: string, wert: unknown, optionen: KonfigOptionen = {}): Promise<void> {
   const o = await konfigOrt();
   if (!o) {
     try {
-      localStorage.setItem(SPEICHER(bereich), JSON.stringify(wert));
+      localStorage.setItem(schluessel(bereich, optionen), JSON.stringify(wert));
     } catch {
       // ohne Speicher gilt die Einstellung nur bis zum Schließen
     }
     return;
   }
-  await dateiSchreiben(verbinde(o.ordner, `${bereich}.json`), wert);
+  await dateiSchreiben(verbinde(optionen.lokal ? o.basis : o.ordner, `${bereich}.json`), wert);
+}
+
+/** Bereich gezielt ändern: frisch lesen, `aendern` anwenden, schreiben – nacheinander mit anderen Änderungen */
+export function konfigAendern<T>(bereich: string, aendern: (roh: unknown) => T, optionen: KonfigOptionen = {}): Promise<T> {
+  return nacheinander(async () => {
+    const neu = aendern(await konfigLesen(bereich, optionen));
+    await schreibenJetzt(bereich, neu, optionen);
+    return neu;
+  });
 }
 
 /**
@@ -140,9 +174,49 @@ export async function allgemeinLaden(): Promise<AllgemeineEinstellungen> {
 }
 
 /** Gemeinsame Einstellungen ändern: frisch lesen, nur die übergebenen Angaben ersetzen (andere Apps schreiben mit) */
-export async function allgemeinAendern(patch: Partial<AllgemeineEinstellungen>): Promise<AllgemeineEinstellungen> {
-  const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
-  const neu = { ...roh, ...patch };
-  await konfigSchreiben('allgemein', neu);
-  return allgemeinAus(neu);
+export function allgemeinAendern(patch: Partial<AllgemeineEinstellungen>): Promise<AllgemeineEinstellungen> {
+  return nacheinander(async () => {
+    const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
+    const neu = { ...roh, ...patch };
+    await schreibenJetzt('allgemein', neu);
+    return allgemeinAus(neu);
+  });
+}
+
+/* ---------- Zuletzt geöffnet: je Benutzer, gemeinsam für alle Apps ---------- */
+
+export interface ZuletztEintrag {
+  /** vollständiger Pfad des Projektordners (bzw. der Datei) – der Schlüssel */
+  pfad: string;
+  /** zuletzt geöffnet (ms seit 1970) */
+  zeit: number;
+  /** in welcher App */
+  app?: string;
+}
+
+const ZULETZT = 'zuletzt';
+const ZULETZT_MAX = 50;
+
+const zuletztAus = (roh: unknown): ZuletztEintrag[] =>
+  (Array.isArray((roh as { eintraege?: unknown })?.eintraege) ? (roh as { eintraege: unknown[] }).eintraege : [])
+    .filter((e): e is ZuletztEintrag => !!e && typeof e === 'object' && typeof (e as ZuletztEintrag).pfad === 'string' && typeof (e as ZuletztEintrag).zeit === 'number')
+    .map((e) => ({ pfad: e.pfad, zeit: e.zeit, ...(typeof e.app === 'string' ? { app: e.app } : {}) }));
+
+/** Zuletzt geöffnete Projekte dieses Benutzers (aller Apps), neueste zuerst */
+export async function zuletztLesen(): Promise<ZuletztEintrag[]> {
+  return zuletztAus(await konfigLesen(ZULETZT, { lokal: true }).catch(() => null)).sort((a, b) => b.zeit - a.zeit);
+}
+
+/** Projekt als zuletzt geöffnet vermerken (gleicher Pfad ohne Rücksicht auf Groß-/Kleinschreibung zählt einmal) */
+export async function zuletztMerken(pfad: string, app?: string, zeit = Date.now()): Promise<ZuletztEintrag[]> {
+  return konfigAendern(
+    ZULETZT,
+    (roh) => ({ eintraege: [{ pfad, zeit, ...(app ? { app } : {}) }, ...zuletztAus(roh).filter((e) => e.pfad.toLowerCase() !== pfad.toLowerCase())].slice(0, ZULETZT_MAX) }),
+    { lokal: true },
+  ).then((r) => r.eintraege);
+}
+
+/** Eintrag aus „Zuletzt geöffnet“ nehmen – am Projekt selbst ändert sich nichts */
+export async function zuletztVergessen(pfad: string): Promise<ZuletztEintrag[]> {
+  return konfigAendern(ZULETZT, (roh) => ({ eintraege: zuletztAus(roh).filter((e) => e.pfad.toLowerCase() !== pfad.toLowerCase()) }), { lokal: true }).then((r) => r.eintraege);
 }

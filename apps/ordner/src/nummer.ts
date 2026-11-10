@@ -80,3 +80,32 @@ export function dateimuster(schema: string, nummer: string): RegExp {
   muster += escape(schema.slice(pos));
   return new RegExp(`^${muster}$`);
 }
+
+/**
+ * Nummer und Kurzname aus einem Ordnernamen nach dem Schema („2026-014 EFH Musterweg“ bei „{nummer} {kurzname}“) –
+ * für Projektordner ohne Projektdatei, damit der Assistent nicht bei null anfängt. Leer, wenn er nicht passt.
+ */
+export function ausOrdnername(schema: string, name: string): { nummer?: string; kurzname?: string } {
+  const namen: string[] = [];
+  let muster = '';
+  let pos = 0;
+  for (const m of schema.matchAll(/\{([a-zäöü_]+)\}/gi)) {
+    muster += escape(schema.slice(pos, m.index));
+    const n = m[1].toLowerCase();
+    if (n === 'nummer') muster += '(.+?)';
+    else if (n === 'kurzname') muster += '(.+)';
+    else if (n === 'jahr') muster += '\\d{4}';
+    else muster += '.*?';
+    if (n === 'nummer' || n === 'kurzname') namen.push(n);
+    pos = m.index + m[0].length;
+  }
+  muster += escape(schema.slice(pos));
+  const r = new RegExp(`^${muster}$`).exec(name.trim());
+  if (!r) return {};
+  const out: { nummer?: string; kurzname?: string } = {};
+  namen.forEach((n, i) => {
+    const v = r[i + 1]?.trim();
+    if (v) out[n as 'nummer' | 'kurzname'] = v;
+  });
+  return out;
+}

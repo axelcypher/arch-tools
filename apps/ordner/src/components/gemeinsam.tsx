@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { hatDateisystem, oeffneOrdner, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import type { Ergebnis, Herkunft, Plan } from '../plan';
+import { tutEtwas } from '../plan';
 import { useOrdner } from '../store';
 import type { Struktur } from '../struktur';
 import { aktivePresets } from '../struktur';
 
-/** Bausteine, die „Neues Projekt“, „Projekt aktualisieren“ und „Vorlagen“ gemeinsam nutzen */
+/** Bausteine, die der Assistent und „Vorlagen“ gemeinsam nutzen */
 
-const HERKUNFT: Record<Herkunft, string> = { struktur: 'Struktur', vorlage: 'Vorlage', stammdaten: 'Stammdaten', flaechen: 'leere Flächenberechnung' };
+const HERKUNFT: Record<Herkunft, string> = { struktur: 'Struktur', vorlage: 'Vorlage', projektdatei: 'Projektdatei mit Stammdaten' };
 
 /**
  * Trockenlauf als Baum: jeder Ordner und jede Datei mit Herkunft und dem Vermerk „neu“ oder „vorhanden“.
@@ -17,8 +18,8 @@ export function PlanTabelle({ plan, abgewaehlt, onUmschalten, nurNeu = false }: 
   const weg = [...(abgewaehlt ?? [])].map((p) => p.toLowerCase());
   const entfaellt = (pfad: string) => weg.some((w) => pfad.toLowerCase() === w || pfad.toLowerCase().startsWith(`${w}/`));
   // nur Neues: Ordner bleiben stehen, wenn darin etwas neu ist (sonst fehlt im Baum der Zusammenhang)
-  const neuDarin = (pfad: string) => plan.schritte.some((x) => !x.vorhanden && (x.pfad === pfad || x.pfad.startsWith(`${pfad}/`)));
-  const zeilen = nurNeu ? plan.schritte.filter((s) => !s.vorhanden || (s.art === 'ordner' && neuDarin(s.pfad))) : plan.schritte;
+  const neuDarin = (pfad: string) => plan.schritte.some((x) => tutEtwas(x) && (x.pfad === pfad || x.pfad.startsWith(`${pfad}/`)));
+  const zeilen = nurNeu ? plan.schritte.filter((s) => tutEtwas(s) || (s.art === 'ordner' && neuDarin(s.pfad))) : plan.schritte;
   if (!zeilen.length) return <p className="muted small-text">Es fehlt nichts – alles ist schon vorhanden.</p>;
   return (
     <div className="po-plan">
@@ -29,9 +30,9 @@ export function PlanTabelle({ plan, abgewaehlt, onUmschalten, nurNeu = false }: 
             const aus = entfaellt(s.pfad);
             const herkunft = s.art === 'datei' || s.herkunft === 'vorlage' ? `${HERKUNFT[s.herkunft]}${s.preset ? ` · ${s.preset}` : ''}` : '';
             return (
-              <tr key={`${s.art}:${s.pfad}`} className={`${s.vorhanden ? 'vorhanden' : ''}${aus ? ' abgewaehlt' : ''}`}>
+              <tr key={`${s.art}:${s.pfad}`} className={`${s.vorhanden && !tutEtwas(s) ? 'vorhanden' : ''}${aus ? ' abgewaehlt' : ''}`}>
                 <td style={{ paddingLeft: 6 + tiefe * 16 }} title={s.pfad}>
-                  {onUmschalten && !s.vorhanden && (
+                  {onUmschalten && tutEtwas(s) && (
                     <input
                       type="checkbox"
                       className="po-wahl"
@@ -49,8 +50,11 @@ export function PlanTabelle({ plan, abgewaehlt, onUmschalten, nurNeu = false }: 
                 <td className="muted small-text" title={s.quelle ? `aus dem Vorlagenordner: ${s.quelle}` : undefined}>
                   {herkunft}
                 </td>
-                <td className="po-status" title={s.vorhandenAls ? `mit anderem Datum vorhanden – nach dem Schema hieße sie heute ${s.pfad.split('/').pop()}` : undefined}>
-                  {aus ? 'abgewählt' : s.vorhandenAls ? 'vorhanden*' : s.vorhanden ? 'vorhanden' : 'neu'}
+                <td
+                  className="po-status"
+                  title={s.aenderung?.teile.length ? `wird ergänzt: ${s.aenderung.teile.join(', ')}` : s.vorhandenAls ? `mit anderem Datum vorhanden – nach dem Schema hieße sie heute ${s.pfad.split('/').pop()}` : undefined}
+                >
+                  {aus ? 'abgewählt' : s.aenderung?.teile.length ? 'wird ergänzt' : s.vorhandenAls ? 'vorhanden*' : s.vorhanden ? 'vorhanden' : 'neu'}
                 </td>
               </tr>
             );
@@ -157,7 +161,7 @@ export function PresetAuswahl({ struktur, auswahl, onChange }: { struktur: Struk
         </label>
       ))}
       {unbekannt.map((n) => (
-        <span key={n} className="po-unbekannt" title="In der projekt.json gewählt, in der Struktur aber nicht vorhanden">
+        <span key={n} className="po-unbekannt" title="In der Projektdatei gewählt, in der Struktur aber nicht vorhanden">
           {n} (unbekannt)
         </span>
       ))}
@@ -169,12 +173,14 @@ export function PresetAuswahl({ struktur, auswahl, onChange }: { struktur: Struk
 export function ErgebnisAnzeige({ ordner, liste, children }: { ordner: string; liste: Ergebnis[]; children?: React.ReactNode }) {
   const [fehler, setFehler] = useState<string | null>(null);
   const angelegt = liste.filter((x) => x.status === 'angelegt').length;
+  const ergaenzt = liste.filter((x) => x.status === 'ergaenzt').length;
   const unveraendert = liste.filter((x) => x.status === 'vorhanden').length;
   const fehlgeschlagen = liste.filter((x) => x.status === 'fehler');
   return (
     <div className={`po-ergebnis${fehlgeschlagen.length ? ' fehler' : ''}`}>
       <strong>
-        {angelegt} angelegt{unveraendert ? `, ${unveraendert} schon vorhanden` : ''}
+        {angelegt} angelegt{ergaenzt ? ', Projektdatei ergänzt' : ''}
+        {unveraendert ? `, ${unveraendert} schon vorhanden` : ''}
         {fehlgeschlagen.length ? `, ${fehlgeschlagen.length} fehlgeschlagen` : ''}
       </strong>
       {ordner && <code>{ordner}</code>}

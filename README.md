@@ -8,7 +8,7 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 | **Flächenrechner** | Flächen- und Rauminhaltsberechnung nach DIN 277 und WoFlV | unten |
 | **GRZ-Nachweis** | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
 | **Kostenermittlung** | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
-| **Projektordner** | Projektordner nach einheitlichem Schema anlegen, mit Vorlagen-Presets bestücken, aktualisieren und prüfen | [docs/projektordner.md](docs/projektordner.md) |
+| **Projektordner** | Projekte mit einem Assistenten anlegen und ergänzen: Stammdaten in der Projektdatei, Ordner nach Schema, Vorlagen-Presets; Ordner prüfen | [docs/projektordner.md](docs/projektordner.md) |
 | **Entzerrung** | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 | **Formulare** | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
 
@@ -83,11 +83,14 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
 - **Massen- und Kostenermittlung nach DIN 276** als eigene App (`apps/kosten`): Mengen aus dem Projekt mit
   Nachweis im Grundriss und im 3D-Modell, Kennwerte mit Bandbreite, Kennwertkatalog, Kostenstände – siehe
   [docs/kosten.md](docs/kosten.md)
-- **Projektordner** als eigene App (`apps/ordner`): Projektordner nach einheitlicher, konfigurierbarer Struktur
-  anlegen (Trockenlauf, `projekt.json`, leere Flächenrechner-Datei), **Vorlagen-Presets** aus einem eigenen
-  Vorlagenordner (Datei oder Ordner → Zielordner, Dateiname nach dem Schema des Büros, `.dotx`/`.xltx` werden
-  Dokumente), vorhandene Projekte **aktualisieren** (nur Fehlendes ergänzen) und Ordner prüfen – siehe
-  [docs/projektordner.md](docs/projektordner.md)
+- **Projektordner** als eigene App (`apps/ordner`): Assistent für neue und bestehende Projekte (Stammdaten,
+  Umfang, Vorlagen, Trockenlauf), alles in der Projektdatei (`.oap`) des Projektordners, **Vorlagen-Presets** aus
+  einem eigenen Vorlagenordner (Datei oder Ordner → Zielordner, Dateiname nach dem Schema des Büros,
+  `.dotx`/`.xltx` werden Dokumente), Ordner prüfen – siehe [docs/projektordner.md](docs/projektordner.md)
+- **Gemeinsame Basis aller Apps** (`packages/core`): Konfigurationsordner für übergreifende Einstellungen
+  (`platform/konfig.ts`), die Projektdatei im Projektordner finden, gezielt ergänzen und anlegen
+  (`projektdatei.ts`, `platform/projektordner.ts`), Stammdaten-Dialog für Projektordner ohne Projektdatei
+  (`ui/Stammdaten.tsx`); unbekannte Abschnitte der Projektdatei bleiben erhalten
 - **Projektdaten** (Projektcode, Adresse, Grundstück mit Gemarkung/Flur/Flurstück, Bauherr mit beliebig vielen
   E-Mail-Adressen und Telefonnummern) im Dialog; als Platzhalter für Excel-Vorlagen (`{{bauherr.name}}` …)
 - Rückgängig/Wiederholen, automatische Zwischenspeicherung (IndexedDB); stürzt eine App kurz nach dem Laden des
@@ -132,7 +135,7 @@ packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als
 apps/flaechenrechner/  Flächenrechner (dieses Tool): Zeichenfläche, Bericht, Excel, DXF/PDF, 3D
 apps/grz/              GRZ/GFZ-Nachweis: Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md
 apps/kosten/           Kostenermittlung nach DIN 276: Mengen, Kennwerte, Kostenstände, Druck, Excel – siehe docs/kosten.md
-apps/ordner/           Projektordner anlegen, aktualisieren und prüfen: Struktur, Vorlagen-Presets, Stammdaten – siehe docs/projektordner.md
+apps/ordner/           Projekt-Assistent (neu/ergänzen), Ordner prüfen: Struktur, Vorlagen-Presets, Projektdatei – siehe docs/projektordner.md
 apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
 apps/formulare/        FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
 ```

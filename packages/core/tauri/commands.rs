@@ -443,3 +443,144 @@ async fn projekt_oap_ersetzen(app: tauri::AppHandle, root: String, pfad: String,
     log::info!("Projektdatei ersetzt: {} ({} Bytes, Sicherung {})", p.display(), laenge, kopie.display());
     Ok(())
 }
+
+fn projekt_suche(dir: &std::path::Path, prefix: &str, tiefe: u32, endung: &str, out: &mut Vec<ProjektEintrag>, gesehen: &mut usize) -> Result<(), String> {
+    let lesen = match std::fs::read_dir(dir) {
+        Ok(l) => l,
+        // nicht lesbare Unterordner (Rechte) überspringen – die Suche soll nicht an einem Ordner scheitern
+        Err(_) if !prefix.is_empty() => return Ok(()),
+        Err(e) => return Err(format!("{}: {}", dir.display(), e)),
+    };
+    for e in lesen.flatten() {
+        let typ = match e.file_type() {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+        if typ.is_symlink() {
+            continue;
+        }
+        *gesehen += 1;
+        if *gesehen >= PROJEKT_MAX_EINTRAEGE {
+            return Err(format!("Mehr als {PROJEKT_MAX_EINTRAEGE} Einträge – bitte einen kleineren Ordner wählen."));
+        }
+        let name = e.file_name().to_string_lossy().to_string();
+        let pfad = if prefix.is_empty() { name.clone() } else { format!("{prefix}/{name}") };
+        if typ.is_dir() {
+            if tiefe > 1 {
+                projekt_suche(&e.path(), &pfad, tiefe - 1, endung, out, gesehen)?;
+            }
+        } else if name.to_lowercase().ends_with(&format!(".{endung}")) {
+            let meta = e.metadata().ok();
+            out.push(ProjektEintrag {
+                pfad,
+                ordner: false,
+                groesse: meta.as_ref().map(|m| m.len()).unwrap_or(0),
+                geaendert: meta.as_ref().map(projekt_ms).unwrap_or(0),
+            });
+        }
+    }
+    Ok(())
+}
+
+/// Sucht Dateien mit der Endung `endung` (ohne Punkt, z. B. „oap“) unter `root` bis zur Tiefe `tiefe` – liefert
+/// nur die Treffer, nicht den ganzen Baum (schnell auch über das Netz).
+#[tauri::command]
+async fn projekt_dateien_suchen(root: String, tiefe: u32, endung: String) -> Result<Vec<ProjektEintrag>, String> {
+    let dir = std::path::Path::new(&root);
+    if !dir.is_absolute() {
+        return Err(format!("Kein vollständiger Pfad: {root}"));
+    }
+    let endung = endung.trim_start_matches('.').to_lowercase();
+    let mut out = Vec::new();
+    let mut gesehen = 0;
+    projekt_suche(dir, "", tiefe.max(1), &endung, &mut out, &mut gesehen)?;
+    out.sort_by(|a, b| a.pfad.to_lowercase().cmp(&b.pfad.to_lowercase()));
+    Ok(out)
+}
+
+#[derive(serde::Serialize)]
+struct ZipEintragInhalt {
+    /// Daten des Eintrags, wie sie im Archiv stehen (bei `methode` 8 noch komprimiert), Base64
+    daten: String,
+    /// 0 = gespeichert, 8 = deflate
+    methode: u16,
+    /// Größe unkomprimiert
+    groesse: u64,
+    /// Änderungszeit des Archivs (ms seit 1970)
+    geaendert: u64,
+}
+
+fn le16(b: &[u8], i: usize) -> u16 {
+    u16::from_le_bytes([b[i], b[i + 1]])
+}
+fn le32(b: &[u8], i: usize) -> u32 {
+    u32::from_le_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]])
+}
+
+/// Liest einen einzelnen Eintrag eines ZIP-Archivs (z. B. `projekt.json` einer Projektdatei), ohne das ganze
+/// Archiv zu laden – für Übersichten mit vielen Projekten. `None`, wenn es Datei oder Eintrag nicht gibt.
+#[tauri::command]
+async fn projekt_zip_eintrag(root: String, pfad: String, name: String) -> Result<Option<ZipEintragInhalt>, String> {
+    use std::io::{Read, Seek, SeekFrom};
+    let p = projekt_unterhalb(&root, &pfad)?;
+    let fehler = |e: std::io::Error| format!("{}: {}", p.display(), e);
+    let mut f = match std::fs::File::open(&p) {
+        Ok(f) => f,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(fehler(e)),
+    };
+    let meta = f.metadata().map_err(fehler)?;
+    let laenge = meta.len();
+    // Ende des zentralen Verzeichnisses: in den letzten 64 KB + 22 Bytes
+    let ende = laenge.min(65_557);
+    f.seek(SeekFrom::Start(laenge - ende)).map_err(fehler)?;
+    let mut schwanz = vec![0u8; ende as usize];
+    f.read_exact(&mut schwanz).map_err(fehler)?;
+    let eocd = (0..schwanz.len().saturating_sub(21)).rev().find(|&i| le32(&schwanz, i) == 0x0605_4b50);
+    let Some(eocd) = eocd else {
+        return Err(format!("{}: kein ZIP-Archiv", p.display()));
+    };
+    let anzahl = le16(&schwanz, eocd + 10) as usize;
+    let cd_groesse = le32(&schwanz, eocd + 12) as usize;
+    let cd_start = le32(&schwanz, eocd + 16) as u64;
+    if cd_start + cd_groesse as u64 > laenge {
+        return Err(format!("{}: ZIP-Verzeichnis beschädigt", p.display()));
+    }
+    f.seek(SeekFrom::Start(cd_start)).map_err(fehler)?;
+    let mut cd = vec![0u8; cd_groesse];
+    f.read_exact(&mut cd).map_err(fehler)?;
+    let mut i = 0;
+    for _ in 0..anzahl {
+        if i + 46 > cd.len() || le32(&cd, i) != 0x0201_4b50 {
+            break;
+        }
+        let methode = le16(&cd, i + 10);
+        let komprimiert = le32(&cd, i + 20) as u64;
+        let groesse = le32(&cd, i + 24) as u64;
+        let n = le16(&cd, i + 28) as usize;
+        let extra = le16(&cd, i + 30) as usize;
+        let kommentar = le16(&cd, i + 32) as usize;
+        let lokal = le32(&cd, i + 42) as u64;
+        if i + 46 + n > cd.len() {
+            break;
+        }
+        if &cd[i + 46..i + 46 + n] == name.as_bytes() {
+            let mut kopf = [0u8; 30];
+            f.seek(SeekFrom::Start(lokal)).map_err(fehler)?;
+            f.read_exact(&mut kopf).map_err(fehler)?;
+            if le32(&kopf, 0) != 0x0403_4b50 {
+                return Err(format!("{}: ZIP-Eintrag {name} beschädigt", p.display()));
+            }
+            let start = lokal + 30 + le16(&kopf, 26) as u64 + le16(&kopf, 28) as u64;
+            if start + komprimiert > laenge {
+                return Err(format!("{}: ZIP-Eintrag {name} beschädigt", p.display()));
+            }
+            f.seek(SeekFrom::Start(start)).map_err(fehler)?;
+            let mut daten = vec![0u8; komprimiert as usize];
+            f.read_exact(&mut daten).map_err(fehler)?;
+            return Ok(Some(ZipEintragInhalt { daten: base64::engine::general_purpose::STANDARD.encode(&daten), methode, groesse, geaendert: projekt_ms(&meta) }));
+        }
+        i += 46 + n + extra + kommentar;
+    }
+    Ok(None)
+}

@@ -1,37 +1,22 @@
-import { zipSync } from 'fflate';
 import { isTauri } from '@core/platform/files';
-import { ordnerWaehlen, ordnerZeigen, tauriProjektordner } from '@core/platform/projektordner';
+import type { ProjektordnerZugriff } from '@core/platform/projektordner';
+import { ordnerWaehlen, ordnerZeigen, SpeicherProjektordner, tauriProjektordner, verbinde } from '@core/platform/projektordner';
+import type { OrdnerEintrag } from '@core/projektdatei';
 
 /**
- * Zugriff auf Ordner und Dateien. In der Desktop-App über eigene Befehle der Tauri-Hülle, die nur neu
- * anlegen und nie überschreiben. Im Browser gibt es keinen Schreibzugriff auf Ordner: Dort entsteht der
- * Projektordner als ZIP, und zum Prüfen wird ein Ordner über den Dateidialog eingelesen.
+ * Zugriff auf Ordner und Dateien. In der Desktop-App über die gemeinsamen Befehle der Tauri-Hüllen: Ordner und
+ * Dateien nur neu anlegen, nie überschreiben – außer der Projektdatei (.oap), die gezielt ergänzt wird (mit
+ * Sicherungskopie). Im Browser gibt es keinen Schreibzugriff auf Ordner: Dort entsteht der Projektordner als ZIP,
+ * und zum Prüfen wird ein Ordner über den Dateidialog eingelesen.
  */
 
-export interface Eintrag {
-  /** Pfad relativ zum aufgelisteten Ordner, mit „/“ getrennt */
-  pfad: string;
-  ordner: boolean;
-  groesse: number;
-}
+export type Eintrag = OrdnerEintrag;
 
-export interface Dateisystem {
-  /** Ordner und Dateien unter `root` bis zur Tiefe `tiefe` (1 = nur direkt enthaltene) */
-  liste(root: string, tiefe: number): Promise<Eintrag[]>;
-  lies(root: string, pfad: string): Promise<Uint8Array>;
-  /** true = neu angelegt, false = war schon vorhanden */
-  ordnerAnlegen(root: string, pfad: string): Promise<boolean>;
-  /** true = neu angelegt, false = vorhandene Datei unverändert gelassen */
-  dateiAnlegen(root: string, pfad: string, daten: Uint8Array): Promise<boolean>;
-}
+/** Zugriff auf Ordner – der gemeinsame der Apps (anlegen, lesen, die Projektdatei gezielt ersetzen) */
+export type Dateisystem = ProjektordnerZugriff;
 
 /** Desktop: die gemeinsamen Befehle aller Apps (packages/core/tauri/commands.rs) */
-export const tauriDateisystem: Dateisystem = {
-  liste: (root, tiefe) => tauriProjektordner.liste(root, tiefe),
-  lies: (root, pfad) => tauriProjektordner.lies(root, pfad),
-  ordnerAnlegen: (root, pfad) => tauriProjektordner.ordnerAnlegen(root, pfad),
-  dateiAnlegen: (root, pfad, daten) => tauriProjektordner.dateiAnlegen(root, pfad, daten),
-};
+export const tauriDateisystem: Dateisystem = tauriProjektordner;
 
 export const hatDateisystem = () => isTauri();
 
@@ -39,76 +24,10 @@ export const waehleOrdner = (titel: string): Promise<string | null> => ordnerWae
 
 export const oeffneOrdner = (pfad: string): Promise<void> => ordnerZeigen(pfad);
 
-/** Pfad aus Ordner und relativem Teil – mit dem Trenner, den der Ordner schon verwendet */
-export function verbinde(root: string, rel: string): string {
-  const sep = root.includes('\\') ? '\\' : '/';
-  return `${root.replace(/[\\/]+$/, '')}${sep}${rel.split('/').join(sep)}`;
-}
+export { verbinde };
 
-/* ---------- im Speicher (Tests, ZIP im Browser) ---------- */
-
-/** Dateisystem im Speicher: Schlüssel sind vollständige Pfade mit „/“; Ordner haben den Wert null */
-export class SpeicherDateisystem implements Dateisystem {
-  readonly eintraege = new Map<string, Uint8Array | null>();
-
-  private pfad(root: string, rel: string) {
-    return `${root.replace(/[\\/]+$/, '').replace(/\\/g, '/')}/${rel}`;
-  }
-
-  async liste(root: string, tiefe: number): Promise<Eintrag[]> {
-    const basis = `${root.replace(/[\\/]+$/, '').replace(/\\/g, '/')}/`;
-    const out: Eintrag[] = [];
-    for (const [p, v] of this.eintraege) {
-      if (!p.startsWith(basis)) continue;
-      const rel = p.slice(basis.length);
-      if (!rel || rel.split('/').length > tiefe) continue;
-      out.push({ pfad: rel, ordner: v === null, groesse: v?.length ?? 0 });
-    }
-    return out.sort((a, b) => a.pfad.toLowerCase().localeCompare(b.pfad.toLowerCase()));
-  }
-
-  async lies(root: string, pfad: string): Promise<Uint8Array> {
-    const v = this.eintraege.get(this.pfad(root, pfad));
-    if (!v) throw new Error(`${pfad}: nicht gefunden`);
-    return v;
-  }
-
-  async ordnerAnlegen(root: string, pfad: string): Promise<boolean> {
-    const teile = pfad.split('/');
-    let neu = false;
-    for (let i = 1; i <= teile.length; i++) {
-      const p = this.pfad(root, teile.slice(0, i).join('/'));
-      if (this.eintraege.get(p) instanceof Uint8Array) throw new Error(`${pfad}: Es gibt bereits eine Datei mit diesem Namen`);
-      if (!this.eintraege.has(p)) {
-        this.eintraege.set(p, null);
-        neu = i === teile.length || neu;
-      }
-    }
-    return neu;
-  }
-
-  async dateiAnlegen(root: string, pfad: string, daten: Uint8Array): Promise<boolean> {
-    const p = this.pfad(root, pfad);
-    if (this.eintraege.has(p)) return false;
-    const eltern = pfad.split('/').slice(0, -1).join('/');
-    if (eltern) await this.ordnerAnlegen(root, eltern);
-    this.eintraege.set(p, daten);
-    return true;
-  }
-
-  /** alles unter `root` als ZIP (leere Ordner bleiben erhalten) */
-  alsZip(root: string): Uint8Array {
-    const basis = `${root.replace(/[\\/]+$/, '').replace(/\\/g, '/')}/`;
-    const dateien: Record<string, Uint8Array> = {};
-    for (const [p, v] of this.eintraege) {
-      if (!p.startsWith(basis)) continue;
-      const rel = p.slice(basis.length);
-      if (v === null) dateien[`${rel}/`] = new Uint8Array(0);
-      else dateien[rel] = v;
-    }
-    return zipSync(dateien, { level: 6 });
-  }
-}
+/** im Speicher (Tests, ZIP im Browser) */
+export { SpeicherProjektordner as SpeicherDateisystem };
 
 /* ---------- Browser: Ordner über den Dateidialog einlesen ---------- */
 

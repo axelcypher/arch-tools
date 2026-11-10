@@ -1,16 +1,20 @@
-import { strToU8 } from 'fflate';
-import { ARCHIV_ENDUNG, writeArchive } from '@core/archive';
+import { writeArchive } from '@core/archive';
+import type { ProjectMeta, ProjektordnerAngaben } from '@core/model';
+import { projektdateiSchreiben } from '@core/platform/projektordner';
+import { projektdateiPfad, projektdateiWaehlen, VORGABE_OAP_PFAD } from '@core/projektdatei';
 import type { Dateisystem, Eintrag } from './dateisystem';
 import { nameAus } from './nummer';
-import type { Stammdaten } from './stammdaten';
-import { alsProject, bereinigt, isoDatum, platzhalter, PROJEKT_DATEI, projektJson } from './stammdaten';
+import type { ProjektdateiAenderung, Stammdaten } from './stammdaten';
+import { alsProject, bereinigt, isoDatum, platzhalter, projektdateiAenderung } from './stammdaten';
 import type { Struktur, VorlagenEintrag } from './struktur';
 import { aktivePresets, normPfad, regelGilt, sichererName } from './struktur';
 import { alsDokument, fuelleVorlage, zielDateiname } from './vorlagen';
 
 /**
  * Plan für einen Projektordner – neu anzulegen oder zu ergänzen: erst zeigen, was passiert (Trockenlauf), dann
- * ausführen. Es wird nur neu angelegt – was es schon gibt, bleibt unverändert und ist im Plan als „vorhanden“ markiert.
+ * ausführen. Ordner und Vorlagen werden nur neu angelegt – was es schon gibt, bleibt unverändert und ist im Plan als
+ * „vorhanden“ markiert. Die Projektdatei (.oap) wird angelegt, wenn sie fehlt, sonst gezielt ergänzt (geänderte
+ * Stammdaten, Presets). Gelöscht wird nichts.
  */
 
 /** Datei im Vorlagenordner */
@@ -20,7 +24,7 @@ export interface Vorlage {
   lies: () => Promise<Uint8Array>;
 }
 
-export type Herkunft = 'struktur' | 'vorlage' | 'stammdaten' | 'flaechen';
+export type Herkunft = 'struktur' | 'vorlage' | 'projektdatei';
 
 export interface Schritt {
   art: 'ordner' | 'datei';
@@ -35,8 +39,13 @@ export interface Schritt {
   vorhanden: boolean;
   /** vorhanden unter anderem Namen (Datum im Dateinamen) */
   vorhandenAls?: string;
+  /** vorhandene Projektdatei: was darin ergänzt bzw. geändert wird */
+  aenderung?: ProjektdateiAenderung;
   daten?: () => Promise<Uint8Array>;
 }
+
+/** Schritt, der etwas tut: Neues anlegen oder die vorhandene Projektdatei ergänzen */
+export const tutEtwas = (s: Schritt) => !s.vorhanden || !!s.aenderung?.teile.length;
 
 export interface Plan {
   /** Name des Projektordners */
@@ -49,13 +58,19 @@ export interface Plan {
   hinweise: string[];
   /** Presets, die angewendet werden */
   presets: string[];
+  /** die Projektdatei: neu anzulegen oder vorhanden (mit dem, was darin ergänzt wird) */
+  projektdatei: { pfad: string; neu: boolean; teile: string[] };
 }
 
 export interface PlanOptionen {
-  /** Name eines vorhandenen Projektordners (Aktualisieren) – sonst ergibt er sich aus dem Schema */
+  /** Name eines vorhandenen Projektordners (Ergänzen) – sonst ergibt er sich aus dem Schema */
   ordner?: string;
   /** Jahr, in dem das Projekt angelegt wurde (für {jahr} in Namen) – sonst das laufende */
   jahr?: number;
+  /** Ort einer neuen Projektdatei im Projektordner (gemeinsame Einstellung aller Apps) */
+  oapPfad?: string;
+  /** die vorhandene Projektdatei des Ordners (Ergänzen) – sie wird gezielt ergänzt statt neu angelegt */
+  projektdatei?: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben } | null;
 }
 
 /** Dateien, die keine Vorlagen sind: Systemdateien, Sperrdateien von Office, die Anleitung im Stamm */
@@ -215,13 +230,26 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     schritte.set(k, { art: 'datei', pfad, herkunft, ...extra, vorhanden: da.has(k) || !!als, ...(als ? { vorhandenAls: als } : {}), daten });
   };
 
-  // projekt.json hält fest, welche Presets gewählt sind
-  datei(PROJEKT_DATEI, 'stammdaten', async () => strToU8(projektJson({ ...s, presets: presets.map((p) => p.name) }, struktur, date)));
-
-  if (struktur.flaechenprojekt.trim()) {
-    let pfad = zielPfad(struktur.flaechenprojekt, werte);
-    if (pfad && !new RegExp(`\\.${ARCHIV_ENDUNG}$`, 'i').test(pfad)) pfad += `.${ARCHIV_ENDUNG}`;
-    if (pfad) datei(pfad, 'flaechen', async () => writeArchive(alsProject(s), { app: `Projektordner ${__APP_VERSION__}`, date }));
+  // Projektdatei (.oap): jedes Projekt hat eine. Fehlt sie, wird sie angelegt – mit den Stammdaten, der Struktur
+  // und den gewählten Presets; sonst werden darin nur geänderte Stammdaten und die Presets ergänzt.
+  const presetNamen = presets.map((p) => p.name);
+  const geladen = optionen.projektdatei ?? null;
+  const schonDa = geladen ? null : projektdateiWaehlen(vorhandene);
+  let projektdatei: Plan['projektdatei'];
+  if (geladen) {
+    const aenderung = projektdateiAenderung(geladen, s, { struktur, presets: presetNamen });
+    const eltern = geladen.pfad.split('/').slice(0, -1).join('/');
+    if (eltern) ordnerSchritt(eltern, 'projektdatei');
+    schritte.set(geladen.pfad.toLowerCase(), { art: 'datei', pfad: geladen.pfad, herkunft: 'projektdatei', vorhanden: true, aenderung });
+    projektdatei = { pfad: geladen.pfad, neu: false, teile: aenderung.teile };
+  } else if (schonDa) {
+    // vorhanden, aber nicht geladen (z. B. im Browser nicht lesbar): bleibt unverändert
+    datei(schonDa.pfad, 'projektdatei', async () => new Uint8Array());
+    projektdatei = { pfad: schonDa.pfad, neu: false, teile: [] };
+  } else {
+    const pfad = projektdateiPfad(optionen.oapPfad ?? VORGABE_OAP_PFAD, { nummer: s.nummer, kurzname: s.kurzname, jahr: werte.jahr });
+    datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date }), { app: `Projektordner ${__APP_VERSION__}`, date }));
+    projektdatei = { pfad, neu: true, teile: [] };
   }
 
   // Vorlagen aus den Presets
@@ -261,7 +289,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
   // als Baum: jeder Ordner vor seinem Inhalt, Dateien im Stamm zuletzt
   const schluessel = (x: Schritt) => (x.art === 'datei' && !x.pfad.includes('/') ? `￿${x.pfad}` : x.pfad);
   liste.sort((a, b) => schluessel(a).localeCompare(schluessel(b), 'de', { numeric: true }));
-  return { ordner, schritte: liste, fehler, warnungen, hinweise, presets: presets.map((p) => p.name) };
+  return { ordner, schritte: liste, fehler, warnungen, hinweise, presets: presetNamen, projektdatei };
 }
 
 /** Plan ohne die abgewählten Einträge – mit einem Ordner entfällt alles darin */
@@ -274,7 +302,8 @@ export function ohne(plan: Plan, abgewaehlt: Iterable<string>): Plan {
 
 export interface Ergebnis {
   schritt: Schritt;
-  status: 'angelegt' | 'vorhanden' | 'fehler';
+  /** angelegt = neu, ergaenzt = vorhandene Projektdatei geändert, vorhanden = unverändert gelassen */
+  status: 'angelegt' | 'ergaenzt' | 'vorhanden' | 'fehler';
   meldung?: string;
 }
 
@@ -296,9 +325,15 @@ export async function ausfuehren(fs: Dateisystem, root: string, plan: Plan, opti
   for (const [i, schritt] of plan.schritte.entries()) {
     const pfad = optionen.imProjektordner ? schritt.pfad : `${plan.ordner}/${schritt.pfad}`;
     try {
-      // eine Datei mit anderem Datum im Namen gilt als vorhanden – nicht noch einmal anlegen
-      const neu = schritt.vorhandenAls ? false : schritt.art === 'ordner' ? await fs.ordnerAnlegen(root, pfad) : await fs.dateiAnlegen(root, pfad, await schritt.daten!());
-      out.push({ schritt, status: neu ? 'angelegt' : 'vorhanden' });
+      if (schritt.aenderung) {
+        // vorhandene Projektdatei: frisch lesen, nur die Änderungen eintragen
+        const geschrieben = schritt.aenderung.teile.length ? await projektdateiSchreiben(fs, root, pfad, schritt.aenderung.aendern) : false;
+        out.push({ schritt, status: geschrieben ? 'ergaenzt' : 'vorhanden' });
+      } else {
+        // eine Datei mit anderem Datum im Namen gilt als vorhanden – nicht noch einmal anlegen
+        const neu = schritt.vorhandenAls ? false : schritt.art === 'ordner' ? await fs.ordnerAnlegen(root, pfad) : await fs.dateiAnlegen(root, pfad, await schritt.daten!());
+        out.push({ schritt, status: neu ? 'angelegt' : 'vorhanden' });
+      }
     } catch (e) {
       out.push({ schritt, status: 'fehler', meldung: e instanceof Error ? e.message : String(e) });
     }

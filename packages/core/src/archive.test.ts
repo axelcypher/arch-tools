@@ -153,13 +153,13 @@ describe('Abschnitte anderer Apps', () => {
     // eine andere App hat einen eigenen Abschnitt in projekt.json geschrieben
     const dateien = unzipSync(zip);
     const roh = JSON.parse(strFromU8(dateien['projekt.json'])) as Record<string, unknown>;
-    roh.formulare = { umfang: [{ nr: '01', titel: 'Bauantrag' }], aktiveFassung: 'BAUA 2' };
+    roh.zukunft = { umfang: [{ nr: '01', titel: 'Bauantrag' }], aktiveFassung: 'BAUA 2' };
     dateien['projekt.json'] = strToU8(JSON.stringify(roh));
     const gelesen = readProjectFile(zipSync(dateien));
-    expect(gelesen.erweiterungen).toEqual({ formulare: { umfang: [{ nr: '01', titel: 'Bauantrag' }], aktiveFassung: 'BAUA 2' } });
+    expect(gelesen.erweiterungen).toEqual({ zukunft: { umfang: [{ nr: '01', titel: 'Bauantrag' }], aktiveFassung: 'BAUA 2' } });
     // wieder geschrieben (z. B. vom Flächenrechner): der Abschnitt steht unverändert auf der obersten Ebene
     const wieder = JSON.parse(strFromU8(unzipSync(writeArchive(gelesen))['projekt.json'])) as Record<string, unknown>;
-    expect(wieder.formulare).toEqual(roh.formulare);
+    expect(wieder.zukunft).toEqual(roh.zukunft);
     expect(wieder.erweiterungen).toBeUndefined();
     expect(readProjectFile(writeArchive(gelesen)).erweiterungen).toEqual(gelesen.erweiterungen);
   });

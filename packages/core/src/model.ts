@@ -280,6 +280,11 @@ export interface ProjectMeta {
   beteiligte?: Beteiligter[];
   /** Tag, an dem das Projekt angelegt wurde (JJJJ-MM-TT) */
   angelegt?: string;
+  /**
+   * Projektmerkmale (Name → Wert), z. B. Gebäudeklasse, Sonderbau, Verfahren – frei erweiterbar; welche es gibt,
+   * steht in den Einstellungen der Apps.
+   */
+  merkmale?: Record<string, string>;
 }
 
 /** Leistungsphasen nach HOAI */
@@ -389,6 +394,8 @@ export interface Project {
   kosten?: Kosten;
   /** Angaben der App „Projektordner“ (Struktur, Vorlagen-Presets) */
   projektordner?: ProjektordnerAngaben;
+  /** Angaben der App „Formulare“ (Projektumfang, aktive Antragsfassung …) – geprüft wird in der App, hier nur durchgereicht */
+  formulare?: unknown;
   /**
    * Abschnitte der Projektdatei, die diese Programmfassung nicht kennt (von neueren Fassungen oder anderen Apps).
    * Sie werden unverändert wieder geschrieben – keine App verliert Daten einer anderen.
