@@ -283,6 +283,35 @@ describe('Dateibefehle im Projektordner', () => {
     expect(ds.papierkorb.has(`${PROJEKT}/Planung/Protokoll.txt`)).toBe(true);
   });
 
+  it('Formulare löschen: mit Rückfrage und Sicherung, ein hier geöffnetes wird vorher geschlossen – in FORMA geöffnete nicht', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Zweites.frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/003-In FORMA.frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/003-In FORMA.frmtmp', new Uint8Array([1]));
+    const host = await projektBS9();
+    // in FORMA geöffnet: abgelehnt, ohne zu fragen
+    await rechtsklick(knopf(host, '003-In FORMA'));
+    await klick(menuePunkt('Löschen'));
+    expect(document.querySelector('.rf')).toBeNull();
+    expect(host.textContent).toContain('ist gerade in FORMA oder auf einem anderen Rechner geöffnet');
+    expect(ds.dateien.has('C:/FORMA/BS9/003-In FORMA.frmsjf')).toBe(true);
+
+    // hier geöffnet und geändert: nach Rückfrage geschlossen (Sperre weg) und gelöscht
+    await klick(knopf(host, '002-Zweites'));
+    expect(ds.dateien.has('C:/FORMA/BS9/002-Zweites.frmtmp')).toBe(true);
+    const feld = useFormulare.getState().offen!.felder[0].find((f) => f.art === 'text')!;
+    act(() => useFormulare.getState().wertSetzen(feld, 'geändert'));
+    await rechtsklick(knopf(host, '002-Zweites'));
+    await klick(menuePunkt('Löschen'));
+    expect(document.querySelector('.rf')!.textContent).toContain('Nicht gespeicherte Eingaben gehen verloren');
+    await klick(knopf(document.querySelector('.rf')!, 'Löschen'));
+    await warte();
+    expect(ds.dateien.has('C:/FORMA/BS9/002-Zweites.frmsjf')).toBe(false);
+    expect(ds.dateien.has('C:/FORMA/BS9/002-Zweites.frmtmp')).toBe(false);
+    expect(ds.papierkorb.has('C:/FORMA/BS9/002-Zweites.frmsjf')).toBe(true);
+    expect(useFormulare.getState().offen).toBeNull();
+    expect(useFormulare.getState().formulare.map((f) => f.name)).toEqual(['001-Muster', '003-In FORMA']);
+  });
+
   it('kopieren und in einen anderen Ordner einfügen', async () => {
     const host = await projektBS9();
     await klick(knopf(host, 'Planung'));

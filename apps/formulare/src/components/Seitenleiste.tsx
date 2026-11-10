@@ -4,6 +4,7 @@ import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
 import { useAntrag } from '../antragStore';
 import type { FormularEintrag } from '../projekte';
+import { formularLoeschen } from '../dateiAktionen';
 import { AblageBaum } from './AblageBaum';
 import { FassungsWahl, StatusPunkt, umfangZeigen } from './Antrag';
 import { useExportDialog } from './ExportDialog';
@@ -95,6 +96,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
         : []),
       { text: 'Im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(projekt!.root, projekt!.ordner)).catch(() => undefined) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(projekt!.root, f.pfad)) },
+      { trenner: true },
+      { text: 'Löschen …', symbol: 'muell', aktion: () => void formularLoeschen(f) },
     ];
   };
 

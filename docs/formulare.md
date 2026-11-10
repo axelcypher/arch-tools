@@ -149,7 +149,11 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   Bestätigung, mit Sicherungskopie im App-Ordner), mit einem **Antragsdokument verknüpfen** (liegt die Datei nicht im
   Ordner der aktiven Fassung, wird sie dorthin kopiert) und Pfad kopieren. Rechtsklick auf einen Ordner: Einfügen,
   Neuer Ordner …, Im Explorer zeigen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`, `.frmtmp`, `.sdb`,
-  `.ini`) lassen sich hier nicht umbenennen oder löschen.
+  `.ini`) lassen sich hier nicht umbenennen.
+- **Formulare löschen** (Rechtsklick auf ein Formular › Löschen …): nach Rückfrage und mit Sicherungskopie im
+  App-Ordner. Ist das Formular hier geöffnet, wird es vorher geschlossen (die Rückfrage warnt vor nicht gespeicherten
+  Eingaben); ist es in FORMA oder auf einem anderen Rechner geöffnet (Sperrdatei), wird nicht gelöscht. Sperrdateien,
+  Projektkarte und Projekttitel verwaltet weiterhin nur FORMA. Automatisch löscht die App nie etwas.
 
 ### Antrag, Export und Vollständigkeit
 
@@ -421,8 +425,8 @@ legt nur `.frmtmp` an bzw. löscht sie und ändert in `sj_prokarte.sdb` nur vorh
 Transaktion, und nur, wenn jeder noch den Wert hat, von dem die Änderung ausgeht. Neu anlegen darf sie Dokumente
 (PDF, Excel, Word), Formulare (`.frmsjf`, nie überschreibend) und Ordner; die Projektdatei (`.oap`) schreiben die
 gemeinsamen Befehle aus `packages/core/tauri/commands.rs`;
-kopieren und umbenennen nur ohne zu überschreiben, löschen nur nach einer Sicherungskopie – Dateien von FORMA sind
-davon ausgenommen. Beim Auflisten liefert sie die Änderungszeit mit (für die Vollständigkeitsprüfung).
+kopieren und umbenennen nur ohne zu überschreiben (Dateien von FORMA ausgenommen), löschen nur von Hand und nach
+einer Sicherungskopie – Formulare nur ohne Sperrdatei daneben, Sperrdateien, Projektkarte und Projekttitel nie. Beim Auflisten liefert sie die Änderungszeit mit (für die Vollständigkeitsprüfung).
 
 ## Kompatibilitätstests
 

@@ -4,6 +4,7 @@ import { tauriProjektordner } from '@core/platform/projektordner';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import type { SperrProbe } from './forma/sperre';
+import { sperrPfad } from './forma/sperre';
 
 /**
  * Zugriff auf die FORMA-Projektordner. In der Desktop-App über eigene Befehle der Tauri-Hülle, die nur
@@ -77,7 +78,7 @@ export interface Dateisystem {
   kopieren(root: string, von: string, nach: string): Promise<void>;
   /** Datei umbenennen bzw. verschieben; das Ziel wird nie überschrieben (nicht für Dateien von FORMA) */
   umbenennen(root: string, von: string, nach: string): Promise<void>;
-  /** Datei löschen – vorher mit Sicherungskopie (nicht für Dateien von FORMA) */
+  /** Datei löschen – vorher mit Sicherungskopie (Formulare nur, wenn nicht geöffnet; Sperr-, Projektkarten- und INI-Dateien nie) */
   loeschen(root: string, pfad: string): Promise<void>;
   /** Projektkarte (`sj_prokarte.sdb`) lesen; `null`, wenn es keine gibt */
   projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null>;
@@ -182,8 +183,11 @@ export function verbinde(root: string, rel: string): string {
 
 const gleich = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
 
-/** Dateien von FORMA, die nur FORMA selbst anlegt, umbenennt oder löscht */
+/** Dateien von FORMA, die nur FORMA selbst anlegt oder umbenennt */
 export const istFormaDatei = (pfad: string) => /\.(frmsjf|frmtmp|sdb|ini)$/i.test(pfad);
+
+/** Dateien von FORMA, die auch von Hand nicht gelöscht werden (Formulare dürfen, wenn sie nicht geöffnet sind) */
+export const nurFormaLoescht = (pfad: string) => /\.(frmtmp|sdb|ini)$/i.test(pfad);
 
 /* ---------- im Speicher (Tests) ---------- */
 
@@ -388,7 +392,8 @@ export class SpeicherDateisystem implements Dateisystem {
   }
 
   async loeschen(root: string, pfad: string): Promise<void> {
-    if (istFormaDatei(pfad)) throw new Error(`${pfad}: Dateien von FORMA werden nur in FORMA gelöscht`);
+    if (nurFormaLoescht(pfad)) throw new Error(`${pfad}: Dateien von FORMA werden nur in FORMA gelöscht`);
+    if (/\.frmsjf$/i.test(pfad) && this.dateien.has(this.pfad(root, sperrPfad(pfad)))) throw new Error(`${pfad}: Das Formular ist gerade geöffnet (Sperrdatei vorhanden) – bitte erst dort schließen`);
     const p = this.pfad(root, pfad);
     const q = this.dateien.get(p);
     if (!q) throw new Error(`${pfad}: Datei nicht gefunden`);
