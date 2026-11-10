@@ -2,7 +2,13 @@ import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
+import { useAntrag } from '../antragStore';
+import type { FormularEintrag } from '../projekte';
 import { AblageBaum } from './AblageBaum';
+import { FassungsWahl, StatusPunkt, umfangZeigen } from './Antrag';
+import { useExportDialog } from './ExportDialog';
+import type { MenuePunkt } from './Menue';
+import { zeigeMenue } from './Menue';
 import { Symbol } from './Symbol';
 
 /** Aufklappbarer Abschnitt der Navigation; der Zustand bleibt je Abschnitt erhalten */
@@ -61,6 +67,39 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
   const { projekteLaden, projektWaehlen, formularOeffnen, setHaupt, setLeisteBreite, setAuswahl } = useFormulare.getState();
   const [suche, setSuche] = useState('');
   const [pfadeBearbeiten, setPfadeBearbeiten] = useState(false);
+  const dokumente = useAntrag((s) => s.dokumente);
+  const umfangDa = useAntrag((s) => !!s.projektdatei?.umfang);
+  // Status je Formular und fehlende Formulare des Projektumfangs
+  const statusVon = useMemo(() => new Map(dokumente.filter((d) => d.formular).map((d) => [d.formular!.pfad, d])), [dokumente]);
+  const fehlende = dokumente.filter((d) => d.eintrag.art === 'intern' && !d.formular);
+
+  const formularMenue = (f: FormularEintrag): MenuePunkt[] => {
+    const umfang = useAntrag.getState().projektdatei?.umfang;
+    const zugeordnet = statusVon.get(f.pfad);
+    return [
+      { text: 'Öffnen', symbol: 'formular', aktion: () => void formularOeffnen(f) },
+      { text: 'Als PDF exportieren …', symbol: 'export', deaktiviert: !ablage, aktion: () => useExportDialog.getState().oeffnen(f.pfad) },
+      { text: 'Speichern unter …', symbol: 'datei', aktion: () => void useAntrag.getState().speichernUnter(f.pfad) },
+      { trenner: true },
+      ...(umfang
+        ? [
+            {
+              text: 'Antragsdokument',
+              symbol: 'stapel' as const,
+              unter: umfang
+                .filter((u) => u.art === 'intern')
+                .map((u) => ({
+                  text: u.titel,
+                  symbol: (zugeordnet?.eintrag.id === u.id ? 'haken' : undefined) as 'haken' | undefined,
+                  aktion: () => void useAntrag.getState().umfangSetzen(umfang.map((x) => (x.id === u.id ? { ...x, formularDatei: f.pfad.split('/').pop() } : x))),
+                })),
+            },
+          ]
+        : []),
+      { text: 'Im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(projekt!.root, projekt!.ordner)).catch(() => undefined) },
+      { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(projekt!.root, f.pfad)) },
+    ];
+  };
 
   const gefiltert = useMemo(() => {
     const q = suche.trim().toLowerCase();
@@ -107,6 +146,7 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
                 <Symbol name="schliessen" />
               </button>
             </div>
+            <FassungsWahl />
           </div>
         ) : (
           projektordner.length > 0 && (
@@ -177,16 +217,21 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
                   const ungespeichert = aktiv ? istGeaendert(offen) : hatEntwurf(projekt, f.pfad);
                   const fremd = f.gesperrt && !(aktiv && offen?.sperre.art === 'eigen');
                   const gezeigt = aktiv && haupt === 'formular';
+                  const doc = umfangDa ? statusVon.get(f.pfad) : undefined;
                   return (
                     <button
                       key={f.pfad}
                       role="listitem"
                       className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
                       aria-current={gezeigt ? 'page' : undefined}
-                      title={f.name}
+                      title={doc ? `${f.name} – ${doc.eintrag.titel}` : f.name}
                       onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
+                      onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
                     >
-                      <Symbol name="formular" />
+                      <span className="nav-symbol">
+                        <Symbol name="formular" />
+                        {doc && <StatusPunkt status={doc.status} />}
+                      </span>
                       <span className="nav-text">{f.name}</span>
                       {fremd && (
                         <span className="nav-schloss" title="Anderswo geöffnet (Sperrdatei vorhanden)" aria-label="gesperrt">
@@ -201,7 +246,29 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
                     </button>
                   );
                 })}
-                {!formulare.length && <p className="nav-leer">Keine Formulare in diesem Projekt.</p>}
+                {fehlende.map((d) => (
+                  <button
+                    key={d.eintrag.id}
+                    role="listitem"
+                    className="nav-eintrag fehlt"
+                    title={`${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`}
+                    onClick={() => void useAntrag.getState().formularAnlegen(d.eintrag.id)}
+                    onContextMenu={(e) =>
+                      zeigeMenue(e, [
+                        { text: 'Formular anlegen', symbol: 'plus', aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id) },
+                        { text: 'Projektumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
+                      ])
+                    }
+                  >
+                    <span className="nav-symbol">
+                      <Symbol name="formular" />
+                      <StatusPunkt status="fehlt" />
+                    </span>
+                    <span className="nav-text">{d.eintrag.titel}</span>
+                    <span className="nav-unter">anlegen</span>
+                  </button>
+                ))}
+                {!formulare.length && !fehlende.length && <p className="nav-leer">Keine Formulare in diesem Projekt.</p>}
               </div>
             </Abschnitt>
 

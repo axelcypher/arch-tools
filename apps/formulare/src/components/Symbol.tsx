@@ -35,6 +35,14 @@ const PFADE = {
   /** Klammer um mehrere Zeilen: Felder, die zusammen eine Angabe sind */
   gruppe: 'M7 4H5v16h2M17 4h2v16h-2M9 8h6M9 12h6M9 16h6',
   strich: 'M6 12h12',
+  export: 'M12 3v12M7 10l5 5 5-5M5 21h14',
+  kopie: 'M9 9h10v12H9zM5 15V3h10',
+  muell: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
+  link: 'M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1',
+  einfuegen: 'M9 4h6v3H9zM8 5H5v16h14V5h-3M9 13h6M12 10v6',
+  textfeld: 'M4 6V4h16v2M12 4v16M9 20h6',
+  kreuz: 'M5 5h14v14H5zM8 8l8 8M16 8l-8 8',
+  stapel: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5',
 } as const;
 
 export type SymbolName = keyof typeof PFADE;

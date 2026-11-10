@@ -4,6 +4,10 @@ import { TitleBar } from '@core/ui/TitleBar';
 import { anzahlZugeordnet } from './ausfuellen';
 import { AusfuellenDialog } from './components/AusfuellenDialog';
 import { EinstellungenAnsicht } from './components/Einstellungen';
+import { ExportDialog, useExportDialog } from './components/ExportDialog';
+import { MenueHost, MenueKnopf } from './components/Menue';
+import { RueckfrageHost } from './components/Rueckfrage';
+import { useAntrag } from './antragStore';
 import { DateiAnsicht } from './components/dokumente/DateiAnsicht';
 import { Symbol } from './components/Symbol';
 import { FelderAnsicht } from './components/FelderAnsicht';
@@ -77,6 +81,9 @@ export function App() {
     haupt === 'einstellungen' ? 'Einstellungen' : haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
   const zugeordnet = useMemo(() => (offen ? anzahlZugeordnet(offen) : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
   const formularSichtbar = !!offen && haupt === 'formular';
+  const exportPfad = useExportDialog((s) => s.pfad);
+  // Export-Dialog gehört zum Projekt
+  useEffect(() => useExportDialog.getState().schliessen(), [projekt]);
 
   useEffect(() => {
     document.title = `${geaendert ? '● ' : ''}${name} – Formulare`;
@@ -102,6 +109,9 @@ export function App() {
       } else if (taste === 'p' && s.offen && s.haupt === 'formular') {
         e.preventDefault();
         void drucken();
+      } else if (taste === 'e' && s.offen?.projekt && s.haupt === 'formular') {
+        e.preventDefault();
+        useExportDialog.getState().oeffnen(s.offen.pfad);
       } else if (taste === 'z' || taste === 'y') {
         // eigener Verlauf statt des Rückgängig der Eingabefelder (das kennt die Feldwechsel nicht)
         const zurueck = taste === 'z' && !e.shiftKey;
@@ -190,9 +200,20 @@ export function App() {
         )}
         {formularSichtbar && (
           <div className="tb-group">
-            <button title="Drucken oder als PDF speichern (Strg+P)" onClick={() => void drucken()}>
+            <button title="Drucken (Strg+P)" onClick={() => void drucken()}>
               <Symbol name="drucken" /> Drucken
             </button>
+            {offen.projekt && (
+              <MenueKnopf
+                title="Als PDF exportieren – in den Antragsordner, anderswo ins Projekt oder mit „Speichern unter …“"
+                punkte={() => [
+                  { text: 'Als PDF exportieren …', symbol: 'export', hinweis: 'Strg+E', aktion: () => useExportDialog.getState().oeffnen(offen.pfad) },
+                  { text: 'Speichern unter …', symbol: 'datei', aktion: () => void useAntrag.getState().speichernUnter(offen.pfad) },
+                ]}
+              >
+                <Symbol name="export" /> PDF
+              </MenueKnopf>
+            )}
             <button className={verlaufOffen ? 'active' : ''} title="Verlauf der Eingaben" onClick={() => setVerlaufOffen(!verlaufOffen)}>
               <Symbol name="verlauf" /> Verlauf
             </button>
@@ -297,6 +318,9 @@ export function App() {
         </section>
         {formularSichtbar && verlaufOffen && <VerlaufLeiste offen={offen} />}
       </main>
+      {exportPfad && <ExportDialog formularPfad={exportPfad} onClose={() => useExportDialog.getState().schliessen()} />}
+      <MenueHost />
+      <RueckfrageHost />
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
       {dialog === 'schnellwahl' && <Schnellwahl onClose={() => setDialog(null)} />}
       {dialog === 'ausfuellen' && offen && <AusfuellenDialog offen={offen} onClose={() => setDialog(null)} />}

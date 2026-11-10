@@ -66,3 +66,60 @@ export async function pdfAusfuellen(bytes: Uint8Array, werte: Map<string, string
     await pdfSchliessen(doc);
   }
 }
+
+/* ---------- Text und Kreuze eintragen (auch in PDFs ohne Formularfelder) ---------- */
+
+/** Eingetragener Text: Seite (ab 1), Rechteck in PDF-Koordinaten [x1, y1, x2, y2], Schriftgröße in pt */
+export interface PdfText {
+  seite: number;
+  rect: [number, number, number, number];
+  text: string;
+  groesse: number;
+  /** Drehung der Seite, damit der Text aufrecht steht */
+  drehung?: number;
+}
+
+/** Kennung im annotationStorage von pdf.js: Einträge mit diesem Anfang speichert pdf.js als neue Anmerkungen */
+const EDITOR = 'pdfjs_internal_editor_formulare_';
+/** pdf.js: AnnotationEditorType.FREETEXT */
+const FREITEXT = 3;
+
+/** Größe eines Textfelds für den Text (Helvetica, grob geschätzt) in pt */
+export function textGroesse(text: string, groesse: number): { breite: number; hoehe: number } {
+  const zeilen = text.split('\n');
+  const breite = Math.max(...zeilen.map((z) => z.length)) * groesse * 0.56 + groesse * 0.4;
+  return { breite, hoehe: zeilen.length * groesse * 1.2 + groesse * 0.3 };
+}
+
+/**
+ * Text als Freitext-Anmerkung vormerken – pdf.js schreibt sie beim Speichern als Nachtrag (mit Erscheinungsbild,
+ * druckbar), der ursprüngliche Inhalt der PDF bleibt unverändert.
+ */
+export function textVormerken(doc: PDFDocumentProxy, id: string, t: PdfText) {
+  doc.annotationStorage.setValue(`${EDITOR}${id}`, {
+    annotationType: FREITEXT,
+    color: [0, 0, 0],
+    fontSize: t.groesse,
+    value: t.text,
+    pageIndex: t.seite - 1,
+    rect: t.rect,
+    rotation: t.drehung ?? 0,
+    id: null,
+  });
+}
+
+/** Vorgemerkten Text wieder entfernen */
+export function textEntfernen(doc: PDFDocumentProxy, id: string) {
+  doc.annotationStorage.remove(`${EDITOR}${id}`);
+}
+
+/** Text in eine PDF eintragen und mit Nachtrag speichern */
+export async function pdfMitText(bytes: Uint8Array, texte: PdfText[]): Promise<Uint8Array> {
+  const doc = await pdfOeffnen(bytes);
+  try {
+    texte.forEach((t, i) => textVormerken(doc, String(i), t));
+    return await doc.saveDocument();
+  } finally {
+    await pdfSchliessen(doc);
+  }
+}

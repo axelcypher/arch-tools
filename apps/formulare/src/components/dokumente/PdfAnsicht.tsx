@@ -1,7 +1,9 @@
 import 'pdfjs-dist/web/pdf_viewer.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
-import { pdfFelder, pdfjs, pdfOeffnen, pdfSchliessen } from '../../dokumente/pdf';
+import { pdfFelder, pdfjs, pdfOeffnen, pdfSchliessen, textEntfernen, textGroesse, textVormerken } from '../../dokumente/pdf';
+import { frageText } from '../Rueckfrage';
+import { Symbol } from '../Symbol';
 import type { OffeneDatei } from '../../store';
 import { useFormulare } from '../../store';
 import { DateiKopf, useSpeichernTaste } from './DateiAnsicht';
@@ -33,9 +35,48 @@ const verweise = {
 
 const ZOOM = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
-/** Eine Seite: Bild (Canvas) und darüber die Formularfelder (Annotation Layer von pdf.js) */
-function Seite({ doc, nr, massstab }: { doc: PDFDocumentProxy; nr: number; massstab: number }) {
+type Werkzeug = 'text' | 'kreuz' | null;
+
+/** Vorgemerkter Text (noch nicht gespeichert): Lage oben links in Seitenpunkten, wie bei Maßstab 1 */
+interface Vormerk {
+  id: string;
+  seite: number;
+  links: number;
+  oben: number;
+  text: string;
+  groesse: number;
+}
+
+interface Klick {
+  nr: number;
+  /** Punkt in der Ansicht bei Maßstab 1 */
+  x: number;
+  y: number;
+  /** Ansicht → PDF-Koordinaten (bei Maßstab 1) */
+  inPdf: (x: number, y: number) => [number, number];
+  drehung: number;
+}
+
+/** Eine Seite: Bild (Canvas), darüber die Formularfelder (Annotation Layer von pdf.js) und vorgemerkter Text */
+function Seite({
+  doc,
+  nr,
+  massstab,
+  werkzeug,
+  vorgemerkt,
+  onKlick,
+  onEntfernen,
+}: {
+  doc: PDFDocumentProxy;
+  nr: number;
+  massstab: number;
+  werkzeug: Werkzeug;
+  vorgemerkt: Vormerk[];
+  onKlick: (k: Klick) => void;
+  onEntfernen: (id: string) => void;
+}) {
   const huelle = useRef<HTMLDivElement>(null);
+  const ansicht = useRef<{ inPdf: (x: number, y: number) => [number, number]; drehung: number } | null>(null);
   useEffect(() => {
     const el = huelle.current;
     if (!el) return;
@@ -45,6 +86,8 @@ function Seite({ doc, nr, massstab }: { doc: PDFDocumentProxy; nr: number; masss
       const seite = await doc.getPage(nr);
       if (abbruch) return;
       const viewport = seite.getViewport({ scale: massstab });
+      const einfach = seite.getViewport({ scale: 1 });
+      ansicht.current = { inPdf: (x, y) => einfach.convertToPdfPoint(x, y) as [number, number], drehung: seite.rotate };
       el.replaceChildren();
       el.style.width = `${Math.floor(viewport.width)}px`;
       el.style.height = `${Math.floor(viewport.height)}px`;
@@ -94,7 +137,31 @@ function Seite({ doc, nr, massstab }: { doc: PDFDocumentProxy; nr: number; masss
       abbruch = true;
     };
   }, [doc, nr, massstab]);
-  return <div ref={huelle} className="pdf-seite" data-seite-pdf={nr} />;
+  return (
+    <div
+      className={`pdf-seite-rahmen${werkzeug ? ` werkzeug-${werkzeug}` : ''}`}
+      onClickCapture={(e) => {
+        if (!werkzeug || !ansicht.current) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const r = e.currentTarget.getBoundingClientRect();
+        onKlick({ nr, x: (e.clientX - r.left) / massstab, y: (e.clientY - r.top) / massstab, ...ansicht.current });
+      }}
+    >
+      <div ref={huelle} className="pdf-seite" data-seite-pdf={nr} />
+      {vorgemerkt.map((v) => (
+        <button
+          key={v.id}
+          className="pdf-vormerk"
+          style={{ left: v.links * massstab, top: v.oben * massstab, fontSize: v.groesse * massstab }}
+          title="Noch nicht gespeichert – Klick entfernt den Eintrag"
+          onClick={() => !werkzeug && onEntfernen(v.id)}
+        >
+          {v.text}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -111,7 +178,10 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
   const [breite, setBreite] = useState(0);
   const [seitenBreite, setSeitenBreite] = useState(595);
   const [runde, setRunde] = useState(0);
+  const [werkzeug, setWerkzeug] = useState<Werkzeug>(null);
+  const [vorgemerkt, setVorgemerkt] = useState<Vormerk[]>([]);
   const flaeche = useRef<HTMLDivElement>(null);
+  const zaehler = useRef(0);
 
   useEffect(() => {
     let d: PDFDocumentProxy | null = null;
@@ -127,6 +197,7 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
         const erste = await x.getPage(1);
         setSeitenBreite(erste.getViewport({ scale: 1 }).width);
         setFelder((await pdfFelder(x)).length);
+        setVorgemerkt([]);
         setDoc(x);
       })
       .catch((e: unknown) => setFehler(e instanceof Error ? e.message : String(e)));
@@ -145,6 +216,29 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
     return () => ro.disconnect();
   }, []);
 
+  /** Text bzw. Kreuz an der angeklickten Stelle vormerken */
+  const eintragen = async (k: Klick) => {
+    if (!doc) return;
+    const text = werkzeug === 'kreuz' ? 'X' : await frageText('Text eintragen', '', 'Eintragen', 'Der Text beginnt an der angeklickten Stelle (Helvetica 11 pt).');
+    if (!text) return;
+    const groesse = werkzeug === 'kreuz' ? 12 : 11;
+    const g = textGroesse(text, groesse);
+    // Kreuz mittig auf der Stelle, Text beginnt dort (Mitte der ersten Zeile)
+    const links = werkzeug === 'kreuz' ? k.x - g.breite / 2 : k.x;
+    const oben = k.y - groesse * 0.75;
+    const [x1, y1] = k.inPdf(links, oben);
+    const [x2, y2] = k.inPdf(links + g.breite, oben + g.hoehe);
+    const id = `${Date.now().toString(36)}${zaehler.current++}`;
+    textVormerken(doc, id, { seite: k.nr, rect: [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)], text, groesse, drehung: k.drehung });
+    setVorgemerkt((v) => [...v, { id, seite: k.nr, links, oben, text, groesse }]);
+    setGeaendert(true);
+  };
+  const entfernen = (id: string) => {
+    if (!doc) return;
+    textEntfernen(doc, id);
+    setVorgemerkt((v) => v.filter((x) => x.id !== id));
+  };
+
   const speichern = useCallback(async () => {
     if (!doc || !geaendert) return;
     try {
@@ -153,40 +247,70 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
       setFehler(e instanceof Error ? e.message : String(e));
     }
   }, [doc, geaendert, dateiSpeichern]);
-  useSpeichernTaste(() => void speichern(), felder > 0);
+  useSpeichernTaste(() => void speichern(), true);
 
   const massstab = zoom > 0 ? zoom : breite > 0 ? Math.max(0.4, Math.min(3, (breite - 48) / seitenBreite)) : 1;
   const hinweis = fehler
     ? `Die PDF lässt sich nicht anzeigen: ${fehler}`
-    : felder > 0
-      ? `${felder} Formularfeld(er) – direkt auf der Seite ausfüllen. Gespeichert wird als Nachtrag; der Inhalt der PDF bleibt unverändert.`
-      : undefined;
+    : werkzeug
+      ? `${werkzeug === 'kreuz' ? 'Kreuz' : 'Text'}: auf die Stelle in der PDF klicken. Esc oder erneuter Klick auf das Werkzeug beendet.`
+      : felder > 0
+        ? `${felder} Formularfeld(er) – direkt auf der Seite ausfüllen; „Text“ und „Kreuz“ tragen auch anderswo etwas ein. Gespeichert wird als Nachtrag, der Inhalt der PDF bleibt unverändert.`
+        : '„Text“ und „Kreuz“ tragen etwas in die PDF ein. Gespeichert wird als Nachtrag, der Inhalt der PDF bleibt unverändert.';
+
+  useEffect(() => {
+    if (!werkzeug) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setWerkzeug(null);
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [werkzeug]);
 
   return (
     <div className="dok">
       <DateiKopf
         datei={datei}
         geaendert={geaendert}
-        bearbeitbar={felder > 0}
+        bearbeitbar
         hinweis={hinweis}
         onSpeichern={() => void speichern()}
         onVerwerfen={() => {
           setGeaendert(false);
+          setWerkzeug(null);
           setRunde((r) => r + 1);
         }}
         werkzeuge={
-          <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
-            <option value={0}>Seitenbreite</option>
-            {ZOOM.map((z) => (
-              <option key={z} value={z}>
-                {Math.round(z * 100)} %
-              </option>
-            ))}
-          </select>
+          <>
+            <button className={werkzeug === 'text' ? 'active' : ''} aria-pressed={werkzeug === 'text'} disabled={!doc} title="Text in die PDF eintragen: Werkzeug wählen, dann auf die Stelle klicken" onClick={() => setWerkzeug(werkzeug === 'text' ? null : 'text')}>
+              <Symbol name="textfeld" /> Text
+            </button>
+            <button className={werkzeug === 'kreuz' ? 'active' : ''} aria-pressed={werkzeug === 'kreuz'} disabled={!doc} title="Kreuz setzen (z. B. in ein Kästchen): Werkzeug wählen, dann auf die Stelle klicken" onClick={() => setWerkzeug(werkzeug === 'kreuz' ? null : 'kreuz')}>
+              <Symbol name="kreuz" /> Kreuz
+            </button>
+            <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
+              <option value={0}>Seitenbreite</option>
+              {ZOOM.map((z) => (
+                <option key={z} value={z}>
+                  {Math.round(z * 100)} %
+                </option>
+              ))}
+            </select>
+          </>
         }
       />
       <div className="dok-flaeche pdf-flaeche" ref={flaeche}>
-        {doc && Array.from({ length: doc.numPages }, (_, i) => <Seite key={`${runde}-${i}`} doc={doc} nr={i + 1} massstab={massstab} />)}
+        {doc &&
+          Array.from({ length: doc.numPages }, (_, i) => (
+            <Seite
+              key={`${runde}-${i}`}
+              doc={doc}
+              nr={i + 1}
+              massstab={massstab}
+              werkzeug={werkzeug}
+              vorgemerkt={vorgemerkt.filter((v) => v.seite === i + 1)}
+              onKlick={(k) => void eintragen(k)}
+              onEntfernen={entfernen}
+            />
+          ))}
         {!doc && !fehler && <p className="muted">PDF wird gelesen …</p>}
       </div>
     </div>

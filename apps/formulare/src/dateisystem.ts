@@ -16,7 +16,12 @@ export interface Eintrag {
   pfad: string;
   ordner: boolean;
   groesse: number;
+  /** letzte Änderung (ms seit 1970); 0 oder fehlend, wenn unbekannt */
+  geaendert?: number;
 }
+
+/** Datei mit den Angaben der App zum Projekt (Projektumfang, aktive Antragsfassung) im FORMA-Projektordner */
+export const PROJEKTDATEI = 'formulare.json';
 
 export interface Rechner {
   benutzer: string;
@@ -57,6 +62,18 @@ export interface Dateisystem {
   inOffice(root: string, pfad: string): Promise<boolean>;
   /** Neues Dokument anlegen (Ordner wird angelegt); vorhandene werden nie überschrieben */
   dokumentAnlegen(root: string, pfad: string, daten: Uint8Array): Promise<void>;
+  /** `formulare.json` im FORMA-Projekt schreiben (atomar); andere Dateien werden abgelehnt */
+  projektdateiSchreiben(root: string, pfad: string, daten: Uint8Array): Promise<void>;
+  /** Ordner anlegen (samt fehlender darüber) */
+  ordnerAnlegen(root: string, pfad: string): Promise<void>;
+  /** Neues Formular (.frmsjf) anlegen; vorhandene werden nie überschrieben */
+  formularAnlegen(root: string, pfad: string, daten: Uint8Array): Promise<void>;
+  /** Datei kopieren; das Ziel wird nie überschrieben */
+  kopieren(root: string, von: string, nach: string): Promise<void>;
+  /** Datei umbenennen bzw. verschieben; das Ziel wird nie überschrieben (nicht für Dateien von FORMA) */
+  umbenennen(root: string, von: string, nach: string): Promise<void>;
+  /** Datei löschen – vorher mit Sicherungskopie (nicht für Dateien von FORMA) */
+  loeschen(root: string, pfad: string): Promise<void>;
   /** Projektkarte (`sj_prokarte.sdb`) lesen; `null`, wenn es keine gibt */
   projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null>;
   /** Einträge der Projektkarte ändern – alle oder keiner; Fehler, wenn einer inzwischen anders lautet */
@@ -132,6 +149,12 @@ export const tauriDateisystem: Dateisystem = {
   dokumentErsetzen: (root, pfad, daten) => invoke<void>('doc_replace', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   inOffice: (root, pfad) => invoke<boolean>('doc_in_office', { root, pfad }),
   dokumentAnlegen: (root, pfad, daten) => invoke<void>('doc_create', { root, pfad, contentsBase64: bytesToBase64(daten) }),
+  projektdateiSchreiben: (root, pfad, daten) => invoke<void>('project_file_write', { root, pfad, contentsBase64: bytesToBase64(daten) }),
+  ordnerAnlegen: (root, pfad) => invoke<void>('dir_create', { root, pfad }),
+  formularAnlegen: (root, pfad, daten) => invoke<void>('form_create', { root, pfad, contentsBase64: bytesToBase64(daten) }),
+  kopieren: (root, von, nach) => invoke<void>('doc_copy', { root, von, nach }),
+  umbenennen: (root, von, nach) => invoke<void>('doc_rename', { root, von, nach }),
+  loeschen: (root, pfad) => invoke<void>('doc_delete', { root, pfad }),
   rechner: () => invoke<Rechner>('machine_info'),
 };
 
@@ -154,6 +177,9 @@ export function verbinde(root: string, rel: string): string {
 
 const gleich = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
 
+/** Dateien von FORMA, die nur FORMA selbst anlegt, umbenennt oder löscht */
+export const istFormaDatei = (pfad: string) => /\.(frmsjf|frmtmp|sdb|ini)$/i.test(pfad);
+
 /* ---------- im Speicher (Tests) ---------- */
 
 /** Dateisystem im Speicher: Schlüssel sind vollständige Pfade mit „/“; Ordner entstehen implizit */
@@ -171,6 +197,17 @@ export class SpeicherDateisystem implements Dateisystem {
   readonly geaendert = new Map<string, number>();
   /** von „dieser App“ angelegte und offen gehaltene Sperren */
   private readonly eigene = new Set<string>();
+  /** leere Ordner (vollständige Pfade) */
+  readonly ordner = new Set<string>();
+  /** gelöschte Dateien (Sicherungen) */
+  readonly papierkorb = new Map<string, Uint8Array>();
+  private uhr = 0;
+
+  /** Änderungszeit setzen – streng steigend, damit die Reihenfolge von Schreibvorgängen eindeutig ist */
+  beruehren(pfad: string) {
+    this.uhr = Math.max(Date.now(), this.uhr + 1);
+    this.geaendert.set(pfad, this.uhr);
+  }
 
   constructor(readonly rechnerInfo: Rechner = { benutzer: 'test', computer: 'TEST-PC', prozess: 4242 }) {}
 
@@ -181,13 +218,15 @@ export class SpeicherDateisystem implements Dateisystem {
   async liste(root: string, tiefe: number): Promise<Eintrag[]> {
     const basis = `${root.replace(/[\\/]+$/, '').replace(/\\/g, '/')}/`;
     const out = new Map<string, Eintrag>();
-    for (const [p, v] of this.dateien) {
+    const alle: [string, Uint8Array | null][] = [...this.dateien, ...[...this.ordner].map((o): [string, null] => [`${o}/`, null])];
+    for (const [p, v] of alle) {
       if (!p.startsWith(basis)) continue;
       const teile = p.slice(basis.length).split('/');
       for (let i = 1; i <= Math.min(teile.length, tiefe); i++) {
         const rel = teile.slice(0, i).join('/');
+        if (!rel) continue;
         const ordner = i < teile.length;
-        if (!out.has(rel)) out.set(rel, { pfad: rel, ordner, groesse: ordner ? 0 : v.length });
+        if (!out.has(rel)) out.set(rel, { pfad: rel, ordner, groesse: ordner || !v ? 0 : v.length, geaendert: this.geaendert.get(basis + rel) ?? 0 });
       }
     }
     return [...out.values()].sort((a, b) => a.pfad.toLowerCase().localeCompare(b.pfad.toLowerCase()));
@@ -202,6 +241,7 @@ export class SpeicherDateisystem implements Dateisystem {
     if (!pfad.toLowerCase().endsWith('.frmsjf')) throw new Error(`${pfad}: nur Formulare dürfen ersetzt werden`);
     if (!this.dateien.has(p)) throw new Error(`${pfad}: nicht gefunden`);
     this.dateien.set(p, daten);
+    this.beruehren(p);
     this.schreibvorgaenge.push(`ersetze ${pfad}`);
   }
 
@@ -247,6 +287,7 @@ export class SpeicherDateisystem implements Dateisystem {
     const p = this.pfad(root, pfad);
     if (this.dateien.has(p)) throw new Error(`${pfad}: Die Datei gibt es schon`);
     this.dateien.set(p, daten);
+    this.beruehren(p);
     this.schreibvorgaenge.push(`neu ${pfad}`);
   }
 
@@ -256,7 +297,60 @@ export class SpeicherDateisystem implements Dateisystem {
     if (!this.dateien.has(p)) throw new Error(`${pfad}: Datei nicht gefunden`);
     if (await this.inOffice(root, pfad)) throw new Error(`${pfad}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen`);
     this.dateien.set(p, daten);
+    this.beruehren(p);
     this.schreibvorgaenge.push(`dokument ${pfad}`);
+  }
+
+  async projektdateiSchreiben(root: string, pfad: string, daten: Uint8Array): Promise<void> {
+    if (!/(^|\/)formulare\.json$/i.test(pfad)) throw new Error(`${pfad}: Hier darf nur ${PROJEKTDATEI} geschrieben werden`);
+    this.dateien.set(this.pfad(root, pfad), daten);
+    this.schreibvorgaenge.push(`projektdatei ${pfad}`);
+  }
+
+  async ordnerAnlegen(root: string, pfad: string): Promise<void> {
+    this.ordner.add(this.pfad(root, pfad));
+    this.schreibvorgaenge.push(`ordner ${pfad}`);
+  }
+
+  async formularAnlegen(root: string, pfad: string, daten: Uint8Array): Promise<void> {
+    const p = this.pfad(root, pfad);
+    if (!/\.frmsjf$/i.test(pfad)) throw new Error(`${pfad}: Nur Formulare (.frmsjf) dürfen hier angelegt werden`);
+    if (this.dateien.has(p)) throw new Error(`${pfad}: Das Formular gibt es schon`);
+    this.dateien.set(p, daten);
+    this.beruehren(p);
+    this.schreibvorgaenge.push(`formular ${pfad}`);
+  }
+
+  async kopieren(root: string, von: string, nach: string): Promise<void> {
+    const q = this.dateien.get(this.pfad(root, von));
+    if (!q) throw new Error(`${von}: Datei nicht gefunden`);
+    if (this.dateien.has(this.pfad(root, nach))) throw new Error(`${nach}: Die Datei gibt es schon`);
+    this.dateien.set(this.pfad(root, nach), q.slice());
+    this.beruehren(this.pfad(root, nach));
+    this.schreibvorgaenge.push(`kopiere ${von} → ${nach}`);
+  }
+
+  async umbenennen(root: string, von: string, nach: string): Promise<void> {
+    if (istFormaDatei(von) || istFormaDatei(nach)) throw new Error(`${von}: Dateien von FORMA werden nur in FORMA umbenannt`);
+    const q = this.dateien.get(this.pfad(root, von));
+    if (!q) throw new Error(`${von}: Datei nicht gefunden`);
+    if (await this.inOffice(root, von)) throw new Error(`${von}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen`);
+    if (this.dateien.has(this.pfad(root, nach)) && von.toLowerCase() !== nach.toLowerCase()) throw new Error(`${nach}: Die Datei gibt es schon`);
+    this.dateien.delete(this.pfad(root, von));
+    this.dateien.set(this.pfad(root, nach), q);
+    this.geaendert.set(this.pfad(root, nach), this.geaendert.get(this.pfad(root, von)) ?? 0);
+    this.schreibvorgaenge.push(`umbenennen ${von} → ${nach}`);
+  }
+
+  async loeschen(root: string, pfad: string): Promise<void> {
+    if (istFormaDatei(pfad)) throw new Error(`${pfad}: Dateien von FORMA werden nur in FORMA gelöscht`);
+    const p = this.pfad(root, pfad);
+    const q = this.dateien.get(p);
+    if (!q) throw new Error(`${pfad}: Datei nicht gefunden`);
+    if (await this.inOffice(root, pfad)) throw new Error(`${pfad}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen`);
+    this.papierkorb.set(p, q);
+    this.dateien.delete(p);
+    this.schreibvorgaenge.push(`lösche ${pfad}`);
   }
 
   async projektkarteLesen(root: string, pfad: string): Promise<Projektkarte | null> {

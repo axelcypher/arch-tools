@@ -254,7 +254,7 @@ interface FormulareState extends Gespeichert {
   projektdatenUebernehmen: (angaben: Angabe[]) => void;
 }
 
-export type EinstellungsBereich = 'ordner' | 'stammdaten' | 'adressbuch' | 'formulare' | 'projektdaten';
+export type EinstellungsBereich = 'ordner' | 'stammdaten' | 'adressbuch' | 'formulare' | 'antrag' | 'projektdaten';
 
 export interface ProjektdatenDatei {
   /** Projektordner (absolut) */
@@ -315,6 +315,14 @@ const karteSchluessel = (p: Projekt) => `karte|${p.root}|${p.ordner}`;
 const entwuerfe = () => lesen<Record<string, Record<string, Wert>>>(ENTWUERFE, {});
 
 export const hatEntwurf = (projekt: Projekt, pfad: string) => !!entwuerfe()[dokSchluessel({ projekt, pfad })];
+
+/** Ungespeicherte Eingaben eines (nicht geöffneten) Formulars und wann sie zuletzt geändert wurden */
+export function entwurfVon(projekt: Projekt, pfad: string): { aenderungen: Record<string, Wert>; zeit: number } | null {
+  const k = dokSchluessel({ projekt, pfad });
+  const aenderungen = entwuerfe()[k];
+  if (!aenderungen || !Object.keys(aenderungen).length) return null;
+  return { aenderungen, zeit: lesen<Record<string, number>>(VERLAEUFE, {})[k] ?? Date.now() };
+}
 
 /** Verlauf je Formular unter eigenem Schlüssel; ein Verzeichnis hält fest, wann er zuletzt geändert wurde */
 const verlaufSchluessel = (k: string) => `${VERLAEUFE}:${k}`;

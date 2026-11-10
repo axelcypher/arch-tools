@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pdfAusfuellen, pdfFelder, pdfOeffnen, pdfSchliessen } from './pdf';
+import { pdfAusfuellen, pdfFelder, pdfMitText, pdfOeffnen, pdfSchliessen } from './pdf';
 
 /** Kleine PDF mit AcroForm: ein Textfeld „Bauherr“ und ein Kästchen „Neubau“ (Querverweise korrekt berechnet) */
 function formularPdf(): Uint8Array {
@@ -49,5 +49,20 @@ describe('PDF-Formulare', () => {
     const felder = await pdfFelder(wieder);
     await pdfSchliessen(wieder);
     expect(felder.find((f) => f.name === 'Bauherr')!.wert).toBe('Mustermann, Erika');
+  });
+});
+
+describe('Text und Kreuze in PDFs', () => {
+  it('trägt Freitext als Nachtrag ein – auch ohne Formularfelder; der Inhalt bleibt Byte für Byte', async () => {
+    const vorher = formularPdf();
+    const nachher = await pdfMitText(vorher, [
+      { seite: 1, rect: [100, 500, 220, 516], text: 'Müller, Erika', groesse: 11 },
+      { seite: 1, rect: [50, 640, 62, 654], text: 'X', groesse: 12 },
+    ]);
+    expect([...nachher.subarray(0, vorher.length)]).toEqual([...vorher]);
+    const doc = await pdfOeffnen(nachher);
+    const anm = (await (await doc.getPage(1)).getAnnotations()) as { subtype: string; contentsObj?: { str: string } }[];
+    await pdfSchliessen(doc);
+    expect(anm.filter((a) => a.subtype === 'FreeText').map((a) => a.contentsObj?.str)).toEqual(['Müller, Erika', 'X']);
   });
 });

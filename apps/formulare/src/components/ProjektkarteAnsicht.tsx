@@ -10,6 +10,8 @@ import { IN_PROJEKTKARTE } from '../projektdaten';
 import type { Stammadresse } from '../stammdaten';
 import { stammdatenLaden } from '../stammdaten';
 import { Symbol } from './Symbol';
+import { ProjektumfangAnsicht, StatusPunkt, zusammenfassung as umfangZusammenfassung } from './Antrag';
+import { useAntrag } from '../antragStore';
 import type { KartenWert, OffeneKarte } from '../store';
 import { karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
 
@@ -57,6 +59,9 @@ export function ProjektkarteAnsicht() {
               erstellt.
             </p>
             <button onClick={() => void karteLaden()}>Erneut lesen</button>
+            <div className="pk-ohne-karte">
+              <ProjektumfangAnsicht />
+            </div>
           </>
         ) : (
           <p className="muted">Projektkarte wird gelesen …</p>
@@ -73,8 +78,8 @@ function Karte({ karte }: { karte: OffeneKarte }) {
   const [gruppeId, setGruppeId] = useState<number>(() => gewaehlt.get(projektKey) ?? alle[0]?.id ?? 0);
   const [suche, setSuche] = useState('');
   const [stamm] = useState<Stammadresse[]>(stammdatenLaden);
-  /** -1 = Abgleich mit der Projektdaten.xlsx */
-  const gruppe = gruppeId === PROJEKTDATEN ? null : (alle.find((g) => g.id === gruppeId) ?? alle[0]);
+  /** -1 = Abgleich mit der Projektdaten.xlsx, -2 = Projektumfang */
+  const gruppe = gruppeId === PROJEKTDATEN || gruppeId === PROJEKTUMFANG ? null : (alle.find((g) => g.id === gruppeId) ?? alle[0]);
 
   const waehle = (id: number, eintrag?: string) => {
     gewaehlt.set(projektKey, id);
@@ -89,22 +94,37 @@ function Karte({ karte }: { karte: OffeneKarte }) {
       const g = Number(s.split(':')[0]);
       if (g && g !== gruppeId) waehle(g, s);
     };
+    const zumUmfang = () => waehle(PROJEKTUMFANG);
     window.addEventListener('formulare:pk-sprung', beiSprung);
-    return () => window.removeEventListener('formulare:pk-sprung', beiSprung);
+    window.addEventListener('formulare:projektumfang', zumUmfang);
+    return () => {
+      window.removeEventListener('formulare:pk-sprung', beiSprung);
+      window.removeEventListener('formulare:projektumfang', zumUmfang);
+    };
   });
 
   if (!alle.length) return <div className="fo-leer">Die Projektkarte enthält keine Einträge.</div>;
 
   return (
     <div className="pk">
-      <Navigation karte={karte} reihen={reihen} aktiv={gruppe?.id ?? PROJEKTDATEN} suche={suche} setSuche={setSuche} onWahl={waehle} />
-      {gruppe ? <GruppenEditor key={gruppe.id} karte={karte} gruppe={gruppe} alleGruppen={alle} stamm={stamm} /> : <ProjektdatenAbgleich karte={karte} />}
+      <Navigation karte={karte} reihen={reihen} aktiv={gruppe?.id ?? gruppeId} suche={suche} setSuche={setSuche} onWahl={waehle} />
+      {gruppe ? (
+        <GruppenEditor key={gruppe.id} karte={karte} gruppe={gruppe} alleGruppen={alle} stamm={stamm} />
+      ) : gruppeId === PROJEKTUMFANG ? (
+        <div className="pk-editor">
+          <ProjektumfangAnsicht />
+        </div>
+      ) : (
+        <ProjektdatenAbgleich karte={karte} />
+      )}
     </div>
   );
 }
 
 /** Kennung des Abgleichs mit der Projektdaten.xlsx in der Navigation */
 const PROJEKTDATEN = -1;
+/** Kennung des Projektumfangs (nicht aus FORMA) in der Navigation */
+const PROJEKTUMFANG = -2;
 
 /** Leere Adressgruppen mit den Vorgaben der Stammdaten füllen */
 function vorgabenFuer(karte: OffeneKarte, adressen: Adresse[], vorgaben: Record<string, string>): KartenWert[] {
@@ -202,7 +222,26 @@ function Navigation({
           </button>
         </div>
       )}
+      {!q && <UmfangNavEintrag aktiv={aktiv === PROJEKTUMFANG} onClick={() => onWahl(PROJEKTUMFANG)} />}
     </nav>
+  );
+}
+
+/** Reiter „Projektumfang“ – gibt es in FORMA nicht, steht deshalb unter „Antrag“ */
+function UmfangNavEintrag({ aktiv, onClick }: { aktiv: boolean; onClick: () => void }) {
+  const dokumente = useAntrag((s) => s.dokumente);
+  const festgelegt = useAntrag((s) => !!s.projektdatei?.umfang);
+  const z = umfangZusammenfassung(dokumente);
+  return (
+    <div className="pk-nav-reihe">
+      <div className="pk-nav-titel">Antrag</div>
+      <button className={`pk-nav-eintrag${aktiv ? ' aktiv' : ''}${festgelegt ? '' : ' leer'}`} aria-current={aktiv ? 'true' : undefined} onClick={onClick}>
+        <span className="pk-nav-name">
+          <Symbol name="stapel" /> Projektumfang {festgelegt && dokumente.length > 0 && <StatusPunkt status={z.schlimmstes} />}
+        </span>
+        <span className="pk-nav-kurz">{festgelegt ? `${z.aktuell} von ${z.gesamt} Dokumenten aktuell` : 'noch nicht festgelegt'}</span>
+      </button>
+    </div>
   );
 }
 

@@ -1427,6 +1427,37 @@ button.icon.fo-gl-zaehlt.an {
   outline: 1px solid var(--accent);
 }
 
+/* Text und Kreuze eintragen */
+.pdf-seite-rahmen {
+  position: relative;
+  flex-shrink: 0;
+}
+.pdf-seite-rahmen.werkzeug-text,
+.pdf-seite-rahmen.werkzeug-text * {
+  cursor: text;
+}
+.pdf-seite-rahmen.werkzeug-kreuz,
+.pdf-seite-rahmen.werkzeug-kreuz * {
+  cursor: crosshair;
+}
+.pdf-vormerk {
+  position: absolute;
+  z-index: 3;
+  padding: 0 1px;
+  border: 1px dashed var(--sel);
+  border-radius: 2px;
+  background: color-mix(in srgb, #ffc400 30%, transparent);
+  color: #000;
+  font-family: Helvetica, Arial, sans-serif;
+  line-height: 1.2;
+  white-space: pre;
+}
+.pdf-seite-rahmen:not(.werkzeug-text):not(.werkzeug-kreuz) .pdf-vormerk:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 25%, transparent);
+  border-color: var(--danger);
+  text-decoration: line-through;
+}
+
 /* Excel */
 .xl-leiste {
   display: flex;
@@ -2304,4 +2335,543 @@ button.icon.fo-gl-zaehlt.an {
   .fo-papier .fo-check.geaendert {
     box-shadow: none !important;
   }
+}
+
+/* ---------- Menüs (Kontextmenü, Knöpfe mit Pfeil) ---------- */
+
+.menue {
+  position: fixed;
+  z-index: 40;
+  min-width: 200px;
+  max-width: 360px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.18),
+    0 1px 3px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  font-size: 12.5px;
+}
+.menue-punkt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+.menue-punkt:hover:not(:disabled),
+.menue-punkt:focus-visible,
+.menue-punkt.offen {
+  background: var(--accent-soft);
+  outline: none;
+}
+.menue-punkt:disabled {
+  color: var(--muted);
+  opacity: 0.6;
+}
+.menue-punkt.gefahr {
+  color: var(--danger);
+}
+.menue-symbol {
+  width: 16px;
+  display: inline-flex;
+  justify-content: center;
+  color: var(--muted);
+}
+.menue-punkt.gefahr .menue-symbol {
+  color: var(--danger);
+}
+.menue-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menue-hinweis {
+  font-size: 11px;
+  color: var(--muted);
+}
+.menue-trenner {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+/* ---------- Rückfrage ---------- */
+
+.rf input {
+  width: 100%;
+  margin: 4px 0 2px;
+}
+
+/* ---------- Export-Dialog ---------- */
+
+.ex {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ex h3 {
+  margin-bottom: 0;
+}
+.ex-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ex-feld input {
+  width: 100%;
+  font-size: 14px;
+}
+.ex-ziele {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ex-ziel {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ex-ziel.aktiv {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.ex-ziel input {
+  width: auto;
+  margin: 3px 0 0;
+}
+.ex-ziel > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ex-pfad {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ex-baum {
+  max-height: 240px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-size: 12.5px;
+}
+.ex-baum-knoten {
+  display: flex;
+  align-items: center;
+}
+button.icon.ex-baum-pfeil {
+  min-width: 18px;
+  height: 20px;
+  padding: 0;
+}
+.ex-baum-zeile {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+.ex-baum-zeile .symbol {
+  color: #c99a1a;
+}
+.ex-baum-zeile:hover:not(:disabled) {
+  background: var(--hover);
+}
+.ex-baum-zeile.aktiv {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.ex-hinweis {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.ex-hinweis input {
+  width: auto;
+  margin: 0;
+}
+.ex .dialog-buttons .ex-links {
+  margin-right: auto;
+}
+
+/* ---------- Status der Antragsdokumente ---------- */
+
+.st-punkt {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px var(--nav-bg, var(--panel));
+  vertical-align: 0;
+}
+.st-punkt.fehlt {
+  background: #9aa1ad;
+}
+.st-punkt.unvollstaendig {
+  background: #d64541;
+}
+.st-punkt.offen {
+  background: #e3a412;
+}
+.st-punkt.aktuell {
+  background: #2e9e5b;
+}
+
+/* Symbol eines Formulars in der Navigation mit Statuspunkt rechts unten */
+.nav-symbol {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.nav-symbol .symbol {
+  color: var(--muted);
+}
+.nav-eintrag.aktiv .nav-symbol .symbol {
+  color: var(--accent);
+}
+.nav-symbol .st-punkt {
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  width: 8px;
+  height: 8px;
+}
+/* fehlendes Formular des Projektumfangs: grau hinterlegt, Klick legt es an */
+.nav-eintrag.fehlt {
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
+  color: var(--muted);
+  font-style: italic;
+}
+.nav-eintrag.fehlt:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--muted) 22%, transparent);
+  color: var(--text);
+}
+.nav-eintrag.fehlt .nav-unter {
+  font-style: normal;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* aktive Antragsfassung im Projektkopf */
+.fo-projektkopf {
+  flex-wrap: wrap;
+}
+.an-fassung {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  margin-top: 2px;
+  border-top: 1px solid var(--line-soft);
+}
+.an-fassung-knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+.an-fassung-stand {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 6px;
+  border: none;
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.pu-kopf .an-fassung {
+  flex-basis: auto;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ---------- Projektumfang ---------- */
+
+.pu {
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pu-kopf {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pu-kopf > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.pu-kopf h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+.pu-kopf p {
+  margin: 0;
+}
+.pu-kopf-knoepfe {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pu-leer {
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.pu-leer p {
+  margin: 0;
+}
+.pu-legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  color: var(--muted);
+}
+.pu-legende span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pu-summe {
+  margin-left: auto;
+  color: var(--text);
+}
+.pu-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pu-zeile {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+.pu-zeile.fehlt {
+  border-left-color: #9aa1ad;
+}
+.pu-zeile.unvollstaendig {
+  border-left-color: #d64541;
+}
+.pu-zeile.offen {
+  border-left-color: #e3a412;
+}
+.pu-zeile.aktuell {
+  border-left-color: #2e9e5b;
+}
+.pu-haupt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+.pu-nr {
+  width: 42px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+.pu-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pu-text > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pu-art {
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--line-soft);
+}
+.pu-art.intern {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+.pu-datei {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pu-datei:hover:not(:disabled) {
+  background: none;
+  text-decoration: underline;
+}
+.pu-knoepfe {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pu-knoepfe button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.pu-bearbeiten {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px 12px;
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.pu-bearbeiten label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pu-bearbeiten input,
+.pu-bearbeiten select {
+  width: 100%;
+}
+.pu-bearbeiten-knoepfe {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+}
+button.gefahr {
+  color: var(--danger);
+}
+.pu-unten {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pu-unten > button:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pu-export {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+.pu-export-kopf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);
+}
+.pk-ohne-karte {
+  margin-top: 24px;
+  text-align: left;
+}
+
+/* ---------- Einstellungen: Antrag & Export ---------- */
+
+.es-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 14px;
+}
+.es-raster label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.es-raster input {
+  width: 100%;
+}
+.es-breit {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.es-breit input {
+  width: 100%;
+}
+.es-platzhalter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.es-platzhalter button {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 11px;
+}
+.es-katalog input,
+.es-katalog select {
+  width: 100%;
+  font-size: 12px;
+  padding: 2px 5px;
+}
+.es-katalog td {
+  padding: 3px 4px;
+}
+.es-mitte {
+  text-align: center;
+}
+.es-mitte input {
+  width: auto;
 }

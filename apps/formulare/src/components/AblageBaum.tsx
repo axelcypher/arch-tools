@@ -4,6 +4,10 @@ import { dateiArt, sichtbarkeit } from '../ablage';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
+import { aktiveFassung, antragsOrdner, useAntrag } from '../antragStore';
+import { duplizieren, einfuegen, loeschen, ordnerNeu, umbenennen, useDateiAktionen, verknuepfen } from '../dateiAktionen';
+import type { MenuePunkt } from './Menue';
+import { zeigeMenue } from './Menue';
 import type { SymbolName } from './Symbol';
 import { Symbol } from './Symbol';
 
@@ -20,9 +24,56 @@ const SYMBOL: Record<ReturnType<typeof dateiArt>, SymbolName> = {
 
 const sortiere = (a: Eintrag, b: Eintrag) => Number(b.ordner) - Number(a.ordner) || a.pfad.localeCompare(b.pfad, 'de', { numeric: true, sensitivity: 'base' });
 
+/** Kontextmenü einer Datei im Projektordner */
+function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
+  const st = useAntrag.getState();
+  const projekt = useFormulare.getState().projekt;
+  const umfang = st.projektdatei?.umfang ?? [];
+  const imAntrag = !!projekt && pfad.slice(0, pfad.lastIndexOf('/')).toLowerCase() === antragsOrdner(st, projekt).toLowerCase();
+  const name = pfad.split('/').pop() ?? pfad;
+  return [
+    ...(dateiArtVon(pfad) ? [{ text: 'Ansehen', symbol: 'datei' as const, aktion: () => void useFormulare.getState().dateiAnsehen(basis, pfad) }] : []),
+    { text: 'Mit Programm öffnen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined) },
+    { text: 'Im Explorer zeigen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(basis, pfad.slice(0, Math.max(0, pfad.lastIndexOf('/'))) || '.')).catch(() => undefined) },
+    { trenner: true },
+    { text: 'Kopieren', symbol: 'kopie', hinweis: 'zum Einfügen in einen Ordner', aktion: () => useDateiAktionen.getState().merken({ basis, pfad }) },
+    { text: 'Duplizieren', symbol: 'kopie', aktion: () => void duplizieren(basis, pfad) },
+    { text: 'Umbenennen …', symbol: 'stift', aktion: () => void umbenennen(basis, pfad) },
+    { text: 'Löschen …', symbol: 'muell', gefahr: true, aktion: () => void loeschen(basis, pfad) },
+    ...(umfang.length && projekt
+      ? [
+          { trenner: true as const },
+          {
+            text: imAntrag ? 'Mit Antragsdokument verknüpfen' : `In ${aktiveFassung(st, projekt)} kopieren und verknüpfen`,
+            symbol: 'link' as const,
+            unter: umfang.map((u) => ({
+              text: u.titel,
+              symbol: (u.dateien?.[aktiveFassung(st, projekt)]?.toLowerCase() === name.toLowerCase() && imAntrag ? 'haken' : undefined) as 'haken' | undefined,
+              aktion: () => void verknuepfen(basis, pfad, u.id),
+            })),
+          },
+        ]
+      : []),
+    { trenner: true },
+    { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(basis, pfad)) },
+  ];
+}
+
+/** Kontextmenü eines Ordners im Projektordner */
+function ordnerMenue(basis: string, pfad: string): MenuePunkt[] {
+  const z = useDateiAktionen.getState().ablage;
+  return [
+    { text: z ? `„${z.pfad.split('/').pop()}“ einfügen` : 'Einfügen', symbol: 'einfuegen', deaktiviert: !z || z.basis !== basis, aktion: () => void einfuegen(basis, pfad) },
+    { text: 'Neuer Ordner …', symbol: 'plus', aktion: () => void ordnerNeu(basis, pfad) },
+    { trenner: true },
+    { text: 'Im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined) },
+    { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(basis, pfad)) },
+  ];
+}
+
 /**
  * Der echte Projektordner auf dem Server, beschränkt auf die ausgewählten Pfade. Ordner werden erst beim
- * Aufklappen gelesen; ein Doppelklick öffnet eine Datei mit ihrem Programm.
+ * Aufklappen gelesen; ein Doppelklick öffnet eine Datei mit ihrem Programm, Rechtsklick zeigt die Dateibefehle.
  */
 export function AblageBaum({ ordner, auswahl }: { ordner: AblageOrdner; auswahl: string[] }) {
   const basis = verbinde(ordner.root, ordner.pfad);
@@ -34,6 +85,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
   const offen = useFormulare((s) => (s.haupt === 'datei' && s.datei?.root === basis ? s.datei.pfad : null));
   const entwuerfe = useFormulare((s) => s.dateiEntwuerfe);
   const { dateiAnsehen } = useFormulare.getState();
+  const stand = useDateiAktionen((s) => s.stand);
   const [eintraege, setEintraege] = useState<Eintrag[] | null>(null);
   const [fehler, setFehler] = useState('');
 
@@ -46,7 +98,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
     return () => {
       aktiv = false;
     };
-  }, [ds, basis, rel]);
+  }, [ds, basis, rel, stand]);
 
   if (fehler) return <p className="warning small-text">{fehler}</p>;
   if (!eintraege) return <p className="muted small-text fo-baum-zeile" style={{ paddingLeft: tiefe * 14 }}>…</p>;
@@ -73,6 +125,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
               title={dateiArtVon(x.e.pfad) ? `${x.e.pfad} – Klick: hier ansehen, Doppelklick: im Programm öffnen` : `${x.e.pfad} – Doppelklick öffnet`}
               onClick={() => dateiArtVon(x.e.pfad) && void dateiAnsehen(basis, x.pfad)}
               onDoubleClick={() => void oeffnePfad(verbinde(basis, x.pfad)).catch(() => undefined)}
+              onContextMenu={(e) => zeigeMenue(e, dateiMenue(basis, x.pfad))}
             >
               <span className={`fo-baum-symbol ${dateiArt(x.e.pfad)}`}>
                 <Symbol name={SYMBOL[dateiArt(x.e.pfad)]} />
@@ -92,7 +145,7 @@ function OrdnerKnoten({ basis, pfad, name, auswahl, ganz, tiefe }: { basis: stri
   return (
     <li role="treeitem" aria-expanded={auf} aria-selected={false}>
       <div className="fo-baum-knoten">
-        <button className="fo-baum-zeile" style={{ paddingLeft: tiefe * 14 }} onClick={() => setAuf(!auf)} title={name}>
+        <button className="fo-baum-zeile" style={{ paddingLeft: tiefe * 14 }} onClick={() => setAuf(!auf)} title={name} onContextMenu={(e) => zeigeMenue(e, ordnerMenue(basis, pfad))}>
           <span className="fo-baum-pfeil">
             <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} />
           </span>

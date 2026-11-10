@@ -5,6 +5,7 @@ import { adressName, adressOrt, inRolle, sucheAdressen } from '../adressbuch';
 import { waehleOrdner } from '../dateisystem';
 import { IN_PROJEKTKARTE } from '../projektdaten';
 import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
+import { AntragEinstellungen } from './AntragEinstellungen';
 import type { EinstellungsBereich } from '../store';
 import { useFormulare } from '../store';
 import type { SymbolName } from './Symbol';
@@ -15,6 +16,7 @@ const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; te
   { id: 'stammdaten', titel: 'Büro & Stammdaten', symbol: 'buero', text: 'Vorgaben je Rolle für neue Projektkarten' },
   { id: 'adressbuch', titel: 'Adressbuch', symbol: 'adressen', text: 'Adressen aus allen FORMA-Projekten' },
   { id: 'formulare', titel: 'Formulare', symbol: 'formular', text: 'Gliederung und Füllstand je Formular' },
+  { id: 'antrag', titel: 'Antrag & Export', symbol: 'export', text: 'PDF-Export, Antragsfassungen, Antragsdokumente' },
   { id: 'projektdaten', titel: 'Projektdaten.xlsx', symbol: 'tabelle', text: 'Abgleich mit dem Projektordner' },
 ];
 
@@ -89,6 +91,7 @@ export function EinstellungenAnsicht() {
         {bereich === 'stammdaten' && <Stammdaten />}
         {bereich === 'adressbuch' && <Adressbuch />}
         {bereich === 'formulare' && <Formulare />}
+        {bereich === 'antrag' && <AntragEinstellungen />}
         {bereich === 'projektdaten' && <Projektdaten />}
       </section>
     </div>

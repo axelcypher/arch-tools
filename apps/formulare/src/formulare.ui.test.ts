@@ -389,12 +389,14 @@ describe('Formulare', () => {
     const host = await render();
     await klick(knopf(host, 'BS9'));
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
-    const nav = [...host.querySelectorAll('.pk-nav-eintrag')].map((b) => [b.querySelector('.pk-nav-name')!.textContent, b.querySelector('.pk-nav-kurz')!.textContent]);
+    const nav = [...host.querySelectorAll('.pk-nav-eintrag')].map((b) => [b.querySelector('.pk-nav-name')!.textContent!.trim(), b.querySelector('.pk-nav-kurz')!.textContent]);
     expect(nav).toEqual([
       ['Projektdaten', 'Neubau'],
       ['Bauherr', 'Mustermann, Max · Musterstadt'],
       ['Eigentümer des Baugrundstücks', 'nicht ausgefüllt'],
       ['Gemeinde', 'Musterstadt'],
+      // nicht aus FORMA: der Projektumfang des Antrags
+      ['Projektumfang', 'noch nicht festgelegt'],
     ]);
     await gruppeWaehlen(host, 'Bauherr');
     expect(kartenFeld(host, 'Name/Firma').value).toBe('Mustermann');

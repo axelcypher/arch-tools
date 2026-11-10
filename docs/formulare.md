@@ -52,8 +52,14 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Speichern** (<kbd>Strg</kbd>+<kbd>S</kbd>) schreibt die geänderten Felder in die FORMA-Datei. Vorher wird sie
   frisch eingelesen: Hat sie seit dem Öffnen jemand geändert (z. B. in FORMA gespeichert), wird nicht gespeichert.
   „Neu laden“ liest die neue Fassung und trägt die eigenen Eingaben wieder ein; danach kann gespeichert werden.
-- **Drucken** (<kbd>Strg</kbd>+<kbd>P</kbd>): die Formularansicht in Originalgröße, eine Seite je Blatt (A4); über
-  „Als PDF speichern“ entsteht ein PDF.
+- **Drucken** (<kbd>Strg</kbd>+<kbd>P</kbd>): die Formularansicht in Originalgröße, eine Seite je Blatt (A4).
+- **PDF** (<kbd>Strg</kbd>+<kbd>E</kbd>, auch im Kontextmenü eines Formulars): „Als PDF exportieren …“ fragt, ob in
+  den **voreingestellten Ordner** (die aktive Antragsfassung, z. B. `TÖB\BAUA 2`) oder in einen **anderen Ordner
+  im Projekt** exportiert wird; der Dateiname kommt aus der Namensvorlage und lässt sich ändern. Gibt es die Datei
+  schon, wird erst nach Bestätigung ersetzt (die bisherige wird gesichert). „Speichern unter …“ öffnet den
+  Speicherdialog von Windows. Die PDF enthält auch noch nicht gespeicherte Eingaben; „Speichern“
+  (<kbd>Strg</kbd>+<kbd>S</kbd>) bleibt das Speichern in die FORMA-Datei. Mehr unter „Antrag, Export und
+  Vollständigkeit“.
 
 ### Zwischenspeichern, Rückgängig, Verlauf
 
@@ -104,8 +110,8 @@ Anschrift, wie sie in Formularen steht.
 
 ### Projektordner (Server)
 
-Neben den FORMA-Projekten lassen sich die **echten Projektordner** anbinden – nur zum Nachsehen (welche Formulare
-schon als PDF vorliegen, welche Berechnungen es gibt); dort wird nichts geschrieben.
+Neben den FORMA-Projekten lassen sich die **echten Projektordner** anbinden – zum Nachsehen (welche Formulare
+schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports und für einfache Dateibefehle.
 
 - Zuordnung über das **Kürzel**: Der FORMA-Projektordner heißt „BS5“, der echte Ordner beginnt damit
   („BS5 Birkenstraße 5“) oder hat ein Wort davor („JJ H24 …“). Gesucht wird **zwei Ebenen** tief (auch in
@@ -115,6 +121,51 @@ schon als PDF vorliegen, welche Berechnungen es gibt); dort wird nichts geschrie
   Einstellungen, je Projekt lässt sie sich über ⚙ ändern. Ordner werden erst beim Aufklappen gelesen.
 - **Klick** auf eine PDF-, Excel-, Word- oder Bilddatei zeigt sie in der App (siehe unten), **Doppelklick** öffnet
   sie mit ihrem Programm, ↗ zeigt einen Ordner im Explorer. Besitzerdateien von Office (`~$…`) werden ausgeblendet.
+- **Rechtsklick** auf eine Datei: Ansehen, Mit Programm öffnen, Im Explorer zeigen, **Kopieren** (danach Rechtsklick
+  auf einen Ordner › Einfügen), **Duplizieren** („Name (Kopie).pdf“), **Umbenennen …**, **Löschen …** (nach
+  Bestätigung, mit Sicherungskopie im App-Ordner), mit einem **Antragsdokument verknüpfen** (liegt die Datei nicht im
+  Ordner der aktiven Fassung, wird sie dorthin kopiert) und Pfad kopieren. Rechtsklick auf einen Ordner: Einfügen,
+  Neuer Ordner …, Im Explorer zeigen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`, `.frmtmp`, `.sdb`,
+  `.ini`) lassen sich hier nicht umbenennen oder löschen.
+
+### Antrag, Export und Vollständigkeit
+
+Die Anträge liegen im Projektordner unter `TÖB` (einstellbar), darin je **Antragsfassung** ein Ordner: `BAUA`, bei
+mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Voranfrage) oder `DENK` (Denkmal).
+
+- **Aktive Fassung** (oben links am Projekt, „Antrag“): die gewählte, sonst die neueste der Standardart. Über das
+  Menü lässt sich umschalten oder eine **neue Fassung anlegen** („BAUA 3“ – der Ordner entsteht sofort). Die aktive
+  Fassung ist das voreingestellte Ziel des Exports und der Maßstab der Vollständigkeitsprüfung.
+- **Dateiname** nach der Namensvorlage, Vorgabe `{Kürzel} {Phase} {Datum} {Nr} {Name}` → „BS9 GP 261110 03
+  Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Weitere Platzhalter: `{Antrag}`,
+  `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Projektumfang, sonst der Formularname ohne
+  laufende Nummer und Jahr.
+- **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard), Namensvorlage und
+  Phase, Ziel (aktive Antragsfassung oder fester Ordner, z. B. `TÖB/{Antrag}/Formulare`), Ordner der
+  Berechnungen, Vorlagenordner für neue Formulare und der **Katalog der Antragsdokumente**. Je Projekt lassen sich
+  Antragsordner, Namensvorlage, Phase und Ziel abweichend einstellen (Projektkarte › Projektumfang › „Export für …“,
+  „Vorgabe verwenden“ setzt zurück) – wie die angezeigten Pfade im Projektordner.
+- **Projektumfang** (eigener Reiter der Projektkarte unter „Antrag“ – gibt es in FORMA nicht): welche Dokumente zum
+  Antrag gehören. „Aus dem Katalog festlegen“ übernimmt die vorgewählten, „Dokument hinzufügen“ weitere aus dem
+  Katalog oder eigene. Je Dokument: Nummer (für `{Nr}`), Titel, **intern** (Formular aus FORMA – Teil des Namens
+  oder Kennung) oder **extern** (Datei – Berechnung, Plan, fremde PDF; Ordner der Quelle und Muster mit `*`, `?`,
+  mehrere mit `;`). Die Datei im Antragsordner wird nach Muster bzw. Titel gefunden oder ausdrücklich verknüpft (🔗,
+  auch per Rechtsklick im Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Projektumfang
+  und die aktive Fassung stehen in `formulare.json` im FORMA-Projekt und gelten damit für alle im Büro.
+- **Status** – immer gegen die aktive Fassung:
+  - **grau – fehlt:** kein Formular im Projekt bzw. weder Quelle noch Datei;
+  - **rot – nicht vollständig:** das Formular hat noch offene Angaben (Füllstand wie in der Gliederung);
+  - **gelb – nicht (aktuell) exportiert:** ausgefüllt, aber keine PDF im Antragsordner oder die PDF ist älter als
+    die letzte Änderung (Datei oder ungespeicherte Eingaben); bei externen: die Quelle ist neuer als die Datei;
+  - **grün – aktuell:** die PDF liegt im Ordner der aktiven Fassung und ist nach der letzten Änderung entstanden.
+- In der **Navigation** trägt jedes Formular des Projektumfangs einen Farbpunkt; fehlende Formulare stehen grau
+  hinterlegt darunter – ein **Klick legt das Formular an** (aus dem Vorlagenordner, sonst als Kopie des neuesten
+  passenden Formulars aus einem anderen Projekt, jeweils mit geleerten Eingaben; schreibgeschützte Textfelder
+  bleiben) und öffnet es. „Aus Projektkarte ausfüllen …“ trägt dann die Projektdaten ein.
+- Die **PDF** entsteht in der App aus dem Formular selbst – so, wie die Formularansicht es zeigt: A4-Blätter, Rahmen,
+  Linien, Beschriftungen (auch gedreht), Feldinhalte und Kreuze, Bilder. Echter Text in den PDF-Standardschriften:
+  Helvetica hat die Breiten von Arial, Courier die von Courier New – die Zeilen brechen an denselben Stellen um.
+  Zeichen außerhalb von Windows-1252 werden zu „?“.
 
 ### Projektdaten.xlsx
 
@@ -132,8 +183,11 @@ Dokumente aus dem Projektordner erscheinen in der App mit Kopfzeile (Art, Name, 
 öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde, in der Datei bleibt, wie es war:
 
 - **PDF:** alle Seiten, Zoom (Seitenbreite oder 50–200 %). Hat die PDF **Formularfelder**, lassen sie sich direkt
-  auf der Seite ausfüllen; gespeichert wird als **Nachtrag** ans Ende der Datei (inkrementell) – der ursprüngliche
-  Inhalt bleibt Byte für Byte erhalten.
+  auf der Seite ausfüllen. Mit **Text** und **Kreuz** lässt sich auch in PDFs ohne Formularfelder etwas eintragen:
+  Werkzeug wählen, auf die Stelle klicken (Text: Eingabe, beginnt an der Stelle; Kreuz: mittig darauf). Vorgemerkte
+  Einträge sind markiert, ein Klick entfernt sie wieder. Gespeichert wird als **Nachtrag** ans Ende der Datei
+  (Freitext-Anmerkungen mit Erscheinungsbild, druckbar) – der ursprüngliche Inhalt bleibt Byte für Byte erhalten.
+  Vorhandenen Text einer PDF ändern geht nicht; er lässt sich nur mit neuem Text ergänzen.
 - **Excel** (`.xlsx`, `.xlsm`): Blätter mit Spalten- und Zeilenköpfen, Formaten (fett, kursiv, Füllung, Rahmen,
   Zahl- und Datumsformate), verbundenen Zellen und Spaltenbreiten. Zelle wählen und tippen (oder Doppelklick, F2),
   Enter/Tab übernimmt, Entf leert; Zahlen mit Komma, Formeln in Excel-Schreibweise mit „=“ (englische
@@ -192,6 +246,7 @@ Ein FORMA-Projekt ist ein Ordner:
 | `sj_prokarte.sdb` | Projektkarte (SQLite, Texte UTF-8): Projektdaten, Beteiligte, Grundstück … – `.bak` ist die Sicherung |
 | `sj_office.ini` | Projekttitel (`[Allgemeines]`, `Text=`, Windows-1252) |
 | `*.frmtmp` | Sperrdatei, solange das Formular geöffnet ist (INI, Windows-1252) |
+| `formulare.json` | nicht von FORMA: Angaben dieser App zum Projekt – aktive Antragsfassung, Projektumfang mit Verknüpfungen |
 
 ### Formulardatei (`.frmsjf`)
 
@@ -262,8 +317,12 @@ lässt Trenner am Ende weg (FORMA lässt dort manchmal ein Komma stehen).
 `src/forma/` ist der Formatkern: `dfm.ts` liest DFM-Text verlustfrei, `delphi.ts` schreibt Zeichenketten
 wie Delphi, `formular.ts` liest und schreibt Formulardateien und ändert Textfelder und Kästchen,
 `felder.ts` leitet Beschriftung, Abschnitt und Zeilen eines Felds aus der Lage ab (FORMA kennt keine Verknüpfung),
-`darstellung.ts` Farben, Maße, Drehung und Bilder für die Formularansicht, `projektkarte.ts` die Zuordnung
-Feld → Projektkarte, `sperre.ts` liest und schreibt Sperrdateien. `dokumente/` liest und ändert PDF (pdf.js),
+`darstellung.ts` Farben, Maße, Drehung und Bilder für die Formularansicht, `pdf.ts` die PDF aus dem Formular
+(eigener PDF-Schreiber, Zeichenbreiten der Standardschriften in `schriftbreiten.ts`, Bitmaps/PNG/JPEG),
+`projektkarte.ts` die Zuordnung Feld → Projektkarte, `sperre.ts` liest und schreibt Sperrdateien.
+`antrag.ts` ist die Logik von Antrag und Export (Namensvorlage, Fassungen, Katalog, Zuordnung, Status),
+`antragStore.ts` der Zustand dazu (Einstellungen, `formulare.json`, Export, Formular anlegen), `dateiAktionen.ts`
+die Dateibefehle des Kontextmenüs. `dokumente/` liest und ändert PDF (pdf.js),
 Excel und Word (eigener XML-Leser mit Lage im Quelltext, ZIP über fflate). `verlauf.ts` ist der Verlauf, `ablage.ts` die
 Zuordnung der echten Projektordner.
 
@@ -272,7 +331,10 @@ Word-Dateien (atomar über eine temporäre Datei, Dokumente nur mit Sicherungsko
 geöffnet hat), prüft
 Sperrdateien (offen gehalten? Prozess auf diesem Rechner?),
 legt nur `.frmtmp` an bzw. löscht sie und ändert in `sj_prokarte.sdb` nur vorhandene Einträge – in einer
-Transaktion, und nur, wenn jeder noch den Wert hat, von dem die Änderung ausgeht. Sonst schreibt sie nichts.
+Transaktion, und nur, wenn jeder noch den Wert hat, von dem die Änderung ausgeht. Neu anlegen darf sie Dokumente
+(PDF, Excel, Word), Formulare (`.frmsjf`, nie überschreibend), Ordner und `formulare.json` (atomar ersetzt);
+kopieren und umbenennen nur ohne zu überschreiben, löschen nur nach einer Sicherungskopie – Dateien von FORMA sind
+davon ausgenommen. Beim Auflisten liefert sie die Änderungszeit mit (für die Vollständigkeitsprüfung).
 
 ## Kompatibilitätstests
 
@@ -304,7 +366,14 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
 - **`InGebrauch` in der Sperrdatei:** Bedeutung bei FORMA unbekannt; die App trägt ihre Prozessnummer ein. Ist
   es auch bei FORMA die Prozessnummer, erkennt die App verwaiste FORMA-Sperren auf demselben Rechner sicher.
   Zu prüfen: Hält FORMA seine Sperrdatei offen (dann zeigt die App sie als „In Gebrauch“)?
-- **Neue Formulare und neue Formularfassungen:** brauchen die Formularbibliothek von FORMA (Vorlagen).
+- **Neue Formulare und neue Formularfassungen:** sauber nur mit der Formularbibliothek von FORMA. Bis dahin legt die
+  App fehlende Formulare aus einem Vorlagenordner bzw. als geleerte Kopie aus einem anderen Projekt an – zu prüfen,
+  ob FORMA solche Kopien vollständig annimmt (Gegenprobe) und ob dabei Felder geleert werden, die FORMA selbst
+  vorbelegt.
+- **PDF-Export gegen FORMA-Druck vergleichen:** Schriften (Helvetica statt Arial), Bilder und gedrehte
+  Beschriftungen mit echten Formularen prüfen.
+- **Katalog der Antragsdokumente:** Vorgabe an die Bauvorlagen des Büros anpassen (Muster der Dateinamen, Kennungen
+  der Formulare).
 - **Adressdatenbank von SJ OFFICE:** Ort und Aufbau unbekannt; bis dahin kommt das Adressbuch aus den Projektkarten.
 - **`Projektdaten.xlsx`:** gelesen wird allgemein; mit einer echten Datei bzw. der Vorlage des Büros prüfen und
   die Erkennung bei Bedarf anpassen.

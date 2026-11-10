@@ -1,11 +1,14 @@
 //! Desktop-Hülle für die Formulare-App. Die allgemeinen Befehle (Speichern-Dialoge, Protokoll) stehen in
 //! packages/core/tauri/commands.rs; hier kommen die Dateisystem-Befehle für die FORMA-Projektordner dazu.
 //!
-//! Grundsatz: Ersetzt werden nur vorhandene Formulare (`.frmsjf`), angelegt und gelöscht nur Sperrdateien
-//! (`.frmtmp`) – und gelöscht nur, solange sie noch genau den Inhalt haben, den diese App geschrieben hat. In der
-//! Projektkarte (`sj_prokarte.sdb`) werden nur vorhandene Einträge geändert, und nur wenn sie noch den Wert haben,
-//! von dem die Änderung ausgeht. Jeder Pfad bleibt innerhalb des vom Benutzer gewählten Ordners. Eigene
-//! Sperrdateien werden beim Beenden entfernt.
+//! Grundsatz: Ersetzt werden nur vorhandene Formulare (`.frmsjf`), neue Formulare nur angelegt (nie
+//! überschrieben), angelegt und gelöscht nur Sperrdateien (`.frmtmp`) – und gelöscht nur, solange sie noch genau
+//! den Inhalt haben, den diese App geschrieben hat. In der Projektkarte (`sj_prokarte.sdb`) werden nur vorhandene
+//! Einträge geändert, und nur wenn sie noch den Wert haben, von dem die Änderung ausgeht. Die eigenen Angaben der
+//! App zum Projekt (Projektumfang, aktive Antragsfassung) stehen in `formulare.json` im FORMA-Projekt. Dokumente
+//! im Projektordner lassen sich kopieren, umbenennen und löschen – gelöscht wird erst nach einer Sicherungskopie,
+//! und die Dateien von FORMA sind davon ausgenommen. Jeder Pfad bleibt innerhalb des vom Benutzer gewählten
+//! Ordners. Eigene Sperrdateien werden beim Beenden entfernt.
 
 include!("../../../../packages/core/tauri/commands.rs");
 
@@ -76,6 +79,17 @@ struct Eintrag {
     pfad: String,
     ordner: bool,
     groesse: u64,
+    /// letzte Änderung (ms seit 1970), 0 wenn unbekannt
+    geaendert: u64,
+}
+
+/// Änderungszeit in ms seit 1970 (0, wenn das Dateisystem sie nicht liefert)
+fn ms_seit_1970(m: &std::fs::Metadata) -> u64 {
+    m.modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 #[derive(serde::Serialize)]
@@ -142,14 +156,16 @@ fn sammle(dir: &Path, prefix: &str, tiefe: u32, out: &mut Vec<Eintrag>) -> Resul
         if out.len() >= MAX_EINTRAEGE {
             return Err(format!("Mehr als {MAX_EINTRAEGE} Einträge – bitte einen kleineren Ordner wählen."));
         }
+        let meta = e.metadata().ok();
+        let geaendert = meta.as_ref().map(ms_seit_1970).unwrap_or(0);
         if typ.is_dir() {
-            out.push(Eintrag { pfad: pfad.clone(), ordner: true, groesse: 0 });
+            out.push(Eintrag { pfad: pfad.clone(), ordner: true, groesse: 0, geaendert });
             if tiefe > 1 {
                 sammle(&e.path(), &pfad, tiefe - 1, out)?;
             }
         } else {
-            let groesse = e.metadata().map(|m| m.len()).unwrap_or(0);
-            out.push(Eintrag { pfad, ordner: false, groesse });
+            let groesse = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+            out.push(Eintrag { pfad, ordner: false, groesse, geaendert });
         }
     }
     Ok(())
@@ -293,6 +309,140 @@ async fn doc_create(root: String, pfad: String, contents_base64: String) -> Resu
 #[tauri::command]
 async fn doc_in_office(root: String, pfad: String) -> Result<bool, String> {
     Ok(office_offen(&unterhalb(&root, &pfad)?))
+}
+
+/// Name der Datei mit den Angaben der App zum Projekt (im FORMA-Projektordner)
+const PROJEKTDATEI: &str = "formulare.json";
+
+/// Dateien von FORMA, die nur FORMA selbst anlegt, umbenennt oder löscht
+fn ist_forma_datei(p: &Path) -> bool {
+    ["frmsjf", "frmtmp", "sdb", "ini"].iter().any(|e| endung_ist(p, e))
+}
+
+/// Schreibt die Angaben der App zum Projekt (`formulare.json`) atomar – andere Dateien werden abgelehnt.
+#[tauri::command]
+async fn project_file_write(root: String, pfad: String, contents_base64: String) -> Result<(), String> {
+    let p = unterhalb(&root, &pfad)?;
+    if !p.file_name().is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case(PROJEKTDATEI)) {
+        return Err(format!("{}: Hier darf nur {PROJEKTDATEI} geschrieben werden", p.display()));
+    }
+    if !p.parent().is_some_and(|o| o.is_dir()) {
+        return Err(format!("{}: Ordner nicht gefunden", p.display()));
+    }
+    let bytes = base64_lesen(&contents_base64)?;
+    let ziel = p.clone();
+    tauri::async_runtime::spawn_blocking(move || write_atomic(&ziel, &bytes))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| format!("{}: {}", p.display(), e))?;
+    Ok(())
+}
+
+/// Legt einen Ordner an (samt fehlender Ordner darüber), z. B. eine neue Antragsfassung „TÖB/BAUA 3“.
+#[tauri::command]
+async fn dir_create(root: String, pfad: String) -> Result<(), String> {
+    let p = unterhalb(&root, &pfad)?;
+    std::fs::create_dir_all(&p).map_err(|e| format!("{}: {}", p.display(), e))?;
+    log::info!("Ordner angelegt: {}", p.display());
+    Ok(())
+}
+
+/// Legt ein neues Formular (.frmsjf) an – aus einer Vorlage, eine vorhandene Datei wird nie überschrieben.
+#[tauri::command]
+async fn form_create(root: String, pfad: String, contents_base64: String) -> Result<(), String> {
+    let p = unterhalb(&root, &pfad)?;
+    if !endung_ist(&p, "frmsjf") {
+        return Err(format!("{}: Nur Formulare (.frmsjf) dürfen hier angelegt werden", p.display()));
+    }
+    if !p.parent().is_some_and(|o| o.is_dir()) {
+        return Err(format!("{}: Projektordner nicht gefunden", p.display()));
+    }
+    let bytes = base64_lesen(&contents_base64)?;
+    let mut f = std::fs::OpenOptions::new().write(true).create_new(true).open(&p).map_err(|e| match e.kind() {
+        std::io::ErrorKind::AlreadyExists => format!("{}: Das Formular gibt es schon", p.display()),
+        _ => format!("{}: {}", p.display(), e),
+    })?;
+    f.write_all(&bytes).and_then(|_| f.sync_all()).map_err(|e| format!("{}: {}", p.display(), e))?;
+    log::info!("Formular angelegt: {}", p.display());
+    Ok(())
+}
+
+/// Kopiert eine Datei (auch in einen anderen Ordner unter `root`); das Ziel wird nie überschrieben.
+#[tauri::command]
+async fn doc_copy(root: String, von: String, nach: String) -> Result<(), String> {
+    let quelle = unterhalb(&root, &von)?;
+    let ziel = unterhalb(&root, &nach)?;
+    if !quelle.is_file() {
+        return Err(format!("{}: Datei nicht gefunden", quelle.display()));
+    }
+    if let Some(ordner) = ziel.parent() {
+        std::fs::create_dir_all(ordner).map_err(|e| format!("{}: {}", ordner.display(), e))?;
+    }
+    let (q, z) = (quelle.clone(), ziel.clone());
+    tauri::async_runtime::spawn_blocking(move || -> std::io::Result<()> {
+        let mut aus = std::fs::File::open(&q)?;
+        let mut ein = std::fs::OpenOptions::new().write(true).create_new(true).open(&z)?;
+        std::io::copy(&mut aus, &mut ein)?;
+        ein.sync_all()
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| match e.kind() {
+        std::io::ErrorKind::AlreadyExists => format!("{}: Die Datei gibt es schon", ziel.display()),
+        _ => format!("{}: {}", ziel.display(), e),
+    })?;
+    log::info!("Kopiert: {} → {}", quelle.display(), ziel.display());
+    Ok(())
+}
+
+/// Benennt eine Datei um bzw. verschiebt sie unter `root`; das Ziel wird nie überschrieben. Dateien von FORMA
+/// sind ausgenommen.
+#[tauri::command]
+async fn doc_rename(root: String, von: String, nach: String) -> Result<(), String> {
+    let quelle = unterhalb(&root, &von)?;
+    let ziel = unterhalb(&root, &nach)?;
+    if ist_forma_datei(&quelle) || ist_forma_datei(&ziel) {
+        return Err(format!("{}: Dateien von FORMA werden nur in FORMA umbenannt", quelle.display()));
+    }
+    if !quelle.is_file() {
+        return Err(format!("{}: Datei nicht gefunden", quelle.display()));
+    }
+    if office_offen(&quelle) {
+        return Err(format!("{}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen", quelle.display()));
+    }
+    // nur Groß-/Kleinschreibung geändert: unter Windows ist das dieselbe Datei
+    let gleiche_datei = von.to_lowercase() == nach.to_lowercase();
+    if ziel.exists() && !gleiche_datei {
+        return Err(format!("{}: Die Datei gibt es schon", ziel.display()));
+    }
+    std::fs::rename(&quelle, &ziel).map_err(|e| match e.raw_os_error() {
+        Some(5) | Some(32) | Some(33) => format!("{}: Die Datei ist in einem anderen Programm geöffnet – bitte dort schließen", quelle.display()),
+        _ => format!("{}: {}", quelle.display(), e),
+    })?;
+    log::info!("Umbenannt: {} → {}", quelle.display(), ziel.display());
+    Ok(())
+}
+
+/// Löscht eine Datei – vorher mit Sicherungskopie im App-Ordner. Dateien von FORMA sind ausgenommen.
+#[tauri::command]
+async fn doc_delete(app: tauri::AppHandle, root: String, pfad: String) -> Result<(), String> {
+    let p = unterhalb(&root, &pfad)?;
+    if ist_forma_datei(&p) {
+        return Err(format!("{}: Dateien von FORMA werden nur in FORMA gelöscht", p.display()));
+    }
+    if !p.is_file() {
+        return Err(format!("{}: Datei nicht gefunden", p.display()));
+    }
+    if office_offen(&p) {
+        return Err(format!("{}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen", p.display()));
+    }
+    let kopie = sicherung(&app, &p)?;
+    std::fs::remove_file(&p).map_err(|e| match e.raw_os_error() {
+        Some(5) | Some(32) | Some(33) => format!("{}: Die Datei ist in einem anderen Programm geöffnet – bitte dort schließen", p.display()),
+        _ => format!("{}: {}", p.display(), e),
+    })?;
+    log::info!("Gelöscht: {} (Sicherung: {})", p.display(), kopie.display());
+    Ok(())
 }
 
 /// Legt eine Sperrdatei (.frmtmp) an. `false`, wenn es schon eine gibt (das Formular ist anderswo geöffnet).
@@ -679,6 +829,12 @@ pub fn run() {
             doc_replace,
             doc_create,
             doc_in_office,
+            project_file_write,
+            dir_create,
+            form_create,
+            doc_copy,
+            doc_rename,
+            doc_delete,
             process_info,
             prokarte_read,
             prokarte_write,
@@ -777,6 +933,29 @@ mod tests {
         // Art des Werts muss zum Eintrag passen
         let falsch = PkAenderung { gruppe: 201, id: 40, typ: 1, wert: PkWert::Ganzzahl { alt: None, neu: Some(1) } };
         assert!(pk_schreiben(&p, &[falsch]).unwrap_err().contains("keine Auswahl"));
+    }
+
+    #[test]
+    fn dateien_von_forma_sind_geschuetzt() {
+        for name in ["001-Bauantrag.frmsjf", "001-Bauantrag.FRMTMP", "sj_prokarte.sdb", "sj_office.ini"] {
+            assert!(ist_forma_datei(Path::new(name)), "{name}");
+        }
+        for name in ["BS9 GP 261110 Bauantrag.pdf", "formulare.json", "Berechnung.xlsx"] {
+            assert!(!ist_forma_datei(Path::new(name)), "{name}");
+        }
+    }
+
+    #[test]
+    fn liste_mit_aenderungszeit() {
+        let dir = std::env::temp_dir().join(format!("formulare-liste-{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("TÖB/BAUA 2")).unwrap();
+        std::fs::write(dir.join("TÖB/BAUA 2/a.pdf"), b"x").unwrap();
+        let mut out = Vec::new();
+        sammle(&dir, "", 3, &mut out).unwrap();
+        let datei = out.iter().find(|e| e.pfad == "TÖB/BAUA 2/a.pdf").expect("Datei gelistet");
+        assert!(!datei.ordner && datei.groesse == 1 && datei.geaendert > 1_600_000_000_000);
+        assert!(out.iter().any(|e| e.pfad == "TÖB/BAUA 2" && e.ordner));
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]
