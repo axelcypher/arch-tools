@@ -3,7 +3,7 @@ import { pickFile, saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import type { AblageOrdner } from './ablage';
 import { VORGABE_AUSWAHL, ablageSuchen, auswahlBereinigt, zuordnen } from './ablage';
-import type { Dateisystem, Eintrag, PkAenderung } from './dateisystem';
+import type { Dateisystem, PkAenderung } from './dateisystem';
 import { hatDateisystem, tauriDateisystem, verbinde } from './dateisystem';
 import type { Feld } from './forma/felder';
 import { felderDerSeite } from './forma/felder';
@@ -23,8 +23,16 @@ import { xlsxLesen } from './dokumente/xlsx';
 import type { Angabe, ProjektdatenEintrag } from './projektdaten';
 import { IN_PROJEKTKARTE, projektdatenLesen } from './projektdaten';
 import type { OapInhalt } from './oap';
-import { OAP_ANGABEN, angabenAus, metaMit, neueOap, oapLesen, oapMetaSetzen, oapPfad } from './oap';
-import { leereMeta } from '@core/model';
+import { OAP_ANGABEN, angabenAus, metaMit } from './oap';
+import type { Project, ProjectMeta } from '@core/model';
+import { createProject, leereMeta } from '@core/model';
+import { parseProjectData } from '@core/serialize';
+import { VORGABE_OAP_PFAD, projektdateiPfad } from '@core/projektdatei';
+import type { DateiStand } from '@core/platform/projektordner';
+import { projektdateiAnlegen, projektdateiLaden, projektdateiSchreiben } from '@core/platform/projektordner';
+import { allgemeinAendern, konfigAendern, konfigLesen } from '@core/platform/konfig';
+import { ordnerName } from '@core/platform/projektordner';
+import { sichererDateiname } from '@core/projektdatei';
 import type { FormularProfil } from './profil';
 import { bereinigt as profilBereinigt, istLeer as profilLeer } from './profil';
 import type { FeldAenderung, Verlauf } from './verlauf';
@@ -108,8 +116,8 @@ interface Gespeichert {
   gliederungOffen: boolean;
   /** Stammdaten: Vorgabe je Rolle (Gruppe der Projektkarte) → Schlüssel einer Adresse im Adressbuch */
   rollenVorgaben: Record<string, string>;
-  /** Pfad einer neuen Projektdatei (.oap) im Projektordner, `{Kürzel}` als Platzhalter; leer = keine anlegen */
-  oapNeu: string;
+  /** Ort einer neuen Projektdatei (.oap) im Projektordner – gemeinsam für alle Apps (allgemein.json, oapPfad) */
+  oapVorlage: string;
   /** gewählte Projektdatei je Projektkürzel (Pfad relativ zum Projektordner) */
   oapWahl: Record<string, string>;
   /** angezeigte Pfade im echten Projektordner: Vorgabe und je Projektkürzel */
@@ -194,6 +202,12 @@ interface FormulareState extends Gespeichert {
   projektdaten: ProjektdatenDatei | 'fehlt' | null;
   /** Projektdatei (.oap) des gewählten Projekts – Quelle der Projektstammdaten; 'fehlt' = keine gefunden */
   oap: OapDatei | 'fehlt' | null;
+  /** Stammdaten-Dialog zum Anlegen der fehlenden Projektdatei (mit Vorbelegung aus der Projektkarte) */
+  stammdatenDialog: { grund: string; meta: ProjectMeta } | null;
+  /** Dialog „Projektordner zuordnen“ (wählen oder im Stammordner anlegen) */
+  ordnerDialog: { grund: string } | null;
+  /** von Hand zugeordnete Projektordner je Kürzel (vollständiger Pfad) – gemeinsam im Konfigurationsordner */
+  ordnerWahl: Record<string, string>;
   /** Bereich der Einstellungen */
   einstellungsBereich: EinstellungsBereich;
   /** echte Projektordner (erste und zweite Ebene) */
@@ -267,9 +281,25 @@ interface FormulareState extends Gespeichert {
   profilSetzen: (schluessel: string, profil: FormularProfil | null) => void;
   einstellungenOeffnen: (bereich?: EinstellungsBereich) => void;
   setRollenVorgabe: (gruppe: number, schluessel: string | null) => void;
-  setOapNeu: (pfad: string) => void;
+  setOapVorlage: (pfad: string) => void;
   /** Projektdatei für das gewählte Projekt festlegen; null = wieder automatisch */
   oapWaehlen: (pfad: string | null) => Promise<void>;
+  /** gemeinsame Einstellungen (allgemein.json) übernehmen: Stammordner der Projekte, Ort neuer Projektdateien */
+  gemeinsamLaden: () => Promise<void>;
+  /** Projektdatei gezielt ändern (frisch lesen, nur `projekt.json`); legt sie nicht an – dann false */
+  oapAendern: (aendern: (roh: Record<string, unknown>) => Record<string, unknown>) => Promise<boolean>;
+  /** Stammdaten-Dialog öffnen, um die fehlende Projektdatei anzulegen; `danach` läuft nach dem Anlegen */
+  stammdatenErfassen: (grund: string, danach?: () => Promise<void>) => Promise<void>;
+  /** Projektdatei mit diesen Stammdaten anlegen (aus dem Dialog) */
+  projektdateiAnlegen: (meta: ProjectMeta) => Promise<void>;
+  stammdatenAbbrechen: () => void;
+  /** Dialog öffnen, um dem gewählten Projekt einen Projektordner zuzuordnen; `danach` läuft, sobald es eine Projektdatei gibt */
+  projektordnerZuordnen: (grund: string, danach?: () => Promise<void>) => void;
+  /** vorhandenen Ordner zuordnen */
+  projektordnerWaehlen: (pfad: string) => Promise<void>;
+  /** neuen Projektordner im Stammordner anlegen und zuordnen */
+  projektordnerAnlegen: (stammordner: string, name: string) => Promise<void>;
+  ordnerDialogSchliessen: () => void;
   /** Projektdatei des gewählten Projekts suchen und lesen */
   oapLaden: () => Promise<void>;
   /** Angaben aus der Projektdatei in die Projektkarte übernehmen (ein Schritt) */
@@ -292,7 +322,10 @@ export interface OapDatei {
   /** Projektordner (absolut) */
   root: string;
   pfad: string;
-  bytes: Uint8Array;
+  /** Stand beim Lesen (zum Erkennen fremder Änderungen) */
+  stand: DateiStand;
+  /** das ganze Projekt, wie es die Apps lesen (auch die Abschnitte anderer Apps unter `erweiterungen`) */
+  projekt: Project;
   inhalt: OapInhalt;
   /** alle Projektdateien im Projektordner (für die Wahl) */
   kandidaten: string[];
@@ -343,32 +376,15 @@ function ladeEinstellungen(): Gespeichert {
     verlaufOffen: o.verlaufOffen === true,
     gliederungOffen: o.gliederungOffen !== false,
     rollenVorgaben: o.rollenVorgaben && typeof o.rollenVorgaben === 'object' ? Object.fromEntries(Object.entries(o.rollenVorgaben).filter(([, v]) => typeof v === 'string')) : {},
-    oapNeu: typeof o.oapNeu === 'string' ? o.oapNeu : VORGABE_OAP,
+    // früher eigene Einstellung „oapNeu“ – wird beim ersten Start in die gemeinsamen Einstellungen übernommen
+    oapVorlage: typeof o.oapVorlage === 'string' && o.oapVorlage.trim() ? o.oapVorlage : typeof (o as { oapNeu?: unknown }).oapNeu === 'string' && (o as { oapNeu: string }).oapNeu.trim() ? (o as { oapNeu: string }).oapNeu : VORGABE_OAP_PFAD,
     oapWahl: o.oapWahl && typeof o.oapWahl === 'object' ? Object.fromEntries(Object.entries(o.oapWahl).filter(([, v]) => typeof v === 'string')) : {},
     vorgabeAuswahl: Array.isArray(o.vorgabeAuswahl) ? strings(o.vorgabeAuswahl) : VORGABE_AUSWAHL,
     auswahl,
   };
 }
 
-/** Vorgabe für eine neue Projektdatei: bei uns liegen Berechnungen unter Planung/Berechnungen */
-export const VORGABE_OAP = 'Planung/Berechnungen/{Kürzel}.oap';
-
-/**
- * Projektdatei unter mehreren im Projektordner: gewählt, sonst im Ordner der Berechnungen, sonst die mit dem
- * kürzesten Pfad, dann die zuletzt geänderte.
- */
-export function oapAuswahl(dateien: Eintrag[], gewaehlt: string | undefined): Eintrag | null {
-  const oap = dateien.filter((e) => !e.ordner && /\.oap$/i.test(e.pfad) && !/(^|\/)~\$/.test(e.pfad));
-  const g = gewaehlt && oap.find((e) => e.pfad.toLowerCase() === gewaehlt.toLowerCase());
-  if (g) return g;
-  const rang = (e: Eintrag) => [/berechnung/i.test(e.pfad) ? 0 : 1, e.pfad.split('/').length, -(e.geaendert ?? 0)];
-  return (
-    oap.sort((a, b) => {
-      const [x, y] = [rang(a), rang(b)];
-      return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || a.pfad.localeCompare(b.pfad, 'de');
-    })[0] ?? null
-  );
-}
+export { VORGABE_OAP_PFAD };
 
 /* ---------- Entwürfe und Verlauf ---------- */
 
@@ -654,9 +670,9 @@ export const useFormulare = create<FormulareState>()((set, get) => {
   };
 
   /**
-   * Angaben in die Projektdatei (.oap) schreiben: frisch einlesen, nur die übergebenen Angaben in `meta` ändern,
-   * ersetzen (mit Sicherungskopie). Fehlt die Datei und ist ein Pfad für neue eingestellt, wird sie angelegt.
-   * Liefert eine Meldung oder null.
+   * Angaben in die Projektdatei (.oap) schreiben: frisch einlesen, nur die übergebenen Angaben in `meta` ändern
+   * (gemeinsamer Zugriff aus packages/core: atomar, mit Sicherungskopie, nur wenn seitdem niemand die Datei
+   * geändert hat). Fehlt die Datei, öffnet sich der Stammdaten-Dialog, der sie anlegt. Liefert eine Meldung oder null.
    */
   const inProjektdatei = async (projekt: Projekt, werte: Map<Angabe, string>): Promise<string | null> => {
     const ds = get().ds;
@@ -664,28 +680,51 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     if (!ds || !ablage || !werte.size || get().projekt !== projekt) return null;
     const o = get().oap;
     if (o === 'fehlt') {
-      const vorlage = get().oapNeu;
-      if (!vorlage.trim()) return null;
-      const pfad = oapPfad(vorlage, projekt.ordner);
-      const meta = metaMit({ ...leereMeta(), projektcode: projekt.ordner }, werte);
-      await ds.dokumentAnlegen(verbinde(ablage.root, ablage.pfad), pfad, neueOap(werte.get('vorhaben')?.trim() || projekt.titel || projekt.ordner, meta));
-      log.info(`Projektdatei angelegt: ${pfad}`);
-      await get().oapLaden();
-      return `Projektdatei angelegt: ${pfad}`;
+      void get().stammdatenErfassen('Die Projektkarte ist gespeichert. Für die Projektstammdaten fehlt im Projektordner noch die Projektdatei (.oap) – mit diesen Angaben wird sie angelegt.');
+      return null;
     }
     if (!o) return null;
-    // frisch lesen: nur die eigenen Angaben ändern, was andere Apps inzwischen gespeichert haben, bleibt
-    const aktuell = await ds.lies(o.root, o.pfad);
-    if (!aktuell) throw new Error(`${o.pfad} nicht gefunden`);
-    const bisher = oapLesen(aktuell).meta;
-    // nur, was sich unterscheidet – steht schon alles so darin, bleibt die Datei unberührt
-    const vorher = angabenAus(bisher);
-    const geaendert = new Map([...werte].filter(([a, w]) => (vorher.get(a) ?? '').trim() !== w.trim()));
-    if (!geaendert.size) return null;
-    await ds.dokumentErsetzen(o.root, o.pfad, oapMetaSetzen(aktuell, metaMit(bisher, geaendert)));
-    log.info(`Projektdatei ${o.pfad}: ${[...geaendert.keys()].join(', ')}`);
+    let anzahl = 0;
+    const geschrieben = await get().oapAendern((roh) => {
+      const bisher = parseProjectData(roh).meta;
+      // nur, was sich unterscheidet – steht schon alles so darin, bleibt die Datei unberührt
+      const vorher = angabenAus(bisher);
+      const geaendert = new Map([...werte].filter(([a, w]) => (vorher.get(a) ?? '').trim() !== w.trim()));
+      anzahl = geaendert.size;
+      return geaendert.size ? { ...roh, meta: metaMit(bisher, geaendert) } : roh;
+    });
+    if (!geschrieben) return null;
+    log.info(`Projektdatei ${o.pfad}: ${anzahl} Angabe(n)`);
+    return `Projektdatei mitgeführt (${anzahl} Angabe(n))`;
+  };
+
+  /** Vorbelegung der Stammdaten aus der Projektkarte (alle Angaben mit Gegenstück) */
+  const metaAusKarte = (projekt: Projekt, k: OffeneKarte | null): ProjectMeta => {
+    const werte = new Map<Angabe, string>();
+    if (k)
+      for (const { angabe } of OAP_ANGABEN) {
+        const ziel = IN_PROJEKTKARTE[angabe];
+        if (ziel && pkEintrag(k.karte, ziel.gruppe, ziel.id)) {
+          const t = karteText(k, ziel.gruppe, ziel.id).trim();
+          if (t) werte.set(angabe, t);
+        }
+      }
+    const meta = metaMit({ ...leereMeta(), projektcode: projekt.ordner }, werte);
+    return projekt.titel ? { ...meta, kurzname: projekt.titel } : meta;
+  };
+  /** nach dem Anlegen der Projektdatei weitermachen (z. B. den Projektumfang speichern) */
+  let nachAnlegen: (() => Promise<void>) | null = null;
+
+  /** Projektordner zugeordnet: Projektdatei suchen; fehlt sie, die Stammdaten erfassen (die wartende Aktion bleibt) */
+  const nachZuordnen = async (projekt: Projekt) => {
     await get().oapLaden();
-    return `Projektdatei mitgeführt (${geaendert.size} Angabe(n))`;
+    if (get().projekt !== projekt) return;
+    const weiter = nachAnlegen;
+    if (get().oap === 'fehlt') await get().stammdatenErfassen('Im Projektordner gibt es noch keine Projektdatei (.oap). Mit diesen Stammdaten wird sie angelegt.', weiter ?? undefined);
+    else {
+      nachAnlegen = null;
+      if (weiter) await weiter();
+    }
   };
 
   /** Neuer Stand der Projektkarte: übernehmen und lokal sichern (Entwurf und Verlauf) */
@@ -713,6 +752,9 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     adressbuchLaeuft: null,
     projektdaten: null,
     oap: null,
+    stammdatenDialog: null,
+    ordnerDialog: null,
+    ordnerWahl: {},
     einstellungsBereich: 'ordner',
     ablage: [],
     ablageFehler: [],
@@ -745,11 +787,13 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     ablageHinzufuegen: async (pfad) => {
       if (get().ablageordner.includes(pfad)) return;
       set({ ablageordner: [...get().ablageordner, pfad] });
+      void allgemeinAendern({ projekte: get().ablageordner }).catch((e) => log.warn(`Gemeinsame Einstellungen nicht geschrieben: ${fehlertext(e)}`));
       await get().ablageLaden();
     },
 
     ablageEntfernen: async (pfad) => {
       set({ ablageordner: get().ablageordner.filter((p) => p !== pfad) });
+      void allgemeinAendern({ projekte: get().ablageordner }).catch((e) => log.warn(`Gemeinsame Einstellungen nicht geschrieben: ${fehlertext(e)}`));
       await get().ablageLaden();
     },
 
@@ -799,7 +843,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     projektWaehlen: async (projekt) => {
       await get().schliessen();
-      set({ projekt, formulare: [], karte: null, datei: null, projektdaten: null, oap: null, haupt: 'formular' });
+      nachAnlegen = null;
+      set({ projekt, formulare: [], karte: null, datei: null, projektdaten: null, oap: null, stammdatenDialog: null, ordnerDialog: null, haupt: 'formular' });
       const ds = get().ds;
       if (!projekt || !ds) return;
       const gleich = (z: Pick<Projekt, 'root' | 'ordner'>) => z.root === projekt.root && z.ordner === projekt.ordner;
@@ -1148,7 +1193,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       set({ rollenVorgaben });
     },
 
-    setOapNeu: (oapNeu) => set({ oapNeu: oapNeu.trim() }),
+    setOapVorlage: (pfad) => {
+      const oapVorlage = pfad.trim() || VORGABE_OAP_PFAD;
+      set({ oapVorlage });
+      void allgemeinAendern({ oapPfad: oapVorlage }).catch((e) => log.warn(`Gemeinsame Einstellungen nicht geschrieben: ${fehlertext(e)}`));
+    },
     oapWaehlen: async (pfad) => {
       const p = get().projekt;
       if (!p) return;
@@ -1164,19 +1213,102 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!ds || !projekt || !ablage) return;
       const root = verbinde(ablage.root, ablage.pfad);
       try {
-        const alle = await ds.liste(root, 4);
-        const datei = oapAuswahl(alle, get().oapWahl[projekt.ordner]);
-        const kandidaten = alle.filter((e) => !e.ordner && /\.oap$/i.test(e.pfad)).map((e) => e.pfad);
-        if (!datei) {
-          if (get().projekt === projekt) set({ oap: 'fehlt' });
+        const g = await projektdateiLaden(ds.projektordner, root, { gewaehlt: get().oapWahl[projekt.ordner] });
+        if (get().projekt !== projekt) return;
+        if (!g) {
+          set({ oap: 'fehlt' });
           return;
         }
-        const bytes = await ds.lies(root, datei.pfad);
-        if (!bytes) throw new Error('nicht lesbar');
-        if (get().projekt === projekt) set({ oap: { root, pfad: datei.pfad, bytes, inhalt: oapLesen(bytes), kandidaten } });
+        set({ oap: { root, pfad: g.pfad, stand: g.stand, projekt: g.projekt, inhalt: { name: g.projekt.name, meta: g.projekt.meta }, kandidaten: g.kandidaten } });
       } catch (e) {
         log.warn(`Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}`);
         if (get().projekt === projekt) set({ oap: 'fehlt', meldung: { art: 'fehler', text: `Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}` } });
+      }
+    },
+    oapAendern: async (aendern) => {
+      const { ds } = get();
+      const o = get().oap;
+      if (!ds || !o || o === 'fehlt') return false;
+      // liest frisch und versucht es erneut, wenn eine andere App die Datei zwischen Lesen und Schreiben geändert hat
+      const geschrieben = await projektdateiSchreiben(ds.projektordner, o.root, o.pfad, aendern);
+      if (geschrieben) await get().oapLaden();
+      return geschrieben;
+    },
+    stammdatenErfassen: async (grund, danach) => {
+      const projekt = get().projekt;
+      if (!projekt) return;
+      if (!get().karte) await get().karteLaden();
+      if (get().projekt !== projekt) return;
+      nachAnlegen = danach ?? null;
+      set({ stammdatenDialog: { grund, meta: metaAusKarte(projekt, get().karte) } });
+    },
+    stammdatenAbbrechen: () => {
+      nachAnlegen = null;
+      set({ stammdatenDialog: null });
+    },
+    projektdateiAnlegen: async (meta) => {
+      const { ds, projekt } = get();
+      const ablage = ablageVon(get(), projekt);
+      if (!ds || !projekt || !ablage) throw new Error('Kein Projektordner zugeordnet.');
+      const root = verbinde(ablage.root, ablage.pfad);
+      const pfad = projektdateiPfad(get().oapVorlage, { nummer: meta.projektcode || projekt.ordner, kurzname: meta.kurzname });
+      if (!pfad) throw new Error('Kein Ort für neue Projektdateien eingestellt.');
+      const p = createProject(meta.kurzname || meta.vorhaben || projekt.titel || projekt.ordner);
+      p.meta = meta;
+      if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, 'Formulare'))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in der Projektkarte auswählen.`);
+      log.info(`Projektdatei angelegt: ${pfad}`);
+      set({ stammdatenDialog: null, meldung: { art: 'info', text: `Projektdatei angelegt: ${pfad}` } });
+      await get().oapLaden();
+      const weiter = nachAnlegen;
+      nachAnlegen = null;
+      if (weiter) await weiter();
+    },
+    projektordnerZuordnen: (grund, danach) => {
+      if (!get().projekt) return;
+      nachAnlegen = danach ?? null;
+      set({ ordnerDialog: { grund } });
+    },
+    ordnerDialogSchliessen: () => {
+      nachAnlegen = null;
+      set({ ordnerDialog: null });
+    },
+    projektordnerWaehlen: async (pfad) => {
+      const projekt = get().projekt;
+      if (!projekt) return;
+      const ordnerWahl = { ...get().ordnerWahl, [projekt.ordner]: pfad };
+      set({ ordnerWahl, ordnerDialog: null, oap: null });
+      await formulareKonfigAendern({ ordnerWahl });
+      log.info(`${projekt.ordner}: Projektordner ${pfad} zugeordnet`);
+      await nachZuordnen(projekt);
+    },
+    projektordnerAnlegen: async (stammordner, name) => {
+      const { ds, projekt } = get();
+      if (!ds || !projekt) return;
+      const sauber = sichererDateiname(name);
+      if (!sauber) throw new Error('Bitte einen Namen für den Ordner angeben.');
+      if (!(await ds.projektordner.ordnerAnlegen(stammordner, sauber))) throw new Error(`${sauber}: Den Ordner gibt es schon – bitte „Vorhandenen Ordner wählen …“.`);
+      log.info(`${projekt.ordner}: Projektordner angelegt: ${verbinde(stammordner, sauber)}`);
+      await get().ablageLaden();
+      await get().projektordnerWaehlen(verbinde(stammordner, sauber));
+    },
+    gemeinsamLaden: async () => {
+      try {
+        const app = ((await konfigLesen('formulare')) ?? {}) as Record<string, unknown>;
+        if (app.ordnerWahl && typeof app.ordnerWahl === 'object') set({ ordnerWahl: Object.fromEntries(Object.entries(app.ordnerWahl as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string')) });
+        const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
+        const projekte = Array.isArray(roh.projekte) ? roh.projekte.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
+        // Stammordner: gemeinsam; gibt es dort noch keine, die bisherigen dieser App übernehmen
+        if (projekte.length) {
+          if (projekte.join('\n') !== get().ablageordner.join('\n')) {
+            set({ ablageordner: projekte });
+            await get().ablageLaden();
+          }
+        } else if (get().ablageordner.length) await allgemeinAendern({ projekte: get().ablageordner });
+        // Ort neuer Projektdateien: ebenso
+        if (typeof roh.oapPfad === 'string' && roh.oapPfad.trim()) set({ oapVorlage: roh.oapPfad.trim() });
+        else if (get().oapVorlage.trim() && get().oapVorlage !== VORGABE_OAP_PFAD) await allgemeinAendern({ oapPfad: get().oapVorlage });
+      } catch (e) {
+        log.warn(`Gemeinsame Einstellungen nicht lesbar: ${fehlertext(e)}`);
       }
     },
     oapUebernehmen: (angaben) => {
@@ -1328,7 +1460,33 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 });
 
 /** Echter Projektordner des gewählten FORMA-Projekts (über das Kürzel) */
-export const ablageVon = (s: Pick<FormulareState, 'ablage'>, p: Projekt | null) => (p ? zuordnen(p.ordner, s.ablage) : null);
+/** von Hand zugeordnete Ordner als AblageOrdner – je Pfad dasselbe Objekt (stabil für Selektoren) */
+const gewaehlteOrdner = new Map<string, AblageOrdner>();
+
+export function ablageVon(s: Pick<FormulareState, 'ablage' | 'ordnerWahl'>, p: Projekt | null): AblageOrdner | null {
+  if (!p) return null;
+  const gewaehlt = s.ordnerWahl[p.ordner];
+  if (gewaehlt) {
+    let a = gewaehlteOrdner.get(gewaehlt);
+    if (!a) {
+      const name = ordnerName(gewaehlt);
+      const root = gewaehlt.replace(/[\\/]+$/, '').slice(0, -name.length).replace(/[\\/]+$/, '') || gewaehlt;
+      a = { root, pfad: name, name };
+      gewaehlteOrdner.set(gewaehlt, a);
+    }
+    return a;
+  }
+  return zuordnen(p.ordner, s.ablage);
+}
+
+/** App-Bereich im gemeinsamen Konfigurationsordner gezielt ändern (frisch lesen, nur die übergebenen Angaben) */
+async function formulareKonfigAendern(patch: Record<string, unknown>) {
+  try {
+    await konfigAendern('formulare', (roh) => ({ ...((roh ?? {}) as Record<string, unknown>), ...patch }));
+  } catch (e) {
+    log.warn(`Einstellungen von Formulare nicht geschrieben: ${fehlertext(e)}`);
+  }
+}
 
 /** Angezeigte Pfade im echten Projektordner eines Projekts */
 export const auswahlVon = (s: Pick<FormulareState, 'auswahl' | 'vorgabeAuswahl'>, p: Projekt | null) => (p && s.auswahl[p.ordner]) || s.vorgabeAuswahl;
@@ -1343,7 +1501,7 @@ useFormulare.subscribe((s) => {
     verlaufOffen: s.verlaufOffen,
     gliederungOffen: s.gliederungOffen,
     rollenVorgaben: s.rollenVorgaben,
-    oapNeu: s.oapNeu,
+    oapVorlage: s.oapVorlage,
     oapWahl: s.oapWahl,
     vorgabeAuswahl: s.vorgabeAuswahl,
     auswahl: s.auswahl,

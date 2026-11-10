@@ -1,6 +1,6 @@
 /**
  * Zustand für Antrag und Export: Einstellungen (global und je Projekt), die Angaben der App zum gewählten
- * Projekt (`formulare.json`: Projektumfang, aktive Antragsfassung), die Antragsfassungen im Projektordner und der
+ * Projekt (Abschnitt „formulare“ der Projektdatei: Projektumfang, aktive Antragsfassung), die Antragsfassungen im Projektordner und der
  * Status jedes Dokuments im Projektumfang. Dazu der Export als PDF, das Verknüpfen von Dateien und das Anlegen
  * fehlender Formulare.
  *
@@ -36,7 +36,7 @@ import {
 import type { Merkmal } from './bedingung';
 import { merkmaleAus } from './bedingung';
 import type { Eintrag } from './dateisystem';
-import { PROJEKTDATEI, verbinde } from './dateisystem';
+import { ALTE_PROJEKTDATEI, verbinde } from './dateisystem';
 import type { Feld } from './forma/felder';
 import { felderDerSeite } from './forma/felder';
 import type { Formular } from './forma/formular';
@@ -109,7 +109,7 @@ interface AntragState {
   merkmalDefinitionen: Merkmal[];
   /** je Projektkürzel */
   ueberschreibungen: Record<string, ExportUeberschreibung>;
-  /** `formulare.json` des gewählten Projekts; null = nicht gelesen */
+  /** Abschnitt „formulare“ der Projektdatei des gewählten Projekts; null = nicht gelesen */
   projektdatei: ProjektDatei | null;
   fassungen: Fassung[];
   /** Dateien im Ordner der aktiven Fassung */
@@ -125,7 +125,7 @@ interface AntragState {
   setEinstellungen: (e: Partial<ExportEinstellungen>) => void;
   setKatalog: (k: KatalogEintrag[] | null) => void;
   setMerkmalDefinitionen: (m: Merkmal[] | null) => void;
-  /** Wert eines Projektmerkmals im gewählten Projekt setzen (leer = entfernen) – in formulare.json */
+  /** Wert eines Projektmerkmals im gewählten Projekt setzen (leer = entfernen) – in der Projektdatei */
   merkmalSetzen: (name: string, wert: string) => Promise<void>;
   /** Abweichungen des gewählten Projekts; null = wieder die Vorgabe */
   setUeberschreibung: (u: ExportUeberschreibung | null) => void;
@@ -248,12 +248,76 @@ function geleert(bytes: Uint8Array): Uint8Array {
 
 let dateienFormaProjekt: Eintrag[] = [];
 
+/**
+ * `projekt.json` mit den Angaben der App: aktive Antragsfassung und Projektumfang im Abschnitt „formulare“ (leer =
+ * ohne den Abschnitt), die Projektmerkmale in `meta.merkmale` – sie gehören zum Projekt, nicht zu einer App.
+ */
+function mitAbschnitt(roh: Record<string, unknown>, neu: ProjektDatei): Record<string, unknown> {
+  const { merkmale, ...abschnitt } = neu;
+  const { formulare: _alt, ...rest } = roh;
+  const meta = { ...((roh.meta as Record<string, unknown> | undefined) ?? {}) };
+  if (merkmale && Object.keys(merkmale).length) meta.merkmale = merkmale;
+  else delete meta.merkmale;
+  return { ...rest, meta, ...(Object.keys(abschnitt).length ? { formulare: abschnitt } : {}) };
+}
+
+/** Angaben der App aus der geladenen Projektdatei; null, wenn es keine Projektdatei gibt oder nichts darin steht */
+function abschnittAusOap(): ProjektDatei | null {
+  const o = useFormulare.getState().oap;
+  if (!o || o === 'fehlt') return null;
+  const roh = o.projekt.formulare ?? o.projekt.erweiterungen?.formulare;
+  const merkmale = o.projekt.meta.merkmale;
+  if (roh === undefined && !merkmale) return null;
+  const p = roh === undefined ? {} : projektDateiAus(roh);
+  // Projektmerkmale stehen in meta (früher im Abschnitt – dann gilt der, bis zum nächsten Speichern)
+  if (merkmale && Object.keys(merkmale).length) p.merkmale = { ...merkmale };
+  return p;
+}
+
+/** Angaben aus einer alten formulare.json einmalig in die Projektdatei übernehmen (die alte Datei bleibt liegen) */
+async function uebernehmen(projekt: Projekt, alt: ProjektDatei) {
+  const f = useFormulare.getState();
+  if (!Object.keys(alt).length || f.projekt !== projekt) return;
+  if (f.oap === null) await f.oapLaden();
+  const o = useFormulare.getState().oap;
+  if (!o || o === 'fehlt' || abschnittAusOap() || useFormulare.getState().projekt !== projekt) return;
+  try {
+    if (await useFormulare.getState().oapAendern((roh) => (roh.formulare === undefined ? mitAbschnitt(roh, { ...alt, merkmale: { ...alt.merkmale, ...((roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale ?? {}) } }) : roh))) {
+      log.info(`${projekt.ordner}: ${ALTE_PROJEKTDATEI} in die Projektdatei ${o.pfad} übernommen`);
+      useFormulare.getState().setMeldung({ art: 'info', text: `Projektumfang und Antragsfassung aus ${ALTE_PROJEKTDATEI} in die Projektdatei übernommen – die alte Datei bleibt liegen.` });
+    }
+  } catch (e) {
+    log.warn(`${ALTE_PROJEKTDATEI} nicht in die Projektdatei übernommen: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
 export const useAntrag = create<AntragState>((set, get) => {
-  const projektdateiSchreiben = async (neu: ProjektDatei) => {
-    const { ds, projekt } = ctx();
-    if (!ds || !projekt) return;
-    await ds.projektdateiSchreiben(projekt.root, `${projekt.ordner}/${PROJEKTDATEI}`, new TextEncoder().encode(`${JSON.stringify(neu, null, 2)}\n`));
+  /**
+   * Angaben der App zum Projekt in den Abschnitt „formulare“ der Projektdatei (.oap) schreiben – gezielt, alles
+   * andere in der Datei bleibt. Fehlt die Projektdatei, fragt der Stammdaten-Dialog die Angaben ab, legt sie an und
+   * speichert danach; ohne Projektordner wird erst einer zugeordnet. Liefert true, wenn gespeichert wurde.
+   */
+  const projektdateiSchreiben = async (neu: ProjektDatei): Promise<boolean> => {
+    const f = useFormulare.getState();
+    const projekt = f.projekt;
+    if (!f.ds || !projekt) return false;
+    if (!ablageVon(f, projekt)) {
+      f.projektordnerZuordnen('Die Angaben zum Antrag werden in der Projektdatei (.oap) im Projektordner gespeichert. Für dieses Projekt ist noch kein Projektordner zugeordnet.', async () => {
+        if (await projektdateiSchreiben(neu)) await get().laden();
+      });
+      return false;
+    }
+    if (f.oap === null) await f.oapLaden();
+    const o = useFormulare.getState().oap;
+    if (!o || o === 'fehlt') {
+      await f.stammdatenErfassen('Die Angaben zum Antrag (Projektumfang, Antragsfassung, Projektmerkmale) werden in der Projektdatei (.oap) gespeichert. Im Projektordner gibt es noch keine – mit diesen Stammdaten wird sie angelegt.', async () => {
+        if (await projektdateiSchreiben(neu)) await get().laden();
+      });
+      return false;
+    }
+    await useFormulare.getState().oapAendern((roh) => mitAbschnitt(roh, neu));
     set({ projektdatei: neu });
+    return true;
   };
   const meldung = (art: 'info' | 'fehler', text: string) => useFormulare.getState().setMeldung({ art, text });
   const fehler = (was: string, e: unknown) => {
@@ -347,12 +411,19 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
       set({ laedt: true });
       try {
-        let projektdatei: ProjektDatei = {};
-        try {
-          const roh = await ds.lies(projekt.root, `${projekt.ordner}/${PROJEKTDATEI}`);
-          if (roh) projektdatei = projektDateiAus(JSON.parse(new TextDecoder().decode(roh)));
-        } catch (e) {
-          fehler(`${PROJEKTDATEI} von ${projekt.ordner} nicht lesbar`, e);
+        let projektdatei = abschnittAusOap();
+        if (!projektdatei) {
+          projektdatei = {};
+          // früher: formulare.json im FORMA-Projekt – wird nur noch gelesen und in die Projektdatei übernommen
+          try {
+            const roh = await ds.lies(projekt.root, `${projekt.ordner}/${ALTE_PROJEKTDATEI}`);
+            if (roh) {
+              projektdatei = projektDateiAus(JSON.parse(new TextDecoder().decode(roh)));
+              void uebernehmen(projekt, projektdatei);
+            }
+          } catch (e) {
+            fehler(`${ALTE_PROJEKTDATEI} von ${projekt.ordner} nicht lesbar`, e);
+          }
         }
         let fassungen: Fassung[] = [];
         const e = wirksameEinstellungen(get(), projekt);
@@ -453,7 +524,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         return { eintrag: u, status: externStatus(quelle, datei), formular: null, datei, quelle };
       });
       set({ formularInfo, dokumente });
-      // für die Projektübersicht merken – nur mit gelesener formulare.json und allen Formularen zerlegt
+      // für die Projektübersicht merken – nur mit gelesenen Angaben zum Antrag und allen Formularen zerlegt
       if (st.projektdatei && infos.length >= s.formulare.length) {
         const k = projektSchluessel(projekt);
         const alt = st.projektStatus[k];
@@ -733,6 +804,13 @@ useFormulare.subscribe((s, vorher) => {
     zerlegt.clear();
     if (s.projekt !== vorher.projekt) useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [] });
     void useAntrag.getState().laden();
+  } else if (s.oap !== vorher.oap) {
+    // Projektdatei gelesen oder geändert (auch von einer anderen App): Abschnitt „formulare“ übernehmen
+    const neu = abschnittAusOap();
+    if (neu && JSON.stringify(neu) !== JSON.stringify(useAntrag.getState().projektdatei)) {
+      useAntrag.setState({ projektdatei: neu });
+      void useAntrag.getState().aktualisieren();
+    }
   } else if (s.formulare !== vorher.formulare || s.offen?.bytes !== vorher.offen?.bytes) {
     void useAntrag.getState().aktualisieren();
   } else if (s.offen !== vorher.offen || s.profile !== vorher.profile) {

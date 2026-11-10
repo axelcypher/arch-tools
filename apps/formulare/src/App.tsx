@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LogDialog } from '@core/ui/LogDialog';
+import { StammdatenDialog } from '@core/ui/Stammdaten';
 import { TitleBar } from '@core/ui/TitleBar';
 import { anzahlZugeordnet } from './ausfuellen';
 import { AusfuellenDialog } from './components/AusfuellenDialog';
@@ -15,6 +16,7 @@ import { FelderAnsicht } from './components/FelderAnsicht';
 import { Gliederung } from './components/Gliederung';
 import { ProjektkarteAnsicht } from './components/ProjektkarteAnsicht';
 import { ProjektUebersicht } from './components/ProjektUebersicht';
+import { ProjektordnerDialog } from './components/ProjektordnerDialog';
 import { Schnellwahl } from './components/Schnellwahl';
 import { SeitenAnsicht } from './components/SeitenAnsicht';
 import { zeigeEintrag } from './components/ProjektkarteAnsicht';
@@ -73,6 +75,8 @@ export function App() {
   const datei = useFormulare((s) => s.datei);
   const meldung = useFormulare((s) => s.meldung);
   const konflikt = useFormulare((s) => s.konflikt);
+  const stammdaten = useFormulare((s) => s.stammdatenDialog);
+  const ordnerDialog = useFormulare((s) => s.ordnerDialog);
   const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen, setGliederungOffen, karteSpeichern, karteVerwerfen, karteRueckgaengig, karteWiederholen, sperreNeuPruefen, sperreAufheben } =
     useFormulare.getState();
   const [dialog, setDialog] = useState<'log' | 'schnellwahl' | 'ausfuellen' | 'aufheben' | 'sperren' | null>(null);
@@ -93,7 +97,11 @@ export function App() {
   }, [name, geaendert]);
 
   useEffect(() => {
-    void projekteLaden();
+    // erst die gemeinsamen Einstellungen (Stammordner der Projekte), dann suchen
+    void useFormulare
+      .getState()
+      .gemeinsamLaden()
+      .then(() => projekteLaden());
   }, [projekteLaden]);
 
   // Tastenkürzel
@@ -325,6 +333,16 @@ export function App() {
       </main>
       {exportPfad && <ExportDialog formularPfad={exportPfad} onClose={() => useExportDialog.getState().schliessen()} />}
       {hinzufuegen && projekt && <FormularHinzufuegenDialog onClose={() => useHinzufuegenDialog.getState().setOffen(false)} />}
+      {ordnerDialog && projekt && <ProjektordnerDialog grund={ordnerDialog.grund} />}
+      {stammdaten && projekt && (
+        <StammdatenDialog
+          titel={`Projektdatei für ${projekt.ordner} anlegen`}
+          text={stammdaten.grund}
+          meta={stammdaten.meta}
+          onSpeichern={(meta) => useFormulare.getState().projektdateiAnlegen(meta)}
+          onAbbrechen={() => useFormulare.getState().stammdatenAbbrechen()}
+        />
+      )}
       <MenueHost />
       <RueckfrageHost />
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}

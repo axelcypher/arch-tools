@@ -320,6 +320,21 @@ fn ist_forma_datei(p: &Path) -> bool {
     ["frmsjf", "frmtmp", "sdb", "ini"].iter().any(|e| endung_ist(p, e))
 }
 
+/// Darf die Datei von Hand gelöscht werden? Formulare (.frmsjf) ja, aber nicht, solange eine Sperrdatei daneben
+/// liegt (in FORMA oder hier geöffnet); Sperrdateien, Projektkarte und Projekttitel verwaltet nur FORMA.
+fn loeschen_erlaubt(p: &Path) -> Result<(), String> {
+    if endung_ist(p, "frmsjf") {
+        if p.with_extension("frmtmp").exists() {
+            return Err(format!("{}: Das Formular ist gerade geöffnet (Sperrdatei vorhanden) – bitte erst dort schließen", p.display()));
+        }
+        return Ok(());
+    }
+    if ist_forma_datei(p) {
+        return Err(format!("{}: Dateien von FORMA werden nur in FORMA gelöscht", p.display()));
+    }
+    Ok(())
+}
+
 /// Schreibt die Angaben der App zum Projekt (`formulare.json`) atomar – andere Dateien werden abgelehnt.
 #[tauri::command]
 async fn project_file_write(root: String, pfad: String, contents_base64: String) -> Result<(), String> {
@@ -428,12 +443,10 @@ async fn doc_rename(root: String, von: String, nach: String) -> Result<(), Strin
 #[tauri::command]
 async fn doc_delete(app: tauri::AppHandle, root: String, pfad: String) -> Result<(), String> {
     let p = unterhalb(&root, &pfad)?;
-    if ist_forma_datei(&p) {
-        return Err(format!("{}: Dateien von FORMA werden nur in FORMA gelöscht", p.display()));
-    }
     if !p.is_file() {
         return Err(format!("{}: Datei nicht gefunden", p.display()));
     }
+    loeschen_erlaubt(&p)?;
     if office_offen(&p) {
         return Err(format!("{}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen", p.display()));
     }
@@ -954,6 +967,22 @@ mod tests {
         for name in ["BS9 GP 261110 Bauantrag.pdf", "formulare.json", "Berechnung.xlsx"] {
             assert!(!ist_forma_datei(Path::new(name)), "{name}");
         }
+    }
+
+    #[test]
+    fn formulare_lassen_sich_loeschen_aber_nicht_geoeffnet() {
+        let dir = std::env::temp_dir().join(format!("formulare-loeschen-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let formular = dir.join("001-Bauantrag (2026).frmsjf");
+        std::fs::write(&formular, b"x").unwrap();
+        assert!(loeschen_erlaubt(&formular).is_ok());
+        std::fs::write(dir.join("001-Bauantrag (2026).frmtmp"), b"x").unwrap();
+        assert!(loeschen_erlaubt(&formular).unwrap_err().contains("geöffnet"));
+        for name in ["001-Bauantrag (2026).frmtmp", "sj_prokarte.sdb", "sj_office.ini"] {
+            assert!(loeschen_erlaubt(&dir.join(name)).is_err(), "{name}");
+        }
+        assert!(loeschen_erlaubt(&dir.join("BS9 GP 261110 Bauantrag.pdf")).is_ok());
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]

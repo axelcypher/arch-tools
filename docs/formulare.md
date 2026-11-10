@@ -16,6 +16,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Formularen, aus ihnen werden die Formulare ausgefüllt.
   Rechts der **Inhalt**. Was zum Dokument gehört – Gliederung, Verlauf, Formularfläche –, steht im Grau der
   Formularfläche.
+- **Gemeinsame Einstellungen:** Die Stammordner der Projektordner und der Ort neuer Projektdateien gelten für alle
+  Apps (`allgemein.json` im gemeinsamen Konfigurationsordner, siehe `packages/core/src/platform/konfig.ts`); Formulare
+  übernimmt beim ersten Start seine bisherigen Werte dorthin, wenn dort noch keine stehen.
 - **Einstellungen (⚙)** als eigene Ansicht mit Ebenen: **Ordner** (FORMA-Projekte, Projektordner, angezeigte
   Pfade), **Büro & Stammdaten**, **Adressbuch**, **Formulare**, **Antrag & Export** und **Projektdatei (.oap)** (siehe unten).
 - **Projektübersicht:** Ohne gewähltes Projekt (und über „Wechseln“ oben links) zeigt der Inhalt alle Projekte
@@ -146,7 +149,11 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   Bestätigung, mit Sicherungskopie im App-Ordner), mit einem **Antragsdokument verknüpfen** (liegt die Datei nicht im
   Ordner der aktiven Fassung, wird sie dorthin kopiert) und Pfad kopieren. Rechtsklick auf einen Ordner: Einfügen,
   Neuer Ordner …, Im Explorer zeigen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`, `.frmtmp`, `.sdb`,
-  `.ini`) lassen sich hier nicht umbenennen oder löschen.
+  `.ini`) lassen sich hier nicht umbenennen.
+- **Formulare löschen** (Rechtsklick auf ein Formular › Löschen …): nach Rückfrage und mit Sicherungskopie im
+  App-Ordner. Ist das Formular hier geöffnet, wird es vorher geschlossen (die Rückfrage warnt vor nicht gespeicherten
+  Eingaben); ist es in FORMA oder auf einem anderen Rechner geöffnet (Sperrdatei), wird nicht gelöscht. Sperrdateien,
+  Projektkarte und Projekttitel verwaltet weiterhin nur FORMA. Automatisch löscht die App nie etwas.
 
 ### Antrag, Export und Vollständigkeit
 
@@ -171,10 +178,12 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   oder Kennung) oder **extern** (Datei – Berechnung, Plan, fremde PDF; Ordner der Quelle und Muster mit `*`, `?`,
   mehrere mit `;`). Die Datei im Antragsordner wird nach Muster bzw. Titel gefunden oder ausdrücklich verknüpft (🔗,
   auch per Rechtsklick im Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Projektumfang
-  und die aktive Fassung stehen in `formulare.json` im FORMA-Projekt und gelten damit für alle im Büro.
+  und die aktive Fassung stehen im Abschnitt `formulare` der Projektdatei (`.oap`) im Projektordner und gelten damit
+  für alle im Büro (siehe unten).
 - **Projektmerkmale** (oben im Projektumfang): Gebäudeklasse, Sonderbau, Verfahren … – je Projekt einmal gewählt,
   gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Projektumfang. Welche Merkmale es gibt
-  und ihre Werte, steht in Einstellungen › Antrag & Export. Gespeichert in `formulare.json`.
+  und ihre Werte, steht in Einstellungen › Antrag & Export. Gespeichert in der Projektdatei unter `meta.merkmale` –
+  sie gehören zum Projekt und stehen damit auch den anderen Apps zur Verfügung.
 - **Dokumente mit Bedingung:** im Projektumfang (Bearbeiten) und im Katalog („Nur wenn“) – etwa ein Nachweis nur
   bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“: kein Farbpunkt, kein grauer
   „Anlegen“-Eintrag, es zählt nicht mit.
@@ -217,9 +226,23 @@ beschrieben.
   (Pläne, Modelle, Quelldateien, Manifest) bleibt unverändert; vorher wird eine Sicherungskopie angelegt. Steht
   schon alles so in der Datei, wird nichts geschrieben. Hat der Flächenrechner das Projekt gerade offen, führt er
   die Änderung beim nächsten Speichern mit seinen eigenen zusammen.
-- **Neue Projektdatei:** fehlt sie, legt die App sie beim Speichern der Projektkarte (oder mit „Jetzt anlegen“)
-  unter dem eingestellten Pfad an – Vorgabe `Planung/Berechnungen/{Kürzel}.oap`, leer = keine anlegen. Sie ist eine
-  leere Flächenberechnung mit den Stammdaten, wie sie auch die App „Projektordner“ anlegt.
+- **Gemeinsamer Zugriff:** Lesen, gezielt Ändern und Anlegen laufen über `packages/core` (`projektdatei.ts`,
+  `platform/projektordner.ts`) – dieselben Regeln in allen Apps. Ersetzt wird atomar, mit Sicherungskopie und nur,
+  wenn die Datei seit dem Lesen niemand geändert hat (sonst einmal frisch gelesen und erneut versucht). Was andere
+  Apps in `projekt.json` ablegen, bleibt erhalten.
+- **Fehlt die Projektdatei:** kein Fehler – der **Stammdaten-Dialog** (gemeinsam in `packages/core`) fragt die
+  Angaben ab, vorbelegt aus der Projektkarte, und legt sie an. Er erscheint, sobald die App die Datei braucht (beim
+  Speichern der Projektkarte, beim Festlegen von Projektumfang, Antragsfassung oder Projektmerkmalen); im Projektkopf
+  steht bis dahin „Keine Projektdatei – Stammdaten erfassen …“. Der Ort kommt aus den gemeinsamen Einstellungen
+  (`oapPfad`, Platzhalter `{nummer}` bzw. `{Kürzel}`, `{kurzname}`, `{jahr}`) und gilt für alle Apps; eine bisher
+  eigene Einstellung dieser App wird beim ersten Start dorthin übernommen.
+- **Fehlt der Projektordner:** „Kein Projektordner – zuordnen …“ im Projektkopf (und automatisch, wenn er gebraucht
+  wird): einen vorhandenen Ordner wählen oder im Stammordner einen neuen anlegen (Vorschlag „Kürzel Titel“), danach
+  folgt bei Bedarf der Stammdaten-Dialog. Die Zuordnung gilt für alle im Büro (gemeinsamer Konfigurationsordner,
+  Bereich `formulare`, `ordnerWahl`).
+- **Angaben zum Antrag** (aktive Antragsfassung, Projektumfang) stehen im Abschnitt `formulare` von `projekt.json`,
+  die Projektmerkmale unter `meta.merkmale`. Eine alte `formulare.json` im FORMA-Projekt wird noch gelesen und einmalig in die
+  Projektdatei übernommen – sie selbst bleibt liegen und wird nicht mehr geschrieben.
 - **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
   Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann
   in der Projektdatei.
@@ -315,7 +338,7 @@ Ein FORMA-Projekt ist ein Ordner:
 | `sj_prokarte.sdb` | Projektkarte (SQLite, Texte UTF-8): Projektdaten, Beteiligte, Grundstück … – `.bak` ist die Sicherung |
 | `sj_office.ini` | Projekttitel (`[Allgemeines]`, `Text=`, Windows-1252) |
 | `*.frmtmp` | Sperrdatei, solange das Formular geöffnet ist (INI, Windows-1252) |
-| `formulare.json` | nicht von FORMA: Angaben dieser App zum Projekt – aktive Antragsfassung, Projektmerkmale, Projektumfang mit Verknüpfungen und Bedingungen |
+| `formulare.json` | nicht von FORMA, früher: Angaben dieser App zum Projekt – stehen jetzt im Abschnitt `formulare` der Projektdatei (`.oap`); eine vorhandene wird nur noch gelesen und übernommen |
 
 ### Formulardatei (`.frmsjf`)
 
@@ -390,7 +413,7 @@ wie Delphi, `formular.ts` liest und schreibt Formulardateien und ändert Textfel
 (eigener PDF-Schreiber, Zeichenbreiten der Standardschriften in `schriftbreiten.ts`, Bitmaps/PNG/JPEG),
 `projektkarte.ts` die Zuordnung Feld → Projektkarte, `sperre.ts` liest und schreibt Sperrdateien.
 `antrag.ts` ist die Logik von Antrag und Export (Namensvorlage, Fassungen, Katalog, Zuordnung, Status),
-`antragStore.ts` der Zustand dazu (Einstellungen, `formulare.json`, Export, Formular anlegen), `dateiAktionen.ts`
+`antragStore.ts` der Zustand dazu (Einstellungen, Abschnitt `formulare` der Projektdatei, Export, Formular anlegen), `dateiAktionen.ts`
 die Dateibefehle des Kontextmenüs. `dokumente/` liest und ändert PDF (pdf.js),
 Excel und Word (eigener XML-Leser mit Lage im Quelltext, ZIP über fflate). `verlauf.ts` ist der Verlauf, `ablage.ts` die
 Zuordnung der echten Projektordner.
@@ -401,9 +424,10 @@ geöffnet hat), prüft
 Sperrdateien (offen gehalten? Prozess auf diesem Rechner?),
 legt nur `.frmtmp` an bzw. löscht sie und ändert in `sj_prokarte.sdb` nur vorhandene Einträge – in einer
 Transaktion, und nur, wenn jeder noch den Wert hat, von dem die Änderung ausgeht. Neu anlegen darf sie Dokumente
-(PDF, Excel, Word), Formulare (`.frmsjf`, nie überschreibend), Ordner und `formulare.json` (atomar ersetzt);
-kopieren und umbenennen nur ohne zu überschreiben, löschen nur nach einer Sicherungskopie – Dateien von FORMA sind
-davon ausgenommen. Beim Auflisten liefert sie die Änderungszeit mit (für die Vollständigkeitsprüfung).
+(PDF, Excel, Word), Formulare (`.frmsjf`, nie überschreibend) und Ordner; die Projektdatei (`.oap`) schreiben die
+gemeinsamen Befehle aus `packages/core/tauri/commands.rs`;
+kopieren und umbenennen nur ohne zu überschreiben (Dateien von FORMA ausgenommen), löschen nur von Hand und nach
+einer Sicherungskopie – Formulare nur ohne Sperrdatei daneben, Sperrdateien, Projektkarte und Projekttitel nie. Beim Auflisten liefert sie die Änderungszeit mit (für die Vollständigkeitsprüfung).
 
 ## Kompatibilitätstests
 

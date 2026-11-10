@@ -4,6 +4,7 @@ import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
 import { useAntrag } from '../antragStore';
 import type { FormularEintrag } from '../projekte';
+import { formularLoeschen } from '../dateiAktionen';
 import { AblageBaum } from './AblageBaum';
 import { FassungsWahl, StatusPunkt, umfangZeigen } from './Antrag';
 import { useExportDialog } from './ExportDialog';
@@ -57,6 +58,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   const haupt = useFormulare((s) => s.haupt);
   const karte = useFormulare((s) => s.karte);
   const ablage = useFormulare((s) => ablageVon(s, s.projekt));
+  const oap = useFormulare((s) => s.oap);
   const auswahl = useFormulare((s) => auswahlVon(s, s.projekt));
   const eigeneAuswahl = useFormulare((s) => !!s.projekt && !!s.auswahl[s.projekt.ordner]);
   const ablageordner = useFormulare((s) => s.ablageordner.length);
@@ -94,6 +96,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
         : []),
       { text: 'Im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(projekt!.root, projekt!.ordner)).catch(() => undefined) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(projekt!.root, f.pfad)) },
+      { trenner: true },
+      { text: 'Löschen …', symbol: 'muell', aktion: () => void formularLoeschen(f) },
     ];
   };
 
@@ -129,6 +133,25 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
               </button>
             </div>
             <FassungsWahl />
+            {!ablage ? (
+              <button
+                className="fo-hinweis-knopf"
+                title="Zum Kürzel wurde kein Projektordner gefunden – einen wählen oder anlegen"
+                onClick={() => useFormulare.getState().projektordnerZuordnen('Zum Kürzel wurde in den Stammordnern kein Projektordner gefunden. Dort liegt die Projektdatei (.oap) mit den Stammdaten und den Angaben zum Antrag.')}
+              >
+                <Symbol name="ordner" /> Kein Projektordner – zuordnen …
+              </button>
+            ) : (
+              oap === 'fehlt' && (
+                <button
+                  className="fo-hinweis-knopf"
+                  title="Im Projektordner gibt es noch keine Projektdatei (.oap)"
+                  onClick={() => void useFormulare.getState().stammdatenErfassen('Für dieses Projekt gibt es im Projektordner noch keine Projektdatei (.oap). Mit diesen Stammdaten wird sie angelegt.')}
+                >
+                  <Symbol name="tabelle" /> Keine Projektdatei – Stammdaten erfassen …
+                </button>
+              )
+            )}
           </div>
         )}
 

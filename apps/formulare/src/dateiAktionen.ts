@@ -1,14 +1,17 @@
 /**
  * Dateibefehle im Projektordner (Kontextmenü): kopieren und einfügen, duplizieren, umbenennen, löschen und mit
  * einem Antragsdokument verknüpfen. Geschrieben wird über die Befehle der Hülle – nichts wird überschrieben, gelöscht
- * wird erst nach einer Sicherungskopie, Dateien von FORMA sind ausgenommen.
+ * wird nur von Hand und erst nach einer Sicherungskopie. Formulare lassen sich löschen, wenn sie nirgends geöffnet
+ * sind; Sperrdateien, Projektkarte und Projekttitel verwaltet nur FORMA.
  */
 
 import { create } from 'zustand';
 import { aktiveFassung, antragsOrdner, useAntrag } from './antragStore';
 import { bestaetigen, frageText } from './components/Rueckfrage';
-import { istFormaDatei, verbinde } from './dateisystem';
-import { useFormulare } from './store';
+import { nurFormaLoescht, verbinde } from './dateisystem';
+import type { FormularEintrag } from './projekte';
+import { formulareDesProjekts } from './projekte';
+import { hatEntwurf, useFormulare } from './store';
 
 interface Zwischenablage {
   basis: string;
@@ -90,12 +93,35 @@ export async function umbenennen(basis: string, pfad: string) {
 export async function loeschen(basis: string, pfad: string) {
   const ds = useFormulare.getState().ds;
   if (!ds) return;
-  if (istFormaDatei(pfad)) return fehler('Löschen', new Error('Dateien von FORMA werden nur in FORMA gelöscht'));
+  if (nurFormaLoescht(pfad)) return fehler('Löschen', new Error('Dateien von FORMA werden nur in FORMA gelöscht'));
   if (!(await bestaetigen('Löschen', `„${nameVon(pfad)}“ löschen? Eine Sicherungskopie bleibt im Ordner „Sicherungen“ der App.`, 'Löschen', true))) return;
   try {
     await ds.loeschen(basis, pfad);
     geoeffnetesSchliessen(basis, pfad);
     geaendert();
+  } catch (e) {
+    fehler('Löschen', e);
+  }
+}
+
+/**
+ * Formular aus dem FORMA-Projekt löschen – mit Rückfrage und Sicherungskopie. Ist es hier geöffnet, wird es vorher
+ * geschlossen; ist es in FORMA (oder auf einem anderen Rechner) geöffnet, wird nicht gelöscht.
+ */
+export async function formularLoeschen(f: FormularEintrag) {
+  const s = useFormulare.getState();
+  const { ds, projekt } = s;
+  if (!ds || !projekt) return;
+  const hier = s.offen?.projekt === projekt && s.offen.pfad === f.pfad;
+  if (f.gesperrt && !hier) return fehler('Löschen', new Error(`„${f.name}“ ist gerade in FORMA oder auf einem anderen Rechner geöffnet – bitte erst dort schließen`));
+  const entwurf = hatEntwurf(projekt, f.pfad) || (hier && Object.keys(s.offen!.aenderungen).length > 0);
+  const text = `Formular „${f.name}“ löschen? Eine Sicherungskopie bleibt im Ordner „Sicherungen“ der App.${entwurf ? ' Nicht gespeicherte Eingaben gehen verloren.' : ''}`;
+  if (!(await bestaetigen('Formular löschen', text, 'Löschen', true))) return;
+  try {
+    if (hier) await useFormulare.getState().schliessen();
+    await ds.loeschen(projekt.root, f.pfad);
+    if (useFormulare.getState().projekt === projekt) useFormulare.setState({ formulare: await formulareDesProjekts(ds, projekt) });
+    useFormulare.getState().setMeldung({ art: 'info', text: `„${f.name}“ gelöscht – die Sicherungskopie liegt im Ordner „Sicherungen“ der App.` });
   } catch (e) {
     fehler('Löschen', e);
   }
