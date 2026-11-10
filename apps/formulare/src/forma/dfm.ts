@@ -224,14 +224,15 @@ export class Leser {
 
   objekt(): Objekt {
     const kopf = this.ganzeZeile();
-    const m = /^(?:object|inherited|inline) ([^:]*):\s*(\S+)/.exec(kopf.trim());
+    // ohne Namen nur die Klasse: `object TLabel`
+    const m = /^(?:object|inherited|inline) (?:([^:]*):\s*(\S+)|(\S+))$/.exec(kopf.trim());
     if (!m) this.fehler('Objektkopf „object Name: Typ“ erwartet');
     const elemente: (Eigenschaft | Objekt)[] = [];
     for (;;) {
       const t = this.zeile().trim();
       if (t === 'end') {
         const fuss = this.ganzeZeile();
-        return { typ: 'objekt', name: m[1].trim(), klasse: m[2], kopf, fuss, elemente };
+        return { typ: 'objekt', name: (m[1] ?? '').trim(), klasse: m[2] ?? m[3], kopf, fuss, elemente };
       }
       elemente.push(OBJEKTKOPF.test(t) ? this.objekt() : this.eigenschaft());
     }

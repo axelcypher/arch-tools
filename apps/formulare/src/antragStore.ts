@@ -35,7 +35,7 @@ import {
   vorlagenAus,
 } from './antrag';
 import type { Merkmal } from './bedingung';
-import { merkmaleAus } from './bedingung';
+import { merkmaleAus, mitVorgabeMerkmalen } from './bedingung';
 import type { Eintrag } from './dateisystem';
 import { ALTE_PROJEKTDATEI, verbinde } from './dateisystem';
 import type { Feld } from './forma/felder';
@@ -410,7 +410,8 @@ export const useAntrag = create<AntragState>((set, get) => {
       set({ katalog });
     },
     setMerkmalDefinitionen: (m) => {
-      const merkmalDefinitionen = m ?? merkmaleAus(null);
+      // die Merkmale der App bleiben (die Vorgaben der Formulare brauchen sie)
+      const merkmalDefinitionen = m ? mitVorgabeMerkmalen(m) : merkmaleAus(null);
       if (m) schreiben(MERKMALE, merkmalDefinitionen);
       else
         try {

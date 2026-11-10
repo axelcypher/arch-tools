@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Fragment, useState } from 'react';
 import type { AntragsVorlage, KatalogEintrag } from '../antrag';
-import { VORGABE_MERKMALE, bedingungText, hatBedingung } from '../bedingung';
+import { VORGABE_MERKMALE, bedingungText, hatBedingung, istVorgabeMerkmal } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import { PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus } from '../antrag';
 import { Griff, useSortieren } from './Sortieren';
@@ -163,7 +163,13 @@ export function AntragEinstellungen() {
                   <Griff {...merkmalSort.griff(i, m.name)} />
                 </td>
                 <td>
-                  <input value={m.name} aria-label="Merkmal" onChange={(x) => setMerkmalDefinitionen(merkmale.map((y, n) => (n === i ? { ...y, name: x.target.value } : y)))} />
+                  <input
+                    value={m.name}
+                    aria-label="Merkmal"
+                    readOnly={istVorgabeMerkmal(m.name)}
+                    title={istVorgabeMerkmal(m.name) ? 'Merkmal der App – die Vorgaben der Formulare bauen darauf auf' : undefined}
+                    onChange={(x) => setMerkmalDefinitionen(merkmale.map((y, n) => (n === i ? { ...y, name: x.target.value } : y)))}
+                  />
                 </td>
                 <td>
                   <input
@@ -174,7 +180,13 @@ export function AntragEinstellungen() {
                   />
                 </td>
                 <td>
-                  <button className="icon" aria-label={`${m.name} entfernen`} title="Entfernen" onClick={() => setMerkmalDefinitionen(merkmale.filter((_, n) => n !== i))}>
+                  <button
+                    className="icon"
+                    aria-label={`${m.name} entfernen`}
+                    title={istVorgabeMerkmal(m.name) ? 'Merkmal der App – bleibt' : 'Entfernen'}
+                    disabled={istVorgabeMerkmal(m.name)}
+                    onClick={() => setMerkmalDefinitionen(merkmale.filter((_, n) => n !== i))}
+                  >
                     <Symbol name="muell" />
                   </button>
                 </td>

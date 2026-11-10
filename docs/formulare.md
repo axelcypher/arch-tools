@@ -55,6 +55,23 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   darüber und gehen immer vor; gespeichert wird nur, was davon abweicht – alles andere folgt der Vorgabe, auch wenn
   eine spätere Version sie verbessert. Beim Einrichten steht bei jedem Eintrag, ob er aus der Vorgabe stammt;
   „Vorgabe wiederherstellen“ verwirft die eigene Änderung, „Alles auf die Vorgabe zurücksetzen“ alle des Formulars.
+  Vorgaben gibt es für die Anlagen der VV BauPrüfVO NRW:
+
+  | Formular | Stand | Was die Vorgabe schaltet |
+  |---|---|---|
+  | I/1 Baugenehmigungsverfahren (`nw010001`) | 2026I | Unterlagen nur beim Bauantrag; Nr. 2 nur mit Bebauungsplan, Nr. 3 nur nach §§ 34/35 BauGB, Nr. 6 Baubeschreibung nicht beim Einfamilienhaus, Nr. 9 Betriebsbeschreibung bei Nichtwohngebäuden, Nr. 10 eine Kostenangabe; „Bei Vorbescheid“ nur beim Vorbescheid; Bindungen nur, wenn angekreuzt |
+  | I/2 vereinfachtes Verfahren (`nw010002`) | 2026I | wie I/1 (Nr. 7 Kosten); Nr. 8/9 nur für Sonderbauten, Nr. 11.2 Brandschutz-Bescheinigung bei Gebäudeklasse 4/5 ohne Sonderbau und Garagen über 100 m² |
+  | I/3 Genehmigungsfreistellung (`nw010005`) | 2026I | wie auf dem Vordruck: „ja“ → Nr. 2 bis 6, „nein“ → Nr. 1, 4 und 5; Nr. 2.4 nicht beim Einfamilienhaus |
+  | I/7 Baubeschreibung (`nw010010`) | 2024G, 2026I | Nr. 8 bis 10 nicht im vereinfachten Verfahren; Nr. 11 nur bei Ortssatzung/Denkmalschutz; Barrierefreiheit ab Gebäudeklasse 3 und bei Nichtwohngebäuden |
+  | I/10 Abweichung, Ausnahme, Befreiung (`nw010013`) | 2026I | Gemeinde nur bei Ausnahme oder Befreiung |
+
+  Überall: richtige Titel für alle Felder, Behördenfelder (Eingangsstempel, Aktenzeichen, Genehmigungsvermerk)
+  zählen nicht, Auswahlen (Gebäudeklasse, Antragsart …) als eine Angabe, bei Telefon/Mobil/E-Mail genügt eine.
+- **Projektmerkmale der App:** Gebäudeklasse, Sonderbau, Verfahren, **Gebäudeart** (Einfamilienhaus,
+  Zweifamilienhaus, Mehrfamilienhaus, Nichtwohngebäude, kein Gebäude), **Vorhaben** (Errichtung, Änderung,
+  Nutzungsänderung, Beseitigung) und **Planungsrecht** (Bebauungsplan, Innenbereich, Außenbereich). Die Vorgaben
+  bauen darauf auf; sie bleiben deshalb auch in einer eigenen Merkmalliste (fehlende werden ergänzt, auch fehlende
+  Werte) und lassen sich weder umbenennen noch entfernen. Eigene Merkmale und Werte kommen dazu.
 - **Formular einrichten** („Einrichten“ in der Werkzeugleiste), je Formular und Stand – gilt in allen Projekten.
   Das Formular wird zur Fläche zum Auswählen: **Feld anklicken** (mit <kbd>Strg</kbd>/<kbd>Umschalt</kbd> mehrere),
   links zeigt die Gliederung den Aufbau als **Baum** (Abschnitte, Gruppen, Felder – mit Füllstand, Inhalt zum
@@ -422,6 +439,15 @@ end
   berechnet: Jede Eigenschaft behält ihre Originalzeilen, nur geänderte werden neu erzeugt.
 - In Textfeldern mit Zeilenumbruch speichert FORMA jede *angezeigte* Zeile einzeln – ein langer Name kann
   also auf zwei Zeilen verteilt sein.
+- Leere Vorlagen, die FORMA noch nie gespeichert hat, tragen die Kennung ohne Marke
+  (`[*SJ_BEGIN#]nw010005[*SJ_VERSION#]2026I[*SJ_END#]`), und manche Komponenten haben keinen Namen
+  (`object TLabel`).
+- Was ganz außerhalb seines Rahmens liegt (etwa ein Textfeld mit negativem `Top`), schneidet Delphi ab – die App
+  zeigt es nicht und zählt es nicht. Gesperrte Textfelder (`Enabled = False`) rechnet FORMA aus (Summen, Kopfzeilen
+  der Folgeblätter); man trägt dort nichts ein, und sie zählen nicht für den Füllstand.
+- Beschriftungen: über dem Feld (Höhe nach den Textzeilen, nicht nach `Height`), sonst links daneben; bei
+  Kästchen rechts daneben – außer in Zeilen, deren Beschriftungen links vor den Kästchen stehen
+  („1 ☐ 2 ☐ 3 ☐“). „☐ 3-fach Lageplan …“ ergibt „Lageplan … (3-fach)“; Tabellenzellen bekommen den Spaltenkopf.
 - Alle bekannten Seiten sind 700 Pixel breit. Beschriftungen in Arial, Textfelder in Courier New; gedrehte
   Beschriftungen (`TExtendedLabel`, `Angle = 90/270`) geben Breite und Höhe ungedreht an. Bilder (`TImage`)
   stehen als `Picture.Data` in der Datei (Klassenname, bei `TBitmap` Länge + Windows-BMP).
@@ -528,4 +554,7 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
 - **Projektdatei (.oap):** mit echten Projekten prüfen, welche Datei je Projekt die Stammdaten führen soll (bei
   mehreren Berechnungen) und ob die Zuordnung Grundstück/Ort zur Projektkarte so passt.
 - **Vorgabe der angezeigten Pfade** an die Ordnerstruktur des Büros anpassen.
+- **Weitere Vorgaben:** Statistikbögen, Bauanzeigen (Baubeginn, Fertigstellung), Vollmacht, Artenschutzprüfung,
+  Betriebsbeschreibungen und die Verzeichnisse der Prüfsachverständigen haben noch keine Vorgabe (dort gelten die
+  erkannten Beschriftungen und die eigenen Einstellungen).
 - **Beschriftungen in Tabellen** (z. B. „1-fach / 3-fach“-Spalten) sind aus der Lage nur unvollständig ableitbar.

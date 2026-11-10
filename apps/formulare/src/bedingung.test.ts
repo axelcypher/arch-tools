@@ -69,7 +69,9 @@ describe('Bedingungen', () => {
     expect(bedingungAus('kaputt')).toBeUndefined();
     expect(bedingungAus({ art: 'gruppe', op: 'und', teile: [] })).toBeUndefined();
     expect(merkmaleAus(null)).toEqual(VORGABE_MERKMALE);
-    expect(merkmaleAus([{ name: ' GK ', werte: ['1', ' 2 ', ''] }, { name: '' }])).toEqual([{ name: 'GK', werte: ['1', '2'] }]);
+    // eigene Listen behalten die Merkmale der App (ihre Werte auch) – die Vorgaben der Formulare brauchen sie
+    expect(merkmaleAus([{ name: ' GK ', werte: ['1', ' 2 ', ''] }, { name: '' }])).toEqual([{ name: 'GK', werte: ['1', '2'] }, ...VORGABE_MERKMALE]);
+    expect(merkmaleAus([{ name: 'Gebäudeart', werte: ['Doppelhaus'] }])[0]).toEqual({ name: 'Gebäudeart', werte: ['Doppelhaus', ...VORGABE_MERKMALE.find((m) => m.name === 'Gebäudeart')!.werte] });
   });
 
   it('nur Projektmerkmale (für Dokumente des Projektumfangs)', () => {

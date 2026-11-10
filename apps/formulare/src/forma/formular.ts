@@ -8,6 +8,8 @@
  *   [*S01#][*SJ_BEGIN#]object Form1: TFRMABSeiteForm … end⏎[*SJ_END#]
  *   [*S02#][*SJ_BEGIN#]object Form2: TFRMABSeiteForm … end⏎[*SJ_END#]
  *
+ * Leere Vorlagen, die FORMA noch nie gespeichert hat, tragen die Kennung ohne `[*SJ_MODIFIED#]`.
+ *
  * Grundsatz: Das Originalprogramm muss jede Datei weiter lesen können. Geändert wird nur der Inhalt von
  * Feldern, nie das Layout, und alles Unveränderte bleibt Byte für Byte erhalten.
  */
@@ -59,7 +61,8 @@ export function parseFormular(bytes: Uint8Array): Formular {
   p.erwarte(BEGINN);
   const kopf: [string, string][] = [];
   while (!p.bei(ENDE)) {
-    const schluessel = marke(p);
+    // leere Vorlagen (nie in FORMA gespeichert) haben die Kennung ohne Marke: [*SJ_BEGIN#]nw010005[*SJ_VERSION#]…
+    const schluessel = p.bei('[*') ? marke(p) : '';
     kopf.push([schluessel, p.bis('[*')]);
   }
   p.erwarte(ENDE);
@@ -84,7 +87,7 @@ function marke(p: Leser): string {
 
 export function formularBytes(f: Formular): Uint8Array {
   const out: string[] = [SIGNATUR, BEGINN];
-  for (const [k, v] of f.kopf) out.push(`[*${k}#]`, v);
+  for (const [k, v] of f.kopf) out.push(k ? `[*${k}#]` : '', v);
   out.push(ENDE);
   for (const s of f.seiten) {
     out.push(`[*${s.schluessel}#]`, BEGINN);
@@ -96,8 +99,8 @@ export function formularBytes(f: Formular): Uint8Array {
 
 const kopfwert = (f: Formular, k: string) => f.kopf.find(([s]) => s === k)?.[1];
 
-/** Formularkennung, z. B. `nw010005` (NRW, Formular 005) */
-export const kennung = (f: Formular) => kopfwert(f, 'SJ_MODIFIED');
+/** Formularkennung, z. B. `nw010005` (NRW, Formular 005) – in leeren Vorlagen ohne Marke */
+export const kennung = (f: Formular) => kopfwert(f, 'SJ_MODIFIED') ?? kopfwert(f, '');
 /** Stand des Formulars, z. B. `2026I` */
 export const stand = (f: Formular) => kopfwert(f, 'SJ_VERSION');
 /** Fenstertitel der Seite, z. B. „NRW - 2026 - Anlage I-3 - … - Seite 1 von 3“ */

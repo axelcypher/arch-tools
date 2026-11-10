@@ -17,11 +17,36 @@ export interface Merkmal {
   werte: string[];
 }
 
+/**
+ * Merkmale, die die App mitbringt – die Vorgaben der Formulare (vorgaben/) bauen darauf auf. Sie bleiben deshalb
+ * immer in der Liste, auch wenn man eigene Merkmale anlegt; ihre Werte ebenso (eigene Werte kommen dazu).
+ */
 export const VORGABE_MERKMALE: Merkmal[] = [
   { name: 'Gebäudeklasse', werte: ['1', '2', '3', '4', '5'] },
   { name: 'Sonderbau', werte: ['ja', 'nein'] },
   { name: 'Verfahren', werte: ['Genehmigungsfreistellung', 'vereinfachtes Verfahren', 'Baugenehmigungsverfahren'] },
+  /** Art des Gebäudes (Wohngebäude nach Zahl der Wohnungen) */
+  { name: 'Gebäudeart', werte: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Nichtwohngebäude', 'kein Gebäude'] },
+  /** Art des Vorhabens (§ 60 BauO NRW 2018; Beseitigung § 62 Absatz 3) */
+  { name: 'Vorhaben', werte: ['Errichtung', 'Änderung', 'Nutzungsänderung', 'Beseitigung'] },
+  /** planungsrechtliche Lage des Grundstücks (§§ 30, 34, 35 BauGB) */
+  { name: 'Planungsrecht', werte: ['Bebauungsplan', 'Innenbereich', 'Außenbereich'] },
 ];
+
+const gleicherName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/** Eigene Merkmalliste samt den Merkmalen der App: fehlende kommen ans Ende, fehlende Werte der App ebenso */
+export function mitVorgabeMerkmalen(liste: Merkmal[]): Merkmal[] {
+  const out = liste.map((m) => {
+    const v = VORGABE_MERKMALE.find((x) => gleicherName(x.name, m.name));
+    return v ? { ...m, werte: [...m.werte, ...v.werte.filter((w) => !m.werte.includes(w))] } : m;
+  });
+  for (const v of VORGABE_MERKMALE) if (!out.some((m) => gleicherName(m.name, v.name))) out.push({ ...v, werte: [...v.werte] });
+  return out;
+}
+
+/** Merkmal der App (kann nicht entfernt werden) */
+export const istVorgabeMerkmal = (name: string) => VORGABE_MERKMALE.some((v) => gleicherName(v.name, name));
 
 export type FeldPruefung = 'ausgefuellt' | 'leer' | 'gleich' | 'ungleich';
 
@@ -163,6 +188,10 @@ export function bedingungAus(roh: unknown): Bedingung | undefined {
 
 export function merkmaleAus(roh: unknown): Merkmal[] {
   if (!Array.isArray(roh)) return VORGABE_MERKMALE;
+  return mitVorgabeMerkmalen(eigeneMerkmale(roh));
+}
+
+function eigeneMerkmale(roh: unknown[]): Merkmal[] {
   return roh
     .filter((m): m is Record<string, unknown> => !!m && typeof m === 'object' && typeof (m as { name?: unknown }).name === 'string' && !!(m as { name: string }).name.trim())
     .map((m) => ({ name: String(m.name).trim(), werte: (Array.isArray(m.werte) ? m.werte : []).filter((w): w is string => typeof w === 'string' && !!w.trim()).map((w) => w.trim()) }));

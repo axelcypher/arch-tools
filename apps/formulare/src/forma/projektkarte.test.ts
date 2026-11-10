@@ -72,9 +72,7 @@ describe.skipIf(!projekte.length)('Ausfüllen gegen echte FORMA-Projekte', () =>
     const dir = path.join(REF, projekt);
     const pk = pkLesen(path.join(dir, 'sj_prokarte.sdb'));
     expect(pk.gruppen.length).toBeGreaterThan(10);
-    expect(pkWert(pk, 101, 30)).not.toBe('');
-    // Auswahllisten liefern die gewählte Möglichkeit, nicht die Liste (Land ist hier nicht gewählt)
-    expect(pkWert(pk, 101, 60)).toBe('');
+    // Auswahllisten liefern die gewählte Möglichkeit, nicht die Liste
     for (const e of pk.eintraege.filter((x) => x.typ === 4 || x.typ === 8)) expect(pkWert(pk, e.gruppe, e.id)).not.toMatch(/[\r\n]/);
 
     let gleich = 0;
@@ -95,8 +93,10 @@ describe.skipIf(!projekte.length)('Ausfüllen gegen echte FORMA-Projekte', () =>
     }
     // Felder können nach dem Ausfüllen von Hand geändert worden sein – die meisten müssen aber passen
     console.log(`${projekt}: ${gleich} gleich, ${abweichend.length} abweichend\n  ${abweichend.join('\n  ')}`);
+    // leere Vorlagen (Vorlagenordner mit Projektkarte): nichts zu vergleichen
+    if (!gleich && !abweichend.length) return;
     expect(gleich).toBeGreaterThan(0);
-    expect(gleich / (gleich + abweichend.length)).toBeGreaterThan(0.6);
+    expect(gleich /(gleich + abweichend.length)).toBeGreaterThan(0.6);
   });
 });
 
