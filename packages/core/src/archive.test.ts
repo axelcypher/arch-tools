@@ -1,4 +1,4 @@
-import { strToU8, unzipSync, zipSync } from 'fflate';
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { readProjectFile, writeArchive } from './archive';
 import { rectPoints } from './geometry';
@@ -134,5 +134,33 @@ describe('Lageplan und Festsetzungen im Projektformat', () => {
     expect(p.storeys.map((s) => s.name)).toEqual(['EG']);
     expect(p.lageplan!.flaechen).toHaveLength(1);
     expect(p.lageplan!.flaechen[0]).toMatchObject({ name: 'Einfahrt', nutzung: 'zufahrt' });
+  });
+});
+
+describe('Abschnitte anderer Apps', () => {
+  it('Stammdaten mit Kurzname, Leistungsphasen, Beteiligten und die Angaben des Projektordners überstehen das Archiv', () => {
+    const p = createProject('Kita');
+    p.meta = { ...p.meta, projektcode: '2026-014', kurzname: 'Kita', leistungsphasen: [4, 1, 2, 2], beteiligte: [{ rolle: 'Tragwerk', name: 'Büro Statik', kontakt: '' }, { rolle: '', name: '', kontakt: '' }], angelegt: '2026-10-01' };
+    p.projektordner = { struktur: 'Büro', presets: ['Jedes Projekt', 'Jedes Projekt'], dateischema: '{nummer}_{titel}' };
+    const back = readProjectFile(writeArchive(p));
+    expect(back.meta).toMatchObject({ kurzname: 'Kita', leistungsphasen: [1, 2, 4], beteiligte: [{ rolle: 'Tragwerk', name: 'Büro Statik', kontakt: '' }], angelegt: '2026-10-01' });
+    expect(back.projektordner).toEqual({ struktur: 'Büro', presets: ['Jedes Projekt'], dateischema: '{nummer}_{titel}' });
+  });
+
+  it('unbekannte Abschnitte (neuere Fassungen, andere Apps) bleiben beim Lesen und Schreiben erhalten', () => {
+    const p = createProject('X');
+    const zip = writeArchive(p);
+    // eine andere App hat einen eigenen Abschnitt in projekt.json geschrieben
+    const dateien = unzipSync(zip);
+    const roh = JSON.parse(strFromU8(dateien['projekt.json'])) as Record<string, unknown>;
+    roh.formulare = { umfang: [{ nr: '01', titel: 'Bauantrag' }], aktiveFassung: 'BAUA 2' };
+    dateien['projekt.json'] = strToU8(JSON.stringify(roh));
+    const gelesen = readProjectFile(zipSync(dateien));
+    expect(gelesen.erweiterungen).toEqual({ formulare: { umfang: [{ nr: '01', titel: 'Bauantrag' }], aktiveFassung: 'BAUA 2' } });
+    // wieder geschrieben (z. B. vom Flächenrechner): der Abschnitt steht unverändert auf der obersten Ebene
+    const wieder = JSON.parse(strFromU8(unzipSync(writeArchive(gelesen))['projekt.json'])) as Record<string, unknown>;
+    expect(wieder.formulare).toEqual(roh.formulare);
+    expect(wieder.erweiterungen).toBeUndefined();
+    expect(readProjectFile(writeArchive(gelesen)).erweiterungen).toEqual(gelesen.erweiterungen);
   });
 });

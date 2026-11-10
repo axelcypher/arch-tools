@@ -249,13 +249,23 @@ export interface Bauherr {
   kontakte: Kontakt[];
 }
 
+/** Beteiligter am Projekt (Fachplaner, Behörde …) */
+export interface Beteiligter {
+  /** z. B. Tragwerksplanung, Vermessung, Bauamt */
+  rolle: string;
+  name: string;
+  kontakt: string;
+}
+
 /**
- * Projektstammdaten – gemeinsam für Flächenrechner, GRZ-Nachweis, Kostenermittlung, Projektordner und Formulare
- * (die Formulare-App gleicht sie mit der Projektkarte von FORMA ab).
+ * Projektstammdaten – gemeinsam für alle Apps (Flächenrechner, GRZ-Nachweis, Kostenermittlung, Projektordner,
+ * Formulare, Entzerrung); die Formulare-App gleicht sie mit der Projektkarte von FORMA ab.
  */
 export interface ProjectMeta {
   /** Projektcode / Projektnummer */
   projektcode: string;
+  /** Kurzname, z. B. „EFH Musterweg“ (Teil des Ordnernamens) */
+  kurzname?: string;
   /** Bezeichnung des Vorhabens bzw. der Baumaßnahme */
   vorhaben?: string;
   /** Aktenzeichen der Bauaufsicht */
@@ -265,6 +275,34 @@ export interface ProjectMeta {
   grundstueck: Grundstueck;
   bauherr: Bauherr;
   bearbeiter: string;
+  /** beauftragte Leistungsphasen (1–9); fehlt = nicht festgelegt */
+  leistungsphasen?: number[];
+  beteiligte?: Beteiligter[];
+  /** Tag, an dem das Projekt angelegt wurde (JJJJ-MM-TT) */
+  angelegt?: string;
+}
+
+/** Leistungsphasen nach HOAI */
+export const LEISTUNGSPHASEN: { nr: number; label: string }[] = [
+  { nr: 1, label: 'Grundlagenermittlung' },
+  { nr: 2, label: 'Vorplanung' },
+  { nr: 3, label: 'Entwurfsplanung' },
+  { nr: 4, label: 'Genehmigungsplanung' },
+  { nr: 5, label: 'Ausführungsplanung' },
+  { nr: 6, label: 'Vorbereitung der Vergabe' },
+  { nr: 7, label: 'Mitwirkung bei der Vergabe' },
+  { nr: 8, label: 'Objektüberwachung' },
+  { nr: 9, label: 'Objektbetreuung' },
+];
+
+/** Angaben der App „Projektordner“ zum Projekt */
+export interface ProjektordnerAngaben {
+  /** Struktur, nach der der Projektordner angelegt bzw. zuletzt ergänzt wurde */
+  struktur?: string;
+  /** Dateinamenschema für Pläne, z. B. „{nummer}_{plannummer}_{index}_{titel}“ */
+  dateischema?: string;
+  /** gewählte Vorlagen-Presets */
+  presets?: string[];
 }
 
 export const leereAnschrift = (): Anschrift => ({ strasse: '', plz: '', ort: '' });
@@ -349,6 +387,13 @@ export interface Project {
   massNutzung?: MassNutzung;
   /** Kostenermittlung nach DIN 276 */
   kosten?: Kosten;
+  /** Angaben der App „Projektordner“ (Struktur, Vorlagen-Presets) */
+  projektordner?: ProjektordnerAngaben;
+  /**
+   * Abschnitte der Projektdatei, die diese Programmfassung nicht kennt (von neueren Fassungen oder anderen Apps).
+   * Sie werden unverändert wieder geschrieben – keine App verliert Daten einer anderen.
+   */
+  erweiterungen?: Record<string, unknown>;
 }
 
 /* ---------- Kostenermittlung (DIN 276) ---------- */

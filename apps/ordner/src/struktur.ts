@@ -12,6 +12,29 @@ export interface OrdnerRegel {
   dateischema?: boolean;
 }
 
+/**
+ * Zuordnung einer Vorlage: welche Datei (oder welcher Ordner) aus dem Vorlagenordner an welche Stelle im
+ * Projekt kommt und wie sie dort heißt.
+ */
+export interface VorlagenEintrag {
+  /** Pfad im Vorlagenordner, mit „/“ getrennt – eine Datei oder ein Ordner (alle Dateien darin); leer = der ganze Vorlagenordner */
+  quelle: string;
+  /** Zielordner im Projekt (Platzhalter erlaubt); leer = Stamm des Projektordners. Unterordner einer Ordner-Quelle bleiben erhalten. */
+  ziel: string;
+  /** Dateiname im Projekt, z. B. „{nummer} Kostenschätzung“; leer = Dateinamenschema für Vorlagen. Die Endung kommt von der Vorlage. */
+  name?: string;
+  /** nur, wenn eine dieser Leistungsphasen beauftragt ist (leer = immer) */
+  lph?: number[];
+}
+
+/** Zusammenstellung von Vorlagen, die beim Anlegen oder Aktualisieren eines Projekts ergänzt werden */
+export interface VorlagenPreset {
+  name: string;
+  /** bei neuen Projekten vorausgewählt */
+  standard?: boolean;
+  eintraege: VorlagenEintrag[];
+}
+
 export interface Struktur {
   name: string;
   /** Projektnummer, z. B. „{jahr}-{nr:3}“ → 2026-014 */
@@ -23,7 +46,16 @@ export interface Struktur {
   ordner: OrdnerRegel[];
   /** leere Flächenrechner-Datei (.oap) an diesem Pfad anlegen; leer = keine */
   flaechenprojekt: string;
+  /**
+   * Dateinamen der Vorlagen im Projekt, z. B. „{nummer} {name}“ ({name} = Name der Vorlage ohne Endung).
+   * Gilt nicht für Vorlagen, deren Name selbst Platzhalter enthält, und nicht, wo eine Zuordnung einen Namen vorgibt.
+   */
+  vorlagenname: string;
+  presets: VorlagenPreset[];
 }
+
+/** der ganze Vorlagenordner, aufgebaut wie ein Projektordner: jede Datei an denselben Ort */
+export const GANZER_VORLAGENORDNER: VorlagenPreset = { name: 'Alle Vorlagen', standard: true, eintraege: [{ quelle: '', ziel: '' }] };
 
 export const STANDARD: Struktur = {
   name: 'Standard',
@@ -53,6 +85,8 @@ export const STANDARD: Struktur = {
     { pfad: '08 Bauleitung/Rechnungen', lph: [8] },
     { pfad: '09 Fotos' },
   ],
+  vorlagenname: '{nummer} {name}',
+  presets: [GANZER_VORLAGENORDNER],
 };
 
 /** Pfad vereinheitlichen: „/“ als Trenner, keine leeren Teile, keine Leerzeichen an den Rändern */
@@ -74,7 +108,7 @@ export function sichererName(name: string): string {
 }
 
 /** „5-8“, „6, 7“ oder „4“ → Leistungsphasen */
-function lphAus(text: string): number[] {
+export function lphAus(text: string): number[] {
   const out = new Set<number>();
   for (const teil of text.split(/[,;\s]+/).filter(Boolean)) {
     const m = /^(\d)(?:\s*[-–]\s*(\d))?$/.exec(teil);
@@ -86,7 +120,7 @@ function lphAus(text: string): number[] {
   return [...out].sort();
 }
 
-function lphText(lph: number[]): string {
+export function lphText(lph: number[]): string {
   // zusammenhängende Phasen als Bereich
   const teile: string[] = [];
   for (let i = 0; i < lph.length; i++) {
@@ -131,6 +165,36 @@ export function ordnerAlsText(ordner: OrdnerRegel[]): string {
 
 const text = (v: unknown, vorgabe: string) => (typeof v === 'string' && v.trim() ? v.trim() : vorgabe);
 
+/** Zielpfad im Projekt bereinigen: „/“ als Trenner, unzulässige Zeichen je Teil entfernt (Platzhalter bleiben) */
+export const zielordnerAus = (p: string) => normPfad(p).split('/').map(sichererName).filter(Boolean).join('/');
+
+const lphListe = (v: unknown) => (Array.isArray(v) ? [...new Set(v.filter((n): n is number => Number.isInteger(n) && n >= 1 && n <= 9))].sort() : []);
+
+function eintragAus(x: unknown): VorlagenEintrag | null {
+  if (!x || typeof x !== 'object') return null;
+  const o = x as Record<string, unknown>;
+  if (typeof o.quelle !== 'string') return null;
+  const name = typeof o.name === 'string' ? o.name.trim() : '';
+  const lph = lphListe(o.lph);
+  return { quelle: normPfad(o.quelle), ziel: typeof o.ziel === 'string' ? zielordnerAus(o.ziel) : '', ...(name ? { name } : {}), ...(lph.length ? { lph } : {}) };
+}
+
+/** Presets aus der Konfiguration: ohne Namen oder doppelt benannte entfallen */
+export function presetsAus(liste: unknown[]): VorlagenPreset[] {
+  const out: VorlagenPreset[] = [];
+  const namen = new Set<string>();
+  for (const x of liste) {
+    if (!x || typeof x !== 'object') continue;
+    const o = x as Record<string, unknown>;
+    const name = typeof o.name === 'string' ? o.name.trim() : '';
+    if (!name || namen.has(name.toLowerCase())) continue;
+    namen.add(name.toLowerCase());
+    const eintraege = (Array.isArray(o.eintraege) ? o.eintraege : []).map(eintragAus).filter((e): e is VorlagenEintrag => !!e);
+    out.push({ name, ...(o.standard === true ? { standard: true } : {}), eintraege });
+  }
+  return out;
+}
+
 /** Struktur aus einer Konfigurationsdatei; fehlende Angaben kommen aus der Vorgabe */
 export function strukturAusJson(json: string): Struktur {
   let o: Record<string, unknown>;
@@ -153,6 +217,8 @@ export function strukturAusJson(json: string): Struktur {
     }
   }
   if (liste && !ordner.length) throw new Error('Die Konfiguration enthält keinen gültigen Ordner.');
+  // Konfigurationen ohne Presets (bis Version 0.1.x): der ganze Vorlagenordner wie bisher, Dateinamen unverändert
+  const ohnePresets = !Array.isArray(o.presets);
   return {
     name: text(o.name, STANDARD.name),
     nummernschema: text(o.nummernschema, STANDARD.nummernschema),
@@ -160,10 +226,24 @@ export function strukturAusJson(json: string): Struktur {
     dateischema: text(o.dateischema, STANDARD.dateischema),
     flaechenprojekt: typeof o.flaechenprojekt === 'string' ? normPfad(o.flaechenprojekt) : STANDARD.flaechenprojekt,
     ordner: liste ? ordner : STANDARD.ordner,
+    vorlagenname: text(o.vorlagenname, ohnePresets ? '{name}' : STANDARD.vorlagenname),
+    presets: ohnePresets ? [GANZER_VORLAGENORDNER] : presetsAus(o.presets as unknown[]),
   };
 }
 
 export const strukturAlsJson = (s: Struktur) => `${JSON.stringify(s, null, 2)}\n`;
 
 /** Gilt die Regel für ein Projekt mit diesen Leistungsphasen? Ohne Angabe von Phasen gelten alle Ordner. */
-export const regelGilt = (r: OrdnerRegel, lph: number[]) => !r.lph?.length || !lph.length || r.lph.some((p) => lph.includes(p));
+export const regelGilt = (r: { lph?: number[] }, lph: number[]) => !r.lph?.length || !lph.length || r.lph.some((p) => lph.includes(p));
+
+/**
+ * Presets, die für ein Projekt gelten: die ausgewählten – ohne Auswahl die Standard-Presets der Struktur.
+ * `unbekannt` sind ausgewählte Namen, die es in der Struktur nicht (mehr) gibt.
+ */
+export function aktivePresets(struktur: Struktur, auswahl: string[] | undefined): { presets: VorlagenPreset[]; unbekannt: string[] } {
+  if (!auswahl) return { presets: struktur.presets.filter((p) => p.standard), unbekannt: [] };
+  const gewaehlt = new Set(auswahl.map((n) => n.toLowerCase()));
+  const presets = struktur.presets.filter((p) => gewaehlt.has(p.name.toLowerCase()));
+  const da = new Set(struktur.presets.map((p) => p.name.toLowerCase()));
+  return { presets, unbekannt: auswahl.filter((n) => !da.has(n.toLowerCase())) };
+}

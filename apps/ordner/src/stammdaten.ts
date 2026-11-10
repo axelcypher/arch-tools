@@ -29,6 +29,8 @@ export interface Stammdaten {
   /** beauftragte Leistungsphasen (1–9); leer = nicht festgelegt */
   leistungsphasen: number[];
   beteiligte: Beteiligter[];
+  /** gewählte Vorlagen-Presets; nicht gesetzt = die Standard-Presets der Struktur */
+  presets?: string[];
 }
 
 export const LEISTUNGSPHASEN: { nr: number; label: string }[] = [
@@ -121,6 +123,7 @@ export function leseProjektJson(json: string): ProjektDatei {
     beteiligte: (Array.isArray(o.beteiligte) ? o.beteiligte : [])
       .filter((x): x is Record<string, unknown> => !!x && typeof x === 'object')
       .map((x) => ({ rolle: str(x.rolle), name: str(x.name), kontakt: str(x.kontakt) })),
+    ...(Array.isArray(o.presets) ? { presets: o.presets.filter((n): n is string => typeof n === 'string' && !!n.trim()).map((n) => n.trim()) } : {}),
     angelegt: str(o.angelegt),
     struktur: str(o.struktur),
     dateischema: str(o.dateischema),
@@ -141,6 +144,7 @@ export function bereinigt(s: Stammdaten): Stammdaten {
     bearbeiter: t(s.bearbeiter),
     leistungsphasen: [...new Set(s.leistungsphasen)].sort(),
     beteiligte: s.beteiligte.map((b) => ({ rolle: t(b.rolle), name: t(b.name), kontakt: t(b.kontakt) })).filter((b) => b.rolle || b.name || b.kontakt),
+    ...(s.presets ? { presets: [...new Set(s.presets.map(t).filter(Boolean))] } : {}),
   };
 }
 

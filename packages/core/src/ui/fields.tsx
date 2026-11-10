@@ -122,8 +122,8 @@ export function NumberField({
   );
 }
 
-/** Texteingabe, die erst bei Enter/Fokusverlust übernimmt. */
-export function TextField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+/** Texteingabe, die erst bei Enter/Fokusverlust übernimmt. `list`: id einer <datalist> mit Vorschlägen */
+export function TextField({ value, onChange, placeholder, list, title }: { value: string; onChange: (v: string) => void; placeholder?: string; list?: string; title?: string }) {
   const [text, setText] = useState(value);
   const textRef = useRef(text);
   textRef.current = text;
@@ -138,6 +138,8 @@ export function TextField({ value, onChange, placeholder }: { value: string; onC
       ref={pending.ref}
       value={text}
       placeholder={placeholder}
+      list={list}
+      title={title}
       onFocus={pending.onFocus}
       onChange={(e) => setText(e.target.value)}
       onBlur={commit}

@@ -1,6 +1,8 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import type { ExportContext } from '@core/excel/context';
 import { resolveText } from '@core/excel/context';
+import { nameAus } from './nummer';
+import { sichererName } from './struktur';
 
 /**
  * Vorlagen füllen. Platzhalter stehen in doppelten geschweiften Klammern ({{projekt.nummer}},
@@ -8,10 +10,79 @@ import { resolveText } from '@core/excel/context';
  * stehen, damit Tippfehler auffallen.
  *
  *   Textdateien (.md, .txt, .csv, .json, .html, .xml …)  Platzhalter im Text
- *   Excel (.xlsx)                                        Vorlagen-Engine mit Wiederholungszeilen
- *   Word (.docx)                                         Platzhalter im Text, in Kopf- und Fußzeilen
+ *   Excel (.xlsx, aus .xltx)                             Vorlagen-Engine mit Wiederholungszeilen
+ *   Word (.docx, .docm, aus .dotx/.dotm)                 Platzhalter im Text, in Kopf- und Fußzeilen
  *   alles andere                                         unverändert kopiert
+ *
+ * Office-Vorlagen (.dotx, .xltx, .potx …) werden im Projekt zu Dokumenten (.docx, .xlsx, .pptx …).
  */
+
+/* ---------- Dateinamen ---------- */
+
+/** Office-Vorlage → Dokument: Endung im Projekt */
+export const DOKUMENT_AUS_VORLAGE: Record<string, string> = { '.dotx': '.docx', '.dotm': '.docm', '.xltx': '.xlsx', '.xltm': '.xlsm', '.potx': '.pptx', '.potm': '.pptm' };
+
+/** Endung samt Punkt („.xlsx“), leer ohne Endung */
+export function endungVon(name: string): string {
+  const punkt = name.lastIndexOf('.');
+  return punkt > 0 ? name.slice(punkt) : '';
+}
+
+const PLATZHALTER_IM_NAMEN = /\{[^{}]+\}/;
+
+/**
+ * Dateiname einer Vorlage im Projekt.
+ *  1. Gibt die Zuordnung einen Namen vor, gilt er.
+ *  2. Enthält der Name der Vorlage selbst Platzhalter ({nummer} Projektblatt.md), werden nur diese ersetzt.
+ *  3. Sonst gilt das Dateinamenschema für Vorlagen, z. B. „{nummer} {name}“.
+ * {name} ist der Name der Vorlage ohne Endung. Die Endung kommt immer von der Vorlage (Office-Vorlagen werden
+ * zu Dokumenten) und wird angehängt, wenn das Muster sie nicht schon enthält.
+ */
+export function zielDateiname(vorlage: string, muster: string | undefined, schema: string, werte: Record<string, string | number>): string {
+  const alt = endungVon(vorlage);
+  const basis = alt ? vorlage.slice(0, -alt.length) : vorlage;
+  const endung = DOKUMENT_AUS_VORLAGE[alt.toLowerCase()] ?? alt;
+  const name = sichererName(nameAus(basis, werte));
+  const m = muster?.trim() || (PLATZHALTER_IM_NAMEN.test(basis) ? '{name}' : schema.trim() || '{name}');
+  let out = sichererName(nameAus(m, { ...werte, name }));
+  if (alt && out.toLowerCase().endsWith(alt.toLowerCase()) && alt !== endung) out = out.slice(0, -alt.length);
+  if (!out) out = name;
+  return endung && !out.toLowerCase().endsWith(endung.toLowerCase()) ? `${out}${endung}` : out;
+}
+
+/** Inhaltstypen der Office-Vorlagen und der zugehörigen Dokumente */
+const INHALTSTYP: [string, string][] = [
+  ['wordprocessingml.template.main+xml', 'wordprocessingml.document.main+xml'],
+  ['ms-word.template.macroEnabledTemplate.main+xml', 'ms-word.document.macroEnabled.main+xml'],
+  ['spreadsheetml.template.main+xml', 'spreadsheetml.sheet.main+xml'],
+  ['ms-excel.template.macroEnabled.main+xml', 'ms-excel.sheet.macroEnabled.main+xml'],
+  ['presentationml.template.main+xml', 'presentationml.presentation.main+xml'],
+  ['ms-powerpoint.template.macroEnabled.main+xml', 'ms-powerpoint.presentation.macroEnabled.main+xml'],
+];
+
+/**
+ * Office-Vorlage (.dotx, .xltx, .potx …) als Dokument: Nur der Inhaltstyp des Hauptteils unterscheidet sie –
+ * ohne die Änderung verweigert Office das Öffnen einer umbenannten Vorlage. Andere Dateien bleiben unverändert.
+ */
+export function alsDokument(name: string, daten: Uint8Array): Uint8Array {
+  if (!DOKUMENT_AUS_VORLAGE[endungVon(name).toLowerCase()]) return daten;
+  let zip: ReturnType<typeof unzipSync>;
+  try {
+    zip = unzipSync(daten);
+  } catch (e) {
+    throw new Error(`Die Office-Vorlage ist beschädigt: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  const ct = zip['[Content_Types].xml'];
+  if (!ct) return daten;
+  const xml = strFromU8(ct);
+  let neu = xml;
+  for (const [vorlage, dokument] of INHALTSTYP) neu = neu.split(vorlage).join(dokument);
+  if (neu === xml) return daten;
+  zip['[Content_Types].xml'] = strToU8(neu);
+  return zipSync(zip, { level: 6 });
+}
+
+/* ---------- Inhalte ---------- */
 
 const TEXT = /\.(md|txt|csv|tsv|json|html?|xml|ya?ml|ini|url)$/i;
 
@@ -52,7 +123,7 @@ export function fuelleDocx(daten: Uint8Array, ctx: ExportContext): Uint8Array {
   return geaendert ? zipSync(zip, { level: 6 }) : daten;
 }
 
-/** Füllt eine Vorlage je nach Dateiart; unbekannte Arten bleiben unverändert */
+/** Füllt eine Vorlage je nach Dateiart (nach dem Namen im Projekt); unbekannte Arten bleiben unverändert */
 export async function fuelleVorlage(name: string, daten: Uint8Array, ctx: ExportContext): Promise<Uint8Array> {
   if (TEXT.test(name)) {
     // BOM erhalten (Excel-CSV)
@@ -66,7 +137,7 @@ export async function fuelleVorlage(name: string, daten: Uint8Array, ctx: Export
     return out;
   }
   if (/\.xlsx$/i.test(name)) return (await import('@core/excel/fill')).fuelleVorlage(daten, ctx);
-  if (/\.docx$/i.test(name)) return fuelleDocx(daten, ctx);
+  if (/\.doc[xm]$/i.test(name)) return fuelleDocx(daten, ctx);
   return daten;
 }
 
@@ -83,20 +154,23 @@ export const MUSTER_VORLAGEN: { pfad: string; inhalt: string }[] = [
     inhalt: `Vorlagenordner für das Projektordner-Tool
 ==========================================
 
-Dieser Ordner ist aufgebaut wie ein Projektordner. Jede Datei wird beim Anlegen eines Projekts an denselben
-Ort im Projektordner kopiert; diese Datei (LIESMICH.txt im Stamm) wird nicht kopiert.
+Dieser Ordner ist aufgebaut wie ein Projektordner. Mit dem Preset "Alle Vorlagen" wird jede Datei beim
+Anlegen eines Projekts an denselben Ort im Projektordner kopiert; diese Datei (LIESMICH.txt im Stamm) wird
+nicht kopiert. Eigene Presets im Tool unter "Vorlagen" ordnen Dateien aus beliebigen Unterordnern einer
+Stelle im Projekt zu und geben ihnen dort einen Namen nach dem Schema des Büros.
 
 Platzhalter
 -----------
-In Datei- und Ordnernamen: {nummer}, {kurzname}, {jahr}
+In Datei- und Ordnernamen: {nummer}, {kurzname}, {jahr}, {datum}, {bearbeiter}
 In Textdateien, Excel (.xlsx) und Word (.docx): {{projekt.nummer}}, {{projekt.kurzname}}, {{projekt.name}},
 {{projekt.adresse}}, {{bauherr.name}}, {{bauherr.adresse}}, {{projekt.bearbeiter}}, {{datum}} ...
-Die vollständige Liste zeigt das Tool unter "Struktur".
+Die vollständige Liste zeigt das Tool unter "Vorlagen".
 
 In Excel wird eine Zeile mit {{beteiligter.rolle}}, {{beteiligter.name}}, {{beteiligter.kontakt}} je
 Beteiligtem wiederholt. In Word muss ein Platzhalter in einem Zug getippt sein.
 
-Vorhandene Dateien im Projektordner werden nie überschrieben.
+Vorhandene Dateien im Projektordner werden nie überschrieben. Beim Aktualisieren eines Projekts werden nur
+fehlende Dateien ergänzt.
 `,
   },
   {
@@ -148,13 +222,16 @@ Aufgestellt: {{projekt.bearbeiter}}
   },
 ];
 
-/** Platzhalter für die Hilfe unter „Struktur“ */
+/** Platzhalter für die Hilfe unter „Vorlagen“ */
 export const PLATZHALTER_DOCS: { gruppe: string; zeilen: [string, string][] }[] = [
   {
     gruppe: 'In Datei- und Ordnernamen (einfache Klammern)',
     zeilen: [
       ['{nummer}, {kurzname}', 'Projektnummer und Kurzname'],
-      ['{jahr}', 'Jahr des Anlegens'],
+      ['{jahr}', 'Jahr, in dem das Projekt angelegt wurde'],
+      ['{name}', 'Name der Vorlage ohne Endung (nur Dateinamen im Projekt)'],
+      ['{datum}', 'Tag des Anlegens der Datei, JJJJ-MM-TT – beim Aktualisieren gilt eine Datei mit anderem Datum als vorhanden'],
+      ['{bearbeiter}', 'Bearbeitung'],
     ],
   },
   {

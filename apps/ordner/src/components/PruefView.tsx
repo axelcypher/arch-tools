@@ -1,35 +1,33 @@
 import { useState } from 'react';
 import { logger } from '@core/platform/log';
-import type { Eintrag } from '../dateisystem';
 import { hatDateisystem, oeffneOrdner, tauriDateisystem, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import type { BefundArt, Pruefergebnis } from '../pruefung';
 import { pruefe } from '../pruefung';
 import type { ProjektDatei } from '../stammdaten';
 import { leseProjektJson, PROJEKT_DATEI } from '../stammdaten';
 import { useOrdner } from '../store';
+import type { GeladenerOrdner } from './AktualisierenView';
+import { ladeProjektordner } from './AktualisierenView';
 
 const log = logger('pruefen');
 
 const ART: Record<BefundArt, string> = { fehler: 'Fehler', warnung: 'Abweichung', hinweis: 'Hinweis', ok: 'in Ordnung' };
 const MAX_PFADE = 40;
 
-interface Geprueft {
-  /** vollständiger Pfad (Desktop) bzw. leer im Browser */
-  pfad: string;
-  name: string;
+interface Geprueft extends GeladenerOrdner {
   projekt: ProjektDatei | null;
   ergebnis: Pruefergebnis;
 }
 
 /** Prüfmodus: Projektordner einlesen und Abweichungen von der Struktur melden */
-export function PruefView({ onUebernommen }: { onUebernommen: () => void }) {
+export function PruefView({ onUebernommen, onAktualisieren }: { onUebernommen: () => void; onAktualisieren: (o: GeladenerOrdner) => void }) {
   const desktop = hatDateisystem();
   const struktur = useOrdner((s) => s.struktur);
   const [g, setG] = useState<Geprueft | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
 
-  const auswerten = async (pfad: string, name: string, eintraege: Eintrag[], lies: (p: string) => Promise<Uint8Array>) => {
+  const auswerten = async ({ pfad, name, eintraege, lies }: GeladenerOrdner) => {
     let projekt: ProjektDatei | null = null;
     let projektFehler: string | undefined;
     const datei = eintraege.find((e) => !e.ordner && e.pfad.toLowerCase() === PROJEKT_DATEI);
@@ -42,15 +40,14 @@ export function PruefView({ onUebernommen }: { onUebernommen: () => void }) {
     }
     const ergebnis = pruefe(name, eintraege, struktur, projekt, projektFehler);
     log.info(`Ordner geprüft: ${name}`, { ordner: ergebnis.ordner, dateien: ergebnis.dateien, befunde: ergebnis.befunde.filter((b) => b.art !== 'ok').length });
-    setG({ pfad, name, projekt, ergebnis });
+    setG({ pfad, name, eintraege, lies, projekt, ergebnis });
   };
 
   const pruefenPfad = async (pfad: string) => {
     setLaeuft(true);
     setFehler(null);
     try {
-      const name = pfad.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? pfad;
-      await auswerten(pfad, name, await tauriDateisystem.liste(pfad, 12), (p) => tauriDateisystem.lies(pfad, p));
+      await auswerten(await ladeProjektordner(pfad));
     } catch (e) {
       setFehler(e instanceof Error ? e.message : String(e));
     } finally {
@@ -66,7 +63,7 @@ export function PruefView({ onUebernommen }: { onUebernommen: () => void }) {
       return;
     }
     const o = await waehleOrdnerImBrowser();
-    if (o) await auswerten('', o.name, o.eintraege, o.lies);
+    if (o) await auswerten({ pfad: '', name: o.name, eintraege: o.eintraege, lies: o.lies });
   };
 
   const fehlendeAnlegen = async () => {
@@ -85,7 +82,8 @@ export function PruefView({ onUebernommen }: { onUebernommen: () => void }) {
   const uebernehmen = () => {
     if (!g?.projekt) return;
     const { format: _f, version: _v, angelegt: _a, struktur: _s, dateischema: _d, ...stamm } = g.projekt;
-    useOrdner.getState().setStamm(stamm);
+    // ohne Presets in der projekt.json gelten die Standard-Presets – keine Auswahl vom vorigen Projekt stehen lassen
+    useOrdner.getState().setStamm({ ...stamm, presets: stamm.presets });
     onUebernommen();
   };
 
@@ -151,8 +149,11 @@ export function PruefView({ onUebernommen }: { onUebernommen: () => void }) {
                   {g.ergebnis.fehlendeOrdner.length} fehlende Ordner anlegen
                 </button>
               )}
+              <button onClick={() => onAktualisieren(g)} title="Fehlende Ordner, Vorlagen und Stammdaten nach Struktur und Presets ergänzen – vorhandene Dateien bleiben unverändert">
+                Projekt aktualisieren …
+              </button>
               {g.projekt && (
-                <button onClick={uebernehmen} title="Stammdaten aus der projekt.json in „Neues Projekt“ übernehmen – z. B. um fehlende Vorlagen nachzutragen">
+                <button onClick={uebernehmen} title="Stammdaten aus der projekt.json als Ausgangspunkt für ein neues Projekt in „Neues Projekt“ übernehmen">
                   Stammdaten übernehmen
                 </button>
               )}

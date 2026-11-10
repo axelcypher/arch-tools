@@ -5,6 +5,7 @@ import type {
   DateiArt,
   Grundstueck,
   KontaktArt,
+  ProjektordnerAngaben,
   Kosten,
   KostenBezug,
   KostenPosition,
@@ -33,7 +34,34 @@ import { DACH_TYPEN } from './roof';
 /** Reine JSON-Fassung (ohne mitgespeicherte Originaldateien – dafür das Projektarchiv, siehe archive.ts) */
 export function serializeProject(p: Project): string {
   const { dateien: _, ...rest } = p;
-  return JSON.stringify(rest, null, 2);
+  return JSON.stringify(mitErweiterungen(rest), null, 2);
+}
+
+/** Abschnitte, die das Projektmodell kennt – alle anderen landen in `erweiterungen` */
+const BEKANNTE_ABSCHNITTE = new Set([
+  'format',
+  'version',
+  'name',
+  'meta',
+  'settings',
+  'storeys',
+  'dachModell',
+  'gelaendeModell',
+  'ifcBekannt',
+  'ifcUmrisse',
+  'dateien',
+  'lageplan',
+  'massNutzung',
+  'kosten',
+  'projektordner',
+  'erweiterungen',
+]);
+
+/** Unbekannte Abschnitte wieder auf die oberste Ebene (zum Schreiben); bekannte gehen vor */
+export function mitErweiterungen<T extends { erweiterungen?: Record<string, unknown> }>(p: T): Omit<T, 'erweiterungen'> {
+  const { erweiterungen, ...rest } = p;
+  const fremd = Object.fromEntries(Object.entries(erweiterungen ?? {}).filter(([k]) => !BEKANNTE_ABSCHNITTE.has(k)));
+  return { ...fremd, ...rest };
 }
 
 export class ProjectFormatError extends Error {}
@@ -103,7 +131,22 @@ export function parseProjectData(raw: unknown): Project {
   if (isObj(raw.gelaendeModell) && Array.isArray(raw.gelaendeModell.triangles)) {
     project.gelaendeModell = { name: str(raw.gelaendeModell.name, 'Gelände'), triangles: raw.gelaendeModell.triangles.filter((v): v is number => typeof v === 'number') };
   }
+  if (isObj(raw.projektordner)) {
+    const po = normalizeProjektordner(raw.projektordner);
+    if (Object.keys(po).length) project.projektordner = po;
+  }
+  // was diese Fassung nicht kennt, bleibt erhalten (neuere Fassungen, andere Apps)
+  const fremd = Object.entries(raw).filter(([k, v]) => !BEKANNTE_ABSCHNITTE.has(k) && v !== undefined);
+  if (fremd.length) project.erweiterungen = Object.fromEntries(fremd);
   return project;
+}
+
+function normalizeProjektordner(v: Record<string, unknown>): ProjektordnerAngaben {
+  const out: ProjektordnerAngaben = {};
+  if (typeof v.struktur === 'string' && v.struktur.trim()) out.struktur = v.struktur.trim();
+  if (typeof v.dateischema === 'string' && v.dateischema.trim()) out.dateischema = v.dateischema.trim();
+  if (Array.isArray(v.presets)) out.presets = [...new Set(v.presets.filter((n): n is string => typeof n === 'string' && !!n.trim()).map((n) => n.trim()))];
+  return out;
 }
 
 function normalizeAnschrift(v: unknown): Anschrift {
@@ -129,8 +172,21 @@ function normalizeMeta(v: unknown): ProjectMeta {
   if (typeof b.vorname === 'string' && b.vorname) bauherr.vorname = b.vorname;
   const meta: ProjectMeta = { projektcode: str(m.projektcode, ''), adresse: normalizeAnschrift(m.adresse), grundstueck, bauherr, bearbeiter: str(m.bearbeiter, '') };
   // erst später ergänzt: nur, wenn vorhanden
+  if (typeof m.kurzname === 'string' && m.kurzname) meta.kurzname = m.kurzname;
   if (typeof m.vorhaben === 'string' && m.vorhaben) meta.vorhaben = m.vorhaben;
   if (typeof m.aktenzeichen === 'string' && m.aktenzeichen) meta.aktenzeichen = m.aktenzeichen;
+  if (Array.isArray(m.leistungsphasen)) {
+    const lph = [...new Set(m.leistungsphasen.filter((n): n is number => Number.isInteger(n) && n >= 1 && n <= 9))].sort((a, b) => a - b);
+    if (lph.length) meta.leistungsphasen = lph;
+  }
+  if (Array.isArray(m.beteiligte)) {
+    const bt = m.beteiligte
+      .filter(isObj)
+      .map((x) => ({ rolle: str(x.rolle, ''), name: str(x.name, ''), kontakt: str(x.kontakt, '') }))
+      .filter((x) => x.rolle || x.name || x.kontakt);
+    if (bt.length) meta.beteiligte = bt;
+  }
+  if (typeof m.angelegt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.angelegt)) meta.angelegt = m.angelegt;
   return meta;
 }
 
