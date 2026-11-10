@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { pdfAusfuellen, pdfFelder, pdfMitText, pdfOeffnen, pdfSchliessen } from './pdf';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { pdfAusfuellen, pdfFelder, pdfjs, pdfMitText, pdfOeffnen, pdfSchliessen } from './pdf';
 
 /** Kleine PDF mit AcroForm: ein Textfeld „Bauherr“ und ein Kästchen „Neubau“ (Querverweise korrekt berechnet) */
 function formularPdf(): Uint8Array {
@@ -25,7 +25,12 @@ function formularPdf(): Uint8Array {
   return new TextEncoder().encode(text);
 }
 
-describe('PDF-Formulare', () => {
+// pdf.js ist groß: einmal vorab laden – auf langsamen Rechnern (CI unter Windows) dauert das mehrere Sekunden
+beforeAll(async () => {
+  await pdfjs();
+}, 60_000);
+
+describe('PDF-Formulare', { timeout: 30_000 }, () => {
   it('liest die Formularfelder', async () => {
     const doc = await pdfOeffnen(formularPdf());
     const felder = await pdfFelder(doc);
@@ -52,7 +57,7 @@ describe('PDF-Formulare', () => {
   });
 });
 
-describe('Text und Kreuze in PDFs', () => {
+describe('Text und Kreuze in PDFs', { timeout: 30_000 }, () => {
   it('trägt Freitext als Nachtrag ein – auch ohne Formularfelder; der Inhalt bleibt Byte für Byte', async () => {
     const vorher = formularPdf();
     const nachher = await pdfMitText(vorher, [

@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { zlibSync } from 'fflate';
-import { describe, expect, it } from 'vitest';
-import { pdfOeffnen, pdfSchliessen } from '../dokumente/pdf';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { pdfjs, pdfOeffnen, pdfSchliessen } from '../dokumente/pdf';
 import type { Feld } from './felder';
 import { felderDerSeite } from './felder';
 import { parseFormular } from './formular';
@@ -26,7 +26,12 @@ async function texte(pdf: Uint8Array): Promise<{ seiten: number; texte: string[]
   }
 }
 
-describe('PDF aus dem Formular', () => {
+// pdf.js ist groß: einmal vorab laden – auf langsamen Rechnern (CI unter Windows) dauert das mehrere Sekunden
+beforeAll(async () => {
+  await pdfjs();
+}, 60_000);
+
+describe('PDF aus dem Formular', { timeout: 30_000 }, () => {
   const formular = parseFormular(MUSTER);
   const felder = formular.seiten.map((s, i) => felderDerSeite(s, i));
   const original = (f: Feld) => f.original;

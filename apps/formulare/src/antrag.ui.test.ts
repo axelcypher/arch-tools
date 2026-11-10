@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { VORGABE_EXPORT, jjmmtt } from './antrag';
 import { useAntrag } from './antragStore';
@@ -12,6 +12,7 @@ import { cp1252Schreiben } from './forma/cp1252';
 import { felderDerSeite } from './forma/felder';
 import { parseFormular } from './forma/formular';
 import { formularPdf } from './forma/pdf';
+import { pdfjs } from './dokumente/pdf';
 import { useFormulare } from './store';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -265,7 +266,12 @@ describe('Dateibefehle im Projektordner', () => {
   });
 });
 
-describe('PDF: Text und Kreuze', () => {
+describe('PDF: Text und Kreuze', { timeout: 30_000 }, () => {
+  // pdf.js vorab laden – auf langsamen Rechnern (CI unter Windows) dauert das mehrere Sekunden
+  beforeAll(async () => {
+    await pdfjs();
+  }, 60_000);
+
   it('Text vormerken und speichern – als Nachtrag in der Datei', async () => {
     const f = parseFormular(MUSTER);
     const flach = formularPdf(
