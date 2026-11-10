@@ -61,16 +61,38 @@ export function sichererDateiname(name: string): string {
     .trim();
 }
 
+/** Platzhalter für den Pfad neuer Projektdateien (Groß-/Kleinschreibung egal) – für die Einstellungen */
+export const OAP_PLATZHALTER: { name: string; text: string }[] = [
+  { name: '{Kürzel}', text: 'Projektkürzel bzw. -nummer (gleich: {nummer}, {projektcode})' },
+  { name: '{Kurzname}', text: 'Kurzname des Projekts' },
+  { name: '{Vorhaben}', text: 'Bezeichnung des Vorhabens' },
+  { name: '{Datum}', text: 'Tag des Anlegens als JJMMTT' },
+  { name: '{Jahr}', text: 'Jahr des Anlegens' },
+];
+
+const PLATZHALTER_MUSTER = /\{\s*([^{}]*?)\s*\}/g;
+const BEKANNT = /^(nummer|k(?:ü|ue)rzel|projektcode|kurzname|vorhaben|datum|jahr)$/i;
+
+/** Platzhalter der Vorlage, die nicht aufgelöst werden (bleiben so im Pfad stehen) */
+export const unbekanntePlatzhalter = (vorlage: string) => [...new Set([...vorlage.matchAll(PLATZHALTER_MUSTER)].filter((m) => !BEKANNT.test(m[1])).map((m) => m[0]))];
+
+const zweistellig = (n: number) => String(n).padStart(2, '0');
+
 /**
  * Pfad einer neuen Projektdatei im Projektordner aus der Vorlage. Platzhalter: {nummer} bzw. {kürzel} (Projektcode),
- * {kurzname}, {jahr}. Fehlt die Endung, wird sie ergänzt; leere Teile (z. B. ohne Kurzname) fallen weg.
+ * {kurzname}, {vorhaben}, {datum} (JJMMTT) und {jahr} – siehe {@link OAP_PLATZHALTER}. Fehlt die Endung, wird sie
+ * ergänzt; leere Teile (z. B. ohne Kurzname) fallen weg. Unbekannte Platzhalter bleiben stehen.
  */
-export function projektdateiPfad(vorlage: string, werte: { nummer: string; kurzname?: string; jahr?: number | string }): string {
-  const ersetzt = (vorlage.trim() || VORGABE_OAP_PFAD).replace(/\{\s*(nummer|k(?:ü|ue)rzel|projektcode|kurzname|jahr)\s*\}/gi, (_m, k: string) => {
+export function projektdateiPfad(vorlage: string, werte: { nummer: string; kurzname?: string; vorhaben?: string; jahr?: number | string; datum?: Date }): string {
+  const tag = werte.datum ?? new Date();
+  const ersetzt = (vorlage.trim() || VORGABE_OAP_PFAD).replace(PLATZHALTER_MUSTER, (m, k: string) => {
+    if (!BEKANNT.test(k)) return m;
     const n = k.toLowerCase();
     // Werte ohne Trenner und unzulässige Zeichen – ein „/“ im Kurznamen darf keinen Unterordner ergeben
     if (n === 'kurzname') return sichererDateiname(werte.kurzname ?? '');
-    if (n === 'jahr') return String(werte.jahr ?? new Date().getFullYear());
+    if (n === 'vorhaben') return sichererDateiname(werte.vorhaben ?? '');
+    if (n === 'jahr') return String(werte.jahr ?? tag.getFullYear());
+    if (n === 'datum') return `${zweistellig(tag.getFullYear() % 100)}${zweistellig(tag.getMonth() + 1)}${zweistellig(tag.getDate())}`;
     return sichererDateiname(werte.nummer);
   });
   const teile = ersetzt

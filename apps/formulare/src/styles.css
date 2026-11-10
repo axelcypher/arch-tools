@@ -3741,3 +3741,7 @@ tr[data-ziehen='danach'] > td {
   pointer-events: none;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 15%, transparent);
 }
+.es-beispiel {
+  margin: 6px 0 0;
+  font-size: 12px;
+}

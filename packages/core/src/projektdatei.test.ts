@@ -4,7 +4,7 @@ import { readProjectFile, writeArchive } from './archive';
 import { createProject } from './model';
 import { allgemeinAus, VORGABE_ALLGEMEIN } from './platform/konfig';
 import { projektdateiAbschnittSetzen, projektdateiAnlegen, projektdateiFinden, projektdateiKopf, projektdateiLaden, projektdateiSchreiben, projekteAuflisten, SpeicherProjektordner, verbinde } from './platform/projektordner';
-import { projektdateiAendern, projektdateiPfad, projektdateiWaehlen } from './projektdatei';
+import { projektdateiAendern, projektdateiPfad, projektdateiWaehlen, unbekanntePlatzhalter } from './projektdatei';
 
 const e = (pfad: string, geaendert = 0) => ({ pfad, ordner: false, groesse: 1, geaendert });
 
@@ -24,6 +24,14 @@ describe('Projektdatei im Projektordner', () => {
     expect(projektdateiPfad('Planung\\Berechnungen\\{Kürzel}', { nummer: 'BS5' })).toBe('Planung/Berechnungen/BS5.oap');
     expect(projektdateiPfad('{nummer} {kurzname}.oap', { nummer: 'BS5' })).toBe('BS5.oap');
     expect(projektdateiPfad('', { nummer: 'X', kurzname: 'Y', jahr: 2026 })).toBe('03 Berechnungen/Flächen/X Y.oap');
+    // Vorhaben und Datum (JJMMTT); fehlt das Vorhaben, fällt es weg
+    const datum = new Date(2026, 10, 10);
+    expect(projektdateiPfad('Organisation/{Kürzel} {Datum} {Vorhaben}.oap', { nummer: 'BS9', vorhaben: 'Neubau EFH / Garage', datum })).toBe('Organisation/BS9 261110 Neubau EFH Garage.oap');
+    expect(projektdateiPfad('Organisation/{Kürzel} {Datum} {Vorhaben}.oap', { nummer: 'BS9', datum })).toBe('Organisation/BS9 261110.oap');
+    expect(projektdateiPfad('{JAHR}/{ kurzname }', { nummer: 'BS9', kurzname: 'Kita', datum })).toBe('2026/Kita.oap');
+    // unbekannte Platzhalter bleiben stehen – die Einstellungen weisen darauf hin
+    expect(projektdateiPfad('{Kürzel} {Bauherr}', { nummer: 'BS9' })).toBe('BS9 {Bauherr}.oap');
+    expect(unbekanntePlatzhalter('{Kürzel} {Bauherr} {datum} {Ort} {Bauherr}')).toEqual(['{Bauherr}', '{Ort}']);
   });
 
   it('gezielt ändern: nur projekt.json, alle anderen Einträge bleiben, Abschnitte anderer Apps auch; ohne Änderung null', () => {

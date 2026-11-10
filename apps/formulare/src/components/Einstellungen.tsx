@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { dateiname } from '@core/platform/files';
+import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
 import type { Adresse } from '../adressbuch';
 import { adressName, adressOrt, inRolle, sucheAdressen } from '../adressbuch';
 import { waehleOrdner } from '../dateisystem';
@@ -378,8 +379,8 @@ function Formulare() {
       <h2>Formulare</h2>
       <p className="muted">
         Je Formular lässt sich einstellen, welche Abschnitte die Gliederung zeigt, wie Abschnitte und Felder heißen, welche Felder in den Füllstand eingehen und welche zusammen
-        als eine Angabe zählen – im Formular über die Gliederung
-        (<Symbol name="stift" /> Anpassen). Die Einstellung gilt für das Formular in allen Projekten.
+        als eine Angabe zählen und wann etwas erforderlich ist – im Formular über „Einrichten“ in der Werkzeugleiste. Die Einstellung gilt für das Formular in
+        allen Projekten.
       </p>
       {!eintraege.length ? (
         <p className="muted small-text">Noch kein Formular angepasst.</p>
@@ -418,6 +419,15 @@ function Formulare() {
   );
 }
 
+/** Beispielwerte für die Vorschau des Pfads neuer Projektdateien */
+const OAP_BEISPIEL = { nummer: 'BS9', kurzname: 'EFH Musterweg', vorhaben: 'Neubau Einfamilienhaus', datum: new Date() };
+
+/** Platzhalter anhängen – vor der Endung „.oap“, falls vorhanden */
+const mitPlatzhalter = (vorlage: string, name: string) => {
+  const m = /^(.*?)\s*(\.oap)\s*$/i.exec(vorlage.trim());
+  return m ? `${`${m[1]} ${name}`.trim()}${m[2]}` : `${vorlage.trim()} ${name}`.trim();
+};
+
 function Projektdaten() {
   const neu = useFormulare((s) => s.oapVorlage);
   const { setOapVorlage } = useFormulare.getState();
@@ -435,15 +445,30 @@ function Projektdaten() {
         titel="Neue Projektdatei"
         text={
           <>
-            Fehlt die Projektdatei, legt sie der Stammdaten-Dialog hier an – relativ zum Projektordner, Platzhalter <code>{'{nummer}'}</code> (Kürzel),{' '}
-            <code>{'{kurzname}'}</code> und <code>{'{jahr}'}</code>. Die Einstellung gilt für alle Apps (gemeinsamer Konfigurationsordner).
+            Fehlt die Projektdatei, legt sie der Stammdaten-Dialog hier an – relativ zum Projektordner, mit den Angaben aus dem Dialog. Die Einstellung gilt für
+            alle Apps (gemeinsamer Konfigurationsordner).
           </>
         }
       >
         <div className="es-zeile">
           <input defaultValue={neu} key={neu} placeholder={VORGABE_OAP_PFAD} onBlur={(e) => e.target.value.trim() !== neu && setOapVorlage(e.target.value)} aria-label="Pfad für neue Projektdateien" />
-          {neu !== VORGABE_OAP_PFAD && <button onClick={() => setOapVorlage(VORGABE_OAP_PFAD)}>Vorgabe</button>}
         </div>
+        <div className="es-platzhalter">
+          {OAP_PLATZHALTER.map((p) => (
+            <button key={p.name} className="small" title={p.text} onClick={() => setOapVorlage(mitPlatzhalter(neu, p.name))}>
+              {p.name}
+            </button>
+          ))}
+          {neu !== VORGABE_OAP_PFAD && (
+            <button className="small" onClick={() => setOapVorlage(VORGABE_OAP_PFAD)}>
+              Vorgabe
+            </button>
+          )}
+        </div>
+        <p className="muted es-beispiel" aria-label="Beispiel für den Pfad">
+          Beispiel: <code>{projektdateiPfad(neu, OAP_BEISPIEL)}</code>
+        </p>
+        {unbekanntePlatzhalter(neu).length > 0 && <p className="warning">Unbekannt, bleibt so im Namen stehen: {unbekanntePlatzhalter(neu).join(', ')}</p>}
       </Karte>
       <Karte titel="Angaben">
         <table className="es-tabelle">

@@ -262,8 +262,11 @@ beschrieben.
   Angaben ab, vorbelegt aus der Projektkarte, und legt sie an. Er erscheint, sobald die App die Datei braucht (beim
   Speichern der Projektkarte, beim Festlegen von Projektumfang, Antragsfassung oder Projektmerkmalen); im Projektkopf
   steht bis dahin „Keine Projektdatei – Stammdaten erfassen …“. Der Ort kommt aus den gemeinsamen Einstellungen
-  (`oapPfad`, Platzhalter `{nummer}` bzw. `{Kürzel}`, `{kurzname}`, `{jahr}`) und gilt für alle Apps; eine bisher
-  eigene Einstellung dieser App wird beim ersten Start dorthin übernommen.
+  (`oapPfad`) und gilt für alle Apps; eine bisher eigene Einstellung dieser App wird beim ersten Start dorthin
+  übernommen. Platzhalter (Groß-/Kleinschreibung egal): `{Kürzel}` (auch `{nummer}`), `{Kurzname}`, `{Vorhaben}`,
+  `{Datum}` (Tag des Anlegens als JJMMTT) und `{Jahr}` – etwa `Organisation/{Kürzel} {Datum} {Vorhaben}.oap` →
+  `Organisation/BS9 261110 Neubau EFH.oap`; leere Angaben fallen weg. Die Einstellungen (Projektdatei) fügen
+  Platzhalter per Knopf ein, zeigen ein Beispiel und warnen vor unbekannten Platzhaltern (sie blieben so im Namen).
 - **Fehlt der Projektordner:** „Kein Projektordner – zuordnen …“ im Projektkopf (und automatisch, wenn er gebraucht
   wird): einen vorhandenen Ordner wählen oder im Stammordner einen neuen anlegen (Vorschlag „Kürzel Titel“), danach
   folgt bei Bedarf der Stammdaten-Dialog. Die Zuordnung gilt für alle im Büro (gemeinsamer Konfigurationsordner,

@@ -1274,7 +1274,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const ablage = ablageVon(get(), projekt);
       if (!ds || !projekt || !ablage) throw new Error('Kein Projektordner zugeordnet.');
       const root = verbinde(ablage.root, ablage.pfad);
-      const pfad = projektdateiPfad(get().oapVorlage, { nummer: meta.projektcode || projekt.ordner, kurzname: meta.kurzname });
+      const pfad = projektdateiPfad(get().oapVorlage, { nummer: meta.projektcode || projekt.ordner, kurzname: meta.kurzname, vorhaben: meta.vorhaben });
       if (!pfad) throw new Error('Kein Ort für neue Projektdateien eingestellt.');
       const p = createProject(meta.kurzname || meta.vorhaben || projekt.titel || projekt.ordner);
       p.meta = meta;

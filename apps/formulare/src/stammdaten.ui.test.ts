@@ -445,6 +445,34 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!)).toMatchObject({ projekte: ['Z:/Projekte'], oapPfad: 'Planung/Berechnungen/{Kürzel}.oap' });
   });
 
+  it('Ort neuer Projektdateien mit {Datum} und {Vorhaben} – Einstellungen zeigen Beispiel und unbekannte Platzhalter', async () => {
+    const d = new Date();
+    const heute = [d.getFullYear() % 100, d.getMonth() + 1, d.getDate()].map((n) => String(n).padStart(2, '0')).join('');
+    useFormulare.setState({ oapVorlage: 'Organisation/{Kürzel} {Datum} {Vorhaben}.oap' });
+    const host = await oeffnen();
+    act(() => useFormulare.getState().karteSetzen(101, 30, 'Neubau EFH'));
+    await warte();
+    await klick(knopf(host, 'Projektkarte speichern'));
+    await warte();
+    const dialog = document.querySelector('[role="dialog"][aria-label="Projektdatei für BS9 anlegen"]') as HTMLElement;
+    expect(useFormulare.getState().stammdatenDialog?.meta.vorhaben).toBe('Neubau EFH');
+    await klick(knopf(dialog, 'Projektdatei anlegen'));
+    await warte();
+    expect(ds.schreibvorgaenge).toContain(`neu Organisation/BS9 ${heute} Neubau EFH.oap`);
+
+    // Einstellungen › Projektdatei: Platzhalter einfügen, Beispiel, Warnung
+    act(() => useFormulare.getState().einstellungenOeffnen('projektdaten'));
+    await warte();
+    const beispiel = () => document.querySelector('[aria-label="Beispiel für den Pfad"]')!.textContent;
+    expect(beispiel()).toBe(`Beispiel: Organisation/BS9 ${heute} Neubau Einfamilienhaus.oap`);
+    act(() => useFormulare.getState().setOapVorlage('Organisation/{Kürzel} {Bauherr}.oap'));
+    await warte();
+    expect(document.querySelector('.warning')!.textContent).toContain('{Bauherr}');
+    await klick(knopf(document.body, '{Kurzname}'));
+    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{Kürzel} {Bauherr} {Kurzname}.oap');
+    expect(beispiel()).toBe('Beispiel: Organisation/BS9 {Bauherr} EFH Musterweg.oap');
+  });
+
   it('eine alte Projektdaten.xlsx wird nur gelesen – ihre Angaben lassen sich in die Projektkarte übernehmen', async () => {
     ds.dateien.set(PD, await projektdaten());
     ds.dateien.set(OAP, projektdatei());
