@@ -49,3 +49,5 @@ export const nw010013_2026I: FormularProfil = zusammen({
     '0:Memo1': oder(angekreuzt('1:CheckBox2'), angekreuzt('1:CheckBox3')),
   },
 });
+
+export const vorgaben: Record<string, FormularProfil> = { 'nw010013|2026I': nw010013_2026I };

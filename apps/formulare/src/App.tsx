@@ -6,6 +6,7 @@ import { autofillFelder } from './autofill';
 import { ignoriert, ignorierenSetzen, useAktualisieren } from './aktualisieren';
 import { auffrischen } from './dateiAktionen';
 import { AktualisierenDialog, UnterlagenDialog } from './components/AktualisierenDialog';
+import { GesetzModal } from './components/GesetzModal';
 import { EinstellungenAnsicht } from './components/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
 import { FormularHinzufuegenDialog, useHinzufuegenDialog } from './components/FormularHinzufuegen';
@@ -398,6 +399,7 @@ export function App() {
       <MenueHost />
       <RueckfrageHost />
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
+      <GesetzModal />
       {dialog === 'schnellwahl' && <Schnellwahl onClose={() => setDialog(null)} />}
       {aktualisierenOffen && offen && <AktualisierenDialog offen={offen} onClose={() => useAktualisieren.getState().dialogSchliessen()} />}
       <UnterlagenDialog />

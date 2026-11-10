@@ -2,7 +2,7 @@
  * Bausteine für die Vorgaben: Bedingungen kurz geschrieben. Merkmale und Werte wie in VORGABE_MERKMALE.
  */
 
-import type { Bedingung, BedingungTeil, Teilbedingung } from '../bedingung';
+import type { Bedingung, BedingungTeil, Quelle, Teilbedingung } from '../bedingung';
 import { gruppe } from '../bedingung';
 import type { Gruppe, Regel } from '../profil';
 
@@ -34,3 +34,15 @@ export const s =
   (seite: number) =>
   (...namen: string[]): string[] =>
     namen.map((n) => `${seite}:${n}`);
+
+/** Fundstelle: `q('bauo-nrw', '68', 2, 3)` = § 68 Absatz 2 Satz 3 BauO NRW 2018 */
+export const q = (gesetz: string, paragraf: string, absatz?: number, satz?: number, nummer?: number): Quelle => ({
+  gesetz,
+  paragraf,
+  ...(absatz ? { absatz } : {}),
+  ...(satz ? { satz } : {}),
+  ...(nummer ? { nummer } : {}),
+});
+
+/** Bedingung mit Begründung und Rechtsgrundlage – erscheint am Feld, wenn es deshalb entfällt */
+export const begruendet = (b: Bedingung, grund: string, ...quellen: Quelle[]): Bedingung => ({ ...b, grund, ...(quellen.length ? { quellen } : {}) });

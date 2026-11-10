@@ -3789,3 +3789,103 @@ tr[data-ziehen='danach'] > td {
   padding-left: 4px;
   padding-right: 4px;
 }
+
+/* ---------- Entfallende Felder: Hinweis warum, Gesetzestext ---------- */
+.fo-entfall-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0 0 0 4px;
+  border: none;
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: help;
+  vertical-align: -2px;
+  z-index: 4;
+}
+.fo-entfall-info.mit-quelle {
+  color: var(--accent);
+  cursor: pointer;
+}
+.fo-entfall-info:hover {
+  color: var(--accent-hover);
+}
+.fo-entfall-info svg {
+  width: 13px;
+  height: 13px;
+}
+.fo-papier .fo-entfall-info {
+  margin: 0;
+  opacity: 0.85;
+}
+.fo-papier .fo-entfall-info:hover {
+  opacity: 1;
+}
+.fo-tipp {
+  position: fixed;
+  z-index: 1000;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-line;
+  pointer-events: none;
+}
+.fo-gesetz {
+  width: min(760px, 92vw);
+  display: flex;
+  flex-direction: column;
+}
+.fo-gesetz-reiter {
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.fo-gesetz-titel {
+  font-weight: normal;
+}
+.fo-gesetz-text {
+  flex: 1;
+  min-height: 120px;
+  max-height: 60vh;
+  overflow: auto;
+  margin: 6px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--canvas);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.fo-gesetz-zeile {
+  margin: 0 0 6px;
+  padding: 2px 6px;
+  border-left: 3px solid transparent;
+}
+.fo-gesetz-zeile.punkt {
+  padding-left: 22px;
+}
+.fo-gesetz-zeile.markiert {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+@media print {
+  .fo-entfall-info,
+  .fo-tipp {
+    display: none !important;
+  }
+}
+/* Feldansicht: entfallende Felder gedämpft */
+.fo-feld.entfaellt > .field-label,
+.fo-feld.entfaellt.fo-kreuz > span {
+  color: var(--muted);
+}

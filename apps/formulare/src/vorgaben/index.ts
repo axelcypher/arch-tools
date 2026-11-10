@@ -3,21 +3,20 @@
  * Abschnitte, Gruppen und Bedingungen nach der Rechtsgrundlage (BauO NRW, BauPrüfVO). Die eigenen Einstellungen
  * liegen darüber und gehen vor (siehe vorgabe.ts).
  *
+ * Eine Datei je Formular (`nw<Kennung>.ts`), die `vorgaben` exportiert – Schlüssel → Profil (mehrere Stände mit
+ * denselben Feldern dürfen dasselbe Profil nutzen). Die Dateien tragen sich hier von selbst ein.
+ *
  * Feld- und Abschnittsschlüssel prüft `vorgaben.test.ts` gegen die echten Formulare (unter `.ref/`).
  */
 
 import type { FormularProfil } from '../profil';
-import { nw010001_2026I } from './nw010001';
-import { nw010002_2026I } from './nw010002';
-import { nw010005_2026I } from './nw010005';
-import { nw010010 } from './nw010010';
-import { nw010013_2026I } from './nw010013';
 
-export const VORGABEN: Record<string, FormularProfil> = {
-  'nw010001|2026I': nw010001_2026I,
-  'nw010002|2026I': nw010002_2026I,
-  'nw010005|2026I': nw010005_2026I,
-  'nw010010|2024G': nw010010,
-  'nw010010|2026I': nw010010,
-  'nw010013|2026I': nw010013_2026I,
-};
+const dateien = import.meta.glob<Record<string, FormularProfil>>('./nw*.ts', { eager: true, import: 'vorgaben' });
+
+export const VORGABEN: Record<string, FormularProfil> = {};
+for (const [datei, vorgaben] of Object.entries(dateien)) {
+  for (const [schluessel, profil] of Object.entries(vorgaben ?? {})) {
+    if (schluessel in VORGABEN) throw new Error(`Vorgabe ${schluessel} doppelt (${datei})`);
+    VORGABEN[schluessel] = profil;
+  }
+}

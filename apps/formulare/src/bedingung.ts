@@ -63,6 +63,30 @@ export interface BedingungGruppe {
   art: 'gruppe';
   op: Verknuepfung;
   teile: BedingungTeil[];
+  /** warum es diese Bedingung gibt (Vorgaben der App) – erscheint, wenn ein Feld deshalb entfällt */
+  grund?: string;
+  /** Rechtsgrundlage(n) – öffnen den Gesetzestext */
+  quellen?: Quelle[];
+}
+
+/** Fundstelle im Gesetz, z. B. § 68 Absatz 2 Satz 3 BauO NRW 2018 (Gesetze siehe recht/) */
+export interface Quelle {
+  /** Kennung des Gesetzes: `bauo-nrw`, `baupruefvo`, `baugb`, `baunvo`, `bnatschg`, `geig` */
+  gesetz: string;
+  paragraf: string;
+  absatz?: number;
+  satz?: number;
+  nummer?: number;
+}
+
+function quelleAus(roh: unknown): Quelle | null {
+  if (!roh || typeof roh !== 'object') return null;
+  const o = roh as Record<string, unknown>;
+  if (typeof o.gesetz !== 'string' || !o.gesetz || typeof o.paragraf !== 'string' || !o.paragraf) return null;
+  const zahl = (x: unknown) => (typeof x === 'number' && Number.isInteger(x) && x > 0 ? x : undefined);
+  const q: Quelle = { gesetz: o.gesetz, paragraf: o.paragraf };
+  for (const k of ['absatz', 'satz', 'nummer'] as const) if (zahl(o[k])) q[k] = zahl(o[k]);
+  return q;
 }
 
 export type BedingungTeil = Teilbedingung | BedingungGruppe;
@@ -164,7 +188,11 @@ function teilAus(roh: unknown, tiefe: number): BedingungTeil | null {
   if (o.art === 'gruppe' || Array.isArray(roh)) {
     if (tiefe > 4) return null;
     const teile = (Array.isArray(roh) ? roh : Array.isArray(o.teile) ? o.teile : []).map((t) => teilAus(t, tiefe + 1)).filter((t): t is BedingungTeil => !!t);
-    return gruppe(o.op === 'oder' ? 'oder' : 'und', teile);
+    const g = gruppe(o.op === 'oder' ? 'oder' : 'und', teile);
+    if (typeof o.grund === 'string' && o.grund.trim()) g.grund = o.grund.trim();
+    const quellen = (Array.isArray(o.quellen) ? o.quellen : []).map(quelleAus).filter((q): q is Quelle => !!q);
+    if (quellen.length) g.quellen = quellen;
+    return g;
   }
   if (o.art === 'merkmal' && typeof o.merkmal === 'string' && o.merkmal && Array.isArray(o.werte)) {
     // auch ohne gewählten Wert behalten (beim Bearbeiten) – trifft dann nie zu

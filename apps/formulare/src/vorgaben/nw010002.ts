@@ -14,7 +14,8 @@
 
 import type { FormularProfil } from '../profil';
 import { blatt2, kopf, personen, unterschriften, zusammen } from './antrag';
-import { angekreuzt, gruppeV, ist, istNicht, oder, s, und, wenn, zaehltNicht } from './hilfen';
+import { brandschutzBescheinigung, keinEinfamilienhaus, nurBebauungsplan, nurBetrieb, nurInnenAussen } from './grundlagen';
+import { angekreuzt, begruendet, gruppeV, ist, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
 const s1 = s(1);
@@ -26,7 +27,15 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
   abschnitte: {
     '0:Panel8': { titel: 'Gebäudeklasse und Art des Gebäudes' },
     '1:Panel1': { titel: 'Erforderliche Unterlagen (Bauantrag)', bedingung: wenn(bauantrag) },
-    '2:Panel1': { titel: 'Zusätzliche Bauvorlagen für Sonderbauten (Nr. 8 und 9)', bedingung: und(bauantrag, sonderbau) },
+    '2:Panel1': {
+      titel: 'Zusätzliche Bauvorlagen für Sonderbauten (Nr. 8 und 9)',
+      bedingung: begruendet(
+        und(bauantrag, sonderbau),
+        'Diese Bauvorlagen gehören laut Vordruck nur zu Sonderbauten – und nur zum Bauantrag, nicht zum Vorbescheid.',
+        q('baupruefvo', '12'),
+        q('bauo-nrw', '50'),
+      ),
+    },
     '2:Panel2': { titel: 'Nr. 10 Bescheinigung der Übereinstimmung mit § 6 BauO NRW 2018 (freiwillig)' },
     '2:Panel3': { titel: 'Nr. 11 Unterlagen zum Brandschutz', bedingung: wenn(bauantrag) },
     '2:Panel4': { titel: 'Nr. 12 Erhebungsbogen für die Baustatistik' },
@@ -64,13 +73,15 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
     gruppeV('brandschutz', 'Nr. 11 Erklärung oder Bescheinigung zum Brandschutz', 'eins', s2('CheckBox4', 'CheckBox5')),
   ],
   bedingungen: {
-    '1:CheckBox2': wenn(ist('Planungsrecht', 'Bebauungsplan')),
-    '1:CheckBox3': wenn(ist('Planungsrecht', 'Innenbereich', 'Außenbereich')),
-    '1:CheckBox6': wenn(istNicht('Gebäudeart', 'Einfamilienhaus')),
+    '1:CheckBox2': nurBebauungsplan,
+    '1:CheckBox3': nurInnenAussen,
+    '1:CheckBox6': keinEinfamilienhaus,
     '1:Memo5': wenn(angekreuzt('1:CheckBox9')),
-    '2:CheckBox1': wenn(ist('Gebäudeart', 'Nichtwohngebäude')),
-    '2:CheckBox5': oder(und(ist('Gebäudeklasse', '4', '5'), ist('Sonderbau', 'nein')), angekreuzt('0:CheckBox24')),
+    '2:CheckBox1': nurBetrieb,
+    '2:CheckBox5': brandschutzBescheinigung(oder(und(ist('Gebäudeklasse', '4', '5'), ist('Sonderbau', 'nein')), angekreuzt('0:CheckBox24'))),
     '2:CheckBox6': wenn(bauantrag),
     '2:CheckBox7': wenn(bauantrag),
   },
 });
+
+export const vorgaben: Record<string, FormularProfil> = { 'nw010002|2026I': nw010002_2026I };

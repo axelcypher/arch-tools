@@ -1,0 +1,36 @@
+{
+ "id": "geig",
+ "kurz": "GEIG",
+ "titel": "Gebäude-Elektromobilitätsinfrastruktur-Gesetz",
+ "fassung": "Stand 10.11.2026",
+ "url": "https://www.gesetze-im-internet.de/geig/",
+ "paragrafen": {
+  "6": {
+   "titel": "Zu errichtende Wohngebäude mit mehr als fünf Stellplätzen",
+   "url": "https://www.gesetze-im-internet.de/geig/__6.html",
+   "text": [
+    "Wer ein Wohngebäude errichtet, das über mehr als fünf Stellplätze innerhalb des Gebäudes oder über mehr als fünf an das Gebäude angrenzende Stellplätze verfügt, hat dafür zu sorgen, dass jeder Stellplatz mit der Leitungsinfrastruktur für die Elektromobilität ausgestattet wird."
+   ]
+  },
+  "7": {
+   "titel": "Zu errichtende Nichtwohngebäude mit mehr als sechs Stellplätzen",
+   "url": "https://www.gesetze-im-internet.de/geig/__7.html",
+   "text": [
+    "Wer ein Nichtwohngebäude errichtet, das über mehr als sechs Stellplätze innerhalb des Gebäudes oder über mehr als sechs an das Gebäude angrenzende Stellplätze verfügt, hat dafür zu sorgen, dass",
+    "1.",
+    "mindestens jeder dritte Stellplatz mit der Leitungsinfrastruktur für die Elektromobilität ausgestattet wird und",
+    "2.",
+    "zusätzlich mindestens ein Ladepunkt errichtet wird."
+   ]
+  },
+  "10": {
+   "titel": "Bestehende Nichtwohngebäude mit mehr als 20 Stellplätzen",
+   "url": "https://www.gesetze-im-internet.de/geig/__10.html",
+   "text": [
+    "(1) Für jedes Nichtwohngebäude, das über mehr als 20 Stellplätze innerhalb des Gebäudes oder über mehr als 20 an das Gebäude angrenzende Stellplätze verfügt, hat der Eigentümer dafür zu sorgen, dass nach dem 1. Januar 2025 ein Ladepunkt errichtet wird.",
+    "(2) Hat ein Eigentümer die Pflicht nach Absatz 1 für mehr als ein Nichtwohngebäude, so kann er die Pflicht auch dadurch erfüllen, dass er die Gesamtzahl der zu errichtenden Ladepunkte zusammen in einer oder mehreren seiner Liegenschaften errichtet, wenn dem bestehenden oder erwarteten Bedarf an Ladeinfrastruktur in den betroffenen Liegenschaften dadurch Rechnung getragen wird. Will ein Eigentümer seine Pflicht nach Satz 1 erfüllen, muss er eine Planung für alle betroffenen Nichtwohngebäude und Stellplätze zugrunde legen, die der zuständigen Behörde auf Verlangen vorzulegen ist.",
+    "(3) Absatz 2 kann auch in den Fällen des § 7 Nummer 2, des § 9 Absatz 1 Nummer 2 und Absatz 2 Nummer 2 angewendet werden."
+   ]
+  }
+ }
+}

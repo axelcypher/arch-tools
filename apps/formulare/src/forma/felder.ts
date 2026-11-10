@@ -255,7 +255,10 @@ export function abschnitte(felder: Feld[]): Abschnitt[] {
     const rahmen = rahmenVon(f);
     const letzter = out[out.length - 1];
     const gleicherRahmen = letzter && rahmenVon(letzter.felder[0]) === rahmen;
+    // Felder ohne Rahmen bilden je Seite einen Abschnitt (eine Kennung `<Seite>:-`), auch wenn Rahmen dazwischen liegen
+    const ohneRahmen = !rahmen && out.find((a) => !a.rahmen && a.felder[0].seite === f.seite);
     if (gleicherRahmen) letzter.felder.push(f);
+    else if (ohneRahmen) ohneRahmen.felder.push(f);
     else out.push({ titel: f.abschnitt, felder: [f], rahmen });
   }
   return out;
