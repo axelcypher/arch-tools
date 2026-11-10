@@ -6,7 +6,9 @@ import { Report } from './components/Report';
 import { Sidebar } from './components/Sidebar';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
-import { Toolbar } from './components/Toolbar';
+import { projektDateiOeffnen, projektUebernehmen, Toolbar } from './components/Toolbar';
+import { isTauri } from '@core/platform/files';
+import { ProjektWahl } from '@core/ui/ProjektWahl';
 import { applyTheme, useTheme } from '@core/platform/theme';
 import { useEditor } from './store/store';
 
@@ -22,6 +24,9 @@ export function App() {
   const theme = useTheme((s) => s.theme);
   const canvasDunkel = useTheme((s) => s.canvasDunkel);
   const [logOpen, setLogOpen] = useState(false);
+  const datei = useEditor((s) => s.datei);
+  // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
+  const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
 
   useEffect(() => applyTheme(theme, canvasDunkel), [theme, canvasDunkel]);
 
@@ -39,7 +44,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Flächenrechner" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="flaechen" />
+      <TitleBar app="Flächenrechner" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="flaechen" onProjekte={() => setProjekteOffen(true)} />
       <Toolbar />
       <div className="workspace">
         <Sidebar />
@@ -67,6 +72,18 @@ export function App() {
       </div>
       {reportOpen && <Report />}
       {excelOpen && <ExcelDialog />}
+      {projekteOffen && (
+        <ProjektWahl
+          app="Flächenrechner"
+          offeneDatei={datei}
+          onGewaehlt={(g) => projektUebernehmen(g.project, g.datei) && setProjekteOffen(false)}
+          onSchliessen={() => setProjekteOffen(false)}
+          onDateiOeffnen={() => {
+            setProjekteOffen(false);
+            void projektDateiOeffnen();
+          }}
+        />
+      )}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
     </div>
   );

@@ -5,6 +5,7 @@ import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
+import { ProjektWahl } from '@core/ui/ProjektWahl';
 import { ExcelDialog } from './components/ExcelDialog';
 import { KatalogDialog } from './components/KatalogDialog';
 import { KostenDruck } from './components/KostenDruck';
@@ -26,6 +27,9 @@ export function App() {
   const canRedo = useKosten((s) => s.future.length > 0);
   const dateien = useKosten((s) => s.project.dateien);
   const [logOpen, setLogOpen] = useState(false);
+  const datei = useKosten((s) => s.datei);
+  // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
+  const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
   const [excelOpen, setExcelOpen] = useState(false);
   const [druckOpen, setDruckOpen] = useState(false);
   const [katalogOpen, setKatalogOpen] = useState(false);
@@ -127,7 +131,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Kostenermittlung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="kosten" />
+      <TitleBar app="Kostenermittlung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="kosten" onProjekte={() => setProjekteOffen(true)} />
       <div className="toolbar">
         <div className="tb-group">
           <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
@@ -231,6 +235,24 @@ export function App() {
       {druckOpen && <KostenDruck onClose={() => setDruckOpen(false)} />}
       {excelOpen && <ExcelDialog onClose={() => setExcelOpen(false)} />}
       {katalogOpen && <KatalogDialog onClose={() => setKatalogOpen(false)} />}
+      {projekteOffen && (
+        <ProjektWahl
+          app="Kostenermittlung"
+          offeneDatei={datei}
+          onGewaehlt={(g) => {
+            eingabeAbschliessen();
+            if (useKosten.getState().dirty && !window.confirm('Ungespeicherte Änderungen verwerfen?')) return;
+            useKosten.getState().load(g.project, g.datei, g.project);
+            setBericht([]);
+            setProjekteOffen(false);
+          }}
+          onSchliessen={() => setProjekteOffen(false)}
+          onDateiOeffnen={() => {
+            setProjekteOffen(false);
+            void onOpen();
+          }}
+        />
+      )}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
     </div>
   );

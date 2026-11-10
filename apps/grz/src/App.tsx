@@ -5,6 +5,7 @@ import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
+import { ProjektWahl } from '@core/ui/ProjektWahl';
 import { ExcelDialog } from './components/ExcelDialog';
 import { GrzGfzView } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
@@ -20,6 +21,9 @@ export function App() {
   const canUndo = useGrz((s) => s.past.length > 0);
   const canRedo = useGrz((s) => s.future.length > 0);
   const [logOpen, setLogOpen] = useState(false);
+  const datei = useGrz((s) => s.datei);
+  // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
+  const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
   const [excelOpen, setExcelOpen] = useState(false);
   const [druckOpen, setDruckOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -113,7 +117,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="GRZ-Nachweis" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" />
+      <TitleBar app="GRZ-Nachweis" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" onProjekte={() => setProjekteOffen(true)} />
       <div className="toolbar">
         <div className="tb-group">
           <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
@@ -183,6 +187,24 @@ export function App() {
       </main>
       {druckOpen && <NachweisDruck onClose={() => setDruckOpen(false)} />}
       {excelOpen && <ExcelDialog onClose={() => setExcelOpen(false)} />}
+      {projekteOffen && (
+        <ProjektWahl
+          app="GRZ-Nachweis"
+          offeneDatei={datei}
+          onGewaehlt={(g) => {
+            eingabeAbschliessen();
+            if (useGrz.getState().dirty && !window.confirm('Ungespeicherte Änderungen verwerfen?')) return;
+            useGrz.getState().load(g.project, g.datei, g.project);
+            setBericht([]);
+            setProjekteOffen(false);
+          }}
+          onSchliessen={() => setProjekteOffen(false)}
+          onDateiOeffnen={() => {
+            setProjekteOffen(false);
+            void onOpen();
+          }}
+        />
+      )}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
     </div>
   );

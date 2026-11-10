@@ -7,12 +7,44 @@ import { ProjectFormatError } from '@core/serialize';
 import { isTauri, saveTextFile } from '@core/platform/files';
 import { exportDateiname, exportOrdner, projektDateiWaehlen, projektSpeichern, speichernAbwarten } from '@core/platform/projektDatei';
 import { mitVorlage } from '../platform/vorlage';
+import type { Project } from '@core/model';
 import type { Tool } from '../store/store';
 import { restoreIfcModel, useEditor } from '../store/store';
 import { IfcImportDialog } from './IfcImportDialog';
 import { logger } from '@core/platform/log';
 
 const log = logger('datei');
+
+const verwerfenOk = () => !useEditor.getState().dirty || window.confirm('Ungespeicherte Änderungen verwerfen?');
+
+/** Projektdatei über den Dateidialog öffnen (Strg+O, auch aus der Projektübersicht) */
+export async function projektDateiOeffnen() {
+  eingabeAbschliessen();
+  if (!verwerfenOk()) return;
+  let name = '';
+  try {
+    const f = await projektDateiWaehlen({ datei: useEditor.getState().datei });
+    if (!f) return;
+    name = f.pfad ?? f.name;
+    const done = log.time(`Öffnen: ${name}`);
+    const p = readProjectFile(f.bytes);
+    useEditor.getState().loadProject(p, p, name);
+    done({ bytes: f.bytes.byteLength, geschosse: p.storeys.length, dateien: p.dateien?.length ?? 0 });
+    void restoreIfcModel(p);
+  } catch (e) {
+    log.error(`Öffnen fehlgeschlagen: ${name}`, e);
+    alert(e instanceof ProjectFormatError ? e.message : `Datei konnte nicht geladen werden: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+/** Projekt aus der Projektübersicht übernehmen; false, wenn ungespeicherte Änderungen nicht verworfen werden sollen */
+export function projektUebernehmen(p: Project, datei: string): boolean {
+  eingabeAbschliessen();
+  if (!verwerfenOk()) return false;
+  useEditor.getState().loadProject(p, p, datei);
+  void restoreIfcModel(p);
+  return true;
+}
 
 const TOOLS: { id: Tool; label: string; key: string; icon: string }[] = [
   { id: 'select', label: 'Auswählen', key: 'V', icon: '⬉' },
@@ -39,24 +71,7 @@ export function Toolbar() {
     if (confirmDiscard()) st.newProject();
   };
 
-  const onOpen = async () => {
-    eingabeAbschliessen();
-    if (!confirmDiscard()) return;
-    let name = '';
-    try {
-      const f = await projektDateiWaehlen({ datei: useEditor.getState().datei });
-      if (!f) return;
-      name = f.pfad ?? f.name;
-      const done = log.time(`Öffnen: ${name}`);
-      const p = readProjectFile(f.bytes);
-      st.loadProject(p, p, name);
-      done({ bytes: f.bytes.byteLength, geschosse: p.storeys.length, dateien: p.dateien?.length ?? 0 });
-      void restoreIfcModel(p);
-    } catch (e) {
-      log.error(`Öffnen fehlgeschlagen: ${name}`, e);
-      alert(e instanceof ProjectFormatError ? e.message : `Datei konnte nicht geladen werden: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
+  const onOpen = () => projektDateiOeffnen();
 
   const onSave = async (unter = false) => {
     eingabeAbschliessen();

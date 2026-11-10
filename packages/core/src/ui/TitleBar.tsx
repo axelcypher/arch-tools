@@ -27,9 +27,11 @@ export interface TitleBarProps {
   onOpenLog: () => void;
   /** Nachschlagewerk der Berechnungsregeln dieser App anbieten */
   regeln?: RegelApp;
+  /** Knopf „Projekte“: die gemeinsame Projektübersicht öffnen */
+  onProjekte?: () => void;
 }
 
-export function TitleBar({ app, name, dirty, onOpenLog, regeln }: TitleBarProps) {
+export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte }: TitleBarProps) {
   const desktop = isTauri();
   const [win, setWin] = useState<AppWindow | null>(null);
   const [maximized, setMaximized] = useState(false);
@@ -84,6 +86,11 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln }: TitleBarProps)
       <span className="titlebar-app" data-tauri-drag-region>
         {app}
       </span>
+      {onProjekte && (
+        <button className="titlebar-btn titlebar-projekte" title="Projektübersicht – Projekt aus den Projektordnern öffnen" onClick={onProjekte}>
+          Projekte
+        </button>
+      )}
       <span className="titlebar-sep" data-tauri-drag-region>
         ·
       </span>
