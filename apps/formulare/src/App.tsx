@@ -14,6 +14,7 @@ import { Symbol } from './components/Symbol';
 import { FelderAnsicht } from './components/FelderAnsicht';
 import { Gliederung } from './components/Gliederung';
 import { ProjektkarteAnsicht } from './components/ProjektkarteAnsicht';
+import { ProjektUebersicht } from './components/ProjektUebersicht';
 import { Schnellwahl } from './components/Schnellwahl';
 import { SeitenAnsicht } from './components/SeitenAnsicht';
 import { zeigeEintrag } from './components/ProjektkarteAnsicht';
@@ -79,7 +80,7 @@ export function App() {
   const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
   const grund = offen ? sperrgrund(offen) : null;
   const name =
-    haupt === 'einstellungen' ? 'Einstellungen' : haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
+    haupt === 'einstellungen' ? 'Einstellungen' : ds && (!projekt || haupt === 'projekte') ? 'Projekte' : haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
   const zugeordnet = useMemo(() => (offen ? anzahlZugeordnet(offen) : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
   const formularSichtbar = !!offen && haupt === 'formular';
   const exportPfad = useExportDialog((s) => s.pfad);
@@ -299,11 +300,13 @@ export function App() {
         </>
       )}
       <main className="fo-main">
-        {ds && <Seitenleiste onSchnellwahl={() => setDialog('schnellwahl')} onEinstellungen={() => useFormulare.getState().einstellungenOeffnen('ordner')} onSperren={() => setDialog('sperren')} />}
+        {ds && projekt && haupt !== 'projekte' && <Seitenleiste onProjekte={() => useFormulare.getState().setHaupt('projekte')} onSperren={() => setDialog('sperren')} />}
         {formularSichtbar && gliederungOffen && <Gliederung offen={offen} />}
         <section className={`fo-inhalt${formularSichtbar && ansicht === 'seite' ? ' fo-inhalt-papier' : ''}`}>
           {haupt === 'einstellungen' ? (
             <EinstellungenAnsicht />
+          ) : ds && (!projekt || haupt === 'projekte') ? (
+            <ProjektUebersicht onEinstellungen={() => useFormulare.getState().einstellungenOeffnen('ordner')} />
           ) : haupt === 'projektkarte' && projekt ? (
             <ProjektkarteAnsicht />
           ) : haupt === 'datei' && datei ? (

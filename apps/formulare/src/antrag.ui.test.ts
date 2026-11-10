@@ -14,6 +14,7 @@ import { felderDerSeite } from './forma/felder';
 import { parseFormular } from './forma/formular';
 import { formularPdf } from './forma/pdf';
 import { pdfjs } from './dokumente/pdf';
+import { useAufgeklappt } from './components/ProjektUebersicht';
 import { useFormulare } from './store';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -62,8 +63,10 @@ beforeEach(() => {
     dateiEntwuerfe: {},
     meldung: null,
     ansicht: 'seite',
+    zuletzt: [],
   });
-  useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [] });
+  useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [], projektStatus: {} });
+  useAufgeklappt.setState({ offen: [] });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -103,9 +106,16 @@ async function render(): Promise<HTMLElement> {
 
 async function projektBS9(): Promise<HTMLElement> {
   const host = await render();
-  await klick(knopf(host, 'BS9'));
+  await projektOeffnen(host, 'BS9');
   await warte();
   return host;
+}
+
+/** Projekt in der Projektübersicht öffnen – eingeklappte Quellen vorher aufklappen */
+async function projektOeffnen(host: HTMLElement, kuerzel: string) {
+  const karte = () => host.querySelector<HTMLButtonElement>(`.pa-karte[data-projekt="${kuerzel}"]`);
+  if (!karte()) for (const g of host.querySelectorAll<HTMLButtonElement>('.pa-gruppe-kopf[aria-expanded="false"]')) await klick(g);
+  await klick(karte()!);
 }
 
 describe('Antragsfassung und Export', () => {
@@ -380,5 +390,63 @@ describe('Formular hinzufügen', () => {
     expect(felderDerSeite(parseFormular(neu).seiten[0], 0).every((f) => f.original === '' || f.original === false)).toBe(true);
     expect(useFormulare.getState().offen?.name).toBe('002-Bauantrag (2026)');
     expect(useAntrag.getState().projektdatei?.umfang).toMatchObject([{ titel: 'Bauantrag', art: 'intern', formularDatei: '002-Bauantrag (2026).frmsjf' }]);
+  });
+});
+
+describe('Projektübersicht', () => {
+  it('je Quelle eingeklappt, die Suche klappt auf, zuletzt geöffnete vorne – mit Antragsstatus und Sperren', async () => {
+    useFormulare.setState({ projektordner: ['C:/FORMA', 'D:/Archiv'] });
+    ds.dateien.set('D:/Archiv/AB1/001-Muster.frmsjf', MUSTER);
+    ds.dateien.set('D:/Archiv/AB1/001-Muster.frmtmp', new Uint8Array([1]));
+    ds.dateien.set('D:/Archiv/AB1/sj_office.ini', cp1252Schreiben('[Allgemeines]\r\nText=Am Bach 1\r\n\r\n'));
+    const host = await render();
+    const koepfe = () => [...host.querySelectorAll('.pa-gruppe-kopf')].map((k) => [k.querySelector('.pa-gruppe-name')!.textContent, k.getAttribute('aria-expanded'), k.querySelector('.pa-zahl')!.textContent]);
+    expect(koepfe()).toEqual([
+      ['FORMA', 'false', '2'],
+      ['Archiv', 'false', '1'],
+    ]);
+    expect(host.querySelector('.pa-karte')).toBeNull();
+    expect(host.querySelector('[aria-label="Zuletzt geöffnet"]')).toBeNull();
+
+    // Suche: nur die passende Quelle, aufgeklappt; Enter öffnet den ersten Treffer
+    const suche = host.querySelector<HTMLInputElement>('input[aria-label="Projekte durchsuchen"]')!;
+    eingabe(suche, 'bach');
+    await warte();
+    expect(koepfe()).toEqual([['Archiv', 'true', '1 / 1']]);
+    const ab1 = host.querySelector('.pa-karte[data-projekt="AB1"]')!;
+    expect(ab1.querySelector('.pa-titel')!.textContent).toBe('Am Bach 1');
+    expect(ab1.querySelector('.pa-info')!.textContent).toContain('1 Formular');
+    expect(ab1.querySelector('.pa-marke.sperre')!.textContent).toContain('1 geöffnet');
+    expect(ab1.querySelector('.pa-status-text')!.textContent).toContain('noch nicht geprüft');
+    act(() => void suche.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    await warte();
+    expect(useFormulare.getState().projekt?.ordner).toBe('AB1');
+    expect(host.querySelector('.pa')).toBeNull();
+
+    // BS9 öffnen und den Projektumfang festlegen – der Antragsstatus wird für die Übersicht gemerkt
+    await klick(knopf(host, 'Wechseln'));
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await klick(knopf(host, 'Aus dem Katalog festlegen'));
+    await warte();
+    expect(useAntrag.getState().projektStatus['C:/FORMA|BS9'].anzahl).toEqual({ unvollstaendig: 1, fehlt: 1, offen: 1 });
+
+    await klick(knopf(host, 'Wechseln'));
+    const zuletzt = host.querySelector('[aria-label="Zuletzt geöffnet"]')!;
+    expect([...zuletzt.querySelectorAll('.pa-karte')].map((k) => k.getAttribute('data-projekt'))).toEqual(['BS9', 'AB1']);
+    const bs9 = zuletzt.querySelector('.pa-karte[data-projekt="BS9"]')!;
+    expect(bs9.className).toContain('aktiv');
+    expect(bs9.querySelector('.pa-ampel')!.className).toContain('fehlt');
+    expect(bs9.querySelector('.pa-status-text')!.textContent).toBe('0/3 aktuell · BAUA 2');
+    expect(bs9.querySelectorAll('.pa-balken-teil')).toHaveLength(3);
+    expect(bs9.querySelector('.pa-info')!.textContent).toMatch(/1 Formular · geöffnet heute/);
+
+    // aus „Zuletzt geöffnet“ entfernen (Kontextmenü), dann zurück zum Projekt
+    await rechtsklick(zuletzt.querySelector('.pa-karte[data-projekt="AB1"]')!);
+    await klick(menuePunkt('Aus „Zuletzt geöffnet“ entfernen'));
+    expect(useFormulare.getState().zuletzt.map((z) => z.ordner)).toEqual(['BS9']);
+    await klick(knopf(host, 'Zurück zu BS9'));
+    expect(host.querySelector('.pa')).toBeNull();
+    expect(host.querySelector('.fo-projektkopf')!.textContent).toContain('BS9');
   });
 });

@@ -50,11 +50,7 @@ function Abschnitt({ id, titel, kopf, children, start = true }: { id: string; ti
  * Projektdaten (die Projektkarte aus FORMA, hervorgehoben), Formulare und – durch eine Linie getrennt – der
  * echte Projektordner.
  */
-export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { onSchnellwahl: () => void; onEinstellungen: () => void; onSperren: () => void }) {
-  const projektordner = useFormulare((s) => s.projektordner);
-  const projekte = useFormulare((s) => s.projekte);
-  const suchfehler = useFormulare((s) => s.suchfehler);
-  const sucht = useFormulare((s) => s.sucht);
+export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void; onSperren: () => void }) {
   const projekt = useFormulare((s) => s.projekt);
   const formulare = useFormulare((s) => s.formulare);
   const offen = useFormulare((s) => s.offen);
@@ -65,8 +61,7 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
   const eigeneAuswahl = useFormulare((s) => !!s.projekt && !!s.auswahl[s.projekt.ordner]);
   const ablageordner = useFormulare((s) => s.ablageordner.length);
   const breite = useFormulare((s) => s.leisteBreite);
-  const { projekteLaden, projektWaehlen, formularOeffnen, setHaupt, setLeisteBreite, setAuswahl } = useFormulare.getState();
-  const [suche, setSuche] = useState('');
+  const { projektWaehlen, formularOeffnen, setHaupt, setLeisteBreite, setAuswahl } = useFormulare.getState();
   const [pfadeBearbeiten, setPfadeBearbeiten] = useState(false);
   const dokumente = useAntrag((s) => s.dokumente);
   const umfangDa = useAntrag((s) => !!s.projektdatei?.umfang);
@@ -102,11 +97,6 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
     ];
   };
 
-  const gefiltert = useMemo(() => {
-    const q = suche.trim().toLowerCase();
-    return q ? projekte.filter((p) => `${p.ordner} ${p.titel}`.toLowerCase().includes(q)) : projekte;
-  }, [projekte, suche]);
-
   // Breite mit der Maus ziehen
   const ziehen = (e: React.PointerEvent) => {
     const start = e.clientX;
@@ -123,16 +113,7 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
   return (
     <aside className="nav" style={{ width: breite }} aria-label="Navigation">
       <div className="nav-rollbereich">
-        {!projektordner.length && (
-          <div className="nav-hinweis">
-            <p>Noch kein Ordner mit FORMA-Projekten eingestellt.</p>
-            <button className="primary" onClick={onEinstellungen}>
-              Einstellungen …
-            </button>
-          </div>
-        )}
-
-        {projekt ? (
+        {projekt && (
           <div className="fo-projektkopf">
             <div className="fo-projektkopf-text" title={verbinde(projekt.root, projekt.ordner)}>
               <span className="nav-klein">Projekt</span>
@@ -140,7 +121,7 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
               {projekt.titel && <span className="fo-projektkopf-titel">{projekt.titel}</span>}
             </div>
             <div className="fo-projektkopf-knoepfe">
-              <button className="small" title="Anderes Projekt (Strg+K)" onClick={onSchnellwahl}>
+              <button className="small" title="Alle Projekte – zuletzt geöffnete und je Quelle (Strg+K sucht direkt)" onClick={onProjekte}>
                 Wechseln
               </button>
               <button className="icon" title="Projekt schließen" aria-label="Projekt schließen" onClick={() => void projektWaehlen(null)}>
@@ -149,34 +130,6 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
             </div>
             <FassungsWahl />
           </div>
-        ) : (
-          projektordner.length > 0 && (
-            <Abschnitt
-              id="projekte"
-              titel={<>Projekte {sucht && <span className="nav-klein">(werden gesucht …)</span>}</>}
-              kopf={
-                <button className="icon" title="Projekte neu einlesen" aria-label="Projekte neu einlesen" disabled={sucht} onClick={() => void projekteLaden()}>
-                  <Symbol name="verlauf" />
-                </button>
-              }
-            >
-              <input type="search" className="nav-suche" placeholder="Kürzel oder Titel …" value={suche} onChange={(e) => setSuche(e.target.value)} autoFocus />
-              <div className="nav-liste" role="list">
-                {gefiltert.map((p) => (
-                  <button key={`${p.root}|${p.ordner}`} role="listitem" className="nav-eintrag zweizeilig" title={verbinde(p.root, p.ordner)} onClick={() => void projektWaehlen(p)}>
-                    <strong>{p.ordner}</strong>
-                    {p.titel && <span className="nav-unter">{p.titel}</span>}
-                  </button>
-                ))}
-                {!sucht && !gefiltert.length && <p className="nav-leer">Keine FORMA-Projekte gefunden.</p>}
-              </div>
-              {suchfehler.map((f) => (
-                <p key={f} className="warning small-text">
-                  {f}
-                </p>
-              ))}
-            </Abschnitt>
-          )
         )}
 
         {projekt && (

@@ -149,17 +149,30 @@ const pkText = (gruppe: number, id: number) => karteVon().eintraege.find((e) => 
 
 async function oeffneMuster(host?: HTMLElement): Promise<HTMLElement> {
   host ??= await render();
-  await klick(knopf(host, 'BS9'));
+  await projektOeffnen(host, 'BS9');
   await klick(knopf(host, '001-Muster'));
   return host;
+}
+
+/** Projekt in der Projektübersicht öffnen – eingeklappte Quellen vorher aufklappen */
+async function projektOeffnen(host: HTMLElement, kuerzel: string) {
+  const karte = () => host.querySelector<HTMLButtonElement>(`.pa-karte[data-projekt="${kuerzel}"]`);
+  if (!karte()) for (const g of host.querySelectorAll<HTMLButtonElement>('.pa-gruppe-kopf[aria-expanded="false"]')) await klick(g);
+  await klick(karte()!);
 }
 
 describe('Formulare', () => {
   it('findet Projekte mit Titel und ihre Formulare (ohne Archiv)', async () => {
     const host = await render();
-    expect(knopf(host, 'BS9').textContent).toContain('Musterstraße 9');
+    // Projektübersicht statt Liste in der Seitenleiste: je Quelle eine Gruppe, beim Start eingeklappt
+    expect(host.querySelector('.nav')).toBeNull();
+    const gruppe = host.querySelector<HTMLButtonElement>('.pa-gruppe-kopf')!;
+    expect(gruppe.getAttribute('aria-expanded')).toBe('false');
+    expect(host.querySelector('.pa-karte')).toBeNull();
+    await klick(gruppe);
+    expect(host.querySelector('.pa-karte[data-projekt="BS9"]')!.textContent).toContain('Musterstraße 9');
     expect(knopf(host, 'Sonstiges')).toBeUndefined();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     expect(host.querySelector('.fo-projektkopf')?.textContent).toContain('BS9');
     expect(knopf(host, '001-Muster')).toBeDefined();
     expect(knopf(host, '000-Alt')).toBeUndefined();
@@ -276,7 +289,7 @@ describe('Formulare', () => {
     ds.dateien.set(SPERRE, cp1252Schreiben('[Zugriff]\r\nUser=kollege\r\nComputer=CAD03\r\nAngemeldet=09.11.2026 10:17:12\r\nInGebrauch=2\r\n\r\n'));
     ds.offeneSperren.add(SPERRE);
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await klick(knopfMit(host, 'Sperren'));
     await warte();
     const zeilen = [...host.querySelectorAll('.fo-sperr-zeile')];
@@ -314,7 +327,7 @@ describe('Formulare', () => {
     eingabe(feld(host, 'Bauherrschaft', 1), 'Musterweg 7');
     act(() => kreuz(host, 'Sonderbau').click());
     await klick(knopfMit(host, 'Projekt schließen'));
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     expect(knopf(host, '001-Muster').textContent).toContain('●');
 
     host = await oeffneMuster(await neustart());
@@ -387,7 +400,7 @@ describe('Formulare', () => {
 
   it('Projektkarte: Gruppen mit Kurzfassung, bearbeiten und speichern – nur geänderte Einträge, mit dem alten Wert als Prüfung', async () => {
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     const nav = [...host.querySelectorAll('.pk-nav-eintrag')].map((b) => [b.querySelector('.pk-nav-name')!.textContent!.trim(), b.querySelector('.pk-nav-kurz')!.textContent]);
     expect(nav).toEqual([
@@ -423,7 +436,7 @@ describe('Formulare', () => {
 
   it('Projektkarte: Auswahllisten speichern die Nummer der Wahl, Hinweise auf Tippfehler, Rückgängig', async () => {
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     await gruppeWaehlen(host, 'Bauherr');
     const anrede = kartenFeld<HTMLSelectElement>(host, 'Anrede');
@@ -444,7 +457,7 @@ describe('Formulare', () => {
 
   it('Projektkarte: Angaben von einer anderen Gruppe übernehmen; eine Adresse als Vorgabe festlegen und eintragen', async () => {
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     await gruppeWaehlen(host, 'Eigentümer');
     waehle(host.querySelector<HTMLSelectElement>('.pk-uebernehmen')!, 'g:201');
@@ -475,7 +488,7 @@ describe('Formulare', () => {
 
   it('Projektkarte durchsuchen: ein Treffer springt in seine Gruppe', async () => {
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     eingabe(host.querySelector<HTMLInputElement>('.pk-suche')!, 'musterweg');
     const treffer = [...host.querySelectorAll<HTMLButtonElement>('.pk-treffer-zeile')];
@@ -512,7 +525,7 @@ describe('Formulare', () => {
     ds.dateien.set('Z:/Projekte/_Akquise/XY1 Anfrage/a.txt', new Uint8Array([1]));
     useFormulare.setState({ ablageordner: ['Z:/Projekte'], vorgabeAuswahl: ['Organisation'] });
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await warte();
     const block = host.querySelector('.fo-baum')!.closest('.nav-abschnitt')!;
     expect(block.textContent).toContain('BS9 Musterstraße 9');

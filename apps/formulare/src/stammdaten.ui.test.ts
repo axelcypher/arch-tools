@@ -132,10 +132,17 @@ async function render(): Promise<HTMLElement> {
   return host;
 }
 
+/** Projekt in der Projektübersicht öffnen – eingeklappte Quellen vorher aufklappen */
+async function projektOeffnen(host: HTMLElement, kuerzel: string) {
+  const karte = () => host.querySelector<HTMLButtonElement>(`.pa-karte[data-projekt="${kuerzel}"]`);
+  if (!karte()) for (const g of host.querySelectorAll<HTMLButtonElement>('.pa-gruppe-kopf[aria-expanded="false"]')) await klick(g);
+  await klick(karte()!);
+}
+
 describe('Gliederung je Formular', () => {
   it('Abschnitte ausblenden und umbenennen, Felder vom Füllstand ausnehmen – gilt für das Formular in allen Projekten', async () => {
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await klick(knopf(host, '001-Muster'));
     const gl = () => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
     const abschnitte = () => [...gl().querySelectorAll('.fo-gl-abschnitt')].map((b) => b.querySelector('.fo-gl-titel')!.textContent);
@@ -164,14 +171,14 @@ describe('Gliederung je Formular', () => {
 
     // im anderen Projekt gilt dasselbe Profil
     await klick(knopfMit(host, 'Projekt schließen'));
-    await klick(knopf(host, 'H24'));
+    await projektOeffnen(host, 'H24');
     await klick(knopf(host, '001-Muster'));
     expect(abschnitte()[0]).toBe('Bauherr und Grundstück');
   });
 
   it('Felder gruppieren und umbenennen: eine Auswahl über zwei Zeilen zählt als eine Angabe, die Untereinträge zeigen die Namen', async () => {
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await klick(knopf(host, '001-Muster'));
     const gl = () => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
     const zahl = () => gl().querySelector('.fo-gl-zahl')!.textContent;
@@ -223,7 +230,7 @@ describe('Gliederung je Formular', () => {
 
   it('Zeigen auf einen Eintrag hebt seine Felder im Formular hervor; im Anpassen-Modus nach drei Sekunden umrandet', async () => {
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await klick(knopf(host, '001-Muster'));
     const gl = () => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
     const markiert = () => host.querySelectorAll('.fo-papier .markiert').length;
@@ -303,7 +310,7 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
   };
   const oeffnen = async () => {
     const host = await render();
-    await klick(knopf(host, 'BS9'));
+    await projektOeffnen(host, 'BS9');
     await warte();
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     await warte();

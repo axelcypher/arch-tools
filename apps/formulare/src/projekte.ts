@@ -16,6 +16,17 @@ export interface Projekt {
   ordner: string;
   /** Projekttitel aus sj_office.ini, z. B. „Birkenstraße 5 Welver“ */
   titel: string;
+  /** beim Suchen ermittelt (für die Projektübersicht) */
+  info?: ProjektInfo;
+}
+
+export interface ProjektInfo {
+  /** Anzahl der Formulare */
+  formulare: number;
+  /** Formulare mit Sperrdatei (in FORMA oder hier geöffnet) */
+  gesperrt: number;
+  /** letzte Änderung einer Datei im Projekt (ms); null = unbekannt */
+  geaendert: number | null;
 }
 
 export interface FormularEintrag {
@@ -38,13 +49,20 @@ export async function projekteSuchen(ds: Dateisystem, roots: string[]): Promise<
       try {
         const eintraege = await ds.liste(root, 2);
         const ordner = new Map<string, boolean>();
+        const info = new Map<string, ProjektInfo>();
         for (const e of eintraege) {
           const [kopf, name] = e.pfad.split('/');
-          if (name !== undefined && !e.ordner && istProjektdatei(name)) ordner.set(kopf, true);
+          if (name === undefined || e.ordner) continue;
+          if (istProjektdatei(name)) ordner.set(kopf, true);
+          const i = info.get(kopf) ?? { formulare: 0, gesperrt: 0, geaendert: null };
+          if (/\.frmsjf$/i.test(name)) i.formulare++;
+          if (/\.frmtmp$/i.test(name)) i.gesperrt++;
+          if (e.geaendert) i.geaendert = Math.max(i.geaendert ?? 0, e.geaendert);
+          info.set(kopf, i);
         }
         const mitIni = new Set(eintraege.filter((e) => /\/sj_office\.ini$/i.test(e.pfad)).map((e) => e.pfad.split('/')[0]));
         const gefunden = await Promise.all(
-          [...ordner.keys()].map(async (o) => ({ root, ordner: o, titel: mitIni.has(o) ? await projektTitel(ds, root, o) : '' })),
+          [...ordner.keys()].map(async (o) => ({ root, ordner: o, titel: mitIni.has(o) ? await projektTitel(ds, root, o) : '', info: info.get(o) })),
         );
         projekte.push(...gefunden);
       } catch (e) {
@@ -55,6 +73,9 @@ export async function projekteSuchen(ds: Dateisystem, roots: string[]): Promise<
   projekte.sort((a, b) => sortiere(a.root, b.root) || sortiere(a.ordner, b.ordner));
   return { projekte, fehler };
 }
+
+/** Schlüssel eines Projekts (Quelle und Ordner) */
+export const projektSchluessel = (p: Pick<Projekt, 'root' | 'ordner'>) => `${p.root}|${p.ordner}`;
 
 async function projektTitel(ds: Dateisystem, root: string, ordner: string): Promise<string> {
   try {

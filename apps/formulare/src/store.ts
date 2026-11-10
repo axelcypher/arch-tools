@@ -42,7 +42,7 @@ import { eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererV
 const log = logger('formulare');
 
 export type Ansicht = 'felder' | 'seite';
-export type Hauptansicht = 'formular' | 'projektkarte' | 'datei' | 'einstellungen';
+export type Hauptansicht = 'formular' | 'projektkarte' | 'datei' | 'einstellungen' | 'projekte';
 
 /** Dokumente aus dem Projektordner, die die App selbst zeigt (und teils bearbeitet) */
 export type DateiArt = 'pdf' | 'excel' | 'word' | 'bild';
@@ -79,6 +79,17 @@ const VERLAEUFE = 'formulare:verlauf';
 const PK_ENTWUERFE = 'formulare:projektkarten';
 const PROFILE = 'formulare:profile';
 const ADRESSBUCH = 'formulare:adressbuch';
+const ZULETZT = 'formulare:zuletzt';
+/** so viele zuletzt geöffnete Projekte merkt sich die App */
+const MAX_ZULETZT = 12;
+
+/** Ein zuletzt geöffnetes Projekt */
+export interface ZuletztEintrag {
+  root: string;
+  ordner: string;
+  /** zuletzt geöffnet (ms) */
+  zeit: number;
+}
 /** so viele Formulare behalten ihren Verlauf */
 const MAX_VERLAEUFE = 60;
 
@@ -167,6 +178,8 @@ interface FormulareState extends Gespeichert {
   formulare: FormularEintrag[];
   offen: OffenesFormular | null;
   haupt: Hauptansicht;
+  /** zuletzt geöffnete Projekte, das neueste zuerst */
+  zuletzt: ZuletztEintrag[];
   karte: OffeneKarte | null;
   datei: OffeneDatei | null;
   /** ungespeicherte Bearbeitungen je Dokument (`root|pfad`), nur für diese Sitzung */
@@ -209,6 +222,8 @@ interface FormulareState extends Gespeichert {
   einstellungenNeuLesen: () => Promise<void>;
   ablageLaden: () => Promise<void>;
   projektWaehlen: (p: Projekt | null) => Promise<void>;
+  /** Projekt aus „Zuletzt geöffnet“ streichen */
+  zuletztEntfernen: (p: Pick<Projekt, 'root' | 'ordner'>) => void;
   formularOeffnen: (e: FormularEintrag) => Promise<void>;
   /** Browser: einzelne .frmsjf-Datei über den Dateidialog */
   dateiOeffnen: () => Promise<void>;
@@ -363,6 +378,19 @@ const karteSchluessel = (p: Projekt) => `karte|${p.root}|${p.ordner}`;
 const entwuerfe = () => lesen<Record<string, Record<string, Wert>>>(ENTWUERFE, {});
 
 export const hatEntwurf = (projekt: Projekt, pfad: string) => !!entwuerfe()[dokSchluessel({ projekt, pfad })];
+
+/** Ungespeicherte Eingaben irgendwo im Projekt (Formulare oder Projektkarte) */
+export function projektHatEntwuerfe(p: Pick<Projekt, 'root' | 'ordner'>): boolean {
+  const vorne = `${p.root}|${p.ordner}/`;
+  return Object.keys(entwuerfe()).some((k) => k.startsWith(vorne)) || !!lesen<Record<string, unknown>>(PK_ENTWUERFE, {})[`karte|${p.root}|${p.ordner}`];
+}
+
+function zuletztLaden(): ZuletztEintrag[] {
+  const roh = lesen<unknown>(ZULETZT, []);
+  return Array.isArray(roh)
+    ? roh.filter((z): z is ZuletztEintrag => !!z && typeof z.root === 'string' && typeof z.ordner === 'string' && typeof z.zeit === 'number').slice(0, MAX_ZULETZT)
+    : [];
+}
 
 /** Ungespeicherte Eingaben eines (nicht geöffneten) Formulars und wann sie zuletzt geändert wurden */
 export function entwurfVon(projekt: Projekt, pfad: string): { aenderungen: Record<string, Wert>; zeit: number } | null {
@@ -676,6 +704,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     formulare: [],
     offen: null,
     haupt: 'formular',
+    zuletzt: zuletztLaden(),
     karte: null,
     datei: null,
     dateiEntwuerfe: {},
@@ -773,6 +802,10 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       set({ projekt, formulare: [], karte: null, datei: null, projektdaten: null, oap: null, haupt: 'formular' });
       const ds = get().ds;
       if (!projekt || !ds) return;
+      const gleich = (z: Pick<Projekt, 'root' | 'ordner'>) => z.root === projekt.root && z.ordner === projekt.ordner;
+      const zuletzt = [{ root: projekt.root, ordner: projekt.ordner, zeit: Date.now() }, ...get().zuletzt.filter((z) => !gleich(z))].slice(0, MAX_ZULETZT);
+      schreiben(ZULETZT, zuletzt);
+      set({ zuletzt });
       try {
         set({ formulare: await formulareDesProjekts(ds, projekt) });
       } catch (e) {
@@ -780,6 +813,12 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       }
       void get().oapLaden();
       void get().projektdatenLaden();
+    },
+
+    zuletztEntfernen: (p) => {
+      const zuletzt = get().zuletzt.filter((z) => z.root !== p.root || z.ordner !== p.ordner);
+      schreiben(ZULETZT, zuletzt);
+      set({ zuletzt });
     },
 
     formularOeffnen: async (eintrag) => {

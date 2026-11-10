@@ -11,7 +11,7 @@
 import { create } from 'zustand';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
-import type { ExportEinstellungen, ExportUeberschreibung, Fassung, Fuellstand, KatalogEintrag, ProjektDatei, Status, UmfangEintrag } from './antrag';
+import type { ExportEinstellungen, ExportUeberschreibung, Fassung, Fuellstand, KatalogEintrag, ProjektDatei, ProjektStatus, Status, UmfangEintrag } from './antrag';
 import {
   anzeigeName,
   dateiImAntrag,
@@ -26,6 +26,8 @@ import {
   katalogAus,
   passt,
   projektDateiAus,
+  projektStatusAus,
+  projektStatusLesen,
   quelleVon,
   standardFassung,
   UEBERSCHREIBBAR,
@@ -44,7 +46,7 @@ import { formularPdf } from './forma/pdf';
 import type { FormularProfil } from './profil';
 import { leeresProfil, profilSchluessel } from './profil';
 import type { FormularEintrag, Projekt } from './projekte';
-import { formulareDesProjekts } from './projekte';
+import { formulareDesProjekts, projektSchluessel } from './projekte';
 import { ablageVon, entwurfVon, useFormulare, wertVon } from './store';
 
 const log = logger('formulare');
@@ -53,6 +55,7 @@ const EINSTELLUNGEN = 'formulare:export';
 const KATALOG = 'formulare:katalog';
 const UEBERSCHREIBUNGEN = 'formulare:export-projekte';
 const MERKMALE = 'formulare:merkmale';
+const PROJEKTSTATUS = 'formulare:projektstatus';
 
 function lesen<T>(schluessel: string, vorgabe: T): T {
   try {
@@ -116,6 +119,8 @@ interface AntragState {
   formularInfo: Record<string, FormularInfo>;
   dokumente: DokZustand[];
   laedt: boolean;
+  /** Antragsstatus je Projekt (Schlüssel `<Quelle>|<Ordner>`), zuletzt berechnet – für die Projektübersicht */
+  projektStatus: Record<string, ProjektStatus>;
 
   setEinstellungen: (e: Partial<ExportEinstellungen>) => void;
   setKatalog: (k: KatalogEintrag[] | null) => void;
@@ -269,6 +274,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     formularInfo: {},
     dokumente: [],
     laedt: false,
+    projektStatus: projektStatusLesen(lesen<unknown>(PROJEKTSTATUS, null)),
 
     einstellungenNeuLesen: () => {
       set({
@@ -447,6 +453,17 @@ export const useAntrag = create<AntragState>((set, get) => {
         return { eintrag: u, status: externStatus(quelle, datei), formular: null, datei, quelle };
       });
       set({ formularInfo, dokumente });
+      // für die Projektübersicht merken – nur mit gelesener formulare.json und allen Formularen zerlegt
+      if (st.projektdatei && infos.length >= s.formulare.length) {
+        const k = projektSchluessel(projekt);
+        const alt = st.projektStatus[k];
+        const neu = projektStatusAus(st.projektdatei.umfang ? dokumente.map((d) => d.status) : [], fassung, Date.now());
+        if (!alt || JSON.stringify([alt.anzahl, alt.fassung]) !== JSON.stringify([neu.anzahl, neu.fassung]) || neu.zeit - alt.zeit > 60_000) {
+          const projektStatus = { ...st.projektStatus, [k]: neu };
+          schreiben(PROJEKTSTATUS, projektStatus);
+          set({ projektStatus });
+        }
+      }
     },
 
     fassungWaehlen: async (name, anlegen = false) => {

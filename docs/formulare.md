@@ -18,9 +18,15 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Formularfläche.
 - **Einstellungen (⚙)** als eigene Ansicht mit Ebenen: **Ordner** (FORMA-Projekte, Projektordner, angezeigte
   Pfade), **Büro & Stammdaten**, **Adressbuch**, **Formulare**, **Antrag & Export** und **Projektdatei (.oap)** (siehe unten).
-- **Projekt wählen:** links in der Liste (Suche nach Kürzel oder Titel) oder von überall mit
-  <kbd>Strg</kbd>+<kbd>K</kbd> (Schnellwahl: Kürzel tippen, Enter). Ein gewähltes Projekt steht oben links;
-  „Wechseln“ öffnet die Schnellwahl.
+- **Projektübersicht:** Ohne gewähltes Projekt (und über „Wechseln“ oben links) zeigt der Inhalt alle Projekte
+  über die volle Fensterhöhe – vorne **Zuletzt geöffnet** (die letzten acht), darunter je **Quelle** (Ordner mit
+  FORMA-Projekten) eine Gruppe, beim Start eingeklappt. Jede Karte zeigt Kürzel, Titel, Anzahl der Formulare,
+  letzte Änderung bzw. wann zuletzt geöffnet, Marken für geöffnete Formulare (🔒), ungespeicherte Eingaben und
+  einen fehlenden Projektordner sowie den **Antragsstatus**: Farbpunkt (schlimmster Status, wie in der
+  Navigation), Balken je Status und „3/7 aktuell · BAUA 2“. Der Status stammt vom letzten Öffnen des Projekts
+  in dieser App („noch nicht geprüft“, solange es nicht offen war). Die Suche (Kürzel oder Titel) klappt die
+  passenden Quellen auf, Enter öffnet den ersten Treffer. Rechtsklick: Ordner zeigen, Pfad kopieren, aus
+  „Zuletzt geöffnet“ entfernen. Von überall sucht <kbd>Strg</kbd>+<kbd>K</kbd> (Schnellwahl) direkt.
 - **Formulare:** die Formulare des Projekts, ohne die alten Fassungen in `_archiv`. 🔒 heißt: anderswo geöffnet.
   ● heißt: nicht gespeicherte Eingaben.
 - **Formular hinzufügen** (＋ über den Formularen): Auswahl aus dem Vorlagenordner (Einstellungen › Antrag &

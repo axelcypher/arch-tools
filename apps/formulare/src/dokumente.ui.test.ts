@@ -93,13 +93,20 @@ async function oeffne(datei: string): Promise<HTMLElement> {
     root.render(createElement(App));
   });
   await warte();
-  await klick(knopf(host, 'BS9'));
+  await projektOeffnen(host, 'BS9');
   await warte();
   await klick(knopf(host, 'Berechnungen'));
   await warte();
   await klick(knopf(host, datei));
   await warte();
   return host;
+}
+
+/** Projekt in der Projektübersicht öffnen – eingeklappte Quellen vorher aufklappen */
+async function projektOeffnen(host: HTMLElement, kuerzel: string) {
+  const karte = () => host.querySelector<HTMLButtonElement>(`.pa-karte[data-projekt="${kuerzel}"]`);
+  if (!karte()) for (const g of host.querySelectorAll<HTMLButtonElement>('.pa-gruppe-kopf[aria-expanded="false"]')) await klick(g);
+  await klick(karte()!);
 }
 
 describe('Dokumente aus dem Projektordner', () => {

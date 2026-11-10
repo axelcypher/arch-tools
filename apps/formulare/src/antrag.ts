@@ -368,6 +368,52 @@ export const STATUS_TEXT: Record<Status, string> = {
   aktuell: 'liegt aktuell im Antragsordner',
 };
 
+/** Reihenfolge der Status vom besten zum schlimmsten (ohne „entfällt“) */
+export const STATUS_REIHE = ['aktuell', 'offen', 'unvollstaendig', 'fehlt'] as const;
+export type ZaehlStatus = (typeof STATUS_REIHE)[number];
+
+/** Antragsstatus eines Projekts, berechnet, als es zuletzt geöffnet war – für die Projektübersicht */
+export interface ProjektStatus {
+  /** Dokumente je Status (ohne „entfällt“); leer = kein Projektumfang festgelegt */
+  anzahl: Partial<Record<ZaehlStatus, number>>;
+  /** aktive Antragsfassung, z. B. „BAUA 2“ */
+  fassung: string;
+  /** berechnet (ms) */
+  zeit: number;
+}
+
+export function projektStatusAus(status: Status[], fassung: string, zeit: number): ProjektStatus {
+  const anzahl: ProjektStatus['anzahl'] = {};
+  for (const st of status) if (st !== 'entfaellt') anzahl[st] = (anzahl[st] ?? 0) + 1;
+  return { anzahl, fassung, zeit };
+}
+
+export const statusGesamt = (p: ProjektStatus) => STATUS_REIHE.reduce((n, st) => n + (p.anzahl[st] ?? 0), 0);
+
+/** Der schlimmste Status (für den Farbpunkt); null ohne Projektumfang */
+export function schlimmsterStatus(p: ProjektStatus): ZaehlStatus | null {
+  for (const st of [...STATUS_REIHE].reverse()) if (p.anzahl[st]) return st;
+  return null;
+}
+
+/** Gespeicherte Antragsstatus prüfen (je Projektschlüssel) */
+export function projektStatusLesen(roh: unknown): Record<string, ProjektStatus> {
+  if (!roh || typeof roh !== 'object' || Array.isArray(roh)) return {};
+  const out: Record<string, ProjektStatus> = {};
+  for (const [k, v] of Object.entries(roh as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object') continue;
+    const o = v as Record<string, unknown>;
+    if (typeof o.fassung !== 'string' || typeof o.zeit !== 'number' || !o.anzahl || typeof o.anzahl !== 'object') continue;
+    const anzahl: ProjektStatus['anzahl'] = {};
+    for (const st of STATUS_REIHE) {
+      const n = (o.anzahl as Record<string, unknown>)[st];
+      if (typeof n === 'number' && n > 0) anzahl[st] = Math.floor(n);
+    }
+    out[k] = { anzahl, fassung: o.fassung, zeit: o.zeit };
+  }
+  return out;
+}
+
 export interface Fuellstand {
   gefuellt: number;
   gesamt: number;

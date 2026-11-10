@@ -1,21 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { UmfangEintrag } from './antrag';
-import {
-  VORGABE_EXPORT,
-  anzeigeName,
-  dateiImAntrag,
-  dateiname,
-  einstellungenFuer,
-  externStatus,
-  fassungenAus,
-  formularStatus,
-  formularVon,
-  naechsteFassung,
-  passt,
-  projektDateiAus,
-  quelleVon,
-  standardFassung,
-} from './antrag';
+import { VORGABE_EXPORT, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -106,5 +91,23 @@ describe('Projektumfang: Dateien und Status', () => {
       aktiveFassung: 'BAUA 2',
       umfang: [{ id: 'u1', titel: 'Lageplan', art: 'extern', dateien: { BAUA: 'a.pdf' } }],
     });
+  });
+});
+
+describe('Antragsstatus für die Projektübersicht', () => {
+  it('zählt je Status (ohne „entfällt“), der schlimmste bestimmt den Farbpunkt', () => {
+    const st = projektStatusAus(['aktuell', 'offen', 'entfaellt', 'aktuell', 'unvollstaendig'], 'BAUA 2', 5);
+    expect(st).toEqual({ anzahl: { aktuell: 2, offen: 1, unvollstaendig: 1 }, fassung: 'BAUA 2', zeit: 5 });
+    expect(statusGesamt(st)).toBe(4);
+    expect(schlimmsterStatus(st)).toBe('unvollstaendig');
+    expect(schlimmsterStatus(projektStatusAus(['aktuell'], 'BAUA', 0))).toBe('aktuell');
+    expect(schlimmsterStatus(projektStatusAus([], 'BAUA', 0))).toBeNull();
+  });
+
+  it('gespeicherte Status werden geprüft', () => {
+    expect(projektStatusLesen({ a: { anzahl: { aktuell: 2, fehlt: -1, quatsch: 3 }, fassung: 'BAUA', zeit: 1 }, b: { fassung: 1 }, c: null })).toEqual({
+      a: { anzahl: { aktuell: 2 }, fassung: 'BAUA', zeit: 1 },
+    });
+    expect(projektStatusLesen('kaputt')).toEqual({});
   });
 });
