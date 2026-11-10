@@ -6,6 +6,7 @@ import { ANDOCKEN } from '@core/platform/rahmen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { UpdateKnopf } from '@core/ui/UpdateKnopf';
 import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
+import { sperrenFreigeben } from './sperren';
 import { useRahmen } from './store';
 
 const log = logger('rahmen');
@@ -21,6 +22,8 @@ export function App() {
   const desktop = isTauri();
   const { tabs, aktiv, status, fenster, oeffnen, waehlen, schliessen, setStatus, herausgeloest, angedockt, fensterZu } = useRahmen();
   const rahmen = useRef(new Map<string, HTMLIFrameElement>());
+  /** angedockte Fenster: ihr Schließen gibt keine Sperren mehr frei (die App läuft als Tab weiter) */
+  const angedocktGerade = useRef(new Set<string>());
   const [win, setWin] = useState<AppWindow | null>(null);
   const [maximiert, setMaximiert] = useState(false);
   const [menue, setMenue] = useState(false);
@@ -62,7 +65,11 @@ export function App() {
     let lebt = true;
     void import('@tauri-apps/api/event').then(async ({ listen }) => {
       const aus = await listen<{ app: string }>(ANDOCKEN, (e) => {
-        if (appInfo(e.payload.app)) angedockt(e.payload.app);
+        const id = e.payload.app;
+        if (!appInfo(id)) return;
+        angedocktGerade.current.add(id);
+        // erst freigeben, dann den Tab öffnen – der sperrt die geöffneten Formulare neu
+        void sperrenFreigeben(id).then(() => angedockt(id));
       });
       if (lebt) ende = aus;
       else aus();
@@ -91,12 +98,18 @@ export function App() {
 
   const herausloesen = async (id: string) => {
     const info = appInfo(id)!;
-    if (status[id]?.dirty && !window.confirm(`${info.name}: Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt. Herauslösen?`)) return;
+    const frage = info.zwischenstand
+      ? `${info.name}: Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt. Herauslösen?`
+      : `${info.name}: Ungespeicherte Änderungen gehen beim Herauslösen verloren – bitte vorher speichern. Trotzdem herauslösen?`;
+    if (status[id]?.dirty && !window.confirm(frage)) return;
     if (!desktop) {
       window.open(appAdresse(id, 'fenster'), `arch-tools-${id}`);
       herausgeloest(id);
       return;
     }
+    // Tab zu, Sperren frei – dann das Fenster, das die geöffneten Formulare neu sperrt
+    herausgeloest(id);
+    await sperrenFreigeben(id);
     try {
       const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
       const w = new WebviewWindow(fensterLabel(id), {
@@ -114,17 +127,22 @@ export function App() {
         fensterZu(id);
         oeffnen(id);
       });
-      void w.once('tauri://destroyed', () => fensterZu(id));
-      herausgeloest(id);
+      void w.once('tauri://destroyed', () => {
+        fensterZu(id);
+        if (!angedocktGerade.current.delete(id)) void sperrenFreigeben(id);
+      });
       log.info(`Herausgelöst: ${info.name}`);
     } catch (e) {
       log.error(`Herauslösen fehlgeschlagen: ${info.name}`, e);
+      fensterZu(id);
+      oeffnen(id);
     }
   };
 
   const tabSchliessen = (id: string) => {
     if (status[id]?.dirty && !window.confirm(`${appInfo(id)?.name}: Ungespeicherte Änderungen verwerfen und schließen?`)) return;
     schliessen(id);
+    void sperrenFreigeben(id);
   };
 
   const fensterSchliessen = async () => {

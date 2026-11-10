@@ -9,10 +9,12 @@ Programm und einem Fenster**. Sie kann nichts weiter, als zwischen den Apps zu w
   geöffnete Projekt und ● bei ungespeicherten Änderungen; Schließen (× oder mittlere Maustaste) fragt dann nach.
   Welche Tabs offen waren, steht beim nächsten Start wieder da.
 - **Herauslösen:** ⧉ am Tab öffnet die App in einem **eigenen Fenster** (z. B. auf dem zweiten Bildschirm) – mit
-  eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Ungespeicherte Eingaben
-  gehen dabei nicht verloren: Die Apps sichern laufend einen Zwischenstand und stellen ihn im neuen Fenster wieder
-  her. Jede App ist höchstens einmal offen – ist sie herausgelöst, holt „+“ bzw. die Startseite ihr Fenster nach
-  vorn.
+  eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App startet dabei neu:
+  Flächenrechner, GRZ-Nachweis, Kostenermittlung und Entzerrung stellen ungespeicherte Eingaben aus ihrem
+  Zwischenstand wieder her; in Projektordner und Formulare vorher speichern (der Rahmen fragt nach). Jede App ist
+  höchstens einmal offen – ist sie herausgelöst, holt „+“ bzw. die Startseite ihr Fenster nach vorn.
+- **Sperrdateien der Formulare** (`.frmtmp`, für FORMA und die Kollegen) gibt der Rahmen frei, sobald der
+  Formulare-Tab bzw. sein Fenster zu ist oder umzieht – nicht erst beim Beenden des Programms.
 - **Updates** macht der Rahmen für alle Apps zusammen (Knopf in der Titelleiste, Manifest `suite.json`); die
   Update-Knöpfe der einzelnen Apps sind im Rahmen ausgeblendet.
 

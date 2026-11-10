@@ -6,6 +6,14 @@
 include!("../../../../packages/core/tauri/commands.rs");
 include!("../../../formulare/src-tauri/src/befehle.rs");
 
+/// Die Formulare-App im Tab bzw. Fenster ist zu oder zieht um (Herauslösen, Andocken): ihre Sperrdateien freigeben.
+/// Sonst hielte das Programm sie bis zum Beenden – die nächste Formulare-Instanz sähe die Formulare als „hier
+/// geöffnet“, FORMA als gesperrt. Formulare läuft im Rahmen höchstens einmal, also sind es genau ihre Sperren.
+#[tauri::command]
+fn rahmen_formulare_freigeben(app: tauri::AppHandle) {
+    formulare_beim_beenden(&app);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
@@ -57,7 +65,9 @@ pub fn run() {
             prokarte_read,
             prokarte_write,
             machine_info,
-            open_path
+            open_path,
+            // Rahmen
+            rahmen_formulare_freigeben
         ])
         .setup(|app| {
             log::info!("arch-tools {} gestartet", app.package_info().version);
