@@ -190,7 +190,8 @@ export function einheiten(a: Abschnitt, profil: FormularProfil, k?: BedingungKon
     const e = gruppenEinheit(g, new Set());
     if (e.felder.length) out.push(e);
   }
-  const frei = a.felder.filter((f) => !gruppiert.has(f.schluessel) && profil.zaehlt[f.schluessel] !== false);
+  // von FORMA berechnete Felder zählen nie
+  const frei = a.felder.filter((f) => !gruppiert.has(f.schluessel) && profil.zaehlt[f.schluessel] !== false && !f.berechnet);
   for (const f of frei) if (f.art === 'text') out.push({ id: f.schluessel, felder: [f], art: 'text', regel: 'eins' });
   for (const z of zeilen(frei.filter((f) => f.art === 'kreuz'))) out.push({ id: z[0].schluessel, felder: z, art: 'auswahl', regel: 'eins' });
   const erstes = (e: Einheit) => Math.min(...e.felder.map((f) => index.get(f.schluessel)!));

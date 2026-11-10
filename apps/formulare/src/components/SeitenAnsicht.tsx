@@ -363,7 +363,7 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${autofill ? ` ${autofill}` : ''}`}
           style={{ ...pos, ...schrift(k), textAlign: AUSRICHTUNG[bezeichner(k.o, 'Alignment') ?? ''] }}
           value={typeof wert === 'string' ? wert : ''}
-          disabled={gesperrt}
+          disabled={gesperrt || feld.berechnet}
           title={autofill ? `${titel} – ${AUTOFILL_TEXT[autofill]}` : titel}
           aria-label={feld.beschriftung}
           data-feld={feld.schluessel}
@@ -385,7 +385,14 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           style={{ ...pos, ...schrift(k) }}
           title={entfaellt ? `${titel} – nicht erforderlich` : titel}
         >
-          <input type="checkbox" checked={wert === true} disabled={gesperrt} aria-label={feld.beschriftung} data-feld={feld.schluessel} onChange={(e) => wertSetzen(feld, e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={wert === true}
+            disabled={gesperrt || feld.berechnet}
+            aria-label={feld.beschriftung}
+            data-feld={feld.schluessel}
+            onChange={(e) => wertSetzen(feld, e.target.checked)}
+          />
           {caption && <span>{caption}</span>}
         </label>
       );

@@ -1,0 +1,150 @@
+/**
+ * Anlage I/7 zur VV BauPrüfVO – Baubeschreibung (§ 5 Absatz 1 BauPrüfVO). Die Stände 2024G und 2026I haben
+ * dieselben Felder.
+ *
+ * Nach dem Vordruck: „Im vereinfachten Baugenehmigungsverfahren sind Angaben zu den gekennzeichneten Ziffern 8 bis 10
+ * nicht erforderlich.“ Nr. 11 nur, „sofern wegen Ortssatzungen oder Denkmalschutz erforderlich“. Barrierefreies
+ * Bauen (Nr. 4) betrifft Gebäude der Gebäudeklassen 3 bis 5 mit Wohnungen und öffentlich zugängliche Anlagen
+ * (§ 49 BauO NRW 2018). Die Stellplätze mit Leitungsinfrastruktur (Nr. 6, GEIG) gelten erst ab 6 bzw. 7
+ * Stellplätzen – keine Pflichtangabe. Summen und die Kopfzeilen von Blatt 2 und 3 rechnet FORMA selbst.
+ */
+
+import type { FormularProfil } from '../profil';
+import { zusammen } from './antrag';
+import { angekreuzt, fuer, gruppeV, ist, istNicht, oder, s, wenn, zaehltNicht } from './hilfen';
+
+const s0 = s(0);
+const s1 = s(1);
+const nichtVereinfacht = wenn(istNicht('Verfahren', 'vereinfachtes Verfahren'));
+
+export const nw010010: FormularProfil = zusammen({
+  abschnitte: {
+    '0:Panel1': { titel: 'Bauantrag, Bauherrschaft, Grundstück' },
+    '0:Panel2': { titel: 'Nr. 1 Bezeichnung des Vorhabens' },
+    '0:Panel3': { titel: 'Nr. 2 Art der Nutzung' },
+    '0:Panel5': { titel: 'Nr. 3 Angaben zum Grundstück' },
+    '0:Panel7': { titel: 'Nr. 4 Barrierefreies Bauen' },
+    '0:Panel11': { titel: 'Nr. 5 Anzahl der notwendigen Stellplätze' },
+    '0:Panel13': { titel: 'Nr. 6 Stellplätze mit Leitungsinfrastruktur für Elektromobilität (nur wenn gefordert)' },
+    '1:Panel1': { titel: 'Kopf Blatt 2' },
+    '1:Panel2': { titel: 'Nr. 7 Anzahl der notwendigen Fahrradstellplätze' },
+    '1:Panel4': { titel: 'Nr. 8 Schutz gegen schädliche Einflüsse', bedingung: nichtVereinfacht },
+    '1:Panel6': { titel: 'Nr. 9 Wärmeerzeugung, Energiebereitstellung, Brennstofflagerung', bedingung: nichtVereinfacht },
+    '1:Panel8': { titel: 'Nr. 10 Lüftung', bedingung: nichtVereinfacht },
+    '1:Panel10': { titel: 'Nr. 11 Weitere Angaben (nur bei Ortssatzung oder Denkmalschutz)' },
+    '2:Panel1': { titel: 'Kopf Blatt 3' },
+    '2:Panel2': { titel: 'Nr. 12 Sonstiges' },
+    '2:Panel3': { titel: 'Entwurfsverfassende' },
+    '2:Panel4': { titel: 'Genehmigungsvermerk (füllt die Bauaufsichtsbehörde aus)' },
+  },
+  feldTitel: {
+    '0:Memo1': 'Bauantrag / Antrag auf Vorbescheid vom (Datum)',
+    '0:Memo2': 'Bauherrschaft',
+    '0:Memo3': 'Grundstück (Ort, Straße, Hausnummer)',
+    '0:Memo4': 'Bezeichnung des Vorhabens',
+    '0:Memo5': 'Art der Nutzung',
+    '0:CheckBox1': 'Betriebsbeschreibung ist beigefügt',
+    '0:Memo6': 'Angaben zum Grundstück',
+    '0:CheckBox2': 'Geschützter Baumbestand vorhanden',
+    '0:Memo7': 'Geschützter Baumbestand (Angaben)',
+    '0:CheckBox3': 'Trinkwasser: durch zentrale Wasserversorgung',
+    '0:CheckBox4': 'Trinkwasser: durch Brunnen',
+    '0:Memo8': 'Löschwasserversorgung (Art und Entfernung zur Entnahmestelle)',
+    '0:CheckBox5': 'Entwässerung: durch öffentliche Sammelkanalisation',
+    '0:CheckBox8': 'Sammelkanalisation vorhanden',
+    '0:CheckBox9': 'Sammelkanalisation fertiggestellt bis zum',
+    '0:Memo9': 'Sammelkanalisation fertiggestellt bis zum (Datum)',
+    '0:CheckBox6': 'Entwässerung: durch Kleinkläranlage',
+    '0:CheckBox7': 'Entwässerung: durch sonstige Anlage',
+    '0:Memo10': 'Sonstige Entwässerungsanlage (Art)',
+    '0:Memo11': 'Grundstück: Sonstiges',
+    '0:CheckBox10': 'Barrierefreiheit eingehalten bei:',
+    '0:CheckBox11': 'Gebäudeklasse 3 bis 5 mit Wohnungen',
+    '0:CheckBox12': 'öffentlich zugänglichen baulichen Anlagen',
+    '0:CheckBox13': 'Unverhältnismäßiger Mehraufwand aufgrund von:',
+    '0:CheckBox14': 'schwierigen Geländeverhältnissen',
+    '0:CheckBox15': 'ungünstiger vorhandener Bebauung (Nachweis beigefügt)',
+    '0:Memo12': 'Stellplätze auf dem Baugrundstück: in Garagen',
+    '0:Memo13': 'Stellplätze auf dem Baugrundstück: im Freien',
+    '0:Memo14': 'Stellplätze auf dem Baugrundstück (Summe)',
+    '0:Memo15': 'Stellplätze auf fremdem Grundstück mit Baulast',
+    '0:Memo16': 'Stellplätze durch Ablösung',
+    '0:Memo17': 'Stellplätze insgesamt',
+    '0:Memo18': 'Stellplätze davon für Menschen mit Behinderungen',
+    '0:Memo19': 'Wohngebäude über 5 Stellplätze: Stellplätze mit Leitungsinfrastruktur (§ 6 GEIG)',
+    '0:Memo20': 'Nichtwohngebäude über 6 Stellplätze: Stellplätze mit Leitungsinfrastruktur (§ 7 GEIG)',
+    '0:Memo21': 'Nichtwohngebäude über 6 Stellplätze: Anzahl Ladepunkte',
+    '0:CheckBox16': 'Ladepunkte gesammelt in einer oder mehreren Liegenschaften (§ 10 Absatz 2 und 3 GEIG)',
+    '1:Memo1': 'Bauherrschaft (Blatt 2)',
+    '1:Memo2': 'Bauantrag vom (Blatt 2)',
+    '1:Memo3': 'Fahrradstellplätze auf dem Baugrundstück: in Garagen',
+    '1:Memo4': 'Fahrradstellplätze auf dem Baugrundstück: im Freien',
+    '1:Memo5': 'Fahrradstellplätze auf dem Baugrundstück (Summe)',
+    '1:Memo6': 'Fahrradstellplätze auf fremdem Grundstück mit Baulast',
+    '1:Memo7': 'Fahrradstellplätze durch Ablösung',
+    '1:Memo8': 'Fahrradstellplätze insgesamt',
+    '1:Memo9': 'Fahrradstellplätze davon für Menschen mit Behinderungen',
+    '1:Memo10': 'Schutz gegen schädliche Einflüsse',
+    '1:Memo11': 'Gesamt-Nennwärmeleistung (kW)',
+    '1:CheckBox1': 'Heizraum',
+    '1:CheckBox2': 'Aufstellraum',
+    '1:CheckBox3': 'Brennstoff: fest',
+    '1:CheckBox4': 'Brennstoff: Heizöl',
+    '1:Memo12': 'Lagermenge fester Brennstoff / Heizöl (m³)',
+    '1:CheckBox5': 'Brennstoff: Gas',
+    '1:CheckBox6': 'Brennstoff: Flüssiggas',
+    '1:Memo13': 'Lagermenge Gas / Flüssiggas (m³)',
+    '1:CheckBox7': 'Lager: unterirdischer Lagerbehälter',
+    '1:CheckBox8': 'Lager: Lagerraum',
+    '1:CheckBox9': 'Lager: sonstiger Raum',
+    '1:Memo14': 'Lager: sonstiger Raum (Angabe)',
+    '1:CheckBox10': 'Lüftungsanlage für Mittel- oder Großgarage',
+    '1:Memo15': 'Lüftungsanlage Mittel-/Großgarage: Art der Anlage',
+    '1:CheckBox11': 'Sonstige genehmigungspflichtige Lüftungsanlage',
+    '1:Memo16': 'Sonstige Lüftungsanlage: Art der Anlage',
+    '1:CheckBox12': 'Lüftungsanlage überbrückt Gebäudetrennwände oder Geschossdecken',
+    '1:CheckBox13': 'Schematische Darstellung der Lüftungsanlagen ist beigefügt',
+    '1:Memo17': 'Weitere Angaben (Ortssatzung, Denkmalschutz)',
+    '1:Memo18': 'Äußere Gestaltung: Wände',
+    '1:Memo19': 'Äußere Gestaltung: Dachflächen und Dachaufbauten',
+    '1:Memo20': 'Äußere Gestaltung: Türen und Fenster',
+    '1:Memo21': 'Spielplatz für Kleinkinder (Größe und Ausstattung)',
+    '1:Memo22': 'Befestigung, Gestaltung und Eingrünung der Zufahrten und Stellplätze',
+    '1:Memo23': 'Gestaltung und Bepflanzung der nicht überbauten Flächen',
+    '2:Memo1': 'Bauherrschaft (Blatt 3)',
+    '2:Memo2': 'Bauantrag vom (Blatt 3)',
+    '2:Memo3': 'Sonstiges',
+    '2:Memo4': 'Entwurfsverfassende: Name, Vorname, Büro',
+    '2:Memo5': 'Entwurfsverfassende: Straße, Hausnummer',
+    '2:Memo6': 'Entwurfsverfassende: PLZ, Ort',
+    '2:Memo7': 'Entwurfsverfassende: Datum, Unterschrift',
+    '2:Memo8': 'Genehmigungsvermerk',
+  },
+  zaehlt: {
+    ...zaehltNicht('0:Memo6', '0:CheckBox2', '0:Memo11', '0:Memo18', '0:Memo19', '0:Memo20', '0:Memo21', '0:CheckBox16', '1:Memo9', '2:Memo3', '2:Memo8'),
+    // Nr. 11: nur bei Ortssatzung oder Denkmalschutz
+    ...zaehltNicht(...s1('Memo17', 'Memo18', 'Memo19', 'Memo20', 'Memo21', 'Memo22', 'Memo23')),
+    // Nr. 9 Brennstofflagerung und Nr. 10 Lüftung: nur, wenn es so etwas gibt
+    ...zaehltNicht(...s1('CheckBox3', 'CheckBox4', 'Memo12', 'CheckBox5', 'CheckBox6', 'Memo13', 'CheckBox7', 'CheckBox8', 'CheckBox9', 'Memo14')),
+    ...zaehltNicht(...s1('CheckBox10', 'Memo15', 'CheckBox11', 'Memo16', 'CheckBox12', 'CheckBox13')),
+  },
+  gruppen: [
+    gruppeV('trinkwasser', 'Trinkwasserversorgung', 'eins', s0('CheckBox3', 'CheckBox4')),
+    gruppeV('entwaesserung', 'Grundstücksentwässerung', 'eins', s0('CheckBox5', 'CheckBox6', 'CheckBox7')),
+    gruppeV('kanal', 'Sammelkanalisation vorhanden oder fertiggestellt bis', 'eins', s0('CheckBox8', 'CheckBox9'), { bedingung: wenn(angekreuzt('0:CheckBox5')) }),
+    gruppeV('barrierefrei', 'Barrierefreiheit eingehalten oder Mehraufwand', 'eins', s0('CheckBox10', 'CheckBox11', 'CheckBox12', 'CheckBox13', 'CheckBox14', 'CheckBox15'), {
+      bedingung: oder(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude')),
+    }),
+    gruppeV('stellplaetze', 'Anzahl der notwendigen Stellplätze', 'eins', s0('Memo12', 'Memo13', 'Memo15', 'Memo16')),
+    gruppeV('fahrrad', 'Anzahl der notwendigen Fahrradstellplätze', 'eins', s1('Memo3', 'Memo4', 'Memo6', 'Memo7')),
+    gruppeV('heizung', 'Heizraum oder Aufstellraum', 'eins', s1('CheckBox1', 'CheckBox2')),
+  ],
+  bedingungen: {
+    '0:Memo7': wenn(angekreuzt('0:CheckBox2')),
+    '0:Memo9': wenn(angekreuzt('0:CheckBox9')),
+    '0:Memo10': wenn(angekreuzt('0:CheckBox7')),
+    '0:CheckBox1': wenn(ist('Gebäudeart', 'Nichtwohngebäude')),
+    ...fuer(s1('Memo15'), wenn(angekreuzt('1:CheckBox10'))),
+    ...fuer(s1('Memo16'), wenn(angekreuzt('1:CheckBox11'))),
+  },
+});

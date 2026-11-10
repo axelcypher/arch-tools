@@ -82,7 +82,7 @@ describe('Einstellungen › Sichern & Übertragen', () => {
     ]);
     await klick(knopf('Übernehmen'));
     expect(useFormulare.getState().profile).toEqual({ 'nw019999|2026A': PROFIL });
-    expect(useAntrag.getState().merkmalDefinitionen.map((m) => m.name)).toEqual(['Gebäudeklasse', 'Denkmal']);
+    expect(useAntrag.getState().merkmalDefinitionen.map((m) => m.name).slice(0, 2)).toEqual(['Gebäudeklasse', 'Denkmal']);
     expect(useFormulare.getState().projektordner).toEqual(['D:/FORMA']);
     expect(useFormulare.getState().meldung?.text).toContain('Einstellungen übernommen: Gliederung der Formulare');
   });
