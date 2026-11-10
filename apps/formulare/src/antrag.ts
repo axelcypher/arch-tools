@@ -253,7 +253,7 @@ export interface UmfangEintrag {
   bedingung?: Bedingung;
 }
 
-/** Angaben der App zum Projekt in `formulare.json` (im FORMA-Projekt, für alle im Büro gleich) */
+/** Angaben der App zum Projekt – Abschnitt „formulare“ der Projektdatei (.oap), für alle im Büro gleich */
 export interface ProjektDatei {
   /** aktive Antragsfassung (Ordnername) */
   aktiveFassung?: string;

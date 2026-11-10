@@ -4,15 +4,13 @@
  * Kostenermittlung und Projektordner (ZIP mit `manifest.json` und `projekt.json`); die Stammdaten stehen in
  * `projekt.json` unter `meta`: Projektcode, Vorhaben, Aktenzeichen, Adresse des Vorhabens, Grundstück, Bauherr.
  *
- * Geschrieben wird gezielt: nur `meta` in `projekt.json` ändert sich, alle anderen Einträge des Archivs (Pläne,
- * Modelle, Quelldateien, Manifest) werden unverändert übernommen.
+ * Gelesen, gezielt geändert und angelegt wird über den gemeinsamen Zugriff in packages/core (projektdatei.ts,
+ * platform/projektordner.ts): nur `projekt.json` ändert sich, alle anderen Einträge des Archivs bleiben gleich.
+ * Hier steht nur die Zuordnung der Angaben der Projektkarte zu `meta`.
  */
 
-import type { ZipOptions } from 'fflate';
-import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { ARCHIV_FORMAT, isZip, readProjectFile, writeArchive } from '@core/archive';
+import { readProjectFile } from '@core/archive';
 import type { Kontakt, KontaktArt, ProjectMeta } from '@core/model';
-import { createProject } from '@core/model';
 import type { Angabe } from './projektdaten';
 
 /** Angaben, die die Projektdatei führt (alle mit Gegenstück in der Projektkarte) */
@@ -156,38 +154,3 @@ export function oapLesen(bytes: Uint8Array): OapInhalt {
   const p = readProjectFile(bytes);
   return { name: p.name, meta: p.meta };
 }
-
-/**
- * Stammdaten in einer vorhandenen Projektdatei ersetzen: nur `meta` in `projekt.json` ändert sich; die übrigen
- * Einträge werden mit derselben Kompression wieder geschrieben (Pläne, PDF und Excel unkomprimiert wie im
- * Original).
- */
-export function oapMetaSetzen(bytes: Uint8Array, meta: ProjectMeta): Uint8Array {
-  if (!isZip(bytes)) throw new Error('Die Projektdatei ist kein Archiv (ältere JSON-Fassung) – bitte einmal im Flächenrechner öffnen und speichern');
-  const zip = unzipSync(bytes);
-  const manifest = JSON.parse(strFromU8(zip['manifest.json'] ?? new Uint8Array())) as { format?: string; inhalt?: { pfad: string; art: string }[] };
-  if (manifest.format !== ARCHIV_FORMAT) throw new Error('keine Projektdatei des Flächenrechners');
-  const projekt = JSON.parse(strFromU8(zip['projekt.json'] ?? new Uint8Array())) as Record<string, unknown>;
-  projekt.meta = meta;
-  const unkomprimiert = new Set((manifest.inhalt ?? []).filter((e) => e.art === 'plan' || e.art === 'pdf' || e.art.startsWith('vorlage')).map((e) => e.pfad));
-  const dateien: Record<string, [Uint8Array, ZipOptions]> = {};
-  for (const [pfad, daten] of Object.entries(zip)) {
-    dateien[pfad] = pfad === 'projekt.json' ? [strToU8(JSON.stringify(projekt)), { level: 6 }] : [daten, { level: unkomprimiert.has(pfad) ? 0 : 6 }];
-  }
-  return zipSync(dateien);
-}
-
-/** Neue, leere Projektdatei mit den Stammdaten (wie sie die App „Projektordner“ anlegt) */
-export function neueOap(name: string, meta: ProjectMeta): Uint8Array {
-  const p = createProject(name);
-  p.meta = meta;
-  return writeArchive(p, { app: 'Formulare' });
-}
-
-/** Pfad einer neuen Projektdatei aus der Vorlage („Planung/Berechnungen/{Kürzel}.oap“) */
-export const oapPfad = (vorlage: string, kuerzel: string) =>
-  vorlage
-    .replace(/\{k(ü|ue)rzel\}/gi, kuerzel)
-    .replace(/\\/g, '/')
-    .replace(/^\/+/, '')
-    .trim();

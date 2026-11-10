@@ -8,7 +8,7 @@ import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
 import { AntragEinstellungen } from './AntragEinstellungen';
 import { SicherungEinstellungen } from './SicherungEinstellungen';
 import type { EinstellungsBereich } from '../store';
-import { VORGABE_OAP, useFormulare } from '../store';
+import { VORGABE_OAP_PFAD, useFormulare } from '../store';
 import { OAP_ANGABEN } from '../oap';
 import type { SymbolName } from './Symbol';
 import { Symbol } from './Symbol';
@@ -159,8 +159,8 @@ function Ordner() {
         titel="Projektordner"
         text={
           <>
-            Ordner mit den eigentlichen Projektordnern (z. B. <code>Z:\Projekte</code>). Zuordnung über das Kürzel – „BS5 Birkenstraße 5“ oder „JJ H24 …“ –, zwei Ebenen
-            tief (auch in Unterordnern wie der Akquise).
+            Stammordner mit den eigentlichen Projektordnern (z. B. <code>Z:\Projekte</code>) – gemeinsam für alle Apps (gemeinsamer Konfigurationsordner). Zuordnung
+            über das Kürzel – „BS5 Birkenstraße 5“ oder „JJ H24 …“ –, zwei Ebenen tief (auch in Unterordnern wie der Akquise).
           </>
         }
       >
@@ -419,8 +419,8 @@ function Formulare() {
 }
 
 function Projektdaten() {
-  const neu = useFormulare((s) => s.oapNeu);
-  const { setOapNeu } = useFormulare.getState();
+  const neu = useFormulare((s) => s.oapVorlage);
+  const { setOapVorlage } = useFormulare.getState();
   return (
     <>
       <h2>Projektdatei (.oap)</h2>
@@ -431,10 +431,18 @@ function Projektdaten() {
         abgleichen; beim Speichern der Projektkarte werden geänderte Angaben in die Projektdatei eingetragen, alles andere darin bleibt unverändert. Eine alte
         Projektdaten.xlsx wird nur noch gelesen, um ihre Angaben zu übernehmen.
       </p>
-      <Karte titel="Neue Projektdatei" text="Fehlt die Projektdatei, wird sie beim Speichern der Projektkarte hier angelegt (relativ zum Projektordner, {Kürzel} als Platzhalter). Leer = keine anlegen.">
+      <Karte
+        titel="Neue Projektdatei"
+        text={
+          <>
+            Fehlt die Projektdatei, legt sie der Stammdaten-Dialog hier an – relativ zum Projektordner, Platzhalter <code>{'{nummer}'}</code> (Kürzel),{' '}
+            <code>{'{kurzname}'}</code> und <code>{'{jahr}'}</code>. Die Einstellung gilt für alle Apps (gemeinsamer Konfigurationsordner).
+          </>
+        }
+      >
         <div className="es-zeile">
-          <input value={neu} placeholder={VORGABE_OAP} onChange={(e) => setOapNeu(e.target.value)} aria-label="Pfad für neue Projektdateien" />
-          {neu !== VORGABE_OAP && <button onClick={() => setOapNeu(VORGABE_OAP)}>Vorgabe</button>}
+          <input defaultValue={neu} key={neu} placeholder={VORGABE_OAP_PFAD} onBlur={(e) => e.target.value.trim() !== neu && setOapVorlage(e.target.value)} aria-label="Pfad für neue Projektdateien" />
+          {neu !== VORGABE_OAP_PFAD && <button onClick={() => setOapVorlage(VORGABE_OAP_PFAD)}>Vorgabe</button>}
         </div>
       </Karte>
       <Karte titel="Angaben">

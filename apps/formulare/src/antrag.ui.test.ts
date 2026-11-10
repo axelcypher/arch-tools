@@ -16,11 +16,22 @@ import { formularPdf } from './forma/pdf';
 import { pdfjs } from './dokumente/pdf';
 import { useAufgeklappt } from './components/ProjektUebersicht';
 import { useFormulare } from './store';
+import { readProjectFile, writeArchive } from '@core/archive';
+import { createProject, leereMeta } from '@core/model';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const MUSTER = new Uint8Array(readFileSync(path.resolve(__dirname, '__fixtures__/muster.frmsjf')));
 const PROJEKT = 'Z:/Projekte/BS9 Musterstraße 9';
+/** die Projektdatei im Projektordner – dort steht der Abschnitt „formulare“ */
+const OAP = `${PROJEKT}/Planung/Berechnungen/BS9.oap`;
+const neueOap = () => {
+  const p = createProject('Musterstraße 9');
+  p.meta = { ...leereMeta(), projektcode: 'BS9' };
+  return writeArchive(p);
+};
+/** Abschnitt „formulare“ der Projektdatei */
+const abschnitt = () => readProjectFile(ds.dateien.get(OAP)!).erweiterungen?.formulare as Record<string, unknown> | undefined;
 const KATALOG = [
   { id: 'muster', titel: 'Musterformular', art: 'intern' as const, formular: 'Muster', vorgewaehlt: true },
   { id: 'bauantrag', titel: 'Bauantrag', art: 'intern' as const, formular: 'Bauantrag', vorgewaehlt: true },
@@ -42,6 +53,7 @@ beforeEach(() => {
   ds.ordner.add(`${PROJEKT}/TÖB/BAUA 2`);
   ds.dateien.set(`${PROJEKT}/Planung/BS9 Lageplan.pdf`, new Uint8Array([1]));
   ds.dateien.set(`${PROJEKT}/Planung/Notiz.txt`, new Uint8Array([1]));
+  ds.dateien.set(OAP, neueOap());
   useFormulare.setState({
     ds,
     projektordner: ['C:/FORMA'],
@@ -64,6 +76,10 @@ beforeEach(() => {
     meldung: null,
     ansicht: 'seite',
     zuletzt: [],
+    ordnerWahl: {},
+    oapVorlage: 'Planung/Berechnungen/{nummer}.oap',
+    stammdatenDialog: null,
+    ordnerDialog: null,
   });
   useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [], projektStatus: {} });
   useAufgeklappt.setState({ offen: [] });
@@ -155,12 +171,13 @@ describe('Antragsfassung und Export', () => {
     expect([...ds.dateien.keys()].some((k) => k.startsWith(`${PROJEKT}/Planung/BS9 GP`) && k.endsWith('Muster.pdf'))).toBe(true);
   });
 
-  it('neue Antragsfassung anlegen: Ordner entsteht, sie wird aktiv und in formulare.json vermerkt', async () => {
+  it('neue Antragsfassung anlegen: Ordner entsteht, sie wird aktiv und in der Projektdatei vermerkt', async () => {
     const host = await projektBS9();
     await klick(host.querySelector<HTMLButtonElement>('.an-fassung-knopf')!);
     await klick(menuePunkt('Neue Fassung „BAUA 3“'));
     expect(ds.ordner.has(`${PROJEKT}/TÖB/BAUA 3`)).toBe(true);
-    expect(JSON.parse(new TextDecoder().decode(ds.dateien.get('C:/FORMA/BS9/formulare.json')!))).toEqual({ aktiveFassung: 'BAUA 3' });
+    expect(abschnitt()).toEqual({ aktiveFassung: 'BAUA 3' });
+    expect(ds.dateien.has('C:/FORMA/BS9/formulare.json')).toBe(false);
     expect(host.querySelector('.an-fassung')?.textContent).toContain('BAUA 3');
   });
 });
@@ -172,7 +189,7 @@ describe('Projektumfang und Vollständigkeit', () => {
     await warte();
     // ohne Projektkarte (keine sj_prokarte.sdb) steht der Projektumfang direkt darunter
     await klick(knopf(host, 'Aus dem Katalog festlegen'));
-    const datei = JSON.parse(new TextDecoder().decode(ds.dateien.get('C:/FORMA/BS9/formulare.json')!));
+    const datei = abschnitt() as { umfang: { id: string }[] };
     expect(datei.umfang.map((u: { id: string }) => u.id)).toEqual(['muster', 'bauantrag', 'lageplan']);
 
     // Muster: 3 von 5 Angaben – rot; Bauantrag fehlt – grau; Lageplan: Quelle da, nicht im Antragsordner – gelb
@@ -323,7 +340,7 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
       gk.dispatchEvent(new Event('change', { bubbles: true }));
     });
     await warte();
-    expect(JSON.parse(new TextDecoder().decode(ds.dateien.get('C:/FORMA/BS9/formulare.json')!)).merkmale).toEqual({ Gebäudeklasse: '3' });
+    expect(abschnitt()!.merkmale).toEqual({ Gebäudeklasse: '3' });
 
     await klick(knopf(host, '001-Muster'));
     expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')).toBeNull();
@@ -448,5 +465,61 @@ describe('Projektübersicht', () => {
     await klick(knopf(host, 'Zurück zu BS9'));
     expect(host.querySelector('.pa')).toBeNull();
     expect(host.querySelector('.fo-projektkopf')!.textContent).toContain('BS9');
+  });
+});
+
+describe('Angaben zum Antrag in der Projektdatei (.oap)', () => {
+  const dialog = (name: string) => document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${name}"]`);
+
+  it('eine alte formulare.json wird gelesen und einmalig in die Projektdatei übernommen – sie selbst bleibt liegen', async () => {
+    const alt = new TextEncoder().encode(JSON.stringify({ aktiveFassung: 'BAUA', merkmale: { Gebäudeklasse: '2' } }));
+    ds.dateien.set('C:/FORMA/BS9/formulare.json', alt);
+    const host = await projektBS9();
+    await warte();
+    expect(abschnitt()).toEqual({ aktiveFassung: 'BAUA', merkmale: { Gebäudeklasse: '2' } });
+    expect(ds.dateien.get('C:/FORMA/BS9/formulare.json')).toBe(alt);
+    expect(useAntrag.getState().projektdatei).toMatchObject({ aktiveFassung: 'BAUA' });
+    expect(host.textContent).toContain('in die Projektdatei übernommen');
+    // die Stammdaten der Projektdatei bleiben, wie sie sind
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.projektcode).toBe('BS9');
+  });
+
+  it('ohne Projektdatei fragt der Stammdaten-Dialog die Angaben ab – danach steht der Projektumfang in der neuen Datei', async () => {
+    ds.dateien.delete(OAP);
+    const host = await projektBS9();
+    expect(knopf(host, 'Keine Projektdatei')).toBeDefined();
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await klick(knopf(host, 'Aus dem Katalog festlegen'));
+    const sd = dialog('Projektdatei für BS9 anlegen')!;
+    expect(sd).not.toBeNull();
+    expect(ds.dateien.has(OAP)).toBe(false);
+    await klick(knopf(sd, 'Projektdatei anlegen'));
+    await warte();
+    expect(dialog('Projektdatei für BS9 anlegen')).toBeNull();
+    expect((abschnitt()!.umfang as { id: string }[]).map((u) => u.id)).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.projektcode).toBe('BS9');
+    expect(knopf(host, 'Keine Projektdatei')).toBeUndefined();
+    expect(ds.dateien.has('C:/FORMA/BS9/formulare.json')).toBe(false);
+  });
+
+  it('ohne Projektordner: im Stammordner anlegen und zuordnen, dann Stammdaten – der Projektumfang landet in der neuen Projektdatei', async () => {
+    for (const k of [...ds.dateien.keys()]) if (k.startsWith(PROJEKT)) ds.dateien.delete(k);
+    ds.ordner.clear();
+    const host = await projektBS9();
+    expect(knopf(host, 'Kein Projektordner')).toBeDefined();
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await klick(knopf(host, 'Aus dem Katalog festlegen'));
+    const po = dialog('Projektordner für BS9')!;
+    expect(po.querySelector<HTMLInputElement>('input[aria-label="Name des Projektordners"]')!.value).toBe('BS9 Musterstraße 9');
+    await klick(knopf(po, 'Ordner anlegen'));
+    await warte();
+    expect(ds.ordner.has(PROJEKT)).toBe(true);
+    expect(useFormulare.getState().ordnerWahl).toEqual({ BS9: PROJEKT });
+    // die Zuordnung gilt für alle (gemeinsamer Konfigurationsordner)
+    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:formulare')!)).toEqual({ ordnerWahl: { BS9: PROJEKT } });
+    await klick(knopf(dialog('Projektdatei für BS9 anlegen')!, 'Projektdatei anlegen'));
+    await warte();
+    expect((abschnitt()!.umfang as unknown[]).length).toBe(3);
+    expect(knopf(host, 'Kein Projektordner')).toBeUndefined();
   });
 });

@@ -1,4 +1,6 @@
 import { base64ToBytes, bytesToBase64, isTauri } from '@core/platform/files';
+import type { DateiStand, ProjektordnerZugriff } from '@core/platform/projektordner';
+import { tauriProjektordner } from '@core/platform/projektordner';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import type { SperrProbe } from './forma/sperre';
@@ -20,8 +22,11 @@ export interface Eintrag {
   geaendert?: number;
 }
 
-/** Datei mit den Angaben der App zum Projekt (Projektumfang, aktive Antragsfassung) im FORMA-Projektordner */
-export const PROJEKTDATEI = 'formulare.json';
+/**
+ * Früher: Angaben der App zum Projekt (Projektumfang, aktive Antragsfassung) im FORMA-Projektordner. Sie stehen
+ * jetzt im Abschnitt „formulare“ der Projektdatei (.oap); die alte Datei wird nur noch gelesen und übernommen.
+ */
+export const ALTE_PROJEKTDATEI = 'formulare.json';
 
 export interface Rechner {
   benutzer: string;
@@ -39,6 +44,8 @@ export type PkAenderung = { gruppe: number; id: number; typ: number } & (
 );
 
 export interface Dateisystem {
+  /** gemeinsamer Zugriff auf die Projektordner (packages/core): Projektdatei (.oap) lesen, gezielt ändern, anlegen */
+  readonly projektordner: ProjektordnerZugriff;
   /** Ordner und Dateien unter `root` bis zur Tiefe `tiefe` (1 = nur direkt enthaltene) */
   liste(root: string, tiefe: number): Promise<Eintrag[]>;
   /** Inhalt der Datei oder `null`, wenn es sie nicht gibt */
@@ -62,8 +69,6 @@ export interface Dateisystem {
   inOffice(root: string, pfad: string): Promise<boolean>;
   /** Neues Dokument anlegen (Ordner wird angelegt); vorhandene werden nie überschrieben */
   dokumentAnlegen(root: string, pfad: string, daten: Uint8Array): Promise<void>;
-  /** `formulare.json` im FORMA-Projekt schreiben (atomar); andere Dateien werden abgelehnt */
-  projektdateiSchreiben(root: string, pfad: string, daten: Uint8Array): Promise<void>;
   /** Ordner anlegen (samt fehlender darüber) */
   ordnerAnlegen(root: string, pfad: string): Promise<void>;
   /** Neues Formular (.frmsjf) anlegen; vorhandene werden nie überschrieben */
@@ -119,6 +124,7 @@ export function pkBytes(s: string): number[] {
 const text = pkText;
 
 export const tauriDateisystem: Dateisystem = {
+  projektordner: tauriProjektordner,
   liste: (root, tiefe) => invoke<Eintrag[]>('fs_list', { root, tiefe }),
   lies: async (root, pfad) => {
     const b64 = await invoke<string | null>('fs_read', { root, pfad });
@@ -149,7 +155,6 @@ export const tauriDateisystem: Dateisystem = {
   dokumentErsetzen: (root, pfad, daten) => invoke<void>('doc_replace', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   inOffice: (root, pfad) => invoke<boolean>('doc_in_office', { root, pfad }),
   dokumentAnlegen: (root, pfad, daten) => invoke<void>('doc_create', { root, pfad, contentsBase64: bytesToBase64(daten) }),
-  projektdateiSchreiben: (root, pfad, daten) => invoke<void>('project_file_write', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   ordnerAnlegen: (root, pfad) => invoke<void>('dir_create', { root, pfad }),
   formularAnlegen: (root, pfad, daten) => invoke<void>('form_create', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   kopieren: (root, von, nach) => invoke<void>('doc_copy', { root, von, nach }),
@@ -182,8 +187,54 @@ export const istFormaDatei = (pfad: string) => /\.(frmsjf|frmtmp|sdb|ini)$/i.tes
 
 /* ---------- im Speicher (Tests) ---------- */
 
+/** Gemeinsamer Projektordner-Zugriff auf demselben Speicher (Stand = Größe und Änderungszeit) */
+class SpeicherProjektordner implements ProjektordnerZugriff {
+  constructor(private readonly ds: SpeicherDateisystem) {}
+  private voll(root: string, rel: string) {
+    return `${root.replace(/[\\/]+$/, '').replace(/\\/g, '/')}/${rel}`;
+  }
+  liste(root: string, tiefe: number) {
+    return this.ds.liste(root, tiefe);
+  }
+  async lies(root: string, pfad: string) {
+    const d = await this.ds.lies(root, pfad);
+    if (!d) throw new Error(`${pfad}: nicht gefunden`);
+    return d;
+  }
+  async liesMitStand(root: string, pfad: string) {
+    const d = await this.ds.lies(root, pfad);
+    return d ? { daten: d, stand: { groesse: d.length, geaendert: this.ds.geaendert.get(this.voll(root, pfad)) ?? 0 } } : null;
+  }
+  async ordnerAnlegen(root: string, pfad: string) {
+    const v = this.voll(root, pfad);
+    const da = this.ds.ordner.has(v) || [...this.ds.dateien.keys()].some((k) => k.startsWith(`${v}/`));
+    await this.ds.ordnerAnlegen(root, pfad);
+    return !da;
+  }
+  async dateiAnlegen(root: string, pfad: string, daten: Uint8Array) {
+    const v = this.voll(root, pfad);
+    if (this.ds.dateien.has(v)) return false;
+    this.ds.dateien.set(v, daten);
+    this.ds.beruehren(v);
+    this.ds.schreibvorgaenge.push(`neu ${pfad}`);
+    return true;
+  }
+  async projektdateiErsetzen(root: string, pfad: string, daten: Uint8Array, stand: DateiStand) {
+    if (!/\.oap$/i.test(pfad)) throw new Error(`${pfad}: nur Projektdateien (.oap) dürfen ersetzt werden`);
+    const v = this.voll(root, pfad);
+    const alt = this.ds.dateien.get(v);
+    if (!alt) throw new Error(`${pfad}: nicht gefunden`);
+    if (alt.length !== stand.groesse || (this.ds.geaendert.get(v) ?? 0) !== stand.geaendert) throw new Error(`${pfad}: wurde inzwischen geändert – bitte erneut versuchen`);
+    this.ds.papierkorb.set(`${v}.sicherung`, alt);
+    this.ds.dateien.set(v, daten);
+    this.ds.beruehren(v);
+    this.ds.schreibvorgaenge.push(`oap ${pfad}`);
+  }
+}
+
 /** Dateisystem im Speicher: Schlüssel sind vollständige Pfade mit „/“; Ordner entstehen implizit */
 export class SpeicherDateisystem implements Dateisystem {
+  readonly projektordner: ProjektordnerZugriff = new SpeicherProjektordner(this);
   readonly dateien = new Map<string, Uint8Array>();
   /** Projektkarten je vollständigem Pfad der .sdb (die Datei selbst muss in `dateien` stehen) */
   readonly projektkarten = new Map<string, Projektkarte>();
@@ -299,12 +350,6 @@ export class SpeicherDateisystem implements Dateisystem {
     this.dateien.set(p, daten);
     this.beruehren(p);
     this.schreibvorgaenge.push(`dokument ${pfad}`);
-  }
-
-  async projektdateiSchreiben(root: string, pfad: string, daten: Uint8Array): Promise<void> {
-    if (!/(^|\/)formulare\.json$/i.test(pfad)) throw new Error(`${pfad}: Hier darf nur ${PROJEKTDATEI} geschrieben werden`);
-    this.dateien.set(this.pfad(root, pfad), daten);
-    this.schreibvorgaenge.push(`projektdatei ${pfad}`);
   }
 
   async ordnerAnlegen(root: string, pfad: string): Promise<void> {

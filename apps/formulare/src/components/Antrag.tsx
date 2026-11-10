@@ -81,8 +81,8 @@ const ART_TEXT = { intern: 'Formular', extern: 'Datei' };
 
 /**
  * Projektumfang: welche Dokumente zum Antrag gehören – grundlegend aus dem Katalog der Einstellungen, je Projekt
- * änderbar – mit ihrem Status in der aktiven Antragsfassung. Liegt in `formulare.json` im FORMA-Projekt und gilt
- * damit für alle im Büro.
+ * änderbar – mit ihrem Status in der aktiven Antragsfassung. Liegt im Abschnitt „formulare“ der Projektdatei (.oap)
+ * und gilt damit für alle im Büro.
  */
 export function ProjektumfangAnsicht() {
   const projekt = useFormulare((s) => s.projekt);

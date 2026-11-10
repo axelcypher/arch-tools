@@ -34,6 +34,7 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
   const zuletzt = useFormulare((s) => s.zuletzt);
   const aktuell = useFormulare((s) => s.projekt);
   const ablage = useFormulare((s) => s.ablage);
+  const ordnerWahl = useFormulare((s) => s.ordnerWahl);
   const ablageGesucht = useFormulare((s) => s.ablageordner.length > 0);
   const projektStatus = useAntrag((s) => s.projektStatus);
   const { projekteLaden, setHaupt } = useFormulare.getState();
@@ -79,12 +80,12 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
     const m: UebersichtMarke[] = [];
     if (p.info?.gesperrt) m.push({ text: `${p.info.gesperrt} geöffnet`, art: 'warnung', symbol: 'schloss', titel: 'Formulare mit Sperrdatei – in FORMA oder hier geöffnet' });
     if (projektHatEntwuerfe(p)) m.push({ text: 'ungespeichert', art: 'hinweis', symbol: 'stift', titel: 'Hier eingegeben, aber noch nicht in die FORMA-Datei gespeichert' });
-    if (ablageGesucht && !ablageVon({ ablage }, p)) m.push({ text: 'kein Projektordner', symbol: 'ordner', titel: 'Kein Projektordner mit diesem Kürzel gefunden' });
+    if (ablageGesucht && !ablageVon({ ablage, ordnerWahl }, p)) m.push({ text: 'kein Projektordner', symbol: 'ordner', titel: 'Kein Projektordner mit diesem Kürzel gefunden' });
     return m;
   };
 
   const menue = (p: Projekt, zuletztKarte: boolean): MenuePunkt[] => {
-    const a = ablageVon({ ablage }, p);
+    const a = ablageVon({ ablage, ordnerWahl }, p);
     return [
       { text: 'Öffnen', symbol: 'formular', aktion: () => oeffnen({ schluessel: projektSchluessel(p) } as UebersichtProjekt) },
       { trenner: true },

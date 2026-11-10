@@ -3185,3 +3185,58 @@ button.icon.fo-gl-bed.gesetzt {
 .sg-import p {
   margin: 0;
 }
+
+/* Hinweise im Projektkopf: kein Projektordner bzw. keine Projektdatei */
+.fo-hinweis-knopf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border: 1px dashed var(--warn-border);
+  border-radius: 6px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: 12px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.3;
+}
+.fo-hinweis-knopf svg {
+  flex-shrink: 0;
+}
+.fo-hinweis-knopf:hover:not(:disabled) {
+  border-style: solid;
+}
+
+/* Projektordner zuordnen */
+.po-teil {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.po-teil h4 {
+  margin: 0;
+  font-size: 13px;
+}
+.po-teil p {
+  margin: 0;
+}
+.po-zeile {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.po-zeile select {
+  flex: 0 1 38%;
+  width: auto;
+  min-width: 0;
+}
+.po-zeile input {
+  flex: 1 1 62%;
+  min-width: 0;
+}

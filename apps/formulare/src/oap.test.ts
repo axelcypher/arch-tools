@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { readProjectFile, writeArchive } from '@core/archive';
 import { addDatei, createProject } from '@core/model';
 import type { Angabe } from './projektdaten';
-import { angabenAus, flaecheZahl, metaMit, neueOap, oapLesen, oapMetaSetzen, oapPfad } from './oap';
+import { parseProjectData } from '@core/serialize';
+import { projektdateiAendern, projektdateiPfad } from '@core/projektdatei';
+import { angabenAus, flaecheZahl, metaMit, oapLesen } from './oap';
 
 // 1×1-PNG
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
@@ -80,7 +82,8 @@ describe('Projektdatei (.oap) als Quelle der Stammdaten', () => {
   it('schreibt nur meta in projekt.json; alle anderen Einträge des Archivs bleiben gleich', () => {
     const vorher = projektdatei();
     const { meta } = oapLesen(vorher);
-    const nachher = oapMetaSetzen(vorher, metaMit(meta, new Map<Angabe, string>([['bauherr.name', 'Musterfrau']])));
+    const nachher = projektdateiAendern(vorher, (roh) => ({ ...roh, meta: metaMit(parseProjectData(roh).meta, new Map<Angabe, string>([['bauherr.name', 'Musterfrau']])) }))!;
+    expect(meta.bauherr.name).toBe('Mustermann');
     const [a, b] = [unzipSync(vorher), unzipSync(nachher)];
     expect(Object.keys(b).sort()).toEqual(Object.keys(a).sort());
     expect(Object.keys(a).some((k) => k.startsWith('plaene/')) && Object.keys(a).some((k) => k.startsWith('quellen/'))).toBe(true);
@@ -93,12 +96,9 @@ describe('Projektdatei (.oap) als Quelle der Stammdaten', () => {
     expect(p.dateien?.[0].daten).toEqual(new Uint8Array([37, 80, 68, 70, 9, 8, 7]));
   });
 
-  it('legt eine neue Projektdatei an, die Flächenrechner & Co. öffnen', () => {
-    const { meta } = oapLesen(projektdatei());
-    const p = readProjectFile(neueOap('BS9', meta));
-    expect(p.name).toBe('BS9');
-    expect(p.meta).toEqual(meta);
-    expect(oapPfad('Planung\\Berechnungen\\{Kürzel}.oap', 'BS9')).toBe('Planung/Berechnungen/BS9.oap');
+  it('der bisherige Ort neuer Projektdateien gilt auch mit den gemeinsamen Platzhaltern', () => {
+    expect(projektdateiPfad('Planung\\Berechnungen\\{Kürzel}.oap', { nummer: 'BS9' })).toBe('Planung/Berechnungen/BS9.oap');
+    expect(projektdateiPfad('Planung/Berechnungen/{nummer} {kurzname}', { nummer: 'BS9', kurzname: 'Musterstraße 9' })).toBe('Planung/Berechnungen/BS9 Musterstraße 9.oap');
   });
 
   it('Flächen als Text', () => {

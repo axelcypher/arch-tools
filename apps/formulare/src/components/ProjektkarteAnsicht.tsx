@@ -7,7 +7,8 @@ import type { Adresse } from '../adressbuch';
 import { adressName, adressOrt, adressSchluessel, adressenAusKarte, inRolle } from '../adressbuch';
 import type { Angabe } from '../projektdaten';
 import { IN_PROJEKTKARTE } from '../projektdaten';
-import { OAP_ANGABEN, angabenAus, oapPfad } from '../oap';
+import { OAP_ANGABEN, angabenAus } from '../oap';
+import { projektdateiPfad } from '@core/projektdatei';
 import type { Stammadresse } from '../stammdaten';
 import { stammdatenLaden } from '../stammdaten';
 import { Symbol } from './Symbol';
@@ -587,8 +588,8 @@ function Kreuze({ karte, eintraege }: { karte: OffeneKarte; eintraege: PkEintrag
 function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
   const oap = useFormulare((s) => s.oap);
   const xlsx = useFormulare((s) => s.projektdaten);
-  const neu = useFormulare((s) => s.oapNeu);
-  const { oapUebernehmen, oapEintragen, oapLaden, oapWaehlen, projektdatenUebernehmen, dateiAnsehen, einstellungenOeffnen } = useFormulare.getState();
+  const vorlage = useFormulare((s) => s.oapVorlage);
+  const { oapUebernehmen, oapEintragen, oapLaden, oapWaehlen, projektdatenUebernehmen, dateiAnsehen, stammdatenErfassen } = useFormulare.getState();
   const projekt = karte.projekt;
   const werte = oap && oap !== 'fehlt' ? angabenAus(oap.inhalt.meta) : null;
   // nur Angaben, die es in dieser Projektkarte gibt
@@ -636,19 +637,11 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
       </p>
       {oap === 'fehlt' && (
         <p className="pk-text">
-          {neu ? (
-            <>
-              Beim nächsten Speichern der Projektkarte wird sie unter <code>{oapPfad(neu, projekt.ordner)}</code> angelegt.{' '}
-              <button className="small" onClick={() => void oapEintragen(zeilen.filter((z) => z.inKarte.trim()).map((z) => z.angabe))}>
-                Jetzt anlegen
-              </button>
-            </>
-          ) : (
-            <>
-              Ist in den <button className="es-verweis" onClick={() => einstellungenOeffnen('projektdaten')}>Einstellungen</button> ein Pfad für neue Projektdateien eingestellt, legt die App
-              sie beim Speichern der Projektkarte an.
-            </>
-          )}
+          Im Projektordner gibt es noch keine Projektdatei. Der Stammdaten-Dialog legt sie an – vorbelegt mit den Angaben der Projektkarte, unter{' '}
+          <code>{projektdateiPfad(vorlage, { nummer: projekt.ordner, kurzname: projekt.titel })}</code>.{' '}
+          <button className="small primary" onClick={() => void stammdatenErfassen('Für dieses Projekt gibt es im Projektordner noch keine Projektdatei (.oap). Mit diesen Angaben wird sie angelegt.')}>
+            Stammdaten erfassen …
+          </button>
         </p>
       )}
       {oap && oap !== 'fehlt' && oap.kandidaten.length > 1 && (

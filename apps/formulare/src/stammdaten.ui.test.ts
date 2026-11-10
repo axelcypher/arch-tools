@@ -89,7 +89,7 @@ beforeEach(() => {
     rollenVorgaben: {},
     profile: {},
     projektdaten: null,
-    oapNeu: 'Planung/Berechnungen/{Kürzel}.oap',
+    oapVorlage: 'Planung/Berechnungen/{Kürzel}.oap',
     oapWahl: {},
     oap: null,
     einstellungsBereich: 'ordner',
@@ -353,11 +353,13 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(p.meta).toMatchObject({ projektcode: 'BS9', vorhaben: 'Umbau Wohnhaus', bearbeiter: 'TP', bauherr: { name: 'Musterfrau', adresse: { ort: 'Musterstadt' } } });
     expect(p.name).toBe('EFH Musterstraße');
     expect(host.textContent).toContain('Projektdatei mitgeführt (1 Angabe(n))');
+    // über den gemeinsamen Zugriff (packages/core): atomar, mit Sicherungskopie, nur wenn seitdem unverändert
     expect(ds.schreibvorgaenge.filter((w) => !w.startsWith('sperre'))).toEqual([
-      'dokument Planung/Berechnungen/BS9 Flächen.oap',
+      'oap Planung/Berechnungen/BS9 Flächen.oap',
       'projektkarte BS9/sj_prokarte.sdb (5)',
-      'dokument Planung/Berechnungen/BS9 Flächen.oap',
+      'oap Planung/Berechnungen/BS9 Flächen.oap',
     ]);
+    expect(ds.papierkorb.has(`${OAP}.sicherung`)).toBe(true);
     // die andere Projektdatei bleibt unberührt; sie lässt sich je Projekt wählen
     expect(readProjectFile(ds.dateien.get(`${ORDNER}/Planung/Berechnungen/Variante.oap`)!).meta.bauherr.name).toBe('Mustermann');
     act(() => (host.querySelector<HTMLSelectElement>('select[aria-label="Projektdatei"]')!.value = 'Planung/Berechnungen/Variante.oap'));
@@ -367,17 +369,27 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(useFormulare.getState().oapWahl).toEqual({ BS9: 'Planung/Berechnungen/Variante.oap' });
   });
 
-  it('fehlt die Projektdatei, wird sie beim Speichern unter dem eingestellten Pfad angelegt', async () => {
+  it('fehlt die Projektdatei, legt sie der Stammdaten-Dialog an – vorbelegt aus der Projektkarte, am gemeinsamen Ort', async () => {
     const host = await oeffnen();
     expect(knopf(host, 'Projektdatei (.oap)').textContent).toContain('nicht gefunden');
     act(() => useFormulare.getState().karteSetzen(201, 40, 'Neue Bauherrin'));
     await warte();
     await klick(knopf(host, 'Projektkarte speichern'));
     await warte();
-    expect(ds.schreibvorgaenge.slice(1, 2)).toEqual(['neu Planung/Berechnungen/BS9.oap']);
+    // gespeichert ist die Projektkarte; statt eines Fehlers fragt der Dialog die Stammdaten ab
+    const dialog = document.querySelector('[role="dialog"][aria-label="Projektdatei für BS9 anlegen"]')!;
+    expect(dialog).not.toBeNull();
+    expect(useFormulare.getState().stammdatenDialog?.meta).toMatchObject({ projektcode: 'BS9', bauherr: { name: 'Neue Bauherrin' } });
+    expect([...ds.dateien.keys()].some((k) => k.endsWith('.oap'))).toBe(false);
+    await klick(knopf(dialog as HTMLElement, 'Projektdatei anlegen'));
+    await warte();
+    expect(document.querySelector('[role="dialog"][aria-label="Projektdatei für BS9 anlegen"]')).toBeNull();
+    expect(ds.schreibvorgaenge).toContain('neu Planung/Berechnungen/BS9.oap');
     const p = readProjectFile(ds.dateien.get(`${ORDNER}/Planung/Berechnungen/BS9.oap`)!);
     expect(p.meta).toMatchObject({ projektcode: 'BS9', bauherr: { name: 'Neue Bauherrin' } });
     expect(knopf(host, 'Projektdatei (.oap)').textContent).toContain('BS9.oap');
+    // der Ort neuer Projektdateien gilt für alle Apps
+    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!)).toMatchObject({ projekte: ['Z:/Projekte'], oapPfad: 'Planung/Berechnungen/{Kürzel}.oap' });
   });
 
   it('eine alte Projektdaten.xlsx wird nur gelesen – ihre Angaben lassen sich in die Projektkarte übernehmen', async () => {

@@ -4,7 +4,7 @@
  * Feldern desselben Formulars – „wenn ‚Sonderbau‘ angekreuzt ist“. Alle Teile einer Bedingung müssen zutreffen.
  *
  * Projektmerkmale (Gebäudeklasse, Sonderbau, Verfahren …) werden in den Einstellungen festgelegt; ihr Wert gilt je
- * Projekt für alle Formulare und steht in `formulare.json` im FORMA-Projekt.
+ * Projekt für alle Formulare und steht im Abschnitt „formulare“ der Projektdatei (.oap).
  */
 
 export interface Merkmal {
