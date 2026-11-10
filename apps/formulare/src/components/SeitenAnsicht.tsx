@@ -2,11 +2,12 @@ import type { CSSProperties } from 'react';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { bezeichner, eigenschaft, text, zahl } from '../forma/dfm';
 import type { Feld, Kasten } from '../forma/felder';
-import { kaesten, ohneKuerzel } from '../forma/felder';
+import { abschnitte, kaesten, ohneKuerzel } from '../forma/felder';
 import { bild, blatt, drehung, farbe, lage, seitenMasse } from '../forma/darstellung';
 import { umgebend, useMarkierung } from '../markierung';
 import { feldTasten } from '../navigation';
-import { profilSchluessel } from '../profil';
+import { feldErforderlich, formularKontext, leeresProfil, profilSchluessel } from '../profil';
+import { useAntrag } from '../antragStore';
 import type { OffenesFormular } from '../store';
 import { useFormulare, wertVon } from '../store';
 
@@ -17,7 +18,9 @@ import { useFormulare, wertVon } from '../store';
  */
 export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; gesperrt: boolean }) {
   const zoom = useFormulare((s) => s.zoom);
-  const feldTitel = useFormulare((s) => s.profile[profilSchluessel(offen.formular, offen.name)]?.feldTitel);
+  const profil = useFormulare((s) => s.profile[profilSchluessel(offen.formular, offen.name)]);
+  const feldTitel = profil?.feldTitel;
+  const merkmale = useAntrag((s) => s.projektdatei?.merkmale);
   const markierung = useMarkierung((s) => s.markierung);
   const huelle = useRef<HTMLDivElement>(null);
   const [breite, setBreite] = useState(0);
@@ -38,6 +41,15 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   );
   const tasten = useMemo(() => feldTasten(offen.felder.flat()), [offen.felder]);
   const markiert = useMemo(() => new Set(markierung?.felder), [markierung]);
+  // Felder, die nach den Bedingungen (noch) nicht erforderlich sind – im Formular neutral statt farbig
+  const entfallen = useMemo(() => {
+    const out = new Set<string>();
+    if (!profil) return out;
+    const p = { ...leeresProfil(), ...profil };
+    const k = formularKontext(merkmale ?? {}, offen.felder.flat(), (f) => wertVon(offen, f));
+    for (const seite of offen.felder) for (const a of abschnitte(seite)) for (const f of a.felder) if (!feldErforderlich(f, a, p, k)) out.add(f.schluessel);
+    return out;
+  }, [profil, merkmale, offen]);
 
   // umrandeter Bereich je Seite: der Rahmen des Abschnitts bzw. das Rechteck um die Felder
   const umrandung = (s: (typeof seiten)[number]) => {
@@ -75,7 +87,7 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
             {/* das Formular selbst wird nicht beschnitten – nur das Blatt an seinem Rand */}
             <div className="fo-satz" style={{ left: s.blatt.links, top: s.blatt.oben }}>
               {s.kaesten.map((k, n) => (
-                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel)} gesperrt={gesperrt} />
+                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel, entfallen)} gesperrt={gesperrt} />
               ))}
               {(() => {
                 const r = umrandung(s);
@@ -159,9 +171,17 @@ function feldProps(
   feld: Feld | undefined,
   markiert: Set<string>,
   titel: Record<string, string> | undefined,
-): Pick<ElementProps, 'feld' | 'wert' | 'geaendert' | 'markiert' | 'titel'> {
+  entfallen: Set<string>,
+): Pick<ElementProps, 'feld' | 'wert' | 'geaendert' | 'markiert' | 'titel' | 'entfaellt'> {
   return feld
-    ? { feld, wert: wertVon(o, feld), geaendert: feld.schluessel in o.aenderungen, markiert: markiert.has(feld.schluessel), titel: titel?.[feld.schluessel]?.trim() || feld.beschriftung }
+    ? {
+        feld,
+        wert: wertVon(o, feld),
+        geaendert: feld.schluessel in o.aenderungen,
+        markiert: markiert.has(feld.schluessel),
+        titel: titel?.[feld.schluessel]?.trim() || feld.beschriftung,
+        entfaellt: entfallen.has(feld.schluessel),
+      }
     : {};
 }
 
@@ -174,10 +194,12 @@ interface ElementProps {
   markiert?: boolean;
   /** Titel des Felds (eigener aus dem Profil oder die erkannte Beschriftung) */
   titel?: string;
+  /** nach den Bedingungen (noch) nicht erforderlich */
+  entfaellt?: boolean;
   gesperrt: boolean;
 }
 
-const Element = memo(function Element({ k, feld, wert, geaendert, markiert, titel, gesperrt }: ElementProps) {
+const Element = memo(function Element({ k, feld, wert, geaendert, markiert, titel, entfaellt, gesperrt }: ElementProps) {
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const l = lage(k);
   const pos: CSSProperties = { left: l.x, top: l.y, width: l.b, height: l.h };
@@ -215,7 +237,7 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
       if (!feld) return null;
       return (
         <textarea
-          className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}`}
+          className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}`}
           style={{ ...pos, ...schrift(k), textAlign: AUSRICHTUNG[bezeichner(k.o, 'Alignment') ?? ''] }}
           value={typeof wert === 'string' ? wert : ''}
           disabled={gesperrt}
@@ -234,7 +256,7 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
       if (!feld) return null;
       const rechts = bezeichner(k.o, 'Alignment') !== 'taLeftJustify';
       return (
-        <label className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${rechts ? '' : ' links'}`} style={{ ...pos, ...schrift(k) }} title={titel}>
+        <label className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${rechts ? '' : ' links'}`} style={{ ...pos, ...schrift(k) }} title={entfaellt ? `${titel} – nicht erforderlich` : titel}>
           <input
             type="checkbox"
             checked={wert === true}

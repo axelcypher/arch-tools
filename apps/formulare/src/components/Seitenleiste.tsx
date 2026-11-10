@@ -7,6 +7,7 @@ import type { FormularEintrag } from '../projekte';
 import { AblageBaum } from './AblageBaum';
 import { FassungsWahl, StatusPunkt, umfangZeigen } from './Antrag';
 import { useExportDialog } from './ExportDialog';
+import { useHinzufuegenDialog } from './FormularHinzufuegen';
 import type { MenuePunkt } from './Menue';
 import { zeigeMenue } from './Menue';
 import { Symbol } from './Symbol';
@@ -70,8 +71,8 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
   const dokumente = useAntrag((s) => s.dokumente);
   const umfangDa = useAntrag((s) => !!s.projektdatei?.umfang);
   // Status je Formular und fehlende Formulare des Projektumfangs
-  const statusVon = useMemo(() => new Map(dokumente.filter((d) => d.formular).map((d) => [d.formular!.pfad, d])), [dokumente]);
-  const fehlende = dokumente.filter((d) => d.eintrag.art === 'intern' && !d.formular);
+  const statusVon = useMemo(() => new Map(dokumente.filter((d) => d.formular && d.status !== 'entfaellt').map((d) => [d.formular!.pfad, d])), [dokumente]);
+  const fehlende = dokumente.filter((d) => d.eintrag.art === 'intern' && !d.formular && d.status === 'fehlt');
 
   const formularMenue = (f: FormularEintrag): MenuePunkt[] => {
     const umfang = useAntrag.getState().projektdatei?.umfang;
@@ -185,6 +186,9 @@ export function Seitenleiste({ onSchnellwahl, onEinstellungen, onSperren }: { on
               titel="FORMA"
               kopf={
                 <>
+                  <button className="icon" title="Formular hinzufügen – aus dem Vorlagenordner oder einem anderen Projekt" aria-label="Formular hinzufügen" onClick={() => useHinzufuegenDialog.getState().setOffen(true)}>
+                    <Symbol name="plus" />
+                  </button>
                   <button className="icon" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren" onClick={onSperren}>
                     <Symbol name="schloss" />
                   </button>

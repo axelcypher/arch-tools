@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
 import { STATUS_TEXT, naechsteFassung, umfangAusKatalog } from '../antrag';
+import { bedingungText } from '../bedingung';
+import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
 import { aktiveFassung, antragsOrdner, useAntrag, wirksameEinstellungen } from '../antragStore';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -16,7 +18,9 @@ export function StatusPunkt({ status, titel }: { status: Status; titel?: string 
 }
 
 /** Zusammenfassung „5 von 8 aktuell“ */
-export function zusammenfassung(dokumente: DokZustand[]) {
+export function zusammenfassung(alle: DokZustand[]) {
+  // nicht erforderliche zählen nicht mit
+  const dokumente = alle.filter((d) => d.status !== 'entfaellt');
   const aktuell = dokumente.filter((d) => d.status === 'aktuell').length;
   const schlimmstes: Status = dokumente.some((d) => d.status === 'fehlt')
     ? 'fehlt'
@@ -90,7 +94,8 @@ export function ProjektumfangAnsicht() {
   const katalog = useAntrag((s) => s.katalog);
   const dateien = useAntrag((s) => s.dateien);
   const st = useAntrag();
-  const { umfangSetzen, verknuepfen, formularAnlegen, aktualisieren } = st;
+  const { umfangSetzen, verknuepfen, formularAnlegen, aktualisieren, merkmalSetzen } = st;
+  const merkmalWerte = st.projektdatei?.merkmale ?? {};
   const [bearbeiten, setBearbeiten] = useState<string | null>(null);
   if (!projekt || !ds) return null;
   const fassung = aktiveFassung(st, projekt);
@@ -156,6 +161,24 @@ export function ProjektumfangAnsicht() {
         </div>
       </div>
 
+      <section className="pu-merkmale" aria-label="Projektmerkmale">
+        <strong>Projektmerkmale</strong>
+        {st.merkmalDefinitionen.map((m) => (
+          <label key={m.name} className="pu-merkmal">
+            <span className="field-label">{m.name}</span>
+            <select value={merkmalWerte[m.name] ?? ''} aria-label={m.name} onChange={(e) => void merkmalSetzen(m.name, e.target.value)}>
+              <option value="">–</option>
+              {m.werte.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+        <span className="muted small-text">Gelten für alle Formulare dieses Projekts – Abschnitte und Felder mit Bedingung (z. B. „nur bei Gebäudeklasse 3–5“) kommen dazu oder entfallen.</span>
+      </section>
+
       {!umfang ? (
         <div className="pu-leer">
           <p>
@@ -180,6 +203,9 @@ export function ProjektumfangAnsicht() {
             </span>
             <span>
               <StatusPunkt status="aktuell" /> aktuell in {fassung}
+            </span>
+            <span>
+              <StatusPunkt status="entfaellt" /> nicht erforderlich
             </span>
             <strong className="pu-summe">
               {z.aktuell} von {z.gesamt} aktuell
@@ -216,10 +242,11 @@ export function ProjektumfangAnsicht() {
                         )}
                         {' · '}
                         <span className="muted">{STATUS_TEXT[d.status]}</span>
+                        {u.bedingung?.length ? <span className="pu-bedingung"> · nur wenn {bedingungText(u.bedingung)}</span> : null}
                       </span>
                     </div>
                     <div className="pu-knoepfe">
-                      {u.art === 'intern' && !d.formular && (
+                      {u.art === 'intern' && !d.formular && d.status !== 'entfaellt' && (
                         <button className="small primary" onClick={() => void formularAnlegen(u.id)}>
                           Formular anlegen
                         </button>
@@ -278,6 +305,10 @@ export function ProjektumfangAnsicht() {
                         <span className="field-label">Muster der Datei (* ? ;)</span>
                         <input value={u.muster ?? ''} placeholder={`*${u.titel}*`} onChange={(e) => setzen(u.id, { muster: e.target.value || undefined })} />
                       </label>
+                      <div className="pu-bedingung-editor">
+                        <span className="field-label">Nur erforderlich, wenn …</span>
+                        <BedingungEditor wert={u.bedingung} merkmale={st.merkmalDefinitionen} onChange={(b) => setzen(u.id, { bedingung: b })} />
+                      </div>
                       <div className="pu-bearbeiten-knoepfe">
                         <button className="small" onClick={() => setBearbeiten(null)}>
                           Fertig

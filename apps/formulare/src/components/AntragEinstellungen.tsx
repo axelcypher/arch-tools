@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
+import { Fragment, useState } from 'react';
 import type { KatalogEintrag } from '../antrag';
+import { VORGABE_MERKMALE, bedingungText } from '../bedingung';
+import { BedingungEditor } from './BedingungEditor';
 import { PLATZHALTER, VORGABE_EXPORT, dateiname } from '../antrag';
 import { useAntrag } from '../antragStore';
 import { waehleOrdner } from '../dateisystem';
@@ -25,7 +28,9 @@ function Karte({ titel, text, children }: { titel: string; text?: ReactNode; chi
 export function AntragEinstellungen() {
   const e = useAntrag((s) => s.einstellungen);
   const katalog = useAntrag((s) => s.katalog);
-  const { setEinstellungen, setKatalog } = useAntrag.getState();
+  const merkmale = useAntrag((s) => s.merkmalDefinitionen);
+  const { setEinstellungen, setKatalog, setMerkmalDefinitionen } = useAntrag.getState();
+  const [bedingungOffen, setBedingungOffen] = useState<string | null>(null);
   const beispiel = dateiname(e.namensvorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, kennung: 'nw010005', stand: '2026A' });
 
   const zeileSetzen = (i: number, teil: Partial<KatalogEintrag>) => setKatalog(katalog.map((k, n) => (n === i ? { ...k, ...teil } : k)));
@@ -132,6 +137,49 @@ export function AntragEinstellungen() {
       </Karte>
 
       <Karte
+        titel="Projektmerkmale"
+        text="Merkmale eines Projekts, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Der Wert wird je Projekt im Projektumfang gewählt und gilt für alle Formulare; Bedingungen stellst du in der Gliederung (Anpassen) und im Katalog ein."
+      >
+        <table className="es-tabelle es-katalog">
+          <thead>
+            <tr>
+              <th>Merkmal</th>
+              <th>Mögliche Werte (mit Komma getrennt)</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {merkmale.map((m, i) => (
+              <tr key={i}>
+                <td>
+                  <input value={m.name} aria-label="Merkmal" onChange={(x) => setMerkmalDefinitionen(merkmale.map((y, n) => (n === i ? { ...y, name: x.target.value } : y)))} />
+                </td>
+                <td>
+                  <input
+                    defaultValue={m.werte.join(', ')}
+                    key={m.werte.join(',')}
+                    aria-label={`Werte von ${m.name}`}
+                    onBlur={(x) => setMerkmalDefinitionen(merkmale.map((y, n) => (n === i ? { ...y, werte: x.target.value.split(',').map((w) => w.trim()).filter(Boolean) } : y)))}
+                  />
+                </td>
+                <td>
+                  <button className="icon" aria-label={`${m.name} entfernen`} title="Entfernen" onClick={() => setMerkmalDefinitionen(merkmale.filter((_, n) => n !== i))}>
+                    <Symbol name="muell" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="es-zeile">
+          <button onClick={() => setMerkmalDefinitionen([...merkmale, { name: 'Neues Merkmal', werte: ['ja', 'nein'] }])}>
+            <Symbol name="plus" /> Merkmal hinzufügen
+          </button>
+          {JSON.stringify(merkmale) !== JSON.stringify(VORGABE_MERKMALE) && <button onClick={() => setMerkmalDefinitionen(null)}>Vorgabe wiederherstellen</button>}
+        </div>
+      </Karte>
+
+      <Karte
         titel="Antragsdokumente (Katalog)"
         text="Grundlegende Dokumente eines Antrags. Vorgewählte kommen beim ersten Festlegen des Projektumfangs dazu, die übrigen lassen sich je Projekt hinzunehmen. Intern: Formular aus FORMA (Teil des Namens oder Kennung). Extern: Datei aus dem Projektordner (Ordner der Quelle und Muster mit * und ?, mehrere mit „;“)."
       >
@@ -143,40 +191,60 @@ export function AntragEinstellungen() {
               <th>Formular / Quelle</th>
               <th>Muster der Datei</th>
               <th title="in neuen Projekten vorgewählt">Vorgewählt</th>
+              <th title="nur erforderlich, wenn die Projektmerkmale zutreffen">Nur wenn</th>
               <th />
             </tr>
           </thead>
           <tbody>
             {katalog.map((k, i) => (
-              <tr key={k.id}>
-                <td>
-                  <input value={k.titel} onChange={(x) => zeileSetzen(i, { titel: x.target.value })} aria-label="Dokument" />
-                </td>
-                <td>
-                  <select value={k.art} onChange={(x) => zeileSetzen(i, { art: x.target.value as KatalogEintrag['art'] })} aria-label="Art">
-                    <option value="intern">intern (FORMA)</option>
-                    <option value="extern">extern (Datei)</option>
-                  </select>
-                </td>
-                <td>
-                  {k.art === 'intern' ? (
-                    <input value={k.formular ?? ''} placeholder={k.titel} onChange={(x) => zeileSetzen(i, { formular: x.target.value })} aria-label="Formular" />
-                  ) : (
-                    <input value={k.quelle ?? ''} placeholder={e.berechnungsordner} onChange={(x) => zeileSetzen(i, { quelle: x.target.value })} aria-label="Quelle" />
-                  )}
-                </td>
-                <td>
-                  <input value={k.muster ?? ''} placeholder={`*${k.titel}*`} onChange={(x) => zeileSetzen(i, { muster: x.target.value })} aria-label="Muster" />
-                </td>
-                <td className="es-mitte">
-                  <input type="checkbox" checked={k.vorgewaehlt} onChange={(x) => zeileSetzen(i, { vorgewaehlt: x.target.checked })} aria-label="Vorgewählt" />
-                </td>
-                <td>
-                  <button className="icon" aria-label={`${k.titel} entfernen`} title="Entfernen" onClick={() => setKatalog(katalog.filter((_, n) => n !== i))}>
-                    <Symbol name="muell" />
-                  </button>
-                </td>
-              </tr>
+              <Fragment key={k.id}>
+                <tr>
+                  <td>
+                    <input value={k.titel} onChange={(x) => zeileSetzen(i, { titel: x.target.value })} aria-label="Dokument" />
+                  </td>
+                  <td>
+                    <select value={k.art} onChange={(x) => zeileSetzen(i, { art: x.target.value as KatalogEintrag['art'] })} aria-label="Art">
+                      <option value="intern">intern (FORMA)</option>
+                      <option value="extern">extern (Datei)</option>
+                    </select>
+                  </td>
+                  <td>
+                    {k.art === 'intern' ? (
+                      <input value={k.formular ?? ''} placeholder={k.titel} onChange={(x) => zeileSetzen(i, { formular: x.target.value })} aria-label="Formular" />
+                    ) : (
+                      <input value={k.quelle ?? ''} placeholder={e.berechnungsordner} onChange={(x) => zeileSetzen(i, { quelle: x.target.value })} aria-label="Quelle" />
+                    )}
+                  </td>
+                  <td>
+                    <input value={k.muster ?? ''} placeholder={`*${k.titel}*`} onChange={(x) => zeileSetzen(i, { muster: x.target.value })} aria-label="Muster" />
+                  </td>
+                  <td className="es-mitte">
+                    <input type="checkbox" checked={k.vorgewaehlt} onChange={(x) => zeileSetzen(i, { vorgewaehlt: x.target.checked })} aria-label="Vorgewählt" />
+                  </td>
+                  <td>
+                    <button
+                      className={`small es-bedingung${k.bedingung?.length ? ' gesetzt' : ''}`}
+                      aria-label={`Bedingung für ${k.titel}`}
+                      title={k.bedingung?.length ? `Nur erforderlich, wenn ${bedingungText(k.bedingung)}` : 'Immer erforderlich – klicken für eine Bedingung'}
+                      onClick={() => setBedingungOffen(bedingungOffen === k.id ? null : k.id)}
+                    >
+                      {k.bedingung?.length ? bedingungText(k.bedingung) : 'immer'}
+                    </button>
+                  </td>
+                  <td>
+                    <button className="icon" aria-label={`${k.titel} entfernen`} title="Entfernen" onClick={() => setKatalog(katalog.filter((_, n) => n !== i))}>
+                      <Symbol name="muell" />
+                    </button>
+                  </td>
+                </tr>
+                {bedingungOffen === k.id && (
+                  <tr className="es-bedingung-zeile">
+                    <td colSpan={7}>
+                      <BedingungEditor wert={k.bedingung} merkmale={merkmale} onChange={(b) => zeileSetzen(i, { bedingung: b })} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

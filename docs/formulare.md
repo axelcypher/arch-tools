@@ -23,6 +23,11 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   „Wechseln“ öffnet die Schnellwahl.
 - **Formulare:** die Formulare des Projekts, ohne die alten Fassungen in `_archiv`. 🔒 heißt: anderswo geöffnet.
   ● heißt: nicht gespeicherte Eingaben.
+- **Formular hinzufügen** (＋ über den Formularen): Auswahl aus dem Vorlagenordner (Einstellungen › Antrag &
+  Export) und den Formularen der anderen FORMA-Projekte – je Formular (Name ohne Nummer und Jahr) eins: aus dem
+  Vorlagenordner, sonst der neueste Stand. Angelegt wird eine Kopie mit geleerten Eingaben (schreibgeschützte
+  Textfelder bleiben), mit der nächsten laufenden Nummer; sie wird geöffnet und auf Wunsch in den Projektumfang
+  aufgenommen. „Aus Projektkarte ausfüllen …“ trägt dann die Projektdaten ein.
 - **Ansicht „Formular“:** die Seiten wie auf Papier – weiße A4-Blätter mit Rand, das Formular mittig, in den
   Schriften und an den Stellen aus der Datei (Textfelder in Courier New wie in FORMA), mit Zoom (Seitenbreite
   oder 75–200 %). Die Felder sind farbig hinterlegt; gedruckt wird ohne Hinterlegung.
@@ -43,6 +48,14 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   - **gruppieren:** Felder anhaken und „… als eine Angabe zählen“ – etwa eine Mehrfachauswahl über mehrere Zeilen,
     die dann 1/1 statt 1/5 zählt. Eine Gruppe hat einen Namen und eine Regel: „eine genügt“ (ausgefüllt, sobald
     eine Angabe gemacht ist), „alle nötig“ oder „zählt nicht“. ✕ nimmt ein Feld aus der Gruppe bzw. löst sie auf.
+
+  - **Bedingungen** (Verzweigungs-Symbol an Abschnitt, Gruppe oder Feld): „nur erforderlich, wenn …“ – ein
+    **Projektmerkmal** hat einen der angekreuzten Werte (z. B. Gebäudeklasse 3, 4 oder 5) und/oder ein **anderes
+    Feld** des Formulars ist angekreuzt/ausgefüllt, leer oder hat einen bestimmten Wert. Mehrere Teile gelten
+    zusammen („und“). Trifft die Bedingung nicht zu, **entfällt** der Eintrag: Er zählt nicht, ist in der
+    Gliederung durchgestrichen bzw. „entfällt“, und seine Felder sind im Formular neutral statt blau hinterlegt.
+    Kreuzt man das auslösende Feld an, wird das abhängige Feld wieder erforderlich (blau). Fehlt im Projekt ein
+    Merkmal, von dem eine Bedingung abhängt, weist die Gliederung darauf hin („Festlegen …“).
 
   Verweilt man drei Sekunden auf einem Eintrag (Abschnitt, Gruppe oder Feld), wird er im Formular umrandet und ins
   Bild geholt. „Vorgabe wiederherstellen“ setzt zurück; eine Übersicht steht in den Einstellungen unter
@@ -153,6 +166,12 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   mehrere mit `;`). Die Datei im Antragsordner wird nach Muster bzw. Titel gefunden oder ausdrücklich verknüpft (🔗,
   auch per Rechtsklick im Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Projektumfang
   und die aktive Fassung stehen in `formulare.json` im FORMA-Projekt und gelten damit für alle im Büro.
+- **Projektmerkmale** (oben im Projektumfang): Gebäudeklasse, Sonderbau, Verfahren … – je Projekt einmal gewählt,
+  gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Projektumfang. Welche Merkmale es gibt
+  und ihre Werte, steht in Einstellungen › Antrag & Export. Gespeichert in `formulare.json`.
+- **Dokumente mit Bedingung:** im Projektumfang (Bearbeiten) und im Katalog („Nur wenn“) – etwa ein Nachweis nur
+  bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“: kein Farbpunkt, kein grauer
+  „Anlegen“-Eintrag, es zählt nicht mit.
 - **Status** – immer gegen die aktive Fassung:
   - **grau – fehlt:** kein Formular im Projekt bzw. weder Quelle noch Datei;
   - **rot – nicht vollständig:** das Formular hat noch offene Angaben (Füllstand wie in der Gliederung);
@@ -268,7 +287,7 @@ Ein FORMA-Projekt ist ein Ordner:
 | `sj_prokarte.sdb` | Projektkarte (SQLite, Texte UTF-8): Projektdaten, Beteiligte, Grundstück … – `.bak` ist die Sicherung |
 | `sj_office.ini` | Projekttitel (`[Allgemeines]`, `Text=`, Windows-1252) |
 | `*.frmtmp` | Sperrdatei, solange das Formular geöffnet ist (INI, Windows-1252) |
-| `formulare.json` | nicht von FORMA: Angaben dieser App zum Projekt – aktive Antragsfassung, Projektumfang mit Verknüpfungen |
+| `formulare.json` | nicht von FORMA: Angaben dieser App zum Projekt – aktive Antragsfassung, Projektmerkmale, Projektumfang mit Verknüpfungen und Bedingungen |
 
 ### Formulardatei (`.frmsjf`)
 

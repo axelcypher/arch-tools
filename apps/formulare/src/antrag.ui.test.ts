@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { VORGABE_EXPORT, jjmmtt } from './antrag';
+import { VORGABE_MERKMALE } from './bedingung';
 import { useAntrag } from './antragStore';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Schreiben } from './forma/cp1252';
@@ -62,7 +63,7 @@ beforeEach(() => {
     meldung: null,
     ansicht: 'seite',
   });
-  useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [] });
+  useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [] });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -288,5 +289,96 @@ describe('PDF: Text und Kreuze', { timeout: 30_000 }, () => {
     expect(knopf(host, 'Kreuz').getAttribute('aria-pressed')).toBe('false');
     await klick(knopf(host, 'Kreuz'));
     expect(knopf(host, 'Kreuz').getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('Bedingungen: Projektmerkmale und Felder', () => {
+  const GK345 = [{ art: 'merkmal' as const, merkmal: 'Gebäudeklasse', werte: ['3', '4', '5'] }];
+  const gl = (host: Element) => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
+
+  it('ein Abschnitt nur bei Gebäudeklasse 3–5: entfällt, bis das Projekt GK 3 ist – das Merkmal gilt für alle Formulare', async () => {
+    useFormulare.getState().profilSetzen('nw019999|2026A', { abschnitte: { '0:Panel1': { bedingung: GK345 } }, zaehlt: {} });
+    const host = await projektBS9();
+    await klick(knopf(host, '001-Muster'));
+    expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')?.textContent).toContain('entfällt');
+    expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('0 von 0');
+    expect(gl(host).querySelector('.fo-gl-merkmal')!.textContent).toContain('Gebäudeklasse');
+
+    // „Festlegen …“ führt zu den Projektmerkmalen im Projektumfang
+    await klick(knopf(gl(host) as HTMLElement, 'Festlegen'));
+    await warte();
+    const gk = host.querySelector<HTMLSelectElement>('select[aria-label="Gebäudeklasse"]')!;
+    act(() => {
+      gk.value = '3';
+      gk.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await warte();
+    expect(JSON.parse(new TextDecoder().decode(ds.dateien.get('C:/FORMA/BS9/formulare.json')!)).merkmale).toEqual({ Gebäudeklasse: '3' });
+
+    await klick(knopf(host, '001-Muster'));
+    expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')).toBeNull();
+    expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
+    expect(gl(host).querySelector('.fo-gl-merkmal')).toBeNull();
+  });
+
+  it('Bedingung in der Gliederung bearbeiten: Projektmerkmal wählen und Wert ankreuzen', async () => {
+    const host = await projektBS9();
+    await klick(knopf(host, '001-Muster'));
+    await klick(host.querySelector<HTMLButtonElement>('button[aria-label="Gliederung anpassen"]')!);
+    await klick(host.querySelector<HTMLButtonElement>('button[aria-label="Bedingung für Abschnitt Bauherrschaft"]')!);
+    await klick(knopf(gl(host) as HTMLElement, 'Projektmerkmal'));
+    await klick(gl(host).querySelector<HTMLInputElement>('input[aria-label="Gebäudeklasse 4"]')!);
+    expect(useFormulare.getState().profile['nw019999|2026A'].abschnitte['0:Panel1'].bedingung).toEqual([{ art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['4'] }]);
+  });
+
+  it('ein angekreuztes Feld schaltet ein weiteres erforderliches Feld frei – im Formular farbig statt neutral', async () => {
+    useFormulare.getState().profilSetzen('nw019999|2026A', { abschnitte: {}, zaehlt: {}, bedingungen: { '0:Memo2': [{ art: 'feld', feld: '0:CheckBox2', pruefung: 'ausgefuellt' }] } });
+    const host = await projektBS9();
+    await klick(knopf(host, '001-Muster'));
+    const memo2 = () => host.querySelector('.fo-papier [data-feld="0:Memo2"]')!;
+    // Memo2 (leer) ist noch nicht erforderlich: 3 von 4
+    expect(memo2().classList.contains('entfaellt')).toBe(true);
+    expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/4');
+    const s = useFormulare.getState();
+    act(() => s.wertSetzen(s.offen!.felder[0].find((f) => f.name === 'CheckBox2')!, true));
+    await warte();
+    expect(memo2().classList.contains('entfaellt')).toBe(false);
+    expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('4/5');
+  });
+
+  it('Dokumente des Projektumfangs mit Bedingung: entfallen bei GK 1, fehlen bei GK 3', async () => {
+    const host = await projektBS9();
+    await useAntrag.getState().merkmalSetzen('Gebäudeklasse', '1');
+    await useAntrag.getState().umfangSetzen([{ id: 'bauantrag', titel: 'Bauantrag', art: 'intern', formular: 'Bauantrag', bedingung: GK345 }]);
+    await warte();
+    expect(useAntrag.getState().dokumente[0].status).toBe('entfaellt');
+    expect(host.querySelector('.nav-eintrag.fehlt')).toBeNull();
+    await useAntrag.getState().merkmalSetzen('Gebäudeklasse', '3');
+    await warte();
+    expect(useAntrag.getState().dokumente[0].status).toBe('fehlt');
+    expect(host.querySelector('.nav-eintrag.fehlt')?.textContent).toContain('Bauantrag');
+  });
+});
+
+describe('Formular hinzufügen', () => {
+  it('aus einem anderen Projekt – neuester Stand, geleert, geöffnet und in den Projektumfang aufgenommen', async () => {
+    ds.dateien.set('C:/FORMA/H24/004-Bauantrag (2024).frmsjf', MUSTER);
+    ds.beruehren('C:/FORMA/H24/003-Bauantrag (2026).frmsjf');
+    const host = await projektBS9();
+    await useAntrag.getState().umfangSetzen([]);
+    await klick(host.querySelector<HTMLButtonElement>('button[aria-label="Formular hinzufügen"]')!);
+    await warte();
+    const dialog = host.querySelector('[aria-label="Formular hinzufügen"][role="dialog"]')!;
+    const zeilen = [...dialog.querySelectorAll('.fh-zeile')];
+    // je Formular nur eins: der neueste Stand (2026), Musterformulare aus H24 nicht doppelt
+    expect(zeilen.map((z) => z.querySelector('strong')!.textContent)).toEqual(['Bauantrag']);
+    expect(zeilen[0].textContent).toContain('003-Bauantrag (2026).frmsjf');
+    await klick(zeilen[0] as HTMLElement);
+    await klick(knopf(dialog, 'Hinzufügen'));
+    await warte();
+    const neu = ds.dateien.get('C:/FORMA/BS9/002-Bauantrag (2026).frmsjf')!;
+    expect(felderDerSeite(parseFormular(neu).seiten[0], 0).every((f) => f.original === '' || f.original === false)).toBe(true);
+    expect(useFormulare.getState().offen?.name).toBe('002-Bauantrag (2026)');
+    expect(useAntrag.getState().projektdatei?.umfang).toMatchObject([{ titel: 'Bauantrag', art: 'intern', formularDatei: '002-Bauantrag (2026).frmsjf' }]);
   });
 });

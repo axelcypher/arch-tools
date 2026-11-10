@@ -29,7 +29,10 @@ import {
   quelleVon,
   standardFassung,
   UEBERSCHREIBBAR,
+  umfangErforderlich,
 } from './antrag';
+import type { Merkmal } from './bedingung';
+import { merkmaleAus } from './bedingung';
 import type { Eintrag } from './dateisystem';
 import { PROJEKTDATEI, verbinde } from './dateisystem';
 import type { Feld } from './forma/felder';
@@ -49,6 +52,7 @@ const log = logger('formulare');
 const EINSTELLUNGEN = 'formulare:export';
 const KATALOG = 'formulare:katalog';
 const UEBERSCHREIBUNGEN = 'formulare:export-projekte';
+const MERKMALE = 'formulare:merkmale';
 
 function lesen<T>(schluessel: string, vorgabe: T): T {
   try {
@@ -98,6 +102,8 @@ export interface ExportZiel {
 interface AntragState {
   einstellungen: ExportEinstellungen;
   katalog: KatalogEintrag[];
+  /** Projektmerkmale (Gebäudeklasse …) mit ihren möglichen Werten – für Bedingungen */
+  merkmalDefinitionen: Merkmal[];
   /** je Projektkürzel */
   ueberschreibungen: Record<string, ExportUeberschreibung>;
   /** `formulare.json` des gewählten Projekts; null = nicht gelesen */
@@ -113,6 +119,9 @@ interface AntragState {
 
   setEinstellungen: (e: Partial<ExportEinstellungen>) => void;
   setKatalog: (k: KatalogEintrag[] | null) => void;
+  setMerkmalDefinitionen: (m: Merkmal[] | null) => void;
+  /** Wert eines Projektmerkmals im gewählten Projekt setzen (leer = entfernen) – in formulare.json */
+  merkmalSetzen: (name: string, wert: string) => Promise<void>;
   /** Abweichungen des gewählten Projekts; null = wieder die Vorgabe */
   setUeberschreibung: (u: ExportUeberschreibung | null) => void;
   /** alles für das gewählte Projekt neu lesen */
@@ -128,6 +137,25 @@ interface AntragState {
   exportieren: (formularPfad: string, ziel: ExportZiel, ersetzen: boolean) => Promise<string | null>;
   speichernUnter: (formularPfad: string) => Promise<boolean>;
   formularAnlegen: (umfangId: string) => Promise<string | null>;
+  /** verfügbare Formulare zum Hinzufügen: Vorlagenordner und andere Projekte, je Formular der neueste Stand */
+  vorlagenAuflisten: () => Promise<Vorlage[]>;
+  /** Formular aus einer Vorlage geleert anlegen und öffnen; auf Wunsch in den Projektumfang aufnehmen */
+  formularHinzufuegen: (v: Vorlage, inUmfang: boolean) => Promise<string | null>;
+}
+
+/** Formular, das sich ins Projekt übernehmen lässt */
+export interface Vorlage {
+  /** Ordner, in dem es liegt (absolut) */
+  root: string;
+  /** relativ dazu */
+  pfad: string;
+  /** Dateiname */
+  datei: string;
+  /** Name ohne Nummer und Jahr */
+  name: string;
+  /** „Vorlagenordner“ oder „Projekt BS5“ */
+  herkunft: string;
+  geaendert: number;
 }
 
 /* ---------- Hilfen ---------- */
@@ -230,6 +258,7 @@ export const useAntrag = create<AntragState>((set, get) => {
   return {
     einstellungen: einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null)),
     katalog: katalogAus(lesen<unknown>(KATALOG, null)),
+    merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
     ueberschreibungen: lesen<Record<string, ExportUeberschreibung>>(UEBERSCHREIBUNGEN, {}),
     projektdatei: null,
     fassungen: [],
@@ -255,6 +284,31 @@ export const useAntrag = create<AntragState>((set, get) => {
           // nichts zu löschen
         }
       set({ katalog });
+    },
+    setMerkmalDefinitionen: (m) => {
+      const merkmalDefinitionen = m ?? merkmaleAus(null);
+      if (m) schreiben(MERKMALE, merkmalDefinitionen);
+      else
+        try {
+          localStorage.removeItem(MERKMALE);
+        } catch {
+          // nichts zu löschen
+        }
+      set({ merkmalDefinitionen });
+    },
+    merkmalSetzen: async (name, wert) => {
+      try {
+        const alt = get().projektdatei ?? {};
+        const merkmale = { ...alt.merkmale };
+        if (wert) merkmale[name] = wert;
+        else delete merkmale[name];
+        const neu: ProjektDatei = { ...alt, merkmale };
+        if (!Object.keys(merkmale).length) delete neu.merkmale;
+        await projektdateiSchreiben(neu);
+        get().neuBerechnen();
+      } catch (e) {
+        fehler(`Projektmerkmal ${name}`, e);
+      }
     },
     setUeberschreibung: (u) => {
       const p = useFormulare.getState().projekt;
@@ -349,6 +403,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       const projekt = s.projekt;
       if (!projekt) return;
       const formularInfo: Record<string, FormularInfo> = {};
+      const merkmale = get().projektdatei?.merkmale ?? {};
       for (const f of s.formulare) {
         const eintrag = dateienFormaProjekt.find((d) => d.pfad === nurName(f.pfad));
         const k = `${projekt.root}|${f.pfad}|${eintrag?.groesse ?? 0}|${eintrag?.geaendert ?? 0}`;
@@ -361,7 +416,7 @@ export const useAntrag = create<AntragState>((set, get) => {
           name: f.name,
           kennung: kennung(z.formular) ?? null,
           stand: stand(z.formular) ?? null,
-          fuellstand: fuellstand(z.felder, profilFuer(z.formular, f.name), wert),
+          fuellstand: fuellstand(z.felder, profilFuer(z.formular, f.name), wert, merkmale),
           letzteAenderung: Math.max(eintrag?.geaendert ?? 0, entwurfZeit ?? 0),
         };
       }
@@ -371,6 +426,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       const infos = Object.values(formularInfo);
       const dokumente = (st.projektdatei?.umfang ?? []).map((u): DokZustand => {
         const datei = dateiImAntrag(u, st.dateien, fassung);
+        if (!umfangErforderlich(u, merkmale)) return { eintrag: u, status: 'entfaellt', formular: u.art === 'intern' ? formularVon(u, infos) : null, datei, quelle: null };
         if (u.art === 'intern') {
           const formular = formularVon(u, infos);
           if (!formular) return { eintrag: u, status: 'fehlt', formular: null, datei, quelle: null };
@@ -468,6 +524,57 @@ export const useAntrag = create<AntragState>((set, get) => {
       } catch (e) {
         fehler('Speichern unter', e);
         return false;
+      }
+    },
+
+    vorlagenAuflisten: async () => {
+      const s = useFormulare.getState();
+      const ds = s.ds;
+      if (!ds) return [];
+      const liste = async (root: string, ordner: string, herkunft: string): Promise<Vorlage[]> =>
+        (await ds.liste(ordner ? verbinde(root, ordner) : root, 1).catch(() => [] as Eintrag[]))
+          .filter((e) => !e.ordner && /\.frmsjf$/i.test(e.pfad))
+          .map((e) => ({ root, pfad: ordner ? `${ordner}/${e.pfad}` : e.pfad, datei: e.pfad, name: anzeigeName(ohneEndung(e.pfad)), herkunft, geaendert: e.geaendert ?? 0 }));
+      const vorlagenordner = get().einstellungen.vorlagenordner.trim();
+      const andere = s.projekte.filter((p) => !(p.root === s.projekt?.root && p.ordner === s.projekt?.ordner));
+      const alle = [
+        ...(vorlagenordner ? await liste(vorlagenordner, '', 'Vorlagenordner') : []),
+        ...(await Promise.all(andere.map((p) => liste(p.root, p.ordner, `Projekt ${p.ordner}`)))).flat(),
+      ];
+      // je Formular (Name ohne Nummer und Jahr) eine: aus dem Vorlagenordner, sonst die neueste
+      const je = new Map<string, Vorlage>();
+      for (const v of alle) {
+        const k = v.name.toLowerCase();
+        const da = je.get(k);
+        const rang = (x: Vorlage) => (x.herkunft === 'Vorlagenordner' ? 1 : 0);
+        const besser = !da || rang(v) > rang(da) || (rang(v) === rang(da) && v.geaendert > da.geaendert);
+        if (besser) je.set(k, v);
+      }
+      return [...je.values()].sort((a, b) => a.name.localeCompare(b.name, 'de', { numeric: true }));
+    },
+
+    formularHinzufuegen: async (v, inUmfang) => {
+      const s = useFormulare.getState();
+      const { ds, projekt } = ctx();
+      if (!ds || !projekt) return null;
+      try {
+        const bytes = await ds.lies(v.root, v.pfad);
+        if (!bytes) throw new Error(`${v.datei} nicht gefunden`);
+        const name = neuerName(v.datei, s.formulare);
+        const pfad = `${projekt.ordner}/${name}`;
+        await ds.formularAnlegen(projekt.root, pfad, geleert(bytes));
+        log.info(`Formular angelegt: ${pfad} (Vorlage: ${v.herkunft}, ${v.pfad})`);
+        const umfang = get().projektdatei?.umfang;
+        if (inUmfang && umfang)
+          await projektdateiSchreiben({ ...(get().projektdatei ?? {}), umfang: [...umfang, { id: `u${Date.now().toString(36)}`, titel: v.name, art: 'intern', formular: v.name, formularDatei: name }] });
+        useFormulare.setState({ formulare: await formulareDesProjekts(ds, projekt) });
+        const eintrag = useFormulare.getState().formulare.find((f) => f.pfad === pfad);
+        if (eintrag) await useFormulare.getState().formularOeffnen(eintrag);
+        meldung('info', `„${name}“ aus ${v.herkunft} angelegt (leer). „Aus Projektkarte ausfüllen“ übernimmt die Projektdaten.`);
+        return pfad;
+      } catch (e) {
+        fehler(`Formular „${v.name}“ hinzufügen`, e);
+        return null;
       }
     },
 

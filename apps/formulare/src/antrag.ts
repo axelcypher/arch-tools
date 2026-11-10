@@ -8,11 +8,13 @@
  * Ziel des Exports. Unsere Dateien heißen `<Kürzel> <Phase> <JJMMTT> [Nr] <Name>`, z. B. „BS9 GP 261110 Bauantrag.pdf“.
  */
 
+import type { Bedingung } from './bedingung';
+import { bedingungAus, erfuellt } from './bedingung';
 import type { Eintrag } from './dateisystem';
 import type { Feld } from './forma/felder';
 import { abschnitte } from './forma/felder';
 import type { FormularProfil } from './profil';
-import { abschnittId, ausgefuellt, einheiten } from './profil';
+import { abschnittErforderlich, abschnittId, ausgefuellt, einheiten, formularKontext } from './profil';
 
 /* ---------- Einstellungen ---------- */
 
@@ -198,6 +200,8 @@ export interface KatalogEintrag {
   muster?: string;
   /** in neuen Projekten vorgewählt */
   vorgewaehlt: boolean;
+  /** nur erforderlich, wenn die Projektmerkmale zutreffen (z. B. Gebäudeklasse 3–5) */
+  bedingung?: Bedingung;
 }
 
 /** Grundlegende Antragsdokumente – in den Einstellungen anpassbar */
@@ -227,6 +231,7 @@ export function katalogAus(roh: unknown): KatalogEintrag[] {
       quelle: typeof e.quelle === 'string' ? e.quelle : undefined,
       muster: typeof e.muster === 'string' ? e.muster : undefined,
       vorgewaehlt: e.vorgewaehlt === true,
+      bedingung: bedingungAus(e.bedingung)?.filter((t) => t.art === 'merkmal'),
     }));
 }
 
@@ -244,6 +249,8 @@ export interface UmfangEintrag {
   formularDatei?: string;
   /** verknüpfte Datei je Antragsfassung (Dateiname im Ordner der Fassung) */
   dateien?: Record<string, string>;
+  /** nur erforderlich, wenn die Projektmerkmale zutreffen */
+  bedingung?: Bedingung;
 }
 
 /** Angaben der App zum Projekt in `formulare.json` (im FORMA-Projekt, für alle im Büro gleich) */
@@ -252,6 +259,8 @@ export interface ProjektDatei {
   aktiveFassung?: string;
   /** Projektumfang; fehlt = nicht festgelegt (keine Vollständigkeitsprüfung) */
   umfang?: UmfangEintrag[];
+  /** Projektmerkmale (Gebäudeklasse, Sonderbau …): Name → Wert, gilt für alle Formulare */
+  merkmale?: Record<string, string>;
 }
 
 export function projektDateiAus(roh: unknown): ProjektDatei {
@@ -266,14 +275,22 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
         for (const k of ['formular', 'quelle', 'muster', 'nr', 'formularDatei'] as const) if (typeof e[k] === 'string' && e[k]) u[k] = e[k] as string;
         if (e.dateien && typeof e.dateien === 'object')
           u.dateien = Object.fromEntries(Object.entries(e.dateien as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string'));
+        const b = bedingungAus(e.bedingung)?.filter((t) => t.art === 'merkmal');
+        if (b?.length) u.bedingung = b;
         return u;
       });
+  if (o.merkmale && typeof o.merkmale === 'object') {
+    const m = Object.fromEntries(Object.entries(o.merkmale as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string' && !!x[1]));
+    if (Object.keys(m).length) out.merkmale = m;
+  }
   return out;
 }
 
 /** Projektumfang aus den vorgewählten Einträgen des Katalogs */
 export const umfangAusKatalog = (katalog: KatalogEintrag[]): UmfangEintrag[] =>
-  katalog.filter((k) => k.vorgewaehlt).map(({ id, titel, art, formular, quelle, muster }) => ({ id, titel, art, formular, quelle, muster }));
+  katalog
+    .filter((k) => k.vorgewaehlt)
+    .map(({ id, titel, art, formular, quelle, muster, bedingung }) => ({ id, titel, art, formular, quelle, muster, ...(bedingung?.length ? { bedingung } : {}) }));
 
 /* ---------- Zuordnung von Dateien ---------- */
 
@@ -337,10 +354,14 @@ export function formularVon<T extends { pfad: string; name: string; kennung?: st
 
 /* ---------- Vollständigkeit ---------- */
 
-/** grau: fehlt · rot: unvollständig · gelb: ausgefüllt, aber nicht (aktuell) im Antragsordner · grün: aktuell */
-export type Status = 'fehlt' | 'unvollstaendig' | 'offen' | 'aktuell';
+/**
+ * grau: fehlt · rot: unvollständig · gelb: ausgefüllt, aber nicht (aktuell) im Antragsordner · grün: aktuell ·
+ * entfällt: nach den Projektmerkmalen nicht erforderlich
+ */
+export type Status = 'fehlt' | 'unvollstaendig' | 'offen' | 'aktuell' | 'entfaellt';
 
 export const STATUS_TEXT: Record<Status, string> = {
+  entfaellt: 'nicht erforderlich (Projektmerkmale)',
   fehlt: 'fehlt',
   unvollstaendig: 'nicht vollständig ausgefüllt',
   offen: 'noch nicht (aktuell) im Antragsordner',
@@ -352,20 +373,28 @@ export interface Fuellstand {
   gesamt: number;
 }
 
-/** Füllstand eines Formulars wie in der Gliederung (nur angezeigte Abschnitte, Einheiten nach dem Profil) */
-export function fuellstand(felder: Feld[][], profil: FormularProfil, wert: (f: Feld) => string | boolean): Fuellstand {
+/**
+ * Füllstand eines Formulars wie in der Gliederung: nur angezeigte und erforderliche Abschnitte, Einheiten nach dem
+ * Profil ohne die, deren Bedingung (Projektmerkmal, anderes Feld) nicht zutrifft
+ */
+export function fuellstand(felder: Feld[][], profil: FormularProfil, wert: (f: Feld) => string | boolean, merkmale: Record<string, string> = {}): Fuellstand {
+  const k = formularKontext(merkmale, felder.flat(), wert);
   let gefuellt = 0;
   let gesamt = 0;
   for (const seite of felder)
     for (const a of abschnitte(seite)) {
-      if (profil.abschnitte[abschnittId(a)]?.sichtbar === false) continue;
-      for (const e of einheiten(a, profil)) {
+      if (profil.abschnitte[abschnittId(a)]?.sichtbar === false || !abschnittErforderlich(a, profil, k)) continue;
+      for (const e of einheiten(a, profil, k)) {
+        if (e.entfaellt) continue;
         gesamt++;
         if (ausgefuellt(e, wert)) gefuellt++;
       }
     }
   return { gefuellt, gesamt };
 }
+
+/** Ist ein Dokument des Projektumfangs nach den Projektmerkmalen erforderlich? */
+export const umfangErforderlich = (u: Pick<UmfangEintrag, 'bedingung'>, merkmale: Record<string, string>) => erfuellt(u.bedingung, { merkmale });
 
 /**
  * Status eines Formulars: unvollständig, solange nicht alle Angaben gemacht sind; sonst aktuell, wenn die PDF

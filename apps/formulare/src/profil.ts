@@ -8,8 +8,13 @@
  * („Gebäudeklasse 1 2 3 4 5“ ist ausgefüllt, wenn eins angekreuzt ist). Eigene Gruppen fassen beliebige Felder
  * eines Abschnitts zu einer Einheit zusammen – etwa eine Mehrfachauswahl über mehrere Zeilen, die dann 1/1
  * statt 1/5 zählt.
+ *
+ * Abschnitte, Gruppen und Felder können an Bedingungen geknüpft sein (Projektmerkmal oder anderes Feld, siehe
+ * bedingung.ts): Trifft die Bedingung nicht zu, entfallen sie – sie zählen nicht und sind ausgegraut.
  */
 
+import type { Bedingung, BedingungKontext } from './bedingung';
+import { bedingungAus, erfuellt } from './bedingung';
 import type { Abschnitt, Feld } from './forma/felder';
 import { zeilen } from './forma/felder';
 import type { Formular } from './forma/formular';
@@ -20,6 +25,8 @@ export interface AbschnittProfil {
   sichtbar?: boolean;
   /** eigener Titel statt des erkannten */
   titel?: string;
+  /** nur erforderlich, wenn die Bedingung zutrifft */
+  bedingung?: Bedingung;
 }
 
 /**
@@ -42,6 +49,8 @@ export interface Gruppe {
   regel: Regel;
   /** Feldschlüssel (`<Seite>:<Name>`) */
   felder: string[];
+  /** nur erforderlich, wenn die Bedingung zutrifft */
+  bedingung?: Bedingung;
 }
 
 export interface FormularProfil {
@@ -53,17 +62,14 @@ export interface FormularProfil {
   feldTitel?: Record<string, string>;
   /** eigene Gruppen; ein Feld gehört höchstens zu einer */
   gruppen?: Gruppe[];
+  /** Feldschlüssel → nur erforderlich, wenn die Bedingung zutrifft */
+  bedingungen?: Record<string, Bedingung>;
 }
 
-export const leeresProfil = (): FormularProfil => ({ abschnitte: {}, zaehlt: {}, feldTitel: {}, gruppen: [] });
+export const leeresProfil = (): FormularProfil => ({ abschnitte: {}, zaehlt: {}, feldTitel: {}, gruppen: [], bedingungen: {} });
 
 /** Tiefe Kopie zum Ändern */
-export const profilKopie = (p: FormularProfil): FormularProfil => ({
-  abschnitte: Object.fromEntries(Object.entries(p.abschnitte).map(([k, v]) => [k, { ...v }])),
-  zaehlt: { ...p.zaehlt },
-  feldTitel: { ...p.feldTitel },
-  gruppen: (p.gruppen ?? []).map((g) => ({ ...g, felder: [...g.felder] })),
-});
+export const profilKopie = (p: FormularProfil): FormularProfil => structuredClone({ ...leeresProfil(), ...p });
 
 /** Profil gilt je Formular und Stand; ohne Kennung nach dem Dateinamen */
 export function profilSchluessel(f: Formular, name: string): string {
@@ -74,7 +80,24 @@ export function profilSchluessel(f: Formular, name: string): string {
 export const abschnittId = (a: Abschnitt) => `${a.felder[0].seite}:${a.rahmen?.o.name ?? '-'}`;
 
 export const istLeer = (p: FormularProfil) =>
-  !Object.keys(p.abschnitte).length && !Object.keys(p.zaehlt).length && !Object.keys(p.feldTitel ?? {}).length && !(p.gruppen ?? []).length;
+  !Object.keys(p.abschnitte).length && !Object.keys(p.zaehlt).length && !Object.keys(p.feldTitel ?? {}).length && !(p.gruppen ?? []).length && !Object.keys(p.bedingungen ?? {}).length;
+
+/** Kontext für Bedingungen im Formular: Projektmerkmale und die Werte der Felder (nach Schlüssel) */
+export function formularKontext(merkmale: Record<string, string>, felder: Feld[], wert: (f: Feld) => string | boolean): BedingungKontext {
+  const nach = new Map(felder.map((f) => [f.schluessel, f]));
+  return { merkmale, wert: (k) => (nach.has(k) ? wert(nach.get(k)!) : undefined) };
+}
+
+/** Ist der Abschnitt erforderlich (ohne Kontext: immer)? */
+export const abschnittErforderlich = (a: Abschnitt, p: FormularProfil, k?: BedingungKontext) => !k || erfuellt(p.abschnitte[abschnittId(a)]?.bedingung, k);
+
+/** Ist das Feld selbst erforderlich – nach seiner eigenen Bedingung, der seiner Gruppe und seines Abschnitts? */
+export function feldErforderlich(f: Feld, a: Abschnitt | undefined, p: FormularProfil, k: BedingungKontext): boolean {
+  if (a && !abschnittErforderlich(a, p, k)) return false;
+  const g = gruppeVon(p, f.schluessel);
+  if (g && !erfuellt(g.bedingung, k)) return false;
+  return erfuellt(p.bedingungen?.[f.schluessel], k);
+}
 
 /** Titel eines Felds: der eigene, sonst die erkannte Beschriftung */
 export const feldTitel = (f: Feld, p: FormularProfil) => p.feldTitel?.[f.schluessel]?.trim() || f.beschriftung;
@@ -97,10 +120,16 @@ export interface Einheit {
   /** `eins`: ausgefüllt, sobald ein Feld ausgefüllt ist; `alle`: erst wenn alle */
   regel: 'eins' | 'alle';
   gruppe?: Gruppe;
+  /** nach den Bedingungen (noch) nicht erforderlich – zählt nicht */
+  entfaellt?: boolean;
 }
 
-/** Zähleinheiten eines Abschnitts unter Beachtung des Profils, in Lesereihenfolge */
-export function einheiten(a: Abschnitt, profil: FormularProfil): Einheit[] {
+/**
+ * Zähleinheiten eines Abschnitts unter Beachtung des Profils, in Lesereihenfolge. Mit Kontext sind Einheiten,
+ * deren Bedingung nicht zutrifft, als `entfaellt` markiert (Gruppe: ihre Bedingung; sonst: entfällt, wenn alle
+ * ihre Felder entfallen; der Abschnitt wird hier nicht geprüft).
+ */
+export function einheiten(a: Abschnitt, profil: FormularProfil, k?: BedingungKontext): Einheit[] {
   const index = new Map(a.felder.map((f, i) => [f.schluessel, i]));
   const gruppen = gruppenIm(a, profil);
   const gruppiert = new Set(gruppen.flatMap((g) => g.felder));
@@ -114,6 +143,11 @@ export function einheiten(a: Abschnitt, profil: FormularProfil): Einheit[] {
   for (const f of frei) if (f.art === 'text') out.push({ id: f.schluessel, felder: [f], art: 'text', regel: 'eins' });
   for (const z of zeilen(frei.filter((f) => f.art === 'kreuz'))) out.push({ id: z[0].schluessel, felder: z, art: 'auswahl', regel: 'eins' });
   const erstes = (e: Einheit) => Math.min(...e.felder.map((f) => index.get(f.schluessel)!));
+  if (k)
+    for (const e of out) {
+      const weg = e.gruppe ? !erfuellt(e.gruppe.bedingung, k) : e.felder.every((f) => !erfuellt(profil.bedingungen?.[f.schluessel], k));
+      if (weg) e.entfaellt = true;
+    }
   return out.sort((x, y) => erstes(x) - erstes(y));
 }
 
@@ -154,6 +188,8 @@ export function bereinigt(p: FormularProfil): FormularProfil {
     const e: AbschnittProfil = {};
     if (v.sichtbar === false) e.sichtbar = false;
     if (v.titel?.trim()) e.titel = v.titel.trim();
+    const b = bedingungAus(v.bedingung);
+    if (b) e.bedingung = b;
     if (Object.keys(e).length) abschnitte[k] = e;
   }
   const zaehlt = Object.fromEntries(Object.entries(p.zaehlt).filter(([, v]) => v === false));
@@ -171,8 +207,15 @@ export function bereinigt(p: FormularProfil): FormularProfil {
     if (!felder.length) continue;
     const e: Gruppe = { id: g.id, regel: REGELN.some((r) => r.id === g.regel) ? g.regel : 'eins', felder };
     if (g.titel?.trim()) e.titel = g.titel.trim();
+    const b = bedingungAus(g.bedingung);
+    if (b) e.bedingung = b;
     gruppen.push(e);
   }
   if (gruppen.length) out.gruppen = gruppen;
+  const bedingungen = Object.fromEntries(Object.entries(p.bedingungen ?? {}).flatMap(([k, v]) => {
+    const b = bedingungAus(v);
+    return b ? [[k, b]] : [];
+  }));
+  if (Object.keys(bedingungen).length) out.bedingungen = bedingungen;
   return out;
 }

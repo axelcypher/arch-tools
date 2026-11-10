@@ -1,12 +1,19 @@
+import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
+import { useAntrag } from '../antragStore';
+import type { Bedingung, BedingungKontext, Merkmal } from '../bedingung';
+import { bedingungText, erfuellt, fehlendeMerkmale } from '../bedingung';
 import type { Abschnitt, Feld } from '../forma/felder';
 import { abschnitte } from '../forma/felder';
 import { useHervorheben } from '../markierung';
 import { springeZuFeld } from '../navigation';
 import type { Einheit, FormularProfil, Gruppe, Regel } from '../profil';
-import { abschnittId, ausGruppe, ausgefuellt, einheiten, einheitTitel, feldTitel, gruppeBilden, gruppenIm, leeresProfil, profilKopie, profilSchluessel, REGELN } from '../profil';
+import { abschnittErforderlich, abschnittId, ausGruppe, ausgefuellt, einheiten, einheitTitel, feldTitel, formularKontext, gruppeBilden, gruppenIm, leeresProfil, profilKopie, profilSchluessel, REGELN } from '../profil';
 import type { OffenesFormular } from '../store';
 import { useFormulare, wertVon } from '../store';
+import { umfangZeigen } from './Antrag';
+import type { FeldWahl } from './BedingungEditor';
+import { BedingungEditor } from './BedingungEditor';
 import { Symbol } from './Symbol';
 
 interface Punkt {
@@ -16,12 +23,53 @@ interface Punkt {
   titel: string;
   sichtbar: boolean;
   einheiten: { einheit: Einheit; voll: boolean }[];
+  /** nach seiner Bedingung erforderlich */
+  erforderlich: boolean;
   gesamt: number;
   gefuellt: number;
   geaendert: boolean;
 }
 
 const schluesselVon = (felder: Feld[]) => felder.map((f) => f.schluessel);
+
+/** was die Bearbeitung von Bedingungen braucht */
+interface Bed {
+  k: BedingungKontext;
+  merkmale: Merkmal[];
+  felder: FeldWahl[];
+  /** Name eines Felds für die Beschreibung */
+  name: (schluessel: string) => { titel: string; kreuz: boolean } | undefined;
+  /** welcher Editor offen ist: `a:<Abschnitt>`, `g:<Gruppe>`, `f:<Feld>` */
+  offen: string | null;
+  setOffen: (k: string | null) => void;
+}
+
+/** Knopf, der den Bedingungs-Editor eines Eintrags öffnet (hervorgehoben, wenn es eine Bedingung gibt) */
+function BedingungKnopf({ id, bedingung, bed, wofuer }: { id: string; bedingung: Bedingung | undefined; bed: Bed; wofuer: string }) {
+  const aktiv = bed.offen === id;
+  return (
+    <button
+      className={`icon fo-gl-bed${bedingung?.length ? ' gesetzt' : ''}${aktiv ? ' active' : ''}`}
+      aria-label={`Bedingung für ${wofuer}`}
+      aria-expanded={aktiv}
+      title={bedingung?.length ? `Nur erforderlich, wenn ${bedingungText(bedingung, bed.name)}` : 'Bedingung: nur erforderlich, wenn …'}
+      onClick={() => bed.setOffen(aktiv ? null : id)}
+    >
+      <Symbol name="bedingung" />
+    </button>
+  );
+}
+
+/** Beschreibung bzw. Editor unter einem Eintrag */
+function BedingungZeile({ id, bedingung, bed, onChange, ohne, entfaellt }: { id: string; bedingung: Bedingung | undefined; bed: Bed; onChange: (b: Bedingung | undefined) => void; ohne?: string[]; entfaellt: boolean }) {
+  if (bed.offen === id) return <BedingungEditor wert={bedingung} onChange={onChange} merkmale={bed.merkmale} felder={bed.felder} ohne={ohne} />;
+  if (!bedingung?.length) return null;
+  return (
+    <p className={`fo-gl-bed-text${entfaellt ? ' entfaellt' : ''}`}>
+      {entfaellt ? 'entfällt – ' : ''}nur wenn {bedingungText(bedingung, bed.name)}
+    </p>
+  );
+}
 
 /**
  * Gliederung des offenen Formulars: Seiten und Abschnitte mit Füllstand – ein Klick springt hin, Zeigen hebt die
@@ -38,7 +86,11 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
   const [anpassen, setAnpassen] = useState(false);
   const [aufgeklappt, setAufgeklappt] = useState<string | null>(null);
   const [offeneAbschnitte, setOffeneAbschnitte] = useState<Set<string>>(() => new Set());
+  const [bedingungOffen, setBedingungOffen] = useState<string | null>(null);
+  const merkmalWerte = useAntrag((s) => s.projektdatei?.merkmale);
+  const merkmalDefinitionen = useAntrag((s) => s.merkmalDefinitionen);
   const hervor = useHervorheben();
+  const k = useMemo(() => formularKontext(merkmalWerte ?? {}, offen.felder.flat(), (f) => wertVon(offen, f)), [merkmalWerte, offen]);
 
   const seiten = useMemo(
     () =>
@@ -48,7 +100,9 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
           const id = abschnittId(a);
           const p = profil.abschnitte[id];
           const erkannt = a.titel || a.felder[0].beschriftung;
-          const e = einheiten(a, profil).map((einheit) => ({ einheit, voll: ausgefuellt(einheit, (f) => wertVon(offen, f)) }));
+          const erforderlich = abschnittErforderlich(a, profil, k);
+          const e = einheiten(a, profil, k).map((einheit) => ({ einheit, voll: ausgefuellt(einheit, (f) => wertVon(offen, f)) }));
+          const zaehlen = erforderlich ? e.filter((x) => !x.einheit.entfaellt) : [];
           return {
             id,
             abschnitt: a,
@@ -56,16 +110,40 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
             titel: p?.titel || erkannt,
             sichtbar: p?.sichtbar !== false,
             einheiten: e,
-            gesamt: e.length,
-            gefuellt: e.filter((x) => x.voll).length,
+            erforderlich,
+            gesamt: zaehlen.length,
+            gefuellt: zaehlen.filter((x) => x.voll).length,
             geaendert: a.felder.some((f) => f.schluessel in offen.aenderungen),
           };
         }),
       })),
-    [offen, profil],
+    [offen, profil, k],
   );
 
-  const sichtbare = seiten.flatMap((s) => s.punkte.filter((p) => p.sichtbar));
+  // Felder zur Wahl in Bedingungen und ihre Namen
+  const bed: Bed = useMemo(() => {
+    const felder: FeldWahl[] = seiten.flatMap((s) => s.punkte.flatMap((p) => p.abschnitt.felder.map((f) => ({ feld: f, titel: feldTitel(f, profil), ort: `Seite ${s.i + 1} · ${p.titel}` }))));
+    const nach = new Map(felder.map((f) => [f.feld.schluessel, f]));
+    return {
+      k,
+      merkmale: merkmalDefinitionen,
+      felder,
+      name: (x: string) => (nach.has(x) ? { titel: nach.get(x)!.titel, kreuz: nach.get(x)!.feld.art === 'kreuz' } : undefined),
+      offen: bedingungOffen,
+      setOffen: setBedingungOffen,
+    };
+  }, [seiten, profil, k, merkmalDefinitionen, bedingungOffen]);
+
+  // Bedingungen, deren Projektmerkmal im Projekt noch fehlt
+  const fehlend = [
+    ...new Set(
+      [...Object.values(profil.abschnitte).map((a) => a.bedingung), ...(profil.gruppen ?? []).map((g) => g.bedingung), ...Object.values(profil.bedingungen ?? {})].flatMap((b) =>
+        fehlendeMerkmale(b, merkmalWerte ?? {}),
+      ),
+    ),
+  ];
+
+  const sichtbare = seiten.flatMap((s) => s.punkte.filter((p) => p.sichtbar && p.erforderlich));
   const gesamt = sichtbare.reduce((n, p) => n + p.gesamt, 0);
   const gefuellt = sichtbare.reduce((n, p) => n + p.gefuellt, 0);
 
@@ -110,11 +188,23 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
         </div>
       </div>
 
+      {fehlend.length > 0 && (
+        <div className="fo-gl-merkmal">
+          <span>
+            Für die Bedingungen dieses Formulars fehlt im Projekt: <strong>{fehlend.join(', ')}</strong>
+          </span>
+          <button className="small" onClick={umfangZeigen}>
+            Festlegen …
+          </button>
+        </div>
+      )}
+
       {anpassen && (
         <div className="fo-gl-hinweis">
           <span>
             Gilt für dieses Formular in allen Projekten. Auge: in der Gliederung zeigen; Titel überschreiben; aufklappen, um Felder umzubenennen, vom Füllstand auszunehmen oder zu einer
-            Angabe zu gruppieren. Drei Sekunden auf einem Eintrag verweilen umrandet ihn im Formular.
+            Angabe zu gruppieren. <Symbol name="bedingung" /> knüpft Abschnitte, Gruppen und Felder an Bedingungen (Projektmerkmal wie Gebäudeklasse oder anderes Feld) – trifft
+            sie nicht zu, entfallen sie. Drei Sekunden auf einem Eintrag verweilen umrandet ihn im Formular.
           </span>
           {gespeichert && (
             <button className="small" onClick={() => profilSetzen(schluessel, null)}>
@@ -133,7 +223,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
             </button>
             {punkte.map((p) =>
               anpassen ? (
-                <div key={p.id} className={`fo-gl-anpassen${p.sichtbar ? '' : ' versteckt'}`}>
+                <div key={p.id} className={`fo-gl-anpassen${p.sichtbar ? '' : ' versteckt'}${p.erforderlich ? '' : ' entfaellt'}`}>
                   <div className="fo-gl-anpassen-zeile" {...hervor(abschnittBereich(p.abschnitt), true)}>
                     <button
                       className="icon"
@@ -151,6 +241,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                       onBlur={(e) => e.target.value !== (profil.abschnitte[p.id]?.titel ?? '') && abschnittSetzen(p.id, { titel: e.target.value })}
                     />
                     <Zahl punkt={p} />
+                    <BedingungKnopf id={`a:${p.id}`} bedingung={profil.abschnitte[p.id]?.bedingung} bed={bed} wofuer={`Abschnitt ${p.titel}`} />
                     <button
                       className="icon"
                       aria-expanded={aufgeklappt === p.id}
@@ -161,17 +252,34 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                       <Symbol name={aufgeklappt === p.id ? 'pfeilUnten' : 'pfeilRechts'} />
                     </button>
                   </div>
-                  {aufgeklappt === p.id && <FelderAnpassen abschnitt={p.abschnitt} profil={profil} aendern={aendern} hervor={hervor} />}
+                  <BedingungZeile
+                    id={`a:${p.id}`}
+                    bedingung={profil.abschnitte[p.id]?.bedingung}
+                    bed={bed}
+                    entfaellt={!p.erforderlich}
+                    ohne={schluesselVon(p.abschnitt.felder)}
+                    onChange={(b) =>
+                      aendern((pr) => {
+                        pr.abschnitte[p.id] = { ...pr.abschnitte[p.id], bedingung: b };
+                      })
+                    }
+                  />
+                  {aufgeklappt === p.id && <FelderAnpassen abschnitt={p.abschnitt} profil={profil} aendern={aendern} hervor={hervor} bed={bed} />}
                 </div>
               ) : (
-                <div key={p.id} className="fo-gl-punkt">
+                <div key={p.id} className={`fo-gl-punkt${p.erforderlich ? '' : ' entfaellt'}`}>
                   <div className="fo-gl-zeile">
-                    <button className="fo-gl-abschnitt" title={p.titel} onClick={() => springeZuFeld(p.abschnitt.felder[0].schluessel)} {...hervor({ felder: schluesselVon(p.abschnitt.felder) })}>
+                    <button
+                      className="fo-gl-abschnitt"
+                      title={p.erforderlich ? p.titel : `${p.titel} – entfällt: nur wenn ${bedingungText(profil.abschnitte[p.id]?.bedingung, bed.name)}`}
+                      onClick={() => springeZuFeld(p.abschnitt.felder[0].schluessel)}
+                      {...hervor({ felder: schluesselVon(p.abschnitt.felder) })}
+                    >
                       <span className="fo-gl-titel">
                         {p.titel}
                         {p.geaendert && <span className="fo-ungespeichert"> ●</span>}
                       </span>
-                      <Zahl punkt={p} />
+                      {p.erforderlich ? <Zahl punkt={p} /> : <span className="fo-gl-entfaellt">entfällt</span>}
                     </button>
                     {p.einheiten.length > 1 ? (
                       <button
@@ -191,12 +299,23 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                     <div className="fo-gl-unter">
                       {p.einheiten.map(({ einheit: e, voll }) => {
                         const titel = einheitTitel(e, profil);
+                        const weg = !p.erforderlich || !!e.entfaellt;
                         return (
-                          <button key={e.id} className="fo-gl-einheit" title={titel} onClick={() => springeZuFeld(e.felder[0].schluessel)} {...hervor({ felder: schluesselVon(e.felder) })}>
+                          <button
+                            key={e.id}
+                            className={`fo-gl-einheit${weg ? ' entfaellt' : ''}`}
+                            title={weg ? `${titel} – entfällt (Bedingung trifft nicht zu)` : titel}
+                            onClick={() => springeZuFeld(e.felder[0].schluessel)}
+                            {...hervor({ felder: schluesselVon(e.felder) })}
+                          >
                             <span className="fo-gl-titel">{titel}</span>
-                            <span className={`fo-gl-status${voll ? ' voll' : ''}`} aria-label={voll ? 'ausgefüllt' : 'offen'}>
-                              {voll ? '✓' : ''}
-                            </span>
+                            {weg ? (
+                              <span className="fo-gl-entfaellt">entfällt</span>
+                            ) : (
+                              <span className={`fo-gl-status${voll ? ' voll' : ''}`} aria-label={voll ? 'ausgefüllt' : 'offen'}>
+                                {voll ? '✓' : ''}
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -230,7 +349,7 @@ type Hervor = ReturnType<typeof useHervorheben>;
  * Felder eines Abschnitts im Anpassen-Modus: eigene Gruppen mit Namen und Regel, darunter die übrigen Felder.
  * Jedes Feld lässt sich umbenennen und vom Füllstand ausnehmen; angehakte Felder werden zu einer Gruppe.
  */
-function FelderAnpassen({ abschnitt, profil, aendern, hervor }: { abschnitt: Abschnitt; profil: FormularProfil; aendern: Aendern; hervor: Hervor }) {
+function FelderAnpassen({ abschnitt, profil, aendern, hervor, bed }: { abschnitt: Abschnitt; profil: FormularProfil; aendern: Aendern; hervor: Hervor; bed: Bed }) {
   const [auswahl, setAuswahl] = useState<Set<string>>(() => new Set());
   const gruppen = gruppenIm(abschnitt, profil);
   const gruppiert = new Set(gruppen.flatMap((g) => g.felder));
@@ -263,12 +382,14 @@ function FelderAnpassen({ abschnitt, profil, aendern, hervor }: { abschnitt: Abs
                   </option>
                 ))}
               </select>
+              <BedingungKnopf id={`g:${g.id}`} bedingung={g.bedingung} bed={bed} wofuer={`Gruppe ${g.titel || vorschlag}`} />
               <button className="icon" aria-label="Gruppe auflösen" title="Gruppe auflösen – die Felder zählen wieder einzeln" onClick={() => aendern((p) => void (p.gruppen = p.gruppen!.filter((x) => x.id !== g.id)))}>
                 <Symbol name="schliessen" />
               </button>
             </div>
+            <BedingungZeile id={`g:${g.id}`} bedingung={g.bedingung} bed={bed} entfaellt={!erfuellt(g.bedingung, bed.k)} ohne={g.felder} onChange={(b) => gruppeSetzen(g.id, { bedingung: b })} />
             {felder.map((f) => (
-              <FeldZeile key={f.schluessel} feld={f} profil={profil} aendern={aendern} hervor={hervor}>
+              <FeldZeile key={f.schluessel} feld={f} profil={profil} aendern={aendern} hervor={hervor} bed={bed}>
                 <button className="icon" aria-label="Aus der Gruppe nehmen" title="Aus der Gruppe nehmen" onClick={() => aendern((p) => ausGruppe(p, f.schluessel))}>
                   <Symbol name="schliessen" />
                 </button>
@@ -287,6 +408,7 @@ function FelderAnpassen({ abschnitt, profil, aendern, hervor }: { abschnitt: Abs
             profil={profil}
             aendern={aendern}
             hervor={hervor}
+            bed={bed}
             vorne={
               <input
                 type="checkbox"
@@ -341,6 +463,7 @@ function FeldZeile({
   profil,
   aendern,
   hervor,
+  bed,
   vorne,
   zaehltNicht,
   children,
@@ -349,31 +472,50 @@ function FeldZeile({
   profil: FormularProfil;
   aendern: Aendern;
   hervor: Hervor;
-  vorne?: React.ReactNode;
+  bed: Bed;
+  vorne?: ReactNode;
   zaehltNicht?: boolean;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }) {
   const eigen = profil.feldTitel?.[f.schluessel] ?? '';
+  const bedingung = profil.bedingungen?.[f.schluessel];
   return (
-    <div className={`fo-gl-feld${zaehltNicht ? ' zaehlt-nicht' : ''}`} title={f.hinweis} {...hervor({ felder: [f.schluessel] }, true)}>
-      {vorne ?? <span className="fo-gl-einzug" />}
-      <span className="fo-gl-feld-art" aria-hidden>
-        {f.art === 'kreuz' ? '☐' : 'T'}
-      </span>
-      <input
-        key={`${f.schluessel}|${eigen}`}
-        className="fo-gl-feld-titel"
-        defaultValue={eigen}
-        placeholder={f.beschriftung}
-        aria-label={`Feldtitel für ${f.beschriftung}`}
-        onBlur={(e) =>
-          e.target.value !== eigen &&
+    <>
+      <div className={`fo-gl-feld${zaehltNicht ? ' zaehlt-nicht' : ''}${erfuellt(bedingung, bed.k) ? '' : ' entfaellt'}`} title={f.hinweis} {...hervor({ felder: [f.schluessel] }, true)}>
+        {vorne ?? <span className="fo-gl-einzug" />}
+        <span className="fo-gl-feld-art" aria-hidden>
+          {f.art === 'kreuz' ? '☐' : 'T'}
+        </span>
+        <input
+          key={`${f.schluessel}|${eigen}`}
+          className="fo-gl-feld-titel"
+          defaultValue={eigen}
+          placeholder={f.beschriftung}
+          aria-label={`Feldtitel für ${f.beschriftung}`}
+          onBlur={(e) =>
+            e.target.value !== eigen &&
+            aendern((p) => {
+              p.feldTitel![f.schluessel] = e.target.value;
+            })
+          }
+        />
+        <BedingungKnopf id={`f:${f.schluessel}`} bedingung={bedingung} bed={bed} wofuer={`Feld ${feldTitel(f, profil)}`} />
+        {children}
+      </div>
+      <BedingungZeile
+        id={`f:${f.schluessel}`}
+        bedingung={bedingung}
+        bed={bed}
+        entfaellt={!erfuellt(bedingung, bed.k)}
+        ohne={[f.schluessel]}
+        onChange={(b) =>
           aendern((p) => {
-            p.feldTitel![f.schluessel] = e.target.value;
+            p.bedingungen = { ...p.bedingungen };
+            if (b) p.bedingungen[f.schluessel] = b;
+            else delete p.bedingungen[f.schluessel];
           })
         }
       />
-      {children}
-    </div>
+    </>
   );
 }

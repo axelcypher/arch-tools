@@ -2902,3 +2902,251 @@ button.gefahr {
   display: flex;
   gap: 6px;
 }
+
+/* ---------- Bedingungen ---------- */
+
+.bd {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 3px 0 6px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+  font-size: 11.5px;
+}
+.bd p {
+  margin: 0;
+}
+.bd-teil {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.bd-teil select,
+.bd-teil input:not([type='checkbox']) {
+  font-size: 11.5px;
+  padding: 1px 4px;
+  min-width: 0;
+}
+.bd-feld {
+  max-width: 100%;
+  flex: 1 1 140px;
+}
+.bd-text {
+  width: 90px;
+}
+.bd-wort {
+  font-weight: 600;
+  color: var(--accent);
+}
+.bd-werte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.bd-wert {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 5px 0 2px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  background: var(--panel);
+}
+.bd-wert.an {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.bd-wert input {
+  width: auto;
+  margin: 0;
+}
+.bd-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.bd-knoepfe button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+button.icon.fo-gl-bed {
+  min-width: 20px;
+  height: 20px;
+  padding: 0;
+}
+button.icon.fo-gl-bed.gesetzt {
+  color: var(--accent);
+}
+.fo-gl-bed-text {
+  margin: 0 0 3px 30px;
+  font-size: 11px;
+  color: var(--accent);
+}
+.fo-gl-bed-text.entfaellt {
+  color: var(--muted);
+}
+.fo-gl-felder .fo-gl-bed-text {
+  margin-left: 36px;
+}
+.fo-gl-entfaellt {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+}
+.fo-gl-punkt.entfaellt .fo-gl-titel,
+.fo-gl-einheit.entfaellt .fo-gl-titel,
+.fo-gl-anpassen.entfaellt > .fo-gl-anpassen-zeile input,
+.fo-gl-feld.entfaellt .fo-gl-feld-titel {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+.fo-gl-merkmal {
+  margin: 4px 8px 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: var(--warn-text);
+  font-size: 11.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+/* im Formular: (noch) nicht erforderliche Felder neutral statt farbig */
+.fo-papier .fo-memo.entfaellt,
+.fo-check.entfaellt input {
+  background: rgba(0, 0, 0, 0.035);
+}
+.st-punkt.entfaellt {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px #9aa1ad;
+}
+.pu-zeile.entfaellt {
+  opacity: 0.6;
+  border-left-style: dashed;
+}
+.pu-bedingung {
+  color: var(--accent);
+}
+.pu-bedingung-editor {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pu-merkmale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+.pu-merkmale > strong {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+.pu-merkmal {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pu-merkmale > .small-text {
+  flex-basis: 100%;
+}
+.es-bedingung {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.es-bedingung.gesetzt {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.es-bedingung-zeile td {
+  background: var(--bg);
+}
+
+/* ---------- Formular hinzufügen ---------- */
+
+.fh {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fh h3,
+.fh p {
+  margin: 0;
+}
+.fh input[type='search'] {
+  width: 100%;
+}
+.fh-liste {
+  max-height: 340px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.fh-zeile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+.fh-zeile:hover:not(:disabled) {
+  background: var(--hover);
+}
+.fh-zeile.aktiv {
+  background: var(--accent-soft);
+}
+.fh-zeile .symbol {
+  color: var(--muted);
+}
+.fh-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fh-text > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fh-da {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 6px;
+}

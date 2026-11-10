@@ -5,6 +5,7 @@ import { anzahlZugeordnet } from './ausfuellen';
 import { AusfuellenDialog } from './components/AusfuellenDialog';
 import { EinstellungenAnsicht } from './components/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
+import { FormularHinzufuegenDialog, useHinzufuegenDialog } from './components/FormularHinzufuegen';
 import { MenueHost, MenueKnopf } from './components/Menue';
 import { RueckfrageHost } from './components/Rueckfrage';
 import { useAntrag } from './antragStore';
@@ -82,6 +83,7 @@ export function App() {
   const zugeordnet = useMemo(() => (offen ? anzahlZugeordnet(offen) : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
   const formularSichtbar = !!offen && haupt === 'formular';
   const exportPfad = useExportDialog((s) => s.pfad);
+  const hinzufuegen = useHinzufuegenDialog((s) => s.offen);
   // Export-Dialog gehört zum Projekt
   useEffect(() => useExportDialog.getState().schliessen(), [projekt]);
 
@@ -319,6 +321,7 @@ export function App() {
         {formularSichtbar && verlaufOffen && <VerlaufLeiste offen={offen} />}
       </main>
       {exportPfad && <ExportDialog formularPfad={exportPfad} onClose={() => useExportDialog.getState().schliessen()} />}
+      {hinzufuegen && projekt && <FormularHinzufuegenDialog onClose={() => useHinzufuegenDialog.getState().setOffen(false)} />}
       <MenueHost />
       <RueckfrageHost />
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
