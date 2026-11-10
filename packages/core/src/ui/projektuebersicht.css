@@ -1,0 +1,246 @@
+/* Projektübersicht (gemeinsame Startseite der Apps): zuletzt geöffnet, darunter je Quelle – volle Höhe, Karten im Raster */
+.pa {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: color-mix(in srgb, var(--bg) 92%, var(--accent) 8%);
+}
+.pa-kopf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 28px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-wrap: wrap;
+}
+.pa-kopf-titel {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-right: auto;
+}
+.pa-kopf h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.pa-suche {
+  width: min(340px, 100%);
+}
+.pa-rollbereich {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pa-abschnitt-titel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pa-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+.pa-gruppe {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.pa-gruppe > .pa-raster {
+  padding: 4px 14px 14px;
+}
+.pa-gruppe-kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  font-weight: 600;
+}
+.pa-gruppe-kopf:hover:not(:disabled) {
+  background: var(--hover);
+}
+.pa-gruppe-kopf:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.pa-gruppe-name {
+  font-size: 14px;
+}
+.pa-gruppe-pfad {
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.pa-zahl {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+}
+.pa-karte {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 12px 14px 10px;
+  min-height: 132px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s,
+    transform 0.12s;
+  white-space: normal;
+}
+.pa-karte:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+.pa-karte.aktiv {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.pa-karte-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pa-kuerzel {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.pa-titel {
+  font-size: 13px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pa-info {
+  margin-top: auto;
+}
+.pa-marken {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pa-marke {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 18px;
+  background: var(--hover);
+  color: var(--muted);
+}
+.pa-marke svg {
+  width: 11px;
+  height: 11px;
+}
+.pa-marke.warnung {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.pa-marke.hinweis {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pa-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line-soft, var(--border));
+}
+.pa-balken {
+  display: flex;
+  gap: 2px;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--hover);
+}
+.pa-balken-teil.aktuell {
+  background: #2e9e5b;
+}
+.pa-balken-teil.offen {
+  background: #e3a412;
+}
+.pa-balken-teil.unvollstaendig {
+  background: #d64541;
+}
+.pa-balken-teil.fehlt {
+  background: #9aa1ad;
+}
+.pa-status-text {
+  color: var(--muted);
+}
+.pa-ampel {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pa-ampel.aktuell {
+  background: #2e9e5b;
+}
+.pa-ampel.offen {
+  background: #e3a412;
+}
+.pa-ampel.unvollstaendig {
+  background: #d64541;
+}
+.pa-ampel.fehlt {
+  background: #9aa1ad;
+}
+.pa-ampel.ohne,
+.pa-ampel.unbekannt {
+  box-shadow: inset 0 0 0 1.5px #9aa1ad;
+}
+.pa-ampel.unbekannt {
+  opacity: 0.5;
+}
+.pa-leer {
+  max-width: 520px;
+  margin: 80px auto;
+  padding: 0 16px;
+  text-align: center;
+}
+.pa-nichts {
+  text-align: center;
+  margin-top: 30px;
+}
+.pa .symbol {
+  flex-shrink: 0;
+}
