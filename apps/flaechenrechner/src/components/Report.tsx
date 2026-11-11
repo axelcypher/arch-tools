@@ -8,6 +8,7 @@ import { polygonArea } from '@core/geometry';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useEditor } from '../store/store';
 import { PlanFigure } from './PlanFigure';
+import { raumRechenweg, rechenwegText } from '../core/raumRechenweg';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { DruckKopf } from '@core/ui/DruckKopf';
 
@@ -25,6 +26,7 @@ export function Report() {
   const massText = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.text;
   const [showPlans, setShowPlans] = useState(true);
   const [showBackground, setShowBackground] = useState(false);
+  const [showRechenweg, setShowRechenweg] = useState(false);
 
   const din277Row = (name: string, h: number | null, t: AreaTotals, cls = '') => (
     <tr className={cls} key={name}>
@@ -53,6 +55,10 @@ export function Report() {
           <label className="toggle">
             <input type="checkbox" checked={showBackground} disabled={!showPlans} onChange={(e) => setShowBackground(e.target.checked)} />
             Hintergrundplan
+          </label>
+          <label className="toggle" title="Rechenweg je Raum: Maße, Putzabzug, Abzugsflächen, Anrechnung">
+            <input type="checkbox" checked={showRechenweg} onChange={(e) => setShowRechenweg(e.target.checked)} />
+            Rechenweg je Raum
           </label>
           <button onClick={() => druckenAls({ datei: useEditor.getState().datei, projektName: project.name, zusatz: 'WoFl+BGF+BRI' })}>Drucken / PDF</button>
           <button className="primary" onClick={() => setOpen(false)}>
@@ -199,7 +205,7 @@ export function Report() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sr.rooms.map((room) => (
+                    {sr.rooms.map((room) => [
                       <tr key={room.shapeId}>
                         <td>{room.nummer}</td>
                         <td>
@@ -215,8 +221,16 @@ export function Report() {
                         <td className="num">{room.woflKategorie === 'keine' ? '' : fmt2(room.woflFaktor)}</td>
                         <td className="num">{room.woflKategorie === 'keine' ? '' : fmt2(room.woflArea)}</td>
                         <td>{room.wohnung}</td>
-                      </tr>
-                    ))}
+                      </tr>,
+                      showRechenweg && !room.subtract && raumById.get(room.shapeId) ? (
+                        <tr key={`${room.shapeId}-rw`} className="rechenweg">
+                          <td />
+                          <td colSpan={mitPutz ? 10 : 8} className="formula">
+                            {rechenwegText(raumRechenweg(raumById.get(room.shapeId)!, storey, project))}
+                          </td>
+                        </tr>
+                      ) : null,
+                    ])}
                     <tr className="sum">
                       <td />
                       <td>Summe {sr.name}</td>

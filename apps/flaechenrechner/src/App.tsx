@@ -5,6 +5,7 @@ import { Properties } from './components/Properties';
 import { Report } from './components/Report';
 import { Sidebar } from './components/Sidebar';
 import { KopieDialogHost } from './components/KopieDialog';
+import { katalogLaden } from './core/katalog';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
 import { projektDateiOeffnen, projektSpeichernAktion, projektUebernehmen, Toolbar, verwerfenOk } from './components/Toolbar';
@@ -29,6 +30,9 @@ export function App() {
     const s = useEditor.getState();
     return isTauri() || (!s.datei && s.project.storeys.every((st) => !st.shapes.length));
   });
+
+  // Raumkatalog und Nutzungsarten aus dem Konfigurationsordner (F-11, F-14)
+  useEffect(() => void katalogLaden(), []);
 
   useEffect(() => {
     document.title = `${dirty ? '• ' : ''}${name} – Flächenrechner`;

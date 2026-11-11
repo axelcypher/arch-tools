@@ -190,11 +190,30 @@ mitbumpt).
 - [x] **FR-21** Bestand nach II. BV – FR 0.20.0: Projektschalter „Altberechnung nach II. BV (nur Vergleich)“ mit
   deutlichem Hinweis in Seitenleiste und Bericht; Wirkung nur auf den Standardfaktor für Freisitze (½); Standard
   bleibt WoFlV, Schalter aus = unverändert (Test).
-- [ ] **F-10** Plausibilitätsprüfung
-- [ ] **F-11** Raumkatalog und Vorgaben für neue Räume
+Block 3 (Verbesserungen F-10, F-11, F-13, F-14): FR 0.21.0; Rechenkern (Nutzungsgruppe aus der Nutzungsart) auch
+KO 0.11.2 (Patch).
+
+- [x] **F-10** Plausibilitätsprüfung – FR 0.21.0: reine Funktion `core/pruefung.ts` (R-/S-Raum außerhalb bzw. über den
+  Umriss hinaus, NRF > BGF je R/S, Umrisse bzw. Räume überlappen – Abzugsflächen ausgenommen –, Bereiche ohne Raum
+  erst ab 0,6 m Breite und 1 m², doppelte Nummern, Raum ohne Wohnung, „keine Wohnfläche“ im Wohngeschoss, „voll“ im
+  Dachgeschoss (FR-08), S-Umriss ohne Körperhöhe (FR-10), Raum ohne Katalogeintrag bei eigenem Katalog, zum Prüfen
+  markierte Umrisse), alles als Warnung/Hinweis; Ampel „Prüfen“ in der Auswertung, Klick wählt die Fläche; „Auf
+  Umriss beschneiden“ in den Raumeigenschaften. Damit auch der Prüflisten-Teil von F-01, FR-02 und FR-08.
+- [x] **F-11** Raumkatalog und Vorgaben für neue Räume – FR 0.21.0: Bezeichnung mit Vorschlagsliste, Katalogname setzt
+  Nutzungsgruppe/Nutzungsart und WoFlV-Anrechnung („aus Katalog“, Kennzeichen entfällt bei Änderung von Hand);
+  Katalog des Büros `raumkatalog.json` im Konfigurationsordner, sonst Vorgabe mit getrennten Einträgen
+  Abstellraum in/außerhalb der Wohnung, HWR/Waschküche, Treppenraum, Flur (VF, keine) und Flur in der Wohnung;
+  neue Räume übernehmen Nutzung und Anrechnung vom zuletzt angelegten Raum des Geschosses (im leeren Wohngeschoss
+  „voll“); Wohnung als Auswahl der vorhandenen, Schreibvarianten werden vereinheitlicht. Keine Sperre für 100 % im
+  Dachgeschoss (nur Hinweis in der Prüfliste).
 - [ ] **F-12** Dachschrägen nach WoFlV gliedern
-- [ ] **F-13** Rechenweg je Raum
-- [ ] **F-14** Nutzungsarten als zweite Ebene
+- [x] **F-13** Rechenweg je Raum – FR 0.21.0: `core/raumRechenweg.ts` (Rechtecke L × B bzw. Dreiecke aus
+  `flaechenZerlegung.ts`, sonst Gauß’sche Formel; Putzabzug, Abzugsflächen als Minuszeilen, Anrechnung bzw.
+  Raumteile nach Höhe), Summe = Ergebnis der Auswertung (Test); Bericht mit Schalter „Rechenweg je Raum“, Excel-Blatt
+  „Rechenweg Räume“ mit Formeln. Abweichung: statt aufklappbarer Spalte eine zuschaltbare Zeile je Raum (druckbar).
+- [x] **F-14** Nutzungsarten als zweite Ebene – FR 0.21.0: Feld „Nutzungsart“ je Raum (Liste des Büros
+  `nutzungsarten.json`, Vorgabe nur 1.1, 7.1, 7.3, 7.4, 9.1 mit kurzen Bezeichnungen – keine Normtabelle), Gruppe
+  folgt der ersten Ziffer (`raumNutzung`), Auswertung weiter je Gruppe; ohne Nutzungsart wie bisher (Test).
 - [ ] **F-15** BGF-Umriss aus dem Plan erkennen
 - [ ] **F-16** Kalibrieren mit Fang und Kontrollmaß
 - [ ] **F-17** Bericht für die Bauvorlage

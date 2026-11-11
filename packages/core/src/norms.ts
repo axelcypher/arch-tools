@@ -20,6 +20,19 @@ export function nutzungInfo(id: Nutzungsgruppe) {
   return NUTZUNGSGRUPPEN.find((n) => n.id === id) ?? NUTZUNGSGRUPPEN[0];
 }
 
+/** Nutzungsgruppe aus der Nummer einer Nutzungsart (zweite Ebene): „7.1“ → NUF 7, „8.…“ → TF, „9.…“ → VF */
+export function gruppeAusNutzungsart(nr: string | undefined): Nutzungsgruppe | undefined {
+  const m = /^\s*([1-9])(?:\.|$)/.exec(nr ?? '');
+  if (!m) return undefined;
+  const d = Number(m[1]);
+  return d <= 7 ? (`NUF${d}` as Nutzungsgruppe) : d === 8 ? 'TF' : 'VF';
+}
+
+/** Nutzungsgruppe eines Raums: aus der Nutzungsart, wenn eine angegeben ist, sonst die gewählte Gruppe */
+export function raumNutzung(r: { nutzung: Nutzungsgruppe; nutzungsart?: string }): Nutzungsgruppe {
+  return gruppeAusNutzungsart(r.nutzungsart) ?? r.nutzung;
+}
+
 /** Raumumschließung nach DIN 277:2021-08 (sinngemäß): kurz für Auswahllisten, label als Erläuterung */
 export const UMSCHLIESSUNG: { id: Raumumschliessung; kurz: string; label: string }[] = [
   { id: 'R', kurz: 'R – Regelfall', label: 'R – Regelfall: allseitig in voller Höhe umschlossen' },

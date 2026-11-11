@@ -4,6 +4,9 @@ import { buildExportContext, PLACEHOLDER_DOCS } from '../core/exportData';
 import { colLetter, excel, fuelleVorlage, NUM, platzhalterBlatt, styleHeader, styleSum, titel as title, toCellValue, writeFormulaResults } from '@core/excel/fill';
 import type { Project } from '@core/model';
 import { NUF_IDS, nutzungInfo } from '@core/norms';
+import { raumRechenweg } from '../core/raumRechenweg';
+
+const round = (v: number, d: number) => Math.round(v * 10 ** d) / 10 ** d;
 
 /**
  * Excel-Export (.xlsx) mit ExcelJS – entweder im Standardlayout oder auf Basis einer
@@ -103,6 +106,63 @@ export async function exportDefault(project: Project, result: ProjectResult): Pr
       c.width = i === 0 ? 18 : 11;
       if (i > 0) c.numFmt = NUM;
     });
+  }
+
+  // Rechenweg je Raum (F-13): Maße und Formeln, damit gedruckte Werte und Rechnung übereinstimmen
+  {
+    const ws = wb.addWorksheet('Rechenweg Räume');
+    title(ws, 'Rechenweg je Raum (Maße, Putzabzug, Abzugsflächen, Wohnfläche)', project);
+    ws.addRow([]);
+    const h = ws.addRow(['Geschoss', 'Nr.', 'Raum', 'Teil', 'L bzw. g [m]', 'B bzw. h [m]', 'Faktor', 'Fläche [m²]']).number;
+    styleHeader(ws, h);
+    for (const st of project.storeys) {
+      for (const r of st.shapes) {
+        if (r.kind !== 'room' || r.subtract || r.points.length < 3) continue;
+        const w = raumRechenweg(r, st, project);
+        const teilZeilen: number[] = [];
+        let putzZeile = 0;
+        const abzugZeilen: { zeile: number; nrf: boolean }[] = [];
+        let erste = true;
+        const zeile = (teil: string, l: number | null, b: number | null, f: number | null, wert: unknown) => {
+          const row = ws.addRow([erste ? st.name : null, erste ? r.nummer : null, erste ? r.name : null, teil, l, b, f, wert]);
+          erste = false;
+          return row.number;
+        };
+        for (const z of w.zeilen) {
+          if (z.art === 'teil') {
+            const n = ws.rowCount + 1;
+            teilZeilen.push(zeile(z.text, round(z.laenge!, 3), round(z.breite!, 3), z.faktor!, { formula: `ROUND(E${n}*F${n}*G${n},4)`, result: z.flaeche }));
+          } else if (z.art === 'gauss') teilZeilen.push(zeile(z.text, null, null, null, round(z.flaeche, 4)));
+          else if (z.art === 'putz') {
+            const n = ws.rowCount + 1;
+            putzZeile = zeile(z.text, null, null, -z.faktor! / 100, { formula: `ROUND(SUM(${teilZeilen.map((t) => `H${t}`).join(',')})*G${n},4)`, result: z.flaeche });
+          } else if (z.art === 'abzug') abzugZeilen.push({ zeile: zeile(z.text, null, null, null, round(z.flaeche, 4)), nrf: !!z.nrf });
+        }
+        const flaecheTeile = [...teilZeilen, ...(putzZeile ? [putzZeile] : [])].map((t) => `H${t}`);
+        const nrfTeile = [...flaecheTeile, ...abzugZeilen.filter((a) => a.nrf).map((a) => `H${a.zeile}`)];
+        const nrf = zeile('NRF des Raums', null, null, null, { formula: `ROUND(SUM(${nrfTeile.join(',')}),2)`, result: round(w.nrf, 2) });
+        ws.getRow(nrf).font = { bold: true };
+        if (r.wofl.kategorie !== 'keine') {
+          const woflTeile = [...flaecheTeile, ...w.zeilen.filter((z) => z.art === 'abzug').flatMap((z, i) => (z.wofl ? [`H${abzugZeilen[i].zeile}`] : []))];
+          const wz = w.zeilen.filter((z) => z.art === 'wofl');
+          const gleich = wz.length === 1 || (r.wofl.kategorie === 'hoehen' && !!r.wofl.anteile);
+          if (gleich && r.wofl.kategorie === 'hoehen' && r.wofl.anteile) {
+            const n = ws.rowCount + 1;
+            const a = r.wofl.anteile;
+            zeile('Wohnfläche (Raumteile ≥ 2 m × 1 + 1–2 m × 0,5)', null, null, round(a.h2 + 0.5 * a.h12, 6), { formula: `ROUND(SUM(${woflTeile.join(',')})*G${n},2)`, result: round(w.wofl, 2) });
+          } else if (gleich) {
+            const n = ws.rowCount + 1;
+            zeile('Wohnfläche', null, null, round(wz[0].faktor ?? 0, 6), { formula: `ROUND(SUM(${woflTeile.join(',')})*G${n},2)`, result: round(w.wofl, 2) });
+          } else zeile('Wohnfläche', null, null, null, round(w.wofl, 2));
+        }
+        ws.addRow([]);
+      }
+    }
+    [12, 8, 22, 34, 12, 12, 9, 12].forEach((wd, i) => (ws.getColumn(i + 1).width = wd));
+    ws.getColumn(5).numFmt = '#,##0.000';
+    ws.getColumn(6).numFmt = '#,##0.000';
+    ws.getColumn(8).numFmt = NUM;
+    ws.views = [{ state: 'frozen', ySplit: h }];
   }
 
   // Raumliste

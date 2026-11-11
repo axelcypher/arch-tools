@@ -7,6 +7,11 @@ import { istDachgeschoss, istKellergeschoss, shapeArea, storeyElevations } from 
 import { ABZUG_ARTEN, NUTZUNGSGRUPPEN, UMSCHLIESSUNG, WOFL_HINWEIS, WOFL_KATEGORIEN, woflArt, woflFaktor, woflHinweis } from '@core/norms';
 import { mapShape, mapStorey, useActiveStorey, useEditor, useSelectedShape, useSelectedShapes } from '../store/store';
 import { BackgroundPanel } from './BackgroundPanel';
+import { Pruefliste } from './Pruefliste';
+import { katalogAnwenden, katalogEintrag, useKatalog, wohnungNormalisieren } from '../core/katalog';
+import { wohnungenImProjekt } from '../core/geschosse';
+import { raumAufUmriss } from '@core/pruefung';
+import { gruppeAusNutzungsart } from '@core/norms';
 import { doppelteNummern, raeumeNeuNummerieren, raumNummernPraefix } from '../core/geschosse';
 import type { NummerReihenfolge } from '../core/geschosse';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
@@ -73,17 +78,9 @@ function ShapeProperties({ shape }: { shape: Shape }) {
         </div>
       </div>
       {selfX && <p className="warning">Das Polygon überschneidet sich selbst – die Fläche ist so nicht korrekt.</p>}
+      {shape.kind === 'room' && !shape.subtract && <AufUmrissBeschneiden shape={shape} upd={upd} />}
 
-      {shape.kind === 'room' && (
-        <div className="field-row">
-          <Field label="Nr.">
-            <TextField value={shape.nummer} onChange={(v) => upd((s) => ({ ...s, nummer: v }))} />
-          </Field>
-          <Field label="Bezeichnung">
-            <TextField value={shape.name} onChange={(v) => upd((s) => ({ ...s, name: v }))} />
-          </Field>
-        </div>
-      )}
+      {shape.kind === 'room' && <RaumBezeichnung shape={shape} upd={upd} />}
       {shape.kind === 'room' && !shape.subtract && shape.nummer.trim() && doppelteNummern(storey).has(shape.nummer.trim()) && (
         <p className="warning small-text">Die Raumnummer {shape.nummer} kommt in diesem Geschoss mehrfach vor.</p>
       )}
@@ -167,7 +164,19 @@ function ShapeProperties({ shape }: { shape: Shape }) {
       {shape.kind === 'room' && (
         <>
           <Field label="Nutzungsgruppe (DIN 277)">
-            <select value={shape.nutzung} onChange={(e) => upd((s) => ({ ...s, nutzung: e.target.value as Nutzungsgruppe }))}>
+            <select
+              value={shape.nutzung}
+              onChange={(e) =>
+                upd((s) => {
+                  if (s.kind !== 'room') return s;
+                  // eine Nutzungsart einer anderen Gruppe passt nicht mehr
+                  const { nutzungsart, katalog: _k, ...rest } = s;
+                  void _k;
+                  const g = e.target.value as Nutzungsgruppe;
+                  return { ...rest, nutzung: g, ...(nutzungsart && gruppeAusNutzungsart(nutzungsart) === g ? { nutzungsart } : {}) };
+                })
+              }
+            >
               {NUTZUNGSGRUPPEN.map((n) => (
                 <option key={n.id} value={n.id}>
                   {n.kurz} – {n.label}
@@ -175,6 +184,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
               ))}
             </select>
           </Field>
+          <NutzungsartFeld shape={shape} upd={upd} />
           <Field label="Putzabzug [%]" hint="z. B. 3 % bei Flächen aus Rohbaumaßen (wie Archicad-Zonen)">
             <NumberField
               value={shape.putzabzug}
@@ -194,7 +204,12 @@ function ShapeProperties({ shape }: { shape: Shape }) {
             <select
               value={shape.wofl.kategorie}
               onChange={(e) =>
-                upd((s) => (s.kind === 'room' ? { ...s, wofl: { ...s.wofl, kategorie: e.target.value as WoflKategorie, faktor: undefined } } : s))
+                upd((s) => {
+                  if (s.kind !== 'room') return s;
+                  const { katalog: _k, ...rest } = s;
+                  void _k;
+                  return { ...rest, wofl: { ...s.wofl, kategorie: e.target.value as WoflKategorie, faktor: undefined } };
+                })
               }
             >
               {WOFL_KATEGORIEN.map((k) => (
@@ -221,12 +236,18 @@ function ShapeProperties({ shape }: { shape: Shape }) {
           {shape.wofl.kategorie === 'hoehen' && <HoehenTeile shape={shape} upd={upd} />}
           {shape.wofl.kategorie !== 'keine' && (
             <>
-              <Field label="Wohnung">
+              <Field label="Wohnung" hint="Auswahl der vorhandenen Wohnungen; eine neue einfach eintippen (gleiche Schreibweise wie vorhandene wird übernommen)">
                 <TextField
                   value={shape.wofl.wohnung}
                   placeholder="z. B. WE 01"
-                  onChange={(v) => upd((s) => (s.kind === 'room' ? { ...s, wofl: { ...s.wofl, wohnung: v } } : s))}
+                  list="fr-wohnungen"
+                  onChange={(v) => upd((s) => (s.kind === 'room' ? { ...s, wofl: { ...s.wofl, wohnung: wohnungNormalisieren(v, wohnungenImProjekt(project)) } } : s))}
                 />
+                <datalist id="fr-wohnungen">
+                  {wohnungenImProjekt(project).map((w) => (
+                    <option key={w} value={w} />
+                  ))}
+                </datalist>
               </Field>
               <p className="muted">
                 Anrechenbar: {fmt2(area * woflFaktor(shape.wofl, project.settings) * (shape.subtract ? -1 : 1))} m²
@@ -630,6 +651,7 @@ function Summary() {
           {sr.kgf.S < -0.005 && <p className="warning">NRF (S) ist größer als BGF (S) – fehlt ein S-Umriss (Balkon, Loggia)?</p>}
         </>
       )}
+      <Pruefliste />
       {sr.bgf.total > 0 && (
         <p className="muted small-text">
           NRF/BGF: {fmt2((sr.nrf.total / sr.bgf.total) * 100)} % · KGF/BGF: {fmt2((sr.kgf.total / sr.bgf.total) * 100)} %
@@ -713,5 +735,95 @@ function HoehenTeile({ shape, upd }: { shape: RoomShape; upd: (fn: (s: Shape) =>
         <input className="num" readOnly value={fmt2(a.h01 * f)} />
       </Field>
     </div>
+  );
+}
+
+/** Nr. und Bezeichnung mit Vorschlägen aus dem Raumkatalog: ein Katalogname setzt Nutzung und Anrechnung (F-11) */
+function RaumBezeichnung({ shape, upd }: { shape: RoomShape; upd: (fn: (s: Shape) => Shape) => void }) {
+  const katalog = useKatalog((s) => s.katalog);
+  return (
+    <>
+      <div className="field-row">
+        <Field label="Nr.">
+          <TextField value={shape.nummer} onChange={(v) => upd((s) => ({ ...s, nummer: v }))} />
+        </Field>
+        <Field label="Bezeichnung">
+          <TextField
+            value={shape.name}
+            list="fr-raumkatalog"
+            onChange={(v) =>
+              upd((s) => {
+                if (s.kind !== 'room') return s;
+                const e = katalogEintrag(katalog, v);
+                return e ? katalogAnwenden(s, e) : { ...s, name: v };
+              })
+            }
+          />
+          <datalist id="fr-raumkatalog">
+            {katalog.map((k) => (
+              <option key={k.name} value={k.name} />
+            ))}
+          </datalist>
+        </Field>
+      </div>
+      {shape.katalog && (
+        <p className="muted small-text katalog-hinweis">
+          Nutzung und Anrechnung aus dem Raumkatalog („{shape.katalog}“) – Vorschlag, bitte prüfen.
+        </p>
+      )}
+    </>
+  );
+}
+
+/** Nutzungsart als zweite Ebene (F-14): Nummer aus dem Katalog des Büros, die Gruppe folgt der ersten Ziffer */
+function NutzungsartFeld({ shape, upd }: { shape: RoomShape; upd: (fn: (s: Shape) => Shape) => void }) {
+  const arten = useKatalog((s) => s.nutzungsarten);
+  const passend = arten.filter((a) => gruppeAusNutzungsart(a.nr) === shape.nutzung);
+  const bez = arten.find((a) => a.nr === shape.nutzungsart)?.bezeichnung;
+  return (
+    <Field label="Nutzungsart (optional)" hint={bez ? `${shape.nutzungsart} ${bez}` : 'zweite Ebene unter der Nutzungsgruppe, z. B. 7.1 – die Auswertung summiert weiter je Gruppe'}>
+      <TextField
+        value={shape.nutzungsart ?? ''}
+        list="fr-nutzungsarten"
+        placeholder={passend[0]?.nr ?? ''}
+        onChange={(v) =>
+          upd((s) => {
+            if (s.kind !== 'room') return s;
+            const { nutzungsart: _a, ...rest } = s;
+            void _a;
+            const nr = v.trim();
+            const g = gruppeAusNutzungsart(nr);
+            return nr ? { ...rest, nutzungsart: nr, ...(g ? { nutzung: g } : {}) } : rest;
+          })
+        }
+      />
+      <datalist id="fr-nutzungsarten">
+        {arten.map((a) => (
+          <option key={a.nr} value={a.nr} label={a.bezeichnung} />
+        ))}
+      </datalist>
+    </Field>
+  );
+}
+
+/** Raum ragt über den BGF-Umriss hinaus: auf den Umriss beschneiden (NRF muss innerhalb der BGF liegen) */
+function AufUmrissBeschneiden({ shape, upd }: { shape: RoomShape; upd: (fn: (s: Shape) => Shape) => void }) {
+  const storey = useActiveStorey();
+  const neu = useMemo(() => {
+    if (!storey.shapes.some((s) => s.kind === 'outline')) return null;
+    const pts = raumAufUmriss(shape, storey);
+    if (!pts) return null;
+    const vorher = shapeArea({ ...shape, putzabzug: undefined });
+    const nachher = shapeArea({ ...shape, points: pts, putzabzug: undefined });
+    return vorher - nachher > 0.01 ? { pts, diff: vorher - nachher } : null;
+  }, [shape, storey]);
+  if (!neu) return null;
+  return (
+    <p className="warning small-text">
+      Der Raum ragt {fmt2(neu.diff)} m² über den BGF-Umriss hinaus.{' '}
+      <button className="small" onClick={() => upd((s) => ({ ...s, points: neu.pts }))}>
+        Auf Umriss beschneiden
+      </button>
+    </p>
   );
 }

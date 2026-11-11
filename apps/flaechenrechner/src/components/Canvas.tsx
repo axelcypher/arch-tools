@@ -24,6 +24,7 @@ import { detectRegion } from '@core/detect';
 import { SegmentGrid } from '@core/spatial';
 import { loadImage, rasterEdgeRefiner, rasterMaskProvider } from '../platform/rasterMask';
 import { einfuegenAktion } from './KopieDialog';
+import { neuerRaumVorgabe } from '../core/katalog';
 import { auswahlVerschieben, flaechenDuplizieren, flaechenKopieren, mapStorey, nextRoomNumber, setShapePoints, useActiveStorey, useEditor } from '../store/store';
 import { BackgroundLayer } from './BackgroundLayer';
 import { logger } from '@core/platform/log';
@@ -269,7 +270,7 @@ export function Canvas() {
       const shape =
         drawKind === 'outline'
           ? createOutline(clean, st.shapes.some((s) => s.kind === 'outline') ? 'BGF-Teilfläche' : 'BGF')
-          : createRoom(clean, nextRoomNumber(project, st));
+          : { ...createRoom(clean, nextRoomNumber(project, st)), ...neuerRaumVorgabe(project, st) };
       update((p) => mapStorey(p, st.id, (s) => ({ ...s, shapes: [...s.shapes, shape] })));
       select(shape.id);
     },

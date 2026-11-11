@@ -229,7 +229,15 @@ describe('Excel-Export mit Vorlage', () => {
   it('erzeugt das Standardlayout inkl. BRI-Rechenweg', async () => {
     const p = project();
     const wb = await load(await exportDefault(p, computeProject(p)));
-    expect(wb.worksheets.map((w) => w.name)).toEqual(['DIN 277', 'BGF-Teilflächen', 'NRF Nutzungsgruppen', 'Raumliste', 'Wohnflächen', 'BRI-Rechenweg']);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(['DIN 277', 'BGF-Teilflächen', 'NRF Nutzungsgruppen', 'Rechenweg Räume', 'Raumliste', 'Wohnflächen', 'BRI-Rechenweg']);
+    // Rechenweg je Raum mit Formeln (F-13)
+    const rw = wb.getWorksheet('Rechenweg Räume')!;
+    const formeln: string[] = [];
+    rw.eachRow((row) => row.eachCell((c) => {
+      const v = c.value as { formula?: string } | null;
+      if (v && typeof v === 'object' && v.formula) formeln.push(v.formula);
+    }));
+    expect(formeln.some((f) => /^ROUND\(E\d+\*F\d+\*G\d+,4\)$/.test(f))).toBe(true);
     const ws = wb.getWorksheet('DIN 277')!;
     expect(ws.getCell('A6').value).toBe('KG');
     expect(ws.getCell('E6').value).toBe(80);

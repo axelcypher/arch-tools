@@ -113,7 +113,24 @@ festgehalten.
 - Messen-Werkzeug, Maßketten der ausgewählten Fläche, Maßstabsleiste
 - Live-Auswertung je Geschoss und gesamt
 - **Flächenaufstellung** zum Drucken/PDF mit **Grundriss je Geschoss** (farbig nach Nutzungsgruppe, beschriftet,
-  Maßstabsleiste, Legende, optional mit Hintergrundplan) und Raumliste je Geschoss
+  Maßstabsleiste, Legende, optional mit Hintergrundplan) und Raumliste je Geschoss; auf Wunsch mit **Rechenweg je
+  Raum** (L × B bzw. Zerlegung in Rechtecke/Dreiecke oder Gauß’sche Formel, − Putzabzug, − Abzugsflächen,
+  × Anrechnung) – die Summe der Zeilen ist exakt das Ergebnis. Im Excel-Standardlayout steht derselbe Rechenweg
+  als Formeln (Blatt „Rechenweg Räume“)
+- **Prüfliste** in der Auswertung (Ampel „Prüfen“): Räume außerhalb bzw. über den Umriss hinaus (je R/S),
+  NRF > BGF je Bereich, überlappende Umrisse oder Räume (z. B. versetzt eingefügte Kopie; Abzugsflächen
+  ausgenommen), breite Bereiche ohne Raum, doppelte Raumnummern, Räume ohne Wohnung, „keine Wohnfläche“ im
+  Wohngeschoss, „voll“ im Dachgeschoss, S-Umrisse ohne Körperhöhe – alles als Hinweis; ein Klick wählt die
+  Fläche. Ragt ein Raum über den Umriss, lässt er sich in den Eigenschaften „auf den Umriss beschneiden“
+- **Raumkatalog**: Die Bezeichnung schlägt Raumnamen vor; ein Katalogname setzt Nutzungsgruppe (ggf. Nutzungsart)
+  und WoFlV-Anrechnung, gekennzeichnet als Vorschlag „aus Katalog“. Der Katalog des Büros liegt im
+  Konfigurationsordner (`raumkatalog.json`, Liste aus `{ "name", "nutzung", "nutzungsart", "wofl" }`), sonst gilt
+  eine kleine Vorgabe (u. a. getrennt „Abstellraum (in der Wohnung)“ / „Abstellraum/Keller (außerhalb)“,
+  „HWR (in der Wohnung)“ / „Waschküche“). Neue Räume übernehmen Nutzung und Anrechnung vom zuletzt angelegten Raum
+  des Geschosses; die Wohnung wird aus den vorhandenen gewählt (Schreibvarianten wie „WE01“ werden zu „WE 01“)
+- **Nutzungsart** als optionale zweite Ebene unter der Nutzungsgruppe (z. B. 7.1): Liste des Büros in
+  `nutzungsarten.json` (`{ "nr", "bezeichnung" }`); die Gruppe folgt der ersten Ziffer, die Auswertung summiert
+  weiter je Gruppe. Die vollständige Tabelle der DIN 277 wird nicht mitgeliefert (urheberrechtlich geschützt)
 - **Excel-Export** (.xlsx) im Standardlayout oder mit **eigener Vorlage** – siehe [docs/excel-vorlagen.md](docs/excel-vorlagen.md);
   BGF auch je Teilfläche (`{{bgf.name}}`, `{{bgf.flaeche}}` …), leere Blöcke entfallen, bedingte Abschnitte
   mit `{{#wenn raum[nebenflaeche]}}` … `{{/wenn}}`

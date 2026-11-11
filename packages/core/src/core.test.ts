@@ -350,3 +350,17 @@ describe('Projektformat: neue Felder (Block 2)', () => {
     expect(raum.kind === 'room' && [raum.rsVonHand, raum.abzugArt, raum.nutzungsart, raum.katalog, raum.stempel, raum.wofl.anteile]).toEqual([undefined, undefined, undefined, undefined, undefined, undefined]);
   });
 });
+
+describe('Nutzungsart als zweite Ebene (F-14)', () => {
+  it('Nutzungsart 7.1 summiert in NUF 7; ohne Nutzungsart wie bisher', () => {
+    const p = createProject();
+    const bad = createRoom(rect(0, 0, 2, 3), '0.01', 'Bad');
+    bad.nutzungsart = '7.1';
+    const wohnen = createRoom(rect(2, 0, 4, 3), '0.02', 'Wohnen');
+    p.storeys[0].shapes.push(bad, wohnen);
+    const r = computeStorey(p.storeys[0], p);
+    expect(r.nutzung.NUF7).toBeCloseTo(6);
+    expect(r.nutzung.NUF1).toBeCloseTo(12);
+    expect(r.rooms[0].nutzung).toBe('NUF7');
+  });
+});

@@ -7,7 +7,7 @@ import { roomArea, storeyElevations } from './model';
 import { gaubenVolumen } from './gaube';
 import { roofStats } from './roof';
 import { meshRoofStats } from './roofMesh';
-import { nutzungInfo, woflFaktor } from './norms';
+import { nutzungInfo, raumNutzung, woflFaktor } from './norms';
 
 /**
  * Flächen- und Rauminhaltsberechnung.
@@ -328,9 +328,11 @@ export function computeStorey(storey: Storey, project: Project): StoreyResult {
       const rs = raumUmschliessung(s, storey);
       // Abzugsflächen: NRF und Wohnfläche (Standard), nur Wohnfläche (§ 3 Abs. 3 WoFlV, z. B. Treppe) oder nur NRF
       const art: AbzugArt | undefined = s.subtract ? (s.abzugArt ?? 'beide') : undefined;
+      // Nutzungsart (zweite Ebene) bestimmt die Gruppe mit; ohne Nutzungsart wie bisher
+      const gruppe = raumNutzung(s);
       if (art !== 'wofl') {
-        t.nutzung[s.nutzung] += a;
-        const bereich = nutzungInfo(s.nutzung).bereich;
+        t.nutzung[gruppe] += a;
+        const bereich = nutzungInfo(gruppe).bereich;
         addRS(bereich === 'NUF' ? t.nuf : bereich === 'TF' ? t.tf : t.vf, rs, a);
         addRS(t.nrf, rs, a);
       }
@@ -345,7 +347,7 @@ export function computeStorey(storey: Storey, project: Project): StoreyResult {
         storeyName: storey.name,
         nummer: s.nummer,
         name: s.name,
-        nutzung: s.nutzung,
+        nutzung: gruppe,
         umschliessung: rs,
         subtract: s.subtract,
         area: a,
