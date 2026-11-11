@@ -23,11 +23,12 @@ const eingabe = (el: HTMLInputElement, value: string) => {
   });
   act(() => el.blur());
 };
-const feld = (host: Element, label: string) => [...host.querySelectorAll('label.field')].find((l) => l.querySelector('.field-label')?.textContent === label)!.querySelector('input') as HTMLInputElement;
+const feld = (host: Element, label: string) =>
+  [...host.querySelectorAll('label.field')].find((l) => l.querySelector('.field-label')?.textContent?.replace(/\s*\*$/, '') === label)!.querySelector('input') as HTMLInputElement;
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith(text)) as HTMLButtonElement;
 
 describe('Stammdaten-Dialog', () => {
-  it('ohne Projektnummer gesperrt; legt mit den eingegebenen Stammdaten an', async () => {
+  it('frisch geöffnet keine Fehler; ohne Projektnummer erscheint die Meldung am Feld; legt mit den Stammdaten an', async () => {
     const gespeichert = vi.fn<(m: ProjectMeta) => void>();
     const host = document.createElement('div');
     document.body.appendChild(host);
@@ -36,7 +37,16 @@ describe('Stammdaten-Dialog', () => {
       root.render(createElement(StammdatenDialog, { titel: 'Projektdatei anlegen', text: 'Im Ordner liegt noch keine Projektdatei.', meta: leereMeta(), onSpeichern: gespeichert, onAbbrechen: () => {} }));
     });
     expect(host.textContent).toContain('Im Ordner liegt noch keine Projektdatei.');
-    expect(knopf(host, 'Projektdatei anlegen').disabled).toBe(true);
+    // frisch geöffnet: keine Fehlerkästen, Pflichtfeld markiert
+    expect(host.querySelector('.feld-meldung')).toBeNull();
+    expect(feld(host, 'Projektnummer').required).toBe(true);
+    await act(async () => knopf(host, 'Projektdatei anlegen').click());
+    expect(gespeichert).not.toHaveBeenCalled();
+    expect(feld(host, 'Projektnummer').closest('label')!.querySelector('.feld-meldung')!.textContent).toBe('Angabe fehlt.');
+    // weiche Prüfungen: Hinweise, kein Blocker
+    eingabe(feld(host, 'PLZ'), '4814');
+    expect(feld(host, 'PLZ').closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('fünf Ziffern');
+    eingabe(feld(host, 'PLZ'), '48143');
     eingabe(feld(host, 'Projektnummer'), ' BS5 ');
     eingabe(feld(host, 'Kurzname'), 'Birkenstraße');
     eingabe(feld(host, 'Name bzw. Firma'), 'Mustermann');
@@ -44,7 +54,6 @@ describe('Stammdaten-Dialog', () => {
     act(() => ([...host.querySelectorAll('.sd-lph input')][3] as HTMLInputElement).click());
     act(() => knopf(host, '+ Beteiligter').click());
     eingabe(host.querySelector('.sd-beteiligte input') as HTMLInputElement, 'Tragwerk');
-    expect(knopf(host, 'Projektdatei anlegen').disabled).toBe(false);
     await act(async () => knopf(host, 'Projektdatei anlegen').click());
     expect(gespeichert).toHaveBeenCalledTimes(1);
     expect(gespeichert.mock.calls[0][0]).toMatchObject({

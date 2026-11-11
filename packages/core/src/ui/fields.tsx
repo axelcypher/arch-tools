@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { fmt2, parseNum } from '../format';
+import type { Pruefung } from './pruefen';
+import { alle, bereichMeldung, pflicht as pflichtRegel } from './pruefen';
+
+/** Zahl in Meldungen: so kurz wie möglich, mindestens eine Nachkommastelle (1,0 · 0,4 · 0,25) */
+const kurz = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 4 });
 
 /**
  * Gemeinsames Verhalten der Eingabefelder, die erst bei Enter/Fokusverlust übernehmen:
@@ -44,9 +49,11 @@ function usePendingCommit(commit: () => void) {
 }
 
 /**
- * Zahleneingabe mit Dezimalkomma. Übernimmt den Wert bei Enter oder Fokusverlust,
- * damit nicht jeder Tastendruck einen Undo-Schritt erzeugt. Nur wirklich bearbeitete Eingaben werden
- * übernommen – Hinein- und Herausklicken rundet keinen gespeicherten Wert auf die angezeigten Stellen.
+ * Zahleneingabe in deutscher Schreibweise (Komma, Tausenderpunkte, Einheit erlaubt – siehe `parseNum`). Übernimmt den
+ * Wert bei Enter oder Fokusverlust, damit nicht jeder Tastendruck einen Undo-Schritt erzeugt. Nur wirklich bearbeitete
+ * Eingaben werden übernommen – Hinein- und Herausklicken rundet keinen gespeicherten Wert auf die angezeigten Stellen.
+ * Ungültige Eingaben und Werte außerhalb von min/max werden nicht still gekappt oder verworfen: Das Feld wird rot
+ * markiert, die Meldung steht darunter, der Wert wird nicht übernommen und die Eingabe bleibt zum Korrigieren stehen.
  * Esc verwirft die Eingabe.
  */
 export function NumberField({
@@ -58,6 +65,8 @@ export function NumberField({
   placeholder,
   allowEmpty = false,
   title,
+  pflicht = false,
+  label,
 }: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;
@@ -67,101 +76,184 @@ export function NumberField({
   placeholder?: string;
   allowEmpty?: boolean;
   title?: string;
+  /** Pflichtfeld (markiert; leer nach dem Verlassen = Meldung) */
+  pflicht?: boolean;
+  /** Name des Felds für Screenreader, falls es nicht in einem <label> steht */
+  label?: string;
 }) {
   const format = (v: number | undefined) => (v === undefined ? '' : digits === 2 ? fmt2(v).replace(/\./g, '') : v.toFixed(digits).replace('.', ','));
+  const zeige = (v: number) => kurz.format(v);
   const [text, setText] = useState(format(value));
+  const [fehler, setFehler] = useState<string | null>(null);
   const textRef = useRef(text);
   textRef.current = text;
   const bearbeitet = useRef(false);
-  useEffect(() => setText(format(value)), [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setText(format(value));
+    setFehler(null);
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commit = () => {
     pending.done();
     if (!bearbeitet.current) return;
-    bearbeitet.current = false;
     const text = textRef.current;
-    const v = parseNum(text);
-    if (v === null) {
-      if (allowEmpty && text.trim() === '') {
+    if (text.trim() === '') {
+      if (allowEmpty) {
+        bearbeitet.current = false;
+        setFehler(null);
         if (value !== undefined) onChange(undefined);
-      } else setText(format(value));
+      } else setFehler(pflicht ? 'Pflichtangabe – bitte eine Zahl eingeben.' : 'Bitte eine Zahl eingeben.');
       return;
     }
-    let c = v;
-    if (min !== undefined) c = Math.max(min, c);
-    if (max !== undefined) c = Math.min(max, c);
-    if (c !== value) onChange(c);
-    setText(format(c));
+    const v = parseNum(text);
+    if (v === null) {
+      setFehler(`„${text.trim()}“ ist keine Zahl (z. B. 1.234,5).`);
+      return;
+    }
+    const bereich = bereichMeldung(v, min, max, zeige);
+    if (bereich) {
+      setFehler(bereich);
+      return;
+    }
+    bearbeitet.current = false;
+    setFehler(null);
+    if (v !== value) onChange(v);
+    setText(format(v));
   };
   const pending = usePendingCommit(commit);
 
   return (
-    <input
-      ref={pending.ref}
-      className="num"
-      value={text}
-      onFocus={pending.onFocus}
-      placeholder={placeholder}
-      title={title}
-      inputMode="decimal"
-      onChange={(e) => {
-        bearbeitet.current = true;
-        setText(e.target.value);
-      }}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-        if (e.key === 'Escape') {
-          // Esc verwirft die Eingabe – und schließt nicht zugleich den Dialog
-          e.stopPropagation();
-          bearbeitet.current = false;
-          textRef.current = format(value);
-          setText(textRef.current);
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-    />
+    <>
+      <input
+        ref={pending.ref}
+        className={`num${fehler ? ' feld-fehler' : ''}`}
+        value={text}
+        onFocus={pending.onFocus}
+        placeholder={placeholder}
+        title={fehler ?? title}
+        inputMode="decimal"
+        aria-label={label}
+        aria-invalid={fehler ? true : undefined}
+        aria-required={pflicht || undefined}
+        required={pflicht || undefined}
+        onChange={(e) => {
+          bearbeitet.current = true;
+          setText(e.target.value);
+        }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          if (e.key === 'Escape') {
+            // Esc verwirft die Eingabe – und schließt nicht zugleich den Dialog
+            e.stopPropagation();
+            bearbeitet.current = false;
+            setFehler(null);
+            textRef.current = format(value);
+            setText(textRef.current);
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+      />
+      {fehler && (
+        <span className="feld-meldung" role="alert">
+          {fehler}
+        </span>
+      )}
+    </>
   );
 }
 
-/** Texteingabe, die erst bei Enter/Fokusverlust übernimmt. `list`: id einer <datalist> mit Vorschlägen */
-export function TextField({ value, onChange, placeholder, list, title }: { value: string; onChange: (v: string) => void; placeholder?: string; list?: string; title?: string }) {
+/**
+ * Texteingabe, die erst bei Enter/Fokusverlust übernimmt. `list`: id einer <datalist> mit Vorschlägen.
+ * `pruefen` (siehe pruefen.ts) meldet Fehler bzw. Hinweise am Feld – erst nach dem Verlassen des Felds (oder sofort,
+ * wenn `zeigen` gesetzt ist, etwa nach „Weiter“); weiche Hinweise blockieren nichts, der Wert wird übernommen.
+ * `live` zeigt den Hinweis schon beim Tippen (z. B. Zeichen, die im Ordnernamen entfallen).
+ */
+export function TextField({
+  value,
+  onChange,
+  placeholder,
+  list,
+  title,
+  pflicht = false,
+  pruefen,
+  zeigen = false,
+  live = false,
+  label,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  list?: string;
+  title?: string;
+  pflicht?: boolean;
+  pruefen?: Pruefung;
+  /** Meldungen auch ohne vorheriges Verlassen zeigen (nach dem Absenden) */
+  zeigen?: boolean;
+  /** Hinweis schon beim Tippen */
+  live?: boolean;
+  label?: string;
+}) {
   const [text, setText] = useState(value);
+  const [verlassen, setVerlassen] = useState(false);
   const textRef = useRef(text);
   textRef.current = text;
   useEffect(() => setText(value), [value]);
   const commit = () => {
     pending.done();
+    setVerlassen(true);
     if (textRef.current !== value) onChange(textRef.current);
   };
   const pending = usePendingCommit(commit);
+  const regel = pflicht && pruefen ? alle(pflichtRegel(), pruefen) : pflicht ? pflichtRegel() : pruefen;
+  const meldung = regel && (verlassen || zeigen || (live && text !== value)) ? regel(live ? text : value) : null;
   return (
-    <input
-      ref={pending.ref}
-      value={text}
-      placeholder={placeholder}
-      list={list}
-      title={title}
-      onFocus={pending.onFocus}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-        if (e.key === 'Escape') {
-          e.stopPropagation();
-          textRef.current = value;
-          setText(value);
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-    />
+    <>
+      <input
+        ref={pending.ref}
+        value={text}
+        placeholder={placeholder}
+        list={list}
+        title={meldung ?? title}
+        className={meldung ? 'feld-fehler' : undefined}
+        aria-label={label}
+        aria-invalid={meldung ? true : undefined}
+        aria-required={pflicht || undefined}
+        required={pflicht || undefined}
+        onFocus={pending.onFocus}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          if (e.key === 'Escape') {
+            e.stopPropagation();
+            textRef.current = value;
+            setText(value);
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+      />
+      {meldung && (
+        <span className="feld-meldung" role="alert">
+          {meldung}
+        </span>
+      )}
+    </>
   );
 }
 
-export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+export function Field({ label, children, hint, pflicht = false }: { label: string; children: React.ReactNode; hint?: string; pflicht?: boolean }) {
   return (
     <label className="field">
-      <span className="field-label">{label}</span>
+      <span className="field-label">
+        {label}
+        {pflicht && (
+          <span className="pflicht" title="Pflichtangabe" aria-hidden>
+            {' '}
+            *
+          </span>
+        )}
+      </span>
       {children}
       {hint && <span className="field-hint">{hint}</span>}
     </label>

@@ -2,7 +2,8 @@
 import { act, createElement, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { NumberField, TextField } from './fields';
+import { Field, NumberField, TextField } from './fields';
+import { email, ordnername, plz } from './pruefen';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -87,5 +88,65 @@ describe('Eingabefelder', () => {
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     });
     expect(aufrufe).toEqual([3.1]);
+  });
+
+  it('Zahlenfeld: „4“ bei höchstens 1 wird nicht gekappt, sondern gemeldet; „abc“ sichtbar abgelehnt; Tausenderpunkte', () => {
+    const aufrufe: (number | undefined)[] = [];
+    const host = render(createElement(NumberField, { value: 0.4, min: 0, max: 1, onChange: (v: number | undefined) => aufrufe.push(v) }));
+    const input = host.querySelector('input')!;
+    tippen(input, '4');
+    // Meldung erst nach dem Verlassen
+    expect(host.querySelector('.feld-meldung')).toBeNull();
+    act(() => input.blur());
+    expect(aufrufe).toEqual([]);
+    expect(input.classList.contains('feld-fehler')).toBe(true);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(host.querySelector('.feld-meldung')!.textContent).toBe('Höchstens 1,0 – gemeint 0,4?');
+    expect(input.value).toBe('4'); // Eingabe bleibt zum Korrigieren stehen
+    tippen(input, 'abc');
+    act(() => input.blur());
+    expect(aufrufe).toEqual([]);
+    expect(host.querySelector('.feld-meldung')!.textContent).toContain('„abc“ ist keine Zahl');
+    // Esc verwirft Eingabe und Meldung
+    act(() => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(host.querySelector('.feld-meldung')).toBeNull();
+    expect(input.value).toBe('0,40');
+  });
+
+  it('Zahlenfeld liest deutsche Schreibweise mit Einheit', () => {
+    const aufrufe: (number | undefined)[] = [];
+    const host = render(createElement(NumberField, { value: undefined, allowEmpty: true, onChange: (v: number | undefined) => aufrufe.push(v) }));
+    const input = host.querySelector('input')!;
+    tippen(input, '1.234,5 m²');
+    act(() => input.blur());
+    expect(aufrufe).toEqual([1234.5]);
+  });
+
+  it('Textfeld mit Prüfung: Meldung erst nach dem Verlassen, Pflichtfeld markiert', () => {
+    const host = render(createElement(Field, { label: 'PLZ', pflicht: true, children: createElement(TextField, { value: '', pflicht: true, pruefen: plz, onChange: () => {} }) }));
+    expect(host.querySelector('.pflicht')).not.toBeNull();
+    const input = host.querySelector('input')!;
+    expect(input.required).toBe(true);
+    expect(host.querySelector('.feld-meldung')).toBeNull();
+    act(() => {
+      input.focus();
+      input.blur();
+    });
+    expect(host.querySelector('.feld-meldung')!.textContent).toBe('Angabe fehlt.');
+  });
+});
+
+describe('Prüfregeln', () => {
+  it('PLZ, E-Mail je Eintrag, Zeichen im Ordnernamen', () => {
+    expect(plz('4814')).toBe('PLZ mit fünf Ziffern, z. B. 48143.');
+    expect(plz('48143')).toBeNull();
+    expect(plz('')).toBeNull();
+    expect(email('anna@mueller.de, kein-mail')).toBe('Keine gültige E-Mail-Adresse: kein-mail');
+    expect(email('anna@mueller, a@b.de')).toBe('Keine gültige E-Mail-Adresse: anna@mueller');
+    expect(email('a@b.de; c@d.org')).toBeNull();
+    expect(ordnername('EFH Müller/Weg: 3?')).toBe('/ : ? werden im Ordnernamen entfernt.');
+    expect(ordnername('EFH Müller')).toBeNull();
   });
 });

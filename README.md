@@ -23,6 +23,12 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 - **Ungespeicherte Änderungen**: Vor Öffnen, Neu und Beenden fragt die App „Änderungen an ‚…‘ speichern?“ mit
   *Speichern*, *Nicht speichern* und *Abbrechen*; schlägt das Speichern fehl, bleibt das Projekt offen. Löschen und
   Ersetzen fragen mit eigenem Knopf (z. B. *Entfernen*) nach.
+- **Eingaben**: Zahlenfelder lesen die deutsche Schreibweise (Komma, Tausenderpunkte „1.234,5“, Einheit „m²“, „%“).
+  Ungültige Eingaben und Werte außerhalb des erlaubten Bereichs werden nicht still gekappt oder verworfen: Das Feld
+  wird rot, die Meldung steht direkt darunter (z. B. „Höchstens 1,0 – gemeint 0,4?“), die Eingabe bleibt zum
+  Korrigieren stehen. Meldungen erscheinen erst nach dem Verlassen des Feldes bzw. nach dem Absenden; Pflichtfelder
+  tragen einen Stern. Im Stammdaten-Formular gibt es weiche Hinweise zu PLZ (fünf Ziffern), E-Mail-Adressen und
+  Zeichen, die im Ordnernamen entfallen (`/ : ? …`).
 - **Datei ließ sich nicht öffnen**: Die Meldung nennt Datei und Grund in Klartext („Keine gültige Projektdatei
   (.oap) – beschädigt oder aus einer anderen Anwendung.“); technische Einzelheiten stehen aufklappbar darunter und im
   Protokoll. Ein fehlgeschlagenes Öffnen ändert das geöffnete Projekt nicht.

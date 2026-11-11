@@ -1477,3 +1477,23 @@ svg[tabindex]:focus:not(:focus-visible) {
   border-radius: 4px;
   user-select: text;
 }
+
+/* ---------- Eingabeprüfung (fields.tsx, pruefen.ts): Meldung am Feld, Pflichtfeld-Stern ---------- */
+
+input.feld-fehler,
+input.feld-fehler:focus {
+  border-color: var(--danger);
+  outline-color: var(--danger);
+}
+.feld-meldung {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--danger);
+  white-space: normal;
+}
+.field-label .pflicht {
+  color: var(--danger);
+  font-weight: 600;
+}

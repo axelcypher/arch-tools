@@ -21,7 +21,14 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
   `frageText`, `meldung`), angezeigt von der Titelleiste. Alle `window.confirm` und `alert` ersetzt; die Rahmen-App
   lässt beim Schließen eines Tabs über eine Nachricht im Tab speichern (`speichernImTab`). Erledigt damit auch
   G-11, G-15 (GRZ).
-- [ ] **Q-3** Einheitliche Eingabeprüfung
+- [x] **Q-3** Einheitliche Eingabeprüfung – Block 2 (FR 0.17.0, GRZ 0.9.0, KO 0.9.0, PO 0.4.0, EZ 0.4.0, FO 0.20.0,
+  SU 0.3.0). `parseNum` liest deutsche Schreibweise mit Einheit; `NumberField` kappt nicht mehr, sondern meldet am Feld
+  (nach dem Verlassen), `TextField` mit `pruefen`/`pflicht`/`live`, Prüfregeln in `ui/pruefen.ts` (Pflicht, PLZ,
+  E-Mail je Eintrag, Zeichen im Ordnernamen), Pflichtfeld-Stern in `Field`. Eingesetzt in allen Zahlenfeldern (GRZ,
+  Flächenrechner, Kosten, Entzerrung, Projektordner) und im Stammdaten-Formular (Projektnummer Pflicht; der
+  Stammdaten-Dialog zeigt die Meldungen nach Klick auf „Anlegen“ statt eines grauen Knopfs). Erledigt damit G-07 (GRZ).
+  Abweichung: Die Datums- und Zahlenfelder der Formulare sind Felder der FORMA-Vordrucke (formularspezifisch) und
+  bleiben unverändert; die Assistent-Teile von P-08 (Projektordner) folgen in Phase 3.
 - [ ] **Q-4** Stammdaten einmal erfassen, überall gleich ausgeben
 - [ ] **Q-5** Einheitlicher Einstieg
 - [x] **Q-6** Fehlermeldungen beim Öffnen verständlich – Block 1. `platform/dateiFehler.ts` (`DateiLesenFehler`,
@@ -108,7 +115,7 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
 - [ ] **G-04** Druck: Spalte „angerechnet“
 - [ ] **G-05** Excel: Summe zählt Überlagerungen doppelt
 - [x] **G-06** Farbschema-Wechsel wirkt erst nach Neustart – GRZ 0.8.0 (mit Q-1)
-- [ ] **G-07** Zahlenfelder verwerfen oder kappen Eingaben ohne Meldung
+- [x] **G-07** Zahlenfelder verwerfen oder kappen Eingaben ohne Meldung – GRZ 0.9.0 (mit Q-3)
 - [ ] **G-08** Druck-Lageplan: Nummern, Maßstab, Nordpfeil
 - [ ] **G-09** Bedienhinweise und Doppelungen im amtlichen Nachweis
 - [x] **G-11** Esc schließt Druck, Excel und Projektübersicht – GRZ 0.8.0 (mit Q-2)

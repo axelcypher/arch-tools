@@ -63,6 +63,25 @@ describe('Zahlenformat', () => {
     expect(parseNum('3,25')).toBe(3.25);
     expect(parseNum(' 3.5 ')).toBe(3.5);
     expect(parseNum('abc')).toBeNull();
+    // deutsche Schreibweise: Punkt als Tausendertrenner, Komma als Dezimalzeichen, Einheit erlaubt
+    const tabelle: [string, number | null][] = [
+      ['1.234,56', 1234.56],
+      ['1.234', 1234],
+      ['1.234.567', 1234567],
+      ['3.25', 3.25],
+      ['0.4', 0.4],
+      ['0.400', 0.4],
+      ['12,5 m²', 12.5],
+      ['612,50m2', 612.5],
+      ['40 %', 40],
+      ['3,00 m', 3],
+      ['-1,5', -1.5],
+      ['1.23,4', null],
+      ['1,2,3', null],
+      ['1.2.3', null],
+      ['4x', null],
+    ];
+    for (const [ein, aus] of tabelle) expect([ein, parseNum(ein)]).toEqual([ein, aus]);
     expect(fmt2(1234.5)).toBe('1.234,50');
   });
 });

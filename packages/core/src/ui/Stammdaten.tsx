@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Anschrift, Beteiligter, KontaktArt, ProjectMeta } from '../model';
 import { LEISTUNGSPHASEN } from '../model';
 import { Field, NumberField, TextField } from './fields';
+import { email, ordnername, plz } from './pruefen';
 import { useEscSchliessen } from './Dialog';
 
 /**
@@ -20,6 +21,9 @@ export function StammdatenFelder({
   bereiche = ALLE,
   nummerHinweis,
   nummerVorschlag,
+  kurznameHinweis = 'wird Teil des Ordnernamens',
+  kurznamePflicht = false,
+  fehlerZeigen = false,
 }: {
   meta: ProjectMeta;
   onChange: (meta: ProjectMeta) => void;
@@ -28,6 +32,12 @@ export function StammdatenFelder({
   nummerHinweis?: string;
   /** vorgeschlagene Projektnummer (Platzhalter im Feld, „übernehmen“-Knopf) */
   nummerVorschlag?: string;
+  /** Hinweis unter dem Kurznamen (Vorgabe „wird Teil des Ordnernamens“; null = keiner) */
+  kurznameHinweis?: string | null;
+  /** Kurzname ist Pflicht (z. B. für den Ordnernamen eines neuen Projekts) */
+  kurznamePflicht?: boolean;
+  /** Meldungen an den Feldern auch ohne vorheriges Verlassen zeigen (nach „Weiter“ bzw. dem Absenden) */
+  fehlerZeigen?: boolean;
 }) {
   const set = (patch: Partial<ProjectMeta>) => onChange({ ...meta, ...patch });
   const setAdresse = (patch: Partial<Anschrift>) => set({ adresse: { ...meta.adresse, ...patch } });
@@ -75,11 +85,19 @@ export function StammdatenFelder({
       {zeigt('projekt') && (
         <>
           <div className="field-row">
-            <Field label="Projektnummer" hint={nummerHinweis}>
-              <TextField value={meta.projektcode} placeholder={nummerVorschlag} onChange={(v) => set({ projektcode: v.trim() })} />
+            <Field label="Projektnummer" hint={nummerHinweis} pflicht>
+              <TextField value={meta.projektcode} placeholder={nummerVorschlag} pflicht zeigen={fehlerZeigen} pruefen={ordnername} live onChange={(v) => set({ projektcode: v.trim() })} />
             </Field>
-            <Field label="Kurzname" hint="wird Teil des Ordnernamens">
-              <TextField value={meta.kurzname ?? ''} placeholder="z. B. EFH Musterweg" onChange={(v) => optional('kurzname', v)} />
+            <Field label="Kurzname" hint={kurznameHinweis ?? undefined} pflicht={kurznamePflicht}>
+              <TextField
+                value={meta.kurzname ?? ''}
+                placeholder="z. B. EFH Musterweg"
+                pflicht={kurznamePflicht}
+                zeigen={fehlerZeigen}
+                pruefen={ordnername}
+                live
+                onChange={(v) => optional('kurzname', v)}
+              />
             </Field>
           </div>
           {nummerVorschlag && nummerVorschlag !== meta.projektcode && (
@@ -95,7 +113,7 @@ export function StammdatenFelder({
           </Field>
           <div className="field-row">
             <Field label="PLZ">
-              <TextField value={meta.adresse.plz} onChange={(v) => setAdresse({ plz: v })} />
+              <TextField value={meta.adresse.plz} pruefen={plz} zeigen={fehlerZeigen} onChange={(v) => setAdresse({ plz: v })} />
             </Field>
             <Field label="Ort">
               <TextField value={meta.adresse.ort} onChange={(v) => setAdresse({ ort: v })} />
@@ -149,7 +167,7 @@ export function StammdatenFelder({
           </Field>
           <div className="field-row">
             <Field label="PLZ">
-              <TextField value={meta.bauherr.adresse.plz} onChange={(v) => setBauherrAdresse({ plz: v })} />
+              <TextField value={meta.bauherr.adresse.plz} pruefen={plz} zeigen={fehlerZeigen} onChange={(v) => setBauherrAdresse({ plz: v })} />
             </Field>
             <Field label="Ort">
               <TextField value={meta.bauherr.adresse.ort} onChange={(v) => setBauherrAdresse({ ort: v })} />
@@ -157,7 +175,7 @@ export function StammdatenFelder({
           </div>
           <div className="field-row">
             <Field label="E-Mail" hint="mehrere mit Komma">
-              <TextField value={kontakte('email')} onChange={(v) => setKontakte('email', v)} />
+              <TextField value={kontakte('email')} pruefen={email} zeigen={fehlerZeigen} onChange={(v) => setKontakte('email', v)} />
             </Field>
             <Field label="Telefon">
               <TextField value={kontakte('telefon')} onChange={(v) => setKontakte('telefon', v)} />
@@ -245,9 +263,12 @@ export function StammdatenDialog({
   const [meta, setMeta] = useState(anfang);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
+  const [versucht, setVersucht] = useState(false);
   useEscSchliessen(laeuft ? undefined : onAbbrechen);
   const offen = stammdatenFehlen(meta);
   const speichern = async () => {
+    setVersucht(true);
+    if (offen.length) return;
     setFehler(null);
     setLaeuft(true);
     try {
@@ -263,13 +284,13 @@ export function StammdatenDialog({
       <div className="modal modal-wide sd-dialog" role="dialog" aria-modal="true" aria-label={titel}>
         <h3>{titel}</h3>
         {text && <p className="muted small-text">{text}</p>}
-        <StammdatenFelder meta={meta} onChange={setMeta} />
+        <StammdatenFelder meta={meta} onChange={setMeta} fehlerZeigen={versucht} />
         {fehler && <p className="warning">{fehler}</p>}
         <div className="dialog-buttons">
           <button onClick={onAbbrechen} disabled={laeuft}>
             Abbrechen
           </button>
-          <button className="primary" disabled={laeuft || offen.length > 0} title={offen.join(' ')} onClick={() => void speichern()}>
+          <button className="primary" disabled={laeuft} title={offen.join(' ')} onClick={() => void speichern()}>
             {speichernText}
           </button>
         </div>
