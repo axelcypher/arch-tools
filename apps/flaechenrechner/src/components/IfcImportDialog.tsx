@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { computeProject } from '@core/calc';
 import { fmt2 } from '@core/format';
 import type { IfcExtract } from '@core/ifcData';
@@ -16,7 +16,7 @@ import { useEscSchliessen } from '@core/ui/Dialog';
 
 const log = logger('ifc');
 
-type Step = { kind: 'start' } | { kind: 'loading'; msg: string } | { kind: 'options'; x: IfcExtract; file: string } | { kind: 'done'; report: string[] };
+type Step = { kind: 'start' } | { kind: 'loading'; msg: string; abbrechbar?: boolean } | { kind: 'options'; x: IfcExtract; file: string } | { kind: 'done'; report: string[] };
 
 /** IFC-Import (z. B. Archicad): Geschosse, Zonen → Räume, BGF-Umrisse, Dach für den BRI. */
 export function IfcImportDialog({ onClose }: { onClose: () => void }) {
@@ -39,11 +39,20 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
     modus: hatIfcHerkunft(useEditor.getState().project) ? 'aktualisieren' : 'neu',
   }));
 
+  // web-ifc schon beim Öffnen des Dialogs laden (F-22) – das Lesen der Datei startet dann ohne Wartezeit
+  useEffect(() => {
+    void import('@core/platform/ifc').catch(() => undefined);
+    void import('web-ifc').catch(() => undefined);
+  }, []);
+  /** zählt bei jedem Laden bzw. Abbrechen weiter – ein abgebrochener Ladevorgang wird verworfen */
+  const lauf = useRef(0);
+
   const choose = async () => {
     setError(null);
     const f = await pickFile('.ifc');
     if (!f) return;
-    setStep({ kind: 'loading', msg: 'Datei wird gelesen …' });
+    const meiner = ++lauf.current;
+    setStep({ kind: 'loading', msg: 'Datei wird gelesen …', abbrechbar: true });
     try {
       const data = new Uint8Array(await f.arrayBuffer());
       original.current = data;
@@ -51,11 +60,13 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
       const done = log.time(`IFC lesen: ${f.name}`);
       const x = await loadIfc(data.slice(), (msg) => {
         log.debug(msg);
-        setStep({ kind: 'loading', msg });
+        if (lauf.current === meiner) setStep({ kind: 'loading', msg, abbrechbar: true });
       });
+      if (lauf.current !== meiner) return; // abgebrochen
       done({ bytes: data.byteLength, geschosse: x.storeys.length, zonen: x.spaces.length });
       setStep({ kind: 'options', x, file: f.name });
     } catch (e) {
+      if (lauf.current !== meiner) return;
       log.error(`IFC-Datei konnte nicht gelesen werden: ${f.name}`, e);
       setError(`IFC-Datei konnte nicht gelesen werden: ${e instanceof Error ? e.message : String(e)}`);
       setStep({ kind: 'start' });
@@ -134,7 +145,23 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
             </div>
           </>
         )}
-        {step.kind === 'loading' && <p className="busy">{step.msg}</p>}
+        {step.kind === 'loading' && (
+          <>
+            <p className="busy">{step.msg}</p>
+            {step.abbrechbar && (
+            <div className="dialog-buttons">
+              <button
+                onClick={() => {
+                  lauf.current++;
+                  setStep({ kind: 'start' });
+                }}
+              >
+                Abbrechen
+              </button>
+            </div>
+            )}
+          </>
+        )}
         {step.kind === 'options' && (
           <>
             <p className="small-text">

@@ -26,10 +26,11 @@ import { loadImage, rasterEdgeRefiner, rasterMaskProvider } from '../platform/ra
 import { einfuegenAktion } from './KopieDialog';
 import { neuerRaumVorgabe } from '../core/katalog';
 import { kontrollAbweichung, kontrollText, laengeAusText } from '../core/background';
+import { messText, messung } from '../core/messung';
 import { sVorschlagen } from '../core/umriss';
 import { hoehenZonen } from '@core/hoehenlinien';
 import { clippedPieces } from '@core/roof';
-import { auswahlVerschieben, flaechenDuplizieren, flaechenKopieren, mapStorey, nextRoomNumber, setShapePoints, useActiveStorey, useEditor } from '../store/store';
+import { auswahlVerschieben, flaechenDuplizieren, flaechenKopieren, mapShape, mapStorey, nextRoomNumber, setShapePoints, useActiveStorey, useEditor } from '../store/store';
 import { BackgroundLayer } from './BackgroundLayer';
 import { logger } from '@core/platform/log';
 
@@ -54,10 +55,12 @@ interface SnapResult {
 type Drag =
   | { kind: 'pan'; sx: number; sy: number; tx: number; ty: number }
   | { kind: 'vertex'; shapeId: string; index: number; orig: Point[]; started: boolean; sx: number; sy: number }
-  | { kind: 'move'; start: Point; orig: Map<string, Point[]>; started: boolean; sx: number; sy: number; shapeId: string }
-  | { kind: 'box'; start: Point; cur: Point; add: boolean };
+  | { kind: 'move'; start: Point; orig: Map<string, Point[]>; stempel?: Map<string, Point>; started: boolean; sx: number; sy: number; shapeId: string }
+  | { kind: 'box'; start: Point; cur: Point; add: boolean }
+  | { kind: 'stempel'; shapeId: string; started: boolean; sx: number; sy: number };
 
 const VERTEX_SNAP_PX = 10;
+const HINWEIS_KEY = 'arch-flaechen-tool:hinweise-zu';
 const EDGE_SNAP_PX = 7;
 const GUIDE_SNAP_PX = 8;
 
@@ -80,9 +83,27 @@ export function Canvas() {
   const [box, setBox] = useState<[Point, Point] | null>(null);
   const [draft, setDraft] = useState<Point[]>([]);
   const [numBuf, setNumBuf] = useState('');
-  const [measure, setMeasure] = useState<[Point, Point] | null>(null);
+  // Messung (F-19): Kette, ggf. geschlossen; bleibt beim Werkzeugwechsel stehen, bis Esc oder eine neue Messung
+  const [mess, setMess] = useState<{ punkte: Point[]; fertig: boolean; geschlossen: boolean } | null>(null);
   const [calib, setCalib] = useState<[Point, Point] | null>(null);
   const [kontrolle, setKontrolle] = useState<[Point, Point] | null>(null);
+  // Bedienhinweise unten: einmal eingeklappt, bleiben sie eingeklappt (F-24)
+  const [hinweisZu, setHinweisZu] = useState(() => {
+    try {
+      return localStorage.getItem(HINWEIS_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const hinweisUmschalten = (zu: boolean) => {
+    setHinweisZu(zu);
+    try {
+      if (zu) localStorage.setItem(HINWEIS_KEY, '1');
+      else localStorage.removeItem(HINWEIS_KEY);
+    } catch {
+      // ohne Speicher gilt es nur bis zum Schließen
+    }
+  };
   const [spaceDown, setSpaceDown] = useState(false);
   const drag = useRef<Drag | null>(null);
   const lastClick = useRef<{ t: number; x: number; y: number }>({ t: 0, x: 0, y: 0 });
@@ -165,7 +186,7 @@ export function Canvas() {
   useEffect(() => {
     setDraft([]);
     setNumBuf('');
-    if (tool !== 'measure') setMeasure(null);
+    if (tool !== 'measure') setMess((m) => (m && !m.fertig ? (m.punkte.length >= 2 ? { ...m, fertig: true } : null) : m));
     setCalib(null);
   }, [tool, storey.id]);
 
@@ -356,6 +377,13 @@ export function Canvas() {
         st.selectMany(storey.shapes.filter((s) => (s.kind === 'outline' ? v.showOutlines : v.showRooms)).map((s) => s.id));
         return;
       }
+      // Strg+C kopiert die Messung (F-19)
+      if (ctrl && e.key.toLowerCase() === 'c' && tool === 'measure' && mess && mess.punkte.length >= 2) {
+        e.preventDefault();
+        void navigator.clipboard?.writeText(messText(messung(mess.punkte, mess.geschlossen))).catch(() => undefined);
+        setMessage('Messung in die Zwischenablage kopiert.');
+        return;
+      }
       if (ctrl && tool === 'select' && !e.shiftKey && !e.altKey) {
         const k = e.key.toLowerCase();
         if (k === 'c' && flaechenKopieren()) e.preventDefault();
@@ -400,6 +428,10 @@ export function Canvas() {
       }
       switch (e.key) {
         case 'Escape':
+          if (mess) {
+            setMess(null);
+            break;
+          }
           if (numBuf) setNumBuf('');
           else if (draft.length) setDraft([]);
           else if (calib) setCalib(null);
@@ -407,7 +439,8 @@ export function Canvas() {
           else st.select(null);
           break;
         case 'Enter':
-          if (numBuf) applyNumeric();
+          if (tool === 'measure' && mess && !mess.fertig) setMess({ ...mess, fertig: mess.punkte.length >= 2 });
+          else if (numBuf) applyNumeric();
           else if (tool === 'polygon' && draft.length >= 3) finishShape(draft);
           break;
         case 'Backspace':
@@ -469,7 +502,7 @@ export function Canvas() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [draft, tool, numBuf, calib, applyNumeric, finishShape, storey.id, storey.shapes, setTool]);
+  }, [draft, tool, numBuf, calib, mess, applyNumeric, finishShape, storey.id, storey.shapes, setTool]);
 
   /* ---------- Maus ---------- */
 
@@ -531,15 +564,15 @@ export function Canvas() {
         if (!draft.length) setDraft([p]);
         else finishShape(achsRechteck(draft[0], p, theta));
         break;
-      case 'measure':
-        if (draft.length === 0) {
-          setDraft([p]);
-          setMeasure(null);
-        } else {
-          setMeasure([draft[0], p]);
-          setDraft([]);
-        }
+      case 'measure': {
+        // Kettenmessung: jeder Klick ein Punkt; Doppelklick/Enter beendet, Klick auf den Startpunkt schließt (Fläche)
+        const m = mess && !mess.fertig ? mess : null;
+        if (!m) setMess({ punkte: [p], fertig: false, geschlossen: false });
+        else if (m.punkte.length >= 3 && distance(toScreen(p), toScreen(m.punkte[0])) < VERTEX_SNAP_PX) setMess({ ...m, fertig: true, geschlossen: true });
+        else if (isDouble) setMess({ ...m, fertig: m.punkte.length >= 2 });
+        else if (distance(p, m.punkte[m.punkte.length - 1]) > 1e-9) setMess({ ...m, punkte: [...m.punkte, p] });
         break;
+      }
       case 'detect':
         void runDetection(raw);
         break;
@@ -638,7 +671,8 @@ export function Canvas() {
     if (!st.selectedIds.includes(shape.id)) select(shape.id);
     const orig = new Map(storey.shapes.filter((s) => ids.includes(s.id)).map((s) => [s.id, s.points] as const));
     const { sx, sy } = localPos(e);
-    drag.current = { kind: 'move', start: toWorld(sx, sy), orig, started: false, sx, sy, shapeId: shape.id };
+    const stempel = new Map(storey.shapes.filter((s) => ids.includes(s.id) && s.stempel).map((s) => [s.id, s.stempel!] as const));
+    drag.current = { kind: 'move', start: toWorld(sx, sy), orig, stempel, started: false, sx, sy, shapeId: shape.id };
     svgRef.current!.setPointerCapture(e.pointerId);
   };
 
@@ -717,7 +751,10 @@ export function Canvas() {
       }
       updateSilent((p) => {
         let next = p;
-        for (const [id, pts] of d.orig) next = setShapePoints(next, storey.id, id, translate(pts, dx, dy));
+        for (const [id, pts] of d.orig) {
+          const st0 = d.stempel?.get(id);
+          next = mapShape(next, storey.id, id, (s) => ({ ...s, points: translate(pts, dx, dy), ...(st0 ? { stempel: { x: st0.x + dx, y: st0.y + dy } } : {}) }));
+        }
         return next;
       });
       return;
@@ -725,6 +762,17 @@ export function Canvas() {
     if (d?.kind === 'box') {
       d.cur = raw;
       setBox([d.start, raw]);
+      return;
+    }
+    if (d?.kind === 'stempel') {
+      if (!d.started) {
+        if (Math.hypot(sx - d.sx, sy - d.sy) < 3) return;
+        d.started = true;
+        checkpoint();
+      }
+      // der Griff sitzt unter dem Stempel: Stempel folgt dem Mauszeiger mit diesem Versatz
+      const p = toWorld(sx, sy - 17);
+      updateSilent((q) => mapShape(q, storey.id, d.shapeId, (s) => ({ ...s, stempel: { x: roundTo(p.x, 1e-3), y: roundTo(p.y, 1e-3) } })));
       return;
     }
     const origin = draft.length ? draft[draft.length - 1] : null;
@@ -812,7 +860,7 @@ export function Canvas() {
   const labelPoints = useMemo(() => {
     const m = new Map<string, Point>();
     const roomPts = view.showRooms ? storey.shapes.filter((s) => s.kind === 'room').map((s) => s.points) : [];
-    for (const s of storey.shapes) m.set(s.id, labelPoint(s.points, s.kind === 'outline' ? roomPts : []));
+    for (const s of storey.shapes) m.set(s.id, s.stempel ?? labelPoint(s.points, s.kind === 'outline' ? roomPts : []));
     return m;
   }, [storey.shapes, view.showRooms]);
 
@@ -840,8 +888,17 @@ export function Canvas() {
 
   const renderLabel = (s: Shape) => {
     if (s.points.length < 3) return null;
-    const lp = toScreen(labelPoints.get(s.id) ?? labelPoint(s.points));
     const b = bounds(s.points);
+    // BGF-Beschriftung am Rand (außen oben links) statt in der Mitte auf den Räumen (F-20) – ein verschobener Stempel geht vor
+    if (s.kind === 'outline' && !s.stempel) {
+      const q = toScreen({ x: b.minX, y: b.minY });
+      return (
+        <text key={`l-${s.id}`} className="shape-label umriss-label" x={q.x + 2} y={q.y - 6} textAnchor="start">
+          {s.name} ({s.umschliessung}) · {fmt2(shapeArea(s) * (s.subtract ? -1 : 1))} m²
+        </text>
+      );
+    }
+    const lp = toScreen(labelPoints.get(s.id) ?? labelPoint(s.points));
     const wPx = (b.maxX - b.minX) * vp.scale;
     const hPx = (b.maxY - b.minY) * vp.scale;
     if (wPx < 30 || hPx < 16) return null;
@@ -920,7 +977,7 @@ export function Canvas() {
         : `In einen umschlossenen Bereich klicken – die Fläche wird als ${drawKind === 'outline' ? 'BGF-Umriss' : 'Raum'} angelegt (Türöffnungen bis ${fmt2(detect.gap)} m werden geschlossen)`;
       break;
     case 'measure':
-      hint = 'Zwei Punkte klicken, um einen Abstand zu messen';
+      hint = 'Punkte klicken (Kette mit Summe) · Doppelklick/Enter: beenden · Klick auf den Startpunkt: Fläche · Strg+C: kopieren · Esc: löschen – Messungen zählen nicht zu BGF, NRF oder Wohnfläche';
       break;
     case 'calibrate':
       hint = bg ? 'Zwei Punkte mit bekanntem Abstand auf dem Plan anklicken (Fang auf Plankanten und Eckpunkte; Alt: ohne Fang)' : 'Zuerst einen Plan laden (Geschoss-Eigenschaften rechts)';
@@ -1004,6 +1061,28 @@ export function Canvas() {
                 />
               );
             })}
+            {selected.kind === 'room' && (() => {
+              // Raumstempel verschieben (F-20)
+              const q = toScreen(labelPoints.get(selected.id) ?? labelPoint(selected.points));
+              return (
+                <rect
+                  className="stempel-handle"
+                  x={q.x - 5}
+                  y={q.y + 12}
+                  width={10}
+                  height={10}
+                  onPointerDown={(e) => {
+                    if (e.button !== 0) return;
+                    e.stopPropagation();
+                    const { sx, sy } = localPos(e);
+                    drag.current = { kind: 'stempel', shapeId: selected.id, started: false, sx, sy };
+                    svgRef.current!.setPointerCapture(e.pointerId);
+                  }}
+                >
+                  <title>Raumstempel verschieben</title>
+                </rect>
+              );
+            })()}
             {selected.points.map((p, i) => {
               const s = toScreen(p);
               return (
@@ -1045,10 +1124,11 @@ export function Canvas() {
         )}
 
         {/* Messen / Kalibrieren */}
-        {(tool === 'measure' || tool === 'calibrate' || tool === 'kontrolle') && (
+        {mess && <MessAnzeige mess={mess} vorschau={tool === 'measure' && !mess.fertig && cursor ? cursor.p : null} toScreen={toScreen} />}
+        {(tool === 'calibrate' || tool === 'kontrolle') && (
           <g pointerEvents="none">
             {(() => {
-              const seg = draft.length && preview ? ([draft[0], preview] as [Point, Point]) : tool === 'measure' ? measure : tool === 'kontrolle' ? kontrolle : calib;
+              const seg = draft.length && preview ? ([draft[0], preview] as [Point, Point]) : tool === 'kontrolle' ? kontrolle : calib;
               if (!seg) return null;
               const a = toScreen(seg[0]);
               const b = toScreen(seg[1]);
@@ -1125,7 +1205,18 @@ export function Canvas() {
           {origin && preview && tool === 'polygon' && <em> · Segment {fmt2(distance(origin, preview))} m</em>}
         </span>
         {numBuf && <span className="hud-input">Eingabe: {numBuf}▏</span>}
-        <span className="hud-hint">{hint}</span>
+        {hinweisZu ? (
+          <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(false)} title="Bedienhinweise einblenden">
+            ? Hinweise
+          </button>
+        ) : (
+          <span className="hud-hint">
+            {hint}{' '}
+            <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)">
+              ×
+            </button>
+          </span>
+        )}
       </div>
       <ScaleBar scale={vp.scale} />
       <div className="canvas-controls" title="Alt gedrückt halten: Fang aus · Shift: orthogonal">
@@ -1312,6 +1403,41 @@ function HoehenLayer({ storey, toScreen }: { storey: Storey; toScreen: (p: Point
           ))}
         </g>
       ))}
+    </g>
+  );
+}
+
+/** Messkette mit Abschnittslängen, Summe, dx/dy/Winkel des letzten Abschnitts und ggf. Fläche (F-19) */
+function MessAnzeige({ mess, vorschau, toScreen }: { mess: { punkte: Point[]; fertig: boolean; geschlossen: boolean }; vorschau: Point | null; toScreen: (p: Point) => Point }) {
+  const punkte = vorschau ? [...mess.punkte, vorschau] : mess.punkte;
+  if (punkte.length < 1) return null;
+  const m = messung(punkte, mess.geschlossen);
+  const sp = punkte.map(toScreen);
+  const d = sp.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join('') + (mess.geschlossen ? 'Z' : '');
+  const letzter = m.abschnitte[m.abschnitte.length - 1];
+  const ende = sp[sp.length - 1];
+  return (
+    <g pointerEvents="none">
+      {mess.geschlossen && <path d={d} className="mess-flaeche" />}
+      <path d={d} className="measure-line" fill="none" />
+      {sp.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={3} className="draft-point" />
+      ))}
+      {m.abschnitte.map((a, i) => {
+        const p = sp[i];
+        const q = sp[(i + 1) % sp.length];
+        return (
+          <text key={`l${i}`} x={(p.x + q.x) / 2} y={(p.y + q.y) / 2 - 8} textAnchor="middle" className="dim-label measure-label">
+            {fmt2(a.laenge)} m
+          </text>
+        );
+      })}
+      {letzter && (
+        <text x={ende.x + 12} y={ende.y + 18} className="dim-label measure-label mess-info">
+          {m.abschnitte.length > 1 ? `Σ ${fmt2(m.summe)} m · ` : ''}dx {fmt2(letzter.dx)} · dy {fmt2(letzter.dy)} · {letzter.winkel.toLocaleString('de-DE', { maximumFractionDigits: 1 })}°
+          {m.flaeche !== undefined ? ` · Fläche ${fmt2(m.flaeche)} m²` : ''}
+        </text>
+      )}
     </g>
   );
 }

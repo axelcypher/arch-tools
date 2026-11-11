@@ -284,3 +284,29 @@ describe('Neues Geschoss (F-03)', () => {
     expect(oben.project.storeys.map((s) => s.name)).toEqual(['KG', 'EG', '1. OG']);
   });
 });
+
+describe('Neues Geschoss mit Bezug zum darunterliegenden (F-18)', () => {
+  it('Übernahme kopiert nur die Punkte – ohne Dach, Körperhöhe, Höhenversatz, Umschließung – und markiert „prüfen“', async () => {
+    const { umrisseUebernehmen, geschossDarunter } = await import('../core/geschosse');
+    const { addStorey } = await import('./store');
+    const p = createProject('Haus');
+    const o = { ...createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })), umschliessung: 'S' as const, hoehe: 2.2, versatz: -0.5, ifcId: 'X' };
+    o.dach = { typ: 'sattel', traufhoehe: 1, neigung: 40 };
+    p.storeys[0].shapes.push(o);
+    const r = addStorey(p, undefined, p.storeys[0].id, 'darueber');
+    const og = r.project.storeys.find((s) => s.id === r.id)!;
+    expect(geschossDarunter(r.project, og)?.name).toBe('EG');
+    const [neu] = umrisseUebernehmen(geschossDarunter(r.project, og)!);
+    expect(neu.points).toEqual(o.points);
+    expect(neu.points).not.toBe(o.points);
+    expect([neu.dach, neu.hoehe, neu.versatz, neu.umschliessung, neu.ifcId, neu.pruefen]).toEqual([undefined, undefined, undefined, 'R', undefined, true]);
+  });
+});
+
+describe('Raumliste sortiert (F-21)', () => {
+  it('natürliche Sortierung: 0.04 vor 1.01, 0.10 nach 0.09, ohne Nummer zuletzt', async () => {
+    const { nachNummer } = await import('../core/geschosse');
+    const r = (nummer: string) => ({ nummer });
+    expect(nachNummer([r('1.01'), r('0.10'), r(''), r('0.04'), r('0.09'), r('-1.02'), r('-1.01')]).map((x) => x.nummer)).toEqual(['-1.01', '-1.02', '0.04', '0.09', '0.10', '1.01', '']);
+  });
+});

@@ -1,4 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { nachNummer } from '../core/geschosse';
+import { RaumTabelle } from './RaumTabelle';
 import { computeStorey } from '@core/calc';
 import { fmt2 } from '@core/format';
 import type { Massgrundlage } from '@core/model';
@@ -26,6 +28,8 @@ async function neuesGeschoss(bezugId: string, bezugName: string) {
   const r = addStorey(st.project, undefined, bezugId, lage);
   st.update(() => r.project);
   st.setActiveStorey(r.id);
+  // neues leeres Geschoss: das darunterliegende einblenden (Bezug zum Nachzeichnen, F-18)
+  st.setView({ showGhost: true });
 }
 
 /** Linke Seitenleiste: Projekt, Geschosse, Flächenliste des aktiven Geschosses. */
@@ -37,7 +41,9 @@ export function Sidebar() {
   const st = useEditor.getState();
 
   const outlines = storey.shapes.filter((s) => s.kind === 'outline');
-  const rooms = storey.shapes.filter((s) => s.kind === 'room');
+  // nach Nummer sortiert (natürliche Sortierung, F-21)
+  const rooms = nachNummer(storey.shapes.filter((s) => s.kind === 'room'));
+  const [tabelle, setTabelle] = useState(false);
 
   return (
     <aside className="sidebar sidebar-left">
@@ -159,7 +165,15 @@ export function Sidebar() {
             </li>
           ))}
         </ul>
-        {rooms.length > 0 && <h3>Räume</h3>}
+        {rooms.length > 0 && (
+          <div className="section-head">
+            <h3>Räume</h3>
+            <button className="small" onClick={() => setTabelle(true)} title="Alle Räume des Projekts als Tabelle bearbeiten">
+              Tabelle …
+            </button>
+          </div>
+        )}
+        {tabelle && <RaumTabelle onClose={() => setTabelle(false)} />}
         <ul className="list shape-list">
           {rooms.map((s) => (
             <li key={s.id} className={s.id === selectedId ? 'active' : ''} onClick={() => st.select(s.id)}>

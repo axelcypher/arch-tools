@@ -14,6 +14,7 @@ import { raumAufUmriss } from '@core/pruefung';
 import { gruppeAusNutzungsart } from '@core/norms';
 import { raumHoehenAnteile } from '@core/hoehenlinien';
 import { naeherungsVermerk, umrissAusRaeumen } from '../core/umriss';
+import { geschossDarunter, umrisseUebernehmen } from '../core/geschosse';
 import { createOutline } from '@core/model';
 import { frageText } from '@core/ui/Rueckfrage';
 import { parseNum } from '@core/format';
@@ -267,6 +268,13 @@ function ShapeProperties({ shape }: { shape: Shape }) {
       <Field label="Bemerkung">
         <TextField value={shape.bemerkung ?? ''} onChange={(v) => upd((s) => ({ ...s, bemerkung: v || undefined }))} />
       </Field>
+      {shape.stempel && (
+        <div className="button-row">
+          <button className="small" onClick={() => upd((s) => ({ ...s, stempel: undefined }))} title="Beschriftung wieder automatisch platzieren">
+            Beschriftung zurücksetzen
+          </button>
+        </div>
+      )}
 
       <details className="points-editor">
         <summary>Eckpunkte ({shape.points.length})</summary>
@@ -562,6 +570,7 @@ function StoreyProperties() {
         </div>
       )}
 
+      <UmrissUebernehmen />
       <UmrissAusRaeumen />
       <BackgroundPanel storey={storey} />
     </section>
@@ -888,6 +897,30 @@ function UmrissAusRaeumen() {
     <div className="button-row">
       <button className="small" onClick={() => void anlegen()} title="Näherung: Räume um die Wanddicke erweitert">
         BGF-Umriss aus Räumen + Wanddicke …
+      </button>
+    </div>
+  );
+}
+
+/** Leeres Geschoss: „BGF-Umriss aus [Geschoss darunter] übernehmen“ – nur die Geometrie, zum Prüfen markiert (F-18) */
+function UmrissUebernehmen() {
+  const storey = useActiveStorey();
+  const project = useEditor((s) => s.project);
+  if (storey.shapes.some((s) => s.kind === 'outline')) return null;
+  const unten = geschossDarunter(project, storey);
+  if (!unten || !unten.shapes.some((s) => s.kind === 'outline')) return null;
+  return (
+    <div className="button-row">
+      <button
+        className="small"
+        title="Kopiert nur die Umrissgeometrie (ohne Dach, Körperhöhe, Höhenversatz, Umschließung) und markiert sie zum Prüfen"
+        onClick={() => {
+          const neu = umrisseUebernehmen(unten);
+          useEditor.getState().update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: [...neu, ...s.shapes] })));
+          useEditor.getState().setView({ showGhost: true });
+        }}
+      >
+        BGF-Umriss aus „{unten.name}“ übernehmen
       </button>
     </div>
   );

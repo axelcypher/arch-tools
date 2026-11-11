@@ -47,3 +47,28 @@ describe('Flächenrechner (Oberfläche)', () => {
     expect(host.querySelector('.pw-einstieg')).toBeNull();
   });
 });
+
+describe('Flächenrechner: Prüfliste und Raumtabelle (F-10, F-21)', () => {
+  it('Ampel „Prüfen“ zeigt Warnungen; Klick wählt die Fläche; Raumtabelle listet die Räume nach Nummer', async () => {
+    const { rectPoints } = await import('@core/geometry');
+    const { createOutline, createRoom } = await import('@core/model');
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    const a = createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 4.8, y: 7.7 }), '0.02', 'Küche');
+    const b = createRoom(rectPoints({ x: 5, y: 0.3 }, { x: 11, y: 7.7 }), '0.01', 'Wohnen'); // ragt über den Umriss
+    p.storeys[0].shapes.push(a, b);
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const host = render();
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('.pw-einstieg button')].find((x) => x.textContent === 'Schließen')?.click());
+    const knopf = host.querySelector<HTMLButtonElement>('.pruef-knopf')!;
+    expect(knopf.textContent).toMatch(/Prüfen: 1 Warnung/);
+    act(() => knopf.click());
+    const eintrag = [...host.querySelectorAll<HTMLLIElement>('.pruef-liste li')].find((li) => /ragt/.test(li.textContent ?? ''))!;
+    act(() => eintrag.click());
+    expect(useEditor.getState().selectedIds).toEqual([b.id]);
+    act(() => useEditor.getState().select(null));
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('button')].find((x) => x.textContent === 'Tabelle …')!.click());
+    const zeilen = [...document.querySelectorAll('.raumtabelle tbody tr')].map((tr) => (tr.querySelectorAll('input')[0] as HTMLInputElement).value);
+    expect(zeilen).toEqual(['0.01', '0.02']);
+  });
+});

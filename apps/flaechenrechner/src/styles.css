@@ -608,3 +608,89 @@
 .hoehen-h01 {
   fill: rgba(150, 80, 20, 0.22);
 }
+
+/* Raumtabelle (F-21) */
+.raumtabelle-dialog {
+  max-width: min(1200px, 96vw);
+}
+
+.raumtabelle-rahmen {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.raumtabelle {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.raumtabelle th,
+.raumtabelle td {
+  border-bottom: 1px solid var(--border);
+  padding: 2px 4px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.raumtabelle th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+}
+
+.raumtabelle td input:not([type='checkbox']),
+.raumtabelle td select {
+  width: 100%;
+  min-width: 60px;
+}
+
+.raumtabelle td.mitte {
+  text-align: center;
+}
+
+/* Messen (F-19), Raumstempel und BGF-Beschriftung (F-20) */
+.mess-flaeche {
+  fill: rgba(179, 89, 0, 0.12);
+  stroke: none;
+}
+
+.mess-info {
+  font-weight: 600;
+}
+
+.stempel-handle {
+  fill: var(--sel);
+  stroke: #fff;
+  stroke-width: 1;
+  cursor: move;
+}
+
+.umriss-label {
+  fill: #2a5bd7;
+  font-size: 11px;
+}
+
+/* Bedienhinweise ein-/ausklappen, dezenter Fokusrahmen der Zeichenfläche (F-24) */
+.hud-hint-knopf {
+  pointer-events: auto;
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  background: var(--overlay-bg);
+  color: var(--muted);
+  font-size: 11px;
+  padding: 0 5px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.hud-hint .hud-hint-knopf {
+  border: none;
+  background: none;
+  padding: 0 2px;
+}
+
+.canvas:focus-visible {
+  outline: 1px solid var(--accent-soft);
+  outline-offset: -2px;
+}

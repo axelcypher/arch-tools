@@ -267,11 +267,23 @@ KO 0.11.2 (Patch).
   Prüfung „Adresse/Bauherr fehlt“: Der Kopf druckt beides, sobald es in den Stammdaten steht (Q-4) – die Beobachtung
   stammte aus Projekten ohne erfasste Stammdaten. Abweichung: Die Fundstelle der Unterschriftsbezeichnung (§ 54 BauO
   NRW 2018) ist sinngemäß gewählt und sollte vom Büro bestätigt werden.
-- [ ] **F-18** Neues Geschoss mit Bezug zum darunterliegenden
-- [ ] **F-19** Messen erweitern
-- [ ] **F-20** Beschriftungen überlagern sich
-- [ ] **F-21** Raumliste sortiert, Tabellenansicht
-- [ ] F-22 bis F-24 (optional, nur Liste)
+- [x] **F-18** Neues Geschoss mit Bezug zum darunterliegenden – FR 0.26.0: „+ Neu“ blendet das darunterliegende Geschoss
+  ein; im leeren Geschoss „BGF-Umriss aus [Geschoss darunter] übernehmen“ (`umrisseUebernehmen`: nur Geometrie,
+  ohne Dach/Körperhöhe/Höhenversatz/Umschließung/IFC-Herkunft, `pruefen` gesetzt – erscheint in der Prüfliste).
+- [x] **F-19** Messen erweitern – FR 0.26.0: Kettenmessung mit Summe, dx/dy und Winkel (`core/messung.ts`), Flächen- und
+  Umfangsmessung durch Klick auf den Startpunkt, `Strg+C` kopiert, Messung bleibt beim Werkzeugwechsel stehen; zählt
+  nirgends mit.
+- [x] **F-20** Beschriftungen überlagern sich – FR 0.26.0: BGF-Beschriftung am Rand (außen oben links) in Zeichenfläche und
+  Bericht-Grundriss; Raumstempel per Griff verschiebbar, Position `stempel` im Modell (Rundlauf-Test in
+  `core.test.ts`), wandert beim Verschieben/Kopieren der Fläche mit, „Beschriftung zurücksetzen“.
+- [x] **F-21** Raumliste sortiert, Tabellenansicht – FR 0.26.0: Seitenleiste nach Nummer (natürliche Sortierung,
+  `nachNummer`), „Tabelle …“ mit allen Räumen und bearbeitbaren Spalten (Nr., Bezeichnung, R/S, Nutzung,
+  WoFlV-Anrechnung, Faktor, Wohnung, Abzug, Putzabzug); UI-Test für Prüfliste und Tabelle.
+- [x] F-22 bis F-24 (optional) – teilweise, FR 0.26.0: F-22 web-ifc wird beim Öffnen des IFC-Dialogs vorgeladen, Lesen
+  abbrechbar (Fortschrittstexte gab es schon). F-24: „Neu“/Öffnen beginnt mit dem BGF-Umriss, Bedienhinweise
+  einklappbar (gemerkt), Fokusrahmen der Zeichenfläche dezenter. Zurückgestellt: F-23 (Speichern im Browser über
+  `showSaveFilePicker`) und „Protokoll“ → „Diagnose“ – beides im gemeinsamen Unterbau (`platform/files.ts`,
+  `ui/TitleBar.tsx`) aller Apps, gehört in einen Querschnittsschritt.
 
 ## GRZ-Nachweis
 

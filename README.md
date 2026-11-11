@@ -118,7 +118,18 @@ festgehalten.
   darunterliegendes Geschoss einblenden. **Geschossart** Keller-, Normal- oder Dachgeschoss (ohne Angabe nach Name
   bzw. Dach): Räume im Kellergeschoss werden nicht als Wohnfläche vorgeschlagen – eine Souterrainwohnung liegt in
   einem Geschoss mit der Art „Normalgeschoss“
-- Messen-Werkzeug, Maßketten der ausgewählten Fläche, Maßstabsleiste
+- **Messen**: Kettenmessung mit Summe, dx/dy und Winkel je Abschnitt, Klick auf den Startpunkt misst die Fläche
+  (ohne Raum anzulegen), `Strg+C` kopiert die Messung, sie bleibt beim Werkzeugwechsel stehen (Esc löscht);
+  Messungen zählen nie zu BGF, NRF oder Wohnfläche. Maßketten der ausgewählten Fläche, Maßstabsleiste
+- **Beschriftung**: BGF-Beschriftung am Rand des Umrisses (außen oben links) statt auf den Räumen; Raumstempel lassen
+  sich am Griff unter der Beschriftung verschieben (gespeichert, auch im Grundriss des Berichts; „Beschriftung
+  zurücksetzen“ in den Eigenschaften)
+- **Raumliste** nach Nummer sortiert (natürliche Sortierung); **Raumtabelle** aller Räume des Projekts mit direkt
+  bearbeitbaren Spalten (Nr., Bezeichnung, R/S, Nutzung, WoFlV-Anrechnung, Faktor, Wohnung, Abzug, Putzabzug)
+- **Neues Geschoss**: das darunterliegende wird eingeblendet; „BGF-Umriss aus [Geschoss darunter] übernehmen“
+  kopiert nur die Geometrie (ohne Dach, Körperhöhe, Höhenversatz, Umschließung) und markiert den Umriss zum Prüfen
+- IFC-Import: das IFC-Modul lädt schon beim Öffnen des Dialogs, das Lesen einer Datei lässt sich abbrechen;
+  Bedienhinweise unten lassen sich einklappen (bleibt so); „Neu“ beginnt mit dem BGF-Umriss
 - Live-Auswertung je Geschoss und gesamt
 - **Flächenaufstellung** zum Drucken/PDF mit **Grundriss je Geschoss** (farbig nach Nutzungsgruppe, beschriftet,
   Maßstabsleiste, Legende, optional mit Hintergrundplan) und Raumliste je Geschoss; auf Wunsch mit **Rechenweg je

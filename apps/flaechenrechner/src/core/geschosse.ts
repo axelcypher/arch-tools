@@ -1,6 +1,6 @@
 import { centroid, labelPoint } from '@core/geometry';
-import type { Project, RoomShape, Shape, Storey } from '@core/model';
-import { storeyElevations } from '@core/model';
+import type { OutlineShape, Project, RoomShape, Shape, Storey } from '@core/model';
+import { createOutline, storeyElevations } from '@core/model';
 
 /**
  * Raumnummern und Geschosse (F-01, F-02, F-03):
@@ -175,4 +175,49 @@ export function geschossNameVorschlag(p: Project, bezug: Storey, lage: Lage): st
 export function neueKote(p: Project, bezug: Storey, lage: Lage, hoehe: number): number {
   const e = storeyElevations(p)[p.storeys.indexOf(bezug)] ?? 0;
   return Math.round((lage === 'darueber' ? e + bezug.hoehe : e - hoehe) * 1000) / 1000;
+}
+
+/** Geschoss direkt darunter (nach Fußbodenhöhe) */
+export function geschossDarunter(p: Project, storey: Storey): Storey | undefined {
+  const elev = storeyElevations(p);
+  const e = elev[p.storeys.indexOf(storey)] ?? 0;
+  let best: { s: Storey; e: number } | undefined;
+  p.storeys.forEach((s, i) => {
+    if (s !== storey && elev[i] < e - 1e-6 && (!best || elev[i] > best.e)) best = { s, e: elev[i] };
+  });
+  return best?.s;
+}
+
+/**
+ * BGF-Umrisse eines Geschosses als Vorlage übernehmen (F-18): nur die Geometrie – ohne Dach, Körperhöhe,
+ * Höhenversatz, Umschließung (R) und IFC-Herkunft des Originals; der Umriss ist „zu prüfen“ (im DG weicht die BGF
+ * regelmäßig ab).
+ */
+export function umrisseUebernehmen(quelle: Storey): OutlineShape[] {
+  return quelle.shapes
+    .filter((s): s is OutlineShape => s.kind === 'outline' && s.points.length >= 3)
+    .map((s) => ({
+      ...createOutline(
+        s.points.map((q) => ({ ...q })),
+        s.name,
+      ),
+      subtract: s.subtract,
+      pruefen: true,
+    }));
+}
+
+/** natürliche Sortierung der Raumnummern: 0.04 vor 1.01, 0.10 nach 0.09, -1.01 vor 0.01; ohne Nummer zuletzt */
+export function nachNummer<T extends { nummer: string; name?: string }>(raeume: readonly T[]): T[] {
+  const schluessel = (n: string) => {
+    const m = /^\s*(-?\d+)(?:\.(\d+))?/.exec(n);
+    return m ? [Number(m[1]), m[2] !== undefined ? Number(m[2]) : -1] : null;
+  };
+  return [...raeume].sort((a, b) => {
+    const ka = schluessel(a.nummer);
+    const kb = schluessel(b.nummer);
+    if (ka && kb) return ka[0] - kb[0] || ka[1] - kb[1] || a.nummer.localeCompare(b.nummer, 'de', { numeric: true });
+    if (ka) return -1;
+    if (kb) return 1;
+    return a.nummer.localeCompare(b.nummer, 'de', { numeric: true }) || (a.name ?? '').localeCompare(b.name ?? '', 'de');
+  });
 }

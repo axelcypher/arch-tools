@@ -82,8 +82,16 @@ export function PlanFigure({ storey, showBackground }: { storey: Storey; showBac
           const sw = bb.maxX - bb.minX;
           const sh = bb.maxY - bb.minY;
           if (sw < fs * 2.5 || sh < fs * 1.2) return null;
-          const lp = labelPoint(s.points, s.kind === 'outline' ? roomPts : []);
           const area = shapeArea(s) * (s.subtract ? -1 : 1);
+          // BGF-Beschriftung am Rand (außen oben links), Raumstempel an seiner gespeicherten Stelle (F-20)
+          if (s.kind === 'outline' && !s.stempel) {
+            return (
+              <text key={`t-${s.id}`} x={bb.minX} y={bb.minY - fs * 0.35} fontSize={fs * 0.8} textAnchor="start" className="plan-label">
+                {s.name} ({s.umschliessung}) · {fmt2(area)} m²
+              </text>
+            );
+          }
+          const lp = s.stempel ?? labelPoint(s.points, s.kind === 'outline' ? roomPts : []);
           const title = s.kind === 'room' ? [s.nummer, s.name].filter(Boolean).join(' ') : `${s.name} (${s.umschliessung})`;
           const two = sh > fs * 2.6 && sw > fs * Math.min(title.length * 0.55, 8);
           const f = s.kind === 'outline' ? fs * 0.85 : fs;

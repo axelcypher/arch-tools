@@ -180,6 +180,8 @@ export const useEditor = create<EditorState>((set, get) => {
         selectedShapeId: null,
         selectedIds: [],
         tool: 'select',
+        // ein neues bzw. anderes Projekt beginnt mit dem BGF-Umriss, nicht mit der Zeichenart des vorigen (F-24)
+        drawKind: 'outline',
         fitRequest: get().fitRequest + 1,
         ifcModel: null,
       });
@@ -496,6 +498,7 @@ function kopie(s: Shape, dx = 0, dy = 0): Shape {
   delete c.ifcId;
   delete c.ifcStand;
   c.points = c.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+  if (c.stempel) c.stempel = { x: c.stempel.x + dx, y: c.stempel.y + dy };
   return c;
 }
 
@@ -558,6 +561,13 @@ export function auswahlVerschieben(dx: number, dy: number): void {
   const jetzt = Date.now();
   if (jetzt - letzterSchritt > 800 || st.project !== nachSchritt) st.checkpoint();
   letzterSchritt = jetzt;
-  st.updateSilent((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.map((x) => (ids.has(x.id) ? { ...x, points: x.points.map((q) => ({ x: q.x + dx, y: q.y + dy })) } : x)) })));
+  st.updateSilent((p) =>
+    mapStorey(p, storey.id, (s) => ({
+      ...s,
+      shapes: s.shapes.map((x) =>
+        ids.has(x.id) ? { ...x, points: x.points.map((q) => ({ x: q.x + dx, y: q.y + dy })), ...(x.stempel ? { stempel: { x: x.stempel.x + dx, y: x.stempel.y + dy } } : {}) } : x,
+      ),
+    })),
+  );
   nachSchritt = useEditor.getState().project;
 }
