@@ -586,3 +586,25 @@
     break-after: avoid;
   }
 }
+
+/* Dachflächen und Zonen der lichten Höhe (F-12) */
+.dach-kante {
+  fill: none;
+  stroke: #8a6d3b;
+  stroke-width: 0.8;
+  stroke-dasharray: 8 3 2 3;
+}
+
+.hoehen-zone {
+  stroke: #b35900;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.hoehen-h12 {
+  fill: rgba(230, 160, 40, 0.12);
+}
+
+.hoehen-h01 {
+  fill: rgba(150, 80, 20, 0.22);
+}

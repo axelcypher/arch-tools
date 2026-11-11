@@ -12,6 +12,7 @@ import { katalogAnwenden, katalogEintrag, useKatalog, wohnungNormalisieren } fro
 import { wohnungenImProjekt } from '../core/geschosse';
 import { raumAufUmriss } from '@core/pruefung';
 import { gruppeAusNutzungsart } from '@core/norms';
+import { raumHoehenAnteile } from '@core/hoehenlinien';
 import { doppelteNummern, raeumeNeuNummerieren, raumNummernPraefix } from '../core/geschosse';
 import type { NummerReihenfolge } from '../core/geschosse';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
@@ -233,6 +234,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
               />
             </Field>
           )}
+          {!shape.subtract && <AnHoehenlinienTeilen shape={shape} upd={upd} />}
           {shape.wofl.kategorie === 'hoehen' && <HoehenTeile shape={shape} upd={upd} />}
           {shape.wofl.kategorie !== 'keine' && (
             <>
@@ -509,6 +511,16 @@ function StoreyProperties() {
         </select>
       </Field>
       <RaumNummern />
+      {(istDachgeschoss(storey) || storey.shapes.some((s) => s.kind === 'outline' && !!s.dach && s.dach.typ !== 'flach')) && (
+        <div className="field-row">
+          <Field label="Dachaufbau bis Innenbekleidung [m]" hint="senkrecht zur Dachfläche gemessen; für die Höhenlinien (lichte Höhe unter Schrägen)">
+            <NumberField value={storey.dachaufbau} allowEmpty min={0} max={2} digits={3} placeholder="0,000" onChange={(v) => upd((s) => ({ ...s, dachaufbau: v || undefined }))} />
+          </Field>
+          <Field label="Fußbodenaufbau [m]" hint="nur, wenn die Geschosskote auf dem Rohfußboden liegt">
+            <NumberField value={storey.fussbodenaufbau} allowEmpty min={0} max={1} digits={3} placeholder="0,000" onChange={(v) => upd((s) => ({ ...s, fussbodenaufbau: v || undefined }))} />
+          </Field>
+        </div>
+      )}
       {project.dachModell && (
         <label className="toggle block" title="Ohne Haken reicht der Rauminhalt dort, wo darüber keine BGF liegt (z. B. Dachspitze als eigenes Geschoss), bis unter die Dachhaut.">
           <input type="checkbox" checked={!!storey.geschosshoeheBegrenzt} onChange={(e) => upd((s) => ({ ...s, geschosshoeheBegrenzt: e.target.checked || undefined }))} />
@@ -823,6 +835,25 @@ function AufUmrissBeschneiden({ shape, upd }: { shape: RoomShape; upd: (fn: (s: 
       Der Raum ragt {fmt2(neu.diff)} m² über den BGF-Umriss hinaus.{' '}
       <button className="small" onClick={() => upd((s) => ({ ...s, points: neu.pts }))}>
         Auf Umriss beschneiden
+      </button>
+    </p>
+  );
+}
+
+/** „Raum an Höhenlinien teilen“: Teilflächen ≥ 2 m / 1–2 m / < 1 m aus der Dachform (F-12) – nur die Wohnfläche ändert sich */
+function AnHoehenlinienTeilen({ shape, upd }: { shape: RoomShape; upd: (fn: (s: Shape) => Shape) => void }) {
+  const storey = useActiveStorey();
+  const t = useMemo(() => raumHoehenAnteile(shape, storey), [shape, storey]);
+  if (!t) return null;
+  const f = shapeArea(shape);
+  const a = t.anteile;
+  const gleich = shape.wofl.kategorie === 'hoehen' && shape.wofl.anteile && Math.abs(shape.wofl.anteile.h2 - a.h2) < 1e-6 && Math.abs(shape.wofl.anteile.h12 - a.h12) < 1e-6;
+  if (gleich) return <p className="muted small-text">Teilflächen aus den Höhenlinien der Dachform abgeleitet (Planmaße).</p>;
+  return (
+    <p className="hinweis small-text">
+      Unter der Dachform: ≥ 2 m {fmt2(a.h2 * f)} m², 1–2 m {fmt2(a.h12 * f)} m², &lt; 1 m {fmt2(a.h01 * f)} m².{' '}
+      <button className="small" onClick={() => upd((s) => (s.kind === 'room' ? { ...s, wofl: { ...s.wofl, kategorie: 'hoehen', faktor: undefined, anteile: a } } : s))}>
+        Raum an Höhenlinien teilen
       </button>
     </p>
   );

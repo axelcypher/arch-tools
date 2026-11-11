@@ -117,6 +117,12 @@ festgehalten.
   Raum** (L × B bzw. Zerlegung in Rechtecke/Dreiecke oder Gauß’sche Formel, − Putzabzug, − Abzugsflächen,
   × Anrechnung) – die Summe der Zeilen ist exakt das Ergebnis. Im Excel-Standardlayout steht derselbe Rechenweg
   als Formeln (Blatt „Rechenweg Räume“)
+- **Dachschrägen nach WoFlV**: Unter Dachformen zeigt der Grundriss die Dachflächen (First, Grate, Kehlen) und die
+  Zonen der lichten Höhe (< 1 m schraffiert, 1–2 m getönt; Ansicht „Höhenlinien“). Lichte Höhe = Dachhaut −
+  Dachaufbau bis zur Innenbekleidung ÷ cos α − ggf. Fußbodenaufbau (je Geschoss einstellbar) − Höhenlage des Raums.
+  „Raum an Höhenlinien teilen“ setzt die Anrechnung „Raumteile nach lichter Höhe“ mit den Teilflächen ≥ 2 m /
+  1–2 m / < 1 m – eine Nummer, eine NRF, nur die Wohnfläche ändert sich. Bericht und Excel (`raum.teil_h2` …) weisen
+  die Teilflächen in m² aus. Gauben und Kehlbalkendecken werden dabei nicht berücksichtigt (Teilflächen prüfen)
 - **Bericht für die Bauvorlage**: Vorlagen „Vollständige Flächenaufstellung“, „Bauantrag NRW (BRI + WoFl)“ und
   freie Auswahl der Abschnitte (Grundflächen und Rauminhalte, BRI-Rechenweg, Nutzungsgruppen, Raumlisten,
   Wohnflächen, Hochbaustatistik). In „Bauantrag NRW“ sind die Tabelle nach DIN 277 mit R/S-Trennung und der

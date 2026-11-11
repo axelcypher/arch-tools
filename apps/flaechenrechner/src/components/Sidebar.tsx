@@ -141,6 +141,10 @@ export function Sidebar() {
             <input type="checkbox" checked={view.showDimensions} onChange={(e) => st.setView({ showDimensions: e.target.checked })} />
             Maße
           </label>
+          <label className="toggle" title="Dachflächen und Höhenlinien 1 m / 2 m lichte Höhe unter Dachformen">
+            <input type="checkbox" checked={view.showHoehenlinien} onChange={(e) => st.setView({ showHoehenlinien: e.target.checked })} />
+            Höhenlinien
+          </label>
         </div>
         {storey.shapes.length === 0 && <p className="muted">Noch keine Flächen. Werkzeug „Polygon“ oder „Rechteck“ wählen und zeichnen.</p>}
         {outlines.length > 0 && <h3>BGF-Umrisse</h3>}

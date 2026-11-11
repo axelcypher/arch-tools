@@ -183,6 +183,9 @@ export async function exportDefault(project: Project, result: ProjectResult): Pr
       ['R/S', 'umschliessung', 6],
       ['Fläche [m²]', 'flaeche', 12],
       ['WoFlV-Anrechnung', 'wofl_kategorie', 34],
+      ['≥ 2 m [m²]', 'teil_h2', 10],
+      ['1–2 m [m²]', 'teil_h12', 10],
+      ['< 1 m [m²]', 'teil_h01', 10],
       ['Faktor', 'wofl_faktor', 8],
       ['WoFl [m²]', 'wofl', 12],
       ['Wohnung', 'wohnung', 12],
@@ -200,7 +203,7 @@ export async function exportDefault(project: Project, result: ProjectResult): Pr
     }
     cols.forEach((c, i) => {
       ws.getColumn(i + 1).width = c[2];
-      if (['flaeche', 'wofl', 'wofl_faktor'].includes(c[1])) ws.getColumn(i + 1).numFmt = NUM;
+      if (['flaeche', 'wofl', 'wofl_faktor', 'teil_h2', 'teil_h12', 'teil_h01'].includes(c[1])) ws.getColumn(i + 1).numFmt = NUM;
     });
     ws.views = [{ state: 'frozen', ySplit: h }];
   }

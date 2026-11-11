@@ -96,6 +96,10 @@ export function buildExportContext(project: Project, result: ProjectResult, date
         wohnflaeche: wofl ? 'ja' : '',
         wofl_kategorie: wofl ? (WOFL_KATEGORIEN.find((k) => k.id === r.woflKategorie)?.label ?? '') : '',
         wofl_faktor: wofl ? r2(r.woflFaktor) : '',
+        // Raumteile nach lichter Höhe (FR-12): Teilflächen in m², Summe = Raumfläche
+        teil_h2: r.woflAnteile ? r2(Math.abs(r.area) * r.woflAnteile.h2) : '',
+        teil_h12: r.woflAnteile ? r2(Math.abs(r.area) * r.woflAnteile.h12) : '',
+        teil_h01: r.woflAnteile ? r2(Math.abs(r.area) * r.woflAnteile.h01) : '',
         wofl: wofl ? r2(r.woflArea) : '',
         wofl_roh: wofl ? r2(roh * r.woflFaktor) : '',
         wohnung: r.wohnung,
@@ -294,6 +298,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['raum.wofl_kategorie', 'Anrechnung nach WoFlV'],
       ['raum.wofl_faktor', 'Anrechnungsfaktor'],
       ['raum.wofl', 'anrechenbare Wohnfläche [m²]'],
+      ['raum.teil_h2, raum.teil_h12, raum.teil_h01', 'nur „Raumteile nach lichter Höhe“: Teilflächen ≥ 2 m, 1–2 m, < 1 m [m²] (Wohnfläche = ≥ 2 m + ½ × 1–2 m)'],
       ['raum.wofl_roh', 'anrechenbare Wohnfläche ohne Putzabzug [m²] – wenn der Abzug in Excel gerechnet wird'],
       ['raum.wohnung', 'Wohnungszuordnung'],
       ['raum.abzug', '„Abzug“ bei Abzugsflächen, sonst leer'],

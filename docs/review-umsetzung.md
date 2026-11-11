@@ -183,7 +183,10 @@ mitbumpt).
   `sohleAnsetzen`. BRI S getrennt im Bericht mit FR-09/F-17.
 - [x] **FR-11** „unbeheizbarer“ Wintergarten – FR 0.20.0: Bezeichnung „unbeheizbarer Wintergarten, Schwimmbad u. ä.
   (50 %)“, Hilfetext „beheizbare Wintergärten: lichte Höhe ≥ 2 m (100 %) wählen“, Berichtstext.
-- [ ] **FR-12** Teilflächen statt gemischtem Faktor
+- [x] **FR-12** Teilflächen statt gemischtem Faktor – Kern seit FR 0.20.0 (Kategorie „Raumteile nach lichter
+  Höhe“ mit Anteilen, IFC-Import ohne gerundeten Mischfaktor und ohne 0,5-%-Toleranz, Wohnfläche exakt
+  1 · ≥ 2 m + 0,5 · 1–2 m); FR 0.24.0: Bericht und Excel weisen die Teilflächen in m² aus (`raum.teil_h2`, `teil_h12`,
+  `teil_h01`), der Faktor entfällt dort als Rechengröße.
 - [x] **FR-13** Veraltete bzw. vermischte Begriffe – FR 0.20.0: Muster-Vorlage „Wohnfläche nach WoFlV“, „Flächen ohne
   Wohnflächenanrechnung“, „Brutto-Grundfläche“ (Zeilen „Brutto-/Netto-Wohnflächen“ mit 3-%-Abzug unverändert);
   Filter `hnf`/`nnf` bleiben als Altnamen, Doku „NUF 1–6 / NUF 7 (früher HNF/NNF nach DIN 277-2:2005)“; R = „allseitig
@@ -223,7 +226,17 @@ KO 0.11.2 (Patch).
   neue Räume übernehmen Nutzung und Anrechnung vom zuletzt angelegten Raum des Geschosses (im leeren Wohngeschoss
   „voll“); Wohnung als Auswahl der vorhandenen, Schreibvarianten werden vereinheitlicht. Keine Sperre für 100 % im
   Dachgeschoss (nur Hinweis in der Prüfliste).
-- [ ] **F-12** Dachschrägen nach WoFlV gliedern
+- [x] **F-12** Dachschrägen nach WoFlV gliedern – FR 0.24.0 (Kern): `core/hoehenlinien.ts` – Zonen der lichten Höhe
+  je Dachfläche (lichte Höhe = Dachhaut − Dachaufbau ÷ cos α − Fußbodenaufbau − Höhenlage des Raums), Eingaben
+  „Dachaufbau bis Innenbekleidung“ und „Fußbodenaufbau“ je Geschoss; Grundriss zeigt Dachflächen (First/Grate/Kehlen)
+  und die Zonen < 1 m und 1–2 m (Ansicht „Höhenlinien“); „Raum an Höhenlinien teilen“ setzt Teilflächen als
+  Unterteilung des Raums (eine Nummer, eine NRF, nur die Wohnfläche ändert sich; Summe exakt = Raumfläche);
+  Split-Level berücksichtigt; Bericht je Raum mit Teilflächen und Hinweis „aus Planmaßen abgeleitet“; FR-08-Hinweis
+  bei „voll“ im Dachgeschoss (seit 0.20.0). Abweichung: zurückgestellt sind das allgemeine Werkzeug „Fläche teilen“
+  (Linie durch die Fläche) und Gauben im Grundriss mit Verschieben per Ziehen (eigener Zeichenmodus in der
+  Zeichenfläche, Aufwand); Gauben und Kehlbalkendecken gehen nicht in die Teilflächen ein (konservativ, Hinweis in
+  der Doku); keine Vorgabe der Aufbauten aus der IFC (dort liefert der Import die Anteile direkt aus den
+  Raumkörpern).
 - [x] **F-13** Rechenweg je Raum – FR 0.21.0: `core/raumRechenweg.ts` (Rechtecke L × B bzw. Dreiecke aus
   `flaechenZerlegung.ts`, sonst Gauß’sche Formel; Putzabzug, Abzugsflächen als Minuszeilen, Anrechnung bzw.
   Raumteile nach Höhe), Summe = Ergebnis der Auswertung (Test); Bericht mit Schalter „Rechenweg je Raum“, Excel-Blatt

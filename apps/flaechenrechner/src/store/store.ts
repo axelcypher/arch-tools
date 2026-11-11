@@ -38,6 +38,8 @@ export interface ViewOptions {
   snapVertices: boolean;
   /** Hilfslinien: Verlängerung bestehender Kanten und Gebäudeachsen */
   snapGuides: boolean;
+  /** Dachflächen und Höhenlinien 1 m / 2 m lichte Höhe unter Dachformen (F-12) */
+  showHoehenlinien: boolean;
 }
 
 const HISTORY_LIMIT = 200;
@@ -128,6 +130,7 @@ export const useEditor = create<EditorState>((set, get) => {
       snapGrid: true,
       snapVertices: true,
       snapGuides: true,
+      showHoehenlinien: true,
     },
     fitRequest: 1,
     reportOpen: false,

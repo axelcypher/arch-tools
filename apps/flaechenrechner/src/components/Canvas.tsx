@@ -16,7 +16,7 @@ import { fmt2, parseNum } from '@core/format';
 import { NumberField } from '@core/ui/fields';
 import type { Hilfslinie } from '@core/fang';
 import { achsBeschraenkt, achsRechteck, achsRichtungen, eckpunktHilfslinien, gebaeudeAchse, hilfslinienFang, zeichenHilfslinien } from '@core/fang';
-import type { Shape, Storey } from '@core/model';
+import type { OutlineShape, Shape, Storey } from '@core/model';
 import { createOutline, createRoom, shapeArea } from '@core/model';
 import { nutzungInfo } from '@core/norms';
 import { bgWorldBounds, scaleAround, vectorSegmentGrid } from '../core/background';
@@ -25,6 +25,8 @@ import { SegmentGrid } from '@core/spatial';
 import { loadImage, rasterEdgeRefiner, rasterMaskProvider } from '../platform/rasterMask';
 import { einfuegenAktion } from './KopieDialog';
 import { neuerRaumVorgabe } from '../core/katalog';
+import { hoehenZonen } from '@core/hoehenlinien';
+import { clippedPieces } from '@core/roof';
 import { auswahlVerschieben, flaechenDuplizieren, flaechenKopieren, mapStorey, nextRoomNumber, setShapePoints, useActiveStorey, useEditor } from '../store/store';
 import { BackgroundLayer } from './BackgroundLayer';
 import { logger } from '@core/platform/log';
@@ -946,6 +948,7 @@ export function Canvas() {
             />
           ))}
         </g>
+        {view.showHoehenlinien && <HoehenLayer storey={storey} toScreen={toScreen} />}
         <g style={{ pointerEvents: 'none' }}>{[...outlines, ...rooms].map(renderLabel)}</g>
 
         {selected && tool === 'select' && (
@@ -1236,4 +1239,40 @@ function kanteSchnitt(
     if (pr.dist < 1e-6 && Math.hypot(s.x - raw.x, s.y - raw.y) <= tol * 1.5) return s;
   }
   return null;
+}
+
+/**
+ * Dachflächen (Grate, First, Kehlen) und Zonen der lichten Höhe unter Dachformen (F-12): < 1 m schraffiert,
+ * 1–2 m leicht getönt, Grenzen gestrichelt – im Geschoss mit Aufbauten aus den Geschosseigenschaften.
+ */
+function HoehenLayer({ storey, toScreen }: { storey: Storey; toScreen: (p: Point) => Point }) {
+  const daten = useMemo(
+    () =>
+      storey.shapes
+        .filter((s): s is OutlineShape => s.kind === 'outline' && !s.subtract && !!s.dach && s.dach.typ !== 'flach' && s.dach.typ !== 'modell')
+        .map((u) => ({
+          id: u.id,
+          kanten: clippedPieces(u.dach!, u.points).map((p) => p.poly),
+          zonen: hoehenZonen(u, u.points, { dachaufbau: storey.dachaufbau, fussbodenaufbau: storey.fussbodenaufbau }),
+        })),
+    [storey],
+  );
+  if (!daten.length) return null;
+  const pfad = (pts: Point[]) => pts.map((p, i) => `${i ? 'L' : 'M'}${toScreen(p).x},${toScreen(p).y}`).join('') + 'Z';
+  return (
+    <g pointerEvents="none" className="hoehen-layer">
+      {daten.map((d) => (
+        <g key={d.id}>
+          {d.zonen
+            .filter((z) => z.klasse !== 'h2')
+            .map((z, i) => (
+              <path key={`z${i}`} d={pfad(z.points)} className={`hoehen-zone hoehen-${z.klasse}`} />
+            ))}
+          {d.kanten.map((k, i) => (
+            <path key={`k${i}`} d={pfad(k)} className="dach-kante" />
+          ))}
+        </g>
+      ))}
+    </g>
+  );
 }

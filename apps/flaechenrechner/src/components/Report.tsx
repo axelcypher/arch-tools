@@ -298,8 +298,14 @@ export function Report() {
                         {mitPutz && <td className="num">{fmt2(polygonArea(raumById.get(room.shapeId)?.points ?? []) * (room.subtract ? -1 : 1))}</td>}
                         {mitPutz && <td className="num">{raumById.get(room.shapeId)?.putzabzug ? `${fmt2(raumById.get(room.shapeId)!.putzabzug!)} %` : ''}</td>}
                         <td className="num">{fmt2(room.area)}</td>
-                        <td>{room.woflKategorie === 'keine' ? '–' : WOFL_KATEGORIEN.find((k) => k.id === room.woflKategorie)?.label}</td>
-                        <td className="num">{room.woflKategorie === 'keine' ? '' : fmt2(room.woflFaktor)}</td>
+                        <td>
+                          {room.woflKategorie === 'keine'
+                            ? '–'
+                            : room.woflAnteile
+                              ? `≥ 2 m ${fmt2(Math.abs(room.area) * room.woflAnteile.h2)} | 1–2 m ${fmt2(Math.abs(room.area) * room.woflAnteile.h12)} | < 1 m ${fmt2(Math.abs(room.area) * room.woflAnteile.h01)} m²`
+                              : WOFL_KATEGORIEN.find((k) => k.id === room.woflKategorie)?.label}
+                        </td>
+                        <td className="num">{room.woflKategorie === 'keine' || room.woflAnteile ? '' : fmt2(room.woflFaktor)}</td>
                         <td className="num">{room.woflKategorie === 'keine' ? '' : fmt2(room.woflArea)}</td>
                         <td>{room.wohnung}</td>
                       </tr>,
@@ -375,6 +381,8 @@ export function Report() {
           WoFlV bleiben Schornsteine, Pfeiler und Säulen über 1,50 m Höhe und mehr als 0,1 m² Grundfläche, Treppen mit mehr als drei Steigungen samt
           Treppenabsätzen, Türnischen sowie Fenster- und offene Wandnischen, die nicht bis zum Fußboden reichen oder höchstens 0,13 m tief sind, außer Betracht; sie sind als Abzugsflächen im Raum erfasst
           (Treppen nur von der Wohnfläche, sie bleiben Teil der NRF). WoFlV-Einstufung nach Raumnamen vorgeschlagen, vom Verfasser geprüft.
+          {r.storeys.some((s) => s.rooms.some((x) => x.woflAnteile)) &&
+            ' Räume unter Dachschrägen mit Teilflächen nach lichter Höhe (≥ 2 m voll, 1–2 m zur Hälfte, < 1 m nicht); Höhenlinien aus Planmaßen bzw. dem IFC-Modell abgeleitet.'}
         </p>
           </section>
         )}
