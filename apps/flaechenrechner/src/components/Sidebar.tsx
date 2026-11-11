@@ -3,10 +3,29 @@ import { computeStorey } from '@core/calc';
 import { fmt2 } from '@core/format';
 import { shapeArea } from '@core/model';
 import { nutzungInfo } from '@core/norms';
-import { addStorey, duplicateStorey, moveStorey, removeStorey, useActiveStorey, useEditor } from '../store/store';
+import { addStorey, moveStorey, removeStorey, useActiveStorey, useEditor } from '../store/store';
 import { Field, NumberField } from '@core/ui/fields';
 import { ProjektInfo } from './ProjektDialog';
-import { bestaetigen } from '@core/ui/Rueckfrage';
+import { bestaetigen, fragen } from '@core/ui/Rueckfrage';
+import { geschossDuplizierenAktion } from './KopieDialog';
+
+/** „+ Neu“: Geschoss über oder unter dem aktiven einfügen, Name und Fußbodenhöhe nach der Lage (F-03) */
+async function neuesGeschoss(bezugId: string, bezugName: string) {
+  const lage = await fragen({
+    titel: 'Neues Geschoss',
+    text: `Wo soll das neue Geschoss liegen? Name und Fußbodenhöhe werden aus „${bezugName}“ abgeleitet und lassen sich danach ändern.`,
+    knoepfe: [
+      { id: 'abbrechen', label: 'Abbrechen' },
+      { id: 'darunter', label: `unter „${bezugName}“` },
+      { id: 'darueber', label: `über „${bezugName}“`, art: 'primary' },
+    ],
+  });
+  if (lage !== 'darueber' && lage !== 'darunter') return;
+  const st = useEditor.getState();
+  const r = addStorey(st.project, undefined, bezugId, lage);
+  st.update(() => r.project);
+  st.setActiveStorey(r.id);
+}
 
 /** Linke Seitenleiste: Projekt, Geschosse, Flächenliste des aktiven Geschosses. */
 export function Sidebar() {
@@ -49,12 +68,8 @@ export function Sidebar() {
           <h2>Geschosse</h2>
           <button
             className="small"
-            onClick={() => {
-              const r = addStorey(project, `${project.storeys.length}. OG`);
-              st.update(() => r.project);
-              st.setActiveStorey(r.id);
-            }}
-            title="Geschoss hinzufügen"
+            onClick={() => void neuesGeschoss(storey.id, storey.name)}
+            title="Geschoss über oder unter dem aktiven einfügen"
           >
             + Neu
           </button>
@@ -67,11 +82,7 @@ export function Sidebar() {
         <div className="button-row">
           <button
             className="small"
-            onClick={() => {
-              const r = duplicateStorey(project, storey.id);
-              st.update(() => r.project);
-              st.setActiveStorey(r.id);
-            }}
+            onClick={() => void geschossDuplizierenAktion(storey.id)}
             title="Aktives Geschoss inkl. aller Flächen kopieren"
           >
             Duplizieren

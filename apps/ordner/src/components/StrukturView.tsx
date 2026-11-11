@@ -2,12 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
-import { bestaetigen } from '@core/ui/Rueckfrage';
 import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
 import { hatDateisystem, waehleOrdner } from '../dateisystem';
 import { dateimuster, nameAus, nummerAus } from '../nummer';
-import type { Sicherung } from '../sicherung';
-import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
 import type { Struktur } from '../struktur';
 import { ordnerAlsText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from '../struktur';
@@ -22,11 +19,6 @@ const log = logger('struktur');
 export function StrukturView() {
   const struktur = useOrdner((s) => s.struktur);
   const setStruktur = useOrdner((s) => s.setStruktur);
-  const strukturErsetzen = useOrdner((s) => s.strukturErsetzen);
-  const rueckgaengig = useOrdner((s) => s.rueckgaengig);
-  const strukturRueckgaengig = useOrdner((s) => s.strukturRueckgaengig);
-  const sicherungenLesen = useOrdner((s) => s.sicherungenLesen);
-  const [sicherungen, setSicherungen] = useState<Sicherung[] | null>(null);
   const [text, setText] = useState(() => ordnerAlsText(struktur.ordner));
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
 
@@ -38,39 +30,8 @@ export function StrukturView() {
   const ordnerUebernehmen = () => {
     const { ordner } = gelesen;
     if (!ordner.length) return setMeldung({ art: 'fehler', text: 'Die Liste enthält keinen Ordner – die bisherige Struktur bleibt bestehen.' });
+    set({ ordner });
     setMeldung(null);
-    void strukturErsetzen({ ...struktur, ordner }, 'Ordnerliste übernommen.', { sicherung: false });
-  };
-
-  /**
-   * Bürostruktur ersetzen (Standard, Laden, Sicherung): erst die Rückfrage mit Vorschau der Änderung, dann sichern,
-   * ersetzen und „Rückgängig“ anbieten.
-   */
-  const ersetzen = async (neu: Struktur, titel: string, grund: string) => {
-    if (strukturAlsJson(neu) === strukturAlsJson(struktur)) return setMeldung({ art: 'ok', text: 'Keine Änderung – die Struktur entspricht schon dieser Fassung.' });
-    const was = unterschiedText(strukturUnterschied(struktur, neu)) || 'Ordner und Schemata bleiben, Einzelheiten der Presets ändern sich';
-    const ok = await bestaetigen(
-      titel,
-      `${was}. Die Bürostruktur gilt für alle, die diesen Konfigurationsordner nutzen. Vorher wird der bisherige Stand gesichert; „Rückgängig“ stellt ihn wieder her.`,
-      'Ersetzen',
-      true,
-    );
-    if (!ok) return;
-    try {
-      await strukturErsetzen(neu, grund);
-      setMeldung(null);
-      setSicherungen(null);
-    } catch (e) {
-      setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
-    }
-  };
-  const sicherungenZeigen = async () => {
-    if (sicherungen) return setSicherungen(null);
-    try {
-      setSicherungen(await sicherungenLesen());
-    } catch (e) {
-      setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
-    }
   };
 
   const laden = async () => {
@@ -78,7 +39,8 @@ export function StrukturView() {
     if (!f) return;
     try {
       const s = strukturAusJson(f.text);
-      await ersetzen(s, `Struktur „${s.name}“ aus ${f.name} laden?`, `Struktur „${s.name}“ aus ${f.name} geladen (${s.ordner.length} Ordner, ${s.presets.length} ${s.presets.length === 1 ? 'Preset' : 'Presets'}).`);
+      setStruktur(s);
+      setMeldung({ art: 'ok', text: `Struktur „${s.name}“ aus ${f.name} geladen (${s.ordner.length} Ordner, ${s.presets.length} ${s.presets.length === 1 ? 'Preset' : 'Presets'}).` });
       log.info(`Struktur geladen: ${s.name}`, { ordner: s.ordner.length, presets: s.presets.length });
     } catch (e) {
       setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
@@ -107,50 +69,15 @@ export function StrukturView() {
           <button onClick={() => void speichern()}>Struktur speichern …</button>
           <button
             title="Ordner und Namensschemata auf die neutrale Vorgabe zurücksetzen – Presets und Dateinamen der Vorlagen bleiben"
-            onClick={() =>
-              void ersetzen(
-                { ...STANDARD, vorlagenname: struktur.vorlagenname, presets: struktur.presets },
-                'Standardstruktur wiederherstellen?',
-                'Neutrale Standardstruktur wiederhergestellt; die Vorlagen-Presets bleiben.',
-              )
-            }
+            onClick={() => {
+              setStruktur({ ...STANDARD, vorlagenname: struktur.vorlagenname, presets: struktur.presets });
+              setMeldung({ art: 'ok', text: 'Neutrale Standardstruktur wiederhergestellt; die Vorlagen-Presets bleiben.' });
+            }}
           >
             Standard
           </button>
-          <button title="Frühere Fassungen der Struktur – vor jedem Ersetzen gesichert (die letzten zehn)" onClick={() => void sicherungenZeigen()}>
-            Sicherungen …
-          </button>
         </div>
         {meldung && <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'}>{meldung.text}</p>}
-        {rueckgaengig && (
-          <p className="po-meldung po-rueckgaengig">
-            {rueckgaengig.text}{' '}
-            <button className="small" onClick={strukturRueckgaengig}>
-              Rückgängig
-            </button>
-          </p>
-        )}
-        {sicherungen && (
-          <div className="po-sicherungen">
-            <span className="field-label">Sicherungen der Struktur</span>
-            {!sicherungen.length && <p className="muted small-text">Noch keine – eine Sicherung entsteht vor jedem Ersetzen der Struktur.</p>}
-            <ul className="list">
-              {sicherungen.map((x) => (
-                <li key={`${x.name}:${x.grund}`}>
-                  <span title={x.grund}>
-                    {x.name.replace(/^projektordner\.json\.bak-/, '')} · „{x.inhalt.struktur.name}“ · {x.grund}
-                  </span>
-                  <button
-                    className="small"
-                    onClick={() => void ersetzen(x.inhalt.struktur, `Sicherung ${x.name} wiederherstellen?`, `Sicherung ${x.name} wiederhergestellt.`)}
-                  >
-                    Wiederherstellen
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         <Field label="Name der Struktur">
           <TextField value={struktur.name} onChange={(v) => set({ name: v.trim() || struktur.name })} />

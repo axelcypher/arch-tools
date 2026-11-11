@@ -1,22 +1,9 @@
 import { create } from 'zustand';
 import type { AllgemeineEinstellungen, KonfigOrt } from '@core/platform/konfig';
-import {
-  allgemeinAendern,
-  allgemeinAus,
-  konfigAendern,
-  konfigLesen,
-  konfigOrdnerWechseln,
-  konfigOrt,
-  konfigSchreiben,
-  konfigSchreibenWennUnveraendert,
-  konfigStand,
-  VORGABE_ALLGEMEIN,
-} from '@core/platform/konfig';
+import { allgemeinAendern, allgemeinAus, konfigLesen, konfigOrdnerWechseln, konfigOrt, konfigSchreiben, VORGABE_ALLGEMEIN } from '@core/platform/konfig';
 import { hatDateisystem, tauriDateisystem } from './dateisystem';
 import type { Vorlage } from './plan';
 import { ladeVorlagen } from './plan';
-import type { Sicherung } from './sicherung';
-import { SICHERUNGEN, sicherungenAus, sicherungenMit, sicherungsName } from './sicherung';
 import type { Stammdaten } from './stammdaten';
 import { leereStammdaten } from './stammdaten';
 import type { Struktur } from './struktur';
@@ -26,9 +13,6 @@ import { alterOapPfad, STANDARD, strukturAusJson } from './struktur';
  * Zustand des Tools. Die Einstellungen liegen im gemeinsamen Konfigurationsordner aller Apps:
  *   allgemein.json       Stammordner der Projekte, Ort neuer Projektdateien, Fotoordner (alle Apps)
  *   projektordner.json   Struktur (samt Vorlagen-Presets) und Vorlagenordner (dieses Tool)
- * projektordner.json wird nur geschrieben, wenn sie seit dem Lesen unverändert ist (sonst Meldung „von einem anderen
- * Rechner geändert“), und entprellt – nicht bei jeder einzelnen Änderung. Vor dem Ersetzen der Struktur entsteht eine
- * Sicherung (projektordner-sicherungen.json, siehe sicherung.ts).
  * Im lokalen Speicher bleiben nur das angefangene Formular für ein neues Projekt und – als Übergang – die
  * Einstellungen älterer Fassungen, die beim ersten Start in den Konfigurationsordner übernommen werden.
  */
@@ -62,26 +46,8 @@ interface OrdnerState {
   vorlagenName: string;
   vorlagenFehler: string | null;
   vorlagenLaden: boolean;
-  /** Stand von projektordner.json beim letzten Lesen bzw. Schreiben (zum Erkennen fremder Änderungen) */
-  konfigStandEigen: string | null;
-  /** projektordner.json wurde inzwischen anderswo geändert: deren Inhalt; nichts wird geschrieben, bis entschieden ist */
-  konflikt: { roh: unknown } | null;
-  /** die Struktur vor der letzten Ersetzung („Rückgängig“) – entfällt mit der nächsten Änderung */
-  rueckgaengig: { struktur: Struktur; text: string } | null;
   setStamm: (patch: Partial<Stammdaten>) => void;
   setStruktur: (s: Struktur) => void;
-  /** Struktur als Ganzes ersetzen (Standard, Laden, Sicherung, Ordnerliste): vorher sichern, „Rückgängig“ anbieten */
-  strukturErsetzen: (neu: Struktur, grund: string, optionen?: { sicherung?: boolean }) => Promise<void>;
-  /** die letzte Ersetzung zurücknehmen */
-  strukturRueckgaengig: () => void;
-  /** Sicherungen der Struktur im Konfigurationsordner, neueste zuerst */
-  sicherungenLesen: () => Promise<Sicherung[]>;
-  /** anstehendes Schreiben sofort ausführen (statt nach der Wartezeit) */
-  speichernJetzt: () => Promise<void>;
-  /** projektordner.json frisch lesen (beim Wechsel in Einstellungen bzw. Vorlagen) – fremde Änderungen übernehmen */
-  neuLesen: () => Promise<void>;
-  /** Konflikt lösen: die andere Fassung laden oder die eigene trotzdem speichern */
-  konfliktLoesen: (wie: 'neu-laden' | 'meine') => Promise<void>;
   setStammordner: (p: string) => void;
   setVorlagenordner: (p: string) => void;
   setAllgemein: (patch: Partial<AllgemeineEinstellungen>) => void;
@@ -125,45 +91,10 @@ const anfang = {
 
 const fehlertext = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-/** so lange nach der letzten Änderung wird projektordner.json geschrieben */
-export const SPEICHERN_NACH_MS = 400;
-
-const eigenAus = (roh: unknown) => {
-  const eigen = (roh ?? {}) as { struktur?: unknown; vorlagenordner?: unknown };
-  return { struktur: strukturAus(eigen.struktur), vorlagenordner: typeof eigen.vorlagenordner === 'string' ? eigen.vorlagenordner : '' };
-};
-
 export const useOrdner = create<OrdnerState>()((set, get) => {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let schreiben: Promise<void> = Promise.resolve();
-  /** jetzt schreiben – nur, wenn die Datei seit dem Lesen unverändert ist; sonst Konflikt melden */
-  const jetztSpeichern = (): Promise<void> => {
-    schreiben = schreiben.then(async () => {
-      const { struktur, vorlagenordner, konfigStandEigen, konflikt } = get();
-      if (konflikt) return;
-      try {
-        const r = await konfigSchreibenWennUnveraendert(BEREICH, { struktur, vorlagenordner }, konfigStandEigen);
-        if (r.ok) set({ konfigStandEigen: r.stand });
-        else set({ konflikt: { roh: r.aktuell } });
-      } catch (e) {
-        set({ konfigFehler: `Einstellungen nicht gespeichert: ${fehlertext(e)}` });
-      }
-    });
-    return schreiben;
-  };
-  // entprellt: mehrere Änderungen kurz hintereinander ergeben ein Schreiben
   const eigeneSpeichern = () => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      timer = null;
-      void jetztSpeichern();
-    }, SPEICHERN_NACH_MS);
-  };
-  const speichernJetzt = () => {
-    if (!timer) return schreiben;
-    clearTimeout(timer);
-    timer = null;
-    return jetztSpeichern();
+    const { struktur, vorlagenordner } = get();
+    konfigSchreiben(BEREICH, { struktur, vorlagenordner }).catch((e) => set({ konfigFehler: `Einstellungen nicht gespeichert: ${fehlertext(e)}` }));
   };
   const allgemeinSetzen = (patch: Partial<AllgemeineEinstellungen>) => {
     const allgemein = { ...get().allgemein, ...patch };
@@ -181,56 +112,9 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     vorlagenFehler: null,
     vorlagenLaden: false,
     setStamm: (patch) => set({ stamm: { ...get().stamm, ...patch } }),
-    konfigStandEigen: null,
-    konflikt: null,
-    rueckgaengig: null,
     setStruktur: (struktur) => {
-      set({ struktur, rueckgaengig: null });
+      set({ struktur });
       eigeneSpeichern();
-    },
-    strukturErsetzen: async (neu, grund, { sicherung = true } = {}) => {
-      const { struktur: alt, vorlagenordner } = get();
-      if (sicherung) {
-        try {
-          await konfigAendern(SICHERUNGEN, (roh) => sicherungenMit(roh, { name: sicherungsName(new Date()), grund: `vor: ${grund}`, inhalt: { struktur: alt, vorlagenordner } }));
-        } catch (e) {
-          throw new Error(`Die Sicherung der bisherigen Struktur ließ sich nicht anlegen – die Struktur bleibt unverändert. (${fehlertext(e)})`);
-        }
-      }
-      set({ struktur: neu, rueckgaengig: { struktur: alt, text: grund } });
-      eigeneSpeichern();
-    },
-    strukturRueckgaengig: () => {
-      const r = get().rueckgaengig;
-      if (!r) return;
-      set({ struktur: r.struktur, rueckgaengig: null });
-      eigeneSpeichern();
-    },
-    sicherungenLesen: async () => sicherungenAus(await konfigLesen(SICHERUNGEN)),
-    speichernJetzt,
-    neuLesen: async () => {
-      await speichernJetzt();
-      if (get().konflikt) return;
-      try {
-        const roh = await konfigLesen(BEREICH);
-        // nur übernehmen, wenn es anderswo geändert ist und hier nichts ansteht
-        if (roh == null || konfigStand(roh) === get().konfigStandEigen || timer || get().konflikt) return;
-        set({ ...eigenAus(roh), konfigStandEigen: konfigStand(roh), rueckgaengig: null });
-      } catch (e) {
-        set({ konfigFehler: `Einstellungen nicht lesbar: ${fehlertext(e)}` });
-      }
-    },
-    konfliktLoesen: async (wie) => {
-      const k = get().konflikt;
-      if (!k) return;
-      if (wie === 'neu-laden') {
-        // die eigene Fassung bleibt über „Rückgängig“ erreichbar
-        const eigene = get().struktur;
-        set({ ...eigenAus(k.roh), konfigStandEigen: konfigStand(k.roh), konflikt: null, rueckgaengig: { struktur: eigene, text: 'Die Struktur des anderen Rechners wurde geladen.' } });
-        return;
-      }
-      set({ konfigStandEigen: konfigStand(k.roh), konflikt: null });
-      await jetztSpeichern();
     },
     setStammordner: (p) => allgemeinSetzen({ projekte: [p, ...get().allgemein.projekte.filter((x) => x !== p)].filter(Boolean) }),
     // eingelesen wird in App (bei jedem Wechsel des Ordners und der Ansicht)
@@ -247,26 +131,22 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
           const oap = alterOapPfad(lokal.struktur);
           await allgemeinAendern({ projekte: anfang.allgemein.projekte, ...(oap ? { oapPfad: oap } : {}) });
         }
-        const anfangEigen = { struktur: anfang.struktur, vorlagenordner: anfang.vorlagenordner };
-        if (rohEigen == null) await konfigSchreiben(BEREICH, anfangEigen);
+        if (rohEigen == null) await konfigSchreiben(BEREICH, { struktur: anfang.struktur, vorlagenordner: anfang.vorlagenordner });
         const allgemein = rohAllgemein == null ? allgemeinAus(await konfigLesen('allgemein')) : allgemeinAus(rohAllgemein);
-        const eigen = rohEigen ?? anfangEigen;
+        const eigen = (rohEigen ?? { struktur: anfang.struktur, vorlagenordner: anfang.vorlagenordner }) as { struktur?: unknown; vorlagenordner?: unknown };
         set({
           konfig: ort,
           konfigFehler: null,
           allgemein,
           stammordner: allgemein.projekte[0] ?? '',
-          ...eigenAus(eigen),
-          // Stand wie beim Lesen der Datei (JSON hin und zurück)
-          konfigStandEigen: konfigStand(JSON.parse(JSON.stringify(eigen))),
-          konflikt: null,
+          struktur: strukturAus(eigen.struktur),
+          vorlagenordner: typeof eigen.vorlagenordner === 'string' ? eigen.vorlagenordner : '',
         });
       } catch (e) {
         set({ konfigFehler: `Einstellungen nicht lesbar: ${fehlertext(e)}` });
       }
     },
     konfigOrdnerSetzen: async (ordner) => {
-      await speichernJetzt();
       const uebernommen = await konfigOrdnerWechseln(ordner, BEREICHE);
       await get().konfigLaden();
       return uebernommen;

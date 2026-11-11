@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { allgemeinAendern, allgemeinLaden, konfigLesen, konfigSchreiben, konfigSchreibenWennUnveraendert, konfigStand, zuletztLesen, zuletztMerken, zuletztVergessen } from './konfig';
+import { allgemeinAendern, allgemeinLaden, konfigLesen, konfigSchreiben, zuletztLesen, zuletztMerken, zuletztVergessen } from './konfig';
 
 beforeEach(() => localStorage.clear());
 
@@ -25,23 +25,5 @@ describe('Gemeinsame Einstellungen im Browser', () => {
     // lokal, nicht im gemeinsamen Bereich
     expect(localStorage.getItem('arch-tools:konfig:zuletzt')).toBeNull();
     expect(await zuletztVergessen('P:\\Projekte\\2026-014')).toEqual([{ pfad: 'p:\\projekte\\bs5', zeit: 3000, app: 'Flächenrechner' }]);
-  });
-});
-
-describe('Schreiben mit Konfliktprüfung (P-02)', () => {
-  it('Schreiben mit veraltetem Stand schlägt fehl und liefert den aktuellen Inhalt; mit aktuellem Stand gelingt es', async () => {
-    await konfigSchreiben('projektordner', { struktur: { name: 'A' } });
-    const stand = konfigStand(await konfigLesen('projektordner'));
-    // ein anderer Rechner schreibt dazwischen
-    await konfigSchreiben('projektordner', { struktur: { name: 'B' } });
-    expect(await konfigSchreibenWennUnveraendert('projektordner', { struktur: { name: 'C' } }, stand)).toEqual({ ok: false, aktuell: { struktur: { name: 'B' } } });
-    expect(await konfigLesen('projektordner')).toEqual({ struktur: { name: 'B' } });
-    // mit dem aktuellen Stand gelingt es; der neue Stand passt zum Inhalt
-    const r = await konfigSchreibenWennUnveraendert('projektordner', { struktur: { name: 'C' } }, konfigStand({ struktur: { name: 'B' } }));
-    expect(r).toEqual({ ok: true, stand: konfigStand({ struktur: { name: 'C' } }) });
-    expect(r.ok && r.stand).toBe(konfigStand(await konfigLesen('projektordner')));
-    // ein Bereich, den es noch nicht gibt: Stand null
-    expect(konfigStand(await konfigLesen('neu'))).toBeNull();
-    expect((await konfigSchreibenWennUnveraendert('neu', { a: 1 }, null)).ok).toBe(true);
   });
 });

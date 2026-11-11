@@ -5,6 +5,7 @@ export interface IfcReference {
   meshes: { type: string; positions: Float32Array; indices: Uint32Array; color: [number, number, number, number] }[];
 }
 import { extractIfc } from './ifcExtract';
+import { mitHarmlosenMeldungen } from './harmlos';
 
 /**
  * Lädt eine IFC-Datei im Browser bzw. in der Tauri-WebView mit web-ifc (WebAssembly).
@@ -16,7 +17,8 @@ export async function loadIfc(data: Uint8Array, onProgress?: (msg: string) => vo
   const wasmUrl = (await import('web-ifc/web-ifc.wasm?url')).default;
   const api = new W.IfcAPI();
   // einfädig: kein SharedArrayBuffer/COOP-Header nötig (Web-Hosting und Tauri)
-  await api.Init((path: string) => (path.endsWith('.wasm') ? wasmUrl : path), true);
+  // Rückfall-Meldungen von web-ifc beim Laden des WebAssembly-Moduls sind harmlos (kein roter Fehlerzähler)
+  await mitHarmlosenMeldungen(() => api.Init((path: string) => (path.endsWith('.wasm') ? wasmUrl : path), true));
   // dem Browser Zeit für die Fortschrittsanzeige lassen
   await new Promise((r) => setTimeout(r, 30));
   return extractIfc(api, W as never, data, onProgress);

@@ -23,7 +23,8 @@ import { bgWorldBounds, scaleAround, vectorSegmentGrid } from '../core/backgroun
 import { detectRegion } from '@core/detect';
 import { SegmentGrid } from '@core/spatial';
 import { loadImage, rasterEdgeRefiner, rasterMaskProvider } from '../platform/rasterMask';
-import { auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapStorey, nextRoomNumber, setShapePoints, useActiveStorey, useEditor } from '../store/store';
+import { einfuegenAktion } from './KopieDialog';
+import { auswahlVerschieben, flaechenDuplizieren, flaechenKopieren, mapStorey, nextRoomNumber, setShapePoints, useActiveStorey, useEditor } from '../store/store';
 import { BackgroundLayer } from './BackgroundLayer';
 import { logger } from '@core/platform/log';
 
@@ -350,7 +351,7 @@ export function Canvas() {
       if (ctrl && tool === 'select' && !e.shiftKey && !e.altKey) {
         const k = e.key.toLowerCase();
         if (k === 'c' && flaechenKopieren()) e.preventDefault();
-        else if (k === 'v' && flaechenEinfuegen()) e.preventDefault();
+        else if (k === 'v' && einfuegenAktion()) e.preventDefault();
         else if (k === 'd') {
           e.preventDefault();
           flaechenDuplizieren();
@@ -851,8 +852,9 @@ export function Canvas() {
           ny = -ny;
         }
       }
+      // mit Abstand zur Kante: nicht auf dem Griff in der Kantenmitte bzw. den Eckpunkten (F-06)
       out.push(
-        <text key={`d${i}`} className="dim-label" x={mx + nx * 12} y={my + ny * 12 + 4} textAnchor="middle">
+        <text key={`d${i}`} className="dim-label" x={mx + nx * 18} y={my + ny * 18 + 4} textAnchor="middle">
           {fmt2(len)}
         </text>,
       );

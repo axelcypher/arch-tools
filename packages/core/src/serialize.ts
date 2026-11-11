@@ -329,6 +329,8 @@ function normalizeStorey(s: Record<string, unknown>): Storey {
     shapes,
   };
   if (typeof s.dachgeschoss === 'boolean') storey.dachgeschoss = s.dachgeschoss;
+  if (typeof s.keller === 'boolean') storey.keller = s.keller;
+  if (typeof s.nummernPraefix === 'string' && s.nummernPraefix.trim()) storey.nummernPraefix = s.nummernPraefix.trim();
   if (s.geschosshoeheBegrenzt === true) storey.geschosshoeheBegrenzt = true;
   if (typeof s.vollgeschoss === 'boolean') storey.vollgeschoss = s.vollgeschoss;
   if (typeof s.sohle === 'number' && Number.isFinite(s.sohle) && s.sohle > 0) storey.sohle = s.sohle;

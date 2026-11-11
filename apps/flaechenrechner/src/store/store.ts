@@ -6,6 +6,8 @@ import { createProject, createStorey, newId } from '@core/model';
 import { parseProject, parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
+import type { KopieOptionen, Lage } from '../core/geschosse';
+import { geschossNameVorschlag, kopieAnpassen, naechsteRaumnummer, neueKote, raumNummernPraefix } from '../core/geschosse';
 
 const log = logger('autosave');
 
@@ -287,27 +289,43 @@ export function setShapePoints(p: Project, storeyId: string, shapeId: string, po
   return mapShape(p, storeyId, shapeId, (s) => ({ ...s, points }));
 }
 
-export function addStorey(p: Project, name: string): { project: Project; id: string } {
-  const last = p.storeys[p.storeys.length - 1];
-  const st = createStorey(name, last?.hoehe ?? 3);
-  return { project: { ...p, storeys: [...p.storeys, st] }, id: st.id };
+/**
+ * Neues Geschoss. Ohne Bezug ganz oben; mit Bezug darüber bzw. darunter (Höhe wie das Bezugsgeschoss, Kote aus
+ * dessen Fußboden – darunter ausdrücklich, damit die Geschosse darüber ihre Höhenlage behalten). Ohne Namen ein
+ * Vorschlag nach der Lage (KG, EG, 1. OG …).
+ */
+export function addStorey(p: Project, name?: string, bezugId?: string, lage: Lage = 'darueber'): { project: Project; id: string } {
+  const idx = bezugId ? p.storeys.findIndex((s) => s.id === bezugId) : p.storeys.length - 1;
+  const bezug = p.storeys[idx];
+  if (!bezug) {
+    const st = createStorey(name ?? 'EG', 3);
+    return { project: { ...p, storeys: [...p.storeys, st] }, id: st.id };
+  }
+  const st = createStorey(name ?? geschossNameVorschlag(p, bezug, lage), bezug.hoehe);
+  if (lage === 'darunter') st.elevation = neueKote(p, bezug, lage, st.hoehe);
+  const storeys = [...p.storeys];
+  storeys.splice(lage === 'darueber' ? idx + 1 : idx, 0, st);
+  return { project: { ...p, storeys }, id: st.id };
 }
 
 /**
  * Kopiert ein Geschoss inkl. aller Flächen (neue IDs), z. B. für Regelgeschosse. Die Kopie ist kein Element des
  * IFC-Modells: ohne GlobalId und Vergleichsstand – sonst hielte ein späterer Abgleich sie für das Original.
  */
-export function duplicateStorey(p: Project, storeyId: string): { project: Project; id: string } {
+export function duplicateStorey(p: Project, storeyId: string, o: KopieOptionen = { nummernAnpassen: false, wohnung: null }): { project: Project; id: string } {
   const idx = p.storeys.findIndex((s) => s.id === storeyId);
   if (idx < 0) return { project: p, id: storeyId };
   const src = p.storeys[idx];
+  // Name nach der Lage (über dem EG „1. OG“) statt „EG (Kopie)“; eigenes Nummernpräfix entfällt (gilt fürs Original)
   const copy: Storey = {
     ...structuredClone(src),
     id: newId('st'),
-    name: `${src.name} (Kopie)`,
+    name: geschossNameVorschlag(p, src, 'darueber'),
   };
   delete copy.ifcId;
   delete copy.ifcStand;
+  delete copy.nummernPraefix;
+  delete copy.elevation;
   copy.shapes = copy.shapes.map((s) => {
     const { ifcId: _id, ifcStand: _stand, ...rest } = s;
     void _id;
@@ -316,7 +334,9 @@ export function duplicateStorey(p: Project, storeyId: string): { project: Projec
   });
   const storeys = [...p.storeys];
   storeys.splice(idx + 1, 0, copy);
-  return { project: { ...p, storeys }, id: copy.id };
+  const project = { ...p, storeys };
+  copy.shapes = kopieAnpassen(copy.shapes, raumNummernPraefix(project, copy), [], o);
+  return { project, id: copy.id };
 }
 
 export function removeStorey(p: Project, storeyId: string): Project {
@@ -333,12 +353,8 @@ export function moveStorey(p: Project, storeyId: string, delta: -1 | 1): Project
   return { ...p, storeys };
 }
 
-/** Nächste freie Raumnummer im Geschoss, z. B. "0.03". */
-export function nextRoomNumber(p: Project, storey: Storey): string {
-  const idx = p.storeys.findIndex((s) => s.id === storey.id);
-  const rooms = storey.shapes.filter((s) => s.kind === 'room').length;
-  return `${Math.max(0, idx)}.${String(rooms + 1).padStart(2, '0')}`;
-}
+/** Nächste Raumnummer im Geschoss, z. B. "0.03" – höchste vorhandene + 1 (siehe core/geschosse.ts) */
+export const nextRoomNumber = naechsteRaumnummer;
 
 /* ---------- Einstellungen & Autosave ---------- */
 
@@ -488,13 +504,25 @@ export function flaechenKopieren(): number {
   return shapes.length;
 }
 
-/** Ablage ins aktive Geschoss einfügen (Strg+V): in ein anderes Geschoss deckungsgleich, ins selbe um 0,50 m versetzt */
-export function flaechenEinfuegen(): number {
+/** Liegt etwas zum Einfügen bereit? Rückfrage nötig: Räume, die in ein anderes Geschoss eingefügt würden (F-02) */
+export function ablageStatus(): { leer: boolean; rueckfrage: boolean } {
+  if (!ablage?.shapes.length) return { leer: true, rueckfrage: false };
+  const st = useEditor.getState();
+  const anderes = ablage.storeyId !== st.activeStoreyId;
+  return { leer: false, rueckfrage: anderes && ablage.shapes.some((s) => s.kind === 'room') };
+}
+
+/**
+ * Ablage ins aktive Geschoss einfügen (Strg+V): in ein anderes Geschoss deckungsgleich, ins selbe um 0,50 m versetzt.
+ * In ein anderes Geschoss mit Optionen (Nummern anpassen, Wohnung); ins selbe Geschoss bleiben die Nummern.
+ */
+export function flaechenEinfuegen(o?: KopieOptionen): number {
   if (!ablage?.shapes.length) return 0;
   const st = useEditor.getState();
   const storey = st.project.storeys.find((s) => s.id === st.activeStoreyId) ?? st.project.storeys[0];
   const d = storey.id === ablage.storeyId ? 0.5 : 0;
-  const neu = ablage.shapes.map((s) => kopie(s, d, d));
+  let neu = ablage.shapes.map((s) => kopie(s, d, d));
+  if (o && !d) neu = kopieAnpassen(neu, raumNummernPraefix(st.project, storey), storey.shapes, o);
   // mehrfaches Einfügen ins selbe Geschoss staffelt weiter
   if (d) ablage = { storeyId: storey.id, shapes: neu.map((s) => structuredClone(s)) };
   st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: [...s.shapes, ...neu] })));

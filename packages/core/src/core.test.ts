@@ -208,3 +208,15 @@ describe('Projektdaten', () => {
     expect('vorhaben' in ohne || 'aktenzeichen' in ohne || 'vorname' in ohne.bauherr).toBe(false);
   });
 });
+
+describe('WoFlV-Vorschlag nach Geschossart (F-03)', () => {
+  it('Kellergeschoss nach der Geschossart, nicht nur nach dem Namen', async () => {
+    const { woflArt } = await import('./norms');
+    expect(woflArt('Bad', { name: 'KG' }, 'NUF7')).toBe('keine');
+    // Souterrainwohnung: Geschoss heißt „UG“, ist aber ausdrücklich kein Kellergeschoss
+    expect(woflArt('Bad', { name: 'UG', keller: false }, 'NUF7')).toBe('wohnen');
+    // ausdrücklich Kellergeschoss trotz neutralem Namen
+    expect(woflArt('Hobby', { name: 'Ebene -1', keller: true }, 'NUF1')).toBe('keine');
+    expect(woflArt('Bad', 'Kellergeschoss', 'NUF7')).toBe('keine');
+  });
+});

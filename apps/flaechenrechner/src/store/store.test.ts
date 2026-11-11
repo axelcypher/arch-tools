@@ -174,3 +174,113 @@ describe('Geschoss duplizieren', () => {
     expect(p.storeys[0].shapes[0].ifcId).toBe('R-1');
   });
 });
+
+describe('Raumnummern (F-01)', () => {
+  it('neue Nummer = höchste vorhandene + 1, nicht Anzahl + 1', async () => {
+    const { nextRoomNumber } = await import('./store');
+    const p = createProject('Haus');
+    const eg = p.storeys[0];
+    for (let i = 1; i <= 4; i++) eg.shapes.push(createRoom(rectPoints({ x: i * 3, y: 0 }, { x: i * 3 + 2, y: 2 }), `0.0${i}`, `R${i}`));
+    eg.shapes.splice(1, 1); // 0.02 gelöscht
+    expect(nextRoomNumber(p, eg)).toBe('0.05');
+  });
+
+  it('ein Geschoss unter dem EG ändert die Nummernvergabe im EG nicht', async () => {
+    const { addStorey, nextRoomNumber } = await import('./store');
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0, y: 0 }, { x: 2, y: 2 }), '0.01', 'Wohnen'));
+    const vorher = nextRoomNumber(p, p.storeys[0]);
+    const r = addStorey(p, undefined, p.storeys[0].id, 'darunter');
+    const eg = r.project.storeys.find((s) => s.name === 'EG')!;
+    const kg = r.project.storeys.find((s) => s.id === r.id)!;
+    expect(vorher).toBe('0.02');
+    expect(nextRoomNumber(r.project, eg)).toBe('0.02');
+    expect(kg.name).toBe('KG');
+    expect(nextRoomNumber(r.project, kg)).toBe('-1.01');
+  });
+
+  it('Präfix je Geschoss einstellbar, sonst nach Lage zum nächsten benannten Geschoss', async () => {
+    const { raumNummernPraefix } = await import('../core/geschosse');
+    const p = createProject('Haus');
+    p.storeys.push({ ...createProject().storeys[0], name: 'Dachgeschoss' });
+    expect(raumNummernPraefix(p, p.storeys[1])).toBe('1');
+    p.storeys[1].nummernPraefix = 'D';
+    expect(raumNummernPraefix(p, p.storeys[1])).toBe('D');
+  });
+
+  it('Neu-Nummerieren nur auf Befehl, Räume aus dem IFC-Import behalten ihre Nummer', async () => {
+    const { raeumeNeuNummerieren } = await import('../core/geschosse');
+    const p = createProject('Haus');
+    const eg = p.storeys[0];
+    const a = createRoom(rectPoints({ x: 0, y: 0 }, { x: 2, y: 2 }), '0.07', 'A');
+    const b = createRoom(rectPoints({ x: 3, y: 0 }, { x: 5, y: 2 }), '0.01', 'B (IFC)');
+    b.ifcId = 'IFC-B';
+    const c = createRoom(rectPoints({ x: 6, y: 0 }, { x: 8, y: 2 }), '0.09', 'C');
+    eg.shapes.push(a, b, c);
+    const r = raeumeNeuNummerieren(p, eg, 'liste');
+    expect(r.ifc).toBe(1);
+    expect(r.storey.shapes.map((s) => (s.kind === 'room' ? s.nummer : ''))).toEqual(['0.02', '0.01', '0.03']);
+  });
+});
+
+describe('Kopieren in ein anderes Geschoss, Duplizieren (F-02)', () => {
+  it('EG-Räume ins 1. OG einfügen mit „Nummern anpassen“ → 1.01 ff., Wohnung wie gewählt', async () => {
+    const { flaechenEinfuegen, flaechenKopieren, ablageStatus } = await import('./store');
+    const p = createProject('Haus');
+    const eg = p.storeys[0];
+    const r1 = createRoom(rectPoints({ x: 0, y: 0 }, { x: 2, y: 2 }), '0.01', 'Wohnen');
+    r1.wofl = { kategorie: 'voll', wohnung: 'EG' };
+    const r2 = createRoom(rectPoints({ x: 3, y: 0 }, { x: 5, y: 2 }), '0.02', 'Bad');
+    r2.wofl = { kategorie: 'voll', wohnung: 'EG' };
+    eg.shapes.push(r1, r2);
+    p.storeys.push({ ...createProject().storeys[0], name: '1. OG' });
+    useEditor.getState().loadProject(p);
+    useEditor.getState().selectMany([r1.id, r2.id]);
+    flaechenKopieren();
+    useEditor.getState().setActiveStorey(useEditor.getState().project.storeys[1].id);
+    expect(ablageStatus().rueckfrage).toBe(true);
+    flaechenEinfuegen({ nummernAnpassen: true, wohnung: 'WE 02' });
+    const og = useEditor.getState().project.storeys[1].shapes;
+    expect(og.map((s) => (s.kind === 'room' ? [s.nummer, s.wofl.wohnung] : null))).toEqual([
+      ['1.01', 'WE 02'],
+      ['1.02', 'WE 02'],
+    ]);
+  });
+
+  it('ohne Anpassen bleiben Nummern und Wohnung; ins selbe Geschoss keine Rückfrage', async () => {
+    const { flaechenEinfuegen, flaechenKopieren, ablageStatus } = await import('./store');
+    const { b } = laden();
+    useEditor.getState().select(b.id);
+    flaechenKopieren();
+    expect(ablageStatus().rueckfrage).toBe(false);
+    flaechenEinfuegen();
+    const shapes = useEditor.getState().project.storeys[0].shapes;
+    expect(shapes[shapes.length - 1].kind === 'room' && shapes[shapes.length - 1]).toMatchObject({ nummer: '1' });
+  });
+
+  it('Duplikat heißt nach seiner Lage und nummeriert nach Wunsch neu', async () => {
+    const { duplicateStorey } = await import('./store');
+    const p = createProject('Haus');
+    const r = createRoom(rectPoints({ x: 0, y: 0 }, { x: 2, y: 2 }), '0.01', 'Wohnen');
+    r.wofl = { kategorie: 'voll', wohnung: 'WE 01' };
+    p.storeys[0].shapes.push(r);
+    const ohne = duplicateStorey(p, p.storeys[0].id);
+    expect(ohne.project.storeys[1].name).toBe('1. OG');
+    expect(ohne.project.storeys[1].shapes[0]).toMatchObject({ nummer: '0.01', wofl: { wohnung: 'WE 01' } });
+    const mit = duplicateStorey(p, p.storeys[0].id, { nummernAnpassen: true, wohnung: 'WE 02' });
+    expect(mit.project.storeys[1].shapes[0]).toMatchObject({ nummer: '1.01', wofl: { wohnung: 'WE 02' } });
+  });
+});
+
+describe('Neues Geschoss (F-03)', () => {
+  it('unter dem EG eingefügt heißt es KG und liegt eine Geschosshöhe tiefer; darüber 1. OG', async () => {
+    const { addStorey } = await import('./store');
+    const { storeyElevations } = await import('@core/model');
+    const p = createProject('Haus');
+    const unten = addStorey(p, undefined, p.storeys[0].id, 'darunter');
+    expect(unten.project.storeys[0].name).toBe('KG');
+    expect(storeyElevations(unten.project)).toEqual([-3, 0]);
+    const oben = addStorey(unten.project, undefined, unten.project.storeys[1].id, 'darueber');
+    expect(oben.project.storeys.map((s) => s.name)).toEqual(['KG', 'EG', '1. OG']);
+  });
+});

@@ -20,7 +20,6 @@ const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
 export function App() {
   const struktur = useOrdner((s) => s.struktur);
   const vorlagenordner = useOrdner((s) => s.vorlagenordner);
-  const konflikt = useOrdner((s) => s.konflikt);
   const [ansicht, setAnsicht] = useState<Ansicht>('projekt');
   // ein Projekt aus dem Prüfmodus im Assistenten ergänzen: neuer Start des Assistenten
   const [start, setStart] = useState<{ ordner: GeladenerOrdner; nr: number } | null>(null);
@@ -34,18 +33,6 @@ export function App() {
   // gemeinsame Einstellungen aus dem Konfigurationsordner
   useEffect(() => {
     void useOrdner.getState().konfigLaden();
-  }, []);
-
-  // Struktur beim Wechsel in Einstellungen bzw. Vorlagen frisch lesen – ein anderer Rechner kann sie geändert haben
-  useEffect(() => {
-    if (ansicht === 'einstellungen' || ansicht === 'vorlagen') void useOrdner.getState().neuLesen();
-  }, [ansicht]);
-
-  // Anstehendes Schreiben der Einstellungen beim Schließen nicht verlieren
-  useEffect(() => {
-    const jetzt = () => void useOrdner.getState().speichernJetzt();
-    window.addEventListener('beforeunload', jetzt);
-    return () => window.removeEventListener('beforeunload', jetzt);
   }, []);
 
   // Vorlagenordner beim Start und bei jedem Wechsel der Ansicht frisch einlesen – Vorlagen ändern sich nebenher
@@ -78,17 +65,6 @@ export function App() {
         </div>
         <span className="muted small-text">Struktur: {struktur.name}</span>
       </div>
-      {konflikt && (
-        <div className="warning po-konflikt" role="alert">
-          Die Struktur wurde inzwischen von einem anderen Rechner geändert – neu laden? Ihre Änderungen sind noch nicht gespeichert.
-          <button className="small" onClick={() => void useOrdner.getState().konfliktLoesen('neu-laden')}>
-            Neu laden
-          </button>
-          <button className="small" onClick={() => void useOrdner.getState().konfliktLoesen('meine')}>
-            Meine Fassung trotzdem speichern
-          </button>
-        </div>
-      )}
       <main className="po-main">
         {ansicht === 'projekt' && <AssistentView key={`${start?.nr ?? 0}-${neustart}`} start={start?.ordner ?? null} onEinstellungen={() => setAnsicht('einstellungen')} />}
         {ansicht === 'pruefen' && (

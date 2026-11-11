@@ -18,6 +18,21 @@ Graphisoft und lassen sich außerhalb von Archicad nicht lesen. Der verlässlich
 | Gelände, Lageplan-Bauteile | `IfcSite`, `IfcGeographicElement`, Bauteile des Lageplan-Geschosses | Lageplan-Flächen und Geländemodell (Höhenfeld) |
 | GlobalId | `IfcRoot.GlobalId` | Zuordnung beim erneuten Import („IFC aktualisieren“) |
 
+## Wohnfläche und Wohnung
+
+Mit der Option „als Wohnfläche anrechnen“ schlägt der Import die WoFlV-Einstufung nach dem Raumnamen vor
+(Faktor aus den lichten Raumhöhen). Die WoFlV verlangt die Wohnfläche **je Wohnung**; deshalb wählt man, wie
+die Räume den Wohnungen zugeordnet werden:
+
+- **eine Wohnung für alle Geschosse** (Vorgabe „WE 01“, z. B. Einfamilienhaus, Maisonette),
+- **je Geschoss eine Wohnung** (Wohnung = Geschossname) – der Bericht weist darauf hin, dass das bei
+  Wohnungen über mehrere Geschosse falsch gegliedert ist,
+- **aus der Zonenkategorie** (IFC-Objekttyp der Zone, `IfcSpace.ObjectType`) – Räume ohne Kategorie bleiben
+  ohne Wohnung und werden im Bericht gezählt.
+
+Räume in einem Kellergeschoss werden nicht als Wohnfläche vorgeschlagen; ob ein Geschoss ein Kellergeschoss ist,
+richtet sich nach der **Geschossart** (Geschosseigenschaften), ohne Angabe nach dem Namen (KG, UG, Keller).
+
 ## Split-Level und Bodenplatte
 
 Die Fußbodenhöhe eines Geschosses ist der flächengewichtete Median der Zonenunterseiten (die Höhe, auf der der größere Teil der Zonenfläche liegt). Liegt eine

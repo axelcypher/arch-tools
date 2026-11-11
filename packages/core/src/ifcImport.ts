@@ -23,8 +23,15 @@ export interface IfcImportOptions {
   rooms: boolean;
   outlines: boolean;
   roof: boolean;
-  /** alle Räume als Wohnfläche (100 %) anrechnen, Wohnung = Geschossname */
+  /** Räume nach Raumname als Wohnfläche anrechnen (Faktor aus den lichten Raumhöhen) */
   wohnflaeche: boolean;
+  /**
+   * Zuordnung zur Wohnung bei Wohnflächenanrechnung: eine Wohnung für alle Geschosse (Vorgabe, z. B. EFH/Maisonette),
+   * je Geschoss eine Wohnung oder aus der Zonenkategorie (IfcSpace.ObjectType)
+   */
+  wohnung?: 'eine' | 'geschoss' | 'zone';
+  /** Name der Wohnung bei „eine“ (Vorgabe „WE 01“) */
+  wohnungName?: string;
   /** Geschossschnitt als Vektorplan hinterlegen (Schnitthöhe über Fußboden in m, 0/undefiniert = aus) */
   planSchnitthoehe?: number;
   /** Dachform und Gauben aus dem Modell ableiten (für BRI-Formeln); sonst Dach als Höhenfeld */
@@ -158,6 +165,7 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
     let n = 0;
     let putz = 0;
     let keineWofl = 0;
+    let ohneKategorie = 0;
     for (const sp of x.spaces) {
       if (!imGebaeude(sp.storey)) continue; // Zonen im Lageplan werden Lageplan-Flächen
       const pts = footprintFromTriangles(sp.tris);
@@ -190,13 +198,15 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
       const hc = heightClasses(sp.tris);
       if (hc && hc.a2 < 0.995) notes.push(`lichte Höhe ≥ 2 m: ${fmt(hc.a2 * 100, 0)} %, 1–2 m: ${fmt(hc.a12 * 100, 0)} %, < 1 m: ${fmt(hc.a01 * 100, 0)} %`);
       if (o.wohnflaeche) {
-        const art = woflArt(room.name, st.name, room.nutzung);
-        if (art === 'freisitz') room.wofl = { kategorie: 'freisitz', wohnung: st.name };
+        const art = woflArt(room.name, st, room.nutzung);
+        const wohnung = o.wohnung === 'geschoss' ? st.name : o.wohnung === 'zone' ? (sp.kategorie ?? '').trim() : o.wohnungName?.trim() || 'WE 01';
+        if (o.wohnung === 'zone' && !wohnung && art !== 'keine') ohneKategorie++;
+        if (art === 'freisitz') room.wofl = { kategorie: 'freisitz', wohnung };
         else if (art === 'wohnen')
           room.wofl =
             hc && hc.a2 < 0.995
-              ? { kategorie: 'individuell', faktor: round(hc.a2 + 0.5 * hc.a12, 4), wohnung: st.name }
-              : { kategorie: 'voll', wohnung: st.name };
+              ? { kategorie: 'individuell', faktor: round(hc.a2 + 0.5 * hc.a12, 4), wohnung }
+              : { kategorie: 'voll', wohnung };
         else keineWofl++;
       }
       if (notes.length) room.bemerkung = notes.join('; ');
@@ -207,6 +217,9 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
     if (splitLevel.length) report.push(`Split-Level erkannt (Fußboden gegenüber dem Geschoss): ${splitLevel.join(', ')} – im BRI berücksichtigt.`);
     if (o.wohnflaeche && keineWofl) report.push(`${keineWofl} Räume nicht als Wohnfläche angerechnet (Keller, Technik, Treppenhaus, Garage, Dachboden …) – bei Bedarf im Raum ändern.`);
     if (putz) report.push(`${putz} Räume mit Putzabzug aus Archicad (Nettofläche aus Rohbaumaßen) übernommen.`);
+    if (ohneKategorie) report.push(`${ohneKategorie} Räume ohne Zonenkategorie – keiner Wohnung zugeordnet, bitte im Raum ergänzen.`);
+    if (o.wohnflaeche && o.wohnung === 'geschoss')
+      report.push('Hinweis: Wohnungen heißen wie die Geschosse – bei Einfamilienhaus oder Maisonette (eine Wohnung über mehrere Geschosse) ist die Wohnfläche so falsch gegliedert (WoFlV: Wohnfläche je Wohnung).');
   }
 
   // BGF-Umrisse

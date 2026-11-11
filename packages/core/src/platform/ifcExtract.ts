@@ -210,6 +210,7 @@ export function extractIfc(api: IfcAPI, T: IfcTypeCodes, data: Uint8Array, onPro
           storey: resolveStorey(id),
           tris: spaceTris.get(id) ?? new Float32Array(),
           netFloorArea: netArea.get(id),
+          ...(str(l.ObjectType) ? { kategorie: str(l.ObjectType) } : {}),
         };
       })
       .filter((s) => s.tris.length > 0);

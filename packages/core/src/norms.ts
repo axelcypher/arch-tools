@@ -1,4 +1,5 @@
-import type { Nutzungsgruppe, ProjectSettings, Raumumschliessung, WoflAngaben, WoflKategorie } from './model';
+import type { Nutzungsgruppe, ProjectSettings, Raumumschliessung, Storey, WoflAngaben, WoflKategorie } from './model';
+import { istKellergeschoss } from './model';
 
 /** Nutzungsgruppen der Netto-Raumfläche nach DIN 277 (Tabelle 1). */
 export const NUTZUNGSGRUPPEN: { id: Nutzungsgruppe; kurz: string; label: string; bereich: 'NUF' | 'TF' | 'VF'; color: string }[] = [
@@ -19,9 +20,10 @@ export function nutzungInfo(id: Nutzungsgruppe) {
   return NUTZUNGSGRUPPEN.find((n) => n.id === id) ?? NUTZUNGSGRUPPEN[0];
 }
 
-export const UMSCHLIESSUNG: { id: Raumumschliessung; label: string }[] = [
-  { id: 'R', label: 'R – Regelfall (allseitig umschlossen, überdeckt)' },
-  { id: 'S', label: 'S – Sonderfall (z. B. Balkon, Loggia, Terrasse)' },
+/** Raumumschließung nach DIN 277:2021-08 (sinngemäß): kurz für Auswahllisten, label als Erläuterung */
+export const UMSCHLIESSUNG: { id: Raumumschliessung; kurz: string; label: string }[] = [
+  { id: 'R', kurz: 'R – Regelfall', label: 'R – Regelfall: allseitig in voller Höhe umschlossen' },
+  { id: 'S', kurz: 'S – Sonderfall', label: 'S – Sonderfall: nicht allseitig in voller Höhe umschlossen (z. B. Balkon, Loggia, Terrasse, Dachterrasse)' },
 ];
 
 export const WOFL_KATEGORIEN: { id: WoflKategorie; label: string; faktor: number | null }[] = [
@@ -66,10 +68,15 @@ function clamp(v: number, lo: number, hi: number) {
  */
 const KEINE_WOFL = /keller|heiz|technik|hausanschluss|elektro|lüftung|server|garage|carport|stellplatz|waschküche|waschkueche|trockenraum|trockenboden|dachboden|spitzboden|\bboden\b|lager|fahrrad|müll|muell|tank|treppe|\btr\b|\bth\b|aufzug|schacht/i;
 const FREISITZ = /balkon|loggia|terrasse|dachgarten|freisitz/i;
-const KEINE_WOFL_GESCHOSS = /keller|\bkg\b|\bug\b|untergeschoss|spitzboden|dachboden|^dach$/i;
+const KEINE_WOFL_GESCHOSS = /spitzboden|dachboden|^dach$/i;
 
-export function woflArt(raum: string, geschoss: string, nutzung: Nutzungsgruppe): 'wohnen' | 'freisitz' | 'keine' {
+/**
+ * Vorschlag der WoFlV-Einstufung nach Raumname und Geschoss. Kellergeschoss nach der Geschossart (Storey.keller),
+ * ohne Angabe nach dem Namen – als Text übergeben gilt nur der Name.
+ */
+export function woflArt(raum: string, geschoss: string | Pick<Storey, 'name' | 'keller'>, nutzung: Nutzungsgruppe): 'wohnen' | 'freisitz' | 'keine' {
+  const g = typeof geschoss === 'string' ? { name: geschoss } : geschoss;
   if (FREISITZ.test(raum)) return 'freisitz';
-  if (KEINE_WOFL.test(raum) || KEINE_WOFL_GESCHOSS.test(geschoss.trim()) || nutzung === 'TF') return 'keine';
+  if (KEINE_WOFL.test(raum) || istKellergeschoss(g) || KEINE_WOFL_GESCHOSS.test(g.name.trim()) || nutzung === 'TF') return 'keine';
   return 'wohnen';
 }

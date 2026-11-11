@@ -12,7 +12,6 @@ import { projektEinlesen } from './projekt';
 import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
 import type { Struktur } from './struktur';
 import { aktivePresets, alterOapPfad, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
-import { MAX_SICHERUNGEN, sicherungenAus, sicherungenMit, sicherungsName, strukturUnterschied, unterschiedText } from './sicherung';
 import { alsDokument, fuelleDocx, fuelleText, fuelleVorlage, MUSTER_VORLAGEN, zielDateiname } from './vorlagen';
 
 const TAG = new Date(2026, 9, 1);
@@ -118,28 +117,6 @@ describe('Struktur', () => {
     expect(alterOapPfad({})).toBeNull();
     expect(() => strukturAusJson('kein json')).toThrow(/kein gültiges JSON/);
     expect(() => strukturAusJson('{"ordner":[1,2]}')).toThrow(/keinen gültigen Ordner/);
-  });
-});
-
-describe('Sicherungen der Struktur (P-01)', () => {
-  it('Name projektordner.json.bak-JJJJ-MM-TT-hhmm, nur die neuesten zehn bleiben', () => {
-    expect(sicherungsName(new Date(2026, 10, 1, 9, 5))).toBe('projektordner.json.bak-2026-11-01-0905');
-    let roh: unknown = null;
-    for (let i = 0; i < 12; i++) roh = sicherungenMit(roh, { name: `S${i}`, grund: 'Test', inhalt: { struktur: KLEIN, vorlagenordner: '' } });
-    const liste = sicherungenAus(roh);
-    expect(liste).toHaveLength(MAX_SICHERUNGEN);
-    expect(liste.map((x) => x.name).slice(0, 2)).toEqual(['S11', 'S10']);
-    expect(liste.at(-1)!.name).toBe('S2');
-    // Ungültiges entfällt
-    expect(sicherungenAus({ sicherungen: [{ name: 'x' }, null] })).toEqual([]);
-  });
-
-  it('Vorschau der Änderung: entfallende und neue Ordner, Schemata, Presets', () => {
-    const neu: Struktur = { ...KLEIN, nummernschema: '{jj}-{nr:2}', ordnername: '{nummer}_{kurzname}', ordner: [{ pfad: 'B' }, { pfad: 'C' }, { pfad: 'D' }], presets: [] };
-    const u = strukturUnterschied(KLEIN, neu);
-    expect(u).toMatchObject({ weg: KLEIN.ordner.map((o) => o.pfad), neu: ['B', 'C', 'D'], schemata: ['Projektnummer', 'Name des Projektordners'] });
-    expect(unterschiedText(u)).toMatch(/^4 Ordner entfallen, 3 neu, 2 Schemata ändern sich \(Projektnummer, Name des Projektordners\)/);
-    expect(unterschiedText(strukturUnterschied(KLEIN, KLEIN))).toBe('');
   });
 });
 

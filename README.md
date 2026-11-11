@@ -84,7 +84,13 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
   und Fluchten bestehender Eckpunkte; **Shift** hält die Linie auf der Gebäudeachse, Rechtecke richten sich an ihr aus
 - **Mehrfachauswahl**: Shift+Klick, Shift+Aufziehen, `Strg+A`; gemeinsam verschieben, löschen und gemeinsame Felder bearbeiten
 - **Kopieren, Einfügen, Duplizieren** (`Strg+C/V/D`) – auch in ein anderes Geschoss (Regelgeschosse) – und
-  Verschieben mit den Pfeiltasten (1 cm, mit Umschalt 10 cm)
+  Verschieben mit den Pfeiltasten (1 cm, mit Umschalt 10 cm). Beim Einfügen von Räumen in ein anderes Geschoss
+  und beim Duplizieren eines Geschosses fragt die App, ob die Raumnummern an das Zielgeschoss angepasst werden und
+  welcher Wohnung die Räume angehören (Vorgabe: Wohnung beibehalten)
+- **Raumnummern**: Präfix je Geschoss (Vorgabe aus dem Namen: KG → -1, EG → 0, 1. OG → 1; in den
+  Geschosseigenschaften einstellbar), neue Räume zählen ab der höchsten vergebenen Nummer weiter. Doppelte Nummern
+  werden gemeldet; „Räume neu nummerieren“ (Listenreihenfolge oder im Uhrzeigersinn) nur auf ausdrücklichen Befehl –
+  Räume aus dem IFC-Import behalten ihre Nummer, damit sie zu Modell und Plänen passen
 - **Höhenlage / Split-Level**: Räume (Höhenlage Fußboden) und Umriss-Körper (Höhenversatz, ganzer Körper samt
   Dach) lassen sich nach oben und unten versetzen; tiefer liegende Räume (aus IFC automatisch erkannt) und die
   Bodenplatte gehen als eigene Posten in den BRI ein
@@ -94,8 +100,13 @@ einstellbar, max. 50 %) sowie ein individueller Faktor.
   Quellenangaben, Links und Suche – zentral und je Funktion gefiltert
 - **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ, Rechteck `4,5x3,2`
 - Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Punkt löschen, Koordinaten-Tabelle
-- **Abzugsflächen** (Innenhof, Schacht, Treppenloch, Schornstein …)
-- Mehrere **Geschosse**, Geschoss duplizieren (Regelgeschosse), darunterliegendes Geschoss einblenden
+- **Abzugsflächen**: am BGF-Umriss z. B. Innenhof oder Luftraum über einer Galerie, im Raum z. B. Schornstein,
+  Pfeiler, Schacht im Raum
+- Mehrere **Geschosse**: „+ Neu“ fügt über oder unter dem aktiven Geschoss ein (Name und Fußbodenhöhe nach der
+  Lage, z. B. KG unter dem EG), Geschoss duplizieren (Regelgeschosse, die Kopie heißt nach ihrer Lage),
+  darunterliegendes Geschoss einblenden. **Geschossart** Keller-, Normal- oder Dachgeschoss (ohne Angabe nach Name
+  bzw. Dach): Räume im Kellergeschoss werden nicht als Wohnfläche vorgeschlagen – eine Souterrainwohnung liegt in
+  einem Geschoss mit der Art „Normalgeschoss“
 - Messen-Werkzeug, Maßketten der ausgewählten Fläche, Maßstabsleiste
 - Live-Auswertung je Geschoss und gesamt
 - **Flächenaufstellung** zum Drucken/PDF mit **Grundriss je Geschoss** (farbig nach Nutzungsgruppe, beschriftet,

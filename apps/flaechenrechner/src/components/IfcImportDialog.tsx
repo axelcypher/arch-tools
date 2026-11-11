@@ -32,6 +32,8 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
     roof: true,
     // beim Abgleich wie beim bisherigen Import
     wohnflaeche: wohnflaecheAusProjekt(useEditor.getState().project) ?? false,
+    wohnung: 'eine',
+    wohnungName: 'WE 01',
     planSchnitthoehe: 1,
     dachform: true,
     modus: hatIfcHerkunft(useEditor.getState().project) ? 'aktualisieren' : 'neu',
@@ -153,8 +155,25 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
             </label>
             <label className="toggle block indent">
               <input type="checkbox" checked={opts.wohnflaeche} disabled={!opts.rooms} onChange={(e) => setOpts({ ...opts, wohnflaeche: e.target.checked })} />
-              als Wohnfläche anrechnen (WoFlV-Faktor aus den lichten Raumhöhen, Wohnung = Geschoss)
+              als Wohnfläche anrechnen (Vorschlag nach Raumname, WoFlV-Faktor aus den lichten Raumhöhen)
             </label>
+            {opts.rooms && opts.wohnflaeche && (
+              <div className="ifc-wohnung indent">
+                <label className="toggle block">
+                  <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'eine'} onChange={() => setOpts({ ...opts, wohnung: 'eine' })} />
+                  eine Wohnung für alle Geschosse
+                  <input className="ifc-wohnung-name" value={opts.wohnungName ?? ''} disabled={opts.wohnung !== 'eine'} onChange={(e) => setOpts({ ...opts, wohnungName: e.target.value })} />
+                </label>
+                <label className="toggle block">
+                  <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'geschoss'} onChange={() => setOpts({ ...opts, wohnung: 'geschoss' })} />
+                  je Geschoss eine Wohnung (Wohnung = Geschossname)
+                </label>
+                <label className="toggle block">
+                  <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'zone'} onChange={() => setOpts({ ...opts, wohnung: 'zone' })} />
+                  aus der Zonenkategorie (IFC-Objekttyp der Zone)
+                </label>
+              </div>
+            )}
             <label className="toggle block">
               <input type="checkbox" checked={opts.outlines} onChange={(e) => setOpts({ ...opts, outlines: e.target.checked })} />
               BGF-Umrisse aus Wänden, Stützen, Fenstern und Türen je Geschoss
@@ -186,15 +205,15 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
             )}
             <hr />
             <label className="toggle block" title="Räume über die IFC-GlobalId zuordnen: neue Geometrie aus der IFC, von Hand geänderte Angaben bleiben, neue Zonen kommen hinzu">
-              <input type="radio" checked={opts.modus === 'aktualisieren'} onChange={() => setOpts({ ...opts, modus: 'aktualisieren' })} />
+              <input type="radio" name="ifc-modus" checked={opts.modus === 'aktualisieren'} onChange={() => setOpts({ ...opts, modus: 'aktualisieren' })} />
               aktuelles Projekt aktualisieren (erneuter Export desselben Modells – Ihre Änderungen bleiben)
             </label>
             <label className="toggle block">
-              <input type="radio" checked={opts.modus === 'neu'} onChange={() => setOpts({ ...opts, modus: 'neu' })} />
+              <input type="radio" name="ifc-modus" checked={opts.modus === 'neu'} onChange={() => setOpts({ ...opts, modus: 'neu' })} />
               als neues Projekt öffnen
             </label>
             <label className="toggle block">
-              <input type="radio" checked={opts.modus === 'hinzufuegen'} onChange={() => setOpts({ ...opts, modus: 'hinzufuegen' })} />
+              <input type="radio" name="ifc-modus" checked={opts.modus === 'hinzufuegen'} onChange={() => setOpts({ ...opts, modus: 'hinzufuegen' })} />
               Geschosse zum aktuellen Projekt hinzufügen
             </label>
             <div className="dialog-buttons">

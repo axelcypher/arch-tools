@@ -30,6 +30,8 @@ export interface IfcSpaceData {
   tris: Float32Array;
   /** Nettofläche aus den Mengen (Qto), falls exportiert */
   netFloorArea?: number;
+  /** Objekttyp (IfcSpace.ObjectType), bei Archicad die Zonenkategorie */
+  kategorie?: string;
 }
 
 export interface IfcExtract {

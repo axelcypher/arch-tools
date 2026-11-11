@@ -164,6 +164,47 @@
   font-size: 12px;
 }
 
+/* Eigenschaften: Checkbox mit mehrzeiligem Text bleibt in ihrer Zeile (F-06) */
+.abzug-toggle {
+  align-items: flex-start;
+  margin: 8px 0 10px;
+  line-height: 1.35;
+}
+
+.abzug-toggle input[type='checkbox'] {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 1px 4px 0 0;
+}
+
+/* Nachschlagewerk: lange Einträge umbrechen statt abschneiden (F-06) */
+.nw-liste {
+  overflow-x: hidden;
+}
+
+.nw-eintrag {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  height: auto;
+}
+
+/* Werkzeugoptionen („Erkennen“) in eigener Zeile unter den Ansichtsoptionen; Meldungen darunter – nichts verdeckt
+   Punktfang/Hilfslinien (F-05) */
+.canvas-controls.detect-controls {
+  top: 44px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 200px);
+}
+
+.canvas-wrap .canvas-message {
+  top: 84px;
+  left: auto;
+  right: 8px;
+  transform: none;
+  max-width: min(480px, 60%);
+}
+
 .scalebar {
   position: absolute;
   right: 12px;
@@ -212,6 +253,21 @@
 .toggle.block {
   display: flex;
   margin: 5px 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/* Optionsfelder wie die Checkboxen: Knopf links, Text daneben (F-04) */
+.toggle input[type='radio'] {
+  width: auto;
+  margin: 0 2px 0 0;
+  flex: none;
+}
+
+.ifc-wohnung-name {
+  width: 90px;
+  margin-left: 6px;
+  padding: 1px 4px;
 }
 
 .inline-num {
@@ -379,4 +435,21 @@
   font-weight: 700;
   font-size: 14px;
   color: var(--accent);
+}
+
+/* Druck/PDF: Beschriftungen ohne Kontur – Chrome schreibt Kontur und Füllung sonst als zwei Texte ins PDF
+   („00..0011 WWoohhnneenn“, die Suche findet nichts); Seiten mit weißem Hintergrund (F-09) */
+@media print {
+  .plan-label {
+    stroke: none;
+  }
+
+  html,
+  body,
+  #root,
+  .app,
+  .report-backdrop,
+  .report {
+    background: #fff !important;
+  }
 }

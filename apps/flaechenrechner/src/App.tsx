@@ -4,6 +4,7 @@ import { ExcelDialog } from './components/ExcelDialog';
 import { Properties } from './components/Properties';
 import { Report } from './components/Report';
 import { Sidebar } from './components/Sidebar';
+import { KopieDialogHost } from './components/KopieDialog';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
 import { projektDateiOeffnen, projektSpeichernAktion, projektUebernehmen, Toolbar, verwerfenOk } from './components/Toolbar';
@@ -99,6 +100,7 @@ export function App() {
         />
       )}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
+      <KopieDialogHost />
     </div>
   );
 }

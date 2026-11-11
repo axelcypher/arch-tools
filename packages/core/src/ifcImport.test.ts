@@ -288,3 +288,44 @@ describe('IFC: Lageplan-Geschoss', () => {
     expect(polygonArea(ug[0].points)).toBeCloseTo(80, 1);
   });
 });
+
+/** Modell mit Zonen in EG und OG (für Wohnfläche, Wohnung, Nutzungsgruppen) */
+function mitZonen(zonen: { name: string; longName: string; storey: number; netFloorArea?: number; kategorie?: string; box?: [number, number, number, number] }[]): IfcExtract {
+  return {
+    schema: 'IFC4',
+    projectName: 'Test',
+    storeys: [
+      { name: 'EG', elevation: 0, expressId: 1 },
+      { name: 'OG', elevation: 3, expressId: 2 },
+    ],
+    spaces: zonen.map((z, i) => {
+      const [x0, y0, x1, y1] = z.box ?? [0.3 + i * 2, 0.3, 0.3 + i * 2 + 1.8, 3];
+      const z0 = z.storey * 3;
+      return { expressId: 100 + i, globalId: `Z${i}`, name: z.name, longName: z.longName, storey: z.storey, tris: Float32Array.from(box(x0, y0, x1, y1, z0, z0 + 2.5)), netFloorArea: z.netFloorArea, kategorie: z.kategorie };
+    }),
+    elements: [part('IFCWALL', 0, ring(0, 3)), part('IFCWALL', 1, ring(3, 6))],
+    offset: { x: 0, y: 0 },
+  };
+}
+
+describe('IFC-Import: Wohnung (F-02/FR-15)', () => {
+  const zonen = [
+    { name: '0.01', longName: 'Wohnen', storey: 0 },
+    { name: '1.01', longName: 'Schlafen', storey: 1, kategorie: 'WE 02' },
+  ];
+  const wohnungen = (o: Parameters<typeof buildFromIfc>[1]) =>
+    buildFromIfc(mitZonen(zonen), o).storeys.flatMap((s) => s.shapes.flatMap((x) => (x.kind === 'room' ? [x.wofl.wohnung] : [])));
+  const basis = { rooms: true, outlines: false, roof: false, wohnflaeche: true };
+
+  it('Vorgabe: eine Wohnung für alle Geschosse', () => {
+    expect(wohnungen(basis)).toEqual(['WE 01', 'WE 01']);
+    expect(wohnungen({ ...basis, wohnung: 'eine', wohnungName: 'Haus' })).toEqual(['Haus', 'Haus']);
+  });
+
+  it('je Geschoss mit Hinweis im Bericht; aus der Zonenkategorie', () => {
+    const r = buildFromIfc(mitZonen(zonen), { ...basis, wohnung: 'geschoss' });
+    expect(r.storeys.flatMap((s) => s.shapes.flatMap((x) => (x.kind === 'room' ? [x.wofl.wohnung] : [])))).toEqual(['EG', 'OG']);
+    expect(r.report.some((z) => /heißen wie die Geschosse/.test(z))).toBe(true);
+    expect(wohnungen({ ...basis, wohnung: 'zone' })).toEqual(['', 'WE 02']);
+  });
+});

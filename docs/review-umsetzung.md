@@ -83,19 +83,40 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
 
 ## Flächenrechner
 
-- [ ] **F-01** Doppelte Raumnummern
-- [ ] **F-02 / FR-15** Kopieren und Duplizieren behalten Nummern und Wohnung
-- [ ] **F-03** Neues Geschoss: Name, Lage, Geschossart
-- [ ] **F-04** Radiobuttons im IFC-Dialog
-- [ ] **F-05** Einstellleiste von „Erkennen“ verdeckt die Ansichtsleiste
-- [ ] **F-06** Layout- und Textfehler in den Eigenschaften
+Block 1 (Fehler F-01 bis F-09): FR 0.18.1; wegen des Projektformats (neue Geschossfelder) bzw. des IFC-Ladens auch
+GRZ 0.10.1, KO 0.10.1, PO 0.5.2, EZ 0.5.1, FO 0.21.2 (nur Patch, Bundles geändert).
+
+- [x] **F-01** Doppelte Raumnummern – FR 0.18.1: neue Nummer = höchste vorhandene + 1 (`core/geschosse.ts`), Präfix je
+  Geschoss (`Storey.nummernPraefix`, Vorgabe aus dem Namen KG → -1, EG → 0, 1. OG → 1, sonst aus der Lage zum
+  nächsten benannten Geschoss), Warnung bei doppelten Nummern (Geschoss- und Raumeigenschaften), „Räume neu
+  nummerieren“ (Liste/Uhrzeigersinn) nur auf Befehl mit Rückfrage; IFC-Räume behalten ihre Nummer. Abweichung: Die
+  Warnung steht zunächst in den Eigenschaften; die Prüfliste folgt mit F-10.
+- [x] **F-02 / FR-15** Kopieren und Duplizieren behalten Nummern und Wohnung – FR 0.18.1: Rückfrage beim Einfügen von
+  Räumen in ein anderes Geschoss und beim Duplizieren (Nummern anpassen ja/nein, Wohnung beibehalten / vorhandene /
+  neue); Duplikat heißt nach seiner Lage („1. OG“ statt „EG (Kopie)“). „Automatisch nach Raumname“ setzt keine
+  Wohnung = Geschoss mehr. IFC-Import: Wohnung „eine für alle Geschosse“ (Vorgabe „WE 01“) / „je Geschoss“ (mit
+  Hinweis im Bericht) / „aus Zonenkategorie“ (`IfcSpace.ObjectType`, neu in `ifcData`).
+- [x] **F-03** Neues Geschoss: Name, Lage, Geschossart – FR 0.18.1: „+ Neu“ fragt „über/unter dem aktiven Geschoss“,
+  Name nach Lage (KG, EG, 1. OG …), Höhe vom Bezugsgeschoss, darunter mit ausdrücklicher Kote. Geschossart
+  Keller/Normal/Dach (`Storey.keller` neu, optional; ohne Angabe aus dem Namen); `woflArt` nimmt das Geschoss und
+  richtet die Keller-Regel nach der Geschossart.
+- [x] **F-04** Radiobuttons im IFC-Dialog – FR 0.18.1: Knopf links, Text daneben, linksbündig (wie die Checkboxen).
+- [x] **F-05** Einstellleiste von „Erkennen“ verdeckt die Ansichtsleiste – FR 0.18.1: Werkzeugoptionen in eigener Zeile
+  unter den Ansichtsoptionen, Meldungen darunter (rechts) – Punktfang/Hilfslinien bleiben frei.
+- [x] **F-06** Layout- und Textfehler in den Eigenschaften – FR 0.18.1: Checkbox „Abzugsfläche“ in normaler Größe mit
+  umbrechendem Text und Beispielen je Art (FR-04), R/S-Auswahl „R – Regelfall“ / „S – Sonderfall“ mit Erläuterung
+  nach DIN 277 als Hinweis, Maßzahlen weiter von der Kante (nicht auf den Griffen), Einträge des Nachschlagewerks
+  umbrechen.
 - [x] **F-07** Technische Fehlermeldung beim Öffnen – FR 0.16.0 (mit Q-6): Meldung mit Dateiname und Grund, eigener
   Dialog statt `alert`
-- [ ] **F-08** Harmlose Meldungen als roter Fehlerzähler
-- [ ] **F-09** Beschriftungen im PDF doppelt
+- [x] **F-08** Harmlose Meldungen als roter Fehlerzähler – FR 0.18.1: `platform/harmlos.ts` stuft die Rückfall-Meldungen
+  von web-ifc beim Laden des WebAssembly-Moduls als Hinweis (Info) ein; echte Warnungen/Fehler zählen weiter.
+- [x] **F-09** Beschriftungen im PDF doppelt – FR 0.18.1: je Beschriftung ein `<text>` (Test), im Druck ohne Kontur
+  (Chrome schreibt Kontur und Füllung sonst als zwei Texte ins PDF), weißer Seitenhintergrund.
 - [ ] **FR-02** Raumumschließung R/S der Räume
 - [ ] **FR-03** Abzugsflächen: WoFlV und DIN 277 getrennt
-- [ ] **FR-04** Beispiele für BGF-Abzugsflächen
+- [x] **FR-04** Beispiele für BGF-Abzugsflächen – FR 0.18.1 (mit F-06): Umriss „z. B. Innenhof, Luftraum über
+  Galerie“, Raum „z. B. Schornstein, Pfeiler, Schacht im Raum“; „Treppenloch“ entfernt, Kommentar in `model.ts`.
 - [ ] **FR-05** Putzabzug, Normausgabe, Maßgrundlage
 - [ ] **FR-06** Nutzungsgruppen-Vorschlag beim IFC-Import
 - [ ] **FR-07** WoFlV-Automatik nach Raum- und Geschossnamen
@@ -169,17 +190,8 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
 - [x] **PB-05** Texte passen nicht zur Lage – PO 0.5.1: „1 Datei“/„2 Dateien“; Satz zur Projektdatei je Lage (neu
   angelegt / auf dem Desktop gezielt ergänzt / im Browser keiner); Kurzname-Hinweis beim Ergänzen „Der Ordner wird
   nicht umbenannt.“ (über `kurznameHinweis`); im Browser „Ausgabe: ZIP-Datei zum Herunterladen“ statt Stammordner
-- [x] **P-01** Bürostruktur ohne Rückfrage und Rückweg ersetzbar – PO 0.6.0: „Standard“, „Struktur laden …“ und
-  „Sicherungen … → Wiederherstellen“ fragen mit Vorschau („4 Ordner entfallen, 3 neu, 2 Schemata ändern sich“) und
-  „Ersetzen / Abbrechen“; vorher Sicherung `projektordner.json.bak-JJJJ-MM-TT-hhmm` (die letzten zehn); „Rückgängig“
-  nach dem Ersetzen und nach „Ordnerliste übernehmen“. Abweichung: Die Sicherungen stehen gemeinsam in
-  `projektordner-sicherungen.json` statt in einzelnen Dateien – das Begrenzen auf zehn Dateien bräuchte einen neuen
-  Rust-Befehl zum Löschen; so wird keine Datei gelöscht. Optionales „Bearbeiten“-Freischalten nicht umgesetzt.
-- [x] **P-02** Letzter Schreiber gewinnt – PO 0.6.0: `konfigSchreibenWennUnveraendert` in `platform/konfig.ts` (neu, nur
-  vom Projektordner genutzt) vergleicht vor dem Schreiben den frisch gelesenen Inhalt mit dem Stand beim letzten Lesen
-  bzw. Schreiben; bei Abweichung Meldung mit „Neu laden“ / „Meine Fassung trotzdem speichern“. Frisch gelesen beim
-  Wechsel in Einstellungen/Vorlagen; Schreiben entprellt (400 ms). Abweichung: Vergleich über den Inhalt statt
-  Änderungszeit (ohne Rust); zwischen Lesen und Schreiben bleibt ein sehr kurzes Zeitfenster.
+- [ ] **P-01** Bürostruktur ohne Rückfrage und Rückweg ersetzbar
+- [ ] **P-02** Letzter Schreiber gewinnt
 - [ ] **P-03** Projektnummer: Prüfung, Vorschlag aus allen Stammordnern
 - [ ] **P-04** Ordnerliste als Baum
 - [ ] **P-05** Vorlagen-Zuordnungen außerhalb der Struktur

@@ -169,20 +169,6 @@
   border-radius: 4px;
   font-size: 12px;
 }
-.po-rueckgaengig button,
-.po-konflikt button {
-  margin-left: 6px;
-}
-.po-konflikt {
-  margin: 0;
-  border-radius: 0;
-}
-.po-sicherungen li {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-}
 
 /* Prüfen */
 .po-befunde {

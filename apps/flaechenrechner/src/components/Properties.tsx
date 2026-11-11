@@ -3,10 +3,13 @@ import { computeProject, computeStorey, raumBodenVersatz, unterbau } from '@core
 import { fmt2 } from '@core/format';
 import { isSelfIntersecting, perimeter } from '@core/geometry';
 import type { Nutzungsgruppe, OutlineShape, Raumumschliessung, Shape, WoflKategorie } from '@core/model';
-import { istDachgeschoss, shapeArea, storeyElevations } from '@core/model';
+import { istDachgeschoss, istKellergeschoss, shapeArea, storeyElevations } from '@core/model';
 import { NUTZUNGSGRUPPEN, UMSCHLIESSUNG, WOFL_KATEGORIEN, woflArt, woflFaktor } from '@core/norms';
 import { mapShape, mapStorey, useActiveStorey, useEditor, useSelectedShape, useSelectedShapes } from '../store/store';
 import { BackgroundPanel } from './BackgroundPanel';
+import { doppelteNummern, raeumeNeuNummerieren, raumNummernPraefix } from '../core/geschosse';
+import type { NummerReihenfolge } from '../core/geschosse';
+import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { RoofEditor } from './RoofEditor';
 import { Field, NumberField, TextField } from '@core/ui/fields';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
@@ -81,25 +84,31 @@ function ShapeProperties({ shape }: { shape: Shape }) {
           </Field>
         </div>
       )}
+      {shape.kind === 'room' && !shape.subtract && shape.nummer.trim() && doppelteNummern(storey).has(shape.nummer.trim()) && (
+        <p className="warning small-text">Die Raumnummer {shape.nummer} kommt in diesem Geschoss mehrfach vor.</p>
+      )}
       {shape.kind === 'outline' && (
         <Field label="Bezeichnung">
           <TextField value={shape.name} onChange={(v) => upd((s) => ({ ...s, name: v }))} />
         </Field>
       )}
 
-      <Field label="Raumumschließung (DIN 277)">
+      <Field label="Raumumschließung (DIN 277)" hint={UMSCHLIESSUNG.find((u) => u.id === shape.umschliessung)?.label}>
         <select value={shape.umschliessung} onChange={(e) => upd((s) => ({ ...s, umschliessung: e.target.value as Raumumschliessung }))}>
           {UMSCHLIESSUNG.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.label}
+            <option key={u.id} value={u.id} title={u.label}>
+              {u.kurz}
             </option>
           ))}
         </select>
       </Field>
 
-      <label className="toggle">
+      <label className="toggle block abzug-toggle">
         <input type="checkbox" checked={shape.subtract} onChange={(e) => upd((s) => ({ ...s, subtract: e.target.checked }))} />
-        Abzugsfläche (wird abgezogen, z. B. Innenhof, Schacht, Treppenloch)
+        <span>
+          Abzugsfläche
+          <small className="muted"> – wird abgezogen, {shape.kind === 'outline' ? 'z. B. Innenhof, Luftraum über Galerie' : 'z. B. Schornstein, Pfeiler, Schacht im Raum'}</small>
+        </span>
       </label>
 
       <Field
@@ -302,8 +311,8 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
         <select value={umschliessung ?? ''} onChange={(e) => e.target.value && updAll((s) => ({ ...s, umschliessung: e.target.value as Raumumschliessung }))}>
           {umschliessung === undefined && <option value="">unterschiedlich</option>}
           {UMSCHLIESSUNG.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.label}
+            <option key={u.id} value={u.id} title={u.label}>
+              {u.kurz}
             </option>
           ))}
         </select>
@@ -419,16 +428,26 @@ function StoreyProperties() {
       {istUnterstes && !storey.sohle && storey.shapes.some((s) => s.kind === 'outline') && (
         <p className="warning small-text">Unterstes Geschoss ohne Bodenplatte: der BRI endet am Fußboden statt an der Unterseite der Sohle.</p>
       )}
-      <Field label="Geschossart" hint="für Excel-Vorlagen: Normalgeschosse als Höhe × BGF, Dachgeschosse mit Dachformeln (Filter [normal] / [dg])">
+      <Field
+        label="Geschossart"
+        hint="Kellergeschoss: Räume werden bei „automatisch nach Raumname“ nicht als Wohnfläche vorgeschlagen (Souterrainwohnung: Normalgeschoss wählen). Excel-Vorlagen: Normalgeschosse als Höhe × BGF, Dachgeschosse mit Dachformeln (Filter [normal] / [dg])"
+      >
         <select
-          value={storey.dachgeschoss === undefined ? 'auto' : storey.dachgeschoss ? 'dg' : 'normal'}
-          onChange={(e) => upd((s) => ({ ...s, dachgeschoss: e.target.value === 'auto' ? undefined : e.target.value === 'dg' }))}
+          value={storey.keller ? 'kg' : storey.dachgeschoss ? 'dg' : storey.keller === false || storey.dachgeschoss === false ? 'normal' : 'auto'}
+          onChange={(e) => {
+            const v = e.target.value;
+            upd((s) => ({ ...s, keller: v === 'auto' ? undefined : v === 'kg', dachgeschoss: v === 'auto' ? undefined : v === 'dg' }));
+          }}
         >
-          <option value="auto">automatisch ({istDachgeschoss({ ...storey, dachgeschoss: undefined }) ? 'Dachgeschoss' : 'Normalgeschoss'})</option>
+          <option value="auto">
+            automatisch ({istKellergeschoss({ name: storey.name }) ? 'Kellergeschoss' : istDachgeschoss({ ...storey, dachgeschoss: undefined }) ? 'Dachgeschoss' : 'Normalgeschoss'})
+          </option>
+          <option value="kg">Kellergeschoss</option>
           <option value="normal">Normalgeschoss</option>
           <option value="dg">Dachgeschoss</option>
         </select>
       </Field>
+      <RaumNummern />
       {project.dachModell && (
         <label className="toggle block" title="Ohne Haken reicht der Rauminhalt dort, wo darüber keine BGF liegt (z. B. Dachspitze als eigenes Geschoss), bis unter die Dachhaut.">
           <input type="checkbox" checked={!!storey.geschosshoeheBegrenzt} onChange={(e) => upd((s) => ({ ...s, geschosshoeheBegrenzt: e.target.checked || undefined }))} />
@@ -447,8 +466,9 @@ function StoreyProperties() {
                   ...s,
                   shapes: s.shapes.map((sh) => {
                     if (sh.kind !== 'room') return sh;
-                    const art = woflArt(sh.name, s.name, sh.nutzung);
-                    const wohnung = sh.wofl.wohnung || s.name;
+                    const art = woflArt(sh.name, s, sh.nutzung);
+                    // Wohnung bleibt, wie sie ist – nie automatisch „Wohnung = Geschoss“ (WoFlV: Wohnfläche je Wohnung)
+                    const wohnung = sh.wofl.wohnung;
                     if (art === 'keine') return { ...sh, wofl: { ...sh.wofl, kategorie: 'keine' as const } };
                     if (art === 'freisitz') return { ...sh, wofl: { ...sh.wofl, kategorie: 'freisitz' as const, wohnung } };
                     return sh.wofl.kategorie === 'keine' || sh.wofl.kategorie === 'freisitz' ? { ...sh, wofl: { ...sh.wofl, kategorie: 'voll' as const, wohnung } } : { ...sh, wofl: { ...sh.wofl, wohnung } };
@@ -468,6 +488,53 @@ function StoreyProperties() {
       <BackgroundPanel storey={storey} />
     </section>
   );
+}
+
+/** Präfix der Raumnummern und „Räume neu nummerieren“ (nur auf ausdrücklichen Befehl, F-01) */
+function RaumNummern() {
+  const storey = useActiveStorey();
+  const project = useEditor((s) => s.project);
+  const st = useEditor.getState();
+  const vorschlag = raumNummernPraefix(project, { ...storey, nummernPraefix: undefined });
+  const raeume = storey.shapes.filter((s) => s.kind === 'room' && !s.subtract);
+  const doppelt = doppelteNummern(storey);
+  const neu = async (reihenfolge: NummerReihenfolge) => {
+    const ifc = raeume.filter((r) => r.ifcId).length;
+    const ok = await bestaetigen(
+      `Räume in „${storey.name}“ neu nummerieren?`,
+      `Die Räume erhalten fortlaufende Nummern ab ${raumNummernPraefix(project, storey)}.01 (${reihenfolge === 'liste' ? 'Reihenfolge der Liste' : 'im Uhrzeigersinn, oben beginnend'}). Die Raumnummern im Flächennachweis müssen mit den Bauzeichnungen übereinstimmen.${ifc ? ` ${ifc} Räume aus dem IFC-Import behalten ihre Nummer – sonst weichen die Nummern vom Modell und den Plänen ab.` : ''}`,
+      'Neu nummerieren',
+    );
+    if (!ok) return;
+    const p = useEditor.getState().project;
+    const s = p.storeys.find((x) => x.id === storey.id);
+    if (!s) return;
+    const r = raeumeNeuNummerieren(p, s, reihenfolge);
+    if (r.geaendert) st.update((q) => mapStorey(q, storey.id, () => r.storey));
+    else void meldung('Neu nummerieren', 'Alle Räume tragen schon diese Nummern.');
+  };
+  return (
+    <>
+      <Field label="Präfix der Raumnummern" hint={`leer = nach dem Geschossnamen bzw. der Lage („${vorschlag}“ → ${vorschlag}.01); neue Räume zählen ab der höchsten Nummer weiter`}>
+        <TextField value={storey.nummernPraefix ?? ''} placeholder={vorschlag} onChange={(v) => upd(st, storey.id, (s) => ({ ...s, nummernPraefix: v.trim() || undefined }))} />
+      </Field>
+      {doppelt.size > 0 && <p className="warning small-text">Doppelte Raumnummern: {[...doppelt].join(', ')}</p>}
+      {raeume.length > 1 && (
+        <div className="button-row">
+          <button className="small" onClick={() => void neu('liste')} title="Fortlaufend in der Reihenfolge der Raumliste">
+            Räume neu nummerieren
+          </button>
+          <button className="small" onClick={() => void neu('uhrzeigersinn')} title="Fortlaufend im Uhrzeigersinn um die Geschossmitte, oben beginnend">
+            … im Uhrzeigersinn
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function upd(st: ReturnType<typeof useEditor.getState>, storeyId: string, fn: Parameters<typeof mapStorey>[2]) {
+  st.update((p) => mapStorey(p, storeyId, fn));
 }
 
 function Summary() {

@@ -9,7 +9,8 @@ import type { DachModell } from './roofMesh';
  *  - Je Geschoss werden BGF-Umrisse (kind "outline") gezeichnet → BGF und BRI.
  *  - Räume (kind "room") werden je Nutzungsgruppe nach DIN 277 erfasst → NUF/TF/VF = NRF.
  *  - Räume können zusätzlich mit einer Anrechnungskategorie nach WoFlV versehen werden → Wohnfläche.
- *  - Jede Fläche kann als Abzugsfläche markiert werden (z. B. Innenhof, Schacht, Schornstein).
+ *  - Jede Fläche kann als Abzugsfläche markiert werden: Umriss z. B. Innenhof, Luftraum über Galerie;
+ *    Raum z. B. Schornstein, Pfeiler, Schacht im Raum (Schornsteine und Schächte sind keine BGF-Abzüge).
  */
 
 /** Raumumschließung nach DIN 277: Regelfall (R) oder Sonderfall (S, z. B. Balkon, Loggia). */
@@ -195,6 +196,13 @@ export interface Storey {
   geschosshoeheBegrenzt?: boolean;
   /** Geschossart für Auswertung und Vorlagen; ohne Angabe automatisch (siehe istDachgeschoss) */
   dachgeschoss?: boolean;
+  /**
+   * Kellergeschoss (WoFlV: Räume darin i. d. R. Zubehör, keine Wohnfläche); ohne Angabe nach dem Geschossnamen
+   * (siehe istKellergeschoss). Eine Souterrainwohnung steht in einem Geschoss mit keller = false.
+   */
+  keller?: boolean;
+  /** Präfix der Raumnummern, z. B. „0“ → 0.01, „-1“ → -1.01; ohne Angabe aus dem Geschossnamen bzw. der Lage */
+  nummernPraefix?: string;
   /** Vollgeschoss für GFZ und Zahl der Vollgeschosse (GRZ/GFZ-Nachweis); ohne Angabe nach der Bauordnung geprüft */
   vollgeschoss?: boolean;
   /**
@@ -645,6 +653,14 @@ export function storeyElevations(p: Project): number[] {
 export function istDachgeschoss(s: Storey): boolean {
   if (s.dachgeschoss !== undefined) return s.dachgeschoss;
   return s.shapes.some((sh) => sh.kind === 'outline' && !sh.subtract && sh.dach !== undefined && sh.dach.typ !== 'flach' && sh.dach.typ !== 'modell');
+}
+
+/** Geschossnamen, die auf ein Kellergeschoss deuten (nur ohne ausdrückliche Geschossart) */
+const KELLER_NAME = /keller|\bkg\b|\bug\b|untergeschoss/i;
+
+/** Kellergeschoss? Ausdrückliche Angabe, sonst nach dem Geschossnamen (KG, UG, Keller …) */
+export function istKellergeschoss(s: Pick<Storey, 'name' | 'keller'>): boolean {
+  return s.keller ?? KELLER_NAME.test(s.name.trim());
 }
 
 /** Anrechenbare Grundfläche eines Raums (Polygonfläche abzüglich Putzabzug) */
