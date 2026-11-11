@@ -7,6 +7,7 @@ import { strToU8 } from 'fflate';
 import { VORGABE_ALLGEMEIN } from '@core/platform/konfig';
 import { App } from './App';
 import { AssistentView } from './components/AssistentView';
+import { PruefView } from './components/PruefView';
 import { SpeicherDateisystem } from './dateisystem';
 import { ausfuehren, planen } from './plan';
 import { leereStammdaten } from './stammdaten';
@@ -464,6 +465,54 @@ describe('Projektordner', () => {
     localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['S:\\Server'], oapPfad: 'B.oap' }));
     await frisch.getState().konfigLaden();
     expect(frisch.getState()).toMatchObject({ stammordner: 'S:\\Server', allgemein: { oapPfad: 'B.oap' } });
+  });
+
+  it('Nach dem Anlegen: Abschlussseite mit Ordnername, Entwurf geleert, „Rückgängig“ stellt ihn wieder her (P-11)', async () => {
+    const url = URL as unknown as { createObjectURL: (b: Blob) => string; revokeObjectURL: (u: string) => void };
+    url.createObjectURL = () => 'blob:test';
+    url.revokeObjectURL = () => {};
+    useOrdner.setState({ stamm: { ...leereStammdaten(), nummer: '2026-020', kurzname: 'Haus am See', bearbeiter: 'TP' } });
+    const host = render();
+    act(() => knopf(host, 'Weiter mit 2026-020').click());
+    act(() => knopf(host, '5Anlegen').click());
+    await act(async () => knopf(host, 'Als ZIP herunterladen').click());
+    await warten();
+    // Entwurf geleert (Bearbeitung bleibt), Abschlussseite nennt den Ordner, kein ZIP-Knopf mehr als Hauptaktion
+    expect(useOrdner.getState().stamm).toMatchObject({ nummer: '', kurzname: '', bearbeiter: 'TP' });
+    expect(host.querySelector('.po-abschluss h2')?.textContent).toBe('Projekt als ZIP heruntergeladen');
+    expect(host.querySelector('.po-abschluss-name')?.textContent).toContain('2026-020 Haus am See');
+    expect(knopf(host, 'Als ZIP herunterladen')).toBeUndefined();
+    expect(knopf(host, 'Nächstes Projekt').className).toContain('primary');
+    // Rückgängig: der Entwurf ist wieder da
+    act(() => knopf(host, 'Rückgängig').click());
+    expect(useOrdner.getState().stamm).toMatchObject({ nummer: '2026-020', kurzname: 'Haus am See' });
+    act(() => knopf(host, 'Nächstes Projekt').click());
+    expect(host.textContent).toContain('Neues Projekt anlegen');
+  });
+
+  it('Ordner prüfen: Projektliste der Stammordner – Klick prüft; alle Projekte mit Übersicht; Befunde nach Schwere (P-10)', async () => {
+    const fs = new SpeicherDateisystem();
+    await ausfuehren(fs, 'P:/Projekte', planen({ ...leereStammdaten(), nummer: '2026-014', kurzname: 'EFH', leistungsphasen: [1, 2] }, STANDARD, [], [], new Date(2026, 9, 1)));
+    await fs.ordnerAnlegen('P:/Projekte', '2019-003 Altbau/Sonstiges');
+    useOrdner.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['P:/Projekte'] } });
+    const host = render(createElement(PruefView, { fs, onErgaenzen: () => {} }));
+    await warten();
+    await warten();
+    const projekt = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('.po-projektliste button')].find((b) => b.textContent === name)!;
+    await act(async () => projekt('2019-003 Altbau').click());
+    await warten();
+    expect(host.querySelector('h3')?.textContent).toContain('2019-003 Altbau');
+    // gruppiert nach Schwere: Abweichungen vor Hinweisen
+    const gruppen = [...host.querySelectorAll('.po-befundgruppe h4')].map((h) => h.textContent);
+    expect(gruppen[0]).toMatch(/^Abweichungen/);
+    expect(gruppen.indexOf(gruppen.find((x) => x?.startsWith('Hinweise'))!)).toBeGreaterThan(0);
+    act(() => knopf(host, 'Zur Projektliste').click());
+    await act(async () => knopf(host, 'Alle Projekte prüfen').click());
+    await warten();
+    const zeilen = [...host.querySelectorAll('.po-sammel tbody tr')].map((z) => [...z.querySelectorAll('td')].map((t) => t.textContent));
+    expect(zeilen).toHaveLength(2);
+    expect(zeilen.find((z) => z[0] === '2026-014 EFH')![2]).toBe('ja');
+    expect(zeilen.find((z) => z[0] === '2019-003 Altbau')![2]).toBe('nein');
   });
 
   it('Ordner prüfen: Einstieg erklärt, dass nichts verändert wird', () => {

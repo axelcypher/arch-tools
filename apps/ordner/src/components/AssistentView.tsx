@@ -4,7 +4,7 @@ import { zuletztMerken } from '@core/platform/konfig';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { StammdatenFelder } from '@core/ui/Stammdaten';
-import type { Eintrag } from '../dateisystem';
+import type { Dateisystem, Eintrag } from '../dateisystem';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import { ausOrdnername, naechsteNummer, nummerPasst } from '../nummer';
 import type { Ergebnis, Plan } from '../plan';
@@ -31,11 +31,14 @@ const SCHRITTE: { id: SchrittId; label: string }[] = [
   { id: 'ausfuehren', label: 'Anlegen' },
 ];
 
-/** Desktop: Projektordner einlesen */
-export async function ladeProjektordner(pfad: string): Promise<GeladenerOrdner> {
+/** Desktop: Projektordner einlesen (`fs` ersetzt das Dateisystem des Desktops, etwa in Tests) */
+export async function ladeProjektordner(pfad: string, fs: Dateisystem = tauriDateisystem): Promise<GeladenerOrdner> {
   const name = pfad.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? pfad;
-  return { pfad, name, eintraege: await tauriDateisystem.liste(pfad, 12), lies: (p) => tauriDateisystem.lies(pfad, p) };
+  return { pfad, name, eintraege: await fs.liste(pfad, 12), lies: (p) => fs.lies(pfad, p) };
 }
+
+/** so lange lässt sich der geleerte Entwurf nach dem Anlegen wiederherstellen */
+const RUECKGAENGIG_MS = 10_000;
 
 /** „1 Datei“, „2 Dateien“ */
 const anzahlDateien = (n: number) => `${n} ${n === 1 ? 'Datei' : 'Dateien'}`;
@@ -71,6 +74,8 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState<string | null>(null);
   const [ergebnis, setErgebnis] = useState<{ ordner: string; liste: Ergebnis[] } | null>(null);
+  /** neues Projekt erfolgreich angelegt: Abschlussseite; der Entwurf ist geleert und lässt sich kurz wiederherstellen */
+  const [abschluss, setAbschluss] = useState<{ ordner: string; pfad: string; liste: Ergebnis[]; entwurf: Stammdaten; rueckgaengig: boolean } | null>(null);
   const [lesung, setLesung] = useState(0);
   /** Ordnernamen aller Stammordner – für den Nummernvorschlag */
   const [alleNamen, setAlleNamen] = useState<string[]>([]);
@@ -249,6 +254,25 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
       return neu;
     });
 
+  // „Rückgängig“ für den geleerten Entwurf nur kurz anbieten
+  useEffect(() => {
+    if (!abschluss?.rueckgaengig) return;
+    const t = setTimeout(() => setAbschluss((a) => (a ? { ...a, rueckgaengig: false } : a)), RUECKGAENGIG_MS);
+    return () => clearTimeout(t);
+  }, [abschluss?.rueckgaengig]);
+  /** neues Projekt angelegt: Entwurf leeren, Abschlussseite zeigen – bei Fehlern einzelner Schritte bleibt alles stehen */
+  const fertig = (ordnerName: string, pfad: string, liste: Ergebnis[]) => {
+    if (liste.some((x) => x.status === 'fehler')) return setErgebnis({ ordner: pfad, liste });
+    setAbschluss({ ordner: ordnerName, pfad, liste, entwurf, rueckgaengig: true });
+    neuesProjekt();
+  };
+  const naechstesProjekt = () => {
+    setAbschluss(null);
+    setErgebnis(null);
+    setModus(null);
+    setSchritt('start');
+  };
+
   const ausfuehrenJetzt = async () => {
     if (!auszufuehren || !modus) return;
     setFehler(null);
@@ -259,14 +283,14 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
           setLaeuft('Projektordner wird angelegt …');
           const liste = await ausfuehren(tauriDateisystem, stammordner, auszufuehren, { fortschritt: (i, n) => setLaeuft(`Projektordner wird angelegt … ${i} / ${n}`) });
           log.info(`Projektordner angelegt: ${auszufuehren.ordner}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, fehler: liste.filter((x) => x.status === 'fehler').length, presets: auszufuehren.presets });
-          setErgebnis({ ordner: verbinde(stammordner, auszufuehren.ordner), liste });
+          fertig(auszufuehren.ordner, verbinde(stammordner, auszufuehren.ordner), liste);
           void zuletztMerken(verbinde(stammordner, auszufuehren.ordner), 'Projektordner').catch(() => undefined);
         } else {
           setLaeuft('ZIP wird erstellt …');
           const fs = new SpeicherDateisystem();
           const liste = await ausfuehren(fs, '/zip', auszufuehren);
           const ok = await saveBinaryFile({ defaultName: `${auszufuehren.ordner}.zip`, data: fs.alsZip('/zip'), filterName: 'ZIP-Archiv', extension: 'zip', mime: 'application/zip' });
-          if (ok) setErgebnis({ ordner: '', liste });
+          if (ok) fertig(auszufuehren.ordner, '', liste);
         }
       } else if (ordner) {
         if (desktop && ordner.pfad) {
@@ -369,7 +393,7 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
           <p className="po-kontext">
             {modus === 'neu' ? (
               <>
-                Neues Projekt: <strong>{plan?.ordner || 'noch ohne Namen'}</strong>
+                Neues Projekt: <strong>{abschluss?.ordner || plan?.ordner || 'noch ohne Namen'}</strong>
               </>
             ) : (
               <>
@@ -517,7 +541,37 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
           </>
         )}
 
-        {schritt === 'ausfuehren' && (
+        {schritt === 'ausfuehren' && modus === 'neu' && abschluss && (
+          <div className="po-abschluss">
+            <h2>{desktop ? 'Projekt angelegt' : 'Projekt als ZIP heruntergeladen'}</h2>
+            <p className="po-abschluss-name">
+              <strong>{abschluss.ordner}</strong>
+              {!desktop && <span className="muted small-text"> ({abschluss.ordner}.zip – entpacken, wo das Projekt liegen soll)</span>}
+            </p>
+            <ErgebnisAnzeige ordner={abschluss.pfad} liste={abschluss.liste}>
+              <button className="small primary" onClick={naechstesProjekt}>
+                Nächstes Projekt
+              </button>
+            </ErgebnisAnzeige>
+            {abschluss.rueckgaengig && (
+              <p className="po-meldung po-rueckgaengig">
+                Das Formular ist für das nächste Projekt geleert.{' '}
+                <button
+                  className="small"
+                  onClick={() => {
+                    setStamm(abschluss.entwurf);
+                    setAbschluss({ ...abschluss, rueckgaengig: false });
+                  }}
+                >
+                  Rückgängig
+                </button>
+              </p>
+            )}
+            {desktop && <p className="muted small-text">Das Projekt steht in allen Apps unter „Zuletzt geöffnet“ – etwa im Flächenrechner zum Weiterarbeiten.</p>}
+          </div>
+        )}
+
+        {schritt === 'ausfuehren' && !(modus === 'neu' && abschluss) && (
           <>
             <h2>{modus === 'ergaenzen' ? 'Ergänzen' : 'Anlegen'}</h2>
             {modus === 'neu' && (
@@ -597,9 +651,7 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
                     className="small"
                     onClick={() => {
                       neuesProjekt();
-                      setErgebnis(null);
-                      setModus(null);
-                      setSchritt('start');
+                      naechstesProjekt();
                     }}
                   >
                     Nächstes Projekt

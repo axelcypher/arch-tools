@@ -187,6 +187,27 @@
 }
 
 /* Prüfen */
+.po-befundgruppe h4 {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.po-projekt-knopf {
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.po-projekt-knopf:hover {
+  color: var(--accent);
+}
+.po-sammel td,
+.po-sammel th {
+  text-align: left;
+}
 .po-befunde {
   list-style: none;
   margin: 10px 0;

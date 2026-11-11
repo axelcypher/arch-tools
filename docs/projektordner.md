@@ -55,6 +55,9 @@ Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davo
    vorgeschlagen werden, und springt mit „Leistungsphasen wählen“ zum Umfang. Danach meldet das Tool, was angelegt
    bzw. ergänzt wurde, was schon da war und was fehlgeschlagen ist – ein Fehler hält die übrigen Schritte nicht auf.
    Im Browser entsteht der Projektordner als ZIP-Datei zum Herunterladen (statt im Stammordner).
+   Nach dem erfolgreichen Anlegen zeigt der Assistent eine **Abschlussseite** mit dem Ordnernamen, „Ordner öffnen“
+   und „Nächstes Projekt“; das Formular ist dann schon für das nächste Projekt geleert – „Rückgängig“ (zehn Sekunden)
+   holt den Entwurf zurück. Schlägt ein Schritt fehl, bleibt der Entwurf stehen.
 
 **Tastatur:** Strg+Enter geht zum nächsten Schritt; der aktive Schritt ist für Bildschirmleser gekennzeichnet, die
 Felder der Beteiligten sind je Zeile beschriftet („Rolle 2“, „Beteiligten 2 entfernen“).
@@ -218,7 +221,8 @@ Unbekannte Platzhalter bleiben stehen, damit Tippfehler auffallen.
 
 ## Ordner prüfen
 
-Ein vorhandener Projektordner wird eingelesen und mit der Struktur verglichen. Gemeldet werden
+Ein vorhandener Projektordner wird eingelesen und mit der Struktur verglichen – aus der Liste der Projektordner aller
+Stammordner (mit Suche; ein Klick prüft) oder über „Ordner wählen …“. Gemeldet werden
 
 - die **Projektdatei**: vorhanden (mit Nummer, Kurzname, Anlagedatum, Struktur), fehlt (dann gilt die vollständige
   Struktur; stehen Stammdaten noch in einer alten `projekt.json`, gelten deren Leistungsphasen) oder nicht lesbar,
@@ -230,6 +234,14 @@ Ein vorhandener Projektordner wird eingelesen und mit der Struktur verglichen. G
   Stammdaten),
 - **überlange Pfade** (mehr als 200 Zeichen ab dem Projektordner – mit Laufwerk und Stammordner droht die
   Windows-Grenze von 260 Zeichen).
+
+Die Befunde stehen nach Schwere gruppiert: Fehler, Abweichungen, Hinweise, in Ordnung. „Bericht als CSV …“ speichert
+sie mit allen betroffenen Pfaden (für Excel: Semikolon, UTF-8 mit BOM).
+
+**Alle Projekte prüfen** prüft jeden Projektordner der Stammordner – nur lesend – und zeigt eine Übersicht: Projekt,
+Zahl der Abweichungen (davon Fehler), Projektdatei ja/nein, längster Pfad; Projekte mit Fehlern und den meisten
+Abweichungen zuerst. Ein Klick auf ein Projekt zeigt dessen Einzelbericht; „Als CSV speichern …“ speichert die
+Übersicht.
 
 Das Tool meldet nur. Von hier aus lassen sich **fehlende Ordner anlegen** und das **Projekt ergänzen** (im
 Assistenten: fehlende Ordner, Vorlagen und die Projektdatei).

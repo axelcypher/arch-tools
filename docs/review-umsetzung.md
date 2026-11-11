@@ -309,8 +309,15 @@ mitbumpt).
   abgeleitete Fehler „kein Name“ entfällt; Ordnername direkt unter Nummer/Kurzname (core: Prop `ordnerName`); PLZ,
   E-Mail und Zeichen im Kurznamen über die gemeinsame Prüfung (Q-3)
 - [ ] **P-09** Projektübersicht (alle Apps)
-- [ ] **P-10** „Ordner prüfen“ für alle Projekte, mit Bericht
-- [ ] **P-11** Entwurf bleibt nach dem Anlegen stehen
+- [x] **P-10** „Ordner prüfen“ für alle Projekte, mit Bericht – PO 0.9.0: Projektliste aller Stammordner mit Suche
+  (Klick prüft) und „Anderen Ordner wählen …“; „Alle Projekte prüfen“ (`allePruefen`, nur lesend) mit Übersicht
+  (Abweichungen, davon Fehler, Projektdatei, längster Pfad) und CSV; Befunde nach Schwere gruppiert, Einzelbericht als
+  CSV (`berichtCsv`). Abweichung: kein PDF (optional).
+- [x] **P-11** Entwurf bleibt nach dem Anlegen stehen – PO 0.9.0: nach Erfolg Abschlussseite mit Ordnername, „Ordner
+  öffnen“ und „Nächstes Projekt“ (Hauptaktion), Entwurf geleert mit „Rückgängig“ (10 s); kein ZIP-Knopf mehr nach dem
+  Herunterladen; bei Fehlern einzelner Schritte bleibt der Entwurf. Abweichung: „In Flächenrechner öffnen“ fehlt – es
+  gibt keinen Weg, eine andere App mit einem Projekt zu starten (bräuchte Rahmen-App bzw. Rust); stattdessen der Hinweis,
+  dass das Projekt in allen Apps unter „Zuletzt geöffnet“ steht.
 - [x] **P-12** Barrierefreiheit und Tastatur – PO 0.7.0: `aria-current="step"`, Strg+Enter = „Weiter“, `aria-label` je
   Beteiligten-Feld („Rolle 2“) und Löschknopf („Beteiligten 2 entfernen“, core), aktiver Schritt nicht mehr grau
   (auch auf der Startseite), Text in `--text` und fett; „neu“-Vermerk fett in `--ok-text`. Die übrigen „×“-Knöpfe

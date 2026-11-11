@@ -7,6 +7,7 @@ import { dateimuster, naechsteNummer, nameAus, nummerAus, nummerPasst } from './
 import type { PlanOptionen, Vorlage } from './plan';
 import { ausfuehren, ladeVorlagen, nichtVorausgewaehlt, ohne, ordnerName, planen, presetPruefen, vorlagenAnzahl, vorlagenDateien } from './plan';
 import { ausserhalbDerStruktur, pruefe } from './pruefung';
+import { allePruefen, berichtCsv, sammelCsv } from './sammel';
 import type { Stammdaten } from './stammdaten';
 import { beteiligteSammeln, projektEinlesen } from './projekt';
 import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
@@ -668,6 +669,36 @@ describe('Prüfmodus', () => {
     // ohne projekt.json: kein solcher Befund
     const { fs: fs2, basis: b2, projekt, quelle } = await angelegt();
     expect(pruefe('2026-014 EFH Musterweg', await fs2.liste(b2, 12), KLEIN, projekt, quelle).befunde.some((x) => x.titel.includes('projekt.json'))).toBe(false);
+  });
+
+  it('Alle Projekte prüfen: eine Zeile je Projekt, Befunde nach Schwere, CSV für Übersicht und Bericht (P-10)', async () => {
+    const fs = new SpeicherDateisystem();
+    await ausfuehren(fs, 'P:/Projekte', plane(stamm(), KLEIN, []));
+    await fs.ordnerAnlegen('P:/Projekte', '2019-003 Altbau;alt/Fremd');
+    await fs.dateiAnlegen('P:/Projekte/2019-003 Altbau;alt', 'lose.pdf', strToU8('x'));
+    await fs.ordnerAnlegen('P:/Archiv', '2018-001 Archiv');
+    const zeilen = await allePruefen(fs, ['P:/Projekte', 'P:/Archiv'], KLEIN);
+    expect(zeilen.map((z) => z.projekt).sort()).toEqual(['2018-001 Archiv', '2019-003 Altbau;alt', '2026-014 EFH Musterweg']);
+    const neu = zeilen.find((z) => z.projekt === '2026-014 EFH Musterweg')!;
+    expect(neu).toMatchObject({ abweichungen: 0, projektdatei: true });
+    expect(neu.laengsterPfad).toBe('2026-014 EFH Musterweg/00 Projekt/2026-014 EFH Musterweg.oap'.length);
+    const alt = zeilen.find((z) => z.projekt.startsWith('2019'))!;
+    expect(alt.projektdatei).toBe(false);
+    expect(alt.abweichungen).toBeGreaterThanOrEqual(3);
+    // nur lesend: nichts wurde angelegt
+    expect([...fs.eintraege.keys()].some((k) => k.includes('2019-003 Altbau;alt/00 Projekt'))).toBe(false);
+    // CSV mit BOM, Semikolon, Feld mit Semikolon in Anführungszeichen
+    const c = sammelCsv(zeilen);
+    expect(c.startsWith('\uFEFFProjekt;Abweichungen;davon Fehler;Projektdatei;Längster Pfad (Zeichen);Pfad;Lesefehler\r\n')).toBe(true);
+    expect(c).toContain('"2019-003 Altbau;alt";');
+    // Einzelbericht: Befunde nach Schwere, je Pfad eine Zeile
+    const fs2 = await eingelesen(fs, 'P:/Projekte/2019-003 Altbau;alt');
+    const ergebnis = pruefe(fs2.name, fs2.eintraege, KLEIN, null);
+    const rang = { fehler: 0, warnung: 1, hinweis: 2, ok: 3 };
+    expect(ergebnis.befunde.map((b) => rang[b.art])).toEqual([...ergebnis.befunde.map((b) => rang[b.art])].sort());
+    const bericht = berichtCsv(ergebnis).split('\r\n');
+    expect(bericht[0]).toBe('\uFEFFArt;Befund;Erläuterung;Pfad');
+    expect(bericht.some((z) => z.startsWith('Hinweis;') && z.endsWith(';lose.pdf'))).toBe(true);
   });
 
   it('frisch angelegter Ordner: keine Abweichungen', async () => {
