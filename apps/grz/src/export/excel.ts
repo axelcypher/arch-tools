@@ -186,9 +186,18 @@ function nachweisBlatt(wb: Workbook, stellen: { grz?: number; grz2?: number; gfz
   );
   summe(46, ['D', 'F'], 45, 45);
 
-  abschnitt(48, 'Hinweise');
-  put('A49', '{{hinweis.text}}', { wrap: true });
+  // Rechenweg: Formeln und Teilflächen, deren Fläche als Formel Länge × Breite × Faktor
+  abschnitt(48, 'Rechenweg');
+  put('A49', '{{formel.text}}');
   ws.mergeCells(`A49:${letzte}49`);
+  kopf(50, ['Fläche', 'Teilfläche', 'Länge', 'Breite', 'Faktor', 'Fläche', '']);
+  zeile(51, ['{{teil.flaeche_nr}} {{teil.flaeche_name}}', '{{teil.name}}', '{{teil.laenge}}', '{{teil.breite}}', '{{teil.faktor}}', { formula: 'C51*D51*E51' }], {
+    fmts: [undefined, undefined, M, M, '0.0', M2],
+  });
+
+  abschnitt(53, 'Hinweise');
+  put('A54', '{{hinweis.text}}', { wrap: true });
+  ws.mergeCells(`A54:${letzte}54`);
   return ws;
 }
 

@@ -2,6 +2,7 @@ import { lazy, Suspense, useDeferredValue, useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import { LAGEPLAN_NUTZUNGEN, VERSIEGELUNGEN } from '@core/lageplan';
 import type { BauNVOFassung, BauOFassung, LageplanFlaeche, LageplanNutzung, MassNutzung, RoomShape, Versiegelung } from '@core/model';
+import type { Point } from '@core/geometry';
 import { Field, NumberField, TextField } from '@core/ui/fields';
 import type { Anrechnung, Kennzahl, Status } from '../massNutzung';
 import { anrechnungRegel, BAUNVO_FASSUNGEN, BAUO_FASSUNGEN, baunvoLabel, bauoLabel, massNachweis, recht } from '../massNutzung';
@@ -11,6 +12,8 @@ import { LageplanEditor } from './LageplanEditor';
 import { areaMP, unionAll } from '@core/polygon';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
+import { teilFormel } from '@core/flaechenZerlegung';
+import { rechenweg, teilName } from '../rechenweg';
 
 const Gelaende3D = lazy(() => import('./Gelaende3D'));
 
@@ -26,6 +29,8 @@ export function GrzGfzView() {
   // Nachweis nachrangig rechnen: Ziehen und Tippen bleiben flüssig, die Kennzahlen folgen einen Augenblick später
   const nachweisStand = useDeferredValue(project);
   const n = useMemo(() => massNachweis(nachweisStand), [nachweisStand]);
+  // Nummern wie im Druck (eigene Flächen in Listenfolge) und Rechenweg
+  const rw = useMemo(() => rechenweg(n, new Map(n.lageplan.filter((l) => !l.nachbar).map((l, i) => [l.id, i + 1]))), [n]);
   const m = project.massNutzung ?? {};
   const st = useGrz.getState();
   const setM = (patch: Partial<MassNutzung>) => st.update((p) => setMassNutzung(p, patch));
@@ -240,9 +245,35 @@ export function GrzGfzView() {
             <Field label="Bezeichnung">
               <TextField value={sel.name} onChange={(v) => updFlaeche(sel.id, { name: v })} />
             </Field>
+            <Field label="Nutzung">
+              <select value={sel.nutzung} disabled={sel.nachbar} onChange={(e) => updFlaeche(sel.id, { nutzung: e.target.value as LageplanNutzung })}>
+                {LAGEPLAN_NUTZUNGEN.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Versiegelung">
+              <select value={sel.versiegelung} disabled={sel.nachbar} onChange={(e) => updFlaeche(sel.id, { versiegelung: e.target.value as Versiegelung })}>
+                {VERSIEGELUNGEN.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Nachbargrundstück">
+              <select value={sel.nachbar ? 'ja' : 'nein'} onChange={(e) => updFlaeche(sel.id, { nachbar: e.target.value === 'ja' || undefined })}>
+                <option value="nein">eigenes Grundstück</option>
+                <option value="ja">Nachbar (zählt nicht)</option>
+              </select>
+            </Field>
             <Field label="Höhe der Oberfläche [m]" hint="über ±0,00 – für die Geländeoberfläche">
               <NumberField value={sel.hoehe} allowEmpty onChange={(v) => updFlaeche(sel.id, { hoehe: v })} />
             </Field>
+            <KantenLaengen pts={sel.points} onChange={(pts) => updFlaeche(sel.id, { points: pts })} />
+            <TeilflaechenListe f={rw.flaechen.find((x) => x.id === sel.id)} />
             <button className="small danger" onClick={() => st.update((p) => removeFlaeche(p, sel.id))}>
               Fläche löschen
             </button>
@@ -340,6 +371,14 @@ export function GrzGfzView() {
             </div>
           </div>
         </div>
+        <details className="grz-rechenweg-app">
+          <summary>Rechenweg</summary>
+          <ul className="grz-formeln">
+            {rw.formeln.map((f, i) => (
+              <li key={i}>{f}</li>
+            ))}
+          </ul>
+        </details>
         {n.garagenFrei !== undefined && n.garagenFrei > 0 && (
           <p className="small-text">Garagen und überdachte Stellplätze: {fmt2(n.garagenFrei)} m² anrechnungsfrei (§ 21a Abs. 3, bis 0,1 der Grundstücksfläche).</p>
         )}
@@ -496,6 +535,62 @@ export function GrzGfzView() {
         <p className="muted small-text">{HAFTUNG}</p>
       </section>
     </div>
+  );
+}
+
+/**
+ * Kantenlängen der gewählten Fläche, bearbeitbar: Eine Eingabe verschiebt den Endpunkt entlang der Kante; bei einem
+ * Rechteck wandert die gegenüberliegende Ecke mit, damit es ein Rechteck bleibt.
+ */
+function KantenLaengen({ pts, onChange }: { pts: Point[]; onChange: (pts: Point[]) => void }) {
+  return (
+    <details className="lp-kanten">
+      <summary className="small-text">Kantenlängen</summary>
+      <div className="lp-kanten-liste">
+        {pts.map((a, i) => {
+          const b = pts[(i + 1) % pts.length];
+          const l = Math.hypot(b.x - a.x, b.y - a.y);
+          return (
+            <Field key={i} label={`Kante ${i + 1}`}>
+              <NumberField value={Math.round(l * 10000) / 10000} min={0.01} onChange={(v) => v !== undefined && onChange(kanteSetzen(pts, i, v))} />
+            </Field>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
+/** Kante i auf die Länge l bringen: Endpunkt entlang der Kante verschieben (Rechteck: Nachbarecke mit) */
+export function kanteSetzen(pts: Point[], i: number, l: number): Point[] {
+  const n = pts.length;
+  const a = pts[i];
+  const j = (i + 1) % n;
+  const b = pts[j];
+  const alt = Math.hypot(b.x - a.x, b.y - a.y);
+  if (alt < 1e-9) return pts;
+  const d = { x: ((b.x - a.x) / alt) * (l - alt), y: ((b.y - a.y) / alt) * (l - alt) };
+  const recht = n === 4 && pts.every((p, k) => {
+    const q = pts[(k + 1) % 4];
+    const r = pts[(k + 2) % 4];
+    return Math.abs((q.x - p.x) * (r.x - q.x) + (q.y - p.y) * (r.y - q.y)) < 1e-6;
+  });
+  const bewegen = new Set(recht ? [j, (j + 1) % n] : [j]);
+  return pts.map((p, k) => (bewegen.has(k) ? { x: p.x + d.x, y: p.y + d.y } : p));
+}
+
+/** Teilflächen der gewählten Fläche (Rechenweg) */
+function TeilflaechenListe({ f }: { f: ReturnType<typeof rechenweg>['flaechen'][number] | undefined }) {
+  if (!f) return null;
+  if (!f.zerlegung.zerlegt) return <p className="grz-teile">Fläche aus Koordinaten: {fmt2(f.zerlegung.flaeche)} m²</p>;
+  return (
+    <ul className="grz-teile" aria-label="Teilflächen">
+      {f.zerlegung.teile.map((t, i) => (
+        <li key={i}>
+          {teilName(f.nr, i, t)}: {teilFormel(t)}
+        </li>
+      ))}
+    </ul>
   );
 }
 

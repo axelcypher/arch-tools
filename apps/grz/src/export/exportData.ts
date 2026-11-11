@@ -8,6 +8,7 @@ import type { Kennzahl, Nachweis } from '../massNutzung';
 import { baunvoLabel, bauoLabel, istAufenthaltsraum, massNachweis, sachlicheHinweise } from '../massNutzung';
 import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlStellenVon, roemisch, STATUS } from '../texte';
 import { datumText } from '@core/ui/DruckKopf';
+import { rechenweg, teilName } from '../rechenweg';
 
 /**
  * Datengrundlage für Excel-Export und Vorlagen des GRZ-Nachweises (Syntax siehe docs/excel-vorlagen.md).
@@ -186,11 +187,20 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     );
 
   // nur sachliche Hinweise (Bedienhinweise bleiben in der App)
+  // Rechenweg: Formelzeilen und Teilflächen (Länge × Breite × Faktor; ohne Zerlegung die Fläche aus Koordinaten × 1 × 1)
+  const rw = rechenweg(n, new Map(n.lageplan.filter((l) => !l.nachbar).map((l, i) => [l.id, i + 1])));
+  const formel: Row[] = rw.formeln.map((text, i) => ({ nr: i + 1, text }));
+  const teil: Row[] = rw.flaechen.flatMap((f) =>
+    f.zerlegung.zerlegt
+      ? f.zerlegung.teile.map((t, i) => ({ flaeche_nr: f.nr, flaeche_name: f.name, name: teilName(f.nr, i, t), art: t.art === 'rechteck' ? 'Rechteck' : 'Dreieck', laenge: r4(t.laenge), breite: r4(t.breite), faktor: t.faktor, flaeche: r4(t.flaeche) }))
+      : [{ flaeche_nr: f.nr, flaeche_name: f.name, name: `${f.nr} Fläche aus Koordinaten`, art: 'Koordinaten', laenge: r4(f.zerlegung.flaeche), breite: 1, faktor: 1, flaeche: r4(f.zerlegung.flaeche) }],
+  );
+
   const hinweis: Row[] = [...n.recht.hinweise, ...sachlicheHinweise(n)].map((text, i) => ({ nr: i + 1, text }));
 
   return {
     scalars,
-    collections: { geschoss, lageplan, raum, hinweis },
+    collections: { geschoss, lageplan, raum, hinweis, formel, teil },
     byName: { geschoss: new Map(geschoss.map((g) => [String(g.name), g])) },
     filters: FILTERS,
     belongsTo: zugehoerig,
@@ -281,7 +291,10 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['raum.aufenthalt, raum.festlegung', 'Aufenthaltsraum, Treppenraum oder kein Aufenthaltsraum; automatisch oder festgelegt'],
       ['raum.begruendung', 'Prüfung nach Nutzung und lichter Höhe (vor 1990, Nicht-Vollgeschosse)'],
       ['raum.hoehenlage', 'Höhenlage des Fußbodens gegenüber dem Geschoss [m] (Split-Level)'],
-      ['hinweis.nr, hinweis.text', 'Zeile je Hinweis'],
+      ['hinweis.nr, hinweis.text', 'Zeile je Hinweis für die Bauaufsicht'],
+      ['formel.text', 'Zeile je Formel des Rechenwegs, z. B. „GRZ I = GR I / FGst = 135,00 m² / 612,50 m² = 0,220“'],
+      ['teil.flaeche_nr, teil.flaeche_name, teil.name, teil.art', 'Zeile je Teilfläche (H = Hauptanlage): Nummer und Name der Fläche, „1.2 Rechteck“, Rechteck/Dreieck/Koordinaten'],
+      ['teil.laenge, teil.breite, teil.faktor, teil.flaeche', 'Länge bzw. Grundseite, Breite bzw. Höhe [m], Faktor (1 Rechteck, 0,5 Dreieck), Fläche [m²] – ohne Zerlegung Fläche × 1 × 1'],
     ],
   },
 ];

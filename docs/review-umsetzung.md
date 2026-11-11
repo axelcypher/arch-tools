@@ -195,10 +195,21 @@ GRZ 0.10.1, KO 0.10.1, PO 0.6.1, EZ 0.5.1, FO 0.21.2 (nur Patch, Bundles geände
 - [x] **G-14** Technische Fehlermeldung bei defekter Projektdatei – GRZ 0.8.0 (mit Q-6); gilt für Öffnen,
   IFC-Übernahme und Speichern
 - [x] **G-15** Rückfrage als `window.confirm` – GRZ 0.8.0 (mit Q-2)
-- [ ] **G-20** Prüffähiger Rechenweg
-- [ ] **G-21** Genaue Eingabe beim Zeichnen
+- [x] **G-20** Prüffähiger Rechenweg – GRZ 0.11.0: neu `core/flaechenZerlegung.ts` (Rechtecke entlang der Flächenachse,
+  auch mit Löchern; sonst Dreiecke; Summe = Fläche exakt; sonst „Fläche aus Koordinaten“), `apps/grz/src/rechenweg.ts`
+  (Formelzeilen GRZ = GR / FGst, GR II = GR I + § 19 Abs. 4, GF; Teilflächen des eindeutigen Anteils je Fläche); App
+  („Rechenweg“ unter den Kacheln, Teilflächen der gewählten Fläche), Druck (Schalter, standardmäßig an; Teilflächen
+  gestrichelt mit Nummer und Maßen im Lageplan), Excel (Sammlungen `formel`, `teil`, Fläche als Formel L × B × Faktor).
+  Abweichung: Maße stehen als Beschriftung je Teilfläche („1.2: 3,00 × 5,00“) statt als Maßketten an den Kanten
+- [x] **G-21** Genaue Eingabe beim Zeichnen – GRZ 0.11.0: Eingabe unter der Plan-Leiste (Polygon: Länge/Winkel gegen die
+  Gebäudeachse, leer = Mausrichtung; Rechteck: Breite × Tiefe), Ziffer springt ins Feld, Tab/Enter; laufende Anzeige
+  von Segment und Fläche (Leiste und am Zeiger); neu `core/kantenFang.ts` (Kantenmitte, Lot, Punkt auf der Kante) mit
+  Symbol; Kantenlängen der gewählten Fläche bearbeitbar (Rechteck bleibt Rechteck). Abweichung: Eingabefelder in der
+  Leiste statt schwebend am Zeiger; Test für den Fang in `kantenFang.test.ts` statt `fang.test.ts`
 - [ ] **G-22** Unterlage und echte Grundstücksgrenze
-- [ ] **G-23** Nutzung direkt beim Zeichnen
+- [x] **G-23** Nutzung direkt beim Zeichnen – GRZ 0.11.0: Leiste „Neue Fläche“ mit allen Nutzungen, Versiegelung passend
+  vorbelegt, Name je Nutzung („Zufahrt 1“), kein „sonstige“ mehr als Vorgabe; Auswahlbereich mit Nutzung,
+  Versiegelung und Nachbar
 - [ ] **G-24** Beschriftung und Orientierung im Plan
 - [ ] **G-25** Stammdaten und Bebauungsplan-Kopf
 - [ ] **G-26** Fachliche Lücken bei Festsetzungen und Einstufung

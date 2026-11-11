@@ -262,6 +262,25 @@ button.link:hover {
   padding-left: 18px;
   font-size: 12px;
 }
+.grz-formeln {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.grz-rechenweg-app summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  margin: 10px 0 4px;
+}
+.grz-teile {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
 
 .grz-report-unterschrift {
   display: flex;
@@ -343,3 +362,36 @@ button.link:hover {
   margin-bottom: 6px;
 }
 .grz-3d-fehler { padding: 24px; }
+
+/* Lageplan: Nutzung neuer Flächen, genaue Eingabe, Fang und Maße */
+.lp-nutzungen {
+  flex-wrap: wrap;
+}
+.lp-eingabe {
+  align-items: center;
+}
+.lp-eingabe-feld {
+  width: 72px;
+  font: inherit;
+  padding: 2px 5px;
+}
+.lp-mass {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.lp-masstext {
+  fill: var(--sel);
+  paint-order: stroke;
+  stroke: var(--panel);
+  stroke-width: 0.25em;
+  font-variant-numeric: tabular-nums;
+}
+.lp-kanten summary {
+  cursor: pointer;
+  margin: 4px 0;
+}
+.lp-kanten-liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 0 8px;
+}

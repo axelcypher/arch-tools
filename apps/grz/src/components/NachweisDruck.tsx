@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import type { Point } from '@core/geometry';
-import { bounds, polygonArea } from '@core/geometry';
+import { bounds, centroid, polygonArea } from '@core/geometry';
 import { nutzungLabel, VERSIEGELUNGEN, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
 import type { Anrechnung, Kennzahl, Nachweis } from '../massNutzung';
@@ -12,6 +12,9 @@ import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAF
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { datumText, DruckKopf } from '@core/ui/DruckKopf';
 import { beschriftungsPunkt, massstabLaenge, PT } from '../beschriftung';
+import type { Rechenweg } from '../rechenweg';
+import { rechenweg as rechenwegVon, teilName } from '../rechenweg';
+import { teilFormel } from '@core/flaechenZerlegung';
 
 /** Druckbarer Nachweis des Maßes der baulichen Nutzung (GRZ, GFZ, Vollgeschosse) – über den Druckdialog auch als PDF. */
 export function NachweisDruck({ onClose }: { onClose: () => void }) {
@@ -22,6 +25,8 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
   const [raeume, setRaeume] = useState(true);
   // Haftungssatz des Tools gehört nicht auf das Blatt für das Bauamt – nur auf Wunsch
   const [haftung, setHaftung] = useState(false);
+  // prüffähiger Rechenweg (Formeln, Teilflächen mit Maßen) – im Druck standardmäßig an
+  const [mitRechenweg, setMitRechenweg] = useState(true);
   // Stand des Nachweises: nicht automatisch heute, sondern wie eingetragen (leer = ohne Stand im Kopf)
   const [stand, setStand] = useState('');
   const m = project.massNutzung ?? {};
@@ -32,6 +37,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
   const aufenthalt = vor1990 ? aufenthaltsraeume(project, n) : [];
   const hinweise = sachlicheHinweise(n);
   const grLabel = vor1990 ? 'GR' : 'GR II';
+  const rw = useMemo(() => rechenwegVon(n, nr), [n, nr]);
 
   return (
     <div className="report-backdrop">
@@ -47,6 +53,10 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
               Aufenthaltsräume
             </label>
           )}
+          <label className="toggle">
+            <input type="checkbox" checked={mitRechenweg} onChange={(e) => setMitRechenweg(e.target.checked)} />
+            Rechenweg
+          </label>
           <label className="toggle">
             <input type="checkbox" checked={haftung} onChange={(e) => setHaftung(e.target.checked)} />
             Haftungshinweis
@@ -146,7 +156,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           </p>
         )}
 
-        {plan && <LageplanSkizze n={n} project={project} nr={nr} />}
+        {plan && <LageplanSkizze n={n} project={project} nr={nr} rechenweg={mitRechenweg ? rw : undefined} />}
 
         <h2>Grundfläche</h2>
         <table className="report-table">
@@ -226,6 +236,8 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
             </tr>
           </tbody>
         </table>
+
+        {mitRechenweg && <RechenwegTabelle rw={rw} />}
 
         <h2>Vollgeschosse</h2>
         <table className="report-table">
@@ -391,6 +403,70 @@ function KennzahlZeile({ titel, kurz, k }: { titel: string; kurz: string; k: Ken
   );
 }
 
+/** Rechenweg: Formelzeilen und Teilflächen je Fläche (Länge × Breite bzw. g × h / 2) */
+function RechenwegTabelle({ rw }: { rw: Rechenweg }) {
+  return (
+    <section className="grz-rechenweg">
+      <h2>Rechenweg</h2>
+      <ul className="grz-formeln">
+        {rw.formeln.map((f, i) => (
+          <li key={i}>{f}</li>
+        ))}
+      </ul>
+      <table className="report-table">
+        <thead>
+          <tr>
+            <th>Nr.</th>
+            <th>Fläche</th>
+            <th>Teilfläche</th>
+            <th>Rechnung</th>
+            <th className="num">Fläche [m²]</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rw.flaechen.map((f) => (
+            <RechenwegZeilen key={f.nr + f.name} f={f} />
+          ))}
+        </tbody>
+      </table>
+      <p className="report-note">Gezählt wird der eindeutige Anteil jeder Fläche (ohne Gebäude und Überlagerungen); Maße auf cm gerundet.</p>
+    </section>
+  );
+}
+
+function RechenwegZeilen({ f }: { f: Rechenweg['flaechen'][number] }) {
+  const z = f.zerlegung;
+  if (!z.zerlegt)
+    return (
+      <tr className="subtotal">
+        <td>{f.nr}</td>
+        <td>{f.name}</td>
+        <td colSpan={2}>Fläche aus Koordinaten (Gaußsche Flächenformel)</td>
+        <td className="num">{fmt2(z.flaeche)}</td>
+      </tr>
+    );
+  return (
+    <>
+      {z.teile.map((t, i) => (
+        <tr key={i}>
+          <td>{i === 0 ? f.nr : ''}</td>
+          <td>{i === 0 ? f.name : ''}</td>
+          <td>{teilName(f.nr, i, t)}</td>
+          <td className="formula">{teilFormel(t)}</td>
+          <td className="num">{fmt2(t.flaeche)}</td>
+        </tr>
+      ))}
+      {z.teile.length > 1 && (
+        <tr className="subtotal">
+          <td />
+          <td colSpan={3}>Summe {f.name}</td>
+          <td className="num">{fmt2(z.flaeche)}</td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 /** tatsächlich angerechnete Fläche, bei „prüfen“ als Spanne */
 function AngerechnetZelle({ a }: { a: { angerechnet: number; angerechnetBis?: number; anrechnung: Anrechnung } }) {
   return (
@@ -422,7 +498,7 @@ const SCHRIFT_PT = 10;
  * Lageplan fürs Blatt: Grundstück, Gebäude schraffiert, Flächen farbig nach Versiegelung mit Nummern im eindeutigen
  * Anteil (nicht unter dem Gebäude), Maßstabsleiste und Nordpfeil (Planoberkante = Projektnorden des Modells)
  */
-export function LageplanSkizze({ n, project, nr }: { n: Nachweis; project: Project; nr: Map<string, number> }) {
+export function LageplanSkizze({ n, project, nr, rechenweg }: { n: Nachweis; project: Project; nr: Map<string, number>; rechenweg?: Rechenweg }) {
   const flaechen = project.lageplan?.flaechen ?? [];
   const pts: Point[] = [...n.hauptanlagePolygone.flat(), ...n.grundstueckPolygone.flat(), ...flaechen.filter((f) => !f.nachbar).flatMap((f) => f.points)];
   if (!pts.length) return null;
@@ -467,6 +543,21 @@ export function LageplanSkizze({ n, project, nr }: { n: Nachweis; project: Proje
         {n.grundstueckPolygone.map((p, i) => (
           <path key={`g${i}`} d={d(p)} fill="none" stroke="#1f2328" strokeWidth={k * 2.5} strokeDasharray={`${k * 10} ${k * 3} ${k * 2} ${k * 3}`} />
         ))}
+        {rechenweg?.flaechen.flatMap((f) =>
+          f.zerlegung.teile.length > 1 || f.nr === 'H'
+            ? f.zerlegung.teile.map((t, i) => {
+                const c = centroid(t.punkte);
+                return (
+                  <g key={`rw${f.nr}.${i}`} className="plan-teil">
+                    <path d={d(t.punkte)} fill="none" stroke="#1f2328" strokeWidth={k * 0.6} strokeDasharray={`${k * 3} ${k * 2}`} />
+                    <text x={c.x} y={c.y + schrift * 0.9} fontSize={k * 7 * PT} className="plan-label" textAnchor="middle" dominantBaseline="middle">
+                      {`${f.nr}.${i + 1}: ${fmt2(t.laenge)} × ${fmt2(t.breite)}`}
+                    </text>
+                  </g>
+                );
+              })
+            : [],
+        )}
         {flaechen
           .filter((f) => nr.has(f.id))
           .map((f) => {

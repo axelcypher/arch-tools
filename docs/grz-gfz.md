@@ -78,6 +78,22 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
   Versiegelung, Nachbar und Höhe gemeinsam bearbeitet. Strg+C/V/D kopiert, fügt ein bzw. dupliziert (um 0,50 m
   versetzt), die Pfeiltasten verschieben die Auswahl um 1 cm (mit Umschalt 10 cm). Nach einem Klick in den Lageplan
   wählt Tab bzw. Umschalt+Tab die nächste bzw. vorige Fläche.
+- **Nutzung beim Zeichnen:** Die Leiste „Neue Fläche“ unter den Werkzeugen wählt die Nutzung neuer Flächen
+  (Zufahrt, Stellplatz, Garage, Terrasse, Weg, Nebenanlage, unterirdische Anlage, Garten, sonstige). Die
+  Versiegelung wird passend vorbelegt (z. B. Zufahrt vollversiegelt, Garten Grünfläche), der Name zählt je Nutzung
+  („Zufahrt 1“, „Terrasse 2“). Ein Klick auf eine Nutzung wählt, falls nötig, das Rechteck-Werkzeug. „sonstige“
+  (Anrechnung „prüfen“) gibt es nur noch auf ausdrückliche Wahl. Der Auswahlbereich unter dem Plan bietet für eine
+  gewählte Fläche Bezeichnung, Nutzung, Versiegelung, Nachbargrundstück, Höhe, die Kantenlängen und die Teilflächen
+  des Rechenwegs.
+- **Genaue Eingabe:** Nach dem ersten Punkt erscheint unter der Leiste die Eingabe – beim Polygon Länge [m] und
+  Winkel [°] (gegen die Gebäudeachse, gegen den Uhrzeigersinn; leer: in Richtung des Mauszeigers), beim Rechteck
+  Breite × Tiefe [m] entlang der Gebäudeachse in Richtung des Mauszeigers. Eine Zifferntaste springt in das erste
+  Feld, Tab wechselt das Feld, Enter setzt den Punkt bzw. das Rechteck, Enter im leeren Feld schließt das Polygon.
+  Beim Zeichnen stehen Segmentlänge (bzw. Breite × Tiefe) und Fläche am Mauszeiger und in der Leiste.
+- **Kantenfang:** Außer auf Ecken fängt der Cursor auf die Kantenmitte (Dreieck), das Lot vom letzten Punkt auf
+  eine Kante (⊥) und jeden Punkt einer Kante (×) – z. B. eine Terrasse ohne Spalt an der Hauswand.
+- **Kantenlängen** einer gewählten Fläche lassen sich unter „Kantenlängen“ eintragen: Der Endpunkt wandert entlang
+  der Kante; bei einem Rechteck wandert die Nachbarecke mit, es bleibt ein Rechteck.
 - **Hilfslinienfang:** Beim Zeichnen und Punkteziehen fängt der Cursor auf den Verlängerungen der Nachbarkanten,
   den Achsen des (genordet schräg stehenden) Gebäudes und den Fluchten vorhandener Eckpunkte. Shift hält die
   Linie auf der Gebäudeachse, Rechtecke richten sich an ihr aus. Alt schaltet den Fang aus.
@@ -149,6 +165,15 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
   als „–“ und „Grundstücksfläche fehlt“ statt einer Ampel.
 - **Hinweise** sind getrennt in sachliche (für die Bauaufsicht, kommen in Druck und Excel) und Bedienhinweise
   (nur in der App, grau; z. B. „Geländeoberfläche unbekannt“). Arbeitsanweisungen stehen nur in der App.
+- **Rechenweg:** „Rechenweg“ unter den Kacheln zeigt die Formeln (z. B. „GRZ I = GR I / FGst = 135,00 m² /
+  612,50 m² = 0,220“, GR II = GR I + Anlagen nach § 19 Abs. 4, GF als Summe der Geschosse). Jede Fläche (Hauptanlage
+  und eigene Lageplan-Flächen, jeweils der eindeutige Anteil) wird in Rechtecke (Länge × Breite) bzw. Dreiecke
+  (Grundseite × Höhe / 2) zerlegt; die Summe der Teilflächen ist exakt die Fläche aus den Koordinaten. Rechtwinklige
+  Flächen – auch schräg zur Planachse und mit Löchern, etwa ein Garten um das Haus – werden in Streifen entlang
+  ihrer Achse zerlegt, andere ohne Löcher in Dreiecke; mehr als acht Teile oder keine saubere Zerlegung ergeben
+  „Fläche aus Koordinaten“. Im Druck (Schalter „Rechenweg“, standardmäßig an) stehen Formeln und Teilflächen als
+  Tabelle, im Lageplan die Teilflächen gestrichelt mit Nummer und Maßen; im Excel-Standardlayout Formeln und
+  Teilflächen als Zeilen mit der Formel Länge × Breite × Faktor.
 - **Zwischenstand:** Die App sichert den Stand laufend im Browser bzw. App-Speicher. Wird nach einem Neustart ein
   Stand wiederhergestellt, der von der Datei abweicht, gilt er als ungespeichert (Titel „•“); eine Leiste
   „Ungespeicherter Stand vom … wiederhergestellt – Speichern / Verwerfen“ bietet an, ihn zu speichern oder auf den

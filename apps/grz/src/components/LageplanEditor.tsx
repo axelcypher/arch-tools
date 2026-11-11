@@ -1,13 +1,15 @@
 import { zeichenKuerzelErlaubt } from '@core/platform/eingabe';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Hilfslinie } from '@core/fang';
-import { achsBeschraenkt, achsRechteck, eckpunktHilfslinien, gebaeudeAchse, hilfslinienFang, zeichenHilfslinien } from '@core/fang';
+import { achsBeschraenkt, achsRechteck, achsRichtungen, eckpunktHilfslinien, gebaeudeAchse, hilfslinienFang, zeichenHilfslinien } from '@core/fang';
+import type { KantenFang } from '@core/kantenFang';
+import { kantenFang, polarPunkt } from '@core/kantenFang';
+import { fmt2, parseNum } from '@core/format';
 import type { Point } from '@core/geometry';
 import { bounds, pointInPolygon, polygonArea } from '@core/geometry';
-import { nutzungLabel, versiegelungInfo } from '@core/lageplan';
-import { createLageplanFlaeche } from '@core/model';
+import { LAGEPLAN_NUTZUNGEN, nutzungLabel, versiegelungInfo } from '@core/lageplan';
 import type { Nachweis } from '../massNutzung';
-import { addFlaeche, auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapFlaeche, removeFlaeche, useGrz } from '../store';
+import { addFlaeche, auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapFlaeche, neueFlaeche, NUTZUNG_NAME, removeFlaeche, useGrz } from '../store';
 import type { Werkzeug } from '../store';
 
 export interface Ausschnitt {
@@ -52,12 +54,18 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const selected = useGrz((s) => s.selected);
   const selectedIds = useGrz((s) => s.selectedIds);
   const werkzeug = useGrz((s) => s.werkzeug);
+  const nutzungVorlage = useGrz((s) => s.nutzungVorlage);
   const st = useGrz.getState();
   const flaechen = project.lageplan?.flaechen ?? [];
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<Point[]>([]);
   const [cursor, setCursor] = useState<Point | null>(null);
   const [linien, setLinien] = useState<Hilfslinie[]>([]);
+  // Kantenfang (Mitte, Lot, Kante) für das Fangsymbol
+  const [kfang, setKfang] = useState<KantenFang | null>(null);
+  // genaue Eingabe beim Zeichnen: Länge/Winkel bzw. Breite/Tiefe in m
+  const [eingabe, setEingabe] = useState<{ a: string; b: string }>({ a: '', b: '' });
+  const eingabeA = useRef<HTMLInputElement>(null);
   const [rahmen, setRahmen] = useState<[Point, Point] | null>(null);
   const ziehen = useRef<Ziehen | null>(null);
   // Vorschau beim Ziehen (Punkte der gezogenen Flächen)
@@ -76,7 +84,10 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const [vb, setVb] = useState<Ausschnitt>(passend);
   useEffect(() => setVb(passend), [passend]);
 
-  useEffect(() => setDraft([]), [werkzeug]);
+  useEffect(() => {
+    setDraft([]);
+    setEingabe({ a: '', b: '' });
+  }, [werkzeug]);
 
   // Mausrad zoomt nur den Plan – die Seite darf dabei nicht scrollen (React-Handler sind passiv)
   useEffect(() => {
@@ -114,8 +125,9 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
    * Fang: nächster Punkt von Gebäude, Flächen und Entwurf im Fangradius, sonst Hilfslinien (Kantenverlängerung,
    * Gebäudeachsen); `ohne` wird übergangen (der gezogene Punkt). Alt schaltet den Fang aus.
    */
-  const fang = (p: Point, o: { ohne?: Point; hilfslinien?: Hilfslinie[]; alt?: boolean } = {}): Point => {
+  const fang = (p: Point, o: { ohne?: Point; ohneId?: string; von?: Point; hilfslinien?: Hilfslinie[]; alt?: boolean } = {}): Point => {
     setLinien([]);
+    setKfang(null);
     if (o.alt) return p;
     let best: Point | null = null;
     let d = FANG_PX * skala();
@@ -128,6 +140,13 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       }
     }
     if (best) return { ...best };
+    // Kanten von Gebäude und Flächen: Mitte, Lot vom letzten Punkt, beliebiger Punkt der Kante
+    const kanten = [...n.hauptanlagePolygone, ...flaechen.filter((f) => f.id !== o.ohneId).map((f) => f.points)];
+    const kf = kantenFang(p, kanten, FANG_PX * skala(), o.von);
+    if (kf) {
+      setKfang(kf);
+      return kf.p;
+    }
     const h = o.hilfslinien?.length ? hilfslinienFang(p, o.hilfslinien, FANG_PX * skala()) : null;
     if (h) {
       setLinien(h.linien);
@@ -138,10 +157,46 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
 
   const fertig = (pts: Point[]) => {
     setDraft([]);
+    setEingabe({ a: '', b: '' });
     if (pts.length < 3 || polygonArea(pts) < 0.05) return;
-    const f = createLageplanFlaeche(pts, `Fläche ${flaechen.length + 1}`);
+    const f = neueFlaeche(useGrz.getState().project, pts, useGrz.getState().nutzungVorlage);
     st.update((p) => addFlaeche(p, f));
     st.select(f.id);
+  };
+
+  /**
+   * Genaue Eingabe übernehmen. Polygon: Länge (und Winkel gegen die Gebäudeachse; ohne Winkel in Richtung des
+   * Mauszeigers) ab dem letzten Punkt. Rechteck: Breite × Tiefe entlang der Gebäudeachse ab der ersten Ecke, in
+   * Richtung des Mauszeigers.
+   */
+  const eingabeUebernehmen = () => {
+    const a = parseNum(eingabe.a);
+    const b = parseNum(eingabe.b);
+    const letzter = draft[draft.length - 1];
+    if (!letzter) return;
+    const [ax, ay] = achsRichtungen(theta);
+    if (werkzeug === 'rechteck') {
+      if (a === null || b === null || a <= 0 || b <= 0) return;
+      const v = cursor ? { x: cursor.x - letzter.x, y: cursor.y - letzter.y } : { x: 1, y: 1 };
+      const su = v.x * ax.x + v.y * ax.y < 0 ? -1 : 1;
+      const sw = v.x * ay.x + v.y * ay.y < 0 ? -1 : 1;
+      const gegen = { x: letzter.x + ax.x * a * su + ay.x * b * sw, y: letzter.y + ax.y * a * su + ay.y * b * sw };
+      fertig(achsRechteck(letzter, gegen, theta));
+      return;
+    }
+    if (a === null || a <= 0) {
+      if (eingabe.a.trim() === '' && draft.length >= 3) fertig(draft);
+      return;
+    }
+    let p: Point;
+    if (b !== null) p = polarPunkt(letzter, a, b, ax);
+    else {
+      const v = cursor ? { x: cursor.x - letzter.x, y: cursor.y - letzter.y } : ax;
+      const l = Math.hypot(v.x, v.y) || 1;
+      p = { x: letzter.x + (v.x / l) * a, y: letzter.y + (v.y / l) * a };
+    }
+    setDraft([...draft, p]);
+    setEingabe({ a: '', b: '' });
   };
 
   const setzePunkte = (id: string, pts: Point[]) => st.update((p) => mapFlaeche(p, id, (f) => ({ ...f, points: pts })));
@@ -229,7 +284,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         const roh = toWorld(e);
         const p = e.shiftKey
           ? achsBeschraenkt(z.orig[(z.index - 1 + n0) % n0], roh, theta)
-          : fang(roh, { ohne: z.orig[z.index], hilfslinien: eckpunktHilfslinien(z.orig, z.index, theta), alt: e.altKey });
+          : fang(roh, { ohne: z.orig[z.index], ohneId: z.id, von: z.orig[(z.index - 1 + n0) % n0], hilfslinien: eckpunktHilfslinien(z.orig, z.index, theta), alt: e.altKey });
         setVorschau(new Map([[z.id, z.orig.map((q, i) => (i === z.index ? p : q))]]));
       } else {
         const roh = toWorld(e);
@@ -243,7 +298,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     if (werkzeug !== 'auswahl') {
       const roh = toWorld(e);
       const letzter = draft[draft.length - 1];
-      setCursor(e.shiftKey && letzter ? achsBeschraenkt(letzter, roh, theta) : fang(roh, { hilfslinien: zeichenHilfslinien(draft, theta), alt: e.altKey }));
+      setCursor(e.shiftKey && letzter ? achsBeschraenkt(letzter, roh, theta) : fang(roh, { von: letzter, hilfslinien: zeichenHilfslinien(draft, theta), alt: e.altKey }));
     }
   };
 
@@ -253,6 +308,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     const v = vorschau;
     setVorschau(null);
     setLinien([]);
+    setKfang(null);
     if (z?.art === 'rahmen') {
       const x0 = Math.min(z.start.x, z.cur.x);
       const x1 = Math.max(z.start.x, z.cur.x);
@@ -281,7 +337,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     if (e.button !== 0 || leertaste || werkzeug === 'auswahl') return;
     const roh = toWorld(e);
     const letzter = draft[draft.length - 1];
-    const p = e.shiftKey && letzter ? achsBeschraenkt(letzter, roh, theta) : fang(roh, { hilfslinien: zeichenHilfslinien(draft, theta), alt: e.altKey });
+    const p = e.shiftKey && letzter ? achsBeschraenkt(letzter, roh, theta) : fang(roh, { von: letzter, hilfslinien: zeichenHilfslinien(draft, theta), alt: e.altKey });
     if (werkzeug === 'rechteck') {
       if (!draft.length) setDraft([p]);
       else fertig(achsRechteck(draft[0], p, theta));
@@ -317,6 +373,13 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const sel = useGrz.getState().selectedIds;
+      // Zahl beim Zeichnen: in die genaue Eingabe (Länge bzw. Breite) springen
+      if (werkzeug !== 'auswahl' && draft.length && /^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        setEingabe({ a: e.key, b: '' });
+        eingabeA.current?.focus();
+        return;
+      }
       // Tab / Umschalt+Tab: nächste bzw. vorige Fläche (nur, wenn der Lageplan den Fokus hat)
       if (e.key === 'Tab' && werkzeug === 'auswahl' && !draft.length && flaechen.length && document.activeElement === svgRef.current) {
         const i = flaechen.findIndex((f) => f.id === useGrz.getState().selected);
@@ -385,6 +448,18 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const sel = werkzeug === 'auswahl' && selectedIds.length <= 1 ? flaechen.find((f) => f.id === selected) : undefined;
   const selPts = sel ? punkteVon(sel.id, sel.points) : [];
   const cursorStil = ziehen.current?.art === 'pan' || leertaste ? 'grabbing' : werkzeug === 'auswahl' ? 'default' : 'crosshair';
+  // laufende Anzeige beim Zeichnen: Länge des aktuellen Segments bzw. Breite × Tiefe und Gesamtfläche
+  const masstext = (() => {
+    if (!draft.length || !cursor) return '';
+    if (werkzeug === 'rechteck') {
+      const r = achsRechteck(draft[0], cursor, theta);
+      const b = Math.hypot(r[1].x - r[0].x, r[1].y - r[0].y);
+      const t = Math.hypot(r[3].x - r[0].x, r[3].y - r[0].y);
+      return `${fmt2(b)} × ${fmt2(t)} m · Fläche ${fmt2(b * t)} m²`;
+    }
+    const l = draft[draft.length - 1];
+    return `Segment ${fmt2(Math.hypot(cursor.x - l.x, cursor.y - l.y))} m${entwurf.length >= 3 ? ` · Fläche ${fmt2(polygonArea(entwurf))} m²` : ''}`;
+  })();
 
   return (
     <div className="lp-editor">
@@ -401,6 +476,64 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           {WERKZEUGE.find((w) => w.id === werkzeug)!.hint} · Mausrad: zoomen · mittlere Maustaste oder Leertaste + Ziehen: verschieben
         </span>
       </div>
+      <div className="lp-tools lp-nutzungen" role="group" aria-label="Nutzung neuer Flächen">
+        <span className="muted small-text">Neue Fläche:</span>
+        {LAGEPLAN_NUTZUNGEN.map((x) => (
+          <button
+            key={x.id}
+            className={nutzungVorlage === x.id ? 'small active' : 'small'}
+            title={`Neue Flächen als „${x.label}“ zeichnen (Versiegelung passend vorbelegt)`}
+            onClick={() => {
+              st.setNutzungVorlage(x.id);
+              if (werkzeug === 'auswahl') st.setWerkzeug('rechteck');
+            }}
+          >
+            {x.id === 'sonstige' ? 'sonstige' : NUTZUNG_NAME[x.id]}
+          </button>
+        ))}
+      </div>
+      {werkzeug !== 'auswahl' && draft.length > 0 && (
+        <div className="lp-tools lp-eingabe">
+          <label className="small-text">
+            {werkzeug === 'rechteck' ? 'Breite [m]' : 'Länge [m]'}{' '}
+            <input
+              ref={eingabeA}
+              className="lp-eingabe-feld"
+              inputMode="decimal"
+              value={eingabe.a}
+              onChange={(e) => setEingabe({ ...eingabe, a: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  eingabeUebernehmen();
+                } else if (e.key === 'Escape') {
+                  e.stopPropagation();
+                  setEingabe({ a: '', b: '' });
+                  svgRef.current?.focus();
+                }
+              }}
+            />
+          </label>
+          <label className="small-text">
+            {werkzeug === 'rechteck' ? 'Tiefe [m]' : 'Winkel [°]'}{' '}
+            <input
+              className="lp-eingabe-feld"
+              inputMode="decimal"
+              value={eingabe.b}
+              placeholder={werkzeug === 'rechteck' ? '' : 'Maus'}
+              title={werkzeug === 'rechteck' ? undefined : 'gegen die Gebäudeachse, gegen den Uhrzeigersinn; leer: in Richtung des Mauszeigers'}
+              onChange={(e) => setEingabe({ ...eingabe, b: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  eingabeUebernehmen();
+                }
+              }}
+            />
+          </label>
+          <span className="small-text lp-mass">{masstext}</span>
+        </div>
+      )}
       <svg
         ref={svgRef}
         className={`grz-skizze lp-${werkzeug}`}
@@ -483,6 +616,12 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           </g>
         )}
         {cursor && werkzeug !== 'auswahl' && <circle cx={cursor.x} cy={cursor.y} r={k * 3} fill="var(--sel)" pointerEvents="none" />}
+        {kfang && <FangSymbol f={kfang} k={k} />}
+        {cursor && werkzeug !== 'auswahl' && masstext && (
+          <text x={cursor.x + k * 10} y={cursor.y - k * 10} fontSize={k * 11} className="lp-masstext" pointerEvents="none">
+            {masstext}
+          </text>
+        )}
         {linien.map((l, i) => {
           const L = Math.max(vb.w, vb.h) * 2;
           const o = l.p;
@@ -512,6 +651,21 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         )}
       </svg>
     </div>
+  );
+}
+
+/** Symbol des Kantenfangs: Dreieck = Kantenmitte, ⊥ = Lot, × = Punkt auf der Kante */
+function FangSymbol({ f, k }: { f: KantenFang; k: number }) {
+  const { p } = f;
+  const r = k * 6;
+  const titel = f.art === 'mitte' ? 'Kantenmitte' : f.art === 'lot' ? 'Lot' : 'auf der Kante';
+  return (
+    <g className={`fang-symbol fang-${f.art}`} pointerEvents="none" stroke="var(--sel)" strokeWidth={k * 1.5} fill="none">
+      <title>{titel}</title>
+      {f.art === 'mitte' && <path d={`M${p.x} ${p.y - r}L${p.x + r} ${p.y + r * 0.7}L${p.x - r} ${p.y + r * 0.7}Z`} />}
+      {f.art === 'lot' && <path d={`M${p.x - r} ${p.y + r}L${p.x + r} ${p.y + r}M${p.x} ${p.y + r}L${p.x} ${p.y - r}`} />}
+      {f.art === 'kante' && <path d={`M${p.x - r} ${p.y - r}L${p.x + r} ${p.y + r}M${p.x - r} ${p.y + r}L${p.x + r} ${p.y - r}`} />}
+    </g>
   );
 }
 

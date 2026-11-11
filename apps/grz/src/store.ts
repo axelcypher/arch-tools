@@ -1,7 +1,7 @@
 import { standNachSpeichern } from '@core/platform/projektDatei';
 import { create } from 'zustand';
-import type { LageplanFlaeche, MassNutzung, Project } from '@core/model';
-import { createProject, leereMeta, newId } from '@core/model';
+import type { LageplanFlaeche, LageplanNutzung, MassNutzung, Project, Versiegelung } from '@core/model';
+import { createLageplanFlaeche, createProject, leereMeta, newId } from '@core/model';
 import { gleich } from '@core/zusammenfuehren';
 import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
@@ -33,6 +33,8 @@ interface GrzState {
   /** alle gewählten Lageplan-Flächen (Mehrfachauswahl mit Umschalt) – enthält selected */
   selectedIds: string[];
   werkzeug: Werkzeug;
+  /** Nutzung, mit der neue Flächen gezeichnet werden (Vorlage in der Plan-Leiste) */
+  nutzungVorlage: LageplanNutzung;
   /** Zeitpunkt des ungespeicherten Zwischenstands, der beim Start wiederhergestellt wurde (Leiste „Speichern / Verwerfen“) */
   wiederhergestellt: number | null;
 
@@ -57,6 +59,7 @@ interface GrzState {
   toggleSelect: (id: string) => void;
   selectMany: (ids: string[]) => void;
   setWerkzeug: (w: Werkzeug) => void;
+  setNutzungVorlage: (n: LageplanNutzung) => void;
 }
 
 let letzteAenderung: { schluessel?: string; zeit: number; ergebnis?: Project } = { zeit: 0 };
@@ -73,6 +76,7 @@ export const useGrz = create<GrzState>()((set, get) => ({
   selectedIds: [],
   werkzeug: 'auswahl',
   wiederhergestellt: null,
+  nutzungVorlage: 'zufahrt',
 
   load: (p, datei = null, basis = null) => {
     log.info(`Projekt geladen: ${p.name}`, { geschosse: p.storeys.length, lageplan: p.lageplan?.flaechen.length ?? 0 });
@@ -132,7 +136,42 @@ export const useGrz = create<GrzState>()((set, get) => ({
   },
   selectMany: (ids) => set({ selectedIds: ids, selected: ids.length ? ids[ids.length - 1] : null }),
   setWerkzeug: (w) => set({ werkzeug: w }),
+  setNutzungVorlage: (n) => set({ nutzungVorlage: n }),
 }));
+
+/** passende Versiegelung je Nutzung (Vorgabe beim Zeichnen, änderbar) */
+export const VERSIEGELUNG_VORGABE: Record<LageplanNutzung, Versiegelung> = {
+  zufahrt: 'voll',
+  stellplatz: 'voll',
+  garage: 'voll',
+  terrasse: 'voll',
+  weg: 'voll',
+  nebenanlage: 'voll',
+  unterirdisch: 'voll',
+  garten: 'gruen',
+  sonstige: 'voll',
+};
+
+/** kurzer Name je Nutzung für neue Flächen („Zufahrt 1“, „Terrasse 2“) */
+export const NUTZUNG_NAME: Record<LageplanNutzung, string> = {
+  zufahrt: 'Zufahrt',
+  stellplatz: 'Stellplatz',
+  garage: 'Garage',
+  terrasse: 'Terrasse',
+  weg: 'Weg',
+  nebenanlage: 'Nebenanlage',
+  unterirdisch: 'Unterirdische Anlage',
+  garten: 'Garten',
+  sonstige: 'Fläche',
+};
+
+/** neue Lageplan-Fläche mit Nutzung, passender Versiegelung und laufender Nummer je Nutzung */
+export function neueFlaeche(p: Project, points: LageplanFlaeche['points'], nutzung: LageplanNutzung): LageplanFlaeche {
+  const name = NUTZUNG_NAME[nutzung];
+  const re = new RegExp(`^${name} (\\d+)$`);
+  const nr = Math.max(0, ...(p.lageplan?.flaechen ?? []).map((f) => Number(re.exec(f.name)?.[1] ?? 0))) + 1;
+  return { ...createLageplanFlaeche(points, `${name} ${nr}`), nutzung, versiegelung: VERSIEGELUNG_VORGABE[nutzung] };
+}
 
 /** gewählte Flächen, die es nicht mehr gibt (gelöscht, Rückgängig), aus der Auswahl nehmen */
 function auswahlBereinigen(set: (s: Partial<GrzState>) => void, get: () => GrzState) {

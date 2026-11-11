@@ -298,6 +298,8 @@ Schlüssel); ein Projekt kann also beide Vorlagen enthalten. Das Standardlayout 
 | `{{raum[gf].name}}` | Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume vor 1990 zur Geschossfläche zählen |
 | `{{raum.begruendung}}`, `{{raum.hoehenlage}}` | Ergebnis der Raumprüfung nach Nutzung und lichter Höhe; Höhenversatz des Fußbodens (Split-Level) |
 | `{{hinweis.text}}` | Zeile je Hinweis für die Bauaufsicht (ohne Bedienhinweise der App) |
+| `{{formel.text}}` | Zeile je Formel des Rechenwegs („GRZ I = GR I / FGst = 135,00 m² / 612,50 m² = 0,220“) |
+| `{{teil.name}}`, `{{teil.laenge}}`, `{{teil.breite}}`, `{{teil.faktor}}`, `{{teil.flaeche}}` | Zeile je Teilfläche (Rechteck/Dreieck) des Rechenwegs; `teil.flaeche_nr`, `teil.flaeche_name` nennen die Fläche |
 
 Im Standardlayout sind GRZ und GFZ Formeln aus den Zellen (Fläche / Grundstücksfläche), ebenso zulässige
 Fläche und Ergebnis; der Haftungssatz steht dort nicht mehr (Platzhalter `{{haftung}}` bleibt für eigene Vorlagen).
@@ -324,6 +326,8 @@ und auf ganze Euro gerundet.
 | `{{menge.kurz}}`, `{{menge.wert}}`, `{{menge.ermittlung}}` | Zeile je Menge; Filter `[festgelegt]` |
 | `{{stand.datum}}`, `{{stand.stufe}}`, `{{stand.brutto}}` | Zeile je festgehaltenem Kostenstand |
 | `{{hinweis.text}}` | Zeile je Hinweis für die Bauaufsicht (ohne Bedienhinweise der App) |
+| `{{formel.text}}` | Zeile je Formel des Rechenwegs („GRZ I = GR I / FGst = 135,00 m² / 612,50 m² = 0,220“) |
+| `{{teil.name}}`, `{{teil.laenge}}`, `{{teil.breite}}`, `{{teil.faktor}}`, `{{teil.flaeche}}` | Zeile je Teilfläche (Rechteck/Dreieck) des Rechenwegs; `teil.flaeche_nr`, `teil.flaeche_name` nennen die Fläche |
 
 ## Einschränkungen
 

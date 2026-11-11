@@ -8,7 +8,7 @@ import { pointInPolygon, rectPoints } from '@core/geometry';
 import { App } from './App';
 import { innenflaeche, weltpunkt } from './components/LageplanEditor';
 import { massNachweis } from './massNutzung';
-import { GrzGfzView } from './components/GrzGfzView';
+import { GrzGfzView, kanteSetzen } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
 import { useGrz } from './store';
 import { projekt } from './testdaten';
@@ -274,5 +274,106 @@ describe('Fehlerkorrekturen (Phase 1)', () => {
     document.body.appendChild(el);
     el.getBoundingClientRect = () => ({ left: 100, top: 50, width: 602, height: 402, right: 702, bottom: 452, x: 100, y: 50, toJSON: () => '' });
     expect(innenflaeche(el)).toEqual(innen);
+  });
+});
+
+/** Bildschirmpunkt eines Planpunkts (wie weltpunkt, Innenfläche ohne Layout: 600 × 400 px ab 0|0) */
+function bildpunkt(svg: Element, q: { x: number; y: number }) {
+  const [x, y, w, h] = svg.getAttribute('viewBox')!.split(' ').map(Number);
+  const s = Math.max(w / 600, h / 400);
+  return { clientX: (q.x - (x - (600 * s - w) / 2)) / s, clientY: (q.y - (y - (400 * s - h) / 2)) / s };
+}
+
+describe('Zeichnen (G-21, G-23)', () => {
+  const knopf = (host: HTMLElement, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent === t) as HTMLButtonElement;
+  const klick = (svg: Element, q: { x: number; y: number }) => act(() => svg.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, ...bildpunkt(svg, q) })));
+  const bewege = (svg: Element, q: { x: number; y: number }) => act(() => svg.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, ...bildpunkt(svg, q) })));
+
+  it('Vorlage „Zufahrt“: Nutzung, passende Versiegelung, Name „Zufahrt 1“; keine offene Spanne', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, planDatum: '2020-05-01' };
+    p.lageplan!.flaechen = p.lageplan!.flaechen.filter((f) => f.nutzung !== 'terrasse');
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    act(() => knopf(host, 'Zufahrt').click());
+    expect(useGrz.getState().werkzeug).toBe('rechteck');
+    const svg = host.querySelector('svg.grz-skizze')!;
+    klick(svg, { x: 16, y: 2 });
+    klick(svg, { x: 19, y: 6 });
+    const f = useGrz.getState().project.lageplan!.flaechen.at(-1)!;
+    expect(f).toMatchObject({ name: 'Zufahrt 1', nutzung: 'zufahrt', versiegelung: 'voll' });
+    const n = massNachweis(useGrz.getState().project);
+    expect(n.grz2!.mitOffenen).toBeUndefined();
+    // Auswahlbereich unter dem Plan: Nutzung, Versiegelung, Nachbar
+    const auswahl = host.querySelector('.lp-auswahl')!;
+    expect(auswahl.textContent).toContain('Nutzung');
+    expect(auswahl.textContent).toContain('Versiegelung');
+    expect(auswahl.textContent).toContain('Nachbargrundstück');
+    // Garten: unversiegelt
+    act(() => knopf(host, 'Garten').click());
+    klick(svg, { x: 16, y: 8 });
+    klick(svg, { x: 19, y: 9 });
+    expect(useGrz.getState().project.lageplan!.flaechen.at(-1)).toMatchObject({ name: 'Garten 1', nutzung: 'garten', versiegelung: 'gruen' });
+  });
+
+  it('Rechteck per Eingabe 3,00 × 5,00 an der Hauswand: exakt diese Maße, ohne Spalt', () => {
+    const p = projekt();
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    act(() => knopf(host, 'Terrasse').click());
+    const svg = host.querySelector('svg.grz-skizze')!;
+    // erste Ecke an der Hausecke (wird gefangen), Richtung mit der Maus
+    klick(svg, { x: 12.05, y: 11.3 });
+    bewege(svg, { x: 14, y: 14 });
+    expect(host.querySelector('.lp-mass')!.textContent).toMatch(/× .* m · Fläche/);
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '3', bubbles: true })));
+    const [breite, tiefe] = [...host.querySelectorAll('.lp-eingabe-feld')] as HTMLInputElement[];
+    expect(breite.value).toBe('3');
+    change(tiefe, '5');
+    act(() => tiefe.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    const f = useGrz.getState().project.lageplan!.flaechen.at(-1)!;
+    expect(f.name).toBe('Terrasse 1');
+    expect(f.points).toEqual([
+      { x: 12, y: 11.25 },
+      { x: 15, y: 11.25 },
+      { x: 15, y: 16.25 },
+      { x: 12, y: 16.25 },
+    ]);
+  });
+
+  it('Polygon per Länge und Winkel; Kantenlänge in der Auswahl bearbeiten', () => {
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    act(() => knopf(host, 'Weg').click());
+    act(() => knopf(host, 'Polygon').click());
+    const svg = host.querySelector('svg.grz-skizze')!;
+    klick(svg, { x: 0, y: 11.25 }); // Hausecke
+    const setze = (l: string, w: string) => {
+      act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: l[0], bubbles: true })));
+      const [a, b] = [...host.querySelectorAll('.lp-eingabe-feld')] as HTMLInputElement[];
+      change(a, l);
+      change(b, w);
+      act(() => b.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    };
+    setze('2', '-90'); // 2 m nach unten (Bildschirm)
+    setze('4', '0'); // 4 m entlang der Achse
+    setze('2', '90');
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    const f = useGrz.getState().project.lageplan!.flaechen.at(-1)!;
+    expect(f.nutzung).toBe('weg');
+    expect(f.points.map((q) => [Math.round(q.x * 1e6) / 1e6, Math.round(q.y * 1e6) / 1e6])).toEqual([
+      [0, 11.25],
+      [0, 13.25],
+      [4, 13.25],
+      [4, 11.25],
+    ]);
+    // Rechteck bleibt beim Ändern einer Kantenlänge ein Rechteck
+    const r = kanteSetzen(rectPoints({ x: 0, y: 0 }, { x: 3, y: 5 }), 0, 3.5);
+    expect(r).toEqual([
+      { x: 0, y: 0 },
+      { x: 3.5, y: 0 },
+      { x: 3.5, y: 5 },
+      { x: 0, y: 5 },
+    ]);
   });
 });

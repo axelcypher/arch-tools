@@ -107,6 +107,22 @@ describe('GRZ-Excel', () => {
     expect((ws.getCell(offen, 4).value as { result: number }).result).toBeCloseTo(n.grz2!.mitOffenen!, 6);
   });
 
+  it('Rechenweg (G-20): Formelzeile „135,00 m² / 612,50 m²“ und Teilflächen mit Formel Länge × Breite', async () => {
+    const p = projekt();
+    const wb = await lesen(await exportDefault(p, new Date(2026, 8, 30)));
+    const ws = wb.getWorksheet('GRZ GFZ')!;
+    const t = texte(ws);
+    expect(t).toContain('GRZ = GR / FGst = 135,00 m² / 612,50 m² = 0,220');
+    expect(t.some((x) => x.startsWith('GF = EG 135,00 m² + OG 135,00 m² + DG'))).toBe(true);
+    const h = zeileMit(ws, 'H.1 Rechteck');
+    expect(h).toBeGreaterThan(0);
+    const f = ws.getCell(h, 6).value as { formula: string; result: number };
+    expect(f.formula).toBe(`C${h}*D${h}*E${h}`);
+    expect(f.result).toBeCloseTo(135, 6);
+    expect(ws.getCell(h + 1, 2).value).toBe('1.1 Rechteck');
+    expect((ws.getCell(h + 1, 6).value as { result: number }).result).toBeCloseTo(30, 6);
+  });
+
   it('Muster-Vorlage mit Hilfeblatt; eigene Vorlage mit Block, Filter und Nachschlagen per Name', async () => {
     const muster = await lesen(await buildSampleTemplate());
     expect(muster.worksheets.map((w) => w.name)).toEqual(['GRZ GFZ', 'Platzhalter']);
