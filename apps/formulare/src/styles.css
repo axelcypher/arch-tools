@@ -4169,3 +4169,105 @@ tr[data-ziehen='danach'] > td {
 .fo-feld.entfaellt.fo-kreuz > span {
   color: var(--muted);
 }
+
+/* ---------- Projektordner, Ansicht „Antrag“: Dokumente im Antragsordner, „bereit“ von Hand ---------- */
+.fo-ablage-umschalter {
+  display: inline-flex;
+  margin-right: 4px;
+}
+.fo-ablage-umschalter button {
+  padding: 1px 7px;
+  font-size: 11px;
+  border-radius: 0;
+}
+.fo-ablage-umschalter button:first-child {
+  border-radius: 4px 0 0 4px;
+}
+.fo-ablage-umschalter button:last-child {
+  border-radius: 0 4px 4px 0;
+  margin-left: -1px;
+}
+.fo-bereit-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 12px;
+  margin: 2px 0 6px;
+}
+.fo-bereit-balken {
+  flex: 1;
+  min-width: 60px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--chip-bg);
+  overflow: hidden;
+}
+.fo-bereit-balken > span {
+  display: block;
+  height: 100%;
+  background: var(--ok-text);
+}
+.fo-bereit-fertig {
+  color: var(--ok-text);
+  font-weight: 600;
+}
+.fo-bereit-zeile {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.fo-bereit-knopf {
+  flex: 0 0 22px;
+  height: 20px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 50%;
+  color: var(--muted);
+  background: var(--input-bg);
+}
+.fo-bereit-zeile.bereit .fo-bereit-knopf {
+  color: var(--ok-text);
+  background: var(--ok-bg);
+  border-color: var(--ok-border);
+  font-weight: 700;
+}
+.fo-bereit-zeile.name .fo-bereit-knopf {
+  color: var(--fehler-text);
+  background: var(--fehler-bg);
+  border-color: var(--fehler-border);
+  opacity: 1;
+}
+.fo-bereit-zeile.geaendert .fo-bereit-knopf {
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+}
+.fo-bereit-unter {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+.fo-bereit-zeile.name .fo-bereit-unter {
+  color: var(--fehler-text);
+}
+.fo-bereit-zeile .fo-baum-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.fo-bereit-titel {
+  margin: 8px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.fo-bereit-fehlt .fo-baum-zeile {
+  color: var(--muted);
+  cursor: default;
+}
+@media print {
+  .fo-bereit-knopf {
+    display: none;
+  }
+}

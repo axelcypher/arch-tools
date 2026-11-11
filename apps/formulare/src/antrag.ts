@@ -5,7 +5,8 @@
  *
  * Ablage im echten Projektordner (einstellbar): `<Projekt>/TÖB/BAUA` – bei mehreren Fassungen `BAUA 2`, `BAUA3` …,
  * daneben andere Antragsarten wie `BAUVA` (Voranfrage) oder `DENK` (Denkmal). Die aktive Fassung ist zugleich das
- * Ziel des Exports. Unsere Dateien heißen `<Kürzel> <Phase> <JJMMTT> [Nr] <Name>`, z. B. „BS9 GP 261110 Bauantrag.pdf“.
+ * Ziel des Exports. Dateien im Antragsordner heißen `<Projektcode> <Antragsart> <JJMMTT> <Name>`, z. B.
+ * „BS9 BAUA 261110 01 Bauantrag.pdf“ – nur so benannte Dateien lassen sich als „bereit“ markieren (von Hand).
  */
 
 import type { Zustaende } from './autofill';
@@ -42,7 +43,7 @@ export interface ExportEinstellungen {
 export const VORGABE_EXPORT: ExportEinstellungen = {
   antragsordner: 'TÖB',
   arten: ['BAUA', 'BAUVA', 'DENK'],
-  namensvorlage: '{Kürzel} {Phase} {Datum} {Nr} {Name}',
+  namensvorlage: '{Kürzel} {Art} {Datum} {Nr} {Name}',
   phase: 'GP',
   ziel: 'aktiv',
   zielpfad: 'TÖB/{Antrag}',
@@ -95,6 +96,8 @@ export interface NamensAngaben {
   formular?: string;
   /** aktive Antragsfassung, z. B. „BAUA 2“ */
   antrag?: string;
+  /** Antragsart der aktiven Fassung, z. B. „BAUA“ */
+  art?: string;
   kennung?: string;
   stand?: string;
 }
@@ -109,6 +112,7 @@ export const PLATZHALTER: { name: string; text: string }[] = [
   { name: '{Datum}', text: 'Datum des Exports als JJMMTT' },
   { name: '{Nr}', text: 'Nummer im Projektumfang (entfällt, wenn leer)' },
   { name: '{Name}', text: 'Titel im Projektumfang, sonst Name des Formulars' },
+  { name: '{Art}', text: 'Antragsart der aktiven Fassung, z. B. BAUA (Pflicht im Antragsordner)' },
   { name: '{Antrag}', text: 'aktive Antragsfassung, z. B. BAUA 2' },
   { name: '{Formular}', text: 'Dateiname des Formulars' },
   { name: '{Kennung}', text: 'Kennung des Formulars, z. B. nw010005' },
@@ -131,6 +135,7 @@ export function dateiname(vorlage: string, a: NamensAngaben): string {
     name: a.name,
     formular: a.formular ?? a.name,
     antrag: a.antrag ?? '',
+    art: a.art ?? (a.antrag ?? '').replace(/[\s_-]*\d+$/, ''),
     kennung: a.kennung ?? '',
     stand: a.stand ?? '',
   };
@@ -213,8 +218,10 @@ export const VORGABE_KATALOG: KatalogEintrag[] = [
   { id: 'betriebsbeschreibung', titel: 'Betriebsbeschreibung', art: 'intern', formular: 'Betriebsbeschreibung', vorgewaehlt: false },
   { id: 'statistik', titel: 'Statistischer Erhebungsbogen', art: 'intern', formular: 'Statisti', vorgewaehlt: true },
   { id: 'standsicherheit', titel: 'Erklärung zum Standsicherheitsnachweis', art: 'intern', formular: 'Standsicherheit', vorgewaehlt: false },
-  { id: 'lageplan', titel: 'Lageplan', art: 'extern', quelle: 'Planung', muster: '*Lageplan*', vorgewaehlt: true },
-  { id: 'zeichnungen', titel: 'Bauzeichnungen', art: 'extern', quelle: 'Planung', muster: '*Grundri*;*Schnitt*;*Ansicht*', vorgewaehlt: true },
+  // Unterlagen vom Vermesser: Fachplanung/G27 … (auch „Fachplaner“)
+  { id: 'lageplan', titel: 'Lageplan', art: 'extern', quelle: 'Fachplanung/G27*', muster: '*Lageplan*', vorgewaehlt: true },
+  // Genehmigungsplanung als PDF: Planung/03 Genehmigungsplanung/pdf, …/Genehmigung/pdf, …/GP/pdf
+  { id: 'zeichnungen', titel: 'Bauzeichnungen', art: 'extern', quelle: 'Planung/Genehmigungsplanung/pdf', muster: '*Grundri*;*Schnitt*;*Ansicht*', vorgewaehlt: true },
   { id: 'grz', titel: 'Berechnung GRZ/GFZ', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*GRZ*;*GFZ*', vorgewaehlt: true },
   { id: 'flaechen', titel: 'Flächenberechnung', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*Fläche*;*Flaeche*;*BRI*;*Wohnfl*', vorgewaehlt: true },
   { id: 'kosten', titel: 'Kostenermittlung', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*Kosten*', vorgewaehlt: true },
@@ -319,6 +326,16 @@ export interface ProjektDatei {
   merkmale?: Record<string, string>;
   /** Autofill: je Formulardatei Auto-Wert und manuelle Überschreibung der Felder (siehe autofill.ts) */
   felder?: Zustaende;
+  /** von Hand als „bereit“ markierte Dateien je Antragsfassung (Ordnername) */
+  bereit?: Record<string, BereitEintrag[]>;
+}
+
+/** Eine als „bereit“ markierte Datei im Ordner einer Antragsfassung */
+export interface BereitEintrag {
+  /** Dateiname im Ordner der Fassung */
+  datei: string;
+  /** Änderungszeit der Datei beim Markieren (ms) – ist sie danach geändert worden, gilt sie nicht mehr als bereit */
+  stand?: number;
 }
 
 export function projektDateiAus(roh: unknown): ProjektDatei {
@@ -343,7 +360,61 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
   }
   const felder = zustaendeAus(o.felder);
   if (Object.keys(felder).length) out.felder = felder;
+  if (o.bereit && typeof o.bereit === 'object') {
+    const b: Record<string, BereitEintrag[]> = {};
+    for (const [fassung, liste] of Object.entries(o.bereit as Record<string, unknown>)) {
+      if (!Array.isArray(liste)) continue;
+      const eintraege = liste
+        .filter((x): x is Record<string, unknown> => !!x && typeof x === 'object' && typeof (x as { datei?: unknown }).datei === 'string')
+        .map((x) => ({ datei: String(x.datei), ...(typeof x.stand === 'number' ? { stand: x.stand } : {}) }));
+      if (eintraege.length) b[fassung] = eintraege;
+    }
+    if (Object.keys(b).length) out.bereit = b;
+  }
   return out;
+}
+
+/* ---------- Dokumente im Antragsordner: Namensformat und „bereit“ ---------- */
+
+/** Antragsart einer Fassung: „BAUA 2“ → „BAUA“ */
+export const artDerFassung = (fassung: string) => fassung.trim().replace(/[\s_-]*\d+$/, '').toUpperCase();
+
+/**
+ * Prüft das Namensformat einer Datei im Antragsordner: `<Projektcode> <Antragsart> <JJMMTT> <Rest>` – z. B.
+ * „BS9 BAUA 261110 Bauantrag.pdf“. Projektcode ist das Projektkürzel (oder der Projektcode der Projektdatei), die
+ * Antragsart die der Fassung (BAUA, BAUVA, DENK …). Liefert null, wenn der Name passt, sonst den Grund.
+ */
+export function antragsNameFehler(name: string, o: { codes: string[]; art: string }): string | null {
+  const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
+  const art = o.art.trim();
+  const erwartet = `erwartet „${codes[0] ?? 'Projektcode'} ${art || 'Antragsart'} JJMMTT …“`;
+  const t = name.trim();
+  const code = codes.find((c) => t.toLowerCase().startsWith(`${c.toLowerCase()} `));
+  if (!code) return `Projektcode fehlt am Anfang – ${erwartet}`;
+  const rest = t.slice(code.length + 1).trimStart();
+  if (!art || !rest.toUpperCase().startsWith(`${art.toUpperCase()} `)) return `Antragsart ${art || '?'} fehlt nach dem Projektcode – ${erwartet}`;
+  const m = /^(\d{2})(\d{2})(\d{2})(\s+\S.*)$/.exec(rest.slice(art.length + 1).trimStart());
+  if (!m) return `Datum JJMMTT und Name fehlen nach der Antragsart – ${erwartet}`;
+  const [monat, tag] = [Number(m[2]), Number(m[3])];
+  if (monat < 1 || monat > 12 || tag < 1 || tag > 31) return `Kein gültiges Datum „${m[1]}${m[2]}${m[3]}“ – ${erwartet}`;
+  return null;
+}
+
+/** bereit: von Hand markiert und seitdem unverändert · offen: noch nicht markiert · name: Namensformat passt nicht · geaendert: nach dem Markieren geändert */
+export type Bereitschaft = 'bereit' | 'offen' | 'name' | 'geaendert';
+
+export const BEREIT_TEXT: Record<Bereitschaft, string> = {
+  bereit: 'bereit (von Hand markiert)',
+  offen: 'noch nicht als bereit markiert',
+  name: 'Namensformat passt nicht – kann nicht bereit sein',
+  geaendert: 'nach dem Markieren geändert – bitte erneut prüfen',
+};
+
+export function bereitschaft(datei: Pick<Eintrag, 'pfad' | 'geaendert'>, markiert: BereitEintrag | undefined, nameFehler: string | null): Bereitschaft {
+  if (nameFehler) return 'name';
+  if (!markiert) return 'offen';
+  if (markiert.stand && datei.geaendert && datei.geaendert > markiert.stand + 2000) return 'geaendert';
+  return 'bereit';
 }
 
 /** Projektumfang aus den vorgewählten Einträgen des Katalogs */
@@ -353,6 +424,31 @@ export const umfangAusKatalog = (katalog: KatalogEintrag[], vorlage?: AntragsVor
 
 /** Katalogeintrag als Dokument des Projektumfangs */
 export const alsUmfang = ({ id, titel, art, formular, quelle, muster, bedingung }: KatalogEintrag): UmfangEintrag => ({ id, titel, art, formular, quelle, muster, ...(hatBedingung(bedingung) ? { bedingung } : {}) });
+
+/* ---------- Ordner im Projektordner: Schreibweisen ---------- */
+
+/** gleichwertige Ordnernamen (nach dem Normalisieren) */
+const ORDNER_GLEICH: string[][] = [
+  ['genehmigungsplanung', 'genehmigung', 'gp'],
+  ['fachplanung', 'fachplaner'],
+  ['berechnungen', 'berechnung'],
+  ['toeb', 'traegeroeffentlicherbelange'],
+];
+
+/** Ordnername zum Vergleichen: Nummern, Unterstriche und Punkte vorn weg („03 Genehmigungsplanung“, „__Berechnungen“) */
+const ordnerKern = (name: string) => normal(name.replace(/^[\s\d._-]+/, '')) || normal(name);
+
+/**
+ * Passt ein Ordner zum Teil eines Quellpfads? Platzhalter * und ? wie bei Dateien; sonst gleich nach dem Normalisieren
+ * oder gleichwertig (Genehmigungsplanung = Genehmigung = GP, Fachplanung = Fachplaner, Berechnungen = Berechnung).
+ */
+export function ordnerPasst(name: string, teil: string): boolean {
+  if (/[*?]/.test(teil)) return glob(teil).test(name.trim());
+  const a = ordnerKern(name);
+  const b = ordnerKern(teil);
+  if (a === b) return true;
+  return ORDNER_GLEICH.some((g) => g.includes(a) && g.includes(b));
+}
 
 /* ---------- Zuordnung von Dateien ---------- */
 

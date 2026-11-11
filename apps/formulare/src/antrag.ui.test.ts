@@ -148,7 +148,7 @@ describe('Antragsfassung und Export', () => {
     await klick(knopf(host, 'PDF'));
     await klick(menuePunkt('Als PDF exportieren'));
     const dialog = host.querySelector('[aria-label="Als PDF exportieren"]')!;
-    const name = `BS9 GP ${jjmmtt(new Date())} Muster.pdf`;
+    const name = `BS9 BAUA ${jjmmtt(new Date())} Muster.pdf`;
     expect(dialog.querySelector<HTMLInputElement>('input[aria-label="Dateiname"]')!.value).toBe(name);
     expect(dialog.textContent).toContain('TÖB/BAUA 2');
     await klick(knopf(dialog, 'Exportieren'));
@@ -175,7 +175,7 @@ describe('Antragsfassung und Export', () => {
     await klick(menuePunkt('Als PDF exportieren'));
     await klick(knopf(host.querySelector('[aria-label="Als PDF exportieren"]')!, 'Exportieren'));
     await warte();
-    expect(baum(`BS9 GP ${jjmmtt(new Date())} Muster.pdf`)).toBeDefined();
+    expect(baum(`BS9 BAUA ${jjmmtt(new Date())} Muster.pdf`)).toBeDefined();
 
     // von außen: ein Dokument im Projektordner und ein neues Formular in FORMA
     await klick(baum('Planung')!);
@@ -199,7 +199,7 @@ describe('Antragsfassung und Export', () => {
     await warte();
     await klick(knopf(dialog, 'Planung'));
     await klick(knopf(dialog, 'Exportieren'));
-    expect([...ds.dateien.keys()].some((k) => k.startsWith(`${PROJEKT}/Planung/BS9 GP`) && k.endsWith('Muster.pdf'))).toBe(true);
+    expect([...ds.dateien.keys()].some((k) => k.startsWith(`${PROJEKT}/Planung/BS9 BAUA`) && k.endsWith('Muster.pdf'))).toBe(true);
   });
 
   it('neue Antragsfassung anlegen: Ordner entsteht, sie wird aktiv und in der Projektdatei vermerkt', async () => {
@@ -285,7 +285,7 @@ describe('Projektumfang und Vollständigkeit', () => {
     await warte();
     const d = useAntrag.getState().dokumente[0];
     expect(d.status).toBe('aktuell');
-    expect(d.datei?.pfad).toMatch(/^BS9 GP \d{6} Musterformular\.pdf$/);
+    expect(d.datei?.pfad).toMatch(/^BS9 BAUA \d{6} Musterformular\.pdf$/);
     expect(host.querySelector('.nav-symbol .st-punkt')!.className).toContain('aktuell');
   });
 });
@@ -785,5 +785,50 @@ describe('Antragsvorlagen und Reihenfolge', () => {
     expect(katalogTitel()).toEqual(['bauantrag', 'muster', 'lageplan']);
     taste(host.querySelector<HTMLElement>('button[aria-label="Vorlage Neue Vorlage verschieben"]')!, 'ArrowUp');
     expect(useAntrag.getState().vorlagen.map((v) => v.name)).toEqual(['Bauantrag', 'Neue Vorlage', 'Bauvoranfrage']);
+  });
+});
+
+describe('Projektordner, Ansicht „Antrag“: Dokumente im Antragsordner mit Vollständigkeit', () => {
+  it('nur der Ordner der aktiven Fassung; „bereit“ von Hand und nur im Namensformat; Umbenennen nach Format', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261110 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/Lageplan vom Vermesser.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await klick(knopf(host, 'Antrag'));
+    expect(localStorage.getItem('formulare:ablage-ansicht')).toBe('antrag');
+    const ansicht = () => host.querySelector('.fo-antrag-ablage')!;
+    const kopf = () => ansicht().querySelector('.fo-bereit-kopf')!.textContent;
+    const zeile = (name: string) => [...ansicht().querySelectorAll('.fo-bereit-zeile')].find((z) => z.textContent?.includes(name))!;
+    expect(ansicht().querySelector('.nav-ablage-name')!.textContent).toBe('TÖB/BAUA 2');
+    // nur die Dokumente des Antragsordners, nicht BAUA oder Planung
+    expect([...ansicht().querySelectorAll('.fo-bereit-zeile .fo-baum-name')].map((n) => n.firstChild!.textContent)).toEqual(['BS9 BAUA 261110 01 Bauantrag.pdf', 'Lageplan vom Vermesser.pdf']);
+    expect(kopf()).toContain('0 von 2 bereit');
+
+    // falscher Name: kann nicht bereit sein
+    const falsch = zeile('Lageplan vom Vermesser.pdf');
+    expect(falsch.classList.contains('name')).toBe(true);
+    expect(falsch.querySelector<HTMLButtonElement>('.fo-bereit-knopf')!.disabled).toBe(true);
+    expect(falsch.textContent).toContain('Namensformat passt nicht');
+
+    // von Hand bereit: steht in der Projektdatei (je Fassung)
+    await klick(zeile('Bauantrag.pdf').querySelector<HTMLButtonElement>('.fo-bereit-knopf')!);
+    expect(kopf()).toContain('1 von 2 bereit');
+    expect(zeile('Bauantrag.pdf').querySelector('.fo-bereit-knopf')!.getAttribute('aria-pressed')).toBe('true');
+    expect((abschnitt()!.bereit as Record<string, { datei: string }[]>)['BAUA 2'].map((b) => b.datei)).toEqual(['BS9 BAUA 261110 01 Bauantrag.pdf']);
+
+    // Umbenennen nach Namensformat: Vorschlag mit Kürzel, Antragsart und Datum
+    await rechtsklick(falsch.querySelector('.fo-baum-zeile')!);
+    await klick(menuePunkt('Umbenennen nach Namensformat'));
+    const feld = host.querySelector<HTMLInputElement>('.modal.rf input')!;
+    expect(feld.value).toMatch(/^BS9 BAUA \d{6} Lageplan vom Vermesser\.pdf$/);
+    await klick(knopf(host.querySelector('.modal.rf')!, 'Umbenennen'));
+    expect([...ds.dateien.keys()].some((k) => /\/TÖB\/BAUA 2\/BS9 BAUA \d{6} Lageplan vom Vermesser\.pdf$/.test(k))).toBe(true);
+    expect(zeile('Lageplan vom Vermesser.pdf').classList.contains('offen')).toBe(true);
+    await klick(zeile('Lageplan vom Vermesser.pdf').querySelector<HTMLButtonElement>('.fo-bereit-knopf')!);
+    expect(kopf()).toContain('2 von 2 bereit');
+    expect(kopf()).toContain('Alles bereit');
+
+    // zurück zur Ordneransicht
+    await klick(knopf(host, 'Ordner'));
+    expect(host.querySelector('.fo-antrag-ablage')).toBeNull();
   });
 });

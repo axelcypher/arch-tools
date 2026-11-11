@@ -11,7 +11,7 @@ import { zeigeMenue } from './Menue';
 import type { SymbolName } from './Symbol';
 import { Symbol } from './Symbol';
 
-const SYMBOL: Record<ReturnType<typeof dateiArt>, SymbolName> = {
+export const SYMBOL: Record<ReturnType<typeof dateiArt>, SymbolName> = {
   pdf: 'datei',
   berechnung: 'tabelle',
   tabelle: 'tabelle',
@@ -25,7 +25,7 @@ const SYMBOL: Record<ReturnType<typeof dateiArt>, SymbolName> = {
 const sortiere = (a: Eintrag, b: Eintrag) => Number(b.ordner) - Number(a.ordner) || a.pfad.localeCompare(b.pfad, 'de', { numeric: true, sensitivity: 'base' });
 
 /** Kontextmenü einer Datei im Projektordner */
-function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
+export function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
   const st = useAntrag.getState();
   const projekt = useFormulare.getState().projekt;
   const umfang = st.projektdatei?.umfang ?? [];

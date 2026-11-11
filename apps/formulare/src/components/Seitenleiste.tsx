@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
 import { useAntrag } from '../antragStore';
+import { AntragsAblage } from './AntragsAblage';
 import type { FormularEintrag } from '../projekte';
 import { formularLoeschen } from '../dateiAktionen';
 import { AblageBaum } from './AblageBaum';
@@ -66,6 +67,22 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   const breite = useFormulare((s) => s.leisteBreite);
   const { projektWaehlen, formularOeffnen, setHaupt, setLeisteBreite, setAuswahl } = useFormulare.getState();
   const [pfadeBearbeiten, setPfadeBearbeiten] = useState(false);
+  // Projektordner: ganze Auswahl („Ordner“) oder nur die Dokumente im Antragsordner („Antrag“) – je Rechner gemerkt
+  const [ablageAnsicht, setAblageAnsichtRoh] = useState<'ordner' | 'antrag'>(() => {
+    try {
+      return localStorage.getItem('formulare:ablage-ansicht') === 'antrag' ? 'antrag' : 'ordner';
+    } catch {
+      return 'ordner';
+    }
+  });
+  const setAblageAnsicht = (a: 'ordner' | 'antrag') => {
+    setAblageAnsichtRoh(a);
+    try {
+      localStorage.setItem('formulare:ablage-ansicht', a);
+    } catch {
+      // nur für diese Sitzung
+    }
+  };
   const dokumente = useAntrag((s) => s.dokumente);
   const umfangDa = useAntrag((s) => !!s.projektdatei?.umfang);
   // Status je Formular und fehlende Formulare des Projektumfangs
@@ -262,9 +279,24 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                 titel="Projektordner"
                 kopf={
                   <>
-                    <button className={`icon${pfadeBearbeiten ? ' active' : ''}`} title="Angezeigte Pfade für dieses Projekt" aria-label="Angezeigte Pfade" onClick={() => setPfadeBearbeiten(!pfadeBearbeiten)}>
-                      <Symbol name="zahnrad" />
-                    </button>
+                    <span className="fo-ablage-umschalter" role="group" aria-label="Ansicht des Projektordners">
+                      <button className={ablageAnsicht === 'ordner' ? 'active' : ''} aria-pressed={ablageAnsicht === 'ordner'} title="Angezeigte Pfade des Projektordners" onClick={() => setAblageAnsicht('ordner')}>
+                        Ordner
+                      </button>
+                      <button
+                        className={ablageAnsicht === 'antrag' ? 'active' : ''}
+                        aria-pressed={ablageAnsicht === 'antrag'}
+                        title="Nur die Dokumente im Antragsordner der aktiven Fassung – mit Vollständigkeit und „bereit“"
+                        onClick={() => setAblageAnsicht('antrag')}
+                      >
+                        Antrag
+                      </button>
+                    </span>
+                    {ablageAnsicht === 'ordner' && (
+                      <button className={`icon${pfadeBearbeiten ? ' active' : ''}`} title="Angezeigte Pfade für dieses Projekt" aria-label="Angezeigte Pfade" onClick={() => setPfadeBearbeiten(!pfadeBearbeiten)}>
+                        <Symbol name="zahnrad" />
+                      </button>
+                    )}
                     {ablage && (
                       <button className="icon" title="Im Explorer zeigen" aria-label="Projektordner zeigen" onClick={() => void oeffnePfad(verbinde(ablage.root, ablage.pfad)).catch(() => undefined)}>
                         <Symbol name="extern" />
@@ -273,7 +305,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                   </>
                 }
               >
-                {pfadeBearbeiten && (
+                {pfadeBearbeiten && ablageAnsicht === 'ordner' && (
                   <div className="nav-pfade">
                     <label className="small-text">
                       Angezeigte Pfade für {projekt.ordner} (je Zeile, Platzhalter * und ?)
@@ -286,7 +318,9 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                     )}
                   </div>
                 )}
-                {ablage ? (
+                {ablage && ablageAnsicht === 'antrag' ? (
+                  <AntragsAblage ablage={ablage} />
+                ) : ablage ? (
                   <>
                     <p className="nav-ablage-name" title={verbinde(ablage.root, ablage.pfad)}>
                       {ablage.pfad}

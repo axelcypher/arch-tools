@@ -33,6 +33,9 @@ import {
   UEBERSCHREIBBAR,
   umfangErforderlich,
   vorlagenAus,
+  antragsNameFehler,
+  artDerFassung,
+  ordnerPasst,
 } from './antrag';
 import type { Merkmal } from './bedingung';
 import { merkmaleAus, mitVorgabeMerkmalen } from './bedingung';
@@ -158,6 +161,8 @@ interface AntragState {
   formularHinzufuegen: (v: Vorlage, inUmfang: boolean) => Promise<string | null>;
   /** Autofill-Zustand von Formularen (Dateiname im FORMA-Projekt) in die Projektdatei – nur, wenn es eine gibt */
   zustaendeSetzen: (neu: Zustaende) => Promise<void>;
+  /** Datei im Ordner der aktiven Fassung von Hand als „bereit“ markieren bzw. die Markierung aufheben */
+  bereitUmschalten: (datei: string) => Promise<void>;
 }
 
 /** Formular, das sich ins Projekt übernehmen lässt */
@@ -191,6 +196,33 @@ export const wirksameEinstellungen = (s: Pick<AntragState, 'einstellungen' | 'ue
 export function aktiveFassung(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null): string {
   const e = wirksameEinstellungen(s, p);
   return s.projektdatei?.aktiveFassung || standardFassung(s.fassungen, e.arten)?.name || e.arten[0] || 'BAUA';
+}
+
+/**
+ * Quellordner (relativ, z. B. „Planung/Berechnungen“) im Projektordner suchen: je Teil zuerst der genaue Name, sonst
+ * eine gleichwertige Schreibweise (`ordnerPasst`). Teile, die es nicht gibt, bleiben wie angegeben.
+ */
+export async function ordnerAufloesen(ds: { liste: (pfad: string, tiefe: number) => Promise<Eintrag[]> }, basis: string, rel: string): Promise<string> {
+  const teile = rel.replace(/\\/g, '/').split('/').filter(Boolean);
+  const out: string[] = [];
+  for (const teil of teile) {
+    let kinder: string[] = [];
+    try {
+      kinder = (await ds.liste(out.length ? verbinde(basis, out.join('/')) : basis, 1)).filter((e) => e.ordner).map((e) => e.pfad);
+    } catch {
+      return [...out, ...teile.slice(out.length)].join('/');
+    }
+    const genau = kinder.find((k) => k.toLowerCase() === teil.toLowerCase());
+    const treffer = genau ?? kinder.filter((k) => ordnerPasst(k, teil)).sort((a, b) => b.localeCompare(a, 'de', { numeric: true }))[0];
+    out.push(treffer ?? teil);
+  }
+  return out.join('/');
+}
+
+/** Projektcodes, mit denen Dateien im Antragsordner beginnen dürfen: Kürzel des FORMA-Projekts, Projektcode der .oap */
+export function projektCodes(p: Projekt): string[] {
+  const o = useFormulare.getState().oap;
+  return [p.ordner, ...(o && o !== 'fehlt' && o.inhalt.meta.projektcode ? [o.inhalt.meta.projektcode] : [])];
 }
 
 /** Ordner der aktiven Fassung relativ zum Projektordner */
@@ -358,6 +390,32 @@ export const useAntrag = create<AntragState>((set, get) => {
   };
 
   return {
+    bereitUmschalten: async (datei) => {
+      const projekt = useFormulare.getState().projekt;
+      if (!projekt) return;
+      const st = get();
+      const fassung = aktiveFassung(st, projekt);
+      const pd = st.projektdatei ?? {};
+      const liste = pd.bereit?.[fassung] ?? [];
+      const markiert = liste.some((b) => b.datei.toLowerCase() === datei.toLowerCase());
+      let neu: typeof liste;
+      if (markiert) neu = liste.filter((b) => b.datei.toLowerCase() !== datei.toLowerCase());
+      else {
+        const fehlerText = antragsNameFehler(datei, { codes: projektCodes(projekt), art: artDerFassung(fassung) });
+        if (fehlerText) {
+          meldung('fehler', `„${datei}“ kann nicht als bereit markiert werden: ${fehlerText}.`);
+          return;
+        }
+        const e = st.dateien.find((d) => !d.ordner && d.pfad.toLowerCase() === datei.toLowerCase());
+        neu = [...liste, { datei, ...(e?.geaendert ? { stand: e.geaendert } : {}) }];
+      }
+      const bereit = { ...pd.bereit, [fassung]: neu };
+      if (!neu.length) delete bereit[fassung];
+      const naechste: ProjektDatei = { ...pd, bereit };
+      if (!Object.keys(bereit).length) delete naechste.bereit;
+      if (await projektdateiSchreiben(naechste)) log.info(`${fassung}: ${datei} ${markiert ? 'nicht mehr bereit' : 'bereit'}`);
+    },
+
     einstellungen: einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null)),
     katalog: katalogAus(lesen<unknown>(KATALOG, null)),
     vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
@@ -503,7 +561,8 @@ export const useAntrag = create<AntragState>((set, get) => {
         const ordner = new Set((get().projektdatei?.umfang ?? []).filter((u) => u.art === 'extern').map((u) => (u.quelle ?? e.berechnungsordner).trim()));
         for (const o of ordner) {
           try {
-            quellen[o] = o ? await ds.liste(verbinde(basis, o), 2) : [];
+            // Schreibweisen der Büros: „Planung/00 Berechnungen“, „Planung/_Berechnungen“, „…/GP/pdf“ …
+            quellen[o] = o ? await ds.liste(verbinde(basis, await ordnerAufloesen(ds, basis, o)), 2) : [];
           } catch {
             quellen[o] = [];
           }
@@ -812,6 +871,7 @@ export function exportVorschlag(formularPfad: string, datum = new Date()): Expor
     name: doc?.eintrag.titel ?? anzeigeName(formularName),
     formular: formularName,
     antrag: aktiveFassung(st, projekt),
+    art: artDerFassung(aktiveFassung(st, projekt)),
     kennung: info?.kennung ?? undefined,
     stand: info?.stand ?? undefined,
   });

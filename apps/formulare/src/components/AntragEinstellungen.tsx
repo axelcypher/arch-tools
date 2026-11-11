@@ -38,7 +38,7 @@ export function AntragEinstellungen() {
   const vorlageSetzen = (id: string, teil: Partial<AntragsVorlage>) => setVorlagen(vorlagen.map((v) => (v.id === id ? { ...v, ...teil } : v)));
   const inVorlage = (v: AntragsVorlage, kid: string, an: boolean) => vorlageSetzen(v.id, { dokumente: an ? [...v.dokumente.filter((d) => d !== kid), kid] : v.dokumente.filter((d) => d !== kid) });
   const [bedingungOffen, setBedingungOffen] = useState<string | null>(null);
-  const beispiel = dateiname(e.namensvorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, kennung: 'nw010005', stand: '2026A' });
+  const beispiel = dateiname(e.namensvorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
 
   const zeileSetzen = (i: number, teil: Partial<KatalogEintrag>) => setKatalog(katalog.map((k, n) => (n === i ? { ...k, ...teil } : k)));
 
@@ -98,6 +98,12 @@ export function AntragEinstellungen() {
             </button>
           )}
         </div>
+        {!/^\{k(ü|ue)rzel\}\s+\{art\}\s+\{datum\}\s/i.test(e.namensvorlage.trim()) && (
+          <p className="warning small-text">
+            Dateien im Antragsordner müssen mit „Projektcode Antragsart JJMMTT“ beginnen, sonst lassen sie sich nicht als bereit markieren – die Vorlage sollte mit „{'{Kürzel} {Art} {Datum}'}“
+            beginnen.
+          </p>
+        )}
       </Karte>
 
       <Karte titel="Ziel des Exports" text="Der voreingestellte Ordner im Export-Dialog; dort lässt sich jedes Mal auch ein anderer Ordner im Projekt wählen oder „Speichern unter …“.">

@@ -243,6 +243,23 @@ Anschrift, wie sie in Formularen steht.
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
   Adressen zuerst. In der Projektkarte: „Als Vorgabe festlegen“ bei einer Adresse, **„Vorgaben eintragen“** füllt
   alle leeren Rollen auf einmal, und „Übernehmen von …“ bietet die Vorgabe und die bisherigen Adressen der Rolle an.
+- **Projektordner, Ansicht „Antrag“:** Im Abschnitt „Projektordner“ der Navigation schaltet „Ordner | Antrag“ um
+  zwischen den angezeigten Pfaden und nur den Dokumenten im Ordner der aktiven Antragsfassung (z. B. `TÖB/BAUA 2`).
+  Oben steht „n von m bereit“ mit Balken (dazu, wie viele Dokumente des Projektumfangs dort noch fehlen), darunter je
+  Datei ein Zeichen: ✓ bereit, ○ noch nicht bereit, ! Namensformat passt nicht, ↻ nach dem Markieren geändert.
+  **Bereit markiert man von Hand** (Klick auf das Zeichen oder Rechtsklick) – das steht je Fassung in der
+  Projektdatei (.oap) und gilt für alle im Büro. Wird die Datei danach geändert, gilt sie nicht mehr als bereit.
+  Bereit sein können nur Dateien im **Namensformat `<Projektcode> <Antragsart> <JJMMTT> …`**, z. B.
+  „MUS BAUA 261110 01 Bauantrag.pdf“ (Projektcode = Kürzel des FORMA-Projekts oder Projektcode der Projektdatei,
+  Antragsart = die der Fassung: BAUA, BAUVA, DENK …). Rechtsklick → „Umbenennen nach Namensformat …“ schlägt den
+  Namen vor (Datum der Datei). Unter „Fehlt im Antragsordner“ stehen die Dokumente des Projektumfangs ohne Datei.
+  Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
+  aktiven Fassung; `{Phase}` gibt es weiter).
+- **Quellordner mit Schreibweisen der Büros:** Quellen im Projektumfang (z. B. `Planung/Berechnungen`,
+  `Planung/Genehmigungsplanung/pdf`, `Fachplanung/G27*`) werden auch gefunden, wenn der Ordner anders geschrieben ist:
+  Nummern, Unterstriche und Punkte vorn („00 Berechnungen“, „__Berechnungen“, „03 Genehmigungsplanung“), gleichwertige
+  Namen (Genehmigungsplanung = Genehmigung = GP, Fachplanung = Fachplaner) und Platzhalter („G27*“ für den Ordner des
+  Vermessers). Neu im Katalog: Lageplan aus `Fachplanung/G27*`, Bauzeichnungen aus `Planung/Genehmigungsplanung/pdf`.
 - **Projektdatei (.oap)** (in der Projektkarte unter „Projektordner“): Abgleich der Projektstammdaten mit der
   Projektkarte in beide Richtungen – „Übernehmen“ (Projektdatei → Projektkarte) und „Eintragen“ (Projektkarte →
   Projektdatei), je Angabe oder für alle abweichenden. Beim Speichern der Projektkarte werden geänderte Angaben in

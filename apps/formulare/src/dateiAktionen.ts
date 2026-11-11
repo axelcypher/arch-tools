@@ -75,10 +75,10 @@ export async function duplizieren(basis: string, pfad: string) {
   }
 }
 
-export async function umbenennen(basis: string, pfad: string) {
+export async function umbenennen(basis: string, pfad: string, vorschlag?: string, text?: string) {
   const ds = useFormulare.getState().ds;
   if (!ds) return;
-  const neu = await frageText('Umbenennen', nameVon(pfad), 'Umbenennen');
+  const neu = await frageText('Umbenennen', vorschlag ?? nameVon(pfad), 'Umbenennen', text);
   if (!neu || neu === nameVon(pfad)) return;
   if (/[<>:"/\\|?*]/.test(neu)) return fehler('Umbenennen', new Error('Diese Zeichen sind in Dateinamen nicht erlaubt: < > : " / \\ | ? *'));
   try {

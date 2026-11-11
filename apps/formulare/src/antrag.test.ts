@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { UmfangEintrag } from './antrag';
-import { VORGABE_EXPORT, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { VORGABE_EXPORT, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
-  it('Kürzel Phase JJMMTT [Nr] Name – fehlende Nummer entfällt samt Leerzeichen', () => {
-    expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', phase: 'GP', datum, name: 'Bauantrag' })).toBe('BS9 GP 261110 Bauantrag');
-    expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', phase: 'GP', datum, nr: '03', name: 'Baubeschreibung' })).toBe('BS9 GP 261110 03 Baubeschreibung');
+  it('Kürzel Antragsart JJMMTT [Nr] Name – fehlende Nummer entfällt samt Leerzeichen; {Phase} gibt es weiter', () => {
+    expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', phase: 'GP', datum, name: 'Bauantrag', antrag: 'BAUA 2' })).toBe('BS9 BAUA 261110 Bauantrag');
+    expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', phase: 'GP', datum, nr: '03', name: 'Baubeschreibung', art: 'DENK' })).toBe('BS9 DENK 261110 03 Baubeschreibung');
+    expect(dateiname('{Kürzel} {Phase} {Datum} {Name}', { kuerzel: 'BS9', phase: 'GP', datum, name: 'Bauantrag' })).toBe('BS9 GP 261110 Bauantrag');
   });
 
   it('weitere Platzhalter, unbekannte bleiben stehen, unzulässige Zeichen werden zu „-“', () => {
@@ -142,5 +143,43 @@ describe('Antragsvorlagen und Reihenfolge', () => {
     expect(vorlageFuer(vorlagen, 'bauva')?.id).toBe('b');
     expect(vorlageFuer(vorlagen, 'DENK')?.id).toBe('a');
     expect(vorlageFuer([], 'BAUA')).toBeUndefined();
+  });
+});
+
+describe('Dokumente im Antragsordner: Namensformat und „bereit“', () => {
+  const o = { codes: ['MUS', '2026-014'], art: 'BAUA' };
+  it('Namensformat „<Projektcode> <Antragsart> <JJMMTT> …“', () => {
+    expect(antragsNameFehler('MUS BAUA 261110 Bauantrag.pdf', o)).toBeNull();
+    expect(antragsNameFehler('2026-014 BAUA 261110 01 Lageplan.pdf', o)).toBeNull();
+    expect(antragsNameFehler('mus baua 261110 Bauantrag.pdf', o)).toBeNull();
+    expect(antragsNameFehler('MUS GP 261110 Bauantrag.pdf', o)).toContain('Antragsart BAUA fehlt');
+    expect(antragsNameFehler('Bauantrag MUS BAUA 261110.pdf', o)).toContain('Projektcode fehlt');
+    expect(antragsNameFehler('MUS BAUA Bauantrag.pdf', o)).toContain('Datum JJMMTT');
+    expect(antragsNameFehler('MUS BAUA 261110.pdf', o)).toContain('Datum JJMMTT und Name fehlen');
+    expect(antragsNameFehler('MUS BAUA 261310 Bauantrag.pdf', o)).toContain('Kein gültiges Datum');
+    expect(antragsNameFehler('MUS BAUA 261110 Bauantrag.pdf', { codes: ['MUS'], art: artDerFassung('BAUA 2') })).toBeNull();
+    expect(artDerFassung('bauva3')).toBe('BAUVA');
+  });
+
+  it('bereit nur von Hand, mit passendem Namen und ohne spätere Änderung', () => {
+    const d = { pfad: 'MUS BAUA 261110 Bauantrag.pdf', geaendert: 1000 };
+    expect(bereitschaft(d, undefined, null)).toBe('offen');
+    expect(bereitschaft(d, { datei: d.pfad, stand: 1000 }, null)).toBe('bereit');
+    expect(bereitschaft({ ...d, geaendert: 60_000 }, { datei: d.pfad, stand: 1000 }, null)).toBe('geaendert');
+    expect(bereitschaft(d, { datei: d.pfad, stand: 1000 }, 'Name passt nicht')).toBe('name');
+  });
+
+  it('„bereit“ wird mit der Projektdatei gelesen', () => {
+    expect(projektDateiAus({ bereit: { BAUA: [{ datei: 'MUS BAUA 261110 A.pdf', stand: 5 }, { kaputt: 1 }], leer: [] } }).bereit).toEqual({ BAUA: [{ datei: 'MUS BAUA 261110 A.pdf', stand: 5 }] });
+  });
+});
+
+describe('Quellordner: Schreibweisen der Büros', () => {
+  it('Nummern und Unterstriche vorn, gleichwertige Namen, Platzhalter', () => {
+    for (const n of ['00 Berechnungen', '0 Berechnungen', '__Berechnungen', '_Berechnungen', 'Berechnungen']) expect([n, ordnerPasst(n, 'Berechnungen')]).toEqual([n, true]);
+    for (const n of ['03 Genehmigungsplanung', 'Genehmigungsplanung', 'Genehmigung', 'GP']) expect([n, ordnerPasst(n, 'Genehmigungsplanung')]).toEqual([n, true]);
+    expect(ordnerPasst('Fachplaner', 'Fachplanung')).toBe(true);
+    expect(ordnerPasst('G27 Vermessung Müller', 'G27*')).toBe(true);
+    expect(ordnerPasst('Ausführungsplanung', 'Genehmigungsplanung')).toBe(false);
   });
 });
