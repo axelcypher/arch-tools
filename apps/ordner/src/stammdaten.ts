@@ -1,6 +1,6 @@
 import { projektWerte } from '@core/excel/projekt';
 import type { ExportContext, Row, Value } from '@core/excel/context';
-import type { Anschrift, Bauherr, Beteiligter, Grundstueck, Kontakt, Project, ProjectMeta, ProjektordnerAngaben } from '@core/model';
+import type { Anschrift, Bauherr, Beteiligter, Grundstueck, Kontakt, Project, ProjectMeta, ProjektordnerAngaben, Koordinaten } from '@core/model';
 import { createProject, leereAnschrift, LEISTUNGSPHASEN } from '@core/model';
 import { gleich } from '@core/zusammenfuehren';
 import { sichererName } from './struktur';
@@ -28,6 +28,8 @@ export interface Stammdaten {
   beteiligte: Beteiligter[];
   /** gewählte Vorlagen-Presets; nicht gesetzt = die Standard-Presets der Struktur */
   presets?: string[];
+  /** Koordinaten der Adresse (EPSG:25832), von den gemeinsamen Stammdaten abgefragt */
+  koordinaten?: Koordinaten;
 }
 
 export function leereStammdaten(): Stammdaten {
@@ -77,6 +79,7 @@ export function bereinigt(s: Stammdaten): Stammdaten {
     leistungsphasen: [...new Set(s.leistungsphasen)].sort((x, y) => x - y),
     beteiligte: s.beteiligte.map((b) => ({ rolle: t(b.rolle), name: t(b.name), kontakt: t(b.kontakt) })).filter((b) => b.rolle || b.name || b.kontakt),
     ...(s.presets ? { presets: [...new Set(s.presets.map(t).filter(Boolean))] } : {}),
+    ...(s.koordinaten ? { koordinaten: { ...s.koordinaten } } : {}),
   };
 }
 
@@ -98,6 +101,7 @@ export function metaAus(stamm: Stammdaten): ProjectMeta {
   if (s.aktenzeichen) m.aktenzeichen = s.aktenzeichen;
   if (s.leistungsphasen.length) m.leistungsphasen = [...s.leistungsphasen];
   if (s.beteiligte.length) m.beteiligte = s.beteiligte.map((b) => ({ ...b }));
+  if (s.koordinaten) m.koordinaten = { ...s.koordinaten };
   return m;
 }
 
@@ -107,6 +111,7 @@ export function formularMeta(s: Stammdaten): ProjectMeta {
   if (s.kurzname) m.kurzname = s.kurzname;
   if (s.bezeichnung) m.vorhaben = s.bezeichnung;
   if (s.aktenzeichen) m.aktenzeichen = s.aktenzeichen;
+  if (s.koordinaten) m.koordinaten = s.koordinaten;
   return m;
 }
 
@@ -124,6 +129,7 @@ export function stammAusMeta(m: ProjectMeta, angaben?: ProjektordnerAngaben): St
     leistungsphasen: [...(m.leistungsphasen ?? [])],
     beteiligte: (m.beteiligte ?? []).map((b) => ({ ...b })),
     ...(angaben?.presets ? { presets: [...angaben.presets] } : {}),
+    ...(m.koordinaten ? { koordinaten: { ...m.koordinaten } } : {}),
   };
 }
 
@@ -160,6 +166,7 @@ const META_TEILE: [keyof ProjectMeta, string][] = [
   ['bearbeiter', 'Bearbeitung'],
   ['leistungsphasen', 'Leistungsphasen'],
   ['beteiligte', 'Beteiligte'],
+  ['koordinaten', 'Koordinaten'],
 ];
 
 /** leere Liste und fehlender Wert gelten als gleich */

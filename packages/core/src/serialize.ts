@@ -209,6 +209,22 @@ function normalizeMeta(v: unknown): ProjectMeta {
     if (typeof m.bebauungsplan.name === 'string' && m.bebauungsplan.name.trim()) bp.name = m.bebauungsplan.name;
     if (bp.nummer || bp.name) meta.bebauungsplan = bp;
   }
+  if (isObj(m.koordinaten)) {
+    const k = m.koordinaten;
+    const zahl = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+    if (zahl(k.ost) && zahl(k.nord) && zahl(k.lat) && zahl(k.lon))
+      meta.koordinaten = {
+        epsg: 25832,
+        ost: k.ost as number,
+        nord: k.nord as number,
+        lat: k.lat as number,
+        lon: k.lon as number,
+        adresse: str(k.adresse, ''),
+        quelle: str(k.quelle, ''),
+        stand: str(k.stand, ''),
+        ...(k.genauigkeit === 'adresse' || k.genauigkeit === 'strasse' || k.genauigkeit === 'ort' ? { genauigkeit: k.genauigkeit } : {}),
+      };
+  }
   if (Array.isArray(m.leistungsphasen)) {
     const lph = [...new Set(m.leistungsphasen.filter((n): n is number => Number.isInteger(n) && n >= 1 && n <= 9))].sort((a, b) => a - b);
     if (lph.length) meta.leistungsphasen = lph;

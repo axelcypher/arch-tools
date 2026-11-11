@@ -321,6 +321,26 @@ export interface Grundstueck {
   flaeche?: number;
 }
 
+/** Koordinaten der Adresse des Vorhabens: ETRS89 / UTM 32N (EPSG:25832, wie ALKIS NRW), dazu geographisch */
+export interface Koordinaten {
+  epsg: 25832;
+  /** Ostwert (Rechtswert) in m */
+  ost: number;
+  /** Nordwert (Hochwert) in m */
+  nord: number;
+  /** geographische Breite und Länge (WGS84) */
+  lat: number;
+  lon: number;
+  /** Adresse, für die sie ermittelt wurden („Straße Nr., PLZ Ort“) – ändert sich die Adresse, wird neu abgefragt */
+  adresse: string;
+  /** Herkunft, z. B. „OpenStreetMap (Nominatim)“ */
+  quelle: string;
+  /** Tag der Abfrage (JJJJ-MM-TT) */
+  stand: string;
+  /** wie genau der Treffer ist: die Hausnummer, nur die Straße oder nur der Ort */
+  genauigkeit?: 'adresse' | 'strasse' | 'ort';
+}
+
 /** Bebauungsplan, in dessen Geltungsbereich das Grundstück liegt */
 export interface Bebauungsplan {
   /** Nummer, z. B. „Nr. 112“ */
@@ -365,6 +385,8 @@ export interface ProjectMeta {
   grundstueck: Grundstueck;
   /** Bebauungsplan (Nummer, Name) – fehlt, wenn keiner erfasst ist */
   bebauungsplan?: Bebauungsplan;
+  /** Lage des Vorhabens (aus der Adresse ermittelt), z. B. zum Suchen in QGIS – fehlt, solange keine ermittelt ist */
+  koordinaten?: Koordinaten;
   bauherr: Bauherr;
   bearbeiter: string;
   /** beauftragte Leistungsphasen (1–9); fehlt = nicht festgelegt */

@@ -41,6 +41,7 @@ import { abweichung, abweichungAus, istLeer as abweichungLeer, ohneEigenes, vorg
 import type { FeldAenderung, Verlauf } from './verlauf';
 import { abgleichen, eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
 import { GRUNDSTUECK, PLZ_GRUNDSTUECK, istZusatz, mitZusatz } from './zusatz';
+import { adresseSchluessel, koordinatenVeraltet, mitKoordinaten } from '@core/platform/geokodierung';
 
 /**
  * Zustand der App: Einstellungen, die gefundenen Projekte, das geöffnete Formular und die Projektkarte.
@@ -815,13 +816,19 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     }
     if (!o) return null;
     let anzahl = 0;
+    // Koordinaten zur geänderten Adresse des Vorhabens vorab abfragen (das Schreiben selbst liest frisch und ist synchron)
+    const lage = (await mitKoordinaten(metaMit(o.inhalt.meta, werte))).meta.koordinaten;
     const geschrieben = await get().oapAendern((roh) => {
       const bisher = parseProjectData(roh).meta;
       // nur, was sich unterscheidet – steht schon alles so darin, bleibt die Datei unberührt
       const vorher = angabenAus(bisher);
       const geaendert = new Map([...werte].filter(([a, w]) => (vorher.get(a) ?? '').trim() !== w.trim()));
       anzahl = geaendert.size;
-      return geaendert.size ? { ...roh, meta: metaMit(bisher, geaendert) } : roh;
+      if (!geaendert.size) return roh;
+      const meta = metaMit(bisher, geaendert);
+      if (lage && lage.adresse === adresseSchluessel(meta.adresse)) meta.koordinaten = lage;
+      else if (koordinatenVeraltet(meta)) delete meta.koordinaten;
+      return { ...roh, meta };
     });
     if (!geschrieben) return null;
     log.info(`Projektdatei ${o.pfad}: ${anzahl} Angabe(n)`);

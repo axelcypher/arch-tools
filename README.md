@@ -34,6 +34,14 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
   ohne die App zu wechseln; andere Apps sehen die Änderung, sobald das Projekt dort neu geladen wird. Ausdrucke und
   Excel-Dateien haben denselben Kopf aus diesen Angaben, dazu den Büronamen (Projektordner → Einstellungen) und
   „Seite x von y“.
+- **Koordinaten der Projektadresse:** Sobald Straße und PLZ bzw. Ort des Vorhabens eingetragen sind (und bei jeder
+  Änderung, spätestens beim Speichern), fragt die App die Lage bei OpenStreetMap (Nominatim) ab und sichert sie in den
+  Stammdaten der Projektdatei – in **ETRS89 / UTM 32N (EPSG:25832)** wie ALKIS NRW, dazu geographisch. In den
+  Stammdaten stehen sie als „O … · N …“; **Kopieren** liefert „Ost, Nord“ mit Punkt als Dezimalzeichen, z. B. zum
+  Springen in QGIS (Projekt-KBS EPSG:25832). Liegt nur ein Treffer für die Straße oder den Ort vor, steht das dabei;
+  „Neu abfragen“ fragt erneut. Gesendet wird nur die Adresse des Vorhabens, eine Abfrage je geänderter Adresse; die
+  Desktop-Apps erlauben dafür in ihrer CSP genau diesen Dienst. Die Umrechnung rechnet die App selbst (Krüger-Reihen,
+  im Millimeterbereich genau); WGS84 und ETRS89 weichen um weniger als einen Meter ab.
 - **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch Projektordner und Formulare). Ohne geöffnetes Projekt
   zeigt jede App denselben Einstieg mit denselben Aktionen: *Projekt wählen …* (Desktop: Übersicht mit „zuletzt
   geöffnet“), *Datei öffnen …*, *Neues Projekt*.

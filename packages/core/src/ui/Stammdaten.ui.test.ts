@@ -131,3 +131,30 @@ describe('Stammdaten-Dialog', () => {
     expect(host.textContent).toContain('Ordner schreibgeschützt');
   });
 });
+
+describe('Stammdaten: Koordinaten der Adresse', () => {
+  it('werden nach dem Eintragen der Adresse abgefragt, angezeigt, kopierbar und mit gespeichert', async () => {
+    const { geokodiererSetzen } = await import('../platform/geokodierung');
+    const abruf = vi.fn(async () => ({ ok: true, status: 200, json: async () => [{ lat: '51.96236', lon: '7.62571', place_rank: 30 }] }));
+    geokodiererSetzen(abruf);
+    const gespeichert = vi.fn<(m: ProjectMeta) => void>();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(StammdatenDialog, { titel: 'Stammdaten', meta: leereMeta(), projektnummerPflicht: false, speichernText: 'Übernehmen', onSpeichern: gespeichert, onAbbrechen: () => {} }));
+    });
+    eingabe(feld(host, 'Bauvorhaben – Straße und Hausnummer'), 'Prinzipalmarkt 10');
+    eingabe(feld(host, 'Ort'), 'Münster');
+    await act(async () => new Promise((r) => setTimeout(r, 900)));
+    expect(abruf).toHaveBeenCalledTimes(1);
+    expect(host.querySelector('.sd-koordinaten-wert')!.textContent).toBe('O 405.577,31 · N 5.757.743,76');
+    const schreiben = vi.fn(async () => {});
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: schreiben }, configurable: true });
+    act(() => knopf(host, 'Kopieren').click());
+    expect(schreiben).toHaveBeenCalledWith('405577.31, 5757743.76');
+    await act(async () => knopf(host, 'Übernehmen').click());
+    expect(gespeichert.mock.calls[0][0].koordinaten).toMatchObject({ epsg: 25832, ost: 405577.31, adresse: 'Prinzipalmarkt 10, Münster' });
+    geokodiererSetzen(null);
+  });
+});

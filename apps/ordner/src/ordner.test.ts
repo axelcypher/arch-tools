@@ -10,7 +10,7 @@ import { ausserhalbDerStruktur, pruefe } from './pruefung';
 import { allePruefen, berichtCsv, sammelCsv } from './sammel';
 import type { Stammdaten } from './stammdaten';
 import { beteiligteSammeln, projektEinlesen, projektStatusSetzen } from './projekt';
-import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
+import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, metaAus, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
 import type { OrdnerRegel, Struktur } from './struktur';
 import { ausruecken, baumOrdnung, baumZeilen, einruecken, hinzufuegen, loeschen, umbenennen, verschieben, zusatzSetzen } from './baum';
 import { aktivePresets, alterOapPfad, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
@@ -202,6 +202,13 @@ describe('Sicherungen der Struktur (P-01)', () => {
 });
 
 describe('Stammdaten', () => {
+  it('Koordinaten der Adresse gehen in die Projektdatei und zurück', () => {
+    const koordinaten = { epsg: 25832 as const, ost: 405577.31, nord: 5757743.76, lat: 51.96236, lon: 7.62571, adresse: 'Musterweg 3, 48143 Münster', quelle: 'OpenStreetMap (Nominatim)', stand: '2026-11-11' };
+    const m = metaAus({ ...stamm(), koordinaten });
+    expect(m.koordinaten).toEqual(koordinaten);
+    expect(stammAusMeta(m).koordinaten).toEqual(koordinaten);
+  });
+
   it('Projektdatei: Stammdaten, Anlagedatum, Struktur und Presets hin und zurück', () => {
     const p = alsProject(stamm({ kurzname: ' EFH Musterweg ', aktenzeichen: '63/1' }), { struktur: KLEIN, presets: ['Alle Vorlagen'], date: TAG });
     expect(p.name).toBe('Neubau eines Einfamilienhauses');

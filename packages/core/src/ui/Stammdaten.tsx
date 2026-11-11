@@ -1,10 +1,11 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { Anschrift, Beteiligter, KontaktArt, ProjectMeta } from '../model';
 import { anschriftEinzeilig, bebauungsplanText, flurText, LEISTUNGSPHASEN } from '../model';
 import { Field, NumberField, TextField } from './fields';
 import type { Pruefung } from './pruefen';
 import { alle, email, ordnername, plz } from './pruefen';
 import { useEscSchliessen } from './Dialog';
+import { abfragbar, adresseSchluessel, geokodierungMoeglich, koordinatenFuerQgis, koordinatenVeraltet, mitKoordinaten, QUELLE } from '../platform/geokodierung';
 
 /**
  * Stammdaten eines Projekts bearbeiten – gemeinsam für alle Apps. `StammdatenFelder` sind die Eingaben (auch in
@@ -180,6 +181,7 @@ export function StammdatenFelder({
               <TextField value={meta.adresse.ort} onChange={(v) => setAdresse({ ort: v })} />
             </Field>
           </div>
+          <KoordinatenZeile meta={meta} onChange={onChange} />
         </>
       )}
       {zeigt('grundstueck') && (
@@ -397,7 +399,9 @@ export function StammdatenDialog({
     setFehler(null);
     setLaeuft(true);
     try {
-      await onSpeichern(meta, nameAnfang === undefined ? undefined : name.trim() || nameAnfang);
+      // Koordinaten zur (geänderten) Adresse gleich mit sichern
+      const mitLage = koordinatenVeraltet(meta) && geokodierungMoeglich() ? (await mitKoordinaten(meta)).meta : meta;
+      await onSpeichern(mitLage, nameAnfang === undefined ? undefined : name.trim() || nameAnfang);
     } catch (e) {
       setFehler(e instanceof Error ? e.message : String(e));
     } finally {
@@ -465,6 +469,85 @@ export function StammdatenKnopf({ project, onAendern, kurz = true }: { project: 
           onAbbrechen={() => setOffen(false)}
         />
       )}
+    </div>
+  );
+}
+
+const fmtKoord = (v: number) => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const GENAU: Record<string, string> = { adresse: 'Hausnummer', strasse: 'nur Straße', ort: 'nur Ort' };
+
+/**
+ * Koordinaten der Adresse des Vorhabens (ETRS89 / UTM 32N, EPSG:25832): werden abgefragt, sobald die Adresse
+ * vollständig ist und sich geändert hat (kurz nach dem letzten Eintrag), lassen sich für QGIS kopieren und neu abfragen.
+ */
+function KoordinatenZeile({ meta, onChange }: { meta: ProjectMeta; onChange: (m: ProjectMeta) => void }) {
+  const [laeuft, setLaeuft] = useState(false);
+  const [hinweis, setHinweis] = useState<string | null>(null);
+  const [kopiert, setKopiert] = useState(false);
+  const aktuell = useRef({ meta, onChange });
+  aktuell.current = { meta, onChange };
+  const k = meta.koordinaten;
+  const veraltet = koordinatenVeraltet(meta);
+  const schluessel = adresseSchluessel(meta.adresse);
+
+  const abfragen = async (erzwingen = false) => {
+    const m = aktuell.current.meta;
+    const basis = erzwingen ? { ...m, koordinaten: undefined } : m;
+    if (!abfragbar(m.adresse)) return;
+    setLaeuft(true);
+    setHinweis(null);
+    const r = await mitKoordinaten(basis);
+    setLaeuft(false);
+    // inzwischen weitergetippt: das Ergebnis gehört zu einer anderen Adresse
+    const jetzt = aktuell.current.meta;
+    if (adresseSchluessel(jetzt.adresse) !== adresseSchluessel(m.adresse)) return;
+    const neu: ProjectMeta = { ...jetzt };
+    if (r.meta.koordinaten) neu.koordinaten = r.meta.koordinaten;
+    else delete neu.koordinaten;
+    aktuell.current.onChange(neu);
+    setHinweis(r.hinweis ?? null);
+  };
+
+  // automatisch, kurz nachdem die Adresse fertig eingetragen ist
+  useEffect(() => {
+    if (!veraltet || !geokodierungMoeglich()) return;
+    const t = setTimeout(() => void abfragen(), 800);
+    return () => clearTimeout(t);
+  }, [schluessel, veraltet]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!abfragbar(meta.adresse) && !k) return null;
+  return (
+    <div className="sd-koordinaten">
+      <span className="field-label">Koordinaten (ETRS89 / UTM 32N, EPSG:25832)</span>
+      <div className="sd-koordinaten-zeile">
+        {k && !veraltet ? (
+          <span className="sd-koordinaten-wert" title={`Breite ${k.lat.toFixed(6)}°, Länge ${k.lon.toFixed(6)}° · ${k.quelle}, ${k.stand}`}>
+            O {fmtKoord(k.ost)} · N {fmtKoord(k.nord)}
+            {k.genauigkeit && k.genauigkeit !== 'adresse' && <span className="sd-koordinaten-genau"> ({GENAU[k.genauigkeit]})</span>}
+          </span>
+        ) : (
+          <span className="muted small-text">{laeuft ? 'werden abgefragt …' : geokodierungMoeglich() ? 'noch nicht ermittelt' : 'Abfrage hier nicht verfügbar'}</span>
+        )}
+        {k && !veraltet && (
+          <button
+            className="small"
+            title="„Ost, Nord“ für QGIS kopieren (Koordinate in EPSG:25832, Punkt als Dezimalzeichen)"
+            onClick={() => {
+              void navigator.clipboard?.writeText(koordinatenFuerQgis(k));
+              setKopiert(true);
+              setTimeout(() => setKopiert(false), 1500);
+            }}
+          >
+            {kopiert ? 'Kopiert' : 'Kopieren'}
+          </button>
+        )}
+        {geokodierungMoeglich() && abfragbar(meta.adresse) && (
+          <button className="small" disabled={laeuft} title={`Koordinaten zur Adresse bei ${QUELLE} abfragen – gesendet wird nur die Adresse des Vorhabens`} onClick={() => void abfragen(true)}>
+            {k ? 'Neu abfragen' : 'Koordinaten abfragen'}
+          </button>
+        )}
+      </div>
+      {hinweis && <span className="field-hint warning-text">{hinweis}</span>}
     </div>
   );
 }
