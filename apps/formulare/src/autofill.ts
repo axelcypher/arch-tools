@@ -17,6 +17,8 @@ import type { Feld } from './forma/felder';
 import type { Formular } from './forma/formular';
 import type { Projektkarte, Teil } from './forma/projektkarte';
 import { ausfuellen, pkTitel, pkWert, verwendeteEintraege, zuordnungen } from './forma/projektkarte';
+import { kennung } from './forma/formular';
+import { korrigiert } from './vorgaben/zuordnungen';
 
 export interface FeldZustand {
   /** zuletzt eingetragener Auto-Wert */
@@ -57,14 +59,18 @@ function quelle(teile: Teil[], pk: Projektkarte): string {
   return [...nach].map(([g, titel]) => `${pk.gruppen.find((x) => x.id === g)?.text ?? `Gruppe ${g}`}: ${titel.join(', ')}`).join(' · ');
 }
 
-/** Felder mit Zuordnung zur Projektkarte (Textfelder) – unabhängig davon, ob die Projektkarte etwas hat */
+/**
+ * Felder mit Zuordnung zur Projektkarte (Textfelder) – unabhängig davon, ob die Projektkarte etwas hat. Verweist ein
+ * Vordruck auf die falsche Beteiligten-Gruppe, gilt die Korrektur aus `vorgaben/zuordnungen.ts`.
+ */
 export function autofillFelder(formular: Formular, felder: Feld[][]): Map<string, { feld: Feld; teile: Teil[] }> {
   const out = new Map<string, { feld: Feld; teile: Teil[] }>();
+  const k = kennung(formular);
   formular.seiten.forEach((seite, i) => {
     const nachName = new Map((felder[i] ?? []).map((f) => [f.name, f]));
     for (const [name, teile] of zuordnungen(seite)) {
       const feld = nachName.get(name);
-      if (feld && feld.art === 'text') out.set(feld.schluessel, { feld, teile });
+      if (feld && feld.art === 'text') out.set(feld.schluessel, { feld, teile: korrigiert(k, feld.schluessel, teile) });
     }
   });
   return out;

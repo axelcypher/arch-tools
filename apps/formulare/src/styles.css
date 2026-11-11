@@ -1291,6 +1291,30 @@ button.icon.fo-gl-zaehlt.an {
 .pk-zurueck:hover {
   color: var(--accent);
 }
+/* Eintrag ausblenden: dezent, beim Überfahren oder per Tastatur sichtbar */
+.pk-feld-auge {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 0 4px;
+  line-height: 16px;
+  color: var(--muted);
+  opacity: 0;
+}
+.pk-feld:hover .pk-feld-auge,
+.pk-feld-auge:focus-visible,
+.pk-feld.ausgeblendet .pk-feld-auge {
+  opacity: 1;
+}
+.pk-feld-auge:hover {
+  color: var(--text);
+}
+.pk-feld.ausgeblendet {
+  opacity: 0.6;
+}
+.pk-eintraege-mehr {
+  margin-top: 6px;
+}
 /* Optionen: Knöpfe wie überall in der App, als zusammenhängende Gruppe */
 .pk-optionen {
   display: inline-flex;

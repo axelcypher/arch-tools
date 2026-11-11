@@ -1,5 +1,5 @@
 import type { KeyboardEvent, ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { PkEintrag, PkGruppe, PkWert } from '../forma/projektkarte';
 import { pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWertVon } from '../forma/projektkarte';
 import { anschrift, aufbau, einheit, feldTitel, gruppenReihen, istAdresse, pruefung, zusammenfassung } from '../projektkarteAufbau';
@@ -358,6 +358,12 @@ function NavKnopf({ aktiv, gefuellt, onClick, children }: { aktiv: boolean; gefu
 
 /* ---------- Editor einer Gruppe ---------- */
 
+/** Schlüssel eines ausgeblendeten Eintrags: bei Beteiligten für alle (gleicher Aufbau), sonst je Gruppe */
+export const eintragAusblendSchluessel = (g: Pick<PkGruppe, 'id' | 'typ'>, id: number) => (istAdresse(g) ? `a:${id}` : `${g.id}:${id}`);
+
+/** Ausblenden einzelner Einträge im Gruppen-Editor (für die Zellen) */
+const AusblendenKontext = createContext<{ istAus: (ids: number[]) => boolean; schalten: (ids: number[]) => void; gruppe: string } | null>(null);
+
 function GruppenEditor({
   karte,
   gruppe,
@@ -375,8 +381,23 @@ function GruppenEditor({
   const vorgabe = adressbuch?.adressen.find((a) => a.schluessel === vorgabeSchluessel);
   const inDieserRolle = adressbuch ? inRolle(adressbuch.adressen, gruppe.id).filter((a) => a !== vorgabe).slice(0, 15) : [];
   const eintraege = useMemo(() => karte.karte.eintraege.filter((e) => e.gruppe === gruppe.id), [karte.karte, gruppe.id]);
-  const abschnitte = useMemo(() => aufbau(gruppe, eintraege), [gruppe, eintraege]);
+  const alleAbschnitte = useMemo(() => aufbau(gruppe, eintraege), [gruppe, eintraege]);
   const text = (id: number) => karteText(karte, gruppe.id, id);
+  // ausgeblendete Einträge: weg aus dem Editor – außer mit ungespeicherten Änderungen oder bei „zeigen“
+  const ausSchluessel = useFormulare((s) => s.kartenEintraegeAusgeblendet);
+  const [zeigeAus, setZeigeAus] = useState(false);
+  const istAus = (ids: number[]) => ids.every((id) => ausSchluessel.includes(eintragAusblendSchluessel(gruppe, id)));
+  const verborgen = (id: number) => istAus([id]) && !(pkSchluessel(gruppe.id, id) in karte.aenderungen);
+  const ausgeblendetZahl = eintraege.filter((e) => verborgen(e.id)).length;
+  const abschnitte = zeigeAus ? alleAbschnitte : alleAbschnitte.map((a) => ({ ...a, felder: a.felder.filter((x) => !verborgen(x.eintrag.id)) })).filter((a) => a.felder.length);
+  const ausblenden = useMemo(
+    () => ({
+      istAus,
+      schalten: (ids: number[]) => useFormulare.getState().kartenEintraegeUmschalten(ids.map((id) => eintragAusblendSchluessel(gruppe, id))),
+      gruppe: istAdresse(gruppe) ? 'alle Beteiligten' : gruppe.text,
+    }),
+    [ausSchluessel, gruppe], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const adresse = istAdresse(gruppe);
   const gefuellt = eintraege.some((e) => text(e.id).trim());
   const quellen = alleGruppen.filter((g) => g.id !== gruppe.id && istAdresse(g) && karte.karte.eintraege.some((e) => e.gruppe === g.id && karteText(karte, g.id, e.id).trim()));
@@ -504,11 +525,18 @@ function GruppenEditor({
 
       <div className={`pk-koerper${adresse ? ' mit-vorschau' : ''}`}>
         <div className="pk-abschnitte" ref={inhalt} onKeyDown={tasten}>
-          {abschnitte.map((a) => (
-            <Abschnitt key={a.titel || 'alle'} titel={a.titel} einklappbar={a.einklappbar && a.felder.every((x) => !text(x.eintrag.id).trim())}>
-              <div className="pk-raster">{zellen(a.felder, karte, gruppe, text(120))}</div>
-            </Abschnitt>
-          ))}
+          <AusblendenKontext.Provider value={ausblenden}>
+            {abschnitte.map((a) => (
+              <Abschnitt key={a.titel || 'alle'} titel={a.titel} einklappbar={a.einklappbar && a.felder.every((x) => !text(x.eintrag.id).trim())}>
+                <div className="pk-raster">{zellen(a.felder, karte, gruppe, text(120))}</div>
+              </Abschnitt>
+            ))}
+          </AusblendenKontext.Provider>
+          {ausgeblendetZahl > 0 && (
+            <button className="pk-nav-mehr pk-eintraege-mehr" aria-expanded={zeigeAus} onClick={() => setZeigeAus(!zeigeAus)}>
+              {ausgeblendetZahl} {ausgeblendetZahl === 1 ? 'Eintrag' : 'Einträge'} ausgeblendet – {zeigeAus ? 'verbergen' : 'zeigen'}
+            </button>
+          )}
         </div>
         {adresse && <Vorschau zeilen={anschrift(text)} />}
       </div>
@@ -568,9 +596,32 @@ function zellen(felder: { eintrag: PkEintrag; breite: number }[], karte: OffeneK
   return out;
 }
 
-function Zelle({ breite, titel, geaendert, hinweis, warnung, onZurueck, children, htmlFor }: { breite: number; titel: string; geaendert: boolean; hinweis?: string; warnung?: string | null; onZurueck?: () => void; children: ReactNode; htmlFor?: string }) {
+function Zelle({
+  breite,
+  titel,
+  geaendert,
+  hinweis,
+  warnung,
+  onZurueck,
+  children,
+  htmlFor,
+  ids,
+}: {
+  breite: number;
+  titel: string;
+  geaendert: boolean;
+  hinweis?: string;
+  warnung?: string | null;
+  onZurueck?: () => void;
+  children: ReactNode;
+  htmlFor?: string;
+  /** Einträge dieser Zelle (zum Ausblenden) */
+  ids?: number[];
+}) {
+  const aus = useContext(AusblendenKontext);
+  const ausgeblendet = !!(aus && ids?.length && aus.istAus(ids));
   return (
-    <div className={`pk-feld${geaendert ? ' geaendert' : ''}${warnung ? ' warnung' : ''}`} style={{ gridColumn: `span ${breite}` }}>
+    <div className={`pk-feld${geaendert ? ' geaendert' : ''}${warnung ? ' warnung' : ''}${ausgeblendet ? ' ausgeblendet' : ''}`} style={{ gridColumn: `span ${breite}` }}>
       <div className="pk-feld-kopf">
         <label className="pk-feld-titel" htmlFor={htmlFor}>
           {titel}
@@ -581,6 +632,17 @@ function Zelle({ breite, titel, geaendert, hinweis, warnung, onZurueck, children
             ↺
           </button>
         )}
+        {aus && ids?.length ? (
+          <button
+            className="pk-feld-auge"
+            aria-pressed={ausgeblendet}
+            aria-label={ausgeblendet ? `${titel} wieder einblenden` : `${titel} ausblenden`}
+            title={ausgeblendet ? 'Wieder einblenden' : `Ausblenden – gilt für ${aus.gruppe} in allen Projekten; Formulare werden weiter befüllt`}
+            onClick={() => aus.schalten(ids)}
+          >
+            <Symbol name="auge" />
+          </button>
+        ) : null}
       </div>
       {children}
       {warnung && <div className="pk-warnung">{warnung}</div>}
@@ -604,7 +666,7 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
     // Auswahllisten: erste (leere) Möglichkeit = „keine Angabe“; Optionen: erneuter Klick hebt die Wahl auf
     if (art === 'auswahl' || moeglich.length > 4) {
       return (
-        <Zelle breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck} htmlFor={id}>
+        <Zelle ids={[eintrag.id]} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck} htmlFor={id}>
           <select id={id} data-pk={s} value={typeof wert === 'number' ? wert : ''} onChange={(e) => setzen(e.target.value === '' ? null : Number(e.target.value))}>
             <option value="">– keine Angabe –</option>
             {moeglich.map((m, i) => (m ? <option key={i} value={i}>{m}</option> : null))}
@@ -613,7 +675,7 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
       );
     }
     return (
-      <Zelle breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck}>
+      <Zelle ids={[eintrag.id]} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck}>
         <div className="pk-optionen" role="radiogroup" aria-label={titel}>
           {moeglich.map((m, i) => (
             <button key={i} role="radio" aria-checked={wert === i} data-pk={i === 0 ? s : undefined} className={wert === i ? 'active' : ''} onClick={() => setzen(wert === i ? null : i)}>
@@ -630,13 +692,13 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
   const e = einheit(eintrag.titel);
   if (art === 'mehrzeilig') {
     return (
-      <Zelle breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
+      <Zelle ids={[eintrag.id]} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
         <textarea id={id} data-pk={s} rows={Math.max(2, Math.min(10, textWert.split('\n').length + 1))} value={textWert} onChange={(ev) => setzen(ev.target.value)} />
       </Zelle>
     );
   }
   return (
-    <Zelle breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
+    <Zelle ids={[eintrag.id]} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
       <input
         id={id}
         data-pk={s}
@@ -654,7 +716,7 @@ function Kreuze({ karte, eintraege }: { karte: OffeneKarte; eintraege: PkEintrag
   const karteSetzen = useFormulare((s) => s.karteSetzen);
   const geaendert = eintraege.some((e) => pkSchluessel(e.gruppe, e.id) in karte.aenderungen);
   return (
-    <Zelle breite={12} titel={feldTitel(eintraege[0].titel)} geaendert={geaendert}>
+    <Zelle breite={12} titel={feldTitel(eintraege[0].titel)} geaendert={geaendert} ids={eintraege.map((e) => e.id)}>
       <div className="pk-kreuze">
         {eintraege.map((e) => (
           <label key={e.id} className="pk-kreuz">

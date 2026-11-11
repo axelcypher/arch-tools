@@ -130,6 +130,11 @@ interface Gespeichert {
   kartenFavoriten: number[];
   /** Projektkarte: Gruppen, die in der Gliederung ausgeblendet sind – für alle Projekte */
   kartenAusgeblendet: number[];
+  /**
+   * Projektkarte: ausgeblendete Einträge innerhalb der Gruppen – `a:<Eintrag>` für alle Beteiligten (gleicher Aufbau),
+   * sonst `<Gruppe>:<Eintrag>`; für alle Projekte
+   */
+  kartenEintraegeAusgeblendet: string[];
 }
 
 export type SperrZustand =
@@ -301,6 +306,8 @@ interface FormulareState extends Gespeichert {
   kartenFavoritUmschalten: (gruppe: number) => void;
   /** Gruppe der Projektkarte in der Gliederung aus- bzw. wieder einblenden */
   kartenAusblendenUmschalten: (gruppe: number) => void;
+  /** Einträge (Schlüssel siehe `kartenEintraegeAusgeblendet`) aus- bzw. wieder einblenden */
+  kartenEintraegeUmschalten: (schluessel: string[]) => void;
   setOapVorlage: (pfad: string) => void;
   /** Projektdatei für das gewählte Projekt festlegen; null = wieder automatisch */
   oapWaehlen: (pfad: string | null) => Promise<void>;
@@ -408,6 +415,7 @@ function ladeEinstellungen(): Gespeichert {
     auswahl,
     kartenFavoriten: zahlen(o.kartenFavoriten),
     kartenAusgeblendet: zahlen(o.kartenAusgeblendet),
+    kartenEintraegeAusgeblendet: [...new Set(strings(o.kartenEintraegeAusgeblendet))],
   };
 }
 
@@ -1375,6 +1383,12 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       set({ kartenFavoriten: f.includes(gruppe) ? f.filter((x) => x !== gruppe) : [...f, gruppe], kartenAusgeblendet: get().kartenAusgeblendet.filter((x) => x !== gruppe) });
     },
 
+    kartenEintraegeUmschalten: (schluessel) => {
+      const a = get().kartenEintraegeAusgeblendet;
+      const aus = schluessel.every((k) => a.includes(k));
+      set({ kartenEintraegeAusgeblendet: aus ? a.filter((k) => !schluessel.includes(k)) : [...new Set([...a, ...schluessel])] });
+    },
+
     kartenAusblendenUmschalten: (gruppe) => {
       const a = get().kartenAusgeblendet;
       set({ kartenAusgeblendet: a.includes(gruppe) ? a.filter((x) => x !== gruppe) : [...a, gruppe], kartenFavoriten: get().kartenFavoriten.filter((x) => x !== gruppe) });
@@ -1728,6 +1742,7 @@ useFormulare.subscribe((s) => {
     auswahl: s.auswahl,
     kartenFavoriten: s.kartenFavoriten,
     kartenAusgeblendet: s.kartenAusgeblendet,
+    kartenEintraegeAusgeblendet: s.kartenEintraegeAusgeblendet,
   };
   schreiben(EINSTELLUNGEN, g);
 });

@@ -82,7 +82,7 @@ beforeEach(() => {
   ds.projektkarten.set(KARTE, projektkarte());
   ds.dateien.set('C:/FORMA/BS9/_archiv/000-Alt.frmsjf', MUSTER);
   ds.dateien.set('C:/FORMA/Sonstiges/notiz.txt', new Uint8Array([1]));
-  useFormulare.setState({ ds, ...ANFANG, kartenFavoriten: [], kartenAusgeblendet: [] });
+  useFormulare.setState({ ds, ...ANFANG, kartenFavoriten: [], kartenAusgeblendet: [], kartenEintraegeAusgeblendet: [] });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -538,6 +538,34 @@ describe('Formulare', () => {
     await klick(zeile('Eigentümer des Baugrundstücks').querySelector<HTMLButtonElement>('.pk-nav-auge')!);
     await klick(zeile('Gemeinde').querySelector<HTMLButtonElement>('.pk-nav-auge')!);
     expect(useFormulare.getState()).toMatchObject({ kartenFavoriten: [], kartenAusgeblendet: [232] });
+  });
+
+  it('Projektkarte: einzelne Einträge ausblenden – bei Beteiligten für alle, mit ungespeicherter Änderung sichtbar', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await gruppeWaehlen(host, 'Bauherr');
+    const titel = () => [...host.querySelectorAll('.pk-feld-titel')].map((t) => t.textContent);
+    const zelle = (t: string) => [...host.querySelectorAll('.pk-feld')].find((f) => f.querySelector('.pk-feld-titel')?.textContent === t)!;
+    expect(titel()).toContain('Straße/Nr.');
+    await klick(zelle('Straße/Nr.').querySelector<HTMLButtonElement>('.pk-feld-auge')!);
+    expect(titel()).not.toContain('Straße/Nr.');
+    expect(useFormulare.getState().kartenEintraegeAusgeblendet).toEqual(['a:70']);
+    expect(JSON.parse(localStorage.getItem('formulare:einstellungen')!).kartenEintraegeAusgeblendet).toEqual(['a:70']);
+    // gilt für alle Beteiligten
+    await gruppeWaehlen(host, 'Gemeinde');
+    expect(titel()).not.toContain('Straße/Nr.');
+    // „zeigen“: wieder sichtbar (gedämpft) und einblendbar
+    const mehr = host.querySelector<HTMLButtonElement>('.pk-eintraege-mehr')!;
+    expect(mehr.textContent).toBe('1 Eintrag ausgeblendet – zeigen');
+    await klick(mehr);
+    expect(zelle('Straße/Nr.').classList.contains('ausgeblendet')).toBe(true);
+    // mit ungespeicherter Änderung zählt der Eintrag nicht als verborgen – er bleibt sichtbar
+    eingabe(kartenFeld(host, 'Straße/Nr.'), 'Rathausplatz 1');
+    expect(host.querySelector('.pk-eintraege-mehr')).toBeNull();
+    expect(titel()).toContain('Straße/Nr.');
+    await klick(zelle('Straße/Nr.').querySelector<HTMLButtonElement>('.pk-feld-auge')!);
+    expect(useFormulare.getState().kartenEintraegeAusgeblendet).toEqual([]);
   });
 
   it('füllt das Formular aus der Projektkarte – leere Felder vorgewählt, in einem rückgängig zu machenden Schritt', async () => {

@@ -223,6 +223,11 @@ Anschrift, wie sie in Formularen steht.
   gewählte Gruppe und Gruppen mit ungespeicherten Änderungen bleiben sichtbar. Ein Favorit ist nie zugleich
   ausgeblendet. Die Auswahl gilt für alle FORMA-Projekte (die Gruppen haben in jeder Projektkarte dieselbe Kennung)
   und wird je Rechner mit den übrigen Ansichtseinstellungen gespeichert.
+- **Einträge ausblenden:** Das Auge an einem Eintrag der gewählten Gruppe (beim Überfahren bzw. per Tab sichtbar)
+  blendet ihn aus, z. B. „Postfach“ oder „Bank“. Bei Beteiligten gilt das für alle Beteiligten (sie haben denselben
+  Aufbau), sonst für diese Gruppe – jeweils in allen Projekten. „n Einträge ausgeblendet – zeigen“ unter der Gruppe
+  zeigt sie gedämpft wieder und lässt sie einblenden. Einträge mit ungespeicherten Änderungen bleiben sichtbar.
+  Ausgeblendete Einträge befüllen die Formulare weiter.
 - **Werkzeugleiste:** ↶ ↷ (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>), „Projektkarte speichern“
   (<kbd>Strg</kbd>+<kbd>S</kbd>) und „Verwerfen“ (lässt sich rückgängig machen). Ungespeicherte Änderungen bleiben
   lokal gesichert, auch über Neustarts. Geänderte Einträge sind orange markiert, ↺ setzt einen zurück.
@@ -245,6 +250,9 @@ Anschrift, wie sie in Formularen steht.
 - **Suche** über alle Einträge; ein Treffer springt in seine Gruppe.
 - **Hinweise auf Tippfehler** (Postleitzahl, E-Mail, IBAN-Prüfziffer, Telefonnummer) – nur Hinweise, gespeichert
   wird trotzdem. Zeichen, die es in Windows-1252 nicht gibt (z. B. Emojis), werden abgelehnt.
+- **Korrekturen der Zuordnung:** Wo ein FORMA-Vordruck Felder der falschen Beteiligten-Gruppe zuordnet, liest die
+  App die Zuordnung korrigiert (die Datei bleibt unverändert; `src/vorgaben/zuordnungen.ts`). Bisher: Angaben zur
+  Artenschutzprüfung (nw020012) – „Antragsteller/in“ kommt aus den Bauherrendaten, nicht vom Entwurfsverfasser.
 - **Autofill mit Zustand:** Felder, die FORMA einem Eintrag der Projektkarte zuordnet, bekommen ihren Text von
   dort (Auto-Wert). Je Feld merkt sich die App in der Projektdatei (`.oap`, Abschnitt `formulare` → `felder`, je
   Formulardatei) getrennt den zuletzt eingetragenen Auto-Wert und eine manuelle Überschreibung:

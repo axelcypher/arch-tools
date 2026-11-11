@@ -54,8 +54,11 @@ function rahmen(r: SynRahmen, top: number, nr: { label: number }): { zeilen: str
   return { zeilen: [`  object ${r.name}: TPanel`, '    Left = 0', `    Top = ${top}`, '    Width = 700', `    Height = ${hoehe}`, ...z, '  end'], hoehe };
 }
 
-/** Formulardatei (`.frmsjf`) mit Kennung, Stand und Seiten aus Rahmen; `werte` (`<Seite>:<Name>`) setzt Eingaben */
-export function synthetischesFormular(kennung: string, stand: string, seiten: SynRahmen[][], werte: Record<string, string | boolean> = {}): Uint8Array {
+/**
+ * Formulardatei (`.frmsjf`) mit Kennung, Stand und Seiten aus Rahmen; `werte` (`<Seite>:<Name>`) setzt Eingaben,
+ * `prokarte` (je Seite) die versteckte Liste `lstbxProkarte` mit Zuordnungen wie `Memo7=0202aedt040`
+ */
+export function synthetischesFormular(kennung: string, stand: string, seiten: SynRahmen[][], werte: Record<string, string | boolean> = {}, prokarte: Record<number, string[]> = {}): Uint8Array {
   seiten = seiten.map((rs, i) => rs.map((r) => ({ ...r, felder: r.felder.map((f) => (`${i}:${f.name}` in werte ? { ...f, wert: werte[`${i}:${f.name}`] } : f)) })));
   const teile = [`[*SJ_FORMULAR (w) by SJ GmbH Aachen#][*SJ_BEGIN#][*SJ_MODIFIED#]${kennung}[*SJ_VERSION#]${stand}[*SJ_END#]`];
   seiten.forEach((rahmenListe, i) => {
@@ -67,6 +70,20 @@ export function synthetischesFormular(kennung: string, stand: string, seiten: Sy
       zeilen.push(...x.zeilen);
       top += x.hoehe + 10;
     }
+    const liste = prokarte[i];
+    if (liste?.length)
+      zeilen.push(
+        '  object lstbxProkarte: TListBox',
+        '    Left = 706',
+        '    Top = 25',
+        '    Width = 400',
+        '    Height = 100',
+        '    ItemHeight = 13',
+        '    Items.Strings = (',
+        ...liste.map((z, k) => `      ${zk(z)}${k === liste.length - 1 ? ')' : ''}`),
+        '    Visible = False',
+        '  end',
+      );
     zeilen.push('end', '');
     teile.push(`[*S${String(i + 1).padStart(2, '0')}#][*SJ_BEGIN#]${zeilen.join('\r\n')}[*SJ_END#]`);
   });
