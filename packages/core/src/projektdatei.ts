@@ -66,12 +66,23 @@ export const OAP_PLATZHALTER: { name: string; text: string }[] = [
   { name: '{Kürzel}', text: 'Projektkürzel bzw. -nummer (gleich: {nummer}, {projektcode})' },
   { name: '{Kurzname}', text: 'Kurzname des Projekts' },
   { name: '{Vorhaben}', text: 'Bezeichnung des Vorhabens' },
-  { name: '{Datum}', text: 'Tag des Anlegens als JJMMTT' },
-  { name: '{Jahr}', text: 'Jahr des Anlegens' },
+  { name: '{Datum}', text: 'Tag des Anlegens – hier ohne Angabe als JJMMTT (wie bisher); mit Format z. B. {datum:JJJJ-MM-TT}' },
+  { name: '{datum:JJMMTT}', text: 'Tag des Anlegens im angegebenen Format (JJJJ, JJ, MM, TT)' },
+  { name: '{Jahr}', text: 'Jahr des Anlegens (vierstellig)' },
+  { name: '{jj}', text: 'Jahr des Anlegens (zweistellig)' },
 ];
 
 const PLATZHALTER_MUSTER = /\{\s*([^{}]*?)\s*\}/g;
-const BEKANNT = /^(nummer|k(?:ü|ue)rzel|projektcode|kurzname|vorhaben|datum|jahr)$/i;
+const BEKANNT = /^(nummer|k(?:ü|ue)rzel|projektcode|kurzname|vorhaben|datum(?::\s*[JMT.\-_ ]+)?|jahr|jj)$/i;
+
+/**
+ * Datum nach Format: JJJJ (Jahr), JJ (zweistellig), MM, TT, dazwischen Trenner – „JJJJ-MM-TT“ → 2026-11-11, „JJMMTT“ →
+ * 261111. Gemeinsam für Dateinamen und den Pfad der Projektdatei.
+ */
+export function datumNachFormat(d: Date, format: string): string {
+  const zwei = (n: number) => String(n).padStart(2, '0');
+  return format.replace(/JJJJ|JJ|MM|TT/g, (t) => (t === 'JJJJ' ? String(d.getFullYear()) : t === 'JJ' ? zwei(d.getFullYear() % 100) : t === 'MM' ? zwei(d.getMonth() + 1) : zwei(d.getDate())));
+}
 
 /** Platzhalter der Vorlage, die nicht aufgelöst werden (bleiben so im Pfad stehen) */
 export const unbekanntePlatzhalter = (vorlage: string) => [...new Set([...vorlage.matchAll(PLATZHALTER_MUSTER)].filter((m) => !BEKANNT.test(m[1])).map((m) => m[0]))];
@@ -92,6 +103,16 @@ export function projektdateiPfad(vorlage: string, werte: { nummer: string; kurzn
     if (n === 'kurzname') return sichererDateiname(werte.kurzname ?? '');
     if (n === 'vorhaben') return sichererDateiname(werte.vorhaben ?? '');
     if (n === 'jahr') return String(werte.jahr ?? tag.getFullYear());
+    if (n === 'jj') return zweistellig(Number(werte.jahr ?? tag.getFullYear()) % 100);
+    // {datum} ohne Format bleibt hier JJMMTT, damit vorhandene Einstellungen dieselben Namen ergeben
+    if (n.startsWith('datum:'))
+      return datumNachFormat(
+        tag,
+        k
+          .slice(k.indexOf(':') + 1)
+          .trim()
+          .toUpperCase(),
+      );
     if (n === 'datum') return `${zweistellig(tag.getFullYear() % 100)}${zweistellig(tag.getMonth() + 1)}${zweistellig(tag.getDate())}`;
     return sichererDateiname(werte.nummer);
   });

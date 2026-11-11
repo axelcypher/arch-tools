@@ -34,7 +34,7 @@ interface Geprueft extends GeladenerOrdner {
  * Stammordner oder per „Ordner wählen …“) oder alle auf einmal mit Übersicht und CSV. Nur lesend; einzig „fehlende
  * Ordner anlegen“ legt auf Wunsch Ordner an. `fs` ersetzt das Dateisystem des Desktops (Tests).
  */
-export function PruefView({ onErgaenzen, fs: fsVorgabe }: { onErgaenzen: (o: GeladenerOrdner) => void; fs?: Dateisystem }) {
+export function PruefView({ onErgaenzen, fs: fsVorgabe, start }: { onErgaenzen: (o: GeladenerOrdner) => void; fs?: Dateisystem; start?: string | null }) {
   const desktop = hatDateisystem();
   const fs = fsVorgabe ?? (desktop ? tauriDateisystem : null);
   const struktur = useOrdner((s) => s.struktur);
@@ -56,6 +56,11 @@ export function PruefView({ onErgaenzen, fs: fsVorgabe }: { onErgaenzen: (o: Gel
       aktuell = false;
     };
   }, [fs, rootsSchluessel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // aus der Projektübersicht: dieses Projekt gleich prüfen
+  useEffect(() => {
+    if (start) void pruefenPfad(start);
+  }, [start]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const auswerten = async (o: GeladenerOrdner) => {
     const g = await projektEinlesen(o);

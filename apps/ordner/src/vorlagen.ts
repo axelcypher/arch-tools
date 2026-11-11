@@ -227,10 +227,10 @@ export const PLATZHALTER_DOCS: { gruppe: string; zeilen: [string, string][] }[] 
   {
     gruppe: 'In Datei- und Ordnernamen (einfache Klammern)',
     zeilen: [
-      ['{nummer}, {kurzname}', 'Projektnummer und Kurzname'],
-      ['{jahr}', 'Jahr, in dem das Projekt angelegt wurde'],
+      ['{nummer} (= {kürzel}), {kurzname}, {vorhaben}', 'Projektnummer, Kurzname, Bezeichnung des Vorhabens – Groß-/Kleinschreibung egal'],
+      ['{jahr}, {jj}', 'Jahr, in dem das Projekt angelegt wurde (vier- bzw. zweistellig)'],
       ['{name}', 'Name der Vorlage ohne Endung (nur Dateinamen im Projekt)'],
-      ['{datum}', 'Tag des Anlegens der Datei, JJJJ-MM-TT – beim Aktualisieren gilt eine Datei mit anderem Datum als vorhanden'],
+      ['{datum}, {datum:JJMMTT}', 'Tag des Anlegens der Datei, JJJJ-MM-TT bzw. im angegebenen Format – beim Aktualisieren gilt eine Datei mit anderem Datum als vorhanden'],
       ['{bearbeiter}', 'Bearbeitung'],
     ],
   },

@@ -3,7 +3,7 @@ import type { ProjectMeta, ProjektordnerAngaben } from '@core/model';
 import { projektdateiSchreiben } from '@core/platform/projektordner';
 import { projektdateiPfad, projektdateiWaehlen, VORGABE_OAP_PFAD } from '@core/projektdatei';
 import type { Dateisystem, Eintrag } from './dateisystem';
-import { nameAus } from './nummer';
+import { DATUM_MUSTER, nameAus } from './nummer';
 import type { ProjektdateiAenderung, Stammdaten } from './stammdaten';
 import { alsProject, bereinigt, isoDatum, platzhalter, projektdateiAenderung } from './stammdaten';
 import type { Struktur, VorlagenEintrag } from './struktur';
@@ -83,7 +83,9 @@ const ANLEITUNG = /^liesmich\.(txt|md)$/i;
 export const kurzeWerte = (s: Stammdaten, date: Date, jahr = date.getFullYear()): Record<string, string | number> => ({
   nummer: s.nummer,
   kurzname: s.kurzname,
+  vorhaben: s.bezeichnung,
   jahr,
+  jj: String(jahr % 100).padStart(2, '0'),
   bearbeiter: s.bearbeiter,
   datum: isoDatum(date),
 });
@@ -154,7 +156,7 @@ export function zuordnungAufloesen(e: VorlagenEintrag, dateien: VorlagenDatei[],
     const zielOrdner = zielPfad(ordner, werte);
     const pfad = zielOrdner ? `${zielOrdner}/${name}` : name;
     const mitPlatzhalter = [zielPfad(ordner, datumWerte), zielDateiname(vorlageName, e.name, vorlagenname, datumWerte)].filter(Boolean).join('/');
-    const muster = mitPlatzhalter.includes(DATUM_PLATZHALTER) ? new RegExp(`^${escapeRe(mitPlatzhalter.toLowerCase()).split(DATUM_PLATZHALTER).join('\\d{4}-\\d{2}-\\d{2}')}$`) : undefined;
+    const muster = mitPlatzhalter.includes(DATUM_PLATZHALTER) ? new RegExp(`^${escapeRe(mitPlatzhalter.toLowerCase()).split(DATUM_PLATZHALTER).join(DATUM_MUSTER)}$`) : undefined;
     out.push({ datei, vorlageName, pfad, name, ...(muster ? { muster } : {}) });
   }
   return out;

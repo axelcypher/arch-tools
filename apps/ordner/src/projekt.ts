@@ -1,7 +1,7 @@
 import { readProjectFile } from '@core/archive';
-import type { Beteiligter, ProjectMeta, ProjektordnerAngaben } from '@core/model';
+import type { Beteiligter, ProjectMeta, ProjektordnerAngaben, ProjektStatus } from '@core/model';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
-import { projektdateiFinden, projektdateiKopf, projekteAuflisten } from '@core/platform/projektordner';
+import { projektdateiFinden, projektdateiKopf, projektdateiSchreiben, projekteAuflisten } from '@core/platform/projektordner';
 import { projektdateien, projektdateiWaehlen } from '@core/projektdatei';
 import type { Eintrag } from './dateisystem';
 import type { ProjektAngaben } from './stammdaten';
@@ -62,6 +62,22 @@ export async function projektEinlesen(o: GeladenerOrdner, gewaehlt?: string | nu
   } catch (e) {
     return { angaben: alt, quelle: { pfad: datei.pfad, fehler: e instanceof Error ? e.message : String(e), ...defekt }, projektdatei: null, kandidaten };
   }
+}
+
+/**
+ * Status eines Projekts setzen (P-15, „Projekt abschließen“): nur `meta.status` in der Projektdatei – frisch gelesen,
+ * alles andere bleibt, wie es ist (auch Abschnitte anderer Apps und alle übrigen Einträge des Archivs). „aktiv“ ist
+ * der Normalfall und steht nicht in der Datei. Ohne Projektdatei geht es nicht – dann zuerst ergänzen.
+ */
+export async function projektStatusSetzen(fs: ProjektordnerZugriff, projektordner: string, status: ProjektStatus): Promise<void> {
+  const datei = await projektdateiFinden(fs, projektordner);
+  if (!datei) throw new Error('Das Projekt hat noch keine Projektdatei (.oap) – bitte zuerst im Assistenten ergänzen.');
+  await projektdateiSchreiben(fs, projektordner, datei.pfad, (roh) => {
+    const meta = { ...((roh.meta ?? {}) as Record<string, unknown>) };
+    if (status === 'aktiv') delete meta.status;
+    else meta.status = status;
+    return { ...roh, meta };
+  });
 }
 
 /**

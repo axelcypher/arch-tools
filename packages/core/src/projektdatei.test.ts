@@ -32,6 +32,10 @@ describe('Projektdatei im Projektordner', () => {
     // unbekannte Platzhalter bleiben stehen – die Einstellungen weisen darauf hin
     expect(projektdateiPfad('{Kürzel} {Bauherr}', { nummer: 'BS9' })).toBe('BS9 {Bauherr}.oap');
     expect(unbekanntePlatzhalter('{Kürzel} {Bauherr} {datum} {Ort} {Bauherr}')).toEqual(['{Bauherr}', '{Ort}']);
+    // Datum mit Format (P-06), {jj}; ohne Format bleibt es JJMMTT wie bisher
+    expect(projektdateiPfad('{nummer} {datum:JJJJ-MM-TT}', { nummer: 'BS9', datum })).toBe('BS9 2026-11-10.oap');
+    expect(projektdateiPfad('{nummer} {Datum:jjmmtt} {jj}', { nummer: 'BS9', datum })).toBe('BS9 261110 26.oap');
+    expect(unbekanntePlatzhalter('{datum:JJJJ-MM-TT} {jj} {datum:xyz}')).toEqual(['{datum:xyz}']);
   });
 
   it('gezielt ändern: nur projekt.json, alle anderen Einträge bleiben, Abschnitte anderer Apps auch; ohne Änderung null', () => {

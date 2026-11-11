@@ -26,6 +26,8 @@ export function App() {
   const [start, setStart] = useState<{ ordner: GeladenerOrdner; nr: number } | null>(null);
   const [logOpen, setLogOpen] = useState(false);
   const [neustart, setNeustart] = useState(0);
+  // „Projekt prüfen“ aus der Projektübersicht
+  const [pruefStart, setPruefStart] = useState<{ pfad: string; nr: number } | null>(null);
 
   useEffect(() => {
     document.title = 'Projektordner';
@@ -90,9 +92,21 @@ export function App() {
         </div>
       )}
       <main className="po-main">
-        {ansicht === 'projekt' && <AssistentView key={`${start?.nr ?? 0}-${neustart}`} start={start?.ordner ?? null} onEinstellungen={() => setAnsicht('einstellungen')} />}
+        {ansicht === 'projekt' && (
+          <AssistentView
+            key={`${start?.nr ?? 0}-${neustart}`}
+            start={start?.ordner ?? null}
+            onEinstellungen={() => setAnsicht('einstellungen')}
+            onPruefen={(pfad) => {
+              setPruefStart({ pfad, nr: (pruefStart?.nr ?? 0) + 1 });
+              setAnsicht('pruefen');
+            }}
+          />
+        )}
         {ansicht === 'pruefen' && (
           <PruefView
+            key={pruefStart?.nr ?? 0}
+            start={pruefStart?.pfad ?? null}
             onErgaenzen={(ordner) => {
               setStart({ ordner, nr: (start?.nr ?? 0) + 1 });
               setAnsicht('projekt');

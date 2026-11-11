@@ -3,12 +3,13 @@ import { readProjectFile } from '../archive';
 import type { Project, ProjectMeta } from '../model';
 import { createProject, leereMeta } from '../model';
 import type { AllgemeineEinstellungen } from '../platform/konfig';
-import { allgemeinAendern, allgemeinLaden, zuletztMerken } from '../platform/konfig';
+import { allgemeinAendern, allgemeinLaden, angeheftetLesen, anheftenUmschalten, zuletztMerken } from '../platform/konfig';
 import { logger } from '../platform/log';
 import type { ProjektordnerZugriff } from '../platform/projektordner';
-import { hatOrdnerzugriff, ordnerName, ordnerWaehlen, projektdateiAnlegen, projektdateiFinden, projektdateiKopf, tauriProjektordner, verbinde } from '../platform/projektordner';
+import { hatOrdnerzugriff, ordnerName, ordnerWaehlen, ordnerZeigen, projektdateiAnlegen, projektdateiFinden, projektdateiKopf, tauriProjektordner, verbinde } from '../platform/projektordner';
 import { projektdateiPfad } from '../projektdatei';
-import { ausOrdnernameEinfach, useProjektordnerListe } from './projektListe';
+import { ausOrdnernameMit, useProjektordnerListe } from './projektListe';
+import type { KontextEintrag, UebersichtProjekt } from './ProjektUebersicht';
 import { ProjektUebersicht } from './ProjektUebersicht';
 import { StammdatenDialog } from './Stammdaten';
 import './projektwahl.css';
@@ -77,6 +78,15 @@ export function ProjektWahl({
   const [laeuft, setLaeuft] = useState<string | null>(null);
   useEscSchliessen(onSchliessen);
   const [dialog, setDialog] = useState<{ ordner: string; meta: ProjectMeta } | null>(null);
+  const [angeheftet, setAngeheftet] = useState<string[]>([]);
+
+  useEffect(() => {
+    let aktuell = true;
+    void angeheftetLesen().then((a) => aktuell && setAngeheftet(a));
+    return () => {
+      aktuell = false;
+    };
+  }, []);
 
   useEffect(() => {
     let aktuell = true;
@@ -89,7 +99,9 @@ export function ProjektWahl({
     };
   }, []);
 
-  const liste = useProjektordnerListe(fs, allgemein?.projekte ?? []);
+  // Nummer und Kurzname aus dem Ordnernamen – nach dem Schema der Struktur (gemeinsame Einstellung), wie im Projektordner
+  const ausName = useMemo(() => ausOrdnernameMit(allgemein?.ordnerSchema), [allgemein?.ordnerSchema]);
+  const liste = useProjektordnerListe(fs, allgemein?.projekte ?? [], ausName);
   const aktiv = useMemo(() => {
     if (!offeneDatei) return null;
     const d = offeneDatei.toLowerCase().replace(/\\/g, '/');
@@ -122,7 +134,7 @@ export function ProjektWahl({
       if (datei) await geladen(ordner, datei.pfad, false);
       else {
         // ohne Projektdatei: Stammdaten erfassen, Nummer und Kurzname aus dem Ordnernamen vorschlagen
-        const n = ausOrdnernameEinfach(ordnerName(ordner));
+        const n = ausName(ordnerName(ordner));
         setDialog({ ordner, meta: { ...leereMeta(), projektcode: n.nummer ?? '', ...(n.kurzname ? { kurzname: n.kurzname } : {}) } });
       }
     } catch (e) {
@@ -141,6 +153,16 @@ export function ProjektWahl({
     log.info(`Projektdatei angelegt: ${verbinde(ordner, pfad)}`);
     setDialog(null);
     await geladen(ordner, pfad, true);
+  };
+
+  /** Kontextmenü je Projekt: im Explorer öffnen, anheften bzw. lösen */
+  const kontextMenue = (p: UebersichtProjekt): KontextEintrag[] => {
+    const dran = angeheftet.some((a) => a.toLowerCase() === p.schluessel.toLowerCase());
+    return [
+      { label: 'Öffnen', aktion: () => void oeffnen(p.schluessel) },
+      { label: 'Im Explorer öffnen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => setFehler(e instanceof Error ? e.message : String(e))) },
+      { label: dran ? 'Lösen' : 'Anheften', titel: 'Angeheftete Projekte stehen vorne – in allen Apps', aktion: () => void anheftenUmschalten(p.schluessel).then(setAngeheftet) },
+    ];
   };
 
   const stammordnerWaehlen = async () => {
@@ -189,6 +211,8 @@ export function ProjektWahl({
         onZurueck={onSchliessen}
         onNeuLaden={liste.neuLaden}
         marken={liste.marken}
+        angeheftet={angeheftet}
+        kontextMenue={kontextMenue}
         kopf={
           <>
             {onDateiOeffnen && (

@@ -373,7 +373,16 @@ export interface ProjectMeta {
    * steht in den Einstellungen der Apps.
    */
   merkmale?: Record<string, string>;
+  /** Stand des Projekts: Akquise, aktiv, abgeschlossen – fehlt = aktiv (Filter der Projektübersicht) */
+  status?: ProjektStatus;
 }
+
+export type ProjektStatus = 'akquise' | 'aktiv' | 'abgeschlossen';
+export const PROJEKT_STATUS: { id: ProjektStatus; label: string }[] = [
+  { id: 'akquise', label: 'Akquise' },
+  { id: 'aktiv', label: 'aktiv' },
+  { id: 'abgeschlossen', label: 'abgeschlossen' },
+];
 
 /** Leistungsphasen nach HOAI */
 export const LEISTUNGSPHASEN: { nr: number; label: string }[] = [

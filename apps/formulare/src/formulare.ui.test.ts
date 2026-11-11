@@ -177,12 +177,10 @@ describe('Formulare', () => {
 
   it('findet Projekte mit Titel und ihre Formulare (ohne Archiv)', async () => {
     const host = await render();
-    // Projektübersicht statt Liste in der Seitenleiste: je Quelle eine Gruppe, beim Start eingeklappt
+    // Projektübersicht statt Liste in der Seitenleiste: je Quelle eine Gruppe – bei genau einer Quelle aufgeklappt (P-09)
     expect(host.querySelector('.nav')).toBeNull();
     const gruppe = host.querySelector<HTMLButtonElement>('.pa-gruppe-kopf')!;
-    expect(gruppe.getAttribute('aria-expanded')).toBe('false');
-    expect(host.querySelector('.pa-karte')).toBeNull();
-    await klick(gruppe);
+    expect(gruppe.getAttribute('aria-expanded')).toBe('true');
     expect(host.querySelector('.pa-karte[data-projekt="BS9"]')!.textContent).toContain('Musterstraße 9');
     expect(knopf(host, 'Sonstiges')).toBeUndefined();
     await projektOeffnen(host, 'BS9');

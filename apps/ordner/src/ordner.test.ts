@@ -3,13 +3,13 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { readProjectFile, writeArchive } from '@core/archive';
 import { ordnerAusDateien, SpeicherDateisystem, verbinde } from './dateisystem';
-import { dateimuster, naechsteNummer, nameAus, nummerAus, nummerPasst } from './nummer';
+import { dateimuster, naechsteNummer, nameAus, nummerAus, nummerPasst, PLATZHALTER_NUMMER, PLATZHALTER_PROJEKT, PLATZHALTER_VORLAGE, unbekanntePlatzhalterIn } from './nummer';
 import type { PlanOptionen, Vorlage } from './plan';
 import { ausfuehren, ladeVorlagen, nichtVorausgewaehlt, ohne, ordnerName, planen, presetPruefen, vorlagenAnzahl, vorlagenDateien } from './plan';
 import { ausserhalbDerStruktur, pruefe } from './pruefung';
 import { allePruefen, berichtCsv, sammelCsv } from './sammel';
 import type { Stammdaten } from './stammdaten';
-import { beteiligteSammeln, projektEinlesen } from './projekt';
+import { beteiligteSammeln, projektEinlesen, projektStatusSetzen } from './projekt';
 import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
 import type { OrdnerRegel, Struktur } from './struktur';
 import { ausruecken, baumOrdnung, baumZeilen, einruecken, hinzufuegen, loeschen, umbenennen, verschieben, zusatzSetzen } from './baum';
@@ -97,6 +97,19 @@ describe('Nummern und Namen', () => {
     expect(m.test('Grundriss EG')).toBe(false);
     expect(m.test('2026-014_A-101_Grundriss EG')).toBe(false); // Index fehlt
     expect(dateimuster('{datum}_{titel}', '').test('2026-10-01_Aktennotiz')).toBe(true);
+  });
+
+  it('ein Platzhalter-Satz: Groß-/Kleinschreibung egal, {kürzel} = {nummer}, {datum:JJMMTT}, unbekannte erkannt (P-06)', () => {
+    const werte = { nummer: '2026-014', kurzname: 'EFH', vorhaben: 'Neubau', jahr: 2026, jj: '26', datum: '2026-11-10', bearbeiter: 'TP' };
+    expect(nameAus('{Nummer} {KURZNAME} {Kürzel} {projektcode}', werte)).toBe('2026-014 EFH 2026-014 2026-014');
+    expect(nameAus('{datum} {datum:JJMMTT} {datum:TT.MM.JJJJ} {Datum:jjjjmmtt}', werte)).toBe('2026-11-10 261110 10.11.2026 20261110');
+    expect(nameAus('{datum:xyz} {vorhaben} {jj}', werte)).toBe('{datum:xyz} Neubau 26');
+    expect(unbekanntePlatzhalterIn('{Nummer} {kürzel} {datum:JJMMTT} {bauherr} {datum:xyz}', PLATZHALTER_PROJEKT)).toEqual(['{bauherr}', '{datum:xyz}']);
+    expect(unbekanntePlatzhalterIn('{jahr}-{nr:4} {nr}', PLATZHALTER_NUMMER)).toEqual([]);
+    expect(unbekanntePlatzhalterIn('{name} {titel}', PLATZHALTER_VORLAGE)).toEqual(['{titel}']);
+    // Dateischema mit Datum im anderen Format
+    expect(dateimuster('{datum:JJMMTT}_{titel}', '').test('261110_Aktennotiz')).toBe(true);
+    expect(dateimuster('{Kürzel}_{titel}', '2026-014').test('2026-014_Plan')).toBe(true);
   });
 });
 
@@ -609,6 +622,37 @@ describe('Vorlagen-Presets', () => {
     const ergebnis = await ausfuehren(fs, '/p', spaeter);
     expect(ergebnis.find((e) => e.schritt === datei)?.status).toBe('vorhanden');
     expect(fs.eintraege.has(`${basis}/03 Berechnungen/Kosten/2026-014 Kostenschätzung 2026-11-10.csv`)).toBe(false);
+  });
+
+  it('Datum mit Format im Dateinamen: dieselbe Datei mit anderem Datum gilt als vorhanden (P-06)', async () => {
+    const struktur: Struktur = { ...MIT_PRESETS, presets: [{ name: 'Kosten', standard: true, eintraege: [{ quelle: 'Excel/Kostenschätzung.csv', ziel: '03 Berechnungen/Kosten', name: '{Kürzel} {datum:JJMMTT} Kosten' }] }] };
+    const fs = new SpeicherDateisystem();
+    await ausfuehren(fs, '/p', plane(stamm(), struktur, BUERO, [], TAG));
+    const basis = '/p/2026-014 EFH Musterweg';
+    expect(fs.eintraege.has(`${basis}/03 Berechnungen/Kosten/2026-014 261001 Kosten.csv`)).toBe(true);
+    const spaeter = plane(stamm(), struktur, BUERO, await fs.liste(basis, 12), new Date(2026, 10, 10));
+    expect(spaeter.schritte.find((x) => x.herkunft === 'vorlage')).toMatchObject({ vorhanden: true, vorhandenAls: '03 Berechnungen/Kosten/2026-014 261001 Kosten.csv' });
+  });
+
+  it('Projekt abschließen: nur meta.status in der Projektdatei, alles andere bleibt; Nummernvorschlag zählt den Archiv-Stammordner (P-15)', async () => {
+    const fs = new SpeicherDateisystem();
+    await ausfuehren(fs, 'P:/Projekte', plane(stamm(), KLEIN, []));
+    const basis = 'P:/Projekte/2026-014 EFH Musterweg';
+    const pfad = `${basis}/00 Projekt/2026-014 EFH Musterweg.oap`;
+    const vorher = unzipSync(fs.eintraege.get(pfad)!);
+    const metaVorher = readProjectFile(fs.eintraege.get(pfad)!).meta;
+    await projektStatusSetzen(fs, basis, 'abgeschlossen');
+    const nachher = unzipSync(fs.eintraege.get(pfad)!);
+    expect(readProjectFile(fs.eintraege.get(pfad)!).meta).toEqual({ ...metaVorher, status: 'abgeschlossen' });
+    for (const k of Object.keys(vorher).filter((k) => k !== 'projekt.json')) expect(nachher[k]).toEqual(vorher[k]);
+    // „aktiv“ ist der Normalfall und steht nicht in der Datei
+    await projektStatusSetzen(fs, basis, 'aktiv');
+    expect(readProjectFile(fs.eintraege.get(pfad)!).meta.status).toBeUndefined();
+    // ohne Projektdatei: verständliche Meldung, nichts wird angelegt
+    await fs.ordnerAnlegen('P:/Projekte', '2019-003 Altbau');
+    await expect(projektStatusSetzen(fs, 'P:/Projekte/2019-003 Altbau', 'abgeschlossen')).rejects.toThrow(/noch keine Projektdatei/);
+    // verschobene Projekte im Archiv-Stammordner zählen beim Nummernvorschlag mit
+    expect(naechsteNummer('{jahr}-{nr:3}', ['2026-014 EFH Musterweg', ...['2026-020 Archiviert']], TAG)).toBe('2026-021');
   });
 
   it('dieselbe Vorlage aus zwei Presets ist kein Widerspruch; verschiedene Vorlagen mit demselben Ziel schon', () => {

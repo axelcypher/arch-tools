@@ -1,8 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { ProjektStatus } from '@core/model';
+import { angeheftetLesen, anheftenUmschalten } from '@core/platform/konfig';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
+import { ordnerZeigen } from '@core/platform/projektordner';
+import { meldung } from '@core/ui/Rueckfrage';
 import { useProjektordnerListe } from '@core/ui/projektListe';
+import type { KontextEintrag, UebersichtProjekt } from '@core/ui/ProjektUebersicht';
 import { ProjektUebersicht } from '@core/ui/ProjektUebersicht';
 import { ausOrdnername } from '../nummer';
+import { projektStatusSetzen } from '../projekt';
 import { useOrdner } from '../store';
 
 /**
@@ -18,6 +24,7 @@ export function ProjektStart({
   onOeffnen,
   onAndererOrdner,
   onEinstellungen,
+  onPruefen,
 }: {
   fs: ProjektordnerZugriff;
   /** angefangenes neues Projekt („2026-014 EFH Musterweg“), leer ohne */
@@ -27,11 +34,52 @@ export function ProjektStart({
   onOeffnen: (pfad: string) => void;
   onAndererOrdner: () => void;
   onEinstellungen?: () => void;
+  /** ein Projekt in „Ordner prüfen“ prüfen */
+  onPruefen?: (pfad: string) => void;
 }) {
   const { allgemein, struktur } = useOrdner();
   // Nummer und Kurzname aus dem Ordnernamen nach dem Schema der Struktur
   const ausName = useCallback((name: string) => ausOrdnername(struktur.ordnername, name), [struktur.ordnername]);
   const liste = useProjektordnerListe(fs, allgemein.projekte, ausName);
+  const [angeheftet, setAngeheftet] = useState<string[]>([]);
+  useEffect(() => {
+    let aktuell = true;
+    void angeheftetLesen().then((a) => aktuell && setAngeheftet(a));
+    return () => {
+      aktuell = false;
+    };
+  }, []);
+
+  const statusSetzen = async (p: UebersichtProjekt, status: ProjektStatus) => {
+    try {
+      await projektStatusSetzen(fs, p.schluessel, status);
+      liste.neuLaden();
+    } catch (e) {
+      await meldung('Status nicht gesetzt', e instanceof Error ? e.message : String(e));
+    }
+  };
+  /** Kontextmenü je Projekt: ergänzen, prüfen, im Explorer öffnen, Status, anheften */
+  const kontextMenue = (p: UebersichtProjekt): KontextEintrag[] => {
+    const dran = angeheftet.some((a) => a.toLowerCase() === p.schluessel.toLowerCase());
+    const status = p.projektStatus ?? 'aktiv';
+    return [
+      { label: 'Ergänzen …', aktion: () => onOeffnen(p.schluessel) },
+      ...(onPruefen ? [{ label: 'Projekt prüfen', aktion: () => onPruefen(p.schluessel) }] : []),
+      { label: 'Im Explorer öffnen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => void meldung('Ordner ließ sich nicht öffnen', String(e))) },
+      ...(status !== 'abgeschlossen'
+        ? [
+            {
+              label: 'Projekt abschließen',
+              titel: 'Status „abgeschlossen“ in der Projektdatei – das Projekt verschwindet aus der Standardansicht',
+              aktion: () => void statusSetzen(p, 'abgeschlossen'),
+            },
+          ]
+        : [{ label: 'Wieder aktiv', aktion: () => void statusSetzen(p, 'aktiv') }]),
+      ...(status === 'aktiv' ? [{ label: 'Als Akquise kennzeichnen', aktion: () => void statusSetzen(p, 'akquise') }] : []),
+      ...(status === 'akquise' ? [{ label: 'Beauftragt (aktiv)', aktion: () => void statusSetzen(p, 'aktiv') }] : []),
+      { label: dran ? 'Lösen' : 'Anheften', titel: 'Angeheftete Projekte stehen vorne – in allen Apps', aktion: () => void anheftenUmschalten(p.schluessel).then(setAngeheftet) },
+    ];
+  };
 
   return (
     <ProjektUebersicht
@@ -44,7 +92,9 @@ export function ProjektStart({
       onOeffnen={(p) => onOeffnen(p.schluessel)}
       onNeuLaden={liste.neuLaden}
       onEinstellungen={onEinstellungen}
-      marken={liste.marken}
+      marken={(p) => [...liste.marken(p), ...(p.projektStatus && p.projektStatus !== 'aktiv' ? [{ text: p.projektStatus === 'akquise' ? 'Akquise' : 'abgeschlossen', art: 'neutral' as const }] : [])]}
+      angeheftet={angeheftet}
+      kontextMenue={kontextMenue}
       kopf={
         <>
           <button className="primary" onClick={onNeu} title="Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen">

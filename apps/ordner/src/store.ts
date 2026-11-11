@@ -62,6 +62,8 @@ interface OrdnerState {
   vorlagenName: string;
   vorlagenFehler: string | null;
   vorlagenLaden: boolean;
+  /** die Einstellungen sind aus dem Konfigurationsordner gelesen */
+  geladen: boolean;
   /** Stand von projektordner.json beim letzten Lesen bzw. Schreiben (zum Erkennen fremder Änderungen) */
   konfigStandEigen: string | null;
   /** projektordner.json wurde inzwischen anderswo geändert: deren Inhalt; nichts wird geschrieben, bis entschieden ist */
@@ -181,6 +183,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     vorlagenFehler: null,
     vorlagenLaden: false,
     setStamm: (patch) => set({ stamm: { ...get().stamm, ...patch } }),
+    geladen: false,
     konfigStandEigen: null,
     konflikt: null,
     rueckgaengig: null,
@@ -260,6 +263,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
           // Stand wie beim Lesen der Datei (JSON hin und zurück)
           konfigStandEigen: konfigStand(JSON.parse(JSON.stringify(eigen))),
           konflikt: null,
+          geladen: true,
         });
       } catch (e) {
         set({ konfigFehler: `Einstellungen nicht lesbar: ${fehlertext(e)}` });
@@ -288,6 +292,13 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     setVorlagenImBrowser: (vorlagenName, vorlagen) => set({ vorlagenName, vorlagen, vorlagenFehler: null }),
     neuesProjekt: () => set({ stamm: { ...leereStammdaten(), bearbeiter: get().stamm.bearbeiter } }),
   };
+});
+
+// Schema der Projektordner-Namen für alle Apps (gleiche Ableitung von Nummer und Kurzname, P-09): nachgeführt, sobald
+// die Einstellungen gelesen sind und wenn es sich ändert
+useOrdner.subscribe((s, vorher) => {
+  if (!s.geladen || (s.struktur === vorher.struktur && s.geladen === vorher.geladen)) return;
+  if (s.struktur.ordnername !== s.allgemein.ordnerSchema) s.setAllgemein({ ordnerSchema: s.struktur.ordnername });
 });
 
 // nur das angefangene Formular bleibt lokal

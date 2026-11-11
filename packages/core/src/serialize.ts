@@ -225,6 +225,7 @@ function normalizeMeta(v: unknown): ProjectMeta {
     const mk = Object.entries(m.merkmale).filter((e): e is [string, string] => typeof e[1] === 'string' && !!e[0].trim());
     if (mk.length) meta.merkmale = Object.fromEntries(mk);
   }
+  if (m.status === 'akquise' || m.status === 'aktiv' || m.status === 'abgeschlossen') meta.status = m.status;
   return meta;
 }
 

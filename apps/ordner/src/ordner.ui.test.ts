@@ -179,6 +179,21 @@ describe('Projektordner', () => {
     expect(useOrdner.getState().allgemein.mitarbeiter).toEqual(['TP', 'AK']);
     eingabe(feld(host, 'Name des Projektordners'), '{nummer}_{kurzname}');
     expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname}');
+    // Platzhalter einfügen (Menü), Vorschau und unbekannte Platzhalter schon beim Tippen (P-06)
+    const menue = host.querySelector<HTMLSelectElement>('select[aria-label="Platzhalter einfügen: Name des Projektordners"]')!;
+    act(() => {
+      menue.value = '{jahr}';
+      menue.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname}{jahr}');
+    const ordnerFeld = feld(host, 'Name des Projektordners');
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(ordnerFeld, '{nummer} {Bauherr}');
+      ordnerFeld.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(ordnerFeld.closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('{Bauherr}');
+    expect(ordnerFeld.closest('label')!.querySelector('.po-vorschau')!.textContent).toBe('Beispiel: 2026-014 {Bauherr}');
+    eingabe(ordnerFeld, '{nummer}_{kurzname}');
     // Ordnerliste als Baum (P-04): LPh-Häkchen und Dateischema je Ordner
     const lph = (pfad: string, n: number) => host.querySelector<HTMLInputElement>(`input[aria-label="LPh ${n} ${pfad}"]`)!;
     act(() => lph('09 Fotos', 9).click());
@@ -264,6 +279,8 @@ describe('Projektordner', () => {
     const host = render();
     act(() => knopf(host, 'Einstellungen').click());
     await warten();
+    // das Schema der Ordnernamen steht für alle Apps in den gemeinsamen Einstellungen (P-09)
+    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!).ordnerSchema).toBe(STANDARD.ordnername);
     // ein anderer Rechner speichert dazwischen
     fremd('Fremd');
     eingabe(feld(host, 'Name der Struktur'), 'Meine');
@@ -544,13 +561,27 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     // zuletzt geöffnet (auch aus einer anderen App) steht vorne, mit Marke ohne Projektdatei
     expect(host.textContent).toContain('2019-003');
     expect(host.textContent).toContain('ohne Projektdatei');
-    // Gruppe aufklappen: Titel aus der Projektdatei
-    act(() => knopf(host, 'Projekte').click());
+    // genau ein Stammordner: Gruppe aufgeklappt (P-09), Titel aus der Projektdatei
     expect(host.textContent).toContain('Neubau EFH');
     expect(host.textContent).toContain('LPh 1, 2');
     act(() => knopf(host, 'Neues Projekt').click());
     expect(neu).toBe(1);
-    const karte = [...host.querySelectorAll('button, [role="button"], .pa-karte')].find((k) => k.textContent?.includes('Neubau EFH')) as HTMLElement;
+    // Kontextmenü (P-09): ergänzen, prüfen, Explorer, abschließen (P-15), anheften
+    const karteVon = (text: string) => [...host.querySelectorAll('.pa-karte')].find((k) => k.textContent?.includes(text)) as HTMLElement;
+    act(() => karteVon('Neubau EFH').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
+    expect([...host.querySelectorAll('.pa-menue [role="menuitem"]')].map((b) => b.textContent)).toEqual(['Ergänzen …', 'Im Explorer öffnen', 'Projekt abschließen', 'Als Akquise kennzeichnen', 'Anheften']);
+    await act(async () => ([...host.querySelectorAll('.pa-menue [role="menuitem"]')].find((b) => b.textContent === 'Projekt abschließen') as HTMLButtonElement).click());
+    await warten();
+    await warten();
+    const { readProjectFile: lesen } = await import('@core/archive');
+    expect(lesen(fs.eintraege.get('P:/Projekte/2026-014 EFH Musterweg/03 Berechnungen/Flächen/2026-014 EFH Musterweg.oap')!).meta.status).toBe('abgeschlossen');
+    // abgeschlossen: in der Standardansicht ausgeblendet, über den Filter sichtbar
+    const gruppe = host.querySelector('.pa-gruppe')!;
+    expect(gruppe.textContent).not.toContain('Neubau EFH');
+    expect(gruppe.textContent).toContain('1 abgeschlossenes Projekt ausgeblendet');
+    act(() => knopf(gruppe, '1 abgeschlossenes Projekt ausgeblendet').click());
+    expect(host.querySelector('.pa-gruppe')!.textContent).toContain('Neubau EFH');
+    const karte = [...host.querySelectorAll('.pa-gruppe .pa-karte')].find((k) => k.textContent?.includes('Neubau EFH')) as HTMLElement;
     act(() => karte.click());
     expect(geoeffnet).toEqual(['P:/Projekte/2026-014 EFH Musterweg']);
   });

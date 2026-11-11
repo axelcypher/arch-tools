@@ -5,7 +5,8 @@ import { Field, TextField } from '@core/ui/fields';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
 import { hatDateisystem, waehleOrdner } from '../dateisystem';
-import { dateimuster, nameAus, nummerAus } from '../nummer';
+import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT, unbekanntePlatzhalterIn } from '../nummer';
+import { SchemaFeld } from './SchemaFeld';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
@@ -14,6 +15,20 @@ import type { Struktur } from '../struktur';
 import { ordnerAlsText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from '../struktur';
 
 const log = logger('struktur');
+
+/** Beispielwerte für die Vorschau der Schemata */
+const musterWerte = (nummer: string) => {
+  const d = new Date();
+  return {
+    nummer,
+    kurzname: 'EFH Musterweg',
+    vorhaben: 'Neubau eines Einfamilienhauses',
+    jahr: d.getFullYear(),
+    jj: String(d.getFullYear() % 100).padStart(2, '0'),
+    bearbeiter: 'TP',
+    datum: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+  };
+};
 
 /**
  * Einstellungen: gemeinsame Einstellungen aller Apps (Konfigurationsordner, Stammordner der Projekte, Ort der
@@ -101,9 +116,8 @@ export function StrukturView() {
       mime: 'application/json',
     });
 
-  const beispiel = { nummer: nummerAus(struktur.nummernschema, 14), kurzname: 'EFH Musterweg', jahr: new Date().getFullYear() };
-  const dateiBeispiel = nameAus(struktur.dateischema, { ...beispiel, projekt: beispiel.nummer, plannummer: 'A-101', index: 'b', titel: 'Grundriss EG', datum: '2026-10-01' });
-  const dateiPasst = dateimuster(struktur.dateischema, beispiel.nummer).test(dateiBeispiel);
+  const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
+  const dateiBeispiel = (schema: string) => nameAus(schema, { ...beispiel, projekt: beispiel.nummer, plannummer: 'A-101', index: 'b', titel: 'Grundriss EG' });
   const geaendert = text !== ordnerAlsText(struktur.ordner);
 
   return (
@@ -165,17 +179,37 @@ export function StrukturView() {
         <Field label="Name der Struktur">
           <TextField value={struktur.name} onChange={(v) => set({ name: v.trim() || struktur.name })} />
         </Field>
-        <Field label="Projektnummer" hint={`{jahr}, {jj}, {nr} oder {nr:3} – Beispiel: ${beispiel.nummer}`}>
-          <TextField value={struktur.nummernschema} onChange={(v) => set({ nummernschema: v.trim() || struktur.nummernschema })} />
+        <Field label="Projektnummer">
+          <SchemaFeld
+            label="Projektnummer"
+            value={struktur.nummernschema}
+            platzhalter={PLATZHALTER_NUMMER}
+            vorschau={(t) => `Beispiel: ${nummerAus(t, 14)}`}
+            unbekannt={(t) => unbekanntePlatzhalterIn(t, PLATZHALTER_NUMMER)}
+            onChange={(v) => set({ nummernschema: v.trim() || struktur.nummernschema })}
+          />
         </Field>
-        <Field label="Name des Projektordners" hint={`{nummer}, {kurzname}, {jahr} – Beispiel: ${sichererName(nameAus(struktur.ordnername, beispiel))}`}>
-          <TextField value={struktur.ordnername} onChange={(v) => set({ ordnername: v.trim() || struktur.ordnername })} />
+        <Field label="Name des Projektordners">
+          <SchemaFeld
+            label="Name des Projektordners"
+            value={struktur.ordnername}
+            platzhalter={PLATZHALTER_PROJEKT}
+            vorschau={(t) => `Beispiel: ${sichererName(nameAus(t, beispiel))}`}
+            unbekannt={(t) => unbekanntePlatzhalterIn(t, PLATZHALTER_PROJEKT)}
+            onChange={(v) => set({ ordnername: v.trim() || struktur.ordnername })}
+          />
         </Field>
-        <Field
-          label="Dateinamenschema für Pläne"
-          hint={`{nummer}, {plannummer}, {index}, {titel}, {datum} – Beispiel: ${dateiBeispiel}.pdf${dateiPasst ? '' : ' (das Schema erkennt sein eigenes Beispiel nicht – bitte Trennzeichen prüfen)'}`}
-        >
-          <TextField value={struktur.dateischema} onChange={(v) => set({ dateischema: v.trim() })} />
+        <Field label="Dateinamenschema für Pläne">
+          <SchemaFeld
+            label="Dateinamenschema für Pläne"
+            value={struktur.dateischema}
+            platzhalter={PLATZHALTER_PLAN}
+            vorschau={(t) =>
+              `Beispiel: ${dateiBeispiel(t)}.pdf${dateimuster(t, beispiel.nummer).test(dateiBeispiel(t)) ? '' : ' (das Schema erkennt sein eigenes Beispiel nicht – bitte Trennzeichen prüfen)'}`
+            }
+            unbekannt={(t) => unbekanntePlatzhalterIn(t, PLATZHALTER_PLAN)}
+            onChange={(v) => set({ dateischema: v.trim() })}
+          />
         </Field>
       </section>
 
@@ -249,7 +283,7 @@ function GemeinsameEinstellungen() {
   const desktop = hatDateisystem();
   const { konfig, konfigFehler, allgemein, setAllgemein, konfigOrdnerSetzen, struktur } = useOrdner();
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
-  const beispiel = { nummer: nummerAus(struktur.nummernschema, 14), kurzname: 'EFH Musterweg', jahr: new Date().getFullYear() };
+  const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
 
   const konfigWaehlen = async (lokal: boolean) => {
     setMeldung(null);
@@ -325,13 +359,16 @@ function GemeinsameEinstellungen() {
           </button>
         </div>
       )}
-      <Field
-        label="Projektdatei (.oap) in neuen Projekten"
-        hint={`Pfad im Projektordner – ${OAP_PLATZHALTER.map((p) => p.name).join(', ')} ({Datum} hier als JJMMTT). Beispiel: ${projektdateiPfad(allgemein.oapPfad, { ...beispiel, vorhaben: 'Neubau eines Einfamilienhauses' })}`}
-      >
-        <TextField value={allgemein.oapPfad} onChange={(v) => setAllgemein({ oapPfad: v.trim() })} />
+      <Field label="Projektdatei (.oap) in neuen Projekten" hint="Pfad im Projektordner – {datum} ohne Format hier wie bisher als JJMMTT, mit Format z. B. {datum:JJJJ-MM-TT}">
+        <SchemaFeld
+          label="Projektdatei (.oap) in neuen Projekten"
+          value={allgemein.oapPfad}
+          platzhalter={OAP_PLATZHALTER}
+          vorschau={(t) => `Beispiel: ${projektdateiPfad(t, { nummer: beispiel.nummer, kurzname: beispiel.kurzname, vorhaben: beispiel.vorhaben })}`}
+          unbekannt={unbekanntePlatzhalter}
+          onChange={(v) => setAllgemein({ oapPfad: v.trim() })}
+        />
       </Field>
-      {unbekanntePlatzhalter(allgemein.oapPfad).length > 0 && <p className="warning">Unbekannt, bleibt so im Namen stehen: {unbekanntePlatzhalter(allgemein.oapPfad).join(', ')}</p>}
       <Field label="Fotoordner im Projekt" hint="Hier sucht die Entzerrung (auch in Unterordnern) nach Fotos; die .entz-Datei liegt beim Foto.">
         <TextField value={allgemein.fotoordner} onChange={(v) => setAllgemein({ fotoordner: v.trim() })} />
       </Field>

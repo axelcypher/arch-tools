@@ -4,7 +4,8 @@ import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, waehleOrdner } from '../dateisystem';
-import { nummerAus } from '../nummer';
+import { nummerAus, PLATZHALTER_VORLAGE, unbekanntePlatzhalterIn } from '../nummer';
+import { SchemaFeld } from './SchemaFeld';
 import { kurzeWerte, nichtVorausgewaehlt, presetPruefen, vorlagenDateien, zuordnungAufloesen } from '../plan';
 import { bereinigt } from '../stammdaten';
 import { useOrdner } from '../store';
@@ -137,7 +138,8 @@ export function VorlagenView() {
     }
   };
 
-  const schemaBeispiel = zielDateiname('Kostenschätzung.xlsx', undefined, struktur.vorlagenname, werte);
+  const schemaBeispiel = (schema: string) => zielDateiname('Kostenschätzung.xlsx', undefined, schema || '{name}', werte);
+  const unbekannt = (t: string) => unbekanntePlatzhalterIn(t, PLATZHALTER_VORLAGE);
 
   return (
     <div className="po-view">
@@ -154,11 +156,16 @@ export function VorlagenView() {
             besser seine Ordner gezielt einem Zielordner der Struktur zuordnen.
           </p>
         ))}
-        <Field
-          label="Dateinamen im Projekt"
-          hint={`{name} = Name der Vorlage ohne Endung, dazu {nummer}, {kurzname}, {jahr}, {datum}, {bearbeiter} – Beispiel: Kostenschätzung.xlsx → ${schemaBeispiel}. Vorlagen mit Platzhaltern im eigenen Namen behalten ihn.`}
-        >
-          <TextField value={struktur.vorlagenname} placeholder="{name}" onChange={(v) => setStruktur({ ...struktur, vorlagenname: v.trim() || '{name}' })} />
+        <Field label="Dateinamen im Projekt" hint="{name} = Name der Vorlage ohne Endung. Vorlagen mit Platzhaltern im eigenen Namen behalten ihn.">
+          <SchemaFeld
+            label="Dateinamen im Projekt"
+            value={struktur.vorlagenname}
+            placeholder="{name}"
+            platzhalter={PLATZHALTER_VORLAGE}
+            vorschau={(t) => `Beispiel: Kostenschätzung.xlsx → ${schemaBeispiel(t)}`}
+            unbekannt={unbekannt}
+            onChange={(v) => setStruktur({ ...struktur, vorlagenname: v.trim() || '{name}' })}
+          />
         </Field>
 
         <h2>Presets</h2>
@@ -293,7 +300,14 @@ export function VorlagenView() {
                         <TextField value={e.ziel} list="po-strukturordner" placeholder="Stamm des Projektordners" onChange={(v) => setEintrag(k, { ziel: zielordnerAus(v) })} />
                       </Field>
                       <Field label={istOrdner ? 'Dateinamen im Projekt (je Datei)' : 'Dateiname im Projekt'}>
-                        <TextField value={e.name ?? ''} placeholder={struktur.vorlagenname} onChange={(v) => setEintrag(k, { name: v.trim() || undefined })} />
+                        <SchemaFeld
+                          label={`Dateiname im Projekt (Zuordnung ${k + 1})`}
+                          value={e.name ?? ''}
+                          placeholder={struktur.vorlagenname}
+                          platzhalter={PLATZHALTER_VORLAGE}
+                          unbekannt={unbekannt}
+                          onChange={(v) => setEintrag(k, { name: v.trim() || undefined })}
+                        />
                       </Field>
                     </div>
                     <div className="po-z-vorschau">

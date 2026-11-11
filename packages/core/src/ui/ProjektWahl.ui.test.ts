@@ -42,8 +42,8 @@ describe('Projektwahl (Flächenrechner, GRZ-Nachweis, Kostenermittlung)', () => 
       root.render(createElement(ProjektWahl, { app: 'Flächenrechner', fs, onGewaehlt: (g: GewaehltesProjekt) => void gewaehlt.push(g), onSchliessen: () => {} }));
     });
     await warten();
-    act(() => knopf(host, 'p').click()); // Gruppe „p“ aufklappen
-    await warten();
+    // genau eine Quelle: aufgeklappt (P-09)
+    expect(host.querySelector('.pa-gruppe-kopf')!.getAttribute('aria-expanded')).toBe('true');
     expect(host.textContent).toContain('Kita am Park');
     expect(host.textContent).toContain('ohne Projektdatei');
 
@@ -64,6 +64,28 @@ describe('Projektwahl (Flächenrechner, GRZ-Nachweis, Kostenermittlung)', () => 
     expect(neu.meta.angelegt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     // zuletzt geöffnet: je Benutzer, lokal
     expect(JSON.parse(localStorage.getItem('arch-tools:lokal:zuletzt')!).eintraege.map((e: { pfad: string }) => e.pfad)).toEqual(['/p/2019-003 Altbau', '/p/2025-007 Kita']);
+  });
+
+  it('Kontextmenü je Projekt (Öffnen, Im Explorer öffnen, Anheften), Nummer und Kurzname nach dem Schema aus den Einstellungen (P-09)', async () => {
+    localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['/p'], ordnerSchema: '{kurzname}_{nummer}' }));
+    const fs = new SpeicherProjektordner();
+    await fs.ordnerAnlegen('/p', 'Altbau_2019-003');
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(ProjektWahl, { app: 'GRZ-Nachweis', fs, onGewaehlt: () => {} }));
+    });
+    await warten();
+    // Ableitung nach dem Schema der Struktur – wie im Projektordner
+    expect(karte(host, 'Altbau').querySelector('.pa-kuerzel')!.textContent).toBe('2019-003');
+    act(() => karte(host, 'Altbau').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
+    const eintraege = () => [...host.querySelectorAll('.pa-menue [role="menuitem"]')].map((b) => b.textContent);
+    expect(eintraege()).toEqual(['Öffnen', 'Im Explorer öffnen', 'Anheften']);
+    await act(async () => (host.querySelector('.pa-menue [role="menuitem"]:nth-child(3)') as HTMLButtonElement).click());
+    await warten();
+    expect(JSON.parse(localStorage.getItem('arch-tools:lokal:angeheftet')!).pfade).toEqual(['/p/Altbau_2019-003']);
+    expect(host.querySelector('[aria-label="Angeheftet"]')?.textContent).toContain('2019-003');
   });
 
   it('ohne Stammordner: Hinweis und Datei öffnen', async () => {

@@ -25,6 +25,13 @@ Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davo
    einen Projektordner an beliebiger Stelle. Der Ordner muss nicht nach dem Schema heißen; ergänzt wird in genau
    diesem Ordner. Aus „Ordner prüfen“ führt „Projekt ergänzen …“ direkt hierher. Ohne eingestellten Stammordner
    (und im Browser) stehen hier zwei Karten: neues Projekt bzw. Projektordner wählen.
+   Gibt es genau einen Stammordner, ist er aufgeklappt. Die Projekte lassen sich sortieren (Ordnername, Nummer –
+   neueste zuerst –, zuletzt geändert, Titel) und nach Status filtern (Standard: ohne abgeschlossene; die Wahl gilt
+   je Benutzer). Rechtsklick auf ein Projekt: „Ergänzen …“, „Projekt prüfen“, „Im Explorer öffnen“, **„Projekt
+   abschließen“** bzw. „Wieder aktiv“, „Als Akquise kennzeichnen“ und „Anheften“ – angeheftete Projekte stehen ganz
+   vorne, in allen Apps. Der Status steht in der Projektdatei (`meta.status`: Akquise, aktiv, abgeschlossen); gesetzt
+   wird nur diese Angabe, alles andere in der Datei bleibt. Nummer und Kurzname leitet jede App gleich aus dem
+   Ordnernamen ab: Das Schema der Struktur steht dafür in `allgemein.json` (`ordnerSchema`).
 2. **Stammdaten:** Projektnummer, Kurzname, Bezeichnung, Adresse des Bauvorhabens, Grundstück, Aktenzeichen,
    Bauherr mit Kontakten.
    - Neues Projekt: Das Tool trägt die nächste freie Nummer vor (änderbar) – die höchste laufende Nummer unter den
@@ -187,8 +194,13 @@ So heißt eine Vorlage im Projekt:
 3. Sonst gilt das **Dateinamenschema für Vorlagen** (Vorgabe `{nummer} {name}`):
    `Kostenschätzung.xlsx` → `2026-014 Kostenschätzung.xlsx`.
 
-Platzhalter in Namen: `{nummer}`, `{kurzname}`, `{jahr}`, `{bearbeiter}`, `{datum}` (Tag des Anlegens,
-JJJJ-MM-TT) und `{name}` (Name der Vorlage ohne Endung). Die Endung kommt immer von der Vorlage. **Office-Vorlagen
+Platzhalter in Namen – derselbe Satz für Ordnernamen, Dateinamen und den Pfad der Projektdatei, Groß-/Kleinschreibung
+egal: `{nummer}` (gleich: `{kürzel}`, `{projektcode}`), `{kurzname}`, `{vorhaben}`, `{jahr}`, `{jj}`, `{bearbeiter}`,
+`{datum}` (Tag des Anlegens, JJJJ-MM-TT) bzw. `{datum:JJMMTT}` mit eigenem Format (JJJJ, JJ, MM, TT und Trenner) und
+`{name}` (Name der Vorlage ohne Endung). Jedes Schemafeld hat ein Menü „Platzhalter ▾“, das den Platzhalter an der
+Schreibmarke einsetzt; die Vorschau folgt schon beim Tippen, unbekannte Platzhalter sind sofort markiert. Einzige
+Ausnahme: Im Pfad der Projektdatei bleibt `{datum}` ohne Format wie bisher JJMMTT, damit vorhandene Einstellungen
+dieselben Namen ergeben – mit Format (`{datum:JJJJ-MM-TT}`) gilt dasselbe wie überall. Die Endung kommt immer von der Vorlage. **Office-Vorlagen
 werden zu Dokumenten:** `.dotx` → `.docx`, `.xltx` → `.xlsx`, `.potx` → `.pptx` (auch die Varianten mit Makros) –
 mit umgestelltem Inhaltstyp, sonst öffnet Office die Datei nicht.
 
@@ -315,7 +327,9 @@ Presets in der Struktur-Datei:
 
 ## Grenzen
 
-- Kein Archivieren (Projekt abschließen, als ZIP exportieren) und keine Obsidian-Projektnotiz.
+- „Projekt abschließen“ setzt nur den Status; ein Verschieben in einen Archiv-Stammordner (als Kopie) und den
+  Prüfbericht als PDF gibt es nicht. Ein von Hand ins Archiv verschobenes Projekt zählt beim Nummernvorschlag mit,
+  wenn sein Stammordner eingestellt ist. Keine Obsidian-Projektnotiz.
 - Ob eine Vorlage vorhanden ist, entscheidet ihr Name im Projekt. Wurde eine ergänzte Datei später umbenannt,
   ergänzt der nächste Lauf sie erneut – der Trockenlauf zeigt es vorher, und sie lässt sich abwählen.
 - Die Planliste ist eine Vorlage, keine Verwaltung – Revisionen und Verteiler führt das Tool nicht.

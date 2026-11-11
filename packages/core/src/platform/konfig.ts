@@ -28,6 +28,11 @@ export interface AllgemeineEinstellungen {
   buero?: string;
   /** Kürzel der Mitarbeiter – Vorschläge für „Bearbeitung“ in den Stammdaten (leer = keine) */
   mitarbeiter?: string[];
+  /**
+   * Schema der Projektordner-Namen aus der Struktur des Projektordner-Tools, z. B. „{nummer} {kurzname}“ – damit alle
+   * Apps Nummer und Kurzname gleich aus dem Ordnernamen ableiten (fehlt = bis zum ersten Leerzeichen die Nummer)
+   */
+  ordnerSchema?: string;
 }
 
 export const VORGABE_ALLGEMEIN: AllgemeineEinstellungen = { projekte: [], oapPfad: VORGABE_OAP_PFAD, fotoordner: '09 Fotos' };
@@ -200,6 +205,7 @@ export function allgemeinAus(roh: unknown): AllgemeineEinstellungen {
   };
   if (text(o.buero, '')) a.buero = text(o.buero, '');
   if (texte(o.mitarbeiter).length) a.mitarbeiter = texte(o.mitarbeiter);
+  if (text(o.ordnerSchema, '')) a.ordnerSchema = text(o.ordnerSchema, '');
   bueroZuletzt = a.buero ?? '';
   return a;
 }
@@ -249,6 +255,29 @@ export async function zuletztMerken(pfad: string, app?: string, zeit = Date.now(
     (roh) => ({ eintraege: [{ pfad, zeit, ...(app ? { app } : {}) }, ...zuletztAus(roh).filter((e) => e.pfad.toLowerCase() !== pfad.toLowerCase())].slice(0, ZULETZT_MAX) }),
     { lokal: true },
   ).then((r) => r.eintraege);
+}
+
+/* ---------- Angeheftete Projekte: je Benutzer, gemeinsam für alle Apps ---------- */
+
+const ANGEHEFTET = 'angeheftet';
+const pfadeAus = (roh: unknown): string[] => texte((roh as { pfade?: unknown } | null)?.pfade);
+
+/** angeheftete Projektordner dieses Benutzers (vollständige Pfade), in der Reihenfolge des Anheftens */
+export async function angeheftetLesen(): Promise<string[]> {
+  return pfadeAus(await konfigLesen(ANGEHEFTET, { lokal: true }).catch(() => null));
+}
+
+/** Projekt anheften bzw. lösen (Groß-/Kleinschreibung egal); liefert die neue Liste */
+export async function anheftenUmschalten(pfad: string): Promise<string[]> {
+  return konfigAendern(
+    ANGEHEFTET,
+    (roh) => {
+      const alt = pfadeAus(roh);
+      const da = alt.some((p) => p.toLowerCase() === pfad.toLowerCase());
+      return { pfade: da ? alt.filter((p) => p.toLowerCase() !== pfad.toLowerCase()) : [...alt, pfad] };
+    },
+    { lokal: true },
+  ).then((r) => r.pfade);
 }
 
 /** Eintrag aus „Zuletzt geöffnet“ nehmen – am Projekt selbst ändert sich nichts */

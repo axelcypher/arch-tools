@@ -24,6 +24,46 @@ export function ausOrdnernameEinfach(name: string): { nummer?: string; kurzname?
   return m ? { nummer: m[1], kurzname: m[2] } : { nummer: name.trim() };
 }
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Nummer und Kurzname aus dem Ordnernamen nach dem Schema der Projektordner („2026-014 EFH Musterweg“ bei
+ * „{nummer} {kurzname}“) – dasselbe in allen Apps (Schema aus `allgemein.ordnerSchema`). Leer, wenn er nicht passt.
+ */
+export function ausOrdnernameNachSchema(schema: string, name: string): { nummer?: string; kurzname?: string } {
+  const namen: string[] = [];
+  let muster = '';
+  let pos = 0;
+  for (const m of schema.matchAll(/\{([a-zäöü_]+)(?::[^{}]*)?\}/gi)) {
+    muster += escapeRe(schema.slice(pos, m.index));
+    const n = m[1].toLowerCase();
+    if (n === 'nummer') muster += '(.+?)';
+    else if (n === 'kurzname') muster += '(.+)';
+    else if (n === 'jahr') muster += '\\d{4}';
+    else muster += '.*?';
+    if (n === 'nummer' || n === 'kurzname') namen.push(n);
+    pos = m.index + m[0].length;
+  }
+  muster += escapeRe(schema.slice(pos));
+  const r = new RegExp(`^${muster}$`).exec(name.trim());
+  if (!r) return {};
+  const out: { nummer?: string; kurzname?: string } = {};
+  namen.forEach((n, i) => {
+    const v = r[i + 1]?.trim();
+    if (v) out[n as 'nummer' | 'kurzname'] = v;
+  });
+  return out;
+}
+
+/** Ableitung aus den gemeinsamen Einstellungen: nach dem Schema der Struktur, sonst bis zum ersten Leerzeichen */
+export const ausOrdnernameMit =
+  (schema: string | undefined) =>
+  (name: string): { nummer?: string; kurzname?: string } => {
+    if (!schema) return ausOrdnernameEinfach(name);
+    const n = ausOrdnernameNachSchema(schema, name);
+    return n.nummer || n.kurzname ? n : ausOrdnernameEinfach(name);
+  };
+
 export interface ProjektListe {
   gruppen: UebersichtGruppe[];
   projekte: UebersichtProjekt[];
@@ -110,6 +150,7 @@ export function useProjektordnerListe(fs: ProjektordnerZugriff | null, roots: st
           kuerzel,
           titel,
           ...(meta?.leistungsphasen?.length ? { info: `LPh ${meta.leistungsphasen.join(', ')}` } : {}),
+          ...(meta?.status ? { projektStatus: meta.status } : {}),
           geaendert: o.geaendert || null,
           suchtext: [o.name, bauherr, meta?.adresse.ort, meta?.adresse.strasse].filter(Boolean).join(' '),
         };

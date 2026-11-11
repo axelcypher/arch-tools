@@ -365,7 +365,12 @@ KO 0.11.2 (Patch).
   vorausgewählt, wenn mehr als die Hälfte der Vorlagen außerhalb der Struktur landete (Hinweis unter „Vorlagen“ und im
   Assistenten); `LIESMICH.txt` zählt nicht; „… und N weitere“ aufklappbar. Abweichung: „wie die Struktur aufgebaut“ als
   Mehrheit der Vorlagen gefasst, damit ein einzelner Zusatzordner das Preset nicht abschaltet.
-- [ ] **P-06** Uneinheitliche Platzhalter
+- [x] **P-06** Uneinheitliche Platzhalter – PO 0.10.0: ein Satz für Ordner-, Dateinamen und Projektdatei-Pfad
+  (`nameAus`, `PLATZHALTER_*`, Groß/Klein egal, `{kürzel}`/`{projektcode}` = `{nummer}`, `{vorhaben}`, `{jj}`),
+  `{datum:FORMAT}` überall (core `datumNachFormat`, auch in `projektdateiPfad`); Schemafelder mit Menü „Platzhalter ▾“
+  (Einfügen an der Schreibmarke), Vorschau beim Tippen, unbekannte sofort markiert (`SchemaFeld`). Abweichung: Im
+  Pfad der Projektdatei bleibt `{datum}` ohne Format JJMMTT – vorhandene Einstellungen (auch der Formulare-App) und
+  ältere App-Fassungen auf anderen Rechnern ergäben sonst andere Dateinamen; mit Format gilt dasselbe wie überall.
 - [x] **P-07** Leistungsphasen-Auswahl – PO 0.7.0 (core `StammdatenFelder`, damit in allen Apps; mit P-03, P-08, P-12,
   P-14 auch FR 0.19.0, GRZ 0.11.0, KO 0.11.0, FO 0.22.0, dazu EZ 0.5.2 und SU 0.4.1 nur Patch, Bundles geändert): Namen sichtbar
   („4 Genehmigungsplanung“), Schnellwahl „1–4 bis Bauantrag“, „5–8“, „1–9 alle“, „keine“; im Trockenlauf beim
@@ -374,7 +379,14 @@ KO 0.11.2 (Patch).
   Kästen beim Öffnen, Meldungen am Feld nach Verlassen bzw. nach „Weiter“, „Weiter“ nennt sichtbar, was fehlt; der
   abgeleitete Fehler „kein Name“ entfällt; Ordnername direkt unter Nummer/Kurzname (core: Prop `ordnerName`); PLZ,
   E-Mail und Zeichen im Kurznamen über die gemeinsame Prüfung (Q-3)
-- [ ] **P-09** Projektübersicht (alle Apps)
+- [x] **P-09** Projektübersicht (alle Apps) – PO 0.10.0, mit FR 0.23.0, GRZ 0.14.0, KO 0.12.0, EZ 0.6.0, FO 0.26.0
+  (core `ProjektUebersicht`, `ProjektWahl`, `projektListe`, `konfig`; Rahmen-App unverändert): eine Quelle → aufgeklappt; Sortierung
+  (Ordnername, Nummer, zuletzt geändert, Titel) und Statusfilter (Standard ohne abgeschlossene, `meta.status`) je
+  Benutzer gemerkt; „Angeheftet“ vorne (lokal je Benutzer, alle Apps); Kontextmenü (`kontextMenue`) – in den Apps
+  „Öffnen“, „Im Explorer öffnen“, „Anheften“, im Projektordner zusätzlich „Ergänzen“, „Projekt prüfen“, Status;
+  Ableitung von Nummer/Kurzname überall nach `allgemein.ordnerSchema` (vom Projektordner aus der Struktur
+  geschrieben, `ausOrdnernameNachSchema`). Abweichung: „Projekt prüfen“ und „Neues Projekt …“ fehlen im Menü der
+  anderen Apps – es gibt keinen Weg, aus einer App den Assistenten der Projektordner-App zu starten (Rahmen-App/Rust).
 - [x] **P-10** „Ordner prüfen“ für alle Projekte, mit Bericht – PO 0.9.0: Projektliste aller Stammordner mit Suche
   (Klick prüft) und „Anderen Ordner wählen …“; „Alle Projekte prüfen“ (`allePruefen`, nur lesend) mit Übersicht
   (Abweichungen, davon Fehler, Projektdatei, längster Pfad) und CSV; Befunde nach Schwere gruppiert, Einzelbericht als
@@ -394,4 +406,8 @@ KO 0.11.2 (Patch).
   Projekte) mit Ergänzen von Rolle/Kontakt, „Bearbeitung“ mit Hinweis „Kürzel, z. B. TP“ und Vorschlägen aus
   `allgemein.mitarbeiter` (neu, Einstellungen „Mitarbeiter (Kürzel)“). Die Vorschläge nutzt der Projektordner; in den
   anderen Apps bietet der Dialog die Rollen-Vorschläge.
-- [ ] **P-15** Kein Abschluss/Archiv
+- [x] **P-15** Kein Abschluss/Archiv – PO 0.10.0: „Projekt abschließen“ / „Wieder aktiv“ / „Als Akquise kennzeichnen“
+  im Kontextmenü der Startseite setzt nur `meta.status` in der Projektdatei (`projektStatusSetzen`, frisch gelesen,
+  übrige Einträge unverändert); abgeschlossene sind in der Standardansicht aller Apps ausgeblendet („N abgeschlossene
+  ausgeblendet – zeigen“); der Nummernvorschlag zählt alle Stammordner (auch Archiv, P-03). Abweichung: das optionale
+  Verschieben in einen Archiv-Stammordner und der Prüfbericht als PDF sind nicht umgesetzt.
