@@ -351,7 +351,7 @@ interface FormulareState extends Gespeichert {
   projektdatenUebernehmen: (angaben: Angabe[]) => void;
 }
 
-export type EinstellungsBereich = 'ordner' | 'stammdaten' | 'adressbuch' | 'formulare' | 'antrag' | 'projektdaten' | 'sicherung';
+export type EinstellungsBereich = 'ordner' | 'stammdaten' | 'adressbuch' | 'formulare' | 'antrag' | 'kataster' | 'projektdaten' | 'sicherung';
 
 export interface OapDatei {
   /** Projektordner (absolut) */

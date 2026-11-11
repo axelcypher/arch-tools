@@ -2,6 +2,7 @@ import type { Unzipped, ZipOptions } from 'fflate';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import type { Project } from './model';
 import { benutzteDateien, istVorlage } from './model';
+import type { DateiArt } from './model';
 import { KEINE_PROJEKTDATEI, mitErweiterungen, parseProject, parseProjectData, ProjectFormatError } from './serialize';
 
 /**
@@ -82,8 +83,8 @@ export function writeArchive(p: Project, opts: { app?: string; date?: Date } = {
 
   const dateien = benutzteDateien(p).map((d) => {
     const pfad = `quellen/${d.id}/${safeName(d.name)}`;
-    // PDF und Excel sind bereits komprimiert
-    add(pfad, d.daten, d.art, d.name, d.art === 'pdf' || istVorlage(d.art));
+    // PDF, Excel und QGIS-Projekte (.qgz) sind bereits komprimiert
+    add(pfad, d.daten, d.art, d.name, d.art === 'pdf' || istVorlage(d.art) || (d.art === 'qgis' && /\.qgz$/i.test(d.name)));
     const { daten: _, ...rest } = d;
     return { ...rest, pfad };
   });
@@ -190,4 +191,33 @@ function base64ToBytes(b64: string): Uint8Array {
   const out = new Uint8Array(s.length);
   for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
   return out;
+}
+
+/**
+ * Eine Originaldatei im Projektarchiv setzen, ohne das übrige Archiv anzufassen: ersetzt alle Dateien derselben Art
+ * (z. B. die QGIS-Vorlage) durch `datei` – Eintrag in `projekt.json` (`dateien`), Datei unter `quellen/` und im
+ * Manifest. Liefert das neue Archiv.
+ */
+export function archivDateiSetzen(bytes: Uint8Array, datei: { id: string; name: string; art: DateiArt; datum: string }, daten: Uint8Array): Uint8Array {
+  if (!isZip(bytes)) throw new Error('Die Projektdatei ist kein Archiv (ältere JSON-Fassung) – bitte einmal im Flächenrechner öffnen und speichern.');
+  const zip = unzipSync(bytes);
+  const manifest = readJson(zip, MANIFEST) as Manifest | null;
+  const raw = readJson(zip, PROJEKT);
+  if (!manifest || manifest.format !== ARCHIV_FORMAT || !isObj(raw)) throw new Error('Die Datei ist keine Projektdatei (.oap).');
+  const bisher = (Array.isArray(raw.dateien) ? raw.dateien : []).filter(isObj);
+  const weg = new Set(bisher.filter((d) => d.art === datei.art && typeof d.pfad === 'string').map((d) => String(d.pfad)));
+  const pfad = `quellen/${datei.id}/${safeName(datei.name)}`;
+  const dateien: Record<string, [Uint8Array, { level: 0 | 6 }]> = {};
+  for (const [n, d] of Object.entries(zip)) {
+    if (weg.has(n) || n === MANIFEST || n === PROJEKT) continue;
+    dateien[n] = [d, { level: 6 }];
+  }
+  dateien[pfad] = [daten, { level: /\.(qgz|pdf|xlsx?|zip)$/i.test(datei.name) ? 0 : 6 }];
+  const neuManifest: Manifest = { ...manifest, inhalt: [...manifest.inhalt.filter((e) => !weg.has(e.pfad)), { pfad, art: datei.art, name: datei.name }] };
+  const projekt = { ...raw, dateien: [...bisher.filter((d) => d.art !== datei.art), { ...datei, pfad }] };
+  return zipSync({
+    [MANIFEST]: [strToU8(JSON.stringify(neuManifest, null, 2)), { level: 6 }],
+    [PROJEKT]: [strToU8(JSON.stringify(projekt)), { level: 6 }],
+    ...dateien,
+  });
 }

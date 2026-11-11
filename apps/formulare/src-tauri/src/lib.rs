@@ -12,6 +12,7 @@
 
 include!("../../../../packages/core/tauri/commands.rs");
 include!("befehle.rs");
+include!("../../../../packages/core/tauri/qgis.rs");
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -25,6 +26,8 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .manage(EigeneSperren::default())
         .invoke_handler(tauri::generate_handler![
+            qgis_suchen,
+            qgis_ausfuehren,
             konfig_basis,
             ordner_waehlen,
             ordner_zeigen,

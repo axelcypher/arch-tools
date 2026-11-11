@@ -44,6 +44,26 @@ export type PkAenderung = { gruppe: number; id: number; typ: number } & (
   | { spalte: 'ganzzahl'; alt: number | null; neu: number | null }
 );
 
+/** Aufruf von qgis_process mit dem Export-Skript (siehe kataster/katasterexport.py) */
+export interface QgisAufruf {
+  /** Pfad zu qgis_process */
+  programm: string;
+  /** Inhalt des Export-Skripts */
+  skript: string;
+  /** Auftrag (JSON); „vorlage“ setzt die Hülle, „ausgabe“ je Plan ist der vollständige Zielpfad */
+  auftrag: unknown;
+  vorlage: Uint8Array;
+  vorlageName: string;
+}
+
+export interface QgisErgebnis {
+  code: number;
+  ausgabe: string;
+  fehler: string;
+  /** am Ziel abgelegte Pläne (nie überschrieben: sonst `fehler`) */
+  abgelegt: { id: string; datei: string | null; fehler: string | null }[];
+}
+
 export interface Dateisystem {
   /** gemeinsamer Zugriff auf die Projektordner (packages/core): Projektdatei (.oap) lesen, gezielt ändern, anlegen */
   readonly projektordner: ProjektordnerZugriff;
@@ -85,6 +105,12 @@ export interface Dateisystem {
   /** Einträge der Projektkarte ändern – alle oder keiner; Fehler, wenn einer inzwischen anders lautet */
   projektkarteSchreiben(root: string, pfad: string, aenderungen: PkAenderung[]): Promise<void>;
   rechner(): Promise<Rechner>;
+  /** Datei an einem vollständigen Pfad lesen (z. B. die QGIS-Vorlage); `null`, wenn es sie nicht gibt */
+  dateiLesen(pfad: string): Promise<Uint8Array | null>;
+  /** qgis_process in den üblichen Installationsorten suchen */
+  qgisSuchen(): Promise<string[]>;
+  /** Export-Skript mit qgis_process ausführen; legt die Pläne an ihren Zielen ab (ohne zu überschreiben) */
+  qgisAusfuehren(a: QgisAufruf): Promise<QgisErgebnis>;
 }
 
 async function invoke<T>(befehl: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -162,6 +188,13 @@ export const tauriDateisystem: Dateisystem = {
   umbenennen: (root, von, nach) => invoke<void>('doc_rename', { root, von, nach }),
   loeschen: (root, pfad) => invoke<void>('doc_delete', { root, pfad }),
   rechner: () => invoke<Rechner>('machine_info'),
+  dateiLesen: async (pfad) => {
+    const b64 = await invoke<string | null>('read_binary_file', { path: pfad });
+    return b64 == null ? null : base64ToBytes(b64);
+  },
+  qgisSuchen: () => invoke<string[]>('qgis_suchen'),
+  qgisAusfuehren: (a) =>
+    invoke<QgisErgebnis>('qgis_ausfuehren', { programm: a.programm, skript: a.skript, auftrag: JSON.stringify(a.auftrag), vorlageBase64: bytesToBase64(a.vorlage), vorlageName: a.vorlageName }),
 };
 
 export const hatDateisystem = () => isTauri();
@@ -433,5 +466,42 @@ export class SpeicherDateisystem implements Dateisystem {
 
   async rechner(): Promise<Rechner> {
     return this.rechnerInfo;
+  }
+
+  async dateiLesen(pfad: string): Promise<Uint8Array | null> {
+    return this.dateien.get(pfad.replace(/\\/g, '/')) ?? null;
+  }
+
+  /** gefundene qgis_process (Tests) */
+  qgisProgramme: string[] = [];
+  /** Aufrufe von qgis_process (Tests) */
+  readonly qgisAufrufe: QgisAufruf[] = [];
+  /**
+   * Ersatz für qgis_process (Tests): liefert die Ausgabe; die Pläne mit `ok` werden – wie in der Hülle – nur neu
+   * angelegt. Ohne Ersatz meldet jeder Plan Erfolg.
+   */
+  qgisLauf: ((a: QgisAufruf) => { code?: number; ausgabe?: string; fehler?: string; ok?: string[] }) | null = null;
+
+  async qgisSuchen(): Promise<string[]> {
+    return this.qgisProgramme;
+  }
+
+  async qgisAusfuehren(a: QgisAufruf): Promise<QgisErgebnis> {
+    this.qgisAufrufe.push(a);
+    const plaene = ((a.auftrag as { plaene?: { id: string; ausgabe: string }[] }).plaene ?? []).map((p) => ({ ...p }));
+    const r = this.qgisLauf?.(a) ?? { ok: plaene.map((p) => p.id) };
+    const ok = new Set(r.ok ?? []);
+    const ausgabe = r.ausgabe ?? plaene.map((p) => `ERGEBNIS ${JSON.stringify({ id: p.id, datei: p.ausgabe, ok: ok.has(p.id) })}`).join('\n');
+    const abgelegt = plaene
+      .filter((p) => ok.has(p.id))
+      .map((p) => {
+        const v = p.ausgabe.replace(/\\/g, '/');
+        if (this.dateien.has(v)) return { id: p.id, datei: null, fehler: `${p.ausgabe}: Die Datei gibt es schon` };
+        this.dateien.set(v, new TextEncoder().encode(`${p.id}`));
+        this.beruehren(v);
+        this.schreibvorgaenge.push(`qgis ${v}`);
+        return { id: p.id, datei: p.ausgabe, fehler: null };
+      });
+    return { code: r.code ?? 0, ausgabe, fehler: r.fehler ?? '', abgelegt };
   }
 }

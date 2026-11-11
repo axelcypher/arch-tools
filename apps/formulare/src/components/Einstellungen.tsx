@@ -9,6 +9,7 @@ import { waehleOrdner } from '../dateisystem';
 import { IN_PROJEKTKARTE } from '../projektdaten';
 import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
 import { AntragEinstellungen } from './AntragEinstellungen';
+import { KatasterEinstellungen } from './KatasterEinstellungen';
 import { SicherungEinstellungen } from './SicherungEinstellungen';
 import type { EinstellungsBereich } from '../store';
 import { VORGABE_OAP_PFAD, useFormulare } from '../store';
@@ -22,6 +23,7 @@ const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; te
   { id: 'adressbuch', titel: 'Adressbuch', symbol: 'adressen', text: 'Adressen aus allen FORMA-Projekten' },
   { id: 'formulare', titel: 'Formulare', symbol: 'formular', text: 'Gliederung und Füllstand je Formular' },
   { id: 'antrag', titel: 'Antrag & Export', symbol: 'export', text: 'PDF-Export, Antragsfassungen, Antragsdokumente' },
+  { id: 'kataster', titel: 'Katasterpläne', symbol: 'karte', text: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne' },
   { id: 'projektdaten', titel: 'Projektdatei (.oap)', symbol: 'tabelle', text: 'Projektstammdaten aus dem Projektordner' },
   { id: 'sicherung', titel: 'Sichern & Übertragen', symbol: 'uebertragen', text: 'Einstellungen als Datei exportieren und importieren' },
 ];
@@ -98,6 +100,7 @@ export function EinstellungenAnsicht() {
         {bereich === 'adressbuch' && <Adressbuch />}
         {bereich === 'formulare' && <Formulare />}
         {bereich === 'antrag' && <AntragEinstellungen />}
+        {bereich === 'kataster' && <KatasterEinstellungen />}
         {bereich === 'projektdaten' && <Projektdaten />}
         {bereich === 'sicherung' && <SicherungEinstellungen />}
       </section>

@@ -184,3 +184,23 @@ describe('Stammdaten: eine Quelle, gemeinsamer Kopf (Q-4)', () => {
     expect(ohne.meta.bebauungsplan).toBeUndefined();
   });
 });
+
+describe('QGIS-Vorlage in der Projektdatei', () => {
+  it('wird als Originaldatei gesetzt und ersetzt, alles andere bleibt; andere Apps behalten sie beim Speichern', async () => {
+    const { archivDateiSetzen } = await import('./archive');
+    const p = createProject();
+    p.name = 'EFH';
+    const v1 = new Uint8Array([1, 2, 3]);
+    let oap = archivDateiSetzen(writeArchive(p), { id: 'q1', name: 'Kataster.qgz', art: 'qgis', datum: '2026-11-11' }, v1);
+    let gelesen = readProjectFile(oap);
+    expect(gelesen.name).toBe('EFH');
+    expect(gelesen.dateien?.map((d) => [d.art, d.name, [...d.daten]])).toEqual([['qgis', 'Kataster.qgz', [1, 2, 3]]]);
+    // aktualisieren: die alte Fassung verschwindet
+    oap = archivDateiSetzen(oap, { id: 'q2', name: 'Kataster.qgz', art: 'qgis', datum: '2026-12-01' }, new Uint8Array([9]));
+    gelesen = readProjectFile(oap);
+    expect(gelesen.dateien?.map((d) => [d.id, [...d.daten]])).toEqual([['q2', [9]]]);
+    expect(Object.keys(unzipSync(oap)).filter((k) => k.startsWith('quellen/'))).toEqual(['quellen/q2/Kataster.qgz']);
+    // eine andere App speichert das Projekt neu: die Vorlage bleibt
+    expect(readProjectFile(writeArchive(gelesen)).dateien?.map((d) => d.art)).toEqual(['qgis']);
+  });
+});

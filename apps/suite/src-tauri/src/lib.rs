@@ -5,6 +5,7 @@
 
 include!("../../../../packages/core/tauri/commands.rs");
 include!("../../../formulare/src-tauri/src/befehle.rs");
+include!("../../../../packages/core/tauri/qgis.rs");
 
 /// Die Formulare-App im Tab bzw. Fenster ist zu oder zieht um (Herauslösen, Andocken): ihre Sperrdateien freigeben.
 /// Sonst hielte das Programm sie bis zum Beenden – die nächste Formulare-Instanz sähe die Formulare als „hier
@@ -27,6 +28,8 @@ pub fn run() {
         // Formulare: eigene Sperrdateien
         .manage(EigeneSperren::default())
         .invoke_handler(tauri::generate_handler![
+            qgis_suchen,
+            qgis_ausfuehren,
             // gemeinsam
             konfig_basis,
             ordner_waehlen,

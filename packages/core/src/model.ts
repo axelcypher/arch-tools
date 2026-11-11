@@ -478,7 +478,8 @@ export function flurText(g: Grundstueck): string {
 }
 
 /** Art einer mitgespeicherten Originaldatei */
-export type DateiArt = 'ifc' | 'dxf' | 'pdf' | 'vorlage' | 'vorlage-grz' | 'vorlage-kosten';
+/** `qgis`: QGIS-Projekt als Vorlage der Katasterpläne (Formulare), wird mit dem Projekt aufbewahrt */
+export type DateiArt = 'ifc' | 'dxf' | 'pdf' | 'vorlage' | 'vorlage-grz' | 'vorlage-kosten' | 'qgis';
 
 /** Excel-Vorlagen: „vorlage“ des Flächenrechners, „vorlage-grz“ des GRZ-Nachweises, „vorlage-kosten“ der Kostenermittlung */
 export const istVorlage = (art: DateiArt) => art === 'vorlage' || art === 'vorlage-grz' || art === 'vorlage-kosten';
@@ -774,7 +775,7 @@ function gleicheBytes(a: Uint8Array, b: Uint8Array): boolean {
 /** Nur noch benötigte Originaldateien: PDF/DXF, auf die ein Plan verweist, alle IFC-Modelle und die Vorlagen */
 export function benutzteDateien(p: Project): ProjektDatei[] {
   const refs = new Set(p.storeys.map((s) => s.background?.quelle).filter(Boolean));
-  return (p.dateien ?? []).filter((d) => d.art === 'ifc' || istVorlage(d.art) || refs.has(d.id));
+  return (p.dateien ?? []).filter((d) => d.art === 'ifc' || d.art === 'qgis' || istVorlage(d.art) || refs.has(d.id));
 }
 
 /** Fußbodenhöhen aller Geschosse (explizit oder als Summe der Geschosshöhen, unterstes Geschoss = 0) */

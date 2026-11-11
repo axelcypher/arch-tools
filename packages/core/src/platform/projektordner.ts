@@ -1,5 +1,6 @@
 import { inflateSync, strFromU8, unzipSync, zipSync } from 'fflate';
-import { readProjectFile, writeArchive } from '../archive';
+import { archivDateiSetzen, readProjectFile, writeArchive } from '../archive';
+import type { DateiArt } from '../model';
 import type { Project } from '../model';
 import type { OrdnerEintrag } from '../projektdatei';
 import { OAP_SUCHTIEFE, projektdateiAendern, projektdateiWaehlen } from '../projektdatei';
@@ -133,6 +134,23 @@ export async function projektdateiSchreiben(fs: ProjektordnerZugriff, root: stri
     try {
       await fs.projektdateiErsetzen(root, pfad, neu, r.stand);
       return true;
+    } catch (e) {
+      if (versuch >= versuche || !istGeaendert(e)) throw e;
+    }
+  }
+}
+
+/**
+ * Eine Originaldatei in die Projektdatei legen (ersetzt die bisherige derselben Art, z. B. die QGIS-Vorlage); liest
+ * frisch und versucht es erneut, wenn eine andere App die Datei zwischen Lesen und Schreiben geändert hat.
+ */
+export async function projektdateiDateiSetzen(fs: ProjektordnerZugriff, root: string, pfad: string, datei: { id: string; name: string; art: DateiArt; datum: string }, daten: Uint8Array, versuche = 3): Promise<void> {
+  for (let versuch = 1; ; versuch++) {
+    const r = await fs.liesMitStand(root, pfad);
+    if (!r) throw new Error(`${pfad}: nicht gefunden`);
+    try {
+      await fs.projektdateiErsetzen(root, pfad, archivDateiSetzen(r.daten, datei, daten), r.stand);
+      return;
     } catch (e) {
       if (versuch >= versuche || !istGeaendert(e)) throw e;
     }
