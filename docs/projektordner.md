@@ -33,7 +33,8 @@ Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davo
      erhalten.
    - Bestehendes Projekt: Die Stammdaten kommen aus der Projektdatei. **Fehlt sie, ist das kein Fehler:** Der
      Assistent erfasst die Stammdaten (Nummer und Kurzname aus dem Ordnernamen vorgeschlagen, bei Ordnern aus
-     Version 0.1 aus der alten `projekt.json`) und legt die Projektdatei damit an.
+     Version 0.1 aus der alten `projekt.json`) und legt die Projektdatei damit an. Der Ordner wird beim Ergänzen
+     nicht umbenannt.
 3. **Umfang:** beauftragte Leistungsphasen, Bearbeitung, Beteiligte (Rolle, Name, Kontakt). An Leistungsphasen
    gebundene Ordner und Vorlagen entstehen nur, wenn eine davon beauftragt ist (ohne Angabe alle).
 4. **Vorlagen:** Vorlagenordner und Vorlagen-Presets (siehe [Vorlagen](#vorlagen)). Vorausgewählt sind bei neuen
@@ -43,6 +44,7 @@ Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davo
    den geänderten Angaben als Hinweis). Beim Ergänzen zeigt er nur, was sich ändert (umschaltbar). Einzelne
    Einträge lassen sich abwählen; mit einem Ordner entfällt alles darin. Danach meldet das Tool, was angelegt
    bzw. ergänzt wurde, was schon da war und was fehlgeschlagen ist – ein Fehler hält die übrigen Schritte nicht auf.
+   Im Browser entsteht der Projektordner als ZIP-Datei zum Herunterladen (statt im Stammordner).
 
 Angelegt bzw. ergänzt werden
 
@@ -100,7 +102,11 @@ Die **Ordnerliste** ist ein Text mit einer Zeile je Ordner, Unterordner mit `/`.
 - `LPh 5`, `LPh 6-7`, `LPh 4, 8` – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist.
 - `Dateischema` – Dateien in diesem Ordner werden im Prüfmodus gegen das Dateinamenschema geprüft.
 
-Unzulässige Zeichen in Namen (`\ / : * ? " < > |`) werden entfernt. Der Ort der Projektdatei stand bis Version 0.1
+Unzulässige Zeichen in Namen (`\ / : * ? " < > |`) werden entfernt. Was beim Lesen der Liste entfällt oder
+bereinigt wird – doppelte Zeilen (nur die erste gilt), Leistungsphasen außerhalb 1 bis 9, entfernte Zeichen,
+unbekannte Zusätze nach `|` –, meldet das Tool zeilenweise unter dem Feld („Zeile 4 doppelt zu Zeile 1 – nur die
+erste gilt“). Eine Liste mit Meldungen wird nicht schon beim Verlassen des Felds übernommen, sondern erst mit
+„Ordnerliste übernehmen“. Der Ort der Projektdatei stand bis Version 0.1
 in der Struktur („Leere Flächenrechner-Datei“); er ist jetzt eine gemeinsame Einstellung und wird übernommen.
 
 ## Vorlagen

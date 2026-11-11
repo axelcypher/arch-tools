@@ -11,7 +11,7 @@ import type { Stammdaten } from './stammdaten';
 import { projektEinlesen } from './projekt';
 import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
 import type { Struktur } from './struktur';
-import { aktivePresets, alterOapPfad, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
+import { aktivePresets, alterOapPfad, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
 import { alsDokument, fuelleDocx, fuelleText, fuelleVorlage, MUSTER_VORLAGEN, zielDateiname } from './vorlagen';
 
 const TAG = new Date(2026, 9, 1);
@@ -89,6 +89,22 @@ describe('Struktur', () => {
     expect(o).toEqual([{ pfad: '00 Projekt' }, { pfad: '02 Pläne/Ausführung', lph: [5, 6], dateischema: true }, { pfad: '07 Ausschreibung', lph: [6, 7] }, { pfad: '08 Bau/Mängel', lph: [8] }]);
     expect(ordnerAlsText(o)).toBe('00 Projekt\n02 Pläne/Ausführung | LPh 5-6 | Dateischema\n07 Ausschreibung | LPh 6-7\n08 Bau/Mängel | LPh 8');
     expect(ordnerAusText(ordnerAlsText(STANDARD.ordner))).toEqual(STANDARD.ordner);
+  });
+
+  it('Ordnerliste: Meldungen mit Zeilennummer statt stiller Korrektur (PB-03)', () => {
+    const text = '00 Projekt\n# Kommentar\n\n10 Archiv | LPh 10\n00 projekt\nTest<>Ordner\n05 Protokolle | LPh 4 | Ablage\n06 Genehmigung | LPh 0, 4';
+    const { ordner, meldungen } = ordnerAusTextMitMeldungen(text);
+    expect(ordner).toEqual([{ pfad: '00 Projekt' }, { pfad: '10 Archiv' }, { pfad: 'Test Ordner' }, { pfad: '05 Protokolle', lph: [4] }, { pfad: '06 Genehmigung', lph: [4] }]);
+    expect(meldungen).toEqual([
+      { zeile: 4, text: 'Zeile 4: LPh 10 gibt es nicht (nur 1 bis 9) – der Ordner wird dann immer angelegt.' },
+      { zeile: 5, text: 'Zeile 5 doppelt zu Zeile 1 – nur die erste gilt.' },
+      { zeile: 6, text: 'Zeile 6: Zeichen < > werden entfernt.' },
+      { zeile: 7, text: 'Zeile 7: unbekannter Zusatz „Ablage“ – erlaubt sind „LPh …“ und „Dateischema“.' },
+      { zeile: 8, text: 'Zeile 8: LPh 0 gibt es nicht (nur 1 bis 9).' },
+    ]);
+    // fehlerfreie Listen: keine Meldungen, dasselbe Ergebnis wie bisher
+    expect(ordnerAusTextMitMeldungen(ordnerAlsText(STANDARD.ordner))).toEqual({ ordner: STANDARD.ordner, meldungen: [] });
+    expect(ordnerAusText(text)).toEqual(ordner);
   });
 
   it('Konfiguration als JSON: Hin und zurück, Vorgaben für fehlende Angaben, verständliche Fehler', () => {

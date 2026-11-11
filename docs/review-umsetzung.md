@@ -155,10 +155,14 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
 
 - [x] **PB-01** Helle Kästen im Dunkelmodus – PO 0.3.0 (mit Q-1): nur noch Variablen aus `base.css`
 - [x] **PB-02** Farbschema wechselt erst nach Neustart – PO 0.3.0 (mit Q-1); „Zeichenfläche abdunkeln“ ausgeblendet
-- [ ] **PB-03** Ungültige/doppelte Zeilen der Ordnerliste verschwinden still
+- [x] **PB-03** Ungültige/doppelte Zeilen der Ordnerliste verschwinden still – PO 0.5.1: `ordnerAusTextMitMeldungen`
+  meldet je Zeile doppelte Pfade, LPh außerhalb 1–9, entfernte Zeichen, unbekannte Zusätze; Meldungen unter dem Feld,
+  mit Meldungen kein Übernehmen beim Verlassen (nur über den Knopf); `ordnerAusText` bleibt kompatibel
 - [x] **PB-04** Beschädigte alte `projekt.json` wird nicht gemeldet – PO 0.3.0 (mit Q-6): Befund „Alte projekt.json
   nicht lesbar“ (Hinweis), Hinweis beim Ergänzen
-- [ ] **PB-05** Texte passen nicht zur Lage
+- [x] **PB-05** Texte passen nicht zur Lage – PO 0.5.1: „1 Datei“/„2 Dateien“; Satz zur Projektdatei je Lage (neu
+  angelegt / auf dem Desktop gezielt ergänzt / im Browser keiner); Kurzname-Hinweis beim Ergänzen „Der Ordner wird
+  nicht umbenannt.“ (über `kurznameHinweis`); im Browser „Ausgabe: ZIP-Datei zum Herunterladen“ statt Stammordner
 - [ ] **P-01** Bürostruktur ohne Rückfrage und Rückweg ersetzbar
 - [ ] **P-02** Letzter Schreiber gewinnt
 - [ ] **P-03** Projektnummer: Prüfung, Vorschlag aus allen Stammordnern

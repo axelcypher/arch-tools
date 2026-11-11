@@ -109,6 +109,12 @@ describe('Projektordner', () => {
     expect(zeilen(host)).not.toContain('08 Bauleitung');
     expect(host.textContent).toContain('gehören zu nicht beauftragten Leistungsphasen');
     expect(knopf(host, 'Als ZIP herunterladen').disabled).toBe(false);
+    // Texte passend zur Lage (PB-05): Singular, kein Satz zur Sicherung beim neuen Projekt, Ausgabe im Browser erklärt
+    expect(host.querySelector('h3')?.textContent).toMatch(/– \d+ Ordner und 1 Datei neu$/);
+    expect(host.textContent).toContain('Die Projektdatei wird neu angelegt.');
+    expect(host.textContent).not.toContain('vorher gesichert');
+    expect(host.textContent).not.toContain('Stammordner für Projekte');
+    expect(host.textContent).toContain('ZIP-Datei zum Herunterladen');
 
     // zurück zu den Stammdaten über die Schrittleiste, Formular leeren
     act(() => knopf(host, '2Stammdaten').click());
@@ -133,6 +139,18 @@ describe('Projektordner', () => {
     expect(text.value.split('\n')).toHaveLength(STANDARD.ordner.length);
     eingabe(text, 'A\nB/C | LPh 5-6 | Dateischema');
     expect(useOrdner.getState().struktur.ordner).toEqual([{ pfad: 'A' }, { pfad: 'B/C', lph: [5, 6], dateischema: true }]);
+    // fehlerhafte Liste (PB-03): Meldungen mit Zeilennummer, beim Verlassen nicht übernommen – erst über den Knopf
+    eingabe(text, 'A\nB/C | LPh 5-6 | Dateischema\nX | LPh 10\na\nTest<>Ordner');
+    expect(useOrdner.getState().struktur.ordner).toEqual([{ pfad: 'A' }, { pfad: 'B/C', lph: [5, 6], dateischema: true }]);
+    const meldungen = host.querySelector('.po-ordnermeldungen')!.textContent;
+    expect(meldungen).toContain('Zeile 3: LPh 10 gibt es nicht');
+    expect(meldungen).toContain('Zeile 4 doppelt zu Zeile 1');
+    expect(meldungen).toContain('Zeile 5: Zeichen < > werden entfernt');
+    act(() => knopf(host, 'Ordnerliste übernehmen').click());
+    expect(useOrdner.getState().struktur.ordner.map((o) => o.pfad)).toEqual(['A', 'B/C', 'X', 'Test Ordner']);
+    expect(host.querySelector('.po-ordnermeldungen')).toBeNull();
+    eingabe(text, 'A\nB/C | LPh 5-6 | Dateischema');
+    expect(useOrdner.getState().struktur.ordner).toHaveLength(2);
     // leere Liste wird nicht übernommen
     eingabe(text, '# nichts');
     expect(useOrdner.getState().struktur.ordner).toHaveLength(2);
@@ -224,6 +242,9 @@ describe('Projektordner', () => {
     expect(host.querySelector('.po-kontext')?.textContent).toContain('Projektdatei 03 Berechnungen/Flächen/2025-007 Kita.oap');
     expect(feld(host, 'Projektnummer').value).toBe('2025-007');
     expect(feld(host, 'Kurzname').value).toBe('Kita');
+    // beim Ergänzen wird der Ordner nicht umbenannt (PB-05)
+    expect(host.textContent).not.toContain('wird Teil des Ordnernamens');
+    expect(host.textContent).toContain('Der Ordner wird nicht umbenannt.');
     // das Formular für neue Projekte bleibt unberührt
     eingabe(feld(host, 'Bezeichnung des Vorhabens'), 'Neubau Kita am Park');
     expect(useOrdner.getState().stamm.nummer).toBe('');

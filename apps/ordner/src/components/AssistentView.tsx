@@ -36,6 +36,16 @@ export async function ladeProjektordner(pfad: string): Promise<GeladenerOrdner> 
   return { pfad, name, eintraege: await tauriDateisystem.liste(pfad, 12), lies: (p) => tauriDateisystem.lies(pfad, p) };
 }
 
+/** „1 Datei“, „2 Dateien“ */
+const anzahlDateien = (n: number) => `${n} ${n === 1 ? 'Datei' : 'Dateien'}`;
+
+/** Satz zur Projektdatei je Lage: neu angelegt, auf dem Desktop gezielt ergänzt; im Browser (ZIP) kein Satz zum Ergänzen */
+function projektdateiSatz(modus: Modus | null, desktop: boolean, neu: boolean): string {
+  if (neu) return 'Die Projektdatei wird neu angelegt.';
+  if (modus === 'ergaenzen' && desktop) return 'Die Projektdatei wird gezielt ergänzt (vorher gesichert).';
+  return '';
+}
+
 /** nur, was etwas tut (Neues anlegen, die Projektdatei ergänzen) */
 const nurWasEtwasTut = (plan: Plan): Plan => ({ ...plan, schritte: plan.schritte.filter(tutEtwas) });
 
@@ -381,6 +391,8 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
               bereiche={['projekt', 'grundstueck', 'bauherr']}
               nummerHinweis={modus === 'neu' ? `Schema ${struktur.nummernschema}` : undefined}
               nummerVorschlag={modus === 'neu' && desktop && stammordner ? vorschlag : undefined}
+              // beim Ergänzen wird der vorhandene Ordner nicht umbenannt
+              kurznameHinweis={modus === 'neu' ? undefined : 'Der Ordner wird nicht umbenannt.'}
             />
             {modus === 'neu' && gibtEsSchon && (
               <p className="po-hinweis">
@@ -436,8 +448,12 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
             {modus === 'neu' && (
               <div className="po-ort">
                 <div>
-                  <span className="field-label">Stammordner für Projekte</span>
-                  {desktop ? <code title={stammordner}>{stammordner || 'noch nicht gewählt'}</code> : <span className="muted small-text">Im Browser entsteht der Projektordner als ZIP-Datei.</span>}
+                  <span className="field-label">{desktop ? 'Stammordner für Projekte' : 'Ausgabe'}</span>
+                  {desktop ? (
+                    <code title={stammordner}>{stammordner || 'noch nicht gewählt'}</code>
+                  ) : (
+                    <span className="muted small-text">Im Browser entsteht der Projektordner als ZIP-Datei zum Herunterladen – entpacken, wo das Projekt liegen soll.</span>
+                  )}
                 </div>
                 {desktop && (
                   <button className="small" onClick={() => void stammWaehlen()}>
@@ -452,8 +468,8 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
                   {plan.ordner || 'Projektordner'}
                   <span className="muted small-text">
                     {' '}
-                    – {offen.filter((s) => s.art === 'ordner').length} Ordner und {offen.filter((s) => s.art === 'datei' && !s.vorhanden).length} Dateien neu
-                    {plan.projektdatei.teile.length && !abgewaehlt.has(plan.projektdatei.pfad) ? `, Projektdatei ergänzt (${plan.projektdatei.teile.join(', ')})` : ''}
+                    – {offen.filter((s) => s.art === 'ordner').length} Ordner und {anzahlDateien(offen.filter((s) => s.art === 'datei' && !s.vorhanden).length)} neu
+                    {desktop && plan.projektdatei.teile.length && !abgewaehlt.has(plan.projektdatei.pfad) ? `, Projektdatei ergänzt (${plan.projektdatei.teile.join(', ')})` : ''}
                   </span>
                 </h3>
                 {modus === 'ergaenzen' && (
@@ -474,8 +490,8 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
                   {laeuft && <span className="busy">{laeuft}</span>}
                 </div>
                 <p className="muted small-text">
-                  Ordner und Dateien werden nur neu angelegt; Vorhandenes bleibt unverändert, nichts wird verschoben oder gelöscht. Die Projektdatei wird gezielt ergänzt (vorher
-                  gesichert). Einzelne Einträge lassen sich abwählen.
+                  Ordner und Dateien werden nur neu angelegt; Vorhandenes bleibt unverändert, nichts wird verschoben oder gelöscht.{' '}
+                  {projektdateiSatz(modus, desktop, plan.projektdatei.neu)} Einzelne Einträge lassen sich abwählen.
                 </p>
               </>
             )}

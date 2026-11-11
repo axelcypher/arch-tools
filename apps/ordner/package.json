@@ -1,7 +1,7 @@
 {
   "name": "projektordner",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "description": "Projekte mit einem Assistenten anlegen und ergänzen: Projektdatei (.oap) mit Stammdaten, Ordner nach Schema, Vorlagen-Presets; Ordner prüfen",
   "scripts": {

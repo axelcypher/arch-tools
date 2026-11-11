@@ -231,6 +231,13 @@
   resize: vertical;
   white-space: pre;
 }
+.po-ordnermeldungen {
+  margin: 6px 0;
+}
+.po-ordnermeldungen ul {
+  margin: 0 0 4px;
+  padding-left: 18px;
+}
 .po-col .placeholder-help {
   max-height: none;
 }

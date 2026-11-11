@@ -137,32 +137,75 @@ export function lphText(lph: number[]): string {
   return teile.join(', ');
 }
 
+/** Meldung zu einer Zeile der Ordnerliste (Zeilennummer ab 1, wie im Textfeld) */
+export interface OrdnerMeldung {
+  zeile: number;
+  text: string;
+}
+
+/** Zeichen, die in Ordnernamen nicht erlaubt sind und beim Lesen entfernt werden („/“ und „\\“ trennen Unterordner) */
+const ENTFERNT = /[:*?"<>\u0000-\u001f]/g;
+
+/** „5-8“, „6, 7“ – Teile, die keine Leistungsphase 1–9 ergeben (z. B. „10“) */
+function falscheLph(text: string): string[] {
+  return text
+    .split(/[,;\s]+/)
+    .filter(Boolean)
+    .filter((teil) => {
+      const m = /^(\d)(?:\s*[-–]\s*(\d))?$/.exec(teil);
+      return !m || Number(m[1]) < 1 || (m[2] !== undefined && Number(m[2]) < 1);
+    });
+}
+
 /**
  * Ordnerliste als Text – eine Zeile je Ordner, Zusätze mit „|“:
  *   02 Pläne/Ausführung | LPh 5 | Dateischema
- * Leerzeilen und Zeilen mit „#“ werden übergangen.
+ * Leerzeilen und Zeilen mit „#“ werden übergangen. Liefert neben den Ordnern Meldungen mit Zeilennummer zu allem,
+ * was beim Lesen entfällt oder bereinigt wird: doppelte Pfade (nur der erste gilt), Leistungsphasen außerhalb 1–9,
+ * entfernte Zeichen, unbekannte Zusätze.
  */
-export function ordnerAusText(text: string): OrdnerRegel[] {
+export function ordnerAusTextMitMeldungen(text: string): { ordner: OrdnerRegel[]; meldungen: OrdnerMeldung[] } {
   const out: OrdnerRegel[] = [];
-  const gesehen = new Set<string>();
-  for (const zeile of text.split(/\r?\n/)) {
-    if (!zeile.trim() || zeile.trim().startsWith('#')) continue;
+  const meldungen: OrdnerMeldung[] = [];
+  const gesehen = new Map<string, number>();
+  text.split(/\r?\n/).forEach((zeile, i) => {
+    const nr = i + 1;
+    if (!zeile.trim() || zeile.trim().startsWith('#')) return;
     const [roh, ...zusaetze] = zeile.split('|');
+    const zeichen = [...new Set(roh.match(ENTFERNT) ?? [])].filter((z) => z.trim());
+    if (zeichen.length) meldungen.push({ zeile: nr, text: `Zeile ${nr}: Zeichen ${zeichen.join(' ')} ${zeichen.length === 1 ? 'wird' : 'werden'} entfernt.` });
     const pfad = normPfad(roh).split('/').map(sichererName).filter(Boolean).join('/');
-    if (!pfad || gesehen.has(pfad.toLowerCase())) continue;
-    gesehen.add(pfad.toLowerCase());
+    if (!pfad) {
+      meldungen.push({ zeile: nr, text: `Zeile ${nr}: kein Ordnername – die Zeile entfällt.` });
+      return;
+    }
+    const frueher = gesehen.get(pfad.toLowerCase());
+    if (frueher !== undefined) {
+      meldungen.push({ zeile: nr, text: `Zeile ${nr} doppelt zu Zeile ${frueher} – nur die erste gilt.` });
+      return;
+    }
+    gesehen.set(pfad.toLowerCase(), nr);
     const regel: OrdnerRegel = { pfad };
     for (const z of zusaetze.map((x) => x.trim())) {
-      const m = /^lph\.?\s*(.+)$/i.exec(z);
+      if (!z) continue;
+      const m = /^lph\.?\s*(.*)$/i.exec(z);
       if (m) {
+        const falsch = falscheLph(m[1]);
+        if (falsch.length)
+          meldungen.push({ zeile: nr, text: `Zeile ${nr}: LPh ${falsch.join(', ')} gibt es nicht (nur 1 bis 9)${lphAus(m[1]).length ? '' : ' – der Ordner wird dann immer angelegt'}.` });
+        else if (!m[1].trim()) meldungen.push({ zeile: nr, text: `Zeile ${nr}: „LPh“ ohne Leistungsphase – der Ordner wird immer angelegt.` });
         const lph = lphAus(m[1]);
         if (lph.length) regel.lph = lph;
       } else if (/^dateischema$/i.test(z)) regel.dateischema = true;
+      else meldungen.push({ zeile: nr, text: `Zeile ${nr}: unbekannter Zusatz „${z}“ – erlaubt sind „LPh …“ und „Dateischema“.` });
     }
     out.push(regel);
-  }
-  return out;
+  });
+  return { ordner: out, meldungen };
 }
+
+/** Ordnerliste als Text lesen (ohne Meldungen, siehe `ordnerAusTextMitMeldungen`) */
+export const ordnerAusText = (text: string): OrdnerRegel[] => ordnerAusTextMitMeldungen(text).ordner;
 
 export function ordnerAlsText(ordner: OrdnerRegel[]): string {
   return ordner.map((o) => [o.pfad, o.lph?.length ? `LPh ${lphText(o.lph)}` : '', o.dateischema ? 'Dateischema' : ''].filter(Boolean).join(' | ')).join('\n');

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
@@ -7,7 +7,7 @@ import { hatDateisystem, waehleOrdner } from '../dateisystem';
 import { dateimuster, nameAus, nummerAus } from '../nummer';
 import { useOrdner } from '../store';
 import type { Struktur } from '../struktur';
-import { ordnerAlsText, ordnerAusText, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from '../struktur';
+import { ordnerAlsText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from '../struktur';
 
 const log = logger('struktur');
 
@@ -25,8 +25,10 @@ export function StrukturView() {
   useEffect(() => setText(ordnerAlsText(struktur.ordner)), [struktur.ordner]);
 
   const set = (patch: Partial<Struktur>) => setStruktur({ ...struktur, ...patch });
+  // Meldungen zur Ordnerliste (doppelte Zeilen, falsche LPh, entfernte Zeichen) – vor dem Übernehmen sichtbar
+  const gelesen = useMemo(() => ordnerAusTextMitMeldungen(text), [text]);
   const ordnerUebernehmen = () => {
-    const ordner = ordnerAusText(text);
+    const { ordner } = gelesen;
     if (!ordner.length) return setMeldung({ art: 'fehler', text: 'Die Liste enthält keinen Ordner – die bisherige Struktur bleibt bestehen.' });
     set({ ordner });
     setMeldung(null);
@@ -101,7 +103,25 @@ export function StrukturView() {
           Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen
           beauftragt ist; <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft.
         </p>
-        <textarea className="po-ordnertext" value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} onBlur={() => geaendert && ordnerUebernehmen()} />
+        <textarea
+          className="po-ordnertext"
+          aria-label="Ordnerliste"
+          value={text}
+          spellCheck={false}
+          onChange={(e) => setText(e.target.value)}
+          // mit Meldungen nicht still beim Verlassen übernehmen – erst nach Durchsicht über den Knopf
+          onBlur={() => geaendert && !gelesen.meldungen.length && ordnerUebernehmen()}
+        />
+        {gelesen.meldungen.length > 0 && (
+          <div className="warning po-ordnermeldungen">
+            <ul>
+              {gelesen.meldungen.map((m) => (
+                <li key={`${m.zeile}:${m.text}`}>{m.text}</li>
+              ))}
+            </ul>
+            {geaendert && <span className="small-text">Mit „Ordnerliste übernehmen“ gilt die Liste so, wie oben beschrieben bereinigt.</span>}
+          </div>
+        )}
         <div className="button-row">
           <button className="primary" disabled={!geaendert} onClick={ordnerUebernehmen}>
             Ordnerliste übernehmen
