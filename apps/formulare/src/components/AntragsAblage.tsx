@@ -11,6 +11,31 @@ import { StatusPunkt } from './Antrag';
 import type { MenuePunkt } from './Menue';
 import { zeigeMenue } from './Menue';
 import { Symbol } from './Symbol';
+import { useState } from 'react';
+import { UnterlagenVorschau } from './UnterlagenVorschau';
+
+/** Alle Formulare des Projekts (ohne Archivordner) auf einmal als PDF exportieren – mit Fortschritt */
+export function SammelExportKnopf({ mitText = false }: { mitText?: boolean }) {
+  const laeuft = useAntrag((s) => s.sammelExport);
+  const anzahl = useFormulare((s) => s.formulare.length);
+  return (
+    <button
+      className={mitText ? 'small' : 'icon'}
+      disabled={!!laeuft || !anzahl}
+      aria-label="Alle Formulare als PDF exportieren"
+      title="Alle Formulare des Projekts als PDF exportieren – Name und Ziel wie beim einzelnen Export (Formulare in _archiv bzw. archiv ausgenommen)"
+      onClick={() => void useAntrag.getState().alleExportieren()}
+    >
+      <Symbol name="export" />
+      {mitText && (laeuft ? ` Export ${laeuft.fertig} von ${laeuft.gesamt} …` : ' Alle Formulare exportieren')}
+      {!mitText && laeuft && (
+        <span className="fo-sammel-zahl">
+          {laeuft.fertig}/{laeuft.gesamt}
+        </span>
+      )}
+    </button>
+  );
+}
 
 /** Zeichen des Zustands einer Datei im Antragsordner */
 const ZEICHEN: Record<Bereitschaft, string> = { bereit: '✓', offen: '○', name: '!', geaendert: '↻' };
@@ -33,6 +58,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const bereitJeFassung = useAntrag((s) => s.projektdatei?.bereit);
   const markiert = bereitJeFassung?.[fassung] ?? [];
   const { bereitUmschalten } = useAntrag.getState();
+  const [vorschau, setVorschau] = useState<string | null | undefined>(undefined);
   const basis = verbinde(ablage.root, ablage.pfad);
   const art = artDerFassung(fassung);
   const codes = projektCodes(projekt);
@@ -66,6 +92,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           },
         ]
       : []),
+    { text: 'In der Vorschau durchblättern', symbol: 'auge', aktion: () => setVorschau(pfad) },
     { trenner: true },
     ...dateiMenue(basis, `${ordner}/${pfad}`),
   ];
@@ -88,6 +115,13 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
         </span>
         {vollstaendig && <span className="fo-bereit-fertig">Alles bereit</span>}
       </div>
+      <div className="fo-bereit-knoepfe">
+        <button className="small" disabled={!liste.length} title="Alle Antragsunterlagen groß ansehen und durchblättern (mit Zoom)" onClick={() => setVorschau(null)}>
+          <Symbol name="auge" /> Ansehen
+        </button>
+        <SammelExportKnopf mitText />
+      </div>
+      {vorschau !== undefined && <UnterlagenVorschau ablage={ablage} start={vorschau ?? undefined} onClose={() => setVorschau(undefined)} />}
       {!liste.length && <p className="nav-leer">Im Ordner {ordner} liegen noch keine Dokumente.</p>}
       <ul className="fo-baum fo-bereit-liste">
         {liste.map(({ d, fehler, zustand, dok }) => (

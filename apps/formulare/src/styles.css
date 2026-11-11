@@ -4271,3 +4271,119 @@ tr[data-ziehen='danach'] > td {
     display: none;
   }
 }
+.fo-bereit-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.fo-sammel-zahl {
+  margin-left: 2px;
+  font-size: 10px;
+}
+
+/* ---------- Antragsunterlagen ansehen (UnterlagenVorschau): ganzes Fenster, blättern, zoomen ---------- */
+.vs-ebene {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.vs-leiste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 6px 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.vs-titel {
+  font-size: 13px;
+}
+.vs-blaettern,
+.vs-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.vs-blaettern button {
+  min-width: 30px;
+  font-size: 15px;
+  line-height: 1;
+}
+.vs-zaehler {
+  min-width: 52px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.vs-bereit.bereit {
+  color: var(--ok-text);
+  background: var(--ok-bg);
+  border-color: var(--ok-border);
+  font-weight: 600;
+}
+.vs-koerper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.vs-liste {
+  flex: 0 0 220px;
+  overflow: auto;
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.vs-liste button {
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  border: none;
+  background: none;
+  font-size: 12px;
+  border-left: 3px solid transparent;
+  border-radius: 0 4px 4px 0;
+}
+.vs-liste button.aktiv {
+  background: var(--accent-soft);
+  border-left-color: var(--accent);
+}
+.vs-flaeche {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 10px 16px 24px;
+}
+.vs-name {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.vs-hinweis {
+  color: var(--muted);
+  margin-top: 40px;
+  text-align: center;
+}
+.vs-pdf,
+.vs-bild {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.vs-seite,
+.vs-bild img {
+  display: block;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+@media (max-width: 720px) {
+  .vs-liste {
+    display: none;
+  }
+}

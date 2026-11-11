@@ -54,6 +54,7 @@ import { formulareDesProjekts, projektSchluessel } from './projekte';
 import type { FormularZustand, Zustaende } from './autofill';
 import { autoWerte } from './autofill';
 import { ablageVon, autofillAnbindung, entwurfVon, karteMitAenderungen, mitAenderungen, profilFuer as wirksamesProfil, useFormulare, wertVon } from './store';
+import { fragen } from '@core/ui/Rueckfrage';
 
 const log = logger('formulare');
 
@@ -163,6 +164,10 @@ interface AntragState {
   zustaendeSetzen: (neu: Zustaende) => Promise<void>;
   /** Datei im Ordner der aktiven Fassung von Hand als „bereit“ markieren bzw. die Markierung aufheben */
   bereitUmschalten: (datei: string) => Promise<void>;
+  /** alle Formulare des FORMA-Projekts (ohne Archivordner) als PDF an ihr Exportziel; liefert die Zahl der exportierten */
+  alleExportieren: () => Promise<number>;
+  /** läuft gerade der Sammel-Export: fertig von gesamt */
+  sammelExport: { fertig: number; gesamt: number } | null;
 }
 
 /** Formular, das sich ins Projekt übernehmen lässt */
@@ -218,6 +223,9 @@ export async function ordnerAufloesen(ds: { liste: (pfad: string, tiefe: number)
   }
   return out.join('/');
 }
+
+/** Formular in einem Archivordner (`_archiv`, `archiv`, auch tiefer) – wird beim Sammel-Export ausgelassen */
+export const istArchiv = (pfad: string) => /(^|\/)_?archiv(\/|$)/i.test(pfad.replace(/\\/g, '/'));
 
 /** Projektcodes, mit denen Dateien im Antragsordner beginnen dürfen: Kürzel des FORMA-Projekts, Projektcode der .oap */
 export function projektCodes(p: Projekt): string[] {
@@ -390,6 +398,78 @@ export const useAntrag = create<AntragState>((set, get) => {
   };
 
   return {
+    sammelExport: null,
+
+    alleExportieren: async () => {
+      const { ds, projekt, basis } = ctx();
+      if (!ds || !projekt || !basis || get().sammelExport) return 0;
+      const liste = useFormulare.getState().formulare.filter((f) => !istArchiv(f.pfad));
+      if (!liste.length) {
+        meldung('info', 'In diesem Projekt gibt es keine Formulare zum Exportieren.');
+        return 0;
+      }
+      const ziele = liste.map((f) => ({ f, ziel: exportVorschlag(f.pfad) }));
+      const pfadVon = (z: ExportZiel) => `${z.ordner ? `${z.ordner}/` : ''}${z.name}`;
+      const vorhanden: string[] = [];
+      for (const { ziel } of ziele) if (await ds.lies(basis, pfadVon(ziel)).catch(() => null)) vorhanden.push(ziel.name);
+      let ersetzen = false;
+      if (vorhanden.length) {
+        const a = await fragen({
+          titel: `${vorhanden.length === 1 ? 'Eine Datei gibt' : `${vorhanden.length} Dateien gibt`} es schon`,
+          text: `${vorhanden.slice(0, 8).join('\n')}${vorhanden.length > 8 ? `\n… und ${vorhanden.length - 8} weitere` : ''}`,
+          knoepfe: [
+            { id: 'abbrechen', label: 'Abbrechen' },
+            { id: 'ueberspringen', label: 'Vorhandene überspringen' },
+            { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
+          ],
+        });
+        if (a !== 'ueberspringen' && a !== 'ersetzen') return 0;
+        ersetzen = a === 'ersetzen';
+      }
+      const fertig: { pfad: string; name: string; ordner: string }[] = [];
+      const fehlgeschlagen: string[] = [];
+      let uebersprungen = 0;
+      set({ sammelExport: { fertig: 0, gesamt: ziele.length } });
+      try {
+        for (const [i, { f, ziel }] of ziele.entries()) {
+          const pfad = pfadVon(ziel);
+          try {
+            const da = vorhanden.includes(ziel.name);
+            if (da && !ersetzen) uebersprungen++;
+            else {
+              const pdf = await pdfVon(projekt, f.pfad);
+              if (da) await ds.dokumentErsetzen(basis, pfad, pdf);
+              else await ds.dokumentAnlegen(basis, pfad, pdf);
+              fertig.push({ pfad: f.pfad, name: ziel.name, ordner: ziel.ordner });
+              log.info(`Exportiert: ${f.pfad} → ${verbinde(basis, pfad)}`);
+            }
+          } catch (e) {
+            fehlgeschlagen.push(`${f.name}: ${e instanceof Error ? e.message : String(e)}`);
+          }
+          set({ sammelExport: { fertig: i + 1, gesamt: ziele.length } });
+        }
+        // im Ordner der aktiven Fassung: mit den Dokumenten des Projektumfangs verknüpfen (ein Schritt)
+        const st = get();
+        const umfang = st.projektdatei?.umfang;
+        const fassung = aktiveFassung(st, projekt);
+        const imAntrag = fertig.filter((x) => x.ordner === antragsOrdner(st, projekt));
+        if (umfang && imAntrag.length) {
+          const neu = umfang.map((u) => {
+            const doc = st.dokumente.find((d) => d.eintrag.id === u.id);
+            const x = doc?.formular && imAntrag.find((y) => y.pfad === doc.formular!.pfad);
+            return x ? { ...u, formularDatei: nurName(x.pfad), dateien: { ...u.dateien, [fassung]: x.name } } : u;
+          });
+          await get().umfangSetzen(neu);
+        } else await get().aktualisieren();
+      } finally {
+        set({ sammelExport: null });
+      }
+      const ordner = [...new Set(ziele.map((z) => z.ziel.ordner || 'Projektordner'))].join(', ');
+      const teile = [`${fertig.length} von ${ziele.length} Formularen als PDF nach ${ordner} exportiert`, uebersprungen ? `${uebersprungen} vorhandene übersprungen` : '', fehlgeschlagen.length ? `nicht exportiert: ${fehlgeschlagen.join('; ')}` : ''];
+      meldung(fehlgeschlagen.length ? 'fehler' : 'info', `${teile.filter(Boolean).join(' – ')}.`);
+      return fertig.length;
+    },
+
     bereitUmschalten: async (datei) => {
       const projekt = useFormulare.getState().projekt;
       if (!projekt) return;

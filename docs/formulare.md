@@ -255,6 +255,16 @@ Anschrift, wie sie in Formularen steht.
   Namen vor (Datum der Datei). Unter „Fehlt im Antragsordner“ stehen die Dokumente des Projektumfangs ohne Datei.
   Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
   aktiven Fassung; `{Phase}` gibt es weiter).
+- **Antragsunterlagen ansehen:** „Ansehen“ in der Ansicht „Antrag“ (oder Rechtsklick auf eine Datei → „In der
+  Vorschau durchblättern“) zeigt alle Unterlagen der aktiven Fassung im ganzen Fenster – zuerst die Dokumente des
+  Projektumfangs in ihrer Reihenfolge, dann die übrigen. Blättern mit ‹ ›, ← → oder Bild↑/Bild↓ bzw. über die Liste
+  links; Zoom mit − + (Tasten − + 0) oder der Auswahl (Seitenbreite, 50–300 %). PDFs erscheinen mit allen Seiten,
+  Bilder ebenso, andere Dateien öffnet „Extern öffnen“. „Als bereit markieren“ geht auch hier. Esc schließt.
+- **Alle Formulare exportieren:** Knopf in der Ansicht „Antrag“ bzw. ⇪ im Kopf des Abschnitts „FORMA“: alle
+  Formulare des FORMA-Projekts als PDF, Name und Ziel wie beim einzelnen Export (Namensvorlage, aktive Fassung).
+  Formulare in `_archiv` bzw. `archiv` bleiben außen vor. Gibt es Dateien schon, fragt die App einmal: „Ersetzen“,
+  „Vorhandene überspringen“ oder „Abbrechen“. Exportierte PDFs im Antragsordner werden mit den Dokumenten des
+  Projektumfangs verknüpft; am Ende steht, wie viele exportiert, übersprungen oder fehlgeschlagen sind.
 - **Quellordner mit Schreibweisen der Büros:** Quellen im Projektumfang (z. B. `Planung/Berechnungen`,
   `Planung/Genehmigungsplanung/pdf`, `Fachplanung/G27*`) werden auch gefunden, wenn der Ordner anders geschrieben ist:
   Nummern, Unterstriche und Punkte vorn („00 Berechnungen“, „__Berechnungen“, „03 Genehmigungsplanung“), gleichwertige

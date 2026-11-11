@@ -7,7 +7,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { VORGABE_EXPORT, jjmmtt } from './antrag';
 import { VORGABE_MERKMALE } from './bedingung';
-import { useAntrag } from './antragStore';
+import { istArchiv, useAntrag } from './antragStore';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Schreiben } from './forma/cp1252';
 import { felderDerSeite } from './forma/felder';
@@ -830,5 +830,68 @@ describe('Projektordner, Ansicht „Antrag“: Dokumente im Antragsordner mit Vo
     // zurück zur Ordneransicht
     await klick(knopf(host, 'Ordner'));
     expect(host.querySelector('.fo-antrag-ablage')).toBeNull();
+  });
+});
+
+describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
+  it('Archivordner werden beim Sammel-Export ausgelassen', () => {
+    expect(istArchiv('BS9/_archiv/003-Alt.frmsjf')).toBe(true);
+    expect(istArchiv('BS9/Archiv/003-Alt.frmsjf')).toBe(true);
+    expect(istArchiv('BS9/003-Archivierung.frmsjf')).toBe(false);
+    expect(istArchiv('BS9/001-Bauantrag.frmsjf')).toBe(false);
+  });
+
+  it('Vorschau: alle Unterlagen der aktiven Fassung durchblättern, zoomen, Esc schließt', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/A Notiz.txt`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/B Foto.png`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/C Liste.txt`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await klick(knopf(host, 'Antrag'));
+    await klick(knopf(host.querySelector('.fo-antrag-ablage')!, 'Ansehen'));
+    const ebene = () => host.querySelector('.vs-ebene');
+    const zaehler = () => ebene()!.querySelector('.vs-zaehler')!.textContent;
+    expect(zaehler()).toBe('1 / 3');
+    expect(ebene()!.querySelector('.vs-name')!.textContent).toBe('A Notiz.txt');
+    expect(ebene()!.textContent).toContain('keine Vorschau');
+    const taste = (key: string) => act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+    taste('ArrowRight');
+    await warte();
+    expect(zaehler()).toBe('2 / 3');
+    expect(ebene()!.querySelector('.vs-bild')).not.toBeNull();
+    await klick(ebene()!.querySelector<HTMLButtonElement>('[aria-label="Nächstes Dokument"]')!);
+    expect(zaehler()).toBe('3 / 3');
+    expect(ebene()!.querySelector<HTMLButtonElement>('[aria-label="Nächstes Dokument"]')!.disabled).toBe(true);
+    // Liste links springt direkt
+    await klick([...ebene()!.querySelectorAll<HTMLButtonElement>('.vs-liste button')][0]);
+    expect(zaehler()).toBe('1 / 3');
+    // Zoom
+    const zoom = () => ebene()!.querySelector<HTMLSelectElement>('select[aria-label="Zoom"]')!.value;
+    expect(zoom()).toBe('0');
+    taste('+');
+    taste('+');
+    expect(zoom()).toBe('0.75');
+    taste('0');
+    expect(zoom()).toBe('0');
+    taste('Escape');
+    expect(ebene()).toBeNull();
+  });
+
+  it('alle Formulare auf einmal als PDF – Archiv ausgenommen; vorhandene ersetzen oder überspringen', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Zweites.frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/_archiv/003-Alt.frmsjf', MUSTER);
+    const host = await projektBS9();
+    await klick(knopf(host, 'Antrag'));
+    await klick(knopf(host.querySelector('.fo-antrag-ablage')!, 'Alle Formulare exportieren'));
+    const datum = jjmmtt(new Date());
+    const exportiert = () => [...ds.dateien.keys()].filter((k) => k.startsWith(`${PROJEKT}/TÖB/BAUA 2/`) && k.endsWith('.pdf')).map((k) => k.split('/').pop());
+    expect(exportiert().sort()).toEqual([`BS9 BAUA ${datum} Muster.pdf`, `BS9 BAUA ${datum} Zweites.pdf`]);
+    expect(useFormulare.getState().meldung?.text).toContain('2 von 2 Formularen als PDF nach TÖB/BAUA 2 exportiert');
+    // noch einmal: Rückfrage, vorhandene überspringen
+    await klick(knopf(host.querySelector('.fo-antrag-ablage')!, 'Alle Formulare exportieren'));
+    const dialog = host.querySelector('.modal.rf')!;
+    expect(dialog.textContent).toContain('2 Dateien gibt es schon');
+    await klick(knopf(dialog, 'Vorhandene überspringen'));
+    expect(useFormulare.getState().meldung?.text).toContain('0 von 2 Formularen');
+    expect(useFormulare.getState().meldung?.text).toContain('2 vorhandene übersprungen');
   });
 });

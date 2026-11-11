@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
 import { useAntrag } from '../antragStore';
-import { AntragsAblage } from './AntragsAblage';
+import { AntragsAblage, SammelExportKnopf } from './AntragsAblage';
 import type { FormularEintrag } from '../projekte';
 import { formularLoeschen } from '../dateiAktionen';
 import { AblageBaum } from './AblageBaum';
@@ -184,6 +184,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                   <button className="icon" title="Formular hinzufügen – aus dem Vorlagenordner oder einem anderen Projekt" aria-label="Formular hinzufügen" onClick={() => useHinzufuegenDialog.getState().setOffen(true)}>
                     <Symbol name="plus" />
                   </button>
+                  <SammelExportKnopf />
                   <button className="icon" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren" onClick={onSperren}>
                     <Symbol name="schloss" />
                   </button>
