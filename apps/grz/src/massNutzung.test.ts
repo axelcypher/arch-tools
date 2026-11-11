@@ -174,7 +174,25 @@ describe('Maß der baulichen Nutzung: Speichern', () => {
     const { parseProject, serializeProject } = await import('@core/serialize');
     const { readProjectFile, writeArchive } = await import('@core/archive');
     const p = haus('1967-03-14');
-    p.massNutzung = { ...p.massNutzung, einfamilienhaus: true, wandzuschlag: 0.3, einstufung: { terrasse: 'nein' } };
+    p.massNutzung = {
+      ...p.massNutzung,
+      einfamilienhaus: true,
+      wandzuschlag: 0.3,
+      einstufung: { terrasse: 'nein', zufahrt: 'grz1' },
+      gebietsart: 'WA',
+      stand: '2026-11-11',
+      grAbsolut: 120,
+      gfAbsolut: 300,
+      bmz: 2.4,
+      vollgeschosseMin: 1,
+      vollgeschosseZwingend: true,
+      traufhoeheMax: 6.5,
+      firsthoeheMax: 10,
+      aufenthaltNichtVollgeschoss: true,
+    };
+    const eg = p.storeys[1].shapes[0];
+    if (eg.kind === 'outline') eg.anlage = 'garage';
+    p.lageplan = { flaechen: [], grenze: [{ id: 'g1', name: 'Flurstück 12', points: rectPoints({ x: -5, y: -5 }, { x: 20, y: 20 }) }] };
     p.storeys[1].vollgeschoss = true;
     const zimmer = p.storeys[3].shapes.find((s) => s.kind === 'room')!;
     if (zimmer.kind === 'room') zimmer.aufenthalt = 'treppe';
@@ -182,6 +200,7 @@ describe('Maß der baulichen Nutzung: Speichern', () => {
     for (const back of [parseProject(serializeProject(p)), readProjectFile(writeArchive(p))]) {
       expect(back.massNutzung).toEqual(p.massNutzung);
       expect(back.lageplan).toEqual(p.lageplan);
+      expect(back.storeys[1].shapes[0]).toMatchObject({ anlage: 'garage' });
       expect(back.storeys[1].vollgeschoss).toBe(true);
       expect(back.storeys[3].shapes.find((s) => s.kind === 'room')).toMatchObject({ aufenthalt: 'treppe' });
       expect(massNachweis(back)).toEqual(massNachweis(p));
@@ -382,5 +401,100 @@ describe('Angerechnete Fläche und Hinweise (G-04, G-09)', () => {
     expect(sachlicheHinweise(n).some((t) => t.startsWith('Geländeoberfläche'))).toBe(false);
     // Recht steht in den Grundlagen, nicht noch einmal in den Hinweisen
     expect(n.hinweise.some((x) => x.text.startsWith('Ohne Plandatum'))).toBe(false);
+  });
+});
+
+describe('Fachliche Lücken (G-26) und Grundstücksgrenze (G-22)', () => {
+  it('Terrasse 1990 mit Einstufung „GRZ I“ zählt zur GR statt zur GR II', () => {
+    const p = haus('2020-05-01');
+    lageplan(p, flaeche(-3, 0, 0, 5, { name: 'Terrasse', nutzung: 'terrasse' }));
+    p.massNutzung = { ...p.massNutzung, einstufung: { terrasse: 'grz1' } };
+    const n = massNachweis(p);
+    expect(n.grz.flaeche).toBeCloseTo(135 + 15, 6);
+    expect(n.grz2!.flaeche).toBeCloseTo(135 + 15, 6);
+    p.massNutzung = { ...p.massNutzung, einstufung: { terrasse: 'ja' } };
+    const m = massNachweis(p);
+    expect(m.grz.flaeche).toBeCloseTo(135, 6);
+    expect(m.grz2!.flaeche).toBeCloseTo(150, 6);
+  });
+
+  it('angebaute Garage aus der IFC als Anlage: zählt zur GRZ II, nicht zur Hauptanlage', () => {
+    const p = haus('2020-05-01');
+    const garage = createOutline(rectPoints({ x: 12, y: 0 }, { x: 15, y: 6 }), 'Garage');
+    garage.anlage = 'garage';
+    p.storeys[1].shapes.push(garage);
+    const n = massNachweis(p);
+    expect(n.hauptanlage).toBeCloseTo(135, 6);
+    expect(n.grz.flaeche).toBeCloseTo(135, 6);
+    expect(n.grz2!.flaeche).toBeCloseTo(135 + 18, 6);
+    const post = n.lageplan.find((l) => l.ausGebaeude)!;
+    expect(post).toMatchObject({ nutzung: 'garage', anrechnung: 'grz2' });
+    expect(post.angerechnet).toBeCloseTo(18, 6);
+    expect(n.bilanz.gebaeude).toBeCloseTo(153, 6);
+    // ohne Kennzeichnung: Hauptanlage
+    garage.anlage = undefined;
+    expect(massNachweis(p).hauptanlage).toBeCloseTo(153, 6);
+  });
+
+  it('BauNVO 1962: Garage in GE nicht angerechnet, in WA angerechnet (§ 19 Abs. 5)', () => {
+    const p = haus('1967-03-14');
+    lageplan(p, flaeche(12, 0, 15, 6, { name: 'Garage', nutzung: 'garage' }));
+    p.massNutzung = { ...p.massNutzung, gebietsart: 'WA' };
+    expect(massNachweis(p).grz.flaeche).toBeCloseTo(135 + 18, 6);
+    p.massNutzung = { ...p.massNutzung, gebietsart: 'GE' };
+    const n = massNachweis(p);
+    expect(n.grz.flaeche).toBeCloseTo(135, 6);
+    expect(n.lageplan[0].anrechnung).toBe('nein');
+  });
+
+  it('absolute GR 120 m² gegen die vorhandene GR; Vollgeschosse mindestens/zwingend; BMZ', () => {
+    const p = haus('2020-05-01');
+    p.massNutzung = { ...p.massNutzung, grAbsolut: 120, gfAbsolut: 300, bmz: 2 };
+    const n = massNachweis(p);
+    expect(n.grAbsolut).toMatchObject({ zulaessig: 120, status: 'ueberschritten' });
+    expect(n.grAbsolut!.flaeche).toBeCloseTo(135, 6);
+    expect(n.gfAbsolut!.status).toBe('ok');
+    // Baumasse: EG 3,45 + OG 3,20 Geschosshöhe × 135 m²
+    expect(n.baumasse).toBeCloseTo(135 * (3.45 + 3.2), 6);
+    expect(n.bmz!.wert).toBeCloseTo((135 * 6.65) / 612.5, 6);
+    p.massNutzung = { ...p.massNutzung, vollgeschosseMax: 3, vollgeschosseZwingend: true };
+    expect(massNachweis(p).vollgeschosse.status).toBe('unterschritten');
+    p.massNutzung = { ...p.massNutzung, vollgeschosseMax: 3, vollgeschosseZwingend: undefined, vollgeschosseMin: 2 };
+    expect(massNachweis(p).vollgeschosse.status).toBe('ok');
+  });
+
+  it('§ 20 Abs. 3 S. 2 BauNVO 1990: Aufenthaltsräume in Nicht-Vollgeschossen nur bei Festsetzung', () => {
+    const p = haus('2020-05-01');
+    expect(massNachweis(p).gfAufenthalt).toBe(0);
+    p.massNutzung = { ...p.massNutzung, aufenthaltNichtVollgeschoss: true };
+    const n = massNachweis(p);
+    expect(n.gfAufenthalt).toBeGreaterThan(0);
+    expect(n.gf).toBeCloseTo(2 * 135 + n.gfAufenthalt, 6);
+  });
+
+  it('BauO NW 1970: Kellergeschoss im Lichten – 1,50 m über Gelände zählt, 1,30 m nicht', () => {
+    const p = haus('1975-06-01');
+    // UG-Decke bei ±0,00, Decken-/Dachaufbau 0,30 m: im Lichten über Gelände = 0 − 0,30 − Gelände
+    p.massNutzung = { ...p.massNutzung, dachaufbau: 0.3, gelaende: -1.8 };
+    expect(massNachweis(p).geschosse.find((g) => g.name === 'UG')!.vollgeschoss).toBe(true);
+    p.massNutzung = { ...p.massNutzung, gelaende: -1.6 };
+    const ug = massNachweis(p).geschosse.find((g) => g.name === 'UG')!;
+    expect(ug.vollgeschoss).toBe(false);
+    expect(ug.begruendung).toContain('im Lichten 1,30 m');
+  });
+
+  it('Grundstücksgrenze 612,50 m² gezeichnet: Linie im Plan; Abweichung zur eingetragenen Fläche wird gemeldet', () => {
+    const p = haus('2020-05-01');
+    p.lageplan = { flaechen: [], grenze: [{ id: 'g', name: 'Flurstück', points: rectPoints({ x: -5, y: -5 }, { x: 20, y: 19.5 }) }] };
+    p.meta.grundstueck.flaeche = undefined;
+    const n = massNachweis(p);
+    expect(n.grundstueck.quelle).toBe('grenze');
+    expect(n.grundstueck.flaeche).toBeCloseTo(612.5, 6);
+    expect(n.grenzeGezeichnet).toBe(true);
+    expect(n.grundstueckPolygone).toHaveLength(1);
+    p.meta.grundstueck.flaeche = 600;
+    const m = massNachweis(p);
+    expect(m.grundstueck).toMatchObject({ quelle: 'projektdaten', flaeche: 600 });
+    expect(m.hinweise.some((h) => h.text.includes('gezeichnete Grenze 612,50 m²') && h.text.includes('Katasterangabe'))).toBe(true);
   });
 });

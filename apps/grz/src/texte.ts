@@ -5,6 +5,7 @@ import type { Anrechnung, GelaendeQuelle, Kennzahl, Nachweis, Status } from './m
 export const STATUS: Record<Status, { label: string; cls: string }> = {
   ok: { label: 'eingehalten', cls: 'ok' },
   ueberschritten: { label: 'überschritten', cls: 'bad' },
+  unterschritten: { label: 'unterschritten', cls: 'bad' },
   pruefen: { label: 'prüfen', cls: 'warn' },
   offen: { label: 'Festsetzung fehlt', cls: 'off' },
   fehlt: { label: 'Grundstücksfläche fehlt', cls: 'off' },
@@ -25,6 +26,9 @@ export const GELAENDE_QUELLE: Record<GelaendeQuelle, string> = {
   annahme: 'angenommen',
 };
 
+/** Herkunft der Grundstücksfläche */
+export const GRUNDSTUECK_QUELLE = { projektdaten: 'Projektdaten (Kataster)', grenze: 'aus der gezeichneten Grenze', lageplan: 'aus dem Lageplan', fehlt: 'fehlt' } as const;
+
 export const AUFENTHALT = { ja: 'Aufenthaltsraum', nein: 'kein Aufenthaltsraum', treppe: 'Treppenraum' } as const;
 
 export const GF_ART: Record<Nachweis['gfJeGeschoss'][number]['art'], string> = {
@@ -32,6 +36,14 @@ export const GF_ART: Record<Nachweis['gfJeGeschoss'][number]['art'], string> = {
   aufenthalt: 'Aufenthaltsräume mit Treppenräumen und Umfassungswänden',
   keine: 'zählt nicht',
 };
+
+/** zulässige Vollgeschosse als Text: „zulässig II · “, „mind. I, höchstens III · “, „zwingend II · “ */
+export function vollgeschosseZulaessig(v: Nachweis['vollgeschosse'], ende = ' · '): string {
+  if (v.zwingend && v.zulaessig !== undefined) return `zwingend ${roemisch(v.zulaessig)}${ende}`;
+  const t = [v.mindestens !== undefined && `mind. ${roemisch(v.mindestens)}`, v.zulaessig !== undefined && `höchstens ${roemisch(v.zulaessig)}`].filter(Boolean);
+  if (!t.length) return '';
+  return `${v.mindestens === undefined ? `zulässig ${roemisch(v.zulaessig!)}` : t.join(', ')}${ende}`;
+}
 
 export function roemisch(n: number): string {
   const r = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];

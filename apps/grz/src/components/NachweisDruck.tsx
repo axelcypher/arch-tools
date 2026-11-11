@@ -7,8 +7,9 @@ import type { Project, RoomShape } from '@core/model';
 import type { Anrechnung, Kennzahl, Nachweis } from '../massNutzung';
 import { baunvoLabel, bauoLabel, massNachweis, sachlicheHinweise } from '../massNutzung';
 import { druckenAls } from '@core/platform/projektDatei';
-import { useGrz } from '../store';
-import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, zahl } from '../texte';
+import { setMassNutzung, useGrz } from '../store';
+import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, vollgeschosseZulaessig, zahl } from '../texte';
+import { bebauungsplanText, GEBIETSARTEN } from '@core/model';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { datumText, DruckKopf } from '@core/ui/DruckKopf';
 import { beschriftungsPunkt, massstabLaenge, PT } from '../beschriftung';
@@ -27,14 +28,17 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
   const [haftung, setHaftung] = useState(false);
   // prüffähiger Rechenweg (Formeln, Teilflächen mit Maßen) – im Druck standardmäßig an
   const [mitRechenweg, setMitRechenweg] = useState(true);
-  // Stand des Nachweises: nicht automatisch heute, sondern wie eingetragen (leer = ohne Stand im Kopf)
-  const [stand, setStand] = useState('');
+  // Stand des Nachweises: nicht automatisch heute, sondern wie eingetragen und im Projekt gespeichert (leer = ohne Stand)
+  const stand = project.massNutzung?.stand ?? '';
+  const setStand = (v: string) => useGrz.getState().update((p) => setMassNutzung(p, { stand: v || undefined }), 'stand');
   const m = project.massNutzung ?? {};
   const G = n.grundstueck.flaeche;
   const eigene = n.lageplan.filter((l) => !l.nachbar);
   const nr = new Map(eigene.map((l, i) => [l.id, i + 1]));
   const vor1990 = n.recht.baunvo !== '1990';
-  const aufenthalt = vor1990 ? aufenthaltsraeume(project, n) : [];
+  // Aufenthaltsräume in Nicht-Vollgeschossen: vor 1990, 1990 nur bei Festsetzung (§ 20 Abs. 3 S. 2)
+  const mitRaeumen = vor1990 || !!m.aufenthaltNichtVollgeschoss;
+  const aufenthalt = mitRaeumen ? aufenthaltsraeume(project, n) : [];
   const hinweise = sachlicheHinweise(n);
   const grLabel = vor1990 ? 'GR' : 'GR II';
   const rw = useMemo(() => rechenwegVon(n, nr), [n, nr]);
@@ -47,7 +51,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
             <input type="checkbox" checked={plan} onChange={(e) => setPlan(e.target.checked)} />
             Lageplan
           </label>
-          {vor1990 && (
+          {mitRaeumen && (
             <label className="toggle">
               <input type="checkbox" checked={raeume} onChange={(e) => setRaeume(e.target.checked)} />
               Aufenthaltsräume
@@ -76,9 +80,17 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
         <table className="report-table narrow">
           <tbody>
             <tr>
-              <td>Bebauungsplan in Kraft seit</td>
-              <td>{m.planDatum ? datumText(m.planDatum) : 'kein Datum (aktuelles Recht)'}</td>
+              <td>Bebauungsplan</td>
+              <td>
+                {[bebauungsplanText(project.meta.bebauungsplan), m.planDatum ? `in Kraft seit ${datumText(m.planDatum)}` : 'kein Datum (aktuelles Recht)'].filter(Boolean).join(', ')}
+              </td>
             </tr>
+            {m.gebietsart && (
+              <tr>
+                <td>Baugebiet</td>
+                <td>{GEBIETSARTEN.find((g) => g.id === m.gebietsart)?.label ?? m.gebietsart}</td>
+              </tr>
+            )}
             <tr>
               <td>Baunutzungsverordnung</td>
               <td>
@@ -97,7 +109,13 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
                   m.grz !== undefined && `GRZ ${zahl(m.grz)}`,
                   m.grzIIMax !== undefined && `GRZ II ${zahl(m.grzIIMax)}`,
                   m.gfz !== undefined && `GFZ ${zahl(m.gfz)}`,
-                  m.vollgeschosseMax !== undefined && `${roemisch(m.vollgeschosseMax)} Vollgeschosse`,
+                  m.grAbsolut !== undefined && `GR ${fmt2(m.grAbsolut)} m²`,
+                  m.gfAbsolut !== undefined && `GF ${fmt2(m.gfAbsolut)} m²`,
+                  m.bmz !== undefined && `BMZ ${zahl(m.bmz)}`,
+                  vollgeschosseZulaessig(n.vollgeschosse, '') && `Vollgeschosse ${vollgeschosseZulaessig(n.vollgeschosse, '').replace('zulässig ', 'höchstens ')}`,
+                  m.traufhoeheMax !== undefined && `Traufhöhe ≤ ${fmt2(m.traufhoeheMax)} m`,
+                  m.firsthoeheMax !== undefined && `Firsthöhe ≤ ${fmt2(m.firsthoeheMax)} m`,
+                  m.aufenthaltNichtVollgeschoss && 'Aufenthaltsräume in Nicht-Vollgeschossen zählen (§ 20 Abs. 3 S. 2)',
                 ]
                   .filter(Boolean)
                   .join(' · ') || 'keine eingetragen'}
@@ -108,6 +126,8 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
               <td>
                 {G !== undefined ? `${fmt2(G)} m²` : 'fehlt'}
                 {n.grundstueck.quelle === 'lageplan' && ' (aus dem Lageplan)'}
+                {n.grundstueck.quelle === 'grenze' && ' (aus der gezeichneten Grenze)'}
+                {n.grundstueck.quelle === 'projektdaten' && n.grundstueck.grenze !== undefined && ` (gezeichnete Grenze ${fmt2(n.grundstueck.grenze)} m²)`}
               </td>
             </tr>
             <tr>
@@ -137,11 +157,14 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
             <KennzahlZeile titel={vor1990 ? 'GRZ' : 'GRZ I'} kurz={vor1990 ? 'GR' : 'GR I'} k={n.grz} />
             {n.grz2 && <KennzahlZeile titel="GRZ II (§ 19 Abs. 4)" kurz="GR II" k={n.grz2} />}
             <KennzahlZeile titel="GFZ" kurz="GF" k={n.gfz} />
+            {n.grAbsolut && <AbsolutZeile titel={vor1990 ? 'GR (absolut)' : 'GR I (absolut)'} a={n.grAbsolut} />}
+            {n.gfAbsolut && <AbsolutZeile titel="GF (absolut)" a={n.gfAbsolut} />}
+            {n.bmz && <KennzahlZeile titel="BMZ" kurz="BM" k={n.bmz} />}
             <tr>
               <td>Vollgeschosse</td>
               <td className="num" />
               <td className="num strong">{roemisch(n.vollgeschosse.anzahl)}</td>
-              <td className="num">{n.vollgeschosse.zulaessig !== undefined ? roemisch(n.vollgeschosse.zulaessig) : '–'}</td>
+              <td className="num">{vollgeschosseZulaessig(n.vollgeschosse, '').replace('zulässig ', '') || '–'}</td>
               <td className="num" />
               <td>{STATUS[n.vollgeschosse.status].label}</td>
             </tr>
@@ -467,6 +490,20 @@ function RechenwegZeilen({ f }: { f: Rechenweg['flaechen'][number] }) {
   );
 }
 
+/** absolute Festsetzung in m² */
+function AbsolutZeile({ titel, a }: { titel: string; a: NonNullable<Nachweis['grAbsolut']> }) {
+  return (
+    <tr>
+      <td>{titel}</td>
+      <td className="num">{fmt2(a.flaeche)}</td>
+      <td className="num" />
+      <td className="num">{fmt2(a.zulaessig)} m²</td>
+      <td className="num">{fmt2(a.zulaessig - a.flaeche)}</td>
+      <td>{STATUS[a.status].label}</td>
+    </tr>
+  );
+}
+
 /** tatsächlich angerechnete Fläche, bei „prüfen“ als Spanne */
 function AngerechnetZelle({ a }: { a: { angerechnet: number; angerechnetBis?: number; anrechnung: Anrechnung } }) {
   return (
@@ -500,7 +537,7 @@ const SCHRIFT_PT = 10;
  */
 export function LageplanSkizze({ n, project, nr, rechenweg }: { n: Nachweis; project: Project; nr: Map<string, number>; rechenweg?: Rechenweg }) {
   const flaechen = project.lageplan?.flaechen ?? [];
-  const pts: Point[] = [...n.hauptanlagePolygone.flat(), ...n.grundstueckPolygone.flat(), ...flaechen.filter((f) => !f.nachbar).flatMap((f) => f.points)];
+  const pts: Point[] = [...n.hauptanlagePolygone.flat(), ...n.anlagenPolygone.flat(), ...n.grundstueckPolygone.flat(), ...flaechen.filter((f) => !f.nachbar).flatMap((f) => f.points)];
   if (!pts.length) return null;
   const b = bounds(pts);
   const pad = Math.max(b.maxX - b.minX, b.maxY - b.minY) * 0.04 + 0.5;
@@ -540,6 +577,9 @@ export function LageplanSkizze({ n, project, nr, rechenweg }: { n: Nachweis; pro
         {n.hauptanlagePolygone.map((p, i) => (
           <path key={`h${i}`} d={d(p)} fill="url(#grz-druck-hatch)" stroke="#1d3f96" strokeWidth={k * 2} fillRule="evenodd" />
         ))}
+        {n.anlagenPolygone.map((p, i) => (
+          <path key={`a${i}`} d={d(p)} fill="#8a8f99" fillOpacity={0.45} stroke="#1d3f96" strokeWidth={k * 1.5} fillRule="evenodd" />
+        ))}
         {n.grundstueckPolygone.map((p, i) => (
           <path key={`g${i}`} d={d(p)} fill="none" stroke="#1f2328" strokeWidth={k * 2.5} strokeDasharray={`${k * 10} ${k * 3} ${k * 2} ${k * 3}`} />
         ))}
@@ -565,6 +605,16 @@ export function LageplanSkizze({ n, project, nr, rechenweg }: { n: Nachweis; pro
             return (
               <text key={`t${f.id}`} x={p.x} y={p.y} className="plan-label" fontSize={schrift} fontWeight={600} textAnchor="middle" dominantBaseline="middle" data-flaeche={f.id}>
                 {nr.get(f.id)}
+              </text>
+            );
+          })}
+        {n.lageplan
+          .filter((l) => l.ausGebaeude && nr.has(l.id))
+          .map((l) => {
+            const p = beschriftungsPunkt(l.eindeutig, l.polygone![0]);
+            return (
+              <text key={`t${l.id}`} x={p.x} y={p.y} className="plan-label" fontSize={schrift} fontWeight={600} textAnchor="middle" dominantBaseline="middle" data-flaeche={l.id}>
+                {nr.get(l.id)}
               </text>
             );
           })}
@@ -596,6 +646,7 @@ export function LageplanSkizze({ n, project, nr, rechenweg }: { n: Nachweis; pro
             {v.label}
           </span>
         ))}
+        <span>{n.grenzeGezeichnet ? 'Strichpunktiert: Grundstücksgrenze' : 'Strichpunktiert: Umriss der erfassten Flächen (keine Grundstücksgrenze gezeichnet)'}</span>
         <span>Nummern: siehe „Grundfläche“</span>
       </figcaption>
     </figure>

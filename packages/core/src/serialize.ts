@@ -4,7 +4,10 @@ import type {
   Bauherr,
   DateiArt,
   Bebauungsplan,
+  Einstufung,
+  Gebietsart,
   Grundstueck,
+  GrundstuecksGrenze,
   HoehenAnteile,
   KontaktArt,
   ProjektordnerAngaben,
@@ -27,7 +30,7 @@ import type {
   Versiegelung,
   WoflKategorie,
 } from './model';
-import { anschriftAusText, createProject, KOSTEN_BEZUEGE, KOSTEN_STUFEN, newId } from './model';
+import { anschriftAusText, createProject, GEBIETSARTEN, KOSTEN_BEZUEGE, KOSTEN_STUFEN, newId } from './model';
 import { NUTZUNGSGRUPPEN, WOFL_KATEGORIEN } from './norms';
 import type { Gaube, GaubenTyp } from './gaube';
 import type { Dach, DachTyp } from './roof';
@@ -121,6 +124,15 @@ export function parseProjectData(raw: unknown): Project {
   ];
   const flaechen = lpRoh.filter(isObj).map(normalizeFlaeche).filter((f): f is LageplanFlaeche => f !== null);
   if (flaechen.length || isObj(raw.lageplan)) project.lageplan = { flaechen };
+  if (project.lageplan && isObj(raw.lageplan)) {
+    const grenze = (Array.isArray(raw.lageplan.grenze) ? raw.lageplan.grenze : []).filter(isObj).flatMap((g): GrundstuecksGrenze[] => {
+      const points = (Array.isArray(g.points) ? g.points : []).filter(isObj).map((q) => ({ x: num(q.x, NaN), y: num(q.y, NaN) })).filter((q) => Number.isFinite(q.x) && Number.isFinite(q.y));
+      return points.length >= 3 ? [{ id: str(g.id, newId('gr')), name: str(g.name, 'Flurstück'), points }] : [];
+    });
+    if (grenze.length) project.lageplan.grenze = grenze;
+    const unterlage = normalizeBackground(raw.lageplan.unterlage);
+    if (unterlage) project.lageplan.unterlage = unterlage;
+  }
   if (isObj(raw.massNutzung)) project.massNutzung = normalizeMassNutzung(raw.massNutzung);
   if (isObj(raw.kosten)) project.kosten = normalizeKosten(raw.kosten);
   if (Array.isArray(raw.dateien)) {
@@ -242,13 +254,17 @@ function normalizeMassNutzung(m: Record<string, unknown>): MassNutzung {
   if (typeof m.planDatum === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.planDatum)) out.planDatum = m.planDatum;
   if (m.baunvo === '1962' || m.baunvo === '1968' || m.baunvo === '1990') out.baunvo = m.baunvo;
   if (m.bauo === 'nw1962' || m.bauo === 'nw1985' || m.bauo === 'nrw2019') out.bauo = m.bauo;
-  for (const k of ['grz', 'gfz', 'vollgeschosseMax', 'grzIIMax', 'gelaende', 'dachaufbau', 'wandzuschlag'] as const) {
+  for (const k of ['grz', 'gfz', 'vollgeschosseMax', 'grzIIMax', 'gelaende', 'dachaufbau', 'wandzuschlag', 'grAbsolut', 'gfAbsolut', 'bmz', 'vollgeschosseMin', 'traufhoeheMax', 'firsthoeheMax'] as const) {
     if (typeof m[k] === 'number' && Number.isFinite(m[k])) out[k] = m[k] as number;
   }
   if (m.einfamilienhaus === true) out.einfamilienhaus = true;
+  if (m.vollgeschosseZwingend === true) out.vollgeschosseZwingend = true;
+  if (m.aufenthaltNichtVollgeschoss === true) out.aufenthaltNichtVollgeschoss = true;
+  if (typeof m.gebietsart === 'string' && GEBIETSARTEN.some((g) => g.id === m.gebietsart)) out.gebietsart = m.gebietsart as Gebietsart;
+  if (typeof m.stand === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.stand)) out.stand = m.stand;
   if (isObj(m.einstufung)) {
     const e: MassNutzung['einstufung'] = {};
-    for (const n of NUTZUNGEN) if (m.einstufung[n] === 'ja' || m.einstufung[n] === 'nein') e[n] = m.einstufung[n] as 'ja' | 'nein';
+    for (const n of NUTZUNGEN) if (m.einstufung[n] === 'ja' || m.einstufung[n] === 'nein' || m.einstufung[n] === 'grz1') e[n] = m.einstufung[n] as Einstufung;
     out.einstufung = e;
   }
   return out;
@@ -371,6 +387,7 @@ function normalizeShape(s: Record<string, unknown>): Shape | null {
       ...(s.sohleAnsetzen === true ? { sohleAnsetzen: true } : {}),
       ...(s.pruefen === true ? { pruefen: true } : {}),
       ...stempel,
+      ...(s.anlage === 'garage' || s.anlage === 'nebenanlage' ? { anlage: s.anlage } : {}),
     };
   }
   if (s.kind === 'room') {

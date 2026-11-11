@@ -92,6 +92,11 @@ export interface OutlineShape extends ShapeBase {
   stempel?: Point;
   /** Dach/oberer Abschluss: BRI dieses Umrisses = Volumen vom Fußboden bis zur Dachhaut */
   dach?: Dach;
+  /**
+   * GRZ-Nachweis: Gebäudeteil ist keine Hauptanlage, sondern Garage/Carport bzw. Nebenanlage (angebaut, aus der IFC) –
+   * gerechnet als Anlage nach § 19 Abs. 4 BauNVO 1990 bzw. § 21a (1962–1977). Ohne Angabe: Hauptanlage.
+   */
+  anlage?: 'garage' | 'nebenanlage';
 }
 
 export interface RoomShape extends ShapeBase {
@@ -152,6 +157,17 @@ export interface LageplanFlaeche {
  */
 export interface Lageplan {
   flaechen: LageplanFlaeche[];
+  /** Grundstücksgrenze (Flurstücke) – maßgebend für die Grundstückslinie im Plan; fehlt: Umriss der erfassten Flächen */
+  grenze?: GrundstuecksGrenze[];
+  /** Unterlage zum Nachzeichnen (amtlicher Lageplan als Bild bzw. PDF-Seite), kalibriert in Metern */
+  unterlage?: Background;
+}
+
+/** Flurstück bzw. Grundstück als Polygon (GRZ-Nachweis) */
+export interface GrundstuecksGrenze {
+  id: string;
+  name: string;
+  points: Point[];
 }
 
 /** Was eine Abzugsfläche im Raum mindert (siehe RoomShape.abzugArt) */
@@ -591,8 +607,28 @@ export interface Kosten {
 export type BauNVOFassung = '1962' | '1968' | '1990';
 /** Vollgeschossbegriff der Bauordnung NRW (statisch nach dem Datum des Bebauungsplans) */
 export type BauOFassung = 'nw1962' | 'nw1985' | 'nrw2019';
-/** Einstufung einer Flächennutzung, die die BauNVO-Fassung nicht eindeutig regelt */
-export type Einstufung = 'ja' | 'nein';
+/**
+ * Einstufung einer Flächennutzung, die die BauNVO-Fassung nicht eindeutig regelt: ja = zählt zur Grundfläche
+ * (BauNVO 1990: GRZ II), grz1 = zählt zur Hauptanlage (GRZ I, BauNVO 1990), nein = zählt nicht
+ */
+export type Einstufung = 'ja' | 'nein' | 'grz1';
+
+/** Baugebiet nach BauNVO (Art der baulichen Nutzung) */
+export type Gebietsart = 'WS' | 'WR' | 'WA' | 'WB' | 'MD' | 'MDW' | 'MI' | 'MU' | 'MK' | 'GE' | 'GI' | 'SO';
+export const GEBIETSARTEN: { id: Gebietsart; label: string }[] = [
+  { id: 'WS', label: 'WS – Kleinsiedlungsgebiet' },
+  { id: 'WR', label: 'WR – reines Wohngebiet' },
+  { id: 'WA', label: 'WA – allgemeines Wohngebiet' },
+  { id: 'WB', label: 'WB – besonderes Wohngebiet' },
+  { id: 'MD', label: 'MD – Dorfgebiet' },
+  { id: 'MDW', label: 'MDW – dörfliches Wohngebiet' },
+  { id: 'MI', label: 'MI – Mischgebiet' },
+  { id: 'MU', label: 'MU – urbanes Gebiet' },
+  { id: 'MK', label: 'MK – Kerngebiet' },
+  { id: 'GE', label: 'GE – Gewerbegebiet' },
+  { id: 'GI', label: 'GI – Industriegebiet' },
+  { id: 'SO', label: 'SO – Sondergebiet' },
+];
 
 export interface MassNutzung {
   /** Inkrafttreten / Satzungsbeschluss des Bebauungsplans (JJJJ-MM-TT); leer = aktuelles Recht (§ 34/35 BauGB) */
@@ -615,6 +651,23 @@ export interface MassNutzung {
   wandzuschlag?: number;
   /** Festlegung für Nutzungen, die die Fassung offenlässt („prüfen“) */
   einstufung?: Partial<Record<LageplanNutzung, Einstufung>>;
+  /** Baugebiet (BauNVO 1962 § 19 Abs. 5: Garagen in MK, GE, GI anrechnungsfrei) */
+  gebietsart?: Gebietsart;
+  /** Stand des Nachweises (JJJJ-MM-TT) für Druck und Excel – nicht automatisch heute */
+  stand?: string;
+  /** Grundfläche bzw. Geschossfläche als absolute Festsetzung [m²] (§ 16 Abs. 2 BauNVO) */
+  grAbsolut?: number;
+  gfAbsolut?: number;
+  /** Baumassenzahl (§ 21 BauNVO) */
+  bmz?: number;
+  /** Vollgeschosse als Mindestmaß; zwingend: genau vollgeschosseMax */
+  vollgeschosseMin?: number;
+  vollgeschosseZwingend?: boolean;
+  /** Trauf- und Firsthöhe höchstens [m] – nur als Eingabe mit Prüfhinweis */
+  traufhoeheMax?: number;
+  firsthoeheMax?: number;
+  /** § 20 Abs. 3 Satz 2 BauNVO 1990: Aufenthaltsräume in Nicht-Vollgeschossen mitrechnen (festgesetzt) */
+  aufenthaltNichtVollgeschoss?: boolean;
 }
 
 export function createLageplanFlaeche(points: Point[], name = 'Fläche'): LageplanFlaeche {

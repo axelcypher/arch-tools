@@ -9,6 +9,7 @@ import type {
   BauNVOFassung,
   BauOFassung,
   Einstufung,
+  Gebietsart,
   LageplanNutzung,
   MassNutzung,
   OutlineShape,
@@ -117,16 +118,23 @@ const REGELN: Record<BauNVOFassung, Record<LageplanNutzung, Anrechnung>> = {
   },
 };
 
-export function anrechnungRegel(n: LageplanNutzung, f: BauNVOFassung): Anrechnung {
+/** BauNVO 1962 § 19 Abs. 5: Garagen in Kern-, Gewerbe- und Industriegebieten werden nicht angerechnet */
+const GARAGEN_FREI_1962: Gebietsart[] = ['MK', 'GE', 'GI'];
+
+export function anrechnungRegel(n: LageplanNutzung, f: BauNVOFassung, gebietsart?: Gebietsart): Anrechnung {
+  if (f === '1962' && n === 'garage' && gebietsart && GARAGEN_FREI_1962.includes(gebietsart)) return 'nein';
   return REGELN[f][n];
 }
 
-/** Regel mit der Festlegung für offene Fälle */
-export function anrechnung(n: LageplanNutzung, f: BauNVOFassung, einstufung?: Partial<Record<LageplanNutzung, Einstufung>>): Anrechnung {
-  const r = REGELN[f][n];
+/**
+ * Regel mit der Festlegung für offene Fälle: ja = zählt (1990: GRZ II), grz1 = zählt zur Hauptanlage (GRZ I), nein
+ */
+export function anrechnung(n: LageplanNutzung, f: BauNVOFassung, einstufung?: Partial<Record<LageplanNutzung, Einstufung>>, gebietsart?: Gebietsart): Anrechnung {
+  const r = anrechnungRegel(n, f, gebietsart);
   if (r !== 'pruefen') return r;
   const e = einstufung?.[n];
   if (e === 'nein') return 'nein';
+  if (e === 'grz1') return 'hauptanlage';
   if (e === 'ja') return f === '1990' ? 'grz2' : 'hauptanlage';
   return 'pruefen';
 }
@@ -141,9 +149,12 @@ function outlinesOf(st: Storey): OutlineShape[] {
   return st.shapes.filter((s): s is OutlineShape => s.kind === 'outline');
 }
 
-/** Grundriss eines Geschosses (Umrisse abzüglich Abzugsflächen); nurR: ohne Balkone/Loggien/Terrassen (S) */
-function geschossFlaeche(st: Storey, nurR: boolean): MultiPolygon {
-  const o = outlinesOf(st);
+/**
+ * Grundriss eines Geschosses (Umrisse abzüglich Abzugsflächen); nurR: ohne Balkone/Loggien/Terrassen (S);
+ * ohneAnlagen: ohne Gebäudeteile, die als Garage/Nebenanlage gekennzeichnet sind (für die Hauptanlage)
+ */
+function geschossFlaeche(st: Storey, nurR: boolean, ohneAnlagen = false): MultiPolygon {
+  const o = outlinesOf(st).filter((s) => !ohneAnlagen || s.subtract || !s.anlage);
   const plus = unionAll(o.filter((s) => !s.subtract && (!nurR || s.umschliessung === 'R')).map((s) => s.points));
   const minus = unionAll(o.filter((s) => s.subtract).map((s) => s.points));
   return diffMP(plus, minus);
@@ -388,7 +399,7 @@ function aufenthaltsFlaecheRechnen(st: Storey, grundriss: MultiPolygon, wand: nu
 /* ---------- Nachweis ---------- */
 
 /** fehlt: ohne Grundstücksfläche lässt sich die Kennzahl nicht berechnen */
-export type Status = 'ok' | 'ueberschritten' | 'pruefen' | 'offen' | 'fehlt';
+export type Status = 'ok' | 'ueberschritten' | 'unterschritten' | 'pruefen' | 'offen' | 'fehlt';
 
 export interface Kennzahl {
   /** Kennzahl; fehlt ohne Grundstücksfläche */
@@ -443,6 +454,9 @@ export interface LageplanPosten {
   angerechnet: number;
   /** „prüfen“: angerechnet bis zu dieser Fläche, falls die Fläche zählt */
   angerechnetBis?: number;
+  /** Gebäudeteil (Umriss), als Garage/Nebenanlage gekennzeichnet – keine Lageplan-Fläche; polygone für Plan und Druck */
+  ausGebaeude?: boolean;
+  polygone?: Point[][];
   anrechnung: Anrechnung;
   /** Regel ohne Festlegung (für die Anzeige „prüfen“) */
   regel: Anrechnung;
@@ -451,7 +465,21 @@ export interface LageplanPosten {
 
 export interface Nachweis {
   recht: Recht;
-  grundstueck: { flaeche?: number; ausLageplan?: number; quelle: 'projektdaten' | 'lageplan' | 'fehlt' };
+  /**
+   * Grundstück: Fläche laut Projektdaten (Kataster), sonst aus der gezeichneten Grenze, sonst aus den Lageplan-Flächen;
+   * grenze: Fläche der gezeichneten Grundstücksgrenze
+   */
+  grundstueck: { flaeche?: number; ausLageplan?: number; grenze?: number; quelle: 'projektdaten' | 'grenze' | 'lageplan' | 'fehlt' };
+  /** Grundstückslinie ist die gezeichnete Grenze (sonst Umriss der erfassten Flächen) */
+  grenzeGezeichnet: boolean;
+  /** Gebäudeteile, die als Garage/Nebenanlage gekennzeichnet sind */
+  anlagenPolygone: Point[][];
+  /** absolute Festsetzungen GR/GF [m²] gegen die vorhandene GR (1990: GR I) bzw. GF */
+  grAbsolut?: { flaeche: number; zulaessig: number; status: Status };
+  gfAbsolut?: { flaeche: number; zulaessig: number; status: Status };
+  /** Baumasse (vereinfacht: Grundfläche × Geschosshöhe der Vollgeschosse) und Baumassenzahl, falls festgesetzt */
+  baumasse: number;
+  bmz?: Kennzahl;
   /** Geländeoberfläche im Mittel rund um das Gebäude */
   gelaende: { hoehe: number; quelle: GelaendeQuelle; min?: number; max?: number };
   hauptanlage: number;
@@ -468,7 +496,7 @@ export interface Nachweis {
   gf: number;
   gfAufenthalt: number;
   gfz: Kennzahl;
-  vollgeschosse: { anzahl: number; zulaessig?: number; status: Status };
+  vollgeschosse: { anzahl: number; zulaessig?: number; mindestens?: number; zwingend?: boolean; status: Status };
   geschosse: VollgeschossPruefung[];
   /** Geschossfläche je Geschoss (R-Umrisse der Vollgeschosse bzw. Aufenthaltsräume) */
   gfJeGeschoss: { storeyId: string; name: string; flaeche: number; art: 'vollgeschoss' | 'aufenthalt' | 'keine' }[];
@@ -552,6 +580,11 @@ export function massNachweis(project: Project): Nachweis {
 
   // Vollgeschossprüfung
   const pruefungen: VollgeschossPruefung[] = [];
+  // BauO NW 1970 (ab 27.01.1970): Kellergeschosse „im Lichten“ gemessen; ohne Datum (Fassung von Hand) ebenso
+  const kellerImLichten = !m.planDatum || m.planDatum >= '1970-01-27';
+  // Baumasse (§ 21 Abs. 2): Außenmaße vom Fußboden des untersten bis zur Decke des obersten Vollgeschosses – vereinfacht
+  // als Grundfläche × Geschosshöhe je Vollgeschoss
+  let baumasse = 0;
   geschosse.forEach(({ st, e }, idx) => {
     const gr = grundriss.get(st.id)!;
     const A = areaMP(gr);
@@ -622,7 +655,9 @@ export function massNachweis(project: Project): Nachweis {
       const vollUeber = e >= gel.max - 0.005;
       const soll = schraeg || m.einfamilienhaus ? 2.3 : 2.5;
       const { hoch, anteil } = anteilVon(soll, true, A);
-      const keller = !vollUeber && ueber > 1.4;
+      // Kellergeschoss: BauO NW 1970 „im Lichten“ (bis UK Decke = OK Decke − Decken-/Dachaufbau), davor bis OK Decke
+      const ueberKeller = kellerImLichten ? ueber - aufbau : ueber;
+      const keller = !vollUeber && ueberKeller > 1.4;
       p = {
         gelaende: gel,
         ueberGelaende: ueber,
@@ -639,12 +674,13 @@ export function massNachweis(project: Project): Nachweis {
         begruendung: vollUeber
           ? `lichte Höhe ≥ ${fmtM(soll)} auf ${pct(anteil)} der eigenen Grundfläche (mindestens zwei Drittel gefordert)`
           : keller
-            ? `Kellergeschoss ragt im Mittel ${fmtM(ueber)} über Gelände (mehr als 1,40 m): wird angerechnet`
-            : `nicht vollständig über der Geländeoberfläche (Fußboden ${fmtM(e - gel.max)} unter dem höchsten Geländepunkt), Decke im Mittel ${fmtM(ueber)} darüber: kein Vollgeschoss`,
+            ? `Kellergeschoss ragt im Mittel ${fmtM(ueberKeller)} ${kellerImLichten ? 'im Lichten ' : ''}über Gelände (mehr als 1,40 m): wird angerechnet`
+            : `nicht vollständig über der Geländeoberfläche (Fußboden ${fmtM(e - gel.max)} unter dem höchsten Geländepunkt), ${kellerImLichten ? `im Lichten ${fmtM(ueberKeller)}` : `Decke im Mittel ${fmtM(ueber)}`} darüber: kein Vollgeschoss`,
       };
     }
     const { vg, ...rest } = p;
     pruefungen.push({ ...rest, storeyId: st.id, name: st.name, automatisch: st.vollgeschoss === undefined, vollgeschoss: st.vollgeschoss ?? vg });
+    if (st.vollgeschoss ?? vg) baumasse += A * (decke - e);
   });
   if (re.bauo === 'nw1962')
     hinweise.push({
@@ -655,10 +691,16 @@ export function massNachweis(project: Project): Nachweis {
 
   // Hauptanlage: oberirdische Geschosse (bzw. nicht vollständig unter Gelände); vor 1990 ohne Balkone usw. (1968/77)
   const oberirdisch = new Set(pruefungen.filter((x) => x.ueberGelaende > 0).map((x) => x.storeyId));
-  const hauptTeile = geschosse.filter(({ st }) => oberirdisch.has(st.id)).map(({ st }) => geschossFlaeche(st, re.baunvo === '1968'));
+  const hauptTeile = geschosse.filter(({ st }) => oberirdisch.has(st.id)).map(({ st }) => geschossFlaeche(st, re.baunvo === '1968', true));
   const haupt = unionMP(...hauptTeile);
   const hauptanlage = areaMP(haupt);
-  const unterirdisch = diffMP(unionMP(...geschosse.filter(({ st }) => !oberirdisch.has(st.id)).map(({ st }) => grundriss.get(st.id)!)), haupt);
+  // Gebäudeteile als Garage/Carport bzw. Nebenanlage (aus der IFC): Anlagen statt Hauptanlage
+  const anlagenUmrisse = geschosse
+    .filter(({ st }) => oberirdisch.has(st.id))
+    .flatMap(({ st }) => outlinesOf(st).filter((o) => o.anlage && !o.subtract && o.points.length >= 3));
+  const anlagenMP = diffMP(unionAll(anlagenUmrisse.map((o) => o.points)), haupt);
+  const gebaeude = unionMP(haupt, anlagenMP);
+  const unterirdisch = diffMP(unionMP(...geschosse.filter(({ st }) => !oberirdisch.has(st.id)).map(({ st }) => grundriss.get(st.id)!)), gebaeude);
 
   // Lageplan-Flächen
   const posten: LageplanPosten[] = flaechen.map((f) => {
@@ -674,12 +716,35 @@ export function massNachweis(project: Project): Nachweis {
       eindeutig: [],
       ueberlagert: 0,
       angerechnet: 0,
-      anrechnung: f.nachbar ? 'nein' : anrechnung(f.nutzung, re.baunvo, m.einstufung),
-      regel: f.nachbar ? 'nein' : anrechnungRegel(f.nutzung, re.baunvo),
+      anrechnung: f.nachbar ? 'nein' : anrechnung(f.nutzung, re.baunvo, m.einstufung, m.gebietsart),
+      regel: f.nachbar ? 'nein' : anrechnungRegel(f.nutzung, re.baunvo, m.gebietsart),
       nachbar: !!f.nachbar,
     };
   });
-  const unterirdischAnr = anrechnung('unterirdisch', re.baunvo, m.einstufung);
+  // gekennzeichnete Gebäudeteile wie Lageplan-Flächen ihrer Nutzung (vor den Lageplan-Flächen)
+  const anlagenPosten: LageplanPosten[] = anlagenUmrisse.map((o) => {
+    const nutzung: LageplanNutzung = o.anlage === 'garage' ? 'garage' : 'nebenanlage';
+    const mp = unionAll([o.points]);
+    return {
+      id: o.id,
+      name: o.name && o.name !== 'BGF' ? o.name : o.anlage === 'garage' ? 'Garage (Gebäudeteil)' : 'Nebenanlage (Gebäudeteil)',
+      nutzung,
+      versiegelung: 'voll',
+      flaeche: areaMP(mp),
+      flaecheAussen: areaMP(diffMP(mp, haupt)),
+      flaecheEindeutig: 0,
+      eindeutig: [],
+      ueberlagert: 0,
+      angerechnet: 0,
+      anrechnung: anrechnung(nutzung, re.baunvo, m.einstufung, m.gebietsart),
+      regel: anrechnungRegel(nutzung, re.baunvo, m.gebietsart),
+      nachbar: false,
+      ausGebaeude: true,
+      polygone: [o.points],
+    };
+  });
+  posten.unshift(...anlagenPosten);
+  const unterirdischAnr = anrechnung('unterirdisch', re.baunvo, m.einstufung, m.gebietsart);
   // Überlagerungen eindeutig zuordnen: Flächen nach Rang der Anrechnung, gleiche Ränge in Listenfolge; Kellergeschosse
   // außerhalb der Hauptanlage (unterirdische Anlagen) reihen sich mit ihrer Anrechnung ein, hinter den Lageplan-Flächen
   const RANG: Record<Anrechnung, number> = { hauptanlage: 0, grz2: 1, garage01: 2, pruefen: 3, nein: 4 };
@@ -690,10 +755,11 @@ export function massNachweis(project: Project): Nachweis {
           mp: unterirdisch,
           name: 'Kellergeschoss',
           post: { anrechnung: unterirdischAnr, nachbar: false, flaecheAussen: areaMP(unterirdisch), flaecheEindeutig: 0, eindeutig: [], ueberlagert: 0 },
-          i: flaechen.length,
+          i: flaechen.length + anlagenUmrisse.length,
         }
       : null;
-  const eintraege: Eintrag[] = [...flaechen.map((f, i) => ({ mp: unionAll([f.points]), name: f.name || 'Fläche', post: posten[i], i })), ...(keller ? [keller] : [])];
+  const quellen = [...anlagenUmrisse.map((o) => o.points), ...flaechen.map((f) => f.points)];
+  const eintraege: Eintrag[] = [...quellen.map((pts, i) => ({ mp: unionAll([pts]), name: posten[i].name || 'Fläche', post: posten[i], i })), ...(keller ? [keller] : [])];
   const reihenfolge = eintraege.sort((a, b) => Number(a.post.nachbar) - Number(b.post.nachbar) || RANG[a.post.anrechnung] - RANG[b.post.anrechnung] || a.i - b.i);
   let belegt: MultiPolygon = haupt;
   const ueberlagerungen: Nachweis['ueberlagerungen'] = [];
@@ -721,11 +787,25 @@ export function massNachweis(project: Project): Nachweis {
     });
   }
 
-  // Grundstück
+  // Grundstück: Projektdaten (Kataster) vor gezeichneter Grenze vor den erfassten Flächen
   const ausLageplan = eigene.length ? areaMP(unionMP(unionAll(eigene.map((f) => f.points)), alleGeschosse)) : undefined;
+  const grenzen = (project.lageplan?.grenze ?? []).filter((g) => g.points.length >= 3);
+  const grenzeMP = unionAll(grenzen.map((g) => g.points));
+  const ausGrenze = grenzen.length ? areaMP(grenzeMP) : undefined;
   const gProjekt = project.meta.grundstueck.flaeche;
-  const G = gProjekt ?? ausLageplan;
-  const grundstueck: Nachweis['grundstueck'] = { flaeche: G, ausLageplan, quelle: gProjekt !== undefined ? 'projektdaten' : ausLageplan !== undefined ? 'lageplan' : 'fehlt' };
+  const G = gProjekt ?? ausGrenze ?? ausLageplan;
+  const grundstueck: Nachweis['grundstueck'] = {
+    flaeche: G,
+    ausLageplan,
+    grenze: ausGrenze,
+    quelle: gProjekt !== undefined ? 'projektdaten' : ausGrenze !== undefined ? 'grenze' : ausLageplan !== undefined ? 'lageplan' : 'fehlt',
+  };
+  if (gProjekt !== undefined && ausGrenze !== undefined && Math.abs(gProjekt - ausGrenze) > Math.max(0.5, gProjekt * 0.005)) {
+    hinweise.push({
+      text: `Grundstücksfläche laut Projektdaten (Kataster) ${fmtA(gProjekt)}, gezeichnete Grenze ${fmtA(ausGrenze)} – maßgebend ist die Katasterangabe (§ 19 Abs. 3 BauNVO: Fläche des Baulands).`,
+      art: 'sachlich',
+    });
+  }
   if (G === undefined)
     hinweise.push({
       text: 'Grundstücksfläche fehlt: GRZ und GFZ lassen sich nicht berechnen.',
@@ -733,10 +813,10 @@ export function massNachweis(project: Project): Nachweis {
       tipp: 'Im Feld „Grundstücksfläche [m²]“ in den Festsetzungen eintragen oder Lageplan-Flächen anlegen.',
       feld: 'grundstueck',
     });
-  else if (gProjekt !== undefined && ausLageplan !== undefined && Math.abs(gProjekt - ausLageplan) > Math.max(0.5, gProjekt * 0.005)) {
+  else if (ausGrenze === undefined && gProjekt !== undefined && ausLageplan !== undefined && Math.abs(gProjekt - ausLageplan) > Math.max(0.5, gProjekt * 0.005)) {
     hinweise.push({ text: `Grundstücksfläche laut Projektdaten ${fmtA(gProjekt)}, Lageplan-Flächen mit Gebäude ${fmtA(ausLageplan)} – Lageplan unvollständig oder Flächen überlappen.`, art: 'sachlich' });
   }
-  const grundstueckPolygone = eigene.length ? ringsOf(unionMP(unionAll(eigene.map((f) => f.points)), alleGeschosse)) : [];
+  const grundstueckPolygone = grenzen.length ? ringsOf(grenzeMP) : eigene.length ? ringsOf(unionMP(unionAll(eigene.map((f) => f.points)), alleGeschosse)) : [];
 
   // Grundfläche: Summe der eindeutigen Anteile (disjunkt) – Summen im Druck stimmen so exakt mit den Kennzahlen überein
   const alle = reihenfolge.map((e) => e.post);
@@ -750,7 +830,8 @@ export function massNachweis(project: Project): Nachweis {
   let garagenAnteil = 1;
   if (re.baunvo === '1990') {
     const ii = hauptanlage + summe((a) => a === 'grz2' || a === 'hauptanlage');
-    grz = kennzahl(hauptanlage, G, m.grz);
+    // GRZ I: Hauptanlage und Flächen, die ihr zugerechnet werden (z. B. angebaute Terrasse, Einstufung „GRZ I“)
+    grz = kennzahl(hauptanlage + summe((a) => a === 'hauptanlage'), G, m.grz);
     const grz2Max = m.grzIIMax ?? (m.grz !== undefined ? Math.max(m.grz, Math.min(1.5 * m.grz, 0.8)) : undefined);
     grz2 = kennzahl(ii, G, grz2Max, anyOffen ? ii + offen : undefined);
   } else {
@@ -782,7 +863,8 @@ export function massNachweis(project: Project): Nachweis {
     });
 
   // Geschossfläche
-  const vorher1990 = re.baunvo !== '1990';
+  // vor 1990, bzw. 1990 bei Festsetzung nach § 20 Abs. 3 Satz 2: Aufenthaltsräume in Nicht-Vollgeschossen zählen mit
+  const vorher1990 = re.baunvo !== '1990' || !!m.aufenthaltNichtVollgeschoss;
   const wand = m.wandzuschlag ?? 0.25;
   // Räume der Nicht-Vollgeschosse nach Nutzung und lichter Höhe (nur vor 1990 für die Geschossfläche maßgebend)
   const raeume: RaumPruefung[] = vorher1990
@@ -808,19 +890,39 @@ export function massNachweis(project: Project): Nachweis {
   const gfz = kennzahl(gf, G, m.gfz);
 
   const anzahl = pruefungen.filter((x) => x.vollgeschoss).length;
+  const zwingend = !!m.vollgeschosseZwingend && m.vollgeschosseMax !== undefined;
+  const mindestens = zwingend ? m.vollgeschosseMax : m.vollgeschosseMin;
   const vollgeschosse = {
     anzahl,
     zulaessig: m.vollgeschosseMax,
-    status: (m.vollgeschosseMax === undefined ? 'offen' : anzahl > m.vollgeschosseMax ? 'ueberschritten' : 'ok') as Status,
+    mindestens,
+    zwingend: zwingend || undefined,
+    status: (m.vollgeschosseMax !== undefined && anzahl > m.vollgeschosseMax
+      ? 'ueberschritten'
+      : mindestens !== undefined && anzahl < mindestens
+        ? 'unterschritten'
+        : m.vollgeschosseMax === undefined && mindestens === undefined
+          ? 'offen'
+          : 'ok') as Status,
   };
+  // absolute Festsetzungen und Baumassenzahl
+  const absolut = (flaeche: number, zul: number | undefined) => (zul === undefined ? undefined : { flaeche, zulaessig: zul, status: (flaeche > zul + 1e-9 ? 'ueberschritten' : 'ok') as Status });
+  const grAbsolut = absolut(grz.flaeche, m.grAbsolut);
+  const gfAbsolut = absolut(gf, m.gfAbsolut);
+  const bmz = m.bmz !== undefined ? kennzahl(baumasse, G, m.bmz) : undefined;
+  if (m.bmz !== undefined) hinweise.push({ text: `Baumasse vereinfacht aus Grundfläche × Geschosshöhe der Vollgeschosse (${fmtA(baumasse).replace('m²', 'm³')}).`, art: 'sachlich' });
+  if (m.traufhoeheMax !== undefined || m.firsthoeheMax !== undefined) {
+    const t = [m.traufhoeheMax !== undefined && `Traufhöhe höchstens ${fmtM(m.traufhoeheMax)}`, m.firsthoeheMax !== undefined && `Firsthöhe höchstens ${fmtM(m.firsthoeheMax)}`].filter(Boolean).join(', ');
+    hinweise.push({ text: `Festgesetzt: ${t} – nicht automatisch geprüft, im Schnitt nachzuweisen.`, art: 'sachlich' });
+  }
 
   // Flächenbilanz: jede Stelle einmal, Gebäude zuerst
   const klasse = (v: Versiegelung) => unionAll(eigene.filter((f) => f.versiegelung === v).map((f) => f.points));
-  const vollMP = diffMP(klasse('voll'), haupt);
-  const teilMP = diffMP(klasse('teil'), haupt, vollMP);
-  const gruenMP = diffMP(klasse('gruen'), haupt, vollMP, teilMP);
+  const vollMP = diffMP(klasse('voll'), gebaeude);
+  const teilMP = diffMP(klasse('teil'), gebaeude, vollMP);
+  const gruenMP = diffMP(klasse('gruen'), gebaeude, vollMP, teilMP);
   const bilanz = {
-    gebaeude: hauptanlage,
+    gebaeude: areaMP(gebaeude),
     voll: areaMP(vollMP),
     teil: areaMP(teilMP),
     gruen: areaMP(gruenMP),
@@ -837,7 +939,13 @@ export function massNachweis(project: Project): Nachweis {
     hauptanlage,
     unterirdisch: unterirdischPosten,
     hauptanlagePolygone: ringsOf(haupt),
+    anlagenPolygone: ringsOf(anlagenMP),
     grundstueckPolygone,
+    grenzeGezeichnet: grenzen.length > 0,
+    grAbsolut,
+    gfAbsolut,
+    baumasse,
+    bmz,
     grz,
     grz2,
     garagenFrei,

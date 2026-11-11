@@ -247,7 +247,7 @@ KO 0.11.2 (Patch).
 - [x] **G-09** Bedienhinweise und Doppelungen im amtlichen Nachweis – GRZ 0.10.1: `Hinweis` mit Art „sachlich“/„bedienung“
   und `tipp` (nur App); Druck/Excel nur sachliche, Recht-Hinweise nicht doppelt; keine doppelte Klammer; Datum
   TT.MM.JJJJ; Haftungssatz im Druck per Schalter (aus), im Excel-Standardlayout entfernt; „Stand“ im Druckdialog
-  eintragbar (leer = ohne). Abweichung: Der Stand wird noch nicht im Projekt gespeichert (folgt mit G-25)
+  eintragbar (leer = ohne); ab GRZ 0.12.0 im Projekt gespeichert (`massNutzung.stand`) und im Excel (`stand.text`)
 - [x] **G-11** Esc schließt Druck, Excel und Projektübersicht – GRZ 0.8.0 (mit Q-2)
 - [x] **G-12** Lageplan im Dunkelmodus weiß – GRZ 0.8.0 (mit Q-1): `.grz-skizze` mit `--canvas-filter`
 - [x] **G-13** Zeichenpunkte um die Rahmenbreite versetzt – GRZ 0.10.1: `innenflaeche()` (ohne Rahmen/Innenabstand) für
@@ -271,8 +271,18 @@ KO 0.11.2 (Patch).
   vorbelegt, Name je Nutzung („Zufahrt 1“), kein „sonstige“ mehr als Vorgabe; Auswahlbereich mit Nutzung,
   Versiegelung und Nachbar
 - [ ] **G-24** Beschriftung und Orientierung im Plan
-- [ ] **G-25** Stammdaten und Bebauungsplan-Kopf
-- [ ] **G-26** Fachliche Lücken bei Festsetzungen und Einstufung
+- [x] **G-25** Stammdaten und Bebauungsplan-Kopf – GRZ 0.12.0: Abschnitt „Projekt und Bebauungsplan“ mit `StammdatenKnopf`,
+  B-Plan Nr./Name direkt eintragbar (in `meta.bebauungsplan`, kein Doppelmodell), Baugebiet `massNutzung.gebietsart`;
+  Druck (Grundlagen: Bebauungsplan, Baugebiet) und Excel (`bplan.angabe`, `gebietsart.*`, `stand.*`). Abweichung:
+  B-Plan Nr./Name liegen wie mit Q-4 entschieden in den gemeinsamen Stammdaten, nicht in `MassNutzung`. core-Modell
+  und -Speicherung erweitert (auch für G-26/G-22) – dadurch auch FR 0.21.1, KO 0.11.2, PO 0.9.1, EZ 0.5.4, FO 0.24.1 (Patch, gleiche Speicherung)
+- [x] **G-26** Fachliche Lücken bei Festsetzungen und Einstufung – GRZ 0.12.0: Einstufung „GRZ I“ (`'grz1'`) für offene
+  Fälle 1990, Vorgabe bei „zählt“ bleibt GRZ II; Gebäudeumrisse als Garage/Carport/Nebenanlage (`OutlineShape.anlage`,
+  zählen als Anlage, nicht als Hauptanlage); Baugebiet mit § 19 Abs. 5 BauNVO 1962; GR/GF absolut, BMZ (Baumasse
+  vereinfacht), Vollgeschosse mindestens/zwingend („unterschritten“), Trauf-/Firsthöhe als Prüfhinweis; Schalter
+  § 20 Abs. 3 S. 2 (1990); Keller „im Lichten“ ab BauO NW 1970 (Plandatum ab 27.01.1970 oder ohne Datum); Feld
+  „Decken-/Dachaufbau [m]“. Staffelgeschoss-Regel unverändert. Abweichung: gekennzeichnete Gebäudeteile bleiben in
+  Vollgeschossprüfung und Geschossfläche (nur die Grundfläche ändert sich)
 - [ ] **G-27** Leerzustand und Einstieg
 - [ ] **G-28** Layout der Nachweis-Spalte
 - [ ] **G-29** Regeln: Begründung der Anrechnung je Nutzung

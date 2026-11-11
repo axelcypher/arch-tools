@@ -47,7 +47,7 @@ function nachweisBlatt(wb: Workbook, stellen: { grz?: number; grz2?: number; gfz
     fitToHeight: 0,
     margins: { left: 0.6, right: 0.5, top: 0.6, bottom: 0.7, header: 0.3, footer: 0.3 },
   };
-  ws.headerFooter.oddFooter = '&L{{projekt.name}} · Stand {{datum}}&RSeite &P/&N';
+  ws.headerFooter.oddFooter = '&L{{projekt.name}} {{stand.text}}&RSeite &P/&N';
   const SP = 7;
   const letzte = String.fromCharCode(64 + SP);
 
@@ -87,7 +87,7 @@ function nachweisBlatt(wb: Workbook, stellen: { grz?: number; grz2?: number; gfz
   put(`${letzte}3`, 'Projekt {{projekt.code}}', { right: true });
   put('A4', '{{projekt.adresse}}');
   put('A5', '{{grundstueck.flurtext}}');
-  put('A6', 'Stand {{datum}}');
+  put('A6', '{{stand.text}}');
   put(`${letzte}6`, '{{projekt.bearbeiter}}', { right: true });
   ws.getCell('A6').font = { size: 9 };
   put('A7', '{{kopf.angaben}}');
@@ -95,12 +95,13 @@ function nachweisBlatt(wb: Workbook, stellen: { grz?: number; grz2?: number; gfz
   ws.getCell(`${letzte}6`).font = { size: 9 };
 
   abschnitt(8, 'Grundlagen');
-  zeile(9, ['Bebauungsplan vom', '{{bplan.datum}}']);
+  zeile(9, ['Bebauungsplan', '{{bplan.angabe}}']);
   zeile(10, ['Baunutzungsverordnung', '{{baunvo.fassung}}']);
   zeile(11, ['Vollgeschossbegriff', '{{bauo.fassung}}']);
   zeile(12, ['Grundstücksfläche', '{{grundstueck.quelle}}', '{{grundstueck.flaeche_nachweis}}'], { fmts: [undefined, undefined, M2] });
   zeile(13, ['Geländeoberfläche', '{{gelaende.quelle}}', '{{gelaende}}'], { fmts: [undefined, undefined, M] });
   zeile(14, ['Hauptanlage', 'Grundfläche der Gebäude', '{{hauptanlage}}'], { fmts: [undefined, undefined, M2] });
+  zeile(15, ['{{gebietsart.bezeichnung}}', '{{gebietsart.text}}']);
 
   // Kennzahlen: vorhanden = Fläche / Grundstücksfläche, zulässige Fläche = zulässig × Grundstücksfläche, Ergebnis als Vergleich
   abschnitt(16, 'Kennzahlen');
@@ -143,36 +144,42 @@ function nachweisBlatt(wb: Workbook, stellen: { grz?: number; grz2?: number; gfz
   });
   for (const r of [18, 21, 22]) ws.getCell(`D${r}`).font = { bold: true };
 
+  zeile(23, ['{{gr_absolut.bezeichnung}}', '', '{{gr_absolut}}', null, null, '{{gr_absolut.zulaessig}}', '{{gr_absolut.status}}'], { fmts: [undefined, undefined, M2, undefined, undefined, M2] });
+  zeile(24, ['{{gf_absolut.bezeichnung}}', '', '{{gf_absolut}}', null, null, '{{gf_absolut.zulaessig}}', '{{gf_absolut.status}}'], { fmts: [undefined, undefined, M2, undefined, undefined, M2] });
+  zeile(25, ['{{bmz.bezeichnung}}', '{{bmz.text}}', '{{bmz.baumasse}}', '{{bmz}}', '{{bmz.zulaessig}}', null, '{{bmz.status}}'], {
+    fmts: [undefined, undefined, '#,##0.00 "m³"', '0.000', RATIO_FEST],
+  });
+
   // ab hier dynamisch (Wiederholungszeilen)
-  abschnitt(24, 'Vollgeschosse');
-  kopf(25, ['Geschoss', 'Begründung', 'über Gelände', 'Anteil', 'Ergebnis', '', '']);
-  zeile(26, ['{{geschoss.name}}', '{{geschoss.begruendung}}', '{{geschoss.ueber_gelaende}}', '{{geschoss.anteil}}', '{{geschoss.ergebnis}}'], {
+  abschnitt(27, 'Vollgeschosse');
+  kopf(28, ['Geschoss', 'Begründung', 'über Gelände', 'Anteil', 'Ergebnis', '', '']);
+  zeile(29, ['{{geschoss.name}}', '{{geschoss.begruendung}}', '{{geschoss.ueber_gelaende}}', '{{geschoss.anteil}}', '{{geschoss.ergebnis}}'], {
     fmts: [undefined, undefined, M, PROZENT],
     wrap: [1],
   });
-  ws.mergeCells(`E26:${letzte}26`);
+  ws.mergeCells(`E29:${letzte}29`);
 
-  abschnitt(28, 'Geschossfläche');
-  kopf(29, ['Geschoss', 'Ermittlung', 'Fläche', '', '', '', '']);
-  zeile(30, ['{{geschoss.name}}', '{{geschoss.gf_art}}', '{{geschoss.gf}}'], { fmts: [undefined, undefined, M2], wrap: [1] });
-  summe(31, ['C'], 30, 30);
+  abschnitt(31, 'Geschossfläche');
+  kopf(32, ['Geschoss', 'Ermittlung', 'Fläche', '', '', '', '']);
+  zeile(33, ['{{geschoss.name}}', '{{geschoss.gf_art}}', '{{geschoss.gf}}'], { fmts: [undefined, undefined, M2], wrap: [1] });
+  summe(34, ['C'], 33, 33);
 
-  put('A33', '{{aufenthalt.titel}}', { bold: true });
-  zeile(34, ['{{raum[gf].geschoss}}', '{{raum[gf].nummer}} {{raum[gf].name}}', '{{raum[gf].flaeche}}', '{{raum[gf].aufenthalt}}'], { fmts: [undefined, undefined, M2] });
-  ws.mergeCells(`D34:${letzte}34`);
+  put('A36', '{{aufenthalt.titel}}', { bold: true });
+  zeile(37, ['{{raum[gf].geschoss}}', '{{raum[gf].nummer}} {{raum[gf].name}}', '{{raum[gf].flaeche}}', '{{raum[gf].aufenthalt}}'], { fmts: [undefined, undefined, M2] });
+  ws.mergeCells(`D37:${letzte}37`);
 
-  abschnitt(36, 'Flächenbilanz des Grundstücks');
-  zeile(37, [null, 'Gebäude', '{{bilanz.gebaeude}}'], { fmts: [undefined, undefined, M2] });
-  zeile(38, [null, 'vollversiegelt', '{{bilanz.vollversiegelt}}'], { fmts: [undefined, undefined, M2] });
-  zeile(39, [null, 'teilversiegelt', '{{bilanz.teilversiegelt}}'], { fmts: [undefined, undefined, M2] });
-  zeile(40, [null, 'Grünfläche', '{{bilanz.gruen}}'], { fmts: [undefined, undefined, M2] });
-  summe(41, ['C'], 37, 40);
+  abschnitt(39, 'Flächenbilanz des Grundstücks');
+  zeile(40, [null, 'Gebäude', '{{bilanz.gebaeude}}'], { fmts: [undefined, undefined, M2] });
+  zeile(41, [null, 'vollversiegelt', '{{bilanz.vollversiegelt}}'], { fmts: [undefined, undefined, M2] });
+  zeile(42, [null, 'teilversiegelt', '{{bilanz.teilversiegelt}}'], { fmts: [undefined, undefined, M2] });
+  zeile(43, [null, 'Grünfläche', '{{bilanz.gruen}}'], { fmts: [undefined, undefined, M2] });
+  summe(44, ['C'], 40, 43);
 
   // Lageplan: „eindeutig“ zählt Überlagerungen nur einmal – Summe = Wert der App; „angerechnet“ auf GR II bzw. GR
-  abschnitt(43, 'Lageplan-Flächen');
-  kopf(44, ['Fläche', 'Nutzung', 'Fläche', 'eindeutig', 'Versiegelung', 'angerechnet', 'Anrechnung']);
+  abschnitt(46, 'Lageplan-Flächen');
+  kopf(47, ['Fläche', 'Nutzung', 'Fläche', 'eindeutig', 'Versiegelung', 'angerechnet', 'Anrechnung']);
   zeile(
-    45,
+    48,
     [
       '{{lageplan[eigen].name}}',
       '{{lageplan[eigen].nutzung}}',
@@ -184,20 +191,20 @@ function nachweisBlatt(wb: Workbook, stellen: { grz?: number; grz2?: number; gfz
     ],
     { fmts: [undefined, undefined, M2, M2, undefined, M2] },
   );
-  summe(46, ['D', 'F'], 45, 45);
+  summe(49, ['D', 'F'], 48, 48);
 
   // Rechenweg: Formeln und Teilflächen, deren Fläche als Formel Länge × Breite × Faktor
-  abschnitt(48, 'Rechenweg');
-  put('A49', '{{formel.text}}');
-  ws.mergeCells(`A49:${letzte}49`);
-  kopf(50, ['Fläche', 'Teilfläche', 'Länge', 'Breite', 'Faktor', 'Fläche', '']);
-  zeile(51, ['{{teil.flaeche_nr}} {{teil.flaeche_name}}', '{{teil.name}}', '{{teil.laenge}}', '{{teil.breite}}', '{{teil.faktor}}', { formula: 'C51*D51*E51' }], {
+  abschnitt(51, 'Rechenweg');
+  put('A52', '{{formel.text}}');
+  ws.mergeCells(`A52:${letzte}52`);
+  kopf(53, ['Fläche', 'Teilfläche', 'Länge', 'Breite', 'Faktor', 'Fläche', '']);
+  zeile(54, ['{{teil.flaeche_nr}} {{teil.flaeche_name}}', '{{teil.name}}', '{{teil.laenge}}', '{{teil.breite}}', '{{teil.faktor}}', { formula: 'C54*D54*E54' }], {
     fmts: [undefined, undefined, M, M, '0.0', M2],
   });
 
-  abschnitt(53, 'Hinweise');
-  put('A54', '{{hinweis.text}}', { wrap: true });
-  ws.mergeCells(`A54:${letzte}54`);
+  abschnitt(56, 'Hinweise');
+  put('A57', '{{hinweis.text}}', { wrap: true });
+  ws.mergeCells(`A57:${letzte}57`);
   return ws;
 }
 

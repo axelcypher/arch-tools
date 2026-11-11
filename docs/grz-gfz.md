@@ -26,9 +26,25 @@ Bebauungsplan gilt.
   angewandten Vorschriften (Zitat, Fundstelle, Link, Suche); die `?`-Knöpfe an den Abschnitten zeigen nur die
   dort maßgebenden Regeln.
 
+## Projekt und Bebauungsplan
+
+Oben in der linken Spalte stehen die gemeinsamen **Stammdaten** des Projekts (Knopf „Stammdaten …“: Bauvorhaben,
+Adresse, Gemarkung/Flur/Flurstück, Bauherr, Bearbeitung – dieselben wie in den anderen Apps, gespeichert in der
+Projektdatei), dazu direkt eintragbar **Bebauungsplan Nr. und Name** (ebenfalls Stammdaten, also auch in den
+anderen Apps sichtbar), das **Baugebiet** (WS, WR, WA, WB, MD, MDW, MI, MU, MK, GE, GI, SO; gespeichert in den
+Festsetzungen) und das Datum des Bebauungsplans. Druck und Excel geben sie im gemeinsamen Kopf bzw. unter
+„Grundlagen“ aus.
+
+**Festsetzungen:** GRZ, GFZ, GR und GF als absolute Festsetzung [m²], Baumassenzahl (§ 21; Baumasse vereinfacht aus
+Grundfläche × Geschosshöhe der Vollgeschosse), Vollgeschosse höchstens bzw. mindestens oder zwingend, GRZ II
+höchstens (1990), Trauf- und Firsthöhe (nur als Prüfhinweis im Nachweis, nicht gerechnet) und – nur bei
+entsprechender Festsetzung nach BauNVO 1990 – „Aufenthaltsräume in Nicht-Vollgeschossen mitrechnen“ (§ 20 Abs. 3
+Satz 2). Absolute GR/GF und BMZ erscheinen als eigene Kacheln und Zeilen in Druck und Excel; unterschrittene
+Mindest- bzw. zwingende Vollgeschosse stehen als „unterschritten“.
+
 ## Welches Recht gilt
 
-Unter „Festsetzungen“ wird das **Datum des Bebauungsplans** eingetragen (Inkrafttreten bzw. Satzungsbeschluss). Daraus wählt das
+Unter „Projekt und Bebauungsplan“ wird das **Datum des Bebauungsplans** eingetragen (Inkrafttreten bzw. Satzungsbeschluss). Daraus wählt das
 Tool zwei Regelwerke; beide lassen sich übersteuern, maßgebend ist die Planurkunde. Ohne Datum gilt das aktuelle
 Recht (Vorhaben nach § 34 oder § 35 BauGB).
 
@@ -50,7 +66,10 @@ Recht (Vorhaben nach § 34 oder § 35 BauGB).
 | BauO NRW 2018 | ab 01.01.2019 | Deckenoberkante im Mittel mehr als 1,60 m über Gelände und lichte Höhe mindestens 2,30 m über mehr als drei Viertel der Grundfläche des Geschosses darunter. |
 
 Nicht automatisch geprüft werden (BauO NW 1962/1970) Geschosse mit mehr als 1,80 m lichter Höhe unterhalb der
-Traufenoberkante und Garagengeschosse; sie lassen sich je Geschoss als Vollgeschoss festlegen.
+Traufenoberkante und Garagengeschosse; sie lassen sich je Geschoss als Vollgeschoss festlegen. Kellergeschosse
+werden bei Plänen ab der BauO NW 1970 (ab 27.01.1970, ebenso ohne Plandatum) „im Lichten“ gemessen: Deckenoberkante
+minus Decken-/Dachaufbau muss im Mittel mehr als 1,40 m über dem Gelände liegen; bei älteren Plänen zählt die
+Deckenoberkante.
 
 ## Lageplan
 
@@ -150,8 +169,17 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
   zählen nicht), in kleinen Wohngebäuden 2,30 m. Die Tabelle zeigt je Raum Einstufung, Höhenlage und Begründung;
   Räume mit Höhenversatz (Split-Level) werden mit ihrer eigenen Fußbodenhöhe gerechnet.
 - **Höhen:** Das Tool rechnet auf einem Raster über dem Grundriss mit der Höhe bis zur Dachhaut (Dachform mit Gauben
-  bzw. IFC-Modell) oder bis zum Fußboden darüber. Lichte Höhe = diese Höhe minus Dachaufbau (Standard 0,30 m,
-  einstellbar).
+  bzw. IFC-Modell) oder bis zum Fußboden darüber. Lichte Höhe = diese Höhe minus Decken-/Dachaufbau (Standard
+  0,30 m, einstellbar; gilt für Dach und Decken).
+- **Terrassen und offene Fälle:** Unter „Einstufung offener Fälle“ lässt sich nach BauNVO 1990 außer „zählt zur
+  GRZ II“ (Vorgabe, wenn die Fläche zählt) und „zählt nicht“ auch „zählt zur Hauptanlage (GRZ I)“ wählen – z. B. für
+  eine angebaute, ebenerdige Terrasse, die viele Bauaufsichten der Hauptanlage zurechnen.
+- **Gebäudeteile:** Hat ein Geschoss mehrere Umrisse (z. B. eine im IFC modellierte angebaute Garage), lassen sie sich
+  unter „Gebäudeteile“ als „Garage / Carport“ oder „Nebenanlage“ kennzeichnen. Sie zählen dann nicht zur
+  Hauptanlage, sondern wie eine Lageplan-Fläche dieser Nutzung (§ 19 Abs. 4 BauNVO 1990 bzw. § 21a 1968/1977) und
+  erscheinen in der Tabelle „Grundfläche“; Vollgeschossprüfung und Geschossfläche bleiben unverändert.
+- **BauNVO 1962, § 19 Abs. 5:** Im Kern-, Gewerbe- und Industriegebiet (Baugebiet MK, GE, GI) werden Garagen nicht
+  auf die Grundfläche angerechnet, sonst schon.
 
 ## Ausgabe
 
@@ -189,7 +217,8 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
   - Lageplan: Nummern in mindestens 10 pt im eindeutigen Anteil der Fläche (nicht unter dem Gebäude oder
     überlagernden Flächen, bei mehreren Teilstücken im größten), Maßstabsleiste und Nordpfeil (Planoberkante =
     Projektnorden des Modells).
-  - „Stand“ im Kopf wird im Druckdialog eingetragen (leer: ohne Stand), nicht automatisch heute. Der Haftungssatz
+  - „Stand“ im Kopf wird im Druckdialog eingetragen und mit dem Projekt gespeichert (leer: ohne Stand), nicht
+    automatisch heute; Excel übernimmt ihn (`{{stand.text}}`). Der Haftungssatz
     des Tools steht nur auf dem Blatt, wenn „Haftungshinweis“ gewählt ist.
 - **Excel …**: Standardlayout (Blatt „GRZ GFZ“ mit Summenformeln) oder eigene Vorlage mit Platzhaltern wie
   `{{grz}}`, `{{gfz}}`, `{{vollgeschosse}}`, `{{bilanz.*}}` und den Sammlungen `geschoss`, `lageplan`, `raum`,

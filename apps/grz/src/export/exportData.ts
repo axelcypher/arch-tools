@@ -6,7 +6,8 @@ import { nutzungLabel, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
 import type { Kennzahl, Nachweis } from '../massNutzung';
 import { baunvoLabel, bauoLabel, istAufenthaltsraum, massNachweis, sachlicheHinweise } from '../massNutzung';
-import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlStellenVon, roemisch, STATUS } from '../texte';
+import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, GRUNDSTUECK_QUELLE, HAFTUNG, kennzahlStellenVon, roemisch, STATUS } from '../texte';
+import { bebauungsplanText, GEBIETSARTEN } from '@core/model';
 import { datumText } from '@core/ui/DruckKopf';
 import { rechenweg, teilName } from '../rechenweg';
 
@@ -66,18 +67,42 @@ function kennzahlWerte(prefix: string, k: Kennzahl | undefined, kurz: string): R
   };
 }
 
+function absolutWerte(prefix: string, a: Nachweis['grAbsolut'], bezeichnung: string): Record<string, Value> {
+  return {
+    [`${prefix}.bezeichnung`]: a ? bezeichnung : '',
+    [prefix]: a ? r2(a.flaeche) : '',
+    [`${prefix}.zulaessig`]: a ? r2(a.zulaessig) : '',
+    [`${prefix}.status`]: a ? STATUS[a.status].label : '',
+  };
+}
+
 export function buildGrzContext(project: Project, date = new Date(), n: Nachweis = massNachweis(project)): ExportContext {
   const G = n.grundstueck.flaeche;
+  const m = project.massNutzung ?? {};
   const scalars: Record<string, Value> = {
     ...projektWerte(project, date),
-    'bplan.datum': project.massNutzung?.planDatum ? datumText(project.massNutzung.planDatum) : '',
+    'bplan.datum': m.planDatum ? datumText(m.planDatum) : '',
+    'bplan.angabe': [bebauungsplanText(project.meta.bebauungsplan), m.planDatum ? `vom ${datumText(m.planDatum)}` : 'ohne Datum (aktuelles Recht)'].filter(Boolean).join(' '),
+    gebietsart: m.gebietsart ?? '',
+    'gebietsart.bezeichnung': m.gebietsart ? 'Baugebiet' : '',
+    'gebietsart.text': m.gebietsart ? (GEBIETSARTEN.find((g) => g.id === m.gebietsart)?.label ?? m.gebietsart) : '',
+    stand: m.stand ? datumText(m.stand) : '',
+    'stand.text': m.stand ? `Stand ${datumText(m.stand)}` : '',
+    ...absolutWerte('gr_absolut', n.grAbsolut, n.recht.baunvo === '1990' ? 'GR I (absolut)' : 'GR (absolut)'),
+    ...absolutWerte('gf_absolut', n.gfAbsolut, 'GF (absolut)'),
+    ...kennzahlWerte('bmz', n.bmz, 'BM'),
+    'bmz.bezeichnung': n.bmz ? 'BMZ' : '',
+    'bmz.text': n.bmz ? 'Baumasse (vereinfacht)' : '',
+    'bmz.baumasse': n.bmz ? r2(n.baumasse) : '',
+    'vollgeschosse.mindestens': n.vollgeschosse.mindestens ?? '',
+    'vollgeschosse.zwingend': n.vollgeschosse.zwingend ? 'ja' : '',
     'baunvo.fassung': baunvoLabel(n.recht.baunvo),
     'bauo.fassung': bauoLabel(n.recht.bauo),
     'recht.hinweise': n.recht.hinweise.join(' '),
     // offene Spanne („prüfen“): zur GRZ II (1990) bzw. zur GRZ
     'grz.offen.bezeichnung': (n.grz2 ?? n.grz).mitOffenen !== undefined ? `${n.grz2 ? 'GRZ II' : 'GRZ'} bei Anrechnung offener Flächen` : '',
     'grundstueck.flaeche_nachweis': opt(G, r4),
-    'grundstueck.quelle': n.grundstueck.quelle === 'lageplan' ? 'aus dem Lageplan' : n.grundstueck.quelle === 'projektdaten' ? 'Projektdaten' : 'fehlt',
+    'grundstueck.quelle': GRUNDSTUECK_QUELLE[n.grundstueck.quelle],
     gelaende: r2(n.gelaende.hoehe),
     'gelaende.quelle': GELAENDE_QUELLE[n.gelaende.quelle],
     'grz.bezeichnung': n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ',
@@ -228,7 +253,10 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
   {
     group: 'Grundlagen',
     keys: [
-      ['bplan.datum', 'Datum des Bebauungsplans'],
+      ['bplan.datum', 'Datum des Bebauungsplans (TT.MM.JJJJ)'],
+      ['bplan.angabe', 'Nr., Name und Datum in einer Zeile: „Nr. 112 „Am Hang“ vom 14.03.1967“'],
+      ['gebietsart, gebietsart.text', 'Baugebiet: Kürzel (WA, MI …) bzw. mit Bezeichnung'],
+      ['stand, stand.text', 'Stand des Nachweises (im Druckdialog eingetragen) bzw. „Stand TT.MM.JJJJ“ – leer, wenn nicht eingetragen'],
       ['baunvo.fassung, bauo.fassung', 'angewandte BauNVO-Fassung und Vollgeschossbegriff'],
       ['recht.hinweise', 'Hinweise zur Wahl der Fassung'],
       ['grundstueck.flaeche_nachweis, grundstueck.quelle', 'maßgebende Grundstücksfläche [m²] und Herkunft'],
@@ -249,6 +277,9 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['unterirdisch.flaeche, unterirdisch.angerechnet', 'Kellergeschoss außerhalb der Hauptanlage [m²] und davon angerechnet'],
       ['grz.ii, grz.ii.zulaessig, grz.ii.flaeche, grz.ii.reserve, grz.ii.status, grz.ii.mit_offenen', 'GRZ II nach § 19 Abs. 4 BauNVO 1990 (sonst leer)'],
       ['garagen.frei', 'anrechnungsfreie Garagenfläche nach § 21a Abs. 3 (1968/1977) [m²]'],
+      ['gr_absolut, gr_absolut.zulaessig, gr_absolut.status, gr_absolut.bezeichnung', 'absolute Festsetzung der Grundfläche: vorhanden, zulässig [m²], Ergebnis (leer ohne Festsetzung); ebenso gf_absolut'],
+      ['bmz, bmz.zulaessig, bmz.status, bmz.baumasse', 'Baumassenzahl (§ 21) und Baumasse [m³], vereinfacht aus Grundfläche × Geschosshöhe der Vollgeschosse'],
+      ['vollgeschosse.mindestens, vollgeschosse.zwingend', 'Mindestzahl der Vollgeschosse; „ja“, wenn die Zahl zwingend ist'],
       ['gf, gf.aufenthalt', 'Geschossfläche [m²]; davon Aufenthaltsräume in Nicht-Vollgeschossen'],
       ['gfz, gfz.zulaessig, gfz.reserve, gfz.status, gfz.vergleich', 'GFZ, zulässig, Reserve [m²], Ergebnis, Begründung in m²'],
       ['vollgeschosse, vollgeschosse.roemisch, vollgeschosse.zulaessig, vollgeschosse.status', 'Zahl der Vollgeschosse'],

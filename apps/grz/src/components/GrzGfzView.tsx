@@ -1,15 +1,17 @@
 import { lazy, Suspense, useDeferredValue, useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import { LAGEPLAN_NUTZUNGEN, VERSIEGELUNGEN } from '@core/lageplan';
-import type { BauNVOFassung, BauOFassung, LageplanFlaeche, LageplanNutzung, MassNutzung, RoomShape, Versiegelung } from '@core/model';
+import type { BauNVOFassung, BauOFassung, Einstufung, Gebietsart, LageplanFlaeche, LageplanNutzung, MassNutzung, OutlineShape, RoomShape, Versiegelung } from '@core/model';
+import { GEBIETSARTEN } from '@core/model';
 import type { Point } from '@core/geometry';
 import { Field, NumberField, TextField } from '@core/ui/fields';
 import type { Anrechnung, Kennzahl, Status } from '../massNutzung';
 import { anrechnungRegel, BAUNVO_FASSUNGEN, BAUO_FASSUNGEN, baunvoLabel, bauoLabel, massNachweis, recht } from '../massNutzung';
 import { mapFlaeche, removeFlaeche, setMassNutzung, useGrz } from '../store';
-import { AUFENTHALT, ANRECHNUNG, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, zahl } from '../texte';
+import { AUFENTHALT, ANRECHNUNG, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, vollgeschosseZulaessig, zahl } from '../texte';
 import { LageplanEditor } from './LageplanEditor';
 import { areaMP, unionAll } from '@core/polygon';
+import { polygonArea } from '@core/geometry';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
 import { teilFormel } from '@core/flaechenZerlegung';
@@ -49,6 +51,19 @@ export function GrzGfzView() {
   const gleich = <T,>(werte: T[]): T | undefined => (werte.length && werte.every((v) => v === werte[0]) ? werte[0] : undefined);
   const setVollgeschoss = (storeyId: string, v: boolean | undefined) =>
     st.update((p) => ({ ...p, storeys: p.storeys.map((s) => (s.id === storeyId ? { ...s, vollgeschoss: v } : s)) }));
+  const setBplan = (patch: { nummer?: string; name?: string }) =>
+    st.update((p) => {
+      const b = { ...(p.meta.bebauungsplan ?? {}), ...patch };
+      const leer = !b.nummer?.trim() && !b.name?.trim();
+      return { ...p, meta: { ...p.meta, bebauungsplan: leer ? undefined : b } };
+    });
+  // Gebäudeteile: Umrisse oberirdischer Geschosse, sobald ein Geschoss mehrere hat (oder einer gekennzeichnet ist)
+  const gebaeudeteile = project.storeys.flatMap((s) => {
+    const os = s.shapes.filter((x): x is OutlineShape => x.kind === 'outline' && !x.subtract);
+    return os.length > 1 || os.some((o) => o.anlage) ? os.map((o) => ({ storey: s.name, o })) : [];
+  });
+  const setAnlage = (id: string, anlage: OutlineShape['anlage']) =>
+    st.update((p) => ({ ...p, storeys: p.storeys.map((s) => ({ ...s, shapes: s.shapes.map((x) => (x.id === id && x.kind === 'outline' ? { ...x, anlage } : x)) })) }));
   const setAufenthalt = (storeyId: string, roomId: string, v: RoomShape['aufenthalt']) =>
     st.update((p) => ({
       ...p,
@@ -57,15 +72,33 @@ export function GrzGfzView() {
   return (
     <div className="grz-view">
       <section className="grz-col grz-fest">
-        <h2>Projekt</h2>
+        <h2>Projekt und Bebauungsplan</h2>
         <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }))} />
+        <div className="field-row">
+          <Field label="Bebauungsplan Nr.">
+            <TextField value={project.meta.bebauungsplan?.nummer ?? ''} onChange={(v) => setBplan({ nummer: v })} />
+          </Field>
+          <Field label="Gebiet">
+            <select value={m.gebietsart ?? ''} onChange={(e) => setM({ gebietsart: (e.target.value || undefined) as Gebietsart | undefined })} title="Art der baulichen Nutzung (BauNVO)">
+              <option value="">–</option>
+              {GEBIETSARTEN.map((g) => (
+                <option key={g.id} value={g.id} title={g.label}>
+                  {g.id}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <Field label="Bebauungsplan Name">
+          <TextField value={project.meta.bebauungsplan?.name ?? ''} onChange={(v) => setBplan({ name: v })} />
+        </Field>
+        <Field label="Bebauungsplan in Kraft seit" hint="leer = aktuelles Recht (§ 34/35 BauGB)">
+          <input type="date" value={m.planDatum ?? ''} onChange={(e) => setM({ planDatum: e.target.value || undefined })} />
+        </Field>
         <h2>
           Festsetzungen
           <HilfeKnopf thema={['baunvo', 'vollgeschoss']} titel="Festsetzungen" />
         </h2>
-        <Field label="Bebauungsplan in Kraft seit" hint="leer = aktuelles Recht (§ 34/35 BauGB)">
-          <input type="date" value={m.planDatum ?? ''} onChange={(e) => setM({ planDatum: e.target.value || undefined })} />
-        </Field>
         <Field label="BauNVO-Fassung">
           <select value={m.baunvo ?? 'auto'} onChange={(e) => setM({ baunvo: e.target.value === 'auto' ? undefined : (e.target.value as BauNVOFassung) })}>
             <option value="auto">automatisch ({baunvoLabel(auto.baunvo)})</option>
@@ -95,21 +128,68 @@ export function GrzGfzView() {
           </Field>
         </div>
         <div className="field-row">
-          <Field label="Vollgeschosse höchstens">
+          <Field label="GR zulässig [m²]" hint="absolut (§ 16 Abs. 2)">
+            <NumberField value={m.grAbsolut} allowEmpty min={0} onChange={(v) => setM({ grAbsolut: v })} />
+          </Field>
+          <Field label="GF zulässig [m²]" hint="absolut">
+            <NumberField value={m.gfAbsolut} allowEmpty min={0} onChange={(v) => setM({ gfAbsolut: v })} />
+          </Field>
+        </div>
+        <div className="field-row">
+          <Field label="BMZ zulässig" hint="Baumassenzahl (§ 21)">
+            <NumberField value={m.bmz} allowEmpty min={0} max={20} onChange={(v) => setM({ bmz: v })} />
+          </Field>
+          <Field label={m.vollgeschosseZwingend ? 'Vollgeschosse zwingend' : 'Vollgeschosse höchstens'}>
             <NumberField value={m.vollgeschosseMax} allowEmpty min={0} max={40} digits={0} onChange={(v) => setM({ vollgeschosseMax: v === undefined ? undefined : Math.round(v) })} />
           </Field>
+        </div>
+        <div className="field-row">
+          {!m.vollgeschosseZwingend && (
+            <Field label="Vollgeschosse mindestens">
+              <NumberField value={m.vollgeschosseMin} allowEmpty min={0} max={40} digits={0} onChange={(v) => setM({ vollgeschosseMin: v === undefined ? undefined : Math.round(v) })} />
+            </Field>
+          )}
+          <label className="toggle block">
+            <input type="checkbox" checked={!!m.vollgeschosseZwingend} onChange={(e) => setM({ vollgeschosseZwingend: e.target.checked || undefined })} />
+            zwingend
+          </label>
+        </div>
+        <div className="field-row">
           {n.recht.baunvo === '1990' && (
             <Field label="GRZ II höchstens" hint="leer = 1,5 × GRZ, max. 0,8">
               <NumberField value={m.grzIIMax} allowEmpty min={0} max={1} onChange={(v) => setM({ grzIIMax: v })} />
             </Field>
           )}
         </div>
-        <Field label="Grundstücksfläche [m²]" hint={n.grundstueck.ausLageplan !== undefined ? `aus dem Lageplan: ${fmt2(n.grundstueck.ausLageplan)} m²` : 'wie in den Projektdaten'}>
+        <div className="field-row">
+          <Field label="Traufhöhe höchstens [m]" hint="nur Prüfhinweis">
+            <NumberField value={m.traufhoeheMax} allowEmpty min={0} max={100} onChange={(v) => setM({ traufhoeheMax: v })} />
+          </Field>
+          <Field label="Firsthöhe höchstens [m]" hint="nur Prüfhinweis">
+            <NumberField value={m.firsthoeheMax} allowEmpty min={0} max={100} onChange={(v) => setM({ firsthoeheMax: v })} />
+          </Field>
+        </div>
+        {n.recht.baunvo === '1990' && (
+          <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
+            <input type="checkbox" checked={!!m.aufenthaltNichtVollgeschoss} onChange={(e) => setM({ aufenthaltNichtVollgeschoss: e.target.checked || undefined })} />
+            Aufenthaltsräume in Nicht-Vollgeschossen mitrechnen (§ 20 Abs. 3 S. 2 BauNVO)
+          </label>
+        )}
+        <Field
+          label="Grundstücksfläche [m²]"
+          hint={
+            n.grundstueck.grenze !== undefined
+              ? `gezeichnete Grenze: ${fmt2(n.grundstueck.grenze)} m² – maßgebend ist die Katasterangabe`
+              : n.grundstueck.ausLageplan !== undefined
+                ? `aus dem Lageplan: ${fmt2(n.grundstueck.ausLageplan)} m²`
+                : 'laut Kataster (Projektdaten)'
+          }
+        >
           <NumberField
             value={project.meta.grundstueck.flaeche}
             allowEmpty
             min={0}
-            placeholder={n.grundstueck.ausLageplan !== undefined ? fmt2(n.grundstueck.ausLageplan) : ''}
+            placeholder={n.grundstueck.grenze !== undefined ? fmt2(n.grundstueck.grenze) : n.grundstueck.ausLageplan !== undefined ? fmt2(n.grundstueck.ausLageplan) : ''}
             onChange={(v) => st.update((p) => ({ ...p, meta: { ...p.meta, grundstueck: { ...p.meta.grundstueck, flaeche: v } } }))}
           />
         </Field>
@@ -126,7 +206,7 @@ export function GrzGfzView() {
           <NumberField value={m.gelaende} allowEmpty placeholder={fmt2(n.gelaende.hoehe)} onChange={(v) => setM({ gelaende: v })} />
         </Field>
         <div className="field-row">
-          <Field label="Dachaufbau [m]" hint="lichte Höhe = Dachhaut − Aufbau">
+          <Field label="Decken-/Dachaufbau [m]" hint="lichte Höhe = OK Decke bzw. Dachhaut − Aufbau">
             <NumberField value={m.dachaufbau} allowEmpty min={0} max={2} placeholder="0,30" onChange={(v) => setM({ dachaufbau: v })} />
           </Field>
           {n.recht.baunvo !== '1990' && (
@@ -141,6 +221,21 @@ export function GrzGfzView() {
             Einfamilienhaus (lichte Höhe für Aufenthaltsräume 2,30 statt 2,50 m)
           </label>
         )}
+        {gebaeudeteile.length > 0 && (
+          <>
+            <h3>Gebäudeteile</h3>
+            <p className="muted small-text">Angebaute Garagen, Carports oder Gartenhäuser aus der IFC zählen als Anlage (§ 19 Abs. 4 bzw. § 21a), nicht als Hauptanlage.</p>
+            {gebaeudeteile.map(({ storey, o }) => (
+              <Field key={o.id} label={`${storey} · ${o.name || 'Umriss'} · ${fmt2(polygonArea(o.points))} m²`}>
+                <select value={o.anlage ?? ''} onChange={(e) => setAnlage(o.id, (e.target.value || undefined) as OutlineShape['anlage'])}>
+                  <option value="">Hauptanlage</option>
+                  <option value="garage">Garage / Carport</option>
+                  <option value="nebenanlage">Nebenanlage</option>
+                </select>
+              </Field>
+            ))}
+          </>
+        )}
         {offeneNutzungen.length > 0 && (
           <>
             <h3>Einstufung offener Fälle</h3>
@@ -152,12 +247,13 @@ export function GrzGfzView() {
                   onChange={(e) => {
                     const einstufung = { ...(m.einstufung ?? {}) };
                     if (e.target.value === 'offen') delete einstufung[x.id];
-                    else einstufung[x.id] = e.target.value as 'ja' | 'nein';
+                    else einstufung[x.id] = e.target.value as Einstufung;
                     setM({ einstufung });
                   }}
                 >
                   <option value="offen">offen – ohne und mit rechnen</option>
-                  <option value="ja">zählt zur Grundfläche</option>
+                  <option value="ja">{n.recht.baunvo === '1990' ? 'zählt zur GRZ II' : 'zählt zur Grundfläche'}</option>
+                  {n.recht.baunvo === '1990' && <option value="grz1">zählt zur Hauptanlage (GRZ I)</option>}
                   <option value="nein">zählt nicht</option>
                 </select>
               </Field>
@@ -359,6 +455,9 @@ export function GrzGfzView() {
           <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" kurz={n.recht.baunvo === '1990' ? 'GR I' : 'GR'} />
           {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
           <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" />
+          {n.grAbsolut && <AbsolutKpi titel={n.recht.baunvo === '1990' ? 'GR I absolut' : 'GR absolut'} a={n.grAbsolut} />}
+          {n.gfAbsolut && <AbsolutKpi titel="GF absolut" a={n.gfAbsolut} />}
+          {n.bmz && <KpiZeile titel="BMZ" k={n.bmz} einheit="Baumasse" kurz="BM" />}
           <div className="kpi">
             <div className="kpi-head">
               <span>Vollgeschosse</span>
@@ -366,7 +465,7 @@ export function GrzGfzView() {
             </div>
             <div className="kpi-value">{roemisch(n.vollgeschosse.anzahl)}</div>
             <div className="kpi-sub">
-              {n.vollgeschosse.zulaessig !== undefined ? `zulässig ${roemisch(n.vollgeschosse.zulaessig)} · ` : ''}
+              {vollgeschosseZulaessig(n.vollgeschosse)}
               {n.geschosse.filter((g) => g.vollgeschoss).map((g) => g.name).join(', ') || 'keine'}
             </div>
           </div>
@@ -577,6 +676,24 @@ export function kanteSetzen(pts: Point[], i: number, l: number): Point[] {
   });
   const bewegen = new Set(recht ? [j, (j + 1) % n] : [j]);
   return pts.map((p, k) => (bewegen.has(k) ? { x: p.x + d.x, y: p.y + d.y } : p));
+}
+
+/** absolute Festsetzung (GR/GF in m²) */
+function AbsolutKpi({ titel, a }: { titel: string; a: NonNullable<ReturnType<typeof massNachweis>['grAbsolut']> }) {
+  return (
+    <div className={`kpi${a.status === 'ueberschritten' ? ' alarm' : ''}`}>
+      <div className="kpi-head">
+        <span>{titel}</span>
+        <StatusPill s={a.status} />
+      </div>
+      <div className="kpi-value">
+        {fmt2(a.flaeche)} <small>m²</small>
+      </div>
+      <div className="kpi-sub">
+        zulässig <span className="nowrap">{fmt2(a.zulaessig)} m²</span>
+      </div>
+    </div>
+  );
 }
 
 /** Teilflächen der gewählten Fläche (Rechenweg) */

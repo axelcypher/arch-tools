@@ -377,3 +377,39 @@ describe('Zeichnen (G-21, G-23)', () => {
     ]);
   });
 });
+
+describe('Stammdaten und Bebauungsplan (G-25)', () => {
+  it('B-Plan Nr., Gebiet und Stand erscheinen im Druck und im Export; Stand wird im Projekt gespeichert', async () => {
+    const p = projekt();
+    p.meta.bauherr.name = 'Muster';
+    p.meta.grundstueck.flurstueck = '123';
+    useGrz.getState().load(p);
+    const host = render(App);
+    const feld = [...host.querySelectorAll('.field')].find((f) => f.textContent?.startsWith('Bebauungsplan Nr.'))!.querySelector('input') as HTMLInputElement;
+    change(feld, '7');
+    act(() => feld.dispatchEvent(new FocusEvent('blur', { bubbles: true })));
+    act(() => feld.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+    expect(useGrz.getState().project.meta.bebauungsplan?.nummer).toBe('7');
+    const gebiet = [...host.querySelectorAll('select')].find((x) => [...x.options].some((o) => o.value === 'WA'))!;
+    change(gebiet, 'WA');
+    expect(useGrz.getState().project.massNutzung?.gebietsart).toBe('WA');
+    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Nachweis drucken'))!.click());
+    const kopf = host.querySelector('.druck-kopf')!.textContent!;
+    expect(kopf).toContain('Nr. 7');
+    expect(kopf).toContain('Muster');
+    expect(kopf).toContain('Flurstück 123');
+    expect(host.querySelector('.grz-report')!.textContent).toContain('WA – allgemeines Wohngebiet');
+    // Stand eintragen: gespeichert im Projekt, im Kopf
+    const stand = host.querySelector('.report-actions input[type="date"]') as HTMLInputElement;
+    change(stand, '2026-06-01');
+    expect(useGrz.getState().project.massNutzung?.stand).toBe('2026-06-01');
+    expect(host.querySelector('.druck-kopf')!.textContent).toContain('01.06.2026');
+    const { buildGrzContext } = await import('./export/exportData');
+    const ctx = buildGrzContext(useGrz.getState().project);
+    expect(ctx.scalars['bplan.angabe']).toBe('Nr. 7 vom 14.03.1967');
+    expect(ctx.scalars['gebietsart.text']).toBe('WA – allgemeines Wohngebiet');
+    expect(ctx.scalars['stand.text']).toBe('Stand 01.06.2026');
+    expect(ctx.scalars['kopf.angaben']).toContain('Muster');
+  });
+});
+

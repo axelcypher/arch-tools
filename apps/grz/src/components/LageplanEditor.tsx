@@ -114,7 +114,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   };
   const toWorld = (e: { clientX: number; clientY: number }): Point => weltpunkt(vb, innenflaeche(svgRef.current), e.clientX, e.clientY);
 
-  const fangpunkte = useMemo(() => [...n.hauptanlagePolygone.flat(), ...flaechen.flatMap((f) => f.points)], [n.hauptanlagePolygone, flaechen]);
+  const fangpunkte = useMemo(() => [...n.hauptanlagePolygone.flat(), ...n.anlagenPolygone.flat(), ...flaechen.flatMap((f) => f.points)], [n.hauptanlagePolygone, n.anlagenPolygone, flaechen]);
   // Gebäudeachse (genordete Pläne: Gebäude stehen schräg) für Hilfslinien, Umschalt und Rechtecke
   // während des Ziehens fest – sonst drehte sich die Achse mit der gezogenen Kante
   const thetaAktuell = useMemo(() => gebaeudeAchse([...n.hauptanlagePolygone, ...flaechen.map((f) => f.points)]), [n.hauptanlagePolygone, flaechen]);
@@ -141,7 +141,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     }
     if (best) return { ...best };
     // Kanten von Gebäude und Flächen: Mitte, Lot vom letzten Punkt, beliebiger Punkt der Kante
-    const kanten = [...n.hauptanlagePolygone, ...flaechen.filter((f) => f.id !== o.ohneId).map((f) => f.points)];
+    const kanten = [...n.hauptanlagePolygone, ...n.anlagenPolygone, ...flaechen.filter((f) => f.id !== o.ohneId).map((f) => f.points)];
     const kf = kantenFang(p, kanten, FANG_PX * skala(), o.von);
     if (kf) {
       setKfang(kf);
@@ -572,6 +572,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         ))}
         {n.hauptanlagePolygone.map((pts, i) => (
           <path key={`h${i}`} d={d(pts)} fill="url(#grz-hatch)" stroke="#1d3f96" strokeWidth={k * 2} fillRule="evenodd" pointerEvents="none" />
+        ))}
+        {n.anlagenPolygone.map((pts, i) => (
+          <path key={`a${i}`} d={d(pts)} fill="#8a8f99" fillOpacity={0.45} stroke="#1d3f96" strokeWidth={k * 1.5} pointerEvents="none">
+            <title>Gebäudeteil als Garage/Nebenanlage</title>
+          </path>
         ))}
         {n.grundstueckPolygone.map((pts, i) => (
           <path key={`g${i}`} d={d(pts)} fill="none" stroke="#1f2328" strokeWidth={k * 2.5} strokeDasharray={`${k * 10} ${k * 3} ${k * 2} ${k * 3}`} pointerEvents="none" />
