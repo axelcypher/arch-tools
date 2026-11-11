@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Anschrift, Beteiligter, KontaktArt, ProjectMeta } from '../model';
 import { LEISTUNGSPHASEN } from '../model';
 import { Field, NumberField, TextField } from './fields';
+import { useEscSchliessen } from './Dialog';
 
 /**
  * Stammdaten eines Projekts bearbeiten – gemeinsam für alle Apps. `StammdatenFelder` sind die Eingaben (auch in
@@ -244,6 +245,7 @@ export function StammdatenDialog({
   const [meta, setMeta] = useState(anfang);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
+  useEscSchliessen(laeuft ? undefined : onAbbrechen);
   const offen = stammdatenFehlen(meta);
   const speichern = async () => {
     setFehler(null);

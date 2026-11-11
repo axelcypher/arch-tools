@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { externOeffnen } from '../platform/links';
 import type { Regel, RegelApp } from '../regeln/regelwerk';
 import { BEREICHE, suche } from '../regeln/regelwerk';
+import { useEscSchliessen } from './Dialog';
 
 /**
  * Nachschlagewerk der Berechnungsregeln: zentral über die Titelleiste („Regeln“) und an den einzelnen Funktionen
@@ -133,12 +134,7 @@ export function Nachschlagewerk({ app }: { app: RegelApp }) {
     requestAnimationFrame(() => suchfeld.current?.focus());
   }, [offen, themen]);
 
-  useEffect(() => {
-    if (!offen) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && schliessen();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [offen, schliessen]);
+  useEscSchliessen(schliessen, offen);
 
   const treffer = useMemo(() => suche(q, { app, themen: nurKontext && themen.length ? themen : undefined }).map((t) => t.regel), [q, app, themen, nurKontext]);
   const aktiv = treffer.find((r) => r.id === gewaehlt) ?? treffer[0];

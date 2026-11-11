@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Sperre, SperrBewertung } from '../forma/sperre';
 import type { SperrEintrag } from '../store';
 import { useFormulare } from '../store';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 const ZUSTAND: Record<SperrBewertung['art'], string> = { benutzt: 'In Gebrauch', verwaist: 'Verwaist', unklar: 'Nicht prüfbar' };
 
@@ -35,6 +36,7 @@ export function SperreAufhebenDialog({
   onClose: () => void;
 }) {
   const [laeuft, setLaeuft] = useState(false);
+  useEscSchliessen(laeuft ? undefined : onClose);
   return (
     <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !laeuft && onClose()}>
       <div className="modal modal-wide" aria-label="Sperre aufheben">
@@ -82,6 +84,7 @@ export function SperreAufhebenDialog({
 
 /** Übersicht aller Sperrdateien des Projekts – auch solcher ohne Formular – mit Bewertung und Aufheben */
 export function SperrenDialog({ onClose }: { onClose: () => void }) {
+  useEscSchliessen(onClose);
   const projekt = useFormulare((s) => s.projekt);
   const { sperrenAuflisten, sperrdateiAufheben } = useFormulare.getState();
   const [liste, setListe] = useState<SperrEintrag[] | null>(null);

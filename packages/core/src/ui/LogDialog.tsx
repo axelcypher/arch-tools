@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { isTauri, saveTextFile } from '../platform/files';
 import type { LogLevel } from '../platform/log';
 import { clearLog, formatTime, getEntries, isDebugEnabled, levelRank, logText, logVersion, setDebugEnabled, subscribe } from '../platform/log';
+import { useEscSchliessen } from './Dialog';
 
 const FILTER: { id: LogLevel; label: string }[] = [
   { id: 'debug', label: 'Alles' },
@@ -23,11 +24,7 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
     void import('@tauri-apps/api/path').then((p) => p.appLogDir()).then(setLogDir, () => undefined);
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useEscSchliessen(onClose);
 
   const list = useMemo(() => {
     const s = q.trim().toLowerCase();

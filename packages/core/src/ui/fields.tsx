@@ -112,6 +112,8 @@ export function NumberField({
       onKeyDown={(e) => {
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
         if (e.key === 'Escape') {
+          // Esc verwirft die Eingabe – und schließt nicht zugleich den Dialog
+          e.stopPropagation();
           bearbeitet.current = false;
           textRef.current = format(value);
           setText(textRef.current);
@@ -146,6 +148,7 @@ export function TextField({ value, onChange, placeholder, list, title }: { value
       onKeyDown={(e) => {
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
         if (e.key === 'Escape') {
+          e.stopPropagation();
           textRef.current = value;
           setText(value);
           (e.target as HTMLInputElement).blur();

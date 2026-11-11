@@ -3,6 +3,7 @@ import type { ProjektordnerZugriff } from '@core/platform/projektordner';
 import { ordnerName, ordnerWaehlen, verbinde } from '@core/platform/projektordner';
 import type { OrdnerEintrag } from '@core/projektdatei';
 import { entzZuFoto, FOTO_ENDUNG } from '../projekt';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 /** so tief wird im Fotoordner gesucht */
 const TIEFE = 10;
@@ -33,6 +34,7 @@ export function FotoWahl({
   const [fehler, setFehler] = useState<string | null>(null);
   const [suche, setSuche] = useState('');
   const [lauf, setLauf] = useState(0);
+  useEscSchliessen(onSchliessen);
 
   useEffect(() => {
     let aktuell = true;

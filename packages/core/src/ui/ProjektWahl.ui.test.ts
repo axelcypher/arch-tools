@@ -39,7 +39,7 @@ describe('Projektwahl (Flächenrechner, GRZ-Nachweis, Kostenermittlung)', () => 
     document.body.appendChild(host);
     act(() => {
       root = createRoot(host);
-      root.render(createElement(ProjektWahl, { app: 'Flächenrechner', fs, onGewaehlt: (g: GewaehltesProjekt) => gewaehlt.push(g), onSchliessen: () => {} }));
+      root.render(createElement(ProjektWahl, { app: 'Flächenrechner', fs, onGewaehlt: (g: GewaehltesProjekt) => void gewaehlt.push(g), onSchliessen: () => {} }));
     });
     await warten();
     act(() => knopf(host, 'p').click()); // Gruppe „p“ aufklappen

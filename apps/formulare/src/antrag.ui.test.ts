@@ -516,7 +516,8 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
     const modal = document.querySelector('.fo-gesetz')!;
     expect(modal.querySelector('h3')!.textContent).toContain('§ 68 BauO NRW 2018');
     expect(modal.querySelector('.fo-gesetz-zeile.markiert')!.textContent).toMatch(/^\(2\)/);
-    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+    // Esc (Tastendruck im Dokument) schließt das Fenster über den gemeinsamen Dialog-Stapel
+    act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.querySelector('.fo-gesetz')).toBeNull();
     // angekreuzt: Memo2 ist erforderlich, das Symbol verschwindet
     const s = useFormulare.getState();

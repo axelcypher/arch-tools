@@ -12,6 +12,7 @@ import { ausOrdnernameEinfach, useProjektordnerListe } from './projektListe';
 import { ProjektUebersicht } from './ProjektUebersicht';
 import { StammdatenDialog } from './Stammdaten';
 import './projektwahl.css';
+import { useEscSchliessen } from './Dialog';
 
 const log = logger('projektwahl');
 
@@ -51,7 +52,7 @@ export function ProjektWahl({
   app: string;
   /** Projektdatei des geöffneten Projekts (vollständiger Pfad) – ihr Projektordner wird hervorgehoben */
   offeneDatei?: string | null;
-  onGewaehlt: (g: GewaehltesProjekt) => void;
+  onGewaehlt: (g: GewaehltesProjekt) => void | Promise<void>;
   /** zurück zum geöffneten Projekt */
   onSchliessen?: () => void;
   /** Projektdatei über den Dateidialog öffnen (wie bisher) */
@@ -68,6 +69,7 @@ export function ProjektWahl({
   const [allgemein, setAllgemein] = useState<AllgemeineEinstellungen | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState<string | null>(null);
+  useEscSchliessen(onSchliessen);
   const [dialog, setDialog] = useState<{ ordner: string; meta: ProjectMeta } | null>(null);
 
   useEffect(() => {

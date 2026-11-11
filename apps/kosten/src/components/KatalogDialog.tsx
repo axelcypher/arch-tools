@@ -8,6 +8,7 @@ import { eintragAusPosition, gespeicherterKatalog, katalogCsv, katalogJson, kata
 import { MENGEN_INFO } from '../mengen';
 import type { MengenBezug } from '../mengen';
 import { addPositionen, setKosten, useKosten } from '../store';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 const log = logger('katalog');
 
@@ -20,6 +21,7 @@ const wert = (v: number | undefined) => (v === undefined ? '' : v.toLocaleString
  * und Einträge als Positionen übernehmen.
  */
 export function KatalogDialog({ onClose }: { onClose: () => void }) {
+  useEscSchliessen(onClose);
   const [katalog, setKatalog] = useState<Katalog | null>(() => gespeicherterKatalog());
   const [auswahl, setAuswahl] = useState<Set<number>>(new Set());
   const [fehler, setFehler] = useState<string | null>(null);

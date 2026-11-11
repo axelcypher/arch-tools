@@ -2,7 +2,7 @@ import type { Unzipped, ZipOptions } from 'fflate';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import type { Project } from './model';
 import { benutzteDateien, istVorlage } from './model';
-import { mitErweiterungen, parseProject, parseProjectData, ProjectFormatError } from './serialize';
+import { KEINE_PROJEKTDATEI, mitErweiterungen, parseProject, parseProjectData, ProjectFormatError } from './serialize';
 
 /**
  * Projektarchiv (.oap): ein ZIP mit dem Projekt und allem,
@@ -112,10 +112,11 @@ export function readProjectFile(bytes: Uint8Array): Project {
   try {
     zip = unzipSync(bytes);
   } catch {
-    throw new ProjectFormatError('Das Archiv ist beschädigt und kann nicht gelesen werden.');
+    throw new ProjectFormatError('Das Projektarchiv (.oap) ist beschädigt und lässt sich nicht entpacken.', 'ZIP nicht lesbar');
   }
   const manifest = readJson(zip, MANIFEST) as Partial<Manifest> | null;
-  if (!manifest || manifest.format !== ARCHIV_FORMAT) throw new ProjectFormatError('Die Datei ist kein Projektarchiv des Flächenrechners.');
+  if (!manifest || manifest.format !== ARCHIV_FORMAT)
+    throw new ProjectFormatError(`${KEINE_PROJEKTDATEI} (Das ZIP-Archiv ist kein Projektarchiv der arch-tools.)`, 'manifest.json fehlt oder Format abweichend');
   if (typeof manifest.version !== 'number' || manifest.version > ARCHIV_VERSION) {
     throw new ProjectFormatError(`Das Archiv stammt aus einer neueren Programmversion (Archivversion ${String(manifest.version)}).`);
   }
@@ -154,7 +155,7 @@ function readJson(zip: Unzipped, name: string): unknown {
   try {
     return JSON.parse(strFromU8(data));
   } catch {
-    throw new ProjectFormatError(`${name} im Archiv ist kein gültiges JSON.`);
+    throw new ProjectFormatError('Das Projektarchiv (.oap) ist beschädigt.', `${name} im Archiv ist kein gültiges JSON`);
   }
 }
 

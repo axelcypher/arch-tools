@@ -3,6 +3,7 @@ import { sichererDateiname } from '@core/projektdatei';
 import { verbinde, waehleOrdner } from '../dateisystem';
 import { useFormulare } from '../store';
 import { Symbol } from './Symbol';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 /**
  * Projektordner zuordnen, wenn zum Kürzel keiner gefunden wurde: einen vorhandenen Ordner wählen oder einen neuen im
@@ -16,6 +17,7 @@ export function ProjektordnerDialog({ grund }: { grund: string }) {
   const [name, setName] = useState(sichererDateiname(`${projekt.ordner} ${projekt.titel}`));
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
+  useEscSchliessen(laeuft ? undefined : ordnerDialogSchliessen);
 
   const ausfuehren = async (f: () => Promise<void>) => {
     setFehler(null);

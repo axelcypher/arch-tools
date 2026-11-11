@@ -24,6 +24,15 @@
   --warn-bg: #fff4e5;
   --warn-border: #f5c26b;
   --warn-text: #8a5300;
+  /* Statusfarben (Erfolg, Fehler, neutrale Marke) – nie feste Farben in den Apps */
+  --ok-bg: #e9f6ee;
+  --ok-border: #9fd3b3;
+  --ok-text: #1f6b3d;
+  --fehler-bg: #fbe4e1;
+  --fehler-border: #e8a59c;
+  --fehler-text: #a3281d;
+  --chip-bg: #eef0f2;
+  --on-accent: #ffffff;
   --overlay-bg: rgba(255, 255, 255, 0.92);
   --code-bg: rgba(0, 0, 0, 0.05);
   --backdrop: rgba(20, 24, 31, 0.4);
@@ -863,6 +872,14 @@ code {
   --warn-bg: #3a2c17;
   --warn-border: #8a6420;
   --warn-text: #f3c77a;
+  --ok-bg: #17311f;
+  --ok-border: #2f6b45;
+  --ok-text: #8fd6a8;
+  --fehler-bg: #3d1f1c;
+  --fehler-border: #7d3a33;
+  --fehler-text: #f3a197;
+  --chip-bg: #2b3038;
+  --on-accent: #10131a;
   --overlay-bg: rgba(31, 34, 40, 0.92);
   --code-bg: rgba(255, 255, 255, 0.08);
   --backdrop: rgba(0, 0, 0, 0.55);
@@ -1428,4 +1445,35 @@ svg[tabindex]:focus:not(:focus-visible) {
 .titlebar-im-rahmen {
   height: 30px;
   flex-basis: 30px;
+}
+
+/* ---------- Rückfragen und Meldungen (Rueckfrage.tsx) – über allen anderen Dialogen ---------- */
+
+.modal-backdrop:has(> .modal.rf) {
+  z-index: 100;
+}
+.rf {
+  width: 420px;
+}
+.rf-text {
+  white-space: pre-line;
+}
+.rf input {
+  width: 100%;
+  margin: 4px 0 2px;
+}
+.rf-details {
+  margin: 6px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rf-details pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow: auto;
+  background: var(--code-bg);
+  padding: 6px 8px;
+  border-radius: 4px;
+  user-select: text;
 }

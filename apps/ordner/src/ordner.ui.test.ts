@@ -12,6 +12,7 @@ import { ausfuehren, planen } from './plan';
 import { leereStammdaten } from './stammdaten';
 import { useOrdner } from './store';
 import { STANDARD } from './struktur';
+import { farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -56,6 +57,12 @@ const warten = () =>
 const weiter = (host: Element) => act(() => knopf(host, 'Weiter:').click());
 
 describe('Projektordner', () => {
+  it('Farbschema wechselt sofort (Menü ◐), ohne Option „Zeichenfläche abdunkeln“', () => {
+    const host = render();
+    expect(farbschemaWechseln(host, 'Dunkel')).toBe('dunkel');
+    expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
+  });
+
   it('Assistent: neues Projekt Schritt für Schritt – Stammdaten, Umfang, Vorlagen, Anlegen', () => {
     const host = render();
     expect(host.textContent).toContain('Neues Projekt anlegen');
@@ -245,6 +252,16 @@ describe('Projektordner', () => {
     expect(zeilen(host)).toContain('03 Berechnungen/Flächen/2019-003 Altbau.oap');
     const oap = [...host.querySelectorAll('.po-plan tr')].find((z) => z.querySelector('td')!.getAttribute('title') === '03 Berechnungen/Flächen/2019-003 Altbau.oap')!;
     expect(oap.querySelector('.po-status')?.textContent).toBe('neu');
+  });
+
+  it('Ergänzen mit beschädigter alter projekt.json: Hinweis statt nur „Bitte die Stammdaten erfassen“', async () => {
+    const fs = new SpeicherDateisystem();
+    await fs.ordnerAnlegen('/p', '2019-003 Altbau/Pläne');
+    await fs.dateiAnlegen('/p/2019-003 Altbau', 'projekt.json', new TextEncoder().encode('{kaputt'));
+    const ordner = { pfad: '', name: '2019-003 Altbau', eintraege: await fs.liste('/p/2019-003 Altbau', 12), lies: (p: string) => fs.lies('/p/2019-003 Altbau', p) };
+    const host = render(createElement(AssistentView, { start: ordner }));
+    await warten();
+    expect(host.textContent).toContain('Die alte projekt.json im Ordner ist nicht lesbar');
   });
 
   it('Einstellungen älterer Fassungen werden beim ersten Start in den Konfigurationsordner übernommen', async () => {

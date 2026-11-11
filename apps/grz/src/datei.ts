@@ -7,6 +7,7 @@ import type { ProjektGespeichert } from '@core/platform/projektDatei';
 import { projektDateiWaehlen, projektSpeichern, safeFileName } from '@core/platform/projektDatei';
 import { ifcAktualisieren } from '@core/platform/ifcAktualisieren';
 import { logger } from '@core/platform/log';
+import { DateiLesenFehler, mitDatei } from '@core/platform/dateiFehler';
 import { vorlage } from './vorlage';
 
 const log = logger('datei');
@@ -31,7 +32,9 @@ export async function oeffnen(onProgress?: (msg: string) => void, bisher?: strin
   if (/\.ifc$/i.test(f.name)) {
     onProgress?.('IFC-Modell wird gelesen …');
     const { loadIfc } = await import('@core/platform/ifc');
-    const x = await loadIfc(bytes.slice(), onProgress);
+    const x = await loadIfc(bytes.slice(), onProgress).catch((e: unknown) => {
+      throw new DateiLesenFehler(f.name, e);
+    });
     onProgress?.('Gebäude und Lageplan werden ermittelt …');
     const r = buildFromIfc(x, { rooms: true, outlines: true, roof: true, wohnflaeche: false, dachform: true });
     let p = projektAusIfc(x.projectName || f.name.replace(/\.ifc$/i, ''), r);
@@ -41,7 +44,7 @@ export async function oeffnen(onProgress?: (msg: string) => void, bisher?: strin
     const ordner = f.pfad ? f.pfad.slice(0, f.pfad.length - f.name.length) : '';
     return { project: p, datei: `${ordner}${safeFileName(p.name)}.${ARCHIV_ENDUNG}`, basis: null, bericht: r.report };
   }
-  const p = readProjectFile(bytes);
+  const p = mitDatei(f.name, () => readProjectFile(bytes));
   log.info(`Projekt geöffnet: ${f.pfad ?? f.name}`);
   return { project: p, datei: f.pfad ?? f.name, basis: p, bericht: [] };
 }

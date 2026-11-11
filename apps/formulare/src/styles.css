@@ -2408,10 +2408,6 @@ button.icon.fo-gl-zaehlt.an {
 
 /* ---------- Rückfrage ---------- */
 
-.rf input {
-  width: 100%;
-  margin: 4px 0 2px;
-}
 
 /* ---------- Export-Dialog ---------- */
 
@@ -3862,7 +3858,9 @@ tr[data-ziehen='danach'] > td {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 5px;
-  background: var(--canvas);
+  /* Themenfarben: der ganze Paragraf bleibt lesbar (auch der nicht markierte Rest), in hell und dunkel */
+  background: var(--panel);
+  color: var(--text);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -3877,6 +3875,7 @@ tr[data-ziehen='danach'] > td {
 .fo-gesetz-zeile.markiert {
   border-left-color: var(--accent);
   background: var(--accent-soft);
+  color: var(--text);
 }
 @media print {
   .fo-entfall-info,

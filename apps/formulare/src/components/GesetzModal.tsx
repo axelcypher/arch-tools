@@ -4,6 +4,7 @@ import { externOeffnen } from '@core/platform/links';
 import type { Quelle } from '../bedingung';
 import type { Gesetz } from '../recht';
 import { absatzZeilen, gesetzBekannt, gesetzLaden, quelleText } from '../recht';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 interface GesetzState {
   /** geöffnete Fundstellen (null: geschlossen) */
@@ -49,12 +50,7 @@ export function GesetzModal() {
       aktuell = false;
     };
   }, [q]);
-  useEffect(() => {
-    if (!quellen) return;
-    const taste = (e: KeyboardEvent) => e.key === 'Escape' && schliessen();
-    window.addEventListener('keydown', taste);
-    return () => window.removeEventListener('keydown', taste);
-  }, [quellen, schliessen]);
+  useEscSchliessen(schliessen, !!quellen);
   useEffect(() => markiert.current?.scrollIntoView?.({ block: 'center' }), [gesetz, q]);
 
   if (!quellen || !q) return null;

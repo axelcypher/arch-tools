@@ -127,6 +127,10 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Speichern** (<kbd>Strg</kbd>+<kbd>S</kbd>) schreibt die geänderten Felder in die FORMA-Datei. Vorher wird sie
   frisch eingelesen: Hat sie seit dem Öffnen jemand geändert (z. B. in FORMA gespeichert), wird nicht gespeichert.
   „Neu laden“ liest die neue Fassung und trägt die eigenen Eingaben wieder ein; danach kann gespeichert werden.
+- **Öffnen einer falschen Datei** (z. B. keine `.frmsjf`): Die App prüft die Datei, bevor sie das geöffnete Formular
+  schließt. Ist sie kein FORMA-Formular, meldet sie „Das ist kein FORMA-Formular (.frmsjf). Bitte eine Formulardatei
+  aus dem FORMA-Projektordner wählen.“ – das geöffnete Formular bleibt offen, die technische Einzelheit steht im
+  Protokoll.
 - **Drucken** (<kbd>Strg</kbd>+<kbd>P</kbd>): die Formularansicht in Originalgröße, eine Seite je Blatt (A4).
 - **PDF** (<kbd>Strg</kbd>+<kbd>E</kbd>, auch im Kontextmenü eines Formulars): „Als PDF exportieren …“ fragt, ob in
   den **voreingestellten Ordner** (die aktive Antragsfassung, z. B. `TÖB\BAUA 2`) oder in einen **anderen Ordner

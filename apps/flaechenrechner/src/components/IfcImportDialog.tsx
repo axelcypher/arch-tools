@@ -11,6 +11,8 @@ import { pickFile } from '@core/platform/files';
 import { useEditor } from '../store/store';
 import { NumberField } from '@core/ui/fields';
 import { logger } from '@core/platform/log';
+import { verwerfenOk } from './Toolbar';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 const log = logger('ifc');
 
@@ -18,6 +20,7 @@ type Step = { kind: 'start' } | { kind: 'loading'; msg: string } | { kind: 'opti
 
 /** IFC-Import (z. B. Archicad): Geschosse, Zonen → Räume, BGF-Umrisse, Dach für den BRI. */
 export function IfcImportDialog({ onClose }: { onClose: () => void }) {
+  useEscSchliessen(onClose);
   const [step, setStep] = useState<Step>({ kind: 'start' });
   const [error, setError] = useState<string | null>(null);
   /** Originaldatei – wird im Projektarchiv mitgespeichert */
@@ -76,7 +79,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
         return;
       }
       if (opts.modus === 'neu') {
-        if (st.dirty && !window.confirm('Ungespeicherte Änderungen am aktuellen Projekt verwerfen?')) {
+        if (!(await verwerfenOk())) {
           setStep({ kind: 'options', x, file });
           return;
         }

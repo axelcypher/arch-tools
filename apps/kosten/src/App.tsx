@@ -6,6 +6,7 @@ import { logger } from '@core/platform/log';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
 import { ProjektWahl } from '@core/ui/ProjektWahl';
+import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
 import { ExcelDialog } from './components/ExcelDialog';
 import { KatalogDialog } from './components/KatalogDialog';
 import { KostenDruck } from './components/KostenDruck';
@@ -47,9 +48,14 @@ export function App() {
     document.title = `${dirty ? '• ' : ''}${name} – Kostenermittlung`;
   }, [name, dirty]);
 
-  const onOpen = async () => {
+  /** vor Öffnen/Neu: ungespeicherte Änderungen speichern, verwerfen oder abbrechen */
+  const weiterNachRueckfrage = async () => {
     eingabeAbschliessen();
-    if (useKosten.getState().dirty && !window.confirm('Ungespeicherte Änderungen verwerfen?')) return;
+    return !useKosten.getState().dirty || (await aenderungenSpeichern(useKosten.getState().project.name, () => onSave()));
+  };
+
+  const onOpen = async () => {
+    if (!(await weiterNachRueckfrage())) return;
     try {
       const r = await oeffnen(setBusy, useKosten.getState().datei);
       if (r) {
@@ -58,7 +64,7 @@ export function App() {
       }
     } catch (e) {
       log.error('Öffnen fehlgeschlagen', e instanceof Error ? e.message : String(e));
-      alert(`Datei konnte nicht geöffnet werden: ${e instanceof Error ? e.message : String(e)}`);
+      await oeffnenFehlgeschlagen(e);
     } finally {
       setBusy(null);
     }
@@ -74,13 +80,14 @@ export function App() {
       }
     } catch (e) {
       log.error('IFC-Aktualisierung fehlgeschlagen', e);
-      alert(`IFC konnte nicht übernommen werden: ${e instanceof Error ? e.message : String(e)}`);
+      await oeffnenFehlgeschlagen(e, undefined, 'Das Projekt bleibt unverändert.');
     } finally {
       setBusy(null);
     }
   };
 
-  const onSave = async (unter = false) => {
+  /** liefert true, wenn gespeichert wurde */
+  const onSave = async (unter = false): Promise<boolean> => {
     eingabeAbschliessen();
     await speichernAbwarten(); // Strg+S während eines Speicherns: danach den aktuellen Stand speichern
     const { project, datei, basis, dokument } = useKosten.getState();
@@ -88,9 +95,11 @@ export function App() {
       const r = await speichern(project, datei, basis, unter);
       // während des Speicherns weitergearbeitet? Dann bleibt der neue Stand ungespeichert (mit den Änderungen aus der Datei).
       if (r) useKosten.getState().markSaved(r.datei, r.project, project, dokument);
+      return !!r;
     } catch (e) {
       log.error('Speichern fehlgeschlagen', e instanceof Error ? e.message : String(e));
-      alert(`Speichern fehlgeschlagen: ${String(e)}`);
+      await meldung('Speichern fehlgeschlagen', 'Das Projekt ließ sich nicht speichern. Die Änderungen bleiben in der App erhalten.', e);
+      return false;
     }
   };
 
@@ -131,7 +140,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Kostenermittlung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="kosten" onProjekte={() => setProjekteOffen(true)} />
+      <TitleBar app="Kostenermittlung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="kosten" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
       <div className="toolbar">
         <div className="tb-group">
           <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
@@ -239,9 +248,8 @@ export function App() {
         <ProjektWahl
           app="Kostenermittlung"
           offeneDatei={datei}
-          onGewaehlt={(g) => {
-            eingabeAbschliessen();
-            if (useKosten.getState().dirty && !window.confirm('Ungespeicherte Änderungen verwerfen?')) return;
+          onGewaehlt={async (g) => {
+            if (!(await weiterNachRueckfrage())) return;
             useKosten.getState().load(g.project, g.datei, g.project);
             setBericht([]);
             setProjekteOffen(false);

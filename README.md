@@ -14,6 +14,19 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 | **Formulare** | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
 | **arch-tools** | Rahmen-App: alle Apps in einem Fenster als Tabs, einzelne in eigene Fenster herauslösen | [docs/suite.md](docs/suite.md) |
 
+## Gemeinsame Bedienung aller Apps
+
+- **Farbschema** (◐ in der Titelleiste): Hell, Dunkel oder wie das System – wirkt sofort in allen geöffneten Apps,
+  Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es nur in Apps mit Zeichenfläche bzw. Lageplan.
+- **Dialoge**: Esc schließt den obersten Dialog (in einem Eingabefeld verwirft Esc zuerst die Eingabe), der Fokus
+  bleibt im Dialog und springt danach zurück.
+- **Ungespeicherte Änderungen**: Vor Öffnen, Neu und Beenden fragt die App „Änderungen an ‚…‘ speichern?“ mit
+  *Speichern*, *Nicht speichern* und *Abbrechen*; schlägt das Speichern fehl, bleibt das Projekt offen. Löschen und
+  Ersetzen fragen mit eigenem Knopf (z. B. *Entfernen*) nach.
+- **Datei ließ sich nicht öffnen**: Die Meldung nennt Datei und Grund in Klartext („Keine gültige Projektdatei
+  (.oap) – beschädigt oder aus einer anderen Anwendung.“); technische Einzelheiten stehen aufklappbar darunter und im
+  Protokoll. Ein fehlgeschlagenes Öffnen ändert das geöffnete Projekt nicht.
+
 ## Flächenrechner
 
 Visuell gestützte Flächenberechnung für Gebäude. Grundrisse werden direkt gezeichnet oder auf einem
@@ -138,7 +151,8 @@ packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als
                      Berechnung, Lageplan-Flächen
   src/excel/         Excel-Vorlagen-Engine (Platzhalter, Blöcke, Formeln), Vorlagenspeicher
   src/platform/      Speichern/Öffnen (Tauri-Dialog bzw. Download), web-ifc, Protokoll, Farbschema
-  src/ui/            Titelleiste, Protokoll-Fenster, Excel-Dialog, Eingabefelder, Grund-Styles (base.css)
+  src/ui/            Titelleiste, Protokoll-Fenster, Excel-Dialog, Eingabefelder, Dialoge (Dialog.tsx: Esc, Modal;
+                     Rueckfrage.tsx: Rückfragen und Meldungen), Grund-Styles (base.css)
   tauri/commands.rs  gemeinsame Tauri-Befehle, per include! in alle Tauri-Hüllen eingebunden
 apps/flaechenrechner/  Flächenrechner (dieses Tool): Zeichenfläche, Bericht, Excel, DXF/PDF, 3D
 apps/grz/              GRZ/GFZ-Nachweis: Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md

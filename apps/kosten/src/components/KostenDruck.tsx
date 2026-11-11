@@ -9,12 +9,14 @@ import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useKosten } from '../store';
 import { useBauteile } from '../bauteile';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const datum = (iso: string) => new Date(iso).toLocaleDateString('de-DE');
 
 /** Druckbare Kostenermittlung nach DIN 276 – über den Druckdialog auch als PDF. */
 export function KostenDruck({ onClose }: { onClose: () => void }) {
+  useEscSchliessen(onClose);
   const project = useKosten((s) => s.project);
   const waende = useBauteile((s) => s.waende);
   const e = useMemo(() => berechne(project, undefined, waende), [project, waende]);

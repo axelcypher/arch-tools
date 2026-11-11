@@ -5,6 +5,7 @@ import type { Eintrag } from '../dateisystem';
 import { verbinde } from '../dateisystem';
 import { ablageVon, entwurfVon, useFormulare } from '../store';
 import { Symbol } from './Symbol';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 /** Offener Export-Dialog (auch aus Kontextmenüs, für nicht geöffnete Formulare) */
 export const useExportDialog = create<{ pfad: string | null; oeffnen: (pfad: string) => void; schliessen: () => void }>((set) => ({
@@ -21,6 +22,7 @@ const sortiere = (a: Eintrag, b: Eintrag) => a.pfad.localeCompare(b.pfad, 'de', 
  * unter …“ öffnet stattdessen den Speicherdialog von Windows.
  */
 export function ExportDialog({ formularPfad, onClose }: { formularPfad: string; onClose: () => void }) {
+  useEscSchliessen(onClose);
   const ds = useFormulare((s) => s.ds);
   const projekt = useFormulare((s) => s.projekt);
   const ablage = useFormulare((s) => ablageVon(s, s.projekt));

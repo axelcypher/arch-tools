@@ -9,6 +9,7 @@ import type { Bereich, Ebene, Foto } from '../model';
 import { exportieren, PAPIER, passenderMassstab, pdfPlan } from '../export/export';
 import type { Format, Papier } from '../export/export';
 import { useEntz } from '../store';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 const log = logger('export');
 
@@ -19,6 +20,7 @@ export function ExportDialog({ foto, ebene, e, aufloesung, bereich, onClose }: {
   const [massstab, setMassstab] = useState(() => passenderMassstab(bereich, 'A3'));
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
+  useEscSchliessen(laeuft ? undefined : onClose);
   const a = ausgabe(bereich, aufloesung);
   const plan = pdfPlan(bereich, massstab, papier);
   // Druckauflösung: Bildpixel je Millimeter Papier

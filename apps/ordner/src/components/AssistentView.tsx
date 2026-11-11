@@ -365,7 +365,12 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
             {ohneProjektdatei && (
               <p className="po-hinweis">
                 In diesem Ordner liegt noch keine Projektdatei (.oap).{' '}
-                {geladen?.quelle.alteProjektJson ? 'Die Stammdaten stammen aus der alten projekt.json, die liegen bleibt.' : 'Bitte die Stammdaten erfassen.'} Die Projektdatei wird
+                {geladen?.quelle.alteProjektJson
+                  ? 'Die Stammdaten stammen aus der alten projekt.json, die liegen bleibt.'
+                  : geladen?.quelle.alteProjektJsonDefekt
+                    ? 'Die alte projekt.json im Ordner ist nicht lesbar (sie bleibt unverändert liegen) – bitte die Stammdaten neu erfassen.'
+                    : 'Bitte die Stammdaten erfassen.'}{' '}
+                Die Projektdatei wird
                 damit angelegt.
               </p>
             )}

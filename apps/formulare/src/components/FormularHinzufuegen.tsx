@@ -5,6 +5,7 @@ import type { Vorlage } from '../antragStore';
 import { useAntrag } from '../antragStore';
 import { useFormulare } from '../store';
 import { Symbol } from './Symbol';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 /** Offener Dialog „Formular hinzufügen“ */
 export const useHinzufuegenDialog = create<{ offen: boolean; setOffen: (o: boolean) => void }>((set) => ({ offen: false, setOffen: (offen) => set({ offen }) }));
@@ -17,6 +18,7 @@ const datum = (ms: number) => (ms ? new Date(ms).toLocaleDateString('de-DE') : '
  * Eingaben; danach füllt „Aus Projektkarte ausfüllen“ die Projektdaten ein.
  */
 export function FormularHinzufuegenDialog({ onClose }: { onClose: () => void }) {
+  useEscSchliessen(onClose);
   const formulare = useFormulare((s) => s.formulare);
   const umfangDa = useAntrag((s) => !!s.projektdatei?.umfang);
   const vorlagenordner = useAntrag((s) => s.einstellungen.vorlagenordner);

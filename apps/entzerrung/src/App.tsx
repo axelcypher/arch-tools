@@ -111,10 +111,10 @@ export function App() {
         void ablegen([...e.dataTransfer.files]);
       }}
     >
-      <TitleBar app="Entzerrung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} onProjekte={() => setWahl(projektordner ? 'fotos' : 'projekt')} />
+      <TitleBar app="Entzerrung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} onProjekte={() => setWahl(projektordner ? 'fotos' : 'projekt')} onSpeichern={() => speichern()} />
       <div className="toolbar">
         <div className="tb-group">
-          <button onClick={neu} title="Neues Projekt">
+          <button onClick={() => void neu()} title="Neues Projekt">
             Neu
           </button>
           <button onClick={() => void oeffnen()} title="Projekt öffnen (Strg+O)">

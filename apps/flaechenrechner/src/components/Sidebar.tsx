@@ -6,6 +6,7 @@ import { nutzungInfo } from '@core/norms';
 import { addStorey, duplicateStorey, moveStorey, removeStorey, useActiveStorey, useEditor } from '../store/store';
 import { Field, NumberField } from '@core/ui/fields';
 import { ProjektInfo } from './ProjektDialog';
+import { bestaetigen } from '@core/ui/Rueckfrage';
 
 /** Linke Seitenleiste: Projekt, Geschosse, Flächenliste des aktiven Geschosses. */
 export function Sidebar() {
@@ -84,7 +85,7 @@ export function Sidebar() {
           <button
             className="small danger"
             disabled={project.storeys.length <= 1}
-            onClick={() => window.confirm(`Geschoss „${storey.name}“ löschen?`) && st.update((p) => removeStorey(p, storey.id))}
+            onClick={() => void bestaetigen(`Geschoss „${storey.name}“ löschen?`, 'Das Geschoss wird mit allen Flächen gelöscht (rückgängig mit Strg+Z).', 'Löschen', true).then((ok) => ok && st.update((p) => removeStorey(p, storey.id)))}
           >
             Löschen
           </button>

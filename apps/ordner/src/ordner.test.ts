@@ -539,6 +539,23 @@ describe('Prüfmodus', () => {
     return { fs, basis, projekt: g.angaben, quelle: g.quelle };
   }
 
+  it('beschädigte alte projekt.json: Hinweis „Alte projekt.json nicht lesbar“, die Datei bleibt unangetastet', async () => {
+    const fs = new SpeicherDateisystem();
+    const basis = '/p/2019-003 Altbau';
+    await fs.ordnerAnlegen('/p', '2019-003 Altbau');
+    await fs.dateiAnlegen(basis, 'projekt.json', strToU8('{kaputt'));
+    const g = await projektEinlesen(await eingelesen(fs, basis));
+    expect(g.angaben).toBeNull();
+    expect(g.quelle.alteProjektJsonDefekt).toContain('kein gültiges JSON');
+    const r = pruefe('2019-003 Altbau', await fs.liste(basis, 12), KLEIN, g.angaben, g.quelle);
+    const b = r.befunde.find((x) => x.titel === 'Alte projekt.json nicht lesbar')!;
+    expect(b.art).toBe('hinweis');
+    expect(new TextDecoder().decode(await fs.lies(basis, 'projekt.json'))).toBe('{kaputt');
+    // ohne projekt.json: kein solcher Befund
+    const { fs: fs2, basis: b2, projekt, quelle } = await angelegt();
+    expect(pruefe('2026-014 EFH Musterweg', await fs2.liste(b2, 12), KLEIN, projekt, quelle).befunde.some((x) => x.titel.includes('projekt.json'))).toBe(false);
+  });
+
   it('frisch angelegter Ordner: keine Abweichungen', async () => {
     const { fs, basis, projekt, quelle } = await angelegt();
     const r = pruefe('2026-014 EFH Musterweg', await fs.liste(basis, 12), KLEIN, projekt, quelle);

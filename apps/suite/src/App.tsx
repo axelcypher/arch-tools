@@ -8,6 +8,8 @@ import { UpdateKnopf } from '@core/ui/UpdateKnopf';
 import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
 import { sperrenFreigeben } from './sperren';
 import { useRahmen } from './store';
+import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from '@core/ui/Rueckfrage';
+import { speichernImTab } from '@core/platform/rahmen';
 
 const log = logger('rahmen');
 
@@ -98,7 +100,7 @@ export function App() {
 
   const herausloesen = async (id: string) => {
     const info = appInfo(id)!;
-    if (status[id]?.dirty && !window.confirm(`${info.name}: ${info.beimUmzug} Herauslösen?`)) return;
+    if (status[id]?.dirty && !(await bestaetigen(`${info.name} herauslösen?`, info.beimUmzug, 'Herauslösen'))) return;
     if (!desktop) {
       window.open(appAdresse(id, 'fenster'), `arch-tools-${id}`);
       herausgeloest(id);
@@ -136,15 +138,25 @@ export function App() {
     }
   };
 
-  const tabSchliessen = (id: string) => {
-    if (status[id]?.dirty && !window.confirm(`${appInfo(id)?.name}: Ungespeicherte Änderungen verwerfen und schließen?`)) return;
+  /** ungespeicherte Änderungen eines Tabs: speichern (in der App), verwerfen oder abbrechen; true = weiter */
+  const tabFreigeben = async (id: string): Promise<boolean> => {
+    if (!status[id]?.dirty) return true;
+    const frame = rahmen.current.get(id);
+    return aenderungenSpeichern(`${appInfo(id)?.name}${status[id]?.name ? ` – ${status[id].name}` : ''}`, () => (frame ? speichernImTab(frame) : false));
+  };
+
+  const tabSchliessen = async (id: string) => {
+    if (status[id]?.dirty && !(await tabFreigeben(id))) return;
     schliessen(id);
     void sperrenFreigeben(id);
   };
 
   const fensterSchliessen = async () => {
-    const offen = tabs.filter((id) => status[id]?.dirty).map((id) => appInfo(id)?.name);
-    if (offen.length && !window.confirm(`Ungespeicherte Änderungen in ${offen.join(', ')} verwerfen und beenden?`)) return;
+    for (const id of tabs) {
+      if (!status[id]?.dirty) continue;
+      waehlen(id);
+      if (!(await tabFreigeben(id))) return;
+    }
     await win?.close();
   };
 
@@ -166,7 +178,7 @@ export function App() {
                 className={`rahmen-tab${id === aktiv ? ' aktiv' : ''}`}
                 title={s?.name ? `${info.name} – ${s.name}` : info.name}
                 onClick={() => waehlen(id)}
-                onAuxClick={(e) => e.button === 1 && tabSchliessen(id)}
+                onAuxClick={(e) => e.button === 1 && void tabSchliessen(id)}
               >
                 <img src={`apps/${id}/favicon.svg`} alt="" />
                 <span className="rahmen-tab-name">{info.name}</span>
@@ -189,7 +201,7 @@ export function App() {
                   aria-label={`${info.name} schließen`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    tabSchliessen(id);
+                    void tabSchliessen(id);
                   }}
                 >
                   ×
@@ -282,6 +294,7 @@ export function App() {
         )}
       </main>
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
+      <RueckfrageHost />
     </div>
   );
 }

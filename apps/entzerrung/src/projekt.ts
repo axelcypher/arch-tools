@@ -8,26 +8,30 @@ import { ENDUNG, entpacken, packen } from './datei';
 import { neueId, neuesFoto } from './model';
 import { fotoSchreiben, standLesen, standSchreiben } from './speicher';
 import { useEntz } from './store';
+import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
 
 /** Projekt neu, öffnen, speichern, Fotos hinzufügen und automatisch zwischenspeichern */
 
 const log = logger('projekt');
 
-function verwerfenOk(): boolean {
-  return !useEntz.getState().dirty || window.confirm('Ungespeicherte Änderungen verwerfen?');
+/** vor Neu/Öffnen: ungespeicherte Änderungen speichern, verwerfen oder abbrechen; true = weiter */
+export async function verwerfenOk(): Promise<boolean> {
+  const s = useEntz.getState();
+  if (!s.dirty) return true;
+  return aenderungenSpeichern(s.dateiname?.split(/[\\/]/).pop() ?? s.doc.fotos[0]?.name ?? 'Entzerrung', () => speichern());
 }
 
-export function neu() {
-  if (!verwerfenOk()) return;
+export async function neu() {
+  if (!(await verwerfenOk())) return;
   useEntz.getState().laden({ fotos: [] }, {}, null);
   log.info('Neues Projekt');
 }
 
 export async function oeffnen(datei?: File) {
-  if (!datei && !verwerfenOk()) return;
+  if (!datei && !(await verwerfenOk())) return;
   const f = datei ?? (await pickFile(`.${ENDUNG}`));
   if (!f) return;
-  if (datei && !verwerfenOk()) return;
+  if (datei && !(await verwerfenOk())) return;
   try {
     const { doc, fotos } = entpacken(new Uint8Array(await f.arrayBuffer()));
     useEntz.getState().laden(doc, fotos, f.name);
@@ -36,13 +40,14 @@ export async function oeffnen(datei?: File) {
   } catch (e) {
     const text = e instanceof Error ? e.message : String(e);
     log.error(`Öffnen fehlgeschlagen: ${f.name}`, text);
-    window.alert(text);
+    await oeffnenFehlgeschlagen(e, f.name, 'Die geöffnete Entzerrung bleibt unverändert.');
   }
 }
 
-export async function speichern() {
+/** true, wenn gespeichert wurde */
+export async function speichern(): Promise<boolean> {
   const s = useEntz.getState();
-  if (!s.doc.fotos.length) return;
+  if (!s.doc.fotos.length) return false;
   const vorschlag = s.dateiname ?? `${s.doc.fotos[0].name}.${ENDUNG}`;
   try {
     const name = await saveMergedFile({
@@ -58,10 +63,12 @@ export async function speichern() {
       useEntz.getState().gespeichert(name);
       log.info(`Gespeichert: ${name}`);
     }
+    return !!name;
   } catch (e) {
     const text = e instanceof Error ? e.message : String(e);
     log.error('Speichern fehlgeschlagen', text);
-    window.alert(`Speichern fehlgeschlagen: ${text}`);
+    await meldung('Speichern fehlgeschlagen', 'Die Entzerrung ließ sich nicht speichern. Die Änderungen bleiben in der App erhalten.', e);
+    return false;
   }
 }
 
@@ -81,7 +88,7 @@ export async function fotosHinzufuegen(dateien?: File[]) {
     } catch (e) {
       const text = e instanceof Error ? e.message : String(e);
       log.error('Foto konnte nicht hinzugefügt werden', text);
-      window.alert(text);
+      await meldung('Foto ließ sich nicht hinzufügen', `${d.name}: ${text}`, e);
     }
   }
 }
@@ -100,7 +107,7 @@ export const entzZuFoto = (fotoPfad: string) => `${fotoPfad.replace(/\.[^./\\]+$
  * `root` ist der Fotoordner, `pfad` das Foto darin.
  */
 export async function fotoImProjektOeffnen(fs: ProjektordnerZugriff, root: string, pfad: string): Promise<void> {
-  if (!verwerfenOk()) return;
+  if (!(await verwerfenOk())) return;
   const entz = entzZuFoto(pfad);
   const ziel = verbinde(root, entz);
   try {
@@ -123,7 +130,7 @@ export async function fotoImProjektOeffnen(fs: ProjektordnerZugriff, root: strin
   } catch (e) {
     const text = e instanceof Error ? e.message : String(e);
     log.error(`Öffnen fehlgeschlagen: ${pfad}`, text);
-    window.alert(text);
+    await oeffnenFehlgeschlagen(e, pfad, 'Die geöffnete Entzerrung bleibt unverändert.');
   }
 }
 

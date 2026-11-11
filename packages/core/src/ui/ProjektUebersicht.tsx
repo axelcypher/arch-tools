@@ -187,7 +187,11 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
           onChange={(e) => setSuche(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && q && treffer[0]) onOeffnen(treffer[0]);
-            if (e.key === 'Escape') setSuche('');
+            // Esc verwirft zuerst die Suche, erst dann schließt es die Übersicht
+            if (e.key === 'Escape' && suche) {
+              e.stopPropagation();
+              setSuche('');
+            }
           }}
           autoFocus
         />

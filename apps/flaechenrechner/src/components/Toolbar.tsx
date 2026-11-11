@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { computeProject } from '@core/calc';
 import { projectToCsv } from '../core/export';
 import { readProjectFile } from '@core/archive';
-import { ProjectFormatError } from '@core/serialize';
 import { isTauri, saveTextFile } from '@core/platform/files';
 import { exportDateiname, exportOrdner, projektDateiWaehlen, projektSpeichern, speichernAbwarten } from '@core/platform/projektDatei';
 import { mitVorlage } from '../platform/vorlage';
@@ -12,35 +11,56 @@ import type { Tool } from '../store/store';
 import { restoreIfcModel, useEditor } from '../store/store';
 import { IfcImportDialog } from './IfcImportDialog';
 import { logger } from '@core/platform/log';
+import { mitDatei } from '@core/platform/dateiFehler';
+import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
 
 const log = logger('datei');
 
-const verwerfenOk = () => !useEditor.getState().dirty || window.confirm('Ungespeicherte Änderungen verwerfen?');
+/** Projekt speichern (Strg+S, „Speichern unter“, Rückfrage vor Öffnen/Beenden); true, wenn gespeichert wurde */
+export async function projektSpeichernAktion(unter = false): Promise<boolean> {
+  eingabeAbschliessen();
+  await speichernAbwarten(); // Strg+S während eines Speicherns: danach den aktuellen Stand speichern
+  const { project: p, basis, datei, dokument } = useEditor.getState();
+  try {
+    const r = await projektSpeichern({ project: p, basis, datei, unter, app: __APP_VERSION__, filterName: 'Flächenprojekt', fuerDatei: mitVorlage });
+    // während des Speicherns weitergezeichnet? Dann bleibt der neue Stand ungespeichert (mit den Änderungen aus der Datei).
+    if (r) useEditor.getState().markSaved(r.project, r.datei, p, dokument);
+    return !!r;
+  } catch (e) {
+    log.error('Speichern fehlgeschlagen', e);
+    await meldung('Speichern fehlgeschlagen', 'Das Projekt ließ sich nicht speichern. Die Änderungen bleiben in der App erhalten.', e);
+    return false;
+  }
+}
+
+/** vor Öffnen/Neu: ungespeicherte Änderungen speichern, verwerfen oder abbrechen; true = weiter */
+export async function verwerfenOk(): Promise<boolean> {
+  eingabeAbschliessen();
+  return !useEditor.getState().dirty || (await aenderungenSpeichern(useEditor.getState().project.name, () => projektSpeichernAktion()));
+}
 
 /** Projektdatei über den Dateidialog öffnen (Strg+O, auch aus der Projektübersicht) */
 export async function projektDateiOeffnen() {
-  eingabeAbschliessen();
-  if (!verwerfenOk()) return;
+  if (!(await verwerfenOk())) return;
   let name = '';
   try {
     const f = await projektDateiWaehlen({ datei: useEditor.getState().datei });
     if (!f) return;
     name = f.pfad ?? f.name;
     const done = log.time(`Öffnen: ${name}`);
-    const p = readProjectFile(f.bytes);
+    const p = mitDatei(f.name, () => readProjectFile(f.bytes));
     useEditor.getState().loadProject(p, p, name);
     done({ bytes: f.bytes.byteLength, geschosse: p.storeys.length, dateien: p.dateien?.length ?? 0 });
     void restoreIfcModel(p);
   } catch (e) {
     log.error(`Öffnen fehlgeschlagen: ${name}`, e);
-    alert(e instanceof ProjectFormatError ? e.message : `Datei konnte nicht geladen werden: ${e instanceof Error ? e.message : String(e)}`);
+    await oeffnenFehlgeschlagen(e, name);
   }
 }
 
-/** Projekt aus der Projektübersicht übernehmen; false, wenn ungespeicherte Änderungen nicht verworfen werden sollen */
-export function projektUebernehmen(p: Project, datei: string): boolean {
-  eingabeAbschliessen();
-  if (!verwerfenOk()) return false;
+/** Projekt aus der Projektübersicht übernehmen; false, wenn abgebrochen wurde (ungespeicherte Änderungen) */
+export async function projektUebernehmen(p: Project, datei: string): Promise<boolean> {
+  if (!(await verwerfenOk())) return false;
   useEditor.getState().loadProject(p, p, datei);
   void restoreIfcModel(p);
   return true;
@@ -63,29 +83,15 @@ export function Toolbar() {
   const dirty = useEditor((s) => s.dirty);
   const st = useEditor.getState();
 
-  const confirmDiscard = () => !useEditor.getState().dirty || window.confirm('Ungespeicherte Änderungen verwerfen?');
-
   const [ifcOpen, setIfcOpen] = useState(false);
 
-  const onNew = () => {
-    if (confirmDiscard()) st.newProject();
+  const onNew = async () => {
+    if (await verwerfenOk()) st.newProject();
   };
 
   const onOpen = () => projektDateiOeffnen();
 
-  const onSave = async (unter = false) => {
-    eingabeAbschliessen();
-    await speichernAbwarten(); // Strg+S während eines Speicherns: danach den aktuellen Stand speichern
-    const { project: p, basis, datei, dokument } = useEditor.getState();
-    try {
-      const r = await projektSpeichern({ project: p, basis, datei, unter, app: __APP_VERSION__, filterName: 'Flächenprojekt', fuerDatei: mitVorlage });
-      // während des Speicherns weitergezeichnet? Dann bleibt der neue Stand ungespeichert (mit den Änderungen aus der Datei).
-      if (r) useEditor.getState().markSaved(r.project, r.datei, p, dokument);
-    } catch (e) {
-      log.error('Speichern fehlgeschlagen', e);
-      alert(`Speichern fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
+  const onSave = (unter = false) => projektSpeichernAktion(unter);
 
   // Strg+S / Strg+Umschalt+S / Strg+O
   useEffect(() => {
@@ -117,14 +123,14 @@ export function Toolbar() {
       });
     } catch (e) {
       log.error('CSV-Export fehlgeschlagen', e);
-      alert(`Export fehlgeschlagen: ${String(e)}`);
+      await meldung('Export fehlgeschlagen', 'Die CSV-Datei ließ sich nicht schreiben.', e);
     }
   };
 
   return (
     <div className="toolbar">
       <div className="tb-group">
-        <button onClick={onNew} title="Neues Projekt">
+        <button onClick={() => void onNew()} title="Neues Projekt">
           Neu
         </button>
         <button onClick={() => void onOpen()} title="Projekt öffnen (Strg+O)">

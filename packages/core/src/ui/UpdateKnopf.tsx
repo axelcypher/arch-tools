@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RELEASE_SEITE, starteUpdatePruefung, useUpdate } from '../platform/update';
+import { useEscSchliessen } from './Dialog';
 
 const mb = (bytes: number) => (bytes / 1024 / 1024).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
@@ -42,11 +43,7 @@ function UpdateDialog({ app, dirty, onClose }: { app: string; dirty: boolean; on
   const { status, version, notizen, geladen, gesamt, fehler, suchen, installieren } = useUpdate();
   const laeuft = status === 'laedt' || status === 'installiert';
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !laeuft && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, laeuft]);
+  useEscSchliessen(laeuft ? undefined : onClose);
 
   return (
     <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !laeuft && onClose()}>

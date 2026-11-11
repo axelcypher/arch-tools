@@ -11,7 +11,6 @@ import { EinstellungenAnsicht } from './components/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
 import { FormularHinzufuegenDialog, useHinzufuegenDialog } from './components/FormularHinzufuegen';
 import { MenueHost, MenueKnopf } from './components/Menue';
-import { RueckfrageHost } from './components/Rueckfrage';
 import { useAntrag } from './antragStore';
 import { DateiAnsicht } from './components/dokumente/DateiAnsicht';
 import { Symbol } from './components/Symbol';
@@ -178,7 +177,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Formulare" name={name} dirty={geaendert} onOpenLog={() => setDialog('log')} />
+      <TitleBar app="Formulare" name={name} dirty={geaendert} onOpenLog={() => setDialog('log')} zeichenflaeche={false} />
       <div className="toolbar">
         {formularSichtbar && (
           <div className="tb-group">
@@ -397,7 +396,6 @@ export function App() {
         />
       )}
       <MenueHost />
-      <RueckfrageHost />
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
       <GesetzModal />
       {dialog === 'schnellwahl' && <Schnellwahl onClose={() => setDialog(null)} />}

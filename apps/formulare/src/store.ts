@@ -700,11 +700,33 @@ function kartenAenderungen(k: OffeneKarte): PkAenderung[] {
 
 const fehlertext = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+class KeinFormular extends Error {
+  constructor(readonly ursache: unknown) {
+    super(fehlertext(ursache));
+  }
+}
+
+/** Meldung, wenn eine Datei kein lesbares FORMA-Formular ist (die technische Einzelheit steht im Protokoll) */
+export const KEIN_FORMULAR = 'Das ist kein FORMA-Formular (.frmsjf). Bitte eine Formulardatei aus dem FORMA-Projektordner wählen.';
+
 export const useFormulare = create<FormulareState>()((set, get) => {
   const fehler = (text: string, e?: unknown) => {
     const t = e === undefined ? text : `${text}: ${fehlertext(e)}`;
     log.error(t);
     set({ meldung: { art: 'fehler', text: t } });
+  };
+  /** Datei ließ sich nicht als Formular lesen: Alltagssprache in der Meldung, Technik ins Protokoll */
+  const nichtLesbar = (name: string, e: unknown) => {
+    log.error(`${name} lässt sich nicht öffnen: ${fehlertext(e)}`);
+    set({ meldung: { art: 'fehler', text: `„${name}“ ließ sich nicht öffnen. ${e instanceof KeinFormular ? KEIN_FORMULAR : fehlertext(e)} Das geöffnete Formular bleibt unverändert.` } });
+  };
+  /** liest das Formular zur Probe; ein Lesefehler heißt: keine FORMA-Formulardatei */
+  const pruefen = (bytes: Uint8Array) => {
+    try {
+      aufbereiten(bytes);
+    } catch (e) {
+      throw new KeinFormular(e);
+    }
   };
 
   const oeffnen = async (projekt: Projekt | null, pfad: string, name: string, bytes: Uint8Array, sperre: SperrZustand) => {
@@ -932,12 +954,19 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     formularOeffnen: async (eintrag) => {
       const { ds, projekt } = get();
       if (!ds || !projekt) return;
+      // erst lesen und prüfen – ein fehlgeschlagenes Öffnen lässt das geöffnete Formular unverändert
+      let bytes: Uint8Array;
+      try {
+        const b = await ds.lies(projekt.root, eintrag.pfad);
+        if (!b) throw new Error('Die Datei wurde nicht gefunden.');
+        pruefen(b);
+        bytes = b;
+      } catch (e) {
+        nichtLesbar(eintrag.name, e);
+        return;
+      }
       await get().schliessen();
       try {
-        const bytes = await ds.lies(projekt.root, eintrag.pfad);
-        if (!bytes) throw new Error('Datei nicht gefunden');
-        // erst prüfen, ob die Datei lesbar ist – dann sperren
-        aufbereiten(bytes);
         const { zustand: sperre, aufgeraeumt } = await sperren(ds, projekt.root, eintrag.pfad);
         // Zwischen Lesen und Sperren könnte FORMA gespeichert haben: mit Sperre noch einmal lesen
         const frisch = sperre.art === 'eigen' ? ((await ds.lies(projekt.root, eintrag.pfad)) ?? bytes) : bytes;
@@ -955,11 +984,20 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     dateiOeffnen: async () => {
       const datei = await pickFile('.frmsjf');
       if (!datei) return;
+      // erst lesen und prüfen, dann das bisherige Formular schließen – bei einem Fehler bleibt es offen
+      let bytes: Uint8Array;
+      try {
+        bytes = new Uint8Array(await datei.arrayBuffer());
+        pruefen(bytes);
+      } catch (e) {
+        nichtLesbar(datei.name, e);
+        return;
+      }
       await get().schliessen();
       try {
-        await oeffnen(null, datei.name, datei.name.replace(/\.frmsjf$/i, ''), new Uint8Array(await datei.arrayBuffer()), { art: 'ohne' });
+        await oeffnen(null, datei.name, datei.name.replace(/\.frmsjf$/i, ''), bytes, { art: 'ohne' });
       } catch (e) {
-        fehler(`${datei.name} lässt sich nicht öffnen`, e);
+        nichtLesbar(datei.name, e);
       }
     },
 

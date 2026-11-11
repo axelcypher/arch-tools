@@ -10,6 +10,7 @@ import { KostenDruck } from './components/KostenDruck';
 import { leseKatalog, katalogSpeichern } from './katalog';
 import { useKosten } from './store';
 import { projekt, projektMitAnbau, projektMitKosten } from './testdaten';
+import { farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -48,6 +49,13 @@ const knopf = (host: Element, text: string) => [...host.querySelectorAll('button
 const kosten = () => useKosten.getState().project.kosten!;
 
 describe('Kostenermittlung', () => {
+  it('Farbschema wechselt sofort (Menü ◐)', () => {
+    useKosten.getState().load(createProject());
+    const host = render(App);
+    expect(farbschemaWechseln(host, 'Dunkel')).toBe('dunkel');
+    expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
+  });
+
   it('zeigt ohne Projekt den Einstieg; Druck und Excel sind gesperrt', () => {
     useKosten.getState().load(createProject());
     const host = render(App);

@@ -3,6 +3,7 @@ import { fmt2, parseNum } from '@core/format';
 import type { Anschrift, KontaktArt, Project, ProjectMeta } from '@core/model';
 import { flurText, plzOrt } from '@core/model';
 import { useEditor } from '../store/store';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 /** Projektdaten in der Seitenleiste: nur Anzeige, Bearbeiten über den Dialog. */
 export function ProjektInfo() {
@@ -57,6 +58,7 @@ export function ProjektInfo() {
 }
 
 function ProjektDialog({ project, onClose }: { project: Project; onClose: () => void }) {
+  useEscSchliessen(onClose);
   const [name, setName] = useState(project.name);
   const [m, setM] = useState<ProjectMeta>(() => structuredClone(project.meta));
   const [flaeche, setFlaeche] = useState(project.meta.grundstueck.flaeche !== undefined ? fmt2(project.meta.grundstueck.flaeche).replace(/\./g, '') : '');
@@ -84,7 +86,7 @@ function ProjektDialog({ project, onClose }: { project: Project; onClose: () => 
 
   return (
     <div className="modal-backdrop">
-      <div className="modal modal-wide projekt-dialog" onKeyDown={(e) => e.key === 'Escape' && onClose()}>
+      <div className="modal modal-wide projekt-dialog">
         <h3>Projektdaten</h3>
 
         <h4>Projekt</h4>

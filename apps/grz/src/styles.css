@@ -34,6 +34,17 @@
   padding: 4px 6px;
 }
 .grz-skizze {
+  /* Lageplan wie die Zeichenfläche des Flächenrechners: helle Planfarben, im dunklen Schema als Ganzes
+     invertiert (Option „Zeichenfläche abdunkeln“); Papier (Druck) bleibt hell */
+  --text: #1f2328;
+  --muted: #6b7280;
+  --border: #d8dbe0;
+  --panel: #ffffff;
+  --accent: #2a5bd7;
+  --accent-soft: #e6edfb;
+  --sel: #ff7a00;
+  --danger: #c0392b;
+  filter: var(--canvas-filter);
   width: 100%;
   height: 360px;
   display: block;

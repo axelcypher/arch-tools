@@ -10,6 +10,7 @@ import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import { sperreVermerken } from './eigeneSperren';
 import { mitAenderungen, useFormulare } from './store';
+import { farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -162,6 +163,12 @@ async function projektOeffnen(host: HTMLElement, kuerzel: string) {
 }
 
 describe('Formulare', () => {
+  it('Farbschema wechselt sofort (Menü ◐), ohne Option „Zeichenfläche abdunkeln“', async () => {
+    const host = await render();
+    expect(farbschemaWechseln(host, 'Dunkel')).toBe('dunkel');
+    expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
+  });
+
   it('findet Projekte mit Titel und ihre Formulare (ohne Archiv)', async () => {
     const host = await render();
     // Projektübersicht statt Liste in der Seitenleiste: je Quelle eine Gruppe, beim Start eingeklappt

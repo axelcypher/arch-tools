@@ -6,10 +6,9 @@ import { Report } from './components/Report';
 import { Sidebar } from './components/Sidebar';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
-import { projektDateiOeffnen, projektUebernehmen, Toolbar } from './components/Toolbar';
+import { projektDateiOeffnen, projektSpeichernAktion, projektUebernehmen, Toolbar } from './components/Toolbar';
 import { isTauri } from '@core/platform/files';
 import { ProjektWahl } from '@core/ui/ProjektWahl';
-import { applyTheme, useTheme } from '@core/platform/theme';
 import { useEditor } from './store/store';
 
 const View3D = lazy(() => import('./components/View3D'));
@@ -21,14 +20,10 @@ export function App() {
   const setMainView = useEditor((s) => s.setMainView);
   const name = useEditor((s) => s.project.name);
   const dirty = useEditor((s) => s.dirty);
-  const theme = useTheme((s) => s.theme);
-  const canvasDunkel = useTheme((s) => s.canvasDunkel);
   const [logOpen, setLogOpen] = useState(false);
   const datei = useEditor((s) => s.datei);
   // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
   const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
-
-  useEffect(() => applyTheme(theme, canvasDunkel), [theme, canvasDunkel]);
 
   useEffect(() => {
     document.title = `${dirty ? '• ' : ''}${name} – Flächenrechner`;
@@ -44,7 +39,15 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Flächenrechner" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="flaechen" onProjekte={() => setProjekteOffen(true)} />
+      <TitleBar
+        app="Flächenrechner"
+        name={name}
+        dirty={dirty}
+        onOpenLog={() => setLogOpen(true)}
+        regeln="flaechen"
+        onProjekte={() => setProjekteOffen(true)}
+        onSpeichern={() => projektSpeichernAktion()}
+      />
       <Toolbar />
       <div className="workspace">
         <Sidebar />
@@ -76,7 +79,9 @@ export function App() {
         <ProjektWahl
           app="Flächenrechner"
           offeneDatei={datei}
-          onGewaehlt={(g) => projektUebernehmen(g.project, g.datei) && setProjekteOffen(false)}
+          onGewaehlt={async (g) => {
+            if (await projektUebernehmen(g.project, g.datei)) setProjekteOffen(false);
+          }}
           onSchliessen={() => setProjekteOffen(false)}
           onDateiOeffnen={() => {
             setProjekteOffen(false);

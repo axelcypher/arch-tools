@@ -8,6 +8,7 @@ import { GrzGfzView } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
 import { useGrz } from './store';
 import { projekt } from './testdaten';
+import { farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -39,6 +40,27 @@ const change = (el: HTMLSelectElement | HTMLInputElement, value: string) =>
   });
 
 describe('GRZ-Nachweis', () => {
+  it('Esc schließt Druck und Excel-Dialog (gemeinsamer Dialog-Stapel)', () => {
+    useGrz.getState().load(projekt());
+    const host = render(App);
+    const esc = () => act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Nachweis drucken'))!.click());
+    expect(host.querySelector('.report-backdrop')).not.toBeNull();
+    esc();
+    expect(host.querySelector('.report-backdrop')).toBeNull();
+    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Excel'))!.click());
+    expect(host.querySelector('.modal')).not.toBeNull();
+    esc();
+    expect(host.querySelector('.modal')).toBeNull();
+  });
+
+  it('Farbschema wechselt sofort (Menü ◐)', () => {
+    useGrz.getState().load(createProject());
+    const host = render(App);
+    expect(farbschemaWechseln(host, 'Dunkel')).toBe('dunkel');
+    expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
+  });
+
   it('zeigt ohne Projekt den Einstieg', () => {
     useGrz.getState().load(createProject());
     expect(render(App).textContent).toContain('Projekt oder IFC öffnen');

@@ -10,9 +10,11 @@ import { baunvoLabel, bauoLabel, massNachweis } from '../massNutzung';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useGrz } from '../store';
 import { ANRECHNUNG, AUFENTHALT, GELAENDE_QUELLE, GF_ART, HAFTUNG, roemisch, STATUS, zahl } from '../texte';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 /** Druckbarer Nachweis des Maßes der baulichen Nutzung (GRZ, GFZ, Vollgeschosse) – über den Druckdialog auch als PDF. */
 export function NachweisDruck({ onClose }: { onClose: () => void }) {
+  useEscSchliessen(onClose);
   const project = useGrz((s) => s.project);
   const n = useMemo(() => massNachweis(project), [project]);
   const [plan, setPlan] = useState(true);

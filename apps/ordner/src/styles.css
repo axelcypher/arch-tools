@@ -112,7 +112,7 @@
   width: 80px;
   text-align: right !important;
   font-size: 11px;
-  color: #1f6b3d;
+  color: var(--ok-text);
 }
 .po-plan tr.vorhanden .po-status {
   color: var(--muted);
@@ -146,9 +146,9 @@
 .po-ergebnis {
   margin-top: 10px;
   padding: 10px 12px;
-  border: 1px solid #9fd3b3;
-  background: #e9f6ee;
-  color: #1f2328;
+  border: 1px solid var(--ok-border);
+  background: var(--ok-bg);
+  color: var(--text);
   border-radius: 6px;
   font-size: 12px;
 }
@@ -163,9 +163,9 @@
 }
 .po-meldung {
   padding: 6px 8px;
-  border: 1px solid #9fd3b3;
-  background: #e9f6ee;
-  color: #1f2328;
+  border: 1px solid var(--ok-border);
+  background: var(--ok-bg);
+  color: var(--text);
   border-radius: 4px;
   font-size: 12px;
 }
@@ -192,19 +192,19 @@
   padding: 1px 7px;
   border-radius: 999px;
   color: var(--muted);
-  background: #eef0f2;
+  background: var(--chip-bg);
 }
 .po-befunde li.ok .po-befund-art {
-  color: #1f6b3d;
-  background: #e2f2e8;
+  color: var(--ok-text);
+  background: var(--ok-bg);
 }
 .po-befunde li.warnung .po-befund-art {
-  color: #8a5a0b;
-  background: #fbefd6;
+  color: var(--warn-text);
+  background: var(--warn-bg);
 }
 .po-befunde li.fehler .po-befund-art {
-  color: #a3281d;
-  background: #fbe4e1;
+  color: var(--fehler-text);
+  background: var(--fehler-bg);
 }
 .po-pfade {
   margin: 4px 0 0;
@@ -391,8 +391,8 @@
   height: 18px;
   border-radius: 50%;
   font-size: 11px;
-  background: #eef0f2;
-  color: var(--muted);
+  background: var(--chip-bg);
+  color: var(--text);
 }
 .po-schritte li.aktiv button {
   border-color: var(--accent);
@@ -402,7 +402,7 @@
 .po-schritte li.aktiv .po-schritt-nr,
 .po-schritte li.erledigt .po-schritt-nr {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .po-kontext {
   margin: 0 0 10px;

@@ -10,6 +10,8 @@ import { openPdf } from '../platform/pdf';
 import { mapStorey, useEditor } from '../store/store';
 import { Field, NumberField } from '@core/ui/fields';
 import { logger } from '@core/platform/log';
+import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 const log = logger('plan');
 
@@ -55,7 +57,8 @@ export function BackgroundPanel({ storey }: { storey: Storey }) {
         setBgMitQuelle(res.background, f.name, 'dxf', bytes);
         afterLoad(false);
         if (!res.unitDetected) {
-          alert(
+          void meldung(
+            'Einheit der DXF-Datei prüfen',
             `Die DXF-Datei enthält keine Einheitenangabe. Angenommen: ${DXF_UNITS.find((u) => u.scale === res.background.scale)?.label ?? 'Meter'}. Bitte unter „Einheit“ prüfen oder kalibrieren.`,
           );
         }
@@ -69,7 +72,7 @@ export function BackgroundPanel({ storey }: { storey: Storey }) {
       }
     } catch (e) {
       log.error('Plan konnte nicht geladen werden', e);
-      alert(e instanceof Error ? e.message : String(e));
+      void meldung('Plan ließ sich nicht laden', `${e instanceof Error ? e.message : String(e)}\nDer bisherige Hintergrundplan bleibt unverändert.`, e);
     } finally {
       setBusy(null);
     }
@@ -104,7 +107,7 @@ export function BackgroundPanel({ storey }: { storey: Storey }) {
       afterLoad(!massstab);
     } catch (e) {
       log.error('PDF konnte nicht gerendert werden', e);
-      alert(`PDF konnte nicht gerendert werden: ${e instanceof Error ? e.message : String(e)}`);
+      void meldung('PDF ließ sich nicht darstellen', 'Die gewählte Seite ließ sich nicht als Hintergrundplan aufbereiten.', e);
     } finally {
       setBusy(null);
     }
@@ -196,7 +199,7 @@ export function BackgroundPanel({ storey }: { storey: Storey }) {
             <button className="small" onClick={load}>
               Ersetzen
             </button>
-            <button className="small danger" onClick={() => window.confirm('Hintergrundplan entfernen?') && setBg(undefined)}>
+            <button className="small danger" onClick={() => void bestaetigen('Hintergrundplan entfernen?', 'Der Plan wird aus dem Geschoss entfernt.', 'Entfernen', true).then((ok) => ok && setBg(undefined))}>
               Entfernen
             </button>
           </div>
@@ -252,6 +255,7 @@ function PdfImportDialog({
   const [page, setPage] = useState(1);
   const [known, setKnown] = useState(true);
   const [massstab, setMassstab] = useState<number | undefined>(100);
+  useEscSchliessen(onCancel);
   return (
     <div className="modal-backdrop">
       <form

@@ -4,6 +4,8 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { aktuell, mitEbene, useEntz } from './store';
+import { oeffnen } from './projekt';
+import { farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -44,6 +46,22 @@ const ECKEN = [
 ];
 
 describe('Entzerrung', () => {
+  it('defekte Projektdatei: Meldung mit Dateiname, die geöffnete Entzerrung bleibt (Q-6)', async () => {
+    const host = render();
+    const vorher = useEntz.getState().doc;
+    await act(async () => void oeffnen(new File(['kein zip'], 'Fassade.entz')));
+    for (let i = 0; i < 10 && !host.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
+    expect(host.querySelector('.modal.rf')!.textContent).toContain('Die Datei „Fassade.entz“ ließ sich nicht lesen');
+    expect(host.querySelector('.modal.rf')!.textContent).toContain('Die geöffnete Entzerrung bleibt unverändert.');
+    expect(useEntz.getState().doc).toBe(vorher);
+  });
+
+  it('Farbschema wechselt sofort (Menü ◐)', () => {
+    const host = render();
+    expect(farbschemaWechseln(host, 'Dunkel')).toBe('dunkel');
+    expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
+  });
+
   it('ohne Foto: Hinweis, Entzerrt gesperrt', () => {
     const host = render();
     expect(host.textContent).toContain('Foto hinzufügen');

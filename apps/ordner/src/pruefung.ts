@@ -42,6 +42,8 @@ export interface ProjektQuelle {
   alteProjektJson?: boolean;
   /** Projektdatei vorhanden, aber nicht lesbar */
   fehler?: string;
+  /** eine alte projekt.json liegt im Ordner, ist aber nicht lesbar (kaputt oder fremd) – sie bleibt unangetastet */
+  alteProjektJsonDefekt?: string;
 }
 
 export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struktur, projekt: ProjektAngaben | null, quelle: ProjektQuelle = {}): Pruefergebnis {
@@ -62,6 +64,13 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
       text: `${beschreibung(projekt)}. „Projekt ergänzen“ legt die Projektdatei mit diesen Stammdaten an; die ${PROJEKT_DATEI} bleibt liegen.`,
     });
   else befunde.push({ art: 'warnung', titel: 'Projektdatei (.oap) fehlt', text: 'Jedes Projekt hat eine Projektdatei mit den Stammdaten. „Projekt ergänzen“ legt sie an. Geprüft wird gegen die vollständige Struktur.' });
+  if (quelle.alteProjektJsonDefekt)
+    befunde.push({
+      art: 'hinweis',
+      titel: `Alte ${PROJEKT_DATEI} nicht lesbar`,
+      text: `Im Ordner liegt eine ${PROJEKT_DATEI} (Stammdaten bis Version 0.2), die sich nicht lesen lässt: ${quelle.alteProjektJsonDefekt}. Die Datei bleibt unverändert liegen.`,
+      pfade: [PROJEKT_DATEI],
+    });
   if (projekt) {
     const soll = sichererName(nameAus(struktur.ordnername, { nummer: projekt.nummer, kurzname: projekt.kurzname, jahr: projekt.angelegt.slice(0, 4) }));
     // ohne Kurzname (etwa eine Projektdatei aus der Formulare-App) lässt sich der Name nicht beurteilen

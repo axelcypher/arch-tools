@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { useRahmen } from './store';
+import { useTheme } from '@core/platform/theme';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -32,6 +33,14 @@ const karte = (host: Element, name: string) => [...host.querySelectorAll('.rahme
 const tab = (host: Element, name: string) => [...host.querySelectorAll('.rahmen-tab')].find((k) => k.textContent?.includes(name)) as HTMLElement;
 
 describe('Rahmen-App', () => {
+  it('Farbschema: Wahl in einem Tab (localStorage) wirkt sofort im Rahmen', () => {
+    render();
+    useTheme.getState().setWahl('hell');
+    localStorage.setItem('flaechenrechner.theme', 'dunkel');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'flaechenrechner.theme' }));
+    expect(document.documentElement.dataset.theme).toBe('dunkel');
+  });
+
   it('Apps als Tabs öffnen, wechseln (die anderen bleiben geladen), schließen; offene Tabs bleiben für den nächsten Start', () => {
     const host = render();
     expect(host.querySelectorAll('.rahmen-karte')).toHaveLength(6);
@@ -50,7 +59,7 @@ describe('Rahmen-App', () => {
     expect(useRahmen.getState().aktiv).toBe('formulare');
   });
 
-  it('Meldungen der App im Tab: Projektname und ungespeicherte Änderungen; Rückfrage beim Schließen', () => {
+  it('Meldungen der App im Tab: Projektname und ungespeicherte Änderungen; Rückfrage beim Schließen', async () => {
     const host = render();
     act(() => karte(host, 'Flächenrechner').click());
     const f = host.querySelector('iframe')!;
@@ -64,11 +73,19 @@ describe('Rahmen-App', () => {
       window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'X', name: 'fremd', dirty: false }, origin: 'https://example.org', source: f.contentWindow }));
     });
     expect(tab(host, 'Flächenrechner').textContent).toContain('EFH Musterweg');
-    const nein = vi.fn(() => false);
-    window.confirm = nein;
+    // Rückfrage mit drei Knöpfen statt window.confirm
+    const confirm = vi.fn(() => true);
+    window.confirm = confirm;
     act(() => (tab(host, 'Flächenrechner').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
-    expect(nein).toHaveBeenCalled();
+    const dialog = () => host.querySelector('.modal.rf');
+    expect(dialog()?.textContent).toContain('Änderungen an „Flächenrechner – EFH Musterweg“ speichern?');
+    expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Nicht speichern', 'Speichern']);
+    await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
     expect(useRahmen.getState().tabs).toEqual(['flaechenrechner']);
+    act(() => (tab(host, 'Flächenrechner').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
+    await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Nicht speichern')!.click());
+    expect(useRahmen.getState().tabs).toEqual([]);
+    expect(confirm).not.toHaveBeenCalled();
   });
 
   it('Herauslösen (Browser: neues Fenster) nimmt den Tab weg; Andocken holt ihn zurück', () => {

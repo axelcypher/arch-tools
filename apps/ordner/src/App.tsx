@@ -41,7 +41,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Projektordner" name={start?.ordner.name ?? ''} dirty={false} onOpenLog={() => setLogOpen(true)} />
+      <TitleBar app="Projektordner" name={start?.ordner.name ?? ''} dirty={false} onOpenLog={() => setLogOpen(true)} zeichenflaeche={false} />
       <div className="toolbar">
         <div className="tb-group">
           {ANSICHTEN.map((a) => (

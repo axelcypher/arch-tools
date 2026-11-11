@@ -8,11 +8,13 @@ import { NUF_IDS, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useEditor } from '../store/store';
 import { PlanFigure } from './PlanFigure';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 /** Druckbare Flächenaufstellung (DIN 277 / WoFlV). */
 export function Report() {
   const project = useEditor((s) => s.project);
   const setOpen = useEditor((s) => s.setReportOpen);
+  useEscSchliessen(() => setOpen(false));
   const r = useMemo(() => computeProject(project), [project]);
   const rechenweg = useMemo(() => briRechenweg(project), [project]);
   const today = new Date().toLocaleDateString('de-DE');

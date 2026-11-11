@@ -6,6 +6,7 @@ import type { Project } from '../model';
 import { pickFile, saveBinaryFile } from '../platform/files';
 import { logger } from '../platform/log';
 import { exportDateiname, exportOrdner } from '../platform/projektDatei';
+import { useEscSchliessen } from './Dialog';
 
 const log = logger('excel');
 
@@ -36,6 +37,7 @@ export interface ExcelDialogProps {
 
 /** Excel-Export: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
 export function ExcelDialog(props: ExcelDialogProps) {
+  useEscSchliessen(props.onClose);
   const { project, update, onClose, speicher } = props;
   // Zähler, damit Änderungen an der im Browser hinterlegten Vorlage neu gelesen werden
   const [rev, setRev] = useState(0);

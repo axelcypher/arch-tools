@@ -34,27 +34,30 @@ export interface GeladenesProjekt {
 export async function projektEinlesen(o: GeladenerOrdner, gewaehlt?: string | null): Promise<GeladenesProjekt> {
   const kandidaten = projektdateien(o.eintraege).map((e) => e.pfad);
   let alt: ProjektAngaben | null = null;
+  // eine fremde oder kaputte projekt.json zählt nicht – wird aber gemeldet (Hinweis), die Datei bleibt unangetastet
+  let altDefekt: string | undefined;
   const json = o.eintraege.find((e) => !e.ordner && e.pfad.toLowerCase() === PROJEKT_DATEI);
   if (json) {
     try {
       alt = leseProjektJson(new TextDecoder('utf-8').decode(await o.lies(json.pfad)));
-    } catch {
-      // eine fremde oder kaputte projekt.json zählt nicht
+    } catch (e) {
+      altDefekt = e instanceof Error ? e.message : String(e);
     }
   }
+  const defekt = altDefekt ? { alteProjektJsonDefekt: altDefekt } : {};
   const datei = projektdateiWaehlen(o.eintraege, gewaehlt);
-  if (!datei) return { angaben: alt, quelle: alt ? { alteProjektJson: true } : {}, projektdatei: null, kandidaten };
+  if (!datei) return { angaben: alt, quelle: alt ? { alteProjektJson: true } : defekt, projektdatei: null, kandidaten };
   try {
     const p = readProjectFile(await o.lies(datei.pfad));
     const angaben = angabenAusProjekt(p);
     return {
       // Lücken (etwa Kurzname oder Leistungsphasen aus der Zeit vor der Projektdatei) aus der alten projekt.json
       angaben: alt ? mitAlterProjektJson(angaben, alt) : angaben,
-      quelle: { pfad: datei.pfad },
+      quelle: { pfad: datei.pfad, ...defekt },
       projektdatei: { pfad: datei.pfad, meta: p.meta, ...(p.projektordner ? { projektordner: p.projektordner } : {}) },
       kandidaten,
     };
   } catch (e) {
-    return { angaben: alt, quelle: { pfad: datei.pfad, fehler: e instanceof Error ? e.message : String(e) }, projektdatei: null, kandidaten };
+    return { angaben: alt, quelle: { pfad: datei.pfad, fehler: e instanceof Error ? e.message : String(e), ...defekt }, projektdatei: null, kandidaten };
   }
 }

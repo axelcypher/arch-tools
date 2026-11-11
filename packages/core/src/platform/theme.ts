@@ -73,7 +73,28 @@ media?.addEventListener('change', () => {
 
 /** Schema am <html>-Element setzen (CSS: [data-theme="dunkel"]) */
 export function applyTheme(t: Theme, canvasDunkel: boolean) {
+  if (typeof document === 'undefined') return;
   document.documentElement.dataset.theme = t;
   document.documentElement.dataset.canvas = canvasDunkel ? 'dunkel' : 'hell';
   document.documentElement.style.colorScheme = t === 'dunkel' ? 'dark' : 'light';
+}
+
+/** aktuelles Schema anwenden – beim Start vor dem ersten Zeichnen (kein helles Aufblitzen) */
+export function themeAnwenden(): void {
+  const s = useTheme.getState();
+  applyTheme(s.theme, s.canvasDunkel);
+}
+
+// Zentral für alle Apps: jede Änderung (Menü ◐, Systemschema, andere Fenster/Tabs) wirkt sofort – ohne Neustart
+useTheme.subscribe((s, vorher) => {
+  if (s.theme !== vorher.theme || s.canvasDunkel !== vorher.canvasDunkel) applyTheme(s.theme, s.canvasDunkel);
+});
+
+// Andere Fenster bzw. Tabs der Rahmen-App (gleicher Ursprung) ändern die Wahl im localStorage: übernehmen
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== null && e.key !== KEY && e.key !== CANVAS_KEY) return;
+    const wahl = readWahl();
+    useTheme.setState({ wahl, theme: resolve(wahl), canvasDunkel: readCanvasDunkel() });
+  });
 }

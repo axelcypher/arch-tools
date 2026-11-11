@@ -5,6 +5,7 @@ import { ignoriert, ignorierenSetzen, planOffen, uebernehmenOffen, unterlagenAkt
 import { useAntrag } from '../antragStore';
 import type { OffenesFormular } from '../store';
 import { useFormulare } from '../store';
+import { useEscSchliessen } from '@core/ui/Dialog';
 
 const REIHENFOLGE: SchrittArt[] = ['auto', 'leer', 'manuell', 'unbekannt'];
 
@@ -15,6 +16,7 @@ const REIHENFOLGE: SchrittArt[] = ['auto', 'leer', 'manuell', 'unbekannt'];
  * wird in einem Schritt, der sich als Ganzes rückgängig machen lässt.
  */
 export function AktualisierenDialog({ offen, onClose }: { offen: OffenesFormular; onClose: () => void }) {
+  useEscSchliessen(onClose);
   const karte = useFormulare((s) => s.karte);
   const projektdatei = useAntrag((s) => s.projektdatei);
   const { karteLaden } = useFormulare.getState();
@@ -101,8 +103,9 @@ export function AktualisierenDialog({ offen, onClose }: { offen: OffenesFormular
 export function UnterlagenDialog() {
   const plaene = useAktualisieren((s) => s.unterlagen);
   const laeuft = useAktualisieren((s) => s.laeuft);
-  if (!plaene) return null;
   const schliessen = () => useAktualisieren.getState().unterlagenSchliessen();
+  useEscSchliessen(laeuft ? undefined : schliessen, !!plaene);
+  if (!plaene) return null;
   return (
     <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !laeuft && schliessen()}>
       <div className="modal modal-wide" role="dialog" aria-label="Unterlagen aktualisieren">

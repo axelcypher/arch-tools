@@ -65,7 +65,18 @@ export function mitErweiterungen<T extends { erweiterungen?: Record<string, unkn
   return { ...fremd, ...rest };
 }
 
-export class ProjectFormatError extends Error {}
+/** Projektdatei nicht lesbar: `message` ist für die Anwender, `technisch` die Einzelheit für das Protokoll */
+export class ProjectFormatError extends Error {
+  constructor(
+    message: string,
+    readonly technisch?: string,
+  ) {
+    super(message);
+  }
+}
+
+/** Meldung für alles, was keine Projektdatei ist (kaputt, falsche Datei, andere Anwendung) */
+export const KEINE_PROJEKTDATEI = 'Keine gültige Projektdatei (.oap) – beschädigt oder aus einer anderen Anwendung.';
 
 /**
  * Liest eine Projektdatei ein, ergänzt fehlende Felder mit Standardwerten
@@ -75,8 +86,8 @@ export function parseProject(json: string): Project {
   let raw: unknown;
   try {
     raw = JSON.parse(json);
-  } catch {
-    throw new ProjectFormatError('Die Datei ist kein gültiges JSON.');
+  } catch (e) {
+    throw new ProjectFormatError(KEINE_PROJEKTDATEI, `kein gültiges JSON: ${e instanceof Error ? e.message : String(e)}`);
   }
   return parseProjectData(raw);
 }
@@ -84,7 +95,7 @@ export function parseProject(json: string): Project {
 /** Wie parseProject, aber für bereits gelesene Daten (Archiv, Autosave mit Originaldateien als Uint8Array) */
 export function parseProjectData(raw: unknown): Project {
   if (!isObj(raw) || raw.format !== 'arch-flaechen-tool') {
-    throw new ProjectFormatError('Die Datei ist keine Projektdatei des Flächenrechners.');
+    throw new ProjectFormatError(KEINE_PROJEKTDATEI, 'Kennung „format: arch-flaechen-tool“ fehlt');
   }
   if (raw.version !== 1) {
     throw new ProjectFormatError(`Nicht unterstützte Dateiversion: ${String(raw.version)}`);

@@ -234,7 +234,9 @@ Berechnungen (Pfad enthält „Berechnung“), sonst die mit dem kürzesten Pfad
 Regel wie in der Formulare-App.
 
 Bis Version 0.1 standen die Stammdaten in einer eigenen `projekt.json` im Projektordner. Sie wird nur noch gelesen
-(sie füllt Lücken der Projektdatei, etwa Kurzname und Leistungsphasen) und bleibt liegen.
+(sie füllt Lücken der Projektdatei, etwa Kurzname und Leistungsphasen) und bleibt liegen. Ist sie nicht lesbar
+(beschädigt oder fremd), meldet „Ordner prüfen“ den Hinweis „Alte projekt.json nicht lesbar“, und beim Ergänzen steht
+derselbe Hinweis über den Stammdaten – die Datei selbst bleibt unangetastet.
 
 Presets in der Struktur-Datei:
 

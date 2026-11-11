@@ -3,6 +3,7 @@ import { vorschauUrl } from '../bilder';
 import { entzerrung } from '../geo/ebene';
 import type { Foto } from '../model';
 import { fotosHinzufuegen } from '../projekt';
+import { bestaetigen } from '@core/ui/Rueckfrage';
 import { ebeneHinzufuegen, mitEbene, mitFoto, useEntz } from '../store';
 
 /** Linke Leiste: Fotos des Projekts und Ebenen des gewählten Fotos */
@@ -41,8 +42,8 @@ function FotoEintrag({ foto, aktiv }: { foto: Foto; aktiv: boolean }) {
     setUrl(u);
     return () => URL.revokeObjectURL(u);
   }, [daten, foto.mime]);
-  const loeschen = () => {
-    if (!window.confirm(`Foto „${foto.name}“ mit allen Ebenen und Messungen entfernen?`)) return;
+  const loeschen = async () => {
+    if (!(await bestaetigen(`Foto „${foto.name}“ entfernen?`, 'Das Foto wird mit allen Ebenen und Messungen entfernt.', 'Entfernen', true))) return;
     const s = useEntz.getState();
     const rest = s.doc.fotos.filter((f) => f.id !== foto.id);
     s.aendern((d) => ({ fotos: d.fotos.filter((f) => f.id !== foto.id) }));
@@ -63,7 +64,7 @@ function FotoEintrag({ foto, aktiv }: { foto: Foto; aktiv: boolean }) {
         title="Foto entfernen"
         onClick={(e) => {
           e.stopPropagation();
-          loeschen();
+          void loeschen();
         }}
       >
         ×
@@ -76,9 +77,9 @@ function EbenenListe({ foto }: { foto: Foto }) {
   const ebeneId = useEntz((s) => s.ebeneId);
   const [umbenennen, setUmbenennen] = useState<string | null>(null);
   const status = useMemo(() => new Map(foto.ebenen.map((e) => [e.id, entzerrung(foto, e).ok])), [foto]);
-  const loeschen = (id: string, name: string) => {
+  const loeschen = async (id: string, name: string) => {
     if (foto.ebenen.length <= 1) return;
-    if (!window.confirm(`Ebene „${name}“ mit ihren Messungen entfernen?`)) return;
+    if (!(await bestaetigen(`Ebene „${name}“ entfernen?`, 'Die Ebene wird mit ihren Messungen entfernt.', 'Entfernen', true))) return;
     const s = useEntz.getState();
     const rest = foto.ebenen.filter((e) => e.id !== id);
     s.aendern(mitFoto(foto.id, (f) => ({ ...f, ebenen: rest })));
@@ -127,7 +128,7 @@ function EbenenListe({ foto }: { foto: Foto }) {
                 title="Ebene entfernen"
                 onClick={(x) => {
                   x.stopPropagation();
-                  loeschen(e.id, e.name);
+                  void loeschen(e.id, e.name);
                 }}
               >
                 ×

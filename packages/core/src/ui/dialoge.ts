@@ -4,6 +4,8 @@
  *  - Fokus beim Öffnen in den Dialog (sofern er nicht schon darin liegt), beim Schließen zurück an die
  *    Stelle davor (z. B. der Knopf, der ihn geöffnet hat)
  *  - Tab und Umschalt+Tab bleiben im obersten Dialog
+ *  - Esc schließt den obersten Dialog, der sich dafür angemeldet hat (`escAnmelden`, Hook `useEscSchliessen`);
+ *    ein Eingabefeld, das Esc selbst nutzt (Eingabe verwerfen), hält das Ereignis an und schließt nichts
  */
 
 const FOKUSSIERBAR = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
@@ -71,4 +73,37 @@ export function dialogVerhaltenEinrichten(): void {
     },
     true,
   );
+}
+
+/* ---------- Esc schließt den obersten Dialog ---------- */
+
+const escStapel: { schliessen: () => void; rang: number }[] = [];
+let escEingerichtet = false;
+let letzterRang = 0;
+
+/** Rang eines Dialogs: in der Reihenfolge des ersten Renderns (äußere vor inneren, frühere vor späteren) */
+export const naechsterEscRang = (): number => ++letzterRang;
+
+function escEinrichten() {
+  if (escEingerichtet || typeof document === 'undefined') return;
+  escEingerichtet = true;
+  // Blasenphase am Dokument: Felder, die Esc selbst verarbeiten (fields.tsx), halten das Ereignis vorher an
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
+    const oben = escStapel.reduce<(typeof escStapel)[number] | undefined>((a, b) => (!a || b.rang > a.rang ? b : a), undefined);
+    if (!oben) return;
+    e.preventDefault();
+    oben.schliessen();
+  });
+}
+
+/** Dialog für Esc anmelden; verschachtelt schließt Esc nur den obersten (höchster Rang). Liefert die Abmeldung. */
+export function escAnmelden(schliessen: () => void, rang = naechsterEscRang()): () => void {
+  escEinrichten();
+  const eintrag = { schliessen, rang };
+  escStapel.push(eintrag);
+  return () => {
+    const i = escStapel.indexOf(eintrag);
+    if (i >= 0) escStapel.splice(i, 1);
+  };
 }

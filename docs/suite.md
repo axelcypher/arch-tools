@@ -6,7 +6,9 @@ Programm und einem Fenster**. Sie kann nichts weiter, als zwischen den Apps zu w
 - **Tabs:** Jede geöffnete App ist ein Tab in der Titelleiste – Projektordner, Formulare, Flächenrechner,
   GRZ-Nachweis, Kostenermittlung, Entzerrung. Ohne offene App zeigt der Rahmen die Startseite mit allen Apps; „+“
   öffnet weitere. Beim Wechseln bleibt jede App, wie sie war (sie läuft im Hintergrund weiter). Der Tab zeigt das
-  geöffnete Projekt und ● bei ungespeicherten Änderungen; Schließen (× oder mittlere Maustaste) fragt dann nach.
+  geöffnete Projekt und ● bei ungespeicherten Änderungen; Schließen (× oder mittlere Maustaste) fragt dann
+  „Änderungen an ‚…‘ speichern?“ – *Speichern* lässt die App im Tab speichern, *Nicht speichern* verwirft, *Abbrechen*
+  lässt den Tab offen. Beim Beenden fragt der Rahmen so für jeden Tab mit ungespeicherten Änderungen.
   Welche Tabs offen waren, steht beim nächsten Start wieder da.
 - **Herauslösen:** ⧉ am Tab öffnet die App in einem **eigenen Fenster** (z. B. auf dem zweiten Bildschirm) – mit
   eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App startet dabei neu:
@@ -38,7 +40,7 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   `postMessage` an den Rahmen; im herausgelösten Fenster zeigt sie „Andocken“ (Tauri-Ereignis `arch-tools:andocken`).
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
-  `arch-tools-entzerrung`). Gemeinsam ist nur das Farbschema.
+  `arch-tools-entzerrung`). Gemeinsam ist nur das Farbschema – ein Wechsel in einem Tab oder Fenster wirkt sofort in allen.
 - Dateien per Ziehen & Ablegen: Die Fenster des Rahmens haben `dragDropEnabled: false`, damit die Apps in den Tabs
   die Dateien selbst bekommen.
 
