@@ -87,7 +87,7 @@ export const nw010005_2026I: FormularProfil = zusammen({
   },
   zaehlt: zaehltNicht('0:Memo3', '0:Memo4', '0:Memo5', '0:Memo6', '0:Memo10', '1:CheckBox5', '1:Memo28', '1:Memo32'),
   gruppen: [
-    gruppeV('bauantrag', 'Behandlung als Bauantrag: ja oder nein', 'eins', s0('CheckBox1', 'CheckBox2')),
+    gruppeV('bauantrag', 'Behandlung als Bauantrag: ja oder nein', 'genau', s0('CheckBox1', 'CheckBox2')),
     gruppeV('bauherrschaft-erreichbar', 'Bauherrschaft: Telefon, Mobiltelefon oder E-Mail', 'eins', s0('Memo11', 'Memo12', 'Memo13')),
     gruppeV('entwurf-erreichbar', 'Entwurfsverfassende: Telefon, Mobiltelefon oder E-Mail', 'eins', s0('Memo19', 'Memo20', 'Memo21')),
     gruppeV('gebaeudeklasse', 'Gebäudeklasse', 'eins', s0('CheckBox8', 'CheckBox9', 'CheckBox10', 'CheckBox11', 'CheckBox12', 'CheckBox22')),

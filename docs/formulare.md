@@ -48,7 +48,19 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   zählende Felder (Behördenfelder), mit den ungeklärten (hängen an nicht festgelegten Projektmerkmalen). Im Kopf der
   Gliederung steht „4 offen · 2 ungeklärt“ (Klick öffnet die Liste) bzw. „Nach den Vorgaben der App keine offenen
   Angaben“ – nie „vollständig“. „Nächste offene Angabe“ (auch <kbd>F8</kbd>) springt zum ersten Feld der nächsten
-  offenen Angabe nach dem Feld mit dem Fokus.
+  offenen Angabe nach dem Feld mit dem Fokus. Dazu kommen **Hinweise** (gelb, Widersprüche rot; nie blockierend):
+  - **Widersprüchliche Kreuze** (`plausibel.ts`): Gruppenregel „genau eine“ (zählt wie „eine genügt“, mehr als ein
+    Kreuz ist ein Widerspruch) – in den Vorgaben bei Bauantrag/Antrag auf Vorbescheid und bei „Behandlung als
+    Bauantrag: ja/nein“ (I/3); in der Feldansicht sind diese Fälle Optionsfelder. Mehrere Gebäudeklassen ergeben nur
+    die Frage „umfasst der Antrag mehrere Gebäude?“, mehrere Gebäudekategorien („alle zutreffenden“) nichts. I/3 mit
+    Projektmerkmal Sonderbau = ja: Hinweis auf § 63 Abs. 1 Satz 2 BauO NRW 2018.
+  - **Formular und Projektmerkmale** (`merkmalAbgleich.ts`, Prüfregeln in `vorgaben/pruefregeln.ts`): Leere Kästchen
+    der Gebäudeklasse werden aus dem Merkmal vorbelegt – nur wenn in der Gruppe nichts angekreuzt ist, nie
+    überschrieben, als ein Schritt „Aus Projektmerkmal vorbelegt“ im Verlauf (rückgängig zu machen) und am Kästchen
+    gestrichelt als Vorschlag gekennzeichnet. Weicht das Formular ab, steht „Projekt: GK 3, Formular: GK 1“ in der
+    Prüfliste und am Feld. Kreuzt man von Hand eine andere Gebäudeklasse an, fragt die App, ob sie als Projektmerkmal
+    übernommen werden soll. Verfahren und Antragsart werden nicht verknüpft.
+  Am Abschnitt der Gliederung zeigt ⚠ die Hinweise (Titel beim Zeigen).
 - **Gesetzestext-Fenster:** Schließen (Esc, Knopf, Klick daneben) und Reiterwechsel sind gegen den Absturz
   „destroy is not a function“ (Chromium/WebView2 liefert bei `scrollIntoView` ein Promise) abgesichert
   (`gesetz.ui.test.ts`).
@@ -94,7 +106,12 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Status, nie „nicht erforderlich“. Ein Abschnitt heißt „entfällt“, wenn seine Bedingung sicher nicht zutrifft oder
   alle seine zählenden Angaben entfallen; Abschnitte ganz ohne zählende Angaben heißen „freiwillig“.
 - **Warum entfällt ein Feld?** Entfällt ein Feld nach den Bedingungen (oder ist es offen), steht daran ein Info-Symbol
-  (in der Formular- und der Feldansicht). Zeigen nennt den Grund: die Begründung der Vorgabe, die Bedingung in Worten, noch
+  (in der Formular- und der Feldansicht) – klein (11 px, auf dem Papier mit geringer Deckkraft; die Trefferfläche ist
+  größer als das Symbol), rechts am Rahmen bzw. oben rechts im Textfeld, damit es weder Kästchen noch Beschriftung
+  verdeckt. Felder eines Abschnitts mit **gleichem Grund** teilen sich ein Symbol (entfällt der ganze Abschnitt, steht
+  es oben rechts am Rahmen bzw. am Abschnittstitel der Feldansicht); Felder mit eigenem Grund behalten ihres. Die
+  Symbole sind per Tastatur erreichbar: <kbd>F1</kbd> im Feld setzt den Fokus auf sein Symbol und zeigt den Hinweis,
+  <kbd>Enter</kbd> öffnet den Gesetzestext, <kbd>Esc</kbd> führt zurück ins Feld. Zeigen nennt den Grund: die Begründung der Vorgabe, die Bedingung in Worten, noch
   nicht festgelegte Projektmerkmale und die Rechtsgrundlage. Ein Klick öffnet den **Gesetzestext** als Fenster in der
   App – der Paragraf mit dem zitierten Absatz hervorgehoben, darunter „Im Original öffnen“. Die Texte liefert die App
   mit (amtliche Fassungen, lesbar ohne Netz): BauO NRW 2018 (gültig ab 01.09.2026) und BauPrüfVO (gültig ab

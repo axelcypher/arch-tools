@@ -96,11 +96,21 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
   (`MERKMAL_ERKLAERUNG`); Desktop in die Projektdatei, Web je Datei im lokalen Speicher (löst B-03 mit)
 - [x] **U-03** Prüfliste „Was fehlt noch?“ – FO 0.24.0: Filter „Offene“ (ersetzt „Leere“) als Liste je offener
   Angabe mit den Eingaben darin, ungeklärte gelb; „n offen · n ungeklärt“ im Kopf der Gliederung; „Nächste offene
-  Angabe“ (Knopf, F8); Suche blendet Seiten ohne Treffer aus und zeigt die Trefferzahl. Hinweise (U-04/U-05) kommen
-  mit FO 0.25.0 dazu. Abweichung: Hinweise auf veraltete Vordrucke gibt es in der App nicht (nichts aufzunehmen)
-- [ ] **U-04** Plausibilität: widersprüchliche Kreuze
-- [ ] **U-05** Formularangaben und Projektmerkmale abgleichen
-- [ ] **U-06** Info-Symbole
+  Angabe“ (Knopf, F8); Suche blendet Seiten ohne Treffer aus und zeigt die Trefferzahl. Hinweise (U-04/U-05) seit
+  FO 0.25.0 in Kopf und Liste („· n Hinweise“). Abweichung: Hinweise auf veraltete Vordrucke gibt es in der App nicht (nichts aufzunehmen)
+- [x] **U-04** Plausibilität: widersprüchliche Kreuze – FO 0.25.0: Regel „genau eine“ (`REGELN`), Widerspruch bei
+  Antragsart (auch 2024D und nw010006, gleiche Gruppe) und ja/nein in nw010005, dort Optionsfelder in der
+  Felderansicht; Gebäudeklasse nur als Hinweis (Prüfregel `mehrfach`), Gebäudekategorie ohne Regel; Meldungen am
+  Abschnitt (⚠), in der Prüfliste und am Feld, nie blockierend; Plausibilitätshinweis Sonderbau bei nw010005 (R-03)
+- [x] **U-05** Formularangaben und Projektmerkmale abgleichen – FO 0.25.0: Gebäudeklasse aus dem Merkmal vorbelegt
+  (nur leere Gruppe, nie überschreiben, ein Verlaufsschritt, gestrichelt gekennzeichnet), Abweichung „Projekt: GK 3,
+  Formular: GK 1“ in Prüfliste und am Feld, beim Ankreuzen Rückfrage „… als Projektmerkmal übernehmen?“; Verfahren
+  und Antragsart bewusst nicht verknüpft. Abweichung: die Bedingungen lesen das Kästchen nicht zusätzlich (wo nicht
+  schon vorhanden, z. B. R-03) – stattdessen der Hinweis bei Abweichung (im Handoff als Alternative genannt)
+- [x] **U-06** Info-Symbole – FO 0.25.0: 11 px statt 13 px, Trefferfläche über Polster, auf dem Papier geringe
+  Deckkraft; rechts am Rahmen bzw. oben rechts im Textfeld; gleicher Grund im Abschnitt → ein Symbol (ganzer
+  Abschnitt: oben rechts am Rahmen); im Tab-Ablauf, F1 im Feld fokussiert das Symbol und zeigt den Hinweis, Enter
+  öffnet den Gesetzestext, Esc zurück; nie im Druck
 
 ## Flächenrechner
 

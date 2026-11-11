@@ -65,6 +65,7 @@ export function EntfallInfo({
   text,
   offen = false,
   merkmale,
+  info,
   className = '',
   style,
 }: {
@@ -73,6 +74,8 @@ export function EntfallInfo({
   offen?: boolean;
   /** offenes Feld: Werte der Projektmerkmale – die fehlenden lassen sich im Fenster festlegen */
   merkmale?: Record<string, string>;
+  /** Schlüssel der Felder, zu denen das Symbol gehört (Leerzeichen dazwischen) – F1 am Feld springt hierher */
+  info?: string;
   className?: string;
   style?: CSSProperties;
 }) {
@@ -90,12 +93,22 @@ export function EntfallInfo({
         className={`fo-entfall-info${quellen.length || fehlend.length ? ' mit-quelle' : ''}${offen ? ' offen' : ''} ${className}`}
         style={style}
         aria-label={text}
-        tabIndex={-1}
+        data-info={info}
         onPointerEnter={zeigen}
         onPointerLeave={verbergen}
         onFocus={zeigen}
         onBlur={verbergen}
         onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          // Esc: zurück ins Feld
+          const feld = info?.split(' ')[0];
+          if (e.key === 'Escape' && feld) {
+            e.preventDefault();
+            e.stopPropagation();
+            verbergen();
+            document.querySelector<HTMLElement>(`[data-feld="${feld}"]`)?.focus();
+          }
+        }}
         onClick={(e) => {
           e.stopPropagation();
           e.preventDefault();
@@ -110,8 +123,26 @@ export function EntfallInfo({
   );
 }
 
+/** Gleicher Grund? (Art und Bedingungen samt Ebene) – Felder mit gleichem Grund teilen sich ein Symbol (U-06) */
+export const grundSignatur = (gruende: Entfall[], offen: boolean) => `${offen ? 'o' : 'e'}|${JSON.stringify(gruende.map((e) => [e.ebene, e.titel, e.bedingung]))}`;
+
+/**
+ * F1 im Feld: das Symbol des Felds (bzw. seines Abschnitts) bekommt den Fokus und zeigt den Hinweis; Enter oder
+ * Leertaste öffnet dann den Gesetzestext, Esc führt zurück ins Feld.
+ */
+export function hinweisPerF1(e: { key: string; target: EventTarget | null; currentTarget: HTMLElement; preventDefault: () => void }): boolean {
+  if (e.key !== 'F1') return false;
+  const feld = (e.target as HTMLElement | null)?.dataset?.feld;
+  if (!feld) return false;
+  const symbol = [...e.currentTarget.querySelectorAll<HTMLElement>('[data-info]')].find((el) => el.dataset.info!.split(' ').includes(feld));
+  if (!symbol) return false;
+  e.preventDefault();
+  symbol.focus();
+  return true;
+}
+
 /** Hinweis neben dem Symbol – außerhalb des Blatts, damit ihn der Rand des Formulars nicht abschneidet */
-function Tipp({ lage, text }: { lage: DOMRect; text: string }) {
+export function Tipp({ lage, text }: { lage: DOMRect; text: string }) {
   const breite = 340;
   const links = Math.max(8, Math.min(lage.left, window.innerWidth - breite - 8));
   const unten = lage.bottom + 6;

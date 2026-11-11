@@ -32,13 +32,15 @@ export interface AbschnittProfil {
 }
 
 /**
- * Wann eine Gruppe als ausgefüllt gilt: `eins` – sobald eine Angabe gemacht ist (Auswahl), `alle` – erst wenn
- * alle Felder ausgefüllt sind, `nie` – die Gruppe zählt nicht für den Füllstand.
+ * Wann eine Gruppe als ausgefüllt gilt: `eins` – sobald eine Angabe gemacht ist (Auswahl), `genau` – wie `eins`,
+ * mehr als eine Angabe ist aber ein Widerspruch (Meldung, nicht blockierend; U-04), `alle` – erst wenn alle Felder
+ * ausgefüllt sind, `nie` – die Gruppe zählt nicht für den Füllstand.
  */
-export type Regel = 'eins' | 'alle' | 'nie';
+export type Regel = 'eins' | 'genau' | 'alle' | 'nie';
 
 export const REGELN: { id: Regel; text: string; lang: string }[] = [
   { id: 'eins', text: 'eine genügt', lang: 'Ausgefüllt, sobald eine Angabe gemacht ist (z. B. Auswahl)' },
+  { id: 'genau', text: 'genau eine', lang: 'Ausgefüllt mit einer Angabe; mehr als eine wird als Widerspruch gemeldet (z. B. ja/nein)' },
   { id: 'alle', text: 'alle nötig', lang: 'Ausgefüllt, wenn alle Felder ausgefüllt sind' },
   { id: 'nie', text: 'zählt nicht', lang: 'Zählt nicht für den Füllstand' },
 ];

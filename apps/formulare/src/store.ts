@@ -517,6 +517,12 @@ export const autofillAnbindung: {
   karteGespeichert?: (alt: Projektkarte, neu: Projektkarte) => void;
 } = { zustand: () => undefined, speichern: () => undefined };
 
+/**
+ * Nach einer Eingabe von Hand (ein Feld): merkmalAbgleich.ts trägt hier ein, dass beim Ankreuzen einer Gebäudeklasse
+ * angeboten wird, sie als Projektmerkmal zu übernehmen (U-05) – ohne Kreis zwischen den Modulen.
+ */
+export const eingabeAnbindung: { nachEingabe?: (o: OffenesFormular, feld: Feld, wert: Wert) => void } = {};
+
 /** Dateiname eines Formulars im FORMA-Projekt (Schlüssel des Autofill-Zustands) */
 export const formularDatei = (pfad: string) => pfad.split('/').pop() ?? pfad;
 
@@ -1101,7 +1107,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const vorher = wertVon(o, feld);
       if (vorher === wert) return;
       const verlauf = eintragen(o.verlauf, feld.schluessel, vorher, wert, Date.now());
-      aktualisieren({ ...o, verlauf, aenderungen: mitWerten(o, new Map([[feld.schluessel, wert]])) });
+      const neu = aktualisieren({ ...o, verlauf, aenderungen: mitWerten(o, new Map([[feld.schluessel, wert]])) });
+      eingabeAnbindung.nachEingabe?.(neu, feld, wert);
     },
 
     feldVerlassen: (feld) => {

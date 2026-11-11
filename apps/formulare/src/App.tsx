@@ -31,6 +31,7 @@ import { VerlaufLeiste } from './components/VerlaufLeiste';
 import { kennung, stand } from './forma/formular';
 import { springeZuFeld } from './navigation';
 import { zurNaechstenOffenen } from './pruefen';
+import { useVorbelegung } from './merkmalAbgleich';
 import type { Ansicht, OffenesFormular } from './store';
 import { ZOOMSTUFEN, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
 import { kannRueckgaengig, kannWiederholen } from './verlauf';
@@ -96,6 +97,8 @@ export function App() {
     haupt === 'einstellungen' ? 'Einstellungen' : ds && (!projekt || haupt === 'projekte') ? 'Projekte' : haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
   const zugeordnet = useMemo(() => (offen ? autofillFelder(offen.formular, offen.felder).size : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
   const formularSichtbar = !!offen && haupt === 'formular';
+  // leere Kästchen (Gebäudeklasse) aus den Projektmerkmalen vorbelegen (U-05)
+  useVorbelegung(offen);
   const exportPfad = useExportDialog((s) => s.pfad);
   const hinzufuegen = useHinzufuegenDialog((s) => s.offen);
   // Export-Dialog gehört zum Projekt

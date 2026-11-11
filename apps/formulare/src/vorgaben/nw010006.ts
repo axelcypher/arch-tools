@@ -124,7 +124,7 @@ export const nw010006_2026C: FormularProfil = zusammen({
     ...zaehltNicht(...s1('Memo1', 'Memo2', 'Memo32', 'Memo33', 'Memo34', 'Memo35', 'Memo36', 'Memo37', 'Memo38', 'Memo39', 'Memo40', 'Memo41')),
   },
   gruppen: [
-    gruppeV('antragsart', 'Bauantrag oder Antrag auf Vorbescheid', 'eins', s0('CheckBox1', 'CheckBox2')),
+    gruppeV('antragsart', 'Bauantrag oder Antrag auf Vorbescheid', 'genau', s0('CheckBox1', 'CheckBox2')),
     gruppeV('bauherrschaft-erreichbar', 'Bauherrschaft: Telefon, Telefax oder E-Mail', 'eins', s0('Memo9', 'Memo10', 'Memo11')),
     gruppeV('entwurf-erreichbar', 'Entwurfsverfassende: Telefon, Telefax oder E-Mail', 'eins', s0('Memo17', 'Memo18', 'Memo19')),
     gruppeV('staette', 'Vorhaben an der Stätte der Leistung: ja oder nein', 'eins', s0('CheckBox3', 'CheckBox4')),

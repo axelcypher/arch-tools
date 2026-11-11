@@ -161,7 +161,7 @@ export const nw010002_2024D: FormularProfil = {
     ...zaehltNicht('0:CheckBox14', '0:CheckBox15', '0:CheckBox17', '0:CheckBox18', '0:CheckBox23', '0:CheckBox19'),
   },
   gruppen: [
-    gruppeV('antragsart', 'Bauantrag oder Antrag auf Vorbescheid', 'eins', s0('CheckBox1', 'CheckBox2')),
+    gruppeV('antragsart', 'Bauantrag oder Antrag auf Vorbescheid', 'genau', s0('CheckBox1', 'CheckBox2')),
     gruppeV('bauherrschaft-erreichbar', 'Bauherrschaft: Telefon, Telefax oder E-Mail', 'eins', s0('Memo9', 'Memo10', 'Memo11')),
     gruppeV('entwurf-erreichbar', 'Entwurfsverfassende: Telefon, Telefax oder E-Mail', 'eins', s0('Memo17', 'Memo18', 'Memo19')),
     gruppeV('gebaeudeklasse', 'Gebäudeklasse', 'eins', s0('CheckBox4', 'CheckBox5', 'CheckBox6', 'CheckBox7', 'CheckBox8', 'CheckBox22')),

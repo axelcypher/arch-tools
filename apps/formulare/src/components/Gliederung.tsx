@@ -15,6 +15,7 @@ import type { OffenesFormular } from '../store';
 import { useFormulare, useProfil, wertVon } from '../store';
 import { umfangZeigen } from './Antrag';
 import { EinrichtenBaum } from './Einrichten';
+import { usePlausibel } from './Hinweise';
 import { MerkmalWahl } from './MerkmalWahl';
 import { Symbol } from './Symbol';
 
@@ -75,6 +76,8 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
   // Prüfliste: fehlende Pflichtangaben und ungeklärte (hängen an Projektmerkmalen)
   const liste = useMemo(() => offeneAngaben(offen.felder, profil, k, (f) => wertVon(offen, f)), [offen, profil, k]);
   const fehlen = liste.filter((x) => !x.ungeklaert).length;
+  // Hinweise: Widersprüche (U-04) und Abweichungen von den Projektmerkmalen (U-05)
+  const hinweise = usePlausibel(offen);
   const zeigeOffene = () => {
     useFormulare.getState().setAnsicht('felder');
     useFeldFilter.getState().setFilter('offen');
@@ -118,19 +121,19 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
 
       {!anpassen && (
         <div className="fo-gl-pruefliste" aria-label="Prüfliste">
-          {liste.length ? (
-            <>
-              <button className="fo-gl-pruef-zahl" title="Was fehlt noch? – offene Angaben in der Feldansicht zeigen" onClick={zeigeOffene}>
-                {fehlen} offen
-                {liste.length > fehlen && <span className="fo-gl-offen">{liste.length - fehlen} ungeklärt</span>}
-              </button>
-              <button className="small" title="Zur nächsten offenen Angabe springen (F8)" onClick={() => zurNaechstenOffenen()}>
-                Nächste offene Angabe
-              </button>
-            </>
-          ) : (
-            <span className="muted small-text">Nach den Vorgaben der App keine offenen Angaben</span>
+          {liste.length || hinweise.length ? (
+            <button className="fo-gl-pruef-zahl" title="Was fehlt noch? – offene Angaben und Hinweise in der Feldansicht zeigen" onClick={zeigeOffene}>
+              {fehlen} offen
+              {liste.length > fehlen && <span className="fo-gl-offen">{liste.length - fehlen} ungeklärt</span>}
+              {hinweise.length > 0 && <span className={`fo-gl-hinweise${hinweise.some((h) => h.art === 'fehler') ? ' fehler' : ''}`}>{hinweise.length === 1 ? '1 Hinweis' : `${hinweise.length} Hinweise`}</span>}
+            </button>
+          ) : null}
+          {liste.length > 0 && (
+            <button className="small" title="Zur nächsten offenen Angabe springen (F8)" onClick={() => zurNaechstenOffenen()}>
+              Nächste offene Angabe
+            </button>
           )}
+          {!liste.length && <span className="muted small-text">Nach den Vorgaben der App keine offenen Angaben</span>}
         </div>
       )}
 
@@ -186,6 +189,17 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                       ) : (
                         <>
                           <Zahl punkt={p} />
+                          {hinweise.some((h) => h.abschnitt === p.id) && (
+                            <span
+                              className={`fo-gl-hinweise${hinweise.some((h) => h.abschnitt === p.id && h.art === 'fehler') ? ' fehler' : ''}`}
+                              title={hinweise
+                                .filter((h) => h.abschnitt === p.id)
+                                .map((h) => h.text)
+                                .join('\n')}
+                            >
+                              ⚠
+                            </span>
+                          )}
                           {p.offen > 0 && (
                             <span className="fo-gl-offen" title={`${p.offen} offen – hängt ab von: ${p.fehlend.join(', ')} (nicht festgelegt)`}>
                               {p.abschnittOffen && p.offen === p.gesamt - p.gefuellt ? 'offen' : `${p.offen} offen`}

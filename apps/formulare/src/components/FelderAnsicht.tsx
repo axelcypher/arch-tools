@@ -5,13 +5,17 @@ import { useMarkierung } from '../markierung';
 import { feldTasten } from '../navigation';
 import type { Entfall } from '../entfall';
 import type { FormularProfil } from '../profil';
-import { abschnittId, feldTitel, formularKontext, leeresProfil, profilSchluessel } from '../profil';
+import { abschnittId, feldTitel, formularKontext, gruppeVon, leeresProfil, profilSchluessel } from '../profil';
 import type { FeldFilter } from '../pruefen';
 import { useFeldFilter, zurNaechstenOffenen } from '../pruefen';
 import { offeneAngaben } from '../pruefliste';
 import type { OffenesFormular } from '../store';
 import { useFormulare, useProfil, wertVon } from '../store';
-import { EntfallInfo, useEntfallen } from './EntfallInfo';
+import { EntfallInfo, grundSignatur, hinweisPerF1, useEntfallen } from './EntfallInfo';
+import { HinweisSymbol, hinweiseJeFeld, usePlausibel } from './Hinweise';
+import type { Plausi } from '../plausibel';
+import { useVorbelegt } from '../merkmalAbgleich';
+import { springeZuFeld } from '../navigation';
 
 const FILTER: { id: FeldFilter; label: string; title: string }[] = [
   { id: 'alle', label: 'Alle', title: 'Alle Felder' },
@@ -63,28 +67,43 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   // gesucht oder gefiltert: Seiten ohne Treffer fallen weg
   const eingeschraenkt = !!q || filter !== 'alle';
   const listeGefiltert = q ? liste.filter((o) => `${o.abschnitt} ${o.titel}`.toLowerCase().includes(q)) : liste;
-  const eingabe = (f: Feld) => (
+  // Hinweise (U-04, U-05), vorbelegte Kästchen (U-05)
+  const hinweise = usePlausibel(offen);
+  const hinweisFelder = useMemo(() => hinweiseJeFeld(hinweise), [hinweise]);
+  const vorbelegt = useVorbelegt(offen);
+  const entfallVon = (f: Feld) =>
+    entfall.gruende.has(f.schluessel)
+      ? { gruende: entfall.gruende.get(f.schluessel)!, text: entfall.text(f.schluessel) }
+      : entfall.offen.has(f.schluessel)
+        ? { gruende: entfall.offen.get(f.schluessel)!, text: entfall.text(f.schluessel), offen: true, merkmale: entfall.merkmale }
+        : undefined;
+  const eingabe = (f: Feld, ohneBeschriftung = false, ohneInfo = false) => (
     <FeldEingabe
       key={f.schluessel}
       feld={f}
       offen={offen}
       gesperrt={gesperrt}
       profil={profil}
-      entfall={
-        entfall.gruende.has(f.schluessel)
-          ? { gruende: entfall.gruende.get(f.schluessel)!, text: entfall.text(f.schluessel) }
-          : entfall.offen.has(f.schluessel)
-            ? { gruende: entfall.offen.get(f.schluessel)!, text: entfall.text(f.schluessel), offen: true, merkmale: entfall.merkmale }
-            : undefined
-      }
-      ohneBeschriftung={false}
+      entfall={entfallVon(f)}
+      ohneInfo={ohneInfo}
+      hinweise={hinweisFelder.get(f.schluessel)}
+      vorbelegt={vorbelegt.has(f.schluessel)}
+      ohneBeschriftung={ohneBeschriftung}
       markiert={markiert.has(f.schluessel) ? (markierung?.rahmen ? 'umrandet' : 'markiert') : null}
     />
   );
+  /** ein Abschnitt, dessen Felder alle aus demselben Grund entfallen bzw. offen sind: ein Symbol am Abschnitt (U-06) */
+  const gebuendelt = (felder: Feld[]) => {
+    if (felder.length < 2) return null;
+    const e = felder.map(entfallVon);
+    if (e.some((x) => !x)) return null;
+    const sig = e.map((x) => grundSignatur(x!.gruende, !!x!.offen));
+    return sig.every((x) => x === sig[0]) ? e[0]! : null;
+  };
   const tasten = useMemo(() => feldTasten(offen.felder.flat()), [offen.felder]);
 
   return (
-    <div className="fo-felder" ref={huelle} onKeyDown={tasten}>
+    <div className="fo-felder" ref={huelle} onKeyDown={(e) => hinweisPerF1(e) || tasten(e)}>
       <div className="fo-felder-kopf">
         <input type="search" className="fo-feldsuche" placeholder="Felder durchsuchen (Beschriftung oder Inhalt) …" value={suche} onChange={(e) => setSuche(e.target.value)} />
         <div className="tb-group">
@@ -119,9 +138,37 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                   </span>
                 )}
               </div>
-              <div className="fo-zeile">{o.felder.map(eingabe)}</div>
+              <div className="fo-zeile">{o.felder.map((f) => eingabe(f))}</div>
             </div>
           ))}
+          {hinweise.length > 0 && (
+            <>
+              <h2>
+                Hinweise <span className="muted">{hinweise.length === 1 ? '1 Hinweis' : `${hinweise.length} Hinweise`}</span>
+              </h2>
+              {hinweise.map((h, i) => (
+                <div key={i} className={`fo-pruef-zeile hinweis${h.art === 'fehler' ? ' fehler' : ''}`}>
+                  <div className="fo-pruef-kopf">
+                    <strong>{h.art === 'fehler' ? 'Widerspruch' : 'Hinweis'}</strong>
+                    <span>{h.text}</span>
+                    {h.felder.length > 0 && (
+                      <button className="small" onClick={() => springeZuFeld(h.felder[0])}>
+                        Zum Feld
+                      </button>
+                    )}
+                  </div>
+                  {h.felder.length > 0 && (
+                    <div className="fo-zeile">
+                      {offen.felder
+                        .flat()
+                        .filter((f) => h.felder.includes(f.schluessel))
+                        .map((f) => eingabe(f))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
         </section>
       )}
       {filter !== 'offen' && eingeschraenkt && !treffer && <p className="muted small-text fo-keine-treffer">Keine passenden Felder.</p>}
@@ -138,29 +185,20 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                 <div key={n} className="fo-reihe">
                   {reihe.map((a) => {
                     const titel = profil.abschnitte[abschnittId(a)]?.titel?.trim() || a.titel;
+                    const buendel = gebuendelt(a.felder);
                     return (
                       <div key={a.felder[0].schluessel} className="fo-abschnitt" style={{ flexGrow: a.rahmen?.b ?? 700 }}>
-                        {titel && <h3>{titel}</h3>}
+                        {(titel || buendel) && (
+                          <h3>
+                            {titel}
+                            {buendel && (
+                              <EntfallInfo gruende={buendel.gruende} text={buendel.text} offen={buendel.offen} merkmale={buendel.merkmale} info={a.felder.map((f) => f.schluessel).join(' ')} />
+                            )}
+                          </h3>
+                        )}
                         {zeilen(a.felder).map((z) => (
                           <div key={z[0].schluessel} className="fo-zeile">
-                            {z.map((f) => (
-                              <FeldEingabe
-                                key={f.schluessel}
-                                feld={f}
-                                offen={offen}
-                                gesperrt={gesperrt}
-                                profil={profil}
-                                entfall={
-                                  entfall.gruende.has(f.schluessel)
-                                    ? { gruende: entfall.gruende.get(f.schluessel)!, text: entfall.text(f.schluessel) }
-                                    : entfall.offen.has(f.schluessel)
-                                      ? { gruende: entfall.offen.get(f.schluessel)!, text: entfall.text(f.schluessel), offen: true, merkmale: entfall.merkmale }
-                                      : undefined
-                                }
-                                ohneBeschriftung={feldTitel(f, profil) === titel && f.art === 'text'}
-                                markiert={markiert.has(f.schluessel) ? (markierung?.rahmen ? 'umrandet' : 'markiert') : null}
-                              />
-                            ))}
+                            {z.map((f) => eingabe(f, feldTitel(f, profil) === titel && f.art === 'text', !!buendel))}
                           </div>
                         ))}
                       </div>
@@ -180,6 +218,9 @@ function FeldEingabe({
   gesperrt: gesperrtFormular,
   profil,
   entfall,
+  ohneInfo = false,
+  hinweise,
+  vorbelegt = false,
   ohneBeschriftung,
   markiert,
 }: {
@@ -189,15 +230,27 @@ function FeldEingabe({
   profil: FormularProfil;
   /** entfällt nach den Bedingungen bzw. ist offen (fehlendes Projektmerkmal) – mit Gründen und Hinweistext */
   entfall?: { gruende: Entfall[]; text: string; offen?: boolean; merkmale?: Record<string, string> };
+  /** das Symbol steht am Abschnitt (gleicher Grund für alle Felder) */
+  ohneInfo?: boolean;
+  /** Plausibilitätsmeldungen zu diesem Feld */
+  hinweise?: Plausi[];
+  /** aus einem Projektmerkmal vorbelegt (Vorschlag) */
+  vorbelegt?: boolean;
   ohneBeschriftung: boolean;
   /** in der Gliederung gezeigt (umrandet: zusätzlich umrandet) */
   markiert: 'markiert' | 'umrandet' | null;
 }) {
   const wertSetzen = useFormulare((s) => s.wertSetzen);
+  const werteSetzen = useFormulare((s) => s.werteSetzen);
   const wert = wertVon(offen, feld);
   const geaendert = feld.schluessel in offen.aenderungen;
-  const klasse = `fo-feld${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${markiert === 'umrandet' ? ' umrandet' : ''}${entfall ? (entfall.offen ? ' offen' : ' entfaellt') : ''}`;
-  const info = entfall && <EntfallInfo gruende={entfall.gruende} text={entfall.text} offen={entfall.offen} merkmale={entfall.merkmale} />;
+  const klasse = `fo-feld${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${markiert === 'umrandet' ? ' umrandet' : ''}${entfall ? (entfall.offen ? ' offen' : ' entfaellt') : ''}${vorbelegt ? ' vorbelegt' : ''}`;
+  const info = (
+    <>
+      {entfall && !ohneInfo && <EntfallInfo gruende={entfall.gruende} text={entfall.text} offen={entfall.offen} merkmale={entfall.merkmale} info={feld.schluessel} />}
+      {hinweise?.length ? <HinweisSymbol hinweise={hinweise} info={feld.schluessel} /> : null}
+    </>
+  );
   const breite = { flexGrow: Math.max(40, feld.kasten.b) };
   // von FORMA berechnete Felder trägt man nicht ein
   const gesperrt = gesperrtFormular || feld.berechnet;
@@ -205,9 +258,27 @@ function FeldEingabe({
   const hinweis = feld.berechnet ? `${titel} – berechnet FORMA` : feld.hinweis;
 
   if (feld.art === 'kreuz') {
+    // echte Entweder-oder-Fälle (Regel „genau eine“, z. B. Bauantrag/Vorbescheid, ja/nein) als Optionsfelder (U-04) –
+    // solange nicht schon mehrere angekreuzt sind
+    const g = gruppeVon(profil, feld.schluessel);
+    const andere = g?.regel === 'genau' ? offen.felder.flat().filter((f) => g.felder.includes(f.schluessel) && f.schluessel !== feld.schluessel) : [];
+    const radio = g?.regel === 'genau' && andere.filter((f) => wertVon(offen, f) === true).length + (wert === true ? 1 : 0) <= 1;
+    const titelText = vorbelegt ? `${hinweis ?? titel} – aus dem Projektmerkmal vorbelegt, bitte prüfen` : hinweis;
     return (
-      <label className={`${klasse} fo-kreuz`} title={hinweis} style={breite}>
-        <input type="checkbox" checked={wert === true} disabled={gesperrt} data-feld={feld.schluessel} onChange={(e) => wertSetzen(feld, e.target.checked)} />
+      <label className={`${klasse} fo-kreuz`} title={titelText} style={breite}>
+        {radio ? (
+          <input
+            type="radio"
+            name={`genau-${g!.id}`}
+            checked={wert === true}
+            disabled={gesperrt}
+            data-feld={feld.schluessel}
+            onClick={() => wert === true && wertSetzen(feld, false)}
+            onChange={(e) => e.target.checked && werteSetzen([{ feld, wert: true }, ...andere.filter((f) => wertVon(offen, f) === true).map((f) => ({ feld: f, wert: false }))], titel)}
+          />
+        ) : (
+          <input type="checkbox" checked={wert === true} disabled={gesperrt} data-feld={feld.schluessel} onChange={(e) => wertSetzen(feld, e.target.checked)} />
+        )}
         <span>{titel}</span>
         {info}
       </label>

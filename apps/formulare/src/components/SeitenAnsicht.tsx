@@ -12,7 +12,12 @@ import { feldId, useEinrichten } from '../einrichten';
 import { useAntrag } from '../antragStore';
 import type { OffenesFormular } from '../store';
 import { formularDatei, useFormulare, useProfil, wertVon } from '../store';
-import { EntfallInfo, useEntfallen } from './EntfallInfo';
+import type { Entfallen } from './EntfallInfo';
+import { EntfallInfo, grundSignatur, hinweisPerF1, useEntfallen } from './EntfallInfo';
+import { HinweisSymbol, hinweiseJeFeld, usePlausibel } from './Hinweise';
+import type { Plausi } from '../plausibel';
+import type { Entfall } from '../entfall';
+import { useVorbelegt } from '../merkmalAbgleich';
 import { autofillFelder } from '../autofill';
 
 /**
@@ -59,6 +64,11 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const entfallen = useMemo(() => new Set(entfall.gruende.keys()), [entfall]);
   // offen: hängt an nicht festgelegten Projektmerkmalen – gelb, mit Hinweis
   const offene = useMemo(() => new Set(entfall.offen.keys()), [entfall]);
+  // Hinweise (Widersprüche, Abweichungen vom Projektmerkmal) und vorbelegte Kästchen
+  const hinweise = usePlausibel(offen);
+  const vorbelegt = useVorbelegt(offen);
+  // Info-Symbole (U-06): klein, rechts am Rahmen; gleicher Grund für mehrere Felder eines Abschnitts → ein Symbol
+  const symbole = useMemo(() => offen.felder.map((felder) => symboleDerSeite(felder, entfall, hinweiseJeFeld(hinweise))), [offen.felder, entfall, hinweise]);
 
   // Einrichten: ausgewählte Felder (direkt, über ihre Gruppe oder ihren Abschnitt) und Abschnitte je Seite
   const abschnitteJeSeite = useMemo(() => offen.felder.map((f) => abschnitte(f)), [offen.felder]);
@@ -118,7 +128,7 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const faktor = zoom > 0 ? zoom : breite > 0 ? Math.max(0.4, Math.min(2.5, (breite - 48) / papier)) : 1;
 
   return (
-    <div className={`fo-seiten${einrichten ? ' einrichten' : ''}${waehlen ? ' waehlen' : ''}`} ref={huelle} onKeyDown={tasten}>
+    <div className={`fo-seiten${einrichten ? ' einrichten' : ''}${waehlen ? ' waehlen' : ''}`} ref={huelle} onKeyDown={(e) => hinweisPerF1(e) || tasten(e)}>
       {seiten.map((s) => (
         <section key={s.i} className="fo-blatt" data-seite={s.i}>
           <div className="fo-blatt-kopf" style={{ width: s.blatt.breite * faktor }}>
@@ -128,28 +138,25 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
             {/* das Formular selbst wird nicht beschnitten – nur das Blatt an seinem Rand */}
             <div className="fo-satz" style={{ left: s.blatt.links, top: s.blatt.oben }}>
               {s.kaesten.map((k, n) => (
-                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel, entfallen, offene, autofill)} gesperrt={gesperrt} />
+                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel, entfallen, offene, autofill, vorbelegt)} gesperrt={gesperrt} />
               ))}
               {!einrichten &&
-                offen.felder[s.i]
-                  .filter((f) => entfall.gruende.has(f.schluessel) || entfall.offen.has(f.schluessel))
-                  .map((f) => {
-                    const l = lage(f.kasten);
-                    // Textfeld: oben rechts im Feld; Kästchen: hochgestellt rechts neben dem Kästchen
-                    const ort = f.art === 'kreuz' ? { left: l.x + 12, top: l.y - 7 } : { left: l.x + l.b - 14, top: l.y + 1 };
-                    const istOffen = !entfall.gruende.has(f.schluessel);
-                    return (
-                      <EntfallInfo
-                        key={f.schluessel}
-                        className="fo-el"
-                        style={ort}
-                        offen={istOffen}
-                        merkmale={entfall.merkmale}
-                        gruende={(istOffen ? entfall.offen : entfall.gruende).get(f.schluessel)!}
-                        text={entfall.text(f.schluessel)}
-                      />
-                    );
-                  })}
+                symbole[s.i].map((x) =>
+                  x.hinweise ? (
+                    <HinweisSymbol key={x.key} className="fo-el" style={x.ort} hinweise={x.hinweise} info={x.felder.join(' ')} />
+                  ) : (
+                    <EntfallInfo
+                      key={x.key}
+                      className="fo-el"
+                      style={x.ort}
+                      offen={x.offen}
+                      merkmale={entfall.merkmale}
+                      gruende={x.gruende!}
+                      text={entfall.text(x.felder[0])}
+                      info={x.felder.join(' ')}
+                    />
+                  ),
+                )}
               {(() => {
                 const r = umrandung(s);
                 return r && <div className="fo-el fo-umrandung" style={{ left: r.x - 4, top: r.y - 4, width: r.b + 8, height: r.h + 8 }} />;
@@ -171,6 +178,55 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
       ))}
     </div>
   );
+}
+
+interface SymbolOrt {
+  key: string;
+  felder: string[];
+  ort: CSSProperties;
+  gruende?: Entfall[];
+  offen?: boolean;
+  hinweise?: Plausi[];
+}
+
+/**
+ * Info-Symbole einer Seite (U-06): Felder eines Abschnitts mit gleichem Grund teilen sich ein Symbol – entfällt der
+ * ganze Abschnitt aus demselben Grund, steht es oben rechts am Rahmen; sonst rechts am Rahmen in der Zeile des ersten
+ * Felds (Textfelder: oben rechts im Feld). So verdecken die Symbole weder Kästchen noch Beschriftung („3-fach“).
+ * Felder mit eigenem Grund behalten ihr eigenes Symbol.
+ */
+function symboleDerSeite(felder: Feld[], entfall: Entfallen, hinweise: Map<string, Plausi[]>): SymbolOrt[] {
+  const out: SymbolOrt[] = [];
+  const rechtsAmRahmen = (f: Feld, a: { rahmen: Kasten | null }, versatz = 0): CSSProperties => {
+    const l = lage(f.kasten);
+    if (f.art === 'text') return { left: l.x + l.b - 14 - versatz, top: l.y + 2 };
+    const r = a.rahmen ? lage(a.rahmen) : null;
+    return r ? { left: r.x + r.b - 16 - versatz, top: l.y + 1 } : { left: l.x + l.b + 2 + versatz, top: l.y + 1 };
+  };
+  for (const a of abschnitte(felder)) {
+    const gruppen = new Map<string, { felder: Feld[]; gruende: Entfall[]; offen: boolean }>();
+    for (const f of a.felder) {
+      const offen = !entfall.gruende.has(f.schluessel) && entfall.offen.has(f.schluessel);
+      const gruende = entfall.gruende.get(f.schluessel) ?? entfall.offen.get(f.schluessel);
+      if (!gruende) continue;
+      const sig = grundSignatur(gruende, offen);
+      const g = gruppen.get(sig) ?? { felder: [], gruende, offen };
+      g.felder.push(f);
+      gruppen.set(sig, g);
+    }
+    for (const [sig, g] of gruppen) {
+      const ganz = g.felder.length === a.felder.length && g.felder.length > 1 && a.rahmen;
+      const r = a.rahmen ? lage(a.rahmen) : null;
+      const ort = ganz && r ? { left: r.x + r.b - 16, top: r.y + 3 } : rechtsAmRahmen(g.felder[0], a);
+      out.push({ key: `${abschnittId(a)}|${sig}`, felder: g.felder.map((f) => f.schluessel), ort, gruende: g.gruende, offen: g.offen });
+    }
+    // Hinweise (Widersprüche, Abweichungen) am Feld – etwas links vom Info-Symbol
+    for (const f of a.felder) {
+      const h = hinweise.get(f.schluessel);
+      if (h?.length) out.push({ key: `h|${f.schluessel}`, felder: [f.schluessel], ort: rechtsAmRahmen(f, a, 16), hinweise: h });
+    }
+  }
+  return out;
 }
 
 function schrift(k: Kasten): CSSProperties {
@@ -307,7 +363,8 @@ function feldProps(
   entfallen: Set<string>,
   offene: Set<string>,
   autofill: Map<string, 'auto' | 'fixiert'>,
-): Pick<ElementProps, 'feld' | 'wert' | 'geaendert' | 'markiert' | 'titel' | 'entfaellt' | 'offen' | 'autofill'> {
+  vorbelegt: Set<string>,
+): Pick<ElementProps, 'feld' | 'wert' | 'geaendert' | 'markiert' | 'titel' | 'entfaellt' | 'offen' | 'autofill' | 'vorbelegt'> {
   return feld
     ? {
         feld,
@@ -318,6 +375,7 @@ function feldProps(
         entfaellt: entfallen.has(feld.schluessel),
         offen: offene.has(feld.schluessel),
         autofill: autofill.get(feld.schluessel),
+        vorbelegt: vorbelegt.has(feld.schluessel),
       }
     : {};
 }
@@ -335,6 +393,8 @@ interface ElementProps {
   entfaellt?: boolean;
   /** hängt an nicht festgelegten Projektmerkmalen (gilt als erforderlich) */
   offen?: boolean;
+  /** aus einem Projektmerkmal vorbelegt (Vorschlag, bitte prüfen) */
+  vorbelegt?: boolean;
   /** Wert aus der Projektkarte (auto) bzw. von Hand überschrieben (fixiert) */
   autofill?: 'auto' | 'fixiert';
   gesperrt: boolean;
@@ -342,7 +402,7 @@ interface ElementProps {
 
 const AUTOFILL_TEXT = { auto: 'Wert aus der Projektkarte', fixiert: 'von Hand überschrieben (bleibt beim Aktualisieren)' };
 
-const Element = memo(function Element({ k, feld, wert, geaendert, markiert, titel, entfaellt, offen, autofill, gesperrt }: ElementProps) {
+const Element = memo(function Element({ k, feld, wert, geaendert, markiert, titel, entfaellt, offen, autofill, vorbelegt, gesperrt }: ElementProps) {
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const l = lage(k);
   const pos: CSSProperties = { left: l.x, top: l.y, width: l.b, height: l.h };
@@ -401,9 +461,11 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
       const rechts = bezeichner(k.o, 'Alignment') !== 'taLeftJustify';
       return (
         <label
-          className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${offen ? ' offen' : ''}${rechts ? '' : ' links'}`}
+          className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${offen ? ' offen' : ''}${vorbelegt ? ' vorbelegt' : ''}${rechts ? '' : ' links'}`}
           style={{ ...pos, ...schrift(k) }}
-          title={entfaellt ? `${titel} – nicht erforderlich` : offen ? `${titel} – offen (hängt von Projektmerkmalen ab)` : titel}
+          title={
+            vorbelegt ? `${titel} – aus dem Projektmerkmal vorbelegt, bitte prüfen` : entfaellt ? `${titel} – nicht erforderlich` : offen ? `${titel} – offen (hängt von Projektmerkmalen ab)` : titel
+          }
         >
           <input
             type="checkbox"

@@ -54,8 +54,9 @@ function rahmen(r: SynRahmen, top: number, nr: { label: number }): { zeilen: str
   return { zeilen: [`  object ${r.name}: TPanel`, '    Left = 0', `    Top = ${top}`, '    Width = 700', `    Height = ${hoehe}`, ...z, '  end'], hoehe };
 }
 
-/** Formulardatei (`.frmsjf`) mit Kennung, Stand und Seiten aus Rahmen */
-export function synthetischesFormular(kennung: string, stand: string, seiten: SynRahmen[][]): Uint8Array {
+/** Formulardatei (`.frmsjf`) mit Kennung, Stand und Seiten aus Rahmen; `werte` (`<Seite>:<Name>`) setzt Eingaben */
+export function synthetischesFormular(kennung: string, stand: string, seiten: SynRahmen[][], werte: Record<string, string | boolean> = {}): Uint8Array {
+  seiten = seiten.map((rs, i) => rs.map((r) => ({ ...r, felder: r.felder.map((f) => (`${i}:${f.name}` in werte ? { ...f, wert: werte[`${i}:${f.name}`] } : f)) })));
   const teile = [`[*SJ_FORMULAR (w) by SJ GmbH Aachen#][*SJ_BEGIN#][*SJ_MODIFIED#]${kennung}[*SJ_VERSION#]${stand}[*SJ_END#]`];
   seiten.forEach((rahmenListe, i) => {
     const nr = { label: 1 };
@@ -72,49 +73,51 @@ export function synthetischesFormular(kennung: string, stand: string, seiten: Sy
   return new TextEncoder().encode(teile.join(''));
 }
 
-/** Bauantrag nach Anlage I/1 (nw010001, Stand 2026I) im Aufbau der Vorgabe – leer */
-export function nw010001Leer(): Uint8Array {
-  return synthetischesFormular('nw010001', '2026I', [
-    [
-      { name: 'Panel1', titel: 'Untere Bauaufsichtsbehörde', felder: [{ art: 'memo', name: 'Memo1', text: 'Anschrift' }] },
-      { name: 'Panel2', titel: 'Eingangsstempel', felder: [{ art: 'memo', name: 'Memo3', text: 'Aktenzeichen' }] },
-      {
-        name: 'Panel3',
-        titel: 'Antrag',
-        felder: [
-          { art: 'kreuz', name: 'CheckBox1', text: 'Bauantrag' },
-          { art: 'kreuz', name: 'CheckBox2', text: 'Antrag auf Vorbescheid' },
-        ],
-      },
-      { name: 'Panel4', titel: 'Bauherrschaft', felder: [{ art: 'memo', name: 'Memo5', text: 'Name, Vorname, Firma' }] },
-      {
-        name: 'Panel8',
-        titel: 'Gebäudeklasse',
-        felder: [
-          { art: 'kreuz', name: 'CheckBox4', text: 'Gebäudeklasse 1' },
-          { art: 'kreuz', name: 'CheckBox5', text: 'Gebäudeklasse 2' },
-          { art: 'kreuz', name: 'CheckBox6', text: 'Gebäudeklasse 3' },
-          { art: 'kreuz', name: 'CheckBox7', text: 'Gebäudeklasse 4' },
-          { art: 'kreuz', name: 'CheckBox8', text: 'Gebäudeklasse 5' },
-        ],
-      },
-    ],
-    [
-      {
-        name: 'Panel1',
-        titel: 'Erforderliche Unterlagen',
-        felder: [
-          { art: 'kreuz', name: 'CheckBox1', text: 'Lageplan' },
-          { art: 'kreuz', name: 'CheckBox2', text: 'Maß der baulichen Nutzung' },
-          { art: 'kreuz', name: 'CheckBox3', text: 'Flurkarte' },
-          { art: 'kreuz', name: 'CheckBox4', text: 'Basiskarte' },
-          { art: 'kreuz', name: 'CheckBox5', text: 'Bauzeichnungen' },
-          { art: 'kreuz', name: 'CheckBox6', text: 'Baubeschreibung' },
-          { art: 'kreuz', name: 'CheckBox7', text: 'Brandschutzkonzept' },
-          { art: 'kreuz', name: 'CheckBox8', text: 'Barrierefrei-Konzept' },
-          { art: 'kreuz', name: 'CheckBox9', text: 'Betriebsbeschreibung' },
-        ],
-      },
-    ],
-  ]);
+/** Bauantrag nach Anlage I/1 (nw010001, Stand 2026I) im Aufbau der Vorgabe – leer bzw. mit `werte` */
+export function nw010001Leer(werte: Record<string, string | boolean> = {}): Uint8Array {
+  return synthetischesFormular('nw010001', '2026I', NW010001, werte);
 }
+
+const NW010001: SynRahmen[][] = [
+  [
+    { name: 'Panel1', titel: 'Untere Bauaufsichtsbehörde', felder: [{ art: 'memo', name: 'Memo1', text: 'Anschrift' }] },
+    { name: 'Panel2', titel: 'Eingangsstempel', felder: [{ art: 'memo', name: 'Memo3', text: 'Aktenzeichen' }] },
+    {
+      name: 'Panel3',
+      titel: 'Antrag',
+      felder: [
+        { art: 'kreuz', name: 'CheckBox1', text: 'Bauantrag' },
+        { art: 'kreuz', name: 'CheckBox2', text: 'Antrag auf Vorbescheid' },
+      ],
+    },
+    { name: 'Panel4', titel: 'Bauherrschaft', felder: [{ art: 'memo', name: 'Memo5', text: 'Name, Vorname, Firma' }] },
+    {
+      name: 'Panel8',
+      titel: 'Gebäudeklasse',
+      felder: [
+        { art: 'kreuz', name: 'CheckBox4', text: 'Gebäudeklasse 1' },
+        { art: 'kreuz', name: 'CheckBox5', text: 'Gebäudeklasse 2' },
+        { art: 'kreuz', name: 'CheckBox6', text: 'Gebäudeklasse 3' },
+        { art: 'kreuz', name: 'CheckBox7', text: 'Gebäudeklasse 4' },
+        { art: 'kreuz', name: 'CheckBox8', text: 'Gebäudeklasse 5' },
+      ],
+    },
+  ],
+  [
+    {
+      name: 'Panel1',
+      titel: 'Erforderliche Unterlagen',
+      felder: [
+        { art: 'kreuz', name: 'CheckBox1', text: 'Lageplan' },
+        { art: 'kreuz', name: 'CheckBox2', text: 'Maß der baulichen Nutzung' },
+        { art: 'kreuz', name: 'CheckBox3', text: 'Flurkarte' },
+        { art: 'kreuz', name: 'CheckBox4', text: 'Basiskarte' },
+        { art: 'kreuz', name: 'CheckBox5', text: 'Bauzeichnungen' },
+        { art: 'kreuz', name: 'CheckBox6', text: 'Baubeschreibung' },
+        { art: 'kreuz', name: 'CheckBox7', text: 'Brandschutzkonzept' },
+        { art: 'kreuz', name: 'CheckBox8', text: 'Barrierefrei-Konzept' },
+        { art: 'kreuz', name: 'CheckBox9', text: 'Betriebsbeschreibung' },
+      ],
+    },
+  ],
+];

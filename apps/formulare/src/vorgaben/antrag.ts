@@ -72,7 +72,7 @@ export const kopf: Partial<FormularProfil> = {
   },
   zaehlt: zaehltNicht('0:Memo3'),
   gruppen: [
-    gruppeV('antragsart', 'Bauantrag oder Antrag auf Vorbescheid', 'eins', s0('CheckBox1', 'CheckBox2')),
+    gruppeV('antragsart', 'Bauantrag oder Antrag auf Vorbescheid', 'genau', s0('CheckBox1', 'CheckBox2')),
     gruppeV('gebaeudeklasse', 'Gebäudeklasse', 'eins', s0('CheckBox4', 'CheckBox5', 'CheckBox6', 'CheckBox7', 'CheckBox8', 'CheckBox22')),
   ],
 };
