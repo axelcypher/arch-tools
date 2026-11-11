@@ -250,9 +250,18 @@ Anschrift, wie sie in Formularen steht.
 - **Suche** über alle Einträge; ein Treffer springt in seine Gruppe.
 - **Hinweise auf Tippfehler** (Postleitzahl, E-Mail, IBAN-Prüfziffer, Telefonnummer) – nur Hinweise, gespeichert
   wird trotzdem. Zeichen, die es in Windows-1252 nicht gibt (z. B. Emojis), werden abgelehnt.
-- **Korrekturen der Zuordnung:** Wo ein FORMA-Vordruck Felder der falschen Beteiligten-Gruppe zuordnet, liest die
-  App die Zuordnung korrigiert (die Datei bleibt unverändert; `src/vorgaben/zuordnungen.ts`). Bisher: Angaben zur
-  Artenschutzprüfung (nw020012) – „Antragsteller/in“ kommt aus den Bauherrendaten, nicht vom Entwurfsverfasser.
+- **Korrekturen der Zuordnung:** Wo ein FORMA-Vordruck Felder falsch oder gar nicht mit der Projektkarte verknüpft,
+  liest die App die Zuordnung korrigiert (die Datei bleibt unverändert; `src/vorgaben/zuordnungen.ts`):
+  - Angaben zur Artenschutzprüfung (nw020012): „Antragsteller/in“ aus den Bauherrendaten statt vom
+    Entwurfsverfasser; PLZ des Bauvorhabens aus der PLZ des Grundstücks.
+  - Erhebungsbögen der Bautätigkeitsstatistik (Baugenehmigung nw010020 samt Baufertigstellung auf Seite 3,
+    Baufertigstellung nw010021, Bauabgang nw010022): Anschrift des Baugrundstücks bzw. Gebäudes – Straße und
+    Hausnummer getrennt aus „Straße/Nr.“ des Grundstücks („Musterweg 12 a“ → „Musterweg“ und „12 a“), dazu die PLZ.
+- **Ergänzungen der Projektkarte („Schicht“ der App):** Angaben, für die die Projektkarte von FORMA keinen Eintrag
+  hat – bisher die **PLZ des Grundstücks** (Gruppe Baugrundstücksdaten, „PLZ (Ergänzung der App)“). Sie erscheinen
+  wie ein Eintrag, werden aber nie in `sj_prokarte.sdb` geschrieben: Die App merkt sie sich je FORMA-Projekt und
+  führt sie in der Projektdatei (.oap, Adresse des Vorhabens) mit; ohne eigene Angabe kommt die PLZ von dort. Im
+  Abgleich mit der Projektdatei steht sie als „Adresse: PLZ“.
 - **Autofill mit Zustand:** Felder, die FORMA einem Eintrag der Projektkarte zuordnet, bekommen ihren Text von
   dort (Auto-Wert). Je Feld merkt sich die App in der Projektdatei (`.oap`, Abschnitt `formulare` → `felder`, je
   Formulardatei) getrennt den zuletzt eingetragenen Auto-Wert und eine manuelle Überschreibung:

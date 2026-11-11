@@ -111,7 +111,18 @@ export const pkTitel = (titel: string) => titel.replace(/\s*:\s*$/, '');
 
 /* ---------- Zuordnung Feld → Projektkarte ---------- */
 
-export type Teil = { art: 'eintrag'; gruppe: number; id: number; trenner: string } | { art: 'text'; text: string };
+/**
+ * Teil einer Zuordnung: ein Eintrag der Projektkarte (mit Trenner danach) oder fester Text. `auszug` (nur von der
+ * App gesetzt, nie in FORMA-Dateien) nimmt aus „Straße Nr.“ nur die Straße bzw. nur die Hausnummer.
+ */
+export type Teil = { art: 'eintrag'; gruppe: number; id: number; trenner: string; auszug?: 'strasse' | 'hausnummer' } | { art: 'text'; text: string };
+
+/** „Musterweg 12 a“ → Straße „Musterweg“, Hausnummer „12 a“; ohne erkennbare Nummer alles Straße */
+export function strasseUndNummer(text: string): { strasse: string; hausnummer: string } {
+  const t = text.trim();
+  const m = /^(.*?\D)\s*(\d+\s*[a-zA-Z]?(?:\s*[-–/]\s*\d+\s*[a-zA-Z]?)?)$/.exec(t);
+  return m ? { strasse: m[1].trim().replace(/,$/, ''), hausnummer: m[2].replace(/\s+/g, ' ').trim() } : { strasse: t, hausnummer: '' };
+}
 
 const TRENNER: Record<string, string> = { K: ', ', L: ' ', R: '\n' };
 
@@ -160,7 +171,8 @@ export function ausfuellen(teile: Teil[], wert: (gruppe: number, id: number) => 
       davor += t.text;
       continue;
     }
-    const v = wert(t.gruppe, t.id).replace(/\r\n?/g, '\n').trim();
+    let v = wert(t.gruppe, t.id).replace(/\r\n?/g, '\n').trim();
+    if (t.auszug) v = strasseUndNummer(v.replace(/\s*\n\s*/g, ' '))[t.auszug];
     if (v) out += davor + v + t.trenner;
     davor = '';
   }

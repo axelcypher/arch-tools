@@ -380,6 +380,8 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     const zeilen = () => [...host.querySelectorAll('.pk-abgleich tbody tr')];
     expect(zeilen().map((z) => z.querySelector('td')!.firstChild!.textContent)).toEqual([
       'Bezeichnung der Baumaßnahme',
+      // Ergänzung der App: in FORMA ohne Eintrag, kommt hier aus der Projektdatei
+      'Grundstück: PLZ',
       'Gemarkung',
       'Flur',
       'Flurstück',
@@ -390,7 +392,8 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
       'Bauherr: Ort',
     ]);
     // Name stimmt schon; Projektdatei → Projektkarte
-    expect(zeilen()[4].classList.contains('gleich')).toBe(true);
+    expect(zeilen()[5].classList.contains('gleich')).toBe(true);
+    expect(zeilen()[1].classList.contains('gleich')).toBe(true);
     await klick(knopf(host, 'Abweichende übernehmen (4)'));
     expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '101:30': 'Umbau Wohnhaus', '301:40': 'Musterhausen', '301:50': '3', '301:60': '123' });
     // Projektkarte → Projektdatei: der Ort des Bauherrn

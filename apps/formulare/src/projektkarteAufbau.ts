@@ -41,7 +41,8 @@ const AUFBAU: Record<number, AufbauAbschnitt[]> = {
     { titel: 'Termine und Umfang', felder: [f(80, 4), f(90, 4), f(100, 4), f(110, 3), f(120, 5)] },
   ],
   301: [
-    { titel: 'Lage', felder: [f(20, 8), f(10, 4), f(30, 6), f(40, 6), f(50, 3), f(60, 3)] },
+    // 9010: PLZ – Ergänzung der App (zusatz.ts), in FORMA ohne Eintrag
+    { titel: 'Lage', felder: [f(20, 6), f(9010, 2), f(10, 4), f(30, 6), f(40, 6), f(50, 3), f(60, 3)] },
     { titel: 'Grundbuch', felder: [f(70, 6), f(80, 6)] },
     { titel: 'Flächen', felder: [f(90, 3), f(100, 3), f(110, 3), f(120, 3)] },
     { titel: 'Beschaffenheit', felder: [f(130, 6), f(190, 6), f(200, 6), f(210, 6), f(220, 12)] },

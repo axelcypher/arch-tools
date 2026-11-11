@@ -35,6 +35,8 @@ export const IN_PROJEKTKARTE: Partial<Record<Angabe, { gruppe: number; id: numbe
   aktenzeichen: { gruppe: 101, id: 130, titel: 'Aktenzeichen' },
   'grundstueck.strasse': { gruppe: 301, id: 20, titel: 'Grundstück: Straße/Nr.' },
   'grundstueck.ort': { gruppe: 301, id: 10, titel: 'Grundstück: Ort' },
+  // in FORMA ohne Eintrag: Ergänzung der App (zusatz.ts)
+  'grundstueck.plz': { gruppe: 301, id: 9010, titel: 'Grundstück: PLZ' },
   gemarkung: { gruppe: 301, id: 40, titel: 'Gemarkung' },
   flur: { gruppe: 301, id: 50, titel: 'Flur' },
   flurstueck: { gruppe: 301, id: 60, titel: 'Flurstück' },

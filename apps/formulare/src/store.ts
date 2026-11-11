@@ -40,6 +40,7 @@ import type { Abweichung, Eintrag } from './vorgabe';
 import { abweichung, abweichungAus, istLeer as abweichungLeer, ohneEigenes, vorgabeFuer, wirksam } from './vorgabe';
 import type { FeldAenderung, Verlauf } from './verlauf';
 import { abgleichen, eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
+import { GRUNDSTUECK, PLZ_GRUNDSTUECK, istZusatz, mitZusatz } from './zusatz';
 
 /**
  * Zustand der App: Einstellungen, die gefundenen Projekte, das geöffnete Formular und die Projektkarte.
@@ -88,6 +89,8 @@ const EINSTELLUNGEN = 'formulare:einstellungen';
 const ENTWUERFE = 'formulare:entwuerfe';
 const VERLAEUFE = 'formulare:verlauf';
 const PK_ENTWUERFE = 'formulare:projektkarten';
+/** Ergänzungen der Projektkarte durch die App (zusatz.ts) je FORMA-Projekt: Schlüssel `<Gruppe>:<Eintrag>` → Text */
+const PK_ZUSATZ = 'formulare:projektkarten-zusatz';
 const PROFILE = 'formulare:profile';
 const ADRESSBUCH = 'formulare:adressbuch';
 const ZULETZT = 'formulare:zuletzt';
@@ -425,6 +428,20 @@ export { VORGABE_OAP_PFAD };
 
 const dokSchluessel = (o: Pick<OffenesFormular, 'projekt' | 'pfad'>) => (o.projekt ? `${o.projekt.root}|${o.pfad}` : `datei|${o.pfad}`);
 const karteSchluessel = (p: Projekt) => `karte|${p.root}|${p.ordner}`;
+
+/** gemerkte Ergänzungen eines Projekts; die PLZ des Grundstücks sonst aus der Projektdatei (.oap) */
+function zusatzWerte(p: Projekt, oap: FormulareState['oap']): Record<string, string> {
+  const gemerkt = lesen<Record<string, Record<string, string>>>(PK_ZUSATZ, {})[karteSchluessel(p)] ?? {};
+  const plz = `${GRUNDSTUECK}:${PLZ_GRUNDSTUECK}`;
+  if (!(plz in gemerkt) && oap && oap !== 'fehlt' && oap.inhalt.meta.adresse.plz.trim()) return { ...gemerkt, [plz]: oap.inhalt.meta.adresse.plz.trim() };
+  return gemerkt;
+}
+
+function zusatzMerken(p: Projekt, werte: Record<string, string>) {
+  const alle = lesen<Record<string, Record<string, string>>>(PK_ZUSATZ, {});
+  alle[karteSchluessel(p)] = { ...alle[karteSchluessel(p)], ...werte };
+  schreiben(PK_ZUSATZ, alle);
+}
 
 const entwuerfe = () => lesen<Record<string, Record<string, Wert>>>(ENTWUERFE, {});
 
@@ -1271,7 +1288,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           return;
         }
         const k = karteSchluessel(projekt);
-        const offen: OffeneKarte = { projekt, karte, aenderungen: {}, verlauf: verlaufLaden(k), gesichert: null };
+        const offen: OffeneKarte = { projekt, karte: mitZusatz(karte, zusatzWerte(projekt, get().oap)), aenderungen: {}, verlauf: verlaufLaden(k), gesichert: null };
         // nur Entwürfe übernehmen, die zum Eintrag passen und noch vom gespeicherten Wert abweichen
         const entwurf = lesen<Record<string, Record<string, unknown>>>(PK_ENTWUERFE, {})[k] ?? {};
         offen.aenderungen = karteMitWerten(offen, new Map(Object.entries(entwurf)));
@@ -1428,6 +1445,13 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           return;
         }
         set({ oap: { root, pfad: g.pfad, stand: g.stand, projekt: g.projekt, inhalt: { name: g.projekt.name, meta: g.projekt.meta }, kandidaten: g.kandidaten } });
+        // Ergänzungen der Projektkarte, die noch leer sind (z. B. PLZ des Grundstücks), aus der Projektdatei
+        const k = get().karte;
+        if (k && k.projekt === projekt) {
+          const werte = zusatzWerte(projekt, get().oap);
+          const eintraege = k.karte.eintraege.map((e) => (istZusatz(e.gruppe, e.id) && !e.text.trim() && werte[pkSchluessel(e.gruppe, e.id)] ? { ...e, text: werte[pkSchluessel(e.gruppe, e.id)] } : e));
+          if (eintraege.some((e, i) => e !== k.karte.eintraege[i])) set({ karte: { ...k, karte: { ...k.karte, eintraege } } });
+        }
       } catch (e) {
         log.warn(`Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}`);
         if (get().projekt === projekt) set({ oap: 'fehlt', meldung: { art: 'fehler', text: `Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}` } });
@@ -1666,15 +1690,20 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!ds || !k || !karteGeaendert(k)) return;
       const pfad = `${k.projekt.ordner}/sj_prokarte.sdb`;
       try {
-        const aenderungen = kartenAenderungen(k);
+        // Ergänzungen der App (zusatz.ts) nie in die Projektkarte von FORMA – sie merkt sich die App selbst
+        const alle = kartenAenderungen(k);
+        const aenderungen = alle.filter((a) => !istZusatz(a.gruppe, a.id));
+        const zusatz = Object.fromEntries(alle.filter((a) => istZusatz(a.gruppe, a.id)).map((a) => [pkSchluessel(a.gruppe, a.id), String(a.neu ?? '')]));
+        if (Object.keys(zusatz).length) zusatzMerken(k.projekt, zusatz);
         if (aenderungen.length) await ds.projektkarteSchreiben(k.projekt.root, pfad, aenderungen);
-        const frisch = await ds.projektkarteLesen(k.projekt.root, pfad);
-        if (!frisch) throw new Error('Projektkarte nach dem Speichern nicht lesbar');
+        const gelesen = await ds.projektkarteLesen(k.projekt.root, pfad);
+        if (!gelesen) throw new Error('Projektkarte nach dem Speichern nicht lesbar');
+        const frisch = mitZusatz(gelesen, zusatzWerte(k.projekt, get().oap));
         karteAktualisieren({ ...k, karte: frisch, aenderungen: {} });
         set({ meldung: { art: 'info', text: `Projektkarte von ${k.projekt.ordner} gespeichert.` } });
-        if (aenderungen.length) autofillAnbindung.karteGespeichert?.(k.karte, frisch);
+        if (alle.length) autofillAnbindung.karteGespeichert?.(k.karte, frisch);
         // die Projektdatei (.oap) im Projektordner gleich mitführen: geänderte Angaben mit Gegenstück
-        const geaendert = new Set(aenderungen.map((a) => pkSchluessel(a.gruppe, a.id)));
+        const geaendert = new Set(alle.map((a) => pkSchluessel(a.gruppe, a.id)));
         const werte = new Map<Angabe, string>();
         for (const { angabe } of OAP_ANGABEN) {
           const z = IN_PROJEKTKARTE[angabe];
@@ -1686,7 +1715,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         } catch (e) {
           fehler('Projektkarte gespeichert, aber nicht in die Projektdatei übernommen', e);
         }
-        log.info(`Projektkarte gespeichert: ${pfad} (${aenderungen.length} Einträge)`);
+        log.info(`Projektkarte gespeichert: ${pfad} (${aenderungen.length} Einträge${Object.keys(zusatz).length ? `, ${Object.keys(zusatz).length} Ergänzung(en) der App` : ''})`);
       } catch (e) {
         fehler('Projektkarte nicht gespeichert', e);
       }

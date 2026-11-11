@@ -18,6 +18,7 @@ export const OAP_ANGABEN: { angabe: Angabe; feld: string }[] = [
   { angabe: 'vorhaben', feld: 'Vorhaben' },
   { angabe: 'aktenzeichen', feld: 'Aktenzeichen' },
   { angabe: 'grundstueck.strasse', feld: 'Adresse: Straße' },
+  { angabe: 'grundstueck.plz', feld: 'Adresse: PLZ' },
   { angabe: 'grundstueck.ort', feld: 'Adresse: Ort' },
   { angabe: 'gemarkung', feld: 'Grundstück: Gemarkung' },
   { angabe: 'flur', feld: 'Grundstück: Flur' },

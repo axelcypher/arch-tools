@@ -18,7 +18,7 @@ import type { Formular } from './forma/formular';
 import type { Projektkarte, Teil } from './forma/projektkarte';
 import { ausfuellen, pkTitel, pkWert, verwendeteEintraege, zuordnungen } from './forma/projektkarte';
 import { kennung } from './forma/formular';
-import { korrigiert } from './vorgaben/zuordnungen';
+import { korrigiert, zusaetzlicheFelder } from './vorgaben/zuordnungen';
 
 export interface FeldZustand {
   /** zuletzt eingetragener Auto-Wert */
@@ -66,11 +66,19 @@ function quelle(teile: Teil[], pk: Projektkarte): string {
 export function autofillFelder(formular: Formular, felder: Feld[][]): Map<string, { feld: Feld; teile: Teil[] }> {
   const out = new Map<string, { feld: Feld; teile: Teil[] }>();
   const k = kennung(formular);
+  const zusaetzlich = zusaetzlicheFelder(k);
   formular.seiten.forEach((seite, i) => {
     const nachName = new Map((felder[i] ?? []).map((f) => [f.name, f]));
-    for (const [name, teile] of zuordnungen(seite)) {
+    const liste = zuordnungen(seite);
+    // Felder, die erst die Korrektur verknüpft (FORMA hat für sie keine Zuordnung)
+    for (const s of zusaetzlich) {
+      const [seiteNr, name] = s.split(':');
+      if (Number(seiteNr) === i && !liste.has(name)) liste.set(name, []);
+    }
+    for (const [name, teile] of liste) {
       const feld = nachName.get(name);
-      if (feld && feld.art === 'text') out.set(feld.schluessel, { feld, teile: korrigiert(k, feld.schluessel, teile) });
+      const t = feld ? korrigiert(k, feld.schluessel, teile) : [];
+      if (feld && feld.art === 'text' && t.some((x) => x.art === 'eintrag')) out.set(feld.schluessel, { feld, teile: t });
     }
   });
   return out;
