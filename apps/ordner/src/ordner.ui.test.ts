@@ -16,6 +16,9 @@ import { farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// der echte Ladevorgang (die Tests ersetzen ihn sonst durch einen leeren)
+const echtesKonfigLaden = useOrdner.getState().konfigLaden;
+
 let root: ReturnType<typeof createRoot> | null = null;
 function render(element: ReactElement = createElement(App)): HTMLElement {
   const host = document.createElement('div');
@@ -29,9 +32,23 @@ function render(element: ReactElement = createElement(App)): HTMLElement {
 beforeEach(() => {
   localStorage.clear();
   // die gemeinsamen Einstellungen setzen die Tests selbst
-  useOrdner.setState({ stamm: leereStammdaten(), struktur: STANDARD, stammordner: '', vorlagenordner: '', vorlagen: [], vorlagenName: '', allgemein: VORGABE_ALLGEMEIN, konfigLaden: async () => {} });
+  useOrdner.setState({
+    stamm: leereStammdaten(),
+    struktur: STANDARD,
+    stammordner: '',
+    vorlagenordner: '',
+    vorlagen: [],
+    vorlagenName: '',
+    allgemein: VORGABE_ALLGEMEIN,
+    konfigLaden: async () => {},
+    konfigStandEigen: null,
+    konflikt: null,
+    rueckgaengig: null,
+  });
 });
-afterEach(() => {
+afterEach(async () => {
+  // anstehendes (entprelltes) Schreiben nicht in den nächsten Test tragen
+  await act(() => useOrdner.getState().speichernJetzt());
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
@@ -155,12 +172,78 @@ describe('Projektordner', () => {
     eingabe(text, '# nichts');
     expect(useOrdner.getState().struktur.ordner).toHaveLength(2);
     expect(host.textContent).toContain('Die Liste enthält keinen Ordner');
+    // Standard: erst Rückfrage mit Vorschau, Abbrechen ändert nichts (P-01)
     act(() => knopf(host, 'Standard').click());
-    expect(useOrdner.getState().struktur).toEqual(STANDARD);
-    // gespeichert im Konfigurationsordner (im Browser: lokaler Speicher)
     await warten();
+    expect(host.querySelector('.modal')?.textContent).toContain('Standardstruktur wiederherstellen?');
+    expect(host.querySelector('.modal')?.textContent).toMatch(/2 Ordner entfallen, \d+ neu/);
+    act(() => knopf(host, 'Abbrechen').click());
+    await warten();
+    expect(useOrdner.getState().struktur.ordner).toHaveLength(2);
+    // Bestätigen ersetzt – vorher gesichert
+    act(() => knopf(host, 'Standard').click());
+    await warten();
+    act(() => knopf(host, 'Ersetzen').click());
+    await warten();
+    expect(useOrdner.getState().struktur).toEqual(STANDARD);
+    const sicherungen = JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen')!).sicherungen;
+    expect(sicherungen).toHaveLength(1);
+    expect(sicherungen[0].name).toMatch(/^projektordner\.json\.bak-\d{4}-\d{2}-\d{2}-\d{4}$/);
+    expect(sicherungen[0].inhalt.struktur.ordner).toEqual([{ pfad: 'A' }, { pfad: 'B/C', lph: [5, 6], dateischema: true }]);
+    // „Rückgängig“ stellt wieder her
+    act(() => knopf(host, 'Rückgängig').click());
+    expect(useOrdner.getState().struktur.ordner).toHaveLength(2);
+    // Sicherung wiederherstellen: die Liste zeigt sie, gleicher Stand = keine Änderung
+    act(() => knopf(host, 'Sicherungen').click());
+    await warten();
+    expect(host.querySelector('.po-sicherungen')?.textContent).toContain('vor: Neutrale Standardstruktur wiederhergestellt');
+    act(() => knopf(host, 'Wiederherstellen').click());
+    await warten();
+    expect(host.textContent).toContain('Keine Änderung');
+    act(() => knopf(host, 'Standard').click());
+    await warten();
+    act(() => knopf(host, 'Ersetzen').click());
+    await warten();
+    // gespeichert im Konfigurationsordner (im Browser: lokaler Speicher), entprellt
+    await act(() => useOrdner.getState().speichernJetzt());
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!)).toMatchObject({ oapPfad: 'Planung/Berechnungen/{nummer}', fotoordner: '10 Fotos' });
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner')!).struktur.ordnername).toBe(STANDARD.ordnername);
+  });
+
+  it('Struktur von einem anderen Rechner geändert: Meldung statt Überschreiben, neu laden oder eigene Fassung speichern (P-02)', async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    const fremd = (name: string) => localStorage.setItem('arch-tools:konfig:projektordner', JSON.stringify({ struktur: { ...STANDARD, name }, vorlagenordner: '' }));
+    const host = render();
+    act(() => knopf(host, 'Einstellungen').click());
+    await warten();
+    // ein anderer Rechner speichert dazwischen
+    fremd('Fremd');
+    eingabe(feld(host, 'Name der Struktur'), 'Meine');
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(host.querySelector('.po-konflikt')?.textContent).toContain('von einem anderen Rechner geändert');
+    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner')!).struktur.name).toBe('Fremd');
+    // neu laden: die fremde Fassung gilt, die eigene bleibt über „Rückgängig“ erreichbar
+    await act(() => knopf(host, 'Neu laden').click());
+    expect(useOrdner.getState().struktur.name).toBe('Fremd');
+    expect(host.querySelector('.po-konflikt')).toBeNull();
+    act(() => knopf(host, 'Rückgängig').click());
+    expect(useOrdner.getState().struktur.name).toBe('Meine');
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner')!).struktur.name).toBe('Meine');
+    // noch einmal fremd geändert: eigene Fassung trotzdem speichern
+    fremd('Wieder fremd');
+    eingabe(feld(host, 'Name der Struktur'), 'Meine 2');
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(host.querySelector('.po-konflikt')).not.toBeNull();
+    await act(async () => knopf(host, 'Meine Fassung trotzdem speichern').click());
+    await warten();
+    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner')!).struktur.name).toBe('Meine 2');
+    // beim Wechsel in die Einstellungen wird frisch gelesen
+    fremd('Vom Server');
+    act(() => knopf(host, 'Vorlagen').click());
+    await warten();
+    expect(useOrdner.getState().struktur.name).toBe('Vom Server');
   });
 
   it('Vorlagen: Preset anlegen, Vorlagen aus dem Vorlagenordner zuordnen, im neuen Projekt wählen', async () => {

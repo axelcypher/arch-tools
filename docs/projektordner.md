@@ -78,12 +78,25 @@ Welcher Konfigurationsordner gilt, steht je Benutzer in `%APPDATA%\arch-tools\ko
 derselbe Ort. Einstellungen früherer Fassungen (lokal gespeichert) werden beim ersten Start übernommen. Im Browser
 liegen die Einstellungen im Speicher des Browsers.
 
+`projektordner.json` wird kurz nach der letzten Änderung geschrieben (nicht bei jedem Tastendruck) und nur, wenn
+die Datei seit dem Lesen unverändert ist. Hat ein anderer Rechner sie inzwischen geändert, überschreibt das Tool
+sie nicht, sondern meldet „Die Struktur wurde inzwischen von einem anderen Rechner geändert – neu laden?“ mit
+„Neu laden“ (die eigene Fassung bleibt über „Rückgängig“ erreichbar) und „Meine Fassung trotzdem speichern“. Beim
+Wechsel in „Einstellungen“ und „Vorlagen“ liest das Tool die Datei frisch.
+
 ### Struktur
 
 Ordnerbaum und Namensschemata gehören dem Büro, nicht dem Tool. Die Struktur lässt sich zusätzlich als JSON-Datei
 speichern, weitergeben und laden – samt den Vorlagen-Presets und dem Dateinamenschema für Vorlagen; die eingebaute
 Vorgabe ist neutral (nach Dokumentart: Projekt, Grundlagen, Pläne, Berechnungen, Schriftverkehr, Protokolle,
 Genehmigung, Ausschreibung, Bauleitung, Fotos). „Standard“ setzt Ordner und Schemata zurück; die Presets bleiben.
+
+Die Bürostruktur gilt für alle, die den Konfigurationsordner nutzen. „Standard“ und „Struktur laden …“ fragen
+deshalb vorher nach und zeigen, was sich ändert („6 Ordner entfallen, 2 neu, 3 Schemata ändern sich“), mit
+„Ersetzen / Abbrechen“. Vor dem Ersetzen wird der bisherige Stand gesichert – in `projektordner-sicherungen.json`
+im Konfigurationsordner, je Sicherung mit Namen `projektordner.json.bak-JJJJ-MM-TT-hhmm`; die letzten zehn bleiben.
+„Sicherungen …“ listet sie zum Wiederherstellen. Nach dem Ersetzen (und nach „Ordnerliste übernehmen“) nimmt
+„Rückgängig“ die Änderung zurück, solange nichts anderes geändert wurde.
 
 | Einstellung | Vorgabe | Platzhalter |
 |---|---|---|

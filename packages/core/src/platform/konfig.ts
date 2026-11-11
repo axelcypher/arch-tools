@@ -137,6 +137,25 @@ export function konfigAendern<T>(bereich: string, aendern: (roh: unknown) => T, 
   });
 }
 
+/** Stand eines Bereichs zum Vergleich vor dem Schreiben: sein Inhalt als JSON-Text; null, wenn es ihn nicht gibt */
+export const konfigStand = (roh: unknown): string | null => (roh == null ? null : JSON.stringify(roh));
+
+export type KonfigSchreibErgebnis = { ok: true; stand: string | null } | { ok: false; aktuell: unknown };
+
+/**
+ * Bereich nur schreiben, wenn er seit dem Lesen unverändert ist (`stand` aus `konfigStand`) – sonst nichts schreiben
+ * und den aktuellen Inhalt liefern. Verhindert, dass zwei Rechner mit offener App sich gegenseitig Änderungen
+ * überschreiben („letzter Schreiber gewinnt“). Liefert beim Gelingen den neuen Stand.
+ */
+export function konfigSchreibenWennUnveraendert(bereich: string, wert: unknown, stand: string | null, optionen: KonfigOptionen = {}): Promise<KonfigSchreibErgebnis> {
+  return nacheinander(async () => {
+    const aktuell = await konfigLesen(bereich, optionen);
+    if (konfigStand(aktuell) !== stand) return { ok: false, aktuell };
+    await schreibenJetzt(bereich, wert, optionen);
+    return { ok: true, stand: konfigStand(wert) };
+  });
+}
+
 /**
  * Anderen Konfigurationsordner wählen (`null` = wieder der lokale). Bereiche, die es dort noch nicht gibt, werden
  * aus dem bisherigen Ordner hinübergenommen; was dort schon liegt, gilt und bleibt unverändert. Liefert die
