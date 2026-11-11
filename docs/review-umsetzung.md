@@ -216,16 +216,32 @@ GRZ 0.10.1, KO 0.10.1, PO 0.6.1, EZ 0.5.1, FO 0.21.2 (nur Patch, Bundles geände
   bzw. Schreiben; bei Abweichung Meldung mit „Neu laden“ / „Meine Fassung trotzdem speichern“. Frisch gelesen beim
   Wechsel in Einstellungen/Vorlagen; Schreiben entprellt (400 ms). Abweichung: Vergleich über den Inhalt statt
   Änderungszeit (ohne Rust); zwischen Lesen und Schreiben bleibt ein sehr kurzes Zeitfenster.
-- [ ] **P-03** Projektnummer: Prüfung, Vorschlag aus allen Stammordnern
+- [x] **P-03** Projektnummer: Prüfung, Vorschlag aus allen Stammordnern – PO 0.7.0: `nummerPasst` (Schema
+  `{jahr} {jj} {nr[:n]}`), Hinweis am Feld „Passt nicht zum Schema … – erwartet z. B. 2026-015“ (blockiert nicht;
+  core: Prop `nummerPruefen` in `StammdatenFelder`); Vorschlag über die Ordner aller `allgemein.projekte`, beim neuen
+  Projekt vorausgefüllt. Abweichung: die optionale Reservierungsdatei `nummern.json` ist nicht umgesetzt.
 - [ ] **P-04** Ordnerliste als Baum
 - [ ] **P-05** Vorlagen-Zuordnungen außerhalb der Struktur
 - [ ] **P-06** Uneinheitliche Platzhalter
-- [ ] **P-07** Leistungsphasen-Auswahl
-- [ ] **P-08** Validierung im Stammdaten-Formular
+- [x] **P-07** Leistungsphasen-Auswahl – PO 0.7.0 (core `StammdatenFelder`, damit in allen Apps; mit P-03, P-08, P-12,
+  P-14 auch FR 0.19.0, GRZ 0.11.0, KO 0.11.0, FO 0.22.0, dazu EZ 0.5.2 und SU 0.4.1 nur Patch, Bundles geändert): Namen sichtbar
+  („4 Genehmigungsplanung“), Schnellwahl „1–4 bis Bauantrag“, „5–8“, „1–9 alle“, „keine“; im Trockenlauf beim
+  Ergänzen ohne LPh Hinweis mit Sprung „Leistungsphasen wählen“; „Alle neuen Einträge abwählen“ / „Alle wieder wählen“
+- [x] **P-08** Validierung im Stammdaten-Formular – PO 0.7.0: im Assistenten Kurzname Pflicht (Stern), keine gelben
+  Kästen beim Öffnen, Meldungen am Feld nach Verlassen bzw. nach „Weiter“, „Weiter“ nennt sichtbar, was fehlt; der
+  abgeleitete Fehler „kein Name“ entfällt; Ordnername direkt unter Nummer/Kurzname (core: Prop `ordnerName`); PLZ,
+  E-Mail und Zeichen im Kurznamen über die gemeinsame Prüfung (Q-3)
 - [ ] **P-09** Projektübersicht (alle Apps)
 - [ ] **P-10** „Ordner prüfen“ für alle Projekte, mit Bericht
 - [ ] **P-11** Entwurf bleibt nach dem Anlegen stehen
-- [ ] **P-12** Barrierefreiheit und Tastatur
+- [x] **P-12** Barrierefreiheit und Tastatur – PO 0.7.0: `aria-current="step"`, Strg+Enter = „Weiter“, `aria-label` je
+  Beteiligten-Feld („Rolle 2“) und Löschknopf („Beteiligten 2 entfernen“, core), aktiver Schritt nicht mehr grau
+  (auch auf der Startseite), Text in `--text` und fett; „neu“-Vermerk fett in `--ok-text`. Die übrigen „×“-Knöpfe
+  (Stammordner, Zuordnungen) haben bereits eine Beschriftung über `title`.
 - [x] **P-13** Uneinheitlicher Einstieg – PO 0.5.0 (mit Q-5)
-- [ ] **P-14** Beteiligte und Bearbeitung ohne Adressbuch
+- [x] **P-14** Beteiligte und Bearbeitung ohne Adressbuch – PO 0.7.0: Rollen-Vorschläge (`ROLLEN`, NRW-typisch) plus
+  Freitext, Namen-Vorschläge aus den Projektdateien der Stammordner (`beteiligteSammeln`, die 60 zuletzt geänderten
+  Projekte) mit Ergänzen von Rolle/Kontakt, „Bearbeitung“ mit Hinweis „Kürzel, z. B. TP“ und Vorschlägen aus
+  `allgemein.mitarbeiter` (neu, Einstellungen „Mitarbeiter (Kürzel)“). Die Vorschläge nutzt der Projektordner; in den
+  anderen Apps bietet der Dialog die Rollen-Vorschläge.
 - [ ] **P-15** Kein Abschluss/Archiv

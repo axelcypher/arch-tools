@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectMeta } from '../model';
 import { leereMeta } from '../model';
-import { StammdatenDialog } from './Stammdaten';
+import { StammdatenDialog, StammdatenFelder } from './Stammdaten';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -47,6 +47,8 @@ describe('Stammdaten-Dialog', () => {
     eingabe(feld(host, 'PLZ'), '4814');
     expect(feld(host, 'PLZ').closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('fünf Ziffern');
     eingabe(feld(host, 'PLZ'), '48143');
+    eingabe(feld(host, 'E-Mail'), 'anna@mueller, kein-mail');
+    expect(feld(host, 'E-Mail').closest('label')!.querySelector('.feld-meldung')!.textContent).toBe('Keine gültige E-Mail-Adresse: anna@mueller, kein-mail');
     eingabe(feld(host, 'Projektnummer'), ' BS5 ');
     eingabe(feld(host, 'Kurzname'), 'Birkenstraße');
     eingabe(feld(host, 'Name bzw. Firma'), 'Mustermann');
@@ -63,6 +65,59 @@ describe('Stammdaten-Dialog', () => {
       beteiligte: [{ rolle: 'Tragwerk', name: '', kontakt: '' }],
       bauherr: { name: 'Mustermann', kontakte: [{ art: 'email', wert: 'a@example.org' }, { art: 'email', wert: 'b@example.org' }] },
     });
+  });
+
+  it('Leistungsphasen mit Namen und Schnellwahl; Beteiligte mit Rollen-Vorschlägen, Übernahme aus früheren Projekten, beschriftete Felder (P-07, P-12, P-14)', () => {
+    let meta: ProjectMeta = { ...leereMeta(), beteiligte: [{ rolle: '', name: '', kontakt: '' }] };
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const zeichne = () =>
+      act(() =>
+        root!.render(
+          createElement(StammdatenFelder, {
+            meta,
+            bereiche: ['umfang'],
+            onChange: (m: ProjectMeta) => {
+              meta = m;
+              zeichne();
+            },
+            bearbeiterVorschlaege: ['TP', 'AK'],
+            beteiligtVorschlaege: [{ rolle: 'Tragwerksplanung', name: 'Büro Statik', kontakt: '0251 1234' }],
+          }),
+        ),
+      );
+    act(() => {
+      root = createRoot(host);
+    });
+    zeichne();
+    // Namen sichtbar, Schnellwahl
+    const lph = host.querySelector('.sd-lph')!.textContent!;
+    expect(lph).toContain('4 Genehmigungsplanung');
+    expect(lph).toContain('8 Objektüberwachung');
+    act(() => knopf(host, '1–4 bis Bauantrag').click());
+    expect(meta.leistungsphasen).toEqual([1, 2, 3, 4]);
+    act(() => knopf(host, '5–8').click());
+    expect(meta.leistungsphasen).toEqual([5, 6, 7, 8]);
+    act(() => knopf(host, '1–9 alle').click());
+    expect(meta.leistungsphasen).toHaveLength(9);
+    act(() => knopf(host, 'keine').click());
+    expect(meta.leistungsphasen).toBeUndefined();
+    // Bearbeitung: Hinweis und Vorschläge der Mitarbeiter
+    expect(feld(host, 'Bearbeitung').closest('label')!.textContent).toContain('Kürzel, z. B. TP');
+    const liste = (el: HTMLInputElement) => [...host.querySelectorAll(`datalist[id="${el.getAttribute('list')}"] option`)].map((o) => o.getAttribute('value'));
+    expect(liste(feld(host, 'Bearbeitung'))).toEqual(['TP', 'AK']);
+    // beschriftete Felder je Zeile, Rollen-Vorschläge plus Freitext
+    const rolle = host.querySelector<HTMLInputElement>('input[aria-label="Rolle 1"]')!;
+    expect(liste(rolle)).toContain('Prüfingenieur/-in für Standsicherheit');
+    expect(liste(rolle)).toContain('Vermessung (ÖbVI)');
+    expect(host.querySelector('button[aria-label="Beteiligten 1 entfernen"]')).not.toBeNull();
+    eingabe(rolle, 'Lichtplanung');
+    expect(meta.beteiligte![0].rolle).toBe('Lichtplanung');
+    // Name aus einem früheren Projekt: Kontakt wird ergänzt, die eigene Rolle bleibt
+    const name = host.querySelector<HTMLInputElement>('input[aria-label="Name 1"]')!;
+    expect(liste(name)).toEqual(['Büro Statik']);
+    eingabe(name, 'Büro Statik');
+    expect(meta.beteiligte![0]).toEqual({ rolle: 'Lichtplanung', name: 'Büro Statik', kontakt: '0251 1234' });
   });
 
   it('ein Fehler beim Anlegen erscheint im Dialog', async () => {

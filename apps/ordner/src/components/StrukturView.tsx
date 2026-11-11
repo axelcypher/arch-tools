@@ -298,6 +298,24 @@ function GemeinsameEinstellungen() {
       <Field label="Büro" hint="Name des Büros im Kopf der Ausdrucke und Excel-Dateien aller Apps (leer = ohne)">
         <TextField value={allgemein.buero ?? ''} placeholder="z. B. Architekturbüro Muster" onChange={(v) => setAllgemein({ buero: v.trim() })} />
       </Field>
+      <Field label="Mitarbeiter (Kürzel)" hint="mehrere mit Komma – Vorschläge für „Bearbeitung“ in den Stammdaten">
+        <TextField
+          value={(allgemein.mitarbeiter ?? []).join(', ')}
+          placeholder="z. B. TP, AK"
+          onChange={(v) =>
+            setAllgemein({
+              mitarbeiter: [
+                ...new Set(
+                  v
+                    .split(/[,;]+/)
+                    .map((x) => x.trim())
+                    .filter(Boolean),
+                ),
+              ],
+            })
+          }
+        />
+      </Field>
     </>
   );
 }

@@ -112,10 +112,12 @@
   width: 80px;
   text-align: right !important;
   font-size: 11px;
+  font-weight: 600;
   color: var(--ok-text);
 }
 .po-plan tr.vorhanden .po-status {
   color: var(--muted);
+  font-weight: normal;
 }
 .po-art {
   display: inline-block;
@@ -418,7 +420,14 @@
 .po-schritte li.aktiv button {
   border-color: var(--accent);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
+  opacity: 1;
+}
+.po-weiter-grund {
+  align-self: center;
+  font-size: 12px;
+  color: var(--warn-text);
 }
 .po-schritte li.aktiv .po-schritt-nr,
 .po-schritte li.erledigt .po-schritt-nr {

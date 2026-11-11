@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Beteiligter } from '@core/model';
 import { zuletztMerken } from '@core/platform/konfig';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { StammdatenFelder } from '@core/ui/Stammdaten';
 import type { Eintrag } from '../dateisystem';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
-import { ausOrdnername, naechsteNummer } from '../nummer';
+import { ausOrdnername, naechsteNummer, nummerPasst } from '../nummer';
 import type { Ergebnis, Plan } from '../plan';
 import { ausfuehren, ohne, planen, tutEtwas } from '../plan';
 import type { GeladenerOrdner, GeladenesProjekt } from '../projekt';
-import { projektEinlesen } from '../projekt';
+import { beteiligteSammeln, projektEinlesen } from '../projekt';
 import type { Stammdaten } from '../stammdaten';
 import { formularMeta, leereStammdaten, stammAusMeta } from '../stammdaten';
 import { useOrdner } from '../store';
@@ -71,6 +72,14 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
   const [laeuft, setLaeuft] = useState<string | null>(null);
   const [ergebnis, setErgebnis] = useState<{ ordner: string; liste: Ergebnis[] } | null>(null);
   const [lesung, setLesung] = useState(0);
+  /** Ordnernamen aller Stammordner – für den Nummernvorschlag */
+  const [alleNamen, setAlleNamen] = useState<string[]>([]);
+  /** Projektnummer beim neuen Projekt schon einmal vorausgefüllt (danach nicht mehr überschreiben) */
+  const [vorbelegt, setVorbelegt] = useState(false);
+  /** „Weiter“ trotz offener Angaben gedrückt: Meldungen an den Feldern zeigen */
+  const [versucht, setVersucht] = useState(false);
+  const [beteiligtVorschlaege, setBeteiligtVorschlaege] = useState<Beteiligter[] | null>(null);
+  const weiterKnopf = useRef<HTMLButtonElement>(null);
 
   // Projektordner im Stammordner: Auswahl zum Ergänzen und Nummernvorschlag
   useEffect(() => {
@@ -91,6 +100,32 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
       aktuell = false;
     };
   }, [desktop, stammordner, ergebnis]);
+
+  // Nummernvorschlag aus den Ordnern ALLER Stammordner (auch Archiv, Akquise …)
+  const stammordnerSchluessel = allgemein.projekte.join('|');
+  useEffect(() => {
+    if (!desktop || !allgemein.projekte.length) return setAlleNamen([]);
+    let aktuell = true;
+    void Promise.all(allgemein.projekte.map((r) => tauriDateisystem.liste(r, 1).then((l) => l.filter((e) => e.ordner).map((e) => e.pfad), () => [] as string[]))).then(
+      (je) => aktuell && setAlleNamen(je.flat()),
+    );
+    return () => {
+      aktuell = false;
+    };
+  }, [desktop, stammordnerSchluessel, ergebnis]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Beteiligte früherer Projekte als Vorschläge (im Hintergrund, sobald der Umfang dran ist)
+  useEffect(() => {
+    if (schritt !== 'umfang' || beteiligtVorschlaege || !desktop || !allgemein.projekte.length) return;
+    let aktuell = true;
+    void beteiligteSammeln(tauriDateisystem, allgemein.projekte).then(
+      (l) => aktuell && setBeteiligtVorschlaege(l),
+      () => aktuell && setBeteiligtVorschlaege([]),
+    );
+    return () => {
+      aktuell = false;
+    };
+  }, [schritt, desktop, stammordnerSchluessel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // bestehendes Projekt: Projektdatei (oder alte projekt.json) lesen
   const ordnerSchluessel = ordner ? `${ordner.pfad}|${ordner.name}` : '';
@@ -148,12 +183,22 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
   }, [modus, stamm, struktur, vorlagen, ordner, geladen, vorhandeneNeu, jahr, allgemein.oapPfad]);
   const auszufuehren = useMemo(() => (plan ? nurWasEtwasTut(ohne(plan, abgewaehlt)) : null), [plan, abgewaehlt]);
   const offen = auszufuehren?.schritte ?? [];
-  const vorschlag = useMemo(() => naechsteNummer(struktur.nummernschema, projekte), [struktur.nummernschema, projekte]);
+  const vorschlag = useMemo(() => naechsteNummer(struktur.nummernschema, alleNamen), [struktur.nummernschema, alleNamen]);
+  // neues Projekt: den Vorschlag einmal ins Feld übernehmen (bleibt änderbar)
+  useEffect(() => {
+    if (vorbelegt || modus !== 'neu' || !desktop || !alleNamen.length || entwurf.nummer.trim()) return;
+    setStamm({ nummer: vorschlag });
+    setVorbelegt(true);
+  }, [vorbelegt, modus, desktop, alleNamen, vorschlag]); // eslint-disable-line react-hooks/exhaustive-deps
+  const nummerBeispiel = vorschlag;
+  const nummerPruefen = (v: string) => (!v.trim() || nummerPasst(struktur.nummernschema, v) ? null : `Passt nicht zum Schema ${struktur.nummernschema} – erwartet z. B. ${nummerBeispiel}.`);
 
   /* ---------- Aktionen ---------- */
 
   const neuBeginnen = () => {
     setModus('neu');
+    setVorbelegt(false);
+    setVersucht(false);
     setOrdner(null);
     setErgebnis(null);
     setFehler(null);
@@ -162,6 +207,7 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
   };
   const ergaenzenMit = (o: GeladenerOrdner) => {
     setModus('ergaenzen');
+    setVersucht(false);
     setOrdner(o);
     setErgebnis(null);
     setFehler(null);
@@ -253,12 +299,28 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
   /* ---------- Prüfen je Schritt ---------- */
 
   const stammFehler = !stamm ? ['Die Stammdaten werden gelesen …'] : modus === 'neu' ? (plan?.fehler ?? []) : stamm.nummer.trim() ? [] : ['Die Projektnummer fehlt.'];
+  // Meldungen, die an einem Feld stehen (Nummer, Kurzname) – nicht noch einmal als Kasten
+  const AM_FELD = ['Die Projektnummer fehlt.', 'Der Kurzname fehlt.'];
   const kannWeiter = (id: SchrittId) => (id === 'start' ? !!modus && (modus === 'neu' || !!stamm) : id === 'stammdaten' ? !stammFehler.length : true);
   const index = SCHRITTE.findIndex((s) => s.id === schritt);
   const naechster = SCHRITTE[index + 1];
   const voriger = SCHRITTE[index - 1];
   // ein Schritt ist erreichbar, wenn alle davor taugen
   const erreichbar = (i: number) => !!modus && SCHRITTE.slice(0, i).every((s) => kannWeiter(s.id));
+
+  const weiterGehen = () => {
+    if (!naechster) return;
+    if (!kannWeiter(schritt)) return setVersucht(true);
+    setVersucht(false);
+    setSchritt(naechster.id);
+  };
+  // Strg+Enter = „Weiter“ – nach dem Übernehmen des Feldes, in dem der Fokus steht (Enter verlässt das Feld)
+  const tasten = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || schritt === 'start') return;
+    e.preventDefault();
+    setTimeout(() => weiterKnopf.current?.click(), 0);
+  };
+  const neueEintraege = (plan?.schritte ?? []).filter((x) => !x.vorhanden).map((x) => x.pfad);
 
   const presetsAktiv = aktivePresets(struktur, stamm?.presets).presets;
   const ohneProjektdatei = modus === 'ergaenzen' && geladen && !geladen.projektdatei;
@@ -291,11 +353,11 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
 
   return (
     <div className="po-view einspaltig po-assistent">
-      <section className="po-col">
-        <ol className="po-schritte">
+      <section className="po-col" onKeyDown={tasten}>
+        <ol className="po-schritte" aria-label="Schritte">
           {SCHRITTE.map((s, i) => (
-            <li key={s.id} className={`${s.id === schritt ? 'aktiv' : ''}${i < index ? ' erledigt' : ''}`}>
-              <button disabled={!erreichbar(i)} onClick={() => setSchritt(s.id)}>
+            <li key={s.id} className={`${s.id === schritt ? 'aktiv' : ''}${i < index ? ' erledigt' : ''}`} aria-current={s.id === schritt ? 'step' : undefined}>
+              <button disabled={!erreichbar(i) && s.id !== schritt} onClick={() => setSchritt(s.id)}>
                 <span className="po-schritt-nr">{i + 1}</span>
                 {s.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : s.label}
               </button>
@@ -390,9 +452,13 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
               onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
               bereiche={['projekt', 'grundstueck', 'bauherr']}
               nummerHinweis={modus === 'neu' ? `Schema ${struktur.nummernschema}` : undefined}
-              nummerVorschlag={modus === 'neu' && desktop && stammordner ? vorschlag : undefined}
+              nummerVorschlag={modus === 'neu' && desktop && alleNamen.length ? vorschlag : undefined}
+              nummerPruefen={modus === 'neu' ? nummerPruefen : undefined}
               // beim Ergänzen wird der vorhandene Ordner nicht umbenannt
               kurznameHinweis={modus === 'neu' ? undefined : 'Der Ordner wird nicht umbenannt.'}
+              kurznamePflicht={modus === 'neu'}
+              ordnerName={modus === 'neu' ? (plan?.ordner ?? '') : undefined}
+              fehlerZeigen={versucht}
             />
             {modus === 'neu' && gibtEsSchon && (
               <p className="po-hinweis">
@@ -409,11 +475,13 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
                 </button>
               </div>
             )}
-            {stammFehler.map((f) => (
-              <p key={f} className="warning">
-                {f}
-              </p>
-            ))}
+            {stammFehler
+              .filter((f) => !AM_FELD.includes(f))
+              .map((f) => (
+                <p key={f} className="warning">
+                  {f}
+                </p>
+              ))}
           </>
         )}
 
@@ -421,7 +489,13 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
           <>
             <h2>Umfang</h2>
             <p className="muted small-text">Ordner und Vorlagen, die an Leistungsphasen gebunden sind, entstehen nur für die beauftragten. Ohne Auswahl entsteht alles.</p>
-            <StammdatenFelder meta={formularMeta(stamm)} onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))} bereiche={['umfang']} />
+            <StammdatenFelder
+              meta={formularMeta(stamm)}
+              onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
+              bereiche={['umfang']}
+              bearbeiterVorschlaege={allgemein.mitarbeiter}
+              beteiligtVorschlaege={beteiligtVorschlaege ?? undefined}
+            />
           </>
         )}
 
@@ -472,11 +546,31 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
                     {desktop && plan.projektdatei.teile.length && !abgewaehlt.has(plan.projektdatei.pfad) ? `, Projektdatei ergänzt (${plan.projektdatei.teile.join(', ')})` : ''}
                   </span>
                 </h3>
+                {modus === 'ergaenzen' && !stamm?.leistungsphasen.length && (
+                  <p className="po-hinweis">
+                    Keine Leistungsphasen gewählt – alle Ordner werden vorgeschlagen, auch die für Ausschreibung und Bauleitung.{' '}
+                    <button className="small" onClick={() => setSchritt('umfang')}>
+                      Leistungsphasen wählen
+                    </button>
+                  </p>
+                )}
                 {modus === 'ergaenzen' && (
                   <label className="toggle po-nurneu">
                     <input type="checkbox" checked={nurNeu} onChange={() => setNurNeu(!nurNeu)} />
                     nur zeigen, was sich ändert
                   </label>
+                )}
+                {neueEintraege.length > 1 && (
+                  <div className="button-row po-auswahl">
+                    <button className="small" title="Nichts Neues anlegen – dann einzelne Einträge wieder anwählen" onClick={() => setAbgewaehlt(new Set(neueEintraege))}>
+                      Alle neuen Einträge abwählen
+                    </button>
+                    {abgewaehlt.size > 0 && (
+                      <button className="small" onClick={() => setAbgewaehlt(new Set())}>
+                        Alle wieder wählen
+                      </button>
+                    )}
+                  </div>
                 )}
                 <PlanTabelle plan={plan} abgewaehlt={abgewaehlt} onUmschalten={umschalten} nurNeu={modus === 'ergaenzen' && nurNeu} />
                 <PlanMeldungen plan={plan} />
@@ -519,9 +613,19 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
           <div className="button-row po-navigation">
             {voriger && <button onClick={() => setSchritt(voriger.id)}>← {voriger.id === 'start' ? 'Anderes Projekt' : voriger.label}</button>}
             {naechster && (
-              <button className="primary" disabled={!kannWeiter(schritt)} title={schritt === 'stammdaten' ? stammFehler.join(' ') : undefined} onClick={() => setSchritt(naechster.id)}>
+              <button
+                ref={weiterKnopf}
+                className="primary"
+                title={`${schritt === 'stammdaten' && stammFehler.length ? `${stammFehler.join(' ')} ` : ''}(Strg+Enter)`}
+                onClick={weiterGehen}
+              >
                 Weiter: {naechster.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : naechster.label} →
               </button>
+            )}
+            {versucht && !kannWeiter(schritt) && (
+              <span className="po-weiter-grund" role="status">
+                Noch offen: {stammFehler.map((f) => f.replace(/\.$/, '')).join(', ')}
+              </span>
             )}
           </div>
         )}

@@ -1,5 +1,7 @@
 import { readProjectFile } from '@core/archive';
-import type { ProjectMeta, ProjektordnerAngaben } from '@core/model';
+import type { Beteiligter, ProjectMeta, ProjektordnerAngaben } from '@core/model';
+import type { ProjektordnerZugriff } from '@core/platform/projektordner';
+import { projektdateiFinden, projektdateiKopf, projekteAuflisten } from '@core/platform/projektordner';
 import { projektdateien, projektdateiWaehlen } from '@core/projektdatei';
 import type { Eintrag } from './dateisystem';
 import type { ProjektAngaben } from './stammdaten';
@@ -60,4 +62,32 @@ export async function projektEinlesen(o: GeladenerOrdner, gewaehlt?: string | nu
   } catch (e) {
     return { angaben: alt, quelle: { pfad: datei.pfad, fehler: e instanceof Error ? e.message : String(e), ...defekt }, projektdatei: null, kandidaten };
   }
+}
+
+/**
+ * Beteiligte aus den Projektdateien der Stammordner – Vorschläge für neue Projekte (P-14). Gelesen werden nur die
+ * Stammdaten (projekt.json in der Projektdatei) der zuletzt geänderten `max` Projektordner, einige gleichzeitig;
+ * je Name zählt der Eintrag aus dem jüngsten Projekt. Nicht lesbare Projekte werden übergangen.
+ */
+export async function beteiligteSammeln(fs: ProjektordnerZugriff, roots: string[], max = 60): Promise<Beteiligter[]> {
+  const { projekte } = await projekteAuflisten(fs, roots);
+  const warteschlange = [...projekte].sort((a, b) => b.geaendert - a.geaendert).slice(0, max);
+  const je: Beteiligter[][] = warteschlange.map(() => []);
+  let naechster = 0;
+  const arbeiter = async () => {
+    while (naechster < warteschlange.length) {
+      const i = naechster++;
+      try {
+        const datei = await projektdateiFinden(fs, warteschlange[i].pfad);
+        const kopf = datei ? await projektdateiKopf(fs, warteschlange[i].pfad, datei.pfad) : null;
+        je[i] = kopf?.meta.beteiligte ?? [];
+      } catch {
+        // nicht lesbar: übergehen
+      }
+    }
+  };
+  await Promise.all([arbeiter(), arbeiter(), arbeiter(), arbeiter()]);
+  const out = new Map<string, Beteiligter>();
+  for (const liste of je) for (const b of liste) if (b.name.trim() && !out.has(b.name.trim().toLowerCase())) out.set(b.name.trim().toLowerCase(), b);
+  return [...out.values()].sort((a, b) => a.name.localeCompare(b.name, 'de'));
 }

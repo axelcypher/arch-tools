@@ -47,6 +47,27 @@ export function naechsteNummer(schema: string, vorhandene: string[], date = new 
   return nummerAus(schema, max + 1, date);
 }
 
+/**
+ * Passt eine Projektnummer zum Schema? {jahr} = vier Ziffern, {jj} = zwei, {nr:3} = mindestens drei Ziffern, {nr}
+ * = Ziffern; der Rest wörtlich. „26-14“ passt nicht zu „{jahr}-{nr:3}“, „2026-014“ schon. Nur ein Hinweis – die
+ * Nummer vergibt das Büro.
+ */
+export function nummerPasst(schema: string, nummer: string): boolean {
+  let muster = '';
+  let pos = 0;
+  for (const m of schema.matchAll(TOKEN)) {
+    muster += escape(schema.slice(pos, m.index));
+    const n = m[1].toLowerCase();
+    if (n === 'jahr') muster += '\\d{4}';
+    else if (n === 'jj') muster += '\\d{2}';
+    else if (n === 'nr') muster += `\\d{${Number(m[2] ?? 1)},}`;
+    else muster += '.+?';
+    pos = m.index + m[0].length;
+  }
+  muster += escape(schema.slice(pos));
+  return new RegExp(`^${muster}$`, 'i').test(nummer.trim());
+}
+
 /** Platzhalter in Datei- und Ordnernamen: {nummer}, {kurzname} … (auch in doppelten Klammern) */
 export function nameAus(schema: string, werte: Record<string, string | number>): string {
   return schema.replace(/\{\{?\s*([a-zäöü_.]+)\s*\}?\}/gi, (m, key: string) => {

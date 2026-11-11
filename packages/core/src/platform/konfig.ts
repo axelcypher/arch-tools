@@ -26,6 +26,8 @@ export interface AllgemeineEinstellungen {
   fotoordner: string;
   /** Name des Büros für den Kopf der Ausdrucke und Excel-Dateien (leer = ohne) */
   buero?: string;
+  /** Kürzel der Mitarbeiter – Vorschläge für „Bearbeitung“ in den Stammdaten (leer = keine) */
+  mitarbeiter?: string[];
 }
 
 export const VORGABE_ALLGEMEIN: AllgemeineEinstellungen = { projekte: [], oapPfad: VORGABE_OAP_PFAD, fotoordner: '09 Fotos' };
@@ -197,6 +199,7 @@ export function allgemeinAus(roh: unknown): AllgemeineEinstellungen {
     fotoordner: text(o.fotoordner, VORGABE_ALLGEMEIN.fotoordner),
   };
   if (text(o.buero, '')) a.buero = text(o.buero, '');
+  if (texte(o.mitarbeiter).length) a.mitarbeiter = texte(o.mitarbeiter);
   bueroZuletzt = a.buero ?? '';
   return a;
 }

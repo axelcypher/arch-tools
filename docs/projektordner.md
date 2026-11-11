@@ -27,24 +27,37 @@ Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davo
    (und im Browser) stehen hier zwei Karten: neues Projekt bzw. Projektordner wählen.
 2. **Stammdaten:** Projektnummer, Kurzname, Bezeichnung, Adresse des Bauvorhabens, Grundstück, Aktenzeichen,
    Bauherr mit Kontakten.
-   - Neues Projekt: Das Tool schlägt die nächste freie Nummer vor – die höchste laufende Nummer unter den Ordnern
-     des Stammordners (im laufenden Jahr, wenn das Schema ein Jahr enthält) plus eins. Gibt es den Ordner schon,
-     bietet der Assistent an, dieses Projekt zu ergänzen. Das angefangene Formular bleibt bis zum nächsten Start
-     erhalten.
+   - Neues Projekt: Das Tool trägt die nächste freie Nummer vor (änderbar) – die höchste laufende Nummer unter den
+     Ordnern **aller** Stammordner (auch Archiv oder Akquise; im laufenden Jahr, wenn das Schema ein Jahr enthält)
+     plus eins. Passt eine Nummer nicht zum Schema („26-14“ bei `{jahr}-{nr:3}`), steht am Feld ein Hinweis
+     („erwartet z. B. 2026-015“); er hält nicht auf. Projektnummer und Kurzname sind Pflicht (Stern); der
+     Ordnername, der sich daraus ergibt, steht direkt darunter, Zeichen wie `/ : ?` meldet das Feld schon beim
+     Tippen. Meldungen erscheinen am Feld erst nach dem Verlassen bzw. nach „Weiter“; „Weiter“ nennt dann sichtbar,
+     was noch fehlt. Gibt es den Ordner schon, bietet der Assistent an, dieses Projekt zu ergänzen. Das angefangene
+     Formular bleibt bis zum nächsten Start erhalten.
    - Bestehendes Projekt: Die Stammdaten kommen aus der Projektdatei. **Fehlt sie, ist das kein Fehler:** Der
      Assistent erfasst die Stammdaten (Nummer und Kurzname aus dem Ordnernamen vorgeschlagen, bei Ordnern aus
      Version 0.1 aus der alten `projekt.json`) und legt die Projektdatei damit an. Der Ordner wird beim Ergänzen
      nicht umbenannt.
-3. **Umfang:** beauftragte Leistungsphasen, Bearbeitung, Beteiligte (Rolle, Name, Kontakt). An Leistungsphasen
-   gebundene Ordner und Vorlagen entstehen nur, wenn eine davon beauftragt ist (ohne Angabe alle).
+3. **Umfang:** beauftragte Leistungsphasen (mit Namen, Schnellwahl „1–4 bis Bauantrag“, „5–8“, „1–9 alle“,
+   „keine“), Bearbeitung (Kürzel; Vorschläge aus den Mitarbeitern unter „Einstellungen“), Beteiligte (Rolle mit
+   Vorschlägen typischer Beteiligter – Tragwerksplanung, Prüfingenieur/-in, Brandschutz, Vermessung ÖbVI, TGA,
+   Energieberatung/GEG, Bauaufsicht … – oder frei; Name mit Vorschlägen aus den Projektdateien der Stammordner, Rolle
+   und Kontakt werden dann ergänzt). An Leistungsphasen gebundene Ordner und Vorlagen entstehen nur, wenn eine davon
+   beauftragt ist (ohne Angabe alle).
 4. **Vorlagen:** Vorlagenordner und Vorlagen-Presets (siehe [Vorlagen](#vorlagen)). Vorausgewählt sind bei neuen
    Projekten die Presets mit „Standard“, bei bestehenden die in der Projektdatei vermerkten.
 5. **Anlegen bzw. Ergänzen:** der Trockenlauf als Baum – jeder Ordner und jede Datei mit Herkunft (Struktur,
    Vorlage mit Preset, Projektdatei) und dem Vermerk „neu“, „vorhanden“ oder „wird ergänzt“ (Projektdatei, mit
    den geänderten Angaben als Hinweis). Beim Ergänzen zeigt er nur, was sich ändert (umschaltbar). Einzelne
-   Einträge lassen sich abwählen; mit einem Ordner entfällt alles darin. Danach meldet das Tool, was angelegt
+   Einträge lassen sich abwählen („Alle neuen Einträge abwählen“ und danach einzelne wieder wählen); mit einem
+   Ordner entfällt alles darin. Ergänzen ohne Leistungsphasen: Der Trockenlauf weist darauf hin, dass alle Ordner
+   vorgeschlagen werden, und springt mit „Leistungsphasen wählen“ zum Umfang. Danach meldet das Tool, was angelegt
    bzw. ergänzt wurde, was schon da war und was fehlgeschlagen ist – ein Fehler hält die übrigen Schritte nicht auf.
    Im Browser entsteht der Projektordner als ZIP-Datei zum Herunterladen (statt im Stammordner).
+
+**Tastatur:** Strg+Enter geht zum nächsten Schritt; der aktive Schritt ist für Bildschirmleser gekennzeichnet, die
+Felder der Beteiligten sind je Zeile beschriftet („Rolle 2“, „Beteiligten 2 entfernen“).
 
 Angelegt bzw. ergänzt werden
 
@@ -71,7 +84,7 @@ mit; was dort schon liegt, gilt und bleibt unverändert.
 
 | Datei | Inhalt |
 |---|---|
-| `allgemein.json` | Stammordner der Projekte (mehrere möglich; im ersten entstehen neue Projekte), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien |
+| `allgemein.json` | Stammordner der Projekte (mehrere möglich; im ersten entstehen neue Projekte), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien, Kürzel der Mitarbeiter (Vorschläge für „Bearbeitung“) |
 | `projektordner.json` | Struktur samt Vorlagen-Presets und Vorlagenordner dieses Tools |
 
 Welcher Konfigurationsordner gilt, steht je Benutzer in `%APPDATA%\arch-tools\konfig.json` – für alle Apps

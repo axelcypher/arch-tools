@@ -177,7 +177,8 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
   const hinweise: string[] = [];
   if (!s.nummer) fehler.push('Die Projektnummer fehlt.');
   if (!s.kurzname) fehler.push('Der Kurzname fehlt.');
-  if (!ordner) fehler.push('Aus dem Schema für den Ordnernamen ergibt sich kein Name.');
+  // folgt aus fehlender Nummer bzw. Kurzname – dann nicht noch einmal melden
+  if (!ordner && s.nummer && s.kurzname) fehler.push('Aus dem Schema für den Ordnernamen ergibt sich kein Name.');
   if (optionen.ordner === undefined && /\{[^}]*\}/.test(ordner)) fehler.push(`Der Ordnername enthält einen unbekannten Platzhalter: ${ordner}`);
 
   const da = new Map(vorhandene.map((e) => [e.pfad.toLowerCase(), e]));

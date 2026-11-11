@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { Anschrift, Beteiligter, KontaktArt, ProjectMeta } from '../model';
 import { anschriftEinzeilig, bebauungsplanText, flurText, LEISTUNGSPHASEN } from '../model';
 import { Field, NumberField, TextField } from './fields';
-import { email, ordnername, plz } from './pruefen';
+import type { Pruefung } from './pruefen';
+import { alle, email, ordnername, plz } from './pruefen';
 import { useEscSchliessen } from './Dialog';
 
 /**
@@ -12,6 +13,28 @@ import { useEscSchliessen } from './Dialog';
  */
 
 export type StammdatenBereich = 'projekt' | 'grundstueck' | 'bauherr' | 'umfang';
+
+/** typische Beteiligte eines Bauvorhabens in NRW – Vorschläge für die Rolle (Freitext bleibt möglich) */
+export const ROLLEN = [
+  'Tragwerksplanung',
+  'Prüfingenieur/-in für Standsicherheit',
+  'Brandschutz',
+  'Prüfingenieur/-in für Brandschutz',
+  'Vermessung (ÖbVI)',
+  'TGA-Planung',
+  'Energieberatung / GEG-Nachweis',
+  'Bodengutachten',
+  'Bauaufsicht',
+  'Bauleitung',
+];
+
+/** Schnellwahl der Leistungsphasen */
+const LPH_SCHNELL: { label: string; title: string; lph: number[] }[] = [
+  { label: '1–4 bis Bauantrag', title: 'Grundlagenermittlung bis Genehmigungsplanung', lph: [1, 2, 3, 4] },
+  { label: '5–8', title: 'Ausführungsplanung bis Objektüberwachung', lph: [5, 6, 7, 8] },
+  { label: '1–9 alle', title: 'alle Leistungsphasen', lph: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
+  { label: 'keine', title: 'keine Auswahl – Ordner und Vorlagen aller Leistungsphasen', lph: [] },
+];
 
 const ALLE: StammdatenBereich[] = ['projekt', 'grundstueck', 'bauherr', 'umfang'];
 
@@ -24,6 +47,10 @@ export function StammdatenFelder({
   kurznameHinweis = 'wird Teil des Ordnernamens',
   kurznamePflicht = false,
   fehlerZeigen = false,
+  nummerPruefen,
+  ordnerName,
+  bearbeiterVorschlaege,
+  beteiligtVorschlaege,
 }: {
   meta: ProjectMeta;
   onChange: (meta: ProjectMeta) => void;
@@ -38,7 +65,16 @@ export function StammdatenFelder({
   kurznamePflicht?: boolean;
   /** Meldungen an den Feldern auch ohne vorheriges Verlassen zeigen (nach „Weiter“ bzw. dem Absenden) */
   fehlerZeigen?: boolean;
+  /** weitere (weiche) Prüfung der Projektnummer, z. B. gegen das Nummernschema des Büros */
+  nummerPruefen?: Pruefung;
+  /** der Ordnername, der sich aus Nummer und Kurzname ergibt – steht direkt unter den beiden Feldern */
+  ordnerName?: string;
+  /** Vorschläge für „Bearbeitung“ (Kürzel der Mitarbeiter aus den Einstellungen) */
+  bearbeiterVorschlaege?: string[];
+  /** Beteiligte früherer Projekte: Vorschläge für den Namen, Rolle und Kontakt werden ergänzt */
+  beteiligtVorschlaege?: Beteiligter[];
 }) {
+  const id = useId();
   const set = (patch: Partial<ProjectMeta>) => onChange({ ...meta, ...patch });
   const setAdresse = (patch: Partial<Anschrift>) => set({ adresse: { ...meta.adresse, ...patch } });
   const setBauherr = (patch: Partial<ProjectMeta['bauherr']>) => set({ bauherr: { ...meta.bauherr, ...patch } });
@@ -66,18 +102,24 @@ export function StammdatenFelder({
     onChange(neu);
   };
   const lph = meta.leistungsphasen ?? [];
-  const toggleLph = (nr: number) => {
-    const neu = lph.includes(nr) ? lph.filter((x) => x !== nr) : [...lph, nr].sort((a, b) => a - b);
+  const setLph = (neu: number[]) => {
     const m: ProjectMeta = { ...meta, leistungsphasen: neu };
     if (!neu.length) delete m.leistungsphasen;
     onChange(m);
   };
+  const toggleLph = (nr: number) => setLph(lph.includes(nr) ? lph.filter((x) => x !== nr) : [...lph, nr].sort((a, b) => a - b));
   const beteiligte = meta.beteiligte ?? [];
   const setBeteiligte = (liste: Beteiligter[]) => {
     const m: ProjectMeta = { ...meta, beteiligte: liste };
     if (!liste.length) delete m.beteiligte;
     onChange(m);
   };
+  // Name aus einem früheren Projekt gewählt: leere Rolle und leeren Kontakt ergänzen
+  const setBeteiligtName = (i: number, name: string) => {
+    const v = beteiligtVorschlaege?.find((b) => b.name.trim().toLowerCase() === name.trim().toLowerCase());
+    setBeteiligte(beteiligte.map((x, k) => (k === i ? { ...x, name, ...(v && !x.rolle.trim() ? { rolle: v.rolle } : {}), ...(v && !x.kontakt.trim() ? { kontakt: v.kontakt } : {}) } : x)));
+  };
+  const vorschlagNamen = [...new Set((beteiligtVorschlaege ?? []).map((b) => b.name.trim()).filter(Boolean))];
   const zeigt = (b: StammdatenBereich) => bereiche.includes(b);
   const setBplan = (patch: { nummer?: string; name?: string }) => {
     const bp = { ...meta.bebauungsplan, ...patch };
@@ -94,7 +136,15 @@ export function StammdatenFelder({
         <>
           <div className="field-row">
             <Field label="Projektnummer" hint={nummerHinweis} pflicht>
-              <TextField value={meta.projektcode} placeholder={nummerVorschlag} pflicht zeigen={fehlerZeigen} pruefen={ordnername} live onChange={(v) => set({ projektcode: v.trim() })} />
+              <TextField
+                value={meta.projektcode}
+                placeholder={nummerVorschlag}
+                pflicht
+                zeigen={fehlerZeigen}
+                pruefen={nummerPruefen ? alle(ordnername, nummerPruefen) : ordnername}
+                live
+                onChange={(v) => set({ projektcode: v.trim() })}
+              />
             </Field>
             <Field label="Kurzname" hint={kurznameHinweis ?? undefined} pflicht={kurznamePflicht}>
               <TextField
@@ -108,6 +158,9 @@ export function StammdatenFelder({
               />
             </Field>
           </div>
+          {ordnerName !== undefined && (
+            <div className="sd-ordnername small-text">Ordnername: {ordnerName ? <strong>{ordnerName}</strong> : <span className="muted">ergibt sich aus Nummer und Kurzname</span>}</div>
+          )}
           {nummerVorschlag && nummerVorschlag !== meta.projektcode && (
             <button className="small sd-vorschlag" onClick={() => set({ projektcode: nummerVorschlag })} title="Nächste freie Nummer – bitte mit der Nummernvergabe im Büro abgleichen">
               Nummer {nummerVorschlag} übernehmen
@@ -202,17 +255,54 @@ export function StammdatenFelder({
       {zeigt('umfang') && (
         <>
           <h3 className="sd-titel">Leistungen und Beteiligte</h3>
-          <div className="sd-lph" title="Ordner und Vorlagen, die an Leistungsphasen gebunden sind, entstehen nur für die gewählten. Ohne Auswahl gilt alles.">
+          <div className="sd-lph-schnell" role="group" aria-label="Schnellwahl Leistungsphasen">
+            {LPH_SCHNELL.map((x) => (
+              <button
+                key={x.label}
+                type="button"
+                className={`small${x.lph.length === lph.length && x.lph.every((n) => lph.includes(n)) ? ' active' : ''}`}
+                title={x.title}
+                onClick={() => setLph(x.lph)}
+              >
+                {x.label}
+              </button>
+            ))}
+          </div>
+          <div
+            className="sd-lph"
+            role="group"
+            aria-label="Leistungsphasen"
+            title="Ordner und Vorlagen, die an Leistungsphasen gebunden sind, entstehen nur für die gewählten. Ohne Auswahl gilt alles."
+          >
             {LEISTUNGSPHASEN.map((l) => (
-              <label key={l.nr} className="toggle" title={l.label}>
+              <label key={l.nr} className="toggle" title={`LPh ${l.nr} ${l.label}`}>
                 <input type="checkbox" checked={lph.includes(l.nr)} onChange={() => toggleLph(l.nr)} />
-                LPh {l.nr}
+                {l.nr} {l.label}
               </label>
             ))}
           </div>
-          <Field label="Bearbeitung">
-            <TextField value={meta.bearbeiter} onChange={(v) => set({ bearbeiter: v.trim() })} />
+          <Field label="Bearbeitung" hint="Kürzel, z. B. TP">
+            <TextField value={meta.bearbeiter} list={bearbeiterVorschlaege?.length ? `${id}-bearbeiter` : undefined} onChange={(v) => set({ bearbeiter: v.trim() })} />
           </Field>
+          {!!bearbeiterVorschlaege?.length && (
+            <datalist id={`${id}-bearbeiter`}>
+              {bearbeiterVorschlaege.map((b) => (
+                <option key={b} value={b} />
+              ))}
+            </datalist>
+          )}
+          <datalist id={`${id}-rollen`}>
+            {[...new Set([...ROLLEN, ...(beteiligtVorschlaege ?? []).map((b) => b.rolle.trim()).filter(Boolean)])].map((r) => (
+              <option key={r} value={r} />
+            ))}
+          </datalist>
+          {vorschlagNamen.length > 0 && (
+            <datalist id={`${id}-namen`}>
+              {vorschlagNamen.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+          )}
           {beteiligte.length > 0 && (
             <table className="sd-beteiligte">
               <thead>
@@ -227,16 +317,27 @@ export function StammdatenFelder({
                 {beteiligte.map((b, i) => (
                   <tr key={i}>
                     <td>
-                      <TextField value={b.rolle} placeholder="z. B. Tragwerk" onChange={(v) => setBeteiligte(beteiligte.map((x, k) => (k === i ? { ...x, rolle: v } : x)))} />
+                      <TextField
+                        value={b.rolle}
+                        label={`Rolle ${i + 1}`}
+                        list={`${id}-rollen`}
+                        placeholder="z. B. Tragwerksplanung"
+                        onChange={(v) => setBeteiligte(beteiligte.map((x, k) => (k === i ? { ...x, rolle: v } : x)))}
+                      />
                     </td>
                     <td>
-                      <TextField value={b.name} onChange={(v) => setBeteiligte(beteiligte.map((x, k) => (k === i ? { ...x, name: v } : x)))} />
+                      <TextField value={b.name} label={`Name ${i + 1}`} list={vorschlagNamen.length ? `${id}-namen` : undefined} onChange={(v) => setBeteiligtName(i, v)} />
                     </td>
                     <td>
-                      <TextField value={b.kontakt} onChange={(v) => setBeteiligte(beteiligte.map((x, k) => (k === i ? { ...x, kontakt: v } : x)))} />
+                      <TextField value={b.kontakt} label={`Kontakt ${i + 1}`} onChange={(v) => setBeteiligte(beteiligte.map((x, k) => (k === i ? { ...x, kontakt: v } : x)))} />
                     </td>
                     <td>
-                      <button className="small danger" title="Beteiligten entfernen" onClick={() => setBeteiligte(beteiligte.filter((_, k) => k !== i))}>
+                      <button
+                        className="small danger"
+                        title={`Beteiligten ${i + 1} entfernen`}
+                        aria-label={`Beteiligten ${i + 1} entfernen`}
+                        onClick={() => setBeteiligte(beteiligte.filter((_, k) => k !== i))}
+                      >
                         ×
                       </button>
                     </td>

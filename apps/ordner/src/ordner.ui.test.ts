@@ -89,15 +89,31 @@ describe('Projektordner', () => {
     expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
   });
 
-  it('Assistent: neues Projekt Schritt für Schritt – Stammdaten, Umfang, Vorlagen, Anlegen', () => {
+  it('Assistent: neues Projekt Schritt für Schritt – Stammdaten, Umfang, Vorlagen, Anlegen', async () => {
     const host = render();
     expect(host.textContent).toContain('Neues Projekt anlegen');
     expect(host.textContent).toContain('Bestehendes Projekt ergänzen');
     act(() => knopf(host, 'Neues Projekt').click());
 
-    // Stammdaten: ohne Nummer und Kurzname geht es nicht weiter
-    expect(host.textContent).toContain('Die Projektnummer fehlt.');
-    expect(knopf(host, 'Weiter:').disabled).toBe(true);
+    // Stammdaten (P-08): frisch geöffnet keine Fehlerkästen, Pflichtfelder markiert
+    expect(host.querySelector('.warning')).toBeNull();
+    expect(host.querySelector('.feld-meldung')).toBeNull();
+    expect(feld(host, 'Projektnummer').required).toBe(true);
+    expect(feld(host, 'Kurzname').required).toBe(true);
+    // aktiver Schritt für Hilfsmittel gekennzeichnet (P-12)
+    expect([...host.querySelectorAll('.po-schritte li[aria-current="step"]')].map((l) => l.textContent)).toEqual(['2Stammdaten']);
+    // „Weiter“ ohne Nummer und Kurzname: bleibt stehen und nennt den Grund sichtbar, Meldungen an den Feldern
+    weiter(host);
+    expect(host.querySelector('.po-weiter-grund')?.textContent).toBe('Noch offen: Die Projektnummer fehlt, Der Kurzname fehlt');
+    expect(feld(host, 'Projektnummer').closest('label')!.querySelector('.feld-meldung')!.textContent).toBe('Angabe fehlt.');
+    expect(host.querySelector('h2')?.textContent).toBe('Stammdaten');
+    // Kurzname: Hinweis zu unzulässigen Zeichen schon beim Tippen, Ordnername direkt darunter
+    eingabe(feld(host, 'Kurzname'), 'EFH Müller/Weg: 3?');
+    expect(feld(host, 'Kurzname').closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('/ : ? werden im Ordnernamen entfernt');
+    // Nummer passt nicht zum Schema: Hinweis am Feld, kein Blocker (P-03)
+    eingabe(feld(host, 'Projektnummer'), '26-14');
+    expect(feld(host, 'Projektnummer').closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('Passt nicht zum Schema {jahr}-{nr:3}');
+    expect(host.querySelector('.sd-ordnername')?.textContent).toBe('Ordnername: 26-14 EFH Müller Weg 3');
     eingabe(feld(host, 'Projektnummer'), '2026-014');
     eingabe(feld(host, 'Kurzname'), 'EFH Musterweg');
     eingabe(feld(host, 'Name bzw. Firma'), 'Familie Beispiel');
@@ -105,8 +121,13 @@ describe('Projektordner', () => {
     expect(host.querySelector('.po-kontext')?.textContent).toContain('2026-014 EFH Musterweg');
     expect(knopf(host, 'Weiter:').disabled).toBe(false);
 
-    // Umfang: nur LPh 1–3
+    // Umfang: Namen der Leistungsphasen sichtbar, Schnellwahl (P-07); dann nur LPh 1–3
     weiter(host);
+    expect(host.querySelector('.sd-lph')?.textContent).toContain('4 Genehmigungsplanung');
+    act(() => knopf(host, '1–4 bis Bauantrag').click());
+    expect(useOrdner.getState().stamm.leistungsphasen).toEqual([1, 2, 3, 4]);
+    act(() => knopf(host, 'keine').click());
+    expect(useOrdner.getState().stamm.leistungsphasen).toEqual([]);
     for (const nr of [1, 2, 3]) act(() => ([...host.querySelectorAll('.sd-lph input')][nr - 1] as HTMLInputElement).click());
     expect(useOrdner.getState().stamm.leistungsphasen).toEqual([1, 2, 3]);
     eingabe(feld(host, 'Bearbeitung'), 'TP');
@@ -114,8 +135,10 @@ describe('Projektordner', () => {
     eingabe(host.querySelector('.sd-beteiligte input') as HTMLInputElement, 'Tragwerk');
     expect(useOrdner.getState().stamm.beteiligte).toEqual([{ rolle: 'Tragwerk', name: '', kontakt: '' }]);
 
-    // Vorlagen: Standard-Preset vorausgewählt
-    weiter(host);
+    // Vorlagen: Standard-Preset vorausgewählt – mit Strg+Enter (P-12)
+    act(() => host.querySelector('.po-col')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })));
+    await warten();
+    expect(host.querySelector('h2')?.textContent).toBe('Vorlagen');
     expect((host.querySelector('.po-presetwahl input') as HTMLInputElement).checked).toBe(true);
 
     // Anlegen: Projektdatei statt projekt.json, Ordner nach Leistungsphasen
@@ -150,6 +173,9 @@ describe('Projektordner', () => {
     expect(host.textContent).toContain('Beispiel: Planung/Berechnungen/');
     eingabe(feld(host, 'Fotoordner im Projekt'), '10 Fotos');
     expect(useOrdner.getState().allgemein.fotoordner).toBe('10 Fotos');
+    // Kürzel der Mitarbeiter: Vorschläge für „Bearbeitung“ (P-14)
+    eingabe(feld(host, 'Mitarbeiter (Kürzel)'), 'TP, AK; TP');
+    expect(useOrdner.getState().allgemein.mitarbeiter).toEqual(['TP', 'AK']);
     eingabe(feld(host, 'Name des Projektordners'), '{nummer}_{kurzname}');
     expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname}');
     const text = host.querySelector('textarea') as HTMLTextAreaElement;
@@ -365,6 +391,15 @@ describe('Projektordner', () => {
     expect(zeilen(host)).toContain('03 Berechnungen/Flächen/2019-003 Altbau.oap');
     const oap = [...host.querySelectorAll('.po-plan tr')].find((z) => z.querySelector('td')!.getAttribute('title') === '03 Berechnungen/Flächen/2019-003 Altbau.oap')!;
     expect(oap.querySelector('.po-status')?.textContent).toBe('neu');
+    // ohne Leistungsphasen: deutlicher Hinweis mit Sprung zum Umfang (P-07)
+    expect(host.textContent).toContain('Keine Leistungsphasen gewählt – alle Ordner werden vorgeschlagen');
+    act(() => knopf(host, 'Alle neuen Einträge abwählen').click());
+    expect([...host.querySelectorAll('.po-plan tr.abgewaehlt')].length).toBeGreaterThan(5);
+    expect(knopf(host, 'Neues als ZIP herunterladen').disabled).toBe(true);
+    act(() => knopf(host, 'Alle wieder wählen').click());
+    expect(host.querySelector('.po-plan tr.abgewaehlt')).toBeNull();
+    act(() => knopf(host, 'Leistungsphasen wählen').click());
+    expect(host.querySelector('h2')?.textContent).toBe('Umfang');
   });
 
   it('Ergänzen mit beschädigter alter projekt.json: Hinweis statt nur „Bitte die Stammdaten erfassen“', async () => {

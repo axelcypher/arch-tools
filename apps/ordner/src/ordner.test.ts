@@ -3,12 +3,12 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { readProjectFile, writeArchive } from '@core/archive';
 import { ordnerAusDateien, SpeicherDateisystem, verbinde } from './dateisystem';
-import { dateimuster, naechsteNummer, nameAus, nummerAus } from './nummer';
+import { dateimuster, naechsteNummer, nameAus, nummerAus, nummerPasst } from './nummer';
 import type { PlanOptionen, Vorlage } from './plan';
 import { ausfuehren, ladeVorlagen, ohne, ordnerName, planen } from './plan';
 import { pruefe } from './pruefung';
 import type { Stammdaten } from './stammdaten';
-import { projektEinlesen } from './projekt';
+import { beteiligteSammeln, projektEinlesen } from './projekt';
 import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
 import type { Struktur } from './struktur';
 import { aktivePresets, alterOapPfad, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
@@ -63,6 +63,21 @@ describe('Nummern und Namen', () => {
     expect(naechsteNummer('{jj}{nr:3}', ['26013 Kita', '26014_Schule', '25099 Vorjahr'], TAG)).toBe('26015');
     // Schema ohne laufende Nummer: nichts zu zählen
     expect(naechsteNummer('{jahr}', ordner, TAG)).toBe('2026');
+  });
+
+  it('Projektnummer passt zum Schema; Vorschlag über die Ordner mehrerer Stammordner (P-03)', () => {
+    expect(nummerPasst('{jahr}-{nr:3}', '26-14')).toBe(false);
+    expect(nummerPasst('{jahr}-{nr:3}', '2026-014')).toBe(true);
+    expect(nummerPasst('{jahr}-{nr:3}', '2026-1014')).toBe(true);
+    expect(nummerPasst('{jahr}-{nr:3}', '2026-14')).toBe(false);
+    expect(nummerPasst('{jj}{nr:3}', '26015')).toBe(true);
+    expect(nummerPasst('P{nr}', 'p7')).toBe(true);
+    // Stammordner „Projekte“, „Archiv“ und „Akquise“: die höchste Nummer aller zählt
+    const projekte = ['2026-003 Haus', '2026-007 Kita'];
+    const archiv = ['2026-012 Abgeschlossen', '2025-099 Alt'];
+    const akquise = ['2026-010 Wettbewerb'];
+    expect(naechsteNummer('{jahr}-{nr:3}', projekte, TAG)).toBe('2026-008');
+    expect(naechsteNummer('{jahr}-{nr:3}', [...projekte, ...archiv, ...akquise], TAG)).toBe('2026-013');
   });
 
   it('Ordnername: Platzhalter ersetzt, unzulässige Zeichen entfernt', () => {
@@ -284,7 +299,9 @@ describe('Plan und Anlegen', () => {
 
   it('fehlende Angaben verhindern das Anlegen', async () => {
     const plan = plane(stamm({ nummer: ' ', kurzname: '' }), KLEIN, [], [], TAG);
-    expect(plan.fehler).toEqual(['Die Projektnummer fehlt.', 'Der Kurzname fehlt.', 'Aus dem Schema für den Ordnernamen ergibt sich kein Name.']);
+    // der abgeleitete Fehler „kein Name“ entfällt, wenn Nummer bzw. Kurzname fehlen (P-08)
+    expect(plan.fehler).toEqual(['Die Projektnummer fehlt.', 'Der Kurzname fehlt.']);
+    expect(plane(stamm({ nummer: 'X', kurzname: 'Y' }), { ...KLEIN, ordnername: '{bauherr}' }, [], [], TAG).fehler).toEqual([expect.stringContaining('unbekannten Platzhalter')]);
     await expect(ausfuehren(new SpeicherDateisystem(), '/p', plan)).rejects.toThrow(/Projektnummer fehlt/);
   });
 
@@ -502,6 +519,16 @@ describe('Vorlagen-Presets', () => {
     const { angelegt: _a2, struktur: _s2, dateischema: _d2, ...stamm2 } = g2.angaben!;
     const plan2 = plane(stamm2, MIT_PRESETS, BUERO, (await eingelesen(fs, basis)).eintraege, new Date(2027, 0, 16), { ordner: '2026-014 Musterweg (alt)', jahr: 2026, projektdatei: g2.projektdatei });
     expect(plan2.schritte.filter((x) => !x.vorhanden || x.aenderung?.teile.length)).toEqual([]);
+  });
+
+  it('Beteiligte früherer Projekte aus den Projektdateien der Stammordner, je Name einmal (P-14)', async () => {
+    const fs = new SpeicherDateisystem();
+    await ausfuehren(fs, 'P:/Projekte', plane(stamm({ nummer: '2026-001', beteiligte: [{ rolle: 'Tragwerk', name: 'Büro Statik', kontakt: '0251 1' }] }), KLEIN, []));
+    await ausfuehren(fs, 'P:/Archiv', plane(stamm({ nummer: '2025-009', beteiligte: [{ rolle: 'Vermessung', name: 'ÖbVI Meier', kontakt: 'm@example.org' }, { rolle: 'Statik', name: 'büro statik', kontakt: 'alt' }] }), KLEIN, []));
+    await fs.ordnerAnlegen('P:/Projekte', '2019-003 ohne Projektdatei');
+    const liste = await beteiligteSammeln(fs, ['P:/Projekte', 'P:/Archiv']);
+    expect(liste.map((b) => b.name.toLowerCase()).sort()).toEqual(['büro statik', 'öbvi meier']);
+    expect(liste.find((b) => b.name === 'ÖbVI Meier')).toEqual({ rolle: 'Vermessung', name: 'ÖbVI Meier', kontakt: 'm@example.org' });
   });
 
   it('Projektordner ohne Projektdatei: Stammdaten erfassen, die Projektdatei wird angelegt', async () => {

@@ -1435,11 +1435,20 @@ svg[tabindex]:focus:not(:focus-visible) {
   margin: -2px 0 8px;
 }
 .sd-lph {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 2px 8px;
   margin-bottom: 8px;
   font-size: 12px;
+}
+.sd-lph-schnell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.sd-ordnername {
+  margin: -2px 0 8px;
 }
 .sd-beteiligte {
   width: 100%;
