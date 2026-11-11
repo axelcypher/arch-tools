@@ -175,6 +175,7 @@ export function GrzGfzView() {
             Aufenthaltsräume in Nicht-Vollgeschossen mitrechnen (§ 20 Abs. 3 S. 2 BauNVO)
           </label>
         )}
+        <div id="grz-grundstueck">
         <Field
           label="Grundstücksfläche [m²]"
           hint={
@@ -193,6 +194,7 @@ export function GrzGfzView() {
             onChange={(v) => st.update((p) => ({ ...p, meta: { ...p.meta, grundstueck: { ...p.meta.grundstueck, flaeche: v } } }))}
           />
         </Field>
+        </div>
         <Field
           label={n.recht.bauo === 'nw1962' ? 'festgelegte Geländeoberfläche [m]' : 'Geländeoberfläche [m]'}
           hint={
@@ -626,6 +628,14 @@ export function GrzGfzView() {
                 <li key={i} className={h.art === 'bedienung' ? 'bedienung' : undefined} title={h.art === 'bedienung' ? 'Bedienhinweis – erscheint nicht im Nachweis' : undefined}>
                   {h.text}
                   {h.tipp && <span className="muted"> {h.tipp}</span>}
+                  {h.feld === 'grundstueck' && (
+                    <>
+                      {' '}
+                      <button className="link" onClick={() => document.querySelector<HTMLInputElement>('#grz-grundstueck input')?.focus()}>
+                        zum Feld
+                      </button>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>

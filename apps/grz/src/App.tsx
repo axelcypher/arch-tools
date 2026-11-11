@@ -21,6 +21,9 @@ export function App() {
   const name = useGrz((s) => s.project.name);
   const dirty = useGrz((s) => s.dirty);
   const hatGebaeude = useGrz((s) => s.project.storeys.some((st) => st.shapes.some((x) => x.kind === 'outline')));
+  const hatFlaechen = useGrz((s) => (s.project.lageplan?.flaechen.length ?? 0) > 0);
+  /** Grund für gesperrte Knöpfe */
+  const gesperrt = 'Erst ein Gebäude öffnen: Projekt (.oap) oder IFC-Modell';
   const canUndo = useGrz((s) => s.past.length > 0);
   const canRedo = useGrz((s) => s.future.length > 0);
   const [logOpen, setLogOpen] = useState(false);
@@ -142,6 +145,9 @@ export function App() {
       <TitleBar app="GRZ-Nachweis" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
       <div className="toolbar">
         <div className="tb-group">
+          <button onClick={() => void onNeu()} title="Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)">
+            Neu
+          </button>
           <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
             Öffnen
           </button>
@@ -156,16 +162,16 @@ export function App() {
           <button
             onClick={() => void onIfcAktualisieren()}
             disabled={!hatGebaeude}
-            title="Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Ihre Änderungen bleiben"
+            title={hatGebaeude ? 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Ihre Änderungen bleiben' : gesperrt}
           >
             IFC aktualisieren …
           </button>
         </div>
         <div className="tb-group">
-          <button onClick={() => setDruckOpen(true)} disabled={!hatGebaeude} title="Druckbarer Nachweis – über den Druckdialog auch als PDF (Strg+P)">
+          <button onClick={() => setDruckOpen(true)} disabled={!hatGebaeude} title={hatGebaeude ? 'Druckbarer Nachweis – über den Druckdialog auch als PDF (Strg+P)' : gesperrt}>
             Nachweis drucken
           </button>
-          <button onClick={() => setExcelOpen(true)} disabled={!hatGebaeude} title="Nachweis als Excel-Datei – Standardlayout oder eigene Vorlage">
+          <button onClick={() => setExcelOpen(true)} disabled={!hatGebaeude} title={hatGebaeude ? 'Nachweis als Excel-Datei – Standardlayout oder eigene Vorlage' : gesperrt}>
             Excel …
           </button>
         </div>
@@ -211,17 +217,20 @@ export function App() {
             </button>
           </div>
         )}
-        {!hatGebaeude && !neuBegonnen && (
+        {!hatGebaeude && !hatFlaechen && !neuBegonnen ? (
           <ProjektEinstieg
             titel="GRZ-Nachweis"
-            text={'Projekt oder IFC öffnen: ein Projekt des Flächenrechners (.oap) oder direkt ein IFC-Modell. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei.'}
+            text={
+              'Projekt oder IFC öffnen: ein Projekt des Flächenrechners (.oap) oder direkt ein IFC-Modell. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei. „Neues Projekt“ beginnt mit leerem Lageplan.'
+            }
             onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
             onDateiOeffnen={() => void onOpen()}
             dateiHinweis="Projektdatei (.oap) oder IFC-Modell"
             onNeu={() => void onNeu()}
           />
+        ) : (
+          <GrzGfzView />
         )}
-        <GrzGfzView />
       </main>
       {druckOpen && <NachweisDruck onClose={() => setDruckOpen(false)} />}
       {excelOpen && <ExcelDialog onClose={() => setExcelOpen(false)} />}

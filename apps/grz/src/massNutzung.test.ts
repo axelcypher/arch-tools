@@ -192,7 +192,11 @@ describe('Maß der baulichen Nutzung: Speichern', () => {
     };
     const eg = p.storeys[1].shapes[0];
     if (eg.kind === 'outline') eg.anlage = 'garage';
-    p.lageplan = { flaechen: [], grenze: [{ id: 'g1', name: 'Flurstück 12', points: rectPoints({ x: -5, y: -5 }, { x: 20, y: 20 }) }] };
+    p.lageplan = {
+      flaechen: [],
+      grenze: [{ id: 'g1', name: 'Flurstück 12', points: rectPoints({ x: -5, y: -5 }, { x: 20, y: 20 }) }],
+      unterlage: { type: 'raster', name: 'Lageplan.png', dataUrl: 'data:image/png;base64,AAAA', widthPx: 800, heightPx: 600, metersPerPixel: 0.05, x: -10, y: -8, opacity: 0.5, visible: true },
+    };
     p.storeys[1].vollgeschoss = true;
     const zimmer = p.storeys[3].shapes.find((s) => s.kind === 'room')!;
     if (zimmer.kind === 'room') zimmer.aufenthalt = 'treppe';

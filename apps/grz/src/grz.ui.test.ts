@@ -413,3 +413,76 @@ describe('Stammdaten und Bebauungsplan (G-25)', () => {
   });
 });
 
+describe('Plan und Einstieg (G-22, G-24, G-27)', () => {
+  it('G-24: Beschriftung „Nr · Nutzung · m²“ im Plan, ausblendbar; Hilfezeile mit höchstens drei Kürzeln; Maßstab und Nordpfeil', () => {
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    const texte = () => [...host.querySelectorAll('.lp-beschriftung')].map((t) => t.textContent);
+    expect(texte()).toContain('1 · Zufahrt · 30,00 m²');
+    const schalter = [...host.querySelectorAll('.lp-tools label')].find((l) => l.textContent?.includes('Beschriftung'))!.querySelector('input')!;
+    act(() => schalter.click());
+    expect(texte().some((t) => t?.includes('Zufahrt'))).toBe(false);
+    const hilfe = host.querySelector('.lp-hint')!.textContent!;
+    expect(hilfe.split(' · ').length).toBeLessThanOrEqual(3);
+    expect(host.querySelector('.lp-tasten-liste')!.textContent).toContain('Strg+C');
+    expect(host.querySelector('.lp-massstab')).not.toBeNull();
+    expect(host.querySelector('.lp-nordpfeil')).not.toBeNull();
+  });
+
+  it('G-22: Werkzeug „Grenze“ zeichnet die Grundstücksgrenze; Linie und Legende folgen ihr', () => {
+    const p = projekt();
+    p.meta.grundstueck.flaeche = undefined;
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    expect(host.querySelector('.lp-legende')!.textContent).toContain('Umriss der erfassten Flächen');
+    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Grenze')!.click());
+    const svg = host.querySelector('svg.grz-skizze')!;
+    const klick = (x: number, y: number) => act(() => svg.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, ...bildpunkt(svg, { x, y }) })));
+    klick(-5, -4);
+    klick(18, -4);
+    klick(18, 16);
+    klick(-5, 16);
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    const g = useGrz.getState().project.lageplan!.grenze!;
+    expect(g).toHaveLength(1);
+    expect(g[0].name).toBe('Flurstück 1');
+    const n = massNachweis(useGrz.getState().project);
+    expect(n.grundstueck.quelle).toBe('grenze');
+    expect(n.grundstueck.flaeche).toBeCloseTo(23 * 20, 0);
+    expect(host.querySelector('.lp-legende')!.textContent).toContain('Grundstücksgrenze');
+    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Grenze löschen')!.click());
+    expect(useGrz.getState().project.lageplan!.grenze).toBeUndefined();
+  });
+
+  it('G-27: Leerzustand nur mit Einstieg; gesperrte Knöpfe nennen den Grund; „Neu“ setzt zurück', async () => {
+    useGrz.getState().load(createProject());
+    const host = render(App);
+    expect(host.querySelector('.grz-view')).toBeNull();
+    const druck = [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Nachweis drucken'))!;
+    expect(druck.disabled).toBe(true);
+    expect(druck.title).toContain('Erst ein Gebäude öffnen');
+    // Projekt mit Gebäude, ungespeichert geändert → „Neu“ fragt nach; „Nicht speichern“ setzt zurück
+    act(() => useGrz.getState().load(projekt()));
+    act(() => useGrz.getState().update((p) => ({ ...p, name: 'geändert' })));
+    expect(host.querySelector('.grz-view')).not.toBeNull();
+    await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Neu')!.click());
+    for (let i = 0; i < 10 && !host.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
+    const nicht = [...host.querySelectorAll('.modal.rf button')].find((b) => b.textContent === 'Nicht speichern') as HTMLButtonElement;
+    await act(async () => nicht.click());
+    for (let i = 0; i < 10 && useGrz.getState().project.name !== 'Neues Projekt'; i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
+    expect(useGrz.getState().project.name).toBe('Neues Projekt');
+    expect(useGrz.getState().dirty).toBe(false);
+  });
+
+  it('G-27: Hinweis „Grundstücksfläche fehlt“ springt per Klick in das Feld', () => {
+    const p = projekt();
+    p.meta.grundstueck.flaeche = undefined;
+    p.lageplan = { flaechen: [] };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const knopf = [...host.querySelectorAll('.grz-hinweise button')].find((b) => b.textContent === 'zum Feld') as HTMLButtonElement;
+    act(() => knopf.click());
+    expect(document.activeElement).toBe(host.querySelector('#grz-grundstueck input'));
+  });
+});
+

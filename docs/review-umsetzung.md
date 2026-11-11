@@ -292,11 +292,19 @@ KO 0.11.2 (Patch).
   von Segment und Fläche (Leiste und am Zeiger); neu `core/kantenFang.ts` (Kantenmitte, Lot, Punkt auf der Kante) mit
   Symbol; Kantenlängen der gewählten Fläche bearbeitbar (Rechteck bleibt Rechteck). Abweichung: Eingabefelder in der
   Leiste statt schwebend am Zeiger; Test für den Fang in `kantenFang.test.ts` statt `fang.test.ts`
-- [ ] **G-22** Unterlage und echte Grundstücksgrenze
+- [x] **G-22** Unterlage und echte Grundstücksgrenze – GRZ 0.13.0: Unterlage Bild/PDF (erste Seite, pdf.js wie im
+  Flächenrechner) in `lageplan.unterlage`, ein-/ausblendbar, Deckkraft; Kalibrieren an zwei Punkten und Ausrichten
+  (neu `core/kalibrierung.ts`); Werkzeug „Grenze“ → `lageplan.grenze`, Grundstückslinie = Grenze, sonst als „Umriss
+  der erfassten Flächen“ beschriftet; Abgleich mit der eingetragenen Fläche (Katasterangabe maßgebend). Abweichung:
+  DXF als Unterlage zurückgestellt – der DXF-Import liegt im Flächenrechner (`apps/flaechenrechner/src/core/dxf.ts`)
+  und müsste dafür nach core wandern, während dort parallel gearbeitet wird; ALKIS (optionale Stufe) nicht umgesetzt;
+  die Grenze wird gelöscht und neu gezeichnet statt Punkt für Punkt bearbeitet; Unterlage ohne Drehen
 - [x] **G-23** Nutzung direkt beim Zeichnen – GRZ 0.11.0: Leiste „Neue Fläche“ mit allen Nutzungen, Versiegelung passend
   vorbelegt, Name je Nutzung („Zufahrt 1“), kein „sonstige“ mehr als Vorgabe; Auswahlbereich mit Nutzung,
   Versiegelung und Nachbar
-- [ ] **G-24** Beschriftung und Orientierung im Plan
+- [x] **G-24** Beschriftung und Orientierung im Plan – GRZ 0.13.0: „Nr · Nutzung · m²“ im eindeutigen Anteil
+  (Schalter „Beschriftung“), Maßstabsleiste, Nordpfeil, Raster (Schalter); Kürzel in der Übersicht „?“, Hilfezeile
+  mit höchstens drei Kürzeln
 - [x] **G-25** Stammdaten und Bebauungsplan-Kopf – GRZ 0.12.0: Abschnitt „Projekt und Bebauungsplan“ mit `StammdatenKnopf`,
   B-Plan Nr./Name direkt eintragbar (in `meta.bebauungsplan`, kein Doppelmodell), Baugebiet `massNutzung.gebietsart`;
   Druck (Grundlagen: Bebauungsplan, Baugebiet) und Excel (`bplan.angabe`, `gebietsart.*`, `stand.*`). Abweichung:
@@ -309,7 +317,10 @@ KO 0.11.2 (Patch).
   § 20 Abs. 3 S. 2 (1990); Keller „im Lichten“ ab BauO NW 1970 (Plandatum ab 27.01.1970 oder ohne Datum); Feld
   „Decken-/Dachaufbau [m]“. Staffelgeschoss-Regel unverändert. Abweichung: gekennzeichnete Gebäudeteile bleiben in
   Vollgeschossprüfung und Geschossfläche (nur die Grundfläche ändert sich)
-- [ ] **G-27** Leerzustand und Einstieg
+- [x] **G-27** Leerzustand und Einstieg – GRZ 0.13.0: ohne Gebäude und Flächen nur `ProjektEinstieg` (Text nennt „mit
+  leerem Lageplan beginnen“); „Neu“ in der Werkzeugleiste mit Rückfrage; gesperrte Knöpfe mit Grund im Tooltip;
+  Hinweis „Grundstücksfläche fehlt“ mit „zum Feld“. Abweichung: Die Aktion heißt wie in allen Apps „Neues Projekt“
+  (Q-5)
 - [ ] **G-28** Layout der Nachweis-Spalte
 - [ ] **G-29** Regeln: Begründung der Anrechnung je Nutzung
 - [ ] **G-30** IFC-Bericht zuschneiden

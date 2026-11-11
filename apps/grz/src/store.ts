@@ -15,7 +15,8 @@ import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGelad
 const log = logger('projekt');
 const HISTORY = 100;
 
-export type Werkzeug = 'auswahl' | 'polygon' | 'rechteck';
+/** grenze: Grundstücksgrenze zeichnen; kalibrieren/ausrichten: Unterlage an zwei Punkten einrichten */
+export type Werkzeug = 'auswahl' | 'polygon' | 'rechteck' | 'grenze' | 'kalibrieren' | 'ausrichten';
 
 interface GrzState {
   project: Project;

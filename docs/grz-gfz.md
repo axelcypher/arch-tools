@@ -6,6 +6,12 @@ Bebauungsplan gilt.
 
 ## Arbeitsweise
 
+- **Einstieg:** Ohne Gebäude und Lageplan-Flächen zeigt die App nur die Einstiegskarte (Projekt wählen, Datei öffnen –
+  auch IFC –, Neues Projekt = mit leerem Lageplan beginnen); Festsetzungen, Plan und Nachweis erscheinen danach.
+  „Neu“ in der Werkzeugleiste beginnt ein leeres Projekt (mit Rückfrage bei ungespeicherten Änderungen) und
+  verwirft damit auch den Zwischenstand. Gesperrte Knöpfe nennen im Tooltip den Grund. Der Hinweis
+  „Grundstücksfläche fehlt“ springt mit „zum Feld“ in das Feld „Grundstücksfläche [m²]“.
+
 - **Öffnen:** ein Projekt des Flächenrechners (`.oap`, auch ältere `.json`) oder direkt ein IFC-Modell.
   Gebäudeumrisse, Geschosse, Räume und Dach kommen aus dem Projekt bzw. dem IFC-Import (derselbe Import wie im
   Flächenrechner, mit Dachform- und Gaubenerkennung).
@@ -97,6 +103,19 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
   Versiegelung, Nachbar und Höhe gemeinsam bearbeitet. Strg+C/V/D kopiert, fügt ein bzw. dupliziert (um 0,50 m
   versetzt), die Pfeiltasten verschieben die Auswahl um 1 cm (mit Umschalt 10 cm). Nach einem Klick in den Lageplan
   wählt Tab bzw. Umschalt+Tab die nächste bzw. vorige Fläche.
+- **Beschriftung und Orientierung:** Jede eigene Fläche trägt im Plan „Nr · Nutzung · m²“ (eindeutiger Anteil, Nummern
+  wie im Druck), abschaltbar über „Beschriftung“. Maßstabsleiste und Nordpfeil (Planoberkante = Projektnorden) stehen
+  immer im Plan, ein Raster lässt sich zuschalten. Die Hilfezeile nennt nur die wichtigsten Kürzel des Werkzeugs;
+  alle Kürzel stehen in der Übersicht hinter „?“.
+- **Unterlage:** „Bild/PDF …“ legt einen amtlichen Lageplan (PNG, JPG oder die erste Seite eines PDF) unter den Plan;
+  er wird mit dem Projekt gespeichert, lässt sich ein- und ausblenden und in der Deckkraft einstellen. „Kalibrieren“:
+  zwei Punkte einer bekannten Strecke klicken und die wahre Länge in Metern eintragen – der erste Punkt bleibt an
+  seiner Stelle. „Ausrichten“: einen Punkt der Unterlage und dann den Zielpunkt im Plan klicken.
+- **Grundstücksgrenze:** Das Werkzeug „Grenze“ (G) zeichnet das Flurstück als Polygon (mehrere nacheinander möglich,
+  „Grenze löschen“ entfernt sie). Die strichpunktierte Linie in Plan und Druck ist dann die gezeichnete Grenze;
+  ohne Grenze ist sie als „Umriss der erfassten Flächen“ beschriftet. Die Fläche der Grenze wird mit der
+  eingetragenen Grundstücksfläche abgeglichen: Bei Abweichung nennt der Nachweis beide Werte, maßgebend bleibt die
+  Katasterangabe (§ 19 Abs. 3 BauNVO). Ohne eingetragene Grundstücksfläche gilt die Fläche der Grenze.
 - **Nutzung beim Zeichnen:** Die Leiste „Neue Fläche“ unter den Werkzeugen wählt die Nutzung neuer Flächen
   (Zufahrt, Stellplatz, Garage, Terrasse, Weg, Nebenanlage, unterirdische Anlage, Garten, sonstige). Die
   Versiegelung wird passend vorbelegt (z. B. Zufahrt vollversiegelt, Garten Grünfläche), der Name zählt je Nutzung
@@ -137,7 +156,7 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
 
 ### Grundstück und Gelände
 
-- **Grundstücksfläche:** aus den Projektdaten; fehlt sie, aus den eigenen Lageplan-Flächen zusammen mit dem
+- **Grundstücksfläche:** aus den Projektdaten (Kataster); fehlt sie, aus der gezeichneten Grundstücksgrenze, sonst aus den eigenen Lageplan-Flächen zusammen mit dem
   Gebäude. Weichen beide voneinander ab, weist der Nachweis darauf hin.
 - **Geländeoberfläche:** eingetragener Wert (vor 1985: die festgelegte Geländeoberfläche). Sonst wird das Gelände
   **je Geschoss** entlang seiner eigenen Außenwände abgetastet (alle 0,4 m, 0,5 m vor der Wand) – aus dem

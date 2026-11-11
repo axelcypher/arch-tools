@@ -10,6 +10,12 @@ import { bounds, pointInPolygon, polygonArea } from '@core/geometry';
 import { LAGEPLAN_NUTZUNGEN, nutzungLabel, versiegelungInfo } from '@core/lageplan';
 import type { Nachweis } from '../massNutzung';
 import { addFlaeche, auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapFlaeche, neueFlaeche, NUTZUNG_NAME, removeFlaeche, useGrz } from '../store';
+import { beschriftungsPunkt, massstabLaenge } from '../beschriftung';
+import { unterlageKalibrieren, unterlageVerschieben } from '@core/kalibrierung';
+import { frageText, meldung } from '@core/ui/Rueckfrage';
+import { newId } from '@core/model';
+import type { RasterBackground } from '@core/model';
+import { unterlageLesen } from '../unterlage';
 import type { Werkzeug } from '../store';
 
 export interface Ausschnitt {
@@ -24,17 +30,59 @@ const FANG_PX = 10;
 /** Mindestweg in Pixeln, ab dem ein Ziehen beginnt (sonst Klick) */
 const ZIEH_PX = 3;
 
-/** Werkzeuge und Tasten wie im Flächenrechner */
-const WERKZEUGE: { id: Werkzeug; label: string; taste: string; hint: string }[] = [
+/**
+ * Werkzeuge und Tasten wie im Flächenrechner. kurz: die zwei, drei wichtigsten Kürzel für die Hilfezeile; alle:
+ * vollständige Übersicht hinter „?“
+ */
+const WERKZEUGE: { id: Werkzeug; label: string; taste: string; kurz: string[]; alle: string[]; titel: string }[] = [
   {
     id: 'auswahl',
     label: 'Auswahl',
     taste: 'V',
-    hint: 'Klicken: auswählen · Umschalt+Klick/-Rahmen: mehrere · Strg+A: alle · Tab: nächste Fläche · Pfeiltasten: verschieben (Umschalt: 10 cm) · Strg+C/V/D: kopieren/einfügen/duplizieren · Ziehen: verschieben · Punkt ziehen: ändern (Umschalt während des Ziehens: entlang der Gebäudeachse) · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: löschen',
+    titel: 'Flächen auswählen, verschieben und ändern',
+    kurz: ['Klicken: auswählen', 'Ziehen: verschieben', 'Entf: löschen'],
+    alle: [
+      'Klicken: auswählen · Umschalt+Klick oder Umschalt+Rahmen: mehrere · Strg+A: alle',
+      'Tab: nächste Fläche · Pfeiltasten: verschieben (1 cm, Umschalt: 10 cm)',
+      'Strg+C / Strg+V / Strg+D: kopieren / einfügen / duplizieren',
+      'Ziehen: verschieben · Punkt ziehen: ändern (Umschalt: entlang der Gebäudeachse)',
+      '◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: Fläche löschen',
+    ],
   },
-  { id: 'polygon', label: 'Polygon', taste: 'P', hint: 'Klicken: nächster Punkt · Enter/Doppelklick/Startpunkt: schließen · Umschalt: entlang der Gebäudeachse · Rück: letzten Punkt löschen · Esc: abbrechen' },
-  { id: 'rechteck', label: 'Rechteck', taste: 'R', hint: 'Erste Ecke setzen, dann Gegenecke klicken – ausgerichtet an der Gebäudeachse' },
+  {
+    id: 'polygon',
+    label: 'Polygon',
+    taste: 'P',
+    titel: 'Fläche Punkt für Punkt zeichnen',
+    kurz: ['Klicken: Punkt', 'Zahl: Länge eingeben', 'Enter: schließen'],
+    alle: ['Klicken: nächster Punkt · Enter, Doppelklick oder Startpunkt: schließen', 'Zahl tippen: Länge und Winkel eingeben', 'Umschalt: entlang der Gebäudeachse · Rück: letzten Punkt löschen · Esc: abbrechen'],
+  },
+  {
+    id: 'rechteck',
+    label: 'Rechteck',
+    taste: 'R',
+    titel: 'Rechteck an der Gebäudeachse zeichnen',
+    kurz: ['Klicken: erste Ecke', 'Zahl: Breite × Tiefe', 'Klicken: Gegenecke'],
+    alle: ['Erste Ecke setzen, dann Gegenecke klicken – ausgerichtet an der Gebäudeachse', 'Zahl tippen: Breite und Tiefe eingeben'],
+  },
+  {
+    id: 'grenze',
+    label: 'Grenze',
+    taste: 'G',
+    titel: 'Grundstücksgrenze (Flurstück) als Polygon zeichnen',
+    kurz: ['Klicken: Punkt', 'Enter: schließen', 'Esc: abbrechen'],
+    alle: ['Grundstücksgrenze wie ein Polygon zeichnen; mehrere Flurstücke nacheinander', 'Die Fläche wird mit der eingetragenen Grundstücksfläche abgeglichen'],
+  },
 ];
+
+/** allgemeine Kürzel (Übersicht hinter „?“) */
+const ALLGEMEIN = ['Mausrad: zoomen · mittlere Maustaste oder Leertaste + Ziehen: verschieben', 'F: einpassen · Alt: Fang aus', 'Esc: Zeichnen abbrechen bzw. zur Auswahl'];
+
+/** Rasterweite: runde Weite, mindestens etwa 25 px auf dem Bildschirm */
+function rasterWeite(k: number): number {
+  for (const s of [0.5, 1, 2, 5, 10, 20, 50, 100]) if (s / k >= 25) return s;
+  return 200;
+}
 
 type Ziehen =
   | { art: 'pan'; sx: number; sy: number; vb: Ausschnitt }
@@ -71,6 +119,12 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   // Vorschau beim Ziehen (Punkte der gezogenen Flächen)
   const [vorschau, setVorschau] = useState<Map<string, Point[]> | null>(null);
   const [leertaste, setLeertaste] = useState(false);
+  // Anzeige: Beschriftung „Nr · Nutzung · m²“ und Raster (Schalter in der Plan-Leiste)
+  const [beschriften, setBeschriften] = useState(true);
+  const [raster, setRaster] = useState(false);
+  const dateiRef = useRef<HTMLInputElement>(null);
+  const unterlage = project.lageplan?.unterlage;
+  const grenzen = project.lageplan?.grenze ?? [];
 
   // Ausschnitt: eingepasst auf Gebäude und Flächen; neu beim Öffnen eines anderen Projekts
   const passend = useMemo<Ausschnitt>(() => {
@@ -159,6 +213,13 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     setDraft([]);
     setEingabe({ a: '', b: '' });
     if (pts.length < 3 || polygonArea(pts) < 0.05) return;
+    if (werkzeug === 'grenze') {
+      st.update((p) => {
+        const alt = p.lageplan?.grenze ?? [];
+        return { ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: [...alt, { id: newId('gr'), name: `Flurstück ${alt.length + 1}`, points: pts }] } };
+      }, undefined);
+      return;
+    }
     const f = neueFlaeche(useGrz.getState().project, pts, useGrz.getState().nutzungVorlage);
     st.update((p) => addFlaeche(p, f));
     st.select(f.id);
@@ -343,13 +404,51 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       else fertig(achsRechteck(draft[0], p, theta));
       return;
     }
+    if (werkzeug === 'kalibrieren' || werkzeug === 'ausrichten') {
+      if (!draft.length) setDraft([p]);
+      else void unterlageEinrichten(draft[0], p);
+      return;
+    }
     // Polygon: Klick auf den ersten Punkt schließt
     if (draft.length >= 3 && Math.hypot(p.x - draft[0].x, p.y - draft[0].y) < FANG_PX * skala()) fertig(draft);
     else setDraft([...draft, p]);
   };
 
   const onDoubleClick = () => {
-    if (werkzeug === 'polygon' && draft.length >= 3) fertig(draft);
+    if ((werkzeug === 'polygon' || werkzeug === 'grenze') && draft.length >= 3) fertig(draft);
+  };
+
+  const setUnterlage = (u: RasterBackground | undefined) => st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, unterlage: u } }));
+
+  /** Kalibrieren (Strecke a–b, wahre Länge erfragen) bzw. Ausrichten (Punkt a der Unterlage auf b) */
+  const unterlageEinrichten = async (a: Point, b: Point) => {
+    setDraft([]);
+    const u = useGrz.getState().project.lageplan?.unterlage;
+    const art = werkzeug;
+    st.setWerkzeug('auswahl');
+    if (!u || u.type !== 'raster') return;
+    if (art === 'ausrichten') {
+      setUnterlage(unterlageVerschieben(u, a, b));
+      return;
+    }
+    const gemessen = Math.hypot(b.x - a.x, b.y - a.y);
+    const t = await frageText('Unterlage kalibrieren', fmt2(gemessen), 'Kalibrieren', 'Wahre Länge der Strecke zwischen den beiden Punkten in Metern (z. B. eine Grundstücksseite mit Maß):');
+    if (t === null) return;
+    const l = parseNum(t);
+    if (l === null || l <= 0) {
+      await meldung('Kalibrieren nicht möglich', 'Bitte eine Länge über 0 in Metern eingeben.');
+      return;
+    }
+    setUnterlage(unterlageKalibrieren(u, a, b, l));
+  };
+
+  const unterlageWaehlen = async (datei: File | undefined) => {
+    if (!datei) return;
+    try {
+      setUnterlage(await unterlageLesen(datei, vb));
+    } catch (e) {
+      await meldung('Unterlage ließ sich nicht lesen', `Die Datei „${datei.name}“ ist kein lesbares Bild (PNG, JPG) bzw. PDF.`, e);
+    }
   };
 
   // Tastatur wie im Flächenrechner
@@ -374,7 +473,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const sel = useGrz.getState().selectedIds;
       // Zahl beim Zeichnen: in die genaue Eingabe (Länge bzw. Breite) springen
-      if (werkzeug !== 'auswahl' && draft.length && /^[0-9]$/.test(e.key)) {
+      if ((werkzeug === 'polygon' || werkzeug === 'rechteck' || werkzeug === 'grenze') && draft.length && /^[0-9]$/.test(e.key)) {
         e.preventDefault();
         setEingabe({ a: e.key, b: '' });
         eingabeA.current?.focus();
@@ -409,7 +508,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           else st.select(null);
           break;
         case 'Enter':
-          if (werkzeug === 'polygon' && draft.length >= 3) fertig(draft);
+          if ((werkzeug === 'polygon' || werkzeug === 'grenze') && draft.length >= 3) fertig(draft);
           break;
         case 'Backspace':
           if (draft.length) setDraft(draft.slice(0, -1));
@@ -443,7 +542,24 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const k = skala();
   const d = (pts: Point[], zu = true) => `M${pts.map((p) => `${p.x} ${p.y}`).join('L')}${zu ? 'Z' : ''}`;
   const punkteVon = (id: string, pts: Point[]) => vorschau?.get(id) ?? pts;
-  const entwurf = draft.length && cursor ? (werkzeug === 'rechteck' ? achsRechteck(draft[0], cursor, theta) : [...draft, cursor]) : draft;
+  const entwurf =
+    werkzeug === 'kalibrieren' || werkzeug === 'ausrichten' ? [] : draft.length && cursor ? (werkzeug === 'rechteck' ? achsRechteck(draft[0], cursor, theta) : [...draft, cursor]) : draft;
+  // Beschriftung: Nummern wie im Druck (eigene Flächen in Listenfolge)
+  const beschriftungen = beschriften
+    ? n.lageplan
+        .filter((l) => !l.nachbar)
+        .map((l, i) => ({ l, nr: i + 1 }))
+        .filter(({ l }) => l.flaecheEindeutig > 0.005)
+        .map(({ l, nr }) => {
+          const f = flaechen.find((x) => x.id === l.id);
+          const umriss = f?.points ?? l.polygone?.[0] ?? [];
+          return { id: l.id, p: beschriftungsPunkt(l.eindeutig, umriss), text: `${nr} · ${nutzungLabel(l.nutzung)} · ${fmt2(l.flaecheEindeutig)} m²` };
+        })
+    : [];
+  const rw = rasterWeite(k);
+  const ml = massstabLaenge(vb.w);
+  const werkzeugInfo = WERKZEUGE.find((w) => w.id === werkzeug);
+  const zeichnet = werkzeug === 'polygon' || werkzeug === 'rechteck' || werkzeug === 'grenze';
   // Eckpunkte nur bei genau einer gewählten Fläche
   const sel = werkzeug === 'auswahl' && selectedIds.length <= 1 ? flaechen.find((f) => f.id === selected) : undefined;
   const selPts = sel ? punkteVon(sel.id, sel.points) : [];
@@ -465,16 +581,92 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     <div className="lp-editor">
       <div className="lp-tools">
         {WERKZEUGE.map((w) => (
-          <button key={w.id} className={werkzeug === w.id ? 'small active' : 'small'} title={`${w.hint} (${w.taste})`} onClick={() => st.setWerkzeug(w.id)}>
+          <button key={w.id} className={werkzeug === w.id ? 'small active' : 'small'} title={`${w.titel} (${w.taste})`} onClick={() => st.setWerkzeug(w.id)}>
             {w.label}
           </button>
         ))}
         <button className="small" title="Ansicht auf Gebäude und Flächen einpassen (F)" onClick={() => setVb(passend)}>
           Einpassen
         </button>
+        <label className="toggle small-text" title="Nummer, Nutzung und Fläche im Plan">
+          <input type="checkbox" checked={beschriften} onChange={(e) => setBeschriften(e.target.checked)} />
+          Beschriftung
+        </label>
+        <label className="toggle small-text">
+          <input type="checkbox" checked={raster} onChange={(e) => setRaster(e.target.checked)} />
+          Raster
+        </label>
+        <details className="lp-tasten">
+          <summary title="Tastenübersicht">?</summary>
+          <div className="lp-tasten-liste">
+            {WERKZEUGE.map((w) => (
+              <div key={w.id}>
+                <strong>
+                  {w.label} ({w.taste})
+                </strong>
+                <ul>
+                  {w.alle.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            <div>
+              <strong>Allgemein</strong>
+              <ul>
+                {ALLGEMEIN.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </details>
         <span className="muted small-text lp-hint">
-          {WERKZEUGE.find((w) => w.id === werkzeug)!.hint} · Mausrad: zoomen · mittlere Maustaste oder Leertaste + Ziehen: verschieben
+          {werkzeug === 'kalibrieren'
+            ? 'Zwei Punkte einer bekannten Strecke auf der Unterlage klicken'
+            : werkzeug === 'ausrichten'
+              ? 'Punkt auf der Unterlage, dann den Zielpunkt im Plan klicken'
+              : werkzeugInfo!.kurz.join(' · ')}
         </span>
+      </div>
+      <div className="lp-tools lp-unterlage">
+        <span className="muted small-text">Unterlage:</span>
+        <input ref={dateiRef} type="file" accept="image/png,image/jpeg,application/pdf,.pdf" hidden onChange={(e) => void unterlageWaehlen(e.target.files?.[0])} />
+        <button className="small" title="Amtlicher Lageplan als Bild (PNG, JPG) oder PDF zum Nachzeichnen" onClick={() => dateiRef.current?.click()}>
+          {unterlage ? 'Ersetzen …' : 'Bild/PDF …'}
+        </button>
+        {unterlage && (
+          <>
+            <button className={werkzeug === 'kalibrieren' ? 'small active' : 'small'} title="Maßstab an einer bekannten Strecke festlegen" onClick={() => st.setWerkzeug('kalibrieren')}>
+              Kalibrieren
+            </button>
+            <button className={werkzeug === 'ausrichten' ? 'small active' : 'small'} title="Unterlage verschieben: Punkt auf der Unterlage → Punkt im Plan" onClick={() => st.setWerkzeug('ausrichten')}>
+              Ausrichten
+            </button>
+            <label className="toggle small-text">
+              <input type="checkbox" checked={unterlage.visible} onChange={(e) => setUnterlage({ ...(unterlage as RasterBackground), visible: e.target.checked })} />
+              anzeigen
+            </label>
+            <input
+              type="range"
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={unterlage.opacity}
+              title="Deckkraft"
+              aria-label="Deckkraft der Unterlage"
+              onChange={(e) => setUnterlage({ ...(unterlage as RasterBackground), opacity: Number(e.target.value) })}
+            />
+            <button className="small" onClick={() => setUnterlage(undefined)}>
+              Entfernen
+            </button>
+          </>
+        )}
+        {grenzen.length > 0 && (
+          <button className="small" title="Gezeichnete Grundstücksgrenze entfernen" onClick={() => st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: undefined } }))}>
+            Grenze löschen
+          </button>
+        )}
       </div>
       <div className="lp-tools lp-nutzungen" role="group" aria-label="Nutzung neuer Flächen">
         <span className="muted small-text">Neue Fläche:</span>
@@ -492,7 +684,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           </button>
         ))}
       </div>
-      {werkzeug !== 'auswahl' && draft.length > 0 && (
+      {zeichnet && draft.length > 0 && (
         <div className="lp-tools lp-eingabe">
           <label className="small-text">
             {werkzeug === 'rechteck' ? 'Breite [m]' : 'Länge [m]'}{' '}
@@ -557,6 +749,31 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             <line x1="0" y1="0" x2="0" y2={k * 8} stroke="#2a5bd7" strokeWidth={k * 2} strokeOpacity={0.5} />
           </pattern>
         </defs>
+        {unterlage?.visible && unterlage.type === 'raster' && (
+          <image
+            className="lp-unterlage-bild"
+            href={unterlage.dataUrl}
+            x={unterlage.x}
+            y={unterlage.y}
+            width={unterlage.widthPx * unterlage.metersPerPixel}
+            height={unterlage.heightPx * unterlage.metersPerPixel}
+            opacity={unterlage.opacity}
+            preserveAspectRatio="none"
+            pointerEvents="none"
+          />
+        )}
+        {raster && (
+          <g className="lp-raster" pointerEvents="none" stroke="#c9cdd4" strokeWidth={k * 0.6}>
+            {Array.from({ length: Math.min(400, Math.ceil(vb.w / rw) + 2) }, (_, i) => {
+              const x = (Math.floor(vb.x / rw) + i) * rw;
+              return <line key={`x${i}`} x1={x} y1={vb.y - vb.h} x2={x} y2={vb.y + 2 * vb.h} />;
+            })}
+            {Array.from({ length: Math.min(400, Math.ceil(vb.h / rw) + 2) }, (_, i) => {
+              const y = (Math.floor(vb.y / rw) + i) * rw;
+              return <line key={`y${i}`} x1={vb.x - vb.w} y1={y} x2={vb.x + 2 * vb.w} y2={y} />;
+            })}
+          </g>
+        )}
         {flaechen.map((f) => (
           <path
             key={f.id}
@@ -581,6 +798,24 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         {n.grundstueckPolygone.map((pts, i) => (
           <path key={`g${i}`} d={d(pts)} fill="none" stroke="#1f2328" strokeWidth={k * 2.5} strokeDasharray={`${k * 10} ${k * 3} ${k * 2} ${k * 3}`} pointerEvents="none" />
         ))}
+        {beschriftungen.map((b) => (
+          <text key={`b${b.id}`} x={b.p.x} y={b.p.y} fontSize={k * 11} className="lp-beschriftung" textAnchor="middle" dominantBaseline="middle" pointerEvents="none">
+            {b.text}
+          </text>
+        ))}
+        <g className="lp-massstab" pointerEvents="none" data-laenge={ml}>
+          <rect x={vb.x + k * 12} y={vb.y + vb.h - k * 16} width={ml / 2} height={k * 5} fill="#1f2328" />
+          <rect x={vb.x + k * 12 + ml / 2} y={vb.y + vb.h - k * 16} width={ml / 2} height={k * 5} fill="#fff" stroke="#1f2328" strokeWidth={k} />
+          <text x={vb.x + k * 12 + ml} y={vb.y + vb.h - k * 20} fontSize={k * 10} className="lp-beschriftung" textAnchor="middle">
+            {ml.toLocaleString('de-DE')} m
+          </text>
+        </g>
+        <g className="lp-nordpfeil" pointerEvents="none" transform={`translate(${vb.x + vb.w - k * 20} ${vb.y + k * 10})`}>
+          <path d={`M0 0 L${k * 6} ${k * 18} L0 ${k * 14} L${-k * 6} ${k * 18} Z`} fill="#1f2328" />
+          <text x={0} y={k * 30} fontSize={k * 10} className="lp-beschriftung" textAnchor="middle">
+            N
+          </text>
+        </g>
         {sel && (
           <g>
             {selPts.map((p, i) => {
@@ -612,7 +847,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             ))}
           </g>
         )}
-        {entwurf.length > 0 && (
+        {(entwurf.length > 0 || draft.length > 0) && (
           <g pointerEvents="none">
             <path d={d(entwurf, werkzeug === 'rechteck' || entwurf.length > 2)} fill="var(--sel)" fillOpacity={0.12} stroke="var(--sel)" strokeWidth={k * 1.5} />
             {draft.map((p, i) => (
@@ -655,6 +890,9 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           />
         )}
       </svg>
+      <p className="muted small-text lp-legende">
+        Strichpunktiert: {n.grenzeGezeichnet ? 'Grundstücksgrenze' : 'Umriss der erfassten Flächen (keine Grundstücksgrenze gezeichnet – Werkzeug „Grenze“)'}
+      </p>
     </div>
   );
 }
