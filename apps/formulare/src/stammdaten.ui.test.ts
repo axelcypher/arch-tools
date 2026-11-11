@@ -11,6 +11,7 @@ import { readProjectFile, writeArchive } from '@core/archive';
 import { createProject, leereMeta } from '@core/model';
 import { cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
+import { useAntrag } from './antragStore';
 import { useFormulare } from './store';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -411,6 +412,8 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(host.textContent).toContain('Projektdatei mitgeführt (1 Angabe(n))');
     // über den gemeinsamen Zugriff (packages/core): atomar, mit Sicherungskopie, nur wenn seitdem unverändert
     expect(ds.schreibvorgaenge.filter((w) => !w.startsWith('sperre'))).toEqual([
+      // beim ersten Öffnen: der Antrag entsteht (Abschnitt „formulare“)
+      'oap Planung/Berechnungen/BS9 Flächen.oap',
       'oap Planung/Berechnungen/BS9 Flächen.oap',
       'projektkarte BS9/sj_prokarte.sdb (5)',
       'oap Planung/Berechnungen/BS9 Flächen.oap',
@@ -500,7 +503,10 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
       Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, value);
       el.dispatchEvent(new Event('input', { bubbles: true }));
     });
-  const zustand = () => (readProjectFile(ds.dateien.get(OAP)!).formulare as { felder?: Record<string, unknown> } | undefined)?.felder?.['001-Muster.frmsjf'];
+  /** Autofill-Zustände des aktiven Antrags in der Projektdatei */
+  const felderImAntrag = () =>
+    (readProjectFile(ds.dateien.get(OAP)!).formulare as { antraege?: Record<string, { felder?: Record<string, unknown> }> } | undefined)?.antraege?.[useAntrag.getState().projektdatei!.ansicht!]?.felder;
+  const zustand = () => felderImAntrag()?.['001-Muster.frmsjf'];
   const speichern = () => act(() => useFormulare.getState().speichern());
   const karteAendern = async (name: string) => {
     act(() => useFormulare.getState().karteSetzen(231, 40, name));
@@ -600,7 +606,7 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     expect(neu.find((x) => x.name === 'Memo1')!.original).toBe('Kreis Soest, Hoher Weg 1');
     // Felder ohne Angabe in der Projektkarte bleiben leer
     expect(neu.find((x) => x.name === 'Memo3')!.original).toBe('');
-    expect((readProjectFile(ds.dateien.get(OAP)!).formulare as { felder: Record<string, unknown> }).felder['002-Muster.frmsjf']).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Soest, Hoher Weg 1' } } });
+    expect(felderImAntrag()!['002-Muster.frmsjf']).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Soest, Hoher Weg 1' } } });
     expect(useFormulare.getState().meldung?.text).toContain('mit 1 Angabe(n) aus der Projektkarte befüllt');
   });
 });

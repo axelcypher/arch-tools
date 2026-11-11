@@ -9,7 +9,7 @@
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { create } from 'zustand';
-import type { ProjektStatus } from '../model';
+import type { AntragKurz, ProjektStatus } from '../model';
 import { PROJEKT_STATUS } from '../model';
 import './projektuebersicht.css';
 
@@ -38,6 +38,17 @@ export interface UebersichtProjekt {
   suchtext?: string;
   /** Stand aus der Projektdatei (`meta.status`); fehlt = aktiv */
   projektStatus?: ProjektStatus;
+  /** der zuletzt angelegte Antrag (`meta.antrag`) – als Marke auf der Karte */
+  antrag?: AntragKurz;
+}
+
+const tag = (iso: string) => iso.split('-').reverse().join('.');
+
+/** Marke des aktuellsten Antrags: „BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in Arbeit“ */
+export function antragMarke(a: AntragKurz): UebersichtMarke {
+  return a.eingereicht
+    ? { text: `${a.name} · eingereicht ${tag(a.eingereicht.datum)}`, art: 'ok', titel: `Antrag ${a.name} eingereicht – ${a.eingereicht.datei}` }
+    : { text: `${a.name} in Arbeit`, art: 'neutral', titel: `Aktuellster Antrag: ${a.name}${a.angelegt ? `, angelegt am ${tag(a.angelegt)}` : ''} – noch nicht eingereicht` };
 }
 
 /** Eintrag des Kontextmenüs einer Karte */
@@ -114,7 +125,7 @@ export interface UebersichtStatus {
 
 export interface UebersichtMarke {
   text: string;
-  art?: 'warnung' | 'hinweis' | 'neutral';
+  art?: 'warnung' | 'hinweis' | 'neutral' | 'ok';
   titel?: string;
   symbol?: IconName;
 }
@@ -428,7 +439,7 @@ type KartenProps = Pick<ProjektUebersichtProps, 'onOeffnen' | 'onKontext' | 'sta
 
 function Karte({ p, hervorgehoben, geoeffnet, onOeffnen, onKontext, status, marken }: KartenProps) {
   const st = status?.(p);
-  const mk = marken?.(p) ?? [];
+  const mk = [...(p.antrag ? [antragMarke(p.antrag)] : []), ...(marken?.(p) ?? [])];
   const zeit = geoeffnet ? `geöffnet ${wann(geoeffnet)}` : p.geaendert ? `geändert ${wann(p.geaendert)}` : null;
   const gesamt = st?.balken ? STUFEN.reduce((n, s) => n + (st.balken![s] ?? 0), 0) : 0;
   const ampel = st ? (st.stufe ?? (st.unbekannt ? 'unbekannt' : 'ohne')) : 'unbekannt';

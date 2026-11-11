@@ -9,6 +9,8 @@
  * „BS9 BAUA 261110 01 Bauantrag.pdf“ – nur so benannte Dateien lassen sich als „bereit“ markieren (von Hand).
  */
 
+import type { AntragKurz } from '@core/model';
+import { antragKurzAus } from '@core/serialize';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
 import type { Bedingung } from './bedingung';
@@ -317,9 +319,16 @@ export interface UmfangEintrag {
 }
 
 /** Angaben der App zum Projekt – Abschnitt „formulare“ der Projektdatei (.oap), für alle im Büro gleich */
+/**
+ * Angaben der App zum Projekt, wie sie die Oberfläche sieht: die Werte des **aktiven Antrags** (`ansicht`) – Projektumfang,
+ * Projektmerkmale, Autofill-Zustände – und dazu alle Anträge (`antraege`), wie sie in der Projektdatei stehen.
+ * Gespeichert wird im Abschnitt „formulare“ nur `aktiveFassung` und `antraege` (siehe `abschnittVon`).
+ */
 export interface ProjektDatei {
   /** aktive Antragsfassung (Ordnername) */
   aktiveFassung?: string;
+  /** Antrag, dessen Werte hier stehen (umfang, merkmale, felder) */
+  ansicht?: string;
   /** Projektumfang; fehlt = nicht festgelegt (keine Vollständigkeitsprüfung) */
   umfang?: UmfangEintrag[];
   /** Projektmerkmale (Gebäudeklasse, Sonderbau …): Name → Wert, gilt für alle Formulare */
@@ -328,6 +337,28 @@ export interface ProjektDatei {
   felder?: Zustaende;
   /** von Hand als „bereit“ markierte Dateien je Antragsfassung (Ordnername) */
   bereit?: Record<string, BereitEintrag[]>;
+  /** alle Anträge des Projekts je Fassung (Ordnername) */
+  antraege?: Record<string, AntragDaten>;
+}
+
+/** Angaben eines Antrags (einer Antragsfassung) – unabhängig von den anderen Anträgen und den Vorgaben */
+export interface AntragDaten {
+  /** angelegt (JJJJ-MM-TT) */
+  angelegt?: string;
+  merkmale?: Record<string, string>;
+  umfang?: UmfangEintrag[];
+  felder?: Zustaende;
+  bereit?: BereitEintrag[];
+  /** Antragsprotokoll bzw. Eingangsbestätigung im Ordner des Antrags */
+  eingereicht?: { datei: string; datum: string };
+}
+
+/** Gespeicherter Abschnitt „formulare“: aktive Fassung und die Anträge; `alt` = Angaben aus der Zeit vor den Anträgen */
+export interface Abschnitt {
+  aktiveFassung?: string;
+  antraege: Record<string, AntragDaten>;
+  /** früher projektweit (Projektumfang, Merkmale, Autofill) – wird in die vorhandenen Anträge übernommen */
+  alt?: AntragDaten;
 }
 
 /** Eine als „bereit“ markierte Datei im Ordner einer Antragsfassung */
@@ -372,6 +403,134 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
     if (Object.keys(b).length) out.bereit = b;
   }
   return out;
+}
+
+const TAG = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Tag (JJJJ-MM-TT) in Ortszeit */
+export const tagVon = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+function antragDatenAus(roh: unknown): AntragDaten {
+  const o = (roh && typeof roh === 'object' ? roh : {}) as Record<string, unknown>;
+  const p = projektDateiAus({ umfang: o.umfang, merkmale: o.merkmale, felder: o.felder, bereit: { x: o.bereit } });
+  const a: AntragDaten = {};
+  if (typeof o.angelegt === 'string' && TAG.test(o.angelegt)) a.angelegt = o.angelegt;
+  if (p.merkmale) a.merkmale = p.merkmale;
+  if (p.umfang) a.umfang = p.umfang;
+  if (p.felder) a.felder = p.felder;
+  if (p.bereit?.x) a.bereit = p.bereit.x;
+  const e = o.eingereicht as Record<string, unknown> | undefined;
+  if (e && typeof e === 'object' && typeof e.datei === 'string' && e.datei && typeof e.datum === 'string' && TAG.test(e.datum)) a.eingereicht = { datei: e.datei, datum: e.datum };
+  return a;
+}
+
+/**
+ * Abschnitt „formulare“ lesen. Ältere Projektdateien hatten Projektumfang, Autofill (im Abschnitt) und Projektmerkmale
+ * (`meta.merkmale`) für das ganze Projekt: Sie kommen nach `alt` und werden in die vorhandenen Anträge übernommen;
+ * die „bereit“-Markierungen waren schon je Fassung.
+ */
+export function abschnittAus(roh: unknown, metaMerkmale?: Record<string, string>): Abschnitt {
+  const o = (roh && typeof roh === 'object' ? roh : {}) as Record<string, unknown>;
+  const legacy = projektDateiAus(o);
+  const a: Abschnitt = { antraege: {} };
+  if (legacy.aktiveFassung) a.aktiveFassung = legacy.aktiveFassung;
+  if (o.antraege && typeof o.antraege === 'object' && !Array.isArray(o.antraege))
+    for (const [name, daten] of Object.entries(o.antraege as Record<string, unknown>)) if (name.trim()) a.antraege[name] = antragDatenAus(daten);
+  const alt: AntragDaten = {};
+  const merkmale = legacy.merkmale ?? (metaMerkmale && Object.keys(metaMerkmale).length ? { ...metaMerkmale } : undefined);
+  if (merkmale) alt.merkmale = merkmale;
+  if (legacy.umfang) alt.umfang = legacy.umfang;
+  if (legacy.felder) alt.felder = legacy.felder;
+  if (Object.keys(alt).length) a.alt = alt;
+  for (const [fassung, liste] of Object.entries(legacy.bereit ?? {})) {
+    const ziel = a.antraege[fassung];
+    if (ziel) {
+      if (!ziel.bereit) ziel.bereit = liste;
+    } else a.antraege[fassung] = { ...structuredClone(alt), bereit: liste };
+  }
+  return a;
+}
+
+/** Neuer Antrag: die Vorgabewerte der Projektmerkmale (globales Preset), sonst leer */
+export function neuerAntrag(vorgaben: Record<string, string>, angelegt: string): AntragDaten {
+  return { angelegt, ...(Object.keys(vorgaben).length ? { merkmale: { ...vorgaben } } : {}) };
+}
+
+/**
+ * Ansicht für einen Antrag: dessen Werte vorne, alle Anträge dahinter. Fehlt der Antrag, entsteht er – aus den früher
+ * projektweiten Angaben (`alt`) oder aus den Vorgaben; `neu` sagt dann, dass er noch gespeichert werden muss.
+ */
+export function ansichtVon(a: Abschnitt, fassung: string, neu: () => AntragDaten): { pd: ProjektDatei; neu: boolean } {
+  const antraege = { ...a.antraege };
+  const fehlt = !antraege[fassung];
+  if (fehlt) antraege[fassung] = a.alt ? { ...structuredClone(a.alt), angelegt: neu().angelegt } : neu();
+  const d = antraege[fassung];
+  const bereit = Object.fromEntries(Object.entries(antraege).flatMap(([n, x]) => (x.bereit?.length ? [[n, x.bereit]] : [])));
+  const pd: ProjektDatei = {
+    ...(a.aktiveFassung ? { aktiveFassung: a.aktiveFassung } : {}),
+    ansicht: fassung,
+    ...(d.umfang ? { umfang: d.umfang } : {}),
+    ...(d.merkmale && Object.keys(d.merkmale).length ? { merkmale: d.merkmale } : {}),
+    ...(d.felder && Object.keys(d.felder).length ? { felder: d.felder } : {}),
+    ...(Object.keys(bereit).length ? { bereit } : {}),
+    antraege,
+  };
+  return { pd, neu: fehlt };
+}
+
+/** Anträge aus der Ansicht: die Werte des angezeigten Antrags und die „bereit“-Markierungen je Fassung zurückgeschrieben */
+export function antraegeVon(pd: ProjektDatei): Record<string, AntragDaten> {
+  const antraege: Record<string, AntragDaten> = {};
+  for (const [n, x] of Object.entries(pd.antraege ?? {})) {
+    const { bereit: _, ...rest } = x;
+    antraege[n] = rest;
+  }
+  if (pd.ansicht) {
+    const { merkmale: _m, umfang: _u, felder: _f, ...rest } = antraege[pd.ansicht] ?? {};
+    antraege[pd.ansicht] = {
+      ...rest,
+      ...(pd.merkmale && Object.keys(pd.merkmale).length ? { merkmale: pd.merkmale } : {}),
+      ...(pd.umfang ? { umfang: pd.umfang } : {}),
+      ...(pd.felder && Object.keys(pd.felder).length ? { felder: pd.felder } : {}),
+    };
+  }
+  for (const [n, liste] of Object.entries(pd.bereit ?? {})) if (liste.length) antraege[n] = { ...antraege[n], bereit: liste };
+  return antraege;
+}
+
+/** Zu speichernder Abschnitt „formulare“ */
+export function abschnittVon(pd: ProjektDatei): Record<string, unknown> {
+  const antraege = antraegeVon(pd);
+  return { ...(pd.aktiveFassung ? { aktiveFassung: pd.aktiveFassung } : {}), ...(Object.keys(antraege).length ? { antraege } : {}) };
+}
+
+/**
+ * Der zuletzt angelegte Antrag (für die Startseiten): nach `angelegt`, bei gleichem Tag bzw. ohne Datum nach der
+ * Reihenfolge der Fassungen (`reihe`, z. B. BAUVA, BAUA, BAUA 2) – die spätere gewinnt.
+ */
+export function aktuellsterAntrag(antraege: Record<string, AntragDaten>, reihe: string[] = []): AntragKurz | null {
+  const rang = (n: string) => {
+    const i = reihe.findIndex((r) => r.toLowerCase() === n.toLowerCase());
+    return i < 0 ? -1 : i;
+  };
+  const namen = Object.keys(antraege).sort((a, b) => (antraege[a].angelegt ?? '').localeCompare(antraege[b].angelegt ?? '') || rang(a) - rang(b) || a.localeCompare(b, 'de', { numeric: true }));
+  const name = namen.at(-1);
+  if (!name) return null;
+  const d = antraege[name];
+  return { name, ...(d.angelegt ? { angelegt: d.angelegt } : {}), ...(d.eingereicht ? { eingereicht: d.eingereicht } : {}) };
+}
+
+/** Dokumente, die einen Antrag als eingereicht kennzeichnen */
+export const EINGEREICHT_MUSTER = /antragsprotokoll|eingangsbest(ä|ae)tigung/i;
+
+/** Eingereicht? – die neueste passende Datei im Ordner des Antrags (Office-Sperrdateien ausgenommen) */
+export function eingereichtAus(dateien: Eintrag[]): { datei: string; datum: string } | null {
+  const treffer = dateien
+    .filter((d) => !d.ordner && !/^(~\$|\.~lock\.)/.test(d.pfad.split('/').pop() ?? '') && EINGEREICHT_MUSTER.test(d.pfad.split('/').pop() ?? ''))
+    .sort((a, b) => (b.geaendert ?? 0) - (a.geaendert ?? 0));
+  const d = treffer[0];
+  if (!d) return null;
+  return { datei: d.pfad.split('/').pop()!, datum: tagVon(d.geaendert ? new Date(d.geaendert) : new Date()) };
 }
 
 /* ---------- Dokumente im Antragsordner: Namensformat und „bereit“ ---------- */
@@ -538,12 +697,14 @@ export interface ProjektStatus {
   fassung: string;
   /** berechnet (ms) */
   zeit: number;
+  /** der zuletzt angelegte Antrag (mit „eingereicht“) */
+  antrag?: AntragKurz;
 }
 
-export function projektStatusAus(status: Status[], fassung: string, zeit: number): ProjektStatus {
+export function projektStatusAus(status: Status[], fassung: string, zeit: number, antrag?: AntragKurz | null): ProjektStatus {
   const anzahl: ProjektStatus['anzahl'] = {};
   for (const st of status) if (st !== 'entfaellt') anzahl[st] = (anzahl[st] ?? 0) + 1;
-  return { anzahl, fassung, zeit };
+  return { anzahl, fassung, zeit, ...(antrag ? { antrag } : {}) };
 }
 
 export const statusGesamt = (p: ProjektStatus) => STATUS_REIHE.reduce((n, st) => n + (p.anzahl[st] ?? 0), 0);
@@ -567,7 +728,8 @@ export function projektStatusLesen(roh: unknown): Record<string, ProjektStatus> 
       const n = (o.anzahl as Record<string, unknown>)[st];
       if (typeof n === 'number' && n > 0) anzahl[st] = Math.floor(n);
     }
-    out[k] = { anzahl, fassung: o.fassung, zeit: o.zeit };
+    const antrag = antragKurzAus(o.antrag);
+    out[k] = { anzahl, fassung: o.fassung, zeit: o.zeit, ...(antrag ? { antrag } : {}) };
   }
   return out;
 }

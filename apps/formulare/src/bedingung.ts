@@ -21,7 +21,13 @@ export interface Merkmal {
   name: string;
   /** mögliche Werte */
   werte: string[];
+  /** Vorgabewert für neue Anträge (globales Preset); fehlt = leer */
+  vorgabe?: string;
 }
+
+/** Vorgabewerte der Merkmale für einen neuen Antrag: Name → Wert (nur gesetzte, die zu den Werten passen) */
+export const merkmalVorgaben = (liste: Merkmal[]): Record<string, string> =>
+  Object.fromEntries(liste.filter((m) => m.vorgabe && m.werte.includes(m.vorgabe)).map((m) => [m.name, m.vorgabe!]));
 
 /**
  * Merkmale, die die App mitbringt – die Vorgaben der Formulare (vorgaben/) bauen darauf auf. Sie bleiben deshalb
@@ -301,5 +307,9 @@ export function merkmaleAus(roh: unknown): Merkmal[] {
 function eigeneMerkmale(roh: unknown[]): Merkmal[] {
   return roh
     .filter((m): m is Record<string, unknown> => !!m && typeof m === 'object' && typeof (m as { name?: unknown }).name === 'string' && !!(m as { name: string }).name.trim())
-    .map((m) => ({ name: String(m.name).trim(), werte: (Array.isArray(m.werte) ? m.werte : []).filter((w): w is string => typeof w === 'string' && !!w.trim()).map((w) => w.trim()) }));
+    .map((m) => {
+      const werte = (Array.isArray(m.werte) ? m.werte : []).filter((w): w is string => typeof w === 'string' && !!w.trim()).map((w) => w.trim());
+      const vorgabe = typeof m.vorgabe === 'string' ? m.vorgabe.trim() : '';
+      return { name: String(m.name).trim(), werte, ...(vorgabe ? { vorgabe } : {}) };
+    });
 }

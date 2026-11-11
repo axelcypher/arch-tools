@@ -4517,3 +4517,13 @@ tr[data-ziehen='danach'] > td {
   max-height: 160px;
   overflow: auto;
 }
+
+/* Antrag eingereicht (Antragsprotokoll bzw. Eingangsbestätigung im Ordner des Antrags) */
+.an-eingereicht {
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  white-space: nowrap;
+}

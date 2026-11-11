@@ -11,6 +11,7 @@
 import { create } from 'zustand';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
+import type { Abschnitt, AntragDaten } from './antrag';
 import type { AntragsVorlage, ExportEinstellungen, ExportUeberschreibung, Fassung, Fuellstand, KatalogEintrag, ProjektDatei, ProjektStatus, Status, UmfangEintrag } from './antrag';
 import {
   anzeigeName,
@@ -26,6 +27,14 @@ import {
   katalogAus,
   passt,
   projektDateiAus,
+  abschnittAus,
+  abschnittVon,
+  aktuellsterAntrag,
+  ansichtVon,
+  antraegeVon,
+  eingereichtAus,
+  neuerAntrag,
+  tagVon,
   projektStatusAus,
   projektStatusLesen,
   quelleVon,
@@ -38,7 +47,7 @@ import {
   ordnerPasst,
 } from './antrag';
 import type { Merkmal } from './bedingung';
-import { merkmaleAus, mitVorgabeMerkmalen } from './bedingung';
+import { merkmaleAus, merkmalVorgaben, mitVorgabeMerkmalen } from './bedingung';
 import type { Eintrag } from './dateisystem';
 import { ALTE_PROJEKTDATEI, verbinde } from './dateisystem';
 import type { Feld } from './forma/felder';
@@ -299,29 +308,48 @@ function geleert(bytes: Uint8Array): Uint8Array {
 let dateienFormaProjekt: Eintrag[] = [];
 
 /**
- * `projekt.json` mit den Angaben der App: aktive Antragsfassung und Projektumfang im Abschnitt „formulare“ (leer =
- * ohne den Abschnitt), die Projektmerkmale in `meta.merkmale` – sie gehören zum Projekt, nicht zu einer App.
+ * `projekt.json` mit den Angaben der App: im Abschnitt „formulare“ die aktive Antragsfassung und die Anträge (je
+ * Antrag Projektumfang, Projektmerkmale, Autofill, „bereit“, angelegt, eingereicht), dazu in `meta.antrag` der zuletzt
+ * angelegte Antrag für die Startseiten. `meta.merkmale` (früher projektweit) entfällt – die Werte stehen in den Anträgen.
  */
 function mitAbschnitt(roh: Record<string, unknown>, neu: ProjektDatei): Record<string, unknown> {
-  const { merkmale, ...abschnitt } = neu;
+  // noch nicht übernommene, früher projektweite Angaben gehen nie verloren: in jeden vorhandenen Antrag ohne eigene
+  const gespeichert = abschnittAus(roh.formulare ?? (roh.erweiterungen as Record<string, unknown> | undefined)?.formulare, (roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale);
+  if (gespeichert.alt) {
+    const antraege = { ...neu.antraege };
+    for (const f of useAntrag.getState().fassungen) if (!antraege[f.name]) antraege[f.name] = { ...structuredClone(gespeichert.alt), angelegt: tagVon(new Date()) };
+    neu = { ...neu, antraege };
+  }
+  const abschnitt = abschnittVon(neu);
   const { formulare: _alt, ...rest } = roh;
   const meta = { ...((roh.meta as Record<string, unknown> | undefined) ?? {}) };
-  if (merkmale && Object.keys(merkmale).length) meta.merkmale = merkmale;
-  else delete meta.merkmale;
+  delete meta.merkmale;
+  const kurz = aktuellsterAntrag(antraegeVon(neu), useAntrag.getState().fassungen.map((f) => f.name));
+  if (kurz) meta.antrag = kurz;
+  else delete meta.antrag;
   return { ...rest, meta, ...(Object.keys(abschnitt).length ? { formulare: abschnitt } : {}) };
 }
 
-/** Angaben der App aus der geladenen Projektdatei; null, wenn es keine Projektdatei gibt oder nichts darin steht */
-function abschnittAusOap(): ProjektDatei | null {
+/** Gespeicherter Abschnitt der geladenen Projektdatei; null, wenn es keine Projektdatei gibt oder nichts darin steht */
+function abschnittRohAusOap(): Abschnitt | null {
   const o = useFormulare.getState().oap;
   if (!o || o === 'fehlt') return null;
   const roh = o.projekt.formulare ?? o.projekt.erweiterungen?.formulare;
   const merkmale = o.projekt.meta.merkmale;
   if (roh === undefined && !merkmale) return null;
-  const p = roh === undefined ? {} : projektDateiAus(roh);
-  // Projektmerkmale stehen in meta (früher im Abschnitt – dann gilt der, bis zum nächsten Speichern)
-  if (merkmale && Object.keys(merkmale).length) p.merkmale = { ...merkmale };
-  return p;
+  return abschnittAus(roh, merkmale);
+}
+
+/** Neuer Antrag aus den Vorgaben (globales Preset der Projektmerkmale) */
+const neuAusVorgaben = (angelegt = tagVon(new Date())) => neuerAntrag(merkmalVorgaben(useAntrag.getState().merkmalDefinitionen), angelegt);
+
+/** Ansicht der App für den aktiven Antrag aus der geladenen Projektdatei (nach Änderungen von außen) */
+function abschnittAusOap(): ProjektDatei | null {
+  const a = abschnittRohAusOap();
+  if (!a) return null;
+  const st = useAntrag.getState();
+  const fassung = a.aktiveFassung || st.projektdatei?.ansicht || aktiveFassung({ ...st, projektdatei: null }, useFormulare.getState().projekt);
+  return ansichtVon(a, fassung, () => neuAusVorgaben()).pd;
 }
 
 /**
@@ -353,7 +381,9 @@ async function uebernehmen(projekt: Projekt, alt: ProjektDatei) {
   const o = useFormulare.getState().oap;
   if (!o || o === 'fehlt' || abschnittAusOap() || useFormulare.getState().projekt !== projekt) return;
   try {
-    if (await useFormulare.getState().oapAendern((roh) => (roh.formulare === undefined ? mitAbschnitt(roh, { ...alt, merkmale: { ...alt.merkmale, ...((roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale ?? {}) } }) : roh))) {
+    const altFormat = (roh: Record<string, unknown>) => ({ ...alt, merkmale: { ...alt.merkmale, ...((roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale ?? {}) } });
+    // im bisherigen Format – das nächste Laden übernimmt die Angaben in die Anträge
+    if (await useFormulare.getState().oapAendern((roh) => (roh.formulare === undefined ? { ...roh, formulare: altFormat(roh) } : roh))) {
       log.info(`${projekt.ordner}: ${ALTE_PROJEKTDATEI} in die Projektdatei ${o.pfad} übernommen`);
       useFormulare.getState().setMeldung({ art: 'info', text: `Projektumfang und Antragsfassung aus ${ALTE_PROJEKTDATEI} in die Projektdatei übernommen – die alte Datei bleibt liegen.` });
     }
@@ -389,6 +419,41 @@ export const useAntrag = create<AntragState>((set, get) => {
     await useFormulare.getState().oapAendern((roh) => mitAbschnitt(roh, neu));
     set({ projektdatei: neu });
     return true;
+  };
+  /** Ohne Rückfrage speichern (neue Anträge, „eingereicht“) – nur, wenn es eine Projektdatei gibt */
+  const stillSpeichern = async (neu: ProjektDatei): Promise<void> => {
+    const o = useFormulare.getState().oap;
+    if (!o || o === 'fehlt') return;
+    try {
+      await useFormulare.getState().oapAendern((roh) => mitAbschnitt(roh, neu));
+    } catch (e) {
+      log.warn(`Anträge nicht in die Projektdatei geschrieben: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+  /**
+   * „Eingereicht“ der Anträge nachführen und `meta.antrag` (zuletzt angelegter Antrag, für die Startseiten) aktuell
+   * halten – gespeichert wird nur, wenn sich etwas geändert hat.
+   */
+  const antragStandPflegen = async (eingereicht: Record<string, { datei: string; datum: string } | null>) => {
+    const pd = get().projektdatei;
+    const o = useFormulare.getState().oap;
+    // ohne gespeicherte Angaben (z. B. während eine alte formulare.json übernommen wird) nichts schreiben
+    if (!pd?.antraege || !o || o === 'fehlt' || !abschnittRohAusOap()) return;
+    let geaendert = false;
+    const antraege: Record<string, AntragDaten> = { ...pd.antraege };
+    for (const [name, e] of Object.entries(eingereicht)) {
+      const alt = antraege[name];
+      if (!alt || JSON.stringify(alt.eingereicht ?? null) === JSON.stringify(e)) continue;
+      const { eingereicht: _, ...rest } = alt;
+      antraege[name] = e ? { ...rest, eingereicht: e } : rest;
+      geaendert = true;
+      log.info(`${name}: ${e ? `eingereicht (${e.datei})` : 'nicht mehr eingereicht'}`);
+    }
+    const neu = geaendert ? { ...pd, antraege } : pd;
+    const kurz = aktuellsterAntrag(antraegeVon(neu), get().fassungen.map((f) => f.name));
+    if (!geaendert && JSON.stringify(kurz) === JSON.stringify(o.projekt.meta.antrag ?? null)) return;
+    set({ projektdatei: neu });
+    await stillSpeichern(neu);
   };
   const meldung = (art: 'info' | 'fehler', text: string) => useFormulare.getState().setMeldung({ art, text });
   const fehler = (was: string, e: unknown) => {
@@ -593,33 +658,53 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
       set({ laedt: true });
       try {
-        let projektdatei = abschnittAusOap();
-        if (!projektdatei) {
-          projektdatei = {};
+        let abschnitt = abschnittRohAusOap();
+        let ausJson = false;
+        if (!abschnitt) {
           // früher: formulare.json im FORMA-Projekt – wird nur noch gelesen und in die Projektdatei übernommen
           try {
             const roh = await ds.lies(projekt.root, `${projekt.ordner}/${ALTE_PROJEKTDATEI}`);
             if (roh) {
-              projektdatei = projektDateiAus(JSON.parse(new TextDecoder().decode(roh)));
-              void uebernehmen(projekt, projektdatei);
+              const alt = projektDateiAus(JSON.parse(new TextDecoder().decode(roh)));
+              abschnitt = abschnittAus(alt);
+              ausJson = true;
+              void uebernehmen(projekt, alt);
             }
           } catch (e) {
             fehler(`${ALTE_PROJEKTDATEI} von ${projekt.ordner} nicht lesbar`, e);
           }
         }
+        const a: Abschnitt = abschnitt ?? { antraege: {} };
         let fassungen: Fassung[] = [];
+        const ordnerZeit = new Map<string, number>();
         const e = wirksameEinstellungen(get(), projekt);
         if (basis && e.antragsordner.trim()) {
           try {
-            const ordner = (await ds.liste(verbinde(basis, e.antragsordner), 1)).filter((x) => x.ordner).map((x) => x.pfad);
-            fassungen = fassungenAus(ordner, e.arten);
+            const ordner = (await ds.liste(verbinde(basis, e.antragsordner), 1)).filter((x) => x.ordner);
+            for (const o of ordner) if (o.geaendert) ordnerZeit.set(o.pfad, o.geaendert);
+            fassungen = fassungenAus(
+              ordner.map((x) => x.pfad),
+              e.arten,
+            );
           } catch {
             // Antragsordner gibt es (noch) nicht
           }
         }
         // inzwischen ein anderes Projekt gewählt?
         if (useFormulare.getState().projekt !== projekt) return;
-        set({ projektdatei, fassungen });
+        const tag = (fassung: string) => tagVon(new Date(ordnerZeit.get(fassung) ?? Date.now()));
+        // Jeder Ordner einer Antragsfassung ist ein Antrag: fehlende entstehen aus den früher projektweiten Angaben
+        // (einmalige Übernahme) bzw. aus den Vorgaben – danach unabhängig
+        let anlegen = false;
+        for (const f of fassungen)
+          if (!a.antraege[f.name]) {
+            a.antraege[f.name] = a.alt ? { ...structuredClone(a.alt), angelegt: tag(f.name) } : neuAusVorgaben(tag(f.name));
+            anlegen = true;
+          }
+        const fassung = a.aktiveFassung || aktiveFassung({ ...get(), projektdatei: null, fassungen }, projekt);
+        const ansicht = ansichtVon(a, fassung, () => neuAusVorgaben(tag(fassung)));
+        set({ projektdatei: ansicht.pd, fassungen });
+        if ((anlegen || ansicht.neu) && !ausJson) await stillSpeichern(ansicht.pd);
         await get().aktualisieren();
       } finally {
         set({ laedt: false });
@@ -653,8 +738,21 @@ export const useAntrag = create<AntragState>((set, get) => {
       } catch {
         dateienFormaProjekt = [];
       }
+      // eingereicht? – Antragsprotokoll bzw. Eingangsbestätigung im Ordner eines Antrags
+      const eingereicht: Record<string, ReturnType<typeof eingereichtAus>> = {};
+      if (basis) {
+        const aktiv = antragsOrdner(get(), projekt).split('/').pop()!;
+        for (const f of get().fassungen) {
+          try {
+            eingereicht[f.name] = eingereichtAus(f.name === aktiv ? dateien : await ds.liste(verbinde(basis, `${e.antragsordner.replace(/^\/+|\/+$/g, '')}/${f.name}`), 1));
+          } catch {
+            eingereicht[f.name] = null;
+          }
+        }
+      }
       if (useFormulare.getState().projekt !== projekt) return;
       set({ dateien, quellen });
+      await antragStandPflegen(eingereicht);
       // nach Export, neuer Fassung, Verknüpfen … oder von außen: auch der Projektordner-Baum liest neu
       useFormulare.getState().ordnerNeuLesen();
       // Formulare zerlegen (zwischengespeichert), dann rechnen
@@ -713,8 +811,9 @@ export const useAntrag = create<AntragState>((set, get) => {
       if (st.projektdatei && infos.length >= s.formulare.length) {
         const k = projektSchluessel(projekt);
         const alt = st.projektStatus[k];
-        const neu = projektStatusAus(st.projektdatei.umfang ? dokumente.map((d) => d.status) : [], fassung, Date.now());
-        if (!alt || JSON.stringify([alt.anzahl, alt.fassung]) !== JSON.stringify([neu.anzahl, neu.fassung]) || neu.zeit - alt.zeit > 60_000) {
+        const antrag = st.projektdatei.antraege ? aktuellsterAntrag(antraegeVon(st.projektdatei), st.fassungen.map((f) => f.name)) : null;
+        const neu = projektStatusAus(st.projektdatei.umfang ? dokumente.map((d) => d.status) : [], fassung, Date.now(), antrag);
+        if (!alt || JSON.stringify([alt.anzahl, alt.fassung, alt.antrag]) !== JSON.stringify([neu.anzahl, neu.fassung, neu.antrag]) || neu.zeit - alt.zeit > 60_000) {
           const projektStatus = { ...st.projektStatus, [k]: neu };
           schreiben(PROJEKTSTATUS, projektStatus);
           set({ projektStatus });
@@ -882,10 +981,11 @@ export const useAntrag = create<AntragState>((set, get) => {
       // ohne Projektdatei gilt der Zustand nur bis zum Neuladen – kein Dialog dafür
       if (!o || o === 'fehlt') return;
       try {
+        const fassung = get().projektdatei?.ansicht ?? aktiveFassung(get(), f.projekt);
         await useFormulare.getState().oapAendern((roh) => {
-          const alt = projektDateiAus(roh.formulare ?? (roh.erweiterungen as Record<string, unknown> | undefined)?.formulare);
-          const merkmale = (roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale;
-          return mitAbschnitt(roh, { ...alt, ...(merkmale ? { merkmale } : {}), felder: zusammen(alt.felder) });
+          const a = abschnittAus(roh.formulare ?? (roh.erweiterungen as Record<string, unknown> | undefined)?.formulare, (roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale);
+          const { pd: frisch } = ansichtVon(a, fassung, () => neuAusVorgaben());
+          return mitAbschnitt(roh, { ...frisch, felder: zusammen(frisch.felder) });
         });
       } catch (e) {
         log.warn(`Autofill-Zustand nicht in die Projektdatei geschrieben: ${e instanceof Error ? e.message : String(e)}`);
@@ -1025,8 +1125,12 @@ useFormulare.subscribe((s, vorher) => {
     zerlegt.clear();
     if (s.projekt !== vorher.projekt) useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [] });
     void useAntrag.getState().laden();
+  } else if (s.oap !== vorher.oap && s.oap && s.oap !== 'fehlt' && (!vorher.oap || (vorher.oap !== 'fehlt' && vorher.oap.pfad !== s.oap.pfad))) {
+    // Projektdatei erstmals gelesen bzw. eine andere gewählt: neu laden – dabei entstehen fehlende Anträge (und werden
+    // gespeichert). Eine eben angelegte (vorher „fehlt“) lädt der Aufrufer selbst nach dem Speichern.
+    void useAntrag.getState().laden();
   } else if (s.oap !== vorher.oap) {
-    // Projektdatei gelesen oder geändert (auch von einer anderen App): Abschnitt „formulare“ übernehmen
+    // Projektdatei geändert (auch von einer anderen App): Abschnitt „formulare“ übernehmen
     const neu = abschnittAusOap();
     if (neu && JSON.stringify(neu) !== JSON.stringify(useAntrag.getState().projektdatei)) {
       useAntrag.setState({ projektdatei: neu });

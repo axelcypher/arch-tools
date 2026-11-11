@@ -167,7 +167,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   bietet je fehlendem Merkmal Segmentknöpfe mit Kurzerklärung und Fundstelle (z. B. „Gebäudeklasse (§ 2 Abs. 3 BauO
   NRW 2018)“, die Erklärung je Wert beim Zeigen; „§“ öffnet den Gesetzestext). Dieselbe Auswahl öffnet das
   Info-Symbol an einem offenen Feld („Gebäudeart festlegen“ im Gesetzes-Fenster). Die Wahl wirkt sofort. Mit Projekt
-  steht sie in der Projektdatei (`meta.merkmale`, gilt für alle Formulare; „Alle Projektmerkmale …“ führt zum
+  steht sie im aktiven Antrag der Projektdatei (gilt für alle Formulare; „Alle Projektmerkmale …“ führt zum
   Projektumfang), ohne Projekt (Web-Version) gilt sie für die Datei und liegt im lokalen Speicher
   (`formulare:merkmale-datei`, `merkmalWerte.ts`). Bedingungen aus früheren Versionen (eine Liste, alle
   Teile müssen zutreffen) werden als Und-Gruppe übernommen.
@@ -376,10 +376,22 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
 - **Reihenfolge ändern:** am Griff ⠿ ziehen – oder den Griff wählen und mit ↑/↓ verschieben – im Katalog, bei den
   Antragsvorlagen und Projektmerkmalen und im Projektumfang eines Projekts (dort auch per Rechtsklick „Nach oben“ /
   „Nach unten“).
-- **Projektmerkmale** (oben im Projektumfang): Gebäudeklasse, Sonderbau, Verfahren … – je Projekt einmal gewählt,
-  gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Projektumfang. Welche Merkmale es gibt
-  und ihre Werte, steht in Einstellungen › Antrag & Export. Gespeichert in der Projektdatei unter `meta.merkmale` –
-  sie gehören zum Projekt und stehen damit auch den anderen Apps zur Verfügung.
+- **Projektmerkmale** (oben im Projektumfang): Gebäudeklasse, Sonderbau, Verfahren … – **je Antrag** gewählt,
+  gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Projektumfang des Antrags. Welche Merkmale
+  es gibt, ihre Werte und die **Vorgabe für neue Anträge** (globales Preset) stehen in Einstellungen › Antrag &
+  Export. Ein neuer Antrag übernimmt die Vorgaben einmalig; danach ist er unabhängig – spätere Änderungen am Preset
+  oder an anderen Anträgen ändern ihn nicht.
+- **Jeder Antrag hat seinen eigenen Satz:** Projektmerkmale, Projektumfang (mit Verknüpfungen), die manuellen
+  Überschreibungen des Autofills und die „bereit“-Markierungen gehören zum Antrag (zur Antragsfassung, z. B. `BAUA 2`).
+  Mit der aktiven Fassung wechselt die App auch diese Angaben. Jeder Ordner einer Antragsfassung ist ein Antrag; beim
+  ersten Öffnen werden fehlende angelegt (Angelegt-Datum aus dem Ordner). Angaben aus älteren Fassungen der App, die
+  für das ganze Projekt galten, werden dabei einmalig in jeden vorhandenen Antrag übernommen.
+- **Eingereicht:** liegt im Ordner eines Antrags ein Dokument, dessen Name `Antragsprotokoll` oder
+  `Eingangsbestätigung` (auch `Eingangsbestaetigung`) enthält, gilt der Antrag als **eingereicht** – mit dem Datum
+  der Datei. Das zeigt die App am Antrag (oben links) und im Menü der Fassungen; verschwindet die Datei, ist er es
+  nicht mehr. Der **zuletzt angelegte Antrag** steht zusätzlich in `meta.antrag` der Projektdatei und erscheint auf
+  den Startseiten aller Apps als Marke auf der Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in
+  Arbeit“). Erkannt wird beim Öffnen bzw. Aktualisieren des Projekts in Formulare.
 - **Dokumente mit Bedingung:** im Projektumfang (Bearbeiten) und im Katalog („Nur wenn“; Projektmerkmale mit
   und/oder wie oben) – etwa ein Nachweis nur
   bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“: kein Farbpunkt, kein grauer
@@ -440,8 +452,10 @@ beschrieben.
   wird): einen vorhandenen Ordner wählen oder im Stammordner einen neuen anlegen (Vorschlag „Kürzel Titel“), danach
   folgt bei Bedarf der Stammdaten-Dialog. Die Zuordnung gilt für alle im Büro (gemeinsamer Konfigurationsordner,
   Bereich `formulare`, `ordnerWahl`).
-- **Angaben zum Antrag** (aktive Antragsfassung, Projektumfang) stehen im Abschnitt `formulare` von `projekt.json`,
-  die Projektmerkmale unter `meta.merkmale`. Eine alte `formulare.json` im FORMA-Projekt wird noch gelesen und einmalig in die
+- **Angaben zum Antrag** stehen im Abschnitt `formulare` von `projekt.json`: `aktiveFassung` und `antraege` – je
+  Fassung `angelegt`, `merkmale`, `umfang`, `felder` (Autofill), `bereit` und `eingereicht`; der zuletzt angelegte
+  Antrag zusätzlich als Kurzfassung in `meta.antrag` (für die anderen Apps). Ein früheres `meta.merkmale` bzw.
+  projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im FORMA-Projekt wird noch gelesen und einmalig in die
   Projektdatei übernommen – sie selbst bleibt liegen und wird nicht mehr geschrieben.
 - **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
   Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann

@@ -151,7 +151,7 @@ export function AntragEinstellungen() {
 
       <Karte
         titel="Projektmerkmale"
-        text="Merkmale eines Projekts, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Der Wert wird je Projekt im Projektumfang gewählt und gilt für alle Formulare; Bedingungen stellst du in der Gliederung (Anpassen) und im Katalog ein."
+        text="Merkmale eines Antrags, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Jeder Antrag hat seine eigenen Werte (im Projektumfang gewählt); ein neuer Antrag übernimmt einmalig die Vorgabe – spätere Änderungen hier ändern bestehende Anträge nicht. Bedingungen stellst du in der Gliederung (Anpassen) und im Katalog ein."
       >
         <table className="es-tabelle es-katalog" data-sortier-liste="">
           <thead>
@@ -159,6 +159,7 @@ export function AntragEinstellungen() {
               <th />
               <th>Merkmal</th>
               <th>Mögliche Werte (mit Komma getrennt)</th>
+              <th>Vorgabe für neue Anträge</th>
               <th />
             </tr>
           </thead>
@@ -184,6 +185,20 @@ export function AntragEinstellungen() {
                     aria-label={`Werte von ${m.name}`}
                     onBlur={(x) => setMerkmalDefinitionen(merkmale.map((y, n) => (n === i ? { ...y, werte: x.target.value.split(',').map((w) => w.trim()).filter(Boolean) } : y)))}
                   />
+                </td>
+                <td>
+                  <select
+                    value={m.vorgabe && m.werte.includes(m.vorgabe) ? m.vorgabe : ''}
+                    aria-label={`Vorgabe von ${m.name}`}
+                    onChange={(x) => setMerkmalDefinitionen(merkmale.map((y, n) => (n === i ? { ...y, vorgabe: x.target.value || undefined } : y)))}
+                  >
+                    <option value="">– leer –</option>
+                    {m.werte.map((w) => (
+                      <option key={w} value={w}>
+                        {w}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td>
                   <button

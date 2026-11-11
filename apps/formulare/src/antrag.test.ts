@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { UmfangEintrag } from './antrag';
+import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
+import { merkmalVorgaben } from './bedingung';
 import { VORGABE_EXPORT, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
@@ -181,5 +183,59 @@ describe('Quellordner: Schreibweisen der Büros', () => {
     expect(ordnerPasst('Fachplaner', 'Fachplanung')).toBe(true);
     expect(ordnerPasst('G27 Vermessung Müller', 'G27*')).toBe(true);
     expect(ordnerPasst('Ausführungsplanung', 'Genehmigungsplanung')).toBe(false);
+  });
+});
+
+describe('Anträge: je Antrag eigene Projektmerkmale, Projektumfang und Autofill', () => {
+  const umfang: UmfangEintrag[] = [{ id: 'muster', titel: 'Muster', art: 'intern' }];
+
+  it('übernimmt die früher projektweiten Angaben (Abschnitt bzw. meta.merkmale) als „alt“, „bereit“ je Fassung in den Antrag', () => {
+    const a = abschnittAus({ aktiveFassung: 'BAUA 2', umfang, felder: { 'a.frmsjf': { felder: { x: { auto: '1' } } } }, bereit: { 'BAUA 2': [{ datei: 'x.pdf', stand: 5 }] } }, { Gebäudeklasse: '3' });
+    expect(a.aktiveFassung).toBe('BAUA 2');
+    expect(a.alt).toEqual({ merkmale: { Gebäudeklasse: '3' }, umfang, felder: { 'a.frmsjf': { felder: { x: { auto: '1' } } } } });
+    expect(a.antraege['BAUA 2']).toMatchObject({ merkmale: { Gebäudeklasse: '3' }, umfang, bereit: [{ datei: 'x.pdf', stand: 5 }] });
+    // neues Format: nichts „alt“
+    const neu = abschnittAus({ antraege: { BAUA: { angelegt: '2026-10-01', merkmale: { Sonderbau: 'ja' }, eingereicht: { datei: 'Eingangsbestätigung.pdf', datum: '2026-10-20' } } } });
+    expect(neu).toEqual({ antraege: { BAUA: { angelegt: '2026-10-01', merkmale: { Sonderbau: 'ja' }, eingereicht: { datei: 'Eingangsbestätigung.pdf', datum: '2026-10-20' } } } });
+  });
+
+  it('Ansicht des aktiven Antrags und zurück: andere Anträge bleiben unberührt; ein fehlender entsteht aus den Vorgaben', () => {
+    const a = abschnittAus({ antraege: { BAUA: { angelegt: '2026-10-01', merkmale: { Gebäudeklasse: '2' }, umfang } } });
+    const { pd, neu } = ansichtVon(a, 'BAUA 2', () => neuerAntrag(merkmalVorgaben([{ name: 'Gebäudeklasse', werte: ['1', '2', '3'], vorgabe: '3' }, { name: 'Sonderbau', werte: ['ja'], vorgabe: 'nein' }]), '2026-11-11'));
+    expect(neu).toBe(true);
+    expect(pd).toMatchObject({ ansicht: 'BAUA 2', merkmale: { Gebäudeklasse: '3' } });
+    expect(pd.umfang).toBeUndefined();
+    // Änderung im angezeigten Antrag
+    const geschrieben = abschnittVon({ ...pd, aktiveFassung: 'BAUA 2', merkmale: { Gebäudeklasse: '4' }, bereit: { 'BAUA 2': [{ datei: 'y.pdf' }] } });
+    expect(geschrieben).toEqual({
+      aktiveFassung: 'BAUA 2',
+      antraege: {
+        BAUA: { angelegt: '2026-10-01', merkmale: { Gebäudeklasse: '2' }, umfang },
+        'BAUA 2': { angelegt: '2026-11-11', merkmale: { Gebäudeklasse: '4' }, bereit: [{ datei: 'y.pdf' }] },
+      },
+    });
+  });
+
+  it('aktuellster Antrag: zuletzt angelegt, bei gleichem Tag die spätere Fassung', () => {
+    expect(aktuellsterAntrag({})).toBeNull();
+    const antraege = {
+      BAUVA: { angelegt: '2026-03-01', eingereicht: { datei: 'Antragsprotokoll.pdf', datum: '2026-03-20' } },
+      BAUA: { angelegt: '2026-09-01' },
+      'BAUA 2': { angelegt: '2026-09-01' },
+    };
+    expect(aktuellsterAntrag(antraege, ['BAUVA', 'BAUA', 'BAUA 2'])).toEqual({ name: 'BAUA 2', angelegt: '2026-09-01' });
+    expect(aktuellsterAntrag({ ...antraege, BAUVA: { ...antraege.BAUVA, angelegt: '2026-10-01' } }, ['BAUVA', 'BAUA', 'BAUA 2'])).toEqual({ name: 'BAUVA', angelegt: '2026-10-01', eingereicht: { datei: 'Antragsprotokoll.pdf', datum: '2026-03-20' } });
+  });
+
+  it('eingereicht: Antragsprotokoll oder Eingangsbestätigung (auch „ae“), die neueste; Sperrdateien zählen nicht', () => {
+    const zeit = new Date(2026, 10, 3, 12).getTime();
+    expect(eingereichtAus([{ pfad: 'BS9 BAUA 261101 Bauantrag.pdf', ordner: false, groesse: 1 }])).toBeNull();
+    expect(eingereichtAus([{ pfad: '~$Eingangsbestätigung.docx', ordner: false, groesse: 1 }])).toBeNull();
+    expect(
+      eingereichtAus([
+        { pfad: 'BS9 BAUA 261020 Antragsprotokoll.pdf', ordner: false, groesse: 1, geaendert: zeit - 86400000 * 14 },
+        { pfad: 'Eingangsbestaetigung Kreis.pdf', ordner: false, groesse: 1, geaendert: zeit },
+      ]),
+    ).toEqual({ datei: 'Eingangsbestaetigung Kreis.pdf', datum: '2026-11-03' });
   });
 });

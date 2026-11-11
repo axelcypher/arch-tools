@@ -44,16 +44,23 @@ export function FassungsWahl() {
   const aktiv = useAntrag((s) => aktiveFassung(s, projekt));
   const arten = useAntrag((s) => wirksameEinstellungen(s, projekt).arten);
   const dokumente = useAntrag((s) => s.dokumente);
+  const antraege = useAntrag((s) => s.projektdatei?.antraege);
   const { fassungWaehlen } = useAntrag.getState();
   if (!projekt || !ablage) return null;
+  const eingereicht = antraege?.[aktiv]?.eingereicht;
+  const tag = (iso: string) => iso.split('-').reverse().join('.');
   const aktivDa = fassungen.some((f) => f.name === aktiv);
   const z = zusammenfassung(dokumente);
   const punkte = (): MenuePunkt[] => [
-    ...fassungen.map((f) => ({ text: f.name, symbol: f.name === aktiv ? ('haken' as const) : undefined, aktion: () => void fassungWaehlen(f.name) })),
+    ...fassungen.map((f) => ({
+      text: `${f.name}${antraege?.[f.name]?.eingereicht ? ` – eingereicht ${tag(antraege[f.name].eingereicht!.datum)}` : ''}`,
+      symbol: f.name === aktiv ? ('haken' as const) : undefined,
+      aktion: () => void fassungWaehlen(f.name),
+    })),
     ...(fassungen.length ? [{ trenner: true as const }] : []),
     ...arten.map((a) => {
       const neu = naechsteFassung(fassungen, a);
-      return { text: `Neue Fassung „${neu}“ anlegen`, symbol: 'plus' as const, aktion: () => void fassungWaehlen(neu, true) };
+      return { text: `Neue Fassung „${neu}“ anlegen`, symbol: 'plus' as const, hinweis: 'mit den Vorgaben der Projektmerkmale', aktion: () => void fassungWaehlen(neu, true) };
     }),
   ];
   return (
@@ -63,6 +70,11 @@ export function FassungsWahl() {
         <Symbol name="stapel" /> {aktiv}
         {!aktivDa && <span className="muted"> (neu)</span>}
       </MenueKnopf>
+      {eingereicht && (
+        <span className="an-eingereicht" title={`Antrag ${aktiv} eingereicht – ${eingereicht.datei}`}>
+          ✓ eingereicht {tag(eingereicht.datum)}
+        </span>
+      )}
       {dokumente.length > 0 && (
         <button className="an-fassung-stand" title={`Projektumfang: ${z.aktuell} von ${z.gesamt} Dokumenten liegen aktuell im Antragsordner`} onClick={() => umfangZeigen()}>
           <StatusPunkt status={z.schlimmstes} titel={`${z.aktuell} von ${z.gesamt} aktuell`} /> {z.aktuell}/{z.gesamt}
@@ -170,7 +182,8 @@ export function ProjektumfangAnsicht() {
           <h2>Projektumfang</h2>
           <p className="muted small-text">
             Was zum Antrag gehört – geprüft im Ordner der aktiven Fassung <strong>{ordner}</strong>
-            {basis ? '' : ' (kein Projektordner gefunden)'}. Gespeichert in der Projektdatei (.oap), gilt für alle im Büro.
+            {basis ? '' : ' (kein Projektordner gefunden)'}. Projektumfang und Projektmerkmale gelten nur für diesen Antrag; jeder Antrag hat seine eigenen. Gespeichert in der
+            Projektdatei (.oap), gilt für alle im Büro.
           </p>
         </div>
         <div className="pu-kopf-knoepfe">
@@ -187,7 +200,7 @@ export function ProjektumfangAnsicht() {
       </div>
 
       <section className="pu-merkmale" aria-label="Projektmerkmale">
-        <strong>Projektmerkmale</strong>
+        <strong title="Gelten für diesen Antrag – ein neuer Antrag startet mit den Vorgaben aus den Einstellungen">Projektmerkmale des Antrags</strong>
         {st.merkmalDefinitionen.map((m) => (
           <label key={m.name} className="pu-merkmal" title={MERKMAL_ERKLAERUNG[m.name]?.text}>
             <span className="field-label">{m.name}</span>

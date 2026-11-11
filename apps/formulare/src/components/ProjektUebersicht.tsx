@@ -49,8 +49,9 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
         titel: p.titel,
         info: p.info ? `${p.info.formulare} ${p.info.formulare === 1 ? 'Formular' : 'Formulare'}` : undefined,
         geaendert: p.info?.geaendert,
+        ...(projektStatus[projektSchluessel(p)]?.antrag ? { antrag: projektStatus[projektSchluessel(p)].antrag } : {}),
       })),
-    [projekte],
+    [projekte, projektStatus],
   );
   const gruppen = useMemo(() => projektordner.map((root) => ({ id: root, name: quellenName(root, projektordner), pfad: root })), [projektordner]);
 

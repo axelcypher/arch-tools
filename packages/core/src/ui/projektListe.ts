@@ -151,6 +151,7 @@ export function useProjektordnerListe(fs: ProjektordnerZugriff | null, roots: st
           titel,
           ...(meta?.leistungsphasen?.length ? { info: `LPh ${meta.leistungsphasen.join(', ')}` } : {}),
           ...(meta?.status ? { projektStatus: meta.status } : {}),
+          ...(meta?.antrag ? { antrag: meta.antrag } : {}),
           geaendert: o.geaendert || null,
           suchtext: [o.name, bauherr, meta?.adresse.ort, meta?.adresse.strasse].filter(Boolean).join(' '),
         };

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { UebersichtProjekt } from './ProjektUebersicht';
-import { nachStatus, quellenName, sortiert, wann } from './ProjektUebersicht';
+import { antragMarke, nachStatus, quellenName, sortiert, wann } from './ProjektUebersicht';
+import { antragKurzAus, parseProjectData } from '../serialize';
 import { ausOrdnernameMit, ausOrdnernameNachSchema } from './projektListe';
 
 describe('Zeitangaben auf den Projektkarten', () => {
@@ -50,5 +51,19 @@ describe('Name einer Quelle', () => {
     expect(quellenName('C:/FORMA', ['C:/FORMA', 'D:/Archiv'])).toBe('FORMA');
     expect(quellenName('Z:\\Akquise\\FORMA', ['C:/FORMA', 'Z:\\Akquise\\FORMA'])).toBe('Akquise/FORMA');
     expect(quellenName('C:/FORMA', ['C:/FORMA', 'Z:/Akquise/forma'])).toBe('C:/FORMA');
+  });
+});
+
+describe('aktuellster Antrag auf der Karte (meta.antrag)', () => {
+  it('liest meta.antrag robust und zeigt „eingereicht“ als grüne Marke', () => {
+    expect(antragKurzAus(null)).toBeNull();
+    expect(antragKurzAus({ name: ' ' })).toBeNull();
+    expect(antragKurzAus({ name: 'BAUA 2', angelegt: '11.11.2026', eingereicht: { datei: 'x.pdf', datum: 'gestern' } })).toEqual({ name: 'BAUA 2' });
+    const a = antragKurzAus({ name: 'BAUA 2', angelegt: '2026-10-01', eingereicht: { datei: 'Eingangsbestätigung.pdf', datum: '2026-11-03' } })!;
+    expect(antragMarke(a)).toMatchObject({ text: 'BAUA 2 · eingereicht 03.11.2026', art: 'ok' });
+    expect(antragMarke({ name: 'BAUVA', angelegt: '2026-10-01' })).toMatchObject({ text: 'BAUVA in Arbeit', art: 'neutral', titel: expect.stringContaining('01.10.2026') });
+    // bleibt beim Lesen der Projektdatei erhalten
+    const p = parseProjectData({ format: 'arch-flaechen-tool', version: 1, name: 'X', meta: { projektcode: 'BS9', antrag: { name: 'BAUA', eingereicht: { datei: 'Antragsprotokoll.pdf', datum: '2026-11-03' } } }, storeys: [] });
+    expect(p.meta.antrag).toEqual({ name: 'BAUA', eingereicht: { datei: 'Antragsprotokoll.pdf', datum: '2026-11-03' } });
   });
 });

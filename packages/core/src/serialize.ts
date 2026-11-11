@@ -1,4 +1,5 @@
 import type {
+  AntragKurz,
   Anschrift,
   Background,
   Bauherr,
@@ -242,7 +243,21 @@ function normalizeMeta(v: unknown): ProjectMeta {
     if (mk.length) meta.merkmale = Object.fromEntries(mk);
   }
   if (m.status === 'akquise' || m.status === 'aktiv' || m.status === 'abgeschlossen') meta.status = m.status;
+  const a = antragKurzAus(m.antrag);
+  if (a) meta.antrag = a;
   return meta;
+}
+
+const TAG = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Kurzfassung eines Antrags (meta.antrag); null, wenn ungültig */
+export function antragKurzAus(roh: unknown): AntragKurz | null {
+  if (!isObj(roh) || typeof roh.name !== 'string' || !roh.name.trim()) return null;
+  const a: AntragKurz = { name: roh.name.trim() };
+  if (typeof roh.angelegt === 'string' && TAG.test(roh.angelegt)) a.angelegt = roh.angelegt;
+  const e = roh.eingereicht;
+  if (isObj(e) && typeof e.datei === 'string' && e.datei && typeof e.datum === 'string' && TAG.test(e.datum)) a.eingereicht = { datei: e.datei, datum: e.datum };
+  return a;
 }
 
 const NUTZUNGEN: LageplanNutzung[] = ['zufahrt', 'stellplatz', 'garage', 'terrasse', 'weg', 'nebenanlage', 'unterirdisch', 'garten', 'sonstige'];

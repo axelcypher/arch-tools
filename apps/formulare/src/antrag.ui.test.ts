@@ -32,6 +32,11 @@ const neueOap = () => {
 };
 /** Abschnitt „formulare“ der Projektdatei */
 const abschnitt = () => readProjectFile(ds.dateien.get(OAP)!).formulare as Record<string, unknown> | undefined;
+/** Ein Antrag im Abschnitt „formulare“ (ohne Namen: der aktive) */
+const antragIn = (name?: string) => {
+  const a = abschnitt() as { antraege?: Record<string, Record<string, unknown>> } | undefined;
+  return a?.antraege?.[name ?? useAntrag.getState().projektdatei!.ansicht!];
+};
 const KATALOG = [
   { id: 'muster', titel: 'Musterformular', art: 'intern' as const, formular: 'Muster', vorgewaehlt: true },
   { id: 'bauantrag', titel: 'Bauantrag', art: 'intern' as const, formular: 'Bauantrag', vorgewaehlt: true },
@@ -207,7 +212,10 @@ describe('Antragsfassung und Export', () => {
     await klick(host.querySelector<HTMLButtonElement>('.an-fassung-knopf')!);
     await klick(menuePunkt('Neue Fassung „BAUA 3“'));
     expect(ds.ordner.has(`${PROJEKT}/TÖB/BAUA 3`)).toBe(true);
-    expect(abschnitt()).toEqual({ aktiveFassung: 'BAUA 3' });
+    expect(abschnitt()).toMatchObject({ aktiveFassung: 'BAUA 3' });
+    // ein eigener Antrag – angelegt heute, ohne Werte aus den anderen Anträgen
+    expect(antragIn('BAUA 3')).toEqual({ angelegt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) });
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.antrag).toMatchObject({ name: 'BAUA 3' });
     expect(ds.dateien.has('C:/FORMA/BS9/formulare.json')).toBe(false);
     expect(host.querySelector('.an-fassung')?.textContent).toContain('BAUA 3');
   });
@@ -220,7 +228,7 @@ describe('Projektumfang und Vollständigkeit', () => {
     await warte();
     // ohne Projektkarte (keine sj_prokarte.sdb) steht der Projektumfang direkt darunter
     await klick(knopf(host, 'Projektumfang festlegen'));
-    const datei = abschnitt() as { umfang: { id: string }[] };
+    const datei = antragIn() as { umfang: { id: string }[] };
     expect(datei.umfang.map((u: { id: string }) => u.id)).toEqual(['muster', 'bauantrag', 'lageplan']);
 
     // Muster: 3 von 5 Angaben – rot; Bauantrag fehlt – grau; Lageplan: Quelle da, nicht im Antragsordner – gelb
@@ -408,9 +416,10 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
       gk.dispatchEvent(new Event('change', { bubbles: true }));
     });
     await warte();
-    // Projektmerkmale gehören zum Projekt: meta.merkmale (für alle Apps), nicht der Abschnitt „formulare“
-    expect(readProjectFile(ds.dateien.get(OAP)!).meta.merkmale).toEqual({ Gebäudeklasse: '1' });
-    expect(abschnitt()?.merkmale).toBeUndefined();
+    // Projektmerkmale gehören zum Antrag (Abschnitt „formulare“, je Fassung) – nicht mehr projektweit in meta.merkmale
+    expect(antragIn()?.merkmale).toEqual({ Gebäudeklasse: '1' });
+    expect(antragIn('BAUA')?.merkmale).toBeUndefined();
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.merkmale).toBeUndefined();
 
     await klick(knopf(host, '001-Muster'));
     expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')?.textContent).toContain('entfällt');
@@ -436,7 +445,7 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
     expect(wahl.querySelector<HTMLButtonElement>('.fo-merkmal-werte button')!.title).toContain('freistehend');
     await klick(knopf(wahl as HTMLElement, '3'));
     await warte();
-    expect(readProjectFile(ds.dateien.get(OAP)!).meta.merkmale).toEqual({ Gebäudeklasse: '3' });
+    expect(antragIn()?.merkmale).toEqual({ Gebäudeklasse: '3' });
     expect(gl(host).querySelector('.fo-gl-merkmal')).toBeNull();
     expect(gl(host).querySelector('.fo-gl-offen')).toBeNull();
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
@@ -666,12 +675,15 @@ describe('Angaben zum Antrag in der Projektdatei (.oap)', () => {
     ds.dateien.set('C:/FORMA/BS9/formulare.json', alt);
     const host = await projektBS9();
     await warte();
-    expect(abschnitt()).toEqual({ aktiveFassung: 'BAUA' });
-    expect(readProjectFile(ds.dateien.get(OAP)!).meta.merkmale).toEqual({ Gebäudeklasse: '2' });
+    expect(host.textContent).toContain('in die Projektdatei übernommen');
+    // nach dem nächsten Laden: in jeden vorhandenen Antrag übernommen (danach unabhängig)
+    await act(() => useAntrag.getState().laden());
+    expect(abschnitt()).toMatchObject({ aktiveFassung: 'BAUA' });
+    expect(antragIn('BAUA')?.merkmale).toEqual({ Gebäudeklasse: '2' });
+    expect(antragIn('BAUA 2')?.merkmale).toEqual({ Gebäudeklasse: '2' });
     expect(useAntrag.getState().projektdatei?.merkmale).toEqual({ Gebäudeklasse: '2' });
     expect(ds.dateien.get('C:/FORMA/BS9/formulare.json')).toBe(alt);
     expect(useAntrag.getState().projektdatei).toMatchObject({ aktiveFassung: 'BAUA' });
-    expect(host.textContent).toContain('in die Projektdatei übernommen');
     // die Stammdaten der Projektdatei bleiben, wie sie sind
     expect(readProjectFile(ds.dateien.get(OAP)!).meta.projektcode).toBe('BS9');
   });
@@ -688,7 +700,7 @@ describe('Angaben zum Antrag in der Projektdatei (.oap)', () => {
     await klick(knopf(sd, 'Projektdatei anlegen'));
     await warte();
     expect(dialog('Projektdatei für BS9 anlegen')).toBeNull();
-    expect((abschnitt()!.umfang as { id: string }[]).map((u) => u.id)).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect((antragIn()!.umfang as { id: string }[]).map((u) => u.id)).toEqual(['muster', 'bauantrag', 'lageplan']);
     expect(readProjectFile(ds.dateien.get(OAP)!).meta.projektcode).toBe('BS9');
     expect(knopf(host, 'Keine Projektdatei')).toBeUndefined();
     expect(ds.dateien.has('C:/FORMA/BS9/formulare.json')).toBe(false);
@@ -711,13 +723,13 @@ describe('Angaben zum Antrag in der Projektdatei (.oap)', () => {
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:formulare')!)).toEqual({ ordnerWahl: { BS9: PROJEKT } });
     await klick(knopf(dialog('Projektdatei für BS9 anlegen')!, 'Projektdatei anlegen'));
     await warte();
-    expect((abschnitt()!.umfang as unknown[]).length).toBe(3);
+    expect((antragIn()!.umfang as unknown[]).length).toBe(3);
     expect(knopf(host, 'Kein Projektordner')).toBeUndefined();
   });
 });
 
 describe('Antragsvorlagen und Reihenfolge', () => {
-  const ids = () => (abschnitt()!.umfang as { id: string }[]).map((u) => u.id);
+  const ids = () => (antragIn()!.umfang as { id: string }[]).map((u) => u.id);
   const zeile = (host: HTMLElement, titel: string) => [...host.querySelectorAll<HTMLElement>('.pu-zeile')].find((z) => z.querySelector('strong')?.textContent === titel)!;
   const taste = (el: HTMLElement, key: string) => act(() => void el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
 
@@ -813,7 +825,7 @@ describe('Projektordner, Ansicht „Antrag“: Dokumente im Antragsordner mit Vo
     await klick(zeile('Bauantrag.pdf').querySelector<HTMLButtonElement>('.fo-bereit-knopf')!);
     expect(kopf()).toContain('1 von 2 bereit');
     expect(zeile('Bauantrag.pdf').querySelector('.fo-bereit-knopf')!.getAttribute('aria-pressed')).toBe('true');
-    expect((abschnitt()!.bereit as Record<string, { datei: string }[]>)['BAUA 2'].map((b) => b.datei)).toEqual(['BS9 BAUA 261110 01 Bauantrag.pdf']);
+    expect((antragIn('BAUA 2')!.bereit as { datei: string }[]).map((b) => b.datei)).toEqual(['BS9 BAUA 261110 01 Bauantrag.pdf']);
 
     // Umbenennen nach Namensformat: Vorschlag mit Kürzel, Antragsart und Datum
     await rechtsklick(falsch.querySelector('.fo-baum-zeile')!);
@@ -893,5 +905,57 @@ describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
     await klick(knopf(dialog, 'Vorhandene überspringen'));
     expect(useFormulare.getState().meldung?.text).toContain('0 von 2 Formularen');
     expect(useFormulare.getState().meldung?.text).toContain('2 vorhandene übersprungen');
+  });
+});
+
+describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
+  it('ein neuer Antrag übernimmt das Preset – danach unabhängig von Preset und anderen Anträgen', async () => {
+    useAntrag.getState().setMerkmalDefinitionen(VORGABE_MERKMALE.map((m) => (m.name === 'Gebäudeklasse' ? { ...m, vorgabe: '3' } : m)));
+    const host = await projektBS9();
+    // die vorhandenen Anträge entstehen beim ersten Öffnen (aus dem Preset, es gab nichts Projektweites)
+    expect(antragIn('BAUA')?.merkmale).toEqual({ Gebäudeklasse: '3' });
+    await act(() => useAntrag.getState().merkmalSetzen('Gebäudeklasse', '5'));
+    expect(antragIn('BAUA 2')?.merkmale).toEqual({ Gebäudeklasse: '5' });
+    expect(antragIn('BAUA')?.merkmale).toEqual({ Gebäudeklasse: '3' });
+
+    // Preset ändern, dann neuen Antrag anlegen: der neue bekommt das neue Preset, die alten bleiben
+    useAntrag.getState().setMerkmalDefinitionen(VORGABE_MERKMALE.map((m) => (m.name === 'Gebäudeklasse' ? { ...m, vorgabe: '2' } : m)));
+    await warte();
+    await klick(host.querySelector<HTMLButtonElement>('.an-fassung-knopf')!);
+    await klick(menuePunkt('Neue Fassung „BAUA 3“'));
+    expect(antragIn('BAUA 3')?.merkmale).toEqual({ Gebäudeklasse: '2' });
+    expect(useAntrag.getState().projektdatei?.merkmale).toEqual({ Gebäudeklasse: '2' });
+    expect(antragIn('BAUA 2')?.merkmale).toEqual({ Gebäudeklasse: '5' });
+
+    // zurück zu BAUA 2: dessen Werte
+    await klick(host.querySelector<HTMLButtonElement>('.an-fassung-knopf')!);
+    await klick(menuePunkt('BAUA 2'));
+    expect(useAntrag.getState().projektdatei?.merkmale).toEqual({ Gebäudeklasse: '5' });
+  });
+
+  it('Eingangsbestätigung im Ordner des Antrags: eingereicht – im Projekt und auf der Startseite (aktuellster Antrag)', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261103 Eingangsbestätigung.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    expect(antragIn('BAUA 2')?.eingereicht).toEqual({ datei: 'BS9 BAUA 261103 Eingangsbestätigung.pdf', datum: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) });
+    expect(antragIn('BAUA')?.eingereicht).toBeUndefined();
+    // für die Startseiten aller Apps
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.antrag).toMatchObject({ name: 'BAUA 2', eingereicht: { datei: 'BS9 BAUA 261103 Eingangsbestätigung.pdf' } });
+    expect(host.querySelector('.an-eingereicht')!.textContent).toContain('eingereicht');
+
+    // Startseite von Formulare
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await klick(knopf(host, 'Projektumfang festlegen'));
+    await warte();
+    await klick(knopf(host, 'Wechseln'));
+    const karte = host.querySelector('[aria-label="Zuletzt geöffnet"] .pa-karte[data-projekt="BS9"]')!;
+    expect(karte.querySelector('.pa-marke.ok')!.textContent).toContain('BAUA 2 · eingereicht');
+    await klick(knopf(host, 'Zurück zu BS9'));
+
+    // Datei wieder weg: nicht mehr eingereicht
+    ds.dateien.delete(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261103 Eingangsbestätigung.pdf`);
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(antragIn('BAUA 2')?.eingereicht).toBeUndefined();
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.antrag).toEqual({ name: 'BAUA 2', angelegt: expect.any(String) });
   });
 });

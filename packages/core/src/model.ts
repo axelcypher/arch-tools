@@ -371,6 +371,16 @@ export interface Beteiligter {
  * Projektstammdaten – gemeinsam für alle Apps (Flächenrechner, GRZ-Nachweis, Kostenermittlung, Projektordner,
  * Formulare, Entzerrung); die Formulare-App gleicht sie mit der Projektkarte von FORMA ab.
  */
+/** Kurzfassung eines Antrags für die Projektübersicht */
+export interface AntragKurz {
+  /** Antragsfassung (Ordnername), z. B. „BAUA 2“ */
+  name: string;
+  /** angelegt (JJJJ-MM-TT) */
+  angelegt?: string;
+  /** eingereicht: Antragsprotokoll bzw. Eingangsbestätigung im Ordner des Antrags */
+  eingereicht?: { datei: string; /** Datum der Datei (JJJJ-MM-TT) */ datum: string };
+}
+
 export interface ProjectMeta {
   /** Projektcode / Projektnummer */
   projektcode: string;
@@ -395,10 +405,12 @@ export interface ProjectMeta {
   /** Tag, an dem das Projekt angelegt wurde (JJJJ-MM-TT) */
   angelegt?: string;
   /**
-   * Projektmerkmale (Name → Wert), z. B. Gebäudeklasse, Sonderbau, Verfahren – frei erweiterbar; welche es gibt,
-   * steht in den Einstellungen der Apps.
+   * Früher: Projektmerkmale (Name → Wert) für das ganze Projekt. Sie gelten jetzt je Antrag (Abschnitt „formulare“,
+   * `antraege`); dieser Eintrag wird nur noch gelesen und beim ersten Speichern dorthin übernommen.
    */
   merkmale?: Record<string, string>;
+  /** Der zuletzt angelegte Antrag (von Formulare gepflegt) – für die Startseiten aller Apps */
+  antrag?: AntragKurz;
   /** Stand des Projekts: Akquise, aktiv, abgeschlossen – fehlt = aktiv (Filter der Projektübersicht) */
   status?: ProjektStatus;
 }
