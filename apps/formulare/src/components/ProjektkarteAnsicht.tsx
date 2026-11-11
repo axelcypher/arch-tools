@@ -173,6 +173,32 @@ function Navigation({
   const vorschlag = adressbuch ? vorgabenFuer(karte, adressbuch.adressen, vorgaben) : [];
   const vorgabeGruppen = new Set(vorschlag.map((v) => v.gruppe)).size;
 
+  // Favoriten oben (in der gewählten Reihenfolge), ausgeblendete Gruppen am Ende – außer der gewählten und solchen
+  // mit ungespeicherten Änderungen, die bleiben sichtbar
+  const favIds = useFormulare((s) => s.kartenFavoriten);
+  const ausIds = useFormulare((s) => s.kartenAusgeblendet);
+  const { kartenFavoritUmschalten, kartenAusblendenUmschalten } = useFormulare.getState();
+  const [zeigeVersteckte, setZeigeVersteckte] = useState(false);
+  const alle = reihen.flatMap((r) => r.gruppen);
+  const geaendert = (g: PkGruppe) => karte.karte.eintraege.some((e) => e.gruppe === g.id && pkSchluessel(e.gruppe, e.id) in karte.aenderungen);
+  const istVersteckt = (g: PkGruppe) => ausIds.includes(g.id) && g.id !== aktiv && !geaendert(g);
+  const favoriten = favIds.map((id) => alle.find((g) => g.id === id)).filter((g): g is PkGruppe => !!g);
+  const sichtbareReihen = reihen.map((r) => ({ ...r, gruppen: r.gruppen.filter((g) => !favIds.includes(g.id) && !istVersteckt(g)) })).filter((r) => r.gruppen.length);
+  const versteckt = alle.filter(istVersteckt);
+  const eintrag = (g: PkGruppe) => (
+    <NavEintrag
+      key={g.id}
+      karte={karte}
+      gruppe={g}
+      aktiv={g.id === aktiv}
+      onClick={() => onWahl(g.id)}
+      favorit={favIds.includes(g.id)}
+      ausgeblendet={ausIds.includes(g.id)}
+      onFavorit={() => kartenFavoritUmschalten(g.id)}
+      onAusblenden={() => kartenAusblendenUmschalten(g.id)}
+    />
+  );
+
   return (
     <nav className="pk-nav" aria-label="Gruppen der Projektkarte">
       <div className="pk-nav-kopf">
@@ -204,14 +230,28 @@ function Navigation({
           {!treffer.length && <p className="muted small-text">Nichts gefunden.</p>}
         </div>
       ) : (
-        reihen.map((r) => (
-          <div key={r.titel} className="pk-nav-reihe">
-            <div className="pk-nav-titel">{r.titel}</div>
-            {r.gruppen.map((g) => (
-              <NavEintrag key={g.id} karte={karte} gruppe={g} aktiv={g.id === aktiv} onClick={() => onWahl(g.id)} />
-            ))}
-          </div>
-        ))
+        <>
+          {favoriten.length > 0 && (
+            <div className="pk-nav-reihe pk-nav-favoriten">
+              <div className="pk-nav-titel">Favoriten</div>
+              {favoriten.map((g) => eintrag(g))}
+            </div>
+          )}
+          {sichtbareReihen.map((r) => (
+            <div key={r.titel} className="pk-nav-reihe">
+              <div className="pk-nav-titel">{r.titel}</div>
+              {r.gruppen.map((g) => eintrag(g))}
+            </div>
+          ))}
+          {versteckt.length > 0 && (
+            <div className="pk-nav-reihe pk-nav-ausgeblendet">
+              <button className="pk-nav-mehr" aria-expanded={zeigeVersteckte} onClick={() => setZeigeVersteckte(!zeigeVersteckte)}>
+                {versteckt.length} ausgeblendet – {zeigeVersteckte ? 'verbergen' : 'zeigen'}
+              </button>
+              {zeigeVersteckte && versteckt.map((g) => eintrag(g))}
+            </div>
+          )}
+        </>
       )}
       {!q && oap !== null && (
         <div className="pk-nav-reihe">
@@ -247,23 +287,71 @@ function UmfangNavEintrag({ aktiv, onClick }: { aktiv: boolean; onClick: () => v
   );
 }
 
-function NavEintrag({ karte, gruppe, aktiv, onClick }: { karte: OffeneKarte; gruppe: PkGruppe; aktiv: boolean; onClick: () => void }) {
+function NavEintrag({
+  karte,
+  gruppe,
+  aktiv,
+  onClick,
+  favorit,
+  ausgeblendet,
+  onFavorit,
+  onAusblenden,
+}: {
+  karte: OffeneKarte;
+  gruppe: PkGruppe;
+  aktiv: boolean;
+  onClick: () => void;
+  favorit: boolean;
+  ausgeblendet: boolean;
+  onFavorit: () => void;
+  onAusblenden: () => void;
+}) {
   const eintraege = karte.karte.eintraege.filter((e) => e.gruppe === gruppe.id);
   const gefuellt = eintraege.filter((e) => karteText(karte, e.gruppe, e.id).trim()).length;
   const geaendert = eintraege.some((e) => pkSchluessel(e.gruppe, e.id) in karte.aenderungen);
   const kurz = zusammenfassung(gruppe, (id) => karteText(karte, gruppe.id, id));
   return (
-    <button className={`pk-nav-eintrag${aktiv ? ' aktiv' : ''}${gefuellt ? '' : ' leer'}`} aria-current={aktiv ? 'true' : undefined} onClick={onClick}>
-      <span className="pk-nav-name">
-        {gruppe.text}
-        {geaendert && (
-          <span className="fo-ungespeichert" title="Ungespeicherte Änderungen">
-            {' '}
-            ●
-          </span>
-        )}
+    <div className={`pk-nav-zeile${favorit ? ' favorit' : ''}${ausgeblendet ? ' ausgeblendet' : ''}`}>
+      <NavKnopf aktiv={aktiv} gefuellt={!!gefuellt} onClick={onClick}>
+        <span className="pk-nav-name">
+          {gruppe.text}
+          {geaendert && (
+            <span className="fo-ungespeichert" title="Ungespeicherte Änderungen">
+              {' '}
+              ●
+            </span>
+          )}
+        </span>
+        <span className="pk-nav-kurz">{kurz || (gefuellt ? `${gefuellt} von ${eintraege.length} ausgefüllt` : 'nicht ausgefüllt')}</span>
+      </NavKnopf>
+      <span className="pk-nav-aktionen">
+        <button
+          className="pk-nav-stern"
+          aria-pressed={favorit}
+          aria-label={favorit ? `${gruppe.text}: Favorit entfernen` : `${gruppe.text} als Favorit oben anzeigen`}
+          title={favorit ? 'Favorit entfernen' : 'Als Favorit oben anzeigen (gilt für alle Projekte)'}
+          onClick={onFavorit}
+        >
+          {favorit ? '★' : '☆'}
+        </button>
+        <button
+          className="pk-nav-auge"
+          aria-pressed={ausgeblendet}
+          aria-label={ausgeblendet ? `${gruppe.text} wieder einblenden` : `${gruppe.text} ausblenden`}
+          title={ausgeblendet ? 'Wieder einblenden' : 'In der Gliederung ausblenden (gilt für alle Projekte; die Suche findet die Gruppe weiter)'}
+          onClick={onAusblenden}
+        >
+          <Symbol name="auge" />
+        </button>
       </span>
-      <span className="pk-nav-kurz">{kurz || (gefuellt ? `${gefuellt} von ${eintraege.length} ausgefüllt` : 'nicht ausgefüllt')}</span>
+    </div>
+  );
+}
+
+function NavKnopf({ aktiv, gefuellt, onClick, children }: { aktiv: boolean; gefuellt: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button className={`pk-nav-eintrag${aktiv ? ' aktiv' : ''}${gefuellt ? '' : ' leer'}`} aria-current={aktiv ? 'true' : undefined} onClick={onClick}>
+      {children}
     </button>
   );
 }

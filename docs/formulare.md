@@ -217,6 +217,12 @@ Kurzfassung („Mustermann, Max · Welver“ oder „nicht ausgefüllt“), rech
 Formular: bei Adressen Name, Anschrift, Kontakt sowie Bank und Sonstiges (zugeklappt, solange leer), daneben die
 Anschrift, wie sie in Formularen steht.
 
+- **Favoriten und Ausblenden:** ☆ an einer Gruppe in der Gliederung (beim Überfahren bzw. per Tab sichtbar) stellt
+  sie oben unter „Favoriten“, ★ nimmt sie wieder heraus. Das Auge blendet eine Gruppe aus; sie steht dann unter
+  „n ausgeblendet – zeigen“ und lässt sich dort wieder einblenden. Die Suche findet auch ausgeblendete Gruppen; die
+  gewählte Gruppe und Gruppen mit ungespeicherten Änderungen bleiben sichtbar. Ein Favorit ist nie zugleich
+  ausgeblendet. Die Auswahl gilt für alle FORMA-Projekte (die Gruppen haben in jeder Projektkarte dieselbe Kennung)
+  und wird je Rechner mit den übrigen Ansichtseinstellungen gespeichert.
 - **Werkzeugleiste:** ↶ ↷ (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>), „Projektkarte speichern“
   (<kbd>Strg</kbd>+<kbd>S</kbd>) und „Verwerfen“ (lässt sich rückgängig machen). Ungespeicherte Änderungen bleiben
   lokal gesichert, auch über Neustarts. Geänderte Einträge sind orange markiert, ↺ setzt einen zurück.

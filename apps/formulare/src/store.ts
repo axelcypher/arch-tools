@@ -126,6 +126,10 @@ interface Gespeichert {
   /** angezeigte Pfade im echten Projektordner: Vorgabe und je Projektkürzel */
   vorgabeAuswahl: string[];
   auswahl: Record<string, string[]>;
+  /** Projektkarte: Gruppen (Kennung, z. B. 201 Bauherr), die oben unter „Favoriten“ stehen – für alle Projekte */
+  kartenFavoriten: number[];
+  /** Projektkarte: Gruppen, die in der Gliederung ausgeblendet sind – für alle Projekte */
+  kartenAusgeblendet: number[];
 }
 
 export type SperrZustand =
@@ -293,6 +297,10 @@ interface FormulareState extends Gespeichert {
   eigenesVerwerfen: (schluessel: string, eintrag: Eintrag) => void;
   einstellungenOeffnen: (bereich?: EinstellungsBereich) => void;
   setRollenVorgabe: (gruppe: number, schluessel: string | null) => void;
+  /** Gruppe der Projektkarte als Favorit markieren bzw. die Markierung entfernen */
+  kartenFavoritUmschalten: (gruppe: number) => void;
+  /** Gruppe der Projektkarte in der Gliederung aus- bzw. wieder einblenden */
+  kartenAusblendenUmschalten: (gruppe: number) => void;
   setOapVorlage: (pfad: string) => void;
   /** Projektdatei für das gewählte Projekt festlegen; null = wieder automatisch */
   oapWaehlen: (pfad: string | null) => Promise<void>;
@@ -378,6 +386,7 @@ function schreiben(schluessel: string, wert: unknown): boolean {
 }
 
 const strings = (x: unknown) => (Array.isArray(x) ? x.filter((p): p is string => typeof p === 'string') : []);
+const zahlen = (x: unknown) => (Array.isArray(x) ? [...new Set(x.filter((p): p is number => Number.isInteger(p)))] : []);
 
 function ladeEinstellungen(): Gespeichert {
   const o = lesen<Partial<Gespeichert>>(EINSTELLUNGEN, {});
@@ -397,6 +406,8 @@ function ladeEinstellungen(): Gespeichert {
     oapWahl: o.oapWahl && typeof o.oapWahl === 'object' ? Object.fromEntries(Object.entries(o.oapWahl).filter(([, v]) => typeof v === 'string')) : {},
     vorgabeAuswahl: Array.isArray(o.vorgabeAuswahl) ? strings(o.vorgabeAuswahl) : VORGABE_AUSWAHL,
     auswahl,
+    kartenFavoriten: zahlen(o.kartenFavoriten),
+    kartenAusgeblendet: zahlen(o.kartenAusgeblendet),
   };
 }
 
@@ -1358,6 +1369,17 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     einstellungenOeffnen: (bereich) => set({ haupt: 'einstellungen', ...(bereich ? { einstellungsBereich: bereich } : {}) }),
 
+    kartenFavoritUmschalten: (gruppe) => {
+      const f = get().kartenFavoriten;
+      // ein Favorit ist nie zugleich ausgeblendet
+      set({ kartenFavoriten: f.includes(gruppe) ? f.filter((x) => x !== gruppe) : [...f, gruppe], kartenAusgeblendet: get().kartenAusgeblendet.filter((x) => x !== gruppe) });
+    },
+
+    kartenAusblendenUmschalten: (gruppe) => {
+      const a = get().kartenAusgeblendet;
+      set({ kartenAusgeblendet: a.includes(gruppe) ? a.filter((x) => x !== gruppe) : [...a, gruppe], kartenFavoriten: get().kartenFavoriten.filter((x) => x !== gruppe) });
+    },
+
     setRollenVorgabe: (gruppe, schluessel) => {
       const rollenVorgaben = { ...get().rollenVorgaben };
       if (schluessel) rollenVorgaben[String(gruppe)] = schluessel;
@@ -1704,6 +1726,8 @@ useFormulare.subscribe((s) => {
     oapWahl: s.oapWahl,
     vorgabeAuswahl: s.vorgabeAuswahl,
     auswahl: s.auswahl,
+    kartenFavoriten: s.kartenFavoriten,
+    kartenAusgeblendet: s.kartenAusgeblendet,
   };
   schreiben(EINSTELLUNGEN, g);
 });

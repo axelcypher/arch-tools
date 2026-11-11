@@ -1053,6 +1053,63 @@ button.icon.fo-gl-zaehlt.an {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Zeile der Gliederung: Gruppe + Favorit/Ausblenden (dezent, beim Überfahren oder per Tastatur sichtbar) */
+.pk-nav-zeile {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.pk-nav-zeile > .pk-nav-eintrag {
+  flex: 1;
+  min-width: 0;
+  padding-right: 48px;
+}
+.pk-nav-aktionen {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 1px;
+}
+.pk-nav-aktionen button {
+  padding: 1px 4px;
+  min-width: 20px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.2;
+  opacity: 0;
+}
+.pk-nav-zeile:hover .pk-nav-aktionen button,
+.pk-nav-aktionen button:focus-visible,
+.pk-nav-zeile.favorit .pk-nav-stern,
+.pk-nav-zeile.ausgeblendet .pk-nav-auge {
+  opacity: 1;
+}
+.pk-nav-aktionen button:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.pk-nav-zeile.favorit .pk-nav-stern {
+  color: var(--accent);
+}
+.pk-nav-zeile.ausgeblendet > .pk-nav-eintrag {
+  opacity: 0.6;
+}
+.pk-nav-mehr {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 4px 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.pk-nav-mehr:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
 .pk-nav-eintrag.leer .pk-nav-name {
   font-weight: 400;
   color: var(--muted);

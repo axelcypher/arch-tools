@@ -82,7 +82,7 @@ beforeEach(() => {
   ds.projektkarten.set(KARTE, projektkarte());
   ds.dateien.set('C:/FORMA/BS9/_archiv/000-Alt.frmsjf', MUSTER);
   ds.dateien.set('C:/FORMA/Sonstiges/notiz.txt', new Uint8Array([1]));
-  useFormulare.setState({ ds, ...ANFANG });
+  useFormulare.setState({ ds, ...ANFANG, kartenFavoriten: [], kartenAusgeblendet: [] });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -506,6 +506,38 @@ describe('Formulare', () => {
     expect(treffer.map((t) => t.querySelector('.pk-treffer-ort')!.textContent)).toEqual(['Bauherr › Straße/Nr.']);
     await klick(treffer[0]);
     expect(host.querySelector('.pk-kopf h2')!.textContent).toBe('Bauherr');
+  });
+
+  it('Projektkarte: Gruppen als Favorit oben anzeigen und ausblenden – gilt für alle Projekte, bleibt gespeichert', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    const reihen = () =>
+      [...host.querySelectorAll('.pk-nav-reihe')].map((r) => [
+        r.querySelector('.pk-nav-titel')?.textContent ?? r.querySelector('.pk-nav-mehr')?.textContent,
+        ...[...r.querySelectorAll('.pk-nav-eintrag .pk-nav-name')].map((n) => n.textContent!.trim()),
+      ]);
+    const zeile = (name: string) => [...host.querySelectorAll('.pk-nav-zeile')].find((z) => z.querySelector('.pk-nav-name')!.textContent!.trim() === name)!;
+    expect(reihen()).toEqual([['Projekt', 'Projektdaten'], ['Beteiligte', 'Bauherr', 'Eigentümer des Baugrundstücks', 'Gemeinde'], ['Antrag', 'Projektumfang']]);
+
+    // Favorit: oben unter „Favoriten“, nicht mehr doppelt in der eigenen Reihe
+    await klick(zeile('Gemeinde').querySelector<HTMLButtonElement>('.pk-nav-stern')!);
+    expect(reihen()[0]).toEqual(['Favoriten', 'Gemeinde']);
+    expect(reihen()[2]).toEqual(['Beteiligte', 'Bauherr', 'Eigentümer des Baugrundstücks']);
+    expect(zeile('Gemeinde').querySelector('.pk-nav-stern')!.getAttribute('aria-pressed')).toBe('true');
+
+    // ausblenden: verschwindet aus der Gliederung, über „… ausgeblendet – zeigen“ erreichbar; die Suche findet sie weiter
+    await klick(zeile('Eigentümer des Baugrundstücks').querySelector<HTMLButtonElement>('.pk-nav-auge')!);
+    expect(reihen()).toEqual([['Favoriten', 'Gemeinde'], ['Projekt', 'Projektdaten'], ['Beteiligte', 'Bauherr'], ['1 ausgeblendet – zeigen'], ['Antrag', 'Projektumfang']]);
+    await klick(host.querySelector<HTMLButtonElement>('.pk-nav-mehr')!);
+    expect(reihen()[3]).toEqual(['1 ausgeblendet – verbergen', 'Eigentümer des Baugrundstücks']);
+    expect(useFormulare.getState()).toMatchObject({ kartenFavoriten: [232], kartenAusgeblendet: [205] });
+    expect(JSON.parse(localStorage.getItem('formulare:einstellungen')!)).toMatchObject({ kartenFavoriten: [232], kartenAusgeblendet: [205] });
+
+    // wieder einblenden; ein Favorit lässt sich nicht zugleich ausblenden
+    await klick(zeile('Eigentümer des Baugrundstücks').querySelector<HTMLButtonElement>('.pk-nav-auge')!);
+    await klick(zeile('Gemeinde').querySelector<HTMLButtonElement>('.pk-nav-auge')!);
+    expect(useFormulare.getState()).toMatchObject({ kartenFavoriten: [], kartenAusgeblendet: [232] });
   });
 
   it('füllt das Formular aus der Projektkarte – leere Felder vorgewählt, in einem rückgängig zu machenden Schritt', async () => {
