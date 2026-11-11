@@ -6,6 +6,7 @@ import { istDachgeschoss } from '@core/model';
 import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
 import { MASSGRUNDLAGEN, NUF_IDS, NUTZUNGSGRUPPEN, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
 import { briKoerper, briRechenweg, rechteckMasse } from '@core/rechenweg';
+import { statistik } from './bericht';
 import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
 
 /**
@@ -49,6 +50,8 @@ function totalsRow(t: AreaTotals): Row {
     nrf_r: r2(t.nrf.R),
     nrf_s: r2(t.nrf.S),
     kgf: r2(t.kgf.total),
+    kgf_r: r2(t.kgf.R),
+    kgf_s: r2(t.kgf.S),
     wofl: r2(t.wofl),
   };
   NUF_IDS.forEach((id, i) => (row[`nuf${i + 1}`] = r2(t.nutzung[id])));
@@ -160,10 +163,15 @@ export function buildExportContext(project: Project, result: ProjectResult, date
   sum.nebenflaeche = sumBy(raum.filter((r) => !r.wohnflaeche), 'flaeche');
   for (const [k, v] of Object.entries(sum)) scalars[`summe.${k}`] = v;
 
+  const stat = statistik(result);
+  scalars['statistik.wohnungen'] = stat.wohnungen.length;
+  scalars['statistik.raeume'] = stat.wohnungen.reduce((a, w) => a + w.raeume, 0);
+  scalars['statistik.sonstige_nutzflaeche'] = r2(stat.sonstigeNutzflaeche);
   const wohnung: Row[] = result.wohnungen.map((w, i) => ({
     nr: i + 1,
     name: w.wohnung,
     anzahl_raeume: w.rooms.length,
+    raeume_statistik: stat.wohnungen[i]?.raeume ?? 0,
     grundflaeche: r2(w.grundflaeche),
     wofl: r2(w.wofl),
   }));
@@ -248,6 +256,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['projekt.massgrundlage', 'Maßgrundlage: „Planmaß Rohbau“, „Planmaß Fertigmaß“ oder „Aufmaß“ (Projekt-Einstellung)'],
       ['projekt.massgrundlage_text', 'als Satz, z. B. „Flächen aus Planmaßen (Rohbau), Putzabzug je Raum“'],
       ['projekt.normen', '„Wohnfläche nach WoFlV vom 25.11.2003; Grundflächen und Rauminhalte nach DIN 277:2021-08“'],
+      ['statistik.wohnungen, statistik.raeume, statistik.sonstige_nutzflaeche', 'Hochbaustatistik: Zahl der Wohnungen, Räume (NUF 1 ab 6 m² inkl. Küche), Nutzfläche ohne Wohnflächenräume [m²]'],
     ],
   },
   {
@@ -258,7 +267,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['nuf, nuf1 … nuf7', 'Nutzungsfläche gesamt bzw. je Nutzungsgruppe [m²]'],
       ['tf, vf', 'Technikfläche, Verkehrsfläche [m²]'],
       ['nrf, nrf_r, nrf_s', 'Netto-Raumfläche [m²]'],
-      ['kgf', 'Konstruktions-Grundfläche (BGF − NRF) [m²]'],
+      ['kgf, kgf_r, kgf_s', 'Konstruktions-Grundfläche (BGF − NRF) gesamt / Regelfall / Sonderfall [m²]'],
       ['wofl, wofl_roh', 'Wohnfläche nach WoFlV [m²] mit bzw. ohne Putzabzug der Räume'],
       ['nebenflaeche', 'Summe der Räume ohne Wohnflächenanrechnung [m²]'],
       ['anzahl_raeume', 'Anzahl Räume'],
@@ -345,6 +354,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['wohnung.nr', 'laufende Nummer'],
       ['wohnung.name', 'Bezeichnung'],
       ['wohnung.anzahl_raeume', 'Anzahl Räume'],
+      ['wohnung.raeume_statistik', 'Räume für die Hochbaustatistik: NUF 1 ab 6 m² einschließlich Küche (Zählregel am Erhebungsbogen prüfen)'],
       ['wohnung.grundflaeche', 'Summe Grundflächen [m²]'],
       ['wohnung.wofl', 'Wohnfläche [m²]'],
     ],

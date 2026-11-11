@@ -289,6 +289,8 @@ export interface ProjectSettings {
   massgrundlage?: Massgrundlage;
   /** Altberechnung nach der II. BV (§§ 42–44, nur zum Vergleich mit Bestandsberechnungen bis 31.12.2003) */
   zweiteBV?: boolean;
+  /** Flächenrechner: Vorlage und Abschnitte des Berichts (geprüft in der App) */
+  bericht?: { vorlage?: string; abschnitte?: string[] };
 }
 
 export type Massgrundlage = 'rohbau' | 'fertig' | 'aufmass';

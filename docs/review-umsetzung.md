@@ -175,7 +175,9 @@ mitbumpt).
 - [x] **FR-08** 100 %-Anrechnung unter Dachschrägen (Hinweis) – FR 0.20.0: Hinweis in den Eigenschaften bei „voll“ im
   Dachgeschoss (keine Sperre); Anrechnung „Raumteile nach lichter Höhe“ mit Teilflächen in m². Prüfliste mit F-10,
   Berechnung aus dem Dach mit F-12.
-- [ ] **FR-09** Bericht mit R/S-Trennung bei BRI, NRF, KGF
+- [x] **FR-09** Bericht mit R/S-Trennung bei BRI, NRF, KGF – FR 0.22.0 (mit F-17): Tabelle „Grundflächen und
+  Rauminhalte“ mit BGF/BRI/NRF/KGF je R | S | gesamt, S-Spalten nur bei Sonderfall; CSV und Excel-Standardlayout
+  ebenso, Platzhalter `kgf_r`/`kgf_s` neu (`nrf_r`/`nrf_s` gab es schon).
 - [x] **FR-10** BRI von S-Umrissen – FR 0.20.0: Körperhöhe bei S als Pflichtangabe markiert (Unterkante Überdeckung
   bzw. Oberkante Umwehrung) mit Warnung, solange sie fehlt; Bodenplatte unter S-Umrissen nur mit Haken
   `sohleAnsetzen`. BRI S getrennt im Bericht mit FR-09/F-17.
@@ -195,8 +197,13 @@ mitbumpt).
   (z. B. Spitzboden), BGF-Umriss ergänzen“; die Erkennung bleibt.
 - [x] **FR-18** Abweichung der Dachform im Rechenweg – FR 0.20.0: `Dach.modellAbweichung` (IFC-Import und Dach-Editor),
   Fußnote `BriKoerper.bemerkung`, im Bericht unter dem BRI-Rechenweg und in Excel `koerper.bemerkung`.
-- [ ] **FR-19** Normausgabe in Bauvorlage und Gebühr
-- [ ] **FR-20** Angaben für die Hochbaustatistik
+- [x] **FR-19** Normausgabe in Bauvorlage und Gebühr – Regel „BRI in Bauvorlage und Gebühr (NRW)“ im
+  Nachschlagewerk seit FR 0.20.0; Berichtskopf, DIN-277-Tabelle und Excel nennen „BRI nach DIN 277:2021-08 (entspricht
+  für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW)“ – FR 0.22.0.
+- [x] **FR-20** Angaben für die Hochbaustatistik – FR 0.22.0: Abschnitt „Angaben für die Hochbaustatistik“ (Wohnfläche
+  und Räume je Wohnung, sonstige Nutzfläche = NUF ohne Wohnflächenräume, BRI), Excel `statistik.*` und
+  `wohnung.raeume_statistik`. Abweichung: Die Zählregel (Räume = NUF 1 ab 6 m² inkl. Küche, ohne Freisitze) ist
+  nicht am aktuellen Erhebungsbogen von IT.NRW geprüft (nicht verfügbar) – der Bericht weist darauf hin.
 - [x] **FR-21** Bestand nach II. BV – FR 0.20.0: Projektschalter „Altberechnung nach II. BV (nur Vergleich)“ mit
   deutlichem Hinweis in Seitenleiste und Bericht; Wirkung nur auf den Standardfaktor für Freisitze (½); Standard
   bleibt WoFlV, Schalter aus = unverändert (Test).
@@ -226,7 +233,16 @@ KO 0.11.2 (Patch).
   folgt der ersten Ziffer (`raumNutzung`), Auswertung weiter je Gruppe; ohne Nutzungsart wie bisher (Test).
 - [ ] **F-15** BGF-Umriss aus dem Plan erkennen
 - [ ] **F-16** Kalibrieren mit Fang und Kontrollmaß
-- [ ] **F-17** Bericht für die Bauvorlage
+- [x] **F-17** Bericht für die Bauvorlage – FR 0.22.0: Vorlagen „Vollständige Flächenaufstellung“, „Bauantrag NRW
+  (BRI + WoFl)“ (DIN 277 mit R/S und BRI-Rechenweg nicht abwählbar), „Abschnitte frei wählen“, gemerkt in
+  `settings.bericht`; Kopf aus den Stammdaten (gemeinsamer `DruckKopf`: Bauvorhaben, Adresse, Grundstück, Bauherr,
+  Büro/Bearbeitung) mit Normausgaben und Maßgrundlage (FR-05, FR-19), „Seite x von y“ (seit Q-4), Unterschriftszeilen
+  „Ort, Datum“, „Aufgestellt“, „Entwurfsverfasserin / Entwurfsverfasser (§ 54 BauO NRW 2018)“; leere Abschnitte
+  (S-Spalten, Wohnflächen) entfallen, fehlender BRI als Warnung; keine erzwungenen Seitenumbrüche je Geschoss mehr
+  (Überschriften bleiben bei ihrem Inhalt). Logik in `core/bericht.ts` (Tests), Render-Test `Report.test.ts`.
+  Prüfung „Adresse/Bauherr fehlt“: Der Kopf druckt beides, sobald es in den Stammdaten steht (Q-4) – die Beobachtung
+  stammte aus Projekten ohne erfasste Stammdaten. Abweichung: Die Fundstelle der Unterschriftsbezeichnung (§ 54 BauO
+  NRW 2018) ist sinngemäß gewählt und sollte vom Büro bestätigt werden.
 - [ ] **F-18** Neues Geschoss mit Bezug zum darunterliegenden
 - [ ] **F-19** Messen erweitern
 - [ ] **F-20** Beschriftungen überlagern sich

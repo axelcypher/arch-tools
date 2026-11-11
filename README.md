@@ -117,6 +117,16 @@ festgehalten.
   Raum** (L × B bzw. Zerlegung in Rechtecke/Dreiecke oder Gauß’sche Formel, − Putzabzug, − Abzugsflächen,
   × Anrechnung) – die Summe der Zeilen ist exakt das Ergebnis. Im Excel-Standardlayout steht derselbe Rechenweg
   als Formeln (Blatt „Rechenweg Räume“)
+- **Bericht für die Bauvorlage**: Vorlagen „Vollständige Flächenaufstellung“, „Bauantrag NRW (BRI + WoFl)“ und
+  freie Auswahl der Abschnitte (Grundflächen und Rauminhalte, BRI-Rechenweg, Nutzungsgruppen, Raumlisten,
+  Wohnflächen, Hochbaustatistik). In „Bauantrag NRW“ sind die Tabelle nach DIN 277 mit R/S-Trennung und der
+  BRI-Rechenweg nicht abwählbar (§ 6 Nr. 1 BauPrüfVO NRW, Gebührentarif 3.1.1.2). Kopf aus den Stammdaten mit
+  Normausgaben („BRI nach DIN 277:2021-08 (entspricht für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW)“, WoFlV vom
+  25.11.2003) und Maßgrundlage, „Seite x von y“, Unterschriftszeilen (Aufsteller, Entwurfsverfasser). BGF, BRI, NRF
+  und KGF getrennt nach R und S (S-Spalten nur, wenn es einen Sonderfall gibt; ebenso in CSV und Excel:
+  `nrf_r`/`nrf_s`, `kgf_r`/`kgf_s`); leere Abschnitte entfallen, ein fehlender BRI erscheint als Warnung; keine
+  erzwungenen Seitenumbrüche mehr. **Angaben für die Hochbaustatistik**: Wohnfläche und Räume je Wohnung, sonstige
+  Nutzfläche, BRI (Excel `statistik.*`, `wohnung.raeume_statistik`; Zählregeln am Erhebungsbogen prüfen)
 - **Prüfliste** in der Auswertung (Ampel „Prüfen“): Räume außerhalb bzw. über den Umriss hinaus (je R/S),
   NRF > BGF je Bereich, überlappende Umrisse oder Räume (z. B. versetzt eingefügte Kopie; Abzugsflächen
   ausgenommen), breite Bereiche ohne Raum, doppelte Raumnummern, Räume ohne Wohnung, „keine Wohnfläche“ im

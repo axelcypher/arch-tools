@@ -34,8 +34,9 @@ export async function exportDefault(project: Project, result: ProjectResult): Pr
   {
     const ws = wb.addWorksheet('DIN 277');
     title(ws, 'Grundflächen und Rauminhalte nach DIN 277', project);
-    const head = ['Geschoss', 'Höhe [m]', 'BGF R [m²]', 'BGF S [m²]', 'BGF [m²]', 'BRI R [m³]', 'BRI S [m³]', 'BRI [m³]', 'NUF [m²]', 'TF [m²]', 'VF [m²]', 'NRF [m²]', 'KGF [m²]', 'WoFl [m²]'];
-    const keys = ['name', 'hoehe', 'bgf_r', 'bgf_s', 'bgf', 'bri_r', 'bri_s', 'bri', 'nuf', 'tf', 'vf', 'nrf', 'kgf', 'wofl'];
+    // R/S getrennt (FR-09)
+    const head = ['Geschoss', 'Höhe [m]', 'BGF R [m²]', 'BGF S [m²]', 'BGF [m²]', 'BRI R [m³]', 'BRI S [m³]', 'BRI [m³]', 'NUF [m²]', 'TF [m²]', 'VF [m²]', 'NRF R [m²]', 'NRF S [m²]', 'NRF [m²]', 'KGF R [m²]', 'KGF S [m²]', 'KGF [m²]', 'WoFl [m²]'];
+    const keys = ['name', 'hoehe', 'bgf_r', 'bgf_s', 'bgf', 'bri_r', 'bri_s', 'bri', 'nuf', 'tf', 'vf', 'nrf_r', 'nrf_s', 'nrf', 'kgf_r', 'kgf_s', 'kgf', 'wofl'];
     ws.addRow([]);
     const h = ws.addRow(head).number;
     styleHeader(ws, h);
@@ -50,6 +51,10 @@ export async function exportDefault(project: Project, result: ProjectResult): Pr
     });
     ws.addRow([]);
     ws.addRow(['R = Regelfall, S = Sonderfall der Raumumschließung. KGF = BGF − NRF. BRI = Σ Umrissfläche × Höhe bzw. Volumen bis zur Dachhaut.']).font = { italic: true, color: { argb: 'FF6B7280' } };
+    ws.addRow([`Grundflächen und Rauminhalte nach DIN 277:2021-08 (BRI entspricht DIN 277-1:2016-01, § 6 BauPrüfVO NRW); Wohnfläche nach WoFlV vom 25.11.2003${ctx.scalars['projekt.massgrundlage_text'] ? `; ${ctx.scalars['projekt.massgrundlage_text']}` : ''}.`]).font = {
+      italic: true,
+      color: { argb: 'FF6B7280' },
+    };
     ws.views = [{ state: 'frozen', ySplit: h }];
   }
 

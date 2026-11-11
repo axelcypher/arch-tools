@@ -24,7 +24,25 @@ export function projectToCsv(project: Project, result: ProjectResult): string {
   rows.push([]);
 
   rows.push(['Flächen und Rauminhalte nach DIN 277']);
-  rows.push(['Geschoss', 'Höhe [m]', 'BGF R [m²]', 'BGF S [m²]', 'BGF [m²]', 'BRI R [m³]', 'BRI S [m³]', 'BRI [m³]', 'NUF [m²]', 'TF [m²]', 'VF [m²]', 'NRF [m²]', 'KGF [m²]']);
+  rows.push([
+    'Geschoss',
+    'Höhe [m]',
+    'BGF R [m²]',
+    'BGF S [m²]',
+    'BGF [m²]',
+    'BRI R [m³]',
+    'BRI S [m³]',
+    'BRI [m³]',
+    'NUF [m²]',
+    'TF [m²]',
+    'VF [m²]',
+    'NRF R [m²]',
+    'NRF S [m²]',
+    'NRF [m²]',
+    'KGF R [m²]',
+    'KGF S [m²]',
+    'KGF [m²]',
+  ]);
   const line = (name: string, h: string, t: { bgf: RS; bri: RS; nuf: RS; tf: RS; vf: RS; nrf: RS; kgf: RS }) => [
     name,
     h,
@@ -37,7 +55,11 @@ export function projectToCsv(project: Project, result: ProjectResult): string {
     n(t.nuf.total),
     n(t.tf.total),
     n(t.vf.total),
+    n(t.nrf.R),
+    n(t.nrf.S),
     n(t.nrf.total),
+    n(t.kgf.R),
+    n(t.kgf.S),
     n(t.kgf.total),
   ];
   for (const s of result.storeys) rows.push(line(s.name, n(s.hoehe), s));

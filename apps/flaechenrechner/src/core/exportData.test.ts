@@ -59,3 +59,20 @@ describe('Putzabzug und Maßgrundlage (FR-05)', () => {
     expect(c.scalars['projekt.normen']).toMatch(/DIN 277:2021-08/);
   });
 });
+
+describe('R/S getrennt (FR-09)', () => {
+  it('Projekt mit S-Umriss liefert getrennte Werte für BGF, BRI, NRF und KGF, Summen stimmen', () => {
+    const p = createProject('Haus');
+    const eg = p.storeys[0];
+    eg.shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    eg.shapes.push({ ...createOutline(rectPoints({ x: 10, y: 0 }, { x: 12, y: 4 }), 'Balkon'), umschliessung: 'S' as const, hoehe: 1.1 });
+    eg.shapes.push(createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 9.7, y: 7.7 }), '0.01', 'Wohnen'));
+    eg.shapes.push(createRoom(rectPoints({ x: 10, y: 0 }, { x: 12, y: 3.5 }), '0.02', 'Balkon'));
+    const c = buildExportContext(p, computeProject(p));
+    const g = c.collections.geschoss[0];
+    expect([g.bgf_r, g.bgf_s, g.bri_s, g.nrf_s, g.kgf_s]).toEqual([80, 8, 8.8, 7, 1]);
+    expect((g.nrf_r as number) + (g.nrf_s as number)).toBeCloseTo(g.nrf as number, 6);
+    expect((g.kgf_r as number) + (g.kgf_s as number)).toBeCloseTo(g.kgf as number, 6);
+    expect(c.scalars['summe.kgf_s']).toBe(1);
+  });
+});
