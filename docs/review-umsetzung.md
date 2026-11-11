@@ -84,7 +84,7 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
 ## Flächenrechner
 
 Block 1 (Fehler F-01 bis F-09): FR 0.18.1; wegen des Projektformats (neue Geschossfelder) bzw. des IFC-Ladens auch
-GRZ 0.10.1, KO 0.10.1, PO 0.5.2, EZ 0.5.1, FO 0.21.2 (nur Patch, Bundles geändert).
+GRZ 0.10.1, KO 0.10.1, PO 0.6.1, EZ 0.5.1, FO 0.21.2 (nur Patch, Bundles geändert).
 
 - [x] **F-01** Doppelte Raumnummern – FR 0.18.1: neue Nummer = höchste vorhandene + 1 (`core/geschosse.ts`), Präfix je
   Geschoss (`Storey.nummernPraefix`, Vorgabe aus dem Namen KG → -1, EG → 0, 1. OG → 1, sonst aus der Lage zum
@@ -190,8 +190,17 @@ GRZ 0.10.1, KO 0.10.1, PO 0.5.2, EZ 0.5.1, FO 0.21.2 (nur Patch, Bundles geände
 - [x] **PB-05** Texte passen nicht zur Lage – PO 0.5.1: „1 Datei“/„2 Dateien“; Satz zur Projektdatei je Lage (neu
   angelegt / auf dem Desktop gezielt ergänzt / im Browser keiner); Kurzname-Hinweis beim Ergänzen „Der Ordner wird
   nicht umbenannt.“ (über `kurznameHinweis`); im Browser „Ausgabe: ZIP-Datei zum Herunterladen“ statt Stammordner
-- [ ] **P-01** Bürostruktur ohne Rückfrage und Rückweg ersetzbar
-- [ ] **P-02** Letzter Schreiber gewinnt
+- [x] **P-01** Bürostruktur ohne Rückfrage und Rückweg ersetzbar – PO 0.6.0: „Standard“, „Struktur laden …“ und
+  „Sicherungen … → Wiederherstellen“ fragen mit Vorschau („4 Ordner entfallen, 3 neu, 2 Schemata ändern sich“) und
+  „Ersetzen / Abbrechen“; vorher Sicherung `projektordner.json.bak-JJJJ-MM-TT-hhmm` (die letzten zehn); „Rückgängig“
+  nach dem Ersetzen und nach „Ordnerliste übernehmen“. Abweichung: Die Sicherungen stehen gemeinsam in
+  `projektordner-sicherungen.json` statt in einzelnen Dateien – das Begrenzen auf zehn Dateien bräuchte einen neuen
+  Rust-Befehl zum Löschen; so wird keine Datei gelöscht. Optionales „Bearbeiten“-Freischalten nicht umgesetzt.
+- [x] **P-02** Letzter Schreiber gewinnt – PO 0.6.0: `konfigSchreibenWennUnveraendert` in `platform/konfig.ts` (neu, nur
+  vom Projektordner genutzt) vergleicht vor dem Schreiben den frisch gelesenen Inhalt mit dem Stand beim letzten Lesen
+  bzw. Schreiben; bei Abweichung Meldung mit „Neu laden“ / „Meine Fassung trotzdem speichern“. Frisch gelesen beim
+  Wechsel in Einstellungen/Vorlagen; Schreiben entprellt (400 ms). Abweichung: Vergleich über den Inhalt statt
+  Änderungszeit (ohne Rust); zwischen Lesen und Schreiben bleibt ein sehr kurzes Zeitfenster.
 - [ ] **P-03** Projektnummer: Prüfung, Vorschlag aus allen Stammordnern
 - [ ] **P-04** Ordnerliste als Baum
 - [ ] **P-05** Vorlagen-Zuordnungen außerhalb der Struktur
