@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react';
 import { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useAntrag } from '../antragStore';
+import { useMerkmalWerte } from '../merkmalWerte';
 import type { Entfall } from '../entfall';
-import { entfallGruende, entfallQuellen, entfallText } from '../entfall';
+import { entfallGruende, entfallQuellen, entfallText, offenGruende } from '../entfall';
 import { abschnitte } from '../forma/felder';
 import { formularKontext, leeresProfil, profilSchluessel } from '../profil';
 import type { OffenesFormular } from '../store';
@@ -11,39 +11,53 @@ import { useProfil, wertVon } from '../store';
 import { useGesetz } from './GesetzModal';
 import { Symbol } from './Symbol';
 
+export interface Entfallen {
+  /** entfallende Felder mit ihren Gründen (Schlüssel → Gründe) */
+  gruende: Map<string, Entfall[]>;
+  /** offene Felder (hängen an nicht festgelegten Projektmerkmalen) mit ihren Gründen */
+  offen: Map<string, Entfall[]>;
+  /** Hinweistext zu einem entfallenden oder offenen Feld */
+  text: (schluessel: string) => string;
+}
+
 /**
- * Entfallende Felder des offenen Formulars mit ihren Gründen (Schlüssel → Gründe) und dem Hinweistext dazu.
+ * Entfallende und offene Felder des offenen Formulars mit ihren Gründen und dem Hinweistext dazu.
  */
-export function useEntfallen(offen: OffenesFormular): { gruende: Map<string, Entfall[]>; text: (schluessel: string) => string } {
+export function useEntfallen(offen: OffenesFormular): Entfallen {
   const roh = useProfil(profilSchluessel(offen.formular, offen.name));
-  const merkmale = useAntrag((s) => s.projektdatei?.merkmale);
+  const merkmale = useMerkmalWerte(offen);
   return useMemo(() => {
     const gruende = new Map<string, Entfall[]>();
+    const offene = new Map<string, Entfall[]>();
     const p = { ...leeresProfil(), ...roh };
     const felder = offen.felder.flat();
     if (roh) {
-      const k = formularKontext(merkmale ?? {}, felder, (f) => wertVon(offen, f));
+      const k = formularKontext(merkmale, felder, (f) => wertVon(offen, f));
       for (const seite of offen.felder)
         for (const a of abschnitte(seite))
           for (const f of a.felder) {
             const e = entfallGruende(f, a, p, k);
             if (e.length) gruende.set(f.schluessel, e);
+            else {
+              const o = offenGruende(f, a, p, k);
+              if (o.length) offene.set(f.schluessel, o);
+            }
           }
     }
     const texte = new Map<string, string>();
     const text = (s: string) => {
-      if (!texte.has(s)) texte.set(s, gruende.has(s) ? entfallText(gruende.get(s)!, felder, p, merkmale ?? {}) : '');
+      if (!texte.has(s)) texte.set(s, gruende.has(s) ? entfallText(gruende.get(s)!, felder, p, merkmale) : offene.has(s) ? entfallText(offene.get(s)!, felder, p, merkmale, 'offen') : '');
       return texte.get(s)!;
     };
-    return { gruende, text };
+    return { gruende, offen: offene, text };
   }, [roh, merkmale, offen]);
 }
 
 /**
- * Info-Symbol an einem entfallenden Feld: Zeigen nennt den Grund, ein Klick öffnet die Rechtsgrundlage (wenn die
- * Vorgabe eine nennt) im Gesetzes-Fenster.
+ * Info-Symbol an einem entfallenden oder offenen Feld: Zeigen nennt den Grund, ein Klick öffnet die Rechtsgrundlage
+ * (wenn die Vorgabe eine nennt) im Gesetzes-Fenster.
  */
-export function EntfallInfo({ gruende, text, className = '', style }: { gruende: Entfall[]; text: string; className?: string; style?: CSSProperties }) {
+export function EntfallInfo({ gruende, text, offen = false, className = '', style }: { gruende: Entfall[]; text: string; offen?: boolean; className?: string; style?: CSSProperties }) {
   const quellen = entfallQuellen(gruende);
   const knopf = useRef<HTMLButtonElement>(null);
   const [lage, setLage] = useState<DOMRect | null>(null);
@@ -54,7 +68,7 @@ export function EntfallInfo({ gruende, text, className = '', style }: { gruende:
       <button
         ref={knopf}
         type="button"
-        className={`fo-entfall-info${quellen.length ? ' mit-quelle' : ''} ${className}`}
+        className={`fo-entfall-info${quellen.length ? ' mit-quelle' : ''}${offen ? ' offen' : ''} ${className}`}
         style={style}
         aria-label={text}
         tabIndex={-1}

@@ -90,27 +90,32 @@ export const anzeigeKopf: FormularProfil = zusammen(
 );
 
 /**
- * Bautechnische Nachweise (§ 68 BauO NRW 2018) bei Baubeginn und abschließender Fertigstellung. „Gebäude nach § 68
- * Absatz 2“ sind hier die Wohngebäude der Gebäudeklassen 1 und 2 (Absatz 2 Nr. 1) – die übrigen Fälle des Absatzes
- * (kleine Nichtwohngebäude u. a.) lassen sich mit den Merkmalen nicht erkennen und bleiben erforderlich.
+ * Bautechnische Nachweise (§ 68 BauO NRW 2018, Fassung ab 01.09.2026) bei Baubeginn und abschließender
+ * Fertigstellung. Die Vordrucke (Fassung 2018) sprechen noch von „Gebäuden nach § 68 Absatz 2“ – nach der heutigen
+ * Gliederung regelt Absatz 2 den Brandschutz; maßgeblich ist das geltende Gesetz (R-10): Schall- und Wärmeschutz
+ * Absatz 4 Satz 2, Standsicherheit Absatz 3 Satz 5 Nr. 2, Brandschutz Absatz 2. Weitere Ausnahmen (landwirtschaftliche
+ * Betriebsgebäude, eingeschossige Gebäude bis 200 m², kleine Nichtwohngebäude) lassen sich mit den Merkmalen nicht
+ * erkennen und bleiben erforderlich.
  */
 export const nachweise = {
-  /** kein Gebäude nach § 68 Absatz 2: Gebäudeklasse 3 bis 5 oder Nichtwohngebäude */
+  /** Schall- und Wärmeschutz: nicht bei Wohngebäuden der Gebäudeklassen 1 und 2 */
   nichtAbsatz2Gebaeude: begruendet(
     oder(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude')),
-    'Laut Vordruck nicht erforderlich bei Gebäuden nach § 68 Absatz 2 (hier: Wohngebäude der Gebäudeklassen 1 und 2).',
-    q('bauo-nrw', '68'),
+    'Bescheinigungen über Schall- und Wärmeschutz sind nicht erforderlich bei Wohngebäuden der Gebäudeklassen 1 und 2. Der Vordruck (Fassung 2018) nennt noch ‚Gebäude nach § 68 Absatz 2‘ und ‚Wohngebäude mit bis zu zwei Wohnungen‘ – maßgeblich ist das geltende Gesetz.',
+    q('bauo-nrw', '68', 4, 2),
   ),
-  /** wie oben, dazu bauliche Anlagen, die keine Gebäude sind (Standsicherheit) */
+  /** Standsicherheit: wie oben, dazu bauliche Anlagen, die keine Gebäude sind */
   nichtAbsatz2: begruendet(
     oder(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude', 'kein Gebäude')),
-    'Laut Vordruck nicht erforderlich bei Gebäuden nach § 68 Absatz 2 (hier: Wohngebäude der Gebäudeklassen 1 und 2).',
-    q('bauo-nrw', '68', 3),
+    'Prüfung und Bescheinigung entfallen u. a. bei Wohngebäuden der Gebäudeklassen 1 und 2 einschließlich ihrer Nebengebäude; die weiteren Ausnahmen (landwirtschaftliche Betriebsgebäude, eingeschossige Gebäude bis 200 m²) erkennt die App nicht.',
+    q('bauo-nrw', '68', 3, 5, 2),
   ),
   /** Brandschutz: geprüft oder bescheinigt nur bei Gebäudeklasse 4 und 5 sowie Sonderbauten */
   brandschutz: begruendet(
     oder(ist('Gebäudeklasse', '4', '5'), ist('Sonderbau', 'ja')),
-    'Laut Vordruck nicht erforderlich bei Gebäuden der Gebäudeklassen 1 bis 3 – dort genügt die Erklärung der Entwurfsverfassenden.',
-    q('bauo-nrw', '68', 2),
+    'Bescheinigung der Prüfsachverständigen bei Gebäudeklasse 4 und 5 (ohne Sonderbauten) und Mittelgaragen; bei Sonderbauten und Großgaragen prüft die Bauaufsichtsbehörde; bei Gebäudeklasse 1–3 genügt die Erklärung.',
+    q('bauo-nrw', '68', 2, 3),
+    q('bauo-nrw', '68', 2, 5),
+    q('bauo-nrw', '68', 2, 2),
   ),
 };

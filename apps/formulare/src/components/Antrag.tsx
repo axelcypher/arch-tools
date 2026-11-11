@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
 import { STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer } from '../antrag';
-import { bedingungText, hatBedingung } from '../bedingung';
+import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
 import { aktiveFassung, antragsOrdner, useAntrag, wirksameEinstellungen } from '../antragStore';
@@ -189,16 +189,17 @@ export function ProjektumfangAnsicht() {
       <section className="pu-merkmale" aria-label="Projektmerkmale">
         <strong>Projektmerkmale</strong>
         {st.merkmalDefinitionen.map((m) => (
-          <label key={m.name} className="pu-merkmal">
+          <label key={m.name} className="pu-merkmal" title={MERKMAL_ERKLAERUNG[m.name]?.text}>
             <span className="field-label">{m.name}</span>
             <select value={merkmalWerte[m.name] ?? ''} aria-label={m.name} onChange={(e) => void merkmalSetzen(m.name, e.target.value)}>
               <option value="">–</option>
               {m.werte.map((w) => (
-                <option key={w} value={w}>
+                <option key={w} value={w} title={MERKMAL_ERKLAERUNG[m.name]?.werte?.[w]}>
                   {w}
                 </option>
               ))}
             </select>
+            {MERKMAL_ERKLAERUNG[m.name]?.werte?.[merkmalWerte[m.name] ?? ''] && <span className="muted small-text">{MERKMAL_ERKLAERUNG[m.name]!.werte![merkmalWerte[m.name]]}</span>}
           </label>
         ))}
         <span className="muted small-text">Gelten für alle Formulare dieses Projekts – Abschnitte und Felder mit Bedingung (z. B. „nur bei Gebäudeklasse 3–5“) kommen dazu oder entfallen.</span>

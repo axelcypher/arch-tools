@@ -3,13 +3,15 @@
  *
  * Der Vordruck sagt selbst, was auszufüllen ist: „Behandlung als Bauantrag …“ – ja: „bitte Nummer 2 bis 6
  * ausfüllen“, nein: „bitte Nummer 1, 4 und 5 ausfüllen“. Nr. 3 (Bescheinigung nach § 6) ist freiwillig. Dazu: die
- * Baubeschreibung (Nr. 2.4) entfällt beim Einfamilienhaus, bei den Kosten (Nr. 2.5) genügt eine Angabe.
+ * Baubeschreibung (Nr. 2.4) entfällt beim Einfamilienhaus, bei den Kosten (Nr. 2.5) genügt eine Angabe. Nr. 6
+ * (Erklärung zum Brandschutz) gehört bei Gebäudeklasse 1 und 2 immer dazu (§ 13 Abs. 1 Satz 3 BauPrüfVO), sonst nur
+ * bei Behandlung als Bauantrag.
  */
 
 import type { FormularProfil } from '../profil';
 import { zusammen } from './antrag';
 import { keinEinfamilienhaus } from './grundlagen';
-import { angekreuzt, fuer, gruppeV, s, wenn, zaehltNicht } from './hilfen';
+import { angekreuzt, begruendet, gruppeV, ist, oder, q, s, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
 const s1 = s(1);
@@ -95,7 +97,13 @@ export const nw010005_2026I: FormularProfil = zusammen({
   bedingungen: {
     '1:CheckBox14': keinEinfamilienhaus,
     '1:Memo1': wenn(angekreuzt('1:CheckBox17')),
-    ...fuer(s1('CheckBox8'), wenn(ja)),
+    // Erklärung zum Brandschutz: bei Gebäudeklasse 1 und 2 immer (Merkmal oder Kästchen), sonst bei „ja“ (R-03)
+    '1:CheckBox8': begruendet(
+      oder(ja, ist('Gebäudeklasse', '1', '2'), angekreuzt('0:CheckBox8'), angekreuzt('0:CheckBox9')),
+      'Bei Gebäuden der Gebäudeklassen 1 und 2 ist die Erklärung zum Brandschutz in der Genehmigungsfreistellung immer beizufügen (auch wenn die Unterlagen nicht als Bauantrag behandelt werden sollen); sonst nur bei Behandlung als Bauantrag.',
+      q('baupruefvo', '13', 1, 3),
+      q('bauo-nrw', '68', 2, 2),
+    ),
   },
 });
 

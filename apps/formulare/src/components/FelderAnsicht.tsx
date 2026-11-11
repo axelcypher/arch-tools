@@ -85,7 +85,13 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                             offen={offen}
                             gesperrt={gesperrt}
                             profil={profil}
-                            entfall={entfall.gruende.has(f.schluessel) ? { gruende: entfall.gruende.get(f.schluessel)!, text: entfall.text(f.schluessel) } : undefined}
+                            entfall={
+                              entfall.gruende.has(f.schluessel)
+                                ? { gruende: entfall.gruende.get(f.schluessel)!, text: entfall.text(f.schluessel) }
+                                : entfall.offen.has(f.schluessel)
+                                  ? { gruende: entfall.offen.get(f.schluessel)!, text: entfall.text(f.schluessel), offen: true }
+                                  : undefined
+                            }
                             ohneBeschriftung={feldTitel(f, profil) === titel && f.art === 'text'}
                             markiert={markiert.has(f.schluessel) ? (markierung?.rahmen ? 'umrandet' : 'markiert') : null}
                           />
@@ -116,8 +122,8 @@ function FeldEingabe({
   offen: OffenesFormular;
   gesperrt: boolean;
   profil: FormularProfil;
-  /** entfällt nach den Bedingungen – mit Gründen und Hinweistext */
-  entfall?: { gruende: Entfall[]; text: string };
+  /** entfällt nach den Bedingungen bzw. ist offen (fehlendes Projektmerkmal) – mit Gründen und Hinweistext */
+  entfall?: { gruende: Entfall[]; text: string; offen?: boolean };
   ohneBeschriftung: boolean;
   /** in der Gliederung gezeigt (umrandet: zusätzlich umrandet) */
   markiert: 'markiert' | 'umrandet' | null;
@@ -125,8 +131,8 @@ function FeldEingabe({
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const wert = wertVon(offen, feld);
   const geaendert = feld.schluessel in offen.aenderungen;
-  const klasse = `fo-feld${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${markiert === 'umrandet' ? ' umrandet' : ''}${entfall ? ' entfaellt' : ''}`;
-  const info = entfall && <EntfallInfo gruende={entfall.gruende} text={entfall.text} />;
+  const klasse = `fo-feld${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${markiert === 'umrandet' ? ' umrandet' : ''}${entfall ? (entfall.offen ? ' offen' : ' entfaellt') : ''}`;
+  const info = entfall && <EntfallInfo gruende={entfall.gruende} text={entfall.text} offen={entfall.offen} />;
   const breite = { flexGrow: Math.max(40, feld.kasten.b) };
   // von FORMA berechnete Felder trägt man nicht ein
   const gesperrt = gesperrtFormular || feld.berechnet;

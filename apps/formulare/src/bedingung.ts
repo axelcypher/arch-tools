@@ -9,6 +9,12 @@
  *
  * Projektmerkmale (Gebäudeklasse, Sonderbau, Verfahren …) werden in den Einstellungen festgelegt; ihr Wert gilt je
  * Projekt für alle Formulare und steht in der Projektdatei (.oap) unter `meta.merkmale`.
+ *
+ * Drei Ergebnisse (R-01): Eine Bedingung trifft zu (`ja`: erforderlich), trifft nicht zu (`nein`: entfällt) oder ist
+ * **offen** – sie hängt an einem Projektmerkmal, das noch nicht festgelegt ist. Ein fehlendes Merkmal lässt nichts
+ * entfallen (Fail-safe): Offenes gilt als erforderlich, bis das Merkmal festgelegt ist. Ausgewertet wird dreiwertig
+ * (und: ein `nein` genügt für `nein`; oder: ein `ja` genügt für `ja`; sonst offen, wenn etwas offen ist) – so entfällt
+ * ein Feld trotz fehlendem Merkmal nur, wenn es schon nach den übrigen Angaben feststeht.
  */
 
 export interface Merkmal {
@@ -29,9 +35,58 @@ export const VORGABE_MERKMALE: Merkmal[] = [
   { name: 'Gebäudeart', werte: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Nichtwohngebäude', 'kein Gebäude'] },
   /** Art des Vorhabens (§ 60 BauO NRW 2018; Beseitigung § 62 Absatz 3) */
   { name: 'Vorhaben', werte: ['Errichtung', 'Änderung', 'Nutzungsänderung', 'Beseitigung'] },
-  /** planungsrechtliche Lage des Grundstücks (§§ 30, 34, 35 BauGB) */
-  { name: 'Planungsrecht', werte: ['Bebauungsplan', 'Innenbereich', 'Außenbereich'] },
+  /**
+   * planungsrechtliche Lage des Grundstücks (§§ 30, 34, 35 BauGB); „Bebauungsplan“ = qualifiziert oder
+   * vorhabenbezogen, der einfache Bebauungsplan und Satzungen nach dem BauGB eigens (R-25)
+   */
+  { name: 'Planungsrecht', werte: ['Bebauungsplan', 'einfacher Bebauungsplan', 'Innenbereich', 'Außenbereich', 'Satzung nach BauGB'] },
 ];
+
+/**
+ * Kurzerklärung mit Fundstelle je Merkmal der App und je Wert – bei der Auswahl gezeigt: Die Wahl ist eine rechtliche
+ * Einordnung durch die Entwurfsverfassenden (§ 54 Abs. 1 BauO NRW 2018), ohne Erklärung verleitet sie zu falschen
+ * Werten.
+ */
+export const MERKMAL_ERKLAERUNG: Record<string, { text: string; quelle?: Quelle; werte?: Record<string, string> }> = {
+  Gebäudeklasse: {
+    text: 'Gebäudeklasse (§ 2 Abs. 3 BauO NRW 2018)',
+    quelle: { gesetz: 'bauo-nrw', paragraf: '2', absatz: 3 },
+    werte: {
+      '1': 'freistehend, Höhe bis 7 m, höchstens zwei Nutzungseinheiten mit zusammen bis 400 m²; land- oder forstwirtschaftlich genutzte Gebäude',
+      '2': 'Höhe bis 7 m, höchstens zwei Nutzungseinheiten mit zusammen bis 400 m²',
+      '3': 'sonstige Gebäude mit einer Höhe bis 7 m',
+      '4': 'Höhe bis 13 m, Nutzungseinheiten mit je bis 400 m² in einem Geschoss',
+      '5': 'sonstige Gebäude einschließlich unterirdischer',
+    },
+  },
+  Sonderbau: {
+    text: 'Sonderbau (§ 50 BauO NRW 2018)',
+    quelle: { gesetz: 'bauo-nrw', paragraf: '50' },
+    werte: { ja: 'Anlage oder Raum besonderer Art oder Nutzung, z. B. Hochhaus, Verkaufsstätte, Versammlungsstätte, Mittel- und Großgarage', nein: 'kein Sonderbau' },
+  },
+  Verfahren: {
+    text: 'Verfahren (§§ 63 bis 65 BauO NRW 2018)',
+    quelle: { gesetz: 'bauo-nrw', paragraf: '64' },
+    werte: {
+      Genehmigungsfreistellung: '§ 63 BauO NRW 2018',
+      'vereinfachtes Verfahren': '§ 64 BauO NRW 2018',
+      Baugenehmigungsverfahren: '§ 65 BauO NRW 2018 (große Sonderbauten)',
+    },
+  },
+  Gebäudeart: { text: 'Art des Gebäudes (Wohngebäude nach Zahl der Wohnungen)' },
+  Vorhaben: { text: 'Art des Vorhabens (§ 60 BauO NRW 2018)', quelle: { gesetz: 'bauo-nrw', paragraf: '60' } },
+  Planungsrecht: {
+    text: 'Planungsrechtliche Lage (§§ 30, 34, 35 BauGB)',
+    quelle: { gesetz: 'baugb', paragraf: '30' },
+    werte: {
+      Bebauungsplan: 'qualifizierter oder vorhabenbezogener Bebauungsplan (§ 30 Abs. 1, 2 BauGB)',
+      'einfacher Bebauungsplan': 'Bebauungsplan ohne alle Mindestfestsetzungen, im Übrigen § 34 oder § 35 BauGB (§ 30 Abs. 3 BauGB)',
+      Innenbereich: 'im Zusammenhang bebauter Ortsteil (§ 34 BauGB)',
+      Außenbereich: '§ 35 BauGB',
+      'Satzung nach BauGB': 'z. B. Innenbereichssatzung (§ 34 Abs. 4 BauGB), Außenbereichssatzung (§ 35 Abs. 6 BauGB)',
+    },
+  },
+};
 
 const gleicherName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
@@ -115,28 +170,52 @@ export function blaetter(b: BedingungTeil | undefined): Teilbedingung[] {
   return b.art === 'gruppe' ? b.teile.flatMap(blaetter) : [b];
 }
 
-function trifft(t: BedingungTeil, k: BedingungKontext): boolean {
+/** Ergebnis einer Bedingung: trifft zu, trifft nicht zu, offen (hängt an einem nicht festgelegten Projektmerkmal) */
+export type Wahrheit = 'ja' | 'nein' | 'offen';
+
+const aus = (b: boolean): Wahrheit => (b ? 'ja' : 'nein');
+
+function trifft(t: BedingungTeil, k: BedingungKontext): Wahrheit {
   if (t.art === 'gruppe') {
     const geprueft = t.teile.filter((x) => x.art !== 'gruppe' || blaetter(x).length);
-    if (!geprueft.length) return true;
-    return t.op === 'oder' ? geprueft.some((x) => trifft(x, k)) : geprueft.every((x) => trifft(x, k));
+    if (!geprueft.length) return 'ja';
+    const teile = geprueft.map((x) => trifft(x, k));
+    const entscheidet: Wahrheit = t.op === 'oder' ? 'ja' : 'nein';
+    if (teile.includes(entscheidet)) return entscheidet;
+    return teile.includes('offen') ? 'offen' : t.op === 'oder' ? 'nein' : 'ja';
   }
   if (t.art === 'merkmal') {
     const v = k.merkmale[t.merkmal];
-    // ohne Wert im Projekt trifft ein Merkmal nie zu – auch nicht verneint
-    if (!v) return false;
-    return t.nicht ? !t.werte.includes(v) : t.werte.includes(v);
+    // ohne Wert im Projekt offen – auch verneint (nie „trifft nicht zu“, sonst entfiele eine Pflichtangabe)
+    if (!v) return 'offen';
+    return aus(t.nicht ? !t.werte.includes(v) : t.werte.includes(v));
   }
   const w = k.wert?.(t.feld);
-  if (t.pruefung === 'ausgefuellt') return gefuellt(w);
-  if (t.pruefung === 'leer') return !gefuellt(w);
-  if (t.pruefung === 'ungleich') return !gleichText(w, t.wert);
-  return gleichText(w, t.wert);
+  if (t.pruefung === 'ausgefuellt') return aus(gefuellt(w));
+  if (t.pruefung === 'leer') return aus(!gefuellt(w));
+  if (t.pruefung === 'ungleich') return aus(!gleichText(w, t.wert));
+  return aus(gleichText(w, t.wert));
 }
 
-/** Trifft die Bedingung zu? Ohne Bedingung: ja. Ein Merkmal ohne Wert im Projekt trifft nicht zu. */
+/** Bedingung dreiwertig auswerten; ohne Bedingung `ja` */
+export function auswerten(b: Bedingung | undefined, k: BedingungKontext): Wahrheit {
+  return hatBedingung(b) ? trifft(b, k) : 'ja';
+}
+
+/**
+ * Ist erforderlich, was an der Bedingung hängt? Ohne Bedingung: ja. Fail-safe: Hängt sie an einem nicht festgelegten
+ * Projektmerkmal (offen), gilt sie als erfüllt – nur ein sicheres „trifft nicht zu“ lässt etwas entfallen.
+ */
 export function erfuellt(b: Bedingung | undefined, k: BedingungKontext): boolean {
-  return !hatBedingung(b) || trifft(b, k);
+  return auswerten(b, k) !== 'nein';
+}
+
+/** Hängt die Bedingung an einem nicht festgelegten Projektmerkmal und ist deshalb noch offen? */
+export const istOffen = (b: Bedingung | undefined, k: BedingungKontext) => auswerten(b, k) === 'offen';
+
+/** Gesamtergebnis mehrerer Ebenen (Abschnitt, Gruppe, Feld): ein `nein` entscheidet, sonst offen vor ja */
+export function zusammenfassen(...w: Wahrheit[]): Wahrheit {
+  return w.includes('nein') ? 'nein' : w.includes('offen') ? 'offen' : 'ja';
 }
 
 /** Fehlt im Projekt ein Merkmal, von dem die Bedingung abhängt? (für den Hinweis „Gebäudeklasse festlegen“) */
@@ -195,7 +274,7 @@ function teilAus(roh: unknown, tiefe: number): BedingungTeil | null {
     return g;
   }
   if (o.art === 'merkmal' && typeof o.merkmal === 'string' && o.merkmal && Array.isArray(o.werte)) {
-    // auch ohne gewählten Wert behalten (beim Bearbeiten) – trifft dann nie zu
+    // auch ohne gewählten Wert behalten (beim Bearbeiten) – trifft dann nicht zu (ohne Wert im Projekt: offen)
     return { art: 'merkmal', merkmal: o.merkmal, werte: o.werte.filter((w): w is string => typeof w === 'string' && !!w), ...(o.nicht === true ? { nicht: true } : {}) };
   }
   if (o.art === 'feld' && typeof o.feld === 'string' && o.feld && (o.pruefung === 'ausgefuellt' || o.pruefung === 'leer' || o.pruefung === 'gleich' || o.pruefung === 'ungleich')) {

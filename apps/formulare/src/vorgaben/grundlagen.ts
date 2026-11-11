@@ -5,20 +5,56 @@
 
 import { begruendet, ist, istNicht, oder, q, wenn } from './hilfen';
 
+/**
+ * Planungsrecht (R-25): „Bebauungsplan“ ist der qualifizierte oder vorhabenbezogene (§ 30 Abs. 1, 2 BauGB). Im
+ * einfachen Bebauungsplan (§ 30 Abs. 3 BauGB) richtet sich die Zulässigkeit im Übrigen nach § 34 oder § 35 – er
+ * zählt für die Bauvorlagen sowohl als Bebauungsplan (Maß der baulichen Nutzung) als auch als Vorhaben nach den
+ * §§ 34, 35 (Auszug aus dem Liegenschaftskataster).
+ */
+export const PLANUNGSRECHT_BEBAUUNGSPLAN = ist('Planungsrecht', 'Bebauungsplan', 'einfacher Bebauungsplan', 'Satzung nach BauGB');
+/** Vorhaben nach den §§ 34 und 35 BauGB (auch im einfachen Bebauungsplan) */
+export const PLANUNGSRECHT_34_35 = ist('Planungsrecht', 'Innenbereich', 'Außenbereich', 'einfacher Bebauungsplan');
+
 /** Berechnung des Maßes der baulichen Nutzung: nur im Geltungsbereich eines Bebauungsplans */
 export const nurBebauungsplan = begruendet(
-  wenn(ist('Planungsrecht', 'Bebauungsplan')),
-  'Die Berechnung des Maßes der baulichen Nutzung gehört nur zu Vorhaben im Geltungsbereich eines Bebauungsplans (oder einer anderen Satzung nach dem BauGB).',
+  wenn(PLANUNGSRECHT_BEBAUUNGSPLAN),
+  'Die Berechnung des Maßes der baulichen Nutzung gehört nur zu Vorhaben im Geltungsbereich eines Bebauungsplans (auch eines einfachen) oder einer anderen Satzung nach dem BauGB.',
   q('baupruefvo', '3', 2),
   q('baugb', '30'),
 );
 
+const INNEN_AUSSEN_GRUND =
+  'nur bei Vorhaben nach den §§ 34 und 35 BauGB beizufügen (Innen- oder Außenbereich) oder einfacher Bebauungsplan (§ 30 Abs. 3 BauGB). „Bebauungsplan“ heißt hier qualifizierter oder vorhabenbezogener Bebauungsplan (§ 30 Abs. 1, 2 BauGB).';
+
 /** Auszug aus dem Liegenschaftskataster (Flurkarte): nur bei Vorhaben nach §§ 34, 35 BauGB */
 export const nurInnenAussen = begruendet(
-  wenn(ist('Planungsrecht', 'Innenbereich', 'Außenbereich')),
-  'Der Auszug aus dem Liegenschaftskataster ist nur bei Vorhaben nach den §§ 34 und 35 BauGB beizufügen (Innen- oder Außenbereich).',
+  wenn(PLANUNGSRECHT_34_35),
+  `Der Auszug aus dem Liegenschaftskataster ist ${INNEN_AUSSEN_GRUND}`,
   q('baupruefvo', '10', 1, undefined, 1),
   q('baupruefvo', '2'),
+  q('baugb', '30'),
+  q('baugb', '34'),
+  q('baugb', '35'),
+);
+
+/** Nr. 3 Auszug aus der Flurkarte: wie oben; entfällt bei einem amtlichen Lageplan (R-07) */
+export const nurInnenAussenFlurkarte = begruendet(
+  wenn(PLANUNGSRECHT_34_35),
+  `Der Auszug aus der Flurkarte ist ${INNEN_AUSSEN_GRUND} Er entfällt, wenn ein amtlicher Lageplan vorgelegt wird.`,
+  q('baupruefvo', '10', 1, undefined, 1),
+  q('baupruefvo', '2', 2, 3),
+  q('baugb', '30'),
+  q('baugb', '34'),
+  q('baugb', '35'),
+);
+
+/** Nr. 4 Auszug aus der amtlichen Basiskarte: nur bei Vorhaben nach §§ 34, 35 BauGB, üblich im Außenbereich (R-07) */
+export const nurInnenAussenBasiskarte = begruendet(
+  wenn(PLANUNGSRECHT_34_35),
+  `Der Auszug aus der amtlichen Basiskarte ist ${INNEN_AUSSEN_GRUND} Nach Anforderung der Bauaufsichtsbehörde, üblich im Außenbereich.`,
+  q('baupruefvo', '10', 1, undefined, 1),
+  q('baupruefvo', '2', 3),
+  q('baugb', '30'),
   q('baugb', '34'),
   q('baugb', '35'),
 );

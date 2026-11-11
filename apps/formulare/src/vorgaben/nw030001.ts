@@ -4,8 +4,9 @@
  *
  * Bedingungen nach dem Vordruck und § 68 BauO NRW 2018 (bautechnische Nachweise, siehe vordruck2018.ts):
  * - „Die Baugenehmigung wurde am … erteilt“: nicht bei der Genehmigungsfreistellung (keine Baugenehmigung).
- * - Nr. 1 Schall- und Wärmeschutz: „nicht erforderlich bei Gebäuden nach § 68 Abs. 2 oder Wohngebäuden mit bis zu
- *   zwei Wohnungen“ – entfällt beim Ein- und Zweifamilienhaus und bei Wohngebäuden der Gebäudeklassen 1 und 2.
+ * - Nr. 1 Schall- und Wärmeschutz: Der Vordruck nennt „Gebäude nach § 68 Abs. 2 oder Wohngebäude mit bis zu zwei
+ *   Wohnungen“; nach geltendem Recht (§ 68 Abs. 4 Satz 2 BauO NRW 2018) entfällt er nur bei Wohngebäuden der
+ *   Gebäudeklassen 1 und 2 – das Zweifamilienhaus der Gebäudeklasse 3 braucht ihn (R-10).
  * - Nr. 2 Standsicherheit: immer eine Angabe (qualifizierte Tragwerksplanung für Gebäude nach § 68 Absatz 2,
  *   sonst Bescheinigung oder Prüfung).
  * - Nr. 3 Brandschutz: „nicht erforderlich bei Gebäuden der Gebäudeklasse 1 bis 3“ – nur bei Gebäudeklasse 4 und 5;
@@ -16,21 +17,14 @@
 import type { FormularProfil } from '../profil';
 import { zusammen } from './antrag';
 import { anzeigeKopf, bauleitende, grundstueck, nachweise } from './vordruck2018';
-import { begruendet, gruppeV, istNicht, q, s, und, wenn, zaehltNicht } from './hilfen';
+import { begruendet, gruppeV, istNicht, q, s, wenn, zaehltNicht } from './hilfen';
 
 const s1 = s(1);
 
 export const nw030001_2021L: FormularProfil = zusammen(anzeigeKopf, grundstueck(['Memo17', 'Memo18', 'Memo19', 'Memo20', 'Memo21']), bauleitende, {
   abschnitte: {
     '0:-': { titel: 'Baubeginn und Baugenehmigung' },
-    '1:Panel1': {
-      titel: 'Nr. 1 Nachweise Schall- und Wärmeschutz',
-      bedingung: begruendet(
-        und(istNicht('Gebäudeart', 'Einfamilienhaus', 'Zweifamilienhaus'), nachweise.nichtAbsatz2Gebaeude),
-        'Laut Vordruck nicht erforderlich bei Gebäuden nach § 68 Absatz 2 (hier: Wohngebäude der Gebäudeklassen 1 und 2) und bei Wohngebäuden mit bis zu zwei Wohnungen.',
-        q('bauo-nrw', '68'),
-      ),
-    },
+    '1:Panel1': { titel: 'Nr. 1 Nachweise Schall- und Wärmeschutz', bedingung: nachweise.nichtAbsatz2Gebaeude },
     '1:Panel2': { titel: 'Nr. 2 Nachweis der Standsicherheit' },
     '1:Panel3': { titel: 'Nr. 3 Nachweis des baulichen Brandschutzes', bedingung: nachweise.brandschutz },
     '1:Panel4': { titel: 'Ort, Datum, Unterschrift' },

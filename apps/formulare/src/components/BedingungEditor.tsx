@@ -1,5 +1,5 @@
 import type { Bedingung, BedingungGruppe, BedingungKontext, BedingungTeil, FeldPruefung, Merkmal, Teilbedingung, Verknuepfung } from '../bedingung';
-import { bedingungText, blaetter, erfuellt, gruppe, hatBedingung } from '../bedingung';
+import { auswerten, bedingungText, blaetter, gruppe, hatBedingung } from '../bedingung';
 import type { Feld } from '../forma/felder';
 import { Symbol } from './Symbol';
 
@@ -87,7 +87,7 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
     );
   }
 
-  const trifftZu = kontext ? erfuellt(wurzel, kontext) : undefined;
+  const jetzt = kontext ? auswerten(wurzel, kontext) : undefined;
   return (
     <div className="bd" role="group" aria-label="Bedingung">
       <GruppeEditor
@@ -106,7 +106,11 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
           <span className="muted">Erforderlich, wenn </span>
           {bedingungText(wurzel, name)}
         </p>
-        {trifftZu !== undefined && <span className={`bd-jetzt${trifftZu ? ' an' : ''}`}>{trifftZu ? 'trifft gerade zu' : 'trifft gerade nicht zu'}</span>}
+        {jetzt !== undefined && (
+          <span className={`bd-jetzt${jetzt === 'ja' ? ' an' : ''}`}>
+            {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Projektmerkmal nicht festgelegt (gilt als erforderlich)' : 'trifft gerade nicht zu'}
+          </span>
+        )}
         <button className="small bd-weg" onClick={() => onChange(undefined)}>
           Bedingung entfernen
         </button>

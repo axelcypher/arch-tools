@@ -57,6 +57,8 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   // Felder, die nach den Bedingungen (noch) nicht erforderlich sind – im Formular neutral statt farbig, mit Hinweis warum
   const entfall = useEntfallen(offen);
   const entfallen = useMemo(() => new Set(entfall.gruende.keys()), [entfall]);
+  // offen: hängt an nicht festgelegten Projektmerkmalen – gelb, mit Hinweis
+  const offene = useMemo(() => new Set(entfall.offen.keys()), [entfall]);
 
   // Einrichten: ausgewählte Felder (direkt, über ihre Gruppe oder ihren Abschnitt) und Abschnitte je Seite
   const abschnitteJeSeite = useMemo(() => offen.felder.map((f) => abschnitte(f)), [offen.felder]);
@@ -126,16 +128,26 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
             {/* das Formular selbst wird nicht beschnitten – nur das Blatt an seinem Rand */}
             <div className="fo-satz" style={{ left: s.blatt.links, top: s.blatt.oben }}>
               {s.kaesten.map((k, n) => (
-                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel, entfallen, autofill)} gesperrt={gesperrt} />
+                <Element key={n} k={k} {...feldProps(offen, s.felder.get(k.o.name), markiert, feldTitel, entfallen, offene, autofill)} gesperrt={gesperrt} />
               ))}
               {!einrichten &&
                 offen.felder[s.i]
-                  .filter((f) => entfall.gruende.has(f.schluessel))
+                  .filter((f) => entfall.gruende.has(f.schluessel) || entfall.offen.has(f.schluessel))
                   .map((f) => {
                     const l = lage(f.kasten);
                     // Textfeld: oben rechts im Feld; Kästchen: hochgestellt rechts neben dem Kästchen
                     const ort = f.art === 'kreuz' ? { left: l.x + 12, top: l.y - 7 } : { left: l.x + l.b - 14, top: l.y + 1 };
-                    return <EntfallInfo key={f.schluessel} className="fo-el" style={ort} gruende={entfall.gruende.get(f.schluessel)!} text={entfall.text(f.schluessel)} />;
+                    const istOffen = !entfall.gruende.has(f.schluessel);
+                    return (
+                      <EntfallInfo
+                        key={f.schluessel}
+                        className="fo-el"
+                        style={ort}
+                        offen={istOffen}
+                        gruende={(istOffen ? entfall.offen : entfall.gruende).get(f.schluessel)!}
+                        text={entfall.text(f.schluessel)}
+                      />
+                    );
                   })}
               {(() => {
                 const r = umrandung(s);
@@ -292,8 +304,9 @@ function feldProps(
   markiert: Set<string>,
   titel: Record<string, string> | undefined,
   entfallen: Set<string>,
+  offene: Set<string>,
   autofill: Map<string, 'auto' | 'fixiert'>,
-): Pick<ElementProps, 'feld' | 'wert' | 'geaendert' | 'markiert' | 'titel' | 'entfaellt' | 'autofill'> {
+): Pick<ElementProps, 'feld' | 'wert' | 'geaendert' | 'markiert' | 'titel' | 'entfaellt' | 'offen' | 'autofill'> {
   return feld
     ? {
         feld,
@@ -302,6 +315,7 @@ function feldProps(
         markiert: markiert.has(feld.schluessel),
         titel: titel?.[feld.schluessel]?.trim() || feld.beschriftung,
         entfaellt: entfallen.has(feld.schluessel),
+        offen: offene.has(feld.schluessel),
         autofill: autofill.get(feld.schluessel),
       }
     : {};
@@ -316,8 +330,10 @@ interface ElementProps {
   markiert?: boolean;
   /** Titel des Felds (eigener aus dem Profil oder die erkannte Beschriftung) */
   titel?: string;
-  /** nach den Bedingungen (noch) nicht erforderlich */
+  /** nach den Bedingungen nicht erforderlich */
   entfaellt?: boolean;
+  /** hängt an nicht festgelegten Projektmerkmalen (gilt als erforderlich) */
+  offen?: boolean;
   /** Wert aus der Projektkarte (auto) bzw. von Hand überschrieben (fixiert) */
   autofill?: 'auto' | 'fixiert';
   gesperrt: boolean;
@@ -325,7 +341,7 @@ interface ElementProps {
 
 const AUTOFILL_TEXT = { auto: 'Wert aus der Projektkarte', fixiert: 'von Hand überschrieben (bleibt beim Aktualisieren)' };
 
-const Element = memo(function Element({ k, feld, wert, geaendert, markiert, titel, entfaellt, autofill, gesperrt }: ElementProps) {
+const Element = memo(function Element({ k, feld, wert, geaendert, markiert, titel, entfaellt, offen, autofill, gesperrt }: ElementProps) {
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const l = lage(k);
   const pos: CSSProperties = { left: l.x, top: l.y, width: l.b, height: l.h };
@@ -363,7 +379,7 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
       if (!feld) return null;
       return (
         <textarea
-          className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${autofill ? ` ${autofill}` : ''}`}
+          className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${offen ? ' offen' : ''}${autofill ? ` ${autofill}` : ''}`}
           style={{ ...pos, ...schrift(k), textAlign: AUSRICHTUNG[bezeichner(k.o, 'Alignment') ?? ''] }}
           value={typeof wert === 'string' ? wert : ''}
           disabled={gesperrt || feld.berechnet}
@@ -384,9 +400,9 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
       const rechts = bezeichner(k.o, 'Alignment') !== 'taLeftJustify';
       return (
         <label
-          className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${rechts ? '' : ' links'}`}
+          className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${offen ? ' offen' : ''}${rechts ? '' : ' links'}`}
           style={{ ...pos, ...schrift(k) }}
-          title={entfaellt ? `${titel} – nicht erforderlich` : titel}
+          title={entfaellt ? `${titel} – nicht erforderlich` : offen ? `${titel} – offen (hängt von Projektmerkmalen ab)` : titel}
         >
           <input
             type="checkbox"

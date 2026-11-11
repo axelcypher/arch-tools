@@ -10,11 +10,13 @@
  * statt 1/5 zählt.
  *
  * Abschnitte, Gruppen und Felder können an Bedingungen geknüpft sein (Projektmerkmal oder anderes Feld, siehe
- * bedingung.ts): Trifft die Bedingung nicht zu, entfallen sie – sie zählen nicht und sind ausgegraut.
+ * bedingung.ts): Trifft die Bedingung nicht zu, entfallen sie – sie zählen nicht und sind ausgegraut. Hängt sie an
+ * einem nicht festgelegten Projektmerkmal, sind sie **offen**: Sie zählen wie erforderliche Angaben und sind gelb
+ * gekennzeichnet, bis das Merkmal festgelegt ist (R-01).
  */
 
-import type { Bedingung, BedingungKontext } from './bedingung';
-import { bedingungAus, erfuellt } from './bedingung';
+import type { Bedingung, BedingungKontext, Wahrheit } from './bedingung';
+import { auswerten, bedingungAus, erfuellt, fehlendeMerkmale, zusammenfassen } from './bedingung';
 import type { Abschnitt, Feld } from './forma/felder';
 import { zeilen } from './forma/felder';
 import type { Formular } from './forma/formular';
@@ -90,15 +92,20 @@ export function formularKontext(merkmale: Record<string, string>, felder: Feld[]
   return { merkmale, wert: (k) => (nach.has(k) ? wert(nach.get(k)!) : undefined) };
 }
 
-/** Ist der Abschnitt erforderlich (ohne Kontext: immer)? */
+/** Ist der Abschnitt erforderlich (ohne Kontext: immer)? Offen (fehlendes Merkmal) gilt als erforderlich. */
 export const abschnittErforderlich = (a: Abschnitt, p: FormularProfil, k?: BedingungKontext) => !k || erfuellt(p.abschnitte[abschnittId(a)]?.bedingung, k);
 
-/** Ist das Feld selbst erforderlich – nach seiner eigenen Bedingung, der seiner Gruppe und seines Abschnitts? */
+/** Bedingung des Abschnitts dreiwertig (ohne Kontext: `ja`) */
+export const abschnittZustand = (a: Abschnitt, p: FormularProfil, k?: BedingungKontext): Wahrheit => (k ? auswerten(p.abschnitte[abschnittId(a)]?.bedingung, k) : 'ja');
+
+/** Feld dreiwertig: erforderlich (`ja`), entfällt (`nein`) oder offen – nach Abschnitt, Gruppe und eigener Bedingung */
+export function feldZustand(f: Feld, a: Abschnitt | undefined, p: FormularProfil, k: BedingungKontext): Wahrheit {
+  return zusammenfassen(a ? abschnittZustand(a, p, k) : 'ja', auswerten(gruppeVon(p, f.schluessel)?.bedingung, k), auswerten(p.bedingungen?.[f.schluessel], k));
+}
+
+/** Ist das Feld selbst erforderlich – nach seiner eigenen Bedingung, der seiner Gruppe und seines Abschnitts? Offen zählt als erforderlich. */
 export function feldErforderlich(f: Feld, a: Abschnitt | undefined, p: FormularProfil, k: BedingungKontext): boolean {
-  if (a && !abschnittErforderlich(a, p, k)) return false;
-  const g = gruppeVon(p, f.schluessel);
-  if (g && !erfuellt(g.bedingung, k)) return false;
-  return erfuellt(p.bedingungen?.[f.schluessel], k);
+  return feldZustand(f, a, p, k) !== 'nein';
 }
 
 /** Titel eines Felds: der eigene, sonst die erkannte Beschriftung */
@@ -150,14 +157,19 @@ export interface Einheit {
   gruppe?: Gruppe;
   /** Gruppe: ihre Teile – Felder direkt darin und Untergruppen (verschachtelt) */
   teile?: (EinheitFeld | Einheit)[];
-  /** nach den Bedingungen (noch) nicht erforderlich – zählt nicht */
+  /** nach den Bedingungen nicht erforderlich – zählt nicht */
   entfaellt?: boolean;
+  /** hängt an nicht festgelegten Projektmerkmalen – zählt wie erforderlich (R-01) */
+  offen?: boolean;
+  /** die nicht festgelegten Projektmerkmale, an denen die Einheit hängt */
+  fehlend?: string[];
 }
 
 /** Feld als Teil einer Gruppe */
 export interface EinheitFeld {
   feld: Feld;
   entfaellt?: boolean;
+  offen?: boolean;
 }
 
 /**
@@ -177,12 +189,19 @@ export function einheiten(a: Abschnitt, profil: FormularProfil, k?: BedingungKon
     const felder = a.felder.filter((f) => alle.has(f.schluessel));
     const eigene: EinheitFeld[] = a.felder
       .filter((f) => g.felder.includes(f.schluessel))
-      .map((feld) => ({ feld, ...(k && !erfuellt(profil.bedingungen?.[feld.schluessel], k) ? { entfaellt: true } : {}) }));
+      .map((feld) => {
+        const z = k ? auswerten(profil.bedingungen?.[feld.schluessel], k) : 'ja';
+        return { feld, ...(z === 'nein' ? { entfaellt: true } : z === 'offen' ? { offen: true } : {}) };
+      });
     const unter = untergruppen(profil, g.id)
       .filter((u) => u.regel !== 'nie' && !gesehen.has(u.id))
       .map((u) => gruppenEinheit(u, gesehen))
       .filter((e) => e.felder.length);
-    for (const u of unter) if (k && !erfuellt(u.gruppe!.bedingung, k)) u.entfaellt = true;
+    for (const u of unter) {
+      const z = k ? auswerten(u.gruppe!.bedingung, k) : 'ja';
+      if (z === 'nein') u.entfaellt = true;
+      else if (z === 'offen') u.offen = true;
+    }
     return { id: `g:${g.id}`, felder, art: 'gruppe', regel: g.regel === 'alle' ? 'alle' : 'eins', gruppe: g, teile: [...eigene, ...unter] };
   };
   for (const g of gruppen) {
@@ -197,8 +216,16 @@ export function einheiten(a: Abschnitt, profil: FormularProfil, k?: BedingungKon
   const erstes = (e: Einheit) => Math.min(...e.felder.map((f) => index.get(f.schluessel)!));
   if (k)
     for (const e of out) {
-      const weg = e.gruppe ? !erfuellt(e.gruppe.bedingung, k) : e.felder.every((f) => !erfuellt(profil.bedingungen?.[f.schluessel], k));
-      if (weg) e.entfaellt = true;
+      // eine Gruppe nach ihrer Bedingung; sonst entfällt die Einheit, wenn alle Felder entfallen, und ist offen, wenn
+      // keines sicher erforderlich ist, aber eines offen
+      const bedingungen = e.gruppe ? [e.gruppe.bedingung] : e.felder.map((f) => profil.bedingungen?.[f.schluessel]);
+      const z = bedingungen.map((b) => auswerten(b, k));
+      const zustand: Wahrheit = e.gruppe ? z[0] : z.includes('ja') ? 'ja' : z.includes('offen') ? 'offen' : 'nein';
+      if (zustand === 'nein') e.entfaellt = true;
+      else if (zustand === 'offen') {
+        e.offen = true;
+        e.fehlend = [...new Set(bedingungen.flatMap((b) => fehlendeMerkmale(b, k.merkmale)))];
+      }
     }
   return out.sort((x, y) => erstes(x) - erstes(y));
 }

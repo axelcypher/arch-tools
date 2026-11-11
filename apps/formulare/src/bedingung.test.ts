@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Bedingung, Teilbedingung } from './bedingung';
-import { bedingungAus, bedingungText, erfuellt, fehlendeMerkmale, gruppe, hatBedingung, merkmaleAus, nurMerkmale, VORGABE_MERKMALE } from './bedingung';
+import { auswerten, bedingungAus, bedingungText, erfuellt, fehlendeMerkmale, gruppe, hatBedingung, istOffen, merkmaleAus, nurMerkmale, VORGABE_MERKMALE } from './bedingung';
 import type { Abschnitt, Feld } from './forma/felder';
 import type { FormularProfil } from './profil';
-import { bereinigt, einheiten, feldErforderlich, formularKontext, leeresProfil } from './profil';
+import { abschnittZustand, bereinigt, einheiten, feldErforderlich, feldZustand, formularKontext, leeresProfil } from './profil';
 import { fuellstand } from './antrag';
 
 const gk345: Teilbedingung = { art: 'merkmal', merkmal: 'Gebäudeklasse', werte: ['3', '4', '5'] };
@@ -11,18 +11,35 @@ const und = (...t: Bedingung['teile']) => gruppe('und', t);
 const oder = (...t: Bedingung['teile']) => gruppe('oder', t);
 
 describe('Bedingungen', () => {
-  it('Projektmerkmal: einer der Werte bzw. keiner davon; fehlt der Wert im Projekt, trifft sie nie zu', () => {
+  it('Projektmerkmal: einer der Werte bzw. keiner davon; fehlt der Wert im Projekt, ist sie offen und gilt als erfüllt (R-01)', () => {
     expect(erfuellt(und(gk345), { merkmale: { Gebäudeklasse: '3' } })).toBe(true);
     expect(erfuellt(und(gk345), { merkmale: { Gebäudeklasse: '2' } })).toBe(false);
-    expect(erfuellt(und(gk345), { merkmale: {} })).toBe(false);
+    // Fail-safe: ein fehlendes Merkmal lässt nichts entfallen – auch nicht verneint
+    expect(erfuellt(und(gk345), { merkmale: {} })).toBe(true);
+    expect(auswerten(und(gk345), { merkmale: {} })).toBe('offen');
     const nicht: Teilbedingung = { ...gk345, nicht: true };
     expect(erfuellt(und(nicht), { merkmale: { Gebäudeklasse: '2' } })).toBe(true);
     expect(erfuellt(und(nicht), { merkmale: { Gebäudeklasse: '4' } })).toBe(false);
-    expect(erfuellt(und(nicht), { merkmale: {} })).toBe(false);
+    expect(erfuellt(und(nicht), { merkmale: {} })).toBe(true);
+    expect(istOffen(und(nicht), { merkmale: {} })).toBe(true);
+    expect(istOffen(und(nicht), { merkmale: { Gebäudeklasse: '2' } })).toBe(false);
     expect(fehlendeMerkmale(und(gk345, oder({ art: 'merkmal', merkmal: 'Sonderbau', werte: ['ja'] })), {})).toEqual(['Gebäudeklasse', 'Sonderbau']);
     expect(erfuellt(undefined, { merkmale: {} })).toBe(true);
     expect(erfuellt(und(), { merkmale: {} })).toBe(true);
     expect(hatBedingung(und(oder()))).toBe(false);
+  });
+
+  it('dreiwertig: ein sicheres Ergebnis der übrigen Teile entscheidet trotz fehlendem Merkmal', () => {
+    const kreuz: Teilbedingung = { art: 'feld', feld: '0:K', pruefung: 'ausgefuellt' };
+    const k = (an: boolean, merkmale: Record<string, string> = {}) => ({ merkmale, wert: (s: string) => (s === '0:K' ? an : undefined) });
+    // und: ein „nein“ genügt – das Feld entfällt, auch wenn die Gebäudeklasse fehlt
+    expect(auswerten(und(kreuz, gk345), k(false))).toBe('nein');
+    expect(auswerten(und(kreuz, gk345), k(true))).toBe('offen');
+    // oder: ein „ja“ genügt
+    expect(auswerten(oder(kreuz, gk345), k(true))).toBe('ja');
+    expect(auswerten(oder(kreuz, gk345), k(false))).toBe('offen');
+    expect(auswerten(oder(kreuz, gk345), k(false, { Gebäudeklasse: '1' }))).toBe('nein');
+    expect(auswerten(undefined, k(false))).toBe('ja');
   });
 
   it('Feld: angekreuzt/ausgefüllt, leer, gleich, ungleich', () => {
@@ -74,6 +91,18 @@ describe('Bedingungen', () => {
     expect(merkmaleAus([{ name: 'Gebäudeart', werte: ['Doppelhaus'] }])[0]).toEqual({ name: 'Gebäudeart', werte: ['Doppelhaus', ...VORGABE_MERKMALE.find((m) => m.name === 'Gebäudeart')!.werte] });
   });
 
+  it('Planungsrecht kennt den einfachen Bebauungsplan und Satzungen; eigene Listen bekommen die neuen Werte dazu (R-25)', () => {
+    expect(VORGABE_MERKMALE.find((m) => m.name === 'Planungsrecht')!.werte).toEqual(['Bebauungsplan', 'einfacher Bebauungsplan', 'Innenbereich', 'Außenbereich', 'Satzung nach BauGB']);
+    // eine gespeicherte Liste von früher: Werte bleiben, die neuen kommen ans Ende; „Bebauungsplan“ wird nicht umgedeutet
+    expect(merkmaleAus([{ name: 'Planungsrecht', werte: ['Bebauungsplan', 'Innenbereich', 'Außenbereich'] }])[0].werte).toEqual([
+      'Bebauungsplan',
+      'Innenbereich',
+      'Außenbereich',
+      'einfacher Bebauungsplan',
+      'Satzung nach BauGB',
+    ]);
+  });
+
   it('nur Projektmerkmale (für Dokumente des Projektumfangs)', () => {
     const feld: Teilbedingung = { art: 'feld', feld: '0:A', pruefung: 'leer' };
     expect(nurMerkmale(und(gk345, oder(feld)))).toEqual(und(gk345, oder()));
@@ -118,5 +147,27 @@ describe('Bedingungen in der Gliederung', () => {
     expect(p.abschnitte['0:-'].bedingung).toEqual(und(gk345));
     expect(p.gruppen?.[0].bedingung).toEqual(und(oder(gk345)));
     expect(p.bedingungen).toEqual(profil.bedingungen);
+  });
+
+  it('Abschnitt entfällt nur mit festgelegtem Merkmal; fehlt es, sind die Angaben offen und zählen (B-07, R-01)', () => {
+    const efh: Teilbedingung = { art: 'merkmal', merkmal: 'Gebäudeart', werte: ['Einfamilienhaus'], nicht: true };
+    // alle Felder des Abschnitts hängen an der Gebäudeart (wie nw010010 Nr. 4 Barrierefreies Bauen)
+    const p: FormularProfil = { ...leeresProfil(), bedingungen: Object.fromEntries(a.felder.map((f) => [f.schluessel, und(efh)])) };
+    const wert = (f: Feld) => (f.art === 'kreuz' ? false : '');
+    const mit = (merkmale: Record<string, string>) => einheiten(a, p, formularKontext(merkmale, a.felder, wert));
+    // festgelegt, trifft nicht zu: alle Angaben entfallen → der Abschnitt entfällt
+    expect(mit({ Gebäudeart: 'Einfamilienhaus' }).every((e) => e.entfaellt)).toBe(true);
+    // nicht festgelegt: nichts entfällt, alles ist offen und hängt an der Gebäudeart
+    const offen = mit({});
+    expect(offen.some((e) => e.entfaellt)).toBe(false);
+    expect(offen.every((e) => e.offen && e.fehlend?.includes('Gebäudeart'))).toBe(true);
+    expect(feldZustand(name, a, p, formularKontext({}, a.felder, wert))).toBe('offen');
+    expect(feldErforderlich(name, a, p, formularKontext({}, a.felder, wert))).toBe(true);
+    // festgelegt, trifft zu: erforderlich, nicht offen
+    expect(mit({ Gebäudeart: 'Mehrfamilienhaus' }).some((e) => e.offen || e.entfaellt)).toBe(false);
+    // Bedingung am Abschnitt
+    const pa: FormularProfil = { ...leeresProfil(), abschnitte: { '0:-': { bedingung: und(efh) } } };
+    expect(abschnittZustand(a, pa, formularKontext({}, a.felder, wert))).toBe('offen');
+    expect(abschnittZustand(a, pa, formularKontext({ Gebäudeart: 'Einfamilienhaus' }, a.felder, wert))).toBe('nein');
   });
 });

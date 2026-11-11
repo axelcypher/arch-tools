@@ -1806,6 +1806,8 @@ button.icon.fo-gl-zaehlt.an {
   --p-markiert: rgba(255, 196, 0, 0.5);
   --p-umrandung: #2a5bd7;
   --p-geaendert: #ff7a00;
+  /* offen: hängt an nicht festgelegten Projektmerkmalen (gilt als erforderlich) */
+  --p-offen: rgba(245, 180, 0, 0.22);
   padding: 16px 24px 48px;
   display: flex;
   flex-direction: column;
@@ -3185,10 +3187,47 @@ button.icon.fo-gl-bed.gesetzt {
   align-items: flex-start;
   gap: 4px;
 }
-/* im Formular: (noch) nicht erforderliche Felder neutral statt farbig */
+/* im Formular: nicht erforderliche Felder neutral statt farbig */
 .fo-papier .fo-memo.entfaellt,
 .fo-check.entfaellt input {
   background: rgba(0, 0, 0, 0.035);
+}
+/* offen (fehlendes Projektmerkmal): gelb statt neutral – gilt als erforderlich */
+.fo-papier .fo-memo.offen,
+.fo-check.offen input {
+  background: var(--p-offen);
+}
+.fo-feld.offen input,
+.fo-feld.offen textarea {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+}
+.fo-entfall-info.offen {
+  color: var(--warn-text);
+}
+/* Gliederung: offene Angaben (hängen an Projektmerkmalen) und freiwillige Abschnitte */
+.fo-gl-offen {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 16px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: var(--warn-text);
+  white-space: nowrap;
+}
+.fo-gl-kopf .fo-gl-offen {
+  margin-left: 6px;
+}
+.fo-gl-freiwillig {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--muted);
+  background: var(--line-soft);
 }
 .st-punkt.entfaellt {
   background: transparent;

@@ -4,8 +4,10 @@
  * Bedingungen nach dem Vordruck und § 68 BauO NRW 2018 (bautechnische Nachweise, siehe vordruck2018.ts):
  * - Gebäudeeinmessung (Auftrag an die Katasterbehörde oder Auftragsbestätigung der/des ÖbVI): eine Angabe, nur bei
  *   Errichtung oder Änderung eines Gebäudes (Einmessungspflicht nach dem Vermessungs- und Katastergesetz NRW).
- * - Nr. 1 Schall- und Wärmeschutz: „nicht erforderlich bei Gebäuden nach § 68 Abs. 2“.
- * - Nr. 2 Standsicherheit: „nicht erforderlich bei Gebäuden nach § 68“ (gemeint: Absatz 2).
+ * - Nr. 1 Schall- und Wärmeschutz: „nicht erforderlich bei Gebäuden nach § 68 Abs. 2“ – nach geltendem Recht
+ *   (§ 68 Abs. 4 Satz 2 BauO NRW 2018) nur bei Wohngebäuden der Gebäudeklassen 1 und 2 (R-10).
+ * - Nr. 2 Standsicherheit: „nicht erforderlich bei Gebäuden nach § 68“ – heute § 68 Abs. 3 Satz 5 Nr. 2 (Wohngebäude
+ *   der Gebäudeklassen 1 und 2 samt Nebengebäuden).
  * - Nr. 3 Brandschutz: „nicht erforderlich bei Gebäuden der Gebäudeklasse 1 bis 3“ – nur bei Gebäudeklasse 4 und 5;
  *   bei Sonderbauten prüft die Bauaufsichtsbehörde. Die Bitte um eine Bescheinigung über die Besichtigung ist
  *   freiwillig.

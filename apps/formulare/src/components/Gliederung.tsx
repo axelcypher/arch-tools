@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useAntrag } from '../antragStore';
 import { bedingungText, fehlendeMerkmale } from '../bedingung';
 import { useEinrichten } from '../einrichten';
 import type { Abschnitt, Feld } from '../forma/felder';
@@ -7,7 +6,8 @@ import { abschnitte } from '../forma/felder';
 import { useHervorheben } from '../markierung';
 import { springeZuFeld } from '../navigation';
 import type { Einheit, FormularProfil } from '../profil';
-import { abschnittErforderlich, abschnittId, ausgefuellt, einheiten, einheitTitel, feldTitel, formularKontext, leeresProfil, profilSchluessel } from '../profil';
+import { abschnittId, abschnittZustand, ausgefuellt, einheiten, einheitTitel, feldTitel, formularKontext, leeresProfil, profilSchluessel } from '../profil';
+import { useMerkmalWerte } from '../merkmalWerte';
 import type { OffenesFormular } from '../store';
 import { useFormulare, useProfil, wertVon } from '../store';
 import { umfangZeigen } from './Antrag';
@@ -21,10 +21,18 @@ interface Punkt {
   titel: string;
   sichtbar: boolean;
   einheiten: { einheit: Einheit; voll: boolean }[];
-  /** nach seiner Bedingung erforderlich */
+  /** nach seiner Bedingung erforderlich (auch offen) und nicht alle Angaben entfallen */
   erforderlich: boolean;
+  /** Abschnitt hängt an nicht festgelegten Projektmerkmalen */
+  abschnittOffen: boolean;
+  /** keine zählenden Angaben (alle „zählt nicht“) */
+  freiwillig: boolean;
   gesamt: number;
   gefuellt: number;
+  /** nicht ausgefüllte Angaben, die an nicht festgelegten Projektmerkmalen hängen (zählen in `gesamt` mit) */
+  offen: number;
+  /** die Merkmale, an denen die offenen Angaben hängen */
+  fehlend: string[];
   geaendert: boolean;
 }
 
@@ -42,9 +50,9 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
   const profil: FormularProfil = useMemo(() => ({ ...leeresProfil(), ...wirksames }), [wirksames]);
   const anpassen = useEinrichten((s) => s.aktiv);
   const [offeneAbschnitte, setOffeneAbschnitte] = useState<Set<string>>(() => new Set());
-  const merkmalWerte = useAntrag((s) => s.projektdatei?.merkmale);
+  const merkmalWerte = useMerkmalWerte(offen);
   const hervor = useHervorheben();
-  const k = useMemo(() => formularKontext(merkmalWerte ?? {}, offen.felder.flat(), (f) => wertVon(offen, f)), [merkmalWerte, offen]);
+  const k = useMemo(() => formularKontext(merkmalWerte, offen.felder.flat(), (f) => wertVon(offen, f)), [merkmalWerte, offen]);
 
   const seiten = useMemo(
     () =>
@@ -54,9 +62,13 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
           const id = abschnittId(a);
           const p = profil.abschnitte[id];
           const erkannt = a.titel || a.felder[0].beschriftung;
-          const erforderlich = abschnittErforderlich(a, profil, k);
+          const zustand = abschnittZustand(a, profil, k);
           const e = einheiten(a, profil, k).map((einheit) => ({ einheit, voll: ausgefuellt(einheit, (f) => wertVon(offen, f)) }));
-          const zaehlen = erforderlich ? e.filter((x) => !x.einheit.entfaellt) : [];
+          const zaehlen = zustand !== 'nein' ? e.filter((x) => !x.einheit.entfaellt) : [];
+          // entfällt: Bedingung des Abschnitts trifft sicher nicht zu oder alle Angaben entfallen (B-07)
+          const erforderlich = zustand !== 'nein' && (zaehlen.length > 0 || !e.length);
+          const abschnittOffen = zustand === 'offen';
+          const offeneEinheiten = zaehlen.filter((x) => !x.voll && (abschnittOffen || x.einheit.offen));
           return {
             id,
             abschnitt: a,
@@ -65,8 +77,14 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
             sichtbar: p?.sichtbar !== false,
             einheiten: e,
             erforderlich,
+            abschnittOffen,
+            freiwillig: erforderlich && !e.length,
             gesamt: zaehlen.length,
             gefuellt: zaehlen.filter((x) => x.voll).length,
+            offen: offeneEinheiten.length,
+            fehlend: [
+              ...new Set([...(abschnittOffen ? fehlendeMerkmale(p?.bedingung, k.merkmale) : []), ...offeneEinheiten.flatMap((x) => x.einheit.fehlend ?? [])]),
+            ],
             geaendert: a.felder.some((f) => f.schluessel in offen.aenderungen),
           };
         }),
@@ -84,7 +102,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
   const fehlend = [
     ...new Set(
       [...Object.values(profil.abschnitte).map((a) => a.bedingung), ...(profil.gruppen ?? []).map((g) => g.bedingung), ...Object.values(profil.bedingungen ?? {})].flatMap((b) =>
-        fehlendeMerkmale(b, merkmalWerte ?? {}),
+        fehlendeMerkmale(b, merkmalWerte),
       ),
     ),
   ];
@@ -92,6 +110,8 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
   const sichtbare = seiten.flatMap((s) => s.punkte.filter((p) => p.sichtbar && p.erforderlich));
   const gesamt = sichtbare.reduce((n, p) => n + p.gesamt, 0);
   const gefuellt = sichtbare.reduce((n, p) => n + p.gefuellt, 0);
+  // offene Angaben zählen wie erforderliche – kein voller Balken, solange etwas offen ist
+  const ungeklaert = sichtbare.reduce((n, p) => n + p.offen, 0);
 
   const umschalten = (id: string) =>
     setOffeneAbschnitte((s) => {
@@ -113,6 +133,11 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
               <span style={{ width: `${gesamt ? Math.round((gefuellt / gesamt) * 100) : 0}%` }} />
             </span>
             {gefuellt} von {gesamt}
+            {ungeklaert > 0 && (
+              <span className="fo-gl-offen" title="Diese Angaben hängen an Projektmerkmalen, die noch nicht festgelegt sind – sie zählen wie erforderliche Angaben.">
+                {ungeklaert} offen (hängt von Merkmalen ab)
+              </span>
+            )}
           </span>
         </div>
         <div className="fo-gl-kopf-knoepfe">
@@ -152,7 +177,13 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                   <div className="fo-gl-zeile">
                     <button
                       className="fo-gl-abschnitt"
-                      title={p.erforderlich ? p.titel : `${p.titel} – entfällt: nur wenn ${bedingungText(profil.abschnitte[p.id]?.bedingung, name)}`}
+                      title={
+                        p.erforderlich
+                          ? p.titel
+                          : profil.abschnitte[p.id]?.bedingung && abschnittZustand(p.abschnitt, profil, k) === 'nein'
+                            ? `${p.titel} – entfällt: nur wenn ${bedingungText(profil.abschnitte[p.id]?.bedingung, name)}`
+                            : `${p.titel} – entfällt: keine der Angaben ist erforderlich`
+                      }
                       onClick={() => springeZuFeld(p.abschnitt.felder[0].schluessel)}
                       {...hervor({ felder: schluesselVon(p.abschnitt.felder) })}
                     >
@@ -160,7 +191,22 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                         {p.titel}
                         {p.geaendert && <span className="fo-ungespeichert"> ●</span>}
                       </span>
-                      {p.erforderlich ? <Zahl punkt={p} /> : <span className="fo-gl-entfaellt">entfällt</span>}
+                      {!p.erforderlich ? (
+                        <span className="fo-gl-entfaellt">entfällt</span>
+                      ) : p.freiwillig ? (
+                        <span className="fo-gl-freiwillig" title="Zählt nicht für den Füllstand (freiwillig oder von der Behörde auszufüllen)">
+                          freiwillig
+                        </span>
+                      ) : (
+                        <>
+                          <Zahl punkt={p} />
+                          {p.offen > 0 && (
+                            <span className="fo-gl-offen" title={`${p.offen} offen – hängt ab von: ${p.fehlend.join(', ')} (nicht festgelegt)`}>
+                              {p.abschnittOffen && p.offen === p.gesamt - p.gefuellt ? 'offen' : `${p.offen} offen`}
+                            </span>
+                          )}
+                        </>
+                      )}
                     </button>
                     {p.einheiten.length > 1 ? (
                       <button
@@ -181,17 +227,20 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                       {p.einheiten.map(({ einheit: e, voll }) => {
                         const titel = einheitTitel(e, profil);
                         const weg = !p.erforderlich || !!e.entfaellt;
+                        const ungeklaert = !weg && !voll && (p.abschnittOffen || !!e.offen);
                         return (
                           <button
                             key={e.id}
-                            className={`fo-gl-einheit${weg ? ' entfaellt' : ''}`}
-                            title={weg ? `${titel} – entfällt (Bedingung trifft nicht zu)` : titel}
+                            className={`fo-gl-einheit${weg ? ' entfaellt' : ''}${ungeklaert ? ' offen' : ''}`}
+                            title={weg ? `${titel} – entfällt (Bedingung trifft nicht zu)` : ungeklaert ? `${titel} – offen, hängt ab von: ${(e.fehlend ?? p.fehlend).join(', ')}` : titel}
                             onClick={() => springeZuFeld(e.felder[0].schluessel)}
                             {...hervor({ felder: schluesselVon(e.felder) })}
                           >
                             <span className="fo-gl-titel">{titel}</span>
                             {weg ? (
                               <span className="fo-gl-entfaellt">entfällt</span>
+                            ) : ungeklaert ? (
+                              <span className="fo-gl-offen">offen</span>
                             ) : (
                               <span className={`fo-gl-status${voll ? ' voll' : ''}`} aria-label={voll ? 'ausgefüllt' : 'offen'}>
                                 {voll ? '✓' : ''}

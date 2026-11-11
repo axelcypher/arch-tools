@@ -383,31 +383,46 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
   const GK345 = { art: 'gruppe' as const, op: 'und' as const, teile: [{ art: 'merkmal' as const, merkmal: 'Gebäudeklasse', werte: ['3', '4', '5'] }] };
   const gl = (host: Element) => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
 
-  it('ein Abschnitt nur bei Gebäudeklasse 3–5: entfällt, bis das Projekt GK 3 ist – das Merkmal gilt für alle Formulare', async () => {
+  it('ein Abschnitt nur bei Gebäudeklasse 3–5: offen, solange die Gebäudeklasse fehlt; entfällt bei GK 1 – das Merkmal gilt für alle Formulare', async () => {
     useFormulare.getState().profilSetzen('nw019999|2026A', { abschnitte: { '0:Panel1': { bedingung: GK345 } }, zaehlt: {} });
     const host = await projektBS9();
     await klick(knopf(host, '001-Muster'));
-    expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')?.textContent).toContain('entfällt');
-    expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('0 von 0');
+    // ohne Gebäudeklasse entfällt nichts (R-01): der Abschnitt zählt, die leeren Angaben sind offen
+    expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')).toBeNull();
+    expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
+    expect(gl(host).querySelector('.fo-gl-punkt .fo-gl-offen')!.getAttribute('title')).toContain('hängt ab von: Gebäudeklasse (nicht festgelegt)');
+    expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('3 von 5');
+    expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('2 offen (hängt von Merkmalen ab)');
     expect(gl(host).querySelector('.fo-gl-merkmal')!.textContent).toContain('Gebäudeklasse');
+    // am Feld: gelb mit Hinweis „Offen“, nicht „Entfällt“
+    expect(host.querySelector('.fo-papier [data-feld="0:Memo2"]')!.classList.contains('offen')).toBe(true);
+    const info = host.querySelector<HTMLButtonElement>('.fo-papier .fo-entfall-info.offen')!;
+    expect(info.getAttribute('aria-label')).toMatch(/^Offen – hängt ab von: Gebäudeklasse \(nicht festgelegt\)/);
 
     // „Festlegen …“ führt zu den Projektmerkmalen im Projektumfang
     await klick(knopf(gl(host) as HTMLElement, 'Festlegen'));
     await warte();
     const gk = host.querySelector<HTMLSelectElement>('select[aria-label="Gebäudeklasse"]')!;
     act(() => {
-      gk.value = '3';
+      gk.value = '1';
       gk.dispatchEvent(new Event('change', { bubbles: true }));
     });
     await warte();
     // Projektmerkmale gehören zum Projekt: meta.merkmale (für alle Apps), nicht der Abschnitt „formulare“
-    expect(readProjectFile(ds.dateien.get(OAP)!).meta.merkmale).toEqual({ Gebäudeklasse: '3' });
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.merkmale).toEqual({ Gebäudeklasse: '1' });
     expect(abschnitt()?.merkmale).toBeUndefined();
 
     await klick(knopf(host, '001-Muster'));
+    expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')?.textContent).toContain('entfällt');
+    expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('0 von 0');
+    expect(gl(host).querySelector('.fo-gl-merkmal')).toBeNull();
+    expect(gl(host).querySelector('.fo-gl-offen')).toBeNull();
+
+    await act(() => useAntrag.getState().merkmalSetzen('Gebäudeklasse', '3'));
+    await warte();
     expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')).toBeNull();
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
-    expect(gl(host).querySelector('.fo-gl-merkmal')).toBeNull();
+    expect(gl(host).querySelector('.fo-gl-offen')).toBeNull();
   });
 
   it('Bedingung zusammenstellen: Projektmerkmal UND (Feld per Klick im Formular ODER anderes Merkmal) – in Worten und mit Zustand', async () => {
@@ -459,7 +474,8 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
       ],
     });
     expect(panel().querySelector('.bd-satz')!.textContent).toBe('Erforderlich, wenn Gebäudeklasse 4 oder 5 und (Sonderbau ja oder Verfahren Baugenehmigungsverfahren)');
-    expect(panel().querySelector('.bd-jetzt')!.textContent).toBe('trifft gerade nicht zu');
+    // die Merkmale fehlen im Projekt: offen, gilt als erforderlich (R-01)
+    expect(panel().querySelector('.bd-jetzt')!.textContent).toBe('offen – Projektmerkmal nicht festgelegt (gilt als erforderlich)');
 
     // ein Feld durch Klick ins Formular wählen: Bedingung für das Feld Memo2 – „wenn Sonderbau (Kästchen) angekreuzt“
     await klick(host.querySelector<HTMLButtonElement>('.fo-ein-feld[data-ein="0:Memo2"]')!);
@@ -526,10 +542,14 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
     expect(info()).toBeNull();
   });
 
-  it('Dokumente des Projektumfangs mit Bedingung: entfallen bei GK 1, fehlen bei GK 3', async () => {
+  it('Dokumente des Projektumfangs mit Bedingung: fehlen ohne Gebäudeklasse, entfallen bei GK 1, fehlen bei GK 3', async () => {
     const host = await projektBS9();
-    await useAntrag.getState().merkmalSetzen('Gebäudeklasse', '1');
     await useAntrag.getState().umfangSetzen([{ id: 'bauantrag', titel: 'Bauantrag', art: 'intern', formular: 'Bauantrag', bedingung: GK345 }]);
+    await warte();
+    // fehlendes Merkmal: nie „nicht erforderlich“ (R-01)
+    expect(useAntrag.getState().dokumente[0].status).not.toBe('entfaellt');
+    expect(useAntrag.getState().dokumente[0].status).toBe('fehlt');
+    await useAntrag.getState().merkmalSetzen('Gebäudeklasse', '1');
     await warte();
     expect(useAntrag.getState().dokumente[0].status).toBe('entfaellt');
     expect(host.querySelector('.nav-eintrag.fehlt')).toBeNull();

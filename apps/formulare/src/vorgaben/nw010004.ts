@@ -13,7 +13,8 @@
 
 import type { FormularProfil } from '../profil';
 import { zusammen } from './antrag';
-import { begruendet, gruppeV, ist, q, s, wenn, zaehltNicht } from './hilfen';
+import { PLANUNGSRECHT_34_35 } from './grundlagen';
+import { begruendet, gruppeV, q, s, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
 
@@ -75,10 +76,11 @@ export const nw010004_2026C: FormularProfil = zusammen({
   ],
   bedingungen: {
     '0:CheckBox1': begruendet(
-      wenn(ist('Planungsrecht', 'Innenbereich', 'Außenbereich')),
-      'Bei einer Nutzungsänderung gehört der Auszug aus dem Liegenschaftskataster nur zu Vorhaben nach den §§ 34 und 35 BauGB.',
+      wenn(PLANUNGSRECHT_34_35),
+      'Bei einer Nutzungsänderung gehört der Auszug aus dem Liegenschaftskataster nur zu Vorhaben nach den §§ 34 und 35 BauGB (auch im einfachen Bebauungsplan, § 30 Abs. 3 BauGB).',
       q('baupruefvo', '10', 3),
       q('baupruefvo', '10', 1, undefined, 1),
+      q('baugb', '30'),
     ),
   },
 });

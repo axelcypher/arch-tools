@@ -13,8 +13,9 @@
  * - Nr. 3 Flurkarte und Nr. 4 Basiskarte: „nur bei Vorhaben nach den §§ 34 oder 35 des BauGB“.
  * - Nr. 6 Baubeschreibung: entfällt beim Einfamilienhaus (wie Fassung 2026).
  * - Nr. 7.1 bis 7.3 Kosten: eine Angabe; die Herstellungssumme nur, wenn 7.3 angekreuzt ist.
- * - Nr. 8 und 9 „Zusätzliche Bauvorlagen für Sonderbauten“: nur bei Sonderbauten (Merkmal oder angekreuzt);
- *   die Betriebsbeschreibung nur für Nichtwohngebäude (wie Fassung 2026).
+ * - Nr. 8 und 9 „Zusätzliche Bauvorlagen für Sonderbauten“: nur bei Sonderbauten (Merkmal oder angekreuzt); die
+ *   Betriebsbeschreibung aber bei jedem gewerblichen oder landwirtschaftlichen Betrieb (Nichtwohngebäude, § 10 Abs. 1
+ *   Satz 1 Nr. 4 BauPrüfVO), auch ohne Sonderbau (wie Fassung 2026).
  * - Nr. 10 Bescheinigung zum Brandschutz nach dem Wortlaut: „Wohngebäude der Gebäudeklasse 4 und 5,
  *   Nicht-Wohngebäude der Gebäudeklasse 3 bis 5“ (Garagen über 100 m² bis 1.000 m²: kein Merkmal dafür).
  *   Nr. 10 oder Nr. 14 (Erklärung der/des Entwurfsverfassenden): eine Angabe (wie Fassung 2026).
@@ -30,7 +31,7 @@
 
 import type { Teilbedingung } from '../bedingung';
 import type { FormularProfil } from '../profil';
-import { brandschutzBescheinigung, keinEinfamilienhaus, nurBebauungsplan, nurInnenAussen } from './grundlagen';
+import { brandschutzBescheinigung, keinEinfamilienhaus, nurBebauungsplan, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte } from './grundlagen';
 import { angekreuzt, begruendet, fuer, gruppeV, ist, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
@@ -127,7 +128,7 @@ export const nw010002_2024D: FormularProfil = {
     // Blatt 2
     '1:CheckBox1': 'Nr. 1 Lageplan / amtlicher Lageplan (3-fach)',
     '1:CheckBox2': 'Nr. 2 Berechnung des Maßes der baulichen Nutzung (3-fach)',
-    '1:CheckBox3': 'Nr. 3 Beglaubigter Auszug aus der Flurkarte (3-fach)',
+    '1:CheckBox3': 'Nr. 3 Beglaubigter Auszug aus der Flurkarte (3-fach) – entfällt bei amtlichem Lageplan (§ 2 Absatz 2 Satz 3 BauPrüfVO)',
     '1:CheckBox4': 'Nr. 4 Auszug aus der amtlichen Basiskarte 1:5000 (3-fach)',
     '1:CheckBox5': 'Nr. 5 Bauzeichnungen (3-fach)',
     '1:CheckBox6': 'Nr. 6 Baubeschreibung auf amtlichem Vordruck (3-fach)',
@@ -183,13 +184,14 @@ export const nw010002_2024D: FormularProfil = {
     ...fuer(s0('Memo41', 'Memo42', 'Memo43', 'Memo44'), wenn(angekreuzt('0:CheckBox19'))),
     // Bauvorlagen
     '1:CheckBox2': nurBebauungsplan,
-    '1:CheckBox3': nurInnenAussen,
-    '1:CheckBox4': nurInnenAussen,
+    '1:CheckBox3': nurInnenAussenFlurkarte,
+    '1:CheckBox4': nurInnenAussenBasiskarte,
     '1:CheckBox6': keinEinfamilienhaus,
     '1:Memo1': wenn(angekreuzt('1:CheckBox9')),
     '1:CheckBox10': begruendet(
-      und(sonderbau, ist('Gebäudeart', 'Nichtwohngebäude')),
-      'Die Betriebsbeschreibung gehört laut Vordruck zu Sonderbauten, und nur bei gewerblichen oder landwirtschaftlichen Betrieben.',
+      wenn(ist('Gebäudeart', 'Nichtwohngebäude')),
+      'Die Betriebsbeschreibung gehört zu jedem gewerblichen oder landwirtschaftlichen Betrieb – nicht nur zu Sonderbauten (der Vordruck führt sie unter den Sonderbauten auf). Bei Wohngebäuden mit gewerblicher Einheit und bei gewerblichen Anlagen ohne Gebäude selbst prüfen.',
+      q('baupruefvo', '10', 1, 1, 4),
       q('baupruefvo', '5', 2),
       q('baupruefvo', '5', 3),
     ),

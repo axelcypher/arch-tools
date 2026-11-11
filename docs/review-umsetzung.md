@@ -63,18 +63,34 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
   über Hintergrund und Rand
 - [x] **B-06** Fehlgeschlagenes Öffnen schließt das geöffnete Formular – FO 0.19.0 (mit Q-6): erst lesen und prüfen,
   dann schließen; gilt für „Formular öffnen …“ und den Projekteintrag
-- [ ] **B-07** Abschnitt ohne Kennzeichnung, obwohl alle Felder entfallen
+- [x] **B-07** Abschnitt ohne Kennzeichnung, obwohl alle Felder entfallen – FO 0.23.0 (mit R-01, davon abhängig):
+  „entfällt“, wenn die Abschnittsbedingung sicher nicht zutrifft oder alle zählenden Angaben entfallen (dreiwertig: nie
+  wegen eines fehlenden Merkmals); hängt es an fehlenden Merkmalen, gelb „n offen“ bzw. „offen“ mit „hängt ab von: …“;
+  Abschnitte ohne zählende Angaben „freiwillig“. Abweichung: mit Block B statt im Patch-Release, weil es R-01 voraussetzt
 - [x] **B-08** Verlauf passt in der Web-Version nicht zum Dateistand – FO 0.21.1: Abgleich beim Öffnen
   (`abgleichen` in `verlauf.ts`), nicht passende Schritte unter „Frühere Sitzung – nicht in dieser Datei“ (nur
   Ansicht); Meldung „heruntergeladen als … – bitte die neue Datei weiterverwenden“
-- [ ] **R-01 / U-01** Fehlendes Projektmerkmal darf Pflichtfelder nicht entfallen lassen
-- [ ] **R-03** nw010005: Erklärung zum Brandschutz
-- [ ] **R-04** nw010002: Betriebsbeschreibung
-- [ ] **R-06** nw010002 Nr. 11: Sonderbau GK 4/5
-- [ ] **R-07** Nr. 4 Amtliche Basiskarte
-- [ ] **R-08** nw010001: Barrierefrei-Konzept
-- [ ] **R-10** Anzeigen (Fassung 2018): § 68
-- [ ] **R-25** Merkmal „Planungsrecht“: einfacher Bebauungsplan
+- [x] **R-01 / U-01** Fehlendes Projektmerkmal darf Pflichtfelder nicht entfallen lassen – FO 0.23.0: dreiwertige
+  Auswertung (`auswerten`: ja/nein/offen, Kleene-Logik) in `bedingung.ts`, `erfuellt` fail-safe; offene Felder zählen
+  wie erforderliche, gelb am Feld und in der Gliederung („n offen (hängt von Merkmalen ab)“), Hinweis „Offen – hängt
+  ab von: … (nicht festgelegt)“ statt „Entfällt“ (`offenGruende`); Projektumfang nie „nicht erforderlich“ bei fehlendem
+  Merkmal; Bedingungs-Editor zeigt „offen“; Fallmatrix in `vorgaben.test.ts`
+- [x] **R-03** nw010005: Erklärung zum Brandschutz – FO 0.23.0: Nr. 6 bei „ja“ oder GK 1/2 (Merkmal oder Kästchen),
+  Grund und Quellen wie vorgegeben; der Plausibilitätshinweis „Sonderbau“ folgt mit U-04
+- [x] **R-04** nw010002: Betriebsbeschreibung – FO 0.23.0: Bedingung vom Abschnitt auf die Felder (Nr. 8 bei
+  Nichtwohngebäude, Nr. 9 bei Sonderbau), 2024D ohne Sonderbau
+- [x] **R-06** nw010002 Nr. 11: Sonderbau GK 4/5 – FO 0.23.0: 11.1 bei GK 1–3 ohne Sonderbau, Gruppe nur ohne
+  Sonderbau, Hinweis auf § 9 BauPrüfVO an Nr. 9
+- [x] **R-07** Nr. 4 Amtliche Basiskarte – FO 0.23.0: nur nach §§ 34/35 BauGB (nw010001, nw010002, 2024D einheitlich),
+  Grund „nach Anforderung der Bauaufsichtsbehörde, üblich im Außenbereich“; Titel Nr. 3 mit Hinweis auf den amtlichen
+  Lageplan (Quelle § 2 Abs. 2 Satz 3 BauPrüfVO an der Bedingung)
+- [x] **R-08** nw010001: Barrierefrei-Konzept – FO 0.23.0: zählt, erforderlich bei Vorhaben „Errichtung“
+- [x] **R-10** Anzeigen (Fassung 2018): § 68 – FO 0.23.0: Schall/Wärme nur Wohngebäude GK 1/2 (§ 68 Abs. 4 Satz 2),
+  Standsicherheit § 68 Abs. 3 Satz 5 Nr. 2, Brandschutz-Grund mit Abs. 2 Satz 2, 3, 5. Die Bedingung beim Brandschutz
+  bleibt (Mittel- und Großgaragen kennt die App nicht als Merkmal; im Grund genannt)
+- [x] **R-25** Merkmal „Planungsrecht“: einfacher Bebauungsplan – FO 0.23.0: neue Werte „einfacher Bebauungsplan“,
+  „Satzung nach BauGB“; Erklärungen je Wert (`MERKMAL_ERKLAERUNG`, im Projektumfang angezeigt); auch nw010004
+  (Flurkarte bei Nutzungsänderung) zählt den einfachen Bebauungsplan mit
 - [ ] **U-02** Projektmerkmale direkt im Formular festlegen
 - [ ] **U-03** Prüfliste „Was fehlt noch?“
 - [ ] **U-04** Plausibilität: widersprüchliche Kreuze

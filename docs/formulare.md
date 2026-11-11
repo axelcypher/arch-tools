@@ -64,9 +64,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 
   | Formulare | Was die Vorgabe schaltet |
   |---|---|
-  | Bauanträge I/1, I/2 (auch Stand 2024D), I/3 | Unterlagen nur beim Bauantrag; Maß der baulichen Nutzung nur mit Bebauungsplan, Flurkarte nur nach §§ 34/35 BauGB, Baubeschreibung nicht beim Einfamilienhaus, eine Kostenangabe; Vorbescheid-Teil nur beim Vorbescheid; I/3 „ja“ → Nr. 2 bis 6, „nein“ → Nr. 1, 4, 5 |
+  | Bauanträge I/1, I/2 (auch Stand 2024D), I/3 | Unterlagen nur beim Bauantrag; Maß der baulichen Nutzung nur mit Bebauungsplan (auch einfachem) oder Satzung, Flurkarte und Basiskarte nur nach §§ 34/35 BauGB (auch im einfachen Bebauungsplan), Baubeschreibung nicht beim Einfamilienhaus, eine Kostenangabe; Betriebsbeschreibung bei jedem Nichtwohngebäude (nicht nur bei Sonderbauten), Nr. 9 nur bei Sonderbauten; Nr. 11 Brandschutz: Erklärung bei GK 1–3, Bescheinigung bei GK 4/5, beim Sonderbau keins von beiden; I/1 Barrierefrei-Konzept bei der Errichtung; Vorbescheid-Teil nur beim Vorbescheid; I/3 „ja“ → Nr. 2 bis 6, „nein“ → Nr. 1, 4, 5, Nr. 6 Erklärung zum Brandschutz bei GK 1/2 immer |
   | Baubeschreibung I/7 | Nr. 8 bis 10 nicht im vereinfachten Verfahren; Nr. 11 nur bei Ortssatzung/Denkmalschutz |
-  | Anzeigen (Baubeginn, Rohbau, Fertigstellung), I/2.1, I/6 | Nachweise nach § 68 BauO NRW 2018 nur, wo der Vordruck sie an Gebäudeklasse/Gebäudeart knüpft; Baugenehmigungsdatum nicht bei Freistellung |
+  | Anzeigen (Baubeginn, Rohbau, Fertigstellung), I/2.1, I/6 | Nachweise nach § 68 BauO NRW 2018 (Fassung ab 01.09.2026, nicht nach der alten Gliederung des Vordrucks): Schall-/Wärmeschutz und Standsicherheit entfallen nur bei Wohngebäuden der GK 1 und 2, Brandschutz bei GK 4/5 und Sonderbauten; Baugenehmigungsdatum nicht bei Freistellung |
   | Werbeanlage I/4, Teilung I/5, Beseitigung I/6.1, Abweichung I/10 und 2018 | Auswahlen, Detailangaben nur beim angekreuzten Kästchen, Bindungen nur wenn vorhanden |
   | Betriebsbeschreibungen I/8, I/9, Artenschutzprüfung | ja/nein-Fragen als Auswahl, Detailangaben nur bei „ja“ bzw. wenn Werte eingetragen sind |
   | Statistikbögen | Neubau-/Bestandsteile und Wohn-/Nichtwohnangaben nach den Kästchen des Bogens; Ziffernkästchen als eine Angabe; Behördenfelder zählen nicht |
@@ -77,8 +77,17 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   und Unterschriftsfelder zählen nicht, bei Telefon/Telefax/E-Mail genügt eine Angabe. Bedingungen gibt es nur, wo der
   Vordruck oder BauO NRW/BauPrüfVO sie hergeben – im Zweifel keine. `vorgaben.test.ts` prüft gegen die echten
   Formulare unter `.ref/`, dass jeder Schlüssel existiert und dass jedes Formular dort eine Vorgabe hat.
-- **Warum entfällt ein Feld?** Entfällt ein Feld nach den Bedingungen, steht daran ein Info-Symbol (in der
-  Formular- und der Feldansicht). Zeigen nennt den Grund: die Begründung der Vorgabe, die Bedingung in Worten, noch
+- **Erforderlich, entfällt, offen:** Eine Bedingung kann zutreffen (erforderlich), sicher nicht zutreffen (entfällt)
+  oder **offen** sein, weil sie an einem Projektmerkmal hängt, das noch nicht festgelegt ist. Ein fehlendes Merkmal
+  lässt nichts entfallen (Fail-safe, `bedingung.ts`: dreiwertige Auswertung; ein sicheres „nein“ der übrigen Teile
+  entscheidet trotzdem). Offene Angaben zählen im Füllstand wie erforderliche; Gliederung und Kopf zeigen sie
+  zusätzlich gelb („2 offen (hängt von Merkmalen ab)“), ✓ und voller Balken erscheinen erst, wenn nichts mehr fehlt.
+  Am Feld sind sie gelb hinterlegt, das Info-Symbol sagt „Offen – hängt ab von: Gebäudeart (nicht festgelegt)“ /
+  „Erforderlich, bis Gebäudeart festgelegt ist.“ Im Projektumfang bekommen Dokumente mit fehlendem Merkmal den normalen
+  Status, nie „nicht erforderlich“. Ein Abschnitt heißt „entfällt“, wenn seine Bedingung sicher nicht zutrifft oder
+  alle seine zählenden Angaben entfallen; Abschnitte ganz ohne zählende Angaben heißen „freiwillig“.
+- **Warum entfällt ein Feld?** Entfällt ein Feld nach den Bedingungen (oder ist es offen), steht daran ein Info-Symbol
+  (in der Formular- und der Feldansicht). Zeigen nennt den Grund: die Begründung der Vorgabe, die Bedingung in Worten, noch
   nicht festgelegte Projektmerkmale und die Rechtsgrundlage. Ein Klick öffnet den **Gesetzestext** als Fenster in der
   App – der Paragraf mit dem zitierten Absatz hervorgehoben, darunter „Im Original öffnen“. Die Texte liefert die App
   mit (amtliche Fassungen, lesbar ohne Netz): BauO NRW 2018 (gültig ab 01.09.2026) und BauPrüfVO (gültig ab
@@ -86,11 +95,17 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   gesetze-im-internet.de. Neue Fassungen holt `node apps/formulare/scripts/recht-holen.mjs` (URL im Skript anpassen);
   die Daten liegen in `src/recht/daten/`. In Vorgaben trägt eine Bedingung Begründung und Fundstellen
   (`begruendet(bedingung, 'Grund', q('bauo-nrw', '68', 2, 3))`, gemeinsame in `vorgaben/grundlagen.ts`);
-  `vorgaben.test.ts` prüft, dass es jede Fundstelle samt Absatz im Text gibt. Eigene Bedingungen zeigen die
+  `vorgaben.test.ts` prüft, dass es jede Fundstelle samt Absatz (und Nummer) im Text gibt, und enthält eine
+  **Fallmatrix** (Vordruck × Gebäudeklasse × Gebäudeart × Sonderbau × Vorhaben × Planungsrecht, auch „nicht
+  festgelegt“ → erforderlich/entfällt/offen) für die Pflichtvorlagen. Eigene Bedingungen zeigen die
   Bedingung in Worten, ohne Gesetzestext.
 - **Projektmerkmale der App:** Gebäudeklasse, Sonderbau, Verfahren, **Gebäudeart** (Einfamilienhaus,
   Zweifamilienhaus, Mehrfamilienhaus, Nichtwohngebäude, kein Gebäude), **Vorhaben** (Errichtung, Änderung,
-  Nutzungsänderung, Beseitigung) und **Planungsrecht** (Bebauungsplan, Innenbereich, Außenbereich). Die Vorgaben
+  Nutzungsänderung, Beseitigung) und **Planungsrecht** (Bebauungsplan = qualifiziert oder vorhabenbezogen nach § 30
+  Abs. 1, 2 BauGB, einfacher Bebauungsplan nach § 30 Abs. 3 BauGB, Innenbereich, Außenbereich, Satzung nach BauGB). Der
+  einfache Bebauungsplan zählt für die Bauvorlagen als Bebauungsplan (Maß der baulichen Nutzung) und als Vorhaben nach
+  §§ 34/35 (Flurkarte, Basiskarte). Ein gespeichertes „Bebauungsplan“ wird nicht umgedeutet; Projektumfang und
+  Hinweise erklären die Werte (`MERKMAL_ERKLAERUNG` in `bedingung.ts`). Die Vorgaben
   bauen darauf auf; sie bleiben deshalb auch in einer eigenen Merkmalliste (fehlende werden ergänzt, auch fehlende
   Werte) und lassen sich weder umbenennen noch entfernen. Eigene Merkmale und Werte kommen dazu.
 - **Felder ohne Rahmen** bilden je Seite einen Abschnitt (Kennung `<Seite>:-`), auch wenn Rahmen dazwischen liegen.
@@ -123,7 +138,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   die Bedingung in Worten und ob sie gerade zutrifft. Trifft sie nicht zu, **entfällt** der Eintrag: Er zählt nicht,
   ist in der Gliederung durchgestrichen bzw. „entfällt“, seine Felder sind im Formular neutral statt blau
   hinterlegt; in Gruppen zählen entfallene Teile nicht mit. Fehlt im Projekt ein Merkmal, von dem eine Bedingung
-  abhängt, weist die Gliederung darauf hin („Festlegen …“). Bedingungen aus früheren Versionen (eine Liste, alle
+  abhängt, ist der Eintrag offen (siehe oben), und die Gliederung weist darauf hin („Festlegen …“). Bedingungen aus früheren Versionen (eine Liste, alle
   Teile müssen zutreffen) werden als Und-Gruppe übernommen.
 - **Tastatur:** <kbd>Tab</kbd> und <kbd>Enter</kbd> (in einzeiligen Feldern) gehen in Lesereihenfolge zum nächsten
   Feld – auf dem Papier von oben nach unten, nebeneinanderliegende Rahmen von links nach rechts.

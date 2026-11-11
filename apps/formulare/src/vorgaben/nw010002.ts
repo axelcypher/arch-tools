@@ -4,17 +4,20 @@
  * Bedingungen nach dem Vordruck selbst (Hinweise in den Nummern) und der BauPrüfVO:
  * - Unterlagen nur beim Bauantrag („Einem Antrag auf Vorbescheid sind nur die für die Klärung der Fragestellung
  *   erforderlichen Unterlagen beizufügen“).
- * - Nr. 2 Maß der baulichen Nutzung: „nur im Bereich eines Bebauungsplans“; Nr. 3 Flurkarte: „nur bei Vorhaben nach
- *   den §§ 34 oder 35 BauGB“.
+ * - Nr. 2 Maß der baulichen Nutzung: „nur im Bereich eines Bebauungsplans“ (auch eines einfachen); Nr. 3 Flurkarte
+ *   und Nr. 4 Basiskarte: „nur bei Vorhaben nach den §§ 34 oder 35 BauGB“ (auch im einfachen Bebauungsplan).
  * - Nr. 6 Baubeschreibung: entfällt beim Einfamilienhaus.
  * - Nr. 7.1 bis 7.3 Kosten: eine Angabe; die Herstellungssumme bei 7.3.
- * - Nr. 8 und 9 nur für Sonderbauten (die Betriebsbeschreibung nur für Nichtwohngebäude).
- * - Nr. 11.2 Bescheinigung zum Brandschutz: Gebäudeklasse 4 und 5 ohne Sonderbauten, Garagen über 100 m² bis 1.000 m².
+ * - Nr. 8 Betriebsbeschreibung bei jedem gewerblichen oder landwirtschaftlichen Betrieb (Nichtwohngebäude, § 10
+ *   Abs. 1 Satz 1 Nr. 4 BauPrüfVO) – der Vordruck führt sie unter den Sonderbauten; Nr. 9 nur für Sonderbauten.
+ * - Nr. 11.1 Erklärung zum Brandschutz: Gebäudeklasse 1 bis 3 ohne Sonderbauten; Nr. 11.2 Bescheinigung:
+ *   Gebäudeklasse 4 und 5 ohne Sonderbauten, Garagen über 100 m² bis 1.000 m². Bei Sonderbauten keins von beiden
+ *   (die Bauaufsichtsbehörde prüft, § 68 Abs. 2 Satz 5 BauO NRW 2018).
  */
 
 import type { FormularProfil } from '../profil';
 import { blatt2, kopf, personen, unterschriften, zusammen } from './antrag';
-import { brandschutzBescheinigung, keinEinfamilienhaus, nurBebauungsplan, nurBetrieb, nurInnenAussen } from './grundlagen';
+import { brandschutzBescheinigung, keinEinfamilienhaus, nurBebauungsplan, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte } from './grundlagen';
 import { angekreuzt, begruendet, gruppeV, ist, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
@@ -27,15 +30,8 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
   abschnitte: {
     '0:Panel8': { titel: 'Gebäudeklasse und Art des Gebäudes' },
     '1:Panel1': { titel: 'Erforderliche Unterlagen (Bauantrag)', bedingung: wenn(bauantrag) },
-    '2:Panel1': {
-      titel: 'Zusätzliche Bauvorlagen für Sonderbauten (Nr. 8 und 9)',
-      bedingung: begruendet(
-        und(bauantrag, sonderbau),
-        'Diese Bauvorlagen gehören laut Vordruck nur zu Sonderbauten – und nur zum Bauantrag, nicht zum Vorbescheid.',
-        q('baupruefvo', '12'),
-        q('bauo-nrw', '50'),
-      ),
-    },
+    // die Bedingungen hängen an den Feldern (R-04): die Betriebsbeschreibung gehört nicht nur zu Sonderbauten
+    '2:Panel1': { titel: 'Nr. 8 Betriebsbeschreibung, Nr. 9 Zusätzliche Bauvorlagen für Sonderbauten' },
     '2:Panel2': { titel: 'Nr. 10 Bescheinigung der Übereinstimmung mit § 6 BauO NRW 2018 (freiwillig)' },
     '2:Panel3': { titel: 'Nr. 11 Unterlagen zum Brandschutz', bedingung: wenn(bauantrag) },
     '2:Panel4': { titel: 'Nr. 12 Erhebungsbogen für die Baustatistik' },
@@ -50,7 +46,7 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
     '1:Memo4': 'Bezeichnung des Vorhabens',
     '1:CheckBox1': 'Nr. 1 Lageplan / amtlicher Lageplan (3-fach)',
     '1:CheckBox2': 'Nr. 2 Berechnung des Maßes der baulichen Nutzung (3-fach)',
-    '1:CheckBox3': 'Nr. 3 Beglaubigter Auszug aus der Flurkarte (3-fach)',
+    '1:CheckBox3': 'Nr. 3 Beglaubigter Auszug aus der Flurkarte (3-fach) – entfällt bei amtlichem Lageplan (§ 2 Absatz 2 Satz 3 BauPrüfVO)',
     '1:CheckBox4': 'Nr. 4 Auszug aus der amtlichen Basiskarte 1:5000 (3-fach)',
     '1:CheckBox5': 'Nr. 5 Bauzeichnungen (3-fach)',
     '1:CheckBox6': 'Nr. 6 Baubeschreibung auf amtlichem Vordruck (3-fach)',
@@ -70,14 +66,37 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
   gruppen: [
     gruppeV('art', 'Art des Gebäudes (alle zutreffenden)', 'eins', s0('CheckBox28', 'CheckBox26', 'CheckBox27', 'CheckBox25', 'CheckBox24')),
     gruppeV('kosten', 'Nr. 7 Rauminhalt, Rohbaukosten oder Herstellungssumme', 'eins', s1('CheckBox7', 'CheckBox8', 'CheckBox9')),
-    gruppeV('brandschutz', 'Nr. 11 Erklärung oder Bescheinigung zum Brandschutz', 'eins', s2('CheckBox4', 'CheckBox5')),
+    // beim Sonderbau weder Erklärung noch Bescheinigung: die Bauaufsichtsbehörde prüft (R-06)
+    gruppeV('brandschutz', 'Nr. 11 Erklärung oder Bescheinigung zum Brandschutz', 'eins', s2('CheckBox4', 'CheckBox5'), {
+      bedingung: begruendet(wenn(ist('Sonderbau', 'nein')), 'Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure).', q('bauo-nrw', '68', 2, 5)),
+    }),
   ],
   bedingungen: {
     '1:CheckBox2': nurBebauungsplan,
-    '1:CheckBox3': nurInnenAussen,
+    '1:CheckBox3': nurInnenAussenFlurkarte,
+    '1:CheckBox4': nurInnenAussenBasiskarte,
     '1:CheckBox6': keinEinfamilienhaus,
     '1:Memo5': wenn(angekreuzt('1:CheckBox9')),
-    '2:CheckBox1': nurBetrieb,
+    '2:CheckBox1': begruendet(
+      und(bauantrag, ist('Gebäudeart', 'Nichtwohngebäude')),
+      'Die Betriebsbeschreibung gehört im vereinfachten Verfahren zu jedem gewerblichen oder landwirtschaftlichen Betrieb – nicht nur zu Sonderbauten (der Vordruck führt sie unter den Sonderbauten auf). Bei Wohngebäuden mit gewerblicher Einheit und bei gewerblichen Anlagen ohne Gebäude selbst prüfen.',
+      q('baupruefvo', '10', 1, 1, 4),
+      q('baupruefvo', '5', 2),
+      q('baupruefvo', '5', 3),
+    ),
+    '2:CheckBox2': begruendet(
+      und(bauantrag, sonderbau),
+      'Zusätzliche Angaben nach § 12 BauPrüfVO nur bei Sonderbauten (z. B. Versammlungs-, Beherbergungs-, Verkaufsstätten, Mittel- und Großgaragen). Bei Sonderbauten gehört das Brandschutzkonzept hierher (§ 9 BauPrüfVO).',
+      q('baupruefvo', '12'),
+      q('bauo-nrw', '50', 1),
+      q('baupruefvo', '9'),
+    ),
+    '2:CheckBox4': begruendet(
+      und(ist('Gebäudeklasse', '1', '2', '3'), ist('Sonderbau', 'nein')),
+      'Die Erklärung der Entwurfsverfassenden genügt bei Gebäuden der Gebäudeklassen 1 bis 3 und Kleingaragen. Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure) – dann gehört das Brandschutzkonzept/der Brandschutznachweis zu Nr. 9.',
+      q('bauo-nrw', '68', 2, 2),
+      q('bauo-nrw', '68', 2, 5),
+    ),
     '2:CheckBox5': brandschutzBescheinigung(oder(und(ist('Gebäudeklasse', '4', '5'), ist('Sonderbau', 'nein')), angekreuzt('0:CheckBox24'))),
     '2:CheckBox6': wenn(bauantrag),
     '2:CheckBox7': wenn(bauantrag),

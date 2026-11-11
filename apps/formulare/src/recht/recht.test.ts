@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bedingungAus } from '../bedingung';
-import { entfallGruende, entfallText } from '../entfall';
+import { entfallGruende, entfallText, offenGruende } from '../entfall';
 import type { Feld } from '../forma/felder';
 import { leeresProfil } from '../profil';
 import { wirksam } from '../vorgabe';
@@ -46,16 +46,33 @@ describe('Begründung an Bedingungen', () => {
   it('Gründe und Hinweis eines entfallenden Felds', () => {
     const feld = { schluessel: '0:A', name: 'A', art: 'kreuz', beschriftung: 'A' } as Feld;
     const p = { ...leeresProfil(), bedingungen: { '0:A': b } };
-    const gruende = entfallGruende(feld, undefined, p, { merkmale: {} });
+    const gruende = entfallGruende(feld, undefined, p, { merkmale: { Gebäudeart: 'Einfamilienhaus' } });
     expect(gruende.map((e) => e.ebene)).toEqual(['feld']);
-    const text = entfallText(gruende, [feld], p, {});
-    expect(text.split('\n')).toEqual([
+    expect(entfallText(gruende, [feld], p, { Gebäudeart: 'Einfamilienhaus' }).split('\n')).toEqual([
       'Entfällt',
+      'Nur für Betriebe.',
+      '(nur erforderlich, wenn Gebäudeart Nichtwohngebäude)',
+      'Rechtsgrundlage: § 5 Absatz 2 BauPrüfVO – klicken für den Gesetzestext',
+    ]);
+    expect(entfallGruende(feld, undefined, p, { merkmale: { Gebäudeart: 'Nichtwohngebäude' } })).toEqual([]);
+    expect(offenGruende(feld, undefined, p, { merkmale: { Gebäudeart: 'Nichtwohngebäude' } })).toEqual([]);
+  });
+
+  it('fehlt das Merkmal, entfällt nichts: Offen-Grund und Offen-Hinweis statt „Entfällt“ (R-01)', () => {
+    const feld = { schluessel: '0:A', name: 'A', art: 'kreuz', beschriftung: 'A' } as Feld;
+    const p = { ...leeresProfil(), bedingungen: { '0:A': b } };
+    expect(entfallGruende(feld, undefined, p, { merkmale: {} })).toEqual([]);
+    const offen = offenGruende(feld, undefined, p, { merkmale: {} });
+    expect(offen.map((e) => e.ebene)).toEqual(['feld']);
+    const text = entfallText(offen, [feld], p, {}, 'offen');
+    expect(text.split('\n')).toEqual([
+      'Offen – hängt ab von: Gebäudeart (nicht festgelegt)',
+      'Erforderlich, bis Gebäudeart festgelegt ist.',
       'Nur für Betriebe.',
       '(nur erforderlich, wenn Gebäudeart Nichtwohngebäude)',
       'Im Projekt noch nicht festgelegt: Gebäudeart',
       'Rechtsgrundlage: § 5 Absatz 2 BauPrüfVO – klicken für den Gesetzestext',
     ]);
-    expect(entfallGruende(feld, undefined, p, { merkmale: { Gebäudeart: 'Nichtwohngebäude' } })).toEqual([]);
+    expect(text).not.toContain('Entfällt');
   });
 });
