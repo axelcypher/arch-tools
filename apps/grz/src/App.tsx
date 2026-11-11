@@ -5,7 +5,8 @@ import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
-import { ProjektWahl } from '@core/ui/ProjektWahl';
+import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
+import { createProject } from '@core/model';
 import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
 import { ExcelDialog } from './components/ExcelDialog';
 import { GrzGfzView } from './components/GrzGfzView';
@@ -38,6 +39,16 @@ export function App() {
   const weiterNachRueckfrage = async () => {
     eingabeAbschliessen();
     return !useGrz.getState().dirty || (await aenderungenSpeichern(useGrz.getState().project.name, () => onSave()));
+  };
+
+  // „Neues Projekt“: leeres Projekt (z. B. nur Lageplan bzw. Mengen von Hand); verwirft auch den Zwischenstand
+  const [neuBegonnen, setNeuBegonnen] = useState(false);
+  const onNeu = async () => {
+    if (!(await weiterNachRueckfrage())) return;
+    useGrz.getState().load(createProject());
+    setBericht([]);
+    setNeuBegonnen(true);
+    setProjekteOffen(false);
   };
 
   const onOpen = async () => {
@@ -180,17 +191,15 @@ export function App() {
             </button>
           </div>
         )}
-        {!hatGebaeude && (
-          <div className="grz-leer">
-            <h2>GRZ-Nachweis</h2>
-            <p>
-              Ein Projekt des Flächenrechners (<code>.oap</code>) oder direkt ein IFC-Modell öffnen. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus
-              dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei.
-            </p>
-            <button className="primary" onClick={onOpen}>
-              Projekt oder IFC öffnen …
-            </button>
-          </div>
+        {!hatGebaeude && !neuBegonnen && (
+          <ProjektEinstieg
+            titel="GRZ-Nachweis"
+            text={'Projekt oder IFC öffnen: ein Projekt des Flächenrechners (.oap) oder direkt ein IFC-Modell. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei.'}
+            onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
+            onDateiOeffnen={() => void onOpen()}
+            dateiHinweis="Projektdatei (.oap) oder IFC-Modell"
+            onNeu={() => void onNeu()}
+          />
         )}
         <GrzGfzView />
       </main>
@@ -211,6 +220,8 @@ export function App() {
             setProjekteOffen(false);
             void onOpen();
           }}
+          onNeu={() => void onNeu()}
+          dateiHinweis="Projektdatei (.oap) oder IFC-Modell"
         />
       )}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}

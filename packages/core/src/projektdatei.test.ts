@@ -140,3 +140,43 @@ describe('Projektdatei: Abschnitte anderer Apps, gleichzeitiges Schreiben, Über
     expect(await projektdateiKopf(fs, '/p/2025-007 Kita', 'fehlt.oap')).toBeNull();
   });
 });
+
+describe('Stammdaten: eine Quelle, gemeinsamer Kopf (Q-4)', () => {
+  it('Stammdaten aus der Projektdatei (mit Bebauungsplan) – der Kopf enthält die Felder; Büro aus den Einstellungen', async () => {
+    const { kopfZeilen } = await import('./ui/DruckKopf');
+    const { projektWerte } = await import('./excel/projekt');
+    const p = createProject();
+    p.name = 'EFH Musterweg';
+    p.meta = {
+      ...p.meta,
+      projektcode: '2026-014',
+      vorhaben: 'Neubau eines Einfamilienhauses',
+      adresse: { strasse: 'Musterweg 3', plz: '48143', ort: 'Münster' },
+      grundstueck: { gemarkung: 'Münster', flur: '12', flurstueck: '345' },
+      bebauungsplan: { nummer: '112', name: 'Am Mühlenbach' },
+      bauherr: { name: 'Beispiel', vorname: 'Anna', adresse: { strasse: '', plz: '', ort: '' }, kontakte: [] },
+      bearbeiter: 'TP',
+    };
+    const gelesen = readProjectFile(writeArchive(p));
+    expect(gelesen.meta.bebauungsplan).toEqual({ nummer: '112', name: 'Am Mühlenbach' });
+    allgemeinAus({ buero: 'Architekturbüro Muster' });
+    const kopf = Object.fromEntries(kopfZeilen(gelesen, { buero: 'Architekturbüro Muster', stand: new Date(2026, 5, 1) }).map((z) => [z.label, z.wert]));
+    expect(kopf).toEqual({
+      Bauvorhaben: '2026-014 · Neubau eines Einfamilienhauses',
+      Adresse: 'Musterweg 3, 48143 Münster',
+      Grundstück: 'Gemarkung Münster, Flur 12, Flurstück 345',
+      Bebauungsplan: 'Nr. 112 „Am Mühlenbach“',
+      Bauherr: 'Anna Beispiel',
+      Büro: 'Architekturbüro Muster',
+      Bearbeitung: 'TP',
+      Stand: '01.06.2026',
+    });
+    const w = projektWerte(gelesen, new Date(2026, 5, 1));
+    expect(w['bplan.text']).toBe('Nr. 112 „Am Mühlenbach“');
+    expect(w.datum).toBe('01.06.2026');
+    expect(w['kopf.angaben']).toBe('Bebauungsplan: Nr. 112 „Am Mühlenbach“ · Bauherr: Anna Beispiel · Büro: Architekturbüro Muster · Bearbeitung: TP');
+    // ohne Bebauungsplan entfällt der Abschnitt in der Datei
+    const ohne = readProjectFile(writeArchive({ ...p, meta: { ...p.meta, bebauungsplan: { nummer: ' ' } } }));
+    expect(ohne.meta.bebauungsplan).toBeUndefined();
+  });
+});

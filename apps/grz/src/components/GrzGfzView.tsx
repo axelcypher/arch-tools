@@ -10,6 +10,7 @@ import { AUFENTHALT, ANRECHNUNG, GELAENDE_QUELLE, GF_ART, HAFTUNG, roemisch, STA
 import { LageplanEditor } from './LageplanEditor';
 import { areaMP, unionAll } from '@core/polygon';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
+import { StammdatenKnopf } from '@core/ui/Stammdaten';
 
 const Gelaende3D = lazy(() => import('./Gelaende3D'));
 
@@ -51,6 +52,8 @@ export function GrzGfzView() {
   return (
     <div className="grz-view">
       <section className="grz-col grz-fest">
+        <h2>Projekt</h2>
+        <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }))} />
         <h2>
           Festsetzungen
           <HilfeKnopf thema={['baunvo', 'vollgeschoss']} titel="Festsetzungen" />

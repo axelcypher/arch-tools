@@ -12,6 +12,7 @@ import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 import { addPositionen, mapPosition, removePosition, setKosten, useKosten } from '../store';
 import { useBauteile } from '../bauteile';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
+import { StammdatenKnopf } from '@core/ui/Stammdaten';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 
@@ -34,6 +35,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
         <Field label="Projekt">
           <TextField value={project.name} onChange={(v) => st.update((p) => (v.trim() && v.trim() !== p.name ? { ...p, name: v.trim() } : p))} />
         </Field>
+        <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }))} />
         <div className="field-row">
           <Field label="Stufe">
             <select value={k.stufe ?? 'schaetzung'} onChange={(ev) => setK({ stufe: ev.target.value as KostenStufe })}>

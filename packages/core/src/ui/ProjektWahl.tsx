@@ -45,6 +45,8 @@ export function ProjektWahl({
   onGewaehlt,
   onSchliessen,
   onDateiOeffnen,
+  onNeu,
+  dateiHinweis,
   fs: fsVorgabe,
   nurOrdner = false,
 }: {
@@ -57,6 +59,10 @@ export function ProjektWahl({
   onSchliessen?: () => void;
   /** Projektdatei über den Dateidialog öffnen (wie bisher) */
   onDateiOeffnen?: () => void;
+  /** neues, leeres Projekt beginnen */
+  onNeu?: () => void;
+  /** was „Datei öffnen …“ öffnet (Hinweis am Knopf), z. B. „Projektdatei (.oap) oder IFC-Modell“ */
+  dateiHinweis?: string;
   /** Ordnerzugriff (Tests); Vorgabe: die gemeinsamen Befehle der Desktop-App */
   fs?: ProjektordnerZugriff;
   /**
@@ -146,18 +152,13 @@ export function ProjektWahl({
   if (!fs) {
     return (
       <div className="pw-ebene">
-        <div className="pw-leer">
-          <h2>Projekte</h2>
-          <p>Die Projektübersicht mit den Projektordnern gibt es in der Desktop-App. Hier lässt sich eine Projektdatei direkt öffnen.</p>
-          <div className="button-row">
-            {onDateiOeffnen && (
-              <button className="primary" onClick={onDateiOeffnen}>
-                Datei öffnen …
-              </button>
-            )}
-            {onSchliessen && <button onClick={onSchliessen}>Schließen</button>}
-          </div>
-        </div>
+        <ProjektEinstieg
+          text="Die Projektübersicht mit den Projektordnern und „zuletzt geöffnet“ gibt es in der Desktop-App. Hier lässt sich eine Projektdatei direkt öffnen oder ein neues Projekt beginnen."
+          onDateiOeffnen={onDateiOeffnen}
+          dateiHinweis={dateiHinweis}
+          onNeu={onNeu}
+          onSchliessen={onSchliessen}
+        />
       </div>
     );
   }
@@ -191,25 +192,23 @@ export function ProjektWahl({
         kopf={
           <>
             {onDateiOeffnen && (
-              <button onClick={onDateiOeffnen} title="Projektdatei über den Dateidialog öffnen (Strg+O)">
+              <button onClick={onDateiOeffnen} title={`${dateiHinweis ?? 'Projektdatei'} über den Dateidialog öffnen (Strg+O)`}>
                 Datei öffnen …
               </button>
             )}
+            {onNeu && <button onClick={onNeu}>Neues Projekt</button>}
             {onSchliessen && <button onClick={onSchliessen}>Schließen</button>}
           </>
         }
         leer={
-          <div className="pw-leer">
-            <h2>Projekte</h2>
-            <p>Noch kein Stammordner eingestellt – der Ordner, in dem die Projektordner liegen. Er gilt für alle Apps.</p>
-            <div className="button-row">
-              <button className="primary" onClick={() => void stammordnerWaehlen()}>
-                Stammordner wählen …
-              </button>
-              {onDateiOeffnen && <button onClick={onDateiOeffnen}>Datei öffnen …</button>}
-              {onSchliessen && <button onClick={onSchliessen}>Schließen</button>}
-            </div>
-          </div>
+          <ProjektEinstieg
+            text="Noch kein Stammordner eingestellt – der Ordner, in dem die Projektordner liegen. Er gilt für alle Apps."
+            onStammordner={() => void stammordnerWaehlen()}
+            onDateiOeffnen={onDateiOeffnen}
+            dateiHinweis={dateiHinweis}
+            onNeu={onNeu}
+            onSchliessen={onSchliessen}
+          />
         }
       />
       {dialog && (
@@ -221,6 +220,65 @@ export function ProjektWahl({
           onAbbrechen={() => setDialog(null)}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Einheitlicher Leerzustand aller Apps („Projekte“): dieselben Aktionen in derselben Reihenfolge – Projekt wählen
+ * (Übersicht mit „zuletzt geöffnet“), Datei öffnen, neues Projekt. Was eine App nicht anbietet, entfällt.
+ */
+export function ProjektEinstieg({
+  titel = 'Projekte',
+  text,
+  onProjekte,
+  onStammordner,
+  onDateiOeffnen,
+  dateiHinweis,
+  onNeu,
+  onSchliessen,
+  children,
+}: {
+  titel?: string;
+  text: React.ReactNode;
+  /** Projektübersicht öffnen (Desktop: Projektordner, zuletzt geöffnet) */
+  onProjekte?: () => void;
+  onStammordner?: () => void;
+  onDateiOeffnen?: () => void;
+  dateiHinweis?: string;
+  onNeu?: () => void;
+  onSchliessen?: () => void;
+  children?: React.ReactNode;
+}) {
+  const erste = onStammordner ? 'stammordner' : onProjekte ? 'projekte' : onDateiOeffnen ? 'datei' : 'neu';
+  return (
+    <div className="pw-leer pw-einstieg">
+      <h2>{titel}</h2>
+      <p>{text}</p>
+      <div className="button-row pw-aktionen">
+        {onStammordner && (
+          <button className="primary" onClick={onStammordner}>
+            Stammordner wählen …
+          </button>
+        )}
+        {onProjekte && (
+          <button className={erste === 'projekte' ? 'primary' : ''} onClick={onProjekte} title="Projektübersicht: Projektordner, zuletzt geöffnet">
+            Projekt wählen …
+          </button>
+        )}
+        {onDateiOeffnen && (
+          <button className={erste === 'datei' ? 'primary' : ''} onClick={onDateiOeffnen} title={`${dateiHinweis ?? 'Projektdatei (.oap)'} über den Dateidialog öffnen (Strg+O)`}>
+            Datei öffnen …
+          </button>
+        )}
+        {onNeu && (
+          <button className={erste === 'neu' ? 'primary' : ''} onClick={onNeu}>
+            Neues Projekt
+          </button>
+        )}
+        {onSchliessen && <button onClick={onSchliessen}>Schließen</button>}
+      </div>
+      {children}
     </div>
   );
 }

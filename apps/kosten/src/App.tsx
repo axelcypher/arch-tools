@@ -5,7 +5,8 @@ import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
-import { ProjektWahl } from '@core/ui/ProjektWahl';
+import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
+import { createProject } from '@core/model';
 import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
 import { ExcelDialog } from './components/ExcelDialog';
 import { KatalogDialog } from './components/KatalogDialog';
@@ -52,6 +53,16 @@ export function App() {
   const weiterNachRueckfrage = async () => {
     eingabeAbschliessen();
     return !useKosten.getState().dirty || (await aenderungenSpeichern(useKosten.getState().project.name, () => onSave()));
+  };
+
+  // „Neues Projekt“: leeres Projekt (z. B. nur Lageplan bzw. Mengen von Hand); verwirft auch den Zwischenstand
+  const [neuBegonnen, setNeuBegonnen] = useState(false);
+  const onNeu = async () => {
+    if (!(await weiterNachRueckfrage())) return;
+    useKosten.getState().load(createProject());
+    setBericht([]);
+    setNeuBegonnen(true);
+    setProjekteOffen(false);
   };
 
   const onOpen = async () => {
@@ -212,18 +223,15 @@ export function App() {
             </button>
           </div>
         )}
-        {!hatGebaeude && !hatPositionen && (
-          <div className="ko-leer">
-            <h2>Kostenermittlung nach DIN 276</h2>
-            <p>
-              Ein Projekt des Flächenrechners (<code>.oap</code>) oder direkt ein IFC-Modell öffnen. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe
-              Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und Kostenstände pflegt dieses Tool. Gespeichert wird in dieselbe Projektdatei.
-            </p>
-            <p className="muted small-text">Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen.</p>
-            <button className="primary" onClick={onOpen}>
-              Projekt oder IFC öffnen …
-            </button>
-          </div>
+        {!hatGebaeude && !hatPositionen && !neuBegonnen && (
+          <ProjektEinstieg
+            titel="Kostenermittlung nach DIN 276"
+            text={'Projekt oder IFC öffnen: ein Projekt des Flächenrechners (.oap) oder direkt ein IFC-Modell. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und Kostenstände pflegt dieses Tool. Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen („Neues Projekt“).'}
+            onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
+            onDateiOeffnen={() => void onOpen()}
+            dateiHinweis="Projektdatei (.oap) oder IFC-Modell"
+            onNeu={() => void onNeu()}
+          />
         )}
         {ansicht === 'mengen' && hatGebaeude ? (
           <MengenView bezug={menge} onBezug={setMenge} />
@@ -259,6 +267,8 @@ export function App() {
             setProjekteOffen(false);
             void onOpen();
           }}
+          onNeu={() => void onNeu()}
+          dateiHinweis="Projektdatei (.oap) oder IFC-Modell"
         />
       )}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}

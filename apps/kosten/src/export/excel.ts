@@ -78,6 +78,8 @@ function kostenBlatt(wb: Workbook): Worksheet {
   put('H6', '{{projekt.bearbeiter}}', { right: true });
   ws.getCell('A6').font = { size: 9 };
   ws.getCell('H6').font = { size: 9 };
+  put('A7', '{{kopf.angaben}}');
+  ws.getCell('A7').font = { size: 9 };
 
   abschnitt(8, 'Grundlagen');
   put('A9', 'Preisstand');

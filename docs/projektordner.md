@@ -69,7 +69,7 @@ mit; was dort schon liegt, gilt und bleibt unverändert.
 
 | Datei | Inhalt |
 |---|---|
-| `allgemein.json` | Stammordner der Projekte (mehrere möglich; im ersten entstehen neue Projekte), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung) |
+| `allgemein.json` | Stammordner der Projekte (mehrere möglich; im ersten entstehen neue Projekte), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien |
 | `projektordner.json` | Struktur samt Vorlagen-Presets und Vorlagenordner dieses Tools |
 
 Welcher Konfigurationsordner gilt, steht je Benutzer in `%APPDATA%\arch-tools\konfig.json` – für alle Apps

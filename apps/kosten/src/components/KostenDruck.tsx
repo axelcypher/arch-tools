@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import type { Spanne } from '@core/model';
-import { anschriftEinzeilig, flurText, KOSTEN_STUFEN } from '@core/model';
+import { KOSTEN_STUFEN } from '@core/model';
 import { istKg, kg1, KG_ERSTE_EBENE, kgName } from '../din276';
 import type { PositionErgebnis } from '../kosten';
 import { berechne, bezugLabel, euro, HAFTUNG, katalogText, stufeLabel } from '../kosten';
@@ -10,6 +10,7 @@ import { druckenAls } from '@core/platform/projektDatei';
 import { useKosten } from '../store';
 import { useBauteile } from '../bauteile';
 import { useEscSchliessen } from '@core/ui/Dialog';
+import { DruckKopf } from '@core/ui/DruckKopf';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const datum = (iso: string) => new Date(iso).toLocaleDateString('de-DE');
@@ -54,23 +55,7 @@ export function KostenDruck({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <header className="report-header">
-          <h1>
-            {stufeLabel(k.stufe ?? 'schaetzung')} nach DIN 276{stufe ? ` (${stufe.lph})` : ''}
-          </h1>
-          <div className="report-meta">
-            <div>
-              {project.meta.projektcode && <>{project.meta.projektcode} · </>}
-              <strong>{project.name}</strong>
-            </div>
-            {anschriftEinzeilig(project.meta.adresse) && <div>{anschriftEinzeilig(project.meta.adresse)}</div>}
-            {flurText(project.meta.grundstueck) && <div>{flurText(project.meta.grundstueck)}</div>}
-            {project.meta.bauherr.name && <div>Bauherr: {project.meta.bauherr.name}</div>}
-            <div>
-              {project.meta.bearbeiter && <>Bearbeiter: {project.meta.bearbeiter} · </>}Stand: {heute}
-            </div>
-          </div>
-        </header>
+        <DruckKopf titel={`${stufeLabel(k.stufe ?? 'schaetzung')} nach DIN 276${stufe ? ` (${stufe.lph})` : ''}`} project={project} />
 
         <h2>Grundlagen</h2>
         <table className="report-table narrow">

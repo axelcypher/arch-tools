@@ -137,7 +137,7 @@ describe('Stammdaten', () => {
       'bauherr.name': 'Familie Beispiel',
       'bauherr.email': 'b@example.org',
       'projekt.leistungsphasen': '1, 2, 3, 4',
-      datum: '1.10.2026',
+      datum: '01.10.2026',
       'datum.iso': '2026-10-01',
       beteiligte: 'Tragwerk: Büro Statik (0251 1234)',
     });

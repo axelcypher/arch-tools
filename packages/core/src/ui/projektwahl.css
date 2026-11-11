@@ -27,3 +27,13 @@
 body:has(.titlebar-im-rahmen) .pw-ebene {
   top: 30px;
 }
+/* Einstieg ohne Projekt (ProjektEinstieg) in der App selbst: als Karte über dem (leeren) Inhalt */
+main .pw-einstieg,
+.workspace .pw-einstieg {
+  max-width: 640px;
+  margin: 24px auto 0;
+  padding: 16px 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Anschrift, Beteiligter, KontaktArt, ProjectMeta } from '../model';
-import { LEISTUNGSPHASEN } from '../model';
+import { anschriftEinzeilig, bebauungsplanText, flurText, LEISTUNGSPHASEN } from '../model';
 import { Field, NumberField, TextField } from './fields';
 import { email, ordnername, plz } from './pruefen';
 import { useEscSchliessen } from './Dialog';
@@ -79,6 +79,14 @@ export function StammdatenFelder({
     onChange(m);
   };
   const zeigt = (b: StammdatenBereich) => bereiche.includes(b);
+  const setBplan = (patch: { nummer?: string; name?: string }) => {
+    const bp = { ...meta.bebauungsplan, ...patch };
+    if (!bp.nummer) delete bp.nummer;
+    if (!bp.name) delete bp.name;
+    const m: ProjectMeta = { ...meta, bebauungsplan: bp };
+    if (!bp.nummer && !bp.name) delete m.bebauungsplan;
+    onChange(m);
+  };
 
   return (
     <div className="sd-felder">
@@ -137,6 +145,14 @@ export function StammdatenFelder({
             </Field>
             <Field label="Grundstücksfläche [m²]">
               <NumberField value={meta.grundstueck.flaeche} allowEmpty min={0} onChange={(v) => set({ grundstueck: { ...meta.grundstueck, flaeche: v } })} />
+            </Field>
+          </div>
+          <div className="field-row">
+            <Field label="Bebauungsplan Nr.">
+              <TextField value={meta.bebauungsplan?.nummer ?? ''} placeholder="z. B. 112" onChange={(v) => setBplan({ nummer: v.trim() })} />
+            </Field>
+            <Field label="Bebauungsplan Name">
+              <TextField value={meta.bebauungsplan?.name ?? ''} placeholder="z. B. Am Mühlenbach" onChange={(v) => setBplan({ name: v.trim() })} />
             </Field>
           </div>
           <Field label="Aktenzeichen der Bauaufsicht">
@@ -252,27 +268,35 @@ export function StammdatenDialog({
   speichernText = 'Projektdatei anlegen',
   onSpeichern,
   onAbbrechen,
+  name: nameAnfang,
+  projektnummerPflicht = true,
 }: {
   titel: string;
   text?: string;
   meta: ProjectMeta;
   speichernText?: string;
-  onSpeichern: (meta: ProjectMeta) => Promise<void> | void;
+  /** `name`: die geänderte Bezeichnung des Projekts, wenn das Feld gezeigt wird */
+  onSpeichern: (meta: ProjectMeta, name?: string) => Promise<void> | void;
   onAbbrechen: () => void;
+  /** Bezeichnung des Projekts mit bearbeiten (z. B. in Flächenrechner, GRZ, Kosten) */
+  name?: string;
+  /** ohne Projektnummer nicht speichern (Anlegen einer Projektdatei) */
+  projektnummerPflicht?: boolean;
 }) {
   const [meta, setMeta] = useState(anfang);
+  const [name, setName] = useState(nameAnfang ?? '');
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
   const [versucht, setVersucht] = useState(false);
   useEscSchliessen(laeuft ? undefined : onAbbrechen);
-  const offen = stammdatenFehlen(meta);
+  const offen = projektnummerPflicht ? stammdatenFehlen(meta) : [];
   const speichern = async () => {
     setVersucht(true);
     if (offen.length) return;
     setFehler(null);
     setLaeuft(true);
     try {
-      await onSpeichern(meta);
+      await onSpeichern(meta, nameAnfang === undefined ? undefined : name.trim() || nameAnfang);
     } catch (e) {
       setFehler(e instanceof Error ? e.message : String(e));
     } finally {
@@ -284,7 +308,12 @@ export function StammdatenDialog({
       <div className="modal modal-wide sd-dialog" role="dialog" aria-modal="true" aria-label={titel}>
         <h3>{titel}</h3>
         {text && <p className="muted small-text">{text}</p>}
-        <StammdatenFelder meta={meta} onChange={setMeta} fehlerZeigen={versucht} />
+        {nameAnfang !== undefined && (
+          <Field label="Bezeichnung des Projekts">
+            <TextField value={name} onChange={setName} />
+          </Field>
+        )}
+        <StammdatenFelder meta={meta} onChange={setMeta} fehlerZeigen={versucht} kurznameHinweis={projektnummerPflicht ? undefined : null} />
         {fehler && <p className="warning">{fehler}</p>}
         <div className="dialog-buttons">
           <button onClick={onAbbrechen} disabled={laeuft}>
@@ -295,6 +324,46 @@ export function StammdatenDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Stammdaten in einer App ansehen und ändern, ohne die App zu wechseln: Kurzfassung und Knopf „Stammdaten …“, der den
+ * gemeinsamen Dialog öffnet. Die Stammdaten liegen in der Projektdatei; andere Apps sehen Änderungen nach dem Speichern
+ * und erneuten Laden (zusammengeführt wie alle Abschnitte).
+ */
+export function StammdatenKnopf({ project, onAendern, kurz = true }: { project: { name: string; meta: ProjectMeta }; onAendern: (meta: ProjectMeta, name: string) => void; kurz?: boolean }) {
+  const [offen, setOffen] = useState(false);
+  const m = project.meta;
+  const zeilen = [
+    m.projektcode,
+    anschriftEinzeilig(m.adresse),
+    flurText(m.grundstueck),
+    bebauungsplanText(m.bebauungsplan) && `Bebauungsplan ${bebauungsplanText(m.bebauungsplan)}`,
+    m.bauherr.name && `Bauherr: ${m.bauherr.name}`,
+  ].filter(Boolean);
+  return (
+    <div className="sd-knopf">
+      {kurz && (zeilen.length ? <div className="small-text">{zeilen.join(' · ')}</div> : <div className="muted small-text">Noch keine Stammdaten erfasst.</div>)}
+      <button className="small" onClick={() => setOffen(true)} title="Bauvorhaben, Grundstück, Bebauungsplan, Bauherr – gemeinsam für alle Apps in der Projektdatei">
+        Stammdaten …
+      </button>
+      {offen && (
+        <StammdatenDialog
+          titel="Stammdaten des Projekts"
+          text="Gelten für alle Apps (Projektdatei). Andere Apps zeigen Änderungen, sobald das Projekt dort neu geladen wird."
+          meta={m}
+          name={project.name}
+          projektnummerPflicht={false}
+          speichernText="Übernehmen"
+          onSpeichern={(meta, name) => {
+            onAendern(meta, name ?? project.name);
+            setOffen(false);
+          }}
+          onAbbrechen={() => setOffen(false)}
+        />
+      )}
     </div>
   );
 }

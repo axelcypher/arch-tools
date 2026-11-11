@@ -71,6 +71,8 @@ function nachweisBlatt(wb: Workbook): Worksheet {
   put('A6', 'Stand {{datum}}');
   put('F6', '{{projekt.bearbeiter}}', { right: true });
   ws.getCell('A6').font = { size: 9 };
+  put('A7', '{{kopf.angaben}}');
+  ws.getCell('A7').font = { size: 9 };
   ws.getCell('F6').font = { size: 9 };
 
   abschnitt(8, 'Grundlagen');

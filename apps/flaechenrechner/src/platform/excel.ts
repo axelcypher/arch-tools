@@ -198,8 +198,11 @@ function sampleHeader(ws: Worksheet, titel: string, lastCol = 'D') {
   ws.getCell(`${lastCol}3`).value = 'Projekt {{projekt.code}}';
   ws.getCell(`${lastCol}3`).alignment = { horizontal: 'right' };
   ws.getCell('A4').value = '{{projekt.adresse}}';
+  ws.getCell('A5').value = '{{grundstueck.flurtext}}';
   ws.getCell('A6').value = 'Stand {{datum}}';
   ws.getCell('A6').font = { size: 9 };
+  ws.getCell('A7').value = '{{kopf.angaben}}';
+  ws.getCell('A7').font = { size: 9 };
   ws.getCell('A8').value = 'Entwurfsplanung';
   ws.mergeCells(`A8:${lastCol}8`);
   ws.getCell('A8').font = { bold: true };

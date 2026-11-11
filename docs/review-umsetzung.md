@@ -29,8 +29,21 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
   Stammdaten-Dialog zeigt die Meldungen nach Klick auf „Anlegen“ statt eines grauen Knopfs). Erledigt damit G-07 (GRZ).
   Abweichung: Die Datums- und Zahlenfelder der Formulare sind Felder der FORMA-Vordrucke (formularspezifisch) und
   bleiben unverändert; die Assistent-Teile von P-08 (Projektordner) folgen in Phase 3.
-- [ ] **Q-4** Stammdaten einmal erfassen, überall gleich ausgeben
-- [ ] **Q-5** Einheitlicher Einstieg
+- [x] **Q-4** Stammdaten einmal erfassen, überall gleich ausgeben – Block 3 (FR 0.18.0, GRZ 0.10.0, KO 0.10.0, PO 0.5.0,
+  EZ 0.5.0, FO 0.21.0, SU 0.4.0). Quelle bleibt die Projektdatei (`meta`); neu `meta.bebauungsplan` (Nr., Name) mit
+  Roundtrip. `StammdatenKnopf` + `StammdatenDialog` (mit Projektbezeichnung, ohne Pflicht-Projektnummer) in
+  Flächenrechner (ersetzt den eigenen Projektdaten-Dialog), GRZ und Kosten; Formulare und Projektordner nutzen die
+  Komponente schon. Gemeinsamer Kopf `ui/DruckKopf.tsx` (`kopfZeilen`, `DruckKopf`) in den Ausdrucken von
+  Flächenrechner, GRZ und Kosten; Excel-Platzhalter `kopf.angaben`, `bplan.*`, `buero`, `projekt.vorhaben`, Datum
+  TT.MM.JJJJ; „Seite x von y“ im Druck über `@page`. Büroname neu in `allgemein.json` (Projektordner → Einstellungen).
+  Abweichung: Die Entzerrung hat keine Projektdatei mit Stammdaten (eigenes `.entz`-Format) – dort kein Stammdaten-Dialog.
+  B-Plan Nr./Name stehen in den gemeinsamen Stammdaten (nicht in `MassNutzung`, wie G-25 es vorschlägt), damit alle
+  Apps sie ausgeben; Gebietsart folgt mit G-25/G-26.
+- [x] **Q-5** Einheitlicher Einstieg – Block 3. `ProjektEinstieg` (gleiche Aktionen in gleicher Reihenfolge: Projekt
+  wählen …, Datei öffnen …, Neues Projekt) in der Projektwahl (Browser und ohne Stammordner), im Leerzustand von GRZ,
+  Kosten und Formulare (Web); der Flächenrechner zeigt im Browser ohne Projekt die Projektwahl wie auf dem Desktop.
+  „Projekte“ in der Titelleiste jetzt auch im Projektordner (führt zur Startseite; der Reiter heißt „Assistent“) und in
+  Formulare (Desktop). Erledigt damit P-13 (PO).
 - [x] **Q-6** Fehlermeldungen beim Öffnen verständlich – Block 1. `platform/dateiFehler.ts` (`DateiLesenFehler`,
   `oeffnenFehlerText`), Meldung `oeffnenFehlgeschlagen` mit aufklappbaren Einzelheiten; `ProjectFormatError` trennt
   Nutzertext und Technik („Keine gültige Projektdatei (.oap) – beschädigt oder aus einer anderen Anwendung.“).
@@ -158,6 +171,6 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
 - [ ] **P-10** „Ordner prüfen“ für alle Projekte, mit Bericht
 - [ ] **P-11** Entwurf bleibt nach dem Anlegen stehen
 - [ ] **P-12** Barrierefreiheit und Tastatur
-- [ ] **P-13** Uneinheitlicher Einstieg
+- [x] **P-13** Uneinheitlicher Einstieg – PO 0.5.0 (mit Q-5)
 - [ ] **P-14** Beteiligte und Bearbeitung ohne Adressbuch
 - [ ] **P-15** Kein Abschluss/Archiv

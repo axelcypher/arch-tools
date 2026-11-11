@@ -3,6 +3,7 @@ import type {
   Background,
   Bauherr,
   DateiArt,
+  Bebauungsplan,
   Grundstueck,
   KontaktArt,
   ProjektordnerAngaben,
@@ -189,6 +190,12 @@ function normalizeMeta(v: unknown): ProjectMeta {
   if (typeof m.kurzname === 'string' && m.kurzname) meta.kurzname = m.kurzname;
   if (typeof m.vorhaben === 'string' && m.vorhaben) meta.vorhaben = m.vorhaben;
   if (typeof m.aktenzeichen === 'string' && m.aktenzeichen) meta.aktenzeichen = m.aktenzeichen;
+  if (isObj(m.bebauungsplan)) {
+    const bp: Bebauungsplan = {};
+    if (typeof m.bebauungsplan.nummer === 'string' && m.bebauungsplan.nummer.trim()) bp.nummer = m.bebauungsplan.nummer;
+    if (typeof m.bebauungsplan.name === 'string' && m.bebauungsplan.name.trim()) bp.name = m.bebauungsplan.name;
+    if (bp.nummer || bp.name) meta.bebauungsplan = bp;
+  }
   if (Array.isArray(m.leistungsphasen)) {
     const lph = [...new Set(m.leistungsphasen.filter((n): n is number => Number.isInteger(n) && n >= 1 && n <= 9))].sort((a, b) => a - b);
     if (lph.length) meta.leistungsphasen = lph;

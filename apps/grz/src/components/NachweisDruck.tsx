@@ -4,13 +4,13 @@ import type { Point } from '@core/geometry';
 import { bounds, labelPoint, polygonArea } from '@core/geometry';
 import { nutzungLabel, VERSIEGELUNGEN, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
-import { anschriftEinzeilig, flurText } from '@core/model';
 import type { Kennzahl, Nachweis } from '../massNutzung';
 import { baunvoLabel, bauoLabel, massNachweis } from '../massNutzung';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useGrz } from '../store';
 import { ANRECHNUNG, AUFENTHALT, GELAENDE_QUELLE, GF_ART, HAFTUNG, roemisch, STATUS, zahl } from '../texte';
 import { useEscSchliessen } from '@core/ui/Dialog';
+import { DruckKopf } from '@core/ui/DruckKopf';
 
 /** Druckbarer Nachweis des Maßes der baulichen Nutzung (GRZ, GFZ, Vollgeschosse) – über den Druckdialog auch als PDF. */
 export function NachweisDruck({ onClose }: { onClose: () => void }) {
@@ -21,7 +21,6 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
   const [raeume, setRaeume] = useState(true);
   const m = project.massNutzung ?? {};
   const G = n.grundstueck.flaeche;
-  const heute = new Date().toLocaleDateString('de-DE');
   const eigene = n.lageplan.filter((l) => !l.nachbar);
   const nr = new Map(eigene.map((l, i) => [l.id, i + 1]));
   const vor1990 = n.recht.baunvo !== '1990';
@@ -47,21 +46,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <header className="report-header">
-          <h1>Nachweis des Maßes der baulichen Nutzung</h1>
-          <div className="report-meta">
-            <div>
-              {project.meta.projektcode && <>{project.meta.projektcode} · </>}
-              <strong>{project.name}</strong>
-            </div>
-            {anschriftEinzeilig(project.meta.adresse) && <div>{anschriftEinzeilig(project.meta.adresse)}</div>}
-            {flurText(project.meta.grundstueck) && <div>{flurText(project.meta.grundstueck)}</div>}
-            {project.meta.bauherr.name && <div>Bauherr: {project.meta.bauherr.name}</div>}
-            <div>
-              {project.meta.bearbeiter && <>Bearbeiter: {project.meta.bearbeiter} · </>}Stand: {heute}
-            </div>
-          </div>
-        </header>
+        <DruckKopf titel='Nachweis des Maßes der baulichen Nutzung' project={project} />
 
         <h2>Grundlagen</h2>
         <table className="report-table narrow">

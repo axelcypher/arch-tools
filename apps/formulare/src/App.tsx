@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LogDialog } from '@core/ui/LogDialog';
 import { StammdatenDialog } from '@core/ui/Stammdaten';
+import { ProjektEinstieg } from '@core/ui/ProjektWahl';
 import { TitleBar } from '@core/ui/TitleBar';
 import { autofillFelder } from './autofill';
 import { ignoriert, ignorierenSetzen, useAktualisieren } from './aktualisieren';
@@ -177,7 +178,22 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Formulare" name={name} dirty={geaendert} onOpenLog={() => setDialog('log')} zeichenflaeche={false} />
+      <TitleBar
+        app="Formulare"
+        name={name}
+        dirty={geaendert}
+        onOpenLog={() => setDialog('log')}
+        zeichenflaeche={false}
+        onProjekte={ds ? () => useFormulare.getState().setHaupt('projekte') : undefined}
+        onSpeichern={
+          offen && haupt === 'formular' && !offen.nurLesen && offen.sperre.art !== 'fremd'
+            ? async () => {
+                await speichern();
+                return !istGeaendert(useFormulare.getState().offen);
+              }
+            : undefined
+        }
+      />
       <div className="toolbar">
         {formularSichtbar && (
           <div className="tb-group">
@@ -414,13 +430,18 @@ function Leer({ desktop, onEinstellungen }: { desktop: boolean; onEinstellungen:
   const projekt = useFormulare((s) => s.projekt);
   return (
     <div className="fo-leer">
-      <h2>Bauantragsformulare aus FORMA</h2>
-      {!desktop && (
-        <p>
-          In der Web-Version lässt sich ein einzelnes Formular (<code>.frmsjf</code>) öffnen; die geänderte Fassung wird heruntergeladen. Projektordner, Sperrdateien und
-          direktes Speichern gibt es nur in der Desktop-App.
-        </p>
-      )}
+      {/* gleicher Einstieg wie in den anderen Apps: Projekt wählen bzw. Datei öffnen (ein neues Formular legt FORMA an) */}
+      <ProjektEinstieg
+        titel="Bauantragsformulare aus FORMA"
+        text={
+          desktop
+            ? 'Formulare der FORMA-Projekte ausfüllen – Projekt wählen (links oder über „Projekte“), dann ein Formular.'
+            : 'In der Web-Version lässt sich ein einzelnes Formular (.frmsjf) öffnen; die geänderte Fassung wird heruntergeladen. Projektordner, Sperrdateien und direktes Speichern gibt es nur in der Desktop-App.'
+        }
+        onProjekte={desktop && ordner > 0 ? () => useFormulare.getState().setHaupt('projekte') : undefined}
+        onDateiOeffnen={desktop ? undefined : () => void useFormulare.getState().dateiOeffnen()}
+        dateiHinweis="Formular (.frmsjf)"
+      />
       {desktop && !ordner && (
         <p>
           Stelle zuerst ein, wo eure FORMA-Projekte liegen. <button onClick={onEinstellungen}>Einstellungen …</button>

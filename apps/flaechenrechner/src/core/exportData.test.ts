@@ -22,7 +22,7 @@ describe('Excel-Vorlagen', () => {
     expect(resolveText('{{geschoss:EG.nrf}}', c)).toBe(20);
     expect(resolveText('{{wohnung:WE 1.wofl}}', c)).toBe(20);
     expect(resolveText('{{gibtsnicht}}', c)).toBe('{{gibtsnicht}}');
-    expect(resolveText('{{datum}}', c)).toBe('28.9.2026');
+    expect(resolveText('{{datum}}', c)).toBe('28.09.2026');
   });
 
   it('erkennt Wiederholungszeilen und setzt Zeilenwerte ein', () => {

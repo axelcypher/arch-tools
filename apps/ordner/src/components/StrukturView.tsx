@@ -202,6 +202,9 @@ function GemeinsameEinstellungen() {
       <Field label="Fotoordner im Projekt" hint="Hier sucht die Entzerrung (auch in Unterordnern) nach Fotos; die .entz-Datei liegt beim Foto.">
         <TextField value={allgemein.fotoordner} onChange={(v) => setAllgemein({ fotoordner: v.trim() })} />
       </Field>
+      <Field label="Büro" hint="Name des Büros im Kopf der Ausdrucke und Excel-Dateien aller Apps (leer = ohne)">
+        <TextField value={allgemein.buero ?? ''} placeholder="z. B. Architekturbüro Muster" onChange={(v) => setAllgemein({ buero: v.trim() })} />
+      </Field>
     </>
   );
 }

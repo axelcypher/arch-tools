@@ -29,6 +29,14 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
   Korrigieren stehen. Meldungen erscheinen erst nach dem Verlassen des Feldes bzw. nach dem Absenden; Pflichtfelder
   tragen einen Stern. Im Stammdaten-Formular gibt es weiche Hinweise zu PLZ (fünf Ziffern), E-Mail-Adressen und
   Zeichen, die im Ordnernamen entfallen (`/ : ? …`).
+- **Stammdaten** (Bauvorhaben, Adresse, Gemarkung/Flur/Flurstück, Bebauungsplan Nr./Name, Bauherr, Bearbeitung)
+  stehen einmal in der Projektdatei. Jede App zeigt sie mit demselben Dialog („Stammdaten …“) und lässt sie ändern,
+  ohne die App zu wechseln; andere Apps sehen die Änderung, sobald das Projekt dort neu geladen wird. Ausdrucke und
+  Excel-Dateien haben denselben Kopf aus diesen Angaben, dazu den Büronamen (Projektordner → Einstellungen) und
+  „Seite x von y“.
+- **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch Projektordner und Formulare). Ohne geöffnetes Projekt
+  zeigt jede App denselben Einstieg mit denselben Aktionen: *Projekt wählen …* (Desktop: Übersicht mit „zuletzt
+  geöffnet“), *Datei öffnen …*, *Neues Projekt*.
 - **Datei ließ sich nicht öffnen**: Die Meldung nennt Datei und Grund in Klartext („Keine gültige Projektdatei
   (.oap) – beschädigt oder aus einer anderen Anwendung.“); technische Einzelheiten stehen aufklappbar darunter und im
   Protokoll. Ein fehlgeschlagenes Öffnen ändert das geöffnete Projekt nicht.

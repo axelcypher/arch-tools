@@ -3,12 +3,12 @@ import type { AreaTotals } from '@core/calc';
 import { computeProject } from '@core/calc';
 import { briRechenweg } from '@core/rechenweg';
 import { fmt2 } from '@core/format';
-import { anschriftEinzeilig, flurText } from '@core/model';
 import { NUF_IDS, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useEditor } from '../store/store';
 import { PlanFigure } from './PlanFigure';
 import { useEscSchliessen } from '@core/ui/Dialog';
+import { DruckKopf } from '@core/ui/DruckKopf';
 
 /** Druckbare Flächenaufstellung (DIN 277 / WoFlV). */
 export function Report() {
@@ -17,7 +17,6 @@ export function Report() {
   useEscSchliessen(() => setOpen(false));
   const r = useMemo(() => computeProject(project), [project]);
   const rechenweg = useMemo(() => briRechenweg(project), [project]);
-  const today = new Date().toLocaleDateString('de-DE');
   const [showPlans, setShowPlans] = useState(true);
   const [showBackground, setShowBackground] = useState(false);
 
@@ -55,21 +54,7 @@ export function Report() {
           </button>
         </div>
 
-        <header className="report-header">
-          <h1>Flächenaufstellung</h1>
-          <div className="report-meta">
-            <div>
-              {project.meta.projektcode && <>{project.meta.projektcode} · </>}
-              <strong>{project.name}</strong>
-            </div>
-            {anschriftEinzeilig(project.meta.adresse) && <div>{anschriftEinzeilig(project.meta.adresse)}</div>}
-            {flurText(project.meta.grundstueck) && <div>{flurText(project.meta.grundstueck)}</div>}
-            {project.meta.bauherr.name && <div>Bauherr: {project.meta.bauherr.name}</div>}
-            <div>
-              {project.meta.bearbeiter && <>Bearbeiter: {project.meta.bearbeiter} · </>}Stand: {today}
-            </div>
-          </div>
-        </header>
+        <DruckKopf titel='Flächenaufstellung' project={project} />
 
         <h2>Grundflächen und Rauminhalte nach DIN 277</h2>
         <table className="report-table">

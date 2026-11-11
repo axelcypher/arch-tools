@@ -9,6 +9,7 @@ import type { RegelApp } from '../regeln/regelwerk';
 import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from './Rueckfrage';
+import { useBuero } from './DruckKopf';
 
 const log = logger('fenster');
 
@@ -68,6 +69,9 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
       off?.();
     };
   }, [desktop]);
+
+  // Büroname für Druck- und Excel-Köpfe einmal lesen
+  useBuero();
 
   // Dialoge: aria-modal, Fokus hinein und zurück, Tab bleibt im Dialog (einmal je App)
   useEffect(() => dialogVerhaltenEinrichten(), []);

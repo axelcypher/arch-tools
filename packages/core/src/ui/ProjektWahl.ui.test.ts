@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readProjectFile } from '../archive';
 import { createProject } from '../model';
 import { projektdateiAnlegen, SpeicherProjektordner } from '../platform/projektordner';
@@ -78,5 +78,18 @@ describe('Projektwahl (Flächenrechner, GRZ-Nachweis, Kostenermittlung)', () => 
     expect(host.textContent).toContain('Noch kein Stammordner eingestellt');
     act(() => knopf(host, 'Datei öffnen').click());
     expect(dateiOeffnen).toBe(1);
+  });
+
+  it('Browser ohne Ordnerzugriff: einheitlicher Einstieg mit Datei öffnen, Neues Projekt, Schließen', () => {
+    const neu = vi.fn();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(ProjektWahl, { app: 'GRZ-Nachweis', fs: undefined, onGewaehlt: () => {}, onSchliessen: () => {}, onDateiOeffnen: () => {}, onNeu: neu }));
+    });
+    expect([...host.querySelectorAll('.pw-aktionen button')].map((b) => b.textContent)).toEqual(['Datei öffnen …', 'Neues Projekt', 'Schließen']);
+    act(() => ([...host.querySelectorAll('.pw-aktionen button')][1] as HTMLButtonElement).click());
+    expect(neu).toHaveBeenCalled();
   });
 });

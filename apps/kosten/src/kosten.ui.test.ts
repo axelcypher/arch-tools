@@ -10,7 +10,7 @@ import { KostenDruck } from './components/KostenDruck';
 import { leseKatalog, katalogSpeichern } from './katalog';
 import { useKosten } from './store';
 import { projekt, projektMitAnbau, projektMitKosten } from './testdaten';
-import { farbschemaWechseln } from '@core/ui/rauchtest';
+import { einstiegsAktionen, farbschemaWechseln, stammdatenAendern } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -49,6 +49,18 @@ const knopf = (host: Element, text: string) => [...host.querySelectorAll('button
 const kosten = () => useKosten.getState().project.kosten!;
 
 describe('Kostenermittlung', () => {
+  it('Stammdaten öffnen und ändern, ohne die App zu wechseln', () => {
+    useKosten.getState().load(projekt());
+    const host = render(App);
+    expect(stammdatenAendern(host, '7a')).toBe('Stammdaten des Projekts');
+    expect(useKosten.getState().project.meta.bebauungsplan).toEqual({ nummer: '7a' });
+  });
+
+  it('Leerzustand: dieselben Aktionen wie in den anderen Apps (Q-5)', () => {
+    useKosten.getState().load(createProject());
+    expect(einstiegsAktionen(render(App))).toEqual(['Datei öffnen …', 'Neues Projekt']);
+  });
+
   it('Farbschema wechselt sofort (Menü ◐)', () => {
     useKosten.getState().load(createProject());
     const host = render(App);

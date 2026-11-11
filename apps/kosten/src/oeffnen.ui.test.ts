@@ -32,7 +32,7 @@ describe('Öffnen einer defekten Projektdatei (Q-6)', () => {
       root = createRoot(host);
       root.render(createElement(App));
     });
-    const knopf = [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith('Projekt oder IFC öffnen'))!;
+    const knopf = [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith('Datei öffnen'))!;
     await act(async () => knopf.click());
     for (let i = 0; i < 10 && !host.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
     const meldung = host.querySelector('.modal.rf')!;

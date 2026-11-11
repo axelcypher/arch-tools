@@ -11,7 +11,7 @@ import { useOrdner } from './store';
 type Ansicht = 'projekt' | 'pruefen' | 'vorlagen' | 'einstellungen';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
-  { id: 'projekt', label: 'Projekt', title: 'Assistent: neues Projekt anlegen oder ein bestehendes ergänzen – Stammdaten, Umfang, Vorlagen, Trockenlauf' },
+  { id: 'projekt', label: 'Assistent', title: 'Assistent: neues Projekt anlegen oder ein bestehendes ergänzen – Stammdaten, Umfang, Vorlagen, Trockenlauf' },
   { id: 'pruefen', label: 'Ordner prüfen', title: 'Vorhandenen Projektordner mit der Struktur vergleichen – es wird nichts verschoben' },
   { id: 'vorlagen', label: 'Vorlagen', title: 'Vorlagenordner, Dateinamen und Presets: welche Vorlage wohin kommt und wie sie dort heißt' },
   { id: 'einstellungen', label: 'Einstellungen', title: 'Gemeinsame Einstellungen aller Apps, Ordnerbaum und Namensschemata des Büros' },
@@ -24,6 +24,7 @@ export function App() {
   // ein Projekt aus dem Prüfmodus im Assistenten ergänzen: neuer Start des Assistenten
   const [start, setStart] = useState<{ ordner: GeladenerOrdner; nr: number } | null>(null);
   const [logOpen, setLogOpen] = useState(false);
+  const [neustart, setNeustart] = useState(0);
 
   useEffect(() => {
     document.title = 'Projektordner';
@@ -41,7 +42,19 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Projektordner" name={start?.ordner.name ?? ''} dirty={false} onOpenLog={() => setLogOpen(true)} zeichenflaeche={false} />
+      <TitleBar
+        app="Projektordner"
+        name={start?.ordner.name ?? ''}
+        dirty={false}
+        onOpenLog={() => setLogOpen(true)}
+        zeichenflaeche={false}
+        // wie in den anderen Apps: „Projekte“ führt zur Startseite mit der gemeinsamen Projektübersicht
+        onProjekte={() => {
+          setStart(null);
+          setNeustart((n) => n + 1);
+          setAnsicht('projekt');
+        }}
+      />
       <div className="toolbar">
         <div className="tb-group">
           {ANSICHTEN.map((a) => (
@@ -53,7 +66,7 @@ export function App() {
         <span className="muted small-text">Struktur: {struktur.name}</span>
       </div>
       <main className="po-main">
-        {ansicht === 'projekt' && <AssistentView key={start?.nr ?? 0} start={start?.ordner ?? null} onEinstellungen={() => setAnsicht('einstellungen')} />}
+        {ansicht === 'projekt' && <AssistentView key={`${start?.nr ?? 0}-${neustart}`} start={start?.ordner ?? null} onEinstellungen={() => setAnsicht('einstellungen')} />}
         {ansicht === 'pruefen' && (
           <PruefView
             onErgaenzen={(ordner) => {

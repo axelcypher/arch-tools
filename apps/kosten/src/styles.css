@@ -6,14 +6,6 @@
   overflow: auto;
   background: var(--bg);
 }
-.ko-leer {
-  max-width: 640px;
-  margin: 24px auto 0;
-  padding: 16px 20px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
 .ko-bericht {
   margin: 12px 12px 0;
   padding: 10px 14px;

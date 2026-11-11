@@ -8,7 +8,7 @@ import { GrzGfzView } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
 import { useGrz } from './store';
 import { projekt } from './testdaten';
-import { farbschemaWechseln } from '@core/ui/rauchtest';
+import { einstiegsAktionen, farbschemaWechseln, stammdatenAendern } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -52,6 +52,20 @@ describe('GRZ-Nachweis', () => {
     expect(host.querySelector('.modal')).not.toBeNull();
     esc();
     expect(host.querySelector('.modal')).toBeNull();
+  });
+
+  it('Stammdaten öffnen und ändern, ohne die App zu wechseln; Druckkopf zeigt sie', () => {
+    useGrz.getState().load(projekt());
+    const host = render(App);
+    expect(stammdatenAendern(host, '112')).toBe('Stammdaten des Projekts');
+    expect(useGrz.getState().project.meta.bebauungsplan).toEqual({ nummer: '112' });
+    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Nachweis drucken'))!.click());
+    expect(host.querySelector('.druck-kopf')!.textContent).toContain('BebauungsplanNr. 112');
+  });
+
+  it('Leerzustand: dieselben Aktionen wie in den anderen Apps (Q-5)', () => {
+    useGrz.getState().load(createProject());
+    expect(einstiegsAktionen(render(App))).toEqual(['Datei öffnen …', 'Neues Projekt']);
   });
 
   it('Farbschema wechselt sofort (Menü ◐)', () => {

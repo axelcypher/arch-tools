@@ -24,6 +24,8 @@ export interface AllgemeineEinstellungen {
   oapPfad: string;
   /** Ordner der Fotos im Projektordner (Entzerrung); wird rekursiv durchsucht */
   fotoordner: string;
+  /** Name des Büros für den Kopf der Ausdrucke und Excel-Dateien (leer = ohne) */
+  buero?: string;
 }
 
 export const VORGABE_ALLGEMEIN: AllgemeineEinstellungen = { projekte: [], oapPfad: VORGABE_OAP_PFAD, fotoordner: '09 Fotos' };
@@ -162,11 +164,22 @@ export async function konfigOrdnerWechseln(neu: string | null, bereiche: string[
 
 const texte = (v: unknown) => (Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === 'string' && !!x.trim()).map((x) => x.trim()))] : []);
 
+let bueroZuletzt = '';
+/** zuletzt gelesener Büroname (für den Kopf der Excel-Dateien; leer, solange die Einstellungen nicht gelesen sind) */
+export const bueroName = (): string => bueroZuletzt;
+
 /** Gemeinsame Einstellungen aus Rohdaten; Fehlendes aus der Vorgabe */
 export function allgemeinAus(roh: unknown): AllgemeineEinstellungen {
   const o = (roh && typeof roh === 'object' ? roh : {}) as Record<string, unknown>;
   const text = (v: unknown, vorgabe: string) => (typeof v === 'string' ? v.trim() : vorgabe);
-  return { projekte: texte(o.projekte), oapPfad: text(o.oapPfad, VORGABE_ALLGEMEIN.oapPfad) || VORGABE_ALLGEMEIN.oapPfad, fotoordner: text(o.fotoordner, VORGABE_ALLGEMEIN.fotoordner) };
+  const a: AllgemeineEinstellungen = {
+    projekte: texte(o.projekte),
+    oapPfad: text(o.oapPfad, VORGABE_ALLGEMEIN.oapPfad) || VORGABE_ALLGEMEIN.oapPfad,
+    fotoordner: text(o.fotoordner, VORGABE_ALLGEMEIN.fotoordner),
+  };
+  if (text(o.buero, '')) a.buero = text(o.buero, '');
+  bueroZuletzt = a.buero ?? '';
+  return a;
 }
 
 export async function allgemeinLaden(): Promise<AllgemeineEinstellungen> {

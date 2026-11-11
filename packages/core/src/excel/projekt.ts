@@ -1,5 +1,7 @@
 import type { Project } from '../model';
-import { anschriftEinzeilig, flurText, plzOrt } from '../model';
+import { anschriftEinzeilig, bebauungsplanText, flurText, plzOrt } from '../model';
+import { bueroName } from '../platform/konfig';
+import { datumText, kopfZeilen } from '../ui/DruckKopf';
 import type { PlaceholderDocs, Value } from './context';
 
 /** alle Kontakte einer Art, mit Komma getrennt */
@@ -22,6 +24,16 @@ export function projektWerte(project: Project, date = new Date()): Record<string
     'projekt.ort': project.meta.adresse.ort,
     'projekt.plz_ort': plzOrt(project.meta.adresse),
     'projekt.bearbeiter': project.meta.bearbeiter,
+    'projekt.vorhaben': project.meta.vorhaben ?? '',
+    'bplan.nummer': project.meta.bebauungsplan?.nummer ?? '',
+    'bplan.name': project.meta.bebauungsplan?.name ?? '',
+    'bplan.text': bebauungsplanText(project.meta.bebauungsplan),
+    buero: bueroName(),
+    // gemeinsamer Kopf (wie im Druck): Bauherr, Bebauungsplan, Büro, Bearbeitung in einer Zeile
+    'kopf.angaben': kopfZeilen(project, { buero: bueroName() })
+      .filter((z) => ['Bauherr', 'Bebauungsplan', 'Büro', 'Bearbeitung'].includes(z.label))
+      .map((z) => `${z.label}: ${z.wert}`)
+      .join(' · '),
     'grundstueck.gemarkung': project.meta.grundstueck.gemarkung,
     'grundstueck.flur': project.meta.grundstueck.flur,
     'grundstueck.flurstueck': project.meta.grundstueck.flurstueck,
@@ -35,7 +47,7 @@ export function projektWerte(project: Project, date = new Date()): Record<string
     'bauherr.plz_ort': plzOrt(project.meta.bauherr.adresse),
     'bauherr.email': kontakte(project, 'email'),
     'bauherr.telefon': kontakte(project, 'telefon'),
-    datum: date.toLocaleDateString('de-DE'),
+    datum: datumText(date),
   };
 }
 
@@ -47,12 +59,16 @@ export const PROJEKT_DOCS: PlaceholderDocs[number] = {
     ['projekt.adresse', 'Adresse in einer Zeile: „Straße Nr., PLZ Ort“'],
     ['projekt.strasse, projekt.plz, projekt.ort, projekt.plz_ort', 'Adresse in Teilen'],
     ['projekt.bearbeiter', 'Bearbeiter'],
+    ['projekt.vorhaben', 'Bezeichnung des Vorhabens'],
+    ['bplan.nummer, bplan.name, bplan.text', 'Bebauungsplan: Nummer, Name, beides in einer Zeile'],
+    ['buero', 'Name des Büros (gemeinsame Einstellungen)'],
+    ['kopf.angaben', 'Kopfzeile wie im Druck: „Bauherr: … · Bebauungsplan: … · Büro: … · Bearbeitung: …“'],
     ['grundstueck.gemarkung, grundstueck.flur, grundstueck.flurstueck', 'Grundstücksdaten'],
     ['grundstueck.flurtext', '„Gemarkung …, Flur …, Flurstück …“'],
     ['grundstueck.flaeche', 'Grundstücksfläche [m²] (Projektdaten)'],
     ['bauherr.name', 'Name des Bauherrn'],
     ['bauherr.adresse, bauherr.strasse, bauherr.plz, bauherr.ort, bauherr.plz_ort', 'Adresse des Bauherrn'],
     ['bauherr.email, bauherr.telefon', 'alle E-Mail-Adressen bzw. Telefonnummern, mit Komma getrennt'],
-    ['datum', 'Datum des Exports'],
+    ['datum', 'Datum des Exports (TT.MM.JJJJ)'],
   ],
 };

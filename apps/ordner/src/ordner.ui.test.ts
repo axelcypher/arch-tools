@@ -57,6 +57,15 @@ const warten = () =>
 const weiter = (host: Element) => act(() => knopf(host, 'Weiter:').click());
 
 describe('Projektordner', () => {
+  it('„Projekte“ in der Titelleiste wie in den anderen Apps: führt zur Startseite des Assistenten (Q-5, P-13)', () => {
+    const host = render();
+    act(() => knopf(host, 'Ordner prüfen').click());
+    const projekte = host.querySelector<HTMLButtonElement>('.titlebar-projekte')!;
+    expect(projekte.textContent).toBe('Projekte');
+    act(() => projekte.click());
+    expect(knopf(host, 'Assistent').className).toContain('active');
+  });
+
   it('Farbschema wechselt sofort (Menü ◐), ohne Option „Zeichenfläche abdunkeln“', () => {
     const host = render();
     expect(farbschemaWechseln(host, 'Dunkel')).toBe('dunkel');
@@ -173,7 +182,7 @@ describe('Projektordner', () => {
     expect(useOrdner.getState().struktur.presets[1].eintraege[1].lph).toEqual([6, 7]);
 
     // im Assistenten wählen: nur „Alle Vorlagen“ ist Standard
-    act(() => knopf(host, 'Projekt').click());
+    act(() => knopf(host, 'Assistent').click());
     act(() => knopf(host, 'Neues Projekt').click());
     eingabe(feld(host, 'Projektnummer'), '2026-014');
     eingabe(feld(host, 'Kurzname'), 'Haus');

@@ -184,7 +184,7 @@ describe('Excel-Export mit Vorlage', () => {
     const wb = await load(await exportWithTemplate(new Uint8Array(await tpl.xlsx.writeBuffer()), p, computeProject(p), new Date(2026, 8, 28)));
     const hf = wb.getWorksheet('Kopf')!.headerFooter;
     expect(hf.oddHeader).toBe('&L&"Arial,Fett"Sanierung EFH Sander&RProjekt A&&B 42');
-    expect(hf.oddFooter).toMatch(/^&LStand 28\.9\.2026 · BRI [\d.,]+ m³ · \{\{gibtsnicht\}\}&RSeite &P\/&N$/);
+    expect(hf.oddFooter).toMatch(/^&LStand 28\.09\.2026 · BRI [\d.,]+ m³ · \{\{gibtsnicht\}\}&RSeite &P\/&N$/);
   });
 
   it('Wohnflächen: Abschnitt Nebenflächen nur, wenn es welche gibt', async () => {

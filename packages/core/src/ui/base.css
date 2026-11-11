@@ -642,6 +642,28 @@ code {
   color: var(--muted);
 }
 
+/* gemeinsamer Druckkopf (DruckKopf.tsx): Angaben in zwei Spalten */
+.druck-kopf-zeilen {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px 18px;
+  margin: 0;
+}
+.druck-kopf-zeilen > div {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+.druck-kopf-zeilen dt {
+  flex: 0 0 92px;
+  color: var(--muted);
+}
+.druck-kopf-zeilen dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
 .report h2 {
   font-size: 15px;
   margin: 22px 0 8px;
@@ -756,6 +778,12 @@ code {
   @page {
     size: A4 landscape;
     margin: 12mm;
+    /* Seitenzahlen in allen Ausdrucken */
+    @bottom-right {
+      content: 'Seite ' counter(page) ' von ' counter(pages);
+      font: 9px 'Segoe UI', system-ui, sans-serif;
+      color: #6b7280;
+    }
   }
 
   html,

@@ -6,7 +6,7 @@ import { Report } from './components/Report';
 import { Sidebar } from './components/Sidebar';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
-import { projektDateiOeffnen, projektSpeichernAktion, projektUebernehmen, Toolbar } from './components/Toolbar';
+import { projektDateiOeffnen, projektSpeichernAktion, projektUebernehmen, Toolbar, verwerfenOk } from './components/Toolbar';
 import { isTauri } from '@core/platform/files';
 import { ProjektWahl } from '@core/ui/ProjektWahl';
 import { useEditor } from './store/store';
@@ -22,8 +22,12 @@ export function App() {
   const dirty = useEditor((s) => s.dirty);
   const [logOpen, setLogOpen] = useState(false);
   const datei = useEditor((s) => s.datei);
-  // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
-  const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
+  // Beim Start die Projektübersicht – auf dem Desktop immer (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“
+  // erreichbar), im Browser, solange kein Projekt bzw. kein Zwischenstand da ist (gleicher Einstieg wie die anderen Apps)
+  const [projekteOffen, setProjekteOffen] = useState(() => {
+    const s = useEditor.getState();
+    return isTauri() || (!s.datei && s.project.storeys.every((st) => !st.shapes.length));
+  });
 
   useEffect(() => {
     document.title = `${dirty ? '• ' : ''}${name} – Flächenrechner`;
@@ -86,6 +90,11 @@ export function App() {
           onDateiOeffnen={() => {
             setProjekteOffen(false);
             void projektDateiOeffnen();
+          }}
+          onNeu={async () => {
+            if (!(await verwerfenOk())) return;
+            useEditor.getState().newProject();
+            setProjekteOffen(false);
           }}
         />
       )}

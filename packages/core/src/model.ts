@@ -239,6 +239,14 @@ export interface Grundstueck {
   flaeche?: number;
 }
 
+/** Bebauungsplan, in dessen Geltungsbereich das Grundstück liegt */
+export interface Bebauungsplan {
+  /** Nummer, z. B. „Nr. 112“ */
+  nummer?: string;
+  /** Name, z. B. „Am Mühlenbach“ */
+  name?: string;
+}
+
 export interface Bauherr {
   /** Name bzw. Firma */
   name: string;
@@ -273,6 +281,8 @@ export interface ProjectMeta {
   /** Adresse des Bauvorhabens */
   adresse: Anschrift;
   grundstueck: Grundstueck;
+  /** Bebauungsplan (Nummer, Name) – fehlt, wenn keiner erfasst ist */
+  bebauungsplan?: Bebauungsplan;
   bauherr: Bauherr;
   bearbeiter: string;
   /** beauftragte Leistungsphasen (1–9); fehlt = nicht festgelegt */
@@ -340,6 +350,13 @@ export function anschriftAusText(text: string): Anschrift {
   const nurOrt = /^(\d{4,5})\s+(.+)$/.exec(t);
   if (nurOrt) return { strasse: '', plz: nurOrt[1], ort: nurOrt[2].trim() };
   return { strasse: t, plz: '', ort: '' };
+}
+
+/** Bebauungsplan in einer Zeile: „Nr. 112 „Am Mühlenbach““ */
+export function bebauungsplanText(b: Bebauungsplan | undefined): string {
+  const nr = b?.nummer?.trim();
+  const name = b?.name?.trim();
+  return [nr && (/^nr\.?\s/i.test(nr) ? nr : `Nr. ${nr}`), name && `„${name}“`].filter(Boolean).join(' ');
 }
 
 /** Gemarkung, Flur, Flurstück in einer Zeile */
