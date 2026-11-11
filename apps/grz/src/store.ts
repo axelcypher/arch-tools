@@ -1,7 +1,8 @@
 import { standNachSpeichern } from '@core/platform/projektDatei';
 import { create } from 'zustand';
 import type { LageplanFlaeche, MassNutzung, Project } from '@core/model';
-import { createProject, newId } from '@core/model';
+import { createProject, leereMeta, newId } from '@core/model';
+import { gleich } from '@core/zusammenfuehren';
 import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
@@ -32,9 +33,18 @@ interface GrzState {
   /** alle gewählten Lageplan-Flächen (Mehrfachauswahl mit Umschalt) – enthält selected */
   selectedIds: string[];
   werkzeug: Werkzeug;
+  /** Zeitpunkt des ungespeicherten Zwischenstands, der beim Start wiederhergestellt wurde (Leiste „Speichern / Verwerfen“) */
+  wiederhergestellt: number | null;
 
   /** basis: Stand der Datei, aus der das Projekt stammt (null bei IFC-Import bzw. neuem Projekt) */
   load: (p: Project, datei?: string | null, basis?: Project | null) => void;
+  /**
+   * Zwischenstand nach dem Neuladen wiederherstellen: ungespeichert, wenn er von der Datei abweicht (Vergleich der
+   * Inhalte) bzw. – ohne Datei – nicht leer ist; zeit: wann er entstand
+   */
+  wiederherstellen: (p: Project, datei: string | null, basis: Project | null, zeit?: number) => void;
+  /** wiederhergestellten Zwischenstand verwerfen: zurück auf den Stand der Datei bzw. ein leeres Projekt */
+  verwerfen: () => void;
   /** zusammenfassen: aufeinanderfolgende Änderungen mit gleichem Schlüssel (z. B. Pfeiltasten) = ein Undo-Schritt */
   update: (fn: (p: Project) => Project, zusammenfassen?: string) => void;
   undo: () => void;
@@ -62,10 +72,22 @@ export const useGrz = create<GrzState>()((set, get) => ({
   selected: null,
   selectedIds: [],
   werkzeug: 'auswahl',
+  wiederhergestellt: null,
 
   load: (p, datei = null, basis = null) => {
     log.info(`Projekt geladen: ${p.name}`, { geschosse: p.storeys.length, lageplan: p.lageplan?.flaechen.length ?? 0 });
-    set({ project: p, datei, basis, dirty: false, dokument: get().dokument + 1, past: [], future: [], selected: null, selectedIds: [], werkzeug: 'auswahl' });
+    set({ project: p, datei, basis, dirty: false, dokument: get().dokument + 1, past: [], future: [], selected: null, selectedIds: [], werkzeug: 'auswahl', wiederhergestellt: null });
+  },
+  wiederherstellen: (p, datei, basis, zeit) => {
+    get().load(p, datei, basis);
+    const dirty = basis ? !gleich(p, basis) : !istLeer(p);
+    if (dirty) log.info('Ungespeicherter Zwischenstand wiederhergestellt', { datei, zeit });
+    set({ dirty, wiederhergestellt: dirty ? (zeit ?? Date.now()) : null });
+  },
+  verwerfen: () => {
+    const { basis, datei } = get();
+    if (basis) get().load(basis, datei, basis);
+    else get().load(createProject());
   },
   update: (fn, zusammenfassen) => {
     const { project, past } = get();
@@ -100,7 +122,7 @@ export const useGrz = create<GrzState>()((set, get) => ({
     // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
     const n = standNachSpeichern(get().project, vorher, gespeichert);
     if (n.verlaufVerwerfen) set({ past: [], future: [] });
-    set({ project: n.project, dirty: n.dirty, datei, basis: gespeichert });
+    set({ project: n.project, dirty: n.dirty, datei, basis: gespeichert, wiederhergestellt: null });
   },
   select: (id) => set({ selected: id, selectedIds: id ? [id] : [] }),
   toggleSelect: (id) => {
@@ -118,6 +140,19 @@ function auswahlBereinigen(set: (s: Partial<GrzState>) => void, get: () => GrzSt
   const da = new Set((project.lageplan?.flaechen ?? []).map((f) => f.id));
   const ids = selectedIds.filter((id) => da.has(id));
   if (ids.length !== selectedIds.length || (selected && !da.has(selected))) set({ selectedIds: ids, selected: selected && da.has(selected) ? selected : (ids[ids.length - 1] ?? null) });
+}
+
+/** leeres Projekt (wie „Neues Projekt“): ohne Gebäude, Lageplan, Festsetzungen, Stammdaten und Dateien */
+export function istLeer(p: Project): boolean {
+  const m = p.massNutzung;
+  return (
+    !p.storeys.some((s) => s.shapes.length) &&
+    !p.lageplan?.flaechen.length &&
+    (!m || Object.keys(m).length === 0) &&
+    !p.dateien?.length &&
+    gleich(p.meta, leereMeta()) &&
+    p.name === createProject().name
+  );
 }
 
 /* ---------- Änderungen am Projekt ---------- */
@@ -172,11 +207,11 @@ if (typeof indexedDB !== 'undefined') {
       .then((raw) => {
         const st = useGrz.getState();
         if (!raw || st.dirty || st.past.length) return;
-        const r = raw as { project: unknown; datei: string | null; basis?: unknown };
+        const r = raw as { project: unknown; datei: string | null; basis?: unknown; zeit?: number };
         const project = parseProjectData(r.project);
         const basis = r.basis ? parseProjectData(r.basis) : null;
         zwischenstandWirdGeladen(DB);
-        st.load(project, r.datei, basis);
+        st.wiederherstellen(project, r.datei, basis, typeof r.zeit === 'number' ? r.zeit : undefined);
       })
       .catch(() => {
         // kein Zwischenstand
@@ -190,7 +225,7 @@ if (typeof indexedDB !== 'undefined') {
       const { project, datei, basis } = useGrz.getState();
       void db()
         .then((d) => {
-          d.transaction(STORE, 'readwrite').objectStore(STORE).put({ project, datei, basis }, KEY);
+          d.transaction(STORE, 'readwrite').objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
           zwischenstandErsetzt(DB);
         })
         .catch(() => undefined);

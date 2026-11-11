@@ -147,6 +147,17 @@ button.link:hover {
   font-size: 11px;
   color: var(--muted);
 }
+.kpi-vergleich {
+  margin-top: 2px;
+}
+/* Zahl und Einheit nie trennen („100,00 m²“) */
+.nowrap,
+.num {
+  white-space: nowrap;
+}
+.grz-hinweise li.bedienung {
+  color: var(--muted);
+}
 .pill {
   display: inline-block;
   font-size: 10.5px;

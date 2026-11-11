@@ -2,8 +2,12 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createProject } from '@core/model';
+import { createLageplanFlaeche, createProject } from '@core/model';
+import { fmt2 } from '@core/format';
+import { pointInPolygon, rectPoints } from '@core/geometry';
 import { App } from './App';
+import { innenflaeche, weltpunkt } from './components/LageplanEditor';
+import { massNachweis } from './massNutzung';
 import { GrzGfzView } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
 import { useGrz } from './store';
@@ -137,13 +141,14 @@ describe('GRZ-Nachweis', () => {
     });
     const text = host.textContent ?? '';
     expect(text).toContain('Nachweis des Maßes der baulichen Nutzung');
-    expect(text).toContain('14.3.1967');
+    expect(text).toContain('14.03.1967');
+    expect(text).not.toContain('((');
     expect(text).toContain('BauNVO 1962');
     expect(text).toContain('Hauptanlage (Gebäude)');
     expect(text).toContain('Aufenthaltsräume in Nicht-Vollgeschossen');
     expect(text).toContain('Zimmer I');
     // Lageplan mit Nummern der eigenen Flächen
-    expect([...host.querySelectorAll('.plan-svg text')].map((t) => t.textContent)).toEqual(['1', '2']);
+    expect([...host.querySelectorAll('.plan-svg text[data-flaeche]')].map((t) => t.textContent)).toEqual(['1', '2']);
   });
 
   it('öffnet Druck und Excel über die Werkzeugleiste', () => {
@@ -194,5 +199,80 @@ describe('GRZ-Nachweis', () => {
     const rad = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 100 });
     act(() => svg.dispatchEvent(rad));
     expect(rad.defaultPrevented).toBe(true);
+  });
+});
+
+describe('Fehlerkorrekturen (Phase 1)', () => {
+  it('G-01: wiederhergestellter Zwischenstand gilt als ungespeichert, „Verwerfen“ setzt auf die Datei zurück', async () => {
+    const datei = projekt();
+    const geaendert = { ...datei, name: 'Umbenannt' };
+    useGrz.getState().wiederherstellen(geaendert, 'Haus.oap', datei, new Date(2026, 10, 11, 9, 5).getTime());
+    expect(useGrz.getState().dirty).toBe(true);
+    const host = render(App);
+    const leiste = host.querySelector('.grz-wiederhergestellt')!;
+    expect(leiste.textContent).toContain('Ungespeicherter Stand vom 11.11.2026 09:05 wiederhergestellt');
+    expect(document.title.startsWith('• ')).toBe(true);
+    // gleicher Inhalt (andere Objekte): gespeichert
+    useGrz.getState().wiederherstellen(structuredClone(datei), 'Haus.oap', datei);
+    expect(useGrz.getState().dirty).toBe(false);
+    // ohne Datei: ein nicht leeres Projekt ist ungespeichert, ein leeres nicht
+    useGrz.getState().wiederherstellen(geaendert, null, null);
+    expect(useGrz.getState().dirty).toBe(true);
+    useGrz.getState().wiederherstellen(createProject(), null, null);
+    expect(useGrz.getState().dirty).toBe(false);
+    // Verwerfen
+    useGrz.getState().wiederherstellen(geaendert, 'Haus.oap', datei);
+    act(() => useGrz.getState().verwerfen());
+    expect(useGrz.getState().project.name).toBe('GRZ-Test');
+    expect(useGrz.getState().dirty).toBe(false);
+    expect(useGrz.getState().wiederhergestellt).toBeNull();
+  });
+
+  it('G-04/G-08: Druck mit angerechneter Fläche, Nummer im eindeutigen Anteil, Maßstab und Nordpfeil', () => {
+    const p = projekt();
+    // Garten umschließt das Gebäude
+    p.lageplan!.flaechen.push({ ...createLageplanFlaeche(rectPoints({ x: -6, y: -5 }, { x: 20, y: 16 }), 'Garten'), nutzung: 'garten', versiegelung: 'gruen' });
+    p.massNutzung = { ...p.massNutzung, planDatum: '1978-06-01' };
+    useGrz.getState().load(p);
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(NachweisDruck, { onClose: () => {} }));
+    });
+    const n = massNachweis(p);
+    // Terrasse zählt 1968/77 nicht: angerechnet 0; Summe GR = Kachel
+    const zeile = [...host.querySelectorAll('.grz-report tr')].find((tr) => tr.children[1]?.textContent === 'Terrasse')!;
+    expect(zeile.children[6].textContent).toBe('0,00');
+    expect(host.querySelector('.grz-summe-gr td.num')!.textContent).toBe(fmt2(n.grz.flaeche));
+    // Garten-Nummer im Garten, nicht im Gebäude
+    const gid = p.lageplan!.flaechen[2].id;
+    const t = host.querySelector(`.plan-svg text[data-flaeche="${gid}"]`)!;
+    const q = { x: Number(t.getAttribute('x')), y: Number(t.getAttribute('y')) };
+    expect(pointInPolygon(q, p.lageplan!.flaechen[2].points)).toBe(true);
+    expect(pointInPolygon(q, rectPoints({ x: 0, y: 0 }, { x: 12, y: 11.25 }))).toBe(false);
+    expect(host.querySelector('.plan-massstab')).not.toBeNull();
+    expect(host.querySelector('.plan-nordpfeil')).not.toBeNull();
+    // Haftungssatz nur auf Wunsch; Stand wie eingetragen (nicht automatisch heute)
+    expect(host.querySelector('.grz-haftung')).toBeNull();
+    expect(host.querySelector('.druck-kopf')!.textContent).not.toContain('Stand');
+  });
+
+  it('G-13: weltpunkt rechnet mit der Innenfläche (ohne Rahmen) – exakt bei jedem Zoom', () => {
+    // Plan 600 × 400 px Innenfläche, Rahmen 1 px: getBoundingClientRect wäre 602 × 402
+    const innen = { left: 101, top: 51, width: 600, height: 400 };
+    for (const zoom of [1, 0.2, 5]) {
+      const vb = { x: -20 / zoom, y: -15 / zoom, w: 60 / zoom, h: 40 / zoom };
+      const s = vb.w / 600;
+      const ziel = { x: 13, y: 6 };
+      const p = weltpunkt(vb, innen, innen.left + (ziel.x - vb.x) / s, innen.top + (ziel.y - vb.y) / s);
+      expect(p.x).toBeCloseTo(13, 9);
+      expect(p.y).toBeCloseTo(6, 9);
+    }
+    const el = document.createElement('div');
+    el.style.border = '1px solid black';
+    document.body.appendChild(el);
+    el.getBoundingClientRect = () => ({ left: 100, top: 50, width: 602, height: 402, right: 702, bottom: 452, x: 100, y: 50, toJSON: () => '' });
+    expect(innenflaeche(el)).toEqual(innen);
   });
 });

@@ -6,7 +6,7 @@ import { Field, NumberField, TextField } from '@core/ui/fields';
 import type { Anrechnung, Kennzahl, Status } from '../massNutzung';
 import { anrechnungRegel, BAUNVO_FASSUNGEN, BAUO_FASSUNGEN, baunvoLabel, bauoLabel, massNachweis, recht } from '../massNutzung';
 import { mapFlaeche, removeFlaeche, setMassNutzung, useGrz } from '../store';
-import { AUFENTHALT, ANRECHNUNG, GELAENDE_QUELLE, GF_ART, HAFTUNG, roemisch, STATUS, zahl } from '../texte';
+import { AUFENTHALT, ANRECHNUNG, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, zahl } from '../texte';
 import { LageplanEditor } from './LageplanEditor';
 import { areaMP, unionAll } from '@core/polygon';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
@@ -325,9 +325,9 @@ export function GrzGfzView() {
           {n.grundstueck.flaeche !== undefined && ` · Grundstück ${fmt2(n.grundstueck.flaeche)} m²${n.grundstueck.quelle === 'lageplan' ? ' (aus dem Lageplan)' : ''}`}
         </p>
         <div className="kpis">
-          <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" flaeche={n.grz.wert * (n.grundstueck.flaeche ?? 0)} />
-          {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" flaeche={n.grz2.wert * (n.grundstueck.flaeche ?? 0)} />}
-          <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" flaeche={n.gf} />
+          <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" kurz={n.recht.baunvo === '1990' ? 'GR I' : 'GR'} />
+          {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
+          <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" />
           <div className="kpi">
             <div className="kpi-head">
               <span>Vollgeschosse</span>
@@ -477,12 +477,18 @@ export function GrzGfzView() {
           </>
         )}
 
-        {n.hinweise.length > 0 && (
+        {n.recht.hinweise.length + n.hinweise.length > 0 && (
           <>
             <h3>Hinweise</h3>
             <ul className="grz-hinweise">
+              {n.recht.hinweise.map((h, i) => (
+                <li key={`r${i}`}>{h}</li>
+              ))}
               {n.hinweise.map((h, i) => (
-                <li key={i}>{h}</li>
+                <li key={i} className={h.art === 'bedienung' ? 'bedienung' : undefined} title={h.art === 'bedienung' ? 'Bedienhinweis – erscheint nicht im Nachweis' : undefined}>
+                  {h.text}
+                  {h.tipp && <span className="muted"> {h.tipp}</span>}
+                </li>
               ))}
             </ul>
           </>
@@ -506,22 +512,33 @@ function AnrechnungPill({ a, baunvo }: { a: Anrechnung; baunvo: BauNVOFassung })
   );
 }
 
-function KpiZeile({ titel, k, einheit, flaeche }: { titel: string; k: Kennzahl; einheit: string; flaeche: number }) {
+function KpiZeile({ titel, k, einheit, kurz }: { titel: string; k: Kennzahl; einheit: string; kurz: string }) {
+  const vergleich = flaechenVergleich(kurz, k);
   return (
     <div className={`kpi${k.status === 'ueberschritten' ? ' alarm' : ''}`}>
       <div className="kpi-head">
         <span>{titel}</span>
         <StatusPill s={k.status} />
       </div>
-      <div className="kpi-value" title={k.wert.toLocaleString('de-DE', { maximumFractionDigits: 4 })}>
-        {zahl(k.wert)}
-        {k.mitOffenen !== undefined && <small> bis {zahl(k.mitOffenen)}</small>}
+      <div className="kpi-value" title={k.wert === undefined ? 'Grundstücksfläche fehlt' : undefined}>
+        {kennzahlWert(k)}
+        {k.mitOffenen !== undefined && <small> bis {kennzahlWert(k, k.mitOffenen)}</small>}
       </div>
       <div className="kpi-sub">
-        {einheit} {fmt2(flaeche)} m²
+        <span className="nowrap">
+          {einheit} {fmt2(k.flaeche)} m²
+        </span>
         {k.zulaessig !== undefined && ` · zulässig ${zahl(k.zulaessig)}`}
-        {k.reserve !== undefined && ` · ${k.reserve >= 0 ? 'Reserve' : 'zu viel'} ${fmt2(Math.abs(k.reserve))} m²`}
+        {k.reserve !== undefined && (
+          <>
+            {' · '}
+            <span className="nowrap">
+              {k.reserve >= 0 ? 'Reserve' : 'zu viel'} {fmt2(Math.abs(k.reserve))} m²
+            </span>
+          </>
+        )}
       </div>
+      {vergleich && <div className="kpi-sub kpi-vergleich">{vergleich}</div>}
     </div>
   );
 }

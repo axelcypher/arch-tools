@@ -10,7 +10,7 @@ import type { Nachweis } from '../massNutzung';
 import { addFlaeche, auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapFlaeche, removeFlaeche, useGrz } from '../store';
 import type { Werkzeug } from '../store';
 
-interface Ausschnitt {
+export interface Ausschnitt {
   x: number;
   y: number;
   w: number;
@@ -84,7 +84,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const r = el.getBoundingClientRect();
+      const r = innenflaeche(el);
       const f = Math.exp(e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0015));
       setVb((v) => {
         const p = weltpunkt(v, r, e.clientX, e.clientY);
@@ -98,10 +98,10 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   }, []);
 
   const skala = () => {
-    const r = svgRef.current?.getBoundingClientRect();
+    const r = innenflaeche(svgRef.current);
     return Math.max(vb.w / (r?.width || 600), vb.h / (r?.height || 400));
   };
-  const toWorld = (e: { clientX: number; clientY: number }): Point => weltpunkt(vb, svgRef.current?.getBoundingClientRect(), e.clientX, e.clientY);
+  const toWorld = (e: { clientX: number; clientY: number }): Point => weltpunkt(vb, innenflaeche(svgRef.current), e.clientX, e.clientY);
 
   const fangpunkte = useMemo(() => [...n.hauptanlagePolygone.flat(), ...flaechen.flatMap((f) => f.points)], [n.hauptanlagePolygone, flaechen]);
   // Gebäudeachse (genordete Pläne: Gebäude stehen schräg) für Hilfslinien, Umschalt und Rechtecke
@@ -515,8 +515,32 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   );
 }
 
-/** Bildschirm → Plan (viewBox mit xMidYMid meet: Ausschnitt mittig, gleicher Maßstab in x und y) */
-function weltpunkt(vb: Ausschnitt, r: DOMRect | undefined, clientX: number, clientY: number): Point {
+/** Rechteck in Bildschirmkoordinaten */
+export interface Rechteck {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Innenfläche des Plans in Bildschirmkoordinaten: ohne Rahmen und Innenabstand – die viewBox bezieht sich auf sie,
+ * nicht auf getBoundingClientRect() (sonst sitzen Punkte um die Rahmenbreite versetzt)
+ */
+export function innenflaeche(el: Element | null | undefined): Rechteck | undefined {
+  if (!el) return undefined;
+  const r = el.getBoundingClientRect();
+  const cs = getComputedStyle(el);
+  const px = (v: string) => parseFloat(v) || 0;
+  const l = px(cs.borderLeftWidth) + px(cs.paddingLeft);
+  const t = px(cs.borderTopWidth) + px(cs.paddingTop);
+  const rr = px(cs.borderRightWidth) + px(cs.paddingRight);
+  const b = px(cs.borderBottomWidth) + px(cs.paddingBottom);
+  return { left: r.left + l, top: r.top + t, width: Math.max(0, r.width - l - rr), height: Math.max(0, r.height - t - b) };
+}
+
+/** Bildschirm → Plan (viewBox mit xMidYMid meet: Ausschnitt mittig, gleicher Maßstab in x und y); r: Innenfläche */
+export function weltpunkt(vb: Ausschnitt, r: Rechteck | undefined, clientX: number, clientY: number): Point {
   const wPx = r?.width || 600;
   const hPx = r?.height || 400;
   const s = Math.max(vb.w / wPx, vb.h / hPx);

@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import type { Point } from '@core/geometry';
-import { bounds, labelPoint, polygonArea } from '@core/geometry';
+import { bounds, polygonArea } from '@core/geometry';
 import { nutzungLabel, VERSIEGELUNGEN, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
-import type { Kennzahl, Nachweis } from '../massNutzung';
-import { baunvoLabel, bauoLabel, massNachweis } from '../massNutzung';
+import type { Anrechnung, Kennzahl, Nachweis } from '../massNutzung';
+import { baunvoLabel, bauoLabel, massNachweis, sachlicheHinweise } from '../massNutzung';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useGrz } from '../store';
-import { ANRECHNUNG, AUFENTHALT, GELAENDE_QUELLE, GF_ART, HAFTUNG, roemisch, STATUS, zahl } from '../texte';
+import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, zahl } from '../texte';
 import { useEscSchliessen } from '@core/ui/Dialog';
-import { DruckKopf } from '@core/ui/DruckKopf';
+import { datumText, DruckKopf } from '@core/ui/DruckKopf';
+import { beschriftungsPunkt, massstabLaenge, PT } from '../beschriftung';
 
 /** Druckbarer Nachweis des Maßes der baulichen Nutzung (GRZ, GFZ, Vollgeschosse) – über den Druckdialog auch als PDF. */
 export function NachweisDruck({ onClose }: { onClose: () => void }) {
@@ -19,12 +20,18 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
   const n = useMemo(() => massNachweis(project), [project]);
   const [plan, setPlan] = useState(true);
   const [raeume, setRaeume] = useState(true);
+  // Haftungssatz des Tools gehört nicht auf das Blatt für das Bauamt – nur auf Wunsch
+  const [haftung, setHaftung] = useState(false);
+  // Stand des Nachweises: nicht automatisch heute, sondern wie eingetragen (leer = ohne Stand im Kopf)
+  const [stand, setStand] = useState('');
   const m = project.massNutzung ?? {};
   const G = n.grundstueck.flaeche;
   const eigene = n.lageplan.filter((l) => !l.nachbar);
   const nr = new Map(eigene.map((l, i) => [l.id, i + 1]));
   const vor1990 = n.recht.baunvo !== '1990';
   const aufenthalt = vor1990 ? aufenthaltsraeume(project, n) : [];
+  const hinweise = sachlicheHinweise(n);
+  const grLabel = vor1990 ? 'GR' : 'GR II';
 
   return (
     <div className="report-backdrop">
@@ -40,20 +47,27 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
               Aufenthaltsräume
             </label>
           )}
+          <label className="toggle">
+            <input type="checkbox" checked={haftung} onChange={(e) => setHaftung(e.target.checked)} />
+            Haftungshinweis
+          </label>
+          <label className="toggle" title="Stand des Nachweises im Kopf – leer: ohne Angabe">
+            Stand <input type="date" value={stand} onChange={(e) => setStand(e.target.value)} />
+          </label>
           <button onClick={() => druckenAls({ datei: useGrz.getState().datei, projektName: project.name, zusatz: 'GRZ+GFZ' })}>Drucken / PDF</button>
           <button className="primary" onClick={onClose}>
             Schließen
           </button>
         </div>
 
-        <DruckKopf titel='Nachweis des Maßes der baulichen Nutzung' project={project} />
+        <DruckKopf titel="Nachweis des Maßes der baulichen Nutzung" project={project} stand={stand} />
 
         <h2>Grundlagen</h2>
         <table className="report-table narrow">
           <tbody>
             <tr>
               <td>Bebauungsplan in Kraft seit</td>
-              <td>{m.planDatum ? new Date(m.planDatum).toLocaleDateString('de-DE') : 'kein Datum (aktuelles Recht)'}</td>
+              <td>{m.planDatum ? datumText(m.planDatum) : 'kein Datum (aktuelles Recht)'}</td>
             </tr>
             <tr>
               <td>Baunutzungsverordnung</td>
@@ -110,9 +124,9 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
             </tr>
           </thead>
           <tbody>
-            <KennzahlZeile titel={vor1990 ? 'GRZ' : 'GRZ I'} k={n.grz} flaeche={G !== undefined ? n.grz.wert * G : undefined} />
-            {n.grz2 && <KennzahlZeile titel="GRZ II (§ 19 Abs. 4)" k={n.grz2} flaeche={G !== undefined ? n.grz2.wert * G : undefined} />}
-            <KennzahlZeile titel="GFZ" k={n.gfz} flaeche={n.gf} />
+            <KennzahlZeile titel={vor1990 ? 'GRZ' : 'GRZ I'} kurz={vor1990 ? 'GR' : 'GR I'} k={n.grz} />
+            {n.grz2 && <KennzahlZeile titel="GRZ II (§ 19 Abs. 4)" kurz="GR II" k={n.grz2} />}
+            <KennzahlZeile titel="GFZ" kurz="GF" k={n.gfz} />
             <tr>
               <td>Vollgeschosse</td>
               <td className="num" />
@@ -128,7 +142,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
         )}
         {(n.grz.mitOffenen !== undefined || n.grz2?.mitOffenen !== undefined) && (
           <p className="report-note">
-            Noch nicht eingestufte Flächen („prüfen“): GRZ bis {zahl(n.grz2?.mitOffenen ?? n.grz.mitOffenen ?? n.grz.wert)} – Einstufung mit der Bauaufsicht klären.
+            Noch nicht eingestufte Flächen („prüfen“): {n.grz2 ? 'GRZ II' : 'GRZ'} bis {kennzahlWert(n.grz2 ?? n.grz, (n.grz2 ?? n.grz).mitOffenen)} – Einstufung mit der Bauaufsicht klären.
           </p>
         )}
 
@@ -143,7 +157,8 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
               <th>Nutzung</th>
               <th>Versiegelung</th>
               <th className="num">Fläche [m²]</th>
-              <th className="num" title="außerhalb des Gebäudes, Überlagerungen nur einmal gezählt">angerechnet [m²]</th>
+              <th className="num" title="außerhalb des Gebäudes, Überlagerungen nur einmal gezählt">eindeutig [m²]</th>
+              <th className="num">angerechnet auf {grLabel} [m²]</th>
               <th>Anrechnung</th>
             </tr>
           </thead>
@@ -154,8 +169,9 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
               <td />
               <td />
               <td className="num">{fmt2(n.hauptanlage)}</td>
-              <td className="num" />
-              <td>zählt</td>
+              <td className="num">{fmt2(n.hauptanlage)}</td>
+              <td className="num">{fmt2(n.hauptanlage)}</td>
+              <td>{vor1990 ? 'zählt' : 'GRZ I und II'}</td>
             </tr>
             {eigene.map((l) => (
               <tr key={l.id}>
@@ -168,14 +184,44 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
                   {fmt2(l.flaecheEindeutig)}
                   {l.ueberlagert > 0.05 && <div className="report-note">{fmt2(l.ueberlagert)} überlagert</div>}
                 </td>
+                <AngerechnetZelle a={l} />
                 <td>{ANRECHNUNG[l.anrechnung]}</td>
               </tr>
             ))}
+            {n.unterirdisch && n.unterirdisch.flaeche > 0.005 && (
+              <tr>
+                <td />
+                <td>Kellergeschoss außerhalb der Hauptanlage</td>
+                <td>{nutzungLabel('unterirdisch')}</td>
+                <td />
+                <td className="num" />
+                <td className="num">{fmt2(n.unterirdisch.flaeche)}</td>
+                <AngerechnetZelle a={n.unterirdisch} />
+                <td>{ANRECHNUNG[n.unterirdisch.anrechnung]}</td>
+              </tr>
+            )}
             <tr className="subtotal">
               <td />
-              <td colSpan={3}>Summe Lageplan-Flächen (jede Stelle einmal)</td>
-              <td />
+              <td colSpan={4}>Summe Lageplan-Flächen (jede Stelle einmal)</td>
               <td className="num">{fmt2(eigene.reduce((a, l) => a + l.flaecheEindeutig, 0))}</td>
+              <td />
+              <td />
+            </tr>
+            {!vor1990 && (
+              <tr className="sum grz-summe-gr1">
+                <td />
+                <td colSpan={5}>Grundfläche GR I (Hauptanlage)</td>
+                <td className="num">{fmt2(n.grz.flaeche)}</td>
+                <td />
+              </tr>
+            )}
+            <tr className="sum grz-summe-gr">
+              <td />
+              <td colSpan={5}>
+                Grundfläche {grLabel}
+                {n.garagenFrei !== undefined && n.garagenFrei > 0 && ` (nach Abzug von ${fmt2(n.garagenFrei)} m² anrechnungsfreien Garagen)`}
+              </td>
+              <td className="num">{fmt2((n.grz2 ?? n.grz).flaeche)}</td>
               <td />
             </tr>
           </tbody>
@@ -298,11 +344,11 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           </>
         )}
 
-        {n.hinweise.length > 0 && (
+        {hinweise.length > 0 && (
           <>
             <h2>Hinweise</h2>
             <ul className="grz-report-hinweise">
-              {n.hinweise.map((h, i) => (
+              {hinweise.map((h, i) => (
                 <li key={i}>{h}</li>
               ))}
             </ul>
@@ -319,25 +365,39 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
             Entwurfsverfasser/in
           </div>
         </div>
-        <p className="report-note">{HAFTUNG}</p>
+        {haftung && <p className="report-note grz-haftung">{HAFTUNG}</p>}
       </div>
     </div>
   );
 }
 
-function KennzahlZeile({ titel, k, flaeche }: { titel: string; k: Kennzahl; flaeche: number | undefined }) {
+function KennzahlZeile({ titel, kurz, k }: { titel: string; kurz: string; k: Kennzahl }) {
+  const vergleich = flaechenVergleich(kurz, k);
   return (
     <tr>
       <td>{titel}</td>
-      <td className="num">{flaeche !== undefined ? fmt2(flaeche) : '–'}</td>
+      <td className="num">{fmt2(k.flaeche)}</td>
       <td className="num strong">
-        {zahl(k.wert)}
-        {k.mitOffenen !== undefined && ` (bis ${zahl(k.mitOffenen)})`}
+        {kennzahlWert(k)}
+        {k.mitOffenen !== undefined && ` (bis ${kennzahlWert(k, k.mitOffenen)})`}
       </td>
       <td className="num">{k.zulaessig !== undefined ? zahl(k.zulaessig) : '–'}</td>
       <td className="num">{k.reserve !== undefined ? fmt2(k.reserve) : '–'}</td>
-      <td>{STATUS[k.status].label}</td>
+      <td>
+        {STATUS[k.status].label}
+        {vergleich && <div className="report-note">{vergleich}</div>}
+      </td>
     </tr>
+  );
+}
+
+/** tatsächlich angerechnete Fläche, bei „prüfen“ als Spanne */
+function AngerechnetZelle({ a }: { a: { angerechnet: number; angerechnetBis?: number; anrechnung: Anrechnung } }) {
+  return (
+    <td className="num">
+      {fmt2(a.angerechnet)}
+      {a.angerechnetBis !== undefined && <div className="report-note">bis {fmt2(a.angerechnetBis)}</div>}
+    </td>
   );
 }
 
@@ -352,17 +412,35 @@ function aufenthaltsraeume(project: Project, n: Nachweis): { geschoss: string; r
     });
 }
 
-/** Lageplan fürs Blatt: Grundstück, Gebäude schraffiert, Flächen farbig nach Versiegelung mit Nummern */
-function LageplanSkizze({ n, project, nr }: { n: Nachweis; project: Project; nr: Map<string, number> }) {
+/** Größe der Planfläche im Druck (CSS-Pixel): Breite der Seite, Höhe wie .grz-report .plan-svg (120 mm) */
+const DRUCK_B = 680;
+const DRUCK_H = (120 / 25.4) * 96;
+/** Mindestschriftgröße der Nummern im Druck */
+const SCHRIFT_PT = 10;
+
+/**
+ * Lageplan fürs Blatt: Grundstück, Gebäude schraffiert, Flächen farbig nach Versiegelung mit Nummern im eindeutigen
+ * Anteil (nicht unter dem Gebäude), Maßstabsleiste und Nordpfeil (Planoberkante = Projektnorden des Modells)
+ */
+export function LageplanSkizze({ n, project, nr }: { n: Nachweis; project: Project; nr: Map<string, number> }) {
   const flaechen = project.lageplan?.flaechen ?? [];
   const pts: Point[] = [...n.hauptanlagePolygone.flat(), ...n.grundstueckPolygone.flat(), ...flaechen.filter((f) => !f.nachbar).flatMap((f) => f.points)];
   if (!pts.length) return null;
   const b = bounds(pts);
   const pad = Math.max(b.maxX - b.minX, b.maxY - b.minY) * 0.04 + 0.5;
-  const vb = { x: b.minX - pad, y: b.minY - pad, w: b.maxX - b.minX + 2 * pad, h: b.maxY - b.minY + 2 * pad };
-  // Strichstärken relativ zur Planbreite (ca. 700 px Druckbreite)
-  const k = vb.w / 700;
+  const vb0 = { x: b.minX - pad, y: b.minY - pad, w: b.maxX - b.minX + 2 * pad, h: b.maxY - b.minY + 2 * pad };
+  // Weltmeter je Druckpixel – die Planfläche ist durch Breite oder Höhe begrenzt (meet); unten Platz für die Maßstabsleiste
+  const k0 = Math.max(vb0.w / DRUCK_B, vb0.h / DRUCK_H);
+  const vb = { ...vb0, h: vb0.h + k0 * 34 };
+  const k = Math.max(vb.w / DRUCK_B, vb.h / DRUCK_H);
+  const schrift = k * SCHRIFT_PT * PT;
   const d = (p: Point[]) => `M${p.map((q) => `${q.x} ${q.y}`).join('L')}Z`;
+  const posten = new Map(n.lageplan.map((l) => [l.id, l]));
+  const ml = massstabLaenge(vb.w);
+  const mx = vb.x + k * 12;
+  const my = vb.y + vb.h - k * 14;
+  const nx = vb.x + vb.w - k * 22;
+  const ny = vb.y + k * 10;
   return (
     <figure className="plan-figure">
       <h2>Lageplan</h2>
@@ -392,13 +470,29 @@ function LageplanSkizze({ n, project, nr }: { n: Nachweis; project: Project; nr:
         {flaechen
           .filter((f) => nr.has(f.id))
           .map((f) => {
-            const p = labelPoint(f.points);
+            const p = beschriftungsPunkt(posten.get(f.id)?.eindeutig ?? [], f.points);
             return (
-              <text key={`t${f.id}`} x={p.x} y={p.y} className="plan-label" fontSize={k * 11} textAnchor="middle" dominantBaseline="middle">
+              <text key={`t${f.id}`} x={p.x} y={p.y} className="plan-label" fontSize={schrift} fontWeight={600} textAnchor="middle" dominantBaseline="middle" data-flaeche={f.id}>
                 {nr.get(f.id)}
               </text>
             );
           })}
+        <g className="plan-massstab" data-laenge={ml}>
+          <rect x={mx} y={my - k * 3} width={ml / 2} height={k * 6} fill="#1f2328" />
+          <rect x={mx + ml / 2} y={my - k * 3} width={ml / 2} height={k * 6} fill="#fff" stroke="#1f2328" strokeWidth={k} />
+          <text x={mx} y={my - k * 6} fontSize={k * 9 * PT} className="plan-label" textAnchor="start">
+            0
+          </text>
+          <text x={mx + ml} y={my - k * 6} fontSize={k * 9 * PT} className="plan-label" textAnchor="middle">
+            {ml.toLocaleString('de-DE')} m
+          </text>
+        </g>
+        <g className="plan-nordpfeil" transform={`translate(${nx} ${ny})`}>
+          <path d={`M0 0 L${k * 7} ${k * 22} L0 ${k * 17} L${-k * 7} ${k * 22} Z`} fill="#1f2328" />
+          <text x={0} y={k * 34} fontSize={k * 10 * PT} className="plan-label" textAnchor="middle" fontWeight={600}>
+            N
+          </text>
+        </g>
       </svg>
       <figcaption className="plan-legend">
         <span>

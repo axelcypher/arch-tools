@@ -7,7 +7,8 @@ import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
 import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
 import { createProject } from '@core/model';
-import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
+import { aenderungenSpeichern, bestaetigen, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
+import { datumText } from '@core/ui/DruckKopf';
 import { ExcelDialog } from './components/ExcelDialog';
 import { GrzGfzView } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
@@ -24,6 +25,7 @@ export function App() {
   const canRedo = useGrz((s) => s.future.length > 0);
   const [logOpen, setLogOpen] = useState(false);
   const datei = useGrz((s) => s.datei);
+  const wiederhergestellt = useGrz((s) => s.wiederhergestellt);
   // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
   const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
   const [excelOpen, setExcelOpen] = useState(false);
@@ -178,6 +180,24 @@ export function App() {
         {busy && <span className="busy">{busy}</span>}
       </div>
       <main className="grz-main">
+        {wiederhergestellt !== null && dirty && (
+          <div className="grz-bericht grz-wiederhergestellt" role="status">
+            Ungespeicherter Stand vom {datumText(new Date(wiederhergestellt))}{' '}
+            {new Date(wiederhergestellt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} wiederhergestellt –{' '}
+            <button className="small" onClick={() => void onSave()}>
+              Speichern
+            </button>{' '}
+            <button
+              className="small"
+              onClick={async () => {
+                const ziel = useGrz.getState().basis ? `der Stand der Datei „${useGrz.getState().datei ?? ''}“` : 'ein leeres Projekt';
+                if (await bestaetigen('Zwischenstand verwerfen?', `Die wiederhergestellten Änderungen gehen verloren; geöffnet bleibt ${ziel}.`, 'Verwerfen', true)) useGrz.getState().verwerfen();
+              }}
+            >
+              Verwerfen
+            </button>
+          </div>
+        )}
         {bericht.length > 0 && (
           <div className="grz-bericht">
             <strong>IFC-Import:</strong>

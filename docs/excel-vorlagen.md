@@ -292,9 +292,15 @@ Schlüssel); ein Projekt kann also beide Vorlagen enthalten. Das Standardlayout 
 | `{{lageplan[eigen].name}}`, `{{lageplan.anrechnung}}` | Zeile je Lageplan-Fläche; Filter `[eigen]`, `[nachbar]`, `[pruefen]`, `[teil]` … |
 | `{{geschoss.gelaende}}`, `{{geschoss.gelaende_min}}`, `{{geschoss.gelaende_max}}`, `{{gelaende.quelle}}` | Geländeoberfläche entlang der Außenwände des Geschosses (Mittel, tiefster, höchster Punkt) und ihre Quelle |
 | `{{lageplan.flaeche_eindeutig}}`, `{{lageplan.ueberlagert}}` | eindeutig dieser Fläche zugeordneter Anteil bzw. von anderen Flächen überlagerter Rest – Überlagerungen zählen nur einmal |
+| `{{lageplan.angerechnet}}`, `{{lageplan.angerechnet_bis}}` | tatsächlich auf die GR II (1990) bzw. GR angerechnete Fläche; bei „prüfen“ bis zu welcher Fläche |
+| `{{grz.stellen}}`, `{{grz.zulaessig_flaeche}}`, `{{grz.vergleich}}` | Nachkommastellen wie in der App, zulässige Fläche [m²], Begründung in m²; ebenso `grz.ii.*`, `gfz.*` |
+| `{{grz.offen.bezeichnung}}`, `{{grz.offen.flaeche}}` | offene Spanne („prüfen“): Bezeichnung und Fläche, leer ohne offene Flächen |
 | `{{raum[gf].name}}` | Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume vor 1990 zur Geschossfläche zählen |
 | `{{raum.begruendung}}`, `{{raum.hoehenlage}}` | Ergebnis der Raumprüfung nach Nutzung und lichter Höhe; Höhenversatz des Fußbodens (Split-Level) |
-| `{{hinweis.text}}` | Zeile je Hinweis |
+| `{{hinweis.text}}` | Zeile je Hinweis für die Bauaufsicht (ohne Bedienhinweise der App) |
+
+Im Standardlayout sind GRZ und GFZ Formeln aus den Zellen (Fläche / Grundstücksfläche), ebenso zulässige
+Fläche und Ergebnis; der Haftungssatz steht dort nicht mehr (Platzhalter `{{haftung}}` bleibt für eigene Vorlagen).
 
 Projektangaben (`projekt.*`, `grundstueck.*`, `bauherr.*`, `datum`) sind in allen Apps gleich.
 
@@ -317,7 +323,7 @@ und auf ganze Euro gerundet.
 | `{{position[aktiv].bezeichnung}}`, `{{position.menge}}`, `{{position.bezug}}`, `{{position.kennwert}}`, `{{position.kosten}}` | Zeile je Position; Filter `[aktiv]`, `[aus]`, `[kg=330]` |
 | `{{menge.kurz}}`, `{{menge.wert}}`, `{{menge.ermittlung}}` | Zeile je Menge; Filter `[festgelegt]` |
 | `{{stand.datum}}`, `{{stand.stufe}}`, `{{stand.brutto}}` | Zeile je festgehaltenem Kostenstand |
-| `{{hinweis.text}}` | Zeile je Hinweis |
+| `{{hinweis.text}}` | Zeile je Hinweis für die Bauaufsicht (ohne Bedienhinweise der App) |
 
 ## Einschränkungen
 

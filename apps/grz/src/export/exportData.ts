@@ -5,8 +5,9 @@ import { polygonArea } from '@core/geometry';
 import { nutzungLabel, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
 import type { Kennzahl, Nachweis } from '../massNutzung';
-import { baunvoLabel, bauoLabel, istAufenthaltsraum, massNachweis } from '../massNutzung';
-import { ANRECHNUNG, AUFENTHALT, GELAENDE_QUELLE, GF_ART, HAFTUNG, roemisch, STATUS } from '../texte';
+import { baunvoLabel, bauoLabel, istAufenthaltsraum, massNachweis, sachlicheHinweise } from '../massNutzung';
+import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlStellenVon, roemisch, STATUS } from '../texte';
+import { datumText } from '@core/ui/DruckKopf';
 
 /**
  * Datengrundlage für Excel-Export und Vorlagen des GRZ-Nachweises (Syntax siehe docs/excel-vorlagen.md).
@@ -18,6 +19,11 @@ import { ANRECHNUNG, AUFENTHALT, GELAENDE_QUELLE, GF_ART, HAFTUNG, roemisch, STA
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const r4 = (v: number) => Math.round(v * 10000) / 10000;
+/** Kennzahl auf die Stellen der App gerundet (mindestens 3, nahe am Grenzwert mehr) */
+const rk = (v: number, k: Kennzahl) => {
+  const f = 10 ** kennzahlStellenVon(k);
+  return Math.round(v * f) / f;
+};
 const opt = (v: number | undefined, f = r4): Value => (v === undefined ? '' : f(v));
 
 const FILTERS: Record<string, (r: Row) => boolean> = {
@@ -44,14 +50,18 @@ function zugehoerig(child: string, row: Row, parent: string, p: Row): boolean {
   return true;
 }
 
-function kennzahlWerte(prefix: string, k: Kennzahl | undefined, flaeche: number | undefined): Record<string, Value> {
+function kennzahlWerte(prefix: string, k: Kennzahl | undefined, kurz: string): Record<string, Value> {
   return {
-    [prefix]: k ? r4(k.wert) : '',
+    [prefix]: k && k.wert !== undefined ? rk(k.wert, k) : '',
+    [`${prefix}.stellen`]: k ? kennzahlStellenVon(k) : '',
     [`${prefix}.zulaessig`]: opt(k?.zulaessig),
-    [`${prefix}.flaeche`]: k && flaeche !== undefined ? r2(flaeche) : '',
-    [`${prefix}.mit_offenen`]: opt(k?.mitOffenen),
+    [`${prefix}.zulaessig_flaeche`]: opt(k?.zulaessigFlaeche, r2),
+    [`${prefix}.flaeche`]: k ? r4(k.flaeche) : '',
+    [`${prefix}.mit_offenen`]: k?.mitOffenen !== undefined ? rk(k.mitOffenen, k) : '',
+    [`${prefix}.flaeche_mit_offenen`]: opt(k?.flaecheMitOffenen, r2),
     [`${prefix}.reserve`]: opt(k?.reserve, r2),
     [`${prefix}.status`]: k ? STATUS[k.status].label : '',
+    [`${prefix}.vergleich`]: (k && flaechenVergleich(kurz, k)) ?? '',
   };
 }
 
@@ -59,24 +69,30 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
   const G = n.grundstueck.flaeche;
   const scalars: Record<string, Value> = {
     ...projektWerte(project, date),
-    'bplan.datum': project.massNutzung?.planDatum ? new Date(project.massNutzung.planDatum).toLocaleDateString('de-DE') : '',
+    'bplan.datum': project.massNutzung?.planDatum ? datumText(project.massNutzung.planDatum) : '',
     'baunvo.fassung': baunvoLabel(n.recht.baunvo),
     'bauo.fassung': bauoLabel(n.recht.bauo),
     'recht.hinweise': n.recht.hinweise.join(' '),
-    'grundstueck.flaeche_nachweis': opt(G, r2),
+    // offene Spanne („prüfen“): zur GRZ II (1990) bzw. zur GRZ
+    'grz.offen.bezeichnung': (n.grz2 ?? n.grz).mitOffenen !== undefined ? `${n.grz2 ? 'GRZ II' : 'GRZ'} bei Anrechnung offener Flächen` : '',
+    'grundstueck.flaeche_nachweis': opt(G, r4),
     'grundstueck.quelle': n.grundstueck.quelle === 'lageplan' ? 'aus dem Lageplan' : n.grundstueck.quelle === 'projektdaten' ? 'Projektdaten' : 'fehlt',
     gelaende: r2(n.gelaende.hoehe),
     'gelaende.quelle': GELAENDE_QUELLE[n.gelaende.quelle],
     'grz.bezeichnung': n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ',
     'grz.ii.bezeichnung': n.grz2 ? 'GRZ II (§ 19 Abs. 4)' : '',
     'aufenthalt.titel': n.recht.baunvo === '1990' ? '' : 'Aufenthaltsräume in Nicht-Vollgeschossen',
-    hauptanlage: r2(n.hauptanlage),
-    ...kennzahlWerte('grz', n.grz, G !== undefined ? n.grz.wert * G : undefined),
-    ...kennzahlWerte('grz.ii', n.grz2, n.grz2 && G !== undefined ? n.grz2.wert * G : undefined),
+    hauptanlage: r4(n.hauptanlage),
+    ...kennzahlWerte('grz', n.grz, n.recht.baunvo === '1990' ? 'GR I' : 'GR'),
+    ...kennzahlWerte('grz.ii', n.grz2, 'GR II'),
+    'grz.offen.flaeche': opt((n.grz2 ?? n.grz).flaecheMitOffenen, r4),
+    'lageplan.angerechnet_auf': n.grz2 ? 'GR II' : 'GR',
+    'unterirdisch.flaeche': n.unterirdisch ? r2(n.unterirdisch.flaeche) : '',
+    'unterirdisch.angerechnet': n.unterirdisch ? r2(n.unterirdisch.angerechnet) : '',
     'garagen.frei': opt(n.garagenFrei, r2),
-    gf: r2(n.gf),
+    gf: r4(n.gf),
     'gf.aufenthalt': r2(n.gfAufenthalt),
-    ...kennzahlWerte('gfz', n.gfz, n.gf),
+    ...kennzahlWerte('gfz', n.gfz, 'GF'),
     vollgeschosse: n.vollgeschosse.anzahl,
     'vollgeschosse.roemisch': roemisch(n.vollgeschosse.anzahl),
     'vollgeschosse.zulaessig': n.vollgeschosse.zulaessig ?? '',
@@ -88,7 +104,7 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     'bilanz.gruen': r2(n.bilanz.gruen),
     'bilanz.summe': r2(n.bilanz.summe),
     'bilanz.differenz': opt(n.bilanz.differenz, r2),
-    hinweise: n.hinweise.join('\n'),
+    hinweise: [...n.recht.hinweise, ...sachlicheHinweise(n)].join('\n'),
     haftung: HAFTUNG,
   };
 
@@ -129,6 +145,8 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
       flaeche: r2(l.flaeche),
       flaeche_aussen: r2(l.flaecheAussen),
       flaeche_eindeutig: r2(l.flaecheEindeutig),
+      angerechnet: r2(l.angerechnet),
+      angerechnet_bis: l.angerechnetBis !== undefined ? r2(l.angerechnetBis) : '',
       ueberlagert: r2(l.ueberlagert),
       anrechnung: l.nachbar ? 'Nachbar' : ANRECHNUNG[l.anrechnung],
       nachbar: l.nachbar ? 'ja' : '',
@@ -167,7 +185,8 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
         }),
     );
 
-  const hinweis: Row[] = n.hinweise.map((text, i) => ({ nr: i + 1, text }));
+  // nur sachliche Hinweise (Bedienhinweise bleiben in der App)
+  const hinweis: Row[] = [...n.recht.hinweise, ...sachlicheHinweise(n)].map((text, i) => ({ nr: i + 1, text }));
 
   return {
     scalars,
@@ -212,17 +231,21 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
     keys: [
       ['grz.bezeichnung, grz.ii.bezeichnung', '„GRZ“ (vor 1990) bzw. „GRZ I“; „GRZ II (§ 19 Abs. 4)“ oder leer'],
       ['aufenthalt.titel', '„Aufenthaltsräume in Nicht-Vollgeschossen“ vor 1990, sonst leer'],
-      ['grz, grz.zulaessig, grz.flaeche, grz.reserve, grz.status', 'GRZ, zulässig, angerechnete Grundfläche [m²], Reserve [m²], Ergebnis'],
-      ['grz.mit_offenen', 'GRZ einschließlich der noch nicht eingestuften Flächen („prüfen“)'],
+      ['grz, grz.zulaessig, grz.flaeche, grz.reserve, grz.status', 'GRZ (auf die Stellen der App gerundet), zulässig, angerechnete Grundfläche [m²], Reserve [m²], Ergebnis'],
+      ['grz.stellen', 'Nachkommastellen der Kennzahl (mindestens 3, nahe am Grenzwert mehr)'],
+      ['grz.zulaessig_flaeche, grz.vergleich', 'zulässige Grundfläche [m²]; Begründung in m², z. B. „GR 135,00 m² < 245,00 m² zulässig“'],
+      ['grz.mit_offenen, grz.flaeche_mit_offenen', 'GRZ bzw. Grundfläche einschließlich der noch nicht eingestuften Flächen („prüfen“)'],
+      ['grz.offen.bezeichnung, grz.offen.flaeche', '„GRZ II bei Anrechnung offener Flächen“ (bzw. GRZ) und die Fläche dazu – leer ohne offene Flächen'],
+      ['unterirdisch.flaeche, unterirdisch.angerechnet', 'Kellergeschoss außerhalb der Hauptanlage [m²] und davon angerechnet'],
       ['grz.ii, grz.ii.zulaessig, grz.ii.flaeche, grz.ii.reserve, grz.ii.status, grz.ii.mit_offenen', 'GRZ II nach § 19 Abs. 4 BauNVO 1990 (sonst leer)'],
       ['garagen.frei', 'anrechnungsfreie Garagenfläche nach § 21a Abs. 3 (1968/1977) [m²]'],
       ['gf, gf.aufenthalt', 'Geschossfläche [m²]; davon Aufenthaltsräume in Nicht-Vollgeschossen'],
-      ['gfz, gfz.zulaessig, gfz.reserve, gfz.status', 'GFZ, zulässig, Reserve [m²], Ergebnis'],
+      ['gfz, gfz.zulaessig, gfz.reserve, gfz.status, gfz.vergleich', 'GFZ, zulässig, Reserve [m²], Ergebnis, Begründung in m²'],
       ['vollgeschosse, vollgeschosse.roemisch, vollgeschosse.zulaessig, vollgeschosse.status', 'Zahl der Vollgeschosse'],
       ['vollgeschosse.namen', 'Namen der Vollgeschosse, mit Komma getrennt'],
       ['bilanz.gebaeude, bilanz.vollversiegelt, bilanz.teilversiegelt, bilanz.gruen, bilanz.summe', 'Flächenbilanz des Grundstücks [m²]'],
       ['bilanz.differenz', 'Grundstücksfläche − Summe (nicht erfasst bzw. überlappend) [m²]'],
-      ['hinweise, haftung', 'alle Hinweise (eine Zelle); Haftungshinweis'],
+      ['hinweise, haftung', 'Hinweise für die Bauaufsicht (eine Zelle, ohne Bedienhinweise); Haftungshinweis des Tools'],
     ],
   },
   {
@@ -244,6 +267,8 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['lageplan.nr, lageplan.name, lageplan.nutzung, lageplan.versiegelung', 'laufende Nummer, Bezeichnung, Nutzung, Versiegelung'],
       ['lageplan.flaeche, lageplan.flaeche_aussen', 'Fläche und davon außerhalb des Gebäudes [m²]'],
       ['lageplan.flaeche_eindeutig, lageplan.ueberlagert', 'nur dieser Fläche zugeordnet (Summen zählen Überlagerungen einmal) bzw. von anderen Flächen schon abgedeckt [m²]'],
+      ['lageplan.angerechnet, lageplan.angerechnet_bis', 'tatsächlich auf die Grundfläche angerechnet (GR II bzw. GR) [m²]; bei „prüfen“ bis zu dieser Fläche'],
+      ['lageplan.angerechnet_auf', '„GR II“ (BauNVO 1990) bzw. „GR“ – Einzelwert für die Spaltenüberschrift'],
       ['lageplan.anrechnung', 'Anrechnung auf die Grundfläche (zählt, GRZ II, bis 0,1 frei, zählt nicht, prüfen, Nachbar)'],
       ['lageplan.nachbar, lageplan.hoehe', '„ja“ bei Nachbargrundstücken; Höhe der Oberfläche [m]'],
     ],

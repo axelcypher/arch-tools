@@ -1,6 +1,8 @@
 import type { Workbook, Worksheet } from 'exceljs';
 import { excel, fuelleVorlage, platzhalterBlatt } from '@core/excel/fill';
 import type { Project } from '@core/model';
+import { massNachweis } from '../massNutzung';
+import { kennzahlStellenVon } from '../texte';
 import { buildGrzContext, GRZ_PLACEHOLDER_DOCS } from './exportData';
 
 /**
@@ -11,17 +13,31 @@ import { buildGrzContext, GRZ_PLACEHOLDER_DOCS } from './exportData';
 
 const M2 = '#,##0.00 "m²"';
 const M = '0.00 "m"';
-const RATIO = '0.00';
+/** zulässige Kennzahl wie eingetragen: zwei bis vier Stellen */
+const RATIO_FEST = '0.00##';
 const PROZENT = '0 %';
 const THIN = { style: 'thin' as const, color: { argb: 'FF1F2328' } };
 const GRAU = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFD9D9D9' } };
 
 type Zelle = string | number | { formula: string } | null;
 
-/** Blatt „GRZ GFZ“: Grundlagen, Kennzahlen, Vollgeschosse, Geschossfläche, Flächenbilanz, Lageplan, Hinweise */
-function nachweisBlatt(wb: Workbook): Worksheet {
+/** über dem Grenzwert erst ab diesem Abstand (wie der Rechenkern, 1e-9) */
+const EPS = '0.000000001';
+
+/** Ergebnis-Formel einer Kennzahl wie im Rechenkern: Zeile r, offene Spanne in Zeile o (nur, wenn dort eine Fläche steht) */
+function ergebnisFormel(r: number, o?: number): string {
+  const offen = o ? `IF(C${o}>0,IF(D${o}>E${r}+${EPS},"prüfen","eingehalten"),"eingehalten")` : '"eingehalten"';
+  return `IF(C$12>0,IF(E${r}>0,IF(D${r}>E${r}+${EPS},"überschritten",${offen}),"Festsetzung fehlt"),"Grundstücksfläche fehlt")`;
+}
+
+/**
+ * Blatt „GRZ GFZ“: Grundlagen, Kennzahlen, Vollgeschosse, Geschossfläche, Flächenbilanz, Lageplan, Hinweise.
+ * Kennzahlen, zulässige Flächen und Ergebnis sind Formeln aus den Zellen – Prüfer können nachrechnen.
+ * stellen: Nachkommastellen der Kennzahlen wie in der App (Standardexport), sonst drei
+ */
+function nachweisBlatt(wb: Workbook, stellen: { grz?: number; grz2?: number; gfz?: number } = {}): Worksheet {
   const ws = wb.addWorksheet('GRZ GFZ');
-  [22, 34, 14, 14, 14, 16].forEach((w, i) => (ws.getColumn(i + 1).width = w));
+  [22, 30, 13, 12, 12, 13, 18].forEach((w, i) => (ws.getColumn(i + 1).width = w));
   ws.pageSetup = {
     ...ws.pageSetup,
     paperSize: 9,
@@ -32,6 +48,8 @@ function nachweisBlatt(wb: Workbook): Worksheet {
     margins: { left: 0.6, right: 0.5, top: 0.6, bottom: 0.7, header: 0.3, footer: 0.3 },
   };
   ws.headerFooter.oddFooter = '&L{{projekt.name}} · Stand {{datum}}&RSeite &P/&N';
+  const SP = 7;
+  const letzte = String.fromCharCode(64 + SP);
 
   const put = (ref: string, v: Zelle, o: { fmt?: string; bold?: boolean; wrap?: boolean; right?: boolean } = {}) => {
     const c = ws.getCell(ref);
@@ -47,33 +65,34 @@ function nachweisBlatt(wb: Workbook): Worksheet {
     });
   const kopf = (r: number, werte: string[]) => {
     zeile(r, werte, { bold: true });
-    for (let i = 0; i < 6; i++) ws.getCell(r, i + 1).border = { bottom: THIN };
+    for (let i = 0; i < SP; i++) ws.getCell(r, i + 1).border = { bottom: THIN };
   };
   const abschnitt = (r: number, text: string) => {
     put(`A${r}`, text, { bold: true });
-    ws.mergeCells(`A${r}:F${r}`);
+    ws.mergeCells(`A${r}:${letzte}${r}`);
     ws.getCell(`A${r}`).fill = GRAU;
   };
-  const summe = (r: number, spalte: string, von: number, bis: number) => {
+  const summe = (r: number, spalten: string[], von: number, bis: number) => {
     put(`B${r}`, 'Summe', { bold: true });
-    put(`${spalte}${r}`, { formula: `SUM(${spalte}${von}:${spalte}${bis})` }, { fmt: M2, bold: true });
-    for (let i = 0; i < 6; i++) ws.getCell(r, i + 1).border = { top: THIN };
+    for (const spalte of spalten) put(`${spalte}${r}`, { formula: `SUM(${spalte}${von}:${spalte}${bis})` }, { fmt: M2, bold: true });
+    for (let i = 0; i < SP; i++) ws.getCell(r, i + 1).border = { top: THIN };
   };
+  const ratio = (d: number | undefined) => `0.${'0'.repeat(d ?? 3)}`;
 
   // Kopf
   put('A1', 'Nachweis des Maßes der baulichen Nutzung');
   ws.getCell('A1').font = { size: 11, color: { argb: 'FF6B7280' } };
   put('A3', '{{projekt.name}}');
   ws.getCell('A3').font = { bold: true, size: 12 };
-  put('F3', 'Projekt {{projekt.code}}', { right: true });
+  put(`${letzte}3`, 'Projekt {{projekt.code}}', { right: true });
   put('A4', '{{projekt.adresse}}');
   put('A5', '{{grundstueck.flurtext}}');
   put('A6', 'Stand {{datum}}');
-  put('F6', '{{projekt.bearbeiter}}', { right: true });
+  put(`${letzte}6`, '{{projekt.bearbeiter}}', { right: true });
   ws.getCell('A6').font = { size: 9 };
   put('A7', '{{kopf.angaben}}');
   ws.getCell('A7').font = { size: 9 };
-  ws.getCell('F6').font = { size: 9 };
+  ws.getCell(`${letzte}6`).font = { size: 9 };
 
   abschnitt(8, 'Grundlagen');
   zeile(9, ['Bebauungsplan vom', '{{bplan.datum}}']);
@@ -83,66 +102,108 @@ function nachweisBlatt(wb: Workbook): Worksheet {
   zeile(13, ['Geländeoberfläche', '{{gelaende.quelle}}', '{{gelaende}}'], { fmts: [undefined, undefined, M] });
   zeile(14, ['Hauptanlage', 'Grundfläche der Gebäude', '{{hauptanlage}}'], { fmts: [undefined, undefined, M2] });
 
+  // Kennzahlen: vorhanden = Fläche / Grundstücksfläche, zulässige Fläche = zulässig × Grundstücksfläche, Ergebnis als Vergleich
   abschnitt(16, 'Kennzahlen');
-  kopf(17, ['', '', 'Fläche', 'vorhanden', 'zulässig', 'Ergebnis']);
-  const kz = [undefined, undefined, M2, RATIO, RATIO];
-  zeile(18, ['{{grz.bezeichnung}}', 'Grundfläche', '{{grz.flaeche}}', '{{grz}}', '{{grz.zulaessig}}', '{{grz.status}}'], { fmts: kz });
-  zeile(19, ['{{grz.ii.bezeichnung}}', '', '{{grz.ii.flaeche}}', '{{grz.ii}}', '{{grz.ii.zulaessig}}', '{{grz.ii.status}}'], { fmts: kz });
-  zeile(20, ['GFZ', 'Geschossfläche', '{{gf}}', '{{gfz}}', '{{gfz.zulaessig}}', '{{gfz.status}}'], { fmts: kz });
-  zeile(21, ['Vollgeschosse', '{{vollgeschosse.namen}}', null, '{{vollgeschosse}}', '{{vollgeschosse.zulaessig}}', '{{vollgeschosse.status}}'], { fmts: [undefined, undefined, undefined, '0', '0'] });
-  ws.getCell('D18').font = { bold: true };
-  ws.getCell('D20').font = { bold: true };
-  ws.getCell('D21').font = { bold: true };
+  kopf(17, ['', '', 'Fläche', 'vorhanden', 'zulässig', 'zulässig [m²]', 'Ergebnis']);
+  const zulM2 = (r: number) => ({ formula: `IF(E${r}>0,E${r}*C$12,"")` });
+  zeile(
+    18,
+    [
+      '{{grz.bezeichnung}}',
+      'Grundfläche',
+      '{{grz.flaeche}}',
+      { formula: 'IF(C$12>0,C18/C$12,"–")' },
+      '{{grz.zulaessig}}',
+      zulM2(18),
+      { formula: `IF(C19>0,${ergebnisFormel(18)},${ergebnisFormel(18, 20)})` },
+    ],
+    {
+      fmts: [undefined, undefined, M2, ratio(stellen.grz), RATIO_FEST, M2],
+    },
+  );
+  zeile(
+    19,
+    [
+      '{{grz.ii.bezeichnung}}',
+      '',
+      '{{grz.ii.flaeche}}',
+      { formula: 'IF(C19>0,IF(C$12>0,C19/C$12,"–"),"")' },
+      '{{grz.ii.zulaessig}}',
+      { formula: 'IF(C19>0,IF(E19>0,E19*C$12,""),"")' },
+      { formula: `IF(C19>0,${ergebnisFormel(19, 20)},"")` },
+    ],
+    { fmts: [undefined, undefined, M2, ratio(stellen.grz2), RATIO_FEST, M2] },
+  );
+  zeile(20, ['{{grz.offen.bezeichnung}}', '', '{{grz.offen.flaeche}}', { formula: 'IF(C20>0,IF(C$12>0,C20/C$12,"–"),"")' }], { fmts: [undefined, undefined, M2, ratio(stellen.grz2 ?? stellen.grz)] });
+  zeile(21, ['GFZ', 'Geschossfläche', '{{gf}}', { formula: 'IF(C$12>0,C21/C$12,"–")' }, '{{gfz.zulaessig}}', zulM2(21), { formula: ergebnisFormel(21) }], {
+    fmts: [undefined, undefined, M2, ratio(stellen.gfz), RATIO_FEST, M2],
+  });
+  zeile(22, ['Vollgeschosse', '{{vollgeschosse.namen}}', null, '{{vollgeschosse}}', '{{vollgeschosse.zulaessig}}', null, '{{vollgeschosse.status}}'], {
+    fmts: [undefined, undefined, undefined, '0', '0'],
+  });
+  for (const r of [18, 21, 22]) ws.getCell(`D${r}`).font = { bold: true };
 
   // ab hier dynamisch (Wiederholungszeilen)
-  abschnitt(23, 'Vollgeschosse');
-  kopf(24, ['Geschoss', 'Begründung', 'über Gelände', 'Anteil', 'Ergebnis', '']);
-  zeile(25, ['{{geschoss.name}}', '{{geschoss.begruendung}}', '{{geschoss.ueber_gelaende}}', '{{geschoss.anteil}}', '{{geschoss.ergebnis}}'], {
+  abschnitt(24, 'Vollgeschosse');
+  kopf(25, ['Geschoss', 'Begründung', 'über Gelände', 'Anteil', 'Ergebnis', '', '']);
+  zeile(26, ['{{geschoss.name}}', '{{geschoss.begruendung}}', '{{geschoss.ueber_gelaende}}', '{{geschoss.anteil}}', '{{geschoss.ergebnis}}'], {
     fmts: [undefined, undefined, M, PROZENT],
     wrap: [1],
   });
-  ws.mergeCells('E25:F25');
+  ws.mergeCells(`E26:${letzte}26`);
 
-  abschnitt(27, 'Geschossfläche');
-  kopf(28, ['Geschoss', 'Ermittlung', 'Fläche', '', '', '']);
-  zeile(29, ['{{geschoss.name}}', '{{geschoss.gf_art}}', '{{geschoss.gf}}'], { fmts: [undefined, undefined, M2], wrap: [1] });
-  summe(30, 'C', 29, 29);
+  abschnitt(28, 'Geschossfläche');
+  kopf(29, ['Geschoss', 'Ermittlung', 'Fläche', '', '', '', '']);
+  zeile(30, ['{{geschoss.name}}', '{{geschoss.gf_art}}', '{{geschoss.gf}}'], { fmts: [undefined, undefined, M2], wrap: [1] });
+  summe(31, ['C'], 30, 30);
 
-  put('A32', '{{aufenthalt.titel}}', { bold: true });
-  zeile(33, ['{{raum[gf].geschoss}}', '{{raum[gf].nummer}} {{raum[gf].name}}', '{{raum[gf].flaeche}}', '{{raum[gf].aufenthalt}}'], { fmts: [undefined, undefined, M2] });
-  ws.mergeCells('D33:F33');
+  put('A33', '{{aufenthalt.titel}}', { bold: true });
+  zeile(34, ['{{raum[gf].geschoss}}', '{{raum[gf].nummer}} {{raum[gf].name}}', '{{raum[gf].flaeche}}', '{{raum[gf].aufenthalt}}'], { fmts: [undefined, undefined, M2] });
+  ws.mergeCells(`D34:${letzte}34`);
 
-  abschnitt(35, 'Flächenbilanz des Grundstücks');
-  zeile(36, [null, 'Gebäude', '{{bilanz.gebaeude}}'], { fmts: [undefined, undefined, M2] });
-  zeile(37, [null, 'vollversiegelt', '{{bilanz.vollversiegelt}}'], { fmts: [undefined, undefined, M2] });
-  zeile(38, [null, 'teilversiegelt', '{{bilanz.teilversiegelt}}'], { fmts: [undefined, undefined, M2] });
-  zeile(39, [null, 'Grünfläche', '{{bilanz.gruen}}'], { fmts: [undefined, undefined, M2] });
-  summe(40, 'C', 36, 39);
+  abschnitt(36, 'Flächenbilanz des Grundstücks');
+  zeile(37, [null, 'Gebäude', '{{bilanz.gebaeude}}'], { fmts: [undefined, undefined, M2] });
+  zeile(38, [null, 'vollversiegelt', '{{bilanz.vollversiegelt}}'], { fmts: [undefined, undefined, M2] });
+  zeile(39, [null, 'teilversiegelt', '{{bilanz.teilversiegelt}}'], { fmts: [undefined, undefined, M2] });
+  zeile(40, [null, 'Grünfläche', '{{bilanz.gruen}}'], { fmts: [undefined, undefined, M2] });
+  summe(41, ['C'], 37, 40);
 
-  abschnitt(42, 'Lageplan-Flächen');
-  kopf(43, ['Fläche', 'Nutzung', 'Fläche', 'Versiegelung', 'Anrechnung', '']);
-  zeile(44, ['{{lageplan[eigen].name}}', '{{lageplan[eigen].nutzung}}', '{{lageplan[eigen].flaeche}}', '{{lageplan[eigen].versiegelung}}', '{{lageplan[eigen].anrechnung}}'], {
-    fmts: [undefined, undefined, M2],
-  });
-  ws.mergeCells('E44:F44');
-  summe(45, 'C', 44, 44);
+  // Lageplan: „eindeutig“ zählt Überlagerungen nur einmal – Summe = Wert der App; „angerechnet“ auf GR II bzw. GR
+  abschnitt(43, 'Lageplan-Flächen');
+  kopf(44, ['Fläche', 'Nutzung', 'Fläche', 'eindeutig', 'Versiegelung', 'angerechnet', 'Anrechnung']);
+  zeile(
+    45,
+    [
+      '{{lageplan[eigen].name}}',
+      '{{lageplan[eigen].nutzung}}',
+      '{{lageplan[eigen].flaeche}}',
+      '{{lageplan[eigen].flaeche_eindeutig}}',
+      '{{lageplan[eigen].versiegelung}}',
+      '{{lageplan[eigen].angerechnet}}',
+      '{{lageplan[eigen].anrechnung}}',
+    ],
+    { fmts: [undefined, undefined, M2, M2, undefined, M2] },
+  );
+  summe(46, ['D', 'F'], 45, 45);
 
-  abschnitt(47, 'Hinweise');
-  put('A48', '{{hinweis.text}}', { wrap: true });
-  ws.mergeCells('A48:F48');
-  put('A50', '{{haftung}}', { wrap: true });
-  ws.getCell('A50').font = { size: 9, color: { argb: 'FF6B7280' } };
-  ws.mergeCells('A50:F50');
-  ws.getRow(50).height = 26;
+  abschnitt(48, 'Hinweise');
+  put('A49', '{{hinweis.text}}', { wrap: true });
+  ws.mergeCells(`A49:${letzte}49`);
   return ws;
 }
 
-async function vorlage(mitHilfe: boolean): Promise<Uint8Array> {
+/** Stellen der Kennzahlen wie in der App (für das Zahlenformat im Standardexport) */
+function stellenVon(project: Project) {
+  const n = massNachweis(project);
+  return { grz: kennzahlStellenVon(n.grz), grz2: n.grz2 ? kennzahlStellenVon(n.grz2) : undefined, gfz: kennzahlStellenVon(n.gfz) };
+}
+
+async function vorlage(mitHilfe: boolean, stellen?: Parameters<typeof nachweisBlatt>[1]): Promise<Uint8Array> {
   const ExcelJS = await excel();
   const wb: Workbook = new ExcelJS.Workbook();
   wb.creator = 'GRZ-Nachweis';
   wb.created = new Date();
-  nachweisBlatt(wb);
+  nachweisBlatt(wb, stellen);
   if (mitHilfe)
     platzhalterBlatt(
       wb,
@@ -160,5 +221,5 @@ export async function exportWithTemplate(template: Uint8Array, project: Project,
 }
 
 export async function exportDefault(project: Project, date = new Date()): Promise<Uint8Array> {
-  return exportWithTemplate(await vorlage(false), project, date);
+  return exportWithTemplate(await vorlage(false, stellenVon(project)), project, date);
 }

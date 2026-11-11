@@ -207,7 +207,7 @@ describe('Überlagerungen, Gelände am Hang, Split-Level', () => {
     expect(garten.flaecheEindeutig).toBeCloseTo(10, 6);
     expect(garten.ueberlagert).toBeCloseTo(10, 6);
     expect(n.ueberlagerungen.length).toBeGreaterThan(0);
-    expect(n.grz2!.wert * 612.5).toBeCloseTo(135 + 20, 6);
+    expect(n.grz2!.wert! * 612.5).toBeCloseTo(135 + 20, 6);
   });
 
   it('Hanglage: Gelände je Geschoss entlang der Außenwände aus den Lageplan-Flächen', () => {
@@ -312,5 +312,75 @@ describe('Lageplan: Kopieren und Pfeiltasten', () => {
     auswahlVerschieben(0.1, 0);
     expect(useGrz.getState().project.lageplan!.flaechen[1].points[0].x).toBeCloseTo(12.7, 9);
     expect(useGrz.getState().past.length).toBe(schritte + 1);
+  });
+});
+
+describe('Anzeige der Kennzahlen (G-02, G-03)', () => {
+  it('nahe am Grenzwert vier Stellen und Begründung in m², sonst drei Stellen', async () => {
+    const { flaechenVergleich, kennzahlText } = await import('./texte');
+    expect(kennzahlText(0.5017, 0.5)).toBe('0,5017');
+    expect(kennzahlText(0.4003, 0.4)).toBe('0,4003');
+    expect(kennzahlText(0.18, 0.4)).toBe('0,180');
+    expect(kennzahlText(0.18)).toBe('0,180');
+    // nie gleich aussehend wie der Grenzwert
+    expect(kennzahlText(0.400001, 0.4)).toBe('0,400001');
+    const p = haus('1967-03-14');
+    p.massNutzung = { ...p.massNutzung, gfz: 0.5 };
+    p.meta.grundstueck.flaeche = 400;
+    const n = massNachweis(p);
+    expect(n.gfz.status).toBe('ueberschritten');
+    expect(flaechenVergleich('GF', n.gfz)).toMatch(/^GF \d+,\d\d m² > 200,00 m² zulässig$/);
+  });
+
+  it('ohne Grundstücksfläche: Grundfläche aus der Rechnung, Kennzahl nicht berechnet, keine Ampel „eingehalten“', () => {
+    const p = createProject('IFC');
+    const eg: Storey = { ...createStorey('EG', 3), elevation: 0, shapes: [createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 }))] };
+    const og: Storey = { ...createStorey('OG', 3), elevation: 3, shapes: [createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 }))] };
+    p.storeys = [eg, og];
+    p.massNutzung = { grz: 0.4, gfz: 0.8, gelaende: -0.2 };
+    const n = massNachweis(p);
+    expect(n.grz.flaeche).toBeCloseTo(80, 6);
+    expect(n.gfz.flaeche).toBeCloseTo(160, 6);
+    expect(n.grz.wert).toBeUndefined();
+    expect(n.grz.status).toBe('fehlt');
+    expect(n.grz2!.status).toBe('fehlt');
+    const h = n.hinweise.find((x) => x.feld === 'grundstueck')!;
+    expect(h.tipp).toContain('„Grundstücksfläche [m²]“ in den Festsetzungen');
+  });
+});
+
+describe('Angerechnete Fläche und Hinweise (G-04, G-09)', () => {
+  it('Terrasse „zählt nicht“ hat angerechnet 0, Summe der angerechneten Flächen = Kennzahl', () => {
+    const p = haus('1978-06-01');
+    lageplan(p, flaeche(12, 0, 15, 6, { name: 'Garage', nutzung: 'garage' }), flaeche(-3, 0, 0, 5, { name: 'Terrasse', nutzung: 'terrasse' }));
+    p.meta.grundstueck.flaeche = 150;
+    const n = massNachweis(p);
+    const t = n.lageplan.find((l) => l.name === 'Terrasse')!;
+    expect(t.anrechnung).toBe('nein');
+    expect(t.angerechnet).toBe(0);
+    // Garage 18 m², davon 15 m² frei → 3 m² angerechnet
+    expect(n.lageplan.find((l) => l.name === 'Garage')!.angerechnet).toBeCloseTo(3, 6);
+    expect(n.hauptanlage + n.lageplan.reduce((a, l) => a + l.angerechnet, 0)).toBeCloseTo(n.grz.flaeche, 9);
+    // BauNVO 1990: Zufahrt auf die GR II, „prüfen“ als Spanne
+    const q = haus('2020-05-01');
+    lageplan(q, flaeche(12, 0, 15, 10, { name: 'Zufahrt', nutzung: 'zufahrt' }), flaeche(-3, 0, 0, 5, { name: 'Terrasse', nutzung: 'terrasse' }));
+    const m = massNachweis(q);
+    const ter = m.lageplan.find((l) => l.name === 'Terrasse')!;
+    expect(ter.angerechnet).toBe(0);
+    expect(ter.angerechnetBis).toBeCloseTo(15, 6);
+    const unter = m.unterirdisch?.angerechnet ?? 0;
+    expect(m.hauptanlage + m.lageplan.reduce((a, l) => a + l.angerechnet, 0) + unter).toBeCloseTo(m.grz2!.flaeche, 9);
+  });
+
+  it('„Gelände unbekannt“ ist ein Bedienhinweis und fehlt im Nachweis für die Bauaufsicht', async () => {
+    const { sachlicheHinweise } = await import('./massNutzung');
+    const p = haus('2020-05-01');
+    delete p.massNutzung!.gelaende;
+    const n = massNachweis(p);
+    const h = n.hinweise.find((x) => x.text.startsWith('Geländeoberfläche unbekannt'))!;
+    expect(h.art).toBe('bedienung');
+    expect(sachlicheHinweise(n).some((t) => t.startsWith('Geländeoberfläche'))).toBe(false);
+    // Recht steht in den Grundlagen, nicht noch einmal in den Hinweisen
+    expect(n.hinweise.some((x) => x.text.startsWith('Ohne Plandatum'))).toBe(false);
   });
 });

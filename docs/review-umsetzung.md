@@ -149,18 +149,33 @@ GRZ 0.10.1, KO 0.10.1, PO 0.6.1, EZ 0.5.1, FO 0.21.2 (nur Patch, Bundles geände
 
 ## GRZ-Nachweis
 
-- [ ] **G-01** Wiederhergestellter Zwischenstand gilt als gespeichert
-- [ ] **G-02** Gerundete Kennzahl widerspricht der Ampel
-- [ ] **G-03** Grundfläche ohne Grundstücksfläche
-- [ ] **G-04** Druck: Spalte „angerechnet“
-- [ ] **G-05** Excel: Summe zählt Überlagerungen doppelt
+- [x] **G-01** Wiederhergestellter Zwischenstand gilt als gespeichert – GRZ 0.10.1: `wiederherstellen()` vergleicht die Inhalte
+  (`gleich`), ohne Datei gilt ein nicht leeres Projekt als ungespeichert; Zeitstempel im IndexedDB-Eintrag, Leiste
+  „Ungespeicherter Stand vom … wiederhergestellt – Speichern / Verwerfen“ (Verwerfen mit Rückfrage)
+- [x] **G-02** Gerundete Kennzahl widerspricht der Ampel – GRZ 0.10.1: `kennzahlText` (mind. 3 Stellen, unter 0,005 Abstand 4,
+  bei Bedarf mehr), Begründung in m² (`flaechenVergleich`) in Kachel, Druck und Excel (`*.vergleich`); Excel mit
+  denselben Stellen
+- [x] **G-03** Grundfläche ohne Grundstücksfläche – GRZ 0.10.1: `Kennzahl.flaeche` direkt aus der Rechnung, ohne
+  Grundstücksfläche Kennzahl „–“ und Status „Grundstücksfläche fehlt“; Hinweis nennt das Feld in den Festsetzungen
+- [x] **G-04** Druck: Spalte „angerechnet“ – GRZ 0.10.1: Spalten „eindeutig“ und „angerechnet auf GR II/GR“ (je Fläche aus
+  dem Rechenkern, Spanne bei „prüfen“), Kellergeschoss als eigene Zeile, Summen GR I/GR II = Kacheln (die Kennzahlen
+  rechnen jetzt selbst mit der Summe der disjunkten Anteile)
+- [x] **G-05** Excel: Summe zählt Überlagerungen doppelt – GRZ 0.10.1: Spalten „eindeutig“ und „angerechnet“ mit Summen,
+  GRZ/GFZ, zulässige Fläche und Ergebnis als Formeln, offene Spanne als eigene Zeile. Abweichung: Die Ergebnis-Formel
+  nutzt nur IF und Vergleiche (vom Formelrechner in core für die Vorschau unterstützt)
 - [x] **G-06** Farbschema-Wechsel wirkt erst nach Neustart – GRZ 0.8.0 (mit Q-1)
 - [x] **G-07** Zahlenfelder verwerfen oder kappen Eingaben ohne Meldung – GRZ 0.9.0 (mit Q-3)
-- [ ] **G-08** Druck-Lageplan: Nummern, Maßstab, Nordpfeil
-- [ ] **G-09** Bedienhinweise und Doppelungen im amtlichen Nachweis
+- [x] **G-08** Druck-Lageplan: Nummern, Maßstab, Nordpfeil – GRZ 0.10.1: Nummern mind. 10 pt (Maßstab aus Breite und Höhe der
+  Druckfläche), Punkt im größten eindeutigen Teilstück (`beschriftung.ts`), Maßstabsleiste, Nordpfeil
+  (Planoberkante = Projektnorden; der IFC-Import legt −y nach Norden). Maße an Kanten folgen mit G-20
+- [x] **G-09** Bedienhinweise und Doppelungen im amtlichen Nachweis – GRZ 0.10.1: `Hinweis` mit Art „sachlich“/„bedienung“
+  und `tipp` (nur App); Druck/Excel nur sachliche, Recht-Hinweise nicht doppelt; keine doppelte Klammer; Datum
+  TT.MM.JJJJ; Haftungssatz im Druck per Schalter (aus), im Excel-Standardlayout entfernt; „Stand“ im Druckdialog
+  eintragbar (leer = ohne). Abweichung: Der Stand wird noch nicht im Projekt gespeichert (folgt mit G-25)
 - [x] **G-11** Esc schließt Druck, Excel und Projektübersicht – GRZ 0.8.0 (mit Q-2)
 - [x] **G-12** Lageplan im Dunkelmodus weiß – GRZ 0.8.0 (mit Q-1): `.grz-skizze` mit `--canvas-filter`
-- [ ] **G-13** Zeichenpunkte um die Rahmenbreite versetzt
+- [x] **G-13** Zeichenpunkte um die Rahmenbreite versetzt – GRZ 0.10.1: `innenflaeche()` (ohne Rahmen/Innenabstand) für
+  Zeichnen, Ziehen, Fang, Zoom und Pan; `weltpunkt` exportiert und getestet (Zoom 1, 0,2, 5)
 - [x] **G-14** Technische Fehlermeldung bei defekter Projektdatei – GRZ 0.8.0 (mit Q-6); gilt für Öffnen,
   IFC-Übernahme und Speichern
 - [x] **G-15** Rückfrage als `window.confirm` – GRZ 0.8.0 (mit Q-2)

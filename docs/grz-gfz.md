@@ -70,7 +70,8 @@ oder Enter schließt, Rück löscht den letzten Punkt, Esc bricht ab) oder „Re
 Gebäude und Flächen werden gefangen. „Auswahl“ (V): Klicken wählt eine Fläche, Ziehen verschiebt sie, Punkte
 ziehen ändert sie, ◇ in der Kantenmitte ziehen fügt einen Punkt ein, Rechtsklick auf einen Punkt löscht ihn
 (mindestens drei bleiben), Entf/Rück löscht die Fläche. Mausrad zoomt (nur den Plan), mittlere Maustaste,
-Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Einpassen“ (F) zeigt alles.
+Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Einpassen“ (F) zeigt alles. Punkte
+werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unter 1 mm bei jedem Zoom.
 
 - **Mehrfachauswahl:** Shift+Klick nimmt Flächen hinzu bzw. heraus, Shift+Ziehen auf freier Fläche zieht einen
   Auswahlrahmen auf, Strg+A wählt alle. Mehrere Flächen werden gemeinsam verschoben, gelöscht und in Nutzung,
@@ -140,15 +141,40 @@ Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Ein
 
 - Kennzahlen mit Ampel und Reserve, Vollgeschossprüfung mit Begründung, Geschossfläche je Geschoss,
   Flächenbilanz (Gebäude, voll-/teilversiegelt, grün) und Hinweise.
-- **Nachweis drucken** (Strg+P): Nachweis auf A4 hoch – Grundlagen und Festsetzungen, Ergebnis-Tabelle, Lageplan
-  mit nummerierten Flächen, Grundfläche je Fläche mit Anrechnung, Vollgeschossprüfung mit Begründung,
-  Geschossfläche, vor 1990 die Aufenthaltsräume in Nicht-Vollgeschossen, Flächenbilanz, Hinweise und
-  Unterschriftszeile. Über den Druckdialog auch als PDF; der vorgeschlagene Dateiname ist
-  `<Projektdatei> GRZ+GFZ`.
+- **Stellen der Kennzahlen:** GRZ und GFZ stehen mit mindestens drei Nachkommastellen; liegt der Wert näher als
+  0,005 am zulässigen Wert, mit vier (0,5017 statt 0,50) – und mit so vielen mehr, dass „überschritten“ nie neben
+  gleich aussehenden Zahlen steht. Die Ampel ist zusätzlich in m² begründet („GF 307,28 m² > 306,25 m² zulässig“).
+  Kachel, Druck und Excel zeigen dieselben Stellen.
+- **Ohne Grundstücksfläche** zeigen die Kacheln die Grundfläche bzw. Geschossfläche aus der Rechnung, die Kennzahl
+  als „–“ und „Grundstücksfläche fehlt“ statt einer Ampel.
+- **Hinweise** sind getrennt in sachliche (für die Bauaufsicht, kommen in Druck und Excel) und Bedienhinweise
+  (nur in der App, grau; z. B. „Geländeoberfläche unbekannt“). Arbeitsanweisungen stehen nur in der App.
+- **Zwischenstand:** Die App sichert den Stand laufend im Browser bzw. App-Speicher. Wird nach einem Neustart ein
+  Stand wiederhergestellt, der von der Datei abweicht, gilt er als ungespeichert (Titel „•“); eine Leiste
+  „Ungespeicherter Stand vom … wiederhergestellt – Speichern / Verwerfen“ bietet an, ihn zu speichern oder auf den
+  Stand der Datei (bzw. ein leeres Projekt) zurückzusetzen.
+- **Nachweis drucken** (Strg+P): Nachweis auf A4 hoch – Kopf mit den Stammdaten, Grundlagen und Festsetzungen
+  (Datum TT.MM.JJJJ), Ergebnis-Tabelle, Lageplan, Grundfläche je Fläche, Vollgeschossprüfung mit Begründung,
+  Geschossfläche, vor 1990 die Aufenthaltsräume in Nicht-Vollgeschossen, Flächenbilanz, sachliche Hinweise und
+  Unterschriftszeile. Über den Druckdialog auch als PDF; der vorgeschlagene Dateiname ist `<Projektdatei> GRZ+GFZ`.
+  - Tabelle „Grundfläche“: Spalte „eindeutig“ (Überlagerungen nur einmal gezählt) und „angerechnet auf GR II“
+    (BauNVO 1990) bzw. „auf GR“ – 0 bei „zählt nicht“, anteilig bei Garagen bis 0,1 der Grundstücksfläche, bei
+    „prüfen“ als Spanne; Kellergeschosse außerhalb der Hauptanlage als eigene Zeile. Die Summenzeilen GR I und
+    GR II bzw. GR stimmen exakt mit den Kacheln überein.
+  - Lageplan: Nummern in mindestens 10 pt im eindeutigen Anteil der Fläche (nicht unter dem Gebäude oder
+    überlagernden Flächen, bei mehreren Teilstücken im größten), Maßstabsleiste und Nordpfeil (Planoberkante =
+    Projektnorden des Modells).
+  - „Stand“ im Kopf wird im Druckdialog eingetragen (leer: ohne Stand), nicht automatisch heute. Der Haftungssatz
+    des Tools steht nur auf dem Blatt, wenn „Haftungshinweis“ gewählt ist.
 - **Excel …**: Standardlayout (Blatt „GRZ GFZ“ mit Summenformeln) oder eigene Vorlage mit Platzhaltern wie
   `{{grz}}`, `{{gfz}}`, `{{vollgeschosse}}`, `{{bilanz.*}}` und den Sammlungen `geschoss`, `lageplan`, `raum`,
   `hinweis` – siehe [Excel-Vorlagen](excel-vorlagen.md#grz-nachweis). Die Vorlage wird wie im Flächenrechner im
   Projekt mitgespeichert, aber getrennt von dessen Vorlage.
+  - Im Standardlayout sind die Kennzahlen Formeln aus den Zellen (GRZ = Grundfläche / Grundstücksfläche), dazu die
+    zulässige Fläche (zulässig × Grundstücksfläche) und das Ergebnis als Vergleich – Prüfer können nachrechnen.
+    Die offene Spanne steht als eigene Zeile „GRZ II bei Anrechnung offener Flächen“.
+  - Die Lageplan-Flächen haben die Spalten „eindeutig“ und „angerechnet“; die Summe über „eindeutig“ ist der Wert
+    der App (keine doppelt gezählten Überlagerungen).
 
 Das Tool rechnet nach und zeigt die angewandte Fassung; die Verantwortung für den Nachweis bleibt bei der
 Entwurfsverfasserin bzw. dem Entwurfsverfasser.
