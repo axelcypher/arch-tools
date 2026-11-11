@@ -238,4 +238,19 @@ describe('Anträge: je Antrag eigene Projektmerkmale, Projektumfang und Autofill
       ]),
     ).toEqual({ datei: 'Eingangsbestaetigung Kreis.pdf', datum: '2026-11-03' });
   });
+
+  it('eingereicht: auch in Unterordnern des Antrags – mit Pfad relativ zum Antragsordner', () => {
+    const zeit = new Date(2026, 10, 3, 12).getTime();
+    expect(
+      eingereichtAus([
+        { pfad: 'Schriftverkehr', ordner: true, groesse: 0 },
+        { pfad: 'Schriftverkehr/Eingangsbestätigung', ordner: true, groesse: 0 },
+        { pfad: 'Schriftverkehr/Kreis/BS9 BAUA 261103 Antragsprotokoll.pdf', ordner: false, groesse: 1, geaendert: zeit },
+      ]),
+    ).toEqual({ datei: 'Schriftverkehr/Kreis/BS9 BAUA 261103 Antragsprotokoll.pdf', datum: '2026-11-03' });
+    // Archivordner (archiv, _archiv – auch tiefer) zählen nicht
+    expect(eingereichtAus([{ pfad: '_archiv/Eingangsbestätigung.pdf', ordner: false, groesse: 1 }])).toBeNull();
+    expect(eingereichtAus([{ pfad: 'Schriftverkehr/Archiv/Antragsprotokoll.pdf', ordner: false, groesse: 1 }])).toBeNull();
+    expect(eingereichtAus([{ pfad: 'Archivierung/Antragsprotokoll.pdf', ordner: false, groesse: 1 }])).not.toBeNull();
+  });
 });

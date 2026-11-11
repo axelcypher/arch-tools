@@ -523,14 +523,23 @@ export function aktuellsterAntrag(antraege: Record<string, AntragDaten>, reihe: 
 /** Dokumente, die einen Antrag als eingereicht kennzeichnen */
 export const EINGEREICHT_MUSTER = /antragsprotokoll|eingangsbest(ä|ae)tigung/i;
 
-/** Eingereicht? – die neueste passende Datei im Ordner des Antrags (Office-Sperrdateien ausgenommen) */
+/** Datei oder Ordner in einem Archivordner (`_archiv`, `archiv`, auch tiefer) */
+export const istArchiv = (pfad: string) => /(^|\/)_?archiv(\/|$)/i.test(pfad.replace(/\\/g, '/'));
+
+/** Wie tief im Ordner des Antrags nach dem Antragsprotokoll bzw. der Eingangsbestätigung gesucht wird */
+export const EINGEREICHT_TIEFE = 6;
+
+/**
+ * Eingereicht? – die neueste passende Datei im Ordner des Antrags oder seinen Unterordnern (Archivordner und
+ * Office-Sperrdateien ausgenommen); `datei` ist der Pfad relativ zum Ordner des Antrags.
+ */
 export function eingereichtAus(dateien: Eintrag[]): { datei: string; datum: string } | null {
   const treffer = dateien
-    .filter((d) => !d.ordner && !/^(~\$|\.~lock\.)/.test(d.pfad.split('/').pop() ?? '') && EINGEREICHT_MUSTER.test(d.pfad.split('/').pop() ?? ''))
+    .filter((d) => !d.ordner && !istArchiv(d.pfad) && !/^(~\$|\.~lock\.)/.test(d.pfad.split('/').pop() ?? '') && EINGEREICHT_MUSTER.test(d.pfad.split('/').pop() ?? ''))
     .sort((a, b) => (b.geaendert ?? 0) - (a.geaendert ?? 0));
   const d = treffer[0];
   if (!d) return null;
-  return { datei: d.pfad.split('/').pop()!, datum: tagVon(d.geaendert ? new Date(d.geaendert) : new Date()) };
+  return { datei: d.pfad, datum: tagVon(d.geaendert ? new Date(d.geaendert) : new Date()) };
 }
 
 /* ---------- Dokumente im Antragsordner: Namensformat und „bereit“ ---------- */

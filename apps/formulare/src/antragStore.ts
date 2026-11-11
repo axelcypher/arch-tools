@@ -32,7 +32,9 @@ import {
   aktuellsterAntrag,
   ansichtVon,
   antraegeVon,
+  EINGEREICHT_TIEFE,
   eingereichtAus,
+  istArchiv,
   neuerAntrag,
   tagVon,
   projektStatusAus,
@@ -233,8 +235,8 @@ export async function ordnerAufloesen(ds: { liste: (pfad: string, tiefe: number)
   return out.join('/');
 }
 
-/** Formular in einem Archivordner (`_archiv`, `archiv`, auch tiefer) – wird beim Sammel-Export ausgelassen */
-export const istArchiv = (pfad: string) => /(^|\/)_?archiv(\/|$)/i.test(pfad.replace(/\\/g, '/'));
+/** Formular in einem Archivordner – wird beim Sammel-Export ausgelassen */
+export { istArchiv };
 
 /** Projektcodes, mit denen Dateien im Antragsordner beginnen dürfen: Kürzel des FORMA-Projekts, Projektcode der .oap */
 export function projektCodes(p: Projekt): string[] {
@@ -738,13 +740,12 @@ export const useAntrag = create<AntragState>((set, get) => {
       } catch {
         dateienFormaProjekt = [];
       }
-      // eingereicht? – Antragsprotokoll bzw. Eingangsbestätigung im Ordner eines Antrags
+      // eingereicht? – Antragsprotokoll bzw. Eingangsbestätigung im Ordner eines Antrags, auch in Unterordnern
       const eingereicht: Record<string, ReturnType<typeof eingereichtAus>> = {};
       if (basis) {
-        const aktiv = antragsOrdner(get(), projekt).split('/').pop()!;
         for (const f of get().fassungen) {
           try {
-            eingereicht[f.name] = eingereichtAus(f.name === aktiv ? dateien : await ds.liste(verbinde(basis, `${e.antragsordner.replace(/^\/+|\/+$/g, '')}/${f.name}`), 1));
+            eingereicht[f.name] = eingereichtAus(await ds.liste(verbinde(basis, `${e.antragsordner.replace(/^\/+|\/+$/g, '')}/${f.name}`), EINGEREICHT_TIEFE));
           } catch {
             eingereicht[f.name] = null;
           }

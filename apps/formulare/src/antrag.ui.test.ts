@@ -957,5 +957,14 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     expect(antragIn('BAUA 2')?.eingereicht).toBeUndefined();
     expect(readProjectFile(ds.dateien.get(OAP)!).meta.antrag).toEqual({ name: 'BAUA 2', angelegt: expect.any(String) });
+
+    // im Archivordner: zählt nicht
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/_archiv/Eingangsbestätigung alt.pdf`, new Uint8Array([1]));
+    // auch tief in Unterordnern – hier im (nicht aktiven) Antrag BAUA
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA/Schriftverkehr/Kreis/Antragsprotokoll Online.pdf`, new Uint8Array([1]));
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(antragIn('BAUA')?.eingereicht).toMatchObject({ datei: 'Schriftverkehr/Kreis/Antragsprotokoll Online.pdf' });
+    expect(antragIn('BAUA 2')?.eingereicht).toBeUndefined();
   });
 });

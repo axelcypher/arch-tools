@@ -386,9 +386,10 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   Mit der aktiven Fassung wechselt die App auch diese Angaben. Jeder Ordner einer Antragsfassung ist ein Antrag; beim
   ersten Öffnen werden fehlende angelegt (Angelegt-Datum aus dem Ordner). Angaben aus älteren Fassungen der App, die
   für das ganze Projekt galten, werden dabei einmalig in jeden vorhandenen Antrag übernommen.
-- **Eingereicht:** liegt im Ordner eines Antrags ein Dokument, dessen Name `Antragsprotokoll` oder
-  `Eingangsbestätigung` (auch `Eingangsbestaetigung`) enthält, gilt der Antrag als **eingereicht** – mit dem Datum
-  der Datei. Das zeigt die App am Antrag (oben links) und im Menü der Fassungen; verschwindet die Datei, ist er es
+- **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)
+  ausgenommen – ein Dokument, dessen Name `Antragsprotokoll` oder `Eingangsbestätigung` (auch
+  `Eingangsbestaetigung`) enthält, gilt der Antrag als **eingereicht** – mit dem Datum der Datei (bei mehreren der
+  neuesten). Das zeigt die App am Antrag (oben links) und im Menü der Fassungen; verschwindet die Datei, ist er es
   nicht mehr. Der **zuletzt angelegte Antrag** steht zusätzlich in `meta.antrag` der Projektdatei und erscheint auf
   den Startseiten aller Apps als Marke auf der Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in
   Arbeit“). Erkannt wird beim Öffnen bzw. Aktualisieren des Projekts in Formulare.
