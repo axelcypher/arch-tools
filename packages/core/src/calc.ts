@@ -1,6 +1,6 @@
 import type { Point } from './geometry';
 import { distanceToEdges, labelPoint, pointInPolygon, polygonArea } from './geometry';
-import type { Nutzungsgruppe, OutlineShape, Project, Raumumschliessung, RoomShape, Storey, WoflKategorie } from './model';
+import type { AbzugArt, HoehenAnteile, Nutzungsgruppe, OutlineShape, Project, Raumumschliessung, RoomShape, Storey, WoflAngaben, WoflKategorie } from './model';
 import type { MultiPolygon } from './polygon';
 import { areaMP, diffMP, intersectMP, oeffnen, unionAll } from './polygon';
 import { roomArea, storeyElevations } from './model';
@@ -42,6 +42,10 @@ export interface RoomResult {
   woflFaktor: number;
   woflArea: number;
   wohnung: string;
+  /** nur Abzugsflächen: was sie mindern (NRF und/oder Wohnfläche) */
+  abzugArt?: AbzugArt;
+  /** Anrechnung „Raumteile nach lichter Höhe“: Anteile der Fläche */
+  woflAnteile?: HoehenAnteile;
 }
 
 export interface AreaTotals {
@@ -191,7 +195,9 @@ export function unterbau(s: OutlineShape, storey: Storey, project: Project): Unt
     const f = freiFlaeche > 1e-6 ? flaecheImFreien(r.points, frei) : 0;
     if (f > 1e-6) out.push({ art: 'absenkung', bezeichnung: `Absenkung ${raumText(r)}`, flaeche: f, hoehe: tiefe, raumId: r.id });
   }
-  if (sohle > 1e-9 && freiFlaeche > 1e-6) out.push({ art: 'sohle', bezeichnung: 'Bodenplatte (UK Sohle bis Fußboden)', flaeche: freiFlaeche, hoehe: sohle });
+  // nicht umschlossene Bereiche (S: Balkon, Dachterrasse) haben i. d. R. keine Bodenplatte – nur auf ausdrücklichen Wunsch
+  if (sohle > 1e-9 && freiFlaeche > 1e-6 && (s.umschliessung === 'R' || s.sohleAnsetzen))
+    out.push({ art: 'sohle', bezeichnung: 'Bodenplatte (UK Sohle bis Fußboden)', flaeche: freiFlaeche, hoehe: sohle });
   return out;
 }
 
@@ -280,6 +286,34 @@ export function outlineVolume(s: OutlineShape, storey: Storey, project: Project)
   return Math.max(0, koerperVolume(s, storey, project) + unten);
 }
 
+/**
+ * Raumumschließung eines Raums: von Hand festgelegt (bzw. gespeichertes „S“), sonst die des BGF-Umrisses, in dem er
+ * liegt – ein Balkonraum auf einem S-Umriss zählt so zur NRF (S), nicht zur NRF (R).
+ */
+export function raumUmschliessung(r: RoomShape, storey: Storey): Raumumschliessung {
+  if (r.rsVonHand || r.umschliessung === 'S' || r.points.length < 3) return r.umschliessung;
+  const p = labelVon(r.points);
+  const umrisse = storey.shapes.filter((s): s is OutlineShape => s.kind === 'outline' && !s.subtract && pointInPolygon(p, s.points));
+  return umrisse.some((o) => o.umschliessung === 'S') ? 'S' : 'R';
+}
+
+/** Raum, in dem eine Abzugsfläche liegt (erster Raum ohne Abzug, der ihren Beschriftungspunkt enthält) */
+export function raumUmAbzug(r: RoomShape, storey: Storey): RoomShape | undefined {
+  if (!r.subtract || r.points.length < 3) return undefined;
+  const p = labelVon(r.points);
+  return storey.shapes.find((s): s is RoomShape => s.kind === 'room' && !s.subtract && s.points.length >= 3 && pointInPolygon(p, s.points));
+}
+
+/**
+ * WoFlV-Angaben eines Raums für die Rechnung: Eine Abzugsfläche ohne eigene Anrechnung („keine“) erbt Kategorie,
+ * Faktor und Wohnung des Raums, in dem sie liegt – sonst mindert ein Schornstein zwar die NRF, aber nicht die
+ * Wohnfläche. Eine eigene Anrechnung übersteuert.
+ */
+export function effektiveWofl(r: RoomShape, storey: Storey): WoflAngaben {
+  if (!r.subtract || r.wofl.kategorie !== 'keine') return r.wofl;
+  return raumUmAbzug(r, storey)?.wofl ?? r.wofl;
+}
+
 export function computeStorey(storey: Storey, project: Project): StoreyResult {
   const t = emptyTotals();
   const rooms: RoomResult[] = [];
@@ -291,11 +325,18 @@ export function computeStorey(storey: Storey, project: Project): StoreyResult {
       addRS(t.bgf, s.umschliessung, a);
       addRS(t.bri, s.umschliessung, sign * outlineVolume(s, storey, project));
     } else {
-      t.nutzung[s.nutzung] += a;
-      const bereich = nutzungInfo(s.nutzung).bereich;
-      addRS(bereich === 'NUF' ? t.nuf : bereich === 'TF' ? t.tf : t.vf, s.umschliessung, a);
-      addRS(t.nrf, s.umschliessung, a);
-      const f = woflFaktor(s.wofl, project.settings);
+      const rs = raumUmschliessung(s, storey);
+      // Abzugsflächen: NRF und Wohnfläche (Standard), nur Wohnfläche (§ 3 Abs. 3 WoFlV, z. B. Treppe) oder nur NRF
+      const art: AbzugArt | undefined = s.subtract ? (s.abzugArt ?? 'beide') : undefined;
+      if (art !== 'wofl') {
+        t.nutzung[s.nutzung] += a;
+        const bereich = nutzungInfo(s.nutzung).bereich;
+        addRS(bereich === 'NUF' ? t.nuf : bereich === 'TF' ? t.tf : t.vf, rs, a);
+        addRS(t.nrf, rs, a);
+      }
+      const w = effektiveWofl(s, storey);
+      const keineWofl = art === 'din';
+      const f = keineWofl ? 0 : woflFaktor(w, project.settings);
       const woflArea = a * f;
       t.wofl += woflArea;
       rooms.push({
@@ -305,13 +346,15 @@ export function computeStorey(storey: Storey, project: Project): StoreyResult {
         nummer: s.nummer,
         name: s.name,
         nutzung: s.nutzung,
-        umschliessung: s.umschliessung,
+        umschliessung: rs,
         subtract: s.subtract,
         area: a,
-        woflKategorie: s.wofl.kategorie,
+        woflKategorie: keineWofl ? 'keine' : w.kategorie,
         woflFaktor: f,
         woflArea,
-        wohnung: s.wofl.wohnung.trim(),
+        wohnung: w.wohnung.trim(),
+        ...(art ? { abzugArt: art } : {}),
+        ...(!keineWofl && w.kategorie === 'hoehen' && w.anteile ? { woflAnteile: w.anteile } : {}),
       });
     }
   }

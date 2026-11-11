@@ -195,8 +195,11 @@ describe('Excel-Export mit Vorlage', () => {
     const texte: unknown[] = [];
     ws.eachRow((row) => row.eachCell((c) => texte.push(c.value)));
     expect(texte).toContain('Netto-Wohnflächen gesamt');
-    expect(texte).not.toContain('Neben-Nutzflächen');
-    expect(texte).not.toContain('Brutto-Nebenflächen gesamt');
+    expect(texte).not.toContain('Flächen ohne Wohnflächenanrechnung');
+    expect(texte).not.toContain('Flächen ohne Wohnflächenanrechnung gesamt');
+    // FR-13: Begriffe nach DIN 277:2021 / WoFlV; die Zeilen mit 3-%-Abzug bleiben
+    expect(texte).toContain('Wohnfläche nach WoFlV');
+    expect(texte).toContain('Brutto-Wohnflächen gesamt');
     expect(texte.filter((t) => typeof t === 'string' && t.includes('{{'))).toEqual([]);
   });
 
@@ -218,7 +221,7 @@ describe('Excel-Export mit Vorlage', () => {
       [null, null, null, '=SUM(C13:C14)'],
       ['DG', 'BGF', 80, null],
       [null, null, null, '=SUM(C16:C16)'],
-      ['Bruttogrundfläche gesamt', null, null, '=SUM(D12,D15,D17)'],
+      ['Brutto-Grundfläche gesamt', null, null, '=SUM(D12,D15,D17)'],
     ]);
     expect((ws.getCell('D18').value as { result: number }).result).toBe(246);
   });

@@ -106,8 +106,9 @@ export const REGELN: Regel[] = [
     text: [
       'Der **Brutto-Rauminhalt** ist der Rauminhalt des Baukörpers, der nach unten von der **Unterseite der konstruktiven Bauwerkssohle** und im Übrigen von den äußeren Begrenzungsflächen des Bauwerks umschlossen wird. Fundamente und Gründungen gehören nicht dazu. Wie die BGF wird er nach Regelfall (R) und Sonderfall (S) getrennt.',
       'Im Flächenrechner:',
-      '- je BGF-Umriss Fläche × Geschosshöhe (OK Rohfußboden bis OK Rohfußboden darüber) bzw. bis zur **Dachhaut** (Dachform, Gauben oder Dach aus dem IFC-Modell)',
-      '- im untersten Geschoss zusätzlich die **Bodenplatte**: Fläche × Abstand UK Sohle bis Fußboden – überall dort, wo kein anderes Geschoss darunter liegt',
+      '- je BGF-Umriss Fläche × Geschosshöhe (Fußboden bis Fußboden darüber – gleiche Bezugsebene wie die Geschosskoten, i. d. R. OK Fertigfußboden) bzw. bis zur **Dachhaut** (Dachform, Gauben oder Dach aus dem IFC-Modell)',
+      '- im untersten Geschoss zusätzlich die **Bodenplatte**: Fläche × Abstand UK Sohle bis zu dieser Bezugsebene – überall dort, wo kein anderes Geschoss darunter liegt; unter nicht umschlossenen Bereichen (S, z. B. Balkon) nur auf ausdrücklichen Wunsch',
+      '- **Sonderfall S** (Balkon, Loggia, Dachterrasse): Die obere Begrenzung ist eigens anzugeben (Körperhöhe bis Unterkante Überdeckung bzw. Oberkante Umwehrung); ohne Angabe rechnet der Flächenrechner mit der Geschosshöhe und warnt',
       '- **Split-Level**: tiefer liegende Räume oder Umrisse vergrößern den Körper nach unten',
       'Der Rechenweg (Bericht, Excel-Vorlage) weist jeden Teilkörper einzeln aus; seine Summe ist exakt der BRI.',
     ],
@@ -139,6 +140,25 @@ export const REGELN: Regel[] = [
     themen: ['nrf', 'nuf', 'din277'],
   },
 
+  {
+    id: 'din277-bauvorlage-nrw',
+    bereich: 'din277',
+    titel: 'BRI in Bauvorlage und Gebühr (NRW)',
+    kurz: 'Bauvorlage: nachprüfbare BRI-Berechnung nach DIN 277-1:2016-01; Gebührentarif: DIN 277:2021-08 – für den BRI gleich.',
+    text: [
+      'Die **Bauprüfverordnung NRW** verlangt für Bauanträge eine nachprüfbare Berechnung des Brutto-Rauminhalts nach DIN 277-1:2016-01 (§ 6 Nr. 1 BauPrüfVO). Der **Allgemeine Gebührentarif NRW** (Tarifstelle 3.1.1.2) bemisst die Baugenehmigungsgebühr nach dem Rauminhalt und verweist auf DIN 277:2021-08.',
+      'Für den Brutto-Rauminhalt stimmen beide Ausgaben in der Sache überein; der Bericht nennt deshalb „BRI nach DIN 277:2021-08 (entspricht für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW)“. Die Trennung nach Regelfall R und Sonderfall S und der Rechenweg je Teilkörper gehören zur Nachprüfbarkeit.',
+    ],
+    quellen: [
+      { titel: 'Verordnung über bautechnische Prüfungen (BauPrüfVO NRW)', fundstelle: '§ 6 Nr. 1 BauPrüfVO' },
+      { titel: 'Allgemeine Verwaltungsgebührenordnung NRW (AVerwGebO NRW), Allgemeiner Gebührentarif', fundstelle: 'Tarifstelle 3.1.1.2' },
+      DIN277,
+    ],
+    stichworte: ['Bauvorlage', 'Bauantrag', 'Gebühr', 'Baugebühr', 'BauPrüfVO', 'Tarifstelle', 'DIN 277-1:2016-01', 'Rauminhalt'],
+    apps: ['flaechen'],
+    themen: ['bri', 'din277'],
+  },
+
   /* ---------- WoFlV ---------- */
   {
     id: 'woflv-2',
@@ -148,7 +168,7 @@ export const REGELN: Regel[] = [
     text: [
       'Zur Wohnfläche gehören die Grundflächen der Räume, die ausschließlich zur Wohnung gehören, einschließlich Wintergärten, Schwimmbädern und ähnlicher geschlossener Räume sowie Balkonen, Loggien, Dachgärten und Terrassen.',
       'Nicht dazu gehören insbesondere Keller-, Abstell- (außerhalb der Wohnung), Bodenräume, Waschküchen, Trockenräume, Heizungsräume, Garagen sowie Räume, die nicht den Anforderungen des Bauordnungsrechts genügen.',
-      'Der Flächenrechner schlägt beim IFC-Import „keine Wohnfläche“ für Keller-, Technik-, Treppen-, Garagen- und Dachbodenräume vor; die Einstufung lässt sich je Raum oder für ein ganzes Geschoss ändern.',
+      'Der Flächenrechner schlägt beim IFC-Import und mit „automatisch nach Raumname“ „keine Wohnfläche“ für Keller-, Technik-, Treppenhaus-, Garagen- und Dachbodenräume vor sowie für alle Räume eines Kellergeschosses (Geschossart; eine Souterrainwohnung liegt in einem Normalgeschoss). Ein Raum mit Treppe, der kein eigener Treppenraum ist (z. B. „Diele/Treppe“), zählt – nur die Treppenfläche entfällt (§ 3 Abs. 3 WoFlV, als Abzugsfläche „nur Wohnfläche“ erfassen). Hauswirtschaftsräume in der Wohnung zählen, Waschküchen nicht. Der Vorschlag ist zu prüfen; die Einstufung lässt sich je Raum oder für ein ganzes Geschoss ändern.',
     ],
     zitate: [
       {

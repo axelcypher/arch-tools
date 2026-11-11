@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import type { AreaTotals } from '@core/calc';
 import { computeProject } from '@core/calc';
-import { briRechenweg } from '@core/rechenweg';
+import { briKoerper, briRechenweg } from '@core/rechenweg';
 import { fmt2 } from '@core/format';
-import { NUF_IDS, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
+import { MASSGRUNDLAGEN, NUF_IDS, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
+import { polygonArea } from '@core/geometry';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useEditor } from '../store/store';
 import { PlanFigure } from './PlanFigure';
@@ -17,6 +18,11 @@ export function Report() {
   useEscSchliessen(() => setOpen(false));
   const r = useMemo(() => computeProject(project), [project]);
   const rechenweg = useMemo(() => briRechenweg(project), [project]);
+  const fussnoten = useMemo(() => briKoerper(project).filter((k) => k.bemerkung), [project]);
+  // Putzabzug sichtbar machen (FR-05): Rohfläche und Abzug je Raum, nur wenn ein Raum einen Abzug hat
+  const raumById = useMemo(() => new Map(project.storeys.flatMap((s) => s.shapes.flatMap((x) => (x.kind === 'room' ? [[x.id, x] as const] : [])))), [project]);
+  const mitPutz = [...raumById.values()].some((x) => (x.putzabzug ?? 0) > 0);
+  const massText = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.text;
   const [showPlans, setShowPlans] = useState(true);
   const [showBackground, setShowBackground] = useState(false);
 
@@ -79,6 +85,9 @@ export function Report() {
           </tbody>
         </table>
         <p className="report-note">
+          {massText ? `${massText}. ` : mitPutz ? 'Putzabzug je Raum. ' : ''}Wohnfläche nach WoFlV vom 25.11.2003; Grundflächen und Rauminhalte nach DIN 277:2021-08.
+        </p>
+        <p className="report-note">
           R = Regelfall der Raumumschließung, S = Sonderfall. KGF = BGF − NRF (rechnerisch). BRI = Σ Umrissfläche × Geschosshöhe bzw. Volumen bis zur Dachhaut (Dachform oder Dach aus IFC-Modell).
         </p>
 
@@ -124,6 +133,11 @@ export function Report() {
           Teilkörper: Anzahl × Länge × Breite (bzw. Grundfläche) × Höhe × Formfaktor (½ Prisma/Keil, ⅓ Walmende/Pyramide, ⅙ Krüppelwalm-Abzug).
           „Mittlere Höhe“: Volumen exakt aus den Dachflächen bzw. dem IFC-Modell, als Grundfläche × mittlere Höhe dargestellt.
         </p>
+        {fussnoten.map((k) => (
+          <p key={`${k.umrissId}-${k.nr}`} className="report-note">
+            {k.geschoss}, {k.umriss}, {k.bezeichnung}: {k.bemerkung}.
+          </p>
+        ))}
 
         <h2>Netto-Raumfläche nach Nutzungsgruppen</h2>
         <table className="report-table">
@@ -175,6 +189,8 @@ export function Report() {
                       <th>Raum</th>
                       <th>Nutzung</th>
                       <th>R/S</th>
+                      {mitPutz && <th>Fläche roh [m²]</th>}
+                      {mitPutz && <th>Putzabzug</th>}
                       <th>Fläche [m²]</th>
                       <th>WoFlV</th>
                       <th>Faktor</th>
@@ -188,10 +204,12 @@ export function Report() {
                         <td>{room.nummer}</td>
                         <td>
                           {room.name}
-                          {room.subtract && <em> (Abzug)</em>}
+                          {room.subtract && <em>{room.abzugArt === 'wofl' ? ' (Abzug nur Wohnfläche)' : room.abzugArt === 'din' ? ' (Abzug nur NRF)' : ' (Abzug)'}</em>}
                         </td>
                         <td>{nutzungInfo(room.nutzung).kurz}</td>
                         <td>{room.umschliessung}</td>
+                        {mitPutz && <td className="num">{fmt2(polygonArea(raumById.get(room.shapeId)?.points ?? []) * (room.subtract ? -1 : 1))}</td>}
+                        {mitPutz && <td className="num">{raumById.get(room.shapeId)?.putzabzug ? `${fmt2(raumById.get(room.shapeId)!.putzabzug!)} %` : ''}</td>}
                         <td className="num">{fmt2(room.area)}</td>
                         <td>{room.woflKategorie === 'keine' ? '–' : WOFL_KATEGORIEN.find((k) => k.id === room.woflKategorie)?.label}</td>
                         <td className="num">{room.woflKategorie === 'keine' ? '' : fmt2(room.woflFaktor)}</td>
@@ -204,6 +222,8 @@ export function Report() {
                       <td>Summe {sr.name}</td>
                       <td />
                       <td />
+                      {mitPutz && <td />}
+                      {mitPutz && <td />}
                       <td className="num">{fmt2(sr.nrf.total)}</td>
                       <td />
                       <td />
@@ -219,7 +239,13 @@ export function Report() {
           );
         })}
 
-        <h2 className={showPlans ? 'page-break' : ''}>Wohnflächen nach WoFlV</h2>
+        <h2 className={showPlans ? 'page-break' : ''}>{project.settings.zweiteBV ? 'Wohnflächen – Altberechnung nach II. BV (nur Vergleich)' : 'Wohnflächen nach WoFlV'}</h2>
+        {project.settings.zweiteBV && (
+          <p className="warning">
+            Altberechnung nach §§ 42–44 II. BV, nur zum Vergleich mit Bestandsberechnungen bis 31.12.2003 (§ 5 WoFlV). Für neue Nachweise gilt die
+            Wohnflächenverordnung.
+          </p>
+        )}
         <table className="report-table narrow">
           <thead>
             <tr>
@@ -247,9 +273,11 @@ export function Report() {
           </tbody>
         </table>
         <p className="report-note">
-          Anrechnung nach § 4 WoFlV: lichte Höhe ≥ 2 m voll, 1–2 m zur Hälfte, &lt; 1 m nicht; unbeheizte Wintergärten zur Hälfte; Balkone, Loggien,
-          Dachgärten und Terrassen i. d. R. zu einem Viertel, höchstens zur Hälfte. Abzugsflächen nach § 3 Abs. 3 WoFlV sind als Abzugsflächen zu
-          erfassen.
+          Anrechnung nach § 4 WoFlV: Räume und Raumteile mit lichter Höhe ≥ 2 m voll, 1–2 m zur Hälfte, &lt; 1 m nicht; unbeheizbare Wintergärten,
+          Schwimmbäder u. ä. zur Hälfte; Balkone, Loggien, Dachgärten und Terrassen i. d. R. zu einem Viertel, höchstens zur Hälfte. Nach § 3 Abs. 3
+          WoFlV bleiben Schornsteine, Pfeiler und Säulen über 1,50 m Höhe und mehr als 0,1 m² Grundfläche, Treppen mit mehr als drei Steigungen samt
+          Treppenabsätzen sowie Tür-, Fenster- und offene Wandnischen bis 0,13 m Tiefe außer Betracht; sie sind als Abzugsflächen im Raum erfasst
+          (Treppen nur von der Wohnfläche, sie bleiben Teil der NRF). WoFlV-Einstufung nach Raumnamen vorgeschlagen, vom Verfasser geprüft.
         </p>
       </div>
     </div>

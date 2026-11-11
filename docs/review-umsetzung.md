@@ -129,26 +129,62 @@ GRZ 0.10.1, KO 0.10.1, PO 0.6.1, EZ 0.5.1, FO 0.21.2 (nur Patch, Bundles geände
   von web-ifc beim Laden des WebAssembly-Moduls als Hinweis (Info) ein; echte Warnungen/Fehler zählen weiter.
 - [x] **F-09** Beschriftungen im PDF doppelt – FR 0.18.1: je Beschriftung ein `<text>` (Test), im Druck ohne Kontur
   (Chrome schreibt Kontur und Füllung sonst als zwei Texte ins PDF), weißer Seitenhintergrund.
-- [ ] **FR-02** Raumumschließung R/S der Räume
-- [ ] **FR-03** Abzugsflächen: WoFlV und DIN 277 getrennt
+Block 2 (normative Korrekturen): FR 0.20.0; Projektformat und gemeinsamer Rechenkern geändert, daher auch GRZ 0.11.1,
+KO 0.11.1, PO 0.8.1, EZ 0.5.3, FO 0.23.1 (Patch). Neue optionale Felder (abwärtskompatibel, Rundlauf-Test): Raum
+`rsVonHand`, `abzugArt`, `nutzungsart`, `katalog`, `stempel`, `wofl.anteile` (Kategorie „hoehen“); Umriss
+`sohleAnsetzen`, `pruefen`, `stempel`; Geschoss `dachaufbau`, `fussbodenaufbau`; Dach `modellAbweichung`;
+Einstellungen `massgrundlage`, `zweiteBV` (die für spätere Punkte schon jetzt, damit nicht jede Stufe alle Apps
+mitbumpt).
+
+- [x] **FR-02** Raumumschließung R/S der Räume – FR 0.20.0: Räume übernehmen R/S vom BGF-Umriss, in dem sie liegen
+  (`raumUmschliessung` in `calc.ts`), Auswahl „wie der BGF-Umriss“ oder von Hand (bleibt; ein gespeichertes „S“ gilt
+  als von Hand); IFC-Import setzt Freisitze auf S; Auswertung warnt getrennt NRF (R) > BGF (R) und NRF (S) > BGF (S).
+  Abweichung: „R-Raum außerhalb aller R-Umrisse“ folgt mit der Prüfliste (F-10).
+- [x] **FR-03** Abzugsflächen: WoFlV und DIN 277 getrennt – FR 0.20.0: Abzugsflächen ohne eigene Anrechnung erben
+  Kategorie und Wohnung des Raums (`effektiveWofl`), Abzugsart „NRF und Wohnfläche“ / „nur Wohnfläche (§ 3 Abs. 3
+  WoFlV)“ / „nur NRF“; Hinweistexte im Bericht und in den Eigenschaften mit Schwellen und Nischenregel.
 - [x] **FR-04** Beispiele für BGF-Abzugsflächen – FR 0.18.1 (mit F-06): Umriss „z. B. Innenhof, Luftraum über
   Galerie“, Raum „z. B. Schornstein, Pfeiler, Schacht im Raum“; „Treppenloch“ entfernt, Kommentar in `model.ts`.
-- [ ] **FR-05** Putzabzug, Normausgabe, Maßgrundlage
-- [ ] **FR-06** Nutzungsgruppen-Vorschlag beim IFC-Import
-- [ ] **FR-07** WoFlV-Automatik nach Raum- und Geschossnamen
-- [ ] **FR-08** 100 %-Anrechnung unter Dachschrägen (Hinweis)
+- [x] **FR-05** Putzabzug, Normausgabe, Maßgrundlage – FR 0.20.0: Raumliste im Bericht mit „Fläche roh“ und
+  „Putzabzug“ (nur wenn ein Raum einen hat), Fußnote mit Maßgrundlage und Normausgaben (WoFlV vom 25.11.2003,
+  DIN 277:2021-08), Projektfeld „Maßgrundlage“ (Planmaß Rohbau/Fertigmaß/Aufmaß), Excel `projekt.massgrundlage`,
+  `projekt.massgrundlage_text`, `projekt.normen`. Abweichung: Eingabe in den Projekt-Einstellungen der Seitenleiste
+  (der frühere Projektdialog ist mit Q-4 im gemeinsamen Stammdaten-Dialog aufgegangen); Rechenweg je Raum mit F-13,
+  Kopf mit F-17.
+- [x] **FR-06** Nutzungsgruppen-Vorschlag beim IFC-Import – FR 0.20.0: Abstell/Keller/Garage/Carport/Fahrrad/Müll und
+  HWR/Hauswirtschaft → NUF 7, Galerie → NUF 1, Lager/Archiv → NUF 4.
+- [x] **FR-07** WoFlV-Automatik nach Raum- und Geschossnamen – FR 0.20.0: Nutzungsgruppe entscheidet nicht mehr (HWR
+  zählt), nur Treppenhaus/Treppenraum entfällt, Raum mit Treppe zählt mit Hinweis auf die Abzugsfläche „nur
+  Wohnfläche“ (`woflHinweis`), Keller-Regel nach Geschossart (F-03), betroffene Räume einzeln im Importbericht;
+  Bericht: „WoFlV-Einstufung nach Raumnamen vorgeschlagen, vom Verfasser geprüft“.
+- [x] **FR-08** 100 %-Anrechnung unter Dachschrägen (Hinweis) – FR 0.20.0: Hinweis in den Eigenschaften bei „voll“ im
+  Dachgeschoss (keine Sperre); Anrechnung „Raumteile nach lichter Höhe“ mit Teilflächen in m². Prüfliste mit F-10,
+  Berechnung aus dem Dach mit F-12.
 - [ ] **FR-09** Bericht mit R/S-Trennung bei BRI, NRF, KGF
-- [ ] **FR-10** BRI von S-Umrissen
-- [ ] **FR-11** „unbeheizbarer“ Wintergarten
+- [x] **FR-10** BRI von S-Umrissen – FR 0.20.0: Körperhöhe bei S als Pflichtangabe markiert (Unterkante Überdeckung
+  bzw. Oberkante Umwehrung) mit Warnung, solange sie fehlt; Bodenplatte unter S-Umrissen nur mit Haken
+  `sohleAnsetzen`. BRI S getrennt im Bericht mit FR-09/F-17.
+- [x] **FR-11** „unbeheizbarer“ Wintergarten – FR 0.20.0: Bezeichnung „unbeheizbarer Wintergarten, Schwimmbad u. ä.
+  (50 %)“, Hilfetext „beheizbare Wintergärten: lichte Höhe ≥ 2 m (100 %) wählen“, Berichtstext.
 - [ ] **FR-12** Teilflächen statt gemischtem Faktor
-- [ ] **FR-13** Veraltete bzw. vermischte Begriffe
-- [ ] **FR-14** Bezugsebene der Geschosshöhe
-- [ ] **FR-16** „Abzug aus IFC-Nettofläche“
-- [ ] **FR-17** Spitzboden ohne BGF: Hinweis
-- [ ] **FR-18** Abweichung der Dachform im Rechenweg
+- [x] **FR-13** Veraltete bzw. vermischte Begriffe – FR 0.20.0: Muster-Vorlage „Wohnfläche nach WoFlV“, „Flächen ohne
+  Wohnflächenanrechnung“, „Brutto-Grundfläche“ (Zeilen „Brutto-/Netto-Wohnflächen“ mit 3-%-Abzug unverändert);
+  Filter `hnf`/`nnf` bleiben als Altnamen, Doku „NUF 1–6 / NUF 7 (früher HNF/NNF nach DIN 277-2:2005)“; R = „allseitig
+  in voller Höhe umschlossen“ (mit F-06).
+- [x] **FR-14** Bezugsebene der Geschosshöhe – FR 0.20.0: einheitlich „Fußboden in derselben Bezugsebene wie die
+  Geschosskoten (i. d. R. OK Fertigfußboden)“, Bodenplatte „UK Sohle bis Fußboden-Bezugsebene“ (Eigenschaften,
+  Nachschlagewerk, Modellkommentar, README).
+- [x] **FR-16** „Abzug aus IFC-Nettofläche“ – FR 0.20.0: neutrale Bezeichnung in Bemerkung und Importbericht, Werte mehr
+  als 0,5 Prozentpunkte neben 3 % einzeln im Bericht.
+- [x] **FR-17** Spitzboden ohne BGF: Hinweis – FR 0.20.0: „Geschoss X ohne BGF übernommen – falls begehbar und nutzbar
+  (z. B. Spitzboden), BGF-Umriss ergänzen“; die Erkennung bleibt.
+- [x] **FR-18** Abweichung der Dachform im Rechenweg – FR 0.20.0: `Dach.modellAbweichung` (IFC-Import und Dach-Editor),
+  Fußnote `BriKoerper.bemerkung`, im Bericht unter dem BRI-Rechenweg und in Excel `koerper.bemerkung`.
 - [ ] **FR-19** Normausgabe in Bauvorlage und Gebühr
 - [ ] **FR-20** Angaben für die Hochbaustatistik
-- [ ] **FR-21** Bestand nach II. BV
+- [x] **FR-21** Bestand nach II. BV – FR 0.20.0: Projektschalter „Altberechnung nach II. BV (nur Vergleich)“ mit
+  deutlichem Hinweis in Seitenleiste und Bericht; Wirkung nur auf den Standardfaktor für Freisitze (½); Standard
+  bleibt WoFlV, Schalter aus = unverändert (Test).
 - [ ] **F-10** Plausibilitätsprüfung
 - [ ] **F-11** Raumkatalog und Vorgaben für neue Räume
 - [ ] **F-12** Dachschrägen nach WoFlV gliedern

@@ -242,7 +242,7 @@ export async function buildSampleTemplate(): Promise<Uint8Array> {
         if (opts.top || opts.bottom) c.border = { ...(opts.top ? { top: MEDIUM } : {}), ...(opts.bottom ? { bottom: THIN } : {}) };
       });
     };
-    put(10, ['Wohnflächen (Hauptnutzfläche)', null, 'WoFl', 'WoFl Summe'], { bold: true });
+    put(10, ['Wohnfläche nach WoFlV', null, 'WoFl', 'WoFl Summe'], { bold: true });
     ws.getCell('C10').alignment = { horizontal: 'right' };
     ws.getCell('D10').alignment = { horizontal: 'right' };
     put(11, ['{{#geschoss}}']);
@@ -255,20 +255,20 @@ export async function buildSampleTemplate(): Promise<Uint8Array> {
     put(17, ['Abzug 3% Ausbau, Putz etc.', null, null, { formula: '-ROUND(D16*0.03,2)' }], { bold: true, fmt: true });
     put(18, ['Netto-Wohnflächen gesamt', null, null, { formula: 'D16+D17' }], { bold: true, fmt: true, top: true, bottom: true });
     // Abschnitt nur, wenn es Nebenflächen gibt
-    put(20, ['{{#wenn raum[nebenflaeche]}}Neben-Nutzflächen'], { bold: true });
+    put(20, ['{{#wenn raum[nebenflaeche]}}Flächen ohne Wohnflächenanrechnung'], { bold: true });
     put(21, ['{{#geschoss}}{{geschoss.name|einmal}}', '{{raum[nebenflaeche].name}}', '{{raum[nebenflaeche].flaeche_roh}}', null], { fmt: true });
     ws.getCell('A21').font = { bold: true };
     put(22, [null, null, null, { formula: 'SUM(C21:C21)' }], { bold: true, fmt: true });
     put(23, ['{{/geschoss}}']);
-    put(24, ['Brutto-Nebenflächen gesamt', null, null, { formula: 'SUM(D22:D22)' }], { bold: true, fmt: true, top: true, bottom: true });
+    put(24, ['Flächen ohne Wohnflächenanrechnung gesamt', null, null, { formula: 'SUM(D22:D22)' }], { bold: true, fmt: true, top: true, bottom: true });
     put(25, ['{{/wenn}}']);
   }
 
   /* BGF je Geschoss mit Teilflächen (BGF-Umrisse), Zwischensumme je Geschoss */
   {
     const ws = wb.addWorksheet('BGF');
-    sampleHeader(ws, 'Bruttogrundflächen-Berechnung');
-    ws.getRow(10).values = ['Bruttogrundfläche', null, 'BGF', 'BGF Summe'];
+    sampleHeader(ws, 'Brutto-Grundfläche nach DIN 277');
+    ws.getRow(10).values = ['Brutto-Grundfläche', null, 'BGF', 'BGF Summe'];
     ws.getRow(10).font = { bold: true };
     ws.getRow(11).values = ['{{#geschoss}}{{geschoss.name|einmal}}', '{{bgf.name}}', '{{bgf.flaeche}}'];
     ws.getCell('A11').font = { bold: true };
@@ -277,7 +277,7 @@ export async function buildSampleTemplate(): Promise<Uint8Array> {
     ws.getCell('D12').numFmt = M2;
     ws.getCell('D12').font = { bold: true };
     ws.getCell('A13').value = '{{/geschoss}}';
-    ws.getRow(14).values = ['Bruttogrundfläche gesamt', null, null, { formula: 'SUM(D12:D12)' } as never];
+    ws.getRow(14).values = ['Brutto-Grundfläche gesamt', null, null, { formula: 'SUM(D12:D12)' } as never];
     ws.getRow(14).font = { bold: true };
     ws.getCell('D14').numFmt = M2;
     ['A', 'B', 'C', 'D'].forEach((c) => (ws.getCell(`${c}14`).border = { top: MEDIUM, bottom: THIN }));

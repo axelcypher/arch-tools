@@ -329,3 +329,37 @@ describe('IFC-Import: Wohnung (F-02/FR-15)', () => {
     expect(wohnungen({ ...basis, wohnung: 'zone' })).toEqual(['', 'WE 02']);
   });
 });
+
+describe('IFC-Import: normative Korrekturen (FR-02, FR-06, FR-16, FR-17)', () => {
+  it('Nutzungsgruppe nach DIN 277:2021-08 (FR-06)', async () => {
+    const { guessNutzung } = await import('./ifcImport');
+    expect(guessNutzung('Abstellraum')).toBe('NUF7');
+    expect(guessNutzung('Garage')).toBe('NUF7');
+    expect(guessNutzung('Galerie')).toBe('NUF1');
+    expect(guessNutzung('HWR')).toBe('NUF7');
+    expect(guessNutzung('Lager')).toBe('NUF4');
+    expect(guessNutzung('Flur')).toBe('VF');
+  });
+
+  it('Balkon wird S (FR-02); Abzug aus IFC-Nettofläche, Ausreißer im Bericht (FR-16)', () => {
+    // Zonen 1,8 × 2,7 m = 4,86 m²
+    const r = buildFromIfc(
+      mitZonen([
+        { name: '0.01', longName: 'Wohnen', storey: 0, netFloorArea: 4.86 * 0.97 },
+        { name: '0.02', longName: 'Kind', storey: 0, netFloorArea: 4.86 * 0.95 },
+        { name: '0.03', longName: 'Balkon', storey: 0 },
+      ]),
+      { rooms: true, outlines: false, roof: false, wohnflaeche: true },
+    );
+    const raeume = r.storeys[0].shapes.filter((s) => s.kind === 'room');
+    expect(raeume.map((x) => x.umschliessung)).toEqual(['R', 'R', 'S']);
+    expect(raeume[0].bemerkung).toMatch(/Abzug aus IFC-Nettofläche 3/);
+    expect(r.report.some((z) => /Abzug aus der IFC-Nettofläche übernommen/.test(z))).toBe(true);
+    expect(r.report.find((z) => /deutlich abseits von 3 %/.test(z))).toMatch(/0\.02 Kind 5/);
+  });
+
+  it('Geschoss ohne Wände (Dachspitze) → Hinweis „ohne BGF übernommen“ (FR-17)', () => {
+    const r = buildFromIfc(extract(true), { rooms: false, outlines: true, roof: false, wohnflaeche: false });
+    expect(r.report.some((z) => /Geschoss Spitzboden ohne BGF übernommen.*BGF-Umriss ergänzen/.test(z))).toBe(true);
+  });
+});

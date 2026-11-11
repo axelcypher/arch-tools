@@ -285,6 +285,8 @@ export interface BriKoerper {
   neigung?: number;
   /** Volumen (negativ bei Abzugsflächen); Summe aller Körper = BRI */
   volumen: number;
+  /** Fußnote, z. B. Abweichung einer aus dem Modell erkannten Dachform */
+  bemerkung?: string;
 }
 
 /** Zahl für Rechenwege: höchstens drei Nachkommastellen (Maße auf mm), ohne überflüssige Nullen – so bleibt die Rechnung nachprüfbar */
@@ -568,6 +570,10 @@ function dachKoerper(s: OutlineShape, dachTeile: Teil[], base: KoerperBasis, sig
     bezeichnung: d.typ === 'modell' ? 'Körper bis Dachhaut (IFC-Modell)' : (DACH_TYPEN.find((x) => x.id === d.typ)?.label ?? 'Dach'),
     neigung: d.typ === 'modell' ? undefined : d.neigung,
     volumen: sign * V,
+    // erkannte Dachform: Abweichung vom IFC-Modell nennen, damit die Berechnung nachprüfbar bleibt
+    ...(d.modellAbweichung !== undefined && d.typ !== 'modell'
+      ? { bemerkung: `Dachform aus dem IFC-Modell abgeleitet; Rauminhalt weicht um ${(Math.abs(d.modellAbweichung) * 100).toLocaleString('de-DE', { maximumFractionDigits: 1 })} % vom Modell ab` }
+      : {}),
   };
   if (df) {
     return {

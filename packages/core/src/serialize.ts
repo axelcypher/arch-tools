@@ -5,6 +5,7 @@ import type {
   DateiArt,
   Bebauungsplan,
   Grundstueck,
+  HoehenAnteile,
   KontaktArt,
   ProjektordnerAngaben,
   Kosten,
@@ -331,6 +332,7 @@ function normalizeStorey(s: Record<string, unknown>): Storey {
   if (typeof s.dachgeschoss === 'boolean') storey.dachgeschoss = s.dachgeschoss;
   if (typeof s.keller === 'boolean') storey.keller = s.keller;
   if (typeof s.nummernPraefix === 'string' && s.nummernPraefix.trim()) storey.nummernPraefix = s.nummernPraefix.trim();
+  for (const k of ['dachaufbau', 'fussbodenaufbau'] as const) if (typeof s[k] === 'number' && Number.isFinite(s[k]) && (s[k] as number) > 0) storey[k] = s[k] as number;
   if (s.geschosshoeheBegrenzt === true) storey.geschosshoeheBegrenzt = true;
   if (typeof s.vollgeschoss === 'boolean') storey.vollgeschoss = s.vollgeschoss;
   if (typeof s.sohle === 'number' && Number.isFinite(s.sohle) && s.sohle > 0) storey.sohle = s.sohle;
@@ -359,8 +361,17 @@ function normalizeShape(s: Record<string, unknown>): Shape | null {
     ...(typeof s.ifcId === 'string' && s.ifcId ? { ifcId: s.ifcId } : {}),
     ...(isObj(s.ifcStand) ? { ifcStand: s.ifcStand } : {}),
   };
+  const stempel = isObj(s.stempel) && Number.isFinite(s.stempel.x) && Number.isFinite(s.stempel.y) ? { stempel: { x: Number(s.stempel.x), y: Number(s.stempel.y) } } : {};
   if (s.kind === 'outline') {
-    return { ...common, kind: 'outline', hoehe: typeof s.hoehe === 'number' ? s.hoehe : undefined, dach: normalizeDach(s.dach) };
+    return {
+      ...common,
+      kind: 'outline',
+      hoehe: typeof s.hoehe === 'number' ? s.hoehe : undefined,
+      dach: normalizeDach(s.dach),
+      ...(s.sohleAnsetzen === true ? { sohleAnsetzen: true } : {}),
+      ...(s.pruefen === true ? { pruefen: true } : {}),
+      ...stempel,
+    };
   }
   if (s.kind === 'room') {
     const w = isObj(s.wofl) ? s.wofl : {};
@@ -370,10 +381,16 @@ function normalizeShape(s: Record<string, unknown>): Shape | null {
       nummer: str(s.nummer, ''),
       putzabzug: typeof s.putzabzug === 'number' && s.putzabzug > 0 && s.putzabzug < 100 ? s.putzabzug : undefined,
       ...(s.aufenthalt === 'ja' || s.aufenthalt === 'nein' || s.aufenthalt === 'treppe' ? { aufenthalt: s.aufenthalt } : {}),
+      ...(s.rsVonHand === true ? { rsVonHand: true } : {}),
+      ...(s.abzugArt === 'wofl' || s.abzugArt === 'din' || s.abzugArt === 'beide' ? { abzugArt: s.abzugArt } : {}),
+      ...(typeof s.nutzungsart === 'string' && s.nutzungsart.trim() ? { nutzungsart: s.nutzungsart.trim() } : {}),
+      ...(typeof s.katalog === 'string' && s.katalog.trim() ? { katalog: s.katalog } : {}),
+      ...stempel,
       nutzung: oneOf<Nutzungsgruppe>(s.nutzung, NUTZUNGSGRUPPEN.map((n) => n.id), 'NUF1'),
       wofl: {
         kategorie: oneOf<WoflKategorie>(w.kategorie, WOFL_KATEGORIEN.map((k) => k.id), 'keine'),
         faktor: typeof w.faktor === 'number' ? w.faktor : undefined,
+        ...(isObj(w.anteile) ? { anteile: normalizeAnteile(w.anteile) } : {}),
         wohnung: str(w.wohnung, ''),
       },
     };
@@ -381,8 +398,17 @@ function normalizeShape(s: Record<string, unknown>): Shape | null {
   return null;
 }
 
+/** Höhenanteile: nicht negativ, Summe 1 */
+function normalizeAnteile(a: Record<string, unknown>): HoehenAnteile {
+  const h2 = Math.max(0, num(a.h2, 0));
+  const h12 = Math.max(0, num(a.h12, 0));
+  const h01 = Math.max(0, num(a.h01, 0));
+  const s = h2 + h12 + h01;
+  return s > 0 ? { h2: h2 / s, h12: h12 / s, h01: h01 / s } : { h2: 1, h12: 0, h01: 0 };
+}
+
 const DACH_IDS: DachTyp[] = [...DACH_TYPEN.map((t) => t.id), 'modell'];
-const DACH_NUM_KEYS = ['neigungWalm', 'firstrichtung', 'krueppelHoehe', 'neigungUnten', 'hoeheUnten', 'stich', 'shedAnzahl', 'shedHoehe', 'maxHoehe'] as const;
+const DACH_NUM_KEYS = ['neigungWalm', 'firstrichtung', 'krueppelHoehe', 'neigungUnten', 'hoeheUnten', 'stich', 'shedAnzahl', 'shedHoehe', 'maxHoehe', 'modellAbweichung'] as const;
 
 function normalizeDach(d: unknown): Dach | undefined {
   if (!isObj(d) || !DACH_IDS.includes(d.typ as DachTyp)) return undefined;

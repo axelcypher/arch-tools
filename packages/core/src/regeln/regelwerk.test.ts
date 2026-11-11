@@ -34,3 +34,12 @@ describe('Nachschlagewerk', () => {
     }
   });
 });
+
+describe('BRI in Bauvorlage und Gebühr (FR-19)', () => {
+  it('Regel mit beiden Fundstellen vorhanden', () => {
+    const r = REGELN.find((x) => x.id === 'din277-bauvorlage-nrw')!;
+    expect(r.text.join(' ')).toMatch(/DIN 277-1:2016-01/);
+    expect(r.text.join(' ')).toMatch(/DIN 277:2021-08/);
+    expect(r.quellen.map((q) => q.fundstelle)).toEqual(expect.arrayContaining(['§ 6 Nr. 1 BauPrüfVO', 'Tarifstelle 3.1.1.2']));
+  });
+});

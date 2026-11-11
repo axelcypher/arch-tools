@@ -54,9 +54,12 @@ kalibrierten Planbild nachgezeichnet; die Anwendung ermittelt daraus:
 | **KGF** – Konstruktions-Grundfläche | DIN 277 | BGF − NRF (rechnerisch) |
 | **WoFl** – Wohnfläche | WoFlV § 4 | Σ Raumfläche × Anrechnungsfaktor, gruppiert nach Wohnung |
 
-Anrechnungsfaktoren WoFlV: lichte Höhe ≥ 2 m → 100 %, 1–2 m → 50 %, < 1 m → 0 %, unbeheizte
-Wintergärten/Schwimmbäder → 50 %, Balkone/Loggien/Dachgärten/Terrassen → i. d. R. 25 % (Projektstandard
-einstellbar, max. 50 %) sowie ein individueller Faktor.
+Anrechnungsfaktoren WoFlV: lichte Höhe ≥ 2 m → 100 %, 1–2 m → 50 %, < 1 m → 0 % (auch als Teilflächen eines
+Raums nach lichter Höhe), unbeheizbare Wintergärten/Schwimmbäder → 50 %, Balkone/Loggien/Dachgärten/Terrassen →
+i. d. R. 25 % (Projektstandard einstellbar, max. 50 %) sowie ein individueller Faktor. Optional eine
+**Altberechnung nach II. BV** (nur zum Vergleich mit Bestandsberechnungen bis 2003, Balkone dann standardmäßig 50 %,
+deutlicher Hinweis im Bericht). Die **Maßgrundlage** (Planmaß Rohbau, Planmaß Fertigmaß, Aufmaß) wird beim Projekt
+festgehalten.
 
 ### Funktionen
 
@@ -257,12 +260,30 @@ aktualisieren sich nicht selbst.
 
 ## Hinweise zur Normanwendung (Flächenrechner)
 
-- Die Unterscheidung R/S erfolgt je Fläche manuell (Eigenschaften rechts).
+- Die Raumumschließung R/S wird je BGF-Umriss festgelegt; Räume übernehmen sie vom Umriss, in dem sie liegen
+  (ein Balkonraum auf einem S-Umriss zählt zur NRF S), lassen sich aber von Hand festlegen. Der IFC-Import setzt
+  Balkone, Loggien und Terrassen auf S. Die Auswertung warnt getrennt, wenn NRF (R) > BGF (R) oder NRF (S) > BGF (S).
+- **S-Umrisse** (Balkon, Loggia, Dachterrasse): Die Körperhöhe ist Pflichtangabe (Unterkante Überdeckung bzw.
+  Oberkante Umwehrung) – ohne sie rechnet der BRI mit der Geschosshöhe und warnt. Die Bodenplatte wird unter
+  S-Umrissen nur auf ausdrücklichen Wunsch angesetzt.
+- Geschosshöhe und Bodenplatte beziehen sich auf den Fußboden in derselben Bezugsebene wie die Geschosskoten
+  (i. d. R. OK Fertigfußboden); die Bodenplatte zählt von UK Sohle bis zu dieser Bezugsebene.
 - KGF wird rechnerisch als BGF − NRF ermittelt; sie ist nur aussagekräftig, wenn alle Räume erfasst sind.
-- Für Dachschrägen die Raumteile mit unterschiedlicher lichter Höhe als getrennte Flächen zeichnen
-  (z. B. „Kind 1 (≥ 2 m)“ und „Kind 1 (1–2 m)“) und derselben Wohnung zuordnen.
-- Abzüge nach § 3 Abs. 3 WoFlV (Schornsteine, Pfeiler > 0,1 m², Treppen mit mehr als drei Steigungen …)
-  als Abzugsfläche mit derselben WoFlV-Kategorie erfassen.
+- Dachschrägen: Anrechnung „Raumteile nach lichter Höhe“ mit Teilflächen ≥ 2 m / 1–2 m / < 1 m (aus dem IFC
+  automatisch); die Wohnfläche ergibt sich exakt als ≥ 2 m + ½ × 1–2 m. Steht ein Raum im Dachgeschoss auf „voll“,
+  erinnert ein Hinweis daran, die lichte Höhe zu prüfen.
+- **Abzugsflächen im Raum** (§ 3 Abs. 3 WoFlV): Sie erben die WoFlV-Anrechnung und Wohnung des Raums, in dem sie
+  liegen, und mindern wahlweise „NRF und Wohnfläche“ (Schornstein, Pfeiler über 0,1 m² und 1,50 m Höhe, Schacht im
+  Raum), „nur Wohnfläche“ (Treppe mit mehr als drei Steigungen samt Absätzen – bleibt Verkehrsfläche der NRF) oder
+  „nur NRF“ (Pfeiler bis 0,1 m², der zur Wohnfläche zählt).
+- „Automatisch nach Raumname“ ist ein Vorschlag: Treppenhaus/Treppenraum zählt nicht, ein Raum mit Treppe
+  (z. B. „Diele/Treppe“) zählt ohne die Treppenfläche, Hauswirtschaftsraum zählt, Waschküche nicht; Räume eines
+  Kellergeschosses (Geschossart) zählen nicht. Die Nutzungsgruppe entscheidet nicht über die Wohnfläche.
+- Beim IFC-Import schlägt der Flächenrechner die Nutzungsgruppe nach DIN 277:2021-08 vor (u. a. Abstellraum,
+  Keller, Garage, Hauswirtschaftsraum → NUF 7, Galerie → NUF 1, Lager/Archiv → NUF 4). Eine kleinere
+  IFC-Nettofläche wird als „Abzug aus IFC-Nettofläche“ je Raum übernommen; Werte deutlich abseits von 3 % nennt der
+  Importbericht einzeln. Geschosse ohne Wände (z. B. Spitzboden) erhalten keine BGF – der Bericht weist darauf hin.
+- Aus dem Modell erkannte Dachformen tragen ihre Abweichung zum Modell als Fußnote im BRI-Rechenweg.
 - Automatisch erkannte Flächen immer kontrollieren (Maße der Auswahl werden angezeigt). Bei Rasterplänen hängt die
   Genauigkeit von der Planqualität ab; DXF-Pläne liefern exakte Kanten.
 - DWG wird nicht direkt unterstützt – bitte als DXF exportieren. Archicad-PLN ist ein geschlossenes Format –

@@ -56,6 +56,8 @@ export interface Dach {
   maxHoehe?: number;
   /** Dachgauben auf den Traufseiten (siehe gaube.ts); ihr Rauminhalt kommt zum Dach hinzu */
   gauben?: Gaube[];
+  /** aus dem Modell erkannte Dachform: relative Abweichung ihres Rauminhalts vom Modell (Fußnote im Rechenweg) */
+  modellAbweichung?: number;
 }
 
 export const DACH_TYPEN: { id: DachTyp; label: string; hint: string }[] = [

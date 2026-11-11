@@ -64,7 +64,8 @@ export function RoofEditor({
     }
     const e = dachAusModell(project.dachModell, shape.points, r.floorZ, waende);
     if (e.dach) {
-      onChange(e.dach);
+      // Abweichung zum Modell bleibt als Fußnote am Dachkörper im Rechenweg (FR-18)
+      onChange({ ...e.dach, modellAbweichung: Math.round(e.abweichung * 1e4) / 1e4 });
       setErkennung(`${e.text} übernommen (Abweichung zum Modell ${(e.abweichung * 100).toFixed(1).replace('.', ',')} %).`);
     } else setErkennung(`Nicht übernommen: ${e.grund}.`);
   };

@@ -4,7 +4,7 @@ import { polygonArea } from '@core/geometry';
 import type { OutlineShape, Project } from '@core/model';
 import { istDachgeschoss } from '@core/model';
 import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
-import { NUF_IDS, NUTZUNGSGRUPPEN, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
+import { MASSGRUNDLAGEN, NUF_IDS, NUTZUNGSGRUPPEN, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
 import { briKoerper, briRechenweg, rechteckMasse } from '@core/rechenweg';
 import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
 
@@ -57,6 +57,10 @@ function totalsRow(t: AreaTotals): Row {
 
 export function buildExportContext(project: Project, result: ProjectResult, date = new Date()): FlaechenContext {
   const scalars: Record<string, Value> = projektWerte(project, date);
+  // Maßgrundlage und Normausgaben für den Kopf (FR-05)
+  scalars['projekt.massgrundlage'] = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.label ?? '';
+  scalars['projekt.massgrundlage_text'] = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.text ?? '';
+  scalars['projekt.normen'] = 'Wohnfläche nach WoFlV vom 25.11.2003; Grundflächen und Rauminhalte nach DIN 277:2021-08';
 
   const shapesById = new Map(project.storeys.flatMap((st) => st.shapes.map((sh) => [sh.id, sh] as const)));
   // Geschossart: „ja“ bei Dachgeschossen – für Filter [dg] / [normal] in allen Sammlungen
@@ -205,6 +209,7 @@ export function buildExportContext(project: Project, result: ProjectResult, date
     breite: k.breite !== undefined ? r3(k.breite) : '',
     neigung: k.neigung !== undefined ? r2(k.neigung) : '',
     volumen: r2(k.volumen),
+    bemerkung: k.bemerkung ?? '',
   }));
 
   return {
@@ -229,7 +234,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['leere Blöcke', 'entfallen: Wiederholungszeilen und innere Blöcke liefern nichts bzw. alle Zahlenwerte des Blocks sind 0'],
       ['#wenn … /wenn', 'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn raum[nebenflaeche]}} (Datensätze vorhanden), {{#wenn summe.wofl}} (Wert nicht 0/leer), {{#wenn summe.wofl>100}} / {{#wenn raum[wofl]>=3}} (Vergleich, Anzahl), {{#wenn[nebenflaeche!=0]}} (Filter auf den umgebenden Datensatz, oben auf summe.*), {{#wenn !…}} umgekehrt; im Block je Datensatz'],
       ['raum[wofl] / raum[nebenflaeche]', 'Filter: Räume mit bzw. ohne Wohnflächenanrechnung'],
-      ['raum[hnf] / raum[nnf] / [nuf] [tf] [vf]', 'Filter nach Nutzungsgruppe (HNF = NUF 1–6, NNF = NUF 7)'],
+      ['raum[hnf] / raum[nnf] / [nuf] [tf] [vf]', 'Filter nach Nutzungsgruppe: hnf = NUF 1–6, nnf = NUF 7 (Altnamen nach DIN 277-2:2005 – frühere HNF/NNF)'],
       ['geschoss[dg] / geschoss[normal]', 'Filter: Dachgeschosse bzw. Normalgeschosse (gilt ebenso für raum, bgf, bri, koerper)'],
       ['koerper[dach] / [gaube] / [grundkoerper]', 'Filter: Dachkörper, Gauben bzw. Grundkörper (Quader)'],
       ['[r] [s] [abzug] [feld=wert] [feld>wert] [!filter]', 'weitere Filter, mehrere mit Komma: raum[wofl,geschoss=EG], geschoss[wofl>0]; Vergleiche = != > < >= <= (leere Felder = 0)'],
@@ -237,6 +242,14 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
     ],
   },
   PROJEKT_DOCS,
+  {
+    group: 'Maßgrundlage und Normen (Flächenrechner)',
+    keys: [
+      ['projekt.massgrundlage', 'Maßgrundlage: „Planmaß Rohbau“, „Planmaß Fertigmaß“ oder „Aufmaß“ (Projekt-Einstellung)'],
+      ['projekt.massgrundlage_text', 'als Satz, z. B. „Flächen aus Planmaßen (Rohbau), Putzabzug je Raum“'],
+      ['projekt.normen', '„Wohnfläche nach WoFlV vom 25.11.2003; Grundflächen und Rauminhalte nach DIN 277:2021-08“'],
+    ],
+  },
   {
     group: 'Kennwerte (summe.*, geschoss.*, geschoss:NAME.*)',
     keys: [
@@ -320,6 +333,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['koerper.rechnung', 'Formel mit eingesetzten Werten, z. B. „10,75 × 5,38 × (3 × 12 − 10,75) / 6“'],
       ['koerper.flaeche', 'Grundfläche [m²] (negativ bei Abzugsflächen)'],
       ['koerper.hoehe', 'Höhe [m]: Grundkörper = Geschoss-/Traufhöhe, Dach = Höhe über Traufe, Gaube = Höhe der Vorderwand über der Dachfläche'],
+      ['koerper.bemerkung', 'Fußnote, z. B. Abweichung einer aus dem IFC-Modell erkannten Dachform'],
       ['koerper.laenge, koerper.breite, koerper.neigung', 'Länge (Firstrichtung) bzw. Gaubenbreite, Breite bzw. Gaubentiefe [m], Dach-/Gaubenneigung [°]'],
       ['koerper.volumen', 'Volumen [m³]; Summe aller Körper = BRI'],
       ['koerper.dachgeschoss', '„ja“, wenn der Körper in einem Dachgeschoss liegt'],

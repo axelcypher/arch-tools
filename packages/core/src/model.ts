@@ -24,14 +24,24 @@ export type WoflKategorie =
   | 'voll' // lichte Höhe ≥ 2 m: 100 %
   | 'halb' // lichte Höhe ≥ 1 m und < 2 m: 50 %
   | 'null' // lichte Höhe < 1 m: 0 %
-  | 'wintergarten' // unbeheizte Wintergärten, Schwimmbäder u. ä.: 50 %
+  | 'wintergarten' // unbeheizbare Wintergärten, Schwimmbäder u. ä.: 50 %
   | 'freisitz' // Balkone, Loggien, Dachgärten, Terrassen: i. d. R. 25 %, höchstens 50 %
-  | 'individuell'; // frei wählbarer Faktor
+  | 'individuell' // frei wählbarer Faktor
+  | 'hoehen'; // Raumteile nach lichter Höhe (Teilflächen ≥ 2 m / 1–2 m / < 1 m, siehe WoflAngaben.anteile)
+
+/** Anteile der Raumfläche nach lichter Höhe (Summe 1): ≥ 2 m (100 %), 1–2 m (50 %), < 1 m (0 %) */
+export interface HoehenAnteile {
+  h2: number;
+  h12: number;
+  h01: number;
+}
 
 export interface WoflAngaben {
   kategorie: WoflKategorie;
   /** nur bei "freisitz" (überschreibt Projektstandard) oder "individuell" */
   faktor?: number;
+  /** nur bei "hoehen": Teilflächen als Anteile der Raumfläche (Wohnfläche = Fläche × (h2 + ½ h12), exakt) */
+  anteile?: HoehenAnteile;
   /** Zuordnung zu einer Wohneinheit, z. B. "WE 01" */
   wohnung: string;
 }
@@ -68,8 +78,18 @@ export type IfcStand = Record<string, unknown>;
 
 export interface OutlineShape extends ShapeBase {
   kind: 'outline';
-  /** Körperhöhe für den BRI (Unter- bis Oberkante des Körpers, z. B. Galerie, Luftraum); sonst Geschosshöhe */
+  /**
+   * Körperhöhe für den BRI (Unter- bis Oberkante des Körpers, z. B. Galerie, Luftraum); sonst Geschosshöhe.
+   * Bei Umschließung S (Balkon, Loggia, Dachterrasse) ausdrücklich anzugeben: Unterkante Überdeckung bzw.
+   * Oberkante Umwehrung.
+   */
   hoehe?: number;
+  /** Bodenplatte des Geschosses auch unter diesem S-Umriss ansetzen (sonst nur unter R-Umrissen) */
+  sohleAnsetzen?: boolean;
+  /** Umriss ist zu prüfen (z. B. aus dem Geschoss darunter übernommen) */
+  pruefen?: boolean;
+  /** Lage der Beschriftung (Weltkoordinaten); ohne Angabe automatisch */
+  stempel?: Point;
   /** Dach/oberer Abschluss: BRI dieses Umrisses = Volumen vom Fußboden bis zur Dachhaut */
   dach?: Dach;
 }
@@ -81,6 +101,22 @@ export interface RoomShape extends ShapeBase {
   wofl: WoflAngaben;
   /** Abzug in % von der Polygonfläche, z. B. 3 % Putzabzug bei Ermittlung aus Rohbaumaßen */
   putzabzug?: number;
+  /**
+   * Raumumschließung von Hand festgelegt. Sonst gilt die des BGF-Umrisses, in dem der Raum liegt (ein gespeichertes
+   * „S“ gilt immer als von Hand, weil Räume früher stets mit „R“ angelegt wurden).
+   */
+  rsVonHand?: boolean;
+  /**
+   * Nur Abzugsflächen: was sie mindern – NRF und Wohnfläche (Standard, z. B. Schornstein, Schacht im Raum), nur die
+   * Wohnfläche (§ 3 Abs. 3 WoFlV, z. B. Treppe mit mehr als drei Steigungen) oder nur die NRF nach DIN 277.
+   */
+  abzugArt?: AbzugArt;
+  /** Nutzungsart (zweite Ebene unter der Nutzungsgruppe, Nummer aus dem Katalog des Büros, z. B. „7.1“) */
+  nutzungsart?: string;
+  /** Bezeichnung des Katalogeintrags, aus dem Nutzung und Anrechnung stammen (Vorschlag „aus Katalog“) */
+  katalog?: string;
+  /** Lage des Raumstempels (Weltkoordinaten); ohne Angabe automatisch */
+  stempel?: Point;
   /**
    * Aufenthaltsraum im Sinne der BauNVO vor 1990 (Geschossfläche in Nicht-Vollgeschossen, GRZ-Nachweis);
    * „treppe“ = zugehöriger Treppenraum. Ohne Angabe nach Nutzung und Raumname.
@@ -117,6 +153,9 @@ export interface LageplanFlaeche {
 export interface Lageplan {
   flaechen: LageplanFlaeche[];
 }
+
+/** Was eine Abzugsfläche im Raum mindert (siehe RoomShape.abzugArt) */
+export type AbzugArt = 'beide' | 'wofl' | 'din';
 
 export type Shape = OutlineShape | RoomShape;
 export type ShapeKind = Shape['kind'];
@@ -188,7 +227,10 @@ export type BackgroundImage = RasterBackground;
 export interface Storey {
   id: string;
   name: string;
-  /** Brutto-Geschosshöhe (OK Fußboden bis OK Fußboden darüber bzw. OK Dach) für BRI */
+  /**
+   * Brutto-Geschosshöhe für den BRI: Fußboden bis Fußboden darüber bzw. OK Dach – Fußboden in derselben Bezugsebene
+   * wie die Geschosskoten (i. d. R. OK Fertigfußboden)
+   */
   hoehe: number;
   /** Höhe OK Fußboden über ±0,00 in m; ohne Angabe Summe der Geschosshöhen darunter */
   elevation?: number;
@@ -203,6 +245,10 @@ export interface Storey {
   keller?: boolean;
   /** Präfix der Raumnummern, z. B. „0“ → 0.01, „-1“ → -1.01; ohne Angabe aus dem Geschossnamen bzw. der Lage */
   nummernPraefix?: string;
+  /** Dachaufbau bis zur Innenbekleidung (senkrecht zur Dachfläche gemessen) in m – für die lichte Höhe unter Schrägen */
+  dachaufbau?: number;
+  /** Fußbodenaufbau in m (nur nötig, wenn die Geschosskote auf dem Rohfußboden liegt) – für die lichte Höhe */
+  fussbodenaufbau?: number;
   /** Vollgeschoss für GFZ und Zahl der Vollgeschosse (GRZ/GFZ-Nachweis); ohne Angabe nach der Bauordnung geprüft */
   vollgeschoss?: boolean;
   /**
@@ -223,7 +269,13 @@ export interface ProjectSettings {
   gridStep: number;
   /** Standardfaktor für Balkone/Terrassen nach WoFlV (0,25 … 0,5) */
   freisitzFaktor: number;
+  /** Maßgrundlage der Flächen (Bericht, Excel): Planmaß Rohbau, Planmaß Fertigmaß oder Aufmaß */
+  massgrundlage?: Massgrundlage;
+  /** Altberechnung nach der II. BV (§§ 42–44, nur zum Vergleich mit Bestandsberechnungen bis 31.12.2003) */
+  zweiteBV?: boolean;
 }
+
+export type Massgrundlage = 'rohbau' | 'fertig' | 'aufmass';
 
 export interface Anschrift {
   /** Straße und Hausnummer */

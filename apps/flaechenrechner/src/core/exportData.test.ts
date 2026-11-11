@@ -42,3 +42,20 @@ describe('Excel-Vorlagen', () => {
     expect(shiftRelativeRows('C5*D$5+SUM($E$1:E5)', 2)).toBe('C7*D$5+SUM($E$1:E7)');
   });
 });
+
+describe('Putzabzug und Maßgrundlage (FR-05)', () => {
+  it('Raum mit 3 % Putzabzug: roh, Abzug und Fläche stimmen; Maßgrundlage im Kopf', () => {
+    const p = createProject('Haus');
+    const r = createRoom(rectPoints({ x: 0, y: 0 }, { x: 9.4, y: 7.4 }), '0.01', 'Wohnen');
+    r.putzabzug = 3;
+    p.storeys[0].shapes.push(r);
+    p.settings.massgrundlage = 'rohbau';
+    const c = buildExportContext(p, computeProject(p));
+    const row = c.collections.raum[0];
+    expect(row.flaeche_roh).toBe(69.56);
+    expect(row.putzabzug).toBe(3);
+    expect(row.flaeche).toBe(Math.round(69.556 * 0.97 * 100) / 100);
+    expect(c.scalars['projekt.massgrundlage']).toBe('Planmaß Rohbau');
+    expect(c.scalars['projekt.normen']).toMatch(/DIN 277:2021-08/);
+  });
+});

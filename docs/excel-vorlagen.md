@@ -50,11 +50,11 @@ Weitere Blockarten: `{{#bgf}}` (mehrzeilige Angaben je BGF-Teilfläche, darin `b
 Teilfläche), `{{#wohnung}}` (Räume je Wohnung), `{{#nutzung}}` (Räume je Nutzungsgruppe), `{{#raum}}`
 (mehrzeilige Angaben je Raum), `{{#koerper}}` (mehrzeilige Angaben je BRI-Körper).
 
-### Beispiel: Wohnflächen mit Haupt- und Nebenflächen
+### Beispiel: Wohnfläche und Flächen ohne Wohnflächenanrechnung
 
 | | A | B | C | D |
 |---|---|---|---|---|
-| 10 | Wohnflächen (Hauptnutzfläche) | | WoFl | WoFl Summe |
+| 10 | Wohnfläche nach WoFlV | | WoFl | WoFl Summe |
 | 11 | `{{#geschoss}}` | | | |
 | 12 | `{{geschoss.name\|einmal}}` | `{{raum[wofl].name}}` | `{{raum[wofl].wofl_roh}}` | |
 | 13 | | | | `=SUMME(C12:C12)` |
@@ -63,18 +63,23 @@ Teilfläche), `{{#wohnung}}` (Räume je Wohnung), `{{#nutzung}}` (Räume je Nutz
 | 16 | Brutto-Wohnflächen gesamt | | | `=SUMME(D13:D13)` |
 | 17 | Abzug 3% Ausbau, Putz etc. | | | `=-RUNDEN(D16*0,03;2)` |
 | 18 | Netto-Wohnflächen gesamt | | | `=D16+D17` |
-| 20 | `{{#wenn raum[nebenflaeche]}}Neben-Nutzflächen` | | | |
+| 20 | `{{#wenn raum[nebenflaeche]}}Flächen ohne Wohnflächenanrechnung` | | | |
 | 21 | `{{#geschoss}}{{geschoss.name\|einmal}}` | `{{raum[nebenflaeche].name}}` | `{{raum[nebenflaeche].flaeche_roh}}` | |
 | 22 | | | | `=SUMME(C21:C21)` |
 | 23 | `{{/geschoss}}` | | | |
-| 24 | Brutto-Nebenflächen gesamt | | | `=SUMME(D22:D22)` |
+| 24 | Flächen ohne Wohnflächenanrechnung gesamt | | | `=SUMME(D22:D22)` |
 | 25 | `{{/wenn}}` | | | |
 
 Ergebnis: je Geschoss steht der Name einmal links, darunter alle Räume, dann die Zwischensumme. Der
-Abschnitt „Neben-Nutzflächen“ samt Überschrift und Summe erscheint nur, wenn es Nebenflächen gibt
+Abschnitt „Flächen ohne Wohnflächenanrechnung“ samt Überschrift und Summe erscheint nur, wenn es solche Räume gibt
 (siehe [Bedingte Abschnitte](#bedingte-abschnitte)).
 `=SUMME(C12:C12)` wird je Geschoss auf dessen Raumzeilen erweitert, `=SUMME(D13:D13)` auf alle
 Zwischensummen, und die Bezüge darunter (`D16`, `D17`) rutschen mit.
+
+> **Begriffe:** Die Zeilen „Brutto-/Netto-Wohnflächen“ mit dem pauschalen Abzug von 3 % sind eine Gepflogenheit
+> vieler Büros (Muster-Vorlage, bewusst beibehalten); die WoFlV selbst kennt keinen pauschalen Abzug.
+> DIN 277:2016/2021 gliedert die Nutzungsfläche in NUF 1–7 – die früheren Begriffe Hauptnutzfläche (HNF) und
+> Nebennutzfläche (NNF) stammen aus DIN 277-2:2005.
 
 > **Putzabzug:** Übernimmt der Import einen Putzabzug je Raum (z. B. 3 % aus Archicad), enthalten
 > `raum.flaeche` und `raum.wofl` diesen bereits. Wird der Abzug – wie oben – in Excel gerechnet,
@@ -89,11 +94,11 @@ Die Sammlung `bgf` enthält je **BGF-Umriss** (Teilfläche) eine Zeile: `bgf.nam
 
 | | A | B | C | D |
 |---|---|---|---|---|
-| 10 | Bruttogrundfläche | | BGF | BGF Summe |
+| 10 | Brutto-Grundfläche | | BGF | BGF Summe |
 | 11 | `{{#geschoss}}{{geschoss.name\|einmal}}` | `{{bgf.name}}` | `{{bgf.flaeche}}` | |
 | 12 | | | | `=SUMME(C11:C11)` |
 | 13 | `{{/geschoss}}` | | | |
-| 14 | Bruttogrundfläche gesamt | | | `=SUMME(D12:D12)` |
+| 14 | Brutto-Grundfläche gesamt | | | `=SUMME(D12:D12)` |
 
 Nur Regel- bzw. Sonderfall: `{{bgf[r].name}}` / `{{bgf[s].name}}`; ohne Abzugsflächen: `{{bgf[!abzug].name}}`.
 
@@ -126,10 +131,10 @@ Formeln, die auf entfallene Zeilen verweisen, rechnen dort mit 0; Bezüge auf Ze
 
 | | A | B | C |
 |---|---|---|---|
-| 20 | `{{#wenn raum[nebenflaeche]}}Neben-Nutzflächen` | | |
+| 20 | `{{#wenn raum[nebenflaeche]}}Flächen ohne Wohnflächenanrechnung` | | |
 | 21 | | `{{raum[nebenflaeche].name}}` | `{{raum[nebenflaeche].flaeche_roh}}` |
-| 22 | `Brutto-Nebenflächen gesamt{{/wenn}}` | | `=SUMME(C21:C21)` |
-| 23 | `{{#wenn !raum[nebenflaeche]}}keine Neben-Nutzflächen{{/wenn}}` | | |
+| 22 | `Summe{{/wenn}}` | | `=SUMME(C21:C21)` |
+| 23 | `{{#wenn !raum[nebenflaeche]}}keine Flächen ohne Wohnflächenanrechnung{{/wenn}}` | | |
 
 ## Formeln
 
@@ -243,7 +248,7 @@ Text (z. B. `12,00 × 9,00 × 3,151 × ½`). Beispiel (Blatt „BRI Teilkörper�
 | `nebenflaeche` | Räume ohne Wohnflächenanrechnung |
 | `dg` / `normal` | Dachgeschosse bzw. Normalgeschosse (Geschossart) |
 | `dach` / `gaube` / `grundkoerper` | nur `koerper`: Dachkörper, Gauben bzw. Grundkörper |
-| `hnf` / `nnf` | NUF 1–6 bzw. NUF 7 |
+| `hnf` / `nnf` | NUF 1–6 bzw. NUF 7 (Altnamen; früher HNF/NNF nach DIN 277-2:2005) |
 | `nuf` / `tf` / `vf` | Nutzungsfläche, Technikfläche, Verkehrsfläche |
 | `r` / `s` | Raumumschließung Regel- bzw. Sonderfall (`raum`, `bgf`) |
 | `abzug` | Abzugsflächen (`raum`, `bgf`) |

@@ -1,4 +1,4 @@
-import type { Nutzungsgruppe, ProjectSettings, Raumumschliessung, Storey, WoflAngaben, WoflKategorie } from './model';
+import type { AbzugArt, Massgrundlage, Nutzungsgruppe, ProjectSettings, Raumumschliessung, Storey, WoflAngaben, WoflKategorie } from './model';
 import { istKellergeschoss } from './model';
 
 /** Nutzungsgruppen der Netto-Raumfläche nach DIN 277 (Tabelle 1). */
@@ -31,9 +31,30 @@ export const WOFL_KATEGORIEN: { id: WoflKategorie; label: string; faktor: number
   { id: 'voll', label: 'lichte Höhe ≥ 2 m (100 %)', faktor: 1 },
   { id: 'halb', label: 'lichte Höhe 1–2 m (50 %)', faktor: 0.5 },
   { id: 'null', label: 'lichte Höhe < 1 m (0 %)', faktor: 0 },
-  { id: 'wintergarten', label: 'unbeheizter Wintergarten / Schwimmbad (50 %)', faktor: 0.5 },
+  { id: 'wintergarten', label: 'unbeheizbarer Wintergarten, Schwimmbad u. ä. (50 %)', faktor: 0.5 },
   { id: 'freisitz', label: 'Balkon, Loggia, Dachgarten, Terrasse (25–50 %)', faktor: null },
+  { id: 'hoehen', label: 'Raumteile nach lichter Höhe (Teilflächen)', faktor: null },
   { id: 'individuell', label: 'individueller Faktor', faktor: null },
+];
+
+/** Hilfetext je Anrechnung (Eigenschaften) */
+export const WOFL_HINWEIS: Partial<Record<WoflKategorie, string>> = {
+  wintergarten: 'nur unbeheizbare Wintergärten, Schwimmbäder u. ä. (§ 4 Nr. 3 WoFlV); beheizbare Wintergärten: „lichte Höhe ≥ 2 m (100 %)“ wählen',
+  hoehen: 'Teilflächen nach lichter Höhe: ≥ 2 m voll, 1–2 m zur Hälfte, < 1 m nicht (§ 4 Nr. 1–2 WoFlV)',
+};
+
+/** Was eine Abzugsfläche im Raum mindert */
+export const ABZUG_ARTEN: { id: AbzugArt; label: string; hint: string }[] = [
+  { id: 'beide', label: 'NRF und Wohnfläche', hint: 'z. B. Schornstein, Pfeiler über 0,1 m² und 1,50 m Höhe, Schacht im Raum' },
+  { id: 'wofl', label: 'nur Wohnfläche (§ 3 Abs. 3 WoFlV)', hint: 'z. B. Treppe mit mehr als drei Steigungen samt Treppenabsatz – bleibt Teil der NRF (Verkehrsfläche)' },
+  { id: 'din', label: 'nur NRF (DIN 277)', hint: 'z. B. Pfeiler bis 0,1 m², der nach WoFlV zur Wohnfläche zählt' },
+];
+
+/** Maßgrundlage der Flächen */
+export const MASSGRUNDLAGEN: { id: Massgrundlage; label: string; text: string }[] = [
+  { id: 'rohbau', label: 'Planmaß Rohbau', text: 'Flächen aus Planmaßen (Rohbau), Putzabzug je Raum' },
+  { id: 'fertig', label: 'Planmaß Fertigmaß', text: 'Flächen aus Planmaßen (Fertigmaße)' },
+  { id: 'aufmass', label: 'Aufmaß', text: 'Flächen aus örtlichem Aufmaß' },
 ];
 
 /** Anrechnungsfaktor nach WoFlV § 4 für einen Raum. */
@@ -48,12 +69,17 @@ export function woflFaktor(w: WoflAngaben, settings: ProjectSettings): number {
     case 'wintergarten':
       return 0.5;
     case 'freisitz': {
-      // WoFlV: "in der Regel zu einem Viertel, höchstens jedoch zur Hälfte"
-      const f = w.faktor ?? settings.freisitzFaktor;
+      // WoFlV: "in der Regel zu einem Viertel, höchstens jedoch zur Hälfte"; II. BV (Altberechnung): bis zur Hälfte
+      const f = w.faktor ?? (settings.zweiteBV ? 0.5 : settings.freisitzFaktor);
       return clamp(f, 0, 0.5);
     }
     case 'individuell':
       return clamp(w.faktor ?? 1, 0, 1);
+    case 'hoehen': {
+      // Raumteile ≥ 2 m voll, 1–2 m zur Hälfte, < 1 m nicht – exakt aus den Teilflächen, ohne gerundeten Faktor
+      const a = w.anteile ?? { h2: 1, h12: 0, h01: 0 };
+      return clamp(a.h2 + 0.5 * a.h12, 0, 1);
+    }
   }
 }
 
@@ -66,7 +92,9 @@ function clamp(v: number, lo: number, hi: number) {
  * Abstellräume außerhalb der Wohnung, Waschküchen, Trockenräume, Heizungsräume, Garagen, Dachböden,
  * außerdem Treppen mit mehr als drei Steigungen und Räume, die Technik aufnehmen.
  */
-const KEINE_WOFL = /keller|heiz|technik|hausanschluss|elektro|lüftung|server|garage|carport|stellplatz|waschküche|waschkueche|trockenraum|trockenboden|dachboden|spitzboden|\bboden\b|lager|fahrrad|müll|muell|tank|treppe|\btr\b|\bth\b|aufzug|schacht/i;
+const KEINE_WOFL = /keller|heiz|technik|hausanschluss|elektro|lüftung|server|garage|carport|stellplatz|waschküche|waschkueche|trockenraum|trockenboden|dachboden|spitzboden|\bboden\b|lager|fahrrad|müll|muell|tank|treppenhaus|treppenraum|^\s*treppe\s*$|\btr\b|\bth\b|aufzug|schacht/i;
+/** Raum mit Treppe, aber kein eigener Treppenraum (z. B. „Diele/Treppe“): nur die Treppenfläche entfällt */
+const TREPPE_IM_RAUM = /treppe/i;
 const FREISITZ = /balkon|loggia|terrasse|dachgarten|freisitz/i;
 const KEINE_WOFL_GESCHOSS = /spitzboden|dachboden|^dach$/i;
 
@@ -76,7 +104,17 @@ const KEINE_WOFL_GESCHOSS = /spitzboden|dachboden|^dach$/i;
  */
 export function woflArt(raum: string, geschoss: string | Pick<Storey, 'name' | 'keller'>, nutzung: Nutzungsgruppe): 'wohnen' | 'freisitz' | 'keine' {
   const g = typeof geschoss === 'string' ? { name: geschoss } : geschoss;
+  void nutzung; // die Nutzungsgruppe entscheidet nicht: HWR (NUF 7) zählt wie „Hauswirtschaft“, Technik nach dem Namen
   if (FREISITZ.test(raum)) return 'freisitz';
-  if (KEINE_WOFL.test(raum) || istKellergeschoss(g) || KEINE_WOFL_GESCHOSS.test(g.name.trim()) || nutzung === 'TF') return 'keine';
+  if (KEINE_WOFL.test(raum) || istKellergeschoss(g) || KEINE_WOFL_GESCHOSS.test(g.name.trim())) return 'keine';
   return 'wohnen';
+}
+
+/**
+ * Hinweis zum Vorschlag nach Raumname: Ein Raum mit Treppe, der kein eigener Treppenraum ist, zählt zur Wohnfläche –
+ * nur die Treppenfläche (mehr als drei Steigungen, mit Absätzen) entfällt (§ 3 Abs. 3 Nr. 2 WoFlV).
+ */
+export function woflHinweis(raum: string): string | undefined {
+  if (TREPPE_IM_RAUM.test(raum) && !KEINE_WOFL.test(raum)) return 'Treppe im Raum: Treppenfläche als Abzugsfläche „nur Wohnfläche“ erfassen (§ 3 Abs. 3 Nr. 2 WoFlV)';
+  return undefined;
 }

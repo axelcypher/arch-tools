@@ -122,3 +122,18 @@ describe('BRI-Körper mit geschlossenen Formeln', () => {
     expect(istDachgeschoss({ ...flach, dachgeschoss: true })).toBe(true);
   });
 });
+
+describe('Dachform aus dem Modell im Rechenweg (FR-18)', () => {
+  it('Abweichung als Fußnote am Dachkörper', async () => {
+    const { createOutline, createProject } = await import('./model');
+    const { rectPoints } = await import('./geometry');
+    const p = createProject();
+    const o = createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 }));
+    o.dach = { typ: 'sattel', traufhoehe: 3, neigung: 40, modellAbweichung: 0.012 };
+    p.storeys[0].shapes.push(o);
+    const dach = briKoerper(p).find((k) => k.art === 'dach')!;
+    expect(dach.bemerkung).toBe('Dachform aus dem IFC-Modell abgeleitet; Rauminhalt weicht um 1,2 % vom Modell ab');
+    o.dach = { typ: 'sattel', traufhoehe: 3, neigung: 40 };
+    expect(briKoerper(p).find((k) => k.art === 'dach')!.bemerkung).toBeUndefined();
+  });
+});

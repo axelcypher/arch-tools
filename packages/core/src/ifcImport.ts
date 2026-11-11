@@ -5,13 +5,13 @@ import { nutzungAusText, versiegelungAusText } from './lageplan';
 import { clipHalfPlane } from './roof';
 import type { IfcExtract, IfcMeshPart } from './ifcData';
 import type { DxfPolyline, IfcStand, Lageplan, LageplanFlaeche, Nutzungsgruppe, OutlineShape, Storey, VectorBackground } from './model';
-import { createLageplanFlaeche, createOutline, createProject, createRoom, createStorey } from './model';
+import { createLageplanFlaeche, createOutline, createProject, createRoom, createStorey, istKellergeschoss } from './model';
 import { modellRoofParams, sohlenPolygon } from './calc';
 import { inMP } from './polygon';
 import type { DachModell } from './roofMesh';
 import { meshRoofStats } from './roofMesh';
 import { dachAusModell } from './roofFit';
-import { woflArt } from './norms';
+import { woflArt, woflHinweis } from './norms';
 import { SegmentGrid } from './spatial';
 
 /**
@@ -166,6 +166,9 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
     let putz = 0;
     let keineWofl = 0;
     let ohneKategorie = 0;
+    const abzugAusreisser: string[] = [];
+    const imKeller: string[] = [];
+    const treppen: string[] = [];
     for (const sp of x.spaces) {
       if (!imGebaeude(sp.storey)) continue; // Zonen im Lageplan werden Lageplan-Flächen
       const pts = footprintFromTriangles(sp.tris);
@@ -186,28 +189,37 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
       room.nutzung = guessNutzung(room.name);
       const geo = polygonArea(pts);
       const notes: string[] = [];
-      // Archicad-Zonen: Nettofläche mit 3 % Putzabzug bei Rohbaumaßen → übernehmen
+      // Nettofläche der Zone kleiner als ihre Geometrie (Archicad: z. B. 3 % Putzabzug bei Rohbaumaßen, aber auch Stützen-
+      // oder Nischenabzüge) → als Abzug je Raum übernehmen, neutral benannt; Werte deutlich abseits von 3 % einzeln melden
       if (sp.netFloorArea !== undefined && geo > 0) {
         const r = sp.netFloorArea / geo;
         if (r > 0.94 && r < 0.998) {
           room.putzabzug = round((1 - r) * 100, 1);
+          notes.push(`Abzug aus IFC-Nettofläche ${fmt(room.putzabzug, 1)} %`);
           putz++;
+          if (Math.abs(room.putzabzug - 3) > 0.5) abzugAusreisser.push(`${room.nummer} ${room.name} ${fmt(room.putzabzug, 1)} %`);
         } else if (Math.abs(r - 1) >= 0.002) notes.push(`IFC-Nettofläche ${fmt(sp.netFloorArea)} m²`);
       }
       // lichte Höhen aus dem Raumkörper (Dachschrägen) für die WoFlV
       const hc = heightClasses(sp.tris);
-      if (hc && hc.a2 < 0.995) notes.push(`lichte Höhe ≥ 2 m: ${fmt(hc.a2 * 100, 0)} %, 1–2 m: ${fmt(hc.a12 * 100, 0)} %, < 1 m: ${fmt(hc.a01 * 100, 0)} %`);
+      const gemischt = !!hc && hc.a2 < 1 - 1e-6;
+      if (hc && gemischt) notes.push(`lichte Höhe ≥ 2 m: ${fmt(hc.a2 * 100, 0)} %, 1–2 m: ${fmt(hc.a12 * 100, 0)} %, < 1 m: ${fmt(hc.a01 * 100, 0)} %`);
+      const art = woflArt(room.name, st, room.nutzung);
+      // Balkone, Loggien, Terrassen: nicht allseitig in voller Höhe umschlossen (DIN 277: Sonderfall S)
+      if (art === 'freisitz') room.umschliessung = 'S';
       if (o.wohnflaeche) {
-        const art = woflArt(room.name, st, room.nutzung);
         const wohnung = o.wohnung === 'geschoss' ? st.name : o.wohnung === 'zone' ? (sp.kategorie ?? '').trim() : o.wohnungName?.trim() || 'WE 01';
         if (o.wohnung === 'zone' && !wohnung && art !== 'keine') ohneKategorie++;
         if (art === 'freisitz') room.wofl = { kategorie: 'freisitz', wohnung };
         else if (art === 'wohnen')
-          room.wofl =
-            hc && hc.a2 < 0.995
-              ? { kategorie: 'individuell', faktor: round(hc.a2 + 0.5 * hc.a12, 4), wohnung }
-              : { kategorie: 'voll', wohnung };
-        else keineWofl++;
+          // gemischte Höhe: Raumteile nach lichter Höhe (Teilflächen) statt gerundetem Mischfaktor – Wohnfläche exakt
+          room.wofl = hc && gemischt ? { kategorie: 'hoehen', anteile: { h2: round(hc.a2, 6), h12: round(hc.a12, 6), h01: round(hc.a01, 6) }, wohnung } : { kategorie: 'voll', wohnung };
+        else {
+          keineWofl++;
+          if (istKellergeschoss(st)) imKeller.push(`${room.nummer} ${room.name}`.trim());
+        }
+        const h = woflHinweis(room.name);
+        if (h && art === 'wohnen') treppen.push(`${room.nummer} ${room.name}`.trim());
       }
       if (notes.length) room.bemerkung = notes.join('; ');
       st.shapes.push(room);
@@ -215,8 +227,12 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
     }
     report.push(`${n} Räume aus IFC-Zonen übernommen.`);
     if (splitLevel.length) report.push(`Split-Level erkannt (Fußboden gegenüber dem Geschoss): ${splitLevel.join(', ')} – im BRI berücksichtigt.`);
-    if (o.wohnflaeche && keineWofl) report.push(`${keineWofl} Räume nicht als Wohnfläche angerechnet (Keller, Technik, Treppenhaus, Garage, Dachboden …) – bei Bedarf im Raum ändern.`);
-    if (putz) report.push(`${putz} Räume mit Putzabzug aus Archicad (Nettofläche aus Rohbaumaßen) übernommen.`);
+    if (o.wohnflaeche && keineWofl) report.push(`${keineWofl} Räume nicht als Wohnfläche angerechnet (Keller, Technik, Treppenhaus, Garage, Dachboden …) – Vorschlag nach Raumname, bei Bedarf im Raum ändern.`);
+    if (imKeller.length)
+      report.push(`Vorschlag „keine Wohnfläche“, weil im Kellergeschoss: ${imKeller.join(', ')} – bei einer Souterrainwohnung die Geschossart auf „Normalgeschoss“ setzen.`);
+    if (treppen.length) report.push(`Räume mit Treppe angerechnet: ${treppen.join(', ')} – die Treppenfläche als Abzugsfläche „nur Wohnfläche“ erfassen (§ 3 Abs. 3 Nr. 2 WoFlV).`);
+    if (putz) report.push(`${putz} Räume mit Abzug aus der IFC-Nettofläche übernommen (Nettofläche kleiner als die Zonengeometrie, z. B. 3 % Putzabzug bei Rohbaumaßen).`);
+    if (abzugAusreisser.length) report.push(`Abzug aus der IFC-Nettofläche deutlich abseits von 3 % – bitte prüfen: ${abzugAusreisser.join(', ')}.`);
     if (ohneKategorie) report.push(`${ohneKategorie} Räume ohne Zonenkategorie – keiner Wohnung zugeordnet, bitte im Raum ergänzen.`);
     if (o.wohnflaeche && o.wohnung === 'geschoss')
       report.push('Hinweis: Wohnungen heißen wie die Geschosse – bei Einfamilienhaus oder Maisonette (eine Wohnung über mehrere Geschosse) ist die Wohnfläche so falsch gegliedert (WoFlV: Wohnfläche je Wohnung).');
@@ -247,7 +263,7 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
         const ol: OutlineShape = createOutline(pts, outlines.length > 1 ? `BGF ${k + 1}` : 'BGF');
         st.shapes.unshift(ol);
       });
-      if (!outlines.length) report.push(`${st.name}: keine Wände/Stützen gefunden – kein BGF-Umriss erzeugt.`);
+      if (!outlines.length) report.push(`Geschoss ${st.name} ohne BGF übernommen (keine Wände/Stützen) – falls begehbar und nutzbar (z. B. Spitzboden), BGF-Umriss ergänzen.`);
     });
   }
 
@@ -278,7 +294,8 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
           if (o.dachform && s.dach?.typ === 'modell' && r.cap === Infinity) {
             const e = dachAusModell(dachModell!, s.points, r.floorZ, waende);
             if (e.dach) {
-              s.dach = e.dach;
+              // Abweichung zum Modell als Fußnote im Rechenweg (nachprüfbar)
+              s.dach = { ...e.dach, modellAbweichung: round(e.abweichung, 4) };
               report.push(`${st.name}: ${e.text} erkannt (Abweichung zum Modell ${(e.abweichung * 100).toFixed(1).replace('.', ',')} %).`);
             } else report.push(`${st.name}: Dachform nicht übernommen (${e.grund}) – BRI bis zur Dachhaut aus dem Modell.`);
           }
@@ -937,11 +954,18 @@ export function upwardTriangles(parts: IfcMeshPart[]): number[] {
 
 /* ---------- Hilfsfunktionen ---------- */
 
+/**
+ * Vorschlag der Nutzungsgruppe nach DIN 277:2021-08 aus dem Raumnamen (sinngemäß): Galerie im Wohnungsbau NUF 1,
+ * Abstell-, Keller-, Fahrzeugabstellräume und Hauswirtschaftsräume NUF 7, Lager/Archiv NUF 4.
+ */
 const NUTZUNG_KEYWORDS: [RegExp, Nutzungsgruppe][] = [
-  [/flur|diele|treppe|gang|korridor|aufzug|foyer|windfang|eingang|galerie|podest/i, 'VF'],
-  [/technik|heiz|hausanschluss|elektro|lüftung|server|hwr|haustechnik/i, 'TF'],
+  [/galerie/i, 'NUF1'],
+  [/flur|diele|treppe|gang|korridor|aufzug|foyer|windfang|eingang|podest/i, 'VF'],
+  [/hwr|hauswirtschaft|waschküche|waschkueche|trockenraum/i, 'NUF7'],
+  [/technik|heiz|hausanschluss|elektro|lüftung|server|haustechnik/i, 'TF'],
   [/büro|buero|office|besprech|arbeitszimmer/i, 'NUF2'],
-  [/lager|abstell|keller|archiv|garage|fahrrad|müll/i, 'NUF4'],
+  [/abstell|keller|garage|carport|fahrrad|müll|muell/i, 'NUF7'],
+  [/lager|archiv/i, 'NUF4'],
   [/wc|bad|dusche|sanitär|umkleide|garderobe/i, 'NUF7'],
 ];
 

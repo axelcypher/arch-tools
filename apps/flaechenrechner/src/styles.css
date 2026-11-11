@@ -453,3 +453,12 @@
     background: #fff !important;
   }
 }
+
+/* Hinweis (kein Fehler) in den Eigenschaften */
+.hinweis {
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  border-radius: 4px;
+  margin: 6px 0;
+}

@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { computeStorey } from '@core/calc';
 import { fmt2 } from '@core/format';
+import type { Massgrundlage } from '@core/model';
 import { shapeArea } from '@core/model';
-import { nutzungInfo } from '@core/norms';
+import { MASSGRUNDLAGEN, nutzungInfo } from '@core/norms';
 import { addStorey, moveStorey, removeStorey, useActiveStorey, useEditor } from '../store/store';
 import { Field, NumberField } from '@core/ui/fields';
 import { ProjektInfo } from './ProjektDialog';
@@ -61,6 +62,24 @@ export function Sidebar() {
             />
           </Field>
         </div>
+        <Field label="Maßgrundlage" hint="steht im Kopf von Bericht und Excel">
+          <select
+            value={project.settings.massgrundlage ?? ''}
+            onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, massgrundlage: (e.target.value || undefined) as Massgrundlage | undefined } }))}
+          >
+            <option value="">nicht angegeben</option>
+            {MASSGRUNDLAGEN.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <label className="toggle block" title="Nur zum Vergleich mit Bestandsberechnungen bis 31.12.2003 (§ 5 WoFlV, §§ 42–44 II. BV). Standard bleibt die WoFlV.">
+          <input type="checkbox" checked={!!project.settings.zweiteBV} onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, zweiteBV: e.target.checked || undefined } }))} />
+          Altberechnung nach II. BV (nur Vergleich)
+        </label>
+        {project.settings.zweiteBV && <p className="warning small-text">Wohnfläche als Altberechnung nach II. BV – nicht für neue Nachweise (dort gilt die WoFlV).</p>}
       </section>
 
       <section>

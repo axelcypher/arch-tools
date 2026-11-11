@@ -220,3 +220,133 @@ describe('WoFlV-Vorschlag nach Geschossart (F-03)', () => {
     expect(woflArt('Bad', 'Kellergeschoss', 'NUF7')).toBe('keine');
   });
 });
+
+describe('Raumumschließung der Räume (FR-02)', () => {
+  it('Balkonraum auf S-Umriss: NRF S 8, KGF S 0 – von Hand festgelegt bleibt', () => {
+    const p = createProject();
+    const eg = p.storeys[0];
+    eg.shapes.push(createOutline(rect(0, 0, 12, 10)));
+    eg.shapes.push({ ...createOutline(rect(12, 0, 2, 4), 'Balkon'), umschliessung: 'S' as const, hoehe: 1.1 });
+    const balkon = createRoom(rect(12, 0, 2, 4), '0.05', 'Balkon');
+    eg.shapes.push(balkon);
+    const r = computeStorey(eg, p);
+    expect(r.nrf.S).toBeCloseTo(8);
+    expect(r.kgf.S).toBeCloseTo(0);
+    expect(r.nrf.R).toBeCloseTo(0);
+    expect(r.rooms[0].umschliessung).toBe('S');
+    // von Hand R: bleibt R
+    eg.shapes[2] = { ...balkon, rsVonHand: true };
+    expect(computeStorey(eg, p).nrf.R).toBeCloseTo(8);
+  });
+});
+
+describe('Abzugsflächen im Raum (FR-03)', () => {
+  const szenario = (abzugArt?: 'wofl' | 'din') => {
+    const p = createProject();
+    const eg = p.storeys[0];
+    const wohnen = createRoom(rectPoints({ x: 0, y: 0 }, { x: 9.4, y: 7.4 }), '0.01', 'Wohnen');
+    wohnen.wofl = { kategorie: 'voll', wohnung: 'WE 01' };
+    const abzug = { ...createRoom(rect(1, 1, 0.5, 0.5), '', abzugArt === 'wofl' ? 'Treppe' : 'Schornstein'), subtract: true, ...(abzugArt ? { abzugArt } : {}) };
+    eg.shapes.push(wohnen, abzug);
+    return computeStorey(eg, p);
+  };
+  it('Schornstein erbt die Anrechnung des Raums: NRF und Wohnfläche 69,31', () => {
+    const r = szenario();
+    expect(r.nrf.total).toBeCloseTo(69.31, 2);
+    expect(r.wofl).toBeCloseTo(69.31, 2);
+    expect(r.rooms[1].wohnung).toBe('WE 01');
+  });
+  it('„nur Wohnfläche“ (Treppe) lässt die NRF unverändert, „nur NRF“ die Wohnfläche', () => {
+    const t = szenario('wofl');
+    expect(t.nrf.total).toBeCloseTo(69.56, 2);
+    expect(t.wofl).toBeCloseTo(69.31, 2);
+    const d = szenario('din');
+    expect(d.nrf.total).toBeCloseTo(69.31, 2);
+    expect(d.wofl).toBeCloseTo(69.56, 2);
+  });
+});
+
+describe('WoFlV-Vorschlag nach Raumname (FR-07)', () => {
+  it('HWR zählt unabhängig von der Nutzungsgruppe, Treppenhaus nicht, Raum mit Treppe schon', async () => {
+    const { woflArt, woflHinweis } = await import('./norms');
+    expect(woflArt('HWR', 'EG', 'NUF1')).toBe('wohnen');
+    expect(woflArt('HWR', 'EG', 'TF')).toBe('wohnen');
+    expect(woflArt('Hauswirtschaft', 'EG', 'NUF7')).toBe('wohnen');
+    expect(woflArt('Treppenhaus', 'EG', 'VF')).toBe('keine');
+    expect(woflArt('Diele/Treppe', 'EG', 'VF')).toBe('wohnen');
+    expect(woflHinweis('Diele/Treppe')).toMatch(/nur Wohnfläche/);
+    expect(woflArt('Bad', { name: 'UG', keller: true }, 'NUF7')).toBe('keine');
+    expect(woflArt('Bad', { name: 'UG', keller: false }, 'NUF7')).toBe('wohnen');
+  });
+});
+
+describe('BRI von S-Umrissen (FR-10)', () => {
+  it('ohne Körperhöhe keine Bodenplatte unter S; mit Körperhöhe 1,10 → BRI 8 × 1,10', () => {
+    const p = createProject();
+    const eg = p.storeys[0];
+    eg.hoehe = 2.75;
+    eg.sohle = 0.3;
+    const balkon = { ...createOutline(rect(0, 0, 2, 4), 'Balkon'), umschliessung: 'S' as const };
+    eg.shapes.push(balkon);
+    expect(computeStorey(eg, p).bri.S).toBeCloseTo(8 * 2.75);
+    eg.shapes[0] = { ...balkon, hoehe: 1.1 };
+    expect(computeStorey(eg, p).bri.S).toBeCloseTo(8 * 1.1);
+    // ausdrücklich mit Bodenplatte
+    eg.shapes[0] = { ...balkon, hoehe: 1.1, sohleAnsetzen: true };
+    expect(computeStorey(eg, p).bri.S).toBeCloseTo(8 * 1.1 + 8 * 0.3);
+  });
+});
+
+describe('Raumteile nach lichter Höhe (FR-12)', () => {
+  it('Wohnfläche = 1 · ≥ 2 m + ½ · 1–2 m, exakt', () => {
+    const p = createProject();
+    const r = createRoom(rect(0, 0, 4, 5), '1.01', 'Kind');
+    r.wofl = { kategorie: 'hoehen', anteile: { h2: 0.5, h12: 0.3, h01: 0.2 }, wohnung: 'WE 01' };
+    p.storeys[0].shapes.push(r);
+    const s = computeStorey(p.storeys[0], p);
+    expect(s.nrf.total).toBeCloseTo(20);
+    expect(s.wofl).toBeCloseTo(10 + 3, 10);
+  });
+});
+
+describe('Altberechnung nach II. BV (FR-21)', () => {
+  it('Schalter aus: Ergebnisse unverändert; an: Balkon ohne eigenen Faktor zur Hälfte', () => {
+    const p = createProject();
+    const b = createRoom(rect(0, 0, 2, 4), '0.05', 'Balkon');
+    b.wofl = { kategorie: 'freisitz', wohnung: 'WE 01' };
+    p.storeys[0].shapes.push(b);
+    const vorher = computeProject(p).total.wofl;
+    expect(computeProject({ ...p, settings: { ...p.settings, zweiteBV: false } }).total.wofl).toBe(vorher);
+    expect(vorher).toBeCloseTo(2);
+    expect(computeProject({ ...p, settings: { ...p.settings, zweiteBV: true } }).total.wofl).toBeCloseTo(4);
+  });
+});
+
+describe('Projektformat: neue Felder (Block 2)', () => {
+  it('Rundlauf Speichern/Laden, alte Dateien ohne die Felder bleiben gültig', () => {
+    const p = createProject();
+    const eg = p.storeys[0];
+    eg.dachaufbau = 0.3;
+    eg.fussbodenaufbau = 0.12;
+    const r = createRoom(rect(0, 0, 4, 5), '1.01', 'Kind');
+    r.rsVonHand = true;
+    r.nutzungsart = '1.1';
+    r.katalog = 'Kinderzimmer';
+    r.stempel = { x: 1, y: 2 };
+    r.wofl = { kategorie: 'hoehen', anteile: { h2: 0.5, h12: 0.3, h01: 0.2 }, wohnung: 'WE 01' };
+    const a = { ...createRoom(rect(1, 1, 0.5, 0.5), '', 'Schornstein'), subtract: true, abzugArt: 'din' as const };
+    const o = { ...createOutline(rect(0, 0, 6, 6)), umschliessung: 'S' as const, sohleAnsetzen: true, pruefen: true, stempel: { x: 0.5, y: 0.5 } };
+    eg.shapes.push(o, r, a);
+    p.settings.massgrundlage = 'rohbau';
+    p.settings.zweiteBV = true;
+    const q = parseProject(serializeProject(p));
+    expect(q.storeys[0]).toMatchObject({ dachaufbau: 0.3, fussbodenaufbau: 0.12 });
+    expect(q.storeys[0].shapes[0]).toMatchObject({ sohleAnsetzen: true, pruefen: true, stempel: { x: 0.5, y: 0.5 } });
+    expect(q.storeys[0].shapes[1]).toMatchObject({ rsVonHand: true, nutzungsart: '1.1', katalog: 'Kinderzimmer', stempel: { x: 1, y: 2 }, wofl: { kategorie: 'hoehen', anteile: { h2: 0.5, h12: 0.3 } } });
+    expect(q.storeys[0].shapes[2]).toMatchObject({ abzugArt: 'din' });
+    expect(q.settings).toMatchObject({ massgrundlage: 'rohbau', zweiteBV: true });
+    const alt = parseProject(JSON.stringify({ format: 'arch-flaechen-tool', version: 1, storeys: [{ name: 'EG', hoehe: 3, shapes: [{ kind: 'room', name: 'Bad', nummer: '1', points: rect(0, 0, 2, 2), wofl: { kategorie: 'voll', wohnung: '' } }] }] }));
+    const raum = alt.storeys[0].shapes[0];
+    expect(raum.kind === 'room' && [raum.rsVonHand, raum.abzugArt, raum.nutzungsart, raum.katalog, raum.stempel, raum.wofl.anteile]).toEqual([undefined, undefined, undefined, undefined, undefined, undefined]);
+  });
+});
