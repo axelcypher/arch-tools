@@ -46,6 +46,44 @@ export interface ProjektQuelle {
   alteProjektJsonDefekt?: string;
 }
 
+/**
+ * Was im Projektordner außerhalb der Struktur liegt – dieselben Regeln für den Prüfmodus und die Vorschau der
+ * Vorlagen-Presets: Ordner auf Ebenen, die die Struktur vorgibt (Stamm und Ordner mit vorgegebenen Unterordnern), die
+ * nicht in der Struktur stehen, und lose Dateien im Stamm (außer Projektdatei, Notizen, Verknüpfungen, alter projekt.json).
+ */
+export function ausserhalbDerStruktur(struktur: Struktur, eintraege: Pick<Eintrag, 'pfad' | 'ordner'>[], werte: Record<string, string | number> = {}): { fremd: string[]; lose: string[] } {
+  const ziel = (p: string) =>
+    normPfad(p)
+      .split('/')
+      .map((t) => sichererName(nameAus(t, werte)))
+      .filter(Boolean)
+      .join('/');
+  const bekannt = new Set<string>();
+  const vorgegebeneEltern = new Set<string>(['']);
+  for (const r of struktur.ordner) {
+    const teile = ziel(r.pfad).toLowerCase().split('/');
+    for (let i = 1; i <= teile.length; i++) {
+      bekannt.add(teile.slice(0, i).join('/'));
+      if (i < teile.length) vorgegebeneEltern.add(teile.slice(0, i).join('/'));
+    }
+  }
+  const fremd = eintraege
+    .filter((e) => e.ordner)
+    .map((e) => e.pfad)
+    .filter((p) => {
+      const k = p.toLowerCase();
+      const eltern = k.split('/').slice(0, -1).join('/');
+      return vorgegebeneEltern.has(eltern) && !bekannt.has(k);
+    });
+  const erlaubtImStamm = /\.(oap|md|lnk|url)$/i;
+  // die alte projekt.json (bis 0.2) darf liegen bleiben – gelöscht wird nichts
+  const lose = eintraege
+    .filter((e) => !e.ordner && !SYSTEMDATEI.test(e.pfad.split('/').pop()!))
+    .map((e) => e.pfad)
+    .filter((p) => !p.includes('/') && p.toLowerCase() !== PROJEKT_DATEI && !erlaubtImStamm.test(p));
+  return { fremd, lose };
+}
+
 export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struktur, projekt: ProjektAngaben | null, quelle: ProjektQuelle = {}): Pruefergebnis {
   const befunde: Befund[] = [];
   const ordner = eintraege.filter((e) => e.ordner);
@@ -93,29 +131,11 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
   if (fehlendeOrdner.length) befunde.push({ art: 'warnung', titel: `${fehlendeOrdner.length} Ordner der Struktur ${fehlendeOrdner.length === 1 ? 'fehlt' : 'fehlen'}`, pfade: fehlendeOrdner });
   else if (regeln.length) befunde.push({ art: 'ok', titel: `Alle ${regeln.length} Ordner der Struktur sind vorhanden` });
 
-  // Ordner außerhalb der Struktur: auf Ebenen, die die Struktur vorgibt (Stamm und Ordner mit vorgegebenen Unterordnern)
-  const bekannt = new Set<string>();
-  const vorgegebeneEltern = new Set<string>(['']);
-  for (const r of struktur.ordner) {
-    const teile = ziel(r.pfad).toLowerCase().split('/');
-    for (let i = 1; i <= teile.length; i++) {
-      bekannt.add(teile.slice(0, i).join('/'));
-      if (i < teile.length) vorgegebeneEltern.add(teile.slice(0, i).join('/'));
-    }
-  }
-  const fremd = ordner
-    .map((e) => e.pfad)
-    .filter((p) => {
-      const k = p.toLowerCase();
-      const eltern = k.split('/').slice(0, -1).join('/');
-      return vorgegebeneEltern.has(eltern) && !bekannt.has(k);
-    });
+  // Ordner außerhalb der Struktur und lose Dateien im Stamm
+  const { fremd, lose } = ausserhalbDerStruktur(struktur, eintraege, werte);
   if (fremd.length) befunde.push({ art: 'hinweis', titel: `${fremd.length} Ordner ${fremd.length === 1 ? 'steht' : 'stehen'} nicht in der Struktur`, text: 'Auf Ebenen, die die Struktur vorgibt, liegen zusätzliche Ordner.', pfade: fremd });
 
   /* lose Dateien im Stamm */
-  const erlaubtImStamm = /\.(oap|md|lnk|url)$/i;
-  // die alte projekt.json (bis 0.2) darf liegen bleiben – gelöscht wird nichts
-  const lose = dateien.map((e) => e.pfad).filter((p) => !p.includes('/') && p.toLowerCase() !== PROJEKT_DATEI && !erlaubtImStamm.test(p));
   if (lose.length) befunde.push({ art: 'hinweis', titel: `${lose.length} ${lose.length === 1 ? 'Datei liegt' : 'Dateien liegen'} lose im Projektordner`, text: 'Dateien gehören in einen Ordner der Struktur.', pfade: lose });
 
   /* Dateinamenschema */

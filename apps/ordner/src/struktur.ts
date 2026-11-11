@@ -284,11 +284,15 @@ export const strukturAlsJson = (s: Struktur) => `${JSON.stringify(s, null, 2)}\n
 export const regelGilt = (r: { lph?: number[] }, lph: number[]) => !r.lph?.length || !lph.length || r.lph.some((p) => lph.includes(p));
 
 /**
- * Presets, die für ein Projekt gelten: die ausgewählten – ohne Auswahl die Standard-Presets der Struktur.
+ * Presets, die für ein Projekt gelten: die ausgewählten – ohne Auswahl die Standard-Presets der Struktur, außer denen
+ * in `nichtAutomatisch` (z. B. „Alle Vorlagen“ bei einem anders gegliederten Vorlagenordner).
  * `unbekannt` sind ausgewählte Namen, die es in der Struktur nicht (mehr) gibt.
  */
-export function aktivePresets(struktur: Struktur, auswahl: string[] | undefined): { presets: VorlagenPreset[]; unbekannt: string[] } {
-  if (!auswahl) return { presets: struktur.presets.filter((p) => p.standard), unbekannt: [] };
+export function aktivePresets(struktur: Struktur, auswahl: string[] | undefined, nichtAutomatisch: Iterable<string> = []): { presets: VorlagenPreset[]; unbekannt: string[] } {
+  if (!auswahl) {
+    const ohne = new Set(nichtAutomatisch);
+    return { presets: struktur.presets.filter((p) => p.standard && !ohne.has(p.name)), unbekannt: [] };
+  }
   const gewaehlt = new Set(auswahl.map((n) => n.toLowerCase()));
   const presets = struktur.presets.filter((p) => gewaehlt.has(p.name.toLowerCase()));
   const da = new Set(struktur.presets.map((p) => p.name.toLowerCase()));

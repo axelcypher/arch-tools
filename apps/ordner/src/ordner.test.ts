@@ -5,12 +5,13 @@ import { readProjectFile, writeArchive } from '@core/archive';
 import { ordnerAusDateien, SpeicherDateisystem, verbinde } from './dateisystem';
 import { dateimuster, naechsteNummer, nameAus, nummerAus, nummerPasst } from './nummer';
 import type { PlanOptionen, Vorlage } from './plan';
-import { ausfuehren, ladeVorlagen, ohne, ordnerName, planen } from './plan';
-import { pruefe } from './pruefung';
+import { ausfuehren, ladeVorlagen, nichtVorausgewaehlt, ohne, ordnerName, planen, presetPruefen, vorlagenAnzahl, vorlagenDateien } from './plan';
+import { ausserhalbDerStruktur, pruefe } from './pruefung';
 import type { Stammdaten } from './stammdaten';
 import { beteiligteSammeln, projektEinlesen } from './projekt';
 import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
-import type { Struktur } from './struktur';
+import type { OrdnerRegel, Struktur } from './struktur';
+import { ausruecken, baumOrdnung, baumZeilen, einruecken, hinzufuegen, loeschen, umbenennen, verschieben, zusatzSetzen } from './baum';
 import { aktivePresets, alterOapPfad, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
 import { MAX_SICHERUNGEN, sicherungenAus, sicherungenMit, sicherungsName, strukturUnterschied, unterschiedText } from './sicherung';
 import { alsDokument, fuelleDocx, fuelleText, fuelleVorlage, MUSTER_VORLAGEN, zielDateiname } from './vorlagen';
@@ -121,6 +122,34 @@ describe('Struktur', () => {
     // fehlerfreie Listen: keine Meldungen, dasselbe Ergebnis wie bisher
     expect(ordnerAusTextMitMeldungen(ordnerAlsText(STANDARD.ordner))).toEqual({ ordner: STANDARD.ordner, meldungen: [] });
     expect(ordnerAusText(text)).toEqual(ordner);
+  });
+
+  it('Ordnerliste als Baum: einrücken, ausrücken, verschieben, umbenennen, löschen, hinzufügen, Zusätze – Rundlauf mit dem Text (P-04)', () => {
+    const o: OrdnerRegel[] = [{ pfad: 'A' }, { pfad: 'B/x', lph: [5] }, { pfad: 'B/y', dateischema: true }, { pfad: 'C' }];
+    expect(baumZeilen(o).map((z) => `${'  '.repeat(z.tiefe)}${z.name}${z.regel ? '' : ' (ohne Regel)'}`)).toEqual(['A', 'B (ohne Regel)', '  x', '  y', 'C']);
+    // C wird Unterordner von B, dann wieder hinaus (direkt hinter B)
+    const ein = einruecken(o, 'C');
+    expect(ein).toEqual([{ pfad: 'A' }, { pfad: 'B/x', lph: [5] }, { pfad: 'B/y', dateischema: true }, { pfad: 'B/C' }]);
+    expect(ausruecken(ein, 'B/C')).toEqual(o);
+    // verschieben unter Geschwistern; der erste kann nicht nach oben
+    expect(verschieben(o, 'B/y', -1).map((r) => r.pfad)).toEqual(['A', 'B/y', 'B/x', 'C']);
+    expect(verschieben(o, 'A', -1)).toBe(o);
+    expect(verschieben(o, 'C', -1).map((r) => r.pfad)).toEqual(['A', 'C', 'B/x', 'B/y']);
+    // umbenennen benennt den ganzen Zweig um; doppelte Namen und unzulässige Zeichen
+    expect(umbenennen(o, 'B', 'Pläne').map((r) => r.pfad)).toEqual(['A', 'Pläne/x', 'Pläne/y', 'C']);
+    expect(umbenennen(o, 'B', 'a')).toBe(o);
+    expect(umbenennen(o, 'A', 'Test<>/Ordner').map((r) => r.pfad)[0]).toBe('Test Ordner');
+    // löschen mit Inhalt, hinzufügen mit durchgezählten Namen
+    expect(loeschen(o, 'B')).toEqual([{ pfad: 'A' }, { pfad: 'C' }]);
+    const h = hinzufuegen(hinzufuegen(o, 'B').ordner, 'B');
+    expect(h.pfad).toBe('B/Neuer Ordner 2');
+    expect(h.ordner.map((r) => r.pfad)).toEqual(['A', 'B/x', 'B/y', 'B/Neuer Ordner', 'B/Neuer Ordner 2', 'C']);
+    // Zusätze: ein Ordner ohne Regel bekommt eine
+    expect(zusatzSetzen(o, 'B', { lph: [8, 4] })).toEqual([{ pfad: 'A' }, { pfad: 'B', lph: [4, 8] }, { pfad: 'B/x', lph: [5] }, { pfad: 'B/y', dateischema: true }, { pfad: 'C' }]);
+    expect(zusatzSetzen(o, 'B/x', { lph: [] })[1]).toEqual({ pfad: 'B/x' });
+    // Rundlauf Text ↔ Baum verlustfrei
+    expect(ordnerAusText(ordnerAlsText(baumOrdnung(STANDARD.ordner)))).toEqual(STANDARD.ordner);
+    expect(baumOrdnung(STANDARD.ordner)).toEqual(STANDARD.ordner);
   });
 
   it('Konfiguration als JSON: Hin und zurück, Vorgaben für fehlende Angaben, verständliche Fehler', () => {
@@ -375,6 +404,25 @@ describe('Plan und Anlegen', () => {
 
 describe('Vorlagen-Presets', () => {
   const werte = { nummer: '2026-014', kurzname: 'EFH Musterweg', jahr: 2026, bearbeiter: 'TP', datum: '2026-10-01' };
+
+  it('Vorlagenordner nach Dateiart: Ordner außerhalb der Struktur und lose Dateien, „Alle Vorlagen“ nicht vorausgewählt (P-05)', () => {
+    const vorlagen = [vorlage('Word/Brief.dotx', 'x'), vorlage('Word/Fax.dotx', 'x'), vorlage('Excel/Kosten.xltx', 'x'), vorlage('Briefbogen.pdf', 'x'), vorlage('LIESMICH.txt', 'x'), vorlage('00 Projekt/Notiz.md', 'x')];
+    const a = presetPruefen(GANZER_VORLAGENORDNER, vorlagenDateien(vorlagen), KLEIN, werte);
+    expect(a).toEqual({ fremd: ['Excel', 'Word'], lose: ['Briefbogen.pdf'], dateien: 5, ausserhalb: 4 });
+    // LIESMICH.txt zählt nicht mit
+    expect(vorlagenAnzahl(vorlagen)).toBe(5);
+    // mehr als die Hälfte außerhalb: bei neuen Projekten nicht vorausgewählt – ausdrücklich gewählt gilt es weiter
+    expect([...nichtVorausgewaehlt(KLEIN, vorlagen).keys()]).toEqual(['Alle Vorlagen']);
+    expect(plane(stamm({ presets: undefined }), KLEIN, vorlagen).schritte.filter((s) => s.herkunft === 'vorlage')).toEqual([]);
+    expect(plane(stamm({ presets: ['Alle Vorlagen'] }), KLEIN, vorlagen).schritte.some((s) => s.pfad === 'Word')).toBe(true);
+    // wie ein Projektordner aufgebaut: vorausgewählt wie bisher
+    expect(nichtVorausgewaehlt(KLEIN, [vorlage('00 Projekt/A.md', 'x'), vorlage('02 Pläne/Entwurf/B.txt', 'x'), vorlage('10 Extra/C.txt', 'x')]).size).toBe(0);
+    // Prüfmodus und Vorschau folgen denselben Regeln
+    expect(ausserhalbDerStruktur(KLEIN, [{ pfad: 'Word', ordner: true }, { pfad: '02 Pläne/Alt', ordner: true }, { pfad: 'x.pdf', ordner: false }, { pfad: 'y.oap', ordner: false }])).toEqual({
+      fremd: ['Word', '02 Pläne/Alt'],
+      lose: ['x.pdf'],
+    });
+  });
 
   it('Dateinamen: Schema, eigene Platzhalter, Name aus der Zuordnung, Office-Vorlagen werden Dokumente', () => {
     expect(zielDateiname('Kostenschätzung.xlsx', undefined, '{nummer} {name}', werte)).toBe('2026-014 Kostenschätzung.xlsx');

@@ -178,7 +178,27 @@ describe('Projektordner', () => {
     expect(useOrdner.getState().allgemein.mitarbeiter).toEqual(['TP', 'AK']);
     eingabe(feld(host, 'Name des Projektordners'), '{nummer}_{kurzname}');
     expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname}');
+    // Ordnerliste als Baum (P-04): LPh-Häkchen und Dateischema je Ordner
+    const lph = (pfad: string, n: number) => host.querySelector<HTMLInputElement>(`input[aria-label="LPh ${n} ${pfad}"]`)!;
+    act(() => lph('09 Fotos', 9).click());
+    expect(useOrdner.getState().struktur.ordner.find((o) => o.pfad === '09 Fotos')!.lph).toEqual([9]);
+    act(() => host.querySelector<HTMLInputElement>('input[aria-label="Dateischema prüfen 05 Protokolle"]')!.click());
+    expect(useOrdner.getState().struktur.ordner.find((o) => o.pfad === '05 Protokolle')!.dateischema).toBe(true);
+    // umbenennen, einrücken, neuer Ordner
+    eingabe(host.querySelector<HTMLInputElement>('input[aria-label="Name von 09 Fotos"]')!, '10 Fotos');
+    expect(useOrdner.getState().struktur.ordner.some((o) => o.pfad === '10 Fotos' && o.lph?.[0] === 9)).toBe(true);
+    act(() => knopf(host, '+ Ordner').click());
+    expect(useOrdner.getState().struktur.ordner.at(-1)).toEqual({ pfad: 'Neuer Ordner' });
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Neuer Ordner einrücken"]')!.click());
+    expect(useOrdner.getState().struktur.ordner.at(-1)).toEqual({ pfad: '10 Fotos/Neuer Ordner' });
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="10 Fotos/Neuer Ordner löschen"]')!.click());
+    await warten();
+    expect(useOrdner.getState().struktur.ordner.some((o) => o.pfad.includes('Neuer Ordner'))).toBe(false);
+    // dieselbe Liste in der Textansicht
+    act(() => knopf(host, 'Text (Experte)').click());
     const text = host.querySelector('textarea') as HTMLTextAreaElement;
+    expect(text.value).toContain('05 Protokolle | Dateischema');
+    expect(text.value).toContain('10 Fotos | LPh 9');
     expect(text.value.split('\n')).toHaveLength(STANDARD.ordner.length);
     eingabe(text, 'A\nB/C | LPh 5-6 | Dateischema');
     expect(useOrdner.getState().struktur.ordner).toEqual([{ pfad: 'A' }, { pfad: 'B/C', lph: [5, 6], dateischema: true }]);
@@ -273,11 +293,29 @@ describe('Projektordner', () => {
   });
 
   it('Vorlagen: Preset anlegen, Vorlagen aus dem Vorlagenordner zuordnen, im neuen Projekt wählen', async () => {
-    const dateien: Record<string, string> = { 'Word/Briefbogen.txt': 'Bauherr: {{bauherr.name}}', 'Excel/Kosten/Kostenschätzung.csv': 'x', 'Excel/Kosten/Massen.csv': 'y' };
+    const dateien: Record<string, string> = {
+      'Word/Briefbogen.txt': 'Bauherr: {{bauherr.name}}',
+      'Excel/Kosten/Kostenschätzung.csv': 'x',
+      'Excel/Kosten/Massen.csv': 'y',
+      'LIESMICH.txt': 'Anleitung',
+      ...Object.fromEntries(['A', 'B', 'C', 'D', 'E'].map((x) => [`Bauantrag/${x}.txt`, x])),
+    };
     useOrdner.setState({ vorlagenName: 'Büro-Vorlagen', vorlagen: Object.entries(dateien).map(([pfad, inhalt]) => ({ pfad, lies: async () => strToU8(inhalt) })) });
     const host = render();
     act(() => knopf(host, 'Vorlagen').click());
     expect(host.textContent).toContain('Büro-Vorlagen');
+    // LIESMICH.txt zählt nicht mit (P-05)
+    expect(host.textContent).toContain('Vorlagenordner – 8 Dateien');
+    // „Alle Vorlagen“ nach den Regeln des Prüfmodus: der Vorlagenordner ist nach Dateiart gegliedert
+    expect(host.textContent).toContain('Der Vorlagenordner ist anders gegliedert als die Struktur');
+    const abweichung = host.querySelector('.po-abweichung')!;
+    expect(abweichung.querySelector('summary')!.textContent).toBe('3 Ordner liegen außerhalb der Struktur');
+    expect([...abweichung.querySelectorAll('li')].map((l) => l.textContent)).toEqual(['Bauantrag', 'Excel', 'Word']);
+    // Vorschau aufklappbar
+    const mehr = knopf(host, '… und 4 weitere');
+    act(() => mehr.click());
+    expect(host.querySelectorAll('.po-zuordnungen > li')[0].querySelector('.po-z-vorschau')!.textContent).toContain('→ Word/2026-014 Briefbogen.txt');
+    expect(knopf(host, 'weniger zeigen')).toBeTruthy();
     expect(host.textContent).toContain('{{projekt.nummer}}'); // Platzhalter-Hilfe
     // Dateinamenschema mit Beispiel
     expect(host.textContent).toContain('Kostenschätzung.xlsx → 2026-014 Kostenschätzung.xlsx');
@@ -308,7 +346,7 @@ describe('Projektordner', () => {
     eingabe(zuordnung(1).querySelector('.po-z-lph input') as HTMLInputElement, '6-7');
     expect(useOrdner.getState().struktur.presets[1].eintraege[1].lph).toEqual([6, 7]);
 
-    // im Assistenten wählen: nur „Alle Vorlagen“ ist Standard
+    // im Assistenten wählen: „Alle Vorlagen“ ist Standard, aber wegen des anders gegliederten Vorlagenordners nicht vorausgewählt
     act(() => knopf(host, 'Assistent').click());
     act(() => knopf(host, 'Neues Projekt').click());
     eingabe(feld(host, 'Projektnummer'), '2026-014');
@@ -316,7 +354,8 @@ describe('Projektordner', () => {
     weiter(host);
     weiter(host);
     const wahl = (name: string) => [...host.querySelectorAll('.po-presetwahl label')].find((l) => l.textContent?.startsWith(name))!.querySelector('input') as HTMLInputElement;
-    act(() => wahl('Alle Vorlagen').click());
+    expect(wahl('Alle Vorlagen').checked).toBe(false);
+    expect(host.querySelector('.po-nicht-automatisch')?.textContent).toContain('„Alle Vorlagen“ ist nicht vorausgewählt');
     act(() => wahl('Jedes Projekt').click());
     expect(useOrdner.getState().stamm.presets).toEqual(['Jedes Projekt']);
     weiter(host);

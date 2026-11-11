@@ -247,8 +247,17 @@ GRZ 0.10.1, KO 0.10.1, PO 0.6.1, EZ 0.5.1, FO 0.21.2 (nur Patch, Bundles geände
   `{jahr} {jj} {nr[:n]}`), Hinweis am Feld „Passt nicht zum Schema … – erwartet z. B. 2026-015“ (blockiert nicht;
   core: Prop `nummerPruefen` in `StammdatenFelder`); Vorschlag über die Ordner aller `allgemein.projekte`, beim neuen
   Projekt vorausgefüllt. Abweichung: die optionale Reservierungsdatei `nummern.json` ist nicht umgesetzt.
-- [ ] **P-04** Ordnerliste als Baum
-- [ ] **P-05** Vorlagen-Zuordnungen außerhalb der Struktur
+- [x] **P-04** Ordnerliste als Baum – PO 0.8.0: Baumansicht (Standard) mit Umbenennen, Löschen (mit Unterordnern nach
+  Rückfrage), Anlegen, ↑ ↓ verschieben, → einrücken, ← ausrücken, je Ordner LPh 1–9 und „Schema“; Textansicht bleibt als
+  „Text (Experte)“; beide bearbeiten `OrdnerRegel[]` (reine Funktionen in `baum.ts`, Rundlauf Text ↔ Baum verlustfrei).
+  Abweichung: Umsortieren über Knöpfe statt Ziehen; das optionale „Struktur aus Musterordner übernehmen“ ist nicht
+  umgesetzt.
+- [x] **P-05** Vorlagen-Zuordnungen außerhalb der Struktur – PO 0.8.0: `presetPruefen` mit den Regeln des Prüfmodus
+  (`ausserhalbDerStruktur`, gemeinsam mit `pruefe`), Zusammenfassung „N Ordner liegen außerhalb der Struktur“ / „N Dateien
+  liegen lose im Projektstamm“ mit aufklappbarer Liste; Standard-Presets mit dem ganzen Vorlagenordner werden nicht
+  vorausgewählt, wenn mehr als die Hälfte der Vorlagen außerhalb der Struktur landete (Hinweis unter „Vorlagen“ und im
+  Assistenten); `LIESMICH.txt` zählt nicht; „… und N weitere“ aufklappbar. Abweichung: „wie die Struktur aufgebaut“ als
+  Mehrheit der Vorlagen gefasst, damit ein einzelner Zusatzordner das Preset nicht abschaltet.
 - [ ] **P-06** Uneinheitliche Platzhalter
 - [x] **P-07** Leistungsphasen-Auswahl – PO 0.7.0 (core `StammdatenFelder`, damit in allen Apps; mit P-03, P-08, P-12,
   P-14 auch FR 0.19.0, GRZ 0.11.0, KO 0.11.0, FO 0.22.0, dazu EZ 0.5.2 und SU 0.4.1 nur Patch, Bundles geändert): Namen sichtbar

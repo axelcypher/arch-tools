@@ -117,7 +117,14 @@ im Konfigurationsordner, je Sicherung mit Namen `projektordner.json.bak-JJJJ-MM-
 | Name des Projektordners | `{nummer} {kurzname}` | `{nummer}`, `{kurzname}`, `{jahr}` |
 | Dateinamenschema für Pläne | `{nummer}_{plannummer}_{index}_{titel}` | dazu `{datum}` |
 
-Die **Ordnerliste** ist ein Text mit einer Zeile je Ordner, Unterordner mit `/`. Zusätze nach `|`:
+Die **Ordnerliste** wird als **Baum** bearbeitet: je Ordner der Name, Häkchen für die Leistungsphasen 1–9 und
+„Schema“ (Dateischema prüfen); ↑ ↓ verschieben unter den Geschwisterordnern, → macht einen Ordner zum Unterordner des
+Ordners darüber, ← rückt ihn eine Ebene höher, „+“ legt einen Unterordner an, „×“ löscht (mit Unterordnern erst nach
+Rückfrage), „+ Ordner“ legt einen im Stamm an. Übergeordnete Ordner, die nur als Teil eines Pfads vorkommen, stehen
+kursiv; ein Häkchen gibt ihnen eine eigene Regel.
+
+Für Geübte gibt es die Ordnerliste auch als **Text (Experte)** – dieselbe Liste, eine Zeile je Ordner, Unterordner
+mit `/`. Zusätze nach `|`:
 
 ```
 02 Pläne/Entwurf | Dateischema
@@ -155,12 +162,17 @@ Jede **Zuordnung** darin sagt:
 
 Zugeordnet wird unter **Vorlagen**: Preset wählen, im Baum des Vorlagenordners auf „+“ klicken, Zielordner und
 gegebenenfalls Namen eintragen. Die Vorschau zeigt mit den Stammdaten des angefangenen neuen Projekts (sonst Beispielwerten),
-wo jede Datei landet und wie sie heißt; Vorlagen, die es im Vorlagenordner nicht gibt, sind markiert.
+wo jede Datei landet und wie sie heißt (mehr als vier Dateien je Zuordnung: aufklappbar); Vorlagen, die es im
+Vorlagenordner nicht gibt, sind markiert. Dazu prüft sie das Preset nach den Regeln von „Ordner prüfen“ und fasst
+zusammen, was danach als Abweichung gälte: „3 Ordner liegen außerhalb der Struktur“, „2 Dateien liegen lose im
+Projektstamm“ (aufklappbar mit Liste). Die Anleitung `LIESMICH.txt` im Stamm des Vorlagenordners zählt nicht mit.
 
 Presets mit **„Standard“** sind bei neuen Projekten vorausgewählt; welche ein Projekt bekommen hat, steht in seiner
 Projektdatei. Die eingebaute Struktur bringt das Preset
 **„Alle Vorlagen“** mit: der ganze Vorlagenordner, jede Datei an denselben Ort im Projekt – für einen Vorlagenordner,
-der wie ein Projektordner aufgebaut ist. Projekte merken sich ihre Presets beim Namen (in der Projektdatei); ein
+der wie ein Projektordner aufgebaut ist. Ist der Vorlagenordner anders gegliedert (mehr als die Hälfte der Vorlagen
+landete außerhalb der Struktur, etwa bei `Word/`, `Excel/`), wird ein solches Preset bei neuen Projekten nicht
+vorausgewählt; „Vorlagen“ und der Assistent sagen das, und es lässt sich weiterhin ausdrücklich wählen. Projekte merken sich ihre Presets beim Namen (in der Projektdatei); ein
 umbenanntes Preset meldet der Trockenlauf beim Ergänzen als unbekannt.
 
 ### Dateinamen

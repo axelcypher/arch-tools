@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { hatDateisystem, oeffneOrdner, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
-import type { Ergebnis, Herkunft, Plan } from '../plan';
-import { tutEtwas } from '../plan';
+import type { Ergebnis, Herkunft, Plan, PresetAbweichung } from '../plan';
+import { tutEtwas, vorlagenAnzahl } from '../plan';
 import { useOrdner } from '../store';
 import type { Struktur } from '../struktur';
 import { aktivePresets } from '../struktur';
@@ -106,7 +106,8 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
     const o = await waehleOrdnerImBrowser();
     if (o) setVorlagenImBrowser(o.name, o.eintraege.filter((e) => !e.ordner).map((e) => ({ pfad: e.pfad, lies: () => o.lies(e.pfad) })));
   };
-  const anzahl = vorlagen.length;
+  // ohne die Anleitung im Stamm (LIESMICH.txt), die nie kopiert wird
+  const anzahl = vorlagenAnzahl(vorlagen);
   return (
     <>
       <div className="po-ort">
@@ -146,8 +147,19 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
 /**
  * Auswahl der Vorlagen-Presets für ein Projekt. `auswahl` nicht gesetzt = die Standard-Presets der Struktur.
  */
-export function PresetAuswahl({ struktur, auswahl, onChange }: { struktur: Struktur; auswahl: string[] | undefined; onChange: (auswahl: string[]) => void }) {
-  const { presets, unbekannt } = aktivePresets(struktur, auswahl);
+export function PresetAuswahl({
+  struktur,
+  auswahl,
+  onChange,
+  nichtAutomatisch = new Map(),
+}: {
+  struktur: Struktur;
+  auswahl: string[] | undefined;
+  onChange: (auswahl: string[]) => void;
+  /** Standard-Presets, die wegen eines anders gegliederten Vorlagenordners nicht vorausgewählt sind */
+  nichtAutomatisch?: Map<string, PresetAbweichung>;
+}) {
+  const { presets, unbekannt } = aktivePresets(struktur, auswahl, nichtAutomatisch.keys());
   const gewaehlt = new Set(presets.map((p) => p.name));
   if (!struktur.presets.length && !unbekannt.length) return <p className="muted small-text">Keine Presets – unter „Vorlagen“ lassen sich welche anlegen.</p>;
   const umschalten = (name: string) => onChange(gewaehlt.has(name) ? presets.map((p) => p.name).filter((n) => n !== name) : struktur.presets.map((p) => p.name).filter((n) => n === name || gewaehlt.has(n)));
@@ -165,6 +177,56 @@ export function PresetAuswahl({ struktur, auswahl, onChange }: { struktur: Struk
           {n} (unbekannt)
         </span>
       ))}
+      {[...nichtAutomatisch].map(([name, a]) => (
+        <p key={name} className="po-hinweis po-nicht-automatisch">
+          „{name}“ ist nicht vorausgewählt: {abweichungText(a)} – der Vorlagenordner ist anders gegliedert als die Struktur. Unter „Vorlagen“ lassen sich seine Ordner gezielt
+          zuordnen.
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/** „3 Ordner lägen außerhalb der Struktur, 2 Dateien lose im Projektstamm“ */
+export function abweichungText(a: PresetAbweichung, konjunktiv = true): string {
+  const teile: string[] = [];
+  if (a.fremd.length) teile.push(`${a.fremd.length} Ordner ${konjunktiv ? (a.fremd.length === 1 ? 'läge' : 'lägen') : a.fremd.length === 1 ? 'liegt' : 'liegen'} außerhalb der Struktur (${a.fremd.join(', ')})`);
+  if (a.lose.length) teile.push(`${a.lose.length} ${a.lose.length === 1 ? 'Datei' : 'Dateien'} lose im Projektstamm`);
+  return teile.join(', ');
+}
+
+/**
+ * Wo die Vorlagen eines Presets außerhalb der Struktur landen – nach den Regeln des Prüfmodus, mit aufklappbarer Liste.
+ */
+export function PresetAbweichungen({ a }: { a: PresetAbweichung }) {
+  if (!a.fremd.length && !a.lose.length) return null;
+  return (
+    <div className="po-hinweis po-abweichung">
+      {a.fremd.length > 0 && (
+        <details>
+          <summary>
+            {a.fremd.length} {a.fremd.length === 1 ? 'Ordner liegt' : 'Ordner liegen'} außerhalb der Struktur
+          </summary>
+          <ul>
+            {a.fremd.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {a.lose.length > 0 && (
+        <details>
+          <summary>
+            {a.lose.length} {a.lose.length === 1 ? 'Datei liegt' : 'Dateien liegen'} lose im Projektstamm
+          </summary>
+          <ul>
+            {a.lose.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <span className="small-text">„Ordner prüfen“ meldet sie später als Abweichung – besser einen Zielordner der Struktur wählen.</span>
     </div>
   );
 }

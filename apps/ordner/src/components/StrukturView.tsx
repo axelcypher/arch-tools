@@ -9,6 +9,7 @@ import { dateimuster, nameAus, nummerAus } from '../nummer';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
+import { OrdnerBaum } from './OrdnerBaum';
 import type { Struktur } from '../struktur';
 import { ordnerAlsText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from '../struktur';
 
@@ -27,6 +28,8 @@ export function StrukturView() {
   const strukturRueckgaengig = useOrdner((s) => s.strukturRueckgaengig);
   const sicherungenLesen = useOrdner((s) => s.sicherungenLesen);
   const [sicherungen, setSicherungen] = useState<Sicherung[] | null>(null);
+  /** Ordnerliste als Baum oder – für Geübte – als Text */
+  const [ordnerAnsicht, setOrdnerAnsicht] = useState<'baum' | 'text'>('baum');
   const [text, setText] = useState(() => ordnerAlsText(struktur.ordner));
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
 
@@ -78,7 +81,11 @@ export function StrukturView() {
     if (!f) return;
     try {
       const s = strukturAusJson(f.text);
-      await ersetzen(s, `Struktur „${s.name}“ aus ${f.name} laden?`, `Struktur „${s.name}“ aus ${f.name} geladen (${s.ordner.length} Ordner, ${s.presets.length} ${s.presets.length === 1 ? 'Preset' : 'Presets'}).`);
+      await ersetzen(
+        s,
+        `Struktur „${s.name}“ aus ${f.name} laden?`,
+        `Struktur „${s.name}“ aus ${f.name} geladen (${s.ordner.length} Ordner, ${s.presets.length} ${s.presets.length === 1 ? 'Preset' : 'Presets'}).`,
+      );
       log.info(`Struktur geladen: ${s.name}`, { ordner: s.ordner.length, presets: s.presets.length });
     } catch (e) {
       setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
@@ -86,7 +93,13 @@ export function StrukturView() {
   };
 
   const speichern = () =>
-    saveTextFile({ defaultName: `Projektstruktur ${sichererName(struktur.name)}.json`, contents: strukturAlsJson(struktur), filterName: 'Projektstruktur', extension: 'json', mime: 'application/json' });
+    saveTextFile({
+      defaultName: `Projektstruktur ${sichererName(struktur.name)}.json`,
+      contents: strukturAlsJson(struktur),
+      filterName: 'Projektstruktur',
+      extension: 'json',
+      mime: 'application/json',
+    });
 
   const beispiel = { nummer: nummerAus(struktur.nummernschema, 14), kurzname: 'EFH Musterweg', jahr: new Date().getFullYear() };
   const dateiBeispiel = nameAus(struktur.dateischema, { ...beispiel, projekt: beispiel.nummer, plannummer: 'A-101', index: 'b', titel: 'Grundriss EG', datum: '2026-10-01' });
@@ -99,8 +112,8 @@ export function StrukturView() {
         <GemeinsameEinstellungen />
         <h2>Struktur</h2>
         <p className="muted small-text">
-          Ordnerbaum und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur lässt sich als Datei speichern, weitergeben und auf einem anderen Rechner laden – samt
-          den Vorlagen-Presets (unter „Vorlagen“).
+          Ordnerbaum und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur lässt sich als Datei speichern, weitergeben und auf einem anderen Rechner laden – samt den Vorlagen-Presets
+          (unter „Vorlagen“).
         </p>
         <div className="button-row">
           <button onClick={() => void laden()}>Struktur laden …</button>
@@ -140,10 +153,7 @@ export function StrukturView() {
                   <span title={x.grund}>
                     {x.name.replace(/^projektordner\.json\.bak-/, '')} · „{x.inhalt.struktur.name}“ · {x.grund}
                   </span>
-                  <button
-                    className="small"
-                    onClick={() => void ersetzen(x.inhalt.struktur, `Sicherung ${x.name} wiederherstellen?`, `Sicherung ${x.name} wiederhergestellt.`)}
-                  >
+                  <button className="small" onClick={() => void ersetzen(x.inhalt.struktur, `Sicherung ${x.name} wiederherstellen?`, `Sicherung ${x.name} wiederhergestellt.`)}>
                     Wiederherstellen
                   </button>
                 </li>
@@ -167,42 +177,68 @@ export function StrukturView() {
         >
           <TextField value={struktur.dateischema} onChange={(v) => set({ dateischema: v.trim() })} />
         </Field>
-
       </section>
 
       <section className="po-col">
-        <h2>Ordner</h2>
-        <p className="muted small-text">
-          Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen
-          beauftragt ist; <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft.
-        </p>
-        <textarea
-          className="po-ordnertext"
-          aria-label="Ordnerliste"
-          value={text}
-          spellCheck={false}
-          onChange={(e) => setText(e.target.value)}
-          // mit Meldungen nicht still beim Verlassen übernehmen – erst nach Durchsicht über den Knopf
-          onBlur={() => geaendert && !gelesen.meldungen.length && ordnerUebernehmen()}
-        />
-        {gelesen.meldungen.length > 0 && (
-          <div className="warning po-ordnermeldungen">
-            <ul>
-              {gelesen.meldungen.map((m) => (
-                <li key={`${m.zeile}:${m.text}`}>{m.text}</li>
-              ))}
-            </ul>
-            {geaendert && <span className="small-text">Mit „Ordnerliste übernehmen“ gilt die Liste so, wie oben beschrieben bereinigt.</span>}
+        <div className="po-ordner-kopf">
+          <h2>Ordner</h2>
+          <div className="tb-group" role="group" aria-label="Ansicht der Ordnerliste">
+            <button className={`small${ordnerAnsicht === 'baum' ? ' active' : ''}`} aria-pressed={ordnerAnsicht === 'baum'} onClick={() => setOrdnerAnsicht('baum')}>
+              Baum
+            </button>
+            <button
+              className={`small${ordnerAnsicht === 'text' ? ' active' : ''}`}
+              aria-pressed={ordnerAnsicht === 'text'}
+              title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten"
+              onClick={() => setOrdnerAnsicht('text')}
+            >
+              Text (Experte)
+            </button>
           </div>
-        )}
-        <div className="button-row">
-          <button className="primary" disabled={!geaendert} onClick={ordnerUebernehmen}>
-            Ordnerliste übernehmen
-          </button>
-          <span className="muted small-text">
-            {struktur.ordner.length} Ordner, davon {struktur.ordner.filter((o) => o.lph?.length).length} an Leistungsphasen gebunden
-          </span>
         </div>
+        {ordnerAnsicht === 'baum' ? (
+          <>
+            <p className="muted small-text">
+              Je Ordner: Leistungsphasen – der Ordner entsteht nur, wenn eine davon beauftragt ist (keine = immer) – und „Schema“: Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft.
+              ↑ ↓ verschieben, → macht einen Ordner zum Unterordner des Ordners darüber, ← eine Ebene höher.
+            </p>
+            <OrdnerBaum ordner={struktur.ordner} onChange={(ordner) => set({ ordner })} />
+          </>
+        ) : (
+          <>
+            <p className="muted small-text">
+              Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist;{' '}
+              <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft.
+            </p>
+            <textarea
+              className="po-ordnertext"
+              aria-label="Ordnerliste"
+              value={text}
+              spellCheck={false}
+              onChange={(e) => setText(e.target.value)}
+              // mit Meldungen nicht still beim Verlassen übernehmen – erst nach Durchsicht über den Knopf
+              onBlur={() => geaendert && !gelesen.meldungen.length && ordnerUebernehmen()}
+            />
+            {gelesen.meldungen.length > 0 && (
+              <div className="warning po-ordnermeldungen">
+                <ul>
+                  {gelesen.meldungen.map((m) => (
+                    <li key={`${m.zeile}:${m.text}`}>{m.text}</li>
+                  ))}
+                </ul>
+                {geaendert && <span className="small-text">Mit „Ordnerliste übernehmen“ gilt die Liste so, wie oben beschrieben bereinigt.</span>}
+              </div>
+            )}
+            <div className="button-row">
+              <button className="primary" disabled={!geaendert} onClick={ordnerUebernehmen}>
+                Ordnerliste übernehmen
+              </button>
+            </div>
+          </>
+        )}
+        <p className="muted small-text">
+          {struktur.ordner.length} Ordner, davon {struktur.ordner.filter((o) => o.lph?.length).length} an Leistungsphasen gebunden
+        </p>
       </section>
     </div>
   );
@@ -244,7 +280,11 @@ function GemeinsameEinstellungen() {
             <span className="field-label">Konfigurationsordner</span>
             <code title={konfig?.ordner}>{konfig ? `${konfig.ordner}${konfig.gewaehlt ? '' : ' (auf diesem Rechner)'}` : 'wird gelesen …'}</code>
           </div>
-          <button className="small" onClick={() => void konfigWaehlen(false)} title="Gemeinsamen Ordner wählen, z. B. auf dem Server – fehlende Einstellungen werden dorthin übernommen, vorhandene gelten">
+          <button
+            className="small"
+            onClick={() => void konfigWaehlen(false)}
+            title="Gemeinsamen Ordner wählen, z. B. auf dem Server – fehlende Einstellungen werden dorthin übernommen, vorhandene gelten"
+          >
             Wählen …
           </button>
           {konfig?.gewaehlt && (

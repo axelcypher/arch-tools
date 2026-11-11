@@ -8,7 +8,7 @@ import type { Eintrag } from '../dateisystem';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import { ausOrdnername, naechsteNummer, nummerPasst } from '../nummer';
 import type { Ergebnis, Plan } from '../plan';
-import { ausfuehren, ohne, planen, tutEtwas } from '../plan';
+import { ausfuehren, nichtVorausgewaehlt, ohne, planen, tutEtwas } from '../plan';
 import type { GeladenerOrdner, GeladenesProjekt } from '../projekt';
 import { beteiligteSammeln, projektEinlesen } from '../projekt';
 import type { Stammdaten } from '../stammdaten';
@@ -322,7 +322,8 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
   };
   const neueEintraege = (plan?.schritte ?? []).filter((x) => !x.vorhanden).map((x) => x.pfad);
 
-  const presetsAktiv = aktivePresets(struktur, stamm?.presets).presets;
+  const nichtAutomatisch = useMemo(() => nichtVorausgewaehlt(struktur, vorlagen), [struktur, vorlagen]);
+  const presetsAktiv = aktivePresets(struktur, stamm?.presets, nichtAutomatisch.keys()).presets;
   const ohneProjektdatei = modus === 'ergaenzen' && geladen && !geladen.projektdatei;
 
   /* ---------- Darstellung ---------- */
@@ -504,7 +505,7 @@ export function AssistentView({ start, onEinstellungen }: { start?: GeladenerOrd
             <h2>Vorlagen</h2>
             <VorlagenordnerZeile />
             <span className="field-label">Vorlagen-Presets</span>
-            <PresetAuswahl struktur={struktur} auswahl={stamm.presets} onChange={(presets) => aendereStamm({ presets })} />
+            <PresetAuswahl struktur={struktur} auswahl={stamm.presets} onChange={(presets) => aendereStamm({ presets })} nichtAutomatisch={nichtAutomatisch} />
             <ul className="po-hinweise">
               {presetsAktiv.map((p) => (
                 <li key={p.name}>

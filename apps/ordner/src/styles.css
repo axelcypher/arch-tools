@@ -247,6 +247,42 @@
   resize: vertical;
   white-space: pre;
 }
+.po-ordner-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.po-baum td {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.po-baum td:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.po-baum td:first-child input {
+  min-width: 140px;
+  padding: 2px 5px;
+  font-size: 12px;
+}
+.po-baum-implizit td:first-child input {
+  font-style: italic;
+}
+.po-baum-lph label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  margin-right: 2px;
+}
+.po-baum-lph input {
+  margin: 0 1px 0 0;
+}
+.po-baum-knoepfe button {
+  min-width: 22px;
+  padding: 1px 4px;
+}
 .po-ordnermeldungen {
   margin: 6px 0;
 }
@@ -476,6 +512,24 @@
   background: var(--accent-soft);
   border-radius: 4px;
   font-size: 12px;
+}
+.po-abweichung {
+  margin: 6px 0;
+}
+.po-abweichung summary {
+  cursor: pointer;
+}
+.po-abweichung ul {
+  margin: 2px 0 4px;
+  padding-left: 18px;
+}
+.po-mehr {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: inherit;
+  cursor: pointer;
 }
 .po-navigation {
   justify-content: space-between;

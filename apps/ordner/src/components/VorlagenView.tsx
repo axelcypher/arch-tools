@@ -5,13 +5,13 @@ import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, waehleOrdner } from '../dateisystem';
 import { nummerAus } from '../nummer';
-import { kurzeWerte, vorlagenDateien, zuordnungAufloesen } from '../plan';
+import { kurzeWerte, nichtVorausgewaehlt, presetPruefen, vorlagenDateien, zuordnungAufloesen } from '../plan';
 import { bereinigt } from '../stammdaten';
 import { useOrdner } from '../store';
 import type { VorlagenEintrag, VorlagenPreset } from '../struktur';
 import { lphAus, lphText, normPfad, zielordnerAus } from '../struktur';
 import { MUSTER_VORLAGEN, PLATZHALTER_DOCS, zielDateiname } from '../vorlagen';
-import { VorlagenordnerZeile } from './gemeinsam';
+import { abweichungText, PresetAbweichungen, VorlagenordnerZeile } from './gemeinsam';
 
 const log = logger('vorlagen');
 
@@ -37,6 +37,8 @@ export function VorlagenView() {
   const [filter, setFilter] = useState('');
   const [loeschen, setLoeschen] = useState(false);
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
+  /** Zuordnungen, deren Vorschau ganz aufgeklappt ist */
+  const [aufgeklappt, setAufgeklappt] = useState<Set<number>>(new Set());
 
   const presets = struktur.presets;
   const index = Math.min(gewaehlt, presets.length - 1);
@@ -47,6 +49,7 @@ export function VorlagenView() {
   const waehle = (i: number) => {
     setGewaehlt(i);
     setLoeschen(false);
+    setAufgeklappt(new Set());
   };
 
   // Beispielwerte für die Vorschau: das angefangene neue Projekt, sonst ein Muster
@@ -55,6 +58,9 @@ export function VorlagenView() {
     return kurzeWerte(s.nummer && s.kurzname ? s : { ...s, nummer: nummerAus(struktur.nummernschema, 14), kurzname: 'EFH Musterweg', bearbeiter: s.bearbeiter || 'TP' }, new Date());
   }, [stamm, struktur.nummernschema]);
   const dateien = useMemo(() => vorlagenDateien(vorlagen), [vorlagen]);
+  // Prüfmodus-Regeln auf das gewählte Preset: was landete außerhalb der Struktur?
+  const abweichung = useMemo(() => (preset ? presetPruefen(preset, dateien, struktur, werte) : null), [preset, dateien, struktur, werte]);
+  const nichtAutomatisch = useMemo(() => nichtVorausgewaehlt(struktur, vorlagen), [struktur, vorlagen]);
 
   // Ordner und Dateien des Vorlagenordners als Baum
   const quellen = useMemo(() => {
@@ -142,6 +148,12 @@ export function VorlagenView() {
           sie dort heißt. Beim Anlegen und beim Aktualisieren eines Projekts werden fehlende Dateien ergänzt – vorhandene bleiben unverändert.
         </p>
         <VorlagenordnerZeile leerText="noch nicht gewählt" />
+        {[...nichtAutomatisch].map(([name, a]) => (
+          <p key={name} className="po-hinweis">
+            Der Vorlagenordner ist anders gegliedert als die Struktur: Mit „{name}“ {abweichungText(a)}. Das Preset wird deshalb bei neuen Projekten nicht vorausgewählt –
+            besser seine Ordner gezielt einem Zielordner der Struktur zuordnen.
+          </p>
+        ))}
         <Field
           label="Dateinamen im Projekt"
           hint={`{name} = Name der Vorlage ohne Endung, dazu {nummer}, {kurzname}, {jahr}, {datum}, {bearbeiter} – Beispiel: Kostenschätzung.xlsx → ${schemaBeispiel}. Vorlagen mit Platzhaltern im eigenen Namen behalten ihn.`}
@@ -250,6 +262,7 @@ export function VorlagenView() {
               ))}
             </datalist>
             {preset.eintraege.length === 0 && <p className="muted small-text">Noch keine Vorlagen zugeordnet – unten aus dem Vorlagenordner hinzufügen.</p>}
+            {abweichung && <PresetAbweichungen a={abweichung} />}
             <ul className="po-zuordnungen">
               {preset.eintraege.map((e, k) => {
                 const ziele = zuordnungAufloesen(e, dateien, struktur.vorlagenname, werte);
@@ -286,12 +299,26 @@ export function VorlagenView() {
                     <div className="po-z-vorschau">
                       {fehlt && <span className="po-warn">{e.quelle ? `„${e.quelle}“ gibt es im Vorlagenordner nicht.` : 'Der Vorlagenordner enthält keine Vorlagen.'}</span>}
                       {!dateien.length && <span className="muted">Vorschau, sobald der Vorlagenordner eingelesen ist.</span>}
-                      {ziele.slice(0, MAX_VORSCHAU).map((z) => (
+                      {ziele.slice(0, aufgeklappt.has(k) ? ziele.length : MAX_VORSCHAU).map((z) => (
                         <div key={z.datei.pfad} title={`aus dem Vorlagenordner: ${z.datei.pfad}`}>
                           → {z.pfad}
                         </div>
                       ))}
-                      {ziele.length > MAX_VORSCHAU && <div className="muted">… und {ziele.length - MAX_VORSCHAU} weitere</div>}
+                      {ziele.length > MAX_VORSCHAU && (
+                        <button
+                          className="link po-mehr"
+                          aria-expanded={aufgeklappt.has(k)}
+                          onClick={() =>
+                            setAufgeklappt((alt) => {
+                              const neu = new Set(alt);
+                              if (!neu.delete(k)) neu.add(k);
+                              return neu;
+                            })
+                          }
+                        >
+                          {aufgeklappt.has(k) ? 'weniger zeigen' : `… und ${ziele.length - MAX_VORSCHAU} weitere`}
+                        </button>
+                      )}
                       {!inStruktur(e.ziel) && <div className="muted">Der Zielordner steht nicht in der Struktur – er wird zusätzlich angelegt.</div>}
                       {!e.ziel && !istOrdner && ziele.length > 0 && <div className="muted">Die Datei landet im Stamm des Projektordners – bitte einen Zielordner wählen.</div>}
                     </div>

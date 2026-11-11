@@ -7,7 +7,9 @@ import { nameAus } from './nummer';
 import type { ProjektdateiAenderung, Stammdaten } from './stammdaten';
 import { alsProject, bereinigt, isoDatum, platzhalter, projektdateiAenderung } from './stammdaten';
 import type { Struktur, VorlagenEintrag } from './struktur';
+import type { VorlagenPreset } from './struktur';
 import { aktivePresets, normPfad, regelGilt, sichererName } from './struktur';
+import { ausserhalbDerStruktur } from './pruefung';
 import { alsDokument, fuelleVorlage, zielDateiname } from './vorlagen';
 
 /**
@@ -158,6 +160,60 @@ export function zuordnungAufloesen(e: VorlagenEintrag, dateien: VorlagenDatei[],
   return out;
 }
 
+/** Dateien im Vorlagenordner ohne die Anleitung im Stamm (LIESMICH.txt) – sie wird nie kopiert und zählt nicht mit */
+export const vorlagenAnzahl = (vorlagen: Vorlage[]) => vorlagenDateien(vorlagen).filter((d) => !ANLEITUNG.test(d.pfad)).length;
+
+/** Wo die Vorlagen eines Presets außerhalb der Struktur landen: zusätzliche Ordner und lose Dateien im Projektstamm */
+export interface PresetAbweichung {
+  fremd: string[];
+  lose: string[];
+  /** Dateien des Presets insgesamt und davon außerhalb der Struktur (in fremden Ordnern oder lose im Stamm) */
+  dateien: number;
+  ausserhalb: number;
+}
+
+/**
+ * Prüft ein Preset mit den Regeln des Prüfmodus: Welche Ordner entstehen außerhalb der Struktur, welche Dateien liegen
+ * danach lose im Projektstamm? Leistungsphasen bleiben außer Acht (das Preset als Ganzes).
+ */
+export function presetPruefen(preset: VorlagenPreset, dateien: VorlagenDatei[], struktur: Struktur, werte: Record<string, string | number>): PresetAbweichung {
+  const pfade = new Map<string, boolean>();
+  for (const e of preset.eintraege)
+    for (const z of zuordnungAufloesen(e, dateien, struktur.vorlagenname, werte)) {
+      const teile = z.pfad.split('/');
+      for (let i = 1; i < teile.length; i++) pfade.set(teile.slice(0, i).join('/'), true);
+      pfade.set(z.pfad, false);
+    }
+  const { fremd, lose } = ausserhalbDerStruktur(
+    struktur,
+    [...pfade].map(([pfad, ordner]) => ({ pfad, ordner })),
+    werte,
+  );
+  const dateienPfade = [...pfade].filter(([, ordner]) => !ordner).map(([pfad]) => pfad.toLowerCase());
+  const weg = fremd.map((f) => `${f.toLowerCase()}/`);
+  const ausserhalb = dateienPfade.filter((d) => !d.includes('/') ? lose.some((l) => l.toLowerCase() === d) : weg.some((w) => d.startsWith(w))).length;
+  return { fremd, lose, dateien: dateienPfade.length, ausserhalb };
+}
+
+/**
+ * Standard-Presets mit dem ganzen Vorlagenordner („Alle Vorlagen“), die bei neuen Projekten NICHT vorausgewählt
+ * werden, weil der Vorlagenordner anders gegliedert ist als die Struktur (etwa nach Dateiart: Word/, Excel/): Mehr als
+ * die Hälfte der Vorlagen landete außerhalb der Struktur. Mit den Abweichungen für den Hinweis. Ohne Vorlagen gibt es
+ * nichts zu prüfen.
+ */
+export function nichtVorausgewaehlt(struktur: Struktur, vorlagen: Vorlage[], date = new Date()): Map<string, PresetAbweichung> {
+  const out = new Map<string, PresetAbweichung>();
+  const dateien = vorlagenDateien(vorlagen);
+  if (!dateien.length) return out;
+  const werte = { nummer: 'X', kurzname: 'X', jahr: date.getFullYear(), bearbeiter: '', datum: isoDatum(date) };
+  for (const p of struktur.presets) {
+    if (!p.standard || !p.eintraege.some((e) => !normPfad(e.quelle))) continue;
+    const a = presetPruefen(p, dateien, struktur, werte);
+    if (a.ausserhalb * 2 > a.dateien) out.set(p.name, a);
+  }
+  return out;
+}
+
 export function ordnerName(stamm: Stammdaten, struktur: Struktur, date = new Date(), jahr?: number): string {
   const s = bereinigt(stamm);
   return sichererName(nameAus(struktur.ordnername, kurzeWerte(s, date, jahr)));
@@ -212,7 +268,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     }
   }
 
-  const { presets, unbekannt } = aktivePresets(struktur, s.presets);
+  const { presets, unbekannt } = aktivePresets(struktur, s.presets, nichtVorausgewaehlt(struktur, vorlagen, date).keys());
   for (const n of unbekannt) warnungen.push(`Das Preset „${n}“ gibt es in der Struktur „${struktur.name}“ nicht – es wird übergangen.`);
 
   const ctx = platzhalter(s, ordner, date);
