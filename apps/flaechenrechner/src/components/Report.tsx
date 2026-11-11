@@ -9,6 +9,7 @@ import { druckenAls } from '@core/platform/projektDatei';
 import { useEditor } from '../store/store';
 import { PlanFigure } from './PlanFigure';
 import { raumRechenweg, rechenwegText } from '../core/raumRechenweg';
+import { kontrollText } from '../core/background';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { DruckKopf } from '@core/ui/DruckKopf';
 import type { Abschnitt, BerichtEinstellung, BerichtVorlage } from '../core/bericht';
@@ -26,6 +27,11 @@ export function Report() {
   const raumById = useMemo(() => new Map(project.storeys.flatMap((s) => s.shapes.flatMap((x) => (x.kind === 'room' ? [[x.id, x] as const] : [])))), [project]);
   const mitPutz = [...raumById.values()].some((x) => (x.putzabzug ?? 0) > 0);
   const massText = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.text;
+  // Maßgrundlage aus dem Plan (F-16): Kontrollmaß je kalibriertem Geschoss
+  const kontrollZeilen = project.storeys.flatMap((s) => {
+    const k = project.settings.kontrollmasse?.[s.id];
+    return k && s.background ? [`${s.name}: ${kontrollText(k)}`] : [];
+  });
   const [showPlans, setShowPlans] = useState(true);
   const [showBackground, setShowBackground] = useState(false);
   const [showRechenweg, setShowRechenweg] = useState(false);
@@ -129,6 +135,12 @@ export function Report() {
               Grundflächen und Rauminhalte nach DIN 277:2021-08 (BRI entspricht DIN 277-1:2016-01, § 6 BauPrüfVO NRW)
               {zeigt('wofl') ? (project.settings.zweiteBV ? ' · Wohnfläche als Altberechnung nach II. BV (nur Vergleich)' : ' · Wohnfläche nach WoFlV vom 25.11.2003') : ''}
               {massText ? ` · Maßgrundlage: ${massText}` : mitPutz ? ' · Putzabzug je Raum' : ''}
+              {kontrollZeilen.map((z) => (
+                <span key={z} className="druck-kopf-kontrolle">
+                  <br />
+                  {z}
+                </span>
+              ))}
             </p>
           }
         />

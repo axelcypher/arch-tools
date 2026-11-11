@@ -7,6 +7,7 @@ import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
 import { MASSGRUNDLAGEN, NUF_IDS, NUTZUNGSGRUPPEN, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
 import { briKoerper, briRechenweg, rechteckMasse } from '@core/rechenweg';
 import { statistik } from './bericht';
+import { kontrollText } from './background';
 import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
 
 /**
@@ -64,6 +65,10 @@ export function buildExportContext(project: Project, result: ProjectResult, date
   scalars['projekt.massgrundlage'] = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.label ?? '';
   scalars['projekt.massgrundlage_text'] = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.text ?? '';
   scalars['projekt.normen'] = 'Wohnfläche nach WoFlV vom 25.11.2003; Grundflächen und Rauminhalte nach DIN 277:2021-08';
+  // Kontrollmaß nach dem Kalibrieren (F-16), je Geschoss mit Plan
+  scalars['projekt.kontrollmass'] = project.storeys
+    .flatMap((s) => (project.settings.kontrollmasse?.[s.id] && s.background ? [`${s.name}: ${kontrollText(project.settings.kontrollmasse[s.id])}`] : []))
+    .join('; ');
 
   const shapesById = new Map(project.storeys.flatMap((st) => st.shapes.map((sh) => [sh.id, sh] as const)));
   // Geschossart: „ja“ bei Dachgeschossen – für Filter [dg] / [normal] in allen Sammlungen
@@ -259,6 +264,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
     keys: [
       ['projekt.massgrundlage', 'Maßgrundlage: „Planmaß Rohbau“, „Planmaß Fertigmaß“ oder „Aufmaß“ (Projekt-Einstellung)'],
       ['projekt.massgrundlage_text', 'als Satz, z. B. „Flächen aus Planmaßen (Rohbau), Putzabzug je Raum“'],
+      ['projekt.kontrollmass', 'je kalibriertem Plan, z. B. „EG: aus Plan abgegriffen, Maßstab kalibriert, Kontrollmaß 8,00 m: Abweichung +0,12 %“'],
       ['projekt.normen', '„Wohnfläche nach WoFlV vom 25.11.2003; Grundflächen und Rauminhalte nach DIN 277:2021-08“'],
       ['statistik.wohnungen, statistik.raeume, statistik.sonstige_nutzflaeche', 'Hochbaustatistik: Zahl der Wohnungen, Räume (NUF 1 ab 6 m² inkl. Küche), Nutzfläche ohne Wohnflächenräume [m²]'],
     ],

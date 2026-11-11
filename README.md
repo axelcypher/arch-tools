@@ -80,8 +80,16 @@ festgehalten.
   - DXF: Kanten werden exakt auf die Plangeometrie eingepasst; Bögen (Türaufschläge) können ignoriert werden
   - PDF/Bild: dünne Linien (Türaufschläge, Möbel) werden ignoriert, solange der Raum geschlossen bleibt;
     Kanten werden auf dem Originalbild subpixelgenau an die Wandkante geschoben
+- **BGF-Umriss aus dem Plan**: Werkzeug „Erkennen“ im Modus BGF-Umriss, Klick auf die Außenwand → äußere Kontur
+  der zusammenhängenden Wandfläche (Außenkante der Wandschraffur bzw. Außenlinie; Öffnungen bis zum Lückenschluss
+  werden überbrückt). Der Umriss ist zum Prüfen markiert (Außenmaße einschließlich Bekleidung, im Dachgeschoss bis
+  zum Schnitt der Dachhaut mit der Fußbodenebene). Ohne Plan: „BGF-Umriss aus Räumen + Wanddicke …“ (nur mit
+  ausdrücklicher Wanddicke, Vermerk „Näherung“). Kleine Umrisse außen am Gebäude: Hinweis „Balkon oder Loggia? → S“
 - **Hintergrundpläne**: **PDF** (Seite wählbar, direkte Maßstabseingabe 1:M), **DXF** (Layer ein-/ausblenden,
   Einheit aus `$INSUNITS`, Blöcke, Bemaßungen, Texte) sowie **PNG/JPG**; Kalibrierung über eine bekannte Strecke
+  (Länge mit Einheit: „12,00 m“, „1200 cm“, „12000 mm“; Fang auf Plankanten und Eckpunkte), danach **Kontrollmaß**
+  an einer zweiten Strecke mit Abweichung in % – steht als Maßgrundlage („aus Plan abgegriffen, Maßstab kalibriert,
+  Kontrollmaß … Abweichung x %“) im Berichtskopf und in Excel (`projekt.kontrollmass`)
 - **Fang** auf Raster, Eckpunkte und Kanten (auch DXF-Geometrie und darunterliegendes Geschoss), **Alt** = Fang aus
 - **Hilfslinienfang** für schräg stehende (genordete) Gebäude: Verlängerungen der Nachbarkanten, Gebäudeachsen
   und Fluchten bestehender Eckpunkte; **Shift** hält die Linie auf der Gebäudeachse, Rechtecke richten sich an ihr aus

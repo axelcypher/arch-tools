@@ -154,6 +154,95 @@ function runWindow(o: DetectOptions, win: DetectWindow): WindowResult {
   return { kind: 'ok', points: orientClockwise(clean.map((p) => ({ x: round4(p.x), y: round4(p.y) }))) };
 }
 
+/**
+ * BGF-Umriss aus dem Plan (F-15): Klick auf eine Wand → äußere Kontur der zusammenhängenden Wandfläche
+ * (Außenkante der Wandschraffur bzw. Außenlinie). Öffnungen bis zum Lückenschluss (Türen in der Außenwand) werden
+ * geschlossen, damit die Kontur nicht in die Räume läuft. Die BGF folgt den Außenmaßen einschließlich Bekleidung
+ * (DIN 277) – das Ergebnis ist zu prüfen.
+ */
+export function detectOutline(o: DetectOptions): DetectResult {
+  const maxSize = o.maxSize ?? 240;
+  const maxPx = o.maxPixels ?? 2400;
+  let size = o.initialSize ?? 32;
+  while (size <= maxSize * 1.0001) {
+    const res = Math.max(size / maxPx, 0.005);
+    const w = Math.ceil(size / res);
+    const win: DetectWindow = { minX: o.click.x - (w * res) / 2, minY: o.click.y - (w * res) / 2, res, w, h: w };
+    const r = outlineWindow(o, win);
+    if (r.kind === 'ok') return { ok: true, points: r.points };
+    if (r.kind === 'error') return { ok: false, error: r.error };
+    size *= 2;
+  }
+  return { ok: false, error: 'Die Wand reicht über den untersuchten Bereich hinaus – Umriss bitte zeichnen.' };
+}
+
+function outlineWindow(o: DetectOptions, win: DetectWindow): WindowResult {
+  const { w, h, res } = win;
+  const lines = new Uint8Array(w * h);
+  let vectorLines = false;
+  const pad = res * 2;
+  for (const g of o.grids) {
+    for (const i of g.query(win.minX - pad, win.minY - pad, win.minX + w * res + pad, win.minY + h * res + pad)) {
+      const [x1, y1, x2, y2] = g.seg(i);
+      drawLine(lines, win, x1, y1, x2, y2);
+      vectorLines = true;
+    }
+  }
+  const raster = o.rasterMask?.(win) ?? null;
+  const blocked = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) blocked[i] = lines[i] | (raster ? raster[i] : 0);
+  const cx = Math.floor((o.click.x - win.minX) / res);
+  const cy = Math.floor((o.click.y - win.minY) / res);
+  // Startpixel: auf der Wand oder (bei dünnen Linien) die nächste belegte Stelle im Umkreis von 2 px
+  let start = -1;
+  for (let r = 0; r <= 2 && start < 0; r++)
+    for (let dy = -r; dy <= r && start < 0; dy++)
+      for (let dx = -r; dx <= r && start < 0; dx++) {
+        const x = cx + dx;
+        const y = cy + dy;
+        if (x >= 0 && y >= 0 && x < w && y < h && blocked[y * w + x]) start = y * w + x;
+      }
+  if (start < 0) return { kind: 'error', error: 'Im Modus „BGF-Umriss“ auf die Außenwand klicken (Wandschraffur bzw. Außenlinie).' };
+  // zusammenhängende Wandfläche (8er-Nachbarschaft), Öffnungen bis zum Lückenschluss überbrückt
+  const gapPx = Math.max(1, Math.ceil(o.gap / 2 / res));
+  const dist = chessboardDistance(blocked, w, h);
+  const naheWand = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) naheWand[i] = dist[i] <= gapPx ? 1 : 0;
+  const comp = new Uint8Array(w * h);
+  const stack = [start];
+  comp[start] = 1;
+  while (stack.length) {
+    const i = stack.pop()!;
+    const x = i % w;
+    const y = (i - x) / w;
+    if (x === 0 || y === 0 || x === w - 1 || y === h - 1) return { kind: 'grow' };
+    for (const j of [i - 1, i + 1, i - w, i + w, i - w - 1, i - w + 1, i + w - 1, i + w + 1]) {
+      if (naheWand[j] && !comp[j]) {
+        comp[j] = 1;
+        stack.push(j);
+      }
+    }
+  }
+  // zurück auf die Wand: Schließung (Ausdehnung um gapPx, dann Abtragen um gapPx) – Öffnungen bleiben geschlossen
+  const frei = chessboardDistance(invert(comp), w, h);
+  const geschlossen = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) geschlossen[i] = comp[i] && (frei[i] > gapPx || blocked[i]) ? 1 : 0;
+  const contour = traceOuterContour(geschlossen, w, h);
+  if (contour.length < 3) return { kind: 'error', error: 'Kontur der Wand konnte nicht ermittelt werden.' };
+  const world = contour.map(([px, py]) => ({ x: win.minX + px * res, y: win.minY + py * res }));
+  const simple = simplifyClosed(world, res * 1.6);
+  const fitted = vectorLines ? fitEdges(simple, o.grids, Math.max(res * 2.5, 0.02), res) : fitEdges(simple, o.grids, Math.max(res * 2.5, 0.02), res, o.refineEdge);
+  const clean = cleanupPolygon(fitted);
+  if (clean.length < 3 || polygonArea(clean) < 1) return { kind: 'error', error: 'Die Wand umschließt keinen Grundriss – Umriss bitte zeichnen.' };
+  return { kind: 'ok', points: orientClockwise(clean.map((p) => ({ x: round4(p.x), y: round4(p.y) }))) };
+}
+
+function invert(m: Uint8Array): Uint8Array {
+  const out = new Uint8Array(m.length);
+  for (let i = 0; i < m.length; i++) out[i] = m[i] ? 0 : 1;
+  return out;
+}
+
 /** Erodiert den Freiraum um gapPx und füllt ab dem Klickpunkt (4-Nachbarschaft). */
 function fillRegion(blocked: Uint8Array, w: number, h: number, gapPx: number, click: [number, number]): FillResult {
   const free = new Uint8Array(w * h);

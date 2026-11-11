@@ -11,7 +11,7 @@ import { geschossNameVorschlag, kopieAnpassen, naechsteRaumnummer, neueKote, rau
 
 const log = logger('autosave');
 
-export type Tool = 'select' | 'polygon' | 'rect' | 'detect' | 'measure' | 'calibrate';
+export type Tool = 'select' | 'polygon' | 'rect' | 'detect' | 'measure' | 'calibrate' | 'kontrolle';
 
 /** Importiertes IFC-Modell zur Anzeige in der 3D-Ansicht (nur für die Sitzung, nicht im Projekt gespeichert) */
 export type { IfcReference } from '@core/platform/ifc';

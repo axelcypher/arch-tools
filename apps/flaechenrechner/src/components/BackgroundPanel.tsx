@@ -193,6 +193,9 @@ export function BackgroundPanel({ storey }: { storey: Storey }) {
             <button className="small" onClick={() => st.setTool('calibrate')} title="Zwei Punkte mit bekanntem Abstand anklicken">
               Kalibrieren
             </button>
+            <button className="small" onClick={() => st.setTool('kontrolle')} title="Zweite bekannte Strecke messen – Abweichung in % (steht im Bericht)">
+              Kontrollmaß
+            </button>
             <button className="small" onClick={() => patchBg({ visible: !bg.visible })}>
               {bg.visible ? 'Ausblenden' : 'Einblenden'}
             </button>

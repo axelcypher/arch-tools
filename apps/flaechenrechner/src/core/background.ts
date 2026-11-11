@@ -92,3 +92,34 @@ export function vectorSegmentGrid(bg: VectorBackground, opts: VectorSegmentOptio
   m.set(key, grid);
   return grid;
 }
+
+/* ---------- Kalibrieren mit Einheit und Kontrollmaß (F-16) ---------- */
+
+const EINHEIT: Record<string, number> = { mm: 0.001, cm: 0.01, dm: 0.1, m: 1 };
+
+/**
+ * Länge mit Einheit lesen: „12“, „12,00 m“, „1200 cm“, „12000 mm“, „1.200,5 cm“ → Meter; null, wenn unlesbar.
+ * Ohne Einheit gilt Meter.
+ */
+export function laengeAusText(text: string): number | null {
+  const m = /^\s*([\d.,\s]+?)\s*(mm|cm|dm|m)?\s*$/i.exec(text);
+  if (!m) return null;
+  let zahl = m[1].replace(/\s/g, '');
+  // deutsche Schreibweise: Punkt als Tausendertrenner, Komma als Dezimalzeichen
+  if (zahl.includes(',')) zahl = zahl.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(zahl)) zahl = zahl.replace(/\./g, '');
+  const v = Number(zahl);
+  if (!Number.isFinite(v) || v <= 0) return null;
+  return v * EINHEIT[(m[2] ?? 'm').toLowerCase()];
+}
+
+/** relative Abweichung eines Kontrollmaßes: (gemessen − tatsächlich) / tatsächlich */
+export function kontrollAbweichung(gemessen: number, tatsaechlich: number): number {
+  return tatsaechlich > 0 ? (gemessen - tatsaechlich) / tatsaechlich : NaN;
+}
+
+/** Text für Bericht und Excel: „aus Plan abgegriffen, Maßstab kalibriert, Kontrollmaß 8,00 m: Abweichung +0,12 %“ */
+export function kontrollText(k: { soll: number; abweichung: number }): string {
+  const pct = (k.abweichung * 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `aus Plan abgegriffen, Maßstab kalibriert, Kontrollmaß ${k.soll.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 3 })} m: Abweichung ${k.abweichung > 0 ? '+' : ''}${pct} %`;
+}

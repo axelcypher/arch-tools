@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectRegion } from './detect';
+import { detectOutline, detectRegion } from './detect';
 import { polygonArea } from './geometry';
 import { SegmentGrid } from './spatial';
 
@@ -103,5 +103,38 @@ describe('Raumerkennung', () => {
     const g = new SegmentGrid([0, 0, 5, 0, 5, 0, 5, 5]);
     const r = detectRegion({ click: { x: 2, y: 2 }, grids: [g], gap: 0, maxSize: 50 });
     expect(r.ok).toBe(false);
+  });
+});
+
+describe('BGF-Umriss aus dem Plan (F-15)', () => {
+  /** Rasterplan: Gebäude 10 × 8 m, Außenwand 0,30 m mit 1,00 m Türöffnung unten, Innenwand – zwei Räume */
+  const wand = (x: number, y: number) => {
+    const aussen = x >= 0 && x <= 10 && y >= 0 && y <= 8;
+    const innen = x > 0.3 && x < 9.7 && y > 0.3 && y < 7.7;
+    const tuer = y > 7.7 && x > 2 && x < 3;
+    const innenwand = x >= 5 && x <= 5.24 && innen;
+    return (aussen && !innen && !tuer) || innenwand;
+  };
+  const rasterMask = (win: { minX: number; minY: number; res: number; w: number; h: number }) => {
+    const m = new Uint8Array(win.w * win.h);
+    for (let j = 0; j < win.h; j++) for (let i = 0; i < win.w; i++) m[j * win.w + i] = wand(win.minX + (i + 0.5) * win.res, win.minY + (j + 0.5) * win.res) ? 1 : 0;
+    return m;
+  };
+
+  it('Klick auf die Außenwand → Außenkante der Wand (Türöffnung überbrückt)', () => {
+    const r = detectOutline({ click: { x: 0.15, y: 4 }, grids: [], rasterMask, gap: 1.1, maxPixels: 800 });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(polygonArea(r.points)).toBeGreaterThan(80 * 0.97);
+    expect(polygonArea(r.points)).toBeLessThan(80 * 1.03);
+    const xs = r.points.map((p) => p.x);
+    expect(Math.min(...xs)).toBeCloseTo(0, 0);
+    expect(Math.max(...xs)).toBeCloseTo(10, 0);
+  });
+
+  it('Klick in einen Raum (nicht auf eine Wand) → Hinweis, keine Fläche', () => {
+    const r = detectOutline({ click: { x: 2.5, y: 4 }, grids: [], rasterMask, gap: 1.1, maxPixels: 800 });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/Außenwand/);
   });
 });

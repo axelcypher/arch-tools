@@ -293,6 +293,8 @@ export interface ProjectSettings {
   zweiteBV?: boolean;
   /** Flächenrechner: Vorlage und Abschnitte des Berichts (geprüft in der App) */
   bericht?: { vorlage?: string; abschnitte?: string[] };
+  /** Flächenrechner: Kontrollmaß nach dem Kalibrieren je Geschoss (Geschoss-Kennung → Soll, gemessen, Abweichung) */
+  kontrollmasse?: Record<string, { soll: number; ist: number; abweichung: number }>;
 }
 
 export type Massgrundlage = 'rohbau' | 'fertig' | 'aufmass';

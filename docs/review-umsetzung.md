@@ -244,8 +244,19 @@ KO 0.11.2 (Patch).
 - [x] **F-14** Nutzungsarten als zweite Ebene – FR 0.21.0: Feld „Nutzungsart“ je Raum (Liste des Büros
   `nutzungsarten.json`, Vorgabe nur 1.1, 7.1, 7.3, 7.4, 9.1 mit kurzen Bezeichnungen – keine Normtabelle), Gruppe
   folgt der ersten Ziffer (`raumNutzung`), Auswertung weiter je Gruppe; ohne Nutzungsart wie bisher (Test).
-- [ ] **F-15** BGF-Umriss aus dem Plan erkennen
-- [ ] **F-16** Kalibrieren mit Fang und Kontrollmaß
+- [x] **F-15** BGF-Umriss aus dem Plan erkennen – FR 0.25.0: `detectOutline` in `core/detect.ts` – im BGF-Modus Klick
+  auf die Wand → äußere Kontur der zusammenhängenden Wandfläche (Öffnungen bis zum Lückenschluss überbrückt, Kanten
+  auf Vektorlinien eingepasst), Umriss zum Prüfen markiert mit Hinweis auf Außenmaße inkl. Bekleidung und den
+  Dachgeschoss-Schnitt; Klick in einen Raum wie bisher mit Hinweis. „BGF-Umriss aus Räumen + Wanddicke …“ nur mit
+  ausdrücklicher Wanddicke und Vermerk „Näherung“ (`core/umriss.ts`); kleiner Umriss außen am Gebäude → Hinweis
+  „Balkon/Loggia? S wählen“. Abweichung: Die BGF im Dachgeschoss bis zum Schnitt Dachhaut/Fußbodenebene wird nicht
+  automatisch ermittelt (nur Hinweis; aus der IFC macht das der Import schon).
+- [x] **F-16** Kalibrieren mit Fang und Kontrollmaß – FR 0.25.0: Länge mit Einheit („12 m“, „1200 cm“, „12000 mm“,
+  `laengeAusText`), nach dem Kalibrieren gleich „Kontrollmaß“ (auch über die Plan-Eigenschaften) mit Abweichung in %
+  und Warnung über 0,5 %; Maßgrundlage „aus Plan abgegriffen, Maßstab kalibriert, Kontrollmaß … Abweichung x %“ im
+  Berichtskopf und in Excel (`projekt.kontrollmass`); Kalibrierpunkte nutzen den Punkt-/Kantenfang (Vektorpläne).
+  Abweichung: keine Lupe und kein Kantenfang auf Rasterplänen, keine Maßstabsliste mit dpi (optional) – das
+  Kontrollmaß deckt Klickfehler auf.
 - [x] **F-17** Bericht für die Bauvorlage – FR 0.22.0: Vorlagen „Vollständige Flächenaufstellung“, „Bauantrag NRW
   (BRI + WoFl)“ (DIN 277 mit R/S und BRI-Rechenweg nicht abwählbar), „Abschnitte frei wählen“, gemerkt in
   `settings.bericht`; Kopf aus den Stammdaten (gemeinsamer `DruckKopf`: Bauvorhaben, Adresse, Grundstück, Bauherr,

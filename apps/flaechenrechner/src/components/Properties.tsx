@@ -13,6 +13,10 @@ import { wohnungenImProjekt } from '../core/geschosse';
 import { raumAufUmriss } from '@core/pruefung';
 import { gruppeAusNutzungsart } from '@core/norms';
 import { raumHoehenAnteile } from '@core/hoehenlinien';
+import { naeherungsVermerk, umrissAusRaeumen } from '../core/umriss';
+import { createOutline } from '@core/model';
+import { frageText } from '@core/ui/Rueckfrage';
+import { parseNum } from '@core/format';
 import { doppelteNummern, raeumeNeuNummerieren, raumNummernPraefix } from '../core/geschosse';
 import type { NummerReihenfolge } from '../core/geschosse';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
@@ -558,6 +562,7 @@ function StoreyProperties() {
         </div>
       )}
 
+      <UmrissAusRaeumen />
       <BackgroundPanel storey={storey} />
     </section>
   );
@@ -856,5 +861,34 @@ function AnHoehenlinienTeilen({ shape, upd }: { shape: RoomShape; upd: (fn: (s: 
         Raum an Höhenlinien teilen
       </button>
     </p>
+  );
+}
+
+/** „BGF-Umriss aus Räumen + Wanddicke“ – nur mit ausdrücklicher Wanddicke, Vermerk „Näherung“ (F-15) */
+function UmrissAusRaeumen() {
+  const storey = useActiveStorey();
+  const st = useEditor.getState();
+  const raeume = storey.shapes.filter((s): s is RoomShape => s.kind === 'room' && !s.subtract);
+  if (!raeume.length || storey.shapes.some((s) => s.kind === 'outline')) return null;
+  const anlegen = async () => {
+    const t = await frageText(
+      'BGF-Umriss aus Räumen',
+      '',
+      'Anlegen',
+      'Wanddicke der Außenwände in m (einschließlich Putz/Dämmung). Der Umriss ist eine Näherung – bei ungleichen Wanddicken besser aus dem Plan erkennen (Werkzeug „Erkennen“, Klick auf die Außenwand) oder zeichnen.',
+    );
+    const d = t ? parseNum(t) : null;
+    if (d === null || !(d > 0 && d < 2)) return;
+    const polys = umrissAusRaeumen(raeume, d);
+    if (!polys.length) return;
+    const neu = polys.map((pts, i) => ({ ...createOutline(pts, polys.length > 1 ? `BGF ${i + 1}` : 'BGF'), bemerkung: naeherungsVermerk(d), pruefen: true }));
+    st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: [...neu, ...s.shapes] })));
+  };
+  return (
+    <div className="button-row">
+      <button className="small" onClick={() => void anlegen()} title="Näherung: Räume um die Wanddicke erweitert">
+        BGF-Umriss aus Räumen + Wanddicke …
+      </button>
+    </div>
   );
 }

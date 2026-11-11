@@ -20,11 +20,13 @@ import type { OutlineShape, Shape, Storey } from '@core/model';
 import { createOutline, createRoom, shapeArea } from '@core/model';
 import { nutzungInfo } from '@core/norms';
 import { bgWorldBounds, scaleAround, vectorSegmentGrid } from '../core/background';
-import { detectRegion } from '@core/detect';
+import { detectOutline, detectRegion } from '@core/detect';
 import { SegmentGrid } from '@core/spatial';
 import { loadImage, rasterEdgeRefiner, rasterMaskProvider } from '../platform/rasterMask';
 import { einfuegenAktion } from './KopieDialog';
 import { neuerRaumVorgabe } from '../core/katalog';
+import { kontrollAbweichung, kontrollText, laengeAusText } from '../core/background';
+import { sVorschlagen } from '../core/umriss';
 import { hoehenZonen } from '@core/hoehenlinien';
 import { clippedPieces } from '@core/roof';
 import { auswahlVerschieben, flaechenDuplizieren, flaechenKopieren, mapStorey, nextRoomNumber, setShapePoints, useActiveStorey, useEditor } from '../store/store';
@@ -80,6 +82,7 @@ export function Canvas() {
   const [numBuf, setNumBuf] = useState('');
   const [measure, setMeasure] = useState<[Point, Point] | null>(null);
   const [calib, setCalib] = useState<[Point, Point] | null>(null);
+  const [kontrolle, setKontrolle] = useState<[Point, Point] | null>(null);
   const [spaceDown, setSpaceDown] = useState(false);
   const drag = useRef<Drag | null>(null);
   const lastClick = useRef<{ t: number; x: number; y: number }>({ t: 0, x: 0, y: 0 });
@@ -262,7 +265,7 @@ export function Canvas() {
   /* ---------- Formen anlegen ---------- */
 
   const finishShape = useCallback(
-    (pts: Point[]) => {
+    (pts: Point[], extra?: { bemerkung?: string; pruefen?: boolean }) => {
       const clean = pts.filter((p, i) => i === 0 || distance(p, pts[i - 1]) > 1e-6);
       if (clean.length > 3 && distance(clean[0], clean[clean.length - 1]) < 1e-6) clean.pop();
       setDraft([]);
@@ -271,10 +274,12 @@ export function Canvas() {
       const st = storey;
       const shape =
         drawKind === 'outline'
-          ? createOutline(clean, st.shapes.some((s) => s.kind === 'outline') ? 'BGF-Teilfläche' : 'BGF')
+          ? { ...createOutline(clean, st.shapes.some((s) => s.kind === 'outline') ? 'BGF-Teilfläche' : 'BGF'), ...extra }
           : { ...createRoom(clean, nextRoomNumber(project, st)), ...neuerRaumVorgabe(project, st) };
       update((p) => mapStorey(p, st.id, (s) => ({ ...s, shapes: [...s.shapes, shape] })));
       select(shape.id);
+      // kleiner Umriss außen am Gebäude: Balkon/Loggia → Umschließung S vorschlagen (F-15)
+      if (shape.kind === 'outline' && sVorschlagen(clean, st)) setMessage('Kleiner Umriss außen am Gebäude – Balkon oder Loggia? Dann rechts die Raumumschließung „S – Sonderfall“ wählen.');
     },
     [storey, drawKind, project, update, select],
   );
@@ -539,10 +544,11 @@ export function Canvas() {
         void runDetection(raw);
         break;
       case 'calibrate':
+      case 'kontrolle':
         if (!storey.background) break;
         if (draft.length === 0) setDraft([p]);
         else {
-          if (distance(draft[0], p) > 1e-6) setCalib([draft[0], p]);
+          if (distance(draft[0], p) > 1e-6) (tool === 'calibrate' ? setCalib : setKontrolle)([draft[0], p]);
           setDraft([]);
         }
         break;
@@ -591,7 +597,18 @@ export function Canvas() {
       }
       // dem Browser einen Frame für die Anzeige des Wartezustands lassen
       await new Promise((r) => requestAnimationFrame(() => r(null)));
+      // BGF-Modus: Klick auf die Außenwand → Außenkontur der Wand (F-15); Klick in einen Raum wie bisher
+      if (drawKind === 'outline') {
+        const aussen = detectOutline({ click, grids, rasterMask, refineEdge, gap: detect.gap });
+        if (aussen.ok) {
+          log.debug('BGF-Umriss aus der Außenwand erkannt', { click, punkte: aussen.points.length });
+          finishShape(aussen.points, { pruefen: true, bemerkung: 'aus dem Plan erkannt (Außenkante der Wand) – prüfen' });
+          setMessage('BGF-Umriss aus der Außenwand erkannt – bitte prüfen: Außenmaße einschließlich Bekleidung (Putz, WDVS); im Dachgeschoss bis zum Schnitt der Dachhaut mit der Fußbodenebene.');
+          return;
+        }
+      }
       const res = detectRegion({ click, grids, rasterMask, refineEdge, gap: detect.gap, ignoreThinLines: detect.ignoreThin ? 0.05 : 0 });
+      if (res.ok && drawKind === 'outline') setMessage('Fläche zwischen den Linien als BGF-Umriss angelegt. Für die BGF eines Gebäudes auf die Außenwand klicken.');
       if (!res.ok) {
         log.info(`Keine Fläche erkannt: ${res.error}`, { click, gap: detect.gap });
         setMessage(res.error);
@@ -744,8 +761,20 @@ export function Canvas() {
     if (measured < 1e-9 || !(realLength > 0)) return;
     update((p) => mapStorey(p, storey.id, (s) => ({ ...s, background: scaleAround(bg, realLength / measured, a) })));
     setCalib(null);
-    setTool('select');
+    // gleich danach ein Kontrollmaß messen (F-16): zweite bekannte Strecke, möglichst quer zur ersten
+    setTool('kontrolle');
+    setMessage('Plan kalibriert. Jetzt eine zweite bekannte Strecke als Kontrollmaß anklicken (Esc: überspringen).');
     requestAnimationFrame(() => fitRef.current());
+  };
+
+  const applyKontrolle = (soll: number) => {
+    if (!kontrolle) return;
+    const ist = distance(kontrolle[0], kontrolle[1]);
+    const abweichung = kontrollAbweichung(ist, soll);
+    update((p) => ({ ...p, settings: { ...p.settings, kontrollmasse: { ...(p.settings.kontrollmasse ?? {}), [storey.id]: { soll, ist, abweichung } } } }));
+    setKontrolle(null);
+    setTool('select');
+    setMessage(`Kontrollmaß: ${kontrollText({ soll, abweichung })}${Math.abs(abweichung) > 0.005 ? ' – größer als 0,5 %: Kalibrierung wiederholen.' : ''}`);
   };
 
   /* ---------- Rendering ---------- */
@@ -894,7 +923,10 @@ export function Canvas() {
       hint = 'Zwei Punkte klicken, um einen Abstand zu messen';
       break;
     case 'calibrate':
-      hint = bg ? 'Zwei Punkte mit bekanntem Abstand auf dem Plan anklicken' : 'Zuerst einen Plan laden (Geschoss-Eigenschaften rechts)';
+      hint = bg ? 'Zwei Punkte mit bekanntem Abstand auf dem Plan anklicken (Fang auf Plankanten und Eckpunkte; Alt: ohne Fang)' : 'Zuerst einen Plan laden (Geschoss-Eigenschaften rechts)';
+      break;
+    case 'kontrolle':
+      hint = 'Kontrollmaß: zwei Punkte einer zweiten bekannten Strecke anklicken (möglichst quer zur ersten) · Esc: überspringen';
       break;
   }
 
@@ -1013,10 +1045,10 @@ export function Canvas() {
         )}
 
         {/* Messen / Kalibrieren */}
-        {(tool === 'measure' || tool === 'calibrate') && (
+        {(tool === 'measure' || tool === 'calibrate' || tool === 'kontrolle') && (
           <g pointerEvents="none">
             {(() => {
-              const seg = draft.length && preview ? ([draft[0], preview] as [Point, Point]) : tool === 'measure' ? measure : calib;
+              const seg = draft.length && preview ? ([draft[0], preview] as [Point, Point]) : tool === 'measure' ? measure : tool === 'kontrolle' ? kontrolle : calib;
               if (!seg) return null;
               const a = toScreen(seg[0]);
               const b = toScreen(seg[1]);
@@ -1153,6 +1185,7 @@ export function Canvas() {
       )}
 
       {calib && <CalibrationDialog measured={distance(calib[0], calib[1])} onApply={applyCalibration} onCancel={() => setCalib(null)} />}
+      {kontrolle && <CalibrationDialog kontrolle measured={distance(kontrolle[0], kontrolle[1])} onApply={applyKontrolle} onCancel={() => setKontrolle(null)} />}
     </div>
   );
 }
@@ -1168,9 +1201,10 @@ function ScaleBar({ scale }: { scale: number }) {
   );
 }
 
-function CalibrationDialog({ measured, onApply, onCancel }: { measured: number; onApply: (v: number) => void; onCancel: () => void }) {
+function CalibrationDialog({ measured, onApply, onCancel, kontrolle = false }: { measured: number; onApply: (v: number) => void; onCancel: () => void; kontrolle?: boolean }) {
   const [val, setVal] = useState('');
-  const v = parseNum(val);
+  // mit Einheit: „12,00 m“, „1200 cm“, „12000 mm“ (ohne Einheit: Meter)
+  const v = laengeAusText(val);
   return (
     <div className="overlay-dialog" onPointerDown={(e) => e.stopPropagation()}>
       <form
@@ -1179,14 +1213,19 @@ function CalibrationDialog({ measured, onApply, onCancel }: { measured: number; 
           if (v && v > 0) onApply(v);
         }}
       >
-        <h3>Plan kalibrieren</h3>
+        <h3>{kontrolle ? 'Kontrollmaß' : 'Plan kalibrieren'}</h3>
         <p>
           Gemessene Strecke im aktuellen Maßstab: <strong>{fmt2(measured)} m</strong>
         </p>
         <label>
-          Tatsächliche Länge [m]
-          <input autoFocus value={val} onChange={(e) => setVal(e.target.value)} placeholder="z. B. 10,00" />
+          Tatsächliche Länge (mit Einheit, z. B. 12,00 m · 1200 cm · 12000 mm)
+          <input autoFocus value={val} onChange={(e) => setVal(e.target.value)} placeholder="z. B. 10,00 m" />
         </label>
+        {v ? (
+          <p className="muted small-text">
+            = {fmt2(v)} m{kontrolle ? ` · Abweichung ${((kontrollAbweichung(measured, v) * 100) || 0).toLocaleString('de-DE', { maximumFractionDigits: 2 })} %` : ''}
+          </p>
+        ) : null}
         <div className="dialog-buttons">
           <button type="button" onClick={onCancel}>
             Abbrechen
