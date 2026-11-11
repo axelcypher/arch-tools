@@ -856,6 +856,19 @@ button.icon.fo-gl-zaehlt.an {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* frühere Sitzung, nicht in der geöffneten Datei: nur zur Ansicht */
+.fo-verlauf-frueher {
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.fo-verlauf-frueher h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+}
+.fo-verlauf-schritt.frueher:hover {
+  background: none;
+}
 
 /* ---------- Feldansicht ---------- */
 
@@ -2280,39 +2293,54 @@ button.icon.fo-gl-zaehlt.an {
 
 /* ---------- Druck ---------- */
 
-/* das Blatt hat seinen Rand selbst – A4 ohne zusätzlichen Druckrand */
-@page {
-  size: A4;
-  margin: 0;
-}
-
+/*
+ * Gedruckt (Strg+P, „Drucken“, im Browser der Weg zur PDF) werden nur die Formularblätter: A4 hoch, eines je Seite,
+ * wie der amtliche Vordruck – ohne Werkzeugleiste, Gliederung und ohne Zutaten der App (Info-Symbole,
+ * Kennzeichnung entfallender/offener Felder, Autofill- und Textmarker-Farben, Feldhinterlegung; § 1 Abs. 3
+ * BauPrüfVO). Die Druckregel aus packages/core zeigt nur Berichte (`.app > :not(.report-backdrop)`); die Regeln hier
+ * sind spezifischer und heben sie für das Formular auf.
+ */
 @media print {
-  .titlebar,
-  .toolbar,
+  @page {
+    size: A4 portrait;
+    margin: 0;
+    @bottom-right {
+      content: none;
+    }
+  }
+  body .app > .titlebar,
+  body .app > .toolbar,
+  body .app > .fo-meldung,
   .nav,
   .fo-gliederung,
-  .fo-meldung,
   .fo-verlauf,
   .fo-blatt-kopf,
-  .modal-backdrop {
+  .modal-backdrop,
+  .fo-entfall-info,
+  .fo-tipp,
+  .fo-umrandung {
     display: none !important;
   }
   html,
   body,
   #root,
-  .app,
-  .fo-main,
-  .fo-inhalt {
+  body .app,
+  body .app > main.fo-main,
+  body .app > main.fo-main > .fo-inhalt {
     display: block !important;
     height: auto !important;
     overflow: visible !important;
     background: #fff !important;
+  }
+  body .app > main.fo-main > :not(.fo-inhalt) {
+    display: none !important;
   }
   .fo-seiten {
     display: block;
     padding: 0;
   }
   .fo-blatt {
+    display: block !important;
     break-after: page;
   }
   .fo-blatt:last-child {
@@ -2320,20 +2348,32 @@ button.icon.fo-gl-zaehlt.an {
   }
   .fo-papier {
     zoom: 1 !important;
-    box-shadow: none;
+    box-shadow: none !important;
     margin: 0 auto;
   }
+  /* der Vordruck unverfälscht: Felder ohne Hinterlegung, Markierung oder Kennzeichnung */
   .fo-papier .fo-memo,
-  .fo-check,
-  .fo-check input {
-    background: transparent !important;
-  }
-  .fo-umrandung {
-    display: none !important;
-  }
+  .fo-papier .fo-memo:focus,
   .fo-papier .fo-memo.geaendert,
-  .fo-papier .fo-check.geaendert {
+  .fo-papier .fo-memo.markiert,
+  .fo-papier .fo-memo.entfaellt,
+  .fo-papier .fo-memo.offen,
+  .fo-papier .fo-memo.auto,
+  .fo-papier .fo-memo.fixiert,
+  .fo-papier .fo-memo.vorbelegt,
+  .fo-papier .fo-check,
+  .fo-papier .fo-check.geaendert,
+  .fo-papier .fo-check.markiert,
+  .fo-papier .fo-check.offen,
+  .fo-papier .fo-check.vorbelegt,
+  .fo-papier .fo-check input,
+  .fo-papier .fo-check.entfaellt input,
+  .fo-papier .fo-check.offen input {
+    background: transparent !important;
     box-shadow: none !important;
+    outline: none !important;
+    text-decoration: none !important;
+    opacity: 1 !important;
   }
 }
 
@@ -3876,12 +3916,6 @@ tr[data-ziehen='danach'] > td {
   border-left-color: var(--accent);
   background: var(--accent-soft);
   color: var(--text);
-}
-@media print {
-  .fo-entfall-info,
-  .fo-tipp {
-    display: none !important;
-  }
 }
 /* Feldansicht: entfallende Felder gedämpft */
 .fo-feld.entfaellt > .field-label,

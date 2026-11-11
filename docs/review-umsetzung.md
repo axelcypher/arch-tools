@@ -51,16 +51,22 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
 
 ## Formulare
 
-- [ ] **B-01** Schließen des Gesetzestext-Fensters stürzt ab
-- [ ] **B-02** Drucken liefert eine leere Seite
-- [ ] **B-03** Web-Version: „Festlegen …“ führt in eine Sackgasse
+- [x] **B-01** Schließen des Gesetzestext-Fensters stürzt ab – FO 0.21.1: Effekt mit Block-Körper (auch die übrigen
+  Pfeil-Effekte in `App.tsx`); Test mit Promise-liefernder `scrollIntoView` für Reiterwechsel, Knopf, Esc, Klick daneben
+- [x] **B-02** Drucken liefert eine leere Seite – FO 0.21.1: spezifischere Druckregeln in `styles.css` heben die
+  core-Regel für `.fo-main` auf (core unverändert); A4 hoch, ein Blatt je Seite, ohne Info-Symbole,
+  Entfall-/Offen-Kennzeichnung, Autofill-/Textmarker-Farben und Feldhinterlegung; `druck.test.ts`
+- [x] **B-03** Web-Version: „Festlegen …“ führt in eine Sackgasse – FO 0.21.1: ohne Projekt kein Sprung in die
+  Projektkarte (`setHaupt`/`umfangZeigen` prüfen es), Knopf ausgeblendet; die Auswahl am Formular folgt mit U-02
 - [x] **B-04** Farbschema wechselt erst nach Neuladen – FO 0.19.0 (mit Q-1)
 - [x] **B-05** Gesetzestext im Dunkelmodus unlesbar – FO 0.19.0 (mit Q-1): Kasten mit `--panel`/`--text`, Markierung
   über Hintergrund und Rand
 - [x] **B-06** Fehlgeschlagenes Öffnen schließt das geöffnete Formular – FO 0.19.0 (mit Q-6): erst lesen und prüfen,
   dann schließen; gilt für „Formular öffnen …“ und den Projekteintrag
 - [ ] **B-07** Abschnitt ohne Kennzeichnung, obwohl alle Felder entfallen
-- [ ] **B-08** Verlauf passt in der Web-Version nicht zum Dateistand
+- [x] **B-08** Verlauf passt in der Web-Version nicht zum Dateistand – FO 0.21.1: Abgleich beim Öffnen
+  (`abgleichen` in `verlauf.ts`), nicht passende Schritte unter „Frühere Sitzung – nicht in dieser Datei“ (nur
+  Ansicht); Meldung „heruntergeladen als … – bitte die neue Datei weiterverwenden“
 - [ ] **R-01 / U-01** Fehlendes Projektmerkmal darf Pflichtfelder nicht entfallen lassen
 - [ ] **R-03** nw010005: Erklärung zum Brandschutz
 - [ ] **R-04** nw010002: Betriebsbeschreibung

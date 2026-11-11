@@ -39,7 +39,7 @@ import { autoWerte, autofillFelder, zustandBeimSpeichern } from './autofill';
 import type { Abweichung, Eintrag } from './vorgabe';
 import { abweichung, abweichungAus, istLeer as abweichungLeer, ohneEigenes, vorgabeFuer, wirksam } from './vorgabe';
 import type { FeldAenderung, Verlauf } from './verlauf';
-import { eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
+import { abgleichen, eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
 
 /**
  * Zustand der App: Einstellungen, die gefundenen Projekte, das geöffnete Formular und die Projektkarte.
@@ -477,7 +477,7 @@ function sichernUnter(ablage: string, k: string, aenderungen: Record<string, unk
   const jetzt = Date.now();
   const verzeichnis = lesen<Record<string, number>>(VERLAEUFE, {});
   let ok = schreiben(ablage, alle);
-  if (verlauf.schritte.length) {
+  if (verlauf.schritte.length || verlauf.frueher?.length) {
     ok = schreiben(verlaufSchluessel(k), verlauf) && ok;
     verzeichnis[k] = jetzt;
   } else {
@@ -735,7 +735,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     const k = dokSchluessel(offen);
     const entwurf = entwuerfe()[k];
     if (entwurf) offen.aenderungen = bereinige(entwurf, felder);
-    offen.verlauf = verlaufLaden(k);
+    // der Verlauf muss zum Inhalt der Datei passen (B-08) – sonst gehören die Schritte zu einer anderen Fassung
+    const geladen = verlaufLaden(k);
+    const nach = new Map(felder.flat().map((f) => [f.schluessel, f]));
+    offen.verlauf = abgleichen(geladen, (s) => (nach.has(s) ? wertVon(offen, nach.get(s)!) : undefined));
+    if (offen.verlauf !== geladen) offen.gesichert = sichern(offen);
     const wiederhergestellt = Object.keys(offen.aenderungen).length;
     set({
       offen,
@@ -848,6 +852,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     setAnsicht: (ansicht) => set({ ansicht }),
     setHaupt: (haupt) => {
+      // nie auf eine Ansicht, die es nicht gibt: ohne Projekt keine Projektkarte (sonst verschwände das Formular, B-03)
+      if (haupt === 'projektkarte' && !get().projekt) return;
       set({ haupt });
       if (haupt === 'projektkarte' && !get().karte) void get().karteLaden();
     },
@@ -1201,7 +1207,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         const { formular, felder, nurLesen } = aufbereiten(neu);
         const geaendert = Object.keys(o.aenderungen).filter((k) => zugeordnet.has(k));
         aktualisieren({ ...o, bytes: neu, formular, felder, nurLesen, aenderungen: {} });
-        set({ meldung: { art: 'info', text: `${o.name} gespeichert.` } });
+        // im Browser entsteht eine neue Datei (Download) – die geöffnete bleibt, wie sie war
+        set({ meldung: { art: 'info', text: o.projekt && ds ? `${o.name} gespeichert.` : `${o.name} heruntergeladen als „${o.name}.frmsjf“ – bitte die neue Datei weiterverwenden.` } });
         if (o.projekt && geaendert.length) {
           const werte = o.aenderungen;
           const z = zustandBeimSpeichern(zustand, geaendert, (k) => (typeof werte[k] === 'string' ? (werte[k] as string) : undefined), bezug);

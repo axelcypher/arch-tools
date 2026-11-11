@@ -74,6 +74,7 @@ export function FassungsWahl() {
 
 /** Projektkarte mit dem Reiter „Projektumfang“ zeigen */
 export function umfangZeigen() {
+  if (!useFormulare.getState().projekt) return;
   useFormulare.getState().setHaupt('projektkarte');
   requestAnimationFrame(() => window.dispatchEvent(new CustomEvent('formulare:projektumfang')));
 }

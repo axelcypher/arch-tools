@@ -129,9 +129,11 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
           <span>
             Für die Bedingungen dieses Formulars fehlt im Projekt: <strong>{fehlend.join(', ')}</strong>
           </span>
-          <button className="small" onClick={umfangZeigen}>
-            Festlegen …
-          </button>
+          {offen.projekt && (
+            <button className="small" onClick={umfangZeigen}>
+              Festlegen …
+            </button>
+          )}
         </div>
       )}
 

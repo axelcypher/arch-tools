@@ -98,12 +98,16 @@ export function App() {
   const exportPfad = useExportDialog((s) => s.pfad);
   const hinzufuegen = useHinzufuegenDialog((s) => s.offen);
   // Export-Dialog gehört zum Projekt
-  useEffect(() => useExportDialog.getState().schliessen(), [projekt]);
+  useEffect(() => {
+    useExportDialog.getState().schliessen();
+  }, [projekt]);
   // Einrichten: auf dem Papier (dort lassen sich Felder anklicken); ein anderes Formular beginnt ohne Auswahl
   useEffect(() => {
     if (einrichten && ansicht !== 'seite') setAnsicht('seite');
   }, [einrichten, ansicht, setAnsicht]);
-  useEffect(() => useEinrichten.getState().setAuswahl([]), [offen?.pfad, offen?.projekt]);
+  useEffect(() => {
+    useEinrichten.getState().setAuswahl([]);
+  }, [offen?.pfad, offen?.projekt]);
   useEffect(() => {
     if (!offen && einrichten) useEinrichten.getState().setAktiv(false);
   }, [offen, einrichten]);

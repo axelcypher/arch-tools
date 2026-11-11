@@ -27,6 +27,11 @@ export interface Verlauf {
   schritte: Schritt[];
   /** Anzahl der angewendeten Schritte; dahinter liegen die wiederherstellbaren */
   position: number;
+  /**
+   * Schritte einer früheren Sitzung, deren Werte nicht in der geöffneten Datei stehen (z. B. Web-Version: Eingaben
+   * heruntergeladen, dann die Originaldatei wieder geöffnet) – nur zur Ansicht, nicht rückgängig zu machen
+   */
+  frueher?: Schritt[];
 }
 
 /** Eingaben im selben Textfeld innerhalb dieser Zeit bilden einen Schritt */
@@ -43,7 +48,7 @@ function anhaengen(v: Verlauf, schritt: Schritt | null): Verlauf {
   const schritte = v.schritte.slice(0, v.position);
   if (schritt) schritte.push(schritt);
   const rest = schritte.slice(Math.max(0, schritte.length - MAX_SCHRITTE));
-  return { schritte: rest, position: rest.length };
+  return { schritte: rest, position: rest.length, ...(v.frueher ? { frueher: v.frueher } : {}) };
 }
 
 /** Neue Eingabe in einem Feld; verwirft die wiederherstellbaren Schritte */
@@ -52,7 +57,7 @@ export function eintragen(v: Verlauf, feld: string, vorher: Wert, nachher: Wert,
   const letzter = v.position === v.schritte.length ? v.schritte[v.position - 1] : undefined;
   const a = letzter?.aenderungen.length === 1 && !letzter.titel ? letzter.aenderungen[0] : undefined;
   if (letzter && a && a.feld === feld && typeof nachher === 'string' && typeof a.nachher === 'string' && zeit - letzter.zeit < ZUSAMMENFASSEN_MS) {
-    const ohne = { schritte: v.schritte.slice(0, -1), position: v.position - 1 };
+    const ohne = { ...v, schritte: v.schritte.slice(0, -1), position: v.position - 1 };
     return anhaengen(ohne, a.vorher === nachher ? null : { zeit, aenderungen: [{ feld, vorher: a.vorher, nachher }] });
   }
   return anhaengen(v, { zeit, aenderungen: [{ feld, vorher, nachher }] });
@@ -76,24 +81,52 @@ export function springe(v: Verlauf, ziel: number): { verlauf: Verlauf; werte: Ma
   } else {
     for (let i = v.position; i < position; i++) for (const a of v.schritte[i].aenderungen) werte.set(a.feld, a.nachher);
   }
-  return { verlauf: { schritte: v.schritte, position }, werte };
+  return { verlauf: { ...v, position }, werte };
+}
+
+/** Werte zum Vergleich: Zeilenenden und Leerraum am Ende zählen nicht, leer ist leer */
+const vergleichswert = (w: Wert | undefined) => (typeof w === 'string' ? w.replace(/\r\n?/g, '\n').replace(/\s+$/, '') : w === null ? '' : w);
+
+/**
+ * Passt der Verlauf zum Inhalt der geöffneten Datei? Nach den angewendeten Schritten muss jedes Feld den Wert seiner
+ * letzten Änderung haben. Sonst stammen die Schritte aus einer anderen Fassung der Datei (Web-Version: Eingaben
+ * heruntergeladen, dann die Originaldatei wieder geöffnet; Desktop: Datei außerhalb geändert): Sie kommen unter
+ * „frühere Sitzung – nicht in dieser Datei“ (nur zur Ansicht), der Verlauf beginnt neu. `wert` liefert den
+ * aktuellen Wert eines Felds (Datei samt wiederhergestellten Eingaben), unbekannte Felder `undefined`.
+ */
+export function abgleichen(v: Verlauf, wert: (feld: string) => Wert | undefined): Verlauf {
+  const soll = new Map<string, Wert>();
+  for (const s of v.schritte.slice(0, v.position)) for (const a of s.aenderungen) soll.set(a.feld, a.nachher);
+  const passt = [...soll].every(([feld, w]) => {
+    const ist = wert(feld);
+    return ist === undefined || vergleichswert(ist) === vergleichswert(w);
+  });
+  if (passt) return v;
+  const frueher = [...(v.frueher ?? []), ...v.schritte.slice(0, v.position)];
+  return { schritte: [], position: 0, frueher: frueher.slice(Math.max(0, frueher.length - MAX_SCHRITTE)) };
 }
 
 const istWert = (w: unknown): w is Wert => w === null || ['string', 'boolean', 'number'].includes(typeof w);
 const istAenderung = (a: unknown): a is FeldAenderung =>
   !!a && typeof a === 'object' && typeof (a as FeldAenderung).feld === 'string' && istWert((a as FeldAenderung).vorher) && istWert((a as FeldAenderung).nachher);
 
-/** Liest einen gespeicherten Verlauf; Unbrauchbares wird verworfen */
-export function verlaufAus(x: unknown): Verlauf {
-  const o = (x && typeof x === 'object' ? x : {}) as Partial<Verlauf>;
+function schritteAus(roh: unknown): Schritt[] {
   const schritte: Schritt[] = [];
-  for (const s of Array.isArray(o.schritte) ? (o.schritte as unknown[]) : []) {
+  for (const s of Array.isArray(roh) ? (roh as unknown[]) : []) {
     if (!s || typeof s !== 'object') continue;
     const r = s as Partial<Schritt>;
     const aenderungen = (Array.isArray(r.aenderungen) ? r.aenderungen : []).filter(istAenderung);
     if (typeof r.zeit !== 'number' || !aenderungen.length) continue;
     schritte.push({ zeit: r.zeit, aenderungen, ...(typeof r.titel === 'string' ? { titel: r.titel } : {}) });
   }
+  return schritte;
+}
+
+/** Liest einen gespeicherten Verlauf; Unbrauchbares wird verworfen */
+export function verlaufAus(x: unknown): Verlauf {
+  const o = (x && typeof x === 'object' ? x : {}) as Partial<Verlauf>;
+  const schritte = schritteAus(o.schritte);
+  const frueher = schritteAus(o.frueher);
   const position = typeof o.position === 'number' && Number.isInteger(o.position) ? Math.max(0, Math.min(schritte.length, o.position)) : schritte.length;
-  return { schritte, position };
+  return { schritte, position, ...(frueher.length ? { frueher } : {}) };
 }

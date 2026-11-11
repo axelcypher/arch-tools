@@ -17,7 +17,16 @@ const kurz = (w: string | boolean | number | null) => (typeof w === 'boolean' ? 
 export function VerlaufLeiste({ offen }: { offen: OffenesFormular }) {
   const { zuVerlaufsstand, setVerlaufOffen } = useFormulare.getState();
   const beschriftung = useMemo(() => new Map(offen.felder.flat().map((f) => [f.schluessel, f.beschriftung])), [offen.felder]);
-  const { schritte, position } = offen.verlauf;
+  const { schritte, position, frueher = [] } = offen.verlauf;
+  const titelVon = (s: (typeof schritte)[number]) => s.titel ?? beschriftung.get(s.aenderungen[0].feld) ?? s.aenderungen[0].feld;
+  const werte = (s: (typeof schritte)[number]) =>
+    s.aenderungen.length === 1 ? (
+      <span className="fo-verlauf-werte">
+        {kurz(s.aenderungen[0].vorher)} → {kurz(s.aenderungen[0].nachher)}
+      </span>
+    ) : (
+      <span className="fo-verlauf-werte">{s.aenderungen.length} Felder</span>
+    );
 
   return (
     <aside className="fo-verlauf" aria-label="Verlauf">
@@ -34,7 +43,7 @@ export function VerlaufLeiste({ offen }: { offen: OffenesFormular }) {
         {[...schritte.keys()].reverse().map((i) => {
           const s = schritte[i];
           const zurueckgenommen = i >= position;
-          const titel = s.titel ?? beschriftung.get(s.aenderungen[0].feld) ?? s.aenderungen[0].feld;
+          const titel = titelVon(s);
           return (
             <li key={i}>
               <button
@@ -44,13 +53,7 @@ export function VerlaufLeiste({ offen }: { offen: OffenesFormular }) {
               >
                 <span className="fo-verlauf-zeit">{zeit(s.zeit)}</span>
                 <span className="fo-verlauf-titel">{titel}</span>
-                {s.aenderungen.length === 1 ? (
-                  <span className="fo-verlauf-werte">
-                    {kurz(s.aenderungen[0].vorher)} → {kurz(s.aenderungen[0].nachher)}
-                  </span>
-                ) : (
-                  <span className="fo-verlauf-werte">{s.aenderungen.length} Felder</span>
-                )}
+                {werte(s)}
               </button>
             </li>
           );
@@ -62,6 +65,23 @@ export function VerlaufLeiste({ offen }: { offen: OffenesFormular }) {
         </button>
       )}
       {!schritte.length && <p className="muted small-text">Noch keine Eingaben.</p>}
+      {frueher.length > 0 && (
+        <div className="fo-verlauf-frueher">
+          <h4>Frühere Sitzung – nicht in dieser Datei</h4>
+          <p className="muted small-text">Diese Eingaben stehen nicht in der geöffneten Datei (z. B. heruntergeladen, aber die ältere Datei geöffnet). Sie lassen sich hier nicht zurücknehmen.</p>
+          <ol className="fo-verlauf-liste" reversed>
+            {[...frueher].reverse().map((s, i) => (
+              <li key={i}>
+                <div className="fo-verlauf-schritt zurueck frueher" title="Frühere Sitzung – nicht in dieser Datei">
+                  <span className="fo-verlauf-zeit">{zeit(s.zeit)}</span>
+                  <span className="fo-verlauf-titel">{titelVon(s)}</span>
+                  {werte(s)}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </aside>
   );
 }

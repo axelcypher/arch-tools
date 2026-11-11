@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Verlauf, Wert } from './verlauf';
-import { MAX_SCHRITTE, ZUSAMMENFASSEN_MS, eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
+import { MAX_SCHRITTE, ZUSAMMENFASSEN_MS, abgleichen, eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
 
 /** Werte nach Anwenden eines Sprungs auf einen Ausgangsstand */
 function anwenden(werte: Record<string, Wert>, v: Verlauf, ziel: number) {
@@ -85,5 +85,26 @@ describe('Verlauf', () => {
     expect(verlaufAus(JSON.parse(JSON.stringify(v)))).toEqual(v);
     expect(verlaufAus({ schritte: [{ zeit: 1, aenderungen: [{ feld: 'a', vorher: {}, nachher: '' }] }, 'kaputt'], position: 7 })).toEqual({ schritte: [], position: 0 });
     expect(verlaufAus(null)).toEqual(leererVerlauf());
+  });
+
+  it('Abgleich mit der Datei: passen die Werte nicht, kommen die Schritte unter „frühere Sitzung“ (B-08)', () => {
+    let v = eintragen(leererVerlauf(), '0:Memo1', '', 'Musterweg 7', 0);
+    v = eintragen(v, '0:CheckBox1', false, true, 5000);
+    v = eintragen(v, '0:Memo2', '', 'zurückgenommen', 10000);
+    v = springe(v, 2).verlauf;
+    // Datei mit den Eingaben (heruntergeladen und weiterverwendet): passt, auch mit anderem Zeilenende
+    const mit: Record<string, Wert> = { '0:Memo1': 'Musterweg 7\r\n', '0:CheckBox1': true, '0:Memo2': '' };
+    expect(abgleichen(v, (f) => mit[f])).toBe(v);
+    // unbekannte Felder stören nicht
+    expect(abgleichen(v, (f) => (f === '0:Memo1' ? undefined : mit[f]))).toBe(v);
+    // Originaldatei ohne die Eingaben: neu beginnen, die angewendeten Schritte nur zur Ansicht
+    const ohne: Record<string, Wert> = { '0:Memo1': '', '0:CheckBox1': false, '0:Memo2': '' };
+    const a = abgleichen(v, (f) => ohne[f]);
+    expect(a.schritte).toEqual([]);
+    expect(a.position).toBe(0);
+    expect(a.frueher?.map((s) => s.aenderungen[0].feld)).toEqual(['0:Memo1', '0:CheckBox1']);
+    // bleibt beim Lesen und bei neuen Eingaben erhalten
+    expect(verlaufAus(JSON.parse(JSON.stringify(a)))).toEqual(a);
+    expect(eintragen(a, '0:Memo1', '', 'neu', 20000).frueher).toEqual(a.frueher);
   });
 });

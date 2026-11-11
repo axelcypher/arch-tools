@@ -33,7 +33,9 @@ export function GesetzModal() {
   const markiert = useRef<HTMLDivElement>(null);
   const q = quellen?.[Math.min(aktiv, quellen.length - 1)];
 
-  useEffect(() => setAktiv(0), [quellen]);
+  useEffect(() => {
+    setAktiv(0);
+  }, [quellen]);
   useEffect(() => {
     setGesetz(null);
     setFehler('');
@@ -51,7 +53,11 @@ export function GesetzModal() {
     };
   }, [q]);
   useEscSchliessen(schliessen, !!quellen);
-  useEffect(() => markiert.current?.scrollIntoView?.({ block: 'center' }), [gesetz, q]);
+  // Block-Körper: scrollIntoView liefert in Chromium/WebView2 ein Promise – als Rückgabe hielte React es für die
+  // Aufräumfunktion und stürzte beim Schließen oder Reiterwechsel ab („destroy is not a function“)
+  useEffect(() => {
+    markiert.current?.scrollIntoView?.({ block: 'center' });
+  }, [gesetz, q]);
 
   if (!quellen || !q) return null;
   const p = gesetz?.paragrafen[q.paragraf];

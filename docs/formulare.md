@@ -42,6 +42,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   oder 75–200 %). Die Felder sind farbig hinterlegt; gedruckt wird ohne Hinterlegung.
 - **Ansicht „Felder“:** dieselben Felder im Aufbau des Formulars – nebeneinanderliegende Abschnitte auch hier
   nebeneinander, Felder einer Zeile in einer Zeile –, groß und durchsuchbar, Filter „Leere“ und „Geänderte“.
+- **Gesetzestext-Fenster:** Schließen (Esc, Knopf, Klick daneben) und Reiterwechsel sind gegen den Absturz
+  „destroy is not a function“ (Chromium/WebView2 liefert bei `scrollIntoView` ein Promise) abgesichert
+  (`gesetz.ui.test.ts`).
 - **Gliederung:** eigener Bereich direkt am Formular („Inhalt des Formulars“, im Grau der Formularfläche – getrennt
   von der Navigation links): Seiten und Abschnitte mit Füllstand (z. B. 3/5, ✓ wenn vollständig) und Balken für
   das ganze Formular; ein Klick springt hin. Zeigt man auf einen Eintrag, werden seine Felder im Formular wie mit
@@ -131,7 +134,11 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   schließt. Ist sie kein FORMA-Formular, meldet sie „Das ist kein FORMA-Formular (.frmsjf). Bitte eine Formulardatei
   aus dem FORMA-Projektordner wählen.“ – das geöffnete Formular bleibt offen, die technische Einzelheit steht im
   Protokoll.
-- **Drucken** (<kbd>Strg</kbd>+<kbd>P</kbd>): die Formularansicht in Originalgröße, eine Seite je Blatt (A4).
+- **Drucken** (<kbd>Strg</kbd>+<kbd>P</kbd>): die Formularansicht in Originalgröße, ein Blatt je Seite (A4 hoch),
+  ohne Werkzeugleiste und Gliederung. Der Druck gibt den amtlichen Vordruck unverfälscht wieder (§ 1 Abs. 3
+  BauPrüfVO): keine Info-Symbole, keine Kennzeichnung entfallender oder offener Felder, keine Autofill- und
+  Textmarker-Farben, keine Feldhinterlegung. Die Druckregel aus `packages/core` (zeigt nur Berichte) hebt
+  `styles.css` mit spezifischeren Regeln auf (`druck.test.ts`).
 - **PDF** (<kbd>Strg</kbd>+<kbd>E</kbd>, auch im Kontextmenü eines Formulars): „Als PDF exportieren …“ fragt, ob in
   den **voreingestellten Ordner** (die aktive Antragsfassung, z. B. `TÖB\BAUA 2`) oder in einen **anderen Ordner
   im Projekt** exportiert wird; der Dateiname kommt aus der Namensvorlage und lässt sich ändern. Gibt es die Datei
@@ -151,6 +158,9 @@ Neustarts übersteht. In die FORMA-Datei kommt sie erst mit „Speichern“; Kol
 - **Verlauf** (rechts): alle Schritte mit Zeit, Feld und „alt → neu“, auch aus früheren Sitzungen. Ein Klick stellt
   den Stand nach diesem Schritt her; „Anfang“ nimmt alles zurück.
 - Auch nach dem Speichern bleibt der Verlauf: Rückgängig ergibt dann wieder eine ungespeicherte Änderung.
+- Beim Öffnen wird der Verlauf mit der Datei abgeglichen: Stehen die Werte der Schritte nicht in der Datei (Web-Version:
+  Eingaben heruntergeladen, dann die Originaldatei wieder geöffnet; Desktop: Datei inzwischen außerhalb geändert),
+  erscheinen sie unter „Frühere Sitzung – nicht in dieser Datei“ (nur zur Ansicht), und der Verlauf beginnt neu.
 - Je Formular bleiben die letzten 500 Schritte, für die 60 zuletzt bearbeiteten Formulare.
 
 ### Projektkarte und Stammdaten
@@ -418,8 +428,9 @@ und eignet sich auch als Vorlage für die Vorgaben der App.
 ### Web-Version
 
 Ohne Desktop-App gibt es keinen Zugriff auf Ordner: Die Web-Version öffnet ein einzelnes Formular über den
-Dateidialog, und „Herunterladen“ liefert die geänderte Fassung als Datei. Sperrdateien, Projektkarte und
-Projektordner gibt es dort nicht.
+Dateidialog, und „Herunterladen“ liefert die geänderte Fassung als Datei („heruntergeladen als … – bitte die neue
+Datei weiterverwenden“). Sperrdateien, Projektkarte und Projektordner gibt es dort nicht; deshalb führt auch kein
+Knopf in die Projektkarte (ohne Projekt bliebe sonst nur „Formular öffnen …“).
 
 ## Dateiformat
 
