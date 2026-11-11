@@ -41,7 +41,14 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Schriften und an den Stellen aus der Datei (Textfelder in Courier New wie in FORMA), mit Zoom (Seitenbreite
   oder 75–200 %). Die Felder sind farbig hinterlegt; gedruckt wird ohne Hinterlegung.
 - **Ansicht „Felder“:** dieselben Felder im Aufbau des Formulars – nebeneinanderliegende Abschnitte auch hier
-  nebeneinander, Felder einer Zeile in einer Zeile –, groß und durchsuchbar, Filter „Leere“ und „Geänderte“.
+  nebeneinander, Felder einer Zeile in einer Zeile –, groß und durchsuchbar, Filter „Offene“ und „Geänderte“. Beim
+  Suchen fallen Seiten ohne Treffer weg, daneben steht die Trefferzahl.
+- **Prüfliste „Was fehlt noch?“** (`pruefliste.ts`): Der Filter „Offene“ zeigt genau, was im Füllstand fehlt – je
+  Angabe eine Zeile mit den Eingaben darin (Gruppen wie „Gebäudeklasse“ als eine Zeile), ohne entfallene und nicht
+  zählende Felder (Behördenfelder), mit den ungeklärten (hängen an nicht festgelegten Projektmerkmalen). Im Kopf der
+  Gliederung steht „4 offen · 2 ungeklärt“ (Klick öffnet die Liste) bzw. „Nach den Vorgaben der App keine offenen
+  Angaben“ – nie „vollständig“. „Nächste offene Angabe“ (auch <kbd>F8</kbd>) springt zum ersten Feld der nächsten
+  offenen Angabe nach dem Feld mit dem Fokus.
 - **Gesetzestext-Fenster:** Schließen (Esc, Knopf, Klick daneben) und Reiterwechsel sind gegen den Absturz
   „destroy is not a function“ (Chromium/WebView2 liefert bei `scrollIntoView` ein Promise) abgesichert
   (`gesetz.ui.test.ts`).
@@ -138,7 +145,14 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   die Bedingung in Worten und ob sie gerade zutrifft. Trifft sie nicht zu, **entfällt** der Eintrag: Er zählt nicht,
   ist in der Gliederung durchgestrichen bzw. „entfällt“, seine Felder sind im Formular neutral statt blau
   hinterlegt; in Gruppen zählen entfallene Teile nicht mit. Fehlt im Projekt ein Merkmal, von dem eine Bedingung
-  abhängt, ist der Eintrag offen (siehe oben), und die Gliederung weist darauf hin („Festlegen …“). Bedingungen aus früheren Versionen (eine Liste, alle
+  abhängt, ist der Eintrag offen (siehe oben), und die Gliederung weist darauf hin.
+- **Projektmerkmale direkt am Formular festlegen** (`components/MerkmalWahl.tsx`): Der Hinweiskasten der Gliederung
+  bietet je fehlendem Merkmal Segmentknöpfe mit Kurzerklärung und Fundstelle (z. B. „Gebäudeklasse (§ 2 Abs. 3 BauO
+  NRW 2018)“, die Erklärung je Wert beim Zeigen; „§“ öffnet den Gesetzestext). Dieselbe Auswahl öffnet das
+  Info-Symbol an einem offenen Feld („Gebäudeart festlegen“ im Gesetzes-Fenster). Die Wahl wirkt sofort. Mit Projekt
+  steht sie in der Projektdatei (`meta.merkmale`, gilt für alle Formulare; „Alle Projektmerkmale …“ führt zum
+  Projektumfang), ohne Projekt (Web-Version) gilt sie für die Datei und liegt im lokalen Speicher
+  (`formulare:merkmale-datei`, `merkmalWerte.ts`). Bedingungen aus früheren Versionen (eine Liste, alle
   Teile müssen zutreffen) werden als Und-Gruppe übernommen.
 - **Tastatur:** <kbd>Tab</kbd> und <kbd>Enter</kbd> (in einzeiligen Feldern) gehen in Lesereihenfolge zum nächsten
   Feld – auf dem Papier von oben nach unten, nebeneinanderliegende Rahmen von links nach rechts.

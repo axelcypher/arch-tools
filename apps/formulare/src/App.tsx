@@ -30,6 +30,7 @@ import { SperreAufhebenDialog, SperrenDialog, ZustandMarke, wer } from './compon
 import { VerlaufLeiste } from './components/VerlaufLeiste';
 import { kennung, stand } from './forma/formular';
 import { springeZuFeld } from './navigation';
+import { zurNaechstenOffenen } from './pruefen';
 import type { Ansicht, OffenesFormular } from './store';
 import { ZOOMSTUFEN, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
 import { kannRueckgaengig, kannWiederholen } from './verlauf';
@@ -141,6 +142,15 @@ export function App() {
   // Tastenkürzel
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // F8: zur nächsten offenen Angabe (Prüfliste)
+      if (e.key === 'F8' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const s = useFormulare.getState();
+        if (s.offen && s.haupt === 'formular' && !useEinrichten.getState().aktiv) {
+          e.preventDefault();
+          zurNaechstenOffenen();
+        }
+        return;
+      }
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
       const s = useFormulare.getState();
       const taste = e.key.toLowerCase();

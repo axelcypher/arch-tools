@@ -399,8 +399,8 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
     const info = host.querySelector<HTMLButtonElement>('.fo-papier .fo-entfall-info.offen')!;
     expect(info.getAttribute('aria-label')).toMatch(/^Offen – hängt ab von: Gebäudeklasse \(nicht festgelegt\)/);
 
-    // „Festlegen …“ führt zu den Projektmerkmalen im Projektumfang
-    await klick(knopf(gl(host) as HTMLElement, 'Festlegen'));
+    // „Alle Projektmerkmale …“ führt zu den Projektmerkmalen im Projektumfang
+    await klick(knopf(gl(host) as HTMLElement, 'Alle Projektmerkmale'));
     await warte();
     const gk = host.querySelector<HTMLSelectElement>('select[aria-label="Gebäudeklasse"]')!;
     act(() => {
@@ -423,6 +423,23 @@ describe('Bedingungen: Projektmerkmale und Felder', () => {
     expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')).toBeNull();
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
     expect(gl(host).querySelector('.fo-gl-offen')).toBeNull();
+  });
+
+  it('Projektmerkmal im Hinweiskasten der Gliederung festlegen: landet in der Projektdatei, offen wird erforderlich (U-02)', async () => {
+    useFormulare.getState().profilSetzen('nw019999|2026A', { abschnitte: { '0:Panel1': { bedingung: GK345 } }, zaehlt: {} });
+    const host = await projektBS9();
+    await klick(knopf(host, '001-Muster'));
+    const wahl = gl(host).querySelector('[aria-label="Gebäudeklasse festlegen"]')!;
+    // mit Kurzerklärung und Fundstelle
+    expect(wahl.textContent).toContain('Gebäudeklasse (§ 2 Abs. 3 BauO NRW 2018)');
+    expect([...wahl.querySelectorAll('.fo-merkmal-werte button')].map((b) => b.textContent)).toEqual(['1', '2', '3', '4', '5']);
+    expect(wahl.querySelector<HTMLButtonElement>('.fo-merkmal-werte button')!.title).toContain('freistehend');
+    await klick(knopf(wahl as HTMLElement, '3'));
+    await warte();
+    expect(readProjectFile(ds.dateien.get(OAP)!).meta.merkmale).toEqual({ Gebäudeklasse: '3' });
+    expect(gl(host).querySelector('.fo-gl-merkmal')).toBeNull();
+    expect(gl(host).querySelector('.fo-gl-offen')).toBeNull();
+    expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
   });
 
   it('Bedingung zusammenstellen: Projektmerkmal UND (Feld per Klick im Formular ODER anderes Merkmal) – in Worten und mit Zustand', async () => {

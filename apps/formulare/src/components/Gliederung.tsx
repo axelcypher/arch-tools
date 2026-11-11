@@ -1,38 +1,24 @@
 import { useMemo, useState } from 'react';
 import { bedingungText, fehlendeMerkmale } from '../bedingung';
 import { useEinrichten } from '../einrichten';
-import type { Abschnitt, Feld } from '../forma/felder';
+import type { Feld } from '../forma/felder';
 import { abschnitte } from '../forma/felder';
 import { useHervorheben } from '../markierung';
 import { springeZuFeld } from '../navigation';
-import type { Einheit, FormularProfil } from '../profil';
-import { abschnittId, abschnittZustand, ausgefuellt, einheiten, einheitTitel, feldTitel, formularKontext, leeresProfil, profilSchluessel } from '../profil';
+import type { FormularProfil } from '../profil';
+import { abschnittZustand, einheitTitel, feldTitel, formularKontext, leeresProfil, profilSchluessel } from '../profil';
+import type { AbschnittStand } from '../pruefliste';
+import { abschnittStand, offeneAngaben } from '../pruefliste';
+import { useFeldFilter, zurNaechstenOffenen } from '../pruefen';
 import { useMerkmalWerte } from '../merkmalWerte';
 import type { OffenesFormular } from '../store';
 import { useFormulare, useProfil, wertVon } from '../store';
 import { umfangZeigen } from './Antrag';
 import { EinrichtenBaum } from './Einrichten';
+import { MerkmalWahl } from './MerkmalWahl';
 import { Symbol } from './Symbol';
 
-interface Punkt {
-  id: string;
-  abschnitt: Abschnitt;
-  erkannt: string;
-  titel: string;
-  sichtbar: boolean;
-  einheiten: { einheit: Einheit; voll: boolean }[];
-  /** nach seiner Bedingung erforderlich (auch offen) und nicht alle Angaben entfallen */
-  erforderlich: boolean;
-  /** Abschnitt hängt an nicht festgelegten Projektmerkmalen */
-  abschnittOffen: boolean;
-  /** keine zählenden Angaben (alle „zählt nicht“) */
-  freiwillig: boolean;
-  gesamt: number;
-  gefuellt: number;
-  /** nicht ausgefüllte Angaben, die an nicht festgelegten Projektmerkmalen hängen (zählen in `gesamt` mit) */
-  offen: number;
-  /** die Merkmale, an denen die offenen Angaben hängen */
-  fehlend: string[];
+interface Punkt extends AbschnittStand {
   geaendert: boolean;
 }
 
@@ -58,36 +44,10 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
     () =>
       offen.felder.map((felder, i) => ({
         i,
-        punkte: abschnitte(felder).map((a): Punkt => {
-          const id = abschnittId(a);
-          const p = profil.abschnitte[id];
-          const erkannt = a.titel || a.felder[0].beschriftung;
-          const zustand = abschnittZustand(a, profil, k);
-          const e = einheiten(a, profil, k).map((einheit) => ({ einheit, voll: ausgefuellt(einheit, (f) => wertVon(offen, f)) }));
-          const zaehlen = zustand !== 'nein' ? e.filter((x) => !x.einheit.entfaellt) : [];
-          // entfällt: Bedingung des Abschnitts trifft sicher nicht zu oder alle Angaben entfallen (B-07)
-          const erforderlich = zustand !== 'nein' && (zaehlen.length > 0 || !e.length);
-          const abschnittOffen = zustand === 'offen';
-          const offeneEinheiten = zaehlen.filter((x) => !x.voll && (abschnittOffen || x.einheit.offen));
-          return {
-            id,
-            abschnitt: a,
-            erkannt,
-            titel: p?.titel || erkannt,
-            sichtbar: p?.sichtbar !== false,
-            einheiten: e,
-            erforderlich,
-            abschnittOffen,
-            freiwillig: erforderlich && !e.length,
-            gesamt: zaehlen.length,
-            gefuellt: zaehlen.filter((x) => x.voll).length,
-            offen: offeneEinheiten.length,
-            fehlend: [
-              ...new Set([...(abschnittOffen ? fehlendeMerkmale(p?.bedingung, k.merkmale) : []), ...offeneEinheiten.flatMap((x) => x.einheit.fehlend ?? [])]),
-            ],
-            geaendert: a.felder.some((f) => f.schluessel in offen.aenderungen),
-          };
-        }),
+        punkte: abschnitte(felder).map((a): Punkt => ({
+          ...abschnittStand(a, profil, k, (f) => wertVon(offen, f)),
+          geaendert: a.felder.some((f) => f.schluessel in offen.aenderungen),
+        })),
       })),
     [offen, profil, k],
   );
@@ -112,6 +72,13 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
   const gefuellt = sichtbare.reduce((n, p) => n + p.gefuellt, 0);
   // offene Angaben zählen wie erforderliche – kein voller Balken, solange etwas offen ist
   const ungeklaert = sichtbare.reduce((n, p) => n + p.offen, 0);
+  // Prüfliste: fehlende Pflichtangaben und ungeklärte (hängen an Projektmerkmalen)
+  const liste = useMemo(() => offeneAngaben(offen.felder, profil, k, (f) => wertVon(offen, f)), [offen, profil, k]);
+  const fehlen = liste.filter((x) => !x.ungeklaert).length;
+  const zeigeOffene = () => {
+    useFormulare.getState().setAnsicht('felder');
+    useFeldFilter.getState().setFilter('offen');
+  };
 
   const umschalten = (id: string) =>
     setOffeneAbschnitte((s) => {
@@ -149,14 +116,33 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
         </div>
       </div>
 
+      {!anpassen && (
+        <div className="fo-gl-pruefliste" aria-label="Prüfliste">
+          {liste.length ? (
+            <>
+              <button className="fo-gl-pruef-zahl" title="Was fehlt noch? – offene Angaben in der Feldansicht zeigen" onClick={zeigeOffene}>
+                {fehlen} offen
+                {liste.length > fehlen && <span className="fo-gl-offen">{liste.length - fehlen} ungeklärt</span>}
+              </button>
+              <button className="small" title="Zur nächsten offenen Angabe springen (F8)" onClick={() => zurNaechstenOffenen()}>
+                Nächste offene Angabe
+              </button>
+            </>
+          ) : (
+            <span className="muted small-text">Nach den Vorgaben der App keine offenen Angaben</span>
+          )}
+        </div>
+      )}
+
       {fehlend.length > 0 && (
         <div className="fo-gl-merkmal">
           <span>
-            Für die Bedingungen dieses Formulars fehlt im Projekt: <strong>{fehlend.join(', ')}</strong>
+            Für die Bedingungen dieses Formulars fehlt {offen.projekt ? 'im Projekt' : 'für diese Datei'}: <strong>{fehlend.join(', ')}</strong>
           </span>
+          <MerkmalWahl offen={offen} namen={fehlend} />
           {offen.projekt && (
             <button className="small" onClick={umfangZeigen}>
-              Festlegen …
+              Alle Projektmerkmale …
             </button>
           )}
         </div>

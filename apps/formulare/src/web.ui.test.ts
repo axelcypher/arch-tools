@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { useAntrag } from './antragStore';
 import { umfangZeigen } from './components/Antrag';
+import { useDateiMerkmale } from './merkmalWerte';
 import { useFormulare } from './store';
 
 const MUSTER = new Uint8Array(readFileSync(path.resolve(__dirname, '__fixtures__/muster.frmsjf')));
@@ -34,6 +35,7 @@ beforeEach(() => {
   datei.heruntergeladen = [];
   useFormulare.setState({ ds: null, projekt: null, offen: null, karte: null, haupt: 'formular', meldung: null, profile: {}, ansicht: 'felder', gliederungOffen: true, verlaufOffen: false });
   useAntrag.setState({ projektdatei: null });
+  useDateiMerkmale.setState({ werte: {} });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -119,5 +121,40 @@ describe('Web-Version', () => {
     // nicht zurückzunehmen
     expect(knopfGenau(host, 'Anfang (vor der ersten Eingabe)')).toBeUndefined();
     expect(host.querySelector<HTMLButtonElement>('button[aria-label="Rückgängig"]')!.disabled).toBe(true);
+  });
+
+  it('Projektmerkmal direkt im Formular festlegen: gilt für diese Datei, abhängige Felder wechseln von „offen“ (U-02)', async () => {
+    useFormulare.getState().profilSetzen('nw019999|2026A', {
+      abschnitte: {},
+      zaehlt: {},
+      bedingungen: { '0:Memo2': { art: 'gruppe', op: 'und', teile: [{ art: 'merkmal', merkmal: 'Gebäudeart', werte: ['Einfamilienhaus'], nicht: true }] } },
+    });
+    const host = await render();
+    await act(() => useFormulare.getState().dateiOeffnen());
+    await warte();
+    await klick(knopfGenau(host, 'Formular')!);
+    const memo2 = () => host.querySelector('.fo-papier [data-feld="0:Memo2"]')!;
+    expect(memo2().classList.contains('offen')).toBe(true);
+    const kasten = host.querySelector('.fo-gl-merkmal')!;
+    expect(kasten.textContent).toContain('fehlt für diese Datei');
+    // Auswahl mit Kurzerklärung
+    const gruppe = kasten.querySelector('[aria-label="Gebäudeart festlegen"]')!;
+    expect(gruppe.textContent).toContain('Art des Gebäudes');
+    await klick(knopfGenau(gruppe, 'Einfamilienhaus')!);
+    expect(host.querySelector('.fo-gl-merkmal')).toBeNull();
+    expect(memo2().classList.contains('offen')).toBe(false);
+    expect(memo2().classList.contains('entfaellt')).toBe(true);
+    expect(JSON.parse(localStorage.getItem('formulare:merkmale-datei')!)).toEqual({ 'datei|Bauantrag.frmsjf': { Gebäudeart: 'Einfamilienhaus' } });
+    expect(useAntrag.getState().projektdatei).toBeNull();
+
+    // am offenen Feld: das Info-Symbol öffnet dieselbe Auswahl
+    act(() => useDateiMerkmale.getState().setzen('datei|Bauantrag.frmsjf', 'Gebäudeart', ''));
+    await warte();
+    await klick(host.querySelector<HTMLButtonElement>('.fo-papier .fo-entfall-info.offen')!);
+    const fenster = document.querySelector('.fo-gesetz')!;
+    expect(fenster.textContent).toContain('Gebäudeart festlegen');
+    await klick(knopfGenau(fenster.querySelector('[aria-label="Gebäudeart festlegen"]')!, 'Mehrfamilienhaus')!);
+    expect(useDateiMerkmale.getState().werte['datei|Bauantrag.frmsjf']).toEqual({ Gebäudeart: 'Mehrfamilienhaus' });
+    expect(memo2().classList.contains('offen') || memo2().classList.contains('entfaellt')).toBe(false);
   });
 });

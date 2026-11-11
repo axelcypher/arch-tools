@@ -144,6 +144,7 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                         className="fo-el"
                         style={ort}
                         offen={istOffen}
+                        merkmale={entfall.merkmale}
                         gruende={(istOffen ? entfall.offen : entfall.gruende).get(f.schluessel)!}
                         text={entfall.text(f.schluessel)}
                       />

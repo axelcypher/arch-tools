@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useMerkmalWerte } from '../merkmalWerte';
 import type { Entfall } from '../entfall';
+import { fehlendeMerkmale } from '../bedingung';
 import { entfallGruende, entfallQuellen, entfallText, offenGruende } from '../entfall';
 import { abschnitte } from '../forma/felder';
 import { formularKontext, leeresProfil, profilSchluessel } from '../profil';
@@ -18,6 +19,8 @@ export interface Entfallen {
   offen: Map<string, Entfall[]>;
   /** Hinweistext zu einem entfallenden oder offenen Feld */
   text: (schluessel: string) => string;
+  /** Werte der Projektmerkmale (für die Auswahl fehlender am offenen Feld) */
+  merkmale: Record<string, string>;
 }
 
 /**
@@ -49,7 +52,7 @@ export function useEntfallen(offen: OffenesFormular): Entfallen {
       if (!texte.has(s)) texte.set(s, gruende.has(s) ? entfallText(gruende.get(s)!, felder, p, merkmale) : offene.has(s) ? entfallText(offene.get(s)!, felder, p, merkmale, 'offen') : '');
       return texte.get(s)!;
     };
-    return { gruende, offen: offene, text };
+    return { gruende, offen: offene, text, merkmale };
   }, [roh, merkmale, offen]);
 }
 
@@ -57,8 +60,24 @@ export function useEntfallen(offen: OffenesFormular): Entfallen {
  * Info-Symbol an einem entfallenden oder offenen Feld: Zeigen nennt den Grund, ein Klick öffnet die Rechtsgrundlage
  * (wenn die Vorgabe eine nennt) im Gesetzes-Fenster.
  */
-export function EntfallInfo({ gruende, text, offen = false, className = '', style }: { gruende: Entfall[]; text: string; offen?: boolean; className?: string; style?: CSSProperties }) {
+export function EntfallInfo({
+  gruende,
+  text,
+  offen = false,
+  merkmale,
+  className = '',
+  style,
+}: {
+  gruende: Entfall[];
+  text: string;
+  offen?: boolean;
+  /** offenes Feld: Werte der Projektmerkmale – die fehlenden lassen sich im Fenster festlegen */
+  merkmale?: Record<string, string>;
+  className?: string;
+  style?: CSSProperties;
+}) {
   const quellen = entfallQuellen(gruende);
+  const fehlend = offen && merkmale ? [...new Set(gruende.flatMap((e) => fehlendeMerkmale(e.bedingung, merkmale)))] : [];
   const knopf = useRef<HTMLButtonElement>(null);
   const [lage, setLage] = useState<DOMRect | null>(null);
   const zeigen = () => setLage(knopf.current?.getBoundingClientRect() ?? null);
@@ -68,7 +87,7 @@ export function EntfallInfo({ gruende, text, offen = false, className = '', styl
       <button
         ref={knopf}
         type="button"
-        className={`fo-entfall-info${quellen.length ? ' mit-quelle' : ''}${offen ? ' offen' : ''} ${className}`}
+        className={`fo-entfall-info${quellen.length || fehlend.length ? ' mit-quelle' : ''}${offen ? ' offen' : ''} ${className}`}
         style={style}
         aria-label={text}
         tabIndex={-1}
@@ -81,7 +100,7 @@ export function EntfallInfo({ gruende, text, offen = false, className = '', styl
           e.stopPropagation();
           e.preventDefault();
           verbergen();
-          if (quellen.length) useGesetz.getState().oeffnen(quellen);
+          if (quellen.length || fehlend.length) useGesetz.getState().oeffnen(quellen, fehlend);
         }}
       >
         <Symbol name="info" />

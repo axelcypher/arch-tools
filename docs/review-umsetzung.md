@@ -91,8 +91,13 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
 - [x] **R-25** Merkmal „Planungsrecht“: einfacher Bebauungsplan – FO 0.23.0: neue Werte „einfacher Bebauungsplan“,
   „Satzung nach BauGB“; Erklärungen je Wert (`MERKMAL_ERKLAERUNG`, im Projektumfang angezeigt); auch nw010004
   (Flurkarte bei Nutzungsänderung) zählt den einfachen Bebauungsplan mit
-- [ ] **U-02** Projektmerkmale direkt im Formular festlegen
-- [ ] **U-03** Prüfliste „Was fehlt noch?“
+- [x] **U-02** Projektmerkmale direkt im Formular festlegen – FO 0.24.0: Segmentknöpfe je fehlendem Merkmal im
+  Hinweiskasten der Gliederung und im Fenster des Info-Symbols am offenen Feld, mit Kurzerklärung und Fundstelle
+  (`MERKMAL_ERKLAERUNG`); Desktop in die Projektdatei, Web je Datei im lokalen Speicher (löst B-03 mit)
+- [x] **U-03** Prüfliste „Was fehlt noch?“ – FO 0.24.0: Filter „Offene“ (ersetzt „Leere“) als Liste je offener
+  Angabe mit den Eingaben darin, ungeklärte gelb; „n offen · n ungeklärt“ im Kopf der Gliederung; „Nächste offene
+  Angabe“ (Knopf, F8); Suche blendet Seiten ohne Treffer aus und zeigt die Trefferzahl. Hinweise (U-04/U-05) kommen
+  mit FO 0.25.0 dazu. Abweichung: Hinweise auf veraltete Vordrucke gibt es in der App nicht (nichts aufzunehmen)
 - [ ] **U-04** Plausibilität: widersprüchliche Kreuze
 - [ ] **U-05** Formularangaben und Projektmerkmale abgleichen
 - [ ] **U-06** Info-Symbole

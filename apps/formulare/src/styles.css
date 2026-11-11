@@ -3220,6 +3220,87 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-gl-kopf .fo-gl-offen {
   margin-left: 6px;
 }
+/* Prüfliste „Was fehlt noch?“ (U-03) */
+.fo-gl-pruefliste {
+  margin: 2px 8px 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+}
+.fo-gl-pruef-zahl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 6px;
+  font-size: 11.5px;
+}
+.fo-pruefliste {
+  margin: 0 0 16px;
+}
+.fo-pruefliste h2 {
+  font-size: 14px;
+  margin: 8px 0;
+}
+.fo-pruef-zeile {
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  background: var(--panel);
+}
+.fo-pruef-zeile.ungeklaert {
+  border-left-color: var(--warn-border);
+}
+.fo-pruef-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.fo-treffer {
+  margin-left: 6px;
+}
+
+/* Projektmerkmale direkt am Formular festlegen (U-02) */
+.fo-merkmal-wahl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.fo-merkmal-zeile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.fo-merkmal-name {
+  font-weight: 600;
+}
+.fo-merkmal-quelle {
+  margin-left: 4px;
+  padding: 0 4px;
+}
+.fo-merkmal-werte {
+  flex-wrap: wrap;
+}
+.fo-merkmal-werte button {
+  white-space: nowrap;
+}
+.fo-gesetz-merkmale {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: var(--warn-text);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .fo-gl-freiwillig {
   flex-shrink: 0;
   padding: 0 5px;
