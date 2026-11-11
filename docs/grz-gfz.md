@@ -30,7 +30,13 @@ Bebauungsplan gilt.
   einen Konflikt. Festsetzungen, Einstufungen und Nutzungen bleiben unberührt.
 - **Regeln nachschlagen:** „§ Regeln“ in der Titelleiste bzw. F1 öffnet das Nachschlagewerk mit den
   angewandten Vorschriften (Zitat, Fundstelle, Link, Suche); die `?`-Knöpfe an den Abschnitten zeigen nur die
-  dort maßgebenden Regeln.
+  dort maßgebenden Regeln. Im GRZ-Nachweis zeigt es nur die eigenen Regeln (keine WoFlV); die Suche findet § 19
+  BauNVO auch über Terrasse, Carport, Zufahrt, Weg. Die Pillen der Anrechnung („prüfen“, „GRZ II“, „zählt nicht“ …)
+  begründen im Tooltip die Einstufung je Nutzung und Fassung und öffnen per Klick die passende Regel.
+- **Rückgängig** (Strg+Z) nennt im Tooltip den Schritt („Rückgängig: Nutzung ändern“), ebenso Wiederholen.
+- **IFC-Bericht:** Nach dem Import („IFC-Import“) bzw. „IFC aktualisieren“ („IFC-Abgleich“) steht oben eine
+  Zusammenfassung („Lageplan: n Flächen, Geländemodell: ja/nein, Geschosse: …“); Hinweise, die nur den
+  Flächenrechner betreffen (BRI, Bodenplatte, Putzabzug, Wohnfläche, Dachform), entfallen.
 
 ## Projekt und Bebauungsplan
 
@@ -130,6 +136,13 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
   Beim Zeichnen stehen Segmentlänge (bzw. Breite × Tiefe) und Fläche am Mauszeiger und in der Leiste.
 - **Kantenfang:** Außer auf Ecken fängt der Cursor auf die Kantenmitte (Dreieck), das Lot vom letzten Punkt auf
   eine Kante (⊥) und jeden Punkt einer Kante (×) – z. B. eine Terrasse ohne Spalt an der Hauswand.
+- **Varianten:** Eine Fläche lässt sich im Auswahlbereich auf „nur Variante B“ (bzw. A, C, D) setzen – etwa „mit
+  Terrasse“ oder „Carport hier/dort“. Sobald es mehr als eine Variante gibt, zeigt der Nachweis oben die
+  Kennzahlen aller Varianten nebeneinander und einen Umschalter; Kacheln, Druck und Excel gelten für die gewählte
+  Variante (sie wird im Projekt gespeichert), Flächen anderer Varianten erscheinen im Plan blass.
+- **3D-Ansicht:** Überlagerte Lageplan-Flächen auf gleicher Höhe liegen nach ihrem Rang einige Millimeter
+  übereinander (wie die Zuordnung der Überlagerungen im Nachweis) – an jeder Stelle ist die höher angerechnete
+  Fläche zu sehen, nichts flimmert.
 - **Kantenlängen** einer gewählten Fläche lassen sich unter „Kantenlängen“ eintragen: Der Endpunkt wandert entlang
   der Kante; bei einem Rechteck wandert die Nachbarecke mit, es bleibt ein Rechteck.
 - **Hilfslinienfang:** Beim Zeichnen und Punkteziehen fängt der Cursor auf den Verlängerungen der Nachbarkanten,
@@ -202,8 +215,9 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
 
 ## Ausgabe
 
-- Kennzahlen mit Ampel und Reserve, Vollgeschossprüfung mit Begründung, Geschossfläche je Geschoss,
-  Flächenbilanz (Gebäude, voll-/teilversiegelt, grün) und Hinweise.
+- Kennzahlen mit Ampel und Reserve, Vollgeschossprüfung mit Begründung (aufklappbar unter jeder Zeile, Festlegung
+  „auto/ja/nein“), Geschossfläche je Geschoss, Flächenbilanz (Gebäude, voll-/teilversiegelt, grün) und Hinweise.
+  Zahl und Einheit stehen nie getrennt; bis 1280 px Fensterbreite steht der Nachweis unter Festsetzungen und Plan.
 - **Stellen der Kennzahlen:** GRZ und GFZ stehen mit mindestens drei Nachkommastellen; liegt der Wert näher als
   0,005 am zulässigen Wert, mit vier (0,5017 statt 0,50) – und mit so vielen mehr, dass „überschritten“ nie neben
   gleich aussehenden Zahlen steht. Die Ampel ist zusätzlich in m² begründet („GF 307,28 m² > 306,25 m² zulässig“).

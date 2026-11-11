@@ -1,4 +1,6 @@
 import type { Anrechnung, GelaendeQuelle, Kennzahl, Nachweis, Status } from './massNutzung';
+import type { BauNVOFassung, LageplanNutzung } from '@core/model';
+import { nutzungLabel } from '@core/lageplan';
 
 /** Bezeichnungen für Ansicht, Druck und Excel */
 
@@ -97,3 +99,32 @@ export function flaechenVergleich(kurz: string, k: Kennzahl): string | undefined
 
 export const HAFTUNG =
   'Das Tool rechnet nach und zeigt die angewandte Fassung; die Verantwortung für den Nachweis bleibt bei der Entwurfsverfasserin bzw. dem Entwurfsverfasser.';
+
+/** Regel im Nachschlagewerk, die eine Anrechnung begründet */
+export function anrechnungRegelId(a: Anrechnung): string {
+  return a === 'garage01' ? 'baunvo-21a' : 'baunvo-19';
+}
+
+const FASSUNG_TEXT: Record<BauNVOFassung, string> = { '1962': 'BauNVO 1962', '1968': 'BauNVO 1968/1977', '1990': 'BauNVO 1990' };
+
+/** Begründung der Anrechnung je Nutzung und Fassung – Tooltip der Pille („prüfen“, „zählt nicht“, „GRZ II“ …) */
+export function anrechnungErklaerung(n: LageplanNutzung, f: BauNVOFassung, a: Anrechnung, regel: Anrechnung): string {
+  const was = `${nutzungLabel(n)} nach ${FASSUNG_TEXT[f]}`;
+  const fest = regel === 'pruefen' && a !== 'pruefen' ? ' – so festgelegt unter „Einstufung offener Fälle“' : '';
+  switch (a) {
+    case 'pruefen':
+      return n === 'terrasse' && f === '1990'
+        ? `${was}: nicht ausdrücklich geregelt. Praxis A: angebaute, ebenerdige Terrasse gehört zur Hauptanlage (GRZ I); Praxis B: Nebenanlage (GRZ II) bzw. nicht überdeckt außer Betracht. Mit der Bauaufsicht klären.`
+        : `${was}: nicht eindeutig geregelt – ohne und mit dieser Fläche gerechnet; Einstufung mit der Bauaufsicht klären.`;
+    case 'grz2':
+      return `${was}: zählt zur GRZ II (§ 19 Abs. 4 BauNVO – Garagen, Stellplätze mit Zufahrten, Nebenanlagen, Unterbauungen)${fest}.`;
+    case 'garage01':
+      return `${was}: bis 0,1 der Grundstücksfläche anrechnungsfrei (§ 21a Abs. 3 BauNVO 1968/1977).`;
+    case 'hauptanlage':
+      return `${was}: zählt zur Grundfläche${f === '1990' ? ' der Hauptanlage (GRZ I)' : ''}${fest}.`;
+    default:
+      return n === 'garage' && f === '1962'
+        ? `${was}: im Kern-, Gewerbe- und Industriegebiet nicht angerechnet (§ 19 Abs. 5 BauNVO 1962)${fest}.`
+        : `${was}: zählt nicht zur Grundfläche${f === '1968' ? ' (§ 19 Abs. 4 BauNVO 1968/1977)' : n === 'garten' ? ' (nicht überbaut)' : ''}${fest}.`;
+  }
+}

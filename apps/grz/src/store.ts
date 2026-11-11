@@ -29,6 +29,9 @@ interface GrzState {
   dokument: number;
   past: Project[];
   future: Project[];
+  /** Namen der Schritte zu past/future (gleich lang) – für „Rückgängig: Nutzung ändern“ */
+  pastAktionen: string[];
+  futureAktionen: string[];
   /** zuletzt gewählte Lageplan-Fläche (Eigenschaften, Eckpunkte) */
   selected: string | null;
   /** alle gewählten Lageplan-Flächen (Mehrfachauswahl mit Umschalt) – enthält selected */
@@ -49,7 +52,7 @@ interface GrzState {
   /** wiederhergestellten Zwischenstand verwerfen: zurück auf den Stand der Datei bzw. ein leeres Projekt */
   verwerfen: () => void;
   /** zusammenfassen: aufeinanderfolgende Änderungen mit gleichem Schlüssel (z. B. Pfeiltasten) = ein Undo-Schritt */
-  update: (fn: (p: Project) => Project, zusammenfassen?: string) => void;
+  update: (fn: (p: Project) => Project, zusammenfassen?: string, aktion?: string) => void;
   undo: () => void;
   redo: () => void;
   /** nach dem Speichern: Dateiname und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
@@ -73,6 +76,8 @@ export const useGrz = create<GrzState>()((set, get) => ({
   past: [],
   dokument: 0,
   future: [],
+  pastAktionen: [],
+  futureAktionen: [],
   selected: null,
   selectedIds: [],
   werkzeug: 'auswahl',
@@ -81,7 +86,21 @@ export const useGrz = create<GrzState>()((set, get) => ({
 
   load: (p, datei = null, basis = null) => {
     log.info(`Projekt geladen: ${p.name}`, { geschosse: p.storeys.length, lageplan: p.lageplan?.flaechen.length ?? 0 });
-    set({ project: p, datei, basis, dirty: false, dokument: get().dokument + 1, past: [], future: [], selected: null, selectedIds: [], werkzeug: 'auswahl', wiederhergestellt: null });
+    set({
+      project: p,
+      datei,
+      basis,
+      dirty: false,
+      dokument: get().dokument + 1,
+      past: [],
+      future: [],
+      pastAktionen: [],
+      futureAktionen: [],
+      selected: null,
+      selectedIds: [],
+      werkzeug: 'auswahl',
+      wiederhergestellt: null,
+    });
   },
   wiederherstellen: (p, datei, basis, zeit) => {
     get().load(p, datei, basis);
@@ -94,8 +113,8 @@ export const useGrz = create<GrzState>()((set, get) => ({
     if (basis) get().load(basis, datei, basis);
     else get().load(createProject());
   },
-  update: (fn, zusammenfassen) => {
-    const { project, past } = get();
+  update: (fn, zusammenfassen, aktion = 'Änderung') => {
+    const { project, past, pastAktionen } = get();
     const next = fn(project);
     if (next === project) return;
     const jetzt = Date.now();
@@ -103,19 +122,27 @@ export const useGrz = create<GrzState>()((set, get) => ({
     const anschluss =
       zusammenfassen !== undefined && letzteAenderung.schluessel === zusammenfassen && jetzt - letzteAenderung.zeit < 800 && letzteAenderung.ergebnis === project && past.length > 0;
     letzteAenderung = { schluessel: zusammenfassen, zeit: jetzt, ergebnis: next };
-    set({ project: next, past: anschluss ? past : [...past, project].slice(-HISTORY), future: [], dirty: true });
+    set({
+      project: next,
+      past: anschluss ? past : [...past, project].slice(-HISTORY),
+      pastAktionen: anschluss ? pastAktionen : [...pastAktionen, aktion].slice(-HISTORY),
+      future: [],
+      futureAktionen: [],
+      dirty: true,
+    });
     auswahlBereinigen(set, get);
   },
   undo: () => {
-    const { past, project, future } = get();
+    const { past, project, future, pastAktionen, futureAktionen } = get();
     if (!past.length) return;
-    set({ project: past[past.length - 1], past: past.slice(0, -1), future: [project, ...future], dirty: true });
+    const a = pastAktionen[pastAktionen.length - 1] ?? 'Änderung';
+    set({ project: past[past.length - 1], past: past.slice(0, -1), future: [project, ...future], pastAktionen: pastAktionen.slice(0, -1), futureAktionen: [a, ...futureAktionen], dirty: true });
     auswahlBereinigen(set, get);
   },
   redo: () => {
-    const { past, project, future } = get();
+    const { past, project, future, pastAktionen, futureAktionen } = get();
     if (!future.length) return;
-    set({ project: future[0], past: [...past, project], future: future.slice(1), dirty: true });
+    set({ project: future[0], past: [...past, project], future: future.slice(1), pastAktionen: [...pastAktionen, futureAktionen[0] ?? 'Änderung'], futureAktionen: futureAktionen.slice(1), dirty: true });
     auswahlBereinigen(set, get);
   },
   markSaved: (datei, gespeichert, vorher, dokument) => {
@@ -126,7 +153,7 @@ export const useGrz = create<GrzState>()((set, get) => ({
     }
     // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
     const n = standNachSpeichern(get().project, vorher, gespeichert);
-    if (n.verlaufVerwerfen) set({ past: [], future: [] });
+    if (n.verlaufVerwerfen) set({ past: [], future: [], pastAktionen: [], futureAktionen: [] });
     set({ project: n.project, dirty: n.dirty, datei, basis: gespeichert, wiederhergestellt: null });
   },
   select: (id) => set({ selected: id, selectedIds: id ? [id] : [] }),
@@ -295,7 +322,7 @@ function kopie(f: LageplanFlaeche, d: number): LageplanFlaeche {
 
 function einsetzen(neu: LageplanFlaeche[]) {
   const st = useGrz.getState();
-  st.update((p) => ({ ...p, lageplan: { flaechen: [...(p.lageplan?.flaechen ?? []), ...neu] } }));
+  st.update((p) => ({ ...p, lageplan: { ...p.lageplan, flaechen: [...(p.lageplan?.flaechen ?? []), ...neu] } }), undefined, neu.length > 1 ? 'Flächen einfügen' : 'Fläche einfügen');
   st.selectMany(neu.map((f) => f.id));
 }
 
@@ -327,7 +354,21 @@ export function auswahlVerschieben(dx: number, dy: number): void {
   const ids = new Set(gewaehlt().map((f) => f.id));
   if (!ids.size) return;
   useGrz.getState().update(
-    (p) => ({ ...p, lageplan: { flaechen: (p.lageplan?.flaechen ?? []).map((f) => (ids.has(f.id) ? { ...f, points: f.points.map((q) => ({ x: q.x + dx, y: q.y + dy })) } : f)) } }),
+    (p) => ({ ...p, lageplan: { ...p.lageplan, flaechen: (p.lageplan?.flaechen ?? []).map((f) => (ids.has(f.id) ? { ...f, points: f.points.map((q) => ({ x: q.x + dx, y: q.y + dy })) } : f)) } }),
     'pfeil',
+    'Fläche verschieben',
   );
+}
+
+/** Name eines Änderungsschritts an einer Fläche aus den geänderten Feldern */
+export function flaechenAktion(patch: Partial<LageplanFlaeche>): string {
+  const k = Object.keys(patch);
+  if (k.includes('nutzung')) return 'Nutzung ändern';
+  if (k.includes('versiegelung')) return 'Versiegelung ändern';
+  if (k.includes('nachbar')) return 'Nachbar ändern';
+  if (k.includes('name')) return 'Bezeichnung ändern';
+  if (k.includes('hoehe')) return 'Höhe ändern';
+  if (k.includes('points')) return 'Fläche ändern';
+  if (k.includes('variante')) return 'Variante ändern';
+  return 'Fläche ändern';
 }

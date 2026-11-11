@@ -245,6 +245,7 @@ function normalizeFlaeche(f: Record<string, unknown>): LageplanFlaeche | null {
     versiegelung: oneOf<Versiegelung>(f.versiegelung, ['voll', 'teil', 'gruen'], 'voll'),
     ...(f.nachbar === true ? { nachbar: true } : {}),
     ...(typeof f.hoehe === 'number' && Number.isFinite(f.hoehe) ? { hoehe: f.hoehe } : {}),
+    ...(typeof f.variante === 'string' && f.variante.trim() ? { variante: f.variante.trim() } : {}),
     ...(typeof f.ifcId === 'string' && f.ifcId ? { ifcId: f.ifcId } : {}),
     ...(isObj(f.ifcStand) ? { ifcStand: f.ifcStand } : {}),
   };
@@ -263,6 +264,7 @@ function normalizeMassNutzung(m: Record<string, unknown>): MassNutzung {
   if (m.aufenthaltNichtVollgeschoss === true) out.aufenthaltNichtVollgeschoss = true;
   if (typeof m.gebietsart === 'string' && GEBIETSARTEN.some((g) => g.id === m.gebietsart)) out.gebietsart = m.gebietsart as Gebietsart;
   if (typeof m.stand === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.stand)) out.stand = m.stand;
+  if (typeof m.variante === 'string' && m.variante.trim()) out.variante = m.variante.trim();
   if (isObj(m.einstufung)) {
     const e: MassNutzung['einstufung'] = {};
     for (const n of NUTZUNGEN) if (m.einstufung[n] === 'ja' || m.einstufung[n] === 'nein' || m.einstufung[n] === 'grz1') e[n] = m.einstufung[n] as Einstufung;

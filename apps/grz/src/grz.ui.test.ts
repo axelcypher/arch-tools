@@ -106,7 +106,7 @@ describe('GRZ-Nachweis', () => {
     change(selects().find((s) => [...s.options].some((o) => o.textContent?.startsWith('offen')))!, 'ja');
     expect(useGrz.getState().project.massNutzung?.einstufung?.terrasse).toBe('ja');
     // Vollgeschoss des DG festlegen
-    const vg = selects().filter((s) => [...s.options].some((o) => o.value === 'auto') && [...s.options].some((o) => o.textContent === 'Vollgeschoss'));
+    const vg = [...host.querySelectorAll('select.grz-wahl')] as HTMLSelectElement[];
     change(vg[vg.length - 1], 'ja');
     expect(useGrz.getState().project.storeys[2].vollgeschoss).toBe(true);
     // zurück auf 1967: Aufenthaltsraum einstufen (DG wieder automatisch)
@@ -483,6 +483,51 @@ describe('Plan und Einstieg (G-22, G-24, G-27)', () => {
     const knopf = [...host.querySelectorAll('.grz-hinweise button')].find((b) => b.textContent === 'zum Feld') as HTMLButtonElement;
     act(() => knopf.click());
     expect(document.activeElement).toBe(host.querySelector('#grz-grundstueck input'));
+  });
+});
+
+describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
+  it('G-28: Zahl und Einheit nie getrennt; Begründung als eigene, aufklappbare Zeile; kurze Auswahl', async () => {
+    const { existsSync, readFileSync } = await import('node:fs');
+    const pfad = ['src/styles.css', 'apps/grz/src/styles.css'].find((x) => existsSync(x))!;
+    const css = readFileSync(pfad, 'utf8');
+    expect(css).toMatch(/\.nowrap,\s*\.num\s*\{\s*white-space: nowrap;/);
+    expect(css).toMatch(/@media \(max-width: 1280px\)/);
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    const zeilen = host.querySelectorAll('tr.grz-begruendung');
+    expect(zeilen).toHaveLength(3);
+    expect(zeilen[0].querySelector('td')!.getAttribute('colspan')).toBe('5');
+    expect(zeilen[0].querySelector('details summary')!.textContent).toBe('Begründung');
+    expect([...(host.querySelector('select.grz-wahl') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['auto', 'ja', 'nein']);
+  });
+
+  it('G-29: Pille begründet die Anrechnung und öffnet die passende Regel', async () => {
+    const { useHilfe } = await import('@core/ui/Nachschlagewerk');
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, planDatum: '2020-05-01' };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const pille = [...host.querySelectorAll('button.pill-knopf')].find((b) => b.textContent === 'prüfen') as HTMLButtonElement;
+    expect(pille.title).toContain('Terrasse nach BauNVO 1990: nicht ausdrücklich geregelt');
+    expect(pille.dataset.regel).toBe('baunvo-19');
+    act(() => pille.click());
+    expect(useHilfe.getState()).toMatchObject({ offen: true, regel: 'baunvo-19' });
+    act(() => useHilfe.getState().schliessen());
+  });
+
+  it('G-32: Rückgängig nennt die Aktion', () => {
+    useGrz.getState().load(projekt());
+    const host = render(App);
+    const id = useGrz.getState().project.lageplan!.flaechen[0].id;
+    act(() => useGrz.getState().select(id));
+    const nutzung = [...host.querySelectorAll('.lp-auswahl select')][0] as HTMLSelectElement;
+    change(nutzung, 'stellplatz');
+    const undo = [...host.querySelectorAll('button')].find((b) => b.textContent === '↶')!;
+    expect(undo.title).toBe('Rückgängig: Nutzung ändern (Strg+Z)');
+    act(() => useGrz.getState().undo());
+    const redo = [...host.querySelectorAll('button')].find((b) => b.textContent === '↷')!;
+    expect(redo.title).toBe('Wiederholen: Nutzung ändern (Strg+Y)');
   });
 });
 

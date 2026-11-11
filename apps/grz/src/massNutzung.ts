@@ -514,6 +514,24 @@ export interface Nachweis {
 export const sachlicheHinweise = (n: Pick<Nachweis, 'hinweise'>): string[] => n.hinweise.filter((h) => h.art === 'sachlich').map((h) => h.text);
 
 
+/** Varianten des Lageplans: „A“ und alle an Flächen vergebenen Namen */
+export function varianten(project: Project): string[] {
+  const v = new Set(['A', ...(project.lageplan?.flaechen ?? []).flatMap((f) => (f.variante ? [f.variante] : []))]);
+  if (project.massNutzung?.variante) v.add(project.massNutzung.variante);
+  return [...v].sort((a, b) => a.localeCompare(b, 'de'));
+}
+
+/** Variante, für die der Nachweis gerechnet wird */
+export const aktiveVariante = (project: Project): string => project.massNutzung?.variante ?? 'A';
+
+/** Lageplan-Flächen der gewählten Variante (ohne Variante: in allen) */
+export const flaechenDerVariante = (project: Project) => (project.lageplan?.flaechen ?? []).filter((f) => !f.variante || f.variante === aktiveVariante(project));
+
+/** Kennzahlen je Variante nebeneinander (der Rechenkern wertet jede Variante aus) */
+export function variantenVergleich(project: Project): { variante: string; n: Nachweis }[] {
+  return varianten(project).map((variante) => ({ variante, n: massNachweis({ ...project, massNutzung: { ...(project.massNutzung ?? {}), variante } }) }));
+}
+
 function kennzahl(flaeche: number, g: number | undefined, zul: number | undefined, mitOffenen?: number): Kennzahl {
   const offen = mitOffenen !== undefined && Math.abs(mitOffenen - flaeche) > 1e-9 ? mitOffenen : undefined;
   if (!g) return { flaeche, flaecheMitOffenen: offen, zulaessig: zul, status: 'fehlt' };
@@ -544,7 +562,9 @@ export function massNachweis(project: Project): Nachweis {
     .filter((st) => st.shapes.some((s) => s.kind === 'outline' && !s.subtract))
     .map((st) => ({ st, e: elev[project.storeys.indexOf(st)] }))
     .sort((a, b) => a.e - b.e);
-  const flaechen = project.lageplan?.flaechen ?? [];
+  // Varianten: Flächen ohne Variante gehören zu allen, sonst nur zur gewählten (Vorgabe „A“)
+  const variante = aktiveVariante(project);
+  const flaechen = (project.lageplan?.flaechen ?? []).filter((f) => !f.variante || f.variante === variante);
   const eigene = flaechen.filter((f) => !f.nachbar);
 
   // Grundrisse je Geschoss

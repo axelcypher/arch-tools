@@ -12,7 +12,8 @@ import { datumText } from '@core/ui/DruckKopf';
 import { ExcelDialog } from './components/ExcelDialog';
 import { GrzGfzView } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
-import { ifcAktualisierenWaehlen, oeffnen, speichern } from './datei';
+import type { IfcBericht } from './datei';
+import { ifcAktualisierenWaehlen, ifcBericht, oeffnen, speichern } from './datei';
 import { useGrz } from './store';
 
 const log = logger('app');
@@ -26,6 +27,8 @@ export function App() {
   const gesperrt = 'Erst ein Gebäude öffnen: Projekt (.oap) oder IFC-Modell';
   const canUndo = useGrz((s) => s.past.length > 0);
   const canRedo = useGrz((s) => s.future.length > 0);
+  const undoName = useGrz((s) => s.pastAktionen[s.pastAktionen.length - 1]);
+  const redoName = useGrz((s) => s.futureAktionen[0]);
   const [logOpen, setLogOpen] = useState(false);
   const datei = useGrz((s) => s.datei);
   const wiederhergestellt = useGrz((s) => s.wiederhergestellt);
@@ -34,7 +37,7 @@ export function App() {
   const [excelOpen, setExcelOpen] = useState(false);
   const [druckOpen, setDruckOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [bericht, setBericht] = useState<string[]>([]);
+  const [bericht, setBericht] = useState<IfcBericht | null>(null);
 
   useEffect(() => {
     document.title = `${dirty ? '• ' : ''}${name} – GRZ-Nachweis`;
@@ -51,7 +54,7 @@ export function App() {
   const onNeu = async () => {
     if (!(await weiterNachRueckfrage())) return;
     useGrz.getState().load(createProject());
-    setBericht([]);
+    setBericht(null);
     setNeuBegonnen(true);
     setProjekteOffen(false);
   };
@@ -62,7 +65,7 @@ export function App() {
       const r = await oeffnen(setBusy, useGrz.getState().datei);
       if (r) {
         useGrz.getState().load(r.project, r.datei, r.basis);
-        setBericht(r.bericht);
+        setBericht(r.basis === null ? ifcBericht(r.project, r.bericht, 'import') : null);
       }
     } catch (e) {
       log.error('Öffnen fehlgeschlagen', e instanceof Error ? e.message : String(e));
@@ -77,8 +80,8 @@ export function App() {
       const { project, datei } = useGrz.getState();
       const r = await ifcAktualisierenWaehlen(project, datei, setBusy);
       if (r) {
-        useGrz.getState().update(() => r.project);
-        setBericht(r.bericht);
+        useGrz.getState().update(() => r.project, undefined, 'IFC aktualisieren');
+        setBericht(ifcBericht(r.project, r.bericht, 'abgleich'));
       }
     } catch (e) {
       log.error('IFC-Aktualisierung fehlgeschlagen', e);
@@ -176,10 +179,10 @@ export function App() {
           </button>
         </div>
         <div className="tb-group">
-          <button onClick={() => useGrz.getState().undo()} disabled={!canUndo} title="Rückgängig (Strg+Z)">
+          <button onClick={() => useGrz.getState().undo()} disabled={!canUndo} title={canUndo ? `Rückgängig: ${undoName ?? 'Änderung'} (Strg+Z)` : 'Rückgängig (Strg+Z)'}>
             ↶
           </button>
-          <button onClick={() => useGrz.getState().redo()} disabled={!canRedo} title="Wiederholen (Strg+Y)">
+          <button onClick={() => useGrz.getState().redo()} disabled={!canRedo} title={canRedo ? `Wiederholen: ${redoName ?? 'Änderung'} (Strg+Y)` : 'Wiederholen (Strg+Y)'}>
             ↷
           </button>
         </div>
@@ -204,15 +207,17 @@ export function App() {
             </button>
           </div>
         )}
-        {bericht.length > 0 && (
+        {bericht && (
           <div className="grz-bericht">
-            <strong>IFC-Import:</strong>
-            <ul>
-              {bericht.map((z, i) => (
-                <li key={i}>{z}</li>
-              ))}
-            </ul>
-            <button className="small" onClick={() => setBericht([])}>
+            <strong>{bericht.titel}:</strong> {bericht.zusammenfassung}
+            {bericht.zeilen.length > 0 && (
+              <ul>
+                {bericht.zeilen.map((z, i) => (
+                  <li key={i}>{z}</li>
+                ))}
+              </ul>
+            )}{' '}
+            <button className="small" onClick={() => setBericht(null)}>
               Schließen
             </button>
           </div>
@@ -241,7 +246,7 @@ export function App() {
           onGewaehlt={async (g) => {
             if (!(await weiterNachRueckfrage())) return;
             useGrz.getState().load(g.project, g.datei, g.project);
-            setBericht([]);
+            setBericht(null);
             setProjekteOffen(false);
           }}
           onSchliessen={() => setProjekteOffen(false)}

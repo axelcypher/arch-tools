@@ -60,3 +60,25 @@ export async function ifcAktualisierenWaehlen(p: Project, datei: string | null, 
   if (!r) return null;
   return { project: r.project, bericht: r.bericht };
 }
+
+/** Hinweise des IFC-Imports, die nur den Flächenrechner betreffen (BRI, Putzabzug, Wohnfläche, Geschossschnitte) */
+const NUR_FLAECHENRECHNER =
+  /\bBRI\b|Rauminhalt|Bodenplatte|UK Sohle|Putzabzug|Nettofläche|Wohnfläche|WoFlV|Wohnung|Zonenkategorie|Geschossschnitte|„Erkennen“|BGF bis zur Dachhaut|Dachform|Dachbauteil/;
+
+export interface IfcBericht {
+  titel: 'IFC-Import' | 'IFC-Abgleich';
+  /** Zusammenfassung für den GRZ-Nachweis: Lageplan-Flächen, Geländemodell, Geschosse */
+  zusammenfassung: string;
+  zeilen: string[];
+}
+
+/** Bericht des IFC-Imports bzw. -Abgleichs auf den GRZ-Nachweis zugeschnitten */
+export function ifcBericht(p: Project, zeilen: string[], art: 'import' | 'abgleich'): IfcBericht {
+  const geschosse = p.storeys.filter((st) => st.shapes.some((x) => x.kind === 'outline')).map((st) => st.name);
+  const lp = p.lageplan?.flaechen.length ?? 0;
+  return {
+    titel: art === 'import' ? 'IFC-Import' : 'IFC-Abgleich',
+    zusammenfassung: `Lageplan: ${lp} ${lp === 1 ? 'Fläche' : 'Flächen'}, Geländemodell: ${p.gelaendeModell ? 'ja' : 'nein'}, Geschosse: ${geschosse.join(', ') || 'keine'}`,
+    zeilen: zeilen.filter((z) => !NUR_FLAECHENRECHNER.test(z)),
+  };
+}

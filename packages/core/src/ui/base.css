@@ -1351,7 +1351,8 @@ code {
 }
 
 .nw-liste {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   border-right: 1px solid var(--border);
   padding-right: 8px;
 }
@@ -1372,6 +1373,9 @@ code {
   display: block;
   width: 100%;
   text-align: left;
+  /* lange Titel umbrechen statt abschneiden (keine waagerechte Bildlaufleiste) */
+  white-space: normal;
+  overflow-wrap: anywhere;
   border-color: transparent;
   background: transparent;
   padding: 4px 6px;

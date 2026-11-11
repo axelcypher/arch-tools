@@ -5,7 +5,7 @@ import { bounds, centroid, polygonArea } from '@core/geometry';
 import { nutzungLabel, VERSIEGELUNGEN, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
 import type { Anrechnung, Kennzahl, Nachweis } from '../massNutzung';
-import { baunvoLabel, bauoLabel, massNachweis, sachlicheHinweise } from '../massNutzung';
+import { aktiveVariante, baunvoLabel, bauoLabel, flaechenDerVariante, massNachweis, sachlicheHinweise, varianten } from '../massNutzung';
 import { druckenAls } from '@core/platform/projektDatei';
 import { setMassNutzung, useGrz } from '../store';
 import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, vollgeschosseZulaessig, zahl } from '../texte';
@@ -30,7 +30,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
   const [mitRechenweg, setMitRechenweg] = useState(true);
   // Stand des Nachweises: nicht automatisch heute, sondern wie eingetragen und im Projekt gespeichert (leer = ohne Stand)
   const stand = project.massNutzung?.stand ?? '';
-  const setStand = (v: string) => useGrz.getState().update((p) => setMassNutzung(p, { stand: v || undefined }), 'stand');
+  const setStand = (v: string) => useGrz.getState().update((p) => setMassNutzung(p, { stand: v || undefined }), 'stand', 'Stand ändern');
   const m = project.massNutzung ?? {};
   const G = n.grundstueck.flaeche;
   const eigene = n.lageplan.filter((l) => !l.nachbar);
@@ -74,7 +74,11 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <DruckKopf titel="Nachweis des Maßes der baulichen Nutzung" project={project} stand={stand} />
+        <DruckKopf
+          titel={varianten(project).length > 1 ? `Nachweis des Maßes der baulichen Nutzung – Variante ${aktiveVariante(project)}` : 'Nachweis des Maßes der baulichen Nutzung'}
+          project={project}
+          stand={stand}
+        />
 
         <h2>Grundlagen</h2>
         <table className="report-table narrow">
@@ -536,7 +540,7 @@ const SCHRIFT_PT = 10;
  * Anteil (nicht unter dem Gebäude), Maßstabsleiste und Nordpfeil (Planoberkante = Projektnorden des Modells)
  */
 export function LageplanSkizze({ n, project, nr, rechenweg }: { n: Nachweis; project: Project; nr: Map<string, number>; rechenweg?: Rechenweg }) {
-  const flaechen = project.lageplan?.flaechen ?? [];
+  const flaechen = flaechenDerVariante(project);
   const pts: Point[] = [...n.hauptanlagePolygone.flat(), ...n.anlagenPolygone.flat(), ...n.grundstueckPolygone.flat(), ...flaechen.filter((f) => !f.nachbar).flatMap((f) => f.points)];
   if (!pts.length) return null;
   const b = bounds(pts);

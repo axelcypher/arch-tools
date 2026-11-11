@@ -269,6 +269,8 @@ export const REGELN: Regel[] = [
     text: [
       'Die **Grundfläche** ist der Teil des Baugrundstücks, der von baulichen Anlagen überdeckt wird – eine Überdeckung, keine Summe: Was sich überlagert, zählt nur einmal. Der GRZ-Nachweis bildet deshalb die Vereinigung aller Flächen (Gebäude und Lageplan-Flächen).',
       'Nach § 19 Abs. 4 (ab 1990) werden Garagen und Stellplätze mit Zufahrten, Nebenanlagen und unterirdische Anlagen mitgerechnet (**GRZ II**); die zulässige Grundfläche darf durch sie um bis zu 50 % überschritten werden, höchstens bis 0,8.',
+      '**Terrassen, Wege, sonstige befestigte Flächen:** § 19 BauNVO 1990 nennt sie nicht ausdrücklich. In der Praxis rechnen viele Bauaufsichten eine angebaute, ebenerdige Terrasse der Hauptanlage zu (GRZ I); andere werten sie als Nebenanlage nach § 14 (GRZ II) oder lassen nicht überdeckte, ebenerdige Flächen außer Betracht. Der GRZ-Nachweis zeigt deshalb „prüfen“ und rechnet ohne und mit ihnen; die Einstufung wird mit der Bauaufsicht geklärt und unter „Einstufung offener Fälle“ festgelegt.',
+      'Nach BauNVO 1968/1977 bleiben Balkone, Loggien, Terrassen und Nebenanlagen nach § 19 Abs. 4 unberücksichtigt; nach BauNVO 1962 werden Garagen in Kern-, Gewerbe- und Industriegebieten nicht angerechnet (§ 19 Abs. 5).',
     ],
     zitate: [
       {
@@ -277,7 +279,7 @@ export const REGELN: Regel[] = [
       },
     ],
     quellen: [BAUNVO('19'), BAUNVO('16')],
-    stichworte: ['GRZ', 'Grundflächenzahl', 'GRZ II', 'Überdeckung', 'Garage', 'Stellplatz', 'Zufahrt', 'Nebenanlage', 'Tiefgarage', '0,8'],
+    stichworte: ['GRZ', 'Grundflächenzahl', 'GRZ II', 'Überdeckung', 'Garage', 'Carport', 'Stellplatz', 'Zufahrt', 'Terrasse', 'Weg', 'Gartenhaus', 'Nebenanlage', 'Tiefgarage', 'Pflaster', '0,8'],
     apps: ['grz'],
     themen: ['grz', 'lageplan', 'ueberlagerung'],
   },
@@ -576,11 +578,17 @@ export interface Treffer {
  * Volltextsuche über Titel, Kurztext, Stichworte, Text und Zitate. Jedes Suchwort muss vorkommen;
  * Treffer in Titel und Stichworten wiegen schwerer.
  */
+/**
+ * Regelsätze, die nur ihre eigenen Regeln zeigen – auch bei der Suche. Im GRZ-Nachweis führt „Terrasse“ sonst zur
+ * WoFlV des Flächenrechners statt zu § 19 BauNVO.
+ */
+const NUR_EIGENE_REGELN: RegelApp[] = ['grz'];
+
 export function suche(q: string, o: { app?: RegelApp; themen?: string[] } = {}): Treffer[] {
   const worte = normalisiere(q).split(' ').filter(Boolean);
   const out: Treffer[] = [];
   for (const regel of REGELN) {
-    if (o.app && !regel.apps.includes(o.app) && !worte.length) continue;
+    if (o.app && !regel.apps.includes(o.app) && (!worte.length || NUR_EIGENE_REGELN.includes(o.app))) continue;
     if (o.themen?.length && !regel.themen.some((t) => o.themen!.includes(t))) continue;
     const titel = normalisiere(regel.titel);
     const stich = normalisiere(regel.stichworte.join(' '));

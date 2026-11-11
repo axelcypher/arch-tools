@@ -9,6 +9,7 @@ import type { Point } from '@core/geometry';
 import { bounds, pointInPolygon, polygonArea } from '@core/geometry';
 import { LAGEPLAN_NUTZUNGEN, nutzungLabel, versiegelungInfo } from '@core/lageplan';
 import type { Nachweis } from '../massNutzung';
+import { aktiveVariante } from '../massNutzung';
 import { addFlaeche, auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapFlaeche, neueFlaeche, NUTZUNG_NAME, removeFlaeche, useGrz } from '../store';
 import { beschriftungsPunkt, massstabLaenge } from '../beschriftung';
 import { unterlageKalibrieren, unterlageVerschieben } from '@core/kalibrierung';
@@ -125,6 +126,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const dateiRef = useRef<HTMLInputElement>(null);
   const unterlage = project.lageplan?.unterlage;
   const grenzen = project.lageplan?.grenze ?? [];
+  const variante = aktiveVariante(project);
 
   // Ausschnitt: eingepasst auf Gebäude und Flächen; neu beim Öffnen eines anderen Projekts
   const passend = useMemo<Ausschnitt>(() => {
@@ -217,11 +219,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       st.update((p) => {
         const alt = p.lageplan?.grenze ?? [];
         return { ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: [...alt, { id: newId('gr'), name: `Flurstück ${alt.length + 1}`, points: pts }] } };
-      }, undefined);
+      }, undefined, 'Grenze zeichnen');
       return;
     }
     const f = neueFlaeche(useGrz.getState().project, pts, useGrz.getState().nutzungVorlage);
-    st.update((p) => addFlaeche(p, f));
+    st.update((p) => addFlaeche(p, f), undefined, 'Fläche zeichnen');
     st.select(f.id);
   };
 
@@ -260,7 +262,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     setEingabe({ a: '', b: '' });
   };
 
-  const setzePunkte = (id: string, pts: Point[]) => st.update((p) => mapFlaeche(p, id, (f) => ({ ...f, points: pts })));
+  const setzePunkte = (id: string, pts: Point[]) => st.update((p) => mapFlaeche(p, id, (f) => ({ ...f, points: pts })), undefined, 'Punkt löschen');
 
   const panStarten = (e: React.PointerEvent) => {
     ziehen.current = { art: 'pan', sx: e.clientX, sy: e.clientY, vb };
@@ -390,7 +392,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         let next = p;
         for (const [id, pts] of v) next = mapFlaeche(next, id, (f) => ({ ...f, points: pts }));
         return next;
-      });
+      }, undefined, z.art === 'punkt' ? (z.eingefuegt ? 'Punkt einfügen' : 'Punkt verschieben') : 'Fläche verschieben');
     }
   };
 
@@ -418,7 +420,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     if ((werkzeug === 'polygon' || werkzeug === 'grenze') && draft.length >= 3) fertig(draft);
   };
 
-  const setUnterlage = (u: RasterBackground | undefined) => st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, unterlage: u } }));
+  const setUnterlage = (u: RasterBackground | undefined) => st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, unterlage: u } }), undefined, 'Unterlage ändern');
 
   /** Kalibrieren (Strecke a–b, wahre Länge erfragen) bzw. Ausrichten (Punkt a der Unterlage auf b) */
   const unterlageEinrichten = async (a: Point, b: Point) => {
@@ -512,11 +514,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           break;
         case 'Backspace':
           if (draft.length) setDraft(draft.slice(0, -1));
-          else if (sel.length) st.update((p) => removeFlaeche(p, sel));
+          else if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, 'Fläche löschen');
           e.preventDefault();
           break;
         case 'Delete':
-          if (sel.length) st.update((p) => removeFlaeche(p, sel));
+          if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, 'Fläche löschen');
           break;
         case 'f':
         case 'F':
@@ -663,7 +665,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           </>
         )}
         {grenzen.length > 0 && (
-          <button className="small" title="Gezeichnete Grundstücksgrenze entfernen" onClick={() => st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: undefined } }))}>
+          <button className="small" title="Gezeichnete Grundstücksgrenze entfernen" onClick={() => st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: undefined } }), undefined, 'Grenze löschen')}>
             Grenze löschen
           </button>
         )}
@@ -779,7 +781,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             key={f.id}
             d={d(punkteVon(f.id, f.points))}
             fill={versiegelungInfo(f.versiegelung).color}
-            fillOpacity={f.nachbar ? 0.15 : 0.55}
+            fillOpacity={f.nachbar ? 0.15 : f.variante && f.variante !== variante ? 0.12 : 0.55}
+            className={f.variante && f.variante !== variante ? 'lp-andere-variante' : undefined}
             stroke={selectedIds.includes(f.id) ? 'var(--sel)' : f.nachbar ? '#9aa0a6' : '#5b6068'}
             strokeWidth={k * (selectedIds.includes(f.id) ? 3 : 1)}
             strokeDasharray={f.nachbar ? `${k * 4} ${k * 3}` : undefined}

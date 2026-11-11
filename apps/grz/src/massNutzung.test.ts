@@ -189,11 +189,12 @@ describe('Maß der baulichen Nutzung: Speichern', () => {
       traufhoeheMax: 6.5,
       firsthoeheMax: 10,
       aufenthaltNichtVollgeschoss: true,
+      variante: 'B',
     };
     const eg = p.storeys[1].shapes[0];
     if (eg.kind === 'outline') eg.anlage = 'garage';
     p.lageplan = {
-      flaechen: [],
+      flaechen: [{ ...flaeche(12, 0, 15, 10, { name: 'Carport', nutzung: 'garage' }), variante: 'B' }],
       grenze: [{ id: 'g1', name: 'Flurstück 12', points: rectPoints({ x: -5, y: -5 }, { x: 20, y: 20 }) }],
       unterlage: { type: 'raster', name: 'Lageplan.png', dataUrl: 'data:image/png;base64,AAAA', widthPx: 800, heightPx: 600, metersPerPixel: 0.05, x: -10, y: -8, opacity: 0.5, visible: true },
     };
@@ -502,3 +503,47 @@ describe('Fachliche Lücken (G-26) und Grundstücksgrenze (G-22)', () => {
     expect(m.hinweise.some((h) => h.text.includes('gezeichnete Grenze 612,50 m²') && h.text.includes('Katasterangabe'))).toBe(true);
   });
 });
+
+describe('Varianten, 3D-Stufen, IFC-Bericht (G-30 bis G-32)', () => {
+  it('Kennzahlen je Variante: Fläche „nur in Variante B“ zählt nur dort', async () => {
+    const { variantenVergleich, varianten } = await import('./massNutzung');
+    const p = haus('2020-05-01');
+    lageplan(p, flaeche(12, 0, 15, 6, { name: 'Zufahrt', nutzung: 'zufahrt' }), { ...flaeche(-3, 0, 0, 5, { name: 'Carport', nutzung: 'garage' }), variante: 'B' });
+    expect(varianten(p)).toEqual(['A', 'B']);
+    const v = variantenVergleich(p);
+    expect(v.find((x) => x.variante === 'A')!.n.grz2!.flaeche).toBeCloseTo(135 + 18, 6);
+    expect(v.find((x) => x.variante === 'B')!.n.grz2!.flaeche).toBeCloseTo(135 + 18 + 15, 6);
+    // Nachweis der gewählten Variante
+    p.massNutzung = { ...p.massNutzung, variante: 'B' };
+    expect(massNachweis(p).lageplan.map((l) => l.name)).toEqual(['Zufahrt', 'Carport']);
+  });
+
+  it('3D: überlagerte Flächen erhalten verschiedene Stufen, die höher angerechnete liegt oben', async () => {
+    const { flaechenStufen } = await import('./flaechen3d');
+    const p = haus('2020-05-01');
+    lageplan(p, flaeche(10, -5, 20, 20, { name: 'Garten', nutzung: 'garten' }), flaeche(12, 0, 15, 6, { name: 'Zufahrt', nutzung: 'zufahrt' }));
+    const n = massNachweis(p);
+    const s = flaechenStufen(n);
+    const garten = n.lageplan.find((l) => l.name === 'Garten')!.id;
+    const zufahrt = n.lageplan.find((l) => l.name === 'Zufahrt')!.id;
+    expect(s.get(zufahrt)!).toBeGreaterThan(s.get(garten)!);
+  });
+
+  it('IFC-Bericht ohne BRI-/Putz-Zeilen, mit Zusammenfassung; Titel je nach Import oder Abgleich', async () => {
+    const { ifcBericht } = await import('./datei');
+    const p = haus('2020-05-01');
+    lageplan(p, flaeche(12, 0, 15, 6, { name: 'Zufahrt', nutzung: 'zufahrt' }));
+    const zeilen = [
+      'UG: keine Bodenplatte gefunden – Dicke im Geschoss eintragen, damit der BRI ab UK Sohle rechnet.',
+      '3 Räume mit Abzug aus der IFC-Nettofläche übernommen (Nettofläche kleiner als die Zonengeometrie, z. B. 3 % Putzabzug bei Rohbaumaßen).',
+      '12 Räume aus IFC-Zonen übernommen.',
+      'Geländeoberfläche aus dem Modell übernommen – der GRZ-Nachweis prüft die Geschossigkeit am tatsächlichen Geländeverlauf.',
+    ];
+    const b = ifcBericht(p, zeilen, 'import');
+    expect(b.titel).toBe('IFC-Import');
+    expect(b.zeilen).toEqual([zeilen[2], zeilen[3]]);
+    expect(b.zusammenfassung).toBe('Lageplan: 1 Fläche, Geländemodell: nein, Geschosse: UG, EG, OG, DG');
+    expect(ifcBericht(p, [], 'abgleich').titel).toBe('IFC-Abgleich');
+  });
+});
+

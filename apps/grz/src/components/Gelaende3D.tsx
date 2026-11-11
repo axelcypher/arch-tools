@@ -7,6 +7,8 @@ import { storeyElevations } from '@core/model';
 import { useTheme } from '@core/platform/theme';
 import { disposeGroup, facesToGeometry, fitCamera, outlineFaces, prismaGeometrie, unterbauKoerper } from '@core/ui/three3d';
 import type { Nachweis } from '../massNutzung';
+import { flaechenDerVariante } from '../massNutzung';
+import { flaechenStufen, STUFE_M } from '../flaechen3d';
 import { useGrz } from '../store';
 
 /**
@@ -159,10 +161,13 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
       t.content.add(mesh);
     }
 
-    // Lageplan-Flächen auf ihrer Höhe (ohne Höhe: auf der gemittelten Geländeoberfläche)
-    for (const f of project.lageplan?.flaechen ?? []) {
+    // Lageplan-Flächen auf ihrer Höhe (ohne Höhe: auf der gemittelten Geländeoberfläche); überlagerte Flächen nach
+    // Rang minimal versetzt und mit polygonOffset – an jeder Stelle ist die Fläche mit dem höchsten Rang sichtbar
+    const stufen = flaechenStufen(n);
+    for (const f of flaechenDerVariante(project)) {
       if (f.points.length < 3) continue;
-      const z = (f.hoehe ?? n.gelaende.hoehe) + 0.02;
+      const stufe = stufen.get(f.id) ?? 0;
+      const z = (f.hoehe ?? n.gelaende.hoehe) + 0.02 + stufe * STUFE_M;
       const geo = prismaGeometrie([{ aussen: f.points, loecher: [] }], z, z + 0.02);
       const sel = selectedIds.includes(f.id);
       const mat = new THREE.MeshStandardMaterial({
@@ -171,9 +176,12 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
         opacity: f.nachbar ? 0.25 : 0.7,
         side: THREE.DoubleSide,
         roughness: 1,
+        polygonOffset: true,
+        polygonOffsetFactor: -stufe,
+        polygonOffsetUnits: -stufe,
       });
       const mesh = new THREE.Mesh(geo, mat);
-      mesh.renderOrder = 2;
+      mesh.renderOrder = 2 + stufe;
       t.content.add(mesh);
     }
 

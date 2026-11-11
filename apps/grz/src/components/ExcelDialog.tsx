@@ -10,7 +10,7 @@ export function ExcelDialog({ onClose }: { onClose: () => void }) {
   return (
     <Dialog
       project={project}
-      update={(fn) => useGrz.getState().update(fn)}
+      update={(fn) => useGrz.getState().update(fn, undefined, 'Excel-Vorlage ändern')}
       onClose={onClose}
       speicher={vorlage}
       standardText="Blatt „GRZ GFZ“: Grundlagen, Kennzahlen, Vollgeschosse, Geschossfläche, Flächenbilanz, Lageplan-Flächen und Hinweise – mit Summenformeln."

@@ -334,11 +334,23 @@ KO 0.11.2 (Patch).
   leerem Lageplan beginnen“); „Neu“ in der Werkzeugleiste mit Rückfrage; gesperrte Knöpfe mit Grund im Tooltip;
   Hinweis „Grundstücksfläche fehlt“ mit „zum Feld“. Abweichung: Die Aktion heißt wie in allen Apps „Neues Projekt“
   (Q-5)
-- [ ] **G-28** Layout der Nachweis-Spalte
-- [ ] **G-29** Regeln: Begründung der Anrechnung je Nutzung
-- [ ] **G-30** IFC-Bericht zuschneiden
-- [ ] **G-31** 3D-Ansicht: überlagerte Flächen
-- [ ] **G-32** Rückgängig mit Beschriftung, Varianten
+- [x] **G-28** Layout der Nachweis-Spalte – GRZ 0.15.0: Begründung als aufklappbare Unterzeile über die volle Breite,
+  Festlegung „auto/ja/nein“, `nowrap` für Zahl und Einheit, bis 1280 px zwei Spalten (Nachweis darunter),
+  Auswahlfelder in Tabellen nicht mehr abgeschnitten. Abweichung: Die Kacheln stehen weiter zweispaltig; die
+  Seitenspalten werden schon bis 1280 px umgebrochen
+- [x] **G-29** Regeln: Begründung der Anrechnung je Nutzung – GRZ 0.15.0: Pille als Knopf mit Begründung je Nutzung und
+  Fassung (`anrechnungErklaerung`), Klick öffnet die Regel (`useHilfe.oeffnen(…, regel)`); § 19 mit Stichworten
+  (Terrasse, Carport, Weg …) und Absatz zur Terrassen-Praxis; Regelsatz „grz“ zeigt nur eigene Regeln
+  (`NUR_EIGENE_REGELN`); Liste bricht Titel um. core geändert – dadurch auch FR 0.24.1, KO 0.12.1, PO 0.10.1, EZ 0.6.1, FO 0.26.1, SU 0.4.2 (Patch)
+- [x] **G-30** IFC-Bericht zuschneiden – GRZ 0.15.0: `ifcBericht()` filtert BRI-/Putz-/Wohnflächen-/Dachform-Hinweise
+  (App-seitig), Titel „IFC-Import“ bzw. „IFC-Abgleich“, Zusammenfassung Lageplan/Geländemodell/Geschosse.
+  Abweichung: Test mit synthetischen Berichtszeilen statt mit `testhaus.ifc` (der IFC-Leser braucht WebAssembly)
+- [x] **G-31** 3D-Ansicht: überlagerte Flächen – GRZ 0.15.0: Stufen nach dem Rang der Überlagerung (`flaechen3d.ts`),
+  4 mm je Stufe, dazu `polygonOffset` und `renderOrder`; Flächen anderer Varianten ausgeblendet
+- [x] **G-32** Rückgängig mit Beschriftung, Varianten – GRZ 0.15.0: Teil 1: `update(fn, zusammenfassen, aktion)`,
+  `pastAktionen`/`futureAktionen`, Tooltip „Rückgängig: Nutzung ändern (Strg+Z)“. Teil 2: `LageplanFlaeche.variante`
+  („nur in Variante B“), `massNutzung.variante` (gewählte Variante), Rechenkern je Variante (`variantenVergleich`),
+  Umschalter und Vergleichstabelle im Nachweis, Druck-Titel mit Variante
 
 ## Projektordner
 

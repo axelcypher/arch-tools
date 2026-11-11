@@ -146,6 +146,8 @@ export interface LageplanFlaeche {
   nachbar?: boolean;
   /** mittlere Höhe der Oberfläche über ±0,00 in m (aus dem Modell) – für die Geländeoberfläche */
   hoehe?: number;
+  /** GRZ-Nachweis: Fläche gehört nur zu dieser Variante („B“); ohne Angabe zu allen */
+  variante?: string;
   /** Herkunft aus der IFC (GlobalId des Bauteils, ggf. mit Teilnummer) – für den erneuten Import */
   ifcId?: string;
   ifcStand?: IfcStand;
@@ -679,6 +681,8 @@ export interface MassNutzung {
   firsthoeheMax?: number;
   /** § 20 Abs. 3 Satz 2 BauNVO 1990: Aufenthaltsräume in Nicht-Vollgeschossen mitrechnen (festgesetzt) */
   aufenthaltNichtVollgeschoss?: boolean;
+  /** Variante, für die der Nachweis gilt (Lageplan-Flächen mit `variante`); ohne Angabe „A“ */
+  variante?: string;
 }
 
 export function createLageplanFlaeche(points: Point[], name = 'Fläche'): LageplanFlaeche {

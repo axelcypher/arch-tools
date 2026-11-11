@@ -7,7 +7,8 @@
   padding: 12px;
   align-items: start;
 }
-@media (max-width: 1250px) {
+/* bis 1280 px zwei Spalten: Festsetzungen | Plan, der Nachweis darunter über die volle Breite */
+@media (max-width: 1280px) {
   .grz-view {
     grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
   }
@@ -91,8 +92,27 @@
 .grz-table tr.nachbar td {
   opacity: 0.55;
 }
+/* Auswahlfelder in Tabellen so breit wie ihr Inhalt – nichts abgeschnitten („vollversiegelt“) */
 .grz-table select {
-  max-width: 150px;
+  width: auto;
+  max-width: none;
+}
+.grz-table select.grz-wahl {
+  padding: 1px 2px;
+}
+.grz-vg-zeile td {
+  border-bottom: none;
+}
+.grz-vg-ergebnis {
+  white-space: nowrap;
+}
+.grz-begruendung td {
+  padding-top: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.grz-begruendung summary {
+  cursor: pointer;
 }
 .grz-table .toggle {
   display: flex;
@@ -440,4 +460,11 @@ button.link:hover {
 }
 .lp-legende {
   margin: -4px 0 6px;
+}
+
+/* Pille der Anrechnung als Knopf (öffnet die Regel) */
+.pill-knopf {
+  border: none;
+  cursor: help;
+  font-family: inherit;
 }

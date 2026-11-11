@@ -1,4 +1,4 @@
-import { lazy, Suspense, useDeferredValue, useMemo, useState } from 'react';
+import { Fragment, lazy, Suspense, useDeferredValue, useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import { LAGEPLAN_NUTZUNGEN, VERSIEGELUNGEN } from '@core/lageplan';
 import type { BauNVOFassung, BauOFassung, Einstufung, Gebietsart, LageplanFlaeche, LageplanNutzung, MassNutzung, OutlineShape, RoomShape, Versiegelung } from '@core/model';
@@ -6,13 +6,13 @@ import { GEBIETSARTEN } from '@core/model';
 import type { Point } from '@core/geometry';
 import { Field, NumberField, TextField } from '@core/ui/fields';
 import type { Anrechnung, Kennzahl, Status } from '../massNutzung';
-import { anrechnungRegel, BAUNVO_FASSUNGEN, BAUO_FASSUNGEN, baunvoLabel, bauoLabel, massNachweis, recht } from '../massNutzung';
-import { mapFlaeche, removeFlaeche, setMassNutzung, useGrz } from '../store';
-import { AUFENTHALT, ANRECHNUNG, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, vollgeschosseZulaessig, zahl } from '../texte';
+import { aktiveVariante, anrechnungRegel, BAUNVO_FASSUNGEN, BAUO_FASSUNGEN, baunvoLabel, bauoLabel, massNachweis, recht, varianten, variantenVergleich } from '../massNutzung';
+import { flaechenAktion, mapFlaeche, removeFlaeche, setMassNutzung, useGrz } from '../store';
+import { anrechnungErklaerung, anrechnungRegelId, AUFENTHALT, ANRECHNUNG, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, vollgeschosseZulaessig, zahl } from '../texte';
 import { LageplanEditor } from './LageplanEditor';
 import { areaMP, unionAll } from '@core/polygon';
 import { polygonArea } from '@core/geometry';
-import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
+import { HilfeKnopf, useHilfe } from '@core/ui/Nachschlagewerk';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
 import { teilFormel } from '@core/flaechenZerlegung';
 import { rechenweg, teilName } from '../rechenweg';
@@ -33,13 +33,16 @@ export function GrzGfzView() {
   const n = useMemo(() => massNachweis(nachweisStand), [nachweisStand]);
   // Nummern wie im Druck (eigene Flächen in Listenfolge) und Rechenweg
   const rw = useMemo(() => rechenweg(n, new Map(n.lageplan.filter((l) => !l.nachbar).map((l, i) => [l.id, i + 1]))), [n]);
+  // Varianten (Lageplan-Flächen „nur in Variante B“): Kennzahlen nebeneinander, nur wenn es mehr als eine gibt
+  const variante = aktiveVariante(nachweisStand);
+  const vergleich = useMemo(() => (varianten(nachweisStand).length > 1 ? variantenVergleich(nachweisStand) : []), [nachweisStand]);
   const m = project.massNutzung ?? {};
   const st = useGrz.getState();
-  const setM = (patch: Partial<MassNutzung>) => st.update((p) => setMassNutzung(p, patch));
+  const setM = (patch: Partial<MassNutzung>) => st.update((p) => setMassNutzung(p, patch), undefined, 'Festsetzung ändern');
   const auto = recht({ ...m, baunvo: undefined, bauo: undefined });
   const flaechen = project.lageplan?.flaechen ?? [];
   const offeneNutzungen = LAGEPLAN_NUTZUNGEN.filter((x) => anrechnungRegel(x.id, n.recht.baunvo) === 'pruefen' && flaechen.some((f) => !f.nachbar && f.nutzung === x.id));
-  const updFlaeche = (id: string, patch: Partial<LageplanFlaeche>) => st.update((p) => mapFlaeche(p, id, (f) => ({ ...f, ...patch })));
+  const updFlaeche = (id: string, patch: Partial<LageplanFlaeche>) => st.update((p) => mapFlaeche(p, id, (f) => ({ ...f, ...patch })), undefined, flaechenAktion(patch));
   const sel = selectedIds.length <= 1 ? flaechen.find((f) => f.id === selected) : undefined;
   const mehrere = selectedIds.length > 1 ? flaechen.filter((f) => selectedIds.includes(f.id)) : [];
   const updAlle = (patch: Partial<LageplanFlaeche>) =>
@@ -47,33 +50,33 @@ export function GrzGfzView() {
       let next = p;
       for (const f of mehrere) next = mapFlaeche(next, f.id, (x) => ({ ...x, ...patch }));
       return next;
-    });
+    }, undefined, flaechenAktion(patch));
   const gleich = <T,>(werte: T[]): T | undefined => (werte.length && werte.every((v) => v === werte[0]) ? werte[0] : undefined);
   const setVollgeschoss = (storeyId: string, v: boolean | undefined) =>
-    st.update((p) => ({ ...p, storeys: p.storeys.map((s) => (s.id === storeyId ? { ...s, vollgeschoss: v } : s)) }));
+    st.update((p) => ({ ...p, storeys: p.storeys.map((s) => (s.id === storeyId ? { ...s, vollgeschoss: v } : s)) }), undefined, 'Vollgeschoss festlegen');
   const setBplan = (patch: { nummer?: string; name?: string }) =>
     st.update((p) => {
       const b = { ...(p.meta.bebauungsplan ?? {}), ...patch };
       const leer = !b.nummer?.trim() && !b.name?.trim();
       return { ...p, meta: { ...p.meta, bebauungsplan: leer ? undefined : b } };
-    });
+    }, undefined, 'Bebauungsplan ändern');
   // Gebäudeteile: Umrisse oberirdischer Geschosse, sobald ein Geschoss mehrere hat (oder einer gekennzeichnet ist)
   const gebaeudeteile = project.storeys.flatMap((s) => {
     const os = s.shapes.filter((x): x is OutlineShape => x.kind === 'outline' && !x.subtract);
     return os.length > 1 || os.some((o) => o.anlage) ? os.map((o) => ({ storey: s.name, o })) : [];
   });
   const setAnlage = (id: string, anlage: OutlineShape['anlage']) =>
-    st.update((p) => ({ ...p, storeys: p.storeys.map((s) => ({ ...s, shapes: s.shapes.map((x) => (x.id === id && x.kind === 'outline' ? { ...x, anlage } : x)) })) }));
+    st.update((p) => ({ ...p, storeys: p.storeys.map((s) => ({ ...s, shapes: s.shapes.map((x) => (x.id === id && x.kind === 'outline' ? { ...x, anlage } : x)) })) }), undefined, 'Gebäudeteil einstufen');
   const setAufenthalt = (storeyId: string, roomId: string, v: RoomShape['aufenthalt']) =>
     st.update((p) => ({
       ...p,
       storeys: p.storeys.map((s) => (s.id === storeyId ? { ...s, shapes: s.shapes.map((r) => (r.id === roomId && r.kind === 'room' ? { ...r, aufenthalt: v } : r)) } : s)),
-    }));
+    }), undefined, 'Aufenthaltsraum festlegen');
   return (
     <div className="grz-view">
       <section className="grz-col grz-fest">
         <h2>Projekt und Bebauungsplan</h2>
-        <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }))} />
+        <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }), undefined, 'Stammdaten ändern')} />
         <div className="field-row">
           <Field label="Bebauungsplan Nr.">
             <TextField value={project.meta.bebauungsplan?.nummer ?? ''} onChange={(v) => setBplan({ nummer: v })} />
@@ -191,7 +194,7 @@ export function GrzGfzView() {
             allowEmpty
             min={0}
             placeholder={n.grundstueck.grenze !== undefined ? fmt2(n.grundstueck.grenze) : n.grundstueck.ausLageplan !== undefined ? fmt2(n.grundstueck.ausLageplan) : ''}
-            onChange={(v) => st.update((p) => ({ ...p, meta: { ...p.meta, grundstueck: { ...p.meta.grundstueck, flaeche: v } } }))}
+            onChange={(v) => st.update((p) => ({ ...p, meta: { ...p.meta, grundstueck: { ...p.meta.grundstueck, flaeche: v } } }), undefined, 'Grundstücksfläche ändern')}
           />
         </Field>
         </div>
@@ -333,7 +336,7 @@ export function GrzGfzView() {
             <Field label="Höhe der Oberfläche [m]" hint="über ±0,00 – für alle gewählten Flächen">
               <NumberField value={gleich(mehrere.map((f) => f.hoehe))} allowEmpty placeholder="unterschiedlich" onChange={(v) => v !== undefined && updAlle({ hoehe: v })} />
             </Field>
-            <button className="small danger" onClick={() => st.update((p) => removeFlaeche(p, mehrere.map((f) => f.id)))}>
+            <button className="small danger" onClick={() => st.update((p) => removeFlaeche(p, mehrere.map((f) => f.id)), undefined, 'Flächen löschen')}>
               {mehrere.length} Flächen löschen
             </button>
           </div>
@@ -370,9 +373,19 @@ export function GrzGfzView() {
             <Field label="Höhe der Oberfläche [m]" hint="über ±0,00 – für die Geländeoberfläche">
               <NumberField value={sel.hoehe} allowEmpty onChange={(v) => updFlaeche(sel.id, { hoehe: v })} />
             </Field>
+            <Field label="Variante" hint="z. B. „mit Terrasse“ nur in Variante B">
+              <select value={sel.variante ?? ''} onChange={(e) => updFlaeche(sel.id, { variante: e.target.value || undefined })}>
+                <option value="">alle Varianten</option>
+                {['A', 'B', 'C', 'D'].map((v) => (
+                  <option key={v} value={v}>
+                    nur Variante {v}
+                  </option>
+                ))}
+              </select>
+            </Field>
             <KantenLaengen pts={sel.points} onChange={(pts) => updFlaeche(sel.id, { points: pts })} />
             <TeilflaechenListe f={rw.flaechen.find((x) => x.id === sel.id)} />
-            <button className="small danger" onClick={() => st.update((p) => removeFlaeche(p, sel.id))}>
+            <button className="small danger" onClick={() => st.update((p) => removeFlaeche(p, sel.id), undefined, 'Fläche löschen')}>
               Fläche löschen
             </button>
           </div>
@@ -393,7 +406,7 @@ export function GrzGfzView() {
                 {flaechen.map((f) => {
                   const post = n.lageplan.find((x) => x.id === f.id);
                   return (
-                    <tr key={f.id} className={`${f.nachbar ? 'nachbar' : ''}${selectedIds.includes(f.id) ? ' selected' : ''}`}>
+                    <tr key={f.id} className={`${f.nachbar || (f.variante && f.variante !== variante) ? 'nachbar' : ''}${selectedIds.includes(f.id) ? ' selected' : ''}`}>
                       <td>
                         <button
                           className="link"
@@ -402,6 +415,7 @@ export function GrzGfzView() {
                         >
                           {f.name || 'Fläche'}
                         </button>
+                        {f.variante && <span className="muted small-text"> · Variante {f.variante}</span>}
                         <label className="toggle small-text">
                           <input type="checkbox" checked={!!f.nachbar} onChange={(e) => updFlaeche(f.id, { nachbar: e.target.checked || undefined })} />
                           Nachbar
@@ -429,7 +443,7 @@ export function GrzGfzView() {
                         {fmt2(post?.flaecheEindeutig ?? 0)}
                         {post && post.ueberlagert > 0.05 && <div className="muted small-text">{fmt2(post.ueberlagert)} überlagert</div>}
                       </td>
-                      <td>{f.nachbar ? <span className="muted small-text">Nachbar</span> : <AnrechnungPill a={post?.anrechnung ?? 'nein'} baunvo={n.recht.baunvo} />}</td>
+                      <td>{f.nachbar ? <span className="muted small-text">Nachbar</span> : <AnrechnungPill a={post?.anrechnung ?? 'nein'} regel={post?.regel ?? 'nein'} nutzung={f.nutzung} baunvo={n.recht.baunvo} />}</td>
                     </tr>
                   );
                 })}
@@ -453,6 +467,38 @@ export function GrzGfzView() {
           {baunvoLabel(n.recht.baunvo)} · Vollgeschosse nach {bauoLabel(n.recht.bauo)}
           {n.grundstueck.flaeche !== undefined && ` · Grundstück ${fmt2(n.grundstueck.flaeche)} m²${n.grundstueck.quelle === 'lageplan' ? ' (aus dem Lageplan)' : ''}`}
         </p>
+        {vergleich.length > 1 && (
+          <div className="grz-varianten">
+            <div className="button-row" role="group" aria-label="Variante">
+              <span className="muted small-text">Variante:</span>
+              {vergleich.map(({ variante: v }) => (
+                <button key={v} className={v === variante ? 'small active' : 'small'} onClick={() => setM({ variante: v === 'A' ? undefined : v })}>
+                  {v}
+                </button>
+              ))}
+            </div>
+            <table className="grz-table grz-varianten-tabelle">
+              <thead>
+                <tr>
+                  <th>Variante</th>
+                  <th className="num">{n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'}</th>
+                  {n.recht.baunvo === '1990' && <th className="num">GRZ II</th>}
+                  <th className="num">GFZ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vergleich.map(({ variante: v, n: nv }) => (
+                  <tr key={v} className={v === variante ? 'selected' : undefined}>
+                    <td>{v}</td>
+                    <td className="num">{kennzahlWert(nv.grz)}</td>
+                    {nv.grz2 && <td className="num">{kennzahlWert(nv.grz2)}</td>}
+                    <td className="num">{kennzahlWert(nv.gfz)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         <div className="kpis">
           <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" kurz={n.recht.baunvo === '1990' ? 'GR I' : 'GR'} />
           {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
@@ -500,7 +546,8 @@ export function GrzGfzView() {
           </thead>
           <tbody>
             {n.geschosse.map((g) => (
-              <tr key={g.storeyId} title={g.begruendung}>
+              <Fragment key={g.storeyId}>
+              <tr className="grz-vg-zeile">
                 <td>{g.name}</td>
                 <td className="num" title={`Quelle: ${GELAENDE_QUELLE[g.gelaende.quelle]}`}>
                   {fmt2(g.gelaende.mittel)} m
@@ -512,19 +559,30 @@ export function GrzGfzView() {
                 </td>
                 <td className="num">{fmt2(g.ueberGelaende)} m</td>
                 <td className="num">{g.oberirdisch ? `${Math.round(g.anteil * 100)} %` : '–'}</td>
-                <td>
+                <td className="grz-vg-ergebnis">
+                  <strong>{g.vollgeschoss ? 'Vollgeschoss' : 'kein Vollgeschoss'}</strong>{' '}
                   <select
+                    className="grz-wahl"
+                    title="Vollgeschoss festlegen: automatisch, ja oder nein"
+                    aria-label={`Vollgeschoss ${g.name}`}
                     value={g.automatisch ? 'auto' : g.vollgeschoss ? 'ja' : 'nein'}
                     onChange={(e) => setVollgeschoss(g.storeyId, e.target.value === 'auto' ? undefined : e.target.value === 'ja')}
                   >
-                    <option value="auto">automatisch</option>
-                    <option value="ja">Vollgeschoss</option>
-                    <option value="nein">kein Vollgeschoss</option>
-                  </select>{' '}
-                  <strong>{g.vollgeschoss ? 'Vollgeschoss' : 'kein Vollgeschoss'}</strong>
-                  <div className="muted small-text">{g.begruendung}</div>
+                    <option value="auto">auto</option>
+                    <option value="ja">ja</option>
+                    <option value="nein">nein</option>
+                  </select>
                 </td>
               </tr>
+              <tr className="grz-begruendung">
+                <td colSpan={5}>
+                  <details>
+                    <summary>Begründung</summary>
+                    {g.begruendung}
+                  </details>
+                </td>
+              </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -725,12 +783,20 @@ export function StatusPill({ s }: { s: Status }) {
   return <span className={`pill ${STATUS[s].cls}`}>{STATUS[s].label}</span>;
 }
 
-function AnrechnungPill({ a, baunvo }: { a: Anrechnung; baunvo: BauNVOFassung }) {
+/** Pille der Anrechnung: Tooltip mit Begründung, Klick öffnet die Regel im Nachschlagewerk */
+export function AnrechnungPill({ a, regel, nutzung, baunvo }: { a: Anrechnung; regel: Anrechnung; nutzung: LageplanNutzung; baunvo: BauNVOFassung }) {
   const cls = a === 'pruefen' ? 'warn' : a === 'nein' ? 'off' : 'ok';
+  const id = anrechnungRegelId(a);
   return (
-    <span className={`pill ${cls}`} title={`${baunvoLabel(baunvo)}`}>
+    <button
+      type="button"
+      className={`pill pill-knopf ${cls}`}
+      title={`${anrechnungErklaerung(nutzung, baunvo, a, regel)} (Klick: Regel nachschlagen)`}
+      data-regel={id}
+      onClick={() => useHilfe.getState().oeffnen(['grz'], 'Anrechnung', id)}
+    >
       {ANRECHNUNG[a]}
-    </span>
+    </button>
   );
 }
 

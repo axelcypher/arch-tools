@@ -17,14 +17,16 @@ interface HilfeState {
   themen: string[];
   /** Titel der Stelle, z. B. „BGF-Umriss“ */
   kontext?: string;
-  oeffnen: (themen?: string[], kontext?: string) => void;
+  /** Regel, die beim Öffnen gezeigt wird (z. B. aus einer Pille „prüfen“) */
+  regel?: string;
+  oeffnen: (themen?: string[], kontext?: string, regel?: string) => void;
   schliessen: () => void;
 }
 
 export const useHilfe = create<HilfeState>((set) => ({
   offen: false,
   themen: [],
-  oeffnen: (themen = [], kontext) => set({ offen: true, themen, kontext }),
+  oeffnen: (themen = [], kontext, regel) => set({ offen: true, themen, kontext, regel }),
   schliessen: () => set({ offen: false }),
 }));
 
@@ -120,7 +122,7 @@ function RegelAnsicht({ r }: { r: Regel }) {
 
 /** Dialog des Nachschlagewerks; einmal je App eingebunden (über die Titelleiste) */
 export function Nachschlagewerk({ app }: { app: RegelApp }) {
-  const { offen, themen, kontext, schliessen } = useHilfe();
+  const { offen, themen, kontext, regel, schliessen } = useHilfe();
   const [q, setQ] = useState('');
   const [nurKontext, setNurKontext] = useState(true);
   const [gewaehlt, setGewaehlt] = useState<string | null>(null);
@@ -130,9 +132,9 @@ export function Nachschlagewerk({ app }: { app: RegelApp }) {
     if (!offen) return;
     setQ('');
     setNurKontext(themen.length > 0);
-    setGewaehlt(null);
+    setGewaehlt(regel ?? null);
     requestAnimationFrame(() => suchfeld.current?.focus());
-  }, [offen, themen]);
+  }, [offen, themen, regel]);
 
   useEscSchliessen(schliessen, offen);
 
