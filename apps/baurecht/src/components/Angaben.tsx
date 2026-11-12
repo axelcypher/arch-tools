@@ -23,8 +23,19 @@ const HERKUNFT: Record<FaktWert['herkunft'], string> = {
 function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
   const merkmale = useBaurecht((s) => s.merkmale);
   const geaendert = useBaurecht((s) => s.merkmaleDatei);
+  const fokus = useBaurecht((s) => s.fokus);
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!fokus?.startsWith('merkmal:') || !ref.current) return;
+    const el = ref.current.querySelector<HTMLElement>(`[data-merkmal="${CSS.escape(fokus.slice(8))}"]`);
+    if (el) {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.querySelector<HTMLElement>('button')?.focus();
+    }
+    useBaurecht.getState().fokusSetzen(null);
+  }, [fokus]);
   return (
-    <section className="br-angaben-gruppe" aria-labelledby="br-merkmale">
+    <section ref={ref} className="br-angaben-gruppe" aria-labelledby="br-merkmale">
       <h2 id="br-merkmale">Antragsmerkmale</h2>
       <p className="br-leise">Gemeinsam mit der App Formulare – gilt für den ganzen Antrag.</p>
       {VORGABE_MERKMALE.map((m) => {
@@ -32,7 +43,7 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
         const wert = merkmale[m.name] ?? '';
         const n = klaerung.get(`merkmal:${m.name}`);
         return (
-          <div key={m.name} className={`br-merkmal${wert ? '' : ' br-offen'}`} role="group" aria-label={e?.text ?? m.name}>
+          <div key={m.name} data-merkmal={m.name} className={`br-merkmal${wert ? '' : ' br-offen'}`} role="group" aria-label={e?.text ?? m.name}>
             <div className="br-fakt-kopf">
               <span className="br-fakt-titel">{e?.text ?? m.name}</span>
               {!wert && n ? <span className="br-klaert" title={`klärt ${n} Paragrafen`}>klärt {n}</span> : null}

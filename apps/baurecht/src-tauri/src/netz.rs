@@ -6,9 +6,8 @@
 // gültig signiertes Regelpaket nennt (`netz_hosts_erweitern`, nach Prüfung der Signatur im Frontend). Umleitungen
 // werden einzeln verfolgt und jede Station gegen die Liste geprüft. Die CSP der Webansicht bleibt unverändert.
 
-use std::collections::HashSet;
-use std::io::Read;
-use std::sync::Mutex;
+// Keine `use`-Zeilen auf oberster Ebene: Die Datei wird per include! neben andere Befehlsdateien gelegt (Rahmen-App),
+// gleichnamige Importe würden dort kollidieren.
 
 /// Hosts, die immer erlaubt sind
 const NETZ_GRUNDLISTE: &[&str] = &[
@@ -38,9 +37,9 @@ const NETZ_GRUNDLISTE: &[&str] = &[
 /// höchstens so viele Bytes je Abruf (große PDFs wie die MVV TB passen hinein)
 const NETZ_HOECHSTENS: u64 = 80 * 1024 * 1024;
 
-fn netz_freigaben() -> &'static Mutex<HashSet<String>> {
-    static FREIGABEN: std::sync::OnceLock<Mutex<HashSet<String>>> = std::sync::OnceLock::new();
-    FREIGABEN.get_or_init(|| Mutex::new(NETZ_GRUNDLISTE.iter().map(|s| s.to_string()).collect()))
+fn netz_freigaben() -> &'static std::sync::Mutex<std::collections::HashSet<String>> {
+    static FREIGABEN: std::sync::OnceLock<std::sync::Mutex<std::collections::HashSet<String>>> = std::sync::OnceLock::new();
+    FREIGABEN.get_or_init(|| std::sync::Mutex::new(NETZ_GRUNDLISTE.iter().map(|s| s.to_string()).collect()))
 }
 
 /// Host einer Adresse (nur https)
@@ -96,6 +95,7 @@ fn netz_agent(zeit_ms: u64) -> ureq::Agent {
 }
 
 fn netz_abrufen(url: String, etag: Option<String>, geaendert: Option<String>, zeit_ms: u64) -> Result<NetzAntwort, String> {
+    use std::io::Read;
     let agent = netz_agent(zeit_ms);
     let mut adresse = url;
     for _ in 0..8 {

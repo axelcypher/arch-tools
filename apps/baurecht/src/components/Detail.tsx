@@ -137,7 +137,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
                   key={o}
                   type="button"
                   className="br-chip-knopf"
-                  onClick={() => (o.startsWith('paragraf:') ? useBaurecht.getState().waehlen(o.slice(9)) : useBaurecht.getState().fokusSetzen(o.startsWith('merkmal:') ? null : o))}
+                  onClick={() => (o.startsWith('paragraf:') ? useBaurecht.getState().waehlen(o.slice(9)) : useBaurecht.getState().fokusSetzen(o))}
                   title={o.startsWith('paragraf:') ? 'zum Paragrafen' : 'zur Angabe'}
                 >
                   {offenText(o, ctx)}
