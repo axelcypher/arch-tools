@@ -3,7 +3,7 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { aenderungAnwenden, alsAngaben, klein, stabil, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { aenderungAnwenden, alsAngaben, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -854,6 +854,41 @@ describe('Anträge: je Antrag eigene Antragsmerkmale, Antragsumfang und Autofill
     expect(eingereichtAus([{ pfad: '_archiv/Eingangsbestätigung.pdf', ordner: false, groesse: 1 }])).toBeNull();
     expect(eingereichtAus([{ pfad: 'Schriftverkehr/Archiv/Antragsprotokoll.pdf', ordner: false, groesse: 1 }])).toBeNull();
     expect(eingereichtAus([{ pfad: 'Archivierung/Antragsprotokoll.pdf', ordner: false, groesse: 1 }])).not.toBeNull();
+  });
+});
+
+describe('Antragsumfang je Eintrag zusammenführen (umfangAnwenden)', () => {
+  const e = (id: string, mehr: Partial<UmfangEintrag> = {}): UmfangEintrag => ({ id, titel: id, art: 'extern', ...mehr });
+  const ids = (u?: UmfangEintrag[]) => (u ?? []).map((x) => x.id);
+  it('zwei Änderungen kurz nacheinander (die zweite auf dem alten Stand): beide bleiben – auch zwei Felder desselben Eintrags', () => {
+    const alt = [e('muster'), e('bauantrag'), e('lageplan')];
+    // in der Datei steht schon die erste Änderung (Nr. am Lageplan)
+    const frisch = [e('muster'), e('bauantrag'), e('lageplan', { nr: '01' })];
+    const z = umfangAnwenden(frisch, alt, [e('muster'), e('bauantrag', { nr: '02' }), e('lageplan')])!;
+    expect(z.map((x) => [x.id, x.nr])).toEqual([['muster', undefined], ['bauantrag', '02'], ['lageplan', '01']]);
+    const z2 = umfangAnwenden([e('lageplan', { titel: 'Lageplan 1:500' })], [e('lageplan')], [e('lageplan', { muster: '*LP*' })])!;
+    expect(z2[0]).toMatchObject({ titel: 'Lageplan 1:500', muster: '*LP*' });
+  });
+  it('woanders entfernt: eine Änderung an dem Eintrag bringt ihn nicht zurück; eigenes Entfernen entfernt', () => {
+    expect(ids(umfangAnwenden([e('a'), e('c')], [e('a'), e('b'), e('c')], [e('a'), e('b', { nr: '07' }), e('c')]))).toEqual(['a', 'c']);
+    expect(ids(umfangAnwenden([e('a'), e('b'), e('c', { nr: '3' })], [e('a'), e('b'), e('c')], [e('a'), e('c')]))).toEqual(['a', 'c']);
+  });
+  it('hinzugefügt: hinter dem Vorgänger, Einträge von anderswo bleiben; doppelt kommt nichts', () => {
+    // woanders kam „x“ ans Ende, hier „neu“ hinter „b“
+    expect(ids(umfangAnwenden([e('a'), e('b'), e('x')], [e('a'), e('b')], [e('a'), e('b'), e('neu')]))).toEqual(['a', 'b', 'neu', 'x']);
+    expect(ids(umfangAnwenden([e('a'), e('neu')], [e('a')], [e('neu'), e('a')]))).toEqual(['a', 'neu']);
+    expect(ids(umfangAnwenden([e('a')], [e('a')], [e('vorn'), e('a')]))).toEqual(['vorn', 'a']);
+  });
+  it('Reihenfolge geändert: auf die gemeinsamen Einträge angewendet, was nur andere kennen bleibt an seiner Stelle', () => {
+    expect(ids(umfangAnwenden([e('x'), e('a'), e('b'), e('c')], [e('a'), e('b'), e('c')], [e('c'), e('a'), e('b')]))).toEqual(['x', 'c', 'a', 'b']);
+    // unverändert gelassen: eine Umstellung von anderswo bleibt
+    expect(ids(umfangAnwenden([e('b'), e('a')], [e('a'), e('b')], [e('a', { nr: '1' }), e('b')]))).toEqual(['b', 'a']);
+  });
+  it('verknüpfte Dateien je Fassung; festlegen bzw. aufheben ganz', () => {
+    const z = umfangAnwenden([e('lp', { dateien: { BAUA: 'a.pdf' } })], [e('lp')], [e('lp', { dateien: { 'BAUA 2': 'b.pdf' } })])!;
+    expect(z[0].dateien).toEqual({ BAUA: 'a.pdf', 'BAUA 2': 'b.pdf' });
+    expect(umfangAnwenden([e('x')], undefined, [e('a')])).toEqual([e('a')]);
+    expect(umfangAnwenden([e('x')], [e('x')], undefined)).toBeUndefined();
   });
 });
 

@@ -1405,7 +1405,17 @@ export const useAntrag = create<AntragState>((set, get) => {
         if (!o.still) meldung('info', `${o.was ?? 'Antragsumfang nicht geändert'} – ${grund}${wechsel ? '; bitte gleich noch einmal versuchen' : ''}.`);
         return Object.assign(o.info ?? {}, { grund, vorab: vorab ?? 'umfang' }, wechsel ? { erneut: true } : {});
       }
-      return get().umfangSetzen(aendern(umfang), { info: o.info });
+      const neu = aendern(umfang);
+      const info = await get().umfangSetzen(neu, { info: o.info });
+      // inzwischen woanders entfernt (beim Schreiben gelesen): die Änderung an ihm kam nicht hinein, er kommt auch nicht
+      // zurück – das sagen
+      const st = get().projektdatei;
+      if (o.eintrag && info.geschrieben && st?.ansicht === pd?.ansicht && neu?.some((x) => x.id === o.eintrag) && !st?.umfang?.some((x) => x.id === o.eintrag)) {
+        const grund = `der Eintrag ${o.titel ? `„${o.titel}“ ` : ''}ist inzwischen nicht mehr im Antragsumfang`;
+        if (!o.still) meldung('info', `${o.was ?? 'Antragsumfang nicht geändert'} – ${grund}.`);
+        return Object.assign(info, { grund, vorab: 'eintrag' as const });
+      }
+      return info;
     },
 
     exportieren: async (formularPfad, ziel, ersetzen) => {

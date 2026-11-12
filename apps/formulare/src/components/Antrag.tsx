@@ -411,6 +411,9 @@ function Merkmale({ gesperrt }: { gesperrt: boolean }) {
 
 const ART_TEXT = { intern: 'Formular', extern: 'Datei', plansatz: 'Plansatz' };
 
+/** Meldung an einem Textfeld, dessen Speichern scheiterte */
+const SPEICHER_FEHLER = 'Nicht gespeichert – Enter im Feld versucht es erneut, Esc verwirft.';
+
 /** Tooltip gesperrter Knöpfe der Antragsdaten */
 const GESPERRT_TITEL = 'Der Antrag ist eingereicht und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen';
 
@@ -450,44 +453,56 @@ function UebernahmeFeld({
   const danach = useRef<string | null>(null);
   useEffect(
     () => () => {
+      // ungespeichert ist, was weder gespeichert steht noch gerade gespeichert wird
       const { entwurf: e, wert: w, beiVerlust: b } = zuletzt.current;
-      if (e !== null && e !== w && laeuft.current === null) b?.(e);
+      if (e !== null && e !== w && e !== laeuft.current) b?.(e);
     },
     [],
   );
   const speichern = (v: string) => {
     laeuft.current = v;
-    void Promise.resolve(onUebernehmen(v, gebunden.current)).then((info) => {
-      laeuft.current = null;
-      const n = danach.current;
-      danach.current = null;
-      // während des Speicherns korrigiert: jetzt das Korrigierte (gegen den dann gespeicherten Stand)
-      if (n !== null && n !== v) return speichern(n);
-      if (info && !info.geschrieben && !info.dialog && info.erneut) return setFehler('Nicht gespeichert – Enter im Feld versucht es erneut, Esc verwirft.');
-      setFehler(null);
-      setEntwurf((e) => (e === v ? null : e));
-    });
+    void Promise.resolve(onUebernehmen(v, gebunden.current))
+      .catch((): SchreibInfo => ({ erneut: true }))
+      .then((info) => {
+        laeuft.current = null;
+        const n = danach.current;
+        danach.current = null;
+        // während des Speicherns korrigiert: jetzt das Korrigierte (gegen den dann gespeicherten Stand)
+        if (n !== null && n !== v) return speichern(n);
+        // nicht gespeichert: markieren – nur, wenn der Entwurf noch dasteht (nach Esc nicht)
+        if (info && !info.geschrieben && !info.dialog && info.erneut) return void (zuletzt.current.entwurf !== null && setFehler(SPEICHER_FEHLER));
+        // nur den eigenen Speicherfehler aufheben (nicht etwa den eines inzwischen geleerten Titels)
+        setFehler((f) => (f === SPEICHER_FEHLER ? null : f));
+        setEntwurf((e) => (e === v ? null : e));
+      });
   };
   const uebernehmen = () => {
     if (entwurf === null) return;
-    if (leerFehler && !entwurf.trim()) return setFehler(leerFehler);
-    // läuft schon: dasselbe nicht noch einmal, Abweichendes danach
+    if (leerFehler && !entwurf.trim()) {
+      // das Leere gilt – ein vorher eingereihter Wert nicht mehr
+      danach.current = null;
+      return setFehler(leerFehler);
+    }
+    // läuft schon: dasselbe nicht noch einmal, Abweichendes danach (zuletzt Bestätigtes gilt)
     if (laeuft.current !== null) {
-      if (entwurf !== laeuft.current) danach.current = entwurf;
+      danach.current = entwurf !== laeuft.current ? entwurf : null;
       return;
     }
     setFehler(null);
     if (entwurf === wert) return setEntwurf(null);
     speichern(entwurf);
   };
+  // getippt für eine Fassung, die nicht mehr angezeigt ist: gleich sagen (gespeichert wird es nicht)
+  const fremd = entwurf !== null && gebunden.current !== undefined && bindung !== gebunden.current;
+  const hinweis = fehler ?? (fremd ? `Getippt für Antrag ${gebunden.current} – inzwischen ist Antrag ${bindung} angezeigt; Esc verwirft.` : null);
   return (
     <>
       <input
         title="Übernommen beim Verlassen des Felds oder mit Enter, Esc verwirft"
         {...rest}
-        className={[rest.className, fehler ? 'feld-fehler' : ''].filter(Boolean).join(' ') || undefined}
-        aria-invalid={fehler ? true : undefined}
-        aria-describedby={fehler ? meldungId : undefined}
+        className={[rest.className, hinweis ? 'feld-fehler' : ''].filter(Boolean).join(' ') || undefined}
+        aria-invalid={hinweis ? true : undefined}
+        aria-describedby={hinweis ? meldungId : undefined}
         value={entwurf ?? wert}
         onChange={(e) => {
           if (entwurf === null) gebunden.current = bindung;
@@ -496,8 +511,9 @@ function UebernahmeFeld({
         onBlur={uebernehmen}
         onKeyDown={(e) => {
           if (e.key === 'Enter') uebernehmen();
-          else if (e.key === 'Escape' && entwurf !== null) {
-            // Esc verwirft die Eingabe – und schließt nichts anderes
+          else if (e.key === 'Escape' && (entwurf !== null || fehler)) {
+            // Esc verwirft die Eingabe (ein gerade laufendes Speichern läuft zu Ende) und die Markierung – und schließt
+            // nichts anderes
             e.stopPropagation();
             danach.current = null;
             setEntwurf(null);
@@ -505,9 +521,9 @@ function UebernahmeFeld({
           }
         }}
       />
-      {fehler && (
+      {hinweis && (
         <span className="feld-meldung pu-feld-meldung" id={meldungId} role="alert">
-          {fehler}
+          {hinweis}
         </span>
       )}
     </>

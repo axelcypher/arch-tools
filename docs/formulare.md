@@ -711,9 +711,12 @@ beschrieben.
   FORMA-Projekt wird noch gelesen und einmalig in die Projektdatei übernommen – sie selbst bleibt liegen und wird nicht
   mehr geschrieben.
 - **Schreiben als Änderung:** Jeder Schreibvorgang liest die Projektdatei frisch und trägt nur ein, was er selbst
-  geändert hat – je Antrag und Feld, Antragsmerkmale und Autofill je Eintrag (`aenderungAnwenden`); was inzwischen
-  anderswo gespeichert wurde (ein anderer Arbeitsplatz, ein gleichzeitiges Laden), bleibt, ebenso ein Antrag, den der
-  Schreibende nicht kannte. Das Laden ergänzt so nur fehlende Anträge, nie ersetzt es Vorhandenes.
+  geändert hat – je Antrag und Feld, Antragsmerkmale und Autofill je Eintrag, den Antragsumfang je Eintrag und Feld
+  (hinzugefügte hinter ihrem Vorgänger, entfernte, geänderte Felder, eine geänderte Reihenfolge; `aenderungAnwenden`,
+  `umfangAnwenden`). Was inzwischen anderswo gespeichert wurde (ein anderer Arbeitsplatz, ein gleichzeitiges Laden,
+  das eigene vorige Speichern), bleibt, ebenso ein Antrag, den der Schreibende nicht kannte; ein woanders entfernter
+  Eintrag kommt durch eine Änderung an ihm nicht zurück („Nicht geändert – der Eintrag „Lageplan“ ist inzwischen nicht
+  mehr im Antragsumfang.“). Das Laden ergänzt so nur fehlende Anträge, nie ersetzt es Vorhandenes.
   - **Bindung:** Geschrieben wird nur in die Projektdatei, aus der die Angaben stammen, und nur für das Projekt, in dem
     die Änderung begonnen hat. Wird währenddessen ein anderes Projekt geöffnet, bricht die Änderung mit Meldung ab
     (Formular anlegen bzw. hinzufügen sagen, was schon geschehen ist: „angelegt, aber nicht zugeordnet …“); wird eine
@@ -757,8 +760,10 @@ beschrieben.
     wenn danach noch der Antrag der Rückfrage angezeigt ist (sonst „Antragsumfang nicht aufgehoben – inzwischen ist
     Antrag BAUA angezeigt.“). Die Textfelder (Nr., Titel, Formular, Ordner der Quelle, Muster) speichern beim Verlassen
     bzw. mit Enter, Esc verwirft – ein Schreiben statt eines je Taste; bis das Speichern zurück ist, bleibt das
-    Getippte stehen, eine Korrektur währenddessen wird danach gespeichert. Sie gelten für die Fassung, in der getippt
-    wurde. Scheitert das Speichern (Schreibfehler, Antrag wird gerade geöffnet), bleibt das Getippte rot markiert
+    Getippte stehen, eine Korrektur währenddessen wird danach gespeichert (das zuletzt Bestätigte gilt). Sie gelten für
+    die Fassung, in der getippt wurde – zeigt das Projekt inzwischen eine andere, sagt das Feld es gleich („Getippt für
+    Antrag BAUA 2 – inzwischen ist Antrag BAUA angezeigt; Esc verwirft.“), gespeichert wird dann nicht. Verschwindet die
+    Zeile mit ungespeicherter Eingabe, sagt eine Meldung es. Scheitert das Speichern (Schreibfehler, Antrag wird gerade geöffnet), bleibt das Getippte rot markiert
     stehen („Nicht gespeichert – Enter im Feld versucht es erneut, Esc verwirft.“); ein leerer Titel wird nicht
     gespeichert („Der Titel darf nicht leer sein – Esc stellt „Lageplan“ wieder her.“).
   - **Nachholen:** Beim Anlegen bzw. Hinzufügen eines Formulars nennt die Meldung den Weg, wenn das Zuordnen nicht

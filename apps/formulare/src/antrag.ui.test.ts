@@ -4222,6 +4222,136 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(navFehlt(host, 'Bauantrag').querySelector('.nav-unter')?.textContent).toBe('anlegen');
   });
 
+  it('zwei Felder nacheinander übernommen, während das erste Speichern hängt: beide stehen in der Datei – auch zwei Felder derselben Zeile', async () => {
+    const host = await mitUmfangInBeiden();
+    const nr = (titel: string) => zeileVon(host, titel).querySelector<HTMLInputElement>('.pu-nr')!;
+    const halt = schreibenAufhalten();
+    eingabe(nr('Lageplan'), '01');
+    await verlassen(nr('Lageplan'));
+    eingabe(nr('Bauantrag'), '02');
+    await verlassen(nr('Bauantrag'));
+    halt.los();
+    for (let i = 0; i < 10; i++) await warte();
+    halt.zurueck();
+    expect(nrVon('BAUA 2', 'lageplan')).toBe('01');
+    expect(nrVon('BAUA 2', 'bauantrag')).toBe('02');
+    // Titel, dann (Tab) Muster derselben Zeile
+    await klick(host.querySelector<HTMLButtonElement>('[aria-label="Lageplan bearbeiten"]')!);
+    const felder = () => [...host.querySelectorAll<HTMLInputElement>('.pu-zeile .pu-bearbeiten input')];
+    const halt2 = schreibenAufhalten();
+    eingabe(felder()[0], 'Lageplan 1:500');
+    await verlassen(felder()[0]);
+    const muster = felder().find((f) => f.placeholder.startsWith('*'))!;
+    eingabe(muster, '*LP*');
+    await verlassen(muster);
+    halt2.los();
+    for (let i = 0; i < 10; i++) await warte();
+    halt2.zurueck();
+    expect((antragIn('BAUA 2')!.umfang as { id: string; titel: string; muster?: string }[]).find((u) => u.id === 'lageplan')).toMatchObject({ titel: 'Lageplan 1:500', muster: '*LP*' });
+  });
+
+  it('Speichern hängt, ein anderer Arbeitsplatz nimmt die Zeile heraus: sie kommt nicht zurück, die Meldung sagt es', async () => {
+    const host = await mitUmfangInBeiden();
+    const nr = zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!;
+    const halt = schreibenAufhalten();
+    eingabe(nr, '07');
+    await verlassen(nr);
+    await umfangVonAussen('BAUA 2', (u) => u.filter((x) => x.id !== 'lageplan'));
+    halt.los();
+    for (let i = 0; i < 10; i++) await warte();
+    halt.zurueck();
+    expect(umfangIdsIn('BAUA 2')).toEqual(['muster', 'bauantrag']);
+    expect(zeileVon(host, 'Lageplan')).toBeUndefined();
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Nicht geändert – der Eintrag „Lageplan“ ist inzwischen nicht mehr im Antragsumfang.' });
+  });
+
+  it('Textfeld: während des Speicherns hin und her bestätigt – das zuletzt Bestätigte gilt; Esc während des Speicherns lässt keine Markierung zurück', async () => {
+    const host = await mitUmfangInBeiden();
+    const nr = () => zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!;
+    const enter = () => act(() => void nr().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    eingabe(nr(), '03');
+    await verlassen(nr());
+    await warte();
+    const halt = schreibenAufhalten();
+    eingabe(nr(), '07');
+    enter();
+    eingabe(nr(), '03');
+    enter();
+    eingabe(nr(), '07');
+    enter();
+    halt.los();
+    for (let i = 0; i < 10; i++) await warte();
+    halt.zurueck();
+    expect(nrVon('BAUA 2', 'lageplan')).toBe('07');
+    expect(nr().value).toBe('07');
+    // Esc während des Speicherns, das dann scheitert: keine Markierung ohne Entwurf
+    const echt = useFormulare.getState().oapAendern;
+    let los!: () => void;
+    const tor = new Promise<void>((r) => (los = r));
+    useFormulare.setState({
+      oapAendern: async () => {
+        await tor;
+        throw new Error('Zugriff verweigert');
+      },
+    });
+    eingabe(nr(), '08');
+    enter();
+    act(() => void nr().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    los();
+    for (let i = 0; i < 6; i++) await warte();
+    useFormulare.setState({ oapAendern: echt });
+    expect(nr().classList.contains('feld-fehler')).toBe(false);
+    expect(nr().value).toBe('07');
+  });
+
+  it('Titel: während des Speicherns weiter bestätigt, dann geleert – das Leere wird abgelehnt und bleibt markiert, nichts danach gespeichert', async () => {
+    const host = await mitUmfangInBeiden();
+    await klick(host.querySelector<HTMLButtonElement>('[aria-label="Lageplan bearbeiten"]')!);
+    const titel = () => host.querySelector<HTMLInputElement>('.pu-zeile .pu-bearbeiten input')!;
+    const enter = () => act(() => void titel().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    const halt = schreibenAufhalten();
+    eingabe(titel(), 'B');
+    enter();
+    eingabe(titel(), 'C');
+    enter();
+    eingabe(titel(), '');
+    enter();
+    halt.los();
+    for (let i = 0; i < 10; i++) await warte();
+    halt.zurueck();
+    expect(halt.anzahl).toBe(1);
+    expect(((antragIn('BAUA 2')!.umfang as { id: string; titel: string }[]).find((u) => u.id === 'lageplan') ?? { titel: '' }).titel).toBe('B');
+    expect(titel().value).toBe('');
+    expect(titel().classList.contains('feld-fehler')).toBe(true);
+  });
+
+  it('Textfeld: „12“ wird gespeichert, „123“ weitergetippt – verschwindet die Zeile, sagt die Meldung, dass „123“ nicht gespeichert ist', async () => {
+    const host = await mitUmfangInBeiden();
+    const nr = zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!;
+    const halt = schreibenAufhalten();
+    eingabe(nr, '12');
+    act(() => void nr.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    eingabe(nr, '123');
+    await umfangVonAussen('BAUA 2', (u) => u.filter((x) => x.id !== 'lageplan'));
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: '„123“ bei „Lageplan“ nicht gespeichert – der Eintrag ist nicht mehr angezeigt.' });
+    halt.los();
+    for (let i = 0; i < 10; i++) await warte();
+    halt.zurueck();
+    expect(umfangIdsIn('BAUA 2')).toEqual(['muster', 'bauantrag']);
+  });
+
+  it('Textfeld: in BAUA 2 getippt, inzwischen zeigt das Projekt BAUA – das Feld sagt es gleich (vor dem Verlassen)', async () => {
+    const host = await mitUmfangInBeiden();
+    const nr = () => zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!;
+    eingabe(nr(), '77');
+    await aktivVonAussen('BAUA');
+    expect(nr().classList.contains('feld-fehler')).toBe(true);
+    expect(host.querySelector(`#${CSS.escape(nr().getAttribute('aria-describedby')!)}`)?.textContent).toBe('Getippt für Antrag BAUA 2 – inzwischen ist Antrag BAUA angezeigt; Esc verwirft.');
+    act(() => void nr().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(nr().classList.contains('feld-fehler')).toBe(false);
+    expect(nr().value).toBe('');
+  });
+
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {
     const ordner = `${PROJEKT}/TÖB/BAUA 2`;
     ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));

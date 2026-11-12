@@ -937,6 +937,61 @@ function mapAnwenden(frisch: Record<string, unknown>, alt: Record<string, unknow
   return z;
 }
 
+/** Felder eines Eintrags im Antragsumfang, die je Schlüssel zusammengeführt werden (verknüpfte Datei je Fassung) */
+const FELD_JE_SCHLUESSEL = new Set(['dateien']);
+
+/**
+ * Antragsumfang je Eintrag ändern: nur was sich zwischen `alt` und `neu` unterscheidet, auf `frisch` – entfernte
+ * Einträge, geänderte Felder (verknüpfte Dateien je Fassung), hinzugefügte (hinter ihrem Vorgänger) und eine geänderte
+ * Reihenfolge (der Einträge, die beide kennen). Was andere inzwischen eingetragen, geändert oder entfernt haben, bleibt:
+ * ein woanders entfernter Eintrag kommt durch eine Änderung an ihm nicht zurück. Ohne bisherigen bzw. frischen Umfang
+ * gilt `neu` ganz (festgelegt), ohne `neu` keiner (aufgehoben).
+ */
+export function umfangAnwenden(frisch: UmfangEintrag[] | undefined, alt: UmfangEintrag[] | undefined, neu: UmfangEintrag[] | undefined): UmfangEintrag[] | undefined {
+  if (!neu) return undefined;
+  if (!alt || !frisch) return neu;
+  const altM = new Map(alt.map((u) => [u.id, u]));
+  const neuM = new Map(neu.map((u) => [u.id, u]));
+  // entfernt
+  let z: UmfangEintrag[] = frisch.filter((u) => !(altM.has(u.id) && !neuM.has(u.id)));
+  // geändert – je Feld, nur wo es den Eintrag noch gibt
+  z = z.map((u) => {
+    const a = altM.get(u.id) as Record<string, unknown> | undefined;
+    const n = neuM.get(u.id) as Record<string, unknown> | undefined;
+    if (!a || !n || stabil(a) === stabil(n)) return u;
+    const e: Record<string, unknown> = { ...u };
+    for (const k of new Set([...Object.keys(a), ...Object.keys(n)])) {
+      if (stabil(a[k]) === stabil(n[k])) continue;
+      if (FELD_JE_SCHLUESSEL.has(k)) {
+        const m = mapAnwenden(istMap(e[k]) ? e[k] : {}, istMap(a[k]) ? a[k] : {}, istMap(n[k]) ? n[k] : {});
+        if (Object.keys(m).length) e[k] = m;
+        else delete e[k];
+      } else if (n[k] === undefined) delete e[k];
+      else e[k] = n[k];
+    }
+    return e as unknown as UmfangEintrag;
+  });
+  // hinzugefügt – hinter dem nächsten Vorgänger, den es noch gibt (sonst an den Anfang)
+  neu.forEach((n, i) => {
+    if (altM.has(n.id) || z.some((u) => u.id === n.id)) return;
+    let j = -1;
+    for (let k = i - 1; k >= 0 && j < 0; k--) j = z.findIndex((u) => u.id === neu[k].id);
+    z.splice(j + 1, 0, n);
+  });
+  // Reihenfolge geändert (unter den Einträgen, die beide kennen): die Einträge von `neu` in dessen Reihenfolge auf
+  // ihre Plätze – was nur andere kennen, bleibt an seiner Stelle
+  const gemeinsam = (l: UmfangEintrag[]) => l.filter((u) => altM.has(u.id) && neuM.has(u.id)).map((u) => u.id);
+  if (gemeinsam(alt).join('\u0000') !== gemeinsam(neu).join('\u0000')) {
+    const folge = neu.filter((n) => z.some((u) => u.id === n.id)).map((n) => n.id);
+    const plaetze = z.flatMap((u, i) => (folge.includes(u.id) ? [i] : []));
+    const nachId = new Map(z.map((u) => [u.id, u]));
+    const r = [...z];
+    plaetze.forEach((p, i) => (r[p] = nachId.get(folge[i])!));
+    z = r;
+  }
+  return z;
+}
+
 /** Abschnitt als Angaben ohne Ansicht – „bereit“ wie beim Schreiben als Feld der Ansicht (antraegeVon holt es von dort) */
 export function alsAngaben(a: Abschnitt): ProjektDatei {
   const bereit = Object.fromEntries(Object.entries(a.antraege).flatMap(([n, x]) => (x.bereit?.length ? [[n, x.bereit]] : [])));
@@ -946,7 +1001,8 @@ export function alsAngaben(a: Abschnitt): ProjektDatei {
 /**
  * Eine Änderung auf den frisch gelesenen Abschnitt anwenden: Nur was sich zwischen `vorher` und `nachher` (die
  * Angaben des Aufrufers vor bzw. nach seiner Änderung) unterscheidet, kommt hinein – je Antrag und Feld, bei den
- * Zuordnungen `merkmale` und `felder` je Eintrag. Was andere inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein
+ * Zuordnungen `merkmale` und `felder` je Eintrag, beim Antragsumfang je Eintrag und Feld (`umfangAnwenden`). Was andere
+ * inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein
  * gleichzeitiges Laden), bleibt. Einen Antrag, den es im frischen Abschnitt nicht gibt, übernimmt die Änderung ganz;
  * einen, den der Aufrufer nicht kannte, den es inzwischen aber gibt, lässt sie unverändert.
  */
@@ -978,6 +1034,11 @@ export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null
         // Einträge anderer bleiben, eine leere Zuordnung entfällt
         const m = mapAnwenden(istMap(f[k]) ? f[k] : {}, istMap(a[k]) ? a[k] : {}, istMap(n[k]) ? n[k] : {});
         if (Object.keys(m).length) z[k] = m;
+        else delete z[k];
+      } else if (k === 'umfang') {
+        // je Eintrag – zwei Änderungen kurz nacheinander bzw. von zwei Arbeitsplätzen überschreiben sich nicht
+        const u = umfangAnwenden(f[k] as UmfangEintrag[] | undefined, a[k] as UmfangEintrag[] | undefined, n[k] as UmfangEintrag[] | undefined);
+        if (u) z[k] = u;
         else delete z[k];
       } else if (n[k] === undefined) delete z[k];
       else z[k] = n[k];
