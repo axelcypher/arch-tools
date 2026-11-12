@@ -326,6 +326,61 @@
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "Karte: ELWAS-WEB bzw. WMS „Wasserschutzgebiete NRW“ (LANUK). Die automatische Abfrage ist ausgeschaltet: Die Nutzungsbedingungen des Dienstes verlangen für die Nutzung zu Erwerbszwecken eine Genehmigung des Herausgebers – bis sie vorliegt, bitte von Hand eintragen."
+    },
+    "ortsrecht.stellplatz_regelt_zahl": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Pflicht und Zahl der notwendigen Stellplätze",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "ortsrecht.stellplatz_regelt_lage": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Lage und Herstellung der Stellplätze (Entfernung, Sicherung)",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "ortsrecht.stellplatz_regelt_kfz": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Größe und Beschaffenheit der Kfz-Stellplätze einschließlich der Stellplätze für Menschen mit Behinderung",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "ortsrecht.stellplatz_regelt_fahrrad": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt die Beschaffenheit der Fahrradabstellplätze",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "ortsrecht.stellplatz_regelt_abloesung": {
+      "titel": "Die Stellplatzsatzung regelt die Ablösung notwendiger Stellplätze",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "lage.zufahrt_klassifiziert": {
+      "titel": "Neue oder geänderte Zufahrt (auch mittelbar) zu einer Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt",
+      "gruppe": "grundstueck",
+      "typ": "janein",
+      "hilfe": "Zustimmung der Straßenbaubehörde nach § 25 Abs. 1 Nr. 2 StrWG NRW – unabhängig vom Abstand des Gebäudes",
+      "wenn": {
+        "f": "lage.zufahrt_neu",
+        "ist": true
+      }
     }
   },
   "bausteine": {
@@ -509,16 +564,8 @@
           ]
         },
         {
-          "und": [
-            {
-              "f": "vorhaben.dachhaut",
-              "ist": true
-            },
-            {
-              "tag": "einreichung",
-              "ab": "2026-01-02"
-            }
-          ]
+          "f": "vorhaben.dachhaut",
+          "ist": true
         }
       ]
     },

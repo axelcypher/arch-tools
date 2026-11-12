@@ -19,11 +19,22 @@
         "Ziele"
       ],
       "pruefen": {
-        "grund": "Darstellung des Regionalplans am Standort (z. B. Allgemeiner Freiraum- und Agrarbereich, Bereich zum Schutz der Natur) von Hand prüfen."
+        "grund": "Auch Änderungen und Nutzungsänderungen raumbedeutsamer Vorhaben dürfen den Zielen der Raumordnung nicht widersprechen (§ 35 Abs. 3 Satz 2 BauGB) – im Einzelfall prüfen.",
+        "wenn": {
+          "oder": [
+            {
+              "$": "aenderung"
+            },
+            {
+              "$": "nutzungsaenderung"
+            }
+          ]
+        }
       },
       "verweise": [
         "bund/baugb/35"
-      ]
+      ],
+      "hinweis": "Darstellung des Regionalplans am Standort (z. B. Allgemeiner Freiraum- und Agrarbereich, Bereich zum Schutz der Natur) von Hand prüfen."
     }
   }
 }

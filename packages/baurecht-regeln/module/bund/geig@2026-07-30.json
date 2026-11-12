@@ -59,6 +59,122 @@
         "7": "b973443e"
       }
     },
+    "8": {
+      "titel": "Größere Renovierung bestehender Wohngebäude mit mehr als zehn Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "$": "wohngebaeude"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 11
+          },
+          {
+            "f": "vorhaben.groessere_renovierung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "beseitigung"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "max": 10
+          },
+          {
+            "f": "vorhaben.groessere_renovierung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Wird das Gebäude mit mehr als zehn Stellplätzen im oder am Gebäude einer größeren Renovierung unterzogen, die den Parkplatz oder die elektrische Infrastruktur umfasst: jeder Stellplatz mit Leitungsinfrastruktur (Abs. 1, 2).",
+      "fundstellen": [
+        "8/1",
+        "8/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "8/1": "77938aab",
+        "8/2": "2252aa93"
+      }
+    },
+    "9": {
+      "titel": "Größere Renovierung bestehender Nichtwohngebäude mit mehr als zehn Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "$": "nichtwohngebaeude"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 11
+          },
+          {
+            "f": "vorhaben.groessere_renovierung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "beseitigung"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "max": 10
+          },
+          {
+            "f": "vorhaben.groessere_renovierung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Wird das Gebäude mit mehr als zehn Stellplätzen im oder am Gebäude einer größeren Renovierung unterzogen, die den Parkplatz oder die elektrische Infrastruktur umfasst: mindestens jeder fünfte Stellplatz mit Leitungsinfrastruktur und zusätzlich mindestens ein Ladepunkt (Abs. 1, 2).",
+      "fundstellen": [
+        "9/1",
+        "9/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "9/1": "72ca0d2a",
+        "9/2": "07a6ce23"
+      }
+    },
     "10": {
       "titel": "Bestehende Nichtwohngebäude mit mehr als 20 Stellplätzen",
       "gilt": {

@@ -68,12 +68,44 @@
     },
     "25": {
       "gilt": {
-        "f": "lage.strasse_ausserorts",
-        "ist": true
+        "oder": [
+          {
+            "f": "lage.strasse_ausserorts",
+            "ist": true
+          },
+          {
+            "und": [
+              {
+                "f": "lage.zufahrt_neu",
+                "ist": true
+              },
+              {
+                "f": "lage.zufahrt_klassifiziert",
+                "ist": true
+              }
+            ]
+          }
+        ]
       },
       "entfaellt": {
-        "f": "lage.strasse_ausserorts",
-        "ist": false
+        "und": [
+          {
+            "f": "lage.strasse_ausserorts",
+            "ist": false
+          },
+          {
+            "oder": [
+              {
+                "f": "lage.zufahrt_neu",
+                "ist": false
+              },
+              {
+                "f": "lage.zufahrt_klassifiziert",
+                "ist": false
+              }
+            ]
+          }
+        ]
       },
       "grund": "Außerhalb von Ortsdurchfahrten braucht die Baugenehmigung die Zustimmung der Straßenbaubehörde, wenn bauliche Anlagen bis 40 m von Landes- oder Kreisstraßen errichtet, erheblich geändert oder anders genutzt werden oder über Zufahrten angeschlossen sind.",
       "fundstellen": [

@@ -10,7 +10,7 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_bauen_gebaeude"
+            "$": "nw_vorhaben_gebaeude"
           },
           {
             "f": "lage.erdbebenzone",
@@ -36,6 +36,12 @@
       "hinweis": "Zone und geologische Untergrundklasse nach der Karte der Erdbebenzonen NRW (GD NRW) bzw. der Zuordnung nach Gemeinden; Grün nur mit bestätigter Zone 0. Nachweis im Rahmen der Standsicherheit (§ 68 Abs. 3 BauO NRW).",
       "stand": {
         "A 1.2.9": "e3b0c442"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     }
   }

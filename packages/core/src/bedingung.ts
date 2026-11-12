@@ -36,7 +36,7 @@ export const merkmalVorgaben = (liste: Merkmal[]): Record<string, string> =>
 export const VORGABE_MERKMALE: Merkmal[] = [
   { name: 'Gebäudeklasse', werte: ['1', '2', '3', '4', '5'] },
   { name: 'Sonderbau', werte: ['ja', 'nein'] },
-  { name: 'Verfahren', werte: ['Genehmigungsfreistellung', 'vereinfachtes Verfahren', 'Baugenehmigungsverfahren'] },
+  { name: 'Verfahren', werte: ['verfahrensfrei', 'Genehmigungsfreistellung', 'vereinfachtes Verfahren', 'Baugenehmigungsverfahren'] },
   /** Art des Gebäudes (Wohngebäude nach Zahl der Wohnungen) */
   { name: 'Gebäudeart', werte: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Nichtwohngebäude', 'kein Gebäude'] },
   /** Art des Vorhabens (§ 60 BauO NRW 2018; Beseitigung § 62 Absatz 3) */
@@ -71,9 +71,10 @@ export const MERKMAL_ERKLAERUNG: Record<string, { text: string; quelle?: Quelle;
     werte: { ja: 'Anlage oder Raum besonderer Art oder Nutzung, z. B. Hochhaus, Verkaufsstätte, Versammlungsstätte, Mittel- und Großgarage', nein: 'kein Sonderbau' },
   },
   Verfahren: {
-    text: 'Verfahren (§§ 63 bis 65 BauO NRW 2018)',
+    text: 'Verfahren (§§ 62 bis 65 BauO NRW 2018)',
     quelle: { gesetz: 'bauo-nrw', paragraf: '64' },
     werte: {
+      verfahrensfrei: '§ 62 BauO NRW 2018 – ohne Baugenehmigung; die Anforderungen gelten trotzdem (§ 60 Abs. 2)',
       Genehmigungsfreistellung: '§ 63 BauO NRW 2018',
       'vereinfachtes Verfahren': '§ 64 BauO NRW 2018',
       Baugenehmigungsverfahren: '§ 65 BauO NRW 2018 (große Sonderbauten)',

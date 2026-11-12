@@ -290,6 +290,41 @@
       "gruppe": "planung",
       "typ": "janein",
       "hilfe": "Der Dienst der Stadt führt Pläne teils Monate nach dem Satzungsbeschluss noch als Entwurf (Stand 2000) – Bekanntmachungsseite der Stadt prüfen"
+    },
+    "ortsrecht.stellplatz_regelt_zahl": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Pflicht und Zahl der notwendigen Stellplätze",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "wert": true,
+      "hilfe": "§§ 2, 3 Stellplatzsatzung Soest (Anlage 3)"
+    },
+    "ortsrecht.stellplatz_regelt_lage": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Lage und Herstellung der Stellplätze (Entfernung, Sicherung)",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "wert": true,
+      "hilfe": "§ 4 Stellplatzsatzung Soest (300 m Fußweg, Sicherung)"
+    },
+    "ortsrecht.stellplatz_regelt_kfz": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Größe und Beschaffenheit der Kfz-Stellplätze einschließlich der Stellplätze für Menschen mit Behinderung",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "wert": false,
+      "hilfe": "die Soester Satzung regelt Stellplätze für Menschen mit Behinderung nicht (§ 2 Abs. 5 verweist nur auf §§ 13, 88 SBauVO) – § 7 StellplatzVO NRW bleibt"
+    },
+    "ortsrecht.stellplatz_regelt_fahrrad": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt die Beschaffenheit der Fahrradabstellplätze",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "wert": true,
+      "hilfe": "§ 4 Stellplatzsatzung Soest (ebenerdig, diebstahlsicher, 1,5 m² je Rad)"
+    },
+    "ortsrecht.stellplatz_regelt_abloesung": {
+      "titel": "Die Stellplatzsatzung regelt die Ablösung notwendiger Stellplätze",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "wert": true,
+      "hilfe": "§ 5 Stellplatzsatzung Soest"
     }
   },
   "bausteine": {

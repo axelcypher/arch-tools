@@ -189,7 +189,7 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_bauen_gebaeude"
+            "$": "nw_vorhaben_gebaeude"
           },
           {
             "$": "nw_verfahren_bekannt"
@@ -210,6 +210,12 @@
         "8/1": "f8bddd9a",
         "8/2": "20139089",
         "8/4": "69fc028a"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "9": {

@@ -9,14 +9,11 @@
       "gilt": {
         "und": [
           {
-            "$": "errichtung"
-          },
-          {
-            "$": "gebaeude"
+            "$": "nw_bauen_gebaeude"
           }
         ]
       },
-      "grund": "Gebäude nur bei gesicherter Zufahrt zu einer befahrbaren öffentlichen Verkehrsfläche und gesicherter Ver- und Entsorgung; ein Gebäude auf mehreren Grundstücken nur mit öffentlich-rechtlicher Sicherung.",
+      "grund": "Gebäude dürfen nur errichtet werden, wenn das Grundstück in angemessener Breite an einer befahrbaren öffentlichen Verkehrsfläche liegt oder eine öffentlich-rechtlich gesicherte Zufahrt hat und die Zufahrt und die Löschwasserversorgung für den Einsatz der Feuerwehr gesichert sind (Abs. 1); ein Gebäude auf mehreren Grundstücken nur mit öffentlich-rechtlicher Sicherung – auch bei Anbau und Änderung (Abs. 2).",
       "fundstellen": [
         "4/1",
         "4/2"
@@ -35,7 +32,7 @@
     },
     "5": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "grund": "Zu- und Durchgänge sowie Zufahrten für die Feuerwehr auf dem Grundstück.",
       "fundstellen": [
@@ -52,11 +49,17 @@
       "stand": {
         "5/1": "bf4f2d6d",
         "5/2": "719ce238"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "6": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "pruefen": {
         "grund": "Bei Nutzungsänderung bleiben vorhandene Abstandsflächen nach Abs. 11 Nr. 3 unberührt – prüfen, ob in der Abstandsfläche privilegierte Anlagen (Abs. 8) umgenutzt werden; andere bauliche Anlagen über 2 m (bzw. betretbar über 1 m) brauchen ebenfalls Abstandsflächen (Abs. 1 Satz 2).",
@@ -81,7 +84,7 @@
           ]
         }
       },
-      "grund": "Vor den Außenwänden von Gebäuden sind Abstandsflächen freizuhalten: 0,4 H, mindestens 3 m (in GE/GI 0,2 H, in MK 0,25 H).",
+      "grund": "Vor den Außenwänden von Gebäuden sind Abstandsflächen freizuhalten: 0,4 H, mindestens 3 m (in GE/GI 0,2 H, in MK und MU zu öffentlichen Verkehrsflächen 0,2 H bzw. die Werte nach Abs. 5); bei Wohngebäuden der Gebäudeklassen 1 und 2 mit nicht mehr als drei oberirdischen Geschossen genügen 3 m (Abs. 5 Satz 5).",
       "fundstellen": [
         "6/1",
         "6/5",
@@ -104,7 +107,7 @@
     },
     "8": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "grund": "Nicht überbaute Flächen wasseraufnahmefähig belassen und begrünen (keine Schottergärten, kein Kunstrasen).",
       "fundstellen": [
@@ -121,6 +124,12 @@
       "stand": {
         "8/1": "3e6f4d1a",
         "8/2": "56e878e1"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "10": {
@@ -167,9 +176,41 @@
         "14": "d300710d"
       }
     },
+    "15": {
+      "titel": "Wärme-, Schall-, Erschütterungsschutz",
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Gebäude brauchen einen ihrer Nutzung und den klimatischen Verhältnissen entsprechenden Wärmeschutz und einen ihrer Lage und Nutzung entsprechenden Schallschutz; Geräusche und Erschütterungen ortsfester Einrichtungen sind zu dämmen (Abs. 1–3).",
+      "fundstellen": [
+        "15/1",
+        "15/2",
+        "15/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "nachweis": [
+        "Nachweise über Wärme- und Schallschutz (§ 68 BauO NRW, § 12 BauPrüfVO) – im vereinfachten Verfahren nicht geprüft, aber einzuhalten"
+      ],
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "verweise": [
+        "bund/geg/10"
+      ],
+      "stand": {
+        "15/1": "322f146a",
+        "15/2": "2780b6d8",
+        "15/3": "c0ff27b9"
+      }
+    },
     "26": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "grund": "Allgemeine Anforderungen an das Brandverhalten von Baustoffen und die Feuerwiderstandsfähigkeit von Bauteilen.",
       "fundstellen": [
@@ -182,16 +223,29 @@
       "stand": {
         "26/1": "2a324c94",
         "26/2": "1de64c20"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "27": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "pruefen": {
-        "grund": "Bei Umnutzung zu Wohnraum gilt § 27 nicht für bestehende Bauteile (§ 47 Abs. 6).",
+        "grund": "Bei Umnutzung zu Wohnraum gilt § 27 nicht für bestehende Bauteile (§ 47 Abs. 6). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nutzungsaenderung"
+            }
+          ]
         }
       },
       "grund": "Tragende und aussteifende Wände und Stützen: Feuerwiderstand nach Gebäudeklasse (GK 2–3 feuerhemmend, GK 4 hochfeuerhemmend, GK 5 feuerbeständig; im Kellergeschoss strenger).",
@@ -210,7 +264,7 @@
     },
     "28": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "grund": "Außenwände: Brandausbreitung ausreichend lang begrenzen; Anforderungen an nichttragende Teile und Bekleidungen erst ab Gebäudeklasse 4.",
       "fundstellen": [
@@ -224,6 +278,12 @@
       "stand": {
         "28/1": "29063c2d",
         "28/5": "7f52f70d"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "29": {
@@ -263,7 +323,7 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_bauen_gebaeude"
+            "$": "nw_vorhaben_gebaeude"
           },
           {
             "f": "nw.grenzabstand_unter_2_5",
@@ -272,29 +332,36 @@
         ]
       },
       "pruefen": {
-        "grund": "Innere Brandwände bei ausgedehnten Gebäuden (höchstens 40 m Abstand), bei aneinandergereihten Gebäuden auf demselben Grundstück und bei landwirtschaftlich genutzten Gebäuden (Abs. 2 Nr. 2–4).",
+        "grund": "Innere Brandwände bei ausgedehnten Gebäuden (höchstens 40 m Abstand), bei aneinandergereihten Gebäuden auf demselben Grundstück und bei landwirtschaftlich genutzten Gebäuden (Abs. 2 Nr. 2–4). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "oder": [
             {
-              "$": "nichtwohngebaeude"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "Mehrfamilienhaus"
-              ]
-            },
-            {
-              "und": [
+              "oder": [
                 {
-                  "f": "gebaeude.landwirtschaft",
-                  "bekannt": true
+                  "$": "nichtwohngebaeude"
                 },
                 {
-                  "f": "gebaeude.landwirtschaft",
-                  "ist": true
+                  "m": "Gebäudeart",
+                  "in": [
+                    "Mehrfamilienhaus"
+                  ]
+                },
+                {
+                  "und": [
+                    {
+                      "f": "gebaeude.landwirtschaft",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.landwirtschaft",
+                      "ist": true
+                    }
+                  ]
                 }
               ]
+            },
+            {
+              "$": "nutzungsaenderung"
             }
           ]
         }
@@ -316,12 +383,19 @@
     },
     "31": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "pruefen": {
-        "grund": "Bei Umnutzung zu Wohnraum gilt § 31 nicht für bestehende Bauteile (§ 47 Abs. 6).",
+        "grund": "Bei Umnutzung zu Wohnraum gilt § 31 nicht für bestehende Bauteile (§ 47 Abs. 6). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nutzungsaenderung"
+            }
+          ]
         }
       },
       "grund": "Decken: Feuerwiderstand nach Gebäudeklasse; Öffnungen in Decken nur nach Abs. 4.",
@@ -342,7 +416,7 @@
     },
     "32": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "grund": "Bedachungen widerstandsfähig gegen Flugfeuer und strahlende Wärme (harte Bedachung); Abstände bei weicher Bedachung.",
       "fundstellen": [
@@ -355,6 +429,12 @@
       "stand": {
         "32/1": "9c83b5ca",
         "32/2": "b9b4ab76"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "33": {
@@ -394,7 +474,7 @@
     },
     "34": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "grund": "Notwendige Treppen zu jedem nicht zu ebener Erde liegenden Geschoss und zum benutzbaren Dachraum.",
       "fundstellen": [
@@ -407,11 +487,17 @@
       "stand": {
         "34/1": "fe86eaa5",
         "34/3": "8db43907"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "35": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "entfaellt": {
         "$": "gk_1_2"
@@ -425,11 +511,17 @@
       },
       "stand": {
         "35/1": "5ae5000b"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "36": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "entfaellt": {
         "und": [
@@ -453,11 +545,17 @@
       "stand": {
         "36/1": "e0add59e",
         "36/2": "e58d63fe"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "37": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "grund": "Fenster, Türen und Öffnungen: Wohnungseingangstüren mindestens 0,90 m breit, Rauchableitung aus fensterlosen Kellergeschossen, Fenster als zweiter Rettungsweg mindestens 0,90 × 1,20 m.",
       "fundstellen": [
@@ -472,11 +570,17 @@
         "37/3": "104b3166",
         "37/4": "26820259",
         "37/5": "21c9ba67"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "38": {
       "gilt": {
-        "$": "nw_bauen_gebaeude"
+        "$": "nw_vorhaben_gebaeude"
       },
       "grund": "Umwehrungen von begehbaren Flächen, die an tiefer liegende Flächen angrenzen; Mindesthöhen der Brüstungen.",
       "fundstellen": [
@@ -487,6 +591,12 @@
       },
       "stand": {
         "38/1": "96b40213"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     },
     "39": {
@@ -537,8 +647,41 @@
           },
           {
             "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.aufzug",
+            "ist": false
           }
         ]
+      },
+      "pruefen": {
+        "grund": "Änderung oder Nutzungsänderung eines Gebäudes mit mehr als drei oberirdischen Geschossen: Aufzugspflicht; Abs. 4 Satz 2 befreit nur beim Dachgeschossausbau, bei der Aufstockung um bis zu zwei Geschosse und bei besonderen Schwierigkeiten – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "m": "Gebäudeart",
+              "nicht": [
+                "Einfamilienhaus",
+                "Zweifamilienhaus",
+                "kein Gebäude"
+              ]
+            },
+            {
+              "f": "nw.geschosse_oberirdisch",
+              "min": 4
+            }
+          ]
+        }
       }
     },
     "42": {
@@ -861,12 +1004,54 @@
         "$": "wohngebaeude"
       }
     },
+    "60": {
+      "titel": "Grundsatz",
+      "gilt": {
+        "oder": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "beseitigung"
+          }
+        ]
+      },
+      "grund": "Errichtung, Änderung, Nutzungsänderung und Beseitigung von Anlagen bedürfen der Baugenehmigung, soweit die §§ 61 bis 63, 78 und 79 nichts anderes bestimmen (Abs. 1). Auch verfahrensfreie und freigestellte Vorhaben sowie das vereinfachte Verfahren entbinden nicht von den Anforderungen des öffentlichen Rechts (Abs. 2).",
+      "fundstellen": [
+        "60/1",
+        "60/2"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "verweise": [
+        "nw/bauo-nrw/62",
+        "nw/bauo-nrw/63",
+        "nw/bauo-nrw/64"
+      ],
+      "stand": {
+        "60/1": "758d2e1b",
+        "60/2": "5320fdbb"
+      }
+    },
     "62": {
       "gilt": {
-        "$": "beseitigung"
+        "oder": [
+          {
+            "$": "beseitigung"
+          },
+          {
+            "m": "Verfahren",
+            "in": [
+              "verfahrensfrei"
+            ]
+          }
+        ]
       },
-      "grund": "Beseitigung: verfahrensfrei für Anlagen nach Abs. 1 und freistehende Gebäude der Gebäudeklassen 1 und 3; im Übrigen Anzeige mindestens einen Monat vorher.",
+      "grund": "Verfahrensfreie Vorhaben (Abs. 1 und 2 – z. B. Garagen bis 50 m² Brutto-Grundfläche mit mittlerer Wandhöhe bis 3 m, nicht im Außenbereich) und Beseitigung (Abs. 3): kein Baugenehmigungsverfahren; die Anforderungen des öffentlichen Rechts gelten trotzdem (§ 60 Abs. 2). Beseitigung im Übrigen mit Anzeige mindestens einen Monat vorher.",
       "fundstellen": [
+        "62/1",
+        "62/2",
         "62/3"
       ],
       "behoerde": {
@@ -875,8 +1060,10 @@
       "nachweis": [
         "Bauvorlagen für die Beseitigung (§ 15 BauPrüfVO)"
       ],
-      "hinweis": "Bei angebauten Gebäuden die Standsicherheit der angrenzenden Gebäude durch eine berechtigte Person beurteilen lassen (Abs. 3 Satz 4); Artenschutz vor Abbruch prüfen.",
+      "hinweis": "Ob ein Vorhaben verfahrensfrei ist, richtet sich nach dem Katalog in Abs. 1; offen, solange das Verfahren nicht festgelegt ist. Bei angebauten Gebäuden die Standsicherheit der angrenzenden Gebäude durch eine berechtigte Person beurteilen lassen (Abs. 3 Satz 4); Artenschutz vor Abbruch prüfen.",
       "stand": {
+        "62/1": "1c0c0a63",
+        "62/2": "81ffc344",
         "62/3": "d5f1a643"
       }
     },
@@ -989,7 +1176,7 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_bauen_gebaeude"
+            "$": "nw_vorhaben_gebaeude"
           },
           {
             "$": "nw_verfahren_bekannt"
@@ -1099,6 +1286,73 @@
         "70/2": "1f114dd7"
       }
     },
+    "72": {
+      "titel": "Beteiligung der Nachbarinnen und Nachbarn und der Öffentlichkeit",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "f": "planung.abweichung",
+                "ist": true
+              },
+              {
+                "f": "planung.befreiung",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "planung.abweichung",
+            "ist": false
+          },
+          {
+            "f": "planung.befreiung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Vor Abweichungen (§ 69) und Befreiungen benachrichtigt die Bauaufsicht die Eigentümer angrenzender Grundstücke, wenn nachbarliche Belange berührt sein können (Abs. 1); das entfällt, wenn sie Lageplan und Bauzeichnungen unterschrieben oder auf andere Weise zugestimmt haben (Abs. 2).",
+      "fundstellen": [
+        "72/1",
+        "72/2",
+        "72/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Vor der Einreichung die Unterschriften der Nachbarn auf Lageplan und Bauzeichnungen einholen – das beschleunigt das Verfahren. Bei großen Vorhaben (mehr als 5 000 m² Brutto-Grundfläche für Wohnen, mehr als 100 zusätzliche Besucher, bestimmte Sonderbauten) ist die Öffentlichkeit zu beteiligen (Abs. 3).",
+      "pruefen": {
+        "grund": "Öffentlichkeitsbeteiligung nach Abs. 3 bei großen Vorhaben (Wohnen über 5 000 m² BGF, mehr als 100 zusätzliche Besucher, Sonderbauten nach § 47 Abs. 5 und § 50 Abs. 2 Nr. 8–15) – im Einzelfall prüfen.",
+        "wenn": {
+          "oder": [
+            {
+              "$": "sonderbau"
+            },
+            {
+              "f": "gebaeude.besucher",
+              "min": 101
+            },
+            {
+              "f": "gebaeude.bgf",
+              "min": 5000
+            }
+          ]
+        }
+      },
+      "stand": {
+        "72/1": "4ed9844b",
+        "72/2": "dd724384",
+        "72/3": "90fc6d8b"
+      }
+    },
     "74": {
       "gilt": {
         "und": [
@@ -1157,7 +1411,7 @@
         "tag": "einreichung",
         "vor": "2026-09-01"
       },
-      "grund": "Verfahren, die vor dem Inkrafttreten der Änderung eingeleitet wurden, werden nach dem Verfahrensrecht zur Zeit der Antragstellung fortgeführt; die Bauherrschaft kann das neue Recht beantragen.",
+      "grund": "Verfahren, die vor dem Inkrafttreten der Änderung eingeleitet wurden, werden nach dem bisherigen Verfahrensrecht fortgeführt; die Bauherrschaft kann die Anwendung des neuen Rechts beantragen (Abs. 4 – „dieses Gesetz“ meint die BauO NRW 2018).",
       "fundstellen": [
         "90/4"
       ],
@@ -1191,7 +1445,7 @@
       "nachweis": [
         "Nachweis auf Verlangen mit dem Formular des Ministeriums (§ 8 SAN-VO NRW)"
       ],
-      "hinweis": "Örtliche Bauvorschriften oder Bebauungsplan sind maßgeblich, wenn sie Festlegungen treffen (Abs. 1 Satz 3). Mindestgröße 30 % der Bruttodachfläche (§ 4 SAN-VO). Für die Genehmigungsfreistellung zählt der Baubeginn statt der Antragstellung (Abs. 1 Satz 2).",
+      "hinweis": "Örtliche Bauvorschriften oder Bebauungsplan sind maßgeblich, wenn sie Festlegungen treffen (Abs. 1 Satz 3). Mindestgröße 30 % der Bruttodachfläche (§ 4 SAN-VO). Für die Genehmigungsfreistellung zählt der Baubeginn statt der Antragstellung (Abs. 1 Satz 2). Bei vollständiger Erneuerung der Dachhaut kommt es auf den Beginn der Arbeiten an (ab 01.01.2026), nicht auf die Einreichung; für Gebäude im Eigentum von Kommunen gilt die Pflicht schon ab 01.07.2024 (Abs. 3 Satz 2).",
       "verweise": [
         "nw/san-vo/1",
         "nw/san-vo/4",

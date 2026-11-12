@@ -11,36 +11,26 @@
         "$": "bauen"
       },
       "entfaellt": {
-        "oder": [
-          {
-            "$": "bplan_jeder"
-          },
-          {
-            "$": "innenbereich"
-          },
-          {
-            "f": "planung.planaufstellung",
-            "ist": true
-          },
-          {
-            "und": [
-              {
-                "$": "satzung_baugb"
-              },
-              {
-                "f": "planung.innen",
-                "ist": true
-              }
-            ]
-          }
-        ]
+        "$": "innen_planrecht"
       },
-      "grund": "Im Außenbereich ist die Errichtung oder Änderung baulicher Anlagen in der Regel ein Eingriff in Natur und Landschaft (Veränderung der Gestalt oder Nutzung von Grundflächen, Abs. 1).",
+      "grund": "Im Außenbereich – auch im Geltungsbereich eines einfachen Bebauungsplans oder einer Satzung, soweit sich die Zulässigkeit nach § 35 BauGB richtet – ist die Errichtung oder Änderung baulicher Anlagen in der Regel ein Eingriff in Natur und Landschaft (Veränderung der Gestalt oder Nutzung von Grundflächen, Abs. 1; § 18 Abs. 2 Satz 2).",
       "fundstellen": [
         "14/1"
       ],
       "pruefen": {
-        "grund": "Ob die Beeinträchtigung erheblich ist, hängt vom Einzelfall ab (Versiegelung, Landschaftsbild)."
+        "grund": "Auch eine Nutzungsänderung im Außenbereich kann die Nutzung von Grundflächen verändern (z. B. Stellplätze, Zufahrten, Versiegelung) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "$": "innen_planrecht"
+              }
+            }
+          ]
+        }
       },
       "behoerde": {
         "$": "genehmigung"
@@ -51,7 +41,8 @@
       ],
       "stand": {
         "14/1": "4ed2a6be"
-      }
+      },
+      "hinweis": "Ob die Beeinträchtigung erheblich ist, hängt vom Einzelfall ab (Versiegelung, Landschaftsbild)."
     },
     "15": {
       "titel": "Verursacherpflichten, Unzulässigkeit von Eingriffen",
@@ -91,7 +82,7 @@
           {
             "oder": [
               {
-                "$": "aussenbereich"
+                "$": "aussen_planrecht"
               },
               {
                 "und": [
@@ -107,7 +98,7 @@
           }
         ]
       },
-      "grund": "Über Vorhaben im Außenbereich und die Errichtung baulicher Anlagen im Innenbereich entscheidet die Bauaufsicht im Benehmen mit der Naturschutzbehörde (Abs. 3); im Bebauungsplan und Innenbereich ist die Eingriffsregelung nicht anzuwenden (Abs. 2).",
+      "grund": "Über Vorhaben im Außenbereich (auch nach § 30 Abs. 3 BauGB mit § 35) und die Errichtung baulicher Anlagen im Innenbereich entscheidet die Bauaufsicht im Benehmen mit der Naturschutzbehörde (Abs. 3); im qualifizierten Bebauungsplan, während der Planaufstellung (§ 33) und im Innenbereich ist die Eingriffsregelung nicht anzuwenden (Abs. 2 Satz 1).",
       "fundstellen": [
         "18/2",
         "18/3"
@@ -196,11 +187,13 @@
           {
             "oder": [
               {
-                "$": "bplan_jeder"
+                "$": "bplan"
               },
               {
-                "f": "planung.planaufstellung",
-                "ist": true
+                "n": "bund/baugb/33",
+                "ampel": [
+                  "rot"
+                ]
               }
             ]
           }
@@ -213,9 +206,19 @@
         "34/8"
       ],
       "pruefen": {
-        "grund": "Ob eine erhebliche Beeinträchtigung möglich ist (Vorprüfung), hängt vom Schutzzweck ab – z. B. Kulissenwirkung hoher Bauten im Vogelschutzgebiet."
+        "grund": "Einfacher Bebauungsplan: ob die Ausnahme nach Abs. 8 greift, im Einzelfall klären.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "$": "bplan_einfach"
+            }
+          ]
+        }
       },
-      "hinweis": "Nicht anzuwenden auf Vorhaben nach § 29 BauGB im Geltungsbereich eines Bebauungsplans und während der Planaufstellung (Abs. 8), außer bei planfeststellungsersetzenden Bebauungsplänen.",
+      "hinweis": "Nicht anzuwenden auf Vorhaben nach § 29 BauGB im Geltungsbereich eines Bebauungsplans und während der Planaufstellung (Abs. 8), außer bei planfeststellungsersetzenden Bebauungsplänen. Ob eine erhebliche Beeinträchtigung möglich ist (Vorprüfung), hängt vom Schutzzweck ab – z. B. Kulissenwirkung hoher Bauten im Vogelschutzgebiet.",
       "behoerde": {
         "$": "genehmigung"
       },

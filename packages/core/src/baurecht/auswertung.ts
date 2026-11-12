@@ -282,6 +282,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       }
     } else if (ampel === 'rot') {
       if (pruef.w === 'ja' && r.pruefen) hinweise.push(`Im Einzelfall prüfen: ${r.pruefen.grund}`);
+      const neu = (n.stand?.kuenftige ?? []).filter((k) => k.gueltigAb > e.einreichung && k.gueltigAb <= entscheidungBis);
+      if (neu.length) hinweise.push(`Neue Fassung ab ${neu.map((k) => datumText(k.gueltigAb)).join(', ')} angekündigt – voraussichtlich vor der Entscheidung; Anforderungen der künftigen Fassung prüfen.`);
       if (geaendert.length) hinweise.push(`Text seit der Prüfung der Regel geändert (${geaendert.map(fundstelleName).join(', ')}).`);
     }
     if (r.hinweis) hinweise.push(r.hinweis);

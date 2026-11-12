@@ -4,13 +4,6 @@
   "norm": "stellplatzvo",
   "fassung": "2022-07-01",
   "version": 1,
-  "geltung": {
-    "nicht": {
-      "f": "ortsrecht.stellplatzsatzung",
-      "ist": true
-    }
-  },
-  "geltungGrund": "Die Stellplatzsatzung der Gemeinde bzw. Stellplatzregelungen im Bebauungsplan gehen der Verordnung vor (§ 1 Abs. 2).",
   "paragrafen": {
     "1": {
       "gilt": {
@@ -40,6 +33,10 @@
       "stand": {
         "1/1": "cf8b5461",
         "1/2": "4c2d69d3"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_zahl",
+        "ist": true
       }
     },
     "2": {
@@ -69,6 +66,10 @@
       "stand": {
         "2/1": "9790f329",
         "2/2": "5e61cb41"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_zahl",
+        "ist": true
       }
     },
     "3": {
@@ -101,6 +102,10 @@
       "stand": {
         "3/1": "0849eafd",
         "3/4": "f22f8ca2"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_zahl",
+        "ist": true
       }
     },
     "4": {
@@ -133,6 +138,10 @@
       "stand": {
         "4/1": "0770478e",
         "4/2": "dae694c5"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_zahl",
+        "ist": true
       }
     },
     "5": {
@@ -164,6 +173,10 @@
         "5/1": "ac392f74",
         "5/2": "a5b49e1e",
         "5/3": "297fbd15"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_lage",
+        "ist": true
       }
     },
     "7": {
@@ -182,7 +195,7 @@
           }
         ]
       },
-      "grund": "Beschaffenheit notwendiger Kfz-Stellplätze einschließlich Stellplätzen für Menschen mit Behinderung.",
+      "grund": "Größe und Beschaffenheit notwendiger Kfz-Stellplätze; bei Wohngebäuden nach § 49 Abs. 1 BauO NRW mindestens ein Stellplatz für Menschen mit Behinderung (Abs. 2) – gilt neben einer Stellplatzsatzung, soweit diese das nicht regelt (§ 1 Abs. 2).",
       "fundstellen": [
         "7"
       ],
@@ -191,6 +204,10 @@
       },
       "stand": {
         "7": "d9c70838"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_kfz",
+        "ist": true
       }
     },
     "8": {
@@ -218,6 +235,10 @@
       },
       "stand": {
         "8": "34318bc8"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_fahrrad",
+        "ist": true
       }
     },
     "9": {
@@ -252,6 +273,18 @@
       },
       "stand": {
         "9": "603187bd"
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "ortsrecht.stellplatz_regelt_zahl",
+            "ist": true
+          },
+          {
+            "f": "ortsrecht.stellplatz_regelt_abloesung",
+            "ist": true
+          }
+        ]
       }
     }
   }

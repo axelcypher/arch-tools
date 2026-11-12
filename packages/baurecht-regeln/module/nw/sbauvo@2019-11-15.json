@@ -16,9 +16,6 @@
             "$": "wohngebaeude"
           },
           {
-            "$": "kein_sonderbau"
-          },
-          {
             "f": "gebaeude.besucher",
             "max": 200
           }
@@ -107,9 +104,6 @@
             "$": "wohngebaeude"
           },
           {
-            "$": "kein_sonderbau"
-          },
-          {
             "f": "gebaeude.verkaufsflaeche",
             "max": 2000
           }
@@ -157,9 +151,6 @@
           },
           {
             "$": "gk_1_3"
-          },
-          {
-            "$": "kein_sonderbau"
           }
         ]
       },

@@ -51,7 +51,9 @@ jobs:
         run: |
           vorher="${{ github.event.before }}"
           if git diff --quiet "$vorher" "$GITHUB_SHA" -- packages/baurecht-regeln/module packages/baurecht-regeln/texte; then exit 0; fi
-          alt=$(git show "$vorher:packages/baurecht-regeln/package.json" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+          # neues Paket (vorher keine package.json): nichts zu vergleichen
+          alt=$(git show "$vorher:packages/baurecht-regeln/package.json" 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version" 2>/dev/null || true)
+          if [ -z "$alt" ]; then exit 0; fi
           neu=$(node -p "require('./packages/baurecht-regeln/package.json').version")
           if [ "$alt" = "$neu" ]; then
             echo "::error::Regeln geändert, aber die Version in packages/baurecht-regeln/package.json ist noch $neu – bitte erhöhen (Datum)."

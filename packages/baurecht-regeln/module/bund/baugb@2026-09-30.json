@@ -130,11 +130,30 @@
             "$": "vorhaben_29"
           },
           {
-            "$": "bplan_jeder"
-          },
-          {
             "f": "planung.befreiung",
             "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "bplan_jeder"
+              },
+              {
+                "und": [
+                  {
+                    "$": "innenbereich"
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "in": [
+                        "keins"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -160,7 +179,8 @@
         "31/1": "ec0a7197",
         "31/2": "e4196dbe",
         "31/3": "40847891"
-      }
+      },
+      "hinweis": "Im Innenbereich mit faktischem Baugebiet gilt § 31 Abs. 1, 2 und 3 Satz 1 entsprechend (§ 34 Abs. 2 Halbs. 2)."
     },
     "33": {
       "titel": "Zulässigkeit von Vorhaben während der Planaufstellung",

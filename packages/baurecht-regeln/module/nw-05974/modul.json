@@ -378,22 +378,7 @@
       ]
     },
     "kreis_soest_aussen": {
-      "oder": [
-        {
-          "$": "aussenbereich"
-        },
-        {
-          "und": [
-            {
-              "$": "satzung_baugb"
-            },
-            {
-              "f": "planung.innen",
-              "ist": false
-            }
-          ]
-        }
-      ]
+      "$": "aussen_planrecht"
     },
     "kreis_soest_eingriff": {
       "oder": [

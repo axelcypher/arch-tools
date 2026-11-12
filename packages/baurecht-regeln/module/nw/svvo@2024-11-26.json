@@ -9,7 +9,7 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_bauen_gebaeude"
+            "$": "nw_vorhaben_gebaeude"
           },
           {
             "$": "nw_verfahren_bekannt"
@@ -27,32 +27,39 @@
         ]
       },
       "pruefen": {
-        "grund": "Keine Prüfung der Standsicherheit auch bei freistehenden landwirtschaftlichen Betriebsgebäuden bis zwei Geschosse und eingeschossigen Gebäuden bis 200 m² (§ 68 Abs. 3 Satz 5 BauO NRW).",
+        "grund": "Keine Prüfung der Standsicherheit auch bei freistehenden landwirtschaftlichen Betriebsgebäuden bis zwei Geschosse und eingeschossigen Gebäuden bis 200 m² (§ 68 Abs. 3 Satz 5 BauO NRW). Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
         "wenn": {
           "oder": [
             {
-              "und": [
+              "oder": [
                 {
-                  "f": "gebaeude.landwirtschaft",
-                  "bekannt": true
+                  "und": [
+                    {
+                      "f": "gebaeude.landwirtschaft",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.landwirtschaft",
+                      "ist": true
+                    }
+                  ]
                 },
                 {
-                  "f": "gebaeude.landwirtschaft",
-                  "ist": true
+                  "und": [
+                    {
+                      "f": "gebaeude.bgf",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.bgf",
+                      "max": 200
+                    }
+                  ]
                 }
               ]
             },
             {
-              "und": [
-                {
-                  "f": "gebaeude.bgf",
-                  "bekannt": true
-                },
-                {
-                  "f": "gebaeude.bgf",
-                  "max": 200
-                }
-              ]
+              "$": "nutzungsaenderung"
             }
           ]
         }
@@ -139,7 +146,7 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_bauen_gebaeude"
+            "$": "nw_vorhaben_gebaeude"
           },
           {
             "$": "nw_verfahren_bekannt"
@@ -168,6 +175,12 @@
       "stand": {
         "23/1": "0b8f8fd6",
         "23/2": "a7f01888"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       }
     }
   }

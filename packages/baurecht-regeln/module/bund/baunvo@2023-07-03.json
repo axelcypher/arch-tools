@@ -38,6 +38,24 @@
       },
       "stand": {
         "2": "a7fa4458"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "3": {
@@ -52,6 +70,24 @@
       },
       "stand": {
         "3": "5d101665"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "4": {
@@ -66,6 +102,24 @@
       },
       "stand": {
         "4": "18d66646"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "5": {
@@ -80,6 +134,24 @@
       },
       "stand": {
         "5": "b443f5dd"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "6": {
@@ -94,6 +166,24 @@
       },
       "stand": {
         "6": "d93a761c"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "7": {
@@ -108,6 +198,24 @@
       },
       "stand": {
         "7": "3d358435"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "8": {
@@ -122,6 +230,24 @@
       },
       "stand": {
         "8": "f2df9359"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "9": {
@@ -136,6 +262,24 @@
       },
       "stand": {
         "9": "6e458066"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "10": {
@@ -158,6 +302,24 @@
       },
       "stand": {
         "10": "28453b5a"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "11": {
@@ -180,6 +342,24 @@
       },
       "stand": {
         "11": "570b859b"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "12": {
@@ -224,19 +404,19 @@
         "12/3"
       ],
       "pruefen": {
-        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
         "wenn": {
           "und": [
             {
               "$": "bplan_jeder"
             },
             {
-              "f": "planung.baunvo",
-              "in": [
-                "1962",
-                "1968",
-                "1977"
-              ]
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
             }
           ]
         }
@@ -248,6 +428,74 @@
         "12/1": "94ae3485",
         "12/2": "1359a9ef",
         "12/3": "cc5cf444"
+      }
+    },
+    "14": {
+      "titel": "Nebenanlagen; Anlagen zur Nutzung solarer Strahlungsenergie und Kraft-Wärme-Kopplungsanlagen",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "bplan_jeder"
+              },
+              {
+                "und": [
+                  {
+                    "$": "innenbereich"
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "in": [
+                        "keins"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.nebenanlage",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "vorhaben.nebenanlage",
+        "ist": false
+      },
+      "grund": "Untergeordnete Nebenanlagen, die dem Nutzungszweck der Grundstücke dienen und der Eigenart des Baugebiets nicht widersprechen, sind zulässig – auch Anlagen zur Erzeugung von Strom oder Wärme aus erneuerbaren Energien (Abs. 1); der Bebauungsplan kann sie einschränken oder ausschließen (Abs. 1 Satz 4); Versorgungsanlagen ausnahmsweise (Abs. 2).",
+      "fundstellen": [
+        "14/1",
+        "14/2"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "hinweis": "Festsetzungen des Bebauungsplans zu Nebenanlagen (z. B. außerhalb der überbaubaren Flächen, § 23 Abs. 5) prüfen.",
+      "stand": {
+        "14/1": "ef451f58",
+        "14/2": "6ad0d887"
       }
     },
     "15": {
@@ -274,14 +522,30 @@
         "15/1"
       ],
       "pruefen": {
-        "grund": "Rücksichtnahme ist eine Wertungsfrage im Einzelfall (Nachbarschaft, Immissionen)."
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       },
       "behoerde": {
         "$": "genehmigung"
       },
       "stand": {
         "15/1": "2b30d38c"
-      }
+      },
+      "hinweis": "Rücksichtnahme ist eine Wertungsfrage im Einzelfall (Nachbarschaft, Immissionen)."
     },
     "18": {
       "titel": "Höhe baulicher Anlagen",
@@ -302,19 +566,19 @@
         "18/2"
       ],
       "pruefen": {
-        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
         "wenn": {
           "und": [
             {
               "$": "bplan_jeder"
             },
             {
-              "f": "planung.baunvo",
-              "in": [
-                "1962",
-                "1968",
-                "1977"
-              ]
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
             }
           ]
         }
@@ -356,19 +620,19 @@
         "19/4"
       ],
       "pruefen": {
-        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
         "wenn": {
           "und": [
             {
               "$": "bplan_jeder"
             },
             {
-              "f": "planung.baunvo",
-              "in": [
-                "1962",
-                "1968",
-                "1977"
-              ]
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
             }
           ]
         }
@@ -413,19 +677,19 @@
         "20/3"
       ],
       "pruefen": {
-        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
         "wenn": {
           "und": [
             {
               "$": "bplan_jeder"
             },
             {
-              "f": "planung.baunvo",
-              "in": [
-                "1962",
-                "1968",
-                "1977"
-              ]
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
             }
           ]
         }
@@ -464,19 +728,19 @@
         "22/4"
       ],
       "pruefen": {
-        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
         "wenn": {
           "und": [
             {
               "$": "bplan_jeder"
             },
             {
-              "f": "planung.baunvo",
-              "in": [
-                "1962",
-                "1968",
-                "1977"
-              ]
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
             }
           ]
         }
@@ -519,19 +783,19 @@
         "23/5"
       ],
       "pruefen": {
-        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
         "wenn": {
           "und": [
             {
               "$": "bplan_jeder"
             },
             {
-              "f": "planung.baunvo",
-              "in": [
-                "1962",
-                "1968",
-                "1977"
-              ]
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
             }
           ]
         }
@@ -562,6 +826,24 @@
       },
       "stand": {
         "4a": "6700f409"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "5a": {
@@ -576,6 +858,24 @@
       },
       "stand": {
         "5a": "8fe09f6c"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "6a": {
@@ -590,6 +890,24 @@
       },
       "stand": {
         "6a": "87d4cd98"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     "21a": {
@@ -637,19 +955,19 @@
         "21a/5"
       ],
       "pruefen": {
-        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
         "wenn": {
           "und": [
             {
               "$": "bplan_jeder"
             },
             {
-              "f": "planung.baunvo",
-              "in": [
-                "1962",
-                "1968",
-                "1977"
-              ]
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
             }
           ]
         }
@@ -692,6 +1010,24 @@
       },
       "stand": {
         "25c": "f8fc88a1"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
       }
     }
   }

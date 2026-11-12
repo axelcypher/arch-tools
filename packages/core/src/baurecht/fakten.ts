@@ -45,7 +45,7 @@ export const FAKTEN: Record<string, FaktDef> = {
   'planung.bplan_nr': { titel: 'Bebauungsplan (Nummer)', gruppe: 'planung', typ: 'text' },
   'planung.bplan_datum': { titel: 'Bebauungsplan in Kraft seit', gruppe: 'planung', typ: 'text', hilfe: 'JJJJ-MM-TT' },
   'planung.gebietsart': { titel: 'Baugebiet', gruppe: 'planung', typ: 'wahl', werte: ['WS', 'WR', 'WA', 'WB', 'MD', 'MDW', 'MI', 'MU', 'MK', 'GE', 'GI', 'SO', 'keins'] },
-  'planung.baunvo': { titel: 'BauNVO-Fassung', gruppe: 'planung', typ: 'wahl', werte: ['1962', '1968', '1977', '1990', 'aktuell'], hilfe: 'im Bebauungsplan die Fassung zum Plandatum; im Innenbereich die geltende' },
+  'planung.baunvo': { titel: 'BauNVO-Fassung', gruppe: 'planung', typ: 'wahl', werte: ['1962', '1968', '1977', '1990', '2013', '2017', '2021', 'aktuell'], hilfe: 'im Bebauungsplan die Fassung zum Zeitpunkt der öffentlichen Auslegung (§§ 25c ff. BauNVO); im Innenbereich die geltende' },
   'planung.veraenderungssperre': j('Veränderungssperre (§ 14 BauGB)', 'planung'),
   'planung.erhaltungssatzung': j('Erhaltungssatzung (§ 172 BauGB)', 'planung'),
   'planung.sanierungsgebiet': j('Sanierungsgebiet', 'planung'),

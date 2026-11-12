@@ -202,8 +202,19 @@ export function merkmalSetzen(roh: Record<string, unknown>, antrag: string, name
 const runde = (n: number, stellen = 2) => Math.round(n * 10 ** stellen) / 10 ** stellen;
 
 /** BauNVO-Fassung nach dem Plandatum (statischer Verweis im Bebauungsplan) */
-export function baunvoNachDatum(datum: string): '1962' | '1968' | '1977' | '1990' {
-  return datum < '1969-01-01' ? '1962' : datum < '1977-10-01' ? '1968' : datum < '1990-01-27' ? '1977' : '1990';
+/**
+ * BauNVO-Fassung nach einem Datum (Stichtage der Änderungen). Maßgeblich ist das Datum der öffentlichen Auslegung des
+ * Plans (§§ 25c ff. BauNVO) – aus dem Plandatum abgeleitet ist das nur ein Hinweis.
+ */
+export function baunvoNachDatum(datum: string): '1962' | '1968' | '1977' | '1990' | '2013' | '2017' | '2021' | 'aktuell' {
+  if (datum < '1969-01-01') return '1962';
+  if (datum < '1977-10-01') return '1968';
+  if (datum < '1990-01-27') return '1977';
+  if (datum < '2013-09-20') return '1990';
+  if (datum < '2017-05-13') return '2013';
+  if (datum < '2021-06-23') return '2017';
+  if (datum < '2023-07-07') return '2021';
+  return 'aktuell';
 }
 
 export interface GebaeudeklasseAbleitung {
@@ -267,7 +278,7 @@ export function projektFakten(p: Project, heute = new Date().toISOString().slice
     // der GRZ-Nachweis fasst 1968/1977 zusammen – für die Regeln zählt die genaue Fassung nach dem Plandatum
     const nachDatum = baunvoNachDatum(mn.planDatum);
     const fassung = !mn.baunvo ? nachDatum : mn.baunvo === '1968' && nachDatum === '1977' ? '1977' : mn.baunvo;
-    setze('planung.baunvo', fassung, 'grz', 'GRZ-Nachweis (Plandatum)');
+    setze('planung.baunvo', fassung, 'grz', 'GRZ-Nachweis (Plandatum)', 'hinweis', 'aus dem Plandatum abgeleitet – maßgeblich ist die Fassung zum Zeitpunkt der öffentlichen Auslegung (§§ 25c ff. BauNVO); bitte im Plan prüfen');
   }
   if (p.storeys.some((s) => s.shapes.length)) {
     // Werte aus dem Modell sind nur so gut wie das Modell: Hinweis, bis bestätigt ist, dass es vollständig ist

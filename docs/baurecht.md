@@ -60,7 +60,13 @@ darauf beruht, wird „prüfen“).
 
 **Hinweise bestätigen:** Angaben, die nur Hinweis sind (z. B. „kein Treffer im Landschaftsschutzgebiet“, Flächen aus
 dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen – nur mit Angabe, worauf die Bestätigung beruht
-(z. B. Auskunft der Behörde mit Datum). Auch sie werden beim Speichern noch einmal bestätigt und stehen im Protokoll.
+(z. B. Auskunft der Behörde mit Datum). Der Dialog zeigt vorher, wie viele Vorschriften dadurch herabgestuft werden.
+Auch Bestätigungen werden beim Speichern noch einmal bestätigt und stehen im Prüfprotokoll. Eine bestätigte Angabe
+aus dem Modell gilt nur für genau diesen Wert – ändert sich das Modell, ist sie wieder Hinweis.
+
+**Schutzgebiete und Geodaten von Hand** (ja/nein, Auswahl) gibt es nur mit Beleg – wie eine Bestätigung. Widerspricht
+die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch stehen; was nur an ihr hängt, bleibt „prüfen“ (für
+einen begründeten Sonderfall: den Paragrafen von Hand festlegen).
 
 ## Lage abfragen (Desktop)
 
@@ -81,6 +87,11 @@ falsches „entfällt“.
 Gesendet werden nur die Lage des Grundstücks (Koordinaten bzw. Umring) und welche Gesetze gebraucht werden – keine
 Personendaten.
 
+## Bedienung mit der Tastatur
+
+Die Vorschriftenliste ist ein Tabstopp: ↑/↓, Pos1/Ende wählen den Paragrafen. F6 (Umschalt+F6) springt zwischen Kopf,
+Angaben, Vorschriften und Einzelheiten; dieselben Sprungmarken erscheinen beim ersten Tab.
+
 ## Rechtsstand
 
 - Quellen: Rechtsinformationssystem des Bundes (wo vorhanden), gesetze-im-internet.de, recht.nrw.de (stabiler Link
@@ -89,6 +100,9 @@ Personendaten.
   Fassungen liegen im gemeinsamen Konfigurationsordner unter `baurecht/recht/` – für alle Projekte gleich, nie
   überschrieben; ist eine Quelle nicht erreichbar, arbeitet die App mit dem letzten Stand und sagt es. Ist eine Norm
   seit **14 Tagen** nicht mehr an der Quelle bestätigt (oder nie), wird aus „entfällt“ ein „prüfen“.
+- **Stichtag:** Eine Fassung mit bekanntem Ende vor der Einreichung deckt den Stichtag nicht; gilt zum Stichtag laut
+  Quelle schon eine angekündigte Fassung, wird sie geholt – liegt ihr Text nicht vor, wird aus „entfällt“ ein „prüfen“.
+  Auch „entfällt mit der Norm“ (Anwendungsbereich) braucht den geprüften Text der Norm.
 - **Künftige Fassungen:** Kündigt die Quelle eine neue Fassung an, die innerhalb von sechs Monaten nach der geplanten
   Einreichung gilt (voraussichtlich vor der Entscheidung), wird aus „entfällt“ ein „prüfen“ – an der künftigen Fassung
   prüfen.
@@ -126,8 +140,9 @@ festgelegt.
 | `npm run index -w @akh/baurecht-regeln` | Paket ohne Leerraum bauen, Index mit SHA-256, Signatur (Ed25519) |
 | `npm run schluessel -w @akh/baurecht-regeln` | Schlüsselpaar für die Signatur erzeugen (einmalig) |
 
-Auslieferung und Wächter: `.github/workflows/regeln.yml` (Release „regeln“; wöchentlicher Abgleich mit den geltenden
-Fassungen, bei Abweichungen ein Issue). **Einrichten:** `npm run schluessel`, privaten Schlüssel als Secret
+Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne
+Schlüssel, Signieren (OpenSSL, Ed25519) und Hochladen in das Release „regeln“ in einem eigenen Job ohne npm; der
+Wächter gleicht wöchentlich mit den geltenden Fassungen ab und legt bei Abweichungen ein Issue an. **Einrichten:** `npm run schluessel`, privaten Schlüssel als Secret
 `BAURECHT_REGELN_SCHLUESSEL`, öffentlichen in `packages/baurecht-regeln/schluessel/regeln.pub`. Solange der öffentliche
 Schlüssel fehlt, nutzt die App das Regelpaket ihres Builds.
 
@@ -143,7 +158,10 @@ bricht sonst ab.
   Umleitung wird einzeln gegen die Liste geprüft; Hosts aus einem gültig signierten Paket kommen dazu. Die CSP der
   Webansicht bleibt unverändert. Die Signatur des Index prüft die Tauri-Hülle beim Freigeben der Hosts selbst
   (öffentlicher Schlüssel einkompiliert). Ablage des Rechtsstands über `baurecht_ablage_*` – nur JSON unter
-  `<Konfigurationsordner>/baurecht`, Verknüpfungen werden aufgelöst.
+  `<Konfigurationsordner>/baurecht`, Verknüpfungen werden aufgelöst. Das schützt vor Fehlbedienung, ist aber keine
+  Sicherheitsgrenze gegenüber der Webansicht, solange die gemeinsamen Dateibefehle der Suite (`read_binary_file`,
+  `write_binary_file`) beliebige Pfade erlauben; die Sicherheit des Regelpakets beruht auf der Signatur.
+- Netzfehler: Nur Verbindungsfehler und Zeitüberschreitungen werden wiederholt, nicht „Host nicht freigegeben“ o. Ä.
 - Kern im gemeinsamen Unterbau: `packages/core/src/recht/` (Adapter, Prüfsummen, Rechtsstand),
   `packages/core/src/baurecht/` (Format, Bedingungen, Auswertung, Projektdatei, Geodienste).
 - Entwicklung: `npm run dev:baurecht` (http://localhost:1490), `npm run tauri:dev:baurecht`; Live-Abgleich der Quellen:

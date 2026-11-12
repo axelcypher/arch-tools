@@ -225,3 +225,92 @@ describe('Fallmatrix', () => {
     expect(rot).toEqual([]);
   });
 });
+
+/* ---------- Fälle aus dem Fachreview: kein Grün, wo das Gesetz noch greift ---------- */
+
+describe('Fälle aus dem Fachreview', () => {
+  const a = (merkmale: Record<string, string>, fakten: Record<string, FaktWert> = {}) => {
+    const r = auswerten(eingabe(merkmale, fakten, TEXTE));
+    return (id: string) => {
+      const p = r.paragrafen.find((x) => x.id === id);
+      expect(p, id).toBeTruthy();
+      return p!.ampel;
+    };
+  };
+  const ja = (...ids: string[]) => Object.fromEntries(ids.map((i) => [i, sicher(true)]));
+  const nein = (...ids: string[]) => Object.fromEntries(ids.map((i) => [i, sicher(false)]));
+
+  it('Nutzungsänderung Büro → sechs Wohnungen (GK 4) und zu einer Gaststätte: Brandschutz der BauO NRW nicht „entfällt“', () => {
+    const wohnen = a({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' });
+    const gast = a({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'Baugenehmigungsverfahren', Sonderbau: 'ja' });
+    for (const nr of ['5', '26', '28', '32', '34', '35', '36', '37', '38']) {
+      expect(wohnen(`nw/bauo-nrw/${nr}`), `§ ${nr} (Wohnen)`).not.toBe('gruen');
+      expect(gast(`nw/bauo-nrw/${nr}`), `§ ${nr} (Gaststätte)`).not.toBe('gruen');
+    }
+    // Gegenprobe: beim Neubau eines Einfamilienhauses GK 1 entfällt der notwendige Treppenraum
+    expect(a({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' })('nw/bauo-nrw/35')).toBe('gruen');
+  });
+
+  it('Garage im Innenbereich: § 62 ist offen, solange das Verfahren nicht feststeht; „verfahrensfrei“ → gilt', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Sonderbau: 'nein' };
+    expect(a(m)('nw/bauo-nrw/62')).toBe('gelb');
+    expect(a({ ...m, Verfahren: 'verfahrensfrei' })('nw/bauo-nrw/62')).toBe('rot');
+    expect(a({ ...m, Verfahren: 'vereinfachtes Verfahren' })('nw/bauo-nrw/62')).toBe('gruen');
+  });
+
+  it('einfacher Bebauungsplan bzw. Satzung im Außenbereich (§ 30 Abs. 3 mit § 35): Eingriffsregelung und Landschaftsrecht nicht „entfällt“', () => {
+    for (const planung of ['einfacher Bebauungsplan', 'Satzung nach BauGB']) {
+      const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: planung, Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+      for (const f of [nein('planung.innen'), {}]) {
+        const x = a(m, f);
+        for (const id of ['bund/bnatschg/14', 'bund/bnatschg/15', 'nw/lnatschg/30', 'nw/lnatschg/31', 'nw/lnatschg/33']) expect(x(id), `${id} bei ${planung} ${JSON.stringify(f)}`).not.toBe('gruen');
+      }
+      // im Innenbereich-Teil (planung.innen = ja) entfällt die Eingriffsregelung
+      expect(a(m, ja('planung.innen'))('bund/bnatschg/14')).toBe('gruen');
+    }
+    // qualifizierter Bebauungsplan: entfällt
+    expect(a({ Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Bebauungsplan', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' })('bund/bnatschg/14')).toBe('gruen');
+  });
+
+  it('Nutzungsänderung im Außenbereich: Eingriffsregelung, LNatSchG § 30 und Ziele der Raumordnung nicht „entfällt“', () => {
+    const x = a({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Außenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' });
+    for (const id of ['bund/bnatschg/14', 'nw/lnatschg/30', 'nw-05974/regionalplan/Ziele']) expect(x(id), id).not.toBe('gruen');
+  });
+
+  it('Stellplätze in Soest: § 7 StellplatzVO (Stellplätze für Menschen mit Behinderung) bleibt neben der Satzung', () => {
+    const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' });
+    expect(x('nw/stellplatzvo/7')).toBe('rot');
+    // was die Soester Satzung regelt, tritt zurück
+    expect(x('nw/stellplatzvo/3')).toBe('gruen');
+  });
+
+  it('Aufstockung bzw. Nutzungsänderung eines Gebäudes mit mehr als drei Geschossen: Aufzugspflicht nicht „entfällt“', () => {
+    for (const Vorhaben of ['Änderung', 'Nutzungsänderung']) {
+      const x = a({ Vorhaben, Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, { 'nw.geschosse_oberirdisch': sicher(5), 'gebaeude.aufzug': sicher(false) });
+      expect(x('nw/bauo-nrw/39'), Vorhaben).not.toBe('gruen');
+    }
+  });
+
+  it('BauNVO im Bebauungsplan: alte oder unbekannte Fassung → nicht „entfällt“ (statische Verweisung)', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Bebauungsplan', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const hinweis1990: FaktWert = { wert: '1990', herkunft: 'grz', sicherheit: 'hinweis', grund: 'aus dem Plandatum' };
+    const faelle: Record<string, FaktWert>[] = [{}, { 'planung.baunvo': hinweis1990 }, { 'planung.baunvo': sicher('1977') }];
+    for (const f of faelle) {
+      const x = a(m, { 'planung.gebietsart': sicher('WA'), ...f });
+      for (const id of ['bund/baunvo/25c', 'bund/baunvo/3', 'bund/baunvo/12']) expect(x(id), `${id} ${JSON.stringify(f)}`).not.toBe('gruen');
+    }
+    // geltende Fassung, gesichert: reines Wohngebiet entfällt im WA
+    expect(a(m, { 'planung.gebietsart': sicher('WA'), 'planung.baunvo': sicher('aktuell') })('bund/baunvo/3')).toBe('gruen');
+  });
+
+  it('Befreiung im Innenbereich mit faktischem Baugebiet: § 31 BauGB nicht „entfällt“', () => {
+    const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, { 'planung.befreiung': sicher(true), 'planung.gebietsart': sicher('WA') });
+    expect(x('bund/baugb/31')).not.toBe('gruen');
+  });
+
+  it('neue Zufahrt zu einer Kreisstraße außerorts, Gebäude weiter als 40 m entfernt: § 25 StrWG NRW nicht „entfällt“', () => {
+    const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Außenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, { 'lage.strasse_ausserorts': sicher(false), 'lage.zufahrt_neu': sicher(true), 'lage.zufahrt_klassifiziert': sicher(true) });
+    expect(x('nw/strwg/25')).toBe('rot');
+  });
+});
+

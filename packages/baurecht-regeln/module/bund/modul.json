@@ -263,6 +263,65 @@
         "vereinfachtes Verfahren",
         "Baugenehmigungsverfahren"
       ]
+    },
+    "innen_planrecht": {
+      "oder": [
+        {
+          "$": "bplan"
+        },
+        {
+          "$": "innenbereich"
+        },
+        {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "bplan_einfach"
+                },
+                {
+                  "$": "satzung_baugb"
+                }
+              ]
+            },
+            {
+              "f": "planung.innen",
+              "ist": true
+            }
+          ]
+        },
+        {
+          "n": "bund/baugb/33",
+          "ampel": [
+            "rot"
+          ]
+        }
+      ]
+    },
+    "aussen_planrecht": {
+      "oder": [
+        {
+          "$": "aussenbereich"
+        },
+        {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "bplan_einfach"
+                },
+                {
+                  "$": "satzung_baugb"
+                }
+              ]
+            },
+            {
+              "f": "planung.innen",
+              "ist": false
+            }
+          ]
+        }
+      ]
     }
   },
   "fakten": {
@@ -375,6 +434,31 @@
       "hilfe": "Nichtwohngebäude solcher Unternehmen sind vom GEIG ausgenommen (§ 1 Abs. 2 GEIG)",
       "wenn": {
         "$": "nichtwohngebaeude"
+      }
+    },
+    "vorhaben.nebenanlage": {
+      "titel": "Nebenanlagen geplant (z. B. Gartenhaus, Schwimmbecken, Wärmepumpe oder Solaranlage außerhalb des Gebäudes)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "untergeordnete Nebenanlagen nach § 14 BauNVO; Garagen und Stellplätze regelt § 12",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "vorhaben.groessere_renovierung": {
+      "titel": "Größere Renovierung, die den Parkplatz oder die elektrische Infrastruktur umfasst",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§§ 8, 9 GEIG – bei Gebäuden mit mehr als zehn Stellplätzen im oder am Gebäude",
+      "wenn": {
+        "oder": [
+          {
+            "$": "aenderung"
+          },
+          {
+            "$": "nutzungsaenderung"
+          }
+        ]
       }
     }
   }
