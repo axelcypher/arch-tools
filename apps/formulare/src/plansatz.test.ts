@@ -45,8 +45,8 @@ describe('Plansatz', () => {
     expect(r.plaene.map((p) => p.schluessel)).toEqual(['GP-03']);
     expect(r.hinweise).toEqual(
       expect.arrayContaining([
-        'GP-01 Grundriss.pdf: sieht nach Plan GP-01 aus, der Name folgt aber nicht dem Namensschema – nicht gezählt',
-        'GP 261111 GP-02 Schnitt.pdf: sieht nach Plan GP-02 aus, der Name folgt aber nicht dem Namensschema – nicht gezählt',
+        'GP-01 Grundriss.pdf (Quelle): Plannummer GP-01 erkannt, sie steht aber nicht an ihrer Stelle im Namensschema – zählt nicht zum Plansatz; umbenennen?',
+        'GP 261111 GP-02 Schnitt.pdf (Quelle): Plannummer GP-02 erkannt, sie steht aber nicht an ihrer Stelle im Namensschema – zählt nicht zum Plansatz; umbenennen?',
       ]),
     );
     // ein Dokument mit Dokumentnummer, das Plannummern nur erwähnt, ist kein falsch benannter Plan

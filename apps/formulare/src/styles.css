@@ -4383,19 +4383,31 @@ tr[data-ziehen='danach'] > td {
   background: color-mix(in srgb, var(--muted) 14%, transparent);
   color: var(--muted);
 }
-/* eingereichte Dateien, die seit der Einreichung aus dem Ordner verschwunden sind */
+/* eingereichte Dateien, die seit der Einreichung aus dem Ordner verschwunden sind – bündig mit dem Text der Summe */
 .fo-stand-entfernt {
   list-style: none;
   margin: -2px 0 6px;
-  padding: 0;
+  padding: 0 0 0 20px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 11.5px;
-  overflow-wrap: anywhere;
+}
+.fo-stand-entfernt li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
 }
 .fo-stand-entfernt .fo-seit {
+  flex: none;
   margin-top: 0;
+}
+.fo-stand-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fo-stand-weitere {
+  color: var(--muted);
 }
 .fo-bereit-zeile .fo-baum-name {
   white-space: normal;

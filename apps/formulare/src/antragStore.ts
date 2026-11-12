@@ -157,6 +157,8 @@ interface AntragState {
   fassungen: Fassung[];
   /** Dateien im Ordner der aktiven Fassung */
   dateien: Eintrag[];
+  /** der Ordner der aktiven Fassung war beim letzten Lesen da, aber nicht lesbar */
+  dateienLesefehler: boolean;
   /** Quellen externer Dokumente: Ordner (relativ) → Dateien darin */
   quellen: Record<string, Eintrag[]>;
   formularInfo: Record<string, FormularInfo>;
@@ -525,15 +527,23 @@ export const useAntrag = create<AntragState>((set, get) => {
       geaendert = true;
       log.info(`${name}: ${e ? `eingereicht (${e.datei})` : 'nicht mehr eingereicht'}`);
     }
-    // Antragsstand bei der Einreichung einmal festhalten (Dateiliste, keine Kopie). Gilt der Antrag wieder als in Arbeit
-    // (Status von Hand, Eingangsbestätigung verschoben), bleibt der Stand stehen und gilt wieder, sobald der Antrag mit
-    // demselben Datum eingereicht ist; nur eine Einreichung an einem anderen Tag hält ihn neu fest.
+    // Antragsstand bei der Einreichung einmal festhalten (Dateiliste, keine Kopie). Ein späteres Bestätigungsschreiben
+    // (anderes Datum) ändert ihn nicht. Gilt der Antrag wieder als in Arbeit (Status von Hand, Bestätigung verschoben),
+    // bleibt der Stand als „zurückgesetzt“ stehen: Mit demselben Datum eingereicht gilt er wieder, nur eine Einreichung
+    // an einem anderen Tag hält ihn neu fest.
     for (const [name, a] of Object.entries(antraege)) {
       const ein = eingereichtVon(a);
-      if (ein && a.stand?.tag !== ein.datum && listen[name]) {
+      if (ein && (!a.stand || (a.stand.zurueckgesetzt && a.stand.tag !== ein.datum)) && listen[name]) {
         antraege[name] = { ...a, stand: standAus(listen[name], ein.datum) };
         geaendert = true;
         log.info(`${name}: Antragsstand vom ${ein.datum} festgehalten (${antraege[name].stand!.dateien.length} Dateien)`);
+      } else if (ein && a.stand?.zurueckgesetzt && a.stand.tag === ein.datum) {
+        const { zurueckgesetzt: _, ...stand } = a.stand;
+        antraege[name] = { ...a, stand };
+        geaendert = true;
+      } else if (!ein && a.stand && !a.stand.zurueckgesetzt) {
+        antraege[name] = { ...a, stand: { ...a.stand, zurueckgesetzt: true } };
+        geaendert = true;
       }
     }
     const neu = geaendert ? { ...pd, antraege } : pd;
@@ -662,6 +672,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     projektdatei: null,
     fassungen: [],
     dateien: [],
+    dateienLesefehler: false,
     quellen: {},
     formularInfo: {},
     dokumente: [],
@@ -829,12 +840,15 @@ export const useAntrag = create<AntragState>((set, get) => {
       if (!ds || !projekt) return;
       const e = wirksameEinstellungen(get(), projekt);
       let dateien: Eintrag[] = [];
+      let dateienLesefehler = false;
       const quellen: Record<string, Eintrag[]> = {};
       if (basis) {
         try {
           dateien = await ds.liste(verbinde(basis, antragsOrdner(get(), projekt)), 1);
         } catch {
-          // Ordner der Fassung gibt es noch nicht
+          // Ordner der Fassung gibt es noch nicht – oder er ist gerade nicht lesbar (Netz nach dem Aufwachen): dann zeigt
+          // die Ablage das an und meldet nichts als „entfernt“
+          dateienLesefehler = !!get().fassungen.find((f) => f.name === aktiveFassung(get(), projekt))?.vorhanden;
         }
         const ordner = new Set((get().projektdatei?.umfang ?? []).filter((u) => u.art !== 'intern').map((u) => quelleVonEintrag(u, e)));
         for (const o of ordner) {
@@ -867,7 +881,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         }
       }
       if (useFormulare.getState().projekt !== projekt) return;
-      set({ dateien, quellen });
+      set({ dateien, dateienLesefehler, quellen });
       await antragStandPflegen(eingereicht, listen);
       // nach Export, neuer Fassung, Verknüpfen … oder von außen: auch der Projektordner-Baum liest neu
       useFormulare.getState().ordnerNeuLesen();

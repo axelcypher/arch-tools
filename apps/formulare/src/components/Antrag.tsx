@@ -714,7 +714,7 @@ function ExportFuerProjekt() {
           </label>
           <label>
             <span className="field-label">Phase</span>
-            <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} aria-describedby="pu-phase-hinweis" />
+            <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} aria-label="Phase" aria-describedby="pu-phase-hinweis" />
             <span className="field-hint" id="pu-phase-hinweis">
               wird für den Platzhalter {'{Phase}'} eingesetzt
             </span>
@@ -750,8 +750,8 @@ function ExportFuerProjekt() {
               {ART_HINWEIS}
             </p>
             {artWarnung && (
-              <p className="warning small-text" id="pu-art-warnung">
-                {artWarnung}{' '}
+              <p className="warning small-text">
+                <span id="pu-art-warnung">{artWarnung}</span>{' '}
                 <button className="small" onClick={() => setzen({ namensvorlage: vorlageMitAntragsart(ueber!.namensvorlage!, reihenfolge) })}>
                   Vorlage anpassen
                 </button>

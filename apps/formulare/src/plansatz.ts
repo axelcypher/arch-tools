@@ -22,7 +22,7 @@
 import type { Namensschema } from '@core/namensschema';
 import { dateinameZerlegen, indexVorgesehen, kuerzelZu, planNummerAus, planSchluessel } from '@core/namensschema';
 import type { Status } from './antrag';
-import { passt, standVergleich } from './antrag';
+import { istHilfsdatei, passt, standVergleich } from './antrag';
 import type { Eintrag } from './dateisystem';
 
 /** aktuell · veraltet (Quelle neuer) · nicht verschoben (nur in der Quelle) · fehlt (Lücke in der Nummernfolge) */
@@ -77,7 +77,6 @@ interface Fund {
 }
 
 const nurName = (pfad: string) => pfad.split(/[\\/]/).pop() ?? pfad;
-const istHilfsdatei = (name: string) => /^(~\$|\.~lock\.)/.test(name) || /^(thumbs\.db|desktop\.ini)$/i.test(name);
 const ohneEndung = (name: string) => name.replace(/\.[^.]+$/, '').toLowerCase();
 const istPdf = (name: string) => /\.pdf$/i.test(name);
 
@@ -93,7 +92,7 @@ function indexHinweis(schema: Namensschema, kuerzel: string, plan: string): stri
  * Pläne einer Dateiliste je Plannummer; ein Satz (GP01-07) zählt für jede seiner Nummern. Nur Dateien direkt im
  * Ordner (keine Unterordner wie „_Archiv“, „alt“); gibt es zu einem Namen ein PDF, zählt nur das PDF.
  */
-function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | undefined, hinweise: string[], codes: string[]): Map<string, Fund[]> {
+function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | undefined, hinweise: string[], codes: string[], ort: string): Map<string, Fund[]> {
   const nach = new Map<string, Fund[]>();
   const direkt = dateien.filter((e) => !e.ordner && !/[\\/]/.test(e.pfad) && !istHilfsdatei(e.pfad));
   const pdfs = new Set(direkt.filter((e) => istPdf(e.pfad)).map((e) => ohneEndung(e.pfad)));
@@ -107,13 +106,16 @@ function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | unde
     if (!pn) {
       // sieht nach einem Plan aus, die Plannummer steht aber nicht an ihrer Stelle (etwa ohne Projektcode) – ohne
       // Hinweis fiele er still heraus, und weil die Reihe nicht bei 01 beginnen muss, auch ohne Lücke
-      const nr =
-        teile.nummer === undefined &&
-        name
-          .replace(/\.[^.]+$/, '')
-          .split(/\s+/)
-          .find((w) => planNummerAus(w, schema));
-      const h = nr && `${name}: sieht nach Plan ${nr} aus, der Name folgt aber nicht dem Namensschema – nicht gezählt`;
+      const wort =
+        teile.nummer === undefined
+          ? name
+              .replace(/\.[^.]+$/, '')
+              .split(/\s+/)
+              .find((w) => planNummerAus(w, schema))
+          : undefined;
+      const erkannt = wort ? planNummerAus(wort, schema) : null;
+      const h =
+        erkannt && `${name} (${ort}): Plannummer ${planSchluessel(erkannt.kuerzel, erkannt.von)} erkannt, sie steht aber nicht an ihrer Stelle im Namensschema – zählt nicht zum Plansatz; umbenennen?`;
       if (h && !hinweise.includes(h)) hinweise.push(h);
       continue;
     }
@@ -179,8 +181,8 @@ export function plansatzPruefen(
 ): PlansatzErgebnis {
   const codes = o.codes ?? [];
   const hinweise: string[] = [];
-  const imAntrag = sammeln(antrag, schema, o.muster, hinweise, codes);
-  const inQuelle = sammeln(quelle, schema, o.muster, hinweise, codes);
+  const imAntrag = sammeln(antrag, schema, o.muster, hinweise, codes, 'Antragsordner');
+  const inQuelle = sammeln(quelle, schema, o.muster, hinweise, codes, 'Quelle');
 
   // ältere Fassungen und Satz neben Einzelplänen im Antragsordner
   const saetzeMitEinzeln = new Set<string>();

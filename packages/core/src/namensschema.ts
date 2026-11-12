@@ -200,8 +200,10 @@ export function dateinameZerlegenMitStellen(name: string, schema: Pick<Namenssch
       p += n;
       continue;
     }
-    // Nummer: in Großbuchstaben immer; klein geschrieben nur, wenn danach noch eine Bezeichnung kommt
-    if (t === 'nummer' && !istNummer(woerter[p], woerter[p + 1] !== undefined)) continue;
+    // Nummer: in Großbuchstaben immer; klein geschrieben nur, wenn danach noch eine Bezeichnung kommt – und nie, wenn hier
+    // ein Projektcode beginnt („BS9“ sähe sonst wie eine Plannummer aus)
+    const codeHier = nachLaenge.some((c) => c.split(/\s+/).every((w, i) => woerter[p + i]?.toLowerCase() === w.toLowerCase()));
+    if (t === 'nummer' && (codeHier || !istNummer(woerter[p], woerter[p + 1] !== undefined))) continue;
     [teile[t], stelle[t]] = [woerter[p], p];
     p++;
   }

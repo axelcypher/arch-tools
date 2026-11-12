@@ -1,7 +1,19 @@
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import type { Bereitschaft } from '../antrag';
-import { antragsMuster, antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, eingereichtVon, entferntSeitEinreichung, nameNachFormat, SEIT_EINREICHUNG_TEXT, seitEinreichung } from '../antrag';
+import {
+  antragsMuster,
+  antragsNameFehler,
+  artDerFassung,
+  BEREIT_TEXT,
+  bereitschaft,
+  eingereichtVon,
+  entferntSeitEinreichung,
+  istHilfsdatei,
+  nameNachFormat,
+  SEIT_EINREICHUNG_TEXT,
+  seitEinreichung,
+} from '../antrag';
 import { aktiveFassung, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -53,6 +65,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   useFormulare((s) => s.oap); // Projektcode der Projektdatei
   const offenPfad = useFormulare((s) => (s.haupt === 'datei' ? s.datei?.pfad : null));
   const dateien = useAntrag((s) => s.dateien);
+  const lesefehler = useAntrag((s) => s.dateienLesefehler);
   const dokumente = useAntrag((s) => s.dokumente);
   const umfangDa = useAntrag((s) => !!s.projektdatei?.umfang);
   const fassung = useAntrag((s) => aktiveFassung(s, projekt));
@@ -74,7 +87,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const reihenfolge = schema.reihenfolge;
 
   const liste = dateien
-    .filter((d) => !d.ordner && !/^(~\$|\.~lock\.)/.test(d.pfad) && !/^(thumbs\.db|desktop\.ini)$/i.test(d.pfad))
+    .filter((d) => !d.ordner && !istHilfsdatei(d.pfad))
     .sort((a, b) => a.pfad.localeCompare(b.pfad, 'de', { numeric: true, sensitivity: 'base' }))
     .map((d) => {
       const fehler = antragsNameFehler(d.pfad, { codes, art, reihenfolge, schema });
@@ -85,11 +98,14 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     });
   const seitNeu = liste.filter((x) => x.seit === 'neu').length;
   const seitGeaendert = liste.filter((x) => x.seit === 'geaendert').length;
-  // eingereichte Dateien, die seitdem aus dem Ordner verschwunden sind (gelöscht oder verschoben)
-  const entfernt = entferntSeitEinreichung(
-    liste.map((x) => x.d.pfad),
-    stand,
-  );
+  // eingereichte Dateien, die seitdem aus dem Ordner verschwunden sind (gelöscht oder verschoben) – nicht, wenn der
+  // Ordner gerade nicht lesbar war
+  const entfernt = lesefehler
+    ? []
+    : entferntSeitEinreichung(
+        liste.map((x) => x.d.pfad),
+        stand,
+      );
   const seitText = [seitNeu ? `${seitNeu} neu` : '', seitGeaendert ? `${seitGeaendert} geändert` : '', entfernt.length ? `${entfernt.length} entfernt` : ''].filter(Boolean).join(', ');
   const bereit = liste.filter((x) => x.zustand === 'bereit').length;
   // fehlt ganz: ein Dokument ohne Datei, ein Plansatz ohne einen einzigen Plan
@@ -155,11 +171,16 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       )}
       {stand && entfernt.length > 0 && (
         <ul className="fo-stand-entfernt" aria-label="Seit der Einreichung entfernt">
-          {entfernt.map((x) => (
+          {/* höchstens drei Namen – alle stehen im Tooltip der Summe */}
+          {(entfernt.length > 3 ? entfernt.slice(0, 2) : entfernt).map((x) => (
             <li key={x.pfad}>
-              <span className="fo-seit entfernt">entfernt</span> {x.pfad}
+              <span className="fo-seit entfernt" title="entfernt seit der Einreichung">
+                entfernt
+              </span>
+              <span className="fo-stand-name">{x.pfad}</span>
             </li>
           ))}
+          {entfernt.length > 3 && <li className="fo-stand-weitere">und {entfernt.length - 2} weitere (alle im Tooltip der Zeile darüber)</li>}
         </ul>
       )}
       <div className="fo-bereit-knoepfe">
@@ -169,7 +190,13 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
         <SammelExportKnopf mitText />
       </div>
       {vorschau !== undefined && <UnterlagenVorschau ablage={ablage} start={vorschau ?? undefined} onClose={() => setVorschau(undefined)} />}
-      {!liste.length && <p className="nav-leer">Im Ordner {ordner} liegen noch keine Dokumente.</p>}
+      {lesefehler ? (
+        <p className="nav-leer" role="status">
+          Der Ordner {ordner} ist gerade nicht lesbar – beim nächsten Lesen wird es nachgeholt.
+        </p>
+      ) : (
+        !liste.length && <p className="nav-leer">Im Ordner {ordner} liegen noch keine Dokumente.</p>
+      )}
       <ul className="fo-baum fo-bereit-liste">
         {liste.map(({ d, fehler, zustand, dok, seit }) => (
           <li key={d.pfad} className={`fo-bereit-zeile ${zustand}${seit ? ` seit-${seit}` : ''}`}>

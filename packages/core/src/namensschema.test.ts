@@ -34,6 +34,9 @@ describe('Namensschema', () => {
     expect(dateinameZerlegen('hvo gp 261111 gp-04 grundriss.pdf')).toMatchObject({ nummer: 'gp-04', rest: 'grundriss' });
     expect(dateinameZerlegen('BS9 BAUA 261110 Anlage1.pdf')).toMatchObject({ rest: 'Anlage1' });
     expect(dateinameZerlegen('HVO GP 261111 GP-04.pdf')).toMatchObject({ nummer: 'GP-04', rest: '' });
+    // Nummer vor dem Code: ein Projektcode, der wie eine Plannummer aussieht (BS9), ist keine Nummer
+    expect(dateinameZerlegen('BS9 BAUA 261112 Lageplan.pdf', { reihenfolge: ['nummer', 'code', 'art', 'datum'] }, ['BS9'])).toEqual({ code: 'BS9', art: 'BAUA', datum: '261112', rest: 'Lageplan' });
+    expect(dateinameZerlegen('GP-01 BS9 BAUA 261112 Lageplan.pdf', { reihenfolge: ['nummer', 'code', 'art', 'datum'] }, ['BS9'])).toMatchObject({ nummer: 'GP-01', code: 'BS9' });
   });
 
   it('Plannummern nur mit Plankürzel: GP-01, GP01, Satz GP01-07, Index – eine reine Zahl ist kein Plan', () => {

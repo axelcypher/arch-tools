@@ -300,9 +300,9 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                             ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder aus dem Antragsumfang nehmen`
                             : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`
                       }
-                      aria-haspopup={doppelt ? 'menu' : undefined}
-                      // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger)
-                      onClick={(e) => (doppelt ? zeigeMenueAn(e.currentTarget, menue()) : void useAntrag.getState().formularAnlegen(d.eintrag.id))}
+                      aria-haspopup={doppelt && !gesperrt ? 'menu' : undefined}
+                      // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger); gesperrt: nur die Meldung
+                      onClick={(e) => (doppelt && !gesperrt ? zeigeMenueAn(e.currentTarget, menue()) : void useAntrag.getState().formularAnlegen(d.eintrag.id))}
                       onContextMenu={(e) => zeigeMenue(e, menue())}
                     >
                       <span className="nav-symbol">

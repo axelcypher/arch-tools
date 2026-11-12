@@ -97,8 +97,8 @@ export function AntragEinstellungen() {
               {ART_HINWEIS}
             </p>
             {artWarnung && (
-              <p className="warning small-text" id="es-art-warnung">
-                {artWarnung}{' '}
+              <p className="warning small-text">
+                <span id="es-art-warnung">{artWarnung}</span>{' '}
                 <button className="small" onClick={() => setEinstellungen({ namensvorlage: wirksameVorlage })}>
                   Vorlage anpassen
                 </button>
