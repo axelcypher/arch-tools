@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
 import { offenText } from '@core/baurecht/kurz';
 import type { ParagrafErgebnis } from '@core/baurecht/typen';
-import { absatzZeilen } from '@core/recht/index';
 import type { Paragraf } from '@core/recht/index';
-import { absatzNummer } from '@core/recht/text';
+import { absaetze as absaetzeVon, absatzNummer } from '@core/recht/text';
 import { externOeffnen } from '@core/platform/links';
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
@@ -33,8 +32,7 @@ function Gegenueberstellung({ alt, neu, absatz }: { alt: Paragraf | undefined; n
   const zeilen = (p: Paragraf | undefined) => {
     if (!p) return ['(nicht vorhanden)'];
     if (!absatz) return p.text;
-    const { von, bis } = absatzZeilen(p, Number.parseInt(absatz, 10));
-    return p.text.slice(von, bis);
+    return absaetzeVon(p).get(absatz) ?? p.text;
   };
   return (
     <div className="br-vergleich">

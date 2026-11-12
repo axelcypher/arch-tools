@@ -1,0 +1,98 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "geig",
+  "fassung": "2026-07-30",
+  "version": 1,
+  "paragrafen": {
+    "6": {
+      "titel": "Zu errichtende Wohngebäude mit mehr als fünf Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "wohngebaeude"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 6
+          }
+        ]
+      },
+      "grund": "Neues Wohngebäude mit mehr als fünf Stellplätzen im oder am Gebäude: jeder Stellplatz ist mit Leitungsinfrastruktur für die Elektromobilität auszustatten.",
+      "fundstellen": [
+        "6"
+      ],
+      "hinweis": "Nachweis über die Unternehmererklärung (§ 13); gemischt genutzte Gebäude nach § 11.",
+      "stand": {
+        "6": "6a76865c"
+      }
+    },
+    "7": {
+      "titel": "Zu errichtende Nichtwohngebäude mit mehr als sechs Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "nichtwohngebaeude"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 7
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.kmu",
+        "ist": true
+      },
+      "grund": "Neues Nichtwohngebäude mit mehr als sechs Stellplätzen: mindestens jeder dritte Stellplatz mit Leitungsinfrastruktur und zusätzlich ein Ladepunkt.",
+      "fundstellen": [
+        "7"
+      ],
+      "hinweis": "Ausgenommen sind Nichtwohngebäude im Eigentum kleiner und mittlerer Unternehmen bei überwiegender Eigennutzung (§ 1 Abs. 2).",
+      "stand": {
+        "7": "b973443e"
+      }
+    },
+    "10": {
+      "titel": "Bestehende Nichtwohngebäude mit mehr als 20 Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "$": "nichtwohngebaeude"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 21
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.kmu",
+        "ist": true
+      },
+      "grund": "Bestehendes Nichtwohngebäude mit mehr als 20 Stellplätzen: seit dem 01.01.2025 ist mindestens ein Ladepunkt zu errichten (Abs. 1).",
+      "fundstellen": [
+        "10/1"
+      ],
+      "stand": {
+        "10/1": "59f32712"
+      }
+    }
+  }
+}

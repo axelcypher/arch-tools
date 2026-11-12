@@ -29,6 +29,7 @@ jobs:
             apps/ordner/dist
             apps/entzerrung/dist
             apps/formulare/dist
+            apps/baurecht/dist
             apps/suite/dist
 
   tauri:
@@ -50,6 +51,8 @@ jobs:
             pkg: entzerrung
           - app: formulare
             pkg: formulare
+          - app: baurecht
+            pkg: baurecht
           # die Rahmen-App bettet die Web-Builds aller Apps ein
           - app: suite
             pkg: arch-tools-suite

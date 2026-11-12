@@ -12,6 +12,7 @@ const ZWISCHENSTAND = 'Ungespeicherte Änderungen bleiben im Zwischenstand und w
 
 export const APPS: AppInfo[] = [
   { id: 'ordner', name: 'Projektordner', text: 'Projekte anlegen und ergänzen, Vorlagen, Ordner prüfen', beimUmzug: 'Ungespeicherte Änderungen gehen verloren – bitte vorher speichern.' },
+  { id: 'baurecht', name: 'Baurecht', text: 'Rechtsprüfung vor dem Bauantrag – Vorschriften je Paragraf als Ampel', beimUmzug: 'Ungespeicherte Angaben und Festlegungen gehen verloren – bitte vorher speichern.' },
   { id: 'formulare', name: 'Formulare', text: 'Bauantragsformulare ausfüllen', beimUmzug: 'Nicht gespeicherte Eingaben bleiben als Entwurf erhalten und erscheinen beim erneuten Öffnen des Formulars wieder; ungespeicherte Bearbeitungen in PDF-, Excel- und Word-Dokumenten der Dateiansicht gehen verloren.' },
   { id: 'flaechenrechner', name: 'Flächenrechner', text: 'Flächen und Rauminhalte nach DIN 277 und WoFlV', beimUmzug: ZWISCHENSTAND },
   { id: 'grz', name: 'GRZ-Nachweis', text: 'GRZ/GFZ-Nachweis nach BauNVO und BauO NRW', beimUmzug: ZWISCHENSTAND },

@@ -49,6 +49,10 @@ describe('Text und Prüfsummen', () => {
     expect([...absaetze(p).keys()]).toEqual(['1', '2']);
     expect(absaetze(p).get('1')).toEqual(['(1) eins', '1. Punkt']);
     expect([...absaetze({ titel: '', url: '', text: ['Wer Kampfmittel entdeckt …'] }).keys()]).toEqual(['']);
+    // eingefügte Absätze mit Buchstaben sind eigene Absätze
+    const q = absaetze({ titel: '', url: '', text: ['(3) drei', '1. Punkt', '(3a) drei a', '(3b) drei b', '(4) vier'] });
+    expect([...q.keys()]).toEqual(['3', '3a', '3b', '4']);
+    expect(q.get('3')).toEqual(['(3) drei', '1. Punkt']);
   });
 
   it('Prüfsumme hängt nur am Inhalt, nicht am Leerraum', async () => {

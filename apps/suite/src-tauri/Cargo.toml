@@ -26,6 +26,8 @@ serde_json = "1"
 base64 = "0.22"
 # Projektkarte (sj_prokarte.sdb) – SQLite mitkompiliert, damit nichts installiert sein muss
 rusqlite = { version = "0.37", features = ["bundled"] }
+# Baurecht: Abruf der Gesetzestexte, Satzungen und Geodienste (apps/baurecht/src-tauri/src/netz.rs)
+ureq = "2.12"
 
 [profile.release]
 codegen-units = 1

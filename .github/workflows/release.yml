@@ -10,6 +10,7 @@ name: Build & Release
 #   Projektordner    apps/ordner            Tag ordner-v<version>
 #   Entzerrung       apps/entzerrung        Tag entzerrung-v<version>
 #   Formulare        apps/formulare         Tag formulare-v<version>
+#   Baurecht         apps/baurecht          Tag baurecht-v<version>
 #   arch-tools       apps/suite             Tag suite-v<version>  (Rahmen-App: alle Apps in einem Fenster)
 #
 # Automatische Updates: Die Installer werden signiert (Secrets TAURI_SIGNING_PRIVATE_KEY und
@@ -27,7 +28,7 @@ on:
       app:
         description: App
         type: choice
-        options: [alle, flaechenrechner, grz, kosten, ordner, entzerrung, formulare, suite]
+        options: [alle, flaechenrechner, grz, kosten, ordner, entzerrung, formulare, baurecht, suite]
         default: alle
 
 permissions:
@@ -53,7 +54,7 @@ jobs:
           PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
         run: |
           apps='[]'
-          for d in flaechenrechner grz kosten ordner entzerrung formulare suite; do
+          for d in flaechenrechner grz kosten ordner entzerrung formulare baurecht suite; do
             # der öffentliche Schlüssel in der App muss zum Signierschlüssel passen, sonst lehnen die Apps jedes Update ab
             k=$(node -p "require('./apps/$d/src-tauri/tauri.conf.json').plugins.updater.pubkey")
             if [ -n "$PUBKEY" ] && [ "$k" != "$(printf '%s' "$PUBKEY" | tr -d '[:space:]')" ]; then
@@ -74,6 +75,7 @@ jobs:
               ordner) tag="$d-v$v"; name="Projektordner"; web="projektordner-web.zip" ;;
               entzerrung) tag="$d-v$v"; name="Entzerrung"; web="entzerrung-web.zip" ;;
               formulare) tag="$d-v$v"; name="Formulare"; web="formulare-web.zip" ;;
+              baurecht) tag="$d-v$v"; name="Baurecht"; web="baurecht-web.zip" ;;
               suite) tag="$d-v$v"; name="arch-tools"; web="arch-tools-web.zip" ;;
             esac
             if [ "$EVENT" = "workflow_dispatch" ]; then

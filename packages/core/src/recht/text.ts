@@ -4,7 +4,6 @@
  */
 
 import type { Paragraf } from './index';
-import { absatzZeilen } from './index';
 import type { Aenderungen } from './typen';
 
 const ENTITAETEN: Record<string, string> = {
@@ -83,17 +82,25 @@ export const titelOhneFussnote = (t: string) =>
 /** Beginnt die Zeile einen Absatz „(n)“? Liefert die Nummer. */
 export const absatzNummer = (z: string): string | undefined => /^\((\d+[a-z]?)\)/.exec(z)?.[1];
 
-/** Absätze eines Paragrafen: Nummer → Zeilen; ohne nummerierte Absätze nur `''` (ganzer Paragraf) */
+/**
+ * Absätze eines Paragrafen: Nummer → Zeilen; ohne nummerierte Absätze nur `''` (ganzer Paragraf). Eingefügte Absätze
+ * mit Buchstaben („(3a)“) sind eigene Absätze. Zeilen vor dem ersten Absatz gehören zum ersten.
+ */
 export function absaetze(p: Paragraf): Map<string, string[]> {
   const out = new Map<string, string[]>();
-  const nummern = [...new Set(p.text.map(absatzNummer).filter((n): n is string => !!n))];
-  if (!nummern.length) {
+  if (!p.text.some((z) => absatzNummer(z))) {
     out.set('', p.text);
     return out;
   }
-  for (const n of nummern) {
-    const { von, bis } = absatzZeilen(p, Number.parseInt(n, 10));
-    out.set(n, p.text.slice(von, bis));
+  let aktuell: string | null = null;
+  const vorweg: string[] = [];
+  for (const z of p.text) {
+    const n = absatzNummer(z);
+    if (n && !out.has(n)) {
+      aktuell = n;
+      out.set(n, out.size === 0 ? [...vorweg, z] : [z]);
+    } else if (aktuell) out.get(aktuell)!.push(z);
+    else vorweg.push(z);
   }
   return out;
 }

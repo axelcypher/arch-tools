@@ -1,0 +1,211 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "whg",
+  "fassung": "2026-11-05",
+  "version": 1,
+  "paragrafen": {
+    "52": {
+      "titel": "Besondere Anforderungen in Wasserschutzgebieten",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "f": "schutz.wsg",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Im Wasser- oder Heilquellenschutzgebiet gelten die Verbote, Beschränkungen und Pflichten der Schutzgebietsverordnung je nach Zone (Abs. 1); Befreiung durch die Wasserbehörde, wenn der Schutzzweck nicht gefährdet wird.",
+      "fundstellen": [
+        "52/1"
+      ],
+      "hinweis": "Für Heilquellenschutzgebiete gilt § 52 entsprechend (§ 53 Abs. 5). Schutzgebietsverordnung mit Zonenplan beschaffen.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "52/1": "2a6a9784"
+      }
+    },
+    "55": {
+      "titel": "Grundsätze der Abwasserbeseitigung",
+      "gilt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": true
+          },
+          {
+            "f": "vorhaben.versickerung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Abwasser ist so zu beseitigen, dass das Wohl der Allgemeinheit nicht beeinträchtigt wird; Niederschlagswasser soll ortsnah versickert, verrieselt oder ohne Vermischung mit Schmutzwasser eingeleitet werden (Abs. 1, 2).",
+      "fundstellen": [
+        "55/1",
+        "55/2"
+      ],
+      "hinweis": "Entwässerungsantrag beim Abwasserbetrieb; Versickerung oder Einleitung ins Gewässer braucht in der Regel eine wasserrechtliche Erlaubnis.",
+      "stand": {
+        "55/1": "75bf03cf",
+        "55/2": "5fc501d6"
+      }
+    },
+    "76": {
+      "titel": "Überschwemmungsgebiete an oberirdischen Gewässern",
+      "gilt": {
+        "f": "schutz.uesg",
+        "ist": true
+      },
+      "grund": "Das Grundstück liegt in einem festgesetzten (Abs. 2) oder vorläufig gesicherten (Abs. 3) Überschwemmungsgebiet – es gelten die Schutzvorschriften der §§ 78 bis 78c.",
+      "fundstellen": [
+        "76/2",
+        "76/3"
+      ],
+      "verweise": [
+        "bund/whg/78"
+      ],
+      "stand": {
+        "76/2": "d513d68f",
+        "76/3": "b10cf1e2"
+      }
+    },
+    "78": {
+      "titel": "Bauliche Schutzvorschriften für festgesetzte Überschwemmungsgebiete",
+      "gilt": {
+        "und": [
+          {
+            "$": "bauen"
+          },
+          {
+            "f": "schutz.uesg",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "In festgesetzten und vorläufig gesicherten Überschwemmungsgebieten ist die Errichtung oder Erweiterung baulicher Anlagen nach den §§ 30, 33, 34 und 35 BauGB untersagt (Abs. 4, 8); die Wasserbehörde kann sie im Einzelfall genehmigen, wenn u. a. Retentionsraum ausgeglichen und hochwasserangepasst gebaut wird (Abs. 5).",
+      "fundstellen": [
+        "78/4",
+        "78/5",
+        "78/8"
+      ],
+      "pruefen": {
+        "grund": "Ob eine Änderung eine Erweiterung ist und die Voraussetzungen des Abs. 5 erfüllt sind, ist im Einzelfall zu klären."
+      },
+      "hinweis": "Eigene Genehmigung der Wasserbehörde – Retentionsraumbilanz und hochwasserangepasste Bauweise darlegen.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "78/4": "3e606a14",
+        "78/5": "0bea8e87",
+        "78/8": "098d81b2"
+      }
+    },
+    "78a": {
+      "titel": "Sonstige Schutzvorschriften für festgesetzte Überschwemmungsgebiete",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "f": "schutz.uesg",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Im Überschwemmungsgebiet sind u. a. Mauern und Wälle, das Erhöhen oder Vertiefen der Erdoberfläche und die Lagerung abflusshindernder oder wassergefährdender Stoffe untersagt, Zulassung im Einzelfall (Abs. 1, 2).",
+      "fundstellen": [
+        "78a/1",
+        "78a/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "78a/1": "07caaae6",
+        "78a/2": "0f17a66d"
+      }
+    },
+    "78b": {
+      "titel": "Risikogebiete außerhalb von Überschwemmungsgebieten",
+      "gilt": {
+        "und": [
+          {
+            "$": "bauen"
+          },
+          {
+            "f": "schutz.risikogebiet",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "In Risikogebieten außerhalb von Überschwemmungsgebieten sollen bauliche Anlagen nur in einer dem Hochwasserrisiko angepassten Bauweise errichtet oder wesentlich erweitert werden (Abs. 1 Satz 2 Nr. 2).",
+      "fundstellen": [
+        "78b/1"
+      ],
+      "stand": {
+        "78b/1": "4aa5f1b3"
+      }
+    },
+    "78c": {
+      "titel": "Heizölverbraucheranlagen in Überschwemmungsgebieten und in weiteren Risikogebieten",
+      "gilt": {
+        "und": [
+          {
+            "f": "technik.heizoel",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "f": "schutz.uesg",
+                "ist": true
+              },
+              {
+                "f": "schutz.risikogebiet",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Neue Heizölverbraucheranlagen sind in Überschwemmungsgebieten verboten (Ausnahme auf Antrag, Abs. 1) und in Risikogebieten nur hochwassersicher und nach Anzeige zulässig (Abs. 2).",
+      "fundstellen": [
+        "78c/1",
+        "78c/2"
+      ],
+      "stand": {
+        "78c/1": "f6184560",
+        "78c/2": "870b8a4c"
+      }
+    }
+  }
+}

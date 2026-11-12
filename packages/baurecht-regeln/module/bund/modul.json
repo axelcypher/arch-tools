@@ -1,0 +1,381 @@
+{
+  "format": 1,
+  "id": "bund",
+  "name": "Bund",
+  "ebene": "bund",
+  "version": "2026-11-12",
+  "hosts": [
+    "www.gesetze-im-internet.de",
+    "testphase.rechtsinformationen.bund.de"
+  ],
+  "normen": {
+    "baugb": {
+      "kurz": "BauGB",
+      "titel": "Baugesetzbuch",
+      "thema": "planungsrecht",
+      "quelle": {
+        "art": "gii",
+        "pfad": "bbaug"
+      }
+    },
+    "baunvo": {
+      "kurz": "BauNVO",
+      "titel": "Baunutzungsverordnung",
+      "thema": "planungsrecht",
+      "quelle": {
+        "art": "ris",
+        "eli": "eli/bund/bgbl-1/1962/s429",
+        "gii": "baunvo"
+      }
+    },
+    "geg": {
+      "kurz": "GEG",
+      "titel": "Gebäudeenergiegesetz (amtlich seit 2026: GModG)",
+      "thema": "energie",
+      "quelle": {
+        "art": "gii",
+        "pfad": "geg"
+      }
+    },
+    "geig": {
+      "kurz": "GEIG",
+      "titel": "Gebäude-Elektromobilitätsinfrastruktur-Gesetz",
+      "thema": "energie",
+      "quelle": {
+        "art": "gii",
+        "pfad": "geig"
+      }
+    },
+    "bnatschg": {
+      "kurz": "BNatSchG",
+      "titel": "Bundesnaturschutzgesetz",
+      "thema": "natur",
+      "quelle": {
+        "art": "ris",
+        "eli": "eli/bund/bgbl-1/2009/s2542",
+        "gii": "bnatschg_2009"
+      }
+    },
+    "whg": {
+      "kurz": "WHG",
+      "titel": "Wasserhaushaltsgesetz",
+      "thema": "wasser",
+      "quelle": {
+        "art": "gii",
+        "pfad": "whg_2009"
+      }
+    },
+    "strlschg": {
+      "kurz": "StrlSchG",
+      "titel": "Strahlenschutzgesetz",
+      "thema": "immission",
+      "quelle": {
+        "art": "gii",
+        "pfad": "strlschg"
+      }
+    },
+    "arbstaettv": {
+      "kurz": "ArbStättV",
+      "titel": "Arbeitsstättenverordnung",
+      "thema": "arbeitsschutz",
+      "quelle": {
+        "art": "gii",
+        "pfad": "arbst_ttv_2004"
+      }
+    },
+    "bbodschg": {
+      "kurz": "BBodSchG",
+      "titel": "Bundes-Bodenschutzgesetz",
+      "thema": "boden",
+      "quelle": {
+        "art": "gii",
+        "pfad": "bbodschg"
+      }
+    }
+  },
+  "bausteine": {
+    "errichtung": {
+      "m": "Vorhaben",
+      "in": [
+        "Errichtung"
+      ]
+    },
+    "aenderung": {
+      "m": "Vorhaben",
+      "in": [
+        "Änderung"
+      ]
+    },
+    "nutzungsaenderung": {
+      "m": "Vorhaben",
+      "in": [
+        "Nutzungsänderung"
+      ]
+    },
+    "beseitigung": {
+      "m": "Vorhaben",
+      "in": [
+        "Beseitigung"
+      ]
+    },
+    "vorhaben_29": {
+      "m": "Vorhaben",
+      "in": [
+        "Errichtung",
+        "Änderung",
+        "Nutzungsänderung"
+      ]
+    },
+    "bauen": {
+      "m": "Vorhaben",
+      "in": [
+        "Errichtung",
+        "Änderung"
+      ]
+    },
+    "gebaeude": {
+      "m": "Gebäudeart",
+      "nicht": [
+        "kein Gebäude"
+      ]
+    },
+    "wohngebaeude": {
+      "m": "Gebäudeart",
+      "in": [
+        "Einfamilienhaus",
+        "Zweifamilienhaus",
+        "Mehrfamilienhaus"
+      ]
+    },
+    "efh_zfh": {
+      "m": "Gebäudeart",
+      "in": [
+        "Einfamilienhaus",
+        "Zweifamilienhaus"
+      ]
+    },
+    "nichtwohngebaeude": {
+      "m": "Gebäudeart",
+      "in": [
+        "Nichtwohngebäude"
+      ]
+    },
+    "bplan": {
+      "m": "Planungsrecht",
+      "in": [
+        "Bebauungsplan"
+      ]
+    },
+    "bplan_einfach": {
+      "m": "Planungsrecht",
+      "in": [
+        "einfacher Bebauungsplan"
+      ]
+    },
+    "bplan_jeder": {
+      "m": "Planungsrecht",
+      "in": [
+        "Bebauungsplan",
+        "einfacher Bebauungsplan"
+      ]
+    },
+    "innenbereich": {
+      "m": "Planungsrecht",
+      "in": [
+        "Innenbereich"
+      ]
+    },
+    "aussenbereich": {
+      "m": "Planungsrecht",
+      "in": [
+        "Außenbereich"
+      ]
+    },
+    "satzung_baugb": {
+      "m": "Planungsrecht",
+      "in": [
+        "Satzung nach BauGB"
+      ]
+    },
+    "gk_1_2": {
+      "m": "Gebäudeklasse",
+      "in": [
+        "1",
+        "2"
+      ]
+    },
+    "gk_1_3": {
+      "m": "Gebäudeklasse",
+      "in": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    "gk_3_5": {
+      "m": "Gebäudeklasse",
+      "in": [
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    "gk_4_5": {
+      "m": "Gebäudeklasse",
+      "in": [
+        "4",
+        "5"
+      ]
+    },
+    "sonderbau": {
+      "m": "Sonderbau",
+      "in": [
+        "ja"
+      ]
+    },
+    "kein_sonderbau": {
+      "m": "Sonderbau",
+      "in": [
+        "nein"
+      ]
+    },
+    "freistellung": {
+      "m": "Verfahren",
+      "in": [
+        "Genehmigungsfreistellung"
+      ]
+    },
+    "vereinfacht": {
+      "m": "Verfahren",
+      "in": [
+        "vereinfachtes Verfahren"
+      ]
+    },
+    "baugenehmigung": {
+      "m": "Verfahren",
+      "in": [
+        "Baugenehmigungsverfahren"
+      ]
+    },
+    "genehmigung": {
+      "m": "Verfahren",
+      "in": [
+        "vereinfachtes Verfahren",
+        "Baugenehmigungsverfahren"
+      ]
+    }
+  },
+  "fakten": {
+    "planung.innen": {
+      "titel": "Im Zusammenhang bebauter Ortsteil (§ 34 BauGB)",
+      "gruppe": "planung",
+      "typ": "janein",
+      "frage": "Richtet sich die Zulässigkeit im Übrigen nach § 34 BauGB (Innenbereich) – nicht nach § 35 (Außenbereich)?",
+      "hilfe": "nur bei einfachem Bebauungsplan (§ 30 Abs. 3 BauGB) oder Satzung nach BauGB (Innenbereichssatzung § 34 Abs. 4 = ja, Außenbereichssatzung § 35 Abs. 6 = nein)",
+      "wenn": {
+        "oder": [
+          {
+            "$": "bplan_einfach"
+          },
+          {
+            "$": "satzung_baugb"
+          }
+        ]
+      }
+    },
+    "planung.mass_festgesetzt": {
+      "titel": "Maß der baulichen Nutzung im einfachen Bebauungsplan festgesetzt",
+      "gruppe": "planung",
+      "typ": "janein",
+      "wenn": {
+        "$": "bplan_einfach"
+      }
+    },
+    "planung.baugrenzen_festgesetzt": {
+      "titel": "Überbaubare Grundstücksfläche (Baugrenzen, Baulinien) im einfachen Bebauungsplan festgesetzt",
+      "gruppe": "planung",
+      "typ": "janein",
+      "wenn": {
+        "$": "bplan_einfach"
+      }
+    },
+    "planung.hoehe_festgesetzt": {
+      "titel": "Höhe baulicher Anlagen im Bebauungsplan festgesetzt (Trauf-, First-, Gebäudehöhe)",
+      "gruppe": "planung",
+      "typ": "janein",
+      "wenn": {
+        "$": "bplan_jeder"
+      }
+    },
+    "planung.bauweise_festgesetzt": {
+      "titel": "Bauweise im Bebauungsplan festgesetzt (offen, geschlossen, abweichend)",
+      "gruppe": "planung",
+      "typ": "janein",
+      "wenn": {
+        "$": "bplan_jeder"
+      }
+    },
+    "planung.so_erholung": {
+      "titel": "Sondergebiet, das der Erholung dient (§ 10 BauNVO)",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "ja = Wochenendhaus-, Ferienhaus-, Campingplatzgebiet; nein = sonstiges Sondergebiet (§ 11 BauNVO)",
+      "wenn": {
+        "f": "planung.gebietsart",
+        "ist": "SO"
+      }
+    },
+    "vorhaben.aussenbauteile": {
+      "titel": "Außenbauteile beheizter oder gekühlter Räume werden erneuert, ersetzt oder erstmals eingebaut",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "Dach, Außenwand, Fenster, Kellerdecke … – ausgenommen Änderungen bis 10 % der Fläche der jeweiligen Bauteilgruppe (§ 36 Satz 2 GEG)",
+      "wenn": {
+        "oder": [
+          {
+            "$": "aenderung"
+          },
+          {
+            "$": "nutzungsaenderung"
+          }
+        ]
+      }
+    },
+    "vorhaben.erweiterung_beheizt": {
+      "titel": "Erweiterung oder Ausbau um beheizte oder gekühlte Räume",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 39 GEG; über 50 m² zusätzlich sommerlicher Wärmeschutz",
+      "wenn": {
+        "oder": [
+          {
+            "$": "aenderung"
+          },
+          {
+            "$": "nutzungsaenderung"
+          }
+        ]
+      }
+    },
+    "vorhaben.heizung": {
+      "titel": "Heizungsanlage wird eingebaut oder ersetzt",
+      "gruppe": "technik",
+      "typ": "janein"
+    },
+    "technik.heizoel": {
+      "titel": "Neue Heizölverbraucheranlage (Ölheizung, Öltank)",
+      "gruppe": "technik",
+      "typ": "janein",
+      "hilfe": "in Überschwemmungs- und Risikogebieten verboten bzw. eingeschränkt (§ 78c WHG)"
+    },
+    "gebaeude.kmu": {
+      "titel": "Eigentum eines kleinen oder mittleren Unternehmens, überwiegend selbst genutzt",
+      "gruppe": "gebaeude",
+      "typ": "janein",
+      "hilfe": "Nichtwohngebäude solcher Unternehmen sind vom GEIG ausgenommen (§ 1 Abs. 2 GEIG)",
+      "wenn": {
+        "$": "nichtwohngebaeude"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Baurecht – Konzept (Entwurf)
 
-Stand: 12.11.2026 · Status: Planung, noch kein Code
+Stand: 12.11.2026 · Status: umgesetzt als Release Candidate (App `apps/baurecht` 0.9.0, Bedienung: [baurecht.md](baurecht.md))
 
 Neue App `apps/baurecht` („Baurecht“): zeigt zu einem Projekt alle Vorschriften, die für den Antrag eine Rolle
 spielen, **je Paragraf als Ampel** – und begründet jede Einstufung. Die Angaben zum Projekt kommen wie bei allen Apps
@@ -295,7 +295,9 @@ Am 12.11.2026 geprüft (ohne Anmeldung, Abfrage in EPSG:25832 wie die Stammdaten
   5. der Dienst hat **gültig geantwortet** – Fehler, Zeitüberschreitung, Wartungsseite oder eine leere Antwort aus
      einem Gebiet, für das der Dienst nachweislich keine Daten führt, sind kein „kein Treffer“.
 
-  Fehlt eine Bedingung, ist der Fakt nur ein Hinweis → **gelb**. Ein Grün aus einem Geodienst ist immer als solches
+  Fehlt eine Bedingung, ist der Fakt nur ein Hinweis → **gelb**. *Umsetzung:* Bedingung 4 lässt sich nicht
+  automatisch prüfen (die Dienste nennen keinen Datenstand je Gebiet). „Kein Treffer“ bleibt deshalb immer ein Hinweis,
+  bis die Bearbeitung ihn bestätigt – die App sagt im Grund, welche Bedingungen erfüllt sind. Ein Grün aus einem Geodienst ist immer als solches
   gekennzeichnet („lt. LINFOS NRW, Stand …, Puffer 25 m“) und steht so im Protokoll; bestätigt die Bearbeitung den
   Fakt (z. B. nach Auskunft der Behörde), gilt er als gesichert.
 - Ergebnisse werden mit Quelle und Stand im Projekt gespeichert; „Neu abfragen“ wie bei den Koordinaten. Quelle und
@@ -543,9 +545,11 @@ Die Regel eines Paragrafen hat drei Teile, die dem Aufbau vieler Vorschriften fo
    - ja → **rot** (ist `entfaellt` offen, mit Hinweis „Ausnahme nach Abs. 4 möglich – Nutzfläche angeben“)
    - nein → **grün**
    - offen → **gelb**, mit den fehlenden bzw. unsicheren Fakten
-5. Herabstufen zur sicheren Seite – aus Grün wird **gelb**, wenn `pruefen` zutrifft oder offen ist, die Regel an der
-   geltenden Fassung nicht geprüft ist (6.6), ein Fakt nur Hinweis ist oder Merkmal und Ableitung sich widersprechen.
-   Rot bleibt rot, bekommt aber den Hinweis („im Einzelfall prüfen“).
+5. Herabstufen zur sicheren Seite – aus Grün wird **gelb**, wenn `pruefen.wenn` zutrifft oder offen ist, die Regel an
+   der geltenden Fassung nicht geprüft ist (6.6), ein Fakt nur Hinweis ist, Merkmal und Ableitung sich widersprechen
+   oder der Text nicht verfügbar ist. Rot bleibt rot, bekommt aber den Hinweis („im Einzelfall prüfen“). Eine
+   Einzelfall-Klausel ohne `wenn` (z. B. § 42a Abs. 5 BauO NRW) ergänzt nur den Hinweis bei Rot – sie macht ein sicheres
+   Grün nach einer Ausnahme (Abs. 4) nicht wieder gelb (Umsetzung).
 6. Paragraf ohne Regel (im Modul gelistet, Regel fehlt): **gelb** („noch keine Regel – von Hand beurteilen“).
 
 Dazu **„Was klärt am meisten?“**: Je fehlendem Fakt wird gezählt, wie viele gelbe Paragrafen er auflösen würde

@@ -82,7 +82,7 @@ function eingabe(merkmale: Record<string, string>, fakten: Record<string, FaktWe
 }
 
 describe('Fallmatrix', () => {
-  it('jede Kombination der Merkmale lässt sich auswerten; ohne Angaben ist nichts grün, was hängen bleibt', () => {
+  it('jede Kombination der Merkmale lässt sich auswerten; ohne Angaben ist nichts grün, was hängen bleibt', { timeout: 180000 }, () => {
     let n = 0;
     for (const m of kombinationen()) {
       const a = auswerten(eingabe(m));

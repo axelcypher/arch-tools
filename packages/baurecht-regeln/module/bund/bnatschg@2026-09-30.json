@@ -1,0 +1,313 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "bnatschg",
+  "fassung": "2026-09-30",
+  "version": 1,
+  "paragrafen": {
+    "14": {
+      "titel": "Eingriffe in Natur und Landschaft",
+      "gilt": {
+        "$": "bauen"
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "bplan_jeder"
+          },
+          {
+            "$": "innenbereich"
+          },
+          {
+            "f": "planung.planaufstellung",
+            "ist": true
+          },
+          {
+            "und": [
+              {
+                "$": "satzung_baugb"
+              },
+              {
+                "f": "planung.innen",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Im Außenbereich ist die Errichtung oder Änderung baulicher Anlagen in der Regel ein Eingriff in Natur und Landschaft (Veränderung der Gestalt oder Nutzung von Grundflächen, Abs. 1).",
+      "fundstellen": [
+        "14/1"
+      ],
+      "pruefen": {
+        "grund": "Ob die Beeinträchtigung erheblich ist, hängt vom Einzelfall ab (Versiegelung, Landschaftsbild)."
+      },
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "verweise": [
+        "bund/bnatschg/15",
+        "bund/bnatschg/18"
+      ],
+      "stand": {
+        "14/1": "4ed2a6be"
+      }
+    },
+    "15": {
+      "titel": "Verursacherpflichten, Unzulässigkeit von Eingriffen",
+      "gilt": {
+        "n": "bund/bnatschg/14",
+        "ampel": [
+          "rot"
+        ]
+      },
+      "grund": "Vermeidbare Beeinträchtigungen sind zu unterlassen, unvermeidbare auszugleichen oder zu ersetzen, sonst Ersatzgeld (Abs. 1, 2, 6) – die Baugenehmigungsbehörde entscheidet im Benehmen mit der Naturschutzbehörde (§ 17 Abs. 1).",
+      "fundstellen": [
+        "15/1",
+        "15/2",
+        "15/5",
+        "15/6"
+      ],
+      "nachweis": [
+        "Angaben zu Eingriff, Vermeidung und Ausgleich (ggf. landschaftspflegerischer Begleitplan, § 17 Abs. 4)"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "15/1": "3e352449",
+        "15/2": "5845c585",
+        "15/5": "27e12c95",
+        "15/6": "b44cda6b"
+      }
+    },
+    "18": {
+      "titel": "Verhältnis zum Baurecht",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "$": "aussenbereich"
+              },
+              {
+                "und": [
+                  {
+                    "$": "innenbereich"
+                  },
+                  {
+                    "$": "errichtung"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Über Vorhaben im Außenbereich und die Errichtung baulicher Anlagen im Innenbereich entscheidet die Bauaufsicht im Benehmen mit der Naturschutzbehörde (Abs. 3); im Bebauungsplan und Innenbereich ist die Eingriffsregelung nicht anzuwenden (Abs. 2).",
+      "fundstellen": [
+        "18/2",
+        "18/3"
+      ],
+      "hinweis": "Im Innenbereich gilt das Benehmen als hergestellt, wenn sich die Naturschutzbehörde nicht binnen eines Monats äußert (Abs. 3 Satz 2).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "18/2": "e98a6b2b",
+        "18/3": "1491b742"
+      }
+    },
+    "30": {
+      "titel": "Gesetzlich geschützte Biotope",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "f": "schutz.biotop",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Handlungen, die gesetzlich geschützte Biotope zerstören oder erheblich beeinträchtigen können, sind verboten (Abs. 2); eine Ausnahme ist nur bei Ausgleich möglich (Abs. 3).",
+      "fundstellen": [
+        "30/2",
+        "30/3"
+      ],
+      "hinweis": "Weitere landesrechtlich geschützte Biotope (in NRW § 42 LNatSchG) gelten mit (Abs. 2 Satz 2); Ausnahme bei der unteren Naturschutzbehörde beantragen.",
+      "stand": {
+        "30/2": "5f81c800",
+        "30/3": "5b3e36df"
+      }
+    },
+    "34": {
+      "titel": "Verträglichkeit und Unzulässigkeit von Projekten; Ausnahmen",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
+          },
+          {
+            "oder": [
+              {
+                "f": "schutz.ffh",
+                "ist": true
+              },
+              {
+                "f": "schutz.vsg",
+                "ist": true
+              },
+              {
+                "f": "schutz.natura_nah",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "$": "bplan_jeder"
+              },
+              {
+                "f": "planung.planaufstellung",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Projekte, die ein Natura-2000-Gebiet (FFH- oder Vogelschutzgebiet) einzeln oder im Zusammenwirken mit anderen erheblich beeinträchtigen können, sind vor der Zulassung auf ihre Verträglichkeit zu prüfen (Abs. 1) – auch im Innenbereich.",
+      "fundstellen": [
+        "34/1",
+        "34/2",
+        "34/8"
+      ],
+      "pruefen": {
+        "grund": "Ob eine erhebliche Beeinträchtigung möglich ist (Vorprüfung), hängt vom Schutzzweck ab – z. B. Kulissenwirkung hoher Bauten im Vogelschutzgebiet."
+      },
+      "hinweis": "Nicht anzuwenden auf Vorhaben nach § 29 BauGB im Geltungsbereich eines Bebauungsplans und während der Planaufstellung (Abs. 8), außer bei planfeststellungsersetzenden Bebauungsplänen.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "34/1": "0d64e247",
+        "34/2": "c773a3f3",
+        "34/8": "be8591a4"
+      }
+    },
+    "44": {
+      "titel": "Vorschriften für besonders geschützte und bestimmte andere Tier- und Pflanzenarten",
+      "gilt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "beseitigung"
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "oder": [
+                  {
+                    "f": "vorhaben.dach_fassade",
+                    "ist": true
+                  },
+                  {
+                    "f": "vorhaben.baeume_faellen",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gruenNurVonHand": true,
+      "grund": "Bei Neubau, Abbruch und Arbeiten an Dach, Fassade oder Gehölzen können Zugriffsverbote berührt sein (Tötung, Störung, Zerstörung von Fortpflanzungs- und Ruhestätten, Abs. 1) – für Vorhaben nach § 18 Abs. 2 Satz 1 mit den Maßgaben des Abs. 5.",
+      "fundstellen": [
+        "44/1",
+        "44/5"
+      ],
+      "hinweis": "In NRW gehört eine artenschutzrechtliche Vorprüfung zu den Bauvorlagen. Bäume außerhalb von Wald und Gärten, Hecken und Gebüsche nicht vom 1. März bis 30. September beseitigen (§ 39 Abs. 5 Satz 1 Nr. 2).",
+      "nachweis": [
+        "Artenschutzrechtliche Vorprüfung (Protokoll Stufe I)"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "44/1": "5e1d0b08",
+        "44/5": "e0ce6f6d"
+      }
+    },
+    "67": {
+      "titel": "Befreiungen",
+      "gilt": {
+        "oder": [
+          {
+            "f": "schutz.nsg",
+            "ist": true
+          },
+          {
+            "f": "schutz.lsg",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Von Verboten einer Schutzgebietsverordnung (Natur- oder Landschaftsschutzgebiet) und des Landesnaturschutzrechts ist für das Vorhaben eine Befreiung zu beantragen – aus überwiegendem öffentlichem Interesse oder bei unzumutbarer Belastung (Abs. 1).",
+      "fundstellen": [
+        "67/1",
+        "67/2"
+      ],
+      "hinweis": "Befreiung bei der unteren Naturschutzbehörde; von den Verboten des § 44 nur bei unzumutbarer Belastung im Einzelfall (Abs. 2).",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "67/1": "2ca9b00c",
+        "67/2": "54272a68"
+      }
+    }
+  }
+}

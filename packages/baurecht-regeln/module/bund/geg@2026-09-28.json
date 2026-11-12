@@ -1,0 +1,417 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "geg",
+  "fassung": "2026-09-28",
+  "version": 1,
+  "geltung": {
+    "und": [
+      {
+        "$": "gebaeude"
+      },
+      {
+        "nicht": {
+          "$": "beseitigung"
+        }
+      },
+      {
+        "f": "gebaeude.beheizt",
+        "ist": true
+      }
+    ]
+  },
+  "geltungGrund": "das GEG gilt für Gebäude, die nach ihrer Zweckbestimmung unter Einsatz von Energie beheizt oder gekühlt werden (§ 2 Abs. 1)",
+  "paragrafen": {
+    "2": {
+      "titel": "Anwendungsbereich",
+      "grund": "Das Gebäude wird unter Einsatz von Energie beheizt oder gekühlt und fällt damit in den Anwendungsbereich des GEG (Abs. 1).",
+      "fundstellen": [
+        "2/1",
+        "2/2"
+      ],
+      "hinweis": "Ausgenommen sind u. a. unterirdische Bauten, provisorische Gebäude bis zwei Jahre, Gebäude für religiöse Zwecke, Wohngebäude mit Nutzung unter vier Monaten im Jahr und Betriebsgebäude mit Solltemperatur unter 12 °C (Abs. 2) – dann von Hand festlegen.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "2/1": "bb17751c",
+        "2/2": "1c8b636e"
+      }
+    },
+    "10": {
+      "titel": "Grundsatz und Niedrigstenergiegebäude",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "grund": "Ein neues Gebäude ist als Niedrigstenergiegebäude zu errichten: Gesamtenergiebedarf nach § 15 bzw. § 18, baulicher Wärmeschutz nach § 16 bzw. § 19 und die Maßgaben der §§ 42 bis 45 entsprechend (Abs. 1, 2).",
+      "fundstellen": [
+        "10/1",
+        "10/2",
+        "10/4"
+      ],
+      "hinweis": "Stromdirektheizungen in Gebäuden mit Wohnungen nur bei 45 % besserem baulichem Wärmeschutz (Abs. 4).",
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "10/1": "050f0c88",
+        "10/2": "b2f8d8e2",
+        "10/4": "c5332aa5"
+      }
+    },
+    "11": {
+      "titel": "Mindestwärmeschutz",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "grund": "Bauteile gegen Außenluft, Erdreich oder deutlich kältere Gebäudeteile müssen den Mindestwärmeschutz nach DIN 4108-2 und DIN 4108-3 erfüllen; bei nicht gesicherter Nachbarbebauung auch Gebäudetrennwände (Abs. 1, 2).",
+      "fundstellen": [
+        "11/1",
+        "11/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "11/1": "b5c2dd85",
+        "11/2": "ddfd591b"
+      }
+    },
+    "12": {
+      "titel": "Wärmebrücken",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "grund": "Der Einfluss konstruktiver Wärmebrücken auf den Jahres-Heizwärmebedarf ist nach den anerkannten Regeln der Technik und im wirtschaftlich vertretbaren Rahmen so gering wie möglich zu halten.",
+      "fundstellen": [
+        "12"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "12": "47bdd5ca"
+      }
+    },
+    "13": {
+      "titel": "Dichtheit",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "grund": "Die wärmeübertragende Umfassungsfläche ist dauerhaft luftundurchlässig nach den anerkannten Regeln der Technik abzudichten; der Mindestluftwechsel muss sichergestellt sein.",
+      "fundstellen": [
+        "13"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "13": "ecbcaf3a"
+      }
+    },
+    "14": {
+      "titel": "Sommerlicher Wärmeschutz",
+      "gilt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "vorhaben.erweiterung_beheizt",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Neue Gebäude brauchen einen ausreichenden baulichen sommerlichen Wärmeschutz, nachgewiesen nach DIN 4108-2 Abschnitt 8 (Abs. 1, 2); bei Erweiterungen über 50 m² zusammenhängender Nutzfläche ebenso (§ 39 Abs. 2).",
+      "fundstellen": [
+        "14/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "verweise": [
+        "bund/geg/39"
+      ],
+      "stand": {
+        "14/1": "c5b2a1d3"
+      }
+    },
+    "15": {
+      "titel": "Gesamtenergiebedarf",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "wohngebaeude"
+          }
+        ]
+      },
+      "grund": "Neue Wohngebäude: Jahres-Primärenergiebedarf höchstens das 0,55fache des Referenzgebäudes (Abs. 1).",
+      "fundstellen": [
+        "15/1",
+        "15/2"
+      ],
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "15/1": "dc0fa608",
+        "15/2": "fcc6fb9e"
+      }
+    },
+    "16": {
+      "titel": "Baulicher Wärmeschutz",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "wohngebaeude"
+          }
+        ]
+      },
+      "grund": "Neue Wohngebäude: spezifischer Transmissionswärmeverlust höchstens das 1,0fache des Referenzgebäudes.",
+      "fundstellen": [
+        "16"
+      ],
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "16": "0a2ba5ec"
+      }
+    },
+    "18": {
+      "titel": "Gesamtenergiebedarf",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "nichtwohngebaeude"
+          }
+        ]
+      },
+      "grund": "Neue Nichtwohngebäude: Jahres-Primärenergiebedarf einschließlich eingebauter Beleuchtung höchstens das 0,55fache des Referenzgebäudes (Abs. 1).",
+      "fundstellen": [
+        "18/1",
+        "18/2"
+      ],
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "18/1": "2500c672",
+        "18/2": "ac4390f2"
+      }
+    },
+    "19": {
+      "titel": "Baulicher Wärmeschutz",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "nichtwohngebaeude"
+          }
+        ]
+      },
+      "grund": "Neue Nichtwohngebäude: Höchstwerte der mittleren Wärmedurchgangskoeffizienten nach Anlage 3.",
+      "fundstellen": [
+        "19"
+      ],
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "19": "89a42029"
+      }
+    },
+    "36": {
+      "titel": "Anforderungen an ein bestehendes Gebäude bei Änderung",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.aussenbauteile",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Werden Außenbauteile beheizter oder gekühlter Räume erneuert, ersetzt oder erstmals eingebaut, dürfen sie die Wärmedurchgangskoeffizienten der Anlage 7 nicht überschreiten; ausgenommen sind Änderungen bis 10 % der jeweiligen Bauteilgruppe (Satz 1, 2).",
+      "fundstellen": [
+        "36"
+      ],
+      "hinweis": "Eigentümer von Wohngebäuden mit höchstens zwei Wohnungen: informatorisches Beratungsgespräch bei Gesamtberechnung nach § 38 (Satz 3). Die Regelung zur Änderung stand bis 2026 in § 48.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "36": "e1868dd2"
+      }
+    },
+    "39": {
+      "titel": "Anforderungen an ein bestehendes Gebäude bei Erweiterung und Ausbau",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.erweiterung_beheizt",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Bei Erweiterung oder Ausbau um beheizte oder gekühlte Räume gelten für die neuen Außenbauteile das 1,2fache des Referenzwerts (Wohngebäude) bzw. das 1,25fache der Höchstwerte (Nichtwohngebäude); über 50 m² zusätzlich sommerlicher Wärmeschutz (Abs. 1, 2).",
+      "fundstellen": [
+        "39/1",
+        "39/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "39/1": "fac5cc39",
+        "39/2": "48c07e5f"
+      }
+    },
+    "42": {
+      "titel": "Grundsatz",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.heizung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Wird in einem bestehenden Gebäude eine Heizungsanlage ersetzt, sind für die gewählte Option (Abs. 2) die Maßgaben der §§ 43 bis 46 zu beachten – z. B. die steigende Quote an Biomethan bzw. grünen Brennstoffen bei neuen Gas- und Ölheizungen (§ 43).",
+      "fundstellen": [
+        "42/1",
+        "42/2"
+      ],
+      "hinweis": "Die frühere 65-%-Regel (§ 71) ist mit der Änderung vom 23.07.2026 weggefallen. Für Neubauten gelten die §§ 42 bis 45 über § 10 Abs. 2 Nr. 3 entsprechend.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "42/1": "b3688bf0",
+        "42/2": "78917587"
+      }
+    },
+    "92": {
+      "titel": "Erfüllungserklärung",
+      "gilt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "n": "bund/geg/39",
+            "ampel": [
+              "rot"
+            ]
+          }
+        ]
+      },
+      "grund": "Für ein neues Gebäude ist der zuständigen Behörde mit einer Erfüllungserklärung nachzuweisen, dass die Anforderungen eingehalten sind – in der Regel nach Fertigstellung (Abs. 1); bei Erweiterung und Ausbau entsprechend (Abs. 2).",
+      "fundstellen": [
+        "92/1",
+        "92/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "92/1": "c3ae78de",
+        "92/2": "96dc21b4"
+      }
+    },
+    "105": {
+      "titel": "Baudenkmäler und sonstige besonders erhaltenswerte Bausubstanz",
+      "gilt": {
+        "oder": [
+          {
+            "f": "schutz.denkmal",
+            "ist": true
+          },
+          {
+            "f": "schutz.denkmalbereich",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Bei Baudenkmälern und besonders erhaltenswerter Bausubstanz kann von den Anforderungen abgewichen werden, soweit sie Substanz oder Erscheinungsbild beeinträchtigen oder unverhältnismäßigen Aufwand verursachen.",
+      "fundstellen": [
+        "105"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "105": "7f010a9f"
+      }
+    }
+  }
+}

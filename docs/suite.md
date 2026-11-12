@@ -3,7 +3,7 @@
 Die Rahmen-App (`apps/suite`, eigene App mit eigenem Installer „arch-tools“) bündelt alle Werkzeuge in **einem
 Programm und einem Fenster**. Sie kann nichts weiter, als zwischen den Apps zu wechseln:
 
-- **Tabs:** Jede geöffnete App ist ein Tab in der Titelleiste – Projektordner, Formulare, Flächenrechner,
+- **Tabs:** Jede geöffnete App ist ein Tab in der Titelleiste – Projektordner, Baurecht, Formulare, Flächenrechner,
   GRZ-Nachweis, Kostenermittlung, Entzerrung. Ohne offene App zeigt der Rahmen die Startseite mit allen Apps; „+“
   öffnet weitere. Beim Wechseln bleibt jede App, wie sie war (sie läuft im Hintergrund weiter). Der Tab zeigt das
   geöffnete Projekt und ● bei ungespeicherten Änderungen; Schließen (× oder mittlere Maustaste) fragt dann

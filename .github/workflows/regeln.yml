@@ -1,0 +1,98 @@
+name: Regelpaket Baurecht
+
+# Das Regelpaket der App Baurecht (packages/baurecht-regeln) wird getrennt von der App ausgeliefert:
+#
+#  - Auslieferung: Sobald sich das Paket auf main ändert, wird es geprüft, ohne Leerraum gebaut, mit dem privaten
+#    Schlüssel (Secret BAURECHT_REGELN_SCHLUESSEL, PKCS#8 Base64) signiert und in das Release „regeln“ hochgeladen.
+#    Die Apps holen index.json + index.json.sig von dort und übernehmen nur gültig signierte Pakete.
+#  - Wächter: Wöchentlich holt der Wächter die geltenden Fassungen aller Normen und prüft, dass die Fundstellen der
+#    Regeln noch im Text stehen und unverändert sind. Weicht etwas ab, legt er ein Issue an (bzw. ergänzt es).
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/baurecht-regeln/**
+  schedule:
+    # montags 05:17 UTC
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      aufgabe:
+        description: Aufgabe
+        type: choice
+        options: [ausliefern, waechter]
+        default: waechter
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  ausliefern:
+    name: Regelpaket ausliefern
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.aufgabe == 'ausliefern')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run --project regeln
+      - name: Bauen und signieren
+        env:
+          BAURECHT_REGELN_SCHLUESSEL: ${{ secrets.BAURECHT_REGELN_SCHLUESSEL }}
+        run: |
+          v=$(node -p "require('./packages/baurecht-regeln/package.json').version")
+          PAKET="$v-${{ github.run_number }}" npm run index -w @akh/baurecht-regeln
+      - name: In das Release „regeln“ hochladen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd packages/baurecht-regeln/ausgabe
+          if [ ! -f index.json.sig ]; then
+            echo "::warning::Kein Schlüssel (Secret BAURECHT_REGELN_SCHLUESSEL) – Regelpaket nicht ausgeliefert. Einrichten: npm run schluessel -w @akh/baurecht-regeln"
+            exit 0
+          fi
+          gh release view regeln >/dev/null 2>&1 || gh release create regeln --latest=false --target "$GITHUB_SHA" \
+            --title "Regelpaket Baurecht" \
+            --notes "Technisches Release: Regelpaket der App Baurecht (signiert). Die App lädt es selbst nach."
+          # erst die Dateien, zuletzt Index und Signatur – so sieht keine App einen Index, dessen Dateien fehlen
+          gh release upload regeln $(ls | grep -v '^index\.json') --clobber
+          gh release upload regeln index.json index.json.sig --clobber
+
+  waechter:
+    name: Wächter – Regeln gegen die geltenden Fassungen
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.aufgabe == 'waechter')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Rechtsstand prüfen
+        id: pruefen
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          LIVE=1 npx vitest run --project regeln test/rechtsstand.live.test.ts 2>&1 | tee waechter.log
+      - name: Issue anlegen oder ergänzen
+        if: steps.pruefen.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          titel="Baurecht: Regeln an neue Gesetzesfassungen anpassen"
+          {
+            echo "Der Wächter hat am $(date -u +%d.%m.%Y) Abweichungen zwischen den Regeln und den geltenden Fassungen gefunden."
+            echo
+            echo '```'
+            grep -E "FAIL|Regeln nachziehen|steht nicht|geändert|neue Fassung" waechter.log | head -80
+            echo '```'
+            echo
+            echo "Vorgehen: \`NUR=<modul>/<norm> npm run fassung -w @akh/baurecht-regeln\`, Regeln prüfen, \`npm run stand\`. Bis dahin zeigen die Apps die betroffenen Paragrafen gelb."
+          } > text.md
+          nr=$(gh issue list --state open --search "$titel in:title" --json number -q '.[0].number')
+          if [ -n "$nr" ]; then gh issue comment "$nr" --body-file text.md; else gh issue create --title "$titel" --body-file text.md; fi

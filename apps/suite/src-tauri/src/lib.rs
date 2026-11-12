@@ -6,6 +6,7 @@
 include!("../../../../packages/core/tauri/commands.rs");
 include!("../../../formulare/src-tauri/src/befehle.rs");
 include!("../../../../packages/core/tauri/qgis.rs");
+include!("../../../baurecht/src-tauri/src/netz.rs");
 
 /// Die Formulare-App im Tab bzw. Fenster ist zu oder zieht um (Herauslösen, Andocken): ihre Sperrdateien freigeben.
 /// Sonst hielte das Programm sie bis zum Beenden – die nächste Formulare-Instanz sähe die Formulare als „hier
@@ -69,6 +70,11 @@ pub fn run() {
             prokarte_write,
             machine_info,
             open_path,
+            // Baurecht (apps/baurecht/src-tauri/src/netz.rs)
+            netz_holen,
+            netz_hosts_erweitern,
+            baurecht_ablage_lesen,
+            baurecht_ablage_schreiben,
             // Rahmen
             rahmen_formulare_freigeben
         ])

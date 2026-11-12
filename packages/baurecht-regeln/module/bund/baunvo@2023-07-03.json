@@ -1,0 +1,698 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "baunvo",
+  "fassung": "2023-07-03",
+  "version": 1,
+  "geltung": {
+    "und": [
+      {
+        "$": "vorhaben_29"
+      },
+      {
+        "oder": [
+          {
+            "$": "bplan_jeder"
+          },
+          {
+            "$": "innenbereich"
+          },
+          {
+            "$": "satzung_baugb"
+          }
+        ]
+      }
+    ]
+  },
+  "geltungGrund": "die BauNVO gilt über Festsetzungen eines Bebauungsplans (§ 1 Abs. 3) bzw. für die Art der Nutzung im Innenbereich (§ 34 Abs. 2 BauGB), nicht im Außenbereich und nicht für die Beseitigung",
+  "paragrafen": {
+    "2": {
+      "titel": "Kleinsiedlungsgebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "WS"
+      },
+      "grund": "Kleinsiedlungsgebiet: zulässig nach Art der Nutzung sind die in § 2 genannten Anlagen (Abs. 2), ausnahmsweise die in Abs. 3.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "2": "a7fa4458"
+      }
+    },
+    "3": {
+      "titel": "Reine Wohngebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "WR"
+      },
+      "grund": "Reines Wohngebiet: allgemein zulässig sind Wohngebäude und Anlagen zur Kinderbetreuung (Abs. 2), Weiteres nur ausnahmsweise (Abs. 3).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "3": "5d101665"
+      }
+    },
+    "4": {
+      "titel": "Allgemeine Wohngebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "WA"
+      },
+      "grund": "Allgemeines Wohngebiet: allgemein zulässig sind die in Abs. 2 genannten Nutzungen, ausnahmsweise die in Abs. 3.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "4": "18d66646"
+      }
+    },
+    "5": {
+      "titel": "Dorfgebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "MD"
+      },
+      "grund": "Dorfgebiet: zulässig nach Abs. 2 unter vorrangiger Rücksicht auf land- und forstwirtschaftliche Betriebe (Abs. 1).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "5": "b443f5dd"
+      }
+    },
+    "6": {
+      "titel": "Mischgebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "MI"
+      },
+      "grund": "Mischgebiet: Wohnen und nicht wesentlich störendes Gewerbe (Abs. 1), zulässig nach Abs. 2, ausnahmsweise nach Abs. 3.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "6": "d93a761c"
+      }
+    },
+    "7": {
+      "titel": "Kerngebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "MK"
+      },
+      "grund": "Kerngebiet: zulässig nach Abs. 2; Wohnungen nur für Aufsichts- und Bereitschaftspersonen bzw. Betriebsinhaber (Abs. 2 Nr. 6), nach Festsetzung (Abs. 2 Nr. 7, Abs. 4) oder ausnahmsweise (Abs. 3 Nr. 2).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "7": "3d358435"
+      }
+    },
+    "8": {
+      "titel": "Gewerbegebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "GE"
+      },
+      "grund": "Gewerbegebiet: zulässig nach Abs. 2, Wohnungen für Betriebsinhaber und Aufsichtspersonen nur ausnahmsweise (Abs. 3 Nr. 1).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "8": "f2df9359"
+      }
+    },
+    "9": {
+      "titel": "Industriegebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "GI"
+      },
+      "grund": "Industriegebiet: zulässig nach Abs. 2, ausnahmsweise nach Abs. 3.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "9": "6e458066"
+      }
+    },
+    "10": {
+      "titel": "Sondergebiete, die der Erholung dienen",
+      "gilt": {
+        "und": [
+          {
+            "f": "planung.gebietsart",
+            "ist": "SO"
+          },
+          {
+            "f": "planung.so_erholung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Sondergebiet für die Erholung: Zweckbestimmung und Art der Nutzung ergeben sich aus den Festsetzungen des Bebauungsplans (Abs. 2–5).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "10": "28453b5a"
+      }
+    },
+    "11": {
+      "titel": "Sonstige Sondergebiete",
+      "gilt": {
+        "und": [
+          {
+            "f": "planung.gebietsart",
+            "ist": "SO"
+          },
+          {
+            "f": "planung.so_erholung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Sonstiges Sondergebiet: Zweckbestimmung und Art der Nutzung ergeben sich aus den Festsetzungen (Abs. 2); großflächiger Einzelhandel nur in Kern- oder Sondergebieten (Abs. 3).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "11": "570b859b"
+      }
+    },
+    "12": {
+      "titel": "Stellplätze und Garagen",
+      "gilt": {
+        "und": [
+          {
+            "f": "planung.gebietsart",
+            "in": [
+              "WS",
+              "WR",
+              "WA",
+              "WB",
+              "MD",
+              "MDW",
+              "MI",
+              "MU",
+              "MK",
+              "GE",
+              "GI",
+              "SO"
+            ]
+          },
+          {
+            "oder": [
+              {
+                "f": "gebaeude.stellplaetze",
+                "min": 1
+              },
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "min": 1
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Stellplätze und Garagen sind in allen Baugebieten zulässig, in WS, WR, WA und Erholungs-Sondergebieten nur für den Bedarf der zugelassenen Nutzung (Abs. 1, 2); Einschränkungen für Lkw (Abs. 3) und durch Festsetzung (Abs. 4–6).",
+      "fundstellen": [
+        "12/1",
+        "12/2",
+        "12/3"
+      ],
+      "pruefen": {
+        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "f": "planung.baunvo",
+              "in": [
+                "1962",
+                "1968",
+                "1977"
+              ]
+            }
+          ]
+        }
+      },
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "12/1": "94ae3485",
+        "12/2": "1359a9ef",
+        "12/3": "cc5cf444"
+      }
+    },
+    "15": {
+      "titel": "Allgemeine Voraussetzungen für die Zulässigkeit baulicher und sonstiger Anlagen",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "in": [
+          "WS",
+          "WR",
+          "WA",
+          "WB",
+          "MD",
+          "MDW",
+          "MI",
+          "MU",
+          "MK",
+          "GE",
+          "GI",
+          "SO"
+        ]
+      },
+      "grund": "Auch allgemein zulässige Anlagen sind im Einzelfall unzulässig, wenn sie nach Anzahl, Lage, Umfang oder Zweckbestimmung der Eigenart des Baugebiets widersprechen oder unzumutbare Belästigungen oder Störungen verursachen oder ihnen ausgesetzt sind (Abs. 1, Gebot der Rücksichtnahme).",
+      "fundstellen": [
+        "15/1"
+      ],
+      "pruefen": {
+        "grund": "Rücksichtnahme ist eine Wertungsfrage im Einzelfall (Nachbarschaft, Immissionen)."
+      },
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "15/1": "2b30d38c"
+      }
+    },
+    "18": {
+      "titel": "Höhe baulicher Anlagen",
+      "gilt": {
+        "und": [
+          {
+            "$": "bplan_jeder"
+          },
+          {
+            "f": "planung.hoehe_festgesetzt",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Bei festgesetzter Höhe sind die Bezugspunkte zu bestimmen (Abs. 1); geringfügige Abweichungen von zwingender Höhe können zugelassen werden (Abs. 2).",
+      "fundstellen": [
+        "18/1",
+        "18/2"
+      ],
+      "pruefen": {
+        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "f": "planung.baunvo",
+              "in": [
+                "1962",
+                "1968",
+                "1977"
+              ]
+            }
+          ]
+        }
+      },
+      "hinweis": "Höhen mit Bezugspunkt in Ansichten und Schnitten vermaßen.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "18/1": "06bad383",
+        "18/2": "c043b7a6"
+      }
+    },
+    "19": {
+      "titel": "Grundflächenzahl, zulässige Grundfläche",
+      "gilt": {
+        "oder": [
+          {
+            "$": "bplan"
+          },
+          {
+            "und": [
+              {
+                "$": "bplan_einfach"
+              },
+              {
+                "f": "planung.mass_festgesetzt",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Die festgesetzte Grundflächenzahl begrenzt die überbaute Grundfläche; Garagen, Stellplätze, Zufahrten und Nebenanlagen zählen mit und dürfen sie um bis zu 50 % überschreiten, höchstens bis 0,8 (Abs. 4).",
+      "fundstellen": [
+        "19/1",
+        "19/2",
+        "19/3",
+        "19/4"
+      ],
+      "pruefen": {
+        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "f": "planung.baunvo",
+              "in": [
+                "1962",
+                "1968",
+                "1977"
+              ]
+            }
+          ]
+        }
+      },
+      "nachweis": [
+        "Berechnung des Maßes der baulichen Nutzung (GRZ-Nachweis)"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "19/1": "00afde7b",
+        "19/2": "317e1906",
+        "19/3": "dc2eddc4",
+        "19/4": "928c26a8"
+      }
+    },
+    "20": {
+      "titel": "Vollgeschosse, Geschossflächenzahl, Geschossfläche",
+      "gilt": {
+        "oder": [
+          {
+            "$": "bplan"
+          },
+          {
+            "und": [
+              {
+                "$": "bplan_einfach"
+              },
+              {
+                "f": "planung.mass_festgesetzt",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Zahl der Vollgeschosse (Begriff nach Landesrecht, Abs. 1) und Geschossflächenzahl bzw. Geschossfläche nach den Außenmaßen in allen Vollgeschossen (Abs. 2, 3) sind einzuhalten.",
+      "fundstellen": [
+        "20/1",
+        "20/2",
+        "20/3"
+      ],
+      "pruefen": {
+        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "f": "planung.baunvo",
+              "in": [
+                "1962",
+                "1968",
+                "1977"
+              ]
+            }
+          ]
+        }
+      },
+      "hinweis": "Vollgeschossbegriff nach dem Landesrecht zum Zeitpunkt des Plans (statische Verweisung) – im GRZ-Nachweis hinterlegt.",
+      "nachweis": [
+        "Berechnung des Maßes der baulichen Nutzung (GFZ, Vollgeschosse)"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "20/1": "80307eda",
+        "20/2": "dcf4de93",
+        "20/3": "a1e3e37c"
+      }
+    },
+    "22": {
+      "titel": "Bauweise",
+      "gilt": {
+        "und": [
+          {
+            "$": "bplan_jeder"
+          },
+          {
+            "f": "planung.bauweise_festgesetzt",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Bei festgesetzter Bauweise: offene Bauweise mit seitlichem Grenzabstand, Gebäudelänge höchstens 50 m (Abs. 2), geschlossene Bauweise ohne seitlichen Grenzabstand (Abs. 3) oder abweichende Bauweise (Abs. 4).",
+      "fundstellen": [
+        "22/1",
+        "22/2",
+        "22/3",
+        "22/4"
+      ],
+      "pruefen": {
+        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "f": "planung.baunvo",
+              "in": [
+                "1962",
+                "1968",
+                "1977"
+              ]
+            }
+          ]
+        }
+      },
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "22/1": "bc5cb591",
+        "22/2": "ea02196a",
+        "22/3": "3f63fa95",
+        "22/4": "6b29eff5"
+      }
+    },
+    "23": {
+      "titel": "Überbaubare Grundstücksfläche",
+      "gilt": {
+        "oder": [
+          {
+            "$": "bplan"
+          },
+          {
+            "und": [
+              {
+                "$": "bplan_einfach"
+              },
+              {
+                "f": "planung.baugrenzen_festgesetzt",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Gebäude dürfen Baulinien und Baugrenzen nicht überschreiten bzw. müssen auf Baulinien gebaut werden; geringfügiges Vor- und Zurücktreten kann zugelassen werden (Abs. 2–4); Nebenanlagen außerhalb nach Abs. 5.",
+      "fundstellen": [
+        "23/1",
+        "23/2",
+        "23/3",
+        "23/5"
+      ],
+      "pruefen": {
+        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "f": "planung.baunvo",
+              "in": [
+                "1962",
+                "1968",
+                "1977"
+              ]
+            }
+          ]
+        }
+      },
+      "hinweis": "Im Innenbereich gelten Bauweise und überbaubare Grundstücksfläche nicht unmittelbar, sondern als Maßstab des Einfügens nach § 34 Abs. 1 BauGB.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "verweise": [
+        "bund/baugb/30"
+      ],
+      "stand": {
+        "23/1": "f42670cd",
+        "23/2": "f95fc978",
+        "23/3": "746fe7ba",
+        "23/5": "fac0c635"
+      }
+    },
+    "4a": {
+      "titel": "Besondere Wohngebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "WB"
+      },
+      "grund": "Besonderes Wohngebiet: zulässig nach Abs. 2, ausnahmsweise nach Abs. 3.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "4a": "6700f409"
+      }
+    },
+    "5a": {
+      "titel": "Dörfliche Wohngebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "MDW"
+      },
+      "grund": "Dörfliches Wohngebiet: zulässig nach Abs. 2, ausnahmsweise nach Abs. 3.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "5a": "8fe09f6c"
+      }
+    },
+    "6a": {
+      "titel": "Urbane Gebiete",
+      "gilt": {
+        "f": "planung.gebietsart",
+        "ist": "MU"
+      },
+      "grund": "Urbanes Gebiet: zulässig nach Abs. 2, ausnahmsweise nach Abs. 3; Gliederung nach Geschossen möglich (Abs. 4).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "6a": "87d4cd98"
+      }
+    },
+    "21a": {
+      "titel": "Stellplätze, Garagen und Gemeinschaftsanlagen",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "bplan"
+              },
+              {
+                "und": [
+                  {
+                    "$": "bplan_einfach"
+                  },
+                  {
+                    "f": "planung.mass_festgesetzt",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "oder": [
+              {
+                "f": "gebaeude.stellplaetze",
+                "min": 1
+              },
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "min": 1
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Garagengeschosse bleiben bei den Vollgeschossen unberücksichtigt, wenn der Plan es festsetzt (Abs. 1); überdachte Stellplätze und Garagen dürfen die zulässige Grundfläche bis 0,1 der Grundstücksfläche überschreiten, soweit § 19 Abs. 4 nicht entgegensteht (Abs. 3); Anrechnung auf die Geschossfläche nach Abs. 4 und 5.",
+      "fundstellen": [
+        "21a/1",
+        "21a/2",
+        "21a/3",
+        "21a/4",
+        "21a/5"
+      ],
+      "pruefen": {
+        "grund": "Bebauungsplan vor dem 27.01.1990: maßgeblich ist die BauNVO in der Fassung zum Plandatum (statische Verweisung) – der Inhalt kann vom geltenden Text abweichen; ältere Fassung von Hand prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "f": "planung.baunvo",
+              "in": [
+                "1962",
+                "1968",
+                "1977"
+              ]
+            }
+          ]
+        }
+      },
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "21a/1": "b8d87fcd",
+        "21a/2": "ad357be5",
+        "21a/3": "cccf702a",
+        "21a/4": "8d864a99",
+        "21a/5": "6be04c25"
+      }
+    },
+    "25c": {
+      "titel": "Überleitungsvorschrift aus Anlass der vierten Änderungsverordnung",
+      "gilt": {
+        "und": [
+          {
+            "$": "bplan_jeder"
+          },
+          {
+            "f": "planung.baunvo",
+            "in": [
+              "1962",
+              "1968",
+              "1977"
+            ]
+          }
+        ]
+      },
+      "grund": "Für Bebauungspläne, die vor dem 27.01.1990 ausgelegt wurden, gilt die BauNVO in der damaligen Fassung (1962, 1968 oder 1977) – maßgeblich ist sie, nicht der geltende Text dieses Moduls.",
+      "fundstellen": [
+        "25c"
+      ],
+      "hinweis": "Auch Bebauungspläne nach 1990 verweisen statisch auf ihre Fassung; Änderungen 2013, 2021 und 2023 siehe §§ 25d–25f.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "25c": "f8fc88a1"
+      }
+    }
+  }
+}

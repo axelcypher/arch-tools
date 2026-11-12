@@ -1,0 +1,432 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "baugb",
+  "fassung": "2026-09-30",
+  "version": 1,
+  "paragrafen": {
+    "14": {
+      "titel": "Veränderungssperre",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
+          },
+          {
+            "f": "planung.veraenderungssperre",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Im Bereich einer Veränderungssperre dürfen Vorhaben nach § 29 nicht durchgeführt und bauliche Anlagen nicht beseitigt werden (Abs. 1 Nr. 1); eine Ausnahme lässt die Baugenehmigungsbehörde im Einvernehmen mit der Gemeinde zu (Abs. 2).",
+      "fundstellen": [
+        "14/1",
+        "14/2",
+        "14/3"
+      ],
+      "hinweis": "Vor Inkrafttreten der Sperre genehmigte Vorhaben und Unterhaltungsarbeiten bleiben unberührt (Abs. 3). Bei der Gemeinde nach laufenden Aufstellungsbeschlüssen und Sperren fragen.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "verweise": [
+        "bund/baugb/17"
+      ],
+      "stand": {
+        "14/1": "727595aa",
+        "14/2": "8a61e964",
+        "14/3": "1f78581c"
+      }
+    },
+    "17": {
+      "titel": "Geltungsdauer der Veränderungssperre",
+      "gilt": {
+        "n": "bund/baugb/14",
+        "ampel": [
+          "rot"
+        ]
+      },
+      "grund": "Die Veränderungssperre tritt nach zwei Jahren außer Kraft, verlängerbar um ein und bei besonderen Umständen ein weiteres Jahr (Abs. 1, 2) – Stand und Ablauf der Sperre vor dem Antrag klären.",
+      "fundstellen": [
+        "17/1",
+        "17/2",
+        "17/5"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "17/1": "a5fa87b1",
+        "17/2": "c3f5cb31",
+        "17/5": "a29655c6"
+      }
+    },
+    "29": {
+      "titel": "Begriff des Vorhabens; Geltung von Rechtsvorschriften",
+      "gilt": {
+        "$": "vorhaben_29"
+      },
+      "grund": "Errichtung, Änderung oder Nutzungsänderung einer baulichen Anlage ist ein Vorhaben nach § 29 Abs. 1 – die Zulässigkeit richtet sich nach den §§ 30 bis 37; Bauordnungsrecht und anderes öffentliches Recht bleiben unberührt (Abs. 2).",
+      "fundstellen": [
+        "29/1",
+        "29/2"
+      ],
+      "hinweis": "Die Beseitigung ist kein Vorhaben nach § 29 Abs. 1; Aufschüttungen und Abgrabungen größeren Umfangs sind es.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "nachweis": [
+        "Lageplan und Bauzeichnungen (BauPrüfVO)"
+      ],
+      "stand": {
+        "29/1": "2ac18412",
+        "29/2": "6ed1f3bf"
+      }
+    },
+    "30": {
+      "titel": "Zulässigkeit von Vorhaben im Geltungsbereich eines Bebauungsplans",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "bplan_jeder"
+          }
+        ]
+      },
+      "grund": "Im Geltungsbereich eines qualifizierten oder vorhabenbezogenen Bebauungsplans ist das Vorhaben zulässig, wenn es den Festsetzungen nicht widerspricht und die Erschließung gesichert ist (Abs. 1, 2); beim einfachen Bebauungsplan im Übrigen nach § 34 oder § 35 (Abs. 3).",
+      "fundstellen": [
+        "30/1",
+        "30/2",
+        "30/3"
+      ],
+      "hinweis": "Planurkunde mit textlichen Festsetzungen und Begründung beschaffen; Festsetzungen (GRZ, GFZ, Vollgeschosse, Baugrenzen, Höhen) im GRZ-Nachweis erfassen.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "verweise": [
+        "bund/baugb/31",
+        "bund/baunvo/19",
+        "bund/baunvo/23"
+      ],
+      "stand": {
+        "30/1": "82f8ec7b",
+        "30/2": "521d824d",
+        "30/3": "10142fd2"
+      }
+    },
+    "31": {
+      "titel": "Ausnahmen und Befreiungen",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "bplan_jeder"
+          },
+          {
+            "f": "planung.befreiung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Abweichungen von Festsetzungen des Bebauungsplans brauchen eine Ausnahme (Abs. 1, nur wenn im Plan vorgesehen) oder Befreiung (Abs. 2: Grundzüge der Planung nicht berührt; Abs. 3: zugunsten des Wohnungsbaus mit Zustimmung der Gemeinde) – gesondert zu beantragen und zu begründen.",
+      "fundstellen": [
+        "31/1",
+        "31/2",
+        "31/3"
+      ],
+      "pruefen": {
+        "grund": "Ob die Grundzüge der Planung berührt sind und die Abweichung städtebaulich vertretbar ist, ist eine Wertungsfrage."
+      },
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "nachweis": [
+        "Antrag auf Ausnahme bzw. Befreiung mit Begründung"
+      ],
+      "verweise": [
+        "bund/baugb/36"
+      ],
+      "stand": {
+        "31/1": "ec0a7197",
+        "31/2": "e4196dbe",
+        "31/3": "40847891"
+      }
+    },
+    "33": {
+      "titel": "Zulässigkeit von Vorhaben während der Planaufstellung",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "planung.planaufstellung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Während der Aufstellung eines Bebauungsplans ist ein Vorhaben nach § 33 zulässig, wenn die Beteiligung durchgeführt ist, es den künftigen Festsetzungen nicht entgegensteht, die Festsetzungen schriftlich anerkannt werden und die Erschließung gesichert ist (Abs. 1).",
+      "fundstellen": [
+        "33/1",
+        "33/2",
+        "33/3"
+      ],
+      "hinweis": "Ohne Planreife bleibt es bei der Beurteilung nach § 30, § 34 oder § 35; eine Veränderungssperre (§ 14) oder Zurückstellung ist möglich.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "33/1": "28a2077b",
+        "33/2": "3aff4e7f",
+        "33/3": "04f2db50"
+      }
+    },
+    "34": {
+      "titel": "Zulässigkeit von Vorhaben innerhalb der im Zusammenhang bebauten Ortsteile",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "$": "innenbereich"
+              },
+              {
+                "und": [
+                  {
+                    "oder": [
+                      {
+                        "$": "bplan_einfach"
+                      },
+                      {
+                        "$": "satzung_baugb"
+                      }
+                    ]
+                  },
+                  {
+                    "f": "planung.innen",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Im Innenbereich muss sich das Vorhaben nach Art und Maß der baulichen Nutzung, Bauweise und überbauter Grundstücksfläche in die Eigenart der näheren Umgebung einfügen und die Erschließung gesichert sein (Abs. 1); entspricht die Umgebung einem Baugebiet der BauNVO, gilt für die Art Abs. 2.",
+      "fundstellen": [
+        "34/1",
+        "34/2",
+        "34/3"
+      ],
+      "pruefen": {
+        "grund": "Das Einfügen ist eine Wertungsfrage (Bezugsrahmen der näheren Umgebung); Abweichungen nach Abs. 3a und 3b sind möglich."
+      },
+      "hinweis": "Bestandsumgebung (Gebäudehöhen, Grundflächen, Bauweise) dokumentieren – z. B. mit Fotos und Lageplan der Nachbarbebauung.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "verweise": [
+        "bund/baugb/36",
+        "bund/baunvo/15"
+      ],
+      "stand": {
+        "34/1": "e2d88078",
+        "34/2": "7787726f",
+        "34/3": "ce17e7ba"
+      }
+    },
+    "35": {
+      "titel": "Bauen im Außenbereich",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "$": "aussenbereich"
+              },
+              {
+                "und": [
+                  {
+                    "oder": [
+                      {
+                        "$": "bplan_einfach"
+                      },
+                      {
+                        "$": "satzung_baugb"
+                      }
+                    ]
+                  },
+                  {
+                    "f": "planung.innen",
+                    "ist": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Im Außenbereich sind nur privilegierte Vorhaben (Abs. 1) bei ausreichender Erschließung und ohne entgegenstehende öffentliche Belange zulässig; sonstige Vorhaben nur, wenn sie öffentliche Belange nicht beeinträchtigen (Abs. 2, 3), mit Erleichterungen nach Abs. 4.",
+      "fundstellen": [
+        "35/1",
+        "35/2",
+        "35/3",
+        "35/4",
+        "35/5"
+      ],
+      "pruefen": {
+        "grund": "Privilegierung, Teilprivilegierung (Abs. 4) und Beeinträchtigung öffentlicher Belange (Abs. 3) sind im Einzelfall zu prüfen."
+      },
+      "hinweis": "Für Vorhaben nach Abs. 1 Nr. 2 bis 6, 8 b, 9 bis 12 ist eine Rückbauverpflichtung abzugeben (Abs. 5).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "verweise": [
+        "bund/baugb/36",
+        "bund/bnatschg/14"
+      ],
+      "stand": {
+        "35/1": "a1144a9f",
+        "35/2": "62edc7a0",
+        "35/3": "78eaf4b6",
+        "35/4": "047130d4",
+        "35/5": "8de0b6cf"
+      }
+    },
+    "36": {
+      "titel": "Einvernehmen der Gemeinde und Zustimmung der höheren Verwaltungsbehörde",
+      "gilt": {
+        "oder": [
+          {
+            "n": "bund/baugb/31",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "bund/baugb/33",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "bund/baugb/34",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "bund/baugb/35",
+            "ampel": [
+              "rot"
+            ]
+          }
+        ]
+      },
+      "grund": "Über Vorhaben nach § 31 Abs. 1 und 2, §§ 33, 34 und 35 entscheidet die Baugenehmigungsbehörde im Einvernehmen mit der Gemeinde (Abs. 1); es gilt als erteilt, wenn es nicht binnen zwei Monaten verweigert wird (Abs. 2).",
+      "fundstellen": [
+        "36/1",
+        "36/2"
+      ],
+      "hinweis": "Frühzeitige Abstimmung mit der Gemeinde (Planungsamt) spart Zeit – das Einvernehmen darf nur aus planungsrechtlichen Gründen versagt werden.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "36/1": "34235fdc",
+        "36/2": "b57bc9d6"
+      }
+    },
+    "172": {
+      "titel": "Erhaltung baulicher Anlagen und der Eigenart von Gebieten (Erhaltungssatzung)",
+      "gilt": {
+        "und": [
+          {
+            "f": "planung.erhaltungssatzung",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Im Gebiet einer Erhaltungssatzung bedürfen Rückbau, Änderung und Nutzungsänderung baulicher Anlagen einer eigenen Genehmigung, bei einer Satzung zur städtebaulichen Gestalt (Abs. 1 Satz 1 Nr. 1) auch die Errichtung.",
+      "fundstellen": [
+        "172/1",
+        "172/3",
+        "172/4"
+      ],
+      "pruefen": {
+        "grund": "Welcher Erhaltungszweck (Gestalt, Zusammensetzung der Wohnbevölkerung, Umstrukturierung) gilt, ergibt sich aus der Satzung – bei der Errichtung nur im Fall der städtebaulichen Gestalt."
+      },
+      "hinweis": "Die Genehmigung erteilt die Gemeinde; ist eine Baugenehmigung nötig, entscheidet die Bauaufsicht im Einvernehmen mit der Gemeinde.",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "172/1": "b7234457",
+        "172/3": "a11d2f06",
+        "172/4": "02fb9718"
+      }
+    },
+    "246e": {
+      "titel": "Befristete Sonderregelung für den Wohnungsbau",
+      "gilt": {
+        "f": "planung.wohnungsbau_246e",
+        "ist": true
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "beseitigung"
+          },
+          {
+            "tag": "einreichung",
+            "ab": "2031-01-01"
+          }
+        ]
+      },
+      "grund": "Mit Zustimmung der Gemeinde kann bis zum 31.12.2030 zugunsten des Wohnungsbaus (Errichtung, Erweiterung, Nutzungsänderung zu Wohnzwecken) von Vorschriften des BauGB abgewichen werden, wenn die Abweichung mit den öffentlichen Belangen vereinbar ist (Abs. 1).",
+      "fundstellen": [
+        "246e/1",
+        "246e/3",
+        "246e/4"
+      ],
+      "pruefen": {
+        "grund": "Vereinbarkeit mit den öffentlichen Belangen und nachbarlichen Interessen; im Außenbereich nur im räumlichen Zusammenhang mit Flächen nach § 30 oder § 34 (Abs. 3)."
+      },
+      "hinweis": "Die Frist bezieht sich auf die Entscheidung im bauaufsichtlichen Verfahren (Abs. 4) – Antrag rechtzeitig vor Ende 2030 stellen; ggf. Strategische Umweltprüfung (Abs. 1 Satz 2).",
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "246e/1": "24c3ad45",
+        "246e/3": "9310a84c",
+        "246e/4": "10701205"
+      }
+    }
+  }
+}
