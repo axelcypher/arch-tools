@@ -47,7 +47,8 @@
       },
       "stand": {
         "1": "9fe97b02"
-      }
+      },
+      "titel": "Einschränkung des Anwendungsbereichs"
     },
     "3": {
       "gilt": {
@@ -67,7 +68,8 @@
       },
       "stand": {
         "3": "dab9d51d"
-      }
+      },
+      "titel": "Verbrennungsluftversorgung von Feuerstätten"
     },
     "4": {
       "gilt": {
@@ -87,7 +89,8 @@
       },
       "stand": {
         "4": "f7b7e9fb"
-      }
+      },
+      "titel": "Aufstellung von Feuerstätten, Gasleitungsanlagen"
     },
     "5": {
       "gilt": {
@@ -107,7 +110,8 @@
       },
       "stand": {
         "5": "48c7cb1b"
-      }
+      },
+      "titel": "Aufstellräume für Feuerstätten"
     },
     "6": {
       "gilt": {
@@ -147,7 +151,8 @@
         "6/1": "8ea833c6",
         "6/2": "48287736",
         "6/3": "16027729"
-      }
+      },
+      "titel": "Heizräume"
     },
     "7": {
       "gilt": {
@@ -167,7 +172,8 @@
       },
       "stand": {
         "7": "587e94b4"
-      }
+      },
+      "titel": "Abgasanlagen"
     },
     "9": {
       "gilt": {
@@ -187,7 +193,8 @@
       },
       "stand": {
         "9": "f060639e"
-      }
+      },
+      "titel": "Abführung von Abgasen"
     },
     "10": {
       "gilt": {
@@ -209,7 +216,8 @@
       "stand": {
         "10/1": "634885d1",
         "10/2": "0c556535"
-      }
+      },
+      "titel": "Wärmepumpen, Blockheizkraftwerke und ortsfeste Verbrennungsmotoren"
     },
     "11": {
       "gilt": {
@@ -229,7 +237,8 @@
       },
       "stand": {
         "11": "43f0391c"
-      }
+      },
+      "titel": "Brennstofflagerung in Brennstofflagerräumen"
     },
     "12": {
       "gilt": {
@@ -249,7 +258,8 @@
       },
       "stand": {
         "12": "e957d892"
-      }
+      },
+      "titel": "Brennstofflagerung außerhalb von Brennstofflagerräumen"
     }
   }
 }

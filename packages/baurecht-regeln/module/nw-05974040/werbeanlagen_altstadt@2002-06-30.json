@@ -34,7 +34,8 @@
         "2/1": "05d6aa2d",
         "2/2": "8d6359a1",
         "2/3": "372ae7f0"
-      }
+      },
+      "titel": "Ort der Werbung"
     },
     "3": {
       "gilt": {
@@ -49,7 +50,8 @@
       },
       "stand": {
         "3": "3af10551"
-      }
+      },
+      "titel": "Ausleger"
     },
     "4": {
       "gilt": {
@@ -64,7 +66,8 @@
       },
       "stand": {
         "4": "dce3d8e0"
-      }
+      },
+      "titel": "Flachwerbeanlagen"
     },
     "5": {
       "gilt": {
@@ -79,7 +82,8 @@
       },
       "stand": {
         "5": "ea305bc7"
-      }
+      },
+      "titel": "Fahnen"
     },
     "6": {
       "gilt": {
@@ -96,7 +100,8 @@
       "stand": {
         "6/1": "4e4adb9b",
         "6/2": "59198049"
-      }
+      },
+      "titel": "Farben und bewegliche Lichtwerbungen"
     },
     "8": {
       "gilt": {
@@ -114,7 +119,8 @@
       },
       "stand": {
         "8": "118c54d1"
-      }
+      },
+      "titel": "Einführung des Genehmigungstatbestandes"
     },
     "9": {
       "gilt": {
@@ -150,7 +156,8 @@
       },
       "stand": {
         "9": "b1bb8c6e"
-      }
+      },
+      "titel": "Abweichungen"
     }
   }
 }

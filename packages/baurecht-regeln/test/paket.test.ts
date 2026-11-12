@@ -11,7 +11,12 @@ import { widersprueche } from '@core/baurecht/projekt';
 import type { FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
 import type { Fassung } from '@core/recht/typen';
 import { VORGABE_MERKMALE } from '@core/bedingung';
-import { ohneFassungsdatum, paketLaden } from './laden';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, relative } from 'node:path';
+import { ohneFassungsdatum, paketLaden, WURZEL } from './laden';
 
 const paket = paketLaden();
 const SOEST = '05974040';
@@ -39,6 +44,19 @@ describe('Regelpaket', () => {
         for (const [nr, r] of Object.entries(l[l.length - 1].regel.paragrafen)) for (const fs of r.fundstellen ?? [nr]) if (!r.stand?.[fs]) fehlt.push(`${m.id}/${norm} § ${nr}: keine Prüfsumme für ${fs} (npm run stand)`);
       }
     expect(fehlt).toEqual([]);
+  });
+
+  it('jede Regel hat einen kurzen Titel wie im Gesetz (auch ohne abgerufenen Text lesbar)', () => {
+    const probleme: string[] = [];
+    for (const [key, l] of paket.regeln)
+      for (const { regel } of l)
+        for (const [nr, r] of Object.entries(regel.paragrafen)) {
+          const t = r.titel?.trim() ?? '';
+          // zusammengezogene Wörter aus Zeilenumbrüchen der Quelle („undBauvorlagen“); Abkürzungen wie „BauGB“ zählen nicht
+          const verklebt = t.split(/\s+/).some((w) => (w.match(/[A-ZÄÖÜ]/g) ?? []).length === 1 && /[a-zäöüß][A-ZÄÖÜ]/.test(w));
+          if (!t || t.length > 120 || /\(zu §/.test(t) || verklebt) probleme.push(`${key} § ${nr}: „${t}“`);
+        }
+    expect(probleme).toEqual([]);
   });
 
   it('jede Gemeinde des Kreises bekommt ihre Zuständigkeit', () => {
@@ -438,8 +456,11 @@ describe('Fälle aus dem Fachreview', () => {
     // Naturdenkmal nicht angegeben bzw. geschützte Bäume: nicht „gilt nicht“
     expect(a(m, sonst)('bund/bnatschg/67')).not.toBe('gruen');
     expect(a(m, { ...sonst, ...nein('schutz.naturdenkmal'), ...ja('schutz.baum') })('bund/bnatschg/67')).not.toBe('gruen');
-    // Gegenprobe: nichts geschützt
-    expect(a(m, { ...sonst, ...nein('schutz.naturdenkmal') })('bund/bnatschg/67')).toBe('gruen');
+    // Gegenprobe: nichts geschützt, kein Eingriff in Gehölze oder Quartiere (Innenumbau) – seit Runde 4 gehört dazu auch
+    // die Prüfung nach § 67 Abs. 2 (Artenschutz bei Neubau, Abbruch, Dach/Fassade) und Natura 2000
+    const innen = { ...m, Vorhaben: 'Änderung' };
+    expect(a(innen, { ...sonst, ...nein('schutz.naturdenkmal', 'schutz.ffh', 'schutz.vsg', 'schutz.natura_nah', 'vorhaben.baeume_faellen', 'vorhaben.dach_fassade') })('bund/bnatschg/67')).toBe('gruen');
+    expect(a(m, { ...sonst, ...nein('schutz.naturdenkmal', 'schutz.ffh', 'schutz.vsg', 'schutz.natura_nah', 'vorhaben.baeume_faellen') })('bund/bnatschg/67')).not.toBe('gruen');
   });
 
   it('Runde 3: Stellplatzanlage mit 40 notwendigen Stellplätzen für einen Markt („kein Gebäude“) – PV-Pflicht nach SAN-VO', () => {
@@ -542,15 +563,226 @@ describe('Fälle aus dem Fachreview', () => {
     const anzeige = a({ ...m, Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Verfahren: 'Baugenehmigungsverfahren' }, ja('vorhaben.nutzung_befristet'));
     expect(anzeige('nw/bauo-nrw/64')).toBe('rot');
   });
+
+  /* ---------- Runde 4 ---------- */
+
+  const M4 = (x: Record<string, string> = {}) => ({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein', ...x });
+  const wert = (id: string, w: FaktWert['wert']) => ({ [id]: sicher(w) });
+  const keinSchutz = () => nein('schutz.nsg', 'schutz.lsg', 'schutz.naturdenkmal', 'schutz.biotop', 'schutz.baum', 'schutz.ffh', 'schutz.vsg', 'schutz.natura_nah', 'schutz.landschaftsplan');
+
+  it('Runde 4: Befreiung nach § 67 BNatSchG / § 75 LNatSchG auch außerhalb von Schutzgebieten (Gehölzfällung, Artenschutz, Natura 2000, Landschaftsplan)', () => {
+    // Neubau mit Gehölzfällung bei der Baufeldräumung: § 39 und § 44 gelten – § 67 nicht „entfällt“
+    const x = a(M4(), { ...keinSchutz(), ...ja('vorhaben.baeume_faellen') });
+    expect(x('bund/bnatschg/39')).toBe('rot');
+    expect(x('bund/bnatschg/44')).toBe('rot');
+    expect(x('bund/bnatschg/67')).not.toBe('gruen');
+    expect(x('nw/lnatschg/75')).not.toBe('gruen');
+    // FFH-Gebiet bzw. Landschaftsplan: § 67 nicht grün, während § 75 gilt (kein Widerspruch mehr)
+    const y = a(M4({ Planungsrecht: 'Außenbereich' }), { ...keinSchutz(), ...nein('vorhaben.baeume_faellen'), ...ja('schutz.ffh', 'schutz.landschaftsplan') });
+    expect(y('bund/bnatschg/67')).not.toBe('gruen');
+    expect(y('nw/lnatschg/75')).toBe('rot');
+    // Klasse: Naturdenkmal eines Landschaftsplans – ein Fakt für Kreisverordnung und Landschaftsplan
+    const lp = inGemeinde('05974052', M4({ Planungsrecht: 'Außenbereich' }), { ...keinSchutz(), ...ja('schutz.landschaftsplan', 'schutz.naturdenkmal') });
+    for (const id of ['nw-05974/lp_vi/C.3', 'bund/bnatschg/67', 'nw/lnatschg/75']) expect(lp(id).ampel, id).toBe('rot');
+  });
+
+  it('Runde 4: Landschaftspläne – Nutzungsänderung im NSG bzw. an geschützten Landschaftsbestandteilen (LP VI Werl), auch ohne Erdarbeiten und Fällung', () => {
+    const f = { ...ja('schutz.nsg', 'schutz.lsg', 'schutz.naturdenkmal'), ...nein('vorhaben.erdarbeiten', 'vorhaben.baeume_faellen') };
+    for (const ags of ['05974052', '05974048', '05974056']) {
+      const x = inGemeinde(ags, M4({ Vorhaben: 'Nutzungsänderung', Planungsrecht: 'Außenbereich' }), f);
+      const lp = { '05974052': 'lp_vi', '05974048': 'lp_iv', '05974056': 'lp_v' }[ags]!;
+      expect(x(`nw-05974/${lp}/C.1`).ampel, `${lp} C.1`).toBe('rot');
+      expect(x(`nw-05974/${lp}/C.4`).ampel, `${lp} C.4`).toBe('rot');
+      // Landschaftsschutz und Naturdenkmal: im Einzelfall
+      expect(x(`nw-05974/${lp}/C.2`).ampel, `${lp} C.2`).not.toBe('gruen');
+      expect(x(`nw-05974/${lp}/C.3`).ampel, `${lp} C.3`).not.toBe('gruen');
+    }
+  });
+
+  it('Runde 4: Planreife (§ 33 BauGB) bei Merkmal Außen- oder Innenbereich – BauNVO §§ 13, 14, 18–23 nicht „gilt nicht“', () => {
+    for (const Planungsrecht of ['Außenbereich', 'Innenbereich']) {
+      const x = a(M4({ Planungsrecht }), { ...ja('planung.planaufstellung', 'planung.planreife', 'vorhaben.nebenanlage', 'vorhaben.freiberuflich'), ...wert('planung.gebietsart', 'WA') });
+      for (const id of ['bund/baunvo/13', 'bund/baunvo/14', 'bund/baunvo/19', 'bund/baunvo/20', 'bund/baunvo/23']) expect(x(id), `${id} (${Planungsrecht})`).toBe('rot');
+      for (const id of ['bund/baunvo/18', 'bund/baunvo/21a', 'bund/baunvo/22']) expect(x(id), `${id} (${Planungsrecht})`).not.toBe('gruen');
+    }
+    // Gegenprobe: kein Plan in Aufstellung → im Innenbereich ohne Plan „gilt nicht“
+    const ohne = a(M4(), { ...nein('planung.planaufstellung'), ...wert('planung.gebietsart', 'WA') });
+    for (const id of ['bund/baunvo/18', 'bund/baunvo/19', 'bund/baunvo/23']) expect(ohne(id), id).toBe('gruen');
+  });
+
+  it('Runde 4: § 49 BauO NRW – Ein- oder Zweifamilienhaus mit öffentlich zugänglicher Praxis bzw. Laden', () => {
+    expect(a(M4(), ja('gebaeude.gemischt', 'gebaeude.oeffentlich'))('nw/bauo-nrw/49')).toBe('rot');
+    expect(a(M4({ Gebäudeart: 'Zweifamilienhaus' }), ja('gebaeude.oeffentlich'))('nw/bauo-nrw/49')).toBe('rot');
+  });
+
+  it('Runde 4: Ausnahmen für Wohngebäude der GK 1/2 nur bei reiner Wohnnutzung – Trennwände, Flure, Prüfung von Standsicherheit und Schall-/Wärmeschutz', () => {
+    const ids = ['nw/bauo-nrw/29', 'nw/bauo-nrw/36', 'nw/svvo/12', 'nw/svvo/23'];
+    const mit = a(M4({ Gebäudeart: 'Zweifamilienhaus', Gebäudeklasse: '2' }), ja('gebaeude.gemischt'));
+    for (const id of ids) expect(mit(id), id).toBe('rot');
+    const offen = a(M4({ Gebäudeart: 'Zweifamilienhaus', Gebäudeklasse: '2' }));
+    for (const id of ids) expect(offen(id), `${id} ohne Angabe`).not.toBe('gruen');
+    const rein = a(M4({ Gebäudeart: 'Zweifamilienhaus', Gebäudeklasse: '2' }), nein('gebaeude.gemischt'));
+    for (const id of ids) expect(rein(id), `${id} rein`).toBe('gruen');
+  });
+
+  it('Runde 4: Bebauungsplan-Norm der Stadt Soest – Merkmal Innenbereich, Plan im Dienst als Entwurf bzw. Plan in Aufstellung', () => {
+    const x = a(M4(), ja('soest.bplan_entwurf'));
+    expect(x('nw-05974040/bebauungsplan/Verfahrensstand')).toBe('rot');
+    expect(x('nw-05974040/bebauungsplan/Festsetzungen')).toBe('rot');
+    expect(a(M4(), { ...nein('soest.bplan_entwurf'), ...ja('planung.planaufstellung') })('nw-05974040/bebauungsplan/Festsetzungen')).toBe('rot');
+    // ohne Angabe zum Verfahren: nicht „entfällt mit der Norm“
+    expect(a(M4())('nw-05974040/bebauungsplan/Festsetzungen')).not.toBe('gruen');
+  });
+
+  it('Runde 4: Abweichung nur von einer örtlichen Bauvorschrift – § 72 BauO NRW (Nachbarbeteiligung) wie § 69', () => {
+    const x = a(M4(), { ...nein('planung.abweichung', 'planung.befreiung'), ...ja('ortsrecht.abweichung') });
+    expect(x('nw/bauo-nrw/69')).toBe('rot');
+    expect(x('nw/bauo-nrw/72')).toBe('rot');
+    // Gegenprobe (kleines Vorhaben, keine Öffentlichkeitsbeteiligung nach Abs. 3)
+    expect(a(M4(), { ...nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung'), ...wert('gebaeude.besucher', 10), ...wert('gebaeude.bgf', 200) })('nw/bauo-nrw/72')).toBe('gruen');
+  });
+
+  it('Runde 4: § 9 DSchG auch im Denkmalbereich (Maßstab für die Erlaubnis nach § 10 Abs. 2) sowie bei Garten- und Bodendenkmal', () => {
+    const alleNein = nein('schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.denkmalbereich_umgebung', 'schutz.bodendenkmal', 'schutz.gartendenkmal');
+    for (const id of ['schutz.denkmalbereich', 'schutz.gartendenkmal', 'schutz.bodendenkmal']) {
+      const x = a(M4({ Vorhaben: 'Änderung' }), { ...alleNein, ...ja(id) });
+      expect(x('nw/dschg/9'), id).toBe('rot');
+    }
+    expect(a(M4({ Vorhaben: 'Änderung' }), alleNein)('nw/dschg/9')).toBe('gruen');
+  });
+
+  it('Runde 4: Anlagen, die keine Gebäude sind (freistehende Wärmepumpe, Klimagerät, Tribüne) – §§ 15, 26, 38 BauO NRW', () => {
+    const m = M4({ Gebäudeart: 'kein Gebäude' });
+    const wp = a(m, ja('technik.waermepumpe'));
+    expect(wp('nw/bauo-nrw/15')).toBe('rot');
+    expect(wp('nw/bauo-nrw/42')).toBe('rot');
+    const klima = a(m, { ...nein('technik.waermepumpe', 'technik.feuerstaette'), ...ja('technik.lueftung') });
+    expect(klima('nw/bauo-nrw/15')).toBe('rot');
+    const sonst = a(m, nein('technik.waermepumpe', 'technik.feuerstaette', 'technik.lueftung'));
+    for (const id of ['nw/bauo-nrw/15', 'nw/bauo-nrw/26', 'nw/bauo-nrw/38']) expect(sonst(id), id).not.toBe('gruen');
+  });
+
+  it('Runde 4: Altstadtsatzung § 14 – Mobilfunk-, Antennen- oder Klimaanlage als „kein Gebäude“; § 3 Abstandsflächen für Mauern', () => {
+    const m = M4({ Gebäudeart: 'kein Gebäude' });
+    expect(a(m, { ...ja('soest.altstadt', 'technik.lueftung') })('nw-05974040/altstadtsatzung/14')).toBe('rot');
+    const antenne = a(m, { ...ja('soest.altstadt'), ...nein('technik.lueftung', 'technik.waermepumpe') });
+    expect(antenne('nw-05974040/altstadtsatzung/14')).not.toBe('gruen');
+    expect(antenne('nw-05974040/altstadtsatzung/3')).not.toBe('gruen');
+  });
+
+  it('Runde 4: Heilquellenschutz Bad Sassendorf Zone III – Lagerplatz, Silo, Camping („kein Gebäude“) und gewerbliche Teile', () => {
+    const zone = { ...ja('schutz.wsg', 'kreis_soest.hsg'), ...wert('kreis_soest.hsg_qualitativ', 'III'), ...wert('kreis_soest.hsg_quantitativ', 'außerhalb'), ...nein('technik.waermepumpe', 'technik.brennstofflager', 'vorhaben.versickerung', 'vorhaben.grundwasser', 'vorhaben.erdarbeiten') };
+    const lager = a(M4({ Gebäudeart: 'kein Gebäude' }), zone);
+    expect(lager('nw-05974/hsg_bad_sassendorf/3')).not.toBe('gruen');
+    expect(lager('nw-05974/hsg_bad_sassendorf/9')).not.toBe('gruen');
+    const mfh = a(M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), { ...zone, ...ja('gebaeude.gemischt') });
+    expect(mfh('nw-05974/hsg_bad_sassendorf/3')).not.toBe('gruen');
+  });
+
+  it('Runde 4: GEG §§ 42–45 beim Neubau auch ohne „Heizung eingebaut oder ersetzt“ (Fernwärme, § 10 Abs. 2 Nr. 3)', () => {
+    const x = a(M4(), { ...ja('gebaeude.beheizt'), ...nein('vorhaben.heizung') });
+    expect(x('bund/geg/42')).toBe('rot');
+    for (const id of ['bund/geg/43', 'bund/geg/44', 'bund/geg/45']) expect(x(id), id).not.toBe('gruen');
+    // Neubau mit Fernwärme: Heizungsart verneint → §§ 43–45 entfallen
+    const fern = a(M4(), { ...ja('gebaeude.beheizt'), ...nein('vorhaben.heizung', 'technik.heizung_fossil', 'technik.solarthermie', 'technik.biomasse') });
+    for (const id of ['bund/geg/43', 'bund/geg/44', 'bund/geg/45']) expect(fern(id), id).toBe('gruen');
+    // Bestand ohne neue Heizung: nicht berührt
+    expect(a(M4({ Vorhaben: 'Änderung' }), { ...ja('gebaeude.beheizt'), ...nein('vorhaben.heizung') })('bund/geg/42')).toBe('gruen');
+  });
+
+  it('Runde 4: Satzung historische Ortsteile – Nutzungsänderung (§ 3 Lager- und Einstellplätze) und Anlagen ohne Gebäude (§ 4)', () => {
+    expect(a(M4({ Vorhaben: 'Nutzungsänderung' }), ja('soest.historische_ortsteile'))('nw-05974040/historische_ortsteile/3')).not.toBe('gruen');
+    expect(a(M4({ Gebäudeart: 'kein Gebäude' }), ja('soest.historische_ortsteile'))('nw-05974040/historische_ortsteile/4')).not.toBe('gruen');
+  });
+
+  it('Runde 4: Bergbau bzw. Gefährdung des Untergrunds – § 12 BauO NRW (Standsicherheit), gelb bis zur Auskunft', () => {
+    expect(a(M4())('nw/bauo-nrw/12')).toBe('rot');
+    expect(a(M4({ Vorhaben: 'Nutzungsänderung' }))('nw/bauo-nrw/12')).toBe('gelb');
+    expect(a(M4({ Vorhaben: 'Nutzungsänderung' }), ja('lage.bergbau'))('nw/bauo-nrw/12')).toBe('gelb');
+    expect(a(M4({ Vorhaben: 'Nutzungsänderung' }), nein('lage.bergbau'))('nw/bauo-nrw/12')).toBe('gruen');
+    const r = auswerten(eingabe(M4(), ja('lage.bergbau'), TEXTE)).paragrafen.find((p) => p.id === 'nw/bauo-nrw/12')!;
+    expect(r.hinweise.join(' ')).toMatch(/Bezirksregierung Arnsberg/);
+  });
+
+  it('Runde 4: PV über Stellplatzflächen – beim Ein-/Zweifamilienhaus wird nicht gefragt, die Regeln entfallen dort; Fakt § 9 FStrG nennt geplante Straßen und Ortsdurchfahrten', () => {
+    const x = a(M4({ Vorhaben: 'Änderung' }), { ...nein('vorhaben.dachhaut'), ...wert('gebaeude.nutzflaeche', 140) });
+    for (const id of ['nw/san-vo/1', 'nw/san-vo/6', 'nw/san-vo/7']) expect(x(id), id).toBe('gruen');
+    // Mehrfamilienhaus: die Frage bleibt, ohne Antwort nicht „entfällt“
+    expect(a(M4({ Vorhaben: 'Änderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), nein('vorhaben.dachhaut'))('nw/san-vo/6')).not.toBe('gruen');
+    const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+    expect(`${defs['lage.bundesfernstrasse'].titel} ${defs['lage.bundesfernstrasse'].hilfe}`).toMatch(/geplant.*Ortsdurchfahrt|Ortsdurchfahrt.*geplant/s);
+  });
 });
 
 
 describe('Werkzeuge', () => {
+  it('index-pruefen: Laufnummer genau, keine mitgelieferte Signatur, Dateien wie im Repo', () => {
+    const ausgabe = mkdtempSync(join(tmpdir(), 'regeln-index-'));
+    try {
+      // Artefakt wie „npm run index“: jede Datei kompakt, Pfade mit „__“
+      const dateien: Record<string, { groesse: number; sha256: string }> = {};
+      const hosts = new Set<string>();
+      const lauf = (dir: string) => {
+        for (const n of readdirSync(dir)) {
+          const p = join(dir, n);
+          if (statSync(p).isDirectory()) lauf(p);
+          else if (n.endsWith('.json')) {
+            const inhalt = JSON.parse(readFileSync(p, 'utf8')) as { hosts?: string[] };
+            const pfad = relative(WURZEL, p).split('\\').join('/');
+            const b = Buffer.from(JSON.stringify(inhalt), 'utf8');
+            dateien[pfad] = { groesse: b.length, sha256: createHash('sha256').update(b).digest('hex') };
+            writeFileSync(join(ausgabe, pfad.replace(/\//g, '__')), b);
+            if (/^module\/[^/]+\/modul\.json$/.test(pfad)) for (const h of inhalt.hosts ?? []) hosts.add(h);
+          }
+        }
+      };
+      for (const d of ['module', 'texte']) lauf(join(WURZEL, d));
+      const version = (JSON.parse(readFileSync(join(WURZEL, 'package.json'), 'utf8')) as { version: string }).version;
+      const index = (paket: string) => writeFileSync(join(ausgabe, 'index.json'), JSON.stringify({ format: 1, paket, dateien, hosts: [...hosts].sort() }));
+      const skript = join(WURZEL, 'werkzeuge', 'index-pruefen.mjs');
+      const pruefen = (run?: string) => spawnSync(process.execPath, [skript, ausgabe], { env: { ...process.env, GITHUB_RUN_NUMBER: run ?? '' }, encoding: 'utf8' });
+      index(`${version}-42`);
+      expect(pruefen('42').status, pruefen('42').stderr).toBe(0);
+      // ohne Laufnummer: nur das Format
+      expect(pruefen().status).toBe(0);
+      // fremde Laufnummer bzw. Unsinn
+      expect(pruefen('41').status).toBe(1);
+      index(`${version}-99999999`);
+      expect(pruefen('42').status).toBe(1);
+      index(`${version}-x`);
+      expect(pruefen().status).toBe(1);
+      // eine schon mitgelieferte Signatur
+      index(`${version}-42`);
+      writeFileSync(join(ausgabe, 'index.json.sig'), 'AAAA');
+      const r = pruefen('42');
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/Signatur schon in der Ausgabe/);
+      rmSync(join(ausgabe, 'index.json.sig'));
+      // geänderte Regeldatei in der Ausgabe
+      const eine = Object.keys(dateien).find((p) => p.startsWith('module/nw/bauo-nrw'))!;
+      writeFileSync(join(ausgabe, eine.replace(/\//g, '__')), '{}');
+      expect(pruefen('42').status).toBe(1);
+    } finally {
+      rmSync(ausgabe, { recursive: true, force: true });
+    }
+  });
+
   it('Quellen ohne Fassungsdatum (gii, Datei ohne Satzungsdatum) melden keine „neue Fassung ab heute“', () => {
     const datei = { art: 'datei' as const, url: 'https://example.org/s.pdf', format: 'pdf' as const };
-    expect(ohneFassungsdatum(datei, { fassung: 'Datei vom 12.11.2026' })).toBe(true);
-    expect(ohneFassungsdatum(datei, { fassung: 'vom 14.11.2023' })).toBe(false);
-    expect(ohneFassungsdatum({ art: 'gii', pfad: 'fstrg' }, { fassung: 'Stand 30.07.2026' })).toBe(true);
-    expect(ohneFassungsdatum({ art: 'ris', eli: 'eli/bund/x' }, { fassung: 'gültig ab 01.01.2026' })).toBe(false);
+    expect(ohneFassungsdatum({ quelle: datei, fassung: 'Datei vom 12.11.2026' })).toBe(true);
+    expect(ohneFassungsdatum({ quelle: datei, fassung: 'vom 14.11.2023' })).toBe(false);
+    expect(ohneFassungsdatum({ quelle: { art: 'gii', pfad: 'fstrg' }, fassung: 'Stand 30.07.2026' })).toBe(true);
+    expect(ohneFassungsdatum({ quelle: { art: 'ris', eli: 'eli/bund/x' }, fassung: 'gültig ab 01.01.2026' })).toBe(false);
+  });
+
+  it('Norm mit Quelle „ris“, deren Fassung aus dem Rückfall auf gii stammt: maßgeblich ist die tatsächliche Quelle', () => {
+    // so liefert fassungHolen den Rückfall (BauNVO, BNatSchG): die Fassung trägt quelle gii, nicht ris
+    const ausRueckfall = { quelle: { art: 'gii' as const, pfad: 'baunvo' }, fassung: 'Stand: zuletzt geändert …' };
+    expect(ohneFassungsdatum(ausRueckfall)).toBe(true);
+    // Wächter und Werkzeuge verwenden die Quelle der Fassung, nicht die des Moduls
+    for (const datei of ['test/rechtsstand.live.test.ts', 'werkzeuge/stand.werkzeug.ts', 'werkzeuge/fassung.werkzeug.ts']) {
+      const text = readFileSync(join(WURZEL, datei), 'utf8');
+      expect(text, datei).not.toMatch(/ohneFassungsdatum\(def/);
+    }
   });
 });

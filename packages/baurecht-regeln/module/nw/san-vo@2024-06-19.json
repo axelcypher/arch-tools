@@ -40,7 +40,8 @@
       "stand": {
         "1/2": "d3b01462",
         "1/4": "9f0628cd"
-      }
+      },
+      "titel": "Anwendungsbereich"
     },
     "4": {
       "gilt": {
@@ -60,7 +61,8 @@
       "stand": {
         "4/1": "f5544140",
         "4/2": "34ebeaac"
-      }
+      },
+      "titel": "Mindestgröße der Photovoltaikanlagen auf Gebäuden"
     },
     "5": {
       "gilt": {
@@ -87,15 +89,23 @@
         "5/2": "9fcb0697",
         "5/3": "df9b6c0f",
         "5/4": "7b68e772"
-      }
+      },
+      "titel": "Ausnahmen und Erfüllungsoptionen für Gebäude"
     },
     "6": {
       "gilt": {
         "$": "nw_pv_pflicht_stellplatz"
       },
       "entfaellt": {
-        "f": "nw.stellplatzflaeche",
-        "max": 35
+        "oder": [
+          {
+            "f": "nw.stellplatzflaeche",
+            "max": 35
+          },
+          {
+            "$": "efh_zfh"
+          }
+        ]
       },
       "grund": "PV über neuen Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für ein Nichtwohngebäude: mindestens 30 % der geeigneten Fläche – auch wenn die Stellplatzfläche selbst das Vorhaben ist.",
       "fundstellen": [
@@ -108,15 +118,23 @@
       "stand": {
         "6/1": "52fa5b73",
         "6/2": "054846d4"
-      }
+      },
+      "titel": "Mindestfläche der Photovoltaikanlage über Stellplatzflächen"
     },
     "7": {
       "gilt": {
         "$": "nw_pv_pflicht_stellplatz"
       },
       "entfaellt": {
-        "f": "nw.stellplatzflaeche",
-        "max": 35
+        "oder": [
+          {
+            "f": "nw.stellplatzflaeche",
+            "max": 35
+          },
+          {
+            "$": "efh_zfh"
+          }
+        ]
       },
       "pruefen": {
         "grund": "Entfällt die Pflicht (z. B. Stellplätze unmittelbar entlang öffentlicher Fahrbahnen), ist ersatzweise je fünf Stellplätze ein Laubbaum zu pflanzen (Abs. 4)."
@@ -130,7 +148,8 @@
       },
       "stand": {
         "7/1": "99459e93"
-      }
+      },
+      "titel": "Ausnahmen und Erfüllungsoptionen bei Stellplatzflächen"
     },
     "8": {
       "gilt": {
@@ -169,7 +188,8 @@
         "8/1": "e2c6b509",
         "8/2": "ae906c37",
         "8/4": "e09561ad"
-      }
+      },
+      "titel": "Nachweis- und Aufbewahrungspflichten"
     }
   }
 }

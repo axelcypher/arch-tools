@@ -70,7 +70,8 @@
       ],
       "stand": {
         "1/1": "2e815871"
-      }
+      },
+      "titel": "Anwendungsbereich"
     },
     "2": {
       "gilt": {
@@ -120,7 +121,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Größe der Spielplätze"
     },
     "3": {
       "gilt": {
@@ -170,7 +172,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Lage der Spielplätze"
     },
     "4": {
       "gilt": {
@@ -222,7 +225,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Beschaffenheit"
     }
   }
 }

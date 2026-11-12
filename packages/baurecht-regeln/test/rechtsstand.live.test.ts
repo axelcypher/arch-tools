@@ -30,7 +30,7 @@ describe.skipIf(!live)('Rechtsstand der Regeln', () => {
             else if (r.stand?.[fs] && r.stand[fs] !== f.summen[fs]) probleme.push(`${fs}: Text geändert`);
           }
         // gii nennt nur das Datum des Abrufs; Dateien ohne erkennbares Satzungsdatum ebenso – dort zeigen nur die Prüfsummen eine Änderung
-        if (f.gueltigAb > regel.fassung && !ohneFassungsdatum(def.quelle, f)) probleme.push(`neue Fassung ab ${f.gueltigAb} (Regeldatei: ${regel.fassung}) → npm run fassung`);
+        if (f.gueltigAb > regel.fassung && !ohneFassungsdatum(f)) probleme.push(`neue Fassung ab ${f.gueltigAb} (Regeldatei: ${regel.fassung}) → npm run fassung`);
         expect(probleme, `${def.kurz}: Regeln nachziehen`).toEqual([]);
       });
     }

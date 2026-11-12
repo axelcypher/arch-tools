@@ -24,6 +24,20 @@ import { ohneFassungsdatum, paketLaden, WURZEL } from '../test/laden';
 const ausgabe = (t = '') => void process.stdout.write(`${t}\n`);
 
 const nur = process.env.NUR;
+
+/** Titel ohne vorangestellte Nummer („§ 6 Abstandsflächen“ → „Abstandsflächen“); leer, wenn es kein Titel ist */
+export function amtlicherTitel(nr: string, roh: string | undefined): string {
+  const t = (roh ?? '')
+    .replace(/\s+/g, ' ')
+    .replace(new RegExp(`^(§|Art\\.?|Artikel)\\s*${nr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b\\s*[-–:.]?\\s*`, 'i'), '')
+    // Landesgesetze hängen den Bezug zum Bundesgesetz an („Landschaftsplan(zu § 11 des …)“) – für die Liste zu lang
+    .replace(/\s*\(zu §[^)]*\)\s*$/, '')
+    // Zeilenumbrüche der Quelle ohne Leerzeichen („undBauvorlagen“) – was so nicht zu erkennen ist, zeigt der Test
+    .replace(/\b(zur|zum|und|im|in|an|für|von|der|des|bei|mit)([A-ZÄÖÜ])/g, '$1 $2')
+    .trim();
+  if (!t || t.length > 120 || /^\(\d/.test(t) || t === '(weggefallen)') return '';
+  return t;
+}
 const uebernehmen = !!process.env.UEBERNEHMEN;
 
 it('Prüfsummen eintragen', async () => {
@@ -54,7 +68,7 @@ it('Prüfsummen eintragen', async () => {
         continue;
       }
       const neueste = dateien[dateien.length - 1];
-      if (f.gueltigAb > neueste.regel.fassung && !ohneFassungsdatum(def.quelle, f)) meldungen.push(`${key}: geltende Fassung ${f.gueltigAb} ist neuer als die Regeldatei ${neueste.regel.fassung} → npm run fassung`);
+      if (f.gueltigAb > neueste.regel.fassung && !ohneFassungsdatum(f)) meldungen.push(`${key}: geltende Fassung ${f.gueltigAb} ist neuer als die Regeldatei ${neueste.regel.fassung} → npm run fassung`);
       const pfad = join(WURZEL, neueste.datei);
       const regel = JSON.parse(readFileSync(pfad, 'utf8')) as Regeldatei;
       let geaendert = false;
@@ -62,6 +76,15 @@ it('Prüfsummen eintragen', async () => {
         if (!f.paragrafen[nr]) {
           meldungen.push(`${key} § ${nr}: steht nicht im Text der geltenden Fassung`);
           continue;
+        }
+        // fehlender Titel: den amtlichen aus der Fassung übernehmen (die Liste zeigt ihn auch ohne abgerufenen Text)
+        if (!r.titel?.trim()) {
+          const t = amtlicherTitel(nr, f.paragrafen[nr].titel);
+          if (t) {
+            r.titel = t;
+            geaendert = true;
+            ausgabe(`${key} § ${nr}: Titel „${t}“`);
+          } else meldungen.push(`${key} § ${nr}: kein Titel in der Fassung – von Hand eintragen`);
         }
         const stand: Record<string, string> = {};
         for (const fs of r.fundstellen ?? [nr]) {

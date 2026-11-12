@@ -24,7 +24,8 @@
       "hinweis": "Vor Erdarbeiten über die örtliche Ordnungsbehörde eine Luftbildauswertung des Kampfmittelbeseitigungsdienstes beantragen.",
       "stand": {
         "2": "b1769289"
-      }
+      },
+      "titel": "Anzeige von Kampfmittelfunden"
     },
     "3": {
       "gilt": {
@@ -64,7 +65,8 @@
         "3/1": "feea23ec",
         "3/2": "347d563d",
         "3/3": "a7c810c3"
-      }
+      },
+      "titel": "Umgang mit Kampfmitteln"
     }
   }
 }

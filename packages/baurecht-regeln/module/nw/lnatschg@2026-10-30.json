@@ -63,7 +63,8 @@
       "stand": {
         "7/1": "34359811",
         "7/2": "1a62f607"
-      }
+      },
+      "titel": "Landschaftsplan"
     },
     "23": {
       "gilt": {
@@ -116,7 +117,8 @@
       "stand": {
         "23/1": "6ed62d2b",
         "23/5": "5c7c7ad3"
-      }
+      },
+      "titel": "Wirkung der Schutzausweisung"
     },
     "30": {
       "gilt": {
@@ -162,7 +164,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Eingriffe in Natur und Landschaft"
     },
     "31": {
       "gilt": {
@@ -206,7 +209,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Ausgleichs- und Ersatzmaßnahmen, Ersatzgeld"
     },
     "33": {
       "gilt": {
@@ -248,7 +252,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Verfahren"
     },
     "39": {
       "gilt": {
@@ -277,7 +282,8 @@
       "stand": {
         "39/1": "9eebe419",
         "39/2": "f178f0b2"
-      }
+      },
+      "titel": "Gesetzlich geschützte Landschaftsbestandteile"
     },
     "41": {
       "gilt": {
@@ -300,7 +306,8 @@
       "stand": {
         "41/1": "88425ffc",
         "41/2": "ce9c97b5"
-      }
+      },
+      "titel": "Alleen"
     },
     "42": {
       "gilt": {
@@ -322,7 +329,8 @@
       "stand": {
         "42/1": "5952a18b",
         "42/4": "ae0960b1"
-      }
+      },
+      "titel": "Gesetzlich geschützte Biotope"
     },
     "75": {
       "gilt": {
@@ -398,12 +406,33 @@
         "75/1": "5eac14ee"
       },
       "pruefen": {
-        "grund": "Geschützte Bäume (Baumschutzsatzung, Allee) bzw. Baumfällung: ob eine Befreiung nötig ist, hängt von der Schutzvorschrift ab (§ 29 BNatSchG, § 41 LNatSchG, Satzung) – im Einzelfall prüfen.",
+        "grund": "Befreiung auch für Verbote außerhalb der Schutzgebiete: geschützte Bäume und Alleen (§ 41 LNatSchG, Satzung), Gehölzbeseitigung, Natura-2000-Gebiete – ob eine Befreiung nötig ist, hängt von der Schutzvorschrift ab; im Einzelfall prüfen.",
         "wenn": {
-          "f": "schutz.baum",
-          "ist": true
+          "oder": [
+            {
+              "f": "schutz.baum",
+              "ist": true
+            },
+            {
+              "f": "vorhaben.baeume_faellen",
+              "ist": true
+            },
+            {
+              "f": "schutz.ffh",
+              "ist": true
+            },
+            {
+              "f": "schutz.vsg",
+              "ist": true
+            },
+            {
+              "f": "schutz.natura_nah",
+              "ist": true
+            }
+          ]
         }
-      }
+      },
+      "titel": "Befreiungen und Ausnahmen"
     }
   }
 }

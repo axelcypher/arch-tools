@@ -31,7 +31,8 @@
       },
       "stand": {
         "2": "08a60d62"
-      }
+      },
+      "titel": "Räumlicher Geltungsbereich"
     },
     "3": {
       "gilt": {
@@ -69,7 +70,8 @@
       },
       "stand": {
         "3": "4237ac7d"
-      }
+      },
+      "titel": "Anschluß- und Benutzungszwang"
     }
   }
 }

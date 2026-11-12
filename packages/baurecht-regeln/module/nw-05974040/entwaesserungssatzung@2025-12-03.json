@@ -55,7 +55,8 @@
         "9/5": "40a41951",
         "9/6": "4764ab4c",
         "9/7": "882114e5"
-      }
+      },
+      "titel": "Anschluss- und Benutzungszwang"
     },
     "10": {
       "gilt": {
@@ -75,7 +76,8 @@
       },
       "stand": {
         "10/3": "569ec2d5"
-      }
+      },
+      "titel": "Befreiung vom Anschluss- und Benutzungszwang"
     },
     "11": {
       "gilt": {
@@ -101,7 +103,8 @@
       "stand": {
         "11/1": "ad0c9d5f",
         "11/3": "f8684af0"
-      }
+      },
+      "titel": "Nutzung und Beseitigung des Niederschlagswassers durch Anschlussnehmer"
     },
     "14": {
       "gilt": {
@@ -152,7 +155,8 @@
         "14/1": "ee5d7dcd",
         "14/2": "0f696c80",
         "14/4": "d6787680"
-      }
+      },
+      "titel": "Zustimmungsverfahren"
     },
     "15": {
       "gilt": {
@@ -200,7 +204,8 @@
         "15/1": "cb9774de",
         "15/4": "a6ffb074",
         "15/6": "5d411332"
-      }
+      },
+      "titel": "Zustands- und Funktionsprüfung bei privaten Abwasserleitungen"
     }
   }
 }

@@ -21,7 +21,8 @@
       ],
       "stand": {
         "1": "d1d16bae"
-      }
+      },
+      "titel": "Geltungsbereich"
     },
     "2": {
       "gilt": {
@@ -89,7 +90,8 @@
       "stand": {
         "2/1": "ed5c6210",
         "2/4": "508bcacb"
-      }
+      },
+      "titel": "Herstellungspflicht und Begriffe"
     },
     "3": {
       "gilt": {
@@ -134,7 +136,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Anzahl der notwendigen Stellplätze und Fahrradabstellplätze"
     },
     "4": {
       "gilt": {
@@ -179,7 +182,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Beschaffenheit von Stellplätzen und Fahrradabstellplätzen"
     },
     "5": {
       "gilt": {
@@ -218,7 +222,8 @@
       },
       "nachweis": [
         "Antrag auf Ablösung notwendiger Stellplätze (Ablösevertrag mit der Stadt Soest)"
-      ]
+      ],
+      "titel": "Ablösung der Stellplätze"
     }
   }
 }

@@ -53,7 +53,8 @@
         "1/1": "515b75cc",
         "1/2": "f0916762",
         "1/3": "a7c7cbd6"
-      }
+      },
+      "titel": "Anwendungsbereich, Anzahl der Besucherinnen und Besucher"
     },
     "47": {
       "gilt": {
@@ -77,7 +78,8 @@
       "hinweis": "Ab mehr als 30 Betten großer Sonderbau (§ 50 Abs. 2 Nr. 7 BauO NRW) – Baugenehmigungsverfahren.",
       "stand": {
         "47": "55c7074c"
-      }
+      },
+      "titel": "Anwendungsbereich"
     },
     "55": {
       "titel": "Alarmierungseinrichtungen, Brandmeldeanlagen, Brandfallsteuerung von Aufzügen",
@@ -150,7 +152,8 @@
       ],
       "stand": {
         "60": "c020d925"
-      }
+      },
+      "titel": "Anwendungsbereich"
     },
     "92": {
       "gilt": {
@@ -192,7 +195,8 @@
       },
       "stand": {
         "92": "cdcdba97"
-      }
+      },
+      "titel": "Anwendungsbereich"
     },
     "121": {
       "gilt": {
@@ -236,7 +240,8 @@
       "hinweis": "Im vereinfachten Verfahren prüft die Behörde den Brandschutz von Garagen bis 1 000 m² nicht (§ 64 Abs. 1 Satz 2 BauO NRW).",
       "stand": {
         "121": "f6855fb0"
-      }
+      },
+      "titel": "Anwendungsbereich"
     },
     "122": {
       "gilt": {
@@ -262,7 +267,8 @@
         "122/2": "cb03623b",
         "122/3": "fca6bcef",
         "122/8": "9093ff94"
-      }
+      },
+      "titel": "Begriffe und allgemeine Anforderungen"
     },
     "131": {
       "gilt": {
@@ -295,7 +301,8 @@
         "131/1": "2f52acdf",
         "131/2": "80282cd2",
         "131/3": "f89e51bb"
-      }
+      },
+      "titel": "Bauliche Anforderungen an Kleingaragen"
     },
     "132": {
       "gilt": {
@@ -321,7 +328,8 @@
       "stand": {
         "132/1": "298cb652",
         "132/2": "9d913467"
-      }
+      },
+      "titel": "Rauchabschnitte, Brandabschnitte"
     },
     "143": {
       "gilt": {
@@ -343,7 +351,8 @@
       },
       "entfaellt": {
         "$": "efh_zfh"
-      }
+      },
+      "titel": "Anwendungsbereich für das Aufstellen elektrischer Anlagen in Betriebsräumen"
     }
   }
 }

@@ -26,7 +26,8 @@
       "stand": {
         "18/1": "bf479f29",
         "18/2": "5d511f8a"
-      }
+      },
+      "titel": "Sondernutzungen"
     },
     "20": {
       "gilt": {
@@ -64,7 +65,8 @@
       "stand": {
         "20/1": "0973a466",
         "20/3": "3169348e"
-      }
+      },
+      "titel": "Straßenanlieger, Zufahrten, Zugänge"
     },
     "25": {
       "gilt": {
@@ -134,7 +136,8 @@
       "stand": {
         "25/1": "3dcf8efe",
         "25/2": "dcc4a223"
-      }
+      },
+      "titel": "Bauliche Anlagen an Straßen"
     }
   }
 }

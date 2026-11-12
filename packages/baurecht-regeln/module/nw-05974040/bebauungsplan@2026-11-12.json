@@ -11,10 +11,18 @@
       },
       {
         "$": "satzung_baugb"
+      },
+      {
+        "f": "soest.bplan_entwurf",
+        "ist": true
+      },
+      {
+        "f": "planung.planaufstellung",
+        "ist": true
       }
     ]
   },
-  "geltungGrund": "nur im Geltungsbereich eines Bebauungsplans oder einer Satzung nach dem BauGB",
+  "geltungGrund": "nur im Geltungsbereich eines Bebauungsplans oder einer Satzung nach dem BauGB oder eines Plans in Aufstellung (§ 33 BauGB, Entwurf im Dienst der Stadt)",
   "paragrafen": {
     "Festsetzungen": {
       "titel": "Festsetzungen des Bebauungsplans",

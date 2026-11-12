@@ -358,6 +358,75 @@
           ]
         }
       ]
+    },
+    "planreif": {
+      "und": [
+        {
+          "f": "planung.planaufstellung",
+          "ist": true
+        },
+        {
+          "nicht": {
+            "f": "planung.planreife",
+            "ist": false
+          }
+        }
+      ]
+    },
+    "bplan_planreif": {
+      "oder": [
+        {
+          "$": "bplan"
+        },
+        {
+          "$": "planreif"
+        }
+      ]
+    },
+    "bplan_jeder_planreif": {
+      "oder": [
+        {
+          "$": "bplan_jeder"
+        },
+        {
+          "$": "planreif"
+        }
+      ]
+    },
+    "baugebiet_planreif": {
+      "oder": [
+        {
+          "$": "baugebiet"
+        },
+        {
+          "$": "planreif"
+        }
+      ]
+    },
+    "geg_heizungsanlage": {
+      "oder": [
+        {
+          "$": "errichtung"
+        },
+        {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "f": "vorhaben.heizung",
+              "ist": true
+            }
+          ]
+        }
+      ]
     }
   },
   "fakten": {
@@ -548,10 +617,10 @@
       "hilfe": "Anzeige einen Monat vor Beginn (§ 49 WHG)"
     },
     "lage.bundesfernstrasse": {
-      "titel": "An einer Bundesautobahn (bis 100 m) oder Bundesstraße außerhalb der Ortsdurchfahrt (bis 40 m), oder Zufahrt dorthin",
+      "titel": "An einer Bundesautobahn (bis 100 m) oder Bundesstraße (außerhalb der Ortsdurchfahrt bis 40 m, in der Ortsdurchfahrt angrenzend) – auch geplant –, oder Zufahrt dorthin",
       "gruppe": "grundstueck",
       "typ": "janein",
-      "hilfe": "Anbauverbot bzw. Zustimmung der Straßenbaubehörde (§ 9 FStrG)"
+      "hilfe": "Anbauverbot bzw. Zustimmung der Straßenbaubehörde (§ 9 Abs. 1, 2 FStrG); bei geplanten Bundesfernstraßen ab Auslegung der Pläne im Planfeststellungsverfahren (Abs. 4); in Ortsdurchfahrten sind die Belange nach Abs. 2 bei der Baugenehmigung zu beachten (Abs. 3a)"
     },
     "schutz.naturdenkmal": {
       "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil betroffen",

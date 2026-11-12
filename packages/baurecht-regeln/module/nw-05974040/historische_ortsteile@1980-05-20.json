@@ -29,7 +29,14 @@
         "3/2": "4a3e0138",
         "3/4": "e05bc466",
         "3/6": "4657400a"
-      }
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die Anforderungen, soweit das äußere Erscheinungsbild oder die Freiflächen (Lager- und Einstellplätze) geändert werden – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "titel": "Einfriedigungen, Gärten, Stellplätze und Lagerplätze"
     },
     "4": {
       "gilt": {
@@ -47,9 +54,26 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind (z. B. Mauern, Einfriedungen, technische Anlagen): die Anpassungspflicht gilt für alle baulichen Anlagen. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "bauen"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                }
+              ]
+            }
+          ]
         }
       },
       "stand": {
@@ -58,7 +82,8 @@
         "4/5": "b02f6c10",
         "4/6": "1bf5ac07",
         "4/7": "012f67e4"
-      }
+      },
+      "titel": "Bauart und Bauform"
     },
     "5": {
       "gilt": {
@@ -87,7 +112,8 @@
       "stand": {
         "5/1": "2a2fce8f",
         "5/2": "98077b50"
-      }
+      },
+      "titel": "Erhaltung des historisch gewachsenen Stadtbildes und Grundrisses"
     },
     "6": {
       "gilt": {
@@ -113,7 +139,8 @@
         "6/2": "9997197b",
         "6/3": "feb2ea37",
         "6/5": "7444100c"
-      }
+      },
+      "titel": "Werbeanlagen und Warenautomaten"
     },
     "7": {
       "gilt": {
@@ -131,7 +158,8 @@
       },
       "stand": {
         "7/1": "710b3be7"
-      }
+      },
+      "titel": "Besondere Anforderungen"
     },
     "8": {
       "gilt": {
@@ -149,7 +177,8 @@
       },
       "stand": {
         "8/1": "1219d385"
-      }
+      },
+      "titel": "Besondere Anforderungen an bauliche Anlagen"
     }
   }
 }

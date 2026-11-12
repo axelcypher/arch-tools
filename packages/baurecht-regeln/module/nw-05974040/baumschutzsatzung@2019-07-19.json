@@ -30,7 +30,8 @@
         "3/3": "9186c05a",
         "3/4": "3253eea5",
         "3/5": "0e6258d1"
-      }
+      },
+      "titel": "Geschützte Bäume"
     },
     "4": {
       "gilt": {
@@ -68,7 +69,8 @@
       "stand": {
         "4/1": "2e1a7483",
         "4/2": "f071351a"
-      }
+      },
+      "titel": "Verbotene Handlungen"
     },
     "6": {
       "gilt": {
@@ -106,7 +108,8 @@
       "stand": {
         "6/1": "117b9115",
         "6/3": "e2c5ce0e"
-      }
+      },
+      "titel": "Ausnahmen und Befreiungen"
     },
     "7": {
       "gilt": {
@@ -143,7 +146,8 @@
         "7/1": "1571fe7a",
         "7/2": "d86fa185",
         "7/3": "99d07483"
-      }
+      },
+      "titel": "Ersatzpflanzungen, Ausgleichszahlungen"
     },
     "8": {
       "gilt": {
@@ -170,7 +174,8 @@
       ],
       "stand": {
         "8/1": "817dcb0d"
-      }
+      },
+      "titel": "Baumschutz im Baugenehmigungsverfahren"
     }
   }
 }

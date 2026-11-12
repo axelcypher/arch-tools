@@ -325,24 +325,6 @@
         ]
       }
     },
-    "kreis_soest.lp_nd_lb": {
-      "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil eines Landschaftsplans am Grundstück",
-      "gruppe": "schutz",
-      "typ": "janein",
-      "hilfe": "Festsetzungskarte und Kapitel C.3/C.4 des Landschaftsplans",
-      "wenn": {
-        "f": "kreis_soest.landschaftsplan",
-        "in": [
-          "I",
-          "II",
-          "III",
-          "IV",
-          "V",
-          "VI",
-          "VIII (Entwurf)"
-        ]
-      }
-    },
     "kreis_soest.vsg_hellweg": {
       "titel": "Im EU-Vogelschutzgebiet Hellwegbörde (DE-4415-401)",
       "gruppe": "schutz",
@@ -356,7 +338,7 @@
       "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil betroffen",
       "gruppe": "schutz",
       "typ": "janein",
-      "hilfe": "im Kreis Soest: Kreisverordnung vom 19.05.2014 (Innenbereich Soest, Welver, Werl) und Festsetzungen der Landschaftspläne (Kapitel C.3/C.4) – ist ein Objekt der Kreisverordnung angegeben, folgt „ja“ daraus",
+      "hilfe": "im Kreis Soest: Naturdenkmale und geschützte Landschaftsbestandteile der Kreisverordnung vom 19.05.2014 (Innenbereich Soest, Welver, Werl) und der Landschaftspläne (Festsetzungskarte, Kapitel C.3/C.4); bei Bäumen auch der Kronentraufbereich – ist ein Objekt der Kreisverordnung angegeben, folgt „ja“ daraus",
       "nach": {
         "fakt": "kreis_soest.naturdenkmal",
         "tabelle": {

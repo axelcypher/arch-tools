@@ -27,7 +27,8 @@
         "22/1": "3f0fa72c",
         "22/2": "9ce0e028",
         "22/3": "4a0eb4c2"
-      }
+      },
+      "titel": "Genehmigung von Anlagen in, an, über und unter oberirdischen Gewässern"
     },
     "31": {
       "gilt": {
@@ -54,6 +55,21 @@
       },
       "stand": {
         "31/1": "fb320819"
+      },
+      "titel": "Gewässerrandstreifen",
+      "pruefen": {
+        "grund": "Im Einzelfall prüfen – bei Nutzungsänderung im Gewässerrandstreifen: Verbote des § 38 Abs. 4 WHG (u. a. Umgang mit wassergefährdenden Stoffen, Ablagerungen) können die neue Nutzung berühren.",
+        "wenn": {
+          "und": [
+            {
+              "f": "lage.gewaesser",
+              "ist": true
+            },
+            {
+              "$": "nutzungsaenderung"
+            }
+          ]
+        }
       }
     },
     "35": {
@@ -98,7 +114,8 @@
         "35/1": "2407de6b",
         "35/2": "9b2e93ab",
         "35/3": "3185e832"
-      }
+      },
+      "titel": "Wasserschutzgebiete"
     },
     "44": {
       "gilt": {
@@ -121,7 +138,8 @@
       "stand": {
         "44/1": "34501a70",
         "44/2": "bf87fc92"
-      }
+      },
+      "titel": "Beseitigung von Niederschlagswasser"
     },
     "48": {
       "gilt": {
@@ -166,7 +184,8 @@
       "hinweis": "Anschluss- und Benutzungszwang, Entwässerungsantrag und Grundstücksentwässerung nach der Entwässerungssatzung der Gemeinde.",
       "stand": {
         "48": "d276af19"
-      }
+      },
+      "titel": "Abwasserüberlassungspflicht"
     },
     "84": {
       "gilt": {
@@ -204,7 +223,8 @@
       "stand": {
         "84/1": "02037afe",
         "84/2": "25e13edd"
-      }
+      },
+      "titel": "Besondere Bestimmungen für Überschwemmungsgebiete"
     }
   }
 }

@@ -419,11 +419,11 @@
       }
     },
     "technik.lueftung": {
-      "titel": "Lüftungsanlage oder raumlufttechnische Anlage geplant",
+      "titel": "Lüftungs-, Klima- oder raumlufttechnische Anlage geplant (auch freistehend)",
       "gruppe": "technik",
       "typ": "janein",
       "wenn": {
-        "$": "nw_vorhaben_gebaeude"
+        "$": "vorhaben_29"
       }
     },
     "gebaeude.abfallraum": {
@@ -664,8 +664,17 @@
       ]
     },
     "nw_pv_pflicht_stellplatz": {
-      "f": "nw.stellplatzflaeche",
-      "min": 36
+      "und": [
+        {
+          "nicht": {
+            "$": "efh_zfh"
+          }
+        },
+        {
+          "f": "nw.stellplatzflaeche",
+          "min": 36
+        }
+      ]
     },
     "nw_denkmalbezug": {
       "oder": [

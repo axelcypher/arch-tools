@@ -23,6 +23,10 @@
           },
           {
             "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.gemischt",
+            "ist": false
           }
         ]
       },
@@ -79,7 +83,8 @@
       "stand": {
         "12/1": "853e90fc",
         "12/2": "d9ab5ff7"
-      }
+      },
+      "titel": "Aufgabenerledigung"
     },
     "16": {
       "gilt": {
@@ -140,7 +145,8 @@
       "stand": {
         "16/1": "415a7bb9",
         "16/2": "9ea00014"
-      }
+      },
+      "titel": "Aufgabenerledigung"
     },
     "23": {
       "gilt": {
@@ -160,6 +166,10 @@
           },
           {
             "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.gemischt",
+            "ist": false
           }
         ]
       },
@@ -181,7 +191,8 @@
         "wenn": {
           "$": "nutzungsaenderung"
         }
-      }
+      },
+      "titel": "Aufgabenerledigung"
     }
   }
 }
