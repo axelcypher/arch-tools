@@ -325,6 +325,26 @@
       "typ": "janein",
       "wert": true,
       "hilfe": "§ 5 Stellplatzsatzung Soest"
+    },
+    "soest.schaufenster": {
+      "titel": "Schaufenster oder Ladeneingänge werden hergestellt oder geändert",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 8 Altstadtsatzung – auch an Wohn- und Geschäftshäusern",
+      "wenn": {
+        "f": "soest.altstadt",
+        "ist": true
+      }
+    },
+    "soest.vordach": {
+      "titel": "Vordächer, Kragdächer oder Markisen werden angebracht oder geändert",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 9 Altstadtsatzung – auch das Vordach über einer Haustür",
+      "wenn": {
+        "f": "soest.altstadt",
+        "ist": true
+      }
     }
   },
   "bausteine": {

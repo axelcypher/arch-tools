@@ -58,20 +58,13 @@
     "47": {
       "gilt": {
         "f": "gebaeude.gastbetten",
-        "min": 13
+        "min": 1
       },
       "entfaellt": {
-        "oder": [
-          {
-            "$": "efh_zfh"
-          },
-          {
-            "f": "gebaeude.gastbetten",
-            "max": 12
-          }
-        ]
+        "f": "gebaeude.gastbetten",
+        "max": 0
       },
-      "grund": "Teil 2 (Beherbergungsstätten) gilt für Beherbergungsstätten mit mehr als zwölf Gastbetten.",
+      "grund": "Teil 2 (Beherbergungsstätten) gilt für Beherbergungsstätten mit mehr als zwölf Gastbetten; die Rauchwarnmelder je Beherbergungsraum (§ 55 Abs. 2) für alle Beherbergungsstätten (Satz 2).",
       "fundstellen": [
         "47"
       ],
@@ -84,6 +77,34 @@
       "hinweis": "Ab mehr als 30 Betten großer Sonderbau (§ 50 Abs. 2 Nr. 7 BauO NRW) – Baugenehmigungsverfahren.",
       "stand": {
         "47": "55c7074c"
+      }
+    },
+    "55": {
+      "titel": "Alarmierungseinrichtungen, Brandmeldeanlagen, Brandfallsteuerung von Aufzügen",
+      "gilt": {
+        "f": "gebaeude.gastbetten",
+        "min": 1
+      },
+      "entfaellt": {
+        "f": "gebaeude.gastbetten",
+        "max": 0
+      },
+      "grund": "Bis 60 Gastbetten mindestens ein Rauchwarnmelder in jedem Beherbergungsraum – für alle Beherbergungsstätten (Abs. 2 mit § 47 Satz 2); ab 13 Gastbetten Alarmierungseinrichtungen (Abs. 1), über 60 Gastbetten Brandmeldeanlage und Brandfallsteuerung der Aufzüge (Abs. 3, 4).",
+      "fundstellen": [
+        "55/1",
+        "55/2",
+        "55/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "verweise": [
+        "nw/sbauvo/47"
+      ],
+      "stand": {
+        "55/1": "a7c6e2ab",
+        "55/2": "c3762ef8",
+        "55/3": "d2c29656"
       }
     },
     "60": {
@@ -182,6 +203,10 @@
           {
             "f": "gebaeude.stellplaetze",
             "min": 1
+          },
+          {
+            "f": "vorhaben.stellplaetze_grundstueck",
+            "ist": true
           }
         ]
       },
@@ -194,6 +219,10 @@
           {
             "f": "gebaeude.stellplaetze",
             "max": 0
+          },
+          {
+            "f": "vorhaben.stellplaetze_grundstueck",
+            "ist": false
           }
         ]
       },

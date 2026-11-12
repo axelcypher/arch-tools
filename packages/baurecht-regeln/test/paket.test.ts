@@ -11,7 +11,7 @@ import { widersprueche } from '@core/baurecht/projekt';
 import type { FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
 import type { Fassung } from '@core/recht/typen';
 import { VORGABE_MERKMALE } from '@core/bedingung';
-import { paketLaden } from './laden';
+import { ohneFassungsdatum, paketLaden } from './laden';
 
 const paket = paketLaden();
 const SOEST = '05974040';
@@ -381,5 +381,176 @@ describe('Fälle aus dem Fachreview', () => {
     const n = auswerten(eingabe({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus' }, ja('nw.grenzabstand_unter_2_5'), TEXTE));
     expect(n.paragrafen.filter((p) => p.norm === 'nachbg').every((p) => p.ampel !== 'rot')).toBe(true);
   });
+
+  /* ---------- Runde 3 ---------- */
+
+  const zahl = (id: string, w: number) => ({ [id]: sicher(w) });
+  /** Auswertung in einer anderen Gemeinde des Kreises (ohne Gemeindemodul) */
+  const inGemeinde = (ags: string, merkmale: Record<string, string>, fakten: Record<string, FaktWert> = {}) => {
+    const r = auswerten({ ...eingabe(merkmale, fakten, TEXTE), module: aktiveModule(paket.module, ags), fakten: { 'lage.ags': sicher(ags), ...fakten } });
+    return (id: string) => r.paragrafen.find((x) => x.id === id)!;
+  };
+
+  it('Runde 3: Anlagen, die keine Gebäude sind (Mobilfunkmast, Silo, Stützmauer) – bautechnische Nachweise und Brandschutz nicht „gilt nicht“', () => {
+    for (const Planungsrecht of ['Außenbereich', 'Innenbereich']) {
+      const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'kein Gebäude', Planungsrecht, Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' });
+      for (const id of ['nw/bauo-nrw/68', 'nw/bauo-nrw/14', 'nw/baupruefvo/8', 'nw/svvo/12']) expect(x(id), `${id} (${Planungsrecht})`).toBe('rot');
+      for (const id of ['nw/bauo-nrw/45', 'nw/bauo-nrw/8']) expect(x(id), `${id} (${Planungsrecht})`).not.toBe('gruen');
+    }
+    // verfahrensfrei: keine bautechnischen Nachweise (§ 68 Abs. 1 Satz 2)
+    expect(a({ Vorhaben: 'Errichtung', Gebäudeart: 'kein Gebäude', Planungsrecht: 'Innenbereich', Verfahren: 'verfahrensfrei', Sonderbau: 'nein' })('nw/bauo-nrw/68')).toBe('gruen');
+  });
+
+  it('Runde 3: verfahrensfreie Maßnahme nur in der engeren Umgebung eines Denkmalbereichs – Erlaubnis nach § 24 DSchG gesondert beantragen', () => {
+    const m = { Vorhaben: 'Änderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'verfahrensfrei', Sonderbau: 'nein' };
+    const f = { ...nein('schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.bodendenkmal', 'schutz.gartendenkmal'), ...ja('schutz.denkmalbereich_umgebung') };
+    const x = a(m, f);
+    for (const id of ['nw/dschg/9', 'nw/dschg/10', 'nw/dschg/24']) expect(x(id), id).toBe('rot');
+    // Gartendenkmal allein: § 13 und § 24
+    const g = a(m, { ...nein('schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.denkmalbereich_umgebung', 'schutz.bodendenkmal'), ...ja('schutz.gartendenkmal') });
+    expect(g('nw/dschg/13')).toBe('rot');
+    expect(g('nw/dschg/24')).toBe('rot');
+    // ohne jeden Denkmalbezug entfällt § 24
+    expect(a(m, nein('schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.denkmalbereich_umgebung', 'schutz.bodendenkmal', 'schutz.gartendenkmal'))('nw/dschg/24')).toBe('gruen');
+  });
+
+  it('Runde 3: Wohn- und Geschäftshaus in der Soester Altstadt als „Mehrfamilienhaus“ – GEG für Nichtwohnteile, Schaufenster und Vordächer', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const basis = ja('soest.altstadt', 'gebaeude.beheizt');
+    const x = a(m, { ...basis, ...ja('gebaeude.gemischt', 'soest.schaufenster', 'soest.vordach') });
+    for (const id of ['bund/geg/18', 'bund/geg/19', 'bund/geg/106', 'nw-05974040/altstadtsatzung/8', 'nw-05974040/altstadtsatzung/9']) expect(x(id), id).toBe('rot');
+    // nicht angegeben: nicht „entfällt“
+    const offen = a(m, basis);
+    for (const id of ['bund/geg/18', 'bund/geg/19', 'nw-05974040/altstadtsatzung/8', 'nw-05974040/altstadtsatzung/9']) expect(offen(id), `${id} ohne Angabe`).not.toBe('gruen');
+    // umgekehrt: Nichtwohngebäude mit Wohnungen → §§ 15, 16
+    const nwg = a({ ...m, Gebäudeart: 'Nichtwohngebäude' }, { ...basis, ...ja('gebaeude.gemischt') });
+    for (const id of ['bund/geg/15', 'bund/geg/16']) expect(nwg(id), id).toBe('rot');
+    // Gegenprobe: reines Wohngebäude ohne Schaufenster und Vordach
+    const rein = a(m, { ...basis, ...nein('gebaeude.gemischt', 'soest.schaufenster', 'soest.vordach') });
+    for (const id of ['bund/geg/18', 'nw-05974040/altstadtsatzung/8', 'nw-05974040/altstadtsatzung/9']) expect(rein(id), id).toBe('gruen');
+  });
+
+  it('Runde 3: Naturdenkmal der Kreisverordnung – Befreiung nach § 67 BNatSchG und § 75 LNatSchG nicht „gilt nicht“', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const sonst = nein('schutz.nsg', 'schutz.lsg', 'schutz.biotop', 'schutz.landschaftsplan', 'schutz.baum');
+    const x = a(m, { ...sonst, ...ja('kreis_soest.naturdenkmal') });
+    for (const id of ['bund/bnatschg/67', 'nw/lnatschg/75', 'nw-05974/nd_vo_innen/4']) expect(x(id), id).toBe('rot');
+    // Naturdenkmal nicht angegeben bzw. geschützte Bäume: nicht „gilt nicht“
+    expect(a(m, sonst)('bund/bnatschg/67')).not.toBe('gruen');
+    expect(a(m, { ...sonst, ...nein('schutz.naturdenkmal'), ...ja('schutz.baum') })('bund/bnatschg/67')).not.toBe('gruen');
+    // Gegenprobe: nichts geschützt
+    expect(a(m, { ...sonst, ...nein('schutz.naturdenkmal') })('bund/bnatschg/67')).toBe('gruen');
+  });
+
+  it('Runde 3: Stellplatzanlage mit 40 notwendigen Stellplätzen für einen Markt („kein Gebäude“) – PV-Pflicht nach SAN-VO', () => {
+    const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'kein Gebäude', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, zahl('nw.stellplatzflaeche', 40));
+    for (const id of ['nw/san-vo/1', 'nw/san-vo/6', 'nw/san-vo/7']) expect(x(id), id).toBe('rot');
+  });
+
+  it('Runde 3: Nutzungsänderung (Scheune zu Wohnhaus im Außenbereich, Hinterhaus zu Wohnung) – § 4 BauO NRW nicht „gilt nicht“', () => {
+    const scheune = a({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Außenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' });
+    const hinterhaus = a({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' });
+    expect(scheune('nw/bauo-nrw/4')).not.toBe('gruen');
+    expect(hinterhaus('nw/bauo-nrw/4')).not.toBe('gruen');
+  });
+
+  it('Runde 3: Neubau mit Gasheizung – §§ 42, 43 GEG über § 10 Abs. 2 Nr. 3', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const x = a(m, { ...ja('gebaeude.beheizt', 'vorhaben.heizung', 'technik.heizung_fossil'), ...nein('technik.solarthermie', 'technik.biomasse', 'technik.stromdirekt') });
+    expect(x('bund/geg/42')).toBe('rot');
+    expect(x('bund/geg/43')).toBe('rot');
+    // Heizungsart nicht angegeben: nicht „entfällt“
+    expect(a(m, ja('gebaeude.beheizt', 'vorhaben.heizung'))('bund/geg/43')).not.toBe('gruen');
+    // Stromdirektheizung im Bestand mit Wohnungen: § 46
+    expect(a({ ...m, Vorhaben: 'Änderung' }, ja('gebaeude.beheizt', 'vorhaben.heizung', 'technik.stromdirekt'))('bund/geg/46')).toBe('rot');
+  });
+
+  it('Runde 3: Außenbereich mit planreifem Bebauungsplan (§ 33 BauGB) – die BauNVO entfällt nicht mit der Norm', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Außenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const r = auswerten(eingabe(m, { ...ja('planung.planaufstellung', 'planung.planreife'), 'planung.gebietsart': sicher('WA'), 'planung.baunvo': sicher('aktuell') }, TEXTE));
+    const baunvo = r.paragrafen.filter((p) => p.norm === 'baunvo');
+    expect(baunvo.filter((p) => p.gruende.some((g) => g.startsWith('Entfällt mit der Norm'))).map((p) => p.id)).toEqual([]);
+    expect(baunvo.find((p) => p.paragraf === '4')!.ampel).toBe('rot');
+    // Planreife noch offen: nicht „entfällt“
+    const offen = auswerten(eingabe(m, { ...ja('planung.planaufstellung'), 'planung.gebietsart': sicher('WA') }, TEXTE));
+    expect(offen.paragrafen.find((p) => p.id === 'bund/baunvo/4')!.ampel).not.toBe('gruen');
+  });
+
+  it('Runde 3: Zurückstellung (§ 15 BauGB) – „nicht beantragt“ trägt kein Grün, solange ein Plan aufgestellt wird; Abs. 3 beim Flächennutzungsplan', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Außenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    expect(a(m, { ...ja('planung.planaufstellung'), ...nein('planung.zurueckstellung', 'planung.planreife') })('bund/baugb/15')).toBe('gelb');
+    expect(a(m, { ...nein('planung.planaufstellung'), ...ja('planung.fnp_verfahren') })('bund/baugb/15')).not.toBe('gruen');
+    expect(a(m, { ...nein('planung.planaufstellung'), ...ja('planung.fnp_verfahren', 'planung.zurueckstellung') })('bund/baugb/15')).toBe('rot');
+    expect(a(m, nein('planung.planaufstellung', 'planung.fnp_verfahren'))('bund/baugb/15')).toBe('gruen');
+  });
+
+  it('Runde 3: Landschaftsplan III in Lippetal im qualifizierten Bebauungsplan – nicht „entfällt mit der Norm“, solange offen ist, ob er sich darauf erstreckt', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Bebauungsplan', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const lp = { 'kreis_soest.landschaftsplan': sicher('III') };
+    for (const nr of ['C.1', 'C.2', 'C.3', 'C.4']) {
+      const p = inGemeinde('05974024', m, lp)(`nw-05974/lp_iii/${nr}`);
+      expect(p.ampel, nr).not.toBe('gruen');
+      expect(p.gruende.join(' '), nr).not.toMatch(/Entfällt mit der Norm/);
+    }
+    // erstreckt sich nach Auskunft nicht auf den Plan: entfällt
+    expect(inGemeinde('05974024', m, { ...lp, ...nein('schutz.landschaftsplan') })('nw-05974/lp_iii/C.2').gruende.join(' ')).toMatch(/Entfällt mit der Norm/);
+    // Satzung nach § 34 Abs. 4 BauGB mit Innenbereich-Teil ebenso
+    expect(inGemeinde('05974024', { ...m, Planungsrecht: 'Satzung nach BauGB' }, { ...lp, ...ja('planung.innen') })('nw-05974/lp_iii/C.2').ampel).not.toBe('gruen');
+  });
+
+  it('Runde 3: Büro zu sechs Wohnungen – Spielplatzsatzung nicht „entfällt“ (§ 8 Abs. 2 Satz 3 BauO NRW)', () => {
+    const x = a({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, zahl('gebaeude.wohnungen', 6));
+    for (const nr of ['1', '2', '3', '4']) expect(x(`nw-05974040/spielplatzsatzung/${nr}`), `§ ${nr}`).not.toBe('gruen');
+  });
+
+  it('Runde 3: Stellplätze auf dem Grundstück, keine am Gebäude – BauNVO §§ 12, 21a und SBauVO § 121 nicht „gilt nicht“', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Planungsrecht: 'Bebauungsplan', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const plan = { 'planung.gebietsart': sicher('WA'), 'planung.baunvo': sicher('aktuell'), ...zahl('gebaeude.stellplaetze', 0), ...zahl('gebaeude.garage_nutzflaeche', 0) };
+    const x = a(m, { ...plan, ...ja('vorhaben.stellplaetze_grundstueck') });
+    for (const id of ['bund/baunvo/12', 'bund/baunvo/21a', 'nw/sbauvo/121']) expect(x(id), id).toBe('rot');
+    const offen = a(m, plan);
+    for (const id of ['bund/baunvo/12', 'nw/sbauvo/121']) expect(offen(id), `${id} ohne Angabe`).not.toBe('gruen');
+  });
+
+  it('Runde 3: Abweichung nur von der Altstadt- bzw. Werbeanlagensatzung – §§ 16–18 und § 9 nicht „entfällt“', () => {
+    const x = a({ Vorhaben: 'Änderung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, { ...ja('soest.altstadt', 'ortsrecht.abweichung', 'vorhaben.werbeanlage'), ...nein('planung.abweichung') });
+    for (const id of ['nw-05974040/altstadtsatzung/16', 'nw-05974040/altstadtsatzung/17', 'nw-05974040/altstadtsatzung/18', 'nw-05974040/werbeanlagen_altstadt/9', 'nw/bauo-nrw/69']) expect(x(id), id).toBe('rot');
+  });
+
+  it('Runde 3: Pension mit acht Gastbetten – Rauchwarnmelder je Beherbergungsraum (§ 47 Satz 2, § 55 Abs. 2 SBauVO)', () => {
+    const x = a({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '2', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, zahl('gebaeude.gastbetten', 8));
+    expect(x('nw/sbauvo/47')).toBe('rot');
+    expect(x('nw/sbauvo/55')).toBe('rot');
+  });
+
+  it('Runde 3: Änderung der Außenbauteile nach § 36 GEG – Erfüllungserklärung und Energieausweis nicht „gilt nicht“', () => {
+    const x = a({ Vorhaben: 'Änderung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, { ...ja('gebaeude.beheizt', 'vorhaben.aussenbauteile'), ...nein('vorhaben.erweiterung_beheizt', 'vorhaben.heizung') });
+    expect(x('bund/geg/36')).toBe('rot');
+    expect(x('bund/geg/92')).not.toBe('gruen');
+    expect(x('bund/geg/80')).not.toBe('gruen');
+  });
+
+  it('Runde 3: Altenteilerhaus am Stall mit 2,50 m Grenzabstand – Brandwand nach § 30 Abs. 2 Nr. 4 BauO NRW', () => {
+    const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Außenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, { ...nein('nw.grenzabstand_unter_2_5', 'gebaeude.landwirtschaft'), ...ja('nw.landwirtschaft_angebaut') });
+    expect(x('nw/bauo-nrw/30')).toBe('rot');
+  });
+
+  it('Runde 3: neu aufgenommene Vorschriften (Umlegung, Gartendenkmal, Energieausweis, Gehölzschnitt, Nutzungsänderungsanzeige)', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const x = a(m, ja('planung.umlegung', 'gebaeude.beheizt', 'vorhaben.baeume_faellen'));
+    for (const id of ['bund/baugb/51', 'bund/geg/80', 'bund/bnatschg/39']) expect(x(id), id).toBe('rot');
+    const anzeige = a({ ...m, Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Verfahren: 'Baugenehmigungsverfahren' }, ja('vorhaben.nutzung_befristet'));
+    expect(anzeige('nw/bauo-nrw/64')).toBe('rot');
+  });
 });
 
+
+describe('Werkzeuge', () => {
+  it('Quellen ohne Fassungsdatum (gii, Datei ohne Satzungsdatum) melden keine „neue Fassung ab heute“', () => {
+    const datei = { art: 'datei' as const, url: 'https://example.org/s.pdf', format: 'pdf' as const };
+    expect(ohneFassungsdatum(datei, { fassung: 'Datei vom 12.11.2026' })).toBe(true);
+    expect(ohneFassungsdatum(datei, { fassung: 'vom 14.11.2023' })).toBe(false);
+    expect(ohneFassungsdatum({ art: 'gii', pfad: 'fstrg' }, { fassung: 'Stand 30.07.2026' })).toBe(true);
+    expect(ohneFassungsdatum({ art: 'ris', eli: 'eli/bund/x' }, { fassung: 'gültig ab 01.01.2026' })).toBe(false);
+  });
+});

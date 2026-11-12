@@ -192,14 +192,14 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_vorhaben_gebaeude"
+            "$": "vorhaben_29"
           },
           {
             "$": "nw_verfahren_bekannt"
           }
         ]
       },
-      "grund": "Nachweis der Standsicherheit (statisches System, Berechnungen, Konstruktionszeichnungen, Baugrund) und, soweit erforderlich, des Schallschutzes.",
+      "grund": "Nachweis der Standsicherheit (statisches System, Berechnungen, Konstruktionszeichnungen, Baugrund) und, soweit erforderlich, des Schallschutzes – für bauliche Anlagen aller Art, auch wenn sie keine Gebäude sind.",
       "fundstellen": [
         "8/1",
         "8/2",

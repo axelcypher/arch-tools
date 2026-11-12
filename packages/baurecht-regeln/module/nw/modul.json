@@ -186,12 +186,23 @@
       "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – auch Stellplatzregeln im Bebauungsplan zählen (§ 1 Abs. 2 StellplatzVO NRW)"
     },
     "nw.stellplatzflaeche": {
-      "titel": "Notwendige Kfz-Stellplätze auf einer neu errichteten Stellplatzfläche für ein Nichtwohngebäude",
+      "titel": "Notwendige Kfz-Stellplätze für ein Nichtwohngebäude auf einer neu errichteten Stellplatzfläche",
       "gruppe": "grundstueck",
       "typ": "zahl",
-      "hilfe": "für die Photovoltaik-Pflicht über Stellplatzflächen (§ 48 Abs. 1a BauO NRW, § 6 SAN-VO NRW): mehr als 35; Stellplätze für Wohnnutzung zählen nicht",
+      "hilfe": "für die Photovoltaik-Pflicht über Stellplatzflächen (§ 48 Abs. 1a BauO NRW, § 6 SAN-VO NRW): mehr als 35 – auch wenn die Stellplatzfläche selbst das Vorhaben ist; Stellplätze für Wohnnutzung zählen nicht",
       "wenn": {
-        "$": "nichtwohngebaeude"
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "m": "Gebäudeart",
+            "nicht": [
+              "Einfamilienhaus",
+              "Zweifamilienhaus"
+            ]
+          }
+        ]
       }
     },
     "nw.grenzabstand_unter_2_5": {
@@ -422,6 +433,36 @@
       "wenn": {
         "$": "nw_vorhaben_gebaeude"
       }
+    },
+    "schutz.gartendenkmal": {
+      "titel": "Gartendenkmal auf dem Grundstück oder in seiner engeren Umgebung",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§ 13 DSchG NRW (z. B. historische Park- und Gartenanlage) – Denkmalliste der Gemeinde"
+    },
+    "ortsrecht.abweichung": {
+      "titel": "Abweichung von einer örtlichen Bauvorschrift beabsichtigt (Gestaltungs-, Werbeanlagen- oder Stellplatzsatzung)",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "§ 69 Abs. 1 und 3 BauO NRW: Abweichungen von örtlichen Bauvorschriften (§ 89) sind gesondert zu beantragen; die Satzungen nennen oft eigene Voraussetzungen"
+    },
+    "nw.landwirtschaft_angebaut": {
+      "titel": "Wohngebäude mit angebautem landwirtschaftlich (oder vergleichbar) genutztem Gebäude bzw. Gebäudeteil",
+      "gruppe": "gebaeude",
+      "typ": "janein",
+      "hilfe": "§ 30 Abs. 2 Nr. 4 BauO NRW: Brandwand zwischen Wohnteil und Stall, Scheune oder Remise – z. B. Altenteilerhaus am Stall",
+      "wenn": {
+        "$": "nw_vorhaben_gebaeude"
+      }
+    },
+    "vorhaben.nutzung_befristet": {
+      "titel": "Nutzungsänderung auf höchstens zwölf Monate befristet (außerhalb des Außenbereichs)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 64 Abs. 3 BauO NRW: Nutzungsänderungsanzeige einen Monat vor Aufnahme der Nutzung",
+      "wenn": {
+        "$": "nutzungsaenderung"
+      }
     }
   },
   "bausteine": {
@@ -623,13 +664,75 @@
       ]
     },
     "nw_pv_pflicht_stellplatz": {
-      "und": [
+      "f": "nw.stellplatzflaeche",
+      "min": 36
+    },
+    "nw_denkmalbezug": {
+      "oder": [
         {
-          "$": "nichtwohngebaeude"
+          "f": "schutz.denkmal",
+          "ist": true
         },
         {
-          "f": "nw.stellplatzflaeche",
-          "min": 36
+          "f": "schutz.denkmal_umgebung",
+          "ist": true
+        },
+        {
+          "f": "schutz.denkmalbereich",
+          "ist": true
+        },
+        {
+          "f": "schutz.denkmalbereich_umgebung",
+          "ist": true
+        },
+        {
+          "f": "schutz.bodendenkmal",
+          "ist": true
+        },
+        {
+          "f": "schutz.gartendenkmal",
+          "ist": true
+        }
+      ]
+    },
+    "nw_kein_denkmalbezug": {
+      "und": [
+        {
+          "f": "schutz.denkmal",
+          "ist": false
+        },
+        {
+          "f": "schutz.denkmal_umgebung",
+          "ist": false
+        },
+        {
+          "f": "schutz.denkmalbereich",
+          "ist": false
+        },
+        {
+          "f": "schutz.denkmalbereich_umgebung",
+          "ist": false
+        },
+        {
+          "f": "schutz.bodendenkmal",
+          "ist": false
+        },
+        {
+          "f": "schutz.gartendenkmal",
+          "ist": false
+        }
+      ]
+    },
+    "nw_kein_gebaeude": {
+      "und": [
+        {
+          "$": "vorhaben_29"
+        },
+        {
+          "m": "Gebäudeart",
+          "in": [
+            "kein Gebäude"
+          ]
         }
       ]
     }

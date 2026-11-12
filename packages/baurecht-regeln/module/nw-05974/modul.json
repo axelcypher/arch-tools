@@ -351,6 +351,18 @@
         "f": "schutz.vsg",
         "ist": true
       }
+    },
+    "schutz.naturdenkmal": {
+      "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil betroffen",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "im Kreis Soest: Kreisverordnung vom 19.05.2014 (Innenbereich Soest, Welver, Werl) und Festsetzungen der Landschaftspläne (Kapitel C.3/C.4) – ist ein Objekt der Kreisverordnung angegeben, folgt „ja“ daraus",
+      "nach": {
+        "fakt": "kreis_soest.naturdenkmal",
+        "tabelle": {
+          "true": true
+        }
+      }
     }
   },
   "bausteine": {

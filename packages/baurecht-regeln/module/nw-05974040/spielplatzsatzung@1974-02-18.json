@@ -18,20 +18,8 @@
         ]
       },
       "entfaellt": {
-        "oder": [
-          {
-            "m": "Vorhaben",
-            "in": [
-              "Änderung",
-              "Nutzungsänderung",
-              "Beseitigung"
-            ]
-          },
-          {
-            "f": "gebaeude.wohnungen",
-            "max": 2
-          }
-        ]
+        "f": "gebaeude.wohnungen",
+        "max": 2
       },
       "grund": "Die Satzung bestimmt Größe und Beschaffenheit der Kleinkinderspielplätze, die bei Errichtung von Gebäuden mit Wohnungen herzustellen sind (heute § 8 Abs. 2 BauO NRW: mehr als drei Wohnungen).",
       "fundstellen": [
@@ -41,16 +29,38 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Die Satzung nennt noch „mehr als zwei Wohnungen“ (§ 10 Abs. 2 BauO NW 1970); § 8 Abs. 2 BauO NRW 2018 verlangt den Spielplatz erst bei mehr als drei Wohnungen – bei drei Wohnungen mit der Bauaufsicht klären.",
+        "grund": "Die Satzung nennt noch „mehr als zwei Wohnungen“ (§ 10 Abs. 2 BauO NW 1970); § 8 Abs. 2 BauO NRW 2018 verlangt den Spielplatz erst bei mehr als drei Wohnungen – bei drei Wohnungen mit der Bauaufsicht klären. Bei bestehenden Gebäuden mit mehr als drei Wohnungen kann die Herstellung eines Kleinkinderspielplatzes verlangt werden (§ 8 Abs. 2 Satz 3 BauO NRW) – bei Änderung oder Nutzungsänderung zu Wohnungen mit der Bauaufsicht klären.",
         "wenn": {
-          "und": [
+          "oder": [
             {
-              "$": "errichtung"
+              "und": [
+                {
+                  "$": "errichtung"
+                },
+                {
+                  "f": "gebaeude.wohnungen",
+                  "min": 3,
+                  "max": 3
+                }
+              ]
             },
             {
-              "f": "gebaeude.wohnungen",
-              "min": 3,
-              "max": 3
+              "und": [
+                {
+                  "oder": [
+                    {
+                      "$": "aenderung"
+                    },
+                    {
+                      "$": "nutzungsaenderung"
+                    }
+                  ]
+                },
+                {
+                  "f": "gebaeude.wohnungen",
+                  "min": 4
+                }
+              ]
             }
           ]
         }
@@ -89,6 +99,27 @@
       "stand": {
         "2/1": "a501bc6b",
         "2/2": "1a118de6"
+      },
+      "pruefen": {
+        "grund": "Bei bestehenden Gebäuden mit mehr als drei Wohnungen kann die Herstellung eines Kleinkinderspielplatzes verlangt werden (§ 8 Abs. 2 Satz 3 BauO NRW) – bei Änderung oder Nutzungsänderung zu Wohnungen mit der Bauaufsicht klären.",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "f": "gebaeude.wohnungen",
+              "min": 4
+            }
+          ]
+        }
       }
     },
     "3": {
@@ -118,6 +149,27 @@
       "stand": {
         "3/1": "67bbeafe",
         "3/2": "c4e9e984"
+      },
+      "pruefen": {
+        "grund": "Bei bestehenden Gebäuden mit mehr als drei Wohnungen kann die Herstellung eines Kleinkinderspielplatzes verlangt werden (§ 8 Abs. 2 Satz 3 BauO NRW) – bei Änderung oder Nutzungsänderung zu Wohnungen mit der Bauaufsicht klären.",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "f": "gebaeude.wohnungen",
+              "min": 4
+            }
+          ]
+        }
       }
     },
     "4": {
@@ -149,6 +201,27 @@
         "4/1": "204725e3",
         "4/2": "9e8e9b01",
         "4/3": "a269b6ae"
+      },
+      "pruefen": {
+        "grund": "Bei bestehenden Gebäuden mit mehr als drei Wohnungen kann die Herstellung eines Kleinkinderspielplatzes verlangt werden (§ 8 Abs. 2 Satz 3 BauO NRW) – bei Änderung oder Nutzungsänderung zu Wohnungen mit der Bauaufsicht klären.",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "f": "gebaeude.wohnungen",
+              "min": 4
+            }
+          ]
+        }
       }
     }
   }

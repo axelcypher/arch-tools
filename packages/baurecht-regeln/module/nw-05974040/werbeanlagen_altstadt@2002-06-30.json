@@ -118,12 +118,28 @@
     },
     "9": {
       "gilt": {
-        "f": "planung.abweichung",
-        "ist": true
+        "oder": [
+          {
+            "f": "planung.abweichung",
+            "ist": true
+          },
+          {
+            "f": "ortsrecht.abweichung",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
-        "f": "planung.abweichung",
-        "ist": false
+        "und": [
+          {
+            "f": "planung.abweichung",
+            "ist": false
+          },
+          {
+            "f": "ortsrecht.abweichung",
+            "ist": false
+          }
+        ]
       },
       "grund": "Abweichungen auf begründeten Antrag bei offenbar nicht beabsichtigter Härte, wenn öffentliche Belange, insbesondere der Denkmalschutz, nicht entgegenstehen.",
       "fundstellen": [
