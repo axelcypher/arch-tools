@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { paragrafName } from '@core/baurecht/typen';
+import { verweisName } from '@core/baurecht/typen';
 import { create } from 'zustand';
 import type { Ampel, FaktDef, FaktStatus, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
 import { faktStatus, wertAnzeige } from '@core/baurecht/typen';
@@ -76,11 +76,12 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
     useBaurecht.getState().festlegen(p, ampel, grund, von.trim(), summen, werte, sicherheit);
     schliessen();
   };
+  // Überschrift mit Norm, benannte Einheiten ohne Doppelung („§ 1 ND-VO – Schutzobjekte“)
+  const normKurz = useBaurecht.getState().paket.module.find((m) => m.id === p.modul)?.normen[p.norm]?.kurz ?? p.norm;
+  const kopfzeile = verweisName(p.paragraf, p.titel, normKurz);
   return (
-    <Modal titel={`${paragrafName(p.paragraf)} von Hand festlegen`} onClose={zu} breit klickDaneben={false}>
-      <h3>
-        {paragrafName(p.paragraf)} {p.titel} – von Hand festlegen
-      </h3>
+    <Modal titel={`${kopfzeile} – von Hand festlegen`} onClose={zu} breit klickDaneben={false}>
+      <h3>{kopfzeile} – von Hand festlegen</h3>
       <p className="br-leise">
         Automatisch: <AmpelMarke ampel={p.automatisch} klein /> {p.gruende[0]}
       </p>
@@ -451,7 +452,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                   {f.von}: {f.grund}
                 </div>
                 {herab && <div className="br-warn-text">Herabstufung</div>}
-                {f.ampel === f.automatisch && <div className="br-leise">Die Festlegung hält die Ampel fest, auch wenn sich Angaben ändern.</div>}
+                {f.ampel === f.automatisch && <div className="br-leise">Wie automatisch – die Festlegung bleibt, solange sich die beteiligten Angaben nicht ändern.</div>}
                 {t.ueberholt && (
                   <div className="br-fehler-text">
                     <strong>Überholt:</strong> {t.ueberholt}. So nicht bestätigbar – bitte erneut festlegen oder aufheben.
@@ -508,7 +509,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
         </div>
       )}
       <label className="toggle br-geprueft">
-        <input type="checkbox" checked={geprueft} disabled={ueberholte.length > 0} onChange={(e) => setGeprueft(e.target.checked)} /> Ich habe {nf && na ? 'diese Festlegungen und Angaben' : nf ? (nf === 1 ? 'diese Festlegung' : 'diese Festlegungen') : na === 1 ? 'diese Angabe' : 'diese Angaben'} geprüft.
+        <input type="checkbox" checked={geprueft} disabled={ueberholte.length > 0} onChange={(e) => setGeprueft(e.target.checked)} /> Ich habe {[nf ? (nf === 1 ? 'diese Festlegung' : 'diese Festlegungen') : '', na ? (na === 1 ? (nf ? 'die Angabe' : 'diese Angabe') : nf ? 'die Angaben' : 'diese Angaben') : ''].filter(Boolean).join(' und ')} geprüft.
       </label>
       <div className="dialog-buttons">
         <button type="button" onClick={() => antwort('abbrechen')}>

@@ -12,7 +12,7 @@ import { heute, offeneBestaetigungen, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
 import { faktBestaetigenOeffnen, faktSetzenOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
-import { nb } from './Ampel';
+import { inBereichZeigen, nb } from './Ampel';
 
 /**
  * Segmentgruppe mit einem Tabstopp: ←/→ (bzw. ↑/↓) bewegt den Fokus, Leertaste/Eingabe wählt. Tabstopp ist der
@@ -47,14 +47,22 @@ const HERKUNFT: Record<FaktWert['herkunft'], string> = {
 };
 
 /** Antragsmerkmale (gemeinsam mit Formulare) als Segmentknöpfe mit Erklärung */
-function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
+/** Unterzeile eines Merkmals: die Erklärung ohne den Namen davor („Gebäudeklasse (§ 2 …)“ → „(§ 2 …)“) */
+const merkmalUnterzeile = (name: string, text?: string) => (!text || text === name ? '' : text.startsWith(name) ? text.slice(name.length).trim() : text);
+/** Merkmale, die zur Suche passen (Name, Erklärung, Werte) */
+const merkmalPasst = (m: { name: string; werte: string[] }, suche: string) => !suche || `${MERKMAL_TITEL[m.name] ?? m.name} ${MERKMAL_ERKLAERUNG[m.name]?.text ?? ''} ${m.werte.join(' ')}`.toLowerCase().includes(suche.toLowerCase());
+
+function Merkmale({ klaerung, suche = '' }: { klaerung: Map<string, number>; suche?: string }) {
   const merkmale = useBaurecht((s) => s.merkmale);
   const geaendert = useBaurecht((s) => s.merkmaleDatei);
   const fokus = useBaurecht((s) => s.fokus);
   const ref = useRef<HTMLElement>(null);
   const fehlen = VORGABE_MERKMALE.filter((m) => !merkmale[m.name]).length;
   // beantwortete Merkmale lassen sich einklappen; fehlt eines, ist die Gruppe offen
-  const [auf, setAuf] = useState(fehlen > 0);
+  const [aufGewaehlt, setAuf] = useState(fehlen > 0);
+  // bei der Suche immer aufgeklappt, nur die passenden Merkmale
+  const auf = aufGewaehlt || !!suche;
+  const sichtbar = VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche));
   useEffect(() => {
     if (fehlen > 0) setAuf(true);
   }, [fehlen]);
@@ -65,20 +73,20 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
     if (!fokus?.startsWith('merkmal:') || !ref.current) return;
     const el = ref.current.querySelector<HTMLElement>(`[data-merkmal="${CSS.escape(fokus.slice(8))}"]`);
     if (el) {
-      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      inBereichZeigen(el.closest<HTMLElement>('.br-angaben-liste'), el, 'mitte');
       el.querySelector<HTMLElement>('button')?.focus();
     }
     useBaurecht.getState().fokusSetzen(null);
   }, [fokus]);
   return (
     <section ref={ref} className="br-angaben-gruppe" aria-labelledby="br-merkmale">
-      <h2 id="br-merkmale">
+      <h3 id="br-merkmale">
         <button type="button" className="br-gruppe-knopf" aria-expanded={auf} onClick={() => setAuf(!auf)}>
           <span aria-hidden="true">{auf ? '▾' : '▸'}</span> Antragsmerkmale <span className="br-gruppe-stand">{fehlen ? `${fehlen} offen` : 'alle festgelegt'}</span>
         </button>
-      </h2>
+      </h3>
       {auf && <p className="br-leise">Gemeinsam mit der App Formulare – gilt für den ganzen Antrag.</p>}
-      {auf && VORGABE_MERKMALE.map((m) => {
+      {auf && sichtbar.map((m) => {
         const e = MERKMAL_ERKLAERUNG[m.name];
         const wert = merkmale[m.name] ?? '';
         const n = klaerung.get(`merkmal:${m.name}`);
@@ -88,7 +96,7 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
               {/* derselbe kurze Name wie im Regelbaum und im Protokoll; die Erklärung darunter */}
               <span className="br-fakt-titel">
                 {MERKMAL_TITEL[m.name] ?? m.name}
-                {e?.text && e.text !== (MERKMAL_TITEL[m.name] ?? m.name) && <span className="br-fakt-frage">{nb(e.text)}</span>}
+                {merkmalUnterzeile(MERKMAL_TITEL[m.name] ?? m.name, e?.text) && <span className="br-fakt-frage">{nb(merkmalUnterzeile(MERKMAL_TITEL[m.name] ?? m.name, e?.text))}</span>}
               </span>
               {!wert && n ? <span className="br-klaert" title={`klärt ${n} Paragrafen`}>klärt {n}</span> : null}
               {(geaendert[m.name] ?? '') !== wert && <span className="br-marke" title="noch nicht gespeichert">geändert</span>}
@@ -102,8 +110,8 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
             </div>
             {wert && (
               <div className="br-merkmal-fuss">
-                {e?.werte?.[wert] && <span className="br-leise br-erklaerung">{e.werte[wert]}</span>}
-                <button type="button" className="small br-link" aria-label={`${m.name} leeren`} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title="Merkmal für den ganzen Antrag leeren (auch in Formulare)">
+                {e?.werte?.[wert] && <span className="br-leise br-erklaerung">{nb(e.werte[wert])}</span>}
+                <button type="button" className="small br-link" aria-label={`${MERKMAL_TITEL[m.name] ?? m.name} leeren`} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title="Merkmal für den ganzen Antrag leeren (auch in Formulare)">
                   leeren
                 </button>
               </div>
@@ -163,7 +171,7 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (fokus === id && ref.current) {
-      ref.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      inBereichZeigen(ref.current.closest<HTMLElement>('.br-angaben-liste'), ref.current, 'mitte');
       ref.current.querySelector<HTMLElement>('button, input, select')?.focus();
       useBaurecht.getState().fokusSetzen(null);
     }
@@ -354,10 +362,23 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
             {w}
           </div>
         ))}
-        {!suche && <Merkmale klaerung={klaerung} />}
+        {(!suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche))) && <Merkmale klaerung={klaerung} suche={suche} />}
+        {suche && !gruppen.length && !VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche)) && (
+          <div className="br-leer-zustand" role="status">
+            <p>Keine Angabe zu „{suche}“{alle ? '' : ' unter den Angaben, an denen eine Regel hängt'}.</p>
+            <button type="button" onClick={() => setSuche('')}>
+              Suche leeren
+            </button>
+            {!alle && (
+              <button type="button" onClick={() => setAlle(true)}>
+                In allen Angaben suchen
+              </button>
+            )}
+          </div>
+        )}
         {gruppen.map((g) => (
           <section key={g.id} className="br-angaben-gruppe" aria-labelledby={`br-g-${g.id}`}>
-            <h2 id={`br-g-${g.id}`}>{g.titel}</h2>
+            <h3 id={`br-g-${g.id}`}>{g.titel}</h3>
             {g.ids.map((id) => (
               <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} />
             ))}

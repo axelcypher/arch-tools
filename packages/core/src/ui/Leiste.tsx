@@ -56,8 +56,15 @@ export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern'
   const richtung = links ? -1 : 1;
   const griff = useRef<HTMLDivElement>(null);
   // nie breiter als der verfügbare Platz (die Mitte behält ihre Mindestbreite) – sonst entstünde eine tote Zone
-  // Wachsen nur bis zum verfügbaren Platz, aber nie kleiner als jetzt (Ende verkleinert nicht); Schrumpfen frei bis min
-  const setzen = (b: number) => setBreite(b > jetzt ? Math.max(jetzt, Math.min(b, Math.max(min ?? 0, verfuegbar(griff.current, mitteMin)))) : b);
+  // Wachsen nur bis zum verfügbaren Platz; geht es nicht weiter, bleibt alles, wie es ist (Ende oder → am Maximum
+  // verkleinern nichts). Ist die Leiste schon geschrumpft (gezeichnet schmaler als gesetzt), fehlt der Platz ohnehin.
+  // Schrumpfen frei bis min, von der gezeichneten Breite aus.
+  const setzen = (b: number) => {
+    if (b <= jetzt) return setBreite(b);
+    if (jetzt < breite - 1) return;
+    const ziel = Math.min(b, Math.max(min ?? 0, verfuegbar(griff.current, mitteMin)));
+    if (ziel > jetzt) setBreite(ziel);
+  };
   // die tatsächliche Breite (eine Leiste kann bei schmalen Fenstern schrumpfen): für Screenreader und als Ausgangspunkt
   // beim Ziehen – sonst gäbe es eine tote Zone zwischen gemerkter und sichtbarer Breite
   const jetzt = ist ?? breite;

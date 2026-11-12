@@ -345,6 +345,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-klaeren-titel {
   width: 100%;
+  margin: 0;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -444,7 +445,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-angaben-gruppe {
   margin-top: 10px;
 }
-.br-angaben-gruppe > h2 {
+.br-angaben-gruppe > h3 {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -812,6 +813,11 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-norm-entfaellt-text {
   font-size: 12px;
   color: var(--br-gruen);
+}
+.br-norm-h {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
 }
 .br-norm-kopf {
   display: flex;
@@ -1375,6 +1381,29 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
     grid-column: 3 / 4;
   }
 }
+/* sehr schmale Mitte (um 420 px): Ampel und Nummer übereinander, damit der Titel Platz hat */
+@container vorschriften (max-width: 560px) {
+  .br-paragraf {
+    grid-template-columns: 64px minmax(0, 1fr);
+    row-gap: 2px;
+    padding-left: 16px;
+  }
+  .br-paragraf > .br-ampel {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .br-paragraf-nr {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .br-paragraf-kopf {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .br-paragraf-grund {
+    grid-column: 2 / 3;
+  }
+}
 
 /* Sprungmarken: unsichtbar, bis sie den Fokus haben (auch F6) */
 .br-sprung {
@@ -1480,6 +1509,15 @@ h2.br-detail-name {
 .br-regel-baum > li ul {
   font-weight: normal;
   color: var(--br-leise-stark);
+}
+/* hängender Einzug: Folgezeilen beginnen unter dem Text, nicht unter ✓/✗/? */
+.br-regel-baum li.br-haengend {
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+.br-regel-baum li.br-haengend > ul {
+  text-indent: 0;
+  margin-left: calc(4px - 1.2em);
 }
 /* Rückgängig nach „Festlegung aufheben“ */
 .br-aufgehoben {
@@ -1588,10 +1626,10 @@ h2.br-detail-name {
   width: 1.8em;
 }
 
-/* Protokoll: Tabellenkopf bleibt beim Bildlauf stehen; Zwischenzeilen der Gruppen; „Weitere“ als Liste */
+/* Protokoll: Tabellenkopf bleibt beim Bildlauf stehen – unter der klebenden Aktionsleiste (Höhe gemessen) */
 .br-protokoll .report-table thead th {
   position: sticky;
-  top: 0;
+  top: calc(var(--br-aktionen-h, 46px) - 28px);
   background: var(--panel, #fff);
   z-index: 1;
 }
@@ -1620,4 +1658,54 @@ h2.br-detail-name {
 .br-detail-inhalt,
 .br-protokoll td {
   overflow-wrap: anywhere;
+}
+
+/* Protokoll ist Papier: auch im dunklen Schema helle Farben für die Grautöne der App */
+.br-app .br-protokoll,
+:root[data-theme='dunkel'] .br-app .br-protokoll {
+  --muted: #5f6673;
+  --br-leise-stark: #4b5563;
+}
+
+/* Dialoge: die Knöpfe bleiben unten sichtbar, auch wenn der Inhalt scrollt */
+.br-app .modal .dialog-buttons {
+  position: sticky;
+  bottom: -18px;
+  background: var(--panel);
+  padding: 10px 0 4px;
+  margin-bottom: -4px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* Schmale Leisten (ab 240 px): lange Wörter trennen statt überlaufen, Stand und Zahl brechen um */
+.br-angaben .br-fakt-titel,
+.br-angaben .br-fakt-frage,
+.br-angaben-gruppe > h3,
+.br-detail-name {
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+.br-gruppe-knopf {
+  white-space: normal;
+  text-align: left;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.br-gruppe-knopf .br-gruppe-stand {
+  white-space: nowrap;
+}
+.br-angaben .br-chip-knopf {
+  white-space: normal;
+  text-align: left;
+  max-width: 100%;
+}
+.br-angaben .br-chip-zahl {
+  white-space: nowrap;
+}
+.br-fakt-kopf {
+  flex-wrap: wrap;
+  column-gap: 8px;
+}
+.br-fakt-kopf > .br-fakt-titel {
+  flex: 1 1 8em;
 }

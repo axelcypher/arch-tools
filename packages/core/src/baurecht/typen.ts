@@ -347,6 +347,10 @@ export function paragrafName(nr: string): string {
 /** Einheiten, die Anzahlen zählen (Stellplätze …): ganzzahlig wie Zahlen ohne Einheit */
 export const zaehlEinheit = (e?: string): boolean => !e || /plätze|stück|wohnungen|betten|geschosse/i.test(e);
 
+/** Zähleinheit in der Einzahl bei genau 1 („1 Stellplatz“, nicht „1 Stellplätze“) */
+const EINZAHL: Record<string, string> = { Stellplätze: 'Stellplatz', Wohnungen: 'Wohnung', Betten: 'Bett', Geschosse: 'Geschoss', Plätze: 'Platz' };
+export const einheitZu = (n: number, e: string): string => (n === 1 ? (EINZAHL[e] ?? e) : e);
+
 export function wertAnzeige(w: FaktWert['wert'] | undefined, def?: Pick<FaktDef, 'typ' | 'einheit'>): string {
   if (w == null) return '–';
   if (w === true) return 'ja';
@@ -355,7 +359,7 @@ export function wertAnzeige(w: FaktWert['wert'] | undefined, def?: Pick<FaktDef,
     const anzahl = def?.typ === 'zahl' && zaehlEinheit(def.einheit) && Number.isInteger(w);
     // wie in den Eingabefeldern: mit Einheit zwei Nachkommastellen, wenn es welche gibt („2,90 m“, „40 m²“)
     const stellen = anzahl || Number.isInteger(w) ? { maximumFractionDigits: 0 } : def?.einheit && !zaehlEinheit(def.einheit) ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 2 };
-    return `${w.toLocaleString('de-DE', stellen)}${def?.einheit ? ` ${def.einheit}` : ''}`;
+    return `${w.toLocaleString('de-DE', stellen)}${def?.einheit ? ` ${einheitZu(w, def.einheit)}` : ''}`;
   }
   return w;
 }
@@ -384,6 +388,13 @@ export function einheitName(nr: string, titel?: string): { nr: string; titel: st
 export function einheitVoll(nr: string, titel?: string): string {
   const e = einheitName(nr, titel);
   return [e.nr, e.titel].filter(Boolean).join(' ');
+}
+
+/** Verweis mit Norm vor dem Titel: „§ 144 BauGB – Genehmigungspflichtige Vorhaben …“, „Gestaltungssatzung – Werbeanlagen“ */
+export function verweisName(nr: string, titel: string | undefined, normKurz: string): string {
+  const e = einheitName(nr, titel);
+  const s = e.nr ? `${e.nr} ${normKurz}${e.titel ? ` – ${e.titel}` : ''}` : `${normKurz} – ${e.titel}`;
+  return s.replace(/\s+/g, ' ').trim();
 }
 
 /** Titel einer Norm ohne angehängte Kurzform, wenn die schon im Titel steht („Landeswassergesetz (LWG)“ → „Landeswassergesetz“) */

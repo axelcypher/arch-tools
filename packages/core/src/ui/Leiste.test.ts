@@ -51,4 +51,45 @@ describe('Leisten: Breite an den verfügbaren Platz gebunden', () => {
     expect(parseFloat(links.style.width)).toBe(240);
     act(() => root.unmount());
   });
+
+  it('geschrumpfte Leiste (gezeichnet schmaler als gesetzt): Ende und Wachsen ändern nichts, Schrumpfen geht von der gezeichneten Breite aus', () => {
+    try {
+      localStorage.clear();
+    } catch {
+      // ohne Speicher
+    }
+    const beobachter: (() => void)[] = [];
+    const vorher = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      constructor(cb: () => void) {
+        beobachter.push(cb);
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    try {
+      const host = document.createElement('div');
+      document.body.appendChild(host);
+      const root = createRoot(host);
+      act(() => root.render(createElement('div', { className: 'arbeit' }, createElement(BreitenLeiste, { schluessel: 't:schmal', vorgabe: 300, min: 240, max: 520, mitteMin: 420, children: createElement('div') }), createElement('main'))));
+      const arbeit = host.querySelector<HTMLElement>('.arbeit')!;
+      const leiste = arbeit.querySelector<HTMLElement>('.leiste')!;
+      Object.defineProperty(arbeit, 'clientWidth', { value: 1400, configurable: true });
+      // gesetzt 300, gezeichnet 243 (flex-shrink bei schmalem Fenster)
+      leiste.getBoundingClientRect = () => ({ width: 243 }) as DOMRect;
+      act(() => beobachter.forEach((b) => b()));
+      const griff = leiste.querySelector<HTMLElement>('[role="separator"]')!;
+      expect(griff.getAttribute('aria-valuenow')).toBe('243');
+      const taste = (key: string) => act(() => void griff.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+      taste('End');
+      taste('ArrowRight');
+      expect(parseFloat(leiste.style.width)).toBe(300);
+      taste('ArrowLeft');
+      expect(parseFloat(leiste.style.width)).toBe(240);
+      act(() => root.unmount());
+    } finally {
+      globalThis.ResizeObserver = vorher;
+    }
+  });
 });

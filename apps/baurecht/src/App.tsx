@@ -290,6 +290,7 @@ export function App() {
       <TitleBar app="Baurecht" name={name} dirty={dirty} zeichenflaeche={false} onOpenLog={() => setLogOffen(true)} onProjekte={() => void projekteOeffnen()} onSpeichern={quelle ? speichernMitMeldung : undefined} />
       {project ? (
         <>
+          <h1 className="br-unsichtbar">Baurecht – {name}</h1>
           <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} onAntrag={(a) => void antragWechseln(a)} lageLaeuft={lageLaeuft} />
           {!isTauri() && (
             <div className="br-hinweisband" role="note">

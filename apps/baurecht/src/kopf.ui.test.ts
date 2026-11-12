@@ -94,4 +94,18 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     act(() => weiter.focus());
     expect(host.querySelector('[role="menu"]')).toBeNull();
   });
+
+  it('Pos1 und Ende springen auf den ersten bzw. letzten Eintrag', () => {
+    const host = render();
+    const mehr = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.startsWith('Mehr'))!;
+    klick(mehr);
+    const eintraege = [...host.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])')];
+    expect(eintraege.length).toBeGreaterThan(1);
+    act(() => eintraege[0].focus());
+    const taste = (key: string) => act(() => void (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+    taste('End');
+    expect(document.activeElement).toBe(eintraege[eintraege.length - 1]);
+    taste('Home');
+    expect(document.activeElement).toBe(eintraege[0]);
+  });
 });

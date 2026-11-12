@@ -48,10 +48,12 @@ function Menue({ titel, label, offen, setOffen, children }: { titel: string; lab
       e.stopPropagation();
       zu();
     }
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
       const el = [...(rahmen.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ?? [])];
+      if (!el.length) return;
       const i = el.indexOf(document.activeElement as HTMLButtonElement);
-      el[(i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length]?.focus();
+      const ziel = e.key === 'Home' ? 0 : e.key === 'End' ? el.length - 1 : (i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length;
+      el[ziel]?.focus();
       e.preventDefault();
     }
   };
@@ -255,7 +257,7 @@ export function Klaeren({ stand }: { stand: Pruefstand }) {
   if (!klaerung.length) return null;
   return (
     <div className="br-klaeren" role="group" aria-label="Angaben, die am meisten klären">
-      <span className="br-klaeren-titel">Klärt am meisten</span>
+      <h3 className="br-klaeren-titel">Klärt am meisten</h3>
       {klaerung.slice(0, 4).map((k) => (
         <button key={k.id} type="button" className="br-chip-knopf" onClick={() => useBaurecht.getState().fokusSetzen(k.id)} title={`Diese Angabe entscheidet ${k.anzahl} offene Paragrafen`}>
           {k.titel} <span className="br-chip-zahl">klärt {k.anzahl}</span>

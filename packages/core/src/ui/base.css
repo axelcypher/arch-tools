@@ -63,6 +63,13 @@ body,
   height: 100%;
   overflow: hidden;
 }
+/* die App selbst scrollt nie – auch nicht programmatisch (overflow: hidden ließe scrollIntoView zu) */
+@media screen {
+  #root,
+  .app {
+    overflow: clip;
+  }
+}
 
 .app {
   display: flex;

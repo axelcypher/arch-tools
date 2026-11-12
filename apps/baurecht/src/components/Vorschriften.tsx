@@ -4,7 +4,7 @@ import type { Ampel, NormErgebnis, ParagrafErgebnis } from '@core/baurecht/typen
 import { EBENEN, einheitName, normTitel, paragrafName, THEMEN } from '@core/baurecht/typen';
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
-import { AMPEL_TEXT, AmpelMarke, datum, nb } from './Ampel';
+import { AMPEL_TEXT, AmpelMarke, datum, inBereichZeigen, nb } from './Ampel';
 
 type Gruppierung = 'offen' | 'ebene' | 'thema';
 
@@ -132,16 +132,18 @@ function NormKarte({
   const kopf = `n:${gruppe}|${n.id}`;
   return (
     <section className={`br-norm${n.geltung === 'nein' ? ' br-norm-entfaellt' : ''}`} aria-labelledby={id}>
+      <h3 className="br-norm-h">
       <button type="button" className="br-norm-kopf" aria-expanded={offen} onClick={umschalten} tabIndex={tabStop === kopf ? 0 : -1} data-roving={kopf} onFocus={() => setFokus(kopf)}>
         <span className="br-norm-pfeil" aria-hidden="true">
           {offen ? '▾' : '▸'}
         </span>
         <span className="br-norm-name" id={id}>
-          <strong>{n.def.kurz}</strong> <span className="br-leise">{normTitel(n.def)}</span>
+          <strong>{n.def.kurz}</strong> <span className="br-leise">{nb(normTitel(n.def))}</span>
           {n.geltung === 'nein' && <span className="br-norm-entfaellt-text"> · Norm berührt das Vorhaben nicht</span>}
         </span>
         <Zaehler sichtbar={sichtbar} gesamt={n.paragrafen.length} />
       </button>
+      </h3>
       {offen && (
         <div className="br-norm-inhalt">
           <div className="br-norm-info">
@@ -182,6 +184,22 @@ function NormKarte({
   );
 }
 
+/**
+ * Suche: „§ 34 BauGB“, „§34“, „34 BauGB“, „GEG 80“ finden genau den Paragrafen (Nummer + Norm in beliebiger
+ * Reihenfolge); Wörter ohne Nummer suchen im Titel, in der Norm und in den Begründungen
+ */
+export function suchTreffer(suche: string): (p: ParagrafErgebnis, n: NormErgebnis) => boolean {
+  const norm = (s: string) => s.toLowerCase().replace(/§/g, ' ').replace(/\s+/g, ' ').trim();
+  const q = norm(suche);
+  if (!q) return () => true;
+  const nr = /(?:^| )(\d+[a-z]?)(?= |$)/.exec(q)?.[1];
+  if (nr) {
+    const rest = q.replace(nr, ' ').replace(/\s+/g, ' ').trim();
+    return (p, n) => p.paragraf.toLowerCase() === nr && (!rest || norm(`${n.def.kurz} ${n.def.titel}`).includes(rest) || norm(n.def.kurz).replace(/ /g, '').includes(rest.replace(/ /g, '')));
+  }
+  return (p, n) => norm(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`).includes(q);
+}
+
 const ORDNUNGEN = [
   ['offen', 'offen zuerst'],
   ['ebene', 'nach Ebene'],
@@ -210,11 +228,12 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     merken(n);
   };
   const { auswertung } = stand;
+  const passt = suchTreffer(suche);
   const filter = (p: ParagrafErgebnis, n: NormErgebnis) =>
     w.ampeln.includes(p.ampel) &&
     (!nurHand || !!p.festlegung) &&
     (!nurGeaendert || p.geaendert.length > 0 || !!p.ueberholt) &&
-    (!suche || `${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`.toLowerCase().includes(suche.toLowerCase()));
+    passt(p, n);
   const gruppen = useMemo(() => {
     if (w.gruppierung === 'offen') return GRUPPE_OFFEN.map((g) => ({ id: g.id, titel: g.titel, ampel: g.id as Ampel | undefined, normen: auswertung.normen.filter((n) => n.paragrafen.some((p) => p.ampel === g.id) || (g.id === 'gelb' && n.ohneRegel)) }));
     const l = w.gruppierung === 'ebene' ? EBENEN.map((e) => ({ id: e.id, titel: e.titel, ampel: undefined, normen: auswertung.normen.filter((n) => n.ebene === e.id) })) : THEMEN.map((t) => ({ id: t.id, titel: t.titel, ampel: undefined, normen: auswertung.normen.filter((n) => n.def.thema === t.id) }));
@@ -248,6 +267,14 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   useEffect(() => {
     if (auswahl) setFokus(`p:${auswahl}`);
   }, [auswahl]);
+  // die gewählte Zeile bleibt im Blick: bei neuer Auswahl (auch aus „Siehe auch“/„Hängt an“) und wenn sie nach einer
+  // Festlegung in eine andere Gruppe wandert
+  const gewaehlteAmpel = auswertung.paragrafen.find((x) => x.id === auswahl)?.ampel;
+  useEffect(() => {
+    if (!auswahl) return;
+    const zeile = liste.current?.querySelector<HTMLElement>(`[data-roving="p:${CSS.escape(auswahl)}"]`);
+    inBereichZeigen(liste.current, zeile ?? null);
+  }, [auswahl, gewaehlteAmpel]);
   // anderer Ordnung: die gewählte Zeile mittig einblenden, sonst an den Anfang
   const ersterLauf = useRef(true);
   useEffect(() => {
@@ -257,7 +284,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     }
     const l = liste.current;
     const zeile = auswahl ? l?.querySelector<HTMLElement>(`[data-roving="p:${CSS.escape(auswahl)}"]`) : null;
-    if (zeile) zeile.scrollIntoView({ block: 'center' });
+    if (zeile) inBereichZeigen(l, zeile, 'mitte');
     else if (l) l.scrollTop = 0;
   }, [w.gruppierung]); // eslint-disable-line react-hooks/exhaustive-deps
   // Filter-Menü (schmal): Klick daneben und Tab hinaus schließen; Esc nur, wenn der Fokus im Menü steht (nicht hinter
@@ -305,7 +332,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     const ziel = e.key === 'Home' ? 0 : e.key === 'End' ? el.length - 1 : Math.min(el.length - 1, Math.max(0, i + (e.key === 'ArrowDown' ? 1 : -1)));
     e.preventDefault();
     el[ziel].focus();
-    el[ziel].scrollIntoView({ block: 'nearest' });
+    inBereichZeigen(liste.current, el[ziel]);
     const k = el[ziel].dataset.roving ?? '';
     if (k.startsWith('p:')) useBaurecht.getState().waehlen(k.slice(2));
   };

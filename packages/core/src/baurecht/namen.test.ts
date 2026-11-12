@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TextKontext } from './kurz';
-import { kurzBaum } from './kurz';
-import { einheitName, einheitVoll, normTitel, normVoll } from './typen';
+import { kurzBaum, kurzText } from './kurz';
+import { einheitName, einheitVoll, normTitel, normVoll, verweisName, wertAnzeige } from './typen';
 
 describe('Namen ohne Doppelung', () => {
   it('benannte Einheiten: Schlüssel nicht neben dem Titel, Paragrafen mit Nummer', () => {
@@ -62,7 +62,10 @@ describe('Regel in Worten: Verneinung positiv, Schwellen lesbar', () => {
     paragraf: (id) => (id === 'x/14' ? '§ 14 BauGB' : id),
   };
   it('verneinte Blätter ohne „trifft nicht zu“', () => {
-    expect(kurzBaum({ nicht: { f: 'art', in: ['EFH', 'ZFH'] } }, t).text).toBe('Gebäudeart: weder „EFH“ noch „ZFH“');
+    expect(kurzBaum({ nicht: { f: 'art', in: ['EFH', 'ZFH'] } }, t).text).toBe('Gebäudeart: alles außer „EFH“ und „ZFH“');
+    // ein Wert: kein „weder“, kein „ist nicht“ (Numerus bei Namen im Plural)
+    expect(kurzBaum({ nicht: { f: 'art', in: ['EFH'] } }, t).text).toBe('Gebäudeart: alles außer „EFH“');
+    expect(kurzBaum({ nicht: { f: 'art', ist: 'EFH' } }, t).text).toBe('Gebäudeart: alles außer „EFH“');
     expect(kurzBaum({ nicht: { n: 'x/14', ampel: ['rot'] } }, t).text).toBe('§ 14 BauGB nicht „gilt“');
     expect(kurzBaum({ nicht: { f: 'h', min: 7 } }, t).text).toBe('Höhe unter 7 m');
     expect(kurzBaum({ nicht: { f: 'art', in: ['EFH'] } }, t).text).not.toMatch(/trifft nicht zu/);
@@ -72,6 +75,52 @@ describe('Regel in Worten: Verneinung positiv, Schwellen lesbar', () => {
     expect(kurzBaum({ f: 'g', min: 0.01 }, t).text).toBe('Garagen: vorhanden');
     expect(kurzBaum({ f: 'g', max: 0 }, t).text).toBe('Garagen: keine');
     expect(kurzBaum({ f: 'h', min: 7 }, t).text).toBe('Höhe mindestens 7 m');
+  });
+});
+
+describe('Regel in Worten: Bausteine, Anzahlen, Gemeinden, Verweise', () => {
+  const t: TextKontext = {
+    fakt: (id) =>
+      (
+        ({
+          w: { titel: 'Wohnungen', gruppe: 'gebaeude', typ: 'zahl' },
+          st: { titel: 'Kfz-Stellplätze im oder am Gebäude', gruppe: 'gebaeude', typ: 'zahl', einheit: 'Stellplätze' },
+          sf: { titel: 'Stellplatzfläche', gruppe: 'gebaeude', typ: 'zahl', einheit: 'Stellplätze' },
+          gn: { titel: 'Nutzfläche von Garagen', gruppe: 'gebaeude', typ: 'zahl', einheit: 'm²' },
+          'lage.ags': { titel: 'Gemeindeschlüssel', gruppe: 'lage', typ: 'text' },
+        }) as Record<string, unknown>
+      )[id] as never,
+    bausteine: { beseitigung: { m: 'Vorhaben', in: ['Beseitigung'] }, tief: { $: 'beseitigung' } },
+  };
+  it('verneinte Bausteine positiv, auch über mehrere Stufen und doppelt verneint', () => {
+    expect(kurzBaum({ nicht: { $: 'tief' } }, t).text).toBe('Art des Vorhabens: alles außer „Beseitigung“');
+    expect(kurzText({ nicht: { $: 'beseitigung' } }, t)).toBe('Art des Vorhabens: alles außer „Beseitigung“');
+    expect(kurzBaum({ nicht: { nicht: { $: 'beseitigung' } } }, t).text).toBe('Art des Vorhabens: „Beseitigung“');
+    expect(kurzBaum({ nicht: { m: 'Gebäudeart', in: ['A', 'B', 'C'] } }, t).text).toMatch(/alles außer „A“, „B“ und „C“$/);
+  });
+  it('ganzzahlige Anzahlen wie im Gesetz: „mehr als“, „genau“, „vorhanden“, Einheit nicht doppelt, Einzahl', () => {
+    expect(kurzBaum({ f: 'w', min: 4 }, t).text).toBe('Wohnungen mehr als 3');
+    expect(kurzBaum({ f: 'w', min: 3, max: 3 }, t).text).toBe('Wohnungen: genau 3');
+    expect(kurzBaum({ f: 'w', min: 1 }, t).text).toBe('Wohnungen: vorhanden');
+    expect(kurzBaum({ nicht: { f: 'w', min: 4 } }, t).text).toBe('Wohnungen höchstens 3');
+    expect(kurzBaum({ f: 'st', min: 11 }, t).text).toBe('Kfz-Stellplätze im oder am Gebäude mehr als 10');
+    expect(kurzBaum({ f: 'st', min: 1 }, t).text).toBe('Kfz-Stellplätze im oder am Gebäude: vorhanden');
+    expect(kurzBaum({ f: 'sf', min: 36 }, t).text).toBe('Stellplatzfläche mehr als 35 Stellplätze');
+    expect(kurzBaum({ f: 'sf', max: 1 }, t).text).toBe('Stellplatzfläche höchstens 1 Stellplatz');
+    expect(kurzBaum({ f: 'gn', min: 0.01, max: 100 }, t).text).toBe('Nutzfläche von Garagen: vorhanden, höchstens 100 m²');
+    expect(wertAnzeige(1, { typ: 'zahl', einheit: 'Stellplätze' })).toBe('1 Stellplatz');
+  });
+  it('Gemeindeschlüssel als Gemeindename, beim aktuellen Wert mit Schlüssel', () => {
+    expect(kurzBaum({ f: 'lage.ags', in: ['05974040', '05974048'] }, t).text).toBe('Gemeindeschlüssel: „Soest“ oder „Welver“');
+    const ctx = { merkmale: {}, fakten: { 'lage.ags': { wert: '05974040', herkunft: 'manuell' as const, sicherheit: 'sicher' as const } }, einreichung: '2026-11-12', heute: '2026-11-12', bausteine: t.bausteine };
+    expect(kurzBaum({ f: 'lage.ags', in: ['05974040'] }, t, ctx).ist).toBe('Soest (05974040)');
+    // unbekannte Schlüssel bleiben stehen
+    expect(kurzBaum({ f: 'lage.ags', in: ['09999999'] }, t).text).toBe('Gemeindeschlüssel: „09999999“');
+  });
+  it('Verweise: Norm vor dem Titel', () => {
+    expect(verweisName('144', 'Genehmigungspflichtige Vorhaben', 'BauGB')).toBe('§ 144 BauGB – Genehmigungspflichtige Vorhaben');
+    expect(verweisName('14', '', 'BauGB')).toBe('§ 14 BauGB');
+    expect(verweisName('Anlage 1', 'Gebietsabgrenzung', 'Altstadtsatzung')).toBe('Altstadtsatzung – Anlage 1 – Gebietsabgrenzung');
   });
 });
 

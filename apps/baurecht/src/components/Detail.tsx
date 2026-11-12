@@ -106,7 +106,7 @@ function Stand({ w, unsicher }: { w?: KurzKnoten['w']; unsicher?: boolean }) {
 function Baum({ k, tiefe = 0 }: { k: KurzKnoten; tiefe?: number }) {
   if (!k.kinder)
     return (
-      <li>
+      <li className="br-haengend">
         <Stand w={k.w} unsicher={k.unsicher} />
         {nb(k.text)}
         {k.ist && <span className="br-ist"> – jetzt: {k.ist}</span>}
@@ -121,9 +121,9 @@ function Baum({ k, tiefe = 0 }: { k: KurzKnoten; tiefe?: number }) {
   );
   if (tiefe < 2)
     return (
-      <li>
+      <li className="br-haengend">
         <Stand w={k.w} unsicher={k.unsicher} />
-        {k.text}
+        {nb(k.text)}
         {liste}
       </li>
     );
@@ -140,9 +140,15 @@ function Baum({ k, tiefe = 0 }: { k: KurzKnoten; tiefe?: number }) {
   );
 }
 
+/** zu einem anderen Paragrafen springen: wählen und den Fokus auf seine Überschrift (sonst fiele er auf die Seite) */
+function zuParagraf(id: string) {
+  useBaurecht.getState().waehlen(id);
+  setTimeout(() => document.querySelector<HTMLElement>('.br-detail [data-f6-ziel]')?.focus(), 0);
+}
+
 const BEHOERDE: Record<string, string> = {
   ja: 'Prüft die Bauaufsicht im gewählten Verfahren.',
-  nein: 'Prüft die Bauaufsicht nicht – gilt trotzdem (eigene Verantwortung der Entwurfsverfassenden).',
+  nein: 'Prüft die Bauaufsicht nicht – soweit die Vorschrift gilt, liegt sie in der eigenen Verantwortung der Entwurfsverfassenden.',
   offen: 'Ob die Bauaufsicht das prüft, hängt am Verfahren – Verfahren festlegen.',
 };
 
@@ -203,7 +209,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
       <header className={`br-detail-kopf br-kopf-${p.ampel}`}>
         <div className="br-detail-titel">
           <span className="br-detail-nr">
-            {einheit.nr ? titel : norm.def.kurz}
+            {nb(einheit.nr ? titel : norm.def.kurz)}
           </span>
           {/* F6 und Sprungmarke landen hier – immer an derselben Stelle, nicht auf einem zufälligen Knopf */}
           <h2 className="br-detail-name" tabIndex={-1} data-f6-ziel="">
@@ -212,18 +218,26 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         </div>
         <div className="br-detail-ampel">
           <AmpelMarke ampel={p.ampel} />
-          {p.festlegung && <span className="br-leise-stark">{p.festlegung.bestaetigt ? 'von Hand festgelegt' : 'von Hand festgelegt · Entwurf (beim Speichern bestätigen)'}</span>}
+          {p.festlegung && (
+            <span className="br-leise-stark">
+              {p.ueberholt || p.unwirksam
+                ? `Festlegung „${AMPEL_TEXT[p.festlegung.ampel]}“ ${p.ueberholt ? 'überholt' : 'noch nicht wirksam'}`
+                : p.festlegung.bestaetigt
+                  ? 'von Hand festgelegt'
+                  : 'von Hand festgelegt · Entwurf (beim Speichern bestätigen)'}
+            </span>
+          )}
         </div>
       </header>
       <div className="br-detail-inhalt">
         {p.ueberholt && (
           <div className="br-meldung br-meldung-warn" role="status">
-            <strong>Festlegung überholt:</strong> {p.ueberholt}. Bitte erneut festlegen oder aufheben.
+            <strong>Festlegung überholt:</strong> {nb(p.ueberholt)}. Bitte erneut festlegen oder aufheben.
           </div>
         )}
         {!p.ueberholt && p.unwirksam && (
           <div className="br-meldung br-meldung-info" role="status">
-            <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {p.unwirksam}. Bis dahin gilt „{AMPEL_TEXT[p.ampel]}“.{' '}
+            <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {nb(p.unwirksam)}. Bis dahin gilt „{AMPEL_TEXT[p.ampel]}“.{' '}
             {isTauri() ? 'Mit „Rechtsstand prüfen“ den Text an der Quelle holen; liegt er geprüft vor, zählt die Festlegung – wurde sie ohne Text getroffen, dann am Text erneut festlegen.' : 'Die Gesetzestexte gibt es nur in der Desktop-App – dort prüfen und festlegen.'}
           </div>
         )}
@@ -231,7 +245,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
           <h3>Begründung</h3>
           {p.festlegung && (
             <p className="br-festlegung-text">
-              <strong>Von Hand ({p.festlegung.von}, {datum(p.festlegung.am)}):</strong> {p.festlegung.grund}
+              <strong>Von Hand ({p.festlegung.von}, {datum(p.festlegung.am)}):</strong> {nb(p.festlegung.grund)}
               <br />
               <span className="br-leise-stark">automatisch wäre: {AMPEL_TEXT[p.automatisch]}</span>
             </p>
@@ -260,7 +274,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
                   key={o}
                   type="button"
                   className="br-chip-knopf"
-                  onClick={() => (o.startsWith('paragraf:') ? useBaurecht.getState().waehlen(o.slice(9)) : useBaurecht.getState().fokusSetzen(o))}
+                  onClick={() => (o.startsWith('paragraf:') ? zuParagraf(o.slice(9)) : useBaurecht.getState().fokusSetzen(o))}
                   title={o.startsWith('paragraf:') ? 'zum Paragrafen' : 'zur Angabe'}
                 >
                   {nb(offenText(o, ctx))}
@@ -277,7 +291,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
               {p.offen
                 .filter((o) => o.startsWith('paragraf:'))
                 .map((o) => (
-                  <button key={o} type="button" className="br-chip-knopf" onClick={() => useBaurecht.getState().waehlen(o.slice(9))} title="zum Paragrafen">
+                  <button key={o} type="button" className="br-chip-knopf" onClick={() => zuParagraf(o.slice(9))} title="zum Paragrafen">
                     {nb(offenText(o, ctx))}
                   </button>
                 ))}
@@ -299,14 +313,14 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         <section className="br-fakten-kurz">
           <h3>Prüfung und Nachweis</h3>
           {p.behoerde ? <p>{BEHOERDE[p.behoerde]}</p> : null}
-          {p.nachweis?.length ? <p>Nachweis: {p.nachweis.join('; ')}</p> : null}
+          {p.nachweis?.length ? <p>Nachweis: {nb(p.nachweis.join('; '))}</p> : null}
           {p.verweise?.length ? (
             <>
               <p className="br-verweise-kopf">Siehe auch:</p>
               <ul className="br-verweise">
                 {p.verweise.map((v) => (
                   <li key={v}>
-                    <button type="button" className="br-link" onClick={() => useBaurecht.getState().waehlen(v)}>
+                    <button type="button" className="br-link" onClick={() => zuParagraf(v)}>
                       {nb(ctx.paragraf?.(v) ?? v)}
                     </button>
                   </li>

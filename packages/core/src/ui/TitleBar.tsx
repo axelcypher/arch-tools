@@ -237,10 +237,14 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
       setOpen(false);
       knopf.current?.focus();
     }
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    // Pos1/Ende springen an Anfang und Ende – nur außerhalb eines Eingabefelds, dort bewegen sie die Schreibmarke
+    const imFeld = document.activeElement instanceof HTMLInputElement;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || ((e.key === 'Home' || e.key === 'End') && !imFeld)) {
       const el = [...(ref.current?.querySelectorAll<HTMLElement>('[role="menuitemradio"], .titlebar-dropdown input') ?? [])];
+      if (!el.length) return;
       const i = el.indexOf(document.activeElement as HTMLElement);
-      el[(i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length]?.focus();
+      const ziel = e.key === 'Home' ? 0 : e.key === 'End' ? el.length - 1 : (i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length;
+      el[ziel]?.focus();
       e.preventDefault();
     }
   };
@@ -257,7 +261,7 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
         <SchemaSymbol id={cur.id} />
       </button>
       {open && (
-        <div className="titlebar-dropdown" role="menu">
+        <div className="titlebar-dropdown" role="menu" aria-label="Farbschema">
           <div className="titlebar-dropdown-head">Farbschema</div>
           {WAHL.map((w) => (
             <button

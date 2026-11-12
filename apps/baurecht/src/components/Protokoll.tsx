@@ -1,5 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { offenText } from '@core/baurecht/kurz';
+import { MERKMAL_TITEL } from '@core/baurecht/fakten';
+import { VORGABE_MERKMALE } from '@core/bedingung';
 import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
 import { EBENEN, einheitName, FAKT_GRUPPEN, faktName, normVoll, wertAnzeige } from '@core/baurecht/typen';
 import { druckenAls } from '@core/platform/projektDatei';
@@ -59,13 +61,15 @@ function nachNorm(ps: ParagrafErgebnis[], normen: { id: string; def: { kurz: str
 }
 
 /** Entwurfsvermerk als Kopfzeile jeder Druckseite (im reservierten oberen Seitenrand, überdruckt keinen Text) */
-const ENTWURF_DRUCK = `@media print { @page { margin-top: 20mm; @top-center { content: 'ENTWURF – enthält nicht gespeicherte bzw. nicht bestätigte Festlegungen oder Angaben von Hand'; font: 700 14pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
+const ENTWURF_DRUCK = `@media print { @page { margin-top: 20mm; @top-center { content: 'ENTWURF – enthält nicht gespeicherte bzw. nicht bestätigte Festlegungen oder gesicherte Angaben'; font: 700 14pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
 /** Modulstände sind Daten (JJJJ-MM-TT) – im Protokoll wie alle Daten als TT.MM.JJJJ */
 const stand = (v: string) => (/^\d{4}-\d\d-\d\d$/.test(v) ? datum(v) : v);
 
 /** Ampel in der Tabelle: mit „von Hand“ bzw. „von Hand, Entwurf“ */
 function ampelText(p: ParagrafErgebnis): string {
   if (!p.festlegung) return AMPEL_TEXT[p.ampel];
+  // eine überholte bzw. nicht wirksame Festlegung trägt die Ampel nicht – das sagt die Zelle auch
+  if (p.ueberholt || p.unwirksam) return `${AMPEL_TEXT[p.ampel]} (Festlegung „${AMPEL_TEXT[p.festlegung.ampel]}“ ${p.ueberholt ? 'überholt' : 'noch nicht wirksam'})`;
   return `${AMPEL_TEXT[p.ampel]} (von Hand${p.festlegung.bestaetigt ? '' : ', Entwurf'})`;
 }
 
@@ -88,6 +92,18 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const laedt = useBaurecht((s) => s.laedt.length);
   const [nurRelevant, setNurRelevant] = useState(false);
   const fenster = useRef<HTMLDivElement>(null);
+  // Höhe der klebenden Aktionsleiste als CSS-Variable – der feste Tabellenkopf klebt darunter
+  useEffect(() => {
+    const d = fenster.current;
+    const leiste = d?.querySelector<HTMLElement>('.br-protokoll-aktionen');
+    if (!d || !leiste) return;
+    const setzen = () => d.style.setProperty('--br-aktionen-h', `${leiste.offsetHeight}px`);
+    setzen();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(setzen);
+    ro.observe(leiste);
+    return () => ro.disconnect();
+  }, []);
   useEscSchliessen(onClose);
   // Fokus: beim Öffnen hinein, Tab bleibt im Protokoll, beim Schließen zurück an die Stelle davor
   useEffect(() => {
@@ -150,21 +166,28 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const mehrere = [...gruppen.entries()].filter(([, ps]) => ps.length > 1).sort((x, y) => y[1].length - x[1].length);
   const titel = `Baurechtliche Prüfung vor dem Einreichen – ${antrag}`;
   // Stand einer Festlegung von Hand: bestätigt/Entwurf und wirksam/überholt/nicht wirksam – getrennt von der Begründung
+  // mehrteilig: Entwurf/bestätigt und – falls – überholt bzw. noch nicht wirksam
   const festlegungStand = (q: ParagrafErgebnis) =>
-    q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : q.festlegung!.bestaetigt ? 'bestätigt' : 'Entwurf – zweite Bestätigung fehlt';
+    [q.festlegung!.bestaetigt ? 'bestätigt' : 'Entwurf – zweite Bestätigung fehlt', q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : ''].filter(Boolean).join(' · ');
   // Zeilen der offenen Punkte, fehlende Angaben nach ihrer Gruppe (Lage, Gebäude …) – ab 15 Zeilen mit Zwischenzeilen
   const gruppeDerAngabe = new Map(a.klaerung.map((k) => [`Es fehlt: ${k.titel}`, FAKT_GRUPPEN.find((g) => g.id === a.faktDefs[k.id]?.gruppe)?.titel ?? 'Weitere Angaben']));
   const zeilen = mehrere.map(([k, ps]) => ({ k, ps, gruppe: gruppeDerAngabe.get(k) ?? 'Andere Gründe' }));
   const reihenfolge = [...FAKT_GRUPPEN.map((g) => g.titel), 'Weitere Angaben', 'Andere Gründe'];
   zeilen.sort((x, y) => reihenfolge.indexOf(x.gruppe) - reihenfolge.indexOf(y.gruppe) || y.ps.length - x.ps.length);
   const mitZwischen = zeilen.length > 15;
-  // Einzelpunkte je Norm: „BauO NRW: § 12 (Bergbau …), § 45 (…)“
-  const weitereJeNorm = new Map<string, string[]>();
+  // Einzelpunkte als eigene Tabelle Norm | Paragraf | Grund – sortiert, je Paragraf einmal (mehrere Gründe zusammen)
+  const weitere = new Map<string, { norm: string; nr: string; sort: string; gruende: string[] }>();
   for (const [k, ps] of einzeln) {
     const q = ps[0];
     const norm = a.normen.find((n) => n.id === `${q.modul}/${q.norm}`)?.def.kurz ?? q.norm;
-    weitereJeNorm.set(norm, [...(weitereJeNorm.get(norm) ?? []), `${einheitName(q.paragraf, q.titel).nr || q.paragraf} (${k.replace(/^Es fehlt: /, '')})`]);
+    const e = einheitName(q.paragraf, q.titel);
+    const eintrag = weitere.get(q.id) ?? { norm, nr: e.nr || e.titel, sort: `${norm}|${q.paragraf.padStart(6, '0')}`, gruende: [] };
+    const grund = k.replace(/^Es fehlt: /, '');
+    if (!eintrag.gruende.includes(grund)) eintrag.gruende.push(grund);
+    weitere.set(q.id, eintrag);
   }
+  const weitereZeilen = [...weitere.values()].sort((x, y) => x.sort.localeCompare(y.sort, 'de', { numeric: true }));
+
   const abschliessen = () => {
     if (sperre) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
@@ -230,7 +253,8 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             )}
             <tr>
               <td>Antragsmerkmale</td>
-              <td>{Object.entries(merkmale).map(([k, v]) => `${k}: ${v}`).join(' · ') || '–'}</td>
+              {/* Reihenfolge und Namen wie in der Leiste */}
+              <td>{VORGABE_MERKMALE.filter((m) => merkmale[m.name]).map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}`).join(' · ') || '–'}</td>
             </tr>
             <tr>
               <td>Ergebnis</td>
@@ -352,7 +376,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                 <tr>
                   <td className="strong">Keine Regeldatei – von Hand beurteilen</td>
                   <td>{ohneRegel.length}</td>
-                  <td>{ohneRegel.map((n) => normVoll(n.def)).join(' · ')}</td>
+                  <td>{nb(ohneRegel.map((n) => normVoll(n.def)).join(' · '))}</td>
                 </tr>
               )}
               {zeilen.map(({ k, ps, gruppe }, i) => (
@@ -364,30 +388,45 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                   )}
                   <tr>
                     {/* die Spalte heißt schon „Was fehlt“ – ohne den Vorsatz je Zeile */}
-                    <td className="strong">{k.replace(/^Es fehlt: /, '')}</td>
+                    <td className="strong">{nb(k.replace(/^Es fehlt: /, ''))}</td>
                     <td>{ps.length}</td>
                     <td>{nachNorm(ps, a.normen)}</td>
                   </tr>
                 </Fragment>
               ))}
-              {einzeln.length > 0 && (
+              {weitereZeilen.length > 0 && (
                 <tr>
                   <td className="strong">Weitere (je ein Paragraf)</td>
-                  <td>{einzeln.length}</td>
-                  <td>
-                    <ul className="br-weitere">
-                      {[...weitereJeNorm.entries()].map(([norm, eintraege]) => (
-                        <li key={norm}>
-                          <strong>{norm}</strong> {nb(eintraege.join(' · '))}
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
+                  <td>{weitereZeilen.length}</td>
+                  <td>siehe Tabelle „Weitere offene Punkte“</td>
                 </tr>
               )}
             </tbody>
           </table>
           <p className="report-note">Ein Paragraf kann unter mehreren fehlenden Angaben stehen – gezählt wie unter „Klärt am meisten“.</p>
+          {weitereZeilen.length > 0 && (
+            <>
+              <h3>Weitere offene Punkte (je ein Paragraf)</h3>
+              <table className="report-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '16%' }}>Norm</th>
+                    <th style={{ width: '24%' }}>Paragraf</th>
+                    <th>Was fehlt bzw. zu klären ist</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weitereZeilen.map((z) => (
+                    <tr key={`${z.sort}|${z.nr}`}>
+                      <td>{z.norm}</td>
+                      <td>{nb(z.nr)}</td>
+                      <td>{nb(z.gruende.join(' · '))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
           </>
         ) : (
           <p>Keine – alle Vorschriften sind eingeordnet.</p>
@@ -405,7 +444,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                 return (
                   <div key={n.id} className="br-protokoll-norm">
                     <h3>
-                      {normVoll(n.def)}{' '}
+                      {nb(normVoll(n.def))}{' '}
                       <span className="report-meta">
                         {n.fassung ? `– ${n.fassung.text}, abgerufen ${datum(n.fassung.abgerufen)}` : n.def.quelle.art === 'verweis' ? '– nur Fundstelle' : '– Text nicht abgerufen'}
                       </span>
@@ -465,7 +504,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
               {a.hinweise.map((h, i) => (
                 <li key={i}>
                   <strong>{h.titel}</strong>
-                  {h.titel.includes(h.modul) ? '' : ` (${h.modul})`}: {h.text}
+                  {h.titel.includes(h.modul) ? '' : ` (${h.modul})`}: {nb(h.text)}
                 </li>
               ))}
             </ul>

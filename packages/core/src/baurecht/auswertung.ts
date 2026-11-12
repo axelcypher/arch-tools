@@ -18,7 +18,7 @@ import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { plusMonate } from '../recht/quellen';
 import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
-import { einheitVoll, faktStatus, fundstelleName, paragrafName } from './typen';
+import { faktStatus, fundstelleName, paragrafName, verweisName } from './typen';
 
 export interface TextStand {
   fassung: Fassung | null;
@@ -169,7 +169,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const stand = e.texte.get(key);
       const datei = regeldateiFuer(e.paket.regeln.get(key), stand?.fassung?.gueltigAb, e.einreichung);
       normen.push({ modul: m, norm, key, datei, stand });
-      for (const [nr, r] of Object.entries(datei?.regel.paragrafen ?? {})) titelCache.set(`${key}/${nr}`, `${einheitVoll(nr, stand?.fassung?.paragrafen[nr]?.titel || r.titel || '')} ${m.normen[norm].kurz}`.replace(/\s+/g, ' ').trim());
+      for (const [nr, r] of Object.entries(datei?.regel.paragrafen ?? {})) titelCache.set(`${key}/${nr}`, verweisName(nr, stand?.fassung?.paragrafen[nr]?.titel || r.titel || '', m.normen[norm].kurz));
     }
 
   const ergebnisse = new Map<string, ParagrafErgebnis>();
@@ -336,7 +336,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
         // der Grund für Gelb zuerst (steht in der Liste), dann warum es sonst grün wäre – als Konjunktiv, damit neben
         // „prüfen“ kein „Entfällt –“ steht
         ampel = 'gelb';
-        const sonst = gruende.map((g) => g.replace(/^(Entfällt mit der Norm|Entfällt|Gilt nicht) – /, (_m, art: string) => (art === 'Gilt nicht' ? 'Ohne diese Vorbehalte gälte sie nicht – ' : art === 'Entfällt mit der Norm' ? 'Ohne diese Vorbehalte entfiele sie mit der Norm – ' : 'Ohne diese Vorbehalte entfiele sie – ')));
+        const ohne = herab.length === 1 ? 'Ohne diesen Vorbehalt' : 'Ohne diese Vorbehalte';
+        const sonst = gruende.map((g) => g.replace(/^(Entfällt mit der Norm|Entfällt|Gilt nicht) – /, (_m, art: string) => (art === 'Gilt nicht' ? `${ohne} gälte sie nicht – ` : art === 'Entfällt mit der Norm' ? `${ohne} entfiele sie mit der Norm – ` : `${ohne} entfiele sie – `)));
         gruende.splice(0, gruende.length, ...herab, ...sonst);
       }
     } else if (ampel === 'rot') {

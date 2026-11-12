@@ -5,8 +5,9 @@
  */
 
 import { MERKMAL_TITEL } from './fakten';
+import { gemeindeName } from './gemeinden';
 import type { Ampel, FaktDef, FaktWert, Kurz, Wahrheit } from './typen';
-import { faktName, zaehlEinheit } from './typen';
+import { einheitZu, faktName, zaehlEinheit } from './typen';
 
 export interface KurzKontext {
   merkmale: Record<string, string>;
@@ -178,11 +179,66 @@ const liste = (w: (string | number)[], wort = 'oder') => (w.length <= 1 ? String
 const datum = (iso: string) => iso.split('-').reverse().join('.');
 const zahl = (n: number) => n.toLocaleString('de-DE');
 
-function wertText(v: string | number | boolean, def?: FaktDef): string {
+/** Text-Wert in Worten: Gemeindeschlüssel als Gemeindename (beim aktuellen Wert mit Schlüssel dahinter) */
+function textWert(id: string | undefined, v: string, mitSchluessel = false): string {
+  const name = id === 'lage.ags' ? gemeindeName(v) : undefined;
+  return name ? (mitSchluessel ? `${name} (${v})` : name) : v;
+}
+
+function wertText(v: string | number | boolean, def?: FaktDef, id?: string): string {
   if (typeof v === 'boolean') return v ? 'ja' : 'nein';
   // wie in den Eingabefeldern: Werte mit Einheit und Nachkommastellen mit zwei Stellen („2,90 m“)
-  if (typeof v === 'number') return `${def?.einheit && !zaehlEinheit(def.einheit) && !Number.isInteger(v) ? v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : zahl(v)}${def?.einheit ? ` ${def.einheit}` : ''}`;
-  return v;
+  if (typeof v === 'number') return `${def?.einheit && !zaehlEinheit(def.einheit) && !Number.isInteger(v) ? v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : zahl(v)}${def?.einheit ? ` ${einheitZu(v, def.einheit)}` : ''}`;
+  return textWert(id, v, true);
+}
+
+/**
+ * Schwellen eines Zahlen-Fakts in Worten, wie im Gesetz: „mindestens 22,01 m“ → „über 22 m“, ganzzahlige Anzahlen
+ * „mindestens 4“ → „mehr als 3“, „mindestens 1“ bzw. „0,01“ → „vorhanden“, „höchstens 0“ → „keine“. Die Einheit
+ * entfällt, wenn der Name sie schon nennt („Kfz-Stellplätze … mehr als 10“), und steht bei 1 in der Einzahl.
+ */
+function schwelle(name: string, def: FaktDef | undefined, min: number | undefined, max: number | undefined, verneint = false): string | undefined {
+  const einheit = def?.einheit;
+  const zaehlt = zaehlEinheit(einheit);
+  const imNamen = !!einheit && zaehlt && name.toLowerCase().includes(einheit.toLowerCase());
+  const mit = (n: number) => `${zahl(n)}${einheit && !imNamen ? ` ${einheitZu(n, einheit)}` : ''}`;
+  const ueber = (x: number) => !zaehlt && Math.abs(x * 100 - Math.round(x) * 100 - 1) < 1e-6;
+  const ganz = (x: number) => zaehlt && Number.isInteger(x);
+  const vorhanden = (x: number) => (x > 0 && x <= 0.01) || (ganz(x) && x === 1);
+  // untere Schwelle: x gehört dazu („mindestens“); „über n“ bzw. „mehr als n“, wo das Gesetz so zählt
+  const ab = (x: number) => (ueber(x) ? `über ${mit(Math.round(x))}` : ganz(x) && x > 1 ? `mehr als ${mit(x - 1)}` : `mindestens ${mit(x)}`);
+  const unter = (x: number) => (ueber(x) ? `höchstens ${mit(Math.round(x))}` : ganz(x) ? `höchstens ${mit(x - 1)}` : `unter ${mit(x)}`);
+  const ueberMax = (x: number) => (ganz(x) ? `mehr als ${mit(x)}` : `über ${mit(x)}`);
+  if (!verneint) {
+    if (min !== undefined && max !== undefined) {
+      if (min === max) return `${name}: genau ${mit(min)}`;
+      if (vorhanden(min)) return `${name}: vorhanden, höchstens ${mit(max)}`;
+      return `${name} ${ueber(min) ? `über ${zahl(Math.round(min))}` : zahl(min)} bis ${mit(max)}`;
+    }
+    if (min !== undefined) return vorhanden(min) ? `${name}: vorhanden` : `${name} ${ab(min)}`;
+    if (max !== undefined) return max === 0 ? `${name}: keine` : `${name} höchstens ${mit(max)}`;
+    return undefined;
+  }
+  if (min !== undefined && max !== undefined) return vorhanden(min) ? `${name}: keine oder ${ueberMax(max)}` : `${name}: ${unter(min)} oder ${ueberMax(max)}`;
+  if (min !== undefined) return vorhanden(min) ? `${name}: keine` : `${name} ${unter(min)}`;
+  if (max !== undefined) return max === 0 ? `${name}: vorhanden` : `${name} ${ueberMax(max)}`;
+  return undefined;
+}
+
+/** Baustein-Verweise bis zur eigentlichen Bedingung auflösen (für die Verneinung) */
+function aufloesen(k: Kurz, t: TextKontext): Kurz {
+  let x = k;
+  for (let i = 0; i < 10 && '$' in x && t.bausteine[x.$]; i++) x = t.bausteine[x.$];
+  return x;
+}
+
+/** „nicht X“ positiv umformen, wo es gleichwertig geht (auch dreiwertig: offen bleibt offen) */
+function nichtUmgeformt(n: Kurz, t: TextKontext): Kurz | undefined {
+  if ('f' in n && typeof n.ist === 'boolean' && t.fakt(n.f)?.typ === 'janein') return { ...n, ist: !n.ist };
+  if ('m' in n && n.in) return { m: n.m, nicht: n.in };
+  if ('m' in n && n.nicht) return { m: n.m, in: n.nicht };
+  if ('nicht' in n && !('m' in n)) return aufloesen(n.nicht, t);
+  return undefined;
 }
 
 /** Bedingung in Worten, z. B. „Art des Vorhabens: Errichtung und Gebäudeklasse 3, 4 oder 5“ */
@@ -220,12 +276,17 @@ export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe
     const s = teile.join('und' in k ? ' und ' : ' oder ');
     return !oben ? `(${s})` : s;
   }
-  if ('nicht' in k && !('m' in k)) return `nicht (${kurzText(k.nicht, t, true, tiefe + 1)})`;
+  if ('nicht' in k && !('m' in k)) {
+    const n = aufloesen(k.nicht, t);
+    const um = nichtUmgeformt(n, t);
+    if (um) return kurzText(um, t, oben, tiefe + 1);
+    return verneint(n, t) ?? `nicht (${kurzText(n, t, true, tiefe + 1)})`;
+  }
   if ('$' in k) return t.bausteine[k.$] ? kurzText(t.bausteine[k.$], t, oben, tiefe + 1) : k.$;
   if ('m' in k) {
     const name = MERKMAL_TITEL[k.m] ?? k.m;
     if (k.in) return `${name}: ${zitiert(k.in)}`;
-    if (k.nicht) return `${name}: alles außer ${zitiert(k.nicht)}`;
+    if (k.nicht) return `${name}: alles außer ${zitiert(k.nicht, 'und')}`;
     return `${name} festgelegt`;
   }
   if ('f' in k) {
@@ -233,15 +294,9 @@ export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe
     const name = faktName(def, k.f);
     if (k.bekannt !== undefined) return k.bekannt ? `${name} bekannt` : `${name} unbekannt`;
     if (def?.typ === 'janein' && typeof k.ist === 'boolean') return `${name}: ${k.ist ? 'ja' : 'nein'}`;
-    if (k.ist !== undefined) return `${name}: ${typeof k.ist === 'string' ? `„${k.ist}“` : wertText(k.ist, def)}`;
-    if (k.in) return `${name}: ${zitiert(k.in)}`;
-    const e = def?.einheit ? ` ${def.einheit}` : '';
-    // Schwellen lesbar: „mindestens 22,01 m“ → „über 22 m“, „mindestens 0,01“ → „vorhanden“, „höchstens 0“ → „keine“
-    const ueber = (x: number) => Math.abs(x * 100 - Math.round(x) * 100 - 1) < 1e-6;
-    if (k.min !== undefined && k.max !== undefined) return `${name} ${ueber(k.min) ? `über ${zahl(Math.round(k.min))}` : zahl(k.min)} bis ${zahl(k.max)}${e}`;
-    if (k.min !== undefined) return k.min > 0 && k.min <= 0.01 ? `${name}: vorhanden` : ueber(k.min) ? `${name} über ${zahl(Math.round(k.min))}${e}` : `${name} mindestens ${zahl(k.min)}${e}`;
-    if (k.max !== undefined) return k.max === 0 ? `${name}: keine` : `${name} höchstens ${zahl(k.max)}${e}`;
-    return `${name} angegeben`;
+    if (k.ist !== undefined) return `${name}: ${typeof k.ist === 'string' ? `„${textWert(k.f, k.ist)}“` : wertText(k.ist, def)}`;
+    if (k.in) return `${name}: ${zitiert(k.in.map((v) => (typeof v === 'string' ? textWert(k.f, v) : v)))}`;
+    return schwelle(name, def, k.min, k.max) ?? `${name} angegeben`;
   }
   if ('tag' in k) {
     const was = k.tag === 'einreichung' ? 'Einreichung' : 'heute';
@@ -275,14 +330,13 @@ function verneint(k: Kurz, t: TextKontext): string | undefined {
   if ('f' in k) {
     const def = t.fakt(k.f);
     const name = faktName(def, k.f);
-    const e = def?.einheit ? ` ${def.einheit}` : '';
     if (k.bekannt !== undefined) return k.bekannt ? `${name} unbekannt` : `${name} bekannt`;
-    if (k.ist !== undefined && typeof k.ist !== 'boolean') return `${name} ist nicht ${typeof k.ist === 'string' ? `„${k.ist}“` : wertText(k.ist, def)}`;
-    if (k.in) return `${name}: weder ${k.in.map((x) => `„${x}“`).join(' noch ')}`;
+    // ohne „ist nicht“ (Numerus: „Nachbarrechtliche Fragen ist …“) und ohne „weder“ bei nur einem Wert
+    if (typeof k.ist === 'string') return `${name}: alles außer „${textWert(k.f, k.ist)}“`;
+    if (typeof k.ist === 'number') return `${name}: nicht ${wertText(k.ist, def)}`;
+    if (k.in) return `${name}: alles außer ${zitiert(k.in.map((v) => (typeof v === 'string' ? textWert(k.f, v) : v)), 'und')}`;
     // wie die Schwellen selbst: „nicht über 22 m“ → „höchstens 22 m“, „nicht vorhanden“ → „keine“
-    const ueber = (x: number) => Math.abs(x * 100 - Math.round(x) * 100 - 1) < 1e-6;
-    if (k.min !== undefined && k.max === undefined) return k.min > 0 && k.min <= 0.01 ? `${name}: keine` : ueber(k.min) ? `${name} höchstens ${zahl(Math.round(k.min))}${e}` : `${name} unter ${zahl(k.min)}${e}`;
-    if (k.max !== undefined && k.min === undefined) return k.max === 0 ? `${name}: vorhanden` : `${name} über ${zahl(k.max)}${e}`;
+    return schwelle(name, def, k.min, k.max, true);
   }
   if ('n' in k) {
     const titel = t.paragraf?.(k.n) ?? k.n;
@@ -303,7 +357,7 @@ function istWert(k: Kurz, t: TextKontext, ctx: KurzKontext): string | undefined 
   if ('f' in k) {
     const f = ctx.fakten[k.f];
     if (f?.wert == null) return 'nicht angegeben';
-    return wertText(f.wert, t.fakt(k.f)) + (f.sicherheit === 'hinweis' && !f.bestaetigt ? ' (Hinweis)' : '') + (f.widerspruch ? ' (Widerspruch)' : '');
+    return wertText(f.wert, t.fakt(k.f), k.f) + (f.sicherheit === 'hinweis' && !f.bestaetigt ? ' (Hinweis)' : '') + (f.widerspruch ? ' (Widerspruch)' : '');
   }
   if ('n' in k) {
     const a = ctx.ampel?.(k.n);
@@ -342,9 +396,10 @@ export function kurzBaum(k: Kurz | undefined, t: TextKontext, ctx?: KurzKontext,
   }
   if ('nicht' in k && !('m' in k)) {
     // positiv formuliert, wo es geht: „nicht (Fakt: nein)“ → „Fakt: ja“, „nicht (Merkmal: A)“ → „Merkmal: alles außer A“
-    const n = k.nicht;
-    if ('f' in n && typeof n.ist === 'boolean' && t.fakt(n.f)?.typ === 'janein') return kurzBaum({ ...n, ist: !n.ist }, t, ctx, tiefe + 1);
-    if ('m' in n && n.in) return kurzBaum({ m: n.m, nicht: n.in }, t, ctx, tiefe + 1);
+    // auch durch Bausteine hindurch („nicht Art des Vorhabens: „Beseitigung““ → „… alles außer „Beseitigung““)
+    const n = aufloesen(k.nicht, t);
+    const um = nichtUmgeformt(n, t);
+    if (um) return kurzBaum(um, t, ctx, tiefe + 1);
     const innen = kurzBaum(n, t, ctx, tiefe + 1);
     // „nicht (A oder B)“ = keines davon; „nicht (A und B)“ = nicht alle davon
     if (innen.kinder) return mitW({ text: innen.art === 'oder' ? 'keines davon:' : 'nicht alle davon:', kinder: innen.kinder });

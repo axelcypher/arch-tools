@@ -70,8 +70,10 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Annahmen des Büros), fehlende und unsichere Angaben (Klick springt hin), ob die Bauaufsicht das im Verfahren prüft,
   womit es nachgewiesen wird, Stand der Regel, aufklappbar die **Regel im Einzelnen** (eingerückt, je Bedingung ✓ trifft
   zu, ✗ trifft nicht zu, ? offen, mit dem aktuellen Wert; entschiedene Unterzweige zugeklappt; „keines davon“ für
-  verneinte Gruppen; verneinte Blätter positiv, z. B. „Gebäudeart: weder „EFH“ noch „ZFH““; Schwellen lesbar wie „über 22 m“,
-  „vorhanden“, „keine“; ✓/✗ neutral eingefärbt, nicht in Ampelfarben), und der **Gesetzestext** mit den
+  verneinte Gruppen; verneinte Blätter positiv, auch durch Bausteine hindurch, z. B. „Gebäudeart: alles außer „EFH“ und
+  „ZFH““; Schwellen wie im Gesetz: „über 22 m“, Anzahlen „mehr als 3“, „genau 3“, „vorhanden“, „keine“, die Einheit nicht
+  doppelt und bei 1 in der Einzahl; Gemeindeschlüssel als Gemeindename; Verweise mit der Norm vor dem Titel („§ 36 BauGB –
+  Einvernehmen …“); Folgezeilen hängend eingerückt; ✓/✗ neutral eingefärbt, nicht in Ampelfarben), und der **Gesetzestext** mit den
   Absätzen der Fundstellen hervorgehoben (mit Legende); nach einer Änderung **alt/neu** untereinander mit
   gestrichenen bzw. unterstrichenen Wörtern – verglichen mit der Fassung, an der die Regel geprüft ist. Die Spalte lässt
   sich am linken Rand in der Breite ziehen (auch mit ←/→, Pos1/Ende). Beide Leisten schrumpfen bei schmalen Fenstern,
