@@ -79,14 +79,23 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: regeln
     runs-on: ubuntu-latest
-    # kein Checkout, kein npm: nur OpenSSL und gh – der private Schlüssel kommt mit keinem fremden Code in Berührung
+    # kein npm: nur Node-Bordmittel, OpenSSL und gh – der private Schlüssel kommt mit keinem fremden Code in Berührung
     permissions:
       contents: write
     steps:
+      # Repo nur zum Vergleichen (kein npm, keine Install-Skripte): signiert wird nur, was genau zum Commit passt
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - uses: actions/download-artifact@v4
         with:
           name: regelpaket
           path: ausgabe
+      - name: Paket gegen das Repo prüfen
+        run: node packages/baurecht-regeln/werkzeuge/index-pruefen.mjs ausgabe
       - name: Signieren (Ed25519)
         env:
           BAURECHT_REGELN_SCHLUESSEL: ${{ secrets.BAURECHT_REGELN_SCHLUESSEL }}

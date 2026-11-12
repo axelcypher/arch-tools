@@ -26,8 +26,11 @@ export function segmentTaste(e: KeyboardEvent<HTMLElement>) {
 }
 const tabStopp = (gewaehlt: boolean, erster: boolean, keinerGewaehlt: boolean) => (gewaehlt || (keinerGewaehlt && erster) ? 0 : -1);
 
+/** Angaben, die an der Lage hängen (Schutzgebiete jedes Moduls, Werte aus Geodiensten): an die Lage gebunden */
+export const lagebezug = (def: FaktDef, wert: FaktWert | undefined) => def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst';
+
 /** Angaben, die von Hand nur mit Begründung gesetzt werden: Schutzgebiete und Werte aus Geodiensten (ja/nein, Auswahl) */
-export const mitBeleg = (def: FaktDef, wert: FaktWert | undefined) => (def.typ === 'janein' || def.typ === 'wahl') && (def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst');
+export const mitBeleg = (def: FaktDef, wert: FaktWert | undefined) => (def.typ === 'janein' || def.typ === 'wahl') && (def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst' || wert?.herkunft === 'modul');
 
 const HERKUNFT: Record<FaktWert['herkunft'], string> = {
   stammdaten: 'Stammdaten',
@@ -153,7 +156,8 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
     }
   }, [fokus, id]);
   const unsicher = wert?.sicherheit === 'hinweis' && !wert.bestaetigt;
-  const fest = wert?.herkunft === 'modul';
+  // feste Werte des Moduls sind nicht änderbar; Werte nach Tabelle (z. B. Landschaftsplan nach Gemeinde) mit Beleg schon
+  const fest = wert?.herkunft === 'modul' && def.wert !== undefined;
   return (
     <div ref={ref} className={`br-fakt${wert?.wert == null ? ' br-offen' : ''}${fokus === id ? ' br-fokus' : ''}`}>
       <div className="br-fakt-kopf">
@@ -179,7 +183,7 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
           wert={wert}
           onWert={(v) => {
             // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
-            if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, def.titel, v, !!def.geodienst || wert?.herkunft === 'geodienst');
+            if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, def.titel, v, lagebezug(def, wert));
             else useBaurecht.getState().faktSetzen(id, v, benutzer());
           }}
         />
@@ -193,7 +197,7 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
               <span className="br-hinweis-marke" title={wert.grund}>
                 nur Hinweis
               </span>
-              <button type="button" className="small" title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, def.titel, wert)}>
+              <button type="button" className="small" title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, def.titel, wert, lagebezug(def, wert))}>
                 Bestätigen …
               </button>
             </>

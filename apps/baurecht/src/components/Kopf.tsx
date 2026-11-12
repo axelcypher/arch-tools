@@ -11,7 +11,7 @@ const datumZeit = (iso: string) => {
 };
 
 /** Kopfleiste in einer Zeile: Antrag, Einreichung, Module, Rechtsstand, Aktionen */
-export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, lageLaeuft }: { stand: Pruefstand; onRechtsstand: () => void; onLage: () => void; onProtokoll: () => void; onSpeichern: () => void; lageLaeuft: boolean }) {
+export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, onAntrag, lageLaeuft }: { stand: Pruefstand; onRechtsstand: () => void; onLage: () => void; onProtokoll: () => void; onSpeichern: () => void; onAntrag: (antrag: string) => void; lageLaeuft: boolean }) {
   const antrag = useBaurecht((s) => s.antrag);
   const antraege = useBaurecht((s) => s.antraege);
   const einreichung = useBaurecht((s) => s.pruefung.einreichung);
@@ -33,7 +33,7 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, l
     <div className="toolbar br-kopf" role="group" aria-label="Prüfung">
       <label className="br-kopf-feld">
         <span className="tb-label">Antrag</span>
-        <select value={antrag} onChange={(e) => useBaurecht.getState().antragWaehlen(e.target.value)}>
+        <select value={antrag} onChange={(e) => onAntrag(e.target.value)}>
           {antraege.map((a) => (
             <option key={a}>{a}</option>
           ))}

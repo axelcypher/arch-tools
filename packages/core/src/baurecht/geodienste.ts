@@ -228,8 +228,14 @@ export function alsFakt(def: FaktDef, d: GeodienstDef, e: GeoErgebnis, o: { gena
 }
 
 const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));
-/** „kein Treffer“ eines Dienstes: nur Hinweis, nie Grund für einen Widerspruch */
-const keinTreffer = (f: FaktWert) => f.wert === false && f.sicherheit === 'hinweis';
+
+/** Angabe von Hand mit dem letzten Ergebnis des Dienstes; Widerspruch, wenn der Dienst etwas anderes meldet (außer „kein Treffer“) */
+export function mitDienst(f: FaktWert, dienst: FaktWert['dienst']): FaktWert {
+  const { widerspruch: _w, dienst: _d, ...ohne } = f;
+  if (!dienst) return ohne;
+  const anders = dienst.wert !== f.wert && !(dienst.wert === false && dienst.sicherheit === 'hinweis');
+  return { ...ohne, dienst, ...(anders ? { widerspruch: `${dienst.quelle ?? 'Geodienst'} meldet „${wertText(dienst.wert)}“${dienst.stand ? ` (${dienst.stand})` : ''}` } : {}) };
+}
 
 /**
  * Neue Ergebnisse der Geodienste mit den Angaben der Prüfung zusammenführen (docs/baurecht-konzept.md, 5.2):
@@ -244,8 +250,9 @@ export function geoZusammenfuehren(alt: Record<string, FaktWert>, neu: Record<st
   for (const [id, n] of Object.entries(neu)) {
     const a = alt[id];
     if (a?.herkunft === 'manuell') {
-      const { widerspruch: _w, ...ohne } = a;
-      out[id] = a.wert === n.wert || keinTreffer(n) ? ohne : { ...ohne, widerspruch: `${n.quelle ?? 'Geodienst'} meldet „${wertText(n.wert)}“ (${n.stand ?? 'heute'})` };
+      // das Ergebnis des Dienstes bleibt an der Angabe von Hand – der Widerspruch wird daraus bestimmt, nicht aus der
+      // Bearbeitung (sonst ließe er sich durch zweimaliges Umstellen löschen)
+      out[id] = mitDienst(a, { wert: n.wert, sicherheit: n.sicherheit, ...(n.quelle ? { quelle: n.quelle } : {}), ...(n.stand ? { stand: n.stand } : {}) });
       continue;
     }
     if (a?.bestaetigt && a.wert === n.wert && (!n.lage || a.bestaetigt.lage === n.lage) && n.sicherheit === 'hinweis') {

@@ -137,7 +137,10 @@ export async function texteLaden(module: Modul[], stichtag: string, o: { aktuali
       if (nr !== lauf) return;
       if (n.norm.quelle.art === 'verweis') continue;
       try {
-        const r = await rs(st.paket).fuer(n.norm, stichtag, { aktualisieren: o.aktualisieren, offline: !isTauri() });
+        // für alt/neu: die Prüfsummen der Regeln (Fassung, an der sie geprüft sind)
+        const regeln = st.paket.regeln.get(n.key);
+        const regelStand = Object.assign({}, ...Object.values(regeln?.[regeln.length - 1]?.regel.paragrafen ?? {}).map((p) => p.stand ?? {})) as Record<string, string>;
+        const r = await rs(st.paket).fuer(n.norm, stichtag, { aktualisieren: o.aktualisieren, offline: !isTauri(), regelStand });
         if (nr !== lauf) return;
         useBaurecht.getState().textSetzen(n.key, { fassung: r.fassung, ...(r.vorige ? { vorige: r.vorige } : {}), ...(r.fehler ? { fehler: r.fehler } : {}), ...(r.kuenftige ? { kuenftige: r.kuenftige } : {}), ...(r.geprueft ? { geprueft: r.geprueft } : {}), ...(r.ueberholtAb ? { ueberholtAb: r.ueberholtAb } : {}), stichtag });
       } catch (e) {

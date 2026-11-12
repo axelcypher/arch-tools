@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { paragrafName } from '@core/baurecht/typen';
 import { create } from 'zustand';
-import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
+import type { Ampel, FaktStatus, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
+import { faktStatus } from '@core/baurecht/typen';
 import { lageKennung } from '@core/baurecht/geodienste';
 import { Modal } from '@core/ui/Dialog';
 import { benutzer, benutzerMerken } from '../benutzer';
@@ -62,9 +63,13 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
     const summen: Record<string, string> = {};
     for (const f of p.fundstellen) if (fassung?.summen[f]) summen[f] = fassung.summen[f];
     const werte: Record<string, string | number | boolean | null> = {};
-    for (const v of p.verwendet) werte[v] = v.startsWith('merkmal:') ? (merkmale[v.slice(8)] ?? null) : (fakten[v]?.wert ?? null);
+    const sicherheit: Record<string, FaktStatus> = {};
+    for (const v of p.verwendet) {
+      werte[v] = v.startsWith('merkmal:') ? (merkmale[v.slice(8)] ?? null) : (fakten[v]?.wert ?? null);
+      if (!v.includes(':') && fakten[v]) sicherheit[v] = faktStatus(fakten[v]);
+    }
     benutzerMerken(von);
-    useBaurecht.getState().festlegen(p, ampel, grund, von.trim(), summen, werte);
+    useBaurecht.getState().festlegen(p, ampel, grund, von.trim(), summen, werte, sicherheit);
     schliessen();
   };
   return (
@@ -162,7 +167,7 @@ interface FaktZiel {
 
 const useFaktBestaetigen = create<{ ziel: FaktZiel | null }>(() => ({ ziel: null }));
 const eintrag = (id: string) => JSON.stringify(useBaurecht.getState().pruefung.fakten[id] ?? null);
-export const faktBestaetigenOeffnen = (id: string, titel: string, wert: FaktWert) => useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'bestaetigen', wert, vorher: eintrag(id) } });
+export const faktBestaetigenOeffnen = (id: string, titel: string, wert: FaktWert, lagebezug = false) => useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'bestaetigen', wert, vorher: eintrag(id), lagebezug } });
 export const faktSetzenOeffnen = (id: string, titel: string, wert: FaktWert['wert'], lagebezug = false) =>
   useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'setzen', wert: { wert, herkunft: 'manuell', sicherheit: 'sicher' }, vorher: eintrag(id), lagebezug } });
 
@@ -221,7 +226,9 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
     if (!ziel) return null;
     const k = project?.meta.koordinaten;
     const lage = k ? lageKennung(k.ost, k.nord) : undefined;
-    const neu: FaktWert = ziel.modus === 'setzen' ? { ...ziel.wert, bestaetigt: { von: '', am: '', grund: 'Vorschau' } } : { ...ziel.wert, bestaetigt: { von: '', am: '', ...(lage ? { lage } : {}) } };
+    // wie beim Übernehmen: mit Lagebezug, aber ohne Koordinaten bleibt die Angabe Hinweis – dann ändert sich nichts
+    if (ziel.lagebezug && !lage) return folgen(ziel.id, ziel.modus === 'setzen' ? { ...ziel.wert, sicherheit: 'hinweis' } : ziel.wert);
+    const neu: FaktWert = { ...ziel.wert, bestaetigt: { von: '', am: '', ...(ziel.modus === 'setzen' ? { grund: 'Vorschau' } : {}), ...(ziel.lagebezug && lage ? { lage } : {}) } };
     return folgen(ziel.id, neu);
   }, [ziel, folgen, project]);
   if (!ziel) return null;
@@ -240,8 +247,10 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
     }
     const k = project?.meta.koordinaten;
     benutzerMerken(von);
-    if (ziel.modus === 'setzen') useBaurecht.getState().faktSetzen(ziel.id, ziel.wert.wert, von.trim(), grund, ziel.id.startsWith('schutz.') || ziel.lagebezug ? (k ? lageKennung(k.ost, k.nord) : null) : null);
-    else useBaurecht.getState().faktBestaetigen(ziel.id, ziel.wert, von.trim(), grund, k ? lageKennung(k.ost, k.nord) : null);
+    // Lagebezug (Schutzgebiete, Geodaten): an die aktuelle Lage binden; ohne Koordinaten bleibt es Hinweis (null)
+    const lage = ziel.lagebezug ? (k ? lageKennung(k.ost, k.nord) : null) : undefined;
+    if (ziel.modus === 'setzen') useBaurecht.getState().faktSetzen(ziel.id, ziel.wert.wert, von.trim(), grund, lage);
+    else useBaurecht.getState().faktBestaetigen(ziel.id, ziel.wert, von.trim(), grund, lage);
     schliessen();
   };
   const geo = ziel.wert.herkunft === 'geodienst';
@@ -261,7 +270,7 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
       {vorschau && <Folgen folgen={vorschau} />}
       <div className="br-meldung br-meldung-warn" role="note">
         Die Angabe gilt danach als gesichert. Bitte nur angeben, was belegt ist – die Begründung steht im Prüfprotokoll.
-        {geo ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ''}
+        {ziel.lagebezug ? (project?.meta.koordinaten ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten in den Stammdaten lässt sie sich an keine Lage binden und bleibt Hinweis.') : ''}
       </div>
       {veraltet && (
         <div className="br-meldung br-meldung-fehler" role="alert">

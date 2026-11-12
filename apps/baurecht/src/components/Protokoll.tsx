@@ -46,7 +46,8 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
     const d = fenster.current;
     d?.querySelector<HTMLElement>('.br-protokoll-aktionen button:not([disabled])')?.focus();
     const taste = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab' || !d) return;
+      // liegt ein Dialog über dem Protokoll (z. B. Bestätigen beim Speichern), führt der den Fokus
+      if (e.key !== 'Tab' || !d || document.querySelector('.modal')) return;
       const ziele = [...d.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex="0"]')];
       if (!ziele.length) return;
       const [erstes, letztes] = [ziele[0], ziele[ziele.length - 1]];
@@ -79,6 +80,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
   const sperre = entwuerfe ? `Erst speichern: ${entwuerfe === 1 ? 'eine Angabe von Hand ist' : `${entwuerfe} Angaben von Hand sind`} noch Entwurf (zweite Bestätigung fehlt)` : ungespeichertGesamt ? 'Erst speichern: Es gibt ungespeicherte Änderungen' : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
+  const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   const gruppen = new Map<string, ParagrafErgebnis[]>();
   for (const p of [...offen, ...ueberholt]) {
     const k = p.ueberholt && p.ampel !== 'gelb' ? 'Festlegung überholt' : p.offen.length ? `Es fehlt: ${offenFrage(p.offen[0], a.text)}` : p.gruende[0].replace(/\s*\(.*$/, '');
@@ -87,7 +89,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const abschliessen = () => {
     if (sperre) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
-    useBaurecht.getState().protokollAnhaengen({ am: new Date().toISOString(), von: benutzer(), paket: paket.version, einreichung: pruefstand.einreichung, fassungen: verwendeteFassungen(a), zaehler: a.zaehler, ampeln, offen: offen.length + ueberholt.length });
+    useBaurecht.getState().protokollAnhaengen({ am: new Date().toISOString(), von: benutzer(), paket: paket.version, einreichung: pruefstand.einreichung, fassungen: verwendeteFassungen(a), zaehler: a.zaehler, ampeln, offen: offen.length + ueberholt.length + ohneRegel.length });
   };
   const datei = quelle?.art === 'ordner' ? quelle.datei : quelle?.art === 'datei' ? quelle.name : null;
   const geo = [...new Set(Object.values(a.fakten).filter((f) => f.herkunft === 'geodienst' && f.quelle).map((f) => `${f.quelle}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`))];
@@ -160,9 +162,14 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
         </table>
         {pruefstand.widersprueche.length > 0 && <p className="report-note">Widerspruch: {pruefstand.widersprueche.join('; ')}</p>}
 
-        <h2>Offene Punkte ({offen.length + ueberholt.length})</h2>
-        {offen.length + ueberholt.length ? (
+        <h2>Offene Punkte ({offen.length + ueberholt.length + ohneRegel.length})</h2>
+        {offen.length + ueberholt.length + ohneRegel.length ? (
           <ul className="br-protokoll-liste">
+            {ohneRegel.length > 0 && (
+              <li>
+                <strong>Keine Regeldatei – von Hand beurteilen ({ohneRegel.length}):</strong> {ohneRegel.map((n) => `${n.def.titel} (${n.def.kurz})`).join(' · ')}
+              </li>
+            )}
             {[...gruppen.entries()]
               .sort((x, y) => y[1].length - x[1].length)
               .map(([k, ps]) => (

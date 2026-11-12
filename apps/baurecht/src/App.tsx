@@ -194,6 +194,13 @@ export function App() {
     return () => window.removeEventListener('keydown', taste);
   }, []);
 
+  // anderer Antrag: ungespeicherte Festlegungen, Bestätigungen und Merkmale nicht stillschweigend verwerfen
+  const antragWechseln = async (antrag: string) => {
+    if (antrag === useBaurecht.getState().antrag) return;
+    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichern()))) return;
+    useBaurecht.getState().antragWaehlen(antrag);
+  };
+
   const projekteOeffnen = async () => {
     if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichern()))) return;
     setWahl(true);
@@ -244,7 +251,7 @@ export function App() {
               </button>
             ))}
           </nav>
-          <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} lageLaeuft={lageLaeuft} />
+          <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} onAntrag={(a) => void antragWechseln(a)} lageLaeuft={lageLaeuft} />
           {!isTauri() && (
             <div className="br-hinweisband" role="note">
               Web-Version: Die Gesetzestexte lassen sich hier nicht abrufen. Ohne Text kann die App nicht prüfen, ob sich ein Paragraf seit der Prüfung der Regel geändert hat – deshalb bleibt, was sonst entfiele, gelb. Die volle Prüfung bietet die Desktop-App.

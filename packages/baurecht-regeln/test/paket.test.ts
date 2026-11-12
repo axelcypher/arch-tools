@@ -147,8 +147,10 @@ const KLEIN: Record<string, (string | undefined)[]> = {
 };
 const LAEUFE: Lauf[] = [
   { name: 'ohne Fakten, ohne Text', fakten: {}, texte: new Map(), werte: WERTE },
-  { name: 'Texte passend, alle Fakten nein', fakten: alleFakten('nein'), texte: TEXTE, werte: KLEIN },
-  { name: 'Texte passend, alle Fakten ja', fakten: alleFakten('ja'), texte: TEXTE, werte: KLEIN },
+  // mit passenden Texten über alle Merkmalswerte – erst so werden grüne Pfade der Normen mit Text erreicht
+  { name: 'Texte passend, alle Fakten nein', fakten: alleFakten('nein'), texte: TEXTE, werte: WERTE },
+  { name: 'Texte passend, alle Fakten ja', fakten: alleFakten('ja'), texte: TEXTE, werte: WERTE },
+  { name: 'Texte passend, alle Fakten nein, mit Sonderbau', fakten: alleFakten('nein'), texte: TEXTE, werte: KLEIN },
 ];
 
 describe('Fallmatrix', () => {
@@ -198,8 +200,8 @@ describe('Fallmatrix', () => {
           if (v.includes(':') || !lauf.fakten[v] || geprueftHerab.has(`${p.id}|${v}`)) continue;
           geprueftHerab.add(`${p.id}|${v}`);
           const alsHinweis = { ...lauf.fakten, [v]: { ...lauf.fakten[v], sicherheit: 'hinweis' as const, grund: 'Test' } };
-          const ohne = { ...lauf.fakten };
-          delete ohne[v];
+          // „unbekannt“ ausdrücklich (leerer Wert von Hand) – sonst spränge eine Tabelle des Moduls mit anderem Wert ein
+          const ohne = { ...lauf.fakten, [v]: { wert: null, herkunft: 'manuell' as const, sicherheit: 'sicher' as const } };
           const q1 = auswerten(eingabe(m, alsHinweis, lauf.texte)).paragrafen.find((x) => x.id === p.id)!;
           const q2 = auswerten(eingabe(m, ohne, lauf.texte)).paragrafen.find((x) => x.id === p.id)!;
           if (q1.automatisch === 'gruen' && q2.automatisch !== 'gruen') melde(`${lauf.name}: ${p.id} bleibt grün, obwohl „${v}“ nur Hinweis ist und ohne „${v}“ nicht grün wäre (${JSON.stringify(m)})`);

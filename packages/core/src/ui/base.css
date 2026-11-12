@@ -117,9 +117,12 @@ body,
   cursor: col-resize;
   z-index: 3;
 }
-.leiste-griff:hover,
-.leiste-griff:focus-visible {
+.leiste-griff:hover {
   background: var(--accent-soft);
+  outline: none;
+}
+.leiste-griff:focus-visible {
+  background: var(--accent);
   outline: none;
 }
 /* andere Browser (Web-Version): Standard-Eigenschaften */
@@ -368,6 +371,13 @@ select:focus,
 textarea:focus {
   outline: 2px solid var(--accent-soft);
   border-color: var(--accent);
+}
+/* mit der Tastatur deutlich sichtbar */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
 }
 
 .button-row {
@@ -1650,4 +1660,10 @@ input.feld-fehler:focus {
 }
 .warning-text {
   color: var(--warn-text);
+}
+
+/* Farbschema-Knopf: Symbol gut erkennbar */
+.titlebar-schema span {
+  font-size: 15px;
+  line-height: 1;
 }

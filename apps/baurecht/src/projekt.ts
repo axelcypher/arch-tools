@@ -5,7 +5,7 @@
  */
 
 import { readProjectFile } from '@core/archive';
-import { merkmalSetzen, pruefungSetzen } from '@core/baurecht/projekt';
+import { merkmaleAusRoh, merkmalSetzen, pruefungSetzen } from '@core/baurecht/projekt';
 import { pickFile, saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { projektdateiSchreiben, tauriProjektordner } from '@core/platform/projektordner';
@@ -49,7 +49,13 @@ export function aenderungenAnwenden(roh: Record<string, unknown>, konflikte: str
   const s = useBaurecht.getState();
   let out = roh;
   const namen = new Set([...Object.keys(s.merkmale), ...Object.keys(s.merkmaleDatei)]);
-  for (const n of namen) if ((s.merkmale[n] ?? '') !== (s.merkmaleDatei[n] ?? '')) out = merkmalSetzen(out, s.antrag, n, s.merkmale[n] ?? '');
+  const inDatei = merkmaleAusRoh(roh, s.antrag);
+  for (const n of namen)
+    if ((s.merkmale[n] ?? '') !== (s.merkmaleDatei[n] ?? '')) {
+      // auch Formulare kann das Merkmal inzwischen geändert haben
+      if ((inDatei[n] ?? '') !== (s.merkmaleDatei[n] ?? '') && (inDatei[n] ?? '') !== (s.merkmale[n] ?? '')) konflikte.push(`Merkmal ${n}`);
+      out = merkmalSetzen(out, s.antrag, n, s.merkmale[n] ?? '');
+    }
   return pruefungSetzen(out, s.antrag, s.pruefung, s.pruefungDatei, { konflikte });
 }
 

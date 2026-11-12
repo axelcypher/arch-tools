@@ -234,19 +234,40 @@ describe('Baurecht – Oberfläche', () => {
   });
 
   it('Folgen-Vorschau: der Bestätigen-Dialog nennt die Zahl der Herabstufungen, und sie stimmt', async () => {
-    const host = render();
+    const { lageKennung } = await import('@core/baurecht/geodienste');
+    const k = useBaurecht.getState().project!.meta.koordinaten!;
+    const lage = lageKennung(k.ost, k.nord);
+    // Schutzgebiete: alle anderen bestätigt „nein“, das Naturschutzgebiet nur als Hinweis eines Geodienstes
     const { auswertungMit, herabstufungen } = await import('./pruefung');
+    const ids = Object.entries(auswertungMit({}).faktDefs).filter(([id, d]) => d.gruppe === 'schutz' && id.startsWith('schutz.')).map(([id]) => id);
+    const geo = Object.fromEntries(ids.map((id) => [id, { wert: false, herkunft: 'geodienst' as const, sicherheit: 'hinweis' as const, quelle: 'LINFOS', grund: 'kein Treffer', lage }]));
+    act(() => useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, fakten: Object.fromEntries(Object.entries(geo).map(([id, f]) => [id, id === 'schutz.nsg' ? f : { ...f, bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Auskunft UNB', lage } }])) } }));
+    const host = render();
     act(() => knopf(host, 'alle Angaben')?.click());
-    const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Gemeindeschlüssel/.test(z.textContent ?? ''))!;
+    const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Naturschutzgebiet/.test(z.textContent ?? '') && !!knopf(z, 'Bestätigen …'))!;
     act(() => knopf(zeile, 'Bestätigen …')!.click());
     const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
     const m = /Stuft (\d+) Vorschrift/.exec(dialog.textContent ?? '');
     expect(m, 'Vorschau mit Zahl').toBeTruthy();
     const s = useBaurecht.getState();
     const jetzt = auswertungMit(s.pruefung.fakten);
-    const ags = jetzt.fakten['lage.ags'];
-    const mit = auswertungMit({ ...s.pruefung.fakten, 'lage.ags': { ...ags, bestaetigt: { von: '', am: '' } } });
+    const mit = auswertungMit({ ...s.pruefung.fakten, 'schutz.nsg': { ...s.pruefung.fakten['schutz.nsg'], bestaetigt: { von: '', am: '', lage } } });
+    expect(Number(m![1])).toBeGreaterThan(0);
     expect(Number(m![1])).toBe(herabstufungen(jetzt, mit).length);
+    act(() => knopf(dialog, 'Abbrechen')!.click());
+  });
+
+  it('Vorschau ohne Koordinaten: eine Angabe mit Lagebezug bleibt Hinweis, die Vorschau zeigt keine Wirkung', () => {
+    act(() => useBaurecht.getState().geoFakten({ 'schutz.lsg': { wert: false, herkunft: 'geodienst', sicherheit: 'hinweis', quelle: 'LINFOS', grund: 'kein Treffer' } }));
+    const p = useBaurecht.getState().project!;
+    act(() => useBaurecht.setState({ project: { ...p, meta: { ...p.meta, koordinaten: undefined } } }));
+    const host = render();
+    act(() => knopf(host, 'alle Angaben')?.click());
+    const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Landschaftsschutzgebiet/.test(z.textContent ?? '') && !!knopf(z, 'Bestätigen …'))!;
+    act(() => knopf(zeile, 'Bestätigen …')!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
+    expect(dialog.textContent).toMatch(/Keine Vorschrift ändert dadurch ihre Ampel/);
+    expect(dialog.textContent).toMatch(/Ohne Koordinaten/);
     act(() => knopf(dialog, 'Abbrechen')!.click());
   });
 

@@ -40,6 +40,8 @@ export interface FassungsEintrag {
   /** Schlüssel der Fassung in der Ablage */
   datei: string;
   abgerufen: string;
+  /** laufende Nummer im Verzeichnis (Reihenfolge des Ablegens) */
+  nr?: number;
 }
 
 interface NormVerzeichnis {
@@ -83,11 +85,12 @@ const sicher = (s: string) => s.replace(/[^\w.@-]+/g, '_');
  * Fassung zum Stichtag aus einer Liste: jüngstes Gültig-ab, das nicht nach dem Stichtag liegt – und deren Gültig-bis
  * (falls bekannt) nicht vor dem Stichtag endet
  */
-export function fassungZumStichtag<T extends { gueltigAb: string; gueltigBis?: string; abgerufen?: string }>(liste: T[], stichtag: string): T | undefined {
+export function fassungZumStichtag<T extends { gueltigAb: string; gueltigBis?: string; abgerufen?: string; nr?: number }>(liste: T[], stichtag: string): T | undefined {
   return [...liste]
     .filter((f) => f.gueltigAb <= stichtag && (!f.gueltigBis || f.gueltigBis >= stichtag))
-    // bei gleichem Gültig-ab die zuletzt abgerufene (z. B. Ortsrecht, dessen Datum gleich bleibt, mit geändertem Text)
-    .sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb) || (b.abgerufen ?? '').localeCompare(a.abgerufen ?? ''))
+    // bei gleichem Gültig-ab die zuletzt abgelegte (z. B. Ortsrecht, dessen Datum gleich bleibt, mit geändertem Text) –
+    // nach der laufenden Nummer im Verzeichnis, nicht nach der Uhr (die Ablage teilen sich mehrere Rechner)
+    .sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb) || (b.nr ?? 0) - (a.nr ?? 0) || (b.abgerufen ?? '').localeCompare(a.abgerufen ?? ''))
     .find(() => true);
 }
 
@@ -144,7 +147,7 @@ export class Rechtsstand {
 
   private async fuerJetzt(norm: NormQuelle, stichtag: string, o: { aktualisieren?: boolean; offline?: boolean; regelStand?: Record<string, string> }): Promise<StandErgebnis> {
     let v = await this.verzeichnis(norm.id);
-    const juengsteEintrag = () => [...v.fassungen].sort((a, b) => b.abgerufen.localeCompare(a.abgerufen))[0];
+    const juengsteEintrag = () => [...v.fassungen].sort((a, b) => (b.nr ?? 0) - (a.nr ?? 0) || b.abgerufen.localeCompare(a.abgerufen))[0];
     const deckt = fassungZumStichtag(v.fassungen, stichtag);
     // eine schon angekündigte Fassung, die zum Stichtag gilt, aber noch nicht vorliegt: nicht gedeckt
     const vorab = v.fassungen.length ? await this.fassungLesen(juengsteEintrag()) : null;
@@ -174,7 +177,8 @@ export class Rechtsstand {
             const datei = `recht/${sicher(norm.id)}/${f.gueltigAb}_${(await kurz(kennung))}`;
             const ablage = { ...f, kennung };
             await this.speicher.schreiben(datei, ablage);
-            v.fassungen.push({ gueltigAb: f.gueltigAb, ...(f.gueltigBis ? { gueltigBis: f.gueltigBis } : {}), kennung, datei, abgerufen: f.abgerufen });
+            const nr = Math.max(0, ...v.fassungen.map((e) => e.nr ?? 0)) + 1;
+            v.fassungen.push({ gueltigAb: f.gueltigAb, ...(f.gueltigBis ? { gueltigBis: f.gueltigBis } : {}), kennung, datei, abgerufen: f.abgerufen, nr });
             neuGeholt = ablage;
           }
         }

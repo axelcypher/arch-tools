@@ -164,7 +164,8 @@ export interface FaktDef {
   /** fester Wert, den das Modul setzt */
   wert?: string | number | boolean;
   /** Wert nach einem anderen Fakt (z. B. Gemeindeschlüssel → Landschaftsplan) */
-  nach?: { fakt: string; tabelle: Record<string, string | number | boolean>; sonst?: string | number | boolean };
+  /** Wert nach einer Tabelle über einen anderen Fakt; `hinweis`: hängt zusätzlich von der Lage ab – nur Hinweis */
+  nach?: { fakt: string; tabelle: Record<string, string | number | boolean>; sonst?: string | number | boolean; hinweis?: boolean };
   geodienst?: GeodienstDef;
   /** Vorschlag aus einem anderen Fakt (nur Hinweis) */
   vorschlag?: string;
@@ -201,6 +202,16 @@ export interface Modul {
   hinweise?: Hinweis[];
 }
 
+/** wie gesichert ein Fakt ist: sicher (auch bestätigt), nur Hinweis, widersprüchlich */
+export type FaktStatus = 'sicher' | 'hinweis' | 'widerspruch';
+
+/** Status eines Fakts für Festlegungen */
+export function faktStatus(f: FaktWert | undefined): FaktStatus {
+  if (!f) return 'hinweis';
+  if (f.widerspruch) return 'widerspruch';
+  return f.sicherheit === 'hinweis' && !f.bestaetigt ? 'hinweis' : 'sicher';
+}
+
 /** Wert eines Fakts im Projekt (Abschnitt 5.1) */
 export interface FaktWert {
   wert: string | number | boolean | null;
@@ -216,6 +227,8 @@ export interface FaktWert {
   lage?: string;
   /** widersprechende Angabe (z. B. Treffer im Geodienst gegen „nein“ von Hand) – macht Grün gelb */
   widerspruch?: string;
+  /** bei Angaben von Hand: das letzte Ergebnis des Dienstes – daraus wird der Widerspruch bei jedem Setzen neu bestimmt */
+  dienst?: { wert: string | number | boolean | null; quelle?: string; stand?: string; sicherheit: 'sicher' | 'hinweis' };
 }
 
 /** Festlegung von Hand (Abschnitt 8) */
@@ -228,6 +241,8 @@ export interface Festlegung {
   automatisch: Ampel;
   /** Fakten (Werte), an denen die Regel beim Festlegen hing */
   fakten?: Record<string, string | number | boolean | null>;
+  /** wie gesichert diese Fakten beim Festlegen waren – verliert einer seine Sicherheit, ist die Festlegung überholt */
+  sicherheit?: Record<string, FaktStatus>;
   /** Prüfsummen der Fundstellen beim Festlegen */
   stand?: Record<string, string>;
   /** zweite Bestätigung beim Speichern (ISO) – fehlt = Entwurf */

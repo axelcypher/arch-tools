@@ -70,7 +70,7 @@ function Gegenueberstellung({ alt, neu, absatz }: { alt: Paragraf | undefined; n
   return (
     <div className="br-vergleich">
       <h4>
-        {absatz ? `Abs. ${absatz}: ` : ''}Änderung gegenüber der vorigen Fassung <span className="br-leise">(gestrichen = entfallen, unterstrichen = neu)</span>
+        {absatz ? `Abs. ${absatz}: ` : ''}Änderung gegenüber der Fassung, an der die Regel geprüft ist <span className="br-leise">(gestrichen = entfallen, unterstrichen = neu)</span>
       </h4>
       <p className="br-vergleich-text">
         {teile.map((t, i) => (t.art === 'gleich' ? <span key={i}>{t.text}</span> : t.art === 'weg' ? <del key={i}>{t.text}</del> : <ins key={i}>{t.text}</ins>))}
@@ -90,6 +90,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   const auswahl = useBaurecht((s) => s.auswahl);
   const texte = useBaurecht((s) => s.texte);
   const [vergleich, setVergleich] = useState(false);
+  const laedtListe = useBaurecht((s) => s.laedt);
   const p: ParagrafErgebnis | undefined = useMemo(() => stand.auswertung.paragrafen.find((x) => x.id === auswahl), [stand.auswertung.paragrafen, auswahl]);
   if (!p)
     return (
@@ -109,6 +110,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
       </aside>
     );
   const norm = stand.auswertung.normen.find((n) => n.id === `${p.modul}/${p.norm}`)!;
+  const laedt = laedtListe.includes(norm.id);
   const t = texte[`${p.modul}/${p.norm}`];
   const text = t?.fassung?.paragrafen[p.paragraf];
   const absaetze = new Set(p.fundstellen.map((f) => f.split('/')[1] ?? ''));
@@ -245,7 +247,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
           )}
           {vergleich && t?.vorige
             ? p.geaendert.map((g) => <Gegenueberstellung key={g} alt={t.vorige!.paragrafen[p.paragraf]} neu={text} absatz={g.split('/')[1] ?? ''} />)
-            : text ? <ParagrafText p={text} absaetze={absaetze} geaendert={geaendert} /> : <p className="br-leise">{useBaurecht.getState().laedt.includes(norm.id) ? 'Text wird geholt …' : norm.def.quelle.art === 'verweis' ? 'Nur Fundstelle – der Text ist nicht frei verfügbar.' : `Text nicht verfügbar${t?.fehler ? `: ${t.fehler}` : ' (Web-Version oder noch nicht geholt)'}.`}</p>}
+            : text ? <ParagrafText p={text} absaetze={absaetze} geaendert={geaendert} /> : <p className="br-leise">{laedt ? 'Text wird geholt …' : norm.def.quelle.art === 'verweis' ? 'Nur Fundstelle – der Text ist nicht frei verfügbar.' : `Text nicht verfügbar${t?.fehler ? `: ${t.fehler}` : ' (Web-Version oder noch nicht geholt)'}.`}</p>}
         </section>
       </div>
       <footer className="br-detail-fuss">

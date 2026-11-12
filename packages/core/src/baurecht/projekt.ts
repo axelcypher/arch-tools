@@ -58,6 +58,10 @@ function faktAus(roh: unknown): FaktWert | null {
   }
   if (typeof roh.lage === 'string') f.lage = roh.lage;
   if (typeof roh.widerspruch === 'string') f.widerspruch = roh.widerspruch;
+  if (istObjekt(roh.dienst) && ['string', 'number', 'boolean'].includes(typeof roh.dienst.wert)) {
+    const d = roh.dienst;
+    f.dienst = { wert: d.wert as string | number | boolean, sicherheit: d.sicherheit === 'sicher' ? 'sicher' : 'hinweis', ...(typeof d.quelle === 'string' ? { quelle: d.quelle } : {}), ...(typeof d.stand === 'string' ? { stand: d.stand } : {}) };
+  }
   return f;
 }
 
@@ -72,6 +76,7 @@ function festlegungAus(roh: unknown): Festlegung | null {
   };
   if (istObjekt(roh.fakten)) f.fakten = Object.fromEntries(Object.entries(roh.fakten).filter(([, v]) => v === null || ['string', 'number', 'boolean'].includes(typeof v))) as Festlegung['fakten'];
   if (istObjekt(roh.stand)) f.stand = Object.fromEntries(Object.entries(roh.stand).filter(([, v]) => typeof v === 'string')) as Record<string, string>;
+  if (istObjekt(roh.sicherheit)) f.sicherheit = Object.fromEntries(Object.entries(roh.sicherheit).filter(([, v]) => v === 'sicher' || v === 'hinweis' || v === 'widerspruch')) as Festlegung['sicherheit'];
   if (typeof roh.bestaetigt === 'string') f.bestaetigt = roh.bestaetigt;
   return f;
 }
@@ -140,6 +145,7 @@ export function pruefungSetzen(roh: Record<string, unknown>, antrag: string, pru
   };
   const ziel: Record<string, unknown> = { ...datei };
   if (pruefung.einreichung !== basis.einreichung) {
+    if (gelesen.einreichung !== basis.einreichung && gelesen.einreichung !== pruefung.einreichung) o.konflikte?.push('Einreichung');
     if (pruefung.einreichung) ziel.einreichung = pruefung.einreichung;
     else delete ziel.einreichung;
   }

@@ -65,7 +65,7 @@ describe('Zustand der App', () => {
     expect(offeneFestlegungen(useBaurecht.getState())).toEqual([]);
     useBaurecht.getState().festlegungAufheben('bund/bnatschg/44');
     expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
-    useBaurecht.getState().faktBestaetigen('gebaeude.nutzflaeche', { wert: 40, herkunft: 'flaechen', sicherheit: 'hinweis' }, 'TP', 'Modell vollständig geprüft', null);
+    useBaurecht.getState().faktBestaetigen('gebaeude.nutzflaeche', { wert: 40, herkunft: 'flaechen', sicherheit: 'hinweis' }, 'TP', 'Modell vollständig geprüft');
     expect(offeneBestaetigungen(useBaurecht.getState())).toEqual(['gebaeude.nutzflaeche']);
     useBaurecht.getState().aufDateistand(['bund/bnatschg/44'], ['gebaeude.nutzflaeche']);
     expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toMatchObject({ ampel: 'rot' });

@@ -8,7 +8,7 @@
 import { create } from 'zustand';
 import type { Paket } from '@core/baurecht/paket';
 import type { BaurechtPruefung } from '@core/baurecht/projekt';
-import { geoZusammenfuehren } from '@core/baurecht/geodienste';
+import { geoZusammenfuehren, mitDienst } from '@core/baurecht/geodienste';
 import { aktiverAntrag, baurechtAusRoh, leerePruefung, merkmaleAusRoh } from '@core/baurecht/projekt';
 import type { Ampel, FaktWert, Festlegung, ParagrafErgebnis } from '@core/baurecht/typen';
 import type { Project } from '@core/model';
@@ -61,14 +61,15 @@ export interface Zustand {
    * Angabe von Hand; mit `grund` (Pflicht für Schutzgebiete und Angaben aus Geodiensten) wird sie wie eine Bestätigung
    * beim Speichern noch einmal abgefragt. Widerspricht sie einem Treffer eines Dienstes, bleibt das als Widerspruch.
    */
+  /** `lage`: Kennung der Lage, an die die Angabe gebunden wird; `null` = sie müsste gebunden werden, es gibt aber keine Koordinaten */
   faktSetzen: (id: string, wert: FaktWert['wert'] | undefined, von: string, grund?: string, lage?: string | null) => void;
   /** Bestätigung (bzw. Angabe von Hand mit Beleg) zurücknehmen – es gilt wieder der Hinweis bzw. nichts */
   bestaetigungZuruecknehmen: (id: string) => void;
   /** Hinweis als gesichert übernehmen – mit Begründung; bei Geodaten an die Lage gebunden; beim Speichern noch einmal bestätigt */
-  faktBestaetigen: (id: string, wert: FaktWert, von: string, grund: string, lage: string | null) => void;
+  faktBestaetigen: (id: string, wert: FaktWert, von: string, grund: string, lage?: string | null) => void;
   geoFakten: (fakten: Record<string, FaktWert>) => void;
   einreichungSetzen: (datum: string) => void;
-  festlegen: (p: ParagrafErgebnis, ampel: Ampel, grund: string, von: string, summen: Record<string, string>, werte: Record<string, string | number | boolean | null>) => void;
+  festlegen: (p: ParagrafErgebnis, ampel: Ampel, grund: string, von: string, summen: Record<string, string>, werte: Record<string, string | number | boolean | null>, sicherheit?: Festlegung['sicherheit']) => void;
   festlegungAufheben: (id: string) => void;
   festlegungenBestaetigen: (ids: string[]) => void;
   /** offene Festlegungen und Bestätigungen auf den Stand der Datei zurücksetzen („ohne diese speichern“) */
@@ -167,20 +168,23 @@ export const useBaurecht = create<Zustand>((set, get) => ({
       const f: FaktWert = { wert, herkunft: 'manuell', sicherheit: 'sicher', stand: heute(), quelle: von ? `von Hand (${von})` : 'von Hand' };
       // Gemeindeschlüssel von Hand steuert Gebietsmodule und Schutzgebietswerte: nur Hinweis, bis er mit Beleg bestätigt ist
       if (id === 'lage.ags' && !grund?.trim()) Object.assign(f, { sicherheit: 'hinweis', grund: 'von Hand eingetragen – bitte mit Beleg bestätigen (z. B. Flurstücksnachweis) oder „Lage abfragen“' });
-      // mit Beleg: wie eine Bestätigung; bei Lagebezug (Schutzgebiete, Geodaten) an die Lage gebunden
-      if (grund?.trim()) f.bestaetigt = { von, am: heute(), grund: grund.trim(), ...(lage ? { lage } : {}) };
-      // ein Ergebnis eines Dienstes (außer einem bloßen „kein Treffer“) bleibt als Widerspruch stehen
-      const dienst = alt?.herkunft === 'geodienst' ? alt : undefined;
-      if (dienst && dienst.wert !== wert && !(dienst.wert === false && dienst.sicherheit === 'hinweis')) f.widerspruch = `${dienst.quelle ?? 'Geodienst'} meldet „${dienst.wert === true ? 'ja' : dienst.wert === false ? 'nein' : String(dienst.wert)}“ (${dienst.stand ?? ''})`.replace(' ()', '');
-      else if (alt?.herkunft === 'manuell' && alt.widerspruch && alt.wert === wert) f.widerspruch = alt.widerspruch;
-      p.fakten[id] = f;
+      // mit Beleg: wie eine Bestätigung; bei Lagebezug (Schutzgebiete, Geodaten) an die Lage gebunden – ohne
+      // Koordinaten (lage === null) nur Hinweis, weil sich die Angabe an keine Lage binden lässt
+      if (grund?.trim() && lage !== null) f.bestaetigt = { von, am: heute(), grund: grund.trim(), ...(lage ? { lage } : {}) };
+      if (grund?.trim() && lage === null) Object.assign(f, { sicherheit: 'hinweis', grund: `ohne Koordinaten an keine Lage gebunden – bitte Adresse/Koordinaten in den Stammdaten eintragen (Beleg: ${grund.trim()})` });
+      // das letzte Ergebnis des Dienstes bleibt an der Angabe – daraus der Widerspruch (nicht aus dem Bearbeitungsverlauf)
+      const dienst = alt?.herkunft === 'geodienst' ? { wert: alt.wert, sicherheit: alt.sicherheit, ...(alt.quelle ? { quelle: alt.quelle } : {}), ...(alt.stand ? { stand: alt.stand } : {}) } : alt?.dienst;
+      p.fakten[id] = mitDienst(f, dienst);
     }
     set({ pruefung: p });
   },
   faktBestaetigen: (id, wert, von, grund, lage) => {
     const p = kopie(get().pruefung);
     const { widerspruch: _w, ...ohne } = wert;
-    p.fakten[id] = { ...ohne, bestaetigt: { von, am: heute(), grund: grund.trim(), ...(lage && wert.herkunft === 'geodienst' ? { lage } : {}) } };
+    const f: FaktWert = { ...ohne, bestaetigt: { von, am: heute(), grund: grund.trim(), ...(lage ? { lage } : {}) } };
+    // Lagebezug ohne Koordinaten: bleibt Hinweis
+    if (lage === null) Object.assign(f, { bestaetigt: undefined, grund: 'ohne Koordinaten an keine Lage gebunden – bitte Adresse/Koordinaten in den Stammdaten eintragen' });
+    p.fakten[id] = JSON.parse(JSON.stringify(f)) as FaktWert;
     set({ pruefung: p });
   },
   bestaetigungZuruecknehmen: (id) => {
@@ -205,9 +209,9 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     else delete p.einreichung;
     set({ pruefung: p });
   },
-  festlegen: (e, ampel, grund, von, summen, werte) => {
+  festlegen: (e, ampel, grund, von, summen, werte, sicherheit) => {
     const p = kopie(get().pruefung);
-    const f: Festlegung = { ampel, grund: grund.trim(), von, am: heute(), automatisch: e.automatisch, fakten: werte, stand: summen };
+    const f: Festlegung = { ampel, grund: grund.trim(), von, am: heute(), automatisch: e.automatisch, fakten: werte, stand: summen, ...(sicherheit && Object.keys(sicherheit).length ? { sicherheit } : {}) };
     p.festlegungen[e.id] = f;
     set({ pruefung: p });
   },

@@ -18,7 +18,7 @@ import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { plusMonate } from '../recht/quellen';
 import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
-import { fundstelleName, paragrafName } from './typen';
+import { faktStatus, fundstelleName, paragrafName } from './typen';
 
 export interface TextStand {
   fassung: Fassung | null;
@@ -99,14 +99,16 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
         const v = d.nach.tabelle[String(basis.wert)] ?? d.nach.sonst;
         // so sicher wie der Bezug (ein bestätigter Hinweis gilt als sicher); ein Widerspruch am Bezug geht mit; die
         // Bestätigung selbst wird nicht kopiert – sie gehört zum Bezug, nicht zum abgeleiteten Wert
-        const unsicher = (basis.sicherheit === 'hinweis' && !basis.bestaetigt) || (d.nach.fakt === 'lage.ags' && m.ebene !== 'bund' && agsUnsicher);
+        // Werte der Gebietsmodule hängen am Gemeindeschlüssel, auch wenn sie aus einem anderen Fakt abgeleitet sind;
+        // Tabellen, deren Werte von der Lage im Gemeindegebiet abhängen, sind immer nur Hinweis
+        const unsicher = (basis.sicherheit === 'hinweis' && !basis.bestaetigt) || (m.ebene !== 'bund' && agsUnsicher) || !!d.nach.hinweis;
         if (v !== undefined)
           out[id] = {
             wert: v,
             herkunft: 'modul',
             quelle: `${m.name} (abgeleitet aus ${d.nach.fakt === 'lage.ags' ? 'dem Gemeindeschlüssel' : d.nach.fakt})`,
             sicherheit: unsicher ? 'hinweis' : 'sicher',
-            ...(unsicher ? { grund: basis.grund ?? 'abgeleitet aus einem nicht gesicherten Wert' } : {}),
+            ...(unsicher ? { grund: d.nach.hinweis ? `Tabelle nach ${d.nach.fakt === 'lage.ags' ? 'Gemeinde' : d.nach.fakt} – hängt von der Lage ab, bitte prüfen` : (basis.grund ?? 'abgeleitet aus einem nicht gesicherten Wert') } : {}),
             ...(basis.widerspruch ? { widerspruch: basis.widerspruch } : {}),
           };
       }
@@ -315,6 +317,12 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       for (const [f, alt] of Object.entries(fl.fakten ?? {})) {
         const jetzt = f.startsWith('merkmal:') ? (e.merkmale[f.slice(8)] ?? null) : (fakten[f]?.wert ?? null);
         if (jetzt !== alt) gruende2.push(`${offenText(f, text)} geändert`);
+        // gleicher Wert, aber nicht mehr so gesichert (Lage verschoben, Gemeindeschlüssel unsicher, Widerspruch)
+        else if (!f.includes(':') && jetzt !== null) {
+          const vorher = fl.sicherheit?.[f] ?? 'sicher';
+          const nun = faktStatus(fakten[f]);
+          if (nun !== vorher && nun !== 'sicher') gruende2.push(`${offenText(f, text)} jetzt ${nun === 'widerspruch' ? 'widersprüchlich' : 'nur Hinweis'}`);
+        }
       }
       if (fassung) for (const [k, summe] of Object.entries(fl.stand ?? {})) if (fassung.summen[k] !== summe) gruende2.push(`Text von ${fundstelleName(k)} geändert`);
       // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text

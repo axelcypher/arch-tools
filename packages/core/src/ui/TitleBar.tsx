@@ -203,7 +203,7 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
   const cur = WAHL.find((w) => w.id === wahl)!;
   return (
     <div className="titlebar-menu" ref={ref}>
-      <button className="titlebar-btn" title={`Farbschema: ${cur.label}`} onClick={() => setOpen(!open)}>
+      <button className="titlebar-btn titlebar-schema" title={`Farbschema: ${cur.label}`} aria-label={`Farbschema: ${cur.label}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span aria-hidden>{cur.icon}</span>
       </button>
       {open && (
