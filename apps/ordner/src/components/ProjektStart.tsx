@@ -10,6 +10,7 @@ import { ProjektUebersicht } from '@core/ui/ProjektUebersicht';
 import { ausOrdnername } from '../nummer';
 import { projektStatusSetzen } from '../projekt';
 import { useOrdner } from '../store';
+import { KatasterDialog } from './KatasterDialog';
 
 /**
  * Startseite des Assistenten: die gemeinsame Projektübersicht aller Apps – zuletzt geöffnet, darunter die
@@ -25,6 +26,7 @@ export function ProjektStart({
   onAndererOrdner,
   onEinstellungen,
   onPruefen,
+  onKatasterEinstellungen,
 }: {
   fs: ProjektordnerZugriff;
   /** angefangenes neues Projekt („2026-014 EFH Musterweg“), leer ohne */
@@ -36,12 +38,16 @@ export function ProjektStart({
   onEinstellungen?: () => void;
   /** ein Projekt in „Ordner prüfen“ prüfen */
   onPruefen?: (pfad: string) => void;
+  /** Einstellungen der Katasterpläne zeigen */
+  onKatasterEinstellungen?: () => void;
 }) {
   const { allgemein, struktur } = useOrdner();
   // Nummer und Kurzname aus dem Ordnernamen nach dem Schema der Struktur
   const ausName = useCallback((name: string) => ausOrdnername(struktur.ordnername, name), [struktur.ordnername]);
   const liste = useProjektordnerListe(fs, allgemein.projekte, ausName);
   const [angeheftet, setAngeheftet] = useState<string[]>([]);
+  // Katasterpläne eines Projekts exportieren
+  const [kataster, setKataster] = useState<{ basis: string; name: string } | null>(null);
   useEffect(() => {
     let aktuell = true;
     void angeheftetLesen().then((a) => aktuell && setAngeheftet(a));
@@ -65,6 +71,11 @@ export function ProjektStart({
     return [
       { label: 'Ergänzen …', aktion: () => onOeffnen(p.schluessel) },
       ...(onPruefen ? [{ label: 'Projekt prüfen', aktion: () => onPruefen(p.schluessel) }] : []),
+      {
+        label: 'Katasterpläne …',
+        titel: 'Katasterauszüge (PDF) und DXF-Pläne aus der QGIS-Vorlage um die Projektadresse exportieren',
+        aktion: () => setKataster({ basis: p.schluessel, name: p.titel ? `${p.kuerzel} ${p.titel}` : p.kuerzel }),
+      },
       { label: 'Im Explorer öffnen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => void meldung('Ordner ließ sich nicht öffnen', String(e))) },
       ...(status !== 'abgeschlossen'
         ? [
@@ -82,30 +93,36 @@ export function ProjektStart({
   };
 
   return (
-    <ProjektUebersicht
-      titel="Projekte"
-      gruppen={liste.gruppen}
-      projekte={liste.projekte}
-      zuletzt={liste.zuletzt}
-      sucht={liste.sucht}
-      fehler={liste.fehler}
-      onOeffnen={(p) => onOeffnen(p.schluessel)}
-      onNeuLaden={liste.neuLaden}
-      onEinstellungen={onEinstellungen}
-      marken={(p) => [...liste.marken(p), ...(p.projektStatus && p.projektStatus !== 'aktiv' ? [{ text: p.projektStatus === 'akquise' ? 'Akquise' : 'abgeschlossen', art: 'neutral' as const }] : [])]}
-      angeheftet={angeheftet}
-      kontextMenue={kontextMenue}
-      kopf={
-        <>
-          <button className="primary" onClick={onNeu} title="Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen">
-            {entwurf ? `Weiter mit ${entwurf}` : 'Neues Projekt'}
-          </button>
-          {entwurf && <button onClick={onLeerNeu}>Neues Projekt (leer)</button>}
-          <button onClick={onAndererOrdner} title="Einen Projektordner außerhalb der Stammordner ergänzen">
-            Anderen Ordner …
-          </button>
-        </>
-      }
-    />
+    <>
+      {kataster && <KatasterDialog basis={kataster.basis} name={kataster.name} onClose={() => setKataster(null)} onEinstellungen={onKatasterEinstellungen} />}
+      <ProjektUebersicht
+        titel="Projekte"
+        gruppen={liste.gruppen}
+        projekte={liste.projekte}
+        zuletzt={liste.zuletzt}
+        sucht={liste.sucht}
+        fehler={liste.fehler}
+        onOeffnen={(p) => onOeffnen(p.schluessel)}
+        onNeuLaden={liste.neuLaden}
+        onEinstellungen={onEinstellungen}
+        marken={(p) => [
+          ...liste.marken(p),
+          ...(p.projektStatus && p.projektStatus !== 'aktiv' ? [{ text: p.projektStatus === 'akquise' ? 'Akquise' : 'abgeschlossen', art: 'neutral' as const }] : []),
+        ]}
+        angeheftet={angeheftet}
+        kontextMenue={kontextMenue}
+        kopf={
+          <>
+            <button className="primary" onClick={onNeu} title="Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen">
+              {entwurf ? `Weiter mit ${entwurf}` : 'Neues Projekt'}
+            </button>
+            {entwurf && <button onClick={onLeerNeu}>Neues Projekt (leer)</button>}
+            <button onClick={onAndererOrdner} title="Einen Projektordner außerhalb der Stammordner ergänzen">
+              Anderen Ordner …
+            </button>
+          </>
+        }
+      />
+    </>
   );
 }

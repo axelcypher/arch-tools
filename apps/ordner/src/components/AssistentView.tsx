@@ -58,7 +58,18 @@ const nurWasEtwasTut = (plan: Plan): Plan => ({ ...plan, schritte: plan.schritte
  * Umfang (Leistungsphasen, Beteiligte) und Vorlagen, zum Schluss der Trockenlauf. Alles landet in der
  * Projektdatei (.oap) des Projektordners; fehlt sie, wird sie angelegt. Gelöscht wird nichts.
  */
-export function AssistentView({ start, onEinstellungen, onPruefen }: { start?: GeladenerOrdner | null; onEinstellungen?: () => void; onPruefen?: (pfad: string) => void }) {
+export function AssistentView({
+  start,
+  onEinstellungen,
+  onPruefen,
+  onKatasterEinstellungen,
+}: {
+  start?: GeladenerOrdner | null;
+  onEinstellungen?: () => void;
+  onPruefen?: (pfad: string) => void;
+  /** Einstellungen der Katasterpläne zeigen */
+  onKatasterEinstellungen?: () => void;
+}) {
   const desktop = hatDateisystem();
   const { stamm: entwurf, struktur, stammordner, vorlagen, allgemein, setStamm, setStammordner, neuesProjekt } = useOrdner();
   const [modus, setModus] = useState<Modus | null>(start ? 'ergaenzen' : null);
@@ -372,6 +383,7 @@ export function AssistentView({ start, onEinstellungen, onPruefen }: { start?: G
           onAndererOrdner={() => void ordnerWaehlen()}
           onEinstellungen={onEinstellungen}
           onPruefen={onPruefen}
+          onKatasterEinstellungen={onKatasterEinstellungen}
         />
       </div>
     );

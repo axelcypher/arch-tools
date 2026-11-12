@@ -5,15 +5,17 @@ import { AssistentView } from './components/AssistentView';
 import { PruefView } from './components/PruefView';
 import { StrukturView } from './components/StrukturView';
 import { VorlagenView } from './components/VorlagenView';
+import { KatasterEinstellungen } from './components/KatasterEinstellungen';
 import type { GeladenerOrdner } from './projekt';
 import { useOrdner } from './store';
 
-type Ansicht = 'projekt' | 'pruefen' | 'vorlagen' | 'einstellungen';
+type Ansicht = 'projekt' | 'pruefen' | 'vorlagen' | 'kataster' | 'einstellungen';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
   { id: 'projekt', label: 'Assistent', title: 'Assistent: neues Projekt anlegen oder ein bestehendes ergänzen – Stammdaten, Umfang, Vorlagen, Trockenlauf' },
   { id: 'pruefen', label: 'Ordner prüfen', title: 'Vorhandenen Projektordner mit der Struktur vergleichen – es wird nichts verschoben' },
   { id: 'vorlagen', label: 'Vorlagen', title: 'Vorlagenordner, Dateinamen und Presets: welche Vorlage wohin kommt und wie sie dort heißt' },
+  { id: 'kataster', label: 'Katasterpläne', title: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne – exportiert wird je Projekt (Rechtsklick auf der Startseite)' },
   { id: 'einstellungen', label: 'Einstellungen', title: 'Gemeinsame Einstellungen aller Apps, Ordnerbaum und Namensschemata des Büros' },
 ];
 
@@ -101,6 +103,7 @@ export function App() {
               setPruefStart({ pfad, nr: (pruefStart?.nr ?? 0) + 1 });
               setAnsicht('pruefen');
             }}
+            onKatasterEinstellungen={() => setAnsicht('kataster')}
           />
         )}
         {ansicht === 'pruefen' && (
@@ -114,6 +117,11 @@ export function App() {
           />
         )}
         {ansicht === 'vorlagen' && <VorlagenView />}
+        {ansicht === 'kataster' && (
+          <div className="po-kataster">
+            <KatasterEinstellungen />
+          </div>
+        )}
         {ansicht === 'einstellungen' && <StrukturView />}
       </main>
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}

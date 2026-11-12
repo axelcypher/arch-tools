@@ -258,6 +258,49 @@ Abweichungen zuerst. Ein Klick auf ein Projekt zeigt dessen Einzelbericht; „Al
 Das Tool meldet nur. Von hier aus lassen sich **fehlende Ordner anlegen** und das **Projekt ergänzen** (im
 Assistenten: fehlende Ordner, Vorlagen und die Projektdatei).
 
+## Katasterpläne
+
+Katasterauszüge als PDF und DXF-Pläne kommen aus einem **QGIS-Projekt als Vorlage**, in dem das Büro seine Dienste
+(ALKIS-WMS/WFS), Kartenthemen und Layouts mit Planköpfen pflegt. Exportiert wird je Projekt auf der Startseite
+(Rechtsklick auf das Projekt → „Katasterpläne …“); QGIS läuft dabei unsichtbar im Hintergrund (`qgis_process`, ab
+QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von Formulare; dessen Einstellungen werden beim ersten Öffnen
+übernommen.
+
+- **Reiter „Katasterpläne“:** die Vorlage (`.qgz`/`.qgs`, gilt für alle im Büro: gemeinsamer
+  Konfigurationsordner, Bereich `kataster`), der Pfad zu `qgis_process` (je Rechner; „Suchen“ findet die
+  üblichen Installationen, unter Windows `…\QGIS 3.x\bin\qgis_process-qgis-ltr.bat`), die Ablage (fester Ordner im
+  Projektordner, Vorgabe `Kataster`, oder der Ordner des aktiven Antrags `TÖB/<Antrag>` – der Antrag aus der
+  Projektdatei, `meta.antrag`, gepflegt in Formulare) mit Dateinamen
+  (`{Code} {Art} {Datum} {Name}` – passt zum Namensformat des Antragsordners) und die Pläne. Vorgegeben sind
+  *Katasterauszug A4* (Layout „Katasterauszug A4“, 1:1000), *Katasterauszug A3* (Layout „Katasterauszug A3“, 1:500),
+  *Schwarzplan* (DXF, Kartenthema „Schwarzplan“, 300 × 300 m) und *Katasterplan* (DXF, Kartenthema „Katasterplan“,
+  150 × 150 m, je Objekt mit Beschriftungen). Layouts, Kartenobjekte und Kartenthemen stehen zur Auswahl, sobald die
+  Vorlage eingelesen ist; was nicht zur Vorlage passt, wird am Plan gemeldet.
+- **PDF:** das Kartenobjekt des Layouts (Kennung oder das erste) wird auf die Koordinate der Projektadresse
+  zentriert – im eingestellten Maßstab, oder mit Breite × Höhe auf genau diesen Ausschnitt (Maßstab ergibt sich).
+  Mit Kartenthema folgt die Karte diesem Thema.
+- **DXF:** die sichtbaren Vektorlayer des Kartenthemas im Ausschnitt um die Projektadresse (Rasterlayer wie WMS
+  entfallen), Symbolik je Symbolebene, je Objekt oder ohne, Symbolmaßstab = Maßstab des Plans, Beschriftungen wahlweise.
+- **Planköpfe:** Projektvariablen `@project_title` (Vorhaben, sonst Name der Projektdatei), `@project_identifier`
+  (Projektcode), `@project_street`, `@project_city`, `@project_zip_code` aus der Projektdatei; je Plan außerdem
+  `@plan_name`, `@plan_massstab` („1:1000“), `@plan_datum` und `@plan_beschriftung` (Text aus den Einstellungen).
+  `project_title` und `project_identifier` sind in QGIS eingebaute Variablen – gesetzt werden dafür Projekttitel und
+  Kennung in den Projekt-Metadaten.
+- **Vorlage in der Projektdatei:** beim ersten Export wird die globale Vorlage in die `.oap` übernommen
+  (`dateien`, Art `qgis`) und danach von dort verwendet – spätere Änderungen an der Bürovorlage ändern alte Projekte
+  nicht. „Vorlage aktualisieren“ im Export-Dialog ersetzt sie durch die aktuelle Fassung.
+- Voraussetzung sind **Koordinaten** in der Projektdatei (beim Speichern der Projektadresse abgefragt, EPSG:25832).
+  Im Projektordner wird nichts überschrieben: Gibt es einen Plan schon, wird er übersprungen oder mit neuem Namen
+  („… (2).pdf“) abgelegt. `{Art}` im Dateinamen ist die Antragsart des aktiven Antrags (ohne Antrag leer).
+
+Umsetzung (`apps/ordner`): `src/kataster/kataster.ts` (Einstellungen, Auslesen der Vorlage, Auftrag), `katasterStore.ts`
+(Ablauf), `qgis.ts` (Befehle der Hülle bzw. Ersatz für die Tests), `components/KatasterDialog.tsx` und
+`KatasterEinstellungen.tsx`,
+`katasterexport.py` (Processing-Skript, wird mitgeliefert und mit `qgis_process run katasterexport.py --
+AUFTRAG=<json>` ausgeführt). Die Hülle (`packages/core/tauri/qgis.rs`) startet nur ein Programm namens
+`qgis_process…`, legt Skript, Auftrag und Vorlage in einen eigenen temporären Ordner, lässt QGIS dort hineinschreiben
+und legt die Pläne danach am Ziel ab – nur neu, nie überschreibend.
+
 ## Desktop und Browser
 
 Ordner anlegen und einlesen kann nur die Desktop-App. Die Web-Version liefert den Projektordner als

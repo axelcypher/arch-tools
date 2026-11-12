@@ -566,10 +566,10 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     expect(host.textContent).toContain('LPh 1, 2');
     act(() => knopf(host, 'Neues Projekt').click());
     expect(neu).toBe(1);
-    // Kontextmenü (P-09): ergänzen, prüfen, Explorer, abschließen (P-15), anheften
+    // Kontextmenü (P-09): ergänzen, prüfen, Katasterpläne, Explorer, abschließen (P-15), anheften
     const karteVon = (text: string) => [...host.querySelectorAll('.pa-karte')].find((k) => k.textContent?.includes(text)) as HTMLElement;
     act(() => karteVon('Neubau EFH').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
-    expect([...host.querySelectorAll('.pa-menue [role="menuitem"]')].map((b) => b.textContent)).toEqual(['Ergänzen …', 'Im Explorer öffnen', 'Projekt abschließen', 'Als Akquise kennzeichnen', 'Anheften']);
+    expect([...host.querySelectorAll('.pa-menue [role="menuitem"]')].map((b) => b.textContent)).toEqual(['Ergänzen …', 'Katasterpläne …', 'Im Explorer öffnen', 'Projekt abschließen', 'Als Akquise kennzeichnen', 'Anheften']);
     await act(async () => ([...host.querySelectorAll('.pa-menue [role="menuitem"]')].find((b) => b.textContent === 'Projekt abschließen') as HTMLButtonElement).click());
     await warten();
     await warten();

@@ -5,24 +5,23 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { readProjectFile, writeArchive } from '@core/archive';
 import { createProject, leereMeta } from '@core/model';
 import { RueckfrageHost } from '@core/ui/Rueckfrage';
-import { vorlageLesen } from './kataster/kataster';
+import { VORGABE_KATASTER, vorlageLesen } from './kataster/kataster';
 import { useKataster } from './kataster/katasterStore';
 import { vorlageQgs, vorlageQgz } from './__fixtures__/qgisVorlage';
 import { KatasterDialog } from './components/KatasterDialog';
 import { KatasterEinstellungen } from './components/KatasterEinstellungen';
-import { SpeicherDateisystem } from './dateisystem';
-import type { Projekt } from './projekte';
-import { useFormulare } from './store';
+import { SpeicherProjektordner } from '@core/platform/projektordner';
+import { SpeicherQgis } from './kataster/qgis';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const ORDNER = 'Z:/Projekte/BS9 Musterstraße 9';
 const OAP = `${ORDNER}/Planung/Berechnungen/BS9 Flächen.oap`;
 const VORLAGE = 'C:/Vorlagen/Kataster.qgz';
-const projekt: Projekt = { root: 'C:/FORMA', ordner: 'BS9', titel: 'Musterstraße 9' };
 const jjmmtt = (d = new Date()) => `${String(d.getFullYear() % 100).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
 
-let ds: SpeicherDateisystem;
+let fs: SpeicherProjektordner;
+let qgis: SpeicherQgis;
 let root: ReturnType<typeof createRoot> | null = null;
 
 function oap(mitKoordinaten = true) {
@@ -39,13 +38,12 @@ function oap(mitKoordinaten = true) {
 
 beforeEach(async () => {
   localStorage.clear();
-  ds = new SpeicherDateisystem();
-  ds.dateien.set(OAP, oap());
-  ds.dateien.set(VORLAGE, vorlageQgz());
-  ds.qgisProgramme = ['C:/Program Files/QGIS 3.40.5/bin/qgis_process-qgis-ltr.bat'];
-  useFormulare.setState({ ds, projekt, ordnerWahl: { BS9: ORDNER }, oap: null, oapWahl: {}, meldung: null, formulare: [] });
-  await useFormulare.getState().oapLaden();
-  useKataster.setState({ programm: '', vorlageInfo: null, laeuft: false, ausgang: null });
+  fs = new SpeicherProjektordner();
+  fs.setze(OAP, oap());
+  qgis = new SpeicherQgis(fs);
+  qgis.dateien.set(VORLAGE, vorlageQgz());
+  qgis.programme = ['C:/Program Files/QGIS 3.40.5/bin/qgis_process-qgis-ltr.bat'];
+  useKataster.setState({ fs, qgis, einstellungen: structuredClone(VORGABE_KATASTER), programm: '', vorlageInfo: null, projekt: null, laeuft: false, ausgang: null });
   await useKataster.getState().aendern({ ...useKataster.getState().einstellungen, vorlage: VORLAGE, ziel: 'pfad', zielpfad: 'Kataster' });
   useKataster.getState().programmSetzen('C:/Program Files/QGIS 3.40.5/bin/qgis_process-qgis-ltr.bat');
 });
@@ -69,11 +67,11 @@ async function zeige(el: React.ReactElement) {
   for (let i = 0; i < 4; i++) await warte();
   return host;
 }
-const plaeneInOap = () => readProjectFile(ds.dateien.get(OAP)!).dateien?.filter((d) => d.art === 'qgis') ?? [];
+const plaeneInOap = () => readProjectFile(fs.eintraege.get(OAP)!).dateien?.filter((d) => d.art === 'qgis') ?? [];
 
 describe('Katasterpläne exportieren', () => {
   it('übernimmt die Vorlage in die Projektdatei, füllt die Planköpfe und legt die Pläne ab', async () => {
-    const host = await zeige(createElement(KatasterDialog, { onClose: () => undefined }));
+    const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9 Musterstraße 9', onClose: () => undefined }));
     expect(host.textContent).toContain('beim Export wird Kataster.qgz übernommen');
     expect(host.textContent).toContain('E 405.577,31');
     await klick(knopf(host, '4 Pläne exportieren'));
@@ -82,7 +80,7 @@ describe('Katasterpläne exportieren', () => {
     expect(plaeneInOap()).toEqual([expect.objectContaining({ name: 'Kataster.qgz', art: 'qgis' })]);
     expect(host.textContent).toContain('Kataster.qgz übernommen am');
 
-    const a = ds.qgisAufrufe[0];
+    const a = qgis.aufrufe[0];
     expect(a.programm).toContain('qgis_process-qgis-ltr.bat');
     expect(a.skript).toContain('class KatasterExport');
     expect(a.vorlageName).toBe('Kataster.qgz');
@@ -91,32 +89,33 @@ describe('Katasterpläne exportieren', () => {
     expect(auftrag.variablen).toEqual({ project_title: 'Neubau EFH', project_identifier: 'MUS', project_street: 'Prinzipalmarkt 10', project_city: 'Münster', project_zip_code: '48143' });
     expect(auftrag.koordinaten).toEqual({ ost: 405577.31, nord: 5757743.76, epsg: 25832 });
     const d = jjmmtt();
-    const namen = ['Katasterauszug A4.pdf', 'Katasterauszug A3.pdf', 'Schwarzplan.dxf', 'Katasterplan.dxf'].map((n) => `Kataster/MUS BAUA ${d} ${n}`);
+    // ohne aktiven Antrag in der Projektdatei entfällt {Art}
+    const namen = ['Katasterauszug A4.pdf', 'Katasterauszug A3.pdf', 'Schwarzplan.dxf', 'Katasterplan.dxf'].map((n) => `Kataster/MUS ${d} ${n}`);
     expect(auftrag.plaene.map((p) => p.ausgabe)).toEqual(namen.map((n) => `${ORDNER}/${n}`));
-    for (const n of namen) expect(ds.dateien.has(`${ORDNER}/${n}`)).toBe(true);
+    for (const n of namen) expect(fs.eintraege.has(`${ORDNER}/${n}`)).toBe(true);
     expect(host.querySelectorAll('.ka-ergebnis.ok')).toHaveLength(4);
-    expect(host.textContent).toContain(`✓ Kataster/MUS BAUA ${d} Schwarzplan.dxf`);
+    expect(host.textContent).toContain(`✓ Kataster/MUS ${d} Schwarzplan.dxf`);
 
     // noch einmal: vorhandene Dateien – überspringen heißt hier: nichts zu tun
     await klick(knopf(host, '4 Pläne exportieren'));
     expect(document.body.textContent).toContain('4 Dateien gibt es schon');
     await klick(knopf(document.body, 'Vorhandene überspringen'));
-    expect(ds.qgisAufrufe).toHaveLength(1);
+    expect(qgis.aufrufe).toHaveLength(1);
 
-    // ersetzen: alte Fassungen gesichert und gelöscht, neu exportiert
+    // mit neuem Namen: nichts wird überschrieben, die neuen heißen „… (2)“
     await klick(knopf(host, '4 Pläne exportieren'));
-    await klick(knopf(document.body, 'Ersetzen'));
-    expect(ds.qgisAufrufe).toHaveLength(2);
-    expect([...ds.papierkorb.keys()].filter((k) => k.includes('/Kataster/'))).toHaveLength(4);
+    await klick(knopf(document.body, 'Mit neuem Namen ablegen'));
+    expect(qgis.aufrufe).toHaveLength(2);
+    expect(fs.eintraege.has(`${ORDNER}/Kataster/MUS ${d} Schwarzplan (2).dxf`)).toBe(true);
     // die Vorlage der Projektdatei wird weiter verwendet (nicht erneut übernommen)
     expect(plaeneInOap()).toHaveLength(1);
   });
 
   it('„Vorlage aktualisieren“ ersetzt die Vorlage der Projektdatei durch die globale', async () => {
-    const host = await zeige(createElement(KatasterDialog, { onClose: () => undefined }));
+    const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9 Musterstraße 9', onClose: () => undefined }));
     await klick(knopf(host, 'Vorlage übernehmen'));
     expect(vorlageLesen(plaeneInOap()[0].daten).layouts.map((l) => l.name)).toEqual(['Katasterauszug A4', 'Katasterauszug A3']);
-    ds.dateien.set(VORLAGE, vorlageQgz(vorlageQgs(['Katasterauszug A4', 'Katasterauszug A3', 'Lageplan A2'])));
+    qgis.dateien.set(VORLAGE, vorlageQgz(vorlageQgs(['Katasterauszug A4', 'Katasterauszug A3', 'Lageplan A2'])));
     await klick(knopf(host, 'Vorlage aktualisieren'));
     expect(plaeneInOap()).toHaveLength(1);
     expect(vorlageLesen(plaeneInOap()[0].daten).layouts.map((l) => l.name)).toContain('Lageplan A2');
@@ -124,7 +123,7 @@ describe('Katasterpläne exportieren', () => {
   });
 
   it('Fehler je Plan aus QGIS; ohne Koordinaten kein Export', async () => {
-    ds.qgisLauf = (a) => {
+    qgis.lauf = (a) => {
       const plaene = (a.auftrag as { plaene: { id: string; ausgabe: string }[] }).plaene;
       return {
         ok: ['a4'],
@@ -133,25 +132,54 @@ describe('Katasterpläne exportieren', () => {
           .join('\n'),
       };
     };
-    const host = await zeige(createElement(KatasterDialog, { onClose: () => undefined }));
+    const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9 Musterstraße 9', onClose: () => undefined }));
     await klick(knopf(host, '4 Pläne exportieren'));
     expect(host.querySelectorAll('.ka-ergebnis.ok')).toHaveLength(1);
     expect(host.textContent).toContain('✗ schwarzplan: Layer nicht erreichbar');
 
     // QGIS bricht ohne Ergebnis ab: Auszug der Fehlerausgabe
-    ds.qgisLauf = () => ({ code: 1, ausgabe: '', fehler: 'Traceback …\nModuleNotFoundError: No module named qgis' });
+    qgis.lauf = () => ({ code: 1, ausgabe: '', fehler: 'Traceback …\nModuleNotFoundError: No module named qgis' });
     await klick(knopf(host, '4 Pläne exportieren'));
     expect(document.body.textContent).toContain('Eine Datei gibt es schon');
-    await klick(knopf(document.body, 'Ersetzen'));
+    await klick(knopf(document.body, 'Mit neuem Namen ablegen'));
     expect(host.querySelector('.ka-meldung')!.textContent).toContain('No module named qgis');
 
     act(() => root!.unmount());
     root = null;
-    ds.dateien.set(OAP, oap(false));
-    await useFormulare.getState().oapLaden();
-    const h2 = await zeige(createElement(KatasterDialog, { onClose: () => undefined }));
+    fs.setze(OAP, oap(false));
+    const h2 = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9 Musterstraße 9', onClose: () => undefined }));
     expect(h2.textContent).toContain('Keine Koordinaten');
     expect(knopf(h2, 'Pläne exportieren').disabled).toBe(true);
+  });
+});
+
+describe('Ablage im Ordner des aktiven Antrags', () => {
+  it('nimmt den aktiven Antrag aus der Projektdatei (meta.antrag) – ohne ihn kein Export', async () => {
+    const p = readProjectFile(fs.eintraege.get(OAP)!);
+    p.meta.antrag = { name: 'BAUA 2' };
+    fs.setze(OAP, writeArchive(p));
+    await useKataster.getState().aendern({ ziel: 'antrag' });
+    const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9', onClose: () => undefined }));
+    expect(host.textContent).toContain('Ablage: TÖB/BAUA 2');
+    await klick(knopf(host, '4 Pläne exportieren'));
+    expect(fs.eintraege.has(`${ORDNER}/TÖB/BAUA 2/MUS BAUA ${jjmmtt()} Katasterauszug A4.pdf`)).toBe(true);
+
+    act(() => root!.unmount());
+    root = null;
+    delete p.meta.antrag;
+    fs.setze(OAP, writeArchive(p));
+    const h2 = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9', onClose: () => undefined }));
+    expect(h2.textContent).toContain('Kein aktiver Antrag in der Projektdatei');
+    expect(knopf(h2, 'Pläne exportieren').disabled).toBe(true);
+  });
+
+  it('übernimmt die Einstellungen aus Formulare beim ersten Laden', async () => {
+    const { konfigAendern, konfigLesen } = await import('@core/platform/konfig');
+    localStorage.clear();
+    await konfigAendern('formulare', () => ({ kataster: { vorlage: 'C:/Alt/Kataster.qgz', ziel: 'pfad', zielpfad: 'Lagepläne', dateiname: '{Code} {Name}', plaene: [] } }));
+    await useKataster.getState().laden();
+    expect(useKataster.getState().einstellungen).toMatchObject({ vorlage: 'C:/Alt/Kataster.qgz', zielpfad: 'Lagepläne', dateiname: '{Code} {Name}' });
+    expect(await konfigLesen('kataster')).toMatchObject({ zielpfad: 'Lagepläne' });
   });
 });
 
@@ -174,7 +202,7 @@ describe('Einstellungen der Katasterpläne', () => {
     await klick(knopf(host, 'DXF'));
     expect(useKataster.getState().einstellungen.plaene.map((p) => p.name)).toEqual(['Katasterauszug A4', 'Katasterauszug A3', 'Schwarzplan', 'Neue DXF']);
     // gespeichert im gemeinsamen Konfigurationsbereich
-    const roh = JSON.parse(Object.entries(localStorage).find(([k]) => k.includes('formulare') && String(localStorage.getItem(k)).includes('kataster'))![1] as string);
-    expect(roh.kataster.plaene).toHaveLength(4);
+    const roh = JSON.parse(Object.entries(localStorage).find(([k]) => k.includes('kataster') && String(localStorage.getItem(k)).includes('plaene'))![1] as string);
+    expect(roh.plaene).toHaveLength(4);
   });
 });

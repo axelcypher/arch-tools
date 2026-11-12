@@ -4,7 +4,8 @@ import { NumberField, TextField } from '@core/ui/fields';
 import type { DxfStil, KatasterPlan, VorlageInfo } from '../kataster/kataster';
 import { ausschnitt, karteVon, planDateiname, planFehler } from '../kataster/kataster';
 import { useKataster } from '../kataster/katasterStore';
-import { useFormulare } from '../store';
+import { tauriQgis } from '../kataster/qgis';
+import { hatDateisystem } from '../dateisystem';
 import { Symbol } from './Symbol';
 
 function Karte({ titel, text, children, kopf }: { titel: string; text?: ReactNode; children: ReactNode; kopf?: ReactNode }) {
@@ -177,7 +178,9 @@ export function KatasterEinstellungen() {
   const { aendern, vorlageWaehlen, vorlageInfoLaden, programmSetzen, programmSuchen, planHinzufuegen, vorgabenWiederherstellen } = useKataster.getState();
   const [gefunden, setGefunden] = useState<string[] | null>(null);
   // Desktop-App (Zugriff auf Dateien und Programme)
-  const desktop = useFormulare((s) => !!s.ds);
+  // Desktop-App (Zugriff auf Dateien und Programme) – oder ein Ersatz für QGIS (Tests)
+  const eigenerZugriff = useKataster((s) => s.qgis !== tauriQgis);
+  const desktop = hatDateisystem() || eigenerZugriff;
   useEffect(() => {
     void useKataster.getState().laden();
   }, []);
@@ -187,6 +190,9 @@ export function KatasterEinstellungen() {
   return (
     <>
       <h2>Katasterpläne</h2>
+      <p className="muted">
+        Exportiert wird je Projekt auf der Startseite: Rechtsklick auf das Projekt → „Katasterpläne …“.
+      </p>
       <p className="muted">
         Katasterauszüge (PDF aus Layouts) und DXF-Pläne (Vektorlayer eines Kartenthemas) kommen aus einem QGIS-Projekt als Vorlage – mit den Diensten (WMS/WFS) und Layouts des Büros. QGIS läuft dafür
         unsichtbar im Hintergrund (<code>qgis_process</code>, ab QGIS 3.28). Der Plan wird um die Koordinaten der Projektadresse gelegt (EPSG:25832). Beim ersten Export wird die Vorlage in die
@@ -276,7 +282,7 @@ export function KatasterEinstellungen() {
           </label>
           <label className={`ex-ziel${e.ziel === 'antrag' ? ' aktiv' : ''}`}>
             <input type="radio" checked={e.ziel === 'antrag'} onChange={() => void aendern({ ziel: 'antrag' })} />
-            <span>Ordner der aktiven Antragsfassung (z. B. TÖB\BAUA 2)</span>
+            <span>Ordner des aktiven Antrags (z. B. TÖB\BAUA 2 – der Antrag aus der Projektdatei, gepflegt in Formulare)</span>
           </label>
         </div>
         <label className="ex-feld">

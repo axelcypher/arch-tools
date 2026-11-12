@@ -1,5 +1,5 @@
-// QGIS im Hintergrund (qgis_process) – für die Katasterpläne der Formulare-App. Per include! in die Hüllen von
-// Formulare und der Rahmen-App eingebunden (nach commands.rs: base64, log).
+// QGIS im Hintergrund (qgis_process) – für die Katasterpläne des Projektordner-Tools. Per include! in die Hüllen von
+// Projektordner und Rahmen-App eingebunden (nach commands.rs: base64, log); Formulare hatte die Katasterpläne früher.
 //
 // Gestartet wird ausschließlich ein Programm namens qgis_process (bzw. qgis_process-qgis*.bat unter Windows), mit dem
 // Export-Skript der App und einem Auftrag (JSON) – beide und die QGIS-Vorlage liegen in einem eigenen temporären

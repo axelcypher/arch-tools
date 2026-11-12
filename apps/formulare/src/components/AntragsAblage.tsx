@@ -13,7 +13,6 @@ import { zeigeMenue } from './Menue';
 import { Symbol } from './Symbol';
 import { useState } from 'react';
 import { UnterlagenVorschau } from './UnterlagenVorschau';
-import { KatasterKnopf } from './KatasterDialog';
 
 /** Alle Formulare des Projekts (ohne Archivordner) auf einmal als PDF exportieren – mit Fortschritt */
 export function SammelExportKnopf({ mitText = false }: { mitText?: boolean }) {
@@ -121,7 +120,6 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           <Symbol name="auge" /> Ansehen
         </button>
         <SammelExportKnopf mitText />
-        <KatasterKnopf />
       </div>
       {vorschau !== undefined && <UnterlagenVorschau ablage={ablage} start={vorschau ?? undefined} onClose={() => setVorschau(undefined)} />}
       {!liste.length && <p className="nav-leer">Im Ordner {ordner} liegen noch keine Dokumente.</p>}
