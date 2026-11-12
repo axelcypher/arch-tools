@@ -569,8 +569,13 @@ textarea:focus-visible {
   width: 620px;
 }
 
-.modal h3 {
+.modal h3,
+.modal h2.br-dialog-titel {
   margin: 0 0 10px;
+}
+/* Dialogüberschrift als h2 (Ebene unter dem Dialog), aussehend wie bisher */
+.modal h2.br-dialog-titel {
+  font-size: 1.17em;
 }
 
 .modal h4 {

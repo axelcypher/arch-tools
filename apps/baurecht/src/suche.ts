@@ -1,0 +1,40 @@
+/**
+ * Textsuche für Angaben und Vorschriften: jedes Wort muss vorkommen – Zahlen als ganzes Wort („1“ trifft nicht „10“),
+ * kurze Wörter bis drei Zeichen (Kürzel) nur am Wortanfang („GK“ trifft nicht „Schwierigkeiten“), längere auch im
+ * Wort (zusammengesetzte Wörter: „flächen“ in „Abstandsflächen“). Gängige Kürzel und Synonyme zählen mit.
+ */
+const SYNONYME: Record<string, string[]> = {
+  gk: ['gebäudeklasse'],
+  grz: ['grundflächenzahl', 'grz'],
+  gfz: ['geschossflächenzahl', 'gfz'],
+  bplan: ['bebauungsplan'],
+  'b-plan': ['bebauungsplan'],
+  fnp: ['flächennutzungsplan'],
+  lsg: ['landschaftsschutz'],
+  nsg: ['naturschutzgebiet'],
+  wsg: ['wasserschutzgebiet'],
+  üsg: ['überschwemmungsgebiet'],
+  abriss: ['beseitigung', 'abbruch'],
+  abbruch: ['beseitigung'],
+  rückbau: ['beseitigung', 'abbruch'],
+  neubau: ['errichtung'],
+  umbau: ['änderung'],
+  stellplatz: ['stellpl'],
+};
+
+export const suchNorm = (s: string) => s.toLowerCase().replace(/§/g, ' ').replace(/\s+/g, ' ').trim();
+const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function wortPasst(text: string, x: string): boolean {
+  if (/^\d/.test(x)) return new RegExp(`(^|[^0-9])${esc(x)}([^0-9]|$)`).test(text);
+  if (x.length <= 3) return new RegExp(`(^|[^a-zäöüß0-9])${esc(x)}`).test(text);
+  return text.includes(x);
+}
+
+/** passt der Text zur Suche? (leere Suche passt immer) */
+export function textPasst(text: string, suche: string): boolean {
+  const q = suchNorm(suche);
+  if (!q) return true;
+  const t = suchNorm(text);
+  return q.split(' ').every((x) => wortPasst(t, x) || (SYNONYME[x] ?? []).some((s) => t.includes(s)));
+}

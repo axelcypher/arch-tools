@@ -2,6 +2,7 @@ import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FAKT_GRUPPEN, faktName, ortsgebunden, zaehlEinheit } from '@core/baurecht/typen';
 import { aktuelleLage, OHNE_LAGEBEZUG } from '../pruefung';
+import { textPasst } from '../suche';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
 import { werten } from '@core/baurecht/kurz';
 import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
@@ -54,12 +55,26 @@ const HERKUNFT: Record<FaktWert['herkunft'], string> = {
 export const merkmalUnterzeile = (name: string, text?: string) => {
   if (!text || text === name) return '';
   const rest = text.startsWith(name) ? text.slice(name.length) : null;
-  return rest !== null && /^[\s(:–,-]/.test(rest) ? rest.replace(/^[\s:–,-]+/, '').trim() : text;
+  return ohneKlammer(rest !== null && /^[\s(:–,-]/.test(rest) ? rest.replace(/^[\s:–,-]+/, '').trim() : text);
+};
+
+/** eine Unterzeile, die nur aus einer Klammer besteht („(§ 2 Abs. 3 BauO NRW)“), ohne die Klammer */
+export const ohneKlammer = (s: string) => {
+  const m = /^\((.*)\)$/.exec(s.trim());
+  return m && !/[()]/.test(m[1]) ? m[1] : s;
 };
 /** Merkmale, die zur Suche passen (Name, Erklärung, Werte) */
-const merkmalPasst = (m: { name: string; werte: string[] }, suche: string) => !suche || `${MERKMAL_TITEL[m.name] ?? m.name} ${MERKMAL_ERKLAERUNG[m.name]?.text ?? ''} ${m.werte.join(' ')}`.toLowerCase().includes(suche.toLowerCase());
+const merkmalPasst = (m: { name: string; werte: string[] }, suche: string) => textPasst(`${MERKMAL_TITEL[m.name] ?? m.name} ${MERKMAL_ERKLAERUNG[m.name]?.text ?? ''} ${m.werte.join(' ')}`, suche);
 
-function Merkmale({ klaerung, suche = '' }: { klaerung: Map<string, number>; suche?: string }) {
+/** Planungsrecht für diesen Ort bestätigen – danach Fokus auf das Merkmal (der Knopf verschwindet) und eine Ansage */
+function planungsrechtGiltHier() {
+  const st = useBaurecht.getState();
+  st.planungsrechtBestaetigen();
+  st.ansagen('Planungsrecht für diesen Ort bestätigt');
+  st.fokusSetzen('merkmal:Planungsrecht');
+}
+
+function Merkmale({ klaerung, suche = '', planungsrechtOffen }: { klaerung: Map<string, number>; suche?: string; planungsrechtOffen?: string }) {
   const merkmale = useBaurecht((s) => s.merkmale);
   const geaendert = useBaurecht((s) => s.merkmaleDatei);
   const fokus = useBaurecht((s) => s.fokus);
@@ -89,8 +104,9 @@ function Merkmale({ klaerung, suche = '' }: { klaerung: Map<string, number>; suc
     <section ref={ref} className="br-angaben-gruppe" aria-labelledby="br-merkmale">
       <h3 id="br-merkmale">
         {/* während der Suche fest aufgeklappt (zeigt die passenden Merkmale) – der Knopf ist dann ohne Wirkung und deshalb aus */}
-        <button type="button" className="br-gruppe-knopf" aria-expanded={auf} disabled={!!suche} title={suche ? 'Während der Suche aufgeklappt' : undefined} onClick={() => setAuf(!auf)}>
-          <span aria-hidden="true">{auf ? '▾' : '▸'}</span> Antragsmerkmale <span className="br-gruppe-stand">{fehlen ? `${fehlen} offen` : 'alle festgelegt'}</span>
+        {/* aria-disabled statt disabled: die Überschrift bleibt gut lesbar (sie beschriftet die sichtbare Gruppe) */}
+        <button type="button" className="br-gruppe-knopf" aria-expanded={auf} aria-disabled={suche ? true : undefined} title={suche ? 'Während der Suche aufgeklappt' : undefined} onClick={() => !suche && setAuf(!auf)}>
+          <span aria-hidden="true">{suche ? '' : auf ? '▾' : '▸'}</span> Antragsmerkmale <span className="br-gruppe-stand">{fehlen ? `${fehlen} offen` : 'alle festgelegt'}</span>
         </button>
       </h3>
       {auf && <p className="br-leise">Gemeinsam mit der App Formulare – gilt für den ganzen Antrag.</p>}
@@ -108,10 +124,24 @@ function Merkmale({ klaerung, suche = '' }: { klaerung: Map<string, number>; suc
               </span>
               {!wert && n ? <span className="br-klaert" title={`klärt ${n} Paragrafen`}>klärt {n}</span> : null}
               {(geaendert[m.name] ?? '') !== wert && <span className="br-marke" title="noch nicht gespeichert">geändert</span>}
+              {m.name === 'Planungsrecht' && wert && planungsrechtOffen && (
+                <span className="br-hinweis-marke" title={planungsrechtOffen}>
+                  nicht für diesen Ort bestätigt
+                </span>
+              )}
             </div>
             <div className={`br-segment${m.werte.length >= 3 && m.werte.some((w) => w.length > 14) ? ' br-segment-senkrecht' : ''}`} onKeyDown={segmentTaste}>
               {m.werte.map((w, i) => (
-                <button key={w} type="button" tabIndex={tabStopp(wert === w, i === 0, !wert)} className={wert === w ? 'active' : ''} aria-pressed={wert === w} title={e?.werte?.[w] ? `${w}: ${e.werte[w]}` : w} onClick={() => wert !== w && useBaurecht.getState().merkmalSetzen(m.name, w)}>
+                <button
+                  key={w}
+                  type="button"
+                  tabIndex={tabStopp(wert === w, i === 0, !wert)}
+                  className={wert === w ? 'active' : ''}
+                  aria-pressed={wert === w}
+                  title={e?.werte?.[w] ? `${w}: ${e.werte[w]}` : w}
+                  // derselbe Wert erneut gewählt bestätigt das Planungsrecht für diesen Ort
+                  onClick={() => (wert !== w ? useBaurecht.getState().merkmalSetzen(m.name, w) : m.name === 'Planungsrecht' && planungsrechtOffen && useBaurecht.getState().planungsrechtBestaetigen())}
+                >
                   {w}
                 </button>
               ))}
@@ -119,6 +149,11 @@ function Merkmale({ klaerung, suche = '' }: { klaerung: Map<string, number>; suc
             {wert && (
               <div className="br-merkmal-fuss">
                 {e?.werte?.[wert] && <span className="br-leise br-erklaerung">{nb(e.werte[wert])}</span>}
+                {m.name === 'Planungsrecht' && planungsrechtOffen && (
+                  <button type="button" className="small" onClick={planungsrechtGiltHier} title={`${planungsrechtOffen} – für diesen Ort bestätigen`}>
+                    Gilt hier
+                  </button>
+                )}
                 <button type="button" className="small br-link" aria-label={`${MERKMAL_TITEL[m.name] ?? m.name} leeren`} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title="Merkmal für den ganzen Antrag leeren (auch in Formulare)">
                   leeren
                 </button>
@@ -202,7 +237,7 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
   const hilfeLang = (def.hilfe?.length ?? 0) > 90;
   // Unterzeile: die Frage, sonst der ausführliche Titel – aber nicht, wenn er nur den kurzen Namen wiederholt
   const rest = def.kurz && def.titel.startsWith(def.kurz) ? def.titel.slice(def.kurz.length).trim() : '';
-  const unterzeile = def.frage ?? (def.kurz ? (def.titel.startsWith(def.kurz) ? rest || undefined : def.titel) : undefined);
+  const unterzeile = def.frage ?? (def.kurz ? (def.titel.startsWith(def.kurz) ? (rest ? ohneKlammer(rest) : undefined) : def.titel) : undefined);
   return (
     <div ref={ref} data-fakt={id} className={`br-fakt${wert?.wert == null ? ' br-offen' : ''}${fokus === id ? ' br-fokus' : ''}`}>
       <div className="br-fakt-kopf">
@@ -221,10 +256,23 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
         <div className="br-fester-wert">
           {typeof wert?.wert === 'boolean' ? (wert.wert ? 'ja' : 'nein') : String(wert?.wert)} <span className="br-leise">– {wert?.quelle}</span>
           {wert?.sicherheit === 'hinweis' && (
-            <span className="br-hinweis-marke" title={wert.grund}>
-              {' '}
-              nur Hinweis
-            </span>
+            <>
+              <span className="br-hinweis-marke" title={wert.grund}>
+                {' '}
+                nur Hinweis
+              </span>
+              {/* der Grund sichtbar, mit Ausweg: feste Werte eines Gebietsmoduls gelten erst mit gesichertem Gemeindeschlüssel */}
+              {/Gemeindeschlüssel/.test(wert.grund ?? '') ? (
+                <span className="br-fester-grund">
+                  <span className="br-leise-stark">gilt erst mit bestätigtem Gemeindeschlüssel</span>{' '}
+                  <button type="button" className="small" onClick={() => useBaurecht.getState().fokusSetzen('lage.ags')}>
+                    Gemeindeschlüssel bestätigen …
+                  </button>
+                </span>
+              ) : (
+                wert.grund && <span className="br-leise-stark br-fester-grund">{wert.grund}</span>
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -261,7 +309,13 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
                       className="small"
                       aria-label={`${name}: für diese Lage übernehmen`}
                       title="Derselbe Wert gilt auch an der aktuellen Lage – an sie binden"
-                      onClick={() => (mitBeleg(def, wert) && wert.wert != null ? faktSetzenOeffnen(id, name, wert.wert, true) : useBaurecht.getState().faktSetzen(id, wert.wert, benutzer(), undefined, lage))}
+                      onClick={() => {
+                        if (mitBeleg(def, wert) && wert.wert != null) return faktSetzenOeffnen(id, name, wert.wert, true);
+                        useBaurecht.getState().faktSetzen(id, wert.wert, benutzer(), undefined, lage);
+                        // der Knopf verschwindet – Fokus auf die Angabe selbst, mit Ansage
+                        useBaurecht.getState().ansagen(`${name} für diese Lage übernommen`);
+                        fokusZurZeile();
+                      }}
                     >
                       Für diese Lage übernehmen
                     </button>
@@ -346,6 +400,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     return s;
   }, [auswertung.paragrafen]);
   const merkmale = useBaurecht((s) => s.merkmale);
+  const ansage = useBaurecht((s) => s.ansage);
   const ctx = { merkmale, fakten: auswertung.fakten, einreichung: stand.einreichung, heute: heute(), bausteine: auswertung.text.bausteine };
   const antrag = useBaurecht((s) => s.antrag);
   const projektKennung = useBaurecht((s) => (s.quelle ? (s.quelle.art === 'datei' ? s.quelle.name : s.quelle.datei) : ''));
@@ -356,7 +411,8 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     const offenB = auswertung.fakten[b]?.wert == null ? 1 : 0;
     return offenB - offenA || (klaerung.get(b) ?? 0) - (klaerung.get(a) ?? 0) || auswertung.faktDefs[a].titel.localeCompare(auswertung.faktDefs[b].titel, 'de');
   };
-  const schluessel = `${projektKennung}|${antrag}|${alle}|${suche}|${stand.module.map((m) => m.id).join(',')}`;
+  // auch ein geändertes Antragsmerkmal (z. B. „Beseitigung“) ordnet neu: seine Folgefragen rücken nach oben
+  const schluessel = `${projektKennung}|${antrag}|${alle}|${suche}|${stand.module.map((m) => m.id).join(',')}|${JSON.stringify(merkmale)}`;
   // Schnappschuss der Reihenfolge je Schlüssel – abgeleiteter Zustand (React: „Informationen aus vorigen Renderläufen
   // speichern“), nicht bei jeder Antwort neu
   const rangBilden = () => new Map(Object.keys(auswertung.faktDefs).sort(vergleich).map((id, i) => [id, i]));
@@ -367,13 +423,16 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     const ids = Object.entries(auswertung.faktDefs)
       .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)))
       .filter(([, d]) => !d.wenn || werten(d.wenn, ctx).w !== 'nein')
-      .filter(([id, d]) => !suche || `${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${id}`.toLowerCase().includes(suche.toLowerCase()))
+      .filter(([id, d]) => textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${id}`, suche))
       .map(([id]) => id)
       .sort((a, b) => (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
     return { ...g, ids };
   }).filter((g) => g.ids.length);
   return (
     <aside className="br-angaben" aria-label="Angaben zum Projekt">
+      <div className="br-unsichtbar" role="status" aria-live="polite">
+        {ansage}
+      </div>
       <div className="br-leiste-kopf">
         <h2>Angaben</h2>
         <label className="toggle" title="auch Angaben zeigen, an denen gerade keine Regel hängt">
@@ -395,12 +454,12 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         {stand.planungsrechtHinweis && (
           <div className="br-meldung br-meldung-warn" role="status">
             {stand.planungsrechtHinweis}.{' '}
-            <button type="button" className="small" onClick={() => useBaurecht.getState().planungsrechtBestaetigen()} title="Das Planungsrecht gilt so für dieses Grundstück – für diesen Ort bestätigen">
+            <button type="button" className="small" onClick={planungsrechtGiltHier} title="Das Planungsrecht gilt so für dieses Grundstück – für diesen Ort bestätigen">
               Gilt hier
             </button>
           </div>
         )}
-        {(!suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche))) && <Merkmale klaerung={klaerung} suche={suche} />}
+        {(!suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche))) && <Merkmale klaerung={klaerung} suche={suche} planungsrechtOffen={stand.planungsrechtFrueher} />}
         {suche && !gruppen.length && !VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche)) && (
           <div className="br-leer-zustand" role="status">
             <p>Keine Angabe zu „{suche}“{alle ? '' : ' unter den Angaben, an denen eine Regel hängt'}.</p>

@@ -91,6 +91,9 @@ export interface Zustand {
   rechtsstandGeprueftSetzen: (iso: string) => void;
   waehlen: (id: string | null) => void;
   fokusSetzen: (id: string | null) => void;
+  /** kurze Ansage für Screenreader (nach Knöpfen, die verschwinden) */
+  ansage: string;
+  ansagen: (text: string) => void;
 }
 
 const kopie = <T>(x: T): T => structuredClone(x);
@@ -117,6 +120,8 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   rechtsstandGeprueft: null,
   auswahl: null,
   fokus: null,
+  ansage: '',
+  ansagen: (text) => set({ ansage: text }),
 
   projektSetzen: (quelle, project, roh) => {
     const antrag = aktiverAntrag(roh);

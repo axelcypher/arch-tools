@@ -69,14 +69,14 @@ describe('Regel in Worten: Verneinung positiv, Schwellen lesbar', () => {
     expect(kurzBaum({ nicht: { f: 'art', in: ['EFH'] } }, t).text).toBe('Gebäudeart: alles außer „EFH“');
     expect(kurzBaum({ nicht: { f: 'art', ist: 'EFH' } }, t).text).toBe('Gebäudeart: alles außer „EFH“');
     expect(kurzBaum({ nicht: { n: 'x/14', ampel: ['rot'] } }, t).text).toBe('§ 14 BauGB nicht „gilt“');
-    expect(kurzBaum({ nicht: { f: 'h', min: 7 } }, t).text).toBe('Höhe unter 7 m');
+    expect(kurzBaum({ nicht: { f: 'h', min: 7 } }, t).text).toBe('Höhe: unter 7 m');
     expect(kurzBaum({ nicht: { f: 'art', in: ['EFH'] } }, t).text).not.toMatch(/trifft nicht zu/);
   });
   it('Schwellen: „über 22 m“, „vorhanden“, „keine“', () => {
-    expect(kurzBaum({ f: 'h', min: 22.01 }, t).text).toBe('Höhe über 22 m');
+    expect(kurzBaum({ f: 'h', min: 22.01 }, t).text).toBe('Höhe: über 22 m');
     expect(kurzBaum({ f: 'g', min: 0.01 }, t).text).toBe('Garagen: vorhanden');
     expect(kurzBaum({ f: 'g', max: 0 }, t).text).toBe('Garagen: keine');
-    expect(kurzBaum({ f: 'h', min: 7 }, t).text).toBe('Höhe mindestens 7 m');
+    expect(kurzBaum({ f: 'h', min: 7 }, t).text).toBe('Höhe: mindestens 7 m');
   });
 });
 
@@ -101,14 +101,14 @@ describe('Regel in Worten: Bausteine, Anzahlen, Gemeinden, Verweise', () => {
     expect(kurzBaum({ nicht: { m: 'Gebäudeart', in: ['A', 'B', 'C'] } }, t).text).toMatch(/alles außer „A“, „B“ und „C“$/);
   });
   it('ganzzahlige Anzahlen wie im Gesetz: „mehr als“, „genau“, „vorhanden“, Einheit nicht doppelt, Einzahl', () => {
-    expect(kurzBaum({ f: 'w', min: 4 }, t).text).toBe('Wohnungen mehr als 3');
+    expect(kurzBaum({ f: 'w', min: 4 }, t).text).toBe('Wohnungen: mehr als 3');
     expect(kurzBaum({ f: 'w', min: 3, max: 3 }, t).text).toBe('Wohnungen: genau 3');
     expect(kurzBaum({ f: 'w', min: 1 }, t).text).toBe('Wohnungen: vorhanden');
-    expect(kurzBaum({ nicht: { f: 'w', min: 4 } }, t).text).toBe('Wohnungen höchstens 3');
-    expect(kurzBaum({ f: 'st', min: 11 }, t).text).toBe('Kfz-Stellplätze im oder am Gebäude mehr als 10');
+    expect(kurzBaum({ nicht: { f: 'w', min: 4 } }, t).text).toBe('Wohnungen: höchstens 3');
+    expect(kurzBaum({ f: 'st', min: 11 }, t).text).toBe('Kfz-Stellplätze im oder am Gebäude: mehr als 10');
     expect(kurzBaum({ f: 'st', min: 1 }, t).text).toBe('Kfz-Stellplätze im oder am Gebäude: vorhanden');
-    expect(kurzBaum({ f: 'sf', min: 36 }, t).text).toBe('Stellplatzfläche mehr als 35 Stellplätze');
-    expect(kurzBaum({ f: 'sf', max: 1 }, t).text).toBe('Stellplatzfläche höchstens 1 Stellplatz');
+    expect(kurzBaum({ f: 'sf', min: 36 }, t).text).toBe('Stellplatzfläche: mehr als 35 Stellplätze');
+    expect(kurzBaum({ f: 'sf', max: 1 }, t).text).toBe('Stellplatzfläche: höchstens 1 Stellplatz');
     expect(kurzBaum({ f: 'gn', min: 0.01, max: 100 }, t).text).toBe('Nutzfläche von Garagen: vorhanden, höchstens 100 m²');
     expect(wertAnzeige(1, { typ: 'zahl', einheit: 'Stellplätze' })).toBe('1 Stellplatz');
   });
@@ -132,7 +132,7 @@ describe('Regel in Worten: verneinte Schwellen und unsichere Gruppen', () => {
     bausteine: {},
   };
   it('„nicht über 22 m“ → „höchstens 22 m“, „nicht vorhanden“ → „keine“', () => {
-    expect(kurzBaum({ nicht: { f: 'h', min: 22.01 } }, t).text).toBe('Höhe höchstens 22 m');
+    expect(kurzBaum({ nicht: { f: 'h', min: 22.01 } }, t).text).toBe('Höhe: höchstens 22 m');
     expect(kurzBaum({ nicht: { f: 'g', min: 0.01 } }, t).text).toBe('Garagen: keine');
   });
   it('eine Gruppe, deren Stand nur auf Hinweisen beruht, ist unsicher', () => {

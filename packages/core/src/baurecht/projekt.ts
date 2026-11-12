@@ -87,7 +87,7 @@ function festlegungAus(roh: unknown): Festlegung | null {
 
 function ortAus(roh: unknown): Ort | undefined {
   if (!istObjekt(roh) || typeof roh.adresse !== 'string' || !(roh.lage === null || typeof roh.lage === 'string')) return undefined;
-  return { adresse: roh.adresse, lage: roh.lage, ...(typeof roh.wert === 'string' ? { wert: roh.wert } : {}) };
+  return { adresse: roh.adresse, lage: roh.lage, ...(typeof roh.wert === 'string' ? { wert: roh.wert } : {}), ...(typeof roh.anzeige === 'string' ? { anzeige: roh.anzeige } : {}) };
 }
 
 /** Abschnitt prüfen; Unbekanntes fällt weg, Gültiges bleibt */

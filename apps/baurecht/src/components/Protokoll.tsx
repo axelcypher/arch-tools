@@ -252,7 +252,8 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             <tr>
               <td>Regelmodule</td>
               <td>
-                {pruefstand.module.map((m) => `${m.name} (Stand ${stand(m.version)})`).join(' · ')} – Regelpaket {paket.version}
+                {/* Gemeinde zuerst – wie im Kopf */}
+                {[...pruefstand.module].reverse().map((m) => `${m.name} (Stand ${stand(m.version)})`).join(' · ')} – Regelpaket {paket.version}
               </td>
             </tr>
             {pruefstand.fehlend.length > 0 && (

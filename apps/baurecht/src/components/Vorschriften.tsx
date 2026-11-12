@@ -4,6 +4,7 @@ import type { Ampel, NormErgebnis, ParagrafErgebnis } from '@core/baurecht/typen
 import { EBENEN, einheitName, normTitel, paragrafName, THEMEN } from '@core/baurecht/typen';
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
+import { suchNorm, textPasst } from '../suche';
 import { AMPEL_TEXT, AmpelMarke, datum, inBereichZeigen, nb } from './Ampel';
 
 type Gruppierung = 'offen' | 'ebene' | 'thema';
@@ -184,34 +185,28 @@ function NormKarte({
   );
 }
 
-/** gängige Kürzel in der Suche (klein geschrieben) – ausgeschrieben auch irgendwo im Wort */
-const KUERZEL: Record<string, string> = { gk: 'gebäudeklasse', grz: 'grundflächenzahl', gfz: 'geschossflächenzahl', bplan: 'bebauungsplan', 'b-plan': 'bebauungsplan', fnp: 'flächennutzungsplan', lsg: 'landschaftsschutz', nsg: 'naturschutzgebiet', wsg: 'wasserschutzgebiet', üsg: 'überschwemmungsgebiet' };
-
 /**
  * Suche: „§ 34 BauGB“, „§34“, „34 BauGB“, „GEG 80“ finden genau den Paragrafen (Nummer + Norm in beliebiger
  * Reihenfolge; die Norm zuerst genau nach ihrer Kurzform, erst dann im Titel). Findet die Paragrafensuche nichts
  * („22 m“, „1996“, „50 kW“), gilt die Volltextsuche über Titel, Norm und Begründungen.
  */
 export function suchTreffer(suche: string, normen: NormErgebnis[] = []): (p: ParagrafErgebnis, n: NormErgebnis) => boolean {
-  const norm = (s: string) => s.toLowerCase().replace(/§/g, ' ').replace(/\s+/g, ' ').trim();
+  const norm = suchNorm;
   const q = norm(suche);
   if (!q) return () => true;
-  // Volltext: kurze Wörter (Kürzel) nur am Wortanfang („GK“ trifft nicht „Zulässigkeit“), längere auch im Wort
-  // (zusammengesetzte Wörter: „flächen“ in „Abstandsflächen“); gängige Kürzel auch ausgeschrieben
-  const woerter = q.split(' ').map((x) => ({ x, lang: KUERZEL[x] }));
-  const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const amAnfang = (text: string, wort: string) => new RegExp(`(^|[^a-zäöüß0-9])${esc(wort)}`).test(text);
-  // Zahlen nur als ganzes Wort („1“ trifft nicht „10“)
-  const ganz = (text: string, wort: string) => new RegExp(`(^|[^0-9])${esc(wort)}([^0-9]|$)`).test(text);
-  const volltext = (p: ParagrafErgebnis, n: NormErgebnis) => {
-    const text = norm(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`);
-    return woerter.every(({ x, lang }) => (/^\d/.test(x) ? ganz(text, x) : x.length <= 3 ? amAnfang(text, x) : text.includes(x)) || (!!lang && text.includes(lang)));
-  };
-  // „§ 6 Abs. 1 BauO NRW“: Absatz, Satz und Nummer gehören nicht zur Paragrafennummer
-  const ohneAbsatz = q.replace(/(?:^| )(?:abs|absatz|satz|nr|s)\.? ?\d+[a-z]?(?= |$)/g, ' ').replace(/\s+/g, ' ').trim();
-  const nr = /(?:^| )(\d+[a-z]?)(?= |$)/.exec(ohneAbsatz)?.[1];
+  // Volltext (Kürzel am Wortanfang, Zahlen als ganzes Wort, Synonyme – dieselbe Suche wie in den Angaben)
+  const volltext = (p: ParagrafErgebnis, n: NormErgebnis) => textPasst(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`, suche);
+  // „§ 6 Abs. 1 BauO NRW“, „§ 34 I BauGB“: Absatz, Satz, Nummer und römische Absatzziffern gehören nicht zur
+  // Paragrafennummer; mit „§“ ist es die erste Zahl danach
+  const ohneAbsatz = q
+    .replace(/(?:^| )(?:abs|absatz|satz|nr|s|ziff)\.? ?\d+[a-z]?(?= |$)/g, ' ')
+    .replace(/(?:^| )[ivx]{1,4}(?= |$)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const nachParagraf = suche.includes('§') ? /§\s*(\d+[a-z]?)/i.exec(suche)?.[1]?.toLowerCase() : undefined;
+  const nr = nachParagraf ?? /(?:^| )(\d+[a-z]?)(?= |$)/.exec(ohneAbsatz)?.[1];
   if (!nr) return volltext;
-  const rest = ohneAbsatz.replace(nr, ' ').replace(/\s+/g, ' ').trim();
+  const rest = ohneAbsatz.replace(new RegExp(`(^| )${nr}(?= |$)`), ' ').replace(/\s+/g, ' ').trim();
   const ohne = (s: string) => norm(s).replace(/ /g, '');
   // Norm: genau die Kurzform („BauO NRW“ ist nicht „SAN-VO … BauO NRW“), sonst Kurzform enthält bzw. Titel enthält
   const stufen: ((n: NormErgebnis) => boolean)[] = rest ? [(n) => ohne(n.def.kurz) === ohne(rest), (n) => ohne(n.def.kurz).includes(ohne(rest)), (n) => norm(n.def.titel).includes(rest)] : [() => true];

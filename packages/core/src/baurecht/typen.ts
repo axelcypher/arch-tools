@@ -255,6 +255,8 @@ export interface Ort {
   lage: string | null;
   /** nur beim Planungsrecht: der Wert des Merkmals, der für diesen Ort bestätigt ist */
   wert?: string;
+  /** Anschrift zum Anzeigen („Musterweg 1, 59494 Soest“) – zählt beim Vergleich nicht */
+  anzeige?: string;
 }
 
 export interface Festlegung {

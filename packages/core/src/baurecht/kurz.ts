@@ -222,15 +222,15 @@ function schwelle(name: string, def: FaktDef | undefined, min: number | undefine
     if (min !== undefined && max !== undefined) {
       if (min === max) return `${name}: genau ${mit(min)}`;
       if (vorhanden(min)) return `${name}: vorhanden, höchstens ${mit(max)}`;
-      return `${name} ${ueber(min) ? `über ${zahl(Math.round(min))}` : zahl(min)} bis ${mit(max)}`;
+      return `${name}: ${ueber(min) ? `über ${zahl(Math.round(min))}` : zahl(min)} bis ${mit(max)}`;
     }
-    if (min !== undefined) return vorhanden(min) ? `${name}: vorhanden` : `${name} ${ab(min)}`;
-    if (max !== undefined) return max === 0 ? `${name}: keine` : `${name} höchstens ${mit(max)}`;
+    if (min !== undefined) return vorhanden(min) ? `${name}: vorhanden` : `${name}: ${ab(min)}`;
+    if (max !== undefined) return max === 0 ? `${name}: keine` : `${name}: höchstens ${mit(max)}`;
     return undefined;
   }
   if (min !== undefined && max !== undefined) return vorhanden(min) ? `${name}: keine oder ${ueberMax(max)}` : `${name}: ${unter(min)} oder ${ueberMax(max)}`;
-  if (min !== undefined) return vorhanden(min) ? `${name}: keine` : `${name} ${unter(min)}`;
-  if (max !== undefined) return max === 0 ? `${name}: vorhanden` : `${name} ${ueberMax(max)}`;
+  if (min !== undefined) return vorhanden(min) ? `${name}: keine` : `${name}: ${unter(min)}`;
+  if (max !== undefined) return max === 0 ? `${name}: vorhanden` : `${name}: ${ueberMax(max)}`;
   return undefined;
 }
 
@@ -311,17 +311,19 @@ export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe
   if ('m' in k) {
     const name = MERKMAL_TITEL[k.m] ?? k.m;
     if (k.in) return `${name}: ${zitiert(k.in)}`;
+    // „alles außer „kein Gebäude““ ist eine doppelte Verneinung – positiv: „ein Gebäude“
+    if (k.nicht?.length === 1 && k.nicht[0] === 'kein Gebäude') return `${name}: ein Gebäude`;
     if (k.nicht) return `${name}: alles außer ${zitiert(k.nicht, 'und')}`;
-    return `${name} festgelegt`;
+    return `${name}: festgelegt`;
   }
   if ('f' in k) {
     const def = t.fakt(k.f);
     const name = faktName(def, k.f);
-    if (k.bekannt !== undefined) return k.bekannt ? `${name} bekannt` : `${name} unbekannt`;
+    if (k.bekannt !== undefined) return k.bekannt ? `${name}: bekannt` : `${name}: unbekannt`;
     if (def?.typ === 'janein' && typeof k.ist === 'boolean') return `${name}: ${k.ist ? 'ja' : 'nein'}`;
     if (k.ist !== undefined) return `${name}: ${typeof k.ist === 'string' ? `„${textWert(k.f, k.ist)}“` : wertText(k.ist, def)}`;
     if (k.in) return `${name}: ${zitiert(k.in.map((v) => (typeof v === 'string' ? textWert(k.f, v) : v)))}`;
-    return schwelle(name, def, k.min, k.max) ?? `${name} angegeben`;
+    return schwelle(name, def, k.min, k.max) ?? `${name}: angegeben`;
   }
   if ('tag' in k) {
     const was = k.tag === 'einreichung' ? 'Einreichung' : 'heute';
@@ -355,7 +357,7 @@ function verneint(k: Kurz, t: TextKontext): string | undefined {
   if ('f' in k) {
     const def = t.fakt(k.f);
     const name = faktName(def, k.f);
-    if (k.bekannt !== undefined) return k.bekannt ? `${name} unbekannt` : `${name} bekannt`;
+    if (k.bekannt !== undefined) return k.bekannt ? `${name}: unbekannt` : `${name}: bekannt`;
     // ohne „ist nicht“ (Numerus: „Nachbarrechtliche Fragen ist …“) und ohne „weder“ bei nur einem Wert
     if (typeof k.ist === 'string') return `${name}: alles außer „${textWert(k.f, k.ist)}“`;
     if (typeof k.ist === 'number') return `${name}: nicht ${wertText(k.ist, def)}`;

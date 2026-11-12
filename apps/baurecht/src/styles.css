@@ -1739,3 +1739,9 @@ h2.br-detail-name {
 .br-ohne-ort {
   margin: 6px 14px 0;
 }
+/* feste Modulwerte, die nur Hinweis sind: Grund sichtbar, mit Ausweg */
+.br-fester-grund {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+}

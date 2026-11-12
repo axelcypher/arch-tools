@@ -17,7 +17,8 @@ export function ortVon(project: Project | null): Ort | undefined {
   const adresse = [a.strasse, a.plz, a.ort, g?.gemarkung, g?.flur, g?.flurstueck].map(glatt).join('|');
   const k = project.meta.koordinaten;
   const lage = k && !koordinatenVeraltet(project.meta) ? lageKennung(k.ost, k.nord) : null;
-  return { adresse, lage };
+  const anzeige = [a.strasse.trim(), `${a.plz} ${a.ort}`.trim()].filter(Boolean).join(', ');
+  return { adresse, lage, ...(anzeige ? { anzeige } : {}) };
 }
 
 /**
@@ -30,7 +31,7 @@ export function planungsrechtOhneOrt(wert: string | undefined, gemerkt: Ort | un
   if (!gemerkt) return 'noch für keinen Ort bestätigt (aus Formulare oder einer älteren Datei)';
   if (gemerkt.wert !== undefined && gemerkt.wert !== wert) return `seit der Bestätigung geändert (bestätigt war „${gemerkt.wert}“)`;
   const weg = ortGeaendert(gemerkt, jetzt);
-  return weg ? `gehört zu einem früheren Ort (${weg})` : undefined;
+  return weg ? `gehört zu einem früheren Ort (${weg}${gemerkt.anzeige && gemerkt.adresse !== jetzt.adresse ? `; bestätigt für ${gemerkt.anzeige}` : ''})` : undefined;
 }
 
 /** warum ein Ort nicht mehr der von damals ist; undefined = derselbe Ort (bzw. kein Vergleich möglich) */

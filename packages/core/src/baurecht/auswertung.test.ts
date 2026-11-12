@@ -388,11 +388,11 @@ describe('Bedingungen', () => {
   it('in Worten', () => {
     const t = { fakt: () => ({ titel: 'Nutzfläche', gruppe: 'gebaeude' as const, typ: 'zahl' as const, einheit: 'm²' }), bausteine: {} };
     expect(kurzText({ und: [{ m: 'Vorhaben', in: ['Errichtung'] }, { oder: [{ f: 'n', max: 50 }, { tag: 'einreichung', ab: '2025-01-02' }] }] }, t)).toBe(
-      'Art des Vorhabens: „Errichtung“ und (Nutzfläche höchstens 50 m² oder Einreichung ab 02.01.2025)',
+      'Art des Vorhabens: „Errichtung“ und (Nutzfläche: höchstens 50 m² oder Einreichung ab 02.01.2025)',
     );
     // gleiche Merkmale im „oder“ zusammengefasst, keine doppelte Verneinung
     expect(kurzText({ oder: [{ m: 'Vorhaben', in: ['Errichtung'] }, { m: 'Vorhaben', in: ['Beseitigung'] }] }, t)).toBe('Art des Vorhabens: „Errichtung“ oder „Beseitigung“');
-    expect(kurzText({ m: 'Gebäudeart', nicht: ['kein Gebäude'] }, t)).toMatch(/alles außer „kein Gebäude“/);
+    expect(kurzText({ m: 'Gebäudeart', nicht: ['kein Gebäude'] }, t)).toBe('Gebäudeart: ein Gebäude');
   });
 });
 

@@ -83,7 +83,7 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
   const kopfzeile = verweisName(p.paragraf, p.titel, normKurz);
   return (
     <Modal titel={`${kopfzeile} – von Hand festlegen`} onClose={zu} breit klickDaneben={false}>
-      <h3>{kopfzeile} – von Hand festlegen</h3>
+      <h2 className="br-dialog-titel">{kopfzeile} – von Hand festlegen</h2>
       <p className="br-leise">
         Automatisch: <AmpelMarke ampel={p.automatisch} klein /> {p.gruende[0]}
       </p>
@@ -91,9 +91,10 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
         <legend>Ampel</legend>
         {(['rot', 'gelb', 'gruen'] as const).map((a) => (
           <label key={a} className={`br-wahl-zeile${ampel === a ? ' br-gewaehlt' : ''}`}>
-            <input type="radio" name="ampel" checked={ampel === a} onChange={() => setAmpel(a)} />
+            {/* Name nur das Ampelwort, die Erklärung als Beschreibung (sonst hieße der Knopf „gilt muss beachtet …“) */}
+            <input type="radio" name="ampel" checked={ampel === a} onChange={() => setAmpel(a)} aria-label={`${AMPEL_TEXT[a]}${a === p.automatisch ? ' (wie automatisch)' : ''}`} aria-describedby={`br-wahl-${a}`} />
             <AmpelMarke ampel={a} />
-            <span>
+            <span id={`br-wahl-${a}`}>
               {AMPEL_ERKLAERUNG[a]}
               {a === p.automatisch ? ' (wie automatisch)' : ''}
             </span>

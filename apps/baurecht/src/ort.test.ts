@@ -4,7 +4,8 @@ import { baurechtAusRoh, leerePruefung, pruefungSetzen } from '@core/baurecht/pr
 import type { FaktWert, NormErgebnis, ParagrafErgebnis } from '@core/baurecht/typen';
 import { projektdateiRoh } from '@core/projektdatei';
 import { beispielOap } from './beispiel.test';
-import { wieAngezeigt } from './components/Angaben';
+import { merkmalUnterzeile, ohneKlammer, wieAngezeigt } from './components/Angaben';
+import { textPasst } from './suche';
 import { suchTreffer } from './components/Vorschriften';
 import { aenderungenAnwenden } from './projekt';
 import { alleFakten, auswertungMit, OHNE_LAGEBEZUG, planungsrechtVerschoben, pruefstandBerechnen } from './pruefung';
@@ -158,5 +159,28 @@ describe('Runde 10: ältere Dateien, Speichern, Konflikte', () => {
     const konflikte: string[] = [];
     pruefungSetzen(datei, 'A', { ...leerePruefung(), planungsrechtOrt: { adresse: 'y', lage: null, wert: 'Außenbereich' } }, basis, { konflikte });
     expect(konflikte).toContain('Ort des Planungsrechts');
+  });
+});
+
+describe('Design Runde 9: Suche und Unterzeilen', () => {
+  it('Synonyme und Kürzel in beiden Suchen', () => {
+    expect(textPasst('Beseitigung von Anlagen', 'Abriss')).toBe(true);
+    expect(textPasst('Rückbau', 'Rückbau')).toBe(true);
+    expect(textPasst('Stellplätze nicht herstellbar (Schwierigkeiten)', 'GK')).toBe(false);
+    expect(textPasst('Gebäudeklasse', 'GK')).toBe(true);
+  });
+  it('„§ 34 I BauGB“ und „§ 6 Abs. 8 BauO NRW“ finden genau den Paragrafen', () => {
+    const para = (paragraf: string, titel: string, gruende: string[] = []) => ({ paragraf, titel, gruende }) as ParagrafErgebnis;
+    const norm = (kurz: string, titel: string, paragrafen: ParagrafErgebnis[]) => ({ def: { kurz, titel }, paragrafen }) as unknown as NormErgebnis;
+    const normen = [norm('BauGB', 'Baugesetzbuch', [para('34', 'Innenbereich'), para('35', 'Außenbereich', ['wie § 34 Abs. 1'])]), norm('BauO NRW', 'Landesbauordnung', [para('6', 'Abstandsflächen'), para('74', 'Baugenehmigung', ['§ 6 Abs. 8'])])];
+    const treffer = (q: string) => normen.flatMap((n) => n.paragrafen.filter((p) => suchTreffer(q, normen)(p, n)).map((p) => `${n.def.kurz} ${p.paragraf}`));
+    expect(treffer('§34 I BauGB')).toEqual(['BauGB 34']);
+    expect(treffer('§ 34 Abs. 1 BauGB')).toEqual(['BauGB 34']);
+    expect(treffer('§ 6 Abs. 8 BauO NRW')).toEqual(['BauO NRW 6']);
+  });
+  it('Unterzeilen, die nur eine Klammer sind, ohne Klammer; Wortgrenze beachtet', () => {
+    expect(merkmalUnterzeile('Gebäudeklasse', 'Gebäudeklasse (§ 2 Abs. 3 BauO NRW)')).toBe('§ 2 Abs. 3 BauO NRW');
+    expect(merkmalUnterzeile('Planungsrecht', 'Planungsrechtliche Lage (§§ 30, 34, 35 BauGB)')).toBe('Planungsrechtliche Lage (§§ 30, 34, 35 BauGB)');
+    expect(ohneKlammer('(a (b) c)')).toBe('(a (b) c)');
   });
 });
