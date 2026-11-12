@@ -51,7 +51,8 @@ export function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
             unter: umfang.map((u) => ({
               text: u.titel,
               symbol: (u.dateien?.[aktiveFassung(st, projekt)]?.toLowerCase() === name.toLowerCase() && imAntrag ? 'haken' : undefined) as 'haken' | undefined,
-              aktion: () => void verknuepfen(basis, pfad, u.id),
+              // die Fassung des Menütexts („In BAUA 2 …“) – verknüpft wird nur für sie
+              aktion: () => void verknuepfen(basis, pfad, u.id, { fassung: aktiveFassung(st, projekt), titel: u.titel }),
             })),
           },
         ]

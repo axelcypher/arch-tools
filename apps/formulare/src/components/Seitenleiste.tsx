@@ -125,7 +125,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                   text: u.titel,
                   symbol: (zugeordnet?.eintrag.id === u.id ? 'haken' : undefined) as 'haken' | undefined,
                   aktion: () =>
-                    void useAntrag.getState().umfangAendern((aktuell) => aktuell.map((x) => (x.id === u.id ? { ...x, formularDatei: f.pfad.split('/').pop() } : x)), { ansicht, eintrag: u.id }),
+                    void useAntrag.getState().umfangAendern((aktuell) => aktuell.map((x) => (x.id === u.id ? { ...x, formularDatei: f.pfad.split('/').pop() } : x)), { ansicht, eintrag: u.id, titel: u.titel, was: 'Nicht zugeordnet' }),
                 })),
             },
           ]
@@ -284,13 +284,17 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                 })}
                 {fehlende.map((d) => {
                   const doppelt = doppeltVon(d);
-                  const menue = (): MenuePunkt[] => [
-                    { text: 'Formular anlegen', symbol: 'plus', deaktiviert: gesperrt, aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id) },
+                  const menue = (): MenuePunkt[] => {
+                    // die beim Öffnen angezeigte Fassung – angelegt bzw. geändert wird nur für sie
+                    const ansicht = useAntrag.getState().projektdatei?.ansicht;
+                    return [
+                    { text: 'Formular anlegen', symbol: 'plus', deaktiviert: gesperrt, aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht }) },
                     ...(formulare.length ? [{ text: 'Vorhandenes Formular zuordnen', symbol: 'link' as const, unter: formularePunkte(d.eintrag.id), deaktiviert: gesperrt }] : []),
-                    { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, deaktiviert: gesperrt, aktion: () => void ausUmfangEntfernen(d.eintrag.id) },
+                    { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, deaktiviert: gesperrt, aktion: () => void ausUmfangEntfernen(d.eintrag.id, ansicht) },
                     { trenner: true },
                     { text: 'Antragsumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
-                  ];
+                    ];
+                  };
                   return (
                     <button
                       key={d.eintrag.id}

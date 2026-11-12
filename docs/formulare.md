@@ -725,13 +725,17 @@ beschrieben.
   gemeldet. Nach dem Anlegen einer Projektdatei über den Stammdaten-Dialog kommt die Änderung samt der Fassung, für die
   sie gedacht war (als aktive), in die neue Datei („Projektdatei angelegt – Antragsfassung „…“ ist das Ziel des
   Exports.“). Änderungen am Antragsumfang aus Menüs, beim Verknüpfen und beim Anlegen bzw. Hinzufügen eines Formulars
-  lesen den Umfang erst beim Speichern (`umfangAendern`) – nur, wenn noch dieselbe Fassung angezeigt wird und es den
-  Eintrag noch gibt. Sonst sagt die Meldung den Grund („inzwischen ist „BAUA“ angezeigt. Bitte später in „BAUA 2“ in
-  den Antragsdaten über „Zuordnen“ nachholen“ bzw. „der Eintrag … ist inzwischen nicht mehr im Antragsumfang“). Findet
-  die Zeile ein eben angelegtes Formular ohnehin über den Namen, heißt es „… findet es über den Namen“. Verknüpfen mit
-  Kopie meldet erst nach dem Speichern, ob verknüpft wurde (sonst: „kopiert, aber nicht verknüpft … Bitte später die
-  Kopie in „BAUA 2“ über „Mit Antragsdokument verknüpfen“ verknüpfen, nicht noch einmal kopieren.“). Eine eigene
-  Meldung „… nicht gespeichert“ verschwindet, sobald der nächste Versuch gespeichert hat.
+  lesen den Umfang erst beim Speichern (`umfangAendern`) – und nur, wenn noch die Fassung angezeigt ist, die beim
+  Öffnen des Menüs bzw. beim Start galt, und es den Eintrag noch gibt. Sonst ändert sich nichts, und die Meldung sagt
+  warum („Nicht entfernt – inzwischen ist Antrag BAUA angezeigt.“, „Nicht zugeordnet – der Eintrag „Bauantrag“ ist
+  inzwischen nicht mehr im Antragsumfang.“). Beim Anlegen bzw. Hinzufügen nennt sie den Weg zum Nachholen („Bitte
+  später in den Antragsdaten von BAUA 2 über „Zuordnen“ nachholen.“); findet die Zeile das Formular ohnehin über den
+  Namen, heißt es „… findet es über den Namen“. Verknüpfen mit Kopie kopiert nichts, wenn der Antrag gesperrt ist oder
+  inzwischen eine andere Fassung angezeigt bzw. gerade geöffnet wird, und meldet erst nach dem Speichern, ob verknüpft
+  wurde (sonst: „kopiert, aber nicht verknüpft … Bitte später die Kopie in BAUA 2 über „Mit Antragsdokument
+  verknüpfen“ verknüpfen, nicht noch einmal kopieren.“); wartet es auf den Stammdaten-Dialog und wird dieser
+  abgebrochen, nimmt die Meldung die Zusage zurück. Eine eigene Meldung „… nicht gespeichert“ verschwindet, sobald der
+  nächste Versuch gespeichert hat.
 - **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
   Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann
   in der Projektdatei.

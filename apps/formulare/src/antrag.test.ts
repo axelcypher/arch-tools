@@ -911,6 +911,12 @@ describe('Änderung auf den frisch gelesenen Abschnitt anwenden', () => {
     // eine leer gewordene Zuordnung entfällt
     expect(aenderungAnwenden({ antraege: { BAUA: { angelegt: '2026-11-01', merkmale: { gk: '3' } } } }, basis({ gk: '3' }), basis()).antraege.BAUA).toEqual({ angelegt: '2026-11-01' });
   });
+  it('Autofill (felder) je Formulardatei: der Eintrag eines anderen Formulars bleibt', () => {
+    const z = (felder?: Record<string, unknown>) => ({ ansicht: 'BAUA', ...(felder ? { felder } : {}), antraege: { BAUA: { angelegt: '2026-11-01', ...(felder ? { felder } : {}) } } }) as unknown as Parameters<typeof aenderungAnwenden>[1] & object;
+    const frisch = { antraege: { BAUA: { angelegt: '2026-11-01', felder: { 'B.frmsjf': { felder: { x: { auto: '2' } } } } } } } as unknown as Parameters<typeof aenderungAnwenden>[0];
+    const a = aenderungAnwenden(frisch, z(), z({ 'A.frmsjf': { felder: { y: { auto: '1' } } } }));
+    expect(Object.keys(a.antraege.BAUA.felder ?? {}).sort()).toEqual(['A.frmsjf', 'B.frmsjf']);
+  });
   it('stabil: Reihenfolge der Schlüssel egal, undefined wie fehlend', () => {
     expect(stabil({ a: 1, b: { c: 2, d: 3 } })).toBe(stabil({ b: { d: 3, c: 2 }, a: 1 }));
     expect(stabil({ a: 1, b: undefined })).toBe(stabil({ a: 1 }));

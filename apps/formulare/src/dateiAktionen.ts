@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { aktiveFassung, antragsOrdner, useAntrag } from './antragStore';
+import { aktiveFassung, antragsOrdner, antragSperre, useAntrag } from './antragStore';
 import { klein } from './antrag';
 import { bestaetigen, frageText } from './components/Rueckfrage';
 import { nurFormaLoescht, verbinde } from './dateisystem';
@@ -190,19 +190,28 @@ export async function ordnerNeu(basis: string, ordner: string) {
  * Datei mit einem Dokument des Antragsumfangs verknüpfen. Liegt sie nicht im Ordner der aktiven Fassung, wird sie
  * dorthin kopiert (ohne zu überschreiben) und die Kopie verknüpft.
  */
-export async function verknuepfen(basis: string, pfad: string, umfangId: string) {
+export async function verknuepfen(basis: string, pfad: string, umfangId: string, o: { fassung?: string; titel?: string } = {}) {
   const ds = useFormulare.getState().ds;
   const projekt = useFormulare.getState().projekt;
   if (!ds || !projekt) return;
   const st = useAntrag.getState();
-  const ziel = antragsOrdner(st, projekt);
-  // verknüpft wird in der Fassung, in deren Ordner kopiert wird – zeigt das Projekt danach eine andere, nicht
-  const ansicht = st.projektdatei?.ansicht;
-  const fassung = aktiveFassung(st, projekt);
   const melde = (art: 'info' | 'fehler', text: string) => useFormulare.getState().setMeldung({ art, text });
+  // eingereicht und gesperrt: nichts kopieren
+  const sperre = antragSperre(st, projekt);
+  if (sperre) {
+    melde('info', sperre);
+    return;
+  }
+  // die Fassung des Menüs (sonst die aktive): nur, wenn sie noch angezeigt und aktiv ist – sonst nichts kopieren
+  const aktiv = aktiveFassung(st, projekt);
+  const fassung = o.fassung ?? aktiv;
+  const ziel = antragsOrdner(st, projekt);
+  const kopiert = ordnerVon(pfad).toLowerCase() !== ziel.toLowerCase();
+  const was = kopiert ? 'Nicht kopiert' : 'Nicht verknüpft';
+  if (aktiv !== fassung) return melde('info', `${was} – inzwischen ist Antrag ${aktiv} angezeigt.`);
+  if (st.projektdatei?.ansicht !== fassung) return melde('info', `${was} – Antrag ${aktiv} wird gerade geöffnet; bitte gleich noch einmal versuchen.`);
   try {
     let name = nameVon(pfad);
-    const kopiert = ordnerVon(pfad).toLowerCase() !== ziel.toLowerCase();
     if (kopiert) {
       name = freierName(await namenIn(basis, ziel), name);
       await ds.kopieren(basis, pfad, zusammen(ziel, name));
@@ -212,14 +221,17 @@ export async function verknuepfen(basis: string, pfad: string, umfangId: string)
         return;
       }
     }
-    const info = await useAntrag.getState().verknuepfen(umfangId, name, { ansicht, still: kopiert });
+    const info = await useAntrag.getState().verknuepfen(umfangId, name, { ansicht: fassung, still: kopiert, titel: o.titel });
     useDateiAktionen.getState().neu();
     if (!kopiert) return;
     // die Kopie ist angelegt – gemeldet wird nach dem Speichern, was daraus wurde (nicht noch einmal kopieren)
     const nachholen = `Bitte später die Kopie in ${fassung} über „Mit Antragsdokument verknüpfen“ verknüpfen, nicht noch einmal kopieren.`;
     if (info.geschrieben) melde('info', `„${name}“ in ${fassung} kopiert und verknüpft.`);
-    else if (info.dialog) melde('info', `„${name}“ in ${fassung} kopiert – verknüpft wird nach dem Anlegen der Projektdatei.`);
-    else if (info.vorab === 'eintrag' || info.vorab === 'umfang') melde('info', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft – ${klein(info.grund!)}.`);
+    else if (info.dialog) {
+      melde('info', `„${name}“ in ${fassung} kopiert – verknüpft wird nach dem Anlegen der Projektdatei.`);
+      // wird der Dialog abgebrochen, gilt die Zusage nicht mehr
+      info.beiAbbruch = () => melde('info', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft – keine Projektdatei angelegt. ${nachholen}`);
+    } else if (info.vorab === 'eintrag' || info.vorab === 'umfang') melde('info', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft – ${klein(info.grund!)}.`);
     else melde('fehler', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft – ${klein(info.grund ?? 'nicht gespeichert')}. ${nachholen}`);
   } catch (e) {
     fehler('Verknüpfen', e);

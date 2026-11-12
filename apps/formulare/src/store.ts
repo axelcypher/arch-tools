@@ -343,7 +343,8 @@ interface FormulareState extends Gespeichert {
   /** Projektdatei gezielt ändern (frisch lesen, nur `projekt.json`); legt sie nicht an – dann false */
   oapAendern: (aendern: (roh: Record<string, unknown>) => Record<string, unknown>) => Promise<boolean>;
   /** Stammdaten-Dialog öffnen, um die fehlende Projektdatei anzulegen; `danach` läuft nach dem Anlegen */
-  stammdatenErfassen: (grund: string, danach?: () => Promise<void>) => Promise<void>;
+  /** Stammdaten-Dialog öffnen; `danach` läuft nach dem Anlegen, `abgebrochen` beim Abbrechen (z. B. eine Zusage zurücknehmen) */
+  stammdatenErfassen: (grund: string, danach?: () => Promise<void>, abgebrochen?: () => void) => Promise<void>;
   /** Projektdatei mit diesen Stammdaten anlegen (aus dem Dialog) */
   projektdateiAnlegen: (meta: ProjectMeta) => Promise<void>;
   stammdatenAbbrechen: () => void;
@@ -906,6 +907,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
   };
   /** nach dem Anlegen der Projektdatei weitermachen (z. B. den Antragsumfang speichern) */
   let nachAnlegen: (() => Promise<void>) | null = null;
+  let beiAbbruch: (() => void) | null = null;
 
   /** Projektordner zugeordnet: Projektdatei suchen; fehlt sie, die Stammdaten erfassen (die wartende Aktion bleibt) */
   const nachZuordnen = async (projekt: Projekt) => {
@@ -1564,17 +1566,21 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (geschrieben) await get().oapLaden();
       return geschrieben;
     },
-    stammdatenErfassen: async (grund, danach) => {
+    stammdatenErfassen: async (grund, danach, abgebrochen) => {
       const projekt = get().projekt;
       if (!projekt) return;
       if (!get().karte) await get().karteLaden();
       if (get().projekt !== projekt) return;
       nachAnlegen = danach ?? null;
+      beiAbbruch = abgebrochen ?? null;
       set({ stammdatenDialog: { grund, meta: metaAusKarte(projekt, get().karte) } });
     },
     stammdatenAbbrechen: () => {
+      const abbruch = nachAnlegen ? beiAbbruch : null;
       nachAnlegen = null;
+      beiAbbruch = null;
       set({ stammdatenDialog: null });
+      abbruch?.();
     },
     projektdateiAnlegen: async (meta) => {
       const { ds, projekt } = get();
@@ -1594,6 +1600,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       await get().oapLaden();
       const weiter = nachAnlegen;
       nachAnlegen = null;
+      beiAbbruch = null;
       if (weiter) await weiter();
     },
     projektordnerZuordnen: (grund, danach) => {

@@ -101,39 +101,44 @@ export function FassungsWahl() {
  */
 export function zuordnenPunkte(umfangId: string): MenuePunkt[] {
   const titel = useAntrag.getState().projektdatei?.umfang?.find((x) => x.id === umfangId)?.titel;
+  // die Fassung beim Öffnen des Menüs – geändert wird nur dort
+  const ansicht = useAntrag.getState().projektdatei?.ansicht;
   if (!titel) return [];
-  return [...formularePunkte(umfangId), { trenner: true }, { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(umfangId) }];
+  return [...formularePunkte(umfangId), { trenner: true }, { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(umfangId, ansicht) }];
 }
 
 /** Die Formulare des Projekts zum Zuordnen (ein schon anders zugeordnetes mit Hinweis) */
 export function formularePunkte(umfangId: string): MenuePunkt[] {
   const st = useAntrag.getState();
   const ansicht = st.projektdatei?.ansicht;
+  const titel = st.projektdatei?.umfang?.find((x) => x.id === umfangId)?.titel;
   const zugeordnet = new Map(st.dokumente.filter((d) => d.formular && d.eintrag.id !== umfangId).map((d) => [d.formular!.pfad, d.eintrag.titel]));
   return useFormulare.getState().formulare.map((f) => ({
     text: f.name,
     symbol: 'formular' as const,
     hinweis: zugeordnet.has(f.pfad) ? `schon „${zugeordnet.get(f.pfad)}“` : undefined,
     // Antragsumfang erst beim Klick lesen (das Menü kann länger offen sein) – nur in derselben Fassung
-    aktion: () => void st.umfangAendern((umfang) => umfang.map((x) => (x.id === umfangId ? { ...x, formularDatei: formularDatei(f.pfad) } : x)), { ansicht, eintrag: umfangId }),
+    aktion: () => void st.umfangAendern((umfang) => umfang.map((x) => (x.id === umfangId ? { ...x, formularDatei: formularDatei(f.pfad) } : x)), { ansicht, eintrag: umfangId, titel, was: 'Nicht zugeordnet' }),
   }));
 }
 
 /** Einen Eintrag aus dem Antragsumfang nehmen (z. B. einen doppelten) */
-export function ausUmfangEntfernen(umfangId: string) {
+export function ausUmfangEntfernen(umfangId: string, ansicht: string | undefined) {
   const st = useAntrag.getState();
-  return st.umfangAendern((umfang) => umfang.filter((x) => x.id !== umfangId), { ansicht: st.projektdatei?.ansicht, eintrag: umfangId });
+  const titel = st.projektdatei?.umfang?.find((x) => x.id === umfangId)?.titel;
+  return st.umfangAendern((umfang) => umfang.filter((x) => x.id !== umfangId), { ansicht, eintrag: umfangId, titel, was: 'Nicht entfernt' });
 }
 
 /** Einen Eintrag im Antragsumfang um eine Stelle verschieben – nach dem Stand beim Klick (nicht beim Öffnen des Menüs) */
-export function eintragVerschieben(umfangId: string, um: -1 | 1) {
+export function eintragVerschieben(umfangId: string, um: -1 | 1, ansicht: string | undefined) {
   const st = useAntrag.getState();
+  const titel = st.projektdatei?.umfang?.find((x) => x.id === umfangId)?.titel;
   return st.umfangAendern(
     (umfang) => {
       const i = umfang.findIndex((x) => x.id === umfangId);
       return i < 0 || i + um < 0 || i + um >= umfang.length ? umfang : verschieben(umfang, i, i + um);
     },
-    { ansicht: st.projektdatei?.ansicht, eintrag: umfangId },
+    { ansicht, eintrag: umfangId, titel, was: 'Nicht verschoben' },
   );
 }
 
@@ -529,14 +534,16 @@ export function AntragsdatenAnsicht() {
 
   const dateiMenue = (d: DokZustand): MenuePunkt[] => {
     const pdfs = dateien.filter((x) => !x.ordner);
+    // die Fassung beim Öffnen des Menüs (deren Ordner gezeigt wird) – verknüpft wird nur für sie
+    const o = { ansicht: useAntrag.getState().projektdatei?.ansicht, titel: d.eintrag.titel };
     return [
       ...pdfs.map((x) => ({
         text: x.pfad,
         symbol: (d.datei?.pfad === x.pfad ? 'haken' : 'datei') as 'haken' | 'datei',
-        aktion: () => void verknuepfen(d.eintrag.id, x.pfad),
+        aktion: () => void verknuepfen(d.eintrag.id, x.pfad, o),
       })),
       ...(pdfs.length ? [] : [{ text: `Keine Dateien in ${ordner}`, deaktiviert: true }]),
-      ...(d.eintrag.dateien?.[fassung] ? [{ trenner: true as const }, { text: 'Verknüpfung lösen (wieder nach Muster)', aktion: () => void verknuepfen(d.eintrag.id, null) }] : []),
+      ...(d.eintrag.dateien?.[fassung] ? [{ trenner: true as const }, { text: 'Verknüpfung lösen (wieder nach Muster)', aktion: () => void verknuepfen(d.eintrag.id, null, { ...o, was: 'Verknüpfung nicht gelöst' }) }] : []),
     ];
   };
 
@@ -645,16 +652,20 @@ export function AntragsdatenAnsicht() {
                   role="listitem"
                   className={`pu-zeile ${d.status}`}
                   {...sortieren.zeile(i)}
-                  onContextMenu={(e) =>
+                  onContextMenu={(e) => {
+                    // die beim Öffnen angezeigte Fassung – geändert wird nur dort
+                    const ansichtJetzt = useAntrag.getState().projektdatei?.ansicht;
+                    return (
                     !gesperrt &&
                     zeigeMenue(e, [
                       { text: 'Bearbeiten', symbol: 'stift', aktion: () => setBearbeiten(u.id) },
-                      { text: 'Nach oben', deaktiviert: i === 0, aktion: () => void eintragVerschieben(u.id, -1) },
-                      { text: 'Nach unten', deaktiviert: i === umfang.length - 1, aktion: () => void eintragVerschieben(u.id, 1) },
+                      { text: 'Nach oben', deaktiviert: i === 0, aktion: () => void eintragVerschieben(u.id, -1, ansichtJetzt) },
+                      { text: 'Nach unten', deaktiviert: i === umfang.length - 1, aktion: () => void eintragVerschieben(u.id, 1, ansichtJetzt) },
                       { trenner: true },
-                      { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(u.id) },
+                      { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(u.id, ansichtJetzt) },
                     ])
-                  }
+                    );
+                  }}
                 >
                   <div className="pu-haupt">
                     {gesperrt ? <span className="sort-griff-platz" /> : <Griff {...sortieren.griff(i, u.titel)} />}
