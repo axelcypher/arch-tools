@@ -1,0 +1,285 @@
+/**
+ * Baurecht: Datenformat der Module und Regeldateien (Regelpaket `packages/baurecht-regeln`) und der Ergebnisse.
+ * Konzept: docs/baurecht-konzept.md, Abschnitte 6 und 7.
+ */
+
+import type { QuellenRef } from '../recht/typen';
+
+export type Ampel = 'rot' | 'gelb' | 'gruen';
+export type Ebene = 'bund' | 'land' | 'kreis' | 'gemeinde';
+export type Wahrheit = 'ja' | 'nein' | 'offen';
+
+export const EBENEN: { id: Ebene; titel: string }[] = [
+  { id: 'bund', titel: 'Bund' },
+  { id: 'land', titel: 'Land' },
+  { id: 'kreis', titel: 'Kreis' },
+  { id: 'gemeinde', titel: 'Gemeinde' },
+];
+
+export type Thema = 'planungsrecht' | 'bauordnung' | 'brandschutz' | 'verfahren' | 'energie' | 'natur' | 'wasser' | 'boden' | 'denkmal' | 'gestaltung' | 'stellplaetze' | 'immission' | 'arbeitsschutz' | 'sonstiges';
+
+export const THEMEN: { id: Thema; titel: string }[] = [
+  { id: 'planungsrecht', titel: 'Planungsrecht' },
+  { id: 'verfahren', titel: 'Verfahren und Bauvorlagen' },
+  { id: 'bauordnung', titel: 'Bauordnung' },
+  { id: 'brandschutz', titel: 'Brandschutz' },
+  { id: 'gestaltung', titel: 'Gestaltung' },
+  { id: 'stellplaetze', titel: 'Stellplätze' },
+  { id: 'energie', titel: 'Energie' },
+  { id: 'natur', titel: 'Natur und Landschaft' },
+  { id: 'wasser', titel: 'Wasser' },
+  { id: 'boden', titel: 'Boden und Altlasten' },
+  { id: 'denkmal', titel: 'Denkmal' },
+  { id: 'immission', titel: 'Immissionsschutz' },
+  { id: 'arbeitsschutz', titel: 'Arbeitsschutz' },
+  { id: 'sonstiges', titel: 'Sonstiges' },
+];
+
+/**
+ * Bedingungen in Kurzform (Abschnitt 6.5). Dreiwertig ausgewertet: Unbekanntes ist offen (gelb), nie „trifft nicht
+ * zu“.
+ */
+export type Kurz =
+  /** Antragsmerkmal hat einen der Werte (`in`) bzw. keinen davon (`nicht`) */
+  | { m: string; in?: string[]; nicht?: string[] }
+  /** Fakt: gleich (`ist`), einer von (`in`), Zahl im Bereich (`min`/`max`, einschließlich), überhaupt bekannt */
+  | { f: string; ist?: string | number | boolean; in?: (string | number)[]; min?: number; max?: number; bekannt?: boolean }
+  /** Stichtag: Einreichung oder heute ab bzw. vor einem Datum */
+  | { tag: 'einreichung' | 'heute'; ab?: string; vor?: string }
+  /** Ampel eines anderen Paragrafen (`modul/norm/§`) */
+  | { n: string; ampel: Ampel[] }
+  /** Baustein aus einem Modul */
+  | { $: string }
+  | { und: Kurz[] }
+  | { oder: Kurz[] }
+  | { nicht: Kurz }
+  | { immer: true };
+
+/** Regel eines Paragrafen (Abschnitt 7.2): Tatbestand, Ausnahmen, Einzelfall */
+export interface ParagrafRegel {
+  /** Titel, falls der Text (noch) nicht vorliegt */
+  titel?: string;
+  /** Tatbestand; fehlt = gilt immer, sobald die Norm gilt */
+  gilt?: Kurz;
+  /** Ausnahmen: ja → grün */
+  entfaellt?: Kurz;
+  /**
+   * Einzelfall/Ermessen. Ohne `wenn`: Hinweis bei Rot („im Einzelfall prüfen“). Mit `wenn`: trifft zu oder offen →
+   * aus Grün wird Gelb, bei Rot Hinweis.
+   */
+  pruefen?: { grund: string; wenn?: Kurz };
+  /** nie automatisch grün */
+  gruenNurVonHand?: boolean;
+  /** Begründung in einem Satz */
+  grund: string;
+  /** Fundstellen „42a/1“ (Paragraf/Absatz) bzw. „42a“ */
+  fundstellen?: string[];
+  /** prüft die Bauaufsicht? (§§ 63–65 BauO NRW) – sonst eigene Verantwortung */
+  behoerde?: Kurz;
+  /** womit es im Antrag nachgewiesen wird */
+  nachweis?: string[];
+  /** Hinweis an der Ampel (z. B. Vorrang des Ortsrechts) */
+  hinweis?: string;
+  /** verwandte Paragrafen (`modul/norm/§`) */
+  verweise?: string[];
+  /** Prüfsumme je Fundstelle in der Fassung, an der die Regel geprüft ist */
+  stand?: Record<string, string>;
+}
+
+export interface Regeldatei {
+  format: 1;
+  modul: string;
+  norm: string;
+  /** Fassung, an der die Regeln geprüft sind (gültig ab, JJJJ-MM-TT) */
+  fassung: string;
+  /** Version dieser Regeldatei */
+  version: number;
+  /** Anwendungsbereich der Norm; nein → alle Paragrafen grün */
+  geltung?: Kurz;
+  /** Begründung der Geltung (in Worten) */
+  geltungGrund?: string;
+  paragrafen: Record<string, ParagrafRegel>;
+}
+
+export interface NormDef {
+  kurz: string;
+  titel: string;
+  quelle: QuellenRef;
+  thema: Thema;
+  /** erlassen von (wenn nicht das Gebiet des Moduls selbst), z. B. „Bezirksregierung Arnsberg“ */
+  erlassen?: string;
+  /** Annahme des Büros, die an jeder Ampel steht (z. B. „gilt als in Kraft“) */
+  annahme?: string;
+  /** Lizenz- bzw. Quellenhinweis */
+  lizenz?: string;
+  /** Text der Norm wird nur als Verweis geführt (Privatrecht, Erläuterung) */
+  nurHinweis?: boolean;
+}
+
+export type FaktTyp = 'janein' | 'zahl' | 'wahl' | 'text';
+
+export type FaktGruppe = 'lage' | 'planung' | 'schutz' | 'vorhaben' | 'gebaeude' | 'technik' | 'grundstueck' | 'antrag' | 'zustaendig' | 'ortsrecht';
+
+export const FAKT_GRUPPEN: { id: FaktGruppe; titel: string }[] = [
+  { id: 'lage', titel: 'Lage' },
+  { id: 'planung', titel: 'Planungsrecht' },
+  { id: 'schutz', titel: 'Schutzgebiete und Denkmal' },
+  { id: 'vorhaben', titel: 'Vorhaben' },
+  { id: 'gebaeude', titel: 'Gebäude' },
+  { id: 'technik', titel: 'Technik' },
+  { id: 'grundstueck', titel: 'Grundstück und Umfeld' },
+  { id: 'ortsrecht', titel: 'Ortsrecht' },
+  { id: 'zustaendig', titel: 'Zuständigkeit' },
+  { id: 'antrag', titel: 'Antrag' },
+];
+
+/** Abfrage eines Geodienstes für einen Fakt (Abschnitt 5.4) */
+export interface GeodienstDef {
+  art: 'wms' | 'arcgis' | 'wfs';
+  url: string;
+  /** Ebene(n) */
+  ebene: string;
+  /** amtlich und vollständig für das Gebiet: nur dann kann „kein Treffer“ grün machen */
+  vollstaendig: boolean;
+  /** Puffer in m (mindestens 25) */
+  puffer?: number;
+  /** Ebenen der Vorstufen (vorläufig gesichert, geplant …), die ebenfalls ohne Treffer sein müssen */
+  vorstufen?: string[];
+  /** Attribut, dessen Wert der Fakt bekommt (sonst ja/nein) */
+  attribut?: string;
+  quelle: string;
+  lizenz?: string;
+}
+
+export interface FaktDef {
+  titel: string;
+  gruppe: FaktGruppe;
+  typ: FaktTyp;
+  werte?: string[];
+  einheit?: string;
+  hilfe?: string;
+  /** Frage an die Bearbeitung (sonst Titel) */
+  frage?: string;
+  /** fester Wert, den das Modul setzt */
+  wert?: string | number | boolean;
+  /** Wert nach einem anderen Fakt (z. B. Gemeindeschlüssel → Landschaftsplan) */
+  nach?: { fakt: string; tabelle: Record<string, string | number | boolean>; sonst?: string | number | boolean };
+  geodienst?: GeodienstDef;
+  /** Vorschlag aus einem anderen Fakt (nur Hinweis) */
+  vorschlag?: string;
+  /** nur fragen, wenn … */
+  wenn?: Kurz;
+}
+
+export interface Hinweis {
+  titel: string;
+  text: string;
+  url?: string;
+  wenn?: Kurz;
+}
+
+export interface Modul {
+  format: 1;
+  id: string;
+  name: string;
+  ebene: Ebene;
+  /** Gemeindeschlüssel bzw. sein Anfang: Land „05“, Kreis „05974“, Gemeinde „05974040“; Bund ohne */
+  schluessel?: string;
+  /** Postleitzahlen der Gemeinde (Vorschlag, solange der Gemeindeschlüssel fehlt) */
+  plz?: string[];
+  ueber?: string;
+  /** Version des Moduls (Datum) */
+  version: string;
+  hosts?: string[];
+  normen: Record<string, NormDef>;
+  fakten?: Record<string, FaktDef>;
+  bausteine?: Record<string, Kurz>;
+  /** Übersichtsseiten, deren Links beobachtet werden */
+  listen?: string[];
+  sperrliste?: string[];
+  hinweise?: Hinweis[];
+}
+
+/** Wert eines Fakts im Projekt (Abschnitt 5.1) */
+export interface FaktWert {
+  wert: string | number | boolean | null;
+  herkunft: 'stammdaten' | 'merkmal' | 'flaechen' | 'grz' | 'geodienst' | 'modul' | 'abgeleitet' | 'manuell';
+  quelle?: string;
+  stand?: string;
+  sicherheit: 'sicher' | 'hinweis';
+  /** warum nur Hinweis */
+  grund?: string;
+  bestaetigt?: { von: string; am: string };
+}
+
+/** Festlegung von Hand (Abschnitt 8) */
+export interface Festlegung {
+  ampel: Ampel;
+  grund: string;
+  von: string;
+  am: string;
+  /** automatische Ampel beim Festlegen */
+  automatisch: Ampel;
+  /** Fakten (Werte), an denen die Regel beim Festlegen hing */
+  fakten?: Record<string, string | number | boolean | null>;
+  /** Prüfsummen der Fundstellen beim Festlegen */
+  stand?: Record<string, string>;
+  /** zweite Bestätigung beim Speichern (ISO) – fehlt = Entwurf */
+  bestaetigt?: string;
+}
+
+export interface ParagrafErgebnis {
+  /** `modul/norm/§` */
+  id: string;
+  modul: string;
+  norm: string;
+  paragraf: string;
+  titel: string;
+  ampel: Ampel;
+  /** Ampel ohne Festlegung */
+  automatisch: Ampel;
+  /** Begründung in Worten (erste Zeile = Hauptgrund) */
+  gruende: string[];
+  hinweise: string[];
+  /** Fakten bzw. Merkmale, die fehlen (machen gelb) */
+  offen: string[];
+  /** Fakten, die nur Hinweis sind */
+  unsicher: string[];
+  /** Absätze, die sich seit der Prüfung der Regel geändert haben */
+  geaendert: string[];
+  /** Fakten (und `merkmal:…`), an denen die Ampel hängt – für „Festlegung überholt“ */
+  verwendet: string[];
+  behoerde?: Wahrheit;
+  nachweis?: string[];
+  fundstellen: string[];
+  verweise?: string[];
+  festlegung?: Festlegung;
+  /** Festlegung überholt: warum */
+  ueberholt?: string;
+  /** Regeldatei */
+  regel?: { datei: string; version: number; fassung: string };
+  /** Annahme des Büros */
+  annahme?: string;
+}
+
+export interface NormErgebnis {
+  /** `modul/norm` */
+  id: string;
+  modul: string;
+  norm: string;
+  def: NormDef;
+  ebene: Ebene;
+  /** Geltung der Norm */
+  geltung: Wahrheit;
+  geltungGrund?: string;
+  paragrafen: ParagrafErgebnis[];
+  zaehler: Record<Ampel, number>;
+  /** Fassung des Texts, die verwendet wurde */
+  fassung?: { gueltigAb: string; text: string; url: string; abgerufen: string; texterkennung?: boolean };
+  /** Text fehlt (nicht abrufbar, Web-Version) */
+  ohneText?: boolean;
+  /** Regeldatei fehlt für diese Norm */
+  ohneRegel?: boolean;
+  fehler?: string;
+  kuenftige?: { gueltigAb: string; url: string }[];
+}
