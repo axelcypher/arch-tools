@@ -129,6 +129,24 @@ Am 12.11.2026 geprüft:
 - Die mitgelieferten Texte (heute `apps/formulare/src/recht/daten/`) sind die Grundausstattung ohne Netz; sie
   ziehen nach `packages/core`. `recht-holen.mjs` erzeugt sie weiter, nimmt die Quellen aber aus den Modulen.
 
+### 4.4a Eigenheiten von recht.nrw.de (für den Adapter)
+
+Aus der Recherche zum Landesmodul (12.11.2026):
+
+- **Aufgehobene Normen** leiten über den Term-Link weiter auf ihre letzte Fassung; erkennbar an „Gültig bis“ in der
+  Infobox und „Aufgehoben durch …“ in der Änderungshistorie (Beispiel: Gesetz zur Ausführung des BauGB). Der Adapter
+  setzt dann `gueltigBis`; nach dem Stichtag gilt die Norm nicht mehr.
+- **Nicht jede Seite hat einen Term-Link** (Stellplatzverordnung NRW) – dann feste Adresse im Modul und Fassungsliste
+  der Seite als Erkennung.
+- **Alte Fassungen gibt es nicht immer als HTML** (teils nur Verweis auf eine `.htm`-Datei); für Stichtage in der
+  Vergangenheit muss der Adapter das lesen können.
+- Der Parser im heutigen `recht-holen.mjs` muss robuster werden: Paragrafennummer ohne §-Zeichen (LWG „104a“),
+  Paragrafen ohne Überschrift (Kampfmittelverordnung), Sektionen ohne Nummer (Eingangsformel, Teil-Überschriften),
+  Fußnoten vor dem Text, Titelzusätze wie „(Fn 9)“ oder „[1]“. Tests mit aufgezeichneten Seiten.
+- **Anlagen stehen nur als PDF da, unter wechselnden Dateinamen** (Gebührentarif, Richtzahlen der
+  Stellplatzverordnung, Anlage der VV TB). Der Adapter findet den Link auf der Seite der Norm über seine Beschriftung
+  und erkennt Änderungen an Prüfsumme bzw. `ETag`.
+
 ### 4.5 Prüfen, bevor ersetzt wird
 
 Eine neu abgerufene Fassung wird nur übernommen, wenn sie plausibel ist – sonst bleibt die bisherige, und die App
@@ -149,8 +167,12 @@ Für jede Prüfung gibt es zwei Daten: **heute** und das **geplante Einreichungs
 | statischer Verweis im Bebauungsplan | Fassung zum Plandatum | BauNVO 1962/1968/1977/1990 – im GRZ-Nachweis schon so modelliert (`MassNutzung.planDatum`, `baunvo`) |
 | sonst | Fassung, die am Einreichungsdatum gilt – und **Hinweis auf bekannte spätere Fassungen** | RIS liefert Fassungen mit Gültigkeitszeitraum: „Änderung tritt am … in Kraft – wahrscheinlich vor der Entscheidung“ → gelb |
 
-Übergangsvorschriften (z. B. § 90 BauO NRW) sind eigene Paragrafen mit Regeln. Ob recht.nrw.de künftige Fassungen
-vorab zeigt, ist offen; das Gültig-ab-Datum wird in jedem Fall ausgewertet.
+Übergangsvorschriften (z. B. § 90 BauO NRW) sind eigene Paragrafen mit Regeln.
+
+**recht.nrw.de zeigt künftige Fassungen vorab** (geprüft am LNatSchG NRW: Fassung ab 01.05.2027 schon online, die
+geltende trägt „Gültig bis 30.04.2027“). Der Term-Link führt aber immer auf die **heute** geltende Fassung; künftige
+stehen nur in der Fassungsliste der Seite (`li.version-item`, „vom 01.05.2027“). Der Adapter liest deshalb die Liste
+und holt auch künftige Fassungen.
 
 ### 4.7 Was sich geändert hat
 
@@ -512,8 +534,9 @@ Rot heißt „gilt“, nicht „wird geprüft“. Jeder rote Paragraf zeigt zus�
   faktischem Baugebiet (§ 34 Abs. 2 BauGB); `geltung` nein im Außenbereich ohne Plan.
 - **§§ 6, 7 GEIG** – rot bei Errichtung eines Wohngebäudes mit mehr als fünf bzw. eines Nichtwohngebäudes mit mehr
   als sechs Stellplätzen; Stellplatzzahl unbekannt → gelb.
-- **GEG** – `geltung`: Gebäude, das beheizt oder gekühlt wird (§ 2); Paragrafen zu Neubau bzw. Änderung von
-  Außenbauteilen (§ 48) nach Vorhaben; eigene Verantwortung, prüft die Behörde nicht.
+- **GEG** – `geltung`: Anwendungsbereich nach § 2; Paragrafen zu Neubau (§§ 10 ff.) bzw. Änderung bestehender
+  Gebäude (§ 36 in der Fassung nach dem Gesetz vom 23.07.2026 – der frühere § 48 ist weggefallen) nach Vorhaben;
+  eigene Verantwortung, prüft die Behörde nicht.
 
 ---
 
@@ -543,8 +566,66 @@ Danach:
 
 ## 9. Die ersten Module
 
-Bund (Grundstock), NRW, Kreis Soest und Stadt Soest – die Liste der Normen, Quellen und Paragrafen folgt nach der
-Recherche (läuft).
+Alle Quellen am 12.11.2026 abgerufen; Term-IDs und Fassungen selbst auf recht.nrw.de bzw. im Verzeichnis von
+gesetze-im-internet.de geprüft. Die Paragrafen sind der erste Umfang der Regeldateien – was „wann es greift“ heißt,
+wird dort als Regel geschrieben und mit der Fallmatrix getestet.
+
+### 9.1 Bund (`bund`) – Grundstock
+
+| Norm | Quelle | Paragrafen (erster Umfang) |
+|---|---|---|
+| BauGB | gii `bbaug` (im RIS noch nicht) – zuletzt geändert durch Art. 8 Abs. 2 G v. 23.7.2026 | §§ 29–38 (Zulässigkeit), § 31 Befreiungen, §§ 14, 17 Veränderungssperre, § 172 Erhaltungssatzung, § 246e (Wohnungsbau) |
+| BauNVO | RIS `eli/bund/bgbl-1/1962/s429` (Fassung ab 03.07.2023), alte Fassungen 1962/1968/1977/1990 mitgeliefert | §§ 1–15 nach Gebietsart, §§ 16–21a Maß, § 23 überbaubare Fläche |
+| GEG | gii `geg` – **seit dem G v. 23.7.2026 amtlich „GModG“**, §§ 47–55 und 71–73 weggefallen | § 2 Anwendungsbereich (`geltung`), §§ 10 ff. Neubau, § 36 Änderung bestehender Gebäude; die Auswahl wird an der neuen Fassung erst erarbeitet |
+| GEIG | gii `geig` | §§ 6, 7 (Neubau mit Stellplätzen), § 10 |
+| BNatSchG | RIS `eli/bund/bgbl-1/2009/s2542` (Fassung ab 30.09.2026) | §§ 14, 15, 18 (Eingriffsregelung), § 30 Biotope, § 44 Artenschutz |
+| WHG | gii `whg_2009` | §§ 76–78b (Überschwemmungs- und Risikogebiete), § 52 (Wasserschutzgebiete), § 55 Abs. 2 (Niederschlagswasser) |
+| StrlSchG | gii `strlschg` | §§ 121–123 (Radon) |
+| ArbStättV | gii `arbst_ttv_2004` | § 3a, Anhang (nur Nichtwohngebäude mit Arbeitsplätzen) |
+| BBodSchG | gii `bbodschg` | Hinweis Altlasten (Einzelheiten im Landesrecht) |
+
+Der GEG-Fund zeigt, warum Abschnitt 6.6 nötig ist: Eine Regel, die sich auf § 48 GEG alter Fassung stützt, wäre ab dem
+Inkrafttreten der Änderung nicht mehr belastbar – sie wird gelb, bis die neue Regeldatei da ist.
+
+### 9.2 Land NRW (`nw`)
+
+Alle Texte von recht.nrw.de, als HTML mit Paragrafen; Anlagen teils nur als PDF.
+
+| Norm | Term | gültig ab | Paragrafen (erster Umfang) |
+|---|---|---|---|
+| BauO NRW 2018 | 32203 | 01.09.2026 | § 4 Bebauung, § 6 Abstandsflächen, § 8 nicht überbaute Flächen und Kinderspielplätze, § 14 und §§ 26–38 Brandschutz, Bauteile, Rettungswege, § 39 Aufzüge, §§ 46, 47 Aufenthaltsräume, Wohnungen, § 42a Solaranlagen, § 48 Stellplätze, § 49 Barrierefreiheit, § 50 Sonderbauten, §§ 60–65 Verfahren, § 67 Bauvorlageberechtigung, § 68 bautechnische Nachweise, § 69 Abweichungen, § 70 Bauantrag, § 90 Übergang |
+| BauPrüfVO | 27719 | 26.11.2024 | §§ 1–6 (Bauvorlagen, Berechnungen), §§ 7–9a (Nachweise, Brandschutz-, Barrierefrei-Konzept), §§ 10–16 (Bauvorlagen je Verfahren), § 18 Baulasten, § 31 Übergang |
+| Sonderbauverordnung (SBauVO) | 31721 | 15.11.2019 | Anwendungsbereiche: § 1 Versammlungsstätten (über 200 Besucher), § 47 Beherbergung (über 12 Gastbetten), § 60 Verkaufsstätten (über 2 000 m²), § 92 Hochhäuser; Garagen §§ 121–140 (Klein- bis 100 m², Mittel- bis 1 000 m², Großgarage darüber), §§ 143–149 elektrische Betriebsräume |
+| Stellplatzverordnung NRW | **kein Term-Link** – feste Adresse `…/01072022-verordnung-ueber-notwendige-stellplaetze-fuer-kraftfahrzeuge-und` | 01.07.2022 | § 1 Anwendungsbereich (Bebauungsplan und Stellplatzsatzung gehen vor), §§ 3–6 Anzahl, Verringerung, Erfüllung, Ablösung (Richtzahlen nur als PDF-Anlage), §§ 7–9, § 11 Übergang |
+| Feuerungsverordnung (FeuVO NRW) | 32303 | 01.01.2019 | §§ 3–6 Verbrennungsluft, Aufstellräume, Heizräume (feste Brennstoffe über 50 kW), §§ 7–9 Abgasanlagen, § 10 Wärmepumpen/BHKW, §§ 11–13 Brennstofflagerung, Flüssiggas |
+| Sachverständigenverordnung (SV-VO) | 28042 | 26.11.2024 | § 6 Pflichten; Fachbereiche Standsicherheit, Brandschutz, Erd- und Grundbau, Schall- und Wärmeschutz |
+| GEG-Umsetzungsverordnung (GEG-UVO) | 33174 | 27.10.2022 | § 2 Nachweis (Sachverständige für Schall- und Wärmeschutz), § 3 Befreiungen |
+| Denkmalschutzgesetz (DSchG NRW) | 33502 | 01.09.2026 | § 4 vorläufiger Schutz, § 9 Erlaubnis (Abs. 1 Denkmal, Abs. 2 engere Umgebung, Abs. 3 Abwägung), § 10 Denkmalbereiche, §§ 15, 16 Bodendenkmäler, §§ 23, 24 Denkmalliste, Verfahren |
+| Landesnaturschutzgesetz (LNatSchG NRW) | 28058 | 30.10.2026 (**gültig bis 30.04.2027**, Fassung ab 01.05.2027 schon online) | § 7 Landschaftsplan, § 23 Schutzausweisung, §§ 30, 31, 33 Eingriff und Ausgleich, §§ 39, 41, 42 Landschaftsbestandteile, Alleen, Biotope, § 49 Baumschutzsatzung (Ermächtigung), § 75 Befreiungen |
+| Landeswassergesetz (LWG) | 26930 | 30.10.2026 | § 22 Anlagen an Gewässern, § 31 Gewässerrandstreifen, §§ 35, 36 Schutzgebiete, § 44 Niederschlagswasser (erstmals bebaut nach 01.01.1996), §§ 46, 48, 57 Abwasser, §§ 83, 84 Überschwemmungsgebiete |
+| Landesbodenschutzgesetz (LBodSchG) | 28047 | 01.04.2025 | § 2 Mitteilungspflichten (Altlasten; über 800 m³ Auf- oder Einbringen), § 8 Altlastenkataster, § 12 Bodenschutzgebiete |
+| Kampfmittelverordnung NRW | 28341 | 01.06.2022 | §§ 2–4 (Fund, Umgang, Betretungsverbot) – eine Auskunftspflicht vor dem Bauantrag steht nicht darin; die Auskunft ist ein Fakt, keine Pflicht aus dieser Verordnung |
+| Straßen- und Wegegesetz (StrWG NRW) | 27058 | 01.07.2026 | § 20 Zufahrten, § 25 bauliche Anlagen an Straßen (außerhalb der Ortsdurchfahrt bis 40 m von Landes- und Kreisstraßen Zustimmung der Straßenbaubehörde), §§ 18, 19 Sondernutzung |
+| Nachbarrechtsgesetz (NachbG NRW) | 26658 | 29.12.2021 | **Privatrecht – nur als Hinweis**, nie rot: § 1 Abstand 2 m, § 4 Fenster, §§ 7–23a Nachbar- und Grenzwand, Wärmedämmung, § 27 Niederschlagswasser, §§ 32–48 Einfriedigung, Pflanzen |
+| Verwaltungsgebührenordnung (AVwGebO NRW) | 33844 | 25.04.2026 | nur zur Information: Tarifstelle 3.1 (Baurecht), 3.3 (Denkmalschutz) – Tarif nur als PDF |
+| VV Technische Baubestimmungen (VV TB NRW) | 33148 | 21.11.2025 | **verweist dynamisch auf die MVV TB des DIBt** (neue Ausgabe gilt 6 Monate nach Veröffentlichung, ohne neue Fassung auf recht.nrw.de); NRW-Abweichungen nur in der PDF-Anlage → eigene Quelle für die MVV TB nötig (offen) |
+
+Geodienste des Landesmoduls: ALKIS (Flurstück, Gemeindeschlüssel), LINFOS (Schutzgebiete, als vollständig
+gekennzeichnet), Überschwemmungs- und Wasserschutzgebiete (Abschnitt 5.4).
+
+Nicht aufgenommen: Landes-Immissionsschutzgesetz (für den Antrag kaum relevant), Prüfverordnung für technische Anlagen
+(nur Sonderbauten, später), Gesetz zur Ausführung des BauGB (**aufgehoben** zum 31.08.2026 durch das Gesetz vom
+21.07.2026, das auch BauO NRW und DSchG NRW geändert hat – zählt nur noch für Anträge vor dem 01.09.2026). Eine
+Verwaltungsvorschrift zur BauO NRW 2018 und die Verwaltungsvorschrift Artenschutz stehen nicht auf recht.nrw.de; sie
+kommen als `datei`-Quelle dazu, sobald die amtliche Fundstelle geklärt ist.
+
+### 9.3 Kreis Soest (`nw-05974`)
+
+Folgt (Recherche läuft).
+
+### 9.4 Stadt Soest (`nw-05974040`)
+
+Folgt (Recherche läuft).
 
 ## 10. Daten in der Projektdatei
 
