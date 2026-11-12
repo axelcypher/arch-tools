@@ -1,0 +1,353 @@
+{
+  "format": 1,
+  "modul": "nw-05974",
+  "norm": "hsg_bad_sassendorf",
+  "fassung": "1987-09-21",
+  "version": 1,
+  "geltung": {
+    "f": "kreis_soest.hsg",
+    "ist": true
+  },
+  "geltungGrund": "nur im Heilquellenschutzgebiet Bad Sassendorf (Teile von Bad Sassendorf und Soest)",
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Heilquellenschutzgebiet für die Heilquellen der Saline Bad Sassendorf in Bad Sassendorf und Soest; qualitative Zonen I und III, quantitative Zonen A, B und C – maßgeblich sind die Schutzgebietskarten 1:5000.",
+      "fundstellen": [
+        "1/1",
+        "1/2",
+        "1/3",
+        "1/5"
+      ],
+      "pruefen": {
+        "grund": "Die Verordnung gilt nach § 14 vierzig Jahre (bis 16.10.2027). Bei Einreichung danach prüfen, ob eine neue Verordnung gilt.",
+        "wenn": {
+          "tag": "einreichung",
+          "ab": "2027-10-17"
+        }
+      },
+      "stand": {
+        "1/1": "725377e9",
+        "1/2": "3c4bbb44",
+        "1/3": "e4f62b89",
+        "1/5": "5f7ecf25"
+      }
+    },
+    "3": {
+      "gilt": {
+        "und": [
+          {
+            "f": "kreis_soest.hsg_qualitativ",
+            "in": [
+              "III"
+            ]
+          },
+          {
+            "oder": [
+              {
+                "und": [
+                  {
+                    "$": "nichtwohngebaeude"
+                  },
+                  {
+                    "$": "vorhaben_29"
+                  }
+                ]
+              },
+              {
+                "f": "technik.waermepumpe",
+                "ist": true
+              },
+              {
+                "f": "technik.brennstofflager",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.versickerung",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.grundwasser",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "kreis_soest.hsg_qualitativ",
+        "in": [
+          "außerhalb"
+        ]
+      },
+      "grund": "In Zone III genehmigungspflichtig u. a.: gewerbliche Anlagen und ihre Nutzungsänderung (Abs. 1 a), Versickerung von Straßen- und Verkehrsflächenwasser (i), Lagern wassergefährdender Stoffe über die Freigrenzen (k), Bohrungen (p) und Wärmepumpen außer Luftwärmepumpen (r); verboten u. a. das Einleiten von Schmutzwasser in den Untergrund (Abs. 2 k).",
+      "fundstellen": [
+        "3/1",
+        "3/2"
+      ],
+      "hinweis": "Heizöl bis 5 000 l oberirdisch und geringe Mengen für den Hausgebrauch sind nicht genehmigungspflichtig (Abs. 1 k). Erdwärmesonden und Wasser-Wasser-Wärmepumpen brauchen eine Genehmigung der unteren Wasserbehörde, Luftwärmepumpen nicht (Abs. 1 r).",
+      "nachweis": [
+        "Genehmigung der unteren Wasserbehörde des Kreises Soest (§ 9), soweit nicht eine andere Zulassung mit Einvernehmen der unteren Wasserbehörde genügt (§ 9 Abs. 6)"
+      ],
+      "pruefen": {
+        "grund": "Die Verordnung gilt nach § 14 vierzig Jahre (bis 16.10.2027). Bei Einreichung danach prüfen, ob eine neue Verordnung gilt.",
+        "wenn": {
+          "tag": "einreichung",
+          "ab": "2027-10-17"
+        }
+      },
+      "stand": {
+        "3/1": "e1ca0e24",
+        "3/2": "5b6c3631"
+      }
+    },
+    "4": {
+      "gilt": {
+        "und": [
+          {
+            "f": "kreis_soest.hsg_quantitativ",
+            "in": [
+              "C"
+            ]
+          },
+          {
+            "oder": [
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.grundwasser",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "kreis_soest.hsg_quantitativ",
+        "in": [
+          "A",
+          "B",
+          "außerhalb"
+        ]
+      },
+      "grund": "In Zone C sind Erdaufschlüsse tiefer als 10 m (Abgrabungen, Bohrungen, z. B. Erdwärmesonden) sowie Sprengungen genehmigungspflichtig.",
+      "fundstellen": [
+        "4"
+      ],
+      "pruefen": {
+        "grund": "Die Verordnung gilt nach § 14 vierzig Jahre (bis 16.10.2027). Bei Einreichung danach prüfen, ob eine neue Verordnung gilt.",
+        "wenn": {
+          "tag": "einreichung",
+          "ab": "2027-10-17"
+        }
+      },
+      "stand": {
+        "4": "d3a3a1e0"
+      }
+    },
+    "5": {
+      "gilt": {
+        "und": [
+          {
+            "f": "kreis_soest.hsg_quantitativ",
+            "in": [
+              "B"
+            ]
+          },
+          {
+            "oder": [
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.grundwasser",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "kreis_soest.hsg_quantitativ",
+        "in": [
+          "A",
+          "C",
+          "außerhalb"
+        ]
+      },
+      "grund": "In Zone B sind Erdaufschlüsse tiefer als 2,50 m – also schon Baugruben für Keller, Gründungen und Bohrungen – sowie Sprengungen genehmigungspflichtig.",
+      "fundstellen": [
+        "5"
+      ],
+      "pruefen": {
+        "grund": "Die Verordnung gilt nach § 14 vierzig Jahre (bis 16.10.2027). Bei Einreichung danach prüfen, ob eine neue Verordnung gilt.",
+        "wenn": {
+          "tag": "einreichung",
+          "ab": "2027-10-17"
+        }
+      },
+      "stand": {
+        "5": "af8d3536"
+      }
+    },
+    "6": {
+      "gilt": {
+        "oder": [
+          {
+            "f": "kreis_soest.hsg_qualitativ",
+            "in": [
+              "I"
+            ]
+          },
+          {
+            "f": "kreis_soest.hsg_quantitativ",
+            "in": [
+              "A"
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "kreis_soest.hsg_qualitativ",
+            "in": [
+              "III",
+              "außerhalb"
+            ]
+          },
+          {
+            "f": "kreis_soest.hsg_quantitativ",
+            "in": [
+              "B",
+              "C",
+              "außerhalb"
+            ]
+          }
+        ]
+      },
+      "grund": "In den Zonen I und A sind alle Handlungen verboten, die nicht dem Betrieb, der Unterhaltung oder der Überwachung der Heilquellen dienen.",
+      "fundstellen": [
+        "6/1",
+        "6/2"
+      ],
+      "stand": {
+        "6/1": "7a24ccac",
+        "6/2": "f1624bec"
+      }
+    },
+    "9": {
+      "gilt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "f": "kreis_soest.hsg_qualitativ",
+                "in": [
+                  "III"
+                ]
+              },
+              {
+                "oder": [
+                  {
+                    "und": [
+                      {
+                        "$": "nichtwohngebaeude"
+                      },
+                      {
+                        "$": "vorhaben_29"
+                      }
+                    ]
+                  },
+                  {
+                    "f": "technik.waermepumpe",
+                    "ist": true
+                  },
+                  {
+                    "f": "technik.brennstofflager",
+                    "ist": true
+                  },
+                  {
+                    "f": "vorhaben.versickerung",
+                    "ist": true
+                  },
+                  {
+                    "f": "vorhaben.grundwasser",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "f": "kreis_soest.hsg_quantitativ",
+                "in": [
+                  "B",
+                  "C"
+                ]
+              },
+              {
+                "oder": [
+                  {
+                    "f": "vorhaben.erdarbeiten",
+                    "ist": true
+                  },
+                  {
+                    "f": "vorhaben.grundwasser",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Über Genehmigungen nach §§ 3 bis 5 entscheidet die untere Wasserbehörde; Antrag vierfach mit allen Unterlagen, Genehmigung erlischt nach zwei Jahren (Abs. 1, 2, 5).",
+      "fundstellen": [
+        "9/1",
+        "9/2",
+        "9/5",
+        "9/6"
+      ],
+      "hinweis": "Einer eigenen Genehmigung bedarf es nicht, wenn eine andere Zulassung (z. B. wasserrechtliche Erlaubnis) einen hinreichenden Schutz ermöglicht und die zuständige Behörde das Einvernehmen der unteren Wasserbehörde einholt (Abs. 6).",
+      "stand": {
+        "9/1": "ebb02071",
+        "9/2": "d876f415",
+        "9/5": "43e5903b",
+        "9/6": "5c6fe3ba"
+      }
+    },
+    "10": {
+      "gilt": {
+        "oder": [
+          {
+            "f": "kreis_soest.hsg_qualitativ",
+            "in": [
+              "I"
+            ]
+          },
+          {
+            "f": "kreis_soest.hsg_quantitativ",
+            "in": [
+              "A"
+            ]
+          }
+        ]
+      },
+      "grund": "Von den Verboten der §§ 3 Abs. 2 und 6 kann die untere Wasserbehörde befreien, wenn das Wohl der Allgemeinheit es erfordert oder ein Verbot zu einer nicht beabsichtigten Härte führt und der Heilquellenschutz gewahrt bleibt.",
+      "fundstellen": [
+        "10/1"
+      ],
+      "stand": {
+        "10/1": "09c93855"
+      }
+    }
+  }
+}

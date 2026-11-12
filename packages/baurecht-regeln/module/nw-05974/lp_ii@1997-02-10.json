@@ -1,0 +1,169 @@
+{
+  "format": 1,
+  "modul": "nw-05974",
+  "norm": "lp_ii",
+  "fassung": "1997-02-10",
+  "version": 1,
+  "geltung": {
+    "und": [
+      {
+        "f": "kreis_soest.landschaftsplan",
+        "ist": "II"
+      },
+      {
+        "$": "kreis_soest_aussen"
+      }
+    ]
+  },
+  "geltungGrund": "nur im Außenbereich im Geltungsbereich des Landschaftsplans II „Erwitte/Anröchte“ (außerhalb der im Zusammenhang bebauten Ortsteile, der Bebauungspläne und der Innenbereichssatzungen)",
+  "paragrafen": {
+    "C.1": {
+      "titel": "Naturschutzgebiete (Festsetzungen C.1)",
+      "gilt": {
+        "und": [
+          {
+            "f": "schutz.nsg",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "bauen"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.baeume_faellen",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "schutz.nsg",
+        "ist": false
+      },
+      "grund": "Im Naturschutzgebiet des Landschaftsplans sind nach den textlichen Festsetzungen (Verbote) insbesondere das Errichten baulicher Anlagen, Veränderungen der Bodengestalt und das Beseitigen von Gehölzen verboten.",
+      "fundstellen": [
+        "C.1"
+      ],
+      "nachweis": [
+        "Antrag auf Befreiung (§ 67 BNatSchG, § 75 LNatSchG NRW) bzw. Ausnahme nach den textlichen Festsetzungen bei der unteren Naturschutzbehörde des Kreises Soest"
+      ]
+    },
+    "C.2": {
+      "titel": "Landschaftsschutzgebiete (Festsetzungen C.2)",
+      "gilt": {
+        "und": [
+          {
+            "f": "schutz.lsg",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "bauen"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.baeume_faellen",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "schutz.lsg",
+        "ist": false
+      },
+      "grund": "Im Landschaftsschutzgebiet des Landschaftsplans ist das Errichten baulicher Anlagen grundsätzlich verboten; die Festsetzungen nennen Ausnahmen (u. a. für privilegierte Vorhaben im Außenbereich).",
+      "fundstellen": [
+        "C.2"
+      ],
+      "nachweis": [
+        "Antrag auf Befreiung (§ 67 BNatSchG, § 75 LNatSchG NRW) bzw. Ausnahme nach den textlichen Festsetzungen bei der unteren Naturschutzbehörde des Kreises Soest"
+      ]
+    },
+    "C.3": {
+      "titel": "Naturdenkmale (Festsetzungen C.3)",
+      "gilt": {
+        "und": [
+          {
+            "f": "kreis_soest.lp_nd_lb",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "bauen"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.baeume_faellen",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "kreis_soest.lp_nd_lb",
+        "ist": false
+      },
+      "grund": "Naturdenkmale des Landschaftsplans (auch Kronentraufbereich) dürfen nicht beseitigt, beschädigt oder verändert werden.",
+      "fundstellen": [
+        "C.3"
+      ],
+      "nachweis": [
+        "Antrag auf Befreiung (§ 67 BNatSchG, § 75 LNatSchG NRW) bzw. Ausnahme nach den textlichen Festsetzungen bei der unteren Naturschutzbehörde des Kreises Soest"
+      ]
+    },
+    "C.4": {
+      "titel": "Geschützte Landschaftsbestandteile (Festsetzungen C.4)",
+      "gilt": {
+        "und": [
+          {
+            "f": "kreis_soest.lp_nd_lb",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "bauen"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.baeume_faellen",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "kreis_soest.lp_nd_lb",
+        "ist": false
+      },
+      "grund": "Geschützte Landschaftsbestandteile (Hecken, Baumreihen, Gewässerufer u. a.) dürfen nicht beseitigt oder beeinträchtigt werden.",
+      "fundstellen": [
+        "C.4"
+      ],
+      "nachweis": [
+        "Antrag auf Befreiung (§ 67 BNatSchG, § 75 LNatSchG NRW) bzw. Ausnahme nach den textlichen Festsetzungen bei der unteren Naturschutzbehörde des Kreises Soest"
+      ]
+    }
+  }
+}

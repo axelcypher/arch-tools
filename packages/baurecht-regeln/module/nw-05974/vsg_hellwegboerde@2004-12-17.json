@@ -1,0 +1,56 @@
+{
+  "format": 1,
+  "modul": "nw-05974",
+  "norm": "vsg_hellwegboerde",
+  "fassung": "2004-12-17",
+  "version": 1,
+  "geltung": {
+    "f": "kreis_soest.vsg_hellweg",
+    "ist": true
+  },
+  "geltungGrund": "nur im Vogelschutzgebiet Hellwegbörde",
+  "paragrafen": {
+    "Schutzzweck": {
+      "titel": "Schutzzweck und Verträglichkeit",
+      "gilt": {
+        "oder": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.erdarbeiten",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Im Vogelschutzgebiet Hellwegbörde (48 417 ha, offene, großräumig unzerschnittene Ackerlandschaft u. a. für Wiesenweihe, Rotmilan, Wachtelkönig) ist vor der Zulassung zu prüfen, ob das Vorhaben das Gebiet erheblich beeinträchtigen kann; dann Verträglichkeitsprüfung nach § 34 BNatSchG – auch im Innenbereich.",
+      "fundstellen": [
+        "Schutzzweck"
+      ],
+      "verweise": [
+        "bund/bnatschg/34"
+      ],
+      "hinweis": "LANUK und Kreis führen ein Kataster der Verträglichkeitsprüfungen; geprüft wird in der Summe aller Eingriffe seit 2004. Bauten mit Kulissenwirkung (Höhe, vertikale Strukturen, Gehölzriegel) gelten als kritisch."
+    },
+    "Massnahmenplan": {
+      "titel": "Maßnahmenplan (LANUV 2015)",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "kreis_soest_aussen"
+          }
+        ]
+      },
+      "grund": "Im Außenbereich: Ziele des Maßnahmenplans (Offenhaltung der Feldflur, Abstand zu Brut- und Rastplätzen) in der Vorprüfung berücksichtigen.",
+      "fundstellen": [
+        "Massnahmenplan"
+      ],
+      "pruefen": {
+        "grund": "Erheblichkeit und Summation beurteilt die untere Naturschutzbehörde im Einzelfall."
+      }
+    }
+  }
+}

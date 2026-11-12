@@ -1,0 +1,488 @@
+{
+  "format": 1,
+  "id": "nw-05974",
+  "name": "Kreis Soest",
+  "ebene": "kreis",
+  "schluessel": "05974",
+  "ueber": "nw",
+  "version": "2026-11-12",
+  "hosts": [
+    "www.kreis-soest.de",
+    "legaldocs.naturschutzinformationen.nrw.de",
+    "www.bra.nrw.de",
+    "www.wms.nrw.de"
+  ],
+  "listen": [
+    "https://www.kreis-soest.de/politik-verwaltung/verwaltung/bekanntmachungen/amtsblatt/amtsblatt",
+    "https://www.bra.nrw.de/bezirksregierung/amtsblatt-der-bezirksregierung-arnsberg",
+    "https://www.kreis-soest.de/umwelt-tourismus/umwelt/natur/landschaftsplanung/-landschaftsplanung"
+  ],
+  "sperrliste": [
+    "https://www.kreis-soest.de/fileadmin/user_upload/01_kreis-soest.de/Umwelt_und_Verbraucher/Umwelt/PDF/Baumschutz/LSG_VO_Amtsblatt_2009_15.pdf"
+  ],
+  "normen": {
+    "lsg_vo": {
+      "kurz": "LSG-VO Kreis Soest",
+      "titel": "Ordnungsbehördliche Verordnung zur Festsetzung der Landschaftsschutzgebiete im Kreis Soest vom 24.03.2009, § 8 neu gefasst durch Verordnung vom 21.07.2026",
+      "thema": "natur",
+      "erlassen": "Bezirksregierung Arnsberg (höhere Naturschutzbehörde)",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://legaldocs.naturschutzinformationen.nrw.de/legaldocs/vo_ar_2009_15.pdf"
+      },
+      "lizenz": "Text der Verordnung 2009 (Amtsblatt Nr. 15/2009); die Neufassung von § 8 (Amtsblatt Nr. 31/2026, S. 303) steht in https://legaldocs.naturschutzinformationen.nrw.de/legaldocs/vo_31_2026_arnsberg.pdf"
+    },
+    "nsg": {
+      "kurz": "NSG-VOen Kreis Soest",
+      "titel": "Naturschutzgebiete mit Anteil an der Stadt Soest (Verordnungen und einstweilige Sicherstellungen der Bezirksregierung Arnsberg)",
+      "thema": "natur",
+      "erlassen": "Bezirksregierung Arnsberg (höhere Naturschutzbehörde)",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://www.wms.nrw.de/umwelt/linfos"
+      }
+    },
+    "uesg_ahse": {
+      "kurz": "ÜSG-VO ME_LIP_1600",
+      "titel": "Ordnungsbehördliche Verordnung zur Festsetzung der Überschwemmungsgebiete der Gewässer Ahse, Salzbach, Mühlenbach, Soestbach, Amper Bach, Blögge, Schledde und Rosenau (Managementeinheit Ahse, ME_LIP_1600) vom 05.03.2022",
+      "thema": "wasser",
+      "erlassen": "Bezirksregierung Arnsberg (obere Wasserbehörde)",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.bra.nrw.de/system/files/media/document/file/001_2022_03_vo_text_me_lip_1600.pdf"
+      }
+    },
+    "hsg_bad_sassendorf": {
+      "kurz": "HSG-VO Bad Sassendorf",
+      "titel": "Ordnungsbehördliche Verordnung zur Festsetzung des Heilquellenschutzgebietes für die Heilquellen Bohrungen 13, 14 und 18 der Saline Bad Sassendorf (Heilquellenschutzgebietsverordnung Bad Sassendorf) vom 21.09.1987",
+      "thema": "wasser",
+      "erlassen": "Regierungspräsident Arnsberg (obere Wasserbehörde)",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+        "textebene": false,
+        "sha256": "1b4688cd6f7e8f0ab66a7f448c57a19c23dd95bda03283c1a8aeb75a273c5daa",
+        "text": "texte/nw-05974/hsg_bad_sassendorf@1987-09-21.json"
+      }
+    },
+    "nd_vo_innen": {
+      "kurz": "ND-VO Soest/Welver/Werl",
+      "titel": "Ordnungsbehördliche Verordnung zur Ausweisung von Naturdenkmalen und geschützten Landschaftsbestandteilen im Innenbereich der Stadt Soest, der Gemeinde Welver und der Stadt Werl vom 19.05.2014",
+      "thema": "natur",
+      "erlassen": "Kreis Soest (untere Naturschutzbehörde)",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.kreis-soest.de/fileadmin/user_upload/01_kreis-soest.de/Umwelt_und_Verbraucher/Umwelt/PDF/Baumschutz/Ordnungsbehoerdliche_Verordnung_ND_Soest_Welver_Werl.pdf"
+      }
+    },
+    "lp_i": {
+      "kurz": "LP I",
+      "titel": "Landschaftsplan I „Obere Lippetalung – Geseker Unterbörde“ (Neufassung 2003)",
+      "thema": "natur",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://legaldocs.naturschutzinformationen.nrw.de/legaldocs/soest_lp_1_text.pdf"
+      }
+    },
+    "lp_ii": {
+      "kurz": "LP II",
+      "titel": "Landschaftsplan II „Erwitte/Anröchte“",
+      "thema": "natur",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://legaldocs.naturschutzinformationen.nrw.de/legaldocs/soest_lp_2_text.pdf"
+      },
+      "lizenz": "Satzungstext nur als Scan; Stand 10/1996, ausgefertigt 10.02.1997 – Rechtskraftdatum nicht ermittelt"
+    },
+    "lp_iii": {
+      "kurz": "LP III",
+      "titel": "Landschaftsplan III „Lippetal – Lippstadt-West“",
+      "thema": "natur",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://legaldocs.naturschutzinformationen.nrw.de/legaldocs/soest_lp_3_text.pdf"
+      },
+      "lizenz": "Rechtskraftdatum nicht ermittelt (Satzungsdatei von 2006)"
+    },
+    "lp_iv": {
+      "kurz": "LP IV",
+      "titel": "Landschaftsplan IV „Welver“ (Satzungsbeschluss 27.06.2013)",
+      "thema": "natur",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://legaldocs.naturschutzinformationen.nrw.de/legaldocs/soest_lp_4_text.pdf"
+      }
+    },
+    "lp_v": {
+      "kurz": "LP V",
+      "titel": "Landschaftsplan V „Wickede-Ense“",
+      "thema": "natur",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://legaldocs.naturschutzinformationen.nrw.de/legaldocs/soest_lp_5_text.pdf"
+      },
+      "lizenz": "Rechtskraftdatum nicht ermittelt (Satzungstext Stand 10.08.2006)"
+    },
+    "lp_vi": {
+      "kurz": "LP VI",
+      "titel": "Landschaftsplan VI „Werl“ (rechtskräftig seit Bekanntmachung am 24.08.2012)",
+      "thema": "natur",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://legaldocs.naturschutzinformationen.nrw.de/legaldocs/soest_lp_6_text.pdf"
+      }
+    },
+    "lp_viii": {
+      "kurz": "LP VIII (Entwurf)",
+      "titel": "Landschaftsplan VIII „Warstein“ – Entwurf (Offenlage 06.07.–08.08.2026) mit einstweiligen Sicherstellungen",
+      "thema": "natur",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://www.kreis-soest.de/fileadmin/user_upload/01_kreis-soest.de/Umwelt_und_Verbraucher/Umwelt/PDF/Landschaftsplanung/LP_8_Warstein_Satzungstext_Offenlage_2026.pdf"
+      }
+    },
+    "vsg_hellwegboerde": {
+      "kurz": "VSG Hellwegbörde",
+      "titel": "EU-Vogelschutzgebiet „Hellwegbörde“ DE-4415-401 (Bekanntmachung der Europäischen Vogelschutzgebiete NRW vom 17.12.2004, Maßnahmenplan LANUV 2015)",
+      "thema": "natur",
+      "erlassen": "Land NRW (LANUK)",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://lanuk.nrw.de/fileadmin/lanuv/natur/schutzgeb/vogelschutzgebiete/vmp_hellwegboerde/VMP_Hellwegboerde.pdf"
+      }
+    },
+    "regionalplan": {
+      "kurz": "Regionalplan Arnsberg (TA Soest/HSK)",
+      "titel": "Regionalplan Arnsberg, Teilabschnitt Kreis Soest und Hochsauerlandkreis (März 2012)",
+      "thema": "planungsrecht",
+      "erlassen": "Bezirksregierung Arnsberg (Regionalplanungsbehörde)",
+      "nurHinweis": true,
+      "quelle": {
+        "art": "verweis",
+        "url": "https://www.bra.nrw.de/energie-bergbau/regionalplanung/der-rechtswirksame-regionalplan"
+      }
+    }
+  },
+  "fakten": {
+    "zustaendig.bauaufsicht": {
+      "titel": "Untere Bauaufsichtsbehörde",
+      "gruppe": "zustaendig",
+      "typ": "text",
+      "hilfe": "Lippstadt (große), Soest, Warstein und Werl (mittlere kreisangehörige Städte) sind selbst Bauaufsicht; für die übrigen zehn Gemeinden der Kreis Soest",
+      "nach": {
+        "fakt": "lage.ags",
+        "tabelle": {
+          "05974040": "Stadt Soest (untere Bauaufsichtsbehörde)",
+          "05974028": "Stadt Lippstadt (untere Bauaufsichtsbehörde)",
+          "05974044": "Stadt Warstein (untere Bauaufsichtsbehörde)",
+          "05974052": "Stadt Werl (untere Bauaufsichtsbehörde)"
+        },
+        "sonst": "Kreis Soest (untere Bauaufsichtsbehörde)"
+      }
+    },
+    "zustaendig.baulasten": {
+      "titel": "Baulastenverzeichnis",
+      "gruppe": "zustaendig",
+      "typ": "text",
+      "nach": {
+        "fakt": "lage.ags",
+        "tabelle": {
+          "05974040": "Stadt Soest",
+          "05974028": "Stadt Lippstadt",
+          "05974044": "Stadt Warstein",
+          "05974052": "Stadt Werl"
+        },
+        "sonst": "Kreis Soest"
+      }
+    },
+    "kreis_soest.landschaftsplan": {
+      "titel": "Landschaftsplan im Gemeindegebiet",
+      "gruppe": "schutz",
+      "typ": "wahl",
+      "werte": [
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VIII (Entwurf)",
+        "kein Landschaftsplan"
+      ],
+      "frage": "Welcher Landschaftsplan des Kreises Soest gilt am Grundstück (nur Außenbereich)?",
+      "hilfe": "Übersichtskarte der Landschaftspläne des Kreises Soest (Stand 11/2019). In Erwitte, Geseke, Lippstadt und Warstein hängt es von der Lage ab (LP I/II/III bzw. LP VIII nur südlich der B 516).",
+      "nach": {
+        "fakt": "lage.ags",
+        "tabelle": {
+          "05974040": "kein Landschaftsplan",
+          "05974008": "kein Landschaftsplan",
+          "05974032": "kein Landschaftsplan",
+          "05974036": "kein Landschaftsplan",
+          "05974048": "IV",
+          "05974052": "VI",
+          "05974056": "V",
+          "05974012": "V",
+          "05974024": "III",
+          "05974004": "II"
+        }
+      }
+    },
+    "kreis_soest.lsg_vo": {
+      "titel": "Gemeinde im Geltungsbereich der Landschaftsschutzverordnung Kreis Soest (ohne rechtskräftigen Landschaftsplan)",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§ 1 der Verordnung: Erwitte, Geseke, Rüthen, Soest, Warstein, Werl, Anröchte, Bad Sassendorf, Möhnesee, Welver; nach § 8 tritt sie außer Kraft, wo ein Landschaftsplan rechtswirksam wird (Welver: LP IV, Werl: LP VI). In Erwitte, Geseke und Anröchte je nach Lage (LP I/II).",
+      "nach": {
+        "fakt": "lage.ags",
+        "tabelle": {
+          "05974040": true,
+          "05974008": true,
+          "05974032": true,
+          "05974036": true,
+          "05974044": true,
+          "05974048": false,
+          "05974052": false,
+          "05974028": false,
+          "05974024": false,
+          "05974012": false,
+          "05974056": false
+        }
+      }
+    },
+    "kreis_soest.nsg": {
+      "titel": "Naturschutzgebiet am Grundstück",
+      "gruppe": "schutz",
+      "typ": "wahl",
+      "werte": [
+        "SO-060 Standortübungsplatz bei Büecke",
+        "SO-075 Ehemalige Klärteiche bei Hattrop",
+        "SO-076 Ehemalige Klärteiche an der Zuckerfabrik Soest",
+        "SO-079 Salzbrink",
+        "anderes Naturschutzgebiet"
+      ],
+      "frage": "Welches Naturschutzgebiet ist betroffen (LINFOS-Kennung)?",
+      "hilfe": "LINFOS NRW zeigt Kennung, Schutzstatus und Geltungsdauer; die Verordnungstexte stehen auf legaldocs.naturschutzinformationen.nrw.de",
+      "wenn": {
+        "f": "schutz.nsg",
+        "ist": true
+      }
+    },
+    "kreis_soest.hsg": {
+      "titel": "Im Heilquellenschutzgebiet Bad Sassendorf",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "Zone III reicht in den Osten der Stadt Soest; Karten 1:5000 bei der Bezirksregierung Arnsberg, Übersicht im WSG-Dienst NRW",
+      "wenn": {
+        "f": "schutz.wsg",
+        "ist": true
+      }
+    },
+    "kreis_soest.hsg_qualitativ": {
+      "titel": "Qualitative Schutzzone des Heilquellenschutzgebiets Bad Sassendorf",
+      "gruppe": "schutz",
+      "typ": "wahl",
+      "werte": [
+        "I",
+        "III",
+        "außerhalb"
+      ],
+      "wenn": {
+        "f": "kreis_soest.hsg",
+        "ist": true
+      }
+    },
+    "kreis_soest.hsg_quantitativ": {
+      "titel": "Quantitative Schutzzone des Heilquellenschutzgebiets Bad Sassendorf",
+      "gruppe": "schutz",
+      "typ": "wahl",
+      "werte": [
+        "A",
+        "B",
+        "C",
+        "außerhalb"
+      ],
+      "wenn": {
+        "f": "kreis_soest.hsg",
+        "ist": true
+      }
+    },
+    "kreis_soest.naturdenkmal": {
+      "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil der Kreisverordnung (Innenbereich Soest, Welver, Werl) betroffen",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "Anlage der Verordnung vom 19.05.2014 (Gemarkung, Flur, Flurstück je Objekt); bei Bäumen auch der Kronentraufbereich",
+      "wenn": {
+        "f": "lage.ags",
+        "in": [
+          "05974040",
+          "05974048",
+          "05974052"
+        ]
+      }
+    },
+    "kreis_soest.lp_nd_lb": {
+      "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil eines Landschaftsplans am Grundstück",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "Festsetzungskarte und Kapitel C.3/C.4 des Landschaftsplans",
+      "wenn": {
+        "f": "kreis_soest.landschaftsplan",
+        "in": [
+          "I",
+          "II",
+          "III",
+          "IV",
+          "V",
+          "VI",
+          "VIII (Entwurf)"
+        ]
+      }
+    },
+    "kreis_soest.vsg_hellweg": {
+      "titel": "Im EU-Vogelschutzgebiet Hellwegbörde (DE-4415-401)",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "wenn": {
+        "f": "schutz.vsg",
+        "ist": true
+      }
+    }
+  },
+  "bausteine": {
+    "kreis_soest_innen": {
+      "oder": [
+        {
+          "$": "bplan"
+        },
+        {
+          "$": "bplan_einfach"
+        },
+        {
+          "$": "innenbereich"
+        },
+        {
+          "und": [
+            {
+              "$": "satzung_baugb"
+            },
+            {
+              "f": "planung.innen",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "kreis_soest_aussen": {
+      "oder": [
+        {
+          "$": "aussenbereich"
+        },
+        {
+          "und": [
+            {
+              "$": "satzung_baugb"
+            },
+            {
+              "f": "planung.innen",
+              "ist": false
+            }
+          ]
+        }
+      ]
+    },
+    "kreis_soest_eingriff": {
+      "oder": [
+        {
+          "$": "bauen"
+        },
+        {
+          "f": "vorhaben.erdarbeiten",
+          "ist": true
+        },
+        {
+          "f": "vorhaben.baeume_faellen",
+          "ist": true
+        }
+      ]
+    }
+  },
+  "hinweise": [
+    {
+      "titel": "Zuständigkeit Bauaufsicht und Baulasten",
+      "text": "Lippstadt, Soest, Warstein und Werl sind selbst untere Bauaufsichtsbehörde und führen ihr Baulastenverzeichnis; für die übrigen zehn Gemeinden ist es der Kreis Soest. Untere Naturschutz-, Wasser- und Bodenschutzbehörde sowie Brandschutzdienststelle ist für alle Gemeinden der Kreis."
+    },
+    {
+      "titel": "Altlastenauskunft (Kreis Soest)",
+      "text": "Auskunft aus dem Altlastenkataster nur schriftlich beim Kreis Soest (Abteilung Umwelt, Sachgebiet Bodenschutz); ohne Einverständnis der Eigentümer nur ja/nein, Bearbeitung etwa eine Woche – früh beantragen.",
+      "url": "https://www.kreis-soest.de/umwelt-tourismus/umwelt/altlasten/altlastenkataster/altlastenkataster-auskuenfte"
+    },
+    {
+      "titel": "Kampfmittel: Luftbildauswertung",
+      "text": "Antrag über die örtliche Ordnungsbehörde der Gemeinde, die den Kampfmittelbeseitigungsdienst Westfalen-Lippe der Bezirksregierung Arnsberg beauftragt.",
+      "url": "https://www.bra.nrw.de/recht-ordnung/gefahrenabwehr/kriegsluftbildauswertung-zur-kampfmittelsuche",
+      "wenn": {
+        "f": "vorhaben.erdarbeiten",
+        "ist": true
+      }
+    },
+    {
+      "titel": "Artenschutz-Vorprüfung",
+      "text": "Der Kreis Soest verlangt das Formular „Vorprüfung Artenschutz“ als Teil der Bauvorlagen (untere Naturschutzbehörde des Kreises); ob eine Stadt mit eigener Bauaufsicht ein eigenes Formular verwendet, dort klären.",
+      "url": "https://www.kreis-soest.de/bauen-kataster/bauen/bauen/artenschutzpruefung/artenschutzpruefung-bauvorhaben",
+      "wenn": {
+        "oder": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "beseitigung"
+          }
+        ]
+      }
+    },
+    {
+      "titel": "Niederschlagswasser, Erdwärme, Grundwasser",
+      "text": "Wasserrechtliche Erlaubnisse (Versickerung, Einleitung in ein Gewässer, Erdwärmesonden, Bauwasserhaltung) erteilt die untere Wasserbehörde des Kreises Soest – auch für Vorhaben in Städten mit eigener Bauaufsicht.",
+      "wenn": {
+        "oder": [
+          {
+            "f": "vorhaben.versickerung",
+            "ist": true
+          },
+          {
+            "f": "vorhaben.grundwasser",
+            "ist": true
+          }
+        ]
+      }
+    },
+    {
+      "titel": "Brandschutzdienststelle",
+      "text": "Stellungnahmen zum Brandschutz (z. B. bei Sonderbauten) gibt die Brandschutzdienststelle des Kreises Soest ab, auch für Soest, Warstein und Werl.",
+      "wenn": {
+        "$": "sonderbau"
+      }
+    },
+    {
+      "titel": "Landschaftspläne in Aufstellung",
+      "text": "Landschaftsplan VII „Möhnesee“ und IX „Rüthen“ (jeweils Teil Arnsberger Wald) sind in Bearbeitung; bis zu ihrer Rechtskraft gilt dort die Landschaftsschutzverordnung von 2009.",
+      "wenn": {
+        "f": "lage.ags",
+        "in": [
+          "05974032",
+          "05974036"
+        ]
+      }
+    },
+    {
+      "titel": "Kartendienste des Kreises",
+      "text": "Die öffentlichen Viewer des Kreises (Landschaftsschutz, Wasserwirtschaft) waren bei der Recherche nicht erreichbar; Altlasten- und Kompensationskataster sind passwortgeschützt. Schutzgebiete daher über LINFOS NRW, Überschwemmungs- und Wasserschutzgebiete über die Landesdienste.",
+      "url": "https://www.gis.kreis-soest.de/"
+    }
+  ]
+}

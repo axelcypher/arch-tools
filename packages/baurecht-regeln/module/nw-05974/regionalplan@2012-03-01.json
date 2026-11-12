@@ -1,0 +1,29 @@
+{
+  "format": 1,
+  "modul": "nw-05974",
+  "norm": "regionalplan",
+  "fassung": "2012-03-01",
+  "version": 1,
+  "geltung": {
+    "$": "kreis_soest_aussen"
+  },
+  "geltungGrund": "nur für Vorhaben im Außenbereich",
+  "paragrafen": {
+    "Ziele": {
+      "titel": "Ziele der Raumordnung (Hinweis zu § 35 Abs. 3 BauGB)",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "grund": "Sonstige Vorhaben im Außenbereich dürfen den Zielen der Raumordnung nicht widersprechen (§ 35 Abs. 3 Satz 2 BauGB); für privilegierte Vorhaben sind sie öffentliche Belange.",
+      "fundstellen": [
+        "Ziele"
+      ],
+      "pruefen": {
+        "grund": "Darstellung des Regionalplans am Standort (z. B. Allgemeiner Freiraum- und Agrarbereich, Bereich zum Schutz der Natur) von Hand prüfen."
+      },
+      "verweise": [
+        "bund/baugb/35"
+      ]
+    }
+  }
+}

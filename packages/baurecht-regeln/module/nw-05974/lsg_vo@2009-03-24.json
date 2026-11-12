@@ -1,0 +1,126 @@
+{
+  "format": 1,
+  "modul": "nw-05974",
+  "norm": "lsg_vo",
+  "fassung": "2009-03-24",
+  "version": 1,
+  "geltung": {
+    "und": [
+      {
+        "f": "schutz.lsg",
+        "ist": true
+      },
+      {
+        "f": "kreis_soest.lsg_vo",
+        "ist": true
+      }
+    ]
+  },
+  "geltungGrund": "nur im Landschaftsschutzgebiet dieser Verordnung (Gemeinden ohne rechtskräftigen Landschaftsplan, §§ 1 und 8)",
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Das Grundstück liegt im Landschaftsschutzgebiet „Kreis Soest“ (LINFOS LSG-SO-00097, rund 31 320 ha); maßgeblich sind die Karten der Verordnung (1:10 000, in Erwitte, Geseke, Warstein, Werl und Welver 1:12 500).",
+      "fundstellen": [
+        "1"
+      ],
+      "hinweis": "§ 8 gilt seit der Verordnung vom 21.07.2026 (Amtsblatt Nr. 31/2026, S. 303) ohne Befristung; die Verordnung tritt für ein Gebiet außer Kraft, sobald dort ein Landschaftsplan rechtswirksam wird. Die Kopie der Verordnung auf kreis-soest.de zeigt diese Änderung nicht.",
+      "stand": {
+        "1": "e3b0c442"
+      }
+    },
+    "3": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "bauen"
+          },
+          {
+            "f": "vorhaben.erdarbeiten",
+            "ist": true
+          },
+          {
+            "f": "vorhaben.baeume_faellen",
+            "ist": true
+          },
+          {
+            "f": "vorhaben.grundwasser",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "$": "bplan"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung ohne bauliche Änderung greift § 3 Abs. 1 Nr. 1 nicht; verboten bleiben aber Handlungen, die den Charakter des Gebiets verändern oder dem Schutzzweck zuwiderlaufen (Abs. 2) – mit der unteren Naturschutzbehörde klären.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "grund": "Verboten ist, bauliche Anlagen (auch Einfriedungen, Stellplätze, Werbeanlagen, Leitungen) zu errichten, zu erweitern oder zu verändern (Abs. 1 Nr. 1), die Bodengestalt zu verändern (Nr. 3), Gehölze und Einzelbäume zu beseitigen (Nr. 5) und feuchtes Grünland durch Grundwasserentnahme zu entwässern (Nr. 12).",
+      "fundstellen": [
+        "3/1",
+        "3/2"
+      ],
+      "hinweis": "Unberührt bleiben u. a. Vorhaben im Haus- und Hofbereich (Abs. 1 Nr. 1 Satz 2) und die Tätigkeiten nach § 4. Maßnahmen aufgrund eines rechtskräftigen Bebauungsplans sind nach § 4 Nr. 7 nicht betroffen.",
+      "nachweis": [
+        "Antrag auf Ausnahme (§ 5) oder Befreiung (§ 67 BNatSchG, § 75 LNatSchG NRW) bei der unteren Naturschutzbehörde des Kreises Soest"
+      ],
+      "verweise": [
+        "bund/bnatschg/67"
+      ]
+    },
+    "4": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "bauen"
+          },
+          {
+            "$": "nutzungsaenderung"
+          }
+        ]
+      },
+      "entfaellt": {
+        "$": "bplan"
+      },
+      "grund": "Prüfen, ob das Vorhaben nach § 4 von den Verboten unberührt bleibt: bestehende Anlagen und zugelassene Nutzungen (Nr. 1), privilegierte Vorhaben nach § 35 Abs. 1 Nr. 1 und 2 BauGB, landwirtschaftliche Anlagen nach § 35 Abs. 1 Nr. 4 und 6 BauGB unterhalb der Schwellen der 4. BImSchV und nach § 35 Abs. 4 Nr. 1 bis 5 BauGB begünstigte Vorhaben (Nr. 2).",
+      "fundstellen": [
+        "4"
+      ],
+      "hinweis": "Greift § 4, entfällt das Verbot des § 3 – der Nachweis (Privilegierung, Bestandsschutz) gehört in die Bauvorlagen.",
+      "stand": {
+        "4": "e3b0c442"
+      }
+    },
+    "5": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "bauen"
+          },
+          {
+            "$": "nutzungsaenderung"
+          }
+        ]
+      },
+      "entfaellt": {
+        "$": "bplan"
+      },
+      "grund": "Eine Ausnahme ist zu erteilen, wenn die Handlung den Schutzzweck (§ 2) nicht beeinträchtigt (Abs. 1); für Bauvorhaben nach § 35 Abs. 1 Nr. 1 bis 3 und Abs. 4 BauGB, wenn sie nach Standort und Gestaltung der Landschaft angepasst werden und dem Schutzzweck nicht entgegenstehen (Abs. 2).",
+      "fundstellen": [
+        "5/1",
+        "5/2"
+      ],
+      "pruefen": {
+        "grund": "Ob die Voraussetzungen einer Ausnahme vorliegen, entscheidet die untere Naturschutzbehörde im Einzelfall."
+      },
+      "nachweis": [
+        "Antrag bei der unteren Naturschutzbehörde des Kreises Soest (Lageplan, Ansichten, Eingrünung)"
+      ]
+    }
+  }
+}
