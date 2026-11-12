@@ -197,6 +197,9 @@ export interface Meldung {
   text: string;
 }
 
+/** Dialog mit wartender Aktion: Projektordner zuordnen bzw. Projektdatei (Stammdaten) anlegen */
+export type DialogArt = 'ordner' | 'oap';
+
 interface FormulareState extends Gespeichert {
   ds: Dateisystem | null;
   projekte: Projekt[];
@@ -344,12 +347,13 @@ interface FormulareState extends Gespeichert {
   oapAendern: (aendern: (roh: Record<string, unknown>) => Record<string, unknown>) => Promise<boolean>;
   /** Stammdaten-Dialog öffnen, um die fehlende Projektdatei anzulegen; `danach` läuft nach dem Anlegen */
   /** Stammdaten-Dialog öffnen; `danach` läuft nach dem Anlegen, `abgebrochen` beim Abbrechen (z. B. eine Zusage zurücknehmen) */
-  stammdatenErfassen: (grund: string, danach?: () => Promise<void>, abgebrochen?: () => void) => Promise<void>;
+  stammdatenErfassen: (grund: string, danach?: () => Promise<void>, abgebrochen?: (art: DialogArt) => void) => Promise<void>;
   /** Projektdatei mit diesen Stammdaten anlegen (aus dem Dialog) */
   projektdateiAnlegen: (meta: ProjectMeta) => Promise<void>;
   stammdatenAbbrechen: () => void;
   /** Dialog öffnen, um dem gewählten Projekt einen Projektordner zuzuordnen; `danach` läuft, sobald es eine Projektdatei gibt */
-  projektordnerZuordnen: (grund: string, danach?: () => Promise<void>) => void;
+  /** Projektordner zuordnen lassen; `danach` läuft nach dem Zuordnen (bzw. Anlegen der Projektdatei), `abgebrochen` beim Abbrechen */
+  projektordnerZuordnen: (grund: string, danach?: () => Promise<void>, abgebrochen?: (art: DialogArt) => void) => void;
   /** vorhandenen Ordner zuordnen */
   projektordnerWaehlen: (pfad: string) => Promise<void>;
   /** neuen Projektordner im Stammordner anlegen und zuordnen */
@@ -907,14 +911,15 @@ export const useFormulare = create<FormulareState>()((set, get) => {
   };
   /** nach dem Anlegen der Projektdatei weitermachen (z. B. den Antragsumfang speichern) */
   let nachAnlegen: (() => Promise<void>) | null = null;
-  let beiAbbruch: (() => void) | null = null;
+  let beiAbbruch: ((art: DialogArt) => void) | null = null;
 
   /** Projektordner zugeordnet: Projektdatei suchen; fehlt sie, die Stammdaten erfassen (die wartende Aktion bleibt) */
   const nachZuordnen = async (projekt: Projekt) => {
     await get().oapLaden();
     if (get().projekt !== projekt) return;
     const weiter = nachAnlegen;
-    if (get().oap === 'fehlt') await get().stammdatenErfassen('Im Projektordner gibt es noch keine Projektdatei (.oap). Mit diesen Stammdaten wird sie angelegt.', weiter ?? undefined);
+    // der Abbruch-Rückruf gilt weiter (Projektordner zugeordnet, dann den Stammdaten-Dialog abgebrochen)
+    if (get().oap === 'fehlt') await get().stammdatenErfassen('Im Projektordner gibt es noch keine Projektdatei (.oap). Mit diesen Stammdaten wird sie angelegt.', weiter ?? undefined, beiAbbruch ?? undefined);
     else {
       nachAnlegen = null;
       if (weiter) await weiter();
@@ -1045,6 +1050,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     projektWaehlen: async (projekt) => {
       await get().schliessen();
       nachAnlegen = null;
+      beiAbbruch = null;
       set({ projekt, formulare: [], karte: null, datei: null, projektdaten: null, oap: null, stammdatenDialog: null, ordnerDialog: null, haupt: 'formular' });
       const ds = get().ds;
       if (!projekt || !ds) return;
@@ -1580,7 +1586,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       nachAnlegen = null;
       beiAbbruch = null;
       set({ stammdatenDialog: null });
-      abbruch?.();
+      abbruch?.('oap');
     },
     projektdateiAnlegen: async (meta) => {
       const { ds, projekt } = get();
@@ -1603,9 +1609,10 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       beiAbbruch = null;
       if (weiter) await weiter();
     },
-    projektordnerZuordnen: (grund, danach) => {
+    projektordnerZuordnen: (grund, danach, abgebrochen) => {
       if (!get().projekt) return;
       nachAnlegen = danach ?? null;
+      beiAbbruch = abgebrochen ?? null;
       set({ ordnerDialog: { grund } });
     },
     ordnerNeuLesen: () => set((s) => ({ ordnerStand: s.ordnerStand + 1 })),
@@ -1623,8 +1630,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       }
     },
     ordnerDialogSchliessen: () => {
+      const abbruch = nachAnlegen ? beiAbbruch : null;
       nachAnlegen = null;
+      beiAbbruch = null;
       set({ ordnerDialog: null });
+      abbruch?.('ordner');
     },
     projektordnerWaehlen: async (pfad) => {
       const projekt = get().projekt;

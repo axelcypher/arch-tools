@@ -78,6 +78,7 @@ import type { FormularEintrag, Projekt } from './projekte';
 import { formulareDesProjekts, projektSchluessel } from './projekte';
 import type { FormularZustand, Zustaende } from './autofill';
 import { autoWerte } from './autofill';
+import type { DialogArt } from './store';
 import { ablageVon, autofillAnbindung, entwurfVon, karteMitAenderungen, mitAenderungen, profilFuer as wirksamesProfil, sperrAnbindung, useFormulare, wertVon } from './store';
 import { fragen } from '@core/ui/Rueckfrage';
 
@@ -196,7 +197,7 @@ interface AntragState {
   neuBerechnen: () => void;
   fassungWaehlen: (name: string, anlegen?: boolean) => Promise<void>;
   /** Antragsumfang setzen – das Ergebnis sagt, ob gespeichert wurde (bzw. ein Dialog es nachholt) */
-  umfangSetzen: (umfang: UmfangEintrag[] | null) => Promise<SchreibInfo>;
+  umfangSetzen: (umfang: UmfangEintrag[] | null, o?: { info?: SchreibInfo }) => Promise<SchreibInfo>;
   /**
    * Antragsumfang ändern – gelesen wird er erst jetzt (Menüs, Verknüpfen, Formular anlegen halten keinen alten fest).
    * Mit `ansicht` nur, wenn noch diese Fassung angezeigt wird, mit `eintrag` nur, wenn es den Eintrag noch gibt; sonst
@@ -339,6 +340,9 @@ export function projektCodes(p: Projekt): string[] {
 }
 
 /** Ordner der aktiven Fassung relativ zum Projektordner */
+/** Zeigt die Ansicht die aktive Fassung? Während ein Fassungswechsel lädt, ist schon die neue aktiv, angezeigt (samt Umfang) noch die bisherige */
+const angezeigtIstAktiv = (s: Parameters<typeof aktiveFassung>[0], p: Projekt | null) => (s.projektdatei?.ansicht ?? aktiveFassung(s, p)) === aktiveFassung(s, p);
+
 export const antragsOrdner = (s: Parameters<typeof aktiveFassung>[0], p: Projekt | null) => `${wirksameEinstellungen(s, p).antragsordner.replace(/^\/+|\/+$/g, '')}/${aktiveFassung(s, p)}`;
 
 /** voreingestellter Zielordner des Exports (relativ zum Projektordner) */
@@ -447,6 +451,8 @@ export interface UmfangAenderung {
   was?: string;
   /** nichts melden (der Aufrufer meldet selbst) */
   still?: boolean;
+  /** Ergebnis-Objekt des Aufrufers (z. B. mit `beiAbbruch`, schon vor dem Schreiben gesetzt) */
+  info?: SchreibInfo;
 }
 
 /** Was beim Schreiben der Projektdatei geschah – für Meldungen der Aufrufer */
@@ -459,8 +465,8 @@ export interface SchreibInfo {
   grund?: string;
   /** schon vor dem Schreiben nicht möglich: andere Fassung angezeigt, Eintrag bzw. Antragsumfang entfernt, gesperrt */
   vorab?: 'fassung' | 'eintrag' | 'umfang' | 'sperre';
-  /** wird der offene Stammdaten-Dialog abgebrochen: dies statt der allgemeinen Meldung (z. B. eine Zusage zurücknehmen) */
-  beiAbbruch?: () => void;
+  /** wird der offene Dialog abgebrochen: dies statt der allgemeinen Meldung (z. B. eine Zusage zurücknehmen) */
+  beiAbbruch?: (art: DialogArt) => void;
 }
 
 /** Gespeicherter Abschnitt der geladenen Projektdatei; null, wenn es keine Projektdatei gibt oder nichts darin steht */
@@ -587,7 +593,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       let zielBasis = basis;
       if (gewollt && jetzt && jetzt !== gewollt) {
         if (art === 'ordner') {
-          meldung('info', `Projektordner zugeordnet – angezeigt wird jetzt die Antragsfassung „${jetzt}“ aus dem Projektordner. Die Änderung ist nicht übernommen; bitte dort bei Bedarf noch einmal vornehmen.`);
+          meldung('info', `Projektordner zugeordnet – angezeigt wird jetzt Antrag ${jetzt} aus dem Projektordner. Die Änderung ist nicht übernommen; bitte dort bei Bedarf noch einmal vornehmen.`);
           return;
         }
         // eben angelegte Projektdatei: die Fassung des Aufrufers bleibt die aktive (als eigene Änderung geschrieben)
@@ -597,11 +603,14 @@ export const useAntrag = create<AntragState>((set, get) => {
       if (!(await projektdateiSchreiben(ziel, projekt, { basis: zielBasis }))) return;
       await get().laden();
       if (art === 'oap' && gewollt && ziel.aktiveFassung === gewollt && stabil(gewollt) !== stabil(basis?.aktiveFassung))
-        meldung('info', `Projektdatei angelegt – Antragsfassung „${gewollt}“ ist das Ziel des Exports.`);
+        meldung('info', `Projektdatei angelegt – Antrag ${gewollt} ist das Ziel des Exports.`);
     };
+    // Dialog abgebrochen: die Zusage des Aufrufers zurücknehmen bzw. allgemein melden
+    const abgebrochen = (art: DialogArt) =>
+      info.beiAbbruch ? info.beiAbbruch(art) : meldung('info', `${art === 'oap' ? 'Projektdatei nicht angelegt' : 'Projektordner nicht zugeordnet'} – die Änderung ist nicht gespeichert.`);
     if (!ablageVon(f, projekt)) {
       info.dialog = true;
-      f.projektordnerZuordnen('Die Angaben zum Antrag werden in der Projektdatei (.oap) im Projektordner gespeichert. Für dieses Projekt ist noch kein Projektordner zugeordnet.', () => nachDialog('ordner'));
+      f.projektordnerZuordnen('Die Angaben zum Antrag werden in der Projektdatei (.oap) im Projektordner gespeichert. Für dieses Projekt ist noch kein Projektordner zugeordnet.', () => nachDialog('ordner'), abgebrochen);
       return false;
     }
     // noch nicht gelesen bzw. gerade nicht lesbar (Netz nach dem Aufwachen): (neu) lesen
@@ -631,7 +640,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       await f.stammdatenErfassen(
         `Die Angaben zum Antrag (Antragsumfang, Antragsfassung, Antragsmerkmale) werden in der Projektdatei (.oap) gespeichert. Im Projektordner gibt es ${geloest ? 'die bisherige nicht mehr (gelöscht oder verschoben)' : 'noch keine'} – mit diesen Stammdaten wird sie angelegt.`,
         () => nachDialog('oap'),
-        () => (info.beiAbbruch ? info.beiAbbruch() : meldung('info', 'Projektdatei nicht angelegt – die Änderung ist nicht gespeichert.')),
+        abgebrochen,
       );
       return false;
     }
@@ -826,7 +835,8 @@ export const useAntrag = create<AntragState>((set, get) => {
         const umfang = st.projektdatei?.umfang;
         const fassung = aktiveFassung(st, projekt);
         const imAntrag = fertig.filter((x) => x.ordner === antragsOrdner(st, projekt));
-        if (umfang && imAntrag.length) {
+        // nur, wenn die aktive Fassung auch angezeigt ist (nicht während ein Wechsel lädt) – sonst gehörte der Umfang zur bisherigen
+        if (umfang && imAntrag.length && angezeigtIstAktiv(st, projekt)) {
           const neu = umfang.map((u) => {
             const doc = st.dokumente.find((d) => d.eintrag.id === u.id);
             const x = doc?.formular && imAntrag.find((y) => y.pfad === doc.formular!.pfad);
@@ -1229,23 +1239,29 @@ export const useAntrag = create<AntragState>((set, get) => {
         if (anlegen && basis) await ds.ordnerAnlegen(basis, `${wirksameEinstellungen(get(), projekt).antragsordner}/${name}`);
         // inzwischen ein anderes Projekt: der Ordner bleibt im bisherigen, aktiv wird dort nichts
         if (anderesProjekt(projekt)) {
-          meldung('info', `Ordner „${name}“ in ${projekt.ordner} angelegt, aber nicht als aktive Antragsfassung gesetzt – inzwischen ist ein anderes Projekt offen.`);
+          meldung('info', `Ordner ${name} in ${projekt.ordner} angelegt, aber nicht als aktive Antragsfassung gesetzt – inzwischen ist ein anderes Projekt offen.`);
           return;
         }
-        const info: SchreibInfo = {};
+        // Dialog abgebrochen: der Ordner ist schon da, nur die aktive Fassung fehlt – das sagen statt „Änderung nicht gespeichert“
+        const info: SchreibInfo = anlegen
+          ? {
+              beiAbbruch: (art) =>
+                meldung('info', `Ordner ${name} angelegt, aber nicht als aktive Antragsfassung gespeichert – ${art === 'oap' ? 'keine Projektdatei angelegt' : 'kein Projektordner zugeordnet'}.`),
+            }
+          : {};
         await projektdateiSchreiben({ ...(get().projektdatei ?? {}), aktiveFassung: name }, projekt, { info });
         if (anderesProjekt(projekt)) return;
         await get().laden();
         // ist ein Dialog offen (Projektordner, Projektdatei), wird die Fassung erst danach aktiv – dann nichts melden
-        if (anlegen && !info.dialog) meldung('info', `Neue Antragsfassung „${name}“ angelegt – sie ist jetzt das Ziel des Exports.`);
+        if (anlegen && !info.dialog) meldung('info', `Neue Antragsfassung ${name} angelegt – sie ist jetzt das Ziel des Exports.`);
       } catch (e) {
         fehler(`Antragsfassung ${name}`, e);
       }
     },
 
-    umfangSetzen: async (umfang) => {
-      const info: SchreibInfo = {};
-      if (gesperrt()) return { grund: (antragSperre(get(), useFormulare.getState().projekt) ?? 'Der Antrag ist gesperrt').replace(/\.$/, ''), vorab: 'sperre' };
+    umfangSetzen: async (umfang, o = {}) => {
+      const info: SchreibInfo = o.info ?? {};
+      if (gesperrt()) return Object.assign(info, { grund: (antragSperre(get(), useFormulare.getState().projekt) ?? 'Der Antrag ist gesperrt').replace(/\.$/, ''), vorab: 'sperre' as const });
       try {
         const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
         if (umfang) neu.umfang = umfang;
@@ -1281,20 +1297,21 @@ export const useAntrag = create<AntragState>((set, get) => {
       const pd = get().projektdatei;
       // erst feststellen, ob es noch geht – dann der Grund daraus. Geändert wird der Umfang der angezeigten Fassung (auch
       // während ein Wechsel lädt): stimmt sie mit der festgehaltenen überein, passt es
-      const vorab: SchreibInfo['vorab'] = !pd?.umfang
+      const umfang = pd?.umfang;
+      const vorab: SchreibInfo['vorab'] = !umfang
         ? 'umfang'
-        : o.ansicht !== undefined && pd.ansicht !== o.ansicht
+        : o.ansicht !== undefined && pd?.ansicht !== o.ansicht
           ? 'fassung'
-          : o.eintrag && !pd.umfang.some((x) => x.id === o.eintrag)
+          : o.eintrag && !umfang.some((x) => x.id === o.eintrag)
             ? 'eintrag'
             : undefined;
-      if (vorab || !pd?.umfang) {
+      if (vorab || !umfang) {
         const grund =
           vorab === 'fassung' ? `inzwischen ist Antrag ${pd?.ansicht} angezeigt` : vorab === 'eintrag' ? `der Eintrag ${o.titel ? `„${o.titel}“ ` : ''}ist inzwischen nicht mehr im Antragsumfang` : 'inzwischen gibt es keinen Antragsumfang mehr';
         if (!o.still) meldung('info', `${o.was ?? 'Antragsumfang nicht geändert'} – ${grund}.`);
-        return { grund, vorab: vorab ?? 'umfang' };
+        return Object.assign(o.info ?? {}, { grund, vorab: vorab ?? 'umfang' });
       }
-      return get().umfangSetzen(aendern(pd.umfang));
+      return get().umfangSetzen(aendern(umfang), { info: o.info });
     },
 
     exportieren: async (formularPfad, ziel, ersetzen) => {
@@ -1312,7 +1329,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         const st = get();
         const umfang = st.projektdatei?.umfang;
         const doc = st.dokumente.find((d) => d.formular?.pfad === formularPfad);
-        if (umfang && doc && ziel.ordner === antragsOrdner(st, projekt)) {
+        if (umfang && doc && ziel.ordner === antragsOrdner(st, projekt) && angezeigtIstAktiv(st, projekt)) {
           const fassung = aktiveFassung(st, projekt);
           await get().umfangSetzen(
             umfang.map((u) => (u.id === doc.eintrag.id ? { ...u, formularDatei: nurName(formularPfad), dateien: { ...u.dateien, [fassung]: ziel.name } } : u)),
@@ -1504,7 +1521,9 @@ export const useAntrag = create<AntragState>((set, get) => {
             meldung(
               'fehler',
               `„${name}“ aus ${vorlage.herkunft} angelegt${befuellt(neu.zustand)}, aber nicht zugeordnet – ${klein(info.grund ?? 'nicht gespeichert')}. ${
-                gefunden ? `Bitte später per Rechtsklick auf das Formular in der Navigation › „Antragsdokument“ › „${u.titel}“ zuordnen.` : `Bitte später in den Antragsdaten${in_ ? ` von ${fassung}` : ''} über „Zuordnen“ nachholen.`
+                gefunden
+                  ? `Bitte später ${in_ ? `zu Antrag ${fassung} wechseln und ` : ''}per Rechtsklick auf „${name.replace(/\.frmsjf$/i, '')}“ in der Navigation › „Antragsdokument“ › „${u.titel}“ zuordnen.`
+                  : `Bitte später in den Antragsdaten${in_ ? ` von ${fassung}` : ''} über „Zuordnen“ nachholen.`
               }`,
             );
         }

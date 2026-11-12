@@ -104,7 +104,7 @@ export function zuordnenPunkte(umfangId: string): MenuePunkt[] {
   // die Fassung beim Öffnen des Menüs – geändert wird nur dort
   const ansicht = useAntrag.getState().projektdatei?.ansicht;
   if (!titel) return [];
-  return [...formularePunkte(umfangId), { trenner: true }, { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(umfangId, ansicht) }];
+  return [...formularePunkte(umfangId), { trenner: true }, { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(umfangId, ansicht, titel) }];
 }
 
 /** Die Formulare des Projekts zum Zuordnen (ein schon anders zugeordnetes mit Hinweis) */
@@ -123,16 +123,17 @@ export function formularePunkte(umfangId: string): MenuePunkt[] {
 }
 
 /** Einen Eintrag aus dem Antragsumfang nehmen (z. B. einen doppelten) */
-export function ausUmfangEntfernen(umfangId: string, ansicht: string | undefined) {
-  const st = useAntrag.getState();
-  const titel = st.projektdatei?.umfang?.find((x) => x.id === umfangId)?.titel;
-  return st.umfangAendern((umfang) => umfang.filter((x) => x.id !== umfangId), { ansicht, eintrag: umfangId, titel, was: 'Nicht entfernt' });
+export async function ausUmfangEntfernen(umfangId: string, ansicht: string | undefined, titel: string | undefined) {
+  const info = await useAntrag.getState().umfangAendern((umfang) => umfang.filter((x) => x.id !== umfangId), { ansicht, eintrag: umfangId, titel, still: true });
+  // schon weg: das Ziel ist erreicht – kein „nicht“; andere Fassung angezeigt: nichts geändert
+  if (info.vorab === 'eintrag') useFormulare.getState().setMeldung({ art: 'info', text: `${titel ? `„${titel}“` : 'Der Eintrag'} ist schon nicht mehr im Antragsumfang.` });
+  else if (info.vorab) useFormulare.getState().setMeldung({ art: 'info', text: `Nicht entfernt – ${info.grund}.` });
+  return info;
 }
 
 /** Einen Eintrag im Antragsumfang um eine Stelle verschieben – nach dem Stand beim Klick (nicht beim Öffnen des Menüs) */
-export function eintragVerschieben(umfangId: string, um: -1 | 1, ansicht: string | undefined) {
+export function eintragVerschieben(umfangId: string, um: -1 | 1, ansicht: string | undefined, titel: string | undefined) {
   const st = useAntrag.getState();
-  const titel = st.projektdatei?.umfang?.find((x) => x.id === umfangId)?.titel;
   return st.umfangAendern(
     (umfang) => {
       const i = umfang.findIndex((x) => x.id === umfangId);
@@ -482,7 +483,21 @@ export function AntragsdatenAnsicht() {
     }, 0);
   };
   const umfangJetzt = projektdatei?.umfang;
-  const sortieren = useSortieren(umfangJetzt?.length ?? 0, (von, nach) => umfangJetzt && void umfangSetzen(verschieben(umfangJetzt, von, nach)));
+  const ansichtJetzt = projektdatei?.ansicht;
+  // Ziehen: nach Kennung im dann gelesenen Umfang verschieben – nur, wenn noch dieselbe Fassung angezeigt ist
+  const sortieren = useSortieren(umfangJetzt?.length ?? 0, (von, nach) => {
+    const vonId = umfangJetzt?.[von]?.id;
+    const nachId = umfangJetzt?.[nach]?.id;
+    if (!vonId || !nachId) return;
+    void st.umfangAendern(
+      (aktuell) => {
+        const i = aktuell.findIndex((x) => x.id === vonId);
+        const j = aktuell.findIndex((x) => x.id === nachId);
+        return i < 0 || j < 0 ? aktuell : verschieben(aktuell, i, j);
+      },
+      { ansicht: ansichtJetzt, eintrag: vonId, titel: umfangJetzt?.[von]?.titel, was: 'Nicht verschoben' },
+    );
+  });
   if (!ds) return <div className="fo-leer">Antragsdaten gibt es nur in der Desktop-App.</div>;
   if (!projekt) return null;
   const fassung = aktiveFassung(st, projekt);
@@ -495,42 +510,52 @@ export function AntragsdatenAnsicht() {
   const umfang = projektdatei?.umfang;
   const z = zusammenfassung(dokumente);
 
-  const setzen = (id: string, teil: Partial<UmfangEintrag>) => umfang && void umfangSetzen(umfang.map((u) => (u.id === id ? { ...u, ...teil } : u)));
+  // Bearbeiten: im dann gelesenen Umfang ändern (nur derselbe Eintrag, dieselbe Fassung)
+  const setzen = (id: string, teil: Partial<UmfangEintrag>) => umfang && void st.umfangAendern((aktuell) => aktuell.map((u) => (u.id === id ? { ...u, ...teil } : u)), { ansicht: projektdatei?.ansicht, eintrag: id, was: 'Nicht geändert' });
   const fehlendeKatalog = katalog.filter((k) => !umfang?.some((u) => u.id === k.id));
 
-  const hinzufuegen = (): MenuePunkt[] => [
-    ...fehlendeKatalog.map((k) => ({
-      text: k.titel,
-      symbol: (k.art === 'intern' ? 'formular' : k.art === 'plansatz' ? 'stapel' : 'datei') as 'formular' | 'datei' | 'stapel',
-      aktion: () => void umfangSetzen([...(umfang ?? []), alsUmfang(k)]),
-    })),
-    ...(fehlendeKatalog.length ? [{ trenner: true as const }] : []),
-    ...(vorlagen.length
-      ? [
-          {
-            text: 'Aus Vorlage ergänzen',
-            symbol: 'stapel' as const,
-            unter: vorlagen.map((v) => {
-              const fehlen = dokumenteDerVorlage(katalog, v).filter((k) => !umfang?.some((u) => u.id === k.id));
-              return {
-                text: `${v.name} (${fehlen.length ? `${fehlen.length} fehlen` : 'vollständig'})`,
-                deaktiviert: !fehlen.length,
-                aktion: () => void umfangSetzen([...(umfang ?? []), ...fehlen.map(alsUmfang)]),
-              };
-            }),
-          },
-        ]
-      : []),
-    {
-      text: 'Eigenes Dokument',
-      symbol: 'plus',
-      aktion: () => {
-        const id = `u${Date.now().toString(36)}`;
-        void umfangSetzen([...(umfang ?? []), { id, titel: 'Neues Dokument', art: 'extern' }]);
-        setBearbeiten(id);
+  /**
+   * Dokumente ergänzen – im beim Klick gelesenen Umfang (nur, was dort noch fehlt) und nur, wenn noch die Fassung
+   * angezeigt ist, in der das Menü geöffnet wurde (das Menü gibt es nur mit Antragsumfang; ist er inzwischen weg, wird abgewiesen)
+   */
+  const ergaenzen = (neue: (aktuell: UmfangEintrag[]) => UmfangEintrag[], ansicht: string | undefined) =>
+    st.umfangAendern((aktuell) => [...aktuell, ...neue(aktuell).filter((n) => !aktuell.some((u) => u.id === n.id))], { ansicht, was: 'Nicht hinzugefügt' });
+  const hinzufuegen = (): MenuePunkt[] => {
+    const ansicht = projektdatei?.ansicht;
+    return [
+      ...fehlendeKatalog.map((k) => ({
+        text: k.titel,
+        symbol: (k.art === 'intern' ? 'formular' : k.art === 'plansatz' ? 'stapel' : 'datei') as 'formular' | 'datei' | 'stapel',
+        aktion: () => void ergaenzen(() => [alsUmfang(k)], ansicht),
+      })),
+      ...(fehlendeKatalog.length ? [{ trenner: true as const }] : []),
+      ...(vorlagen.length
+        ? [
+            {
+              text: 'Aus Vorlage ergänzen',
+              symbol: 'stapel' as const,
+              unter: vorlagen.map((v) => {
+                const fehlen = dokumenteDerVorlage(katalog, v).filter((k) => !umfang?.some((u) => u.id === k.id));
+                return {
+                  text: `${v.name} (${fehlen.length ? `${fehlen.length} fehlen` : 'vollständig'})`,
+                  deaktiviert: !fehlen.length,
+                  aktion: () => void ergaenzen((aktuell) => dokumenteDerVorlage(katalog, v).filter((k) => !aktuell.some((u) => u.id === k.id)).map(alsUmfang), ansicht),
+                };
+              }),
+            },
+          ]
+        : []),
+      {
+        text: 'Eigenes Dokument',
+        symbol: 'plus',
+        aktion: () => {
+          const id = `u${Date.now().toString(36)}`;
+          void ergaenzen(() => [{ id, titel: 'Neues Dokument', art: 'extern' }], ansicht);
+          setBearbeiten(id);
+        },
       },
-    },
-  ];
+    ];
+  };
 
   const dateiMenue = (d: DokZustand): MenuePunkt[] => {
     const pdfs = dateien.filter((x) => !x.ordner);
@@ -656,14 +681,14 @@ export function AntragsdatenAnsicht() {
                     // die beim Öffnen angezeigte Fassung – geändert wird nur dort
                     const ansichtJetzt = useAntrag.getState().projektdatei?.ansicht;
                     return (
-                    !gesperrt &&
-                    zeigeMenue(e, [
-                      { text: 'Bearbeiten', symbol: 'stift', aktion: () => setBearbeiten(u.id) },
-                      { text: 'Nach oben', deaktiviert: i === 0, aktion: () => void eintragVerschieben(u.id, -1, ansichtJetzt) },
-                      { text: 'Nach unten', deaktiviert: i === umfang.length - 1, aktion: () => void eintragVerschieben(u.id, 1, ansichtJetzt) },
-                      { trenner: true },
-                      { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(u.id, ansichtJetzt) },
-                    ])
+                      !gesperrt &&
+                      zeigeMenue(e, [
+                        { text: 'Bearbeiten', symbol: 'stift', aktion: () => setBearbeiten(u.id) },
+                        { text: 'Nach oben', deaktiviert: i === 0, aktion: () => void eintragVerschieben(u.id, -1, ansichtJetzt, u.titel) },
+                        { text: 'Nach unten', deaktiviert: i === umfang.length - 1, aktion: () => void eintragVerschieben(u.id, 1, ansichtJetzt, u.titel) },
+                        { trenner: true },
+                        { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(u.id, ansichtJetzt, u.titel) },
+                      ])
                     );
                   }}
                 >

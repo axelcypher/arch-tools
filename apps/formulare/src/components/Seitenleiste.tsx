@@ -119,6 +119,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
             {
               text: 'Antragsdokument',
               symbol: 'stapel' as const,
+              // eingereicht: wie bei den fehlenden Formularen gesperrt
+              deaktiviert: gesperrt,
               unter: umfang
                 .filter((u) => u.art === 'intern')
                 .map((u) => ({
@@ -288,11 +290,11 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                     // die beim Öffnen angezeigte Fassung – angelegt bzw. geändert wird nur für sie
                     const ansicht = useAntrag.getState().projektdatei?.ansicht;
                     return [
-                    { text: 'Formular anlegen', symbol: 'plus', deaktiviert: gesperrt, aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht }) },
-                    ...(formulare.length ? [{ text: 'Vorhandenes Formular zuordnen', symbol: 'link' as const, unter: formularePunkte(d.eintrag.id), deaktiviert: gesperrt }] : []),
-                    { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, deaktiviert: gesperrt, aktion: () => void ausUmfangEntfernen(d.eintrag.id, ansicht) },
-                    { trenner: true },
-                    { text: 'Antragsumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
+                      { text: 'Formular anlegen', symbol: 'plus', deaktiviert: gesperrt, aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht }) },
+                      ...(formulare.length ? [{ text: 'Vorhandenes Formular zuordnen', symbol: 'link' as const, unter: formularePunkte(d.eintrag.id), deaktiviert: gesperrt }] : []),
+                      { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, deaktiviert: gesperrt, aktion: () => void ausUmfangEntfernen(d.eintrag.id, ansicht, d.eintrag.titel) },
+                      { trenner: true },
+                      { text: 'Antragsumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
                     ];
                   };
                   return (

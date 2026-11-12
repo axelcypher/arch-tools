@@ -7,7 +7,7 @@ import { istHilfsdatei } from '../antrag';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
-import { aktiveFassung, antragsOrdner, useAntrag } from '../antragStore';
+import { aktiveFassung, antragsOrdner, antragSperre, useAntrag } from '../antragStore';
 import { duplizieren, einfuegen, loeschen, ordnerNeu, umbenennen, useDateiAktionen, verknuepfen } from '../dateiAktionen';
 import type { MenuePunkt } from './Menue';
 import { zeigeMenue } from './Menue';
@@ -48,6 +48,9 @@ export function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
           {
             text: imAntrag ? 'Mit Antragsdokument verknüpfen' : `In ${aktiveFassung(st, projekt)} kopieren und verknüpfen`,
             symbol: 'link' as const,
+            // eingereicht: gesperrt (wie die übrigen Änderungen am Antrag)
+            deaktiviert: !!antragSperre(st, projekt),
+            ...(antragSperre(st, projekt) ? { hinweis: 'eingereicht' } : {}),
             unter: umfang.map((u) => ({
               text: u.titel,
               symbol: (u.dateien?.[aktiveFassung(st, projekt)]?.toLowerCase() === name.toLowerCase() && imAntrag ? 'haken' : undefined) as 'haken' | undefined,
