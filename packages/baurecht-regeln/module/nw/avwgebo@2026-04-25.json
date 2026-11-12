@@ -1,0 +1,28 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "avwgebo",
+  "fassung": "2026-04-25",
+  "version": 1,
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "$": "nw_genehmigungsbeduerftig"
+      },
+      "entfaellt": {
+        "$": "freistellung"
+      },
+      "grund": "Verwaltungsgebühren nach dem Allgemeinen Gebührentarif, Tarifstelle 3.1 (Baurecht) – für die Baugenehmigung nach dem Rohbauwert aus dem Brutto-Rauminhalt.",
+      "fundstellen": [
+        "1"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "hinweis": "Der Tarif steht nur als PDF-Anlage; Tarifstelle 3.3 regelt Gebühren im Denkmalschutz.",
+      "stand": {
+        "1": "cb3c008e"
+      }
+    }
+  }
+}

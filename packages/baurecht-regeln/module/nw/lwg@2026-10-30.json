@@ -1,0 +1,210 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "lwg",
+  "fassung": "2026-10-30",
+  "version": 1,
+  "paragrafen": {
+    "22": {
+      "gilt": {
+        "f": "lage.gewaesser",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "lage.gewaesser",
+        "ist": false
+      },
+      "grund": "Anlagen in, an, über und unter oberirdischen Gewässern bedürfen der Genehmigung der Wasserbehörde.",
+      "fundstellen": [
+        "22/1",
+        "22/2",
+        "22/3"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "22/1": "3f0fa72c",
+        "22/2": "9ce0e028",
+        "22/3": "4a0eb4c2"
+      }
+    },
+    "31": {
+      "gilt": {
+        "und": [
+          {
+            "f": "lage.gewaesser",
+            "ist": true
+          },
+          {
+            "$": "bauen"
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "lage.gewaesser",
+        "ist": false
+      },
+      "grund": "Gewässerrandstreifen: Bauverbote nach § 38 WHG und weitergehende Regelungen durch ordnungsbehördliche Verordnung.",
+      "fundstellen": [
+        "31/1"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "31/1": "fb320819"
+      }
+    },
+    "35": {
+      "gilt": {
+        "und": [
+          {
+            "f": "schutz.wsg",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.grundwasser",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "schutz.wsg",
+        "ist": false
+      },
+      "grund": "Wasser- und Heilquellenschutzgebiete: Verbote und Genehmigungspflichten der Schutzgebietsverordnung; Entscheidungen anderer Behörden im Einvernehmen mit der Wasserbehörde.",
+      "fundstellen": [
+        "35/1",
+        "35/2",
+        "35/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Die Verbote je Schutzzone stehen in der Verordnung (Bezirksregierung) – z. B. für Erdwärmesonden, Heizöllagerung, Versickerung; für Heilquellenschutzgebiete gilt § 36.",
+      "stand": {
+        "35/1": "2407de6b",
+        "35/2": "9b2e93ab",
+        "35/3": "3185e832"
+      }
+    },
+    "44": {
+      "gilt": {
+        "f": "vorhaben.erstbebauung",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "vorhaben.erstbebauung",
+        "ist": false
+      },
+      "grund": "Niederschlagswasser von Grundstücken, die nach dem 01.01.1996 erstmals bebaut, befestigt oder angeschlossen werden, ist ortsnah zu versickern, zu verrieseln oder in ein Gewässer einzuleiten (§ 55 Abs. 2 WHG).",
+      "fundstellen": [
+        "44/1",
+        "44/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Die Gemeinde kann Versickerung durch Satzung oder im Bebauungsplan festsetzen (Abs. 2); Versickerung und Einleitung brauchen in der Regel eine wasserrechtliche Erlaubnis der unteren Wasserbehörde.",
+      "stand": {
+        "44/1": "34501a70",
+        "44/2": "bf87fc92"
+      }
+    },
+    "48": {
+      "gilt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "$": "gebaeude"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": false
+          },
+          {
+            "m": "Vorhaben",
+            "nicht": [
+              "Errichtung"
+            ]
+          }
+        ]
+      },
+      "grund": "Abwasser ist der Gemeinde bzw. dem Abwasserbetrieb zu überlassen.",
+      "fundstellen": [
+        "48"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Anschluss- und Benutzungszwang, Entwässerungsantrag und Grundstücksentwässerung nach der Entwässerungssatzung der Gemeinde.",
+      "stand": {
+        "48": "d276af19"
+      }
+    },
+    "84": {
+      "gilt": {
+        "und": [
+          {
+            "f": "schutz.uesg",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "schutz.uesg",
+        "ist": false
+      },
+      "grund": "Im Überschwemmungsgebiet schließt die Baugenehmigung die Genehmigung nach § 78 Abs. 5 WHG ein; die Bauaufsicht entscheidet im Einvernehmen mit der Wasserbehörde.",
+      "fundstellen": [
+        "84/1",
+        "84/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Ohne Baugenehmigung (Freistellung) ist die Genehmigung nach § 78 Abs. 5 WHG gesondert bei der unteren Wasserbehörde zu beantragen; verlorener Rückhalteraum ist auszugleichen.",
+      "stand": {
+        "84/1": "02037afe",
+        "84/2": "25e13edd"
+      }
+    }
+  }
+}

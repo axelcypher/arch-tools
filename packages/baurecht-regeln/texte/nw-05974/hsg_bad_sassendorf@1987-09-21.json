@@ -1,0 +1,119 @@
+{
+  "quelle": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+  "sha256": "1b4688cd6f7e8f0ab66a7f448c57a19c23dd95bda03283c1a8aeb75a273c5daa",
+  "verfahren": "Scan ohne Textebene (Amtsblatt für den Regierungsbezirk Arnsberg Nr. 41 vom 10.10.1987, S. 367 ff.); spaltenweise mit Tesseract 5 (deu) erkannt und von Hand durchgesehen am 12.11.2026. Aufgenommen sind §§ 1–6, 9, 10 und 14; §§ 7, 8 (militärische Übungen, Duldungspflichten) und 11–13 sind für Bauvorhaben ohne eigene Regel und fehlen hier. Maßgeblich ist die Verordnung im Amtsblatt.",
+  "paragrafen": {
+    "1": {
+      "titel": "Räumlicher Geltungsbereich",
+      "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+      "text": [
+        "(1) Zum Schutze der staatlich anerkannten Heilquellen Bohrungen 13, 14 und 18 der Saline Bad Sassendorf GmbH – Moor- und Solebad – in Bad Sassendorf wird in der Gemeinde Bad Sassendorf und der Stadt Soest ein Heilquellenschutzgebiet festgesetzt. Begünstigter Unternehmer ist die Saline Bad Sassendorf GmbH – Moor- und Solebad in Bad Sassendorf.",
+        "(2) Das Heilquellenschutzgebiet gliedert sich in die Zonen I und III (qualitative Schutzzonen) und in die Zonen A, B und C (quantitative Schutzzonen).",
+        "(3) Es erstreckt sich im Kreis Soest auf Teile der Gemarkungen Garbrechten, Heppen, Lohne, Opmünden, Sassendorf, Soest, Thöningsen, Weslarn, Beusingsen, Enkesen im Klei, Neuengeseke und Bettinghausen.",
+        "(4) Über das Heilquellenschutzgebiet mit seinen Schutzzonen geben die beiliegenden Übersichtskarten im Maßstab 1:25 000 einen Überblick.",
+        "(5) Im einzelnen ergibt sich die genaue Abgrenzung des Heilquellenschutzgebietes mit seinen Schutzzonen aus den Schutzgebietskarten im Maßstab 1:5000 für den qualitativen Schutz und den quantitativen Schutz. Hierin sind die Zonen I und A rot, die Zone B grün und die Zone III und C gelb eingetragen.",
+        "(6) Übersichtskarten und Schutzgebietskarten sind Bestandteil dieser Verordnung. Die Verordnung liegt vom Tag des Inkrafttretens an zu jedermanns Einsicht während der Dienststunden bei nachfolgend aufgeführten Behörden aus: 1. Regierungspräsident Arnsberg – obere Wasserbehörde – in Arnsberg, 2. Oberkreisdirektor des Kreises Soest – untere Wasserbehörde – in Soest, 3. Gemeindedirektor der Gemeinde Bad Sassendorf in Bad Sassendorf, 4. Stadtdirektor der Stadt Soest in Soest."
+      ]
+    },
+    "2": {
+      "titel": "Begriffsbestimmungen",
+      "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+      "text": [
+        "(1) Wassergefährdende Stoffe im Sinne dieser Verordnung sind Stoffe, die sich im Wasser lösen, sich mit diesem vermischen, an seinen Inhaltsstoffen haften oder seine Oberfläche bedecken und dadurch die physikalischen, chemischen oder biologischen Eigenschaften des Wassers nachteilig verändern können.",
+        "(2) Gewerbliche Anlagen im Sinne dieser Verordnung sind Anlagen, die gewerblichen Zwecken dienen und dazu bestimmt sind, Stoffe herzustellen, zu bearbeiten, zu verarbeiten, zu behandeln, zu lagern, abzulagern, zu befördern oder wegzuleiten."
+      ]
+    },
+    "3": {
+      "titel": "Schutz in der Zone III",
+      "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+      "text": [
+        "(1) In der Zone III sind genehmigungspflichtig",
+        "a) das Errichten oder Erweitern gewerblicher Anlagen sowie deren Nutzungsänderung,",
+        "b) das Errichten oder Erweitern von Tierkörperbeseitigungsanstalten oder Tierkörperverwertungsbetrieben sowie von Schlachtereien,",
+        "c) das Errichten oder Erweitern von Steinbrüchen, Sand-, Kies- oder Tongruben,",
+        "d) das Errichten oder Erweitern von Kleingartenanlagen,",
+        "e) das Errichten oder Erweitern von Camping- oder Zeltplätzen,",
+        "f) das Errichten, Erweitern oder Betreiben von Abwasserbehandlungsanlagen (Kleinkläranlagen gemäß DIN 4261 sind nach dieser Verordnung nicht genehmigungspflichtig),",
+        "g) das Errichten oder Erweitern von Gärfuttersilos,",
+        "h) die Umwandlung forstwirtschaftlich genutzter Flächen in jede andere Nutzungsart,",
+        "i) das Errichten oder Erweitern von Vorrichtungen zum Versickern des von Straßen oder sonstigen Verkehrsflächen abfließenden Wassers in den Untergrund,",
+        "j) das Errichten oder Erweitern ober- und unterirdischer Rohrleitungen zum Befördern wassergefährdender Stoffe (das Errichten oder Erweitern einer ordnungsgemäßen Abwasserkanalisation ist nicht genehmigungspflichtig),",
+        "k) das Lagern wassergefährdender Stoffe (die oberirdische Lagerung von Mineralölen und Mineralölprodukten bis zu 5000 l entsprechend der Verordnung über Anlagen zum Lagern, Abfüllen und Umschlagen wassergefährdender Stoffe (VAwS) vom 31. Juli 1981 (GV. NW. S. 490/SGV. NW. 77) und das Lagern geringer Mengen wassergefährdender Stoffe für den häuslichen, gewerblichen und landwirtschaftlichen Bedarf sind nicht genehmigungspflichtig),",
+        "l) das Durchführen von Manövern oder Übungen der Streitkräfte oder anderer Organisationen (Durchmärsche durch die Schutzzone sind nicht genehmigungspflichtig),",
+        "m) das Errichten, Erweitern oder Betreiben militärischer Anlagen und Übungsplätze,",
+        "n) das Errichten oder Erweitern von Start- und Landebahnen sowie das Ausweisen von Sicherheitsflächen, Anflugsektoren und Notabwurfplätzen des Luftverkehrs,",
+        "o) das Anlegen oder Erweitern von Friedhöfen,",
+        "p) Sprengungen oder Bohrungen,",
+        "q) das Errichten oder Erweitern von Fischteichen,",
+        "r) das Errichten oder Erweitern von Wärmepumpen (Luftwärmepumpen sind nicht genehmigungspflichtig).",
+        "(2) In der Zone III sind verboten",
+        "a) das Errichten, Erweitern oder Betreiben von Anlagen zur Gewinnung, Herstellung oder Verarbeitung radioaktiven Materials oder zur Gewinnung von Kernenergie sowie Lagern und Ablagern radioaktiver Stoffe (das Lagern geringer Mengen radioaktiver Stoffe, die im Bereich der Prüf-, Meß- und Regeltechnik sowie im medizinischen Bereich Anwendung finden, ist nicht verboten),",
+        "b) das Vergraben von Tierkadavern,",
+        "c) das Zelten und Lagern,",
+        "d) das Errichten oder Erweitern baulicher Anlagen zum dauernden Aufenthalt von Tieren, ohne daß Abwasser, Jauche und Gülle in dichten Behältnissen aufgefangen, gelagert und schadlos beseitigt werden,",
+        "e) das Errichten von Gärfuttermieten, wenn die anfallenden Sickersäfte nicht aufgefangen und schadlos beseitigt werden,",
+        "f) das Ablagern fester oder flüssiger Abfallstoffe,",
+        "g) das gegen Auslaugen, Ab- oder Einschwemmen ungesicherte Lagern wassergefährdender Stoffe z. B. Mineralöle, Mineralölprodukte, Gifte sowie Pflanzenschutzmittel, Wirtschaftsdünger, Klärschlamm, Fäkalien, Tierkadaver und Schlachtabfälle,",
+        "h) das Aufbringen von Jauche, Gülle, Geflügelkot sowie von Klärschlamm auf landwirtschaftlich oder kleingärtnerisch genutzte Flächen, wenn die Dungstoffe nicht sofort verteilt werden und wo ihre Abschwemmung zur Solegewinnungsanlage in Zone I zu besorgen ist – die Vorschriften der Gülleverordnung und der Klärschlammverordnung sind zu beachten –,",
+        "i) das Entleeren bzw. Durch- und Ausspülen von Fäkalien-, Jauche- und Gülletransportfahrzeugen, sofern nicht eine Düngung entsprechend der Regelung in § 3 Abs. 2 Buchstabe h) durchgeführt wird,",
+        "j) das Verwenden von Pflanzenschutzmitteln, die von der Biologischen Bundesanstalt in Braunschweig für die Anwendung in der Zone III von Wasser- und Heilquellenschutzgebieten nicht zugelassen sind oder unsachgemäßes Verwenden zugelassener Mittel sowie deren Anwendung aus Luftfahrzeugen,",
+        "k) das Einleiten von Schmutzwasser in den Untergrund, oberirdische Gewässer, Gräben oder Mulden,",
+        "l) das Errichten oder Erweitern von Schießplätzen,",
+        "m) das Durchführen von Ölwechseln auf nicht befestigten Flächen."
+      ]
+    },
+    "4": {
+      "titel": "Schutz in der Zone C",
+      "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+      "text": [
+        "In der Zone C sind alle Erdaufschlüsse, die über eine Tiefe von 10 m hinausgehen, z. B. Abgrabungen und Bohrungen, sowie Sprengungen genehmigungspflichtig."
+      ]
+    },
+    "5": {
+      "titel": "Schutz in der Zone B",
+      "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+      "text": [
+        "In der Zone B sind alle Erdaufschlüsse, die über eine Tiefe von 2,50 m hinausgehen sowie Sprengungen genehmigungspflichtig."
+      ]
+    },
+    "6": {
+      "titel": "Schutz in den Zonen I und A",
+      "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+      "text": [
+        "(1) In den Zonen I und A sind alle Handlungen verboten, die nicht dem ordnungsgemäßen Betrieb, der Wartung und Unterhaltung oder der behördlichen Überwachung der Heilquellen dienen.",
+        "(2) Das Betreten dieser Zonen ist nur solchen Personen gestattet, die im Interesse des Heilquellenbetriebes handeln oder mit behördlichen Überwachungsaufgaben betraut sind."
+      ]
+    },
+    "9": {
+      "titel": "Genehmigungen",
+      "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+      "text": [
+        "(1) Über Genehmigungen nach § 3 Abs. 1, § 4 und § 5 entscheidet die untere Wasserbehörde.",
+        "(2) Der Genehmigungsantrag (vierfach) soll alle Unterlagen (Beschreibungen, Pläne, Zeichnungen, Berechnungen und sonstige Nachweise) enthalten, die zur Beurteilung des Antrages erforderlich sind. Unvollständige Anträge können zurückgewiesen werden, wenn der Antragsteller die ihm mitgeteilten Mängel innerhalb der gesetzten Frist nicht behebt. Antragsteller sind darauf hinzuweisen.",
+        "(3) Die untere Wasserbehörde beteiligt die Moor- und Solebad GmbH und holt vor ihrer Entscheidung die Stellungnahme des Staatlichen Amtes für Wasser- und Abfallwirtschaft ein. Will die untere Wasserbehörde Bedenken des Staatlichen Amtes für Wasser- und Abfallwirtschaft nicht Rechnung tragen, hat sie die Weisung der oberen Wasserbehörde einzuholen. § 8 Abs. 3 Satz 3 und Satz 4 gelten entsprechend.",
+        "(4) Genehmigungen können mit Bedingungen und Auflagen erteilt werden, nachträglich mit zusätzlichen Anordnungen oder weiteren Einschränkungen versehen oder ganz zurückgenommen werden, wenn es im Interesse des Heilquellenschutzes geboten ist und bei Erteilung der Genehmigung nicht voraussehbar war. Genehmigungen können für eine bestimmte Anzahl zukünftiger einzelner Handlungen gleicher Art erteilt werden.",
+        "(5) Genehmigungen erlöschen, wenn Vorhaben nicht innerhalb von zwei Jahren seit Bekanntgabe oder innerhalb einer von der unteren Wasserbehörde gesetzten anderen Frist ausgeführt werden.",
+        "(6) Einer besonderen Genehmigung nach dieser Verordnung bedarf es nicht für solche Handlungen, für die andere Bestimmungen eine Erlaubnis, Bewilligung, Genehmigung, eine bergrechtliche Betriebsplanzulassung oder eine sonstige behördliche Zulassung vorschreiben – Anzeigeverfahren genügen nicht –, wenn schon die anderen Bestimmungen einen hinreichenden Schutz ermöglichen. Die entscheidende Behörde hat das Einvernehmen der unteren Wasserbehörde einzuholen. Satz 1 und 2 des Absatzes 3 gelten entsprechend.",
+        "(7) Bei allen Entscheidungen ist dem Schutzzweck dieser Verordnung Rechnung zu tragen."
+      ]
+    },
+    "10": {
+      "titel": "Befreiungen",
+      "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+      "text": [
+        "(1) Die untere Wasserbehörde kann auf Antrag von den Verboten des § 3 Abs. 2 und § 6 dieser Verordnung Befreiungen erteilen, wenn",
+        "a) Gründe des Wohls der Allgemeinheit die Abweichung erfordern oder",
+        "b) Verbote zu offenbar nicht beabsichtigten Härten führen würden und Abweichungen mit den Belangen des Wohls der Allgemeinheit, insbesondere des Heilquellenschutzes im Sinne dieser Verordnung vereinbar sind.",
+        "(2) Der Moor- und Solebad GmbH können auf Antrag von der unteren Wasserbehörde Befreiungen von Verboten dieser Verordnung erteilt werden, soweit dies zum Betrieb der Heilquellen erforderlich und mit den Belangen des Wohls der Allgemeinheit vereinbar ist.",
+        "(3) Die Absätze 2 bis 5 und Absatz 7 des § 9 dieser Verordnung gelten entsprechend."
+      ]
+    },
+    "14": {
+      "titel": "Inkrafttreten",
+      "url": "https://www.bra.nrw.de/system/files/media/document/file/hsg_451401_bad_sassendorf.pdf",
+      "text": [
+        "Diese Verordnung tritt eine Woche nach der Verkündung im Regierungsamtsblatt in Kraft und gilt 40 Jahre."
+      ]
+    }
+  }
+}

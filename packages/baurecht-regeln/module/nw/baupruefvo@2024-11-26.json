@@ -1,0 +1,405 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "baupruefvo",
+  "fassung": "2024-11-26",
+  "version": 1,
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "nw_verfahren_bekannt"
+          },
+          {
+            "$": "beseitigung"
+          }
+        ]
+      },
+      "grund": "Bauvorlagen: Inhalt auf das zur Beurteilung Erforderliche beschränkt; zu verwenden sind die Vordrucke des Ministeriums (Ministerialblatt, Gliederungsnummer 23210).",
+      "fundstellen": [
+        "1/1",
+        "1/2",
+        "1/3"
+      ],
+      "behoerde": {
+        "$": "nw_genehmigungsbeduerftig"
+      },
+      "stand": {
+        "1/1": "ff339212",
+        "1/2": "9dec1a27",
+        "1/3": "fec666c5"
+      }
+    },
+    "2": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_genehmigungsbeduerftig"
+          },
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "$": "innenbereich"
+              },
+              {
+                "$": "aussenbereich"
+              },
+              {
+                "$": "bplan_einfach"
+              }
+            ]
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Bei Änderungen ohne veränderte Länge und Höhe der den Nachbargrenzen zugekehrten Wände genügt ein Übersichtsplan (§ 10 Abs. 2).",
+        "wenn": {
+          "$": "aenderung"
+        }
+      },
+      "grund": "Auszug aus dem Liegenschaftskataster (Flurkarte, amtlich beglaubigt, nicht älter als sechs Monate) bei Vorhaben nach §§ 34 und 35 BauGB; im Außenbereich ggf. Amtliche Basiskarte.",
+      "fundstellen": [
+        "2/1",
+        "2/2",
+        "2/3"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "nachweis": [
+        "Auszug aus der Flurkarte bzw. Amtlichen Basiskarte (§ 10 Abs. 1 Nr. 1)"
+      ],
+      "hinweis": "Im Geltungsbereich eines qualifizierten Bebauungsplans nicht beizufügen.",
+      "stand": {
+        "2/1": "29ce63d5",
+        "2/2": "f9c80e55",
+        "2/3": "472b6bb8"
+      }
+    },
+    "3": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_verfahren_bekannt"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
+      },
+      "grund": "Lageplan mindestens 1:500 auf Grundlage des Liegenschaftskatasters, mit Abstandsflächen, Höhen im amtlichen Höhenbezugssystem, Stellplätzen und Freiflächen; im Bebauungsplan mit Berechnung von GRZ, GFZ, Vollgeschossen und Baumasse.",
+      "fundstellen": [
+        "3/1",
+        "3/2",
+        "3/3"
+      ],
+      "behoerde": {
+        "$": "nw_genehmigungsbeduerftig"
+      },
+      "hinweis": "Amtlicher Lageplan (Katasteramt bzw. ÖbVI) u. a. bei nicht festgestellten Grenzen, Grenzüberbauungen und Baulasten (Abs. 3).",
+      "stand": {
+        "3/1": "9720e900",
+        "3/2": "5f7b82eb",
+        "3/3": "2216913d"
+      }
+    },
+    "4": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_verfahren_bekannt"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
+      },
+      "grund": "Bauzeichnungen (Grundrisse aller Geschosse, Schnitte, Ansichten) im Maßstab 1:100 mit Nutzung der Räume, Rettungswegen, Abgasanlagen, Feuerwiderstand der Bauteile und Höhenlage im amtlichen Höhenbezugssystem.",
+      "fundstellen": [
+        "4/1",
+        "4/2",
+        "4/3"
+      ],
+      "behoerde": {
+        "$": "nw_genehmigungsbeduerftig"
+      },
+      "stand": {
+        "4/1": "82c522ed",
+        "4/2": "bd607831",
+        "4/3": "7e339c86"
+      }
+    },
+    "5": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_genehmigungsbeduerftig"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
+      },
+      "grund": "Baubeschreibung, soweit Angaben nicht in Lageplan und Bauzeichnungen stehen; Betriebsbeschreibung für gewerbliche und landwirtschaftliche Betriebe.",
+      "fundstellen": [
+        "5/1",
+        "5/2",
+        "5/3"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "hinweis": "Betriebsbeschreibung bei Nichtwohngebäuden mit Gewerbe- oder Landwirtschaftsnutzung (Abs. 2, 3).",
+      "stand": {
+        "5/1": "0f452b36",
+        "5/2": "dc02d8c2",
+        "5/3": "8cfdec2d"
+      }
+    },
+    "6": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_genehmigungsbeduerftig"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
+      },
+      "grund": "Nachprüfbare Berechnung des Brutto-Rauminhalts nach DIN 277-1:2016-01 (Grundlage der Gebühr), sonst geschätzte Rohbau- bzw. Herstellungskosten.",
+      "fundstellen": [
+        "6"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "nachweis": [
+        "BRI-Berechnung nach DIN 277 (Flächenrechner: Bericht „Bauantrag NRW“)"
+      ],
+      "stand": {
+        "6": "1069c4f9"
+      }
+    },
+    "8": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_bauen_gebaeude"
+          },
+          {
+            "$": "nw_verfahren_bekannt"
+          }
+        ]
+      },
+      "grund": "Nachweis der Standsicherheit (statisches System, Berechnungen, Konstruktionszeichnungen, Baugrund) und, soweit erforderlich, des Schallschutzes.",
+      "fundstellen": [
+        "8/1",
+        "8/2",
+        "8/4"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Einzelnachweise der Ausführungsplanung dürfen nach der Genehmigung, rechtzeitig vor Ausführung, eingereicht werden (Abs. 3).",
+      "stand": {
+        "8/1": "f8bddd9a",
+        "8/2": "20139089",
+        "8/4": "69fc028a"
+      }
+    },
+    "9": {
+      "gilt": {
+        "$": "sonderbau"
+      },
+      "grund": "Brandschutzkonzept als zielorientierte Gesamtbewertung bei Sonderbauten.",
+      "fundstellen": [
+        "9/1",
+        "9/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "9/1": "e78ffb77",
+        "9/2": "c198ec96"
+      }
+    },
+    "10": {
+      "gilt": {
+        "$": "vereinfacht"
+      },
+      "grund": "Bauvorlagen im vereinfachten Verfahren: Auszug aus dem Liegenschaftskataster (bei §§ 34, 35 BauGB), Lageplan, Bauzeichnungen, Baubeschreibung dreifach; Berechnungen zweifach.",
+      "fundstellen": [
+        "10/1",
+        "10/2",
+        "10/3"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "stand": {
+        "10/1": "74be57bb",
+        "10/2": "6fa84115",
+        "10/3": "13f271b6"
+      }
+    },
+    "11": {
+      "gilt": {
+        "$": "baugenehmigung"
+      },
+      "grund": "Bauvorlagen im Baugenehmigungsverfahren: wie § 10 und zusätzlich das Brandschutzkonzept (dreifach).",
+      "fundstellen": [
+        "11"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "stand": {
+        "11": "23aa2717"
+      }
+    },
+    "12": {
+      "gilt": {
+        "oder": [
+          {
+            "f": "gebaeude.besucher",
+            "min": 201
+          },
+          {
+            "f": "gebaeude.gastbetten",
+            "min": 13
+          },
+          {
+            "f": "gebaeude.verkaufsflaeche",
+            "min": 2000.01
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "min": 100.01
+          },
+          {
+            "f": "nw.elt_betriebsraum",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Zusätzliche Bauvorlagen für Versammlungs-, Beherbergungs- und Verkaufsstätten, Mittel- und Großgaragen und elektrische Betriebsräume.",
+      "fundstellen": [
+        "12/1",
+        "12/2",
+        "12/3",
+        "12/4",
+        "12/5"
+      ],
+      "behoerde": {
+        "$": "nw_genehmigungsbeduerftig"
+      },
+      "stand": {
+        "12/1": "cb41e263",
+        "12/2": "428974ea",
+        "12/3": "d3522611",
+        "12/4": "116041c1",
+        "12/5": "1996b412"
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "$": "efh_zfh"
+          },
+          {
+            "$": "kein_sonderbau"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "max": 100
+          }
+        ]
+      }
+    },
+    "13": {
+      "gilt": {
+        "$": "freistellung"
+      },
+      "grund": "Genehmigungsfreistellung: Lageplan und Bauzeichnungen einfach bei der Gemeinde; bei GK 1 und 2 Erklärung der Entwurfsverfassenden zum Brandschutz.",
+      "fundstellen": [
+        "13/1",
+        "13/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "13/1": "954f312c",
+        "13/2": "cfcc0786"
+      }
+    },
+    "15": {
+      "gilt": {
+        "$": "beseitigung"
+      },
+      "grund": "Bauvorlagen für die Beseitigung von Anlagen.",
+      "fundstellen": [
+        "15/1",
+        "15/2",
+        "15/3"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "15/1": "a62f6b11",
+        "15/2": "e2b975b8",
+        "15/3": "17d06eae"
+      }
+    },
+    "18": {
+      "gilt": {
+        "f": "lage.baulast",
+        "ist": true
+      },
+      "grund": "Eintragung von Baulasten: Lageplan mit den belasteten Flächen.",
+      "fundstellen": [
+        "18"
+      ],
+      "behoerde": {
+        "$": "nw_genehmigungsbeduerftig"
+      },
+      "stand": {
+        "18": "f4ebf295"
+      }
+    },
+    "9a": {
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "f": "gebaeude.oeffentlich",
+            "ist": true
+          },
+          {
+            "$": "nw_gross"
+          }
+        ]
+      },
+      "grund": "Barrierefrei-Konzept für neu zu errichtende öffentlich zugängliche Gebäude, die große Sonderbauten sind.",
+      "fundstellen": [
+        "9a/1",
+        "9a/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "9a/1": "2a20a04c",
+        "9a/3": "007673ab"
+      }
+    }
+  }
+}

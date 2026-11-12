@@ -1,0 +1,189 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "san-vo",
+  "fassung": "2024-06-19",
+  "version": 1,
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "nw_pv_pflicht_gebaeude"
+          },
+          {
+            "$": "nw_pv_pflicht_stellplatz"
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "$": "nw_pv_ausnahme"
+          },
+          {
+            "nicht": {
+              "$": "nw_pv_pflicht_stellplatz"
+            }
+          }
+        ]
+      },
+      "grund": "Anwendungsbereich der PV-Pflicht: Neubau von Nichtwohngebäuden (Bauantrag nach dem 01.01.2024) und Wohngebäuden (nach dem 01.01.2025), vollständige Erneuerung der Dachhaut ab 01.01.2026, Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für Nichtwohngebäude – auch in der Genehmigungsfreistellung.",
+      "fundstellen": [
+        "1/2",
+        "1/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "hinweis": "Ausgenommen u. a. Gebäude bis 50 m² Nutzfläche, Behelfsbauten, unterirdische Anlagen, Fliegende Bauten, Tiefgaragen (Abs. 4).",
+      "stand": {
+        "1/2": "d3b01462",
+        "1/4": "9f0628cd"
+      }
+    },
+    "4": {
+      "gilt": {
+        "$": "nw_pv_pflicht_gebaeude"
+      },
+      "entfaellt": {
+        "$": "nw_pv_ausnahme"
+      },
+      "grund": "Mindestgröße: bei Neubauten 30 % der Bruttodachfläche; bei Dacherneuerung 30 % der Nettodachfläche oder 3/4/8 kWp je nach Gebäude.",
+      "fundstellen": [
+        "4/1",
+        "4/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "4/1": "f5544140",
+        "4/2": "34ebeaac"
+      }
+    },
+    "5": {
+      "gilt": {
+        "$": "nw_pv_pflicht_gebaeude"
+      },
+      "entfaellt": {
+        "$": "nw_pv_ausnahme"
+      },
+      "pruefen": {
+        "grund": "Ausnahme prüfen: anderen Pflichten widersprechend, technisch unmöglich (z. B. Dach nur nach Norden) oder wirtschaftlich nicht vertretbar (Amortisation über 25 Jahre); Erfüllung durch Solarthermie möglich."
+      },
+      "grund": "Ausnahmen und Erfüllungsoptionen für Gebäude.",
+      "fundstellen": [
+        "5/1",
+        "5/2",
+        "5/3",
+        "5/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "5/1": "6ea4f969",
+        "5/2": "9fcb0697",
+        "5/3": "df9b6c0f",
+        "5/4": "7b68e772"
+      }
+    },
+    "6": {
+      "gilt": {
+        "$": "nw_pv_pflicht_stellplatz"
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "wohngebaeude"
+          },
+          {
+            "f": "nw.stellplatzflaeche",
+            "max": 35
+          }
+        ]
+      },
+      "grund": "PV über neuen Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für ein Nichtwohngebäude: mindestens 30 % der geeigneten Fläche.",
+      "fundstellen": [
+        "6/1",
+        "6/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "6/1": "52fa5b73",
+        "6/2": "054846d4"
+      }
+    },
+    "7": {
+      "gilt": {
+        "$": "nw_pv_pflicht_stellplatz"
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "wohngebaeude"
+          },
+          {
+            "f": "nw.stellplatzflaeche",
+            "max": 35
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Entfällt die Pflicht (z. B. Stellplätze unmittelbar entlang öffentlicher Fahrbahnen), ist ersatzweise je fünf Stellplätze ein Laubbaum zu pflanzen (Abs. 4)."
+      },
+      "grund": "Ausnahmen und Erfüllungsoptionen bei Stellplatzflächen.",
+      "fundstellen": [
+        "7/1"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "7/1": "99459e93"
+      }
+    },
+    "8": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "nw_pv_pflicht_gebaeude"
+          },
+          {
+            "$": "nw_pv_pflicht_stellplatz"
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "$": "nw_pv_ausnahme"
+          },
+          {
+            "nicht": {
+              "$": "nw_pv_pflicht_stellplatz"
+            }
+          }
+        ]
+      },
+      "grund": "Nachweis der Pflichterfüllung, einer Ausnahme oder Erfüllungsoption auf Verlangen der Bauaufsicht mit dem Formular des Ministeriums; zehn Jahre aufbewahren.",
+      "fundstellen": [
+        "8/1",
+        "8/2",
+        "8/4"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Die Bauaufsicht prüft jährlich stichprobenartig (§ 10); Ordnungswidrigkeit bis 50 000 € (§ 11).",
+      "stand": {
+        "8/1": "e2c6b509",
+        "8/2": "ae906c37",
+        "8/4": "e09561ad"
+      }
+    }
+  }
+}

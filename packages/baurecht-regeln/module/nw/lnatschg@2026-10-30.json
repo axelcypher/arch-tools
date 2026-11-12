@@ -1,0 +1,370 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "lnatschg",
+  "fassung": "2026-10-30",
+  "version": 1,
+  "paragrafen": {
+    "7": {
+      "gilt": {
+        "und": [
+          {
+            "f": "schutz.landschaftsplan",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "schutz.landschaftsplan",
+            "ist": false
+          },
+          {
+            "$": "bplan"
+          },
+          {
+            "$": "innenbereich"
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Ein Landschaftsplan kann sich ausnahmsweise auch auf Flächen eines Bebauungsplans oder einer Satzung nach § 34 Abs. 4 BauGB erstrecken (Abs. 2).",
+        "wenn": {
+          "oder": [
+            {
+              "$": "bplan"
+            },
+            {
+              "$": "satzung_baugb"
+            }
+          ]
+        }
+      },
+      "grund": "Landschaftsplan: rechtsverbindliche Festsetzungen (Schutzgebiete, Entwicklungsziele, Maßnahmen) im Außenbereich.",
+      "fundstellen": [
+        "7/1",
+        "7/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Befreiungen und Ausnahmen erteilt die untere Naturschutzbehörde (§ 75); im Baugenehmigungsverfahren wird sie beteiligt.",
+      "stand": {
+        "7/1": "34359811",
+        "7/2": "1a62f607"
+      }
+    },
+    "23": {
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "f": "schutz.lsg",
+                "ist": true
+              },
+              {
+                "f": "schutz.nsg",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "schutz.lsg",
+            "ist": false
+          },
+          {
+            "f": "schutz.nsg",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Verbote in Natur- und Landschaftsschutzgebieten; Ausnahmen nur, soweit im Landschaftsplan bzw. in der Schutzverordnung vorgesehen.",
+      "fundstellen": [
+        "23/1",
+        "23/5"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Die Verbote stehen in der Schutzverordnung bzw. im Landschaftsplan (Kreis- oder Bezirksebene) – dort die erlaubten Handlungen prüfen; sonst Befreiung nach § 67 BNatSchG / § 75 LNatSchG beantragen.",
+      "stand": {
+        "23/1": "6ed62d2b",
+        "23/5": "5c7c7ad3"
+      }
+    },
+    "30": {
+      "gilt": {
+        "und": [
+          {
+            "$": "aussenbereich"
+          },
+          {
+            "$": "bauen"
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "bplan"
+          },
+          {
+            "$": "innenbereich"
+          }
+        ]
+      },
+      "grund": "Errichtung oder wesentliche Änderung baulicher Anlagen ist ein Eingriff in Natur und Landschaft – im Bebauungsplan und im Innenbereich gilt die Eingriffsregelung nicht (§ 18 Abs. 2 BNatSchG).",
+      "fundstellen": [
+        "30/1",
+        "30/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Landschaftspflegerischer Begleitplan bzw. Eingriffs-/Ausgleichsbilanzierung"
+      ],
+      "hinweis": "Aufschüttungen und Abgrabungen ab 2 m auf mehr als 400 m² sind ebenfalls Eingriffe (Abs. 1 Nr. 2).",
+      "stand": {
+        "30/1": "2fb89ef9",
+        "30/2": "0ddc0d27"
+      }
+    },
+    "31": {
+      "gilt": {
+        "und": [
+          {
+            "$": "aussenbereich"
+          },
+          {
+            "$": "bauen"
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "bplan"
+          },
+          {
+            "$": "innenbereich"
+          }
+        ]
+      },
+      "grund": "Ausgleichs- und Ersatzmaßnahmen bzw. Ersatzgeld für unvermeidbare Beeinträchtigungen; agrarstrukturelle Belange beachten.",
+      "fundstellen": [
+        "31/1",
+        "31/4",
+        "31/7"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "31/1": "41a1d6bd",
+        "31/4": "f4123ecb",
+        "31/7": "46b41bae"
+      }
+    },
+    "33": {
+      "gilt": {
+        "und": [
+          {
+            "$": "aussenbereich"
+          },
+          {
+            "$": "bauen"
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "bplan"
+          },
+          {
+            "$": "innenbereich"
+          }
+        ]
+      },
+      "grund": "Über den Eingriff entscheidet die Bauaufsicht im Benehmen mit der Naturschutzbehörde; ohne Zulassungsverfahren braucht der Eingriff eine Genehmigung der unteren Naturschutzbehörde.",
+      "fundstellen": [
+        "33/1",
+        "33/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "33/1": "085af941",
+        "33/2": "6695c028"
+      }
+    },
+    "39": {
+      "gilt": {
+        "f": "vorhaben.baeume_faellen",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "vorhaben.baeume_faellen",
+        "ist": false
+      },
+      "pruefen": {
+        "grund": "Geschützt sind Hecken ab 100 m Länge im Außenbereich, Wallhecken und als Ausgleich festgesetzte Anpflanzungen – prüfen, ob solche betroffen sind.",
+        "wenn": {
+          "f": "vorhaben.baeume_faellen",
+          "ist": true
+        }
+      },
+      "grund": "Gesetzlich geschützte Landschaftsbestandteile (Hecken ab 100 m im Außenbereich, Wallhecken, Kompensationspflanzungen): Beeinträchtigung verboten.",
+      "fundstellen": [
+        "39/1",
+        "39/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "39/1": "9eebe419",
+        "39/2": "f178f0b2"
+      }
+    },
+    "41": {
+      "gilt": {
+        "f": "schutz.baum",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "schutz.baum",
+        "ist": false
+      },
+      "grund": "Alleen an öffentlichen oder privaten Verkehrsflächen sind gesetzlich geschützt; Beseitigung und Beschädigung verboten.",
+      "fundstellen": [
+        "41/1",
+        "41/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Auch bei neuen Zufahrten durch eine Allee – Kataster des LANUK prüfen (Abs. 4).",
+      "stand": {
+        "41/1": "88425ffc",
+        "41/2": "ce9c97b5"
+      }
+    },
+    "42": {
+      "gilt": {
+        "f": "schutz.biotop",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "schutz.biotop",
+        "ist": false
+      },
+      "grund": "Gesetzlich geschützte Biotope (§ 30 BNatSchG und Abs. 1, u. a. Magerwiesen, Streuobstbestände ab 2 500 m²): Zerstörung und erhebliche Beeinträchtigung verboten.",
+      "fundstellen": [
+        "42/1",
+        "42/4"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "42/1": "5952a18b",
+        "42/4": "ae0960b1"
+      }
+    },
+    "75": {
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "f": "schutz.lsg",
+                "ist": true
+              },
+              {
+                "f": "schutz.nsg",
+                "ist": true
+              },
+              {
+                "f": "schutz.biotop",
+                "ist": true
+              },
+              {
+                "f": "schutz.landschaftsplan",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "schutz.lsg",
+            "ist": false
+          },
+          {
+            "f": "schutz.nsg",
+            "ist": false
+          },
+          {
+            "f": "schutz.biotop",
+            "ist": false
+          },
+          {
+            "f": "schutz.landschaftsplan",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Befreiungen von Ge- und Verboten des Naturschutzrechts erteilt die untere Naturschutzbehörde; der Naturschutzbeirat kann widersprechen.",
+      "fundstellen": [
+        "75/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "75/1": "5eac14ee"
+      }
+    }
+  }
+}

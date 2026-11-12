@@ -1,0 +1,42 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "mvv-tb",
+  "fassung": "2025-11-20",
+  "version": 1,
+  "paragrafen": {
+    "A 1.2.9": {
+      "titel": "Bauliche Anlagen in Erdbebengebieten",
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_bauen_gebaeude"
+          },
+          {
+            "f": "lage.erdbebenzone",
+            "in": [
+              "1",
+              "2",
+              "3"
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "lage.erdbebenzone",
+        "ist": "0"
+      },
+      "grund": "In den Erdbebenzonen 1 bis 3 sind Gebäude nach DIN 4149:2005-04 mit den Maßgaben der Anlage A 1.2.9/1 zu bemessen.",
+      "fundstellen": [
+        "A 1.2.9"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Zone und geologische Untergrundklasse nach der Karte der Erdbebenzonen NRW (GD NRW) bzw. der Zuordnung nach Gemeinden; Grün nur mit bestätigter Zone 0. Nachweis im Rahmen der Standsicherheit (§ 68 Abs. 3 BauO NRW).",
+      "stand": {
+        "A 1.2.9": "e3b0c442"
+      }
+    }
+  }
+}
