@@ -1606,8 +1606,8 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await act(() => useAntrag.getState().aktualisieren());
     await warte();
     await klick(knopfGenau(host, 'Antrag'));
-    // neu: der Lageplan und das (neue) Antragsprotokoll – ein Antragsprotokoll nach dem Stand belegt eine weitere Einreichung
-    expect(host.querySelector('.fo-stand')!.textContent).toContain('2 neu, 1 geändert seit der Einreichung');
+    // neu: der Lageplan – das Antragsprotokoll vom Tag der Einreichung (10.11.) ist der Nachweis selbst, nicht „neu“
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('1 neu, 1 geändert seit der Einreichung');
     // in den Antragsdaten neu festhalten (Rückfrage)
     await klick(antragsdaten(host));
     await klick(knopf(host, 'Stand neu festhalten'));
@@ -1726,6 +1726,174 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     // der Status des Nutzers bleibt, der Stand wird nicht ersetzt
     expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: false, datum: '2026-11-03' });
     expect(antragIn('BAUA 2')?.stand).toEqual(vorher);
+    expect(useFormulare.getState().meldung?.text).toContain('Stand neu festhalten abgebrochen');
+  });
+
+  /** zweites Projekt mit eigener Projektdatei: H24 (FORMA) mit Projektordner „Z:/Projekte/H24 Höggenstraße“ */
+  const H24_OAP = 'Z:/Projekte/H24 Höggenstraße/Planung/Berechnungen/H24.oap';
+  const h24Vorbereiten = () => {
+    const p = createProject('Höggenstraße');
+    p.meta = { ...leereMeta(), projektcode: 'H24' };
+    ds.dateien.set(H24_OAP, writeArchive(p));
+  };
+  const h24Waehlen = async () => {
+    const h24 = useFormulare.getState().projekte.find((p) => p.ordner === 'H24')!;
+    expect(h24).toBeTruthy();
+    await act(() => useFormulare.getState().projektWaehlen(h24));
+    await warte();
+  };
+  /** Liste des Antragsordners BAUA 2 anhalten, bis `frei()` aufgerufen wird */
+  const baua2Anhalten = () => {
+    const liste = ds.liste.bind(ds);
+    let frei!: () => void;
+    const halt = new Promise<void>((r) => (frei = r));
+    let haengen = true;
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (haengen && pfad.endsWith('/TÖB/BAUA 2') && tiefe > 1) await halt;
+      return liste(pfad, tiefe);
+    };
+    return () => {
+      haengen = false;
+      frei();
+    };
+  };
+
+  it('Projektwechsel, während BS9 noch schreibt: die Anträge von BS9 landen nicht in der Projektdatei von H24', async () => {
+    h24Vorbereiten();
+    await projektBS9();
+    // H24: Status von Hand – das darf später nicht verloren gehen
+    await h24Waehlen();
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-10-01' }));
+    await warte();
+    const h24 = () => (readProjectFile(ds.dateien.get(H24_OAP)!).formulare as { antraege?: Record<string, Record<string, unknown>> } | undefined)?.antraege;
+    expect(h24()?.BAUA?.status).toEqual({ eingereicht: true, datum: '2026-10-01' });
+    // zurück zu BS9; das Schreiben der Projektdatei von BS9 hängt einmal – währenddessen wird H24 geöffnet
+    await act(() => useFormulare.getState().projektWaehlen(useFormulare.getState().projekte.find((p) => p.ordner === 'BS9')!));
+    await warte();
+    const ersetzen = ds.projektordner.projektdateiErsetzen.bind(ds.projektordner);
+    let los!: () => void;
+    let einmal = true;
+    ds.projektordner.projektdateiErsetzen = async (...a: Parameters<typeof ersetzen>) => {
+      if (einmal && a[1].endsWith('BS9.oap')) {
+        einmal = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return ersetzen(...a);
+    };
+    let laeuft!: Promise<void>;
+    act(() => {
+      laeuft = useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-05' });
+    });
+    await warte();
+    expect(los).toBeTruthy();
+    await h24Waehlen();
+    los();
+    await act(() => laeuft);
+    await warte();
+    // ein späteres Aktualisieren in H24 (Fokus, Takt)
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(useFormulare.getState().projekt?.ordner).toBe('H24');
+    expect(Object.keys(h24() ?? {})).toEqual(['BAUA']);
+    expect(h24()?.BAUA?.status).toEqual({ eingereicht: true, datum: '2026-10-01' });
+    // BS9 hat seinen Status in der eigenen Projektdatei
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-05' });
+  });
+
+  it('Projektdatei erst während des Ladens gelesen: gespeicherte Angaben werden nicht durch frisch angelegte Anträge ersetzt', async () => {
+    await projektBS9();
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-03' }));
+    await warte();
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
+    // schließen und wieder öffnen – die Liste des Antragsordners hängt, bis die Projektdatei gelesen ist
+    const bs9 = useFormulare.getState().projekt!;
+    await act(() => useFormulare.getState().projektWaehlen(null));
+    await warte();
+    const liste = ds.liste.bind(ds);
+    let frei!: () => void;
+    const halt = new Promise<void>((r) => (frei = r));
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (pfad.endsWith('/TÖB') && tiefe === 1) await halt;
+      return liste(pfad, tiefe);
+    };
+    act(() => void useFormulare.getState().projektWaehlen(bs9));
+    await warte();
+    const o = useFormulare.getState().oap;
+    expect(o && o !== 'fehlt' ? o.pfad : o).toBe('Planung/Berechnungen/BS9.oap');
+    frei();
+    await warte();
+    await warte();
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
+    expect(useAntrag.getState().projektdatei?.antraege?.['BAUA 2']?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
+  });
+
+  it('andere Projektdatei gewählt, während noch gelesen wird: die Angaben der bisherigen landen nicht in der neuen', async () => {
+    const KOPIE = `${PROJEKT}/Planung/Berechnungen/BS9 Kopie.oap`;
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    await projektBS9();
+    // eine Kopie der Projektdatei liegt daneben (mit Abschnitt „formulare“); gewählt ist die bisherige
+    ds.dateien.set(KOPIE, ds.dateien.get(OAP)!);
+    await act(() => useFormulare.getState().oapWaehlen('Planung/Berechnungen/BS9.oap'));
+    await warte();
+    // Kennzeichen der bisherigen Projektdatei: Status von Hand
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: false, datum: '2026-10-01' }));
+    await warte();
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: false, datum: '2026-10-01' });
+    // Eingangsbestätigung kommt dazu; das Lesen hängt (Antragsordner und Antrag) – währenddessen die Kopie wählen
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Eingangsbestätigung.pdf`, new Uint8Array([1]));
+    const liste = ds.liste.bind(ds);
+    let frei1!: () => void;
+    let frei2!: () => void;
+    const halt1 = new Promise<void>((r) => (frei1 = r));
+    const halt2 = new Promise<void>((r) => (frei2 = r));
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (pfad.endsWith('/TÖB/BAUA 2') && tiefe > 1) await halt1;
+      if (pfad.endsWith('/TÖB') && tiefe === 1) await halt2;
+      return liste(pfad, tiefe);
+    };
+    let laeuft!: Promise<void>;
+    act(() => {
+      laeuft = useAntrag.getState().aktualisieren();
+    });
+    await act(() => useFormulare.getState().oapWaehlen('Planung/Berechnungen/BS9 Kopie.oap'));
+    await warte();
+    const kopie = () => (readProjectFile(ds.dateien.get(KOPIE)!).formulare as { antraege?: Record<string, Record<string, unknown>> } | undefined)?.antraege?.['BAUA 2'];
+    // erst das alte Lesen fertig: es schreibt nichts in die Kopie (die Angaben im Store stammen aus der bisherigen)
+    frei1();
+    await act(() => laeuft);
+    await warte();
+    expect(kopie()?.status).toBeUndefined();
+    // dann das Laden der Kopie: „eingereicht“ aus ihren eigenen Angaben
+    frei2();
+    await warte();
+    await warte();
+    expect(kopie()?.status).toBeUndefined();
+    expect(kopie()?.eingereicht).toEqual({ datei: 'BS9 BAUA 261103 Eingangsbestätigung.pdf', datum: '2026-11-03' });
+    // die bisherige behält ihre Angaben
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: false, datum: '2026-10-01' });
+  });
+
+  it('Stand neu festhalten: wird während des Lesens ein anderes Projekt geöffnet, wird abgebrochen – keine Projektdatei ändert sich', async () => {
+    h24Vorbereiten();
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Antragsprotokoll.pdf`, new Uint8Array([1]));
+    await projektBS9();
+    const vorher = antragIn('BAUA 2')?.stand;
+    expect(vorher).toBeTruthy();
+    const frei = baua2Anhalten();
+    let laeuft!: Promise<void>;
+    act(() => {
+      laeuft = useAntrag.getState().standNeuFesthalten();
+    });
+    await h24Waehlen();
+    const h24Vorher = ds.dateien.get(H24_OAP);
+    frei();
+    await act(() => laeuft);
+    await warte();
+    expect(antragIn('BAUA 2')?.stand).toEqual(vorher);
+    expect(ds.dateien.get(H24_OAP)).toBe(h24Vorher);
     expect(useFormulare.getState().meldung?.text).toContain('Stand neu festhalten abgebrochen');
   });
 

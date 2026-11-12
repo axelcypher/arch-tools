@@ -4,7 +4,7 @@ import type { FeldDef } from '@core/ui/ansicht';
 import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
-import { eingereichtVon, PLANSATZ_QUELLE, tagVon } from '../antrag';
+import { eingereichtVon, PLANSATZ_QUELLE, standFestgehaltenText, tagVon } from '../antrag';
 import { ART_HINWEIS, vorlageArtWarnung, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
@@ -82,7 +82,7 @@ export function FassungsWahl() {
         {!aktivDa && <span className="muted"> (neu)</span>}
       </MenueKnopf>
       {eingereicht && (
-        <span className="an-eingereicht" title={`Antrag ${aktiv} eingereicht – ${eingereicht.datei ?? 'von Hand gesetzt'} · gesperrt; zum Nachreichen den Status (Antragsdaten) vorübergehend auf „in Arbeit“ setzen`}>
+        <span className="an-eingereicht" title={`Antrag ${aktiv} eingereicht – ${eingereicht.datei ?? 'von Hand gesetzt'} · gesperrt; zum Nachreichen den Status in den Antragsdaten vorübergehend auf „in Arbeit“ setzen`}>
           <Symbol name="schloss" /> eingereicht {tag(eingereicht.datum)}
         </span>
       )}
@@ -214,7 +214,7 @@ function EinreichungsDatum({ wert, onSetzen, nach }: { wert: string; onSetzen: (
 export function standText(stand: { tag: string; dateien: unknown[]; festgehalten?: number }): string {
   const n = stand.dateien.length;
   const dateien = n === 0 ? 'keine Dateien' : `${n} ${n === 1 ? 'Datei' : 'Dateien'}`;
-  return stand.festgehalten ? `Stand neu festgehalten am ${tagVon(new Date(stand.festgehalten)).split('-').reverse().join('.')} (${dateien})` : `Stand vom ${stand.tag.split('-').reverse().join('.')} festgehalten (${dateien})`;
+  return stand.festgehalten ? `${standFestgehaltenText(stand)} (${dateien})` : `Stand vom ${stand.tag.split('-').reverse().join('.')} festgehalten (${dateien})`;
 }
 
 /** Status des aktiven Antrags: erkannt oder von Hand gesetzt; eingereicht = gesperrt (Nachtrag anlegen) */
@@ -239,7 +239,7 @@ function AntragStatus() {
   const knoepfe = wirksam && (
     <div className="pu-status-knoepfe">
       <button
-        title={`Neue Antragsfassung „${nachtrag}“ anlegen – nur nach Rücknahme, Ablehnung oder für eine Änderung nach der Genehmigung; zum Nachreichen den Status auf „in Arbeit“ setzen`}
+        title={`Neue Antragsfassung „${nachtrag}“ anlegen – nur nach Rücknahme, Ablehnung, Rückgabe der Unterlagen oder für eine Änderung nach der Entscheidung; zum Nachreichen den Status auf „in Arbeit“ setzen`}
         onClick={() => void st.fassungWaehlen(nachtrag, true)}
       >
         <Symbol name="plus" /> Nachtrag „{nachtrag}“ anlegen
@@ -250,14 +250,14 @@ function AntragStatus() {
           title={
             st.dateienLesefehler
               ? 'Ordner gerade nicht erreichbar – neu festhalten geht erst wieder, wenn er erreichbar ist'
-              : 'Den Antragsstand mit den Dateien, die jetzt im Ordner liegen, neu festhalten – etwa nach einem versehentlich gesetzten oder falsch erkannten Status'
+              : 'Den Antragsstand mit den Dateien, die jetzt im Ordner liegen, neu festhalten – nur nach einem versehentlich gesetzten oder falsch erkannten Status, nicht nach einer Nachreichung'
           }
           onClick={async () => {
             if (st.dateienLesefehler) return;
             if (
               await bestaetigen(
                 'Stand neu festhalten?',
-                `Der festgehaltene Stand wird durch die Dateien ersetzt, die jetzt im Ordner liegen. Was bis jetzt neu (auch Nachgereichtes), geändert oder entfernt ist, gehört dann zum Stand und ist nicht mehr gekennzeichnet – nur nach einem versehentlich gesetzten oder falsch erkannten Status, nicht nach einer Nachreichung.`,
+                'Der festgehaltene Stand wird durch die Dateien ersetzt, die jetzt im Ordner liegen. Neues (auch Nachgereichtes) und Geändertes gehört dann zum Stand, Entferntes fällt heraus – nichts davon ist mehr gekennzeichnet. Nur nach einem versehentlich gesetzten oder falsch erkannten Status verwenden, nicht nach einer Nachreichung.',
                 'Neu festhalten',
                 true,
               )
@@ -284,16 +284,24 @@ function AntragStatus() {
             </span>
             <span className="muted small-text">Gesperrt: Formulare nur ansehen; Antragsdaten, Export und „bereit“ wie eingereicht.</span>
             <span className="small-text pu-status-anleitung">
-              Nachreichen: Status vorübergehend auf „in Arbeit“ (Tag und Stand bleiben). Nachtrag: erst nach Rücknahme, Ablehnung oder für eine Änderung nach der
-              Genehmigung.
+              <strong>Nachreichen:</strong> Status vorübergehend auf „in Arbeit“ (Tag und Stand bleiben). <strong>Nachtrag:</strong> erst nach Rücknahme, Ablehnung,
+              Rückgabe der Unterlagen oder für eine Änderung nach der Entscheidung.
             </span>
           </>
         ) : (
-          <span className="muted small-text">
-            {manuell
-              ? 'Von Hand auf „in Arbeit“ gesetzt – ein Antragsprotokoll bzw. eine Eingangsbestätigung im Antragsordner wird nicht beachtet. Datum und Stand der Einreichung bleiben gespeichert. Nach dem Nachreichen wieder auf „automatisch“ bzw. „eingereicht“ stellen – Nachgereichtes ist dann als „neu“ gekennzeichnet.'
-              : 'Wird automatisch eingereicht, sobald ein Antragsprotokoll bzw. eine Eingangsbestätigung im Ordner des Antrags liegt.'}
-          </span>
+          <>
+            <span className="muted small-text">
+              {manuell
+                ? 'Von Hand gesetzt – Antragsprotokoll bzw. Eingangsbestätigung werden nicht beachtet; Tag und Stand der Einreichung bleiben gespeichert.'
+                : 'Wird automatisch eingereicht, sobald ein Antragsprotokoll bzw. eine Eingangsbestätigung im Ordner des Antrags liegt.'}
+            </span>
+            {manuell && (
+              <span className="small-text pu-status-anleitung">
+                <strong>Nach dem Nachreichen:</strong> Status wieder auf „automatisch“ bzw. „eingereicht“ – Nachgereichtes ist dann als „neu“ bzw. „geändert“
+                gekennzeichnet.
+              </span>
+            )}
+          </>
         )}
       </div>
       <div className="pu-status-wahl">

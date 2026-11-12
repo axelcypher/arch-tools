@@ -11,9 +11,9 @@ import {
   entferntSeitEinreichung,
   istHilfsdatei,
   nameNachFormat,
-  SEIT_EINREICHUNG_TEXT,
   seitEinreichung,
-  tagVon,
+  standBezug,
+  standFestgehaltenText,
 } from '../antrag';
 import { aktiveFassung, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
@@ -77,6 +77,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     const a = s.projektdatei?.antraege?.[aktiveFassung(s, projekt)];
     return eingereichtVon(a) ? a?.stand : undefined;
   });
+  // Bezug der Kennzeichen: „seit der Einreichung“ bzw. nach dem Neu-Festhalten „seit dem Festhalten“
+  const bezug = standBezug(stand);
   const markiert = bereitJeFassung?.[fassung] ?? [];
   const { bereitUmschalten } = useAntrag.getState();
   const [vorschau, setVorschau] = useState<string | null | undefined>(undefined);
@@ -199,25 +201,24 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
         <p
           className={`fo-stand${seitText ? ' abweichend' : ''}`}
           role="status"
-          title={entfernt.length ? `Seit der Einreichung nicht mehr im Ordner:\n${entfernt.map((x) => x.pfad).join('\n')}` : undefined}
+          title={entfernt.length ? `${bezug[0].toUpperCase()}${bezug.slice(1)} nicht mehr im Ordner:\n${entfernt.map((x) => x.pfad).join('\n')}` : undefined}
         >
-          <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} –{' '}
-          {stand.festgehalten ? `Stand neu festgehalten am ${tagVon(new Date(stand.festgehalten)).split('-').reverse().join('.')}` : 'Stand festgehalten'}
+          <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} – {standFestgehaltenText(stand)}
           {lesefehler
             ? seitText
               ? ` · beim letzten Lesen: ${seitText} (Ordner gerade nicht erreichbar)`
               : ' · Vergleich mit dem Ordner gerade nicht möglich'
             : seitText
-              ? ` · ${seitText} ${stand.festgehalten ? 'seit dem Festhalten' : 'seit der Einreichung'}`
+              ? ` · ${seitText} ${bezug}`
               : ' · seitdem unverändert'}
         </p>
       )}
       {stand && entfernt.length > 0 && (
-        <ul className="fo-stand-entfernt" aria-label="Seit der Einreichung entfernt">
+        <ul className="fo-stand-entfernt" aria-label={`Entfernt ${bezug}`}>
           {/* bis zu drei Namen; mehr lassen sich aufklappen (alle auch im Tooltip der Summe) */}
           {(entfernt.length > 3 && !alleEntfernt ? entfernt.slice(0, 2) : entfernt).map((x) => (
             <li key={x.pfad}>
-              <span className="fo-seit entfernt" title="entfernt seit der Einreichung">
+              <span className="fo-seit entfernt" title={`entfernt ${bezug}`}>
                 entfernt
               </span>{' '}
               <span className="fo-stand-name">{x.pfad}</span>
@@ -266,9 +267,9 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
               <span className="fo-baum-name">
                 {d.pfad}
                 {(dok || fehler) && <span className="fo-bereit-unter">{fehler ? 'Namensformat passt nicht' : dok!.eintrag.titel}</span>}
-                {/* kurz – der Bezug („seit der Einreichung“) steht in der Zeile darüber, voll im Tooltip */}
+                {/* kurz – der Bezug („seit der Einreichung“ bzw. „seit dem Festhalten“) steht in der Zeile darüber, voll im Tooltip */}
                 {seit && (
-                  <span className={`fo-seit ${seit}`} title={SEIT_EINREICHUNG_TEXT[seit]}>
+                  <span className={`fo-seit ${seit}`} title={`${seit === 'neu' ? 'neu' : 'geändert'} ${bezug}`}>
                     {seit === 'neu' ? 'neu' : 'geändert'}
                   </span>
                 )}

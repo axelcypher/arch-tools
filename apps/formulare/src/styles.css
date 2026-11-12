@@ -4665,9 +4665,19 @@ tr[data-ziehen='danach'] > td {
   flex-direction: column;
   gap: 3px;
 }
-/* die Anleitung zum Nachreichen in voller Textfarbe (nicht gedämpft) */
+/* die Anleitung zum Nachreichen in voller Textfarbe (nicht gedämpft); die gedämpften Zeilen im eingereichten Kasten
+   etwas kräftiger, damit sie auf dem grünen Grund auch hell AA erreichen; lange Dateinamen brechen um */
 .pu-status-anleitung {
   color: var(--text);
+}
+.pu-status-anleitung strong {
+  font-weight: 600;
+}
+.pu-status.eingereicht .muted {
+  color: color-mix(in srgb, var(--text) 15%, var(--muted));
+}
+.pu-status-text {
+  overflow-wrap: anywhere;
 }
 .pu-status-text strong {
   display: inline-flex;

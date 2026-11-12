@@ -456,6 +456,26 @@ async function mitAutofill(bytes: Uint8Array): Promise<{ bytes: Uint8Array; zust
   };
 }
 
+/**
+ * Wofür die Projektdatei im Store gelesen wurde: Projekt und .oap (`root|pfad`, null = ohne .oap). Geschrieben wird nur,
+ * wenn sie noch zum offenen Projekt und zur gelesenen .oap gehört – sonst landeten nach einem Projektwechsel während
+ * eines Lese- oder Schreibvorgangs die Angaben des einen Projekts in der Projektdatei des anderen.
+ */
+let projektdateiQuelle: { projekt: Projekt; oap: string | null } | null = null;
+const oapSchluessel = () => {
+  const o = useFormulare.getState().oap;
+  return o && o !== 'fehlt' ? `${o.root}|${o.pfad}` : null;
+};
+const quelleMerken = (projekt: Projekt | null) => {
+  projektdateiQuelle = projekt ? { projekt, oap: oapSchluessel() } : null;
+};
+/** gehört die Projektdatei im Store zum offenen Projekt – und (mit `mitOap`) zur gerade gelesenen .oap? */
+const projektdateiPasst = (mitOap: boolean) => {
+  const q = projektdateiQuelle;
+  if (!q || q.projekt !== useFormulare.getState().projekt) return false;
+  return mitOap ? q.oap !== null && q.oap === oapSchluessel() : q.oap === null || q.oap === oapSchluessel();
+};
+
 /** Angaben aus einer alten formulare.json einmalig in die Projektdatei übernehmen (die alte Datei bleibt liegen) */
 async function uebernehmen(projekt: Projekt, alt: ProjektDatei) {
   const f = useFormulare.getState();
@@ -492,6 +512,8 @@ export const useAntrag = create<AntragState>((set, get) => {
       return false;
     }
     if (f.oap === null) await f.oapLaden();
+    // inzwischen ein anderes Projekt bzw. eine andere Projektdatei: nichts schreiben
+    if (useFormulare.getState().projekt !== projekt || !projektdateiPasst(false)) return false;
     const o = useFormulare.getState().oap;
     if (!o || o === 'fehlt') {
       await f.stammdatenErfassen('Die Angaben zum Antrag (Antragsumfang, Antragsfassung, Antragsmerkmale) werden in der Projektdatei (.oap) gespeichert. Im Projektordner gibt es noch keine – mit diesen Stammdaten wird sie angelegt.', async () => {
@@ -500,13 +522,16 @@ export const useAntrag = create<AntragState>((set, get) => {
       return false;
     }
     await useFormulare.getState().oapAendern((roh) => mitAbschnitt(roh, neu));
+    if (useFormulare.getState().projekt !== projekt) return false;
     set({ projektdatei: neu });
+    quelleMerken(projekt);
     return true;
   };
   /** Ohne Rückfrage speichern (neue Anträge, „eingereicht“) – nur, wenn es eine Projektdatei gibt */
   const stillSpeichern = async (neu: ProjektDatei): Promise<void> => {
     const o = useFormulare.getState().oap;
-    if (!o || o === 'fehlt') return;
+    // nur in die .oap, aus der die Angaben stammen (nicht in die eines inzwischen gewählten Projekts)
+    if (!o || o === 'fehlt' || !projektdateiPasst(true)) return;
     try {
       await useFormulare.getState().oapAendern((roh) => mitAbschnitt(roh, neu));
     } catch (e) {
@@ -520,8 +545,9 @@ export const useAntrag = create<AntragState>((set, get) => {
   const antragStandPflegen = async (eingereicht: Record<string, { datei: string; datum: string } | null>, listen: Record<string, Eintrag[]> = {}) => {
     const pd = get().projektdatei;
     const o = useFormulare.getState().oap;
-    // ohne gespeicherte Angaben (z. B. während eine alte formulare.json übernommen wird) nichts schreiben
-    if (!pd?.antraege || !o || o === 'fehlt' || !abschnittRohAusOap()) return;
+    // ohne gespeicherte Angaben (z. B. während eine alte formulare.json übernommen wird) nichts schreiben – und nur, wenn
+    // die Projektdatei im Store zum offenen Projekt und zur gelesenen .oap gehört
+    if (!pd?.antraege || !o || o === 'fehlt' || !abschnittRohAusOap() || !projektdateiPasst(true)) return;
     let geaendert = false;
     const antraege: Record<string, AntragDaten> = { ...pd.antraege };
     for (const [name, e] of Object.entries(eingereicht)) {
@@ -774,9 +800,10 @@ export const useAntrag = create<AntragState>((set, get) => {
         meldung('info', 'Stand neu festhalten abgebrochen – Projekt, Antrag oder Status hat sich inzwischen geändert.');
         return;
       }
-      // Zeitpunkt: mindestens die jüngste Änderungszeit der Liste (die Uhr des Netzlaufwerks kann vorgehen)
-      const zeitpunkt = Math.max(Date.now(), ...liste.map((d) => d.geaendert ?? 0)) + 2000;
-      const stand = standAus(liste, ein.datum, zeitpunkt);
+      // angezeigt wird der echte Zeitpunkt; zum Stand gehört alles bis zur jüngsten Änderungszeit der Liste (die Uhr des
+      // Netzlaufwerks kann vorgehen) plus zwei Sekunden Spielraum
+      const jetztMs = Date.now();
+      const stand = standAus(liste, ein.datum, { am: jetztMs, bis: Math.max(jetztMs, ...liste.map((d) => d.geaendert ?? 0)) + 2000 });
       try {
         if (await projektdateiSchreiben({ ...jetzt, antraege: { ...jetzt.antraege, [fassung]: { ...a, stand } } })) {
           log.info(`${fassung}: Antragsstand von Hand neu festgehalten (${stand.dateien.length} Dateien)`);
@@ -822,10 +849,14 @@ export const useAntrag = create<AntragState>((set, get) => {
       const { ds, projekt, basis } = ctx();
       if (!ds || !projekt) {
         set({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [] });
+        quelleMerken(null);
         return;
       }
       set({ laedt: true });
       try {
+        // aus welcher .oap gelesen wird (null: noch keine bzw. keine) – wird sie während des Ladens erst gelesen, gilt das
+        // hier Gebaute nicht (es entstünden frische Anträge über gespeicherte), dann neu laden
+        const von = oapSchluessel();
         let abschnitt = abschnittRohAusOap();
         let ausJson = false;
         if (!abschnitt) {
@@ -858,8 +889,12 @@ export const useAntrag = create<AntragState>((set, get) => {
             // Antragsordner gibt es (noch) nicht
           }
         }
-        // inzwischen ein anderes Projekt gewählt?
+        // inzwischen ein anderes Projekt gewählt bzw. die .oap erst jetzt gelesen?
         if (useFormulare.getState().projekt !== projekt) return;
+        if (von !== oapSchluessel()) {
+          void get().laden();
+          return;
+        }
         const tag = (fassung: string) => tagVon(new Date(ordnerZeit.get(fassung) ?? Date.now()));
         // Jeder Ordner einer Antragsfassung ist ein Antrag: fehlende entstehen aus den früher projektweiten Angaben
         // (einmalige Übernahme) bzw. aus den Vorgaben – danach unabhängig
@@ -872,6 +907,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         const fassung = a.aktiveFassung || aktiveFassung({ ...get(), projektdatei: null, fassungen }, projekt);
         const ansicht = ansichtVon(a, fassung, () => neuAusVorgaben(tag(fassung)));
         set({ projektdatei: ansicht.pd, fassungen });
+        quelleMerken(projekt);
         if ((anlegen || ansicht.neu) && !ausJson) await stillSpeichern(ansicht.pd);
         await get().aktualisieren();
       } finally {
@@ -1168,8 +1204,8 @@ export const useAntrag = create<AntragState>((set, get) => {
       if (!f.ds || !f.projekt || !ablageVon(f, f.projekt)) return;
       if (f.oap === null) await f.oapLaden();
       const o = useFormulare.getState().oap;
-      // ohne Projektdatei gilt der Zustand nur bis zum Neuladen – kein Dialog dafür
-      if (!o || o === 'fehlt') return;
+      // ohne Projektdatei gilt der Zustand nur bis zum Neuladen – kein Dialog dafür; inzwischen anderes Projekt: nichts
+      if (!o || o === 'fehlt' || useFormulare.getState().projekt !== f.projekt) return;
       try {
         const fassung = get().projektdatei?.ansicht ?? aktiveFassung(get(), f.projekt);
         await useFormulare.getState().oapAendern((roh) => {
@@ -1337,8 +1373,10 @@ useFormulare.subscribe((s, vorher) => {
   const schemaNeu = s.namensschemaBuero !== vorher.namensschemaBuero || (!!dieselbe && schemaDerProjektdatei(s.oap as Exclude<OapStand, 'fehlt' | null>) !== schemaDerProjektdatei(vorher.oap as Exclude<OapStand, 'fehlt' | null>));
   if (s.projekt !== vorher.projekt || s.ablage !== vorher.ablage || s.ds !== vorher.ds) {
     zerlegt.clear();
-    if (s.projekt !== vorher.projekt)
+    if (s.projekt !== vorher.projekt) {
       useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [] });
+      quelleMerken(null);
+    }
     void useAntrag.getState().laden();
   } else if (s.oap !== vorher.oap && s.oap && s.oap !== 'fehlt' && (!vorher.oap || (vorher.oap !== 'fehlt' && vorher.oap.pfad !== s.oap.pfad))) {
     // Projektdatei erstmals gelesen bzw. eine andere gewählt: neu laden – dabei entstehen fehlende Anträge (und werden
@@ -1351,6 +1389,7 @@ useFormulare.subscribe((s, vorher) => {
     const neu = abschnittAusOap();
     if (neu && JSON.stringify(neu) !== JSON.stringify(useAntrag.getState().projektdatei)) {
       useAntrag.setState({ projektdatei: neu });
+      quelleMerken(s.projekt);
       void useAntrag.getState().aktualisieren();
     }
   } else if (s.formulare !== vorher.formulare || s.offen?.bytes !== vorher.offen?.bytes) {

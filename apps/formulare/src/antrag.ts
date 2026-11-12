@@ -427,9 +427,19 @@ export interface StandDatei {
 export interface AntragStand {
   tag: string;
   dateien: StandDatei[];
-  /** von Hand neu festgehalten (Zeitpunkt, ms): was bis dahin geändert wurde, gehört vollständig zum Stand */
+  /** von Hand neu festgehalten (Zeitpunkt, ms – für die Anzeige) */
   festgehalten?: number;
+  /** bis zu dieser Änderungszeit (ms) gehört alles vollständig zum von Hand festgehaltenen Stand (mit Spielraum für die Uhr des Netzlaufwerks) */
+  festgehaltenBis?: number;
 }
+
+/** „Stand festgehalten“ bzw. „Stand neu festgehalten am 20.11.2026“ – überall gleich */
+export function standFestgehaltenText(stand: Pick<AntragStand, 'festgehalten'>): string {
+  return stand.festgehalten ? `Stand neu festgehalten am ${tagVon(new Date(stand.festgehalten)).split('-').reverse().join('.')}` : 'Stand festgehalten';
+}
+
+/** Bezug der Kennzeichen: „seit der Einreichung“ bzw. nach dem Neu-Festhalten „seit dem Festhalten“ */
+export const standBezug = (stand: Pick<AntragStand, 'festgehalten'> | undefined) => (stand?.festgehalten ? 'seit dem Festhalten' : 'seit der Einreichung');
 
 /** Hilfsdateien, die nie zu den Unterlagen gehören: Office-Sperrdateien, Thumbs.db, desktop.ini */
 export const istHilfsdatei = (pfad: string) => {
@@ -450,7 +460,8 @@ const FUELLWOERTER = new Set(
 const KERN = new RegExp(
   '^(' +
     [
-      // Bestätigung der Behörde (ein neues Antragsprotokoll belegt dagegen eine weitere Einreichung über das Portal)
+      // Bestätigung der Behörde (ein Antragsprotokoll ist kein Schreiben der Behörde; ein weiteres, späteres kann einen
+      // weiteren Antrag belegen – der Nachweis der Einreichung selbst ist in seitEinreichung ausgenommen)
       'eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung',
       // Entscheidung
       '(bau|teilbau|nachtrags|nachtragsbau|änderungs|aenderungs|entwässerungs|entwaesserungs)?genehmigung(sbescheid)?',
@@ -505,7 +516,7 @@ function datumAusWort(w: string): string | null {
  *
  * Kernwörter (abschließend) – Bürovorgabe: die Genehmigung selbst (auch die Fiktionsbescheinigung, § 74 Abs. 3 Satz 1
  * Nr. 4 BauO NRW 2018 i. V. m. § 42a Abs. 3 VwVfG NRW), die Empfangsbestätigung und Nachforderungen der Behörde (§ 71
- * Abs. 1 Satz 7). Ergänzt: Eingangsbestätigung (§ 71 Abs. 1 Satz 1) und Antragsprotokoll, die Unterrichtung über die
+ * Abs. 1 Satz 7). Ergänzt: Eingangsbestätigung (§ 71 Abs. 1 Satz 1), die Unterrichtung über die
  * Vollständigkeit (§ 71 Abs. 1 Satz 9 BauO NRW 2018 in der Fassung ab 01.09.2026), Bescheide (Vorbescheid, Gebühren,
  * Ablehnung, Abweichung, Befreiung, Verlängerung …), Ablehnung, Anhörung, Kostenfestsetzung, (denkmalrechtliche)
  * Erlaubnis, Abgeschlossenheitsbescheinigung, Rückgabe der Unterlagen (§ 63 Abs. 4 Satz 3) sowie Mitteilung bzw.
@@ -514,7 +525,9 @@ function datumAusWort(w: string): string | null {
  * Datum bzw. Jahr ab dem Tag der Einreichung (ein älteres meint einen beigefügten Bestand, auch im Aktenzeichen; eines
  * mehr als ein Jahr in der Zukunft zählt nicht),
  * der Bezug „zum Bauantrag“ bzw. „Genehmigung Bauantrag“ (nur das ganze Wort), feste Wendungen wie „von Unterlagen“,
- * „Behebung der Mängel“, „an den Bauherrn“.
+ * „an den Bauherrn“ und – nur hinter dem Schreiben der Behörde – „Aufforderung zur Behebung der Mängel“ bzw. „zur
+ * Mängelbeseitigung“ und „Baugenehmigung mit Anlagen“. Eine Präposition vor dem Kernwort („zur Genehmigung“) ist die
+ * Bezeichnung des Büros.
  *
  * Genehmigte Bauvorlagen (§ 74 Abs. 4 Satz 5): mit „genehmigt…“, „Genehmigungsvermerk“ oder „Grünstempel“ dürfen auch
  * Planart, Geschoss, Richtung, Plannummer und Bauvorlagen nach BauPrüfVO im Namen stehen („GP-03 Grundriss OG
@@ -563,8 +576,8 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
     .replace(/(?<=^|\s)(\d{1,2})-(\d{4})(?=\s|$)/g, (g, m, j) => (gueltigerTag(1, Number(m)) ? `${m}.${j}` : g))
     .replace(/(?<=^|\s)(\d{4})-(\d{1,2})(?=\s|$)/g, (g, j, m) => (gueltigerTag(1, Number(m)) ? `${m}.${j}` : g));
   // 5. Aktenzeichen als Ganzes – eine Jahresangabe vor der Einreichung darin meint einen Bestand. Steht am Ende eine
-  //    Jahresangabe („63-1234-72“, „63-1934-2026“), entscheidet sie allein (die Zahlen davor sind laufende Nummern);
-  //    sonst jede vierstellige Jahreszahl („63-1999-0815“, „Nr. 1972“)
+  //    Jahresangabe („63-1234-72“, „63-1934-2026“), entscheidet sie allein (die Zahlen davor sind laufende Nummern,
+  //    auch bei „Az 1950-26“); sonst jede vierstellige Jahreszahl („63-1999-0815“, „Nr. 1972“)
   const abJahr = Number(ab.slice(0, 4));
   let alt = false;
   const aktenzeichen = (gruppe: string) => {
@@ -572,10 +585,11 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
     const letzte = zahlen[zahlen.length - 1] ?? '';
     // erst ab drei Zahlengruppen oder mit „Az“/„Nr.“ ist die letzte sicher das Jahr („1972-26“ kann Jahr-Nummer sein)
     const mitJahr = zahlen.length >= 3 || (zahlen.length > 1 && /^\s*(az|aktenzeichen|nr)/i.test(gruppe));
-    const schlussJahr = !mitJahr ? null : letzte.length === 2 ? 2000 + Number(letzte) : /^(19|20)\d{2}$/.test(letzte) ? Number(letzte) : null;
-    if (schlussJahr !== null) {
-      if (schlussJahr < abJahr || schlussJahr > abJahr + 1) alt = true;
-    } else if (zahlen.some((z) => /^(19|20)\d{2}$/.test(z) && Number(z) < abJahr)) alt = true;
+    const istJahr = (z: string) => /^(19|20)\d{2}$/.test(z);
+    const jahr = !mitJahr ? null : letzte.length === 2 ? 2000 + Number(letzte) : istJahr(letzte) ? Number(letzte) : null;
+    if (jahr !== null) {
+      if (jahr < abJahr || jahr > abJahr + 1) alt = true;
+    } else if (zahlen.some((z) => istJahr(z) && Number(z) < abJahr)) alt = true;
     return ' §az ';
   };
   text = text
@@ -594,7 +608,7 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
     .replace(/((bescheinigung|mitteilung|unterrichtung|best(ä|ae)tigung) )?((ü|ue)ber die|der) (vollst(ä|ae)ndigkeit)/gi, ' $6 ')
     .replace(/bescheinigung (über den |ueber den )?(eintritt (der )?)?genehmigungsfiktion/gi, ' genehmigungsfiktion ')
     .replace(/(eintritt (der )?)genehmigungsfiktion/gi, ' genehmigungsfiktion ')
-    .replace(/(?<=^|\s)(?!(?:bau)?vorbescheid)(\S*bescheid) (?:über die |ueber die )?verl(?:ä|ae)ngerung(?: de[rs] (?:vorbescheid\S*|baugenehmigung))?(?=\s|$)/gi, '$1')
+    .replace(/(?<=^|\s)(?!(?:bau)?vorbescheid)(\S*bescheid) (?:über die |ueber die )?verl(?:ä|ae)ngerung(?: der geltungsdauer)?(?: de[rs] (?:vorbescheid\S*|baugenehmigung))?(?=\s|$)/gi, '$1')
     // nur hinter dem Schreiben der Behörde: „Aufforderung zur Behebung der Mängel“, „Baugenehmigung mit Anlagen“ – sonst
     // ist „Behebung der Mängel …“ bzw. „… mit Anlagen“ die Antwort des Büros
     .replace(/((?:auf|nach)forderung\S*) zur (?:m(?:ä|ae)ngelbeseitigung|behebung (?:der |von )?m(?:ä|ae)ngel(?:n)?)(?=\s|$)/gi, '$1')
@@ -614,7 +628,11 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
   for (let i = 0; i < klein.length; i++) {
     if (!PRAEP.test(klein[i])) continue;
     const naechstes = klein.slice(i + 1).find((w) => !/^(der|die|das|den|dem|des)$/.test(w));
-    const davor = klein.slice(0, i).filter((w) => !FUELLWOERTER.has(w)).pop();
+    // das Wort davor ohne Füllwörter, Daten, Aktenzeichen, Antragsart und Zusätze („Gebührenbescheid vom 20.11.2026 zur …“)
+    const davor = klein
+      .slice(0, i)
+      .filter((w) => !FUELLWOERTER.has(w) && !ZUSATZ.test(w) && !arten.has(w) && !datumAusWort(w))
+      .pop();
     if (naechstes && KERN.test(naechstes) && !(davor && KERN.test(davor))) return false;
   }
   const erlaubt = klein.every((w) => {
@@ -636,10 +654,10 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
  * Tag der Einreichung geändert wurde (etwa wenn die Einreichung erst später erkannt wird), zählt erst beim Vergleich
  * nicht dazu (`imStand`) – so bleibt der Stand richtig, auch wenn sich der Tag später noch ändert.
  */
-export function standAus(dateien: Eintrag[], tag: string, festgehalten?: number): AntragStand {
+export function standAus(dateien: Eintrag[], tag: string, festgehalten?: { am: number; bis: number }): AntragStand {
   return {
     tag,
-    ...(festgehalten ? { festgehalten } : {}),
+    ...(festgehalten ? { festgehalten: festgehalten.am, festgehaltenBis: festgehalten.bis } : {}),
     dateien: dateien
       .filter((d) => !d.ordner && !istArchiv(d.pfad) && !istHilfsdatei(d.pfad))
       .map((d) => ({ pfad: d.pfad, groesse: d.groesse, ...(d.geaendert ? { geaendert: d.geaendert } : {}) })),
@@ -651,7 +669,7 @@ export function standAus(dateien: Eintrag[], tag: string, festgehalten?: number)
  * Hand neu festgehaltenen Stand alles bis zu diesem Zeitpunkt
  */
 export function imStand(stand: AntragStand): StandDatei[] {
-  const ende = Math.max(new Date(`${stand.tag}T23:59:59.999`).getTime(), stand.festgehalten ?? 0);
+  const ende = Math.max(new Date(`${stand.tag}T23:59:59.999`).getTime(), stand.festgehaltenBis ?? stand.festgehalten ?? 0);
   return stand.dateien.filter((d) => !(d.geaendert && d.geaendert > ende));
 }
 
@@ -683,6 +701,14 @@ export function seitEinreichung(
   if (!stand) return null;
   const name = d.pfad.split('/').pop() ?? '';
   const s = imStand(stand).find((x) => x.pfad.toLowerCase() === d.pfad.toLowerCase());
+  // der Nachweis der Einreichung selbst ist nie „neu“: steht er im Stand oder trägt er kein späteres Datum als den Tag der
+  // Einreichung (Antragsprotokoll vom 03.11., erst am 04.11. gespeichert); ein späteres Protokoll bleibt „neu“
+  if (!s && EINGEREICHT_MUSTER.test(name)) {
+    const imStandEingetragen = stand.dateien.some((x) => x.pfad.toLowerCase() === d.pfad.toLowerCase());
+    const n = datumAusName(name, o.codes ?? []);
+    const vom = n ? `${Math.floor(n.tag / 10000)}-${String(Math.floor(n.tag / 100) % 100).padStart(2, '0')}-${String(n.tag % 100).padStart(2, '0')}` : null;
+    if (imStandEingetragen || (vom !== null && vom <= stand.tag)) return null;
+  }
   if (!s) return nachEinreichungErwartet(name, { ...o, tag: stand.tag }) ? null : 'neu';
   if (EINGEREICHT_MUSTER.test(name)) return null;
   const groesse = s.groesse !== undefined && s.groesse !== d.groesse;
@@ -698,7 +724,12 @@ function standAusRoh(roh: unknown): AntragStand | undefined {
   const dateien = o.dateien
     .filter((d): d is Record<string, unknown> => !!d && typeof d === 'object' && typeof (d as { pfad?: unknown }).pfad === 'string')
     .map((d) => ({ pfad: d.pfad as string, ...(typeof d.groesse === 'number' ? { groesse: d.groesse } : {}), ...(typeof d.geaendert === 'number' ? { geaendert: d.geaendert } : {}) }));
-  return { tag: o.tag, dateien, ...(typeof o.festgehalten === 'number' ? { festgehalten: o.festgehalten } : {}) };
+  return {
+    tag: o.tag,
+    dateien,
+    ...(typeof o.festgehalten === 'number' ? { festgehalten: o.festgehalten } : {}),
+    ...(typeof o.festgehaltenBis === 'number' ? { festgehaltenBis: o.festgehaltenBis } : {}),
+  };
 }
 
 /** Von Hand gesetzter Antragsstatus: eingereicht (mit Datum) oder ausdrücklich noch in Arbeit */

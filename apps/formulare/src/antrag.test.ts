@@ -602,6 +602,28 @@ describe('Antragsstand bei der Einreichung', () => {
     expect(seitEinreichung({ pfad: 'Vorbescheid.pdf', groesse: 1 }, s)).toBeNull();
     expect(seitEinreichung({ pfad: 'Lageplan.pdf', groesse: 1 }, s)).toBe('neu');
   });
+  it('der Nachweis der Einreichung: im Stand oder vom Tag der Einreichung nie „neu“ – ein späteres Protokoll schon', () => {
+    const s = { tag: '2026-11-03', dateien: [{ pfad: 'BS9 BAUA 261101 01 Bauantrag.pdf', groesse: 1, geaendert: zeit('2026-11-01T10:00') }, { pfad: 'BS9 BAUA 261103 Antragsprotokoll.pdf', groesse: 1, geaendert: zeit('2026-11-03T10:00') }] };
+    // A: im Stand, erst nach dem Tag noch einmal gespeichert (fällt beim Vergleich aus dem Stand) – bleibt unauffällig
+    expect(seitEinreichung(d('BS9 BAUA 261103 Antragsprotokoll.pdf', zeit('2026-11-05T10:00')), s)).toBeNull();
+    // B: nicht im Stand, trägt aber den Tag der Einreichung (am Folgetag gespeichert) bzw. einen früheren
+    expect(seitEinreichung(d('BS9 BAUA 261103 Eingangsbestätigung.pdf', zeit('2026-11-04T09:00')), s)).toBeNull();
+    expect(seitEinreichung(d('BS9 BAUA 261102 Antragsprotokoll Bauportal.pdf', zeit('2026-11-04T09:00')), s)).toBeNull();
+    // C: ein späteres Protokoll (erneute Einreichung) bzw. eines ohne Datum ist neu
+    expect(seitEinreichung(d('BS9 BAUA 261120 Antragsprotokoll.pdf', zeit('2026-11-20T09:00')), s)).toBe('neu');
+    expect(seitEinreichung(d('Antragsprotokoll.pdf', zeit('2026-11-20T09:00')), s)).toBe('neu');
+  });
+  it('Präposition vor dem Kernwort: nach einem Schreiben der Behörde mit Datum bleibt es erwartet', () => {
+    const o = { codes: ['BS9', 'HVO'], tag };
+    expect(nachEinreichungErwartet('Gebührenbescheid vom 20.11.2026 zur Baugenehmigung.pdf', o)).toBe(true);
+    expect(nachEinreichungErwartet('Gebührenbescheid 261120 zur Baugenehmigung.pdf', o)).toBe(true);
+    expect(nachEinreichungErwartet('Gebührenbescheid Az 63-1234-26 zur Baugenehmigung.pdf', o)).toBe(true);
+    expect(nachEinreichungErwartet('Kostenfestsetzung BAUA zur Baugenehmigung.pdf', o)).toBe(true);
+    expect(nachEinreichungErwartet('Anhörung vom 20.11.2026 vor Ablehnung.pdf', o)).toBe(true);
+    expect(nachEinreichungErwartet('Bescheid über die Verlängerung der Geltungsdauer der Baugenehmigung.pdf', o)).toBe(true);
+    expect(nachEinreichungErwartet('Verlängerung der Geltungsdauer.pdf', o)).toBe(false);
+    expect(nachEinreichungErwartet('zur Baugenehmigung vom 20.11.2026.pdf', o)).toBe(false);
+  });
 });
 
 describe('Umbenennen nach Namensformat', () => {
