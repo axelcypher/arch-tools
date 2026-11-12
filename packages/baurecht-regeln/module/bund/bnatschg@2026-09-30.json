@@ -87,7 +87,7 @@
               {
                 "und": [
                   {
-                    "$": "innenbereich"
+                    "$": "innen_34"
                   },
                   {
                     "$": "errichtung"
@@ -190,10 +190,8 @@
                 "$": "bplan"
               },
               {
-                "n": "bund/baugb/33",
-                "ampel": [
-                  "rot"
-                ]
+                "f": "planung.planreife",
+                "ist": true
               }
             ]
           }

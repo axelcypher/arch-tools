@@ -74,6 +74,10 @@ jobs:
   ausliefern:
     name: Regelpaket signieren und ausliefern
     needs: bauen
+    # signiert wird nur von main – und nur in der Umgebung „regeln“ (in den Einstellungen des Repos mit Branch-Regel
+    # „main“ und Freigabe durch Reviewer anlegen; das Secret BAURECHT_REGELN_SCHLUESSEL gehört in diese Umgebung)
+    if: github.ref == 'refs/heads/main'
+    environment: regeln
     runs-on: ubuntu-latest
     # kein Checkout, kein npm: nur OpenSSL und gh – der private Schlüssel kommt mit keinem fremden Code in Berührung
     permissions:

@@ -311,9 +311,21 @@ function polygonFlaeche(pts: { x: number; y: number }[]): number {
 }
 
 /** Merkmale, deren festgelegter Wert der Ableitung aus dem Modell widerspricht */
-export function widersprueche(merkmale: Record<string, string>, gk: GebaeudeklasseAbleitung | null): { merkmale: Set<string>; texte: string[] } {
+export function widersprueche(merkmale: Record<string, string>, gk: GebaeudeklasseAbleitung | null, fakten: Record<string, FaktWert> = {}): { merkmale: Set<string>; texte: string[] } {
   const out = new Set<string>();
   const texte: string[] = [];
+  // Planungsrecht gegen Geodaten und Stammdaten: die Grenze Innen-/Außenbereich ist die typische Fehleinordnung
+  const pr = merkmale['Planungsrecht'];
+  const ja = (id: string) => fakten[id]?.wert === true;
+  const bplan = [fakten['planung.bplan_nr']?.wert, fakten['soest.bplan']?.wert].find((w) => typeof w === 'string' && w.trim());
+  if ((pr === 'Innenbereich' || pr === 'Außenbereich') && bplan) {
+    out.add('Planungsrecht');
+    texte.push(`Planungsrecht „${pr}“ festgelegt, für das Grundstück ist aber ein Bebauungsplan angegeben (${String(bplan)}) – bitte klären`);
+  }
+  if ((pr === 'Innenbereich' || pr === 'Bebauungsplan') && (ja('schutz.landschaftsplan') || ja('schutz.lsg'))) {
+    out.add('Planungsrecht');
+    texte.push(`Planungsrecht „${pr}“ festgelegt, die Geodaten melden aber einen Landschaftsplan bzw. ein Landschaftsschutzgebiet – Grenze Innen-/Außenbereich prüfen`);
+  }
   const m = merkmale['Gebäudeklasse'];
   if (m && gk && !gk.klassen.includes(m)) {
     out.add('Gebäudeklasse');

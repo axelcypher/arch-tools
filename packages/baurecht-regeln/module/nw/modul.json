@@ -373,13 +373,54 @@
       }
     },
     "lage.zufahrt_klassifiziert": {
-      "titel": "Neue oder geänderte Zufahrt (auch mittelbar) zu einer Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt",
+      "titel": "Neue oder wesentlich geänderte Zufahrt (auch mittelbar) zu einer Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt",
       "gruppe": "grundstueck",
       "typ": "janein",
-      "hilfe": "Zustimmung der Straßenbaubehörde nach § 25 Abs. 1 Nr. 2 StrWG NRW – unabhängig vom Abstand des Gebäudes",
+      "hilfe": "Zustimmung der Straßenbaubehörde nach § 25 Abs. 1 Nr. 2 StrWG NRW – unabhängig vom Abstand des Gebäudes"
+    },
+    "lage.anschluss_klassifiziert": {
+      "titel": "Grundstück an eine Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt angeschlossen (auch bestehend, auch mittelbar über eine Zufahrt)",
+      "gruppe": "grundstueck",
+      "typ": "janein",
+      "hilfe": "§ 25 Abs. 1 Satz 1 Nr. 2 StrWG NRW: auch bei erheblicher Änderung oder anderer Nutzung des bestehenden Anschlusses"
+    },
+    "schutz.denkmalbereich_umgebung": {
+      "titel": "Engere Umgebung eines Denkmalbereichs (z. B. Sichtbezug auf eine geschützte Altstadt)",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§ 5 Abs. 3 DSchG NRW – bei der Unteren Denkmalbehörde erfragen"
+    },
+    "vorhaben.stellplatz_abloesung": {
+      "titel": "Notwendige Stellplätze sollen abgelöst werden (Ablösungsbetrag)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
       "wenn": {
-        "f": "lage.zufahrt_neu",
-        "ist": true
+        "$": "vorhaben_29"
+      }
+    },
+    "vorhaben.andere_gestattung": {
+      "titel": "Das Vorhaben braucht eine andere Gestattung, die die Baugenehmigung einschließt (z. B. wasserrechtliche Zulassung, Anlage der öffentlichen Versorgung, Abfallentsorgungsanlage)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 61 BauO NRW",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "technik.lueftung": {
+      "titel": "Lüftungsanlage oder raumlufttechnische Anlage geplant",
+      "gruppe": "technik",
+      "typ": "janein",
+      "wenn": {
+        "$": "nw_vorhaben_gebaeude"
+      }
+    },
+    "gebaeude.abfallraum": {
+      "titel": "Feste Abfallstoffe werden im Gebäude aufbewahrt (Müllraum)",
+      "gruppe": "gebaeude",
+      "typ": "janein",
+      "wenn": {
+        "$": "nw_vorhaben_gebaeude"
       }
     }
   },

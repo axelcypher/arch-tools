@@ -7,6 +7,7 @@ import type { AuswertungsEingabe } from '@core/baurecht/auswertung';
 import type { TextStand } from '@core/baurecht/auswertung';
 import { auswerten, faktDefinitionen } from '@core/baurecht/auswertung';
 import { aktiveModule, paketPruefen } from '@core/baurecht/paket';
+import { widersprueche } from '@core/baurecht/projekt';
 import type { FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
 import type { Fassung } from '@core/recht/typen';
 import { VORGABE_MERKMALE } from '@core/bedingung';
@@ -62,10 +63,10 @@ describe('Regelpaket', () => {
 
 const WERTE: Record<string, (string | undefined)[]> = {
   Vorhaben: ['Errichtung', 'Änderung', 'Nutzungsänderung', 'Beseitigung', undefined],
-  Gebäudeart: ['Einfamilienhaus', 'Mehrfamilienhaus', 'Nichtwohngebäude', 'kein Gebäude', undefined],
-  Gebäudeklasse: ['1', '3', '5', undefined],
-  Planungsrecht: ['Bebauungsplan', 'einfacher Bebauungsplan', 'Innenbereich', 'Außenbereich', undefined],
-  Verfahren: ['Genehmigungsfreistellung', 'vereinfachtes Verfahren', 'Baugenehmigungsverfahren', undefined],
+  Gebäudeart: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Nichtwohngebäude', 'kein Gebäude', undefined],
+  Gebäudeklasse: ['1', '2', '4', undefined],
+  Planungsrecht: ['Bebauungsplan', 'einfacher Bebauungsplan', 'Satzung nach BauGB', 'Innenbereich', 'Außenbereich', undefined],
+  Verfahren: ['verfahrensfrei', 'Genehmigungsfreistellung', 'vereinfachtes Verfahren', undefined],
 };
 
 function* kombinationen(werte: Record<string, (string | undefined)[]>): Generator<Record<string, string>> {
@@ -79,7 +80,7 @@ function* kombinationen(werte: Record<string, (string | undefined)[]>): Generato
   };
   yield* lauf(0, {});
 }
-const schluessel = (m: Record<string, string>) => Object.keys(WERTE).map((k) => m[k] ?? '–').join('|');
+const schluessel = (m: Record<string, string>, namen: string[]) => namen.map((k) => m[k] ?? '–').join('|');
 
 const sicher = (wert: FaktWert['wert']): FaktWert => ({ wert, herkunft: 'manuell', sicherheit: 'sicher' });
 const HEUTE = '2026-11-12';
@@ -135,7 +136,15 @@ interface Lauf {
 }
 
 const TEXTE = passendeTexte();
-const KLEIN = { ...WERTE, Gebäudeklasse: ['1', '5', undefined], Verfahren: ['Genehmigungsfreistellung', 'vereinfachtes Verfahren', undefined] };
+// mit Texten und Fakten: die übrigen Werte der Merkmale, dazu Sonderbau
+const KLEIN: Record<string, (string | undefined)[]> = {
+  Vorhaben: WERTE.Vorhaben,
+  Gebäudeart: ['Einfamilienhaus', 'Mehrfamilienhaus', 'Nichtwohngebäude', undefined],
+  Gebäudeklasse: ['3', '5', undefined],
+  Planungsrecht: ['Bebauungsplan', 'Satzung nach BauGB', 'Außenbereich', undefined],
+  Verfahren: ['Baugenehmigungsverfahren', 'verfahrensfrei', undefined],
+  Sonderbau: ['ja', 'nein', undefined],
+};
 const LAEUFE: Lauf[] = [
   { name: 'ohne Fakten, ohne Text', fakten: {}, texte: new Map(), werte: WERTE },
   { name: 'Texte passend, alle Fakten nein', fakten: alleFakten('nein'), texte: TEXTE, werte: KLEIN },
@@ -143,7 +152,7 @@ const LAEUFE: Lauf[] = [
 ];
 
 describe('Fallmatrix', () => {
-  it('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: 300000 }, () => {
+  it('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: 600000 }, () => {
     const fehler: string[] = [];
     const melde = (t: string) => {
       if (fehler.length < 40) fehler.push(t);
@@ -153,9 +162,10 @@ describe('Fallmatrix', () => {
     const geprueftText = new Set<string>();
     for (const lauf of LAEUFE) {
       const ergebnisse = new Map<string, Map<string, string>>();
-      const gruen: { m: Record<string, string>; p: ParagrafErgebnis }[] = [];
+      const gruen: { m: Record<string, string>; p: ParagrafErgebnis; ref: string[] }[] = [];
       for (const m of kombinationen(lauf.werte)) {
         const a = auswerten(eingabe(m, lauf.fakten, lauf.texte));
+        const nachId = new Map(a.paragrafen.map((x) => [x.id, x]));
         const ampeln = new Map<string, string>();
         for (const p of a.paragrafen) {
           ampeln.set(p.id, p.automatisch);
@@ -163,10 +173,12 @@ describe('Fallmatrix', () => {
           if (p.automatisch === 'gruen') {
             if (p.offen.length) melde(`${lauf.name}: ${p.id} grün mit offenen Angaben ${p.offen.join(', ')}`);
             if (p.unsicher.length) melde(`${lauf.name}: ${p.id} grün mit unsicheren Angaben ${p.unsicher.join(', ')}`);
-            gruen.push({ m, p });
+            // Fakten der Paragrafen, auf die verwiesen wird (eine Ebene) – für das Herabstufen über Verweise
+            const ref = p.verwendet.filter((v) => v.startsWith('paragraf:')).flatMap((v) => nachId.get(v.slice(9))?.verwendet ?? []);
+            gruen.push({ m, p, ref });
           }
         }
-        ergebnisse.set(schluessel(m), ampeln);
+        ergebnisse.set(schluessel(m, Object.keys(lauf.werte)), ampeln);
       }
       gruenGesamt += gruen.length;
       // 1. Ergänzen fehlender Merkmale
@@ -175,14 +187,14 @@ describe('Fallmatrix', () => {
           if (m[name]) continue;
           for (const w of werte) {
             if (!w) continue;
-            const r = ergebnisse.get(schluessel({ ...m, [name]: w }))?.get(p.id);
+            const r = ergebnisse.get(schluessel({ ...m, [name]: w }, Object.keys(lauf.werte)))?.get(p.id);
             if (r === 'rot') melde(`${lauf.name}: ${p.id} grün ohne ${name}, aber rot mit ${name}=${w} (${JSON.stringify(m)})`);
           }
         }
       // 2. Herabstufen: Bleibt ein Paragraf grün, wenn ein Fakt nur Hinweis ist, dann muss er auch ohne diesen Fakt
       //    grün sein – sonst wurde der Hinweis wie eine gesicherte Angabe behandelt (je Paragraf und Fakt einmal)
-      for (const { m, p } of gruen)
-        for (const v of p.verwendet) {
+      for (const { m, p, ref } of gruen) {
+        for (const v of [...new Set([...p.verwendet, ...ref])]) {
           if (v.includes(':') || !lauf.fakten[v] || geprueftHerab.has(`${p.id}|${v}`)) continue;
           geprueftHerab.add(`${p.id}|${v}`);
           const alsHinweis = { ...lauf.fakten, [v]: { ...lauf.fakten[v], sicherheit: 'hinweis' as const, grund: 'Test' } };
@@ -192,6 +204,7 @@ describe('Fallmatrix', () => {
           const q2 = auswerten(eingabe(m, ohne, lauf.texte)).paragrafen.find((x) => x.id === p.id)!;
           if (q1.automatisch === 'gruen' && q2.automatisch !== 'gruen') melde(`${lauf.name}: ${p.id} bleibt grün, obwohl „${v}“ nur Hinweis ist und ohne „${v}“ nicht grün wäre (${JSON.stringify(m)})`);
         }
+      }
       // 3. Text geändert bzw. fehlt → nicht mehr grün (je Paragraf einmal)
       if (lauf.texte.size)
         for (const { m, p } of gruen) {
@@ -311,6 +324,60 @@ describe('Fälle aus dem Fachreview', () => {
   it('neue Zufahrt zu einer Kreisstraße außerorts, Gebäude weiter als 40 m entfernt: § 25 StrWG NRW nicht „entfällt“', () => {
     const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Außenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, { 'lage.strasse_ausserorts': sicher(false), 'lage.zufahrt_neu': sicher(true), 'lage.zufahrt_klassifiziert': sicher(true) });
     expect(x('nw/strwg/25')).toBe('rot');
+  });
+
+  it('Runde 2: „Plan in Aufstellung“ allein macht Natura 2000 und Eingriffsregelung nicht „entfällt“ – erst die Planreife', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Außenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const x = a(m, { ...ja('planung.planaufstellung', 'schutz.ffh') });
+    for (const id of ['bund/bnatschg/14', 'bund/bnatschg/15', 'bund/bnatschg/34', 'nw/lnatschg/30', 'nw/lnatschg/31', 'nw/lnatschg/33']) expect(x(id), id).not.toBe('gruen');
+    // Planreife gesichert: Eingriffsregelung entfällt (§ 18 Abs. 2)
+    expect(a(m, { ...ja('planung.planaufstellung', 'planung.planreife') })('bund/bnatschg/14')).toBe('gruen');
+  });
+
+  it('Runde 2: Zufahrt zu Kreisstraße außerorts (§ 20 StrWG) und bestehender Anschluss bei Nutzungsänderung (§ 25)', () => {
+    const m = { Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Außenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    expect(a(m, { ...nein('lage.strasse_ausserorts'), ...ja('lage.zufahrt_neu', 'lage.zufahrt_klassifiziert') })('nw/strwg/20')).toBe('rot');
+    expect(a(m, { ...nein('lage.strasse_ausserorts', 'lage.zufahrt_neu'), ...ja('lage.anschluss_klassifiziert') })('nw/strwg/25')).toBe('rot');
+  });
+
+  it('Runde 2: Satzung nach BauGB mit Innenbereich-Teil wie § 34 (Befreiung, Nebenanlagen, Benehmen)', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Satzung nach BauGB', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const x = a(m, { ...ja('planung.innen', 'planung.befreiung', 'vorhaben.nebenanlage'), 'planung.gebietsart': sicher('WA') });
+    for (const id of ['bund/baugb/31', 'bund/baunvo/14', 'bund/bnatschg/18']) expect(x(id), id).not.toBe('gruen');
+  });
+
+  it('Runde 2: Stellplätze auch für Anlagen, die keine Gebäude sind; § 9 auch bei „verfahrensfrei“', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'kein Gebäude', Gebäudeklasse: '1', Planungsrecht: 'Außenbereich', Verfahren: 'verfahrensfrei', Sonderbau: 'nein' };
+    const x = a(m);
+    for (const nr of ['1', '2', '3']) expect(x(`nw/stellplatzvo/${nr}`), `§ ${nr}`).not.toBe('gruen');
+    // in einer Gemeinde ohne Stellplatzsatzung (Kreis Soest, kein Gemeindemodul) gilt § 9 auch bei „verfahrensfrei“
+    const ohne = auswerten({ ...eingabe(m, {}, TEXTE), module: aktiveModule(paket.module, '05974999'), fakten: { 'lage.ags': sicher('05974999') } });
+    expect(ohne.paragrafen.find((p) => p.id === 'nw/stellplatzvo/9')!.ampel).toBe('rot');
+  });
+
+  it('Runde 2: Dachgeschossausbau als Nutzungsänderung in der Altstadt – Gauben, Abweichung und Beirat nicht „entfällt“', () => {
+    const x = a({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, { ...ja('soest.dachaufbauten', 'planung.abweichung', 'soest.altstadt') });
+    for (const id of ['nw-05974040/altstadtsatzung/5', 'nw-05974040/altstadtsatzung/17', 'nw-05974040/altstadtsatzung/18']) expect(x(id), id).not.toBe('gruen');
+  });
+
+  it('Runde 2: engere Umgebung eines Denkmalbereichs → DSchG nicht „entfällt“', () => {
+    const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' }, { ...nein('schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich'), ...ja('schutz.denkmalbereich_umgebung') });
+    expect(x('nw/dschg/9')).toBe('rot');
+  });
+
+  it('Runde 2: Merkmal „Innenbereich“ gegen Bebauungsplan bzw. Landschaftsplan aus den Geodaten → nicht „entfällt“', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const w = widersprueche(m, null, { ...ja('schutz.landschaftsplan') });
+    const r = auswerten({ ...eingabe(m, ja('schutz.landschaftsplan'), TEXTE), widersprueche: w.merkmale });
+    expect(r.paragrafen.find((p) => p.id === 'nw/lnatschg/7')!.ampel).not.toBe('gruen');
+    expect(w.texte[0]).toMatch(/Landschaftsplan/);
+  });
+
+  it('Runde 2: Krankenhaus (Sonderbau) – zusätzliche Bauvorlagen nicht „entfällt“; Nachbarrecht nie „gilt“', () => {
+    const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '5', Planungsrecht: 'Bebauungsplan', Verfahren: 'Baugenehmigungsverfahren', Sonderbau: 'ja' }, { 'gebaeude.besucher': sicher(50), 'gebaeude.gastbetten': sicher(0), 'gebaeude.verkaufsflaeche': sicher(0), 'gebaeude.garage_nutzflaeche': sicher(0), ...nein('nw.elt_betriebsraum') });
+    expect(x('nw/baupruefvo/12')).not.toBe('gruen');
+    const n = auswerten(eingabe({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus' }, ja('nw.grenzabstand_unter_2_5'), TEXTE));
+    expect(n.paragrafen.filter((p) => p.norm === 'nachbg').every((p) => p.ampel !== 'rot')).toBe(true);
   });
 });
 

@@ -7,13 +7,29 @@
   "paragrafen": {
     "2": {
       "gilt": {
-        "und": [
+        "oder": [
           {
-            "$": "nw_bauen_gebaeude"
+            "und": [
+              {
+                "$": "nw_vorhaben_gebaeude"
+              },
+              {
+                "f": "gebaeude.beheizt",
+                "ist": true
+              }
+            ]
           },
           {
-            "f": "gebaeude.beheizt",
-            "ist": true
+            "n": "bund/geg/36",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "bund/geg/39",
+            "ampel": [
+              "rot"
+            ]
           }
         ]
       },

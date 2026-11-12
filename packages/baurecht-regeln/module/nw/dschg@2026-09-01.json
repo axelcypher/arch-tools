@@ -17,6 +17,10 @@
               {
                 "f": "schutz.denkmal_umgebung",
                 "ist": true
+              },
+              {
+                "f": "schutz.denkmalbereich_umgebung",
+                "ist": true
               }
             ]
           },
@@ -40,6 +44,10 @@
           },
           {
             "f": "schutz.denkmal_umgebung",
+            "ist": false
+          },
+          {
+            "f": "schutz.denkmalbereich_umgebung",
             "ist": false
           }
         ]
@@ -69,8 +77,16 @@
       "gilt": {
         "und": [
           {
-            "f": "schutz.denkmalbereich",
-            "ist": true
+            "oder": [
+              {
+                "f": "schutz.denkmalbereich",
+                "ist": true
+              },
+              {
+                "f": "schutz.denkmalbereich_umgebung",
+                "ist": true
+              }
+            ]
           },
           {
             "oder": [
@@ -85,8 +101,16 @@
         ]
       },
       "entfaellt": {
-        "f": "schutz.denkmalbereich",
-        "ist": false
+        "und": [
+          {
+            "f": "schutz.denkmalbereich",
+            "ist": false
+          },
+          {
+            "f": "schutz.denkmalbereich_umgebung",
+            "ist": false
+          }
+        ]
       },
       "grund": "Im Denkmalbereich sind die in der Denkmalbereichssatzung bezeichneten Maßnahmen nach §§ 9, 13 oder 15 erlaubnispflichtig.",
       "fundstellen": [

@@ -50,6 +50,9 @@
               },
               {
                 "$": "bplan_einfach"
+              },
+              {
+                "$": "satzung_baugb"
               }
             ]
           }
@@ -325,6 +328,12 @@
             "max": 100
           }
         ]
+      },
+      "pruefen": {
+        "grund": "Sonderbauten wie Krankenhäuser, Pflege- und Betreuungseinrichtungen oder Schulen brauchen weitere Angaben und Bauvorlagen (z. B. Bettenzahl, Räume mit ionisierender Strahlung, Abs. 6) – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "sonderbau"
+        }
       }
     },
     "13": {
@@ -342,6 +351,46 @@
       "stand": {
         "13/1": "954f312c",
         "13/2": "cfcc0786"
+      }
+    },
+    "14": {
+      "titel": "Bauvorlagen für Werbeanlagen",
+      "gilt": {
+        "und": [
+          {
+            "f": "vorhaben.werbeanlage",
+            "ist": true
+          },
+          {
+            "$": "nw_genehmigungsbeduerftig"
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "vorhaben.werbeanlage",
+            "ist": false
+          },
+          {
+            "m": "Verfahren",
+            "in": [
+              "verfahrensfrei"
+            ]
+          }
+        ]
+      },
+      "grund": "Dem Bauantrag für Werbeanlagen sind Auszug aus dem Liegenschaftskataster mit Standort, Zeichnung (mindestens 1:50, Maße, RAL-Farben) und Beschreibung, ein farbiges Foto bzw. eine Fotomontage und die Herstellungskosten beizufügen (Abs. 1–3).",
+      "fundstellen": [
+        "14/1",
+        "14/2"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "stand": {
+        "14/1": "fa7b9e66",
+        "14/2": "101f72ce"
       }
     },
     "15": {

@@ -159,7 +159,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // eine bestätigte, nicht überholte Festlegung zählt – aber nur als Hinweis (eine Entscheidung von Hand trägt kein
       // automatisches „entfällt“ weiter); Entwürfe und überholte Festlegungen zählen nicht
       if (p.festlegung?.bestaetigt && !p.ueberholt) return { ampel: p.festlegung.ampel, unsicher: true };
-      return { ampel: p.automatisch };
+      // beruht die automatische Ampel auf Hinweisen, ist auch der Verweis darauf nur ein Hinweis
+      return { ampel: p.automatisch, ...(p.unsicher.length ? { unsicher: true } : {}) };
     },
   };
 

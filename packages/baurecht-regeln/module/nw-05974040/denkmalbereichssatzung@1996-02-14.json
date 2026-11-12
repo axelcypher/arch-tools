@@ -12,10 +12,14 @@
       },
       {
         "$": "soest_altstadt"
+      },
+      {
+        "f": "schutz.denkmalbereich_umgebung",
+        "ist": true
       }
     ]
   },
-  "geltungGrund": "nur im Denkmalbereich Altstadt Soest (innerhalb der Wallstraßen einschließlich Bahnhofstraße)",
+  "geltungGrund": "nur im Denkmalbereich Altstadt Soest (innerhalb der Wallstraßen einschließlich Bahnhofstraße) – auch in der engeren Umgebung (Sichtbezüge, § 3 Buchst. b, c der Satzung; § 5 Abs. 3 DSchG NRW)",
   "paragrafen": {
     "1": {
       "gilt": {

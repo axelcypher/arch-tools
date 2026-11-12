@@ -206,6 +206,48 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(dialog, 'Übernehmen')!.click());
     expect(dialog.textContent).toMatch(/inzwischen geändert/);
     expect(useBaurecht.getState().pruefung.fakten['schutz.lsg']).toMatchObject({ wert: true, herkunft: 'geodienst' });
+    // Dialog schließen (getippte Begründung: erst nachfragen, dann verwerfen)
+    act(() => knopf(dialog, 'Abbrechen')!.click());
+    act(() => knopf(dialog, 'Verwerfen')!.click());
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('Tastatur: die Liste ist ein Tabstopp, ↑/↓, Pos1/Ende wählen; F6 springt zwischen den Bereichen', () => {
+    const host = render();
+    const stopps = host.querySelectorAll('.br-vorschriften-liste [data-roving][tabindex="0"]');
+    expect(stopps.length).toBe(1);
+    const liste = host.querySelector<HTMLElement>('.br-vorschriften-liste')!;
+    act(() => (stopps[0] as HTMLElement).focus());
+    const taste = (key: string, ziel: EventTarget = document.activeElement ?? liste) => act(() => void ziel.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+    taste('ArrowDown');
+    taste('ArrowDown');
+    const erste = useBaurecht.getState().auswahl;
+    expect(erste).toBeTruthy();
+    taste('ArrowDown');
+    expect(useBaurecht.getState().auswahl).not.toBe(erste);
+    taste('End');
+    const letzte = [...liste.querySelectorAll<HTMLElement>('[data-roving]')].at(-1)!;
+    expect(document.activeElement).toBe(letzte);
+    // F6: weiter in die Einzelheiten
+    taste('F6', window);
+    expect(host.querySelector('.br-detail')!.contains(document.activeElement)).toBe(true);
+  });
+
+  it('Folgen-Vorschau: der Bestätigen-Dialog nennt die Zahl der Herabstufungen, und sie stimmt', async () => {
+    const host = render();
+    const { auswertungMit, herabstufungen } = await import('./pruefung');
+    act(() => knopf(host, 'alle Angaben')?.click());
+    const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Gemeindeschlüssel/.test(z.textContent ?? ''))!;
+    act(() => knopf(zeile, 'Bestätigen …')!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
+    const m = /Stuft (\d+) Vorschrift/.exec(dialog.textContent ?? '');
+    expect(m, 'Vorschau mit Zahl').toBeTruthy();
+    const s = useBaurecht.getState();
+    const jetzt = auswertungMit(s.pruefung.fakten);
+    const ags = jetzt.fakten['lage.ags'];
+    const mit = auswertungMit({ ...s.pruefung.fakten, 'lage.ags': { ...ags, bestaetigt: { von: '', am: '' } } });
+    expect(Number(m![1])).toBe(herabstufungen(jetzt, mit).length);
+    act(() => knopf(dialog, 'Abbrechen')!.click());
   });
 
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {

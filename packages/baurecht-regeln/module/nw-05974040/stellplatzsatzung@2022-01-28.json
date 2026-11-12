@@ -46,24 +46,41 @@
         "nw/bauo-nrw/48"
       ],
       "pruefen": {
-        "grund": "Dachgeschossausbau in vor dem 01.01.1993 fertiggestellten Gebäuden der Zonen 1 und 2: Stellplätze müssen nicht hergestellt werden, soweit das auf dem Grundstück nicht oder nur unter großen Schwierigkeiten möglich ist (Abs. 1 Nr. 1).",
+        "grund": "Dachgeschossausbau in vor dem 01.01.1993 fertiggestellten Gebäuden der Zonen 1 und 2: Stellplätze müssen nicht hergestellt werden, soweit das auf dem Grundstück nicht oder nur unter großen Schwierigkeiten möglich ist (Abs. 1 Nr. 1). Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
         "wenn": {
-          "und": [
+          "oder": [
             {
-              "oder": [
+              "und": [
                 {
-                  "$": "aenderung"
+                  "oder": [
+                    {
+                      "$": "aenderung"
+                    },
+                    {
+                      "$": "nutzungsaenderung"
+                    }
+                  ]
                 },
                 {
-                  "$": "nutzungsaenderung"
+                  "f": "soest.stellplatzzone",
+                  "in": [
+                    "1",
+                    "2"
+                  ]
                 }
               ]
             },
             {
-              "f": "soest.stellplatzzone",
-              "in": [
-                "1",
-                "2"
+              "und": [
+                {
+                  "$": "vorhaben_29"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                }
               ]
             }
           ]
@@ -101,6 +118,22 @@
         "3/1": "ee9d3765",
         "3/5": "8c30d341",
         "3/6": "8e054a67"
+      },
+      "pruefen": {
+        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            }
+          ]
+        }
       }
     },
     "4": {
@@ -130,6 +163,22 @@
         "4/7": "807197a7",
         "4/8": "94cf7c3e",
         "4/9": "7fd51111"
+      },
+      "pruefen": {
+        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            }
+          ]
+        }
       }
     },
     "5": {

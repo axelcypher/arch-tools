@@ -430,31 +430,58 @@
         "12/3": "cc5cf444"
       }
     },
+    "13": {
+      "titel": "Gebäude und Räume für freie Berufe",
+      "gilt": {
+        "und": [
+          {
+            "$": "baugebiet"
+          },
+          {
+            "f": "vorhaben.freiberuflich",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "vorhaben.freiberuflich",
+        "ist": false
+      },
+      "grund": "Für freiberuflich Tätige und ähnliche Gewerbetreibende sind in Kleinsiedlungs- und Wohngebieten (§§ 2–4) Räume, in den Baugebieten nach §§ 4a–9 auch Gebäude zulässig.",
+      "fundstellen": [
+        "13"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "stand": {
+        "13": "632bb867"
+      }
+    },
     "14": {
       "titel": "Nebenanlagen; Anlagen zur Nutzung solarer Strahlungsenergie und Kraft-Wärme-Kopplungsanlagen",
       "gilt": {
         "und": [
           {
-            "oder": [
-              {
-                "$": "bplan_jeder"
-              },
-              {
-                "und": [
-                  {
-                    "$": "innenbereich"
-                  },
-                  {
-                    "nicht": {
-                      "f": "planung.gebietsart",
-                      "in": [
-                        "keins"
-                      ]
-                    }
-                  }
-                ]
-              }
-            ]
+            "$": "baugebiet"
           },
           {
             "f": "vorhaben.nebenanlage",
@@ -908,6 +935,52 @@
             }
           ]
         }
+      }
+    },
+    "13a": {
+      "titel": "Ferienwohnungen",
+      "gilt": {
+        "und": [
+          {
+            "$": "baugebiet"
+          },
+          {
+            "f": "vorhaben.ferienwohnung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "vorhaben.ferienwohnung",
+        "ist": false
+      },
+      "grund": "Ferienwohnungen gehören in der Regel zu den nicht störenden Gewerbebetrieben bzw. den Betrieben des Beherbergungsgewerbes – zulässig nach den Vorschriften des jeweiligen Baugebiets (unbeschadet § 10).",
+      "fundstellen": [
+        "13a"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "pruefen": {
+        "grund": "Im Bebauungsplan gilt die BauNVO in der Fassung zum Zeitpunkt der öffentlichen Auslegung (statische Verweisung, §§ 25c ff.) – ist das nicht die geltende Fassung oder unbekannt, kann der maßgebliche Text abweichen; an der alten Fassung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "bplan_jeder"
+            },
+            {
+              "nicht": {
+                "f": "planung.baunvo",
+                "in": [
+                  "aktuell"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "stand": {
+        "13a": "9eb64ad1"
       }
     },
     "21a": {

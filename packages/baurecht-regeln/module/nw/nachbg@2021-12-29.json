@@ -7,18 +7,7 @@
   "paragrafen": {
     "1": {
       "gilt": {
-        "und": [
-          {
-            "$": "nw_bauen_gebaeude"
-          },
-          {
-            "f": "nw.grenzabstand_unter_2_5",
-            "ist": true
-          },
-          {
-            "$": "nw_nachbarrecht_offen"
-          }
-        ]
+        "nie": true
       },
       "entfaellt": {
         "oder": [
@@ -44,22 +33,28 @@
       "stand": {
         "1/1": "72bcf04e",
         "1/3": "9ba54751"
+      },
+      "pruefen": {
+        "grund": "Privatrecht (Nachbarrechtsgesetz) – prüft die Bauaufsicht nicht; mit den Nachbarn klären, ggf. schriftliche Zustimmung einholen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_bauen_gebaeude"
+            },
+            {
+              "f": "nw.grenzabstand_unter_2_5",
+              "ist": true
+            },
+            {
+              "$": "nw_nachbarrecht_offen"
+            }
+          ]
+        }
       }
     },
     "4": {
       "gilt": {
-        "und": [
-          {
-            "$": "nw_bauen_gebaeude"
-          },
-          {
-            "f": "nw.grenzabstand_unter_2_5",
-            "ist": true
-          },
-          {
-            "$": "nw_nachbarrecht_offen"
-          }
-        ]
+        "nie": true
       },
       "entfaellt": {
         "oder": [
@@ -82,22 +77,28 @@
       },
       "stand": {
         "4": "37399c6c"
+      },
+      "pruefen": {
+        "grund": "Privatrecht (Nachbarrechtsgesetz) – prüft die Bauaufsicht nicht; mit den Nachbarn klären, ggf. schriftliche Zustimmung einholen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_bauen_gebaeude"
+            },
+            {
+              "f": "nw.grenzabstand_unter_2_5",
+              "ist": true
+            },
+            {
+              "$": "nw_nachbarrecht_offen"
+            }
+          ]
+        }
       }
     },
     "19": {
       "gilt": {
-        "und": [
-          {
-            "$": "nw_bauen_gebaeude"
-          },
-          {
-            "f": "nw.grenzabstand_unter_2_5",
-            "ist": true
-          },
-          {
-            "$": "nw_nachbarrecht_offen"
-          }
-        ]
+        "nie": true
       },
       "entfaellt": {
         "oder": [
@@ -120,34 +121,28 @@
       },
       "stand": {
         "19": "bf6d4027"
+      },
+      "pruefen": {
+        "grund": "Privatrecht (Nachbarrechtsgesetz) – prüft die Bauaufsicht nicht; mit den Nachbarn klären, ggf. schriftliche Zustimmung einholen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_bauen_gebaeude"
+            },
+            {
+              "f": "nw.grenzabstand_unter_2_5",
+              "ist": true
+            },
+            {
+              "$": "nw_nachbarrecht_offen"
+            }
+          ]
+        }
       }
     },
     "27": {
       "gilt": {
-        "und": [
-          {
-            "$": "nw_bauen_gebaeude"
-          },
-          {
-            "f": "nw.grenzabstand_unter_2_5",
-            "ist": true
-          },
-          {
-            "$": "nw_nachbarrecht_offen"
-          }
-        ]
-      },
-      "entfaellt": {
-        "oder": [
-          {
-            "f": "nw.grenzabstand_unter_2_5",
-            "ist": false
-          },
-          {
-            "f": "nw.nachbarrecht",
-            "ist": "geklärt"
-          }
-        ]
+        "nie": true
       },
       "grund": "Privatrecht: Niederschlagwasser darf nicht auf das Nachbargrundstück abgeleitet werden.",
       "fundstellen": [
@@ -158,22 +153,28 @@
       },
       "stand": {
         "27": "5c508859"
+      },
+      "entfaellt": {
+        "f": "nw.nachbarrecht",
+        "ist": "geklärt"
+      },
+      "pruefen": {
+        "grund": "Privatrecht (Nachbarrechtsgesetz) – prüft die Bauaufsicht nicht; mit den Nachbarn klären, ggf. schriftliche Zustimmung einholen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_bauen_gebaeude"
+            },
+            {
+              "$": "nw_nachbarrecht_offen"
+            }
+          ]
+        }
       }
     },
     "23a": {
       "gilt": {
-        "und": [
-          {
-            "$": "aenderung"
-          },
-          {
-            "f": "nw.grenzabstand_unter_2_5",
-            "ist": true
-          },
-          {
-            "$": "nw_nachbarrecht_offen"
-          }
-        ]
+        "nie": true
       },
       "entfaellt": {
         "oder": [
@@ -196,6 +197,23 @@
       },
       "stand": {
         "23a": "b6e9742f"
+      },
+      "pruefen": {
+        "grund": "Privatrecht (Nachbarrechtsgesetz) – prüft die Bauaufsicht nicht; mit den Nachbarn klären, ggf. schriftliche Zustimmung einholen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "aenderung"
+            },
+            {
+              "f": "nw.grenzabstand_unter_2_5",
+              "ist": true
+            },
+            {
+              "$": "nw_nachbarrecht_offen"
+            }
+          ]
+        }
       }
     }
   }

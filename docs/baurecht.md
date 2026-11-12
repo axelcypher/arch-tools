@@ -22,22 +22,28 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Wohnungen aus dem Flächenrechner.
 - **Kopfleiste:** Antrag, **geplante Einreichung** (Stichtag – z. B. § 42a BauO NRW knüpft an das Datum des
   Bauantrags an, § 90 an das Verfahrensrecht zur Zeit der Antragstellung), die aktiven Regelmodule, der Rechtsstand
-  (geprüft um …, nicht abrufbar, geändert, neue Fassung angekündigt), **Lage abfragen**, **Rechtsstand prüfen**,
-  **Prüfprotokoll**, **Speichern** (Strg+S).
-- **Bilanz:** Zahl der Paragrafen je Ampel und **„Am meisten klärt“** – die fehlenden Angaben, die die meisten
-  gelben Paragrafen entscheiden würden (Klick springt zur Angabe).
-- **Angaben (links):** Antragsmerkmale als Knöpfe mit Erklärung und Fundstelle; darunter alle Angaben, an denen eine
-  Regel hängt, offene zuerst. Jede Angabe zeigt ihre Herkunft (Stammdaten, Flächenrechner, GRZ-Nachweis, Geodienst,
+  (Datum des ältesten Stands der aktiven Normen), Warnmarken (nie geprüft, nicht abrufbar, geändert, neue Fassung,
+  Gemeinde unbestätigt bzw. widersprüchlich – sie werden nie gekürzt), **Lage abfragen**, **Rechtsstand prüfen**,
+  **Prüfprotokoll**, **Speichern** (Strg+S). „≡ Fehlerprotokoll“ in der Titelleiste ist die Fehlersuche der App.
+- **Angaben (links):** oben **„Klärt am meisten“** – die fehlenden Angaben, die die meisten offenen Paragrafen
+  entscheiden würden (Klick springt zur Angabe); dann die Antragsmerkmale als Knöpfe mit Erklärung (eingeklappt, wenn
+  alle festgelegt sind; „leeren“ setzt ein Merkmal bewusst zurück); darunter alle Angaben, an denen eine Regel hängt,
+  offene zuerst. Jede Angabe zeigt ihre Herkunft (Stammdaten, Flächenrechner, GRZ-Nachweis, Geodienst,
   Regelmodul, von Hand). **Nur Hinweis** heißt: nicht gesichert (z. B. Geodienst ohne Treffer, Koordinaten nur
-  straßengenau) – ein solcher Wert kann nie etwas ausschließen, bis er **bestätigt** ist. „alle“ zeigt auch Angaben,
-  an denen gerade keine Regel hängt.
-- **Vorschriften (Mitte):** nach Ebene (Bund, Land, Kreis, Gemeinde) oder Thema; je Norm Fassung und Zähler, darunter
-  die Paragrafen mit Ampel und Hauptgrund. Filter: Ampel, von Hand, geändert/überholt, Suche. Marken: „von Hand“
-  (gestrichelt = Entwurf), „überholt“, „Text geändert“, „eigene Verantwortung“ (prüft die Bauaufsicht nicht).
+  straßengenau, Gemeindeschlüssel von Hand ohne Beleg) – ein solcher Wert kann nie etwas ausschließen, bis er
+  **bestätigt** ist; eine Bestätigung lässt sich **zurücknehmen**. „alle Angaben“ zeigt auch Angaben, an denen gerade
+  keine Regel hängt. Widerspricht das Merkmal „Planungsrecht“ den Geodaten (Bebauungsplan angegeben, Landschaftsplan
+  gemeldet), wird das als Widerspruch angezeigt und macht betroffenes Grün gelb.
+- **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm
+  Fassung und Zähler in Worten, darunter die Paragrafen mit Ampel und Hauptgrund (die Angaben, die das Ergebnis
+  tragen). Oben das Ergebnis je Ampel (zugleich Ein-/Ausblenden), Suche und Filter „nur von Hand festgelegte“ bzw.
+  „nur geänderte/überholte“, mit Trefferzahl. Marken: „von Hand“ bzw. „von Hand · Entwurf“, „überholt“, „Text
+  geändert“, „eigene Verantwortung“ (prüft die Bauaufsicht nicht).
 - **Einzelheiten (rechts):** Ampel, Begründung in Worten, Hinweise (Ausnahmen, Einzelfall, Vorrang des Ortsrechts,
   Annahmen des Büros), fehlende und unsichere Angaben (Klick springt hin), ob die Bauaufsicht das im Verfahren prüft,
-  womit es nachgewiesen wird, Regeldatei und Fassung, an der die Regel geprüft ist, und der **Gesetzestext** mit den
-  Absätzen der Fundstellen hervorgehoben; nach einer Änderung **alt/neu** nebeneinander.
+  womit es nachgewiesen wird, Stand der Regel, aufklappbar die **Regel im Einzelnen**, und der **Gesetzestext** mit den
+  Absätzen der Fundstellen hervorgehoben (mit Legende); nach einer Änderung **alt/neu** untereinander mit
+  gestrichenen bzw. unterstrichenen Wörtern – verglichen mit der Fassung, an der die Regel geprüft ist.
 
 ## Von Hand festlegen
 
@@ -53,7 +59,8 @@ Jeder darf festlegen – und bestätigt dafür zweimal:
    als Entwurf offen.
 
 Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald sich danach die automatische Ampel, eine
-beteiligte Angabe oder der Text einer Fundstelle ändert – dann steht ⚠ daran, ein überholtes „entfällt“ zählt als
+beteiligte Angabe oder der Text einer Fundstelle ändert (oder sie ohne geprüften Text getroffen wurde) – dann steht
+die Marke „überholt“ daran, ein überholtes „entfällt“ zählt als
 „prüfen“, und das Protokoll führt sie als offen. Verweist eine Regel auf einen anderen Paragrafen, zählt dort nur die
 automatische Ampel oder eine bestätigte, nicht überholte Festlegung – und auch die nur als unsicher (ein „entfällt“, das
 darauf beruht, wird „prüfen“).
@@ -112,11 +119,13 @@ Angaben, Vorschriften und Einzelheiten; dieselben Sprungmarken erscheinen beim e
 
 ## Prüfprotokoll
 
-Kopf aus den Stammdaten, Grundlagen (Stichtag, Module, Regelpaket, Merkmale, Ergebnis), alle Paragrafen je Ebene mit
-Ampel, Begründung und Fassung, offene Punkte, Festlegungen von Hand (mit Name, Datum, Entwurf/bestätigt), bestätigte
-Angaben (mit Begründung), Quellen der Geodaten, Hinweise und Auskünfte der Module. „Drucken / PDF …“ schlägt den
+Kopf aus den Stammdaten, Grundlagen (Stichtag, Module, Regelpaket, Merkmale, Ergebnis), dann was zu tun ist: offene
+Punkte (gruppiert nach der fehlenden Angabe), Festlegungen von Hand (mit Name, Datum, Entwurf/bestätigt), bestätigte
+Angaben (mit Begründung); danach alle Paragrafen je Ebene mit Ampel, Begründung und Fassung, Quellen der Geodaten,
+Hinweise und Auskünfte der Module. Enthält es Entwürfe, steht „ENTWURF“ auf jeder Druckseite. „Drucken / PDF …“ schlägt den
 Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
-Zähler, Regelpaket) in der Projektdatei ab – erst, wenn keine Angabe von Hand mehr Entwurf ist.
+Zähler, Regelpaket) in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen
+ist.
 
 ## Daten
 
@@ -142,7 +151,11 @@ festgelegt.
 
 Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne
 Schlüssel, Signieren (OpenSSL, Ed25519) und Hochladen in das Release „regeln“ in einem eigenen Job ohne npm; der
-Wächter gleicht wöchentlich mit den geltenden Fassungen ab und legt bei Abweichungen ein Issue an. **Einrichten:** `npm run schluessel`, privaten Schlüssel als Secret
+Wächter gleicht wöchentlich mit den geltenden Fassungen ab und legt bei Abweichungen ein Issue an. Signiert wird nur
+von `main` und nur in der GitHub-Umgebung **„regeln“** – diese Umgebung in den Einstellungen des Repos anlegen (Branch-
+Regel `main`, Freigabe durch Reviewer) und das Secret `BAURECHT_REGELN_SCHLUESSEL` dort hinterlegen.
+
+**Einrichten:** `npm run schluessel`, privaten Schlüssel als Secret (in der Umgebung „regeln“)
 `BAURECHT_REGELN_SCHLUESSEL`, öffentlichen in `packages/baurecht-regeln/schluessel/regeln.pub`. Solange der öffentliche
 Schlüssel fehlt, nutzt die App das Regelpaket ihres Builds.
 

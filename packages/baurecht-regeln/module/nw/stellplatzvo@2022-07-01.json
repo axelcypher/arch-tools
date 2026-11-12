@@ -37,6 +37,22 @@
       "entfaellt": {
         "f": "ortsrecht.stellplatz_regelt_zahl",
         "ist": true
+      },
+      "pruefen": {
+        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            }
+          ]
+        }
       }
     },
     "2": {
@@ -70,6 +86,22 @@
       "entfaellt": {
         "f": "ortsrecht.stellplatz_regelt_zahl",
         "ist": true
+      },
+      "pruefen": {
+        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            }
+          ]
+        }
       }
     },
     "3": {
@@ -106,6 +138,22 @@
       "entfaellt": {
         "f": "ortsrecht.stellplatz_regelt_zahl",
         "ist": true
+      },
+      "pruefen": {
+        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            }
+          ]
+        }
       }
     },
     "4": {
@@ -125,7 +173,20 @@
         ]
       },
       "pruefen": {
-        "grund": "Verringerung bei integrierter Lage mit ÖPNV-Anbindung oder Mobilitätskonzept – öffentlich-rechtlich zu sichern."
+        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            }
+          ]
+        }
       },
       "grund": "Verringerung der Anzahl notwendiger Stellplätze (ÖPNV-Lage, Mobilitätskonzept, offensichtliches Missverhältnis).",
       "fundstellen": [
@@ -142,7 +203,8 @@
       "entfaellt": {
         "f": "ortsrecht.stellplatz_regelt_zahl",
         "ist": true
-      }
+      },
+      "hinweis": "Verringerung bei integrierter Lage mit ÖPNV-Anbindung oder Mobilitätskonzept – öffentlich-rechtlich zu sichern."
     },
     "5": {
       "gilt": {
@@ -177,6 +239,60 @@
       "entfaellt": {
         "f": "ortsrecht.stellplatz_regelt_lage",
         "ist": true
+      },
+      "pruefen": {
+        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "6": {
+      "titel": "Nachweis durch Zahlung von Ablösungsbeträgen",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.stellplatz_abloesung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "vorhaben.stellplatz_abloesung",
+            "ist": false
+          },
+          {
+            "f": "ortsrecht.stellplatz_regelt_abloesung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Werden notwendige Stellplätze nicht hergestellt, kann die Pflicht mit Zustimmung der Gemeinde durch einen Ablösungsbetrag erfüllt werden; bei Wohnungsbau nur, soweit keine erhebliche Beeinträchtigung des Verkehrs zu erwarten ist (Abs. 1, 2).",
+      "fundstellen": [
+        "6/1",
+        "6/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "6/1": "ca7fb329",
+        "6/2": "7c4c7794"
       }
     },
     "7": {
@@ -208,6 +324,22 @@
       "entfaellt": {
         "f": "ortsrecht.stellplatz_regelt_kfz",
         "ist": true
+      },
+      "pruefen": {
+        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            }
+          ]
+        }
       }
     },
     "8": {
@@ -239,28 +371,36 @@
       "entfaellt": {
         "f": "ortsrecht.stellplatz_regelt_fahrrad",
         "ist": true
+      },
+      "pruefen": {
+        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            }
+          ]
+        }
       }
     },
     "9": {
       "gilt": {
         "und": [
           {
-            "und": [
-              {
-                "m": "Vorhaben",
-                "in": [
-                  "Errichtung",
-                  "Änderung",
-                  "Nutzungsänderung"
-                ]
-              },
-              {
-                "$": "gebaeude"
-              }
-            ]
+            "$": "vorhaben_29"
           },
           {
-            "$": "freistellung"
+            "m": "Verfahren",
+            "in": [
+              "Genehmigungsfreistellung",
+              "verfahrensfrei"
+            ]
           }
         ]
       },

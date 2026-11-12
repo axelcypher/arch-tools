@@ -1,9 +1,9 @@
 {
   "name": "@akh/baurecht-regeln",
   "private": true,
-  "version": "2026.11.12.1",
+  "version": "2026.11.12.2",
   "type": "module",
-  "description": "Regelpaket der App Baurecht: Module je Gebiet (Bund, Land, Kreis, Gemeinde), je Norm und Fassung eine Regeldatei – getrennt von der App ausgeliefert",
+  "description": "Regelpaket der App Baurecht: Module je Gebiet (Bund, Land, Kreis, Gemeinde), je Norm und Fassung eine Regeldatei \u2013 getrennt von der App ausgeliefert",
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc -p .",

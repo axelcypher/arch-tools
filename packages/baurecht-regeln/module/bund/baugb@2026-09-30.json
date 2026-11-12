@@ -44,6 +44,49 @@
         "14/3": "1f78581c"
       }
     },
+    "15": {
+      "titel": "Zurückstellung von Baugesuchen",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "planung.planaufstellung",
+            "ist": true
+          },
+          {
+            "f": "planung.zurueckstellung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "planung.planaufstellung",
+            "ist": false
+          },
+          {
+            "f": "planung.zurueckstellung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Auf Antrag der Gemeinde setzt die Baugenehmigungsbehörde die Entscheidung über das Vorhaben bis zu zwölf Monate aus, wenn zu befürchten ist, dass es die Planung unmöglich macht oder wesentlich erschwert (Abs. 1).",
+      "fundstellen": [
+        "15/1"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "verweise": [
+        "bund/baugb/14"
+      ],
+      "stand": {
+        "15/1": "28b2ede0"
+      }
+    },
     "17": {
       "titel": "Geltungsdauer der Veränderungssperre",
       "gilt": {
@@ -141,7 +184,7 @@
               {
                 "und": [
                   {
-                    "$": "innenbereich"
+                    "$": "innen_34"
                   },
                   {
                     "nicht": {
@@ -371,6 +414,65 @@
       "stand": {
         "36/1": "34235fdc",
         "36/2": "b57bc9d6"
+      }
+    },
+    "144": {
+      "titel": "Genehmigungspflichtige Vorhaben und Rechtsvorgänge (Sanierungsgebiet)",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
+          },
+          {
+            "f": "planung.sanierungsgebiet",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "planung.sanierungsgebiet",
+        "ist": false
+      },
+      "grund": "Im förmlich festgelegten Sanierungsgebiet brauchen Vorhaben nach § 14 Abs. 1 (u. a. Vorhaben nach § 29, Beseitigung, erhebliche Veränderungen) die schriftliche Genehmigung der Gemeinde (Abs. 1).",
+      "fundstellen": [
+        "144/1"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "verweise": [
+        "bund/baugb/145"
+      ],
+      "stand": {
+        "144/1": "aba9a9fc"
+      }
+    },
+    "145": {
+      "titel": "Genehmigung (Sanierungsgebiet)",
+      "gilt": {
+        "n": "bund/baugb/144",
+        "ampel": [
+          "rot"
+        ]
+      },
+      "grund": "Ist eine Baugenehmigung erforderlich, erteilt die Baugenehmigungsbehörde die sanierungsrechtliche Genehmigung im Einvernehmen mit der Gemeinde; versagt werden darf sie nur, wenn das Vorhaben die Sanierung unmöglich macht, wesentlich erschwert oder ihren Zielen zuwiderläuft (Abs. 1, 2).",
+      "fundstellen": [
+        "145/1",
+        "145/2"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "stand": {
+        "145/1": "a6923231",
+        "145/2": "74847c0a"
       }
     },
     "172": {

@@ -103,7 +103,14 @@
       "gilt": {
         "und": [
           {
-            "$": "bauen"
+            "oder": [
+              {
+                "$": "bauen"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
           },
           {
             "f": "soest.dachaufbauten",
@@ -474,6 +481,9 @@
               },
               {
                 "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
               }
             ]
           }
@@ -522,6 +532,9 @@
                   },
                   {
                     "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
                   }
                 ]
               }

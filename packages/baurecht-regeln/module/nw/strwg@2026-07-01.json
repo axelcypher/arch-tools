@@ -36,7 +36,7 @@
             "ist": true
           },
           {
-            "f": "lage.strasse_ausserorts",
+            "f": "lage.zufahrt_klassifiziert",
             "ist": true
           }
         ]
@@ -48,7 +48,7 @@
             "ist": false
           },
           {
-            "f": "lage.strasse_ausserorts",
+            "f": "lage.zufahrt_klassifiziert",
             "ist": false
           }
         ]
@@ -84,6 +84,17 @@
                 "ist": true
               }
             ]
+          },
+          {
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "lage.anschluss_klassifiziert",
+                "ist": true
+              }
+            ]
           }
         ]
       },
@@ -91,6 +102,10 @@
         "und": [
           {
             "f": "lage.strasse_ausserorts",
+            "ist": false
+          },
+          {
+            "f": "lage.anschluss_klassifiziert",
             "ist": false
           },
           {

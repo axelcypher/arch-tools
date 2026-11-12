@@ -5,6 +5,89 @@
   "fassung": "2026-11-05",
   "version": 1,
   "paragrafen": {
+    "8": {
+      "titel": "Erlaubnis, Bewilligung",
+      "gilt": {
+        "oder": [
+          {
+            "f": "vorhaben.grundwasser",
+            "ist": true
+          },
+          {
+            "f": "vorhaben.versickerung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "vorhaben.grundwasser",
+            "ist": false
+          },
+          {
+            "f": "vorhaben.versickerung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Die Benutzung eines Gewässers – auch des Grundwassers (§ 9: Entnehmen, Absenken, Umleiten, Einleiten von Stoffen, z. B. Bauwasserhaltung, Versickerung) – bedarf der Erlaubnis der unteren Wasserbehörde (Abs. 1).",
+      "fundstellen": [
+        "8/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "verweise": [
+        "bund/whg/9"
+      ],
+      "hinweis": "Die wasserrechtliche Erlaubnis ist ein eigenes Verfahren bei der unteren Wasserbehörde; erlaubnisfreie Benutzungen nach § 46 und Landesrecht prüfen.",
+      "stand": {
+        "8/1": "fd17b5ac"
+      }
+    },
+    "9": {
+      "titel": "Benutzungen",
+      "gilt": {
+        "n": "bund/whg/8",
+        "ampel": [
+          "rot"
+        ]
+      },
+      "grund": "Benutzungen sind u. a. das Entnehmen, Zutagefördern und Ableiten von Grundwasser, das Einbringen und Einleiten von Stoffen sowie das Aufstauen, Absenken und Umleiten von Grundwasser durch Anlagen (Abs. 1, 2).",
+      "fundstellen": [
+        "9/1",
+        "9/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "9/1": "0952598f",
+        "9/2": "e285b024"
+      }
+    },
+    "49": {
+      "titel": "Erdaufschlüsse",
+      "gilt": {
+        "f": "vorhaben.erdaufschluss",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "vorhaben.erdaufschluss",
+        "ist": false
+      },
+      "grund": "Arbeiten, die so tief in den Boden eindringen, dass sie sich auf das Grundwasser auswirken können (z. B. Erdwärmesonden), sind der Behörde einen Monat vor Beginn anzuzeigen; werden dabei Stoffe ins Grundwasser eingebracht, ist eine Erlaubnis nötig (Abs. 1).",
+      "fundstellen": [
+        "49/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "49/1": "9b1cd7c0"
+      }
+    },
     "52": {
       "titel": "Besondere Anforderungen in Wasserschutzgebieten",
       "gilt": {

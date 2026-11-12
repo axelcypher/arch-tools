@@ -191,6 +191,21 @@
         "31/1": "41a1d6bd",
         "31/4": "f4123ecb",
         "31/7": "46b41bae"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung im Außenbereich: Veränderungen der Nutzung von Grundflächen (Stellplätze, Zufahrten) können ein Eingriff sein – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "$": "innen_planrecht"
+              }
+            }
+          ]
+        }
       }
     },
     "33": {
@@ -218,6 +233,21 @@
       "stand": {
         "33/1": "085af941",
         "33/2": "6695c028"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung im Außenbereich: Veränderungen der Nutzung von Grundflächen (Stellplätze, Zufahrten) können ein Eingriff sein – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "$": "innen_planrecht"
+              }
+            }
+          ]
+        }
       }
     },
     "39": {

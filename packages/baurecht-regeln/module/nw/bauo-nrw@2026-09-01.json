@@ -51,7 +51,7 @@
         "5/2": "719ce238"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -84,7 +84,7 @@
           ]
         }
       },
-      "grund": "Vor den Außenwänden von Gebäuden sind Abstandsflächen freizuhalten: 0,4 H, mindestens 3 m (in GE/GI 0,2 H, in MK und MU zu öffentlichen Verkehrsflächen 0,2 H bzw. die Werte nach Abs. 5); bei Wohngebäuden der Gebäudeklassen 1 und 2 mit nicht mehr als drei oberirdischen Geschossen genügen 3 m (Abs. 5 Satz 5).",
+      "grund": "Vor den Außenwänden von Gebäuden sind Abstandsflächen freizuhalten: 0,4 H, mindestens 3 m; in Kerngebieten 0,25 H, in Gewerbe- und Industriegebieten 0,2 H; in Kern- und urbanen Gebieten zu öffentlichen Verkehrs-, Grün- und Wasserflächen 0,2 H (Abs. 5 Satz 2, 3); bei Wohngebäuden der Gebäudeklassen 1 und 2 mit nicht mehr als drei oberirdischen Geschossen genügen 3 m (Abs. 5 Satz 5).",
       "fundstellen": [
         "6/1",
         "6/5",
@@ -126,7 +126,7 @@
         "8/2": "56e878e1"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -194,7 +194,7 @@
         "Nachweise über Wärme- und Schallschutz (§ 68 BauO NRW, § 12 BauPrüfVO) – im vereinfachten Verfahren nicht geprüft, aber einzuhalten"
       ],
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -225,7 +225,7 @@
         "26/2": "1de64c20"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -236,16 +236,9 @@
         "$": "nw_vorhaben_gebaeude"
       },
       "pruefen": {
-        "grund": "Bei Umnutzung zu Wohnraum gilt § 27 nicht für bestehende Bauteile (§ 47 Abs. 6). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Bei Umnutzung zu Wohnraum gilt § 27 nicht für bestehende Bauteile (§ 47 Abs. 6). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "oder": [
-            {
-              "$": "nutzungsaenderung"
-            },
-            {
-              "$": "nutzungsaenderung"
-            }
-          ]
+          "$": "nutzungsaenderung"
         }
       },
       "grund": "Tragende und aussteifende Wände und Stützen: Feuerwiderstand nach Gebäudeklasse (GK 2–3 feuerhemmend, GK 4 hochfeuerhemmend, GK 5 feuerbeständig; im Kellergeschoss strenger).",
@@ -280,7 +273,7 @@
         "28/5": "7f52f70d"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -332,7 +325,7 @@
         ]
       },
       "pruefen": {
-        "grund": "Innere Brandwände bei ausgedehnten Gebäuden (höchstens 40 m Abstand), bei aneinandergereihten Gebäuden auf demselben Grundstück und bei landwirtschaftlich genutzten Gebäuden (Abs. 2 Nr. 2–4). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Innere Brandwände bei ausgedehnten Gebäuden (höchstens 40 m Abstand), bei aneinandergereihten Gebäuden auf demselben Grundstück und bei landwirtschaftlich genutzten Gebäuden (Abs. 2 Nr. 2–4). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "oder": [
             {
@@ -386,16 +379,9 @@
         "$": "nw_vorhaben_gebaeude"
       },
       "pruefen": {
-        "grund": "Bei Umnutzung zu Wohnraum gilt § 31 nicht für bestehende Bauteile (§ 47 Abs. 6). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Bei Umnutzung zu Wohnraum gilt § 31 nicht für bestehende Bauteile (§ 47 Abs. 6). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "oder": [
-            {
-              "$": "nutzungsaenderung"
-            },
-            {
-              "$": "nutzungsaenderung"
-            }
-          ]
+          "$": "nutzungsaenderung"
         }
       },
       "grund": "Decken: Feuerwiderstand nach Gebäudeklasse; Öffnungen in Decken nur nach Abs. 4.",
@@ -431,7 +417,7 @@
         "32/2": "b9b4ab76"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -489,7 +475,7 @@
         "34/3": "8db43907"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -513,7 +499,7 @@
         "35/1": "5ae5000b"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -547,7 +533,7 @@
         "36/2": "e58d63fe"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -572,7 +558,7 @@
         "37/5": "21c9ba67"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -593,7 +579,7 @@
         "38/1": "96b40213"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 erleichtert nur die Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum und nur für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -684,6 +670,66 @@
         }
       }
     },
+    "40": {
+      "titel": "Leitungsanlagen, Installationsschächte und -kanäle",
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Leitungen durch raumabschließende Bauteile mit vorgeschriebener Feuerwiderstandsfähigkeit nur, wenn eine Brandausbreitung ausreichend lang nicht zu befürchten ist (Abs. 1 – nicht bei GK 1 und 2, innerhalb von Wohnungen und kleinen Nutzungseinheiten); in notwendigen Treppenräumen und Fluren nur, wenn die Rettungswege nutzbar bleiben (Abs. 2); Installationsschächte (Abs. 3).",
+      "fundstellen": [
+        "40/1",
+        "40/2",
+        "40/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "40/1": "5f84162e",
+        "40/2": "616c70fe",
+        "40/3": "b748d1fc"
+      }
+    },
+    "41": {
+      "titel": "Lüftungsanlagen",
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "technik.lueftung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.lueftung",
+        "ist": false
+      },
+      "grund": "Lüftungsanlagen müssen betriebssicher sein und dürfen Feuerungsanlagen nicht beeinträchtigen; Lüftungsleitungen grundsätzlich nichtbrennbar, Überbrückung feuerwiderstandsfähiger Bauteile nur mit Vorkehrungen; keine Übertragung von Gerüchen und Staub; nicht in Abgasanlagen (Abs. 1–4).",
+      "fundstellen": [
+        "41/1",
+        "41/2",
+        "41/3",
+        "41/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "41/1": "b2ae0525",
+        "41/2": "5b4e08a7",
+        "41/3": "831411f9",
+        "41/4": "683139c1"
+      }
+    },
     "42": {
       "gilt": {
         "oder": [
@@ -720,6 +766,106 @@
         "42/3": "6be78228",
         "42/4": "75c6d00b",
         "42/7": "d10f1c1c"
+      }
+    },
+    "43": {
+      "titel": "Sanitäre Anlagen, Wasserzähler",
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Fensterlose Bäder und Toiletten nur mit wirksamer Lüftung (Abs. 1); jede Wohnung und sonstige Nutzungseinheit braucht einen eigenen Wasserzähler – bei Nutzungsänderung nicht, wenn das nur mit unverhältnismäßigem Mehraufwand möglich ist (Abs. 2).",
+      "fundstellen": [
+        "43/1",
+        "43/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "43/1": "f127c809",
+        "43/2": "71e6e8ec"
+      }
+    },
+    "44": {
+      "titel": "Aufbewahrung fester Abfallstoffe",
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.abfallraum",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.abfallraum",
+        "ist": false
+      },
+      "grund": "Feste Abfallstoffe dürfen in Gebäuden der Gebäudeklassen 3 bis 5 nur in Räumen mit feuerwiderstandsfähigen Wänden und Decken, dicht- und selbstschließenden Abschlüssen, Entleerung vom Freien und ständiger Lüftung aufbewahrt werden (Abs. 1); Abfallschächte nicht betreiben (Abs. 2).",
+      "fundstellen": [
+        "44/1",
+        "44/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "44/1": "1528bae5",
+        "44/2": "99320a78"
+      }
+    },
+    "45": {
+      "titel": "Blitzschutzanlagen",
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "$": "sonderbau"
+              },
+              {
+                "$": "gk_4_5"
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Bauliche Anlagen, bei denen nach Lage, Bauart oder Nutzung Blitzschlag leicht eintreten oder zu schweren Folgen führen kann, sind mit dauernd wirksamen Blitzschutzanlagen zu versehen.",
+      "fundstellen": [
+        "45"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "pruefen": {
+        "grund": "Ob nach Lage (z. B. freistehend, exponiert), Bauart (z. B. weiche Bedachung) oder Nutzung eine Blitzschutzanlage nötig ist, im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "nicht": {
+                "oder": [
+                  {
+                    "$": "sonderbau"
+                  },
+                  {
+                    "$": "gk_4_5"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "stand": {
+        "45": "1b5ffa74"
       }
     },
     "46": {
@@ -842,27 +988,30 @@
     },
     "49": {
       "gilt": {
-        "und": [
+        "oder": [
           {
-            "$": "nw_vorhaben_gebaeude"
-          },
-          {
-            "oder": [
+            "und": [
               {
-                "$": "nw_wohnungen_gk3_5"
+                "$": "nw_vorhaben_gebaeude"
               },
               {
-                "und": [
-                  {
-                    "nicht": {
-                      "$": "efh_zfh"
-                    }
-                  },
-                  {
-                    "f": "gebaeude.oeffentlich",
-                    "ist": true
-                  }
-                ]
+                "$": "nw_wohnungen_gk3_5"
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "nicht": {
+                  "$": "efh_zfh"
+                }
+              },
+              {
+                "f": "gebaeude.oeffentlich",
+                "ist": true
               }
             ]
           }
@@ -1032,6 +1181,34 @@
       "stand": {
         "60/1": "758d2e1b",
         "60/2": "5320fdbb"
+      }
+    },
+    "61": {
+      "titel": "Vorrang anderer Gestattungsverfahren",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.andere_gestattung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "vorhaben.andere_gestattung",
+        "ist": false
+      },
+      "grund": "Bestimmte andere Gestattungen schließen die Baugenehmigung ein (u. a. Anlagen an Gewässern, Anlagen der öffentlichen Versorgung, Abfallentsorgungsanlagen nach § 35 Abs. 3 KrWG) – außer bei Gebäuden, die Sonderbauten sind; die bauordnungsrechtlichen Anforderungen gelten trotzdem.",
+      "fundstellen": [
+        "61"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "stand": {
+        "61": "6f052ecb"
       }
     },
     "62": {
@@ -1411,7 +1588,7 @@
         "tag": "einreichung",
         "vor": "2026-09-01"
       },
-      "grund": "Verfahren, die vor dem Inkrafttreten der Änderung eingeleitet wurden, werden nach dem bisherigen Verfahrensrecht fortgeführt; die Bauherrschaft kann die Anwendung des neuen Rechts beantragen (Abs. 4 – „dieses Gesetz“ meint die BauO NRW 2018).",
+      "grund": "Übergangsvorschriften: Für das laufende Verfahren gilt die Genehmigungsfiktion nach Abs. 4 Satz 3; die Übergangsregeln zu Verfahren, die vor dem 01.01.2019 eingeleitet wurden (Abs. 4 Satz 1, „dieses Gesetz“ = BauO NRW 2018), sind heute kaum noch von Bedeutung. Übergangsrecht späterer Änderungen beim jeweiligen Änderungsgesetz prüfen.",
       "fundstellen": [
         "90/4"
       ],

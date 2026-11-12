@@ -13,7 +13,7 @@
       "entfaellt": {
         "oder": [
           {
-            "$": "wohngebaeude"
+            "$": "efh_zfh"
           },
           {
             "f": "gebaeude.besucher",
@@ -63,14 +63,7 @@
       "entfaellt": {
         "oder": [
           {
-            "und": [
-              {
-                "$": "wohngebaeude"
-              },
-              {
-                "$": "kein_sonderbau"
-              }
-            ]
+            "$": "efh_zfh"
           },
           {
             "f": "gebaeude.gastbetten",
@@ -101,7 +94,7 @@
       "entfaellt": {
         "oder": [
           {
-            "$": "wohngebaeude"
+            "$": "efh_zfh"
           },
           {
             "f": "gebaeude.verkaufsflaeche",

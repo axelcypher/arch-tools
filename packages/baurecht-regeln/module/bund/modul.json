@@ -91,6 +91,15 @@
         "art": "gii",
         "pfad": "bbodschg"
       }
+    },
+    "fstrg": {
+      "kurz": "FStrG",
+      "titel": "Bundesfernstraßengesetz",
+      "thema": "sonstiges",
+      "quelle": {
+        "art": "gii",
+        "pfad": "fstrg"
+      }
     }
   },
   "bausteine": {
@@ -270,31 +279,11 @@
           "$": "bplan"
         },
         {
-          "$": "innenbereich"
+          "$": "innen_34"
         },
         {
-          "und": [
-            {
-              "oder": [
-                {
-                  "$": "bplan_einfach"
-                },
-                {
-                  "$": "satzung_baugb"
-                }
-              ]
-            },
-            {
-              "f": "planung.innen",
-              "ist": true
-            }
-          ]
-        },
-        {
-          "n": "bund/baugb/33",
-          "ampel": [
-            "rot"
-          ]
+          "f": "planung.planreife",
+          "ist": true
         }
       ]
     },
@@ -318,6 +307,53 @@
             {
               "f": "planung.innen",
               "ist": false
+            }
+          ]
+        }
+      ]
+    },
+    "innen_34": {
+      "oder": [
+        {
+          "$": "innenbereich"
+        },
+        {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "satzung_baugb"
+                },
+                {
+                  "$": "bplan_einfach"
+                }
+              ]
+            },
+            {
+              "f": "planung.innen",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "baugebiet": {
+      "oder": [
+        {
+          "$": "bplan_jeder"
+        },
+        {
+          "und": [
+            {
+              "$": "innen_34"
+            },
+            {
+              "nicht": {
+                "f": "planung.gebietsart",
+                "in": [
+                  "keins"
+                ]
+              }
             }
           ]
         }
@@ -460,6 +496,54 @@
           }
         ]
       }
+    },
+    "planung.planreife": {
+      "titel": "Vorhaben nach § 33 BauGB zulässig (Planreife; Festsetzungen schriftlich anerkannt, Erschließung gesichert)",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "Ein Aufstellungsbeschluss allein genügt nicht – § 33 Abs. 1 Nr. 1–4 BauGB",
+      "wenn": {
+        "f": "planung.planaufstellung",
+        "ist": true
+      }
+    },
+    "planung.zurueckstellung": {
+      "titel": "Die Gemeinde hat die Zurückstellung des Baugesuchs beantragt (§ 15 BauGB)",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "bei der Gemeinde erfragen, wenn ein Bebauungsplan aufgestellt wird",
+      "wenn": {
+        "f": "planung.planaufstellung",
+        "ist": true
+      }
+    },
+    "vorhaben.freiberuflich": {
+      "titel": "Räume oder Gebäude für freiberuflich Tätige (z. B. Büro, Praxis, Kanzlei)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "vorhaben.ferienwohnung": {
+      "titel": "Ferienwohnungen (ständig wechselnde Gäste gegen Entgelt)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "vorhaben.erdaufschluss": {
+      "titel": "Bohrungen oder Arbeiten, die bis ins Grundwasser reichen können (z. B. Erdwärmesonde, tiefe Gründung, Brunnen)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "Anzeige einen Monat vor Beginn (§ 49 WHG)"
+    },
+    "lage.bundesfernstrasse": {
+      "titel": "An einer Bundesautobahn (bis 100 m) oder Bundesstraße außerhalb der Ortsdurchfahrt (bis 40 m), oder Zufahrt dorthin",
+      "gruppe": "grundstueck",
+      "typ": "janein",
+      "hilfe": "Anbauverbot bzw. Zustimmung der Straßenbaubehörde (§ 9 FStrG)"
     }
   }
 }

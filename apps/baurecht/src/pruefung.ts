@@ -88,7 +88,7 @@ export function pruefstandBerechnen(
   const einreichung = einreichungRoh ?? heute();
   fakten['antrag.einreichung'] = { wert: einreichung, herkunft: einreichungRoh ? 'manuell' : 'abgeleitet', sicherheit: 'sicher' };
   const gk = project ? gebaeudeklasseAbleiten(project, { freistehend: (fakten['gebaeude.freistehend']?.wert as boolean | undefined) ?? null, landwirtschaft: (fakten['gebaeude.landwirtschaft']?.wert as boolean | undefined) ?? null }) : null;
-  const w = widersprueche(merkmale, gk);
+  const w = widersprueche(merkmale, gk, fakten);
   const auswertung = auswerten({ paket, module, merkmale, fakten, einreichung, heute: heute(), texte: new Map(Object.entries(texte)), festlegungen, widersprueche: w.merkmale });
   return { auswertung, module, fehlend: fehlendeEbenen(paket.module, ags), ags, einreichung, gk, widersprueche: w.texte };
 }
