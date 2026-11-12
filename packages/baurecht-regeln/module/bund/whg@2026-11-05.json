@@ -263,6 +263,9 @@
       "gilt": {
         "und": [
           {
+            "$": "vorhaben_29"
+          },
+          {
             "f": "technik.heizoel",
             "ist": true
           },

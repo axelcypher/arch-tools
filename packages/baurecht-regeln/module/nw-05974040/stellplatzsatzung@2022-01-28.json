@@ -7,7 +7,32 @@
   "paragrafen": {
     "1": {
       "gilt": {
-        "$": "vorhaben_29"
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "grund": "Die Stellplatzsatzung gilt im ganzen Stadtgebiet; abweichende Regelungen in Bebauungsplänen oder anderen Satzungen gehen vor.",
       "fundstellen": [
@@ -31,7 +56,25 @@
             "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -47,41 +90,24 @@
         "nw/bauo-nrw/48"
       ],
       "pruefen": {
-        "grund": "Dachgeschossausbau in vor dem 01.01.1993 fertiggestellten Gebäuden der Zonen 1 und 2: Stellplätze müssen nicht hergestellt werden, soweit das auf dem Grundstück nicht oder nur unter großen Schwierigkeiten möglich ist (Abs. 1 Nr. 1). Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+        "grund": "Dachgeschossausbau in vor dem 01.01.1993 fertiggestellten Gebäuden der Zonen 1 und 2: Stellplätze müssen nicht hergestellt werden, soweit das auf dem Grundstück nicht oder nur unter großen Schwierigkeiten möglich ist (Abs. 1 Nr. 1) – im Einzelfall prüfen.",
         "wenn": {
-          "oder": [
+          "und": [
             {
-              "und": [
+              "oder": [
                 {
-                  "oder": [
-                    {
-                      "$": "aenderung"
-                    },
-                    {
-                      "$": "nutzungsaenderung"
-                    }
-                  ]
+                  "$": "aenderung"
                 },
                 {
-                  "f": "soest.stellplatzzone",
-                  "in": [
-                    "1",
-                    "2"
-                  ]
+                  "$": "nutzungsaenderung"
                 }
               ]
             },
             {
-              "und": [
-                {
-                  "$": "vorhaben_29"
-                },
-                {
-                  "m": "Gebäudeart",
-                  "in": [
-                    "kein Gebäude"
-                  ]
-                }
+              "f": "soest.stellplatzzone",
+              "in": [
+                "1",
+                "2"
               ]
             }
           ]

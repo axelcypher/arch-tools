@@ -257,8 +257,15 @@
       "typ": "janein",
       "hilfe": "auch zur Erfüllung der Solarpflicht nach § 42a BauO NRW",
       "wenn": {
-        "f": "soest.altstadt",
-        "ist": true
+        "und": [
+          {
+            "f": "soest.altstadt",
+            "ist": true
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
       }
     },
     "soest.historische_ortsteile": {
@@ -364,6 +371,141 @@
       "wenn": {
         "f": "soest.altstadt",
         "ist": true
+      }
+    },
+    "soest.einfriedung": {
+      "titel": "Einfriedigung zu einer öffentlichen Verkehrsfläche wird errichtet oder geändert (Mauer, Zaun, Gitter, Tor)",
+      "kurz": "Einfriedigung zur Straße",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 12 Altstadtsatzung: Gestaltung der Einfriedigungen zu öffentlichen Verkehrsflächen",
+      "wenn": {
+        "und": [
+          {
+            "f": "soest.altstadt",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              },
+              {
+                "und": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "nicht": {
+                      "und": [
+                        {
+                          "$": "gebaeude"
+                        },
+                        {
+                          "f": "vorhaben.dach_fassade",
+                          "ist": false
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "soest.aussenanlagen": {
+      "titel": "Außenanlagen werden angelegt oder geändert (Vorgarten, Einstellplätze, Standplatz für Abfallbehälter)",
+      "kurz": "Außenanlagen angelegt oder geändert",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 13 Altstadtsatzung: Vorgärten begrünen, Einstellplätze versickerungsfähig, Abfallbehälter nicht sichtbar",
+      "wenn": {
+        "und": [
+          {
+            "f": "soest.altstadt",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              },
+              {
+                "und": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "nicht": {
+                      "und": [
+                        {
+                          "$": "gebaeude"
+                        },
+                        {
+                          "f": "vorhaben.dach_fassade",
+                          "ist": false
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "soest.garage": {
+      "titel": "Garage, Carport oder überdachter Stellplatz wird errichtet oder geändert (auch Dach oder Tor)",
+      "kurz": "Garage oder Carport gebaut/geändert",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 15 Altstadtsatzung: geneigtes oder begrüntes Dach, Tore mit senkrechter Holzstruktur – gefragt, wenn auf dem Grundstück Garagen bestehen oder entstehen",
+      "wenn": {
+        "und": [
+          {
+            "f": "soest.altstadt",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              },
+              {
+                "und": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "nicht": {
+                      "und": [
+                        {
+                          "$": "gebaeude"
+                        },
+                        {
+                          "f": "vorhaben.dach_fassade",
+                          "ist": false
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     }
   },

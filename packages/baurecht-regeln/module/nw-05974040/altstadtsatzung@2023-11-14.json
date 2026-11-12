@@ -19,8 +19,15 @@
             "$": "nutzungsaenderung"
           },
           {
-            "f": "vorhaben.werbeanlage",
-            "ist": true
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "vorhaben.werbeanlage",
+                "ist": true
+              }
+            ]
           }
         ]
       },
@@ -378,7 +385,15 @@
     },
     "12": {
       "gilt": {
-        "$": "bauen"
+        "und": [
+          {
+            "$": "bauen"
+          },
+          {
+            "f": "soest.einfriedung",
+            "ist": true
+          }
+        ]
       },
       "grund": "Einfriedigungen zu öffentlichen Verkehrsflächen: schmiedeeiserne Gitter (1,00–1,30 m) auf Grünsandsteinsockel oder Bruchsteinmauern (1,60–2,00 m) mit Soester Sattel; Tore aus senkrechten Hölzern oder Schmiedeeisen, Zugang höchstens 1,20 m, Einfahrt 3,50 m.",
       "fundstellen": [
@@ -391,18 +406,80 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "soest.einfriedung",
+                "ist": false
+              }
+            }
+          ]
         }
       },
       "stand": {
         "12/1": "6ddf8d03",
         "12/2": "919a6257"
       },
-      "titel": "Einfriedigungen"
+      "titel": "Einfriedigungen",
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "soest.einfriedung",
+            "ist": false
+          },
+          {
+            "und": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "gebaeude"
+              },
+              {
+                "f": "vorhaben.dach_fassade",
+                "ist": false
+              }
+            ]
+          }
+        ]
+      }
     },
     "13": {
       "gilt": {
-        "$": "bauen"
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "$": "gebaeude"
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "bauen"
+              },
+              {
+                "oder": [
+                  {
+                    "f": "soest.aussenanlagen",
+                    "ist": true
+                  },
+                  {
+                    "f": "vorhaben.stellplaetze_grundstueck",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "grund": "Außenanlagen: Vorgärten begrünen; Einstellplätze versickerungsfähig (Naturstein- oder Betonpflaster mit großem Fugenanteil); Abfallbehälter vom öffentlichen Raum nicht sichtbar.",
       "fundstellen": [
@@ -416,7 +493,25 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "und": [
+                  {
+                    "f": "soest.aussenanlagen",
+                    "ist": false
+                  },
+                  {
+                    "f": "vorhaben.stellplaetze_grundstueck",
+                    "ist": false
+                  }
+                ]
+              }
+            }
+          ]
         }
       },
       "stand": {
@@ -424,7 +519,41 @@
         "13/2": "a19292e7",
         "13/3": "bbfac939"
       },
-      "titel": "Außenanlagen"
+      "titel": "Außenanlagen",
+      "entfaellt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "f": "soest.aussenanlagen",
+                "ist": false
+              },
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": false
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "gebaeude"
+              },
+              {
+                "f": "vorhaben.dach_fassade",
+                "ist": false
+              },
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": false
+              }
+            ]
+          }
+        ]
+      }
     },
     "14": {
       "gilt": {
@@ -433,12 +562,23 @@
             "$": "soest_aussen_bauen"
           },
           {
-            "f": "technik.waermepumpe",
-            "ist": true
-          },
-          {
-            "f": "technik.lueftung",
-            "ist": true
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "oder": [
+                  {
+                    "f": "technik.waermepumpe",
+                    "ist": true
+                  },
+                  {
+                    "f": "technik.lueftung",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -489,6 +629,21 @@
           },
           {
             "$": "nw_garage"
+          },
+          {
+            "oder": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": true
+              },
+              {
+                "f": "soest.garage",
+                "ist": true
+              }
+            ]
           }
         ]
       },
@@ -502,8 +657,34 @@
         "$": "nw_prueft_kern"
       },
       "entfaellt": {
-        "f": "gebaeude.garage_nutzflaeche",
-        "max": 0
+        "oder": [
+          {
+            "f": "soest.garage",
+            "ist": false
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "max": 0
+          },
+          {
+            "und": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "gebaeude"
+              },
+              {
+                "f": "vorhaben.dach_fassade",
+                "ist": false
+              },
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": false
+              }
+            ]
+          }
+        ]
       },
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
@@ -511,6 +692,12 @@
           "und": [
             {
               "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "soest.garage",
+                "ist": false
+              }
             },
             {
               "nicht": {
@@ -710,8 +897,15 @@
       "gilt": {
         "oder": [
           {
-            "f": "soest.solaranlage",
-            "ist": true
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "soest.solaranlage",
+                "ist": true
+              }
+            ]
           },
           {
             "n": "nw/bauo-nrw/42a",

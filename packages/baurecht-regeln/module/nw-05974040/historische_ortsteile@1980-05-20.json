@@ -123,8 +123,15 @@
     },
     "6": {
       "gilt": {
-        "f": "vorhaben.werbeanlage",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.werbeanlage",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "vorhaben.werbeanlage",

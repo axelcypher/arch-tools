@@ -740,8 +740,15 @@
           ]
         },
         {
-          "f": "vorhaben.dachhaut",
-          "ist": true
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "f": "vorhaben.dachhaut",
+              "ist": true
+            }
+          ]
         }
       ]
     },
@@ -759,6 +766,9 @@
     },
     "nw_pv_pflicht_stellplatz": {
       "und": [
+        {
+          "$": "vorhaben_29"
+        },
         {
           "nicht": {
             "$": "efh_zfh"

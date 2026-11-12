@@ -160,8 +160,15 @@
     },
     "10": {
       "gilt": {
-        "f": "vorhaben.werbeanlage",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.werbeanlage",
+            "ist": true
+          }
+        ]
       },
       "grund": "Werbeanlagen: keine Verunstaltung; außerhalb im Zusammenhang bebauter Ortsteile unzulässig, in WS, MD, WR und WA nur an der Stätte der Leistung.",
       "fundstellen": [
@@ -216,7 +223,7 @@
       ],
       "hinweis": "Bergbau oder Gefährdung des Untergrunds (Altbergbau, Erdfälle, Senkungen): Auskunft der Bezirksregierung Arnsberg, Abt. 6 (Bergbau und Energie in NRW), bzw. des Geologischen Dienstes einholen; der Standsicherheitsnachweis muss den Baugrund berücksichtigen, in Bergbaugebieten ggf. Anpassungs- und Sicherungsmaßnahmen (§§ 110 ff. BBergG).",
       "pruefen": {
-        "grund": "Standsicherheit im Einzelfall prüfen: bei Bergbau oder Gefährdung des Untergrunds (bekannt bzw. noch nicht erfragt – Auskunft der Bezirksregierung Arnsberg, Abt. 6) und bei Nutzungsänderung mit geänderten Lasten.",
+        "grund": "Standsicherheit im Einzelfall prüfen: bei Bergbau oder Gefährdung des Untergrunds (bekannt bzw. noch nicht erfragt – Auskunft der Bezirksregierung Arnsberg, Abt. 6), bei Nutzungsänderung mit geänderten Lasten und bei der Beseitigung mit Erdarbeiten (z. B. Abbruch von Keller oder Fundamenten): Tragfähigkeit des Baugrunds der Nachbargrundstücke (Abs. 1 Satz 2).",
         "wenn": {
           "oder": [
             {
@@ -227,6 +234,17 @@
             },
             {
               "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "beseitigung"
+                },
+                {
+                  "f": "vorhaben.erdarbeiten",
+                  "ist": true
+                }
+              ]
             }
           ]
         }
@@ -692,14 +710,10 @@
       "entfaellt": {
         "und": [
           {
-            "$": "wohngebaeude"
+            "$": "gebaeude"
           },
           {
             "$": "gk_1_2"
-          },
-          {
-            "f": "gebaeude.gemischt",
-            "ist": false
           }
         ]
       },
@@ -717,27 +731,57 @@
         "36/2": "e58d63fe"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Sonstige Gebäude der Gebäudeklassen 1 und 2 (auch gemischt genutzte): notwendige Flure nur in Kellergeschossen (Abs. 1 Satz 2 Nr. 2) – prüfen, ob Flure im Kellergeschoss liegen. Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "und": [
+          "oder": [
             {
-              "$": "nutzungsaenderung"
+              "und": [
+                {
+                  "$": "nw_vorhaben_gebaeude"
+                },
+                {
+                  "$": "gk_1_2"
+                },
+                {
+                  "nicht": {
+                    "und": [
+                      {
+                        "$": "wohngebaeude"
+                      },
+                      {
+                        "$": "gk_1_2"
+                      },
+                      {
+                        "f": "gebaeude.gemischt",
+                        "ist": false
+                      }
+                    ]
+                  }
+                }
+              ]
             },
             {
-              "nicht": {
-                "und": [
-                  {
-                    "$": "wohngebaeude"
-                  },
-                  {
-                    "$": "gk_1_2"
-                  },
-                  {
-                    "f": "gebaeude.gemischt",
-                    "ist": false
+              "und": [
+                {
+                  "$": "nutzungsaenderung"
+                },
+                {
+                  "nicht": {
+                    "und": [
+                      {
+                        "$": "wohngebaeude"
+                      },
+                      {
+                        "$": "gk_1_2"
+                      },
+                      {
+                        "f": "gebaeude.gemischt",
+                        "ist": false
+                      }
+                    ]
                   }
-                ]
-              }
+                }
+              ]
             }
           ]
         }
@@ -803,8 +847,15 @@
       "gilt": {
         "oder": [
           {
-            "f": "gebaeude.aufzug",
-            "ist": true
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "gebaeude.aufzug",
+                "ist": true
+              }
+            ]
           },
           {
             "und": [
@@ -947,18 +998,25 @@
     },
     "42": {
       "gilt": {
-        "oder": [
+        "und": [
           {
-            "f": "technik.feuerstaette",
-            "ist": true
+            "$": "vorhaben_29"
           },
           {
-            "f": "technik.waermepumpe",
-            "ist": true
-          },
-          {
-            "f": "technik.brennstofflager",
-            "ist": true
+            "oder": [
+              {
+                "f": "technik.feuerstaette",
+                "ist": true
+              },
+              {
+                "f": "technik.waermepumpe",
+                "ist": true
+              },
+              {
+                "f": "technik.brennstofflager",
+                "ist": true
+              }
+            ]
           }
         ]
       },
@@ -1035,34 +1093,13 @@
     "45": {
       "titel": "Blitzschutzanlagen",
       "gilt": {
-        "oder": [
+        "und": [
           {
-            "und": [
-              {
-                "$": "nw_vorhaben_gebaeude"
-              },
-              {
-                "oder": [
-                  {
-                    "$": "sonderbau"
-                  },
-                  {
-                    "$": "gk_4_5"
-                  }
-                ]
-              }
-            ]
+            "$": "vorhaben_29"
           },
           {
-            "und": [
-              {
-                "$": "vorhaben_29"
-              },
-              {
-                "f": "nw.blitzschutz_anlass",
-                "ist": true
-              }
-            ]
+            "f": "nw.blitzschutz_anlass",
+            "ist": true
           }
         ]
       },
@@ -1076,7 +1113,20 @@
       "stand": {
         "45": "1b5ffa74"
       },
-      "hinweis": "Ob nach Lage (z. B. freistehend, exponiert, Mast oder Turm), Bauart (z. B. weiche Bedachung) oder Nutzung eine Blitzschutzanlage nötig ist, im Einzelfall prüfen – das gilt auch für bauliche Anlagen, die keine Gebäude sind."
+      "hinweis": "Ob nach Lage (z. B. freistehend, exponiert, Mast oder Turm), Bauart (z. B. weiche Bedachung) oder Nutzung eine Blitzschutzanlage nötig ist, im Einzelfall prüfen – das gilt auch für bauliche Anlagen, die keine Gebäude sind.",
+      "pruefen": {
+        "grund": "Sonderbau: Die SBauVO verlangt Blitzschutzanlagen für Versammlungsstätten (§ 14 Abs. 4), Verkaufsstätten (§ 78) und Hochhäuser (§ 109 Abs. 2); bei anderen Sonderbauten den Anlass nach Lage, Bauart und Nutzung im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "$": "sonderbau"
+            }
+          ]
+        }
+      }
     },
     "46": {
       "gilt": {
@@ -1252,69 +1302,104 @@
     },
     "50": {
       "gilt": {
-        "$": "sonderbau"
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "sonderbau"
+          }
+        ]
       },
       "pruefen": {
-        "grund": "Nach den Angaben könnte ein großer Sonderbau vorliegen (Höhe über 22 m, Garage über 1 000 m², Verkaufsstätte über 2 000 m², Versammlungsstätte über 200 Besucher, Beherbergung über 30 Betten) – Merkmal Sonderbau prüfen.",
+        "grund": "Nach den Angaben könnte ein großer Sonderbau vorliegen (Gebäude über 22 m, andere bauliche Anlagen über 30 m Höhe, Garage über 1 000 m², Verkaufsstätte über 2 000 m², Versammlungsstätte über 200 Besucher, Beherbergung über 30 Betten) – Merkmal Sonderbau prüfen.",
         "wenn": {
-          "oder": [
+          "und": [
             {
-              "und": [
-                {
-                  "f": "gebaeude.hoehe",
-                  "bekannt": true
-                },
-                {
-                  "f": "gebaeude.hoehe",
-                  "min": 22.01
-                }
-              ]
+              "$": "vorhaben_29"
             },
             {
-              "und": [
+              "oder": [
                 {
-                  "f": "gebaeude.garage_nutzflaeche",
-                  "bekannt": true
+                  "und": [
+                    {
+                      "$": "gebaeude"
+                    },
+                    {
+                      "f": "gebaeude.hoehe",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.hoehe",
+                      "min": 22.01
+                    }
+                  ]
                 },
                 {
-                  "f": "gebaeude.garage_nutzflaeche",
-                  "min": 1000.01
-                }
-              ]
-            },
-            {
-              "und": [
-                {
-                  "f": "gebaeude.verkaufsflaeche",
-                  "bekannt": true
+                  "und": [
+                    {
+                      "m": "Gebäudeart",
+                      "in": [
+                        "kein Gebäude"
+                      ]
+                    },
+                    {
+                      "f": "gebaeude.hoehe",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.hoehe",
+                      "min": 30.01
+                    }
+                  ]
                 },
                 {
-                  "f": "gebaeude.verkaufsflaeche",
-                  "min": 2000.01
-                }
-              ]
-            },
-            {
-              "und": [
-                {
-                  "f": "gebaeude.besucher",
-                  "bekannt": true
+                  "und": [
+                    {
+                      "f": "gebaeude.garage_nutzflaeche",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.garage_nutzflaeche",
+                      "min": 1000.01
+                    }
+                  ]
                 },
                 {
-                  "f": "gebaeude.besucher",
-                  "min": 201
-                }
-              ]
-            },
-            {
-              "und": [
-                {
-                  "f": "gebaeude.gastbetten",
-                  "bekannt": true
+                  "und": [
+                    {
+                      "f": "gebaeude.verkaufsflaeche",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.verkaufsflaeche",
+                      "min": 2000.01
+                    }
+                  ]
                 },
                 {
-                  "f": "gebaeude.gastbetten",
-                  "min": 31
+                  "und": [
+                    {
+                      "f": "gebaeude.besucher",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.besucher",
+                      "min": 201
+                    }
+                  ]
+                },
+                {
+                  "und": [
+                    {
+                      "f": "gebaeude.gastbetten",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.gastbetten",
+                      "min": 31
+                    }
+                  ]
                 }
               ]
             }
@@ -1346,8 +1431,15 @@
     },
     "51": {
       "gilt": {
-        "f": "gebaeude.behelfsbau",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.behelfsbau",
+            "ist": true
+          }
+        ]
       },
       "grund": "Behelfsbauten und untergeordnete Gebäude: die §§ 26 bis 50 gelten nicht; brennbare Behelfsbauten nur erdgeschossig, Dachräume nicht nutzbar, Brandwände mindestens alle 30 m (Abs. 1) – auch für Wohnzwecke (z. B. Wohncontainer).",
       "fundstellen": [
@@ -1467,7 +1559,7 @@
         ]
       },
       "pruefen": {
-        "grund": "Genehmigungsfreistellung (Neufassung ab 01.09.2026) im Einzelfall prüfen: Abs. 1 Satz 1 Nr. 1 nur im Geltungsbereich eines qualifizierten oder vorhabenbezogenen Bebauungsplans ohne Widerspruch zu Festsetzungen und örtlichen Bauvorschriften (Abs. 2); Nr. 2 auch im Innenbereich (§ 34 BauGB) für Dachgeschossausbau zu Wohnzwecken einschließlich Gauben sowie für Solaranlagen nach § 35 Abs. 1 Nr. 8 b und 9 BauGB; nicht für Sonderbauten (außer Solaranlagen) und nicht für große Wohnvorhaben (über 5 000 m² BGF) oder öffentlich zugängliche Anlagen für mehr als 100 zusätzliche Personen im angemessenen Sicherheitsabstand eines Störfallbetriebs (Abs. 1 Satz 2).",
+        "grund": "Genehmigungsfreistellung (Neufassung ab 01.09.2026) im Einzelfall prüfen: Abs. 1 Satz 1 Nr. 1 nur im Geltungsbereich eines qualifizierten oder vorhabenbezogenen Bebauungsplans ohne Widerspruch zu Festsetzungen und örtlichen Bauvorschriften (Abs. 2) – eine beabsichtigte Abweichung von einer örtlichen Bauvorschrift oder Befreiung schließt die Freistellung aus; Nr. 2 auch im Innenbereich (§ 34 BauGB) für Dachgeschossausbau zu Wohnzwecken einschließlich Gauben sowie für Solaranlagen nach § 35 Abs. 1 Nr. 8 b und 9 BauGB; nicht für Sonderbauten (außer Solaranlagen) und nicht für große Wohnvorhaben (über 5 000 m² BGF) oder öffentlich zugängliche Anlagen für mehr als 100 zusätzliche Personen im angemessenen Sicherheitsabstand eines Störfallbetriebs (Abs. 1 Satz 2).",
         "wenn": {
           "und": [
             {
@@ -1492,6 +1584,12 @@
                     {
                       "nicht": {
                         "f": "planung.befreiung",
+                        "ist": false
+                      }
+                    },
+                    {
+                      "nicht": {
+                        "f": "ortsrecht.abweichung",
                         "ist": false
                       }
                     },
@@ -1833,17 +1931,24 @@
       "pruefen": {
         "grund": "Öffentlichkeitsbeteiligung nach Abs. 3 bei großen Vorhaben (Wohnen über 5 000 m² BGF, mehr als 100 zusätzliche Besucher, Sonderbauten nach § 47 Abs. 5 und § 50 Abs. 2 Nr. 8–15) – im Einzelfall prüfen.",
         "wenn": {
-          "oder": [
+          "und": [
             {
-              "$": "sonderbau"
+              "$": "vorhaben_29"
             },
             {
-              "f": "gebaeude.besucher",
-              "min": 101
-            },
-            {
-              "f": "gebaeude.bgf",
-              "min": 5000
+              "oder": [
+                {
+                  "$": "sonderbau"
+                },
+                {
+                  "f": "gebaeude.besucher",
+                  "min": 101
+                },
+                {
+                  "f": "gebaeude.bgf",
+                  "min": 5000
+                }
+              ]
             }
           ]
         }

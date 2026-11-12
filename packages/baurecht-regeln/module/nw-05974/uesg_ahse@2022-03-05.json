@@ -52,8 +52,15 @@
             "ist": true
           },
           {
-            "f": "technik.brennstofflager",
-            "ist": true
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "technik.brennstofflager",
+                "ist": true
+              }
+            ]
           }
         ]
       },
