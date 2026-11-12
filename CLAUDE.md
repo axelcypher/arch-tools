@@ -1,17 +1,23 @@
-# Hinweise für Claude (gilt für alle Sessions in diesem Repo)
+# Hinweise für Claude
 
-## Abschluss jeder Arbeit: PR, Merge, Branch weg
+## Ablauf nach jeder Änderung
 
-- Nach getaner Arbeit **immer selbst** einen Pull Request gegen `main` anlegen, die CI abwarten und bei grünem Ergebnis
-  **selbst mergen** – ohne nachzufragen. Schlägt die CI fehl: Ursache beheben, erneut pushen, dann mergen.
-- Danach den Arbeits-Branch **löschen** (auf GitHub und lokal). Nach getaner Arbeit soll kein Branch übrig bleiben.
-- Merge-Methode: „squash“ oder „merge“ (bei Merge-Commits im Branch geht „rebase“ nicht).
+Immer Pull Request auf `main` anlegen und mergen – ohne extra nachzufragen:
+
+1. Vor dem PR `npm test`, `npm run typecheck` und `npm run build` lokal laufen lassen.
+2. Arbeitszweig pushen, PR gegen `main` öffnen.
+3. Warten, bis alle CI-Checks grün sind (bei Fehlern beheben und erneut pushen; bei einem Konflikt `main` in den
+   Zweig mergen).
+4. Squash-Merge auf `main`.
+5. Den Arbeitszweig danach löschen – auf GitHub und lokal. Nach getaner Arbeit soll kein Branch übrig bleiben.
+6. Den Release-Lauf („Build & Release“) bis zum Ende verfolgen und das Ergebnis melden.
+
+Ein Release (Windows-Installer + Auto-Update) entsteht nur, wenn sich die Version einer App ändert.
+Bei Änderungen an einer App deshalb ihre Version in `apps/<app>/package.json`,
+`apps/<app>/src-tauri/tauri.conf.json`, `apps/<app>/src-tauri/Cargo.toml` und `apps/<app>/src-tauri/Cargo.lock` gleich
+hochsetzen – und die Rahmen-App (`apps/suite`) mit, weil sie alle Apps enthält.
 
 ## Konventionen
 
 - Oberfläche, Doku und Commit-Nachrichten auf Deutsch.
-- Versionen je App stehen in `apps/<app>/package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` und
-  `src-tauri/Cargo.lock` – alle vier gleich. Ein Versionssprung auf `main` löst den Release der App aus
-  (`.github/workflows/release.yml`).
-- Vor dem PR: `npm run typecheck`, `npm test`, `npm run build`.
 - Formatierung wie im Bestand: Prettier mit `--single-quote --print-width 200`.
