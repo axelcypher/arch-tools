@@ -11,7 +11,7 @@ import { felderDerSeite } from './forma/felder';
 import type { Formular } from './forma/formular';
 import { formularBytes, istAngekreuzt, memoText, parseFormular, setzeAngekreuzt, setzeMemoText } from './forma/formular';
 import type { PkEintrag as PkEintragTyp, PkWert, Projektkarte } from './forma/projektkarte';
-import { istWahl, pkAnzeige, pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWert, pkWertPasst, pkWertVon } from './forma/projektkarte';
+import { istWahl, pkAnzeige, pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWert, pkWertPasst, pkWertVon, pkZahlAus } from './forma/projektkarte';
 import type { Sperre, SperrBewertung, SperrProbe } from './forma/sperre';
 import { bewerten, sperreLesen, sperreSchreiben, sperrPfad, zeitstempel } from './forma/sperre';
 import { istEigeneSperre, sperreVergessen, sperreVermerken, verwaisteEigeneSperrenAufraeumen } from './eigeneSperren';
@@ -761,7 +761,7 @@ export function karteMitAenderungen(k: OffeneKarte): Projektkarte {
       const s = pkSchluessel(e.gruppe, e.id);
       if (!(s in k.aenderungen)) return e;
       const w = k.aenderungen[s];
-      return istWahl(e) ? { ...e, zahl: typeof w === 'number' ? w : null } : { ...e, text: typeof w === 'string' ? w : '' };
+      return istWahl(e) ? { ...e, zahl: pkZahlAus(e, typeof w === 'number' ? w : null) } : { ...e, text: typeof w === 'string' ? w : '' };
     }),
   };
 }
@@ -781,7 +781,7 @@ function karteMitWerten(k: OffeneKarte, werte: Map<string, unknown>): Record<str
   return aenderungen;
 }
 
-/** Änderungen für die Hülle: Texte mit CR LF wie bei FORMA, Auswahl als Nummer */
+/** Änderungen für die Hülle: Texte mit CR LF wie bei FORMA, Auswahl als Ganzzahl der Datei (pkZahlAus) */
 function kartenAenderungen(k: OffeneKarte): PkAenderung[] {
   return Object.entries(k.aenderungen).flatMap(([s, w]): PkAenderung[] => {
     const [gruppe, id] = s.split(':').map(Number);
@@ -789,7 +789,7 @@ function kartenAenderungen(k: OffeneKarte): PkAenderung[] {
     if (!e) return [];
     if (istWahl(e)) {
       // „keine Wahl“: was vorher stand (leer oder −1) bleibt so, wenn es schon nichts war
-      const neu = typeof w === 'number' ? w : e.zahl === null ? null : -1;
+      const neu = typeof w === 'number' ? pkZahlAus(e, w) : e.zahl === null ? null : -1;
       return neu === e.zahl ? [] : [{ gruppe, id, typ: e.typ, spalte: 'ganzzahl', alt: e.zahl, neu }];
     }
     return [{ gruppe, id, typ: e.typ, spalte: 'texte', alt: e.text, neu: (typeof w === 'string' ? w : '').replace(/\n/g, '\r\n') }];

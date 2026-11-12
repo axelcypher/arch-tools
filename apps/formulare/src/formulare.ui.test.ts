@@ -473,7 +473,8 @@ describe('Formulare', () => {
     await klick(knopfMit(host, 'Rückgängig'));
     expect(kartenFeld(host, 'PLZ Straße').value).toBe('12345');
     await klick(knopfGenau(host, 'Projektkarte speichern'));
-    expect(pkText(201, 210).zahl).toBe(2);
+    // „Sehr geehrter Herr“ ist die zweite Möglichkeit: Ganzzahl 1 – die leere Zeile zählt in der Datei nicht mit (wie SJ Office)
+    expect(pkText(201, 210).zahl).toBe(1);
     // die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat
     expect(pkText(201, 210).text).toBe(ANREDE);
     expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);

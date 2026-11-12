@@ -866,13 +866,15 @@ Adressgruppen (Typ 1) haben dieselben Einträge: 10 Branche, 20 Titel, 30 Vornam
 | `InhalteTyp` | Art | `Texte` | `Ganzzahl` |
 |---|---|---|---|
 | 1 / 2 | Text, einzeilig / mehrzeilig (CR LF) | der Text | – |
-| 4 | Auswahlliste | die Möglichkeiten zeilenweise, **erste Zeile leer** | Nummer der Wahl, die leere Zeile zählt mit (`NULL`/−1 = keine) |
+| 4 | Auswahlliste | die Möglichkeiten zeilenweise, **erste Zeile leer** | Nummer der Wahl ab 0 **ohne** die leere Zeile (`NULL`/−1 = keine) |
 | 8 | Optionen | die Möglichkeiten zeilenweise | Nummer der Wahl ab 0 (−1 = keine) |
 | 16 | Kästchen | Beschriftung (z. B. „Wärmeschutz“) | 1 = angekreuzt |
 
 Bei Auswahl, Optionen und Kästchen schreibt die App nur `Ganzzahl`; die Möglichkeiten in `Texte` bleiben unverändert.
-Die Zählweise der Auswahlliste folgt aus den Daten (Delphi: `Items` = Texte, `ItemIndex` = Ganzzahl): Nummer 2 ergibt
-bei einem Ansprechpartner „Sehr geehrter Herr“ und als Kontakt „Telefon“.
+Die leere erste Zeile der Auswahlliste steht für „keine Angabe“ (−1); `Ganzzahl` 0 ist die erste Möglichkeit danach.
+So liest SJ Office die Projektkarte: Bei „Land“ ist 0 „NRW“ und 1 „RLP“, bei der Anrede 1 „Sehr geehrter Herr“. Bis
+Formulare 0.35 zählte die App die leere Zeile mit – dort gewählte Auswahlen erscheinen jetzt (wie in SJ Office) um
+eine Möglichkeit versetzt und sind einmal neu zu wählen.
 
 Jede Formularseite enthält eine versteckte Liste **`lstbxProkarte`**, die Textfeldern Einträge zuordnet:
 
