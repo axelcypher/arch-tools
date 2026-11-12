@@ -67,14 +67,15 @@ export async function projektEinlesen(o: GeladenerOrdner, gewaehlt?: string | nu
 /**
  * Status eines Projekts setzen (P-15, „Projekt abschließen“): nur `meta.status` in der Projektdatei – frisch gelesen,
  * alles andere bleibt, wie es ist (auch Abschnitte anderer Apps und alle übrigen Einträge des Archivs). „aktiv“ ist
- * der Normalfall und steht nicht in der Datei. Ohne Projektdatei geht es nicht – dann zuerst ergänzen.
+ * der Normalfall und steht nicht in der Datei – außer mit `ausdruecklich` (Projekt in einem Archiv- bzw. Akquiseordner,
+ * dessen Stand sonst gälte). Ohne Projektdatei geht es nicht – dann zuerst ergänzen.
  */
-export async function projektStatusSetzen(fs: ProjektordnerZugriff, projektordner: string, status: ProjektStatus): Promise<void> {
+export async function projektStatusSetzen(fs: ProjektordnerZugriff, projektordner: string, status: ProjektStatus, { ausdruecklich = false } = {}): Promise<void> {
   const datei = await projektdateiFinden(fs, projektordner);
   if (!datei) throw new Error('Das Projekt hat noch keine Projektdatei (.oap) – bitte zuerst im Assistenten ergänzen.');
   await projektdateiSchreiben(fs, projektordner, datei.pfad, (roh) => {
     const meta = { ...((roh.meta ?? {}) as Record<string, unknown>) };
-    if (status === 'aktiv') delete meta.status;
+    if (status === 'aktiv' && !ausdruecklich) delete meta.status;
     else meta.status = status;
     return { ...roh, meta };
   });

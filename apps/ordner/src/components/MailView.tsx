@@ -381,7 +381,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   );
   // Themen, die im Projekt schon vorkommen – als Vorschläge für einheitliche Namen
   const themen = useMemo(() => [...new Set(zeilen.filter((z) => z.befund.ok && z.befund.teile).map((z) => z.befund.teile!.thema))].sort((a, b) => a.localeCompare(b, 'de')), [zeilen]);
-  const gefiltert = suche.trim() ? projekte.filter((p) => p.name.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
+  const gefiltert = suche.trim() ? projekte.filter((p) => `${p.gruppe ?? ''} ${p.name}`.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
 
   return (
     <div className="po-view po-mails-view">
@@ -398,6 +398,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
             <ul className="list po-projektliste">
               {gefiltert.slice(0, 300).map((p) => (
                 <li key={p.pfad} className={projekt?.pfad === p.pfad ? 'active' : ''} onClick={() => void ladenPfad(p.pfad)} title={p.pfad}>
+                  {p.gruppe && <span className="muted small-text">{p.gruppe} › </span>}
                   {p.name}
                 </li>
               ))}

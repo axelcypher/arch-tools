@@ -33,7 +33,15 @@ abfragt, steht danach in der Projektdatei – für alle Apps.
    einen Projektordner an beliebiger Stelle. Der Ordner muss nicht nach dem Schema heißen; ergänzt wird in genau
    diesem Ordner. Aus „Ordner prüfen“ führt „Projekt ergänzen …“ direkt hierher. Ohne eingestellten Stammordner
    (und im Browser) stehen hier zwei Karten: neues Projekt bzw. Projektordner wählen.
-   Gibt es genau einen Stammordner, ist er aufgeklappt. Die Projekte lassen sich sortieren (Ordnername, Nummer –
+   **Sammelordner:** Projekte in Gruppen-, Akquise- und Archivordnern eines Stammordners (auch verschachtelt, etwa
+   „Archiv/2024“) stehen in eigenen Abschnitten („Projekte › Archiv“). Sammelordner erkennt die App am Namen
+   („Archiv“, „_Archiv“, „99 Abgeschlossen“, „Akquise“ …, nicht „2026-014 Stadtarchiv“) oder daran, dass darin Ordner
+   mit Projektnamen liegen; ein Ordner mit Projektdatei oder nummerierten Unterordnern („00 Projekt“, „01 …“) ist ein
+   Projekt. Ohne Status in der Projektdatei gelten Projekte im Archivordner als abgeschlossen (in der Standardansicht
+   ausgeblendet) und in der Akquise als Akquise; „Wieder aktiv“ schreibt dann „aktiv“ ausdrücklich in die Datei.
+   **Reihenfolge der Stammordner:** die Abschnitte der Übersicht ziehen (die Sammelordner wandern mit) oder unter
+   „Einstellungen“ ziehen bzw. ↑ ↓ – gilt für alle Apps; im ersten entstehen neue Projekte.
+   Gibt es genau einen Stammordner, ist er aufgeklappt (ein Archivordner darin nicht). Die Projekte lassen sich sortieren (Ordnername, Nummer –
    neueste zuerst –, zuletzt geändert, Titel) und nach Status filtern (Standard: ohne abgeschlossene; die Wahl gilt
    je Benutzer). Rechtsklick auf ein Projekt: „Ergänzen …“, „Projekt prüfen“, „Im Explorer öffnen“, **„Projekt
    abschließen“** bzw. „Wieder aktiv“, „Als Akquise kennzeichnen“ und „Anheften“ – angeheftete Projekte stehen ganz
@@ -44,7 +52,7 @@ abfragt, steht danach in der Projektdatei – für alle Apps.
    **Stand**: beauftragt (aktiv) oder Akquise – er steht als `meta.status` in der Projektdatei und gilt für den
    Filter der Projektübersicht aller Apps.
    - Neues Projekt: Das Tool trägt die nächste freie Nummer vor (änderbar) – die höchste laufende Nummer unter den
-     Ordnern **aller** Stammordner (auch Archiv oder Akquise; im laufenden Jahr, wenn das Schema ein Jahr enthält)
+     Projektordnern **aller** Stammordner (auch Archiv oder Akquise, auch in deren Sammelordnern; im laufenden Jahr, wenn das Schema ein Jahr enthält)
      plus eins. Passt eine Nummer nicht zum Schema („26-14“ bei `{jahr}-{nr:3}`), steht am Feld ein Hinweis
      („erwartet z. B. 2026-015“); er hält nicht auf. Projektnummer und Kurzname sind Pflicht (Stern); der
      Ordnername, der sich daraus ergibt, steht direkt darunter, Zeichen wie `/ : ?` meldet das Feld schon beim
@@ -129,7 +137,7 @@ mit; was dort schon liegt, gilt und bleibt unverändert.
 
 | Datei | Inhalt |
 |---|---|
-| `allgemein.json` | Stammordner der Projekte (mehrere möglich; im ersten entstehen neue Projekte), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien, Kürzel der Mitarbeiter (Vorschläge für „Bearbeitung“) |
+| `allgemein.json` | Stammordner der Projekte (mehrere möglich, Reihenfolge per Ziehen; im ersten entstehen neue Projekte; Projekte in Gruppen-, Akquise- und Archivordnern darin zählen mit), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien, Kürzel der Mitarbeiter (Vorschläge für „Bearbeitung“) |
 | `projektordner.json` | Struktur samt Bausteinen und Vorlagen-Presets, Vorlagenordner dieser App |
 
 Welcher Konfigurationsordner gilt, steht je Benutzer in `%APPDATA%\arch-tools\konfig.json` – für alle Apps

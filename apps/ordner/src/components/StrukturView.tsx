@@ -309,6 +309,16 @@ function GemeinsameEinstellungen() {
   const { konfig, konfigFehler, allgemein, setAllgemein, konfigOrdnerSetzen, struktur } = useOrdner();
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
   const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
+  /** Stammordner per Ziehen umsortieren: gezogener Eintrag und Ziel */
+  const [zieht, setZieht] = useState<number | null>(null);
+  const [ziel, setZiel] = useState<{ i: number; davor: boolean } | null>(null);
+  /** Eintrag `von` vor die Stelle `vor` setzen (Index in der alten Liste; Länge = ans Ende) */
+  const verschieben = (von: number, vor: number) => {
+    const liste = [...allgemein.projekte];
+    const [x] = liste.splice(von, 1);
+    liste.splice(vor > von ? vor - 1 : vor, 0, x);
+    if (liste.join('|') !== allgemein.projekte.join('|')) setAllgemein({ projekte: liste });
+  };
 
   const konfigWaehlen = async (lokal: boolean) => {
     setMeldung(null);
@@ -359,9 +369,46 @@ function GemeinsameEinstellungen() {
       {meldung && <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'}>{meldung.text}</p>}
 
       <span className="field-label">Stammordner der Projekte</span>
-      <ul className="list po-stammordner">
+      <p className="muted small-text">
+        Reihenfolge wie in der Projektübersicht aller Apps – zum Umsortieren ziehen (oder ↑ ↓; auch die Abschnitte der Projektübersicht lassen sich ziehen). Im ersten entstehen neue Projekte. Projekte
+        in Gruppen-, Akquise- und Archivordnern darin werden mit erfasst.
+      </p>
+      <ul className="list po-stammordner" aria-label="Stammordner der Projekte">
         {allgemein.projekte.map((p, i) => (
-          <li key={p}>
+          <li
+            key={p}
+            draggable
+            className={`${zieht === i ? 'zieht' : ''}${ziel && ziel.i === i && zieht !== null && zieht !== i ? (ziel.davor ? ' ziel-davor' : ' ziel-danach') : ''}`}
+            onDragStart={(e) => {
+              setZieht(i);
+              try {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', p);
+              } catch {
+                // ohne Datenübergabe genügt der Zustand
+              }
+            }}
+            onDragOver={(e) => {
+              if (zieht === null) return;
+              e.preventDefault();
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const davor = !r.height || e.clientY - r.top < r.height / 2;
+              if (ziel?.i !== i || ziel.davor !== davor) setZiel({ i, davor });
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (zieht !== null) verschieben(zieht, ziel?.davor === false ? i + 1 : i);
+              setZieht(null);
+              setZiel(null);
+            }}
+            onDragEnd={() => {
+              setZieht(null);
+              setZiel(null);
+            }}
+          >
+            <span className="po-griff" aria-hidden title="Zum Umsortieren ziehen">
+              ⠿
+            </span>
             <code title={p}>{p}</code>
             {i === 0 ? (
               <span className="muted small-text">neue Projekte</span>
@@ -370,6 +417,12 @@ function GemeinsameEinstellungen() {
                 für neue
               </button>
             )}
+            <button className="small" title="nach oben" aria-label={`${p} nach oben`} disabled={i === 0} onClick={() => verschieben(i, i - 1)}>
+              ↑
+            </button>
+            <button className="small" title="nach unten" aria-label={`${p} nach unten`} disabled={i === allgemein.projekte.length - 1} onClick={() => verschieben(i, i + 2)}>
+              ↓
+            </button>
             <button className="small" title="Aus der Liste nehmen – am Ordner ändert sich nichts" onClick={() => setAllgemein({ projekte: allgemein.projekte.filter((x) => x !== p) })}>
               ×
             </button>

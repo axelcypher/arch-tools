@@ -128,7 +128,7 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
     );
 
   const offen = g?.ergebnis.befunde.filter((b) => b.art !== 'ok').length ?? 0;
-  const gefiltert = suche.trim() ? projekte.filter((p) => p.name.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
+  const gefiltert = suche.trim() ? projekte.filter((p) => `${p.gruppe ?? ''} ${p.name}`.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
 
   return (
     <div className="po-view einspaltig">
@@ -167,6 +167,7 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
               {gefiltert.slice(0, 300).map((p) => (
                 <li key={p.pfad} title={p.pfad}>
                   <button className="po-projekt-knopf" disabled={!!laeuft} onClick={() => void pruefenPfad(p.pfad)}>
+                    {p.gruppe && <span className="muted small-text">{p.gruppe} › </span>}
                     {p.name}
                   </button>
                 </li>

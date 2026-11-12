@@ -193,19 +193,93 @@ export interface ProjektordnerEintrag {
   pfad: string;
   name: string;
   geaendert: number;
+  /**
+   * Unterordner des Stammordners, in dem das Projekt liegt – ein Gruppen-, Akquise- oder Archivordner („Archiv“,
+   * „Archiv/2024“); fehlt bei Projekten direkt im Stammordner
+   */
+  gruppe?: string;
 }
 
 /**
- * Projektordner in den Stammordnern (nur die oberste Ebene – schnell). Die Projektdatei je Ordner sucht
- * `projektdateiFinden`, ihre Stammdaten liest `projektdateiKopf` – beides am besten erst für sichtbare Karten.
- * Nicht lesbare Stammordner stehen in `fehler`.
+ * Name eines Sammelordners für abgeschlossene bzw. Akquise-Projekte: das Stichwort am Anfang, höchstens nach einer
+ * Sortiernummer („_Archiv“, „99 Abgeschlossen“, „Archiv 2024“, „00_Akquise“) – nicht „2026-014 Stadtarchiv“.
+ */
+export const ARCHIV_NAME = /^(?:\d{1,3}[ _.-]*|[_.\-\s]+)?(?:archiv|abgeschlossen|erledigt|beendet|storniert|ruhend)/i;
+export const AKQUISE_NAME = /^(?:\d{1,3}[ _.-]*|[_.\-\s]+)?(?:akquise|akquisition)/i;
+
+/** Stand eines Projekts aus seinem Sammelordner – gilt, solange die Projektdatei keinen Status nennt */
+export function statusAusGruppe(gruppe: string | undefined): 'akquise' | 'abgeschlossen' | undefined {
+  if (!gruppe) return undefined;
+  const teile = gruppe.split('/');
+  if (teile.some((t) => ARCHIV_NAME.test(t))) return 'abgeschlossen';
+  if (teile.some((t) => AKQUISE_NAME.test(t))) return 'akquise';
+  return undefined;
+}
+
+/** Ordnername, der nach einem Projekt aussieht: Kürzel mit Ziffer bzw. in Großbuchstaben, dann ein Name („2026-014 EFH …“, „SIS Sanierung“) */
+const PROJEKTNAME = /^(?:\S*\d\S*|[A-ZÄÖÜ][A-ZÄÖÜ0-9]{1,7})[\s_-]+\S/;
+/** Unterordner, wie sie in Projekten stehen: nummeriert („00 Projekt“, „01_Grundlagen“) */
+const NUMMERIERT = /^\d{1,3}(?:[ _.-]|$)/;
+
+type Kinder = { ordner: string[]; dateien: string[] };
+
+/**
+ * Ist ein Ordner ein Projekt oder ein Sammelordner (Gruppe, Akquise, Archiv)? Aus seinem Namen und seinen direkten
+ * Einträgen: Akquise-/Archivnamen sammeln; eine Projektdatei, mehrere nummerierte Unterordner oder ein alter
+ * projekt.json machen ein Projekt; sonst sammelt er, wenn darin Ordner mit Projektnamen liegen. Im Zweifel: Projekt
+ * (wie bisher).
+ */
+export function istSammelordner(name: string, k: Kinder): boolean {
+  if (ARCHIV_NAME.test(name) || AKQUISE_NAME.test(name)) return true;
+  if (k.dateien.some((d) => /\.oap$/i.test(d) || d.toLowerCase() === 'projekt.json')) return false;
+  if (k.ordner.filter((o) => NUMMERIERT.test(o)).length >= 2) return false;
+  // „00 Projekt“ ist ein Unterordner eines Projekts, kein Projekt
+  return k.ordner.some((o) => PROJEKTNAME.test(o) && !NUMMERIERT.test(o));
+}
+
+/** so tief werden Sammelordner durchsucht (Archiv/2024/Projekt = 2) */
+const SAMMEL_TIEFE = 3;
+
+/**
+ * Projektordner in den Stammordnern – direkt darin und in Sammelordnern (Gruppen, Akquise, Archiv, auch
+ * verschachtelt bis `SAMMEL_TIEFE`), siehe `istSammelordner`. Gelesen werden je Ordner nur zwei Ebenen. Die
+ * Projektdatei je Ordner sucht `projektdateiFinden`, ihre Stammdaten liest `projektdateiKopf` – beides am besten erst
+ * für sichtbare Karten. Nicht lesbare Stammordner stehen in `fehler`.
  */
 export async function projekteAuflisten(fs: ProjektordnerZugriff, roots: string[]): Promise<{ projekte: ProjektordnerEintrag[]; fehler: { root: string; text: string }[] }> {
   const projekte: ProjektordnerEintrag[] = [];
   const fehler: { root: string; text: string }[] = [];
+  const durchsuchen = async (root: string, ordner: string, gruppe: string, tiefe: number) => {
+    const eintraege = await fs.liste(ordner, 2);
+    const kinder = new Map<string, Kinder>();
+    const oben: { name: string; geaendert: number }[] = [];
+    for (const e of eintraege) {
+      const teile = e.pfad.split('/');
+      if (teile.length === 1) {
+        if (e.ordner && !/^[.~$]/.test(e.pfad)) {
+          oben.push({ name: e.pfad, geaendert: e.geaendert ?? 0 });
+          if (!kinder.has(e.pfad)) kinder.set(e.pfad, { ordner: [], dateien: [] });
+        }
+      } else if (teile.length === 2) {
+        const k = kinder.get(teile[0]) ?? { ordner: [], dateien: [] };
+        (e.ordner ? k.ordner : k.dateien).push(teile[1]);
+        kinder.set(teile[0], k);
+      }
+    }
+    for (const o of oben) {
+      const pfad = verbinde(ordner, o.name);
+      if (tiefe < SAMMEL_TIEFE && istSammelordner(o.name, kinder.get(o.name)!)) {
+        try {
+          await durchsuchen(root, pfad, gruppe ? `${gruppe}/${o.name}` : o.name, tiefe + 1);
+        } catch (e) {
+          fehler.push({ root, text: `${o.name}: ${e instanceof Error ? e.message : String(e)}` });
+        }
+      } else projekte.push({ root, pfad, name: o.name, geaendert: o.geaendert, ...(gruppe ? { gruppe } : {}) });
+    }
+  };
   for (const root of roots) {
     try {
-      for (const e of await fs.liste(root, 1)) if (e.ordner && !/^[.~]/.test(e.pfad)) projekte.push({ root, pfad: verbinde(root, e.pfad), name: e.pfad, geaendert: e.geaendert ?? 0 });
+      await durchsuchen(root, root, '', 1);
     } catch (e) {
       fehler.push({ root, text: e instanceof Error ? e.message : String(e) });
     }

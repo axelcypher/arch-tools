@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Beteiligter, ProjektStatus } from '@core/model';
 import { anschriftEinzeilig, bebauungsplanText, flurText, LEISTUNGSPHASEN } from '@core/model';
 import { zuletztMerken } from '@core/platform/konfig';
+import { projekteAuflisten } from '@core/platform/projektordner';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { anRahmen, ZUR_APP } from '@core/platform/rahmen';
@@ -146,8 +147,10 @@ export function AssistentView({
   useEffect(() => {
     if (!desktop || !allgemein.projekte.length) return setAlleNamen([]);
     let aktuell = true;
-    void Promise.all(allgemein.projekte.map((r) => tauriDateisystem.liste(r, 1).then((l) => l.filter((e) => e.ordner).map((e) => e.pfad), () => [] as string[]))).then(
-      (je) => aktuell && setAlleNamen(je.flat()),
+    // auch Projekte in Gruppen-, Akquise- und Archivordnern zählen mit
+    void projekteAuflisten(tauriDateisystem, allgemein.projekte).then(
+      (r) => aktuell && setAlleNamen(r.projekte.map((p) => p.name)),
+      () => aktuell && setAlleNamen([]),
     );
     return () => {
       aktuell = false;

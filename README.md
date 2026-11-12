@@ -48,6 +48,9 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
   zeigt jede App denselben Einstieg mit denselben Aktionen: *Projekt wählen …* (Desktop: Übersicht mit „zuletzt
   geöffnet“), *Datei öffnen …*, *Neues Projekt*. Die Projektübersicht scrollt als Ganzes (aufgeklappte Quellen werden
   nicht mehr auf die Fensterhöhe gequetscht); „Zuletzt geöffnet“ steht auf einem farbigen Streifen.
+- **Projektübersicht mit Sammelordnern:** Projekte in Gruppen-, Akquise- und Archivordnern der Stammordner stehen in
+  eigenen Abschnitten (Archiv = abgeschlossen, Akquise = Akquise, solange die Projektdatei nichts anderes sagt); die
+  Reihenfolge der Stammordner lässt sich per Ziehen ändern – in der Übersicht und unter „Einstellungen“ der App „Projekt“.
 - **Neues Projekt anlegen** aus jeder App (in der Rahmen-App „arch-tools“): Der Knopf auf der Projektübersicht startet
   den Assistenten der App „Projekt“ in deren Tab; nach dem Anlegen führt „In … öffnen“ zurück, und Flächenrechner,
   GRZ-Nachweis, Kostenermittlung und Entzerrung öffnen das neue Projekt gleich. Auch über „+“ und die Startseite des

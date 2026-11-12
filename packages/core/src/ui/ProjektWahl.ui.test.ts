@@ -181,3 +181,37 @@ describe('Neues Projekt anlegen aus jeder App (Rahmen-App)', () => {
     expect(host.textContent).toContain('Neubau');
   });
 });
+
+describe('Projektübersicht: Sammelordner und Reihenfolge der Stammordner', () => {
+  it('Projekte in Gruppen-, Akquise- und Archivordnern als eigene Abschnitte; Archiv gilt als abgeschlossen; Stammordner per Ziehen umsortieren', async () => {
+    localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['/a', '/b'] }));
+    const fs = new SpeicherProjektordner();
+    for (const p of ['2026-014 EFH/00 Projekt', '2026-014 EFH/01 Grundlagen', 'Akquise/2026-099 Kita/00 Projekt', '_Archiv/2023-010 Halle/Pläne', 'Wohnungsbau/2025-007 MFH/00 Projekt'])
+      await fs.ordnerAnlegen('/a', p);
+    await fs.ordnerAnlegen('/b', '2026-200 Büro/Pläne');
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(ProjektWahl, { app: 'Flächenrechner', fs, onGewaehlt: () => {}, onSchliessen: () => {} }));
+    });
+    await warten();
+    expect([...host.querySelectorAll('.pa-gruppe-name')].map((x) => x.textContent)).toEqual(['a', 'a › Wohnungsbau', 'a › Akquise', 'a › _Archiv', 'b']);
+    // mehrere Stammordner: eingeklappt; aufklappen zeigt die Projekte, das Archiv ist als abgeschlossen ausgeblendet
+    const kopf = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('.pa-gruppe-kopf')].find((k) => k.querySelector('.pa-gruppe-name')?.textContent === name)!;
+    act(() => kopf('a › _Archiv').click());
+    expect(kopf('a › _Archiv').closest('section')!.textContent).toContain('1 abgeschlossenes Projekt ausgeblendet');
+    act(() => kopf('a › Akquise').click());
+    expect(kopf('a › Akquise').closest('section')!.textContent).toContain('2026-099');
+    // ziehen: „b“ vor „a“ – die Abschnitte von „a“ wandern zusammen
+    const ziehen = (von: HTMLElement, nach: HTMLElement) => {
+      act(() => von.dispatchEvent(new Event('dragstart', { bubbles: true })));
+      act(() => nach.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true })));
+      act(() => nach.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true })));
+    };
+    ziehen(kopf('b'), kopf('a'));
+    await warten();
+    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!).projekte).toEqual(['/b', '/a']);
+    expect([...host.querySelectorAll('.pa-gruppe-name')].map((x) => x.textContent)).toEqual(['b', 'a', 'a › Wohnungsbau', 'a › Akquise', 'a › _Archiv']);
+  });
+});

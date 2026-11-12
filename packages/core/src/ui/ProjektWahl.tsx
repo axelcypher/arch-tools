@@ -224,6 +224,8 @@ export function ProjektWahl({
         kontextMenue={kontextMenue}
         // ein mit dem Assistenten der Projekt-App angelegtes Projekt gleich öffnen
         onAngelegt={(ordner) => void oeffnen(ordner)}
+        // Stammordner per Ziehen umsortieren – gilt für alle Apps (gemeinsame Einstellung); der erste nimmt neue Projekte auf
+        onGruppenOrdnen={(projekte) => void allgemeinAendern({ projekte }).then(setAllgemein, (e) => setFehler(e instanceof Error ? e.message : String(e)))}
         kopf={
           <>
             {onDateiOeffnen && (
