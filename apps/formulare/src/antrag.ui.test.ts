@@ -1606,7 +1606,8 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await act(() => useAntrag.getState().aktualisieren());
     await warte();
     await klick(knopfGenau(host, 'Antrag'));
-    expect(host.querySelector('.fo-stand')!.textContent).toContain('1 neu, 1 geändert seit der Einreichung');
+    // neu: der Lageplan und das (neue) Antragsprotokoll – ein Antragsprotokoll nach dem Stand belegt eine weitere Einreichung
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('2 neu, 1 geändert seit der Einreichung');
     // in den Antragsdaten neu festhalten (Rückfrage)
     await klick(antragsdaten(host));
     await klick(knopf(host, 'Stand neu festhalten'));
@@ -1678,7 +1679,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     const vorher = antragIn('BAUA 2')?.stand;
     await act(() => useAntrag.getState().standNeuFesthalten());
     expect(antragIn('BAUA 2')?.stand).toEqual(vorher);
-    expect(useFormulare.getState().meldung?.text).toContain('nicht lesbar – der bisherige Stand bleibt');
+    expect(useFormulare.getState().meldung?.text).toContain('nicht lesbar (Netzlaufwerk nicht erreichbar) – der bisherige Stand bleibt');
     // wieder erreichbar: neu festhalten (Rückfrage mit Gefahr-Knopf), Meldung, der geänderte Lageplan gehört dazu
     gesperrt = false;
     await act(() => useAntrag.getState().aktualisieren());
@@ -1689,9 +1690,43 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await klick(ok);
     await warte();
     expect(useFormulare.getState().meldung?.text).toBe('Antragsstand von BAUA 2 neu festgehalten – 3 Dateien.');
+    // Status und Ablage nennen den Tag des Neu-Festhaltens, nicht nur den der Einreichung
+    expect(host.querySelector('.pu-status-text')!.textContent).toMatch(/Stand neu festgehalten am \d{2}\.\d{2}\.\d{4} \(3 Dateien\)/);
     await klick(knopfGenau(host, 'Antrag'));
-    expect(host.querySelector('.fo-stand')!.textContent).toContain('seitdem unverändert');
+    expect(host.querySelector('.fo-stand')!.textContent).toMatch(/Eingereicht am 03\.11\.2026 – Stand neu festgehalten am \d{2}\.\d{2}\.\d{4} · seitdem unverändert/);
     expect([...host.querySelectorAll('.fo-bereit-zeile')].find((z) => z.textContent?.includes('Lageplan'))!.querySelector('.fo-seit')).toBeNull();
+  });
+
+  it('Stand neu festhalten: ändert sich während des Lesens der Status, wird abgebrochen statt Veraltetes zu schreiben', async () => {
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Antragsprotokoll.pdf`, new Uint8Array([1]));
+    await projektBS9();
+    const vorher = antragIn('BAUA 2')?.stand;
+    // das Lesen hängt, bis wir es freigeben
+    const liste = ds.liste.bind(ds);
+    let frei!: () => void;
+    const halt = new Promise<void>((r) => (frei = r));
+    let haengen = true;
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (haengen && pfad.endsWith('/TÖB/BAUA 2') && tiefe > 1) await halt;
+      return liste(pfad, tiefe);
+    };
+    let laeuft!: Promise<void>;
+    act(() => {
+      laeuft = useAntrag.getState().standNeuFesthalten();
+    });
+    // währenddessen: zum Nachreichen auf „in Arbeit“
+    haengen = false;
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: false, datum: '2026-11-03' }));
+    await warte();
+    frei();
+    await act(() => laeuft);
+    await warte();
+    // der Status des Nutzers bleibt, der Stand wird nicht ersetzt
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: false, datum: '2026-11-03' });
+    expect(antragIn('BAUA 2')?.stand).toEqual(vorher);
+    expect(useFormulare.getState().meldung?.text).toContain('Stand neu festhalten abgebrochen');
   });
 
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {

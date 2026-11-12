@@ -178,7 +178,7 @@ interface AntragState {
   merkmalSetzen: (name: string, wert: string) => Promise<void>;
   /** Status des aktiven Antrags von Hand setzen (eingereicht mit Datum bzw. in Arbeit); null = wieder automatisch */
   statusSetzen: (status: AntragStatusManuell | null) => Promise<void>;
-  /** den Antragsstand des aktiven Antrags verwerfen und mit den Dateien, die jetzt im Ordner liegen, neu festhalten */
+  /** den Antragsstand des aktiven Antrags durch die Dateien ersetzen, die jetzt im Ordner liegen (erst lesen, dann in einem Schritt) */
   standNeuFesthalten: () => Promise<void>;
   /** Abweichungen des gewählten Projekts; null = wieder die Vorgabe */
   setUeberschreibung: (u: ExportUeberschreibung | null) => void;
@@ -310,7 +310,7 @@ const tagText = (iso: string) => iso.split('-').reverse().join('.');
 export function antragSperre(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null): string | null {
   const e = aktiverEingereicht(s, p);
   if (!e) return null;
-  return `Antrag ${aktiveFassung(s, p)} ist eingereicht (${tagText(e.datum)}${e.manuell ? ', von Hand gesetzt' : ''}) und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen (Tag und Stand bleiben); ein Nachtrag (neue Antragsfassung) erst nach Rücknahme, Ablehnung oder für eine Änderung nach der Genehmigung.`;
+  return `Antrag ${aktiveFassung(s, p)} ist eingereicht (${tagText(e.datum)}${e.manuell ? ', von Hand gesetzt' : ''}) und gesperrt. Zum Nachreichen den Status in den Antragsdaten vorübergehend auf „in Arbeit“ setzen.`;
 }
 
 /** Name des nächsten Nachtrags (neue Fassung derselben Antragsart) */
@@ -752,23 +752,33 @@ export const useAntrag = create<AntragState>((set, get) => {
     },
     standNeuFesthalten: async () => {
       const { ds, projekt, basis } = ctx();
-      const pd = get().projektdatei;
-      if (!ds || !projekt || !basis || !pd?.antraege) return;
+      if (!ds || !projekt || !basis || !eingereichtVon(get().projektdatei?.antraege?.[aktiveFassung(get(), projekt)])) return;
       const fassung = aktiveFassung(get(), projekt);
-      const a = pd.antraege[fassung];
-      const ein = eingereichtVon(a);
-      if (!a || !ein) return;
+      const ordner = antragsOrdner(get(), projekt);
       // erst lesen, dann in einem Schritt ersetzen – ist der Ordner nicht lesbar, bleibt der bisherige Stand
       let liste: Eintrag[];
       try {
-        liste = await ds.liste(verbinde(basis, antragsOrdner(get(), projekt)), EINGEREICHT_TIEFE);
+        liste = await ds.liste(verbinde(basis, ordner), EINGEREICHT_TIEFE);
       } catch (e) {
-        fehler(`Stand neu festhalten: Ordner ${antragsOrdner(get(), projekt)} nicht lesbar – der bisherige Stand bleibt`, e);
+        log.error(`Stand neu festhalten: ${e instanceof Error ? e.message : String(e)}`);
+        meldung('fehler', `Stand neu festhalten: Ordner ${ordner} nicht lesbar (${e instanceof Error ? e.message : String(e)}) – der bisherige Stand bleibt.`);
+        await get().aktualisieren();
         return;
       }
-      const stand = standAus(liste, ein.datum, Date.now());
+      // während des Lesens kann sich viel ändern (anderes Projekt, andere Fassung, Status): frisch prüfen und aus der
+      // aktuellen Projektdatei schreiben – sonst überschriebe ein alter Stand neuere Angaben oder ein anderes Projekt
+      const jetzt = get().projektdatei;
+      const a = jetzt?.antraege?.[fassung];
+      const ein = eingereichtVon(a);
+      if (useFormulare.getState().projekt !== projekt || aktiveFassung(get(), projekt) !== fassung || !jetzt?.antraege || !a || !ein) {
+        meldung('info', 'Stand neu festhalten abgebrochen – Projekt, Antrag oder Status hat sich inzwischen geändert.');
+        return;
+      }
+      // Zeitpunkt: mindestens die jüngste Änderungszeit der Liste (die Uhr des Netzlaufwerks kann vorgehen)
+      const zeitpunkt = Math.max(Date.now(), ...liste.map((d) => d.geaendert ?? 0)) + 2000;
+      const stand = standAus(liste, ein.datum, zeitpunkt);
       try {
-        if (await projektdateiSchreiben({ ...pd, antraege: { ...pd.antraege, [fassung]: { ...a, stand } } })) {
+        if (await projektdateiSchreiben({ ...jetzt, antraege: { ...jetzt.antraege, [fassung]: { ...a, stand } } })) {
           log.info(`${fassung}: Antragsstand von Hand neu festgehalten (${stand.dateien.length} Dateien)`);
           meldung('info', `Antragsstand von ${fassung} neu festgehalten – ${stand.dateien.length} ${stand.dateien.length === 1 ? 'Datei' : 'Dateien'}.`);
           await get().aktualisieren();

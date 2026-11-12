@@ -4665,6 +4665,10 @@ tr[data-ziehen='danach'] > td {
   flex-direction: column;
   gap: 3px;
 }
+/* die Anleitung zum Nachreichen in voller Textfarbe (nicht gedämpft) */
+.pu-status-anleitung {
+  color: var(--text);
+}
 .pu-status-text strong {
   display: inline-flex;
   align-items: center;

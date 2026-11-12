@@ -13,6 +13,7 @@ import {
   nameNachFormat,
   SEIT_EINREICHUNG_TEXT,
   seitEinreichung,
+  tagVon,
 } from '../antrag';
 import { aktiveFassung, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
@@ -200,13 +201,14 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           role="status"
           title={entfernt.length ? `Seit der Einreichung nicht mehr im Ordner:\n${entfernt.map((x) => x.pfad).join('\n')}` : undefined}
         >
-          <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} – Stand festgehalten
+          <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} –{' '}
+          {stand.festgehalten ? `Stand neu festgehalten am ${tagVon(new Date(stand.festgehalten)).split('-').reverse().join('.')}` : 'Stand festgehalten'}
           {lesefehler
             ? seitText
               ? ` · beim letzten Lesen: ${seitText} (Ordner gerade nicht erreichbar)`
               : ' · Vergleich mit dem Ordner gerade nicht möglich'
             : seitText
-              ? ` · ${seitText} seit der Einreichung`
+              ? ` · ${seitText} ${stand.festgehalten ? 'seit dem Festhalten' : 'seit der Einreichung'}`
               : ' · seitdem unverändert'}
         </p>
       )}

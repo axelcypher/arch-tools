@@ -264,7 +264,7 @@ describe('Antragsstand bei der Einreichung', () => {
     for (const n of ['HVO BAUVA 261110 01 Antrag auf Vorbescheid.pdf', 'HVO BAUF 261110 Genehmigungsfreistellung.pdf', 'Antrag auf Baugenehmigung.pdf', 'Antrag auf denkmalrechtliche Erlaubnis.pdf'])
       expect(seitEinreichung(d(n, zeit('2026-11-20T10:00')), s)).toBe('neu');
     // die Entscheidung bei Vorbescheid, DENK und ABGE ist erwartet, ebenso die Mitteilung der Gemeinde (BAUF)
-    for (const n of ['Vorbescheid.pdf', 'Denkmalrechtliche Erlaubnis.pdf', 'Abgeschlossenheitsbescheinigung.pdf', 'Aufteilungsplan gesiegelt.pdf', 'Antragsprotokoll Bauportal.pdf', 'Mitteilung der Gemeinde.pdf', 'Nachforderung Kreis.pdf'])
+    for (const n of ['Vorbescheid.pdf', 'Denkmalrechtliche Erlaubnis.pdf', 'Abgeschlossenheitsbescheinigung.pdf', 'Aufteilungsplan gesiegelt.pdf', 'Mitteilung der Gemeinde.pdf', 'Nachforderung Kreis.pdf'])
       expect(erw(n), n).toBe(true);
     // so heißt auch das Schreiben der Behörde; dazu Vollständigkeitsmitteilung (§ 71), genehmigte Bauvorlagen
     // (Genehmigungsvermerk), ein Bescheid – auch „zum Bauantrag“ – und Mitteilung bzw. Erklärung der Stadt (BAUF)
@@ -419,7 +419,6 @@ describe('Antragsstand bei der Einreichung', () => {
       'Bestätigung der Vollständigkeit.pdf',
       'Rückgabe der Unterlagen.pdf',
       'Baugenehmigung mit Nebenbestimmungen.pdf',
-      'Antragsprotokoll.pdf',
       // genehmigte Bauvorlagen mit Geschoss, Richtung, Plannummer, Bauvorlage nach BauPrüfVO
       'Grundriss EG genehmigt.pdf',
       'GP-03 Grundriss OG genehmigt.pdf',
@@ -443,6 +442,12 @@ describe('Antragsstand bei der Einreichung', () => {
       'Baugenehmigung Az 1950-26.pdf',
       'Baugenehmigung 63-1934-2026.pdf',
       'Nachforderung Az 63-1912-26.pdf',
+      // Runde 15: Vollständigkeit mit Bescheinigung, Verlängerung im Bescheid, Mängelbeseitigung hinter der Nachforderung
+      'Bescheinigung über die Vollständigkeit.pdf',
+      'Bescheinigung der Vollständigkeit.pdf',
+      'BS9 BAUA 261110 Bescheinigung über die Vollständigkeit.pdf',
+      'Bescheid über die Verlängerung des Vorbescheids.pdf',
+      'Nachforderung zur Mängelbeseitigung.pdf',
     ])
       expect(erw(n), n).toBe(true);
     // Projektnummern mit Bindestrich oder Unterstrich als Projektcode (Vorgabe der Suite: {jahr}-{nr:3})
@@ -544,6 +549,33 @@ describe('Antragsstand bei der Einreichung', () => {
       'genehmigt Statik.pdf',
       'Grundriss genehmigt b.pdf',
       'Plan genehmigt 999.pdf',
+      // Runde 15: „Behebung der Mängel“ und „mit Anlagen“ nur hinter dem Schreiben der Behörde
+      'Behebung der Mängel zur Nachforderung.pdf',
+      'Zur Behebung der Mängel Nachforderung vom 10.11.2026.pdf',
+      'Behebung der Mängel Nachforderung.pdf',
+      'Behebung der Mängel zur Anhörung.pdf',
+      'HVO BAUA 261120 Behebung der Mängel Nachforderung.pdf',
+      'Antragsprotokoll Behebung der Mängel.pdf',
+      'Eingangsbestätigung Behebung der Mängel.pdf',
+      'Behebung der Mängel Baugenehmigung.pdf',
+      'Mit Anlagen Nachforderung.pdf',
+      'Antragsprotokoll mit Anlagen.pdf',
+      'Eingangsbestätigung mit Anlagen.pdf',
+      // Präposition vor dem Kernwort: die Bezeichnung des Büros
+      'zur Genehmigung.pdf',
+      'HVO BAUA 261120 zur Genehmigung.pdf',
+      'für die Genehmigung.pdf',
+      'vor Genehmigung.pdf',
+      'zur Baugenehmigung.pdf',
+      'gem. Nachforderung.pdf',
+      'gemäß Nachforderung vom 20.11.2026.pdf',
+      'Zur Nachforderung.pdf',
+      'Auf Nachforderung.pdf',
+      // Verlängerung zum Vorbescheid kann der Antrag sein; Jahr-Nummer ohne „Az“; ein neues Antragsprotokoll
+      'Vorbescheid Verlängerung.pdf',
+      'Baugenehmigung 1972-26.pdf',
+      'Antragsprotokoll.pdf',
+      'Antragsprotokoll Bauportal.pdf',
     ])
       expect(erw(n), n).toBe(false);
     expect(seitEinreichung(d('HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');

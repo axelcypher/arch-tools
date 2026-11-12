@@ -450,8 +450,8 @@ const FUELLWOERTER = new Set(
 const KERN = new RegExp(
   '^(' +
     [
-      // Nachweis der Einreichung
-      'antragsprotokoll|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung',
+      // Bestätigung der Behörde (ein neues Antragsprotokoll belegt dagegen eine weitere Einreichung über das Portal)
+      'eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung',
       // Entscheidung
       '(bau|teilbau|nachtrags|nachtragsbau|änderungs|aenderungs|entwässerungs|entwaesserungs)?genehmigung(sbescheid)?',
       '(vor|bauvor|gebühren|gebuehren|ablehnungs|kosten|kostenfestsetzungs|teil|änderungs|aenderungs|abweichungs|befreiungs|verlängerungs|verlaengerungs)?bescheid',
@@ -570,7 +570,9 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
   const aktenzeichen = (gruppe: string) => {
     const zahlen = gruppe.match(/\d+/g) ?? [];
     const letzte = zahlen[zahlen.length - 1] ?? '';
-    const schlussJahr = zahlen.length > 1 && letzte.length === 2 ? 2000 + Number(letzte) : /^(19|20)\d{2}$/.test(letzte) && zahlen.length > 1 ? Number(letzte) : null;
+    // erst ab drei Zahlengruppen oder mit „Az“/„Nr.“ ist die letzte sicher das Jahr („1972-26“ kann Jahr-Nummer sein)
+    const mitJahr = zahlen.length >= 3 || (zahlen.length > 1 && /^\s*(az|aktenzeichen|nr)/i.test(gruppe));
+    const schlussJahr = !mitJahr ? null : letzte.length === 2 ? 2000 + Number(letzte) : /^(19|20)\d{2}$/.test(letzte) ? Number(letzte) : null;
     if (schlussJahr !== null) {
       if (schlussJahr < abJahr || schlussJahr > abJahr + 1) alt = true;
     } else if (zahlen.some((z) => /^(19|20)\d{2}$/.test(z) && Number(z) < abJahr)) alt = true;
@@ -589,13 +591,15 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
     .replace(/(genehmigung\S*|(?<!vor)bescheid\S*|ablehnung\S*) (des )?bauantrag(e?s)?(?=\s|$)/gi, '$1')
     .replace(/(mitteilung|erkl(ä|ae)rung) (der |des )?(gemeinde|stadt)(?=\s|$)/gi, ' §gemeinde ')
     .replace(/r(ü|ue)ckgabe (der )?unterlagen/gi, ' §rueckgabe ')
-    .replace(/((ü|ue)ber die|best(ä|ae)tigung der) (vollst(ä|ae)ndigkeit)/gi, ' $4 ')
+    .replace(/((bescheinigung|mitteilung|unterrichtung|best(ä|ae)tigung) )?((ü|ue)ber die|der) (vollst(ä|ae)ndigkeit)/gi, ' $6 ')
     .replace(/bescheinigung (über den |ueber den )?(eintritt (der )?)?genehmigungsfiktion/gi, ' genehmigungsfiktion ')
     .replace(/(eintritt (der )?)genehmigungsfiktion/gi, ' genehmigungsfiktion ')
-    .replace(/(bescheid\S*) (über die |ueber die )?verl(ä|ae)ngerung/gi, '$1')
-    .replace(/(aufforderung\S*) zur m(ä|ae)ngelbeseitigung/gi, '$1')
-    .replace(/(^|\s)mit anlagen?(?=\s|$)/gi, ' ')
-    .replace(/von (fehlenden )?unterlagen|fehlender unterlagen|(zur )?behebung (der |von )?m(ä|ae)ngel(n)?|an (den|die) (bauherr\S*|antragsteller\S*)/gi, ' ')
+    .replace(/(?<=^|\s)(?!(?:bau)?vorbescheid)(\S*bescheid) (?:über die |ueber die )?verl(?:ä|ae)ngerung(?: de[rs] (?:vorbescheid\S*|baugenehmigung))?(?=\s|$)/gi, '$1')
+    // nur hinter dem Schreiben der Behörde: „Aufforderung zur Behebung der Mängel“, „Baugenehmigung mit Anlagen“ – sonst
+    // ist „Behebung der Mängel …“ bzw. „… mit Anlagen“ die Antwort des Büros
+    .replace(/((?:auf|nach)forderung\S*) zur (?:m(?:ä|ae)ngelbeseitigung|behebung (?:der |von )?m(?:ä|ae)ngel(?:n)?)(?=\s|$)/gi, '$1')
+    .replace(/((?:\S*genehmigung\S*|\S*bescheid\S*|ablehnung|erlaubnis|nachforderung\S*|aufforderung\S*|anh(?:ö|oe)rung\S*)) mit anlagen?(?=\s|$)/gi, '$1')
+    .replace(/von (fehlenden )?unterlagen|fehlender unterlagen|an (den|die) (bauherr\S*|antragsteller\S*)/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   const woerter = text.split(' ').filter(Boolean);
@@ -604,6 +608,15 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
   const stempel = klein.some((w) => STEMPEL.test(w));
   const aufteilung = klein.some((w) => /^aufteilungspl/.test(w)) && klein.some((w) => /^(gesiegelt|gestempelt|beglaubigt)$/.test(w));
   let kern = stempel || aufteilung;
+  // eine Präposition direkt vor dem Kernwort („zur Genehmigung“, „gem. Nachforderung“, „für die Genehmigung“) ist die
+  // Bezeichnung des Büros – außer sie hängt an einem Kernwort davor („Anhörung vor Ablehnung“)
+  const PRAEP = /^(zur|zum|zu|für|fuer|vor|nach|auf|gem|gemäß|gemaess)$/;
+  for (let i = 0; i < klein.length; i++) {
+    if (!PRAEP.test(klein[i])) continue;
+    const naechstes = klein.slice(i + 1).find((w) => !/^(der|die|das|den|dem|des)$/.test(w));
+    const davor = klein.slice(0, i).filter((w) => !FUELLWOERTER.has(w)).pop();
+    if (naechstes && KERN.test(naechstes) && !(davor && KERN.test(davor))) return false;
+  }
   const erlaubt = klein.every((w) => {
     if (KERN.test(w)) return (kern = true);
     if (ZUSATZ.test(w) || FUELLWOERTER.has(w) || arten.has(w)) return true;
