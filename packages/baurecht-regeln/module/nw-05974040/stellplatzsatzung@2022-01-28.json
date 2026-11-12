@@ -202,7 +202,17 @@
           {
             "und": [
               {
-                "$": "beseitigung"
+                "oder": [
+                  {
+                    "$": "beseitigung_art"
+                  },
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
               },
               {
                 "f": "soest.stellplaetze_entfallen",
@@ -276,30 +286,37 @@
     "6": {
       "titel": "Ordnungswidrigkeiten",
       "gilt": {
-        "und": [
-          {
-            "$": "beseitigung"
-          },
-          {
-            "f": "soest.stellplaetze_entfallen",
-            "ist": true
-          }
-        ]
-      },
-      "entfaellt": {
         "oder": [
           {
-            "nicht": {
-              "$": "beseitigung_art"
-            }
+            "n": "nw-05974040/stellplatzsatzung/2",
+            "ampel": [
+              "rot"
+            ]
           },
           {
-            "f": "soest.stellplaetze_entfallen",
-            "ist": false
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "beseitigung_art"
+                  },
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "soest.stellplaetze_entfallen",
+                "ist": true
+              }
+            ]
           }
         ]
       },
-      "grund": "Notwendige Stellplätze und Fahrradabstellplätze dürfen nicht entfernt oder zweckentfremdet werden; das ist ordnungswidrig (Abs. 1 Satz 2) – Ersatz nachweisen oder vor der Beseitigung mit der Stadt klären.",
+      "grund": "Ordnungswidrig ist, wer notwendige Stellplätze oder Fahrradabstellplätze bei Errichtung, Änderung oder Nutzungsänderung nicht herstellt (Abs. 1 Satz 1, § 2) oder sie entfernt bzw. zweckentfremdet (Abs. 1 Satz 2, § 4 Abs. 3) – Ersatz nachweisen oder vorher mit der Stadt klären.",
       "fundstellen": [
         "6/1"
       ],
@@ -307,6 +324,7 @@
         "nie": true
       },
       "verweise": [
+        "nw-05974040/stellplatzsatzung/2",
         "nw-05974040/stellplatzsatzung/4"
       ],
       "stand": {

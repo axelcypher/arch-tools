@@ -14,10 +14,7 @@
           {
             "oder": [
               {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
+                "$": "vorhaben_oder_beseitigung"
               }
             ]
           }
@@ -66,10 +63,7 @@
           {
             "oder": [
               {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
+                "$": "vorhaben_oder_beseitigung"
               }
             ]
           }
@@ -113,10 +107,7 @@
           {
             "oder": [
               {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
+                "$": "vorhaben_oder_beseitigung"
               }
             ]
           }
@@ -153,14 +144,11 @@
           {
             "oder": [
               {
+                "$": "vorhaben_oder_beseitigung"
+              },
+              {
                 "f": "vorhaben.erdarbeiten",
                 "ist": true
-              },
-              {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
               }
             ]
           }
@@ -218,10 +206,7 @@
           {
             "oder": [
               {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
+                "$": "vorhaben_oder_beseitigung"
               }
             ]
           },

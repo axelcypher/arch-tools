@@ -104,9 +104,16 @@
   },
   "bausteine": {
     "errichtung": {
-      "m": "Vorhaben",
-      "in": [
-        "Errichtung"
+      "oder": [
+        {
+          "m": "Vorhaben",
+          "in": [
+            "Errichtung"
+          ]
+        },
+        {
+          "$": "ersatzbau"
+        }
       ]
     },
     "aenderung": {
@@ -135,8 +142,8 @@
         },
         {
           "nicht": {
-            "f": "vorhaben.beseitigung_vollstaendig",
-            "ist": false
+            "f": "vorhaben.beseitigung_umfang",
+            "ist": "Teilabbruch"
           }
         }
       ]
@@ -153,6 +160,9 @@
         },
         {
           "$": "teilbeseitigung"
+        },
+        {
+          "$": "ersatzbau"
         }
       ]
     },
@@ -167,6 +177,9 @@
         },
         {
           "$": "teilbeseitigung"
+        },
+        {
+          "$": "ersatzbau"
         }
       ]
     },
@@ -468,9 +481,55 @@
           "$": "beseitigung_art"
         },
         {
-          "f": "vorhaben.beseitigung_vollstaendig",
-          "ist": false
+          "f": "vorhaben.beseitigung_umfang",
+          "ist": "Teilabbruch"
         }
+      ]
+    },
+    "ersatzbau": {
+      "und": [
+        {
+          "$": "beseitigung_art"
+        },
+        {
+          "f": "vorhaben.beseitigung_umfang",
+          "ist": "Abbruch mit Ersatzbau"
+        }
+      ]
+    },
+    "nur_beseitigung": {
+      "und": [
+        {
+          "$": "beseitigung_art"
+        },
+        {
+          "f": "vorhaben.beseitigung_umfang",
+          "ist": "vollständiger Abbruch ohne Ersatzbau"
+        }
+      ]
+    },
+    "vorhaben_oder_beseitigung": {
+      "m": "Vorhaben",
+      "in": [
+        "Errichtung",
+        "Änderung",
+        "Nutzungsänderung",
+        "Beseitigung"
+      ]
+    },
+    "bauen_oder_beseitigung": {
+      "m": "Vorhaben",
+      "in": [
+        "Errichtung",
+        "Änderung",
+        "Beseitigung"
+      ]
+    },
+    "aenderung_oder_beseitigung": {
+      "m": "Vorhaben",
+      "in": [
+        "Änderung",
+        "Beseitigung"
       ]
     }
   },
@@ -776,13 +835,18 @@
         "$": "vorhaben_29"
       }
     },
-    "vorhaben.beseitigung_vollstaendig": {
-      "titel": "Die Anlage wird vollständig beseitigt – kein Teilabbruch und kein Ersatzbau in diesem Antrag",
-      "kurz": "Vollständiger Abbruch ohne Ersatzbau",
+    "vorhaben.beseitigung_umfang": {
+      "titel": "Umfang der Beseitigung: ganze Anlage, Teil der Anlage oder Abbruch mit Ersatzbau im selben Antrag",
+      "kurz": "Umfang der Beseitigung",
       "gruppe": "vorhaben",
-      "typ": "janein",
-      "frage": "Wird die Anlage vollständig beseitigt, ohne dass in diesem Antrag an ihrer Stelle gebaut wird?",
-      "hilfe": "Ein Teilabbruch (z. B. Anbau, Geschoss, Dach) ist eine Änderung der verbleibenden Anlage (§ 60 Abs. 1 BauO NRW); bei Abbruch mit Ersatzbau den Neubau als Errichtung erfassen. Bei „nein“ prüft die App wie bei einer Änderung.",
+      "typ": "wahl",
+      "werte": [
+        "vollständiger Abbruch ohne Ersatzbau",
+        "Teilabbruch",
+        "Abbruch mit Ersatzbau"
+      ],
+      "frage": "Wird die ganze Anlage beseitigt, nur ein Teil – oder entsteht an ihrer Stelle im selben Antrag ein Ersatzbau?",
+      "hilfe": "Vollständiger Abbruch: die Anlage verschwindet, nichts wird gebaut. Teilabbruch (z. B. Anbau, Geschoss, Dach): Änderung der verbleibenden Anlage (§ 60 Abs. 1 BauO NRW) – geprüft wie eine Änderung. Abbruch mit Ersatzbau: Errichtung einer neuen Anlage (§ 60 Abs. 1) und Beseitigung der alten – geprüft wie beides; die Angaben zum Neubau (Gebäude, Technik) gehören dann dazu.",
       "wenn": {
         "m": "Vorhaben",
         "in": [
@@ -804,19 +868,61 @@
   },
   "hinweise": [
     {
-      "titel": "Teilabbruch oder Ersatzbau",
-      "text": "Die Angabe „vollständiger Abbruch ohne Ersatzbau“ ist verneint: Die App prüft wie bei einer Änderung. Einen Teilabbruch als Änderung der verbleibenden Anlage erfassen (§ 60 Abs. 1 BauO NRW); bei Abbruch mit Ersatzbau den Neubau als eigenen Antrag mit „Errichtung“ anlegen und den Abbruch gesondert prüfen.",
+      "titel": "Teilabbruch",
+      "text": "Teilabbruch: geprüft wie eine Änderung der verbleibenden Anlage (§ 60 Abs. 1 BauO NRW). Die Angaben zur verbleibenden Anlage (Gebäudeart, Gebäudeklasse, Dach/Fassade) machen.",
       "wenn": {
-        "$": "teilbeseitigung"
+        "und": [
+          {
+            "f": "vorhaben.beseitigung_umfang",
+            "bekannt": true
+          },
+          {
+            "$": "teilbeseitigung"
+          }
+        ]
+      }
+    },
+    {
+      "titel": "Abbruch mit Ersatzbau",
+      "text": "Abbruch mit Ersatzbau: geprüft wie die Errichtung der neuen Anlage und die Beseitigung der alten (§ 60 Abs. 1, § 62 Abs. 3 BauO NRW). Gebäudeart, Gebäudeklasse und die Angaben zu Gebäude und Technik beziehen sich auf den Neubau.",
+      "wenn": {
+        "und": [
+          {
+            "f": "vorhaben.beseitigung_umfang",
+            "bekannt": true
+          },
+          {
+            "$": "ersatzbau"
+          }
+        ]
+      }
+    },
+    {
+      "titel": "Umfang der Beseitigung offen",
+      "text": "Solange der Umfang der Beseitigung offen ist (ganze Anlage, Teil, Abbruch mit Ersatzbau), bleiben die Anforderungen an Errichtung und Änderung offen – den Umfang angeben.",
+      "wenn": {
+        "und": [
+          {
+            "$": "beseitigung_art"
+          },
+          {
+            "f": "vorhaben.beseitigung_umfang",
+            "bekannt": false
+          }
+        ]
       }
     },
     {
       "titel": "Beseitigung mit Angaben zu Bauarbeiten",
-      "text": "Für einen vollständigen Abbruch sind Angaben zu Bauarbeiten gemacht (Dach/Fassade, Außenbauteile, beheizte Erweiterung, Heizung). Gehört dazu ein Teilabbruch oder Ersatzbau, die Art des Vorhabens bzw. die Angabe „vollständiger Abbruch ohne Ersatzbau“ korrigieren.",
+      "text": "Für einen vollständigen Abbruch ohne Ersatzbau sind Angaben zu Bauarbeiten gemacht (Dach/Fassade, Außenbauteile, beheizte Erweiterung, Heizung). Gehört dazu ein Teilabbruch oder ein Ersatzbau, den Umfang der Beseitigung korrigieren.",
       "wenn": {
         "und": [
           {
-            "$": "beseitigung"
+            "f": "vorhaben.beseitigung_umfang",
+            "bekannt": true
+          },
+          {
+            "$": "nur_beseitigung"
           },
           {
             "oder": [

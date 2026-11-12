@@ -13,10 +13,88 @@
       "gilt": {
         "oder": [
           {
-            "$": "bauen"
+            "n": "nw-05974040/altstadtsatzung/3",
+            "ampel": [
+              "rot"
+            ]
           },
           {
-            "$": "nutzungsaenderung"
+            "n": "nw-05974040/altstadtsatzung/4",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/5",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/5a",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/6",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/7",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/8",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/9",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/10",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/11",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/12",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/13",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/14",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "nw-05974040/altstadtsatzung/15",
+            "ampel": [
+              "rot"
+            ]
           },
           {
             "und": [
@@ -28,21 +106,10 @@
                 "ist": true
               }
             ]
-          },
-          {
-            "und": [
-              {
-                "$": "beseitigung"
-              },
-              {
-                "f": "soest.freitreppe",
-                "ist": true
-              }
-            ]
           }
         ]
       },
-      "grund": "Das Grundstück liegt im Geltungsbereich der örtlichen Bauvorschrift über Gestaltung (Altstadt im Wallring einschließlich Bahnhof, Übersichtsplan Anlage 1).",
+      "grund": "Das Grundstück liegt im Geltungsbereich der örtlichen Bauvorschrift über Gestaltung (Altstadt im Wallring einschließlich Bahnhof, Übersichtsplan Anlage 1); für das Vorhaben greift mindestens eine ihrer Vorschriften.",
       "fundstellen": [
         "1"
       ],
@@ -446,17 +513,47 @@
     },
     "12": {
       "gilt": {
-        "und": [
+        "oder": [
           {
-            "$": "bauen"
+            "und": [
+              {
+                "$": "vorhaben_oder_beseitigung"
+              },
+              {
+                "f": "soest.einfriedung",
+                "ist": true
+              }
+            ]
           },
           {
-            "f": "soest.einfriedung",
-            "ist": true
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "errichtung"
+                  },
+                  {
+                    "und": [
+                      {
+                        "$": "vorhaben_29"
+                      },
+                      {
+                        "f": "vorhaben.stellplaetze_grundstueck",
+                        "ist": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "f": "soest.einfriedungspflicht",
+                "ist": true
+              }
+            ]
           }
         ]
       },
-      "grund": "Einfriedigungen zu öffentlichen Verkehrsflächen: schmiedeeiserne Gitter (1,00–1,30 m) auf Grünsandsteinsockel oder Bruchsteinmauern (1,60–2,00 m) mit Soester Sattel; Tore aus senkrechten Hölzern oder Schmiedeeisen, Zugang höchstens 1,20 m, Einfahrt 3,50 m.",
+      "grund": "Einfriedigungen zu öffentlichen Verkehrsflächen: Vorgärten und Flächen zwischen Gebäuden sind einzufriedigen – schmiedeeiserne Gitter (1,00–1,30 m) auf Grünsandsteinsockel oder Bruchsteinmauern (1,60–2,00 m) mit Soester Sattel (Abs. 1 Nr. 1); Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2); Tore aus senkrechten Hölzern oder Schmiedeeisen, Zugang höchstens 1,20 m, Einfahrt 3,50 m (Abs. 2).",
       "fundstellen": [
         "12/1",
         "12/2"
@@ -486,8 +583,40 @@
       },
       "titel": "Einfriedigungen",
       "entfaellt": {
-        "f": "soest.einfriedung",
-        "ist": false
+        "und": [
+          {
+            "f": "soest.einfriedung",
+            "ist": false
+          },
+          {
+            "oder": [
+              {
+                "f": "soest.einfriedungspflicht",
+                "ist": false
+              },
+              {
+                "nicht": {
+                  "oder": [
+                    {
+                      "$": "errichtung"
+                    },
+                    {
+                      "und": [
+                        {
+                          "$": "vorhaben_29"
+                        },
+                        {
+                          "f": "vorhaben.stellplaetze_grundstueck",
+                          "ist": true
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
       }
     },
     "13": {
@@ -527,10 +656,7 @@
               {
                 "oder": [
                   {
-                    "$": "beseitigung"
-                  },
-                  {
-                    "$": "aenderung"
+                    "$": "aenderung_oder_beseitigung"
                   }
                 ]
               },
@@ -611,10 +737,7 @@
                 {
                   "oder": [
                     {
-                      "$": "beseitigung"
-                    },
-                    {
-                      "$": "aenderung"
+                      "$": "aenderung_oder_beseitigung"
                     }
                   ]
                 },
@@ -957,7 +1080,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei anderen Vorhaben wird der Beirat nur auf Verlangen der Bauherrschaft, des Ausschusses oder der Verwaltung beteiligt.",
+        "grund": "Bei anderen Vorhaben mit Wirkung nach außen wird der Beirat nur auf Verlangen der Bauherrschaft, des Ausschusses oder der Verwaltung beteiligt – im Einzelfall prüfen.",
         "wenn": {
           "und": [
             {
@@ -972,6 +1095,32 @@
                 {
                   "f": "ortsrecht.abweichung",
                   "ist": false
+                }
+              ]
+            },
+            {
+              "oder": [
+                {
+                  "nicht": {
+                    "f": "vorhaben.dach_fassade",
+                    "ist": false
+                  }
+                },
+                {
+                  "f": "vorhaben.werbeanlage",
+                  "ist": true
+                },
+                {
+                  "f": "soest.einfriedung",
+                  "ist": true
+                },
+                {
+                  "f": "soest.aussenanlagen",
+                  "ist": true
+                },
+                {
+                  "f": "soest.garage",
+                  "ist": true
                 }
               ]
             }
