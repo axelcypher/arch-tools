@@ -359,7 +359,8 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                     </tr>
                   )}
                   <tr>
-                    <td className="strong">{k}</td>
+                    {/* die Spalte heißt schon „Was fehlt“ – ohne den Vorsatz je Zeile */}
+                    <td className="strong">{k.replace(/^Es fehlt: /, '')}</td>
                     <td>{ps.length}</td>
                     <td>{nachNorm(ps, a.normen)}</td>
                   </tr>
