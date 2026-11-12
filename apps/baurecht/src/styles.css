@@ -1501,14 +1501,15 @@ h2.br-detail-name {
   width: 1.2em;
   font-weight: 700;
 }
+/* Wahrheitswerte neutral (nicht in Ampelfarben – ein grünes ✓ unter „Gilt, wenn“ hieße sonst „gilt“) */
 .br-stand-ja {
-  color: var(--ok-text);
+  color: var(--accent-text);
 }
 .br-stand-nein {
-  color: var(--fehler-text);
+  color: var(--br-leise-stark);
 }
 .br-stand-offen {
-  color: var(--warn-text);
+  color: var(--text);
 }
 .br-ist {
   color: var(--br-leise-stark);
@@ -1585,4 +1586,38 @@ h2.br-detail-name {
 .br-stand-unsicher {
   color: var(--br-leise-stark);
   width: 1.8em;
+}
+
+/* Protokoll: Tabellenkopf bleibt beim Bildlauf stehen; Zwischenzeilen der Gruppen; „Weitere“ als Liste */
+.br-protokoll .report-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel, #fff);
+  z-index: 1;
+}
+@media print {
+  .br-protokoll .report-table thead th {
+    position: static;
+  }
+}
+.br-protokoll-zwischen th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--br-leise-stark);
+  padding-top: 10px;
+}
+.br-weitere {
+  margin: 0;
+  padding-left: 16px;
+}
+.br-weitere li {
+  margin: 1px 0;
+}
+/* lange Wörter und Adressen in Begründungen umbrechen statt abschneiden */
+.br-festlegung-text,
+.br-detail-inhalt,
+.br-protokoll td {
+  overflow-wrap: anywhere;
 }

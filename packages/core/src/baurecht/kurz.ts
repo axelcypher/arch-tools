@@ -235,9 +235,12 @@ export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe
     if (def?.typ === 'janein' && typeof k.ist === 'boolean') return `${name}: ${k.ist ? 'ja' : 'nein'}`;
     if (k.ist !== undefined) return `${name}: ${typeof k.ist === 'string' ? `„${k.ist}“` : wertText(k.ist, def)}`;
     if (k.in) return `${name}: ${zitiert(k.in)}`;
-    if (k.min !== undefined && k.max !== undefined) return `${name} ${zahl(k.min)} bis ${zahl(k.max)}${def?.einheit ? ` ${def.einheit}` : ''}`;
-    if (k.min !== undefined) return `${name} mindestens ${zahl(k.min)}${def?.einheit ? ` ${def.einheit}` : ''}`;
-    if (k.max !== undefined) return `${name} höchstens ${zahl(k.max)}${def?.einheit ? ` ${def.einheit}` : ''}`;
+    const e = def?.einheit ? ` ${def.einheit}` : '';
+    // Schwellen lesbar: „mindestens 22,01 m“ → „über 22 m“, „mindestens 0,01“ → „vorhanden“, „höchstens 0“ → „keine“
+    const ueber = (x: number) => Math.abs(x * 100 - Math.round(x) * 100 - 1) < 1e-6;
+    if (k.min !== undefined && k.max !== undefined) return `${name} ${ueber(k.min) ? `über ${zahl(Math.round(k.min))}` : zahl(k.min)} bis ${zahl(k.max)}${e}`;
+    if (k.min !== undefined) return k.min > 0 && k.min <= 0.01 ? `${name}: vorhanden` : ueber(k.min) ? `${name} über ${zahl(Math.round(k.min))}${e}` : `${name} mindestens ${zahl(k.min)}${e}`;
+    if (k.max !== undefined) return k.max === 0 ? `${name}: keine` : `${name} höchstens ${zahl(k.max)}${e}`;
     return `${name} angegeben`;
   }
   if ('tag' in k) {
@@ -265,6 +268,31 @@ export interface KurzKnoten {
   unsicher?: boolean;
   /** Art einer Gruppe (intern, für die Verneinung) */
   art?: 'und' | 'oder';
+}
+
+/** verneintes Blatt in Worten, positiv formuliert; undefined, wenn es keine natürliche Form gibt */
+function verneint(k: Kurz, t: TextKontext): string | undefined {
+  if ('f' in k) {
+    const def = t.fakt(k.f);
+    const name = faktName(def, k.f);
+    const e = def?.einheit ? ` ${def.einheit}` : '';
+    if (k.bekannt !== undefined) return k.bekannt ? `${name} unbekannt` : `${name} bekannt`;
+    if (k.ist !== undefined && typeof k.ist !== 'boolean') return `${name} ist nicht ${typeof k.ist === 'string' ? `„${k.ist}“` : wertText(k.ist, def)}`;
+    if (k.in) return `${name}: weder ${k.in.map((x) => `„${x}“`).join(' noch ')}`;
+    if (k.min !== undefined && k.max === undefined) return `${name} unter ${zahl(k.min)}${e}`;
+    if (k.max !== undefined && k.min === undefined) return k.max === 0 ? `${name}: vorhanden` : `${name} über ${zahl(k.max)}${e}`;
+  }
+  if ('n' in k) {
+    const titel = t.paragraf?.(k.n) ?? k.n;
+    const ampel = k.ampel.map((a) => (a === 'rot' ? 'gilt' : a === 'gruen' ? 'entfällt' : 'offen'));
+    return `${titel} ${ampel.length === 1 ? `nicht „${ampel[0]}“` : `weder ${ampel.map((a) => `„${a}“`).join(' noch ')}`}`;
+  }
+  if ('tag' in k) {
+    const was = k.tag === 'einreichung' ? 'Einreichung' : 'heute';
+    if (k.ab && !k.vor) return `${was} vor ${datum(k.ab)}`;
+    if (k.vor && !k.ab) return `${was} ab ${datum(k.vor)}`;
+  }
+  return undefined;
 }
 
 /** aktueller Wert eines Blatts in Worten */
@@ -318,7 +346,8 @@ export function kurzBaum(k: Kurz | undefined, t: TextKontext, ctx?: KurzKontext,
     const innen = kurzBaum(n, t, ctx, tiefe + 1);
     // „nicht (A oder B)“ = keines davon; „nicht (A und B)“ = nicht alle davon
     if (innen.kinder) return mitW({ text: innen.art === 'oder' ? 'keines davon:' : 'nicht alle davon:', kinder: innen.kinder });
-    return mitW({ text: `trifft nicht zu: ${innen.text}`, ...(innen.ist ? { ist: innen.ist } : {}), ...(innen.unsicher ? { unsicher: true } : {}) });
+    // Blätter positiv: „Gebäudeart ist nicht „EFH““ statt „trifft nicht zu: …“ (das ist der Wortschatz der Zustände)
+    return mitW({ text: verneint(n, t) ?? `nicht ${innen.text}`, ...(innen.ist ? { ist: innen.ist } : {}), ...(innen.unsicher ? { unsicher: true } : {}) });
   }
   const ist = ctx ? istWert(k, t, ctx) : undefined;
   const f = 'f' in k && ctx ? ctx.fakten[k.f] : undefined;

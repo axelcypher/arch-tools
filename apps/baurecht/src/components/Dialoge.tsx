@@ -503,7 +503,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
       </ul>
       {ueberholte.length > 0 && (
         <div className="br-meldung br-meldung-fehler" role="alert">
-          {ueberholte.length === 1 ? 'Eine Festlegung ist überholt' : `${ueberholte.length} Festlegungen sind überholt`} – „Bestätigen und speichern“ geht erst, wenn sie erneut festgelegt oder aufgehoben sind. „Speichern, diese als Entwurf behalten“ geht.
+          {ueberholte.length === 1 ? 'Eine Festlegung ist überholt' : `${ueberholte.length} Festlegungen sind überholt`} – „Bestätigen und speichern“ geht erst, wenn {ueberholte.length === 1 ? 'sie erneut festgelegt oder aufgehoben ist' : 'sie erneut festgelegt oder aufgehoben sind'}. „Speichern, diese als Entwurf behalten“ geht.
         </div>
       )}
       <label className="toggle br-geprueft">
@@ -513,7 +513,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
         <button type="button" onClick={() => antwort('abbrechen')}>
           Abbrechen
         </button>
-        <button type="button" onClick={() => antwort('ohne')} title="Speichert alles andere; für diese Angaben bleibt in der Datei der bisherige Stand. In der App bleiben sie als Entwurf erhalten.">
+        <button type="button" onClick={() => antwort('ohne')} title="Speichert alles andere; für diese Festlegungen bzw. Angaben bleibt in der Datei der bisherige Stand. In der App bleiben sie als Entwurf erhalten.">
           Speichern, diese als Entwurf behalten
         </button>
         <button type="button" className="primary" disabled={!geprueft || ueberholte.length > 0} onClick={() => antwort('bestaetigen')}>

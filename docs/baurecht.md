@@ -44,7 +44,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   offene zuerst (die Reihenfolge entsteht beim Öffnen, Filtern und Suchen und bleibt dann stehen – eine beantwortete
   Angabe springt nicht weg). Jede Angabe trägt überall denselben kurzen Namen (höchstens 40 Zeichen – in der Liste, in
   „Klärt am meisten“, in Begründungen und im Protokoll); Frage bzw. ausführlicher Titel stehen darunter, lange
-  Erläuterungen sind einklappbar. Zahlen stehen
+  Erläuterungen sind einklappbar (auch nach dem Beantworten). Die Antragsmerkmale tragen dieselben kurzen Namen wie im
+  Regelbaum und im Protokoll („Gebäudeart“, „Planungsrecht“), die Erklärung steht darunter. Die Suche findet auch die
+  kurzen Namen. Zahlen stehen
   deutsch mit Einheit („139,12 m²“), Anzahlen ganzzahlig. Jede Angabe zeigt ihre Herkunft (Stammdaten, Flächenrechner, GRZ-Nachweis, Geodienst,
   Regelmodul, von Hand). **Nur Hinweis** heißt: nicht gesichert (z. B. Geodienst ohne Treffer, Koordinaten nur
   straßengenau, Gemeindeschlüssel von Hand ohne Beleg) – ein solcher Wert kann nie etwas ausschließen, bis er
@@ -65,11 +67,12 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Annahmen des Büros), fehlende und unsichere Angaben (Klick springt hin), ob die Bauaufsicht das im Verfahren prüft,
   womit es nachgewiesen wird, Stand der Regel, aufklappbar die **Regel im Einzelnen** (eingerückt, je Bedingung ✓ trifft
   zu, ✗ trifft nicht zu, ? offen, mit dem aktuellen Wert; entschiedene Unterzweige zugeklappt; „keines davon“ für
-  verneinte Gruppen), und der **Gesetzestext** mit den
+  verneinte Gruppen; verneinte Blätter positiv, z. B. „Gebäudeart: weder „EFH“ noch „ZFH““; Schwellen lesbar wie „über 22 m“,
+  „vorhanden“, „keine“; ✓/✗ neutral eingefärbt, nicht in Ampelfarben), und der **Gesetzestext** mit den
   Absätzen der Fundstellen hervorgehoben (mit Legende); nach einer Änderung **alt/neu** untereinander mit
   gestrichenen bzw. unterstrichenen Wörtern – verglichen mit der Fassung, an der die Regel geprüft ist. Die Spalte lässt
   sich am linken Rand in der Breite ziehen (auch mit ←/→, Pos1/Ende). Beide Leisten schrumpfen bei schmalen Fenstern,
-  die Mitte behält mindestens 420 px.
+  die Mitte behält mindestens 420 px; Ziehen und Tastatur gehen nie über den verfügbaren Platz hinaus.
 
 ## Von Hand festlegen
 

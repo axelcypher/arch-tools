@@ -83,7 +83,8 @@ function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis;
             )}
           </span>
         </span>
-        <span className="br-paragraf-grund">{nb(p.gruende[0] ?? '')}</span>
+        {/* bei einer Festlegung ihre Begründung (sonst stünde neben „von Hand“ der automatische Grund) */}
+        <span className="br-paragraf-grund">{nb(p.festlegung && !p.ueberholt && !p.unwirksam ? `Von Hand: ${p.festlegung.grund}` : (p.gruende[0] ?? ''))}</span>
       </button>
     </li>
   );

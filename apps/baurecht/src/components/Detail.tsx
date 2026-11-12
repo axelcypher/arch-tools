@@ -205,7 +205,10 @@ export function Detail({ stand }: { stand: Pruefstand }) {
           <span className="br-detail-nr">
             {einheit.nr ? titel : norm.def.kurz}
           </span>
-          <h2 className="br-detail-name">{einheit.titel || titel}</h2>
+          {/* F6 und Sprungmarke landen hier – immer an derselben Stelle, nicht auf einem zufälligen Knopf */}
+          <h2 className="br-detail-name" tabIndex={-1} data-f6-ziel="">
+            {nb(einheit.titel || titel)}
+          </h2>
         </div>
         <div className="br-detail-ampel">
           <AmpelMarke ampel={p.ampel} />
@@ -260,7 +263,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
                   onClick={() => (o.startsWith('paragraf:') ? useBaurecht.getState().waehlen(o.slice(9)) : useBaurecht.getState().fokusSetzen(o))}
                   title={o.startsWith('paragraf:') ? 'zum Paragrafen' : 'zur Angabe'}
                 >
-                  {offenText(o, ctx)}
+                  {nb(offenText(o, ctx))}
                 </button>
               ))}
             </div>
@@ -287,7 +290,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             <div className="br-chips">
               {p.unsicher.map((o) => (
                 <button key={o} type="button" className="br-chip-knopf" onClick={() => useBaurecht.getState().fokusSetzen(o)}>
-                  {offenText(o, ctx)}
+                  {nb(offenText(o, ctx))}
                 </button>
               ))}
             </div>
@@ -304,7 +307,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
                 {p.verweise.map((v) => (
                   <li key={v}>
                     <button type="button" className="br-link" onClick={() => useBaurecht.getState().waehlen(v)}>
-                      {ctx.paragraf?.(v) ?? v}
+                      {nb(ctx.paragraf?.(v) ?? v)}
                     </button>
                   </li>
                 ))}
@@ -313,7 +316,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
           ) : null}
           {p.regel && (
             <p className="br-leise" title={p.regel.datei}>
-              Regel Stand {datum(p.regel.fassung)} (an dieser Fassung geprüft), Version {p.regel.version}
+              Regel Stand {datum(p.regel.fassung)} (an dieser Fassung geprüft), Version{'\u00a0'}{p.regel.version}
             </p>
           )}
           {p.annahme && <p className="br-leise">Annahme: {p.annahme}</p>}

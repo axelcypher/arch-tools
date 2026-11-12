@@ -333,9 +333,11 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       if (pruefbar && angekuendigt.length) herab.push(`Neue Fassung ab ${angekuendigt.map((k) => datumText(k.gueltigAb)).join(', ')} angekündigt – voraussichtlich vor der Entscheidung; an der künftigen Fassung prüfen.`);
       if (fassung && !fassung.paragrafen[nr] && g.w !== 'nein') herab.push(`${paragrafName(nr)} steht nicht (mehr) im Text der geltenden Fassung.`);
       if (herab.length) {
-        // der Grund für Gelb zuerst (steht in der Liste), dann warum es sonst grün wäre
+        // der Grund für Gelb zuerst (steht in der Liste), dann warum es sonst grün wäre – als Konjunktiv, damit neben
+        // „prüfen“ kein „Entfällt –“ steht
         ampel = 'gelb';
-        gruende.unshift(...herab);
+        const sonst = gruende.map((g) => g.replace(/^(Entfällt mit der Norm|Entfällt|Gilt nicht) – /, (_m, art: string) => (art === 'Gilt nicht' ? 'Ohne diese Vorbehalte gälte sie nicht – ' : art === 'Entfällt mit der Norm' ? 'Ohne diese Vorbehalte entfiele sie mit der Norm – ' : 'Ohne diese Vorbehalte entfiele sie – ')));
+        gruende.splice(0, gruende.length, ...herab, ...sonst);
       }
     } else if (ampel === 'rot') {
       if (pruef.w === 'ja' && r.pruefen) hinweise.push(`Im Einzelfall prüfen: ${r.pruefen.grund}`);

@@ -122,7 +122,7 @@ const BEREICHE = [
 function bereichFokussieren(sel: string): boolean {
   const b = document.querySelector<HTMLElement>(sel);
   if (!b) return false;
-  const ziel = b.querySelector<HTMLElement>('[data-roving][tabindex="0"]') ?? b.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea, [tabindex="0"]') ?? (b.hasAttribute('tabindex') ? b : null);
+  const ziel = b.querySelector<HTMLElement>('[data-f6-ziel]') ?? b.querySelector<HTMLElement>('[data-roving][tabindex="0"]') ?? b.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea, [tabindex="0"]') ?? (b.hasAttribute('tabindex') ? b : null);
   if (!ziel) return false;
   ziel.focus();
   return document.activeElement === ziel;
@@ -293,11 +293,11 @@ export function App() {
           )}
           <div className="workspace br-arbeit">
             {/* schmale Fenster: die Angaben-Leiste startet schmaler, damit die Liste Platz behält */}
-            <BreitenLeiste schluessel="baurecht:leiste-angaben" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1200 ? 260 : 330} min={240} max={520} className="br-leiste-links">
+            <BreitenLeiste schluessel="baurecht:leiste-angaben" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1200 ? 260 : 330} min={240} max={520} className="br-leiste-links" titel="Breite der Angaben" mitteMin={420}>
               <Angaben stand={stand} />
             </BreitenLeiste>
             <Vorschriften stand={stand} />
-            <BreitenLeiste schluessel="baurecht:leiste-einzelheiten" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1400 ? 360 : 420} min={320} max={680} griffLinks className="br-leiste-rechts">
+            <BreitenLeiste schluessel="baurecht:leiste-einzelheiten" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1400 ? 360 : 420} min={280} max={680} griffLinks className="br-leiste-rechts" titel="Breite der Einzelheiten" mitteMin={420}>
               <Detail stand={stand} />
             </BreitenLeiste>
           </div>

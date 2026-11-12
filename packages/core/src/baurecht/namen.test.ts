@@ -54,3 +54,23 @@ describe('Regel als Baum', () => {
     expect(b.kinder?.[1].kinder?.[1]).toMatchObject({ w: 'offen', ist: 'nicht angegeben' });
   });
 });
+
+describe('Regel in Worten: Verneinung positiv, Schwellen lesbar', () => {
+  const t: TextKontext = {
+    fakt: (id) => (({ h: { titel: 'Höhe', kurz: 'Höhe', gruppe: 'gebaeude', typ: 'zahl', einheit: 'm' }, g: { titel: 'Garagen', gruppe: 'gebaeude', typ: 'zahl', einheit: 'm²' }, art: { titel: 'Gebäudeart', gruppe: 'gebaeude', typ: 'wahl' } }) as Record<string, unknown>)[id] as never,
+    bausteine: {},
+    paragraf: (id) => (id === 'x/14' ? '§ 14 BauGB' : id),
+  };
+  it('verneinte Blätter ohne „trifft nicht zu“', () => {
+    expect(kurzBaum({ nicht: { f: 'art', in: ['EFH', 'ZFH'] } }, t).text).toBe('Gebäudeart: weder „EFH“ noch „ZFH“');
+    expect(kurzBaum({ nicht: { n: 'x/14', ampel: ['rot'] } }, t).text).toBe('§ 14 BauGB nicht „gilt“');
+    expect(kurzBaum({ nicht: { f: 'h', min: 7 } }, t).text).toBe('Höhe unter 7 m');
+    expect(kurzBaum({ nicht: { f: 'art', in: ['EFH'] } }, t).text).not.toMatch(/trifft nicht zu/);
+  });
+  it('Schwellen: „über 22 m“, „vorhanden“, „keine“', () => {
+    expect(kurzBaum({ f: 'h', min: 22.01 }, t).text).toBe('Höhe über 22 m');
+    expect(kurzBaum({ f: 'g', min: 0.01 }, t).text).toBe('Garagen: vorhanden');
+    expect(kurzBaum({ f: 'g', max: 0 }, t).text).toBe('Garagen: keine');
+    expect(kurzBaum({ f: 'h', min: 7 }, t).text).toBe('Höhe mindestens 7 m');
+  });
+});

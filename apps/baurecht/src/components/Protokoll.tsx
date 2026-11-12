@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { offenText } from '@core/baurecht/kurz';
 import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
-import { EBENEN, einheitName, faktName, normVoll, wertAnzeige } from '@core/baurecht/typen';
+import { EBENEN, einheitName, FAKT_GRUPPEN, faktName, normVoll, wertAnzeige } from '@core/baurecht/typen';
 import { druckenAls } from '@core/platform/projektDatei';
 import { DruckKopf } from '@core/ui/DruckKopf';
 import { useEscSchliessen } from '@core/ui/Dialog';
@@ -9,7 +9,7 @@ import { benutzer } from '../benutzer';
 import type { Pruefstand } from '../pruefung';
 import { verwendeteFassungen } from '../pruefung';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from '../store';
-import { AMPEL_TEXT, datum } from './Ampel';
+import { AMPEL_TEXT, datum, nb } from './Ampel';
 
 
 
@@ -53,13 +53,13 @@ function nachNorm(ps: ParagrafErgebnis[], normen: { id: string; def: { kurz: str
       const kurz = normen.find((n) => n.id === id)?.def.kurz ?? id;
       const zahlen = liste.every((p) => /^\d/.test(p.paragraf));
       const nrn = liste.map((p) => p.paragraf).join(', ');
-      return zahlen ? `${kurz} ${liste.length > 1 ? '§§' : '§'} ${nrn}` : `${kurz} ${nrn}`;
+      return nb(zahlen ? `${kurz} ${liste.length > 1 ? '§§' : '§'} ${nrn}` : `${kurz} ${nrn}`);
     })
     .join(' · ');
 }
 
 /** Entwurfsvermerk als Kopfzeile jeder Druckseite (im reservierten oberen Seitenrand, überdruckt keinen Text) */
-const ENTWURF_DRUCK = `@media print { @page { margin-top: 20mm; @top-center { content: 'ENTWURF – enthält nicht gespeicherte bzw. nicht bestätigte Angaben von Hand'; font: 700 14pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
+const ENTWURF_DRUCK = `@media print { @page { margin-top: 20mm; @top-center { content: 'ENTWURF – enthält nicht gespeicherte bzw. nicht bestätigte Festlegungen oder Angaben von Hand'; font: 700 14pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
 /** Modulstände sind Daten (JJJJ-MM-TT) – im Protokoll wie alle Daten als TT.MM.JJJJ */
 const stand = (v: string) => (/^\d{4}-\d\d-\d\d$/.test(v) ? datum(v) : v);
 
@@ -151,7 +151,20 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const titel = `Baurechtliche Prüfung vor dem Einreichen – ${antrag}`;
   // Stand einer Festlegung von Hand: bestätigt/Entwurf und wirksam/überholt/nicht wirksam – getrennt von der Begründung
   const festlegungStand = (q: ParagrafErgebnis) =>
-    [q.festlegung!.bestaetigt ? 'bestätigt' : 'Entwurf', q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : 'wirksam'].join(' · ');
+    q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : q.festlegung!.bestaetigt ? 'bestätigt' : 'Entwurf – zweite Bestätigung fehlt';
+  // Zeilen der offenen Punkte, fehlende Angaben nach ihrer Gruppe (Lage, Gebäude …) – ab 15 Zeilen mit Zwischenzeilen
+  const gruppeDerAngabe = new Map(a.klaerung.map((k) => [`Es fehlt: ${k.titel}`, FAKT_GRUPPEN.find((g) => g.id === a.faktDefs[k.id]?.gruppe)?.titel ?? 'Weitere Angaben']));
+  const zeilen = mehrere.map(([k, ps]) => ({ k, ps, gruppe: gruppeDerAngabe.get(k) ?? 'Andere Gründe' }));
+  const reihenfolge = [...FAKT_GRUPPEN.map((g) => g.titel), 'Weitere Angaben', 'Andere Gründe'];
+  zeilen.sort((x, y) => reihenfolge.indexOf(x.gruppe) - reihenfolge.indexOf(y.gruppe) || y.ps.length - x.ps.length);
+  const mitZwischen = zeilen.length > 15;
+  // Einzelpunkte je Norm: „BauO NRW: § 12 (Bergbau …), § 45 (…)“
+  const weitereJeNorm = new Map<string, string[]>();
+  for (const [k, ps] of einzeln) {
+    const q = ps[0];
+    const norm = a.normen.find((n) => n.id === `${q.modul}/${q.norm}`)?.def.kurz ?? q.norm;
+    weitereJeNorm.set(norm, [...(weitereJeNorm.get(norm) ?? []), `${einheitName(q.paragraf, q.titel).nr || q.paragraf} (${k.replace(/^Es fehlt: /, '')})`]);
+  }
   const abschliessen = () => {
     if (sperre) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
@@ -326,7 +339,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             <thead>
               <tr>
                 <th style={{ width: '32%' }}>Was fehlt bzw. zu klären ist</th>
-                <th style={{ width: '9%' }}>Paragrafen</th>
+                <th style={{ width: '9%' }}>Anzahl</th>
                 <th>Paragrafen</th>
               </tr>
             </thead>
@@ -338,18 +351,33 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                   <td>{ohneRegel.map((n) => normVoll(n.def)).join(' · ')}</td>
                 </tr>
               )}
-              {mehrere.map(([k, ps]) => (
-                <tr key={k}>
-                  <td className="strong">{k}</td>
-                  <td>{ps.length}</td>
-                  <td>{nachNorm(ps, a.normen)}</td>
-                </tr>
+              {zeilen.map(({ k, ps, gruppe }, i) => (
+                <Fragment key={k}>
+                  {mitZwischen && gruppe !== zeilen[i - 1]?.gruppe && (
+                    <tr className="br-protokoll-zwischen">
+                      <th colSpan={3}>{gruppe}</th>
+                    </tr>
+                  )}
+                  <tr>
+                    <td className="strong">{k}</td>
+                    <td>{ps.length}</td>
+                    <td>{nachNorm(ps, a.normen)}</td>
+                  </tr>
+                </Fragment>
               ))}
               {einzeln.length > 0 && (
                 <tr>
                   <td className="strong">Weitere (je ein Paragraf)</td>
                   <td>{einzeln.length}</td>
-                  <td>{einzeln.map(([k, ps]) => `${nachNorm(ps, a.normen)}: ${k.replace(/^Es fehlt: /, '')}`).join(' · ')}</td>
+                  <td>
+                    <ul className="br-weitere">
+                      {[...weitereJeNorm.entries()].map(([norm, eintraege]) => (
+                        <li key={norm}>
+                          <strong>{norm}</strong> {nb(eintraege.join(' · '))}
+                        </li>
+                      ))}
+                    </ul>
+                  </td>
                 </tr>
               )}
             </tbody>

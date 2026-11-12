@@ -5,6 +5,7 @@ import { aktuelleLage } from '../pruefung';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
 import { werten } from '@core/baurecht/kurz';
 import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
+import { MERKMAL_TITEL } from '@core/baurecht/fakten';
 import { NumberField, TextField } from '@core/ui/fields';
 import type { Pruefstand } from '../pruefung';
 import { heute, offeneBestaetigungen, useBaurecht } from '../store';
@@ -82,9 +83,13 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
         const wert = merkmale[m.name] ?? '';
         const n = klaerung.get(`merkmal:${m.name}`);
         return (
-          <div key={m.name} data-merkmal={m.name} className={`br-merkmal${wert ? '' : ' br-offen'}`} role="group" aria-label={e?.text ?? m.name}>
+          <div key={m.name} data-merkmal={m.name} className={`br-merkmal${wert ? '' : ' br-offen'}`} role="group" aria-label={MERKMAL_TITEL[m.name] ?? m.name}>
             <div className="br-fakt-kopf">
-              <span className="br-fakt-titel">{e?.text ?? m.name}</span>
+              {/* derselbe kurze Name wie im Regelbaum und im Protokoll; die Erklärung darunter */}
+              <span className="br-fakt-titel">
+                {MERKMAL_TITEL[m.name] ?? m.name}
+                {e?.text && e.text !== (MERKMAL_TITEL[m.name] ?? m.name) && <span className="br-fakt-frage">{nb(e.text)}</span>}
+              </span>
               {!wert && n ? <span className="br-klaert" title={`klärt ${n} Paragrafen`}>klärt {n}</span> : null}
               {(geaendert[m.name] ?? '') !== wert && <span className="br-marke" title="noch nicht gespeichert">geändert</span>}
             </div>
@@ -110,11 +115,14 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
   );
 }
 
+/** id der Unterzeile (Frage bzw. Rest des Titels) als Beschreibung der Eingabe – nur, wenn es sie gibt */
+const beschreibung = (def: FaktDef, id: string) => (def.frage || (def.kurz && def.titel !== def.kurz) ? `br-frage-${id}` : undefined);
+
 function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void }) {
   const v = wert?.wert ?? null;
   if (def.typ === 'janein')
     return (
-      <div className="br-segment" role="group" aria-label={faktName(def, id)} title={def.kurz ? def.titel : undefined} onKeyDown={segmentTaste}>
+      <div className="br-segment" role="group" aria-label={faktName(def, id)} aria-describedby={beschreibung(def, id)} title={def.kurz ? def.titel : undefined} onKeyDown={segmentTaste}>
         {[
           [true, 'ja'],
           [false, 'nein'],
@@ -134,7 +142,7 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
     );
   if (def.typ === 'wahl')
     return (
-      <select aria-label={faktName(def, id)} title={def.kurz ? def.titel : undefined} value={v === null ? '' : String(v)} onChange={(e) => onWert(e.target.value || undefined)}>
+      <select aria-label={faktName(def, id)} aria-describedby={beschreibung(def, id)} title={def.kurz ? def.titel : undefined} value={v === null ? '' : String(v)} onChange={(e) => onWert(e.target.value || undefined)}>
         <option value="">– nicht festgelegt –</option>
         {(def.werte ?? []).map((w) => (
           <option key={w} value={w}>
@@ -169,14 +177,19 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
   const fokusZurZeile = () => setTimeout(() => ref.current?.querySelector<HTMLElement>('button:not([disabled]), input, select')?.focus(), 0);
   const hilfeLang = (def.hilfe?.length ?? 0) > 90;
   // Unterzeile: die Frage, sonst der ausführliche Titel – aber nicht, wenn er nur den kurzen Namen wiederholt
-  const unterzeile = def.frage ?? (def.kurz && !def.titel.startsWith(def.kurz) ? def.titel : undefined);
+  const rest = def.kurz && def.titel.startsWith(def.kurz) ? def.titel.slice(def.kurz.length).trim() : '';
+  const unterzeile = def.frage ?? (def.kurz ? (def.titel.startsWith(def.kurz) ? rest || undefined : def.titel) : undefined);
   return (
     <div ref={ref} data-fakt={id} className={`br-fakt${wert?.wert == null ? ' br-offen' : ''}${fokus === id ? ' br-fokus' : ''}`}>
       <div className="br-fakt-kopf">
         {/* überall derselbe kurze Titel (Chips, Protokoll); die Frage als Unterzeile */}
         <span className="br-fakt-titel" title={def.kurz ? def.titel : def.hilfe}>
           {nb(faktName(def, id))}
-          {unterzeile && <span className="br-fakt-frage">{nb(unterzeile)}</span>}
+          {unterzeile && (
+            <span className="br-fakt-frage" id={`br-frage-${id}`}>
+              {nb(unterzeile)}
+            </span>
+          )}
         </span>
         {wert?.wert == null && klaert > 0 && <span className="br-klaert" title={`klärt ${klaert} Paragrafen`}>klärt {klaert}</span>}
       </div>
@@ -267,10 +280,11 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
         </div>
       )}
       {def.hilfe &&
-        wert?.wert == null &&
-        (hilfeLang ? (
+        (hilfeLang || wert?.wert != null ? (
           <details className="br-erklaerung">
-            <summary>Erläuterung</summary>
+            <summary>
+              Erläuterung<span className="br-unsichtbar"> zu {name}</span>
+            </summary>
             <div className="br-leise">{nb(def.hilfe ?? '')}</div>
           </details>
         ) : (
@@ -314,7 +328,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     const ids = Object.entries(auswertung.faktDefs)
       .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)))
       .filter(([, d]) => !d.wenn || werten(d.wenn, ctx).w !== 'nein')
-      .filter(([id, d]) => !suche || `${d.titel} ${d.frage ?? ''} ${id}`.toLowerCase().includes(suche.toLowerCase()))
+      .filter(([id, d]) => !suche || `${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${id}`.toLowerCase().includes(suche.toLowerCase()))
       .map(([id]) => id)
       .sort((a, b) => (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
     return { ...g, ids };

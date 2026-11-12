@@ -330,7 +330,7 @@ describe('Baurecht – Oberfläche', () => {
     expect(i('Grundlagen')).toBeLessThan(i('Festlegungen von Hand'));
     expect(i('Festlegungen von Hand')).toBeLessThan(i('Gesicherte Angaben'));
     expect(i('Gesicherte Angaben')).toBeLessThan(i('Offene Punkte'));
-    expect(d.querySelector('.br-protokoll-offen thead')?.textContent).toMatch(/Was fehlt.*Paragrafen.*Paragrafen/);
+    expect(d.querySelector('.br-protokoll-offen thead')?.textContent).toMatch(/Was fehlt.*Anzahl.*Paragrafen/);
     expect(d.textContent).toMatch(/Angaben von Hand ohne Beleg/);
     // Entwurf: Abschließen gesperrt, der Grund steht sichtbar daneben
     expect(knopf(d, 'Prüfung abschließen')!.disabled).toBe(true);
@@ -483,6 +483,19 @@ describe('Baurecht – Oberfläche', () => {
     act(() => void vi.runAllTimers());
     vi.useRealTimers();
     expect(document.activeElement?.closest('[data-fakt]')?.getAttribute('data-fakt')).toBe(id);
+  });
+
+  it('Angaben: Suche findet den kurzen Namen; Merkmale tragen denselben kurzen Namen wie im Regelbaum', () => {
+    const host = render();
+    act(() => knopf(host, 'alle Angaben')?.click());
+    const suche = host.querySelector<HTMLInputElement>('input[aria-label="Angaben durchsuchen"]')!;
+    tippen(suche, 'unsicherer Untergrund');
+    expect(host.querySelector('[data-fakt="lage.bergbau"]'), 'über den kurzen Namen gefunden').not.toBeNull();
+    tippen(suche, '');
+    if (!host.querySelector('[data-merkmal="Gebäudeart"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
+    const titel = host.querySelector('[data-merkmal="Gebäudeart"] .br-fakt-titel')!;
+    expect(titel.firstChild?.textContent).toBe('Gebäudeart');
+    expect(titel.querySelector('.br-fakt-frage')?.textContent).toMatch(/Art des Gebäudes/);
   });
 
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {
