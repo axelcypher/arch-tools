@@ -205,7 +205,7 @@
     },
     "soest.stellplatzzone": {
       "titel": "Gebietszone der Stellplatzsatzung",
-      "kurz": "Welche Zone der Stellplatzsatzung",
+      "kurz": "Zone der Stellplatzsatzung",
       "gruppe": "ortsrecht",
       "typ": "wahl",
       "werte": [
@@ -231,7 +231,7 @@
     },
     "soest.baeume": {
       "titel": "Geschützte Bäume nach der Baumschutzsatzung auf dem Grundstück oder angrenzend",
-      "kurz": "Geschützte Bäume (Baumschutzsatzung)",
+      "kurz": "Bäume nach der Baumschutzsatzung",
       "gruppe": "schutz",
       "typ": "janein",
       "frage": "Stehen auf dem Baugrundstück oder auf Nachbargrundstücken Laubbäume mit mindestens 120 cm Stammumfang in 1 m Höhe (mehrstämmig zusammen 150 cm) oder nach Bebauungsplan zu erhaltende Bäume?",
@@ -291,7 +291,7 @@
     },
     "soest.bplan": {
       "titel": "Bebauungsplan oder Satzung am Grundstück (Dienst der Stadt)",
-      "kurz": "Welcher Bebauungsplan (Dienst)",
+      "kurz": "Bebauungsplan laut Dienst der Stadt",
       "gruppe": "planung",
       "typ": "text",
       "geodienst": {

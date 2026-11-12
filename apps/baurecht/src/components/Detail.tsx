@@ -207,15 +207,13 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   return (
     <aside className="br-detail" aria-label={`Einzelheiten ${titel}`} tabIndex={-1}>
       <header className={`br-detail-kopf br-kopf-${p.ampel}`}>
-        <div className="br-detail-titel">
-          <span className="br-detail-nr">
-            {nb(einheit.nr ? titel : norm.def.kurz)}
-          </span>
-          {/* F6 und Sprungmarke landen hier – immer an derselben Stelle, nicht auf einem zufälligen Knopf */}
-          <h2 className="br-detail-name" tabIndex={-1} data-f6-ziel="">
-            {nb(einheit.titel || titel)}
-          </h2>
-        </div>
+        {/* F6 und Sprungmarke landen hier – immer an derselben Stelle, nicht auf einem zufälligen Knopf; die Überschrift
+            nennt § und Norm mit (optisch als Zeile darüber) */}
+        <h2 className="br-detail-titel br-detail-name" tabIndex={-1} data-f6-ziel="">
+          <span className="br-detail-nr">{nb(einheit.nr ? titel : norm.def.kurz)}</span>
+          <span className="br-unsichtbar"> – </span>
+          <span>{nb(einheit.titel || titel)}</span>
+        </h2>
         <div className="br-detail-ampel">
           <AmpelMarke ampel={p.ampel} />
           {p.festlegung && (

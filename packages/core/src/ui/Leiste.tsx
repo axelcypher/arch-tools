@@ -52,6 +52,14 @@ function verfuegbar(griff: HTMLElement | null, mitteMin: number | undefined): nu
   return Math.floor(arbeit.clientWidth - andere - mitteMin);
 }
 
+const ANGLEICHEN = 'leiste-angleichen';
+
+/** die anderen Leisten im Arbeitsbereich bitten, eine geschrumpfte Breite als gesetzte zu übernehmen */
+function angleichen(griff: HTMLElement | null) {
+  const leiste = griff?.parentElement;
+  for (const c of leiste?.parentElement?.children ?? []) if (c !== leiste && c.classList.contains('leiste')) c.dispatchEvent(new CustomEvent(ANGLEICHEN));
+}
+
 export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern', min, max, links = false, ist, mitteMin }: { breite: number; setBreite: (b: number) => void; vorgabe?: number; titel?: string; min?: number; max?: number; links?: boolean; ist?: number; mitteMin?: number }) {
   const richtung = links ? -1 : 1;
   const griff = useRef<HTMLDivElement>(null);
@@ -60,6 +68,9 @@ export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern'
   // verkleinern nichts). Ist die Leiste schon geschrumpft (gezeichnet schmaler als gesetzt), fehlt der Platz ohnehin.
   // Schrumpfen frei bis min, von der gezeichneten Breite aus.
   const setzen = (b: number) => {
+    // geschrumpfte Nachbarleisten auf ihre gezeichnete Breite festhalten – sonst holten sie sich den frei werdenden
+    // Platz zurück (← an den Angaben machte die Einzelheiten breiter statt die Mitte)
+    angleichen(griff.current);
     if (b <= jetzt) return setBreite(b);
     if (jetzt < breite - 1) return;
     const ziel = Math.min(b, Math.max(min ?? 0, verfuegbar(griff.current, mitteMin)));
@@ -87,7 +98,7 @@ export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern'
         const b0 = jetzt;
         zeigerZiehen(e, { schwelle: 0, bewegen: (ev) => setzen(b0 + richtung * (ev.clientX - x0)), ende: () => undefined });
       }}
-      onDoubleClick={() => vorgabe && setBreite(vorgabe)}
+      onDoubleClick={() => vorgabe && setzen(vorgabe)}
       onKeyDown={(e) => {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
           e.preventDefault();
@@ -132,6 +143,8 @@ export function BreitenLeiste({
   children: ReactNode;
 }) {
   const [breite, setBreite] = useLeistenBreite(schluessel, vorgabe, min, max);
+  const setBreiteRef = useRef(setBreite);
+  setBreiteRef.current = setBreite;
   // tatsächliche Breite messen (die Leiste darf per CSS schrumpfen)
   const rahmen = useRef<HTMLDivElement>(null);
   const [ist, setIst] = useState<number | undefined>(undefined);
@@ -145,11 +158,20 @@ export function BreitenLeiste({
       setTakt((t) => t + 1);
     });
     ro.observe(el);
+    // Nachbarleiste wird gezogen: eine geschrumpfte Breite festhalten (gesetzt = gezeichnet)
+    const angleichenAuf = () => {
+      const w = Math.round(el.getBoundingClientRect().width);
+      if (w > 0 && w < parseFloat(el.style.width) - 1) setBreiteRef.current(w);
+    };
+    el.addEventListener(ANGLEICHEN, angleichenAuf);
     if (el.parentElement) {
       ro.observe(el.parentElement);
       for (const c of el.parentElement.children) if (c !== el && c.classList.contains('leiste')) ro.observe(c);
     }
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      el.removeEventListener(ANGLEICHEN, angleichenAuf);
+    };
   }, []);
   return (
     <div ref={rahmen} className={`leiste ${className}`} style={{ width: breite }}>

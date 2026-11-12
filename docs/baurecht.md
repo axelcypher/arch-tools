@@ -34,8 +34,12 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Gemeindeschlüssel aus ALKIS); der Kopf zeigt „Keine Koordinaten“ bzw. „Koordinaten veraltet“, „Bestätigen …“ wird
   dann nicht angeboten. Ortsgebunden sind alle Angaben zu Lage, Schutzgebieten, Planungsrecht (Pläne, Satzungen,
   Sperren), Grundstück (Straßen, Gewässer, Zufahrten), Ortsrecht und Zuständigkeit – auch von Hand und ohne Beleg; nach
-  einem Adresswechsel sind sie erneut anzugeben (derselbe Wert lässt sich dazu erneut anklicken). Anzahlen (z. B.
-  Stellplätze) werden ganzzahlig übernommen.
+  einem Adresswechsel sind sie erneut anzugeben (Knopf „Für diese Lage übernehmen“, bei Angaben mit Beleg erneut mit
+  Beleg). Die frühere Lage bleibt dabei vermerkt („Angabe zu einer früheren Lage“), auch bei Angaben mit Beleg.
+  Gespeichert wird, was das Feld zeigt: Anzahlen (z. B. Stellplätze) ganzzahlig, andere Zahlen auf zwei Nachkommastellen,
+  keine negativen Werte. Schwellen „über x“ (im Regelschema „x,01“) gelten als echtes „größer als x“ – 22,005 m sind
+  über 22 m. Ist das **Planungsrecht** einem früheren Ort zugeordnet (Adresse geändert, seit es in Baurecht gesetzt
+  wurde), steht oben ein Hinweis; bis „Gilt auch hier“ zählt es nicht als gesichert.
 - **Filterleiste:** Ampelzähler (blenden ein/aus), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und
   die Kästchen „nur von Hand festgelegte“ / „nur geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px,
   wird die Ordnung zur Auswahlliste, die Kästchen wandern in **Filter ▾** und der Balken entfällt. Die Zähler an den
@@ -103,6 +107,8 @@ wiederhergestellte Festlegung, die nicht mehr dem Stand der Datei entspricht, is
 
 Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald die automatische Ampel danach strenger wird als
 damals und als die Festlegung (wird sie schwächer oder kommt sie bei der Festlegung an, bleibt die Festlegung richtig),
+sobald sich der **Ort** ändert (Anschrift, Grundstück oder Koordinaten – eine Festlegung gilt für den Ort, an dem sie
+getroffen wurde; eine Festlegung ohne Ortsangabe gilt als überholt),
 sobald sich eine beteiligte Angabe (auch nur ihre Sicherheit, z. B. ein neuer Widerspruch) oder der Text einer Fundstelle ändert (oder
 sie ohne geprüften Text getroffen wurde und der Text jetzt vorliegt) – dann steht die Marke „überholt“ daran, ein
 überholtes „entfällt“ zählt mindestens als „prüfen“, ein überholtes „prüfen“ hält ein automatisches „gilt“ nicht auf
@@ -151,8 +157,11 @@ Fokus haben), danach die Titelleiste. Die Vorschriftenliste ist ein Tabstopp: �
 Auswahlgruppen (ja/nein, Merkmale) bedienen sich mit ←/→ bzw. ↑/↓ (mit Umlauf), Pos1/Ende. F6 (Umschalt+F6) springt
 zwischen Kopf, Angaben, Vorschriften und Einzelheiten; ist kein Paragraf gewählt, bekommen die Einzelheiten selbst den
 Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr ▾, Filter ▾, Farbschema) nehmen beim Öffnen den Fokus,
-bedienen sich mit ↑/↓, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie mit Tab
-verlässt; ihre Einträge sind keine eigenen Tabstopps. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc gibt
+bedienen sich mit ↑/↓ und Pos1/Ende, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie
+mit Tab verlässt; ihre Einträge sind keine eigenen Tabstopps; ↓/↑ auf dem geschlossenen Knopf „Mehr“ öffnet es.
+Die Suche in den Vorschriften findet „§ 6 BauO NRW“ genau (Norm nach Kurzform); findet sie keinen Paragrafen, sucht sie
+im Text; Kürzel (bis drei Zeichen, z. B. „GK“, „GRZ“) nur am Wortanfang und auch ausgeschrieben. Nach Suche, Filter und
+„Filter zurücksetzen“ bleibt die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc gibt
 den Fokus an den Öffner zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an der
 Angabe bzw. am Knopf.
 

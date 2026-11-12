@@ -514,3 +514,43 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
     expect(a.paragrafen.every((x) => x.ampel !== 'gruen')).toBe(true);
   });
 });
+
+describe('Runde 9: kein falsches Grün über Ort und Schwellen', () => {
+  const ort = { adresse: 'musterweg 1|59494|soest|||', lage: '420000,5710000' };
+  const fl = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, ort };
+  it('eine Festlegung gilt nur am Ort, an dem sie getroffen wurde', () => {
+    expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, ort })), 'bund/bnatschg/44')).toMatchObject({ ampel: 'gruen' });
+    // andere Anschrift: überholt, nicht mehr grün
+    const b = p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, ort: { ...ort, adresse: 'andere str. 2|59494|soest|||' } })), 'bund/bnatschg/44');
+    expect(b.ueberholt).toMatch(/Anschrift bzw. Grundstück geändert/);
+    expect(b.ampel).not.toBe('gruen');
+    // gleiche Anschrift, andere Koordinaten bzw. keine mehr: ebenso
+    expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, ort: { ...ort, lage: '420500,5710000' } })), 'bund/bnatschg/44').ueberholt).toMatch(/Koordinaten geändert/);
+    expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, ort: { ...ort, lage: null } })), 'bund/bnatschg/44').ueberholt).toMatch(/Koordinaten fehlen/);
+    // ohne Koordinaten festgelegt, später Koordinaten zur selben Anschrift: bleibt gültig
+    expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': { ...fl, ort: { ...ort, lage: null } } }, ort })), 'bund/bnatschg/44').ueberholt).toBeUndefined();
+    // aus einer Datei ohne Ort: überholt (zur sicheren Seite)
+    const { ort: _o, ...ohneOrt } = fl;
+    expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': ohneOrt }, ort })), 'bund/bnatschg/44').ueberholt).toMatch(/ohne Ortsangabe/);
+  });
+
+  it('„x,01“ heißt „über x“ und wird auch so gewertet – 22,005 m ist über 22 m', () => {
+    const ctx = { merkmale: {}, fakten: { h: sicher(22.005) }, einreichung: '2026-12-01', heute: '2026-11-12', bausteine: {} };
+    expect(werten({ f: 'h', min: 22.01 }, ctx).w).toBe('ja');
+    expect(werten({ f: 'h', min: 22.01 }, { ...ctx, fakten: { h: sicher(22) } }).w).toBe('nein');
+    expect(werten({ nicht: { f: 'h', min: 22.01 } }, ctx).w).toBe('nein');
+    // „vorhanden“ (0,01) heißt „über 0“
+    expect(werten({ f: 'h', min: 0.01 }, { ...ctx, fakten: { h: sicher(0.004) } }).w).toBe('ja');
+    // gewöhnliche Untergrenzen bleiben einschließend
+    expect(werten({ f: 'h', min: 7 }, { ...ctx, fakten: { h: sicher(7) } }).w).toBe('ja');
+  });
+
+  it('ein gesichertes „gilt nicht“ geht einem „entfällt“ vor, das nur auf Hinweisen beruht', () => {
+    const a = p(auswerten(eingabe({ merkmale: { Vorhaben: 'Änderung', Gebäudeart: 'Einfamilienhaus', Planungsrecht: 'Außenbereich', Gebäudeklasse: '1', Verfahren: 'vereinfachtes Verfahren' }, fakten: { 'lage.ags': sicher('05974040'), 'gebaeude.nutzflaeche': hinweis(40) } })), 'nw/bauo-nrw/42a');
+    expect(a.ampel).toBe('gruen');
+    expect(a.gruende[0]).toMatch(/^Gilt nicht/);
+    // ohne gesichertes „gilt nicht“ bleibt das unsichere „entfällt“ gelb
+    const b = p(auswerten(eingabe({ fakten: { 'lage.ags': sicher('05974040'), 'gebaeude.nutzflaeche': hinweis(40) } })), 'nw/bauo-nrw/42a');
+    expect(b.ampel).toBe('gelb');
+  });
+});

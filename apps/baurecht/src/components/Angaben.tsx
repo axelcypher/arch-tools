@@ -47,8 +47,15 @@ const HERKUNFT: Record<FaktWert['herkunft'], string> = {
 };
 
 /** Antragsmerkmale (gemeinsam mit Formulare) als Segmentknöpfe mit Erklärung */
-/** Unterzeile eines Merkmals: die Erklärung ohne den Namen davor („Gebäudeklasse (§ 2 …)“ → „(§ 2 …)“) */
-const merkmalUnterzeile = (name: string, text?: string) => (!text || text === name ? '' : text.startsWith(name) ? text.slice(name.length).trim() : text);
+/**
+ * Unterzeile eines Merkmals: die Erklärung ohne den Namen davor („Gebäudeklasse (§ 2 …)“ → „(§ 2 …)“) – nur an einer
+ * Wortgrenze („Planungsrechtliche Lage …“ bleibt ganz, sonst stünde „liche Lage“ da)
+ */
+export const merkmalUnterzeile = (name: string, text?: string) => {
+  if (!text || text === name) return '';
+  const rest = text.startsWith(name) ? text.slice(name.length) : null;
+  return rest !== null && /^[\s(:–,-]/.test(rest) ? rest.replace(/^[\s:–,-]+/, '').trim() : text;
+};
 /** Merkmale, die zur Suche passen (Name, Erklärung, Werte) */
 const merkmalPasst = (m: { name: string; werte: string[] }, suche: string) => !suche || `${MERKMAL_TITEL[m.name] ?? m.name} ${MERKMAL_ERKLAERUNG[m.name]?.text ?? ''} ${m.werte.join(' ')}`.toLowerCase().includes(suche.toLowerCase());
 
@@ -81,7 +88,8 @@ function Merkmale({ klaerung, suche = '' }: { klaerung: Map<string, number>; suc
   return (
     <section ref={ref} className="br-angaben-gruppe" aria-labelledby="br-merkmale">
       <h3 id="br-merkmale">
-        <button type="button" className="br-gruppe-knopf" aria-expanded={auf} onClick={() => setAuf(!auf)}>
+        {/* während der Suche fest aufgeklappt (zeigt die passenden Merkmale) – der Knopf ist dann ohne Wirkung und deshalb aus */}
+        <button type="button" className="br-gruppe-knopf" aria-expanded={auf} disabled={!!suche} title={suche ? 'Während der Suche aufgeklappt' : undefined} onClick={() => setAuf(!auf)}>
           <span aria-hidden="true">{auf ? '▾' : '▸'}</span> Antragsmerkmale <span className="br-gruppe-stand">{fehlen ? `${fehlen} offen` : 'alle festgelegt'}</span>
         </button>
       </h3>
@@ -123,12 +131,16 @@ function Merkmale({ klaerung, suche = '' }: { klaerung: Map<string, number>; suc
   );
 }
 
+/** Zahl so, wie das Feld sie zeigt (Anzahlen ganz, sonst zwei Nachkommastellen) */
+export const wieAngezeigt = (n: number, def: Pick<FaktDef, 'einheit'>): number => (zaehlEinheit(def.einheit) ? Math.round(n) : Math.round(n * 100) / 100);
+
 /** id der Unterzeile (Frage bzw. Rest des Titels) als Beschreibung der Eingabe – nur, wenn es sie gibt */
 const beschreibung = (def: FaktDef, id: string) => (def.frage || (def.kurz && def.titel !== def.kurz) ? `br-frage-${id}` : undefined);
 
 function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void }) {
   const v = wert?.wert ?? null;
   // eine Angabe von Hand, die nur noch Hinweis ist (z. B. zu einer früheren Lage): derselbe Wert lässt sich erneut setzen
+  // (für alle Typen zusätzlich der Knopf „für diese Lage übernehmen“ in der Fußzeile)
   const neuBinden = wert?.herkunft === 'manuell' && wert.sicherheit === 'hinweis' && !wert.bestaetigt;
   if (def.typ === 'janein')
     return (
@@ -146,8 +158,9 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   if (def.typ === 'zahl')
     return (
       <span className="br-zahl">
-        {/* Anzahlen ganzzahlig übernehmen (angezeigt und gespeichert gleich – „5,5 Stellplätze“ gibt es nicht) */}
-        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty onChange={(n) => onWert(n === undefined || !zaehlEinheit(def.einheit) ? n : Math.round(n))} label={faktName(def, id)} digits={zaehlEinheit(def.einheit) ? 0 : 2} />
+        {/* gespeichert wird, was das Feld zeigt: Anzahlen ganzzahlig („5,5 Stellplätze“ gibt es nicht), sonst auf zwei
+            Stellen – „22,005 m“ stünde sonst als „22,01“ da und zählte doch anders; negative Werte gibt es nicht */}
+        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty min={0} onChange={(n) => onWert(n === undefined ? n : wieAngezeigt(n, def))} label={faktName(def, id)} digits={zaehlEinheit(def.einheit) ? 0 : 2} />
         {def.einheit && <span className="br-leise">{def.einheit}</span>}
       </span>
     );
@@ -237,9 +250,23 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
                 nur Hinweis
               </span>
               {andereLage ? (
-                <span className="br-leise-stark" title={wert.grund}>
-                  {!lage ? 'ohne gültige Koordinaten nicht bestätigbar' : wert.herkunft === 'manuell' ? 'Angabe zu einer früheren Lage – erneut angeben oder zurücksetzen' : 'Ergebnis einer früheren Lage – „Lage abfragen“'}
-                </span>
+                <>
+                  <span className="br-leise-stark" title={wert.grund}>
+                    {!lage ? 'ohne gültige Koordinaten nicht bestätigbar' : wert.herkunft === 'manuell' && !wert.bestaetigt ? 'Angabe zu einer früheren Lage' : 'Ergebnis einer früheren Lage – „Lage abfragen“'}
+                  </span>
+                  {/* Angabe von Hand zu einer früheren Lage: für die aktuelle Lage übernehmen (gleicher Wert, neu gebunden) */}
+                  {lage && wert.herkunft === 'manuell' && (
+                    <button
+                      type="button"
+                      className="small"
+                      aria-label={`${name}: für diese Lage übernehmen`}
+                      title="Derselbe Wert gilt auch an der aktuellen Lage – an sie binden"
+                      onClick={() => (mitBeleg(def, wert) && wert.wert != null ? faktSetzenOeffnen(id, name, wert.wert, true) : useBaurecht.getState().faktSetzen(id, wert.wert, benutzer(), undefined, lage))}
+                    >
+                      Für diese Lage übernehmen
+                    </button>
+                  )}
+                </>
               ) : (
                 <button type="button" className="small" aria-label={`${name} bestätigen …`} title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, name, wert, lagebezug(def, wert))}>
                   Bestätigen …
@@ -310,6 +337,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   const eigene = useBaurecht((s) => s.pruefung.fakten);
   const [alle, setAlle] = useState(false);
   const [suche, setSuche] = useState('');
+  const suchfeld = useRef<HTMLInputElement>(null);
   const { auswertung } = stand;
   const klaerung = useMemo(() => new Map(auswertung.klaerung.map((k) => [k.id, k.anzahl])), [auswertung.klaerung]);
   const relevant = useMemo(() => {
@@ -353,7 +381,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         </label>
       </div>
       <div className="br-suche">
-        <input type="search" placeholder="Angabe suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Angaben durchsuchen" />
+        <input ref={suchfeld} type="search" placeholder="Angabe suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Angaben durchsuchen" />
       </div>
       <div className="br-angaben-liste">
         {!suche && <Klaeren stand={stand} />}
@@ -362,11 +390,26 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
             {w}
           </div>
         ))}
+        {stand.planungsrechtFrueher && (
+          <div className="br-meldung br-meldung-warn" role="status">
+            Planungsrecht „{useBaurecht.getState().merkmale['Planungsrecht']}“ gehört zu einem früheren Ort ({stand.planungsrechtFrueher}) – bitte prüfen. Bis dahin zählt es nicht als gesichert.{' '}
+            <button type="button" className="small" onClick={() => useBaurecht.getState().planungsrechtBestaetigen()}>
+              Gilt auch hier
+            </button>
+          </div>
+        )}
         {(!suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche))) && <Merkmale klaerung={klaerung} suche={suche} />}
         {suche && !gruppen.length && !VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche)) && (
           <div className="br-leer-zustand" role="status">
             <p>Keine Angabe zu „{suche}“{alle ? '' : ' unter den Angaben, an denen eine Regel hängt'}.</p>
-            <button type="button" onClick={() => setSuche('')}>
+            <button
+              type="button"
+              onClick={() => {
+                setSuche('');
+                // der Leerzustand verschwindet – Fokus ins Suchfeld statt auf die Seite
+                setTimeout(() => suchfeld.current?.focus(), 0);
+              }}
+            >
               Suche leeren
             </button>
             {!alle && (

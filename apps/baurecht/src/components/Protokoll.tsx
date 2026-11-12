@@ -9,7 +9,7 @@ import { DruckKopf } from '@core/ui/DruckKopf';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { benutzer } from '../benutzer';
 import type { Pruefstand } from '../pruefung';
-import { verwendeteFassungen } from '../pruefung';
+import { aktuelleLage, verwendeteFassungen } from '../pruefung';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from '../store';
 import { AMPEL_TEXT, datum, nb } from './Ampel';
 
@@ -54,8 +54,9 @@ function nachNorm(ps: ParagrafErgebnis[], normen: { id: string; def: { kurz: str
     .map(([id, liste]) => {
       const kurz = normen.find((n) => n.id === id)?.def.kurz ?? id;
       const zahlen = liste.every((p) => /^\d/.test(p.paragraf));
-      const nrn = liste.map((p) => p.paragraf).join(', ');
-      return nb(zahlen ? `${kurz} ${liste.length > 1 ? '§§' : '§'} ${nrn}` : `${kurz} ${nrn}`);
+      // benannte Einheiten mit ihrem Titel („andere Naturschutzgebiete“), nicht mit dem bloßen Schlüssel („andere“)
+      const nrn = liste.map((p) => (/^\d/.test(p.paragraf) ? p.paragraf : einheitName(p.paragraf, p.titel).titel || p.paragraf)).join(zahlen ? ', ' : '; ');
+      return nb(zahlen ? `${kurz} ${liste.length > 1 ? '§§' : '§'} ${nrn}` : `${kurz}: ${nrn}`);
     })
     .join(' · ');
 }
@@ -88,6 +89,14 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const offeneF = useBaurecht((s) => offeneFestlegungen(s).join('|'));
   const offeneB = useBaurecht((s) => offeneBestaetigungen(s).join('|'));
   const eigeneFakten = useBaurecht((s) => s.pruefung.fakten);
+  // „frühere Lage“ nur, wenn die Angabe wirklich an einer anderen Lage hängt (nicht beim Gemeindeschlüssel von Hand,
+  // der an der aktuellen Lage absichtlich Hinweis bleibt)
+  const lageJetzt = aktuelleLage(project).lage;
+  const lageVermerk = (e: FaktWert | undefined) => {
+    const gebunden = e?.lage ?? e?.bestaetigt?.lage;
+    if (!gebunden) return '';
+    return !lageJetzt ? ' (ohne gültige Koordinaten)' : gebunden !== lageJetzt ? ' (frühere Lage)' : '';
+  };
   const ungespeichertGesamt = useBaurecht(istGeaendert);
   const laedt = useBaurecht((s) => s.laedt.length);
   const [nurRelevant, setNurRelevant] = useState(false);
@@ -346,7 +355,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                   <td>
                     {wertAnzeige(f.wert, a.faktDefs[id])}
                     {/* nur noch Hinweis (frühere Lage, ohne Koordinaten): gekennzeichnet, nicht wie eine geltende Angabe */}
-                    {f.sicherheit === 'hinweis' && <span className="br-entwurf-text"> – nur Hinweis{eigeneFakten[id]?.bestaetigt || eigeneFakten[id]?.lage ? ' (frühere Lage)' : ''}</span>}
+                    {f.sicherheit === 'hinweis' && <span className="br-entwurf-text"> – nur Hinweis{lageVermerk(eigeneFakten[id])}</span>}
                   </td>
                   <td>
                     {/^von Hand \((.+)\)$/.exec(f.quelle ?? '')?.[1] ?? '–'}

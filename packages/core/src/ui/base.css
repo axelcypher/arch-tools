@@ -1098,7 +1098,16 @@ code {
 }
 
 .titlebar-dirty {
-  color: var(--sel);
+  /* Nicht-Text braucht 3:1 gegen die Leiste: das dunklere Warnorange statt der Auswahlfarbe */
+  color: var(--warn-text);
+}
+.titlebar-unsichtbar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .titlebar-drag {

@@ -10,6 +10,7 @@ import type { Paket } from '@core/baurecht/paket';
 import type { BaurechtPruefung } from '@core/baurecht/projekt';
 import { angabeVonHand, hinweisBestaetigen } from '@core/baurecht/angaben';
 import { geoZusammenfuehren } from '@core/baurecht/geodienste';
+import { ortVon } from '@core/baurecht/ort';
 import { isTauri } from '@core/platform/files';
 import { aktiverAntrag, baurechtAusRoh, leerePruefung, merkmaleAusRoh } from '@core/baurecht/projekt';
 import type { Ampel, FaktWert, Festlegung, ParagrafErgebnis } from '@core/baurecht/typen';
@@ -59,6 +60,8 @@ export interface Zustand {
   schliessen: () => void;
   antragWaehlen: (antrag: string) => void;
   merkmalSetzen: (name: string, wert: string) => void;
+  /** Planungsrecht gilt unverändert auch am jetzigen Ort (nach einem Adresswechsel) */
+  planungsrechtBestaetigen: () => void;
   /**
    * Angabe von Hand; mit `grund` (Pflicht für Schutzgebiete und Angaben aus Geodiensten) wird sie wie eine Bestätigung
    * beim Speichern noch einmal abgefragt. Widerspricht sie einem Treffer eines Dienstes, bleibt das als Widerspruch.
@@ -162,7 +165,23 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const m = { ...get().merkmale };
     if (wert) m[name] = wert;
     else delete m[name];
+    // das Planungsrecht hängt am Ort: merken, für welchen es gesetzt wurde (nach einem Adresswechsel ein Hinweis)
+    if (name === 'Planungsrecht') {
+      const p = kopie(get().pruefung);
+      const o = ortVon(get().project);
+      if (wert && o) p.planungsrechtOrt = o;
+      else delete p.planungsrechtOrt;
+      set({ merkmale: m, pruefung: p });
+      return;
+    }
     set({ merkmale: m });
+  },
+  planungsrechtBestaetigen: () => {
+    const o = ortVon(get().project);
+    if (!o) return;
+    const p = kopie(get().pruefung);
+    p.planungsrechtOrt = o;
+    set({ pruefung: p });
   },
   faktSetzen: (id, wert, von, grund, lage) => {
     const p = kopie(get().pruefung);
@@ -200,7 +219,9 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   },
   festlegen: (e, ampel, grund, von, summen, werte, sicherheit) => {
     const p = kopie(get().pruefung);
-    const f: Festlegung = { ampel, grund: grund.trim(), von, am: heute(), automatisch: e.automatisch, fakten: werte, stand: summen, ...(sicherheit && Object.keys(sicherheit).length ? { sicherheit } : {}) };
+    // eine Festlegung gilt für den Ort, an dem sie getroffen wird (ändert er sich, ist sie überholt)
+    const ort = ortVon(get().project);
+    const f: Festlegung = { ampel, grund: grund.trim(), von, am: heute(), automatisch: e.automatisch, fakten: werte, stand: summen, ...(sicherheit && Object.keys(sicherheit).length ? { sicherheit } : {}), ...(ort ? { ort } : {}) };
     p.festlegungen[e.id] = f;
     set({ pruefung: p });
   },

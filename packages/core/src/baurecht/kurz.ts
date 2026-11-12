@@ -99,7 +99,10 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
     if (w === 'ja' && (k.min !== undefined || k.max !== undefined)) {
       const n = typeof v === 'number' ? v : Number(String(v).replace(',', '.'));
       if (!Number.isFinite(n)) return { w: 'offen', offen: [k.f], unsicher: [], widerspruch: [], verwendet };
-      w = aus((k.min === undefined || n >= k.min) && (k.max === undefined || n <= k.max));
+      // „x,01“ steht im Schema für „über x“ (so heißt es auch in Worten) und wird als echtes „größer als x“ gewertet –
+      // sonst fiele „22,005 m“ durch die Lücke zwischen 22 und 22,01
+      const ab = k.min === undefined ? undefined : ueberBasis(k.min);
+      w = aus((k.min === undefined || (ab !== undefined ? n > ab : n >= k.min)) && (k.max === undefined || n <= k.max));
     }
     const unsicher = fw.sicherheit === 'hinweis' && !fw.bestaetigt ? [k.f] : [];
     return { w, offen: [], unsicher, widerspruch: fw.widerspruch ? [k.f] : [], verwendet };
@@ -179,10 +182,15 @@ const liste = (w: (string | number)[], wort = 'oder') => (w.length <= 1 ? String
 const datum = (iso: string) => iso.split('-').reverse().join('.');
 const zahl = (n: number) => n.toLocaleString('de-DE');
 
-/** Text-Wert in Worten: Gemeindeschlüssel als Gemeindename (beim aktuellen Wert mit Schlüssel dahinter) */
+/** „x,01“ (Untergrenze im Schema) meint „über x“: gibt x zurück, sonst undefined */
+export function ueberBasis(min: number): number | undefined {
+  return !Number.isInteger(min) && Math.abs(min * 100 - Math.round(min) * 100 - 1) < 1e-6 ? Math.round(min) : undefined;
+}
+
+/** Text-Wert in Worten: Gemeindeschlüssel als Gemeindename (beim aktuellen Wert mit Schlüssel: „Soest, Schlüssel …“) */
 function textWert(id: string | undefined, v: string, mitSchluessel = false): string {
   const name = id === 'lage.ags' ? gemeindeName(v) : undefined;
-  return name ? (mitSchluessel ? `${name} (${v})` : name) : v;
+  return name ? (mitSchluessel ? `${name}, Schlüssel ${v}` : name) : v;
 }
 
 function wertText(v: string | number | boolean, def?: FaktDef, id?: string): string {
@@ -203,7 +211,7 @@ function schwelle(name: string, def: FaktDef | undefined, min: number | undefine
   const imNamen = !!einheit && zaehlt && name.toLowerCase().includes(einheit.toLowerCase());
   const mit = (n: number) => `${zahl(n)}${einheit && !imNamen ? ` ${einheitZu(n, einheit)}` : ''}`;
   // „22,01“ → „über 22“ (bei ganzen Zahlen nie: dort zählt „mehr als“)
-  const ueber = (x: number) => !Number.isInteger(x) && Math.abs(x * 100 - Math.round(x) * 100 - 1) < 1e-6;
+  const ueber = (x: number) => ueberBasis(x) !== undefined;
   const ganz = (x: number) => zaehlt && Number.isInteger(x);
   const vorhanden = (x: number) => (x > 0 && x <= 0.01) || (ganz(x) && x === 1);
   // untere Schwelle: x gehört dazu („mindestens“); „über n“ bzw. „mehr als n“, wo das Gesetz so zählt
@@ -239,6 +247,22 @@ function nichtUmgeformt(n: Kurz, t: TextKontext): Kurz | undefined {
   if ('m' in n && n.in) return { m: n.m, nicht: n.in };
   if ('m' in n && n.nicht) return { m: n.m, in: n.nicht };
   if ('nicht' in n && !('m' in n)) return aufloesen(n.nicht, t);
+  // De Morgan (gilt auch dreiwertig): „nicht (A oder B)“ = „nicht A und nicht B“, „nicht (A und B)“ = „nicht A oder
+  // nicht B“ – die Teile werden ihrerseits positiv formuliert, gleiche Merkmale zusammengefasst
+  if ('und' in n || 'oder' in n) {
+    const teile = ('und' in n ? n.und : n.oder).map((x) => {
+      const a = aufloesen(x, t);
+      return nichtUmgeformt(a, t) ?? { nicht: a };
+    });
+    if ('und' in n) return { oder: teile };
+    const und: Kurz[] = [];
+    for (const x of teile) {
+      const vorher = 'm' in x && x.nicht ? und.find((y): y is { m: string; nicht: string[] } => 'm' in y && y.m === x.m && !!y.nicht) : undefined;
+      if (vorher && 'm' in x && x.nicht) vorher.nicht = [...new Set([...vorher.nicht, ...x.nicht])];
+      else und.push('m' in x && x.nicht ? { m: x.m, nicht: [...x.nicht] } : x);
+    }
+    return { und };
+  }
   return undefined;
 }
 
@@ -358,7 +382,7 @@ function istWert(k: Kurz, t: TextKontext, ctx: KurzKontext): string | undefined 
   if ('f' in k) {
     const f = ctx.fakten[k.f];
     if (f?.wert == null) return 'nicht angegeben';
-    return wertText(f.wert, t.fakt(k.f), k.f) + (f.sicherheit === 'hinweis' && !f.bestaetigt ? ' (Hinweis)' : '') + (f.widerspruch ? ' (Widerspruch)' : '');
+    return wertText(f.wert, t.fakt(k.f), k.f) + (f.sicherheit === 'hinweis' && !f.bestaetigt ? ', nur Hinweis' : '') + (f.widerspruch ? ', Widerspruch' : '');
   }
   if ('n' in k) {
     const a = ctx.ampel?.(k.n);

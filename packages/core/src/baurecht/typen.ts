@@ -249,6 +249,12 @@ export interface FaktWert {
 }
 
 /** Festlegung von Hand (Abschnitt 8) */
+/** Ort einer Festlegung: Anschrift/Grundstück (vereinheitlicht) und Lage aus gültigen Koordinaten (null = keine) */
+export interface Ort {
+  adresse: string;
+  lage: string | null;
+}
+
 export interface Festlegung {
   ampel: Ampel;
   grund: string;
@@ -264,6 +270,8 @@ export interface Festlegung {
   stand?: Record<string, string>;
   /** zweite Bestätigung beim Speichern (ISO) – fehlt = Entwurf */
   bestaetigt?: string;
+  /** Ort beim Festlegen – eine Festlegung gilt nur für diesen Ort */
+  ort?: Ort;
 }
 
 export interface ParagrafErgebnis {

@@ -40,6 +40,7 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
   const [versucht, setVersucht] = useState(false);
   const [verwerfen, setVerwerfen] = useState(false);
   const feld = useRef<HTMLTextAreaElement>(null);
+  const wahl = useRef<HTMLFieldSetElement>(null);
   useEffect(() => {
     if (!p) return;
     setVerwerfen(false);
@@ -48,7 +49,8 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
     setGrund(p.festlegung?.grund ?? '');
     setVon(benutzer());
     setVersucht(false);
-    setTimeout(() => feld.current?.focus(), 0);
+    // Startfokus auf die Entscheidung selbst (die gewählte Ampel), nicht erst auf die Begründung
+    setTimeout(() => wahl.current?.querySelector<HTMLInputElement>('input:checked')?.focus(), 0);
   }, [p]);
   if (!p) return null;
   const herab = RANG[ampel] < RANG[p.automatisch];
@@ -85,7 +87,7 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
       <p className="br-leise">
         Automatisch: <AmpelMarke ampel={p.automatisch} klein /> {p.gruende[0]}
       </p>
-      <fieldset className="br-wahl">
+      <fieldset className="br-wahl" ref={wahl}>
         <legend>Ampel</legend>
         {(['rot', 'gelb', 'gruen'] as const).map((a) => (
           <label key={a} className={`br-wahl-zeile${ampel === a ? ' br-gewaehlt' : ''}`}>
@@ -108,16 +110,18 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
           Sie stufen von „{AMPEL_TEXT[p.automatisch]}“ auf „{AMPEL_TEXT[ampel]}“ herab. Das ist erlaubt, wenn der Sonderfall begründet ist – die Festlegung steht im Prüfprotokoll und muss beim Speichern noch einmal bestätigt werden.
         </div>
       )}
-      <label className="field">
-        <span className="field-label">
+      {/* Feld und Beschriftung getrennt: das Beispiel gehört zur Beschreibung, nicht zum Namen des Felds */}
+      <div className="field">
+        <label className="field-label" htmlFor="br-festlegen-grund">
           Begründung <span aria-hidden="true">*</span>
-        </span>
+        </label>
         <textarea
+          id="br-festlegen-grund"
           ref={feld}
           rows={4}
           value={grund}
           onChange={(e) => setGrund(e.target.value)}
-          aria-required="true"
+          required
           aria-invalid={versucht && grund.trim().length < 10}
           aria-describedby={versucht && grund.trim().length < 10 ? 'br-festlegen-fehler br-festlegen-beispiel' : 'br-festlegen-beispiel'}
           placeholder="Worauf beruht die Einordnung?"
@@ -130,13 +134,13 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
             Bitte begründen (mindestens 10 Zeichen) – die Begründung steht im Prüfprotokoll.
           </span>
         )}
-      </label>
-      <label className="field">
-        <span className="field-label">
+      </div>
+      <div className="field">
+        <label className="field-label" htmlFor="br-festlegen-von">
           Festgelegt von <span aria-hidden="true">*</span>
-        </span>
-        <input value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" />
-      </label>
+        </label>
+        <input id="br-festlegen-von" value={von} onChange={(e) => setVon(e.target.value)} required />
+      </div>
       {verwerfen ? (
         <div className="br-meldung br-meldung-warn dialog-buttons br-verwerfen" role="alert">
           <span>Die Begründung ist noch nicht übernommen. Verwerfen?</span>

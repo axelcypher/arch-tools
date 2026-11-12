@@ -7,7 +7,7 @@
 import { computeProject } from '../calc';
 import type { Project } from '../model';
 import { istKellergeschoss, storeyElevations } from '../model';
-import type { Ampel, FaktWert, Festlegung } from './typen';
+import type { Ampel, FaktWert, Festlegung, Ort } from './typen';
 
 /* ---------- Abschnitt „baurecht“ ---------- */
 
@@ -31,6 +31,8 @@ export interface BaurechtPruefung {
   fakten: Record<string, FaktWert>;
   festlegungen: Record<string, Festlegung>;
   protokolle: Protokoll[];
+  /** Ort, zu dem das Merkmal „Planungsrecht“ zuletzt in Baurecht gesetzt bzw. bestätigt wurde */
+  planungsrechtOrt?: Ort;
 }
 
 export interface BaurechtAbschnitt {
@@ -78,7 +80,13 @@ function festlegungAus(roh: unknown): Festlegung | null {
   if (istObjekt(roh.stand)) f.stand = Object.fromEntries(Object.entries(roh.stand).filter(([, v]) => typeof v === 'string')) as Record<string, string>;
   if (istObjekt(roh.sicherheit)) f.sicherheit = Object.fromEntries(Object.entries(roh.sicherheit).filter(([, v]) => v === 'sicher' || v === 'hinweis' || v === 'widerspruch')) as Festlegung['sicherheit'];
   if (typeof roh.bestaetigt === 'string') f.bestaetigt = roh.bestaetigt;
+  const o = ortAus(roh.ort);
+  if (o) f.ort = o;
   return f;
+}
+
+function ortAus(roh: unknown): Ort | undefined {
+  return istObjekt(roh) && typeof roh.adresse === 'string' && (roh.lage === null || typeof roh.lage === 'string') ? { adresse: roh.adresse, lage: roh.lage } : undefined;
 }
 
 /** Abschnitt prüfen; Unbekanntes fällt weg, Gültiges bleibt */
@@ -99,6 +107,8 @@ export function baurechtAus(roh: unknown): BaurechtAbschnitt {
         const f = festlegungAus(v);
         if (f) pr.festlegungen[k] = f;
       }
+    const po = ortAus(p.planungsrechtOrt);
+    if (po) pr.planungsrechtOrt = po;
     if (Array.isArray(p.protokolle)) pr.protokolle = p.protokolle.filter((x): x is Protokoll => istObjekt(x) && typeof x.am === 'string') as Protokoll[];
     out.pruefungen[antrag] = pr;
   }
@@ -148,6 +158,10 @@ export function pruefungSetzen(roh: Record<string, unknown>, antrag: string, pru
     if (gelesen.einreichung !== basis.einreichung && gelesen.einreichung !== pruefung.einreichung) o.konflikte?.push('Einreichung');
     if (pruefung.einreichung) ziel.einreichung = pruefung.einreichung;
     else delete ziel.einreichung;
+  }
+  if (!gleich(pruefung.planungsrechtOrt, basis.planungsrechtOrt)) {
+    if (pruefung.planungsrechtOrt) ziel.planungsrechtOrt = pruefung.planungsrechtOrt;
+    else delete ziel.planungsrechtOrt;
   }
   ziel.fakten = zusammen('Angabe', datei.fakten, gelesen.fakten, basis.fakten, pruefung.fakten);
   ziel.festlegungen = zusammen('Festlegung', datei.festlegungen, gelesen.festlegungen, basis.festlegungen, pruefung.festlegungen);

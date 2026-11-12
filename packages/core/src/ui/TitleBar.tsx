@@ -122,7 +122,12 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
         </span>
         <span className="titlebar-project" {...ziehen} title={name}>
           {name}
-          {dirty && <span className="titlebar-dirty" title="Ungespeicherte Änderungen"> ●</span>}
+          {dirty && (
+            <span className="titlebar-dirty" title="Ungespeicherte Änderungen">
+              <span aria-hidden="true"> ●</span>
+              <span className="titlebar-unsichtbar"> – ungespeicherte Änderungen</span>
+            </span>
+          )}
         </span>
         <span className="titlebar-drag" {...ziehen} />
         {desktop && !rahmen && <UpdateKnopf app={app} dirty={dirty} />}
@@ -238,7 +243,8 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
       knopf.current?.focus();
     }
     // Pos1/Ende springen an Anfang und Ende – nur außerhalb eines Eingabefelds, dort bewegen sie die Schreibmarke
-    const imFeld = document.activeElement instanceof HTMLInputElement;
+    const a = document.activeElement;
+    const imFeld = a instanceof HTMLInputElement && !['checkbox', 'radio', 'button'].includes(a.type);
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || ((e.key === 'Home' || e.key === 'End') && !imFeld)) {
       const el = [...(ref.current?.querySelectorAll<HTMLElement>('[role="menuitemradio"], .titlebar-dropdown input') ?? [])];
       if (!el.length) return;

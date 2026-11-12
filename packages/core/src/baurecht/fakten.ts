@@ -26,7 +26,7 @@ const KURZ: Record<string, string> = {
   'planung.befreiung': 'Befreiung vom Bebauungsplan',
   'planung.planaufstellung': 'Bebauungsplan in Aufstellung',
   'planung.wohnungsbau_246e': 'Wohnungsbau nach § 246e BauGB',
-  'schutz.baum': 'Geschützte Bäume betroffen',
+  'schutz.baum': 'Baum, Allee oder Naturdenkmal betroffen',
   'schutz.bodendenkmal': 'Bodendenkmal (auch vermutet)',
   'schutz.denkmal': 'Baudenkmal auf dem Grundstück',
   'schutz.denkmal_umgebung': 'Umgebung eines Baudenkmals',
@@ -103,7 +103,8 @@ const KATALOG: Record<string, FaktDef> = {
   'vorhaben.baustelle_oeffentlich': j('Gerüst oder Baustelleneinrichtung im öffentlichen Straßenraum', 'vorhaben'),
   'vorhaben.entwaesserung': j('Neuer Anschluss oder Änderung der Grundstücksentwässerung', 'vorhaben'),
   'vorhaben.versickerung': j('Niederschlagswasser soll versickert oder eingeleitet werden', 'vorhaben'),
-  'vorhaben.erstbebauung': j('Grundstück wird erstmals bebaut (nach dem 01.01.1996)', 'vorhaben', '§ 44 LWG / § 55 Abs. 2 WHG'),
+  // Eigenschaft des Grundstücks (an die Lage gebunden), nicht des Vorhabens
+  'vorhaben.erstbebauung': j('Grundstück wird erstmals bebaut (nach dem 01.01.1996)', 'grundstueck', '§ 44 LWG / § 55 Abs. 2 WHG'),
   'vorhaben.grundwasser': j('Eingriff ins Grundwasser (Wasserhaltung, Erdwärmesonde, Brunnen)', 'vorhaben'),
 
   /* ---------- Gebäude ---------- */

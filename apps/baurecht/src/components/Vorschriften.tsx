@@ -132,7 +132,7 @@ function NormKarte({
   const kopf = `n:${gruppe}|${n.id}`;
   return (
     <section className={`br-norm${n.geltung === 'nein' ? ' br-norm-entfaellt' : ''}`} aria-labelledby={id}>
-      <h3 className="br-norm-h">
+      <h4 className="br-norm-h">
       <button type="button" className="br-norm-kopf" aria-expanded={offen} onClick={umschalten} tabIndex={tabStop === kopf ? 0 : -1} data-roving={kopf} onFocus={() => setFokus(kopf)}>
         <span className="br-norm-pfeil" aria-hidden="true">
           {offen ? '▾' : '▸'}
@@ -143,7 +143,7 @@ function NormKarte({
         </span>
         <Zaehler sichtbar={sichtbar} gesamt={n.paragrafen.length} />
       </button>
-      </h3>
+      </h4>
       {offen && (
         <div className="br-norm-inhalt">
           <div className="br-norm-info">
@@ -184,20 +184,37 @@ function NormKarte({
   );
 }
 
+/** gängige Kürzel in der Suche (klein geschrieben) – ausgeschrieben auch irgendwo im Wort */
+const KUERZEL: Record<string, string> = { gk: 'gebäudeklasse', grz: 'grundflächenzahl', gfz: 'geschossflächenzahl', bplan: 'bebauungsplan', 'b-plan': 'bebauungsplan', fnp: 'flächennutzungsplan', lsg: 'landschaftsschutz', nsg: 'naturschutzgebiet', wsg: 'wasserschutzgebiet', üsg: 'überschwemmungsgebiet' };
+
 /**
  * Suche: „§ 34 BauGB“, „§34“, „34 BauGB“, „GEG 80“ finden genau den Paragrafen (Nummer + Norm in beliebiger
- * Reihenfolge); Wörter ohne Nummer suchen im Titel, in der Norm und in den Begründungen
+ * Reihenfolge; die Norm zuerst genau nach ihrer Kurzform, erst dann im Titel). Findet die Paragrafensuche nichts
+ * („22 m“, „1996“, „50 kW“), gilt die Volltextsuche über Titel, Norm und Begründungen.
  */
-export function suchTreffer(suche: string): (p: ParagrafErgebnis, n: NormErgebnis) => boolean {
+export function suchTreffer(suche: string, normen: NormErgebnis[] = []): (p: ParagrafErgebnis, n: NormErgebnis) => boolean {
   const norm = (s: string) => s.toLowerCase().replace(/§/g, ' ').replace(/\s+/g, ' ').trim();
   const q = norm(suche);
   if (!q) return () => true;
+  // Volltext: kurze Wörter (Kürzel) nur am Wortanfang („GK“ trifft nicht „Zulässigkeit“), längere auch im Wort
+  // (zusammengesetzte Wörter: „flächen“ in „Abstandsflächen“); gängige Kürzel auch ausgeschrieben
+  const woerter = q.split(' ').map((x) => ({ x, lang: KUERZEL[x] }));
+  const amAnfang = (text: string, wort: string) => new RegExp(`(^|[^a-zäöüß0-9])${wort.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(text);
+  const volltext = (p: ParagrafErgebnis, n: NormErgebnis) => {
+    const text = norm(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`);
+    return woerter.every(({ x, lang }) => (x.length <= 3 ? amAnfang(text, x) : text.includes(x)) || (!!lang && text.includes(lang)));
+  };
   const nr = /(?:^| )(\d+[a-z]?)(?= |$)/.exec(q)?.[1];
-  if (nr) {
-    const rest = q.replace(nr, ' ').replace(/\s+/g, ' ').trim();
-    return (p, n) => p.paragraf.toLowerCase() === nr && (!rest || norm(`${n.def.kurz} ${n.def.titel}`).includes(rest) || norm(n.def.kurz).replace(/ /g, '').includes(rest.replace(/ /g, '')));
+  if (!nr) return volltext;
+  const rest = q.replace(nr, ' ').replace(/\s+/g, ' ').trim();
+  const ohne = (s: string) => norm(s).replace(/ /g, '');
+  // Norm: genau die Kurzform („BauO NRW“ ist nicht „SAN-VO … BauO NRW“), sonst Kurzform enthält bzw. Titel enthält
+  const stufen: ((n: NormErgebnis) => boolean)[] = rest ? [(n) => ohne(n.def.kurz) === ohne(rest), (n) => ohne(n.def.kurz).includes(ohne(rest)), (n) => norm(n.def.titel).includes(rest)] : [() => true];
+  for (const s of stufen) {
+    const passt = (p: ParagrafErgebnis, n: NormErgebnis) => p.paragraf.toLowerCase() === nr && s(n);
+    if (!normen.length || normen.some((n) => n.paragrafen.some((p) => passt(p, n)))) return passt;
   }
-  return (p, n) => norm(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`).includes(q);
+  return volltext;
 }
 
 const ORDNUNGEN = [
@@ -228,7 +245,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     merken(n);
   };
   const { auswertung } = stand;
-  const passt = suchTreffer(suche);
+  const passt = useMemo(() => suchTreffer(suche, auswertung.normen), [suche, auswertung.normen]);
   const filter = (p: ParagrafErgebnis, n: NormErgebnis) =>
     w.ampeln.includes(p.ampel) &&
     (!nurHand || !!p.festlegung) &&
@@ -243,11 +260,14 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   const zaehler = auswertung.zaehler;
   const summe = zaehler.rot + zaehler.gelb + zaehler.gruen || 1;
   const filterAktiv = !!suche || nurHand || nurGeaendert || w.ampeln.length < 3;
+  const suchfeld = useRef<HTMLInputElement>(null);
   const zuruecksetzen = () => {
     setSuche('');
     setNurHand(false);
     setNurGeaendert(false);
     setze({ ...w, ampeln: [...AMPELN] });
+    // der Knopf verschwindet mit dem Filter – der Fokus geht ins Suchfeld statt auf die Seite
+    setTimeout(() => suchfeld.current?.focus(), 0);
   };
 
   // sichtbare Gruppen mit ihren Normen und Paragrafen
@@ -275,6 +295,10 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     const zeile = liste.current?.querySelector<HTMLElement>(`[data-roving="p:${CSS.escape(auswahl)}"]`);
     inBereichZeigen(liste.current, zeile ?? null);
   }, [auswahl, gewaehlteAmpel]);
+  // die Auswahl für Effekte, die nur auf Ordnung bzw. Filter reagieren sollen (nicht auf jede Auswahl)
+  const auswahlRef = useRef(auswahl);
+  auswahlRef.current = auswahl;
+  const gewaehlteZeile = () => (auswahlRef.current ? (liste.current?.querySelector<HTMLElement>(`[data-roving="p:${CSS.escape(auswahlRef.current)}"]`) ?? null) : null);
   // anderer Ordnung: die gewählte Zeile mittig einblenden, sonst an den Anfang
   const ersterLauf = useRef(true);
   useEffect(() => {
@@ -282,11 +306,22 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       ersterLauf.current = false;
       return;
     }
-    const l = liste.current;
-    const zeile = auswahl ? l?.querySelector<HTMLElement>(`[data-roving="p:${CSS.escape(auswahl)}"]`) : null;
-    if (zeile) inBereichZeigen(l, zeile, 'mitte');
-    else if (l) l.scrollTop = 0;
-  }, [w.gruppierung]); // eslint-disable-line react-hooks/exhaustive-deps
+    const zeile = gewaehlteZeile();
+    if (zeile) inBereichZeigen(liste.current, zeile, 'mitte');
+    else if (liste.current) liste.current.scrollTop = 0;
+  }, [w.gruppierung]);
+  // Suche oder Filter geändert (auch geleert bzw. zurückgesetzt): die gewählte Zeile mittig einblenden, sobald sie
+  // wieder in der Liste steht
+  const filterSchluessel = `${suche}|${nurHand}|${nurGeaendert}|${w.ampeln.join(',')}`;
+  const ersterFilter = useRef(true);
+  useEffect(() => {
+    if (ersterFilter.current) {
+      ersterFilter.current = false;
+      return;
+    }
+    const zeile = gewaehlteZeile();
+    if (zeile) inBereichZeigen(liste.current, zeile, 'mitte');
+  }, [filterSchluessel]);
   // Filter-Menü (schmal): Klick daneben und Tab hinaus schließen; Esc nur, wenn der Fokus im Menü steht (nicht hinter
   // einem Dialog)
   const menue = useRef<HTMLDetailsElement>(null);
@@ -306,21 +341,23 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       m.open = false;
       m.querySelector('summary')?.focus();
     }
-    // ↑/↓ zwischen den Kästchen des Menüs
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    // ↑/↓ zwischen den Kästchen des Menüs, Pos1/Ende auf das erste bzw. letzte (die Kästchen sind keine Tabstopps)
+    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
       const el = [...m.querySelectorAll<HTMLInputElement>('.br-filter-menue-inhalt input')];
+      if (!el.length) return;
       const i = el.indexOf(document.activeElement as HTMLInputElement);
-      el[(i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length]?.focus();
+      el[e.key === 'Home' ? 0 : e.key === 'End' ? el.length - 1 : (i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length]?.focus();
       e.preventDefault();
     }
   };
-  const kaesten = (
+  // im Menü (schmal) keine eigenen Tabstopps – dort wandern ↑/↓/Pos1/Ende
+  const kaesten = (imMenue: boolean) => (
     <>
       <label className="toggle">
-        <input type="checkbox" checked={nurHand} onChange={(e) => setNurHand(e.target.checked)} /> nur von Hand festgelegte
+        <input type="checkbox" tabIndex={imMenue ? -1 : undefined} checked={nurHand} onChange={(e) => setNurHand(e.target.checked)} /> nur von Hand festgelegte
       </label>
       <label className="toggle">
-        <input type="checkbox" checked={nurGeaendert} onChange={(e) => setNurGeaendert(e.target.checked)} /> nur geänderte/überholte
+        <input type="checkbox" tabIndex={imMenue ? -1 : undefined} checked={nurGeaendert} onChange={(e) => setNurGeaendert(e.target.checked)} /> nur geänderte/überholte
       </label>
     </>
   );
@@ -338,7 +375,11 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   };
 
   return (
-    <main className="br-vorschriften" aria-label="Vorschriften">
+    <main className="br-vorschriften" aria-labelledby="br-vorschriften-titel">
+      {/* Bereichsüberschrift wie „Angaben“ und „Einzelheiten“ (sichtbar sagt es die Filterleiste) */}
+      <h2 id="br-vorschriften-titel" className="br-unsichtbar">
+        Vorschriften
+      </h2>
       <div className="br-filter" role="group" aria-label="Ergebnis und Filter">
         <div className="br-filter-zeile">
         <span className="br-segment br-bilanz" role="group" aria-label="Ergebnis – Ampeln ein- und ausblenden">
@@ -390,8 +431,8 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
         </select>
         </div>
         <div className="br-filter-zeile2">
-          <input className="br-suchfeld" type="search" placeholder="§ oder Stichwort …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Vorschriften durchsuchen" />
-          <span className="br-filter-kaesten br-nur-breit">{kaesten}</span>
+          <input ref={suchfeld} className="br-suchfeld" type="search" placeholder="§ oder Stichwort …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Vorschriften durchsuchen" />
+          <span className="br-filter-kaesten br-nur-breit">{kaesten(false)}</span>
           <details
             className="br-filter-menue br-nur-schmal"
             ref={menue}
@@ -407,7 +448,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
             <summary>
               Filter{nurHand || nurGeaendert ? ` (${Number(nurHand) + Number(nurGeaendert)})` : ''} <span aria-hidden="true">▾</span>
             </summary>
-            <div className="br-filter-menue-inhalt">{kaesten}</div>
+            <div className="br-filter-menue-inhalt">{kaesten(true)}</div>
           </details>
           <span className="br-leise" role="status">
             {ampelHinweis}
@@ -427,10 +468,10 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       <div className="br-vorschriften-liste" ref={liste} onKeyDown={taste}>
         {ansicht.map((g) => (
           <section key={g.id} className="br-gruppe" aria-labelledby={`br-gruppe-${g.id}`}>
-            <h2 id={`br-gruppe-${g.id}`}>
+            <h3 id={`br-gruppe-${g.id}`}>
               {g.titel}
               {w.gruppierung === 'ebene' && [...new Set(g.normen.map((x) => modulName(x.n.modul)))].filter((m) => m !== g.titel).length > 0 && <span className="br-gruppe-module"> · {[...new Set(g.normen.map((x) => modulName(x.n.modul)))].join(', ')}</span>}
-            </h2>
+            </h3>
             {g.normen.map(({ n, sichtbar }) => {
               const k = `${g.id}|${n.id}`;
               return (

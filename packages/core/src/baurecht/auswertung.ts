@@ -17,7 +17,8 @@ import { kurzText, offenText, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { plusMonate } from '../recht/quellen';
-import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
+import { ortGeaendert } from './ort';
+import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, Ort, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
 import { faktStatus, fundstelleName, paragrafName, verweisName } from './typen';
 
 export interface TextStand {
@@ -53,6 +54,8 @@ export interface AuswertungsEingabe {
   festlegungen: Record<string, Festlegung>;
   /** Merkmale, deren Wert der Ableitung widerspricht */
   widersprueche?: Set<string>;
+  /** Ort des Vorhabens jetzt – Festlegungen zu einem anderen Ort sind überholt (fehlt = kein Vergleich) */
+  ort?: Ort;
   /** Altersgrenze des Rechtsstands in Tagen (Vorgabe RECHTSSTAND_TAGE) */
   rechtsstandTage?: number;
   /** erwartete Dauer bis zur Entscheidung in Monaten (Vorgabe ENTSCHEIDUNG_MONATE) */
@@ -265,6 +268,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     const entf = r.entfaellt ? werten(r.entfaellt, ctx) : null;
     const pruef: Pick<Bewertung, 'w'> & Partial<Bewertung> = r.pruefen ? (r.pruefen.wenn ? werten(r.pruefen.wenn, ctx) : { w: 'ja' }) : { w: 'nein' };
     const tatbestand = undW(g.w, gilt.w);
+    // beide Wege führen zu Grün („entfällt“ und „gilt nicht“): es trägt der sicherere – ein bloßer Hinweis im
+    // Ausnahmeteil soll ein gesichertes „gilt nicht“ nicht abwerten
+    const gewicht = (b: Bewertung) => b.unsicher.length + b.widerspruch.length;
     let ampel: Ampel;
     let tragend: Bewertung[] = [];
     // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `bedingung`
@@ -274,7 +280,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const w = warum(n.datei?.regel.geltung, 'nein');
       gruende.push(`Entfällt mit der Norm – ${n.datei?.regel.geltungGrund ?? 'Anwendungsbereich nicht berührt'}${w ? ` (${w})` : ''}.`);
       tragend = [g];
-    } else if (entf?.w === 'ja') {
+    } else if (entf?.w === 'ja' && !(tatbestand === 'nein' && gewicht(gilt) < gewicht(entf))) {
       ampel = 'gruen';
       gruende.push(`Entfällt – ${warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
       tragend = [entf];
@@ -375,6 +381,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
         }
       }
       if (fassung) for (const [k, summe] of Object.entries(fl.stand ?? {})) if (fassung.summen[k] !== summe) gruende2.push(`Text von ${fundstelleName(k)} geändert`);
+      // eine Festlegung von Hand gilt für den Ort, an dem sie getroffen wurde (Begehung, Abstimmung, Planstand)
+      const ortWeg = ortGeaendert(fl.ort, e.ort);
+      if (ortWeg) gruende2.push(`Ort seit der Festlegung: ${ortWeg}`);
       // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text. Fehlt der Systemstand,
       // ist es „noch nicht wirksam“ (erneut festlegen hilft nicht); wurde ohne Text festgelegt und liegt er jetzt vor,
       // ist es überholt (jetzt am Text erneut festlegen)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TextKontext } from './kurz';
-import { kurzBaum, kurzText } from './kurz';
+import { kurzBaum, kurzText, werten } from './kurz';
 import { einheitName, einheitVoll, normTitel, normVoll, verweisName, wertAnzeige } from './typen';
 
 describe('Namen ohne Doppelung', () => {
@@ -39,9 +39,11 @@ describe('Regel als Baum', () => {
     expect(kurzBaum({ und: [{ f: 'a', ist: false }] }, t)).toEqual({ text: 'Angabe A: nein' });
     // positiv formuliert: „nicht (A: ja)“ → „A: nein“
     expect(kurzBaum({ nicht: { f: 'a', ist: true } }, t)).toEqual({ text: 'Angabe A: nein' });
-    // verneinte Gruppen: „keines davon“ bzw. „nicht alle davon“
-    expect(kurzBaum({ nicht: { $: 'bs' } }, t).text).toBe('keines davon:');
-    expect(kurzBaum({ nicht: { und: [{ f: 'a', ist: true }, { f: 'b', ist: true }] } }, t).text).toBe('nicht alle davon:');
+    // verneinte Gruppen nach De Morgan positiv: „nicht (B oder C)“ = „B: nein und C: nein“
+    expect(kurzBaum({ nicht: { $: 'bs' } }, t)).toMatchObject({ text: 'alle folgenden:', kinder: [{ text: 'Angabe B: nein' }, { text: 'Angabe C: nein' }] });
+    expect(kurzBaum({ nicht: { und: [{ f: 'a', ist: true }, { f: 'b', ist: true }] } }, t)).toMatchObject({ text: 'mindestens eines davon:', kinder: [{ text: 'Angabe A: nein' }, { text: 'Angabe B: nein' }] });
+    // gleiche Merkmale zusammengefasst: „nicht (Vorhaben A oder Vorhaben B)“ = „alles außer A und B“
+    expect(kurzBaum({ nicht: { oder: [{ m: 'Vorhaben', in: ['Errichtung'] }, { m: 'Vorhaben', in: ['Beseitigung'] }] } }, t).text).toBe('Art des Vorhabens: alles außer „Errichtung“ und „Beseitigung“');
   });
 
   it('mit Kontext: Stand je Knoten und aktueller Wert je Blatt', () => {
@@ -113,7 +115,7 @@ describe('Regel in Worten: Bausteine, Anzahlen, Gemeinden, Verweise', () => {
   it('Gemeindeschlüssel als Gemeindename, beim aktuellen Wert mit Schlüssel', () => {
     expect(kurzBaum({ f: 'lage.ags', in: ['05974040', '05974048'] }, t).text).toBe('Gemeindeschlüssel: „Soest“ oder „Welver“');
     const ctx = { merkmale: {}, fakten: { 'lage.ags': { wert: '05974040', herkunft: 'manuell' as const, sicherheit: 'sicher' as const } }, einreichung: '2026-11-12', heute: '2026-11-12', bausteine: t.bausteine };
-    expect(kurzBaum({ f: 'lage.ags', in: ['05974040'] }, t, ctx).ist).toBe('Soest (05974040)');
+    expect(kurzBaum({ f: 'lage.ags', in: ['05974040'] }, t, ctx).ist).toBe('Soest, Schlüssel 05974040');
     // unbekannte Schlüssel bleiben stehen
     expect(kurzBaum({ f: 'lage.ags', in: ['09999999'] }, t).text).toBe('Gemeindeschlüssel: „09999999“');
   });
@@ -137,5 +139,32 @@ describe('Regel in Worten: verneinte Schwellen und unsichere Gruppen', () => {
     const ctx = { merkmale: {}, fakten: { a: { wert: false, herkunft: 'geodienst' as const, sicherheit: 'hinweis' as const }, b: { wert: false, herkunft: 'geodienst' as const, sicherheit: 'hinweis' as const } }, einreichung: '2026-11-12', heute: '2026-11-12', bausteine: {} };
     const b = kurzBaum({ und: [{ f: 'a', ist: true }, { f: 'b', ist: true }] }, t, ctx);
     expect(b).toMatchObject({ w: 'nein', unsicher: true });
+  });
+});
+
+describe('Umformungen im Regelbaum sind dreiwertig gleichwertig', () => {
+  const t: TextKontext = {
+    fakt: (id) => ({ titel: id, typ: id === 'z' ? 'zahl' : 'janein', gruppe: 'vorhaben' }) as never,
+    bausteine: { b: { oder: [{ f: 'a', ist: true }, { m: 'Vorhaben', in: ['Errichtung'] }] } },
+  };
+  const formeln = [
+    { nicht: { oder: [{ f: 'a', ist: true }, { f: 'c', ist: false }] } },
+    { nicht: { und: [{ f: 'a', ist: true }, { nicht: { f: 'c', ist: true } }] } },
+    { nicht: { $: 'b' } },
+    { nicht: { und: [{ $: 'b' }, { f: 'z', min: 22.01 }] } },
+    { nicht: { oder: [{ m: 'Vorhaben', in: ['Errichtung'] }, { m: 'Vorhaben', in: ['Beseitigung'] }] } },
+  ];
+  const werteJa = [true, false, null];
+  it('der angezeigte Stand (✓/✗/?) ist derselbe wie die Auswertung der ursprünglichen Regel', () => {
+    for (const k of formeln)
+      for (const a of werteJa)
+        for (const c of werteJa)
+          for (const z of [22, 22.5, null])
+            for (const v of ['Errichtung', 'Beseitigung', undefined]) {
+              const f = (w: boolean | number | null) => ({ wert: w, herkunft: 'manuell' as const, sicherheit: 'sicher' as const });
+              const merkmale: Record<string, string> = v ? { Vorhaben: v } : {};
+              const ctx = { merkmale, fakten: { a: f(a), c: f(c), z: f(z) }, einreichung: '2026-12-01', heute: '2026-11-12', bausteine: t.bausteine };
+              expect(kurzBaum(k as never, t, ctx).w, JSON.stringify({ k, a, c, z, v })).toBe(werten(k as never, ctx).w);
+            }
   });
 });

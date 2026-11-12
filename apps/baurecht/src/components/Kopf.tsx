@@ -69,7 +69,23 @@ function Menue({ titel, label, offen, setOffen, children }: { titel: string; lab
         if (offen && !rahmen.current?.contains(ziel) && !(mausAufOeffner.current && ziel?.closest?.('[data-menue-oeffner]'))) setOffen(false);
       }}
     >
-      <button type="button" ref={knopf} data-menue-oeffner="" aria-haspopup="menu" aria-expanded={offen} onClick={() => setOffen(!offen)} title={label}>
+      <button
+        type="button"
+        ref={knopf}
+        data-menue-oeffner=""
+        aria-haspopup="menu"
+        aria-expanded={offen}
+        onClick={() => setOffen(!offen)}
+        // wie bei Menüknöpfen üblich: ↓/↑ auf dem geschlossenen Knopf öffnen das Menü
+        onKeyDown={(e) => {
+          if (!offen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            e.preventDefault();
+            e.stopPropagation();
+            setOffen(true);
+          }
+        }}
+        title={label}
+      >
         {titel} <span aria-hidden="true">▾</span>
       </button>
       {offen && (
@@ -103,7 +119,8 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
   const ags = stand.auswertung.fakten['lage.ags'];
   const agsVorschlag = ags?.sicherheit === 'hinweis' && !ags.bestaetigt && !ags.widerspruch;
   const agsWiderspruch = !!ags?.widerspruch;
-  const moduleText = stand.module.map((m) => m.name).join(' · ');
+  // die Gemeinde zuerst: kürzt sich die Zeile, fällt der Bund weg, nicht die Gemeinde
+  const moduleText = [...stand.module].reverse().map((m) => m.name).join(' · ');
   const desktop = isTauri();
   const [mehrOffen, setMehrOffen] = useState(false);
   const ungeprueft = desktop && !laedt.length && !zeiten.length;

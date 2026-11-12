@@ -30,7 +30,7 @@ describe('kurze Namen der Angaben', () => {
     expect([...namen].filter(([, n]) => n.size > 1).map(([id, n]) => `${id}: ${[...n].join(' / ')}`)).toEqual([]);
   });
 
-  it('Runde 6: Auswahl-Fakten heißen „Welche …“ und sind vom Ja/Nein-Fakt zum selben Thema unterscheidbar; die Stellplatzfläche hat eine Einheit', () => {
+  it('Auswahl-Fakten sind vom Ja/Nein-Fakt zum selben Thema unterscheidbar und heißen wie alle Angaben als Nomen; die Stellplatzfläche hat eine Einheit', () => {
     const soest = { ...FAKTEN, ...faktDefinitionen(aktiveModule(paket.module, '05974040')) };
     const paare: [string, string][] = [
       ['schutz.nsg', 'kreis_soest.nsg'],
@@ -42,15 +42,11 @@ describe('kurze Namen der Angaben', () => {
     ];
     for (const [janein, auswahl] of paare) {
       expect(soest[janein].typ, janein).toBe('janein');
-      expect(faktName(soest[auswahl], auswahl), auswahl).toMatch(/^Welche[rs]? /);
+      expect(faktName(soest[auswahl], auswahl), auswahl).not.toBe(faktName(soest[janein], janein));
     }
-    // allgemein: eine Auswahl der Module, die erst nach „ja“ zu einer anderen Angabe gefragt wird, beginnt mit „Welche …“
-    const nachJa = Object.entries(defs).filter(([id, d]) => {
-      const w = d.wenn as { f?: string; ist?: unknown } | undefined;
-      return !(id in FAKTEN) && d.typ === 'wahl' && !!w?.f && w.ist === true;
-    });
-    expect(nachJa.length).toBeGreaterThan(0);
-    for (const [id, d] of nachJa) expect(faktName(d, id), id).toMatch(/^Welche[rs]? /);
+    // kurze Namen sind Nomen, keine Fragen (die Frage steht als Unterzeile)
+    const fragen = Object.entries(defs).filter(([id, d]) => /^(Welche[rsm]?|Wie|Wo|Ist|Gibt) |\?$/.test(faktName(d, id)));
+    expect(fragen.map(([id, d]) => `${id}: ${faktName(d, id)}`)).toEqual([]);
     // Zahl mit Einheit: der Regelbaum zeigt „… mindestens 36 Stellplätze“
     expect(soest['nw.stellplatzflaeche'].einheit).toBe('Stellplätze');
   });
@@ -60,11 +56,13 @@ describe('ortsgebundene Angaben', () => {
   const paket = paketLaden();
   const defs = { ...FAKTEN, ...faktDefinitionen(paket.module) };
   it('Straßen, Gewässer, Pläne, Satzungen, Sperren und Ortsrecht sind an die Lage gebunden', () => {
-    const muss = ['lage.ags', 'lage.altlasten', 'lage.strasse_ausserorts', 'lage.gewaesser', 'lage.bundesfernstrasse', 'lage.zufahrt_klassifiziert', 'lage.anschluss_klassifiziert', 'planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.sanierungsgebiet', 'planung.umlegung', 'schutz.lsg', 'soest.altstadt', 'soest.historische_ortsteile', 'soest.fernwaerme', 'soest.muellingsen', 'soest.bplan_entwurf'];
+    const muss = ['lage.ags', 'lage.altlasten', 'lage.strasse_ausserorts', 'lage.gewaesser', 'lage.bundesfernstrasse', 'lage.zufahrt_klassifiziert', 'lage.anschluss_klassifiziert', 'planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.sanierungsgebiet', 'planung.umlegung', 'schutz.lsg', 'soest.altstadt', 'soest.historische_ortsteile', 'soest.fernwaerme', 'soest.muellingsen', 'soest.bplan_entwurf', 'vorhaben.erstbebauung'];
     expect(muss.filter((id) => !defs[id] || !ortsgebunden(defs[id]))).toEqual([]);
   });
   it('Vorhaben, Gebäude, Technik und Antrag hängen nicht an der Lage', () => {
     const falsch = Object.entries(defs).filter(([, d]) => ['vorhaben', 'gebaeude', 'technik', 'antrag'].includes(d.gruppe) && !d.geodienst && ortsgebunden(d));
     expect(falsch.map(([id]) => id)).toEqual([]);
+    // Projektgrößen verfallen nicht mit der Lage (die Stellplatzzahl ist Teil des Vorhabens)
+    expect(ortsgebunden(defs['nw.stellplatzflaeche'])).toBe(false);
   });
 });

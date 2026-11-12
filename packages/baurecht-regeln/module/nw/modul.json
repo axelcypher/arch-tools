@@ -188,9 +188,9 @@
     },
     "nw.stellplatzflaeche": {
       "titel": "Notwendige Kfz-Stellplätze für ein Nichtwohngebäude auf einer neu errichteten Stellplatzfläche",
-      "kurz": "Stellplatzfläche eines Nichtwohngebäudes",
+      "kurz": "Stellplätze auf neuer Stellplatzfläche",
       "einheit": "Stellplätze",
-      "gruppe": "grundstueck",
+      "gruppe": "vorhaben",
       "typ": "zahl",
       "hilfe": "für die Photovoltaik-Pflicht über Stellplatzflächen (§ 48 Abs. 1a BauO NRW, § 6 SAN-VO NRW): mehr als 35 – auch wenn die Stellplatzfläche selbst das Vorhaben ist; Stellplätze für Wohnnutzung zählen nicht",
       "wenn": {

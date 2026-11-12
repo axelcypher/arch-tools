@@ -12,7 +12,8 @@ import { koordinatenVeraltet } from '@core/platform/geokodierung';
 import { agsVorschlag, aktiveModule, fehlendeEbenen, regeldateiFuer } from '@core/baurecht/paket';
 import type { GebaeudeklasseAbleitung } from '@core/baurecht/projekt';
 import { gebaeudeklasseAbleiten, projektFakten, widersprueche } from '@core/baurecht/projekt';
-import type { Ampel, FaktWert, Modul } from '@core/baurecht/typen';
+import type { Ampel, FaktWert, Modul, Ort } from '@core/baurecht/typen';
+import { ortGeaendert, ortVon } from '@core/baurecht/ort';
 import type { Project } from '@core/model';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
@@ -78,6 +79,25 @@ export interface Pruefstand {
   widersprueche: string[];
   /** Merkmale, die den Geodaten bzw. dem Modell widersprechen */
   widerspruchMerkmale: string[];
+  /** Planungsrecht wurde für einen früheren Ort festgelegt (Grund) – Hinweis mit „bestätigen“ */
+  planungsrechtFrueher?: string;
+}
+
+/**
+ * Planungsrecht nach einem Adresswechsel: zu einem anderen Ort gesetzt (in Baurecht gemerkt) – oder, wenn das nicht
+ * gemerkt ist, die Koordinaten passen nicht mehr zur Adresse bzw. Angaben hängen an einer anderen Lage.
+ */
+export function planungsrechtVerschoben(project: Project | null, merkmale: Record<string, string>, eigene: Record<string, FaktWert>, gemerkt?: Ort): string | undefined {
+  const ort = ortVon(project);
+  if (!merkmale['Planungsrecht'] || !ort) return undefined;
+  if (gemerkt) return ortGeaendert(gemerkt, ort);
+  const l = aktuelleLage(project);
+  if (l.problem === 'veraltet') return 'Adresse seit der Abfrage der Koordinaten geändert';
+  const frueher = Object.values(eigene).some((f) => {
+    const g = f.lage ?? f.bestaetigt?.lage;
+    return !!g && !!l.lage && g !== l.lage;
+  });
+  return frueher ? 'Angaben hängen an einer früheren Lage' : undefined;
 }
 
 /** die Auswertung zum aktuellen Stand (memoisiert) */
@@ -87,7 +107,10 @@ export function usePruefstand(): Pruefstand {
   const pruefung = useBaurecht((s) => s.pruefung);
   const paket = useBaurecht((s) => s.paket);
   const texte = useBaurecht((s) => s.texte);
-  return useMemo(() => pruefstandBerechnen(paket, project, merkmale, pruefung.fakten, pruefung.festlegungen, pruefung.einreichung, texte), [paket, project, merkmale, pruefung.fakten, pruefung.festlegungen, pruefung.einreichung, texte]);
+  return useMemo(
+    () => pruefstandBerechnen(paket, project, merkmale, pruefung.fakten, pruefung.festlegungen, pruefung.einreichung, texte, pruefung.planungsrechtOrt),
+    [paket, project, merkmale, pruefung.fakten, pruefung.festlegungen, pruefung.einreichung, texte, pruefung.planungsrechtOrt],
+  );
 }
 
 export function pruefstandBerechnen(
@@ -98,6 +121,7 @@ export function pruefstandBerechnen(
   festlegungen: Parameters<typeof auswerten>[0]['festlegungen'],
   einreichungRoh: string | undefined,
   texte: Record<string, import('@core/baurecht/auswertung').TextStand>,
+  planungsrechtOrt?: Ort,
 ): Pruefstand {
   const vorab = alleFakten(project, eigene, paket.module);
   const ags = typeof vorab['lage.ags']?.wert === 'string' ? (vorab['lage.ags'].wert as string) : null;
@@ -107,8 +131,12 @@ export function pruefstandBerechnen(
   fakten['antrag.einreichung'] = { wert: einreichung, herkunft: einreichungRoh ? 'manuell' : 'abgeleitet', sicherheit: 'sicher' };
   const gk = project ? gebaeudeklasseAbleiten(project, { freistehend: (fakten['gebaeude.freistehend']?.wert as boolean | undefined) ?? null, landwirtschaft: (fakten['gebaeude.landwirtschaft']?.wert as boolean | undefined) ?? null }) : null;
   const w = widersprueche(merkmale, gk, fakten);
-  const auswertung = auswerten({ paket, module, merkmale, fakten, einreichung, heute: heute(), texte: new Map(Object.entries(texte)), festlegungen, widersprueche: w.merkmale });
-  return { auswertung, module, fehlend: fehlendeEbenen(paket.module, ags), ags, einreichung, gk, widersprueche: w.texte, widerspruchMerkmale: [...w.merkmale] };
+  const ort = ortVon(project);
+  const planungsrechtFrueher = planungsrechtVerschoben(project, merkmale, eigene, planungsrechtOrt);
+  // Planungsrecht zu einem früheren Ort: wie ein Widerspruch – was daran hängt, kann nicht sicher entfallen
+  if (planungsrechtFrueher) w.merkmale.add('Planungsrecht');
+  const auswertung = auswerten({ paket, module, merkmale, fakten, einreichung, heute: heute(), texte: new Map(Object.entries(texte)), festlegungen, widersprueche: w.merkmale, ort });
+  return { auswertung, module, fehlend: fehlendeEbenen(paket.module, ags), ags, einreichung, gk, widersprueche: w.texte, widerspruchMerkmale: [...w.merkmale], planungsrechtFrueher };
 }
 
 const RANG = { rot: 2, gelb: 1, gruen: 0 } as const;
