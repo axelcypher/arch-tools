@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { einfuegeStelle, zeigerZiehen } from '@core/ui/ziehen';
 import type { AblageOrdner } from '../ablage';
-import { dateiArt, sichtbarkeit } from '../ablage';
+import { dateiArt, ebenenSchluessel, nachReihenfolge, sichtbarkeit } from '../ablage';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
@@ -21,8 +23,6 @@ export const SYMBOL: Record<ReturnType<typeof dateiArt>, SymbolName> = {
   formular: 'formular',
   sonst: 'datei',
 };
-
-const sortiere = (a: Eintrag, b: Eintrag) => Number(b.ordner) - Number(a.ordner) || a.pfad.localeCompare(b.pfad, 'de', { numeric: true, sensitivity: 'base' });
 
 /** Kontextmenü einer Datei im Projektordner */
 export function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
@@ -66,6 +66,12 @@ function ordnerMenue(basis: string, pfad: string): MenuePunkt[] {
     { text: z ? `„${z.pfad.split('/').pop()}“ einfügen` : 'Einfügen', symbol: 'einfuegen', deaktiviert: !z || z.basis !== basis, aktion: () => void einfuegen(basis, pfad) },
     { text: 'Neuer Ordner …', symbol: 'plus', aktion: () => void ordnerNeu(basis, pfad) },
     { trenner: true },
+    {
+      text: 'Reihenfolge dieser Ebene zurücksetzen',
+      hinweis: 'alphabetisch',
+      deaktiviert: !useFormulare.getState().ordnerReihenfolge[ebenenSchluessel(pfad.slice(0, Math.max(0, pfad.lastIndexOf('/'))))],
+      aktion: () => useFormulare.getState().ordnerReihenfolgeSetzen(ebenenSchluessel(pfad.slice(0, Math.max(0, pfad.lastIndexOf('/')))), []),
+    },
     { text: 'Im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined) },
     { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(basis, pfad)) },
   ];
@@ -74,6 +80,8 @@ function ordnerMenue(basis: string, pfad: string): MenuePunkt[] {
 /**
  * Der echte Projektordner auf dem Server, beschränkt auf die ausgewählten Pfade. Ordner werden erst beim
  * Aufklappen gelesen; ein Doppelklick öffnet eine Datei mit ihrem Programm, Rechtsklick zeigt die Dateibefehle.
+ * Die Reihenfolge der Ordner einer Ebene lässt sich per Ziehen ändern (Alt+↑/↓ mit der Tastatur) – gemerkt je Ebene,
+ * für alle Projekte.
  */
 export function AblageBaum({ ordner, auswahl }: { ordner: AblageOrdner; auswahl: string[] }) {
   const basis = verbinde(ordner.root, ordner.pfad);
@@ -87,8 +95,11 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
   const { dateiAnsehen } = useFormulare.getState();
   const stand = useDateiAktionen((s) => s.stand);
   const ordnerStand = useFormulare((s) => s.ordnerStand);
+  const reihe = useFormulare((s) => s.ordnerReihenfolge[ebenenSchluessel(rel)]);
   const [eintraege, setEintraege] = useState<Eintrag[] | null>(null);
   const [fehler, setFehler] = useState('');
+  const [zug, setZug] = useState<{ name: string; stelle: number } | null>(null);
+  const liste = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     if (!ds) return;
@@ -96,7 +107,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
     ds.liste(rel ? verbinde(basis, rel) : basis, 1)
       .then((e) => {
         if (!aktiv) return;
-        const neu = e.sort(sortiere);
+        const neu = e;
         // nur bei einer Änderung neu zeichnen (wird regelmäßig abgeglichen)
         setEintraege((alt) => (alt && alt.length === neu.length && alt.every((a, i) => a.pfad === neu[i].pfad && a.ordner === neu[i].ordner) ? alt : neu));
         setFehler('');
@@ -110,7 +121,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
   if (fehler) return <p className="warning small-text">{fehler}</p>;
   if (!eintraege) return <p className="muted small-text fo-baum-zeile" style={{ paddingLeft: tiefe * 14 }}>…</p>;
 
-  const sichtbar = eintraege
+  const sichtbar = nachReihenfolge(eintraege, reihe)
     // Besitzerdateien von Office (~$…), Sperrdateien von LibreOffice und Systemdateien sind nur vorübergehend da
     .filter((e) => !/^(~\$|\.~lock\.)/.test(e.pfad) && !/^(thumbs\.db|desktop\.ini)$/i.test(e.pfad))
     .map((e) => ({ e, pfad: rel ? `${rel}/${e.pfad}` : e.pfad }))
@@ -119,11 +130,65 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
     .filter((x) => x.s === 'ganz' || (x.s === 'teil' && x.e.ordner));
 
   if (!sichtbar.length) return tiefe === 0 ? <p className="muted small-text">Keine ausgewählten Ordner gefunden.</p> : null;
+
+  const ordnerNamen = sichtbar.filter((x) => x.e.ordner).map((x) => x.e.pfad);
+  /** neue Reihenfolge der Ordner dieser Ebene merken – nicht sichtbare behalten ihren Platz dahinter */
+  const merken = (namen: string[]) => {
+    const rest = (reihe ?? []).filter((n) => !namen.some((x) => x.toLowerCase() === n));
+    useFormulare.getState().ordnerReihenfolgeSetzen(ebenenSchluessel(rel), [...namen, ...rest]);
+  };
+  const verschieben = (name: string, stelle: number) => {
+    const ohne = ordnerNamen.filter((n) => n !== name);
+    ohne.splice(Math.max(0, Math.min(stelle, ohne.length)), 0, name);
+    if (ohne.join('\n') !== ordnerNamen.join('\n')) merken(ohne);
+  };
+  const ziehen = (name: string) => (e: ReactPointerEvent<HTMLElement>) => {
+    if (e.button !== 0) return;
+    let stelle = -1;
+    zeigerZiehen(e, {
+      schwelle: 5,
+      beginn: () => setZug({ name, stelle: ordnerNamen.indexOf(name) }),
+      bewegen: (ev) => {
+        const zeilen = liste.current ? [...liste.current.children].filter((z): z is HTMLElement => z instanceof HTMLElement && !!z.dataset.ordner) : [];
+        stelle = einfuegeStelle(
+          zeilen.map((z) => z.querySelector<HTMLElement>(':scope > .fo-baum-knoten') ?? z),
+          ev.clientY,
+          zeilen.findIndex((z) => z.dataset.ordner === name),
+        );
+        setZug({ name, stelle });
+      },
+      ende: (gezogen) => {
+        setZug(null);
+        if (gezogen && stelle >= 0) verschieben(name, stelle);
+      },
+    });
+  };
+  const taste = (name: string) => (e: ReactKeyboardEvent<HTMLElement>) => {
+    if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    e.preventDefault();
+    const i = ordnerNamen.indexOf(name);
+    verschieben(name, e.key === 'ArrowUp' ? i - 1 : i + 1);
+  };
+  const uebrige = ordnerNamen.filter((n) => n !== zug?.name);
+
   return (
-    <ul className="fo-baum" role={tiefe === 0 ? 'tree' : 'group'}>
+    <ul className={`fo-baum${zug ? ' zieht' : ''}`} role={tiefe === 0 ? 'tree' : 'group'} ref={liste}>
       {sichtbar.map((x) =>
         x.e.ordner ? (
-          <OrdnerKnoten key={x.pfad} basis={basis} pfad={x.pfad} name={x.e.pfad} auswahl={auswahl} ganz={x.s === 'ganz'} tiefe={tiefe} />
+          <OrdnerKnoten
+            key={x.pfad}
+            basis={basis}
+            pfad={x.pfad}
+            name={x.e.pfad}
+            auswahl={auswahl}
+            ganz={x.s === 'ganz'}
+            tiefe={tiefe}
+            onZiehen={ziehen(x.e.pfad)}
+            onTaste={taste(x.e.pfad)}
+            markierung={
+              !zug ? undefined : zug.name === x.e.pfad ? 'quelle' : uebrige.indexOf(x.e.pfad) === zug.stelle ? 'davor' : zug.stelle >= uebrige.length && uebrige.at(-1) === x.e.pfad ? 'danach' : undefined
+            }
+          />
         ) : (
           <li key={x.pfad} role="treeitem" aria-selected={false}>
             <button
@@ -147,12 +212,41 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
   );
 }
 
-function OrdnerKnoten({ basis, pfad, name, auswahl, ganz, tiefe }: { basis: string; pfad: string; name: string; auswahl: string[]; ganz: boolean; tiefe: number }) {
+function OrdnerKnoten({
+  basis,
+  pfad,
+  name,
+  auswahl,
+  ganz,
+  tiefe,
+  onZiehen,
+  onTaste,
+  markierung,
+}: {
+  basis: string;
+  pfad: string;
+  name: string;
+  auswahl: string[];
+  ganz: boolean;
+  tiefe: number;
+  onZiehen: (e: ReactPointerEvent<HTMLElement>) => void;
+  onTaste: (e: ReactKeyboardEvent<HTMLElement>) => void;
+  /** beim Ziehen: gezogener Ordner bzw. Einfügestelle davor/danach */
+  markierung?: 'quelle' | 'davor' | 'danach';
+}) {
   const [auf, setAuf] = useState(false);
   return (
-    <li role="treeitem" aria-expanded={auf} aria-selected={false}>
+    <li role="treeitem" aria-expanded={auf} aria-selected={false} data-ordner={name} data-ziehen={markierung}>
       <div className="fo-baum-knoten">
-        <button className="fo-baum-zeile" style={{ paddingLeft: tiefe * 14 }} onClick={() => setAuf(!auf)} title={name} onContextMenu={(e) => zeigeMenue(e, ordnerMenue(basis, pfad))}>
+        <button
+          className="fo-baum-zeile"
+          style={{ paddingLeft: tiefe * 14 }}
+          onClick={() => setAuf(!auf)}
+          title={`${name} – ziehen ändert die Reihenfolge (Alt+↑/↓)`}
+          onPointerDown={onZiehen}
+          onKeyDown={onTaste}
+          onContextMenu={(e) => zeigeMenue(e, ordnerMenue(basis, pfad))}
+        >
           <span className="fo-baum-pfeil">
             <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} />
           </span>

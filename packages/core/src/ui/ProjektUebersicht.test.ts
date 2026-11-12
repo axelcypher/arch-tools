@@ -61,6 +61,11 @@ describe('aktuellster Antrag auf der Karte (meta.antrag)', () => {
     expect(antragKurzAus({ name: 'BAUA 2', angelegt: '11.11.2026', eingereicht: { datei: 'x.pdf', datum: 'gestern' } })).toEqual({ name: 'BAUA 2' });
     const a = antragKurzAus({ name: 'BAUA 2', angelegt: '2026-10-01', eingereicht: { datei: 'Eingangsbestätigung.pdf', datum: '2026-11-03' } })!;
     expect(antragMarke(a)).toMatchObject({ text: 'BAUA 2 · eingereicht 03.11.2026', art: 'ok' });
+    // von Hand gesetzt: ohne Datei
+    const m = antragKurzAus({ name: 'BAUA', eingereicht: { datum: '2026-11-04', manuell: true } })!;
+    expect(m).toEqual({ name: 'BAUA', eingereicht: { datum: '2026-11-04', manuell: true } });
+    expect(antragMarke(m)).toMatchObject({ text: 'BAUA · eingereicht 04.11.2026', art: 'ok', titel: 'Antrag BAUA eingereicht – von Hand gesetzt' });
+    expect(antragKurzAus({ name: 'BAUA', eingereicht: { datum: '2026-11-04' } })).toEqual({ name: 'BAUA' });
     expect(antragMarke({ name: 'BAUVA', angelegt: '2026-10-01' })).toMatchObject({ text: 'BAUVA in Arbeit', art: 'neutral', titel: expect.stringContaining('01.10.2026') });
     // bleibt beim Lesen der Projektdatei erhalten
     const p = parseProjectData({ format: 'arch-flaechen-tool', version: 1, name: 'X', meta: { projektcode: 'BS9', antrag: { name: 'BAUA', eingereicht: { datei: 'Antragsprotokoll.pdf', datum: '2026-11-03' } } }, storeys: [] });

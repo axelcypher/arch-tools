@@ -67,7 +67,7 @@ export function AktualisierenDialog({ offen, onClose }: { offen: OffenesFormular
         {liste && liste.length > 0 && (
           <>
             <p className="muted small-text">
-              FORMA ordnet diese Felder Einträgen der Projektkarte zu. Vorgewählt sind Felder mit dem bisherigen Auto-Wert und leere. Von Hand überschriebene bleiben, außer du hakst sie an. Ein
+              Diese Felder sind Einträgen der Projektkarte zugeordnet. Vorgewählt sind Felder mit dem bisherigen Auto-Wert und leere. Von Hand überschriebene bleiben, außer du hakst sie an. Ein
               geleertes Feld bekommt den Auto-Wert; bewusst leer bleibt ein Feld mit einem Leerzeichen.
             </p>
             <div className="fo-ausfuellen-liste">

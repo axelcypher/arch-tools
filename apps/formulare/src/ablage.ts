@@ -100,3 +100,23 @@ export function dateiArt(name: string): 'pdf' | 'berechnung' | 'tabelle' | 'text
   if (e === 'frmsjf') return 'formular';
   return 'sonst';
 }
+
+/* ---------- Reihenfolge der Ordner im Baum ---------- */
+
+/** Schlüssel einer Ebene im Baum (Pfad relativ zum Projektordner, klein; Wurzel = „“) */
+export const ebenenSchluessel = (rel: string) => rel.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').toLowerCase();
+
+/**
+ * Einträge einer Ebene sortieren: Ordner zuerst – in der von Hand gezogenen Reihenfolge (`reihe`, Namen klein), die
+ * übrigen danach alphabetisch –, dann die Dateien alphabetisch.
+ */
+export function nachReihenfolge<T extends { pfad: string; ordner: boolean }>(eintraege: T[], reihe: string[] = []): T[] {
+  const rang = (name: string) => {
+    const i = reihe.indexOf(name.toLowerCase());
+    return i < 0 ? Number.MAX_SAFE_INTEGER : i;
+  };
+  return [...eintraege].sort(
+    (a, b) =>
+      Number(b.ordner) - Number(a.ordner) || (a.ordner && b.ordner ? rang(a.pfad) - rang(b.pfad) : 0) || a.pfad.localeCompare(b.pfad, 'de', { numeric: true, sensitivity: 'base' }),
+  );
+}

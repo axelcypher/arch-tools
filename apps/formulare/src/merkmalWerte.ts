@@ -1,5 +1,5 @@
 /**
- * Werte der Projektmerkmale für das offene Formular. Mit Projekt (Desktop) stehen sie in der Projektdatei (.oap,
+ * Werte der Antragsmerkmale für das offene Formular. Mit Projekt (Desktop) stehen sie in der Projektdatei (.oap,
  * `meta.merkmale`) und gelten für alle Formulare des Projekts. Ohne Projekt (Web-Version, Formular per „Formular
  * öffnen …“) gibt es keine Projektdatei: Dann gelten sie je Datei und liegen im lokalen Speicher des Browsers (U-02).
  */
@@ -59,7 +59,7 @@ export const useDateiMerkmale = create<DateiMerkmale>((set, get) => ({
 /** Schlüssel einer Datei ohne Projekt */
 const dateiSchluessel = (o: Pick<OffenesFormular, 'pfad'>) => `datei|${o.pfad}`;
 
-/** Projektmerkmale (Name → Wert), die für die Bedingungen des offenen Formulars gelten */
+/** Antragsmerkmale (Name → Wert), die für die Bedingungen des offenen Formulars gelten */
 export function useMerkmalWerte(offen: Pick<OffenesFormular, 'projekt' | 'pfad'> | null): Record<string, string> {
   const projekt = useAntrag((s) => s.projektdatei?.merkmale);
   const datei = useDateiMerkmale((s) => (offen && !offen.projekt ? s.werte[dateiSchluessel(offen)] : undefined));

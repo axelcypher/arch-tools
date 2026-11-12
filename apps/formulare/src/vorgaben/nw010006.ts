@@ -9,7 +9,7 @@
  * - Ausladung, Abstand zur Fahrbahnkante und lichte Durchgangshöhe betreffen nur auskragende Anlagen, die Beleuchtung
  *   nur beleuchtete – nicht pauschal vorgeschrieben, zählen nicht.
  * - Lageplan 1 : 500 „bei freistehenden Werbeanlagen“ – ob eine Anlage freistehend ist, sagt kein Feld und kein
- *   Projektmerkmal; zählt deshalb nicht (bei freistehenden Anlagen selbst ankreuzen).
+ *   Antragsmerkmal; zählt deshalb nicht (bei freistehenden Anlagen selbst ankreuzen).
  * - Bauvorlageberechtigung (§ 67 Absatz 1 BauO NRW 2018) gilt für Gebäude – Name der bauvorlageberechtigten Person und
  *   Kammernummer zählen bei Werbeanlagen nicht.
  * - Denkmalrechtliche Erlaubnis: Bindung, nur wenn vorhanden.

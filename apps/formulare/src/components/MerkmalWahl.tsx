@@ -5,7 +5,7 @@ import type { OffenesFormular } from '../store';
 import { useGesetz } from './GesetzModal';
 
 /**
- * Auswahl fehlender Projektmerkmale direkt am Formular (U-02): je Merkmal Segmentknöpfe mit Kurzerklärung und
+ * Auswahl fehlender Antragsmerkmale direkt am Formular (U-02): je Merkmal Segmentknöpfe mit Kurzerklärung und
  * Fundstelle. Die Wahl wirkt sofort (Füllstand, entfällt/offen); mit Projekt landet sie in der Projektdatei (gilt für
  * alle Formulare), ohne Projekt gilt sie für diese Datei.
  */

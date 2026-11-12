@@ -93,7 +93,7 @@ export async function umbenennen(basis: string, pfad: string, vorschlag?: string
 export async function loeschen(basis: string, pfad: string) {
   const ds = useFormulare.getState().ds;
   if (!ds) return;
-  if (nurFormaLoescht(pfad)) return fehler('Löschen', new Error('Dateien von FORMA werden nur in FORMA gelöscht'));
+  if (nurFormaLoescht(pfad)) return fehler('Löschen', new Error('Projektkarte, Sperrdateien und Projekttitel werden hier nicht gelöscht'));
   if (!(await bestaetigen('Löschen', `„${nameVon(pfad)}“ löschen? Eine Sicherungskopie bleibt im Ordner „Sicherungen“ der App.`, 'Löschen', true))) return;
   try {
     await ds.loeschen(basis, pfad);
@@ -113,7 +113,7 @@ export async function formularLoeschen(f: FormularEintrag) {
   const { ds, projekt } = s;
   if (!ds || !projekt) return;
   const hier = s.offen?.projekt === projekt && s.offen.pfad === f.pfad;
-  if (f.gesperrt && !hier) return fehler('Löschen', new Error(`„${f.name}“ ist gerade in FORMA oder auf einem anderen Rechner geöffnet – bitte erst dort schließen`));
+  if (f.gesperrt && !hier) return fehler('Löschen', new Error(`„${f.name}“ ist gerade in einem anderen Programm oder auf einem anderen Rechner geöffnet – bitte erst dort schließen`));
   const entwurf = hatEntwurf(projekt, f.pfad) || (hier && Object.keys(s.offen!.aenderungen).length > 0);
   const text = `Formular „${f.name}“ löschen? Eine Sicherungskopie bleibt im Ordner „Sicherungen“ der App.${entwurf ? ' Nicht gespeicherte Eingaben gehen verloren.' : ''}`;
   if (!(await bestaetigen('Formular löschen', text, 'Löschen', true))) return;
@@ -186,7 +186,7 @@ export async function ordnerNeu(basis: string, ordner: string) {
 }
 
 /**
- * Datei mit einem Dokument des Projektumfangs verknüpfen. Liegt sie nicht im Ordner der aktiven Fassung, wird sie
+ * Datei mit einem Dokument des Antragsumfangs verknüpfen. Liegt sie nicht im Ordner der aktiven Fassung, wird sie
  * dorthin kopiert (ohne zu überschreiben) und die Kopie verknüpft.
  */
 export async function verknuepfen(basis: string, pfad: string, umfangId: string) {

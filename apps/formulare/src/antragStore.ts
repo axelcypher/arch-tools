@@ -1,7 +1,7 @@
 /**
  * Zustand für Antrag und Export: Einstellungen (global und je Projekt), die Angaben der App zum gewählten
- * Projekt (Abschnitt „formulare“ der Projektdatei: Projektumfang, aktive Antragsfassung), die Antragsfassungen im Projektordner und der
- * Status jedes Dokuments im Projektumfang. Dazu der Export als PDF, das Verknüpfen von Dateien und das Anlegen
+ * Projekt (Abschnitt „formulare“ der Projektdatei: Antragsumfang, aktive Antragsfassung), die Antragsfassungen im Projektordner und der
+ * Status jedes Dokuments im Antragsumfang. Dazu der Export als PDF, das Verknüpfen von Dateien und das Anlegen
  * fehlender Formulare.
  *
  * Eigener Store neben dem der Formulare, damit Tastendrücke im Formular hier nur eine leichte Neuberechnung
@@ -11,7 +11,7 @@
 import { create } from 'zustand';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
-import type { Abschnitt, AntragDaten } from './antrag';
+import type { Abschnitt, AntragDaten, AntragStatusManuell } from './antrag';
 import type { AntragsVorlage, ExportEinstellungen, ExportUeberschreibung, Fassung, Fuellstand, KatalogEintrag, ProjektDatei, ProjektStatus, Status, UmfangEintrag } from './antrag';
 import {
   anzeigeName,
@@ -29,11 +29,13 @@ import {
   projektDateiAus,
   abschnittAus,
   abschnittVon,
-  aktuellsterAntrag,
+  antragKurzVon,
   ansichtVon,
   antraegeVon,
   EINGEREICHT_TIEFE,
   eingereichtAus,
+  eingereichtVon,
+  naechsteFassung,
   istArchiv,
   neuerAntrag,
   tagVon,
@@ -64,7 +66,7 @@ import type { FormularEintrag, Projekt } from './projekte';
 import { formulareDesProjekts, projektSchluessel } from './projekte';
 import type { FormularZustand, Zustaende } from './autofill';
 import { autoWerte } from './autofill';
-import { ablageVon, autofillAnbindung, entwurfVon, karteMitAenderungen, mitAenderungen, profilFuer as wirksamesProfil, useFormulare, wertVon } from './store';
+import { ablageVon, autofillAnbindung, entwurfVon, karteMitAenderungen, mitAenderungen, profilFuer as wirksamesProfil, sperrAnbindung, useFormulare, wertVon } from './store';
 import { fragen } from '@core/ui/Rueckfrage';
 
 const log = logger('formulare');
@@ -103,7 +105,7 @@ export interface FormularInfo {
   letzteAenderung: number;
 }
 
-/** Ein Dokument des Projektumfangs mit seinem Status in der aktiven Fassung */
+/** Ein Dokument des Antragsumfangs mit seinem Status in der aktiven Fassung */
 export interface DokZustand {
   eintrag: UmfangEintrag;
   status: Status;
@@ -126,7 +128,7 @@ interface AntragState {
   katalog: KatalogEintrag[];
   /** Antragsvorlagen: welche Katalogdokumente zu welcher Art von Antrag gehören */
   vorlagen: AntragsVorlage[];
-  /** Projektmerkmale (Gebäudeklasse …) mit ihren möglichen Werten – für Bedingungen */
+  /** Antragsmerkmale (Gebäudeklasse …) mit ihren möglichen Werten – für Bedingungen */
   merkmalDefinitionen: Merkmal[];
   /** je Projektkürzel */
   ueberschreibungen: Record<string, ExportUeberschreibung>;
@@ -148,8 +150,10 @@ interface AntragState {
   /** null = wieder die Vorgabe */
   setVorlagen: (v: AntragsVorlage[] | null) => void;
   setMerkmalDefinitionen: (m: Merkmal[] | null) => void;
-  /** Wert eines Projektmerkmals im gewählten Projekt setzen (leer = entfernen) – in der Projektdatei */
+  /** Wert eines Antragsmerkmals im gewählten Projekt setzen (leer = entfernen) – in der Projektdatei */
   merkmalSetzen: (name: string, wert: string) => Promise<void>;
+  /** Status des aktiven Antrags von Hand setzen (eingereicht mit Datum bzw. in Arbeit); null = wieder automatisch */
+  statusSetzen: (status: AntragStatusManuell | null) => Promise<void>;
   /** Abweichungen des gewählten Projekts; null = wieder die Vorgabe */
   setUeberschreibung: (u: ExportUeberschreibung | null) => void;
   /** Einstellungen neu aus dem lokalen Speicher lesen (nach dem Einspielen einer Datei) und neu berechnen */
@@ -169,7 +173,7 @@ interface AntragState {
   formularAnlegen: (umfangId: string) => Promise<string | null>;
   /** verfügbare Formulare zum Hinzufügen: Vorlagenordner und andere Projekte, je Formular der neueste Stand */
   vorlagenAuflisten: () => Promise<Vorlage[]>;
-  /** Formular aus einer Vorlage geleert anlegen und öffnen; auf Wunsch in den Projektumfang aufnehmen */
+  /** Formular aus einer Vorlage geleert anlegen und öffnen; auf Wunsch in den Antragsumfang aufnehmen */
   formularHinzufuegen: (v: Vorlage, inUmfang: boolean) => Promise<string | null>;
   /** Autofill-Zustand von Formularen (Dateiname im FORMA-Projekt) in die Projektdatei – nur, wenn es eine gibt */
   zustaendeSetzen: (neu: Zustaende) => Promise<void>;
@@ -237,6 +241,30 @@ export async function ordnerAufloesen(ds: { liste: (pfad: string, tiefe: number)
 
 /** Formular in einem Archivordner – wird beim Sammel-Export ausgelassen */
 export { istArchiv };
+
+/** Stand „eingereicht“ des aktiven Antrags (von Hand gesetzt vor erkannt); null = in Arbeit */
+export function aktiverEingereicht(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null) {
+  return eingereichtVon(s.projektdatei?.antraege?.[aktiveFassung(s, p)]);
+}
+
+const tagText = (iso: string) => iso.split('-').reverse().join('.');
+
+/**
+ * Ist der aktive Antrag eingereicht, ist er für die Bearbeitung gesperrt: Formulare nur ansehen, Antragsdaten, Export
+ * und „bereit“ unverändert. Geändert wird mit einem Nachtrag (neue Antragsfassung) – oder der Status wird von Hand
+ * zurückgesetzt. Liefert den Grund in Worten, sonst null.
+ */
+export function antragSperre(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null): string | null {
+  const e = aktiverEingereicht(s, p);
+  if (!e) return null;
+  return `Antrag ${aktiveFassung(s, p)} ist eingereicht (${tagText(e.datum)}${e.manuell ? ', von Hand gesetzt' : ''}) und gesperrt – Änderungen über einen Nachtrag (neue Antragsfassung).`;
+}
+
+/** Name des nächsten Nachtrags (neue Fassung derselben Antragsart) */
+export function nachtragName(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null): string {
+  const aktiv = aktiveFassung(s, p);
+  return naechsteFassung(s.fassungen, s.fassungen.find((f) => f.name === aktiv)?.art ?? aktiv.replace(/[\s_-]*\d+$/, ''));
+}
 
 /** Projektcodes, mit denen Dateien im Antragsordner beginnen dürfen: Kürzel des FORMA-Projekts, Projektcode der .oap */
 export function projektCodes(p: Projekt): string[] {
@@ -311,7 +339,7 @@ let dateienFormaProjekt: Eintrag[] = [];
 
 /**
  * `projekt.json` mit den Angaben der App: im Abschnitt „formulare“ die aktive Antragsfassung und die Anträge (je
- * Antrag Projektumfang, Projektmerkmale, Autofill, „bereit“, angelegt, eingereicht), dazu in `meta.antrag` der zuletzt
+ * Antrag Antragsumfang, Antragsmerkmale, Autofill, „bereit“, angelegt, eingereicht), dazu in `meta.antrag` der zuletzt
  * angelegte Antrag für die Startseiten. `meta.merkmale` (früher projektweit) entfällt – die Werte stehen in den Anträgen.
  */
 function mitAbschnitt(roh: Record<string, unknown>, neu: ProjektDatei): Record<string, unknown> {
@@ -326,7 +354,7 @@ function mitAbschnitt(roh: Record<string, unknown>, neu: ProjektDatei): Record<s
   const { formulare: _alt, ...rest } = roh;
   const meta = { ...((roh.meta as Record<string, unknown> | undefined) ?? {}) };
   delete meta.merkmale;
-  const kurz = aktuellsterAntrag(antraegeVon(neu), useAntrag.getState().fassungen.map((f) => f.name));
+  const kurz = antragKurzVon(antraegeVon(neu), aktiveFassung({ ...useAntrag.getState(), projektdatei: neu }, useFormulare.getState().projekt));
   if (kurz) meta.antrag = kurz;
   else delete meta.antrag;
   return { ...rest, meta, ...(Object.keys(abschnitt).length ? { formulare: abschnitt } : {}) };
@@ -342,7 +370,7 @@ function abschnittRohAusOap(): Abschnitt | null {
   return abschnittAus(roh, merkmale);
 }
 
-/** Neuer Antrag aus den Vorgaben (globales Preset der Projektmerkmale) */
+/** Neuer Antrag aus den Vorgaben (globales Preset der Antragsmerkmale) */
 const neuAusVorgaben = (angelegt = tagVon(new Date())) => neuerAntrag(merkmalVorgaben(useAntrag.getState().merkmalDefinitionen), angelegt);
 
 /** Ansicht der App für den aktiven Antrag aus der geladenen Projektdatei (nach Änderungen von außen) */
@@ -387,7 +415,7 @@ async function uebernehmen(projekt: Projekt, alt: ProjektDatei) {
     // im bisherigen Format – das nächste Laden übernimmt die Angaben in die Anträge
     if (await useFormulare.getState().oapAendern((roh) => (roh.formulare === undefined ? { ...roh, formulare: altFormat(roh) } : roh))) {
       log.info(`${projekt.ordner}: ${ALTE_PROJEKTDATEI} in die Projektdatei ${o.pfad} übernommen`);
-      useFormulare.getState().setMeldung({ art: 'info', text: `Projektumfang und Antragsfassung aus ${ALTE_PROJEKTDATEI} in die Projektdatei übernommen – die alte Datei bleibt liegen.` });
+      useFormulare.getState().setMeldung({ art: 'info', text: `Antragsumfang und Antragsfassung aus ${ALTE_PROJEKTDATEI} in die Projektdatei übernommen – die alte Datei bleibt liegen.` });
     }
   } catch (e) {
     log.warn(`${ALTE_PROJEKTDATEI} nicht in die Projektdatei übernommen: ${e instanceof Error ? e.message : String(e)}`);
@@ -413,7 +441,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     if (f.oap === null) await f.oapLaden();
     const o = useFormulare.getState().oap;
     if (!o || o === 'fehlt') {
-      await f.stammdatenErfassen('Die Angaben zum Antrag (Projektumfang, Antragsfassung, Projektmerkmale) werden in der Projektdatei (.oap) gespeichert. Im Projektordner gibt es noch keine – mit diesen Stammdaten wird sie angelegt.', async () => {
+      await f.stammdatenErfassen('Die Angaben zum Antrag (Antragsumfang, Antragsfassung, Antragsmerkmale) werden in der Projektdatei (.oap) gespeichert. Im Projektordner gibt es noch keine – mit diesen Stammdaten wird sie angelegt.', async () => {
         if (await projektdateiSchreiben(neu)) await get().laden();
       });
       return false;
@@ -452,12 +480,18 @@ export const useAntrag = create<AntragState>((set, get) => {
       log.info(`${name}: ${e ? `eingereicht (${e.datei})` : 'nicht mehr eingereicht'}`);
     }
     const neu = geaendert ? { ...pd, antraege } : pd;
-    const kurz = aktuellsterAntrag(antraegeVon(neu), get().fassungen.map((f) => f.name));
+    const kurz = antragKurzVon(antraegeVon(neu), aktiveFassung({ ...get(), projektdatei: neu }, useFormulare.getState().projekt));
     if (!geaendert && JSON.stringify(kurz) === JSON.stringify(o.projekt.meta.antrag ?? null)) return;
     set({ projektdatei: neu });
     await stillSpeichern(neu);
   };
   const meldung = (art: 'info' | 'fehler', text: string) => useFormulare.getState().setMeldung({ art, text });
+  /** Eingereichter Antrag: nichts ändern, Meldung zeigen – liefert true, wenn gesperrt */
+  const gesperrt = (): boolean => {
+    const grund = antragSperre(get(), useFormulare.getState().projekt);
+    if (grund) meldung('info', grund);
+    return !!grund;
+  };
   const fehler = (was: string, e: unknown) => {
     const text = `${was}: ${e instanceof Error ? e.message : String(e)}`;
     log.error(text);
@@ -469,7 +503,7 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     alleExportieren: async () => {
       const { ds, projekt, basis } = ctx();
-      if (!ds || !projekt || !basis || get().sammelExport) return 0;
+      if (!ds || !projekt || !basis || get().sammelExport || gesperrt()) return 0;
       const liste = useFormulare.getState().formulare.filter((f) => !istArchiv(f.pfad));
       if (!liste.length) {
         meldung('info', 'In diesem Projekt gibt es keine Formulare zum Exportieren.');
@@ -515,7 +549,7 @@ export const useAntrag = create<AntragState>((set, get) => {
           }
           set({ sammelExport: { fertig: i + 1, gesamt: ziele.length } });
         }
-        // im Ordner der aktiven Fassung: mit den Dokumenten des Projektumfangs verknüpfen (ein Schritt)
+        // im Ordner der aktiven Fassung: mit den Dokumenten des Antragsumfangs verknüpfen (ein Schritt)
         const st = get();
         const umfang = st.projektdatei?.umfang;
         const fassung = aktiveFassung(st, projekt);
@@ -539,7 +573,7 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     bereitUmschalten: async (datei) => {
       const projekt = useFormulare.getState().projekt;
-      if (!projekt) return;
+      if (!projekt || gesperrt()) return;
       const st = get();
       const fassung = aktiveFassung(st, projekt);
       const pd = st.projektdatei ?? {};
@@ -627,6 +661,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       set({ merkmalDefinitionen });
     },
     merkmalSetzen: async (name, wert) => {
+      if (gesperrt()) return;
       try {
         const alt = get().projektdatei ?? {};
         const merkmale = { ...alt.merkmale };
@@ -637,7 +672,24 @@ export const useAntrag = create<AntragState>((set, get) => {
         await projektdateiSchreiben(neu);
         get().neuBerechnen();
       } catch (e) {
-        fehler(`Projektmerkmal ${name}`, e);
+        fehler(`Antragsmerkmal ${name}`, e);
+      }
+    },
+    statusSetzen: async (status) => {
+      const projekt = useFormulare.getState().projekt;
+      const pd = get().projektdatei;
+      if (!projekt || !pd) return;
+      const fassung = aktiveFassung(get(), projekt);
+      const antraege = { ...(pd.antraege ?? {}) };
+      const { status: _, ...rest } = antraege[fassung] ?? {};
+      antraege[fassung] = status ? { ...rest, status } : rest;
+      try {
+        if (await projektdateiSchreiben({ ...pd, antraege })) {
+          log.info(`${fassung}: Status ${status ? (status.eingereicht ? `eingereicht (${status.datum ?? 'ohne Datum'}, von Hand)` : 'in Arbeit (von Hand)') : 'automatisch'}`);
+          get().neuBerechnen();
+        }
+      } catch (e) {
+        fehler(`Status von ${fassung}`, e);
       }
     },
     setUeberschreibung: (u) => {
@@ -796,24 +848,28 @@ export const useAntrag = create<AntragState>((set, get) => {
       const e = wirksameEinstellungen(st, projekt);
       const fassung = aktiveFassung(st, projekt);
       const infos = Object.values(formularInfo);
+      const codes = projektCodes(projekt);
       const dokumente = (st.projektdatei?.umfang ?? []).map((u): DokZustand => {
-        const datei = dateiImAntrag(u, st.dateien, fassung);
+        const datei = dateiImAntrag(u, st.dateien, fassung, codes);
         if (!umfangErforderlich(u, merkmale)) return { eintrag: u, status: 'entfaellt', formular: u.art === 'intern' ? formularVon(u, infos) : null, datei, quelle: null };
         if (u.art === 'intern') {
           const formular = formularVon(u, infos);
           if (!formular) return { eintrag: u, status: 'fehlt', formular: null, datei, quelle: null };
-          return { eintrag: u, status: formularStatus(formular.fuellstand, formular.letzteAenderung, datei), formular, datei, quelle: null };
+          return { eintrag: u, status: formularStatus(formular.fuellstand, formular.letzteAenderung, datei, codes), formular, datei, quelle: null };
         }
-        const quelle = quelleVon(u, st.quellen[(u.quelle ?? e.berechnungsordner).trim()] ?? []);
-        return { eintrag: u, status: externStatus(quelle, datei), formular: null, datei, quelle };
+        const quelle = quelleVon(u, st.quellen[(u.quelle ?? e.berechnungsordner).trim()] ?? [], codes);
+        return { eintrag: u, status: externStatus(quelle, datei, codes), formular: null, datei, quelle };
       });
       set({ formularInfo, dokumente });
-      // für die Projektübersicht merken – nur mit gelesenen Angaben zum Antrag und allen Formularen zerlegt
-      if (st.projektdatei && infos.length >= s.formulare.length) {
+      // für die Projektübersicht merken – mit gelesenen Angaben zum Antrag; der Stand der Dokumente nur, wenn alle
+      // Formulare zerlegt sind (sonst bleibt der letzte), der Antrag (eingereicht?) immer – wie im Projekt angezeigt
+      if (st.projektdatei) {
         const k = projektSchluessel(projekt);
         const alt = st.projektStatus[k];
-        const antrag = st.projektdatei.antraege ? aktuellsterAntrag(antraegeVon(st.projektdatei), st.fassungen.map((f) => f.name)) : null;
-        const neu = projektStatusAus(st.projektdatei.umfang ? dokumente.map((d) => d.status) : [], fassung, Date.now(), antrag);
+        const antrag = st.projektdatei.antraege ? antragKurzVon(antraegeVon(st.projektdatei), fassung) : null;
+        const vollstaendig = infos.length >= s.formulare.length;
+        const neu = vollstaendig || !alt ? projektStatusAus(st.projektdatei.umfang ? dokumente.map((d) => d.status) : [], fassung, Date.now(), antrag) : { ...alt, fassung, ...(antrag ? { antrag } : {}) };
+        if (!antrag) delete neu.antrag;
         if (!alt || JSON.stringify([alt.anzahl, alt.fassung, alt.antrag]) !== JSON.stringify([neu.anzahl, neu.fassung, neu.antrag]) || neu.zeit - alt.zeit > 60_000) {
           const projektStatus = { ...st.projektStatus, [k]: neu };
           schreiben(PROJEKTSTATUS, projektStatus);
@@ -836,6 +892,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     },
 
     umfangSetzen: async (umfang) => {
+      if (gesperrt()) return;
       try {
         const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
         if (umfang) neu.umfang = umfang;
@@ -843,7 +900,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         await projektdateiSchreiben(neu);
         await get().aktualisieren();
       } catch (e) {
-        fehler('Projektumfang nicht gespeichert', e);
+        fehler('Antragsumfang nicht gespeichert', e);
       }
     },
 
@@ -865,7 +922,7 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     exportieren: async (formularPfad, ziel, ersetzen) => {
       const { ds, projekt, basis } = ctx();
-      if (!ds || !projekt || !basis) return null;
+      if (!ds || !projekt || !basis || gesperrt()) return null;
       try {
         const pdf = await pdfVon(projekt, formularPfad);
         const pfad = `${ziel.ordner ? `${ziel.ordner}/` : ''}${ziel.name}`;
@@ -874,7 +931,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         if (da) await ds.dokumentErsetzen(basis, pfad, pdf);
         else await ds.dokumentAnlegen(basis, pfad, pdf);
         log.info(`Exportiert: ${formularPfad} → ${verbinde(basis, pfad)}`);
-        // im Ordner der aktiven Fassung: mit dem Dokument des Projektumfangs verknüpfen
+        // im Ordner der aktiven Fassung: mit dem Dokument des Antragsumfangs verknüpfen
         const st = get();
         const umfang = st.projektdatei?.umfang;
         const doc = st.dokumente.find((d) => d.formular?.pfad === formularPfad);
@@ -940,7 +997,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     formularHinzufuegen: async (v, inUmfang) => {
       const s = useFormulare.getState();
       const { ds, projekt } = ctx();
-      if (!ds || !projekt) return null;
+      if (!ds || !projekt || gesperrt()) return null;
       try {
         const bytes = await ds.lies(v.root, v.pfad);
         if (!bytes) throw new Error(`${v.datei} nicht gefunden`);
@@ -997,10 +1054,10 @@ export const useAntrag = create<AntragState>((set, get) => {
       const s = useFormulare.getState();
       const { ds, projekt } = ctx();
       const u = get().projektdatei?.umfang?.find((x) => x.id === umfangId);
-      if (!ds || !projekt || !u) return null;
+      if (!ds || !projekt || !u || gesperrt()) return null;
       try {
         const vorlage = await vorlageSuchen(u);
-        if (!vorlage) throw new Error(`Keine Vorlage für „${u.titel}“ gefunden – bitte in den Einstellungen einen Vorlagenordner mit leeren FORMA-Formularen angeben`);
+        if (!vorlage) throw new Error(`Keine Vorlage für „${u.titel}“ gefunden – bitte in den Einstellungen einen Vorlagenordner mit leeren Formularen angeben`);
         const name = neuerName(vorlage.name, s.formulare);
         const pfad = `${projekt.ordner}/${name}`;
         const neu = await mitAutofill(geleert(vorlage.bytes));
@@ -1023,6 +1080,7 @@ export const useAntrag = create<AntragState>((set, get) => {
 });
 
 autofillAnbindung.zustand = (datei) => useAntrag.getState().projektdatei?.felder?.[datei];
+sperrAnbindung.antrag = (p) => (p && p === useFormulare.getState().projekt ? antragSperre(useAntrag.getState(), p) : null);
 autofillAnbindung.speichern = (datei, z) => void useAntrag.getState().zustaendeSetzen({ [datei]: z });
 
 /* ---------- Export ---------- */

@@ -1,0 +1,231 @@
+/* Eigene Ansichten: Editor (Modal) und Anzeige – gemeinsam für alle Apps */
+
+html.zieht,
+html.zieht * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+/* ---------- Anzeige ---------- */
+
+.av {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.av-abschnitt {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px 14px;
+}
+.av-abschnitt-titel {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.av-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px 14px;
+  align-items: start;
+}
+.av-feld {
+  min-width: 0;
+}
+.av-feld.breit {
+  grid-column: span 2;
+}
+.av-fehlt {
+  padding: 6px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* ---------- Editor ---------- */
+
+.modal.av-editor {
+  width: min(980px, 94vw);
+  height: min(720px, 88vh);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+.av-ed-titel h3 {
+  margin: 0 0 4px;
+}
+.av-ed-titel p {
+  margin: 0;
+}
+.av-ed-koerper {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 14px;
+}
+.av-ed-aufbau,
+.av-ed-katalog {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 10px;
+}
+.av-ed-aufbau {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.av-ed-abschnitt {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px 10px;
+}
+.av-ed-abschnitt.aktiv {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.av-ed-abschnitt.ziel {
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+}
+.av-ed-kopf {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.av-ed-abschnitt-titel {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.av-ed-felder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.av-ed-feld {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+.av-ed-feld.quelle {
+  opacity: 0.45;
+}
+.av-ed-feld.davor {
+  box-shadow: 0 -3px 0 var(--accent);
+}
+.av-ed-feld.fehlt .av-ed-feld-text {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.av-ed-einfuegen {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.av-ed-feld-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.av-ed-feld-text > .small-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.av-griff {
+  cursor: grab;
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  touch-action: none;
+}
+.av-griff:focus-visible {
+  outline: 2px solid var(--accent);
+  border-radius: 4px;
+}
+.av-ed-weg {
+  opacity: 0.6;
+}
+.av-ed-feld:hover .av-ed-weg {
+  opacity: 1;
+}
+.av-ed-leer {
+  padding: 10px 6px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  text-align: center;
+}
+.av-ed-neu {
+  align-self: flex-start;
+}
+.av-ed-katalog {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.av-ed-katalog > p {
+  margin: 0;
+}
+.av-ed-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.av-ed-gruppe-titel {
+  position: sticky;
+  top: -10px;
+  padding: 4px 2px;
+  background: var(--bg);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.av-ed-kat-feld {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.av-ed-kat-feld:hover {
+  background: var(--hover);
+}
+.av-ed-kat-feld.drin {
+  color: var(--accent);
+  font-weight: 600;
+}
+.av-ed-fuss {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.av-ed-abstand {
+  flex: 1;
+}

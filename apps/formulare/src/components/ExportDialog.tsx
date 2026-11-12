@@ -28,7 +28,7 @@ export function ExportDialog({ formularPfad, onClose }: { formularPfad: string; 
   const ablage = useFormulare((s) => ablageVon(s, s.projekt));
   const offen = useFormulare((s) => s.offen);
   const fassung = useAntrag((s) => aktiveFassung(s, projekt));
-  // Vorschlag folgt den Einstellungen und dem Projektumfang, bis der Name von Hand geändert wird
+  // Vorschlag folgt den Einstellungen und dem Antragsumfang, bis der Name von Hand geändert wird
   useAntrag((s) => s.dokumente);
   const { exportieren, speichernUnter } = useAntrag.getState();
   const vorschlag = exportVorschlag(formularPfad);

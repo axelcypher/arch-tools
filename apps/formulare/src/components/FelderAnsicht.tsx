@@ -228,13 +228,13 @@ function FeldEingabe({
   offen: OffenesFormular;
   gesperrt: boolean;
   profil: FormularProfil;
-  /** entfällt nach den Bedingungen bzw. ist offen (fehlendes Projektmerkmal) – mit Gründen und Hinweistext */
+  /** entfällt nach den Bedingungen bzw. ist offen (fehlendes Antragsmerkmal) – mit Gründen und Hinweistext */
   entfall?: { gruende: Entfall[]; text: string; offen?: boolean; merkmale?: Record<string, string> };
   /** das Symbol steht am Abschnitt (gleicher Grund für alle Felder) */
   ohneInfo?: boolean;
   /** Plausibilitätsmeldungen zu diesem Feld */
   hinweise?: Plausi[];
-  /** aus einem Projektmerkmal vorbelegt (Vorschlag) */
+  /** aus einem Antragsmerkmal vorbelegt (Vorschlag) */
   vorbelegt?: boolean;
   ohneBeschriftung: boolean;
   /** in der Gliederung gezeigt (umrandet: zusätzlich umrandet) */
@@ -255,7 +255,7 @@ function FeldEingabe({
   // von FORMA berechnete Felder trägt man nicht ein
   const gesperrt = gesperrtFormular || feld.berechnet;
   const titel = feldTitel(feld, profil);
-  const hinweis = feld.berechnet ? `${titel} – berechnet FORMA` : feld.hinweis;
+  const hinweis = feld.berechnet ? `${titel} – wird berechnet` : feld.hinweis;
 
   if (feld.art === 'kreuz') {
     // echte Entweder-oder-Fälle (Regel „genau eine“, z. B. Bauantrag/Vorbescheid, ja/nein) als Optionsfelder (U-04) –
@@ -263,7 +263,7 @@ function FeldEingabe({
     const g = gruppeVon(profil, feld.schluessel);
     const andere = g?.regel === 'genau' ? offen.felder.flat().filter((f) => g.felder.includes(f.schluessel) && f.schluessel !== feld.schluessel) : [];
     const radio = g?.regel === 'genau' && andere.filter((f) => wertVon(offen, f) === true).length + (wert === true ? 1 : 0) <= 1;
-    const titelText = vorbelegt ? `${hinweis ?? titel} – aus dem Projektmerkmal vorbelegt, bitte prüfen` : hinweis;
+    const titelText = vorbelegt ? `${hinweis ?? titel} – aus dem Antragsmerkmal vorbelegt, bitte prüfen` : hinweis;
     return (
       <label className={`${klasse} fo-kreuz`} title={titelText} style={breite}>
         {radio ? (

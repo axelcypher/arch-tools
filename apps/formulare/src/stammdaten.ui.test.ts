@@ -86,6 +86,8 @@ beforeEach(() => {
     ansicht: 'seite',
     gliederungOffen: true,
     adressbuch: null,
+    adressbuchKarten: null,
+    eigeneAdressen: [],
     adressbuchLaeuft: null,
     rollenVorgaben: {},
     profile: {},
@@ -105,6 +107,7 @@ afterEach(() => {
 
 const warte = () => act(async () => new Promise((r) => setTimeout(r, 0)));
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(text)) as HTMLButtonElement;
+const knopfGenau = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === text) as HTMLButtonElement;
 const knopfMit = (host: Element, label: string) => host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
 const klick = async (el: HTMLElement) => {
   act(() => el.click());
@@ -173,7 +176,7 @@ describe('Formular einrichten', () => {
     verlassen(titel);
     await warte();
     await klick(imFormular(host, '0:Memo1'));
-    expect(panel(host).textContent).toContain('in FORMA „Memo1“');
+    expect(panel(host).textContent).toContain('Feldname „Memo1“');
     await klick(panel(host).querySelector<HTMLInputElement>('input[aria-label="Zählt für den Füllstand"]')!);
     const zweite = host.querySelectorAll<HTMLButtonElement>('.fo-ein-baum .fo-ein-titel')[1];
     if (zweite) {
@@ -331,12 +334,12 @@ describe('Formular einrichten', () => {
 });
 
 describe('Einstellungen', () => {
-  it('Adressbuch aus allen FORMA-Projekten, Stammdaten als Vorgabe je Rolle', async () => {
+  it('Adressbuch aus allen Projektkarten, Stammdaten als Vorgabe je Rolle', async () => {
     const host = await render();
     await klick(knopfMit(host, 'Einstellungen'));
     expect(host.querySelector('.es-nav')).not.toBeNull();
     await klick(knopf(host, 'Adressbuch'));
-    await klick(knopf(host, 'Adressbuch einlesen'));
+    await klick(knopf(host, 'Aus den Projektkarten einlesen'));
     await warte();
     const namen = [...host.querySelectorAll('.es-adress-eintrag strong')].map((s) => s.textContent);
     expect(namen).toEqual(['Beispiel', 'Kreis Soest', 'Mustermann']);
@@ -352,6 +355,49 @@ describe('Einstellungen', () => {
     await warte();
     expect(useFormulare.getState().rollenVorgaben['231']).toBe(kreis.value);
     expect(host.querySelector('.es-adresse')!.textContent).toContain('Hoher Weg 1');
+  });
+
+  it('Adressbuch bearbeiten: neue Adresse anlegen, eine aus den Projektkarten ändern und ausblenden – gespeichert im Konfigurationsordner', async () => {
+    const host = await render();
+    await klick(knopfMit(host, 'Einstellungen'));
+    await klick(knopf(host, 'Adressbuch'));
+    await klick(knopf(host, 'Aus den Projektkarten einlesen'));
+    await warte();
+    const namen = () => [...host.querySelectorAll('.es-adress-eintrag strong')].map((s) => s.textContent);
+    const eintrag = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('.es-adress-eintrag')].find((b) => b.textContent?.includes(name))!;
+    const formFeld = (titel: string) => host.querySelector<HTMLInputElement>(`.es-adress-form input[aria-label="${titel}"]`)!;
+
+    // neu anlegen – ohne Projektkarte
+    await klick(knopf(host, 'Neue Adresse'));
+    eingabe(formFeld('Name/Firma'), 'Statik Nord GmbH');
+    eingabe(formFeld('Ort'), 'Lippstadt');
+    await klick(knopf(host.querySelector('.es-adress-form')!, 'Speichern'));
+    expect(namen()).toEqual(['Beispiel', 'Kreis Soest', 'Mustermann', 'Statik Nord GmbHeigene']);
+    expect(useFormulare.getState().eigeneAdressen).toMatchObject([{ texte: { '40': 'Statik Nord GmbH', '110': 'Lippstadt' } }]);
+    expect(useFormulare.getState().eigeneAdressen[0].schluessel).toMatch(/^e:/);
+
+    // eine Adresse aus den Projektkarten ändern: eigene Fassung, Verwendungen bleiben
+    await klick(eintrag('Kreis Soest'));
+    await klick(knopf(host.querySelector('.es-adress-detail')!, 'Bearbeiten'));
+    eingabe(formFeld('Straße/Nr.'), 'Hoher Weg 3');
+    await klick(knopf(host.querySelector('.es-adress-form')!, 'Speichern'));
+    expect(eintrag('Kreis Soest').textContent).toContain('geändert');
+    expect(host.querySelector('.es-adress-detail')!.textContent).toContain('Hoher Weg 3');
+    expect([...host.querySelectorAll('.es-verwendungen li')].map((l) => l.textContent)).toEqual(['BS9 · Bauaufsichtsbehörde', 'H24 · Bauaufsichtsbehörde']);
+    const kreis = useFormulare.getState().adressbuch!.adressen.find((a) => a.texte['40'] === 'Kreis Soest')!;
+    expect(kreis.werte['70']).toBe('Hoher Weg 3');
+
+    // ausblenden und wieder einblenden
+    await klick(knopf(host.querySelector('.es-adress-detail')!, 'Ausblenden'));
+    await klick(knopfGenau(document.body, 'Ausblenden'));
+    expect(namen().some((n) => n?.startsWith('Kreis Soest'))).toBe(false);
+    expect(host.textContent).toContain('Ausgeblendet (1)');
+    await klick(knopf(host, 'Einblenden'));
+    expect(namen().some((n) => n?.startsWith('Kreis Soest'))).toBe(true);
+
+    // gespeichert im Bereich „formulare“ der gemeinsamen Einstellungen (ohne Konfigurationsordner: lokal)
+    const roh = Object.entries(localStorage).find(([k]) => k.includes('formulare') && k.includes('konfig'));
+    expect(JSON.stringify(roh ?? useFormulare.getState().eigeneAdressen)).toContain('Statik Nord GmbH');
   });
 });
 

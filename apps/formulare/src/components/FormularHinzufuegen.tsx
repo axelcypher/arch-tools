@@ -54,7 +54,7 @@ export function FormularHinzufuegenDialog({ onClose }: { onClose: () => void }) 
       <div className="modal modal-wide fh" role="dialog" aria-label="Formular hinzufügen">
         <h3>Formular hinzufügen</h3>
         <p className="muted small-text">
-          Aus {vorlagenordner ? 'dem Vorlagenordner und ' : ''}den Formularen der anderen FORMA-Projekte – je Formular der neueste Stand. Angelegt wird eine Kopie mit geleerten
+          Aus {vorlagenordner ? 'dem Vorlagenordner und ' : ''}den Formularen der anderen Projekte – je Formular der neueste Stand. Angelegt wird eine Kopie mit geleerten
           Eingaben.{!vorlagenordner && ' Leere Vorlagen lassen sich unter Einstellungen › Antrag & Export als Vorlagenordner angeben.'}
         </p>
         <input type="search" placeholder="Formular suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Formular suchen" autoFocus />
@@ -87,7 +87,7 @@ export function FormularHinzufuegenDialog({ onClose }: { onClose: () => void }) 
         </div>
         {umfangDa && (
           <label className="ex-hinweis small-text">
-            <input type="checkbox" checked={inUmfang} onChange={(e) => setInUmfang(e.target.checked)} /> in den Projektumfang aufnehmen
+            <input type="checkbox" checked={inUmfang} onChange={(e) => setInUmfang(e.target.checked)} /> in den Antragsumfang aufnehmen
           </label>
         )}
         <div className="dialog-buttons">

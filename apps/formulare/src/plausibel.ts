@@ -1,6 +1,6 @@
 /**
  * Plausibilität (U-04, U-05): widersprüchliche Kreuze, Hinweise nach den Prüfregeln der Vorgabe und Abweichungen
- * zwischen Formular und Projektmerkmalen. Alles nicht blockierend – es erscheint als Hinweis in der Prüfliste, am
+ * zwischen Formular und Antragsmerkmalen. Alles nicht blockierend – es erscheint als Hinweis in der Prüfliste, am
  * Abschnitt in der Gliederung und am Feld.
  */
 
@@ -56,7 +56,7 @@ export function plausibilitaet(felderJeSeite: Feld[][], profil: FormularProfil, 
       }
     }
   for (const h of regeln?.hinweise ?? []) if (auswerten(h.bedingung, k) === 'ja') out.push({ art: 'hinweis', text: h.text, felder: [], ...(h.quellen ? { quellen: h.quellen } : {}) });
-  // Abweichung zwischen Projektmerkmal und Formular (U-05)
+  // Abweichung zwischen Antragsmerkmal und Formular (U-05)
   const wertVon = (s: string) => (nach.has(s) ? wert(nach.get(s)!) : undefined);
   for (const [merkmal, map] of Object.entries(regeln?.merkmalFelder ?? {})) {
     const v = k.merkmale[merkmal];

@@ -123,7 +123,7 @@ describe('Web-Version', () => {
     expect(host.querySelector<HTMLButtonElement>('button[aria-label="Rückgängig"]')!.disabled).toBe(true);
   });
 
-  it('Projektmerkmal direkt im Formular festlegen: gilt für diese Datei, abhängige Felder wechseln von „offen“ (U-02)', async () => {
+  it('Antragsmerkmal direkt im Formular festlegen: gilt für diese Datei, abhängige Felder wechseln von „offen“ (U-02)', async () => {
     useFormulare.getState().profilSetzen('nw019999|2026A', {
       abschnitte: {},
       zaehlt: {},

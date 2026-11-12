@@ -1,9 +1,9 @@
 /**
  * Warum entfällt ein Feld? Ein Feld entfällt, wenn die Bedingung seines Abschnitts, seiner Gruppe oder seine eigene
  * nicht zutrifft (profil.ts: feldErforderlich). Hier stehen die Gründe – für den Hinweis am Feld: die Begründung der
- * Vorgabe, die Bedingung in Worten, noch nicht festgelegte Projektmerkmale und die Rechtsgrundlage.
+ * Vorgabe, die Bedingung in Worten, noch nicht festgelegte Antragsmerkmale und die Rechtsgrundlage.
  *
- * Hängt eine Bedingung an einem nicht festgelegten Projektmerkmal, entfällt das Feld nicht, sondern ist **offen**
+ * Hängt eine Bedingung an einem nicht festgelegten Antragsmerkmal, entfällt das Feld nicht, sondern ist **offen**
  * (R-01): erforderlich, bis das Merkmal festgelegt ist. Dafür gibt es eigene Gründe (`offenGruende`) und den
  * Hinweis „Offen – hängt ab von: …“ – nie „Entfällt, weil … nicht festgelegt“.
  */
@@ -40,7 +40,7 @@ function gruende(art: Wahrheit, f: Feld, a: Abschnitt | undefined, p: FormularPr
 /** Bedingungen, die sicher nicht zutreffen und das Feld deshalb entfallen lassen (leer: das Feld ist erforderlich oder offen) */
 export const entfallGruende = (f: Feld, a: Abschnitt | undefined, p: FormularProfil, k: BedingungKontext): Entfall[] => gruende('nein', f, a, p, k);
 
-/** Bedingungen, die an nicht festgelegten Projektmerkmalen hängen (nur, wenn das Feld nicht ohnehin entfällt) */
+/** Bedingungen, die an nicht festgelegten Antragsmerkmalen hängen (nur, wenn das Feld nicht ohnehin entfällt) */
 export const offenGruende = (f: Feld, a: Abschnitt | undefined, p: FormularProfil, k: BedingungKontext): Entfall[] => (entfallGruende(f, a, p, k).length ? [] : gruende('offen', f, a, p, k));
 
 /** alle Rechtsgrundlagen der Gründe (ohne doppelte) */

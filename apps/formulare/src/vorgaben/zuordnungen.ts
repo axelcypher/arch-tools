@@ -19,7 +19,7 @@ const STRASSE_NR = 20;
 const plz = (felder: string[]): ZuordnungKorrektur => ({
   felder,
   teile: [eintrag(GRUNDSTUECK, PLZ_GRUNDSTUECK)],
-  grund: 'Postleitzahl des Baugrundstücks – in der Projektkarte von FORMA nicht vorgesehen, Ergänzung der App.',
+  grund: 'Postleitzahl des Baugrundstücks – in der Projektkarte nicht vorgesehen, Ergänzung der App.',
 });
 /** Baustatistik: Straße und Hausnummer stehen in eigenen Feldern, die Projektkarte hat sie in einem Eintrag */
 const strasseHausnummer = (strasse: string, hausnummer: string, postleitzahl: string): ZuordnungKorrektur[] => [

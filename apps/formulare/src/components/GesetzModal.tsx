@@ -11,7 +11,7 @@ import { MerkmalWahl } from './MerkmalWahl';
 interface GesetzState {
   /** geöffnete Fundstellen (null: geschlossen) */
   quellen: Quelle[] | null;
-  /** am offenen Feld: Projektmerkmale, die noch fehlen – das Fenster bietet sie zum Festlegen an (U-02) */
+  /** am offenen Feld: Antragsmerkmale, die noch fehlen – das Fenster bietet sie zum Festlegen an (U-02) */
   merkmale: string[];
   oeffnen: (quellen: Quelle[], merkmale?: string[]) => void;
   schliessen: () => void;
@@ -73,7 +73,7 @@ export function GesetzModal() {
 
   return (
     <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && schliessen()}>
-      <div className="modal modal-wide fo-gesetz" role="dialog" aria-label={q ? 'Gesetzestext' : 'Projektmerkmale festlegen'}>
+      <div className="modal modal-wide fo-gesetz" role="dialog" aria-label={q ? 'Gesetzestext' : 'Antragsmerkmale festlegen'}>
         {offen && merkmale.length > 0 && (
           <div className="fo-gesetz-merkmale">
             <strong>{merkmale.join(', ')} festlegen</strong>

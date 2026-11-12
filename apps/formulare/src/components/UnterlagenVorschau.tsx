@@ -14,7 +14,7 @@ import { Symbol } from './Symbol';
 /** Zoomstufen der Vorschau (0 = Seitenbreite) */
 export const VORSCHAU_ZOOM = [0, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 
-/** Reihenfolge der Antragsunterlagen: zuerst die Dokumente des Projektumfangs in ihrer Reihenfolge, dann der Rest */
+/** Reihenfolge der Antragsunterlagen: zuerst die Dokumente des Antragsumfangs in ihrer Reihenfolge, dann der Rest */
 export function unterlagenReihenfolge(dateien: Eintrag[], umfangDateien: string[]): Eintrag[] {
   const nurDateien = dateien.filter((d) => !d.ordner && !/^(~\$|\.~lock\.)/.test(d.pfad) && !/^(thumbs\.db|desktop\.ini)$/i.test(d.pfad));
   const rang = (d: Eintrag) => {

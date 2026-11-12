@@ -18,7 +18,7 @@ export { useAufgeklappt } from '@core/ui/ProjektUebersicht';
 function statusText(st: ProjektStatus | undefined): string {
   if (!st) return 'Antrag noch nicht geprüft';
   const gesamt = statusGesamt(st);
-  if (!gesamt) return `Projektumfang nicht festgelegt · ${st.fassung}`;
+  if (!gesamt) return `Antragsumfang nicht festgelegt · ${st.fassung}`;
   return `${st.anzahl.aktuell ?? 0}/${gesamt} aktuell · ${st.fassung}`;
 }
 
@@ -79,8 +79,8 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
     const p = nachSchluessel.get(e.schluessel);
     if (!p) return [];
     const m: UebersichtMarke[] = [];
-    if (p.info?.gesperrt) m.push({ text: `${p.info.gesperrt} geöffnet`, art: 'warnung', symbol: 'schloss', titel: 'Formulare mit Sperrdatei – in FORMA oder hier geöffnet' });
-    if (projektHatEntwuerfe(p)) m.push({ text: 'ungespeichert', art: 'hinweis', symbol: 'stift', titel: 'Hier eingegeben, aber noch nicht in die FORMA-Datei gespeichert' });
+    if (p.info?.gesperrt) m.push({ text: `${p.info.gesperrt} geöffnet`, art: 'warnung', symbol: 'schloss', titel: 'Formulare mit Sperrdatei – hier oder in einem anderen Programm geöffnet' });
+    if (projektHatEntwuerfe(p)) m.push({ text: 'ungespeichert', art: 'hinweis', symbol: 'stift', titel: 'Hier eingegeben, aber noch nicht in die Formulardatei gespeichert' });
     if (ablageGesucht && !ablageVon({ ablage, ordnerWahl }, p)) m.push({ text: 'kein Projektordner', symbol: 'ordner', titel: 'Kein Projektordner mit diesem Kürzel gefunden' });
     return m;
   };
@@ -90,7 +90,7 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
     return [
       { text: 'Öffnen', symbol: 'formular', aktion: () => oeffnen({ schluessel: projektSchluessel(p) } as UebersichtProjekt) },
       { trenner: true },
-      { text: 'FORMA-Ordner im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(p.root, p.ordner)).catch(() => undefined) },
+      { text: 'Formularordner im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(p.root, p.ordner)).catch(() => undefined) },
       { text: 'Projektordner im Explorer zeigen', symbol: 'ordner', deaktiviert: !a, aktion: () => a && void oeffnePfad(verbinde(a.root, a.pfad)).catch(() => undefined) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(p.root, p.ordner)) },
       ...(zuletztKarte ? [{ trenner: true as const }, { text: 'Aus „Zuletzt geöffnet“ entfernen', symbol: 'schliessen' as const, aktion: () => useFormulare.getState().zuletztEntfernen(p) }] : []),
@@ -115,11 +115,11 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
       }}
       status={status}
       marken={marken}
-      gruppeLeer="Keine FORMA-Projekte in diesem Ordner."
+      gruppeLeer="Keine Formularprojekte in diesem Ordner."
       leer={
         <div className="pa-leer">
           <h2>Willkommen</h2>
-          <p>Stelle zuerst ein, wo eure FORMA-Projekte liegen – danach erscheinen sie hier.</p>
+          <p>Stelle zuerst ein, wo eure Formularprojekte liegen – danach erscheinen sie hier.</p>
           <button className="primary" onClick={onEinstellungen}>
             <Symbol name="ordner" /> Ordner einstellen …
           </button>

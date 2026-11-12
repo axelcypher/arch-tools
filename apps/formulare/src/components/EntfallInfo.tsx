@@ -15,11 +15,11 @@ import { Symbol } from './Symbol';
 export interface Entfallen {
   /** entfallende Felder mit ihren Gründen (Schlüssel → Gründe) */
   gruende: Map<string, Entfall[]>;
-  /** offene Felder (hängen an nicht festgelegten Projektmerkmalen) mit ihren Gründen */
+  /** offene Felder (hängen an nicht festgelegten Antragsmerkmalen) mit ihren Gründen */
   offen: Map<string, Entfall[]>;
   /** Hinweistext zu einem entfallenden oder offenen Feld */
   text: (schluessel: string) => string;
-  /** Werte der Projektmerkmale (für die Auswahl fehlender am offenen Feld) */
+  /** Werte der Antragsmerkmale (für die Auswahl fehlender am offenen Feld) */
   merkmale: Record<string, string>;
 }
 
@@ -72,7 +72,7 @@ export function EntfallInfo({
   gruende: Entfall[];
   text: string;
   offen?: boolean;
-  /** offenes Feld: Werte der Projektmerkmale – die fehlenden lassen sich im Fenster festlegen */
+  /** offenes Feld: Werte der Antragsmerkmale – die fehlenden lassen sich im Fenster festlegen */
   merkmale?: Record<string, string>;
   /** Schlüssel der Felder, zu denen das Symbol gehört (Leerzeichen dazwischen) – F1 am Feld springt hierher */
   info?: string;

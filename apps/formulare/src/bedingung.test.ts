@@ -11,7 +11,7 @@ const und = (...t: Bedingung['teile']) => gruppe('und', t);
 const oder = (...t: Bedingung['teile']) => gruppe('oder', t);
 
 describe('Bedingungen', () => {
-  it('Projektmerkmal: einer der Werte bzw. keiner davon; fehlt der Wert im Projekt, ist sie offen und gilt als erfüllt (R-01)', () => {
+  it('Antragsmerkmal: einer der Werte bzw. keiner davon; fehlt der Wert im Projekt, ist sie offen und gilt als erfüllt (R-01)', () => {
     expect(erfuellt(und(gk345), { merkmale: { Gebäudeklasse: '3' } })).toBe(true);
     expect(erfuellt(und(gk345), { merkmale: { Gebäudeklasse: '2' } })).toBe(false);
     // Fail-safe: ein fehlendes Merkmal lässt nichts entfallen – auch nicht verneint
@@ -103,7 +103,7 @@ describe('Bedingungen', () => {
     ]);
   });
 
-  it('nur Projektmerkmale (für Dokumente des Projektumfangs)', () => {
+  it('nur Antragsmerkmale (für Dokumente des Antragsumfangs)', () => {
     const feld: Teilbedingung = { art: 'feld', feld: '0:A', pruefung: 'leer' };
     expect(nurMerkmale(und(gk345, oder(feld)))).toEqual(und(gk345, oder()));
     expect(nurMerkmale(und(feld))).toBeUndefined();
@@ -134,7 +134,7 @@ describe('Bedingungen in der Gliederung', () => {
     expect(feldErforderlich(brandschutz, a, profil, k())).toBe(true);
   });
 
-  it('Abschnitte nach Projektmerkmal – der Füllstand zählt nur erforderliche', () => {
+  it('Abschnitte nach Antragsmerkmal – der Füllstand zählt nur erforderliche', () => {
     const p: FormularProfil = { ...profil, abschnitte: { '0:-': { bedingung: und(gk345) } } };
     const wert = (f: Feld) => (f === name ? 'Muster' : f.art === 'kreuz' ? false : '');
     expect(fuellstand([a.felder], p, wert, { Gebäudeklasse: '2' })).toEqual({ gefuellt: 0, gesamt: 0 });

@@ -377,8 +377,11 @@ export interface AntragKurz {
   name: string;
   /** angelegt (JJJJ-MM-TT) */
   angelegt?: string;
-  /** eingereicht: Antragsprotokoll bzw. Eingangsbestätigung im Ordner des Antrags */
-  eingereicht?: { datei: string; /** Datum der Datei (JJJJ-MM-TT) */ datum: string };
+  /**
+   * eingereicht: Antragsprotokoll bzw. Eingangsbestätigung im Ordner des Antrags (`datei`, relativ zum Ordner) oder von
+   * Hand gesetzt (`manuell`, dann ohne Datei)
+   */
+  eingereicht?: { datei?: string; /** Datum (JJJJ-MM-TT) */ datum: string; manuell?: boolean };
 }
 
 export interface ProjectMeta {
@@ -409,7 +412,7 @@ export interface ProjectMeta {
    * `antraege`); dieser Eintrag wird nur noch gelesen und beim ersten Speichern dorthin übernommen.
    */
   merkmale?: Record<string, string>;
-  /** Der zuletzt angelegte Antrag (von Formulare gepflegt) – für die Startseiten aller Apps */
+  /** Der aktive Antrag (von Formulare gepflegt, wie dort im Projekt angezeigt) – für die Startseiten aller Apps */
   antrag?: AntragKurz;
   /** Stand des Projekts: Akquise, aktiv, abgeschlossen – fehlt = aktiv (Filter der Projektübersicht) */
   status?: ProjektStatus;

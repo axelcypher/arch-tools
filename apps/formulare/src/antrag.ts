@@ -1,6 +1,6 @@
 /**
  * Antrag und Export: Wohin die ausgefüllten Formulare als PDF kommen, wie die Dateien heißen und welche Dokumente
- * zu einem Antrag gehören (Projektumfang) – samt Prüfung, ob sie im Ordner der aktiven Antragsfassung vollständig
+ * zu einem Antrag gehören (Antragsumfang) – samt Prüfung, ob sie im Ordner der aktiven Antragsfassung vollständig
  * und aktuell vorliegen.
  *
  * Ablage im echten Projektordner (einstellbar): `<Projekt>/TÖB/BAUA` – bei mehreren Fassungen `BAUA 2`, `BAUA3` …,
@@ -92,7 +92,7 @@ export interface NamensAngaben {
   phase: string;
   datum: Date;
   nr?: string;
-  /** Name des Dokuments (Titel im Projektumfang, sonst der Name des Formulars) */
+  /** Name des Dokuments (Titel im Antragsumfang, sonst der Name des Formulars) */
   name: string;
   /** Dateiname des Formulars ohne Endung */
   formular?: string;
@@ -112,8 +112,8 @@ export const PLATZHALTER: { name: string; text: string }[] = [
   { name: '{Kürzel}', text: 'Projektkürzel, z. B. BS9' },
   { name: '{Phase}', text: 'Phasenkürzel (BP, EP, GP, AP)' },
   { name: '{Datum}', text: 'Datum des Exports als JJMMTT' },
-  { name: '{Nr}', text: 'Nummer im Projektumfang (entfällt, wenn leer)' },
-  { name: '{Name}', text: 'Titel im Projektumfang, sonst Name des Formulars' },
+  { name: '{Nr}', text: 'Nummer im Antragsumfang (entfällt, wenn leer)' },
+  { name: '{Name}', text: 'Titel im Antragsumfang, sonst Name des Formulars' },
   { name: '{Art}', text: 'Antragsart der aktiven Fassung, z. B. BAUA (Pflicht im Antragsordner)' },
   { name: '{Antrag}', text: 'aktive Antragsfassung, z. B. BAUA 2' },
   { name: '{Formular}', text: 'Dateiname des Formulars' },
@@ -192,7 +192,7 @@ export function naechsteFassung(fassungen: Fassung[], art: string): string {
   return `${art.toUpperCase()} ${Math.max(...da.map((f) => f.nr)) + 1}`;
 }
 
-/* ---------- Katalog und Projektumfang ---------- */
+/* ---------- Katalog und Antragsumfang ---------- */
 
 export type DokArt = 'intern' | 'extern';
 
@@ -209,7 +209,7 @@ export interface KatalogEintrag {
   muster?: string;
   /** früher: in neuen Projekten vorgewählt – heute bestimmen die Antragsvorlagen, was dazugehört (nur noch zum Übernehmen) */
   vorgewaehlt: boolean;
-  /** nur erforderlich, wenn die Projektmerkmale zutreffen (z. B. Gebäudeklasse 3–5) */
+  /** nur erforderlich, wenn die Antragsmerkmale zutreffen (z. B. Gebäudeklasse 3–5) */
   bedingung?: Bedingung;
 }
 
@@ -300,7 +300,7 @@ export function katalogAus(roh: unknown): KatalogEintrag[] {
     }));
 }
 
-/** Dokument im Projektumfang eines Projekts */
+/** Dokument im Antragsumfang eines Projekts */
 export interface UmfangEintrag {
   id: string;
   titel: string;
@@ -314,14 +314,14 @@ export interface UmfangEintrag {
   formularDatei?: string;
   /** verknüpfte Datei je Antragsfassung (Dateiname im Ordner der Fassung) */
   dateien?: Record<string, string>;
-  /** nur erforderlich, wenn die Projektmerkmale zutreffen */
+  /** nur erforderlich, wenn die Antragsmerkmale zutreffen */
   bedingung?: Bedingung;
 }
 
 /** Angaben der App zum Projekt – Abschnitt „formulare“ der Projektdatei (.oap), für alle im Büro gleich */
 /**
- * Angaben der App zum Projekt, wie sie die Oberfläche sieht: die Werte des **aktiven Antrags** (`ansicht`) – Projektumfang,
- * Projektmerkmale, Autofill-Zustände – und dazu alle Anträge (`antraege`), wie sie in der Projektdatei stehen.
+ * Angaben der App zum Projekt, wie sie die Oberfläche sieht: die Werte des **aktiven Antrags** (`ansicht`) – Antragsumfang,
+ * Antragsmerkmale, Autofill-Zustände – und dazu alle Anträge (`antraege`), wie sie in der Projektdatei stehen.
  * Gespeichert wird im Abschnitt „formulare“ nur `aktiveFassung` und `antraege` (siehe `abschnittVon`).
  */
 export interface ProjektDatei {
@@ -329,9 +329,9 @@ export interface ProjektDatei {
   aktiveFassung?: string;
   /** Antrag, dessen Werte hier stehen (umfang, merkmale, felder) */
   ansicht?: string;
-  /** Projektumfang; fehlt = nicht festgelegt (keine Vollständigkeitsprüfung) */
+  /** Antragsumfang; fehlt = nicht festgelegt (keine Vollständigkeitsprüfung) */
   umfang?: UmfangEintrag[];
-  /** Projektmerkmale (Gebäudeklasse, Sonderbau …): Name → Wert, gilt für alle Formulare */
+  /** Antragsmerkmale (Gebäudeklasse, Sonderbau …): Name → Wert, gilt für alle Formulare */
   merkmale?: Record<string, string>;
   /** Autofill: je Formulardatei Auto-Wert und manuelle Überschreibung der Felder (siehe autofill.ts) */
   felder?: Zustaende;
@@ -349,15 +349,39 @@ export interface AntragDaten {
   umfang?: UmfangEintrag[];
   felder?: Zustaende;
   bereit?: BereitEintrag[];
-  /** Antragsprotokoll bzw. Eingangsbestätigung im Ordner des Antrags */
+  /** Antragsprotokoll bzw. Eingangsbestätigung im Ordner des Antrags (erkannt) */
   eingereicht?: { datei: string; datum: string };
+  /** von Hand gesetzter Status – gilt statt der Erkennung (fehlt = automatisch) */
+  status?: AntragStatusManuell;
+}
+
+/** Von Hand gesetzter Antragsstatus: eingereicht (mit Datum) oder ausdrücklich noch in Arbeit */
+export interface AntragStatusManuell {
+  eingereicht: boolean;
+  /** Tag der Einreichung (JJJJ-MM-TT) */
+  datum?: string;
+}
+
+/** Wirksamer Stand „eingereicht“ eines Antrags: von Hand gesetzt vor erkannt; null = in Arbeit */
+export function eingereichtVon(a: AntragDaten | undefined): { datei?: string; datum: string; manuell?: true } | null {
+  if (!a) return null;
+  if (a.status) return a.status.eingereicht ? { datum: a.status.datum ?? a.eingereicht?.datum ?? tagVon(new Date()), manuell: true } : null;
+  return a.eingereicht ?? null;
+}
+
+/** Kurzfassung eines Antrags für die Startseiten (`meta.antrag`) */
+export function antragKurzVon(antraege: Record<string, AntragDaten>, name: string): AntragKurz | null {
+  const d = antraege[name];
+  if (!d) return null;
+  const e = eingereichtVon(d);
+  return { name, ...(d.angelegt ? { angelegt: d.angelegt } : {}), ...(e ? { eingereicht: e } : {}) };
 }
 
 /** Gespeicherter Abschnitt „formulare“: aktive Fassung und die Anträge; `alt` = Angaben aus der Zeit vor den Anträgen */
 export interface Abschnitt {
   aktiveFassung?: string;
   antraege: Record<string, AntragDaten>;
-  /** früher projektweit (Projektumfang, Merkmale, Autofill) – wird in die vorhandenen Anträge übernommen */
+  /** früher projektweit (Antragsumfang, Merkmale, Autofill) – wird in die vorhandenen Anträge übernommen */
   alt?: AntragDaten;
 }
 
@@ -421,11 +445,14 @@ function antragDatenAus(roh: unknown): AntragDaten {
   if (p.bereit?.x) a.bereit = p.bereit.x;
   const e = o.eingereicht as Record<string, unknown> | undefined;
   if (e && typeof e === 'object' && typeof e.datei === 'string' && e.datei && typeof e.datum === 'string' && TAG.test(e.datum)) a.eingereicht = { datei: e.datei, datum: e.datum };
+  const st = o.status as Record<string, unknown> | undefined;
+  if (st && typeof st === 'object' && typeof st.eingereicht === 'boolean')
+    a.status = { eingereicht: st.eingereicht, ...(st.eingereicht && typeof st.datum === 'string' && TAG.test(st.datum) ? { datum: st.datum } : {}) };
   return a;
 }
 
 /**
- * Abschnitt „formulare“ lesen. Ältere Projektdateien hatten Projektumfang, Autofill (im Abschnitt) und Projektmerkmale
+ * Abschnitt „formulare“ lesen. Ältere Projektdateien hatten Antragsumfang, Autofill (im Abschnitt) und Antragsmerkmale
  * (`meta.merkmale`) für das ganze Projekt: Sie kommen nach `alt` und werden in die vorhandenen Anträge übernommen;
  * die „bereit“-Markierungen waren schon je Fassung.
  */
@@ -451,7 +478,7 @@ export function abschnittAus(roh: unknown, metaMerkmale?: Record<string, string>
   return a;
 }
 
-/** Neuer Antrag: die Vorgabewerte der Projektmerkmale (globales Preset), sonst leer */
+/** Neuer Antrag: die Vorgabewerte der Antragsmerkmale (globales Preset), sonst leer */
 export function neuerAntrag(vorgaben: Record<string, string>, angelegt: string): AntragDaten {
   return { angelegt, ...(Object.keys(vorgaben).length ? { merkmale: { ...vorgaben } } : {}) };
 }
@@ -505,7 +532,7 @@ export function abschnittVon(pd: ProjektDatei): Record<string, unknown> {
 }
 
 /**
- * Der zuletzt angelegte Antrag (für die Startseiten): nach `angelegt`, bei gleichem Tag bzw. ohne Datum nach der
+ * Der zuletzt angelegte Antrag: nach `angelegt`, bei gleichem Tag bzw. ohne Datum nach der
  * Reihenfolge der Fassungen (`reihe`, z. B. BAUVA, BAUA, BAUA 2) – die spätere gewinnt.
  */
 export function aktuellsterAntrag(antraege: Record<string, AntragDaten>, reihe: string[] = []): AntragKurz | null {
@@ -534,12 +561,12 @@ export const EINGEREICHT_TIEFE = 6;
  * Office-Sperrdateien ausgenommen); `datei` ist der Pfad relativ zum Ordner des Antrags.
  */
 export function eingereichtAus(dateien: Eintrag[]): { datei: string; datum: string } | null {
-  const treffer = dateien
-    .filter((d) => !d.ordner && !istArchiv(d.pfad) && !/^(~\$|\.~lock\.)/.test(d.pfad.split('/').pop() ?? '') && EINGEREICHT_MUSTER.test(d.pfad.split('/').pop() ?? ''))
-    .sort((a, b) => (b.geaendert ?? 0) - (a.geaendert ?? 0));
-  const d = treffer[0];
+  const d = neueste(dateien.filter((d) => !d.ordner && !istArchiv(d.pfad) && !/^(~\$|\.~lock\.)/.test(d.pfad.split('/').pop() ?? '') && EINGEREICHT_MUSTER.test(d.pfad.split('/').pop() ?? '')));
   if (!d) return null;
-  return { datei: d.pfad, datum: tagVon(d.geaendert ? new Date(d.geaendert) : new Date()) };
+  // Datum: aus dem Namen („… 261103 Eingangsbestätigung.pdf“), sonst die Änderungszeit
+  const n = datumAusName(d.pfad);
+  const datum = n ? `${Math.floor(n.tag / 10000)}-${String(Math.floor(n.tag / 100) % 100).padStart(2, '0')}-${String(n.tag % 100).padStart(2, '0')}` : tagVon(d.geaendert ? new Date(d.geaendert) : new Date());
+  return { datei: d.pfad, datum };
 }
 
 /* ---------- Dokumente im Antragsordner: Namensformat und „bereit“ ---------- */
@@ -585,12 +612,12 @@ export function bereitschaft(datei: Pick<Eintrag, 'pfad' | 'geaendert'>, markier
   return 'bereit';
 }
 
-/** Projektumfang aus den vorgewählten Einträgen des Katalogs */
-/** Projektumfang aus Katalogeinträgen (ohne Vorlage: die früher vorgewählten) */
+/** Antragsumfang aus den vorgewählten Einträgen des Katalogs */
+/** Antragsumfang aus Katalogeinträgen (ohne Vorlage: die früher vorgewählten) */
 export const umfangAusKatalog = (katalog: KatalogEintrag[], vorlage?: AntragsVorlage): UmfangEintrag[] =>
   (vorlage ? dokumenteDerVorlage(katalog, vorlage) : katalog.filter((k) => k.vorgewaehlt)).map(alsUmfang);
 
-/** Katalogeintrag als Dokument des Projektumfangs */
+/** Katalogeintrag als Dokument des Antragsumfangs */
 export const alsUmfang = ({ id, titel, art, formular, quelle, muster, bedingung }: KatalogEintrag): UmfangEintrag => ({ id, titel, art, formular, quelle, muster, ...(hatBedingung(bedingung) ? { bedingung } : {}) });
 
 /* ---------- Ordner im Projektordner: Schreibweisen ---------- */
@@ -645,11 +672,110 @@ export function passt(name: string, muster: string): boolean {
 
 const nurName = (pfad: string) => pfad.split('/').pop() ?? pfad;
 
+/* ---------- Stand einer Datei: Datum im Namen vor Änderungszeit ---------- */
+
+/** Datum aus einem Dateinamen: Tag als JJJJMMTT, dazu die Uhrzeit HHMM, wenn sie dabeisteht */
+export interface NamensDatum {
+  tag: number;
+  zeit?: number;
+}
+
+const gueltig = (j: number, m: number, t: number) => m >= 1 && m <= 12 && t >= 1 && t <= 31 && j >= 1990 && j <= 2099;
+const tagZahl = (j: number, m: number, t: number) => j * 10000 + m * 100 + t;
+const zeitZahl = (h?: string, min?: string) => (h !== undefined && min !== undefined && Number(h) < 24 && Number(min) < 60 ? Number(h) * 100 + Number(min) : undefined);
+
+/**
+ * Das Datum im Dateinamen – so, wie es die Büros schreiben: „BS9 BAUA 261110 Bauantrag“ (JJMMTT, auch mit Uhrzeit
+ * „261110_1430“), „20261110“, „2026-11-10“ oder „10.11.2026“. Es zählt das erste Datum im Namen; ein Projektcode am
+ * Anfang (`codes`, z. B. eine sechsstellige Projektnummer) wird übergangen. null, wenn keins darin steht.
+ */
+export function datumAusName(name: string, codes: string[] = []): NamensDatum | null {
+  let t = nurName(name).replace(/\.[^.]+$/, '');
+  const code = codes.map((c) => c.trim()).find((c) => c && t.toLowerCase().startsWith(c.toLowerCase()) && !/[\dA-Za-z]/.test(t.charAt(c.length)));
+  if (code) t = ' '.repeat(code.length) + t.slice(code.length);
+  const kandidaten: { pos: number; d: NamensDatum }[] = [];
+  const muster: [RegExp, (m: RegExpExecArray) => NamensDatum | null][] = [
+    // 2026-11-10, auch mit Uhrzeit 2026-11-10 14-30 / T14:30
+    [
+      /(?<!\d)(\d{4})-(\d{2})-(\d{2})(?:[ T_-](\d{2})[:.-]?(\d{2}))?(?!\d)/g,
+      (m) => (gueltig(+m[1], +m[2], +m[3]) ? { tag: tagZahl(+m[1], +m[2], +m[3]), ...(zeitZahl(m[4], m[5]) !== undefined ? { zeit: zeitZahl(m[4], m[5]) } : {}) } : null),
+    ],
+    // 10.11.2026 bzw. 10.11.26
+    [
+      /(?<!\d)(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})(?!\d)/g,
+      (m) => {
+        const j = m[3].length === 2 ? 2000 + +m[3] : +m[3];
+        return gueltig(j, +m[2], +m[1]) ? { tag: tagZahl(j, +m[2], +m[1]) } : null;
+      },
+    ],
+    // 20261110, auch 20261110_1430
+    [
+      /(?<!\d)((?:19|20)\d{2})(\d{2})(\d{2})(?:[_-](\d{2})(\d{2}))?(?!\d)/g,
+      (m) => (gueltig(+m[1], +m[2], +m[3]) ? { tag: tagZahl(+m[1], +m[2], +m[3]), ...(zeitZahl(m[4], m[5]) !== undefined ? { zeit: zeitZahl(m[4], m[5]) } : {}) } : null),
+    ],
+    // 261110, auch 261110_1430
+    [
+      /(?<!\d)(\d{2})(\d{2})(\d{2})(?:[_-](\d{2})(\d{2}))?(?!\d)/g,
+      (m) => (gueltig(2000 + +m[1], +m[2], +m[3]) ? { tag: tagZahl(2000 + +m[1], +m[2], +m[3]), ...(zeitZahl(m[4], m[5]) !== undefined ? { zeit: zeitZahl(m[4], m[5]) } : {}) } : null),
+    ],
+  ];
+  for (const [re, lesen] of muster)
+    for (let m = re.exec(t); m; m = re.exec(t)) {
+      const d = lesen(m);
+      if (d && !kandidaten.some((k) => m!.index >= k.pos && m!.index < k.pos + 10)) kandidaten.push({ pos: m.index, d });
+    }
+  return kandidaten.sort((a, b) => a.pos - b.pos)[0]?.d ?? null;
+}
+
+/** Tag einer Änderungszeit (ms) als JJJJMMTT in Ortszeit */
+const tagDerZeit = (ms: number) => {
+  const d = new Date(ms);
+  return tagZahl(d.getFullYear(), d.getMonth() + 1, d.getDate());
+};
+
+/**
+ * Welche Datei ist neuer? Maßstab ist zuerst das Datum im Namen (das setzt man beim Erstellen einer Fassung bewusst),
+ * erst danach die Änderungszeit – sie ändert sich auch, wenn eine Datei nur noch einmal gespeichert wird.
+ *  - Beide mit Datum im Namen: das Datum entscheidet (mit Uhrzeit, wenn beide eine haben); gleich = gleicher Stand.
+ *  - Nur eine mit Datum: verglichen mit dem Tag der Änderungszeit der anderen; am selben Tag die Änderungszeit.
+ *  - Keine: die Änderungszeit.
+ * Liefert > 0, wenn `a` neuer ist, < 0, wenn `b` neuer ist, 0 bei gleichem Stand.
+ */
+export function standVergleich(a: Pick<Eintrag, 'pfad' | 'geaendert'>, b: Pick<Eintrag, 'pfad' | 'geaendert'>, codes: string[] = []): number {
+  const na = datumAusName(a.pfad, codes);
+  const nb = datumAusName(b.pfad, codes);
+  if (na && nb) {
+    if (na.tag !== nb.tag) return na.tag - nb.tag;
+    if (na.zeit !== undefined && nb.zeit !== undefined && na.zeit !== nb.zeit) return na.zeit - nb.zeit;
+    return 0;
+  }
+  return standGegenZeit(na, a.geaendert, nb, b.geaendert);
+}
+
+/** Vergleich, wenn höchstens eine Seite ein Datum im Namen hat (sonst `standVergleich`) */
+function standGegenZeit(na: NamensDatum | null, za: number | undefined, nb: NamensDatum | null, zb: number | undefined): number {
+  if (na || nb) {
+    const ta = na?.tag ?? (za ? tagDerZeit(za) : null);
+    const tb = nb?.tag ?? (zb ? tagDerZeit(zb) : null);
+    if (ta !== null && tb !== null && ta !== tb) return ta - tb;
+  }
+  return (za ?? 0) - (zb ?? 0);
+}
+
+/** Die neueste Datei (nach `standVergleich`, bei gleichem Stand die zuletzt geänderte) */
+export function neueste<T extends Pick<Eintrag, 'pfad' | 'geaendert'>>(dateien: T[], codes: string[] = []): T | null {
+  return dateien.reduce<T | null>((best, d) => {
+    if (!best) return d;
+    const v = standVergleich(d, best, codes);
+    return v > 0 || (v === 0 && (d.geaendert ?? 0) > (best.geaendert ?? 0)) ? d : best;
+  }, null);
+}
+
 /**
  * Die Datei eines Dokuments im Ordner der Antragsfassung: ausdrücklich verknüpft, sonst nach Muster bzw. Titel
- * (PDF bevorzugt, bei mehreren die neueste).
+ * (PDF bevorzugt, bei mehreren die neueste – nach dem Datum im Namen, sonst der Änderungszeit).
  */
-export function dateiImAntrag(u: UmfangEintrag, dateien: Eintrag[], fassung: string): Eintrag | null {
+export function dateiImAntrag(u: UmfangEintrag, dateien: Eintrag[], fassung: string, codes: string[] = []): Eintrag | null {
   const nurDateien = dateien.filter((d) => !d.ordner);
   const verknuepft = u.dateien?.[fassung];
   if (verknuepft) {
@@ -658,14 +784,15 @@ export function dateiImAntrag(u: UmfangEintrag, dateien: Eintrag[], fassung: str
   }
   const kandidaten = nurDateien.filter((d) => passt(nurName(d.pfad), u.muster || u.titel) || (u.art === 'intern' && !!u.formular && passt(nurName(d.pfad), u.formular)));
   const pdfs = kandidaten.filter((d) => /\.pdf$/i.test(d.pfad));
-  const auswahl = pdfs.length ? pdfs : kandidaten;
-  return auswahl.reduce<Eintrag | null>((best, d) => (!best || (d.geaendert ?? 0) > (best.geaendert ?? 0) ? d : best), null);
+  return neueste(pdfs.length ? pdfs : kandidaten, codes);
 }
 
-/** Quelle eines externen Dokuments (z. B. die Berechnung) – die neueste passende Datei */
-export function quelleVon(u: UmfangEintrag, dateien: Eintrag[]): Eintrag | null {
-  const passend = dateien.filter((d) => !d.ordner && !/^~\$/.test(nurName(d.pfad)) && passt(nurName(d.pfad), u.muster || u.titel));
-  return passend.reduce<Eintrag | null>((best, d) => (!best || (d.geaendert ?? 0) > (best.geaendert ?? 0) ? d : best), null);
+/** Quelle eines externen Dokuments (z. B. die Berechnung) – die neueste passende Datei (nach dem Datum im Namen, sonst der Änderungszeit) */
+export function quelleVon(u: UmfangEintrag, dateien: Eintrag[], codes: string[] = []): Eintrag | null {
+  return neueste(
+    dateien.filter((d) => !d.ordner && !/^~\$/.test(nurName(d.pfad)) && passt(nurName(d.pfad), u.muster || u.titel)),
+    codes,
+  );
 }
 
 /** Das Formular eines internen Dokuments im FORMA-Projekt: zugeordnet, sonst nach Name oder Kennung */
@@ -682,12 +809,12 @@ export function formularVon<T extends { pfad: string; name: string; kennung?: st
 
 /**
  * grau: fehlt · rot: unvollständig · gelb: ausgefüllt, aber nicht (aktuell) im Antragsordner · grün: aktuell ·
- * entfällt: nach den Projektmerkmalen nicht erforderlich
+ * entfällt: nach den Antragsmerkmalen nicht erforderlich
  */
 export type Status = 'fehlt' | 'unvollstaendig' | 'offen' | 'aktuell' | 'entfaellt';
 
 export const STATUS_TEXT: Record<Status, string> = {
-  entfaellt: 'nicht erforderlich (Projektmerkmale)',
+  entfaellt: 'nicht erforderlich (Antragsmerkmale)',
   fehlt: 'fehlt',
   unvollstaendig: 'nicht vollständig ausgefüllt',
   offen: 'noch nicht (aktuell) im Antragsordner',
@@ -700,7 +827,7 @@ export type ZaehlStatus = (typeof STATUS_REIHE)[number];
 
 /** Antragsstatus eines Projekts, berechnet, als es zuletzt geöffnet war – für die Projektübersicht */
 export interface ProjektStatus {
-  /** Dokumente je Status (ohne „entfällt“); leer = kein Projektumfang festgelegt */
+  /** Dokumente je Status (ohne „entfällt“); leer = kein Antragsumfang festgelegt */
   anzahl: Partial<Record<ZaehlStatus, number>>;
   /** aktive Antragsfassung, z. B. „BAUA 2“ */
   fassung: string;
@@ -718,7 +845,7 @@ export function projektStatusAus(status: Status[], fassung: string, zeit: number
 
 export const statusGesamt = (p: ProjektStatus) => STATUS_REIHE.reduce((n, st) => n + (p.anzahl[st] ?? 0), 0);
 
-/** Der schlimmste Status (für den Farbpunkt); null ohne Projektumfang */
+/** Der schlimmste Status (für den Farbpunkt); null ohne Antragsumfang */
 export function schlimmsterStatus(p: ProjektStatus): ZaehlStatus | null {
   for (const st of [...STATUS_REIHE].reverse()) if (p.anzahl[st]) return st;
   return null;
@@ -750,7 +877,7 @@ export interface Fuellstand {
 
 /**
  * Füllstand eines Formulars wie in der Gliederung: nur angezeigte und erforderliche Abschnitte, Einheiten nach dem
- * Profil ohne die, deren Bedingung (Projektmerkmal, anderes Feld) nicht zutrifft
+ * Profil ohne die, deren Bedingung (Antragsmerkmal, anderes Feld) nicht zutrifft
  */
 export function fuellstand(felder: Feld[][], profil: FormularProfil, wert: (f: Feld) => string | boolean, merkmale: Record<string, string> = {}): Fuellstand {
   const k = formularKontext(merkmale, felder.flat(), wert);
@@ -768,21 +895,33 @@ export function fuellstand(felder: Feld[][], profil: FormularProfil, wert: (f: F
   return { gefuellt, gesamt };
 }
 
-/** Ist ein Dokument des Projektumfangs nach den Projektmerkmalen erforderlich? */
+/** Ist ein Dokument des Antragsumfangs nach den Antragsmerkmalen erforderlich? */
 export const umfangErforderlich = (u: Pick<UmfangEintrag, 'bedingung'>, merkmale: Record<string, string>) => erfuellt(u.bedingung, { merkmale });
 
 /**
- * Status eines Formulars: unvollständig, solange nicht alle Angaben gemacht sind; sonst aktuell, wenn die PDF
- * im Antragsordner nach der letzten Änderung (Datei oder ungespeicherte Eingaben) entstanden ist.
+ * Status eines Formulars: unvollständig, solange nicht alle Angaben gemacht sind; sonst aktuell, wenn die PDF im
+ * Antragsordner nicht älter ist als die letzte Änderung am Formular (Datei oder ungespeicherte Eingaben). Die PDF
+ * zählt mit dem Datum in ihrem Namen („BS9 BAUA 261110 …“): liegt es nach dem Tag der Änderung, ist sie aktuell,
+ * davor nicht; am selben Tag (oder ohne Datum im Namen) entscheidet die Änderungszeit.
  */
-export function formularStatus(f: Fuellstand, letzteAenderung: number, pdf: Eintrag | null): Status {
+export function formularStatus(f: Fuellstand, letzteAenderung: number, pdf: Eintrag | null, codes: string[] = []): Status {
   if (f.gefuellt < f.gesamt) return 'unvollstaendig';
   if (!pdf) return 'offen';
-  return (pdf.geaendert ?? 0) >= letzteAenderung || !pdf.geaendert ? 'aktuell' : 'offen';
+  if (!pdf.geaendert && !datumAusName(pdf.pfad, codes)) return 'aktuell';
+  return standGegenZeit(datumAusName(pdf.pfad, codes), pdf.geaendert, null, letzteAenderung) >= 0 ? 'aktuell' : 'offen';
 }
 
-/** Status eines externen Dokuments: aktuell, wenn die Datei im Antragsordner nicht älter ist als ihre Quelle */
-export function externStatus(quelle: Eintrag | null, datei: Eintrag | null): Status {
-  if (datei) return !quelle || !quelle.geaendert || !datei.geaendert || datei.geaendert >= quelle.geaendert ? 'aktuell' : 'offen';
+/**
+ * Status eines externen Dokuments: aktuell, wenn die Datei im Antragsordner nicht älter ist als ihre Quelle – nach
+ * dem Datum im Namen (gleiches Datum = gleicher Stand, auch wenn die Quelle danach noch einmal gespeichert wurde),
+ * sonst nach der Änderungszeit.
+ */
+export function externStatus(quelle: Eintrag | null, datei: Eintrag | null, codes: string[] = []): Status {
+  if (datei) {
+    if (!quelle) return 'aktuell';
+    const mitDatum = datumAusName(quelle.pfad, codes) || datumAusName(datei.pfad, codes);
+    if (!mitDatum && (!quelle.geaendert || !datei.geaendert)) return 'aktuell';
+    return standVergleich(datei, quelle, codes) >= 0 ? 'aktuell' : 'offen';
+  }
   return quelle ? 'offen' : 'fehlt';
 }

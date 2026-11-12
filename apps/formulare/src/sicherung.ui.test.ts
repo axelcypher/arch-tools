@@ -54,7 +54,7 @@ const zeigen = async () => {
 
 describe('Einstellungen › Sichern & Übertragen', () => {
   it('exportieren und auf einem anderen Rechner einspielen – Ordnerpfade bleiben, wenn nicht angehakt', async () => {
-    // Rechner A: Gliederung, Projektmerkmale und Ordner eingestellt
+    // Rechner A: Gliederung, Antragsmerkmale und Ordner eingestellt
     useFormulare.getState().profilSetzen('nw019999|2026A', PROFIL);
     useAntrag.getState().setMerkmalDefinitionen([{ name: 'Gebäudeklasse', werte: ['1', '2', '3', '4', '5'] }, { name: 'Denkmal', werte: ['ja', 'nein'] }]);
     await zeigen();
@@ -77,7 +77,7 @@ describe('Einstellungen › Sichern & Übertragen', () => {
     const haken = [...gruppe.querySelectorAll('label')].map((l) => [l.textContent, l.querySelector('input')!.checked]);
     expect(haken).toEqual([
       ['Gliederung der Formulare (Titel, Gruppen, Bedingungen)', true],
-      ['Projektmerkmale', true],
+      ['Antragsmerkmale', true],
       ['Ordner, angezeigte Pfade, Projektdatei, Ansicht', false],
     ]);
     await klick(knopf('Übernehmen'));

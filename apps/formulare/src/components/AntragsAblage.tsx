@@ -44,7 +44,7 @@ const ZEICHEN: Record<Bereitschaft, string> = { bereit: '✓', offen: '○', nam
 /**
  * Projektordner, Ansicht „Antrag“: nur die Dokumente im Ordner der aktiven Antragsfassung (z. B. TÖB/BAUA 2) mit
  * Vollständigkeit. „Bereit“ markiert man von Hand – nur Dateien im Namensformat `<Projektcode> <Antragsart> <JJMMTT> …`;
- * wird eine Datei danach geändert, gilt sie nicht mehr als bereit. Dazu die Dokumente des Projektumfangs, die im
+ * wird eine Datei danach geändert, gilt sie nicht mehr als bereit. Dazu die Dokumente des Antragsumfangs, die im
  * Antragsordner noch fehlen.
  */
 export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {

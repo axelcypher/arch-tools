@@ -24,7 +24,7 @@ function Karte({ titel, text, children }: { titel: string; text?: ReactNode; chi
 /**
  * Einstellungen für Antrag und Export: wo die Anträge im Projektordner liegen, welche Antragsarten es gibt, wie
  * exportierte PDFs heißen und wohin sie kommen, und die grundlegende Liste der Antragsdokumente. Alles gilt für
- * alle Projekte; Abweichungen je Projekt stehen in der Projektkarte unter „Projektumfang“.
+ * alle Projekte; Abweichungen je Projekt stehen in der Projektkarte unter „Antragsumfang“.
  */
 export function AntragEinstellungen() {
   const e = useAntrag((s) => s.einstellungen);
@@ -47,7 +47,7 @@ export function AntragEinstellungen() {
       <h2>Antrag & Export</h2>
       <p className="muted">
         Ausgefüllte Formulare lassen sich als PDF exportieren – in den Ordner der aktiven Antragsfassung (z. B. <code>TÖB\BAUA 2</code>) oder an jeden anderen Ort. Was zu einem
-        Antrag gehört, wird je Projekt in der Projektkarte unter „Projektumfang“ ausgewählt; daran prüft die App, ob alles vollständig und aktuell vorliegt. Abweichungen je
+        Antrag gehört, wird je Projekt in der Projektkarte unter „Antragsumfang“ ausgewählt; daran prüft die App, ob alles vollständig und aktuell vorliegt. Abweichungen je
         Projekt lassen sich dort ebenfalls einstellen.
       </p>
 
@@ -129,12 +129,12 @@ export function AntragEinstellungen() {
             <input value={e.berechnungsordner} onChange={(x) => setEinstellungen({ berechnungsordner: x.target.value })} aria-label="Berechnungsordner" placeholder="Planung/Berechnungen" />
           </label>
           <label>
-            <span className="field-label">Vorlagen für neue Formulare (leere FORMA-Formulare)</span>
+            <span className="field-label">Vorlagen für neue Formulare (leere Formulare)</span>
             <span className="es-zeile">
               <input value={e.vorlagenordner} onChange={(x) => setEinstellungen({ vorlagenordner: x.target.value })} aria-label="Vorlagenordner" placeholder="leer = aus anderen Projekten" />
               <button
                 onClick={async () => {
-                  const p = await waehleOrdner('Ordner mit leeren FORMA-Formularen');
+                  const p = await waehleOrdner('Ordner mit leeren Formularen');
                   if (p) setEinstellungen({ vorlagenordner: p });
                 }}
               >
@@ -144,14 +144,14 @@ export function AntragEinstellungen() {
           </label>
         </div>
         <p className="muted small-text">
-          Fehlt ein Formular des Projektumfangs, legt ein Klick darauf es an: aus dem Vorlagenordner oder – ohne Vorlagenordner – als Kopie des neuesten passenden Formulars aus
+          Fehlt ein Formular des Antragsumfangs, legt ein Klick darauf es an: aus dem Vorlagenordner oder – ohne Vorlagenordner – als Kopie des neuesten passenden Formulars aus
           einem anderen Projekt, mit geleerten Eingaben.
         </p>
       </Karte>
 
       <Karte
-        titel="Projektmerkmale"
-        text="Merkmale eines Antrags, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Jeder Antrag hat seine eigenen Werte (im Projektumfang gewählt); ein neuer Antrag übernimmt einmalig die Vorgabe – spätere Änderungen hier ändern bestehende Anträge nicht. Bedingungen stellst du in der Gliederung (Anpassen) und im Katalog ein."
+        titel="Antragsmerkmale"
+        text="Merkmale eines Antrags, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Jeder Antrag hat seine eigenen Werte (im Antragsumfang gewählt); ein neuer Antrag übernimmt einmalig die Vorgabe – spätere Änderungen hier ändern bestehende Anträge nicht. Bedingungen stellst du in der Gliederung (Anpassen) und im Katalog ein."
       >
         <table className="es-tabelle es-katalog" data-sortier-liste="">
           <thead>
@@ -225,7 +225,7 @@ export function AntragEinstellungen() {
 
       <Karte
         titel="Antragsvorlagen"
-        text="Zusammenstellungen der Antragsdokumente je Art von Antrag. Beim Festlegen des Projektumfangs wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen (z. B. BAUA → Bauantrag). Welche Dokumente dazugehören, kreuzt du unten im Katalog in der Spalte der Vorlage an; die Reihenfolge ist die des Katalogs."
+        text="Zusammenstellungen der Antragsdokumente je Art von Antrag. Beim Festlegen des Antragsumfangs wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen (z. B. BAUA → Bauantrag). Welche Dokumente dazugehören, kreuzt du unten im Katalog in der Spalte der Vorlage an; die Reihenfolge ist die des Katalogs."
       >
         <table className="es-tabelle es-katalog es-vorlagen" data-sortier-liste="">
           <thead>
@@ -278,7 +278,7 @@ export function AntragEinstellungen() {
 
       <Karte
         titel="Antragsdokumente (Katalog)"
-        text="Alle Dokumente, die in einem Antrag vorkommen können – je Vorlage angekreuzt, was dazugehört; die übrigen lassen sich je Projekt hinzunehmen. Intern: Formular aus FORMA (Teil des Namens oder Kennung). Extern: Datei aus dem Projektordner (Ordner der Quelle und Muster mit * und ?, mehrere mit „;“). Die Reihenfolge gilt auch für den Projektumfang."
+        text="Alle Dokumente, die in einem Antrag vorkommen können – je Vorlage angekreuzt, was dazugehört; die übrigen lassen sich je Projekt hinzunehmen. Intern: Formular des Projekts (Teil des Namens oder Kennung). Extern: Datei aus dem Projektordner (Ordner der Quelle und Muster mit * und ?, mehrere mit „;“). Die Reihenfolge gilt auch für den Antragsumfang."
       >
         <table className="es-tabelle es-katalog" data-sortier-liste="">
           <thead>
@@ -293,7 +293,7 @@ export function AntragEinstellungen() {
                   {v.name}
                 </th>
               ))}
-              <th title="nur erforderlich, wenn die Projektmerkmale zutreffen">Nur wenn</th>
+              <th title="nur erforderlich, wenn die Antragsmerkmale zutreffen">Nur wenn</th>
               <th />
             </tr>
           </thead>
@@ -309,7 +309,7 @@ export function AntragEinstellungen() {
                   </td>
                   <td>
                     <select value={k.art} onChange={(x) => zeileSetzen(i, { art: x.target.value as KatalogEintrag['art'] })} aria-label="Art">
-                      <option value="intern">intern (FORMA)</option>
+                      <option value="intern">intern (Formular)</option>
                       <option value="extern">extern (Datei)</option>
                     </select>
                   </td>

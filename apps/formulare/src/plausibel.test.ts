@@ -92,7 +92,7 @@ describe('Plausibilität', () => {
     expect(pruefen(bytes, 'nw010005|2026I', { Sonderbau: 'nein' }).map((x) => x.art)).toEqual(['fehler']);
   });
 
-  it('Abweichung zwischen Projektmerkmal und Formular (U-05)', () => {
+  it('Abweichung zwischen Antragsmerkmal und Formular (U-05)', () => {
     const m = pruefen(nw010001Leer({ '0:CheckBox4': true }), 'nw010001|2026I', { Gebäudeklasse: '3' });
     expect(m).toEqual([{ art: 'hinweis', text: 'Projekt: GK 3, Formular: GK 1', felder: ['0:CheckBox4'], abschnitt: '0:Panel8' }]);
     // passt oder leer: nichts

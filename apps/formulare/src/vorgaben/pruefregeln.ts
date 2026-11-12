@@ -1,8 +1,8 @@
 /**
  * Prüfregeln der Vorgaben (U-04, U-05, R-03): was die App über den Füllstand hinaus meldet – nie blockierend, als
- * Hinweis formuliert – und welche Kästchen sie aus Projektmerkmalen vorbelegt.
+ * Hinweis formuliert – und welche Kästchen sie aus Antragsmerkmalen vorbelegt.
  *
- * - `merkmalFelder`: Projektmerkmal → Wert → Kästchen im Formular. Leere Kästchen werden aus dem Merkmal vorbelegt
+ * - `merkmalFelder`: Antragsmerkmal → Wert → Kästchen im Formular. Leere Kästchen werden aus dem Merkmal vorbelegt
  *   (nie überschrieben, gekennzeichnet); weicht das Formular vom Merkmal ab, erscheint ein Hinweis; beim Ankreuzen
  *   bietet die App an, den Wert als Merkmal zu übernehmen. Verfahren und Antragsart werden bewusst nicht verknüpft
  *   (Verfahren ist nicht Antragsart; „Vorhaben“ ist im Vordruck Freitext).
@@ -38,7 +38,7 @@ export const PRUEFREGELN: Record<string, Pruefregeln> = {
     hinweise: [
       {
         bedingung: wenn(ist('Sonderbau', 'ja')),
-        text: 'Projektmerkmal Sonderbau: ja – Sonderbauten (außer Solaranlagen) sind von der Genehmigungsfreistellung ausgeschlossen (§ 63 Abs. 1 Satz 2 BauO NRW 2018).',
+        text: 'Antragsmerkmal Sonderbau: ja – Sonderbauten (außer Solaranlagen) sind von der Genehmigungsfreistellung ausgeschlossen (§ 63 Abs. 1 Satz 2 BauO NRW 2018).',
         quellen: [q('bauo-nrw', '63', 1, 2)],
       },
     ],

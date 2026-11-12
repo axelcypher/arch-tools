@@ -38,17 +38,17 @@ export interface UebersichtProjekt {
   suchtext?: string;
   /** Stand aus der Projektdatei (`meta.status`); fehlt = aktiv */
   projektStatus?: ProjektStatus;
-  /** der zuletzt angelegte Antrag (`meta.antrag`) – als Marke auf der Karte */
+  /** der aktive Antrag (`meta.antrag`) – als Marke auf der Karte */
   antrag?: AntragKurz;
 }
 
 const tag = (iso: string) => iso.split('-').reverse().join('.');
 
-/** Marke des aktuellsten Antrags: „BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in Arbeit“ */
+/** Marke des aktiven Antrags: „BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in Arbeit“ */
 export function antragMarke(a: AntragKurz): UebersichtMarke {
   return a.eingereicht
-    ? { text: `${a.name} · eingereicht ${tag(a.eingereicht.datum)}`, art: 'ok', titel: `Antrag ${a.name} eingereicht – ${a.eingereicht.datei}` }
-    : { text: `${a.name} in Arbeit`, art: 'neutral', titel: `Aktuellster Antrag: ${a.name}${a.angelegt ? `, angelegt am ${tag(a.angelegt)}` : ''} – noch nicht eingereicht` };
+    ? { text: `${a.name} · eingereicht ${tag(a.eingereicht.datum)}`, art: 'ok', titel: `Antrag ${a.name} eingereicht – ${a.eingereicht.datei ?? 'von Hand gesetzt'}` }
+    : { text: `${a.name} in Arbeit`, art: 'neutral', titel: `Aktiver Antrag: ${a.name}${a.angelegt ? `, angelegt am ${tag(a.angelegt)}` : ''} – noch nicht eingereicht` };
 }
 
 /** Eintrag des Kontextmenüs einer Karte */
@@ -376,7 +376,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
         )}
 
         {!q && zuletztProjekte.length > 0 && (
-          <section className="pa-abschnitt" aria-label="Zuletzt geöffnet">
+          <section className="pa-abschnitt pa-zuletzt" aria-label="Zuletzt geöffnet">
             <h3 className="pa-abschnitt-titel">
               <Icon name="verlauf" /> Zuletzt geöffnet
             </h3>

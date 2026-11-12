@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { VORGABE_EXPORT, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { VORGABE_EXPORT, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -45,7 +45,7 @@ describe('Antragsfassungen', () => {
   });
 });
 
-describe('Projektumfang: Dateien und Status', () => {
+describe('Antragsumfang: Dateien und Status', () => {
   const pdf = (pfad: string, geaendert: number) => ({ pfad, ordner: false, groesse: 1, geaendert });
   const bauantrag: UmfangEintrag = { id: 'bauantrag', titel: 'Bauantrag', art: 'intern', formular: 'Bauantrag' };
 
@@ -55,9 +55,11 @@ describe('Projektumfang: Dateien und Status', () => {
     expect(passt('BS9 Kosten.xlsx', '*GRZ*')).toBe(false);
   });
 
-  it('Datei im Antragsordner: verknüpft vor Muster, PDF vor anderem, neueste zuerst', () => {
+  it('Datei im Antragsordner: verknüpft vor Muster, PDF vor anderem, neueste zuerst (Datum im Namen vor Änderungszeit)', () => {
     const dateien = [pdf('BS9 GP 261101 Bauantrag.pdf', 1), pdf('BS9 GP 261110 Bauantrag.pdf', 2), pdf('Bauantrag alt.pdf', 3), pdf('Bauantrag.docx', 9)];
-    expect(dateiImAntrag(bauantrag, dateien, 'BAUA')?.pfad).toBe('Bauantrag alt.pdf');
+    expect(dateiImAntrag(bauantrag, dateien, 'BAUA')?.pfad).toBe('BS9 GP 261110 Bauantrag.pdf');
+    // ohne Datum im Namen: die zuletzt geänderte
+    expect(dateiImAntrag(bauantrag, [pdf('Bauantrag a.pdf', 5), pdf('Bauantrag b.pdf', 3)], 'BAUA')?.pfad).toBe('Bauantrag a.pdf');
     expect(dateiImAntrag({ ...bauantrag, dateien: { BAUA: 'BS9 GP 261101 Bauantrag.pdf' } }, dateien, 'BAUA')?.pfad).toBe('BS9 GP 261101 Bauantrag.pdf');
     expect(dateiImAntrag(bauantrag, [], 'BAUA')).toBeNull();
   });
@@ -87,6 +89,46 @@ describe('Projektumfang: Dateien und Status', () => {
     expect(externStatus(quelle, pdf('BS9 GRZ.pdf', 40))).toBe('offen');
     expect(externStatus(quelle, pdf('BS9 GRZ.pdf', 60))).toBe('aktuell');
     expect(externStatus(null, null)).toBe('fehlt');
+  });
+
+  it('Datum im Dateinamen: JJMMTT, JJJJMMTT, ISO, deutsch, mit Uhrzeit; Projektcode am Anfang zählt nicht', () => {
+    expect(datumAusName('BS9 BAUA 261110 01 Bauantrag.pdf')).toEqual({ tag: 20261110 });
+    expect(datumAusName('Planung/Berechnungen/BS9 Flächenberechnung 261111_1430.xlsx')).toEqual({ tag: 20261111, zeit: 1430 });
+    expect(datumAusName('Lageplan_20261105.pdf')).toEqual({ tag: 20261105 });
+    expect(datumAusName('Kosten 2026-11-03.xlsx')).toEqual({ tag: 20261103 });
+    expect(datumAusName('Statik vom 4.11.2026.pdf')).toEqual({ tag: 20261104 });
+    expect(datumAusName('BS9 GRZ.pdf')).toBeNull();
+    expect(datumAusName('Grundriss EG 1-100 Index 01.pdf')).toBeNull();
+    // kein gültiges Datum
+    expect(datumAusName('Flurstück 123199.pdf')).toBeNull();
+    // sechsstellige Projektnummer als Projektcode: das Datum dahinter zählt
+    expect(datumAusName('240117 BAUA 261110 Bauantrag.pdf', ['240117'])).toEqual({ tag: 20261110 });
+    expect(datumAusName('240117 BAUA 261110 Bauantrag.pdf')).toEqual({ tag: 20240117 });
+  });
+
+  it('Stand: Datum im Namen vor Änderungszeit, gleiches Datum = gleicher Stand', () => {
+    const tag = (iso: string, h = 12) => new Date(`${iso}T${String(h).padStart(2, '0')}:00:00`).getTime();
+    // Flächenberechnung von gestern als PDF im Antrag, die Excel-Datei danach noch einmal gespeichert
+    const quelle = pdf('BS9 Flächenberechnung 261111.xlsx', tag('2026-11-12', 9));
+    const imAntrag = pdf('BS9 BAUA 261111 Flächenberechnung.pdf', tag('2026-11-11', 17));
+    expect(standVergleich(imAntrag, quelle)).toBe(0);
+    expect(externStatus(quelle, imAntrag)).toBe('aktuell');
+    // neue Fassung der Berechnung mit neuem Datum: die PDF im Antrag ist veraltet – auch wenn sie später gespeichert wurde
+    expect(externStatus(pdf('BS9 Flächenberechnung 261112.xlsx', tag('2026-11-12', 8)), pdf('BS9 BAUA 261111 Flächenberechnung.pdf', tag('2026-11-12', 10)))).toBe('offen');
+    // nur eine Seite mit Datum: gegen den Tag der Änderungszeit, am selben Tag die Änderungszeit
+    expect(externStatus(pdf('BS9 Fläche.xlsx', tag('2026-11-10')), pdf('BS9 BAUA 261111 Fläche.pdf', tag('2026-11-09')))).toBe('aktuell');
+    expect(externStatus(pdf('BS9 Fläche.xlsx', tag('2026-11-12')), pdf('BS9 BAUA 261111 Fläche.pdf', tag('2026-11-13')))).toBe('offen');
+    expect(externStatus(pdf('BS9 Fläche.xlsx', tag('2026-11-11', 9)), pdf('BS9 BAUA 261111 Fläche.pdf', tag('2026-11-11', 10)))).toBe('aktuell');
+    expect(externStatus(pdf('BS9 Fläche.xlsx', tag('2026-11-11', 11)), pdf('BS9 BAUA 261111 Fläche.pdf', tag('2026-11-11', 10)))).toBe('offen');
+    // Quelle: die neueste nach dem Datum im Namen, nicht nach der Änderungszeit
+    const flaeche = { id: 'f', titel: 'Fläche', art: 'extern' as const, muster: '*Fläche*' };
+    expect(quelleVon(flaeche, [pdf('Fläche 261105.pdf', tag('2026-11-12')), pdf('Fläche 261111.xlsx', tag('2026-11-11'))])?.pfad).toBe('Fläche 261111.xlsx');
+    // Formular: PDF mit späterem Datum als die letzte Änderung ist aktuell, mit früherem nicht; am selben Tag die Änderungszeit
+    const voll = { gefuellt: 5, gesamt: 5 };
+    expect(formularStatus(voll, tag('2026-11-10'), pdf('BS9 BAUA 261111 Bauantrag.pdf', tag('2026-11-09')))).toBe('aktuell');
+    expect(formularStatus(voll, tag('2026-11-12'), pdf('BS9 BAUA 261111 Bauantrag.pdf', tag('2026-11-13')))).toBe('offen');
+    expect(formularStatus(voll, tag('2026-11-11', 15), pdf('BS9 BAUA 261111 Bauantrag.pdf', tag('2026-11-11', 10)))).toBe('offen');
+    expect(formularStatus(voll, tag('2026-11-11', 9), pdf('BS9 BAUA 261111 Bauantrag.pdf', tag('2026-11-11', 10)))).toBe('aktuell');
   });
 
   it('Projektdatei: unbekannte Angaben werden verworfen', () => {
@@ -136,7 +178,7 @@ describe('Antragsvorlagen und Reihenfolge', () => {
     expect(vorlagenAus([{ name: 'X', dokumente: ['a', 'a', 3] }, { titel: 'kaputt' }], katalog)).toEqual([{ id: 'v1', name: 'X', dokumente: ['a'] }]);
   });
 
-  it('Projektumfang aus einer Vorlage in der Reihenfolge des Katalogs; Vorschlag nach Antragsart', () => {
+  it('Antragsumfang aus einer Vorlage in der Reihenfolge des Katalogs; Vorschlag nach Antragsart', () => {
     const vorlagen = [
       { id: 'a', name: 'Bauantrag', art: 'BAUA', dokumente: ['kosten', 'bauantrag'] },
       { id: 'b', name: 'Voranfrage', art: 'BAUVA', dokumente: ['lageplan'] },
@@ -186,7 +228,7 @@ describe('Quellordner: Schreibweisen der Büros', () => {
   });
 });
 
-describe('Anträge: je Antrag eigene Projektmerkmale, Projektumfang und Autofill', () => {
+describe('Anträge: je Antrag eigene Antragsmerkmale, Antragsumfang und Autofill', () => {
   const umfang: UmfangEintrag[] = [{ id: 'muster', titel: 'Muster', art: 'intern' }];
 
   it('übernimmt die früher projektweiten Angaben (Abschnitt bzw. meta.merkmale) als „alt“, „bereit“ je Fassung in den Antrag', () => {

@@ -1,7 +1,7 @@
 /**
  * Was fehlt noch? Stand je Abschnitt (wie die Gliederung zählt) und die Liste der offenen Angaben – genau das, was im
  * Füllstand fehlt: Gruppen als eine Angabe, entfallene und nicht zählende Felder ausgeschlossen, Angaben, die an
- * nicht festgelegten Projektmerkmalen hängen (ungeklärt, R-01), eingeschlossen (U-03).
+ * nicht festgelegten Antragsmerkmalen hängen (ungeklärt, R-01), eingeschlossen (U-03).
  */
 
 import type { BedingungKontext } from './bedingung';
@@ -20,13 +20,13 @@ export interface AbschnittStand {
   einheiten: { einheit: Einheit; voll: boolean }[];
   /** nach seiner Bedingung erforderlich (auch offen) und nicht alle Angaben entfallen */
   erforderlich: boolean;
-  /** die Bedingung des Abschnitts hängt an nicht festgelegten Projektmerkmalen */
+  /** die Bedingung des Abschnitts hängt an nicht festgelegten Antragsmerkmalen */
   abschnittOffen: boolean;
   /** keine zählenden Angaben (alle „zählt nicht“) */
   freiwillig: boolean;
   gesamt: number;
   gefuellt: number;
-  /** nicht ausgefüllte Angaben, die an nicht festgelegten Projektmerkmalen hängen (zählen in `gesamt` mit) */
+  /** nicht ausgefüllte Angaben, die an nicht festgelegten Antragsmerkmalen hängen (zählen in `gesamt` mit) */
   offen: number;
   /** die Merkmale, an denen die offenen Angaben hängen */
   fehlend: string[];
@@ -66,7 +66,7 @@ export interface OffeneAngabe {
   abschnitt: string;
   seite: number;
   felder: Feld[];
-  /** hängt an nicht festgelegten Projektmerkmalen */
+  /** hängt an nicht festgelegten Antragsmerkmalen */
   ungeklaert: boolean;
   fehlend: string[];
 }

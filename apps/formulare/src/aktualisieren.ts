@@ -13,7 +13,7 @@ import type { Feld } from './forma/felder';
 import { parseFormular } from './forma/formular';
 import type { Projektkarte } from './forma/projektkarte';
 import type { FormularEintrag } from './projekte';
-import { autofillAnbindung, autoWerteVon, entwurfVon, formularDatei, karteMitAenderungen, useFormulare, wertVon } from './store';
+import { autofillAnbindung, autoWerteVon, entwurfVon, formularDatei, karteMitAenderungen, sperrAnbindung, useFormulare, wertVon } from './store';
 
 /** Plan für ein Formular des Projekts */
 export interface UnterlagenPlan {
@@ -143,6 +143,7 @@ export async function planAusfuehren(p: UnterlagenPlan): Promise<string> {
   const ergebnis = await useFormulare.getState().formularAendern(p.eintrag.pfad, Object.fromEntries(wahl.map((s) => [s.feld.schluessel, s.neu])));
   if (ergebnis === 'gesperrt') return `${p.eintrag.name}: anderswo geöffnet – nicht aktualisiert`;
   if (ergebnis === 'nurLesen') return `${p.eintrag.name}: lässt sich nicht verlustfrei schreiben – nicht aktualisiert`;
+  if (ergebnis === 'eingereicht') return `${p.eintrag.name}: Antrag eingereicht und gesperrt – nicht aktualisiert`;
   await useAntrag.getState().zustaendeSetzen({ [formularDatei(p.eintrag.pfad)]: z });
   return `${p.eintrag.name}: ${wahl.length} Feld(er) aktualisiert${ergebnis === 'entwurf' ? ' (in den ungespeicherten Eingaben)' : ''}${rest}`;
 }
@@ -150,6 +151,8 @@ export async function planAusfuehren(p: UnterlagenPlan): Promise<string> {
 /** „Daten aktualisieren“ für ein Formular aus dem Kontextmenü: geöffnet → Dialog, sonst gleich ausführen */
 export async function formularAktualisieren(eintrag: FormularEintrag) {
   const s = useFormulare.getState();
+  const sperre = sperrAnbindung.antrag(s.projekt);
+  if (sperre) return s.setMeldung({ art: 'info', text: sperre });
   if (s.offen?.projekt === s.projekt && s.offen?.pfad === eintrag.pfad) {
     if (!s.karte) await s.karteLaden();
     useAktualisieren.getState().dialogOeffnen();
@@ -174,7 +177,9 @@ export async function formularAktualisieren(eintrag: FormularEintrag) {
 
 /** Nach geänderten Projektdaten: Pläne für alle Formulare des Projekts – gibt es etwas zu tun, fragt die App nach */
 export async function nachKarteGespeichert(alt: Projektkarte, neu: Projektkarte) {
-  const { formulare } = useFormulare.getState();
+  const { formulare, projekt } = useFormulare.getState();
+  // eingereichter Antrag: die Formulare bleiben, wie sie eingereicht wurden
+  if (sperrAnbindung.antrag(projekt)) return;
   const plaene: UnterlagenPlan[] = [];
   for (const f of formulare) {
     try {

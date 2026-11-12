@@ -24,7 +24,7 @@ export interface Eintrag {
 }
 
 /**
- * Früher: Angaben der App zum Projekt (Projektumfang, aktive Antragsfassung) im FORMA-Projektordner. Sie stehen
+ * Früher: Angaben der App zum Projekt (Antragsumfang, aktive Antragsfassung) im FORMA-Projektordner. Sie stehen
  * jetzt im Abschnitt „formulare“ der Projektdatei (.oap); die alte Datei wird nur noch gelesen und übernommen.
  */
 export const ALTE_PROJEKTDATEI = 'formulare.json';
@@ -143,7 +143,7 @@ export function pkText(b: number[] | Uint8Array): string {
 export function pkBytes(s: string): number[] {
   if (cp1252Lesen(cp1252Schreiben(s)) !== s) {
     const falsch = [...s].filter((c) => cp1252Lesen(cp1252Schreiben(c)) !== c);
-    throw new Error(`Diese Zeichen kann FORMA nicht darstellen: ${[...new Set(falsch)].join(' ')}`);
+    throw new Error(`Diese Zeichen lassen sich im Formular nicht speichern: ${[...new Set(falsch)].join(' ')}`);
   }
   return [...new TextEncoder().encode(s)];
 }
@@ -413,7 +413,7 @@ export class SpeicherDateisystem implements Dateisystem {
   }
 
   async umbenennen(root: string, von: string, nach: string): Promise<void> {
-    if (istFormaDatei(von) || istFormaDatei(nach)) throw new Error(`${von}: Dateien von FORMA werden nur in FORMA umbenannt`);
+    if (istFormaDatei(von) || istFormaDatei(nach)) throw new Error(`${von}: Projektkarte, Sperrdateien und Projekttitel werden hier nicht umbenannt`);
     const q = this.dateien.get(this.pfad(root, von));
     if (!q) throw new Error(`${von}: Datei nicht gefunden`);
     if (await this.inOffice(root, von)) throw new Error(`${von}: Die Datei ist gerade in Excel bzw. Word geöffnet – bitte dort schließen`);
@@ -425,7 +425,7 @@ export class SpeicherDateisystem implements Dateisystem {
   }
 
   async loeschen(root: string, pfad: string): Promise<void> {
-    if (nurFormaLoescht(pfad)) throw new Error(`${pfad}: Dateien von FORMA werden nur in FORMA gelöscht`);
+    if (nurFormaLoescht(pfad)) throw new Error(`${pfad}: Projektkarte, Sperrdateien und Projekttitel werden hier nicht gelöscht`);
     if (/\.frmsjf$/i.test(pfad) && this.dateien.has(this.pfad(root, sperrPfad(pfad)))) throw new Error(`${pfad}: Das Formular ist gerade geöffnet (Sperrdatei vorhanden) – bitte erst dort schließen`);
     const p = this.pfad(root, pfad);
     const q = this.dateien.get(p);

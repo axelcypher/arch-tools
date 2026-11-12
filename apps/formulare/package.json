@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.34.1",
   "type": "module",
-  "description": "Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Originalprogramm lesbar",
+  "description": "Bauantragsformulare bequem ausfüllen – die Dateien bleiben im Originalformat lesbar",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p . && vite build",

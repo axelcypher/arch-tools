@@ -12,8 +12,10 @@ import { projektdateiPfad } from '@core/projektdatei';
 import type { Stammadresse } from '../stammdaten';
 import { stammdatenLaden } from '../stammdaten';
 import { Symbol } from './Symbol';
-import { ProjektumfangAnsicht, StatusPunkt, zusammenfassung as umfangZusammenfassung } from './Antrag';
-import { useAntrag } from '../antragStore';
+import type { FeldDef } from '@core/ui/ansicht';
+import { felderDerAnsicht, useAnsicht } from '@core/ui/ansicht';
+import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import type { KartenWert, OffeneKarte } from '../store';
 import { karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
 
@@ -57,13 +59,9 @@ export function ProjektkarteAnsicht() {
           <>
             <h2>Keine Projektkarte</h2>
             <p>
-              Im FORMA-Projekt <strong>{projekt.ordner}</strong> gibt es keine lesbare Projektkarte (<code>sj_prokarte.sdb</code>). Sie wird von FORMA beim Anlegen des Projekts
-              erstellt.
+              Im Projekt <strong>{projekt.ordner}</strong> gibt es keine lesbare Projektkarte.
             </p>
             <button onClick={() => void karteLaden()}>Erneut lesen</button>
-            <div className="pk-ohne-karte">
-              <ProjektumfangAnsicht />
-            </div>
           </>
         ) : (
           <p className="muted">Projektkarte wird gelesen …</p>
@@ -80,8 +78,8 @@ function Karte({ karte }: { karte: OffeneKarte }) {
   const [gruppeId, setGruppeId] = useState<number>(() => gewaehlt.get(projektKey) ?? alle[0]?.id ?? 0);
   const [suche, setSuche] = useState('');
   const [stamm] = useState<Stammadresse[]>(stammdatenLaden);
-  /** -1 = Abgleich mit der Projektdatei (.oap), -2 = Projektumfang */
-  const gruppe = gruppeId === PROJEKTDATEN || gruppeId === PROJEKTUMFANG ? null : (alle.find((g) => g.id === gruppeId) ?? alle[0]);
+  /** -1 = Abgleich mit der Projektdatei (.oap), -3 = eigene Ansicht */
+  const gruppe = gruppeId === PROJEKTDATEN || gruppeId === EIGENE ? null : (alle.find((g) => g.id === gruppeId) ?? alle[0]);
 
   const waehle = (id: number, eintrag?: string) => {
     gewaehlt.set(projektKey, id);
@@ -96,26 +94,21 @@ function Karte({ karte }: { karte: OffeneKarte }) {
       const g = Number(s.split(':')[0]);
       if (g && g !== gruppeId) waehle(g, s);
     };
-    const zumUmfang = () => waehle(PROJEKTUMFANG);
     window.addEventListener('formulare:pk-sprung', beiSprung);
-    window.addEventListener('formulare:projektumfang', zumUmfang);
-    return () => {
-      window.removeEventListener('formulare:pk-sprung', beiSprung);
-      window.removeEventListener('formulare:projektumfang', zumUmfang);
-    };
+    return () => window.removeEventListener('formulare:pk-sprung', beiSprung);
   });
 
   if (!alle.length) return <div className="fo-leer">Die Projektkarte enthält keine Einträge.</div>;
 
   return (
     <div className="pk">
-      <Navigation karte={karte} reihen={reihen} aktiv={gruppe?.id ?? gruppeId} suche={suche} setSuche={setSuche} onWahl={waehle} />
+      <BreitenLeiste schluessel="formulare:breite:projektkarte" vorgabe={270}>
+        <Navigation karte={karte} reihen={reihen} aktiv={gruppe?.id ?? gruppeId} suche={suche} setSuche={setSuche} onWahl={waehle} />
+      </BreitenLeiste>
       {gruppe ? (
         <GruppenEditor key={gruppe.id} karte={karte} gruppe={gruppe} alleGruppen={alle} stamm={stamm} />
-      ) : gruppeId === PROJEKTUMFANG ? (
-        <div className="pk-editor">
-          <ProjektumfangAnsicht />
-        </div>
+      ) : gruppeId === EIGENE ? (
+        <EigeneAnsicht karte={karte} />
       ) : (
         <ProjektdatenAbgleich karte={karte} />
       )}
@@ -125,8 +118,81 @@ function Karte({ karte }: { karte: OffeneKarte }) {
 
 /** Kennung des Abgleichs mit der Projektdatei (.oap) in der Navigation */
 const PROJEKTDATEN = -1;
-/** Kennung des Projektumfangs (nicht aus FORMA) in der Navigation */
-const PROJEKTUMFANG = -2;
+/** Kennung der eigenen Ansicht in der Navigation */
+const EIGENE = -3;
+
+/** Schlüssel der eigenen Ansicht der Projektkarte (je Benutzer, für alle Projekte) */
+export const KARTEN_ANSICHT = 'formulare:ansicht:projektkarte';
+
+/** Katalog der Projektkarte für den Ansicht-Editor: jeder Eintrag jeder Gruppe (Kennung „Gruppe:Eintrag“) */
+function kartenKatalog(karte: OffeneKarte): FeldDef[] {
+  return karte.karte.gruppen.flatMap((g) =>
+    karte.karte.eintraege
+      .filter((e) => e.gruppe === g.id)
+      .map((e) => ({ id: pkSchluessel(g.id, e.id), titel: feldTitel(e.titel), gruppe: g.text, breit: pkArt(e) === 'mehrzeilig' })),
+  );
+}
+
+/**
+ * Eigene Ansicht der Projektkarte: die im Büro genutzten Einträge aus allen Gruppen auf einer Seite, in eigenen
+ * Abschnitten und eigener Reihenfolge – zusammengestellt im Ansicht-Editor (gilt für alle Projekte).
+ */
+function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
+  const [ansicht, setAnsicht] = useAnsicht(KARTEN_ANSICHT);
+  const [editor, setEditor] = useState(false);
+  const katalog = useMemo(() => kartenKatalog(karte), [karte.karte]); // eslint-disable-line react-hooks/exhaustive-deps
+  const feld = (f: FeldDef) => {
+    const [g, id] = f.id.split(':').map(Number);
+    const gruppe = karte.karte.gruppen.find((x) => x.id === g);
+    const eintrag = karte.karte.eintraege.find((e) => e.gruppe === g && e.id === id);
+    if (!gruppe || !eintrag) return null;
+    return (
+      <div className="pk-eigen-feld">
+        <span className="pk-eigen-gruppe">{gruppe.text}</span>
+        {pkArt(eintrag) === 'kreuz' ? <Kreuze karte={karte} eintraege={[eintrag]} /> : <Eintrag karte={karte} gruppe={gruppe} eintrag={eintrag} breite={12} land={karteText(karte, g, 120)} />}
+      </div>
+    );
+  };
+  return (
+    <section className="pk-editor" aria-label="Eigene Ansicht">
+      <header className="pk-kopf">
+        <div className="pk-kopf-text">
+          <h2>Eigene Ansicht</h2>
+          <span className="muted">Die Einträge, die ihr nutzt – aus allen Gruppen auf einer Seite. Gilt für alle Projekte.</span>
+        </div>
+        <div className="pk-aktionen">
+          <button onClick={() => setEditor(true)}>
+            <Symbol name="stift" /> Ansicht bearbeiten …
+          </button>
+        </div>
+      </header>
+      <div className="pk-koerper">
+        <div className="pk-abschnitte pk-eigen">
+          {ansicht && felderDerAnsicht(ansicht).length ? (
+            <AnsichtAnzeige ansicht={ansicht} katalog={katalog} feld={feld} />
+          ) : (
+            <div className="pk-eigen-leer">
+              <p>Noch keine eigene Ansicht. Stellt euch die Einträge zusammen, die ihr in jedem Projekt braucht – etwa Vorhaben, Bauherr, Grundstück und Bauaufsicht.</p>
+              <button className="primary" onClick={() => setEditor(true)}>
+                Ansicht zusammenstellen …
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      {editor && (
+        <AnsichtEditor
+          titel="Projektkarte: eigene Ansicht"
+          text="Rechts Einträge der Projektkarte anhaken – sie kommen in den gewählten Abschnitt. Links ordnen: am Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓."
+          katalog={katalog}
+          ansicht={ansicht}
+          onChange={setAnsicht}
+          onSchliessen={() => setEditor(false)}
+        />
+      )}
+    </section>
+  );
+}
 
 /** Leere Adressgruppen mit den Vorgaben der Stammdaten füllen */
 function vorgabenFuer(karte: OffeneKarte, adressen: Adresse[], vorgaben: Record<string, string>): KartenWert[] {
@@ -231,6 +297,7 @@ function Navigation({
         </div>
       ) : (
         <>
+          <EigeneNavEintrag aktiv={aktiv === EIGENE} onClick={() => onWahl(EIGENE)} />
           {favoriten.length > 0 && (
             <div className="pk-nav-reihe pk-nav-favoriten">
               <div className="pk-nav-titel">Favoriten</div>
@@ -264,24 +331,21 @@ function Navigation({
           </button>
         </div>
       )}
-      {!q && <UmfangNavEintrag aktiv={aktiv === PROJEKTUMFANG} onClick={() => onWahl(PROJEKTUMFANG)} />}
     </nav>
   );
 }
 
-/** Reiter „Projektumfang“ – gibt es in FORMA nicht, steht deshalb unter „Antrag“ */
-function UmfangNavEintrag({ aktiv, onClick }: { aktiv: boolean; onClick: () => void }) {
-  const dokumente = useAntrag((s) => s.dokumente);
-  const festgelegt = useAntrag((s) => !!s.projektdatei?.umfang);
-  const z = umfangZusammenfassung(dokumente);
+/** Eigene Ansicht in der Navigation (oben) */
+function EigeneNavEintrag({ aktiv, onClick }: { aktiv: boolean; onClick: () => void }) {
+  const [ansicht] = useAnsicht(KARTEN_ANSICHT);
+  const n = felderDerAnsicht(ansicht).length;
   return (
-    <div className="pk-nav-reihe">
-      <div className="pk-nav-titel">Antrag</div>
-      <button className={`pk-nav-eintrag${aktiv ? ' aktiv' : ''}${festgelegt ? '' : ' leer'}`} aria-current={aktiv ? 'true' : undefined} onClick={onClick}>
+    <div className="pk-nav-reihe pk-nav-eigen">
+      <button className={`pk-nav-eintrag${aktiv ? ' aktiv' : ''}`} aria-current={aktiv ? 'true' : undefined} onClick={onClick}>
         <span className="pk-nav-name">
-          <Symbol name="stapel" /> Projektumfang {festgelegt && dokumente.length > 0 && <StatusPunkt status={z.schlimmstes} />}
+          <Symbol name="liste" /> Eigene Ansicht
         </span>
-        <span className="pk-nav-kurz">{festgelegt ? `${z.aktuell} von ${z.gesamt} Dokumenten aktuell` : 'noch nicht festgelegt'}</span>
+        <span className="pk-nav-kurz">{n ? `${n} ${n === 1 ? 'Eintrag' : 'Einträge'} auf einer Seite` : 'zusammenstellen …'}</span>
       </button>
     </div>
   );

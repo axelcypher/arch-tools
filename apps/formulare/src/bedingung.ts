@@ -1,17 +1,17 @@
 /**
  * Bedingungen für die Erforderlichkeit: Abschnitte, Gruppen und Felder eines Formulars (und Dokumente des
- * Projektumfangs) können von Projektmerkmalen abhängen – „nur bei Gebäudeklasse 3, 4 oder 5“ – oder von anderen
+ * Antragsumfangs) können von Antragsmerkmalen abhängen – „nur bei Gebäudeklasse 3, 4 oder 5“ – oder von anderen
  * Feldern desselben Formulars – „wenn ‚Sonderbau‘ angekreuzt ist“.
  *
  * Eine Bedingung ist eine Gruppe: Entweder müssen alle Teile zutreffen (und) oder mindestens einer (oder). Teile
  * sind einzelne Prüfungen oder wieder Gruppen – etwa „Gebäudeklasse 3–5 und (Sonderbau angekreuzt oder Verfahren
  * Baugenehmigungsverfahren)“. Ohne Bedingung ist immer erforderlich.
  *
- * Projektmerkmale (Gebäudeklasse, Sonderbau, Verfahren …) werden in den Einstellungen festgelegt; ihr Wert gilt je
+ * Antragsmerkmale (Gebäudeklasse, Sonderbau, Verfahren …) werden in den Einstellungen festgelegt; ihr Wert gilt je
  * Projekt für alle Formulare und steht in der Projektdatei (.oap) unter `meta.merkmale`.
  *
  * Drei Ergebnisse (R-01): Eine Bedingung trifft zu (`ja`: erforderlich), trifft nicht zu (`nein`: entfällt) oder ist
- * **offen** – sie hängt an einem Projektmerkmal, das noch nicht festgelegt ist. Ein fehlendes Merkmal lässt nichts
+ * **offen** – sie hängt an einem Antragsmerkmal, das noch nicht festgelegt ist. Ein fehlendes Merkmal lässt nichts
  * entfallen (Fail-safe): Offenes gilt als erforderlich, bis das Merkmal festgelegt ist. Ausgewertet wird dreiwertig
  * (und: ein `nein` genügt für `nein`; oder: ein `ja` genügt für `ja`; sonst offen, wenn etwas offen ist) – so entfällt
  * ein Feld trotz fehlendem Merkmal nur, wenn es schon nach den übrigen Angaben feststeht.
@@ -112,7 +112,7 @@ export const istVorgabeMerkmal = (name: string) => VORGABE_MERKMALE.some((v) => 
 export type FeldPruefung = 'ausgefuellt' | 'leer' | 'gleich' | 'ungleich';
 
 export type Teilbedingung =
-  /** das Projektmerkmal hat einen dieser Werte (`nicht`: keinen davon) */
+  /** das Antragsmerkmal hat einen dieser Werte (`nicht`: keinen davon) */
   | { art: 'merkmal'; merkmal: string; werte: string[]; nicht?: boolean }
   /** ein Feld desselben Formulars ist ausgefüllt (Kästchen: angekreuzt), leer, hat einen Wert oder nicht */
   | { art: 'feld'; feld: string; pruefung: FeldPruefung; wert?: string };
@@ -156,7 +156,7 @@ export type BedingungTeil = Teilbedingung | BedingungGruppe;
 export type Bedingung = BedingungGruppe;
 
 export interface BedingungKontext {
-  /** Projektmerkmale des Projekts: Name → Wert */
+  /** Antragsmerkmale des Projekts: Name → Wert */
   merkmale: Record<string, string>;
   /** Wert eines Felds im Formular (Text oder angekreuzt) */
   wert?: (schluessel: string) => string | boolean | undefined;
@@ -176,7 +176,7 @@ export function blaetter(b: BedingungTeil | undefined): Teilbedingung[] {
   return b.art === 'gruppe' ? b.teile.flatMap(blaetter) : [b];
 }
 
-/** Ergebnis einer Bedingung: trifft zu, trifft nicht zu, offen (hängt an einem nicht festgelegten Projektmerkmal) */
+/** Ergebnis einer Bedingung: trifft zu, trifft nicht zu, offen (hängt an einem nicht festgelegten Antragsmerkmal) */
 export type Wahrheit = 'ja' | 'nein' | 'offen';
 
 const aus = (b: boolean): Wahrheit => (b ? 'ja' : 'nein');
@@ -210,13 +210,13 @@ export function auswerten(b: Bedingung | undefined, k: BedingungKontext): Wahrhe
 
 /**
  * Ist erforderlich, was an der Bedingung hängt? Ohne Bedingung: ja. Fail-safe: Hängt sie an einem nicht festgelegten
- * Projektmerkmal (offen), gilt sie als erfüllt – nur ein sicheres „trifft nicht zu“ lässt etwas entfallen.
+ * Antragsmerkmal (offen), gilt sie als erfüllt – nur ein sicheres „trifft nicht zu“ lässt etwas entfallen.
  */
 export function erfuellt(b: Bedingung | undefined, k: BedingungKontext): boolean {
   return auswerten(b, k) !== 'nein';
 }
 
-/** Hängt die Bedingung an einem nicht festgelegten Projektmerkmal und ist deshalb noch offen? */
+/** Hängt die Bedingung an einem nicht festgelegten Antragsmerkmal und ist deshalb noch offen? */
 export const istOffen = (b: Bedingung | undefined, k: BedingungKontext) => auswerten(b, k) === 'offen';
 
 /** Gesamtergebnis mehrerer Ebenen (Abschnitt, Gruppe, Feld): ein `nein` entscheidet, sonst offen vor ja */
@@ -228,7 +228,7 @@ export function zusammenfassen(...w: Wahrheit[]): Wahrheit {
 export const fehlendeMerkmale = (b: Bedingung | undefined, merkmale: Record<string, string>) =>
   blaetter(b).flatMap((t) => (t.art === 'merkmal' && !merkmale[t.merkmal] ? [t.merkmal] : []));
 
-/** Nur die Teile mit Projektmerkmalen (für Dokumente des Projektumfangs, die keine Felder kennen) */
+/** Nur die Teile mit Antragsmerkmalen (für Dokumente des Antragsumfangs, die keine Felder kennen) */
 export function nurMerkmale(b: Bedingung | undefined): Bedingung | undefined {
   const filtern = (g: BedingungGruppe): BedingungGruppe => ({ ...g, teile: g.teile.flatMap((t): BedingungTeil[] => (t.art === 'gruppe' ? [filtern(t)] : t.art === 'merkmal' ? [t] : [])) });
   const out = b && filtern(b);

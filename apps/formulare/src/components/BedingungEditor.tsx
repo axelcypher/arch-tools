@@ -14,7 +14,7 @@ interface Props {
   wert: Bedingung | undefined;
   onChange: (b: Bedingung | undefined) => void;
   merkmale: Merkmal[];
-  /** Felder des Formulars (ohne: nur Projektmerkmale, z. B. für Dokumente des Projektumfangs) */
+  /** Felder des Formulars (ohne: nur Antragsmerkmale, z. B. für Dokumente des Antragsumfangs) */
   felder?: FeldWahl[];
   /** Feldschlüssel, die nicht wählbar sind (das Feld selbst) */
   ohne?: string[];
@@ -41,7 +41,7 @@ function anPfad(g: BedingungGruppe, pfad: Pfad, f: (t: BedingungTeil) => Bedingu
 
 /**
  * Bedingung zusammenstellen: eine Gruppe, deren Teile alle (und) oder mindestens einer (oder) zutreffen müssen. Teile
- * sind Prüfungen – Projektmerkmal hat einen der Werte (oder keinen), Feld ist ausgefüllt/angekreuzt, leer, hat einen
+ * sind Prüfungen – Antragsmerkmal hat einen der Werte (oder keinen), Feld ist ausgefüllt/angekreuzt, leer, hat einen
  * Wert oder nicht – oder wieder Gruppen. Felder lassen sich auch durch Klick ins Formular wählen. Darunter steht die
  * Bedingung in Worten und ob sie gerade zutrifft.
  */
@@ -69,7 +69,7 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
         <div className="bd-knoepfe">
           {merkmale.length > 0 && (
             <button className="small" onClick={() => anfangen({ art: 'merkmal', merkmal: merkmale[0].name, werte: [] })}>
-              <Symbol name="plus" /> Nur bei Projektmerkmal …
+              <Symbol name="plus" /> Nur bei Antragsmerkmal …
             </button>
           )}
           {felder && wahl.length > 0 && (
@@ -108,7 +108,7 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
         </p>
         {jetzt !== undefined && (
           <span className={`bd-jetzt${jetzt === 'ja' ? ' an' : ''}`}>
-            {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Projektmerkmal nicht festgelegt (gilt als erforderlich)' : 'trifft gerade nicht zu'}
+            {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Antragsmerkmal nicht festgelegt (gilt als erforderlich)' : 'trifft gerade nicht zu'}
           </span>
         )}
         <button className="small bd-weg" onClick={() => onChange(undefined)}>
@@ -234,7 +234,7 @@ function RegelZeile({
           {t.art === 'merkmal' && !merkmale.some((m) => m.name === t.merkmal) && <option value={wert}>{t.merkmal || '–'}</option>}
           {t.art === 'feld' && !feld && <option value={wert}>{t.feld || '–'}</option>}
           {merkmale.length > 0 && (
-            <optgroup label="Projektmerkmale">
+            <optgroup label="Antragsmerkmale">
               {merkmale.map((m) => (
                 <option key={m.name} value={`m:${m.name}`}>
                   {m.name}

@@ -3,16 +3,17 @@ import { LogDialog } from '@core/ui/LogDialog';
 import { StammdatenDialog } from '@core/ui/Stammdaten';
 import { ProjektEinstieg } from '@core/ui/ProjektWahl';
 import { TitleBar } from '@core/ui/TitleBar';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import { autofillFelder } from './autofill';
 import { ignoriert, ignorierenSetzen, useAktualisieren } from './aktualisieren';
 import { auffrischen } from './dateiAktionen';
 import { AktualisierenDialog, UnterlagenDialog } from './components/AktualisierenDialog';
 import { GesetzModal } from './components/GesetzModal';
-import { EinstellungenAnsicht } from './components/Einstellungen';
+import { EinstellungenModal } from './components/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
 import { FormularHinzufuegenDialog, useHinzufuegenDialog } from './components/FormularHinzufuegen';
 import { MenueHost, MenueKnopf } from './components/Menue';
-import { useAntrag } from './antragStore';
+import { antragSperre, useAntrag } from './antragStore';
 import { DateiAnsicht } from './components/dokumente/DateiAnsicht';
 import { Symbol } from './components/Symbol';
 import { FelderAnsicht } from './components/FelderAnsicht';
@@ -20,6 +21,7 @@ import { Gliederung } from './components/Gliederung';
 import { EinrichtenPanel } from './components/Einrichten';
 import { useEinrichten } from './einrichten';
 import { ProjektkarteAnsicht } from './components/ProjektkarteAnsicht';
+import { AntragsdatenAnsicht } from './components/Antrag';
 import { ProjektUebersicht } from './components/ProjektUebersicht';
 import { ProjektordnerDialog } from './components/ProjektordnerDialog';
 import { Schnellwahl } from './components/Schnellwahl';
@@ -33,7 +35,7 @@ import { springeZuFeld } from './navigation';
 import { zurNaechstenOffenen } from './pruefen';
 import { useVorbelegung } from './merkmalAbgleich';
 import type { Ansicht, OffenesFormular } from './store';
-import { ZOOMSTUFEN, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
+import { ZOOMSTUFEN, bearbeitungGesperrt, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
 import { kannRueckgaengig, kannWiederholen } from './verlauf';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
@@ -43,7 +45,8 @@ const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
 
 /** Warum nicht bearbeitet werden kann – sonst null */
 function sperrgrund(o: OffenesFormular): string | null {
-  if (o.nurLesen) return o.nurLesen;
+  const g = bearbeitungGesperrt(o);
+  if (g) return g;
   if (o.sperre.art !== 'fremd') return null;
   const s = o.sperre.sperre;
   return `Nur ansehen: Das Formular ist bei ${wer(s)} geöffnet${s.angemeldet ? ` (seit ${s.angemeldet})` : ''}. ${o.sperre.bewertung.grund}`;
@@ -85,19 +88,21 @@ export function App() {
   const konflikt = useFormulare((s) => s.konflikt);
   const stammdaten = useFormulare((s) => s.stammdatenDialog);
   const ordnerDialog = useFormulare((s) => s.ordnerDialog);
+  const einstellungenOffen = useFormulare((s) => s.einstellungenOffen);
   const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen, setGliederungOffen, karteSpeichern, karteVerwerfen, karteRueckgaengig, karteWiederholen, sperreNeuPruefen, sperreAufheben } =
     useFormulare.getState();
   const [dialog, setDialog] = useState<'log' | 'schnellwahl' | 'aufheben' | 'sperren' | null>(null);
   const aktualisierenOffen = useAktualisieren((s) => s.dialog);
-  useAntrag((s) => s.projektdatei); // für den Haken „Manuelle Überschreibungen ignorieren“
+  useAntrag((s) => s.projektdatei); // für den Haken „Manuelle Überschreibungen ignorieren“ und die Sperre eingereichter Anträge
+  const antragGesperrt = useAntrag((s) => !!antragSperre(s, projekt));
   const kartenansicht = haupt === 'projektkarte' && !!projekt;
   const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
   const grund = offen ? sperrgrund(offen) : null;
   const name =
-    haupt === 'einstellungen' ? 'Einstellungen' : ds && (!projekt || haupt === 'projekte') ? 'Projekte' : haupt === 'projektkarte' && projekt ? `Projektkarte ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
+    ds && (!projekt || haupt === 'projekte') ? 'Projekte' : haupt === 'projektkarte' && projekt ? `Projektdaten ${projekt.ordner}` : haupt === 'antrag' && projekt ? `Antragsdaten ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
   const zugeordnet = useMemo(() => (offen ? autofillFelder(offen.formular, offen.felder).size : 0), [offen?.formular]); // eslint-disable-line react-hooks/exhaustive-deps
   const formularSichtbar = !!offen && haupt === 'formular';
-  // leere Kästchen (Gebäudeklasse) aus den Projektmerkmalen vorbelegen (U-05)
+  // leere Kästchen (Gebäudeklasse) aus den Antragsmerkmalen vorbelegen (U-05)
   useVorbelegung(offen);
   const exportPfad = useExportDialog((s) => s.pfad);
   const hinzufuegen = useHinzufuegenDialog((s) => s.offen);
@@ -203,7 +208,7 @@ export function App() {
         zeichenflaeche={false}
         onProjekte={ds ? () => useFormulare.getState().setHaupt('projekte') : undefined}
         onSpeichern={
-          offen && haupt === 'formular' && !offen.nurLesen && offen.sperre.art !== 'fremd'
+          offen && haupt === 'formular' && !bearbeitungGesperrt(offen) && offen.sperre.art !== 'fremd'
             ? async () => {
                 await speichern();
                 return !istGeaendert(useFormulare.getState().offen);
@@ -244,7 +249,7 @@ export function App() {
             <button disabled={!kannVor(offen) || !!grund} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeige(wiederholen())}>
               <Symbol name="wiederholen" />
             </button>
-            <button className="primary" disabled={!geaendert || !!grund || konflikt} title="In die FORMA-Datei speichern (Strg+S)" onClick={() => void speichern()}>
+            <button className="primary" disabled={!geaendert || !!grund || konflikt} title="In die Formulardatei speichern (Strg+S)" onClick={() => void speichern()}>
               {ds ? 'Speichern' : 'Herunterladen'}
             </button>
             {konflikt && (
@@ -323,7 +328,7 @@ export function App() {
             <button disabled={!kannWiederholen(karte.verlauf)} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeigeKarte(karteWiederholen())}>
               <Symbol name="wiederholen" />
             </button>
-            <button className="primary" disabled={!geaendert} title="In die Projektkarte des FORMA-Projekts speichern (Strg+S)" onClick={() => void karteSpeichern()}>
+            <button className="primary" disabled={!geaendert} title="In die Projektkarte des Projekts speichern (Strg+S)" onClick={() => void karteSpeichern()}>
               Projektkarte speichern
             </button>
             <button disabled={!geaendert} title="Alle ungespeicherten Änderungen zurücknehmen (Strg+Z holt sie zurück)" onClick={karteVerwerfen}>
@@ -355,7 +360,7 @@ export function App() {
             <button title="Projekt oder Formular suchen (Strg+K)" onClick={() => setDialog('schnellwahl')}>
               <Symbol name="suche" /> Suchen …
             </button>
-            <button className={haupt === 'einstellungen' ? 'active' : ''} title="Einstellungen: Ordner, Stammdaten, Adressbuch, Formulare" aria-label="Einstellungen" onClick={() => useFormulare.getState().einstellungenOeffnen()}>
+            <button className={einstellungenOffen ? 'active' : ''} title="Einstellungen: Ordner, Stammdaten, Adressbuch, Formulare" aria-label="Einstellungen" onClick={() => useFormulare.getState().einstellungenOeffnen()}>
               <Symbol name="zahnrad" />
             </button>
           </div>
@@ -376,6 +381,13 @@ export function App() {
               <span>
                 {offen.sperre.art === 'fremd' && <ZustandMarke art={offen.sperre.bewertung.art} />} {grund}
               </span>
+              {offen.sperre.art !== 'fremd' && antragGesperrt && (
+                <span className="fo-meldung-knoepfe">
+                  <button className="fo-klein" title="Status des Antrags ansehen, Nachtrag anlegen" onClick={() => useFormulare.getState().setHaupt('antrag')}>
+                    Antragsdaten …
+                  </button>
+                </span>
+              )}
               {offen.sperre.art === 'fremd' && (
                 <span className="fo-meldung-knoepfe">
                   <button className="fo-klein" title="Sperrdatei erneut prüfen; ist sie weg, wird das Formular zum Bearbeiten geöffnet" onClick={() => void sperreNeuPruefen()}>
@@ -394,14 +406,20 @@ export function App() {
       )}
       <main className="fo-main">
         {ds && projekt && haupt !== 'projekte' && <Seitenleiste onProjekte={() => useFormulare.getState().setHaupt('projekte')} onSperren={() => setDialog('sperren')} />}
-        {formularSichtbar && (gliederungOffen || einrichten) && <Gliederung offen={offen} />}
+        {formularSichtbar && (gliederungOffen || einrichten) && (
+          <BreitenLeiste schluessel="formulare:breite:gliederung" vorgabe={260}>
+            <Gliederung offen={offen} />
+          </BreitenLeiste>
+        )}
         <section className={`fo-inhalt${formularSichtbar && ansicht === 'seite' ? ' fo-inhalt-papier' : ''}`}>
-          {haupt === 'einstellungen' ? (
-            <EinstellungenAnsicht />
-          ) : ds && (!projekt || haupt === 'projekte') ? (
+          {ds && (!projekt || haupt === 'projekte') ? (
             <ProjektUebersicht onEinstellungen={() => useFormulare.getState().einstellungenOeffnen('ordner')} />
           ) : haupt === 'projektkarte' && projekt ? (
             <ProjektkarteAnsicht />
+          ) : haupt === 'antrag' && projekt ? (
+            <div className="fo-antragsdaten">
+              <AntragsdatenAnsicht />
+            </div>
           ) : haupt === 'datei' && datei ? (
             <DateiAnsicht />
           ) : offen ? (
@@ -428,6 +446,7 @@ export function App() {
           onAbbrechen={() => useFormulare.getState().stammdatenAbbrechen()}
         />
       )}
+      {einstellungenOffen && <EinstellungenModal />}
       <MenueHost />
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
       <GesetzModal />
@@ -447,12 +466,12 @@ function Leer({ desktop, onEinstellungen }: { desktop: boolean; onEinstellungen:
   const projekt = useFormulare((s) => s.projekt);
   return (
     <div className="fo-leer">
-      {/* gleicher Einstieg wie in den anderen Apps: Projekt wählen bzw. Datei öffnen (ein neues Formular legt FORMA an) */}
+      {/* gleicher Einstieg wie in den anderen Apps: Projekt wählen bzw. Datei öffnen */}
       <ProjektEinstieg
-        titel="Bauantragsformulare aus FORMA"
+        titel="Bauantragsformulare"
         text={
           desktop
-            ? 'Formulare der FORMA-Projekte ausfüllen – Projekt wählen (links oder über „Projekte“), dann ein Formular.'
+            ? 'Bauantragsformulare ausfüllen – Projekt wählen (links oder über „Projekte“), dann ein Formular.'
             : 'In der Web-Version lässt sich ein einzelnes Formular (.frmsjf) öffnen; die geänderte Fassung wird heruntergeladen. Projektordner, Sperrdateien und direktes Speichern gibt es nur in der Desktop-App.'
         }
         onProjekte={desktop && ordner > 0 ? () => useFormulare.getState().setHaupt('projekte') : undefined}
@@ -461,7 +480,7 @@ function Leer({ desktop, onEinstellungen }: { desktop: boolean; onEinstellungen:
       />
       {desktop && !ordner && (
         <p>
-          Stelle zuerst ein, wo eure FORMA-Projekte liegen. <button onClick={onEinstellungen}>Einstellungen …</button>
+          Stelle zuerst ein, wo eure Formularprojekte liegen. <button onClick={onEinstellungen}>Einstellungen …</button>
         </p>
       )}
       {desktop && ordner > 0 && !projekt && (
@@ -471,8 +490,8 @@ function Leer({ desktop, onEinstellungen }: { desktop: boolean; onEinstellungen:
       )}
       {desktop && projekt && <p>Wähle links ein Formular oder die Projektkarte.</p>}
       <p className="muted small-text">
-        Jede Eingabe wird sofort lokal gesichert, mit Verlauf (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>). In die FORMA-Datei kommt sie mit „Speichern“ (
-        <kbd>Strg</kbd>+<kbd>S</kbd>) – geändert wird nur der Inhalt der Felder, Layout und alles andere bleiben Byte für Byte erhalten. Ist ein Formular in FORMA geöffnet, lässt
+        Jede Eingabe wird sofort lokal gesichert, mit Verlauf (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>). In die Formulardatei kommt sie mit „Speichern“ (
+        <kbd>Strg</kbd>+<kbd>S</kbd>) – geändert wird nur der Inhalt der Felder, Layout und alles andere bleiben Byte für Byte erhalten. Ist ein Formular in einem anderen Programm geöffnet, lässt
         es sich hier nur ansehen.
       </p>
     </div>

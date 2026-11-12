@@ -55,7 +55,7 @@ export function SperreAufhebenDialog({
         </dl>
         <p className={bewertung.art === 'verwaist' ? 'muted small-text' : 'warning small-text'}>
           {bewertung.art === 'verwaist'
-            ? 'Die Sperrdatei wird gelöscht. Danach lässt sich das Formular wieder bearbeiten – hier oder in FORMA.'
+            ? 'Die Sperrdatei wird gelöscht. Danach lässt sich das Formular wieder bearbeiten – hier oder in einem anderen Programm.'
             : `Nur aufheben, wenn sicher ist, dass das Formular bei ${sperre.benutzer || 'der anderen Person'} nicht mehr geöffnet ist. Sonst arbeiten zwei Leute gleichzeitig daran, und wer zuletzt speichert, überschreibt den anderen.`}
         </p>
         <div className="dialog-buttons">

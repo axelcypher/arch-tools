@@ -3,7 +3,7 @@ import { formularAktualisieren } from '../aktualisieren';
 import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
-import { useAntrag } from '../antragStore';
+import { aktiveFassung, aktiverEingereicht, useAntrag } from '../antragStore';
 import { AntragsAblage, SammelExportKnopf } from './AntragsAblage';
 import type { FormularEintrag } from '../projekte';
 import { formularLoeschen } from '../dateiAktionen';
@@ -84,8 +84,10 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     }
   };
   const dokumente = useAntrag((s) => s.dokumente);
+  const fassung = useAntrag((s) => aktiveFassung(s, projekt));
+  const eingereicht = useAntrag((s) => !!aktiverEingereicht(s, projekt));
   const umfangDa = useAntrag((s) => !!s.projektdatei?.umfang);
-  // Status je Formular und fehlende Formulare des Projektumfangs
+  // Status je Formular und fehlende Formulare des Antragsumfangs
   const statusVon = useMemo(() => new Map(dokumente.filter((d) => d.formular && d.status !== 'entfaellt').map((d) => [d.formular!.pfad, d])), [dokumente]);
   const fehlende = dokumente.filter((d) => d.eintrag.art === 'intern' && !d.formular && d.status === 'fehlt');
 
@@ -178,7 +180,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
           <>
             <Abschnitt
               id="formulare"
-              titel="FORMA"
+              titel="Formulare"
               kopf={
                 <>
                   <button className="icon" title="Formular hinzufügen – aus dem Vorlagenordner oder einem anderen Projekt" aria-label="Formular hinzufügen" onClick={() => useHinzufuegenDialog.getState().setOffen(true)}>
@@ -188,29 +190,44 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                   <button className="icon" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren" onClick={onSperren}>
                     <Symbol name="schloss" />
                   </button>
-                  <button className="icon" title="FORMA-Projektordner im Explorer zeigen" aria-label="FORMA-Projektordner zeigen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
+                  <button className="icon" title="Formularordner des Projekts im Explorer zeigen" aria-label="Formularordner zeigen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
                     <Symbol name="extern" />
                   </button>
                 </>
               }
             >
-              <button
-                className={`nav-eintrag fo-eintrag-karte${haupt === 'projektkarte' ? ' aktiv' : ''}`}
-                aria-current={haupt === 'projektkarte' ? 'page' : undefined}
-                onClick={() => setHaupt('projektkarte')}
-                title="Projektdaten aus der FORMA-Projektkarte – Vorhaben, Beteiligte, Grundstück; daraus werden die Formulare ausgefüllt"
-              >
-                <Symbol name="karte" />
-                <span className="fo-eintrag-karte-text">
-                  <strong>Projektdaten</strong>
-                  <span className="nav-unter">Vorhaben · Beteiligte · Grundstück</span>
-                </span>
-                {karte && Object.keys(karte.aenderungen).length > 0 && (
-                  <span className="fo-ungespeichert" title="Nicht gespeicherte Änderungen">
-                    ●
+              {/* Projektdaten (für das ganze Projekt) und Antragsdaten (nur für den aktiven Antrag) – ein Knopf in zwei Hälften */}
+              <div className="fo-daten" role="group" aria-label="Daten">
+                <button
+                  className={`nav-eintrag fo-eintrag-karte${haupt === 'projektkarte' ? ' aktiv' : ''}`}
+                  aria-current={haupt === 'projektkarte' ? 'page' : undefined}
+                  onClick={() => setHaupt('projektkarte')}
+                  title="Projektdaten – gelten für das ganze Projekt: Vorhaben, Beteiligte, Grundstück (Projektkarte); daraus werden die Formulare ausgefüllt"
+                >
+                  <Symbol name="karte" />
+                  <span className="fo-eintrag-karte-text">
+                    <strong>Projektdaten</strong>
+                    <span className="nav-unter">ganzes Projekt</span>
                   </span>
-                )}
-              </button>
+                  {karte && Object.keys(karte.aenderungen).length > 0 && (
+                    <span className="fo-ungespeichert" title="Nicht gespeicherte Änderungen">
+                      ●
+                    </span>
+                  )}
+                </button>
+                <button
+                  className={`nav-eintrag fo-eintrag-karte${haupt === 'antrag' ? ' aktiv' : ''}`}
+                  aria-current={haupt === 'antrag' ? 'page' : undefined}
+                  onClick={() => setHaupt('antrag')}
+                  title={`Antragsdaten – gelten nur für den Antrag ${fassung}: Status, Antragsmerkmale, Antragsumfang${eingereicht ? ' · eingereicht und gesperrt' : ''}`}
+                >
+                  <Symbol name={eingereicht ? 'schloss' : 'stapel'} />
+                  <span className="fo-eintrag-karte-text">
+                    <strong>Antragsdaten</strong>
+                    <span className="nav-unter">{eingereicht ? `${fassung} · eingereicht` : fassung}</span>
+                  </span>
+                </button>
+              </div>
               <div className="nav-liste" role="list" aria-label="Formulare">
                 {formulare.map((f) => {
                   const aktiv = offen?.pfad === f.pfad;
@@ -256,7 +273,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                     onContextMenu={(e) =>
                       zeigeMenue(e, [
                         { text: 'Formular anlegen', symbol: 'plus', aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id) },
-                        { text: 'Projektumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
+                        { text: 'Antragsumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
                       ])
                     }
                   >

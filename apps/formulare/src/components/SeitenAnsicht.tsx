@@ -62,9 +62,9 @@ export function SeitenAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   // Felder, die nach den Bedingungen (noch) nicht erforderlich sind – im Formular neutral statt farbig, mit Hinweis warum
   const entfall = useEntfallen(offen);
   const entfallen = useMemo(() => new Set(entfall.gruende.keys()), [entfall]);
-  // offen: hängt an nicht festgelegten Projektmerkmalen – gelb, mit Hinweis
+  // offen: hängt an nicht festgelegten Antragsmerkmalen – gelb, mit Hinweis
   const offene = useMemo(() => new Set(entfall.offen.keys()), [entfall]);
-  // Hinweise (Widersprüche, Abweichungen vom Projektmerkmal) und vorbelegte Kästchen
+  // Hinweise (Widersprüche, Abweichungen vom Antragsmerkmal) und vorbelegte Kästchen
   const hinweise = usePlausibel(offen);
   const vorbelegt = useVorbelegt(offen);
   // Info-Symbole (U-06): klein, rechts am Rahmen; gleicher Grund für mehrere Felder eines Abschnitts → ein Symbol
@@ -391,9 +391,9 @@ interface ElementProps {
   titel?: string;
   /** nach den Bedingungen nicht erforderlich */
   entfaellt?: boolean;
-  /** hängt an nicht festgelegten Projektmerkmalen (gilt als erforderlich) */
+  /** hängt an nicht festgelegten Antragsmerkmalen (gilt als erforderlich) */
   offen?: boolean;
-  /** aus einem Projektmerkmal vorbelegt (Vorschlag, bitte prüfen) */
+  /** aus einem Antragsmerkmal vorbelegt (Vorschlag, bitte prüfen) */
   vorbelegt?: boolean;
   /** Wert aus der Projektkarte (auto) bzw. von Hand überschrieben (fixiert) */
   autofill?: 'auto' | 'fixiert';
@@ -464,7 +464,7 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${offen ? ' offen' : ''}${vorbelegt ? ' vorbelegt' : ''}${rechts ? '' : ' links'}`}
           style={{ ...pos, ...schrift(k) }}
           title={
-            vorbelegt ? `${titel} – aus dem Projektmerkmal vorbelegt, bitte prüfen` : entfaellt ? `${titel} – nicht erforderlich` : offen ? `${titel} – offen (hängt von Projektmerkmalen ab)` : titel
+            vorbelegt ? `${titel} – aus dem Antragsmerkmal vorbelegt, bitte prüfen` : entfaellt ? `${titel} – nicht erforderlich` : offen ? `${titel} – offen (hängt von Antragsmerkmalen ab)` : titel
           }
         >
           <input

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
+import { Modal } from '@core/ui/Dialog';
 import { dateiname } from '@core/platform/files';
 import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
 import { hatVorgabe } from '../vorgabe';
 import { VORGABEN } from '../vorgaben';
 import type { Adresse } from '../adressbuch';
-import { adressName, adressOrt, inRolle, sucheAdressen } from '../adressbuch';
+import { ADRESS_TEXTFELDER, adressName, adressOrt, inRolle, neueEigeneAdresse, sucheAdressen } from '../adressbuch';
+import { bestaetigen } from '@core/ui/Rueckfrage';
 import { waehleOrdner } from '../dateisystem';
 import { IN_PROJEKTKARTE } from '../projektdaten';
 import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
@@ -18,9 +20,9 @@ import type { SymbolName } from './Symbol';
 import { Symbol } from './Symbol';
 
 const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; text: string }[] = [
-  { id: 'ordner', titel: 'Ordner', symbol: 'ordner', text: 'FORMA-Projekte, Projektordner, angezeigte Pfade' },
+  { id: 'ordner', titel: 'Ordner', symbol: 'ordner', text: 'Formularprojekte, Projektordner, angezeigte Pfade' },
   { id: 'stammdaten', titel: 'Büro & Stammdaten', symbol: 'buero', text: 'Vorgaben je Rolle für neue Projektkarten' },
-  { id: 'adressbuch', titel: 'Adressbuch', symbol: 'adressen', text: 'Adressen aus allen FORMA-Projekten' },
+  { id: 'adressbuch', titel: 'Adressbuch', symbol: 'adressen', text: 'Adressen anlegen und pflegen, aus allen Projektkarten' },
   { id: 'formulare', titel: 'Formulare', symbol: 'formular', text: 'Gliederung und Füllstand je Formular' },
   { id: 'antrag', titel: 'Antrag & Export', symbol: 'export', text: 'PDF-Export, Antragsfassungen, Antragsdokumente' },
   { id: 'kataster', titel: 'Katasterpläne', symbol: 'karte', text: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne' },
@@ -67,14 +69,25 @@ const ROLLEN_VORGABE: [number, string][] = [
 ];
 
 /**
- * Einstellungen als eigene Ansicht mit Ebenen: links die Bereiche, rechts der Inhalt. Adressen und Stammdaten
- * kommen aus FORMA (Projektkarten) – hier wird nur ausgewählt, nichts doppelt gepflegt.
+ * Einstellungen als Modal über der aktuellen Ansicht, mit Ebenen: links die Bereiche, rechts der Inhalt. Adressen
+ * und Stammdaten kommen aus den Projektkarten – hier wird nur ausgewählt, nichts doppelt gepflegt. Alles wirkt
+ * sofort; Schließen (Fertig, ×, Esc) kehrt zur Ansicht darunter zurück, die unverändert bleibt.
  */
+export function EinstellungenModal() {
+  const { einstellungenSchliessen } = useFormulare.getState();
+  return (
+    <Modal titel="Einstellungen" className="es-modal" onClose={einstellungenSchliessen} klickDaneben={false}>
+      <button className="icon es-schliessen" title="Schließen (Esc)" aria-label="Einstellungen schließen" onClick={einstellungenSchliessen}>
+        <Symbol name="schliessen" />
+      </button>
+      <EinstellungenAnsicht />
+    </Modal>
+  );
+}
+
 export function EinstellungenAnsicht() {
   const bereich = useFormulare((s) => s.einstellungsBereich);
-  const { einstellungenOeffnen, setHaupt } = useFormulare.getState();
-  const offen = useFormulare((s) => s.offen);
-  const datei = useFormulare((s) => s.datei);
+  const { einstellungenOeffnen, einstellungenSchliessen } = useFormulare.getState();
   return (
     <div className="es">
       <nav className="es-nav" aria-label="Bereiche der Einstellungen">
@@ -90,7 +103,7 @@ export function EinstellungenAnsicht() {
             </span>
           </button>
         ))}
-        <button className="es-zurueck" onClick={() => setHaupt(offen ? 'formular' : datei ? 'datei' : 'formular')}>
+        <button className="es-zurueck primary" onClick={einstellungenSchliessen}>
           Fertig
         </button>
       </nav>
@@ -150,11 +163,11 @@ function Ordner() {
   return (
     <>
       <h2>Ordner</h2>
-      <Karte titel="FORMA-Projekte" text="Ordner, in denen die FORMA-Projekte liegen (je Projekt ein Unterordner mit Kürzel, z. B. „BS5“). Es können mehrere sein.">
+      <Karte titel="Formularprojekte" text="Ordner, in denen die Formularprojekte liegen (je Projekt ein Unterordner mit Kürzel, z. B. „BS5“, mit den Formularen und der Projektkarte). Es können mehrere sein.">
         <OrdnerListe ordner={projektordner} onEntfernen={(p) => void ordnerEntfernen(p)} />
         <button
           onClick={async () => {
-            const p = await waehleOrdner('Ordner mit FORMA-Projekten wählen');
+            const p = await waehleOrdner('Ordner mit Formularprojekten wählen');
             if (p) await ordnerHinzufuegen(p);
           }}
         >
@@ -217,10 +230,13 @@ function AdressbuchLeer() {
   const { adressbuchLaden } = useFormulare.getState();
   return (
     <div className="es-leer">
-      <p>Das Adressbuch wird aus den Projektkarten aller FORMA-Projekte gelesen ({projekte} Projekte).</p>
-      <button className="primary" disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()}>
-        {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Adressbuch einlesen'}
-      </button>
+      <p>Das Adressbuch sammelt die Adressen aus den Projektkarten aller Projekte ({projekte} Projekte) – und eure eigenen, die ihr hier anlegt.</p>
+      <div className="es-knoepfe">
+        <button className="primary" disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()}>
+          {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Aus den Projektkarten einlesen'}
+        </button>
+        <button onClick={() => useFormulare.getState().einstellungenOeffnen('adressbuch')}>Adresse anlegen …</button>
+      </div>
     </div>
   );
 }
@@ -240,7 +256,7 @@ function Stammdaten() {
       <h2>Büro & Stammdaten</h2>
       <p className="muted">
         Vorgaben je Rolle: Welche Adresse in einer neuen Projektkarte eingesetzt wird (Projektkarte → „Vorgaben eintragen“ bzw. „Übernehmen von …“). Die Adressen stammen
-        aus dem <button className="es-verweis" onClick={() => einstellungenOeffnen('adressbuch')}>Adressbuch</button>, also aus FORMA – gepflegt wird dort, nicht hier.
+        aus dem <button className="es-verweis" onClick={() => einstellungenOeffnen('adressbuch')}>Adressbuch</button> – dort lassen sie sich anlegen und ändern.
       </p>
       {!adressbuch ? (
         <AdressbuchLeer />
@@ -284,29 +300,63 @@ function Stammdaten() {
 
 function Adressbuch() {
   const adressbuch = useFormulare((s) => s.adressbuch);
+  const eigene = useFormulare((s) => s.eigeneAdressen);
   const laeuft = useFormulare((s) => s.adressbuchLaeuft);
-  const { adressbuchLaden } = useFormulare.getState();
+  const projekte = useFormulare((s) => s.projekte.length);
+  const { adressbuchLaden, eigeneAdresseSpeichern, eigeneAdresseEntfernen } = useFormulare.getState();
   const [suche, setSuche] = useState('');
   const [gewaehlt, setGewaehlt] = useState<string | null>(null);
+  /** in Bearbeitung: Schlüssel und Texte (neu: Schlüssel „e:…“, noch nicht gespeichert) */
+  const [entwurf, setEntwurf] = useState<{ schluessel: string; texte: Record<string, string>; neu: boolean } | null>(null);
   const [alt, setAlt] = useState(stammdatenLaden);
   const liste = useMemo(() => sucheAdressen(adressbuch?.adressen ?? [], suche), [adressbuch, suche]);
   const auswahl = liste.find((a) => a.schluessel === gewaehlt) ?? liste[0];
+  const ausgeblendet = eigene.filter((e) => e.ausgeblendet);
+
+  const neu = () => {
+    const a = neueEigeneAdresse();
+    setEntwurf({ schluessel: a.schluessel, texte: {}, neu: true });
+  };
+  const bearbeiten = (a: Adresse) => setEntwurf({ schluessel: a.schluessel, texte: Object.fromEntries(ADRESS_TEXTFELDER.map(([id]) => [id, a.texte[id] ?? ''])), neu: false });
+  const speichern = async () => {
+    if (!entwurf || !entwurf.texte['40']?.trim()) return;
+    const texte = Object.fromEntries(Object.entries(entwurf.texte).map(([k, v]) => [k, v.trim()]));
+    await eigeneAdresseSpeichern({ schluessel: entwurf.schluessel, texte, geaendert: Date.now() });
+    setGewaehlt(entwurf.schluessel);
+    setEntwurf(null);
+  };
+  const entfernen = async (a: Adresse) => {
+    if (a.herkunft === 'eigen') {
+      if (await bestaetigen(`„${adressName(a)}“ löschen?`, 'Die Adresse wird aus dem Adressbuch gelöscht. Projektkarten, in die sie übernommen wurde, bleiben unverändert.', 'Löschen'))
+        await eigeneAdresseEntfernen(a.schluessel);
+    } else if (
+      await bestaetigen(
+        `„${adressName(a)}“ ausblenden?`,
+        'Die Adresse steht in Projektkarten und wird dort nicht gelöscht – im Adressbuch erscheint sie nicht mehr (unten wieder einblendbar).',
+        'Ausblenden',
+      )
+    )
+      await eigeneAdresseSpeichern({ schluessel: a.schluessel, texte: {}, ausgeblendet: true, geaendert: Date.now() });
+  };
 
   return (
     <>
       <div className="es-titelzeile">
         <h2>Adressbuch</h2>
-        <button disabled={!!laeuft} onClick={() => void adressbuchLaden()} title="Projektkarten aller FORMA-Projekte neu lesen">
-          {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Neu einlesen'}
+        <button className="primary" onClick={neu}>
+          <Symbol name="plus" /> Neue Adresse
+        </button>
+        <button disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()} title="Die Projektkarten aller Projekte neu lesen">
+          {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Aus den Projektkarten einlesen'}
         </button>
       </div>
       <p className="muted">
-        Alle Adressen aus den Projektkarten der FORMA-Projekte – Bauherren, Entwurfsverfasser, Behörden, Fachplaner. Gepflegt wird in FORMA bzw. in der Projektkarte; gleiche
-        Adressen erscheinen einmal mit allen Verwendungen.
-        {adressbuch && ` Stand: ${new Date(adressbuch.stand).toLocaleString('de-DE')}, ${adressbuch.adressen.length} Adressen.`} Die zentrale Adressdatenbank von SJ OFFICE ist
-        noch nicht angebunden.
+        Bauherren, Entwurfsverfasser, Behörden, Fachplaner: die Adressen aus den Projektkarten aller Projekte (gleiche erscheinen einmal mit allen Verwendungen) und eure
+        eigenen. Anlegen, ändern und ausblenden lässt sich alles hier – gespeichert im gemeinsamen Konfigurationsordner, für alle im Büro. Die Projektkarten selbst bleiben
+        unverändert; übernommen wird eine Adresse in der Projektkarte mit „Übernehmen von …“.
+        {adressbuch && ` ${adressbuch.adressen.length} Adressen${adressbuch.stand ? `, Projektkarten gelesen ${new Date(adressbuch.stand).toLocaleString('de-DE')}` : ''}.`}
       </p>
-      {!adressbuch ? (
+      {!adressbuch && !entwurf ? (
         <AdressbuchLeer />
       ) : (
         <div className="es-adressbuch">
@@ -314,41 +364,130 @@ function Adressbuch() {
             <input type="search" placeholder="Name, Ort, Rolle, Projekt …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Adressbuch durchsuchen" />
             <div className="es-adressliste-eintraege" role="listbox" aria-label="Adressen">
               {liste.map((a) => (
-                <button key={a.schluessel} role="option" aria-selected={auswahl === a} className={`es-adress-eintrag${auswahl === a ? ' aktiv' : ''}`} onClick={() => setGewaehlt(a.schluessel)}>
-                  <strong>{adressName(a)}</strong>
+                <button
+                  key={a.schluessel}
+                  role="option"
+                  aria-selected={auswahl === a && !entwurf?.neu}
+                  className={`es-adress-eintrag${auswahl === a && !entwurf?.neu ? ' aktiv' : ''}`}
+                  onClick={() => {
+                    setGewaehlt(a.schluessel);
+                    setEntwurf(null);
+                  }}
+                >
+                  <strong>
+                    {adressName(a)}
+                    {a.herkunft && <span className={`es-herkunft ${a.herkunft}`}>{a.herkunft === 'eigen' ? 'eigene' : 'geändert'}</span>}
+                  </strong>
                   <span className="muted small-text">
-                    {adressOrt(a) || '–'} · {[...new Set(a.verwendungen.map((v) => v.rolle))].slice(0, 2).join(', ')}
+                    {adressOrt(a) || '–'}
+                    {a.verwendungen.length ? ` · ${[...new Set(a.verwendungen.map((v) => v.rolle))].slice(0, 2).join(', ')}` : ''}
                   </span>
                 </button>
               ))}
               {!liste.length && <p className="muted small-text">Keine passenden Adressen.</p>}
             </div>
           </div>
-          {auswahl && (
-            <div className="es-adress-detail">
-              <h3>{adressName(auswahl)}</h3>
-              <dl>
-                {ADRESSFELDER.filter(([id]) => auswahl.texte[id]?.trim()).map(([id, titel]) => (
-                  <div key={id}>
-                    <dt>{titel}</dt>
-                    <dd>{auswahl.texte[id]}</dd>
-                  </div>
+          {entwurf ? (
+            <form
+              className="es-adress-detail es-adress-form"
+              aria-label={entwurf.neu ? 'Neue Adresse' : 'Adresse bearbeiten'}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void speichern();
+              }}
+            >
+              <h3>{entwurf.neu ? 'Neue Adresse' : 'Adresse bearbeiten'}</h3>
+              <div className="es-adress-felder">
+                {ADRESS_TEXTFELDER.map(([id, titel]) => (
+                  <label key={id} className={id === '40' || id === '70' ? 'breit' : ''}>
+                    <span className="field-label">
+                      {titel}
+                      {id === '40' ? ' *' : ''}
+                    </span>
+                    <input
+                      value={entwurf.texte[id] ?? ''}
+                      aria-label={titel}
+                      required={id === '40'}
+                      autoFocus={id === '40'}
+                      onChange={(e) => setEntwurf({ ...entwurf, texte: { ...entwurf.texte, [id]: e.target.value } })}
+                    />
+                  </label>
                 ))}
-              </dl>
-              <h4>Verwendet in</h4>
-              <ul className="es-verwendungen">
-                {auswahl.verwendungen.map((v, i) => (
-                  <li key={i}>
-                    <strong>{v.projekt}</strong> · {v.rolle}
-                  </li>
-                ))}
-              </ul>
-            </div>
+              </div>
+              <div className="es-knoepfe">
+                <button type="submit" className="primary" disabled={!entwurf.texte['40']?.trim()}>
+                  Speichern
+                </button>
+                <button type="button" onClick={() => setEntwurf(null)}>
+                  Abbrechen
+                </button>
+              </div>
+            </form>
+          ) : (
+            auswahl && (
+              <div className="es-adress-detail">
+                <div className="es-titelzeile">
+                  <h3>{adressName(auswahl)}</h3>
+                  <button className="small" onClick={() => bearbeiten(auswahl)}>
+                    <Symbol name="stift" /> Bearbeiten
+                  </button>
+                  <button className="small" onClick={() => void entfernen(auswahl)}>
+                    {auswahl.herkunft === 'eigen' ? 'Löschen …' : 'Ausblenden …'}
+                  </button>
+                  {auswahl.herkunft === 'geaendert' && (
+                    <button className="small" title="Die eigene Fassung verwerfen – es gilt wieder die aus den Projektkarten" onClick={() => void eigeneAdresseEntfernen(auswahl.schluessel)}>
+                      Änderungen verwerfen
+                    </button>
+                  )}
+                </div>
+                <p className="muted small-text">
+                  {auswahl.herkunft === 'eigen' ? 'Eigene Adresse des Adressbuchs.' : auswahl.herkunft === 'geaendert' ? 'Aus den Projektkarten, im Adressbuch geändert.' : 'Aus den Projektkarten.'}
+                </p>
+                <dl>
+                  {ADRESSFELDER.filter(([id]) => auswahl.texte[id]?.trim()).map(([id, titel]) => (
+                    <div key={id}>
+                      <dt>{titel}</dt>
+                      <dd>{auswahl.texte[id]}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {auswahl.verwendungen.length > 0 && (
+                  <>
+                    <h4>Verwendet in</h4>
+                    <ul className="es-verwendungen">
+                      {auswahl.verwendungen.map((v, i) => (
+                        <li key={i}>
+                          <strong>{v.projekt}</strong> · {v.rolle}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            )
           )}
         </div>
       )}
+      {ausgeblendet.length > 0 && (
+        <Karte titel={`Ausgeblendet (${ausgeblendet.length})`} text="Adressen aus den Projektkarten, die im Adressbuch nicht erscheinen.">
+          <ul className="es-liste">
+            {ausgeblendet.map((e) => {
+              const a = adressbuch?.adressen.find((x) => x.schluessel === e.schluessel) ?? useFormulare.getState().adressbuchKarten?.adressen.find((x) => x.schluessel === e.schluessel);
+              return (
+                <li key={e.schluessel}>
+                  <Symbol name="adressen" />
+                  <span className="es-liste-text">{a ? `${adressName(a)} · ${adressOrt(a)}` : e.schluessel.split('|').filter(Boolean).join(', ')}</span>
+                  <button className="small" onClick={() => void eigeneAdresseEntfernen(e.schluessel)}>
+                    Einblenden
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Karte>
+      )}
       {alt.length > 0 && (
-        <Karte titel="Früher in der App gemerkte Adressen" text="Aus Version 0.2/0.3 – lassen sich weiter übernehmen, sind aber nicht mit FORMA verbunden. Am besten entfernen und die Adresse in FORMA pflegen.">
+        <Karte titel="Früher in der App gemerkte Adressen" text="Aus Version 0.2/0.3 – lassen sich weiter übernehmen. Am besten als neue Adresse ins Adressbuch übertragen und hier entfernen.">
           <ul className="es-liste">
             {alt.map((s) => (
               <li key={s.name}>

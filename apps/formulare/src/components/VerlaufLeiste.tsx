@@ -37,7 +37,7 @@ export function VerlaufLeiste({ offen }: { offen: OffenesFormular }) {
         </button>
       </div>
       <p className="muted small-text">
-        {offen.gesichert ? `Lokal gesichert ${zeit(offen.gesichert)}. ` : ''}Jede Eingabe wird sofort lokal gesichert; in die FORMA-Datei kommt sie mit „Speichern“.
+        {offen.gesichert ? `Lokal gesichert ${zeit(offen.gesichert)}. ` : ''}Jede Eingabe wird sofort lokal gesichert; in die Formulardatei kommt sie mit „Speichern“.
       </p>
       <ol className="fo-verlauf-liste" reversed>
         {[...schritte.keys()].reverse().map((i) => {

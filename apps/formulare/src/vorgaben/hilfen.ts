@@ -6,9 +6,9 @@ import type { Bedingung, BedingungTeil, Quelle, Teilbedingung } from '../bedingu
 import { gruppe } from '../bedingung';
 import type { Gruppe, Regel } from '../profil';
 
-/** Projektmerkmal hat einen der Werte */
+/** Antragsmerkmal hat einen der Werte */
 export const ist = (merkmal: string, ...werte: string[]): Teilbedingung => ({ art: 'merkmal', merkmal, werte });
-/** Projektmerkmal hat keinen der Werte (ohne Wert im Projekt: offen, siehe bedingung.ts) */
+/** Antragsmerkmal hat keinen der Werte (ohne Wert im Projekt: offen, siehe bedingung.ts) */
 export const istNicht = (merkmal: string, ...werte: string[]): Teilbedingung => ({ art: 'merkmal', merkmal, werte, nicht: true });
 /** Kästchen angekreuzt bzw. Textfeld ausgefüllt */
 export const angekreuzt = (feld: string): Teilbedingung => ({ art: 'feld', feld, pruefung: 'ausgefuellt' });

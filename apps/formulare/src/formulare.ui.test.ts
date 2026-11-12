@@ -62,6 +62,8 @@ const ANFANG = {
   verlaufOffen: false,
   gliederungOffen: true,
   adressbuch: null,
+  adressbuchKarten: null,
+  eigeneAdressen: [],
   adressbuchLaeuft: null,
   rollenVorgaben: {},
   profile: {},
@@ -415,12 +417,12 @@ describe('Formulare', () => {
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     const nav = [...host.querySelectorAll('.pk-nav-eintrag')].map((b) => [b.querySelector('.pk-nav-name')!.textContent!.trim(), b.querySelector('.pk-nav-kurz')!.textContent]);
     expect(nav).toEqual([
+      // oben die eigene Ansicht (noch nicht zusammengestellt); der Antragsumfang steht in den Antragsdaten
+      ['Eigene Ansicht', 'zusammenstellen …'],
       ['Projektdaten', 'Neubau'],
       ['Bauherr', 'Mustermann, Max · Musterstadt'],
       ['Eigentümer des Baugrundstücks', 'nicht ausgefüllt'],
       ['Gemeinde', 'Musterstadt'],
-      // nicht aus FORMA: der Projektumfang des Antrags
-      ['Projektumfang', 'noch nicht festgelegt'],
     ]);
     await gruppeWaehlen(host, 'Bauherr');
     expect(kartenFeld(host, 'Name/Firma').value).toBe('Mustermann');
@@ -513,12 +515,12 @@ describe('Formulare', () => {
     await projektOeffnen(host, 'BS9');
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     const reihen = () =>
-      [...host.querySelectorAll('.pk-nav-reihe')].map((r) => [
+      [...host.querySelectorAll('.pk-nav-reihe:not(.pk-nav-eigen)')].map((r) => [
         r.querySelector('.pk-nav-titel')?.textContent ?? r.querySelector('.pk-nav-mehr')?.textContent,
         ...[...r.querySelectorAll('.pk-nav-eintrag .pk-nav-name')].map((n) => n.textContent!.trim()),
       ]);
     const zeile = (name: string) => [...host.querySelectorAll('.pk-nav-zeile')].find((z) => z.querySelector('.pk-nav-name')!.textContent!.trim() === name)!;
-    expect(reihen()).toEqual([['Projekt', 'Projektdaten'], ['Beteiligte', 'Bauherr', 'Eigentümer des Baugrundstücks', 'Gemeinde'], ['Antrag', 'Projektumfang']]);
+    expect(reihen()).toEqual([['Projekt', 'Projektdaten'], ['Beteiligte', 'Bauherr', 'Eigentümer des Baugrundstücks', 'Gemeinde']]);
 
     // Favorit: oben unter „Favoriten“, nicht mehr doppelt in der eigenen Reihe
     await klick(zeile('Gemeinde').querySelector<HTMLButtonElement>('.pk-nav-stern')!);
@@ -528,7 +530,7 @@ describe('Formulare', () => {
 
     // ausblenden: verschwindet aus der Gliederung, über „… ausgeblendet – zeigen“ erreichbar; die Suche findet sie weiter
     await klick(zeile('Eigentümer des Baugrundstücks').querySelector<HTMLButtonElement>('.pk-nav-auge')!);
-    expect(reihen()).toEqual([['Favoriten', 'Gemeinde'], ['Projekt', 'Projektdaten'], ['Beteiligte', 'Bauherr'], ['1 ausgeblendet – zeigen'], ['Antrag', 'Projektumfang']]);
+    expect(reihen()).toEqual([['Favoriten', 'Gemeinde'], ['Projekt', 'Projektdaten'], ['Beteiligte', 'Bauherr'], ['1 ausgeblendet – zeigen']]);
     await klick(host.querySelector<HTMLButtonElement>('.pk-nav-mehr')!);
     expect(reihen()[3]).toEqual(['1 ausgeblendet – verbergen', 'Eigentümer des Baugrundstücks']);
     expect(useFormulare.getState()).toMatchObject({ kartenFavoriten: [232], kartenAusgeblendet: [205] });
@@ -538,6 +540,39 @@ describe('Formulare', () => {
     await klick(zeile('Eigentümer des Baugrundstücks').querySelector<HTMLButtonElement>('.pk-nav-auge')!);
     await klick(zeile('Gemeinde').querySelector<HTMLButtonElement>('.pk-nav-auge')!);
     expect(useFormulare.getState()).toMatchObject({ kartenFavoriten: [], kartenAusgeblendet: [232] });
+  });
+
+  it('Projektkarte: eigene Ansicht – Einträge aus allen Gruppen auf einer Seite zusammenstellen, ordnen und bearbeiten', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await klick([...host.querySelectorAll<HTMLButtonElement>('.pk-nav-eintrag')].find((b) => b.textContent!.includes('Eigene Ansicht'))!);
+    expect(host.querySelector('.pk-kopf h2')!.textContent).toBe('Eigene Ansicht');
+    await klick([...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Ansicht zusammenstellen …')!);
+    const editor = document.querySelector<HTMLElement>('.av-editor')!;
+    expect(editor).toBeTruthy();
+    const haken = (gruppe: string, titel: string) =>
+      [...[...editor.querySelectorAll('.av-ed-gruppe')].find((g) => g.querySelector('.av-ed-gruppe-titel')?.textContent === gruppe)!.querySelectorAll<HTMLLabelElement>('.av-ed-kat-feld')]
+        .find((l) => l.textContent === titel)!
+        .querySelector('input')!;
+    await klick(haken('Bauherr', 'Name/Firma'));
+    await klick(haken('Gemeinde', 'Ort'));
+    const imAufbau = () => [...editor.querySelectorAll('.av-ed-feld .av-ed-feld-text')].map((t) => t.firstChild!.textContent);
+    expect(imAufbau()).toEqual(['Name/Firma', 'Ort']);
+    // mit der Tastatur umordnen
+    taste(editor.querySelectorAll<HTMLElement>('.av-griff')[1], 'ArrowUp');
+    await warte();
+    expect(imAufbau()).toEqual(['Ort', 'Name/Firma']);
+    expect(JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!).abschnitte[0].felder).toEqual(['232:110', '201:40']);
+    await klick([...editor.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Fertig')!);
+    expect(document.querySelector('.av-editor')).toBeNull();
+    // die Felder stehen auf der Seite und lassen sich bearbeiten – mit der Gruppe darüber
+    expect([...host.querySelectorAll('.pk-eigen-gruppe')].map((g) => g.textContent)).toEqual(['Gemeinde', 'Bauherr']);
+    const name = host.querySelector<HTMLInputElement>('.pk-eigen [data-pk="201:40"]')!;
+    eingabe(name, 'Musterfrau, Erika');
+    expect(useFormulare.getState().karte!.aenderungen['201:40']).toBe('Musterfrau, Erika');
+    // Navigation: Zahl der Einträge
+    expect([...host.querySelectorAll('.pk-nav-eigen .pk-nav-kurz')].map((k) => k.textContent)).toEqual(['2 Einträge auf einer Seite']);
   });
 
   it('Projektkarte: einzelne Einträge ausblenden – bei Beteiligten für alle, mit ungespeicherter Änderung sichtbar', async () => {

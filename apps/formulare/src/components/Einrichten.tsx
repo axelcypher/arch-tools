@@ -340,7 +340,7 @@ export function EinrichtenPanel({ offen }: { offen: OffenesFormular }) {
               <li>Titel: wie das Feld in der Gliederung heißt</li>
               <li>Füllstand: ob es für „3 von 5“ mitzählt</li>
               <li>Gruppe: mehrere Felder zählen als eine Angabe (z. B. Auswahl) – verschachtelbar: im Baum mit Strg Gruppen und Felder wählen</li>
-              <li>Bedingung: nur erforderlich, wenn … (Projektmerkmal oder anderes Feld, mit und/oder, auch in Gruppen)</li>
+              <li>Bedingung: nur erforderlich, wenn … (Antragsmerkmal oder anderes Feld, mit und/oder, auch in Gruppen)</li>
             </ul>
             {a.gespeichert && (
               <button className="small" onClick={() => useFormulare.getState().profilSetzen(a.schluessel, null)}>
@@ -568,7 +568,7 @@ function FeldEinstellungen({ a, offen, f, ab, seite, editor, onGruppe }: { a: Au
         <span className="fo-ein-typ">{f.art === 'kreuz' ? 'Kästchen' : 'Textfeld'}</span>
         <strong>{feldTitel(f, a.profil)}</strong>
         <span className="muted small-text">
-          Seite {seite + 1} · {abschnittTitel(ab, a.profil)} · in FORMA „{f.name}“{inhalt ? ` · ${inhalt}` : ''}
+          Seite {seite + 1} · {abschnittTitel(ab, a.profil)} · Feldname „{f.name}“{inhalt ? ` · ${inhalt}` : ''}
         </span>
       </div>
       <HerkunftZeile a={a} eintrag={{ art: 'feld', id: f.schluessel }} />

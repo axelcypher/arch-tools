@@ -9,9 +9,9 @@
  * eines Abschnitts zu einer Einheit zusammen – etwa eine Mehrfachauswahl über mehrere Zeilen, die dann 1/1
  * statt 1/5 zählt.
  *
- * Abschnitte, Gruppen und Felder können an Bedingungen geknüpft sein (Projektmerkmal oder anderes Feld, siehe
+ * Abschnitte, Gruppen und Felder können an Bedingungen geknüpft sein (Antragsmerkmal oder anderes Feld, siehe
  * bedingung.ts): Trifft die Bedingung nicht zu, entfallen sie – sie zählen nicht und sind ausgegraut. Hängt sie an
- * einem nicht festgelegten Projektmerkmal, sind sie **offen**: Sie zählen wie erforderliche Angaben und sind gelb
+ * einem nicht festgelegten Antragsmerkmal, sind sie **offen**: Sie zählen wie erforderliche Angaben und sind gelb
  * gekennzeichnet, bis das Merkmal festgelegt ist (R-01).
  */
 
@@ -88,7 +88,7 @@ export const abschnittId = (a: Abschnitt) => `${a.felder[0].seite}:${a.rahmen?.o
 export const istLeer = (p: FormularProfil) =>
   !Object.keys(p.abschnitte).length && !Object.keys(p.zaehlt).length && !Object.keys(p.feldTitel ?? {}).length && !(p.gruppen ?? []).length && !Object.keys(p.bedingungen ?? {}).length;
 
-/** Kontext für Bedingungen im Formular: Projektmerkmale und die Werte der Felder (nach Schlüssel) */
+/** Kontext für Bedingungen im Formular: Antragsmerkmale und die Werte der Felder (nach Schlüssel) */
 export function formularKontext(merkmale: Record<string, string>, felder: Feld[], wert: (f: Feld) => string | boolean): BedingungKontext {
   const nach = new Map(felder.map((f) => [f.schluessel, f]));
   return { merkmale, wert: (k) => (nach.has(k) ? wert(nach.get(k)!) : undefined) };
@@ -161,9 +161,9 @@ export interface Einheit {
   teile?: (EinheitFeld | Einheit)[];
   /** nach den Bedingungen nicht erforderlich – zählt nicht */
   entfaellt?: boolean;
-  /** hängt an nicht festgelegten Projektmerkmalen – zählt wie erforderlich (R-01) */
+  /** hängt an nicht festgelegten Antragsmerkmalen – zählt wie erforderlich (R-01) */
   offen?: boolean;
-  /** die nicht festgelegten Projektmerkmale, an denen die Einheit hängt */
+  /** die nicht festgelegten Antragsmerkmale, an denen die Einheit hängt */
   fehlend?: string[];
 }
 

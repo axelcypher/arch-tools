@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Widersprüche (U-04), Abgleich mit den Projektmerkmalen (U-05) und Info-Symbole (U-06) an einem synthetischen
+ * Widersprüche (U-04), Abgleich mit den Antragsmerkmalen (U-05) und Info-Symbole (U-06) an einem synthetischen
  * Bauantrag nach Anlage I/1 (nw010001, Vorgabe der App) in der Web-Version (Merkmale je Datei).
  */
 import { readFileSync } from 'node:fs';
@@ -100,7 +100,7 @@ describe('Widersprüchliche Kreuze (U-04)', () => {
   });
 });
 
-describe('Formular und Projektmerkmale abgleichen (U-05)', () => {
+describe('Formular und Antragsmerkmale abgleichen (U-05)', () => {
   it('leeres Kästchen aus dem Merkmal vorbelegt und gekennzeichnet – ein Schritt im Verlauf, rückgängig zu machen', async () => {
     useDateiMerkmale.getState().setzen(DATEI, 'Gebäudeklasse', '3');
     const host = await oeffnen();
@@ -128,11 +128,11 @@ describe('Formular und Projektmerkmale abgleichen (U-05)', () => {
     expect(symbol.getAttribute('aria-label')).toBe('Hinweis: Projekt: GK 3, Formular: GK 1');
   });
 
-  it('beim Ankreuzen von Hand: „Gebäudeklasse 4 als Projektmerkmal übernehmen?“ – mit Rückfrage', async () => {
+  it('beim Ankreuzen von Hand: „Gebäudeklasse 4 als Antragsmerkmal übernehmen?“ – mit Rückfrage', async () => {
     const host = await oeffnen();
     await klick(feld(host, '0:CheckBox7'));
-    const dialog = [...document.querySelectorAll('[role="dialog"], [role="alertdialog"]')].find((d) => d.textContent?.includes('als Projektmerkmal übernehmen?'))!;
-    expect(dialog.textContent).toContain('Gebäudeklasse 4 als Projektmerkmal übernehmen?');
+    const dialog = [...document.querySelectorAll('[role="dialog"], [role="alertdialog"]')].find((d) => d.textContent?.includes('als Antragsmerkmal übernehmen?'))!;
+    expect(dialog.textContent).toContain('Gebäudeklasse 4 als Antragsmerkmal übernehmen?');
     await klick(knopf(dialog, 'Übernehmen'));
     expect(useDateiMerkmale.getState().werte[DATEI]).toEqual({ Gebäudeklasse: '4' });
   });

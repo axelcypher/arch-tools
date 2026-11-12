@@ -32,10 +32,30 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 18px 28px 32px;
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+/* Abschnitte behalten ihre Höhe – die Seite scrollt, statt die Quellen auf die Fensterhöhe zu quetschen */
+.pa-rollbereich > * {
+  flex-shrink: 0;
+}
+/* „Zuletzt geöffnet“ hervorgehoben: Streifen über die ganze Breite */
+.pa-zuletzt {
+  margin: 0 -28px;
+  padding: 14px 28px 18px;
+  background: color-mix(in srgb, var(--accent) 11%, var(--panel));
+  border-top: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+}
+.pa-rollbereich > .pa-zuletzt:first-child {
+  margin-top: -18px;
+  border-top: 0;
+}
+.pa-zuletzt .pa-abschnitt-titel {
+  color: var(--accent);
 }
 .pa-abschnitt-titel {
   display: flex;

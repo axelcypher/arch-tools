@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import type { FeldDef } from '@core/ui/ansicht';
+import { useAnsicht } from '@core/ui/ansicht';
+import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
+import { eingereichtVon, tagVon } from '../antrag';
 import { STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
-import { aktiveFassung, antragsOrdner, useAntrag, wirksameEinstellungen } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsOrdner, nachtragName, useAntrag, wirksameEinstellungen } from '../antragStore';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, useFormulare } from '../store';
 import { useExportDialog } from './ExportDialog';
@@ -47,20 +51,20 @@ export function FassungsWahl() {
   const antraege = useAntrag((s) => s.projektdatei?.antraege);
   const { fassungWaehlen } = useAntrag.getState();
   if (!projekt || !ablage) return null;
-  const eingereicht = antraege?.[aktiv]?.eingereicht;
+  const eingereicht = eingereichtVon(antraege?.[aktiv]);
   const tag = (iso: string) => iso.split('-').reverse().join('.');
   const aktivDa = fassungen.some((f) => f.name === aktiv);
   const z = zusammenfassung(dokumente);
   const punkte = (): MenuePunkt[] => [
     ...fassungen.map((f) => ({
-      text: `${f.name}${antraege?.[f.name]?.eingereicht ? ` – eingereicht ${tag(antraege[f.name].eingereicht!.datum)}` : ''}`,
+      text: `${f.name}${eingereichtVon(antraege?.[f.name]) ? ` – eingereicht ${tag(eingereichtVon(antraege?.[f.name])!.datum)}` : ''}`,
       symbol: f.name === aktiv ? ('haken' as const) : undefined,
       aktion: () => void fassungWaehlen(f.name),
     })),
     ...(fassungen.length ? [{ trenner: true as const }] : []),
     ...arten.map((a) => {
       const neu = naechsteFassung(fassungen, a);
-      return { text: `Neue Fassung „${neu}“ anlegen`, symbol: 'plus' as const, hinweis: 'mit den Vorgaben der Projektmerkmale', aktion: () => void fassungWaehlen(neu, true) };
+      return { text: `Neue Fassung „${neu}“ anlegen`, symbol: 'plus' as const, hinweis: 'mit den Vorgaben der Antragsmerkmale', aktion: () => void fassungWaehlen(neu, true) };
     }),
   ];
   return (
@@ -71,12 +75,12 @@ export function FassungsWahl() {
         {!aktivDa && <span className="muted"> (neu)</span>}
       </MenueKnopf>
       {eingereicht && (
-        <span className="an-eingereicht" title={`Antrag ${aktiv} eingereicht – ${eingereicht.datei}`}>
-          ✓ eingereicht {tag(eingereicht.datum)}
+        <span className="an-eingereicht" title={`Antrag ${aktiv} eingereicht – ${eingereicht.datei ?? 'von Hand gesetzt'} · gesperrt, Änderungen über einen Nachtrag`}>
+          <Symbol name="schloss" /> eingereicht {tag(eingereicht.datum)}
         </span>
       )}
       {dokumente.length > 0 && (
-        <button className="an-fassung-stand" title={`Projektumfang: ${z.aktuell} von ${z.gesamt} Dokumenten liegen aktuell im Antragsordner`} onClick={() => umfangZeigen()}>
+        <button className="an-fassung-stand" title={`Antragsumfang: ${z.aktuell} von ${z.gesamt} Dokumenten liegen aktuell im Antragsordner`} onClick={() => umfangZeigen()}>
           <StatusPunkt status={z.schlimmstes} titel={`${z.aktuell} von ${z.gesamt} aktuell`} /> {z.aktuell}/{z.gesamt}
         </button>
       )}
@@ -84,21 +88,143 @@ export function FassungsWahl() {
   );
 }
 
-/** Projektkarte mit dem Reiter „Projektumfang“ zeigen */
+/** Antragsdaten (mit dem Antragsumfang) zeigen */
 export function umfangZeigen() {
   if (!useFormulare.getState().projekt) return;
-  useFormulare.getState().setHaupt('projektkarte');
-  requestAnimationFrame(() => window.dispatchEvent(new CustomEvent('formulare:projektumfang')));
+  useFormulare.getState().setHaupt('antrag');
+  requestAnimationFrame(() => document.querySelector('.pu-umfang')?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }));
+}
+
+/** Status des aktiven Antrags: erkannt oder von Hand gesetzt; eingereicht = gesperrt (Nachtrag anlegen) */
+function AntragStatus() {
+  const projekt = useFormulare((s) => s.projekt);
+  const st = useAntrag();
+  const fassung = aktiveFassung(st, projekt);
+  const daten = st.projektdatei?.antraege?.[fassung];
+  const wirksam = eingereichtVon(daten);
+  const manuell = daten?.status;
+  const nachtrag = nachtragName(st, projekt);
+  const tag = (iso: string) => iso.split('-').reverse().join('.');
+  const wahl = manuell ? (manuell.eingereicht ? 'eingereicht' : 'arbeit') : 'auto';
+  const setzen = (w: string, datum?: string) =>
+    void st.statusSetzen(w === 'auto' ? null : w === 'arbeit' ? { eingereicht: false } : { eingereicht: true, datum: datum ?? manuell?.datum ?? daten?.eingereicht?.datum ?? tagVon(new Date()) });
+  return (
+    <section className={`pu-status${wirksam ? ' eingereicht' : ''}`} aria-label="Status des Antrags">
+      <div className="pu-status-text">
+        <strong>
+          {wirksam ? <Symbol name="schloss" /> : null} {fassung}: {wirksam ? `eingereicht am ${tag(wirksam.datum)}` : 'in Arbeit'}
+        </strong>
+        <span className="muted small-text">
+          {wirksam
+            ? `${wirksam.manuell ? 'Von Hand gesetzt' : `Erkannt an ${wirksam.datei}`}. Der Antrag ist gesperrt: Formulare nur ansehen, Antragsdaten, Export und „bereit“ bleiben, wie eingereicht. Änderungen kommen in einen Nachtrag.`
+            : manuell
+              ? 'Von Hand auf „in Arbeit“ gesetzt – ein Antragsprotokoll bzw. eine Eingangsbestätigung im Antragsordner wird nicht beachtet.'
+              : 'Wird automatisch eingereicht, sobald ein Antragsprotokoll bzw. eine Eingangsbestätigung im Ordner des Antrags liegt.'}
+        </span>
+      </div>
+      <div className="pu-status-wahl">
+        <label>
+          <span className="field-label">Status</span>
+          <select value={wahl} aria-label="Status des Antrags" onChange={(e) => setzen(e.target.value)}>
+            <option value="auto">automatisch{daten?.eingereicht ? ` (erkannt: eingereicht ${tag(daten.eingereicht.datum)})` : ' (erkannt: in Arbeit)'}</option>
+            <option value="arbeit">in Arbeit</option>
+            <option value="eingereicht">eingereicht</option>
+          </select>
+        </label>
+        {wahl === 'eingereicht' && (
+          <label>
+            <span className="field-label">eingereicht am</span>
+            <input type="date" value={manuell?.datum ?? ''} aria-label="eingereicht am" onChange={(e) => e.target.value && setzen('eingereicht', e.target.value)} />
+          </label>
+        )}
+        {wirksam && (
+          <button className="primary" title={`Neue Antragsfassung „${nachtrag}“ anlegen – sie wird aktiv und lässt sich bearbeiten`} onClick={() => void st.fassungWaehlen(nachtrag, true)}>
+            <Symbol name="plus" /> Nachtrag „{nachtrag}“ anlegen
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** Schlüssel der eigenen Ansicht der Antragsmerkmale */
+const MERKMAL_ANSICHT = 'formulare:ansicht:merkmale';
+
+/**
+ * Antragsmerkmale (Gebäudeklasse, Sonderbau …) des aktiven Antrags – in einer eigenen Ansicht, wenn man sich eine
+ * zusammengestellt hat (Auswahl und Reihenfolge, in Abschnitten), sonst alle. Bedingungen in Formularen und im
+ * Antragsumfang richten sich nach ihnen.
+ */
+function Merkmale({ gesperrt }: { gesperrt: boolean }) {
+  const st = useAntrag();
+  const werte = st.projektdatei?.merkmale ?? {};
+  const [ansicht, setAnsicht] = useAnsicht(MERKMAL_ANSICHT);
+  const [editor, setEditor] = useState(false);
+  const [alle, setAlle] = useState(false);
+  const katalog = useMemo((): FeldDef[] => st.merkmalDefinitionen.map((m) => ({ id: m.name, titel: m.name, gruppe: 'Antragsmerkmale', hinweis: MERKMAL_ERKLAERUNG[m.name]?.text })), [st.merkmalDefinitionen]);
+  const vorgabe = { abschnitte: [{ id: 'alle', titel: '', felder: katalog.map((f) => f.id) }] };
+  const gezeigt = ansicht ?? vorgabe;
+  const weitere = katalog.filter((f) => !gezeigt.abschnitte.some((a) => a.felder.includes(f.id)));
+  const feld = (f: FeldDef) => {
+    const m = st.merkmalDefinitionen.find((x) => x.name === f.id);
+    if (!m) return null;
+    const erkl = MERKMAL_ERKLAERUNG[m.name];
+    return (
+      <label className="pu-merkmal" title={erkl?.text}>
+        <span className="field-label">{m.name}</span>
+        <select value={werte[m.name] ?? ''} aria-label={m.name} disabled={gesperrt} onChange={(e) => void st.merkmalSetzen(m.name, e.target.value)}>
+          <option value="">–</option>
+          {m.werte.map((w) => (
+            <option key={w} value={w} title={erkl?.werte?.[w]}>
+              {w}
+            </option>
+          ))}
+        </select>
+        {erkl?.werte?.[werte[m.name] ?? ''] && <span className="muted small-text">{erkl.werte[werte[m.name]]}</span>}
+      </label>
+    );
+  };
+  return (
+    <section className="pu-merkmale" aria-label="Antragsmerkmale">
+      <div className="pu-abschnitt-kopf">
+        <h3 title="Gelten nur für diesen Antrag – ein neuer Antrag startet mit den Vorgaben aus den Einstellungen">Antragsmerkmale</h3>
+        <span className="muted small-text">Abschnitte und Felder mit Bedingung (z. B. „nur bei Gebäudeklasse 3–5“) kommen dazu oder entfallen.</span>
+        <button className="small" title="Eigene Ansicht zusammenstellen: welche Merkmale in welcher Reihenfolge, in Abschnitten" onClick={() => setEditor(true)}>
+          <Symbol name="stift" /> Ansicht …
+        </button>
+      </div>
+      <AnsichtAnzeige ansicht={gezeigt} katalog={katalog} feld={feld} />
+      {weitere.length > 0 && (
+        <>
+          <button className="pk-nav-mehr" aria-expanded={alle} onClick={() => setAlle(!alle)}>
+            {weitere.length} weitere {weitere.length === 1 ? 'Merkmal' : 'Merkmale'} – {alle ? 'verbergen' : 'zeigen'}
+          </button>
+          {alle && <AnsichtAnzeige ansicht={{ abschnitte: [{ id: 'weitere', titel: 'Weitere', felder: weitere.map((f) => f.id) }] }} katalog={katalog} feld={feld} />}
+        </>
+      )}
+      {editor && (
+        <AnsichtEditor
+          titel="Antragsmerkmale: eigene Ansicht"
+          katalog={katalog}
+          ansicht={ansicht}
+          vorgabe={{ abschnitte: [{ id: 'a1', titel: 'Antragsmerkmale', felder: katalog.map((f) => f.id) }] }}
+          onChange={setAnsicht}
+          onSchliessen={() => setEditor(false)}
+        />
+      )}
+    </section>
+  );
 }
 
 const ART_TEXT = { intern: 'Formular', extern: 'Datei' };
 
 /**
- * Projektumfang: welche Dokumente zum Antrag gehören – grundlegend aus dem Katalog der Einstellungen, je Projekt
- * änderbar – mit ihrem Status in der aktiven Antragsfassung. Liegt im Abschnitt „formulare“ der Projektdatei (.oap)
- * und gilt damit für alle im Büro.
+ * Antragsdaten: was nur für den aktiven Antrag gilt – Status (eingereicht?), Antragsmerkmale und Antragsumfang (welche
+ * Dokumente zum Antrag gehören, grundlegend aus dem Katalog der Einstellungen, je Antrag änderbar, mit ihrem Status in
+ * der aktiven Antragsfassung). Die Projektdaten (Projektkarte) gelten dagegen für das ganze Projekt. Liegt im Abschnitt
+ * „formulare“ der Projektdatei (.oap) und gilt damit für alle im Büro. Ein eingereichter Antrag ist gesperrt.
  */
-export function ProjektumfangAnsicht() {
+export function AntragsdatenAnsicht() {
   const projekt = useFormulare((s) => s.projekt);
   const ds = useFormulare((s) => s.ds);
   const ablage = useFormulare((s) => ablageVon(s, s.projekt));
@@ -109,13 +235,14 @@ export function ProjektumfangAnsicht() {
   const vorlagen = useAntrag((s) => s.vorlagen);
   const dateien = useAntrag((s) => s.dateien);
   const st = useAntrag();
-  const { umfangSetzen, verknuepfen, formularAnlegen, aktualisieren, merkmalSetzen } = st;
-  const merkmalWerte = st.projektdatei?.merkmale ?? {};
+  const { umfangSetzen, verknuepfen, formularAnlegen, aktualisieren } = st;
+  const gesperrt = !!antragSperre(st, projekt);
   const [bearbeiten, setBearbeiten] = useState<string | null>(null);
   const [vorlageWahl, setVorlageWahl] = useState<string | null>(null);
   const umfangJetzt = projektdatei?.umfang;
   const sortieren = useSortieren(umfangJetzt?.length ?? 0, (von, nach) => umfangJetzt && void umfangSetzen(verschieben(umfangJetzt, von, nach)));
-  if (!projekt || !ds) return null;
+  if (!ds) return <div className="fo-leer">Antragsdaten gibt es nur in der Desktop-App.</div>;
+  if (!projekt) return null;
   const fassung = aktiveFassung(st, projekt);
   // Vorschlag: die Vorlage zur Antragsart der aktiven Fassung („BAUA 2“ → BAUA)
   const art = st.fassungen.find((f) => f.name === fassung)?.art ?? fassung.replace(/[\s_-]*\d+$/, '');
@@ -176,14 +303,14 @@ export function ProjektumfangAnsicht() {
   };
 
   return (
-    <div className="pu">
+    <div className={`pu${gesperrt ? ' gesperrt' : ''}`}>
       <div className="pu-kopf">
         <div>
-          <h2>Projektumfang</h2>
+          <h2>Antragsdaten</h2>
           <p className="muted small-text">
-            Was zum Antrag gehört – geprüft im Ordner der aktiven Fassung <strong>{ordner}</strong>
-            {basis ? '' : ' (kein Projektordner gefunden)'}. Projektumfang und Projektmerkmale gelten nur für diesen Antrag; jeder Antrag hat seine eigenen. Gespeichert in der
-            Projektdatei (.oap), gilt für alle im Büro.
+            Gilt nur für den Antrag <strong>{fassung}</strong> – jeder Antrag hat eigene Antragsdaten, ein neuer beginnt mit den Vorgaben aus den Einstellungen. Die
+            Projektdaten gelten für das ganze Projekt. Geprüft wird im Ordner <strong>{ordner}</strong>
+            {basis ? '' : ' (kein Projektordner gefunden)'}; gespeichert in der Projektdatei (.oap), gilt für alle im Büro.
           </p>
         </div>
         <div className="pu-kopf-knoepfe">
@@ -199,29 +326,18 @@ export function ProjektumfangAnsicht() {
         </div>
       </div>
 
-      <section className="pu-merkmale" aria-label="Projektmerkmale">
-        <strong title="Gelten für diesen Antrag – ein neuer Antrag startet mit den Vorgaben aus den Einstellungen">Projektmerkmale des Antrags</strong>
-        {st.merkmalDefinitionen.map((m) => (
-          <label key={m.name} className="pu-merkmal" title={MERKMAL_ERKLAERUNG[m.name]?.text}>
-            <span className="field-label">{m.name}</span>
-            <select value={merkmalWerte[m.name] ?? ''} aria-label={m.name} onChange={(e) => void merkmalSetzen(m.name, e.target.value)}>
-              <option value="">–</option>
-              {m.werte.map((w) => (
-                <option key={w} value={w} title={MERKMAL_ERKLAERUNG[m.name]?.werte?.[w]}>
-                  {w}
-                </option>
-              ))}
-            </select>
-            {MERKMAL_ERKLAERUNG[m.name]?.werte?.[merkmalWerte[m.name] ?? ''] && <span className="muted small-text">{MERKMAL_ERKLAERUNG[m.name]!.werte![merkmalWerte[m.name]]}</span>}
-          </label>
-        ))}
-        <span className="muted small-text">Gelten für alle Formulare dieses Projekts – Abschnitte und Felder mit Bedingung (z. B. „nur bei Gebäudeklasse 3–5“) kommen dazu oder entfallen.</span>
-      </section>
+      <AntragStatus />
 
+      <Merkmale gesperrt={gesperrt} />
+
+      <div className="pu-umfang pu-abschnitt-kopf">
+        <h3>Antragsumfang</h3>
+        <span className="muted small-text">Welche Dokumente zu diesem Antrag gehören – mit Stand im Ordner {ordner}.</span>
+      </div>
       {!umfang ? (
         <div className="pu-leer">
           <p>
-            Für dieses Projekt ist noch kein Projektumfang festgelegt. Danach zeigt die Navigation an jedem Formular, ob es vollständig ausgefüllt ist und aktuell im
+            Für dieses Projekt ist noch kein Antragsumfang festgelegt. Danach zeigt die Navigation an jedem Formular, ob es vollständig ausgefüllt ist und aktuell im
             Antragsordner liegt; fehlende Formulare lassen sich per Klick anlegen.
           </p>
           <div className="pu-vorlage">
@@ -237,8 +353,8 @@ export function ProjektumfangAnsicht() {
                 {!vorlagen.length && <option value="">ganzer Katalog – {katalog.length} Dokumente</option>}
               </select>
             </label>
-            <button className="primary" onClick={() => void umfangSetzen(vorlage ? umfangAusKatalog(katalog, vorlage) : katalog.map(alsUmfang))}>
-              Projektumfang festlegen
+            <button className="primary" disabled={gesperrt} onClick={() => void umfangSetzen(vorlage ? umfangAusKatalog(katalog, vorlage) : katalog.map(alsUmfang))}>
+              Antragsumfang festlegen
             </button>
           </div>
         </div>
@@ -275,19 +391,28 @@ export function ProjektumfangAnsicht() {
                   className={`pu-zeile ${d.status}`}
                   {...sortieren.zeile(i)}
                   onContextMenu={(e) =>
+                    !gesperrt &&
                     zeigeMenue(e, [
                       { text: 'Bearbeiten', symbol: 'stift', aktion: () => setBearbeiten(u.id) },
                       { text: 'Nach oben', deaktiviert: i === 0, aktion: () => void umfangSetzen(verschieben(umfang, i, i - 1)) },
                       { text: 'Nach unten', deaktiviert: i === umfang.length - 1, aktion: () => void umfangSetzen(verschieben(umfang, i, i + 1)) },
                       { trenner: true },
-                      { text: 'Aus dem Projektumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void umfangSetzen(umfang.filter((x) => x.id !== u.id)) },
+                      { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void umfangSetzen(umfang.filter((x) => x.id !== u.id)) },
                     ])
                   }
                 >
                   <div className="pu-haupt">
-                    <Griff {...sortieren.griff(i, u.titel)} />
+                    {gesperrt ? <span className="sort-griff-platz" /> : <Griff {...sortieren.griff(i, u.titel)} />}
                     <StatusPunkt status={d.status} />
-                    <input className="pu-nr" value={u.nr ?? ''} placeholder="Nr" aria-label={`Nummer von ${u.titel}`} onChange={(e) => setzen(u.id, { nr: e.target.value || undefined })} />
+                    <input
+                      className="pu-nr"
+                      value={u.nr ?? ''}
+                      placeholder="Nr."
+                      disabled={gesperrt}
+                      aria-label={`Nummer von ${u.titel}`}
+                      title="Nummer des Dokuments im Antrag (z. B. 01, 02 …) – steht im Dateinamen des PDF-Exports an der Stelle {Nr} (Namensvorlage in den Einstellungen › Antrag & Export) und sortiert so die Unterlagen im Antragsordner"
+                      onChange={(e) => setzen(u.id, { nr: e.target.value || undefined })}
+                    />
                     <div className="pu-text">
                       <strong>{u.titel}</strong>
                       <span className="muted small-text">
@@ -295,7 +420,7 @@ export function ProjektumfangAnsicht() {
                         {u.art === 'intern'
                           ? d.formular
                             ? `${d.formular.name} · ${d.formular.fuellstand.gefuellt} von ${d.formular.fuellstand.gesamt} Angaben`
-                            : 'kein Formular im FORMA-Projekt'
+                            : 'kein Formular im Projekt'
                           : d.quelle
                             ? `Quelle: ${d.quelle.pfad}`
                             : `keine Quelle in ${u.quelle || wirksameEinstellungen(st, projekt).berechnungsordner || 'dem Projektordner'}`}
@@ -315,7 +440,7 @@ export function ProjektumfangAnsicht() {
                     </div>
                     <div className="pu-knoepfe">
                       {u.art === 'intern' && !d.formular && d.status !== 'entfaellt' && (
-                        <button className="small primary" onClick={() => void formularAnlegen(u.id)}>
+                        <button className="small primary" disabled={gesperrt} onClick={() => void formularAnlegen(u.id)}>
                           Formular anlegen
                         </button>
                       )}
@@ -330,22 +455,24 @@ export function ProjektumfangAnsicht() {
                           >
                             Öffnen
                           </button>
-                          <button className="small" disabled={!basis} onClick={() => useExportDialog.getState().oeffnen(d.formular!.pfad)}>
+                          <button className="small" disabled={!basis || gesperrt} onClick={() => useExportDialog.getState().oeffnen(d.formular!.pfad)}>
                             <Symbol name="export" /> PDF
                           </button>
                         </>
                       )}
-                      {basis && (
+                      {basis && !gesperrt && (
                         <MenueKnopf className="small" title={`Datei in ${ordner} verknüpfen`} punkte={() => dateiMenue(d)}>
                           <Symbol name="link" />
                         </MenueKnopf>
                       )}
-                      <button className={`icon${offen ? ' active' : ''}`} aria-label={`${u.titel} bearbeiten`} title="Bearbeiten" onClick={() => setBearbeiten(offen ? null : u.id)}>
-                        <Symbol name="stift" />
-                      </button>
+                      {!gesperrt && (
+                        <button className={`icon${offen ? ' active' : ''}`} aria-label={`${u.titel} bearbeiten`} title="Bearbeiten" onClick={() => setBearbeiten(offen ? null : u.id)}>
+                          <Symbol name="stift" />
+                        </button>
+                      )}
                     </div>
                   </div>
-                  {offen && (
+                  {offen && !gesperrt && (
                     <div className="pu-bearbeiten">
                       <label>
                         <span className="field-label">Titel</span>
@@ -354,7 +481,7 @@ export function ProjektumfangAnsicht() {
                       <label>
                         <span className="field-label">Art</span>
                         <select value={u.art} onChange={(e) => setzen(u.id, { art: e.target.value as UmfangEintrag['art'] })}>
-                          <option value="intern">intern – Formular aus FORMA</option>
+                          <option value="intern">intern – Formular des Projekts</option>
                           <option value="extern">extern – Datei (Berechnung, Plan, PDF)</option>
                         </select>
                       </label>
@@ -382,7 +509,7 @@ export function ProjektumfangAnsicht() {
                           Fertig
                         </button>
                         <button className="small gefahr" onClick={() => void umfangSetzen(umfang.filter((x) => x.id !== u.id))}>
-                          Aus dem Projektumfang nehmen
+                          Aus dem Antragsumfang nehmen
                         </button>
                       </div>
                     </div>
@@ -391,12 +518,12 @@ export function ProjektumfangAnsicht() {
               );
             })}
           </div>
-          <div className="pu-unten">
+          <div className="pu-unten" hidden={gesperrt}>
             <MenueKnopf punkte={hinzufuegen}>
               <Symbol name="plus" /> Dokument hinzufügen
             </MenueKnopf>
-            <button className="small" title="Projektumfang entfernen – keine Vollständigkeitsprüfung mehr" onClick={() => void umfangSetzen(null)}>
-              Projektumfang aufheben
+            <button className="small" title="Antragsumfang entfernen – keine Vollständigkeitsprüfung mehr" onClick={() => void umfangSetzen(null)}>
+              Antragsumfang aufheben
             </button>
           </div>
         </>
@@ -419,7 +546,7 @@ function ExportFuerProjekt() {
     <section className="pu-export">
       <button className="pu-export-kopf" aria-expanded={offen} onClick={() => setOffen(!offen)}>
         <Symbol name={offen ? 'pfeilUnten' : 'pfeilRechts'} /> Export für {projekt.ordner}
-        <span className="muted small-text">{ueber ? ' – weicht von den Einstellungen ab' : ' – wie in den Einstellungen'}</span>
+        <span className="muted small-text">{ueber ? ' – weicht von den Einstellungen ab' : ' – wie in den Einstellungen'} · gilt für alle Anträge des Projekts</span>
       </button>
       {offen && (
         <div className="pu-bearbeiten">

@@ -59,7 +59,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
     return (x: string) => (nach.has(x) ? { titel: feldTitel(nach.get(x)!, profil), kreuz: nach.get(x)!.art === 'kreuz' } : undefined);
   }, [offen.felder, profil]);
 
-  // Bedingungen, deren Projektmerkmal im Projekt noch fehlt
+  // Bedingungen, deren Antragsmerkmal im Projekt noch fehlt
   const fehlend = [
     ...new Set(
       [...Object.values(profil.abschnitte).map((a) => a.bedingung), ...(profil.gruppen ?? []).map((g) => g.bedingung), ...Object.values(profil.bedingungen ?? {})].flatMap((b) =>
@@ -73,10 +73,10 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
   const gefuellt = sichtbare.reduce((n, p) => n + p.gefuellt, 0);
   // offene Angaben zählen wie erforderliche – kein voller Balken, solange etwas offen ist
   const ungeklaert = sichtbare.reduce((n, p) => n + p.offen, 0);
-  // Prüfliste: fehlende Pflichtangaben und ungeklärte (hängen an Projektmerkmalen)
+  // Prüfliste: fehlende Pflichtangaben und ungeklärte (hängen an Antragsmerkmalen)
   const liste = useMemo(() => offeneAngaben(offen.felder, profil, k, (f) => wertVon(offen, f)), [offen, profil, k]);
   const fehlen = liste.filter((x) => !x.ungeklaert).length;
-  // Hinweise: Widersprüche (U-04) und Abweichungen von den Projektmerkmalen (U-05)
+  // Hinweise: Widersprüche (U-04) und Abweichungen von den Antragsmerkmalen (U-05)
   const hinweise = usePlausibel(offen);
   const zeigeOffene = () => {
     useFormulare.getState().setAnsicht('felder');
@@ -104,7 +104,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
             </span>
             {gefuellt} von {gesamt}
             {ungeklaert > 0 && (
-              <span className="fo-gl-offen" title="Diese Angaben hängen an Projektmerkmalen, die noch nicht festgelegt sind – sie zählen wie erforderliche Angaben.">
+              <span className="fo-gl-offen" title="Diese Angaben hängen an Antragsmerkmalen, die noch nicht festgelegt sind – sie zählen wie erforderliche Angaben.">
                 {ungeklaert} offen (hängt von Merkmalen ab)
               </span>
             )}
@@ -145,7 +145,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
           <MerkmalWahl offen={offen} namen={fehlend} />
           {offen.projekt && (
             <button className="small" onClick={umfangZeigen}>
-              Alle Projektmerkmale …
+              Alle Antragsmerkmale …
             </button>
           )}
         </div>

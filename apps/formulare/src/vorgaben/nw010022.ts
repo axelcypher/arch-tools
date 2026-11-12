@@ -109,11 +109,11 @@ export const nw010022_2024G: FormularProfil = zusammen({
     gruppeV('totalabgang', 'Bei Totalabgang: überwiegender Grund', 'eins', s1('CheckBox2', 'CheckBox1', 'CheckBox3', 'CheckBox4', 'CheckBox5', 'CheckBox6', 'CheckBox7'), {
       bedingung: begruendet(
         wenn(istNicht('Vorhaben', 'Nutzungsänderung')),
-        'Der Grund des Abgangs ist laut Vordruck nur beim Totalabgang anzugeben, nicht bei einer Nutzungsänderung (Projektmerkmal Vorhaben).',
+        'Der Grund des Abgangs ist laut Vordruck nur beim Totalabgang anzugeben, nicht bei einer Nutzungsänderung (Antragsmerkmal Vorhaben).',
       ),
     }),
     gruppeV('nutzungsaenderung', 'Bei Nutzungsänderung: mit einer Baumaßnahme verbunden?', 'eins', s1('CheckBox8', 'CheckBox9'), {
-      bedingung: begruendet(wenn(ist('Vorhaben', 'Nutzungsänderung')), 'Nur bei einer Nutzungsänderung (Projektmerkmal Vorhaben).'),
+      bedingung: begruendet(wenn(ist('Vorhaben', 'Nutzungsänderung')), 'Nur bei einer Nutzungsänderung (Antragsmerkmal Vorhaben).'),
     }),
     gruppeV('nutzflaeche', 'Nutzfläche in m² (DIN 277, ohne Wohnfläche)', 'eins', nutzflaeche, { bedingung: wenn(angekreuzt('0:Memo26')) }),
     gruppeV('wohnflaeche', 'Wohnfläche in m² (WoFlV)', 'eins', wohnflaeche, { bedingung: wohn }),

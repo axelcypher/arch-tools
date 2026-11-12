@@ -17,8 +17,8 @@ import { istEigeneSperre, sperreVergessen, sperreVermerken, verwaisteEigeneSperr
 import { finde } from './forma/dfm';
 import type { FormularEintrag, Projekt } from './projekte';
 import { formulareDesProjekts, projekteSuchen } from './projekte';
-import type { Adresse } from './adressbuch';
-import { adressenAusKarte, zusammenfuehren } from './adressbuch';
+import type { Adresse, EigeneAdresse } from './adressbuch';
+import { adressenAusKarte, eigeneAdressenAus, wirksameAdressen, zusammenfuehren } from './adressbuch';
 import { xlsxLesen } from './dokumente/xlsx';
 import type { Angabe, ProjektdatenEintrag } from './projektdaten';
 import { IN_PROJEKTKARTE, projektdatenLesen } from './projektdaten';
@@ -55,7 +55,7 @@ import { adresseSchluessel, koordinatenVeraltet, mitKoordinaten } from '@core/pl
 const log = logger('formulare');
 
 export type Ansicht = 'felder' | 'seite';
-export type Hauptansicht = 'formular' | 'projektkarte' | 'datei' | 'einstellungen' | 'projekte';
+export type Hauptansicht = 'formular' | 'projektkarte' | 'antrag' | 'datei' | 'projekte';
 
 /** Dokumente aus dem Projektordner, die die App selbst zeigt (und teils bearbeitet) */
 export type DateiArt = 'pdf' | 'excel' | 'word' | 'bild';
@@ -132,6 +132,8 @@ interface Gespeichert {
   auswahl: Record<string, string[]>;
   /** Projektkarte: Gruppen (Kennung, z. B. 201 Bauherr), die oben unter „Favoriten“ stehen – für alle Projekte */
   kartenFavoriten: number[];
+  /** Projektordner, Ansicht „Ordner“: von Hand gezogene Reihenfolge der Ordner je Ebene (Pfad klein → Namen klein) – für alle Projekte */
+  ordnerReihenfolge: Record<string, string[]>;
   /** Projektkarte: Gruppen, die in der Gliederung ausgeblendet sind – für alle Projekte */
   kartenAusgeblendet: number[];
   /**
@@ -211,7 +213,12 @@ interface FormulareState extends Gespeichert {
   /** eigene Einstellungen der Formulare (Gliederung, Füllstand, Bedingungen) je Formular und Stand – als Abweichung von der Vorgabe der App */
   profile: Record<string, Abweichung>;
   /** Adressen aus den Projektkarten aller FORMA-Projekte (zwischengespeichert) */
+  /** das Adressbuch, wie es gilt: Adressen der Projektkarten mit den eigenen zusammengeführt (null = noch nichts da) */
   adressbuch: { adressen: Adresse[]; stand: number } | null;
+  /** zuletzt aus den Projektkarten eingelesene Adressen */
+  adressbuchKarten: { adressen: Adresse[]; stand: number } | null;
+  /** eigene Adressen der App (gemeinsamer Konfigurationsordner) */
+  eigeneAdressen: EigeneAdresse[];
   /** Einlesen läuft: so weit */
   adressbuchLaeuft: { fertig: number; gesamt: number } | null;
   /** Projektdaten.xlsx des gewählten Projekts (nur noch zum Übernehmen alter Angaben); 'fehlt' = keine, null = nicht gesucht */
@@ -228,6 +235,8 @@ interface FormulareState extends Gespeichert {
   ordnerWahl: Record<string, string>;
   /** Bereich der Einstellungen */
   einstellungsBereich: EinstellungsBereich;
+  /** Einstellungen als Modal über der aktuellen Ansicht geöffnet */
+  einstellungenOffen: boolean;
   /** echte Projektordner (erste und zweite Ebene) */
   ablage: AblageOrdner[];
   ablageFehler: string[];
@@ -264,7 +273,7 @@ interface FormulareState extends Gespeichert {
   /** Feld verlassen: ein geleertes Feld mit Auto-Wert bekommt ihn wieder (erzwungen leer: ein Leerzeichen) */
   feldVerlassen: (feld: Feld) => void;
   /** nicht geöffnetes Formular ändern: in den Entwurf, falls es einen gibt, sonst in die Datei (mit Sperre) */
-  formularAendern: (pfad: string, werte: Record<string, Wert>) => Promise<'entwurf' | 'gespeichert' | 'gesperrt' | 'nurLesen'>;
+  formularAendern: (pfad: string, werte: Record<string, Wert>) => Promise<'entwurf' | 'gespeichert' | 'gesperrt' | 'nurLesen' | 'eingereicht'>;
   /** mehrere Felder in einem Schritt (Ausfüllen aus der Projektkarte) */
   werteSetzen: (werte: { feld: Feld; wert: Wert }[], titel: string) => void;
   /** liefert den Schlüssel des betroffenen Felds (zum Hinspringen) */
@@ -304,10 +313,14 @@ interface FormulareState extends Gespeichert {
   profilSetzen: (schluessel: string, profil: FormularProfil | null) => void;
   /** eigene Änderungen an einem Abschnitt, Feld oder einer Gruppe verwerfen – es gilt wieder die Vorgabe */
   eigenesVerwerfen: (schluessel: string, eintrag: Eintrag) => void;
+  /** Einstellungen als Modal öffnen – die Ansicht darunter bleibt, wie sie ist */
   einstellungenOeffnen: (bereich?: EinstellungsBereich) => void;
+  einstellungenSchliessen: () => void;
   setRollenVorgabe: (gruppe: number, schluessel: string | null) => void;
   /** Gruppe der Projektkarte als Favorit markieren bzw. die Markierung entfernen */
   kartenFavoritUmschalten: (gruppe: number) => void;
+  /** Reihenfolge der Ordner einer Ebene im Projektordner-Baum setzen (Namen); leer = wieder alphabetisch */
+  ordnerReihenfolgeSetzen: (ebene: string, namen: string[]) => void;
   /** Gruppe der Projektkarte in der Gliederung aus- bzw. wieder einblenden */
   kartenAusblendenUmschalten: (gruppe: number) => void;
   /** Einträge (Schlüssel siehe `kartenEintraegeAusgeblendet`) aus- bzw. wieder einblenden */
@@ -345,6 +358,10 @@ interface FormulareState extends Gespeichert {
   adressbuchLaden: () => Promise<void>;
   /** Adressen ins Adressbuch aufnehmen (z. B. eine eben als Vorgabe festgelegte) */
   adressbuchErgaenzen: (adressen: Adresse[]) => void;
+  /** eigene Adresse speichern (neu, geänderte Fassung oder ausgeblendet) */
+  eigeneAdresseSpeichern: (a: EigeneAdresse) => Promise<void>;
+  /** eigene Adresse bzw. eigene Fassung entfernen – bei Adressen aus Projektkarten gilt wieder deren Fassung */
+  eigeneAdresseEntfernen: (schluessel: string) => Promise<void>;
   /** Projektdaten.xlsx des gewählten Projekts suchen und lesen */
   projektdatenLaden: () => Promise<void>;
   /** Angaben aus der Projektdaten.xlsx in die Projektkarte übernehmen (ein Schritt) */
@@ -418,12 +435,31 @@ function ladeEinstellungen(): Gespeichert {
     vorgabeAuswahl: Array.isArray(o.vorgabeAuswahl) ? strings(o.vorgabeAuswahl) : VORGABE_AUSWAHL,
     auswahl,
     kartenFavoriten: zahlen(o.kartenFavoriten),
+    ordnerReihenfolge:
+      o.ordnerReihenfolge && typeof o.ordnerReihenfolge === 'object' ? Object.fromEntries(Object.entries(o.ordnerReihenfolge).map(([k, v]) => [k, strings(v).map((x) => x.toLowerCase())])) : {},
     kartenAusgeblendet: zahlen(o.kartenAusgeblendet),
     kartenEintraegeAusgeblendet: [...new Set(strings(o.kartenEintraegeAusgeblendet))],
   };
 }
 
 export { VORGABE_OAP_PFAD };
+
+/** Adressbuch, wie es gilt (Projektkarten + eigene); null, solange beides fehlt */
+function wirksamesAdressbuch(karten: { adressen: Adresse[]; stand: number } | null, eigene: EigeneAdresse[]): { adressen: Adresse[]; stand: number } | null {
+  if (!karten && !eigene.length) return null;
+  return { adressen: wirksameAdressen(karten?.adressen ?? [], eigene), stand: karten?.stand ?? 0 };
+}
+
+/** eigene Adressen in den gemeinsamen Konfigurationsordner (Bereich „formulare“, Eintrag „adressen“) */
+async function eigeneSchreiben(liste: EigeneAdresse[]) {
+  const s = useFormulare.getState();
+  useFormulare.setState({ eigeneAdressen: liste, adressbuch: wirksamesAdressbuch(s.adressbuchKarten, liste) });
+  try {
+    await konfigAendern('formulare', (roh) => ({ ...((roh ?? {}) as Record<string, unknown>), adressen: liste }));
+  } catch (e) {
+    useFormulare.getState().setMeldung({ art: 'fehler', text: `Adressbuch nicht gespeichert: ${e instanceof Error ? e.message : String(e)}` });
+  }
+}
 
 /* ---------- Entwürfe und Verlauf ---------- */
 
@@ -556,9 +592,18 @@ export const autofillAnbindung: {
 
 /**
  * Nach einer Eingabe von Hand (ein Feld): merkmalAbgleich.ts trägt hier ein, dass beim Ankreuzen einer Gebäudeklasse
- * angeboten wird, sie als Projektmerkmal zu übernehmen (U-05) – ohne Kreis zwischen den Modulen.
+ * angeboten wird, sie als Antragsmerkmal zu übernehmen (U-05) – ohne Kreis zwischen den Modulen.
  */
 export const eingabeAnbindung: { nachEingabe?: (o: OffenesFormular, feld: Feld, wert: Wert) => void } = {};
+
+/**
+ * Sperre durch einen eingereichten Antrag (antragStore.ts trägt sie ein): Formulare des Projekts lassen sich dann nur
+ * ansehen – keine Eingaben, kein Speichern, kein „Daten aktualisieren“. Liefert den Grund, sonst null.
+ */
+export const sperrAnbindung: { antrag: (projekt: Projekt | null) => string | null } = { antrag: () => null };
+
+/** Warum ein offenes Formular nicht bearbeitet werden kann (Datei, eingereichter Antrag) – null, wenn es geht */
+export const bearbeitungGesperrt = (o: OffenesFormular) => o.nurLesen ?? (o.projekt ? sperrAnbindung.antrag(o.projekt) : null);
 
 /** Dateiname eines Formulars im FORMA-Projekt (Schlüssel des Autofill-Zustands) */
 export const formularDatei = (pfad: string) => pfad.split('/').pop() ?? pfad;
@@ -750,7 +795,7 @@ class KeinFormular extends Error {
 }
 
 /** Meldung, wenn eine Datei kein lesbares FORMA-Formular ist (die technische Einzelheit steht im Protokoll) */
-export const KEIN_FORMULAR = 'Das ist kein FORMA-Formular (.frmsjf). Bitte eine Formulardatei aus dem FORMA-Projektordner wählen.';
+export const KEIN_FORMULAR = 'Das ist keine Formulardatei (.frmsjf). Bitte ein Formular aus einem Formularprojekt wählen.';
 
 export const useFormulare = create<FormulareState>()((set, get) => {
   const fehler = (text: string, e?: unknown) => {
@@ -849,7 +894,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     const meta = metaMit({ ...leereMeta(), projektcode: projekt.ordner }, werte);
     return projekt.titel ? { ...meta, kurzname: projekt.titel } : meta;
   };
-  /** nach dem Anlegen der Projektdatei weitermachen (z. B. den Projektumfang speichern) */
+  /** nach dem Anlegen der Projektdatei weitermachen (z. B. den Antragsumfang speichern) */
   let nachAnlegen: (() => Promise<void>) | null = null;
 
   /** Projektordner zugeordnet: Projektdatei suchen; fehlt sie, die Stammdaten erfassen (die wartende Aktion bleibt) */
@@ -885,7 +930,9 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     datei: null,
     dateiEntwuerfe: {},
     profile: profileAus(lesen<unknown>(PROFILE, {})),
-    adressbuch: lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null),
+    adressbuchKarten: lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null),
+    adressbuch: wirksamesAdressbuch(lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null), []),
+    eigeneAdressen: [],
     adressbuchLaeuft: null,
     projektdaten: null,
     oap: null,
@@ -894,6 +941,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     ordnerWahl: {},
     ordnerStand: 0,
     einstellungsBereich: 'ordner',
+    einstellungenOffen: false,
     ablage: [],
     ablageFehler: [],
     konflikt: false,
@@ -902,7 +950,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     setAnsicht: (ansicht) => set({ ansicht }),
     setHaupt: (haupt) => {
       // nie auf eine Ansicht, die es nicht gibt: ohne Projekt keine Projektkarte (sonst verschwände das Formular, B-03)
-      if (haupt === 'projektkarte' && !get().projekt) return;
+      if ((haupt === 'projektkarte' || haupt === 'antrag') && !get().projekt) return;
       set({ haupt });
       if (haupt === 'projektkarte' && !get().karte) void get().karteLaden();
     },
@@ -1146,7 +1194,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     wertSetzen: (feld, wert) => {
       const o = get().offen;
-      if (!o) return;
+      if (!o || bearbeitungGesperrt(o)) return;
       const vorher = wertVon(o, feld);
       if (vorher === wert) return;
       const verlauf = eintragen(o.verlauf, feld.schluessel, vorher, wert, Date.now());
@@ -1164,6 +1212,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     formularAendern: async (pfad, werte) => {
       const { ds, projekt } = get();
       if (!ds || !projekt) return 'gesperrt';
+      if (sperrAnbindung.antrag(projekt)) return 'eingereicht';
       const k = dokSchluessel({ projekt, pfad });
       const alle = entwuerfe();
       if (alle[k] && Object.keys(alle[k]).length) {
@@ -1191,7 +1240,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     werteSetzen: (werte, titel) => {
       const o = get().offen;
-      if (!o) return;
+      if (!o || bearbeitungGesperrt(o)) return;
       const aenderungen: FeldAenderung[] = werte.map(({ feld, wert }) => ({ feld: feld.schluessel, vorher: wertVon(o, feld), nachher: wert }));
       const verlauf = eintragenMehrere(o.verlauf, aenderungen, titel, Date.now());
       if (verlauf === o.verlauf) return;
@@ -1225,7 +1274,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const { ds, konflikt } = get();
       let o = get().offen;
       if (!o || !istGeaendert(o)) return;
-      if (o.nurLesen) return fehler(o.nurLesen);
+      if (bearbeitungGesperrt(o)) return fehler(bearbeitungGesperrt(o)!);
       if (o.sperre.art === 'fremd') return fehler(`${o.name} ist bei ${o.sperre.sperre.benutzer || 'jemand anderem'} geöffnet – Speichern nicht möglich`);
       if (konflikt) return fehler('Die Datei wurde inzwischen geändert – bitte erst neu laden');
       try {
@@ -1246,12 +1295,12 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         if (o.projekt && ds) {
           const aktuell = await ds.lies(o.projekt.root, o.pfad);
           if (!aktuell || !gleich(aktuell, o.bytes)) {
-            set({ konflikt: true, meldung: { art: 'fehler', text: 'Die Datei wurde seit dem Öffnen außerhalb geändert (z. B. in FORMA). Bitte neu laden – deine Eingaben bleiben erhalten.' } });
+            set({ konflikt: true, meldung: { art: 'fehler', text: 'Die Datei wurde seit dem Öffnen außerhalb geändert (z. B. in einem anderen Programm). Bitte neu laden – deine Eingaben bleiben erhalten.' } });
             return;
           }
           await ds.ersetze(o.projekt.root, o.pfad, neu);
         } else {
-          const ok = await saveBinaryFile({ defaultName: `${o.name}.frmsjf`, data: neu, filterName: 'FORMA-Formular', extension: 'frmsjf', mime: 'application/octet-stream' });
+          const ok = await saveBinaryFile({ defaultName: `${o.name}.frmsjf`, data: neu, filterName: 'Formular', extension: 'frmsjf', mime: 'application/octet-stream' });
           if (!ok) return;
         }
         const { formular, felder, nurLesen } = aufbereiten(neu);
@@ -1399,12 +1448,20 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       }
     },
 
-    einstellungenOeffnen: (bereich) => set({ haupt: 'einstellungen', ...(bereich ? { einstellungsBereich: bereich } : {}) }),
+    einstellungenOeffnen: (bereich) => set({ einstellungenOffen: true, ...(bereich ? { einstellungsBereich: bereich } : {}) }),
+    einstellungenSchliessen: () => set({ einstellungenOffen: false }),
 
     kartenFavoritUmschalten: (gruppe) => {
       const f = get().kartenFavoriten;
       // ein Favorit ist nie zugleich ausgeblendet
       set({ kartenFavoriten: f.includes(gruppe) ? f.filter((x) => x !== gruppe) : [...f, gruppe], kartenAusgeblendet: get().kartenAusgeblendet.filter((x) => x !== gruppe) });
+    },
+
+    ordnerReihenfolgeSetzen: (ebene, namen) => {
+      const r = { ...get().ordnerReihenfolge };
+      if (namen.length) r[ebene.toLowerCase()] = namen.map((n) => n.toLowerCase());
+      else delete r[ebene.toLowerCase()];
+      set({ ordnerReihenfolge: r });
     },
 
     kartenEintraegeUmschalten: (schluessel) => {
@@ -1549,6 +1606,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     gemeinsamLaden: async () => {
       try {
         const app = ((await konfigLesen('formulare')) ?? {}) as Record<string, unknown>;
+        const eigeneAdressen = eigeneAdressenAus(app.adressen);
+        set({ eigeneAdressen, adressbuch: wirksamesAdressbuch(get().adressbuchKarten, eigeneAdressen) });
         if (app.ordnerWahl && typeof app.ordnerWahl === 'object') set({ ordnerWahl: Object.fromEntries(Object.entries(app.ordnerWahl as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string')) });
         const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
         const projekte = Array.isArray(roh.projekte) ? roh.projekte.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
@@ -1609,22 +1668,30 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           }
           set({ adressbuchLaeuft: { fertig: i + 1, gesamt: projekte.length } });
         }
-        const adressbuch = { adressen: zusammenfuehren(gesammelt), stand: Date.now() };
-        schreiben(ADRESSBUCH, adressbuch);
-        set({ adressbuch });
-        log.info(`Adressbuch: ${adressbuch.adressen.length} Adressen aus ${projekte.length} Projekten`);
+        const karten = { adressen: zusammenfuehren(gesammelt), stand: Date.now() };
+        schreiben(ADRESSBUCH, karten);
+        set({ adressbuchKarten: karten, adressbuch: wirksamesAdressbuch(karten, get().eigeneAdressen) });
+        log.info(`Adressbuch: ${karten.adressen.length} Adressen aus ${projekte.length} Projekten`);
       } finally {
         set({ adressbuchLaeuft: null });
       }
     },
 
     adressbuchErgaenzen: (adressen) => {
-      const alt = get().adressbuch?.adressen ?? [];
+      const alt = get().adressbuchKarten?.adressen ?? [];
       const neu = adressen.filter((a) => !alt.some((x) => x.schluessel === a.schluessel));
       if (!neu.length) return;
-      const adressbuch = { adressen: zusammenfuehren([...alt, ...neu]), stand: get().adressbuch?.stand ?? Date.now() };
-      schreiben(ADRESSBUCH, adressbuch);
-      set({ adressbuch });
+      const karten = { adressen: zusammenfuehren([...alt, ...neu]), stand: get().adressbuchKarten?.stand ?? Date.now() };
+      schreiben(ADRESSBUCH, karten);
+      set({ adressbuchKarten: karten, adressbuch: wirksamesAdressbuch(karten, get().eigeneAdressen) });
+    },
+
+    eigeneAdresseSpeichern: async (a) => {
+      const liste = [...get().eigeneAdressen.filter((x) => x.schluessel !== a.schluessel), { ...a, geaendert: Date.now() }];
+      await eigeneSchreiben(liste);
+    },
+    eigeneAdresseEntfernen: async (schluessel) => {
+      await eigeneSchreiben(get().eigeneAdressen.filter((x) => x.schluessel !== schluessel));
     },
 
     projektdatenLaden: async () => {
@@ -1777,6 +1844,7 @@ useFormulare.subscribe((s) => {
     vorgabeAuswahl: s.vorgabeAuswahl,
     auswahl: s.auswahl,
     kartenFavoriten: s.kartenFavoriten,
+    ordnerReihenfolge: s.ordnerReihenfolge,
     kartenAusgeblendet: s.kartenAusgeblendet,
     kartenEintraegeAusgeblendet: s.kartenEintraegeAusgeblendet,
   };

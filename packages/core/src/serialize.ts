@@ -256,7 +256,8 @@ export function antragKurzAus(roh: unknown): AntragKurz | null {
   const a: AntragKurz = { name: roh.name.trim() };
   if (typeof roh.angelegt === 'string' && TAG.test(roh.angelegt)) a.angelegt = roh.angelegt;
   const e = roh.eingereicht;
-  if (isObj(e) && typeof e.datei === 'string' && e.datei && typeof e.datum === 'string' && TAG.test(e.datum)) a.eingereicht = { datei: e.datei, datum: e.datum };
+  if (isObj(e) && typeof e.datum === 'string' && TAG.test(e.datum) && ((typeof e.datei === 'string' && e.datei) || e.manuell === true))
+    a.eingereicht = { ...(typeof e.datei === 'string' && e.datei ? { datei: e.datei } : {}), datum: e.datum, ...(e.manuell === true ? { manuell: true } : {}) };
   return a;
 }
 
