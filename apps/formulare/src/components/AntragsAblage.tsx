@@ -169,7 +169,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           {/* nur der Text ist Statusmeldung, nicht der Knopf */}
           <span role="status">
             Ordner gerade nicht erreichbar (z. B. Netzlaufwerk nicht verbunden).
-            {liste.length ? ' Angezeigt wird der zuletzt gelesene Stand;' : ''} die Liste aktualisiert sich von selbst, sobald er wieder erreichbar ist.
+            {liste.length ? ' Angezeigt wird der zuletzt gelesene Stand; die' : ' Die'} Liste aktualisiert sich von selbst, sobald er wieder erreichbar ist.
             {typeof versuch === 'number' && ` Letzter Versuch ${new Date(versuch).toLocaleTimeString('de-DE')} – ohne Erfolg.`}
           </span>{' '}
           {/* aria-disabled statt disabled: der Fokus bleibt am Knopf, wenn man ihn per Tastatur auslöst */}
@@ -203,7 +203,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} – Stand festgehalten
           {lesefehler
             ? seitText
-              ? ` · zuletzt gelesen: ${seitText} – Vergleich gerade nicht möglich`
+              ? ` · beim letzten Lesen: ${seitText} (Ordner gerade nicht erreichbar)`
               : ' · Vergleich mit dem Ordner gerade nicht möglich'
             : seitText
               ? ` · ${seitText} seit der Einreichung`

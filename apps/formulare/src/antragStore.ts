@@ -178,6 +178,8 @@ interface AntragState {
   merkmalSetzen: (name: string, wert: string) => Promise<void>;
   /** Status des aktiven Antrags von Hand setzen (eingereicht mit Datum bzw. in Arbeit); null = wieder automatisch */
   statusSetzen: (status: AntragStatusManuell | null) => Promise<void>;
+  /** den Antragsstand des aktiven Antrags verwerfen und mit den Dateien, die jetzt im Ordner liegen, neu festhalten */
+  standNeuFesthalten: () => Promise<void>;
   /** Abweichungen des gewählten Projekts; null = wieder die Vorgabe */
   setUeberschreibung: (u: ExportUeberschreibung | null) => void;
   /** Einstellungen neu aus dem lokalen Speicher lesen (nach dem Einspielen einer Datei) und neu berechnen */
@@ -533,8 +535,8 @@ export const useAntrag = create<AntragState>((set, get) => {
     // bauen: So geht er weder durch die Reihenfolge von Dateiaktionen noch durch einen Statuswechsel verloren. Gilt der
     // Antrag als in Arbeit, bleibt er nur unsichtbar. Ändert sich der Tag der Einreichung (von Hand berichtigt, ein
     // älterer Nachweis, der erste verschwunden), wird er neu beschriftet; bei einem früheren Tag gehört, was erst danach
-    // geändert wurde, nicht dazu (wie beim Festhalten, standAus) und gilt dann als „neu“. Eine erneute Einreichung mit
-    // Änderungen ist ein Nachtrag (neue Antragsfassung) mit eigenem Stand.
+    // geändert wurde, beim Vergleich nicht dazu (seitEinreichung) und gilt dann als „neu“. Nach einem Fehlklick lässt er
+    // sich von Hand neu festhalten (standNeuFesthalten); Nachreichungen bleiben im selben Antrag.
     for (const [name, a] of Object.entries(antraege)) {
       const ein = eingereichtVon(a);
       if (!ein) continue;
@@ -543,11 +545,10 @@ export const useAntrag = create<AntragState>((set, get) => {
         geaendert = true;
         log.info(`${name}: Antragsstand vom ${ein.datum} festgehalten (${antraege[name].stand!.dateien.length} Dateien)`);
       } else if (a.stand && a.stand.tag !== ein.datum) {
-        const ende = new Date(`${ein.datum}T23:59:59.999`).getTime();
-        const dateien = ein.datum < a.stand.tag ? a.stand.dateien.filter((d) => !(d.geaendert && d.geaendert > ende)) : a.stand.dateien;
-        antraege[name] = { ...a, stand: { tag: ein.datum, dateien } };
+        // nur neu beschriften – die Einträge bleiben (umkehrbar); was nach dem Tag geändert wurde, zählt erst beim Vergleich
+        antraege[name] = { ...a, stand: { ...a.stand, tag: ein.datum } };
         geaendert = true;
-        log.info(`${name}: Tag der Einreichung jetzt ${ein.datum} (Stand bleibt${dateien.length < a.stand.dateien.length ? `, ${a.stand.dateien.length - dateien.length} danach geändert` : ''})`);
+        log.info(`${name}: Tag der Einreichung jetzt ${ein.datum} (Stand bleibt)`);
       }
     }
     const neu = geaendert ? { ...pd, antraege } : pd;
@@ -746,6 +747,21 @@ export const useAntrag = create<AntragState>((set, get) => {
         get().neuBerechnen();
       } catch (e) {
         fehler(`Antragsmerkmal ${name}`, e);
+      }
+    },
+    standNeuFesthalten: async () => {
+      const projekt = useFormulare.getState().projekt;
+      const pd = get().projektdatei;
+      if (!projekt || !pd?.antraege) return;
+      const fassung = aktiveFassung(get(), projekt);
+      const { stand: _, ...rest } = pd.antraege[fassung] ?? {};
+      try {
+        if (await projektdateiSchreiben({ ...pd, antraege: { ...pd.antraege, [fassung]: rest } })) {
+          log.info(`${fassung}: Antragsstand verworfen – wird neu festgehalten`);
+          await get().aktualisieren();
+        }
+      } catch (e) {
+        fehler('Stand neu festhalten', e);
       }
     },
     statusSetzen: async (status) => {

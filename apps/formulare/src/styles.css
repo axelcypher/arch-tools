@@ -4415,13 +4415,17 @@ tr[data-ziehen='danach'] > td {
 .fo-lesefehler button {
   margin-left: 2px;
 }
-.fo-lesefehler button[aria-disabled='true'] {
-  opacity: 0.6;
+.fo-lesefehler button[aria-disabled='true'],
+.fo-lesefehler button[aria-disabled='true']:hover {
+  opacity: 0.65;
   cursor: progress;
+  background: var(--input-bg);
 }
-/* Meldung zum Datum der Einreichung als eigene Zeile unter Auswahl und Feld */
+/* Meldung zum Datum der Einreichung: eigene Zeile hinter den Knöpfen, verbreitert die Gruppe nicht, nah am Feld */
 .pu-status-wahl .pu-datum-meldung {
   flex-basis: 100%;
+  contain: inline-size;
+  margin-top: -8px;
 }
 .fo-bereit-zeile .fo-baum-name {
   white-space: normal;

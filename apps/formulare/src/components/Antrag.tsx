@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { FeldDef } from '@core/ui/ansicht';
 import { useAnsicht } from '@core/ui/ansicht';
@@ -17,6 +17,7 @@ import { ablageVon, formularDatei, useFormulare } from '../store';
 import { useExportDialog } from './ExportDialog';
 import type { MenuePunkt } from './Menue';
 import { MenueKnopf, zeigeMenue } from './Menue';
+import { bestaetigen } from '@core/ui/Rueckfrage';
 import { Griff, useSortieren } from './Sortieren';
 import { Symbol } from './Symbol';
 
@@ -134,13 +135,17 @@ export function umfangZeigen() {
  * Tag der Einreichung von Hand: übernommen erst beim Verlassen des Felds bzw. mit Enter – Zwischenstände beim Tippen
  * des Jahres („0002-11-03“) zählen nicht. Nur Tage ab 2000 und nicht in der Zukunft. Wie die übrigen Eingabefelder wird
  * nichts still verworfen: ein ungültiger Wert bleibt zum Korrigieren stehen, das Feld ist rot markiert, die Meldung
- * steht darunter; Esc stellt den gespeicherten Tag wieder her.
+ * steht darunter (nach `nach`, z. B. dem Knopf daneben, damit nichts springt); Esc im Feld stellt den gespeicherten Tag
+ * wieder her. Schlägt das Speichern fehl, sagt das Feld es – ein erneutes Enter versucht es noch einmal.
  */
-function EinreichungsDatum({ wert, onSetzen }: { wert: string; onSetzen: (tag: string) => void }) {
+function EinreichungsDatum({ wert, onSetzen, nach }: { wert: string; onSetzen: (tag: string) => Promise<void>; nach?: React.ReactNode }) {
   const [text, setText] = useState(wert);
   const [fehler, setFehler] = useState<string | null>(null);
-  // zuletzt übernommen: Enter und danach Verlassen schreiben nicht zweimal
-  const uebernommen = useRef(wert);
+  const meldungId = useId();
+  // während des Speicherns: dieser Wert wird gerade geschrieben (Enter und danach Verlassen schreiben nicht zweimal)
+  const laeuft = useRef<string | null>(null);
+  const wertJetzt = useRef(wert);
+  wertJetzt.current = wert;
   // gespeicherter Tag geändert (auch durch die eigene Übernahme): nachführen – das Feld bleibt dasselbe, der Fokus auch
   useEffect(() => {
     setText(wert);
@@ -148,7 +153,7 @@ function EinreichungsDatum({ wert, onSetzen }: { wert: string; onSetzen: (tag: s
   }, [wert]);
   const heute = tagVon(new Date());
   const zeige = (t: string) => t.split('-').reverse().join('.');
-  const zurueck = wert ? ` – Esc stellt den ${zeige(wert)} wieder her` : '';
+  const zurueck = wert ? ` – Esc im Feld stellt den ${zeige(wert)} wieder her` : '';
   const pruefen = (t: string) =>
     !/^\d{4}-\d{2}-\d{2}$/.test(t)
       ? `Datum unvollständig – bitte Tag, Monat und Jahr eingeben${zurueck}.`
@@ -156,12 +161,17 @@ function EinreichungsDatum({ wert, onSetzen }: { wert: string; onSetzen: (tag: s
         ? `Nur Tage vom 01.01.2000 bis heute (${zeige(heute)})${zurueck}.`
         : null;
   const uebernehmen = () => {
-    if (text === wert || text === uebernommen.current) return setFehler(null);
+    if (text === wert || text === laeuft.current) return setFehler(null);
     const f = pruefen(text);
     setFehler(f);
     if (f) return;
-    uebernommen.current = text;
-    onSetzen(text);
+    const tag = text;
+    laeuft.current = tag;
+    void onSetzen(tag).finally(() => {
+      laeuft.current = null;
+      // nicht gespeichert (Datei gesperrt …): am Feld sagen, ein erneutes Enter versucht es wieder
+      if (wertJetzt.current !== tag) setFehler(`Nicht gespeichert – Enter versucht es erneut${zurueck}.`);
+    });
   };
   return (
     <>
@@ -175,7 +185,7 @@ function EinreichungsDatum({ wert, onSetzen }: { wert: string; onSetzen: (tag: s
           max={heute}
           aria-label="eingereicht am"
           aria-invalid={fehler ? true : undefined}
-          aria-describedby={fehler ? 'pu-datum-fehler' : undefined}
+          aria-describedby={fehler ? meldungId : undefined}
           title="Tag der Einreichung (ab 2000, nicht in der Zukunft) – übernommen beim Verlassen des Felds oder mit Enter, Esc verwirft"
           onChange={(e) => setText(e.target.value)}
           onBlur={uebernehmen}
@@ -190,8 +200,9 @@ function EinreichungsDatum({ wert, onSetzen }: { wert: string; onSetzen: (tag: s
           }}
         />
       </label>
+      {nach}
       {fehler && (
-        <span className="feld-meldung pu-datum-meldung" id="pu-datum-fehler" role="alert">
+        <span className="feld-meldung pu-datum-meldung" id={meldungId} role="alert">
           {fehler}
         </span>
       )}
@@ -213,9 +224,34 @@ function AntragStatus() {
   // „in Arbeit“ behält das Datum; zurück auf „eingereicht“ gilt derselbe Tag (sonst der erkannte, dann der des Stands)
   const bisher = manuell?.datum ?? daten?.eingereicht?.datum ?? daten?.stand?.tag;
   const setzen = (w: string, datum?: string) =>
-    void st.statusSetzen(
+    st.statusSetzen(
       w === 'auto' ? null : w === 'arbeit' ? { eingereicht: false, ...(bisher ? { datum: bisher } : {}) } : { eingereicht: true, datum: datum ?? bisher ?? tagVon(new Date()) },
     );
+  // eingereicht: Nachtrag anlegen; den festgehaltenen Stand neu festhalten (nach einem Fehlklick auf „eingereicht“)
+  const knoepfe = wirksam && (
+    <>
+      <button className="primary" title={`Neue Antragsfassung „${nachtrag}“ anlegen – sie wird aktiv und lässt sich bearbeiten`} onClick={() => void st.fassungWaehlen(nachtrag, true)}>
+        <Symbol name="plus" /> Nachtrag „{nachtrag}“ anlegen
+      </button>
+      {daten?.stand && (
+        <button
+          title="Den Antragsstand mit den Dateien, die jetzt im Ordner liegen, neu festhalten – etwa nach einem versehentlich gesetzten Status"
+          onClick={async () => {
+            if (
+              await bestaetigen(
+                'Stand neu festhalten?',
+                `Der festgehaltene Stand vom ${tag(daten.stand!.tag)} wird durch die Dateien ersetzt, die jetzt im Ordner liegen. Was seitdem neu, geändert oder entfernt ist, ist dann nicht mehr gekennzeichnet.`,
+                'Neu festhalten',
+              )
+            )
+              await st.standNeuFesthalten();
+          }}
+        >
+          Stand neu festhalten …
+        </button>
+      )}
+    </>
+  );
   return (
     <section className={`pu-status${wirksam ? ' eingereicht' : ''}`} aria-label="Status des Antrags">
       <div className="pu-status-text">
@@ -233,18 +269,13 @@ function AntragStatus() {
       <div className="pu-status-wahl">
         <label>
           <span className="field-label">Status</span>
-          <select value={wahl} aria-label="Status des Antrags" onChange={(e) => setzen(e.target.value)}>
+          <select value={wahl} aria-label="Status des Antrags" onChange={(e) => void setzen(e.target.value)}>
             <option value="auto">automatisch{daten?.eingereicht ? ` (erkannt: eingereicht ${tag(daten.eingereicht.datum)})` : ' (erkannt: in Arbeit)'}</option>
             <option value="arbeit">in Arbeit</option>
             <option value="eingereicht">eingereicht</option>
           </select>
         </label>
-        {wahl === 'eingereicht' && <EinreichungsDatum wert={manuell?.datum ?? ''} onSetzen={(t) => setzen('eingereicht', t)} />}
-        {wirksam && (
-          <button className="primary" title={`Neue Antragsfassung „${nachtrag}“ anlegen – sie wird aktiv und lässt sich bearbeiten`} onClick={() => void st.fassungWaehlen(nachtrag, true)}>
-            <Symbol name="plus" /> Nachtrag „{nachtrag}“ anlegen
-          </button>
-        )}
+        {wahl === 'eingereicht' ? <EinreichungsDatum wert={manuell?.datum ?? ''} onSetzen={(t) => setzen('eingereicht', t)} nach={knoepfe} /> : knoepfe}
       </div>
     </section>
   );

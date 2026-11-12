@@ -3,7 +3,7 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -241,7 +241,11 @@ describe('Antragsstand bei der Einreichung', () => {
   it('hält Name, Größe und Änderungszeit fest – keine Kopie; was erst nach dem Tag geändert wurde, gehört nicht dazu', () => {
     const s = standAus(liste, tag);
     expect(s.tag).toBe(tag);
-    expect(s.dateien.map((x) => x.pfad)).toEqual(['BS9 BAUA 261101 01 Bauantrag.pdf', 'BS9 BAUA 261101 GP-01 Grundriss.pdf', 'BS9 BAUA 261102 Antragsprotokoll.pdf']);
+    // verlustfrei: alle Dateien (ohne Archiv); zur Einreichung gehört nur, was nicht erst danach geändert wurde
+    expect(s.dateien.map((x) => x.pfad)).toEqual(['BS9 BAUA 261101 01 Bauantrag.pdf', 'BS9 BAUA 261101 GP-01 Grundriss.pdf', 'BS9 BAUA 261102 Antragsprotokoll.pdf', 'BS9 BAUA 261105 GP-02 Schnitt.pdf']);
+    expect(imStand(s).map((x) => x.pfad)).toEqual(['BS9 BAUA 261101 01 Bauantrag.pdf', 'BS9 BAUA 261101 GP-01 Grundriss.pdf', 'BS9 BAUA 261102 Antragsprotokoll.pdf']);
+    // ein späterer Tag nimmt ihn wieder auf (umkehrbar)
+    expect(imStand({ ...s, tag: '2026-11-05' }).map((x) => x.pfad)).toContain('BS9 BAUA 261105 GP-02 Schnitt.pdf');
     expect(s.dateien[0]).toEqual({ pfad: 'BS9 BAUA 261101 01 Bauantrag.pdf', groesse: 10, geaendert: zeit('2026-11-01T10:00') });
   });
   it('neu bzw. geändert seit der Einreichung – Bescheid, Eingangsbestätigung und Nachforderung nicht', () => {
@@ -394,10 +398,35 @@ describe('Antragsstand bei der Einreichung', () => {
       'Anhörung zum Bauantrag.pdf',
       'Fiktionsbescheinigung zum Bauantrag.pdf',
       'Bescheinigung Genehmigungsfiktion.pdf',
-      'Baugenehmigung Az 1950-26.pdf',
-      'Baugenehmigung 63-1934-2026.pdf',
-      'Nachforderung Az 63-1912-26.pdf',
+      'Baugenehmigung Az 2050-26.pdf',
+      'Baugenehmigung Az. 63-1234-26.pdf',
       'Mitteilung der Gemeinde an den Bauherrn.pdf',
+      // Runde 13: Trennzeichen, Mehrzahl, Schreiben, zweistelliges Jahr, NFD-Umlaute, weitere Bescheide
+      'BS9_BAUA_261110_Nachforderung.pdf',
+      'BS9-BAUA-261110-Nachforderung.pdf',
+      'Nachforderung_BS9.pdf',
+      'Baugenehmigung (Az. 63-1234-26).pdf',
+      'Bauvorbescheid.pdf',
+      'Nachforderungen.pdf',
+      'Anhörungsschreiben.pdf',
+      'Aufforderungsschreiben.pdf',
+      'Nachforderung vom 10.11.26.pdf',
+      'Anhörung.pdf'.normalize('NFD'),
+      'Gebührenbescheid.pdf'.normalize('NFD'),
+      'Verlängerungsbescheid.pdf',
+      'Abweichungsbescheid.pdf',
+      'Bescheinigung über den Eintritt der Genehmigungsfiktion.pdf',
+      'Bestätigung der Vollständigkeit.pdf',
+      'Rückgabe der Unterlagen.pdf',
+      'Baugenehmigung mit Nebenbestimmungen.pdf',
+      'Antragsprotokoll.pdf',
+      // genehmigte Bauvorlagen mit Geschoss, Richtung, Plannummer, Bauvorlage nach BauPrüfVO
+      'Grundriss EG genehmigt.pdf',
+      'GP-03 Grundriss OG genehmigt.pdf',
+      'genehmigt Ansicht Nord.pdf',
+      'Grünstempel Schnitt A-A.pdf',
+      'Baubeschreibung genehmigt.pdf',
+      'genehmigt Statik.pdf',
     ])
       expect(erw(n), n).toBe(true);
     // Runde 12: nur Füllwörter zählen – alles andere ist nachgereicht (im Zweifel „neu“)
@@ -441,6 +470,34 @@ describe('Antragsstand bei der Einreichung', () => {
       'Nachforderung.Wärmeschutz.pdf',
       'Grundriss ohne Grünstempel.pdf',
       'Grundriss kein Genehmigungsvermerk.pdf',
+      // Runde 13: eine Jahreszahl vor der Einreichung im Aktenzeichen bzw. mit Bindestrich meint einen Bestand
+      'Baugenehmigung Az 1950-26.pdf',
+      'Baugenehmigung 63-1934-2026.pdf',
+      'Nachforderung Az 63-1912-26.pdf',
+      'Baugenehmigung Az. 63-1999-0815.pdf',
+      'Baugenehmigung Nr. 1972.pdf',
+      'Baugenehmigung 12-05-1972.pdf',
+      'Baugenehmigung vom 12-05-1972.pdf',
+      'Baugenehmigung 1972-05.pdf',
+      'Baugenehmigung 05-1972.pdf',
+      'Genehmigung 12-05-72.pdf',
+      'Baugenehmigung 720512.pdf',
+      // „Bescheinigung“ allein, Kernwörter mit Endungen des Büros
+      'Bescheinigung.pdf',
+      'HVO BAUA 261201 Bescheinigung.pdf',
+      'Bescheinigung Kreis.pdf',
+      'Gebührenübernahmeerklärung.pdf',
+      'Gebührenberechnung.pdf',
+      'Vollständigkeitserklärung.pdf',
+      'Vollständigkeitscheckliste.pdf',
+      // „Antrag“ nach der Genehmigung ist der Antrag selbst
+      'Baugenehmigung Antrag.pdf',
+      'Baugenehmigung Antragsunterlagen.pdf',
+      'Teilbaugenehmigung Antrag.pdf',
+      'Genehmigungsfiktion Antrag.pdf',
+      // Verlängerung ohne Bescheid, Nachreichung zum Nachweis
+      'Verlängerung Baugenehmigung.pdf',
+      'Nachreichung zum Antragsprotokoll.pdf',
     ])
       expect(erw(n), n).toBe(false);
     expect(seitEinreichung(d('HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
@@ -523,8 +580,10 @@ describe('Umbenennen nach Namensformat', () => {
       // mit Datum daneben zählt es als Kürzel
       expect(nameNachFormat('bva 261111 Antrag.pdf', { ...o, reihenfolge })).not.toContain('bva');
     }
-    // verrutscht vor dem Projektcode: kein doppelter Kopf
+    // verrutscht vor dem Projektcode: kein doppelter Kopf; ein Projektcode weiter hinten wird herausgenommen
     expect(nameNachFormat('bva HVO 261111 Antrag.pdf', o)).toBe('HVO BAUA 261111 Antrag.pdf');
+    expect(nameNachFormat('261111 bva HVO Antrag.pdf', o)).toBe('HVO BAUA 261111 Antrag.pdf');
+    expect(nameNachFormat('Entw HVO Grundriss.pdf', o)).toBe('HVO BAUA 261112 Entw Grundriss.pdf');
   });
   it('Rundlauf in allen 24 Reihenfolgen, auch mit einem Projektcode, der wie eine Plannummer aussieht (BS9)', () => {
     const teile = ['code', 'art', 'datum', 'nummer'] as const;
