@@ -528,22 +528,7 @@
           {
             "und": [
               {
-                "oder": [
-                  {
-                    "$": "errichtung"
-                  },
-                  {
-                    "und": [
-                      {
-                        "$": "vorhaben_29"
-                      },
-                      {
-                        "f": "vorhaben.stellplaetze_grundstueck",
-                        "ist": true
-                      }
-                    ]
-                  }
-                ]
+                "$": "soest_einfriedung_anlass"
               },
               {
                 "f": "soest.einfriedungspflicht",
@@ -596,22 +581,7 @@
               },
               {
                 "nicht": {
-                  "oder": [
-                    {
-                      "$": "errichtung"
-                    },
-                    {
-                      "und": [
-                        {
-                          "$": "vorhaben_29"
-                        },
-                        {
-                          "f": "vorhaben.stellplaetze_grundstueck",
-                          "ist": true
-                        }
-                      ]
-                    }
-                  ]
+                  "$": "soest_einfriedung_anlass"
                 }
               }
             ]

@@ -12,29 +12,42 @@
             "$": "errichtung"
           },
           {
-            "f": "vorhaben.entwaesserung",
-            "ist": true
+            "und": [
+              {
+                "nicht": {
+                  "$": "nur_beseitigung"
+                }
+              },
+              {
+                "f": "vorhaben.entwaesserung",
+                "ist": true
+              }
+            ]
           }
         ]
       },
       "entfaellt": {
-        "und": [
+        "oder": [
           {
-            "oder": [
+            "und": [
               {
-                "$": "aenderung"
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
               },
               {
-                "$": "nutzungsaenderung"
-              },
-              {
-                "$": "nur_beseitigung"
+                "f": "vorhaben.entwaesserung",
+                "ist": false
               }
             ]
           },
           {
-            "f": "vorhaben.entwaesserung",
-            "ist": false
+            "$": "nur_beseitigung"
           }
         ]
       },
@@ -115,9 +128,6 @@
           {
             "f": "vorhaben.entwaesserung",
             "ist": true
-          },
-          {
-            "$": "beseitigung"
           }
         ]
       },
@@ -130,6 +140,9 @@
               },
               {
                 "$": "nutzungsaenderung"
+              },
+              {
+                "$": "nur_beseitigung"
               }
             ]
           },
@@ -156,7 +169,24 @@
         "14/2": "0f696c80",
         "14/4": "d6787680"
       },
-      "titel": "Zustimmungsverfahren"
+      "titel": "Zustimmungsverfahren",
+      "pruefen": {
+        "grund": "Abbruch eines Gebäudes: Hat es einen Anschlusskanal, ist der Abbruch zwei Wochen vor der Außerbetriebnahme der SES mitzuteilen (Abs. 4) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nur_beseitigung"
+            },
+            {
+              "$": "gebaeude"
+            },
+            {
+              "f": "vorhaben.entwaesserung",
+              "ist": false
+            }
+          ]
+        }
+      }
     },
     "15": {
       "gilt": {
@@ -165,29 +195,42 @@
             "$": "errichtung"
           },
           {
-            "f": "vorhaben.entwaesserung",
-            "ist": true
+            "und": [
+              {
+                "nicht": {
+                  "$": "nur_beseitigung"
+                }
+              },
+              {
+                "f": "vorhaben.entwaesserung",
+                "ist": true
+              }
+            ]
           }
         ]
       },
       "entfaellt": {
-        "und": [
+        "oder": [
           {
-            "oder": [
+            "und": [
               {
-                "$": "aenderung"
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
               },
               {
-                "$": "nutzungsaenderung"
-              },
-              {
-                "$": "nur_beseitigung"
+                "f": "vorhaben.entwaesserung",
+                "ist": false
               }
             ]
           },
           {
-            "f": "vorhaben.entwaesserung",
-            "ist": false
+            "$": "nur_beseitigung"
           }
         ]
       },

@@ -14,19 +14,22 @@
                 "$": "nw_verfahren_bekannt"
               },
               {
-                "oder": [
-                  {
-                    "$": "vorhaben_29"
-                  },
-                  {
-                    "$": "nw_beseitigung_verfahrensfrei"
-                  }
-                ]
+                "$": "nw_29_oder_frei_beseitigung"
               }
             ]
           },
           {
             "$": "nw_beseitigung_anzeige"
+          },
+          {
+            "und": [
+              {
+                "$": "beseitigung_art"
+              },
+              {
+                "$": "nw_verfahren_bekannt"
+              }
+            ]
           }
         ]
       },
@@ -99,12 +102,31 @@
             "$": "nw_beseitigung_anzeige"
           },
           {
+            "$": "nw_beseitigung_genehmigt"
+          },
+          {
             "und": [
               {
-                "$": "nw_beseitigung_verfahrensfrei"
+                "$": "beseitigung_art"
               },
               {
                 "$": "nw_genehmigungsbeduerftig"
+              },
+              {
+                "oder": [
+                  {
+                    "$": "innenbereich"
+                  },
+                  {
+                    "$": "aussenbereich"
+                  },
+                  {
+                    "$": "bplan_einfach"
+                  },
+                  {
+                    "$": "satzung_baugb"
+                  }
+                ]
               }
             ]
           }
@@ -519,14 +541,7 @@
             "$": "nw_beseitigung_anzeige"
           },
           {
-            "und": [
-              {
-                "$": "nw_beseitigung_verfahrensfrei"
-              },
-              {
-                "$": "nw_genehmigungsbeduerftig"
-              }
-            ]
+            "$": "nw_beseitigung_genehmigt"
           }
         ]
       },
@@ -548,6 +563,20 @@
       "entfaellt": {
         "nicht": {
           "$": "beseitigung"
+        }
+      },
+      "pruefen": {
+        "grund": "Teilabbruch an einem angebauten Gebäude: Ist ein eigenständiges angebautes Gebäude betroffen, ist es eine Beseitigung nach § 62 Abs. 3 BauO NRW – mit Bauvorlagen nach Abs. 1 (Flurkarte, Standsicherheitsnachweis für das Gebäude, an das angebaut ist); im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "teilbeseitigung"
+            },
+            {
+              "f": "gebaeude.freistehend",
+              "ist": false
+            }
+          ]
         }
       }
     },
