@@ -119,8 +119,15 @@
     },
     "44": {
       "gilt": {
-        "f": "vorhaben.erstbebauung",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.erstbebauung",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "vorhaben.erstbebauung",

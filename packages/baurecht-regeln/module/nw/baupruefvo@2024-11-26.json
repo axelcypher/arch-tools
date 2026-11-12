@@ -292,7 +292,14 @@
     },
     "9": {
       "gilt": {
-        "$": "sonderbau"
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "sonderbau"
+          }
+        ]
       },
       "grund": "Brandschutzkonzept als zielorientierte Gesamtbewertung bei Sonderbauten.",
       "fundstellen": [
@@ -360,26 +367,33 @@
     },
     "12": {
       "gilt": {
-        "oder": [
+        "und": [
           {
-            "f": "gebaeude.besucher",
-            "min": 201
+            "$": "vorhaben_29"
           },
           {
-            "f": "gebaeude.gastbetten",
-            "min": 13
-          },
-          {
-            "f": "gebaeude.verkaufsflaeche",
-            "min": 2000.01
-          },
-          {
-            "f": "gebaeude.garage_nutzflaeche",
-            "min": 100.01
-          },
-          {
-            "f": "nw.elt_betriebsraum",
-            "ist": true
+            "oder": [
+              {
+                "f": "gebaeude.besucher",
+                "min": 201
+              },
+              {
+                "f": "gebaeude.gastbetten",
+                "min": 13
+              },
+              {
+                "f": "gebaeude.verkaufsflaeche",
+                "min": 2000.01
+              },
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "min": 100.01
+              },
+              {
+                "f": "nw.elt_betriebsraum",
+                "ist": true
+              }
+            ]
           }
         ]
       },
@@ -418,7 +432,14 @@
       "pruefen": {
         "grund": "Sonderbauten wie Krankenhäuser, Pflege- und Betreuungseinrichtungen oder Schulen brauchen weitere Angaben und Bauvorlagen (z. B. Bettenzahl, Räume mit ionisierender Strahlung, Abs. 6) – im Einzelfall prüfen.",
         "wenn": {
-          "$": "sonderbau"
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "$": "sonderbau"
+            }
+          ]
         }
       },
       "titel": "Zusätzliche Angaben und Bauvorlagen für besondere Vorhaben"
@@ -452,6 +473,9 @@
       "titel": "Bauvorlagen für Werbeanlagen",
       "gilt": {
         "und": [
+          {
+            "$": "vorhaben_29"
+          },
           {
             "f": "vorhaben.werbeanlage",
             "ist": true

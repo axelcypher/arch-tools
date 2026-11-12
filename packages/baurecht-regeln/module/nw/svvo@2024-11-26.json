@@ -38,6 +38,9 @@
               "$": "vorhaben_29"
             },
             {
+              "$": "nw_verfahren_bekannt"
+            },
+            {
               "oder": [
                 {
                   "oder": [
@@ -150,7 +153,14 @@
       "pruefen": {
         "grund": "Bei Sonderbauten verlangt die Behörde in der Regel ebenfalls eine Prüfung des Brandschutzes (Brandschutzkonzept, § 9 BauPrüfVO).",
         "wenn": {
-          "$": "sonderbau"
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "$": "sonderbau"
+            }
+          ]
         }
       },
       "grund": "Staatlich anerkannte Sachverständige für Brandschutz prüfen und bescheinigen den baulichen Brandschutz bei Gebäuden der Gebäudeklassen 4 und 5, die keine Sonderbauten sind, und bei Mittelgaragen (§ 68 Abs. 2 BauO NRW).",

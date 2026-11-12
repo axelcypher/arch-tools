@@ -7,8 +7,15 @@
   "paragrafen": {
     "1": {
       "gilt": {
-        "f": "gebaeude.besucher",
-        "min": 201
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.besucher",
+            "min": 201
+          }
+        ]
       },
       "entfaellt": {
         "oder": [
@@ -25,6 +32,9 @@
         "grund": "Nach den Angaben mehr als 200 Besucher – das wäre ein Sonderbau (Versammlungsstätte); Merkmal Sonderbau prüfen.",
         "wenn": {
           "und": [
+            {
+              "$": "vorhaben_29"
+            },
             {
               "f": "gebaeude.besucher",
               "bekannt": true
@@ -58,8 +68,15 @@
     },
     "47": {
       "gilt": {
-        "f": "gebaeude.gastbetten",
-        "min": 1
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.gastbetten",
+            "min": 1
+          }
+        ]
       },
       "entfaellt": {
         "f": "gebaeude.gastbetten",
@@ -84,8 +101,15 @@
     "55": {
       "titel": "Alarmierungseinrichtungen, Brandmeldeanlagen, Brandfallsteuerung von Aufzügen",
       "gilt": {
-        "f": "gebaeude.gastbetten",
-        "min": 1
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.gastbetten",
+            "min": 1
+          }
+        ]
       },
       "entfaellt": {
         "f": "gebaeude.gastbetten",
@@ -111,8 +135,15 @@
     },
     "60": {
       "gilt": {
-        "f": "gebaeude.verkaufsflaeche",
-        "min": 2000.01
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.verkaufsflaeche",
+            "min": 2000.01
+          }
+        ]
       },
       "entfaellt": {
         "oder": [
@@ -129,6 +160,9 @@
         "grund": "Nach den Angaben mehr als 2 000 m² Verkaufsfläche – großer Sonderbau; Merkmal Sonderbau prüfen.",
         "wenn": {
           "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
             {
               "f": "gebaeude.verkaufsflaeche",
               "bekannt": true
@@ -157,8 +191,15 @@
     },
     "92": {
       "gilt": {
-        "f": "gebaeude.hoehe",
-        "min": 22.01
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.hoehe",
+            "min": 22.01
+          }
+        ]
       },
       "entfaellt": {
         "oder": [
@@ -175,6 +216,9 @@
         "grund": "Nach den Angaben liegt der Fußboden des obersten Aufenthaltsgeschosses mehr als 22 m über Gelände – Hochhaus; Merkmal Sonderbau prüfen.",
         "wenn": {
           "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
             {
               "f": "gebaeude.hoehe",
               "bekannt": true
@@ -389,8 +433,15 @@
     },
     "143": {
       "gilt": {
-        "f": "nw.elt_betriebsraum",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "nw.elt_betriebsraum",
+            "ist": true
+          }
+        ]
       },
       "grund": "Teil 6: elektrische Betriebsräume für Transformatoren und Schaltanlagen über 1 kV, Stromerzeugungsaggregate und zentrale Batterieanlagen für sicherheitstechnische Anlagen.",
       "fundstellen": [

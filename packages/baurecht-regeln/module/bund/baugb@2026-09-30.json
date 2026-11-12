@@ -115,19 +115,26 @@
       "pruefen": {
         "grund": "Solange ein Bebauungsplan bzw. ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird, kann die Gemeinde die Zurückstellung auch noch nach Eingang des Bauantrags beantragen (Abs. 1; Abs. 3: binnen sechs Monaten nach Kenntnis) – bei der Gemeinde erfragen.",
         "wenn": {
-          "oder": [
+          "und": [
             {
-              "f": "planung.planaufstellung",
-              "ist": true
+              "$": "vorhaben_29"
             },
             {
-              "und": [
+              "oder": [
                 {
-                  "$": "aussen_planrecht"
+                  "f": "planung.planaufstellung",
+                  "ist": true
                 },
                 {
-                  "f": "planung.fnp_verfahren",
-                  "ist": true
+                  "und": [
+                    {
+                      "$": "aussen_planrecht"
+                    },
+                    {
+                      "f": "planung.fnp_verfahren",
+                      "ist": true
+                    }
+                  ]
                 }
               ]
             }
@@ -300,6 +307,10 @@
         "33/1": "28a2077b",
         "33/2": "3aff4e7f",
         "33/3": "04f2db50"
+      },
+      "entfaellt": {
+        "f": "planung.planreife",
+        "ist": false
       }
     },
     "34": {

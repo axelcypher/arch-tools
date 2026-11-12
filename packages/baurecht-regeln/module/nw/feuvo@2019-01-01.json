@@ -7,18 +7,25 @@
   "paragrafen": {
     "1": {
       "gilt": {
-        "oder": [
+        "und": [
           {
-            "f": "technik.feuerstaette",
-            "ist": true
+            "$": "vorhaben_29"
           },
           {
-            "f": "technik.waermepumpe",
-            "ist": true
-          },
-          {
-            "f": "technik.brennstofflager",
-            "ist": true
+            "oder": [
+              {
+                "f": "technik.feuerstaette",
+                "ist": true
+              },
+              {
+                "f": "technik.waermepumpe",
+                "ist": true
+              },
+              {
+                "f": "technik.brennstofflager",
+                "ist": true
+              }
+            ]
           }
         ]
       },
@@ -52,8 +59,15 @@
     },
     "3": {
       "gilt": {
-        "f": "technik.feuerstaette",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "technik.feuerstaette",
@@ -73,8 +87,15 @@
     },
     "4": {
       "gilt": {
-        "f": "technik.feuerstaette",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "technik.feuerstaette",
@@ -94,8 +115,15 @@
     },
     "5": {
       "gilt": {
-        "f": "technik.feuerstaette",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "technik.feuerstaette",
@@ -116,6 +144,9 @@
     "6": {
       "gilt": {
         "und": [
+          {
+            "$": "vorhaben_29"
+          },
           {
             "f": "technik.feuerstaette",
             "ist": true
@@ -156,8 +187,15 @@
     },
     "7": {
       "gilt": {
-        "f": "technik.feuerstaette",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "technik.feuerstaette",
@@ -177,8 +215,15 @@
     },
     "9": {
       "gilt": {
-        "f": "technik.feuerstaette",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "technik.feuerstaette",
@@ -198,8 +243,15 @@
     },
     "10": {
       "gilt": {
-        "f": "technik.waermepumpe",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.waermepumpe",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "technik.waermepumpe",
@@ -221,8 +273,15 @@
     },
     "11": {
       "gilt": {
-        "f": "technik.brennstofflager",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.brennstofflager",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "technik.brennstofflager",
@@ -242,8 +301,15 @@
     },
     "12": {
       "gilt": {
-        "f": "technik.brennstofflager",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.brennstofflager",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
         "f": "technik.brennstofflager",

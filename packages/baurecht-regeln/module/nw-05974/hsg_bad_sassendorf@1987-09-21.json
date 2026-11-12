@@ -58,12 +58,23 @@
                 ]
               },
               {
-                "f": "technik.waermepumpe",
-                "ist": true
-              },
-              {
-                "f": "technik.brennstofflager",
-                "ist": true
+                "und": [
+                  {
+                    "$": "vorhaben_29"
+                  },
+                  {
+                    "oder": [
+                      {
+                        "f": "technik.waermepumpe",
+                        "ist": true
+                      },
+                      {
+                        "f": "technik.brennstofflager",
+                        "ist": true
+                      }
+                    ]
+                  }
+                ]
               },
               {
                 "f": "vorhaben.versickerung",
@@ -114,8 +125,15 @@
                       "$": "nw_kein_gebaeude"
                     },
                     {
-                      "f": "gebaeude.gemischt",
-                      "ist": true
+                      "und": [
+                        {
+                          "$": "vorhaben_29"
+                        },
+                        {
+                          "f": "gebaeude.gemischt",
+                          "ist": true
+                        }
+                      ]
                     }
                   ]
                 }
@@ -295,12 +313,23 @@
                     ]
                   },
                   {
-                    "f": "technik.waermepumpe",
-                    "ist": true
-                  },
-                  {
-                    "f": "technik.brennstofflager",
-                    "ist": true
+                    "und": [
+                      {
+                        "$": "vorhaben_29"
+                      },
+                      {
+                        "oder": [
+                          {
+                            "f": "technik.waermepumpe",
+                            "ist": true
+                          },
+                          {
+                            "f": "technik.brennstofflager",
+                            "ist": true
+                          }
+                        ]
+                      }
+                    ]
                   },
                   {
                     "f": "vorhaben.versickerung",
@@ -369,8 +398,15 @@
                   "$": "nw_kein_gebaeude"
                 },
                 {
-                  "f": "gebaeude.gemischt",
-                  "ist": true
+                  "und": [
+                    {
+                      "$": "vorhaben_29"
+                    },
+                    {
+                      "f": "gebaeude.gemischt",
+                      "ist": true
+                    }
+                  ]
                 }
               ]
             }

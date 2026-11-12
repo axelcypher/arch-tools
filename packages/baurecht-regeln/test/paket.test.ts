@@ -622,7 +622,9 @@ describe('Fälle aus dem Fachreview', () => {
   it('Runde 4: Ausnahmen für Wohngebäude der GK 1/2 nur bei reiner Wohnnutzung – Trennwände, Flure, Prüfung von Standsicherheit und Schall-/Wärmeschutz', () => {
     const ids = ['nw/bauo-nrw/29', 'nw/bauo-nrw/36', 'nw/svvo/12', 'nw/svvo/23'];
     const mit = a(M4({ Gebäudeart: 'Zweifamilienhaus', Gebäudeklasse: '2' }), ja('gebaeude.gemischt'));
-    for (const id of ids) expect(mit(id), id).toBe('rot');
+    for (const id of ids.filter((i) => i !== 'nw/bauo-nrw/36')) expect(mit(id), id).toBe('rot');
+    // § 36: auch sonstige Gebäude der GK 1/2 brauchen notwendige Flure nur im Kellergeschoss (Abs. 1 Satz 2 Nr. 2) – gelb (Runde 7)
+    expect(mit('nw/bauo-nrw/36')).toBe('gelb');
     const offen = a(M4({ Gebäudeart: 'Zweifamilienhaus', Gebäudeklasse: '2' }));
     for (const id of ids) expect(offen(id), `${id} ohne Angabe`).not.toBe('gruen');
     const rein = a(M4({ Gebäudeart: 'Zweifamilienhaus', Gebäudeklasse: '2' }), nein('gebaeude.gemischt'));
@@ -738,8 +740,8 @@ describe('Fälle aus dem Fachreview', () => {
     // offen, ob freistehend: nicht „gilt nicht“
     expect(a(M4({ Vorhaben: 'Beseitigung' }), nein('lage.bergbau'))('nw/bauo-nrw/12')).toBe('gelb');
     expect(a(M4({ Vorhaben: 'Nutzungsänderung' }), nein('lage.bergbau'))('nw/bauo-nrw/12')).not.toBe('gruen');
-    // Gegenprobe: freistehendes Gebäude ohne Bergbau – keine Nachbarn, deren Standsicherheit berührt wäre
-    const frei = a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }), { ...nein('lage.bergbau'), ...ja('gebaeude.freistehend') });
+    // Gegenprobe: freistehendes Gebäude ohne Bergbau und ohne Erdarbeiten – keine Nachbarn bzw. kein Nachbarbaugrund berührt (Runde 7)
+    const frei = a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }), { ...nein('lage.bergbau', 'vorhaben.erdarbeiten'), ...ja('gebaeude.freistehend') });
     expect(frei('nw/bauo-nrw/12')).toBe('gruen');
     expect(frei('nw/baupruefvo/2')).toBe('gruen');
   });
@@ -942,9 +944,8 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(M4(), nein('nw.blitzschutz_anlass'))('nw/bauo-nrw/45')).toBe('gruen');
     expect(a(M4(), ja('nw.blitzschutz_anlass'))('nw/bauo-nrw/45')).toBe('rot');
     expect(a(anlage({ Planungsrecht: 'Außenbereich' }), ja('nw.blitzschutz_anlass'))('nw/bauo-nrw/45')).toBe('rot');
-    // Gegenproben: ohne Angabe offen; GK 4 immer
+    // Gegenprobe: ohne Angabe offen (Gebäudeklasse 4/5 allein macht § 45 nicht rot – Runde 7)
     expect(a(M4())('nw/bauo-nrw/45')).not.toBe('gruen');
-    expect(a(M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4' }), nein('nw.blitzschutz_anlass'))('nw/bauo-nrw/45')).toBe('rot');
   });
 
   it('Runde 6: § 36 BauGB (Einvernehmen der Gemeinde) nur im Baugenehmigungsverfahren – nicht bei verfahrensfreien Vorhaben und der Freistellung', () => {
@@ -981,6 +982,182 @@ describe('Fälle aus dem Fachreview', () => {
     // Fall D3: Nutzungsänderung zum Café, Schaufenster und Vordach verneint – §§ 8, 9 entfallen sicher
     const d3 = a(M4({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3' }), { ...ja('soest.altstadt'), ...nein('soest.schaufenster', 'soest.vordach') });
     for (const nr of ['8', '9']) expect(d3(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr}`).toBe('gruen');
+  });
+
+  /* ---------- Runde 7 ---------- */
+
+  /** ganzes Ergebnis je Paragraf (für Hinweise) */
+  const voll = (merkmale: Record<string, string>, fakten: Record<string, FaktWert> = {}) => {
+    const r = auswerten(eingabe(merkmale, fakten, TEXTE));
+    return (id: string) => r.paragrafen.find((x) => x.id === id)!;
+  };
+  /** Bestandsangaben eines großen Gebäudes – bei der Beseitigung ohne Bedeutung für Errichtung und Betrieb */
+  const bestand = () => ({
+    ...ja('technik.feuerstaette', 'technik.waermepumpe', 'technik.brennstofflager', 'technik.heizoel', 'technik.lueftung', 'gebaeude.aufzug', 'gebaeude.behelfsbau', 'nw.elt_betriebsraum', 'nw.feste_brennstoffe_50kw', 'gebaeude.gemischt', 'gebaeude.oeffentlich', 'vorhaben.werbeanlage', 'vorhaben.dachhaut'),
+    ...zahl('gebaeude.gastbetten', 80), ...zahl('gebaeude.besucher', 300), ...zahl('gebaeude.hoehe', 25), ...zahl('gebaeude.verkaufsflaeche', 2500),
+    ...zahl('gebaeude.garage_nutzflaeche', 1500), ...zahl('gebaeude.stellplaetze', 60), ...zahl('gebaeude.bgf', 8000), ...zahl('nw.geschosse_oberirdisch', 8), ...zahl('nw.stellplatzflaeche', 900),
+  });
+  /** Regeln, die Errichtung oder Betrieb betreffen und bei der Beseitigung nicht gelten (Befund 2) */
+  const nichtBeiBeseitigung = [
+    'nw/baupruefvo/9', 'nw/baupruefvo/12', 'nw/baupruefvo/14',
+    'nw/bauo-nrw/10', 'nw/bauo-nrw/39', 'nw/bauo-nrw/42', 'nw/bauo-nrw/42a', 'nw/bauo-nrw/45', 'nw/bauo-nrw/50', 'nw/bauo-nrw/51', 'nw/bauo-nrw/72',
+    'nw/sbauvo/1', 'nw/sbauvo/47', 'nw/sbauvo/55', 'nw/sbauvo/60', 'nw/sbauvo/92', 'nw/sbauvo/143',
+    ...['1', '3', '4', '5', '6', '7', '9', '10', '11', '12'].map((nr) => `nw/feuvo/${nr}`),
+    ...['1', '4', '5', '6', '7', '8'].map((nr) => `nw/san-vo/${nr}`),
+    'bund/whg/78c', 'bund/geig/6', 'bund/geig/7', 'bund/geig/10', 'bund/baugb/15', 'nw/svvo/16', 'nw/lwg/44',
+    'nw-05974/hsg_bad_sassendorf/3', 'nw-05974/hsg_bad_sassendorf/9', 'nw-05974/uesg_ahse/2',
+    'nw-05974040/altstadtsatzung/1', 'nw-05974040/altstadtsatzung/5a', 'nw-05974040/altstadtsatzung/14', 'nw-05974040/werbeanlagen_altstadt/2', 'nw-05974040/historische_ortsteile/6',
+  ];
+  /** Lage: Altstadt, historische Ortsteile, Heilquellenschutzzone III, Überschwemmungsgebiet (damit auch das Ortsrecht geprüft wird) */
+  const lage = () => ({
+    ...ja('soest.altstadt', 'soest.historische_ortsteile', 'kreis_soest.hsg', 'schutz.uesg'),
+    ...wert('kreis_soest.hsg_qualitativ', 'III'), ...wert('kreis_soest.hsg_quantitativ', 'außerhalb'),
+    ...nein('vorhaben.erdarbeiten', 'vorhaben.versickerung', 'vorhaben.grundwasser', 'vorhaben.erstbebauung', 'planung.planaufstellung', 'planung.fnp_verfahren', 'nw.blitzschutz_anlass'),
+  });
+
+  it('Runde 7: AVwGebO § 1 – Baugenehmigung für eine verfahrensfreie Beseitigung beantragt (§ 62 Abs. 3 Satz 2 BauO NRW) ist gebührenpflichtig', () => {
+    // Fall N9: angebaute Garage, deren Errichtung verfahrensfrei wäre, im Denkmalbereich – Baugenehmigung beantragt
+    const garage = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Nichtwohngebäude' });
+    const f = { ...nein('gebaeude.freistehend'), ...ja('nw.beseitigung_abs1', 'schutz.denkmalbereich') };
+    expect(a(garage, f)('nw/avwgebo/1')).toBe('rot');
+    // auch das freistehende Einfamilienhaus der GK 1 mit Antrag im Baugenehmigungsverfahren
+    expect(a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'Baugenehmigungsverfahren' }), ja('gebaeude.freistehend'))('nw/avwgebo/1')).toBe('rot');
+    // Gegenproben: ohne Antrag verfahrensfrei → grün; Verfahren offen → nicht grün
+    expect(a(mitVerfahren(garage, 'verfahrensfrei'), f)('nw/avwgebo/1')).toBe('gruen');
+    expect(a(mitVerfahren(garage), f)('nw/avwgebo/1')).not.toBe('gruen');
+  });
+
+  it('Runde 7: Beseitigung – Bestandsangaben (Sonderbau, Gastbetten, Feuerstätte, Aufzug, Ölheizung …) lösen keine Anforderungen an Errichtung oder Betrieb aus, klassenweit', () => {
+    // Fall B7a: Hotel (Sonderbau) GK 5 freistehend – alle Bestandsangaben gesetzt, verfahrensfrei bzw. mit Antrag
+    for (const Verfahren of ['verfahrensfrei', 'vereinfachtes Verfahren']) {
+      const hotel = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '5', Sonderbau: 'ja', Verfahren });
+      const x = a(hotel, { ...bestand(), ...lage(), ...ja('gebaeude.freistehend') });
+      for (const id of nichtBeiBeseitigung) expect(x(id), `${id} (${Verfahren})`).toBe('gruen');
+      // kein falsches Grün: Artenschutz beim Abbruch, Genehmigungsvorbehalt und Verfahrensfreiheit bleiben
+      for (const id of ['bund/bnatschg/44', 'nw/bauo-nrw/60', 'nw/bauo-nrw/62']) expect(x(id), `${id} (${Verfahren})`).toBe('rot');
+    }
+    // Fall B7c: Einfamilienhaus GK 1 – Angaben zu Gebäude und Technik offen: kein Fehl-Gelb
+    const efh = a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }), { ...lage(), ...ja('gebaeude.freistehend') });
+    for (const id of nichtBeiBeseitigung) expect(efh(id), `${id} (B7c)`).toBe('gruen');
+    // Gegenproben: dasselbe Gebäude als Neubau – die Anforderungen gelten bzw. sind zu prüfen
+    const neu = a(M4({ Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '5', Sonderbau: 'ja', Verfahren: 'Baugenehmigungsverfahren' }), { ...bestand(), ...lage(), ...ja('gebaeude.freistehend') });
+    for (const id of ['nw/baupruefvo/9', 'nw/baupruefvo/12', 'nw/bauo-nrw/39', 'nw/bauo-nrw/42', 'nw/bauo-nrw/50', 'nw/bauo-nrw/51', 'nw/sbauvo/1', 'nw/sbauvo/47', 'nw/sbauvo/55', 'nw/sbauvo/60', 'nw/sbauvo/92', 'nw/sbauvo/143', 'nw/feuvo/3', 'nw/feuvo/11', 'nw/san-vo/1', 'nw/san-vo/6', 'bund/whg/78c', 'nw-05974/hsg_bad_sassendorf/3', 'nw-05974/uesg_ahse/2', 'nw-05974040/altstadtsatzung/14', 'nw-05974040/werbeanlagen_altstadt/2']) expect(neu(id), `${id} (Neubau)`).toBe('rot');
+    for (const id of ['bund/geig/7']) expect(neu(id), `${id} (Neubau)`).not.toBe('gruen');
+    // Änderung mit bestehender Feuerstätte bzw. Aufzug: weiterhin rot
+    const umbau = a(M4({ Vorhaben: 'Änderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4' }), ja('technik.feuerstaette', 'gebaeude.aufzug'));
+    for (const id of ['nw/bauo-nrw/39', 'nw/bauo-nrw/42', 'nw/feuvo/3']) expect(umbau(id), `${id} (Änderung)`).toBe('rot');
+  });
+
+  it('Runde 7: § 12 BauO NRW – Beseitigung eines freistehenden Gebäudes mit Erdarbeiten: Tragfähigkeit des Nachbarbaugrunds im Einzelfall', () => {
+    // Fall A1: freistehendes Einfamilienhaus GK 1, verfahrensfrei, mit Erdarbeiten (Keller, Fundamente)
+    const a1 = M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' });
+    expect(a(a1, { ...ja('gebaeude.freistehend', 'vorhaben.erdarbeiten'), ...nein('lage.bergbau') })('nw/bauo-nrw/12')).toBe('gelb');
+    // Gegenproben: ohne Erdarbeiten grün; angebaut rot (Standsicherheit der Nachbargebäude)
+    expect(a(a1, { ...ja('gebaeude.freistehend'), ...nein('vorhaben.erdarbeiten', 'lage.bergbau') })('nw/bauo-nrw/12')).toBe('gruen');
+    expect(a(a1, { ...nein('gebaeude.freistehend', 'vorhaben.erdarbeiten', 'lage.bergbau') })('nw/bauo-nrw/12')).toBe('rot');
+  });
+
+  it('Runde 7: Altstadtsatzung §§ 12, 13, 15 – nur mit Arbeiten an Einfriedigung, Außenanlagen bzw. Garage; Innenumbau nicht rot', () => {
+    const ids = ['12', '13', '15'].map((nr) => `nw-05974040/altstadtsatzung/${nr}`);
+    const mfh = M4({ Vorhaben: 'Änderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' });
+    // Fall X8: Innenumbau, Garage im Bestand, keine Stellplätze geplant – ohne die neuen Angaben grün
+    const x8 = a(mfh, { ...ja('soest.altstadt'), ...nein('vorhaben.dach_fassade', 'vorhaben.stellplaetze_grundstueck'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
+    for (const id of ids) expect(x8(id), `${id} (X8)`).toBe('gruen');
+    // Fall DM2: Fenstertausch (Arbeiten an der Fassade) – ohne Angabe offen, mit „nein“ grün
+    const dm2 = { ...ja('soest.altstadt', 'vorhaben.dach_fassade'), ...nein('vorhaben.stellplaetze_grundstueck'), ...zahl('gebaeude.garage_nutzflaeche', 30) };
+    for (const id of ids) expect(a(mfh, dm2)(id), `${id} (DM2 offen)`).toBe('gelb');
+    const dm2nein = a(mfh, { ...dm2, ...nein('soest.einfriedung', 'soest.aussenanlagen', 'soest.garage') });
+    for (const id of ids) expect(dm2nein(id), `${id} (DM2)`).toBe('gruen');
+    // Gegenproben: die Arbeiten sind angegeben → rot, auch beim Innenumbau
+    expect(a(mfh, { ...dm2, ...ja('soest.einfriedung') })(ids[0])).toBe('rot');
+    expect(a(mfh, { ...dm2, ...ja('soest.aussenanlagen') })(ids[1])).toBe('rot');
+    expect(a(mfh, { ...dm2, ...ja('soest.garage') })(ids[2])).toBe('rot');
+    // Neubau mit Garage: Außenanlagen und Garage rot, Einfriedigung offen
+    const neu = a(M4(), { ...ja('soest.altstadt'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
+    expect(neu(ids[1])).toBe('rot');
+    expect(neu(ids[2])).toBe('rot');
+    expect(neu(ids[0])).not.toBe('gruen');
+    // Beseitigung in der Altstadt: Gestaltung entfällt
+    const weg = a(M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), { ...ja('soest.altstadt'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
+    for (const id of ids) expect(weg(id), `${id} (Beseitigung)`).toBe('gruen');
+  });
+
+  it('Runde 7: Stellplatzsatzung §§ 1, 2 – Anlagen, die keine Gebäude sind, nur mit Zu-/Abfahrtsverkehr (wie §§ 3, 4)', () => {
+    const ids = ['1', '2'].map((nr) => `nw-05974040/stellplatzsatzung/${nr}`);
+    // Fälle E4, KG4: freistehende Wärmepumpe bzw. Einfriedung ohne Verkehr
+    const ohne = a(anlage({ Verfahren: 'verfahrensfrei' }), nein('vorhaben.zu_abfahrtsverkehr'));
+    for (const id of ids) expect(ohne(id), id).toBe('gruen');
+    // Fall KG1: Stellplatzanlage für einen Markt – Herstellungspflicht rot
+    const mit = a(anlage({ Planungsrecht: 'Bebauungsplan' }), { ...ja('vorhaben.zu_abfahrtsverkehr'), ...zahl('nw.stellplatzflaeche', 40) });
+    for (const id of ids) expect(mit(id), `${id} (KG1)`).toBe('rot');
+    // Gegenproben: ohne Angabe nicht grün; Gebäude rot
+    for (const id of ids) expect(a(anlage())(id), `${id} (offen)`).not.toBe('gruen');
+    for (const id of ids) expect(a(M4())(id), `${id} (Gebäude)`).toBe('rot');
+  });
+
+  it('Runde 7: SV-VO § 12 – kein Einzelfall bei verfahrensfreien Vorhaben (keine Prüfung, § 68 Abs. 3 Satz 5 BauO NRW)', () => {
+    // Fälle X10 (Garage 45 m²), DM3 (Gartenhaus), BA1 (Garage mit Abweichung)
+    const garage = M4({ Gebäudeart: 'Nichtwohngebäude', Verfahren: 'verfahrensfrei' });
+    const f = { ...zahl('gebaeude.bgf', 45), ...zahl('gebaeude.garage_nutzflaeche', 40), ...nein('gebaeude.landwirtschaft') };
+    expect(a(garage, f)('nw/svvo/12')).toBe('gruen');
+    expect(a(garage, { ...f, ...ja('planung.abweichung') })('nw/svvo/12')).toBe('gruen');
+    // Gegenproben: dieselbe Garage im vereinfachten Verfahren bzw. Verfahren offen – nicht grün
+    expect(a(mitVerfahren(garage, 'vereinfachtes Verfahren'), f)('nw/svvo/12')).not.toBe('gruen');
+    expect(a(mitVerfahren(garage), f)('nw/svvo/12')).not.toBe('gruen');
+  });
+
+  it('Runde 7: § 45 BauO NRW – Gebäudeklasse 4/5 allein macht Blitzschutz nicht rot; beim Sonderbau Einzelfall', () => {
+    for (const Gebäudeklasse of ['4', '5']) expect(a(M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse }), nein('nw.blitzschutz_anlass'))('nw/bauo-nrw/45'), `GK ${Gebäudeklasse}`).toBe('gruen');
+    // Sonderbau ohne angegebenen Anlass: die SBauVO verlangt Blitzschutz teils ausdrücklich – gelb
+    expect(a(M4({ Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '5', Sonderbau: 'ja' }), nein('nw.blitzschutz_anlass'))('nw/bauo-nrw/45')).toBe('gelb');
+    // Gegenproben: mit Anlass rot, ohne Angabe nicht grün, bei der Beseitigung grün
+    expect(a(M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4' }), ja('nw.blitzschutz_anlass'))('nw/bauo-nrw/45')).toBe('rot');
+    expect(a(M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '5' }))('nw/bauo-nrw/45')).not.toBe('gruen');
+    expect(a(M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '5' }), ja('nw.blitzschutz_anlass'))('nw/bauo-nrw/45')).toBe('gruen');
+  });
+
+  it('Runde 7: SBauVO Teile 2–4, § 50 BauO NRW und Spielplatzsatzung nur für Gebäude – Mobilfunkmast mit 30 m Höhe', () => {
+    // Fall KG2: Mast 30 m im Außenbereich (Höhe nicht über 30 m → kein großer Sonderbau nach § 50 Abs. 2)
+    const mast = anlage({ Planungsrecht: 'Außenbereich' });
+    const kg2 = a(mast, { ...zahl('gebaeude.hoehe', 30), ...ja('nw.blitzschutz_anlass'), ...nein('vorhaben.zu_abfahrtsverkehr') });
+    for (const id of ['nw/sbauvo/47', 'nw/sbauvo/55', 'nw/sbauvo/60', 'nw/sbauvo/92', 'nw/bauo-nrw/50', ...['1', '2', '3', '4'].map((nr) => `nw-05974040/spielplatzsatzung/${nr}`)]) expect(kg2(id), id).toBe('gruen');
+    expect(kg2('nw/bauo-nrw/45')).toBe('rot');
+    // Gegenproben: Mast über 30 m → Sonderbau im Einzelfall; Gebäude über 22 m → Hochhaus
+    expect(a(mast, zahl('gebaeude.hoehe', 35))('nw/bauo-nrw/50')).toBe('gelb');
+    const hoch = a(M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '5' }), zahl('gebaeude.hoehe', 25));
+    expect(hoch('nw/sbauvo/92')).toBe('rot');
+    expect(hoch('nw/bauo-nrw/50')).toBe('gelb');
+    expect(a(M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), zahl('gebaeude.wohnungen', 6))('nw-05974040/spielplatzsatzung/2')).toBe('rot');
+  });
+
+  it('Runde 7: § 63 BauO NRW – Abweichung von einer örtlichen Bauvorschrift bei der Genehmigungsfreistellung: Hinweis', () => {
+    // Fall F2: Mehrfamilienhaus GK 3 im Bebauungsplan, Abweichung von der Gestaltungssatzung beabsichtigt
+    const f2 = M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Planungsrecht: 'Bebauungsplan', Verfahren: 'Genehmigungsfreistellung' });
+    const mit = voll(f2, { ...ja('ortsrecht.abweichung'), ...nein('planung.befreiung') })('nw/bauo-nrw/63');
+    expect(mit.ampel).toBe('rot');
+    expect(mit.hinweise.join(' ')).toMatch(/Abweichung von einer örtlichen Bauvorschrift .*schließt die Freistellung aus/);
+    // Gegenprobe: keine Abweichung, keine Befreiung, kein großes Vorhaben → kein Einzelfall-Hinweis
+    const ohne = voll(f2, { ...nein('ortsrecht.abweichung', 'planung.befreiung'), ...zahl('gebaeude.bgf', 600), ...zahl('gebaeude.besucher', 0) })('nw/bauo-nrw/63');
+    expect(ohne.ampel).toBe('rot');
+    expect(ohne.hinweise.join(' ')).not.toMatch(/Im Einzelfall prüfen/);
+  });
+
+  it('Runde 7: § 33 BauGB entfällt, wenn die Planreife verneint ist', () => {
+    // Fall G2: Innenbereich, Plan in Aufstellung, keine Planreife
+    expect(a(M4(), { ...ja('planung.planaufstellung'), ...nein('planung.planreife') })('bund/baugb/33')).toBe('gruen');
+    // Gegenproben: Planreife ja → rot; Planreife offen → nicht grün
+    expect(a(M4(), ja('planung.planaufstellung', 'planung.planreife'))('bund/baugb/33')).toBe('rot');
+    expect(a(M4(), ja('planung.planaufstellung'))('bund/baugb/33')).not.toBe('gruen');
+  });
+
+  it('Runde 7: § 36 BauO NRW – sonstige Gebäude der GK 1 und 2 brauchen notwendige Flure nur im Kellergeschoss (gelb statt rot)', () => {
+    // Fall GM1: Einfamilienhaus mit Arztpraxis (gemischt) GK 1; Fall X10: Garage GK 1
+    expect(a(M4(), ja('gebaeude.gemischt'))('nw/bauo-nrw/36')).toBe('gelb');
+    expect(a(M4({ Gebäudeart: 'Nichtwohngebäude', Verfahren: 'verfahrensfrei' }))('nw/bauo-nrw/36')).toBe('gelb');
+    // Gegenproben: reines Wohngebäude GK 1/2 grün; Gebäudeklasse 3 rot; Nutzungsänderung im Mehrfamilienhaus GK 3 nicht grün
+    expect(a(M4(), nein('gebaeude.gemischt'))('nw/bauo-nrw/36')).toBe('gruen');
+    expect(a(M4({ Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3' }))('nw/bauo-nrw/36')).toBe('rot');
+    expect(a(M4({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }))('nw/bauo-nrw/36')).not.toBe('gruen');
   });
 });
 

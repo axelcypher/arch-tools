@@ -15,7 +15,16 @@
             "$": "freistellung"
           },
           {
-            "$": "nw_beseitigung_verfahrensfrei"
+            "und": [
+              {
+                "$": "nw_beseitigung_verfahrensfrei"
+              },
+              {
+                "nicht": {
+                  "$": "nw_genehmigungsbeduerftig"
+                }
+              }
+            ]
           }
         ]
       },
