@@ -64,6 +64,9 @@
               },
               {
                 "$": "nutzungsaenderung"
+              },
+              {
+                "$": "beseitigung"
               }
             ]
           }
@@ -169,15 +172,30 @@
         "Antrag auf Befreiung (§ 67 BNatSchG, § 75 LNatSchG NRW) bzw. Ausnahme nach den textlichen Festsetzungen bei der unteren Naturschutzbehörde des Kreises Soest"
       ],
       "pruefen": {
-        "grund": "Nutzungsänderung: Die textlichen Festsetzungen verbieten teils auch, bauliche Anlagen in ihrer Nutzungsart zu ändern – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die textlichen Festsetzungen verbieten teils auch, bauliche Anlagen in ihrer Nutzungsart zu ändern – im Einzelfall prüfen. Beseitigung neben einem Naturdenkmal bzw. geschützten Landschaftsbestandteil: Bodenverdichtung, Lagern und Beschädigen im Schutzbereich sind verboten – im Einzelfall prüfen.",
         "wenn": {
-          "und": [
+          "oder": [
             {
-              "$": "nutzungsaenderung"
+              "und": [
+                {
+                  "$": "nutzungsaenderung"
+                },
+                {
+                  "f": "schutz.naturdenkmal",
+                  "ist": true
+                }
+              ]
             },
             {
-              "f": "schutz.naturdenkmal",
-              "ist": true
+              "und": [
+                {
+                  "$": "beseitigung"
+                },
+                {
+                  "f": "schutz.naturdenkmal",
+                  "ist": true
+                }
+              ]
             }
           ]
         }
@@ -221,7 +239,21 @@
       ],
       "nachweis": [
         "Antrag auf Befreiung (§ 67 BNatSchG, § 75 LNatSchG NRW) bzw. Ausnahme nach den textlichen Festsetzungen bei der unteren Naturschutzbehörde des Kreises Soest"
-      ]
+      ],
+      "pruefen": {
+        "grund": "Beseitigung neben einem Naturdenkmal bzw. geschützten Landschaftsbestandteil: Bodenverdichtung, Lagern und Beschädigen im Schutzbereich sind verboten – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "beseitigung"
+            },
+            {
+              "f": "schutz.naturdenkmal",
+              "ist": true
+            }
+          ]
+        }
+      }
     }
   }
 }

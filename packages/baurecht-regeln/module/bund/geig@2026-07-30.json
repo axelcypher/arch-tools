@@ -151,12 +151,36 @@
         "wenn": {
           "und": [
             {
-              "f": "gebaeude.gemischt",
-              "ist": true
+              "und": [
+                {
+                  "f": "gebaeude.gemischt",
+                  "ist": true
+                },
+                {
+                  "f": "gebaeude.stellplaetze",
+                  "min": 11
+                }
+              ]
             },
             {
-              "f": "gebaeude.stellplaetze",
-              "min": 11
+              "nicht": {
+                "oder": [
+                  {
+                    "$": "errichtung"
+                  },
+                  {
+                    "$": "beseitigung"
+                  },
+                  {
+                    "f": "gebaeude.stellplaetze",
+                    "max": 10
+                  },
+                  {
+                    "f": "vorhaben.groessere_renovierung",
+                    "ist": false
+                  }
+                ]
+              }
             }
           ]
         }
@@ -224,12 +248,36 @@
         "wenn": {
           "und": [
             {
-              "f": "gebaeude.gemischt",
-              "ist": true
+              "und": [
+                {
+                  "f": "gebaeude.gemischt",
+                  "ist": true
+                },
+                {
+                  "f": "gebaeude.stellplaetze",
+                  "min": 11
+                }
+              ]
             },
             {
-              "f": "gebaeude.stellplaetze",
-              "min": 11
+              "nicht": {
+                "oder": [
+                  {
+                    "$": "errichtung"
+                  },
+                  {
+                    "$": "beseitigung"
+                  },
+                  {
+                    "f": "gebaeude.stellplaetze",
+                    "max": 10
+                  },
+                  {
+                    "f": "vorhaben.groessere_renovierung",
+                    "ist": false
+                  }
+                ]
+              }
             }
           ]
         }

@@ -40,7 +40,17 @@
       "pruefen": {
         "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "lage.erdbebenzone",
+                "ist": "0"
+              }
+            }
+          ]
         }
       }
     }

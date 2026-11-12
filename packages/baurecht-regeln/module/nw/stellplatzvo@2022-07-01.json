@@ -9,15 +9,28 @@
       "gilt": {
         "und": [
           {
-            "m": "Vorhaben",
-            "in": [
-              "Errichtung",
-              "Änderung",
-              "Nutzungsänderung"
-            ]
+            "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -29,7 +42,7 @@
       "behoerde": {
         "$": "nw_prueft_kern"
       },
-      "hinweis": "Stellplatzfestsetzungen im Bebauungsplan gehen ebenfalls vor – im Plan prüfen.",
+      "hinweis": "Stellplatzfestsetzungen im Bebauungsplan gehen ebenfalls vor – im Plan prüfen. Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
       "stand": {
         "1/1": "cf8b5461",
         "1/2": "4c2d69d3"
@@ -38,37 +51,34 @@
         "f": "ortsrecht.stellplatz_regelt_zahl",
         "ist": true
       },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
-      },
       "titel": "Anwendungsbereich"
     },
     "2": {
       "gilt": {
         "und": [
           {
-            "m": "Vorhaben",
-            "in": [
-              "Errichtung",
-              "Änderung",
-              "Nutzungsänderung"
-            ]
+            "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -88,37 +98,35 @@
         "f": "ortsrecht.stellplatz_regelt_zahl",
         "ist": true
       },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
-      },
-      "titel": "Notwendige Stellplätze für Kraftfahrzeuge und Fahrräder"
+      "titel": "Notwendige Stellplätze für Kraftfahrzeuge und Fahrräder",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
     },
     "3": {
       "gilt": {
         "und": [
           {
-            "m": "Vorhaben",
-            "in": [
-              "Errichtung",
-              "Änderung",
-              "Nutzungsänderung"
-            ]
+            "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -141,55 +149,37 @@
         "f": "ortsrecht.stellplatz_regelt_zahl",
         "ist": true
       },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
-      },
-      "titel": "Anzahl der notwendigen Stellplätze"
+      "titel": "Anzahl der notwendigen Stellplätze",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
     },
     "4": {
       "gilt": {
         "und": [
           {
-            "m": "Vorhaben",
-            "in": [
-              "Errichtung",
-              "Änderung",
-              "Nutzungsänderung"
-            ]
+            "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
-      },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
       },
       "grund": "Verringerung der Anzahl notwendiger Stellplätze (ÖPNV-Lage, Mobilitätskonzept, offensichtliches Missverhältnis).",
       "fundstellen": [
@@ -207,22 +197,35 @@
         "f": "ortsrecht.stellplatz_regelt_zahl",
         "ist": true
       },
-      "hinweis": "Verringerung bei integrierter Lage mit ÖPNV-Anbindung oder Mobilitätskonzept – öffentlich-rechtlich zu sichern.",
+      "hinweis": "Verringerung bei integrierter Lage mit ÖPNV-Anbindung oder Mobilitätskonzept – öffentlich-rechtlich zu sichern. Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
       "titel": "Verringerung der Anzahl der notwendigen Stellplätze"
     },
     "5": {
       "gilt": {
         "und": [
           {
-            "m": "Vorhaben",
-            "in": [
-              "Errichtung",
-              "Änderung",
-              "Nutzungsänderung"
-            ]
+            "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -244,23 +247,8 @@
         "f": "ortsrecht.stellplatz_regelt_lage",
         "ist": true
       },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
-      },
-      "titel": "Erfüllung der Herstellungspflicht"
+      "titel": "Erfüllung der Herstellungspflicht",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
     },
     "6": {
       "titel": "Nachweis durch Zahlung von Ablösungsbeträgen",
@@ -304,15 +292,28 @@
       "gilt": {
         "und": [
           {
-            "m": "Vorhaben",
-            "in": [
-              "Errichtung",
-              "Änderung",
-              "Nutzungsänderung"
-            ]
+            "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -330,37 +331,35 @@
         "f": "ortsrecht.stellplatz_regelt_kfz",
         "ist": true
       },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
-      },
-      "titel": "Beschaffenheit von notwendigen Stellplätzen für Kraftfahrzeuge"
+      "titel": "Beschaffenheit von notwendigen Stellplätzen für Kraftfahrzeuge",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
     },
     "8": {
       "gilt": {
         "und": [
           {
-            "m": "Vorhaben",
-            "in": [
-              "Errichtung",
-              "Änderung",
-              "Nutzungsänderung"
-            ]
+            "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -378,23 +377,8 @@
         "f": "ortsrecht.stellplatz_regelt_fahrrad",
         "ist": true
       },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
-      },
-      "titel": "Beschaffenheit von notwendigen Stellplätzen für Fahrräder"
+      "titel": "Beschaffenheit von notwendigen Stellplätzen für Fahrräder",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
     },
     "9": {
       "gilt": {

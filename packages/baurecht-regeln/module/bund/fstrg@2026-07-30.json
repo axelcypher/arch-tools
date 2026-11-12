@@ -8,12 +8,26 @@
     "9": {
       "titel": "Bauliche Anlagen an Bundesfernstraßen",
       "gilt": {
-        "f": "lage.bundesfernstrasse",
-        "ist": true
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "lage.bundesfernstrasse",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
-        "f": "lage.bundesfernstrasse",
-        "ist": false
+        "oder": [
+          {
+            "f": "lage.bundesfernstrasse",
+            "ist": false
+          },
+          {
+            "$": "beseitigung"
+          }
+        ]
       },
       "grund": "An Bundesautobahnen (bis 40 m) und Bundesstraßen außerhalb der Ortsdurchfahrten (bis 20 m) dürfen Hochbauten nicht errichtet werden, auch keine Anschlüsse über Zufahrten (Anbauverbot, Abs. 1); bis 100 m bzw. 40 m bedürfen Baugenehmigungen der Zustimmung der Straßenbaubehörde (Abs. 2).",
       "fundstellen": [

@@ -58,13 +58,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "WS"
+                    }
+                  }
                 ]
               }
             }
@@ -90,13 +110,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "WR"
+                    }
+                  }
                 ]
               }
             }
@@ -122,13 +162,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "WA"
+                    }
+                  }
                 ]
               }
             }
@@ -154,13 +214,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "MD"
+                    }
+                  }
                 ]
               }
             }
@@ -186,13 +266,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "MI"
+                    }
+                  }
                 ]
               }
             }
@@ -218,13 +318,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "MK"
+                    }
+                  }
                 ]
               }
             }
@@ -250,13 +370,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "GE"
+                    }
+                  }
                 ]
               }
             }
@@ -282,13 +422,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "GI"
+                    }
+                  }
                 ]
               }
             }
@@ -477,14 +637,24 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
-                ]
+                "f": "vorhaben.freiberuflich",
+                "ist": false
               }
             }
           ]
@@ -524,14 +694,24 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
-                ]
+                "f": "vorhaben.nebenanlage",
+                "ist": false
               }
             }
           ]
@@ -877,13 +1057,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "WB"
+                    }
+                  }
                 ]
               }
             }
@@ -909,13 +1109,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "MDW"
+                    }
+                  }
                 ]
               }
             }
@@ -941,13 +1161,33 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
+                "und": [
+                  {
+                    "f": "planung.gebietsart",
+                    "bekannt": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.gebietsart",
+                      "ist": "MU"
+                    }
+                  }
                 ]
               }
             }
@@ -984,14 +1224,24 @@
         "wenn": {
           "und": [
             {
-              "$": "bplan_jeder"
+              "und": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "nicht": {
+                    "f": "planung.baunvo",
+                    "in": [
+                      "aktuell"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
-                ]
+                "f": "vorhaben.ferienwohnung",
+                "ist": false
               }
             }
           ]
@@ -1114,12 +1364,8 @@
               "$": "bplan_jeder"
             },
             {
-              "nicht": {
-                "f": "planung.baunvo",
-                "in": [
-                  "aktuell"
-                ]
-              }
+              "f": "planung.baunvo",
+              "bekannt": false
             }
           ]
         }

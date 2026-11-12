@@ -33,37 +33,60 @@
       "pruefen": {
         "grund": "Keine Prüfung der Standsicherheit auch bei freistehenden landwirtschaftlichen Betriebsgebäuden bis zwei Geschosse und eingeschossigen Gebäuden bis 200 m² (§ 68 Abs. 3 Satz 5 BauO NRW). Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
         "wenn": {
-          "oder": [
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
             {
               "oder": [
                 {
-                  "und": [
+                  "oder": [
                     {
-                      "f": "gebaeude.landwirtschaft",
-                      "bekannt": true
+                      "und": [
+                        {
+                          "f": "gebaeude.landwirtschaft",
+                          "bekannt": true
+                        },
+                        {
+                          "f": "gebaeude.landwirtschaft",
+                          "ist": true
+                        }
+                      ]
                     },
                     {
-                      "f": "gebaeude.landwirtschaft",
-                      "ist": true
+                      "und": [
+                        {
+                          "f": "gebaeude.bgf",
+                          "bekannt": true
+                        },
+                        {
+                          "f": "gebaeude.bgf",
+                          "max": 200
+                        }
+                      ]
                     }
                   ]
                 },
                 {
-                  "und": [
-                    {
-                      "f": "gebaeude.bgf",
-                      "bekannt": true
-                    },
-                    {
-                      "f": "gebaeude.bgf",
-                      "max": 200
-                    }
-                  ]
+                  "$": "nutzungsaenderung"
                 }
               ]
             },
             {
-              "$": "nutzungsaenderung"
+              "nicht": {
+                "und": [
+                  {
+                    "$": "wohngebaeude"
+                  },
+                  {
+                    "$": "gk_1_2"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": false
+                  }
+                ]
+              }
             }
           ]
         }
@@ -189,7 +212,27 @@
       "pruefen": {
         "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "und": [
+                  {
+                    "$": "wohngebaeude"
+                  },
+                  {
+                    "$": "gk_1_2"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": false
+                  }
+                ]
+              }
+            }
+          ]
         }
       },
       "titel": "Aufgabenerledigung"

@@ -189,6 +189,7 @@
     "nw.stellplatzflaeche": {
       "titel": "Notwendige Kfz-Stellplätze für ein Nichtwohngebäude auf einer neu errichteten Stellplatzfläche",
       "kurz": "Stellplatzfläche eines Nichtwohngebäudes",
+      "einheit": "Stellplätze",
       "gruppe": "grundstueck",
       "typ": "zahl",
       "hilfe": "für die Photovoltaik-Pflicht über Stellplatzflächen (§ 48 Abs. 1a BauO NRW, § 6 SAN-VO NRW): mehr als 35 – auch wenn die Stellplatzfläche selbst das Vorhaben ist; Stellplätze für Wohnnutzung zählen nicht",
@@ -487,6 +488,75 @@
       "wenn": {
         "$": "nutzungsaenderung"
       }
+    },
+    "nw.anlage_ueber_10m": {
+      "titel": "Zu beseitigende Anlage (kein Gebäude) höher als 10 m",
+      "kurz": "Anlage höher als 10 m",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 62 Abs. 3 Satz 1 Nr. 3 BauO NRW: Die Beseitigung sonstiger Anlagen, die keine Gebäude sind, bis 10 m Höhe ist verfahrensfrei; höhere sind einen Monat vorher anzuzeigen (Satz 3) – außer, schon ihre Errichtung wäre verfahrensfrei (Satz 1 Nr. 1).",
+      "wenn": {
+        "und": [
+          {
+            "$": "beseitigung"
+          },
+          {
+            "m": "Gebäudeart",
+            "in": [
+              "kein Gebäude"
+            ]
+          }
+        ]
+      }
+    },
+    "nw.beseitigung_abs1": {
+      "titel": "Die Errichtung der zu beseitigenden Anlage wäre verfahrensfrei (§ 62 Abs. 1 BauO NRW, z. B. Garage, Gartenhaus, Einfriedung)",
+      "kurz": "Errichtung wäre verfahrensfrei",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 62 Abs. 3 Satz 1 Nr. 1 BauO NRW: Die Beseitigung von Anlagen nach Absatz 1 ist verfahrensfrei – auch wenn sie angebaut sind. Wohngebäude gehören nie dazu.",
+      "wenn": {
+        "und": [
+          {
+            "$": "beseitigung"
+          },
+          {
+            "nicht": {
+              "$": "wohngebaeude"
+            }
+          }
+        ]
+      }
+    },
+    "vorhaben.zu_abfahrtsverkehr": {
+      "titel": "Bei der Anlage (kein Gebäude) ist Zu- oder Abfahrtsverkehr mit Kraftfahrzeugen bzw. Fahrrädern zu erwarten",
+      "kurz": "Zu-/Abfahrtsverkehr zu erwarten",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 48 Abs. 1 BauO NRW: Stellplätze sind auch für Anlagen, die keine Gebäude sind, herzustellen, wenn Zu- oder Abfahrtsverkehr zu erwarten ist (z. B. Sportanlage, Stellplatzanlage, Lagerplatz) – nicht bei Mauer, Wärmepumpe oder Werbeanlage.",
+      "wenn": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "m": "Gebäudeart",
+            "in": [
+              "kein Gebäude"
+            ]
+          }
+        ]
+      }
+    },
+    "nw.blitzschutz_anlass": {
+      "titel": "Nach Lage, Bauart oder Nutzung kann ein Blitzschlag leicht eintreten oder schwere Folgen haben (z. B. exponierte Lage, Mast oder Turm, weiche Bedachung, Lager brennbarer Stoffe, viele Menschen)",
+      "kurz": "Besondere Blitzgefahr oder -folgen",
+      "gruppe": "technik",
+      "typ": "janein",
+      "hilfe": "§ 45 BauO NRW: dann ist eine dauernd wirksame Blitzschutzanlage nötig – auch bei baulichen Anlagen, die keine Gebäude sind.",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
     }
   },
   "bausteine": {
@@ -765,6 +835,94 @@
           "m": "Gebäudeart",
           "in": [
             "kein Gebäude"
+          ]
+        }
+      ]
+    },
+    "nw_beseitigung_frei_art": {
+      "oder": [
+        {
+          "und": [
+            {
+              "$": "gebaeude"
+            },
+            {
+              "f": "gebaeude.freistehend",
+              "ist": true
+            },
+            {
+              "m": "Gebäudeklasse",
+              "in": [
+                "1",
+                "3"
+              ]
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            },
+            {
+              "f": "nw.anlage_ueber_10m",
+              "ist": false
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "nicht": {
+                "$": "wohngebaeude"
+              }
+            },
+            {
+              "f": "nw.beseitigung_abs1",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "nw_beseitigung_verfahrensfrei": {
+      "und": [
+        {
+          "$": "beseitigung"
+        },
+        {
+          "$": "nw_beseitigung_frei_art"
+        }
+      ]
+    },
+    "nw_beseitigung_anzeige": {
+      "und": [
+        {
+          "$": "beseitigung"
+        },
+        {
+          "nicht": {
+            "$": "nw_beseitigung_frei_art"
+          }
+        }
+      ]
+    },
+    "nw_mit_baugenehmigung": {
+      "und": [
+        {
+          "$": "nw_genehmigungsbeduerftig"
+        },
+        {
+          "oder": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "$": "nw_beseitigung_verfahrensfrei"
+            }
           ]
         }
       ]

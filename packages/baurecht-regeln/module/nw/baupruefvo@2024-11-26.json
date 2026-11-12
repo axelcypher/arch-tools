@@ -9,10 +9,24 @@
       "gilt": {
         "oder": [
           {
-            "$": "nw_verfahren_bekannt"
+            "und": [
+              {
+                "$": "nw_verfahren_bekannt"
+              },
+              {
+                "oder": [
+                  {
+                    "$": "vorhaben_29"
+                  },
+                  {
+                    "$": "nw_beseitigung_verfahrensfrei"
+                  }
+                ]
+              }
+            ]
           },
           {
-            "$": "beseitigung"
+            "$": "nw_beseitigung_anzeige"
           }
         ]
       },
@@ -23,7 +37,7 @@
         "1/3"
       ],
       "behoerde": {
-        "$": "nw_genehmigungsbeduerftig"
+        "$": "nw_mit_baugenehmigung"
       },
       "stand": {
         "1/1": "ff339212",
@@ -64,23 +78,37 @@
           {
             "und": [
               {
-                "$": "beseitigung"
+                "$": "freistellung"
               },
               {
-                "m": "Verfahren",
-                "nicht": [
-                  "verfahrensfrei"
+                "$": "nutzungsaenderung"
+              },
+              {
+                "oder": [
+                  {
+                    "$": "innen_34"
+                  },
+                  {
+                    "$": "aussen_planrecht"
+                  }
                 ]
+              }
+            ]
+          },
+          {
+            "$": "nw_beseitigung_anzeige"
+          },
+          {
+            "und": [
+              {
+                "$": "nw_beseitigung_verfahrensfrei"
+              },
+              {
+                "$": "nw_genehmigungsbeduerftig"
               }
             ]
           }
         ]
-      },
-      "pruefen": {
-        "grund": "Bei Änderungen ohne veränderte Länge und Höhe der den Nachbargrenzen zugekehrten Wände genügt ein Übersichtsplan (§ 10 Abs. 2).",
-        "wenn": {
-          "$": "aenderung"
-        }
       },
       "grund": "Auszug aus dem Liegenschaftskataster (Flurkarte, amtlich beglaubigt, nicht älter als sechs Monate) bei Vorhaben nach §§ 34 und 35 BauGB; im Außenbereich ggf. Amtliche Basiskarte. Auch der Anzeige einer Beseitigung (§ 62 Abs. 3 BauO NRW) ist ein Auszug aus der Flurkarte beizufügen (§ 15 Abs. 1 Nr. 1).",
       "fundstellen": [
@@ -94,7 +122,7 @@
       "nachweis": [
         "Auszug aus der Flurkarte bzw. Amtlichen Basiskarte (§ 10 Abs. 1 Nr. 1)"
       ],
-      "hinweis": "Im Geltungsbereich eines qualifizierten Bebauungsplans nicht beizufügen.",
+      "hinweis": "Im Geltungsbereich eines qualifizierten Bebauungsplans nicht beizufügen. Bei Änderungen ohne veränderte Länge und Höhe der den Nachbargrenzen zugekehrten Wände genügt ein Übersichtsplan (§ 10 Abs. 2).",
       "stand": {
         "2/1": "29ce63d5",
         "2/2": "f9c80e55",
@@ -282,7 +310,14 @@
     },
     "10": {
       "gilt": {
-        "$": "vereinfacht"
+        "und": [
+          {
+            "$": "vereinfacht"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
       },
       "grund": "Bauvorlagen im vereinfachten Verfahren: Auszug aus dem Liegenschaftskataster (bei §§ 34, 35 BauGB), Lageplan, Bauzeichnungen, Baubeschreibung dreifach; Berechnungen zweifach.",
       "fundstellen": [
@@ -302,7 +337,14 @@
     },
     "11": {
       "gilt": {
-        "$": "baugenehmigung"
+        "und": [
+          {
+            "$": "baugenehmigung"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
       },
       "grund": "Bauvorlagen im Baugenehmigungsverfahren: wie § 10 und zusätzlich das Brandschutzkonzept (dreifach).",
       "fundstellen": [
@@ -383,7 +425,14 @@
     },
     "13": {
       "gilt": {
-        "$": "freistellung"
+        "und": [
+          {
+            "$": "freistellung"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
       },
       "grund": "Genehmigungsfreistellung: Lageplan und Bauzeichnungen einfach bei der Gemeinde; bei GK 1 und 2 Erklärung der Entwurfsverfassenden zum Brandschutz.",
       "fundstellen": [
@@ -441,7 +490,21 @@
     },
     "15": {
       "gilt": {
-        "$": "beseitigung"
+        "oder": [
+          {
+            "$": "nw_beseitigung_anzeige"
+          },
+          {
+            "und": [
+              {
+                "$": "nw_beseitigung_verfahrensfrei"
+              },
+              {
+                "$": "nw_genehmigungsbeduerftig"
+              }
+            ]
+          }
+        ]
       },
       "grund": "Bauvorlagen für die Beseitigung von Anlagen.",
       "fundstellen": [
@@ -457,7 +520,12 @@
         "15/2": "e2b975b8",
         "15/3": "17d06eae"
       },
-      "titel": "Bauvorlagen für die Beseitigung von Anlagen"
+      "titel": "Bauvorlagen für die Beseitigung von Anlagen",
+      "entfaellt": {
+        "nicht": {
+          "$": "beseitigung"
+        }
+      }
     },
     "18": {
       "gilt": {

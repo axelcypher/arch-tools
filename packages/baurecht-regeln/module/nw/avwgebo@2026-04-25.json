@@ -7,10 +7,17 @@
   "paragrafen": {
     "1": {
       "gilt": {
-        "$": "nw_genehmigungsbeduerftig"
+        "$": "nw_mit_baugenehmigung"
       },
       "entfaellt": {
-        "$": "freistellung"
+        "oder": [
+          {
+            "$": "freistellung"
+          },
+          {
+            "$": "nw_beseitigung_verfahrensfrei"
+          }
+        ]
       },
       "grund": "Verwaltungsgebühren nach dem Allgemeinen Gebührentarif, Tarifstelle 3.1 (Baurecht) – für die Baugenehmigung nach dem Rohbauwert aus dem Brutto-Rauminhalt.",
       "fundstellen": [
@@ -23,7 +30,13 @@
       "stand": {
         "1": "cb3c008e"
       },
-      "titel": "Anwendungsbereich, Abweichungsverbot"
+      "titel": "Anwendungsbereich, Abweichungsverbot",
+      "pruefen": {
+        "grund": "Anzeige einer Beseitigung (§ 62 Abs. 3 Satz 3 BauO NRW): ob und welche Gebühr der Tarif dafür vorsieht, im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nw_beseitigung_anzeige"
+        }
+      }
     }
   }
 }

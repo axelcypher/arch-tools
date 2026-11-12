@@ -29,4 +29,29 @@ describe('kurze Namen der Angaben', () => {
     for (const m of paket.module) for (const [id, d] of Object.entries(m.fakten ?? {})) namen.set(id, new Set([...(namen.get(id) ?? []), faktName({ ...FAKTEN[id], ...d }, id)]));
     expect([...namen].filter(([, n]) => n.size > 1).map(([id, n]) => `${id}: ${[...n].join(' / ')}`)).toEqual([]);
   });
+
+  it('Runde 6: Auswahl-Fakten heißen „Welche …“ und sind vom Ja/Nein-Fakt zum selben Thema unterscheidbar; die Stellplatzfläche hat eine Einheit', () => {
+    const soest = { ...FAKTEN, ...faktDefinitionen(aktiveModule(paket.module, '05974040')) };
+    const paare: [string, string][] = [
+      ['schutz.nsg', 'kreis_soest.nsg'],
+      ['schutz.landschaftsplan', 'kreis_soest.landschaftsplan'],
+      ['kreis_soest.hsg', 'kreis_soest.hsg_qualitativ'],
+      ['kreis_soest.hsg', 'kreis_soest.hsg_quantitativ'],
+      ['ortsrecht.stellplatzsatzung', 'soest.stellplatzzone'],
+      ['soest.bplan_entwurf', 'soest.bplan'],
+    ];
+    for (const [janein, auswahl] of paare) {
+      expect(soest[janein].typ, janein).toBe('janein');
+      expect(faktName(soest[auswahl], auswahl), auswahl).toMatch(/^Welche[rs]? /);
+    }
+    // allgemein: eine Auswahl der Module, die erst nach „ja“ zu einer anderen Angabe gefragt wird, beginnt mit „Welche …“
+    const nachJa = Object.entries(defs).filter(([id, d]) => {
+      const w = d.wenn as { f?: string; ist?: unknown } | undefined;
+      return !(id in FAKTEN) && d.typ === 'wahl' && !!w?.f && w.ist === true;
+    });
+    expect(nachJa.length).toBeGreaterThan(0);
+    for (const [id, d] of nachJa) expect(faktName(d, id), id).toMatch(/^Welche[rs]? /);
+    // Zahl mit Einheit: der Regelbaum zeigt „… mindestens 36 Stellplätze“
+    expect(soest['nw.stellplatzflaeche'].einheit).toBe('Stellplätze');
+  });
 });

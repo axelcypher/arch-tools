@@ -227,7 +227,7 @@
           },
           {
             "nicht": {
-              "$": "nw_genehmigungsbeduerftig"
+              "$": "nw_mit_baugenehmigung"
             }
           }
         ]
@@ -235,7 +235,7 @@
       "entfaellt": {
         "oder": [
           {
-            "$": "nw_genehmigungsbeduerftig"
+            "$": "nw_mit_baugenehmigung"
           },
           {
             "$": "nw_kein_denkmalbezug"

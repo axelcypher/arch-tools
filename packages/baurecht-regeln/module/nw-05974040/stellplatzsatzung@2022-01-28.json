@@ -100,7 +100,25 @@
             "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -121,23 +139,8 @@
         "3/5": "8c30d341",
         "3/6": "8e054a67"
       },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
-      },
-      "titel": "Anzahl der notwendigen Stellplätze und Fahrradabstellplätze"
+      "titel": "Anzahl der notwendigen Stellplätze und Fahrradabstellplätze",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
     },
     "4": {
       "gilt": {
@@ -146,7 +149,25 @@
             "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -160,28 +181,12 @@
       "behoerde": {
         "$": "nw_prueft_kern"
       },
-      "hinweis": "Stellplätze außerhalb des Baugrundstücks brauchen eine Baulast.",
+      "hinweis": "Stellplätze außerhalb des Baugrundstücks brauchen eine Baulast. Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
       "stand": {
         "4/1": "e7ae03ff",
         "4/7": "807197a7",
         "4/8": "94cf7c3e",
         "4/9": "7fd51111"
-      },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
       },
       "titel": "Beschaffenheit von Stellplätzen und Fahrradabstellplätzen"
     },

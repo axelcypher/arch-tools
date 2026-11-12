@@ -58,7 +58,16 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung ohne bauliche Änderung greift § 3 Abs. 1 Nr. 1 nicht; verboten bleiben aber Handlungen, die den Charakter des Gebiets verändern oder dem Schutzzweck zuwiderlaufen (Abs. 2) – mit der unteren Naturschutzbehörde klären.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "$": "bplan"
+              }
+            }
+          ]
         }
       },
       "grund": "Verboten ist, bauliche Anlagen (auch Einfriedungen, Stellplätze, Werbeanlagen, Leitungen) zu errichten, zu erweitern oder zu verändern (Abs. 1 Nr. 1), die Bodengestalt zu verändern (Nr. 3), Gehölze und Einzelbäume zu beseitigen (Nr. 5) und feuchtes Grünland durch Grundwasserentnahme zu entwässern (Nr. 12).",

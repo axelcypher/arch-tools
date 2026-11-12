@@ -70,7 +70,21 @@
         "4/1": "2e1a7483",
         "4/2": "f071351a"
       },
-      "titel": "Verbotene Handlungen"
+      "titel": "Verbotene Handlungen",
+      "pruefen": {
+        "grund": "Beseitigung: Verdichten, Abgraben und Lagern im Wurzelbereich geschützter Bäume ist verboten (§ 4) – Schutz während des Abbruchs im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "beseitigung"
+            },
+            {
+              "f": "soest.baeume",
+              "ist": true
+            }
+          ]
+        }
+      }
     },
     "6": {
       "gilt": {
