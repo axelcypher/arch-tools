@@ -9,7 +9,7 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 | **Flächenrechner** | Flächen- und Rauminhaltsberechnung nach DIN 277 und WoFlV | unten |
 | **GRZ-Nachweis** | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
 | **Kostenermittlung** | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
-| **Projekt** (früher Projektordner) | Das Setup-Tool: Projekte mit einem Assistenten anlegen und fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte in der Projektdatei, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
+| **Projekt** (früher Projektordner) | Das Setup-Tool: Projekte mit einem Assistenten anlegen und fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte in der Projektdatei, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Mails prüfen, benennen und aus Outlook ablegen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
 | **Entzerrung** | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 | **Formulare** | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
 | **AVA** | Ausschreibung, Vergabe, Abrechnung und Bauleitung: Leistungsverzeichnisse (LV-Dateien des bisherigen LV-Programms oder eigenes Format), Preisspiegel, Aufträge, Rechnungsprüfung mit Deckblatt, Kostenkontrolle (Excel), Bautagebuch, Protokolle, Mängel, Mailverlauf | [docs/ava.md](docs/ava.md) |

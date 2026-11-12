@@ -38,6 +38,11 @@ export interface ProjektordnerZugriff {
   dateienSuchen?(root: string, tiefe: number, endung: string): Promise<OrdnerEintrag[]>;
   /** einen Eintrag eines ZIP-Archivs lesen, ohne das ganze Archiv zu laden; `null`, wenn es ihn nicht gibt */
   zipEintrag?(root: string, pfad: string, name: string): Promise<{ daten: Uint8Array; stand: DateiStand } | null>;
+  /**
+   * Datei umbenennen (App „Projekt“, nur deren Hülle und die Rahmen-App): nur innerhalb von `root`, Endung bleibt, der
+   * Zielordner muss es geben; `false`, wenn es das Ziel schon gibt – überschrieben wird nie.
+   */
+  umbenennen?(root: string, alt: string, neu: string): Promise<boolean>;
 }
 
 async function invoke<T>(befehl: string, args: Record<string, unknown>): Promise<T> {
@@ -60,6 +65,7 @@ export const tauriProjektordner: ProjektordnerZugriff = {
   dateiAnlegen: (root, pfad, daten) => invoke<boolean>('projekt_datei_anlegen', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   projektdateiErsetzen: (root, pfad, daten, stand) => invoke<void>('projekt_oap_ersetzen', { root, pfad, contentsBase64: bytesToBase64(daten), groesse: stand.groesse, geaendert: stand.geaendert }),
   dateienSuchen: (root, tiefe, endung) => invoke<OrdnerEintrag[]>('projekt_dateien_suchen', { root, tiefe, endung }),
+  umbenennen: (root, alt, neu) => invoke<boolean>('projekt_datei_umbenennen', { root, alt, neu }),
   zipEintrag: async (root, pfad, name) => {
     const r = await invoke<{ daten: string; methode: number; groesse: number; geaendert: number } | null>('projekt_zip_eintrag', { root, pfad, name });
     if (!r) return null;
@@ -89,7 +95,11 @@ export function verbinde(root: string, rel: string): string {
 }
 
 /** letzter Teil eines Pfads */
-export const ordnerName = (pfad: string) => pfad.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? pfad;
+export const ordnerName = (pfad: string) =>
+  pfad
+    .replace(/[\\/]+$/, '')
+    .split(/[\\/]/)
+    .pop() ?? pfad;
 
 /* ---------- Projektdatei im Projektordner ---------- */
 
@@ -144,7 +154,14 @@ export async function projektdateiSchreiben(fs: ProjektordnerZugriff, root: stri
  * Eine Originaldatei in die Projektdatei legen (ersetzt die bisherige derselben Art, z. B. die QGIS-Vorlage); liest
  * frisch und versucht es erneut, wenn eine andere App die Datei zwischen Lesen und Schreiben geändert hat.
  */
-export async function projektdateiDateiSetzen(fs: ProjektordnerZugriff, root: string, pfad: string, datei: { id: string; name: string; art: DateiArt; datum: string }, daten: Uint8Array, versuche = 3): Promise<void> {
+export async function projektdateiDateiSetzen(
+  fs: ProjektordnerZugriff,
+  root: string,
+  pfad: string,
+  datei: { id: string; name: string; art: DateiArt; datum: string },
+  daten: Uint8Array,
+  versuche = 3,
+): Promise<void> {
   for (let versuch = 1; ; versuch++) {
     const r = await fs.liesMitStand(root, pfad);
     if (!r) throw new Error(`${pfad}: nicht gefunden`);
@@ -301,6 +318,21 @@ export class SpeicherProjektordner implements ProjektordnerZugriff {
     const eltern = pfad.split('/').slice(0, -1).join('/');
     if (eltern) await this.ordnerAnlegen(root, eltern);
     this.setze(p, daten);
+    return true;
+  }
+  async umbenennen(root: string, alt: string, neu: string): Promise<boolean> {
+    const von = this.pfad(root, alt);
+    const nach = this.pfad(root, neu);
+    const v = this.eintraege.get(von);
+    if (!(v instanceof Uint8Array)) throw new Error(`${alt}: keine Datei`);
+    const endung = (p: string) => (/\.[^./]+$/.exec(p)?.[0] ?? '').toLowerCase();
+    if (endung(alt) !== endung(neu)) throw new Error(`${neu}: die Endung der Datei darf sich nicht ändern`);
+    const eltern = neu.split('/').slice(0, -1).join('/');
+    if (eltern && this.eintraege.get(this.pfad(root, eltern)) !== null) throw new Error(`${neu}: den Zielordner gibt es nicht`);
+    if (von === nach) return true;
+    if (von.toLowerCase() !== nach.toLowerCase() && this.eintraege.has(nach)) return false;
+    this.eintraege.delete(von);
+    this.setze(nach, v);
     return true;
   }
 

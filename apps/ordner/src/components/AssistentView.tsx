@@ -79,6 +79,7 @@ export function AssistentView({
   onEinstellungen,
   onPruefen,
   onKatasterEinstellungen,
+  onMails,
 }: {
   start?: GeladenerOrdner | null;
   /** neues Projekt im Auftrag einer anderen App: gleich mit den Stammdaten beginnen, danach zurück */
@@ -87,6 +88,8 @@ export function AssistentView({
   onPruefen?: (pfad: string) => void;
   /** Einstellungen der Katasterpläne zeigen */
   onKatasterEinstellungen?: () => void;
+  /** Mails eines Projekts prüfen und benennen */
+  onMails?: (pfad: string) => void;
 }) {
   const desktop = hatDateisystem();
   const { stamm: entwurf, struktur, stammordner, vorlagen, allgemein, setStamm, setStammordner, neuesProjekt } = useOrdner();
@@ -405,6 +408,7 @@ export function AssistentView({
           onEinstellungen={onEinstellungen}
           onPruefen={onPruefen}
           onKatasterEinstellungen={onKatasterEinstellungen}
+          onMails={onMails}
         />
       </div>
     );

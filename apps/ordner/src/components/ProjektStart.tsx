@@ -27,6 +27,7 @@ export function ProjektStart({
   onEinstellungen,
   onPruefen,
   onKatasterEinstellungen,
+  onMails,
 }: {
   fs: ProjektordnerZugriff;
   /** angefangenes neues Projekt („2026-014 EFH Musterweg“), leer ohne */
@@ -40,6 +41,8 @@ export function ProjektStart({
   onPruefen?: (pfad: string) => void;
   /** Einstellungen der Katasterpläne zeigen */
   onKatasterEinstellungen?: () => void;
+  /** Mails des Projekts prüfen und benennen */
+  onMails?: (pfad: string) => void;
 }) {
   const { allgemein, struktur } = useOrdner();
   // Nummer und Kurzname aus dem Ordnernamen nach dem Schema der Struktur
@@ -71,6 +74,7 @@ export function ProjektStart({
     return [
       { label: 'Ergänzen …', aktion: () => onOeffnen(p.schluessel) },
       ...(onPruefen ? [{ label: 'Projekt prüfen', aktion: () => onPruefen(p.schluessel) }] : []),
+      ...(onMails ? [{ label: 'Mails prüfen …', titel: 'Mails (.msg) im Projektordner prüfen und nach dem Schema benennen', aktion: () => onMails(p.schluessel) }] : []),
       {
         label: 'Katasterpläne …',
         titel: 'Katasterauszüge (PDF) und DXF-Pläne aus der QGIS-Vorlage um die Projektadresse exportieren',

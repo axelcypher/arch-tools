@@ -6,16 +6,18 @@ import { PruefView } from './components/PruefView';
 import { EinstellungenView, StrukturView } from './components/StrukturView';
 import { VorlagenView } from './components/VorlagenView';
 import { KatasterEinstellungen } from './components/KatasterEinstellungen';
+import { MailView } from './components/MailView';
 import { ASSISTENT_NEU, vomRahmen } from '@core/platform/rahmen';
 import type { Auftrag } from './components/AssistentView';
 import type { GeladenerOrdner } from './projekt';
 import { useOrdner } from './store';
 
-type Ansicht = 'projekt' | 'pruefen' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
+type Ansicht = 'projekt' | 'pruefen' | 'mails' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
   { id: 'projekt', label: 'Assistent', title: 'Assistent: neues Projekt anlegen oder ein bestehendes fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte, Vorlagen, Trockenlauf' },
   { id: 'pruefen', label: 'Ordner prüfen', title: 'Vorhandenen Projektordner mit der Struktur vergleichen – es wird nichts verschoben' },
+  { id: 'mails', label: 'Mails', title: 'Mails (.msg) im Projektordner prüfen und nach dem Schema benennen: Projektcode von|an Name JJMMTT Thema' },
   { id: 'struktur', label: 'Struktur', title: 'Ordnerbaum des Büros zum Klicken – mit Bausteinen für wiederkehrende Unterordner (z. B. Gewerke) – und Namensschemata' },
   { id: 'vorlagen', label: 'Vorlagen', title: 'Vorlagenordner, Dateinamen und Presets: welche Vorlage wohin kommt und wie sie dort heißt' },
   { id: 'kataster', label: 'Katasterpläne', title: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne – exportiert wird je Projekt (Rechtsklick auf der Startseite)' },
@@ -33,6 +35,12 @@ export function App() {
   const [neustart, setNeustart] = useState(0);
   // „Projekt prüfen“ aus der Projektübersicht
   const [pruefStart, setPruefStart] = useState<{ pfad: string; nr: number } | null>(null);
+  // „Mails prüfen“ aus der Projektübersicht bzw. aus „Ordner prüfen“
+  const [mailStart, setMailStart] = useState<{ pfad: string; nr: number } | null>(null);
+  const mailsPruefen = (pfad: string) => {
+    setMailStart((m) => ({ pfad, nr: (m?.nr ?? 0) + 1 }));
+    setAnsicht('mails');
+  };
   // „Neues Projekt anlegen“ aus einer anderen App (Rahmen-App): Assistent für ein neues Projekt
   const [auftrag, setAuftrag] = useState<(Auftrag & { nr: number }) | null>(null);
 
@@ -121,12 +129,14 @@ export function App() {
               setAnsicht('pruefen');
             }}
             onKatasterEinstellungen={() => setAnsicht('kataster')}
+            onMails={mailsPruefen}
           />
         )}
         {ansicht === 'pruefen' && (
           <PruefView
             key={pruefStart?.nr ?? 0}
             start={pruefStart?.pfad ?? null}
+            onMails={mailsPruefen}
             onErgaenzen={(ordner) => {
               setAuftrag(null);
               setStart({ ordner, nr: (start?.nr ?? 0) + 1 });
@@ -140,6 +150,7 @@ export function App() {
             <KatasterEinstellungen />
           </div>
         )}
+        {ansicht === 'mails' && <MailView key={mailStart?.nr ?? 0} start={mailStart?.pfad ?? null} />}
         {ansicht === 'struktur' && <StrukturView />}
         {ansicht === 'einstellungen' && <EinstellungenView />}
       </main>

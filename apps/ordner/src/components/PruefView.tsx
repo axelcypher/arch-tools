@@ -34,7 +34,7 @@ interface Geprueft extends GeladenerOrdner {
  * Stammordner oder per „Ordner wählen …“) oder alle auf einmal mit Übersicht und CSV. Nur lesend; einzig „fehlende
  * Ordner anlegen“ legt auf Wunsch Ordner an. `fs` ersetzt das Dateisystem des Desktops (Tests).
  */
-export function PruefView({ onErgaenzen, fs: fsVorgabe, start }: { onErgaenzen: (o: GeladenerOrdner) => void; fs?: Dateisystem; start?: string | null }) {
+export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onErgaenzen: (o: GeladenerOrdner) => void; onMails?: (pfad: string) => void; fs?: Dateisystem; start?: string | null }) {
   const desktop = hatDateisystem();
   const fs = fsVorgabe ?? (desktop ? tauriDateisystem : null);
   const struktur = useOrdner((s) => s.struktur);
@@ -269,6 +269,11 @@ export function PruefView({ onErgaenzen, fs: fsVorgabe, start }: { onErgaenzen: 
               <button onClick={() => onErgaenzen(g)} title="Im Assistenten fehlende Ordner, Vorlagen und die Projektdatei ergänzen – vorhandene Dateien bleiben unverändert">
                 Projekt ergänzen …
               </button>
+              {onMails && g.pfad && g.ergebnis.falscheMails.length > 0 && (
+                <button onClick={() => onMails(g.pfad)} title="Die Mails lesen und nach dem Schema benennen">
+                  {g.ergebnis.falscheMails.length} {g.ergebnis.falscheMails.length === 1 ? 'Mail' : 'Mails'} benennen …
+                </button>
+              )}
               <button onClick={() => csvSpeichern(`Prüfbericht ${g.name}`, berichtCsv(g.ergebnis))}>Bericht als CSV …</button>
               {(projekte.length > 0 || alle) && <button onClick={() => setG(null)}>{alle ? 'Zur Übersicht' : 'Zur Projektliste'}</button>}
             </div>
