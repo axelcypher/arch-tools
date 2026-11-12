@@ -82,7 +82,7 @@ export function FassungsWahl() {
         {!aktivDa && <span className="muted"> (neu)</span>}
       </MenueKnopf>
       {eingereicht && (
-        <span className="an-eingereicht" title={`Antrag ${aktiv} eingereicht – ${eingereicht.datei ?? 'von Hand gesetzt'} · gesperrt, Änderungen über einen Nachtrag`}>
+        <span className="an-eingereicht" title={`Antrag ${aktiv} eingereicht – ${eingereicht.datei ?? 'von Hand gesetzt'} · gesperrt; zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen`}>
           <Symbol name="schloss" /> eingereicht {tag(eingereicht.datum)}
         </span>
       )}
@@ -170,7 +170,7 @@ function EinreichungsDatum({ wert, onSetzen, nach }: { wert: string; onSetzen: (
     void onSetzen(tag).finally(() => {
       laeuft.current = null;
       // nicht gespeichert (Datei gesperrt …): am Feld sagen, ein erneutes Enter versucht es wieder
-      if (wertJetzt.current !== tag) setFehler(`Nicht gespeichert – Enter versucht es erneut${zurueck}.`);
+      if (wertJetzt.current !== tag) setFehler(`Tag der Einreichung nicht gespeichert – Enter im Feld versucht es erneut${zurueck}.`);
     });
   };
   return (
@@ -227,21 +227,29 @@ function AntragStatus() {
     st.statusSetzen(
       w === 'auto' ? null : w === 'arbeit' ? { eingereicht: false, ...(bisher ? { datum: bisher } : {}) } : { eingereicht: true, datum: datum ?? bisher ?? tagVon(new Date()) },
     );
-  // eingereicht: Nachtrag anlegen; den festgehaltenen Stand neu festhalten (nach einem Fehlklick auf „eingereicht“)
+  // eingereicht: Nachtrag anlegen; den festgehaltenen Stand neu festhalten (nach einem Fehlklick auf „eingereicht“) –
+  // beide in einer Gruppe, damit sie gemeinsam umbrechen; ist der Ordner gerade nicht lesbar, ist Neu-Festhalten gesperrt
   const knoepfe = wirksam && (
-    <>
+    <div className="pu-status-knoepfe">
       <button className="primary" title={`Neue Antragsfassung „${nachtrag}“ anlegen – sie wird aktiv und lässt sich bearbeiten`} onClick={() => void st.fassungWaehlen(nachtrag, true)}>
         <Symbol name="plus" /> Nachtrag „{nachtrag}“ anlegen
       </button>
       {daten?.stand && (
         <button
-          title="Den Antragsstand mit den Dateien, die jetzt im Ordner liegen, neu festhalten – etwa nach einem versehentlich gesetzten Status"
+          aria-disabled={st.dateienLesefehler || undefined}
+          title={
+            st.dateienLesefehler
+              ? 'Ordner gerade nicht erreichbar – neu festhalten geht erst wieder, wenn er erreichbar ist'
+              : 'Den Antragsstand mit den Dateien, die jetzt im Ordner liegen, neu festhalten – etwa nach einem versehentlich gesetzten oder falsch erkannten Status'
+          }
           onClick={async () => {
+            if (st.dateienLesefehler) return;
             if (
               await bestaetigen(
                 'Stand neu festhalten?',
-                `Der festgehaltene Stand vom ${tag(daten.stand!.tag)} wird durch die Dateien ersetzt, die jetzt im Ordner liegen. Was seitdem neu, geändert oder entfernt ist, ist dann nicht mehr gekennzeichnet.`,
+                `Der festgehaltene Stand vom ${tag(daten.stand!.tag)} wird durch die Dateien ersetzt, die jetzt im Ordner liegen. Was bis jetzt geändert oder entfernt wurde, ist dann nicht mehr gekennzeichnet – was danach dazukommt oder sich ändert, wieder.`,
                 'Neu festhalten',
+                true,
               )
             )
               await st.standNeuFesthalten();
@@ -250,7 +258,7 @@ function AntragStatus() {
           Stand neu festhalten …
         </button>
       )}
-    </>
+    </div>
   );
   return (
     <section className={`pu-status${wirksam ? ' eingereicht' : ''}`} aria-label="Status des Antrags">
@@ -260,7 +268,7 @@ function AntragStatus() {
         </strong>
         <span className="muted small-text">
           {wirksam
-            ? `${wirksam.manuell ? 'Von Hand gesetzt' : `Erkannt an ${wirksam.datei}`}. Der Antrag ist gesperrt: Formulare nur ansehen, Antragsdaten, Export und „bereit“ bleiben, wie eingereicht. Änderungen kommen in einen Nachtrag.`
+            ? `${wirksam.manuell ? 'Von Hand gesetzt' : `Erkannt an ${wirksam.datei}`}. Der Antrag ist gesperrt: Formulare nur ansehen, Antragsdaten, Export und „bereit“ bleiben, wie eingereicht. Zum Nachreichen im laufenden Verfahren den Status vorübergehend auf „in Arbeit“ setzen (Tag und Stand bleiben); ein Nachtrag (neue Antragsfassung) erst nach Rücknahme, Ablehnung oder für eine Änderung nach der Genehmigung.${daten?.stand ? ` Stand vom ${tag(daten.stand.tag)} festgehalten (${daten.stand.dateien.length} ${daten.stand.dateien.length === 1 ? 'Datei' : 'Dateien'}).` : ''}`
             : manuell
               ? 'Von Hand auf „in Arbeit“ gesetzt – ein Antragsprotokoll bzw. eine Eingangsbestätigung im Antragsordner wird nicht beachtet. Datum und Stand der Einreichung bleiben gespeichert.'
               : 'Wird automatisch eingereicht, sobald ein Antragsprotokoll bzw. eine Eingangsbestätigung im Ordner des Antrags liegt.'}
@@ -674,7 +682,7 @@ export function AntragsdatenAnsicht() {
                           <button
                             className="small primary"
                             disabled={gesperrt}
-                            title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – Änderungen über einen Nachtrag' : 'Das Formular aus dem Vorlagenordner bzw. einem anderen Projekt anlegen'}
+                            title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen' : 'Das Formular aus dem Vorlagenordner bzw. einem anderen Projekt anlegen'}
                             onClick={() => void formularAnlegen(u.id)}
                           >
                             Formular anlegen
@@ -683,7 +691,7 @@ export function AntragsdatenAnsicht() {
                             <MenueKnopf
                               className="small"
                               disabled={gesperrt}
-                              title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – Änderungen über einen Nachtrag' : 'Ein Formular, das schon im Projekt liegt (z. B. anders benannt), diesem Eintrag zuordnen'}
+                              title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen' : 'Ein Formular, das schon im Projekt liegt (z. B. anders benannt), diesem Eintrag zuordnen'}
                               punkte={() => zuordnenPunkte(u.id)}
                             >
                               Zuordnen

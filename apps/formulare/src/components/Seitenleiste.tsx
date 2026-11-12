@@ -295,7 +295,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                       className={`nav-eintrag fehlt${gesperrt ? ' gesperrt' : ''}`}
                       title={
                         gesperrt
-                          ? `${d.eintrag.titel} fehlt – der Antrag ist eingereicht und gesperrt; Änderungen über einen Nachtrag`
+                          ? `${d.eintrag.titel} fehlt – der Antrag ist eingereicht und gesperrt; zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen`
                           : doppelt
                             ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder aus dem Antragsumfang nehmen`
                             : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`

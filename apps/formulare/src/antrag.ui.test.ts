@@ -1487,9 +1487,12 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(meldung.getAttribute('role')).toBe('alert');
     expect(meldung.textContent).toContain('Nur Tage vom 01.01.2000 bis heute');
     expect(meldung.textContent).toContain('Esc im Feld stellt den 03.11.2026 wieder her');
-    // die Meldung steht hinter dem Knopf „Nachtrag … anlegen“ – der springt nicht
+    // die Meldung steht hinter den Knöpfen („Nachtrag … anlegen“, „Stand neu festhalten …“) – die springen nicht
     const kinder = [...host.querySelector('.pu-status-wahl')!.children];
-    expect(kinder.findIndex((e) => e.matches('button.primary'))).toBeLessThan(kinder.indexOf(meldung));
+    const gruppe = host.querySelector('.pu-status-knoepfe')!;
+    expect(gruppe.querySelectorAll('button')).toHaveLength(2);
+    expect(kinder.indexOf(gruppe)).toBeGreaterThanOrEqual(0);
+    expect(kinder.indexOf(gruppe)).toBeLessThan(kinder.indexOf(meldung));
     // Esc verwirft die Eingabe
     await taste('Escape');
     expect(feld().value).toBe('2026-11-03');
@@ -1581,7 +1584,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
     expect(feld().value).toBe('2026-11-04');
     expect(feld().className).toContain('feld-fehler');
-    expect(host.querySelector('#' + feld().getAttribute('aria-describedby'))!.textContent).toContain('Nicht gespeichert – Enter versucht es erneut');
+    expect(host.querySelector('#' + feld().getAttribute('aria-describedby'))!.textContent).toContain('Tag der Einreichung nicht gespeichert – Enter im Feld versucht es erneut');
     // die Datei ist wieder frei: Enter schreibt
     await enter();
     expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-04' });
@@ -1621,18 +1624,21 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     const ordner = `${PROJEKT}/TÖB/BAUA 2`;
     ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
     ds.dateien.set(`${ordner}/BS9 BAUA 261101 Lageplan.pdf`, new Uint8Array([1]));
+    // der Lageplan wurde im Februar geändert (nach dem vertippten 01.01., vor dem richtigen Tag)
+    ds.geaendert.set(`${ordner}/BS9 BAUA 261101 Lageplan.pdf`, new Date('2026-02-10T10:00').getTime());
     const host = await projektBS9();
     await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-12' }));
     await warte();
     await klick(knopfGenau(host, 'Antrag'));
     const stand = () => antragIn('BAUA 2')?.stand as { tag: string; dateien: { pfad: string }[] };
     expect(stand().dateien).toHaveLength(2);
-    // Tippfehler (früherer Tag): die Einträge bleiben im Stand – was danach geändert wurde, zählt nur beim Vergleich nicht
-    // (siehe imStand im Unit-Test; das Speicher-Dateisystem hier kennt keine Änderungszeiten) …
+    // Tippfehler (früherer Tag): die Einträge bleiben im Stand – der nach dem Tag geänderte Lageplan zählt beim Vergleich
+    // nicht dazu und gilt als „neu“ …
     await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-01-01' }));
     await warte();
     expect(stand().tag).toBe('2026-01-01');
     expect(stand().dateien).toHaveLength(2);
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('1 neu');
     // … berichtigt: wieder alles im Vergleich, nichts ging verloren; der gelöschte Lageplan ist „entfernt“
     await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-12' }));
     await warte();
@@ -1640,6 +1646,52 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await act(() => useAntrag.getState().aktualisieren());
     await warte();
     expect(host.querySelector('.fo-stand')!.textContent).toContain('1 entfernt');
+  });
+
+  it('Stand neu festhalten: beim Lesefehler gesperrt (alter Stand bleibt); danach Meldung, vorher Geändertes gehört dazu', async () => {
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 Lageplan.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Antragsprotokoll.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    // nach der Einreichung (03.11.) geändert: der Lageplan am 05.11.
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 Lageplan.pdf`, new Uint8Array([1, 2]));
+    ds.geaendert.set(`${ordner}/BS9 BAUA 261101 Lageplan.pdf`, new Date('2026-11-05T10:00').getTime());
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    await klick(antragsdaten(host));
+    // Ordner gerade nicht lesbar: der Knopf ist gesperrt (aria-disabled) und tut nichts
+    const liste = ds.liste.bind(ds);
+    let gesperrt = true;
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (gesperrt && pfad.endsWith('/TÖB/BAUA 2')) throw new Error('Netzlaufwerk nicht erreichbar');
+      return liste(pfad, tiefe);
+    };
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    const knopfNeu = () => knopf(host, 'Stand neu festhalten');
+    expect(knopfNeu().getAttribute('aria-disabled')).toBe('true');
+    expect(knopfNeu().title).toContain('Ordner gerade nicht erreichbar');
+    await klick(knopfNeu());
+    expect(document.querySelector('.rf')).toBeNull();
+    // auch direkt aufgerufen: der bisherige Stand bleibt, eine Fehlermeldung sagt warum
+    const vorher = antragIn('BAUA 2')?.stand;
+    await act(() => useAntrag.getState().standNeuFesthalten());
+    expect(antragIn('BAUA 2')?.stand).toEqual(vorher);
+    expect(useFormulare.getState().meldung?.text).toContain('nicht lesbar – der bisherige Stand bleibt');
+    // wieder erreichbar: neu festhalten (Rückfrage mit Gefahr-Knopf), Meldung, der geänderte Lageplan gehört dazu
+    gesperrt = false;
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    await klick(knopfNeu());
+    const ok = [...document.querySelectorAll<HTMLButtonElement>('.rf .dialog-buttons button')].find((b) => b.textContent === 'Neu festhalten')!;
+    expect(ok.className).toContain('danger');
+    await klick(ok);
+    await warte();
+    expect(useFormulare.getState().meldung?.text).toBe('Antragsstand von BAUA 2 neu festgehalten – 3 Dateien.');
+    await klick(knopfGenau(host, 'Antrag'));
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('seitdem unverändert');
+    expect([...host.querySelectorAll('.fo-bereit-zeile')].find((z) => z.textContent?.includes('Lageplan'))!.querySelector('.fo-seit')).toBeNull();
   });
 
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {

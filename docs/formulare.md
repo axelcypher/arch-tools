@@ -519,15 +519,20 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
 - **Antragsstand bei der Einreichung:** Sobald ein Antrag als eingereicht gilt (erkannt oder von Hand), hält die App
   einmal fest, welche Dateien im Ordner des Antrags liegen – nur Name, Größe und Änderungszeit, **keine Kopie**
   (`stand` im Antrag der Projektdatei; ohne Archiv, Office-Sperrdateien, Thumbs.db und desktop.ini). Die festgehaltene
-  Liste wird danach **nie verworfen, nie neu gebaut und nie gekürzt** – so geht sie weder durch die Reihenfolge von
-  Dateiaktionen noch durch einen Statuswechsel verloren. Gilt der Antrag als in Arbeit (Status von Hand, Nachweis
-  verschoben), ist der Stand nur unsichtbar und gilt wieder, sobald der Antrag eingereicht ist. Ändert sich der Tag
-  der Einreichung (von Hand berichtigt, ein älterer Nachweis taucht auf, der erste verschwindet), wird der Stand nur
-  neu beschriftet – Status, Stand und Startseite zeigen so immer denselben Tag. Was nach dem Tag der Einreichung
-  geändert wurde (etwa wenn die Einreichung erst später erkannt wird), zählt erst **beim Vergleich** nicht zur
-  Einreichung und gilt dann als „neu“; das ist umkehrbar, wenn der Tag später wieder berichtigt wird. Nach einem
-  versehentlich gesetzten Status lässt sich der Stand in den Antragsdaten mit „Stand neu festhalten …“ (mit Rückfrage)
-  durch die Dateien ersetzen, die jetzt im Ordner liegen.
+  Liste wird danach **nie verworfen, nie neu gebaut und nie gekürzt** – außer von Hand mit „Stand neu festhalten …“
+  (siehe unten) –, so geht sie weder durch die Reihenfolge von Dateiaktionen noch durch einen Statuswechsel verloren.
+  Gilt der Antrag als in Arbeit (Status von Hand, Nachweis verschoben), ist der Stand nur unsichtbar und gilt wieder,
+  sobald der Antrag eingereicht ist. Ändert sich der Tag der Einreichung (von Hand berichtigt, ein älterer Nachweis
+  taucht auf, der erste verschwindet), wird der Stand nur neu beschriftet – Status, Stand und Startseite zeigen so
+  immer denselben Tag. Was nach dem Tag der Einreichung geändert wurde (etwa wenn die Einreichung erst später erkannt
+  wird), zählt erst **beim Vergleich** nicht zur Einreichung und gilt dann als „neu“; das ist umkehrbar, wenn der Tag
+  später wieder berichtigt wird.
+  „Stand neu festhalten …“ in den Antragsdaten (mit Rückfrage, Gefahr-Knopf) ersetzt den Stand nach einem
+  versehentlich gesetzten oder falsch erkannten Status durch die Dateien, die jetzt im Ordner liegen: Erst wird der
+  Ordner gelesen, dann in einem Schritt ersetzt – ist er gerade nicht erreichbar, ist der Knopf gesperrt bzw. bleibt
+  der bisherige Stand (Fehlermeldung). Ein so festgehaltener Stand gilt vollständig (auch was nach dem Tag der
+  Einreichung, aber vor dem Festhalten geändert wurde); danach erscheint die Meldung „Antragsstand von … neu
+  festgehalten – n Dateien“. Im Status steht „Stand vom … festgehalten (n Dateien)“.
   In der Ansicht „Antrag“ steht „Eingereicht am … – Stand festgehalten“. Jede **eingereichte** Datei auf oberster
   Ebene des Antragsordners wird mit dem Stand verglichen und ist gekennzeichnet, wenn sie danach **geändert** wurde
   („geändert seit der Einreichung“, gelb, mit Summe oben); verschwundene (gelöscht oder verschoben) zählen als
@@ -536,46 +541,51 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   Empfangsbestätigung). Was im laufenden Verfahren nachgereicht oder ausgetauscht wird, bleibt im selben Antrag und
   erscheint als „neu“ bzw. „geändert seit der Einreichung“ (§ 70 Abs. 2 Satz 4, § 71 Abs. 1 Sätze 6 und 7 BauO NRW
   2018, § 7 BauPrüfVO NRW); eine neue Antragsfassung (Nachtrag) ist es erst nach Rücknahme bzw. Rücknahmefiktion (§ 71
-  Abs. 1 Satz 8), Ablehnung, Rückgabe der Unterlagen (§ 63 Abs. 4 Satz 3) oder bei einer Änderung nach der
-  Entscheidung.
+  Abs. 1 Satz 8), Ablehnung, Rückgabe der Unterlagen (§ 63 Abs. 4 Satz 3, außer im Fall von Satz 4) oder bei einer
+  Änderung nach der Entscheidung.
 - **Neue Dateien nach der Einreichung** sind „neu seit der Einreichung“ – außer sie kommen erwartungsgemäß
   (`nachEinreichungErwartet`, nur für neue Dateien). Grundsatz: **im Zweifel „neu“**, damit nachgereichte Bauvorlagen
   auffallen (§ 70 Abs. 2 Satz 4 und § 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018, § 7 BauPrüfVO NRW). Deshalb gilt eine
   **Positivliste**: Erwartet ist eine Datei nur, wenn ihr Name ausschließlich aus einem Schreiben der Behörde besteht
   – einem Kernwort und sonst nur Zusätzen und Füllwörtern. Alles Weitere (eine Bauvorlage, ein Begleitwort des Büros,
-  ein Bestand, ein Ortsname, eine Dokumentnummer) macht sie zu etwas Nachgereichtem.
+  „Anlagen“, „Mängelbeseitigung“ oder eine Bescheinigung zu einem Schreiben, ein Bestand, ein Ortsname, eine
+  Dokumentnummer) macht sie zu etwas Nachgereichtem.
   - **Kernwörter** (ganze Wörter, abschließend) – nach der Bürovorgabe die Genehmigung selbst (Baugenehmigung, Teil-,
-    Nachtrags-, Änderungs-, Entwässerungsgenehmigung, auch die Fiktionsbescheinigung, § 74 Abs. 3 Satz 1 Nr. 4 BauO
-    NRW 2018 i. V. m. § 42a Abs. 3 VwVfG NRW), die Empfangsbestätigung und Nachforderungen der Behörde (§ 71 Abs. 1
-    Satz 7; auch „Nachforderungen“, „Aufforderung(sschreiben)“). Über die Bürovorgabe hinaus ergänzt:
-    Eingangsbestätigung (§ 71 Abs. 1 Satz 1) und Antragsprotokoll, die Unterrichtung bzw. Mitteilung, Bestätigung oder
-    Bescheinigung über die Vollständigkeit (§ 71 Abs. 1 Satz 9 BauO NRW 2018 in der Fassung ab 01.09.2026), Bescheide
-    (Vor-, Bauvor-, Gebühren-, Ablehnungs-, Kosten(festsetzungs)-, Teil-, Änderungs-, Abweichungs-, Befreiungs-,
-    Verlängerungsbescheid), Ablehnung, Versagung, Anhörung(sschreiben), Gebühr(en), Gebührenrechnung bzw.
-    -festsetzung, Kostenfestsetzung, (denkmalrechtliche) Erlaubnis, Abgeschlossenheitsbescheinigung, Rückgabe der
-    Unterlagen (§ 63 Abs. 4 Satz 3) sowie Mitteilung bzw. Erklärung der Gemeinde (Stadt) bei der
-    Genehmigungsfreistellung (§ 63 Abs. 3 Satz 5; § 63 Abs. 2 Satz 1 Nr. 4 i. V. m. Abs. 4 Satz 1). „Bescheinigung“
-    allein, „Verlängerung“ ohne Bescheid und Zusammensetzungen wie „Gebührenberechnung“ oder
-    „Vollständigkeitserklärung“ zählen nicht.
+    Nachtrags-, Änderungs-, Entwässerungsgenehmigung, auch die Fiktionsbescheinigung bzw. „Bescheinigung über den
+    Eintritt der Genehmigungsfiktion“, § 74 Abs. 3 Satz 1 Nr. 4 BauO NRW 2018 i. V. m. § 42a Abs. 3 VwVfG NRW), die
+    Empfangsbestätigung und Nachforderungen der Behörde (§ 71 Abs. 1 Satz 7; auch „Nachforderungen“,
+    „Aufforderung(sschreiben)“). Über die Bürovorgabe hinaus ergänzt: Eingangsbestätigung (§ 71 Abs. 1 Satz 1) und
+    Antragsprotokoll, die Unterrichtung bzw. Mitteilung, Bestätigung oder Bescheinigung über die Vollständigkeit (§ 71
+    Abs. 1 Satz 9 BauO NRW 2018 in der Fassung ab 01.09.2026), Bescheide (Vor-, Bauvor-, Gebühren-, Ablehnungs-,
+    Kosten(festsetzungs)-, Teil-, Änderungs-, Abweichungs-, Befreiungs-, Verlängerungsbescheid, „Bescheid über die
+    Verlängerung“), Ablehnung, Versagung, Anhörung(sschreiben), Gebühr(en), Gebührenrechnung bzw. -festsetzung,
+    Kostenfestsetzung, (denkmalrechtliche) Erlaubnis, Abgeschlossenheitsbescheinigung, Rückgabe der Unterlagen (§ 63
+    Abs. 4 Satz 3) sowie Mitteilung bzw. Erklärung der Gemeinde (Stadt) bei der Genehmigungsfreistellung (§ 63 Abs. 3
+    Satz 5; § 63 Abs. 2 Satz 1 Nr. 4 i. V. m. Abs. 4 Satz 1). „Bescheinigung“ allein, „Verlängerung“ ohne Bescheid und
+    Zusammensetzungen wie „Gebührenberechnung“ oder „Vollständigkeitserklärung“ zählen nicht.
   - **Füllwörter** – die Behörde (Kreis, Stadt, Gemeinde, Bauamt, Bauaufsicht, Denkmalbehörde …, ohne Ortsnamen),
-    Verbindungswörter, ein Aktenzeichen („Az 63-1234-26“), Projektcode und Antragsart, ein Datum bzw. Jahr ab dem Tag
-    der Einreichung (auch „12-11-2026“, „12.11.26“, „11-2026“; ein älteres – auch im Aktenzeichen – meint einen
-    beigefügten Bestand, eines mehr als ein Jahr in der Zukunft zählt nicht), der Bezug „zum Bauantrag“ bzw.
-    „Genehmigung Bauantrag“ (nur das ganze Wort „Bauantrag“ – „Baugenehmigung Antrag“ ist der Antrag), feste Wendungen
-    wie „von Unterlagen“, „Behebung der Mängel“, „Eintritt der Genehmigungsfiktion“, „an den Bauherrn“; Zusätze wie
-    „Nebenbestimmungen“, „Anlage“, „vereinfachtes Verfahren“. Trennzeichen (_ - ( ) , ;) zählen wie Leerzeichen,
-    zerlegte Umlaute (macOS) werden zusammengeführt.
+    Verbindungswörter, Projektcode (auch mit Bindestrich oder Unterstrich: „2025-014“, „2025_014“, „BS-9“) und
+    Antragsart, ein Aktenzeichen („Az 63-1234-26“), ein Datum ab dem Tag der Einreichung – so genau verglichen, wie es
+    angegeben ist: Tag („12.11.2026“, „12-11-2026“, „12.11.26“, „261112“, „20261112“), Monat („11-2026“) oder Jahr;
+    ein älteres meint einen beigefügten Bestand, eines mehr als ein Jahr in der Zukunft zählt nicht. Im Aktenzeichen
+    entscheidet eine Jahresangabe am Ende („63-1234-72“: 1972, Bestand; „63-1934-2026“: laufende Nummer 1934), sonst
+    jede vierstellige Jahreszahl („Nr. 1972“). Dazu der Bezug „zum Bauantrag“ bzw. „Genehmigung (des) Bauantrags“ (nur
+    das ganze Wort „Bauantrag“ – „Baugenehmigung Antrag“ ist der Antrag), feste Wendungen wie „von Unterlagen“,
+    „Behebung der Mängel“, „Aufforderung zur Mängelbeseitigung“, „mit Anlagen“, „an den Bauherrn“, Zusätze wie
+    „Nebenbestimmungen“ und „vereinfachtes Verfahren“. Trennzeichen (_ - ( ) , ;) zählen wie Leerzeichen, zerlegte
+    Umlaute (macOS) werden zusammengeführt.
   - **Genehmigte Bauvorlagen** (§ 74 Abs. 4 Satz 5 BauO NRW 2018): Mit „genehmigt…“, „Genehmigungsvermerk“ oder
-    „Grünstempel“ dürfen auch Planart, Geschoss (EG, OG, 1OG …), Richtung, Schnittbezeichnung, Plannummer und
-    Bauvorlagen nach BauPrüfVO im Namen stehen („GP-03 Grundriss OG genehmigt“, „Baubeschreibung genehmigt“);
-    Aufteilungspläne mit „gesiegelt“, „gestempelt“ oder „beglaubigt“. Verneint („ohne Grünstempel“, „nicht genehmigt“)
-    oder mit weiteren Wörtern („Nachtrag zur genehmigten Planung“) ist es nachgereicht.
+    „Grünstempel“ dürfen auch Planart, Geschoss (EG, OG, 1OG …), Richtung, Plannummer, Bau- bzw. Betriebsbeschreibung
+    und – bei einem Schnitt – seine Bezeichnung („Schnitt A-A“) im Namen stehen („GP-03 Grundriss OG genehmigt“,
+    „Baubeschreibung genehmigt“); Standsicherheitsnachweise erhalten keinen Genehmigungsvermerk („genehmigt Statik“
+    ist nachgereicht). Aufteilungspläne mit „gesiegelt“, „gestempelt“ oder „beglaubigt“. Verneint („ohne Grünstempel“,
+    „nicht genehmigt“) oder mit weiteren Wörtern („Nachtrag zur genehmigten Planung“) ist es nachgereicht.
 - **Ordner nicht erreichbar:** Ist der Ordner einmal nicht lesbar (Netz nach dem Aufwachen), bleiben „eingereicht“ und
   der Stand unverändert. Die Ablage warnt oben („Ordner gerade nicht erreichbar …“ mit „Erneut versuchen“, das während
   des Versuchs „Wird versucht …“ zeigt und danach „Letzter Versuch 14:32:05 – ohne Erfolg“), zeigt die zuletzt
   gelesene Liste und in der Summe „beim letzten Lesen: 1 neu, 1 entfernt (Ordner gerade nicht erreichbar)“ bzw.
   „Vergleich mit dem Ordner gerade nicht möglich“ statt „seitdem unverändert“ – ohne Liste von vorher zählt sie nichts
-  und meldet nichts als fehlend.
+  und meldet nichts als fehlend. „Stand neu festhalten …“ ist dann gesperrt.
 - **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)
   ausgenommen – ein Dokument, dessen Name `Antragsprotokoll`, `Eingangsbestätigung` oder `Empfangsbestätigung` (auch
   mit „ae“) enthält, gilt der Antrag als **eingereicht** – mit dem Datum im Dateinamen, sonst dem der Datei. Bei
@@ -594,8 +604,11 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   auch dann, wenn nicht alle Formulare lesbar sind.
 - **Eingereicht = gesperrt:** Ist der aktive Antrag eingereicht, lassen sich die Formulare nur ansehen (Hinweis über
   dem Formular, „Antragsdaten …“), Antragsmerkmale, Antragsumfang, Export, „bereit“ und „Daten aktualisieren“ bleiben,
-  wie eingereicht. Geändert wird mit einem **Nachtrag**: „Nachtrag „BAUA 3“ anlegen“ in den Antragsdaten legt die
-  nächste Fassung an und macht sie aktiv – oder der Status wird von Hand zurückgesetzt.
+  wie eingereicht. **Nachgereicht** wird im laufenden Verfahren im selben Antrag: den Status vorübergehend auf „in
+  Arbeit“ setzen (Tag und Stand bleiben), Formulare berichtigen bzw. Unterlagen ablegen, dann wieder „eingereicht“ –
+  die Nachreichung erscheint als „neu“ bzw. „geändert seit der Einreichung“. Ein **Nachtrag** („Nachtrag „BAUA 3“
+  anlegen“ in den Antragsdaten: nächste Fassung, wird aktiv) erst nach Rücknahme bzw. Rücknahmefiktion, Ablehnung,
+  Rückgabe der Unterlagen oder für eine Änderung nach der Genehmigung.
 - **Dokumente mit Bedingung:** im Antragsumfang (Bearbeiten) und im Katalog („Nur wenn“; Antragsmerkmale mit und/oder
   wie oben) – etwa ein Nachweis nur bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“:
   kein Farbpunkt, kein grauer „Anlegen“-Eintrag, es zählt nicht mit.

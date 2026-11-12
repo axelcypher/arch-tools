@@ -426,9 +426,36 @@ describe('Antragsstand bei der Einreichung', () => {
       'genehmigt Ansicht Nord.pdf',
       'Grünstempel Schnitt A-A.pdf',
       'Baubeschreibung genehmigt.pdf',
-      'genehmigt Statik.pdf',
+      // Runde 14: feste Wendungen, des Bauantrags, Verlängerung im Bescheid, Monat der Einreichung, achtstelliges Datum
+      'Aufforderung zur Behebung der Mängel.pdf',
+      'Nachforderung zur Behebung der Mängel.pdf',
+      'Aufforderung zur Mängelbeseitigung.pdf',
+      'Baugenehmigung mit Anlagen.pdf',
+      'Genehmigung des Bauantrags.pdf',
+      'Ablehnung des Bauantrags.pdf',
+      'Bescheid über die Verlängerung.pdf',
+      'Nachforderung 11-2026.pdf',
+      'Baugenehmigung 20261120.pdf',
+      // ein Aktenzeichen ohne „Az“ mit dem Jahr der Einreichung am Ende ist kein Datum
+      'Baugenehmigung 63-12-26.pdf',
+      'Baugenehmigung Az 63-2015-26.pdf',
+      // steht am Ende das Jahr der Einreichung, sind die Zahlen davor laufende Nummern
+      'Baugenehmigung Az 1950-26.pdf',
+      'Baugenehmigung 63-1934-2026.pdf',
+      'Nachforderung Az 63-1912-26.pdf',
     ])
       expect(erw(n), n).toBe(true);
+    // Projektnummern mit Bindestrich oder Unterstrich als Projektcode (Vorgabe der Suite: {jahr}-{nr:3})
+    for (const [n, code] of [
+      ['2025-014 BAUA 261110 Nachforderung.pdf', '2025-014'],
+      ['2025-014 BAUA 261120 Baugenehmigung.pdf', '2025-014'],
+      ['2025_014 BAUA 261120 Baugenehmigung.pdf', '2025-014'],
+      ['2026-14 Nachforderung.pdf', '2026-14'],
+      ['2026-5 Baugenehmigung.pdf', '2026-5'],
+      ['BS-9 Nachforderung.pdf', 'BS-9'],
+      ['H-24 Baugenehmigung.pdf', 'H 24'],
+    ])
+      expect(nachEinreichungErwartet(n, { codes: [code], tag: '2026-11-03' }), n).toBe(true);
     // Runde 12: nur Füllwörter zählen – alles andere ist nachgereicht (im Zweifel „neu“)
     for (const n of [
       // Ortsnamen nach Kreis/Stadt sind nicht erkennbar von einer Bauvorlage zu unterscheiden
@@ -471,9 +498,6 @@ describe('Antragsstand bei der Einreichung', () => {
       'Grundriss ohne Grünstempel.pdf',
       'Grundriss kein Genehmigungsvermerk.pdf',
       // Runde 13: eine Jahreszahl vor der Einreichung im Aktenzeichen bzw. mit Bindestrich meint einen Bestand
-      'Baugenehmigung Az 1950-26.pdf',
-      'Baugenehmigung 63-1934-2026.pdf',
-      'Nachforderung Az 63-1912-26.pdf',
       'Baugenehmigung Az. 63-1999-0815.pdf',
       'Baugenehmigung Nr. 1972.pdf',
       'Baugenehmigung 12-05-1972.pdf',
@@ -498,6 +522,28 @@ describe('Antragsstand bei der Einreichung', () => {
       // Verlängerung ohne Bescheid, Nachreichung zum Nachweis
       'Verlängerung Baugenehmigung.pdf',
       'Nachreichung zum Antragsprotokoll.pdf',
+      // Runde 14: Anlagen, Mängelbeseitigung und Bescheinigungen zu einem Schreiben sind die Antwort des Büros
+      'Anlagen zur Nachforderung.pdf',
+      'HVO BAUA 261120 Anlagen zur Nachforderung.pdf',
+      'Nachforderung Anlagen.pdf',
+      'Anlage zur Nachforderung.pdf',
+      'Anlagen zur Anhörung.pdf',
+      'Antragsprotokoll Anlagen.pdf',
+      'Mängelbeseitigung Nachforderung.pdf',
+      'Mängelbeseitigung zur Nachforderung.pdf',
+      'Nachforderung Mängelbeseitigung.pdf',
+      'Mängel Nachforderung.pdf',
+      'Mängel Anhörung.pdf',
+      'Bescheinigung zur Nachforderung.pdf',
+      'Bescheinigung Nachforderung.pdf',
+      // zweistellige Jahresangabe vor der Einreichung im Aktenzeichen
+      'Baugenehmigung Az 63-1234-72.pdf',
+      'Baugenehmigung Nr. 815-72.pdf',
+      'Genehmigung Az 63-12-85.pdf',
+      // Standsicherheitsnachweise erhalten keinen Genehmigungsvermerk; Buchstaben und Zahlen nur als Schnitt bzw. Plannummer
+      'genehmigt Statik.pdf',
+      'Grundriss genehmigt b.pdf',
+      'Plan genehmigt 999.pdf',
     ])
       expect(erw(n), n).toBe(false);
     expect(seitEinreichung(d('HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');

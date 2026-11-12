@@ -303,13 +303,14 @@ const tagText = (iso: string) => iso.split('-').reverse().join('.');
 
 /**
  * Ist der aktive Antrag eingereicht, ist er für die Bearbeitung gesperrt: Formulare nur ansehen, Antragsdaten, Export
- * und „bereit“ unverändert. Geändert wird mit einem Nachtrag (neue Antragsfassung) – oder der Status wird von Hand
- * zurückgesetzt. Liefert den Grund in Worten, sonst null.
+ * und „bereit“ unverändert. Nachgereicht wird im selben Antrag: Status vorübergehend „in Arbeit“ (Tag und Stand
+ * bleiben); ein Nachtrag (neue Antragsfassung) erst nach Rücknahme, Ablehnung oder für eine Änderung nach der
+ * Genehmigung. Liefert den Grund in Worten, sonst null.
  */
 export function antragSperre(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null): string | null {
   const e = aktiverEingereicht(s, p);
   if (!e) return null;
-  return `Antrag ${aktiveFassung(s, p)} ist eingereicht (${tagText(e.datum)}${e.manuell ? ', von Hand gesetzt' : ''}) und gesperrt – Änderungen über einen Nachtrag (neue Antragsfassung).`;
+  return `Antrag ${aktiveFassung(s, p)} ist eingereicht (${tagText(e.datum)}${e.manuell ? ', von Hand gesetzt' : ''}) und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen (Tag und Stand bleiben); ein Nachtrag (neue Antragsfassung) erst nach Rücknahme, Ablehnung oder für eine Änderung nach der Genehmigung.`;
 }
 
 /** Name des nächsten Nachtrags (neue Fassung derselben Antragsart) */
@@ -750,14 +751,26 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
     },
     standNeuFesthalten: async () => {
-      const projekt = useFormulare.getState().projekt;
+      const { ds, projekt, basis } = ctx();
       const pd = get().projektdatei;
-      if (!projekt || !pd?.antraege) return;
+      if (!ds || !projekt || !basis || !pd?.antraege) return;
       const fassung = aktiveFassung(get(), projekt);
-      const { stand: _, ...rest } = pd.antraege[fassung] ?? {};
+      const a = pd.antraege[fassung];
+      const ein = eingereichtVon(a);
+      if (!a || !ein) return;
+      // erst lesen, dann in einem Schritt ersetzen – ist der Ordner nicht lesbar, bleibt der bisherige Stand
+      let liste: Eintrag[];
       try {
-        if (await projektdateiSchreiben({ ...pd, antraege: { ...pd.antraege, [fassung]: rest } })) {
-          log.info(`${fassung}: Antragsstand verworfen – wird neu festgehalten`);
+        liste = await ds.liste(verbinde(basis, antragsOrdner(get(), projekt)), EINGEREICHT_TIEFE);
+      } catch (e) {
+        fehler(`Stand neu festhalten: Ordner ${antragsOrdner(get(), projekt)} nicht lesbar – der bisherige Stand bleibt`, e);
+        return;
+      }
+      const stand = standAus(liste, ein.datum, Date.now());
+      try {
+        if (await projektdateiSchreiben({ ...pd, antraege: { ...pd.antraege, [fassung]: { ...a, stand } } })) {
+          log.info(`${fassung}: Antragsstand von Hand neu festgehalten (${stand.dateien.length} Dateien)`);
+          meldung('info', `Antragsstand von ${fassung} neu festgehalten – ${stand.dateien.length} ${stand.dateien.length === 1 ? 'Datei' : 'Dateien'}.`);
           await get().aktualisieren();
         }
       } catch (e) {

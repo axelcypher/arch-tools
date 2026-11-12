@@ -427,6 +427,8 @@ export interface StandDatei {
 export interface AntragStand {
   tag: string;
   dateien: StandDatei[];
+  /** von Hand neu festgehalten (Zeitpunkt, ms): was bis dahin geändert wurde, gehört vollständig zum Stand */
+  festgehalten?: number;
 }
 
 /** Hilfsdateien, die nie zu den Unterlagen gehören: Office-Sperrdateien, Thumbs.db, desktop.ini */
@@ -462,12 +464,11 @@ const KERN = new RegExp(
     ')$',
 );
 /** dürfen daneben stehen, genügen aber allein nicht */
-const ZUSATZ =
-  /^(§az|bescheinigung|eintritt|denkmalrechtlich\S*|vereinfacht\S*|(bau)?genehmigungsverfahren|verfahren|genehmigungsfreistellung|freistellung\S*|mitteilung|nebenbestimmungen|anlagen?|m(ä|ae)ngel(beseitigung)?)$/;
+const ZUSATZ = /^(§az|denkmalrechtlich\S*|vereinfacht\S*|(bau)?genehmigungsverfahren|verfahren|genehmigungsfreistellung|freistellung\S*|mitteilung|nebenbestimmungen)$/;
 /** genehmigte Bauvorlagen: das Stempelwort und was auf einer Bauvorlage steht (Planart, Geschoss, Richtung, Bauvorlagen nach BauPrüfVO) */
 const STEMPEL = /^(genehmigt\S*|genehmigungsvermerk|gr(ü|ue)nstempel)$/;
 const VORLAGE =
-  /^(bauvorlagen?|pl(ä|ae|a)ne?|grundri(ss|ß)\S*|schnitt\S*|ansicht\S*|lageplan|baubeschreibung|betriebsbeschreibung|statik|berechnung\S*|nachweis\S*|mit|[a-z]|\d{1,3}|(eg|og|dg|kg|ug|sg)|\d+og|\d+ug|nord\S*|s(ü|ue)d\S*|ost\S*|west\S*|§plannr)$/;
+  /^(bauvorlagen?|pl(ä|ae|a)ne?|grundri(ss|ß)\S*|schnitt\S*|ansicht\S*|lageplan|baubeschreibung|betriebsbeschreibung|mit|(eg|og|dg|kg|ug|sg)|\d+og|\d+ug|nord\S*|s(ü|ue)d\S*|ost\S*|west\S*|§plannr)$/;
 
 /** Obergrenze für ein Datum der Behörde: ein Jahr nach heute (fängt „720512“ = 2072 ab, ohne von der Uhr abzuhängen) */
 const spaetesterTag = () => {
@@ -476,18 +477,22 @@ const spaetesterTag = () => {
   return tagVon(d);
 };
 
-/** Tag (JJJJ-MM-TT) aus „261125“, „12.11.2026“, „12.11.26“, „11.2026“ bzw. einer Jahreszahl (dann der 1. Januar); sonst null */
-function tagAusWort(w: string): string | null {
-  const gueltig = (t: number, m: number) => m >= 1 && m <= 12 && t >= 1 && t <= 31;
+const gueltigerTag = (t: number, m: number) => m >= 1 && m <= 12 && t >= 1 && t <= 31;
+
+/**
+ * Datum aus „261125“, „20261125“, „12.11.2026“, „12.11.26“ (Tag), „11.2026“ (Monat) bzw. einer Jahreszahl (Jahr) – als
+ * JJJJ-MM-TT, JJJJ-MM bzw. JJJJ, damit ein Vergleich nur so genau ist wie die Angabe; sonst null
+ */
+function datumAusWort(w: string): string | null {
   const jahr = (j: string) => (j.length === 4 ? j : `20${j}`);
-  let m = /^(\d{2})(\d{2})(\d{2})$/.exec(w);
-  if (m && gueltig(Number(m[3]), Number(m[2]))) return `20${m[1]}-${m[2]}-${m[3]}`;
+  let m = /^(20)?(\d{2})(\d{2})(\d{2})$/.exec(w);
+  if (m && gueltigerTag(Number(m[4]), Number(m[3]))) return `20${m[2]}-${m[3]}-${m[4]}`;
   m = /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/.exec(w);
-  if (m && gueltig(Number(m[1]), Number(m[2]))) return `${jahr(m[3])}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  if (m && gueltigerTag(Number(m[1]), Number(m[2]))) return `${jahr(m[3])}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
   m = /^(\d{1,2})\.(\d{4})$/.exec(w);
-  if (m && gueltig(1, Number(m[1]))) return `${m[2]}-${m[1].padStart(2, '0')}-01`;
+  if (m && gueltigerTag(1, Number(m[1]))) return `${m[2]}-${m[1].padStart(2, '0')}`;
   m = /^((19|20)\d{2})$/.exec(w);
-  return m ? `${m[1]}-01-01` : null;
+  return m ? m[1] : null;
 }
 /**
  * Neue Dateien, die nach der Einreichung erwartungsgemäß in den Antragsordner kommen und deshalb nicht als „neu seit der
@@ -523,44 +528,74 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
   // in der Zukunft
   const ab = o.tag ?? `${new Date().getFullYear() - 1}-01-01`;
   const bis = spaetesterTag();
-  const imZeitraum = (tag: string, nurJahr: boolean) => (nurJahr ? tag.slice(0, 4) >= ab.slice(0, 4) && tag.slice(0, 4) <= bis.slice(0, 4) : tag >= ab && tag <= bis);
+  // so genau wie die Angabe: Jahr, Monat oder Tag
+  const imZeitraum = (datum: string) => datum >= ab.slice(0, datum.length) && datum <= bis.slice(0, datum.length);
   // 1. Trennzeichen außer dem Bindestrich vereinheitlichen
   let text = roh.replace(/[_()[\]{},;]+/g, ' ');
-  // 2. Plannummern erkennen, solange der Bindestrich noch steht („GP-03“, „GP03“, Satz „GP01-07“)
+  // 2. Projektcodes zuerst – genauso vereinheitlicht, Bindestrich und Leerzeichen gleichwertig („2025-014“, „2025_014“);
+  //    nach dem Auflösen der Bindestriche (6.) noch einmal („BS9-BAUA-261110-Nachforderung“)
+  const codeMuster = [...(o.codes ?? [])]
+    .map((x) => x.replace(/[_()[\]{},;]+/g, ' ').trim())
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+    .map(
+      (c) =>
+        new RegExp(
+          `(^|\\s)${c
+            .split(/[-\s]+/)
+            .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('[-\\s]+')}(?=\\s|$)`,
+          'gi',
+        ),
+    );
+  const ohneCodes = (t: string) => codeMuster.reduce((x, m) => x.replace(m, ' '), t);
+  text = ohneCodes(text);
+  // 3. Plannummern erkennen, solange der Bindestrich noch steht („GP-03“, „GP03“, Satz „GP01-07“)
   text = text
     .split(/\s+/)
     .map((w) => (planNummerAus(w, schema) ? '§plannr' : w))
     .join(' ');
-  // 3. Daten mit Bindestrich als Datum: JJJJ-MM-TT, TT-MM-JJJJ, TT-MM-JJ, MM-JJJJ, JJJJ-MM
+  // 4. Daten mit Bindestrich als Datum, nur gültige: JJJJ-MM-TT, TT-MM-JJJJ, TT-MM-JJ, MM-JJJJ, JJJJ-MM
+  const alsDatum = (g: string, t: string, m: string, j: string) => (gueltigerTag(Number(t), Number(m)) ? `${t}.${m}.${j}` : g);
   text = text
-    .replace(/(^|\s)(\d{4})-(\d{2})-(\d{2})(?=\s|$)/g, '$1$4.$3.$2')
-    .replace(/(^|\s)(\d{1,2})-(\d{1,2})-(\d{4}|\d{2})(?=\s|$)/g, '$1$2.$3.$4')
-    .replace(/(^|\s)(\d{1,2})-(\d{4})(?=\s|$)/g, '$1$2.$3')
-    .replace(/(^|\s)(\d{4})-(\d{1,2})(?=\s|$)/g, '$1$3.$2');
-  // 4. Aktenzeichen als Ganzes – eine Jahreszahl vor der Einreichung darin meint einen Bestand
+    .replace(/(?<=^|\s)(\d{4})-(\d{2})-(\d{2})(?=\s|$)/g, (g, j, m, t) => alsDatum(g, t, m, j))
+    .replace(/(?<=^|\s)(\d{1,2})-(\d{1,2})-(\d{4}|\d{2})(?=\s|$)/g, (g, t, m, j) => alsDatum(g, t, m, j))
+    .replace(/(?<=^|\s)(\d{1,2})-(\d{4})(?=\s|$)/g, (g, m, j) => (gueltigerTag(1, Number(m)) ? `${m}.${j}` : g))
+    .replace(/(?<=^|\s)(\d{4})-(\d{1,2})(?=\s|$)/g, (g, j, m) => (gueltigerTag(1, Number(m)) ? `${m}.${j}` : g));
+  // 5. Aktenzeichen als Ganzes – eine Jahresangabe vor der Einreichung darin meint einen Bestand. Steht am Ende eine
+  //    Jahresangabe („63-1234-72“, „63-1934-2026“), entscheidet sie allein (die Zahlen davor sind laufende Nummern);
+  //    sonst jede vierstellige Jahreszahl („63-1999-0815“, „Nr. 1972“)
+  const abJahr = Number(ab.slice(0, 4));
   let alt = false;
   const aktenzeichen = (gruppe: string) => {
-    if ((gruppe.match(/(?<!\d)(19|20)\d{2}(?!\d)/g) ?? []).some((j) => j < ab.slice(0, 4))) alt = true;
+    const zahlen = gruppe.match(/\d+/g) ?? [];
+    const letzte = zahlen[zahlen.length - 1] ?? '';
+    const schlussJahr = zahlen.length > 1 && letzte.length === 2 ? 2000 + Number(letzte) : /^(19|20)\d{2}$/.test(letzte) && zahlen.length > 1 ? Number(letzte) : null;
+    if (schlussJahr !== null) {
+      if (schlussJahr < abJahr || schlussJahr > abJahr + 1) alt = true;
+    } else if (zahlen.some((z) => /^(19|20)\d{2}$/.test(z) && Number(z) < abJahr)) alt = true;
     return ' §az ';
   };
   text = text
     .replace(/(^|\s)(az|aktenzeichen|nr)\.?:?\s*[\w./-]*\d[\w./-]*/gi, (g) => aktenzeichen(g))
     .replace(/(^|\s)\d+(-\d+)+(?=\s|$)/g, (g) => aktenzeichen(g));
   if (alt) return false;
-  // 5. übrige Bindestriche zwischen Wörtern, 6. Projektcodes (auch mehrteilig), 7. sonstige Zeichen
-  text = text.replace(/(?<=[\p{L}\p{N}])-(?=[\p{L}\p{N}])/gu, ' ');
-  for (const c of [...(o.codes ?? [])].map((x) => x.trim()).filter(Boolean).sort((a, b) => b.length - a.length))
-    text = text.replace(new RegExp(`(^|\\s)${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=\\s|$)`, 'gi'), ' ');
-  text = text
+  // 6. übrige Bindestriche zwischen Wörtern (dann noch einmal die Codes), 7. sonstige Zeichen
+  text = ohneCodes(text.replace(/(?<=[\p{L}\p{N}])-(?=[\p{L}\p{N}])/gu, ' '))
     .replace(/[^\p{L}\p{N}.§]+/gu, ' ')
     // Bezug (nur das ganze Wort „Bauantrag“), Adressat und feste Wendungen
-    .replace(/(^|\s)(zum|zu dem|über den|ueber den|auf den|für den|fuer den) bauantrag(s|es)?(?=\s|$)/gi, ' ')
+    .replace(/(^|\s)(zum|zu dem|über den|ueber den|auf den|für den|fuer den) bauantrag(e?s)?(?=\s|$)/gi, ' ')
     .replace(/(^|\s)(zur|zu der) (bau)?voranfrage(?=\s|$)/gi, ' ')
-    .replace(/(genehmigung\S*|(?<!vor)bescheid\S*|ablehnung\S*) bauantrag(s|es)?(?=\s|$)/gi, '$1')
+    .replace(/(genehmigung\S*|(?<!vor)bescheid\S*|ablehnung\S*) (des )?bauantrag(e?s)?(?=\s|$)/gi, '$1')
     .replace(/(mitteilung|erkl(ä|ae)rung) (der |des )?(gemeinde|stadt)(?=\s|$)/gi, ' §gemeinde ')
     .replace(/r(ü|ue)ckgabe (der )?unterlagen/gi, ' §rueckgabe ')
     .replace(/((ü|ue)ber die|best(ä|ae)tigung der) (vollst(ä|ae)ndigkeit)/gi, ' $4 ')
-    .replace(/von (fehlenden )?unterlagen|fehlender unterlagen|(zur )?behebung (der|von )?m(ä|ae)ngel(n)?|an (den|die) (bauherr\S*|antragsteller\S*)/gi, ' ')
+    .replace(/bescheinigung (über den |ueber den )?(eintritt (der )?)?genehmigungsfiktion/gi, ' genehmigungsfiktion ')
+    .replace(/(eintritt (der )?)genehmigungsfiktion/gi, ' genehmigungsfiktion ')
+    .replace(/(bescheid\S*) (über die |ueber die )?verl(ä|ae)ngerung/gi, '$1')
+    .replace(/(aufforderung\S*) zur m(ä|ae)ngelbeseitigung/gi, '$1')
+    .replace(/(^|\s)mit anlagen?(?=\s|$)/gi, ' ')
+    .replace(/von (fehlenden )?unterlagen|fehlender unterlagen|(zur )?behebung (der |von )?m(ä|ae)ngel(n)?|an (den|die) (bauherr\S*|antragsteller\S*)/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   const woerter = text.split(' ').filter(Boolean);
@@ -572,9 +607,11 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
   const erlaubt = klein.every((w) => {
     if (KERN.test(w)) return (kern = true);
     if (ZUSATZ.test(w) || FUELLWOERTER.has(w) || arten.has(w)) return true;
-    const tag = tagAusWort(w);
-    if (tag) return imZeitraum(tag, /^\d{4}$/.test(w));
+    const datum = datumAusWort(w);
+    if (datum) return imZeitraum(datum);
     if (stempel && (STEMPEL.test(w) || VORLAGE.test(w))) return true;
+    // Schnittbezeichnung „Schnitt A-A“
+    if (stempel && /^[a-z]$/.test(w) && klein.some((x) => /^schnitt/.test(x))) return true;
     if (aufteilung && /^(aufteilungspl\S*|gesiegelt|gestempelt|beglaubigt)$/.test(w)) return true;
     return false;
   });
@@ -586,18 +623,22 @@ export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namenss
  * Tag der Einreichung geändert wurde (etwa wenn die Einreichung erst später erkannt wird), zählt erst beim Vergleich
  * nicht dazu (`imStand`) – so bleibt der Stand richtig, auch wenn sich der Tag später noch ändert.
  */
-export function standAus(dateien: Eintrag[], tag: string): AntragStand {
+export function standAus(dateien: Eintrag[], tag: string, festgehalten?: number): AntragStand {
   return {
     tag,
+    ...(festgehalten ? { festgehalten } : {}),
     dateien: dateien
       .filter((d) => !d.ordner && !istArchiv(d.pfad) && !istHilfsdatei(d.pfad))
       .map((d) => ({ pfad: d.pfad, groesse: d.groesse, ...(d.geaendert ? { geaendert: d.geaendert } : {}) })),
   };
 }
 
-/** Einträge des Stands, die zur Einreichung gehören: nicht erst nach dem Tag der Einreichung geändert */
+/**
+ * Einträge des Stands, die zur Einreichung gehören: nicht erst nach dem Tag der Einreichung geändert – bei einem von
+ * Hand neu festgehaltenen Stand alles bis zu diesem Zeitpunkt
+ */
 export function imStand(stand: AntragStand): StandDatei[] {
-  const ende = new Date(`${stand.tag}T23:59:59.999`).getTime();
+  const ende = Math.max(new Date(`${stand.tag}T23:59:59.999`).getTime(), stand.festgehalten ?? 0);
   return stand.dateien.filter((d) => !(d.geaendert && d.geaendert > ende));
 }
 
@@ -644,7 +685,7 @@ function standAusRoh(roh: unknown): AntragStand | undefined {
   const dateien = o.dateien
     .filter((d): d is Record<string, unknown> => !!d && typeof d === 'object' && typeof (d as { pfad?: unknown }).pfad === 'string')
     .map((d) => ({ pfad: d.pfad as string, ...(typeof d.groesse === 'number' ? { groesse: d.groesse } : {}), ...(typeof d.geaendert === 'number' ? { geaendert: d.geaendert } : {}) }));
-  return { tag: o.tag, dateien };
+  return { tag: o.tag, dateien, ...(typeof o.festgehalten === 'number' ? { festgehalten: o.festgehalten } : {}) };
 }
 
 /** Von Hand gesetzter Antragsstatus: eingereicht (mit Datum) oder ausdrücklich noch in Arbeit */
