@@ -10,6 +10,7 @@ import { ElementPanel } from './ElementPanel';
 import { LvKopfDialog } from './LvKopfDialog';
 import { Textbibliothek } from './Textbibliothek';
 import { LvDruck } from './LvDruck';
+import { GaebExportDialog } from './Gaeb';
 
 interface Zeile {
   el: LvElement;
@@ -48,6 +49,7 @@ export function LvEditor() {
   const [kopfOffen, setKopfOffen] = useState(false);
   const [bibliothek, setBibliothek] = useState<'einfuegen' | null>(null);
   const [druck, setDruck] = useState(false);
+  const [gaeb, setGaeb] = useState(false);
   const [suche, setSuche] = useState('');
   const tabelle = useRef<HTMLDivElement>(null);
   const aendern = useAva.getState().lvAendern;
@@ -217,6 +219,9 @@ export function LvEditor() {
           <button onClick={() => setDruck(true)} title="LV drucken bzw. als PDF (Leistungsbeschreibung mit Leistungsverzeichnis)">
             Drucken …
           </button>
+          <button onClick={() => setGaeb(true)} title="Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)">
+            GAEB-Export …
+          </button>
         </div>
         <div className="tb-group">
           <button onClick={() => useAva.getState().lvRueckgaengig()} disabled={!offen.verlauf.length} title="Rückgängig (Strg+Z)">
@@ -328,6 +333,7 @@ export function LvEditor() {
         />
       )}
       {druck && <LvDruck onClose={() => setDruck(false)} />}
+      {gaeb && <GaebExportDialog onClose={() => setGaeb(false)} />}
     </div>
   );
 }

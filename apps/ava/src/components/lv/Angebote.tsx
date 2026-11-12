@@ -8,6 +8,7 @@ import { useAva } from '../../store';
 import { DatumEingabe, TextEingabe, zahlDE, ZahlEingabe } from '../eingaben';
 import { zeilenVon } from './LvEditor';
 import { PreisspiegelDruck } from './PreisspiegelDruck';
+import { angebotEinlesen } from './Gaeb';
 
 type Modus = 'spiegel' | 'erfassen';
 
@@ -75,6 +76,15 @@ export function Angebote() {
         </div>
         <div className="tb-group">
           <button onClick={() => void neuerBieter()}>+ Bieter</button>
+          <button
+            onClick={async () => {
+              const id = await angebotEinlesen();
+              if (id !== null) setBieterId(id);
+            }}
+            title="Angebot eines Bieters als GAEB-Datei (X84) einlesen – Preise über die Ordnungszahl"
+          >
+            Angebot aus GAEB (X84) …
+          </button>
           <button onClick={() => setDruck(true)} disabled={!gewertet.length}>
             Preisspiegel drucken …
           </button>

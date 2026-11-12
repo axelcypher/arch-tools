@@ -685,7 +685,8 @@ die Dateibefehle des Kontextmenüs. `autofill.ts` ist das Autofill mit Zustand (
 Aktualisieren), `aktualisieren.ts` führt es in offenen und nicht geöffneten Formularen aus (Dialog, Rückfrage nach
 dem Speichern der Projektkarte). `vorgabe.ts` legt die Vorgaben der App (`vorgaben/`) unter die eigenen
 Einstellungen der Formulare und speichert nur die Abweichungen. `dokumente/` liest und ändert PDF (pdf.js),
-Excel und Word (eigener XML-Leser mit Lage im Quelltext, ZIP über fflate). `verlauf.ts` ist der Verlauf, `ablage.ts` die
+Excel und Word (eigener XML-Leser mit Lage im Quelltext, ZIP über fflate; XML-Leser, ZIP und Excel liegen inzwischen
+gemeinsam in `packages/core/src/dokumente/`, hier nur weitergereicht). `verlauf.ts` ist der Verlauf, `ablage.ts` die
 Zuordnung der echten Projektordner.
 
 Die Tauri-Hülle (`src-tauri/src/lib.rs`) ersetzt nur vorhandene `.frmsjf` sowie vorhandene PDF-, Excel- und

@@ -12,6 +12,7 @@ import { Angebote } from './lv/Angebote';
 import { AuftragAnsicht } from './lv/Auftrag';
 import { RechnungenAnsicht } from './abrechnung/RechnungenAnsicht';
 import { Dateiliste } from './Dateiliste';
+import { gaebWaehlen } from './lv/Gaeb';
 
 const TABS: { id: GewerkTab; text: string; title: string; lv?: boolean }[] = [
   { id: 'lv', text: 'Leistungsverzeichnis', title: 'Gliederung, Positionen, Texte, Mengen', lv: true },
@@ -64,6 +65,19 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
     }
   };
 
+  const ausGaeb = async () => {
+    if (!(await lvWeiter())) return;
+    try {
+      const r = await gaebWaehlen(g ? vollerPfad(projekt.ordner, g.pfad) : projekt.ordner);
+      if (!r) return;
+      const bez = await frageText('LV aus GAEB anlegen', r.g.lv.kopf.bezeichnung || `${gewerkZweistellig(gewerk)} ${name}`, 'Anlegen', `${r.name} (X${r.g.dp}): ${r.g.lv.elemente.length} Element(e) auf oberster Ebene. Wird als ${einstellungen.lv.neuesFormat === 'aslv' ? 'LV-Datei (.aslv)' : 'eigene LV-Datei (.oalv)'} angelegt.`);
+      if (!bez) return;
+      await useAva.getState().lvNeu(g, gewerk, einstellungen.lv.neuesFormat, bez, r.g.lv);
+    } catch (e) {
+      await meldung('GAEB-Import fehlgeschlagen', String(e instanceof Error ? e.message : e), e);
+    }
+  };
+
   const offenesLv = lv?.gewerk === gewerk ? lv : null;
   const t = TABS.find((x) => x.id === tab) ?? TABS[0];
 
@@ -97,6 +111,9 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
           )}
           <button onClick={() => void neu()} title="Neues LV in diesem Gewerk anlegen">
             Neues LV …
+          </button>
+          <button onClick={() => void ausGaeb()} title="LV aus einer GAEB-Datei (X81–X86) als neue LV-Datei in diesem Gewerk anlegen">
+            GAEB-Import …
           </button>
           {offenesLv && (
             <button className={lvGeaendert(offenesLv) ? 'primary' : ''} onClick={() => void lvSpeichernMitMeldung()} disabled={!lvGeaendert(offenesLv)} title="LV speichern (Strg+S)">

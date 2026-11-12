@@ -4,7 +4,7 @@ Die Rahmen-App (`apps/suite`, eigene App mit eigenem Installer „arch-tools“)
 Programm und einem Fenster**. Sie kann nichts weiter, als zwischen den Apps zu wechseln:
 
 - **Tabs:** Jede geöffnete App ist ein Tab in der Titelleiste – Projektordner, Formulare, Flächenrechner,
-  GRZ-Nachweis, Kostenermittlung, Entzerrung. Ohne offene App zeigt der Rahmen die Startseite mit allen Apps; „+“
+  GRZ-Nachweis, Kostenermittlung, Entzerrung, AVA. Ohne offene App zeigt der Rahmen die Startseite mit allen Apps; „+“
   öffnet weitere. Beim Wechseln bleibt jede App, wie sie war (sie läuft im Hintergrund weiter). Der Tab zeigt das
   geöffnete Projekt und ● bei ungespeicherten Änderungen; Schließen (× oder mittlere Maustaste) fragt dann
   „Änderungen an ‚…‘ speichern?“ – *Speichern* lässt die App im Tab speichern, *Nicht speichern* verwirft, *Abbrechen*
@@ -28,8 +28,8 @@ Konfigurationsordner) und Projektdateien sind dieselben.
 ## Technik
 
 - **Ein Programm:** Die Tauri-Hülle (`apps/suite/src-tauri/src/lib.rs`) registriert die Befehle aller Apps – die
-  gemeinsamen (`packages/core/tauri/commands.rs`) und die der Formulare-App (`apps/formulare/src-tauri/src/befehle.rs`,
-  per `include!`). Neue Befehle einer App gehören deshalb auch in die Liste der Rahmen-App.
+  gemeinsamen (`packages/core/tauri/commands.rs`), die der Formulare-App (`apps/formulare/src-tauri/src/befehle.rs`)
+  und die der AVA-App (`apps/ava/src-tauri/src/befehle.rs`), jeweils per `include!`. Neue Befehle einer App gehören deshalb auch in die Liste der Rahmen-App.
 - **Web-Builds eingebettet:** `npm run build:alle` (in `apps/suite`) baut alle Apps und kopiert ihre `dist/` nach
   `apps/suite/dist/apps/<app>/` (`scripts/apps-einbauen.mjs`). Jede eingebettete `index.html` lädt vorab
   `rahmen-bruecke.js`: Richtet die Webansicht in einem Tab den Zugang zu den Befehlen nicht selbst ein, übernimmt
@@ -40,7 +40,7 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   `postMessage` an den Rahmen; im herausgelösten Fenster zeigt sie „Andocken“ (Tauri-Ereignis `arch-tools:andocken`).
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
-  `arch-tools-entzerrung`). Gemeinsam ist nur das Farbschema – ein Wechsel in einem Tab oder Fenster wirkt sofort in allen.
+  `arch-tools-entzerrung`, `ava:…`). Gemeinsam ist nur das Farbschema – ein Wechsel in einem Tab oder Fenster wirkt sofort in allen.
 - Dateien per Ziehen & Ablegen: Die Fenster des Rahmens haben `dragDropEnabled: false`, damit die Apps in den Tabs
   die Dateien selbst bekommen.
 

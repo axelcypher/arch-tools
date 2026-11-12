@@ -101,7 +101,7 @@ interface AvaZustand {
   lvRueckgaengig(): void;
   lvWiederholen(): void;
   lvSpeichern(): Promise<boolean>;
-  lvNeu(g: Gewerk | null, gewerk: string, format: LvFormat, bezeichnung: string): Promise<void>;
+  lvNeu(g: Gewerk | null, gewerk: string, format: LvFormat, bezeichnung: string, vorlage?: Lv): Promise<void>;
   kontext(): Kontext | null;
 }
 
@@ -256,13 +256,13 @@ export const useAva = create<AvaZustand>((set, get) => ({
     log.info('LV gespeichert', lv.datei.pfad);
     return true;
   },
-  async lvNeu(g, gewerk, format, bezeichnung) {
+  async lvNeu(g, gewerk, format, bezeichnung, vorlage) {
     const { fs, projekt, einstellungen } = get();
     if (!projekt) return;
-    const lv = leeresLv(bezeichnung);
-    lv.kopf.projektName = projekt.meta.vorhaben || projekt.name;
-    lv.kopf.projekt = [projekt.meta.vorhaben, projekt.meta.adresse.strasse, `${projekt.meta.adresse.plz} ${projekt.meta.adresse.ort}`.trim()].filter(Boolean).join('\n');
-    lv.kopf.nummer = gewerk.slice(1);
+    const lv = vorlage ? { ...vorlage, kopf: { ...vorlage.kopf, bezeichnung } } : leeresLv(bezeichnung);
+    lv.kopf.projektName ??= projekt.meta.vorhaben || projekt.name;
+    lv.kopf.projekt ??= [projekt.meta.vorhaben, projekt.meta.adresse.strasse, `${projekt.meta.adresse.plz} ${projekt.meta.adresse.ort}`.trim()].filter(Boolean).join('\n');
+    lv.kopf.nummer ??= gewerk.slice(1);
     const ordner = g ? g.pfad : `${einstellungen.ablage.gewerke}/${gewerkZweistellig(gewerk)}`;
     const unter = einstellungen.ablage.lv ? `${ordner}/${einstellungen.ablage.lv}` : ordner;
     const name = nameBilden(einstellungen.lv.dateiname, { kuerzel: projekt.meta.projektcode, datum: heuteIso(), gewerk: gewerkZweistellig(gewerk) }).replace(/\{[^}]*\}/g, '').trim() || bezeichnung;
