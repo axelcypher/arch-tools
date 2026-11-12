@@ -1,0 +1,19 @@
+{
+  "name": "@akh/baurecht-regeln",
+  "private": true,
+  "version": "2026.11.12",
+  "type": "module",
+  "description": "Regelpaket der App Baurecht: Module je Gebiet (Bund, Land, Kreis, Gemeinde), je Norm und Fassung eine Regeldatei – getrennt von der App ausgeliefert",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p .",
+    "stand": "vitest run -c vitest.werkzeuge.config.ts werkzeuge/stand.werkzeug.ts",
+    "fassung": "vitest run -c vitest.werkzeuge.config.ts werkzeuge/fassung.werkzeug.ts",
+    "texterkennung": "vitest run -c vitest.werkzeuge.config.ts werkzeuge/texterkennung.werkzeug.ts",
+    "index": "vitest run -c vitest.werkzeuge.config.ts werkzeuge/index.werkzeug.ts",
+    "schluessel": "vitest run -c vitest.werkzeuge.config.ts werkzeuge/schluessel.werkzeug.ts"
+  },
+  "dependencies": {
+    "@akh/core": "*"
+  }
+}

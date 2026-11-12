@@ -50,6 +50,7 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
   if (!k) return leer();
   if (tiefe > 20) throw new Error('Bedingung zu tief verschachtelt (Zyklus in Bausteinen?)');
   if ('immer' in k) return leer();
+  if ('nie' in k) return { ...leer(), w: 'nein' };
   if ('und' in k || 'oder' in k) {
     const teile = ('und' in k ? k.und : k.oder).map((t) => werten(t, ctx, tiefe + 1));
     if (!teile.length) return leer();
@@ -128,6 +129,7 @@ function wertText(v: string | number | boolean, def?: FaktDef): string {
 export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe = 0): string {
   if (!k || tiefe > 20) return '';
   if ('immer' in k) return 'immer';
+  if ('nie' in k) return 'nie';
   if ('und' in k || 'oder' in k) {
     const teile = ('und' in k ? k.und : k.oder).map((x) => kurzText(x, t, false, tiefe + 1)).filter(Boolean);
     const s = teile.join('und' in k ? ' und ' : ' oder ');

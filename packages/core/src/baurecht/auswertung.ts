@@ -20,6 +20,8 @@ import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormEr
 
 export interface TextStand {
   fassung: Fassung | null;
+  /** die vorige Fassung (Gegenüberstellung alt/neu) */
+  vorige?: Fassung | null;
   fehler?: string;
   kuenftige?: { gueltigAb: string; url: string }[];
 }
@@ -186,8 +188,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       if (!fassung && r.stand && g.w !== 'nein') herab.push('Text der Norm nicht verfügbar – nicht an der geltenden Fassung geprüft.');
       if (fassung && !fassung.paragrafen[nr] && g.w !== 'nein') herab.push(`§ ${nr} steht nicht (mehr) im Text der geltenden Fassung.`);
       if (herab.length) {
+        // der Grund für Gelb zuerst (steht in der Liste), dann warum es sonst grün wäre
         ampel = 'gelb';
-        gruende.push(...herab);
+        gruende.unshift(...herab);
       }
     } else if (ampel === 'rot') {
       if (pruef.w === 'ja' && r.pruefen) hinweise.push(`Im Einzelfall prüfen: ${r.pruefen.grund}`);

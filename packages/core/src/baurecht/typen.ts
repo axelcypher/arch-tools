@@ -53,7 +53,8 @@ export type Kurz =
   | { und: Kurz[] }
   | { oder: Kurz[] }
   | { nicht: Kurz }
-  | { immer: true };
+  | { immer: true }
+  | { nie: true };
 
 /** Regel eines Paragrafen (Abschnitt 7.2): Tatbestand, Ausnahmen, Einzelfall */
 export interface ParagrafRegel {
