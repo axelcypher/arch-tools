@@ -1410,7 +1410,9 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(knopf().textContent).toBe('Erneut versuchen');
     await klick(knopf());
     await warte();
-    expect(host.querySelector('.fo-lesefehler')!.textContent).toMatch(/Noch nicht erreichbar \(zuletzt versucht \d{2}:\d{2}\)/);
+    expect(host.querySelector('.fo-lesefehler')!.textContent).toMatch(/Letzter Versuch \d{2}:\d{2}:\d{2} – ohne Erfolg/);
+    // der Knopf bleibt fokussierbar (aria-disabled statt disabled, nur während des Versuchs)
+    expect(knopf().hasAttribute('disabled')).toBe(false);
     // wieder erreichbar: die Warnung verschwindet
     gesperrt = false;
     await klick(knopf());
@@ -1444,13 +1446,22 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(host.querySelector('.fo-stand')!.textContent).toContain('1 entfernt');
   });
 
-  it('Datum von Hand: erst beim Verlassen des Felds übernommen, unplausible Zwischenstände („0002“) zählen nicht', async () => {
+  it('Datum von Hand: erst beim Verlassen übernommen; ungültig bleibt stehen mit Meldung, Esc verwirft, Enter behält den Fokus', async () => {
     const ordner = `${PROJEKT}/TÖB/BAUA 2`;
     ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
     const host = await projektBS9();
     await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-03' }));
     await warte();
     await klick(antragsdaten(host));
+    // Schreibvorgänge zählen
+    const statusSetzen = useAntrag.getState().statusSetzen;
+    let schreiben = 0;
+    useAntrag.setState({
+      statusSetzen: (x) => {
+        schreiben++;
+        return statusSetzen(x);
+      },
+    });
     const feld = () => host.querySelector<HTMLInputElement>('input[aria-label="eingereicht am"]')!;
     const tippen = async (wert: string) =>
       act(async () => {
@@ -1458,19 +1469,78 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
         setter.call(feld(), wert);
         feld().dispatchEvent(new Event('input', { bubbles: true }));
       });
+    const taste = async (key: string) => act(async () => void feld().dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })));
+    const verlassen = async () => {
+      await act(async () => void feld().dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+      await warte();
+    };
     for (const w of ['0002-11-03', '0020-11-03', '0202-11-03']) await tippen(w);
+    expect(schreiben).toBe(0);
+    // unplausibel verlassen: nichts gespeichert, die Eingabe bleibt rot markiert stehen, die Meldung sagt warum
+    await verlassen();
+    expect(schreiben).toBe(0);
     expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
-    // unplausibel verlassen: der vorige Tag gilt wieder
-    await act(async () => void feld().dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
-    await warte();
-    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
+    expect(feld().value).toBe('0202-11-03');
+    expect(feld().className).toContain('feld-fehler');
+    expect(feld().getAttribute('aria-invalid')).toBe('true');
+    const meldung = host.querySelector('#' + feld().getAttribute('aria-describedby'))!;
+    expect(meldung.getAttribute('role')).toBe('alert');
+    expect(meldung.textContent).toContain('Nur Tage vom 01.01.2000 bis heute');
+    expect(meldung.textContent).toContain('Esc stellt den 03.11.2026 wieder her');
+    // Esc verwirft die Eingabe
+    await taste('Escape');
     expect(feld().value).toBe('2026-11-03');
-    expect((antragIn('BAUA 2')?.stand as { tag: string; dateien: unknown[] }).dateien).toHaveLength(1);
-    // gültig, mit Enter übernommen
+    expect(host.querySelector('#pu-datum-fehler')).toBeNull();
+    // gültig, mit Enter übernommen: einmal geschrieben, dasselbe Feld behält den Fokus; Verlassen schreibt nicht noch einmal
+    const vorher = feld();
+    vorher.focus();
     await tippen('2026-11-04');
-    await act(async () => void feld().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    await taste('Enter');
     await warte();
     expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-04' });
+    expect(feld()).toBe(vorher);
+    expect(document.activeElement).toBe(vorher);
+    await verlassen();
+    expect(schreiben).toBe(1);
+    expect((antragIn('BAUA 2')?.stand as { dateien: unknown[] }).dateien).toHaveLength(1);
+  });
+
+  it('Antragsstand: wird nie neu gebaut – weder nach der Reihenfolge von Dateiaktionen noch bei schnellen Statuswechseln während langsamen Lesens', async () => {
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 Lageplan.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Antragsprotokoll.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await klick(knopfGenau(host, 'Antrag'));
+    const stand = () => antragIn('BAUA 2')?.stand as { tag: string; dateien: { pfad: string }[] };
+    expect(stand().dateien.map((x) => x.pfad)).toContain('BS9 BAUA 261101 01 Bauantrag.pdf');
+    // (R3) erst der Nachweis ins Archiv (nicht mehr eingereicht), aufgefrischt, dann eine spätere Eingangsbestätigung
+    ds.dateien.delete(`${ordner}/BS9 BAUA 261103 Antragsprotokoll.pdf`);
+    ds.dateien.set(`${ordner}/_archiv/BS9 BAUA 261103 Antragsprotokoll.pdf`, new Uint8Array([1]));
+    ds.dateien.delete(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`);
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    ds.dateien.set(`${ordner}/BS9 BAUA 261110 Eingangsbestätigung.pdf`, new Uint8Array([1]));
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(stand().tag).toBe('2026-11-10');
+    expect(stand().dateien.map((x) => x.pfad)).toContain('BS9 BAUA 261101 01 Bauantrag.pdf');
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('1 entfernt');
+    // (R1) langsames Lesen; „in Arbeit“, gleich wieder „eingereicht“ und das Datum berichtigt, ohne auf das Lesen zu warten
+    const liste = ds.liste.bind(ds);
+    ds.liste = async (pfad: string, tiefe: number) => {
+      await new Promise((r) => setTimeout(r, 30));
+      return liste(pfad, tiefe);
+    };
+    await act(async () => {
+      void useAntrag.getState().statusSetzen({ eingereicht: false, datum: '2026-11-10' });
+      void useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-10' });
+      await useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-11' });
+    });
+    await act(() => new Promise((r) => setTimeout(r, 400)));
+    await warte();
+    expect(stand().tag).toBe('2026-11-11');
+    expect(stand().dateien.map((x) => x.pfad)).toContain('BS9 BAUA 261101 01 Bauantrag.pdf');
   });
 
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {

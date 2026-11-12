@@ -529,31 +529,25 @@ export const useAntrag = create<AntragState>((set, get) => {
       geaendert = true;
       log.info(`${name}: ${e ? `eingereicht (${e.datei})` : 'nicht mehr eingereicht'}`);
     }
-    // Antragsstand bei der Einreichung einmal festhalten (Dateiliste, keine Kopie). Ein späteres Bestätigungsschreiben
-    // (anderes Datum) ändert ihn nicht. Gilt der Antrag wieder als in Arbeit (Status von Hand, Bestätigung verschoben),
-    // bleibt der Stand als „zurückgesetzt“ stehen: Mit demselben Datum eingereicht gilt er wieder, nur eine Einreichung
-    // an einem anderen Tag hält ihn neu fest.
+    // Antragsstand bei der Einreichung einmal festhalten (Dateiliste, keine Kopie) – danach nie verwerfen und nie neu
+    // bauen: So geht er weder durch die Reihenfolge von Dateiaktionen noch durch einen Statuswechsel verloren. Gilt der
+    // Antrag als in Arbeit, bleibt er nur unsichtbar. Ändert sich der Tag der Einreichung (von Hand berichtigt, ein
+    // älterer Nachweis, der erste verschwunden), wird er neu beschriftet; bei einem früheren Tag gehört, was erst danach
+    // geändert wurde, nicht dazu (wie beim Festhalten, standAus) und gilt dann als „neu“. Eine erneute Einreichung mit
+    // Änderungen ist ein Nachtrag (neue Antragsfassung) mit eigenem Stand.
     for (const [name, a] of Object.entries(antraege)) {
       const ein = eingereichtVon(a);
-      // neu festhalten nur, wenn es noch keinen gibt oder der Antrag nach dem Zurücksetzen an einem anderen Tag
-      // eingereicht wird; ändert sich nur der Tag (von Hand berichtigt, ein älterer Nachweis aufgetaucht, der erste
-      // verschwunden), wird der Stand neu beschriftet – seine Einträge bleiben, damit „geändert“ und „entfernt“ nicht
-      // verloren gehen
-      if (ein && a.stand && !a.stand.zurueckgesetzt && a.stand.tag !== ein.datum) {
-        antraege[name] = { ...a, stand: { ...a.stand, tag: ein.datum } };
-        geaendert = true;
-        log.info(`${name}: Tag der Einreichung jetzt ${ein.datum} (Stand bleibt)`);
-      } else if (ein && (!a.stand || (a.stand.zurueckgesetzt && a.stand.tag !== ein.datum)) && listen[name]) {
+      if (!ein) continue;
+      if (!a.stand && listen[name]) {
         antraege[name] = { ...a, stand: standAus(listen[name], ein.datum) };
         geaendert = true;
         log.info(`${name}: Antragsstand vom ${ein.datum} festgehalten (${antraege[name].stand!.dateien.length} Dateien)`);
-      } else if (ein && a.stand?.zurueckgesetzt && a.stand.tag === ein.datum) {
-        const { zurueckgesetzt: _, ...stand } = a.stand;
-        antraege[name] = { ...a, stand };
+      } else if (a.stand && a.stand.tag !== ein.datum) {
+        const ende = new Date(`${ein.datum}T23:59:59.999`).getTime();
+        const dateien = ein.datum < a.stand.tag ? a.stand.dateien.filter((d) => !(d.geaendert && d.geaendert > ende)) : a.stand.dateien;
+        antraege[name] = { ...a, stand: { tag: ein.datum, dateien } };
         geaendert = true;
-      } else if (!ein && a.stand && !a.stand.zurueckgesetzt) {
-        antraege[name] = { ...a, stand: { ...a.stand, zurueckgesetzt: true } };
-        geaendert = true;
+        log.info(`${name}: Tag der Einreichung jetzt ${ein.datum} (Stand bleibt${dateien.length < a.stand.dateien.length ? `, ${a.stand.dateien.length - dateien.length} danach geändert` : ''})`);
       }
     }
     const neu = geaendert ? { ...pd, antraege } : pd;

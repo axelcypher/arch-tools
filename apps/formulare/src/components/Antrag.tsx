@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { FeldDef } from '@core/ui/ansicht';
 import { useAnsicht } from '@core/ui/ansicht';
@@ -132,29 +132,70 @@ export function umfangZeigen() {
 
 /**
  * Tag der Einreichung von Hand: übernommen erst beim Verlassen des Felds bzw. mit Enter – Zwischenstände beim Tippen
- * des Jahres („0002-11-03“) zählen nicht. Nur Tage ab 2000 und nicht in der Zukunft; sonst gilt wieder der vorige.
+ * des Jahres („0002-11-03“) zählen nicht. Nur Tage ab 2000 und nicht in der Zukunft. Wie die übrigen Eingabefelder wird
+ * nichts still verworfen: ein ungültiger Wert bleibt zum Korrigieren stehen, das Feld ist rot markiert, die Meldung
+ * steht darunter; Esc stellt den gespeicherten Tag wieder her.
  */
 function EinreichungsDatum({ wert, onSetzen }: { wert: string; onSetzen: (tag: string) => void }) {
   const [text, setText] = useState(wert);
+  const [fehler, setFehler] = useState<string | null>(null);
+  // zuletzt übernommen: Enter und danach Verlassen schreiben nicht zweimal
+  const uebernommen = useRef(wert);
+  // gespeicherter Tag geändert (auch durch die eigene Übernahme): nachführen – das Feld bleibt dasselbe, der Fokus auch
+  useEffect(() => {
+    setText(wert);
+    setFehler(null);
+  }, [wert]);
   const heute = tagVon(new Date());
-  const gueltig = (t: string) => /^\d{4}-\d{2}-\d{2}$/.test(t) && t >= '2000-01-01' && t <= heute;
+  const zeige = (t: string) => t.split('-').reverse().join('.');
+  const zurueck = wert ? ` – Esc stellt den ${zeige(wert)} wieder her` : '';
+  const pruefen = (t: string) =>
+    !/^\d{4}-\d{2}-\d{2}$/.test(t)
+      ? `Datum unvollständig – bitte Tag, Monat und Jahr eingeben${zurueck}.`
+      : t < '2000-01-01' || t > heute
+        ? `Nur Tage vom 01.01.2000 bis heute (${zeige(heute)})${zurueck}.`
+        : null;
   const uebernehmen = () => {
-    if (!gueltig(text)) setText(wert);
-    else if (text !== wert) onSetzen(text);
+    if (text === wert || text === uebernommen.current) return setFehler(null);
+    const f = pruefen(text);
+    setFehler(f);
+    if (f) return;
+    uebernommen.current = text;
+    onSetzen(text);
   };
   return (
-    <input
-      type="date"
-      value={text}
-      min="2000-01-01"
-      max={heute}
-      aria-label="eingereicht am"
-      aria-invalid={text !== '' && !gueltig(text)}
-      title="Tag der Einreichung (ab 2000, nicht in der Zukunft) – übernommen beim Verlassen des Felds oder mit Enter"
-      onChange={(e) => setText(e.target.value)}
-      onBlur={uebernehmen}
-      onKeyDown={(e) => e.key === 'Enter' && uebernehmen()}
-    />
+    <>
+      <label>
+        <span className="field-label">eingereicht am</span>
+        <input
+          type="date"
+          className={fehler ? 'feld-fehler' : undefined}
+          value={text}
+          min="2000-01-01"
+          max={heute}
+          aria-label="eingereicht am"
+          aria-invalid={fehler ? true : undefined}
+          aria-describedby={fehler ? 'pu-datum-fehler' : undefined}
+          title="Tag der Einreichung (ab 2000, nicht in der Zukunft) – übernommen beim Verlassen des Felds oder mit Enter, Esc verwirft"
+          onChange={(e) => setText(e.target.value)}
+          onBlur={uebernehmen}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') uebernehmen();
+            if (e.key === 'Escape') {
+              // Esc verwirft die Eingabe – und schließt nichts anderes
+              e.stopPropagation();
+              setText(wert);
+              setFehler(null);
+            }
+          }}
+        />
+      </label>
+      {fehler && (
+        <span className="feld-meldung pu-datum-meldung" id="pu-datum-fehler" role="alert">
+          {fehler}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -198,12 +239,7 @@ function AntragStatus() {
             <option value="eingereicht">eingereicht</option>
           </select>
         </label>
-        {wahl === 'eingereicht' && (
-          <label>
-            <span className="field-label">eingereicht am</span>
-            <EinreichungsDatum key={manuell?.datum ?? ''} wert={manuell?.datum ?? ''} onSetzen={(t) => setzen('eingereicht', t)} />
-          </label>
-        )}
+        {wahl === 'eingereicht' && <EinreichungsDatum wert={manuell?.datum ?? ''} onSetzen={(t) => setzen('eingereicht', t)} />}
         {wirksam && (
           <button className="primary" title={`Neue Antragsfassung „${nachtrag}“ anlegen – sie wird aktiv und lässt sich bearbeiten`} onClick={() => void st.fassungWaehlen(nachtrag, true)}>
             <Symbol name="plus" /> Nachtrag „{nachtrag}“ anlegen

@@ -228,6 +228,9 @@ describe('Antragsstand bei der Einreichung', () => {
   const tag = '2026-11-02';
   const zeit = (t: string) => new Date(t).getTime();
   const d = (pfad: string, geaendert: number, groesse = 10) => ({ pfad, ordner: false, groesse, geaendert });
+  // Positivliste: Projektcodes und der Tag der Einreichung gehören dazu
+  const codes = ['BS9', 'HVO'];
+  const erw = (n: string) => nachEinreichungErwartet(n, { codes, tag: '2026-11-03' });
   const liste = [
     d('BS9 BAUA 261101 01 Bauantrag.pdf', zeit('2026-11-01T10:00')),
     d('BS9 BAUA 261101 GP-01 Grundriss.pdf', zeit('2026-11-02T09:00')),
@@ -249,16 +252,16 @@ describe('Antragsstand bei der Einreichung', () => {
     expect(seitEinreichung({ ...liste[0], geaendert: liste[0].geaendert + 60_000 }, s)).toBe('geaendert');
     expect(seitEinreichung({ ...liste[0], geaendert: liste[0].geaendert + 1000 }, s)).toBeNull();
     for (const n of ['BS9 BAUA 261120 Baugenehmigung.pdf', 'Bescheid.pdf', 'Eingangsbestätigung.pdf', 'Empfangsbestaetigung.pdf', 'Nachforderung.pdf'])
-      expect(seitEinreichung(d(n, zeit('2026-11-20T10:00')), s)).toBeNull();
+      expect(seitEinreichung(d(n, zeit('2026-11-20T10:00')), s, { codes })).toBeNull();
     // im Zweifel „neu“: eine Bauvorlage zur Nachforderung (Statik) ist nachgereicht und muss auffallen
-    expect(seitEinreichung(d('Nachforderung Statik.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
+    expect(seitEinreichung(d('Nachforderung Statik.pdf', zeit('2026-11-20T10:00')), s, { codes })).toBe('neu');
     // „Genehmigungsplanung“ ist keine Genehmigung; Antragsunterlagen gelten nie als erwartet
-    expect(seitEinreichung(d('BS9 BAUA 261120 Genehmigungsplanung.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
+    expect(seitEinreichung(d('BS9 BAUA 261120 Genehmigungsplanung.pdf', zeit('2026-11-20T10:00')), s, { codes })).toBe('neu');
     for (const n of ['HVO BAUVA 261110 01 Antrag auf Vorbescheid.pdf', 'HVO BAUF 261110 Genehmigungsfreistellung.pdf', 'Antrag auf Baugenehmigung.pdf', 'Antrag auf denkmalrechtliche Erlaubnis.pdf'])
       expect(seitEinreichung(d(n, zeit('2026-11-20T10:00')), s)).toBe('neu');
     // die Entscheidung bei Vorbescheid, DENK und ABGE ist erwartet, ebenso die Mitteilung der Gemeinde (BAUF)
     for (const n of ['Vorbescheid.pdf', 'Denkmalrechtliche Erlaubnis.pdf', 'Abgeschlossenheitsbescheinigung.pdf', 'Aufteilungsplan gesiegelt.pdf', 'Antragsprotokoll Bauportal.pdf', 'Mitteilung der Gemeinde.pdf', 'Nachforderung Kreis.pdf'])
-      expect(nachEinreichungErwartet(n)).toBe(true);
+      expect(erw(n), n).toBe(true);
     // so heißt auch das Schreiben der Behörde; dazu Vollständigkeitsmitteilung (§ 71), genehmigte Bauvorlagen
     // (Genehmigungsvermerk), ein Bescheid – auch „zum Bauantrag“ – und Mitteilung bzw. Erklärung der Stadt (BAUF)
     for (const n of [
@@ -278,7 +281,6 @@ describe('Antragsstand bei der Einreichung', () => {
       'Aufteilungspläne gesiegelt.pdf',
       'Ablehnung.pdf',
       'Anhörung vor Ablehnung.pdf',
-      'Baugenehmigung Umbau Bestand.pdf',
       // der Bezug auf den Antrag ist keine Antragsunterlage; Bindestriche wie Leerzeichen
       'Mitteilung der Gemeinde an den Bauherrn.pdf',
       'Bescheid-zum-Bauantrag.pdf',
@@ -288,7 +290,7 @@ describe('Antragsstand bei der Einreichung', () => {
       'Gebührenfestsetzung.pdf',
       'Bescheid zur Bauvoranfrage.pdf',
     ])
-      expect(nachEinreichungErwartet(n)).toBe(true);
+      expect(erw(n), n).toBe(true);
     // eingereichte bzw. nachgereichte Unterlagen des Büros fallen auf: ungesiegelter Aufteilungsplan, Typengenehmigung,
     // Unterlagen zur Nachforderung, eine beigefügte Genehmigung des Bestands, der Antrag auf Vorbescheid
     for (const n of [
@@ -378,10 +380,69 @@ describe('Antragsstand bei der Einreichung', () => {
       // Schreiben der Behörde mit weiteren Wörtern: im Zweifel nachgereicht
       'Nachforderung Brandschutz Stellplätze.pdf',
     ])
-      expect(nachEinreichungErwartet(n)).toBe(false);
-    // Gegenproben: das Schreiben der Behörde mit Behörde, Ort, Datum, Code
-    for (const n of ['Aufteilungspläne gesiegelt.pdf', 'Grundriss genehmigt.pdf', 'Baugenehmigung 2026.pdf', 'Baugenehmigung vom 12.11.2026.pdf', 'BS9 BAUA 261120 Nachforderung Kreis Viersen.pdf', 'Nachforderung Bauaufsicht 12.11.2026.pdf', 'Anhörung vor Ablehnung.pdf'])
-      expect(nachEinreichungErwartet(n), n).toBe(true);
+      expect(erw(n), n).toBe(false);
+    // Gegenproben: das Schreiben der Behörde mit Behörde, Datum, Code, Aktenzeichen
+    for (const n of [
+      'Aufteilungspläne gesiegelt.pdf',
+      'Grundriss genehmigt.pdf',
+      'Baugenehmigung 2026.pdf',
+      'Baugenehmigung vom 12.11.2026.pdf',
+      'BS9 BAUA 261120 Nachforderung Kreis.pdf',
+      'Nachforderung Bauaufsicht 12.11.2026.pdf',
+      'Anhörung vor Ablehnung.pdf',
+      'Nachforderung zum Bauantrag.pdf',
+      'Anhörung zum Bauantrag.pdf',
+      'Fiktionsbescheinigung zum Bauantrag.pdf',
+      'Bescheinigung Genehmigungsfiktion.pdf',
+      'Baugenehmigung Az 1950-26.pdf',
+      'Baugenehmigung 63-1934-2026.pdf',
+      'Nachforderung Az 63-1912-26.pdf',
+      'Mitteilung der Gemeinde an den Bauherrn.pdf',
+    ])
+      expect(erw(n), n).toBe(true);
+    // Runde 12: nur Füllwörter zählen – alles andere ist nachgereicht (im Zweifel „neu“)
+    for (const n of [
+      // Ortsnamen nach Kreis/Stadt sind nicht erkennbar von einer Bauvorlage zu unterscheiden
+      'Nachforderung Kreis Brandschutz.pdf',
+      'Nachforderung Stadt Stellplätze.pdf',
+      'Erklärung der Gemeinde Stellplätze.pdf',
+      'BS9 BAUA 261120 Nachforderung Kreis Viersen.pdf',
+      // an die Behörde, von der Bauherrschaft
+      'Schreiben an das Bauamt Nachforderung.pdf',
+      'Mitteilung an Bauamt Nachforderung.pdf',
+      'Schreiben an Kreis Viersen Nachforderung.pdf',
+      'Erklärung Bauherr Nachforderung.pdf',
+      'Erklärung der Bauherrschaft Fiktion.pdf',
+      'Mitteilung des Bauherrn zur Fiktion.pdf',
+      'Vollständigkeitserklärung Bauherr.pdf',
+      // Antrag, Änderung, Tektur, Nachtrag zur genehmigten Planung
+      'Antrag auf Änderung der genehmigten Planung.pdf',
+      'Nachtrag zur genehmigten Planung.pdf',
+      'Tektur genehmigte Planung.pdf',
+      'Brandschutzkonzept zur genehmigten Planung.pdf',
+      // Bestand mit älterem Jahr bzw. Datum, frühere Genehmigung
+      'Baugenehmigung von 2003.pdf',
+      'Baugenehmigung vom 12.05.2015.pdf',
+      'Baugenehmigung 2008.pdf',
+      'Bestandsbaugenehmigung.pdf',
+      'Frühere Baugenehmigung.pdf',
+      'Baugenehmigung Altbau.pdf',
+      'Baugenehmigung Umbau Bestand.pdf',
+      // Kürzel, Plannummern ohne Trennzeichen, Dokumentnummer, § 6 BauPrüfVO, Zustimmungen
+      'BSK Nachforderung.pdf',
+      'GEG Nachforderung.pdf',
+      'BS9 BAUA 261120 GP03 Nachforderung.pdf',
+      'BS9 BAUA 261120 03 Nachforderung.pdf',
+      'Herstellungskosten Gebühr.pdf',
+      'Rohbauwert Gebühr.pdf',
+      'Zustimmung Eigentümer Genehmigung.pdf',
+      // CamelCase, Punkte, Verneinung
+      'NachforderungBrandschutz.pdf',
+      'Nachforderung.Wärmeschutz.pdf',
+      'Grundriss ohne Grünstempel.pdf',
+      'Grundriss kein Genehmigungsvermerk.pdf',
+    ])
+      expect(erw(n), n).toBe(false);
     expect(seitEinreichung(d('HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
     expect(seitEinreichung(liste[4], undefined)).toBeNull();
   });

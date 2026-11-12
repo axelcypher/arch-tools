@@ -25,7 +25,7 @@ import { zeitKurz, zeitLang } from '../zeit';
 import type { MenuePunkt } from './Menue';
 import { zeigeMenue } from './Menue';
 import { Symbol } from './Symbol';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UnterlagenVorschau } from './UnterlagenVorschau';
 
 /** Alle Formulare des Projekts (ohne Archivordner) auf einmal als PDF exportieren – mit Fortschritt */
@@ -83,10 +83,18 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   // „Erneut versuchen“: läuft gerade bzw. Zeit des letzten vergeblichen Versuchs
   const [versuch, setVersuch] = useState<'laeuft' | number | null>(null);
   const erneutVersuchen = async () => {
+    if (versuch === 'laeuft') return;
     setVersuch('laeuft');
-    await useAntrag.getState().aktualisieren();
-    setVersuch(useAntrag.getState().dateienLesefehler ? Date.now() : null);
+    try {
+      await useAntrag.getState().aktualisieren();
+    } finally {
+      setVersuch(useAntrag.getState().dateienLesefehler ? Date.now() : null);
+    }
   };
+  // wieder erreichbar (auch von selbst): die Zeit des letzten Versuchs gilt nicht mehr
+  useEffect(() => {
+    if (!lesefehler) setVersuch(null);
+  }, [lesefehler]);
   // Ordner nicht lesbar und noch keine Liste von vorher: nichts zählen, nichts als fehlend melden
   const ohneListe = lesefehler && !dateien.length;
   const basis = verbinde(ablage.root, ablage.pfad);
@@ -104,13 +112,13 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       const m = markiert.find((b) => b.datei.toLowerCase() === d.pfad.toLowerCase());
       // zugehöriges Dokument: die verknüpfte bzw. gefundene Datei – bei einem Plansatz jede seiner Plandateien
       const dok = dokumentZu(dokumente, d.pfad);
-      return { d, fehler, zustand: bereitschaft(d, m, fehler), dok, seit: seitEinreichung(d, stand, schema) };
+      return { d, fehler, zustand: bereitschaft(d, m, fehler), dok, seit: seitEinreichung(d, stand, { schema, codes }) };
     });
   const seitNeu = liste.filter((x) => x.seit === 'neu').length;
   const seitGeaendert = liste.filter((x) => x.seit === 'geaendert').length;
-  // eingereichte Dateien, die seitdem aus dem Ordner verschwunden sind (gelöscht oder verschoben) – nicht, wenn der
-  // Ordner gerade nicht lesbar war
-  const entfernt = lesefehler
+  // eingereichte Dateien, die seitdem aus dem Ordner verschwunden sind (gelöscht oder verschoben) – beim Lesefehler aus
+  // der zuletzt gelesenen Liste, ohne Liste gar nicht
+  const entfernt = ohneListe
     ? []
     : entferntSeitEinreichung(
         liste.map((x) => x.d.pfad),
@@ -162,9 +170,10 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           <span role="status">
             Ordner gerade nicht erreichbar (z. B. Netzlaufwerk nicht verbunden).
             {liste.length ? ' Angezeigt wird der zuletzt gelesene Stand;' : ''} die Liste aktualisiert sich von selbst, sobald er wieder erreichbar ist.
-            {typeof versuch === 'number' && ` Noch nicht erreichbar (zuletzt versucht ${new Date(versuch).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}).`}
+            {typeof versuch === 'number' && ` Letzter Versuch ${new Date(versuch).toLocaleTimeString('de-DE')} – ohne Erfolg.`}
           </span>{' '}
-          <button className="small" disabled={versuch === 'laeuft'} onClick={() => void erneutVersuchen()}>
+          {/* aria-disabled statt disabled: der Fokus bleibt am Knopf, wenn man ihn per Tastatur auslöst */}
+          <button className="small" aria-disabled={versuch === 'laeuft' || undefined} onClick={() => void erneutVersuchen()}>
             {versuch === 'laeuft' ? 'Wird versucht …' : 'Erneut versuchen'}
           </button>
         </p>
