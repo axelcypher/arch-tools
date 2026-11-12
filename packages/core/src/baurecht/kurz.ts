@@ -202,7 +202,8 @@ function schwelle(name: string, def: FaktDef | undefined, min: number | undefine
   const zaehlt = zaehlEinheit(einheit);
   const imNamen = !!einheit && zaehlt && name.toLowerCase().includes(einheit.toLowerCase());
   const mit = (n: number) => `${zahl(n)}${einheit && !imNamen ? ` ${einheitZu(n, einheit)}` : ''}`;
-  const ueber = (x: number) => !zaehlt && Math.abs(x * 100 - Math.round(x) * 100 - 1) < 1e-6;
+  // „22,01“ → „über 22“ (bei ganzen Zahlen nie: dort zählt „mehr als“)
+  const ueber = (x: number) => !Number.isInteger(x) && Math.abs(x * 100 - Math.round(x) * 100 - 1) < 1e-6;
   const ganz = (x: number) => zaehlt && Number.isInteger(x);
   const vorhanden = (x: number) => (x > 0 && x <= 0.01) || (ganz(x) && x === 1);
   // untere Schwelle: x gehört dazu („mindestens“); „über n“ bzw. „mehr als n“, wo das Gesetz so zählt
