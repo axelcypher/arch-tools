@@ -2,7 +2,7 @@
   "name": "arch-tools",
   "private": true,
   "type": "module",
-  "description": "Werkzeuge für die Flächen- und Nutzungsberechnung: Flächenrechner (DIN 277, WoFlV), GRZ/GFZ-Nachweis, Kostenermittlung (DIN 276), Projektordner, Entzerrung von Fotos und Bauantragsformulare (SJ FORMA) – einzeln oder alle in einem Fenster (Rahmen-App)",
+  "description": "Werkzeuge für die Flächen- und Nutzungsberechnung: Flächenrechner (DIN 277, WoFlV), GRZ/GFZ-Nachweis, Kostenermittlung (DIN 276), Projekt (Projekte anlegen und fortschreiben), Entzerrung von Fotos und Bauantragsformulare (SJ FORMA) – einzeln oder alle in einem Fenster (Rahmen-App)",
   "workspaces": [
     "packages/*",
     "apps/*"

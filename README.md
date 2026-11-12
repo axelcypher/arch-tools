@@ -9,7 +9,7 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 | **Flächenrechner** | Flächen- und Rauminhaltsberechnung nach DIN 277 und WoFlV | unten |
 | **GRZ-Nachweis** | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
 | **Kostenermittlung** | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
-| **Projektordner** | Projekte mit einem Assistenten anlegen und ergänzen: Stammdaten in der Projektdatei, Ordner nach Schema, Vorlagen-Presets; Ordner prüfen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
+| **Projekt** (früher Projektordner) | Das Setup-Tool: Projekte mit einem Assistenten anlegen und fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte in der Projektdatei, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
 | **Entzerrung** | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 | **Formulare** | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
 | **arch-tools** | Rahmen-App: alle Apps in einem Fenster als Tabs, einzelne in eigene Fenster herauslösen | [docs/suite.md](docs/suite.md) |
@@ -32,7 +32,7 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 - **Stammdaten** (Bauvorhaben, Adresse, Gemarkung/Flur/Flurstück, Bebauungsplan Nr./Name, Bauherr, Bearbeitung)
   stehen einmal in der Projektdatei. Jede App zeigt sie mit demselben Dialog („Stammdaten …“) und lässt sie ändern,
   ohne die App zu wechseln; andere Apps sehen die Änderung, sobald das Projekt dort neu geladen wird. Ausdrucke und
-  Excel-Dateien haben denselben Kopf aus diesen Angaben, dazu den Büronamen (Projektordner → Einstellungen) und
+  Excel-Dateien haben denselben Kopf aus diesen Angaben, dazu den Büronamen (Projekt → Einstellungen) und
   „Seite x von y“.
 - **Koordinaten der Projektadresse:** Sobald Straße und PLZ bzw. Ort des Vorhabens eingetragen sind (und bei jeder
   Änderung, spätestens beim Speichern), fragt die App die Lage bei OpenStreetMap (Nominatim) ab und sichert sie in den
@@ -42,10 +42,14 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
   „Neu abfragen“ fragt erneut. Gesendet wird nur die Adresse des Vorhabens, eine Abfrage je geänderter Adresse; die
   Desktop-Apps erlauben dafür in ihrer CSP genau diesen Dienst. Die Umrechnung rechnet die App selbst (Krüger-Reihen,
   im Millimeterbereich genau); WGS84 und ETRS89 weichen um weniger als einen Meter ab.
-- **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch Projektordner und Formulare). Ohne geöffnetes Projekt
+- **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch Projekt und Formulare). Ohne geöffnetes Projekt
   zeigt jede App denselben Einstieg mit denselben Aktionen: *Projekt wählen …* (Desktop: Übersicht mit „zuletzt
   geöffnet“), *Datei öffnen …*, *Neues Projekt*. Die Projektübersicht scrollt als Ganzes (aufgeklappte Quellen werden
   nicht mehr auf die Fensterhöhe gequetscht); „Zuletzt geöffnet“ steht auf einem farbigen Streifen.
+- **Neues Projekt anlegen** aus jeder App (in der Rahmen-App „arch-tools“): Der Knopf auf der Projektübersicht startet
+  den Assistenten der App „Projekt“ in deren Tab; nach dem Anlegen führt „In … öffnen“ zurück, und Flächenrechner,
+  GRZ-Nachweis, Kostenermittlung und Entzerrung öffnen das neue Projekt gleich. Auch über „+“ und die Startseite des
+  Rahmens. In den einzeln installierten Apps gibt es den Knopf nicht (sie können die App „Projekt“ nicht starten).
 - **Rollbalken** in den Farben des Schemas (schmal, abgerundet); Seitenleisten halten Platz für den Rollbalken frei,
   damit sich ihre Breite beim Wechsel der Ansicht nicht ändert.
 - **Eigene Ansichten** (Ansicht-Editor in `packages/core/src/ui/AnsichtEditor.tsx`): aus einem Katalog von Feldern
@@ -192,8 +196,10 @@ festgehalten.
 - **Massen- und Kostenermittlung nach DIN 276** als eigene App (`apps/kosten`): Mengen aus dem Projekt mit
   Nachweis im Grundriss und im 3D-Modell, Kennwerte mit Bandbreite, Kennwertkatalog, Kostenstände – siehe
   [docs/kosten.md](docs/kosten.md)
-- **Projektordner** als eigene App (`apps/ordner`): Assistent für neue und bestehende Projekte (Stammdaten,
-  Umfang, Vorlagen, Trockenlauf), alles in der Projektdatei (`.oap`) des Projektordners, **Vorlagen-Presets** aus
+- **Projekt** (früher Projektordner) als eigene App (`apps/ordner`): Assistent für neue und bestehende Projekte
+  (Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte, Vorlagen, Zusammenfassung und Trockenlauf), alles in der
+  Projektdatei (`.oap`) des Projektordners, **Struktur-Editor zum Klicken** (Mehrfachauswahl, Ziehen, Kopieren in
+  mehrere Ordner, **Bausteine** für wiederkehrende Unterordner wie Gewerke), **Vorlagen-Presets** aus
   einem eigenen Vorlagenordner (Datei oder Ordner → Zielordner, Dateiname nach dem Schema des Büros,
   `.dotx`/`.xltx` werden Dokumente), Ordner prüfen – siehe [docs/projektordner.md](docs/projektordner.md)
 - **Gemeinsame Basis aller Apps** (`packages/core`): Konfigurationsordner für übergreifende Einstellungen
@@ -252,7 +258,7 @@ packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als
 apps/flaechenrechner/  Flächenrechner (dieses Tool): Zeichenfläche, Bericht, Excel, DXF/PDF, 3D
 apps/grz/              GRZ/GFZ-Nachweis: Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md
 apps/kosten/           Kostenermittlung nach DIN 276: Mengen, Kennwerte, Kostenstände, Druck, Excel – siehe docs/kosten.md
-apps/ordner/           Projekt-Assistent (neu/ergänzen), Ordner prüfen: Struktur, Vorlagen-Presets, Projektdatei – siehe docs/projektordner.md
+apps/ordner/           App „Projekt“: Assistent (neu/fortschreiben), Struktur-Editor, Vorlagen-Presets, Ordner prüfen, Katasterpläne – siehe docs/projektordner.md
 apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
 apps/formulare/        FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
 apps/suite/            Rahmen-App „arch-tools“: alle Apps in einem Fenster (Tabs, herauslösbare Fenster) – siehe docs/suite.md
@@ -279,7 +285,7 @@ npm install              # alle Workspaces
 npm run dev              # Flächenrechner unter http://localhost:1420
 npm run dev:grz          # GRZ-Nachweis unter http://localhost:1430
 npm run dev:kosten       # Kostenermittlung unter http://localhost:1440
-npm run dev:ordner       # Projektordner unter http://localhost:1450
+npm run dev:ordner       # Projekt (früher Projektordner) unter http://localhost:1450
 npm run dev:entzerrung   # Entzerrung unter http://localhost:1460
 npm run dev:formulare    # Formulare unter http://localhost:1470
 npm run dev:suite        # Rahmen-App unter http://localhost:1480 (nach npm run build)
@@ -290,7 +296,7 @@ npm run build            # Web-Builds aller Apps nach apps/<app>/dist/
 npm run tauri:dev        # Flächenrechner als Desktop-App
 npm run tauri:dev:grz    # GRZ-Nachweis als Desktop-App
 npm run tauri:dev:kosten # Kostenermittlung als Desktop-App
-npm run tauri:dev:ordner # Projektordner als Desktop-App
+npm run tauri:dev:ordner # Projekt als Desktop-App
 npm run tauri:dev:entzerrung # Entzerrung als Desktop-App
 npm run tauri:dev:formulare  # Formulare als Desktop-App
 npm run tauri:dev:suite      # Rahmen-App als Desktop-App
@@ -300,7 +306,7 @@ npm run tauri:build -w flaechenrechner   # Windows-Installer unter apps/<app>/sr
 Der Workflow **Build & Release** (GitHub Actions) baut je App die Windows-Installer und veröffentlicht ein
 GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` erhöht wird:
 Flächenrechner als `v<version>`, GRZ-Nachweis als `grz-v<version>`, Kostenermittlung als `kosten-v<version>`,
-Projektordner als `ordner-v<version>`, Entzerrung als `entzerrung-v<version>`, Formulare als `formulare-v<version>`,
+Projekt (früher Projektordner) als `ordner-v<version>`, Entzerrung als `entzerrung-v<version>`, Formulare als `formulare-v<version>`,
 die Rahmen-App als `suite-v<version>`.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.

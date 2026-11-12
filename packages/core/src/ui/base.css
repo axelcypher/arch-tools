@@ -1544,6 +1544,20 @@ svg[tabindex]:focus:not(:focus-visible) {
 .sd-beteiligte td:last-child {
   width: 30px;
 }
+.sd-beteiligte-knoepfe {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.sd-rollen-schnell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sd-rollen-schnell button {
+  color: var(--muted);
+  border-style: dashed;
+}
 .sd-dialog {
   width: min(680px, 94vw);
 }

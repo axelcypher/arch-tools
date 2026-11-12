@@ -13,7 +13,8 @@ import { abfragbar, adresseSchluessel, geokodierungMoeglich, koordinatenFuerQgis
  * Projektordner noch keine Projektdatei (.oap) hat: Dann ist das kein Fehler, sondern der Anlass, sie anzulegen.
  */
 
-export type StammdatenBereich = 'projekt' | 'grundstueck' | 'bauherr' | 'umfang';
+/** 'umfang' = Leistungen (Leistungsphasen, Bearbeitung) und Beteiligte; einzeln: 'leistungen', 'beteiligte' */
+export type StammdatenBereich = 'projekt' | 'grundstueck' | 'bauherr' | 'umfang' | 'leistungen' | 'beteiligte';
 
 /** typische Beteiligte eines Bauvorhabens in NRW – Vorschläge für die Rolle (Freitext bleibt möglich) */
 export const ROLLEN = [
@@ -39,6 +40,9 @@ const LPH_SCHNELL: { label: string; title: string; lph: number[] }[] = [
 
 const ALLE: StammdatenBereich[] = ['projekt', 'grundstueck', 'bauherr', 'umfang'];
 
+/** Rollen, die als Schnellwahl unter den Beteiligten stehen (die ersten typischen) */
+const ROLLEN_SCHNELL = ROLLEN.slice(0, 8);
+
 export function StammdatenFelder({
   meta,
   onChange,
@@ -52,6 +56,7 @@ export function StammdatenFelder({
   ordnerName,
   bearbeiterVorschlaege,
   beteiligtVorschlaege,
+  rollenSchnell = false,
 }: {
   meta: ProjectMeta;
   onChange: (meta: ProjectMeta) => void;
@@ -74,6 +79,8 @@ export function StammdatenFelder({
   bearbeiterVorschlaege?: string[];
   /** Beteiligte früherer Projekte: Vorschläge für den Namen, Rolle und Kontakt werden ergänzt */
   beteiligtVorschlaege?: Beteiligter[];
+  /** Knöpfe „+ Tragwerksplanung“ … zum schnellen Anlegen typischer Beteiligter */
+  rollenSchnell?: boolean;
 }) {
   const id = useId();
   const set = (patch: Partial<ProjectMeta>) => onChange({ ...meta, ...patch });
@@ -121,7 +128,7 @@ export function StammdatenFelder({
     setBeteiligte(beteiligte.map((x, k) => (k === i ? { ...x, name, ...(v && !x.rolle.trim() ? { rolle: v.rolle } : {}), ...(v && !x.kontakt.trim() ? { kontakt: v.kontakt } : {}) } : x)));
   };
   const vorschlagNamen = [...new Set((beteiligtVorschlaege ?? []).map((b) => b.name.trim()).filter(Boolean))];
-  const zeigt = (b: StammdatenBereich) => bereiche.includes(b);
+  const zeigt = (b: StammdatenBereich) => bereiche.includes(b) || ((b === 'leistungen' || b === 'beteiligte') && bereiche.includes('umfang'));
   const setBplan = (patch: { nummer?: string; name?: string }) => {
     const bp = { ...meta.bebauungsplan, ...patch };
     if (!bp.nummer) delete bp.nummer;
@@ -254,9 +261,9 @@ export function StammdatenFelder({
           </div>
         </>
       )}
-      {zeigt('umfang') && (
+      {zeigt('leistungen') && (
         <>
-          <h3 className="sd-titel">Leistungen und Beteiligte</h3>
+          <h3 className="sd-titel">{zeigt('beteiligte') ? 'Leistungen und Beteiligte' : 'Leistungen'}</h3>
           <div className="sd-lph-schnell" role="group" aria-label="Schnellwahl Leistungsphasen">
             {LPH_SCHNELL.map((x) => (
               <button
@@ -293,6 +300,10 @@ export function StammdatenFelder({
               ))}
             </datalist>
           )}
+        </>
+      )}
+      {zeigt('beteiligte') && (
+        <>
           <datalist id={`${id}-rollen`}>
             {[...new Set([...ROLLEN, ...(beteiligtVorschlaege ?? []).map((b) => b.rolle.trim()).filter(Boolean)])].map((r) => (
               <option key={r} value={r} />
@@ -348,9 +359,20 @@ export function StammdatenFelder({
               </tbody>
             </table>
           )}
-          <button className="small" onClick={() => onChange({ ...meta, beteiligte: [...beteiligte, { rolle: '', name: '', kontakt: '' }] })}>
-            + Beteiligter
-          </button>
+          <div className="button-row sd-beteiligte-knoepfe">
+            <button className="small" onClick={() => onChange({ ...meta, beteiligte: [...beteiligte, { rolle: '', name: '', kontakt: '' }] })}>
+              + Beteiligter
+            </button>
+            {rollenSchnell && (
+              <span className="sd-rollen-schnell" role="group" aria-label="Beteiligte nach Rolle hinzufügen">
+                {ROLLEN_SCHNELL.filter((r) => !beteiligte.some((b) => b.rolle.trim().toLowerCase() === r.toLowerCase())).map((r) => (
+                  <button key={r} className="small" title={`Zeile für „${r}“ anlegen`} onClick={() => onChange({ ...meta, beteiligte: [...beteiligte, { rolle: r, name: '', kontakt: '' }] })}>
+                    + {r}
+                  </button>
+                ))}
+              </span>
+            )}
+          </div>
         </>
       )}
     </div>

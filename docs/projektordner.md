@@ -1,8 +1,15 @@
-# Projektordner
+# Projekt (früher „Projektordner“)
 
-Das Tool **Projektordner** (`apps/ordner`, eigene App mit eigenem Installer) legt Projekte nach einheitlichem
-Schema an und ergänzt bestehende – mit einem **Assistenten**, der Stammdaten, Umfang und Vorlagen abfragt –, und
-prüft vorhandene Projektordner gegen dieses Schema.
+Die App **Projekt** (`apps/ordner`, eigene App mit eigenem Installer, in der Rahmen-App der Tab „Projekt“) ist das
+Setup-Tool des Büros: Sie legt Projekte an und schreibt sie fort – mit einem **Assistenten**, der alle Angaben zum
+Projekt abfragt (Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte) und in der Projektdatei (`.oap`) ablegt, den
+Projektordner nach der **Struktur** des Büros anlegt und Vorlagen einsetzt. Dazu prüft sie vorhandene Projektordner
+gegen die Struktur und exportiert Katasterpläne.
+
+Umbenannt wurde nur, was man sieht (Titel, Tab, Texte). Technisch bleibt alles beim Alten: Ordner `apps/ordner`,
+Kennung `de.pendzialek.projektordner`, Installer- und Programmname „Projektordner“ (damit Updates die vorhandene
+Installation ersetzen und keine zweite danebenlegen), Release-Tags `ordner-v…`, Einstellungsdatei `projektordner.json`
+und der Abschnitt `projektordner` in der Projektdatei.
 
 Grundsätze:
 
@@ -16,7 +23,8 @@ Grundsätze:
 
 ## Projekt (Assistent)
 
-Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davor taugen.
+Acht Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davor taugen. Alles, was der Assistent
+abfragt, steht danach in der Projektdatei – für alle Apps.
 
 1. **Projekt:** die **Projektübersicht** – dieselbe Startseite wie in den anderen Apps: vorne „Zuletzt geöffnet“
    (je Benutzer, über alle Apps), darunter die Projektordner je Stammordner als Karten mit Nummer, Bezeichnung und
@@ -32,8 +40,9 @@ Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davo
    vorne, in allen Apps. Der Status steht in der Projektdatei (`meta.status`: Akquise, aktiv, abgeschlossen); gesetzt
    wird nur diese Angabe, alles andere in der Datei bleibt. Nummer und Kurzname leitet jede App gleich aus dem
    Ordnernamen ab: Das Schema der Struktur steht dafür in `allgemein.json` (`ordnerSchema`).
-2. **Stammdaten:** Projektnummer, Kurzname, Bezeichnung, Adresse des Bauvorhabens, Grundstück, Aktenzeichen,
-   Bauherr mit Kontakten.
+2. **Stammdaten:** Projektnummer, Kurzname, Bezeichnung, Adresse des Bauvorhabens (mit Koordinaten) und der
+   **Stand**: beauftragt (aktiv) oder Akquise – er steht als `meta.status` in der Projektdatei und gilt für den
+   Filter der Projektübersicht aller Apps.
    - Neues Projekt: Das Tool trägt die nächste freie Nummer vor (änderbar) – die höchste laufende Nummer unter den
      Ordnern **aller** Stammordner (auch Archiv oder Akquise; im laufenden Jahr, wenn das Schema ein Jahr enthält)
      plus eins. Passt eine Nummer nicht zum Schema („26-14“ bei `{jahr}-{nr:3}`), steht am Feld ein Hinweis
@@ -46,15 +55,22 @@ Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davo
      Assistent erfasst die Stammdaten (Nummer und Kurzname aus dem Ordnernamen vorgeschlagen, bei Ordnern aus
      Version 0.1 aus der alten `projekt.json`) und legt die Projektdatei damit an. Der Ordner wird beim Ergänzen
      nicht umbenannt.
-3. **Umfang:** beauftragte Leistungsphasen (mit Namen, Schnellwahl „1–4 bis Bauantrag“, „5–8“, „1–9 alle“,
-   „keine“), Bearbeitung (Kürzel; Vorschläge aus den Mitarbeitern unter „Einstellungen“), Beteiligte (Rolle mit
-   Vorschlägen typischer Beteiligter – Tragwerksplanung, Prüfingenieur/-in, Brandschutz, Vermessung ÖbVI, TGA,
-   Energieberatung/GEG, Bauaufsicht … – oder frei; Name mit Vorschlägen aus den Projektdateien der Stammordner, Rolle
-   und Kontakt werden dann ergänzt). An Leistungsphasen gebundene Ordner und Vorlagen entstehen nur, wenn eine davon
-   beauftragt ist (ohne Angabe alle).
-4. **Vorlagen:** Vorlagenordner und Vorlagen-Presets (siehe [Vorlagen](#vorlagen)). Vorausgewählt sind bei neuen
+3. **Grundstück:** Gemarkung, Flur, Flurstück, Grundstücksfläche, Bebauungsplan (Nummer, Name) und Aktenzeichen
+   der Bauaufsicht. (Der Bebauungsplan ging bis 0.13 im Assistenten verloren – er wird jetzt gespeichert.)
+4. **Bauherr:** Name bzw. Firma, Vorname, Anschrift, beliebig viele E-Mail-Adressen und Telefonnummern.
+5. **Umfang:** beauftragte Leistungsphasen (mit Namen, Schnellwahl „1–4 bis Bauantrag“, „5–8“, „1–9 alle“,
+   „keine“) und Bearbeitung (Kürzel; Vorschläge aus den Mitarbeitern unter „Einstellungen“). An Leistungsphasen
+   gebundene Ordner und Vorlagen entstehen nur, wenn eine davon beauftragt ist (ohne Angabe alle).
+6. **Beteiligte:** die schon bekannten Fachplaner, Gutachter und Behörden. Rolle mit Vorschlägen typischer
+   Beteiligter (Tragwerksplanung, Prüfingenieur/-in, Brandschutz, Vermessung ÖbVI, TGA, Energieberatung/GEG,
+   Bodengutachten, Bauaufsicht …) oder frei – die typischen stehen außerdem als Knöpfe „+ Tragwerksplanung“ … darunter
+   und legen mit einem Klick eine Zeile an. Name mit Vorschlägen aus den Projektdateien der Stammordner; Rolle und
+   Kontakt werden dann ergänzt.
+7. **Vorlagen:** Vorlagenordner und Vorlagen-Presets (siehe [Vorlagen](#vorlagen)). Vorausgewählt sind bei neuen
    Projekten die Presets mit „Standard“, bei bestehenden die in der Projektdatei vermerkten.
-5. **Anlegen bzw. Ergänzen:** der Trockenlauf als Baum – jeder Ordner und jede Datei mit Herkunft (Struktur,
+8. **Anlegen bzw. Ergänzen:** oben die **Zusammenfassung** – so steht es in der Projektdatei (Projekt, Grundstück,
+   Bauherr, Umfang, Beteiligte, Vorlagen), je Abschnitt mit „ändern“, das zum Schritt springt. Darunter der
+   Trockenlauf als Baum – jeder Ordner und jede Datei mit Herkunft (Struktur,
    Vorlage mit Preset, Projektdatei) und dem Vermerk „neu“, „vorhanden“ oder „wird ergänzt“ (Projektdatei, mit
    den geänderten Angaben als Hinweis). Beim Ergänzen zeigt er nur, was sich ändert (umschaltbar). Einzelne
    Einträge lassen sich abwählen („Alle neuen Einträge abwählen“ und danach einzelne wieder wählen); mit einem
@@ -63,8 +79,27 @@ Fünf Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davo
    bzw. ergänzt wurde, was schon da war und was fehlgeschlagen ist – ein Fehler hält die übrigen Schritte nicht auf.
    Im Browser entsteht der Projektordner als ZIP-Datei zum Herunterladen (statt im Stammordner).
    Nach dem erfolgreichen Anlegen zeigt der Assistent eine **Abschlussseite** mit dem Ordnernamen, „Ordner öffnen“
-   und „Nächstes Projekt“; das Formular ist dann schon für das nächste Projekt geleert – „Rückgängig“ (zehn Sekunden)
+   und „Nächstes Projekt“ (kam der Auftrag aus einer anderen App, außerdem „In … öffnen“, siehe unten); das Formular ist dann schon für das nächste Projekt geleert – „Rückgängig“ (zehn Sekunden)
    holt den Entwurf zurück. Schlägt ein Schritt fehl, bleibt der Entwurf stehen.
+
+### Neues Projekt aus jeder App
+
+In der Rahmen-App „arch-tools“ steht auf der Projektübersicht **jeder** App der Knopf **„Neues Projekt anlegen“**
+(Flächenrechner, GRZ-Nachweis, Kostenermittlung, Entzerrung, Formulare), dazu im „+“-Menü und auf der Startseite des
+Rahmens. Er öffnet den Tab „Projekt“ (bzw. holt dessen herausgelöstes Fenster nach vorn) und startet den Assistenten
+direkt bei den Stammdaten – ein angefangener Entwurf bleibt erhalten („Formular leeren“ beginnt leer). Oben steht,
+aus welcher App der Auftrag kam, mit „Zurück zu …“. Nach dem Anlegen führt **„In Flächenrechner öffnen“** (bzw.
+„Zurück zu Formulare“) zurück: Die Übersicht dort liest die Projekte neu, und Flächenrechner, GRZ-Nachweis,
+Kostenermittlung und Entzerrung öffnen das neue Projekt gleich. In diesen Apps heißt das bisherige „Neues Projekt“
+(leeres Projekt ohne Projektordner) im Rahmen „Leer beginnen“. Die einzeln installierten Apps können die App
+„Projekt“ nicht starten; dort gibt es den Knopf nicht.
+
+Technik: Nachrichten über den Rahmen (`packages/core/src/platform/rahmen.ts`): `arch-tools:projekt-anlegen` (App →
+Rahmen), `arch-tools:assistent-neu` (Rahmen → Projekt), `arch-tools:zur-app` (Projekt → Rahmen, mit dem neuen
+Projektordner) und `arch-tools:projekt-angelegt` (Rahmen → App). Tabs per `postMessage` (nur gleicher Ursprung, nur
+vom Rahmen), herausgelöste Fenster per Tauri-Ereignis (`arch-tools:an-rahmen`, `arch-tools:an-app`). Jede App meldet
+sich mit `arch-tools:bereit`, sobald sie hört; was vorher ankommt (etwa beim frisch geöffneten Tab), stellt der
+Rahmen danach zu.
 
 **Tastatur:** Strg+Enter geht zum nächsten Schritt; der aktive Schritt ist für Bildschirmleser gekennzeichnet, die
 Felder der Beteiligten sind je Zeile beschriftet („Rolle 2“, „Beteiligten 2 entfernen“).
@@ -95,7 +130,7 @@ mit; was dort schon liegt, gilt und bleibt unverändert.
 | Datei | Inhalt |
 |---|---|
 | `allgemein.json` | Stammordner der Projekte (mehrere möglich; im ersten entstehen neue Projekte), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien, Kürzel der Mitarbeiter (Vorschläge für „Bearbeitung“) |
-| `projektordner.json` | Struktur samt Vorlagen-Presets und Vorlagenordner dieses Tools |
+| `projektordner.json` | Struktur samt Bausteinen und Vorlagen-Presets, Vorlagenordner dieser App |
 
 Welcher Konfigurationsordner gilt, steht je Benutzer in `%APPDATA%\arch-tools\konfig.json` – für alle Apps
 derselbe Ort. Einstellungen früherer Fassungen (lokal gespeichert) werden beim ersten Start übernommen. Im Browser
@@ -105,11 +140,12 @@ liegen die Einstellungen im Speicher des Browsers.
 die Datei seit dem Lesen unverändert ist. Hat ein anderer Rechner sie inzwischen geändert, überschreibt das Tool
 sie nicht, sondern meldet „Die Struktur wurde inzwischen von einem anderen Rechner geändert – neu laden?“ mit
 „Neu laden“ (die eigene Fassung bleibt über „Rückgängig“ erreichbar) und „Meine Fassung trotzdem speichern“. Beim
-Wechsel in „Einstellungen“ und „Vorlagen“ liest das Tool die Datei frisch.
+Wechsel in „Struktur“, „Einstellungen“ und „Vorlagen“ liest die App die Datei frisch.
 
 ### Struktur
 
-Ordnerbaum und Namensschemata gehören dem Büro, nicht dem Tool. Die Struktur lässt sich zusätzlich als JSON-Datei
+Eigener Reiter **„Struktur“** (bis 0.13 Teil der Einstellungen). Ordnerbaum, Bausteine und Namensschemata gehören dem
+Büro, nicht dem Tool. Die Struktur lässt sich zusätzlich als JSON-Datei
 speichern, weitergeben und laden – samt den Vorlagen-Presets und dem Dateinamenschema für Vorlagen; die eingebaute
 Vorgabe ist neutral (nach Dokumentart: Projekt, Grundlagen, Pläne, Berechnungen, Schriftverkehr, Protokolle,
 Genehmigung, Ausschreibung, Bauleitung, Fotos). „Standard“ setzt Ordner und Schemata zurück; die Presets bleiben.
@@ -127,11 +163,43 @@ im Konfigurationsordner, je Sicherung mit Namen `projektordner.json.bak-JJJJ-MM-
 | Name des Projektordners | `{nummer} {kurzname}` | `{nummer}`, `{kurzname}`, `{jahr}` |
 | Dateinamenschema für Pläne | `{nummer}_{plannummer}_{index}_{titel}` | dazu `{datum}` |
 
-Die **Ordnerliste** wird als **Baum** bearbeitet: je Ordner der Name, Häkchen für die Leistungsphasen 1–9 und
-„Schema“ (Dateischema prüfen); ↑ ↓ verschieben unter den Geschwisterordnern, → macht einen Ordner zum Unterordner des
-Ordners darüber, ← rückt ihn eine Ebene höher, „+“ legt einen Unterordner an, „×“ löscht (mit Unterordnern erst nach
-Rückfrage), „+ Ordner“ legt einen im Stamm an. Übergeordnete Ordner, die nur als Teil eines Pfads vorkommen, stehen
-kursiv; ein Häkchen gibt ihnen eine eigene Regel.
+Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, rechts die Angaben zur Auswahl:
+
+- **Auswählen:** Klick; Strg+Klick und Umschalt+Klick wählen mehrere. Rechts dann Name, **Leistungsphasen** (Knöpfe
+  1–9, „immer“ und Schnellwahl 1–4, 5–8, 6–7, 8) und „Dateinamen prüfen“ – bei mehreren Ordnern für alle auf einmal
+  (teilweise gesetzte Phasen gestrichelt).
+- **Anlegen:** „+“ an der Zeile bzw. „+ Unterordner“ (Strg+N), „Ordner daneben“ (Strg+Umschalt+N), „+ Ordner“ im
+  Stamm. Der neue Ordner steht gleich zum Benennen bereit (Enter übernimmt, Esc behält den Vorschlag).
+- **Mehrere anlegen …:** eine Zeile je Ordner, eingerückte Zeilen (Tab oder Leerzeichen) werden Unterordner, „/“
+  trennt ebenfalls, Zusätze wie in der Textansicht (`| LPh 6-7`, `| Dateischema`); mit Vorschau als Baum. Sind
+  mehrere Ordner markiert, entsteht die Liste in **jedem** davon.
+- **Umbenennen:** Doppelklick oder F2 (bzw. das Feld rechts); Unterordner wandern mit.
+- **Verschieben:** ziehen und ablegen – auf einen Ordner: hinein, an den oberen bzw. unteren Rand: davor bzw.
+  dahinter, ganz unten: in den Stamm; auch mehrere auf einmal. Tastatur: Alt+↑/↓ unter Geschwistern, Alt+→ wird
+  Unterordner des Ordners darüber, Alt+← eine Ebene höher. Nicht möglich (mit Meldung): in sich selbst, oder im Ziel
+  gibt es schon einen Ordner gleichen Namens.
+- **Kopieren und Einfügen:** Strg+C kopiert die markierten Ordner samt Unterordnern, Strg+V fügt sie in **alle**
+  markierten Ordner ein. Gleichnamige Ordner werden zusammengeführt – mehrfaches Einfügen ändert nichts mehr.
+  **Duplizieren** (Strg+D) legt eine Kopie direkt dahinter an („Rohbau 2“).
+- **Bausteine** (rechts): wiederkehrende Unterordner, z. B. der Aufbau eines Gewerkeordners. Rechtsklick auf einen
+  Ordner → „Unterordner als Baustein speichern …“ (oder „Als Baustein …“ rechts) speichert seine Unterordner unter
+  einem Namen; „Einfügen“ setzt sie in alle markierten Ordner ein. Beispiel: 15 Gewerkeordner mit „Mehrere anlegen“
+  in „07 Ausschreibung“ anlegen, alle markieren (Klick, Umschalt+Klick), Baustein „Gewerk“ einfügen – fertig.
+  Eingefügt wird eine Kopie; spätere Änderungen am Baustein ändern die Struktur nicht. „Beispiel „Gewerk“ anlegen“
+  gibt einen Ausgangspunkt. Bausteine stehen in der Struktur (`bausteine`), werden mit ihr gespeichert, geladen und
+  gesichert.
+- **Löschen:** Entf bzw. Rechtsklick → Löschen; mit Unterordnern oder mehreren erst nach Rückfrage.
+- **Rückgängig/Wiederholen** (↶ ↷, Strg+Z/Strg+Y) für jeden Schritt des Editors.
+- **Vorschau für LPh:** die Leistungsphasen eines Beispielprojekts wählen – Ordner, die dann nicht entstehen, sind
+  blass und durchgestrichen („12 von 44 Ordnern entstehen“).
+- Rechtsklick zeigt alle Aktionen; Aufklappen/Zuklappen, Pfeiltasten, Pos1/Ende bewegen die Auswahl.
+
+**Leistungsphasen werden vererbt:** Ein Unterordner entsteht nur, wenn auch sein übergeordneter Ordner entsteht –
+„07 Ausschreibung | LPh 6-7“ gilt für alle Gewerkeordner darin, ohne dass jeder die Phasen braucht. Im Baum steht
+die geerbte Angabe gestrichelt, rechts der Hinweis „Entsteht nur, wenn auch … entsteht“. Das gilt beim Anlegen, im
+Trockenlauf und in „Ordner prüfen“ (bis 0.13 entstand ein Unterordner ohne eigene Leistungsphasen immer und zog
+seinen übergeordneten Ordner mit). Übergeordnete Ordner, die nur als Teil eines Pfads vorkommen, stehen kursiv; eine
+Leistungsphase oder „Dateinamen prüfen“ gibt ihnen eine eigene Regel.
 
 Für Geübte gibt es die Ordnerliste auch als **Text (Experte)** – dieselbe Liste, eine Zeile je Ordner, Unterordner
 mit `/`. Zusätze nach `|`:
@@ -140,9 +208,11 @@ mit `/`. Zusätze nach `|`:
 02 Pläne/Entwurf | Dateischema
 02 Pläne/Ausführung | LPh 5 | Dateischema
 07 Ausschreibung | LPh 6-7
+07 Ausschreibung/Rohbau/Angebote
 ```
 
-- `LPh 5`, `LPh 6-7`, `LPh 4, 8` – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist.
+- `LPh 5`, `LPh 6-7`, `LPh 4, 8` – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist
+  (Unterordner erben das: „07 Ausschreibung/Rohbau/Angebote“ oben entsteht nur mit LPh 6 oder 7).
 - `Dateischema` – Dateien in diesem Ordner werden im Prüfmodus gegen das Dateinamenschema geprüft.
 
 Unzulässige Zeichen in Namen (`\ / : * ? " < > |`) werden entfernt. Was beim Lesen der Liste entfällt oder
@@ -330,7 +400,9 @@ unter `projektordner`:
     "adresse": { "strasse": "Musterweg 3", "plz": "48143", "ort": "Münster" },
     "grundstueck": { "gemarkung": "", "flur": "", "flurstueck": "" },
     "bauherr": { "name": "…", "adresse": { "strasse": "", "plz": "", "ort": "" }, "kontakte": [{ "art": "email", "wert": "…" }] },
+    "bebauungsplan": { "nummer": "112", "name": "Am Mühlenbach" },
     "bearbeiter": "TP",
+    "status": "akquise",
     "leistungsphasen": [1, 2, 3, 4],
     "beteiligte": [{ "rolle": "Tragwerk", "name": "…", "kontakt": "…" }],
     "angelegt": "2026-10-01"
@@ -349,7 +421,7 @@ Bis Version 0.1 standen die Stammdaten in einer eigenen `projekt.json` im Projek
 (beschädigt oder fremd), meldet „Ordner prüfen“ den Hinweis „Alte projekt.json nicht lesbar“, und beim Ergänzen steht
 derselbe Hinweis über den Stammdaten – die Datei selbst bleibt unangetastet.
 
-Presets in der Struktur-Datei:
+Presets und Bausteine in der Struktur-Datei:
 
 ```json
 {
@@ -364,12 +436,23 @@ Presets in der Struktur-Datei:
       ]
     },
     { "name": "Bauantrag", "eintraege": [{ "quelle": "Bauantrag", "ziel": "06 Genehmigung", "lph": [4] }] }
+  ],
+  "bausteine": [
+    { "name": "Gewerk", "ordner": [{ "pfad": "Angebote" }, { "pfad": "Vergabe" }, { "pfad": "Rechnungen", "lph": [8] }] }
   ]
 }
 ```
 
+`status` fehlt bei beauftragten Projekten (aktiv); `bebauungsplan` fehlt, wenn keiner erfasst ist.
+
 ## Grenzen
 
+- Der Installer heißt weiter „Projektordner“ (Startmenü, Programmordner): Ein anderer Programmname würde beim Update
+  eine zweite Installation neben die alte legen. In der App, im Fenstertitel und im Rahmen heißt sie „Projekt“.
+- „Neues Projekt anlegen“ aus anderen Apps gibt es nur in der Rahmen-App; die einzeln installierten Apps können die
+  App „Projekt“ nicht starten. Formulare öffnet das neue Projekt nicht selbst (seine Übersicht zeigt FORMA-Projekte),
+  sie wird nur neu geladen.
+- Bausteine sind Kopiervorlagen: Ein später geänderter Baustein ändert bereits eingefügte Ordner nicht.
 - „Projekt abschließen“ setzt nur den Status; ein Verschieben in einen Archiv-Stammordner (als Kopie) und den
   Prüfbericht als PDF gibt es nicht. Ein von Hand ins Archiv verschobenes Projekt zählt beim Nummernvorschlag mit,
   wenn sein Stammordner eingestellt ist. Keine Obsidian-Projektnotiz.

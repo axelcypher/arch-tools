@@ -74,7 +74,7 @@ const warten = () =>
   });
 const weiter = (host: Element) => act(() => knopf(host, 'Weiter:').click());
 
-describe('Projektordner', () => {
+describe('Projekt (früher Projektordner)', () => {
   it('„Projekte“ in der Titelleiste wie in den anderen Apps: führt zur Startseite des Assistenten (Q-5, P-13)', () => {
     const host = render();
     act(() => knopf(host, 'Ordner prüfen').click());
@@ -117,10 +117,23 @@ describe('Projektordner', () => {
     expect(host.querySelector('.sd-ordnername')?.textContent).toBe('Ordnername: 26-14 EFH Müller Weg 3');
     eingabe(feld(host, 'Projektnummer'), '2026-014');
     eingabe(feld(host, 'Kurzname'), 'EFH Musterweg');
-    eingabe(feld(host, 'Name bzw. Firma'), 'Familie Beispiel');
-    expect(useOrdner.getState().stamm).toMatchObject({ nummer: '2026-014', kurzname: 'EFH Musterweg', bauherr: { name: 'Familie Beispiel' } });
+    // Stand: Akquise
+    act(() => [...host.querySelectorAll<HTMLInputElement>('.po-statuswahl input')][1].click());
+    expect(useOrdner.getState().stamm.status).toBe('akquise');
     expect(host.querySelector('.po-kontext')?.textContent).toContain('2026-014 EFH Musterweg');
     expect(knopf(host, 'Weiter:').disabled).toBe(false);
+
+    // Grundstück: Bebauungsplan bleibt erhalten
+    weiter(host);
+    expect(host.querySelector('h2')?.textContent).toBe('Grundstück');
+    eingabe(feld(host, 'Flurstück'), '17/3');
+    eingabe(feld(host, 'Bebauungsplan Nr.'), '112');
+    expect(useOrdner.getState().stamm).toMatchObject({ grundstueck: { flurstueck: '17/3' }, bebauungsplan: { nummer: '112' } });
+    // Bauherr
+    weiter(host);
+    expect(host.querySelector('h2')?.textContent).toBe('Bauherr');
+    eingabe(feld(host, 'Name bzw. Firma'), 'Familie Beispiel');
+    expect(useOrdner.getState().stamm).toMatchObject({ nummer: '2026-014', kurzname: 'EFH Musterweg', bauherr: { name: 'Familie Beispiel' } });
 
     // Umfang: Namen der Leistungsphasen sichtbar, Schnellwahl (P-07); dann nur LPh 1–3
     weiter(host);
@@ -132,9 +145,17 @@ describe('Projektordner', () => {
     for (const nr of [1, 2, 3]) act(() => ([...host.querySelectorAll('.sd-lph input')][nr - 1] as HTMLInputElement).click());
     expect(useOrdner.getState().stamm.leistungsphasen).toEqual([1, 2, 3]);
     eingabe(feld(host, 'Bearbeitung'), 'TP');
+    expect(host.querySelector('.sd-beteiligte')).toBeNull();
+
+    // Beteiligte: eigener Schritt, typische Rollen mit einem Klick
+    weiter(host);
+    expect(host.querySelector('h2')?.textContent).toBe('Beteiligte');
     act(() => knopf(host, '+ Beteiligter').click());
     eingabe(host.querySelector('.sd-beteiligte input') as HTMLInputElement, 'Tragwerk');
     expect(useOrdner.getState().stamm.beteiligte).toEqual([{ rolle: 'Tragwerk', name: '', kontakt: '' }]);
+    act(() => knopf(host, '+ Vermessung (ÖbVI)').click());
+    expect(useOrdner.getState().stamm.beteiligte[1]).toEqual({ rolle: 'Vermessung (ÖbVI)', name: '', kontakt: '' });
+    expect(knopf(host, '+ Vermessung (ÖbVI)')).toBeUndefined();
 
     // Vorlagen: Standard-Preset vorausgewählt – mit Strg+Enter (P-12)
     act(() => host.querySelector('.po-col')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })));
@@ -142,8 +163,15 @@ describe('Projektordner', () => {
     expect(host.querySelector('h2')?.textContent).toBe('Vorlagen');
     expect((host.querySelector('.po-presetwahl input') as HTMLInputElement).checked).toBe(true);
 
-    // Anlegen: Projektdatei statt projekt.json, Ordner nach Leistungsphasen
+    // Anlegen: Zusammenfassung mit Sprung zurück, Projektdatei statt projekt.json, Ordner nach Leistungsphasen
     weiter(host);
+    const steckbrief = host.querySelector('.po-steckbrief')!.textContent!;
+    expect(steckbrief).toContain('2026-014 EFH Musterweg');
+    expect(steckbrief).toContain('Akquise');
+    expect(steckbrief).toContain('Bebauungsplan Nr. 112');
+    expect(steckbrief).toContain('Familie Beispiel');
+    expect(steckbrief).toContain('LPh 1, 2, 3');
+    expect(steckbrief).toContain('Vermessung (ÖbVI)');
     expect(zeilen(host)).toContain('03 Berechnungen/Flächen/2026-014 EFH Musterweg.oap');
     expect(zeilen(host)).not.toContain('projekt.json');
     expect(zeilen(host)).not.toContain('02 Pläne/Ausführung');
@@ -162,10 +190,10 @@ describe('Projektordner', () => {
     act(() => knopf(host, 'Formular leeren').click());
     expect(useOrdner.getState().stamm).toMatchObject({ nummer: '', beteiligte: [], bearbeiter: 'TP' });
     // ohne Stammdaten sind die späteren Schritte gesperrt
-    expect(knopf(host, '5Anlegen').disabled).toBe(true);
+    expect(knopf(host, '8Anlegen').disabled).toBe(true);
   });
 
-  it('Einstellungen: gemeinsame Einstellungen, Schemata und Ordnerliste, Standard wiederherstellen', async () => {
+  it('Einstellungen: gemeinsame Einstellungen aller Apps', () => {
     const host = render();
     act(() => knopf(host, 'Einstellungen').click());
     expect(host.textContent).toContain('Gemeinsame Einstellungen');
@@ -177,6 +205,148 @@ describe('Projektordner', () => {
     // Kürzel der Mitarbeiter: Vorschläge für „Bearbeitung“ (P-14)
     eingabe(feld(host, 'Mitarbeiter (Kürzel)'), 'TP, AK; TP');
     expect(useOrdner.getState().allgemein.mitarbeiter).toEqual(['TP', 'AK']);
+    // die Struktur steht im eigenen Reiter
+    expect(host.querySelector('[role="tree"]')).toBeNull();
+  });
+
+  it('Struktur: Klick-Editor – auswählen, umbenennen, anlegen, Leistungsphasen, ziehen, kopieren, Bausteine, rückgängig', async () => {
+    useOrdner.setState({ struktur: { ...STANDARD, ordner: [{ pfad: '05 Protokolle' }, { pfad: '07 Ausschreibung', lph: [6, 7] }, { pfad: '09 Fotos' }] } });
+    const host = render();
+    act(() => knopf(host, 'Struktur').click());
+    const baum = host.querySelector<HTMLElement>('[role="tree"]')!;
+    const z = (pfad: string) => host.querySelector<HTMLElement>(`[role="treeitem"][aria-label="${pfad}"]`)!;
+    const klick = (pfad: string, mod: MouseEventInit = {}) => act(() => z(pfad).dispatchEvent(new MouseEvent('click', { bubbles: true, ...mod })));
+    const taste = (key: string, mod: KeyboardEventInit = {}) => act(() => baum.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...mod })));
+    const pfade = () => useOrdner.getState().struktur.ordner.map((o) => o.pfad);
+    const neuerName = (name: string) => {
+      const el = host.querySelector<HTMLInputElement>('input[aria-label="Neuer Name"]')!;
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, name);
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      });
+    };
+    expect([...host.querySelectorAll('[role="treeitem"]')].map((e) => e.getAttribute('aria-label'))).toEqual(['05 Protokolle', '07 Ausschreibung', '09 Fotos']);
+
+    // auswählen: Leistungsphasen und Dateischema rechts
+    klick('09 Fotos');
+    expect(z('09 Fotos').getAttribute('aria-selected')).toBe('true');
+    act(() => host.querySelector<HTMLButtonElement>('.po-auswahl-panel button[aria-label="LPh 9"]')!.click());
+    expect(useOrdner.getState().struktur.ordner.find((o) => o.pfad === '09 Fotos')!.lph).toEqual([9]);
+    expect(z('09 Fotos').textContent).toContain('LPh 9');
+    // umbenennen per Doppelklick
+    act(() => z('09 Fotos').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
+    neuerName('10 Fotos');
+    expect(pfade()).toEqual(['05 Protokolle', '07 Ausschreibung', '10 Fotos']);
+    expect(z('10 Fotos').getAttribute('aria-selected')).toBe('true');
+    // Unterordner mit Strg+N: entsteht im gewählten Ordner, gleich zum Benennen
+    klick('07 Ausschreibung');
+    taste('n', { ctrlKey: true });
+    neuerName('Rohbau');
+    expect(pfade()).toContain('07 Ausschreibung/Rohbau');
+    // geerbte Leistungsphasen: Hinweis am Unterordner
+    expect(z('07 Ausschreibung/Rohbau').querySelector('.po-k-marke.geerbt')?.textContent).toBe('LPh 6-7');
+    expect(host.querySelector('.po-auswahl-panel')!.textContent).toContain('Entsteht nur, wenn auch „07 Ausschreibung“ (LPh 6-7) entsteht');
+
+    // mehrere Unterordner auf einmal (eingerückt)
+    act(() => knopf(host, 'Mehrere anlegen').click());
+    const liste = host.querySelector<HTMLTextAreaElement>('.modal textarea')!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(liste, 'Angebote\nVergabe\n\tVerträge');
+      liste.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(host.querySelector('.po-mehrere-vorschau')!.textContent).toContain('Vergabe\n  Verträge');
+    act(() => knopf(host.querySelector('.modal')!, 'Anlegen').click());
+    expect(pfade()).toEqual([
+      '05 Protokolle',
+      '07 Ausschreibung',
+      '07 Ausschreibung/Rohbau',
+      '07 Ausschreibung/Rohbau/Angebote',
+      '07 Ausschreibung/Rohbau/Vergabe',
+      '07 Ausschreibung/Rohbau/Vergabe/Verträge',
+      '10 Fotos',
+    ]);
+
+    // Unterordner von Rohbau als Baustein speichern …
+    klick('07 Ausschreibung/Rohbau');
+    act(() => knopf(host, 'Als Baustein').click());
+    await warten();
+    eingabe(host.querySelector<HTMLInputElement>('.modal.rf input')!, 'Gewerk');
+    act(() => knopf(host.querySelector('.modal.rf')!, 'Speichern').click());
+    await warten();
+    expect(useOrdner.getState().struktur.bausteine).toEqual([{ name: 'Gewerk', ordner: [{ pfad: 'Angebote' }, { pfad: 'Vergabe' }, { pfad: 'Vergabe/Verträge' }] }]);
+    // … zwei neue Gewerke anlegen und den Baustein in beide auf einmal einfügen
+    klick('07 Ausschreibung');
+    taste('n', { ctrlKey: true });
+    neuerName('Dach');
+    taste('n', { ctrlKey: true, shiftKey: true });
+    neuerName('Fenster');
+    expect(pfade()).toContain('07 Ausschreibung/Fenster');
+    klick('07 Ausschreibung/Dach', { ctrlKey: true });
+    expect(host.querySelector('.po-auswahl-panel h3')!.textContent).toBe('2 Ordner gewählt');
+    act(() => knopf(host.querySelector('.po-bausteine')!, 'In 2 einfügen').click());
+    expect(pfade().filter((p) => p.startsWith('07 Ausschreibung/Dach/') || p.startsWith('07 Ausschreibung/Fenster/'))).toEqual([
+      '07 Ausschreibung/Dach/Angebote',
+      '07 Ausschreibung/Dach/Vergabe',
+      '07 Ausschreibung/Dach/Vergabe/Verträge',
+      '07 Ausschreibung/Fenster/Angebote',
+      '07 Ausschreibung/Fenster/Vergabe',
+      '07 Ausschreibung/Fenster/Vergabe/Verträge',
+    ]);
+    expect(host.querySelector('.po-editor-meldung')!.textContent).toContain('in 2 Ordner eingefügt');
+    // Leistungsphasen für beide auf einmal
+    act(() => host.querySelector<HTMLButtonElement>('.po-auswahl-panel button[aria-label="LPh 6"]')!.click());
+    expect(useOrdner.getState().struktur.ordner.filter((o) => o.lph?.includes(6)).map((o) => o.pfad)).toEqual(['07 Ausschreibung', '07 Ausschreibung/Dach', '07 Ausschreibung/Fenster']);
+
+    // kopieren und in einen anderen Ordner einfügen
+    klick('05 Protokolle');
+    taste('n', { ctrlKey: true });
+    neuerName('Baubesprechungen');
+    klick('07 Ausschreibung/Dach');
+    taste('c', { ctrlKey: true });
+    klick('05 Protokolle');
+    taste('v', { ctrlKey: true });
+    expect(pfade()).toContain('05 Protokolle/Dach/Vergabe/Verträge');
+    // duplizieren
+    klick('10 Fotos');
+    taste('d', { ctrlKey: true });
+    neuerName('11 Videos');
+    expect(pfade().slice(-2)).toEqual(['10 Fotos', '11 Videos']);
+
+    // ziehen & ablegen: „11 Videos“ in „10 Fotos“
+    act(() => z('11 Videos').dispatchEvent(new Event('dragstart', { bubbles: true })));
+    act(() => z('10 Fotos').dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true })));
+    act(() => z('10 Fotos').dispatchEvent(new Event('drop', { bubbles: true, cancelable: true })));
+    expect(pfade().slice(-2)).toEqual(['10 Fotos', '10 Fotos/11 Videos']);
+    // nicht in sich selbst
+    act(() => z('10 Fotos').dispatchEvent(new Event('dragstart', { bubbles: true })));
+    act(() => z('10 Fotos/11 Videos').dispatchEvent(new Event('drop', { bubbles: true, cancelable: true })));
+    expect(host.querySelector('.po-editor-meldung')!.textContent).toContain('nicht in sich selbst');
+    // Alt+← rückt aus, Rückgängig nimmt es zurück, Wiederholen wieder vor
+    klick('10 Fotos/11 Videos');
+    taste('ArrowLeft', { altKey: true });
+    expect(pfade().slice(-2)).toEqual(['10 Fotos', '11 Videos']);
+    taste('z', { ctrlKey: true });
+    expect(pfade().slice(-2)).toEqual(['10 Fotos', '10 Fotos/11 Videos']);
+    taste('y', { ctrlKey: true });
+    expect(pfade().slice(-1)).toEqual(['11 Videos']);
+    // löschen (ohne Unterordner ohne Rückfrage), Kontextmenü
+    taste('Delete');
+    expect(pfade()).not.toContain('11 Videos');
+    act(() => z('05 Protokolle').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
+    expect([...host.querySelectorAll('.po-menue button')].map((b) => b.textContent)).toEqual(
+      expect.arrayContaining(['Unterordner anlegen', 'Baustein „Gewerk“ einfügen', 'Umbenennen', 'Duplizieren', 'Kopieren', 'Einfügen', 'Unterordner als Baustein speichern …', 'Löschen']),
+    );
+    // Vorschau für Leistungsphasen: Ordner, die bei LPh 1–4 nicht entstehen, sind blass
+    act(() => knopf(host, 'Unterordner anlegen').click());
+    neuerName('Intern');
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Vorschau LPh 4"]')!.click());
+    expect(z('07 Ausschreibung/Dach/Angebote').className).toContain('entfaellt');
+    expect(z('05 Protokolle/Intern').className).not.toContain('entfaellt');
+  });
+
+  it('Struktur: Schemata, Textansicht, Standard wiederherstellen und Sicherungen', async () => {
+    const host = render();
+    act(() => knopf(host, 'Struktur').click());
     eingabe(feld(host, 'Name des Projektordners'), '{nummer}_{kurzname}');
     expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname}');
     // Platzhalter einfügen (Menü), Vorschau und unbekannte Platzhalter schon beim Tippen (P-06)
@@ -194,22 +364,15 @@ describe('Projektordner', () => {
     expect(ordnerFeld.closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('{Bauherr}');
     expect(ordnerFeld.closest('label')!.querySelector('.po-vorschau')!.textContent).toBe('Beispiel: 2026-014 {Bauherr}');
     eingabe(ordnerFeld, '{nummer}_{kurzname}');
-    // Ordnerliste als Baum (P-04): LPh-Häkchen und Dateischema je Ordner
-    const lph = (pfad: string, n: number) => host.querySelector<HTMLInputElement>(`input[aria-label="LPh ${n} ${pfad}"]`)!;
-    act(() => lph('09 Fotos', 9).click());
-    expect(useOrdner.getState().struktur.ordner.find((o) => o.pfad === '09 Fotos')!.lph).toEqual([9]);
-    act(() => host.querySelector<HTMLInputElement>('input[aria-label="Dateischema prüfen 05 Protokolle"]')!.click());
+    // Ordner im Baum ändern: LPh und Dateischema
+    act(() => host.querySelector<HTMLElement>('[role="treeitem"][aria-label="09 Fotos"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => host.querySelector<HTMLButtonElement>('.po-auswahl-panel button[aria-label="LPh 9"]')!.click());
+    act(() => host.querySelector<HTMLElement>('[role="treeitem"][aria-label="05 Protokolle"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => host.querySelector<HTMLInputElement>('.po-auswahl-panel input[type="checkbox"]')!.click());
     expect(useOrdner.getState().struktur.ordner.find((o) => o.pfad === '05 Protokolle')!.dateischema).toBe(true);
-    // umbenennen, einrücken, neuer Ordner
-    eingabe(host.querySelector<HTMLInputElement>('input[aria-label="Name von 09 Fotos"]')!, '10 Fotos');
+    act(() => host.querySelector<HTMLElement>('[role="treeitem"][aria-label="09 Fotos"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    eingabe(host.querySelector<HTMLInputElement>('input[aria-label="Name des Ordners"]')!, '10 Fotos');
     expect(useOrdner.getState().struktur.ordner.some((o) => o.pfad === '10 Fotos' && o.lph?.[0] === 9)).toBe(true);
-    act(() => knopf(host, '+ Ordner').click());
-    expect(useOrdner.getState().struktur.ordner.at(-1)).toEqual({ pfad: 'Neuer Ordner' });
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Neuer Ordner einrücken"]')!.click());
-    expect(useOrdner.getState().struktur.ordner.at(-1)).toEqual({ pfad: '10 Fotos/Neuer Ordner' });
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="10 Fotos/Neuer Ordner löschen"]')!.click());
-    await warten();
-    expect(useOrdner.getState().struktur.ordner.some((o) => o.pfad.includes('Neuer Ordner'))).toBe(false);
     // dieselbe Liste in der Textansicht
     act(() => knopf(host, 'Text (Experte)').click());
     const text = host.querySelector('textarea') as HTMLTextAreaElement;
@@ -268,7 +431,6 @@ describe('Projektordner', () => {
     await warten();
     // gespeichert im Konfigurationsordner (im Browser: lokaler Speicher), entprellt
     await act(() => useOrdner.getState().speichernJetzt());
-    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!)).toMatchObject({ oapPfad: 'Planung/Berechnungen/{nummer}', fotoordner: '10 Fotos' });
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner')!).struktur.ordnername).toBe(STANDARD.ordnername);
   });
 
@@ -277,7 +439,7 @@ describe('Projektordner', () => {
     await act(() => useOrdner.getState().konfigLaden());
     const fremd = (name: string) => localStorage.setItem('arch-tools:konfig:projektordner', JSON.stringify({ struktur: { ...STANDARD, name }, vorlagenordner: '' }));
     const host = render();
-    act(() => knopf(host, 'Einstellungen').click());
+    act(() => knopf(host, 'Struktur').click());
     await warten();
     // das Schema der Ordnernamen steht für alle Apps in den gemeinsamen Einstellungen (P-09)
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!).ordnerSchema).toBe(STANDARD.ordnername);
@@ -369,8 +531,7 @@ describe('Projektordner', () => {
     act(() => knopf(host, 'Neues Projekt').click());
     eingabe(feld(host, 'Projektnummer'), '2026-014');
     eingabe(feld(host, 'Kurzname'), 'Haus');
-    weiter(host);
-    weiter(host);
+    act(() => knopf(host, '7Vorlagen').click());
     const wahl = (name: string) => [...host.querySelectorAll('.po-presetwahl label')].find((l) => l.textContent?.startsWith(name))!.querySelector('input') as HTMLInputElement;
     expect(wahl('Alle Vorlagen').checked).toBe(false);
     expect(host.querySelector('.po-nicht-automatisch')?.textContent).toContain('„Alle Vorlagen“ ist nicht vorausgewählt');
@@ -415,13 +576,15 @@ describe('Projektordner', () => {
     eingabe(feld(host, 'Bezeichnung des Vorhabens'), 'Neubau Kita am Park');
     expect(useOrdner.getState().stamm.nummer).toBe('');
 
-    weiter(host);
+    act(() => knopf(host, '5Umfang').click());
     const lph = [...host.querySelectorAll('.sd-lph input')] as HTMLInputElement[];
     expect(lph.map((x) => x.checked)).toEqual([true, true, true, false, false, false, false, false, false]);
     act(() => lph[3].click());
     weiter(host);
     weiter(host);
-    expect(knopf(host, '5Ergänzen')).toBeTruthy();
+    weiter(host);
+    expect(knopf(host, '8Ergänzen')).toBeTruthy();
+    expect(host.querySelector('.po-steckbrief')?.textContent).toContain('Neubau Kita am Park');
     // nur zeigen, was sich ändert: Vorlage, Genehmigungsordner, Projektdatei wird ergänzt
     expect(zeilen(host)).toContain('00 Projekt/2025-007 Notiz.txt');
     expect(zeilen(host)).toContain('06 Genehmigung');
@@ -442,9 +605,7 @@ describe('Projektordner', () => {
     expect(host.textContent).toContain('In diesem Ordner liegt noch keine Projektdatei (.oap)');
     expect(feld(host, 'Projektnummer').value).toBe('2019-003');
     expect(feld(host, 'Kurzname').value).toBe('Altbau');
-    weiter(host);
-    weiter(host);
-    weiter(host);
+    act(() => knopf(host, '8Ergänzen').click());
     expect(zeilen(host)).toContain('03 Berechnungen/Flächen/2019-003 Altbau.oap');
     const oap = [...host.querySelectorAll('.po-plan tr')].find((z) => z.querySelector('td')!.getAttribute('title') === '03 Berechnungen/Flächen/2019-003 Altbau.oap')!;
     expect(oap.querySelector('.po-status')?.textContent).toBe('neu');
@@ -491,7 +652,7 @@ describe('Projektordner', () => {
     useOrdner.setState({ stamm: { ...leereStammdaten(), nummer: '2026-020', kurzname: 'Haus am See', bearbeiter: 'TP' } });
     const host = render();
     act(() => knopf(host, 'Weiter mit 2026-020').click());
-    act(() => knopf(host, '5Anlegen').click());
+    act(() => knopf(host, '8Anlegen').click());
     await act(async () => knopf(host, 'Als ZIP herunterladen').click());
     await warten();
     // Entwurf geleert (Bearbeitung bleibt), Abschlussseite nennt den Ordner, kein ZIP-Knopf mehr als Hauptaktion
@@ -537,6 +698,35 @@ describe('Projektordner', () => {
     act(() => knopf(host, 'Ordner prüfen').click());
     expect(host.textContent).toContain('es verschiebt, benennt und löscht nichts');
     expect(knopf(host, 'Projektordner wählen')).toBeTruthy();
+  });
+});
+
+describe('Auftrag aus einer anderen App (Rahmen-App)', () => {
+  const echterParent = window.parent;
+  afterEach(() => {
+    Object.defineProperty(window, 'parent', { value: echterParent, configurable: true });
+    (window as unknown as { happyDOM: { setURL: (u: string) => void } }).happyDOM.setURL('http://localhost:3000/');
+  });
+
+  it('„Neues Projekt anlegen“ im Flächenrechner: Assistent beginnt mit den Stammdaten, „Zurück zu Flächenrechner“', async () => {
+    const gesendet: unknown[] = [];
+    const rahmen = { postMessage: (d: unknown) => gesendet.push(d) } as unknown as Window;
+    Object.defineProperty(window, 'parent', { value: rahmen, configurable: true });
+    // frühere Tests (Herunterladen) lassen die Seite auf about:blank zurück
+    (window as unknown as { happyDOM: { setURL: (u: string) => void } }).happyDOM.setURL('http://localhost:3000/?rahmen=tab&app=ordner');
+    const host = render();
+    expect(gesendet).toContainEqual({ typ: 'arch-tools:bereit', app: 'ordner' });
+    act(() => knopf(host, 'Struktur').click());
+    act(() =>
+      window.dispatchEvent(
+        new MessageEvent('message', { data: { typ: 'arch-tools:assistent-neu', von: 'flaechenrechner', vonName: 'Flächenrechner', kannOeffnen: true, an: 'ordner' }, origin: window.location.origin, source: rahmen }),
+      ),
+    );
+    expect(knopf(host, 'Assistent').className).toContain('active');
+    expect(host.querySelector('h2')?.textContent).toBe('Stammdaten');
+    expect(host.querySelector('.po-kontext')?.textContent).toContain('aus Flächenrechner');
+    act(() => knopf(host, 'Zurück zu Flächenrechner').click());
+    expect(gesendet).toContainEqual({ typ: 'arch-tools:zur-app', an: 'flaechenrechner', app: 'ordner' });
   });
 });
 

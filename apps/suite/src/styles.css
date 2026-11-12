@@ -161,3 +161,31 @@
   white-space: normal;
   min-width: 0;
 }
+
+/* Neues Projekt anlegen (Assistent der Projekt-App) */
+.rahmen-menue hr {
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid var(--line-soft);
+}
+.rahmen-menue button.rahmen-menue-anlegen {
+  font-weight: 600;
+}
+.rahmen-plus-symbol {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  line-height: 1;
+}
+.rahmen-anlegen {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 4px 0 18px;
+}

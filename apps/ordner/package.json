@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.13.0",
   "type": "module",
-  "description": "Projekte mit einem Assistenten anlegen und ergänzen: Projektdatei (.oap) mit Stammdaten, Ordner nach Schema, Vorlagen-Presets; Ordner prüfen",
+  "description": "App „Projekt“: Projekte mit einem Assistenten anlegen und fortschreiben – Projektdatei (.oap) mit allen Stammdaten, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Katasterpläne",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p . && vite build",

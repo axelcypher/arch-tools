@@ -111,6 +111,8 @@ export function ProjektStart({
         ]}
         angeheftet={angeheftet}
         kontextMenue={kontextMenue}
+        // die Projekt-App hat ihren eigenen Knopf (der Assistent ist hier)
+        projektAnlegen={false}
         kopf={
           <>
             <button className="primary" onClick={onNeu} title="Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen">
