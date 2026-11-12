@@ -900,6 +900,17 @@ describe('Änderung auf den frisch gelesenen Abschnitt anwenden', () => {
     const frisch = { antraege: { BAUA: { angelegt: '2026-11-01', merkmale: { gk: '3', sonderbau: 'nein' } } } };
     expect(aenderungAnwenden(frisch, vorher, nachher).antraege.BAUA.merkmale).toEqual({ gk: '4', sonderbau: 'nein' });
   });
+  it('Zuordnungen auch beim ersten bzw. letzten Eintrag je Schlüssel – nichts von anderen geht verloren oder kommt zurück', () => {
+    const basis = (merkmale?: Record<string, string>) => ({ ansicht: 'BAUA', ...(merkmale ? { merkmale } : {}), antraege: { BAUA: { angelegt: '2026-11-01', ...(merkmale ? { merkmale } : {}) } } });
+    // erstes Merkmal, anderswo kam schon eines dazu
+    expect(aenderungAnwenden({ antraege: { BAUA: { angelegt: '2026-11-01', merkmale: { sonderbau: 'nein' } } } }, basis(), basis({ gk: '3' })).antraege.BAUA.merkmale).toEqual({ sonderbau: 'nein', gk: '3' });
+    // letztes Merkmal entfernt, anderswo kam eines dazu
+    expect(aenderungAnwenden({ antraege: { BAUA: { angelegt: '2026-11-01', merkmale: { gk: '3', sonderbau: 'nein' } } } }, basis({ gk: '3' }), basis()).antraege.BAUA.merkmale).toEqual({ sonderbau: 'nein' });
+    // anderswo ganz entfernt: kommt nicht zurück, nur das eigene
+    expect(aenderungAnwenden({ antraege: { BAUA: { angelegt: '2026-11-01' } } }, basis({ gk: '3', sonderbau: 'nein' }), basis({ gk: '4', sonderbau: 'nein' })).antraege.BAUA.merkmale).toEqual({ gk: '4' });
+    // eine leer gewordene Zuordnung entfällt
+    expect(aenderungAnwenden({ antraege: { BAUA: { angelegt: '2026-11-01', merkmale: { gk: '3' } } } }, basis({ gk: '3' }), basis()).antraege.BAUA).toEqual({ angelegt: '2026-11-01' });
+  });
   it('stabil: Reihenfolge der Schlüssel egal, undefined wie fehlend', () => {
     expect(stabil({ a: 1, b: { c: 2, d: 3 } })).toBe(stabil({ b: { d: 3, c: 2 }, a: 1 }));
     expect(stabil({ a: 1, b: undefined })).toBe(stabil({ a: 1 }));

@@ -921,13 +921,11 @@ export function stabil(x: unknown): string {
   );
 }
 
-/**
- * Eine Änderung auf den frisch gelesenen Abschnitt anwenden: Nur was sich zwischen `vorher` und `nachher` (die
- * Angaben des Aufrufers vor bzw. nach seiner Änderung) unterscheidet, kommt hinein – je Antrag und Feld. Was andere
- * inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein gleichzeitiges Laden), bleibt. Einen Antrag, den es im
- * frischen Abschnitt nicht gibt, übernimmt die Änderung ganz.
- */
 const istMap = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+/** Felder eines Antrags, die je Eintrag zusammengeführt werden */
+const JE_EINTRAG = new Set(['merkmale', 'felder']);
+/** Text mitten im Satz: erster Buchstabe klein */
+export const klein = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
 /** eine Zuordnung je Schlüssel ändern: nur was sich zwischen `alt` und `neu` unterscheidet, auf `frisch` */
 function mapAnwenden(frisch: Record<string, unknown>, alt: Record<string, unknown>, neu: Record<string, unknown>): Record<string, unknown> {
   const z = { ...frisch };
@@ -945,6 +943,13 @@ export function alsAngaben(a: Abschnitt): ProjektDatei {
   return { ...(a.aktiveFassung ? { aktiveFassung: a.aktiveFassung } : {}), antraege: a.antraege, ...(Object.keys(bereit).length ? { bereit } : {}) };
 }
 
+/**
+ * Eine Änderung auf den frisch gelesenen Abschnitt anwenden: Nur was sich zwischen `vorher` und `nachher` (die
+ * Angaben des Aufrufers vor bzw. nach seiner Änderung) unterscheidet, kommt hinein – je Antrag und Feld, bei den
+ * Zuordnungen `merkmale` und `felder` je Eintrag. Was andere inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein
+ * gleichzeitiges Laden), bleibt. Einen Antrag, den es im frischen Abschnitt nicht gibt, übernimmt die Änderung ganz;
+ * einen, den der Aufrufer nicht kannte, den es inzwischen aber gibt, lässt sie unverändert.
+ */
 export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null, nachher: ProjektDatei): Abschnitt {
   const alt = vorher ? antraegeVon(vorher) : {};
   const neu = antraegeVon(nachher);
@@ -968,9 +973,13 @@ export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null
     const z: Record<string, unknown> = { ...f };
     for (const k of new Set([...Object.keys(a), ...Object.keys(n)])) {
       if (stabil(a[k]) === stabil(n[k])) continue;
-      if (n[k] === undefined) delete z[k];
-      // Zuordnungen (Antragsmerkmale, Autofill je Formular) je Schlüssel – gleichzeitige Einträge anderer bleiben
-      else if (istMap(a[k]) && istMap(n[k]) && istMap(f[k])) z[k] = mapAnwenden(f[k], a[k], n[k]);
+      if (JE_EINTRAG.has(k)) {
+        // Zuordnungen (Antragsmerkmale, Autofill je Formular) je Eintrag – auch das erste bzw. letzte; gleichzeitige
+        // Einträge anderer bleiben, eine leere Zuordnung entfällt
+        const m = mapAnwenden(istMap(f[k]) ? f[k] : {}, istMap(a[k]) ? a[k] : {}, istMap(n[k]) ? n[k] : {});
+        if (Object.keys(m).length) z[k] = m;
+        else delete z[k];
+      } else if (n[k] === undefined) delete z[k];
       else z[k] = n[k];
     }
     antraege[name] = z as AntragDaten;

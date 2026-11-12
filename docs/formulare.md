@@ -723,9 +723,15 @@ beschrieben.
   werden vorhandene Angaben zum Antrag geladen statt überschrieben; zeigt das Projekt danach eine andere Antragsfassung
   (aus dem Projektordner) als die, für die die Änderung gedacht war, wird sie nicht dorthin geschrieben, sondern
   gemeldet. Nach dem Anlegen einer Projektdatei über den Stammdaten-Dialog kommt die Änderung samt der Fassung, für die
-  sie gedacht war (als aktive), in die neue Datei. Formular hinzufügen bzw. anlegen nehmen in den Antragsumfang nur
-  auf bzw. ordnen nur zu, wenn noch dieselbe Fassung angezeigt wird; Verknüpfen mit Kopie meldet erst nach dem
-  Speichern, ob verknüpft wurde (sonst: „kopiert, aber nicht verknüpft … – nicht noch einmal ziehen“).
+  sie gedacht war (als aktive), in die neue Datei („Projektdatei angelegt – Antragsfassung „…“ ist das Ziel des
+  Exports.“). Änderungen am Antragsumfang aus Menüs, beim Verknüpfen und beim Anlegen bzw. Hinzufügen eines Formulars
+  lesen den Umfang erst beim Speichern (`umfangAendern`) – nur, wenn noch dieselbe Fassung angezeigt wird und es den
+  Eintrag noch gibt. Sonst sagt die Meldung den Grund („inzwischen ist „BAUA“ angezeigt. Bitte später in „BAUA 2“ in
+  den Antragsdaten über „Zuordnen“ nachholen“ bzw. „der Eintrag … ist inzwischen nicht mehr im Antragsumfang“). Findet
+  die Zeile ein eben angelegtes Formular ohnehin über den Namen, heißt es „… findet es über den Namen“. Verknüpfen mit
+  Kopie meldet erst nach dem Speichern, ob verknüpft wurde (sonst: „kopiert, aber nicht verknüpft … Bitte später die
+  Kopie in „BAUA 2“ über „Mit Antragsdokument verknüpfen“ verknüpfen, nicht noch einmal kopieren.“). Eine eigene
+  Meldung „… nicht gespeichert“ verschwindet, sobald der nächste Versuch gespeichert hat.
 - **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
   Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann
   in der Projektdatei.

@@ -108,20 +108,33 @@ export function zuordnenPunkte(umfangId: string): MenuePunkt[] {
 /** Die Formulare des Projekts zum Zuordnen (ein schon anders zugeordnetes mit Hinweis) */
 export function formularePunkte(umfangId: string): MenuePunkt[] {
   const st = useAntrag.getState();
-  const umfang = st.projektdatei?.umfang ?? [];
+  const ansicht = st.projektdatei?.ansicht;
   const zugeordnet = new Map(st.dokumente.filter((d) => d.formular && d.eintrag.id !== umfangId).map((d) => [d.formular!.pfad, d.eintrag.titel]));
   return useFormulare.getState().formulare.map((f) => ({
     text: f.name,
     symbol: 'formular' as const,
     hinweis: zugeordnet.has(f.pfad) ? `schon „${zugeordnet.get(f.pfad)}“` : undefined,
-    aktion: () => void st.umfangSetzen(umfang.map((x) => (x.id === umfangId ? { ...x, formularDatei: formularDatei(f.pfad) } : x))),
+    // Antragsumfang erst beim Klick lesen (das Menü kann länger offen sein) – nur in derselben Fassung
+    aktion: () => void st.umfangAendern((umfang) => umfang.map((x) => (x.id === umfangId ? { ...x, formularDatei: formularDatei(f.pfad) } : x)), { ansicht, eintrag: umfangId }),
   }));
 }
 
 /** Einen Eintrag aus dem Antragsumfang nehmen (z. B. einen doppelten) */
 export function ausUmfangEntfernen(umfangId: string) {
   const st = useAntrag.getState();
-  return st.umfangSetzen((st.projektdatei?.umfang ?? []).filter((x) => x.id !== umfangId));
+  return st.umfangAendern((umfang) => umfang.filter((x) => x.id !== umfangId), { ansicht: st.projektdatei?.ansicht, eintrag: umfangId });
+}
+
+/** Einen Eintrag im Antragsumfang um eine Stelle verschieben – nach dem Stand beim Klick (nicht beim Öffnen des Menüs) */
+export function eintragVerschieben(umfangId: string, um: -1 | 1) {
+  const st = useAntrag.getState();
+  return st.umfangAendern(
+    (umfang) => {
+      const i = umfang.findIndex((x) => x.id === umfangId);
+      return i < 0 || i + um < 0 || i + um >= umfang.length ? umfang : verschieben(umfang, i, i + um);
+    },
+    { ansicht: st.projektdatei?.ansicht, eintrag: umfangId },
+  );
 }
 
 /** Antragsdaten (mit dem Antragsumfang) zeigen */
@@ -636,10 +649,10 @@ export function AntragsdatenAnsicht() {
                     !gesperrt &&
                     zeigeMenue(e, [
                       { text: 'Bearbeiten', symbol: 'stift', aktion: () => setBearbeiten(u.id) },
-                      { text: 'Nach oben', deaktiviert: i === 0, aktion: () => void umfangSetzen(verschieben(umfang, i, i - 1)) },
-                      { text: 'Nach unten', deaktiviert: i === umfang.length - 1, aktion: () => void umfangSetzen(verschieben(umfang, i, i + 1)) },
+                      { text: 'Nach oben', deaktiviert: i === 0, aktion: () => void eintragVerschieben(u.id, -1) },
+                      { text: 'Nach unten', deaktiviert: i === umfang.length - 1, aktion: () => void eintragVerschieben(u.id, 1) },
                       { trenner: true },
-                      { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void umfangSetzen(umfang.filter((x) => x.id !== u.id)) },
+                      { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(u.id) },
                     ])
                   }
                 >

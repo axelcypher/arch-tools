@@ -33,6 +33,7 @@ import {
   abschnittVon,
   antragKurzVon,
   aenderungAnwenden,
+  klein,
   stabil,
   alsAngaben,
   ansichtVon,
@@ -196,8 +197,14 @@ interface AntragState {
   fassungWaehlen: (name: string, anlegen?: boolean) => Promise<void>;
   /** Antragsumfang setzen – das Ergebnis sagt, ob gespeichert wurde (bzw. ein Dialog es nachholt) */
   umfangSetzen: (umfang: UmfangEintrag[] | null) => Promise<SchreibInfo>;
+  /**
+   * Antragsumfang ändern – gelesen wird er erst jetzt (Menüs, Verknüpfen, Formular anlegen halten keinen alten fest).
+   * Mit `ansicht` nur, wenn noch diese Fassung angezeigt wird, mit `eintrag` nur, wenn es den Eintrag noch gibt; sonst
+   * nennt das Ergebnis den Grund (gemeldet wird er, außer mit `still`)
+   */
+  umfangAendern: (aendern: (umfang: UmfangEintrag[]) => UmfangEintrag[] | null, o?: { ansicht?: string; eintrag?: string; still?: boolean }) => Promise<SchreibInfo>;
   /** Datei im Ordner der aktiven Fassung mit einem Dokument verknüpfen; null = Verknüpfung lösen */
-  verknuepfen: (umfangId: string, dateiname: string | null) => Promise<SchreibInfo>;
+  verknuepfen: (umfangId: string, dateiname: string | null, o?: { ansicht?: string; still?: boolean }) => Promise<SchreibInfo>;
   exportieren: (formularPfad: string, ziel: ExportZiel, ersetzen: boolean) => Promise<string | null>;
   speichernUnter: (formularPfad: string) => Promise<boolean>;
   formularAnlegen: (umfangId: string) => Promise<string | null>;
@@ -434,6 +441,8 @@ export interface SchreibInfo {
   dialog?: boolean;
   /** warum nicht gespeichert wurde (ohne Punkt) */
   grund?: string;
+  /** schon vor dem Schreiben nicht möglich: andere Fassung angezeigt, Eintrag bzw. Antragsumfang entfernt */
+  vorab?: 'fassung' | 'eintrag' | 'umfang';
 }
 
 /** Gespeicherter Abschnitt der geladenen Projektdatei; null, wenn es keine Projektdatei gibt oder nichts darin steht */
@@ -567,7 +576,10 @@ export const useAntrag = create<AntragState>((set, get) => {
         ziel = { ...neu, aktiveFassung: gewollt };
         zielBasis = basis ? { ...basis, aktiveFassung: undefined } : null;
       }
-      if (await projektdateiSchreiben(ziel, projekt, { basis: zielBasis })) await get().laden();
+      if (!(await projektdateiSchreiben(ziel, projekt, { basis: zielBasis }))) return;
+      await get().laden();
+      if (art === 'oap' && gewollt && ziel.aktiveFassung === gewollt && stabil(gewollt) !== stabil(basis?.aktiveFassung))
+        meldung('info', `Projektdatei angelegt – Antragsfassung „${gewollt}“ ist das Ziel des Exports.`);
     };
     if (!ablageVon(f, projekt)) {
       info.dialog = true;
@@ -608,6 +620,9 @@ export const useAntrag = create<AntragState>((set, get) => {
     // nur die eigene Änderung in den frisch gelesenen Abschnitt – Gleichzeitiges von anderswo bleibt
     await useFormulare.getState().oapAendern((roh) => mitAenderung(roh, basis, neu));
     info.geschrieben = true;
+    // gespeichert: eine eigene „nicht gespeichert“-Meldung von vorhin gilt nicht mehr
+    const m = useFormulare.getState().meldung;
+    if (m?.art === 'fehler' && m.text.startsWith(`Angaben zum Antrag von ${projekt.ordner} nicht gespeichert`)) useFormulare.setState({ meldung: null });
     // gespeichert – ist inzwischen ein anderes Projekt bzw. eine andere .oap gewählt, bleiben deren Angaben im Store
     if (useFormulare.getState().projekt !== projekt || oapSchluessel() !== ziel) return false;
     // im Store der gespeicherte Stand (mit dem, was andere inzwischen eingetragen haben), in der Ansicht des Aufrufers
@@ -616,8 +631,6 @@ export const useAntrag = create<AntragState>((set, get) => {
     quelleMerken(projekt);
     return true;
   };
-  /** Grund mitten im Satz: erster Buchstabe klein */
-  const klein = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
   /** Eine Änderung wurde nicht gespeichert – sagen statt still verwerfen (`grund` ohne Punkt, `rat` optional) */
   const nichtGespeichert = (projekt: Projekt, info: SchreibInfo, grund: string, rat?: string) => {
     info.grund = grund;
@@ -1213,7 +1226,7 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     umfangSetzen: async (umfang) => {
       const info: SchreibInfo = {};
-      if (gesperrt()) return { grund: 'Der Antrag ist eingereicht und gesperrt' };
+      if (gesperrt()) return { grund: (antragSperre(get(), useFormulare.getState().projekt) ?? 'Der Antrag ist gesperrt').replace(/\.$/, '') };
       try {
         const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
         if (umfang) neu.umfang = umfang;
@@ -1227,20 +1240,38 @@ export const useAntrag = create<AntragState>((set, get) => {
       return info;
     },
 
-    verknuepfen: async (umfangId, name) => {
+    verknuepfen: async (umfangId, name, o = {}) => {
       const projekt = useFormulare.getState().projekt;
-      const umfang = get().projektdatei?.umfang;
-      if (!umfang || !projekt) return { grund: 'Kein Antragsumfang' };
-      const fassung = aktiveFassung(get(), projekt);
-      return get().umfangSetzen(
-        umfang.map((u) => {
-          if (u.id !== umfangId) return u;
-          const dateien = { ...u.dateien };
-          if (name) dateien[fassung] = name;
-          else delete dateien[fassung];
-          return { ...u, dateien };
-        }),
+      if (!projekt) return { grund: 'Kein Projekt offen' };
+      return get().umfangAendern(
+        (umfang) => {
+          const fassung = aktiveFassung(get(), projekt);
+          return umfang.map((u) => {
+            if (u.id !== umfangId) return u;
+            const dateien = { ...u.dateien };
+            if (name) dateien[fassung] = name;
+            else delete dateien[fassung];
+            return { ...u, dateien };
+          });
+        },
+        { ...o, eintrag: umfangId },
       );
+    },
+
+    umfangAendern: async (aendern, o = {}) => {
+      const pd = get().projektdatei;
+      const grund = !pd?.umfang
+        ? 'inzwischen gibt es keinen Antragsumfang mehr'
+        : o.ansicht !== undefined && pd.ansicht !== o.ansicht
+          ? `inzwischen ist „${pd.ansicht}“ angezeigt`
+          : o.eintrag && !pd.umfang.some((x) => x.id === o.eintrag)
+            ? 'der Eintrag ist inzwischen nicht mehr im Antragsumfang'
+            : null;
+      if (grund || !pd?.umfang) {
+        if (!o.still) meldung('info', `Antragsumfang nicht geändert – ${grund}.`);
+        return { grund: grund ?? undefined, vorab: !pd?.umfang ? 'umfang' : o.ansicht !== undefined && pd.ansicht !== o.ansicht ? 'fassung' : 'eintrag' };
+      }
+      return get().umfangSetzen(aendern(pd.umfang));
     },
 
     exportieren: async (formularPfad, ziel, ersetzen) => {
@@ -1336,14 +1367,11 @@ export const useAntrag = create<AntragState>((set, get) => {
         log.info(`Formular angelegt: ${pfad} (Vorlage: ${v.herkunft}, ${v.pfad})`);
         if (angelegtImAnderen(name, projekt, aufnehmen ? ', aber nicht in den Antragsumfang aufgenommen und nicht geöffnet' : ', aber nicht geöffnet')) return null;
         if (neu.zustand) await get().zustaendeSetzen({ [name]: neu.zustand });
-        const info: SchreibInfo = {};
         // den Antragsumfang erst jetzt lesen (er kann sich inzwischen geändert haben) – und nur in dieselbe Fassung
-        const jetzt = get().projektdatei;
-        if (aufnehmen && !anderesProjekt(projekt)) {
-          if (jetzt?.umfang && jetzt.ansicht === fassung)
-            await projektdateiSchreiben({ ...jetzt, umfang: [...jetzt.umfang, { id: `u${Date.now().toString(36)}`, titel: v.name, art: 'intern', formular: v.name, formularDatei: name }] }, projekt, { info });
-          else info.grund = 'inzwischen ist eine andere Antragsfassung angezeigt';
-        }
+        const info: SchreibInfo =
+          aufnehmen && !anderesProjekt(projekt)
+            ? await get().umfangAendern((umfang) => [...umfang, { id: `u${Date.now().toString(36)}`, titel: v.name, art: 'intern', formular: v.name, formularDatei: name }], { ansicht: fassung, still: true })
+            : {};
         const formulare = await formulareDesProjekts(ds, projekt);
         const was = !aufnehmen ? ', aber nicht geöffnet' : info.geschrieben ? ' und in den Antragsumfang aufgenommen, aber nicht geöffnet' : ', aber nicht in den Antragsumfang aufgenommen und nicht geöffnet';
         if (angelegtImAnderen(name, projekt, was)) return null;
@@ -1351,8 +1379,14 @@ export const useAntrag = create<AntragState>((set, get) => {
         const eintrag = useFormulare.getState().formulare.find((f) => f.pfad === pfad);
         if (eintrag) await useFormulare.getState().formularOeffnen(eintrag);
         // im selben Projekt nicht gespeichert (Projektdatei nicht lesbar): angelegt ist es – das Aufnehmen nachholen
-        const nachholen = aufnehmen && !info.geschrieben && !info.dialog ? `, aber nicht in den Antragsumfang aufgenommen – ${klein(info.grund ?? 'nicht gespeichert')}. Bitte später über „Dokument hinzufügen“ nachholen` : '';
-        meldung(nachholen ? 'fehler' : 'info', `„${name}“ aus ${v.herkunft} angelegt${befuellt(neu.zustand)}${nachholen}.`);
+        // im selben Projekt nicht aufgenommen: der Grund – und wo es nachzuholen ist, wenn das noch geht
+        const nicht = aufnehmen && !info.geschrieben && !info.dialog;
+        const nachholen = !nicht
+          ? ''
+          : info.vorab === 'umfang'
+            ? ` – ${klein(info.grund!)}`
+            : `, aber nicht in den Antragsumfang aufgenommen – ${klein(info.grund ?? 'nicht gespeichert')}. Bitte später ${info.vorab === 'fassung' ? `in „${fassung}“ ` : ''}in den Antragsdaten über „Dokument hinzufügen“ nachholen`;
+        meldung(nicht && info.vorab !== 'umfang' ? 'fehler' : 'info', `„${name}“ aus ${v.herkunft} angelegt${befuellt(neu.zustand)}${nachholen}.`);
         return pfad;
       } catch (e) {
         fehler(`Formular „${v.name}“ hinzufügen`, e);
@@ -1415,22 +1449,29 @@ export const useAntrag = create<AntragState>((set, get) => {
         log.info(`Formular angelegt: ${pfad} (Vorlage: ${vorlage.herkunft})`);
         if (angelegtImAnderen(name, projekt, ', aber nicht zugeordnet und nicht geöffnet')) return null;
         if (neu.zustand) await get().zustaendeSetzen({ [name]: neu.zustand });
-        const info: SchreibInfo = {};
         // den Antragsumfang erst jetzt lesen – zugeordnet wird nur in derselben Fassung, die den Eintrag noch hat
-        const jetzt = get().projektdatei;
-        if (!anderesProjekt(projekt)) {
-          if (jetzt?.ansicht === fassung && jetzt?.umfang?.some((x) => x.id === u.id))
-            await projektdateiSchreiben({ ...jetzt, umfang: jetzt.umfang.map((x) => (x.id === u.id ? { ...x, formularDatei: name } : x)) }, projekt, { info });
-          else info.grund = 'inzwischen ist eine andere Antragsfassung angezeigt';
-        }
+        const info: SchreibInfo = !anderesProjekt(projekt)
+          ? await get().umfangAendern((umfang) => umfang.map((x) => (x.id === u.id ? { ...x, formularDatei: name } : x)), { ansicht: fassung, eintrag: u.id, still: true })
+          : {};
         const formulare = await formulareDesProjekts(ds, projekt);
         if (angelegtImAnderen(name, projekt, info.geschrieben ? ` und „${u.titel}“ zugeordnet, aber nicht geöffnet` : ', aber nicht zugeordnet und nicht geöffnet')) return null;
         useFormulare.setState({ formulare });
         const eintrag = useFormulare.getState().formulare.find((f) => f.pfad === pfad);
         if (eintrag) await useFormulare.getState().formularOeffnen(eintrag);
         // im selben Projekt nicht gespeichert (Projektdatei nicht lesbar): angelegt ist es – das Zuordnen nachholen
-        const nachholen = !info.geschrieben && !info.dialog ? `, aber nicht zugeordnet – ${klein(info.grund ?? 'nicht gespeichert')}. Bitte später über „Zuordnen“ nachholen` : '';
-        meldung(nachholen ? 'fehler' : 'info', `„${name}“ aus ${vorlage.herkunft} angelegt${befuellt(neu.zustand)}${nachholen || (info.geschrieben ? ` und „${u.titel}“ zugeordnet` : '')}.`);
+        if (info.geschrieben) {
+          meldung('info', `„${name}“ aus ${vorlage.herkunft} angelegt${neu.zustand ? `, „${u.titel}“ zugeordnet${befuellt(neu.zustand)}` : ` (leer) und „${u.titel}“ zugeordnet`}.`);
+        } else if (info.dialog) {
+          meldung('info', `„${name}“ aus ${vorlage.herkunft} angelegt${befuellt(neu.zustand)}.`);
+        } else if (info.vorab === 'eintrag' || info.vorab === 'umfang') {
+          // den Eintrag gibt es nicht mehr – zuzuordnen ist nichts
+          meldung('info', `„${name}“ aus ${vorlage.herkunft} angelegt${befuellt(neu.zustand)} – ${info.vorab === 'eintrag' ? `der Eintrag „${u.titel}“ ist inzwischen nicht mehr im Antragsumfang` : klein(info.grund!)}.`);
+        } else if (info.vorab !== 'fassung' && formularVon(u, useFormulare.getState().formulare)?.pfad === pfad) {
+          // die Zeile findet es ohnehin über den Namen – „Zuordnen“ gibt es dort dann nicht
+          meldung('info', `„${name}“ aus ${vorlage.herkunft} angelegt${befuellt(neu.zustand)} – „${u.titel}“ findet es über den Namen.`);
+        } else {
+          meldung('fehler', `„${name}“ aus ${vorlage.herkunft} angelegt${befuellt(neu.zustand)}, aber nicht zugeordnet – ${klein(info.grund ?? 'nicht gespeichert')}. Bitte später ${info.vorab === 'fassung' ? `in „${fassung}“ ` : ''}in den Antragsdaten über „Zuordnen“ nachholen.`);
+        }
         return pfad;
       } catch (e) {
         fehler(`Formular für „${u.titel}“ anlegen`, e);

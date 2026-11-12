@@ -105,6 +105,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
 
   const formularMenue = (f: FormularEintrag): MenuePunkt[] => {
     const umfang = useAntrag.getState().projektdatei?.umfang;
+    // die beim Öffnen des Menüs angezeigte Fassung – zugeordnet wird nur dort (Umfang erst beim Klick gelesen)
+    const ansicht = useAntrag.getState().projektdatei?.ansicht;
     const zugeordnet = statusVon.get(f.pfad);
     return [
       { text: 'Öffnen', symbol: 'formular', aktion: () => void formularOeffnen(f) },
@@ -122,7 +124,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                 .map((u) => ({
                   text: u.titel,
                   symbol: (zugeordnet?.eintrag.id === u.id ? 'haken' : undefined) as 'haken' | undefined,
-                  aktion: () => void useAntrag.getState().umfangSetzen(umfang.map((x) => (x.id === u.id ? { ...x, formularDatei: f.pfad.split('/').pop() } : x))),
+                  aktion: () =>
+                    void useAntrag.getState().umfangAendern((aktuell) => aktuell.map((x) => (x.id === u.id ? { ...x, formularDatei: f.pfad.split('/').pop() } : x)), { ansicht, eintrag: u.id }),
                 })),
             },
           ]

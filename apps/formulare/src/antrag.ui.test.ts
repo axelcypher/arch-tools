@@ -17,6 +17,7 @@ import { pdfjs } from './dokumente/pdf';
 import { useAufgeklappt } from './components/ProjektUebersicht';
 import { useFormulare } from './store';
 import { verknuepfen as dateiVerknuepfen } from './dateiAktionen';
+import { formularePunkte } from './components/Antrag';
 import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { readProjectFile, writeArchive } from '@core/archive';
 import { createProject, leereMeta } from '@core/model';
@@ -2199,33 +2200,19 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(bs9Formulare()).toHaveLength(1);
     expect((antragIn('BAUA 2')?.umfang as unknown[]).length).toBe(umfangVorher);
     expect(useFormulare.getState().offen?.pfad ?? '').not.toContain('BS9/');
-    // 3. nach dem Aufnehmen, während die Formulare des Projekts gelesen werden: aufgenommen, aber nicht geöffnet
+    // 3. während das Aufnehmen geschrieben wird: aufgenommen, aber nicht geöffnet
     for (const k of bs9Formulare()) ds.dateien.delete(k);
     await act(() => useFormulare.getState().projektWaehlen(bs9Projekt()));
     await warte();
-    const anlegen = ds.formularAnlegen.bind(ds);
-    const liste = ds.liste.bind(ds);
-    let scharf = false;
-    let los!: () => void;
-    ds.formularAnlegen = async (...a: Parameters<typeof anlegen>) => {
-      await anlegen(...a);
-      scharf = true;
-    };
-    ds.liste = async (pfad: string, tiefe: number) => {
-      if (scharf && pfad === 'C:/FORMA/BS9' && tiefe === 1) {
-        scharf = false;
-        await new Promise<void>((r) => (los = r));
-      }
-      return liste(pfad, tiefe);
-    };
+    const schreiben = schreibenAnhalten('BS9.oap');
     act(() => {
       laeuft = useAntrag.getState().formularHinzufuegen(H24_VORLAGE, true);
     });
-    await warte();
-    expect(los).toBeTruthy();
+    for (let i = 0; i < 20 && !schreiben.los; i++) await warte();
+    expect(schreiben.los).toBeTruthy();
     await act(() => useFormulare.getState().projektWaehlen(h24Projekt()));
     await warte();
-    los();
+    schreiben.los!();
     expect(await act(() => laeuft)).toBeNull();
     expect(useFormulare.getState().meldung?.text).toMatch(/ in BS9 angelegt und in den Antragsumfang aufgenommen, aber nicht geöffnet – inzwischen ist ein anderes Projekt offen\.$/);
     expect((antragIn('BAUA 2')?.umfang as unknown[]).length).toBe(umfangVorher + 1);
@@ -2254,33 +2241,19 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(useFormulare.getState().meldung?.text).toMatch(/ in BS9 angelegt, aber nicht zugeordnet und nicht geöffnet – inzwischen ist ein anderes Projekt offen\.$/);
     expect(zugeordnet()).toBeUndefined();
     expect(bs9Formulare()).toHaveLength(1);
-    // 2. nach dem Zuordnen, während die Formulare des Projekts gelesen werden
+    // 2. während das Zuordnen geschrieben wird (geschrieben ist es, geöffnet wird nicht)
     for (const k of bs9Formulare()) ds.dateien.delete(k);
     await act(() => useFormulare.getState().projektWaehlen(bs9Projekt()));
     await warte();
-    const anlegen = ds.formularAnlegen.bind(ds);
-    const liste = ds.liste.bind(ds);
-    let scharf = false;
-    let los!: () => void;
-    ds.formularAnlegen = async (...a: Parameters<typeof anlegen>) => {
-      await anlegen(...a);
-      scharf = true;
-    };
-    ds.liste = async (pfad: string, tiefe: number) => {
-      if (scharf && pfad === 'C:/FORMA/BS9' && tiefe === 1) {
-        scharf = false;
-        await new Promise<void>((r) => (los = r));
-      }
-      return liste(pfad, tiefe);
-    };
+    const schreiben = schreibenAnhalten('BS9.oap');
     act(() => {
       laeuft = useAntrag.getState().formularAnlegen('bauantrag');
     });
-    await warte();
-    expect(los).toBeTruthy();
+    for (let i = 0; i < 20 && !schreiben.los; i++) await warte();
+    expect(schreiben.los).toBeTruthy();
     await act(() => useFormulare.getState().projektWaehlen(h24Projekt()));
     await warte();
-    los();
+    schreiben.los!();
     expect(await act(() => laeuft)).toBeNull();
     expect(useFormulare.getState().meldung?.text).toMatch(/ in BS9 angelegt und „Bauantrag“ zugeordnet, aber nicht geöffnet – inzwischen ist ein anderes Projekt offen\.$/);
     expect(zugeordnet()).toMatch(/Bauantrag/);
@@ -2437,17 +2410,32 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     const zugeordnet = () => ((antragIn('BAUA 2')?.umfang as { id: string; formularDatei?: string }[]).find((u) => u.id === 'bauantrag') ?? {}).formularDatei;
     const gut = ds.dateien.get(OAP)!;
-    // 1. .oap bleibt unlesbar: angelegt, aber nicht zugeordnet – mit Grund und Weg
+    // 1. .oap bleibt unlesbar: angelegt, nicht zugeordnet – die Zeile findet es aber über den Namen (kein „Zuordnen“ nötig)
     ds.dateien.set(OAP, new Uint8Array([1, 2, 3]));
     await act(() => useFormulare.getState().oapLaden());
     await warte();
     expect(await act(() => useAntrag.getState().formularAnlegen('bauantrag'))).toMatch(/Bauantrag/);
     await warte();
-    expect(useFormulare.getState().meldung?.art).toBe('fehler');
-    expect(useFormulare.getState().meldung?.text).toMatch(/angelegt \(leer\), aber nicht zugeordnet – die Projektdatei ist gerade nicht lesbar\. Bitte später über „Zuordnen“ nachholen\.$/);
+    expect(useFormulare.getState().meldung?.art).toBe('info');
+    expect(useFormulare.getState().meldung?.text).toMatch(/angelegt \(leer\) – „Bauantrag“ findet es über den Namen\.$/);
     ds.dateien.set(OAP, gut);
     expect(zugeordnet()).toBeUndefined();
     for (const k of bs9Formulare()) ds.dateien.delete(k);
+    // 1b. gibt es schon ein anderes „Bauantrag“-Formular, findet die Zeile das neue nicht: Fehler mit Grund und Weg
+    ds.dateien.set('C:/FORMA/BS9/000-Bauantrag (2024).frmsjf', MUSTER);
+    await act(() => useFormulare.getState().projektWaehlen(bs9Projekt()));
+    await warte();
+    ds.dateien.set(OAP, new Uint8Array([1, 2, 3]));
+    await act(() => useFormulare.getState().oapLaden());
+    await warte();
+    await act(() => useAntrag.getState().formularAnlegen('bauantrag'));
+    await warte();
+    expect(useFormulare.getState().meldung?.art).toBe('fehler');
+    expect(useFormulare.getState().meldung?.text).toMatch(/angelegt \(leer\), aber nicht zugeordnet – die Projektdatei ist gerade nicht lesbar\. Bitte später in den Antragsdaten über „Zuordnen“ nachholen\.$/);
+    ds.dateien.set(OAP, gut);
+    for (const k of bs9Formulare()) ds.dateien.delete(k);
+    await act(() => useFormulare.getState().projektWaehlen(bs9Projekt()));
+    await warte();
     // 2. Projektwechsel, während die wieder lesbare .oap neu gelesen wird: nicht zugeordnet (nicht „zugeordnet“)
     ds.dateien.set(OAP, new Uint8Array([1, 2, 3]));
     await act(() => useFormulare.getState().oapLaden());
@@ -2603,7 +2591,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await act(() => laeuft);
     await warte();
     expect(ids('BAUA')).toEqual(['eigen']);
-    expect(useFormulare.getState().meldung?.text).toMatch(/, aber nicht in den Antragsumfang aufgenommen – inzwischen ist eine andere Antragsfassung angezeigt\. Bitte später über „Dokument hinzufügen“ nachholen\.$/);
+    expect(useFormulare.getState().meldung?.text).toMatch(/, aber nicht in den Antragsumfang aufgenommen – inzwischen ist „BAUA“ angezeigt\. Bitte später in „BAUA 2“ in den Antragsdaten über „Dokument hinzufügen“ nachholen\.$/);
   });
 
   it('Formular hinzufügen bei nicht lesbarer .oap bzw. Projektwechsel beim erneuten Lesen: „nicht aufgenommen“ – nichts Falsches gemeldet', async () => {
@@ -2622,7 +2610,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await act(() => useAntrag.getState().formularHinzufuegen(H24_VORLAGE, true));
     await warte();
     expect(useFormulare.getState().meldung?.art).toBe('fehler');
-    expect(useFormulare.getState().meldung?.text).toMatch(/angelegt \(leer\), aber nicht in den Antragsumfang aufgenommen – die Projektdatei ist gerade nicht lesbar\. Bitte später über „Dokument hinzufügen“ nachholen\.$/);
+    expect(useFormulare.getState().meldung?.text).toMatch(/angelegt \(leer\), aber nicht in den Antragsumfang aufgenommen – die Projektdatei ist gerade nicht lesbar\. Bitte später in den Antragsdaten über „Dokument hinzufügen“ nachholen\.$/);
     ds.dateien.set(OAP, gut);
     for (const k of bs9Formulare()) ds.dateien.delete(k);
     // 2. Projektwechsel, während die wieder lesbare .oap neu gelesen wird
@@ -2729,7 +2717,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     expect(zugeordnet('BAUA')).toBeUndefined();
     expect(zugeordnet('BAUA 2')).toBeUndefined();
-    expect(useFormulare.getState().meldung?.text).toMatch(/, aber nicht zugeordnet – inzwischen ist eine andere Antragsfassung angezeigt\. Bitte später über „Zuordnen“ nachholen\.$/);
+    expect(useFormulare.getState().meldung?.text).toMatch(/, aber nicht zugeordnet – inzwischen ist „BAUA“ angezeigt\. Bitte später in „BAUA 2“ in den Antragsdaten über „Zuordnen“ nachholen\.$/);
   });
 
   it('Projektdatei samt Ordner verschoben (Ordner fehlt, Projektordner lesbar): die Bindung wird gelöst – der Dialog bietet das Anlegen an', async () => {
@@ -2762,7 +2750,185 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     expect(ds.dateien.has(`${PROJEKT}/TÖB/BAUA 2/BS9 Lageplan.pdf`)).toBe(true);
     expect(useFormulare.getState().meldung?.art).toBe('fehler');
-    expect(useFormulare.getState().meldung?.text).toBe('„BS9 Lageplan.pdf“ in BAUA 2 kopiert, aber nicht verknüpft – die Projektdatei ist gerade nicht lesbar. Bitte die Kopie im Antragsumfang verknüpfen (nicht noch einmal ziehen).');
+    expect(useFormulare.getState().meldung?.text).toBe('„BS9 Lageplan.pdf“ in BAUA 2 kopiert, aber nicht verknüpft – die Projektdatei ist gerade nicht lesbar. Bitte später die Kopie in BAUA 2 über „Mit Antragsdokument verknüpfen“ verknüpfen, nicht noch einmal kopieren.');
+  });
+
+  it('zwei Antragsmerkmale kurz nacheinander auf einem frischen Antrag (das erste Schreiben läuft noch): beide bleiben', async () => {
+    useAntrag.setState({ merkmalDefinitionen: [], einstellungen: { ...VORGABE_EXPORT } });
+    await projektBS9();
+    const halt = schreibenAnhalten('BS9.oap');
+    let erstes!: Promise<void>;
+    act(() => {
+      erstes = useAntrag.getState().merkmalSetzen('Gebäudeklasse', '3');
+    });
+    for (let i = 0; i < 20 && !halt.los; i++) await warte();
+    expect(halt.los).toBeTruthy();
+    let zweites!: Promise<void>;
+    act(() => {
+      zweites = useAntrag.getState().merkmalSetzen('Sonderbau', 'nein');
+    });
+    await warte();
+    halt.los!();
+    await act(() => erstes);
+    await act(() => zweites);
+    await warte();
+    expect(antragIn('BAUA 2')?.merkmale).toEqual({ Gebäudeklasse: '3', Sonderbau: 'nein' });
+  });
+
+  it('Verknüpfen mit Kopie: Eintrag inzwischen entfernt bzw. andere Fassung angezeigt – nichts Falsches verknüpft, passende Meldung', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    const verknuepft = (fassung: string) => ((antragIn(fassung)?.umfang as { id: string; dateien?: Record<string, string> }[] | undefined) ?? []).find((u) => u.id === 'lageplan')?.dateien;
+    const voll = useAntrag.getState().projektdatei!.umfang!;
+    // 1. während des Kopierens wird der Eintrag entfernt
+    let halt = einmalAnhalten('kopieren');
+    let laeuft!: Promise<void>;
+    act(() => {
+      laeuft = dateiVerknuepfen(PROJEKT, 'Planung/BS9 Lageplan.pdf', 'lageplan');
+    });
+    await warte();
+    expect(halt.los).toBeTruthy();
+    const ohne = (useAntrag.getState().projektdatei!.umfang ?? []).filter((u) => u.id !== 'lageplan');
+    await act(async () => void (await useAntrag.getState().umfangSetzen(ohne)));
+    halt.los!();
+    await act(() => laeuft);
+    await warte();
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: '„BS9 Lageplan.pdf“ in BAUA 2 kopiert, aber nicht verknüpft – der Eintrag ist inzwischen nicht mehr im Antragsumfang.' });
+    // 2. während des Kopierens wird BAUA angezeigt (mit demselben Eintrag): dort wird nichts verknüpft
+    await act(async () => void (await useAntrag.getState().umfangSetzen(voll)));
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+    await warte();
+    await act(async () => void (await useAntrag.getState().umfangSetzen(voll)));
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA 2'));
+    await warte();
+    halt = einmalAnhalten('kopieren');
+    act(() => {
+      laeuft = dateiVerknuepfen(PROJEKT, 'Planung/BS9 Lageplan.pdf', 'lageplan');
+    });
+    await warte();
+    expect(halt.los).toBeTruthy();
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+    await warte();
+    halt.los!();
+    await act(() => laeuft);
+    await warte();
+    expect(verknuepft('BAUA')).toBeUndefined();
+    expect(verknuepft('BAUA 2')).toBeUndefined();
+    expect(useFormulare.getState().meldung?.art).toBe('fehler');
+    expect(useFormulare.getState().meldung?.text).toMatch(/^„BS9 Lageplan \(Kopie\)\.pdf“ in BAUA 2 kopiert, aber nicht verknüpft – inzwischen ist „BAUA“ angezeigt\. Bitte später die Kopie in BAUA 2 über „Mit Antragsdokument verknüpfen“ verknüpfen, nicht noch einmal kopieren\.$/);
+    // 3. ohne Störung: erst nach dem Speichern „kopiert und verknüpft“
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA 2'));
+    await warte();
+    await act(() => dateiVerknuepfen(PROJEKT, 'Planung/BS9 Lageplan.pdf', 'lageplan'));
+    await warte();
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: '„BS9 Lageplan (Kopie 2).pdf“ in BAUA 2 kopiert und verknüpft.' });
+    expect(verknuepft('BAUA 2')).toEqual({ 'BAUA 2': 'BS9 Lageplan (Kopie 2).pdf' });
+  });
+
+  it('Menü „Zuordnen“ lange offen: der Antragsumfang wird erst beim Klick gelesen – inzwischen Aufgenommenes bleibt', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    const punkte = formularePunkte('bauantrag');
+    // während das Menü offen ist, kommt ein Eintrag dazu
+    await act(async () => void (await useAntrag.getState().umfangSetzen([...(useAntrag.getState().projektdatei!.umfang ?? []), { id: 'extra', titel: 'Extra', art: 'extern', quelle: 'Planung', muster: '*Extra*' }])));
+    await warte();
+    const punkt = punkte[0] as { aktion: () => void };
+    await act(async () => void punkt.aktion());
+    await warte();
+    const umfang = antragIn('BAUA 2')?.umfang as { id: string; formularDatei?: string }[];
+    expect(umfang.map((u) => u.id)).toContain('extra');
+    expect(umfang.find((u) => u.id === 'bauantrag')?.formularDatei).toBe('001-Muster.frmsjf');
+  });
+
+  it('Formular anlegen bzw. hinzufügen: Eintrag bzw. Antragsumfang inzwischen entfernt – Info mit dem richtigen Grund, Erfolg mit Bezug', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    // 1. ohne Störung: „… angelegt (leer) und „Bauantrag“ zugeordnet.“
+    await act(() => useAntrag.getState().formularAnlegen('bauantrag'));
+    await warte();
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: '„002-Bauantrag (2026).frmsjf“ aus Projekt H24 angelegt (leer) und „Bauantrag“ zugeordnet.' });
+    for (const k of bs9Formulare()) ds.dateien.delete(k);
+    await act(() => useFormulare.getState().projektWaehlen(bs9Projekt()));
+    await warte();
+    await act(async () => void (await useAntrag.getState().umfangSetzen((useAntrag.getState().projektdatei!.umfang ?? []).map((u) => (u.id === 'bauantrag' ? { ...u, formularDatei: undefined } : u)))));
+    await warte();
+    // 2. Eintrag während des Anlegens entfernt
+    let halt = einmalAnhalten('formularAnlegen');
+    let laeuft!: Promise<string | null>;
+    act(() => {
+      laeuft = useAntrag.getState().formularAnlegen('bauantrag');
+    });
+    for (let i = 0; i < 20 && !halt.los; i++) await warte();
+    await act(async () => void (await useAntrag.getState().umfangSetzen((useAntrag.getState().projektdatei!.umfang ?? []).filter((u) => u.id !== 'bauantrag'))));
+    halt.los!();
+    await act(() => laeuft);
+    await warte();
+    expect(useFormulare.getState().meldung?.art).toBe('info');
+    expect(useFormulare.getState().meldung?.text).toMatch(/ angelegt \(leer\) – der Eintrag „Bauantrag“ ist inzwischen nicht mehr im Antragsumfang\.$/);
+    // 3. Formular hinzufügen, während der Antragsumfang aufgehoben wird
+    halt = einmalAnhalten('formularAnlegen');
+    act(() => {
+      laeuft = useAntrag.getState().formularHinzufuegen(H24_VORLAGE, true);
+    });
+    for (let i = 0; i < 20 && !halt.los; i++) await warte();
+    await act(async () => void (await useAntrag.getState().umfangSetzen(null)));
+    halt.los!();
+    await act(() => laeuft);
+    await warte();
+    expect(useFormulare.getState().meldung?.art).toBe('info');
+    expect(useFormulare.getState().meldung?.text).toMatch(/ angelegt \(leer\) – inzwischen gibt es keinen Antragsumfang mehr\.$/);
+  });
+
+  it('„nicht gespeichert“ verschwindet, sobald der nächste Versuch gespeichert hat', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    const gut = ds.dateien.get(OAP)!;
+    ds.dateien.set(OAP, new Uint8Array([1, 2, 3]));
+    await act(() => useFormulare.getState().oapLaden());
+    await warte();
+    const umfang = [{ id: 'muster', titel: 'Musterformular', art: 'intern' as const, formular: 'Muster' }];
+    await act(async () => void (await useAntrag.getState().umfangSetzen(umfang)));
+    await warte();
+    expect(useFormulare.getState().meldung?.text).toContain('nicht gespeichert');
+    ds.dateien.set(OAP, gut);
+    const info = await act(() => useAntrag.getState().umfangSetzen(umfang));
+    await warte();
+    expect(info.geschrieben).toBe(true);
+    expect(useFormulare.getState().meldung?.art).not.toBe('fehler');
+  });
+
+  it('Verknüpfen mit Kopie ohne Projektdatei (Dialog offen): „verknüpft wird nach dem Anlegen der Projektdatei“; ohne alte aktive Fassung bleibt die angezeigte', async () => {
+    ds.dateien.delete(OAP);
+    await projektBS9();
+    expect(useFormulare.getState().oap).toBe('fehlt');
+    // angezeigt ist „BAUA 2“ (die neueste) – inzwischen entsteht „BAUA 3“ im Projektordner
+    expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA 2');
+    ds.ordner.add(`${PROJEKT}/TÖB/BAUA 3`);
+    await act(async () => void (await useAntrag.getState().umfangSetzen([{ id: 'lageplan', titel: 'Lageplan', art: 'extern', quelle: 'Planung', muster: '*Lageplan*' }])));
+    await warte();
+    const dialog = useFormulare.getState().stammdatenDialog;
+    expect(dialog).toBeTruthy();
+    act(() => useFormulare.getState().stammdatenAbbrechen());
+    // Verknüpfen mit Kopie, wieder mit Dialog
+    useAntrag.setState({ projektdatei: { ...useAntrag.getState().projektdatei!, umfang: [{ id: 'lageplan', titel: 'Lageplan', art: 'extern', quelle: 'Planung', muster: '*Lageplan*' }] } });
+    await act(() => dateiVerknuepfen(PROJEKT, 'Planung/BS9 Lageplan.pdf', 'lageplan'));
+    await warte();
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: '„BS9 Lageplan.pdf“ in BAUA 2 kopiert – verknüpft wird nach dem Anlegen der Projektdatei.' });
+    const d2 = useFormulare.getState().stammdatenDialog;
+    expect(d2).toBeTruthy();
+    await act(() => useFormulare.getState().projektdateiAnlegen(d2!.meta));
+    await warte();
+    await warte();
+    // die angezeigte Fassung bleibt die aktive (nicht die inzwischen neueste „BAUA 3“), verknüpft ist dort
+    expect((abschnitt() as { aktiveFassung?: string }).aktiveFassung).toBe('BAUA 2');
+    expect(((antragIn('BAUA 2')?.umfang as { id: string; dateien?: Record<string, string> }[]).find((u) => u.id === 'lageplan') ?? {}).dateien).toEqual({ 'BAUA 2': 'BS9 Lageplan.pdf' });
+    expect(useFormulare.getState().meldung?.text).toBe('Projektdatei angelegt – Antragsfassung „BAUA 2“ ist das Ziel des Exports.');
   });
 
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {
