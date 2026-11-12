@@ -8,7 +8,7 @@ import type { ProjektdateiAenderung, Stammdaten } from './stammdaten';
 import { alsProject, bereinigt, isoDatum, platzhalter, projektdateiAenderung } from './stammdaten';
 import type { Struktur, VorlagenEintrag } from './struktur';
 import type { VorlagenPreset } from './struktur';
-import { aktivePresets, normPfad, regelGilt, sichererName } from './struktur';
+import { aktivePresets, normPfad, ordnerGilt, regelGilt, sichererName } from './struktur';
 import { ausserhalbDerStruktur } from './pruefung';
 import { alsDokument, fuelleVorlage, zielDateiname } from './vorlagen';
 
@@ -256,7 +256,8 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
   for (const r of struktur.ordner) {
     const pfad = zielPfad(r.pfad, werte);
     if (!pfad) continue;
-    if (regelGilt(r, s.leistungsphasen)) ordnerSchritt(pfad, 'struktur');
+    // ein Unterordner entsteht nur mit seinem übergeordneten Ordner (Leistungsphasen werden vererbt)
+    if (ordnerGilt(struktur.ordner, r.pfad, s.leistungsphasen)) ordnerSchritt(pfad, 'struktur');
     else ausgeschlossen.push(pfad.toLowerCase());
   }
   if (ausgeschlossen.length) hinweise.push(`${ausgeschlossen.length} Ordner gehören zu nicht beauftragten Leistungsphasen und werden nicht angelegt.`);
@@ -307,7 +308,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     projektdatei = { pfad: schonDa.pfad, neu: false, teile: [] };
   } else {
     const pfad = projektdateiPfad(optionen.oapPfad ?? VORGABE_OAP_PFAD, { nummer: s.nummer, kurzname: s.kurzname, vorhaben: s.bezeichnung, jahr: werte.jahr, datum: date });
-    datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date }), { app: `Projektordner ${__APP_VERSION__}`, date }));
+    datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date }), { app: `Projekt ${__APP_VERSION__}`, date }));
     projektdatei = { pfad, neu: true, teile: [] };
   }
 

@@ -3,7 +3,7 @@
 Die Rahmen-App (`apps/suite`, eigene App mit eigenem Installer „arch-tools“) bündelt alle Werkzeuge in **einem
 Programm und einem Fenster**. Sie kann nichts weiter, als zwischen den Apps zu wechseln:
 
-- **Tabs:** Jede geöffnete App ist ein Tab in der Titelleiste – Projektordner, Formulare, Flächenrechner,
+- **Tabs:** Jede geöffnete App ist ein Tab in der Titelleiste – Projekt, Formulare, Flächenrechner,
   GRZ-Nachweis, Kostenermittlung, Entzerrung. Ohne offene App zeigt der Rahmen die Startseite mit allen Apps; „+“
   öffnet weitere. Beim Wechseln bleibt jede App, wie sie war (sie läuft im Hintergrund weiter). Der Tab zeigt das
   geöffnete Projekt und ● bei ungespeicherten Änderungen; Schließen (× oder mittlere Maustaste) fragt dann
@@ -17,6 +17,10 @@ Programm und einem Fenster**. Sie kann nichts weiter, als zwischen den Apps zu w
   Öffnen des Formulars wieder – nur ungespeicherte Bearbeitungen von PDF-, Excel- und Word-Dokumenten in der
   Dateiansicht gehen verloren. Bei ungespeicherten Änderungen sagt der Rahmen vorher, was mit ihnen geschieht. Jede App ist
   höchstens einmal offen – ist sie herausgelöst, holt „+“ bzw. die Startseite ihr Fenster nach vorn.
+- **Neues Projekt anlegen** aus jeder App: Der Knopf auf der Projektübersicht der Apps, „+“ → „Neues Projekt
+  anlegen …“ und die Startseite öffnen den Tab „Projekt“ mit dem Assistenten; nach dem Anlegen führt „In … öffnen“
+  zurück zur App, aus der der Auftrag kam (Flächenrechner, GRZ-Nachweis, Kostenermittlung und Entzerrung öffnen das
+  neue Projekt gleich). Der Rahmen leitet dafür Nachrichten weiter (siehe Technik).
 - **Sperrdateien der Formulare** (`.frmtmp`, für FORMA und die Kollegen) gibt der Rahmen frei, sobald der
   Formulare-Tab bzw. sein Fenster zu ist oder umzieht – nicht erst beim Beenden des Programms.
 - **Updates** macht der Rahmen für alle Apps zusammen (Knopf in der Titelleiste, Manifest `suite.json`); die
@@ -41,6 +45,12 @@ Konfigurationsordner) und Projektdateien sind dieselben.
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
   `arch-tools-entzerrung`). Gemeinsam ist nur das Farbschema – ein Wechsel in einem Tab oder Fenster wirkt sofort in allen.
+- **Nachrichten zwischen den Apps** (`rahmen.ts`: `anRahmen`, `vomRahmen`): Tabs schicken per `postMessage`, herausgelöste
+  Fenster per Tauri-Ereignis `arch-tools:an-rahmen`; der Rahmen stellt per `postMessage` bzw. `arch-tools:an-app`
+  (mit Empfänger `an`) zu. Eine App meldet sich mit `arch-tools:bereit`, sobald sie hört – Nachrichten an Apps, die
+  noch laden, hält der Rahmen bis dahin zurück. Aufträge: `arch-tools:projekt-anlegen` → `arch-tools:assistent-neu`
+  (an „Projekt“), `arch-tools:zur-app` → `arch-tools:projekt-angelegt` (an die auftraggebende App). Angenommen wird nur
+  vom gleichen Ursprung und von bekannten Apps.
 - Dateien per Ziehen & Ablegen: Die Fenster des Rahmens haben `dragDropEnabled: false`, damit die Apps in den Tabs
   die Dateien selbst bekommen.
 

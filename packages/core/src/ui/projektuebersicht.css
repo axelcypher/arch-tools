@@ -298,3 +298,15 @@
 .pa-menue button:focus-visible {
   background: var(--accent-soft);
 }
+
+/* „Neues Projekt anlegen“ (Assistent der Projekt-App über die Rahmen-App) */
+.pa-anlegen {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pa-leer-anlegen {
+  display: flex;
+  justify-content: center;
+  padding: 0 28px 24px;
+}

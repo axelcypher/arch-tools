@@ -151,7 +151,7 @@ export async function fuelleVorlage(name: string, daten: Uint8Array, ctx: Export
 export const MUSTER_VORLAGEN: { pfad: string; inhalt: string }[] = [
   {
     pfad: 'LIESMICH.txt',
-    inhalt: `Vorlagenordner für das Projektordner-Tool
+    inhalt: `Vorlagenordner für die App „Projekt“
 ==========================================
 
 Dieser Ordner ist aufgebaut wie ein Projektordner. Mit dem Preset "Alle Vorlagen" wird jede Datei beim

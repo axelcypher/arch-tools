@@ -3,20 +3,23 @@ import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
 import { AssistentView } from './components/AssistentView';
 import { PruefView } from './components/PruefView';
-import { StrukturView } from './components/StrukturView';
+import { EinstellungenView, StrukturView } from './components/StrukturView';
 import { VorlagenView } from './components/VorlagenView';
 import { KatasterEinstellungen } from './components/KatasterEinstellungen';
+import { ASSISTENT_NEU, vomRahmen } from '@core/platform/rahmen';
+import type { Auftrag } from './components/AssistentView';
 import type { GeladenerOrdner } from './projekt';
 import { useOrdner } from './store';
 
-type Ansicht = 'projekt' | 'pruefen' | 'vorlagen' | 'kataster' | 'einstellungen';
+type Ansicht = 'projekt' | 'pruefen' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
-  { id: 'projekt', label: 'Assistent', title: 'Assistent: neues Projekt anlegen oder ein bestehendes ergänzen – Stammdaten, Umfang, Vorlagen, Trockenlauf' },
+  { id: 'projekt', label: 'Assistent', title: 'Assistent: neues Projekt anlegen oder ein bestehendes fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte, Vorlagen, Trockenlauf' },
   { id: 'pruefen', label: 'Ordner prüfen', title: 'Vorhandenen Projektordner mit der Struktur vergleichen – es wird nichts verschoben' },
+  { id: 'struktur', label: 'Struktur', title: 'Ordnerbaum des Büros zum Klicken – mit Bausteinen für wiederkehrende Unterordner (z. B. Gewerke) – und Namensschemata' },
   { id: 'vorlagen', label: 'Vorlagen', title: 'Vorlagenordner, Dateinamen und Presets: welche Vorlage wohin kommt und wie sie dort heißt' },
   { id: 'kataster', label: 'Katasterpläne', title: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne – exportiert wird je Projekt (Rechtsklick auf der Startseite)' },
-  { id: 'einstellungen', label: 'Einstellungen', title: 'Gemeinsame Einstellungen aller Apps, Ordnerbaum und Namensschemata des Büros' },
+  { id: 'einstellungen', label: 'Einstellungen', title: 'Gemeinsame Einstellungen aller Apps: Konfigurationsordner, Stammordner, Ort der Projektdatei, Büro, Mitarbeiter' },
 ];
 
 export function App() {
@@ -30,9 +33,21 @@ export function App() {
   const [neustart, setNeustart] = useState(0);
   // „Projekt prüfen“ aus der Projektübersicht
   const [pruefStart, setPruefStart] = useState<{ pfad: string; nr: number } | null>(null);
+  // „Neues Projekt anlegen“ aus einer anderen App (Rahmen-App): Assistent für ein neues Projekt
+  const [auftrag, setAuftrag] = useState<(Auftrag & { nr: number }) | null>(null);
+
+  useEffect(
+    () =>
+      vomRahmen(ASSISTENT_NEU, (n) => {
+        setStart(null);
+        setAuftrag((a) => ({ von: n.von ?? null, ...(n.vonName ? { vonName: n.vonName } : {}), kannOeffnen: !!n.kannOeffnen, nr: (a?.nr ?? 0) + 1 }));
+        setAnsicht('projekt');
+      }),
+    [],
+  );
 
   useEffect(() => {
-    document.title = 'Projektordner';
+    document.title = 'Projekt';
   }, []);
 
   // gemeinsame Einstellungen aus dem Konfigurationsordner
@@ -42,7 +57,7 @@ export function App() {
 
   // Struktur beim Wechsel in Einstellungen bzw. Vorlagen frisch lesen – ein anderer Rechner kann sie geändert haben
   useEffect(() => {
-    if (ansicht === 'einstellungen' || ansicht === 'vorlagen') void useOrdner.getState().neuLesen();
+    if (ansicht === 'struktur' || ansicht === 'einstellungen' || ansicht === 'vorlagen') void useOrdner.getState().neuLesen();
   }, [ansicht]);
 
   // Anstehendes Schreiben der Einstellungen beim Schließen nicht verlieren
@@ -60,7 +75,7 @@ export function App() {
   return (
     <div className="app">
       <TitleBar
-        app="Projektordner"
+        app="Projekt"
         name={start?.ordner.name ?? ''}
         dirty={false}
         onOpenLog={() => setLogOpen(true)}
@@ -68,6 +83,7 @@ export function App() {
         // wie in den anderen Apps: „Projekte“ führt zur Startseite mit der gemeinsamen Projektübersicht
         onProjekte={() => {
           setStart(null);
+          setAuftrag(null);
           setNeustart((n) => n + 1);
           setAnsicht('projekt');
         }}
@@ -96,8 +112,9 @@ export function App() {
       <main className="po-main">
         {ansicht === 'projekt' && (
           <AssistentView
-            key={`${start?.nr ?? 0}-${neustart}`}
+            key={`${start?.nr ?? 0}-${neustart}-${auftrag?.nr ?? 0}`}
             start={start?.ordner ?? null}
+            auftrag={start ? null : auftrag}
             onEinstellungen={() => setAnsicht('einstellungen')}
             onPruefen={(pfad) => {
               setPruefStart({ pfad, nr: (pruefStart?.nr ?? 0) + 1 });
@@ -111,6 +128,7 @@ export function App() {
             key={pruefStart?.nr ?? 0}
             start={pruefStart?.pfad ?? null}
             onErgaenzen={(ordner) => {
+              setAuftrag(null);
               setStart({ ordner, nr: (start?.nr ?? 0) + 1 });
               setAnsicht('projekt');
             }}
@@ -122,7 +140,8 @@ export function App() {
             <KatasterEinstellungen />
           </div>
         )}
-        {ansicht === 'einstellungen' && <StrukturView />}
+        {ansicht === 'struktur' && <StrukturView />}
+        {ansicht === 'einstellungen' && <EinstellungenView />}
       </main>
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
     </div>
