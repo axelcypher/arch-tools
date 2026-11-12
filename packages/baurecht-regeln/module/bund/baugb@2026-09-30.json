@@ -544,12 +544,24 @@
           {
             "f": "planung.sanierungsgebiet",
             "ist": true
+          },
+          {
+            "f": "planung.sanierung_144_ausgeschlossen",
+            "ist": false
           }
         ]
       },
       "entfaellt": {
-        "f": "planung.sanierungsgebiet",
-        "ist": false
+        "oder": [
+          {
+            "f": "planung.sanierungsgebiet",
+            "ist": false
+          },
+          {
+            "f": "planung.sanierung_144_ausgeschlossen",
+            "ist": true
+          }
+        ]
       },
       "grund": "Im förmlich festgelegten Sanierungsgebiet brauchen Vorhaben nach § 14 Abs. 1 (u. a. Vorhaben nach § 29, Beseitigung, erhebliche Veränderungen) die schriftliche Genehmigung der Gemeinde (Abs. 1).",
       "fundstellen": [
@@ -563,7 +575,8 @@
       ],
       "stand": {
         "144/1": "aba9a9fc"
-      }
+      },
+      "hinweis": "Im vereinfachten Sanierungsverfahren kann die Gemeinde § 144 ganz oder teilweise ausschließen (§ 142 Abs. 4) – dann gilt die Genehmigungspflicht nicht."
     },
     "145": {
       "titel": "Genehmigung (Sanierungsgebiet)",

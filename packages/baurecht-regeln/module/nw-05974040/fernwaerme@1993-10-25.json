@@ -12,15 +12,7 @@
   "paragrafen": {
     "2": {
       "gilt": {
-        "oder": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "f": "vorhaben.heizung",
-            "ist": true
-          }
-        ]
+        "$": "vorhaben_29"
       },
       "grund": "Das Grundstück liegt im Satzungsgebiet „Britische Wohnsiedlung“ (Arnsberger Straße – Hartweg/Herzog-Adolf-Weg – Hiddingser Weg/Kaiser-Otto-Weg – Konrad-Coler-Weg).",
       "fundstellen": [
@@ -37,6 +29,9 @@
     "3": {
       "gilt": {
         "und": [
+          {
+            "$": "vorhaben_29"
+          },
           {
             "oder": [
               {

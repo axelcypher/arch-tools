@@ -27,12 +27,43 @@
     "Festsetzungen": {
       "titel": "Festsetzungen des Bebauungsplans",
       "gilt": {
-        "oder": [
+        "und": [
           {
-            "$": "vorhaben_29"
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
           },
           {
-            "$": "beseitigung"
+            "oder": [
+              {
+                "$": "bplan_jeder"
+              },
+              {
+                "$": "satzung_baugb"
+              },
+              {
+                "$": "planreif"
+              },
+              {
+                "und": [
+                  {
+                    "f": "soest.bplan_entwurf",
+                    "ist": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.planreife",
+                      "ist": false
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       },

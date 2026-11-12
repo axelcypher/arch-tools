@@ -557,6 +557,28 @@
       "wenn": {
         "$": "vorhaben_29"
       }
+    },
+    "schutz.hecke_ausgleich": {
+      "titel": "Hecke ab 100 m im Außenbereich, Wallhecke oder als Ausgleich festgesetzte Anpflanzung betroffen",
+      "kurz": "Geschützte Hecke/Ausgleichspflanzung",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§ 39 LNatSchG NRW: gesetzlich geschützte Landschaftsbestandteile",
+      "wenn": {
+        "f": "vorhaben.baeume_faellen",
+        "ist": true
+      }
+    },
+    "schutz.allee": {
+      "titel": "Baum einer Allee an einer öffentlichen oder privaten Verkehrsfläche betroffen",
+      "kurz": "Allee betroffen",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§ 41 LNatSchG NRW; Alleenkataster des LANUK",
+      "wenn": {
+        "f": "schutz.baum",
+        "ist": true
+      }
     }
   },
   "bausteine": {
@@ -639,11 +661,7 @@
     "nw_bauen_gebaeude": {
       "und": [
         {
-          "m": "Vorhaben",
-          "in": [
-            "Errichtung",
-            "Änderung"
-          ]
+          "$": "bauen"
         },
         {
           "m": "Gebäudeart",
@@ -656,12 +674,7 @@
     "nw_vorhaben_gebaeude": {
       "und": [
         {
-          "m": "Vorhaben",
-          "in": [
-            "Errichtung",
-            "Änderung",
-            "Nutzungsänderung"
-          ]
+          "$": "vorhaben_29"
         },
         {
           "m": "Gebäudeart",

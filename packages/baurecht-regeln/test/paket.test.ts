@@ -262,8 +262,10 @@ describe('Fallmatrix', () => {
 /* ---------- Fälle aus dem Fachreview: kein Grün, wo das Gesetz noch greift ---------- */
 
 describe('Fälle aus dem Fachreview', () => {
+  // Beseitigung meint hier den vollständigen Abbruch ohne Ersatzbau – wo nicht anders angegeben (seit Runde 8 eine Angabe)
+  const VOLL = 'vorhaben.beseitigung_vollstaendig';
   const a = (merkmale: Record<string, string>, fakten: Record<string, FaktWert> = {}) => {
-    const r = auswerten(eingabe(merkmale, fakten, TEXTE));
+    const r = auswerten(eingabe(merkmale, merkmale.Vorhaben === 'Beseitigung' && !(VOLL in fakten) ? { [VOLL]: sicher(true), ...fakten } : fakten, TEXTE));
     return (id: string) => {
       const p = r.paragrafen.find((x) => x.id === id);
       expect(p, id).toBeTruthy();
@@ -409,7 +411,8 @@ describe('Fälle aus dem Fachreview', () => {
   const zahl = (id: string, w: number) => ({ [id]: sicher(w) });
   /** Auswertung in einer anderen Gemeinde des Kreises (ohne Gemeindemodul) */
   const inGemeinde = (ags: string, merkmale: Record<string, string>, fakten: Record<string, FaktWert> = {}) => {
-    const r = auswerten({ ...eingabe(merkmale, fakten, TEXTE), module: aktiveModule(paket.module, ags), fakten: { 'lage.ags': sicher(ags), ...fakten } });
+    const f = merkmale.Vorhaben === 'Beseitigung' && !(VOLL in fakten) ? { [VOLL]: sicher(true), ...fakten } : fakten;
+    const r = auswerten({ ...eingabe(merkmale, f, TEXTE), module: aktiveModule(paket.module, ags), fakten: { 'lage.ags': sicher(ags), ...f } });
     return (id: string) => r.paragrafen.find((x) => x.id === id)!;
   };
 
@@ -634,8 +637,11 @@ describe('Fälle aus dem Fachreview', () => {
   it('Runde 4: Bebauungsplan-Norm der Stadt Soest – Merkmal Innenbereich, Plan im Dienst als Entwurf bzw. Plan in Aufstellung', () => {
     const x = a(M4(), ja('soest.bplan_entwurf'));
     expect(x('nw-05974040/bebauungsplan/Verfahrensstand')).toBe('rot');
-    expect(x('nw-05974040/bebauungsplan/Festsetzungen')).toBe('rot');
-    expect(a(M4(), { ...nein('soest.bplan_entwurf'), ...ja('planung.planaufstellung') })('nw-05974040/bebauungsplan/Festsetzungen')).toBe('rot');
+    // künftige Festsetzungen binden erst bei Planreife (Runde 8): ohne Angabe offen, planreif rot
+    expect(x('nw-05974040/bebauungsplan/Festsetzungen')).toBe('gelb');
+    expect(a(M4(), ja('soest.bplan_entwurf', 'planung.planreife'))('nw-05974040/bebauungsplan/Festsetzungen')).toBe('rot');
+    expect(a(M4(), { ...nein('soest.bplan_entwurf'), ...ja('planung.planaufstellung') })('nw-05974040/bebauungsplan/Festsetzungen')).toBe('gelb');
+    expect(a(M4(), { ...nein('soest.bplan_entwurf'), ...ja('planung.planaufstellung', 'planung.planreife') })('nw-05974040/bebauungsplan/Festsetzungen')).toBe('rot');
     // ohne Angabe zum Verfahren: nicht „entfällt mit der Norm“
     expect(a(M4())('nw-05974040/bebauungsplan/Festsetzungen')).not.toBe('gruen');
   });
@@ -828,7 +834,7 @@ describe('Fälle aus dem Fachreview', () => {
       for (const id of ['nw/bauo-nrw/74', 'nw/baupruefvo/1', 'nw/baupruefvo/2', 'nw/baupruefvo/15', 'nw/dschg/24']) expect(x(id), `${id} (${w})`).toBe('rot');
       // kein Fehl-Gelb bzw. Fehl-Rot aus dem gewählten Verfahren
       for (const id of ['nw/bauo-nrw/63', 'nw/bauo-nrw/64', 'nw/bauo-nrw/65', 'nw/bauo-nrw/70', 'nw/baupruefvo/10', 'nw/baupruefvo/11', 'nw/baupruefvo/13']) expect(x(id), `${id} (${w})`).toBe('gruen');
-      // Gebühr nach dem Rohbauwert nur mit Baugenehmigung; zur Anzeige den Tarif prüfen
+      // keine Baugenehmigung, keine Tarifstelle für die Anzeige – offen nur wegen der denkmalrechtlichen Erlaubnis (Runde 8)
       expect(x('nw/avwgebo/1'), `AVwGebO (${w})`).toBe('gelb');
     }
     // Fall A2: Reihenhaus GK 2 ist nie freistehend und als Wohngebäude nie Anlage nach Abs. 1 – anzuzeigen, auch ohne Angabe „freistehend“
@@ -1013,6 +1019,8 @@ describe('Fälle aus dem Fachreview', () => {
     ...ja('soest.altstadt', 'soest.historische_ortsteile', 'kreis_soest.hsg', 'schutz.uesg'),
     ...wert('kreis_soest.hsg_qualitativ', 'III'), ...wert('kreis_soest.hsg_quantitativ', 'außerhalb'),
     ...nein('vorhaben.erdarbeiten', 'vorhaben.versickerung', 'vorhaben.grundwasser', 'vorhaben.erstbebauung', 'planung.planaufstellung', 'planung.fnp_verfahren', 'nw.blitzschutz_anlass'),
+    // seit Runde 8 gefragt: keine Freitreppe zur Straße, keine notwendigen Stellplätze, die wegfallen
+    ...nein('soest.freitreppe', 'soest.stellplaetze_entfallen'),
   });
 
   it('Runde 7: AVwGebO § 1 – Baugenehmigung für eine verfahrensfreie Beseitigung beantragt (§ 62 Abs. 3 Satz 2 BauO NRW) ist gebührenpflichtig', () => {
@@ -1022,8 +1030,10 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(garage, f)('nw/avwgebo/1')).toBe('rot');
     // auch das freistehende Einfamilienhaus der GK 1 mit Antrag im Baugenehmigungsverfahren
     expect(a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'Baugenehmigungsverfahren' }), ja('gebaeude.freistehend'))('nw/avwgebo/1')).toBe('rot');
-    // Gegenproben: ohne Antrag verfahrensfrei → grün; Verfahren offen → nicht grün
-    expect(a(mitVerfahren(garage, 'verfahrensfrei'), f)('nw/avwgebo/1')).toBe('gruen');
+    // Gegenproben: ohne Antrag verfahrensfrei → grün (außerhalb des Denkmalbereichs; im Denkmalbereich offen wegen der
+    // gesonderten denkmalrechtlichen Erlaubnis, Runde 8); Verfahren offen → nicht grün
+    expect(a(mitVerfahren(garage, 'verfahrensfrei'), { ...f, ...nein('schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.denkmalbereich_umgebung', 'schutz.bodendenkmal', 'schutz.gartendenkmal') })('nw/avwgebo/1')).toBe('gruen');
+    expect(a(mitVerfahren(garage, 'verfahrensfrei'), f)('nw/avwgebo/1')).toBe('gelb');
     expect(a(mitVerfahren(garage), f)('nw/avwgebo/1')).not.toBe('gruen');
   });
 
@@ -1060,13 +1070,16 @@ describe('Fälle aus dem Fachreview', () => {
   it('Runde 7: Altstadtsatzung §§ 12, 13, 15 – nur mit Arbeiten an Einfriedigung, Außenanlagen bzw. Garage; Innenumbau nicht rot', () => {
     const ids = ['12', '13', '15'].map((nr) => `nw-05974040/altstadtsatzung/${nr}`);
     const mfh = M4({ Vorhaben: 'Änderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' });
-    // Fall X8: Innenumbau, Garage im Bestand, keine Stellplätze geplant – ohne die neuen Angaben grün
-    const x8 = a(mfh, { ...ja('soest.altstadt'), ...nein('vorhaben.dach_fassade', 'vorhaben.stellplaetze_grundstueck'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
+    // Fall X8: Innenumbau, Garage im Bestand, keine Stellplätze geplant – ohne die Angaben offen (Runde 8: auch beim
+    // Innenumbau können Einfriedigung, Außenanlagen oder Garage mitgebaut werden), mit „nein“ grün
+    const x8f = { ...ja('soest.altstadt'), ...nein('vorhaben.dach_fassade', 'vorhaben.stellplaetze_grundstueck'), ...zahl('gebaeude.garage_nutzflaeche', 30) };
+    for (const id of ids) expect(a(mfh, x8f)(id), `${id} (X8 offen)`).toBe('gelb');
+    const x8 = a(mfh, { ...x8f, ...nein('soest.einfriedung', 'soest.aussenanlagen', 'soest.garage', 'soest.freitreppe') });
     for (const id of ids) expect(x8(id), `${id} (X8)`).toBe('gruen');
     // Fall DM2: Fenstertausch (Arbeiten an der Fassade) – ohne Angabe offen, mit „nein“ grün
     const dm2 = { ...ja('soest.altstadt', 'vorhaben.dach_fassade'), ...nein('vorhaben.stellplaetze_grundstueck'), ...zahl('gebaeude.garage_nutzflaeche', 30) };
     for (const id of ids) expect(a(mfh, dm2)(id), `${id} (DM2 offen)`).toBe('gelb');
-    const dm2nein = a(mfh, { ...dm2, ...nein('soest.einfriedung', 'soest.aussenanlagen', 'soest.garage') });
+    const dm2nein = a(mfh, { ...dm2, ...nein('soest.einfriedung', 'soest.aussenanlagen', 'soest.garage', 'soest.freitreppe') });
     for (const id of ids) expect(dm2nein(id), `${id} (DM2)`).toBe('gruen');
     // Gegenproben: die Arbeiten sind angegeben → rot, auch beim Innenumbau
     expect(a(mfh, { ...dm2, ...ja('soest.einfriedung') })(ids[0])).toBe('rot');
@@ -1077,8 +1090,8 @@ describe('Fälle aus dem Fachreview', () => {
     expect(neu(ids[1])).toBe('rot');
     expect(neu(ids[2])).toBe('rot');
     expect(neu(ids[0])).not.toBe('gruen');
-    // Beseitigung in der Altstadt: Gestaltung entfällt
-    const weg = a(M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), { ...ja('soest.altstadt'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
+    // Beseitigung in der Altstadt: Gestaltung entfällt – bis auf die Freitreppen (§ 13 Abs. 4, Runde 8)
+    const weg = a(M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), { ...ja('soest.altstadt'), ...nein('soest.freitreppe'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
     for (const id of ids) expect(weg(id), `${id} (Beseitigung)`).toBe('gruen');
   });
 
@@ -1158,6 +1171,155 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(M4(), nein('gebaeude.gemischt'))('nw/bauo-nrw/36')).toBe('gruen');
     expect(a(M4({ Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3' }))('nw/bauo-nrw/36')).toBe('rot');
     expect(a(M4({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }))('nw/bauo-nrw/36')).not.toBe('gruen');
+  });
+
+  /* ---------- Runde 8 ---------- */
+
+  const altstadt = (m: Record<string, string>, f: Record<string, FaktWert> = {}) => a(m, { ...ja('soest.altstadt'), ...f });
+
+  it('Runde 8: Altstadtsatzung §§ 12, 13, 15 – Arbeiten an Einfriedigung, Außenanlagen oder Garage sind rot, auch beim Innenumbau (keine Ausnahme schlägt die Angabe)', () => {
+    const innen = M4({ Vorhaben: 'Änderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' });
+    const f = { ...nein('vorhaben.dach_fassade', 'vorhaben.stellplaetze_grundstueck'), ...zahl('gebaeude.garage_nutzflaeche', 30) };
+    // Fälle A1–A3: Änderung im Wallring, Dach/Fassade nein, aber Arbeiten an Einfriedigung, Außenanlagen bzw. Garage
+    expect(altstadt(innen, { ...f, ...ja('soest.einfriedung') })('nw-05974040/altstadtsatzung/12')).toBe('rot');
+    expect(altstadt(innen, { ...f, ...ja('soest.aussenanlagen') })('nw-05974040/altstadtsatzung/13')).toBe('rot');
+    expect(altstadt(innen, { ...f, ...ja('soest.garage') })('nw-05974040/altstadtsatzung/15')).toBe('rot');
+    // Carport ohne Garagen-Nutzfläche: § 15 gilt trotzdem
+    expect(altstadt(innen, { ...f, ...zahl('gebaeude.garage_nutzflaeche', 0), ...ja('soest.garage') })('nw-05974040/altstadtsatzung/15')).toBe('rot');
+    // Gegenproben: offen → gelb (gefragt), „nein“ → grün
+    for (const nr of ['12', '13', '15']) expect(altstadt(innen, f)(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr} offen`).toBe('gelb');
+    const alleNein = altstadt(innen, { ...f, ...nein('soest.einfriedung', 'soest.aussenanlagen', 'soest.garage', 'soest.freitreppe') });
+    for (const nr of ['12', '13', '15']) expect(alleNein(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr} nein`).toBe('gruen');
+  });
+
+  it('Runde 8: Teilabbruch und Abbruch mit Ersatzbau – „Beseitigung“ nur beim vollständigen Abbruch; sonst wie eine Änderung bzw. offen', () => {
+    const mfh = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Verfahren: 'vereinfachtes Verfahren' });
+    const voll = (w?: boolean) => (w === undefined ? { [VOLL]: { wert: null, herkunft: 'manuell' as const, sicherheit: 'sicher' as const } } : { [VOLL]: sicher(w) });
+    const ids = ['nw/bauo-nrw/6', 'nw/bauo-nrw/29', 'nw/bauo-nrw/35', 'nw/baupruefvo/3', 'bund/baugb/34'];
+    // Angabe offen: keine Anforderung an Errichtung/Änderung still „gilt nicht“
+    const offen = a(mfh, voll());
+    for (const id of ids) expect(offen(id), `${id} (offen)`).not.toBe('gruen');
+    // Teilabbruch (nicht vollständig): wie eine Änderung – die Anforderungen gelten
+    const teil = a(mfh, voll(false));
+    const aenderung = a({ ...mfh, Vorhaben: 'Änderung' });
+    for (const id of ids) expect(teil(id), `${id} (Teilabbruch)`).toBe(aenderung(id));
+    // Gegenprobe: vollständiger Abbruch – Anforderungen an die Errichtung entfallen, die Anzeige gilt
+    const ganz = a(mfh, { ...voll(true), ...nein('gebaeude.freistehend') });
+    for (const id of ['nw/bauo-nrw/29', 'nw/bauo-nrw/35']) expect(ganz(id), `${id} (vollständig)`).toBe('gruen');
+    expect(ganz('nw/bauo-nrw/62')).toBe('rot');
+  });
+
+  it('Runde 8: Stellplatzsatzung §§ 4, 6 – Beseitigung notwendiger Stellplätze ist nicht „gilt nicht“', () => {
+    // Fall A4: Beseitigung einer Garage mit zwei Stellplätzen
+    const garage = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Nichtwohngebäude', Verfahren: 'verfahrensfrei' });
+    const f = { ...ja('gebaeude.freistehend'), ...zahl('gebaeude.garage_nutzflaeche', 30) };
+    for (const nr of ['4', '6']) {
+      expect(a(garage, f)(`nw-05974040/stellplatzsatzung/${nr}`), `§ ${nr} offen`).toBe('gelb');
+      expect(a(garage, { ...f, ...ja('soest.stellplaetze_entfallen') })(`nw-05974040/stellplatzsatzung/${nr}`), `§ ${nr} ja`).toBe('rot');
+      // Gegenprobe: keine notwendigen Stellplätze betroffen → grün
+      expect(a(garage, { ...f, ...nein('soest.stellplaetze_entfallen') })(`nw-05974040/stellplatzsatzung/${nr}`), `§ ${nr} nein`).toBe('gruen');
+    }
+    // beim Neubau gilt § 4 wie bisher, § 6 nicht
+    expect(a(M4())('nw-05974040/stellplatzsatzung/4')).toBe('rot');
+    expect(a(M4())('nw-05974040/stellplatzsatzung/6')).toBe('gruen');
+  });
+
+  it('Runde 8: Altstadtsatzung § 13 Abs. 4 (und § 1) – Freitreppen an öffentlichen Verkehrsflächen dürfen nicht beseitigt werden', () => {
+    // Fälle N1, R1, R11: Beseitigung im Wallring
+    const weg = M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' });
+    const f = ja('gebaeude.freistehend');
+    for (const nr of ['1', '13']) {
+      expect(altstadt(weg, f)(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr} offen`).toBe('gelb');
+      expect(altstadt(weg, { ...f, ...ja('soest.freitreppe') })(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr} ja`).toBe('rot');
+      expect(altstadt(weg, { ...f, ...nein('soest.freitreppe') })(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr} nein`).toBe('gruen');
+    }
+    // Reparatur der Freitreppe bei einer Änderung: § 13 gilt (Abs. 4 Satz 2)
+    const umbau = M4({ Vorhaben: 'Änderung' });
+    expect(altstadt(umbau, { ...nein('soest.aussenanlagen', 'vorhaben.stellplaetze_grundstueck'), ...ja('soest.freitreppe') })('nw-05974040/altstadtsatzung/13')).toBe('rot');
+  });
+
+  it('Runde 8: AVwGebO § 1 – Abweichung oder Befreiung auch bei verfahrensfreiem Vorhaben und Freistellung; Freistellung nicht „entfällt“; Anzeige ohne Tarifstelle', () => {
+    const keinDenkmal = nein('schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.denkmalbereich_umgebung', 'schutz.bodendenkmal', 'schutz.gartendenkmal');
+    const keineAbw = nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung');
+    // Fälle BA1, V1: verfahrensfreie Garage mit Abweichung bzw. Befreiung
+    const garage = M4({ Gebäudeart: 'Nichtwohngebäude', Verfahren: 'verfahrensfrei' });
+    for (const abw of ['planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung']) expect(a(garage, { ...keinDenkmal, ...keineAbw, ...ja(abw) })('nw/avwgebo/1'), abw).toBe('rot');
+    // Fall F5: Freistellung mit Befreiung rot; Fall A8: Freistellung ohne – gelb (Gebühr auf Antrag), nicht grün
+    const frei = M4({ Verfahren: 'Genehmigungsfreistellung' });
+    expect(a(frei, { ...keinDenkmal, ...keineAbw, ...ja('planung.befreiung') })('nw/avwgebo/1')).toBe('rot');
+    expect(a(frei, { ...keinDenkmal, ...keineAbw })('nw/avwgebo/1')).toBe('gelb');
+    // Gegenproben: verfahrensfrei ohne Abweichung → grün; offen → gelb; anzuzeigende Beseitigung ohne Denkmal → grün
+    expect(a(garage, { ...keinDenkmal, ...keineAbw })('nw/avwgebo/1')).toBe('gruen');
+    expect(a(garage, keinDenkmal)('nw/avwgebo/1')).toBe('gelb');
+    const anzeige = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Verfahren: 'verfahrensfrei' });
+    expect(a(anzeige, { ...keinDenkmal, ...nein('gebaeude.freistehend') })('nw/avwgebo/1')).toBe('gruen');
+  });
+
+  it('Runde 8: BauGB §§ 144, 145 – im vereinfachten Sanierungsverfahren ohne Genehmigungspflicht (Soest: alle Satzungen schließen § 144 aus)', () => {
+    // Fälle A7, R2: Sanierungsgebiet in Soest
+    expect(a(M4(), ja('planung.sanierungsgebiet'))('bund/baugb/144')).toBe('gruen');
+    expect(a(M4(), ja('planung.sanierungsgebiet'))('bund/baugb/145')).toBe('gruen');
+    // andere Gemeinde: ohne Angabe offen, mit „nicht ausgeschlossen“ rot, mit „ausgeschlossen“ grün
+    const werl = (f: Record<string, FaktWert>) => inGemeinde('05974052', M4(), { ...ja('planung.sanierungsgebiet'), ...f })('bund/baugb/144').ampel;
+    expect(werl({})).toBe('gelb');
+    expect(werl(nein('planung.sanierung_144_ausgeschlossen'))).toBe('rot');
+    expect(werl(ja('planung.sanierung_144_ausgeschlossen'))).toBe('gruen');
+    // Gegenprobe: kein Sanierungsgebiet → grün
+    expect(werl(nein('planung.sanierungsgebiet'))).toBe('gruen');
+  });
+
+  it('Runde 8: Festsetzungen eines Plans in Aufstellung binden erst bei Planreife (§ 33 BauGB)', () => {
+    // Fall P1: Außenbereich, Plan in Aufstellung, Planreife nein → grün; Fall PR2: Planreife offen → gelb
+    const aussen = M4({ Planungsrecht: 'Außenbereich' });
+    const fest = (f: Record<string, FaktWert>) => a(aussen, { ...ja('planung.planaufstellung'), ...nein('soest.bplan_entwurf'), ...f })('nw-05974040/bebauungsplan/Festsetzungen');
+    expect(fest(nein('planung.planreife'))).toBe('gruen');
+    expect(fest({})).toBe('gelb');
+    // Gegenproben: planreif → rot; Bebauungsplan → rot
+    expect(fest(ja('planung.planreife'))).toBe('rot');
+    expect(a(M4({ Planungsrecht: 'Bebauungsplan' }))('nw-05974040/bebauungsplan/Festsetzungen')).toBe('rot');
+  });
+
+  it('Runde 8: LNatSchG §§ 39, 41 – rot nur mit der eigenen Angabe (geschützte Hecke/Ausgleichspflanzung, Allee), sonst gelb', () => {
+    // Fall R3: Baumfällung im Innenbereich
+    const faellen = (f: Record<string, FaktWert>) => a(M4(), { ...ja('vorhaben.baeume_faellen'), ...f });
+    expect(faellen({})('nw/lnatschg/39')).toBe('gelb');
+    expect(faellen(ja('schutz.hecke_ausgleich'))('nw/lnatschg/39')).toBe('rot');
+    expect(faellen(nein('schutz.hecke_ausgleich'))('nw/lnatschg/39')).toBe('gruen');
+    // § 41: geschützter Baum (Baumschutzsatzung) ohne Angabe zur Allee gelb, Allee rot, keine Allee grün
+    expect(a(M4(), ja('schutz.baum'))('nw/lnatschg/41')).toBe('gelb');
+    expect(a(M4(), ja('schutz.baum', 'schutz.allee'))('nw/lnatschg/41')).toBe('rot');
+    expect(a(M4(), { ...ja('schutz.baum'), ...nein('schutz.allee') })('nw/lnatschg/41')).toBe('gruen');
+    // Gegenproben: keine Fällung bzw. keine geschützten Bäume → grün
+    expect(a(M4(), nein('vorhaben.baeume_faellen'))('nw/lnatschg/39')).toBe('gruen');
+    expect(a(M4(), nein('schutz.baum'))('nw/lnatschg/41')).toBe('gruen');
+  });
+
+  it('Runde 8: Altstadtsatzung §§ 4, 6, 7, 10, 11, 14 – Nutzungsänderung ohne Arbeiten an Dach oder Fassade grün', () => {
+    // Fall A5: Büro → Laden in der Altstadt, Dach/Fassade nein, keine Wärmepumpe/Lüftung
+    const na = M4({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3' });
+    const f = nein('vorhaben.dach_fassade', 'technik.waermepumpe', 'technik.lueftung');
+    for (const nr of ['4', '6', '7', '10', '11', '14']) {
+      expect(altstadt(na, f)(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr}`).toBe('gruen');
+      // Gegenprobe: mit Arbeiten an der Fassade bzw. ohne Angabe – im Einzelfall prüfen
+      expect(altstadt(na, { ...f, ...ja('vorhaben.dach_fassade') })(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr} Fassade`).toBe('gelb');
+      expect(altstadt(na)(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr} offen`).not.toBe('gruen');
+    }
+  });
+
+  it('Runde 8: Fernwärmesatzung §§ 2, 3 – bei der Beseitigung kein Fehl-Gelb aus der Angabe „Heizung“', () => {
+    // Fall R4: Beseitigung in der Britischen Siedlung, Heizung offen
+    const weg = a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }), ja('soest.fernwaerme', 'gebaeude.freistehend'));
+    for (const nr of ['2', '3']) expect(weg(`nw-05974040/fernwaerme/${nr}`), `§ ${nr}`).toBe('gruen');
+    // Gegenprobe: Neubau eines beheizten Gebäudes im Gebiet → rot
+    const neu = a(M4(), ja('soest.fernwaerme', 'gebaeude.beheizt'));
+    for (const nr of ['2', '3']) expect(neu(`nw-05974040/fernwaerme/${nr}`), `§ ${nr} Neubau`).toBe('rot');
+  });
+
+  it('Runde 8: § 62 BauO NRW – Hinweis auf § 53 Abs. 2 Satz 2 und die Anzeige des Beginns der Beseitigung', () => {
+    const r = auswerten(eingabe(M4({ Vorhaben: 'Beseitigung' }), { [VOLL]: sicher(true) }, TEXTE));
+    const p = r.paragrafen.find((x) => x.id === 'nw/bauo-nrw/62')!;
+    expect(p.hinweise.join(' ')).toMatch(/§ 53 Abs\. 2 Satz 2/);
+    expect(p.hinweise.join(' ')).toMatch(/§ 74 Abs\. 8/);
   });
 });
 

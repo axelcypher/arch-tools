@@ -769,12 +769,7 @@
       "gilt": {
         "und": [
           {
-            "m": "Vorhaben",
-            "in": [
-              "Errichtung",
-              "Änderung",
-              "Nutzungsänderung"
-            ]
+            "$": "vorhaben_29"
           },
           {
             "f": "gebaeude.gemischt",

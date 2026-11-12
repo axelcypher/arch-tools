@@ -7,28 +7,36 @@
   "paragrafen": {
     "1": {
       "gilt": {
-        "$": "nw_mit_baugenehmigung"
-      },
-      "entfaellt": {
         "oder": [
           {
-            "$": "freistellung"
+            "$": "nw_mit_baugenehmigung"
           },
           {
             "und": [
               {
-                "$": "nw_beseitigung_verfahrensfrei"
+                "$": "vorhaben_29"
               },
               {
-                "nicht": {
-                  "$": "nw_genehmigungsbeduerftig"
-                }
+                "oder": [
+                  {
+                    "f": "planung.abweichung",
+                    "ist": true
+                  },
+                  {
+                    "f": "planung.befreiung",
+                    "ist": true
+                  },
+                  {
+                    "f": "ortsrecht.abweichung",
+                    "ist": true
+                  }
+                ]
               }
             ]
           }
         ]
       },
-      "grund": "Verwaltungsgebühren nach dem Allgemeinen Gebührentarif, Tarifstelle 3.1 (Baurecht) – für die Baugenehmigung nach dem Rohbauwert aus dem Brutto-Rauminhalt.",
+      "grund": "Verwaltungsgebühren nach dem Allgemeinen Gebührentarif, Tarifstelle 3.1 (Baurecht): für die Baugenehmigung nach dem Rohbauwert aus dem Brutto-Rauminhalt, für die beantragte Genehmigung einer Beseitigung je Anlage (3.1.4.4), für Abweichungen und Befreiungen je Tatbestand (3.1.5.3.1) – auch neben einem verfahrensfreien Vorhaben oder einer Freistellung. Die Anzeige einer Beseitigung hat keine eigene Tarifstelle.",
       "fundstellen": [
         "1"
       ],
@@ -41,9 +49,19 @@
       },
       "titel": "Anwendungsbereich, Abweichungsverbot",
       "pruefen": {
-        "grund": "Anzeige einer Beseitigung (§ 62 Abs. 3 Satz 3 BauO NRW): ob und welche Gebühr der Tarif dafür vorsieht, im Einzelfall prüfen.",
+        "grund": "Gebühr kann anfallen: bei Genehmigungsfreistellung, wenn eine Bestätigung bzw. Erklärung der Gemeinde beantragt wird (Tarifstelle 3.1.4.9), und für eine gesonderte denkmalrechtliche Erlaubnis (Tarifstelle 3.3) – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nw_beseitigung_anzeige"
+          "oder": [
+            {
+              "$": "freistellung"
+            },
+            {
+              "n": "nw/dschg/24",
+              "ampel": [
+                "rot"
+              ]
+            }
+          ]
         }
       }
     }
