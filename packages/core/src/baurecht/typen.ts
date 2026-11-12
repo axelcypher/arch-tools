@@ -204,6 +204,16 @@ export interface Modul {
   hinweise?: Hinweis[];
 }
 
+/**
+ * Angaben, die an der Lage des Grundstücks hängen: Lage, Schutzgebiete, Planungsrecht (Pläne, Satzungen, Sperren),
+ * Grundstück (Straßen, Gewässer, Zufahrten), Ortsrecht, Zuständigkeit sowie alles aus Geodiensten. Angaben von Hand
+ * dazu gelten nur für die Lage, an der sie gemacht wurden. Nicht ortsgebunden: Vorhaben, Gebäude, Technik, Antrag.
+ */
+export const ORTSGEBUNDENE_GRUPPEN: readonly FaktGruppe[] = ['lage', 'schutz', 'planung', 'grundstueck', 'ortsrecht', 'zustaendig'];
+export function ortsgebunden(def: Pick<FaktDef, 'gruppe' | 'geodienst'> | undefined, wert?: Pick<FaktWert, 'herkunft'>): boolean {
+  return (!!def && (ORTSGEBUNDENE_GRUPPEN.includes(def.gruppe) || !!def.geodienst)) || wert?.herkunft === 'geodienst';
+}
+
 /** Name einer Angabe für die Anzeige: der kurze Name, sonst der Titel */
 export function faktName(def: Pick<FaktDef, 'titel' | 'kurz'> | undefined, id = ''): string {
   return def?.kurz ?? def?.titel ?? id;

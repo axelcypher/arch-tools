@@ -74,3 +74,19 @@ describe('Regel in Worten: Verneinung positiv, Schwellen lesbar', () => {
     expect(kurzBaum({ f: 'h', min: 7 }, t).text).toBe('Höhe mindestens 7 m');
   });
 });
+
+describe('Regel in Worten: verneinte Schwellen und unsichere Gruppen', () => {
+  const t: TextKontext = {
+    fakt: (id) => (({ h: { titel: 'Höhe', gruppe: 'gebaeude', typ: 'zahl', einheit: 'm' }, g: { titel: 'Garagen', gruppe: 'gebaeude', typ: 'zahl', einheit: 'm²' }, a: { titel: 'A', gruppe: 'vorhaben', typ: 'janein' }, b: { titel: 'B', gruppe: 'vorhaben', typ: 'janein' } }) as Record<string, unknown>)[id] as never,
+    bausteine: {},
+  };
+  it('„nicht über 22 m“ → „höchstens 22 m“, „nicht vorhanden“ → „keine“', () => {
+    expect(kurzBaum({ nicht: { f: 'h', min: 22.01 } }, t).text).toBe('Höhe höchstens 22 m');
+    expect(kurzBaum({ nicht: { f: 'g', min: 0.01 } }, t).text).toBe('Garagen: keine');
+  });
+  it('eine Gruppe, deren Stand nur auf Hinweisen beruht, ist unsicher', () => {
+    const ctx = { merkmale: {}, fakten: { a: { wert: false, herkunft: 'geodienst' as const, sicherheit: 'hinweis' as const }, b: { wert: false, herkunft: 'geodienst' as const, sicherheit: 'hinweis' as const } }, einreichung: '2026-11-12', heute: '2026-11-12', bausteine: {} };
+    const b = kurzBaum({ und: [{ f: 'a', ist: true }, { f: 'b', ist: true }] }, t, ctx);
+    expect(b).toMatchObject({ w: 'nein', unsicher: true });
+  });
+});

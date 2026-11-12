@@ -122,7 +122,7 @@ function Baum({ k, tiefe = 0 }: { k: KurzKnoten; tiefe?: number }) {
   if (tiefe < 2)
     return (
       <li>
-        <Stand w={k.w} />
+        <Stand w={k.w} unsicher={k.unsicher} />
         {k.text}
         {liste}
       </li>
@@ -131,7 +131,7 @@ function Baum({ k, tiefe = 0 }: { k: KurzKnoten; tiefe?: number }) {
     <li>
       <details open={k.w === 'offen' || !k.w}>
         <summary>
-          <Stand w={k.w} />
+          <Stand w={k.w} unsicher={k.unsicher} />
           {k.text} <span className="br-leise">({k.kinder.length})</span>
         </summary>
         {liste}

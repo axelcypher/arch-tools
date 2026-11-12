@@ -21,6 +21,9 @@ function Menue({ titel, label, offen, setOffen, children }: { titel: string; lab
   const knopf = useRef<HTMLButtonElement>(null);
   // wer das Menü geöffnet hat (Knopf „Mehr“ oder die Sammelmarke) – dorthin geht der Fokus zurück
   const oeffner = useRef<HTMLElement | null>(null);
+  // Mausdruck auf einen Öffner: dessen Klick schaltet das Menü selbst um – nur dann darf der Fokuswechsel dorthin es
+  // nicht schließen (mit der Tastatur auf die Sammelmarke zu gehen, schließt es wie jeder andere Fokuswechsel)
+  const mausAufOeffner = useRef(false);
   useEffect(() => {
     if (!offen) return;
     oeffner.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -28,7 +31,10 @@ function Menue({ titel, label, offen, setOffen, children }: { titel: string; lab
     const weg = (e: MouseEvent) => {
       const ziel = e.target as Element | null;
       // Klicks auf einen Öffner schalten selbst um (sonst schlösse mousedown und der Klick öffnete wieder)
-      if (!rahmen.current?.contains(ziel) && !ziel?.closest?.('[data-menue-oeffner]')) setOffen(false);
+      if (ziel?.closest?.('[data-menue-oeffner]')) {
+        mausAufOeffner.current = true;
+        setTimeout(() => (mausAufOeffner.current = false), 500);
+      } else if (!rahmen.current?.contains(ziel)) setOffen(false);
     };
     document.addEventListener('mousedown', weg);
     return () => document.removeEventListener('mousedown', weg);
@@ -58,7 +64,7 @@ function Menue({ titel, label, offen, setOffen, children }: { titel: string; lab
         // Fokus verlässt das Menü (Tab): schließen – nicht aber, wenn er auf einen Öffner geht (die Sammelmarke schaltet
         // das Menü selbst um; sonst schlösse der Fokuswechsel und der Klick öffnete wieder)
         const ziel = e.relatedTarget as Element | null;
-        if (offen && !rahmen.current?.contains(ziel) && !ziel?.closest?.('[data-menue-oeffner]')) setOffen(false);
+        if (offen && !rahmen.current?.contains(ziel) && !(mausAufOeffner.current && ziel?.closest?.('[data-menue-oeffner]'))) setOffen(false);
       }}
     >
       <button type="button" ref={knopf} data-menue-oeffner="" aria-haspopup="menu" aria-expanded={offen} onClick={() => setOffen(!offen)} title={label}>

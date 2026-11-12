@@ -282,7 +282,9 @@ export function faktenZurLage(fakten: Record<string, FaktWert>, lage: string | n
       continue;
     }
     const { bestaetigt: _b, ...ohne } = f;
-    out[id] = { ...ohne, sicherheit: 'hinweis', grund: lage ? 'Die Koordinaten des Vorhabens haben sich seit der Abfrage geändert – bitte „Lage abfragen“ wiederholen' : ohneLage };
+    // Angaben von Hand stellt „Lage abfragen“ nicht wieder her (sie gehen dem Dienst vor) – sie sind erneut anzugeben
+    const grund = f.herkunft === 'manuell' ? (lage ? 'Angabe von Hand zu einer früheren Lage – bitte erneut angeben oder zurücksetzen' : `${ohneLage} (Angabe von Hand – erneut angeben, sobald die Koordinaten stimmen)`) : lage ? 'Die Koordinaten des Vorhabens haben sich seit der Abfrage geändert – bitte „Lage abfragen“ wiederholen' : ohneLage;
+    out[id] = { ...ohne, sicherheit: 'hinweis', grund };
   }
   return out;
 }

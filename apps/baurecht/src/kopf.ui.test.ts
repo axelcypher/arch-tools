@@ -69,6 +69,19 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     expect(document.activeElement).toBe(marke);
   });
 
+  it('mit der Tastatur auf die Sammelmarke (ohne Maus) schließt das Menü wie jeder Fokuswechsel', () => {
+    const host = render();
+    const marke = host.querySelector<HTMLButtonElement>('.br-marke-knopf')!;
+    klick(marke);
+    expect(host.querySelector('[role="menu"]')).not.toBeNull();
+    // Umschalt+Tab aus dem Menü landet auf der Sammelmarke – kein Mausdruck
+    act(() => {
+      document.activeElement!.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: marke }));
+      marke.focus();
+    });
+    expect(host.querySelector('[role="menu"]')).toBeNull();
+  });
+
   it('Menüeinträge sind keine eigenen Tabstopps; Tab hinaus schließt', () => {
     const host = render();
     const mehr = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.startsWith('Mehr'))!;

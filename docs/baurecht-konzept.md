@@ -621,7 +621,7 @@ Rot heißt „gilt“, nicht „wird geprüft“. Jeder rote Paragraf zeigt zus�
 
 Danach:
 
-- Die Festlegung geht vor. Sie wird **überholt**, wenn sich danach die automatische Ampel, ein beteiligter Fakt oder
+- Die Festlegung geht vor. Sie wird **überholt**, wenn die automatische Ampel danach strenger wird als damals und als die Festlegung, wenn sich ein beteiligter Fakt oder
   eine Fundstelle ändert. Dann steht ⚠ daran („Automatisch jetzt rot: Landschaftsschutzgebiet seit Abfrage am …“),
   und das Protokoll zählt sie als offen, bis sie erneut festgelegt (wieder mit beiden Bestätigungen) oder aufgehoben
   ist.

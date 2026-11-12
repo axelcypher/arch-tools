@@ -261,14 +261,19 @@ export function App() {
     return { herab: herabstufungen(stand.auswertung, mit), nachher: mit.fakten[id] };
   };
   // … und beim Speichern (jetzt gegenüber dem Stand der Datei)
-  const folgenSeitDatei = (id: string) => {
-    const s = useBaurecht.getState();
-    const eigene = { ...s.pruefung.fakten };
-    const alt = s.pruefungDatei.fakten[id];
-    if (alt) eigene[id] = alt;
-    else delete eigene[id];
-    return { herab: herabstufungen(auswertungMit(eigene), stand.auswertung) };
-  };
+  // stabil je Auswertung: der Speicherdialog rechnet die Folgen nur neu, wenn sich der Stand wirklich ändert
+  const auswertungJetzt = stand.auswertung;
+  const folgenSeitDatei = useCallback(
+    (id: string) => {
+      const s = useBaurecht.getState();
+      const eigene = { ...s.pruefung.fakten };
+      const alt = s.pruefungDatei.fakten[id];
+      if (alt) eigene[id] = alt;
+      else delete eigene[id];
+      return { herab: herabstufungen(auswertungMit(eigene), auswertungJetzt) };
+    },
+    [auswertungJetzt],
+  );
 
   return (
     <div className="app br-app">

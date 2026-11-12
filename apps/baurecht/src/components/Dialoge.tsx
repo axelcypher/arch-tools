@@ -411,7 +411,8 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
   const [geprueft, setGeprueft] = useState(false);
   useEffect(() => setGeprueft(false), [offen]);
   // Folgen je Angabe einmal je Öffnen (volle Auswertung je Angabe – nicht bei jedem Haken neu)
-  const folgenJe = useMemo(() => (offen ? Object.fromEntries(offen.fakten.map((id) => [id, folgen(id)])) : {}), [offen]); // eslint-disable-line react-hooks/exhaustive-deps
+  // je Öffnen und je Stand der Auswertung (folgen ist je Auswertung stabil) – nicht bei jedem Haken neu
+  const folgenJe = useMemo(() => (offen ? Object.fromEntries(offen.fakten.map((id) => [id, folgen(id)])) : {}), [offen, folgen]);
   if (!offen || !antwort) return null;
   // überholte Festlegungen lassen sich so nicht bestätigen – erst erneut festlegen oder aufheben
   const ueberholte = offen.festlegungen.filter((id) => festlegungen[id] && titel(id).ueberholt);

@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FAKT_GRUPPEN, faktName, zaehlEinheit } from '@core/baurecht/typen';
+import { FAKT_GRUPPEN, faktName, ortsgebunden, zaehlEinheit } from '@core/baurecht/typen';
 import { aktuelleLage } from '../pruefung';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
 import { werten } from '@core/baurecht/kurz';
@@ -30,7 +30,7 @@ export function segmentTaste(e: KeyboardEvent<HTMLElement>) {
 const tabStopp = (gewaehlt: boolean, erster: boolean, keinerGewaehlt: boolean) => (gewaehlt || (keinerGewaehlt && erster) ? 0 : -1);
 
 /** Angaben, die an der Lage hängen (Schutzgebiete jedes Moduls, Werte aus Geodiensten): an die Lage gebunden */
-export const lagebezug = (def: FaktDef, wert: FaktWert | undefined) => def.gruppe === 'schutz' || def.gruppe === 'lage' || !!def.geodienst || wert?.herkunft === 'geodienst';
+export const lagebezug = (def: FaktDef, wert: FaktWert | undefined) => ortsgebunden(def, wert);
 
 /** Angaben, die von Hand nur mit Begründung gesetzt werden: Schutzgebiete und Werte aus Geodiensten (ja/nein, Auswahl) */
 export const mitBeleg = (def: FaktDef, wert: FaktWert | undefined) => (def.typ === 'janein' || def.typ === 'wahl') && (def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst' || wert?.herkunft === 'modul');
@@ -120,6 +120,8 @@ const beschreibung = (def: FaktDef, id: string) => (def.frage || (def.kurz && de
 
 function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void }) {
   const v = wert?.wert ?? null;
+  // eine Angabe von Hand, die nur noch Hinweis ist (z. B. zu einer früheren Lage): derselbe Wert lässt sich erneut setzen
+  const neuBinden = wert?.herkunft === 'manuell' && wert.sicherheit === 'hinweis' && !wert.bestaetigt;
   if (def.typ === 'janein')
     return (
       <div className="br-segment" role="group" aria-label={faktName(def, id)} aria-describedby={beschreibung(def, id)} title={def.kurz ? def.titel : undefined} onKeyDown={segmentTaste}>
@@ -127,7 +129,7 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
           [true, 'ja'],
           [false, 'nein'],
         ].map(([w, t], i) => (
-          <button key={String(w)} type="button" tabIndex={tabStopp(v === w, i === 0, v === null)} aria-pressed={v === w} className={v === w ? 'active' : ''} onClick={() => v !== w && onWert(w as boolean)}>
+          <button key={String(w)} type="button" tabIndex={tabStopp(v === w, i === 0, v === null)} aria-pressed={v === w} className={v === w ? 'active' : ''} onClick={() => (v !== w || neuBinden) && onWert(w as boolean)}>
             {t as string}
           </button>
         ))}
@@ -136,7 +138,8 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   if (def.typ === 'zahl')
     return (
       <span className="br-zahl">
-        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty onChange={(n) => onWert(n)} label={faktName(def, id)} digits={zaehlEinheit(def.einheit) ? 0 : 2} />
+        {/* Anzahlen ganzzahlig übernehmen (angezeigt und gespeichert gleich – „5,5 Stellplätze“ gibt es nicht) */}
+        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty onChange={(n) => onWert(n === undefined || !zaehlEinheit(def.einheit) ? n : Math.round(n))} label={faktName(def, id)} digits={zaehlEinheit(def.einheit) ? 0 : 2} />
         {def.einheit && <span className="br-leise">{def.einheit}</span>}
       </span>
     );
@@ -227,7 +230,7 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
               </span>
               {andereLage ? (
                 <span className="br-leise-stark" title={wert.grund}>
-                  {lage ? 'Ergebnis einer früheren Lage – „Lage abfragen“' : 'ohne gültige Koordinaten nicht bestätigbar'}
+                  {!lage ? 'ohne gültige Koordinaten nicht bestätigbar' : wert.herkunft === 'manuell' ? 'Angabe zu einer früheren Lage – erneut angeben oder zurücksetzen' : 'Ergebnis einer früheren Lage – „Lage abfragen“'}
                 </span>
               ) : (
                 <button type="button" className="small" aria-label={`${name} bestätigen …`} title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, name, wert, lagebezug(def, wert))}>

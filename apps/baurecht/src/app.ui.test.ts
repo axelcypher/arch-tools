@@ -498,6 +498,22 @@ describe('Baurecht – Oberfläche', () => {
     expect(titel.querySelector('.br-fakt-frage')?.textContent).toMatch(/Art des Gebäudes/);
   });
 
+  it('Anzahlen (Stellplätze) werden ganzzahlig übernommen – angezeigt und gespeichert gleich', () => {
+    const host = render();
+    act(() => knopf(host, 'alle Angaben')?.click());
+    const feld = host.querySelector<HTMLInputElement>('[data-fakt="gebaeude.stellplaetze"] input')!;
+    expect(feld, 'Eingabe Stellplätze').toBeTruthy();
+    act(() => feld.focus());
+    tippen(feld, '5,5');
+    act(() => {
+      feld.dispatchEvent(new FocusEvent('blur'));
+      feld.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+      feld.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    const w = useBaurecht.getState().pruefung.fakten['gebaeude.stellplaetze']?.wert;
+    expect(w).toBe(6);
+  });
+
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {
     const host = render();
     const vorher = host.querySelector('.br-bilanz')!.textContent;

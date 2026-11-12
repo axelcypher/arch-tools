@@ -30,14 +30,25 @@ describe('Leisten: Breite an den verfügbaren Platz gebunden', () => {
     const arbeit = host.querySelector<HTMLElement>('.arbeit')!;
     const [links, rechts] = [...arbeit.querySelectorAll<HTMLElement>('.leiste')];
     // Arbeitsbereich 1000 px; die gezeichnete Breite folgt der gesetzten (kein Layout in happy-dom)
-    Object.defineProperty(arbeit, 'clientWidth', { value: 1000 });
+    Object.defineProperty(arbeit, 'clientWidth', { value: 1000, configurable: true });
     for (const l of [links, rechts]) l.getBoundingClientRect = () => ({ width: parseFloat(l.style.width) }) as DOMRect;
     const griff = links.querySelector<HTMLElement>('[role="separator"]')!;
     expect(griff.getAttribute('aria-label')).toBe('Breite der Angaben');
     expect(rechts.querySelector('[role="separator"]')!.getAttribute('aria-label')).toBe('Breite der Einzelheiten');
-    for (let i = 0; i < 30; i++) act(() => void griff.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })));
-    // 1000 − 360 (rechts) − 420 (Mitte) = 220 < Mindestbreite 240 → bleibt bei der Mindestbreite
-    expect(parseFloat(links.style.width)).toBeLessThanOrEqual(Math.max(240, 1000 - 360 - 420));
+    const taste = (key: string) => act(() => void griff.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+    // 1000 − 360 (rechts) − 420 (Mitte) = 220: kein Platz zum Wachsen – die Leiste wächst nicht (und schrumpft durch
+    // „wachsen“ auch nicht)
+    for (let i = 0; i < 30; i++) taste('ArrowRight');
+    expect(parseFloat(links.style.width)).toBe(300);
+    taste('End');
+    expect(parseFloat(links.style.width)).toBe(300);
+    // mit Platz: wächst bis Arbeitsbereich − andere Leiste − Mitte (1400 − 360 − 420 = 620), höchstens bis max 520
+    Object.defineProperty(arbeit, 'clientWidth', { value: 1400 });
+    for (let i = 0; i < 30; i++) taste('ArrowRight');
+    expect(parseFloat(links.style.width)).toBe(520);
+    // Schrumpfen geht frei bis zur Mindestbreite
+    taste('Home');
+    expect(parseFloat(links.style.width)).toBe(240);
     act(() => root.unmount());
   });
 });

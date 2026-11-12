@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { faktDefinitionen } from '@core/baurecht/auswertung';
 import { FAKTEN } from '@core/baurecht/fakten';
 import { aktiveModule } from '@core/baurecht/paket';
-import { faktName } from '@core/baurecht/typen';
+import { faktName, ortsgebunden } from '@core/baurecht/typen';
 import { paketLaden } from './laden';
 
 describe('kurze Namen der Angaben', () => {
@@ -53,5 +53,18 @@ describe('kurze Namen der Angaben', () => {
     for (const [id, d] of nachJa) expect(faktName(d, id), id).toMatch(/^Welche[rs]? /);
     // Zahl mit Einheit: der Regelbaum zeigt „… mindestens 36 Stellplätze“
     expect(soest['nw.stellplatzflaeche'].einheit).toBe('Stellplätze');
+  });
+});
+
+describe('ortsgebundene Angaben', () => {
+  const paket = paketLaden();
+  const defs = { ...FAKTEN, ...faktDefinitionen(paket.module) };
+  it('Straßen, Gewässer, Pläne, Satzungen, Sperren und Ortsrecht sind an die Lage gebunden', () => {
+    const muss = ['lage.ags', 'lage.altlasten', 'lage.strasse_ausserorts', 'lage.gewaesser', 'lage.bundesfernstrasse', 'lage.zufahrt_klassifiziert', 'lage.anschluss_klassifiziert', 'planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.sanierungsgebiet', 'planung.umlegung', 'schutz.lsg', 'soest.altstadt', 'soest.historische_ortsteile', 'soest.fernwaerme', 'soest.muellingsen', 'soest.bplan_entwurf'];
+    expect(muss.filter((id) => !defs[id] || !ortsgebunden(defs[id]))).toEqual([]);
+  });
+  it('Vorhaben, Gebäude, Technik und Antrag hängen nicht an der Lage', () => {
+    const falsch = Object.entries(defs).filter(([, d]) => ['vorhaben', 'gebaeude', 'technik', 'antrag'].includes(d.gruppe) && !d.geodienst && ortsgebunden(d));
+    expect(falsch.map(([id]) => id)).toEqual([]);
   });
 });

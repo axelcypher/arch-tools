@@ -6,7 +6,7 @@
 
 import { MERKMAL_TITEL } from './fakten';
 import type { Ampel, FaktDef, FaktWert, Kurz, Wahrheit } from './typen';
-import { faktName } from './typen';
+import { faktName, zaehlEinheit } from './typen';
 
 export interface KurzKontext {
   merkmale: Record<string, string>;
@@ -181,7 +181,7 @@ const zahl = (n: number) => n.toLocaleString('de-DE');
 function wertText(v: string | number | boolean, def?: FaktDef): string {
   if (typeof v === 'boolean') return v ? 'ja' : 'nein';
   // wie in den Eingabefeldern: Werte mit Einheit und Nachkommastellen mit zwei Stellen („2,90 m“)
-  if (typeof v === 'number') return `${def?.einheit && !Number.isInteger(v) ? v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : zahl(v)}${def?.einheit ? ` ${def.einheit}` : ''}`;
+  if (typeof v === 'number') return `${def?.einheit && !zaehlEinheit(def.einheit) && !Number.isInteger(v) ? v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : zahl(v)}${def?.einheit ? ` ${def.einheit}` : ''}`;
   return v;
 }
 
@@ -279,7 +279,9 @@ function verneint(k: Kurz, t: TextKontext): string | undefined {
     if (k.bekannt !== undefined) return k.bekannt ? `${name} unbekannt` : `${name} bekannt`;
     if (k.ist !== undefined && typeof k.ist !== 'boolean') return `${name} ist nicht ${typeof k.ist === 'string' ? `„${k.ist}“` : wertText(k.ist, def)}`;
     if (k.in) return `${name}: weder ${k.in.map((x) => `„${x}“`).join(' noch ')}`;
-    if (k.min !== undefined && k.max === undefined) return `${name} unter ${zahl(k.min)}${e}`;
+    // wie die Schwellen selbst: „nicht über 22 m“ → „höchstens 22 m“, „nicht vorhanden“ → „keine“
+    const ueber = (x: number) => Math.abs(x * 100 - Math.round(x) * 100 - 1) < 1e-6;
+    if (k.min !== undefined && k.max === undefined) return k.min > 0 && k.min <= 0.01 ? `${name}: keine` : ueber(k.min) ? `${name} höchstens ${zahl(Math.round(k.min))}${e}` : `${name} unter ${zahl(k.min)}${e}`;
     if (k.max !== undefined && k.min === undefined) return k.max === 0 ? `${name}: vorhanden` : `${name} über ${zahl(k.max)}${e}`;
   }
   if ('n' in k) {

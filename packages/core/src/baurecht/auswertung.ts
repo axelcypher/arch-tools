@@ -482,7 +482,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // Was klärt am meisten: fehlende Angaben an automatisch gelben Paragrafen
   const zahl = new Map<string, number>();
   // ohne Paragrafen mit wirksamer Festlegung – dort ist nichts mehr zu klären
-  const offenAuto = (p: ParagrafErgebnis) => !(p.festlegung && !p.ueberholt && !p.unwirksam) && (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0));
+  // (wirksam = bestätigt, nicht überholt, nicht unwirksam – wie bei Verweisen; ein Entwurf klärt noch nichts)
+  const offenAuto = (p: ParagrafErgebnis) => !(p.festlegung?.bestaetigt && !p.ueberholt && !p.unwirksam) && (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0));
   for (const p of paragrafen) if (offenAuto(p)) for (const o of p.offen) if (!o.startsWith('paragraf:')) zahl.set(o, (zahl.get(o) ?? 0) + 1);
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
 

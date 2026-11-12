@@ -324,7 +324,12 @@ describe('Ampel je Paragraf', () => {
     expect(k).toBeTruthy();
     const ps = vorher.paragrafen.filter((x) => x.offen.includes(k.id));
     const festlegungen = Object.fromEntries(ps.map((x) => [x.id, { ampel: 'gelb' as const, grund: 'von Hand geklärt', von: 'TP', am: '2026-11-12', automatisch: x.automatisch, fakten: {} }]));
-    const nachher = auswerten(eingabe({ merkmale: {}, festlegungen }));
+    // ein Entwurf klärt noch nichts (wie bei Verweisen) …
+    const entwurf = auswerten(eingabe({ merkmale: {}, festlegungen }));
+    expect(entwurf.klaerung.find((x) => x.id === k.id)?.anzahl).toBe(k.anzahl);
+    // … erst die bestätigte Festlegung
+    const bestaetigt = Object.fromEntries(Object.entries(festlegungen).map(([id, f]) => [id, { ...f, bestaetigt: '2026-11-12T10:00:00Z' }]));
+    const nachher = auswerten(eingabe({ merkmale: {}, festlegungen: bestaetigt }));
     expect(nachher.klaerung.find((x) => x.id === k.id)?.anzahl ?? 0).toBe(0);
   });
 

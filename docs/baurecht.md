@@ -32,7 +32,10 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
 - **Koordinaten:** Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur, solange die Koordinaten zur
   Adresse in den Stammdaten passen. Fehlen sie oder wurde die Adresse geändert, sind sie nur noch Hinweis (auch der
   Gemeindeschlüssel aus ALKIS); der Kopf zeigt „Keine Koordinaten“ bzw. „Koordinaten veraltet“, „Bestätigen …“ wird
-  dann nicht angeboten.
+  dann nicht angeboten. Ortsgebunden sind alle Angaben zu Lage, Schutzgebieten, Planungsrecht (Pläne, Satzungen,
+  Sperren), Grundstück (Straßen, Gewässer, Zufahrten), Ortsrecht und Zuständigkeit – auch von Hand und ohne Beleg; nach
+  einem Adresswechsel sind sie erneut anzugeben (derselbe Wert lässt sich dazu erneut anklicken). Anzahlen (z. B.
+  Stellplätze) werden ganzzahlig übernommen.
 - **Filterleiste:** Ampelzähler (blenden ein/aus), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und
   die Kästchen „nur von Hand festgelegte“ / „nur geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px,
   wird die Ordnung zur Auswahlliste, die Kästchen wandern in **Filter ▾** und der Balken entfällt. Die Zähler an den
@@ -92,11 +95,13 @@ Jeder darf festlegen – und bestätigt dafür zweimal:
    verworfen („Nicht speichern“) sind.
 
 „Festlegung aufheben“ wirkt sofort; daneben steht „Rückgängig“, der Fokus geht auf „Von Hand festlegen …“. Auch das
-Aufheben einer gespeicherten Festlegung wird beim Speichern noch einmal bestätigt; eine mit „Rückgängig“
+Aufheben einer gespeicherten Festlegung wird beim Speichern noch einmal bestätigt. Ein Entwurf zählt für Verweise,
+„Klärt am meisten“ und die offenen Punkte noch nicht als Klärung; eine mit „Rückgängig“
 wiederhergestellte Festlegung, die nicht mehr dem Stand der Datei entspricht, ist wieder Entwurf.
 
-Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald sich danach die automatische Ampel, eine
-beteiligte Angabe (auch nur ihre Sicherheit, z. B. ein neuer Widerspruch) oder der Text einer Fundstelle ändert (oder
+Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald die automatische Ampel danach strenger wird als
+damals und als die Festlegung (wird sie schwächer oder kommt sie bei der Festlegung an, bleibt die Festlegung richtig),
+sobald sich eine beteiligte Angabe (auch nur ihre Sicherheit, z. B. ein neuer Widerspruch) oder der Text einer Fundstelle ändert (oder
 sie ohne geprüften Text getroffen wurde und der Text jetzt vorliegt) – dann steht die Marke „überholt“ daran, ein
 überholtes „entfällt“ zählt mindestens als „prüfen“, ein überholtes „prüfen“ hält ein automatisches „gilt“ nicht auf
 (es gilt dann die automatische Ampel), und das Protokoll führt sie als offen. Fehlt dagegen der Systemstand (Text

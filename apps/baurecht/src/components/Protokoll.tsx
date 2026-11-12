@@ -137,7 +137,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   // fehlende Angaben genau wie „Klärt am meisten“ gezählt (ein Paragraf kann unter mehreren Angaben stehen)
   const gruppen = new Map<string, ParagrafErgebnis[]>();
-  for (const k of a.klaerung) gruppen.set(`Es fehlt: ${k.titel}`, a.paragrafen.filter((p) => !(p.festlegung && !p.ueberholt && !p.unwirksam) && (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0)) && p.offen.includes(k.id)));
+  for (const k of a.klaerung) gruppen.set(`Es fehlt: ${k.titel}`, a.paragrafen.filter((p) => !(p.festlegung?.bestaetigt && !p.ueberholt && !p.unwirksam) && (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0)) && p.offen.includes(k.id)));
   for (const p of [...offen, ...ueberholt]) {
     const sonder = gruppeVon(p);
     if (!sonder && p.offen.some((o) => !o.startsWith('paragraf:'))) continue; // steht schon unter seinen fehlenden Angaben
@@ -319,7 +319,11 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
               {vonHandOhneBeleg.map(([id, f]) => (
                 <tr key={id}>
                   <td className="strong">{faktName(a.faktDefs[id], id)}</td>
-                  <td>{wertAnzeige(f.wert, a.faktDefs[id])}</td>
+                  <td>
+                    {wertAnzeige(f.wert, a.faktDefs[id])}
+                    {/* nur noch Hinweis (frühere Lage, ohne Koordinaten): gekennzeichnet, nicht wie eine geltende Angabe */}
+                    {f.sicherheit === 'hinweis' && <span className="br-entwurf-text"> – nur Hinweis{eigeneFakten[id]?.bestaetigt || eigeneFakten[id]?.lage ? ' (frühere Lage)' : ''}</span>}
+                  </td>
                   <td>
                     {/^von Hand \((.+)\)$/.exec(f.quelle ?? '')?.[1] ?? '–'}
                     {f.stand ? `, ${datum(f.stand)}` : ''}

@@ -44,7 +44,11 @@ function verfuegbar(griff: HTMLElement | null, mitteMin: number | undefined): nu
   const leiste = griff?.parentElement;
   const arbeit = leiste?.parentElement;
   if (!leiste || !arbeit || mitteMin === undefined) return Infinity;
-  const andere = [...arbeit.children].filter((c) => c !== leiste && c.classList.contains('leiste')).reduce((s, c) => s + c.getBoundingClientRect().width, 0);
+  // die anderen Leisten mit ihrer Basisbreite (gesetzte Breite), nicht der geschrumpften – sonst wüchse diese auf
+  // deren Kosten über den Platz hinaus
+  const andere = [...arbeit.children]
+    .filter((c): c is HTMLElement => c !== leiste && c.classList.contains('leiste') && c instanceof HTMLElement)
+    .reduce((s, c) => s + (parseFloat(c.style.width) || c.getBoundingClientRect().width), 0);
   return Math.floor(arbeit.clientWidth - andere - mitteMin);
 }
 
@@ -52,7 +56,8 @@ export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern'
   const richtung = links ? -1 : 1;
   const griff = useRef<HTMLDivElement>(null);
   // nie breiter als der verfügbare Platz (die Mitte behält ihre Mindestbreite) – sonst entstünde eine tote Zone
-  const setzen = (b: number) => setBreite(Math.min(b, Math.max(min ?? 0, verfuegbar(griff.current, mitteMin))));
+  // Wachsen nur bis zum verfügbaren Platz, aber nie kleiner als jetzt (Ende verkleinert nicht); Schrumpfen frei bis min
+  const setzen = (b: number) => setBreite(b > jetzt ? Math.max(jetzt, Math.min(b, Math.max(min ?? 0, verfuegbar(griff.current, mitteMin)))) : b);
   // die tatsächliche Breite (eine Leiste kann bei schmalen Fenstern schrumpfen): für Screenreader und als Ausgangspunkt
   // beim Ziehen – sonst gäbe es eine tote Zone zwischen gemerkter und sichtbarer Breite
   const jetzt = ist ?? breite;
@@ -123,11 +128,20 @@ export function BreitenLeiste({
   // tatsächliche Breite messen (die Leiste darf per CSS schrumpfen)
   const rahmen = useRef<HTMLDivElement>(null);
   const [ist, setIst] = useState<number | undefined>(undefined);
+  // neu messen, wenn sich die Leiste, der Arbeitsbereich oder eine andere Leiste ändert (für aria-valuemax)
+  const [, setTakt] = useState(0);
   useEffect(() => {
     const el = rahmen.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => setIst(Math.round(el.getBoundingClientRect().width)));
+    const ro = new ResizeObserver(() => {
+      setIst(Math.round(el.getBoundingClientRect().width));
+      setTakt((t) => t + 1);
+    });
     ro.observe(el);
+    if (el.parentElement) {
+      ro.observe(el.parentElement);
+      for (const c of el.parentElement.children) if (c !== el && c.classList.contains('leiste')) ro.observe(c);
+    }
     return () => ro.disconnect();
   }, []);
   return (
