@@ -68,7 +68,8 @@ export const ohneKlammer = (s: string) => {
 const merkmalPasst = (m: { name: string; werte: string[] }, suche: string) => textPasst(`${MERKMAL_TITEL[m.name] ?? m.name} ${MERKMAL_ERKLAERUNG[m.name]?.text ?? ''} ${m.werte.join(' ')}`, suche);
 
 /** Rückfragen zu einem Antragsmerkmal: stehen direkt unter dem Merkmal (nicht tief in ihrer Gruppe) */
-export const RUECKFRAGEN: Record<string, string[]> = { Vorhaben: ['vorhaben.beseitigung_umfang'] };
+// Umfang der Beseitigung, beim Ersatzbau die Angaben zum Altbau (Verfahren für den Abbruch)
+export const RUECKFRAGEN: Record<string, string[]> = { Vorhaben: ['vorhaben.beseitigung_umfang', 'nw.altbau_verfahrensfrei', 'nw.beseitigung_mit_beantragt'] };
 
 /** eine Rückfrage wird gestellt, wenn es die Angabe gibt und ihre Bedingung („wenn“) nicht verneint ist */
 function rueckfrageSichtbar(id: string, stand: Pruefstand, merkmale: Record<string, string>): boolean {
