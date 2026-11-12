@@ -1,7 +1,21 @@
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { useMemo, useRef, useState } from 'react';
-import type { Ansicht, FeldDef } from './ansicht';
-import { abschnittVerschieben, felderDerAnsicht, feldEntfernen, feldHinzufuegen, feldVerschieben, leereAnsicht, neueId } from './ansicht';
+import type { Ansicht, AnsichtAbschnitt, FeldDef, FeldOptionen } from './ansicht';
+import {
+  abschnittVerschieben,
+  BREITEN,
+  feldBreite,
+  felderDerAnsicht,
+  feldEntfernen,
+  feldHinzufuegen,
+  feldOptionenSetzen,
+  feldVerschieben,
+  leereAnsicht,
+  neueId,
+  verknuepfen,
+  verknuepfteFelder,
+  verknuepfungLoesen,
+} from './ansicht';
 import { Modal } from './Dialog';
 import { einfuegeStelle, zeigerZiehen } from './ziehen';
 import './ansicht.css';
@@ -179,9 +193,23 @@ export function AnsichtEditor({
                           ⠿
                         </button>
                         <span className="av-ed-feld-text">
-                          {def?.titel ?? f}
-                          <span className="muted small-text">{def ? def.gruppe : 'gibt es hier nicht'}</span>
+                          <input
+                            className="av-ed-label"
+                            value={x.optionen?.[f]?.label ?? ''}
+                            placeholder={def?.titel ?? f}
+                            aria-label={`Beschriftung von ${def?.titel ?? f}`}
+                            title="Eigene Beschriftung – leer: die Beschriftung aus dem Katalog"
+                            onChange={(e) => setzen(feldOptionenSetzen(a, f, { label: e.target.value }))}
+                          />
+                          <span className="muted small-text">{def ? `${def.titel}${def.gruppe ? ` · ${def.gruppe}` : ''}` : 'gibt es hier nicht'}</span>
                         </span>
+                        <FeldLayout
+                          optionen={x.optionen?.[f]}
+                          def={def}
+                          titel={def?.titel ?? f}
+                          onChange={(patch) => setzen(feldOptionenSetzen(a, f, patch))}
+                        />
+                        <Verknuepfung a={a} feld={f} nach={nach} titel={def?.titel ?? f} onChange={setzen} />
                         <button
                           type="button"
                           className="icon av-ed-weg"
@@ -197,6 +225,7 @@ export function AnsichtEditor({
                   {zug && zielHier && zug.stelle >= uebrige.length && <li className="av-ed-einfuegen" aria-hidden />}
                   {!x.felder.length && !zielHier && <li className="av-ed-leer muted small-text">Felder rechts anhaken oder hierher ziehen</li>}
                 </ul>
+                {x.felder.length > 0 && <LayoutVorschau abschnitt={x} nach={nach} />}
               </section>
             );
           })}
@@ -238,12 +267,103 @@ export function AnsichtEditor({
   );
 }
 
+/** Breite und Zeilenumbruch eines Felds */
+function FeldLayout({ optionen, def, titel, onChange }: { optionen?: FeldOptionen; def?: FeldDef; titel: string; onChange: (patch: Partial<FeldOptionen>) => void }) {
+  const breite = feldBreite(optionen, def);
+  return (
+    <span className="av-ed-layout">
+      <select value={breite} aria-label={`Breite von ${titel}`} title="Breite in der Zeile" onChange={(e) => onChange({ breite: Number(e.target.value) })}>
+        {BREITEN.map((b) => (
+          <option key={b.wert} value={b.wert}>
+            {b.text}
+          </option>
+        ))}
+        {!BREITEN.some((b) => b.wert === breite) && <option value={breite}>{breite}/12</option>}
+      </select>
+      <label className="av-ed-umbruch" title="Dieses Feld beginnt eine neue Zeile">
+        <input type="checkbox" checked={!!optionen?.neueZeile} aria-label={`${titel} beginnt eine neue Zeile`} onChange={(e) => onChange({ neueZeile: e.target.checked })} />↵
+      </label>
+    </span>
+  );
+}
+
+/** Verknüpfung eines Felds mit anderen der Ansicht: sie werden gemeinsam ausgefüllt */
+function Verknuepfung({ a, feld, nach, titel, onChange }: { a: Ansicht; feld: string; nach: Map<string, FeldDef>; titel: string; onChange: (a: Ansicht) => void }) {
+  const mit = verknuepfteFelder(a, feld);
+  const andere = felderDerAnsicht(a).filter((f) => f !== feld && !mit.includes(f));
+  const name = (f: string) => {
+    const d = nach.get(f);
+    return d ? `${d.titel}${d.gruppe ? ` (${d.gruppe})` : ''}` : f;
+  };
+  return (
+    <select
+      className={`av-ed-link${mit.length ? ' aktiv' : ''}`}
+      value=""
+      aria-label={`${titel} verknüpfen`}
+      title={mit.length ? `Verknüpft mit: ${mit.map(name).join(', ')} – wird gemeinsam ausgefüllt` : 'Mit einem anderen Feld verknüpfen – beide werden gemeinsam ausgefüllt'}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (v === '–') onChange(verknuepfungLoesen(a, feld));
+        else if (v) onChange(verknuepfen(a, feld, v));
+      }}
+    >
+      <option value="">{mit.length ? `⛓ ${mit.length}` : '⛓'}</option>
+      {mit.length > 0 && (
+        <optgroup label="Verknüpft mit">
+          {mit.map((f) => (
+            <option key={f} value="" disabled>
+              {name(f)}
+            </option>
+          ))}
+          <option value="–">Verknüpfung lösen</option>
+        </optgroup>
+      )}
+      {andere.length > 0 && (
+        <optgroup label="Verknüpfen mit …">
+          {andere.map((f) => (
+            <option key={f} value={f}>
+              {name(f)}
+            </option>
+          ))}
+        </optgroup>
+      )}
+    </select>
+  );
+}
+
+/** Vorschau der Zeilen eines Abschnitts: Kästchen in der Breite der Felder */
+function LayoutVorschau({ abschnitt, nach }: { abschnitt: AnsichtAbschnitt; nach: Map<string, FeldDef> }) {
+  return (
+    <div className="av-ed-vorschau" aria-hidden title="So stehen die Felder in Zeilen">
+      {abschnitt.felder.map((f) => {
+        const o = abschnitt.optionen?.[f];
+        return (
+          <span key={f} className="av-ed-vorschau-feld" style={{ gridColumn: `${o?.neueZeile ? '1 / ' : ''}span ${feldBreite(o, nach.get(f))}` }}>
+            {o?.label || nach.get(f)?.titel || f}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * Eine eigene Ansicht anzeigen: je Abschnitt ein Kasten mit den Feldern im Raster; `feld` zeigt ein Feld so an, wie
  * es die App sonst auch tut (Eingabe, Auswahl, Kästchen …). Felder, die es im Katalog nicht (mehr) gibt, erscheinen
  * als Hinweis.
  */
-export function AnsichtAnzeige({ ansicht, katalog, feld, leer }: { ansicht: Ansicht; katalog: FeldDef[]; feld: (f: FeldDef) => ReactNode; leer?: ReactNode }) {
+export function AnsichtAnzeige({
+  ansicht,
+  katalog,
+  feld,
+  leer,
+}: {
+  ansicht: Ansicht;
+  katalog: FeldDef[];
+  /** Feld anzeigen – mit der eigenen Beschriftung (`label`) und den verknüpften Feldern */
+  feld: (f: FeldDef, o: { label: string; verknuepft: string[] }) => ReactNode;
+  leer?: ReactNode;
+}) {
   const nach = useMemo(() => new Map(katalog.map((f) => [f.id, f])), [katalog]);
   return (
     <div className="av">
@@ -254,9 +374,11 @@ export function AnsichtAnzeige({ ansicht, katalog, feld, leer }: { ansicht: Ansi
             <div className="av-raster">
               {x.felder.map((id) => {
                 const f = nach.get(id);
+                const o = x.optionen?.[id];
+                const spalte = `${o?.neueZeile ? '1 / ' : ''}span ${feldBreite(o, f)}`;
                 return f ? (
-                  <div key={id} className={`av-feld${f.breit ? ' breit' : ''}`}>
-                    {feld(f)}
+                  <div key={id} className="av-feld" style={{ gridColumn: spalte }}>
+                    {feld(f, { label: o?.label || f.titel, verknuepft: verknuepfteFelder(ansicht, id) })}
                   </div>
                 ) : (
                   <div key={id} className="av-feld av-fehlt muted small-text" title={id}>

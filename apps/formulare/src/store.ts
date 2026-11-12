@@ -1,3 +1,4 @@
+import { ansichtLesen, verknuepfteFelder } from '@core/ui/ansicht';
 import { create } from 'zustand';
 import { pickFile, saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
@@ -10,7 +11,7 @@ import { felderDerSeite } from './forma/felder';
 import type { Formular } from './forma/formular';
 import { formularBytes, istAngekreuzt, memoText, parseFormular, setzeAngekreuzt, setzeMemoText } from './forma/formular';
 import type { PkWert, Projektkarte } from './forma/projektkarte';
-import { istWahl, pkAnzeige, pkEintrag, pkSchluessel, pkWert, pkWertPasst, pkWertVon } from './forma/projektkarte';
+import { istWahl, pkAnzeige, pkArt, pkEintrag, pkSchluessel, pkTitel, pkWert, pkWertPasst, pkWertVon } from './forma/projektkarte';
 import type { Sperre, SperrBewertung, SperrProbe } from './forma/sperre';
 import { bewerten, sperreLesen, sperreSchreiben, sperrPfad, zeitstempel } from './forma/sperre';
 import { istEigeneSperre, sperreVergessen, sperreVermerken, verwaisteEigeneSperrenAufraeumen } from './eigeneSperren';
@@ -1363,6 +1364,13 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const s = pkSchluessel(gruppe, id);
       const vorher = karteWert(k, gruppe, id);
       if (vorher === wert) return;
+      // verknüpfte Einträge (eigene Ansicht der Projektkarte) bekommen denselben Inhalt – ein Schritt im Verlauf
+      const mit = verknuepfteWerte(k, gruppe, id, wert);
+      if (mit.length) {
+        const e = pkEintrag(k.karte, gruppe, id);
+        get().karteMehrere([{ gruppe, id, wert }, ...mit], `${e ? pkTitel(e.titel).replace(/:$/, '') : s} (verknüpft)`);
+        return;
+      }
       const verlauf = eintragen(k.verlauf, s, vorher, wert, Date.now());
       karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, new Map([[s, wert]])) });
     },
@@ -1828,6 +1836,29 @@ async function formulareKonfigAendern(patch: Record<string, unknown>) {
   } catch (e) {
     log.warn(`Einstellungen von Formulare nicht geschrieben: ${fehlertext(e)}`);
   }
+}
+
+/** Schlüssel der eigenen Ansicht der Projektkarte (je Benutzer, für alle Projekte) */
+export const KARTEN_ANSICHT = 'formulare:ansicht:projektkarte';
+
+const TEXTARTEN = new Set(['text', 'mehrzeilig']);
+
+/**
+ * Werte für die mit einem Eintrag verknüpften Einträge (Verknüpfungen der eigenen Ansicht): Text in Text (einzeilig ohne
+ * Zeilenumbrüche), sonst nur zwischen Einträgen derselben Art.
+ */
+function verknuepfteWerte(k: OffeneKarte, gruppe: number, id: number, wert: PkWert): KartenWert[] {
+  const quelle = pkEintrag(k.karte, gruppe, id);
+  if (!quelle) return [];
+  const qArt = pkArt(quelle);
+  return verknuepfteFelder(ansichtLesen(KARTEN_ANSICHT), pkSchluessel(gruppe, id)).flatMap((v) => {
+    const [g, i] = v.split(':').map(Number);
+    const ziel = pkEintrag(k.karte, g, i);
+    if (!ziel) return [];
+    const zArt = pkArt(ziel);
+    if (TEXTARTEN.has(qArt) && TEXTARTEN.has(zArt)) return [{ gruppe: g, id: i, wert: zArt === 'text' && typeof wert === 'string' ? wert.replace(/\s*\r?\n\s*/g, ' ') : wert }];
+    return qArt === zArt ? [{ gruppe: g, id: i, wert }] : [];
+  });
 }
 
 /** Angezeigte Pfade im echten Projektordner eines Projekts */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { abschnittVerschieben, ansichtAus, felderDerAnsicht, feldEntfernen, feldHinzufuegen, feldVerschieben } from './ansicht';
+import { abschnittVerschieben, ansichtAus, feldBreite, felderDerAnsicht, feldEntfernen, feldHinzufuegen, feldOptionen, feldOptionenSetzen, feldVerschieben, verknuepfen, verknuepfteFelder, verknuepfungLoesen } from './ansicht';
 import { einfuegeStelle } from './ziehen';
 
 const a = {
@@ -27,6 +27,35 @@ describe('eigene Ansichten', () => {
     expect(feldVerschieben(a, '201:40', 'a', 1).abschnitte[0].felder).toEqual(['201:30', '201:40']);
     expect(feldVerschieben(a, '301:10', 'a', 0).abschnitte.map((x) => x.felder)).toEqual([['301:10', '201:40', '201:30'], []]);
     expect(abschnittVerschieben(a, 'b', 0).abschnitte.map((x) => x.id)).toEqual(['b', 'a']);
+  });
+
+  it('Beschriftung, Breite und neue Zeile je Feld – bleiben beim Verschieben, entfallen beim Entfernen', () => {
+    let b = feldOptionenSetzen(a, '201:40', { label: 'Bauherrschaft', breite: 8 });
+    b = feldOptionenSetzen(b, '201:30', { neueZeile: true });
+    expect(feldOptionen(b, '201:40')).toEqual({ label: 'Bauherrschaft', breite: 8 });
+    expect(feldBreite(feldOptionen(b, '201:40'), undefined)).toBe(8);
+    expect(feldBreite(undefined, { breit: true })).toBe(12);
+    expect(feldBreite(undefined, {})).toBe(4);
+    b = feldVerschieben(b, '201:40', 'b', 0);
+    expect(b.abschnitte[1].optionen).toEqual({ '201:40': { label: 'Bauherrschaft', breite: 8 } });
+    expect(b.abschnitte[0].optionen).toEqual({ '201:30': { neueZeile: true } });
+    // leere Beschriftung entfällt
+    expect(feldOptionen(feldOptionenSetzen(b, '201:40', { label: ' ' }), '201:40')).toEqual({ breite: 8 });
+    expect(feldEntfernen(b, '201:40').abschnitte[1].optionen).toBeUndefined();
+    // robust gelesen
+    expect(ansichtAus({ abschnitte: [{ id: 'x', felder: ['f'], optionen: { f: { label: 'L', breite: 99, neueZeile: 'ja' }, fremd: { label: 'x' } } }] })).toEqual({
+      abschnitte: [{ id: 'x', titel: '', felder: ['f'], optionen: { f: { label: 'L' } } }],
+    });
+  });
+
+  it('Verknüpfungen: Gruppen verschmelzen, lösen, entfallen mit dem Feld; nur Felder der Ansicht', () => {
+    let b = verknuepfen(a, '201:40', '301:10');
+    b = verknuepfen(b, '201:30', '201:40');
+    expect(b.verknuepfungen).toEqual([['201:30', '201:40', '301:10']]);
+    expect(verknuepfteFelder(b, '301:10')).toEqual(['201:30', '201:40']);
+    expect(verknuepfungLoesen(b, '201:30').verknuepfungen).toEqual([['201:40', '301:10']]);
+    expect(feldEntfernen(verknuepfungLoesen(b, '201:30'), '301:10').verknuepfungen).toBeUndefined();
+    expect(ansichtAus({ ...b, verknuepfungen: [['201:40', 'gibts-nicht'], ['201:30', '301:10', '201:30']] })!.verknuepfungen).toEqual([['201:30', '301:10']]);
   });
 
   it('Einfügestelle nach den Mitten der Zeilen, ohne die gezogene', () => {

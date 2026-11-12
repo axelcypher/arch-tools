@@ -254,8 +254,16 @@ Anschrift, wie sie in Formularen steht.
   allen Gruppen auf einer Seite, in eigenen Abschnitten und eigener Reihenfolge (über jedem Feld steht die Gruppe).
   „Ansicht bearbeiten …“ öffnet den **Ansicht-Editor** (gemeinsam in `packages/core/src/ui/AnsichtEditor.tsx`): rechts
   der Katalog aller Einträge mit Suche (Haken nimmt in den gewählten Abschnitt auf), links die Abschnitte – Felder am
-  Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt. Gilt je Benutzer für alle
-  Projekte (`formulare:ansicht:projektkarte`).
+  Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt. Je Feld: **eigene
+  Beschriftung**, **Breite** (¼, ⅓, ½, ⅔, ¾, ganz) und **„↵ neue Zeile“** – so legt man fest, welche Felder in einer Zeile
+  stehen (die Vorschau unter jedem Abschnitt zeigt die Zeilen). **Verknüpfen (⛓):** Felder mit demselben Inhalt (z. B.
+  Ort des Bauherrn und Ort des Eigentümers) werden gemeinsam ausgefüllt – eine Eingabe trägt den Wert in alle
+  verknüpften Einträge der Projektkarte ein, als ein Schritt im Verlauf, überall in der Projektkarte (Text in Text,
+  sonst nur zwischen Einträgen derselben Art). Auf der Seite steht unter jedem Feld dezent, aus welcher Gruppe es
+  stammt und womit es verknüpft ist. Gilt je Benutzer für alle Projekte (`formulare:ansicht:projektkarte`).
+- **Eingaben mit fester Form:** „Art der Nutzung“ ist eine Auswahl gängiger Nutzungen (Wohnen, Büro und Verwaltung,
+  Handel …; „andere …“ erlaubt einen eigenen Text), „Art der baulichen Nutzung“ eine Auswahl der Baugebiete nach
+  BauNVO; Einträge „Anzahl …“ nehmen nur ganze Zahlen an. Gespeichert wird weiter als Text der Projektkarte.
 - **Büro & Stammdaten** (Einstellungen): je Rolle (Entwurfsverfasser, Bauvorlageberechtigter,
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
   Adressen zuerst. In der Projektkarte: „Als Vorgabe festlegen“ bei einer Adresse, **„Vorgaben eintragen“** füllt

@@ -29,15 +29,18 @@ html.zieht * {
 }
 .av-raster {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 10px 14px;
   align-items: start;
 }
+/* schmal: jedes Feld eine Zeile */
+@media (max-width: 720px) {
+  .av-raster > .av-feld {
+    grid-column: 1 / -1 !important;
+  }
+}
 .av-feld {
   min-width: 0;
-}
-.av-feld.breit {
-  grid-column: span 2;
 }
 .av-fehlt {
   padding: 6px 8px;
@@ -228,4 +231,48 @@ html.zieht * {
 }
 .av-ed-abstand {
   flex: 1;
+}
+
+/* Editor: Beschriftung, Breite, Zeilenumbruch, Verknüpfung, Vorschau */
+.av-ed-label {
+  width: 100%;
+  min-width: 0;
+  font-weight: 600;
+}
+.av-ed-layout {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.av-ed-layout select {
+  width: 64px;
+}
+.av-ed-umbruch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+}
+.av-ed-link {
+  width: 54px;
+}
+.av-ed-link.aktiv {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.av-ed-vorschau {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 8px;
+}
+.av-ed-vorschau-feld {
+  padding: 2px 5px;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  font-size: 10.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

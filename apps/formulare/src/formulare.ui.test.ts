@@ -557,7 +557,26 @@ describe('Formulare', () => {
         .querySelector('input')!;
     await klick(haken('Bauherr', 'Name/Firma'));
     await klick(haken('Gemeinde', 'Ort'));
-    const imAufbau = () => [...editor.querySelectorAll('.av-ed-feld .av-ed-feld-text')].map((t) => t.firstChild!.textContent);
+    await klick(haken('Bauherr', 'Ort'));
+    const imAufbau = () => [...editor.querySelectorAll<HTMLInputElement>('.av-ed-feld .av-ed-label')].map((t) => t.placeholder);
+    expect(imAufbau()).toEqual(['Name/Firma', 'Ort', 'Ort']);
+    // eigene Beschriftung, Breite, neue Zeile
+    const feldZeile = (n: number) => editor.querySelectorAll<HTMLElement>('.av-ed-feld')[n];
+    eingabe(feldZeile(0).querySelector<HTMLInputElement>('.av-ed-label')!, 'Bauherrschaft');
+    waehle(feldZeile(0).querySelector<HTMLSelectElement>('select[aria-label^="Breite"]')!, '8');
+    await klick(feldZeile(1).querySelector<HTMLInputElement>('input[aria-label$="beginnt eine neue Zeile"]')!);
+    // Ort der Gemeinde mit dem Ort des Bauherrn verknüpfen
+    waehle(feldZeile(1).querySelector<HTMLSelectElement>('select.av-ed-link')!, '201:110');
+    await warte();
+    const gespeichert = JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!);
+    expect(gespeichert.abschnitte[0].optionen).toEqual({ '201:40': { label: 'Bauherrschaft', breite: 8 }, '232:110': { neueZeile: true } });
+    expect(gespeichert.verknuepfungen).toEqual([['232:110', '201:110']]);
+    expect([...editor.querySelectorAll('.av-ed-vorschau-feld')].map((v) => v.textContent)).toEqual(['Bauherrschaft', 'Ort', 'Ort']);
+    // Bauherr › Ort wieder heraus
+    await klick(feldZeile(2).querySelector<HTMLButtonElement>('.av-ed-weg')!);
+    expect(JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!).verknuepfungen).toBeUndefined();
+    waehle(feldZeile(1).querySelector<HTMLSelectElement>('select.av-ed-link')!, '201:40');
+    await warte();
     expect(imAufbau()).toEqual(['Name/Firma', 'Ort']);
     // mit der Tastatur umordnen
     taste(editor.querySelectorAll<HTMLElement>('.av-griff')[1], 'ArrowUp');
@@ -566,11 +585,18 @@ describe('Formulare', () => {
     expect(JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!).abschnitte[0].felder).toEqual(['232:110', '201:40']);
     await klick([...editor.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Fertig')!);
     expect(document.querySelector('.av-editor')).toBeNull();
-    // die Felder stehen auf der Seite und lassen sich bearbeiten – mit der Gruppe darüber
-    expect([...host.querySelectorAll('.pk-eigen-gruppe')].map((g) => g.textContent)).toEqual(['Gemeinde', 'Bauherr']);
+    // auf der Seite: eigene Beschriftung, Herkunft dezent unter dem Feld, Breite im Raster
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-titel')].map((t) => t.textContent)).toEqual(['Ort', 'Bauherrschaft']);
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde · ⛓ Bauherr', 'Bauherr · ⛓ Gemeinde']);
+    expect([...host.querySelectorAll<HTMLElement>('.pk-eigen .av-feld')].map((f) => f.style.gridColumn)).toEqual(['1 / span 4', 'span 8']);
+    // verknüpft: eine Eingabe füllt beide Felder (ein Schritt im Verlauf)
     const name = host.querySelector<HTMLInputElement>('.pk-eigen [data-pk="201:40"]')!;
     eingabe(name, 'Musterfrau, Erika');
     expect(useFormulare.getState().karte!.aenderungen['201:40']).toBe('Musterfrau, Erika');
+    expect(useFormulare.getState().karte!.aenderungen['232:110']).toBe('Musterfrau, Erika');
+    act(() => void useFormulare.getState().karteRueckgaengig());
+    expect(useFormulare.getState().karte!.aenderungen).toEqual({});
+    eingabe(name, 'Musterfrau, Erika');
     // Navigation: Zahl der Einträge
     expect([...host.querySelectorAll('.pk-nav-eigen .pk-nav-kurz')].map((k) => k.textContent)).toEqual(['2 Einträge auf einer Seite']);
   });

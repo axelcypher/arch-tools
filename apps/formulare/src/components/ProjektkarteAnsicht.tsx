@@ -2,7 +2,7 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { PkEintrag, PkGruppe, PkWert } from '../forma/projektkarte';
 import { pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWertVon } from '../forma/projektkarte';
-import { anschrift, aufbau, einheit, feldTitel, gruppenReihen, istAdresse, pruefung, zusammenfassung } from '../projektkarteAufbau';
+import { anschrift, aufbau, einheit, feldTitel, gruppenReihen, istAdresse, istAnzahl, nutzungsarten, pruefung, zusammenfassung } from '../projektkarteAufbau';
 import type { Adresse } from '../adressbuch';
 import { adressName, adressOrt, adressSchluessel, adressenAusKarte, inRolle } from '../adressbuch';
 import type { Angabe } from '../projektdaten';
@@ -17,7 +17,7 @@ import { felderDerAnsicht, useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import type { KartenWert, OffeneKarte } from '../store';
-import { karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
+import { KARTEN_ANSICHT, karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
 
 /** zuletzt gewählte Gruppe je Projekt (bleibt beim Wechsel zwischen Formular und Projektkarte) */
 const gewaehlt = new Map<string, number>();
@@ -121,8 +121,7 @@ const PROJEKTDATEN = -1;
 /** Kennung der eigenen Ansicht in der Navigation */
 const EIGENE = -3;
 
-/** Schlüssel der eigenen Ansicht der Projektkarte (je Benutzer, für alle Projekte) */
-export const KARTEN_ANSICHT = 'formulare:ansicht:projektkarte';
+export { KARTEN_ANSICHT };
 
 /** Katalog der Projektkarte für den Ansicht-Editor: jeder Eintrag jeder Gruppe (Kennung „Gruppe:Eintrag“) */
 function kartenKatalog(karte: OffeneKarte): FeldDef[] {
@@ -141,15 +140,30 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
   const [ansicht, setAnsicht] = useAnsicht(KARTEN_ANSICHT);
   const [editor, setEditor] = useState(false);
   const katalog = useMemo(() => kartenKatalog(karte), [karte.karte]); // eslint-disable-line react-hooks/exhaustive-deps
-  const feld = (f: FeldDef) => {
+  const feld = (f: FeldDef, o: { label: string; verknuepft: string[] }) => {
     const [g, id] = f.id.split(':').map(Number);
     const gruppe = karte.karte.gruppen.find((x) => x.id === g);
     const eintrag = karte.karte.eintraege.find((e) => e.gruppe === g && e.id === id);
     if (!gruppe || !eintrag) return null;
+    const mit = o.verknuepft.map((v) => katalog.find((k) => k.id === v)).filter((k): k is FeldDef => !!k);
+    const unter = (
+      <>
+        {gruppe.text}
+        {mit.length > 0 && (
+          <span className="pk-eigen-link" title={`Verknüpft – wird gemeinsam ausgefüllt mit: ${mit.map((k) => `${k.titel} (${k.gruppe})`).join(', ')}`}>
+            {' '}
+            · ⛓ {mit.map((k) => k.gruppe).join(', ')}
+          </span>
+        )}
+      </>
+    );
     return (
       <div className="pk-eigen-feld">
-        <span className="pk-eigen-gruppe">{gruppe.text}</span>
-        {pkArt(eintrag) === 'kreuz' ? <Kreuze karte={karte} eintraege={[eintrag]} /> : <Eintrag karte={karte} gruppe={gruppe} eintrag={eintrag} breite={12} land={karteText(karte, g, 120)} />}
+        {pkArt(eintrag) === 'kreuz' ? (
+          <Kreuze karte={karte} eintraege={[eintrag]} titelText={o.label} unter={unter} />
+        ) : (
+          <Eintrag karte={karte} gruppe={gruppe} eintrag={eintrag} breite={12} land={karteText(karte, g, 120)} titelText={o.label} unter={unter} />
+        )}
       </div>
     );
   };
@@ -670,9 +684,12 @@ function Zelle({
   children,
   htmlFor,
   ids,
+  unter,
 }: {
   breite: number;
   titel: string;
+  /** dezent unter dem Eingabefeld (eigene Ansicht: aus welcher Gruppe der Eintrag stammt) */
+  unter?: ReactNode;
   geaendert: boolean;
   hinweis?: string;
   warnung?: string | null;
@@ -709,12 +726,30 @@ function Zelle({
         ) : null}
       </div>
       {children}
+      {unter && <div className="pk-feld-unter">{unter}</div>}
       {warnung && <div className="pk-warnung">{warnung}</div>}
     </div>
   );
 }
 
-function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte; gruppe: PkGruppe; eintrag: PkEintrag; breite: number; land: string }) {
+function Eintrag({
+  karte,
+  gruppe,
+  eintrag,
+  breite,
+  land,
+  titelText,
+  unter,
+}: {
+  karte: OffeneKarte;
+  gruppe: PkGruppe;
+  eintrag: PkEintrag;
+  breite: number;
+  land: string;
+  /** eigene Beschriftung (eigene Ansicht) */
+  titelText?: string;
+  unter?: ReactNode;
+}) {
   const karteSetzen = useFormulare((s) => s.karteSetzen);
   const s = pkSchluessel(eintrag.gruppe, eintrag.id);
   const id = `pk-${eintrag.gruppe}-${eintrag.id}`;
@@ -722,7 +757,7 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
   const geaendert = s in karte.aenderungen;
   const setzen = (w: PkWert) => karteSetzen(eintrag.gruppe, eintrag.id, w);
   const zurueck = () => setzen(pkWertVon(eintrag));
-  const titel = feldTitel(eintrag.titel);
+  const titel = titelText || feldTitel(eintrag.titel);
   const art = pkArt(eintrag);
 
   if (art === 'auswahl' || art === 'optionen') {
@@ -730,7 +765,7 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
     // Auswahllisten: erste (leere) Möglichkeit = „keine Angabe“; Optionen: erneuter Klick hebt die Wahl auf
     if (art === 'auswahl' || moeglich.length > 4) {
       return (
-        <Zelle ids={[eintrag.id]} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck} htmlFor={id}>
+        <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck} htmlFor={id}>
           <select id={id} data-pk={s} value={typeof wert === 'number' ? wert : ''} onChange={(e) => setzen(e.target.value === '' ? null : Number(e.target.value))}>
             <option value="">– keine Angabe –</option>
             {moeglich.map((m, i) => (m ? <option key={i} value={i}>{m}</option> : null))}
@@ -739,7 +774,7 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
       );
     }
     return (
-      <Zelle ids={[eintrag.id]} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck}>
+      <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck}>
         <div className="pk-optionen" role="radiogroup" aria-label={titel}>
           {moeglich.map((m, i) => (
             <button key={i} role="radio" aria-checked={wert === i} data-pk={i === 0 ? s : undefined} className={wert === i ? 'active' : ''} onClick={() => setzen(wert === i ? null : i)}>
@@ -756,31 +791,69 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
   const e = einheit(eintrag.titel);
   if (art === 'mehrzeilig') {
     return (
-      <Zelle ids={[eintrag.id]} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
+      <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
         <textarea id={id} data-pk={s} rows={Math.max(2, Math.min(10, textWert.split('\n').length + 1))} value={textWert} onChange={(ev) => setzen(ev.target.value)} />
       </Zelle>
     );
   }
+  const kern = feldTitel(eintrag.titel);
   return (
-    <Zelle ids={[eintrag.id]} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
-      <input
-        id={id}
-        data-pk={s}
-        type="text"
-        value={textWert}
-        spellCheck={false}
-        className={e === 'm²' ? 'pk-zahl' : undefined}
-        onChange={(ev) => setzen(ev.target.value)}
-      />
+    <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
+      {istAnzahl(kern) ? (
+        // Anzahl: nur ganze Zahlen (gespeichert als Text, wie in der Projektkarte)
+        <input id={id} data-pk={s} type="number" min={0} step={1} inputMode="numeric" className="pk-zahl" value={/^\d+$/.test(textWert.trim()) ? textWert.trim() : ''} placeholder={textWert && !/^\d+$/.test(textWert.trim()) ? textWert : undefined} onChange={(ev) => setzen(ev.target.value.replace(/\D/g, ''))} />
+      ) : nutzungsarten(kern) ? (
+        <AuswahlMitText id={id} schluessel={s} wert={textWert} vorschlaege={nutzungsarten(kern)!} onChange={setzen} />
+      ) : (
+        <input id={id} data-pk={s} type="text" value={textWert} spellCheck={false} className={e === 'm²' ? 'pk-zahl' : undefined} onChange={(ev) => setzen(ev.target.value)} />
+      )}
     </Zelle>
   );
 }
 
-function Kreuze({ karte, eintraege }: { karte: OffeneKarte; eintraege: PkEintrag[] }) {
+/**
+ * Auswahl aus gängigen Werten (z. B. Art der Nutzung) – gespeichert wird der Text; „andere …“ erlaubt einen eigenen,
+ * ein Wert, der nicht in der Liste steht, erscheint als eigener.
+ */
+function AuswahlMitText({ id, schluessel, wert, vorschlaege, onChange }: { id: string; schluessel: string; wert: string; vorschlaege: string[]; onChange: (w: string) => void }) {
+  const inListe = !wert || vorschlaege.includes(wert);
+  const [frei, setFrei] = useState(!inListe);
+  if (frei || !inListe)
+    return (
+      <span className="pk-auswahl-frei">
+        <input id={id} data-pk={schluessel} type="text" value={wert} spellCheck={false} autoFocus={frei && inListe} onChange={(ev) => onChange(ev.target.value)} />
+        <button
+          type="button"
+          className="icon"
+          title="Aus der Liste wählen"
+          aria-label="Aus der Liste wählen"
+          onClick={() => {
+            setFrei(false);
+            if (!vorschlaege.includes(wert)) onChange('');
+          }}
+        >
+          ▾
+        </button>
+      </span>
+    );
+  return (
+    <select id={id} data-pk={schluessel} value={wert} onChange={(ev) => (ev.target.value === '\u0000frei' ? setFrei(true) : onChange(ev.target.value))}>
+      <option value="">– keine Angabe –</option>
+      {vorschlaege.map((v) => (
+        <option key={v} value={v}>
+          {v}
+        </option>
+      ))}
+      <option value={'\u0000frei'}>andere …</option>
+    </select>
+  );
+}
+
+function Kreuze({ karte, eintraege, titelText, unter }: { karte: OffeneKarte; eintraege: PkEintrag[]; titelText?: string; unter?: ReactNode }) {
   const karteSetzen = useFormulare((s) => s.karteSetzen);
   const geaendert = eintraege.some((e) => pkSchluessel(e.gruppe, e.id) in karte.aenderungen);
   return (
-    <Zelle breite={12} titel={feldTitel(eintraege[0].titel)} geaendert={geaendert} ids={eintraege.map((e) => e.id)}>
+    <Zelle breite={12} titel={titelText || feldTitel(eintraege[0].titel)} geaendert={geaendert} ids={eintraege.map((e) => e.id)} unter={unter}>
       <div className="pk-kreuze">
         {eintraege.map((e) => (
           <label key={e.id} className="pk-kreuz">

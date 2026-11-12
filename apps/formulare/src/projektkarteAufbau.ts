@@ -161,3 +161,54 @@ export function pruefung(g: PkGruppe, e: PkEintrag, wert: string, land: string):
 export const einheit = (titel: string) => /\[([^\]]+)\]/.exec(titel)?.[1] ?? '';
 /** Titel ohne Einheit und Doppelpunkt */
 export const feldTitel = (titel: string) => pkTitel(titel).replace(/\s*\[[^\]]+\]\s*$/, '');
+
+/* ---------- Eingaben mit fester Form ---------- */
+
+/** Einträge mit einer Anzahl („Anzahl der Wohnungen“): nur ganze Zahlen */
+export const istAnzahl = (titel: string) => /^anzahl\b/i.test(titel.trim());
+
+/** Gebietsarten nach BauNVO (§§ 2–11) – für „Art der baulichen Nutzung“ */
+export const BAUGEBIETE = [
+  'Kleinsiedlungsgebiet (WS)',
+  'Reines Wohngebiet (WR)',
+  'Allgemeines Wohngebiet (WA)',
+  'Besonderes Wohngebiet (WB)',
+  'Dorfgebiet (MD)',
+  'Dörfliches Wohngebiet (MDW)',
+  'Mischgebiet (MI)',
+  'Urbanes Gebiet (MU)',
+  'Kerngebiet (MK)',
+  'Gewerbegebiet (GE)',
+  'Industriegebiet (GI)',
+  'Sondergebiet, das der Erholung dient (SO)',
+  'Sonstiges Sondergebiet (SO)',
+];
+
+/** Gängige Nutzungen eines Gebäudes – für „Art der Nutzung“ (eigene Angaben bleiben möglich) */
+export const NUTZUNGSARTEN = [
+  'Wohnen',
+  'Wohnen und Gewerbe (gemischt)',
+  'Büro und Verwaltung',
+  'Handel',
+  'Gewerbe und Handwerk',
+  'Produktion und Industrie',
+  'Lager und Logistik',
+  'Gastronomie',
+  'Beherbergung',
+  'Landwirtschaft',
+  'Bildung und Betreuung (Schule, Kita)',
+  'Gesundheit und Pflege',
+  'Kultur und Versammlung',
+  'Sport und Freizeit',
+  'Religiöse Zwecke',
+  'Garage und Stellplätze',
+  'Nebengebäude',
+];
+
+/** Vorschläge für einen Eintrag, falls er eine Art der Nutzung ist – „baulichen“ heißt die Gebietsart nach BauNVO */
+export function nutzungsarten(titel: string): string[] | null {
+  const t = titel.trim().toLowerCase();
+  if (/^art der baulichen nutzung/.test(t)) return BAUGEBIETE;
+  if (/^(art der nutzung|nutzungsart|nutzung)$/.test(t.replace(/:$/, ''))) return NUTZUNGSARTEN;
+  return null;
+}

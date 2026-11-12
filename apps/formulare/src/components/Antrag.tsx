@@ -173,13 +173,13 @@ function Merkmale({ gesperrt }: { gesperrt: boolean }) {
   const vorgabe = { abschnitte: [{ id: 'alle', titel: '', felder: katalog.map((f) => f.id) }] };
   const gezeigt = ansicht ?? vorgabe;
   const weitere = katalog.filter((f) => !gezeigt.abschnitte.some((a) => a.felder.includes(f.id)));
-  const feld = (f: FeldDef) => {
+  const feld = (f: FeldDef, o?: { label: string }) => {
     const m = st.merkmalDefinitionen.find((x) => x.name === f.id);
     if (!m) return null;
     const erkl = MERKMAL_ERKLAERUNG[m.name];
     return (
       <label className="pu-merkmal" title={erkl?.text}>
-        <span className="field-label">{m.name}</span>
+        <span className="field-label">{o?.label || m.name}</span>
         <select value={werte[m.name] ?? ''} aria-label={m.name} disabled={gesperrt} onChange={(e) => void st.merkmalSetzen(m.name, e.target.value)}>
           <option value="">–</option>
           {m.werte.map((w) => (
