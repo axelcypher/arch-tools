@@ -843,7 +843,8 @@ describe('Plansatz', () => {
     const zeile = host.querySelector<HTMLElement>('.pu-zeile')!;
     expect(zeile.className).toContain('unvollstaendig');
     expect(zeile.textContent).toContain('Plansatz');
-    expect(zeile.textContent).toContain('4 Pläne · GP-01 bis GP-05 · GP-03 fehlt · 1 noch nicht verschoben');
+    expect(zeile.textContent).toContain('4 Pläne · GP-01 bis GP-05 · GP-03 fehlt · 1 nicht verschoben');
+    expect(zeile.textContent).toContain('Quelle: Planung');
     await klick(knopf(zeile, 'Pläne zeigen'));
     expect([...host.querySelectorAll('.pu-plan')].map((p) => [p.querySelector('.pu-plan-nr')!.textContent, p.className.split(' ')[1]])).toEqual([
       ['GP-01', 'aktuell'],
@@ -855,7 +856,27 @@ describe('Plansatz', () => {
     // Projektordner › Antrag: fehlende Pläne einzeln
     await klick(knopfGenau(host, 'Antrag'));
     const fehlt = [...host.querySelectorAll('.fo-bereit-fehlt li')].map((l) => l.textContent);
-    expect(fehlt).toEqual(['GP-03Lücke in der Nummernfolge', 'GP-05 Ansichtennoch in der Quelle']);
+    expect(fehlt).toEqual(['GP-03fehlt', 'GP-05 Ansichtennicht verschoben']);
+    // die Plandateien gehören zum Plansatz
+    expect([...host.querySelectorAll('.fo-bereit-zeile')].find((z) => z.textContent?.includes('GP-02'))!.textContent).toContain('Bauzeichnungen');
+  });
+
+  it('ganz ohne Pläne zählt der Plansatz als fehlend – nie „Alles bereit“', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261110 01 Bauantrag.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().umfangSetzen([{ id: 'plaene', titel: 'Bauzeichnungen', art: 'plansatz', quelle: 'Planung' }]));
+    await warte();
+    await klick(knopfGenau(host, 'Antrag'));
+    expect([...host.querySelectorAll('.fo-bereit-fehlt li')].map((l) => l.textContent)).toEqual(['Bauzeichnungen']);
+    expect(host.querySelector('.fo-bereit-kopf')!.textContent).toContain('1 fehlt');
+    expect(host.querySelector('.fo-bereit-fertig')).toBeNull();
+  });
+
+  it('Antragsordner werden auch an den Antragsarten des Namensschemas erkannt (BVA, ENTW)', async () => {
+    ds.ordner.add(`${PROJEKT}/TÖB/BVA`);
+    ds.ordner.add(`${PROJEKT}/TÖB/ENTW 2`);
+    await projektBS9();
+    expect(useAntrag.getState().fassungen.map((f) => f.name)).toEqual(expect.arrayContaining(['BAUA', 'BAUA 2', 'BVA', 'ENTW 2']));
   });
 });
 

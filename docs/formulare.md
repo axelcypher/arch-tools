@@ -251,19 +251,24 @@ Anschrift, wie sie in Formularen steht.
   alle im Büro; die Projektkarten selbst ändert das Adressbuch nicht. „Aus den Projektkarten einlesen“ liest alle
   Projektkarten neu. So funktioniert das Adressbuch auch ohne Projektkarten.
 - **Eigene Ansicht der Projektkarte:** oben in der Leiste der Projektkarte – die Einträge, die das Büro nutzt, aus
-  allen Gruppen auf einer Seite, in eigenen Abschnitten und eigener Reihenfolge (über jedem Feld steht die Gruppe).
+  allen Gruppen auf einer Seite, in eigenen Abschnitten und eigener Reihenfolge.
   „Ansicht bearbeiten …“ öffnet den **Ansicht-Editor** (gemeinsam in `packages/core/src/ui/AnsichtEditor.tsx`): rechts
   der Katalog aller Einträge mit Suche (Haken nimmt in den gewählten Abschnitt auf), links die Abschnitte – Felder am
   Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt. Je Feld: **eigene
   Beschriftung**, **Breite** (¼, ⅓, ½, ⅔, ¾, ganz) und **„↵ neue Zeile“** – so legt man fest, welche Felder in einer Zeile
   stehen (die Vorschau unter jedem Abschnitt zeigt die Zeilen). **Verknüpfen (⛓):** Felder mit demselben Inhalt (z. B.
   Ort des Bauherrn und Ort des Eigentümers) werden gemeinsam ausgefüllt – eine Eingabe trägt den Wert in alle
-  verknüpften Einträge der Projektkarte ein, als ein Schritt im Verlauf, überall in der Projektkarte (Text in Text,
-  sonst nur zwischen Einträgen derselben Art). Auf der Seite steht unter jedem Feld dezent, aus welcher Gruppe es
+  verknüpften Einträge der Projektkarte ein – überall in der Projektkarte, auch beim Übernehmen aus einer anderen
+  Gruppe; zusammenhängendes Tippen ist ein Schritt im Verlauf. Angeboten werden nur Felder, die zusammenpassen: Text
+  in Text (ins einzeilige Feld ohne Zeilenumbrüche), Auswahl in Auswahl über den Text der Wahl (fehlt er im Ziel,
+  bleibt es unverändert), Kästchen in Kästchen. Auf der Seite steht unter jedem Feld dezent, aus welcher Gruppe es
   stammt und womit es verknüpft ist. Gilt je Benutzer für alle Projekte (`formulare:ansicht:projektkarte`).
 - **Eingaben mit fester Form:** „Art der Nutzung“ ist eine Auswahl gängiger Nutzungen (Wohnen, Büro und Verwaltung,
-  Handel …; „andere …“ erlaubt einen eigenen Text), „Art der baulichen Nutzung“ eine Auswahl der Baugebiete nach
-  BauNVO; Einträge „Anzahl …“ nehmen nur ganze Zahlen an. Gespeichert wird weiter als Text der Projektkarte.
+  Handel …; „andere …“ erlaubt einen eigenen Text, ein vorhandener eigener Text bleibt als „(eigene Angabe)“
+  erhalten), „Art der baulichen Nutzung“ eine Auswahl der Baugebiete nach BauNVO (§§ 2–11, Sondergebiete nach § 10
+  und § 11 getrennt) samt vorhabenbezogenem Bebauungsplan (§ 12 BauGB), Innenbereich (§ 34) und Außenbereich (§ 35);
+  Einträge „Anzahl …“ nehmen nur ganze Zahlen an – ein alter Text wie „ca. 3“ bleibt sichtbar und wird gemeldet.
+  Gespeichert wird weiter als Text der Projektkarte.
 - **Büro & Stammdaten** (Einstellungen): je Rolle (Entwurfsverfasser, Bauvorlageberechtigter,
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
   Adressen zuerst. In der Projektkarte: „Als Vorgabe festlegen“ bei einer Adresse, **„Vorgaben eintragen“** füllt
@@ -407,20 +412,22 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   der aktiven Fassung und in der Quelle (Vorgabe `Planung/Genehmigungsplanung/pdf`, aus der die Pläne in den
   Antragsordner verschoben werden – eine leere Quelle ist in Ordnung); zugeordnet wird über die Plannummer (ob an
   Stelle 2 GP oder BAUA steht, spielt keine Rolle). Je Plankürzel getrennt:
-  - **Lücke:** zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – dann fehlt sicher ein Plan
-    (rot, „GP-07 fehlt“). Die Reihe muss nicht bei 01 beginnen, die Reihenfolge der Planarten wird nicht geprüft;
+  - **Lücke:** zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – nach der Bürovorgabe
+    (fortlaufende Nummern) fehlt dann ein Plan (rot, „GP-07 fehlt“). Die Reihe muss nicht bei 01 beginnen, die Reihenfolge der Planarten wird nicht geprüft;
   - **noch nicht verschoben:** die Nummer liegt nur in der Quelle (gelb);
   - **veraltet:** die Quelle hat ein neueres Datum im Namen (gelb); liegt eine Nummer mehrfach im Antragsordner, zählt
     die neueste;
   - **Hinweise** (nie sperrend): ältere Fassungen derselben Nummer („alte Fassung?“), ein Satz neben Einzelplänen
-    daraus, ein Index, wo das Schema keinen vorsieht (erst ab Leistungsphase 5), und – nur wenn die Projektdatei
+    daraus, ein Index, wo das Schema keinen vorsieht (erst ab Leistungsphase 5), „kein Schnitt erkannt“ bzw. „keine
+    Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten, § 4 Abs. 1 BauPrüfVO NRW – nur ein
+    Hinweis, weil die Behörde auf Bauvorlagen verzichten kann und ein Vorbescheid weniger braucht), und – nur wenn die Projektdatei
     Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (der einzige Weg, auch einen fehlenden letzten Grundriss
     zu bemerken).
   Die Zeile zeigt „8 Pläne · GP-01 bis GP-08 · GP-07 fehlt“, „Pläne zeigen“ die Liste je Nummer; in der
   Projektordner-Ansicht „Antrag“ stehen fehlende und noch nicht verschobene Pläne einzeln unter „Fehlt im
   Antragsordner“. Ein optionales Muster grenzt die Pläne ein.
-- **Namensschema:** Kürzel (Planphasen BP, EP, GP, AP, AB; Antragsarten BAUA, BAUVA/BVA, BAUF, DENK, ABGE, ENTW), die
-  Stellen der Teile im Dateinamen (Code, Phase bzw. Antragsart, Datum, Nummer) und „Index ab Leistungsphase“ kommen
+- **Namensschema:** Kürzel (Planphasen BP, EP, GP, AP, AB; Antragsarten BAUA, BAUVA/BVA (Antrag auf Vorbescheid),
+  BAUF, DENK, ABGE, ENTW), die Stellen der Teile im Dateinamen (Code, Phase bzw. Antragsart, Datum, Nummer) und „Index ab Leistungsphase“ kommen
   aus dem gemeinsamen Namensschema (`packages/core/src/namensschema.ts`): das der Projektdatei, sonst das des Büros
   (Projektordner › Einstellungen), sonst die Vorgabe. Antragsordner werden an den Antragsarten der Einstellungen und
   des Namensschemas erkannt.

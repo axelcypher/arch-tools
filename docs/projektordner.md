@@ -116,14 +116,21 @@ Eintrag `namensschema`; `packages/core/src/namensschema.ts`):
   Vorgabe „HVO GP 261111 GP-04 Grundriss OG.pdf“ (im Antragsordner steht die Antragsart statt der Phase, die
   Plannummer bleibt).
 - **Planphasen** mit Kürzel, Bedeutung und Leistungsphase: BP Grundlagenermittlung (Bestand), EP Entwurfsplanung,
-  GP Genehmigungsplanung, AP Ausführungsplanung, AB Abgeschlossenheitsbescheinigung (Sonderfall).
-- **Antragsarten** mit gleichwertigen Schreibweisen: BAUA Bauantrag, BAUVA Bauvoranfrage (auch BVA), BAUF
-  Genehmigungsfreistellung, DENK Denkmalrechtliche Erlaubnis, ABGE Abgeschlossenheitsbescheinigung, ENTW
-  Entwässerungsantrag.
-- **Index ab Leistungsphase** (Vorgabe 5): erst ab dann tragen Pläne einen Index (GP-03a).
+  GP Genehmigungsplanung, AP Ausführungsplanung, AB Aufteilungspläne für die Abgeschlossenheitsbescheinigung
+  (§ 7 Abs. 4 WEG, Sonderfall).
+- **Antrags- und Verfahrensarten** mit gleichwertigen Schreibweisen: BAUA Bauantrag, BAUVA Antrag auf Vorbescheid
+  bzw. Bauvoranfrage (auch BVA), BAUF Genehmigungsfreistellung, DENK Denkmalrechtliche Erlaubnis, ABGE
+  Abgeschlossenheitsbescheinigung, ENTW Entwässerungsantrag.
+- **Bearbeiten:** Kürzel, Bedeutung und Schreibweisen werden beim Verlassen des Felds übernommen; ein Kürzel muss aus
+  Großbuchstaben und Ziffern bestehen (höchstens 8 Zeichen) und darf nicht doppelt vorkommen – sonst bleibt das alte
+  und eine Meldung sagt warum. Die Stellen tauschen beim Umstellen die Plätze; das Beispiel zeigt die Zerlegung.
+  „Vorgabe wiederherstellen“ (mit Rückfrage) setzt die eingebaute Vorgabe.
+- **Index ab Leistungsphase** (Vorgabe 5): erst ab dann tragen Pläne einen Index (AP-03a).
 
-Jede **neue Projektdatei** bekommt eine Kopie (Abschnitt `namensschema`); alle Apps lesen zuerst die der
-Projektdatei, sonst die des Büros, sonst die Vorgabe. Formulare erkennt daran Antragsordner und die Pläne eines
+Jede **neue Projektdatei** bekommt eine Kopie (Abschnitt `namensschema`); beim **Ergänzen** eines Projekts wird
+eine fehlende oder abweichende Kopie auf den Stand des Büros gebracht (in der Vorschau als Änderung „Namensschema“
+bzw. „Namensschema (Stand des Büros)“). Alle Apps lesen zuerst die der Projektdatei, sonst die des Büros, sonst die
+Vorgabe. Formulare erkennt daran Antragsordner und die Pläne eines
 Plansatzes.
 
 ### Struktur

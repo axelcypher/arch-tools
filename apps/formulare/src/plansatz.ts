@@ -5,13 +5,14 @@
  * Genehmigungsplanung, aus dem die Pläne in den Antragsordner verschoben werden).
  *
  * Geprüft wird je Plankürzel:
- *  - Lücken: zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – dann fehlt sicher ein Plan
- *    (die Reihe muss nicht bei 01 beginnen; die Reihenfolge der Planarten spielt keine Rolle);
+ *  - Lücken: zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – nach der Bürovorgabe (fortlaufende
+ *    Nummern) fehlt dann ein Plan (die Reihe muss nicht bei 01 beginnen; die Reihenfolge der Planarten spielt keine Rolle);
  *  - noch nicht verschoben: der Plan liegt nur in der Quelle;
  *  - veraltet: die Quelle hat ein neueres Datum im Namen als der Plan im Antragsordner;
  *  - Hinweise (nie sperrend): ältere Fassungen derselben Nummer, ein zusammengefasster Satz (GP01-07) neben
- *    Einzelplänen daraus, ein Index, wo das Schema keinen vorsieht, und – mit Geschossen aus der Projektdatei –
- *    weniger Grundrisse als Geschosse (der einzige Weg, auch einen fehlenden letzten Grundriss zu bemerken).
+ *    Einzelplänen daraus, ein Index, wo das Schema keinen vorsieht, kein Schnitt bzw. keine Ansicht (§ 4 Abs. 1
+ *    BauPrüfVO NRW) und – mit Geschossen aus der Projektdatei – weniger Grundrisse als Geschosse. Diese Hinweise fangen
+ *    auch fehlende Pläne am Ende der Reihe auf, die keine Lücke hinterlassen.
  */
 
 import type { Namensschema } from '@core/namensschema';
@@ -23,11 +24,19 @@ import type { Eintrag } from './dateisystem';
 /** aktuell · veraltet (Quelle neuer) · nicht verschoben (nur in der Quelle) · fehlt (Lücke in der Nummernfolge) */
 export type PlanZustand = 'aktuell' | 'veraltet' | 'quelle' | 'fehlt';
 
+/** Zustand kurz (Listen) und ausführlich (Tooltip) – überall dieselben Worte */
+export const PLAN_ZUSTAND_KURZ: Record<PlanZustand, string> = {
+  aktuell: 'aktuell',
+  veraltet: 'veraltet',
+  quelle: 'nicht verschoben',
+  fehlt: 'fehlt',
+};
+
 export const PLAN_ZUSTAND_TEXT: Record<PlanZustand, string> = {
   aktuell: 'aktuell im Antragsordner',
   veraltet: 'veraltet – in der Quelle gibt es eine neuere Fassung',
-  quelle: 'noch nicht in den Antragsordner verschoben',
-  fehlt: 'fehlt – Lücke in der Nummernfolge',
+  quelle: 'nicht verschoben – liegt erst in der Quelle',
+  fehlt: 'fehlt – Lücke in der fortlaufenden Nummerierung',
 };
 
 export interface PlanEintrag {
@@ -99,6 +108,8 @@ function neueste(funde: Fund[], codes: string[]): Fund {
 }
 
 const grundriss = (bezeichnung: string) => /grundri|(^|\s)gr(\s|$)/i.test(bezeichnung);
+const schnitt = (bezeichnung: string) => /schnitt|(^|\s)sn(\s|$)/i.test(bezeichnung);
+const ansicht = (bezeichnung: string) => /ansicht/i.test(bezeichnung);
 
 /**
  * Plansatz prüfen: `antrag` sind die Dateien im Ordner der aktiven Antragsfassung, `quelle` die im Quellordner (auch
@@ -159,10 +170,18 @@ export function plansatzPruefen(antrag: Eintrag[], quelle: Eintrag[], schema: Na
     }
   }
 
-  // Geschosse der Projektdatei: weniger Grundrisse als Geschosse? (nur mit Einzelplänen zählbar)
-  if (o.geschosse && o.geschosse > 0 && plaene.length && !plaene.some((p) => p.satz)) {
-    const gr = plaene.filter((p) => p.zustand !== 'fehlt' && grundriss(p.bezeichnung ?? '')).length;
-    if (gr < o.geschosse) hinweise.push(`Projektdatei: ${o.geschosse} ${o.geschosse === 1 ? 'Geschoss' : 'Geschosse'}, ${gr} ${gr === 1 ? 'Grundriss' : 'Grundrisse'} erkannt`);
+  // Nur mit Einzelplänen zählbar (ein Satz verrät nicht, was er enthält):
+  if (plaene.length && !plaene.some((p) => p.satz)) {
+    const da = plaene.filter((p) => p.zustand !== 'fehlt').map((p) => p.bezeichnung ?? '');
+    // Bauzeichnungen sind Grundrisse, Schnitte und Ansichten (§ 4 Abs. 1 BauPrüfVO NRW) – fehlt eine Art, ein Hinweis;
+    // er sperrt nicht, weil die Behörde auf Bauvorlagen verzichten kann (§ 1 Abs. 2 BauPrüfVO) und ein Vorbescheid weniger braucht
+    if (!da.some(schnitt)) hinweise.push('kein Schnitt erkannt (Bauzeichnungen: Grundrisse, Schnitte, Ansichten – § 4 Abs. 1 BauPrüfVO NRW)');
+    if (!da.some(ansicht)) hinweise.push('keine Ansicht erkannt (Bauzeichnungen: Grundrisse, Schnitte, Ansichten – § 4 Abs. 1 BauPrüfVO NRW)');
+    // Geschosse der Projektdatei: weniger Grundrisse als Geschosse?
+    if (o.geschosse && o.geschosse > 0) {
+      const gr = da.filter(grundriss).length;
+      if (gr < o.geschosse) hinweise.push(`Projektdatei: ${o.geschosse} ${o.geschosse === 1 ? 'Geschoss' : 'Geschosse'}, ${gr} ${gr === 1 ? 'Grundriss' : 'Grundrisse'} erkannt`);
+    }
   }
 
   const status: Status = !plaene.length ? 'fehlt' : luecken.length ? 'unvollstaendig' : plaene.some((p) => p.zustand === 'quelle' || p.zustand === 'veraltet') ? 'offen' : 'aktuell';
@@ -181,7 +200,7 @@ export function plansatzKurz(r: PlansatzErgebnis): string {
   if (r.luecken.length) teile.push(`${r.luecken.join(', ')} ${r.luecken.length === 1 ? 'fehlt' : 'fehlen'}`);
   const q = r.plaene.filter((p) => p.zustand === 'quelle').length;
   const v = r.plaene.filter((p) => p.zustand === 'veraltet').length;
-  if (q) teile.push(`${q} noch nicht verschoben`);
-  if (v) teile.push(`${v} veraltet`);
+  if (q) teile.push(`${q} ${PLAN_ZUSTAND_KURZ.quelle}`);
+  if (v) teile.push(`${v} ${PLAN_ZUSTAND_KURZ.veraltet}`);
   return teile.join(' · ');
 }

@@ -12,6 +12,7 @@ import {
   feldVerschieben,
   leereAnsicht,
   neueId,
+  abschnittEntfernen,
   verknuepfen,
   verknuepfteFelder,
   verknuepfungLoesen,
@@ -33,6 +34,7 @@ export function AnsichtEditor({
   onChange,
   onSchliessen,
   vorgabe,
+  verknuepfbar,
 }: {
   titel: string;
   text?: ReactNode;
@@ -43,6 +45,11 @@ export function AnsichtEditor({
   onSchliessen: () => void;
   /** Ausgangspunkt, wenn es noch keine eigene Ansicht gibt */
   vorgabe?: Ansicht;
+  /**
+   * Felder lassen sich verknüpfen (gemeinsam ausfüllen) – nur, wenn die App das unterstützt, und nur passende Paare;
+   * fehlt = keine Verknüpfungen
+   */
+  verknuepfbar?: (a: FeldDef, b: FeldDef) => boolean;
 }) {
   const a = ansicht ?? vorgabe ?? leereAnsicht();
   const [aktiv, setAktiv] = useState<string>(a.abschnitte[0]?.id ?? '');
@@ -110,7 +117,7 @@ export function AnsichtEditor({
 
   const abschnittNeu = () => {
     const id = neueId();
-    setzen({ abschnitte: [...a.abschnitte, { id, titel: 'Neuer Abschnitt', felder: [] }] });
+    setzen({ ...a, abschnitte: [...a.abschnitte, { id, titel: 'Neuer Abschnitt', felder: [] }] });
     setAktiv(id);
   };
 
@@ -119,7 +126,8 @@ export function AnsichtEditor({
       <header className="av-ed-titel">
         <h3>{titel}</h3>
         <p className="muted small-text">
-          {text ?? 'Rechts Felder anhaken – sie kommen in den gewählten Abschnitt. Links ordnen: am Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt.'}
+          {text ?? 'Rechts Felder anhaken – sie kommen in den gewählten Abschnitt. Links ordnen: am Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt.'} Je Feld:
+          Beschriftung direkt ändern · Breite ¼ bis ganz · ↵ beginnt eine neue Zeile{verknuepfbar ? ' · ⛓ gemeinsam ausfüllen' : ''}.
         </p>
       </header>
       <div className="av-ed-koerper">
@@ -142,7 +150,7 @@ export function AnsichtEditor({
                     value={x.titel}
                     placeholder="Abschnitt ohne Titel"
                     aria-label={`Titel von Abschnitt ${ai + 1}`}
-                    onChange={(e) => setzen({ abschnitte: a.abschnitte.map((y) => (y.id === x.id ? { ...y, titel: e.target.value } : y)) })}
+                    onChange={(e) => setzen({ ...a, abschnitte: a.abschnitte.map((y) => (y.id === x.id ? { ...y, titel: e.target.value } : y)) })}
                   />
                   <button
                     type="button"
@@ -170,7 +178,7 @@ export function AnsichtEditor({
                     disabled={a.abschnitte.length === 1}
                     title="Abschnitt entfernen (die Felder bleiben im Katalog)"
                     aria-label={`Abschnitt ${x.titel || ai + 1} entfernen`}
-                    onClick={() => setzen({ abschnitte: a.abschnitte.filter((y) => y.id !== x.id) })}
+                    onClick={() => setzen(abschnittEntfernen(a, x.id))}
                   >
                     ×
                   </button>
@@ -201,15 +209,10 @@ export function AnsichtEditor({
                             title="Eigene Beschriftung – leer: die Beschriftung aus dem Katalog"
                             onChange={(e) => setzen(feldOptionenSetzen(a, f, { label: e.target.value }))}
                           />
-                          <span className="muted small-text">{def ? `${def.titel}${def.gruppe ? ` · ${def.gruppe}` : ''}` : 'gibt es hier nicht'}</span>
+                          <span className="muted small-text">{!def ? 'gibt es hier nicht' : x.optionen?.[f]?.label ? [def.titel, def.gruppe].filter(Boolean).join(' · ') : (def.gruppe ?? '')}</span>
                         </span>
-                        <FeldLayout
-                          optionen={x.optionen?.[f]}
-                          def={def}
-                          titel={def?.titel ?? f}
-                          onChange={(patch) => setzen(feldOptionenSetzen(a, f, patch))}
-                        />
-                        <Verknuepfung a={a} feld={f} nach={nach} titel={def?.titel ?? f} onChange={setzen} />
+                        <FeldLayout optionen={x.optionen?.[f]} def={def} titel={def?.titel ?? f} onChange={(patch) => setzen(feldOptionenSetzen(a, f, patch))} />
+                        {verknuepfbar && def && <Verknuepfung a={a} feld={def} nach={nach} passt={verknuepfbar} onChange={setzen} />}
                         <button
                           type="button"
                           className="icon av-ed-weg"
@@ -287,10 +290,12 @@ function FeldLayout({ optionen, def, titel, onChange }: { optionen?: FeldOptione
   );
 }
 
-/** Verknüpfung eines Felds mit anderen der Ansicht: sie werden gemeinsam ausgefüllt */
-function Verknuepfung({ a, feld, nach, titel, onChange }: { a: Ansicht; feld: string; nach: Map<string, FeldDef>; titel: string; onChange: (a: Ansicht) => void }) {
+/** Verknüpfung eines Felds mit anderen der Ansicht: sie werden gemeinsam ausgefüllt (nur passende Felder) */
+function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; feld: FeldDef; nach: Map<string, FeldDef>; passt: (a: FeldDef, b: FeldDef) => boolean; onChange: (a: Ansicht) => void }) {
+  const feld = def.id;
+  const titel = def.titel;
   const mit = verknuepfteFelder(a, feld);
-  const andere = felderDerAnsicht(a).filter((f) => f !== feld && !mit.includes(f));
+  const andere = felderDerAnsicht(a).filter((f) => f !== feld && !mit.includes(f) && nach.has(f) && passt(def, nach.get(f)!));
   const name = (f: string) => {
     const d = nach.get(f);
     return d ? `${d.titel}${d.gruppe ? ` (${d.gruppe})` : ''}` : f;
@@ -335,10 +340,11 @@ function Verknuepfung({ a, feld, nach, titel, onChange }: { a: Ansicht; feld: st
 function LayoutVorschau({ abschnitt, nach }: { abschnitt: AnsichtAbschnitt; nach: Map<string, FeldDef> }) {
   return (
     <div className="av-ed-vorschau" aria-hidden title="So stehen die Felder in Zeilen">
+      <span className="av-ed-vorschau-titel">Vorschau der Zeilen</span>
       {abschnitt.felder.map((f) => {
         const o = abschnitt.optionen?.[f];
         return (
-          <span key={f} className="av-ed-vorschau-feld" style={{ gridColumn: `${o?.neueZeile ? '1 / ' : ''}span ${feldBreite(o, nach.get(f))}` }}>
+          <span key={f} className="av-ed-vorschau-feld" data-breite={feldBreite(o, nach.get(f))} data-neue-zeile={o?.neueZeile ? '' : undefined}>
             {o?.label || nach.get(f)?.titel || f}
           </span>
         );
@@ -375,9 +381,8 @@ export function AnsichtAnzeige({
               {x.felder.map((id) => {
                 const f = nach.get(id);
                 const o = x.optionen?.[id];
-                const spalte = `${o?.neueZeile ? '1 / ' : ''}span ${feldBreite(o, f)}`;
                 return f ? (
-                  <div key={id} className="av-feld" style={{ gridColumn: spalte }}>
+                  <div key={id} className="av-feld" data-breite={feldBreite(o, f)} data-neue-zeile={o?.neueZeile ? '' : undefined}>
                     {feld(f, { label: o?.label || f.titel, verknuepft: verknuepfteFelder(ansicht, id) })}
                   </div>
                 ) : (

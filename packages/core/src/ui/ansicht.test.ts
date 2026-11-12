@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { abschnittVerschieben, ansichtAus, feldBreite, felderDerAnsicht, feldEntfernen, feldHinzufuegen, feldOptionen, feldOptionenSetzen, feldVerschieben, verknuepfen, verknuepfteFelder, verknuepfungLoesen } from './ansicht';
+import {
+  abschnittVerschieben,
+  ansichtAus,
+  feldBreite,
+  felderDerAnsicht,
+  feldEntfernen,
+  feldHinzufuegen,
+  feldOptionen,
+  feldOptionenSetzen,
+  feldVerschieben,
+  verknuepfen,
+  verknuepfteFelder,
+  verknuepfungLoesen,
+} from './ansicht';
 import { einfuegeStelle } from './ziehen';
 
 const a = {
@@ -55,7 +68,15 @@ describe('eigene Ansichten', () => {
     expect(verknuepfteFelder(b, '301:10')).toEqual(['201:30', '201:40']);
     expect(verknuepfungLoesen(b, '201:30').verknuepfungen).toEqual([['201:40', '301:10']]);
     expect(feldEntfernen(verknuepfungLoesen(b, '201:30'), '301:10').verknuepfungen).toBeUndefined();
-    expect(ansichtAus({ ...b, verknuepfungen: [['201:40', 'gibts-nicht'], ['201:30', '301:10', '201:30']] })!.verknuepfungen).toEqual([['201:30', '301:10']]);
+    expect(
+      ansichtAus({
+        ...b,
+        verknuepfungen: [
+          ['201:40', 'gibts-nicht'],
+          ['201:30', '301:10', '201:30'],
+        ],
+      })!.verknuepfungen,
+    ).toEqual([['201:30', '301:10']]);
   });
 
   it('Einfügestelle nach den Mitten der Zeilen, ohne die gezogene', () => {

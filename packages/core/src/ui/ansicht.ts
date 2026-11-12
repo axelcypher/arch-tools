@@ -127,7 +127,10 @@ export function feldHinzufuegen(a: Ansicht, abschnitt: string, feld: string): An
 
 /** Feld aus der Ansicht nehmen – auch aus seinen Verknüpfungen */
 export function feldEntfernen(a: Ansicht, feld: string): Ansicht {
-  return mitVerknuepfungen({ ...a, abschnitte: a.abschnitte.map((x) => ohneFeld(x, feld)) }, (a.verknuepfungen ?? []).map((g) => g.filter((f) => f !== feld)));
+  return mitVerknuepfungen(
+    { ...a, abschnitte: a.abschnitte.map((x) => ohneFeld(x, feld)) },
+    (a.verknuepfungen ?? []).map((g) => g.filter((f) => f !== feld)),
+  );
 }
 
 /** Feld an eine Stelle verschieben – auch in einen anderen Abschnitt (`stelle` nach dem Herausnehmen gezählt); Optionen und Verknüpfungen bleiben */
@@ -163,6 +166,15 @@ export function feldOptionenSetzen(a: Ansicht, feld: string, patch: Partial<Feld
   };
 }
 
+/** Abschnitt entfernen – seine Felder auch aus den Verknüpfungen */
+export function abschnittEntfernen(a: Ansicht, id: string): Ansicht {
+  const weg = new Set(a.abschnitte.find((x) => x.id === id)?.felder ?? []);
+  return mitVerknuepfungen(
+    { ...a, abschnitte: a.abschnitte.filter((x) => x.id !== id) },
+    (a.verknuepfungen ?? []).map((g) => g.filter((f) => !weg.has(f))),
+  );
+}
+
 /* ---------- Verknüpfungen ---------- */
 
 const mitVerknuepfungen = (a: Ansicht, gruppen: string[][]): Ansicht => {
@@ -184,7 +196,11 @@ export function verknuepfen(a: Ansicht, feld: string, mit: string): Ansicht {
 }
 
 /** Ein Feld aus seiner Verknüpfung lösen */
-export const verknuepfungLoesen = (a: Ansicht, feld: string): Ansicht => mitVerknuepfungen(a, (a.verknuepfungen ?? []).map((g) => g.filter((f) => f !== feld)));
+export const verknuepfungLoesen = (a: Ansicht, feld: string): Ansicht =>
+  mitVerknuepfungen(
+    a,
+    (a.verknuepfungen ?? []).map((g) => g.filter((f) => f !== feld)),
+  );
 
 /** Abschnitt an eine Stelle verschieben (`stelle` nach dem Herausnehmen gezählt) */
 export function abschnittVerschieben(a: Ansicht, id: string, stelle: number): Ansicht {

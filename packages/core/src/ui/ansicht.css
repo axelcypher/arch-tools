@@ -14,6 +14,7 @@ html.zieht * {
   gap: 14px;
 }
 .av-abschnitt {
+  container: av-abschnitt / inline-size;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -27,16 +28,56 @@ html.zieht * {
   text-transform: uppercase;
   color: var(--muted);
 }
-.av-raster {
+.av-raster,
+.av-ed-vorschau {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+.av-raster {
   gap: 10px 14px;
   align-items: start;
 }
-/* schmal: jedes Feld eine Zeile */
-@media (max-width: 720px) {
-  .av-raster > .av-feld {
-    grid-column: 1 / -1 !important;
+/* Breite in Spalten von 12, „neue Zeile“ beginnt in Spalte 1 */
+.av-feld,
+.av-ed-vorschau-feld {
+  grid-column: span var(--breite, 4);
+}
+[data-breite='3'] {
+  --breite: 3;
+}
+[data-breite='4'] {
+  --breite: 4;
+}
+[data-breite='6'] {
+  --breite: 6;
+}
+[data-breite='8'] {
+  --breite: 8;
+}
+[data-breite='9'] {
+  --breite: 9;
+}
+[data-breite='12'] {
+  --breite: 12;
+}
+.av-feld[data-neue-zeile],
+.av-ed-vorschau-feld[data-neue-zeile] {
+  grid-column: 1 / span var(--breite, 4);
+}
+/* schmaler Abschnitt (nicht das Fenster): erst halbe, dann ganze Breite */
+@container av-abschnitt (max-width: 760px) {
+  .av-feld[data-breite='3'],
+  .av-feld[data-breite='4'] {
+    --breite: 6;
+  }
+  .av-feld[data-breite='8'],
+  .av-feld[data-breite='9'] {
+    --breite: 12;
+  }
+}
+@container av-abschnitt (max-width: 480px) {
+  .av-feld {
+    --breite: 12;
   }
 }
 .av-feld {
@@ -234,10 +275,24 @@ html.zieht * {
 }
 
 /* Editor: Beschriftung, Breite, Zeilenumbruch, Verknüpfung, Vorschau */
+/* Beschriftung direkt bearbeiten (wie die Feldtitel in der Gliederung): Rahmen erst bei Hover und Fokus */
 .av-ed-label {
   width: 100%;
   min-width: 0;
   font-weight: 600;
+  border-color: transparent;
+  background: transparent;
+  padding-left: 4px;
+  margin-left: -4px;
+}
+.av-ed-label:hover,
+.av-ed-label:focus {
+  border-color: var(--border);
+  background: var(--input-bg);
+}
+.av-ed-label::placeholder {
+  color: var(--text);
+  opacity: 0.72;
 }
 .av-ed-layout {
   display: inline-flex;
@@ -261,10 +316,13 @@ html.zieht * {
   color: var(--accent);
 }
 .av-ed-vorschau {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 3px;
   margin-top: 8px;
+}
+.av-ed-vorschau-titel {
+  grid-column: 1 / -1;
+  font-size: 10.5px;
+  color: var(--muted);
 }
 .av-ed-vorschau-feld {
   padding: 2px 5px;

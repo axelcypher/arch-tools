@@ -883,8 +883,8 @@ export const useAntrag = create<AntragState>((set, get) => {
           const o = useFormulare.getState().oap;
           const geschosse = o && o !== 'fehlt' ? o.projekt.storeys.length : undefined;
           const plansatz = plansatzPruefen(st.dateien, st.quellen[quelleVonEintrag(u, e)] ?? [], namensschema(), { codes, geschosse, muster: u.muster });
-          const neueste = plansatz.plaene.find((p) => p.datei)?.datei ?? null;
-          return { eintrag: u, status: plansatz.status, formular: null, datei: neueste, quelle: null, plansatz };
+          // „Datei“ eines Plansatzes: keine einzelne – die Pläne stehen in `plansatz` (je Nummer mit Datei)
+          return { eintrag: u, status: plansatz.status, formular: null, datei: null, quelle: null, plansatz };
         }
         const quelle = quelleVon(u, st.quellen[quelleVonEintrag(u, e)] ?? [], codes);
         return { eintrag: u, status: externStatus(quelle, datei, codes), formular: null, datei, quelle };

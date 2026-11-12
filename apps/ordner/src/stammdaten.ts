@@ -189,13 +189,25 @@ export interface ProjektdateiAenderung {
  * erhalten bleiben), und die Angaben dieses Tools (Struktur, Dateischema, Presets). Gelöscht wird nichts außer
  * dem, was im Assistenten geleert wurde.
  */
-export function projektdateiAenderung(basis: { meta: ProjectMeta; projektordner?: ProjektordnerAngaben }, stamm: Stammdaten, ziel: { struktur: { name: string; dateischema: string }; presets: string[] }): ProjektdateiAenderung {
+export function projektdateiAenderung(
+  basis: { meta: ProjectMeta; projektordner?: ProjektordnerAngaben; namensschema?: Namensschema },
+  stamm: Stammdaten,
+  ziel: { struktur: { name: string; dateischema: string }; presets: string[]; namensschema?: Namensschema },
+): ProjektdateiAenderung {
   const neu = metaAus(stamm);
   const geaendert = META_TEILE.filter(([k]) => !gleich(wert(basis.meta[k]), wert(neu[k])));
   const po: ProjektordnerAngaben = { struktur: ziel.struktur.name, ...(ziel.struktur.dateischema ? { dateischema: ziel.struktur.dateischema } : {}), presets: [...ziel.presets] };
   const alt = basis.projektordner ?? {};
   const poGeaendert = (['struktur', 'dateischema', 'presets'] as const).filter((k) => !gleich(wert(alt[k]), wert(po[k])));
-  const teile = [...geaendert.map(([, t]) => t), ...(poGeaendert.includes('presets') ? ['Vorlagen-Presets'] : []), ...(poGeaendert.some((k) => k !== 'presets') ? ['Struktur'] : [])];
+  // Namensschema: fehlt es in der Projektdatei oder weicht es vom Büro ab, wird das des Büros übernommen (beim Ergänzen sichtbar)
+  const schema = ziel.namensschema ?? VORGABE_NAMENSSCHEMA;
+  const schemaNeu = JSON.stringify(basis.namensschema ?? null) !== JSON.stringify(schema);
+  const teile = [
+    ...geaendert.map(([, t]) => t),
+    ...(poGeaendert.includes('presets') ? ['Vorlagen-Presets'] : []),
+    ...(poGeaendert.some((k) => k !== 'presets') ? ['Struktur'] : []),
+    ...(schemaNeu ? [basis.namensschema ? 'Namensschema (Stand des Büros)' : 'Namensschema'] : []),
+  ];
   return {
     teile,
     aendern: (roh) => {
@@ -210,7 +222,7 @@ export function projektdateiAenderung(basis: { meta: ProjectMeta; projektordner?
         if (po[k] === undefined) delete projektordner[k];
         else projektordner[k] = structuredClone(po[k]);
       }
-      return { ...roh, meta, ...(poGeaendert.length ? { projektordner } : {}) };
+      return { ...roh, meta, ...(poGeaendert.length ? { projektordner } : {}), ...(schemaNeu ? { namensschema: structuredClone(schema) } : {}) };
     },
   };
 }

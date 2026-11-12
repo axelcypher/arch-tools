@@ -7,6 +7,7 @@
 
 import type { PkEintrag, PkGruppe, Projektkarte } from './forma/projektkarte';
 import { pkArt, pkTitel } from './forma/projektkarte';
+import { GEBIETSARTEN } from '@core/model';
 
 /** Adressgruppen (Bauherr, Entwurfsverfasser, Behörden …) haben in FORMA den Typ 1 */
 export const istAdresse = (g: Pick<PkGruppe, 'typ'>) => g.typ === 1;
@@ -164,29 +165,30 @@ export const feldTitel = (titel: string) => pkTitel(titel).replace(/\s*\[[^\]]+\
 
 /* ---------- Eingaben mit fester Form ---------- */
 
-/** Einträge mit einer Anzahl („Anzahl der Wohnungen“): nur ganze Zahlen */
-export const istAnzahl = (titel: string) => /^anzahl\b/i.test(titel.trim());
+/**
+ * Einträge mit einer Anzahl („Anzahl der Wohnungen“): nur ganze Zahlen – nicht die Zahl der Vollgeschosse, die als
+ * Festsetzung auch „II“, „II–III“ oder „zwingend“ lauten kann (§ 16 Abs. 4 BauNVO)
+ */
+export const istAnzahl = (titel: string) => /^anzahl\b/i.test(titel.trim()) && !/vollgeschoss/i.test(titel);
 
-/** Gebietsarten nach BauNVO (§§ 2–11) – für „Art der baulichen Nutzung“ */
+/**
+ * Für „Art der baulichen Nutzung“: die Baugebiete der BauNVO (§ 1 Abs. 2, §§ 2–11) in der Schreibweise des
+ * GRZ-Nachweises (packages/core GEBIETSARTEN), das Sondergebiet nach §§ 10 und 11 getrennt, dazu die Fälle ohne
+ * Baugebiet (§§ 34, 35 BauGB) und der vorhabenbezogene Bebauungsplan (§ 12 BauGB)
+ */
 export const BAUGEBIETE = [
-  'Kleinsiedlungsgebiet (WS)',
-  'Reines Wohngebiet (WR)',
-  'Allgemeines Wohngebiet (WA)',
-  'Besonderes Wohngebiet (WB)',
-  'Dorfgebiet (MD)',
-  'Dörfliches Wohngebiet (MDW)',
-  'Mischgebiet (MI)',
-  'Urbanes Gebiet (MU)',
-  'Kerngebiet (MK)',
-  'Gewerbegebiet (GE)',
-  'Industriegebiet (GI)',
-  'Sondergebiet, das der Erholung dient (SO)',
-  'Sonstiges Sondergebiet (SO)',
+  ...GEBIETSARTEN.filter((g) => g.id !== 'SO').map((g) => g.label),
+  'SO – Sondergebiet, das der Erholung dient (§ 10 BauNVO)',
+  'SO – sonstiges Sondergebiet (§ 11 BauNVO)',
+  'Vorhabenbezogener Bebauungsplan (§ 12 BauGB)',
+  'Innenbereich ohne Baugebiet (§ 34 Abs. 1 BauGB)',
+  'Außenbereich (§ 35 BauGB)',
 ];
 
 /** Gängige Nutzungen eines Gebäudes – für „Art der Nutzung“ (eigene Angaben bleiben möglich) */
 export const NUTZUNGSARTEN = [
   'Wohnen',
+  'Ferienwohnungen (§ 13a BauNVO)',
   'Wohnen und Gewerbe (gemischt)',
   'Büro und Verwaltung',
   'Handel',
@@ -195,6 +197,8 @@ export const NUTZUNGSARTEN = [
   'Lager und Logistik',
   'Gastronomie',
   'Beherbergung',
+  'Vergnügungsstätte',
+  'Tankstelle',
   'Landwirtschaft',
   'Bildung und Betreuung (Schule, Kita)',
   'Gesundheit und Pflege',

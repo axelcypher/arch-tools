@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import type { FeldDef } from '@core/ui/ansicht';
 import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
@@ -10,7 +11,7 @@ import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
 import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, quelleVonEintrag, useAntrag, wirksameEinstellungen } from '../antragStore';
 import type { PlansatzErgebnis } from '../plansatz';
-import { PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz';
+import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, useFormulare } from '../store';
 import { useExportDialog } from './ExportDialog';
@@ -48,13 +49,10 @@ export function FassungsWahl() {
   const ablage = useFormulare((s) => ablageVon(s, s.projekt));
   const fassungen = useAntrag((s) => s.fassungen);
   const aktiv = useAntrag((s) => aktiveFassung(s, projekt));
-  // Antragsarten aus den Einstellungen und dem Namensschema (der Projektdatei bzw. des Büros) – außerhalb des Selektors
-  // berechnet, damit er stabile Werte liefert
-  const einstellungen = useAntrag((s) => s.einstellungen);
-  useAntrag((s) => s.ueberschreibungen);
-  useFormulare((s) => s.oap);
-  useFormulare((s) => s.namensschemaBuero);
-  const arten = antragsarten(wirksameEinstellungen({ einstellungen, ueberschreibungen: useAntrag.getState().ueberschreibungen }, projekt), false);
+  // Antragsarten aus den Einstellungen und dem Namensschema (der Projektdatei bzw. des Büros); der Selektor liefert ein
+  // neues Feld, useShallow vergleicht den Inhalt
+  useFormulare(useShallow((s) => [s.oap, s.namensschemaBuero]));
+  const arten = useAntrag(useShallow((s) => antragsarten(wirksameEinstellungen(s, projekt), false)));
   const dokumente = useAntrag((s) => s.dokumente);
   const antraege = useAntrag((s) => s.projektdatei?.antraege);
   const { fassungWaehlen } = useAntrag.getState();
@@ -180,7 +178,7 @@ function Merkmale({ gesperrt }: { gesperrt: boolean }) {
     return (
       <label className="pu-merkmal" title={erkl?.text}>
         <span className="field-label">{o?.label || m.name}</span>
-        <select value={werte[m.name] ?? ''} aria-label={m.name} disabled={gesperrt} onChange={(e) => void st.merkmalSetzen(m.name, e.target.value)}>
+        <select value={werte[m.name] ?? ''} aria-label={o?.label || m.name} disabled={gesperrt} onChange={(e) => void st.merkmalSetzen(m.name, e.target.value)}>
           <option value="">–</option>
           {m.werte.map((w) => (
             <option key={w} value={w} title={erkl?.werte?.[w]}>
@@ -227,9 +225,9 @@ function Merkmale({ gesperrt }: { gesperrt: boolean }) {
 const ART_TEXT = { intern: 'Formular', extern: 'Datei', plansatz: 'Plansatz' };
 
 /** Pläne eines Plansatzes: je Plannummer Zustand und Datei, dazu Hinweise */
-function PlansatzListe({ r, basis, ordner }: { r: PlansatzErgebnis; basis: string | null; ordner: string }) {
+function PlansatzListe({ id, r, basis, ordner }: { id: string; r: PlansatzErgebnis; basis: string | null; ordner: string }) {
   return (
-    <div className="pu-plansatz">
+    <div className="pu-plansatz" id={id}>
       {r.plaene.length > 0 && (
         <ul className="pu-plaene">
           {r.plaene.map((p) => (
@@ -243,9 +241,9 @@ function PlansatzListe({ r, basis, ordner }: { r: PlansatzErgebnis; basis: strin
                 ) : (
                   (p.bezeichnung ?? '')
                 )}
-                {p.satz && <span className="muted small-text"> (aus Satz)</span>}
+                {p.satz && <span className="muted small-text"> (im Sammel-PDF)</span>}
               </span>
-              <span className="pu-plan-zustand small-text">{PLAN_ZUSTAND_TEXT[p.zustand]}</span>
+              <span className="pu-plan-zustand small-text">{PLAN_ZUSTAND_KURZ[p.zustand]}</span>
             </li>
           ))}
         </ul>
@@ -471,12 +469,19 @@ export function AntragsdatenAnsicht() {
                       </span>
                       {u.art === 'plansatz' && d.plansatz ? (
                         <span className="small-text">
-                          <button className="pu-datei" aria-expanded={plaeneOffen.includes(u.id)} onClick={() => setPlaeneOffen(plaeneOffen.includes(u.id) ? plaeneOffen.filter((x) => x !== u.id) : [...plaeneOffen, u.id])}>
+                          <button className="pu-datei" aria-expanded={plaeneOffen.includes(u.id)} aria-controls={`plaene-${u.id}`} onClick={() => setPlaeneOffen(plaeneOffen.includes(u.id) ? plaeneOffen.filter((x) => x !== u.id) : [...plaeneOffen, u.id])}>
                             <Symbol name={plaeneOffen.includes(u.id) ? 'pfeilUnten' : 'pfeilRechts'} /> Pläne {plaeneOffen.includes(u.id) ? 'verbergen' : 'zeigen'}
                           </button>
                           {' · '}
-                          <span className="muted">Quelle {quelleVonEintrag(u, wirksameEinstellungen(st, projekt))}</span>
-                          {d.plansatz.hinweise.length > 0 && <span className="pu-bedingung"> · {d.plansatz.hinweise.length === 1 ? '1 Hinweis' : `${d.plansatz.hinweise.length} Hinweise`}</span>}
+                          <span className="muted">Quelle: {quelleVonEintrag(u, wirksameEinstellungen(st, projekt))}</span>
+                          {d.plansatz.hinweise.length > 0 && (
+                            <>
+                              {' · '}
+                              <button className="pu-hinweiszahl" title="Hinweise in der Liste der Pläne zeigen" onClick={() => !plaeneOffen.includes(u.id) && setPlaeneOffen([...plaeneOffen, u.id])}>
+                                {d.plansatz.hinweise.length === 1 ? '1 Hinweis' : `${d.plansatz.hinweise.length} Hinweise`}
+                              </button>
+                            </>
+                          )}
                           {hatBedingung(u.bedingung) ? <span className="pu-bedingung"> · nur wenn {bedingungText(u.bedingung)}</span> : null}
                         </span>
                       ) : (
@@ -528,7 +533,7 @@ export function AntragsdatenAnsicht() {
                       )}
                     </div>
                   </div>
-                  {u.art === 'plansatz' && d.plansatz && plaeneOffen.includes(u.id) && <PlansatzListe r={d.plansatz} basis={basis} ordner={ordner} />}
+                  {u.art === 'plansatz' && d.plansatz && plaeneOffen.includes(u.id) && <PlansatzListe id={`plaene-${u.id}`} r={d.plansatz} basis={basis} ordner={ordner} />}
                   {offen && !gesperrt && (
                     <div className="pu-bearbeiten">
                       <label>

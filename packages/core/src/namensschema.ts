@@ -1,7 +1,7 @@
 /**
  * Namensschema des Büros – gemeinsam für alle Apps: welche Kürzel es gibt (Planphasen wie GP, Antragsarten wie BAUA),
  * an welcher Stelle im Dateinamen Code, Phase bzw. Antragsart, Datum und Plannummer stehen und ab welcher
- * Leistungsphase Pläne einen Index tragen (GP-03a).
+ * Leistungsphase Pläne einen Index tragen (AP-03a).
  *
  *   „HVO GP 261111 GP-04 Grundriss OG.pdf“      im Planungsordner (Phase GP)
  *   „HVO BAUA 261111 GP-04 Grundriss OG.pdf“    derselbe Plan im Antragsordner (Antragsart statt Phase,
@@ -34,7 +34,7 @@ export interface Namensschema {
   antragsarten: Kuerzel[];
   /** Reihenfolge der Teile im Dateinamen */
   reihenfolge: NamensTeil[];
-  /** Pläne tragen einen Index (GP-03a) ab dieser Leistungsphase */
+  /** Pläne tragen einen Index (AP-03a) ab dieser Leistungsphase */
   indexAbLph: number;
 }
 
@@ -51,11 +51,11 @@ export const VORGABE_NAMENSSCHEMA: Namensschema = {
     { kuerzel: 'EP', name: 'Entwurfsplanung', lph: 3 },
     { kuerzel: 'GP', name: 'Genehmigungsplanung', lph: 4 },
     { kuerzel: 'AP', name: 'Ausführungsplanung', lph: 5 },
-    { kuerzel: 'AB', name: 'Abgeschlossenheitsbescheinigung (Sonderfall)' },
+    { kuerzel: 'AB', name: 'Aufteilungspläne (Abgeschlossenheit, § 7 Abs. 4 WEG)' },
   ],
   antragsarten: [
     { kuerzel: 'BAUA', name: 'Bauantrag' },
-    { kuerzel: 'BAUVA', name: 'Bauvoranfrage', synonyme: ['BVA'] },
+    { kuerzel: 'BAUVA', name: 'Antrag auf Vorbescheid (Bauvoranfrage)', synonyme: ['BVA'] },
     { kuerzel: 'BAUF', name: 'Genehmigungsfreistellung' },
     { kuerzel: 'DENK', name: 'Denkmalrechtliche Erlaubnis' },
     { kuerzel: 'ABGE', name: 'Abgeschlossenheitsbescheinigung' },
@@ -151,7 +151,7 @@ export interface PlanNummer {
   /** erste und letzte Nummer (bei einem zusammengefassten Satz verschieden) */
   von: number;
   bis: number;
-  /** Index (GP-03a) – klein */
+  /** Index (AP-03a) – klein */
   index?: string;
 }
 
@@ -159,7 +159,7 @@ const regexText = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Plannummer aus dem Teil „nummer“: Plankürzel einer Phase des Schemas und Nummer – „GP-01“, „GP01“, „GP_01“, ein
- * zusammengefasster Satz „GP01-07“ bzw. „GP-01-GP-07“, mit Index „GP-03a“. Eine reine Zahl („01“) ist eine
+ * zusammengefasster Satz „GP01-07“ bzw. „GP-01-GP-07“, mit Index „AP-03a“. Eine reine Zahl („01“) ist eine
  * Dokumentnummer (Formulare) und kein Plan: null.
  */
 export function planNummerAus(teil: string | undefined, schema: Pick<Namensschema, 'phasen'> = VORGABE_NAMENSSCHEMA): PlanNummer | null {

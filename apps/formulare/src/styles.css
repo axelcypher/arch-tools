@@ -1276,6 +1276,7 @@ button.icon.fo-gl-zaehlt.an {
   opacity: 0.8;
 }
 .pk-feld input[type='text'],
+.pk-feld input[type='number'],
 .pk-feld select,
 .pk-feld textarea {
   width: 100%;
@@ -1289,6 +1290,7 @@ button.icon.fo-gl-zaehlt.an {
   font-variant-numeric: tabular-nums;
 }
 .pk-feld.geaendert input[type='text'],
+.pk-feld.geaendert input[type='number'],
 .pk-feld.geaendert select,
 .pk-feld.geaendert textarea {
   border-color: var(--sel);
@@ -1297,7 +1299,8 @@ button.icon.fo-gl-zaehlt.an {
 .pk-feld.geaendert .pk-feld-titel {
   color: var(--sel);
 }
-.pk-feld.warnung input[type='text'] {
+.pk-feld.warnung input[type='text'],
+.pk-feld.warnung input[type='number'] {
   border-color: var(--warn-border);
 }
 .pk-warnung {
@@ -4648,11 +4651,12 @@ tr[data-ziehen='danach'] > td {
 
 /* Plansatz: Pläne mit Zustand */
 .pu-art.plansatz {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--room-bg);
+  color: var(--room-text);
 }
+/* Planliste: fluchtet mit der Titelspalte der Zeile */
 .pu-plansatz {
-  padding: 0 12px 10px 64px;
+  padding: 0 12px 10px 109px;
 }
 .pu-plaene {
   list-style: none;
@@ -4664,12 +4668,12 @@ tr[data-ziehen='danach'] > td {
 }
 .pu-plan {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
+  grid-template-columns: 64px minmax(0, 1fr) 120px;
   align-items: center;
   gap: 10px;
   padding: 3px 8px;
   border-radius: 5px;
-  border-left: 3px solid var(--ok-text);
+  border-left: 3px solid #2e9e5b;
   background: var(--bg);
 }
 .pu-plan.fehlt {
@@ -4696,6 +4700,18 @@ tr[data-ziehen='danach'] > td {
 }
 .pu-plan.fehlt .pu-plan-zustand {
   color: var(--fehler-text);
+}
+.pu-plan.quelle .pu-plan-zustand,
+.pu-plan.veraltet .pu-plan-zustand {
+  color: var(--warn-text);
+}
+.pu-hinweiszahl {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--warn-text);
+  cursor: pointer;
+  text-decoration: underline dotted;
 }
 .pu-plan-hinweis {
   display: flex;

@@ -1,3 +1,4 @@
+import type { Namensschema } from '@core/namensschema';
 import { readProjectFile } from '@core/archive';
 import type { Beteiligter, ProjectMeta, ProjektordnerAngaben, ProjektStatus } from '@core/model';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
@@ -28,7 +29,7 @@ export interface GeladenesProjekt {
   angaben: ProjektAngaben | null;
   quelle: ProjektQuelle;
   /** die Projektdatei, so wie sie gelesen wurde – Grundlage für gezielte Änderungen */
-  projektdatei: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben } | null;
+  projektdatei: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben; namensschema?: Namensschema } | null;
   /** alle Projektdateien im Ordner */
   kandidaten: string[];
 }
@@ -56,7 +57,7 @@ export async function projektEinlesen(o: GeladenerOrdner, gewaehlt?: string | nu
       // Lücken (etwa Kurzname oder Leistungsphasen aus der Zeit vor der Projektdatei) aus der alten projekt.json
       angaben: alt ? mitAlterProjektJson(angaben, alt) : angaben,
       quelle: { pfad: datei.pfad, ...defekt },
-      projektdatei: { pfad: datei.pfad, meta: p.meta, ...(p.projektordner ? { projektordner: p.projektordner } : {}) },
+      projektdatei: { pfad: datei.pfad, meta: p.meta, ...(p.projektordner ? { projektordner: p.projektordner } : {}), ...(p.namensschema ? { namensschema: p.namensschema } : {}) },
       kandidaten,
     };
   } catch (e) {

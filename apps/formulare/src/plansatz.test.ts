@@ -49,7 +49,7 @@ describe('Plansatz', () => {
       ['GP-03', 'quelle'],
     ]);
     expect(r.status).toBe('offen');
-    expect(plansatzKurz(r)).toBe('3 Pläne · GP-01 bis GP-03 · 1 noch nicht verschoben · 1 veraltet');
+    expect(plansatzKurz(r)).toBe('3 Pläne · GP-01 bis GP-03 · 1 nicht verschoben · 1 veraltet');
     expect(plansatzPruefen(antrag, [], S).status).toBe('aktuell');
     expect(plansatzPruefen([], [], S).status).toBe('fehlt');
   });
@@ -71,10 +71,23 @@ describe('Plansatz', () => {
   });
 
   it('Geschosse aus der Projektdatei: weniger Grundrisse als Geschosse – Hinweis, kein Fehler', () => {
-    const antrag = [datei('A BAUA 261111 GP-01 Lageplan.pdf'), datei('A BAUA 261111 GP-02 Grundriss KG.pdf'), datei('A BAUA 261111 GP-03 Grundriss EG.pdf'), datei('A BAUA 261111 GP-04 Schnitt.pdf')];
+    const antrag = [
+      datei('A BAUA 261111 GP-01 Lageplan.pdf'),
+      datei('A BAUA 261111 GP-02 Grundriss KG.pdf'),
+      datei('A BAUA 261111 GP-03 Grundriss EG.pdf'),
+      datei('A BAUA 261111 GP-04 Schnitt.pdf'),
+      datei('A BAUA 261111 GP-05 Ansichten.pdf'),
+    ];
     const r = plansatzPruefen(antrag, [], S, { geschosse: 3 });
     expect(r.status).toBe('aktuell');
     expect(r.hinweise).toEqual(['Projektdatei: 3 Geschosse, 2 Grundrisse erkannt']);
     expect(plansatzPruefen(antrag, [], S, { geschosse: 2 }).hinweise).toEqual([]);
+  });
+
+  it('fehlen Schnitt oder Ansicht am Ende der Reihe (keine Lücke), gibt es einen Hinweis nach § 4 BauPrüfVO – ohne Sperre', () => {
+    const r = plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss EG.pdf'), datei('A BAUA 261111 GP-02 Grundriss OG.pdf'), datei('A BAUA 261111 GP-03 Schnitt A-A.pdf')], [], S);
+    expect(r.status).toBe('aktuell');
+    expect(r.hinweise).toEqual(['keine Ansicht erkannt (Bauzeichnungen: Grundrisse, Schnitte, Ansichten – § 4 Abs. 1 BauPrüfVO NRW)']);
+    expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss EG.pdf')], [], S).hinweise).toHaveLength(2);
   });
 });

@@ -10,8 +10,8 @@ import type { Feld } from './forma/felder';
 import { felderDerSeite } from './forma/felder';
 import type { Formular } from './forma/formular';
 import { formularBytes, istAngekreuzt, memoText, parseFormular, setzeAngekreuzt, setzeMemoText } from './forma/formular';
-import type { PkWert, Projektkarte } from './forma/projektkarte';
-import { istWahl, pkAnzeige, pkArt, pkEintrag, pkSchluessel, pkTitel, pkWert, pkWertPasst, pkWertVon } from './forma/projektkarte';
+import type { PkEintrag as PkEintragTyp, PkWert, Projektkarte } from './forma/projektkarte';
+import { istWahl, pkAnzeige, pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWert, pkWertPasst, pkWertVon } from './forma/projektkarte';
 import type { Sperre, SperrBewertung, SperrProbe } from './forma/sperre';
 import { bewerten, sperreLesen, sperreSchreiben, sperrPfad, zeitstempel } from './forma/sperre';
 import { istEigeneSperre, sperreVergessen, sperreVermerken, verwaisteEigeneSperrenAufraeumen } from './eigeneSperren';
@@ -297,7 +297,8 @@ interface FormulareState extends Gespeichert {
   karteLaden: () => Promise<void>;
   karteSetzen: (gruppe: number, id: number, wert: PkWert) => void;
   /** mehrere Einträge in einem Schritt (Übernehmen, Leeren) */
-  karteMehrere: (werte: KartenWert[], titel: string) => void;
+  /** mehrere Einträge in einem Schritt; verknüpfte Einträge werden mitgefüllt; `zusammenfassen` führt einen gleichen Schritt beim Tippen fort */
+  karteMehrere: (werte: KartenWert[], titel: string, zusammenfassen?: boolean) => void;
   /** liefert den Schlüssel des betroffenen Eintrags (zum Hinspringen) */
   karteRueckgaengig: () => string | null;
   karteWiederholen: () => string | null;
@@ -1364,26 +1365,36 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const s = pkSchluessel(gruppe, id);
       const vorher = karteWert(k, gruppe, id);
       if (vorher === wert) return;
-      // verknüpfte Einträge (eigene Ansicht der Projektkarte) bekommen denselben Inhalt – ein Schritt im Verlauf
-      const mit = verknuepfteWerte(k, gruppe, id, wert);
-      if (mit.length) {
+      // verknüpfte Einträge (eigene Ansicht der Projektkarte) bekommen denselben Inhalt – beim Tippen ein Schritt im Verlauf
+      if (verknuepfteWerte(k, gruppe, id, wert).length) {
         const e = pkEintrag(k.karte, gruppe, id);
-        get().karteMehrere([{ gruppe, id, wert }, ...mit], `${e ? pkTitel(e.titel).replace(/:$/, '') : s} (verknüpft)`);
+        get().karteMehrere([{ gruppe, id, wert }], `${e ? pkTitel(e.titel).replace(/:$/, '') : s} (verknüpft)`, true);
         return;
       }
       const verlauf = eintragen(k.verlauf, s, vorher, wert, Date.now());
       karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, new Map([[s, wert]])) });
     },
 
-    karteMehrere: (werte, titel) => {
+    karteMehrere: (werte, titel, zusammenfassen = false) => {
       const k = get().karte;
       if (!k) return;
-      const liste = werte.filter((w) => {
+      // verknüpfte Einträge mitfüllen (sofern nicht ausdrücklich mitgegeben)
+      const schon = new Set(werte.map((w) => pkSchluessel(w.gruppe, w.id)));
+      const alle = [...werte];
+      for (const w of werte)
+        for (const v of verknuepfteWerte(k, w.gruppe, w.id, w.wert)) {
+          const sv = pkSchluessel(v.gruppe, v.id);
+          if (!schon.has(sv)) {
+            schon.add(sv);
+            alle.push(v);
+          }
+        }
+      const liste = alle.filter((w) => {
         const e = pkEintrag(k.karte, w.gruppe, w.id);
         return !!e && pkWertPasst(e, w.wert);
       });
       const aenderungen: FeldAenderung[] = liste.map((w) => ({ feld: pkSchluessel(w.gruppe, w.id), vorher: karteWert(k, w.gruppe, w.id), nachher: w.wert }));
-      const verlauf = eintragenMehrere(k.verlauf, aenderungen, titel, Date.now());
+      const verlauf = eintragenMehrere(k.verlauf, aenderungen, titel, Date.now(), zusammenfassen);
       if (verlauf === k.verlauf) return;
       karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, new Map(aenderungen.map((a) => [a.feld, a.nachher]))) });
     },
@@ -1842,10 +1853,19 @@ async function formulareKonfigAendern(patch: Record<string, unknown>) {
 export const KARTEN_ANSICHT = 'formulare:ansicht:projektkarte';
 
 const TEXTARTEN = new Set(['text', 'mehrzeilig']);
+const WAHLARTEN = new Set(['auswahl', 'optionen']);
+
+/** Lassen sich zwei Einträge der Projektkarte verknüpfen? Text mit Text, Auswahl mit Auswahl, Kästchen mit Kästchen */
+export function kartenVerknuepfbar(a: Pick<PkEintragTyp, 'typ' | 'text' | 'titel'> | undefined, b: Pick<PkEintragTyp, 'typ' | 'text' | 'titel'> | undefined): boolean {
+  if (!a || !b) return false;
+  const [x, y] = [pkArt(a as PkEintragTyp), pkArt(b as PkEintragTyp)];
+  return (TEXTARTEN.has(x) && TEXTARTEN.has(y)) || (WAHLARTEN.has(x) && WAHLARTEN.has(y)) || (x === 'kreuz' && y === 'kreuz');
+}
 
 /**
  * Werte für die mit einem Eintrag verknüpften Einträge (Verknüpfungen der eigenen Ansicht): Text in Text (einzeilig ohne
- * Zeilenumbrüche), sonst nur zwischen Einträgen derselben Art.
+ * Zeilenumbrüche); Auswahl und Optionen über den Text der Möglichkeit (fehlt er im Ziel, bleibt es unverändert);
+ * Kästchen in Kästchen.
  */
 function verknuepfteWerte(k: OffeneKarte, gruppe: number, id: number, wert: PkWert): KartenWert[] {
   const quelle = pkEintrag(k.karte, gruppe, id);
@@ -1857,6 +1877,12 @@ function verknuepfteWerte(k: OffeneKarte, gruppe: number, id: number, wert: PkWe
     if (!ziel) return [];
     const zArt = pkArt(ziel);
     if (TEXTARTEN.has(qArt) && TEXTARTEN.has(zArt)) return [{ gruppe: g, id: i, wert: zArt === 'text' && typeof wert === 'string' ? wert.replace(/\s*\r?\n\s*/g, ' ') : wert }];
+    if (WAHLARTEN.has(qArt) && WAHLARTEN.has(zArt)) {
+      if (wert === null) return [{ gruppe: g, id: i, wert: null }];
+      const text = typeof wert === 'number' ? pkMoeglichkeiten(quelle)[wert] : undefined;
+      const n = text ? pkMoeglichkeiten(ziel).indexOf(text) : -1;
+      return n >= 0 ? [{ gruppe: g, id: i, wert: n }] : [];
+    }
     return qArt === zArt ? [{ gruppe: g, id: i, wert }] : [];
   });
 }

@@ -75,7 +75,7 @@ export interface PlanOptionen {
   /** Namensschema des Büros – kommt in jede neue Projektdatei (fehlt = die Vorgabe) */
   namensschema?: Namensschema;
   /** die vorhandene Projektdatei des Ordners (Ergänzen) – sie wird gezielt ergänzt statt neu angelegt */
-  projektdatei?: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben } | null;
+  projektdatei?: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben; namensschema?: Namensschema } | null;
 }
 
 /** Dateien, die keine Vorlagen sind: Systemdateien, Sperrdateien von Office, die Anleitung im Stamm */
@@ -299,7 +299,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
   const schonDa = geladen ? null : projektdateiWaehlen(vorhandene);
   let projektdatei: Plan['projektdatei'];
   if (geladen) {
-    const aenderung = projektdateiAenderung(geladen, s, { struktur, presets: presetNamen });
+    const aenderung = projektdateiAenderung(geladen, s, { struktur, presets: presetNamen, namensschema: optionen.namensschema });
     const eltern = geladen.pfad.split('/').slice(0, -1).join('/');
     if (eltern) ordnerSchritt(eltern, 'projektdatei');
     schritte.set(geladen.pfad.toLowerCase(), { art: 'datei', pfad: geladen.pfad, herkunft: 'projektdatei', vorhanden: true, aenderung });

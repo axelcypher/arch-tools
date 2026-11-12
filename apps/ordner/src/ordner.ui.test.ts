@@ -272,6 +272,66 @@ describe('Projektordner', () => {
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner')!).struktur.ordnername).toBe(STANDARD.ordnername);
   });
 
+  it('Einstellungen: Kürzel und Plannummern – Stellen tauschen, Kürzel ändern, ungültige Kürzel melden, Vorgabe wiederherstellen', async () => {
+    const host = render();
+    act(() => knopf(host, 'Einstellungen').click());
+    const bereich = host.querySelector<HTMLElement>('.po-namensschema')!;
+    const schema = () => useOrdner.getState().allgemein.namensschema!;
+    const beispiel = () => bereich.querySelector('code')!.textContent;
+    expect(beispiel()).toBe('HVO GP 261111 GP-04 Grundriss OG.pdf');
+    // noch keine eigene Fassung: es gilt die Vorgabe, „Vorgabe wiederherstellen“ ist aus
+    expect(knopf(bereich, 'Vorgabe wiederherstellen').disabled).toBe(true);
+
+    // Stelle 2 auf Plannummer: die beiden Teile tauschen die Plätze, das Beispiel folgt
+    const stelle2 = bereich.querySelector<HTMLSelectElement>('select[aria-label="Stelle 2"]')!;
+    act(() => {
+      stelle2.value = 'nummer';
+      stelle2.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(schema().reihenfolge).toEqual(['code', 'nummer', 'datum', 'art']);
+    expect(beispiel()).toBe('HVO GP-04 261111 GP Grundriss OG.pdf');
+    expect(bereich.textContent).toContain('Phase GP, Datum 261111, Plannummer GP-04');
+
+    // Kürzel ändern: klein getippt, groß übernommen
+    const kuerzel = (liste: string, k: string) => bereich.querySelector<HTMLInputElement>(`input[aria-label="${liste}: Kürzel ${k}"]`)!;
+    eingabe(kuerzel('Planphasen', 'BP'), 'bp');
+    expect(schema().phasen[0].kuerzel).toBe('BP');
+    eingabe(kuerzel('Planphasen', 'BP'), 'bs');
+    expect(schema().phasen.map((k) => k.kuerzel)).toEqual(['BS', 'EP', 'GP', 'AP', 'AB']);
+    // ungültig oder doppelt: das alte Kürzel bleibt, die Meldung sagt warum
+    eingabe(kuerzel('Planphasen', 'EP'), 'E-P');
+    expect(schema().phasen[1].kuerzel).toBe('EP');
+    expect(kuerzel('Planphasen', 'EP').getAttribute('aria-invalid')).toBe('true');
+    expect(bereich.querySelector('[role="alert"]')!.textContent).toBe('„E-P“: nur Großbuchstaben und Ziffern, höchstens 8 Zeichen – es bleibt EP.');
+    eingabe(kuerzel('Planphasen', 'EP'), 'gp');
+    expect(bereich.querySelector('[role="alert"]')!.textContent).toBe('GP gibt es schon – es bleibt EP.');
+    expect(schema().phasen[1].kuerzel).toBe('EP');
+
+    // Bedeutung, Schreibweisen und Leistungsphase
+    eingabe(bereich.querySelector<HTMLInputElement>('input[aria-label="Antrags- und Verfahrensarten: Bedeutung von ENTW"]')!, ' Entwässerungsgesuch ');
+    expect(schema().antragsarten.find((k) => k.kuerzel === 'ENTW')!.name).toBe('Entwässerungsgesuch');
+    eingabe(bereich.querySelector<HTMLInputElement>('input[aria-label="Schreibweisen von BAUA"]')!, 'ba, BA,  ');
+    expect(schema().antragsarten.find((k) => k.kuerzel === 'BAUA')!.synonyme).toEqual(['BA']);
+    eingabe(bereich.querySelector<HTMLInputElement>('input[aria-label="Leistungsphase von AB"]')!, '5');
+    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBe(5);
+
+    // neues Kürzel und Entfernen
+    act(() => knopf(bereich.querySelectorAll('.po-kuerzel')[1] as HTMLElement, '+ Kürzel').click());
+    expect(schema().antragsarten.at(-1)).toEqual({ kuerzel: 'NEU', name: '' });
+    act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="NEU entfernen"]')!.click());
+    expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('NEU');
+
+    // Vorgabe wiederherstellen: mit Rückfrage, danach gilt wieder die eingebaute Vorgabe
+    act(() => knopf(bereich, 'Vorgabe wiederherstellen').click());
+    await warten();
+    expect(host.querySelector('.modal')?.textContent).toContain('Namensschema zurücksetzen?');
+    act(() => knopf(host.querySelector('.modal')!, 'Zurücksetzen').click());
+    await warten();
+    expect(schema().reihenfolge).toEqual(['code', 'art', 'datum', 'nummer']);
+    expect(schema().phasen[0].kuerzel).toBe('BP');
+    expect(beispiel()).toBe('HVO GP 261111 GP-04 Grundriss OG.pdf');
+  });
+
   it('Struktur von einem anderen Rechner geändert: Meldung statt Überschreiben, neu laden oder eigene Fassung speichern (P-02)', async () => {
     useOrdner.setState({ konfigLaden: echtesKonfigLaden });
     await act(() => useOrdner.getState().konfigLaden());

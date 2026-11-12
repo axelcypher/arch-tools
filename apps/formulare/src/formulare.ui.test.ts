@@ -468,6 +468,58 @@ describe('Formulare', () => {
     expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);
   });
 
+  it('Projektkarte: Art der Nutzung als Auswahl – eine eigene Angabe bleibt erhalten; Anzahl nur als ganze Zahl', async () => {
+    const k = projektkarte();
+    k.eintraege.push(
+      { gruppe: 101, id: 100, typ: 1, titel: 'Art der Nutzung:', text: 'Eigene Nutzung', zahl: null },
+      { gruppe: 101, id: 110, typ: 1, titel: 'Anzahl Wohnungen:', text: 'ca. 3', zahl: null },
+    );
+    ds.projektkarten.set(KARTE, k);
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await gruppeWaehlen(host, 'Projektdaten');
+
+    // ein Text, der nicht in der Liste steht, wird als „(eigene Angabe)“ angeboten und nicht überschrieben
+    const nutzung = () => kartenFeld<HTMLSelectElement>(host, 'Art der Nutzung');
+    expect(nutzung().tagName).toBe('SELECT');
+    expect(nutzung().value).toBe('Eigene Nutzung');
+    const optionen = () => [...nutzung().options].map((o) => o.textContent);
+    expect(optionen()).toContain('Eigene Nutzung (eigene Angabe)');
+    expect(optionen()).toContain('Wohnen');
+    expect(optionen().at(-1)).toBe('eigene Angabe ändern …');
+
+    // „eigene Angabe ändern …“ öffnet die Eingabe mit dem Text, der Pfeil führt zur Liste zurück – ohne zu löschen
+    waehle(nutzung(), '\u0000frei');
+    const frei = kartenFeld(host, 'Art der Nutzung');
+    expect(frei.tagName).toBe('INPUT');
+    expect(frei.value).toBe('Eigene Nutzung');
+    eingabe(frei, 'Atelier');
+    await klick(knopfMit(host, 'Aus der Liste wählen'));
+    expect(nutzung().value).toBe('Atelier');
+    expect(optionen()).toContain('Atelier (eigene Angabe)');
+
+    // ein Wert aus der Liste ersetzt die eigene Angabe; danach heißt der letzte Punkt wieder „andere …“
+    waehle(nutzung(), 'Wohnen');
+    expect(nutzung().value).toBe('Wohnen');
+    expect(optionen().some((o) => o?.includes('(eigene Angabe)'))).toBe(false);
+    expect(optionen().at(-1)).toBe('andere …');
+
+    // Anzahl: Zahlenfeld; ein alter Text, der keine ganze Zahl ist, bleibt sichtbar und wird gemeldet
+    const anzahl = () => kartenFeld(host, 'Anzahl Wohnungen');
+    expect(anzahl().type).toBe('number');
+    expect(anzahl().value).toBe('');
+    expect(anzahl().placeholder).toBe('ca. 3');
+    expect(host.textContent).toContain('„ca. 3“ ist keine ganze Zahl – bitte als Zahl eintragen');
+    eingabe(anzahl(), '3');
+    expect(anzahl().value).toBe('3');
+    expect(host.textContent).not.toContain('keine ganze Zahl');
+
+    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    expect(pkText(101, 100).text).toBe('Wohnen');
+    expect(pkText(101, 110).text).toBe('3');
+  });
+
   it('Projektkarte: Angaben von einer anderen Gruppe übernehmen; eine Adresse als Vorgabe festlegen und eintragen', async () => {
     const host = await render();
     await projektOeffnen(host, 'BS9');
@@ -588,12 +640,21 @@ describe('Formulare', () => {
     // auf der Seite: eigene Beschriftung, Herkunft dezent unter dem Feld, Breite im Raster
     expect([...host.querySelectorAll('.pk-eigen .pk-feld-titel')].map((t) => t.textContent)).toEqual(['Ort', 'Bauherrschaft']);
     expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde · ⛓ Bauherr', 'Bauherr · ⛓ Gemeinde']);
-    expect([...host.querySelectorAll<HTMLElement>('.pk-eigen .av-feld')].map((f) => f.style.gridColumn)).toEqual(['1 / span 4', 'span 8']);
+    expect([...host.querySelectorAll<HTMLElement>('.pk-eigen .av-feld')].map((f) => [f.dataset.breite, 'neueZeile' in f.dataset])).toEqual([
+      ['4', true],
+      ['8', false],
+    ]);
     // verknüpft: eine Eingabe füllt beide Felder (ein Schritt im Verlauf)
     const name = host.querySelector<HTMLInputElement>('.pk-eigen [data-pk="201:40"]')!;
     eingabe(name, 'Musterfrau, Erika');
     expect(useFormulare.getState().karte!.aenderungen['201:40']).toBe('Musterfrau, Erika');
     expect(useFormulare.getState().karte!.aenderungen['232:110']).toBe('Musterfrau, Erika');
+    act(() => void useFormulare.getState().karteRueckgaengig());
+    expect(useFormulare.getState().karte!.aenderungen).toEqual({});
+    // Zeichen für Zeichen: ein Schritt im Verlauf
+    for (const t of ['M', 'Mu', 'Mus']) eingabe(name, t);
+    expect(useFormulare.getState().karte!.verlauf.schritte).toHaveLength(1);
+    expect(useFormulare.getState().karte!.aenderungen['232:110']).toBe('Mus');
     act(() => void useFormulare.getState().karteRueckgaengig());
     expect(useFormulare.getState().karte!.aenderungen).toEqual({});
     eingabe(name, 'Musterfrau, Erika');

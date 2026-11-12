@@ -10,12 +10,16 @@ describe('Eingaben mit fester Form in der Projektkarte', () => {
     expect(nutzungsarten('Maß der baulichen Nutzung')).toBeNull();
     expect(nutzungsarten('Bezeichnung der Baumaßnahme')).toBeNull();
     expect(NUTZUNGSARTEN).toContain('Wohnen');
-    expect(BAUGEBIETE).toContain('Allgemeines Wohngebiet (WA)');
+    expect(BAUGEBIETE).toContain('WA – allgemeines Wohngebiet');
+    expect(BAUGEBIETE).toContain('Außenbereich (§ 35 BauGB)');
+    expect(BAUGEBIETE.filter((g) => g.startsWith('SO'))).toHaveLength(2);
   });
 
   it('Anzahl: ganze Zahl', () => {
     expect(istAnzahl('Anzahl')).toBe(true);
     expect(istAnzahl('Anzahl der Wohnungen')).toBe(true);
     expect(istAnzahl('Gesamtanzahl')).toBe(false);
+    // die Zahl der Vollgeschosse kann eine Festsetzung wie „II–III“ sein
+    expect(istAnzahl('Anzahl der Vollgeschosse')).toBe(false);
   });
 });

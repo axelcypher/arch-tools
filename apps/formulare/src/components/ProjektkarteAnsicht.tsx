@@ -17,7 +17,7 @@ import { felderDerAnsicht, useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import type { KartenWert, OffeneKarte } from '../store';
-import { KARTEN_ANSICHT, karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
+import { KARTEN_ANSICHT, kartenVerknuepfbar, karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
 
 /** zuletzt gewählte Gruppe je Projekt (bleibt beim Wechsel zwischen Formular und Projektkarte) */
 const gewaehlt = new Map<string, number>();
@@ -202,11 +202,18 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
           ansicht={ansicht}
           onChange={setAnsicht}
           onSchliessen={() => setEditor(false)}
+          verknuepfbar={(a, b) => kartenVerknuepfbar(eintragVon(karte, a.id), eintragVon(karte, b.id))}
         />
       )}
     </section>
   );
 }
+
+/** Eintrag der Projektkarte zu einer Kennung „Gruppe:Eintrag“ */
+const eintragVon = (karte: OffeneKarte, kennung: string) => {
+  const [g, id] = kennung.split(':').map(Number);
+  return karte.karte.eintraege.find((e) => e.gruppe === g && e.id === id);
+};
 
 /** Leere Adressgruppen mit den Vorgaben der Stammdaten füllen */
 function vorgabenFuer(karte: OffeneKarte, adressen: Adresse[], vorgaben: Record<string, string>): KartenWert[] {
@@ -704,7 +711,7 @@ function Zelle({
   return (
     <div className={`pk-feld${geaendert ? ' geaendert' : ''}${warnung ? ' warnung' : ''}${ausgeblendet ? ' ausgeblendet' : ''}`} style={{ gridColumn: `span ${breite}` }}>
       <div className="pk-feld-kopf">
-        <label className="pk-feld-titel" htmlFor={htmlFor}>
+        <label className="pk-feld-titel" htmlFor={htmlFor} title={titel}>
           {titel}
           {hinweis && <span className="pk-einheit"> [{hinweis}]</span>}
         </label>
@@ -787,7 +794,10 @@ function Eintrag({
   }
 
   const textWert = typeof wert === 'string' ? wert : '';
-  const warnung = pruefung(gruppe, eintrag, textWert, land);
+  const kernTitel = feldTitel(eintrag.titel);
+  // Anzahl: ein vorhandener Wert, der keine ganze Zahl ist, bleibt stehen und wird gemeldet
+  const keineZahl = istAnzahl(kernTitel) && textWert.trim() !== '' && !/^\d+$/.test(textWert.trim());
+  const warnung = keineZahl ? `„${textWert.trim()}“ ist keine ganze Zahl – bitte als Zahl eintragen` : pruefung(gruppe, eintrag, textWert, land);
   const e = einheit(eintrag.titel);
   if (art === 'mehrzeilig') {
     return (
@@ -796,12 +806,23 @@ function Eintrag({
       </Zelle>
     );
   }
-  const kern = feldTitel(eintrag.titel);
+  const kern = kernTitel;
   return (
     <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
       {istAnzahl(kern) ? (
         // Anzahl: nur ganze Zahlen (gespeichert als Text, wie in der Projektkarte)
-        <input id={id} data-pk={s} type="number" min={0} step={1} inputMode="numeric" className="pk-zahl" value={/^\d+$/.test(textWert.trim()) ? textWert.trim() : ''} placeholder={textWert && !/^\d+$/.test(textWert.trim()) ? textWert : undefined} onChange={(ev) => setzen(ev.target.value.replace(/\D/g, ''))} />
+        <input
+          id={id}
+          data-pk={s}
+          type="number"
+          min={0}
+          step={1}
+          inputMode="numeric"
+          className="pk-zahl"
+          value={keineZahl ? '' : textWert.trim()}
+          placeholder={keineZahl ? textWert.trim() : undefined}
+          onChange={(ev) => setzen(ev.target.value.replace(/\D/g, ''))}
+        />
       ) : nutzungsarten(kern) ? (
         <AuswahlMitText id={id} schluessel={s} wert={textWert} vorschlaege={nutzungsarten(kern)!} onChange={setzen} />
       ) : (
@@ -812,42 +833,38 @@ function Eintrag({
 }
 
 /**
- * Auswahl aus gängigen Werten (z. B. Art der Nutzung) – gespeichert wird der Text; „andere …“ erlaubt einen eigenen,
- * ein Wert, der nicht in der Liste steht, erscheint als eigener.
+ * Auswahl aus gängigen Werten (z. B. Art der Nutzung) – gespeichert wird der Text. Ein eigener Text bleibt erhalten: Er
+ * steht als „(eigene Angabe)“ in der Auswahl; „andere …“ öffnet die Eingabe, der Pfeil führt zur Liste zurück, ohne
+ * etwas zu löschen.
  */
 function AuswahlMitText({ id, schluessel, wert, vorschlaege, onChange }: { id: string; schluessel: string; wert: string; vorschlaege: string[]; onChange: (w: string) => void }) {
-  const inListe = !wert || vorschlaege.includes(wert);
-  const [frei, setFrei] = useState(!inListe);
-  if (frei || !inListe)
+  const [frei, setFrei] = useState(false);
+  const eigen = wert.trim() !== '' && !vorschlaege.includes(wert);
+  if (frei)
     return (
       <span className="pk-auswahl-frei">
-        <input id={id} data-pk={schluessel} type="text" value={wert} spellCheck={false} autoFocus={frei && inListe} onChange={(ev) => onChange(ev.target.value)} />
-        <button
-          type="button"
-          className="icon"
-          title="Aus der Liste wählen"
-          aria-label="Aus der Liste wählen"
-          onClick={() => {
-            setFrei(false);
-            if (!vorschlaege.includes(wert)) onChange('');
-          }}
-        >
-          ▾
+        <input id={id} data-pk={schluessel} type="text" value={wert} spellCheck={false} autoFocus onChange={(ev) => onChange(ev.target.value)} />
+        <button type="button" className="icon" title="Aus der Liste wählen – die eigene Angabe bleibt erhalten" aria-label="Aus der Liste wählen" onClick={() => setFrei(false)}>
+          <Symbol name="pfeilUnten" />
         </button>
       </span>
     );
   return (
-    <select id={id} data-pk={schluessel} value={wert} onChange={(ev) => (ev.target.value === '\u0000frei' ? setFrei(true) : onChange(ev.target.value))}>
+    <select id={id} data-pk={schluessel} value={wert} onChange={(ev) => (ev.target.value === FREI ? setFrei(true) : onChange(ev.target.value))}>
       <option value="">– keine Angabe –</option>
+      {eigen && <option value={wert}>{wert} (eigene Angabe)</option>}
       {vorschlaege.map((v) => (
         <option key={v} value={v}>
           {v}
         </option>
       ))}
-      <option value={'\u0000frei'}>andere …</option>
+      <option value={FREI}>{eigen ? 'eigene Angabe ändern …' : 'andere …'}</option>
     </select>
   );
 }
+
+/** Wert der Auswahl für „eigene Angabe eingeben“ (kein möglicher Text der Projektkarte) */
+const FREI = '\u0000frei';
 
 function Kreuze({ karte, eintraege, titelText, unter }: { karte: OffeneKarte; eintraege: PkEintrag[]; titelText?: string; unter?: ReactNode }) {
   const karteSetzen = useFormulare((s) => s.karteSetzen);

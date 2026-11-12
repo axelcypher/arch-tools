@@ -8,7 +8,7 @@ import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
 import { dateiMenue, SYMBOL } from './AblageBaum';
 import { StatusPunkt } from './Antrag';
-import { PLAN_ZUSTAND_TEXT } from '../plansatz';
+import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT } from '../plansatz';
 import type { MenuePunkt } from './Menue';
 import { zeigeMenue } from './Menue';
 import { Symbol } from './Symbol';
@@ -70,12 +70,17 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     .map((d) => {
       const fehler = antragsNameFehler(d.pfad, { codes, art });
       const m = markiert.find((b) => b.datei.toLowerCase() === d.pfad.toLowerCase());
-      return { d, fehler, zustand: bereitschaft(d, m, fehler), dok: dokumente.find((x) => x.datei?.pfad === d.pfad) };
+      // zugehöriges Dokument: die verknüpfte bzw. gefundene Datei – bei einem Plansatz jede seiner Plandateien
+      const dok = dokumente.find((x) => x.datei?.pfad === d.pfad || !!x.plansatz?.plaene.some((p) => p.datei?.pfad === d.pfad));
+      return { d, fehler, zustand: bereitschaft(d, m, fehler), dok };
     });
   const bereit = liste.filter((x) => x.zustand === 'bereit').length;
-  const fehlend = dokumente.filter((x) => x.status !== 'entfaellt' && x.eintrag.art !== 'plansatz' && !x.datei);
+  // fehlt ganz: ein Dokument ohne Datei, ein Plansatz ohne einen einzigen Plan
+  const fehlend = dokumente.filter((x) => x.status !== 'entfaellt' && (x.plansatz ? !x.plansatz.plaene.length : !x.datei));
   // Plansätze: fehlende Nummern und noch nicht verschobene Pläne einzeln
-  const fehlendePlaene = dokumente.flatMap((x) => (x.status !== 'entfaellt' && x.plansatz ? x.plansatz.plaene.filter((p) => p.zustand === 'fehlt' || p.zustand === 'quelle').map((p) => ({ dok: x, p })) : []));
+  const fehlendePlaene = dokumente.flatMap((x) =>
+    x.status !== 'entfaellt' && x.plansatz ? x.plansatz.plaene.filter((p) => p.zustand === 'fehlt' || p.zustand === 'quelle').map((p) => ({ dok: x, p })) : [],
+  );
   const vollstaendig = liste.length > 0 && bereit === liste.length && !fehlend.length && !fehlendePlaene.length;
   const vorschlag = (name: string, geaendert?: number) => `${codes[0]} ${art} ${jjmmtt(new Date(geaendert || Date.now()))} ${name}`;
 
@@ -111,7 +116,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
             {bereit} von {liste.length}
           </strong>{' '}
           bereit
-          {umfangDa && fehlend.length + fehlendePlaene.length > 0 && ` · ${fehlend.length + fehlendePlaene.length} fehlt`}
+          {umfangDa && fehlend.length + fehlendePlaene.length > 0 && ` · ${fehlend.length + fehlendePlaene.length} ${fehlend.length + fehlendePlaene.length === 1 ? 'fehlt' : 'fehlen'}`}
         </span>
         <span className="fo-bereit-balken" aria-hidden>
           <span style={{ width: `${liste.length ? (bereit / liste.length) * 100 : 0}%` }} />
@@ -173,7 +178,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
                 <span className="fo-baum-name">
                   {p.schluessel}
                   {p.bezeichnung ? ` ${p.bezeichnung}` : ''}
-                  <span className="fo-bereit-unter">{p.zustand === 'fehlt' ? 'Lücke in der Nummernfolge' : 'noch in der Quelle'}</span>
+                  <span className="fo-bereit-unter">{PLAN_ZUSTAND_KURZ[p.zustand]}</span>
                 </span>
               </li>
             ))}
