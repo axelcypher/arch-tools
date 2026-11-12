@@ -924,8 +924,8 @@ export function stabil(x: unknown): string {
 const istMap = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 /** Felder eines Antrags, die je Eintrag zusammengeführt werden */
 const JE_EINTRAG = new Set(['merkmale', 'felder']);
-/** Text mitten im Satz: erster Buchstabe klein */
-export const klein = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+/** Text mitten im Satz: erster Buchstabe klein – ein Substantiv am Anfang („Antrag BAUA 2 ist eingereicht …“) bleibt groß */
+export const klein = (t: string) => (/^Antrag/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1));
 /** eine Zuordnung je Schlüssel ändern: nur was sich zwischen `alt` und `neu` unterscheidet, auf `frisch` */
 function mapAnwenden(frisch: Record<string, unknown>, alt: Record<string, unknown>, neu: Record<string, unknown>): Record<string, unknown> {
   const z = { ...frisch };

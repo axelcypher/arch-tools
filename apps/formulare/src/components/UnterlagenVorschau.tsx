@@ -5,7 +5,7 @@ import { useEscSchliessen } from '@core/ui/Dialog';
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, istHilfsdatei } from '../antrag';
-import { aktiveFassung, antragsOrdner, dateienVon, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsOrdner, dateienVon, dokumentZu, namensschemaVon, projektCodes, useAntrag, zeilenFassung } from '../antragStore';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { pdfOeffnen, pdfSchliessen } from '../dokumente/pdf';
@@ -39,6 +39,9 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
   const fassung = useAntrag((s) => aktiveFassung(s, projekt));
   const ordner = useAntrag((s) => antragsOrdner(s, projekt));
   const bereitJeFassung = useAntrag((s) => s.projektdatei?.bereit);
+  const gesperrt = useAntrag((s) => !!antragSperre(s, projekt));
+  // Fassung der gezeigten Liste – „bereit“ gilt nur für sie
+  const listeFassung = useAntrag((s) => zeilenFassung(s, projekt));
   const basis = verbinde(ablage.root, ablage.pfad);
   // Reihenfolge des Antragsumfangs – die Pläne eines Plansatzes an seiner Stelle
   const liste = useMemo(() => unterlagenReihenfolge(roh, dateien.flatMap(dateienVon)), [roh, dateien]);
@@ -131,9 +134,9 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
             <button
               className={`vs-bereit ${zustand}`}
               aria-pressed={zustand === 'bereit'}
-              disabled={!!fehlerName}
-              title={fehlerName ? `${BEREIT_TEXT.name}: ${fehlerName}` : BEREIT_TEXT[zustand]}
-              onClick={() => void useAntrag.getState().bereitUmschalten(aktuell.pfad)}
+              disabled={!!fehlerName || gesperrt}
+              title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – „bereit“ bleibt, wie es ist' : fehlerName ? `${BEREIT_TEXT.name}: ${fehlerName}` : BEREIT_TEXT[zustand]}
+              onClick={() => void useAntrag.getState().bereitUmschalten(aktuell.pfad, { fassung: listeFassung })}
             >
               {zustand === 'bereit' ? '✓ Bereit' : 'Als bereit markieren'}
             </button>

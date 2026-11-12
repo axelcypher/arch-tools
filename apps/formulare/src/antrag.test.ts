@@ -3,7 +3,7 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { aenderungAnwenden, alsAngaben, stabil, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { aenderungAnwenden, alsAngaben, klein, stabil, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -858,6 +858,14 @@ describe('Anträge: je Antrag eigene Antragsmerkmale, Antragsumfang und Autofill
 });
 
 describe('Änderung auf den frisch gelesenen Abschnitt anwenden', () => {
+  it('Grund mitten im Satz: klein, außer ein Substantiv am Anfang („Antrag …“)', () => {
+    expect(klein('Die Projektdatei ist gerade nicht lesbar')).toBe('die Projektdatei ist gerade nicht lesbar');
+    expect(klein('Antrag BAUA 2 ist eingereicht')).toBe('Antrag BAUA 2 ist eingereicht');
+    expect(klein('Antragsfassung BAUA 3 fehlt')).toBe('Antragsfassung BAUA 3 fehlt');
+    expect(klein('Antragsumfang fehlt')).toBe('Antragsumfang fehlt');
+    expect(klein('Antragsmerkmale fehlen')).toBe('Antragsmerkmale fehlen');
+    expect(klein('Inzwischen ist Antrag BAUA angezeigt')).toBe('inzwischen ist Antrag BAUA angezeigt');
+  });
   const umfang = [{ id: 'muster', titel: 'Musterformular', art: 'intern' as const, formular: 'Muster' }];
   it('nur geänderte Felder je Antrag – was ein anderer inzwischen gespeichert hat, bleibt', () => {
     const vorher = { ansicht: 'BAUA 2', antraege: { 'BAUA 2': { angelegt: '2026-11-01' } } };

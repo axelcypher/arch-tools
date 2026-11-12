@@ -50,7 +50,7 @@ export function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
             symbol: 'link' as const,
             // eingereicht: gesperrt (wie die übrigen Änderungen am Antrag)
             deaktiviert: !!antragSperre(st, projekt),
-            ...(antragSperre(st, projekt) ? { hinweis: 'eingereicht' } : {}),
+            ...(antragSperre(st, projekt) ? { hinweis: 'Antrag eingereicht' } : {}),
             unter: umfang.map((u) => ({
               text: u.titel,
               symbol: (u.dateien?.[aktiveFassung(st, projekt)]?.toLowerCase() === name.toLowerCase() && imAntrag ? 'haken' : undefined) as 'haken' | undefined,

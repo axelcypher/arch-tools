@@ -2565,6 +2565,10 @@ button.icon.fo-gl-zaehlt.an {
 }
 .menue-punkt:disabled {
   color: var(--muted);
+}
+/* ausgegraut: Text und Symbol blass – der Hinweis (der Grund, z. B. „Antrag eingereicht“) bleibt lesbar */
+.menue-punkt:disabled .menue-text,
+.menue-punkt:disabled .menue-symbol {
   opacity: 0.6;
 }
 .menue-punkt.gefahr {
@@ -4699,6 +4703,23 @@ tr[data-ziehen='danach'] > td {
 }
 .pu.gesperrt .pu-liste .pu-zeile {
   opacity: 0.92;
+}
+/* Inhalt der Antragsdaten – eine Ebene nur für „wird geöffnet“ (ohne eigenes Kästchen, die Abstände bleiben) */
+.pu-inhalt {
+  display: contents;
+}
+.pu-inhalt.laedt > * {
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.pu-laedt-hinweis {
+  margin: 0;
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pu-inhalt.laedt > * {
+    transition: none;
+  }
 }
 .sort-griff-platz {
   display: inline-block;

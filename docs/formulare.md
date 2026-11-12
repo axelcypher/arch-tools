@@ -651,12 +651,12 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   und öffnet es – leere Felder mit Angaben aus der Projektkarte sind gleich befüllt. Die Suche meldet sich sofort
   („Suche eine Vorlage …“); in anderen Projekten sucht sie nur nach dem Namen (im Vorlagenordner auch nach der
   Kennung) und meldet, wenn sie nichts findet. Ein zweiter Klick legt kein zweites Formular an. Liegt das Formular
-  schon im Projekt, nur anders benannt: Rechtsklick › „Vorhandenes Formular zuordnen“ (in den Antragsdaten
-  „Vorhandenes zuordnen“). **Doppelter Eintrag?** Passt der Titel eines fehlenden Eintrags zu einem Formular, das
+  schon im Projekt, nur anders benannt: Rechtsklick › „Vorhandenes Formular zuordnen“ (in den Antragsdaten der Knopf
+  „Zuordnen“). **Doppelter Eintrag?** Passt der Titel eines fehlenden Eintrags zu einem Formular, das
   schon einem anderen Eintrag zugeordnet ist (z. B. „Baustatistik“ neben „Statistischer Erhebungsbogen“), steht dort
   „doppelt?“ – ein Klick legt dann nichts an, sondern öffnet am Eintrag ein Menü mit Zuordnen oder „Aus dem
-  Antragsumfang nehmen“. Bei einem eingereichten Antrag sind Anlegen, Zuordnen und Entfernen gesperrt; der Tooltip
-  sagt warum.
+  Antragsumfang nehmen“. Bei einem eingereichten Antrag sind Anlegen, Zuordnen und Entfernen ausgegraut (mit dem
+  Hinweis „Antrag eingereicht“); der Tooltip sagt warum.
 - Die **PDF** entsteht in der App aus dem Formular selbst – so, wie die Formularansicht es zeigt: A4-Blätter, Rahmen,
   Linien, Beschriftungen (auch gedreht), Feldinhalte und Kreuze, Bilder. Echter Text in den PDF-Standardschriften:
   Helvetica hat die Breiten von Arial, Courier die von Courier New – die Zeilen brechen an denselben Stellen um.
@@ -706,47 +706,62 @@ beschrieben.
 - **Angaben zum Antrag** stehen im Abschnitt `formulare` von `projekt.json`: `aktiveFassung` und `antraege` – je
   Fassung `angelegt`, `merkmale`, `umfang`, `felder` (Autofill), `bereit` und `eingereicht`; der zuletzt angelegte
   Antrag zusätzlich als Kurzfassung in `meta.antrag` (für die anderen Apps). Ein früheres `meta.merkmale` bzw.
-  projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im FORMA-Projekt wird noch gelesen und einmalig in die
-  Projektdatei übernommen – sie selbst bleibt liegen und wird nicht mehr geschrieben.
-  **Schreiben als Änderung:** Jeder Schreibvorgang liest die Projektdatei frisch und trägt nur ein, was er selbst
+  projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im
+  FORMA-Projekt wird noch gelesen und einmalig in die Projektdatei übernommen – sie selbst bleibt liegen und wird nicht
+  mehr geschrieben.
+- **Schreiben als Änderung:** Jeder Schreibvorgang liest die Projektdatei frisch und trägt nur ein, was er selbst
   geändert hat – je Antrag und Feld, Antragsmerkmale und Autofill je Eintrag (`aenderungAnwenden`); was inzwischen
   anderswo gespeichert wurde (ein anderer Arbeitsplatz, ein gleichzeitiges Laden), bleibt, ebenso ein Antrag, den der
-  Schreibende nicht kannte. Das Laden ergänzt so nur fehlende Anträge, nie ersetzt es Vorhandenes. Geschrieben wird nur in die Projektdatei, aus der die Angaben stammen, und nur für das Projekt, in dem
-  die Änderung begonnen hat: Wird währenddessen ein anderes Projekt geöffnet, bricht die Änderung mit Meldung ab
-  (Formular anlegen bzw. hinzufügen sagen, was schon geschehen ist: „angelegt, aber nicht zugeordnet …“); wird eine
-  andere `.oap` gewählt (auch umbenannt oder neu angelegt nach „nicht lesbar“), lädt die App neu und bindet sich an
-  sie. Ist die Datei gerade nicht lesbar (Netz nach dem Aufwachen), liest die App sie beim Speichern erneut und meldet
-  sonst „… nicht gespeichert: Die Projektdatei ist gerade nicht lesbar“; ist sie wieder lesbar, verschwindet die
-  Fehlermeldung. Fehlt sie, obwohl ihr Ordner lesbar ist
-  (gelöscht, verschoben), löst die App die Bindung – dann gilt eine andere `.oap` bzw. der Stammdaten-Dialog bietet das
-  Anlegen an; ein nicht erreichbares Netzlaufwerk zählt nicht als gelöscht. Nach dem Zuordnen eines Projektordners
-  werden vorhandene Angaben zum Antrag geladen statt überschrieben; zeigt das Projekt danach eine andere Antragsfassung
-  (aus dem Projektordner) als die, für die die Änderung gedacht war, wird sie nicht dorthin geschrieben, sondern
-  gemeldet. Nach dem Anlegen einer Projektdatei über den Stammdaten-Dialog kommt die Änderung samt der Fassung, für die
-  sie gedacht war (als aktive), in die neue Datei („Projektdatei angelegt – Antrag BAUA 2 ist das Ziel des Exports.“).
-  Wird ein Dialog abgebrochen (Projektordner zuordnen, Projektdatei anlegen – auch nacheinander), heißt es
-  „Projektordner nicht zugeordnet – die Änderung ist nicht gespeichert.“ bzw. „Projektdatei nicht angelegt – …“; nach
-  „Neue Antragsfassung“ sagt die Meldung, dass der Ordner schon angelegt ist („Ordner BAUA 3 angelegt, aber nicht als
-  aktive Antragsfassung gespeichert – keine Projektdatei angelegt.“). Alle Änderungen am Antragsumfang aus Menüs und
-  Knöpfen – Zeilenmenü, „Zuordnen“, „Dokument hinzufügen“, Ziehen der Zeilen, Bearbeiten, Verknüpfen und Lösen, die
-  Menüs in der Navigation, Anlegen bzw. Hinzufügen eines Formulars – lesen den Umfang erst beim Speichern
-  (`umfangAendern`), und nur, wenn noch die Fassung angezeigt ist, die beim Öffnen des Menüs bzw. beim Beginn des Ziehens
-  galt, und es den Eintrag noch gibt. Sonst ändert sich nichts, und die Meldung sagt warum („Nicht entfernt –
-  inzwischen ist Antrag BAUA angezeigt.“, „Nicht verschoben – der Eintrag „Lageplan“ ist inzwischen nicht mehr im
-  Antragsumfang.“, „Nicht hinzugefügt – inzwischen gibt es keinen Antragsumfang mehr.“); ist ein Eintrag beim
-  Entfernen schon weg, heißt es „„Lageplan“ ist schon nicht mehr im Antragsumfang.“. Beim Anlegen bzw. Hinzufügen nennt
-  die Meldung den Weg zum Nachholen („Bitte später in den Antragsdaten von BAUA 2 über „Zuordnen“ nachholen.“, bei einem
-  schon vorhandenen Formular „Bitte später zu Antrag BAUA 2 wechseln und per Rechtsklick auf „…“ in der Navigation ›
-  „Antragsdokument“ › „Bauantrag“ zuordnen.“); findet die Zeile das Formular ohnehin über den Namen, heißt es „…
-  findet es über den Namen“. Ein PDF-Export verknüpft das PDF nur, wenn die aktive Fassung auch angezeigt ist (nicht,
-  während ein Wechsel lädt). Bei einem eingereichten (gesperrten) Antrag sind die ändernden Menüpunkte ausgegraut (in
-  der Ablage mit dem Hinweis „eingereicht“). Verknüpfen in der Ablage prüft zuerst, ob noch die Fassung des Menüs
-  angezeigt ist (sonst „Nicht kopiert – …“ bzw. „Nicht verknüpft – inzwischen ist Antrag BAUA angezeigt.“, je nach
-  Menüpunkt) oder gerade eine andere geöffnet wird, dann die Sperre; erst danach wird kopiert. Gemeldet wird nach dem
-  Speichern, ob verknüpft wurde (sonst: „kopiert, aber nicht verknüpft … Bitte später die Kopie in BAUA 2 über „Mit
-  Antragsdokument verknüpfen“ verknüpfen, nicht noch einmal kopieren.“); die Zusage „verknüpft wird nach dem Anlegen
-  der Projektdatei“ steht nur, solange der Dialog offen ist, und wird beim Abbrechen zurückgenommen. Eine eigene
-  Meldung „… nicht gespeichert“ verschwindet, sobald der nächste Versuch gespeichert hat.
+  Schreibende nicht kannte. Das Laden ergänzt so nur fehlende Anträge, nie ersetzt es Vorhandenes.
+  - **Bindung:** Geschrieben wird nur in die Projektdatei, aus der die Angaben stammen, und nur für das Projekt, in dem
+    die Änderung begonnen hat. Wird währenddessen ein anderes Projekt geöffnet, bricht die Änderung mit Meldung ab
+    (Formular anlegen bzw. hinzufügen sagen, was schon geschehen ist: „angelegt, aber nicht zugeordnet …“); wird eine
+    andere `.oap` gewählt (auch umbenannt oder neu angelegt nach „nicht lesbar“), lädt die App neu und bindet sich an
+    sie. Ist die Datei gerade nicht lesbar (Netz nach dem Aufwachen), liest die App sie beim Speichern erneut und
+    meldet sonst „… nicht gespeichert: Die Projektdatei ist gerade nicht lesbar“; ist sie wieder lesbar, verschwindet
+    die Fehlermeldung. Fehlt sie, obwohl ihr Ordner lesbar ist (gelöscht, verschoben), löst die App die Bindung – dann
+    gilt eine andere `.oap` bzw. der Stammdaten-Dialog bietet das Anlegen an; ein nicht erreichbares Netzlaufwerk
+    zählt nicht als gelöscht. Eine eigene Meldung „… nicht gespeichert“ verschwindet, sobald der nächste Versuch
+    gespeichert hat.
+  - **Projektordner zuordnen, Projektdatei anlegen:** Nach dem Zuordnen eines Projektordners werden vorhandene Angaben
+    zum Antrag geladen statt überschrieben; zeigt das Projekt danach eine andere Antragsfassung (aus dem
+    Projektordner) als die, für die die Änderung gedacht war, wird sie nicht dorthin geschrieben, sondern gemeldet.
+    Nach dem Anlegen einer Projektdatei über den Stammdaten-Dialog kommt die Änderung samt der Fassung, für die sie
+    gedacht war (als aktive), in die neue Datei („Projektdatei angelegt – Antrag BAUA 2 ist das Ziel des Exports.“).
+    Wird ein Dialog abgebrochen (auch nacheinander), heißt es „Projektordner nicht zugeordnet – die Änderung ist
+    nicht gespeichert.“ bzw. „Projektdatei nicht angelegt – …“; nach „Neue Fassung „BAUA 3“ anlegen“ bzw. „Nachtrag
+    „BAUA 3“ anlegen“ sagt die Meldung, dass der Ordner schon angelegt ist („Ordner BAUA 3 angelegt, aber nicht als
+    aktive Antragsfassung gespeichert – keine Projektdatei angelegt.“; ohne Projektordner entsteht kein Ordner).
+  - **Ein Antrag wird geöffnet:** Während ein Fassungswechsel lädt (auch von außen) – bis Umfang, Zeilen und Dateien
+    der neuen Fassung da sind –, sind die Antragsdaten ausgegraut und nicht bedienbar („Antrag BAUA wird geöffnet
+    …“). Änderungen am Antrag (Antragsumfang, Antragsmerkmale, „bereit“, Formular anlegen bzw. hinzufügen) werden so
+    lange abgewiesen („Nicht entfernt – Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.“), ein
+    PDF-Export verknüpft dann nicht. Innerhalb derselben Fassung werden die Zeilen nach jedem Speichern sofort neu
+    berechnet (die gelesenen Dateien gelten weiter) – Ziehen und ↑/↓ gehen so immer von der angezeigten Reihenfolge
+    aus.
+  - **Festgehaltene Fassung:** Änderungen am Antragsumfang aus Zeilen und Menüs – Zeilenmenü, „Formular anlegen“,
+    „Zuordnen“, Datei verknüpfen bzw. „Verknüpfung lösen“, Bearbeiten (Felder und „Aus dem Antragsumfang nehmen“),
+    Ziehen der Zeilen und ↑/↓, „Dokument hinzufügen“, die Menüs in der Navigation – lesen den Umfang erst beim
+    Speichern (`umfangAendern`), und nur, wenn noch die Fassung der Zeile bzw. des Menüs angezeigt ist und es den
+    Eintrag noch gibt; verschoben wird nach Kennung. Sonst ändert sich nichts, und die Meldung sagt warum („Nicht
+    entfernt – inzwischen ist Antrag BAUA angezeigt.“, „Nicht verschoben – der Eintrag „Lageplan“ ist inzwischen nicht
+    mehr im Antragsumfang.“, „Nicht hinzugefügt – inzwischen gibt es keinen Antragsumfang mehr.“); ist ein Eintrag
+    beim Entfernen schon weg, heißt es „„Lageplan“ ist schon nicht mehr im Antragsumfang.“. „Als bereit markieren“
+    gilt ebenso nur für die Fassung der Liste bzw. des Menüs. „Antragsumfang festlegen“ und „Antragsumfang aufheben“
+    (mit Rückfrage) gelten für den angezeigten Antrag.
+  - **Nachholen:** Beim Anlegen bzw. Hinzufügen eines Formulars nennt die Meldung den Weg, wenn das Zuordnen nicht
+    ging („Bitte später in den Antragsdaten von BAUA 2 über „Zuordnen“ nachholen.“, bei einem schon vorhandenen
+    Formular „Bitte später zu Antrag BAUA 2 wechseln und per Rechtsklick auf „…“ in der Navigation ›
+    „Antragsdokument“ › „Bauantrag“ zuordnen.“); findet die Zeile das Formular ohnehin über den Namen, heißt es „…
+    findet es über den Namen“.
+  - **Eingereicht:** Alle ändernden Menüpunkte und Knöpfe sind ausgegraut, Menüpunkte mit dem Hinweis „Antrag
+    eingereicht“ (Navigation, Zeilenmenü der Antragsdaten, Ablage, „Als bereit markieren“).
+  - **Verknüpfen in der Ablage** prüft zuerst, ob noch die Fassung des Menüs angezeigt ist (sonst „Nicht kopiert – …“
+    bzw. „Nicht verknüpft – inzwischen ist Antrag BAUA angezeigt.“, je nach Menüpunkt) oder gerade ein Antrag
+    geöffnet wird, dann die Sperre; erst danach wird kopiert. Gemeldet wird nach dem Speichern, ob verknüpft wurde
+    (sonst: „kopiert, aber nicht verknüpft … Bitte später die Kopie in BAUA 2 über „Mit Antragsdokument verknüpfen“
+    verknüpfen, nicht noch einmal kopieren.“); die Zusage „verknüpft wird nach dem Anlegen der Projektdatei“ steht
+    nur, solange der Dialog offen ist, und wird beim Abbrechen zurückgenommen.
 - **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
   Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann
   in der Projektdatei.

@@ -170,6 +170,8 @@ interface AntragState {
   quellen: Record<string, Eintrag[]>;
   formularInfo: Record<string, FormularInfo>;
   dokumente: DokZustand[];
+  /** Fassung, deren Ordner zuletzt gelesen und berechnet wurde (Zeilen der Antragsdaten, Ablage „Antrag“); null vor dem ersten Lesen */
+  dokumenteFuer: string | null;
   laedt: boolean;
   /** Antragsstatus je Projekt (Schlüssel `<Quelle>|<Ordner>`), zuletzt berechnet – für die Projektübersicht */
   projektStatus: Record<string, ProjektStatus>;
@@ -218,7 +220,8 @@ interface AntragState {
   /** Autofill-Zustand von Formularen (Dateiname im FORMA-Projekt) in die Projektdatei – nur, wenn es eine gibt */
   zustaendeSetzen: (neu: Zustaende) => Promise<void>;
   /** Datei im Ordner der aktiven Fassung von Hand als „bereit“ markieren bzw. die Markierung aufheben */
-  bereitUmschalten: (datei: string) => Promise<void>;
+  /** `fassung`: die der angezeigten Liste bzw. des Menüs – ist sie nicht mehr angezeigt, ändert sich nichts */
+  bereitUmschalten: (datei: string, o?: { fassung?: string }) => Promise<void>;
   /** alle Formulare des FORMA-Projekts (ohne Archivordner) als PDF an ihr Exportziel; liefert die Zahl der exportierten */
   alleExportieren: () => Promise<number>;
   /** läuft gerade der Sammel-Export: fertig von gesamt */
@@ -339,10 +342,22 @@ export function projektCodes(p: Projekt): string[] {
   return [p.ordner, ...(o && o !== 'fehlt' && o.inhalt.meta.projektcode ? [o.inhalt.meta.projektcode] : [])];
 }
 
-/** Ordner der aktiven Fassung relativ zum Projektordner */
-/** Zeigt die Ansicht die aktive Fassung? Während ein Fassungswechsel lädt, ist schon die neue aktiv, angezeigt (samt Umfang) noch die bisherige */
-const angezeigtIstAktiv = (s: Parameters<typeof aktiveFassung>[0], p: Projekt | null) => (s.projektdatei?.ansicht ?? aktiveFassung(s, p)) === aktiveFassung(s, p);
+/**
+ * Lädt gerade ein Antrag (Fassungswechsel, auch von außen)? Dann ist die neue Fassung schon aktiv, angezeigt wird aber
+ * noch die bisherige – erst ihr Umfang, bis zum Ende des Neu-Prüfens auch ihre Zeilen und Dateien. Solange wird am
+ * Antrag nichts geändert. Liefert den Namen der Fassung, die geöffnet wird, sonst null.
+ */
+export function wechselLaeuft(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen' | 'dokumenteFuer'>, p: Projekt | null): string | null {
+  const aktiv = aktiveFassung(s, p);
+  const ansicht = s.projektdatei?.ansicht ?? aktiv;
+  return ansicht !== aktiv || (s.dokumenteFuer !== null && s.dokumenteFuer !== ansicht) ? aktiv : null;
+}
 
+/** Fassung der angezeigten Zeilen (Antragsdaten, Navigation, Ablage „Antrag“) – an sie sind Aktionen aus Zeilen und deren Menüs gebunden */
+export const zeilenFassung = (s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen' | 'dokumenteFuer'>, p: Projekt | null) =>
+  s.dokumenteFuer ?? s.projektdatei?.ansicht ?? aktiveFassung(s, p);
+
+/** Ordner der aktiven Fassung relativ zum Projektordner */
 export const antragsOrdner = (s: Parameters<typeof aktiveFassung>[0], p: Projekt | null) => `${wirksameEinstellungen(s, p).antragsordner.replace(/^\/+|\/+$/g, '')}/${aktiveFassung(s, p)}`;
 
 /** voreingestellter Zielordner des Exports (relativ zum Projektordner) */
@@ -768,10 +783,22 @@ export const useAntrag = create<AntragState>((set, get) => {
   };
   const meldung = (art: 'info' | 'fehler', text: string) => useFormulare.getState().setMeldung({ art, text });
   /** Eingereichter Antrag: nichts ändern, Meldung zeigen – liefert true, wenn gesperrt */
-  const gesperrt = (): boolean => {
-    const grund = antragSperre(get(), useFormulare.getState().projekt);
-    if (grund) meldung('info', grund);
-    return !!grund;
+  /**
+   * Warum der Antrag gerade nicht geändert werden kann (ohne Punkt): ein Antrag wird gerade geöffnet (`mitWechsel`) bzw.
+   * er ist eingereicht – sonst null
+   */
+  const sperrGrund = (mitWechsel: boolean): { grund: string; vorab: 'fassung' | 'sperre' } | null => {
+    const projekt = useFormulare.getState().projekt;
+    const wechsel = mitWechsel ? wechselLaeuft(get(), projekt) : null;
+    if (wechsel) return { grund: `Antrag ${wechsel} wird gerade geöffnet; bitte gleich noch einmal versuchen`, vorab: 'fassung' };
+    const sperre = antragSperre(get(), projekt);
+    return sperre ? { grund: sperre.replace(/\.$/, ''), vorab: 'sperre' } : null;
+  };
+  /** Gesperrt? – dann mit Meldung. Der Export prüft nur die Sperre (`mitWechsel` false), Änderungen auch den Wechsel */
+  const gesperrt = (mitWechsel = true): boolean => {
+    const g = sperrGrund(mitWechsel);
+    if (g) meldung('info', g.vorab === 'sperre' ? `${g.grund}.` : `Nicht gespeichert – ${g.grund}.`);
+    return !!g;
   };
   const fehler = (was: string, e: unknown) => {
     const text = `${was}: ${e instanceof Error ? e.message : String(e)}`;
@@ -784,7 +811,7 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     alleExportieren: async () => {
       const { ds, projekt, basis } = ctx();
-      if (!ds || !projekt || !basis || get().sammelExport || gesperrt()) return 0;
+      if (!ds || !projekt || !basis || get().sammelExport || gesperrt(false)) return 0;
       const liste = useFormulare.getState().formulare.filter((f) => !istArchiv(f.pfad));
       if (!liste.length) {
         meldung('info', 'In diesem Projekt gibt es keine Formulare zum Exportieren.');
@@ -836,7 +863,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         const fassung = aktiveFassung(st, projekt);
         const imAntrag = fertig.filter((x) => x.ordner === antragsOrdner(st, projekt));
         // nur, wenn die aktive Fassung auch angezeigt ist (nicht während ein Wechsel lädt) – sonst gehörte der Umfang zur bisherigen
-        if (umfang && imAntrag.length && angezeigtIstAktiv(st, projekt)) {
+        if (umfang && imAntrag.length && !wechselLaeuft(st, projekt)) {
           const neu = umfang.map((u) => {
             const doc = st.dokumente.find((d) => d.eintrag.id === u.id);
             const x = doc?.formular && imAntrag.find((y) => y.pfad === doc.formular!.pfad);
@@ -853,14 +880,20 @@ export const useAntrag = create<AntragState>((set, get) => {
       return fertig.length;
     },
 
-    bereitUmschalten: async (datei) => {
+    bereitUmschalten: async (datei, o = {}) => {
       const projekt = useFormulare.getState().projekt;
       if (!projekt || gesperrt()) return;
       const st = get();
       const fassung = aktiveFassung(st, projekt);
       const pd = st.projektdatei ?? {};
+      const istMarkiert = (f: string) => (pd.bereit?.[f] ?? []).some((b) => b.datei.toLowerCase() === datei.toLowerCase());
+      // Liste bzw. Menü einer anderen Fassung (inzwischen ist eine andere angezeigt): nichts ändern
+      if (o.fassung !== undefined && o.fassung !== fassung) {
+        meldung('info', `${istMarkiert(o.fassung) ? 'Markierung nicht aufgehoben' : 'Nicht als bereit markiert'} – inzwischen ist Antrag ${fassung} angezeigt.`);
+        return;
+      }
       const liste = pd.bereit?.[fassung] ?? [];
-      const markiert = liste.some((b) => b.datei.toLowerCase() === datei.toLowerCase());
+      const markiert = istMarkiert(fassung);
       let neu: typeof liste;
       if (markiert) neu = liste.filter((b) => b.datei.toLowerCase() !== datei.toLowerCase());
       else {
@@ -892,6 +925,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     quellen: {},
     formularInfo: {},
     dokumente: [],
+    dokumenteFuer: null,
     laedt: false,
     projektStatus: projektStatusLesen(lesen<unknown>(PROJEKTSTATUS, null)),
 
@@ -1031,7 +1065,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     laden: async () => {
       const { ds, projekt, basis } = ctx();
       if (!ds || !projekt) {
-        set({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [] });
+        set({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [], dokumenteFuer: null });
         quelleMerken(null);
         return;
       }
@@ -1104,6 +1138,8 @@ export const useAntrag = create<AntragState>((set, get) => {
     aktualisieren: async () => {
       const { ds, projekt, basis } = ctx();
       if (!ds || !projekt) return;
+      // gelesen wird der Ordner dieser Fassung – ist danach eine andere aktiv, gilt das Ergebnis nicht (das Lesen für sie läuft)
+      const fuer = aktiveFassung(get(), projekt);
       const e = wirksameEinstellungen(get(), projekt);
       let dateien: Eintrag[] = [];
       let dateienLesefehler = false;
@@ -1148,7 +1184,7 @@ export const useAntrag = create<AntragState>((set, get) => {
           }
         }
       }
-      if (useFormulare.getState().projekt !== projekt) return;
+      if (useFormulare.getState().projekt !== projekt || aktiveFassung(get(), projekt) !== fuer) return;
       set({ dateien, dateienLesefehler, dateienOrdner: dateienLesefehler && !dateien.length ? null : basis ? verbinde(basis, antragsOrdner(get(), projekt)) : null, quellen });
       await antragStandPflegen(eingereicht, listen);
       // nach Export, neuer Fassung, Verknüpfen … oder von außen: auch der Projektordner-Baum liest neu
@@ -1164,7 +1200,11 @@ export const useAntrag = create<AntragState>((set, get) => {
           }
         }),
       );
+      if (useFormulare.getState().projekt !== projekt || aktiveFassung(get(), projekt) !== fuer) return;
       get().neuBerechnen();
+      // Zeilen und Dateien gehören jetzt zu dieser Fassung – ein Wechsel dorthin ist fertig, sobald auch ihr Umfang
+      // angezeigt ist (sonst lädt er noch, und das Neu-Prüfen am Ende des Ladens setzt es)
+      if ((get().projektdatei?.ansicht ?? fuer) === fuer) set({ dokumenteFuer: fuer });
     },
 
     neuBerechnen: () => {
@@ -1236,14 +1276,21 @@ export const useAntrag = create<AntragState>((set, get) => {
       const { ds, projekt, basis } = ctx();
       if (!ds || !projekt) return;
       try {
-        if (anlegen && basis) await ds.ordnerAnlegen(basis, `${wirksameEinstellungen(get(), projekt).antragsordner}/${name}`);
+        // ohne Projektordner entsteht kein Ordner – dann nur die aktive Fassung
+        const ordnerAngelegt = anlegen && !!basis;
+        if (ordnerAngelegt) await ds.ordnerAnlegen(basis, `${wirksameEinstellungen(get(), projekt).antragsordner}/${name}`);
         // inzwischen ein anderes Projekt: der Ordner bleibt im bisherigen, aktiv wird dort nichts
         if (anderesProjekt(projekt)) {
-          meldung('info', `Ordner ${name} in ${projekt.ordner} angelegt, aber nicht als aktive Antragsfassung gesetzt – inzwischen ist ein anderes Projekt offen.`);
+          meldung(
+            'info',
+            ordnerAngelegt
+              ? `Ordner ${name} in ${projekt.ordner} angelegt, aber nicht als aktive Antragsfassung gespeichert – inzwischen ist ein anderes Projekt offen.`
+              : `Antragsfassung ${name} in ${projekt.ordner} nicht gespeichert – inzwischen ist ein anderes Projekt offen.`,
+          );
           return;
         }
         // Dialog abgebrochen: der Ordner ist schon da, nur die aktive Fassung fehlt – das sagen statt „Änderung nicht gespeichert“
-        const info: SchreibInfo = anlegen
+        const info: SchreibInfo = ordnerAngelegt
           ? {
               beiAbbruch: (art) =>
                 meldung('info', `Ordner ${name} angelegt, aber nicht als aktive Antragsfassung gespeichert – ${art === 'oap' ? 'keine Projektdatei angelegt' : 'kein Projektordner zugeordnet'}.`),
@@ -1261,7 +1308,12 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     umfangSetzen: async (umfang, o = {}) => {
       const info: SchreibInfo = o.info ?? {};
-      if (gesperrt()) return Object.assign(info, { grund: (antragSperre(get(), useFormulare.getState().projekt) ?? 'Der Antrag ist gesperrt').replace(/\.$/, ''), vorab: 'sperre' as const });
+      // eingereicht bzw. ein Antrag wird gerade geöffnet: nichts ändern – mit Meldung und dem Grund für den Aufrufer
+      const g = sperrGrund(true);
+      if (g) {
+        meldung('info', g.vorab === 'sperre' ? `${g.grund}.` : `Antragsumfang nicht geändert – ${g.grund}.`);
+        return Object.assign(info, g);
+      }
       try {
         const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
         if (umfang) neu.umfang = umfang;
@@ -1295,19 +1347,27 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     umfangAendern: async (aendern, o = {}) => {
       const pd = get().projektdatei;
-      // erst feststellen, ob es noch geht – dann der Grund daraus. Geändert wird der Umfang der angezeigten Fassung (auch
-      // während ein Wechsel lädt): stimmt sie mit der festgehaltenen überein, passt es
+      // erst feststellen, ob es noch geht – dann der Grund daraus: nicht, während ein Antrag geöffnet wird; sonst nur in
+      // der festgehaltenen Fassung (die dann angezeigt und aktiv ist) und nur, wenn es den Eintrag noch gibt
       const umfang = pd?.umfang;
-      const vorab: SchreibInfo['vorab'] = !umfang
-        ? 'umfang'
-        : o.ansicht !== undefined && pd?.ansicht !== o.ansicht
-          ? 'fassung'
-          : o.eintrag && !umfang.some((x) => x.id === o.eintrag)
-            ? 'eintrag'
-            : undefined;
+      const wechsel = wechselLaeuft(get(), useFormulare.getState().projekt);
+      const vorab: SchreibInfo['vorab'] = wechsel
+        ? 'fassung'
+        : !umfang
+          ? 'umfang'
+          : o.ansicht !== undefined && pd?.ansicht !== o.ansicht
+            ? 'fassung'
+            : o.eintrag && !umfang.some((x) => x.id === o.eintrag)
+              ? 'eintrag'
+              : undefined;
       if (vorab || !umfang) {
-        const grund =
-          vorab === 'fassung' ? `inzwischen ist Antrag ${pd?.ansicht} angezeigt` : vorab === 'eintrag' ? `der Eintrag ${o.titel ? `„${o.titel}“ ` : ''}ist inzwischen nicht mehr im Antragsumfang` : 'inzwischen gibt es keinen Antragsumfang mehr';
+        const grund = wechsel
+          ? `Antrag ${wechsel} wird gerade geöffnet; bitte gleich noch einmal versuchen`
+          : vorab === 'fassung'
+            ? `inzwischen ist Antrag ${pd?.ansicht} angezeigt`
+            : vorab === 'eintrag'
+              ? `der Eintrag ${o.titel ? `„${o.titel}“ ` : ''}ist inzwischen nicht mehr im Antragsumfang`
+              : 'inzwischen gibt es keinen Antragsumfang mehr';
         if (!o.still) meldung('info', `${o.was ?? 'Antragsumfang nicht geändert'} – ${grund}.`);
         return Object.assign(o.info ?? {}, { grund, vorab: vorab ?? 'umfang' });
       }
@@ -1316,7 +1376,7 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     exportieren: async (formularPfad, ziel, ersetzen) => {
       const { ds, projekt, basis } = ctx();
-      if (!ds || !projekt || !basis || gesperrt()) return null;
+      if (!ds || !projekt || !basis || gesperrt(false)) return null;
       try {
         const pdf = await pdfVon(projekt, formularPfad);
         const pfad = `${ziel.ordner ? `${ziel.ordner}/` : ''}${ziel.name}`;
@@ -1329,7 +1389,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         const st = get();
         const umfang = st.projektdatei?.umfang;
         const doc = st.dokumente.find((d) => d.formular?.pfad === formularPfad);
-        if (umfang && doc && ziel.ordner === antragsOrdner(st, projekt) && angezeigtIstAktiv(st, projekt)) {
+        if (umfang && doc && ziel.ordner === antragsOrdner(st, projekt) && !wechselLaeuft(st, projekt)) {
           const fassung = aktiveFassung(st, projekt);
           await get().umfangSetzen(
             umfang.map((u) => (u.id === doc.eintrag.id ? { ...u, formularDatei: nurName(formularPfad), dateien: { ...u.dateien, [fassung]: ziel.name } } : u)),
@@ -1541,6 +1601,15 @@ export const useAntrag = create<AntragState>((set, get) => {
 /** Formulare, die gerade angelegt werden (je Eintrag des Antragsumfangs) – ein zweiter Klick legt kein zweites an */
 const anlegenLaeuft = new Set<string>();
 
+/*
+ * Innerhalb derselben Fassung gelten die gelesenen Dateien weiter: ändert sich die Projektdatei (Speichern, von außen),
+ * werden die Zeilen gleich neu berechnet – sonst zeigten sie bis zum Ende des Neu-Prüfens (Netz) den alten Umfang, und
+ * Ziehen bzw. ↑/↓ gingen von Stellen aus, die es so nicht mehr gibt. Während eines Wechsels bleibt es beim Neu-Prüfen.
+ */
+useAntrag.subscribe((s, vorher) => {
+  if (s.projektdatei !== vorher.projektdatei && s.projektdatei && s.dokumenteFuer !== null && !wechselLaeuft(s, useFormulare.getState().projekt)) s.neuBerechnen();
+});
+
 autofillAnbindung.zustand = (datei) => useAntrag.getState().projektdatei?.felder?.[datei];
 sperrAnbindung.antrag = (p) => (p && p === useFormulare.getState().projekt ? antragSperre(useAntrag.getState(), p) : null);
 autofillAnbindung.speichern = (datei, z) => void useAntrag.getState().zustaendeSetzen({ [datei]: z });
@@ -1656,7 +1725,7 @@ useFormulare.subscribe((s, vorher) => {
   if (s.projekt !== vorher.projekt || s.ablage !== vorher.ablage || s.ds !== vorher.ds) {
     zerlegt.clear();
     if (s.projekt !== vorher.projekt) {
-      useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [] });
+      useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [], dokumenteFuer: null });
       quelleMerken(null);
     }
     void useAntrag.getState().laden();

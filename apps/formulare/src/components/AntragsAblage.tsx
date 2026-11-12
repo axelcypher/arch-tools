@@ -15,7 +15,7 @@ import {
   standBezug,
   standFestgehaltenText,
 } from '../antrag';
-import { aktiveFassung, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag, zeilenFassung } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
@@ -72,6 +72,10 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const fassung = useAntrag((s) => aktiveFassung(s, projekt));
   const ordner = useAntrag((s) => antragsOrdner(s, projekt));
   const bereitJeFassung = useAntrag((s) => s.projektdatei?.bereit);
+  // eingereicht: „bereit“ bleibt, wie es ist (Knopf und Menü ausgegraut, mit Grund)
+  const gesperrt = useAntrag((s) => !!antragSperre(s, projekt));
+  // Fassung der angezeigten Liste – „bereit“ gilt nur für sie
+  const listeFassung = useAntrag((s) => zeilenFassung(s, projekt));
   // Antragsstand bei der Einreichung – er gilt nur, solange der Antrag als eingereicht gilt
   const stand = useAntrag((s) => {
     const a = s.projektdatei?.antraege?.[aktiveFassung(s, projekt)];
@@ -140,12 +144,18 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const vorschlag = (name: string, geaendert?: number) => nameNachFormat(name, { codes, art, datum: new Date(geaendert || Date.now()), reihenfolge, schema });
   const muster = antragsMuster(codes, art, reihenfolge);
 
+  // „bereit“ aus dem Menü: für die Fassung der Liste beim Öffnen des Menüs
+  const bereitAktion = (pfad: string) => {
+    const fassung = zeilenFassung(useAntrag.getState(), projekt);
+    return () => void bereitUmschalten(pfad, { fassung });
+  };
   const menue = (pfad: string, zustand: Bereitschaft, fehler: string | null, geaendert?: number): MenuePunkt[] => [
     {
       text: zustand === 'bereit' || zustand === 'geaendert' ? 'Nicht mehr bereit' : 'Als bereit markieren',
       symbol: 'haken',
-      ...(fehler ? { hinweis: 'Namensformat passt nicht' } : {}),
-      aktion: () => void bereitUmschalten(pfad),
+      deaktiviert: gesperrt,
+      ...(gesperrt ? { hinweis: 'Antrag eingereicht' } : fehler ? { hinweis: 'Namensformat passt nicht' } : {}),
+      aktion: bereitAktion(pfad),
     },
     // nur, wenn der Vorschlag etwas ändert (fehlt bloß die Bezeichnung, ist er der Name selbst)
     ...(fehler && vorschlag(pfad, geaendert) !== pfad
@@ -248,9 +258,17 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
               className="fo-bereit-knopf"
               aria-pressed={zustand === 'bereit'}
               aria-label={`${d.pfad}: ${BEREIT_TEXT[zustand]}`}
-              title={fehler ? `${BEREIT_TEXT.name}: ${fehler}` : zustand === 'bereit' ? 'Bereit – Klick hebt die Markierung auf' : `${BEREIT_TEXT[zustand]} – Klick markiert als bereit`}
-              disabled={!!fehler}
-              onClick={() => void bereitUmschalten(d.pfad)}
+              title={
+                gesperrt
+                  ? 'Der Antrag ist eingereicht und gesperrt – „bereit“ bleibt, wie es ist'
+                  : fehler
+                    ? `${BEREIT_TEXT.name}: ${fehler}`
+                    : zustand === 'bereit'
+                      ? 'Bereit – Klick hebt die Markierung auf'
+                      : `${BEREIT_TEXT[zustand]} – Klick markiert als bereit`
+              }
+              disabled={!!fehler || gesperrt}
+              onClick={() => void bereitUmschalten(d.pfad, { fassung: listeFassung })}
             >
               {ZEICHEN[zustand]}
             </button>

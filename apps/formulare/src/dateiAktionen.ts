@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { aktiveFassung, antragsOrdner, antragSperre, useAntrag } from './antragStore';
+import { aktiveFassung, antragsOrdner, antragSperre, useAntrag, wechselLaeuft } from './antragStore';
 import type { SchreibInfo } from './antragStore';
 import { klein } from './antrag';
 import { bestaetigen, frageText } from './components/Rueckfrage';
@@ -206,7 +206,7 @@ export async function verknuepfen(basis: string, pfad: string, umfangId: string,
   const was = kopiert ? 'Nicht kopiert' : 'Nicht verknüpft';
   // erst: noch dieselbe Fassung angezeigt und aktiv? – sonst nichts kopieren (auch keine Sperre einer anderen melden)
   if (aktiv !== fassung) return melde('info', `${was} – inzwischen ist Antrag ${aktiv} angezeigt.`);
-  if (st.projektdatei?.ansicht !== fassung) return melde('info', `${was} – Antrag ${aktiv} wird gerade geöffnet; bitte gleich noch einmal versuchen.`);
+  if (st.projektdatei?.ansicht !== fassung || wechselLaeuft(st, projekt)) return melde('info', `${was} – Antrag ${aktiv} wird gerade geöffnet; bitte gleich noch einmal versuchen.`);
   // dann: eingereicht und gesperrt – nichts kopieren
   const sperre = antragSperre(st, projekt);
   if (sperre) return melde('info', sperre);
@@ -240,6 +240,8 @@ export async function verknuepfen(basis: string, pfad: string, umfangId: string,
       // die Zusage nur, solange der Dialog noch offen ist (abgebrochen: die Rücknahme ist schon gemeldet)
       if (f.stammdatenDialog || f.ordnerDialog) melde('info', `„${name}“ in ${fassung} kopiert – verknüpft wird nach dem Anlegen der Projektdatei.`);
     } else if (info.vorab === 'eintrag' || info.vorab === 'umfang') melde('info', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft – ${klein(info.grund!)}.`);
+    // inzwischen eingereicht: der Sperrtext ist ein eigener Satz (mit dem Weg zum Entsperren)
+    else if (info.vorab === 'sperre') melde('info', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft. ${info.grund}. Danach die Kopie verknüpfen, nicht noch einmal kopieren.`);
     else melde('fehler', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft – ${klein(info.grund ?? 'nicht gespeichert')}. ${nachholen}`);
   } catch (e) {
     fehler('Verknüpfen', e);
