@@ -1036,7 +1036,8 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'Baugenehmigungsverfahren' }), ja('gebaeude.freistehend'))('nw/avwgebo/1')).toBe('rot');
     // Gegenproben: ohne Antrag verfahrensfrei → grün (außerhalb des Denkmalbereichs; im Denkmalbereich offen wegen der
     // gesonderten denkmalrechtlichen Erlaubnis, Runde 8); Verfahren offen → nicht grün
-    expect(a(mitVerfahren(garage, 'verfahrensfrei'), { ...f, ...nein('schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.denkmalbereich_umgebung', 'schutz.bodendenkmal', 'schutz.gartendenkmal') })('nw/avwgebo/1')).toBe('gruen');
+    // (Baulast angegeben – offen ist sie seit Runde 11 ein Einzelfall wie Abweichung und Befreiung)
+    expect(a(mitVerfahren(garage, 'verfahrensfrei'), { ...f, ...nein('lage.baulast', 'schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.denkmalbereich_umgebung', 'schutz.bodendenkmal', 'schutz.gartendenkmal') })('nw/avwgebo/1')).toBe('gruen');
     expect(a(mitVerfahren(garage, 'verfahrensfrei'), f)('nw/avwgebo/1')).toBe('gelb');
     expect(a(mitVerfahren(garage), f)('nw/avwgebo/1')).not.toBe('gruen');
   });
@@ -1045,13 +1046,14 @@ describe('Fälle aus dem Fachreview', () => {
     // Fall B7a: Hotel (Sonderbau) GK 5 freistehend – alle Bestandsangaben gesetzt, verfahrensfrei bzw. mit Antrag
     for (const Verfahren of ['verfahrensfrei', 'vereinfachtes Verfahren']) {
       const hotel = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '5', Sonderbau: 'ja', Verfahren });
-      const x = a(hotel, { ...bestand(), ...lage(), ...ja('gebaeude.freistehend') });
+      // (Einfriedigungspflicht beantwortet – seit Runde 11 auch beim Abbruch freistehender Gebäude gefragt)
+      const x = a(hotel, { ...bestand(), ...lage(), ...ja('gebaeude.freistehend'), ...nein('soest.einfriedungspflicht') });
       for (const id of nichtBeiBeseitigung) expect(x(id), `${id} (${Verfahren})`).toBe('gruen');
       // kein falsches Grün: Artenschutz beim Abbruch, Genehmigungsvorbehalt und Verfahrensfreiheit bleiben
       for (const id of ['bund/bnatschg/44', 'nw/bauo-nrw/60', 'nw/bauo-nrw/62']) expect(x(id), `${id} (${Verfahren})`).toBe('rot');
     }
     // Fall B7c: Einfamilienhaus GK 1 – Angaben zu Gebäude und Technik offen: kein Fehl-Gelb
-    const efh = a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }), { ...lage(), ...ja('gebaeude.freistehend') });
+    const efh = a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }), { ...lage(), ...ja('gebaeude.freistehend'), ...nein('soest.einfriedungspflicht') });
     for (const id of nichtBeiBeseitigung) expect(efh(id), `${id} (B7c)`).toBe('gruen');
     // Gegenproben: dasselbe Gebäude als Neubau – die Anforderungen gelten bzw. sind zu prüfen
     const neu = a(M4({ Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '5', Sonderbau: 'ja', Verfahren: 'Baugenehmigungsverfahren' }), { ...bestand(), ...lage(), ...ja('gebaeude.freistehend') });
@@ -1097,7 +1099,8 @@ describe('Fälle aus dem Fachreview', () => {
     // Beseitigung in der Altstadt: Gestaltung entfällt – bis auf die Freitreppen (§ 13 Abs. 4, Runde 8),
     // straßenseitige Einfriedigungen (§ 12, Runde 9) und die Baulücke beim Abbruch angebauter Gebäude (Runde 10) –
     // hier ein freistehendes Gebäude
-    const weg = a(M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), { ...ja('soest.altstadt', 'gebaeude.freistehend'), ...nein('soest.freitreppe', 'soest.einfriedung'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
+    // (Runde 11: auch beim Abbruch eines freistehenden Gebäudes wird nach der Einfriedigungspflicht gefragt)
+    const weg = a(M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), { ...ja('soest.altstadt', 'gebaeude.freistehend'), ...nein('soest.freitreppe', 'soest.einfriedung', 'soest.einfriedungspflicht'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
     for (const id of ids) expect(weg(id), `${id} (Beseitigung)`).toBe('gruen');
   });
 
@@ -1235,7 +1238,7 @@ describe('Fälle aus dem Fachreview', () => {
     // Fälle N1, R1, R11: Beseitigung im Wallring
     const weg = M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' });
     // keine Einfriedigung zur Straße betroffen (sonst bliebe § 1 über § 12 offen, Runde 9)
-    const f = { ...ja('gebaeude.freistehend'), ...nein('soest.einfriedung') };
+    const f = { ...ja('gebaeude.freistehend'), ...nein('soest.einfriedung', 'soest.einfriedungspflicht') };
     for (const nr of ['1', '13']) {
       expect(altstadt(weg, f)(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr} offen`).toBe('gelb');
       expect(altstadt(weg, { ...f, ...ja('soest.freitreppe') })(`nw-05974040/altstadtsatzung/${nr}`), `§ ${nr} ja`).toBe('rot');
@@ -1248,7 +1251,8 @@ describe('Fälle aus dem Fachreview', () => {
 
   it('Runde 8: AVwGebO § 1 – Abweichung oder Befreiung auch bei verfahrensfreiem Vorhaben und Freistellung; Freistellung nicht „entfällt“; Anzeige ohne Tarifstelle', () => {
     const keinDenkmal = nein('schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.denkmalbereich_umgebung', 'schutz.bodendenkmal', 'schutz.gartendenkmal');
-    const keineAbw = nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung');
+    // (Baulast angegeben – offen ist sie seit Runde 11 ein Einzelfall wie Abweichung und Befreiung)
+    const keineAbw = nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung', 'lage.baulast');
     // Fälle BA1, V1: verfahrensfreie Garage mit Abweichung bzw. Befreiung
     const garage = M4({ Gebäudeart: 'Nichtwohngebäude', Verfahren: 'verfahrensfrei' });
     for (const abw of ['planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung']) expect(a(garage, { ...keinDenkmal, ...keineAbw, ...ja(abw) })('nw/avwgebo/1'), abw).toBe('rot');
@@ -1260,7 +1264,7 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(garage, { ...keinDenkmal, ...keineAbw })('nw/avwgebo/1')).toBe('gruen');
     expect(a(garage, keinDenkmal)('nw/avwgebo/1')).toBe('gelb');
     const anzeige = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Verfahren: 'verfahrensfrei' });
-    expect(a(anzeige, { ...keinDenkmal, ...nein('gebaeude.freistehend') })('nw/avwgebo/1')).toBe('gruen');
+    expect(a(anzeige, { ...keinDenkmal, ...nein('gebaeude.freistehend', 'lage.baulast') })('nw/avwgebo/1')).toBe('gruen');
   });
 
   it('Runde 8: BauGB §§ 144, 145 – im vereinfachten Sanierungsverfahren ohne Genehmigungspflicht (Soest: alle Satzungen schließen § 144 aus)', () => {
@@ -1405,7 +1409,7 @@ describe('Fälle aus dem Fachreview', () => {
   });
 
   it('Runde 9: AVwGebO § 1 – keine Gebühr für die Erlaubnis nach § 9 DSchG; Einzelfall nur bei Bodendenkmälern (Tarifstelle 3.3.1)', () => {
-    const ohne = nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung');
+    const ohne = nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung', 'lage.baulast');
     // Fall G2: verfahrensfreies Gartenhaus in der Umgebung eines Baudenkmals
     const g2 = M4({ Gebäudeart: 'Nichtwohngebäude', Verfahren: 'verfahrensfrei' });
     expect(a(g2, { ...ohne, ...ja('schutz.denkmal_umgebung'), ...nein('schutz.denkmal', 'schutz.bodendenkmal') })('nw/avwgebo/1')).toBe('gruen');
@@ -1503,8 +1507,8 @@ describe('Fälle aus dem Fachreview', () => {
     const f = { ...nein('soest.einfriedung', 'gebaeude.freistehend'), ...umfang('vollständiger Abbruch ohne Ersatzbau') };
     expect(altstadt(m, f)(p12), 'Pflicht offen').toBe('gelb');
     expect(altstadt(m, { ...f, ...ja('soest.einfriedungspflicht') })(p12), 'Baulücke zur Straße').toBe('rot');
-    // Gegenprobe: freistehendes Hinterhaus – keine Lücke zur Straße, nichts zu fragen
-    expect(altstadt(m, { ...f, ...ja('gebaeude.freistehend') })(p12)).toBe('gruen');
+    // Gegenprobe: freistehendes Hinterhaus – keine Fläche zur Straße (seit Runde 11 gefragt, mit „nein“ grün)
+    expect(altstadt(m, { ...f, ...ja('gebaeude.freistehend'), ...nein('soest.einfriedungspflicht') })(p12)).toBe('gruen');
     // Frage: „zu öffentlichen Verkehrsflächen hin“ auch für Gärten, Lagerplätze, Stellplatzanlagen (Nr. 2)
     const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
     expect(defs['soest.einfriedungspflicht'].hilfe).toMatch(/Rückwärtige Gärten ohne Grenze zur Verkehrsfläche zählen nicht/);
@@ -1546,6 +1550,66 @@ describe('Fälle aus dem Fachreview', () => {
     const r = auswerten(eingabe(M4({ Planungsrecht: 'Bebauungsplan', Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }), umfang('vollständiger Abbruch ohne Ersatzbau'), TEXTE)).paragrafen.find((x) => x.id === 'nw-05974040/bebauungsplan/Festsetzungen')!;
     expect(r.gruende.join(' ')).toMatch(/§ 172 Abs\. 1 BauGB/);
     expect(r.gruende.join(' ')).not.toMatch(/Erhaltungsgebote \(§ 9 Abs\. 1 Nr\. 25 b/);
+  });
+
+  /* ---------- Runde 11 ---------- */
+
+  it('Runde 11: Altstadtsatzung § 12 – auch beim Abbruch eines freistehenden Gebäudes und beim Teilabbruch wird nach der Einfriedigungspflicht gefragt', () => {
+    const p12 = 'nw-05974040/altstadtsatzung/12';
+    // Fall P1: freistehendes EFH an der Straße vollständig abbrechen, Einfriedigungspflicht „ja“ → rot
+    const p1 = M4({ Vorhaben: 'Beseitigung' });
+    const f1 = { ...ja('gebaeude.freistehend'), ...nein('soest.einfriedung'), ...umfang('vollständiger Abbruch ohne Ersatzbau') };
+    expect(altstadt(p1, { ...f1, ...ja('soest.einfriedungspflicht') })(p12), 'P1 Pflicht ja').toBe('rot');
+    expect(altstadt(p1, f1)(p12), 'P1 Pflicht offen').toBe('gelb');
+    expect(altstadt(p1, { ...f1, ...nein('soest.einfriedungspflicht') })(p12), 'P1 Pflicht nein').toBe('gruen');
+    // Fall P3: Teilabbruch eines straßenseitigen Flügels
+    const f3 = { ...nein('soest.einfriedung', 'soest.aussenanlagen', 'soest.garage', 'soest.freitreppe', 'vorhaben.stellplaetze_grundstueck'), ...umfang('Teilabbruch') };
+    expect(altstadt(p1, { ...f3, ...ja('soest.einfriedungspflicht') })(p12), 'P3 Pflicht ja').toBe('rot');
+    expect(altstadt(p1, f3)(p12), 'P3 Pflicht offen').toBe('gelb');
+    expect(altstadt(p1, { ...f3, ...nein('soest.einfriedungspflicht') })(p12), 'P3 Pflicht nein').toBe('gruen');
+    // die Frage wird gestellt (Bedingung der Angabe erfüllt) – beim vollständigen Abbruch und beim Teilabbruch
+    const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+    const bausteine = Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {}));
+    for (const f of [f1, f3]) expect(werten(defs['soest.einfriedungspflicht'].wenn, { merkmale: p1, fakten: { ...ja('soest.altstadt'), ...f }, einreichung: '2026-12-01', heute: '2026-11-12', bausteine }).w).toBe('ja');
+  });
+
+  it('Runde 11: AVwGebO § 1 – keine Genehmigungsfreistellung bei reiner Beseitigung; Baulast offen ist ein Einzelfall', () => {
+    const ohne = nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung', 'schutz.bodendenkmal', 'lage.baulast');
+    // Fall V0Og2: vollständiger Abbruch eines angebauten EFH (anzuzeigen), Verfahren offen → grün, keine Freistellung
+    const v0 = mitVerfahren(M4({ Vorhaben: 'Beseitigung', Gebäudeklasse: '2' }));
+    expect(a(v0, { ...ohne, ...nein('gebaeude.freistehend'), ...umfang('vollständiger Abbruch ohne Ersatzbau') })('nw/avwgebo/1')).toBe('gruen');
+    // Gegenprobe: Neubau mit offenem Verfahren bleibt offen (Freistellung möglich)
+    expect(a(mitVerfahren(M4()), ohne)('nw/avwgebo/1')).not.toBe('gruen');
+    // Fall G2: verfahrensfreie Beseitigung, Baulast offen → gelb; „nein“ → grün; „ja“ → gelb
+    const g2 = M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' });
+    const g2f = { ...nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung', 'schutz.bodendenkmal'), ...ja('gebaeude.freistehend'), ...umfang('vollständiger Abbruch ohne Ersatzbau') };
+    expect(a(g2, g2f)('nw/avwgebo/1')).toBe('gelb');
+    expect(a(g2, { ...g2f, ...nein('lage.baulast') })('nw/avwgebo/1')).toBe('gruen');
+    expect(a(g2, { ...g2f, ...ja('lage.baulast') })('nw/avwgebo/1')).toBe('gelb');
+  });
+
+  it('Runde 11: Satzangaben zu § 62 Abs. 3 BauO NRW; Fragen zur Verfahrensfreiheit des Abbruchs nicht beim Ersatzbau; Hinweise ohne Bezug beim reinen Abbruch', () => {
+    const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+    expect(defs['nw.altbau_verfahrensfrei'].hilfe).toMatch(/anzuzeigen \(Satz 3\)/);
+    expect(defs['nw.altbau_verfahrensfrei'].hilfe).toMatch(/\(Sätze 4, 5\)/);
+    expect(defs['nw.altbau_verfahrensfrei'].hilfe).not.toMatch(/Satz 2\)|Satz 3, 4\)/);
+    const bausteine = Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {}));
+    const ctx = (m: Record<string, string>, w: string) => ({ merkmale: m, fakten: { [UMFANG]: sicher(w) }, einreichung: '2026-12-01', heute: '2026-11-12', bausteine });
+    const nwb = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Nichtwohngebäude' });
+    const keinGeb = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'kein Gebäude' });
+    // beim Ersatzbau nicht gefragt (zählt die Angabe zum Altbau), beim vollständigen Abbruch schon
+    expect(werten(defs['nw.beseitigung_abs1'].wenn, ctx(nwb, 'Abbruch mit Ersatzbau')).w).toBe('nein');
+    expect(werten(defs['nw.anlage_ueber_10m'].wenn, ctx(keinGeb, 'Abbruch mit Ersatzbau')).w).toBe('nein');
+    expect(werten(defs['nw.beseitigung_abs1'].wenn, ctx(nwb, 'vollständiger Abbruch ohne Ersatzbau')).w).toBe('ja');
+    expect(werten(defs['nw.anlage_ueber_10m'].wenn, ctx(keinGeb, 'vollständiger Abbruch ohne Ersatzbau')).w).toBe('ja');
+    // Fall V2Og2: Hinweise zu GEG und Photovoltaik nicht beim reinen Abbruch, wohl beim Neubau
+    const titel = (m: Record<string, string>, f: Record<string, FaktWert> = {}) => auswerten(eingabe(m, { ...ja('soest.altstadt'), ...f }, TEXTE)).hinweise.map((h) => h.titel);
+    const weg = titel(M4({ Vorhaben: 'Beseitigung' }), umfang('vollständiger Abbruch ohne Ersatzbau'));
+    expect(weg.some((t) => t.startsWith('Gebäudeenergiegesetz geändert'))).toBe(false);
+    expect(weg).not.toContain('Photovoltaik und Solarthermie in der Altstadt');
+    const neu = titel(M4());
+    expect(neu.some((t) => t.startsWith('Gebäudeenergiegesetz geändert'))).toBe(true);
+    expect(neu).toContain('Photovoltaik und Solarthermie in der Altstadt');
   });
 });
 

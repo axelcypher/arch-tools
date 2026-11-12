@@ -498,7 +498,7 @@
       "wenn": {
         "und": [
           {
-            "$": "beseitigung"
+            "$": "nur_beseitigung"
           },
           {
             "m": "Gebäudeart",
@@ -518,7 +518,7 @@
       "wenn": {
         "und": [
           {
-            "$": "beseitigung"
+            "$": "nur_beseitigung"
           },
           {
             "nicht": {
@@ -586,7 +586,7 @@
       "gruppe": "vorhaben",
       "typ": "janein",
       "frage": "Ist der abzubrechende Altbau ein freistehendes Gebäude der Gebäudeklasse 1 oder 3, eine Anlage (kein Gebäude) bis 10 m Höhe oder eine verfahrensfreie Anlage nach § 62 Abs. 1?",
-      "hilfe": "Beim Abbruch mit Ersatzbau beschreiben Gebäudeart, Gebäudeklasse und „freistehend“ den Neubau. Für den Abbruch zählt der Altbau: verfahrensfrei nach § 62 Abs. 3 Satz 1 BauO NRW, sonst ist die Beseitigung anzuzeigen (Satz 2) – mit Bauvorlagen nach § 15 BauPrüfVO und, bei angebauten Gebäuden, Standsicherheitsnachweis für das Nachbargebäude (Satz 3, 4).",
+      "hilfe": "Beim Abbruch mit Ersatzbau beschreiben Gebäudeart, Gebäudeklasse und „freistehend“ den Neubau. Für den Abbruch zählt der Altbau: verfahrensfrei nach § 62 Abs. 3 Satz 1 BauO NRW, sonst ist die Beseitigung anzuzeigen (Satz 3) – mit Bauvorlagen nach § 15 BauPrüfVO und, bei angebauten Gebäuden, Standsicherheitsnachweis für das Nachbargebäude und Überwachung (Sätze 4, 5).",
       "wenn": {
         "$": "ersatzbau"
       }
@@ -1095,7 +1095,10 @@
     },
     {
       "titel": "Gebäudeenergiegesetz geändert (Gesetz vom 23.07.2026)",
-      "text": "Die GEG-UVO verweist noch auf die §§ 46 bis 51 und § 48 GEG alter Fassung; diese Paragrafen sind seit der Änderung durch das Gesetz vom 23.07.2026 weggefallen. Nachweise nach der geltenden Fassung des GEG führen und die Zuordnung mit der Bauaufsicht abstimmen."
+      "text": "Die GEG-UVO verweist noch auf die §§ 46 bis 51 und § 48 GEG alter Fassung; diese Paragrafen sind seit der Änderung durch das Gesetz vom 23.07.2026 weggefallen. Nachweise nach der geltenden Fassung des GEG führen und die Zuordnung mit der Bauaufsicht abstimmen.",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
     }
   ]
 }
