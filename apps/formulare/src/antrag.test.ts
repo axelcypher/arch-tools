@@ -340,8 +340,48 @@ describe('Antragsstand bei der Einreichung', () => {
       'Erklärung Entwurfsverfasser Stadt.pdf',
       'Baulasterklärung Stadt.pdf',
       'Mitteilung-an-die-Stadt.pdf',
+      // Runde 11: beglaubigt/gesiegelt nur bei Aufteilungsplänen, Versiegelung, Bestand mit „genehmigt“ oder Jahr,
+      // Satzzeichen, Bauvorlagen nach BauPrüfVO, Ausnahmen überall
+      'Flurkarte beglaubigt.pdf',
+      'Amtlicher Lageplan gesiegelt.pdf',
+      'Baulasterklärung beglaubigt.pdf',
+      'Bestandsgenehmigung beglaubigt.pdf',
+      'Nachweis versiegelte Flächen.pdf',
+      'Nachweis Flächenversiegelung.pdf',
+      'BS9 BAUA 261120 Versiegelungsberechnung.pdf',
+      'Entsiegelungsnachweis.pdf',
+      'Grundbuchauszug beglaubigt.pdf',
+      'Beglaubigte Vollmacht Bauherr.pdf',
+      'Aufteilungsplan ungesiegelt.pdf',
+      'Lageplan ungestempelt.pdf',
+      'Grundriss nicht genehmigt.pdf',
+      'Genehmigter Bestand.pdf',
+      'Nachweis genehmigter Bestand.pdf',
+      'Bestandspläne genehmigt.pdf',
+      'Grundriss genehmigt 1972.pdf',
+      'Gegenüberstellung genehmigt geplant.pdf',
+      'Baugenehmigung vom 12.05.1972.pdf',
+      'Baugenehmigung 1972.pdf',
+      'Baugenehmigung (1972).pdf',
+      'Unterlagen - Nachforderung.pdf',
+      'Unterlagen (Nachforderung).pdf',
+      'Unterlagen zum Bauantrag Nachforderung.pdf',
+      'Baulasterklärung Nachforderung.pdf',
+      'Mitteilung an die Stadt Nachforderung.pdf',
+      'Erklärung Entwurfsverfasser Nachforderung.pdf',
+      'Nachforderung Flurkarte.pdf',
+      'Brandschutzkonzept Nachforderung.pdf',
+      'Übereinstimmungserklärung Nachforderung.pdf',
+      'Gutachten Nachforderung.pdf',
+      'Widerspruch gegen Gebührenbescheid.pdf',
+      'Genehmigungsunterlagen.pdf',
+      // Schreiben der Behörde mit weiteren Wörtern: im Zweifel nachgereicht
+      'Nachforderung Brandschutz Stellplätze.pdf',
     ])
       expect(nachEinreichungErwartet(n)).toBe(false);
+    // Gegenproben: das Schreiben der Behörde mit Behörde, Ort, Datum, Code
+    for (const n of ['Aufteilungspläne gesiegelt.pdf', 'Grundriss genehmigt.pdf', 'Baugenehmigung 2026.pdf', 'Baugenehmigung vom 12.11.2026.pdf', 'BS9 BAUA 261120 Nachforderung Kreis Viersen.pdf', 'Nachforderung Bauaufsicht 12.11.2026.pdf', 'Anhörung vor Ablehnung.pdf'])
+      expect(nachEinreichungErwartet(n), n).toBe(true);
     expect(seitEinreichung(d('HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
     expect(seitEinreichung(liste[4], undefined)).toBeNull();
   });
@@ -422,6 +462,8 @@ describe('Umbenennen nach Namensformat', () => {
       // mit Datum daneben zählt es als Kürzel
       expect(nameNachFormat('bva 261111 Antrag.pdf', { ...o, reihenfolge })).not.toContain('bva');
     }
+    // verrutscht vor dem Projektcode: kein doppelter Kopf
+    expect(nameNachFormat('bva HVO 261111 Antrag.pdf', o)).toBe('HVO BAUA 261111 Antrag.pdf');
   });
   it('Rundlauf in allen 24 Reihenfolgen, auch mit einem Projektcode, der wie eine Plannummer aussieht (BS9)', () => {
     const teile = ['code', 'art', 'datum', 'nummer'] as const;

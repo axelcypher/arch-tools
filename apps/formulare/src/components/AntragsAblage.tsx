@@ -80,6 +80,13 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const { bereitUmschalten } = useAntrag.getState();
   const [vorschau, setVorschau] = useState<string | null | undefined>(undefined);
   const [alleEntfernt, setAlleEntfernt] = useState(false);
+  // „Erneut versuchen“: läuft gerade bzw. Zeit des letzten vergeblichen Versuchs
+  const [versuch, setVersuch] = useState<'laeuft' | number | null>(null);
+  const erneutVersuchen = async () => {
+    setVersuch('laeuft');
+    await useAntrag.getState().aktualisieren();
+    setVersuch(useAntrag.getState().dateienLesefehler ? Date.now() : null);
+  };
   // Ordner nicht lesbar und noch keine Liste von vorher: nichts zählen, nichts als fehlend melden
   const ohneListe = lesefehler && !dateien.length;
   const basis = verbinde(ablage.root, ablage.pfad);
@@ -97,7 +104,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       const m = markiert.find((b) => b.datei.toLowerCase() === d.pfad.toLowerCase());
       // zugehöriges Dokument: die verknüpfte bzw. gefundene Datei – bei einem Plansatz jede seiner Plandateien
       const dok = dokumentZu(dokumente, d.pfad);
-      return { d, fehler, zustand: bereitschaft(d, m, fehler), dok, seit: seitEinreichung(d, stand) };
+      return { d, fehler, zustand: bereitschaft(d, m, fehler), dok, seit: seitEinreichung(d, stand, schema) };
     });
   const seitNeu = liste.filter((x) => x.seit === 'neu').length;
   const seitGeaendert = liste.filter((x) => x.seit === 'geaendert').length;
@@ -150,11 +157,15 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
         {ordner}
       </p>
       {lesefehler && (
-        <p className="warning small-text fo-lesefehler" role="status">
-          Der Ordner {ordner} ist gerade nicht erreichbar (z. B. Netzlaufwerk noch nicht verbunden).
-          {liste.length ? ' Angezeigt wird der zuletzt gelesene Stand.' : ''} Die Liste aktualisiert sich von selbst, sobald er wieder lesbar ist.{' '}
-          <button className="small" onClick={() => void useAntrag.getState().aktualisieren()}>
-            Erneut versuchen
+        <p className="warning small-text fo-lesefehler">
+          {/* nur der Text ist Statusmeldung, nicht der Knopf */}
+          <span role="status">
+            Ordner gerade nicht erreichbar (z. B. Netzlaufwerk nicht verbunden).
+            {liste.length ? ' Angezeigt wird der zuletzt gelesene Stand;' : ''} die Liste aktualisiert sich von selbst, sobald er wieder erreichbar ist.
+            {typeof versuch === 'number' && ` Noch nicht erreichbar (zuletzt versucht ${new Date(versuch).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}).`}
+          </span>{' '}
+          <button className="small" disabled={versuch === 'laeuft'} onClick={() => void erneutVersuchen()}>
+            {versuch === 'laeuft' ? 'Wird versucht …' : 'Erneut versuchen'}
           </button>
         </p>
       )}
@@ -181,7 +192,13 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           title={entfernt.length ? `Seit der Einreichung nicht mehr im Ordner:\n${entfernt.map((x) => x.pfad).join('\n')}` : undefined}
         >
           <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} – Stand festgehalten
-          {lesefehler ? ' · Vergleich mit dem Ordner gerade nicht möglich' : seitText ? ` · ${seitText} seit der Einreichung` : ' · seitdem unverändert'}
+          {lesefehler
+            ? seitText
+              ? ` · zuletzt gelesen: ${seitText} – Vergleich gerade nicht möglich`
+              : ' · Vergleich mit dem Ordner gerade nicht möglich'
+            : seitText
+              ? ` · ${seitText} seit der Einreichung`
+              : ' · seitdem unverändert'}
         </p>
       )}
       {stand && entfernt.length > 0 && (
@@ -198,7 +215,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           {entfernt.length > 3 && (
             <li>
               <button className="pk-nav-mehr" aria-expanded={alleEntfernt} onClick={() => setAlleEntfernt(!alleEntfernt)}>
-                {alleEntfernt ? 'weniger zeigen' : `${entfernt.length - 2} weitere zeigen`}
+                {entfernt.length - 2} weitere – {alleEntfernt ? 'verbergen' : 'zeigen'}
               </button>
             </li>
           )}

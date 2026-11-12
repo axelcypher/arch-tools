@@ -1298,7 +1298,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(host.querySelector('.fo-stand-entfernt')!.textContent).toContain('entfernt BS9 BAUA 261101 01 Bauantrag.pdf');
   });
 
-  it('Antragsstand: viele entfernte Dateien – zwei Namen, der Rest aufklappbar (auch per Tastatur), alle im Tooltip', async () => {
+  it('Antragsstand: viele entfernte Dateien – zwei Namen, der Rest über einen Knopf mit aria-expanded, alle im Tooltip', async () => {
     const ordner = `${PROJEKT}/TÖB/BAUA 2`;
     const plaene = [1, 2, 3, 4, 5].map((n) => `BS9 BAUA 261101 GP-0${n} Plan.pdf`);
     for (const n of plaene) ds.dateien.set(`${ordner}/${n}`, new Uint8Array([1]));
@@ -1313,12 +1313,12 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     const zeilen = () => [...host.querySelectorAll('.fo-stand-entfernt li')].map((l) => l.textContent);
     expect(zeilen()).toHaveLength(3);
     const mehr = host.querySelector<HTMLButtonElement>('.fo-stand-entfernt button.pk-nav-mehr')!;
-    expect(mehr.textContent).toBe('2 weitere zeigen');
+    expect(mehr.textContent).toBe('2 weitere – zeigen');
     expect(mehr.getAttribute('aria-expanded')).toBe('false');
     await klick(mehr);
     expect(zeilen()).toHaveLength(5);
     expect(host.querySelector('.fo-stand-entfernt button.pk-nav-mehr')!.getAttribute('aria-expanded')).toBe('true');
-    expect(zeilen()[4]).toBe('weniger zeigen');
+    expect(zeilen()[4]).toBe('2 weitere – verbergen');
   });
 
   it('Antragsstand: ein vorübergehender Lesefehler verwirft weder „eingereicht“ noch den festgehaltenen Stand', async () => {
@@ -1352,8 +1352,10 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(host.querySelector('.fo-stand')!.textContent).not.toContain('entfernt');
     expect(host.querySelector('.fo-stand')!.textContent).not.toContain('unverändert');
     expect(host.querySelector('.fo-stand')!.textContent).toContain('Vergleich mit dem Ordner gerade nicht möglich');
-    expect(host.querySelector('.fo-lesefehler')!.textContent).toContain('ist gerade nicht erreichbar');
+    expect(host.querySelector('.fo-lesefehler')!.textContent).toContain('Ordner gerade nicht erreichbar');
     expect(host.querySelector('.fo-lesefehler')!.textContent).toContain('zuletzt gelesene Stand');
+    // nur der Text ist Statusmeldung, nicht der Knopf
+    expect(host.querySelector('.fo-lesefehler [role="status"] button')).toBeNull();
     expect(host.querySelector('.fo-bereit-kopf')!.textContent).toContain('0 von 2 bereit');
     // beim nächsten Lesen: weiter derselbe Stand, die neue Datei ist „neu seit der Einreichung“
     await act(() => useAntrag.getState().aktualisieren());
@@ -1388,6 +1390,87 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect((antragIn('BAUA 2')?.stand as { tag: string; zurueckgesetzt?: true }).tag).toBe('2026-11-03');
     expect((antragIn('BAUA 2')?.stand as { zurueckgesetzt?: true }).zurueckgesetzt).toBeUndefined();
     expect(host.querySelector('.fo-stand')!.textContent).toContain('1 geändert seit der Einreichung');
+  });
+
+  it('„Erneut versuchen“: läuft sichtbar, bleibt der Ordner unerreichbar, steht die Zeit des Versuchs da', async () => {
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Eingangsbestätigung.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await klick(knopfGenau(host, 'Antrag'));
+    const liste = ds.liste.bind(ds);
+    let gesperrt = true;
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (gesperrt && pfad.endsWith('/TÖB/BAUA 2') && tiefe === 1) throw new Error('Netzlaufwerk nicht erreichbar');
+      return liste(pfad, tiefe);
+    };
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    const knopf = () => host.querySelector<HTMLButtonElement>('.fo-lesefehler button')!;
+    expect(knopf().textContent).toBe('Erneut versuchen');
+    await klick(knopf());
+    await warte();
+    expect(host.querySelector('.fo-lesefehler')!.textContent).toMatch(/Noch nicht erreichbar \(zuletzt versucht \d{2}:\d{2}\)/);
+    // wieder erreichbar: die Warnung verschwindet
+    gesperrt = false;
+    await klick(knopf());
+    await warte();
+    expect(host.querySelector('.fo-lesefehler')).toBeNull();
+  });
+
+  it('Antragsstand: ändert sich nur der Tag (älterer Nachweis, Datum von Hand), bleibt der Stand – „entfernt“ geht nicht verloren', async () => {
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 Lageplan.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261110 Eingangsbestätigung.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await klick(knopfGenau(host, 'Antrag'));
+    expect((antragIn('BAUA 2')?.stand as { tag: string }).tag).toBe('2026-11-10');
+    // der Lageplan verschwindet, dann taucht das Antragsprotokoll vom 03.11. auf
+    ds.dateien.delete(`${ordner}/BS9 BAUA 261101 Lageplan.pdf`);
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Antragsprotokoll.pdf`, new Uint8Array([1]));
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    const stand = antragIn('BAUA 2')?.stand as { tag: string; dateien: { pfad: string }[] };
+    expect(stand.tag).toBe('2026-11-03');
+    expect(stand.dateien.map((x) => x.pfad)).toContain('BS9 BAUA 261101 Lageplan.pdf');
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('Eingereicht am 03.11.2026');
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('1 entfernt');
+    // von Hand auf einen späteren Tag: Status und Stand zeigen denselben Tag, die Einträge bleiben
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-12' }));
+    await warte();
+    expect((antragIn('BAUA 2')?.stand as { tag: string }).tag).toBe('2026-11-12');
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('Eingereicht am 12.11.2026');
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('1 entfernt');
+  });
+
+  it('Datum von Hand: erst beim Verlassen des Felds übernommen, unplausible Zwischenstände („0002“) zählen nicht', async () => {
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-03' }));
+    await warte();
+    await klick(antragsdaten(host));
+    const feld = () => host.querySelector<HTMLInputElement>('input[aria-label="eingereicht am"]')!;
+    const tippen = async (wert: string) =>
+      act(async () => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+        setter.call(feld(), wert);
+        feld().dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    for (const w of ['0002-11-03', '0020-11-03', '0202-11-03']) await tippen(w);
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
+    // unplausibel verlassen: der vorige Tag gilt wieder
+    await act(async () => void feld().dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+    await warte();
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
+    expect(feld().value).toBe('2026-11-03');
+    expect((antragIn('BAUA 2')?.stand as { tag: string; dateien: unknown[] }).dateien).toHaveLength(1);
+    // gültig, mit Enter übernommen
+    await tippen('2026-11-04');
+    await act(async () => void feld().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    await warte();
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-04' });
   });
 
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {

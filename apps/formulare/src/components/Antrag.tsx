@@ -130,6 +130,34 @@ export function umfangZeigen() {
   requestAnimationFrame(() => document.querySelector('.pu-umfang')?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }));
 }
 
+/**
+ * Tag der Einreichung von Hand: übernommen erst beim Verlassen des Felds bzw. mit Enter – Zwischenstände beim Tippen
+ * des Jahres („0002-11-03“) zählen nicht. Nur Tage ab 2000 und nicht in der Zukunft; sonst gilt wieder der vorige.
+ */
+function EinreichungsDatum({ wert, onSetzen }: { wert: string; onSetzen: (tag: string) => void }) {
+  const [text, setText] = useState(wert);
+  const heute = tagVon(new Date());
+  const gueltig = (t: string) => /^\d{4}-\d{2}-\d{2}$/.test(t) && t >= '2000-01-01' && t <= heute;
+  const uebernehmen = () => {
+    if (!gueltig(text)) setText(wert);
+    else if (text !== wert) onSetzen(text);
+  };
+  return (
+    <input
+      type="date"
+      value={text}
+      min="2000-01-01"
+      max={heute}
+      aria-label="eingereicht am"
+      aria-invalid={text !== '' && !gueltig(text)}
+      title="Tag der Einreichung (ab 2000, nicht in der Zukunft) – übernommen beim Verlassen des Felds oder mit Enter"
+      onChange={(e) => setText(e.target.value)}
+      onBlur={uebernehmen}
+      onKeyDown={(e) => e.key === 'Enter' && uebernehmen()}
+    />
+  );
+}
+
 /** Status des aktiven Antrags: erkannt oder von Hand gesetzt; eingereicht = gesperrt (Nachtrag anlegen) */
 function AntragStatus() {
   const projekt = useFormulare((s) => s.projekt);
@@ -157,7 +185,7 @@ function AntragStatus() {
           {wirksam
             ? `${wirksam.manuell ? 'Von Hand gesetzt' : `Erkannt an ${wirksam.datei}`}. Der Antrag ist gesperrt: Formulare nur ansehen, Antragsdaten, Export und „bereit“ bleiben, wie eingereicht. Änderungen kommen in einen Nachtrag.`
             : manuell
-              ? 'Von Hand auf „in Arbeit“ gesetzt – ein Antragsprotokoll bzw. eine Eingangsbestätigung im Antragsordner wird nicht beachtet.'
+              ? 'Von Hand auf „in Arbeit“ gesetzt – ein Antragsprotokoll bzw. eine Eingangsbestätigung im Antragsordner wird nicht beachtet. Datum und Stand der Einreichung bleiben gespeichert.'
               : 'Wird automatisch eingereicht, sobald ein Antragsprotokoll bzw. eine Eingangsbestätigung im Ordner des Antrags liegt.'}
         </span>
       </div>
@@ -173,7 +201,7 @@ function AntragStatus() {
         {wahl === 'eingereicht' && (
           <label>
             <span className="field-label">eingereicht am</span>
-            <input type="date" value={manuell?.datum ?? ''} aria-label="eingereicht am" onChange={(e) => e.target.value && setzen('eingereicht', e.target.value)} />
+            <EinreichungsDatum key={manuell?.datum ?? ''} wert={manuell?.datum ?? ''} onSetzen={(t) => setzen('eingereicht', t)} />
           </label>
         )}
         {wirksam && (

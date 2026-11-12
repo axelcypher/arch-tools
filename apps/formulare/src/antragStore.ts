@@ -159,7 +159,7 @@ interface AntragState {
   dateien: Eintrag[];
   /** der Ordner der aktiven Fassung war beim letzten Lesen da, aber nicht lesbar (dann gilt die zuletzt gelesene Liste) */
   dateienLesefehler: boolean;
-  /** Ordner, aus dem `dateien` stammt */
+  /** Ordner (mit der Ablage), aus dem `dateien` stammt */
   dateienOrdner: string | null;
   /** Quellen externer Dokumente: Ordner (relativ) → Dateien darin */
   quellen: Record<string, Eintrag[]>;
@@ -535,9 +535,15 @@ export const useAntrag = create<AntragState>((set, get) => {
     // an einem anderen Tag hält ihn neu fest.
     for (const [name, a] of Object.entries(antraege)) {
       const ein = eingereichtVon(a);
-      // neu festhalten: noch keiner, nach dem Zurücksetzen an einem anderen Tag, oder der Tag der Einreichung liegt früher
-      // (von Hand berichtigt, ein älterer Nachweis aufgetaucht)
-      if (ein && (!a.stand || (a.stand.zurueckgesetzt && a.stand.tag !== ein.datum) || ein.datum < a.stand.tag) && listen[name]) {
+      // neu festhalten nur, wenn es noch keinen gibt oder der Antrag nach dem Zurücksetzen an einem anderen Tag
+      // eingereicht wird; ändert sich nur der Tag (von Hand berichtigt, ein älterer Nachweis aufgetaucht, der erste
+      // verschwunden), wird der Stand neu beschriftet – seine Einträge bleiben, damit „geändert“ und „entfernt“ nicht
+      // verloren gehen
+      if (ein && a.stand && !a.stand.zurueckgesetzt && a.stand.tag !== ein.datum) {
+        antraege[name] = { ...a, stand: { ...a.stand, tag: ein.datum } };
+        geaendert = true;
+        log.info(`${name}: Tag der Einreichung jetzt ${ein.datum} (Stand bleibt)`);
+      } else if (ein && (!a.stand || (a.stand.zurueckgesetzt && a.stand.tag !== ein.datum)) && listen[name]) {
         antraege[name] = { ...a, stand: standAus(listen[name], ein.datum) };
         geaendert = true;
         log.info(`${name}: Antragsstand vom ${ein.datum} festgehalten (${antraege[name].stand!.dateien.length} Dateien)`);
@@ -782,7 +788,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     laden: async () => {
       const { ds, projekt, basis } = ctx();
       if (!ds || !projekt) {
-        set({ projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [] });
+        set({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [] });
         return;
       }
       set({ laedt: true });
@@ -855,7 +861,7 @@ export const useAntrag = create<AntragState>((set, get) => {
           // die Ablage das an und meldet nichts als „entfernt“
           dateienLesefehler = !!get().fassungen.find((f) => f.name === aktiveFassung(get(), projekt))?.vorhanden;
           // die zuletzt gelesene Liste desselben Ordners bleibt stehen – sonst sähe alles wie gelöscht aus
-          if (dateienLesefehler && get().dateienOrdner === antragsOrdner(get(), projekt)) dateien = get().dateien;
+          if (dateienLesefehler && get().dateienOrdner === verbinde(basis, antragsOrdner(get(), projekt))) dateien = get().dateien;
         }
         const ordner = new Set((get().projektdatei?.umfang ?? []).filter((u) => u.art !== 'intern').map((u) => quelleVonEintrag(u, e)));
         for (const o of ordner) {
@@ -888,7 +894,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         }
       }
       if (useFormulare.getState().projekt !== projekt) return;
-      set({ dateien, dateienLesefehler, dateienOrdner: dateienLesefehler && !dateien.length ? null : antragsOrdner(get(), projekt), quellen });
+      set({ dateien, dateienLesefehler, dateienOrdner: dateienLesefehler && !dateien.length ? null : basis ? verbinde(basis, antragsOrdner(get(), projekt)) : null, quellen });
       await antragStandPflegen(eingereicht, listen);
       // nach Export, neuer Fassung, Verknüpfen … oder von außen: auch der Projektordner-Baum liest neu
       useFormulare.getState().ordnerNeuLesen();
@@ -1298,7 +1304,8 @@ useFormulare.subscribe((s, vorher) => {
   const schemaNeu = s.namensschemaBuero !== vorher.namensschemaBuero || (!!dieselbe && schemaDerProjektdatei(s.oap as Exclude<OapStand, 'fehlt' | null>) !== schemaDerProjektdatei(vorher.oap as Exclude<OapStand, 'fehlt' | null>));
   if (s.projekt !== vorher.projekt || s.ablage !== vorher.ablage || s.ds !== vorher.ds) {
     zerlegt.clear();
-    if (s.projekt !== vorher.projekt) useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [] });
+    if (s.projekt !== vorher.projekt)
+      useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [] });
     void useAntrag.getState().laden();
   } else if (s.oap !== vorher.oap && s.oap && s.oap !== 'fehlt' && (!vorher.oap || (vorher.oap !== 'fehlt' && vorher.oap.pfad !== s.oap.pfad))) {
     // Projektdatei erstmals gelesen bzw. eine andere gewählt: neu laden – dabei entstehen fehlende Anträge (und werden

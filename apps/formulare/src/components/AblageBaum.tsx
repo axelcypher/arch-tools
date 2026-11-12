@@ -1,9 +1,9 @@
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { istHilfsdatei } from '../antrag';
 import { useEffect, useRef, useState } from 'react';
 import { einfuegeStelle, zeigerZiehen } from '@core/ui/ziehen';
 import type { AblageOrdner } from '../ablage';
 import { dateiArt, ebenenSchluessel, nachReihenfolge, sichtbarkeit } from '../ablage';
+import { istHilfsdatei } from '../antrag';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
