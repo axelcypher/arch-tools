@@ -4,6 +4,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Paket } from '@core/baurecht/paket';
 import { paketAusDateien } from '@core/baurecht/paket';
+import type { Fassung, QuellenRef } from '@core/recht/typen';
 
 export const WURZEL = fileURLToPath(new URL('..', import.meta.url));
 
@@ -24,4 +25,13 @@ export function paketDateien(): Record<string, unknown> {
 export function paketLaden(): Paket {
   const version = (JSON.parse(readFileSync(join(WURZEL, 'package.json'), 'utf8')) as { version: string }).version;
   return paketAusDateien(paketDateien(), version);
+}
+
+/**
+ * Quelle ohne eigenes Fassungsdatum: gesetze-im-internet.de nennt nur den Stand des Abrufs, eine Datei (Satzung als PDF
+ * oder Seite) ohne erkennbares Datum bekommt das Datum des Abrufs. Dort ist „neuere Fassung als die Regeldatei“ kein
+ * Befund – eine Änderung zeigen nur die Prüfsummen der Absätze.
+ */
+export function ohneFassungsdatum(quelle: QuellenRef, f: Pick<Fassung, 'fassung'>): boolean {
+  return quelle.art === 'gii' || (quelle.art === 'datei' && !f.fassung.startsWith('vom '));
 }

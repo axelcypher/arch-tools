@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { holen } from '@core/recht/netz';
 import { fassungHolen } from '@core/recht/quellen';
-import { paketLaden } from './laden';
+import { ohneFassungsdatum, paketLaden } from './laden';
 
 const live = !!process.env.LIVE;
 
@@ -29,7 +29,8 @@ describe.skipIf(!live)('Rechtsstand der Regeln', () => {
             if (!f.summen[fs]) probleme.push(`${fs}: steht nicht im Text`);
             else if (r.stand?.[fs] && r.stand[fs] !== f.summen[fs]) probleme.push(`${fs}: Text geändert`);
           }
-        if (f.gueltigAb > regel.fassung && def.quelle.art !== 'gii') probleme.push(`neue Fassung ab ${f.gueltigAb} (Regeldatei: ${regel.fassung}) → npm run fassung`);
+        // gii nennt nur das Datum des Abrufs; Dateien ohne erkennbares Satzungsdatum ebenso – dort zeigen nur die Prüfsummen eine Änderung
+        if (f.gueltigAb > regel.fassung && !ohneFassungsdatum(def.quelle, f)) probleme.push(`neue Fassung ab ${f.gueltigAb} (Regeldatei: ${regel.fassung}) → npm run fassung`);
         expect(probleme, `${def.kurz}: Regeln nachziehen`).toEqual([]);
       });
     }

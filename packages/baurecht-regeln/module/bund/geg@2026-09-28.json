@@ -161,7 +161,22 @@
             "$": "errichtung"
           },
           {
-            "$": "wohngebaeude"
+            "oder": [
+              {
+                "$": "wohngebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "$": "nichtwohngebaeude"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -179,7 +194,8 @@
       "stand": {
         "15/1": "dc0fa608",
         "15/2": "fcc6fb9e"
-      }
+      },
+      "hinweis": "Wohnteile eines Nichtwohngebäudes mit nicht unerheblichem Anteil werden getrennt als Wohngebäude behandelt (§ 106 Abs. 2)."
     },
     "16": {
       "titel": "Baulicher Wärmeschutz",
@@ -189,7 +205,22 @@
             "$": "errichtung"
           },
           {
-            "$": "wohngebaeude"
+            "oder": [
+              {
+                "$": "wohngebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "$": "nichtwohngebaeude"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -205,7 +236,8 @@
       },
       "stand": {
         "16": "0a2ba5ec"
-      }
+      },
+      "hinweis": "Wohnteile eines Nichtwohngebäudes mit nicht unerheblichem Anteil werden getrennt als Wohngebäude behandelt (§ 106 Abs. 2)."
     },
     "18": {
       "titel": "Gesamtenergiebedarf",
@@ -215,7 +247,22 @@
             "$": "errichtung"
           },
           {
-            "$": "nichtwohngebaeude"
+            "oder": [
+              {
+                "$": "nichtwohngebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "$": "wohngebaeude"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -233,7 +280,8 @@
       "stand": {
         "18/1": "2500c672",
         "18/2": "ac4390f2"
-      }
+      },
+      "hinweis": "Läden, Büros oder Praxen in einem Wohngebäude mit nicht unerheblichem Anteil werden getrennt als Nichtwohngebäude behandelt (§ 106 Abs. 1)."
     },
     "19": {
       "titel": "Baulicher Wärmeschutz",
@@ -243,7 +291,22 @@
             "$": "errichtung"
           },
           {
-            "$": "nichtwohngebaeude"
+            "oder": [
+              {
+                "$": "nichtwohngebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "$": "wohngebaeude"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -259,7 +322,8 @@
       },
       "stand": {
         "19": "89a42029"
-      }
+      },
+      "hinweis": "Läden, Büros oder Praxen in einem Wohngebäude mit nicht unerheblichem Anteil werden getrennt als Nichtwohngebäude behandelt (§ 106 Abs. 1)."
     },
     "36": {
       "titel": "Anforderungen an ein bestehendes Gebäude bei Änderung",
@@ -331,6 +395,199 @@
       "gilt": {
         "und": [
           {
+            "m": "Vorhaben",
+            "in": [
+              "Errichtung",
+              "Änderung",
+              "Nutzungsänderung"
+            ]
+          },
+          {
+            "f": "vorhaben.heizung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Wird eine Heizungsanlage eingebaut oder ersetzt, sind für die gewählte Option (Abs. 2) die Maßgaben der §§ 43 bis 46 zu beachten – bei bestehenden Gebäuden unmittelbar, bei Neubauten die §§ 42 bis 45 entsprechend (§ 10 Abs. 2 Nr. 3).",
+      "fundstellen": [
+        "42/1",
+        "42/2"
+      ],
+      "hinweis": "Die frühere 65-%-Regel (§ 71) ist mit der Änderung vom 23.07.2026 weggefallen.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "42/1": "b3688bf0",
+        "42/2": "78917587"
+      },
+      "verweise": [
+        "bund/geg/10",
+        "bund/geg/43",
+        "bund/geg/44",
+        "bund/geg/45",
+        "bund/geg/46"
+      ]
+    },
+    "43": {
+      "titel": "Einbau einer Heizungsanlage, die mit Gas, Heizöl oder Flüssiggas beschickt wird",
+      "gilt": {
+        "und": [
+          {
+            "und": [
+              {
+                "m": "Vorhaben",
+                "in": [
+                  "Errichtung",
+                  "Änderung",
+                  "Nutzungsänderung"
+                ]
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "f": "technik.heizung_fossil",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "vorhaben.heizung",
+            "ist": false
+          },
+          {
+            "f": "technik.heizung_fossil",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Neue Gas-, Öl- oder Flüssiggasheizungen (nach dem 29.07.2026): ab 2029 mindestens 10 %, ab 2030 15 %, ab 2035 30 %, ab 2040 60 % der Wärme aus Biomethan, Bioöl, biogenem Flüssiggas oder Wasserstoff; anrechenbar Solarthermie und Lüftung mit Wärmerückgewinnung (Abs. 1–5).",
+      "fundstellen": [
+        "43/1",
+        "43/3",
+        "43/5"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Bei Neubauten über § 10 Abs. 2 Nr. 3 entsprechend. Eine Grüngas-/Grünheizölquote für Inverkehrbringer ist angekündigt (§ 42a).",
+      "stand": {
+        "43/1": "18ac08d3",
+        "43/3": "0c811a42",
+        "43/5": "614bbbcf"
+      }
+    },
+    "44": {
+      "titel": "Einbau einer solarthermischen Anlage",
+      "gilt": {
+        "und": [
+          {
+            "und": [
+              {
+                "m": "Vorhaben",
+                "in": [
+                  "Errichtung",
+                  "Änderung",
+                  "Nutzungsänderung"
+                ]
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "f": "technik.solarthermie",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "vorhaben.heizung",
+            "ist": false
+          },
+          {
+            "f": "technik.solarthermie",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Kollektoren bzw. System einer solarthermischen Anlage mit flüssigem Wärmeträger müssen mit „Solar Keymark“ zertifiziert sein.",
+      "fundstellen": [
+        "44"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "44": "9b642c40"
+      }
+    },
+    "45": {
+      "titel": "Einbau einer Heizungsanlage zur Nutzung fester Biomasse",
+      "gilt": {
+        "und": [
+          {
+            "und": [
+              {
+                "m": "Vorhaben",
+                "in": [
+                  "Errichtung",
+                  "Änderung",
+                  "Nutzungsänderung"
+                ]
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "f": "technik.biomasse",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "vorhaben.heizung",
+            "ist": false
+          },
+          {
+            "f": "technik.biomasse",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Feste Biomasse nur in einem Biomasseofen mit Wasser als Wärmeträger oder einem Biomassekessel und nur mit zugelassenen Brennstoffen (Abs. 1); Biomasse-Hybridheizungen erfüllen § 43 Abs. 1 (Abs. 2).",
+      "fundstellen": [
+        "45/1",
+        "45/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "45/1": "5d21b72c",
+        "45/2": "3b38e43c"
+      }
+    },
+    "46": {
+      "titel": "Einbau einer Stromdirektheizung",
+      "gilt": {
+        "und": [
+          {
             "oder": [
               {
                 "$": "aenderung"
@@ -343,21 +600,79 @@
           {
             "f": "vorhaben.heizung",
             "ist": true
+          },
+          {
+            "f": "technik.stromdirekt",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "wohngebaeude"
+              },
+              {
+                "f": "gebaeude.wohnungen",
+                "min": 1
+              },
+              {
+                "f": "gebaeude.gemischt",
+                "ist": true
+              }
+            ]
           }
         ]
       },
-      "grund": "Wird in einem bestehenden Gebäude eine Heizungsanlage ersetzt, sind für die gewählte Option (Abs. 2) die Maßgaben der §§ 43 bis 46 zu beachten – z. B. die steigende Quote an Biomethan bzw. grünen Brennstoffen bei neuen Gas- und Ölheizungen (§ 43).",
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "vorhaben.heizung",
+            "ist": false
+          },
+          {
+            "f": "technik.stromdirekt",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Stromdirektheizung in einem bestehenden Gebäude mit Wohnungen nur, wenn der bauliche Wärmeschutz die Anforderungen der §§ 16 und 19 um mindestens 30 % unterschreitet (Abs. 1) – nicht beim Austausch einer Einzelraum-Stromdirektheizung (Abs. 2).",
       "fundstellen": [
-        "42/1",
-        "42/2"
+        "46/1",
+        "46/2"
       ],
-      "hinweis": "Die frühere 65-%-Regel (§ 71) ist mit der Änderung vom 23.07.2026 weggefallen. Für Neubauten gelten die §§ 42 bis 45 über § 10 Abs. 2 Nr. 3 entsprechend.",
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Ausgenommen Gebäude mit höchstens zwei Wohnungen, von denen der Eigentümer eine selbst bewohnt (Abs. 1 Satz 2). Beim Neubau gilt § 10 Abs. 4 (45 %).",
+      "stand": {
+        "46/1": "1e08d810",
+        "46/2": "72c1a9db"
+      }
+    },
+    "80": {
+      "titel": "Ausstellung und Verwendung von Energieausweisen",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "pruefen": {
+        "grund": "Bei Änderung nach § 36, wenn für das ganze Gebäude nach § 38 gerechnet wird, ist ebenfalls ein Energiebedarfsausweis auszustellen (Abs. 2).",
+        "wenn": {
+          "n": "bund/geg/36",
+          "ampel": [
+            "rot"
+          ]
+        }
+      },
+      "grund": "Für ein neues Gebäude ist nach Fertigstellung ein Energiebedarfsausweis auszustellen und dem Eigentümer zu übergeben (Abs. 1); bei Änderungen mit Gesamtberechnung nach § 38 ebenso (Abs. 2).",
+      "fundstellen": [
+        "80/1",
+        "80/2"
+      ],
       "behoerde": {
         "nie": true
       },
       "stand": {
-        "42/1": "b3688bf0",
-        "42/2": "78917587"
+        "80/1": "cd3a181a",
+        "80/2": "d96ac191"
       }
     },
     "92": {
@@ -386,6 +701,15 @@
       "stand": {
         "92/1": "c3ae78de",
         "92/2": "96dc21b4"
+      },
+      "pruefen": {
+        "grund": "Bei Änderung nach § 36 Satz 1 ist eine Erfüllungserklärung abzugeben, wenn für das ganze Gebäude nach § 38 gerechnet wird (Abs. 2 Satz 1) – im Einzelfall prüfen.",
+        "wenn": {
+          "n": "bund/geg/36",
+          "ampel": [
+            "rot"
+          ]
+        }
       }
     },
     "105": {
@@ -411,6 +735,61 @@
       },
       "stand": {
         "105": "7f010a9f"
+      }
+    },
+    "106": {
+      "titel": "Gemischt genutzte Gebäude",
+      "gilt": {
+        "und": [
+          {
+            "m": "Vorhaben",
+            "in": [
+              "Errichtung",
+              "Änderung",
+              "Nutzungsänderung"
+            ]
+          },
+          {
+            "f": "gebaeude.gemischt",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.gemischt",
+        "ist": false
+      },
+      "grund": "Teile eines Wohngebäudes mit wesentlich anderer Nutzung und nicht unerheblichem Flächenanteil sind getrennt als Nichtwohngebäude zu behandeln, Wohnteile eines Nichtwohngebäudes getrennt als Wohngebäude (Abs. 1, 2).",
+      "fundstellen": [
+        "106/1",
+        "106/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "verweise": [
+        "bund/geg/15",
+        "bund/geg/18"
+      ],
+      "stand": {
+        "106/1": "ac34666c",
+        "106/2": "218f839f"
+      }
+    },
+    "42a": {
+      "titel": "Grüngas-/Grünheizölquote",
+      "gilt": {
+        "nie": true
+      },
+      "grund": "Auftrag an den Gesetzgeber (Quote für Inverkehrbringer von Gas und Öl ab 2045) – keine Pflicht aus dem Bauvorhaben.",
+      "fundstellen": [
+        "42a"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "42a": "3b58bfca"
       }
     }
   }

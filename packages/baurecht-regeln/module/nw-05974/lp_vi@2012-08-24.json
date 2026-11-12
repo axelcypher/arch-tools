@@ -11,11 +11,35 @@
         "ist": "VI"
       },
       {
-        "$": "kreis_soest_aussen"
+        "oder": [
+          {
+            "$": "kreis_soest_aussen"
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "bplan_jeder"
+                  },
+                  {
+                    "$": "satzung_baugb"
+                  }
+                ]
+              },
+              {
+                "nicht": {
+                  "f": "schutz.landschaftsplan",
+                  "ist": false
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   },
-  "geltungGrund": "nur im Außenbereich im Geltungsbereich des Landschaftsplans VI „Werl“ (außerhalb der im Zusammenhang bebauten Ortsteile, der Bebauungspläne und der Innenbereichssatzungen)",
+  "geltungGrund": "nur im Außenbereich im Geltungsbereich des Landschaftsplans VI „Werl“ (außerhalb der im Zusammenhang bebauten Ortsteile); in Bebauungsplänen und Satzungen nach § 34 Abs. 4 BauGB nur, soweit sich der Landschaftsplan nach § 7 Abs. 2 LNatSchG darauf erstreckt",
   "paragrafen": {
     "C.1": {
       "titel": "Naturschutzgebiete (Festsetzungen C.1)",

@@ -202,11 +202,12 @@
             "$": "soest_aussen_bauen"
           },
           {
-            "$": "nichtwohngebaeude"
+            "f": "soest.schaufenster",
+            "ist": true
           }
         ]
       },
-      "grund": "Schaufenster nur im Erdgeschoss, Bezug zu den Fensterachsen, stehende bis quadratische Formate, Bekleben höchstens 30 % der Scheibe.",
+      "grund": "Schaufenster nur im Erdgeschoss, Bezug zu den Fensterachsen, stehende bis quadratische Formate, Bekleben höchstens 30 % der Scheibe – an jedem Gebäude mit Schaufenstern, auch an Wohn- und Geschäftshäusern.",
       "fundstellen": [
         "8/1",
         "8/2",
@@ -217,7 +218,8 @@
         "$": "nw_prueft_kern"
       },
       "entfaellt": {
-        "$": "wohngebaeude"
+        "f": "soest.schaufenster",
+        "ist": false
       },
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
@@ -239,11 +241,12 @@
             "$": "soest_aussen_bauen"
           },
           {
-            "$": "nichtwohngebaeude"
+            "f": "soest.vordach",
+            "ist": true
           }
         ]
       },
-      "grund": "Vordächer und Markisen nur im Erdgeschoss, Kragdächer unzulässig, Vordächer höchstens 1,50 m auskragend und transparent.",
+      "grund": "Vordächer und Markisen nur im Erdgeschoss, Kragdächer unzulässig, Vordächer höchstens 1,50 m auskragend und transparent – auch an Wohngebäuden.",
       "fundstellen": [
         "9/1",
         "9/2",
@@ -254,7 +257,8 @@
         "$": "nw_prueft_kern"
       },
       "entfaellt": {
-        "$": "wohngebaeude"
+        "f": "soest.vordach",
+        "ist": false
       },
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
@@ -444,12 +448,28 @@
     },
     "16": {
       "gilt": {
-        "f": "planung.abweichung",
-        "ist": true
+        "oder": [
+          {
+            "f": "planung.abweichung",
+            "ist": true
+          },
+          {
+            "f": "ortsrecht.abweichung",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
-        "f": "planung.abweichung",
-        "ist": false
+        "und": [
+          {
+            "f": "planung.abweichung",
+            "ist": false
+          },
+          {
+            "f": "ortsrecht.abweichung",
+            "ist": false
+          }
+        ]
       },
       "grund": "Abweichungen im Einzelfall (besondere Härte, besserer Einfügung, Intention der Satzung) – jede beabsichtigte Abweichung ist schriftlich und zeichnerisch zu begründen.",
       "fundstellen": [
@@ -471,8 +491,16 @@
       "gilt": {
         "und": [
           {
-            "f": "planung.abweichung",
-            "ist": true
+            "oder": [
+              {
+                "f": "planung.abweichung",
+                "ist": true
+              },
+              {
+                "f": "ortsrecht.abweichung",
+                "ist": true
+              }
+            ]
           },
           {
             "oder": [
@@ -490,8 +518,16 @@
         ]
       },
       "entfaellt": {
-        "f": "planung.abweichung",
-        "ist": false
+        "und": [
+          {
+            "f": "planung.abweichung",
+            "ist": false
+          },
+          {
+            "f": "ortsrecht.abweichung",
+            "ist": false
+          }
+        ]
       },
       "grund": "Abweichungen für architektonisch eigenständige Entwurfslösungen bei Neu-, Um- und Anbauten, wenn das Konzept durchkomponiert ist, sich in zeitgemäßer Formensprache auf die Umgebung bezieht und den Belangen der Denkmalbereichssatzung gerecht wird – detailliert schriftlich zu begründen.",
       "fundstellen": [
@@ -522,8 +558,16 @@
           {
             "und": [
               {
-                "f": "planung.abweichung",
-                "ist": true
+                "oder": [
+                  {
+                    "f": "planung.abweichung",
+                    "ist": true
+                  },
+                  {
+                    "f": "ortsrecht.abweichung",
+                    "ist": true
+                  }
+                ]
               },
               {
                 "oder": [
@@ -558,8 +602,16 @@
               "$": "aenderung"
             },
             {
-              "f": "planung.abweichung",
-              "ist": false
+              "und": [
+                {
+                  "f": "planung.abweichung",
+                  "ist": false
+                },
+                {
+                  "f": "ortsrecht.abweichung",
+                  "ist": false
+                }
+              ]
             }
           ]
         }

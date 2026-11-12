@@ -9,7 +9,7 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_vorhaben_gebaeude"
+            "$": "vorhaben_29"
           },
           {
             "$": "nw_verfahren_bekannt"

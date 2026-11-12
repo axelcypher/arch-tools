@@ -226,6 +226,31 @@
         "34/8": "be8591a4"
       }
     },
+    "39": {
+      "titel": "Allgemeiner Schutz wild lebender Tiere und Pflanzen",
+      "gilt": {
+        "f": "vorhaben.baeume_faellen",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "vorhaben.baeume_faellen",
+        "ist": false
+      },
+      "grund": "Bäume außerhalb von Wald und gärtnerisch genutzten Flächen, Hecken, Gebüsche und andere Gehölze nicht vom 1. März bis 30. September abschneiden, auf den Stock setzen oder beseitigen; schonende Form- und Pflegeschnitte sind zulässig (Abs. 5 Satz 1 Nr. 2).",
+      "fundstellen": [
+        "39/5"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Ausgenommen u. a. zulässige Bauvorhaben, wenn nur geringfügiger Gehölzbewuchs beseitigt werden muss, und nach § 15 zulässige Eingriffe (Abs. 5 Satz 2). Zusätzlich Artenschutz (§ 44) prüfen.",
+      "verweise": [
+        "bund/bnatschg/44"
+      ],
+      "stand": {
+        "39/5": "078054c7"
+      }
+    },
     "44": {
       "titel": "Vorschriften für besonders geschützte und bestimmte andere Tier- und Pflanzenarten",
       "gilt": {
@@ -293,10 +318,18 @@
           {
             "f": "schutz.lsg",
             "ist": true
+          },
+          {
+            "f": "schutz.naturdenkmal",
+            "ist": true
+          },
+          {
+            "f": "schutz.biotop",
+            "ist": true
           }
         ]
       },
-      "grund": "Von Verboten einer Schutzgebietsverordnung (Natur- oder Landschaftsschutzgebiet) und des Landesnaturschutzrechts ist für das Vorhaben eine Befreiung zu beantragen – aus überwiegendem öffentlichem Interesse oder bei unzumutbarer Belastung (Abs. 1).",
+      "grund": "Von Ge- und Verboten des BNatSchG, einer Schutzverordnung (Natur- oder Landschaftsschutzgebiet, Naturdenkmal, geschützter Landschaftsbestandteil) und des Landesnaturschutzrechts (z. B. gesetzlich geschützte Biotope) ist für das Vorhaben eine Befreiung zu beantragen – aus überwiegendem öffentlichem Interesse oder bei unzumutbarer Belastung (Abs. 1).",
       "fundstellen": [
         "67/1",
         "67/2"
@@ -308,6 +341,33 @@
       "stand": {
         "67/1": "2ca9b00c",
         "67/2": "54272a68"
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "schutz.nsg",
+            "ist": false
+          },
+          {
+            "f": "schutz.lsg",
+            "ist": false
+          },
+          {
+            "f": "schutz.naturdenkmal",
+            "ist": false
+          },
+          {
+            "f": "schutz.biotop",
+            "ist": false
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Geschützte Bäume (Baumschutzsatzung, Allee) bzw. Baumfällung: ob eine Befreiung nötig ist, hängt von der Schutzvorschrift ab (§ 29 BNatSchG, § 41 LNatSchG, Satzung) – im Einzelfall prüfen.",
+        "wenn": {
+          "f": "schutz.baum",
+          "ist": true
+        }
       }
     }
   }

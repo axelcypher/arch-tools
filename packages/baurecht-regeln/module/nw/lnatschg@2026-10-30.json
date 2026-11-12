@@ -344,6 +344,10 @@
               {
                 "f": "schutz.landschaftsplan",
                 "ist": true
+              },
+              {
+                "f": "schutz.naturdenkmal",
+                "ist": true
               }
             ]
           },
@@ -376,6 +380,10 @@
           {
             "f": "schutz.landschaftsplan",
             "ist": false
+          },
+          {
+            "f": "schutz.naturdenkmal",
+            "ist": false
           }
         ]
       },
@@ -388,6 +396,13 @@
       },
       "stand": {
         "75/1": "5eac14ee"
+      },
+      "pruefen": {
+        "grund": "Geschützte Bäume (Baumschutzsatzung, Allee) bzw. Baumfällung: ob eine Befreiung nötig ist, hängt von der Schutzvorschrift ab (§ 29 BNatSchG, § 41 LNatSchG, Satzung) – im Einzelfall prüfen.",
+        "wenn": {
+          "f": "schutz.baum",
+          "ist": true
+        }
       }
     }
   }

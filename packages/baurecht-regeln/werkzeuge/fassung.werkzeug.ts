@@ -14,7 +14,7 @@ import { expect, it } from 'vitest';
 import type { Regeldatei } from '@core/baurecht/typen';
 import { holen } from '@core/recht/netz';
 import { fassungHolen } from '@core/recht/quellen';
-import { paketLaden, WURZEL } from '../test/laden';
+import { ohneFassungsdatum, paketLaden, WURZEL } from '../test/laden';
 
 /** Ausgabe direkt auf die Konsole (vitest fängt console.log ab) */
 const ausgabe = (t = '') => void process.stdout.write(`${t}\n`);
@@ -32,6 +32,10 @@ it('neue Fassung anlegen', async () => {
   const letzte = l[l.length - 1].regel;
   const f = await fassungHolen(holen, { id: norm, kurz: def!.kurz, titel: def!.titel }, def!.quelle, { textAusPaket: async (p) => paket.texte.get(p) ?? null });
   if (f === 'unveraendert') return;
+  if (def!.quelle.art === 'datei' && ohneFassungsdatum(def!.quelle, f)) {
+    ausgabe(`${nur}: kein Satzungsdatum in der Datei erkennbar – keine neue Regeldatei; Änderungen zeigen die Prüfsummen (npm run stand)`);
+    return;
+  }
   if (f.gueltigAb <= letzte.fassung) {
     ausgabe(`${nur}: geltende Fassung ${f.gueltigAb} – keine neuere als die Regeldatei ${letzte.fassung}`);
     return;

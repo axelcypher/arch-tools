@@ -511,10 +511,18 @@
       "titel": "Die Gemeinde hat die Zurückstellung des Baugesuchs beantragt (§ 15 BauGB)",
       "gruppe": "planung",
       "typ": "janein",
-      "hilfe": "bei der Gemeinde erfragen, wenn ein Bebauungsplan aufgestellt wird",
+      "hilfe": "bei der Gemeinde erfragen, solange ein Bebauungsplan oder ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird – die Gemeinde kann die Zurückstellung auch noch nach Eingang des Bauantrags beantragen",
       "wenn": {
-        "f": "planung.planaufstellung",
-        "ist": true
+        "oder": [
+          {
+            "f": "planung.planaufstellung",
+            "ist": true
+          },
+          {
+            "f": "planung.fnp_verfahren",
+            "ist": true
+          }
+        ]
       }
     },
     "vorhaben.freiberuflich": {
@@ -544,6 +552,87 @@
       "gruppe": "grundstueck",
       "typ": "janein",
       "hilfe": "Anbauverbot bzw. Zustimmung der Straßenbaubehörde (§ 9 FStrG)"
+    },
+    "schutz.naturdenkmal": {
+      "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil betroffen",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§§ 28, 29 BNatSchG – festgesetzt durch Schutzverordnung oder Landschaftsplan (Festsetzungskarte); bei Bäumen auch der Kronentraufbereich. Baumschutzsatzungen siehe „Geschützte Bäume“"
+    },
+    "gebaeude.gemischt": {
+      "titel": "Gemischt genutzt: nicht unerheblicher Teil mit der jeweils anderen Nutzung",
+      "gruppe": "gebaeude",
+      "typ": "janein",
+      "frage": "Hat das Gebäude einen nicht unerheblichen Teil mit anderer Nutzung – Läden, Büros oder Praxen in einem Wohngebäude bzw. Wohnungen in einem Nichtwohngebäude?",
+      "hilfe": "Solche Teile werden nach § 106 GEG getrennt als Nichtwohn- bzw. Wohngebäude behandelt (z. B. Wohn- und Geschäftshaus)",
+      "wenn": {
+        "$": "gebaeude"
+      }
+    },
+    "technik.heizung_fossil": {
+      "titel": "Heizungsanlage mit Gas, Heizöl oder Flüssiggas (auch als Hybridheizung)",
+      "gruppe": "technik",
+      "typ": "janein",
+      "hilfe": "§ 43 GEG: steigender Anteil an Biomethan bzw. grünen Brennstoffen ab 2029; bei Neubauten über § 10 Abs. 2 Nr. 3 entsprechend",
+      "wenn": {
+        "f": "vorhaben.heizung",
+        "ist": true
+      }
+    },
+    "technik.solarthermie": {
+      "titel": "Solarthermische Anlage für Heizung oder Warmwasser",
+      "gruppe": "technik",
+      "typ": "janein",
+      "hilfe": "§ 44 GEG: Kollektoren mit „Solar Keymark“",
+      "wenn": {
+        "f": "vorhaben.heizung",
+        "ist": true
+      }
+    },
+    "technik.biomasse": {
+      "titel": "Heizungsanlage für feste Biomasse (Pellet- oder Holzkessel, wasserführender Ofen)",
+      "gruppe": "technik",
+      "typ": "janein",
+      "hilfe": "§ 45 GEG",
+      "wenn": {
+        "f": "vorhaben.heizung",
+        "ist": true
+      }
+    },
+    "technik.stromdirekt": {
+      "titel": "Stromdirektheizung (z. B. Elektro-, Infrarot- oder Nachtspeicherheizung als Heizung)",
+      "gruppe": "technik",
+      "typ": "janein",
+      "hilfe": "§ 46 GEG (bestehende Gebäude mit Wohnungen) bzw. § 10 Abs. 4 GEG (Neubau)",
+      "wenn": {
+        "f": "vorhaben.heizung",
+        "ist": true
+      }
+    },
+    "planung.fnp_verfahren": {
+      "titel": "Flächennutzungsplan mit Konzentrationszonen in Aufstellung (privilegiertes Vorhaben im Außenbereich)",
+      "gruppe": "planung",
+      "typ": "janein",
+      "frage": "Ist das Vorhaben nach § 35 Abs. 1 Nr. 2–6 BauGB privilegiert (z. B. Windenergie, Biogas, Tierhaltung) und hat die Gemeinde beschlossen, einen Flächennutzungsplan mit Konzentrationszonen aufzustellen, zu ändern oder zu ergänzen?",
+      "hilfe": "§ 15 Abs. 3 BauGB: dann kann die Gemeinde die Zurückstellung bis zu einem Jahr beantragen – bei der Gemeinde erfragen",
+      "wenn": {
+        "$": "aussen_planrecht"
+      }
+    },
+    "planung.umlegung": {
+      "titel": "Grundstück in einem Umlegungsgebiet (Umlegungsbeschluss bekannt gemacht)",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "§ 51 BauGB: Verfügungs- und Veränderungssperre – bei der Umlegungsstelle bzw. Gemeinde erfragen"
+    },
+    "vorhaben.stellplaetze_grundstueck": {
+      "titel": "Stellplätze oder Garagen auf dem Grundstück geplant (auch offene und notwendige Stellplätze)",
+      "gruppe": "grundstueck",
+      "typ": "janein",
+      "hilfe": "auch Stellplätze, die die Stellplatzsatzung bzw. die StellplatzVO verlangt – unabhängig davon, ob sie am Gebäude liegen (§ 12 BauNVO, Teil 5 SBauVO)",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
     }
   }
 }

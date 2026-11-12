@@ -94,17 +94,10 @@
         "$": "nw_pv_pflicht_stellplatz"
       },
       "entfaellt": {
-        "oder": [
-          {
-            "$": "wohngebaeude"
-          },
-          {
-            "f": "nw.stellplatzflaeche",
-            "max": 35
-          }
-        ]
+        "f": "nw.stellplatzflaeche",
+        "max": 35
       },
-      "grund": "PV über neuen Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für ein Nichtwohngebäude: mindestens 30 % der geeigneten Fläche.",
+      "grund": "PV über neuen Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für ein Nichtwohngebäude: mindestens 30 % der geeigneten Fläche – auch wenn die Stellplatzfläche selbst das Vorhaben ist.",
       "fundstellen": [
         "6/1",
         "6/2"
@@ -122,15 +115,8 @@
         "$": "nw_pv_pflicht_stellplatz"
       },
       "entfaellt": {
-        "oder": [
-          {
-            "$": "wohngebaeude"
-          },
-          {
-            "f": "nw.stellplatzflaeche",
-            "max": 35
-          }
-        ]
+        "f": "nw.stellplatzflaeche",
+        "max": 35
       },
       "pruefen": {
         "grund": "Entfällt die Pflicht (z. B. Stellplätze unmittelbar entlang öffentlicher Fahrbahnen), ist ersatzweise je fünf Stellplätze ein Laubbaum zu pflanzen (Abs. 4)."

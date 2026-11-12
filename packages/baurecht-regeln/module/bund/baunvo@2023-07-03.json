@@ -19,12 +19,26 @@
           },
           {
             "$": "satzung_baugb"
+          },
+          {
+            "und": [
+              {
+                "f": "planung.planaufstellung",
+                "ist": true
+              },
+              {
+                "nicht": {
+                  "f": "planung.planreife",
+                  "ist": false
+                }
+              }
+            ]
           }
         ]
       }
     ]
   },
-  "geltungGrund": "die BauNVO gilt über Festsetzungen eines Bebauungsplans (§ 1 Abs. 3) bzw. für die Art der Nutzung im Innenbereich (§ 34 Abs. 2 BauGB), nicht im Außenbereich und nicht für die Beseitigung",
+  "geltungGrund": "die BauNVO gilt über Festsetzungen eines Bebauungsplans (§ 1 Abs. 3), bei Planreife über die künftigen Festsetzungen (§ 33 BauGB) bzw. für die Art der Nutzung im Innenbereich (§ 34 Abs. 2 BauGB) – nicht im übrigen Außenbereich und nicht für die Beseitigung",
   "paragrafen": {
     "2": {
       "titel": "Kleinsiedlungsgebiete",
@@ -385,6 +399,10 @@
           },
           {
             "oder": [
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": true
+              },
               {
                 "f": "gebaeude.stellplaetze",
                 "min": 1
@@ -1007,6 +1025,10 @@
           },
           {
             "oder": [
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": true
+              },
               {
                 "f": "gebaeude.stellplaetze",
                 "min": 1

@@ -28,6 +28,19 @@
       "stand": {
         "4/1": "ebfe8137",
         "4/2": "fa82acd5"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Zufahrt, Erreichbarkeit für die Feuerwehr und Löschwasser müssen für die neue Nutzung gesichert sein (§ 60 Abs. 1); die Bauaufsicht prüft § 4 auch im vereinfachten Verfahren (§ 64 Abs. 1 Nr. 1 b) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        }
       }
     },
     "5": {
@@ -109,10 +122,11 @@
       "gilt": {
         "$": "nw_vorhaben_gebaeude"
       },
-      "grund": "Nicht überbaute Flächen wasseraufnahmefähig belassen und begrünen (keine Schottergärten, kein Kunstrasen).",
+      "grund": "Nicht überbaute Flächen wasseraufnahmefähig belassen und begrünen (keine Schottergärten, kein Kunstrasen); Veränderungen der Geländeoberfläche nur ohne Nachteile für Nachbarn, Verkehrsflächen und Ortsbild (Abs. 3).",
       "fundstellen": [
         "8/1",
-        "8/2"
+        "8/2",
+        "8/3"
       ],
       "behoerde": {
         "$": "nw_prueft_voll"
@@ -123,12 +137,20 @@
       "hinweis": "Bei Errichtung von Gebäuden mit mehr als drei Wohnungen ist ein Kleinkinderspielplatz anzulegen (Abs. 2), soweit kein nutzbarer Spielplatz in unmittelbarer Nähe geschaffen wird; die Gemeinde kann das durch Satzung regeln (§ 89 Abs. 1 Nr. 3).",
       "stand": {
         "8/1": "3e6f4d1a",
-        "8/2": "56e878e1"
+        "8/2": "56e878e1",
+        "8/3": "0ce27438"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen. Anlagen, die keine Gebäude sind (z. B. Stellplatzanlage, Mast): Abs. 1 gilt für bebaute Grundstücke, auch mit vergleichbaren baulichen Anlagen; Veränderungen der Geländeoberfläche nur ohne Nachteile für Nachbarn und Ortsbild (Abs. 3) – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nw_kein_gebaeude"
+            }
+          ]
         }
       }
     },
@@ -158,9 +180,9 @@
     },
     "14": {
       "gilt": {
-        "$": "nw_vorhaben_gebaeude"
+        "$": "vorhaben_29"
       },
-      "grund": "Brandschutz: Anlagen so anordnen, errichten und ändern, dass der Brandentstehung und -ausbreitung vorgebeugt wird und Rettung und Löscharbeiten möglich sind.",
+      "grund": "Brandschutz: Anlagen – auch solche, die keine Gebäude sind – so anordnen, errichten und ändern, dass der Brandentstehung und -ausbreitung vorgebeugt wird und Rettung und Löscharbeiten möglich sind; ausreichend Löschwasser.",
       "fundstellen": [
         "14"
       ],
@@ -319,8 +341,16 @@
             "$": "nw_vorhaben_gebaeude"
           },
           {
-            "f": "nw.grenzabstand_unter_2_5",
-            "ist": true
+            "oder": [
+              {
+                "f": "nw.grenzabstand_unter_2_5",
+                "ist": true
+              },
+              {
+                "f": "nw.landwirtschaft_angebaut",
+                "ist": true
+              }
+            ]
           }
         ]
       },
@@ -359,7 +389,7 @@
           ]
         }
       },
-      "grund": "Gebäudeabschlusswand an der Nachbargrenze oder mit weniger als 2,50 m Abstand: Brandwand bzw. in GK 1–3 Wand nach Abs. 3.",
+      "grund": "Gebäudeabschlusswand an der Nachbargrenze oder mit weniger als 2,50 m Abstand: Brandwand bzw. in GK 1–3 Wand nach Abs. 3 (Abs. 2 Nr. 1); Brandwand zwischen Wohngebäude und angebautem landwirtschaftlich genutztem Gebäude bzw. zwischen Wohn- und Betriebsteil (Abs. 2 Nr. 4).",
       "fundstellen": [
         "30/1",
         "30/2",
@@ -843,25 +873,9 @@
         "$": "nw_prueft_voll"
       },
       "pruefen": {
-        "grund": "Ob nach Lage (z. B. freistehend, exponiert), Bauart (z. B. weiche Bedachung) oder Nutzung eine Blitzschutzanlage nötig ist, im Einzelfall prüfen.",
+        "grund": "Ob nach Lage (z. B. freistehend, exponiert, Mast oder Turm), Bauart (z. B. weiche Bedachung) oder Nutzung eine Blitzschutzanlage nötig ist, im Einzelfall prüfen – das gilt auch für bauliche Anlagen, die keine Gebäude sind.",
         "wenn": {
-          "und": [
-            {
-              "$": "nw_vorhaben_gebaeude"
-            },
-            {
-              "nicht": {
-                "oder": [
-                  {
-                    "$": "sonderbau"
-                  },
-                  {
-                    "$": "gk_4_5"
-                  }
-                ]
-              }
-            }
-          ]
+          "$": "vorhaben_29"
         }
       },
       "stand": {
@@ -1304,18 +1318,40 @@
     },
     "64": {
       "gilt": {
-        "$": "vereinfacht"
+        "oder": [
+          {
+            "$": "vereinfacht"
+          },
+          {
+            "und": [
+              {
+                "$": "nutzungsaenderung"
+              },
+              {
+                "f": "vorhaben.nutzung_befristet",
+                "ist": true
+              },
+              {
+                "nicht": {
+                  "$": "aussen_planrecht"
+                }
+              }
+            ]
+          }
+        ]
       },
-      "grund": "Vereinfachtes Verfahren: Die Behörde prüft Planungsrecht (§§ 29–38 BauGB), §§ 4, 6, 48, 49 BauO NRW, örtliche Bauvorschriften, beantragte Abweichungen und sonstiges öffentliches Recht ohne eigenes Zulassungsverfahren; Brandschutz nur bei Sonderbauten.",
+      "grund": "Vereinfachtes Verfahren: Die Behörde prüft Planungsrecht (§§ 29–38 BauGB), §§ 4, 6, 48, 49 BauO NRW, örtliche Bauvorschriften, beantragte Abweichungen und sonstiges öffentliches Recht ohne eigenes Zulassungsverfahren; Brandschutz nur bei Sonderbauten. Befristete Nutzungsänderungen bis zwölf Monate außerhalb des Außenbereichs: Nutzungsänderungsanzeige einen Monat vor Aufnahme der Nutzung (Abs. 3).",
       "fundstellen": [
-        "64/1"
+        "64/1",
+        "64/3"
       ],
       "behoerde": {
         "immer": true
       },
       "hinweis": "Alles andere (z. B. Brandschutz bei Regelbauten, Wärme- und Schallschutz, baulicher Arbeitsschutz) liegt in der Verantwortung der Bauherrschaft und der Entwurfsverfassenden. Große Sonderbauten nach § 50 Abs. 2 gehören ins Baugenehmigungsverfahren (§ 65).",
       "stand": {
-        "64/1": "55cf994d"
+        "64/1": "55cf994d",
+        "64/3": "4b3c7b76"
       }
     },
     "65": {
@@ -1384,14 +1420,14 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_vorhaben_gebaeude"
+            "$": "vorhaben_29"
           },
           {
             "$": "nw_verfahren_bekannt"
           }
         ]
       },
-      "grund": "Bautechnische Nachweise für Standsicherheit, Brand-, Wärme- und Schallschutz.",
+      "grund": "Bautechnische Nachweise für Standsicherheit, Brand-, Wärme- und Schallschutz – für alle nicht verfahrensfreien Vorhaben, auch für bauliche Anlagen, die keine Gebäude sind (Abs. 1).",
       "fundstellen": [
         "68/1",
         "68/2",
@@ -1423,6 +1459,10 @@
           },
           {
             "f": "planung.befreiung",
+            "ist": true
+          },
+          {
+            "f": "ortsrecht.abweichung",
             "ist": true
           }
         ]

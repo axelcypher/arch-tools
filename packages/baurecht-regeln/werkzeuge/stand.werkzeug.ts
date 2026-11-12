@@ -18,7 +18,7 @@ import type { Regeldatei } from '@core/baurecht/typen';
 import { holen } from '@core/recht/netz';
 import { fassungHolen } from '@core/recht/quellen';
 import type { Fassung } from '@core/recht/typen';
-import { paketLaden, WURZEL } from '../test/laden';
+import { ohneFassungsdatum, paketLaden, WURZEL } from '../test/laden';
 
 /** Ausgabe direkt auf die Konsole (vitest fängt console.log ab) */
 const ausgabe = (t = '') => void process.stdout.write(`${t}\n`);
@@ -54,7 +54,7 @@ it('Prüfsummen eintragen', async () => {
         continue;
       }
       const neueste = dateien[dateien.length - 1];
-      if (f.gueltigAb > neueste.regel.fassung && def.quelle.art !== 'gii') meldungen.push(`${key}: geltende Fassung ${f.gueltigAb} ist neuer als die Regeldatei ${neueste.regel.fassung} → npm run fassung`);
+      if (f.gueltigAb > neueste.regel.fassung && !ohneFassungsdatum(def.quelle, f)) meldungen.push(`${key}: geltende Fassung ${f.gueltigAb} ist neuer als die Regeldatei ${neueste.regel.fassung} → npm run fassung`);
       const pfad = join(WURZEL, neueste.datei);
       const regel = JSON.parse(readFileSync(pfad, 'utf8')) as Regeldatei;
       let geaendert = false;
