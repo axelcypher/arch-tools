@@ -204,15 +204,11 @@
             "$": "nw_denkmalbezug"
           },
           {
-            "oder": [
-              {
-                "$": "vorhaben_oder_beseitigung"
-              }
-            ]
+            "$": "vorhaben_oder_beseitigung"
           },
           {
             "nicht": {
-              "$": "nw_mit_baugenehmigung"
+              "$": "nw_alles_genehmigt"
             }
           }
         ]
@@ -220,14 +216,14 @@
       "entfaellt": {
         "oder": [
           {
-            "$": "nw_mit_baugenehmigung"
+            "$": "nw_alles_genehmigt"
           },
           {
             "$": "nw_kein_denkmalbezug"
           }
         ]
       },
-      "grund": "Ohne Baugenehmigungsverfahren ist die denkmalrechtliche Erlaubnis (§§ 9, 10, 13, 15) gesondert in Textform mit den erforderlichen Unterlagen bei der Denkmalbehörde zu beantragen – auch für Maßnahmen in der engeren Umgebung eines Denkmals oder Denkmalbereichs.",
+      "grund": "Ohne Baugenehmigungsverfahren ist die denkmalrechtliche Erlaubnis (§§ 9, 10, 13, 15) gesondert in Textform mit den erforderlichen Unterlagen bei der Denkmalbehörde zu beantragen – auch für Maßnahmen in der engeren Umgebung eines Denkmals oder Denkmalbereichs. Beim Abbruch mit Ersatzbau erfasst die Baugenehmigung den Abbruch nur, wenn er verfahrensfrei ist und mit beantragt wurde (§ 62 Abs. 3 Satz 2 BauO NRW).",
       "fundstellen": [
         "24/1",
         "24/7"

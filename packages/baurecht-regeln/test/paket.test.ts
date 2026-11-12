@@ -1094,9 +1094,10 @@ describe('Fälle aus dem Fachreview', () => {
     expect(neu(ids[1])).toBe('rot');
     expect(neu(ids[2])).toBe('rot');
     expect(neu(ids[0])).not.toBe('gruen');
-    // Beseitigung in der Altstadt: Gestaltung entfällt – bis auf die Freitreppen (§ 13 Abs. 4, Runde 8) und
-    // straßenseitige Einfriedigungen (§ 12, Runde 9)
-    const weg = a(M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), { ...ja('soest.altstadt'), ...nein('soest.freitreppe', 'soest.einfriedung'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
+    // Beseitigung in der Altstadt: Gestaltung entfällt – bis auf die Freitreppen (§ 13 Abs. 4, Runde 8),
+    // straßenseitige Einfriedigungen (§ 12, Runde 9) und die Baulücke beim Abbruch angebauter Gebäude (Runde 10) –
+    // hier ein freistehendes Gebäude
+    const weg = a(M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), { ...ja('soest.altstadt', 'gebaeude.freistehend'), ...nein('soest.freitreppe', 'soest.einfriedung'), ...zahl('gebaeude.garage_nutzflaeche', 30) });
     for (const id of ids) expect(weg(id), `${id} (Beseitigung)`).toBe('gruen');
   });
 
@@ -1441,6 +1442,110 @@ describe('Fälle aus dem Fachreview', () => {
     expect(defs['schutz.hecke_ausgleich'].titel).toMatch(/Geförderte Anpflanzung/);
     const r = auswerten(eingabe(M4({ Vorhaben: 'Beseitigung' }), umfang('vollständiger Abbruch ohne Ersatzbau'), TEXTE));
     expect(r.paragrafen.find((x) => x.id === 'nw/bauo-nrw/62')!.hinweise.join(' ')).toMatch(/Abs\. 3 Satz 7 mit § 74 Abs\. 8/);
+  });
+  it('Runde 10: Ersatzbau – der Abbruch ist von der Baugenehmigung des Neubaus nur erfasst, wenn er verfahrensfrei ist und mit beantragt wurde (DSchG § 24)', () => {
+    const p24 = 'nw/dschg/24';
+    // Fall X3E: Baudenkmal EFH abbrechen, Ersatzbau im vereinfachten Verfahren
+    const m = M4({ Vorhaben: 'Beseitigung' });
+    const d = { ...ja('schutz.denkmal'), ...umfang('Abbruch mit Ersatzbau') };
+    expect(a(m, d)(p24), 'Altbau offen').toBe('gelb');
+    expect(a(m, { ...d, ...ja('nw.altbau_verfahrensfrei'), ...nein('nw.beseitigung_mit_beantragt') })(p24), 'nicht mit beantragt').toBe('rot');
+    expect(a(m, { ...d, ...nein('nw.altbau_verfahrensfrei') })(p24), 'Altbau anzuzeigen').toBe('rot');
+    expect(a(m, { ...d, ...ja('nw.altbau_verfahrensfrei', 'nw.beseitigung_mit_beantragt') })(p24), 'mit beantragt').toBe('gruen');
+    // Gegenproben: Neubau mit Baugenehmigung, verfahrensfreie Beseitigung mit beantragter Genehmigung
+    expect(a(M4(), ja('schutz.denkmal'))(p24)).toBe('gruen');
+    expect(a(m, { ...ja('schutz.denkmal', 'gebaeude.freistehend'), ...umfang('vollständiger Abbruch ohne Ersatzbau') })(p24)).toBe('gruen');
+  });
+
+  it('Runde 10: Ersatzbau – das Verfahren für den Abbruch folgt aus dem Altbau, nicht aus den Merkmalen des Neubaus (BauPrüfVO §§ 2, 15, BauO § 74)', () => {
+    // Fall X1E: Reihenhaus abbrechen, Ersatz: freistehendes EFH GK 1 in der Genehmigungsfreistellung
+    const m = M4({ Vorhaben: 'Beseitigung', Planungsrecht: 'Bebauungsplan', Verfahren: 'Genehmigungsfreistellung' });
+    const f = { ...ja('gebaeude.freistehend'), ...umfang('Abbruch mit Ersatzbau') };
+    expect(a(m, f)('nw/baupruefvo/15'), 'Altbau offen').toBe('gelb');
+    expect(a(m, f)('nw/baupruefvo/2'), 'Altbau offen').toBe('gelb');
+    const anzeige = a(m, { ...f, ...nein('nw.altbau_verfahrensfrei') });
+    for (const id of ['nw/baupruefvo/15', 'nw/baupruefvo/2', 'nw/bauo-nrw/74']) expect(anzeige(id), `${id} (Anzeige)`).toBe('rot');
+    // Gegenprobe: verfahrensfreier Altbau ohne Genehmigungsverfahren – keine Bauvorlagen für den Abbruch
+    expect(a(m, { ...f, ...ja('nw.altbau_verfahrensfrei') })('nw/baupruefvo/15')).toBe('gruen');
+    // die Merkmale des Neubaus („freistehend, GK 1“) machen die Beseitigung nicht mehr verfahrensfrei
+    expect(a(m, { ...f, ...nein('nw.altbau_verfahrensfrei') })('nw/bauo-nrw/62')).toBe('rot');
+  });
+
+  it('Runde 10: Teilabbruch an einem angebauten Gebäude – Einzelfall statt „entfällt“; ein angebautes eigenständiges Gebäude ist eine Beseitigung', () => {
+    const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+    expect(defs[UMFANG].hilfe).toMatch(/angebautes, eigenständiges Gebäude .*kein Teilabbruch/);
+    expect(defs[UMFANG].hilfe).not.toMatch(/Teilabbruch \(z\. B\. Anbau/);
+    // Fall S7: Teilabbruch, verfahrensfrei, angebaut
+    const m = M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' });
+    const angebaut = { ...umfang('Teilabbruch'), ...nein('gebaeude.freistehend') };
+    expect(a(m, angebaut)('nw/baupruefvo/15')).toBe('gelb');
+    expect(a(m, angebaut)('nw/bauo-nrw/74')).toBe('gelb');
+    // Gegenprobe: Teilabbruch eines freistehenden Gebäudes – keine Bauvorlagen für eine Beseitigung
+    expect(a(m, { ...umfang('Teilabbruch'), ...ja('gebaeude.freistehend') })('nw/baupruefvo/15')).toBe('gruen');
+  });
+
+  it('Runde 10: AVwGebO § 1 – Baulast „eingetragen oder nötig“: Gebühr für Eintragung bzw. Auskunft möglich (Tarifstelle 3.1.5.6)', () => {
+    // Fall G4: verfahrensfreie Garage mit nötiger Baulast
+    const g4 = M4({ Gebäudeart: 'Nichtwohngebäude', Verfahren: 'verfahrensfrei' });
+    const ohne = nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung', 'schutz.bodendenkmal');
+    expect(a(g4, { ...ohne, ...ja('lage.baulast') })('nw/avwgebo/1')).toBe('gelb');
+    expect(a(g4, { ...ohne, ...nein('lage.baulast') })('nw/avwgebo/1')).toBe('gruen');
+    // Text: Grabungserlaubnis nach § 15 Abs. 1; § 15 Abs. 2 wie § 9 gebührenfrei
+    const r = auswerten(eingabe(g4, { ...ohne, ...ja('lage.baulast') }, TEXTE)).paragrafen.find((x) => x.id === 'nw/avwgebo/1')!;
+    expect(r.gruende.join(' ')).toMatch(/§ 15 Abs\. 1 DSchG/);
+    expect(r.gruende.join(' ')).toMatch(/§ 15 Abs\. 2 DSchG ist gebührenfrei/);
+  });
+
+  it('Runde 10: Altstadtsatzung § 12 – auch beim Abbruch eines angebauten Gebäudes (Fläche zwischen Gebäuden zur Straße)', () => {
+    const p12 = 'nw-05974040/altstadtsatzung/12';
+    // Fall S2/X4V: Reihenhaus abbrechen
+    const m = M4({ Vorhaben: 'Beseitigung' });
+    const f = { ...nein('soest.einfriedung', 'gebaeude.freistehend'), ...umfang('vollständiger Abbruch ohne Ersatzbau') };
+    expect(altstadt(m, f)(p12), 'Pflicht offen').toBe('gelb');
+    expect(altstadt(m, { ...f, ...ja('soest.einfriedungspflicht') })(p12), 'Baulücke zur Straße').toBe('rot');
+    // Gegenprobe: freistehendes Hinterhaus – keine Lücke zur Straße, nichts zu fragen
+    expect(altstadt(m, { ...f, ...ja('gebaeude.freistehend') })(p12)).toBe('gruen');
+    // Frage: „zu öffentlichen Verkehrsflächen hin“ auch für Gärten, Lagerplätze, Stellplatzanlagen (Nr. 2)
+    const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+    expect(defs['soest.einfriedungspflicht'].hilfe).toMatch(/Rückwärtige Gärten ohne Grenze zur Verkehrsfläche zählen nicht/);
+  });
+
+  it('Runde 10: StrWG § 25 entfällt beim vollständigen Abbruch; Entwässerungssatzung nur, soweit ein Anschluss betroffen ist', () => {
+    // Fall S1: Scheune an der Landesstraße abbrechen
+    const scheune = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Außenbereich', Verfahren: 'verfahrensfrei' });
+    expect(a(scheune, { ...ja('lage.strasse_ausserorts', 'gebaeude.freistehend'), ...umfang('vollständiger Abbruch ohne Ersatzbau') })('nw/strwg/25')).toBe('gruen');
+    expect(a(M4({ Planungsrecht: 'Außenbereich' }), ja('lage.strasse_ausserorts'))('nw/strwg/25')).toBe('rot');
+    const e = (nr: string) => `nw-05974040/entwaesserungssatzung/${nr}`;
+    // Fall S3: Gartenmauer ohne Entwässerung
+    const mauer = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'kein Gebäude', Verfahren: 'verfahrensfrei' });
+    expect(a(mauer, { ...nein('vorhaben.entwaesserung'), ...umfang('vollständiger Abbruch ohne Ersatzbau') })(e('14'))).toBe('gruen');
+    // Fall S4: EFH abbrechen, Kanalanschluss zurückbauen – § 14 (Abbruch mitteilen), nicht §§ 9, 15
+    const efh = M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' });
+    const s4 = a(efh, { ...ja('vorhaben.entwaesserung', 'gebaeude.freistehend'), ...umfang('vollständiger Abbruch ohne Ersatzbau') });
+    expect(s4(e('14'))).toBe('rot');
+    expect(s4(e('9'))).toBe('gruen');
+    expect(s4(e('15'))).toBe('gruen');
+    // Fall S5: Garage, Entwässerung nein – ob ein Anschlusskanal da ist, ist offen (Einzelfall)
+    expect(a(efh, { ...nein('vorhaben.entwaesserung'), ...umfang('vollständiger Abbruch ohne Ersatzbau') })(e('14'))).toBe('gelb');
+    // Gegenprobe Ersatzbau: der Neubau braucht den Anschluss
+    expect(a(efh, { ...nein('vorhaben.entwaesserung'), ...umfang('Abbruch mit Ersatzbau') })(e('14'))).toBe('rot');
+  });
+
+  it('Runde 10: offener Umfang – wo jede Antwort zu „gilt“ führt, ist der Paragraf rot (§§ 64, 70, 74 BauO, BauPrüfVO §§ 1, 2, AVwGebO § 1, BNatSchG § 44)', () => {
+    // Fall B5O: freistehendes EFH GK 1, Baugenehmigung beantragt, Umfang offen
+    const m = M4({ Vorhaben: 'Beseitigung' });
+    const o = a(m, { ...umfang(), ...ja('gebaeude.freistehend', 'vorhaben.baeume_faellen'), ...nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung') });
+    for (const id of ['nw/bauo-nrw/64', 'nw/bauo-nrw/70', 'nw/bauo-nrw/74', 'nw/baupruefvo/1', 'nw/baupruefvo/2', 'nw/avwgebo/1', 'bund/bnatschg/44']) expect(o(id), id).toBe('rot');
+  });
+
+  it('Runde 10: Hinweis „Gestaltungsbeirat“ wie § 18 (nicht bei einer Mauer); Bebauungsplan-Hinweis nennt den Erhaltungsbereich nach § 172 Abs. 1', () => {
+    const titel = (m: Record<string, string>, f: Record<string, FaktWert> = {}) => auswerten(eingabe(m, { ...ja('soest.altstadt'), ...f }, TEXTE)).hinweise.map((h) => h.titel);
+    const ohne = nein('planung.abweichung', 'ortsrecht.abweichung');
+    expect(titel(M4({ Gebäudeart: 'kein Gebäude', Verfahren: 'verfahrensfrei' }), ohne)).not.toContain('Gestaltungsbeirat');
+    expect(titel(M4(), ohne)).toContain('Gestaltungsbeirat');
+    const r = auswerten(eingabe(M4({ Planungsrecht: 'Bebauungsplan', Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }), umfang('vollständiger Abbruch ohne Ersatzbau'), TEXTE)).paragrafen.find((x) => x.id === 'nw-05974040/bebauungsplan/Festsetzungen')!;
+    expect(r.gruende.join(' ')).toMatch(/§ 172 Abs\. 1 BauGB/);
+    expect(r.gruende.join(' ')).not.toMatch(/Erhaltungsgebote \(§ 9 Abs\. 1 Nr\. 25 b/);
   });
 });
 

@@ -72,8 +72,15 @@
       "gilt": {
         "oder": [
           {
-            "f": "lage.strasse_ausserorts",
-            "ist": true
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "lage.strasse_ausserorts",
+                "ist": true
+              }
+            ]
           },
           {
             "und": [
@@ -101,26 +108,33 @@
         ]
       },
       "entfaellt": {
-        "und": [
+        "oder": [
           {
-            "f": "lage.strasse_ausserorts",
-            "ist": false
-          },
-          {
-            "f": "lage.anschluss_klassifiziert",
-            "ist": false
-          },
-          {
-            "oder": [
+            "und": [
               {
-                "f": "lage.zufahrt_neu",
+                "f": "lage.strasse_ausserorts",
                 "ist": false
               },
               {
-                "f": "lage.zufahrt_klassifiziert",
+                "f": "lage.anschluss_klassifiziert",
                 "ist": false
+              },
+              {
+                "oder": [
+                  {
+                    "f": "lage.zufahrt_neu",
+                    "ist": false
+                  },
+                  {
+                    "f": "lage.zufahrt_klassifiziert",
+                    "ist": false
+                  }
+                ]
               }
             ]
+          },
+          {
+            "$": "nur_beseitigung"
           }
         ]
       },

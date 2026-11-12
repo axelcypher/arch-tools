@@ -1649,14 +1649,7 @@
                 "$": "vereinfacht"
               },
               {
-                "oder": [
-                  {
-                    "$": "vorhaben_29"
-                  },
-                  {
-                    "$": "nw_beseitigung_verfahrensfrei"
-                  }
-                ]
+                "$": "nw_29_oder_frei_beseitigung"
               }
             ]
           },
@@ -1700,14 +1693,7 @@
             "$": "baugenehmigung"
           },
           {
-            "oder": [
-              {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "nw_beseitigung_verfahrensfrei"
-              }
-            ]
+            "$": "nw_29_oder_frei_beseitigung"
           }
         ]
       },
@@ -1719,14 +1705,7 @@
               "$": "baugenehmigung"
             },
             {
-              "oder": [
-                {
-                  "$": "vorhaben_29"
-                },
-                {
-                  "$": "nw_beseitigung_verfahrensfrei"
-                }
-              ]
+              "$": "nw_29_oder_frei_beseitigung"
             },
             {
               "$": "kein_sonderbau"
@@ -1987,6 +1966,16 @@
           },
           {
             "$": "nw_beseitigung_anzeige"
+          },
+          {
+            "und": [
+              {
+                "$": "beseitigung_art"
+              },
+              {
+                "$": "nw_genehmigungsbeduerftig"
+              }
+            ]
           }
         ]
       },
@@ -2020,7 +2009,21 @@
         "74/8": "d3f86b45",
         "74/9": "5d2d5598"
       },
-      "titel": "Baugenehmigung, Genehmigungsfiktion, Baubeginn"
+      "titel": "Baugenehmigung, Genehmigungsfiktion, Baubeginn",
+      "pruefen": {
+        "grund": "Teilabbruch an einem angebauten Gebäude: Wird ein eigenständiges angebautes Gebäude beseitigt, ist das eine Beseitigung nach § 62 Abs. 3 – anzuzeigen, mit Baubeginnanzeige nach Abs. 8 und Standsicherheitsnachweis für das Nachbargebäude; im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "teilbeseitigung"
+            },
+            {
+              "f": "gebaeude.freistehend",
+              "ist": false
+            }
+          ]
+        }
+      }
     },
     "85": {
       "gilt": {

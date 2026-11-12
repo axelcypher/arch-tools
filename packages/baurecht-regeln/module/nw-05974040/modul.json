@@ -392,12 +392,12 @@
       }
     },
     "soest.einfriedungspflicht": {
-      "titel": "Zur öffentlichen Verkehrsfläche liegen ein Vorgarten oder eine Fläche zwischen Gebäuden, oder auf dem Grundstück ein Garten, ein Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen",
+      "titel": "Zur öffentlichen Verkehrsfläche hin liegt oder entsteht (auch durch einen Abbruch) ein Vorgarten oder eine Fläche zwischen Gebäuden, oder zur Verkehrsfläche hin ein Garten, ein Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen",
       "kurz": "Einfriedigungspflicht zur Straße",
       "gruppe": "grundstueck",
       "typ": "janein",
-      "frage": "Liegt zur öffentlichen Verkehrsfläche ein Vorgarten oder eine Lücke zwischen Gebäuden – oder entsteht ein Garten, Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen?",
-      "hilfe": "§ 12 Abs. 1 Altstadtsatzung: Vorgärten und Flächen zwischen Gebäuden sind zur öffentlichen Verkehrsfläche mit Gitter auf Grünsandsteinsockel oder Bruchsteinmauer einzufriedigen (Nr. 1), Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2).",
+      "frage": "Liegt oder entsteht zur öffentlichen Verkehrsfläche hin ein Vorgarten oder eine Lücke zwischen Gebäuden (auch durch den Abbruch) – oder grenzt dort ein Garten, Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen an?",
+      "hilfe": "§ 12 Abs. 1 Altstadtsatzung (gilt für Einfriedigungen zu öffentlichen Verkehrsflächen): Vorgärten und Flächen zwischen Gebäuden sind mit Gitter auf Grünsandsteinsockel oder Bruchsteinmauer einzufriedigen (Nr. 1), Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2). Rückwärtige Gärten ohne Grenze zur Verkehrsfläche zählen nicht.",
       "wenn": {
         "und": [
           {
@@ -405,22 +405,7 @@
             "ist": true
           },
           {
-            "oder": [
-              {
-                "$": "errichtung"
-              },
-              {
-                "und": [
-                  {
-                    "$": "vorhaben_29"
-                  },
-                  {
-                    "f": "vorhaben.stellplaetze_grundstueck",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
+            "$": "soest_einfriedung_anlass"
           }
         ]
       }
@@ -591,6 +576,38 @@
           ]
         }
       ]
+    },
+    "soest_einfriedung_anlass": {
+      "oder": [
+        {
+          "$": "errichtung"
+        },
+        {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "f": "vorhaben.stellplaetze_grundstueck",
+              "ist": true
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "$": "nur_beseitigung"
+            },
+            {
+              "$": "gebaeude"
+            },
+            {
+              "f": "gebaeude.freistehend",
+              "ist": false
+            }
+          ]
+        }
+      ]
     }
   },
   "hinweise": [
@@ -611,11 +628,43 @@
           {
             "oder": [
               {
-                "$": "errichtung"
+                "und": [
+                  {
+                    "$": "errichtung"
+                  },
+                  {
+                    "$": "gebaeude"
+                  }
+                ]
               },
               {
-                "f": "planung.abweichung",
-                "ist": true
+                "und": [
+                  {
+                    "oder": [
+                      {
+                        "f": "planung.abweichung",
+                        "ist": true
+                      },
+                      {
+                        "f": "ortsrecht.abweichung",
+                        "ist": true
+                      }
+                    ]
+                  },
+                  {
+                    "oder": [
+                      {
+                        "$": "errichtung"
+                      },
+                      {
+                        "$": "aenderung"
+                      },
+                      {
+                        "$": "nutzungsaenderung"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           }

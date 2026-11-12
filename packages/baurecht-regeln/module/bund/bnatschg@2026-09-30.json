@@ -280,6 +280,25 @@
                 ]
               }
             ]
+          },
+          {
+            "und": [
+              {
+                "$": "beseitigung_art"
+              },
+              {
+                "oder": [
+                  {
+                    "f": "vorhaben.dach_fassade",
+                    "ist": true
+                  },
+                  {
+                    "f": "vorhaben.baeume_faellen",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       },

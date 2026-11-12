@@ -579,6 +579,39 @@
         "f": "schutz.baum",
         "ist": true
       }
+    },
+    "nw.altbau_verfahrensfrei": {
+      "titel": "Abbruch des Altbaus verfahrensfrei (§ 62 Abs. 3 Satz 1 BauO NRW): freistehendes Gebäude der Gebäudeklasse 1 oder 3, Anlage (kein Gebäude) bis 10 m oder verfahrensfreie Anlage nach § 62 Abs. 1",
+      "kurz": "Altbau verfahrensfrei zu beseitigen",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Ist der abzubrechende Altbau ein freistehendes Gebäude der Gebäudeklasse 1 oder 3, eine Anlage (kein Gebäude) bis 10 m Höhe oder eine verfahrensfreie Anlage nach § 62 Abs. 1?",
+      "hilfe": "Beim Abbruch mit Ersatzbau beschreiben Gebäudeart, Gebäudeklasse und „freistehend“ den Neubau. Für den Abbruch zählt der Altbau: verfahrensfrei nach § 62 Abs. 3 Satz 1 BauO NRW, sonst ist die Beseitigung anzuzeigen (Satz 2) – mit Bauvorlagen nach § 15 BauPrüfVO und, bei angebauten Gebäuden, Standsicherheitsnachweis für das Nachbargebäude (Satz 3, 4).",
+      "wenn": {
+        "$": "ersatzbau"
+      }
+    },
+    "nw.beseitigung_mit_beantragt": {
+      "titel": "Abbruch des Altbaus im Bauantrag mit beantragt (§ 62 Abs. 3 Satz 2 BauO NRW)",
+      "kurz": "Abbruch im Bauantrag mitbeantragt",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Ist der (verfahrensfreie) Abbruch des Altbaus im Bauantrag für den Ersatzbau ausdrücklich mit beantragt?",
+      "hilfe": "Die Baugenehmigung für den Neubau erfasst den Abbruch nicht von selbst: Eine verfahrensfreie Beseitigung wird nur genehmigt, wenn sie beantragt ist; eine anzuzeigende Beseitigung kann nicht genehmigt werden. Ohne Genehmigung braucht der Abbruch eines Denkmals bzw. im Denkmalbereich eine eigene denkmalrechtliche Erlaubnis (§§ 9, 24 DSchG).",
+      "wenn": {
+        "und": [
+          {
+            "$": "ersatzbau"
+          },
+          {
+            "f": "nw.altbau_verfahrensfrei",
+            "ist": true
+          },
+          {
+            "$": "nw_genehmigungsbeduerftig"
+          }
+        ]
+      }
     }
   },
   "bausteine": {
@@ -914,7 +947,7 @@
           "$": "beseitigung"
         },
         {
-          "$": "nw_beseitigung_frei_art"
+          "$": "nw_abbruch_frei"
         }
       ]
     },
@@ -925,7 +958,7 @@
         },
         {
           "nicht": {
-            "$": "nw_beseitigung_frei_art"
+            "$": "nw_abbruch_frei"
           }
         }
       ]
@@ -936,12 +969,107 @@
           "$": "nw_genehmigungsbeduerftig"
         },
         {
-          "oder": [
+          "$": "nw_29_oder_frei_beseitigung"
+        }
+      ]
+    },
+    "nw_abbruch_frei": {
+      "oder": [
+        {
+          "und": [
             {
-              "$": "vorhaben_29"
+              "nicht": {
+                "$": "ersatzbau"
+              }
+            },
+            {
+              "$": "nw_beseitigung_frei_art"
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "$": "ersatzbau"
+            },
+            {
+              "f": "nw.altbau_verfahrensfrei",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "nw_29_oder_frei_beseitigung": {
+      "oder": [
+        {
+          "$": "vorhaben_29"
+        },
+        {
+          "$": "nw_beseitigung_verfahrensfrei"
+        },
+        {
+          "und": [
+            {
+              "$": "beseitigung_art"
+            },
+            {
+              "$": "nw_beseitigung_frei_art"
+            }
+          ]
+        }
+      ]
+    },
+    "nw_beseitigung_genehmigt": {
+      "oder": [
+        {
+          "und": [
+            {
+              "nicht": {
+                "$": "ersatzbau"
+              }
             },
             {
               "$": "nw_beseitigung_verfahrensfrei"
+            },
+            {
+              "$": "nw_genehmigungsbeduerftig"
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "$": "ersatzbau"
+            },
+            {
+              "$": "nw_beseitigung_verfahrensfrei"
+            },
+            {
+              "$": "nw_genehmigungsbeduerftig"
+            },
+            {
+              "f": "nw.beseitigung_mit_beantragt",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "nw_alles_genehmigt": {
+      "und": [
+        {
+          "$": "nw_mit_baugenehmigung"
+        },
+        {
+          "oder": [
+            {
+              "nicht": {
+                "$": "ersatzbau"
+              }
+            },
+            {
+              "$": "nw_beseitigung_genehmigt"
             }
           ]
         }

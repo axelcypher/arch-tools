@@ -846,7 +846,7 @@
         "Abbruch mit Ersatzbau"
       ],
       "frage": "Wird die ganze Anlage beseitigt, nur ein Teil – oder entsteht an ihrer Stelle im selben Antrag ein Ersatzbau?",
-      "hilfe": "Vollständiger Abbruch: die Anlage verschwindet, nichts wird gebaut. Teilabbruch (z. B. Anbau, Geschoss, Dach): Änderung der verbleibenden Anlage (§ 60 Abs. 1 BauO NRW) – geprüft wie eine Änderung. Abbruch mit Ersatzbau: Errichtung einer neuen Anlage (§ 60 Abs. 1) und Beseitigung der alten – geprüft wie beides; die Angaben zum Neubau (Gebäude, Technik) gehören dann dazu.",
+      "hilfe": "Vollständiger Abbruch: die Anlage verschwindet, nichts wird gebaut. Teilabbruch: ein Teil desselben Gebäudes (z. B. Geschoss, Dach, Gebäudeteil) – Änderung der verbleibenden Anlage (§ 60 Abs. 1 BauO NRW), geprüft wie eine Änderung. Ein angebautes, eigenständiges Gebäude (z. B. angebaute Garage, Anbau mit eigener Konstruktion) ist kein Teilabbruch, sondern eine Beseitigung („vollständiger Abbruch“ dieses Gebäudes, § 62 Abs. 3 BauO NRW). Abbruch mit Ersatzbau: Errichtung einer neuen Anlage (§ 60 Abs. 1) und Beseitigung der alten – geprüft wie beides; die Angaben zum Neubau (Gebäude, Technik) gehören dann dazu, das Verfahren für den Abbruch des Altbaus wird gesondert gefragt.",
       "wenn": {
         "m": "Vorhaben",
         "in": [
