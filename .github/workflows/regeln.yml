@@ -2,8 +2,9 @@ name: Regelpaket Baurecht
 
 # Das Regelpaket der App Baurecht (packages/baurecht-regeln) wird getrennt von der App ausgeliefert:
 #
-#  - Auslieferung: Sobald sich das Paket auf main ändert, wird es geprüft, ohne Leerraum gebaut, mit dem privaten
-#    Schlüssel (Secret BAURECHT_REGELN_SCHLUESSEL, PKCS#8 Base64) signiert und in das Release „regeln“ hochgeladen.
+#  - Auslieferung: Sobald sich das Paket auf main ändert, wird es geprüft und ohne Leerraum gebaut (Job ohne Rechte und
+#    ohne Schlüssel), dann in einem eigenen Job ohne npm mit dem privaten Schlüssel (Secret BAURECHT_REGELN_SCHLUESSEL,
+#    PKCS#8 Base64) per OpenSSL signiert und in das Release „regeln“ hochgeladen.
 #    Die Apps holen index.json + index.json.sig von dort und übernehmen nur gültig signierte Pakete.
 #  - Wächter: Wöchentlich holt der Wächter die geltenden Fassungen aller Normen und prüft, dass die Fundstellen der
 #    Regeln noch im Text stehen und unverändert sind. Weicht etwas ab, legt er ein Issue an (bzw. ergänzt es).
@@ -27,17 +28,18 @@ on:
 permissions: {}
 
 jobs:
-  ausliefern:
-    name: Regelpaket ausliefern
+  bauen:
+    name: Regelpaket prüfen und bauen
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.aufgabe == 'ausliefern')
     runs-on: ubuntu-latest
+    # ohne Schreibrechte und ohne Schlüssel: hier laufen die Install-Skripte der Abhängigkeiten (npm ci)
     permissions:
-      # Release „regeln“ anlegen und Dateien hochladen
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -57,21 +59,50 @@ jobs:
           fi
       - run: npm ci
       - run: npx vitest run --project regeln
-      - name: Bauen und signieren
-        env:
-          BAURECHT_REGELN_SCHLUESSEL: ${{ secrets.BAURECHT_REGELN_SCHLUESSEL }}
+      - name: Bauen (Index ohne Signatur)
         run: |
           v=$(node -p "require('./packages/baurecht-regeln/package.json').version")
           PAKET="$v-${{ github.run_number }}" npm run index -w @akh/baurecht-regeln
-      - name: In das Release „regeln“ hochladen
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regelpaket
+          path: packages/baurecht-regeln/ausgabe/
+          retention-days: 7
+
+  ausliefern:
+    name: Regelpaket signieren und ausliefern
+    needs: bauen
+    runs-on: ubuntu-latest
+    # kein Checkout, kein npm: nur OpenSSL und gh – der private Schlüssel kommt mit keinem fremden Code in Berührung
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: regelpaket
+          path: ausgabe
+      - name: Signieren (Ed25519)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BAURECHT_REGELN_SCHLUESSEL: ${{ secrets.BAURECHT_REGELN_SCHLUESSEL }}
+        working-directory: ausgabe
         run: |
-          cd packages/baurecht-regeln/ausgabe
-          if [ ! -f index.json.sig ]; then
+          if [ -z "$BAURECHT_REGELN_SCHLUESSEL" ]; then
             echo "::warning::Kein Schlüssel (Secret BAURECHT_REGELN_SCHLUESSEL) – Regelpaket nicht ausgeliefert. Einrichten: npm run schluessel -w @akh/baurecht-regeln"
             exit 0
           fi
+          umask 077
+          pem="$RUNNER_TEMP/regeln.pem"
+          { echo "-----BEGIN PRIVATE KEY-----"; echo "$BAURECHT_REGELN_SCHLUESSEL" | tr -d ' \n\r' | fold -w 64; echo; echo "-----END PRIVATE KEY-----"; } > "$pem"
+          openssl pkeyutl -sign -inkey "$pem" -rawin -in index.json -out "$RUNNER_TEMP/sig.bin"
+          base64 -w0 "$RUNNER_TEMP/sig.bin" > index.json.sig
+          rm -f "$pem" "$RUNNER_TEMP/sig.bin"
+      - name: In das Release „regeln“ hochladen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        working-directory: ausgabe
+        run: |
+          [ -f index.json.sig ] || exit 0
           gh release view regeln >/dev/null 2>&1 || gh release create regeln --latest=false --target "$GITHUB_SHA" \
             --title "Regelpaket Baurecht" \
             --notes "Technisches Release: Regelpaket der App Baurecht (signiert). Die App lädt es selbst nach."
@@ -89,6 +120,8 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22

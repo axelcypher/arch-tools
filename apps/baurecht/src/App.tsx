@@ -10,13 +10,14 @@ import { TitleBar } from '@core/ui/TitleBar';
 import { Angaben } from './components/Angaben';
 import { AmpelMarke, AMPEL_LANG } from './components/Ampel';
 import { Detail } from './components/Detail';
+import type { FolgenRechner } from './components/Dialoge';
 import { BestaetigenDialog, bestaetigenFragen, FaktBestaetigenDialog, FestlegenDialog } from './components/Dialoge';
 import { Bilanz, Kopf } from './components/Kopf';
 import { Protokoll } from './components/Protokoll';
 import { Vorschriften } from './components/Vorschriften';
 import { lageAbfragen } from './lage';
 import { ausProjektwahl, dateiOeffnen, speichernJetzt } from './projekt';
-import { texteLaden, usePruefstand } from './pruefung';
+import { auswertungMit, herabstufungen, texteLaden, usePruefstand } from './pruefung';
 import { abgelegtesPaket, paketNachladen } from './regelpaket';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from './store';
 
@@ -38,9 +39,11 @@ export async function speichern(): Promise<boolean> {
     if (a === 'abbrechen') return false;
     if (a === 'bestaetigen') useBaurecht.getState().festlegungenBestaetigen(festlegungen);
     else {
+      // der Stand nach der Antwort (während des Dialogs kann z. B. „Lage abfragen“ fertig geworden sein)
+      const jetzt = useBaurecht.getState().pruefung;
       entwurf = {
-        festlegungen: Object.fromEntries(festlegungen.map((id) => [id, s.pruefung.festlegungen[id] ?? null])),
-        fakten: Object.fromEntries(fakten.map((id) => [id, s.pruefung.fakten[id] ?? null])),
+        festlegungen: Object.fromEntries(festlegungen.map((id) => [id, jetzt.festlegungen[id] ?? null])),
+        fakten: Object.fromEntries(fakten.map((id) => [id, jetzt.fakten[id] ?? null])),
       };
       useBaurecht.getState().aufDateistand(festlegungen, fakten);
     }
@@ -53,12 +56,17 @@ export async function speichern(): Promise<boolean> {
     return false;
   } finally {
     if (entwurf) {
-      const p = structuredClone(useBaurecht.getState().pruefung);
+      // Entwürfe zurück in die App – nur, wo seitdem nichts anderes geschrieben wurde (Eintrag = Stand der Datei)
+      const st = useBaurecht.getState();
+      const p = structuredClone(st.pruefung);
+      const gleich = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
       for (const [id, f] of Object.entries(entwurf.festlegungen)) {
+        if (!gleich(p.festlegungen[id], st.pruefungDatei.festlegungen[id])) continue;
         if (f) p.festlegungen[id] = f;
         else delete p.festlegungen[id];
       }
       for (const [id, f] of Object.entries(entwurf.fakten)) {
+        if (!gleich(p.fakten[id], st.pruefungDatei.fakten[id])) continue;
         if (f) p.fakten[id] = f;
         else delete p.fakten[id];
       }
@@ -168,6 +176,22 @@ export function App() {
     return { titel: stand.auswertung.text.paragraf?.(id) ?? id, automatisch: p?.automatisch };
   };
   const faktTitel = (id: string) => stand.auswertung.faktDefs[id]?.titel ?? id;
+  // Folgen einer Angabe: Vorschau im Dialog (mit der Angabe gegenüber jetzt) …
+  const folgen: FolgenRechner = (id, wert) => {
+    const eigene = { ...useBaurecht.getState().pruefung.fakten };
+    if (wert) eigene[id] = wert;
+    else delete eigene[id];
+    return { herab: herabstufungen(stand.auswertung, auswertungMit(eigene)) };
+  };
+  // … und beim Speichern (jetzt gegenüber dem Stand der Datei)
+  const folgenSeitDatei = (id: string) => {
+    const s = useBaurecht.getState();
+    const eigene = { ...s.pruefung.fakten };
+    const alt = s.pruefungDatei.fakten[id];
+    if (alt) eigene[id] = alt;
+    else delete eigene[id];
+    return { herab: herabstufungen(auswertungMit(eigene), stand.auswertung) };
+  };
 
   return (
     <div className="app br-app">
@@ -216,8 +240,8 @@ export function App() {
       )}
       {protokoll && project && <Protokoll stand={stand} onClose={() => setProtokoll(false)} />}
       <FestlegenDialog fakten={stand.auswertung.fakten} />
-      <FaktBestaetigenDialog />
-      <BestaetigenDialog titel={titel} faktTitel={faktTitel} />
+      <FaktBestaetigenDialog folgen={folgen} />
+      <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} />
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
     </div>
   );

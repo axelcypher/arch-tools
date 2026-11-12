@@ -57,10 +57,29 @@ describe('Beispiel: Einfamilienhaus in der Soester Altstadt', () => {
     const paket = paketAusDateien(dateien, 'test');
     const merkmale = { Gebäudeart: 'Einfamilienhaus', Vorhaben: 'Errichtung', Verfahren: 'vereinfachtes Verfahren', Planungsrecht: 'Innenbereich', Sonderbau: 'nein', Gebäudeklasse: '1' };
     const s = pruefstandBerechnen(paket, beispielProjekt(), merkmale, { 'lage.ags': { wert: '05974040', herkunft: 'manuell', sicherheit: 'sicher' } }, {}, '2026-12-01', {});
-    expect(s.module.map((m) => m.id)).toContain('bund');
-    expect(s.auswertung.paragrafen.length).toBeGreaterThan(0);
-    // ohne abgerufene Texte ist nichts grün, das an einer Prüfsumme hängt
-    for (const p of s.auswertung.paragrafen) if (p.ampel === 'gruen' && p.regel) expect(p.gruende.join(' ')).not.toMatch(/Text der Norm nicht verfügbar/);
+    expect(s.module.map((m) => m.id)).toEqual(['bund', 'nw', 'nw-05974', 'nw-05974040']);
+    expect(s.fehlend).toEqual([]);
+    expect(s.auswertung.paragrafen.length).toBeGreaterThan(200);
+    // ohne abgerufene Texte ist nichts grün, was an einer Prüfsumme hängt – weder einzeln noch über die Norm
+    const regel = (id: string) => {
+      const [m, n, nr] = id.split('/');
+      const l = paket.regeln.get(`${m}/${n}`)!;
+      const d = l[l.length - 1].regel;
+      return { r: d.paragrafen[nr], normStand: Object.values(d.paragrafen).some((x) => x.stand && Object.keys(x.stand).length) };
+    };
+    const falsch = s.auswertung.paragrafen.filter((p) => {
+      if (p.ampel !== 'gruen') return false;
+      const { r, normStand } = regel(p.id);
+      return (r.stand && Object.keys(r.stand).length) || normStand;
+    });
+    expect(falsch.map((p) => p.id)).toEqual([]);
+    // die Vorschriften, die für ein Einfamilienhaus im Innenbereich sicher gelten, sind rot
+    const ampel = (id: string) => s.auswertung.paragrafen.find((p) => p.id === id)?.ampel;
+    expect(ampel('bund/baugb/34')).toBe('rot');
+    expect(ampel('nw/bauo-nrw/6')).toBe('rot');
+    // und was ohne Angabe offen ist, ist gelb mit der fehlenden Angabe
+    const gelb = s.auswertung.paragrafen.filter((p) => p.ampel === 'gelb' && p.automatisch === 'gelb' && p.offen.length);
+    expect(gelb.length).toBeGreaterThan(10);
     if (process.env.BEISPIEL_OAP) writeFileSync(process.env.BEISPIEL_OAP, beispielOap());
   });
 });

@@ -11,7 +11,7 @@ import { faktenZurLage, lageKennung } from '@core/baurecht/geodienste';
 import { agsVorschlag, aktiveModule, fehlendeEbenen } from '@core/baurecht/paket';
 import type { GebaeudeklasseAbleitung } from '@core/baurecht/projekt';
 import { gebaeudeklasseAbleiten, projektFakten, widersprueche } from '@core/baurecht/projekt';
-import type { FaktWert, Modul } from '@core/baurecht/typen';
+import type { Ampel, FaktWert, Modul } from '@core/baurecht/typen';
 import type { Project } from '@core/model';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
@@ -28,14 +28,29 @@ const log = logger('rechtsstand');
 export function alleFakten(project: Project | null, eigeneRoh: Record<string, FaktWert>, module: Modul[]): Record<string, FaktWert> {
   const k = project?.meta.koordinaten;
   const eigene = faktenZurLage(eigeneRoh, k ? lageKennung(k.ost, k.nord) : null);
-  const f: Record<string, FaktWert> = project ? projektFakten(project, heute()) : {};
+  const basis: Record<string, FaktWert> = project ? projektFakten(project, heute()) : {};
   // Gemeindeschlüssel aus der PLZ, wenn ein Gemeindemodul sie nennt – nur Vorschlag, bis er bestätigt ist
-  if (!eigene['lage.ags'] && project?.meta.adresse.plz) {
+  if (project?.meta.adresse.plz) {
     const v = agsVorschlag(module, project.meta.adresse.plz);
-    if (v) f['lage.ags'] = { wert: v, herkunft: 'abgeleitet', quelle: `PLZ ${project.meta.adresse.plz}`, sicherheit: 'hinweis', grund: 'aus der Postleitzahl vorgeschlagen – bitte bestätigen oder über „Lage abfragen“ ermitteln', stand: heute() };
+    if (v) basis['lage.ags'] = { wert: v, herkunft: 'abgeleitet', quelle: `PLZ ${project.meta.adresse.plz}`, sicherheit: 'hinweis', grund: 'aus der Postleitzahl vorgeschlagen – bitte bestätigen oder über „Lage abfragen“ ermitteln', stand: heute() };
   }
-  return { ...f, ...eigene };
+  const out = { ...basis };
+  for (const [id, e] of Object.entries(eigene)) {
+    // eine Bestätigung eines Werts aus der Projektdatei (Modell, Stammdaten, Vorschlag) gilt nur für genau diesen Wert –
+    // ändert sich das Modell, gilt wieder der neue Wert als Hinweis
+    if (e.bestaetigt && (e.herkunft === 'flaechen' || e.herkunft === 'grz' || e.herkunft === 'stammdaten' || e.herkunft === 'abgeleitet' || e.herkunft === 'merkmal')) {
+      const b = basis[id];
+      if (!b || b.wert !== e.wert) {
+        if (b) out[id] = { ...b, sicherheit: 'hinweis', grund: `Wert seit der Bestätigung geändert (bestätigt war ${wertText(e.wert)}) – bitte erneut prüfen` };
+        continue;
+      }
+    }
+    out[id] = e;
+  }
+  return out;
 }
+
+const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));
 
 export interface Pruefstand {
   auswertung: Auswertung;
@@ -78,6 +93,22 @@ export function pruefstandBerechnen(
   return { auswertung, module, fehlend: fehlendeEbenen(paket.module, ags), ags, einreichung, gk, widersprueche: w.texte };
 }
 
+const RANG = { rot: 2, gelb: 1, gruen: 0 } as const;
+
+/** Paragrafen, die von `alt` nach `neu` schwächer werden (gilt → prüfen/entfällt, prüfen → entfällt) */
+export function herabstufungen(alt: Auswertung, neu: Auswertung): { id: string; titel: string; von: Ampel; nach: Ampel }[] {
+  const vorher = new Map(alt.paragrafen.map((p) => [p.id, p.ampel]));
+  return neu.paragrafen
+    .filter((p) => vorher.has(p.id) && RANG[p.ampel] < RANG[vorher.get(p.id)!])
+    .map((p) => ({ id: p.id, titel: neu.text.paragraf?.(p.id) ?? p.id, von: vorher.get(p.id)!, nach: p.ampel }));
+}
+
+/** Auswertung des aktuellen Stands mit geänderten Angaben der Prüfung (für Vorschau und Bestätigung) */
+export function auswertungMit(eigene: Record<string, FaktWert>): Auswertung {
+  const s = useBaurecht.getState();
+  return pruefstandBerechnen(s.paket, s.project, s.merkmale, eigene, s.pruefung.festlegungen, s.pruefung.einreichung, s.texte).auswertung;
+}
+
 /* ---------- Rechtsstand ---------- */
 
 let rechtsstand: Rechtsstand | null = null;
@@ -96,7 +127,8 @@ let lauf = 0;
 export async function texteLaden(module: Modul[], stichtag: string, o: { aktualisieren?: boolean } = {}): Promise<void> {
   const nr = ++lauf;
   const st = useBaurecht.getState();
-  const normen = module.flatMap((m) => Object.entries(m.normen).map(([norm, def]) => ({ key: `${m.id}/${norm}`, norm: { id: norm, kurz: def.kurz, titel: def.titel, quelle: def.quelle } })));
+  // Kennung in der Ablage: Modul und Norm (zwei Gemeinden können eine „stellplatzsatzung“ haben)
+  const normen = module.flatMap((m) => Object.entries(m.normen).map(([norm, def]) => ({ key: `${m.id}/${norm}`, norm: { id: `${m.id}/${norm}`, kurz: def.kurz, titel: def.titel, quelle: def.quelle } })));
   const offen = new Set(normen.filter((n) => n.norm.quelle.art !== 'verweis').map((n) => n.key));
   st.laedtSetzen([...offen]);
   const schlange = [...normen];
@@ -107,7 +139,7 @@ export async function texteLaden(module: Modul[], stichtag: string, o: { aktuali
       try {
         const r = await rs(st.paket).fuer(n.norm, stichtag, { aktualisieren: o.aktualisieren, offline: !isTauri() });
         if (nr !== lauf) return;
-        useBaurecht.getState().textSetzen(n.key, { fassung: r.fassung, ...(r.vorige ? { vorige: r.vorige } : {}), ...(r.fehler ? { fehler: r.fehler } : {}), ...(r.kuenftige ? { kuenftige: r.kuenftige } : {}), ...(r.geprueft ? { geprueft: r.geprueft } : {}) });
+        useBaurecht.getState().textSetzen(n.key, { fassung: r.fassung, ...(r.vorige ? { vorige: r.vorige } : {}), ...(r.fehler ? { fehler: r.fehler } : {}), ...(r.kuenftige ? { kuenftige: r.kuenftige } : {}), ...(r.geprueft ? { geprueft: r.geprueft } : {}), ...(r.ueberholtAb ? { ueberholtAb: r.ueberholtAb } : {}), stichtag });
       } catch (e) {
         log.warn('Text nicht geholt', { norm: n.key, fehler: String(e) });
         useBaurecht.getState().textSetzen(n.key, { fassung: null, fehler: e instanceof Error ? e.message : String(e) });

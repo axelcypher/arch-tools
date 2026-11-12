@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { paragrafName } from '@core/baurecht/typen';
 import { create } from 'zustand';
 import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
@@ -108,69 +108,147 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
   );
 }
 
-/* ---------- Hinweis bestätigen (erste Bestätigung) ---------- */
+/* ---------- Hinweis bestätigen bzw. Angabe von Hand setzen (erste Bestätigung) ---------- */
 
-interface FaktBestaetigenState {
-  ziel: { id: string; titel: string; wert: FaktWert } | null;
+interface FaktZiel {
+  id: string;
+  titel: string;
+  /** „bestaetigen“: einen Hinweis als gesichert übernehmen; „setzen“: einen Wert von Hand angeben */
+  modus: 'bestaetigen' | 'setzen';
+  /** bestätigen: der Hinweis; setzen: der neue Wert */
+  wert: FaktWert;
+  /** Eintrag der Prüfung beim Öffnen – hat er sich bis zum Bestätigen geändert (z. B. „Lage abfragen“), wird abgebrochen */
+  vorher: string;
 }
 
-const useFaktBestaetigen = create<FaktBestaetigenState>(() => ({ ziel: null }));
-export const faktBestaetigenOeffnen = (id: string, titel: string, wert: FaktWert) => useFaktBestaetigen.setState({ ziel: { id, titel, wert } });
+const useFaktBestaetigen = create<{ ziel: FaktZiel | null }>(() => ({ ziel: null }));
+const eintrag = (id: string) => JSON.stringify(useBaurecht.getState().pruefung.fakten[id] ?? null);
+export const faktBestaetigenOeffnen = (id: string, titel: string, wert: FaktWert) => useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'bestaetigen', wert, vorher: eintrag(id) } });
+export const faktSetzenOeffnen = (id: string, titel: string, wert: FaktWert['wert']) =>
+  useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'setzen', wert: { wert, herkunft: 'manuell', sicherheit: 'sicher' }, vorher: eintrag(id) } });
 
 const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));
 
+/** Folgen einer Angabe: wie viele Paragrafen dadurch auf „entfällt“ (bzw. schwächer) gehen – für die Dialoge */
+export type FolgenRechner = (id: string, wert: FaktWert | null) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[] };
+
+function Folgen({ folgen }: { folgen: ReturnType<FolgenRechner> }) {
+  if (!folgen.herab.length) return <p className="br-leise">Keine Vorschrift ändert dadurch ihre Ampel.</p>;
+  const gruen = folgen.herab.filter((h) => h.nach === 'gruen').length;
+  return (
+    <details className="br-folgen">
+      <summary>
+        <strong>
+          Stuft {folgen.herab.length} {folgen.herab.length === 1 ? 'Vorschrift' : 'Vorschriften'} herab
+        </strong>
+        {gruen ? `, davon ${gruen} auf „entfällt“` : ''} – Liste anzeigen
+      </summary>
+      <ul>
+        {folgen.herab.map((h) => (
+          <li key={h.id}>
+            <AmpelMarke ampel={h.von} klein /> <span aria-label="wird zu">→</span> <AmpelMarke ampel={h.nach} klein /> {h.titel}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 /**
- * Einen Hinweis (z. B. „kein Treffer im Landschaftsschutzgebiet“) als gesichert übernehmen: nur mit Begründung
- * (worauf gestützt, z. B. Auskunft der Behörde mit Datum). Geodaten gelten danach nur für die aktuelle Lage; beim
- * Speichern wird die Bestätigung noch einmal abgefragt und steht im Protokoll.
+ * Einen Hinweis (z. B. „kein Treffer im Landschaftsschutzgebiet“) als gesichert übernehmen bzw. eine Angabe zu
+ * Schutzgebieten und Geodaten von Hand setzen: nur mit Begründung (worauf gestützt, z. B. Auskunft der Behörde mit
+ * Datum). Der Dialog zeigt, welche Vorschriften dadurch herabgestuft werden. Geodaten gelten nur für die aktuelle Lage;
+ * beim Speichern wird die Angabe noch einmal abgefragt und steht im Prüfprotokoll.
  */
-export function FaktBestaetigenDialog() {
+export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
   const ziel = useFaktBestaetigen((s) => s.ziel);
   const project = useBaurecht((s) => s.project);
   const [grund, setGrund] = useState('');
   const [von, setVon] = useState('');
   const [versucht, setVersucht] = useState(false);
+  const [veraltet, setVeraltet] = useState(false);
   const feld = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (!ziel) return;
     setGrund('');
     setVon(benutzer());
     setVersucht(false);
+    setVeraltet(false);
     setTimeout(() => feld.current?.focus(), 0);
   }, [ziel]);
+  const vorschau = useMemo(() => {
+    if (!ziel) return null;
+    const k = project?.meta.koordinaten;
+    const lage = k ? lageKennung(k.ost, k.nord) : undefined;
+    const neu: FaktWert = ziel.modus === 'setzen' ? { ...ziel.wert, bestaetigt: { von: '', am: '', grund: 'Vorschau' } } : { ...ziel.wert, bestaetigt: { von: '', am: '', ...(lage ? { lage } : {}) } };
+    return folgen(ziel.id, neu);
+  }, [ziel, folgen, project]);
   if (!ziel) return null;
   const schliessen = () => useFaktBestaetigen.setState({ ziel: null });
   const ok = grund.trim().length >= 10 && von.trim().length > 0;
   const bestaetigen = () => {
     setVersucht(true);
-    if (!ok) return;
+    if (!ok) {
+      feld.current?.focus();
+      return;
+    }
+    if (eintrag(ziel.id) !== ziel.vorher) {
+      setVeraltet(true);
+      return;
+    }
     const k = project?.meta.koordinaten;
     benutzerMerken(von);
-    useBaurecht.getState().faktBestaetigen(ziel.id, ziel.wert, von.trim(), grund, k ? lageKennung(k.ost, k.nord) : null);
+    if (ziel.modus === 'setzen') useBaurecht.getState().faktSetzen(ziel.id, ziel.wert.wert, von.trim(), grund);
+    else useBaurecht.getState().faktBestaetigen(ziel.id, ziel.wert, von.trim(), grund, k ? lageKennung(k.ost, k.nord) : null);
     schliessen();
   };
+  const geo = ziel.wert.herkunft === 'geodienst';
+  const fehlerId = 'br-fakt-grund-fehler';
   return (
-    <Modal titel="Angabe bestätigen" onClose={schliessen} breit klickDaneben={false}>
+    <Modal titel={ziel.modus === 'setzen' ? 'Angabe von Hand setzen' : 'Angabe bestätigen'} onClose={schliessen} breit klickDaneben={false}>
       <h3>
-        {ziel.titel}: „{wertText(ziel.wert.wert)}“ bestätigen
+        {ziel.titel}: „{wertText(ziel.wert.wert)}“ {ziel.modus === 'setzen' ? 'von Hand setzen' : 'bestätigen'}
       </h3>
-      <p className="br-leise">
-        Bisher nur Hinweis{ziel.wert.quelle ? ` (${ziel.wert.quelle})` : ''}: {ziel.wert.grund ?? 'nicht gesichert'}
-      </p>
+      {ziel.modus === 'bestaetigen' ? (
+        <p className="br-leise-stark">
+          Bisher nur Hinweis{ziel.wert.quelle ? ` (${ziel.wert.quelle})` : ''}: {ziel.wert.grund ?? 'nicht gesichert'}
+        </p>
+      ) : (
+        <p className="br-leise-stark">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>
+      )}
+      {vorschau && <Folgen folgen={vorschau} />}
       <div className="br-meldung br-meldung-warn" role="note">
-        Mit der Bestätigung gilt die Angabe als gesichert – Vorschriften, die nur an ihr hängen, können dadurch „entfällt“ werden. Bitte nur bestätigen, was belegt ist; die Begründung steht im Protokoll.
-        {ziel.wert.herkunft === 'geodienst' ? ' Die Bestätigung gilt nur für die aktuelle Lage des Vorhabens.' : ''}
+        Die Angabe gilt danach als gesichert. Bitte nur angeben, was belegt ist – die Begründung steht im Prüfprotokoll.
+        {geo ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ''}
       </div>
+      {veraltet && (
+        <div className="br-meldung br-meldung-fehler" role="alert">
+          Die Angabe hat sich inzwischen geändert (z. B. durch „Lage abfragen“). Bitte den Dialog schließen und neu prüfen.
+        </div>
+      )}
       <label className="field">
         <span className="field-label">
           Worauf gestützt? <span aria-hidden="true">*</span>
         </span>
-        <textarea ref={feld} rows={3} value={grund} onChange={(e) => setGrund(e.target.value)} aria-required="true" aria-invalid={versucht && grund.trim().length < 10} placeholder="z. B. Auskunft Untere Naturschutzbehörde vom 03.11.2026, Aktenzeichen …" />
-        {versucht && grund.trim().length < 10 && <span className="field-hint br-fehler-text">Bitte angeben, worauf die Bestätigung beruht (mindestens 10 Zeichen).</span>}
+        <textarea
+          ref={feld}
+          rows={3}
+          value={grund}
+          onChange={(e) => setGrund(e.target.value)}
+          aria-required="true"
+          aria-invalid={versucht && grund.trim().length < 10}
+          aria-describedby={versucht && grund.trim().length < 10 ? fehlerId : undefined}
+          placeholder={geo || ziel.id.startsWith('schutz.') ? 'z. B. Auskunft Untere Naturschutzbehörde vom 03.11.2026, Aktenzeichen …' : 'z. B. Modell geprüft am 12.11.2026 / Flurstücksnachweis vom …'}
+        />
+        {versucht && grund.trim().length < 10 && (
+          <span id={fehlerId} className="field-hint br-fehler-text">
+            Bitte angeben, worauf die Angabe beruht (mindestens 10 Zeichen).
+          </span>
+        )}
       </label>
       <label className="field">
         <span className="field-label">
-          Bestätigt von <span aria-hidden="true">*</span>
+          {ziel.modus === 'setzen' ? 'Angegeben von' : 'Bestätigt von'} <span aria-hidden="true">*</span>
         </span>
         <input value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" />
       </label>
@@ -178,8 +256,8 @@ export function FaktBestaetigenDialog() {
         <button type="button" onClick={schliessen}>
           Abbrechen
         </button>
-        <button type="button" className="primary" onClick={bestaetigen} aria-disabled={!ok}>
-          Bestätigen
+        <button type="button" className="primary" onClick={bestaetigen} aria-disabled={!ok || veraltet}>
+          {ziel.modus === 'setzen' ? 'Übernehmen' : 'Bestätigen'}
         </button>
       </div>
     </Modal>
@@ -215,7 +293,7 @@ export function bestaetigenFragen(offen: Offen): Promise<BestaetigenAntwort> {
   );
 }
 
-export function BestaetigenDialog({ titel, faktTitel }: { titel: (id: string) => { titel: string; automatisch?: Ampel }; faktTitel: (id: string) => string }) {
+export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: string) => { titel: string; automatisch?: Ampel }; faktTitel: (id: string) => string; folgen: (id: string) => ReturnType<FolgenRechner> }) {
   const offen = useBestaetigen((s) => s.offen);
   const antwort = useBestaetigen((s) => s.antwort);
   const festlegungen = useBaurecht((s) => s.pruefung.festlegungen);
@@ -226,7 +304,7 @@ export function BestaetigenDialog({ titel, faktTitel }: { titel: (id: string) =>
   if (!offen || !antwort) return null;
   const anzahl = offen.festlegungen.length + offen.fakten.length;
   return (
-    <Modal titel="Vor dem Speichern bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false}>
+    <Modal titel="Angaben von Hand bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false}>
       <h3>Angaben von Hand bestätigen</h3>
       <p>
         Seit dem letzten Speichern {anzahl === 1 ? 'ist eine Angabe von Hand' : `sind ${anzahl} Angaben von Hand`} neu, geändert oder aufgehoben. Bitte noch einmal prüfen – alles steht mit Begründung und Namen im Protokoll.
@@ -265,7 +343,7 @@ export function BestaetigenDialog({ titel, faktTitel }: { titel: (id: string) =>
                   <AmpelMarke ampel={alt.ampel} klein /> <span aria-label="wird zu">→</span> <AmpelMarke ampel={jetzt} klein />
                 </span>
               </div>
-              <div className="br-leise">Festlegung aufgehoben (bisher {alt.von}: {alt.grund}) – es gilt wieder die automatische Ampel.</div>
+              <div className="br-leise-stark">Festlegung aufgehoben (bisher {alt.von}: {alt.grund}) – es gilt wieder die automatische Ampel.</div>
               {herab && <div className="br-warn-text">Herabstufung</div>}
             </li>
           );
@@ -273,15 +351,20 @@ export function BestaetigenDialog({ titel, faktTitel }: { titel: (id: string) =>
         {offen.fakten.map((id) => {
           const f = fakten[id];
           if (!f?.bestaetigt) return null;
+          const fo = folgen(id);
           return (
-            <li key={id} className="br-herab">
+            <li key={id} className={fo.herab.length ? 'br-herab' : ''}>
               <div className="br-bestaetigen-kopf">
                 <strong>{faktTitel(id)}</strong>
-                <span className="br-marke">Hinweis bestätigt: {wertText(f.wert)}</span>
+                <span className="br-marke">
+                  {f.herkunft === 'manuell' ? 'von Hand' : 'Hinweis bestätigt'}: {wertText(f.wert)}
+                </span>
               </div>
-              <div className="br-leise">
+              <div className="br-leise-stark">
                 {f.bestaetigt.von}: {f.bestaetigt.grund ?? '–'}
               </div>
+              {fo.herab.length > 0 && <div className="br-warn-text">Herabstufung ({fo.herab.length})</div>}
+              <Folgen folgen={fo} />
             </li>
           );
         })}

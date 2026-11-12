@@ -53,7 +53,11 @@ export interface Zustand {
   schliessen: () => void;
   antragWaehlen: (antrag: string) => void;
   merkmalSetzen: (name: string, wert: string) => void;
-  faktSetzen: (id: string, wert: FaktWert['wert'] | undefined, von: string) => void;
+  /**
+   * Angabe von Hand; mit `grund` (Pflicht für Schutzgebiete und Angaben aus Geodiensten) wird sie wie eine Bestätigung
+   * beim Speichern noch einmal abgefragt. Widerspricht sie einem Treffer eines Dienstes, bleibt das als Widerspruch.
+   */
+  faktSetzen: (id: string, wert: FaktWert['wert'] | undefined, von: string, grund?: string) => void;
   /** Hinweis als gesichert übernehmen – mit Begründung; bei Geodaten an die Lage gebunden; beim Speichern noch einmal bestätigt */
   faktBestaetigen: (id: string, wert: FaktWert, von: string, grund: string, lage: string | null) => void;
   geoFakten: (fakten: Record<string, FaktWert>) => void;
@@ -124,10 +128,19 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     else delete m[name];
     set({ merkmale: m });
   },
-  faktSetzen: (id, wert, von) => {
+  faktSetzen: (id, wert, von, grund) => {
     const p = kopie(get().pruefung);
+    const alt = p.fakten[id];
     if (wert === undefined) delete p.fakten[id];
-    else p.fakten[id] = { wert, herkunft: 'manuell', sicherheit: 'sicher', stand: heute(), quelle: von ? `von Hand (${von})` : 'von Hand' };
+    else {
+      const f: FaktWert = { wert, herkunft: 'manuell', sicherheit: 'sicher', stand: heute(), quelle: von ? `von Hand (${von})` : 'von Hand' };
+      if (grund?.trim()) f.bestaetigt = { von, am: heute(), grund: grund.trim() };
+      // ein Ergebnis eines Dienstes (außer einem bloßen „kein Treffer“) bleibt als Widerspruch stehen
+      const dienst = alt?.herkunft === 'geodienst' ? alt : undefined;
+      if (dienst && dienst.wert !== wert && !(dienst.wert === false && dienst.sicherheit === 'hinweis')) f.widerspruch = `${dienst.quelle ?? 'Geodienst'} meldet „${dienst.wert === true ? 'ja' : dienst.wert === false ? 'nein' : String(dienst.wert)}“ (${dienst.stand ?? ''})`.replace(' ()', '');
+      else if (alt?.herkunft === 'manuell' && alt.widerspruch && alt.wert === wert) f.widerspruch = alt.widerspruch;
+      p.fakten[id] = f;
+    }
     set({ pruefung: p });
   },
   faktBestaetigen: (id, wert, von, grund, lage) => {

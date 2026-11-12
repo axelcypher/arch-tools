@@ -7,7 +7,10 @@ import { NumberField, TextField } from '@core/ui/fields';
 import type { Pruefstand } from '../pruefung';
 import { heute, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
-import { faktBestaetigenOeffnen } from './Dialoge';
+import { faktBestaetigenOeffnen, faktSetzenOeffnen } from './Dialoge';
+
+/** Angaben, die von Hand nur mit Begründung gesetzt werden: Schutzgebiete und Werte aus Geodiensten (ja/nein, Auswahl) */
+export const mitBeleg = (def: FaktDef, wert: FaktWert | undefined) => (def.typ === 'janein' || def.typ === 'wahl') && (def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst');
 
 const HERKUNFT: Record<FaktWert['herkunft'], string> = {
   stammdaten: 'Stammdaten',
@@ -52,12 +55,19 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
             </div>
             <div className="br-segment">
               {m.werte.map((w) => (
-                <button key={w} type="button" className={wert === w ? 'active' : ''} aria-pressed={wert === w} title={e?.werte?.[w] ? `${w}: ${e.werte[w]}` : w} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, wert === w ? '' : w)}>
+                <button key={w} type="button" className={wert === w ? 'active' : ''} aria-pressed={wert === w} title={e?.werte?.[w] ? `${w}: ${e.werte[w]}` : w} onClick={() => wert !== w && useBaurecht.getState().merkmalSetzen(m.name, w)}>
                   {w}
                 </button>
               ))}
             </div>
-            {wert && e?.werte?.[wert] && <div className="br-leise br-erklaerung">{e.werte[wert]}</div>}
+            {wert && (
+              <div className="br-merkmal-fuss">
+                {e?.werte?.[wert] && <span className="br-leise br-erklaerung">{e.werte[wert]}</span>}
+                <button type="button" className="small br-link" onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title="Merkmal für den ganzen Antrag leeren (auch in Formulare)">
+                  leeren
+                </button>
+              </div>
+            )}
           </div>
         );
       })}
@@ -69,12 +79,12 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   const v = wert?.wert ?? null;
   if (def.typ === 'janein')
     return (
-      <div className="br-segment" role="radiogroup" aria-label={def.titel}>
+      <div className="br-segment" role="group" aria-label={def.titel}>
         {[
           [true, 'ja'],
           [false, 'nein'],
         ].map(([w, t]) => (
-          <button key={String(w)} type="button" role="radio" aria-checked={v === w} className={v === w ? 'active' : ''} onClick={() => onWert(v === w ? undefined : (w as boolean))}>
+          <button key={String(w)} type="button" aria-pressed={v === w} className={v === w ? 'active' : ''} onClick={() => v !== w && onWert(w as boolean)}>
             {t as string}
           </button>
         ))}
@@ -126,7 +136,16 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
           {typeof wert?.wert === 'boolean' ? (wert.wert ? 'ja' : 'nein') : String(wert?.wert)} <span className="br-leise">– {wert?.quelle}</span>
         </div>
       ) : (
-        <FaktEingabe id={id} def={def} wert={wert} onWert={(v) => useBaurecht.getState().faktSetzen(id, v, benutzer())} />
+        <FaktEingabe
+          id={id}
+          def={def}
+          wert={wert}
+          onWert={(v) => {
+            // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
+            if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, def.titel, v);
+            else useBaurecht.getState().faktSetzen(id, v, benutzer());
+          }}
+        />
       )}
       {wert && wert.wert != null && !fest && (
         <div className="br-fakt-fuss">

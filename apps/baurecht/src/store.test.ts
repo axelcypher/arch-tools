@@ -5,6 +5,7 @@ import type { ParagrafErgebnis } from '@core/baurecht/typen';
 import { projektdateiRoh } from '@core/projektdatei';
 import { beispielOap } from './beispiel.test';
 import { aenderungenAnwenden } from './projekt';
+import { alleFakten } from './pruefung';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from './store';
 
 const ergebnis = (id: string): ParagrafErgebnis =>
@@ -70,6 +71,33 @@ describe('Zustand der App', () => {
     expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toMatchObject({ ampel: 'rot' });
     expect(useBaurecht.getState().pruefung.fakten['gebaeude.nutzflaeche']).toBeUndefined();
     expect(istGeaendert(useBaurecht.getState())).toBe(false);
+  });
+
+  it('Angabe von Hand gegen einen Treffer: mit Begründung, Widerspruch bleibt, braucht die zweite Bestätigung', () => {
+    const st = useBaurecht.getState();
+    st.geoFakten({ 'schutz.lsg': { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS', stand: '2026-11-12' } });
+    useBaurecht.getState().faktSetzen('schutz.lsg', false, 'TP', 'Auskunft UNB vom 03.11.2026: außerhalb');
+    const f = useBaurecht.getState().pruefung.fakten['schutz.lsg'];
+    expect(f).toMatchObject({ wert: false, herkunft: 'manuell', bestaetigt: { von: 'TP', grund: 'Auskunft UNB vom 03.11.2026: außerhalb' } });
+    expect(f.widerspruch).toMatch(/LINFOS meldet „ja“/);
+    expect(offeneBestaetigungen(useBaurecht.getState())).toContain('schutz.lsg');
+  });
+
+  it('bestätigter Wert aus dem Modell gilt nur, solange das Modell denselben Wert liefert', () => {
+    const s = useBaurecht.getState();
+    const project = s.project!;
+    const modell = alleFakten(project, {}, s.paket.module);
+    const id = Object.keys(modell).find((k) => modell[k].herkunft === 'flaechen' && typeof modell[k].wert === 'number')!;
+    expect(id, 'ein Wert aus dem Flächenrechner').toBeTruthy();
+    const bestaetigt = { ...modell[id], bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Modell vollständig' } };
+    expect(alleFakten(project, { [id]: bestaetigt }, s.paket.module)[id].bestaetigt).toBeTruthy();
+    // früher bestätigt: ein anderer Wert → die Bestätigung verfällt, der aktuelle Wert gilt als Hinweis
+    const alt = { ...bestaetigt, wert: (modell[id].wert as number) + 7 };
+    const jetzt = alleFakten(project, { [id]: alt }, s.paket.module)[id];
+    expect(jetzt.wert).toBe(modell[id].wert);
+    expect(jetzt.bestaetigt).toBeUndefined();
+    expect(jetzt.sicherheit).toBe('hinweis');
+    expect(jetzt.grund).toMatch(/seit der Bestätigung geändert/);
   });
 
   it('anderer Antrag: eigene Prüfung, Merkmale neu gelesen', () => {

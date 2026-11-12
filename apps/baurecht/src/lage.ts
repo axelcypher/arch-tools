@@ -35,7 +35,8 @@ export async function lageAbfragen(): Promise<LageErgebnis> {
       ags = f.ags;
       umring = f.umring.length >= 3 ? f.umring : null;
       const quelle = `ALKIS NRW (Flurstück ${f.gemarkung}, Flur ${f.flur}, ${f.flurstueck})`;
-      const genau = k.genauigkeit === 'adresse' || k.genauigkeit === undefined;
+      // ohne Angabe zur Genauigkeit gilt die Lage als ungefähr (zur sicheren Seite)
+      const genau = k.genauigkeit === 'adresse';
       const sicherheit = genau ? ({ sicherheit: 'sicher' } as const) : ({ sicherheit: 'hinweis', grund: 'Koordinaten nur auf Straße oder Ort genau – Flurstück bitte prüfen' } as const);
       fakten['lage.ags'] = { wert: f.ags, herkunft: 'geodienst', quelle, stand: heute(), lage, ...sicherheit };
       fakten['lage.gemeinde'] = { wert: f.gemeinde, herkunft: 'geodienst', quelle, stand: heute(), lage, ...sicherheit };
@@ -45,7 +46,7 @@ export async function lageAbfragen(): Promise<LageErgebnis> {
   }
   const module = aktiveModule(s.paket.module, ags ?? (typeof s.pruefung.fakten['lage.ags']?.wert === 'string' ? (s.pruefung.fakten['lage.ags'].wert as string) : null));
   const defs = faktDefinitionen(module);
-  const genau = !!umring && (k.genauigkeit === 'adresse' || k.genauigkeit === undefined);
+  const genau = !!umring && k.genauigkeit === 'adresse';
   let abgefragt = 0;
   for (const [id, def] of Object.entries(defs)) {
     if (!def.geodienst) continue;
@@ -59,7 +60,14 @@ export async function lageAbfragen(): Promise<LageErgebnis> {
       fehler.push(`${def.titel}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
-  useBaurecht.getState().geoFakten(fakten);
+  // während der Abfrage anderes Projekt, anderer Antrag oder andere Koordinaten: Ergebnisse verwerfen
+  const jetzt = useBaurecht.getState();
+  const kj = jetzt.project?.meta.koordinaten;
+  if (jetzt.quelle !== s.quelle || jetzt.antrag !== s.antrag || !kj || lageKennung(kj.ost, kj.nord) !== lage) {
+    log.warn('Lage verworfen – Projekt, Antrag oder Koordinaten haben sich während der Abfrage geändert');
+    return { meldung: 'Ergebnisse verworfen: Projekt, Antrag oder Koordinaten haben sich während der Abfrage geändert. Bitte erneut abfragen.', fehler: [] };
+  }
+  jetzt.geoFakten(fakten);
   log.info('Lage abgefragt', { ags, dienste: abgefragt, fehler: fehler.length });
   const treffer = Object.entries(fakten).filter(([id, f]) => id.startsWith('schutz.') && f.wert === true).map(([id]) => defs[id]?.titel ?? id);
   return {

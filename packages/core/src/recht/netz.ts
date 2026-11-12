@@ -38,14 +38,23 @@ export class NetzFehler extends Error {
   }
 }
 
+/**
+ * Fehler der Rust-Seite (Texte) einordnen: nur Verbindungsfehler und Zeitüberschreitungen sind vorübergehend
+ * (NetzFehler – holenOk wiederholt sie); „Host nicht freigegeben“, „Antwort zu groß“, „Umleitung nicht unterstützt“
+ * usw. sind dauerhaft und werden nicht wiederholt.
+ */
+export function tauriFehler(e: unknown, url: string): Error {
+  const text = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e);
+  return /^(Nicht erreichbar|Lesen fehlgeschlagen)/.test(text) || /timed out|Zeitüberschreitung|timeout/i.test(text) ? new NetzFehler(text, url) : new Error(text);
+}
+
 async function tauriHolen(url: string, o: NetzOptionen = {}): Promise<NetzAntwort> {
   const api = await import('@tauri-apps/api/core');
   let r: { status: number; url: string; etag?: string; geaendert?: string; typ?: string; daten: string };
   try {
     r = await api.invoke('netz_holen', { url, etag: o.etag ?? null, geaendert: o.geaendert ?? null, zeitMs: o.zeit ?? 30000 });
   } catch (e) {
-    // Fehler der Rust-Seite sind Texte – als NetzFehler, damit holenOk vorübergehende Fehler wiederholt
-    throw new NetzFehler(typeof e === 'string' ? e : e instanceof Error ? e.message : String(e), url);
+    throw tauriFehler(e, url);
   }
   return { status: r.status, url: r.url, etag: r.etag ?? undefined, geaendert: r.geaendert ?? undefined, typ: r.typ ?? undefined, daten: base64ToBytes(r.daten) };
 }

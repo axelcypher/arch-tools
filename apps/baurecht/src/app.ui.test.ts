@@ -189,6 +189,24 @@ describe('Baurecht – Oberfläche', () => {
     expect(inDatei().fakten[id].bestaetigt).toMatchObject({ grund: 'Flächen im Modell vollständig, geprüft am 12.11.2026' });
   });
 
+  it('Schutzgebiet von Hand setzen nur mit Beleg; ändert sich die Angabe währenddessen, wird abgebrochen', async () => {
+    const host = render();
+    act(() => knopf(host, 'alle')?.click());
+    const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Landschaftsschutzgebiet/.test(z.textContent ?? ''))!;
+    expect(zeile, 'Zeile Landschaftsschutzgebiet').toBeTruthy();
+    act(() => knopf(zeile, 'nein')!.click());
+    // noch nichts gesetzt – erst der Dialog mit Begründung
+    expect(useBaurecht.getState().pruefung.fakten['schutz.lsg']).toBeUndefined();
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand setzen'))!;
+    expect(dialog.textContent).toMatch(/Vorschrift|ändert dadurch/);
+    tippen(dialog.querySelector('textarea')!, 'Auskunft UNB vom 03.11.2026, Az. 61-123');
+    // währenddessen liefert „Lage abfragen“ einen Treffer
+    act(() => useBaurecht.getState().geoFakten({ 'schutz.lsg': { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS' } }));
+    act(() => knopf(dialog, 'Übernehmen')!.click());
+    expect(dialog.textContent).toMatch(/inzwischen geändert/);
+    expect(useBaurecht.getState().pruefung.fakten['schutz.lsg']).toMatchObject({ wert: true, herkunft: 'geodienst' });
+  });
+
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {
     const host = render();
     const vorher = host.querySelector('.br-bilanz')!.textContent;
