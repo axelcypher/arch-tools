@@ -128,30 +128,55 @@ function wertText(v: string | number | boolean, def?: FaktDef): string {
 }
 
 /** Bedingung in Worten, z. B. „Art des Vorhabens: Errichtung und Gebäudeklasse 3, 4 oder 5“ */
+/** Werte in Anführungszeichen („kein Gebäude“) – damit sie sich vom Satz abheben */
+const zitiert = (w: (string | number)[], wort = 'oder') => liste(w.map((x) => `„${x}“`), wort);
+
+/** verschachtelte gleichartige Verknüpfungen (auch über Bausteine) einebnen: (A oder (B oder C)) → A oder B oder C */
+function einebnen(art: 'und' | 'oder', teile: Kurz[], t: TextKontext, tiefe = 0): Kurz[] {
+  return teile.flatMap((k) => {
+    const b = '$' in k ? t.bausteine[k.$] : k;
+    if (tiefe < 10 && b && art in b) return einebnen(art, (b as Record<'und' | 'oder', Kurz[]>)[art], t, tiefe + 1);
+    return [k];
+  });
+}
+
+/** gleichartige Merkmal-Bedingungen in einem „oder“ zusammenfassen: (Vorhaben: A oder Vorhaben: B) → Vorhaben: A oder B */
+function zusammenfassen(teile: Kurz[]): Kurz[] {
+  const out: Kurz[] = [];
+  for (const k of teile) {
+    const vorher = 'm' in k && k.in ? out.find((x): x is { m: string; in: string[] } => 'm' in x && x.m === k.m && !!x.in && !x.nicht) : undefined;
+    if (vorher && 'm' in k && k.in) vorher.in = [...new Set([...vorher.in, ...k.in])];
+    else out.push('m' in k && k.in ? { ...k, in: [...k.in] } : k);
+  }
+  return out;
+}
+
 export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe = 0): string {
   if (!k || tiefe > 20) return '';
   if ('immer' in k) return 'immer';
   if ('nie' in k) return 'nie';
   if ('und' in k || 'oder' in k) {
-    const teile = ('und' in k ? k.und : k.oder).map((x) => kurzText(x, t, false, tiefe + 1)).filter(Boolean);
+    const roh = 'und' in k ? einebnen('und', k.und, t) : zusammenfassen(einebnen('oder', k.oder, t));
+    const teile = roh.map((x) => kurzText(x, t, false, tiefe + 1)).filter(Boolean);
+    if (teile.length === 1) return teile[0];
     const s = teile.join('und' in k ? ' und ' : ' oder ');
-    return !oben && teile.length > 1 ? `(${s})` : s;
+    return !oben ? `(${s})` : s;
   }
-  if ('nicht' in k && !('m' in k)) return `nicht ${kurzText(k.nicht, t, false, tiefe + 1)}`;
+  if ('nicht' in k && !('m' in k)) return `nicht (${kurzText(k.nicht, t, true, tiefe + 1)})`;
   if ('$' in k) return t.bausteine[k.$] ? kurzText(t.bausteine[k.$], t, oben, tiefe + 1) : k.$;
   if ('m' in k) {
     const name = MERKMAL_TITEL[k.m] ?? k.m;
-    if (k.in) return `${name}: ${liste(k.in)}`;
-    if (k.nicht) return `${name} nicht ${liste(k.nicht)}`;
+    if (k.in) return `${name}: ${zitiert(k.in)}`;
+    if (k.nicht) return `${name}: alles außer ${zitiert(k.nicht)}`;
     return `${name} festgelegt`;
   }
   if ('f' in k) {
     const def = t.fakt(k.f);
     const name = def?.titel ?? k.f;
     if (k.bekannt !== undefined) return k.bekannt ? `${name} bekannt` : `${name} unbekannt`;
-    if (def?.typ === 'janein' && typeof k.ist === 'boolean') return k.ist ? name : `nicht: ${name}`;
-    if (k.ist !== undefined) return `${name}: ${wertText(k.ist, def)}`;
-    if (k.in) return `${name}: ${liste(k.in)}`;
+    if (def?.typ === 'janein' && typeof k.ist === 'boolean') return `${name}: ${k.ist ? 'ja' : 'nein'}`;
+    if (k.ist !== undefined) return `${name}: ${typeof k.ist === 'string' ? `„${k.ist}“` : wertText(k.ist, def)}`;
+    if (k.in) return `${name}: ${zitiert(k.in)}`;
     if (k.min !== undefined && k.max !== undefined) return `${name} ${zahl(k.min)} bis ${zahl(k.max)}${def?.einheit ? ` ${def.einheit}` : ''}`;
     if (k.min !== undefined) return `${name} mindestens ${zahl(k.min)}${def?.einheit ? ` ${def.einheit}` : ''}`;
     if (k.max !== undefined) return `${name} höchstens ${zahl(k.max)}${def?.einheit ? ` ${def.einheit}` : ''}`;
@@ -170,9 +195,15 @@ export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe
   return '';
 }
 
-/** Kennung eines offenen Punkts in Worten (für Listen „fehlt: …“) */
+/** fehlende Angabe in Worten – bei Fakten die Frage, wenn es eine gibt („Gilt eine Veränderungssperre?“) */
 export function offenText(id: string, t: TextKontext): string {
   if (id.startsWith('merkmal:')) return MERKMAL_TITEL[id.slice(8)] ?? id.slice(8);
   if (id.startsWith('paragraf:')) return t.paragraf?.(id.slice(9)) ?? id.slice(9);
   return t.fakt(id)?.titel ?? id;
+}
+
+/** fehlende Angaben als Fragen (für Begründungen): Fakten mit Frage als Frage, sonst der Titel */
+export function offenFrage(id: string, t: TextKontext): string {
+  if (id.startsWith('merkmal:') || id.startsWith('paragraf:')) return offenText(id, t);
+  return t.fakt(id)?.frage ?? offenText(id, t);
 }

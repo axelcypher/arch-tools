@@ -210,6 +210,8 @@ describe('Baurecht – Oberfläche', () => {
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {
     const host = render();
     const vorher = host.querySelector('.br-bilanz')!.textContent;
+    // alle Merkmale festgelegt: die Gruppe ist eingeklappt – aufklappen
+    if (!host.querySelector('[data-merkmal="Planungsrecht"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
     act(() => knopf(host.querySelector('[data-merkmal="Planungsrecht"]')!, 'Außenbereich')!.click());
     expect(host.querySelector('.br-bilanz')!.textContent).not.toBe(vorher);
     expect(host.querySelector('.titlebar-dirty')).not.toBeNull();

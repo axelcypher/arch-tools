@@ -21,6 +21,7 @@ function ParagrafText({ p, absaetze, geaendert }: { p: Paragraf; absaetze: Set<s
         const hervor = absaetze.has(abs) || absaetze.has('');
         return (
           <p key={i} className={`${hervor ? 'br-text-hervor' : ''}${geaendert.has(abs) ? ' br-text-geaendert' : ''}`}>
+            {geaendert.has(abs) && n ? <span className="br-unsichtbar">geändert: </span> : null}
             {z}
           </p>
         );
@@ -29,26 +30,50 @@ function ParagrafText({ p, absaetze, geaendert }: { p: Paragraf; absaetze: Set<s
   );
 }
 
+/** Wortunterschied (längste gemeinsame Teilfolge): gestrichen / eingefügt – nicht nur als Farbe */
+export function wortDiff(alt: string, neu: string): { art: 'gleich' | 'weg' | 'neu'; text: string }[] {
+  const a = alt.split(/(\s+)/).filter(Boolean);
+  const b = neu.split(/(\s+)/).filter(Boolean);
+  if (a.length * b.length > 250000) return [{ art: 'weg', text: alt }, { art: 'neu', text: neu }];
+  const l: number[][] = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+  for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) l[i][j] = a[i] === b[j] ? l[i + 1][j + 1] + 1 : Math.max(l[i + 1][j], l[i][j + 1]);
+  const out: { art: 'gleich' | 'weg' | 'neu'; text: string }[] = [];
+  const dazu = (art: 'gleich' | 'weg' | 'neu', text: string) => {
+    const letzt = out[out.length - 1];
+    if (letzt?.art === art) letzt.text += text;
+    else out.push({ art, text });
+  };
+  let i = 0;
+  let j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      dazu('gleich', a[i]);
+      i++;
+      j++;
+    } else if (l[i + 1][j] >= l[i][j + 1]) dazu('weg', a[i++]);
+    else dazu('neu', b[j++]);
+  }
+  while (i < a.length) dazu('weg', a[i++]);
+  while (j < b.length) dazu('neu', b[j++]);
+  return out;
+}
+
+/** alt/neu untereinander, Wortunterschiede gestrichen bzw. unterstrichen */
 function Gegenueberstellung({ alt, neu, absatz }: { alt: Paragraf | undefined; neu: Paragraf | undefined; absatz: string }) {
   const zeilen = (p: Paragraf | undefined) => {
-    if (!p) return ['(nicht vorhanden)'];
-    if (!absatz) return p.text;
-    return absaetzeVon(p).get(absatz) ?? p.text;
+    if (!p) return '';
+    if (!absatz) return p.text.join('\n');
+    return (absaetzeVon(p).get(absatz) ?? p.text).join('\n');
   };
+  const teile = wortDiff(zeilen(alt), zeilen(neu));
   return (
     <div className="br-vergleich">
-      <div>
-        <h4>bisher</h4>
-        {zeilen(alt).map((z, i) => (
-          <p key={i}>{z}</p>
-        ))}
-      </div>
-      <div>
-        <h4>jetzt</h4>
-        {zeilen(neu).map((z, i) => (
-          <p key={i}>{z}</p>
-        ))}
-      </div>
+      <h4>
+        {absatz ? `Abs. ${absatz}: ` : ''}Änderung gegenüber der vorigen Fassung <span className="br-leise">(gestrichen = entfallen, unterstrichen = neu)</span>
+      </h4>
+      <p className="br-vergleich-text">
+        {teile.map((t, i) => (t.art === 'gleich' ? <span key={i}>{t.text}</span> : t.art === 'weg' ? <del key={i}>{t.text}</del> : <ins key={i}>{t.text}</ins>))}
+      </p>
     </div>
   );
 }
@@ -98,7 +123,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         </div>
         <div className="br-detail-ampel">
           <AmpelMarke ampel={p.ampel} />
-          {p.festlegung && <span className="br-leise">{p.festlegung.bestaetigt ? 'von Hand festgelegt' : 'von Hand festgelegt (Entwurf)'}</span>}
+          {p.festlegung && <span className="br-leise-stark">{p.festlegung.bestaetigt ? 'von Hand festgelegt' : 'von Hand festgelegt · Entwurf (beim Speichern bestätigen)'}</span>}
         </div>
       </header>
       <div className="br-detail-inhalt">
@@ -113,7 +138,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             <p className="br-festlegung-text">
               <strong>Von Hand ({p.festlegung.von}, {datum(p.festlegung.am)}):</strong> {p.festlegung.grund}
               <br />
-              <span className="br-leise">automatisch wäre: {AMPEL_TEXT[p.automatisch]}</span>
+              <span className="br-leise-stark">automatisch wäre: {AMPEL_TEXT[p.automatisch]}</span>
             </p>
           )}
           <ul className="br-gruende">
@@ -164,21 +189,22 @@ export function Detail({ stand }: { stand: Pruefstand }) {
           {p.behoerde ? <p>{BEHOERDE[p.behoerde]}</p> : null}
           {p.nachweis?.length ? <p>Nachweis: {p.nachweis.join('; ')}</p> : null}
           {p.verweise?.length ? (
-            <p>
-              Siehe auch:{' '}
-              {p.verweise.map((v, i) => (
-                <span key={v}>
-                  {i > 0 && ', '}
-                  <button type="button" className="br-link" onClick={() => useBaurecht.getState().waehlen(v)}>
-                    {ctx.paragraf?.(v) ?? v}
-                  </button>
-                </span>
-              ))}
-            </p>
+            <>
+              <p className="br-verweise-kopf">Siehe auch:</p>
+              <ul className="br-verweise">
+                {p.verweise.map((v) => (
+                  <li key={v}>
+                    <button type="button" className="br-link" onClick={() => useBaurecht.getState().waehlen(v)}>
+                      {ctx.paragraf?.(v) ?? v}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : null}
           {p.regel && (
-            <p className="br-leise">
-              Regel: {p.regel.datei.replace(/^module\//, '')} (Version {p.regel.version}, geprüft an der Fassung vom {datum(p.regel.fassung)})
+            <p className="br-leise" title={p.regel.datei}>
+              Regel Stand {datum(p.regel.fassung)} (an dieser Fassung geprüft), Version {p.regel.version}
             </p>
           )}
           {p.annahme && <p className="br-leise">Annahme: {p.annahme}</p>}
@@ -200,6 +226,12 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             </span>
           </div>
           {t?.fassung && <p className="br-leise">{t.fassung.fassung} · abgerufen {datum(t.fassung.abgerufen)}</p>}
+          {text && !vergleich && (
+            <p className="br-text-legende" aria-hidden="true">
+              <span className="br-legende-hervor">Fundstelle der Regel</span>
+              {geaendert.size > 0 && <span className="br-legende-geaendert">seit der Prüfung geändert</span>}
+            </p>
+          )}
           {vergleich && t?.vorige
             ? p.geaendert.map((g) => <Gegenueberstellung key={g} alt={t.vorige!.paragrafen[p.paragraf]} neu={text} absatz={g.split('/')[1] ?? ''} />)
             : text ? <ParagrafText p={text} absaetze={absaetze} geaendert={geaendert} /> : <p className="br-leise">{useBaurecht.getState().laedt.includes(norm.id) ? 'Text wird geholt …' : norm.def.quelle.art === 'verweis' ? 'Nur Fundstelle – der Text ist nicht frei verfügbar.' : `Text nicht verfügbar${t?.fehler ? `: ${t.fehler}` : ' (Web-Version oder noch nicht geholt)'}.`}</p>}

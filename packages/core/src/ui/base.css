@@ -33,6 +33,8 @@
   --fehler-text: #a3281d;
   --chip-bg: #eef0f2;
   --on-accent: #ffffff;
+  /* Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1 */
+  --accent-text: #2a5bd7;
   --overlay-bg: rgba(255, 255, 255, 0.92);
   --code-bg: rgba(0, 0, 0, 0.05);
   --backdrop: rgba(20, 24, 31, 0.4);
@@ -190,7 +192,7 @@ button:disabled {
 button.active {
   background: var(--accent-soft);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 button.active.kind-room {
@@ -202,7 +204,8 @@ button.active.kind-room {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  /* hell: Weiß auf Blau, dunkel: Dunkel auf Hellblau – in beiden Schemata über 4,5:1 */
+  color: var(--on-accent);
 }
 
 button.primary:hover:not(:disabled) {
@@ -345,7 +348,8 @@ input.num {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: 2px solid var(--accent-soft);
   border-color: var(--accent);
 }
@@ -973,6 +977,7 @@ code {
   --fehler-text: #f3a197;
   --chip-bg: #2b3038;
   --on-accent: #10131a;
+  --accent-text: #8fb0ff;
   --overlay-bg: rgba(31, 34, 40, 0.92);
   --code-bg: rgba(255, 255, 255, 0.08);
   --backdrop: rgba(0, 0, 0, 0.55);
@@ -992,6 +997,8 @@ code {
   --text: #1f2328;
   --muted: #6b7280;
   --accent: #2a5bd7;
+  --accent-text: #2a5bd7;
+  --on-accent: #ffffff;
   --accent-soft: #e6edfb;
   --input-bg: #ffffff;
   --hover: #f1f3f6;

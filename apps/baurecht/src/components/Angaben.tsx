@@ -8,6 +8,7 @@ import type { Pruefstand } from '../pruefung';
 import { heute, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
 import { faktBestaetigenOeffnen, faktSetzenOeffnen } from './Dialoge';
+import { Klaeren } from './Kopf';
 
 /** Angaben, die von Hand nur mit Begründung gesetzt werden: Schutzgebiete und Werte aus Geodiensten (ja/nein, Auswahl) */
 export const mitBeleg = (def: FaktDef, wert: FaktWert | undefined) => (def.typ === 'janein' || def.typ === 'wahl') && (def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst');
@@ -29,6 +30,15 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
   const geaendert = useBaurecht((s) => s.merkmaleDatei);
   const fokus = useBaurecht((s) => s.fokus);
   const ref = useRef<HTMLElement>(null);
+  const fehlen = VORGABE_MERKMALE.filter((m) => !merkmale[m.name]).length;
+  // beantwortete Merkmale lassen sich einklappen; fehlt eines, ist die Gruppe offen
+  const [auf, setAuf] = useState(fehlen > 0);
+  useEffect(() => {
+    if (fehlen > 0) setAuf(true);
+  }, [fehlen]);
+  useEffect(() => {
+    if (fokus?.startsWith('merkmal:')) setAuf(true);
+  }, [fokus]);
   useEffect(() => {
     if (!fokus?.startsWith('merkmal:') || !ref.current) return;
     const el = ref.current.querySelector<HTMLElement>(`[data-merkmal="${CSS.escape(fokus.slice(8))}"]`);
@@ -40,9 +50,13 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
   }, [fokus]);
   return (
     <section ref={ref} className="br-angaben-gruppe" aria-labelledby="br-merkmale">
-      <h2 id="br-merkmale">Antragsmerkmale</h2>
-      <p className="br-leise">Gemeinsam mit der App Formulare – gilt für den ganzen Antrag.</p>
-      {VORGABE_MERKMALE.map((m) => {
+      <h2 id="br-merkmale">
+        <button type="button" className="br-gruppe-knopf" aria-expanded={auf} onClick={() => setAuf(!auf)}>
+          <span aria-hidden="true">{auf ? '▾' : '▸'}</span> Antragsmerkmale <span className="br-gruppe-stand">{fehlen ? `${fehlen} offen` : 'alle festgelegt'}</span>
+        </button>
+      </h2>
+      {auf && <p className="br-leise">Gemeinsam mit der App Formulare – gilt für den ganzen Antrag.</p>}
+      {auf && VORGABE_MERKMALE.map((m) => {
         const e = MERKMAL_ERKLAERUNG[m.name];
         const wert = merkmale[m.name] ?? '';
         const n = klaerung.get(`merkmal:${m.name}`);
@@ -53,7 +67,7 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
               {!wert && n ? <span className="br-klaert" title={`klärt ${n} Paragrafen`}>klärt {n}</span> : null}
               {(geaendert[m.name] ?? '') !== wert && <span className="br-marke" title="noch nicht gespeichert">geändert</span>}
             </div>
-            <div className="br-segment">
+            <div className={`br-segment${m.werte.length >= 3 && m.werte.some((w) => w.length > 14) ? ' br-segment-senkrecht' : ''}`}>
               {m.werte.map((w) => (
                 <button key={w} type="button" className={wert === w ? 'active' : ''} aria-pressed={wert === w} title={e?.werte?.[w] ? `${w}: ${e.werte[w]}` : w} onClick={() => wert !== w && useBaurecht.getState().merkmalSetzen(m.name, w)}>
                   {w}
@@ -134,6 +148,12 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
       {fest ? (
         <div className="br-fester-wert">
           {typeof wert?.wert === 'boolean' ? (wert.wert ? 'ja' : 'nein') : String(wert?.wert)} <span className="br-leise">– {wert?.quelle}</span>
+          {wert?.sicherheit === 'hinweis' && (
+            <span className="br-hinweis-marke" title={wert.grund}>
+              {' '}
+              nur Hinweis
+            </span>
+          )}
         </div>
       ) : (
         <FaktEingabe
@@ -222,6 +242,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         <input type="search" placeholder="Angabe suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Angaben durchsuchen" />
       </div>
       <div className="br-angaben-liste">
+        {!suche && <Klaeren stand={stand} />}
         {stand.widersprueche.map((w) => (
           <div key={w} className="br-meldung br-meldung-warn" role="status">
             {w}

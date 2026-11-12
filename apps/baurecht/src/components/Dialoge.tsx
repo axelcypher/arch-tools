@@ -35,9 +35,11 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
   const [grund, setGrund] = useState('');
   const [von, setVon] = useState('');
   const [versucht, setVersucht] = useState(false);
+  const [verwerfen, setVerwerfen] = useState(false);
   const feld = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (!p) return;
+    setVerwerfen(false);
     // Vorgabe: die bisherige Festlegung bzw. die automatische Ampel – eine Herabstufung wählt man bewusst
     setAmpel(p.festlegung?.ampel ?? p.automatisch);
     setGrund(p.festlegung?.grund ?? '');
@@ -48,9 +50,14 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
   if (!p) return null;
   const herab = RANG[ampel] < RANG[p.automatisch];
   const ok = grund.trim().length >= 10 && von.trim().length > 0;
+  // Esc bzw. Schließen mit getippter Begründung: erst nachfragen
+  const zu = () => (grund.trim() && grund.trim() !== (p.festlegung?.grund ?? '') ? setVerwerfen(true) : schliessen());
   const festlegen = () => {
     setVersucht(true);
-    if (!ok) return;
+    if (!ok) {
+      feld.current?.focus();
+      return;
+    }
     const fassung = texte[`${p.modul}/${p.norm}`]?.fassung;
     const summen: Record<string, string> = {};
     for (const f of p.fundstellen) if (fassung?.summen[f]) summen[f] = fassung.summen[f];
@@ -61,7 +68,7 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
     schliessen();
   };
   return (
-    <Modal titel={`${paragrafName(p.paragraf)} von Hand festlegen`} onClose={schliessen} breit klickDaneben={false}>
+    <Modal titel={`${paragrafName(p.paragraf)} von Hand festlegen`} onClose={zu} breit klickDaneben={false}>
       <h3>
         {paragrafName(p.paragraf)} {p.titel} – von Hand festlegen
       </h3>
@@ -80,15 +87,28 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
       </fieldset>
       {herab && (
         <div className="br-meldung br-meldung-warn" role="alert">
-          Sie stufen von „{AMPEL_TEXT[p.automatisch]}“ auf „{AMPEL_TEXT[ampel]}“ herab. Das ist erlaubt, wenn der Sonderfall begründet ist – die Festlegung steht im Protokoll und muss beim Speichern noch einmal bestätigt werden.
+          Sie stufen von „{AMPEL_TEXT[p.automatisch]}“ auf „{AMPEL_TEXT[ampel]}“ herab. Das ist erlaubt, wenn der Sonderfall begründet ist – die Festlegung steht im Prüfprotokoll und muss beim Speichern noch einmal bestätigt werden.
         </div>
       )}
       <label className="field">
         <span className="field-label">
           Begründung <span aria-hidden="true">*</span>
         </span>
-        <textarea ref={feld} rows={4} value={grund} onChange={(e) => setGrund(e.target.value)} aria-required="true" aria-invalid={versucht && grund.trim().length < 10} placeholder="z. B. Begehung am 03.11.2026 ohne Befund, Bericht im Projektordner" />
-        {versucht && grund.trim().length < 10 && <span className="field-hint br-fehler-text">Bitte begründen (mindestens 10 Zeichen) – die Begründung steht im Protokoll.</span>}
+        <textarea
+          ref={feld}
+          rows={4}
+          value={grund}
+          onChange={(e) => setGrund(e.target.value)}
+          aria-required="true"
+          aria-invalid={versucht && grund.trim().length < 10}
+          aria-describedby={versucht && grund.trim().length < 10 ? 'br-festlegen-fehler' : undefined}
+          placeholder="z. B. Begehung am 03.11.2026 ohne Befund, Bericht im Projektordner"
+        />
+        {versucht && grund.trim().length < 10 && (
+          <span id="br-festlegen-fehler" className="field-hint br-fehler-text">
+            Bitte begründen (mindestens 10 Zeichen) – die Begründung steht im Prüfprotokoll.
+          </span>
+        )}
       </label>
       <label className="field">
         <span className="field-label">
@@ -96,14 +116,26 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
         </span>
         <input value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" />
       </label>
-      <div className="dialog-buttons">
-        <button type="button" onClick={schliessen}>
-          Abbrechen
-        </button>
-        <button type="button" className="primary" onClick={festlegen} aria-disabled={!ok}>
-          Festlegen
-        </button>
-      </div>
+      {verwerfen ? (
+        <div className="br-meldung br-meldung-warn dialog-buttons br-verwerfen" role="alert">
+          <span>Die Begründung ist noch nicht übernommen. Verwerfen?</span>
+          <button type="button" onClick={() => setVerwerfen(false)}>
+            Weiter bearbeiten
+          </button>
+          <button type="button" className="danger" onClick={schliessen}>
+            Verwerfen
+          </button>
+        </div>
+      ) : (
+        <div className="dialog-buttons">
+          <button type="button" onClick={zu}>
+            Abbrechen
+          </button>
+          <button type="button" className="primary" onClick={festlegen} aria-disabled={!ok}>
+            Festlegen
+          </button>
+        </div>
+      )}
     </Modal>
   );
 }
@@ -167,6 +199,7 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
   const [von, setVon] = useState('');
   const [versucht, setVersucht] = useState(false);
   const [veraltet, setVeraltet] = useState(false);
+  const [verwerfen, setVerwerfen] = useState(false);
   const feld = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (!ziel) return;
@@ -174,6 +207,7 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
     setVon(benutzer());
     setVersucht(false);
     setVeraltet(false);
+    setVerwerfen(false);
     setTimeout(() => feld.current?.focus(), 0);
   }, [ziel]);
   const vorschau = useMemo(() => {
@@ -185,6 +219,7 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
   }, [ziel, folgen, project]);
   if (!ziel) return null;
   const schliessen = () => useFaktBestaetigen.setState({ ziel: null });
+  const zu = () => (grund.trim() ? setVerwerfen(true) : schliessen());
   const ok = grund.trim().length >= 10 && von.trim().length > 0;
   const bestaetigen = () => {
     setVersucht(true);
@@ -205,7 +240,7 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
   const geo = ziel.wert.herkunft === 'geodienst';
   const fehlerId = 'br-fakt-grund-fehler';
   return (
-    <Modal titel={ziel.modus === 'setzen' ? 'Angabe von Hand setzen' : 'Angabe bestätigen'} onClose={schliessen} breit klickDaneben={false}>
+    <Modal titel={ziel.modus === 'setzen' ? 'Angabe von Hand setzen' : 'Angabe bestätigen'} onClose={zu} breit klickDaneben={false}>
       <h3>
         {ziel.titel}: „{wertText(ziel.wert.wert)}“ {ziel.modus === 'setzen' ? 'von Hand setzen' : 'bestätigen'}
       </h3>
@@ -252,14 +287,26 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
         </span>
         <input value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" />
       </label>
-      <div className="dialog-buttons">
-        <button type="button" onClick={schliessen}>
-          Abbrechen
-        </button>
-        <button type="button" className="primary" onClick={bestaetigen} aria-disabled={!ok || veraltet}>
-          {ziel.modus === 'setzen' ? 'Übernehmen' : 'Bestätigen'}
-        </button>
-      </div>
+      {verwerfen ? (
+        <div className="br-meldung br-meldung-warn dialog-buttons br-verwerfen" role="alert">
+          <span>Die Begründung ist noch nicht übernommen. Verwerfen?</span>
+          <button type="button" onClick={() => setVerwerfen(false)}>
+            Weiter bearbeiten
+          </button>
+          <button type="button" className="danger" onClick={schliessen}>
+            Verwerfen
+          </button>
+        </div>
+      ) : (
+        <div className="dialog-buttons">
+          <button type="button" onClick={zu}>
+            Abbrechen
+          </button>
+          <button type="button" className="primary" onClick={bestaetigen} aria-disabled={!ok || veraltet}>
+            {ziel.modus === 'setzen' ? 'Übernehmen' : 'Bestätigen'}
+          </button>
+        </div>
+      )}
     </Modal>
   );
 }

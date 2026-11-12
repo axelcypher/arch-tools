@@ -13,7 +13,7 @@
 import type { Fassung } from '../recht/typen';
 import { FAKTEN } from './fakten';
 import type { Bewertung, KurzKontext, TextKontext } from './kurz';
-import { kurzText, offenText, werten } from './kurz';
+import { kurzText, offenFrage, offenText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { plusMonate } from '../recht/quellen';
@@ -233,7 +233,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ampel = 'rot';
       gruende.push(r.grund);
       tragend = [g, gilt];
-      if (entf?.w === 'offen') hinweise.push(`Ausnahme möglich (${kurzText(r.entfaellt, text)}) – fehlt: ${entf.offen.map((o) => offenText(o, text)).join(', ')}`);
+      if (entf?.w === 'offen') hinweise.push(`Ausnahme möglich (${kurzText(r.entfaellt, text)}) – es fehlt: ${entf.offen.map((o) => offenFrage(o, text)).join(' · ')}`);
     } else if (tatbestand === 'nein') {
       ampel = 'gruen';
       gruende.push(r.gilt ? `Gilt nicht: Voraussetzung ist ${kurzText(r.gilt, text)}` : 'Gilt nicht');
@@ -241,7 +241,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     } else {
       ampel = 'gelb';
       const fehlt = [...new Set([...g.offen, ...gilt.offen])];
-      gruende.push(`Offen – gilt bei ${kurzText(r.gilt ?? n.datei?.regel.geltung, text) || 'Geltung der Norm'}; fehlt: ${fehlt.map((o) => offenText(o, text)).join(', ') || 'Angaben'}`);
+      gruende.push(`Offen – es fehlt: ${fehlt.map((o) => offenFrage(o, text)).join(' · ') || 'Angaben'}. Gilt, wenn: ${kurzText(r.gilt ?? n.datei?.regel.geltung, text) || 'die Norm anwendbar ist'}.`);
       tragend = [g, gilt];
     }
 

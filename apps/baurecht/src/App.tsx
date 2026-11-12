@@ -12,7 +12,7 @@ import { AmpelMarke, AMPEL_LANG } from './components/Ampel';
 import { Detail } from './components/Detail';
 import type { FolgenRechner } from './components/Dialoge';
 import { BestaetigenDialog, bestaetigenFragen, FaktBestaetigenDialog, FestlegenDialog } from './components/Dialoge';
-import { Bilanz, Kopf } from './components/Kopf';
+import { Kopf } from './components/Kopf';
 import { Protokoll } from './components/Protokoll';
 import { Vorschriften } from './components/Vorschriften';
 import { lageAbfragen } from './lage';
@@ -73,6 +73,22 @@ export async function speichern(): Promise<boolean> {
       useBaurecht.setState({ pruefung: p });
     }
   }
+}
+
+/** Bereiche für F6 und die Sprungmarken */
+const BEREICHE = [
+  { sel: '.br-kopf', titel: 'Kopf' },
+  { sel: '.br-angaben', titel: 'Angaben' },
+  { sel: '.br-vorschriften-liste', titel: 'Vorschriften' },
+  { sel: '.br-detail', titel: 'Einzelheiten' },
+];
+
+/** in einen Bereich springen: auf den Tabstopp der Liste bzw. das erste Bedienelement */
+function bereichFokussieren(sel: string) {
+  const b = document.querySelector<HTMLElement>(sel);
+  if (!b) return;
+  const ziel = b.querySelector<HTMLElement>('[data-roving][tabindex="0"]') ?? b.querySelector<HTMLElement>('button:not([disabled]), input, select, textarea, [tabindex="0"]');
+  ziel?.focus();
 }
 
 function Start({ onWahl }: { onWahl: () => void }) {
@@ -142,13 +158,19 @@ export function App() {
 
   const speichernMitMeldung = useCallback(async () => speichern(), []);
 
-  // Strg+S, Strg+P (Protokoll)
+  // Strg+S speichern; F6 / Umschalt+F6 springt zwischen Kopf, Angaben, Vorschriften und Einzelheiten
   useEffect(() => {
     const taste = (e: KeyboardEvent) => {
       const strg = e.ctrlKey || e.metaKey;
       if (strg && e.key.toLowerCase() === 's') {
         e.preventDefault();
         void speichern();
+      }
+      if (e.key === 'F6' && !document.querySelector('[role="dialog"]')) {
+        e.preventDefault();
+        const i = BEREICHE.findIndex((b) => document.querySelector(b.sel)?.contains(document.activeElement));
+        const n = BEREICHE.length;
+        bereichFokussieren(BEREICHE[(i < 0 ? 0 : i + (e.shiftKey ? n - 1 : 1)) % n].sel);
       }
     };
     window.addEventListener('keydown', taste);
@@ -198,8 +220,14 @@ export function App() {
       <TitleBar app="Baurecht" name={name} dirty={dirty} zeichenflaeche={false} onOpenLog={() => setLogOffen(true)} onProjekte={() => void projekteOeffnen()} onSpeichern={quelle ? speichernMitMeldung : undefined} />
       {project ? (
         <>
+          <nav className="br-sprung" aria-label="Sprungmarken (auch F6)">
+            {BEREICHE.slice(1).map((b) => (
+              <button key={b.sel} type="button" onClick={() => bereichFokussieren(b.sel)}>
+                Zu den {b.titel === 'Angaben' ? 'Angaben' : b.titel === 'Vorschriften' ? 'Vorschriften' : 'Einzelheiten'}
+              </button>
+            ))}
+          </nav>
           <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} lageLaeuft={lageLaeuft} />
-          <Bilanz stand={stand} />
           {!isTauri() && (
             <div className="br-hinweisband" role="note">
               Web-Version: Die Gesetzestexte lassen sich hier nicht abrufen. Ohne Text kann die App nicht prüfen, ob sich ein Paragraf seit der Prüfung der Regel geändert hat – deshalb bleibt, was sonst entfiele, gelb. Die volle Prüfung bietet die Desktop-App.
