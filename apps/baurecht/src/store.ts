@@ -17,6 +17,10 @@ import type { Ampel, FaktWert, Festlegung, ParagrafErgebnis } from '@core/baurec
 import type { Project } from '@core/model';
 import type { TextStand } from '@core/baurecht/auswertung';
 import { mitgeliefert } from './regelpaket';
+import { benutzer } from './benutzer';
+
+/** Kennung der Bestätigung des Planungsrechts für den Ort – zählt beim Speichern wie eine gesicherte Angabe */
+export const PLANUNGSRECHT = 'merkmal:Planungsrecht';
 
 export type Projektquelle =
   /** Projektdatei im Projektordner (Desktop): wird gezielt ersetzt */
@@ -185,7 +189,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     if (name === 'Planungsrecht') {
       const p = kopie(get().pruefung);
       const o = ortVon(get().project);
-      if (wert && o) p.planungsrechtOrt = { ...o, wert };
+      if (wert && o) p.planungsrechtOrt = { ...o, wert, von: benutzer(), am: heute() };
       else delete p.planungsrechtOrt;
       set({ merkmale: m, pruefung: p });
       return;
@@ -197,7 +201,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const wert = get().merkmale['Planungsrecht'];
     if (!o || !wert) return;
     const p = kopie(get().pruefung);
-    p.planungsrechtOrt = { ...o, wert };
+    p.planungsrechtOrt = { ...o, wert, von: benutzer(), am: heute() };
     set({ pruefung: p });
   },
   faktSetzen: (id, wert, von, grund, lage) => {
@@ -286,6 +290,11 @@ export const useBaurecht = create<Zustand>((set, get) => ({
       else delete p.festlegungen[id];
     }
     for (const id of fakten) {
+      if (id === PLANUNGSRECHT) {
+        if (s.pruefungDatei.planungsrechtOrt) p.planungsrechtOrt = kopie(s.pruefungDatei.planungsrechtOrt);
+        else delete p.planungsrechtOrt;
+        continue;
+      }
       const alt = s.pruefungDatei.fakten[id];
       if (alt) p.fakten[id] = kopie(alt);
       else delete p.fakten[id];
@@ -332,7 +341,11 @@ export function offeneFestlegungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'
  */
 export function offeneBestaetigungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
   const kern = (f: FaktWert | undefined) => JSON.stringify(f ? { wert: f.wert, bestaetigt: f.bestaetigt ?? null } : null);
-  return Object.entries(s.pruefung.fakten)
+  const ids = Object.entries(s.pruefung.fakten)
     .filter(([id, f]) => f.bestaetigt && kern(f) !== kern(s.pruefungDatei.fakten[id]))
     .map(([id]) => id);
+  // das Planungsrecht für diesen Ort bestätigt: wie eine gesicherte Angabe noch einmal beim Speichern (es kann viele
+  // Paragrafen entscheiden)
+  if (s.pruefung.planungsrechtOrt && JSON.stringify(s.pruefung.planungsrechtOrt) !== JSON.stringify(s.pruefungDatei.planungsrechtOrt ?? null)) ids.push(PLANUNGSRECHT);
+  return ids;
 }

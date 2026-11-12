@@ -20,7 +20,8 @@ import { lageAbfragen } from './lage';
 import { ausProjektwahl, dateiOeffnen, speichernJetzt } from './projekt';
 import { auswertungMit, herabstufungen, texteLaden, usePruefstand } from './pruefung';
 import { abgelegtesPaket, paketNachladen } from './regelpaket';
-import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from './store';
+import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, PLANUNGSRECHT, useBaurecht } from './store';
+import type { BaurechtPruefung } from '@core/baurecht/projekt';
 
 const log = logger('baurecht');
 
@@ -47,7 +48,7 @@ async function speichernLauf(): Promise<boolean> {
   if (!s.quelle) return false;
   const festlegungen = offeneFestlegungen(s);
   const fakten = offeneBestaetigungen(s);
-  let entwurf: { festlegungen: Record<string, Festlegung | null>; fakten: Record<string, FaktWert | null> } | null = null;
+  let entwurf: { festlegungen: Record<string, Festlegung | null>; fakten: Record<string, FaktWert | null>; planungsrechtOrt?: BaurechtPruefung['planungsrechtOrt'] | null } | null = null;
   if (festlegungen.length || fakten.length) {
     const a = await bestaetigenFragen({ festlegungen, fakten });
     if (a === 'abbrechen') return false;
@@ -57,7 +58,8 @@ async function speichernLauf(): Promise<boolean> {
       const jetzt = useBaurecht.getState().pruefung;
       entwurf = {
         festlegungen: Object.fromEntries(festlegungen.map((id) => [id, jetzt.festlegungen[id] ?? null])),
-        fakten: Object.fromEntries(fakten.map((id) => [id, jetzt.fakten[id] ?? null])),
+        fakten: Object.fromEntries(fakten.filter((id) => id !== PLANUNGSRECHT).map((id) => [id, jetzt.fakten[id] ?? null])),
+        ...(fakten.includes(PLANUNGSRECHT) ? { planungsrechtOrt: jetzt.planungsrechtOrt ?? null } : {}),
       };
       useBaurecht.getState().aufDateistand(festlegungen, fakten);
     }
@@ -87,6 +89,10 @@ async function speichernLauf(): Promise<boolean> {
         if (!gleich(p.fakten[id], st.pruefungDatei.fakten[id])) continue;
         if (f) p.fakten[id] = f;
         else delete p.fakten[id];
+      }
+      if (entwurf.planungsrechtOrt !== undefined && gleich(p.planungsrechtOrt, st.pruefungDatei.planungsrechtOrt)) {
+        if (entwurf.planungsrechtOrt) p.planungsrechtOrt = entwurf.planungsrechtOrt;
+        else delete p.planungsrechtOrt;
       }
       useBaurecht.setState({ pruefung: p });
     }
@@ -266,6 +272,8 @@ export function App() {
   const folgenSeitDatei = useCallback(
     (id: string) => {
       const s = useBaurecht.getState();
+      // Planungsrecht für den Ort bestätigt: Folgen gegenüber dem Stand der Datei (ohne diese Bestätigung)
+      if (id === PLANUNGSRECHT) return { herab: herabstufungen(auswertungMit(s.pruefung.fakten, { planungsrechtOrt: s.pruefungDatei.planungsrechtOrt }), auswertungJetzt) };
       const eigene = { ...s.pruefung.fakten };
       const alt = s.pruefungDatei.fakten[id];
       if (alt) eigene[id] = alt;

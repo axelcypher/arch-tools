@@ -9,7 +9,7 @@ import { textPasst } from './suche';
 import { suchTreffer } from './components/Vorschriften';
 import { aenderungenAnwenden } from './projekt';
 import { alleFakten, auswertungMit, OHNE_LAGEBEZUG, planungsrechtVerschoben, pruefstandBerechnen } from './pruefung';
-import { useBaurecht } from './store';
+import { offeneBestaetigungen, PLANUNGSRECHT, useBaurecht } from './store';
 
 const ergebnis = (id: string): ParagrafErgebnis =>
   ({ id, modul: 'bund', norm: 'bnatschg', paragraf: '44', titel: 'Artenschutz', ampel: 'gelb', automatisch: 'gelb', gruende: ['x'], hinweise: [], offen: [], unsicher: [], geaendert: [], verwendet: ['merkmal:Vorhaben'], fundstellen: ['44/1'] }) as ParagrafErgebnis;
@@ -40,7 +40,7 @@ describe('Ort: Festlegungen und Planungsrecht nach einem Adresswechsel', () => {
     };
     expect(stand().ueberholt ?? '').not.toMatch(/Ort/);
     umziehen('Andere Straße 9');
-    expect(stand().ueberholt).toMatch(/Ort geändert: Anschrift/);
+    expect(stand().ueberholt).toMatch(/Anschrift bzw. Grundstück geändert/);
     expect(stand().ampel).not.toBe('gruen');
   });
 
@@ -215,5 +215,45 @@ describe('Runde 11: ältere Angaben', () => {
     // bestätigt: gilt als gesichert
     const best = alleFakten(s.project, { 'vorhaben.beseitigung_vollstaendig': m(true), 'vorhaben.beseitigung_umfang': { wert: 'vollständiger Abbruch ohne Ersatzbau', herkunft: 'abgeleitet', sicherheit: 'hinweis', bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Abbruchantrag geprüft' } } }, s.paket.module);
     expect(best['vorhaben.beseitigung_umfang'].bestaetigt).toBeDefined();
+  });
+});
+
+describe('Suche, Runde 12', () => {
+  const para = (paragraf: string, titel: string) => ({ paragraf, titel, gruende: [] }) as unknown as ParagrafErgebnis;
+  const norm = (kurz: string, titel: string, paragrafen: ParagrafErgebnis[]) => ({ def: { kurz, titel }, paragrafen }) as unknown as NormErgebnis;
+  const normen = [norm('BauGB', 'Baugesetzbuch', [para('30', 'B-Plan'), para('33', 'Planreife'), para('34', 'Innenbereich'), para('35', 'Außenbereich')]), norm('BauO NRW', 'Landesbauordnung', [para('6', 'Abstandsflächen'), para('62', 'Verfahrensfrei')])];
+  const treffer = (q: string) => normen.flatMap((n) => n.paragrafen.filter((p) => suchTreffer(q, normen)(p, n)).map((p) => `${n.def.kurz} ${p.paragraf}`));
+  it('Buchstaben, Bereiche, Satzzeichen im Volltext, Hinweis beim Rückfall auf die Norm', () => {
+    expect(treffer('§ 62 Abs. 1 Satz 1 Nr. 1 Buchst. a BauO NRW')).toEqual(['BauO NRW 62']);
+    expect(treffer('§§ 30 bis 34 BauGB')).toEqual(['BauGB 30', 'BauGB 33', 'BauGB 34']);
+    expect(treffer('Abstandsflächen.')).toEqual(['BauO NRW 6']);
+    expect(suchTreffer('§ 999 BauGB', normen).hinweis).toMatch(/§ 999 BauGB ist nicht erfasst – gezeigt: BauGB/);
+  });
+});
+
+
+describe('Runde 12: Planungsrecht beim Speichern, Suche', () => {
+  beforeEach(() => {
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+  });
+  it('die Bestätigung des Planungsrechts steht beim Speichern zur Bestätigung an, mit Name und Datum; „ohne“ setzt sie zurück', () => {
+    useBaurecht.getState().planungsrechtBestaetigen();
+    const s = useBaurecht.getState();
+    expect(s.pruefung.planungsrechtOrt).toMatchObject({ von: expect.any(String), am: expect.stringMatching(/^\d{4}-/) });
+    expect(offeneBestaetigungen(s)).toContain(PLANUNGSRECHT);
+    useBaurecht.getState().aufDateistand([], [PLANUNGSRECHT]);
+    expect(useBaurecht.getState().pruefung.planungsrechtOrt).toBeUndefined();
+  });
+  it('„Nr. 1a“, „Abs. 3a“, „§§ 30 ff.“, „LP I“', () => {
+    const para = (paragraf: string, titel: string) => ({ paragraf, titel, gruende: [] }) as unknown as ParagrafErgebnis;
+    const norm = (kurz: string, titel: string, paragrafen: ParagrafErgebnis[]) => ({ def: { kurz, titel }, paragrafen }) as unknown as NormErgebnis;
+    const normen = [norm('BauGB', 'Baugesetzbuch', [para('29', 'Vorhaben'), para('30', 'B-Plan'), para('34', 'Innenbereich')]), norm('BauO NRW', 'Landesbauordnung', [para('62', 'Verfahrensfrei')]), norm('LP I', 'Landschaftsplan I', [para('C.1', 'NSG')]), norm('LP II', 'Landschaftsplan II', [para('C.1', 'NSG')])];
+    const treffer = (q: string) => normen.flatMap((n) => n.paragrafen.filter((p) => suchTreffer(q, normen)(p, n)).map((p) => `${n.def.kurz} ${p.paragraf}`));
+    expect(treffer('§ 62 Abs. 1 Satz 1 Nr. 1a BauO NRW')).toEqual(['BauO NRW 62']);
+    expect(treffer('§ 34 Abs. 3a BauGB')).toEqual(['BauGB 34']);
+    expect(treffer('§§ 30 ff. BauGB')).toEqual(['BauGB 30', 'BauGB 34']);
+    expect(treffer('LP I')).toEqual(['LP I C.1']);
+    expect(textPasst('Einfamilienhaus', 'EFH')).toBe(true);
   });
 });

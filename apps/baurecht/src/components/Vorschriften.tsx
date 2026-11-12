@@ -190,7 +190,7 @@ function NormKarte({
  * Reihenfolge; die Norm zuerst genau nach ihrer Kurzform, erst dann im Titel). Findet die Paragrafensuche nichts
  * („22 m“, „1996“, „50 kW“), gilt die Volltextsuche über Titel, Norm und Begründungen.
  */
-export function suchTreffer(suche: string, normen: NormErgebnis[] = []): (p: ParagrafErgebnis, n: NormErgebnis) => boolean {
+export function suchTreffer(suche: string, normen: NormErgebnis[] = []): ((p: ParagrafErgebnis, n: NormErgebnis) => boolean) & { hinweis?: string } {
   const norm = suchNorm;
   if (!norm(suche)) return () => true;
   // Volltext (Kürzel am Wortanfang, Zahlen als ganzes Wort, Synonyme – dieselbe Suche wie in den Angaben)
@@ -198,7 +198,8 @@ export function suchTreffer(suche: string, normen: NormErgebnis[] = []): (p: Par
   // Zitat zerlegen: Satzzeichen weg; „Abs./Satz/Nr./Ziff. n (a)“ und römische Absatzziffern gehören nicht zur Nummer;
   // mit „§“ bzw. „§§“ sind die Zahlen direkt danach die Nummern („§§ 30, 34 BauGB“), sonst die erste freie Zahl
   const q = norm(suche.replace(/[.,;:]/g, ' '))
-    .replace(/(?:^| )(?:abs|absatz|satz|nr|ziff|buchst|s)\.? ?\d+(?: [a-z])?(?= |$)/g, ' ')
+    .replace(/(?:^| )(?:abs|absatz|satz|nr|ziff|s)\.? ?\d+[a-z]?(?: [a-z])?(?= |$)/g, ' ')
+    .replace(/(?:^| )(?:buchst|lit)\.? ?[a-z](?= |$)/g, ' ')
     // römische Absatzziffern nur direkt nach einer Nummer („34 I“) – „LP II“ ist eine Norm
     .replace(/(\d+[a-z]?) [ivx]{1,4}(?= |$)/g, '$1')
     .replace(/\s+/g, ' ')
@@ -206,11 +207,22 @@ export function suchTreffer(suche: string, normen: NormErgebnis[] = []): (p: Par
   const tokens = q.split(' ').filter(Boolean);
   const istNr = (t: string) => /^\d+[a-z]?$/.test(t);
   let nrs: string[] = [];
+  // „§§ 30 ff.“: ab der Nummer
+  let ab = false;
   if (suche.includes('§')) {
     const nach = norm(suche.slice(suche.indexOf('§')).replace(/[.,;:]/g, ' ')).split(' ').filter(Boolean);
+    let bis = false;
     for (const t of nach) {
-      if (istNr(t)) nrs.push(t);
-      else if (t !== 'und' && t !== 'bis' && t !== '§') break;
+      if (istNr(t)) {
+        // „§§ 30 bis 35“: der ganze Bereich
+        const von = Number.parseInt(nrs[nrs.length - 1] ?? '', 10);
+        const zu = Number.parseInt(t, 10);
+        if (bis && Number.isFinite(von) && Number.isFinite(zu) && zu > von && zu - von < 100) for (let k = von + 1; k < zu; k++) nrs.push(String(k));
+        nrs.push(t);
+        bis = false;
+      } else if (t === 'bis') bis = true;
+      else if (t === 'ff' || t === 'f') ab = true;
+      else if (t !== 'und' && t !== '§') break;
     }
   }
   if (!nrs.length) {
@@ -218,16 +230,22 @@ export function suchTreffer(suche: string, normen: NormErgebnis[] = []): (p: Par
     if (erste) nrs = [erste];
   }
   if (!nrs.length) return volltext;
-  const rest = tokens.filter((t) => !istNr(t) && t !== 'und' && t !== 'bis').join(' ');
+  const rest = tokens.filter((t) => !istNr(t) && !['und', 'bis', 'ff', 'f'].includes(t)).join(' ');
+  const nummer = (x: string) => Number.parseInt(x, 10);
+  const trifftNr = (p: ParagrafErgebnis) => nrs.includes(p.paragraf.toLowerCase()) || (ab && nrs.length === 1 && /^\d/.test(p.paragraf) && nummer(p.paragraf) >= nummer(nrs[0]));
   const ohne = (x: string) => norm(x).replace(/ /g, '');
   // Norm: genau die Kurzform („BauO NRW“ ist nicht „SAN-VO … BauO NRW“), sonst Kurzform enthält bzw. Titel enthält
   const stufen: ((n: NormErgebnis) => boolean)[] = rest ? [(n) => ohne(n.def.kurz) === ohne(rest), (n) => ohne(n.def.kurz).includes(ohne(rest)), (n) => norm(n.def.titel).includes(rest)] : [() => true];
   for (const st of stufen) {
-    const passt = (p: ParagrafErgebnis, n: NormErgebnis) => nrs.includes(p.paragraf.toLowerCase()) && st(n);
+    const passt = (p: ParagrafErgebnis, n: NormErgebnis) => trifftNr(p) && st(n);
     if (!normen.length || normen.some((n) => n.paragrafen.some((p) => passt(p, n)))) return passt;
   }
   // keinen dieser Paragrafen gibt es in den Regeln – dann die Norm selbst, wenn sie genannt ist („§ 1 BauNVO“ → BauNVO)
-  if (rest) for (const st of stufen.slice(0, 2)) if (normen.some(st)) return (_p, n) => st(n);
+  if (rest)
+    for (const st of stufen.slice(0, 2)) {
+      const n0 = normen.find(st);
+      if (n0) return Object.assign((_p: ParagrafErgebnis, n: NormErgebnis) => st(n), { hinweis: `${nrs.length > 1 ? '§§' : '§'} ${nrs.join(', ')} ${n0.def.kurz} ist nicht erfasst – gezeigt: ${n0.def.kurz}` });
+    }
   // ausdrücklich nach einem Paragrafen gefragt, ohne Norm und ohne Treffer: nichts (der Leerzustand sagt das)
   if (suche.includes('§')) return () => false;
   return volltext;
@@ -279,6 +297,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   const summe = zaehler.rot + zaehler.gelb + zaehler.gruen || 1;
   const filterAktiv = !!suche || nurHand || nurGeaendert || w.ampeln.length < 3;
   const suchfeld = useRef<HTMLInputElement>(null);
+  const [ortMeldung, setOrtMeldung] = useState('');
   const zuruecksetzen = () => {
     setSuche('');
     setNurHand(false);
@@ -340,6 +359,8 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     const zeile = gewaehlteZeile();
     if (zeile) inBereichZeigen(liste.current, zeile, 'mitte');
   }, [filterSchluessel]);
+  // die Meldung der Sammelaktion gilt nur, bis die Suche geändert wird
+  useEffect(() => setOrtMeldung(''), [suche]);
   // Filter-Menü (schmal): Klick daneben und Tab hinaus schließen; Esc nur, wenn der Fokus im Menü steht (nicht hinter
   // einem Dialog)
   const menue = useRef<HTMLDetailsElement>(null);
@@ -483,9 +504,13 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
             type="button"
             className="small"
             onClick={() => {
+              const n = ohneOrt.length;
               useBaurecht.getState().festlegungenOrtUebernehmen(ohneOrt);
-              // die Meldung verschwindet – Ansage und Fokus ins Suchfeld statt auf die Seite
-              useBaurecht.getState().ansagen(`${ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`);
+              // die Entwürfe zeigen (nur von Hand festgelegte) – eine Meldung in der Trefferzeile (eine Live-Region), Fokus
+              // ins Suchfeld statt auf die Seite
+              setNurGeaendert(false);
+              setNurHand(true);
+              setOrtMeldung(`${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`);
               setTimeout(() => suchfeld.current?.focus(), 0);
             }}
             title="Dem jetzigen Ort zuordnen – als Entwurf; beim Speichern wird jede noch einmal bestätigt"
@@ -497,7 +522,8 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       <div className="br-treffer" aria-live="polite">
         {filterAktiv ? (
           <>
-            {treffer} von {auswertung.paragrafen.length} Paragrafen{' '}
+            {ortMeldung ? `${ortMeldung} · ` : ''}
+            {treffer} von {auswertung.paragrafen.length} Paragrafen{passt.hinweis ? ` – ${passt.hinweis}` : ''}{' '}
             <button type="button" className="small br-link" onClick={zuruecksetzen}>
               Filter zurücksetzen
             </button>

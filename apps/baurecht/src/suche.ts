@@ -20,13 +20,20 @@ const SYNONYME: Record<string, string[]> = {
   neubau: ['errichtung'],
   umbau: ['änderung'],
   stellplatz: ['stellpl'],
+  lp: ['landschaftsplan'],
+  efh: ['einfamilienhaus'],
+  zfh: ['zweifamilienhaus'],
+  mfh: ['mehrfamilienhaus'],
 };
 
-export const suchNorm = (s: string) => s.toLowerCase().replace(/§/g, ' ').replace(/\s+/g, ' ').trim();
+// Satzzeichen zählen nicht („Abstandsflächen.“, „Stellplätze,“)
+export const suchNorm = (s: string) => s.toLowerCase().replace(/§/g, ' ').replace(/[.,;:!?()„“"]/g, ' ').replace(/\s+/g, ' ').trim();
 const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function wortPasst(text: string, x: string): boolean {
   if (/^\d/.test(x)) return new RegExp(`(^|[^0-9])${esc(x)}([^0-9]|$)`).test(text);
+  // römische Ziffern als ganzes Wort („LP I“ trifft nicht „LP II“)
+  if (/^[ivx]{1,4}$/.test(x)) return new RegExp(`(^|[^a-zäöüß0-9])${x}([^a-zäöüß0-9]|$)`).test(text);
   if (x.length <= 3) return new RegExp(`(^|[^a-zäöüß0-9])${esc(x)}`).test(text);
   return text.includes(x);
 }

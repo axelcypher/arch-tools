@@ -89,6 +89,41 @@ export function faktDefinitionen(module: Modul[]): Record<string, FaktDef> {
   return Object.assign({}, FAKTEN, ...module.map((m) => m.fakten ?? {}));
 }
 
+/** Merkmale nur mit Werten aus ihrer Werteliste (VORGABE_MERKMALE); andere Merkmale (eigene aus Formulare) unverändert */
+export function gueltigeMerkmale(merkmale: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(merkmale)) {
+    const vorgabe = VORGABE_MERKMALE.find((m) => m.name === k);
+    if (!vorgabe || vorgabe.werte.includes(v)) out[k] = v;
+  }
+  return out;
+}
+
+/** passt der Wert zur Angabe (Typ, bei Auswahl einer der Werte)? */
+export function wertPasst(def: Pick<FaktDef, 'typ' | 'werte'>, w: FaktWert['wert']): boolean {
+  if (w === null || w === undefined) return true;
+  if (def.typ === 'janein') return typeof w === 'boolean';
+  if (def.typ === 'zahl') return typeof w === 'number' && Number.isFinite(w);
+  if (def.typ === 'wahl') return typeof w === 'string' && (!def.werte?.length || def.werte.includes(w));
+  return typeof w === 'string';
+}
+
+/** Angaben, deren Wert nicht zur Angabe passt: offen (Wert entfernt), als Hinweis mit Grund */
+export function gueltigeFakten(fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>): Record<string, FaktWert> {
+  const out: Record<string, FaktWert> = {};
+  for (const [id, f] of Object.entries(fakten)) {
+    const d = defs[id];
+    if (!d || wertPasst(d, f.wert)) {
+      out[id] = f;
+      continue;
+    }
+    const { bestaetigt: _b, ...ohne } = f;
+    const erwartet = d.typ === 'janein' ? 'ja oder nein' : d.typ === 'zahl' ? 'eine Zahl' : d.typ === 'wahl' ? `einer von: ${(d.werte ?? []).join(', ')}` : 'ein Text';
+    out[id] = { ...ohne, wert: null, sicherheit: 'hinweis', grund: `Wert „${String(f.wert)}“ passt nicht zur Angabe (erwartet ${erwartet}) – bitte neu angeben` };
+  }
+  return out;
+}
+
 /** Werte, die Module setzen (fest oder nach einer Tabelle) – Angaben von Hand gehen vor */
 export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): Record<string, FaktWert> {
   const out = { ...fakten };
@@ -127,7 +162,7 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
           out[id] = {
             wert: v,
             herkunft: 'modul',
-            quelle: `${m.name} (abgeleitet aus ${d.nach.fakt === 'lage.ags' ? 'dem Gemeindeschlüssel' : d.nach.fakt})`,
+            quelle: `${m.name}, abgeleitet aus ${d.nach.fakt === 'lage.ags' ? 'dem Gemeindeschlüssel' : d.nach.fakt}`,
             sicherheit: unsicher ? 'hinweis' : 'sicher',
             ...(unsicher ? { grund: d.nach.hinweis ? `Tabelle nach ${d.nach.fakt === 'lage.ags' ? 'Gemeinde' : d.nach.fakt} – hängt von der Lage ab, bitte prüfen` : (basis.grund ?? 'abgeleitet aus einem nicht gesicherten Wert') } : {}),
             ...(basis.widerspruch ? { widerspruch: basis.widerspruch } : {}),
@@ -165,7 +200,11 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   const faktDefs = faktDefinitionen(e.module);
   const tageAlt = e.rechtsstandTage ?? RECHTSSTAND_TAGE;
   const entscheidungBis = plusMonate(e.einreichung, e.entscheidungMonate ?? ENTSCHEIDUNG_MONATE);
-  const fakten = modulFakten(e.module, e.fakten);
+  // nur zulässige Werte zählen – ein Merkmalwert außerhalb der Werteliste (Formulare erlaubt eigene Werte) oder eine
+  // Angabe mit falschem Typ bzw. einem Wert außerhalb der Auswahl (ältere Datei, umbenannter Auswahlwert) ist offen,
+  // nicht „trifft nicht zu“ (sonst entstünde ein falsches Grün)
+  const fakten = gueltigeFakten(modulFakten(e.module, e.fakten), faktDefs);
+  const merkmale = gueltigeMerkmale(e.merkmale);
   const titelCache = new Map<string, string>();
   const text: TextKontext = { fakt: (id) => faktDefs[id], bausteine, paragraf: (id) => titelCache.get(id) };
 
@@ -186,7 +225,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   for (const n of normen) for (const [nr, r] of Object.entries(n.datei?.regel.paragrafen ?? {})) regelVon.set(`${n.key}/${nr}`, { n, nr, r });
 
   const ctx: KurzKontext = {
-    merkmale: e.merkmale,
+    merkmale,
     fakten,
     einreichung: e.einreichung,
     heute: e.heute,
@@ -277,6 +316,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     // Ausnahmeteil soll ein gesichertes „gilt nicht“ nicht abwerten
     const gewicht = (b: Bewertung) => b.unsicher.length + b.widerspruch.length;
     let ampel: Ampel;
+    let bestaetigend: string | undefined;
     let tragend: Bewertung[] = [];
     // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `bedingung`
     const warum = (k: Kurz | undefined, w: Wahrheit) => warumText(k, ctx, text, w);
@@ -322,6 +362,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     // zur sicheren Seite
     if (ampel === 'gruen') {
       const herab: string[] = [];
+      bestaetigend = undefined;
       // „entfällt mit der Norm“ hängt am Anwendungsbereich – auch der muss an der geltenden Fassung geprüft sein
       const mitNorm = g.w === 'nein';
       // Einzelfall macht Grün nur gelb, wenn die Regel sagt, wann (sonst nur Hinweis bei Rot) – und nur, wenn die Norm
@@ -347,6 +388,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const angekuendigt = (n.stand?.kuenftige ?? []).filter((k) => k.gueltigAb > e.einreichung && k.gueltigAb <= entscheidungBis);
       if (pruefbar && angekuendigt.length) herab.push(`Neue Fassung ab ${angekuendigt.map((k) => datumText(k.gueltigAb)).join(', ')} angekündigt – voraussichtlich vor der Entscheidung; an der künftigen Fassung prüfen.`);
       if (fassung && !fassung.paragrafen[nr] && g.w !== 'nein') herab.push(`${paragrafName(nr)} steht nicht (mehr) im Text der geltenden Fassung.`);
+      // gelb allein wegen genau einer nicht gesicherten Angabe: deren Bestätigung entschiede den Paragrafen
+      if (herab.length === 1 && unsicher.length === 1 && !widerspruch.length) bestaetigend = unsicher[0];
       if (herab.length) {
         // der Grund für Gelb zuerst (steht in der Liste), dann warum es sonst grün wäre – als Konjunktiv, damit neben
         // „prüfen“ kein „Entfällt –“ steht
@@ -393,7 +436,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       if (fassung) for (const [k, summe] of Object.entries(fl.stand ?? {})) if (fassung.summen[k] !== summe) gruende2.push(`Text von ${fundstelleName(k)} geändert`);
       // eine Festlegung von Hand gilt für den Ort, an dem sie getroffen wurde (Begehung, Abstimmung, Planstand)
       const ortWeg = ortGeaendert(fl.ort, e.ort);
-      if (ortWeg) gruende2.push(fl.ort ? `Ort geändert: ${ortWeg}` : 'ohne Ortsangabe getroffen (ältere Datei)');
+      if (ortWeg) gruende2.push(fl.ort ? ortWeg : 'ohne Ortsangabe getroffen – ältere Datei');
       // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text. Fehlt der Systemstand,
       // ist es „noch nicht wirksam“ (erneut festlegen hilft nicht); wurde ohne Text festgelegt und liegt er jetzt vor,
       // ist es überholt (jetzt am Text erneut festlegen)
@@ -438,6 +481,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       hinweise,
       offen,
       unsicher,
+      ...(bestaetigend && !fl ? { bestaetigend } : {}),
       geaendert,
       verwendet: [...new Set([...g.verwendet, ...gilt.verwendet, ...(entf?.verwendet ?? []), ...(pruef.verwendet ?? [])])].filter((v) => !v.startsWith('tag:')),
       ...(behoerde ? { behoerde } : {}),
@@ -538,8 +582,15 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   }
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
   // gelb nur wegen eines Hinweises (nichts fehlt): bestätigen klärt – Angaben, keine Merkmale
+  // nur Paragrafen, die allein wegen genau dieses Hinweises gelb sind; feste Modulwerte hängen am Gemeindeschlüssel –
+  // dort ist zu bestätigen
   const zahlB = new Map<string, number>();
-  for (const p of paragrafen) if (offenAuto(p) && p.ampel === 'gelb' && !p.offen.length) for (const u of p.unsicher) if (!u.includes(':')) zahlB.set(u, (zahlB.get(u) ?? 0) + 1);
+  for (const p of paragrafen) {
+    if (!p.bestaetigend || p.bestaetigend.includes(':') || !offenAuto(p)) continue;
+    const ziel = fakten[p.bestaetigend]?.herkunft === 'modul' ? 'lage.ags' : p.bestaetigend;
+    p.bestaetigend = ziel;
+    zahlB.set(ziel, (zahlB.get(ziel) ?? 0) + 1);
+  }
   const bestaetigen = [...zahlB.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
 
   const zeigen = (h: Hinweis) => {

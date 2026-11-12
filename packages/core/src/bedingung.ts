@@ -88,7 +88,7 @@ export const MERKMAL_ERKLAERUNG: Record<string, { text: string; quelle?: Quelle;
       Errichtung: 'Neubau einer Anlage; Abbruch und Neubau in einem Antrag: „Beseitigung“ mit Umfang „Abbruch mit Ersatzbau“',
       Änderung: 'bauliche Änderung einer bestehenden Anlage, auch Anbau und Aufstockung',
       Nutzungsänderung: 'andere Nutzung einer bestehenden Anlage, auch ohne bauliche Änderung',
-      Beseitigung: 'Abbruch einer Anlage (§ 62 Abs. 3 BauO NRW) – ganz oder teilweise, mit oder ohne Ersatzbau; der Umfang steht darunter (Teilabbruch wird wie eine Änderung, Ersatzbau wie eine Errichtung geprüft)',
+      Beseitigung: 'Abbruch einer Anlage (§ 62 Abs. 3 BauO NRW) – ganz oder teilweise, mit oder ohne Ersatzbau; der Umfang steht darunter (Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung)',
     },
   },
   Planungsrecht: {

@@ -8,7 +8,7 @@ import { isTauri } from '@core/platform/files';
 import { Modal } from '@core/ui/Dialog';
 import { benutzer, benutzerMerken } from '../benutzer';
 import { aktuelleLage } from '../pruefung';
-import { heute, useBaurecht } from '../store';
+import { heute, PLANUNGSRECHT, useBaurecht } from '../store';
 import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke } from './Ampel';
 
 const RANG: Record<Ampel, number> = { rot: 2, gelb: 1, gruen: 0 };
@@ -414,6 +414,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
   const festlegungen = useBaurecht((s) => s.pruefung.festlegungen);
   const inDatei = useBaurecht((s) => s.pruefungDatei.festlegungen);
   const fakten = useBaurecht((s) => s.pruefung.fakten);
+  const planungsrechtOrt = useBaurecht((s) => s.pruefung.planungsrechtOrt);
   const [geprueft, setGeprueft] = useState(false);
   useEffect(() => setGeprueft(false), [offen]);
   // Folgen je Angabe einmal je Öffnen (volle Auswertung je Angabe – nicht bei jedem Haken neu)
@@ -489,6 +490,23 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
           );
         })}
         {offen.fakten.map((id) => {
+          // Planungsrecht für diesen Ort bestätigt – mit Folgen wie eine gesicherte Angabe
+          if (id === PLANUNGSRECHT) {
+            const po = planungsrechtOrt;
+            const fo = folgenJe[id] ?? { herab: [] };
+            return (
+              <li key={id} className={fo.herab.length ? 'br-herab' : ''}>
+                <div className="br-bestaetigen-kopf">
+                  <strong>Planungsrecht</strong>
+                  <span className="br-marke">für diesen Ort bestätigt: {po?.wert ?? '–'}</span>
+                </div>
+                <div className="br-leise-stark">
+                  {po?.von ? `${po.von}: ` : ''}gilt für {po?.anzeige ?? 'diesen Ort'}
+                </div>
+                <Folgen folgen={fo} />
+              </li>
+            );
+          }
           const f = fakten[id];
           if (!f?.bestaetigt) return null;
           const fo = folgenJe[id] ?? { herab: [] };

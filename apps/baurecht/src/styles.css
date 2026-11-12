@@ -1763,3 +1763,50 @@ h2.br-detail-name {
   font-size: 12px;
   padding: 4px 8px;
 }
+/* fremder Merkmalwert bzw. Wert, der nicht zur Angabe passt */
+.br-merkmal-fremd {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--warn-text);
+}
+/* Fußzeile eines Merkmals: die Erklärung des Werts über die volle Breite, die Knöpfe darunter (nichts wird gequetscht) */
+.br-merkmal-fuss {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.br-merkmal-fuss > .br-erklaerung {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+/* Fußzeile eines Merkmals: die Erklärung des Werts über die volle Breite, die Knöpfe darunter (nichts wird gequetscht) */
+.br-merkmal-fuss {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.br-merkmal-fuss > .br-erklaerung {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+/* schmale Angaben-Leiste: „Klärt am meisten“ kompakt (drei Chips, je eine Zeile) */
+.br-angaben {
+  container: angaben / inline-size;
+}
+@container angaben (max-width: 300px) {
+  .br-klaeren .br-chip-knopf:nth-of-type(n + 4) {
+    display: none;
+  }
+  .br-angaben .br-klaeren .br-chip-knopf {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+/* Marke am Planungsrecht im selben Info-Stil wie der Hinweis */
+.br-info-marke {
+  font-size: 11px;
+  color: var(--accent-text);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 9px;
+  padding: 0 6px;
+  white-space: nowrap;
+}

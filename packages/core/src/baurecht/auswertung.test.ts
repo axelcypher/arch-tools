@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { VORGABE_MERKMALE } from '../bedingung';
 import type { Fassung } from '../recht/typen';
 import type { AuswertungsEingabe } from './auswertung';
-import { auswerten, modulFakten } from './auswertung';
+import { auswerten, gueltigeFakten, gueltigeMerkmale, modulFakten } from './auswertung';
 import type { TextStand } from './auswertung';
 import { kurzText, werten } from './kurz';
 import { agsVorschlag, aktiveModule, fehlendeEbenen, paketAusDateien, paketPruefen, regeldateiFuer, signaturPruefen } from './paket';
@@ -575,5 +575,31 @@ describe('Klärt am meisten: nur Angaben, deren Antwort etwas ändert', () => {
     const a = auswerten({ paket: pk, module: pk.module, merkmale: {}, fakten: {}, einreichung: '2026-12-01', heute: '2026-11-12', texte: new Map(), festlegungen: {} });
     expect(a.paragrafen.find((x) => x.id === 'bund/t/1')!.ampel).toBe('gelb');
     expect(a.klaerung.map((k) => k.id)).toEqual(['x.b']);
+  });
+});
+
+describe('Runde 12: nur zulässige Werte zählen (kein falsches Grün)', () => {
+  it('Merkmalwert außerhalb der Werteliste ist offen, nicht „trifft nicht zu“', () => {
+    // § 44 BNatSchG gilt bei Errichtung, Änderung, Beseitigung – „Umbau“ ist kein Wert der Liste
+    const a = auswerten(eingabe({ merkmale: { Vorhaben: 'Umbau', Gebäudeart: 'Einfamilienhaus', Planungsrecht: 'Außenbereich', Gebäudeklasse: '1', Verfahren: 'vereinfachtes Verfahren' } }));
+    expect(p(a, 'bund/bnatschg/44').ampel).not.toBe('gruen');
+    expect(p(a, 'nw/bauo-nrw/6').ampel).toBe('gelb');
+  });
+  it('Angabe mit falschem Typ bzw. Wert außerhalb der Auswahl ist offen, mit Grund', () => {
+    const f = gueltigeFakten(
+      { a: { wert: 'ja', herkunft: 'manuell', sicherheit: 'sicher' }, b: { wert: 'ganz', herkunft: 'manuell', sicherheit: 'sicher' }, c: { wert: 'Teilabbruch', herkunft: 'manuell', sicherheit: 'sicher' } },
+      { a: { titel: 'A', gruppe: 'vorhaben', typ: 'janein' }, b: { titel: 'B', gruppe: 'vorhaben', typ: 'wahl', werte: ['Teilabbruch'] }, c: { titel: 'C', gruppe: 'vorhaben', typ: 'wahl', werte: ['Teilabbruch'] } },
+    );
+    expect(f.a).toMatchObject({ wert: null, sicherheit: 'hinweis', grund: expect.stringMatching(/passt nicht zur Angabe/) });
+    expect(f.b.wert).toBeNull();
+    expect(f.c.wert).toBe('Teilabbruch');
+    expect(gueltigeMerkmale({ Vorhaben: 'Umbau', Eigenes: 'x', Gebäudeart: 'Einfamilienhaus' })).toEqual({ Eigenes: 'x', Gebäudeart: 'Einfamilienhaus' });
+  });
+  it('„bestätigen klärt“ zählt nur Paragrafen, die allein wegen genau dieses Hinweises gelb sind', () => {
+    // § 1 BauO (Testregel): gilt bei „Überschwemmungsgebiet: nein“ – als Hinweis ist er gelb, sonst nichts offen
+    const a = auswerten(eingabe({ fakten: { 'lage.ags': sicher('05974040'), 'schutz.uesg': hinweis(true) } }));
+    const q = p(a, 'nw/bauo-nrw/1');
+    if (q.ampel === 'gelb' && q.bestaetigend) expect(a.bestaetigen.find((b) => b.id === q.bestaetigend)?.anzahl).toBeGreaterThan(0);
+    for (const b of a.bestaetigen) expect(a.paragrafen.filter((x) => x.bestaetigend === b.id).length).toBe(b.anzahl);
   });
 });

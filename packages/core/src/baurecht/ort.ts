@@ -23,7 +23,7 @@ export function ortVon(project: Project | null): Ort | undefined {
 
 /**
  * Planungsrecht und Ort: gesichert nur, wenn das Merkmal für genau diesen Ort und Wert bestätigt ist (in Baurecht
- * gesetzt oder „Gilt hier“). Ein Wert aus Formulare oder einer älteren Datei ist bis dahin nicht gesichert – sonst
+ * gesetzt oder „Bestätigen“). Ein Wert aus Formulare oder einer älteren Datei ist bis dahin nicht gesichert – sonst
  * zählte nach einem Umzug das Planungsrecht des alten Grundstücks. Gibt den Grund zurück, sonst undefined.
  */
 export function planungsrechtOhneOrt(wert: string | undefined, gemerkt: Ort | undefined, jetzt: Ort | undefined): string | undefined {

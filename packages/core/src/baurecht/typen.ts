@@ -257,6 +257,9 @@ export interface Ort {
   wert?: string;
   /** Anschrift zum Anzeigen („Musterweg 1, 59494 Soest“) – zählt beim Vergleich nicht */
   anzeige?: string;
+  /** nur beim Planungsrecht: wer es wann für diesen Ort bestätigt hat (Protokoll) */
+  von?: string;
+  am?: string;
 }
 
 export interface Festlegung {
@@ -310,6 +313,8 @@ export interface ParagrafErgebnis {
   festlegung?: Festlegung;
   /** die fehlenden Angaben, deren Antwort hier etwas ändert (so zählen „Klärt am meisten“ und das Protokoll) */
   klaerend?: string[];
+  /** gelb allein wegen dieser nicht gesicherten Angabe – ihre Bestätigung entschiede („bestätigen klärt“) */
+  bestaetigend?: string;
   /** Festlegung überholt: warum */
   ueberholt?: string;
   /**

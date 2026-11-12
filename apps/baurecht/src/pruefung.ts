@@ -18,6 +18,7 @@ import { ortsgebunden, wertAnzeige, zaehlEinheit } from '@core/baurecht/typen';
 import { ortVon, planungsrechtOhneOrt } from '@core/baurecht/ort';
 import type { Project } from '@core/model';
 import { isTauri } from '@core/platform/files';
+import { parseNum } from '@core/format';
 import { logger } from '@core/platform/log';
 import { Rechtsstand } from '@core/recht/rechtsstand';
 import { ablage } from './ablage';
@@ -93,8 +94,9 @@ function pruefeEigene(id: string, e: FaktWert, def: FaktDef | undefined): FaktWe
   };
   // Zahl als Text (ältere Datei, Import): lesen wie eine Eingabe, sonst nur Hinweis
   if (def?.typ === 'zahl' && typeof f.wert === 'string') {
-    const n = Number(f.wert.trim().replace(/\./g, '').replace(',', '.'));
-    if (!f.wert.trim() || !Number.isFinite(n)) return hinweis(`keine Zahl („${f.wert}“) – bitte korrigieren`);
+    // genau wie das Eingabefeld (parseNum: „7,5“, „1.234,5“, „7.5“ → 7,5)
+    const n = parseNum(f.wert);
+    if (n === null) return hinweis(`keine Zahl („${f.wert}“) – bitte korrigieren`);
     f = { ...f, wert: n };
   }
   if (typeof f.wert === 'number') {
@@ -120,7 +122,7 @@ export interface Pruefstand {
   widersprueche: string[];
   /** Merkmale, die den Geodaten bzw. dem Modell widersprechen */
   widerspruchMerkmale: string[];
-  /** Planungsrecht ist nicht für diesen Ort bestätigt (Grund) – Hinweis mit „Gilt hier“ */
+  /** Planungsrecht ist nicht für diesen Ort bestätigt (Grund) – Hinweis mit „Bestätigen“ */
   planungsrechtFrueher?: string;
   /** derselbe Hinweis als ganzer Satz (steht auch in `widersprueche`, fürs Protokoll) */
   planungsrechtHinweis?: string;
@@ -168,9 +170,11 @@ export function pruefstandBerechnen(
   // und in den Begründungen mit eigenem Grund (kein „Widerspruch“)
   const vorbehalte: Record<string, string> = {};
   if (planungsrechtFrueher) {
+    const text = `Planungsrecht „${merkmale['Planungsrecht']}“ ${planungsrechtFrueher}`;
+    // widerspricht es zugleich den Geodaten, bleibt der Widerspruch der Grund (der Vorbehalt steht als Hinweis daneben)
+    if (!w.merkmale.has('Planungsrecht')) vorbehalte['Planungsrecht'] = text;
     w.merkmale.add('Planungsrecht');
-    vorbehalte['Planungsrecht'] = `Planungsrecht „${merkmale['Planungsrecht']}“ ${planungsrechtFrueher}`;
-    w.texte.push(vorbehalte['Planungsrecht']);
+    w.texte.push(text);
   }
   const planungsrechtHinweis = planungsrechtFrueher ? w.texte[w.texte.length - 1] : undefined;
   const auswertung = auswerten({ paket, module, merkmale, fakten, einreichung, heute: heute(), texte: new Map(Object.entries(texte)), festlegungen, widersprueche: w.merkmale, vorbehalte, ort });
@@ -188,11 +192,13 @@ export function herabstufungen(alt: Auswertung, neu: Auswertung): { id: string; 
 }
 
 /** Auswertung des aktuellen Stands mit geänderten Angaben der Prüfung (für Vorschau und Bestätigung) */
-export function auswertungMit(eigene: Record<string, FaktWert>): Auswertung {
+/** `mit.planungsrechtOrt`: ein anderer Ort des Planungsrechts (auch keiner) als der aktuelle – z. B. der Stand der Datei */
+export function auswertungMit(eigene: Record<string, FaktWert>, mit?: { planungsrechtOrt: Ort | undefined }): Auswertung {
   const s = useBaurecht.getState();
+  const planungsrechtOrt = mit ? mit.planungsrechtOrt : s.pruefung.planungsrechtOrt;
   // derselbe Stand wie in der Ansicht (auch der Ort des Planungsrechts) – sonst verglichen Vorschau und Speichern
   // ungleiche Stände
-  return pruefstandBerechnen(s.paket, s.project, s.merkmale, eigene, s.pruefung.festlegungen, s.pruefung.einreichung, s.texte, s.pruefung.planungsrechtOrt).auswertung;
+  return pruefstandBerechnen(s.paket, s.project, s.merkmale, eigene, s.pruefung.festlegungen, s.pruefung.einreichung, s.texte, planungsrechtOrt).auswertung;
 }
 
 /* ---------- Rechtsstand ---------- */

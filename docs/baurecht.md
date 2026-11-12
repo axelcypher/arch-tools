@@ -39,7 +39,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Gespeichert wird, was das Feld zeigt: Anzahlen (z. B. Stellplätze) ganzzahlig, andere Zahlen auf zwei Nachkommastellen,
   keine negativen Werte. Schwellen „über x“ (im Regelschema „x,01“) gelten als echtes „größer als x“ – 22,005 m sind
   über 22 m. Das **Planungsrecht** zählt erst als gesichert, wenn es für genau diesen Ort und Wert bestätigt ist: in
-  Baurecht gesetzt oder mit „Gilt hier“ bestätigt. Ein Wert aus Formulare oder einer älteren Datei, ein seither
+  Baurecht gesetzt oder mit „Bestätigen“ bzw. „Für diesen Ort bestätigen“ bestätigt. Ein Wert aus Formulare oder einer älteren Datei, ein seither
   geänderter Wert und ein Umzug (Anschrift, Grundstück, Koordinaten) zeigen oben einen Hinweis; was daran hängt, kann
   bis dahin nicht sicher entfallen (in den Begründungen und im Protokoll „Nicht gesichert: Planungsrecht …“). Angaben
   von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative Werte und halbe Anzahlen sind nur Hinweis,
@@ -50,12 +50,17 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Normen zählen die sichtbaren Zeilen („11 prüfen von 14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im
   Blick.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch
-  ohne Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“, mit offener Erläuterung;
+  ohne Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“ (als Knöpfe, unter der Erklärung des Werts);
   Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung; beim Ersatzbau folgen dort die
   Angaben zum Altbau (verfahrensfrei zu beseitigen, Abbruch im Bauantrag mitbeantragt). Die Rückfragen stehen auch bei
   eingeklappten Merkmalen da („eine Rückfrage offen“). Ändert sich ein Merkmal, ordnen
   sich die Angaben neu. „Klärt am meisten“ zählt eine Angabe bei einem Paragrafen nur, wenn ihre Antwort dort etwas
   ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht).
+  Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (feste Werte
+  eines Gebietsmoduls beim Gemeindeschlüssel). Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste
+  (eigener Wert aus Formulare) und eine Angabe mit falschem Typ oder einem Wert außerhalb ihrer Auswahl (ältere Datei,
+  umbenannter Auswahlwert) gelten als offen und sind so gekennzeichnet; Zahlen, die als Text gespeichert sind, werden
+  wie im Eingabefeld gelesen.
 - **Angaben (links):** oben **„Klärt am meisten“** – die fehlenden Angaben, die die meisten offenen Paragrafen
   entscheiden würden (Klick springt zur Angabe); dann die Antragsmerkmale als Knöpfe mit Erklärung (eingeklappt, wenn
   alle festgelegt sind; „leeren“ setzt ein Merkmal bewusst zurück); darunter alle Angaben, an denen eine Regel hängt,

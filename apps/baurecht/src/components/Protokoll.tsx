@@ -89,6 +89,22 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const offeneF = useBaurecht((s) => offeneFestlegungen(s).join('|'));
   const offeneB = useBaurecht((s) => offeneBestaetigungen(s).join('|'));
   const eigeneFakten = useBaurecht((s) => s.pruefung.fakten);
+  const planungsrechtOrt = useBaurecht((s) => s.pruefung.planungsrechtOrt);
+  // an den Antragsmerkmalen: Bestätigung des Planungsrechts (wer, wann) bzw. Vorbehalt; Umfang der Beseitigung und
+  // Angaben zum Altbau beim Merkmal „Art des Vorhabens“ (wie in der App unter dem Merkmal)
+  const merkmalVermerk = (name: string): string => {
+    if (name === 'Planungsrecht') {
+      if (pruefstand.planungsrechtFrueher) return ' (nicht für diesen Ort bestätigt)';
+      return planungsrechtOrt?.von ? ` (für diesen Ort bestätigt: ${planungsrechtOrt.von}${planungsrechtOrt.am ? `, ${datum(planungsrechtOrt.am)}` : ''})` : '';
+    }
+    if (name === 'Vorhaben') {
+      const teile = ['vorhaben.beseitigung_umfang', 'nw.altbau_verfahrensfrei', 'nw.beseitigung_mit_beantragt']
+        .filter((id) => pruefstand.auswertung.fakten[id]?.wert != null && pruefstand.auswertung.faktDefs[id])
+        .map((id) => (id === 'vorhaben.beseitigung_umfang' ? String(pruefstand.auswertung.fakten[id].wert) : `${faktName(pruefstand.auswertung.faktDefs[id], id)}: ${wertAnzeige(pruefstand.auswertung.fakten[id].wert, pruefstand.auswertung.faktDefs[id])}`));
+      return teile.length ? ` (${teile.join('; ')})` : '';
+    }
+    return '';
+  };
   // „frühere Lage“ nur, wenn die Angabe wirklich an einer anderen Lage hängt (nicht beim Gemeindeschlüssel von Hand,
   // der an der aktuellen Lage absichtlich Hinweis bleibt)
   const lageJetzt = aktuelleLage(project).lage;
@@ -166,9 +182,11 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const gruppen = new Map<string, ParagrafErgebnis[]>();
   // dieselben Paare (Paragraf, klärende Angabe) wie „Klärt am meisten“ – aus der Auswertung, nicht neu gezählt
   for (const k of a.klaerung) gruppen.set(`Es fehlt: ${k.titel}`, a.paragrafen.filter((p) => p.klaerend?.includes(k.id)));
+  // Hinweise, deren Bestätigung entscheidet – dieselben Paare wie „bestätigen klärt“
+  for (const k of a.bestaetigen ?? []) gruppen.set(`Bestätigen: ${k.titel}`, a.paragrafen.filter((p) => p.bestaetigend === k.id));
   for (const p of [...offen, ...ueberholt]) {
     const sonder = gruppeVon(p);
-    if (!sonder && (p.klaerend?.length ?? 0) > 0) continue; // steht schon unter seinen klärenden Angaben
+    if (!sonder && ((p.klaerend?.length ?? 0) > 0 || p.bestaetigend)) continue; // steht schon unter seinen klärenden Angaben
     // sonst nach dem Grund: hängt an einem offenen Paragrafen, oder die fehlenden Angaben entscheiden nur zusammen
     const o = p.offen[0];
     const k = sonder || (o?.startsWith('paragraf:') ? `Hängt an ${offenText(o, a.text)} (dort offen)` : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
@@ -183,7 +201,10 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const festlegungStand = (q: ParagrafErgebnis) =>
     [q.festlegung!.bestaetigt ? 'bestätigt' : 'Entwurf – zweite Bestätigung fehlt', q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : ''].filter(Boolean).join(' · ');
   // Zeilen der offenen Punkte, fehlende Angaben nach ihrer Gruppe (Lage, Gebäude …) – ab 15 Zeilen mit Zwischenzeilen
-  const gruppeDerAngabe = new Map(a.klaerung.map((k) => [`Es fehlt: ${k.titel}`, FAKT_GRUPPEN.find((g) => g.id === a.faktDefs[k.id]?.gruppe)?.titel ?? 'Weitere Angaben']));
+  const gruppeDerAngabe = new Map<string, string>([
+    ...a.klaerung.map((k): [string, string] => [`Es fehlt: ${k.titel}`, FAKT_GRUPPEN.find((g) => g.id === a.faktDefs[k.id]?.gruppe)?.titel ?? 'Weitere Angaben']),
+    ...(a.bestaetigen ?? []).map((k): [string, string] => [`Bestätigen: ${k.titel}`, FAKT_GRUPPEN.find((g) => g.id === a.faktDefs[k.id]?.gruppe)?.titel ?? 'Weitere Angaben']),
+  ]);
   const zeilen = mehrere.map(([k, ps]) => ({ k, ps, gruppe: gruppeDerAngabe.get(k) ?? 'Andere Gründe' }));
   const reihenfolge = [...FAKT_GRUPPEN.map((g) => g.titel), 'Weitere Angaben', 'Andere Gründe'];
   zeilen.sort((x, y) => reihenfolge.indexOf(x.gruppe) - reihenfolge.indexOf(y.gruppe) || y.ps.length - x.ps.length);
@@ -270,7 +291,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
               {/* Reihenfolge und Namen wie in der Leiste */}
               <td>
                 {VORGABE_MERKMALE.filter((m) => merkmale[m.name])
-                  .map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${m.name === 'Planungsrecht' && pruefstand.planungsrechtFrueher ? ' (nicht für diesen Ort bestätigt)' : ''}`)
+                  .map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${merkmalVermerk(m.name)}`)
                   .join(' · ') || '–'}
               </td>
             </tr>
