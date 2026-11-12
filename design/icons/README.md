@@ -25,8 +25,8 @@ und die daraus erzeugten PNG/ICO/ICNS.
 - **Symbol** in Weiß, ein Motiv, Freiraum ringsum 10–12. Jedes Icon muss bei 14 px (Tab der Rahmen-App) erkennbar
   bleiben.
 - **Bernstein** (`#fcba43`, OKLCH 0,83 / 0,15 / 78) für genau ein Element: das, was die App ermittelt oder
-  hervorbringt. Nur auf der Kachelfarbe – auf Weiß fehlt der Kontrast (1,7 : 1); wo es Weiß überlappt, trennt eine
-  Fuge in Kachelfarbe.
+  hervorbringt. Nur auf der Kachelfarbe – auf Weiß fehlt der Kontrast (1,7 : 1), auf weißer Tönung ebenso; wo es
+  daran grenzt oder es überlappt, trennt eine Fuge in Kachelfarbe (mind. 2).
 - **Kachelfarben** mit gleicher Helligkeit (OKLCH L 0,47), nur der Farbton wechselt: Weiß darauf ≥ 6,4 : 1,
   Bernstein ≥ 3,7 : 1. Der Farbton von Bernstein bleibt als Kachel frei. Der Rahmen ist dunkler und fast unbunt,
   damit er nicht wie eine achte App wirkt. Flächenrechner behält das Blau, das auch `--accent` der Oberfläche ist.

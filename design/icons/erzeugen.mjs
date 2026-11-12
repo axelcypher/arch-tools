@@ -6,8 +6,8 @@
 //  - Linien 4 breit (= 1 px bei 16 px), auf Koordinaten ≡ 2 (mod 4) – scharf bei 16, 32 und 48 px
 //  - Symbol in Weiß, Freiraum ringsum mind. 10
 //  - genau ein Element in Bernstein: das, was die App ermittelt bzw. hervorbringt
-//  - Bernstein steht nur auf der Kachelfarbe, nie auf Weiß (zu wenig Kontrast); wo es Weiß überlappt,
-//    trennt eine Fuge in Kachelfarbe
+//  - Bernstein steht nur auf der Kachelfarbe, nie auf Weiß oder weißer Tönung (zu wenig Kontrast); wo es
+//    daran grenzt oder es überlappt, trennt eine Fuge in Kachelfarbe (mind. 2)
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,16 +74,16 @@ const SYMBOL = {
   <path d="M53.5 27.5l-17 17-2.5 8 8-2.5 17-17z" fill="${A}" ${fuge(T, 3.5)}/>
   <path d="M34 52.5l1.2-4 2.8 2.8z" fill="${T}"/>`,
 
-  // Grundriss, der berechnete Raum in Bernstein
+  // Grundriss, der berechnete Raum in Bernstein – mit Fuge (2) zu den Wänden
   flaechenrechner: (T) => `
-  <rect x="34" y="16" width="14" height="16" fill="${A}"/>
+  <rect x="36" y="18" width="10" height="12" fill="${A}"/>
   <path d="M14 14h36v36H14zM32 14v12M32 34v16M32 34h18" fill="none" stroke="${W}" stroke-width="4" stroke-linecap="square"/>`,
 
-  // Grundstücksgrenze gestrichelt, überbaute Fläche in Bernstein
+  // Grundstücksgrenze gestrichelt, überbaute Fläche in Bernstein – mit Fuge, die Tönung ist schon zu hell
   grz: (T) => `
   <rect x="14" y="14" width="36" height="36" fill="${W}" opacity=".16"/>
   <path d="M14 14h36v36H14z" fill="none" stroke="${W}" stroke-width="4" stroke-dasharray="8 4" stroke-dashoffset="4"/>
-  <path d="M22 22h16v10h-6v10H22z" fill="${A}"/>`,
+  <path d="M22 22h16v10h-6v10H22z" fill="${A}" ${fuge(T, 4)}/>`,
 
   // Baukosten: Euro unter dem Dach
   kosten: (T) => `
