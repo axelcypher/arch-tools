@@ -34,26 +34,43 @@
     },
     "2": {
       "gilt": {
-        "und": [
+        "oder": [
           {
-            "$": "nw_genehmigungsbeduerftig"
+            "und": [
+              {
+                "$": "nw_genehmigungsbeduerftig"
+              },
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "oder": [
+                  {
+                    "$": "innenbereich"
+                  },
+                  {
+                    "$": "aussenbereich"
+                  },
+                  {
+                    "$": "bplan_einfach"
+                  },
+                  {
+                    "$": "satzung_baugb"
+                  }
+                ]
+              }
+            ]
           },
           {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
+            "und": [
               {
-                "$": "innenbereich"
+                "$": "beseitigung"
               },
               {
-                "$": "aussenbereich"
-              },
-              {
-                "$": "bplan_einfach"
-              },
-              {
-                "$": "satzung_baugb"
+                "m": "Verfahren",
+                "nicht": [
+                  "verfahrensfrei"
+                ]
               }
             ]
           }
@@ -65,7 +82,7 @@
           "$": "aenderung"
         }
       },
-      "grund": "Auszug aus dem Liegenschaftskataster (Flurkarte, amtlich beglaubigt, nicht älter als sechs Monate) bei Vorhaben nach §§ 34 und 35 BauGB; im Außenbereich ggf. Amtliche Basiskarte.",
+      "grund": "Auszug aus dem Liegenschaftskataster (Flurkarte, amtlich beglaubigt, nicht älter als sechs Monate) bei Vorhaben nach §§ 34 und 35 BauGB; im Außenbereich ggf. Amtliche Basiskarte. Auch der Anzeige einer Beseitigung (§ 62 Abs. 3 BauO NRW) ist ein Auszug aus der Flurkarte beizufügen (§ 15 Abs. 1 Nr. 1).",
       "fundstellen": [
         "2/1",
         "2/2",
@@ -221,9 +238,26 @@
         "8/4": "69fc028a"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
+        "grund": "Im Einzelfall prüfen: bei einer Nutzungsänderung, ob die Anforderung für die neue Nutzung greift; bei der Beseitigung eines nicht freistehenden Gebäudes den Nachweis der Standsicherheit der angrenzenden Gebäude durch eine berechtigte Person (§ 15 Abs. 1 Nr. 2).",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "beseitigung"
+                },
+                {
+                  "nicht": {
+                    "f": "gebaeude.freistehend",
+                    "ist": true
+                  }
+                }
+              ]
+            }
+          ]
         }
       },
       "titel": "Nachweise der Standsicherheit und des Schallschutzes"

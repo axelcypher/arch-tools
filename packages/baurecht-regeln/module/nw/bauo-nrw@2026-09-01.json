@@ -186,11 +186,27 @@
     "12": {
       "titel": "Standsicherheit",
       "gilt": {
-        "$": "bauen"
+        "oder": [
+          {
+            "$": "bauen"
+          },
+          {
+            "und": [
+              {
+                "$": "beseitigung"
+              },
+              {
+                "f": "gebaeude.freistehend",
+                "ist": false
+              }
+            ]
+          }
+        ]
       },
-      "grund": "Jede bauliche Anlage muss im Ganzen und in ihren einzelnen Teilen standsicher sein; die Standsicherheit anderer baulicher Anlagen und die Tragfähigkeit des Baugrunds der Nachbargrundstücke dürfen nicht gefährdet werden (Abs. 1).",
+      "grund": "Jede bauliche Anlage muss im Ganzen und in ihren einzelnen Teilen standsicher sein; die Standsicherheit anderer baulicher Anlagen und die Tragfähigkeit des Baugrunds der Nachbargrundstücke dürfen nicht gefährdet werden (Abs. 1). Gemeinsame Bauteile müssen bei der Beseitigung einer der Anlagen bestehen bleiben können (Abs. 2); bei der Beseitigung angebauter Gebäude ist die Standsicherheit der Nachbargebäude während und nach der Beseitigung nachzuweisen (§ 62 Abs. 3 Satz 4).",
       "fundstellen": [
-        "12/1"
+        "12/1",
+        "12/2"
       ],
       "behoerde": {
         "nie": true
@@ -200,16 +216,24 @@
       ],
       "hinweis": "Bergbau oder Gefährdung des Untergrunds (Altbergbau, Erdfälle, Senkungen): Auskunft der Bezirksregierung Arnsberg, Abt. 6 (Bergbau und Energie in NRW), bzw. des Geologischen Dienstes einholen; der Standsicherheitsnachweis muss den Baugrund berücksichtigen, in Bergbaugebieten ggf. Anpassungs- und Sicherungsmaßnahmen (§§ 110 ff. BBergG).",
       "pruefen": {
-        "grund": "Bergbau oder Gefährdung des Untergrunds bekannt bzw. noch nicht erfragt: Baugrund und Standsicherheit mit der Auskunft der Bezirksregierung Arnsberg (Abt. 6) klären – im Einzelfall prüfen.",
+        "grund": "Standsicherheit im Einzelfall prüfen: bei Bergbau oder Gefährdung des Untergrunds (bekannt bzw. noch nicht erfragt – Auskunft der Bezirksregierung Arnsberg, Abt. 6) und bei Nutzungsänderung mit geänderten Lasten.",
         "wenn": {
-          "nicht": {
-            "f": "lage.bergbau",
-            "ist": false
-          }
+          "oder": [
+            {
+              "nicht": {
+                "f": "lage.bergbau",
+                "ist": false
+              }
+            },
+            {
+              "$": "nutzungsaenderung"
+            }
+          ]
         }
       },
       "stand": {
-        "12/1": "ddaa6d1e"
+        "12/1": "ddaa6d1e",
+        "12/2": "a0599c83"
       }
     },
     "14": {
@@ -836,7 +860,7 @@
       "gilt": {
         "und": [
           {
-            "$": "nw_vorhaben_gebaeude"
+            "$": "vorhaben_29"
           },
           {
             "f": "technik.lueftung",
@@ -1257,7 +1281,7 @@
         "f": "gebaeude.behelfsbau",
         "ist": true
       },
-      "grund": "Behelfsbauten und untergeordnete Gebäude: die §§ 26 bis 50 gelten nicht; brennbare Behelfsbauten nur erdgeschossig.",
+      "grund": "Behelfsbauten und untergeordnete Gebäude: die §§ 26 bis 50 gelten nicht; brennbare Behelfsbauten nur erdgeschossig, Dachräume nicht nutzbar, Brandwände mindestens alle 30 m (Abs. 1) – auch für Wohnzwecke (z. B. Wohncontainer).",
       "fundstellen": [
         "51/1",
         "51/2"
@@ -1268,9 +1292,6 @@
       "stand": {
         "51/1": "d5c199a2",
         "51/2": "558e9621"
-      },
-      "entfaellt": {
-        "$": "wohngebaeude"
       },
       "titel": "Behelfsbauten und untergeordnete Gebäude"
     },
@@ -1371,7 +1392,7 @@
         "$": "freistellung"
       },
       "pruefen": {
-        "grund": "Genehmigungsfreistellung nur im Geltungsbereich eines qualifizierten oder vorhabenbezogenen Bebauungsplans, ohne Widerspruch zu Festsetzungen und örtlichen Bauvorschriften, nicht für Sonderbauten (Abs. 1 Satz 2, Abs. 2) – Verfahren prüfen.",
+        "grund": "Genehmigungsfreistellung (Neufassung ab 01.09.2026) im Einzelfall prüfen: Abs. 1 Satz 1 Nr. 1 nur im Geltungsbereich eines qualifizierten oder vorhabenbezogenen Bebauungsplans ohne Widerspruch zu Festsetzungen und örtlichen Bauvorschriften (Abs. 2); Nr. 2 auch im Innenbereich (§ 34 BauGB) für Dachgeschossausbau zu Wohnzwecken einschließlich Gauben sowie für Solaranlagen nach § 35 Abs. 1 Nr. 8 b und 9 BauGB; nicht für Sonderbauten (außer Solaranlagen) und nicht für große Wohnvorhaben (über 5 000 m² BGF) oder öffentlich zugängliche Anlagen für mehr als 100 zusätzliche Personen im angemessenen Sicherheitsabstand eines Störfallbetriebs (Abs. 1 Satz 2).",
         "wenn": {
           "und": [
             {
@@ -1389,16 +1410,18 @@
                   "$": "sonderbau"
                 },
                 {
-                  "und": [
-                    {
-                      "f": "planung.befreiung",
-                      "bekannt": true
-                    },
-                    {
-                      "f": "planung.befreiung",
-                      "ist": true
-                    }
-                  ]
+                  "nicht": {
+                    "f": "planung.befreiung",
+                    "ist": false
+                  }
+                },
+                {
+                  "f": "gebaeude.bgf",
+                  "min": 5000
+                },
+                {
+                  "f": "gebaeude.besucher",
+                  "min": 101
                 }
               ]
             }
@@ -1409,7 +1432,8 @@
       "fundstellen": [
         "63/1",
         "63/2",
-        "63/3"
+        "63/3",
+        "63/6"
       ],
       "behoerde": {
         "nie": true
@@ -1417,11 +1441,12 @@
       "nachweis": [
         "Bauvorlagen nach § 13 BauPrüfVO"
       ],
-      "hinweis": "Bautechnische Nachweise müssen spätestens bei Baubeginn vorliegen (Abs. 6).",
+      "hinweis": "Bautechnische Nachweise müssen spätestens bei Baubeginn vorliegen; § 70 Abs. 2 Satz 1 und Abs. 3 sowie § 74 Abs. 7, 8 und 9 gelten entsprechend (Abs. 6).",
       "stand": {
         "63/1": "d9020d82",
         "63/2": "57fb7e94",
-        "63/3": "881ef683"
+        "63/3": "881ef683",
+        "63/6": "b791849d"
       },
       "titel": "Genehmigungsfreistellung"
     },
@@ -1602,19 +1627,28 @@
     },
     "70": {
       "gilt": {
-        "$": "nw_genehmigungsbeduerftig"
+        "oder": [
+          {
+            "$": "nw_genehmigungsbeduerftig"
+          },
+          {
+            "$": "freistellung"
+          }
+        ]
       },
-      "grund": "Bauantrag elektronisch bei der unteren Bauaufsichtsbehörde mit allen erforderlichen Bauvorlagen; bei großen Sonderbauten mit Brandschutzkonzept.",
+      "grund": "Bauantrag elektronisch bei der unteren Bauaufsichtsbehörde mit allen erforderlichen Bauvorlagen; bei großen Sonderbauten mit Brandschutzkonzept (Abs. 1, 2). Bei der Genehmigungsfreistellung gelten Abs. 2 Satz 1 (vollständige Unterlagen) und Abs. 3 (Zustimmung der Grundstückseigentümer) entsprechend (§ 63 Abs. 6).",
       "fundstellen": [
         "70/1",
-        "70/2"
+        "70/2",
+        "70/3"
       ],
       "behoerde": {
-        "immer": true
+        "$": "nw_genehmigungsbeduerftig"
       },
       "stand": {
         "70/1": "88cb92a9",
-        "70/2": "1f114dd7"
+        "70/2": "1f114dd7",
+        "70/3": "089bfc7a"
       },
       "titel": "Bauantrag, Bauvorlagen"
     },
@@ -1695,31 +1729,47 @@
     },
     "74": {
       "gilt": {
-        "und": [
+        "oder": [
           {
-            "$": "vereinfacht"
+            "$": "nw_genehmigungsbeduerftig"
           },
           {
-            "tag": "einreichung",
-            "ab": "2026-09-01"
+            "$": "freistellung"
+          },
+          {
+            "$": "beseitigung"
           }
         ]
       },
-      "grund": "Im vereinfachten Verfahren gilt die Genehmigung nach Ablauf der Entscheidungsfrist (sechs Wochen ab Vollständigkeit) als erteilt, wenn die Bauherrschaft nicht verzichtet (Genehmigungsfiktion, für Anträge ab 01.09.2026).",
+      "grund": "Baugenehmigung: wird erteilt, wenn keine öffentlich-rechtlichen Vorschriften entgegenstehen (Abs. 1); Entscheidungsfrist drei Monate, im vereinfachten Verfahren sechs Wochen ab Vollständigkeit (Abs. 2); Baubeginn erst mit Genehmigung, Bescheinigungen nach § 68 und Baubeginnanzeige (Abs. 6); Absteckung und Unterlagen an der Baustelle (Abs. 7); Baubeginnanzeige eine Woche vorher (Abs. 8); Aufbewahrung der Unterlagen (Abs. 9). Bei der Genehmigungsfreistellung gelten Abs. 7, 8 und 9 Satz 1–2 entsprechend (§ 63 Abs. 6), bei der Beseitigung Abs. 8 (§ 62 Abs. 3).",
       "fundstellen": [
+        "74/1",
         "74/2",
-        "74/3"
+        "74/3",
+        "74/4",
+        "74/5",
+        "74/6",
+        "74/7",
+        "74/8",
+        "74/9"
       ],
       "behoerde": {
-        "immer": true
+        "$": "nw_genehmigungsbeduerftig"
       },
-      "hinweis": "Abweichungen unterliegen der Fiktion nur, soweit sie beantragt wurden (Abs. 3 Nr. 2) – alle Abweichungen ausdrücklich beantragen. Verzicht auf die Fiktion in Textform möglich.",
+      "hinweis": "Im vereinfachten Verfahren (Anträge ab 01.09.2026) gilt die Genehmigung nach Ablauf der Entscheidungsfrist als erteilt (Genehmigungsfiktion, Abs. 3), wenn die Bauherrschaft nicht in Textform verzichtet; Abweichungen nur, soweit beantragt – alle Abweichungen ausdrücklich beantragen.",
       "verweise": [
         "nw/bauo-nrw/90"
       ],
       "stand": {
+        "74/1": "78a80121",
         "74/2": "5968fdd8",
-        "74/3": "56618f06"
+        "74/3": "56618f06",
+        "74/4": "927e03c6",
+        "74/5": "547403a6",
+        "74/6": "614cd1a0",
+        "74/7": "b0449336",
+        "74/8": "d3f86b45",
+        "74/9": "5d2d5598"
       },
       "titel": "Baugenehmigung, Genehmigungsfiktion, Baubeginn"
     },

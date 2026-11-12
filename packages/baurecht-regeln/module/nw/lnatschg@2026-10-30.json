@@ -41,12 +41,22 @@
       "pruefen": {
         "grund": "Ein Landschaftsplan kann sich ausnahmsweise auch auf Flächen eines Bebauungsplans oder einer Satzung nach § 34 Abs. 4 BauGB erstrecken (Abs. 2).",
         "wenn": {
-          "oder": [
+          "und": [
             {
-              "$": "bplan"
+              "oder": [
+                {
+                  "$": "bplan"
+                },
+                {
+                  "$": "satzung_baugb"
+                }
+              ]
             },
             {
-              "$": "satzung_baugb"
+              "nicht": {
+                "f": "schutz.landschaftsplan",
+                "ist": false
+              }
             }
           ]
         }
@@ -395,7 +405,7 @@
           }
         ]
       },
-      "grund": "Befreiungen von Ge- und Verboten des Naturschutzrechts erteilt die untere Naturschutzbehörde; der Naturschutzbeirat kann widersprechen.",
+      "grund": "Befreiungen nach § 67 Abs. 1 und 2 BNatSchG (auch vom Artenschutz) erteilt die untere Naturschutzbehörde (Abs. 1, Neufassung ab 30.10.2026): Der Naturschutzbeirat nimmt binnen sechs Wochen Stellung; will die Behörde davon abweichen, unterrichtet sie die höhere Naturschutzbehörde, die binnen vier Wochen eine Weisung erteilen kann.",
       "fundstellen": [
         "75/1"
       ],
@@ -406,7 +416,7 @@
         "75/1": "5eac14ee"
       },
       "pruefen": {
-        "grund": "Befreiung auch für Verbote außerhalb der Schutzgebiete: geschützte Bäume und Alleen (§ 41 LNatSchG, Satzung), Gehölzbeseitigung, Natura-2000-Gebiete – ob eine Befreiung nötig ist, hängt von der Schutzvorschrift ab; im Einzelfall prüfen.",
+        "grund": "Befreiung auch außerhalb von Schutzgebieten (Abs. 1 Satz 1 und 2, Abs. 2): Gehölzbeseitigung in der Schonzeit (§ 39 Abs. 5), Zugriffsverbote des Artenschutzes (§ 44, soweit keine Ausnahme nach § 45 Abs. 7 greift), Festsetzungen eines Landschaftsplans, geschützte Bäume; in Natura-2000-Gebieten Verträglichkeit und Ausnahme nach § 34 – im Einzelfall prüfen.",
         "wenn": {
           "oder": [
             {
@@ -415,6 +425,10 @@
             },
             {
               "f": "vorhaben.baeume_faellen",
+              "ist": true
+            },
+            {
+              "f": "schutz.landschaftsplan",
               "ist": true
             },
             {
@@ -428,11 +442,40 @@
             {
               "f": "schutz.natura_nah",
               "ist": true
+            },
+            {
+              "oder": [
+                {
+                  "$": "errichtung"
+                },
+                {
+                  "$": "beseitigung"
+                },
+                {
+                  "und": [
+                    {
+                      "oder": [
+                        {
+                          "$": "aenderung"
+                        },
+                        {
+                          "$": "nutzungsaenderung"
+                        }
+                      ]
+                    },
+                    {
+                      "f": "vorhaben.dach_fassade",
+                      "ist": true
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
       },
-      "titel": "Befreiungen und Ausnahmen"
+      "titel": "Befreiungen und Ausnahmen",
+      "hinweis": "Mit dem Antrag auf Befreiung rechtzeitig vor dem Bauantrag beginnen – die Beteiligung des Beirats dauert bis zu sechs Wochen."
     }
   }
 }

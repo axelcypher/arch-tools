@@ -699,7 +699,8 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(M4())('nw/bauo-nrw/12')).toBe('rot');
     expect(a(M4({ Vorhaben: 'Nutzungsänderung' }))('nw/bauo-nrw/12')).toBe('gelb');
     expect(a(M4({ Vorhaben: 'Nutzungsänderung' }), ja('lage.bergbau'))('nw/bauo-nrw/12')).toBe('gelb');
-    expect(a(M4({ Vorhaben: 'Nutzungsänderung' }), nein('lage.bergbau'))('nw/bauo-nrw/12')).toBe('gruen');
+    // Nutzungsänderung (geänderte Lasten): seit Runde 5 Einzelfall, auch ohne Bergbau
+    expect(a(M4({ Vorhaben: 'Nutzungsänderung' }), nein('lage.bergbau'))('nw/bauo-nrw/12')).toBe('gelb');
     const r = auswerten(eingabe(M4(), ja('lage.bergbau'), TEXTE)).paragrafen.find((p) => p.id === 'nw/bauo-nrw/12')!;
     expect(r.hinweise.join(' ')).toMatch(/Bezirksregierung Arnsberg/);
   });
@@ -711,6 +712,95 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(M4({ Vorhaben: 'Änderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), nein('vorhaben.dachhaut'))('nw/san-vo/6')).not.toBe('gruen');
     const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
     expect(`${defs['lage.bundesfernstrasse'].titel} ${defs['lage.bundesfernstrasse'].hilfe}`).toMatch(/geplant.*Ortsdurchfahrt|Ortsdurchfahrt.*geplant/s);
+  });
+  it('Runde 5: § 74 BauO NRW für jede Baugenehmigung, die Freistellung und die Beseitigung; § 70 auch bei der Freistellung', () => {
+    expect(a(M4({ Verfahren: 'Baugenehmigungsverfahren', Sonderbau: 'ja', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3' }))('nw/bauo-nrw/74')).toBe('rot');
+    const frei = a(M4({ Verfahren: 'Genehmigungsfreistellung', Planungsrecht: 'Bebauungsplan' }));
+    expect(frei('nw/bauo-nrw/74')).toBe('rot');
+    expect(frei('nw/bauo-nrw/70')).toBe('rot');
+    expect(a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }))('nw/bauo-nrw/74')).toBe('rot');
+    // Gegenprobe: verfahrensfreie Errichtung – keine Baugenehmigung, keine Baubeginnanzeige
+    expect(a(M4({ Verfahren: 'verfahrensfrei' }))('nw/bauo-nrw/74')).toBe('gruen');
+    expect(a(M4({ Verfahren: 'verfahrensfrei' }))('nw/bauo-nrw/70')).toBe('gruen');
+  });
+
+  it('Runde 5: Standsicherheit bei der Beseitigung angebauter Gebäude und bei Nutzungsänderung – § 12 BauO NRW, §§ 2 und 8 BauPrüfVO', () => {
+    const angebaut = a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'vereinfachtes Verfahren' }), { ...nein('lage.bergbau', 'gebaeude.freistehend') });
+    expect(angebaut('nw/bauo-nrw/12')).toBe('rot');
+    expect(angebaut('nw/baupruefvo/2')).toBe('rot');
+    expect(angebaut('nw/baupruefvo/8')).not.toBe('gruen');
+    expect(angebaut('nw/baupruefvo/15')).toBe('rot');
+    // offen, ob freistehend: nicht „gilt nicht“
+    expect(a(M4({ Vorhaben: 'Beseitigung' }), nein('lage.bergbau'))('nw/bauo-nrw/12')).toBe('gelb');
+    expect(a(M4({ Vorhaben: 'Nutzungsänderung' }), nein('lage.bergbau'))('nw/bauo-nrw/12')).not.toBe('gruen');
+    // Gegenprobe: freistehendes Gebäude ohne Bergbau – keine Nachbarn, deren Standsicherheit berührt wäre
+    const frei = a(M4({ Vorhaben: 'Beseitigung', Verfahren: 'verfahrensfrei' }), { ...nein('lage.bergbau'), ...ja('gebaeude.freistehend') });
+    expect(frei('nw/bauo-nrw/12')).toBe('gruen');
+    expect(frei('nw/baupruefvo/2')).toBe('gruen');
+  });
+
+  it('Runde 5: Landschaftspläne im Innenbereich (Soest, Werl) – kein Fehl-Gelb „nur Hinweis“; im Außenbereich bzw. dort, wo die Lage entscheidet, kein falsches Grün', () => {
+    const lpIds = (r: ReturnType<typeof auswerten>) => r.paragrafen.filter((x) => x.modul === 'nw-05974' && x.norm.startsWith('lp_'));
+    for (const ags of [SOEST, '05974052']) {
+      const r = auswerten({ ...eingabe(M4(), {}, TEXTE), module: aktiveModule(paket.module, ags), fakten: { 'lage.ags': sicher(ags) } });
+      const lp = lpIds(r);
+      expect(lp.length).toBeGreaterThan(10);
+      for (const x of lp) {
+        expect(x.ampel, `${x.id} in ${ags}`).toBe('gruen');
+        expect(x.gruende.join(' '), x.id).not.toMatch(/Nur Hinweis/);
+      }
+    }
+    // Soest: kein Landschaftsplan steht fest – § 7 LNatSchG beim EFH im Bebauungsplan nicht mehr gelb
+    expect(a(M4({ Planungsrecht: 'Bebauungsplan' }))('nw/lnatschg/7')).toBe('gruen');
+    // Werl, Außenbereich: LP VI gilt, ohne Angaben nicht „entfällt“
+    const werl = inGemeinde('05974052', M4({ Planungsrecht: 'Außenbereich' }));
+    for (const nr of ['C.1', 'C.2', 'C.3', 'C.4']) expect(werl(`nw-05974/lp_vi/${nr}`).ampel, nr).not.toBe('gruen');
+    // Anröchte: die Lage entscheidet (LP I/II) – im Außenbereich offen
+    expect(inGemeinde('05974004', M4({ Planungsrecht: 'Außenbereich' }))('nw-05974/lp_ii/C.2').ampel).not.toBe('gruen');
+  });
+
+  it('Runde 5: Naturdenkmal der Kreisverordnung (Innenbereich) – Schutzobjekt auch bei Merkmal Außenbereich; Nutzungsänderung im Einzelfall', () => {
+    const aussen = a(M4({ Planungsrecht: 'Außenbereich' }), ja('kreis_soest.naturdenkmal'));
+    for (const nr of ['1', '2', '4']) expect(aussen(`nw-05974/nd_vo_innen/${nr}`), `§ ${nr}`).toBe('rot');
+    const nutzung = a(M4({ Vorhaben: 'Nutzungsänderung' }), { ...ja('kreis_soest.naturdenkmal'), ...nein('vorhaben.erdarbeiten', 'vorhaben.baeume_faellen') });
+    expect(nutzung('nw-05974/nd_vo_innen/2')).not.toBe('gruen');
+    expect(nutzung('nw-05974/nd_vo_innen/4')).not.toBe('gruen');
+    // Gegenprobe: kein Schutzobjekt, Außenbereich – die Verordnung berührt das Vorhaben nicht
+    expect(a(M4({ Planungsrecht: 'Außenbereich' }), nein('kreis_soest.naturdenkmal'))('nw-05974/nd_vo_innen/2')).toBe('gruen');
+  });
+
+  it('Runde 5: § 75 LNatSchG wie § 67 BNatSchG – Neubau, Abbruch, Dacharbeiten ohne Schutzgebiet; Grund nach der Neufassung', () => {
+    for (const m of [M4(), M4({ Vorhaben: 'Beseitigung' }), M4({ Vorhaben: 'Änderung' })]) {
+      const f = { ...keinSchutz(), ...nein('vorhaben.baeume_faellen'), ...(m.Vorhaben === 'Änderung' ? ja('vorhaben.dach_fassade') : {}) };
+      const x = a(m, f);
+      expect(x('bund/bnatschg/67'), `§ 67 ${m.Vorhaben}`).not.toBe('gruen');
+      expect(x('nw/lnatschg/75'), `§ 75 ${m.Vorhaben}`).not.toBe('gruen');
+    }
+    // Innenumbau ohne Dach/Fassade und ohne Schutz: beide entfallen
+    const innen = a(M4({ Vorhaben: 'Änderung' }), { ...keinSchutz(), ...nein('vorhaben.baeume_faellen', 'vorhaben.dach_fassade') });
+    expect(innen('bund/bnatschg/67')).toBe('gruen');
+    expect(innen('nw/lnatschg/75')).toBe('gruen');
+    const r = auswerten(eingabe(M4(), ja('schutz.lsg'), TEXTE)).paragrafen.find((p) => p.id === 'nw/lnatschg/75')!;
+    expect(r.gruende.join(' ')).toMatch(/sechs Wochen/);
+    expect(r.gruende.join(' ')).not.toMatch(/widersprechen/);
+  });
+
+  it('Runde 5: § 51 BauO NRW – Behelfsbau auch zum Wohnen (Wohncontainer)', () => {
+    expect(a(M4({ Gebäudeart: 'Einfamilienhaus' }), ja('gebaeude.behelfsbau'))('nw/bauo-nrw/51')).toBe('rot');
+  });
+
+  it('Runde 5: weitere Stellen – historische Ortsteile §§ 5, 7, 8; § 41 freistehend; StrlSchG § 123 Abs. 4; GEG § 34; § 63 nach der Neufassung', () => {
+    const nutzung = a(M4({ Vorhaben: 'Nutzungsänderung' }), ja('soest.historische_ortsteile'));
+    for (const nr of ['5', '7', '8']) expect(nutzung(`nw-05974040/historische_ortsteile/${nr}`), `§ ${nr}`).not.toBe('gruen');
+    expect(a(M4({ Gebäudeart: 'kein Gebäude' }), ja('soest.historische_ortsteile'))('nw-05974040/historische_ortsteile/8')).not.toBe('gruen');
+    expect(a(M4({ Gebäudeart: 'kein Gebäude' }), ja('technik.lueftung'))('nw/bauo-nrw/41')).toBe('rot');
+    const umbau = a(M4({ Vorhaben: 'Änderung' }), ja('vorhaben.aussenbauteile', 'gebaeude.beheizt'));
+    expect(umbau('bund/strlschg/123')).not.toBe('gruen');
+    expect(umbau('bund/geg/34')).toBe('rot');
+    expect(a(M4({ Vorhaben: 'Änderung' }), { ...nein('vorhaben.aussenbauteile'), ...ja('gebaeude.beheizt') })('bund/geg/34')).toBe('gruen');
+    const r = auswerten(eingabe(M4({ Verfahren: 'Genehmigungsfreistellung', Planungsrecht: 'Innenbereich' }), {}, TEXTE)).paragrafen.find((p) => p.id === 'nw/bauo-nrw/63')!;
+    expect(r.ampel).toBe('rot');
+    expect(r.hinweise.join(' ')).toMatch(/Dachgeschossausbau/);
   });
 });
 
