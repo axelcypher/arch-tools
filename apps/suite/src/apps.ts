@@ -17,6 +17,7 @@ export const APPS: AppInfo[] = [
   { id: 'grz', name: 'GRZ-Nachweis', text: 'GRZ/GFZ-Nachweis nach BauNVO und BauO NRW', beimUmzug: ZWISCHENSTAND },
   { id: 'kosten', name: 'Kostenermittlung', text: 'Massen und Kosten nach DIN 276', beimUmzug: ZWISCHENSTAND },
   { id: 'entzerrung', name: 'Entzerrung', text: 'Fotos entzerren und darin messen', beimUmzug: ZWISCHENSTAND },
+  { id: 'ava', name: 'AVA', text: 'Ausschreibung, Vergabe, Abrechnung und Bauleitung', beimUmzug: 'Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt.' },
 ];
 
 export const appInfo = (id: string) => APPS.find((a) => a.id === id);
