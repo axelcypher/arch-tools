@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { abschnittVerschieben, ansichtAus, felderDerAnsicht, feldEntfernen, feldHinzufuegen, feldVerschieben } from './ansicht';
 import { einfuegeStelle } from './ziehen';
 
-const a = { abschnitte: [{ id: 'a', titel: 'Bauherr', felder: ['201:40', '201:30'] }, { id: 'b', titel: 'Grundstück', felder: ['301:10'] }] };
+const a = {
+  abschnitte: [
+    { id: 'a', titel: 'Bauherr', felder: ['201:40', '201:30'] },
+    { id: 'b', titel: 'Grundstück', felder: ['301:10'] },
+  ],
+};
 
 describe('eigene Ansichten', () => {
   it('liest robust: ungültige Einträge weg, doppelte Felder und Kennungen bereinigt', () => {

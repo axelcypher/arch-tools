@@ -60,7 +60,21 @@ export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern'
 }
 
 /** Seitenleiste mit gemerkter, ziehbarer Breite um beliebigen Inhalt */
-export function BreitenLeiste({ schluessel, vorgabe, min, max, className = '', children }: { schluessel: string; vorgabe: number; min?: number; max?: number; className?: string; children: ReactNode }) {
+export function BreitenLeiste({
+  schluessel,
+  vorgabe,
+  min,
+  max,
+  className = '',
+  children,
+}: {
+  schluessel: string;
+  vorgabe: number;
+  min?: number;
+  max?: number;
+  className?: string;
+  children: ReactNode;
+}) {
   const [breite, setBreite] = useLeistenBreite(schluessel, vorgabe, min, max);
   return (
     <div className={`leiste ${className}`} style={{ width: breite }}>

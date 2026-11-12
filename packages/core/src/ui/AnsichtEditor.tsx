@@ -115,13 +115,39 @@ export function AnsichtEditor({
             const zielHier = zug?.nach === x.id;
             const uebrige = x.felder.filter((f) => f !== zug?.feld);
             return (
-              <section key={x.id} className={`av-ed-abschnitt${gewaehlt ? ' aktiv' : ''}${zielHier ? ' ziel' : ''}`} data-ansicht-abschnitt={x.id} onPointerDown={() => setAktiv(x.id)} onFocus={() => setAktiv(x.id)}>
+              <section
+                key={x.id}
+                className={`av-ed-abschnitt${gewaehlt ? ' aktiv' : ''}${zielHier ? ' ziel' : ''}`}
+                data-ansicht-abschnitt={x.id}
+                onPointerDown={() => setAktiv(x.id)}
+                onFocus={() => setAktiv(x.id)}
+              >
                 <div className="av-ed-kopf">
-                  <input className="av-ed-abschnitt-titel" value={x.titel} placeholder="Abschnitt ohne Titel" aria-label={`Titel von Abschnitt ${ai + 1}`} onChange={(e) => setzen({ abschnitte: a.abschnitte.map((y) => (y.id === x.id ? { ...y, titel: e.target.value } : y)) })} />
-                  <button type="button" className="icon" disabled={ai === 0} title="Abschnitt nach oben" aria-label={`Abschnitt ${x.titel || ai + 1} nach oben`} onClick={() => setzen(abschnittVerschieben(a, x.id, ai - 1))}>
+                  <input
+                    className="av-ed-abschnitt-titel"
+                    value={x.titel}
+                    placeholder="Abschnitt ohne Titel"
+                    aria-label={`Titel von Abschnitt ${ai + 1}`}
+                    onChange={(e) => setzen({ abschnitte: a.abschnitte.map((y) => (y.id === x.id ? { ...y, titel: e.target.value } : y)) })}
+                  />
+                  <button
+                    type="button"
+                    className="icon"
+                    disabled={ai === 0}
+                    title="Abschnitt nach oben"
+                    aria-label={`Abschnitt ${x.titel || ai + 1} nach oben`}
+                    onClick={() => setzen(abschnittVerschieben(a, x.id, ai - 1))}
+                  >
                     ↑
                   </button>
-                  <button type="button" className="icon" disabled={ai === a.abschnitte.length - 1} title="Abschnitt nach unten" aria-label={`Abschnitt ${x.titel || ai + 1} nach unten`} onClick={() => setzen(abschnittVerschieben(a, x.id, ai + 1))}>
+                  <button
+                    type="button"
+                    className="icon"
+                    disabled={ai === a.abschnitte.length - 1}
+                    title="Abschnitt nach unten"
+                    aria-label={`Abschnitt ${x.titel || ai + 1} nach unten`}
+                    onClick={() => setzen(abschnittVerschieben(a, x.id, ai + 1))}
+                  >
                     ↓
                   </button>
                   <button
@@ -142,14 +168,27 @@ export function AnsichtEditor({
                     const markierung = zug && zielHier && zug.feld !== f && rang === zug.stelle ? ' davor' : '';
                     return (
                       <li key={f} className={`av-ed-feld${zug?.feld === f ? ' quelle' : ''}${markierung}${def ? '' : ' fehlt'}`} data-ansicht-feld={f}>
-                        <button type="button" className="av-griff" title="Ziehen, um zu verschieben – oder wählen und ↑/↓, Entf entfernt" aria-label={`${def?.titel ?? f} verschieben`} onPointerDown={feldZiehen(f)} onKeyDown={feldTaste(f, ai, i)}>
+                        <button
+                          type="button"
+                          className="av-griff"
+                          title="Ziehen, um zu verschieben – oder wählen und ↑/↓, Entf entfernt"
+                          aria-label={`${def?.titel ?? f} verschieben`}
+                          onPointerDown={feldZiehen(f)}
+                          onKeyDown={feldTaste(f, ai, i)}
+                        >
                           ⠿
                         </button>
                         <span className="av-ed-feld-text">
                           {def?.titel ?? f}
                           <span className="muted small-text">{def ? def.gruppe : 'gibt es hier nicht'}</span>
                         </span>
-                        <button type="button" className="icon av-ed-weg" title="Aus der Ansicht nehmen" aria-label={`${def?.titel ?? f} aus der Ansicht nehmen`} onClick={() => setzen(feldEntfernen(a, f))}>
+                        <button
+                          type="button"
+                          className="icon av-ed-weg"
+                          title="Aus der Ansicht nehmen"
+                          aria-label={`${def?.titel ?? f} aus der Ansicht nehmen`}
+                          onClick={() => setzen(feldEntfernen(a, f))}
+                        >
                           ×
                         </button>
                       </li>

@@ -10,17 +10,24 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 
 ## Bedienung
 
-- **Aufbau der Oberfläche:** Links die **Navigation** (Projekt, Projektdaten, Formulare und – durch eine Linie
-  getrennt – Projektordner) auf eigenem, dunklerem Grund wie die Titelleiste; der gewählte Eintrag ist hell
-  hinterlegt und links markiert. **Projektdaten** (die Projektkarte aus FORMA) stehen hervorgehoben über den
-  Formularen, aus ihnen werden die Formulare ausgefüllt.
+- **Aufbau der Oberfläche:** Links die **Navigation** (Projekt, Projektdaten | Antragsdaten, Formulare und – durch
+  eine Linie getrennt – Projektordner) auf eigenem, dunklerem Grund wie die Titelleiste; der gewählte Eintrag ist hell
+  hinterlegt und links markiert. Über den Formularen steht hervorgehoben ein Knopf in zwei Hälften: **Projektdaten**
+  (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die Formulare ausgefüllt) und **Antragsdaten** (nur
+  für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang – siehe unten). Aufbau: Dokument › Antrag › Projekt.
+- **Ohne Produktnamen:** Die Oberfläche nennt kein anderes Programm. Die App liest und schreibt das Dateiformat der
+  Formularprojekte (siehe „Dateiformat“) und soll künftig auch ganz ohne das Originalprogramm auskommen.
+- **Seitenleisten** behalten ihre Breite, auch wenn eine Ansicht einen Rollbalken braucht (Platz dafür ist immer
+  frei); die Navigation, die Gliederung des Formulars und die Leiste der Projektkarte lassen sich am rechten Rand in der
+  Breite ziehen (gemerkt je Leiste, Doppelklick: Vorgabe). Rollbalken in den Farben des Schemas (alle Apps).
   Rechts der **Inhalt**. Was zum Dokument gehört – Gliederung, Verlauf, Formularfläche –, steht im Grau der
   Formularfläche.
 - **Gemeinsame Einstellungen:** Die Stammordner der Projektordner und der Ort neuer Projektdateien gelten für alle
   Apps (`allgemein.json` im gemeinsamen Konfigurationsordner, siehe `packages/core/src/platform/konfig.ts`); Formulare
   übernimmt beim ersten Start seine bisherigen Werte dorthin, wenn dort noch keine stehen.
-- **Einstellungen (⚙)** als eigene Ansicht mit Ebenen: **Ordner** (FORMA-Projekte, Projektordner, angezeigte
-  Pfade), **Büro & Stammdaten**, **Adressbuch**, **Formulare**, **Antrag & Export** und **Projektdatei (.oap)** (siehe unten).
+- **Einstellungen (⚙)** als Modal über der aktuellen Ansicht (die bleibt, wie sie ist; Fertig, × oder Esc schließt)
+  mit Ebenen: **Ordner** (Formularprojekte, Projektordner, angezeigte Pfade), **Büro & Stammdaten**, **Adressbuch**,
+  **Formulare**, **Antrag & Export** und **Projektdatei (.oap)** (siehe unten).
 - **Projektübersicht:** Ohne gewähltes Projekt (und über „Wechseln“ oben links) zeigt der Inhalt alle Projekte
   über die volle Fensterhöhe – vorne **Zuletzt geöffnet** (die letzten acht), darunter je **Quelle** (Ordner mit
   FORMA-Projekten) eine Gruppe, beim Start eingeklappt. Jede Karte zeigt Kürzel, Titel, Anzahl der Formulare,
@@ -35,7 +42,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Formular hinzufügen** (＋ über den Formularen): Auswahl aus dem Vorlagenordner (Einstellungen › Antrag &
   Export) und den Formularen der anderen FORMA-Projekte – je Formular (Name ohne Nummer und Jahr) eins: aus dem
   Vorlagenordner, sonst der neueste Stand. Angelegt wird eine Kopie mit geleerten Eingaben (schreibgeschützte
-  Textfelder bleiben), mit der nächsten laufenden Nummer; sie wird geöffnet und auf Wunsch in den Projektumfang
+  Textfelder bleiben), mit der nächsten laufenden Nummer; sie wird geöffnet und auf Wunsch in den Antragsumfang
   aufgenommen. Leere Felder, die FORMA der Projektkarte zuordnet, werden dabei gleich befüllt (siehe Autofill).
 - **Ansicht „Formular“:** die Seiten wie auf Papier – weiße A4-Blätter mit Rand, das Formular mittig, in den
   Schriften und an den Stellen aus der Datei (Textfelder in Courier New wie in FORMA), mit Zoom (Seitenbreite
@@ -45,7 +52,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Suchen fallen Seiten ohne Treffer weg, daneben steht die Trefferzahl.
 - **Prüfliste „Was fehlt noch?“** (`pruefliste.ts`): Der Filter „Offene“ zeigt genau, was im Füllstand fehlt – je
   Angabe eine Zeile mit den Eingaben darin (Gruppen wie „Gebäudeklasse“ als eine Zeile), ohne entfallene und nicht
-  zählende Felder (Behördenfelder), mit den ungeklärten (hängen an nicht festgelegten Projektmerkmalen). Im Kopf der
+  zählende Felder (Behördenfelder), mit den ungeklärten (hängen an nicht festgelegten Antragsmerkmalen). Im Kopf der
   Gliederung steht „4 offen · 2 ungeklärt“ (Klick öffnet die Liste) bzw. „Nach den Vorgaben der App keine offenen
   Angaben“ – nie „vollständig“. „Nächste offene Angabe“ (auch <kbd>F8</kbd>) springt zum ersten Feld der nächsten
   offenen Angabe nach dem Feld mit dem Fokus. Dazu kommen **Hinweise** (gelb, Widersprüche rot; nie blockierend):
@@ -53,12 +60,12 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
     Kreuz ist ein Widerspruch) – in den Vorgaben bei Bauantrag/Antrag auf Vorbescheid und bei „Behandlung als
     Bauantrag: ja/nein“ (I/3); in der Feldansicht sind diese Fälle Optionsfelder. Mehrere Gebäudeklassen ergeben nur
     die Frage „umfasst der Antrag mehrere Gebäude?“, mehrere Gebäudekategorien („alle zutreffenden“) nichts. I/3 mit
-    Projektmerkmal Sonderbau = ja: Hinweis auf § 63 Abs. 1 Satz 2 BauO NRW 2018.
-  - **Formular und Projektmerkmale** (`merkmalAbgleich.ts`, Prüfregeln in `vorgaben/pruefregeln.ts`): Leere Kästchen
+    Antragsmerkmal Sonderbau = ja: Hinweis auf § 63 Abs. 1 Satz 2 BauO NRW 2018.
+  - **Formular und Antragsmerkmale** (`merkmalAbgleich.ts`, Prüfregeln in `vorgaben/pruefregeln.ts`): Leere Kästchen
     der Gebäudeklasse werden aus dem Merkmal vorbelegt – nur wenn in der Gruppe nichts angekreuzt ist, nie
-    überschrieben, als ein Schritt „Aus Projektmerkmal vorbelegt“ im Verlauf (rückgängig zu machen) und am Kästchen
+    überschrieben, als ein Schritt „Aus Antragsmerkmal vorbelegt“ im Verlauf (rückgängig zu machen) und am Kästchen
     gestrichelt als Vorschlag gekennzeichnet. Weicht das Formular ab, steht „Projekt: GK 3, Formular: GK 1“ in der
-    Prüfliste und am Feld. Kreuzt man von Hand eine andere Gebäudeklasse an, fragt die App, ob sie als Projektmerkmal
+    Prüfliste und am Feld. Kreuzt man von Hand eine andere Gebäudeklasse an, fragt die App, ob sie als Antragsmerkmal
     übernommen werden soll. Verfahren und Antragsart werden nicht verknüpft.
   Am Abschnitt der Gliederung zeigt ⚠ die Hinweise (Titel beim Zeigen).
 - **Gesetzestext-Fenster:** Schließen (Esc, Knopf, Klick daneben) und Reiterwechsel sind gegen den Absturz
@@ -97,12 +104,12 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Vordruck oder BauO NRW/BauPrüfVO sie hergeben – im Zweifel keine. `vorgaben.test.ts` prüft gegen die echten
   Formulare unter `.ref/`, dass jeder Schlüssel existiert und dass jedes Formular dort eine Vorgabe hat.
 - **Erforderlich, entfällt, offen:** Eine Bedingung kann zutreffen (erforderlich), sicher nicht zutreffen (entfällt)
-  oder **offen** sein, weil sie an einem Projektmerkmal hängt, das noch nicht festgelegt ist. Ein fehlendes Merkmal
+  oder **offen** sein, weil sie an einem Antragsmerkmal hängt, das noch nicht festgelegt ist. Ein fehlendes Merkmal
   lässt nichts entfallen (Fail-safe, `bedingung.ts`: dreiwertige Auswertung; ein sicheres „nein“ der übrigen Teile
   entscheidet trotzdem). Offene Angaben zählen im Füllstand wie erforderliche; Gliederung und Kopf zeigen sie
   zusätzlich gelb („2 offen (hängt von Merkmalen ab)“), ✓ und voller Balken erscheinen erst, wenn nichts mehr fehlt.
   Am Feld sind sie gelb hinterlegt, das Info-Symbol sagt „Offen – hängt ab von: Gebäudeart (nicht festgelegt)“ /
-  „Erforderlich, bis Gebäudeart festgelegt ist.“ Im Projektumfang bekommen Dokumente mit fehlendem Merkmal den normalen
+  „Erforderlich, bis Gebäudeart festgelegt ist.“ Im Antragsumfang bekommen Dokumente mit fehlendem Merkmal den normalen
   Status, nie „nicht erforderlich“. Ein Abschnitt heißt „entfällt“, wenn seine Bedingung sicher nicht zutrifft oder
   alle seine zählenden Angaben entfallen; Abschnitte ganz ohne zählende Angaben heißen „freiwillig“.
 - **Warum entfällt ein Feld?** Entfällt ein Feld nach den Bedingungen (oder ist es offen), steht daran ein Info-Symbol
@@ -112,7 +119,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   es oben rechts am Rahmen bzw. am Abschnittstitel der Feldansicht); Felder mit eigenem Grund behalten ihres. Die
   Symbole sind per Tastatur erreichbar: <kbd>F1</kbd> im Feld setzt den Fokus auf sein Symbol und zeigt den Hinweis,
   <kbd>Enter</kbd> öffnet den Gesetzestext, <kbd>Esc</kbd> führt zurück ins Feld. Zeigen nennt den Grund: die Begründung der Vorgabe, die Bedingung in Worten, noch
-  nicht festgelegte Projektmerkmale und die Rechtsgrundlage. Ein Klick öffnet den **Gesetzestext** als Fenster in der
+  nicht festgelegte Antragsmerkmale und die Rechtsgrundlage. Ein Klick öffnet den **Gesetzestext** als Fenster in der
   App – der Paragraf mit dem zitierten Absatz hervorgehoben, darunter „Im Original öffnen“. Die Texte liefert die App
   mit (amtliche Fassungen, lesbar ohne Netz): BauO NRW 2018 (gültig ab 01.09.2026) und BauPrüfVO (gültig ab
   26.11.2024) vollständig von recht.nrw.de, dazu einzelne Paragrafen aus BauGB, BauNVO, BNatSchG und GEIG von
@@ -123,12 +130,12 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   **Fallmatrix** (Vordruck × Gebäudeklasse × Gebäudeart × Sonderbau × Vorhaben × Planungsrecht, auch „nicht
   festgelegt“ → erforderlich/entfällt/offen) für die Pflichtvorlagen. Eigene Bedingungen zeigen die
   Bedingung in Worten, ohne Gesetzestext.
-- **Projektmerkmale der App:** Gebäudeklasse, Sonderbau, Verfahren, **Gebäudeart** (Einfamilienhaus,
+- **Antragsmerkmale der App:** Gebäudeklasse, Sonderbau, Verfahren, **Gebäudeart** (Einfamilienhaus,
   Zweifamilienhaus, Mehrfamilienhaus, Nichtwohngebäude, kein Gebäude), **Vorhaben** (Errichtung, Änderung,
   Nutzungsänderung, Beseitigung) und **Planungsrecht** (Bebauungsplan = qualifiziert oder vorhabenbezogen nach § 30
   Abs. 1, 2 BauGB, einfacher Bebauungsplan nach § 30 Abs. 3 BauGB, Innenbereich, Außenbereich, Satzung nach BauGB). Der
   einfache Bebauungsplan zählt für die Bauvorlagen als Bebauungsplan (Maß der baulichen Nutzung) und als Vorhaben nach
-  §§ 34/35 (Flurkarte, Basiskarte). Ein gespeichertes „Bebauungsplan“ wird nicht umgedeutet; Projektumfang und
+  §§ 34/35 (Flurkarte, Basiskarte). Ein gespeichertes „Bebauungsplan“ wird nicht umgedeutet; Antragsumfang und
   Hinweise erklären die Werte (`MERKMAL_ERKLAERUNG` in `bedingung.ts`). Die Vorgaben
   bauen darauf auf; sie bleiben deshalb auch in einer eigenen Merkmalliste (fehlende werden ergänzt, auch fehlende
   Werte) und lassen sich weder umbenennen noch entfernen. Eigene Merkmale und Werte kommen dazu.
@@ -156,19 +163,19 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Bedingungen** („Erforderlich“ in den Einstellungen der Auswahl): „nur erforderlich, wenn …“. Eine Bedingung ist
   eine Gruppe, deren Teile **alle** (und) oder **mindestens einer** (oder) zutreffen müssen; Teile sind Prüfungen
   oder wieder Gruppen (bis vier Ebenen) – etwa „Gebäudeklasse 3–5 **und** (Sonderbau angekreuzt **oder** Verfahren
-  Baugenehmigungsverfahren)“. Prüfungen: ein **Projektmerkmal** ist bzw. ist nicht einer der angekreuzten Werte;
+  Baugenehmigungsverfahren)“. Prüfungen: ein **Antragsmerkmal** ist bzw. ist nicht einer der angekreuzten Werte;
   ein **anderes Feld** ist angekreuzt/ausgefüllt, leer, gleich oder ungleich einem Wert. Felder lassen sich in der
   Liste oder mit „Feld im Formular wählen“ per Klick ins Formular wählen (<kbd>Esc</kbd> bricht ab). Darunter steht
   die Bedingung in Worten und ob sie gerade zutrifft. Trifft sie nicht zu, **entfällt** der Eintrag: Er zählt nicht,
   ist in der Gliederung durchgestrichen bzw. „entfällt“, seine Felder sind im Formular neutral statt blau
   hinterlegt; in Gruppen zählen entfallene Teile nicht mit. Fehlt im Projekt ein Merkmal, von dem eine Bedingung
   abhängt, ist der Eintrag offen (siehe oben), und die Gliederung weist darauf hin.
-- **Projektmerkmale direkt am Formular festlegen** (`components/MerkmalWahl.tsx`): Der Hinweiskasten der Gliederung
+- **Antragsmerkmale direkt am Formular festlegen** (`components/MerkmalWahl.tsx`): Der Hinweiskasten der Gliederung
   bietet je fehlendem Merkmal Segmentknöpfe mit Kurzerklärung und Fundstelle (z. B. „Gebäudeklasse (§ 2 Abs. 3 BauO
   NRW 2018)“, die Erklärung je Wert beim Zeigen; „§“ öffnet den Gesetzestext). Dieselbe Auswahl öffnet das
   Info-Symbol an einem offenen Feld („Gebäudeart festlegen“ im Gesetzes-Fenster). Die Wahl wirkt sofort. Mit Projekt
-  steht sie im aktiven Antrag der Projektdatei (gilt für alle Formulare; „Alle Projektmerkmale …“ führt zum
-  Projektumfang), ohne Projekt (Web-Version) gilt sie für die Datei und liegt im lokalen Speicher
+  steht sie im aktiven Antrag der Projektdatei (gilt für alle Formulare; „Alle Antragsmerkmale …“ führt zum
+  Antragsumfang), ohne Projekt (Web-Version) gilt sie für die Datei und liegt im lokalen Speicher
   (`formulare:merkmale-datei`, `merkmalWerte.ts`). Bedingungen aus früheren Versionen (eine Liste, alle
   Teile müssen zutreffen) werden als Und-Gruppe übernommen.
 - **Tastatur:** <kbd>Tab</kbd> und <kbd>Enter</kbd> (in einzeiligen Feldern) gehen in Lesereihenfolge zum nächsten
@@ -235,37 +242,51 @@ Anschrift, wie sie in Formularen steht.
   Titel (Besondere Auflagen). Die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat.
 - **Übernehmen von …:** alle Angaben einer anderen Adressgruppe dieses Projekts (z. B. Eigentümer = Bauherr) oder
   aus den Bürostammdaten – in einem Schritt, der sich rückgängig machen lässt. „Leeren“ entfernt alle Angaben.
-- **Adressbuch** (Einstellungen): alle Adressen aus den Projektkarten aller FORMA-Projekte – Bauherren,
+- **Adressbuch** (Einstellungen): alle Adressen aus den Projektkarten aller Projekte – Bauherren,
   Entwurfsverfasser, Behörden, Fachplaner –, gleiche Adressen einmal mit allen Verwendungen („BS5 ·
-  Bauaufsichtsbehörde“). Gepflegt wird in FORMA bzw. in der Projektkarte, nicht doppelt; „Neu einlesen“ liest alle
-  Projektkarten. Die zentrale Adressdatenbank von SJ OFFICE ist noch nicht angebunden (Ort unbekannt).
+  Bauaufsichtsbehörde“), dazu die **eigenen**: „Neue Adresse“ legt eine an, „Bearbeiten“ ändert eine (bei einer
+  Adresse aus den Projektkarten entsteht eine eigene Fassung, Marke „geändert“, „Änderungen verwerfen“ nimmt sie
+  zurück), „Löschen“ bzw. „Ausblenden“ nimmt sie aus dem Adressbuch (ausgeblendete unten wieder einblendbar). Die
+  eigenen Adressen stehen im gemeinsamen Konfigurationsordner (Bereich `formulare`, Eintrag `adressen`) und gelten für
+  alle im Büro; die Projektkarten selbst ändert das Adressbuch nicht. „Aus den Projektkarten einlesen“ liest alle
+  Projektkarten neu. So funktioniert das Adressbuch auch ohne Projektkarten.
+- **Eigene Ansicht der Projektkarte:** oben in der Leiste der Projektkarte – die Einträge, die das Büro nutzt, aus
+  allen Gruppen auf einer Seite, in eigenen Abschnitten und eigener Reihenfolge (über jedem Feld steht die Gruppe).
+  „Ansicht bearbeiten …“ öffnet den **Ansicht-Editor** (gemeinsam in `packages/core/src/ui/AnsichtEditor.tsx`): rechts
+  der Katalog aller Einträge mit Suche (Haken nimmt in den gewählten Abschnitt auf), links die Abschnitte – Felder am
+  Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt. Gilt je Benutzer für alle
+  Projekte (`formulare:ansicht:projektkarte`).
 - **Büro & Stammdaten** (Einstellungen): je Rolle (Entwurfsverfasser, Bauvorlageberechtigter,
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
   Adressen zuerst. In der Projektkarte: „Als Vorgabe festlegen“ bei einer Adresse, **„Vorgaben eintragen“** füllt
   alle leeren Rollen auf einmal, und „Übernehmen von …“ bietet die Vorgabe und die bisherigen Adressen der Rolle an.
+- **Projektordner, Ansicht „Ordner“:** Die Reihenfolge der Ordner einer Ebene lässt sich per Ziehen ändern (oder Ordner
+  wählen und Alt+↑/↓); gemerkt je Ebene für alle Projekte, „Reihenfolge dieser Ebene zurücksetzen“ im Kontextmenü
+  sortiert wieder alphabetisch. Ein Klick ohne Bewegung klappt weiter auf.
 - **Projektordner, Ansicht „Antrag“:** Im Abschnitt „Projektordner“ der Navigation schaltet „Ordner | Antrag“ um
   zwischen den angezeigten Pfaden und nur den Dokumenten im Ordner der aktiven Antragsfassung (z. B. `TÖB/BAUA 2`).
-  Oben steht „n von m bereit“ mit Balken (dazu, wie viele Dokumente des Projektumfangs dort noch fehlen), darunter je
+  Alle Zeilen sind gleich hoch (wie mit Unterzeile), eingerückt, die Knöpfe mit Abstand.
+  Oben steht „n von m bereit“ mit Balken (dazu, wie viele Dokumente des Antragsumfangs dort noch fehlen), darunter je
   Datei ein Zeichen: ✓ bereit, ○ noch nicht bereit, ! Namensformat passt nicht, ↻ nach dem Markieren geändert.
   **Bereit markiert man von Hand** (Klick auf das Zeichen oder Rechtsklick) – das steht je Fassung in der
   Projektdatei (.oap) und gilt für alle im Büro. Wird die Datei danach geändert, gilt sie nicht mehr als bereit.
   Bereit sein können nur Dateien im **Namensformat `<Projektcode> <Antragsart> <JJMMTT> …`**, z. B.
   „MUS BAUA 261110 01 Bauantrag.pdf“ (Projektcode = Kürzel des FORMA-Projekts oder Projektcode der Projektdatei,
   Antragsart = die der Fassung: BAUA, BAUVA, DENK …). Rechtsklick → „Umbenennen nach Namensformat …“ schlägt den
-  Namen vor (Datum der Datei). Unter „Fehlt im Antragsordner“ stehen die Dokumente des Projektumfangs ohne Datei.
+  Namen vor (Datum der Datei). Unter „Fehlt im Antragsordner“ stehen die Dokumente des Antragsumfangs ohne Datei.
   Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
   aktiven Fassung; `{Phase}` gibt es weiter).
 - **Antragsunterlagen ansehen:** „Ansehen“ in der Ansicht „Antrag“ (oder Rechtsklick auf eine Datei → „In der
   Vorschau durchblättern“) zeigt alle Unterlagen der aktiven Fassung im ganzen Fenster – zuerst die Dokumente des
-  Projektumfangs in ihrer Reihenfolge, dann die übrigen. Blättern mit ‹ ›, ← → oder Bild↑/Bild↓ bzw. über die Liste
+  Antragsumfangs in ihrer Reihenfolge, dann die übrigen. Blättern mit ‹ ›, ← → oder Bild↑/Bild↓ bzw. über die Liste
   links; Zoom mit − + (Tasten − + 0) oder der Auswahl (Seitenbreite, 50–300 %). PDFs erscheinen mit allen Seiten,
   Bilder ebenso, andere Dateien öffnet „Extern öffnen“. „Als bereit markieren“ geht auch hier. Esc schließt.
 - **Alle Formulare exportieren:** Knopf in der Ansicht „Antrag“ bzw. ⇪ im Kopf des Abschnitts „FORMA“: alle
   Formulare des FORMA-Projekts als PDF, Name und Ziel wie beim einzelnen Export (Namensvorlage, aktive Fassung).
   Formulare in `_archiv` bzw. `archiv` bleiben außen vor. Gibt es Dateien schon, fragt die App einmal: „Ersetzen“,
   „Vorhandene überspringen“ oder „Abbrechen“. Exportierte PDFs im Antragsordner werden mit den Dokumenten des
-  Projektumfangs verknüpft; am Ende steht, wie viele exportiert, übersprungen oder fehlgeschlagen sind.
-- **Quellordner mit Schreibweisen der Büros:** Quellen im Projektumfang (z. B. `Planung/Berechnungen`,
+  Antragsumfangs verknüpft; am Ende steht, wie viele exportiert, übersprungen oder fehlgeschlagen sind.
+- **Quellordner mit Schreibweisen der Büros:** Quellen im Antragsumfang (z. B. `Planung/Berechnungen`,
   `Planung/Genehmigungsplanung/pdf`, `Fachplanung/G27*`) werden auch gefunden, wenn der Ordner anders geschrieben ist:
   Nummern, Unterstriche und Punkte vorn („00 Berechnungen“, „__Berechnungen“, „03 Genehmigungsplanung“), gleichwertige
   Namen (Genehmigungsplanung = Genehmigung = GP, Fachplanung = Fachplaner) und Platzhalter („G27*“ für den Ordner des
@@ -292,7 +313,7 @@ Anschrift, wie sie in Formularen steht.
 - **Autofill mit Zustand:** Felder, die FORMA einem Eintrag der Projektkarte zuordnet, bekommen ihren Text von
   dort (Auto-Wert). Je Feld merkt sich die App in der Projektdatei (`.oap`, Abschnitt `formulare` → `felder`, je
   Formulardatei) getrennt den zuletzt eingetragenen Auto-Wert und eine manuelle Überschreibung:
-  - **neue Formulare** (aus dem Projektumfang oder „Formular hinzufügen“): leere Felder mit Auto-Wert werden gleich
+  - **neue Formulare** (aus dem Antragsumfang oder „Formular hinzufügen“): leere Felder mit Auto-Wert werden gleich
     befüllt;
   - wer den Auto-Text durch eigenen ersetzt, **fixiert die Überschreibung** (beim Speichern) – sie bleibt beim
     Aktualisieren; im Formular ist ein Feld aus der Projektkarte links blau, ein überschriebenes orange markiert;
@@ -352,48 +373,59 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   Fassung ist das voreingestellte Ziel des Exports und der Maßstab der Vollständigkeitsprüfung.
 - **Dateiname** nach der Namensvorlage, Vorgabe `{Kürzel} {Phase} {Datum} {Nr} {Name}` → „BS9 GP 261110 03
   Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Weitere Platzhalter: `{Antrag}`,
-  `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Projektumfang, sonst der Formularname ohne
+  `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Antragsumfang, sonst der Formularname ohne
   laufende Nummer und Jahr.
 - **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard), Namensvorlage und
   Phase, Ziel (aktive Antragsfassung oder fester Ordner, z. B. `TÖB/{Antrag}/Formulare`), Ordner der
   Berechnungen, Vorlagenordner für neue Formulare und der **Katalog der Antragsdokumente**. Je Projekt lassen sich
-  Antragsordner, Namensvorlage, Phase und Ziel abweichend einstellen (Projektkarte › Projektumfang › „Export für …“,
+  Antragsordner, Namensvorlage, Phase und Ziel abweichend einstellen (Antragsdaten › „Export für …“,
   „Vorgabe verwenden“ setzt zurück) – wie die angezeigten Pfade im Projektordner.
-- **Projektumfang** (eigener Reiter der Projektkarte unter „Antrag“ – gibt es in FORMA nicht): welche Dokumente zum
-  Antrag gehören. „Projektumfang festlegen“ übernimmt die Dokumente der gewählten Antragsvorlage, „Dokument hinzufügen“ weitere aus dem
-  Katalog oder eigene. Je Dokument: Nummer (für `{Nr}`), Titel, **intern** (Formular aus FORMA – Teil des Namens
+- **Antragsdaten** (Navigation, rechte Hälfte neben „Projektdaten“): alles, was nur für den aktiven Antrag gilt –
+  **Status** (siehe „Eingereicht“), **Antragsmerkmale** und **Antragsumfang**, dazu „Export für …“ (gilt für alle
+  Anträge des Projekts). Die Projektdaten (Projektkarte) gelten dagegen für das ganze Projekt.
+- **Antragsumfang** (in den Antragsdaten): welche Dokumente zum
+  Antrag gehören. „Antragsumfang festlegen“ übernimmt die Dokumente der gewählten Antragsvorlage, „Dokument hinzufügen“ weitere aus dem
+  Katalog oder eigene. Je Dokument: **Nummer** – sie steht im Dateinamen des PDF-Exports an der Stelle `{Nr}` (z. B.
+  „BS9 BAUA 261110 01 Bauantrag.pdf“) und sortiert so die Unterlagen im Antragsordner –, Titel, **intern** (Formular des Projekts – Teil des Namens
   oder Kennung) oder **extern** (Datei – Berechnung, Plan, fremde PDF; Ordner der Quelle und Muster mit `*`, `?`,
   mehrere mit `;`). Die Datei im Antragsordner wird nach Muster bzw. Titel gefunden oder ausdrücklich verknüpft (🔗,
-  auch per Rechtsklick im Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Projektumfang
+  auch per Rechtsklick im Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Antragsumfang
   und die aktive Fassung stehen im Abschnitt `formulare` der Projektdatei (`.oap`) im Projektordner und gelten damit
   für alle im Büro (siehe unten).
 - **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je
   Antragsart – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Im Katalog
-  hat jede Vorlage eine Spalte zum Ankreuzen; die Reihenfolge ist die des Katalogs. Beim Festlegen des Projektumfangs
+  hat jede Vorlage eine Spalte zum Ankreuzen; die Reihenfolge ist die des Katalogs. Beim Festlegen des Antragsumfangs
   wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen („BAUA 2“ → Bauantrag), eine andere lässt sich
   wählen; „Dokument hinzufügen › Aus Vorlage ergänzen“ nimmt die fehlenden Dokumente einer weiteren Vorlage dazu.
   Die früheren „Vorgewählt“-Häkchen werden beim ersten Start zur Vorlage „Bauantrag“.
 - **Reihenfolge ändern:** am Griff ⠿ ziehen – oder den Griff wählen und mit ↑/↓ verschieben – im Katalog, bei den
-  Antragsvorlagen und Projektmerkmalen und im Projektumfang eines Projekts (dort auch per Rechtsklick „Nach oben“ /
+  Antragsvorlagen und Antragsmerkmalen und im Antragsumfang eines Projekts (dort auch per Rechtsklick „Nach oben“ /
   „Nach unten“).
-- **Projektmerkmale** (oben im Projektumfang): Gebäudeklasse, Sonderbau, Verfahren … – **je Antrag** gewählt,
-  gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Projektumfang des Antrags. Welche Merkmale
+- **Antragsmerkmale** (in den Antragsdaten): Gebäudeklasse, Sonderbau, Verfahren … – **je Antrag** gewählt,
+  gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Antragsumfang des Antrags. Welche Merkmale
   es gibt, ihre Werte und die **Vorgabe für neue Anträge** (globales Preset) stehen in Einstellungen › Antrag &
   Export. Ein neuer Antrag übernimmt die Vorgaben einmalig; danach ist er unabhängig – spätere Änderungen am Preset
-  oder an anderen Anträgen ändern ihn nicht.
-- **Jeder Antrag hat seinen eigenen Satz:** Projektmerkmale, Projektumfang (mit Verknüpfungen), die manuellen
+  oder an anderen Anträgen ändern ihn nicht. „Ansicht …“ stellt mit dem Ansicht-Editor eine eigene Ansicht zusammen
+  (welche Merkmale in welcher Reihenfolge, in Abschnitten; die übrigen unter „weitere Merkmale – zeigen“).
+- **Jeder Antrag hat seinen eigenen Satz:** Antragsmerkmale, Antragsumfang (mit Verknüpfungen), die manuellen
   Überschreibungen des Autofills und die „bereit“-Markierungen gehören zum Antrag (zur Antragsfassung, z. B. `BAUA 2`).
   Mit der aktiven Fassung wechselt die App auch diese Angaben. Jeder Ordner einer Antragsfassung ist ein Antrag; beim
   ersten Öffnen werden fehlende angelegt (Angelegt-Datum aus dem Ordner). Angaben aus älteren Fassungen der App, die
   für das ganze Projekt galten, werden dabei einmalig in jeden vorhandenen Antrag übernommen.
 - **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)
   ausgenommen – ein Dokument, dessen Name `Antragsprotokoll` oder `Eingangsbestätigung` (auch
-  `Eingangsbestaetigung`) enthält, gilt der Antrag als **eingereicht** – mit dem Datum der Datei (bei mehreren der
-  neuesten). Das zeigt die App am Antrag (oben links) und im Menü der Fassungen; verschwindet die Datei, ist er es
-  nicht mehr. Der **zuletzt angelegte Antrag** steht zusätzlich in `meta.antrag` der Projektdatei und erscheint auf
+  `Eingangsbestaetigung`) enthält, gilt der Antrag als **eingereicht** – mit dem Datum im Dateinamen, sonst dem der
+  Datei (bei mehreren der neuesten). Das zeigt die App am Antrag (oben links), in der Navigation und im Menü der
+  Fassungen; verschwindet die Datei, ist er es nicht mehr. Der Status lässt sich in den Antragsdaten **von Hand
+  setzen**: „automatisch“ (die Erkennung), „in Arbeit“ oder „eingereicht“ mit Datum (`status` im Antrag). Der **aktive
+  Antrag** – derselbe, den das Projekt zeigt – steht zusätzlich in `meta.antrag` der Projektdatei und erscheint auf
   den Startseiten aller Apps als Marke auf der Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in
-  Arbeit“). Erkannt wird beim Öffnen bzw. Aktualisieren des Projekts in Formulare.
-- **Dokumente mit Bedingung:** im Projektumfang (Bearbeiten) und im Katalog („Nur wenn“; Projektmerkmale mit
+  Arbeit“); die Startseite von Formulare zeigt ihn auch dann, wenn nicht alle Formulare lesbar sind.
+- **Eingereicht = gesperrt:** Ist der aktive Antrag eingereicht, lassen sich die Formulare nur ansehen (Hinweis über
+  dem Formular, „Antragsdaten …“), Antragsmerkmale, Antragsumfang, Export, „bereit“ und „Daten aktualisieren“ bleiben,
+  wie eingereicht. Geändert wird mit einem **Nachtrag**: „Nachtrag „BAUA 3“ anlegen“ in den Antragsdaten legt die
+  nächste Fassung an und macht sie aktiv – oder der Status wird von Hand zurückgesetzt.
+- **Dokumente mit Bedingung:** im Antragsumfang (Bearbeiten) und im Katalog („Nur wenn“; Antragsmerkmale mit
   und/oder wie oben) – etwa ein Nachweis nur
   bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“: kein Farbpunkt, kein grauer
   „Anlegen“-Eintrag, es zählt nicht mit.
@@ -401,9 +433,15 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   - **grau – fehlt:** kein Formular im Projekt bzw. weder Quelle noch Datei;
   - **rot – nicht vollständig:** das Formular hat noch offene Angaben (Füllstand wie in der Gliederung);
   - **gelb – nicht (aktuell) exportiert:** ausgefüllt, aber keine PDF im Antragsordner oder die PDF ist älter als
-    die letzte Änderung (Datei oder ungespeicherte Eingaben); bei externen: die Quelle ist neuer als die Datei;
+    die letzte Änderung (Datei oder ungespeicherte Eingaben); bei externen: die Quelle ist neuer als die Datei.
+    **Maßstab ist das Datum im Dateinamen** (`JJMMTT` wie „BS9 BAUA 261110 …“, auch `261110_1430`, `20261110`,
+    `2026-11-10`, `10.11.2026`; ein Projektcode am Anfang zählt nicht): Haben Quelle und Datei eines, entscheidet es –
+    gleiches Datum heißt gleicher Stand, auch wenn die Excel-Datei danach noch einmal gespeichert wurde. Hat nur eine
+    Seite eines, wird es mit dem Tag der Änderungszeit der anderen verglichen (am selben Tag zählt die Änderungszeit);
+    ohne Datum im Namen gilt wie bisher die Änderungszeit. Ebenso wählt die App bei mehreren passenden Dateien die
+    neueste (`datumAusName`, `standVergleich` in `antrag.ts`);
   - **grün – aktuell:** die PDF liegt im Ordner der aktiven Fassung und ist nach der letzten Änderung entstanden.
-- In der **Navigation** trägt jedes Formular des Projektumfangs einen Farbpunkt; fehlende Formulare stehen grau
+- In der **Navigation** trägt jedes Formular des Antragsumfangs einen Farbpunkt; fehlende Formulare stehen grau
   hinterlegt darunter – ein **Klick legt das Formular an** (aus dem Vorlagenordner, sonst als Kopie des neuesten
   passenden Formulars aus einem anderen Projekt, jeweils mit geleerten Eingaben; schreibgeschützte Textfelder
   bleiben) und öffnet es – leere Felder mit Angaben aus der Projektkarte sind gleich befüllt.
@@ -442,7 +480,7 @@ beschrieben.
   Apps in `projekt.json` ablegen, bleibt erhalten.
 - **Fehlt die Projektdatei:** kein Fehler – der **Stammdaten-Dialog** (gemeinsam in `packages/core`) fragt die
   Angaben ab, vorbelegt aus der Projektkarte, und legt sie an. Er erscheint, sobald die App die Datei braucht (beim
-  Speichern der Projektkarte, beim Festlegen von Projektumfang, Antragsfassung oder Projektmerkmalen); im Projektkopf
+  Speichern der Projektkarte, beim Festlegen von Antragsumfang, Antragsfassung oder Antragsmerkmalen); im Projektkopf
   steht bis dahin „Keine Projektdatei – Stammdaten erfassen …“. Der Ort kommt aus den gemeinsamen Einstellungen
   (`oapPfad`) und gilt für alle Apps; eine bisher eigene Einstellung dieser App wird beim ersten Start dorthin
   übernommen. Platzhalter (Groß-/Kleinschreibung egal): `{Kürzel}` (auch `{nummer}`), `{Kurzname}`, `{Vorhaben}`,
@@ -561,7 +599,7 @@ gehören nicht dazu.
 | Bereich | Schlüssel | beim Einspielen |
 | --- | --- | --- |
 | Gliederung der Formulare (Titel, Gruppen, Bedingungen) | `formulare:profile` | ergänzt – gleiche Formulare ersetzt |
-| Projektmerkmale | `formulare:merkmale` | ersetzt |
+| Antragsmerkmale | `formulare:merkmale` | ersetzt |
 | Antragsdokumente (Katalog) | `formulare:katalog` | ersetzt |
 | Antrag & Export | `formulare:export` | ersetzt |
 | Antrag & Export: Abweichungen je Projekt | `formulare:export-projekte` | ergänzt – gleiche Projekte ersetzt |
@@ -732,7 +770,8 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
   Beschriftungen mit echten Formularen prüfen.
 - **Katalog der Antragsdokumente:** Vorgabe an die Bauvorlagen des Büros anpassen (Muster der Dateinamen, Kennungen
   der Formulare).
-- **Adressdatenbank von SJ OFFICE:** Ort und Aufbau unbekannt; bis dahin kommt das Adressbuch aus den Projektkarten.
+- **Ganz ohne Originalprogramm:** Die App soll alle Funktionen auch mit eigenen Daten anbieten (Projektkarte,
+  neue Formulare); mit vorhandenen Formularprojekten arbeitet sie auf deren Daten. Das Adressbuch kann das schon.
 - **Projektdatei (.oap):** mit echten Projekten prüfen, welche Datei je Projekt die Stammdaten führen soll (bei
   mehreren Berechnungen) und ob die Zuordnung Grundstück/Ort zur Projektkarte so passt.
 - **Vorgabe der angezeigten Pfade** an die Ordnerstruktur des Büros anpassen.

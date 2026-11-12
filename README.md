@@ -44,7 +44,13 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
   im Millimeterbereich genau); WGS84 und ETRS89 weichen um weniger als einen Meter ab.
 - **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch Projektordner und Formulare). Ohne geöffnetes Projekt
   zeigt jede App denselben Einstieg mit denselben Aktionen: *Projekt wählen …* (Desktop: Übersicht mit „zuletzt
-  geöffnet“), *Datei öffnen …*, *Neues Projekt*.
+  geöffnet“), *Datei öffnen …*, *Neues Projekt*. Die Projektübersicht scrollt als Ganzes (aufgeklappte Quellen werden
+  nicht mehr auf die Fensterhöhe gequetscht); „Zuletzt geöffnet“ steht auf einem farbigen Streifen.
+- **Rollbalken** in den Farben des Schemas (schmal, abgerundet); Seitenleisten halten Platz für den Rollbalken frei,
+  damit sich ihre Breite beim Wechsel der Ansicht nicht ändert.
+- **Eigene Ansichten** (Ansicht-Editor in `packages/core/src/ui/AnsichtEditor.tsx`): aus einem Katalog von Feldern
+  Abschnitte mit genau den benötigten Feldern zusammenstellen – Reihenfolge per Ziehen. Genutzt in Formulare
+  (Projektkarte, Antragsmerkmale); für weitere Apps (Startseite, Vorlagen) vorbereitet.
 - **Datei ließ sich nicht öffnen**: Die Meldung nennt Datei und Grund in Klartext („Keine gültige Projektdatei
   (.oap) – beschädigt oder aus einer anderen Anwendung.“); technische Einzelheiten stehen aufklappbar darunter und im
   Protokoll. Ein fehlgeschlagenes Öffnen ändert das geöffnete Projekt nicht.
@@ -240,7 +246,8 @@ packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als
   src/excel/         Excel-Vorlagen-Engine (Platzhalter, Blöcke, Formeln), Vorlagenspeicher
   src/platform/      Speichern/Öffnen (Tauri-Dialog bzw. Download), web-ifc, Protokoll, Farbschema
   src/ui/            Titelleiste, Protokoll-Fenster, Excel-Dialog, Eingabefelder, Dialoge (Dialog.tsx: Esc, Modal;
-                     Rueckfrage.tsx: Rückfragen und Meldungen), Grund-Styles (base.css)
+                     Rueckfrage.tsx: Rückfragen und Meldungen), Grund-Styles (base.css), Ansicht-Editor
+                     (AnsichtEditor.tsx, ansicht.ts), Ziehen mit dem Zeiger (ziehen.ts), ziehbare Leisten (Leiste.tsx)
   tauri/commands.rs  gemeinsame Tauri-Befehle, per include! in alle Tauri-Hüllen eingebunden
 apps/flaechenrechner/  Flächenrechner (dieses Tool): Zeichenfläche, Bericht, Excel, DXF/PDF, 3D
 apps/grz/              GRZ/GFZ-Nachweis: Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md
