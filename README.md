@@ -1,6 +1,6 @@
 # arch-tools
 
-Werkzeuge für Architekturbüros: sechs Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau – einzeln oder alle
+Werkzeuge für Architekturbüros: sieben Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau – einzeln oder alle
 zusammen in der Rahmen-App „arch-tools“ (Tabs, herauslösbare Fenster). Flächenrechner,
 GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 
@@ -12,6 +12,7 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 | **Projekt** (früher Projektordner) | Das Setup-Tool: Projekte mit einem Assistenten anlegen und fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte in der Projektdatei, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
 | **Entzerrung** | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 | **Formulare** | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
+| **AVA** | Ausschreibung, Vergabe, Abrechnung und Bauleitung: Leistungsverzeichnisse (LV-Dateien des bisherigen LV-Programms oder eigenes Format), Preisspiegel, Aufträge, Rechnungsprüfung mit Deckblatt, Kostenkontrolle (Excel), Bautagebuch, Protokolle, Mängel, Mailverlauf | [docs/ava.md](docs/ava.md) |
 | **arch-tools** | Rahmen-App: alle Apps in einem Fenster als Tabs, einzelne in eigene Fenster herauslösen | [docs/suite.md](docs/suite.md) |
 
 ## Gemeinsame Bedienung aller Apps
@@ -40,7 +41,8 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
   Stammdaten stehen sie als „O … · N …“; **Kopieren** liefert „Ost, Nord“ mit Punkt als Dezimalzeichen, z. B. zum
   Springen in QGIS (Projekt-KBS EPSG:25832). Liegt nur ein Treffer für die Straße oder den Ort vor, steht das dabei;
   „Neu abfragen“ fragt erneut. Gesendet wird nur die Adresse des Vorhabens, eine Abfrage je geänderter Adresse; die
-  Desktop-Apps erlauben dafür in ihrer CSP genau diesen Dienst. Die Umrechnung rechnet die App selbst (Krüger-Reihen,
+  Desktop-Apps erlauben dafür in ihrer CSP genau diesen Dienst (AVA und die Rahmen-App zusätzlich den Wetterdienst
+  Open-Meteo fürs Bautagebuch, nur auf Knopfdruck). Die Umrechnung rechnet die App selbst (Krüger-Reihen,
   im Millimeterbereich genau); WGS84 und ETRS89 weichen um weniger als einen Meter ab.
 - **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch Projekt und Formulare). Ohne geöffnetes Projekt
   zeigt jede App denselben Einstieg mit denselben Aktionen: *Projekt wählen …* (Desktop: Übersicht mit „zuletzt
@@ -243,13 +245,15 @@ festgehalten.
 
 ## Aufbau des Repositorys
 
-Ein Repository mit npm-Workspaces, sechs Apps und einem gemeinsamen Unterbau:
+Ein Repository mit npm-Workspaces, sieben Apps und einem gemeinsamen Unterbau:
 
 ```
 packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als @core/… eingebunden)
   src/               Geometrie, Projektformat (.oap), IFC-Import, Dachformen und Gauben, DIN-277-
                      Berechnung, Lageplan-Flächen
   src/excel/         Excel-Vorlagen-Engine (Platzhalter, Blöcke, Formeln), Vorlagenspeicher
+  src/dokumente/     Office-Dateien verlustfrei lesen und zellgenau ändern (XML mit Lage im Quelltext, ZIP, Excel),
+                     Formeln einer Mappe nachrechnen (auch blattübergreifend)
   src/platform/      Speichern/Öffnen (Tauri-Dialog bzw. Download), web-ifc, Protokoll, Farbschema
   src/ui/            Titelleiste, Protokoll-Fenster, Excel-Dialog, Eingabefelder, Dialoge (Dialog.tsx: Esc, Modal;
                      Rueckfrage.tsx: Rückfragen und Meldungen), Grund-Styles (base.css), Ansicht-Editor
@@ -261,6 +265,7 @@ apps/kosten/           Kostenermittlung nach DIN 276: Mengen, Kennwerte, Kostens
 apps/ordner/           App „Projekt“: Assistent (neu/fortschreiben), Struktur-Editor, Vorlagen-Presets, Ordner prüfen, Katasterpläne – siehe docs/projektordner.md
 apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
 apps/formulare/        FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
+apps/ava/              Ausschreibung, Vergabe, Abrechnung, Bauleitung: LV-Formate (.aslv, .oalv, GAEB), Preisspiegel, Kostenkontrolle, Rechnungsprüfung, Bautagebuch – siehe docs/ava.md
 apps/suite/            Rahmen-App „arch-tools“: alle Apps in einem Fenster (Tabs, herauslösbare Fenster) – siehe docs/suite.md
 ```
 
@@ -288,6 +293,7 @@ npm run dev:kosten       # Kostenermittlung unter http://localhost:1440
 npm run dev:ordner       # Projekt (früher Projektordner) unter http://localhost:1450
 npm run dev:entzerrung   # Entzerrung unter http://localhost:1460
 npm run dev:formulare    # Formulare unter http://localhost:1470
+npm run dev:ava          # AVA unter http://localhost:1490 (Demo-Projekt: http://localhost:1490/?demo)
 npm run dev:suite        # Rahmen-App unter http://localhost:1480 (nach npm run build)
 npm test                 # alle Tests (Unterbau und Apps, vitest)
 npm run typecheck        # TypeScript für alle Workspaces
@@ -299,6 +305,7 @@ npm run tauri:dev:kosten # Kostenermittlung als Desktop-App
 npm run tauri:dev:ordner # Projekt als Desktop-App
 npm run tauri:dev:entzerrung # Entzerrung als Desktop-App
 npm run tauri:dev:formulare  # Formulare als Desktop-App
+npm run tauri:dev:ava        # AVA als Desktop-App
 npm run tauri:dev:suite      # Rahmen-App als Desktop-App
 npm run tauri:build -w flaechenrechner   # Windows-Installer unter apps/<app>/src-tauri/target/release/bundle/
 ```
@@ -307,6 +314,7 @@ Der Workflow **Build & Release** (GitHub Actions) baut je App die Windows-Instal
 GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` erhöht wird:
 Flächenrechner als `v<version>`, GRZ-Nachweis als `grz-v<version>`, Kostenermittlung als `kosten-v<version>`,
 Projekt (früher Projektordner) als `ordner-v<version>`, Entzerrung als `entzerrung-v<version>`, Formulare als `formulare-v<version>`,
+AVA als `ava-v<version>`,
 die Rahmen-App als `suite-v<version>`.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.

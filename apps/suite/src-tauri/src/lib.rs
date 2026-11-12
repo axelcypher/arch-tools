@@ -1,10 +1,12 @@
 //! Desktop-Hülle der Rahmen-App: ein Programm für alle arch-tools. Die Apps laufen als Tabs (iframes) im
 //! Hauptfenster oder herausgelöst in eigenen Fenstern desselben Programms – deshalb registriert diese Hülle die
 //! Befehle aller Apps: die gemeinsamen (packages/core/tauri/commands.rs) und die der Formulare-App
-//! (apps/formulare/src-tauri/src/befehle.rs). Die übrigen Apps haben keine eigenen Befehle.
+//! (apps/formulare/src-tauri/src/befehle.rs) und der AVA-App (apps/ava/src-tauri/src/befehle.rs). Die übrigen Apps haben
+//! keine eigenen Befehle.
 
 include!("../../../../packages/core/tauri/commands.rs");
 include!("../../../formulare/src-tauri/src/befehle.rs");
+include!("../../../ava/src-tauri/src/befehle.rs");
 include!("../../../../packages/core/tauri/qgis.rs");
 
 /// Die Formulare-App im Tab bzw. Fenster ist zu oder zieht um (Herauslösen, Andocken): ihre Sperrdateien freigeben.
@@ -69,6 +71,14 @@ pub fn run() {
             prokarte_write,
             machine_info,
             open_path,
+            // AVA (apps/ava/src-tauri/src/befehle.rs – dieselbe Liste wie dort in lib.rs)
+            ava_ersetzen,
+            ava_office_offen,
+            ava_umbenennen,
+            ava_scan_uebernehmen,
+            ava_oeffnen,
+            ava_mail_entwurf,
+            ava_temp_oeffnen,
             // Rahmen
             rahmen_formulare_freigeben
         ])

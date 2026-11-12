@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const hier = dirname(fileURLToPath(import.meta.url));
 const apps = resolve(hier, '../..');
 const ziel = resolve(hier, '..', process.argv[2] ?? 'dist/apps');
-export const APPS = ['ordner', 'formulare', 'flaechenrechner', 'grz', 'kosten', 'entzerrung'];
+export const APPS = ['ordner', 'formulare', 'flaechenrechner', 'grz', 'kosten', 'entzerrung', 'ava'];
 
 rmSync(ziel, { recursive: true, force: true });
 const fehlen = APPS.filter((a) => !existsSync(join(apps, a, 'dist', 'index.html')));
