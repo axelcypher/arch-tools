@@ -440,8 +440,9 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   **Nummer** – sie steht im Dateinamen des PDF-Exports an der Stelle `{Nr}` (z. B. „BS9 BAUA 261110 01 Bauantrag.pdf“)
   und sortiert so die Unterlagen im Antragsordner –, Titel, **intern** (Formular des Projekts – Teil des Namens oder
   Kennung) oder **extern** (Datei – Berechnung, Plan, fremde PDF; Ordner der Quelle und Muster mit `*`, `?`, mehrere
-  mit `;`). Die Datei im Antragsordner wird nach Muster bzw. Titel gefunden oder ausdrücklich verknüpft (🔗, auch per
-  Rechtsklick im Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Antragsumfang und die
+  mit `;`). Die Textfelder werden beim Verlassen des Felds bzw. mit Enter übernommen, Esc verwirft. Die Datei im
+  Antragsordner wird nach Muster bzw. Titel gefunden oder ausdrücklich verknüpft (🔗, auch per Rechtsklick im
+  Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Antragsumfang und die
   aktive Fassung stehen im Abschnitt `formulare` der Projektdatei (`.oap`) im Projektordner und gelten damit für alle
   im Büro (siehe unten).
 - **Plansatz** (Art eines Dokuments, Vorgabe für „Bauzeichnungen“): ein Eintrag für **alle Pläne**, statt je Grundriss
@@ -755,7 +756,11 @@ beschrieben.
     gilt ebenso nur für die Fassung der Liste bzw. des Menüs. „Antragsumfang aufheben …“ fragt nach und hebt nur auf,
     wenn danach noch der Antrag der Rückfrage angezeigt ist (sonst „Antragsumfang nicht aufgehoben – inzwischen ist
     Antrag BAUA angezeigt.“). Die Textfelder (Nr., Titel, Formular, Ordner der Quelle, Muster) speichern beim Verlassen
-    bzw. mit Enter, Esc verwirft – ein Schreiben statt eines je Taste.
+    bzw. mit Enter, Esc verwirft – ein Schreiben statt eines je Taste; bis das Speichern zurück ist, bleibt das
+    Getippte stehen, eine Korrektur währenddessen wird danach gespeichert. Sie gelten für die Fassung, in der getippt
+    wurde. Scheitert das Speichern (Schreibfehler, Antrag wird gerade geöffnet), bleibt das Getippte rot markiert
+    stehen („Nicht gespeichert – Enter im Feld versucht es erneut, Esc verwirft.“); ein leerer Titel wird nicht
+    gespeichert („Der Titel darf nicht leer sein – Esc stellt „Lageplan“ wieder her.“).
   - **Nachholen:** Beim Anlegen bzw. Hinzufügen eines Formulars nennt die Meldung den Weg, wenn das Zuordnen nicht
     ging („Bitte später in den Antragsdaten von BAUA 2 über „Zuordnen“ nachholen.“, bei einem schon vorhandenen
     Formular „Bitte später zu Antrag BAUA 2 wechseln und per Rechtsklick auf „…“ in der Navigation ›

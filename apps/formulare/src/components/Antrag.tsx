@@ -9,7 +9,7 @@ import { eingereichtVon, PLANSATZ_QUELLE, standFestgehaltenText, tagVon } from '
 import { ART_HINWEIS, vorlageArtWarnung, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
-import type { DokZustand } from '../antragStore';
+import type { DokZustand, SchreibInfo } from '../antragStore';
 import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, namensschemaVon, quelleVonEintrag, useAntrag, wechselLaeuft, wirksameEinstellungen, zeilenFassung } from '../antragStore';
 import type { PlansatzErgebnis } from '../plansatz';
 import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz';
@@ -416,32 +416,101 @@ const GESPERRT_TITEL = 'Der Antrag ist eingereicht und gesperrt – zum Nachreic
 
 /**
  * Textfeld der Antragsdaten: getippt wird im Feld, gespeichert beim Verlassen bzw. mit Enter – ein Schreiben statt eines
- * je Taste (auf dem Netzlaufwerk sprang das Feld sonst zurück, und Getipptes ging verloren); Esc verwirft. Bis das
- * Speichern zurück ist, bleibt das Getippte stehen.
+ * je Taste (auf dem Netzlaufwerk sprang das Feld sonst zurück, und Getipptes ging verloren); Esc verwirft.
+ * - Die Fassung der Zeile gilt ab dem ersten Tastendruck (`bindung`) – ist inzwischen eine andere angezeigt, wird nicht
+ *   gespeichert (die Meldung sagt es) und der Entwurf verworfen.
+ * - Bis das Speichern zurück ist, bleibt das Getippte stehen; dasselbe wird nicht noch einmal gespeichert, eine Korrektur
+ *   währenddessen danach.
+ * - Scheitert das Speichern (Schreibfehler, Antrag wird gerade geöffnet), bleibt der Entwurf markiert stehen – Enter
+ *   versucht es erneut. Leer, wo es nicht leer sein darf (`leerFehler`): markiert, nichts gespeichert.
+ * - Verschwindet das Feld mit einem ungespeicherten Entwurf (Zeile woanders entfernt), sagt `beiVerlust` es.
  */
-function UebernahmeFeld({ wert, onUebernehmen, ...rest }: { wert: string; onUebernehmen: (wert: string) => unknown } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur' | 'onKeyDown'>) {
+function UebernahmeFeld({
+  wert,
+  bindung,
+  onUebernehmen,
+  leerFehler,
+  beiVerlust,
+  ...rest
+}: {
+  wert: string;
+  bindung?: string;
+  onUebernehmen: (wert: string, bindung: string | undefined) => Promise<SchreibInfo> | undefined;
+  leerFehler?: string;
+  beiVerlust?: (entwurf: string) => void;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur' | 'onKeyDown'>) {
   const [entwurf, setEntwurf] = useState<string | null>(null);
+  // für das Verschwinden des Felds: der letzte Stand ohne neu zu rendern
+  const zuletzt = useRef({ entwurf, wert, beiVerlust });
+  zuletzt.current = { entwurf, wert, beiVerlust };
+  const [fehler, setFehler] = useState<string | null>(null);
+  const meldungId = useId();
+  const gebunden = useRef<string | undefined>(undefined);
+  const laeuft = useRef<string | null>(null);
+  const danach = useRef<string | null>(null);
+  useEffect(
+    () => () => {
+      const { entwurf: e, wert: w, beiVerlust: b } = zuletzt.current;
+      if (e !== null && e !== w && laeuft.current === null) b?.(e);
+    },
+    [],
+  );
+  const speichern = (v: string) => {
+    laeuft.current = v;
+    void Promise.resolve(onUebernehmen(v, gebunden.current)).then((info) => {
+      laeuft.current = null;
+      const n = danach.current;
+      danach.current = null;
+      // während des Speicherns korrigiert: jetzt das Korrigierte (gegen den dann gespeicherten Stand)
+      if (n !== null && n !== v) return speichern(n);
+      if (info && !info.geschrieben && !info.dialog && info.erneut) return setFehler('Nicht gespeichert – Enter im Feld versucht es erneut, Esc verwirft.');
+      setFehler(null);
+      setEntwurf((e) => (e === v ? null : e));
+    });
+  };
   const uebernehmen = () => {
     if (entwurf === null) return;
+    if (leerFehler && !entwurf.trim()) return setFehler(leerFehler);
+    // läuft schon: dasselbe nicht noch einmal, Abweichendes danach
+    if (laeuft.current !== null) {
+      if (entwurf !== laeuft.current) danach.current = entwurf;
+      return;
+    }
+    setFehler(null);
     if (entwurf === wert) return setEntwurf(null);
-    const v = entwurf;
-    void Promise.resolve(onUebernehmen(v)).finally(() => setEntwurf((e) => (e === v ? null : e)));
+    speichern(entwurf);
   };
   return (
-    <input
-      {...rest}
-      value={entwurf ?? wert}
-      onChange={(e) => setEntwurf(e.target.value)}
-      onBlur={uebernehmen}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') uebernehmen();
-        else if (e.key === 'Escape' && entwurf !== null) {
-          // Esc verwirft die Eingabe – und schließt nichts anderes
-          e.stopPropagation();
-          setEntwurf(null);
-        }
-      }}
-    />
+    <>
+      <input
+        title="Übernommen beim Verlassen des Felds oder mit Enter, Esc verwirft"
+        {...rest}
+        className={[rest.className, fehler ? 'feld-fehler' : ''].filter(Boolean).join(' ') || undefined}
+        aria-invalid={fehler ? true : undefined}
+        aria-describedby={fehler ? meldungId : undefined}
+        value={entwurf ?? wert}
+        onChange={(e) => {
+          if (entwurf === null) gebunden.current = bindung;
+          setEntwurf(e.target.value);
+        }}
+        onBlur={uebernehmen}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') uebernehmen();
+          else if (e.key === 'Escape' && entwurf !== null) {
+            // Esc verwirft die Eingabe – und schließt nichts anderes
+            e.stopPropagation();
+            danach.current = null;
+            setEntwurf(null);
+            setFehler(null);
+          }
+        }}
+      />
+      {fehler && (
+        <span className="feld-meldung pu-feld-meldung" id={meldungId} role="alert">
+          {fehler}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -561,10 +630,13 @@ export function AntragsdatenAnsicht() {
   const z = zusammenfassung(dokumente);
 
   // Bearbeiten: im dann gelesenen Umfang ändern (nur derselbe Eintrag, dieselbe Fassung)
-  const setzen = (id: string, teil: Partial<UmfangEintrag>) =>
+  // ein ungespeicherter Entwurf, dessen Zeile verschwunden ist (woanders entfernt bzw. eine andere Fassung angezeigt)
+  const verloren = (titel: string) => (v: string) =>
+    useFormulare.getState().setMeldung({ art: 'info', text: `„${v}“ bei „${titel}“ nicht gespeichert – der Eintrag ist nicht mehr angezeigt.` });
+  const setzen = (id: string, teil: Partial<UmfangEintrag>, ansicht: string | undefined = zf) =>
     umfang
       ? st.umfangAendern((aktuell) => aktuell.map((u) => (u.id === id ? { ...u, ...teil } : u)), {
-          ansicht: zf,
+          ansicht,
           eintrag: id,
           titel: dokumente.find((d) => d.eintrag.id === id)?.eintrag.titel,
           was: 'Nicht geändert',
@@ -695,7 +767,7 @@ export function AntragsdatenAnsicht() {
               <button
                 className="primary"
                 disabled={gesperrt || ohneVorlage}
-                title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen' : ohneVorlage ? 'Erst eine Antragsvorlage wählen' : undefined}
+                title={gesperrt ? GESPERRT_TITEL : ohneVorlage ? 'Erst eine Antragsvorlage wählen' : undefined}
                 aria-describedby={ohneVorlage ? 'pu-ohne-vorlage' : undefined}
                 onClick={() => void umfangSetzen(vorlage ? umfangAusKatalog(katalog, vorlage) : katalog.map(alsUmfang))}
               >
@@ -760,11 +832,17 @@ export function AntragsdatenAnsicht() {
                       <UebernahmeFeld
                         className="pu-nr"
                         wert={u.nr ?? ''}
+                        bindung={zf}
+                        beiVerlust={verloren(u.titel)}
                         placeholder="Nr."
                         disabled={gesperrt}
                         aria-label={`Nummer von ${u.titel}`}
-                        title="Nummer des Dokuments im Antrag (z. B. 01, 02 …) – steht im Dateinamen des PDF-Exports an der Stelle {Nr} (Namensvorlage in den Einstellungen › Antrag & Export) und sortiert so die Unterlagen im Antragsordner; gespeichert beim Verlassen des Felds bzw. mit Enter"
-                        onUebernehmen={(v) => setzen(u.id, { nr: v || undefined })}
+                        title={
+                          gesperrt
+                            ? GESPERRT_TITEL
+                            : 'Nummer im Antrag (z. B. 01) – steht im Dateinamen des PDF-Exports und sortiert die Unterlagen; übernommen beim Verlassen des Felds oder mit Enter, Esc verwirft'
+                        }
+                        onUebernehmen={(v, b) => setzen(u.id, { nr: v || undefined }, b)}
                       />
                       <div className="pu-text">
                         <strong>{u.titel}</strong>
@@ -823,7 +901,7 @@ export function AntragsdatenAnsicht() {
                             <button
                               className="small primary"
                               disabled={gesperrt}
-                              title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen' : 'Das Formular aus dem Vorlagenordner bzw. einem anderen Projekt anlegen'}
+                              title={gesperrt ? GESPERRT_TITEL : 'Das Formular aus dem Vorlagenordner bzw. einem anderen Projekt anlegen'}
                               onClick={() => void formularAnlegen(u.id, { ansicht: zf })}
                             >
                               Formular anlegen
@@ -832,7 +910,7 @@ export function AntragsdatenAnsicht() {
                               <MenueKnopf
                                 className="small"
                                 disabled={gesperrt}
-                                title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen' : 'Ein Formular, das schon im Projekt liegt (z. B. anders benannt), diesem Eintrag zuordnen'}
+                                title={gesperrt ? GESPERRT_TITEL : 'Ein Formular, das schon im Projekt liegt (z. B. anders benannt), diesem Eintrag zuordnen'}
                                 punkte={() => zuordnenPunkte(u.id)}
                               >
                                 Zuordnen
@@ -878,7 +956,13 @@ export function AntragsdatenAnsicht() {
                       <div className="pu-bearbeiten">
                         <label>
                           <span className="field-label">Titel</span>
-                          <UebernahmeFeld wert={u.titel} onUebernehmen={(v) => v.trim() && setzen(u.id, { titel: v })} />
+                          <UebernahmeFeld
+                          wert={u.titel}
+                          bindung={zf}
+                          beiVerlust={verloren(u.titel)}
+                          leerFehler={`Der Titel darf nicht leer sein – Esc stellt „${u.titel}“ wieder her.`}
+                          onUebernehmen={(v, b) => setzen(u.id, { titel: v }, b)}
+                        />
                         </label>
                         <label>
                           <span className="field-label">Art</span>
@@ -891,15 +975,23 @@ export function AntragsdatenAnsicht() {
                         {u.art === 'intern' ? (
                           <label>
                             <span className="field-label">Formular (Teil des Namens oder Kennung)</span>
-                            <UebernahmeFeld wert={u.formular ?? ''} placeholder={u.titel} onUebernehmen={(v) => setzen(u.id, { formular: v || undefined, formularDatei: undefined })} />
+                            <UebernahmeFeld
+                              wert={u.formular ?? ''}
+                              bindung={zf}
+                              beiVerlust={verloren(u.titel)}
+                              placeholder={u.titel}
+                              onUebernehmen={(v, b) => setzen(u.id, { formular: v || undefined, formularDatei: undefined }, b)}
+                            />
                           </label>
                         ) : (
                           <label>
                             <span className="field-label">Ordner der Quelle</span>
                             <UebernahmeFeld
                               wert={u.quelle ?? ''}
+                              bindung={zf}
+                              beiVerlust={verloren(u.titel)}
                               placeholder={u.art === 'plansatz' ? PLANSATZ_QUELLE : wirksameEinstellungen(st, projekt).berechnungsordner}
-                              onUebernehmen={(v) => setzen(u.id, { quelle: v || undefined })}
+                              onUebernehmen={(v, b) => setzen(u.id, { quelle: v || undefined }, b)}
                             />
                           </label>
                         )}
@@ -909,8 +1001,10 @@ export function AntragsdatenAnsicht() {
                           </span>
                           <UebernahmeFeld
                           wert={u.muster ?? ''}
+                          bindung={zf}
+                          beiVerlust={verloren(u.titel)}
                           placeholder={u.art === 'plansatz' ? 'alle Pläne mit Plannummer' : `*${u.titel}*`}
-                          onUebernehmen={(v) => setzen(u.id, { muster: v || undefined })}
+                          onUebernehmen={(v, b) => setzen(u.id, { muster: v || undefined }, b)}
                         />
                         </label>
                         <div className="pu-bedingung-editor">
@@ -949,7 +1043,7 @@ export function AntragsdatenAnsicht() {
                   );
                   if (!ok) return;
                   const jetzt = useAntrag.getState().projektdatei?.ansicht;
-                  if (jetzt !== ansicht) useFormulare.getState().setMeldung({ art: 'info', text: `Antragsumfang nicht aufgehoben – inzwischen ist Antrag ${jetzt} angezeigt.` });
+                  if (jetzt !== ansicht) useFormulare.getState().setMeldung({ art: 'info', text: `Antragsumfang nicht aufgehoben – ${jetzt ? `inzwischen ist Antrag ${jetzt} angezeigt` : 'inzwischen sind keine Antragsdaten mehr geladen'}.` });
                   else await umfangSetzen(null);
                 }}
               >

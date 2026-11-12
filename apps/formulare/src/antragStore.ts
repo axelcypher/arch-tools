@@ -480,6 +480,8 @@ export interface SchreibInfo {
   grund?: string;
   /** schon vor dem Schreiben nicht möglich: andere Fassung angezeigt, Eintrag bzw. Antragsumfang entfernt, gesperrt */
   vorab?: 'fassung' | 'eintrag' | 'umfang' | 'sperre';
+  /** nicht gespeichert, ein erneuter Versuch kann gehen (Schreibfehler, Datei gerade nicht lesbar, Antrag wird geöffnet) */
+  erneut?: boolean;
   /** wird der offene Dialog abgebrochen: dies statt der allgemeinen Meldung (z. B. eine Zusage zurücknehmen) */
   beiAbbruch?: (art: DialogArt) => void;
 }
@@ -684,6 +686,7 @@ export const useAntrag = create<AntragState>((set, get) => {
   /** Eine Änderung wurde nicht gespeichert – sagen statt still verwerfen (`grund` ohne Punkt, `rat` optional) */
   const nichtGespeichert = (projekt: Projekt, info: SchreibInfo, grund: string, rat?: string) => {
     info.grund = grund;
+    info.erneut = true;
     log.warn(`Angaben zum Antrag von ${projekt.ordner} nicht gespeichert: ${grund}`);
     meldung('fehler', `Angaben zum Antrag von ${projekt.ordner} nicht gespeichert: ${grund}${rat ? ` – ${rat}` : ''}.`);
   };
@@ -805,9 +808,9 @@ export const useAntrag = create<AntragState>((set, get) => {
   const sperrMeldung = (g: { grund: string; vorab: 'fassung' | 'sperre' }, was: string) =>
     g.vorab === 'sperre' ? `${g.grund}.` : `${was} – ${g.grund}; bitte gleich noch einmal versuchen.`;
   /** Gesperrt? – dann mit Meldung. Der Export prüft nur die Sperre (`mitWechsel` false), Änderungen auch den Wechsel */
-  const gesperrt = (mitWechsel = true): boolean => {
+  const gesperrt = (mitWechsel = true, was = 'Nicht gespeichert'): boolean => {
     const g = sperrGrund(mitWechsel);
-    if (g) meldung('info', sperrMeldung(g, 'Nicht gespeichert'));
+    if (g) meldung('info', sperrMeldung(g, was));
     return !!g;
   };
   const fehler = (was: string, e: unknown) => {
@@ -1342,7 +1345,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       const g = sperrGrund(true);
       if (g) {
         meldung('info', sperrMeldung(g, 'Antragsumfang nicht geändert'));
-        return Object.assign(info, g);
+        return Object.assign(info, g, g.vorab === 'fassung' ? { erneut: true } : {});
       }
       try {
         const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
@@ -1352,6 +1355,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         await get().aktualisieren();
       } catch (e) {
         info.grund = e instanceof Error ? e.message : String(e);
+        info.erneut = true;
         fehler('Antragsumfang nicht gespeichert', e);
       }
       return info;
@@ -1399,7 +1403,7 @@ export const useAntrag = create<AntragState>((set, get) => {
               ? `der Eintrag ${o.titel ? `„${o.titel}“ ` : ''}ist inzwischen nicht mehr im Antragsumfang`
               : 'inzwischen gibt es keinen Antragsumfang mehr';
         if (!o.still) meldung('info', `${o.was ?? 'Antragsumfang nicht geändert'} – ${grund}${wechsel ? '; bitte gleich noch einmal versuchen' : ''}.`);
-        return Object.assign(o.info ?? {}, { grund, vorab: vorab ?? 'umfang' });
+        return Object.assign(o.info ?? {}, { grund, vorab: vorab ?? 'umfang' }, wechsel ? { erneut: true } : {});
       }
       return get().umfangSetzen(aendern(umfang), { info: o.info });
     },
@@ -1481,7 +1485,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     formularHinzufuegen: async (v, inUmfang) => {
       const s = useFormulare.getState();
       const { ds, projekt } = ctx();
-      if (!ds || !projekt || gesperrt()) return null;
+      if (!ds || !projekt || gesperrt(true, 'Formular nicht hinzugefügt')) return null;
       try {
         const bytes = await ds.lies(v.root, v.pfad);
         if (!bytes) throw new Error(`${v.datei} nicht gefunden`);
@@ -1568,7 +1572,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         meldung('fehler', 'Formular anlegen: kein Projekt bzw. kein Eintrag im Antragsumfang – bitte das Projekt neu laden.');
         return null;
       }
-      if (gesperrt() || anlegenLaeuft.has(umfangId)) return null;
+      if (gesperrt(true, 'Formular nicht angelegt') || anlegenLaeuft.has(umfangId)) return null;
       anlegenLaeuft.add(umfangId);
       // zugeordnet wird im Antragsumfang dieser Fassung
       const fassung = get().projektdatei?.ansicht;
@@ -1760,6 +1764,8 @@ useFormulare.subscribe((s, vorher) => {
   if (s.projekt !== vorher.projekt || s.ablage !== vorher.ablage || s.ds !== vorher.ds) {
     zerlegt.clear();
     if (s.projekt !== vorher.projekt) {
+      // die Sicherung gilt je Projekt neu
+      heilung = null;
       useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [], dokumenteFuer: null });
       quelleMerken(null);
     }

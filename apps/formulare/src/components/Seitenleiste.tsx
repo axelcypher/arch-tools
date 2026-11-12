@@ -305,17 +305,23 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                     <button
                       key={d.eintrag.id}
                       role="listitem"
-                      className={`nav-eintrag fehlt${gesperrt ? ' gesperrt' : ''}`}
+                      className={`nav-eintrag fehlt${gesperrt || wechsel ? ' gesperrt' : ''}`}
                       title={
                         gesperrt
                           ? `${d.eintrag.titel} fehlt – der Antrag ist eingereicht und gesperrt; zum Nachreichen den Status in den Antragsdaten vorübergehend auf „in Arbeit“ setzen`
-                          : doppelt
+                          : wechsel
+                            ? `${d.eintrag.titel} fehlt – der Antrag wird gerade geöffnet, gleich wieder möglich`
+                            : doppelt
                             ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder aus dem Antragsumfang nehmen`
                             : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`
                       }
-                      aria-haspopup={doppelt && !gesperrt ? 'menu' : undefined}
-                      // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger); gesperrt: nur die Meldung
-                      onClick={(e) => (doppelt && !gesperrt ? zeigeMenueAn(e.currentTarget, menue()) : void useAntrag.getState().formularAnlegen(d.eintrag.id))}
+                      aria-haspopup={doppelt && !gesperrt && !wechsel ? 'menu' : undefined}
+                      // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger); gesperrt bzw. beim Öffnen: nur die Meldung
+                      onClick={(e) =>
+                        doppelt && !gesperrt && !wechsel
+                          ? zeigeMenueAn(e.currentTarget, menue())
+                          : void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht: zeilenFassung(useAntrag.getState(), projekt) })
+                      }
                       onContextMenu={(e) => zeigeMenue(e, menue())}
                     >
                       <span className="nav-symbol">
@@ -323,7 +329,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                         <StatusPunkt status="fehlt" />
                       </span>
                       <span className="nav-text">{d.eintrag.titel}</span>
-                      {!gesperrt && <span className={`nav-unter${doppelt ? ' nav-doppelt' : ''}`}>{doppelt ? 'doppelt?' : 'anlegen'}</span>}
+                      {!gesperrt && !wechsel && <span className={`nav-unter${doppelt ? ' nav-doppelt' : ''}`}>{doppelt ? 'doppelt?' : 'anlegen'}</span>}
                     </button>
                   );
                 })}

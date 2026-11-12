@@ -2847,6 +2847,7 @@ button.icon.ex-baum-pfeil {
   display: flex;
   align-items: center;
   gap: 4px;
+  position: relative;
 }
 .pu-leer {
   padding: 16px;
@@ -4719,12 +4720,19 @@ tr[data-ziehen='danach'] > td {
 .pu-inhalt.laedt > * {
   opacity: 0.55;
 }
-/* „Antrag … wird geöffnet …“ im Kopf neben der Fassungswahl (immer da als Live-Region, leer ohne Breite) – der Inhalt
-   darunter springt nicht */
+/* „Antrag … wird geöffnet …“ unter der Fassungswahl, außerhalb des Flusses (immer da als Live-Region) – nichts bricht
+   neu um, nichts springt */
 .pu-laedt-hinweis {
-  align-self: center;
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
   color: var(--muted);
   white-space: nowrap;
+  pointer-events: none;
+}
+/* Meldung an einem Textfeld der Antragsdaten (nicht gespeichert, leerer Titel) */
+.pu-feld-meldung {
+  font-size: 12px;
 }
 @media (prefers-reduced-motion: reduce) {
   .pu-inhalt > * {
