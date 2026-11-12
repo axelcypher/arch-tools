@@ -28,6 +28,10 @@ export interface TextStand {
   kuenftige?: { gueltigAb: string; url: string }[];
   /** letzte erfolgreiche Prüfung an der Quelle (ISO) – für die Altersgrenze des Rechtsstands */
   geprueft?: string;
+  /** Stichtag, für den der Text geholt wurde (fehlt = unbekannt); passt er nicht zur Einreichung, trägt der Text kein Grün */
+  stichtag?: string;
+  /** zum Stichtag gilt laut Quelle schon eine neuere Fassung (ab diesem Tag), deren Text nicht vorliegt */
+  ueberholtAb?: string;
 }
 
 /** so lange gilt ein Rechtsstand ohne erfolgreiche Prüfung an der Quelle (Tage) */
@@ -78,10 +82,17 @@ export function faktDefinitionen(module: Modul[]): Record<string, FaktDef> {
 /** Werte, die Module setzen (fest oder nach einer Tabelle) – Angaben von Hand gehen vor */
 export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): Record<string, FaktWert> {
   const out = { ...fakten };
+  // Land-, Kreis- und Gemeindemodule gelten nur so sicher wie der Gemeindeschlüssel, über den sie gewählt sind
+  const ags = fakten['lage.ags'];
+  const agsUnsicher = !ags || (ags.sicherheit === 'hinweis' && !ags.bestaetigt) || !!ags.widerspruch;
   for (const m of module)
     for (const [id, d] of Object.entries(m.fakten ?? {})) {
       if (out[id] && out[id].herkunft !== 'modul') continue;
-      if (d.wert !== undefined) out[id] = { wert: d.wert, herkunft: 'modul', quelle: m.name, sicherheit: 'sicher' };
+      if (d.wert !== undefined)
+        out[id] =
+          m.ebene !== 'bund' && agsUnsicher
+            ? { wert: d.wert, herkunft: 'modul', quelle: m.name, sicherheit: 'hinweis', grund: 'Gemeindeschlüssel nur vorgeschlagen bzw. nicht gesichert – ob dieses Modul gilt, ist offen' }
+            : { wert: d.wert, herkunft: 'modul', quelle: m.name, sicherheit: 'sicher' };
       else if (d.nach) {
         const basis = out[d.nach.fakt];
         if (basis?.wert == null) continue;
@@ -93,6 +104,7 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
 }
 
 const zaehlerLeer = (): Record<Ampel, number> => ({ rot: 0, gelb: 0, gruen: 0 });
+const datumText = (iso: string) => iso.slice(0, 10).split('-').reverse().join('.');
 /** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */
 const tageSeit = (iso: string, heute: string) => Math.floor((Date.parse(`${heute}T12:00:00`) - Date.parse(iso)) / 86400000);
 const undW = (a: Wahrheit, b: Wahrheit): Wahrheit => (a === 'nein' || b === 'nein' ? 'nein' : a === 'offen' || b === 'offen' ? 'offen' : 'ja');
@@ -144,10 +156,24 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   const geltung = (n: (typeof normen)[number]): Bewertung => {
     let g = geltungCache.get(n.key);
     if (!g) {
-      g = werten(n.datei?.regel.geltung, ctx);
+      try {
+        g = werten(n.datei?.regel.geltung, ctx);
+      } catch {
+        // fehlerhafte Geltung: offen (nie „entfällt mit der Norm“)
+        g = { w: 'offen', offen: [], unsicher: [], widerspruch: [], verwendet: [] };
+      }
       geltungCache.set(n.key, g);
     }
     return g;
+  };
+  // je Norm: Prüfsummen vorhanden bzw. irgendeine Fundstelle geändert (für „entfällt mit der Norm“)
+  const normStand = (n: (typeof normen)[number]) => {
+    const paras = Object.values(n.datei?.regel.paragrafen ?? {});
+    const f = n.stand?.fassung;
+    return {
+      hatStand: paras.some((p) => p.stand && Object.keys(p.stand).length),
+      geaendert: !!f && paras.some((p) => Object.entries(p.stand ?? {}).some(([k, s]) => f.summen[k] !== s)),
+    };
   };
 
   function paragraf(id: string): ParagrafErgebnis {
@@ -236,11 +262,18 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       if (geaendert.length) herab.push(`Text seit der Prüfung der Regel geändert (${geaendert.map(fundstelleName).join(', ')}) – Regel noch nicht nachgezogen.`);
       if (unsicher.length) herab.push(`Nur Hinweis, nicht gesichert: ${unsicher.map((u) => offenText(u, text)).join(', ')}.`);
       if (widerspruch.length) herab.push(`Widerspruch: ${widerspruch.map((w) => offenText(w, text)).join(', ')} – Angaben widersprechen einander (Merkmal/Modell bzw. von Hand/Geodienst).`);
-      if (!fassung && r.stand && g.w !== 'nein') herab.push('Text der Norm nicht verfügbar – nicht an der geltenden Fassung geprüft.');
-      if (fassung && r.stand && !n.stand?.geprueft) herab.push('Rechtsstand nie an der Quelle bestätigt – ob die Fassung noch gilt, ist offen.');
-      else if (fassung && r.stand && n.stand?.geprueft && tageSeit(n.stand.geprueft, e.heute) > tageAlt) herab.push(`Rechtsstand seit ${tageSeit(n.stand.geprueft, e.heute)} Tagen nicht an der Quelle bestätigt – ob die Fassung noch gilt, ist offen.`);
+      // „entfällt mit der Norm“ hängt am Anwendungsbereich – auch der muss an der geltenden Fassung geprüft sein
+      const mitNorm = g.w === 'nein';
+      const ns = normStand(n);
+      const pruefbar = mitNorm ? ns.hatStand : !!(r.stand && Object.keys(r.stand).length);
+      if (mitNorm && ns.geaendert) herab.push('Text der Norm seit der Prüfung der Regeln geändert – ob der Anwendungsbereich gleich geblieben ist, ist offen.');
+      if (!fassung && pruefbar) herab.push(mitNorm ? 'Text der Norm nicht verfügbar – der Anwendungsbereich ist nicht an der geltenden Fassung geprüft.' : 'Text der Norm nicht verfügbar – nicht an der geltenden Fassung geprüft.');
+      if (fassung && pruefbar && !n.stand?.geprueft) herab.push('Rechtsstand nie an der Quelle bestätigt – ob die Fassung noch gilt, ist offen.');
+      else if (fassung && pruefbar && n.stand?.geprueft && tageSeit(n.stand.geprueft, e.heute) > tageAlt) herab.push(`Rechtsstand seit ${tageSeit(n.stand.geprueft, e.heute)} Tagen nicht an der Quelle bestätigt – ob die Fassung noch gilt, ist offen.`);
+      if (fassung && pruefbar && n.stand?.ueberholtAb) herab.push(`Zum Stichtag gilt schon die Fassung ab ${datumText(n.stand.ueberholtAb)} – ihr Text liegt noch nicht vor.`);
+      if (fassung && pruefbar && n.stand?.stichtag && n.stand.stichtag !== e.einreichung) herab.push('Text für einen anderen Stichtag geholt – wird aktualisiert.');
       const angekuendigt = (n.stand?.kuenftige ?? []).filter((k) => k.gueltigAb > e.einreichung && k.gueltigAb <= entscheidungBis);
-      if (r.stand && angekuendigt.length) herab.push(`Neue Fassung ab ${angekuendigt.map((k) => k.gueltigAb.split('-').reverse().join('.')).join(', ')} angekündigt – voraussichtlich vor der Entscheidung; an der künftigen Fassung prüfen.`);
+      if (pruefbar && angekuendigt.length) herab.push(`Neue Fassung ab ${angekuendigt.map((k) => datumText(k.gueltigAb)).join(', ')} angekündigt – voraussichtlich vor der Entscheidung; an der künftigen Fassung prüfen.`);
       if (fassung && !fassung.paragrafen[nr] && g.w !== 'nein') herab.push(`${paragrafName(nr)} steht nicht (mehr) im Text der geltenden Fassung.`);
       if (herab.length) {
         // der Grund für Gelb zuerst (steht in der Liste), dann warum es sonst grün wäre
@@ -266,7 +299,13 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
         const jetzt = f.startsWith('merkmal:') ? (e.merkmale[f.slice(8)] ?? null) : (fakten[f]?.wert ?? null);
         if (jetzt !== alt) gruende2.push(`${offenText(f, text)} geändert`);
       }
-      if (fassung) for (const [k, summe] of Object.entries(fl.stand ?? {})) if (fassung.summen[k] !== summe) gruende2.push(`Text von § ${k.replace('/', ' Abs. ')} geändert`);
+      if (fassung) for (const [k, summe] of Object.entries(fl.stand ?? {})) if (fassung.summen[k] !== summe) gruende2.push(`Text von ${fundstelleName(k)} geändert`);
+      // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text
+      if (fl.ampel === 'gruen' && r.stand && Object.keys(r.stand).length) {
+        if (!fassung) gruende2.push('Text der Norm nicht verfügbar');
+        else if (!n.stand?.geprueft || tageSeit(n.stand.geprueft, e.heute) > tageAlt) gruende2.push('Rechtsstand nicht aktuell an der Quelle bestätigt');
+        else if (n.stand?.ueberholtAb) gruende2.push(`zum Stichtag gilt schon die Fassung ab ${datumText(n.stand.ueberholtAb)}`);
+      }
       if (gruende2.length) ueberholt = gruende2.join('; ');
       // ein überholtes „entfällt“ trägt nicht mehr (zur sicheren Seite); strengere Festlegungen bleiben
       if (ueberholt && fl.ampel === 'gruen') {
@@ -341,7 +380,14 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   for (const p of paragrafen) if (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length)) for (const o of p.offen) if (!o.startsWith('paragraf:')) zahl.set(o, (zahl.get(o) ?? 0) + 1);
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
 
-  const hinweise = e.module.flatMap((m) => (m.hinweise ?? []).filter((h) => !h.wenn || werten(h.wenn, ctx).w !== 'nein').map((h) => ({ ...h, modul: m.name })));
+  const zeigen = (h: Hinweis) => {
+    try {
+      return !h.wenn || werten(h.wenn, ctx).w !== 'nein';
+    } catch {
+      return true; // fehlerhafte Bedingung: Hinweis lieber zeigen
+    }
+  };
+  const hinweise = e.module.flatMap((m) => (m.hinweise ?? []).filter(zeigen).map((h) => ({ ...h, modul: m.name })));
   return { normen: normErgebnisse, paragrafen, zaehler, klaerung, hinweise, fakten, faktDefs, text };
 }
 

@@ -99,6 +99,72 @@ function blaetter(k: Kurz | undefined, out: Kurz[] = []): Kurz[] {
   return out;
 }
 
+/** erlaubte Schlüssel je Art einer Bedingung */
+const KNOTEN: [string, string[]][] = [
+  ['m', ['in', 'nicht']],
+  ['f', ['ist', 'in', 'min', 'max', 'bekannt']],
+  ['tag', ['ab', 'vor']],
+  ['n', ['ampel']],
+  ['$', []],
+  ['und', []],
+  ['oder', []],
+  ['nicht', []],
+  ['immer', []],
+  ['nie', []],
+];
+
+/** Aufbau einer Bedingung: genau eine bekannte Art, nur ihre Schlüssel, keine leeren Listen */
+function aufbauFehler(k: unknown, wo: string, out: string[], tiefe = 0): void {
+  if (tiefe > 40) {
+    out.push(`${wo}: Bedingung zu tief verschachtelt`);
+    return;
+  }
+  if (!k || typeof k !== 'object' || Array.isArray(k)) {
+    out.push(`${wo}: Bedingung ist kein Objekt`);
+    return;
+  }
+  const o = k as Record<string, unknown>;
+  const schluessel = Object.keys(o);
+  // „nicht“ ist bei Merkmalen ein Zusatz, sonst eine eigene Art
+  const art = KNOTEN.find(([a]) => a in o && !(a === 'nicht' && 'm' in o));
+  if (!art) {
+    out.push(`${wo}: unbekannte Bedingung ${JSON.stringify(k)}`);
+    return;
+  }
+  const [name, zusatz] = art;
+  const fremd = schluessel.filter((x) => x !== name && !zusatz.includes(x));
+  if (fremd.length) out.push(`${wo}: unbekannte Angabe(n) ${fremd.join(', ')} in „${name}“`);
+  if (name === 'und' || name === 'oder') {
+    const l = o[name];
+    if (!Array.isArray(l) || !l.length) out.push(`${wo}: „${name}“ ohne Teile`);
+    else l.forEach((x) => aufbauFehler(x, wo, out, tiefe + 1));
+  }
+  if (name === 'nicht') aufbauFehler(o.nicht, wo, out, tiefe + 1);
+  if (name === 'm') {
+    for (const z of ['in', 'nicht'] as const) if (z in o && (!Array.isArray(o[z]) || !(o[z] as unknown[]).length)) out.push(`${wo}: Merkmal „${String(o.m)}“ mit leerer Liste „${z}“`);
+  }
+  if (name === 'f' && 'in' in o && (!Array.isArray(o.in) || !(o.in as unknown[]).length)) out.push(`${wo}: Fakt „${String(o.f)}“ mit leerer Liste „in“`);
+  if (name === 'n' && (!Array.isArray(o.ampel) || !(o.ampel as unknown[]).length)) out.push(`${wo}: Verweis ohne Ampel`);
+  if (name === 'tag' && !o.ab && !o.vor) out.push(`${wo}: Stichtag ohne „ab“ bzw. „vor“`);
+}
+
+/** Bausteine, die sich (über andere) selbst enthalten */
+function zyklen(bausteine: Map<string, Kurz[]>): string[] {
+  const fehler: string[] = [];
+  const fertig = new Set<string>();
+  const lauf = (name: string, pfad: string[]) => {
+    if (pfad.includes(name)) {
+      fehler.push(`Baustein-Zyklus: ${[...pfad.slice(pfad.indexOf(name)), name].join(' → ')}`);
+      return;
+    }
+    if (fertig.has(name)) return;
+    for (const def of bausteine.get(name) ?? []) for (const b of blaetter(def)) if ('$' in b) lauf(b.$, [...pfad, name]);
+    fertig.add(name);
+  };
+  for (const name of bausteine.keys()) lauf(name, []);
+  return [...new Set(fehler)];
+}
+
 /** Fehler im Paket: unbekannte Fakten, Bausteine, Merkmalwerte, Verweise, doppelte Module, falsches Format */
 export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[] }[]): string[] {
   const fehler: string[] = [];
@@ -139,6 +205,13 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
       else if (!a) arten.set(id, { typ: d.typ, modul: m.id });
     }
   const pruefe = (wo: string, m: Modul, k: Kurz | undefined, o: { ohneBekannt?: boolean } = {}) => {
+    if (k === undefined) return;
+    const aufbau: string[] = [];
+    aufbauFehler(k, wo, aufbau);
+    if (aufbau.length) {
+      fehler.push(...aufbau);
+      return;
+    }
     const s = sichtbar(m);
     for (const b of blaetter(k)) {
       if ('f' in b && !s.fakten.has(b.f)) fehler.push(`${wo}: Fakt „${b.f}“ ist für ${m.id} nicht sichtbar (weder Katalog noch eigenes bzw. übergeordnetes Modul)`);
@@ -161,6 +234,9 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
       }
     }
   };
+  const alleBausteine = new Map<string, Kurz[]>();
+  for (const m of p.module) for (const [id, b] of Object.entries(m.bausteine ?? {})) alleBausteine.set(id, [...(alleBausteine.get(id) ?? []), b]);
+  fehler.push(...zyklen(alleBausteine));
   for (const m of p.module) {
     for (const [id, b] of Object.entries(m.bausteine ?? {})) pruefe(`${m.id} Baustein ${id}`, m, b);
     for (const [id, f] of Object.entries(m.fakten ?? {})) pruefe(`${m.id} Fakt ${id}`, m, f.wenn);

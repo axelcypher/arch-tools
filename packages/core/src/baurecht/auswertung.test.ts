@@ -3,6 +3,7 @@ import { VORGABE_MERKMALE } from '../bedingung';
 import type { Fassung } from '../recht/typen';
 import type { AuswertungsEingabe } from './auswertung';
 import { auswerten, modulFakten } from './auswertung';
+import type { TextStand } from './auswertung';
 import { kurzText, werten } from './kurz';
 import { agsVorschlag, aktiveModule, fehlendeEbenen, paketAusDateien, paketPruefen, regeldateiFuer, signaturPruefen } from './paket';
 import type { FaktWert, Modul, Regeldatei } from './typen';
@@ -320,5 +321,86 @@ describe('Signatur', () => {
     const sig = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, k.privateKey, daten));
     expect(await signaturPruefen(daten, b64(sig), b64(roh))).toBe(true);
     expect(await signaturPruefen(new TextEncoder().encode('{"paket":"y"}'), b64(sig), b64(roh))).toBe(false);
+  });
+});
+
+describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
+  const innen = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Planungsrecht: 'Innenbereich' };
+  const text = (o: Partial<TextStand> = {}) => new Map([['bund/bnatschg', { fassung: fassung({ '14/1': 'aaaaaaaa', '14': 'x' }), geprueft: '2026-11-12T08:00:00Z', stichtag: '2026-12-01', ...o }]]);
+
+  it('zum Stichtag gilt schon eine neuere Fassung, deren Text fehlt → gelb; Text für anderen Stichtag → gelb', () => {
+    expect(p(auswerten(eingabe({ merkmale: innen, texte: text() })), 'bund/bnatschg/14').ampel).toBe('gruen');
+    const a = p(auswerten(eingabe({ merkmale: innen, texte: text({ ueberholtAb: '2026-11-20' }) })), 'bund/bnatschg/14');
+    expect(a.ampel).toBe('gelb');
+    expect(a.gruende[0]).toMatch(/gilt schon die Fassung ab 20\.11\.2026/);
+    expect(p(auswerten(eingabe({ merkmale: innen, texte: text({ stichtag: '2026-11-12' }) })), 'bund/bnatschg/14').gruende[0]).toMatch(/anderen Stichtag/);
+  });
+
+  it('feste Werte der Gebietsmodule sind nur so sicher wie der Gemeindeschlüssel (PLZ-Vorschlag)', () => {
+    const vorschlag = modulFakten([bund, land, gemeinde], { 'lage.ags': hinweis('05974040') });
+    expect(vorschlag['ortsrecht.satzung']).toMatchObject({ wert: true, sicherheit: 'hinweis' });
+    expect(vorschlag['soest.zone'].sicherheit).toBe('hinweis');
+    const gesichert = modulFakten([bund, land, gemeinde], { 'lage.ags': sicher('05974040') });
+    expect(gesichert['ortsrecht.satzung'].sicherheit).toBe('sicher');
+    const bestaetigt = modulFakten([gemeinde], { 'lage.ags': { ...hinweis('05974040'), bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Flurstücksnachweis' } } });
+    expect(bestaetigt['ortsrecht.satzung'].sicherheit).toBe('sicher');
+  });
+
+  it('festgelegtes „entfällt“ ohne Text bzw. mit veraltetem Rechtsstand ist überholt', () => {
+    const fl = { ampel: 'gruen' as const, grund: 'Sonderfall mit Begründung', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, bestaetigt: '2026-11-12T10:00:00Z' };
+    const id = 'bund/bnatschg/14';
+    expect(p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: text() })), id).ampel).toBe('gruen');
+    const ohne = p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: new Map() })), id);
+    expect(ohne.ampel).toBe('gelb');
+    expect(ohne.ueberholt).toMatch(/Text der Norm nicht verfügbar/);
+    const alt = p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: text({ geprueft: '2026-10-01T08:00:00Z' }) })), id);
+    expect(alt.ampel).toBe('gelb');
+    expect(alt.ueberholt).toMatch(/Rechtsstand/);
+  });
+
+  describe('„entfällt mit der Norm“', () => {
+    const modul: Modul = { format: 1, id: 'bund', name: 'Bund', ebene: 'bund', version: '1', normen: { geg: { kurz: 'GEG', titel: 'Gebäudeenergiegesetz', thema: 'energie', quelle: { art: 'gii', pfad: 'geg' } } } };
+    const geg: Regeldatei = {
+      format: 1,
+      modul: 'bund',
+      norm: 'geg',
+      fassung: '2024-01-01',
+      version: 1,
+      geltung: { m: 'Gebäudeart', nicht: ['kein Gebäude'] },
+      paragrafen: { '10': { gilt: { m: 'Vorhaben', in: ['Errichtung'] }, grund: 'Anforderungen.', stand: { '10/1': 'aaaaaaaa' } }, '48': { gilt: { m: 'Vorhaben', in: ['Änderung'] }, grund: 'Änderung.', stand: { '48/1': 'bbbbbbbb' } } },
+    };
+    const kleinesPaket = paketAusDateien({ 'module/bund/modul.json': modul, 'module/bund/geg@2024-01-01.json': geg }, 'test');
+    const gegText = (summen: Record<string, string>): TextStand => ({
+      fassung: { ...fassung(summen), id: 'geg', paragrafen: { '10': { titel: 'Grundsatz', url: '', text: [] }, '48': { titel: 'Änderung', url: '', text: [] } }, gueltigAb: '2024-01-01' },
+      geprueft: '2026-11-12T08:00:00Z',
+    });
+    const werte = (texte: Map<string, TextStand>) =>
+      auswerten({ paket: kleinesPaket, module: kleinesPaket.module, merkmale: { Vorhaben: 'Errichtung', Gebäudeart: 'kein Gebäude' }, fakten: {}, einreichung: '2026-12-01', heute: '2026-11-12', texte, festlegungen: {} }).paragrafen.find((x) => x.id === 'bund/geg/10')!;
+
+    it('braucht den Text – ohne Text gelb', () => {
+      const a = werte(new Map());
+      expect(a.ampel).toBe('gelb');
+      expect(a.gruende[0]).toMatch(/Anwendungsbereich ist nicht an der geltenden Fassung geprüft/);
+      expect(werte(new Map([['bund/geg', gegText({ '10/1': 'aaaaaaaa', '48/1': 'bbbbbbbb' })]])).ampel).toBe('gruen');
+    });
+
+    it('ändert sich irgendeine Fundstelle der Norm, ist der Anwendungsbereich offen', () => {
+      const a = werte(new Map([['bund/geg', gegText({ '10/1': 'aaaaaaaa', '48/1': 'cccccccc' })]]));
+      expect(a.ampel).toBe('gelb');
+      expect(a.gruende[0]).toMatch(/Anwendungsbereich gleich geblieben/);
+    });
+  });
+
+  it('Paketprüfung: leeres „oder“, unbekannte Bedingungen und Baustein-Zyklen; fehlerhafte Geltung stürzt nicht ab', () => {
+    const kaputt: Modul = { ...bund, bausteine: { a: { $: 'b' }, b: { und: [{ $: 'a' }] }, leer: { oder: [] } } };
+    const regel: Regeldatei = { ...bnatschg, geltung: { x: 1 } as unknown as Regeldatei['geltung'], paragrafen: { '14': { ...bnatschg.paragrafen['14'], entfaellt: { oder: [] } } } };
+    const pk = paketAusDateien({ 'module/bund/modul.json': kaputt, 'module/bund/bnatschg@2026-09-30.json': regel }, 'test');
+    const f = paketPruefen(pk, VORGABE_MERKMALE).join('\n');
+    expect(f).toMatch(/„oder“ ohne Teile/);
+    expect(f).toMatch(/unbekannte Bedingung/);
+    expect(f).toMatch(/Baustein-Zyklus: a → b → a|Baustein-Zyklus: b → a → b/);
+    // leeres „oder“ als Ausnahme macht nichts grün; die kaputte Geltung macht alles gelb statt abzustürzen
+    const a = auswerten({ paket: pk, module: pk.module, merkmale: innen, fakten: {}, einreichung: '2026-12-01', heute: '2026-11-12', texte: new Map(), festlegungen: {} });
+    expect(a.paragrafen.every((x) => x.ampel !== 'gruen')).toBe(true);
   });
 });

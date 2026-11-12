@@ -206,7 +206,7 @@ describe('Fallmatrix', () => {
           ohne.delete(key);
           for (const [art, texte] of [['geändert', geaendert], ['fehlt', ohne]] as const) {
             const q = auswerten(eingabe(m, lauf.fakten, texte)).paragrafen.find((x) => x.id === p.id)!;
-            if (q.automatisch === 'gruen' && !q.gruende[0].startsWith('Entfällt mit der Norm')) melde(`${lauf.name}: ${p.id} bleibt grün, obwohl der Text ${art} (${JSON.stringify(m)})`);
+            if (q.automatisch === 'gruen') melde(`${lauf.name}: ${p.id} bleibt grün, obwohl der Text ${art} (${JSON.stringify(m)})`);
           }
         }
     }

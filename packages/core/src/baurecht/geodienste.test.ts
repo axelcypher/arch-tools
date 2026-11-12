@@ -52,12 +52,33 @@ describe('Geodienste', () => {
     expect(f.grund).toMatch(/Amtsblatt/);
   });
 
-  it('Fehler des Dienstes: kein Treffer, nicht vollständig abgefragt', async () => {
+  it('Fehler des Dienstes: kein Ergebnis (ein früherer Treffer bleibt), nie „kein Treffer“', async () => {
     const kaputt: Holen = async (url) => ({ status: 503, url, daten: new Uint8Array() });
     const e = await dienstAbfragen(async (u, o) => kaputt(u, o), dienst, null, { x: 0, y: 0 });
     expect(e).toMatchObject({ treffer: false, vollstaendigAbgefragt: false });
-    expect(alsFakt(def, dienst, e, { genau: true, heute: '2026-11-12' })!.grund).toMatch(/nicht alle Abfragen/);
+    expect(alsFakt(def, dienst, e, { genau: true, heute: '2026-11-12' })).toBeNull();
+    const alt: FaktWert = { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS' };
+    expect(geoZusammenfuehren({ 'schutz.lsg': alt }, {})['schutz.lsg']).toEqual(alt);
   }, 20000);
+
+  it('eine Wartungsseite ist kein „kein Treffer“', () => {
+    expect(() => gfiAus('<html><body>Wartungsarbeiten</body></html>')).toThrow(/nicht im erwarteten Format/);
+    expect(() => gfiAus('')).toThrow(/nicht im erwarteten Format/);
+    expect(gfiAus(fixture('linfos-leer.xml')).treffer).toBe(false);
+  });
+
+  it('Prüfpunkte decken auch das Innere eines großen Flurstücks ab', () => {
+    const u = [
+      { x: 0, y: 0 },
+      { x: 200, y: 0 },
+      { x: 200, y: 150 },
+      { x: 0, y: 150 },
+    ];
+    const p = pruefpunkte(u, { x: 100, y: 75 }, 25);
+    const innen = p.filter((q) => q.x > 10 && q.x < 190 && q.y > 10 && q.y < 140 && !(q.x === 100 && q.y === 75));
+    expect(innen.length).toBeGreaterThanOrEqual(9);
+    expect(p.length).toBeLessThanOrEqual(96);
+  });
 });
 
 describe('Ergebnisse der Geodienste zusammenführen', () => {

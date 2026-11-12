@@ -53,7 +53,8 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
   if ('nie' in k) return { ...leer(), w: 'nein' };
   if ('und' in k || 'oder' in k) {
     const teile = ('und' in k ? k.und : k.oder).map((t) => werten(t, ctx, tiefe + 1));
-    if (!teile.length) return leer();
+    // leeres „und“ ist wahr, leeres „oder“ falsch (paketPruefen meldet beide als Fehler)
+    if (!teile.length) return 'und' in k ? leer() : { ...leer(), w: 'nein' };
     const entscheidet: Wahrheit = 'und' in k ? 'nein' : 'ja';
     const ws = teile.map((t) => t.w);
     // nur die Teile, die das Ergebnis tragen, zählen für offen/unsicher

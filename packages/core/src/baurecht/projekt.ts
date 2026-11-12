@@ -48,7 +48,8 @@ function faktAus(roh: unknown): FaktWert | null {
   const w = roh.wert;
   if (!(w === null || typeof w === 'string' || typeof w === 'number' || typeof w === 'boolean')) return null;
   const herkunft = HERKUNFT.has(String(roh.herkunft)) ? (roh.herkunft as FaktWert['herkunft']) : 'manuell';
-  const f: FaktWert = { wert: w, herkunft, sicherheit: roh.sicherheit === 'hinweis' ? 'hinweis' : 'sicher' };
+  // fehlt die Angabe zur Sicherheit, gilt der Wert nur als Hinweis (zur sicheren Seite)
+  const f: FaktWert = { wert: w, herkunft, sicherheit: roh.sicherheit === 'sicher' ? 'sicher' : 'hinweis' };
   for (const k of ['quelle', 'stand', 'grund'] as const) if (typeof roh[k] === 'string') f[k] = roh[k] as string;
   if (istObjekt(roh.bestaetigt) && typeof roh.bestaetigt.von === 'string' && typeof roh.bestaetigt.am === 'string') {
     f.bestaetigt = { von: roh.bestaetigt.von, am: roh.bestaetigt.am };
@@ -116,16 +117,22 @@ function baurechtRoh(roh: Record<string, unknown>): Record<string, unknown> {
  * Fakt, je Festlegung, neue Protokolle. Gleichzeitige Änderungen einer anderen Instanz an anderen Einträgen bleiben;
  * unbekannte Felder (neuerer App-Versionen) ebenso.
  */
-export function pruefungSetzen(roh: Record<string, unknown>, antrag: string, pruefung: BaurechtPruefung, basis: BaurechtPruefung = leerePruefung()): Record<string, unknown> {
+export function pruefungSetzen(roh: Record<string, unknown>, antrag: string, pruefung: BaurechtPruefung, basis: BaurechtPruefung = leerePruefung(), o: { konflikte?: string[] } = {}): Record<string, unknown> {
   const abschnitt = baurechtRoh(roh);
   const pruefungen = istObjekt(abschnitt.pruefungen) ? abschnitt.pruefungen : {};
   const datei = istObjekt(pruefungen[antrag]) ? (pruefungen[antrag] as Record<string, unknown>) : {};
   const gelesen = baurechtAus({ pruefungen: { [antrag]: datei } }).pruefungen[antrag] ?? leerePruefung();
   const gleich = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-  const zusammen = <T>(dateiWerte: Record<string, T>, alt: Record<string, T>, neu: Record<string, T>): Record<string, T> => {
-    const out = { ...dateiWerte };
+  /**
+   * je Eintrag zusammenführen: unberührte Einträge bleiben roh, wie sie in der Datei stehen (auch Felder neuerer
+   * App-Versionen); geänderte werden gesetzt bzw. entfernt. Hat inzwischen auch jemand anderes denselben Eintrag
+   * geändert, gilt dieser Stand – und der Konflikt wird gemeldet.
+   */
+  const zusammen = <T>(art: string, dateiRoh: unknown, dateiWerte: Record<string, T>, alt: Record<string, T>, neu: Record<string, T>): Record<string, unknown> => {
+    const out: Record<string, unknown> = istObjekt(dateiRoh) ? { ...dateiRoh } : {};
     for (const k of new Set([...Object.keys(alt), ...Object.keys(neu)])) {
       if (gleich(alt[k], neu[k])) continue;
+      if (!gleich(dateiWerte[k], alt[k]) && !gleich(dateiWerte[k], neu[k])) o.konflikte?.push(`${art} ${k}`);
       if (neu[k] === undefined) delete out[k];
       else out[k] = neu[k];
     }
@@ -136,10 +143,11 @@ export function pruefungSetzen(roh: Record<string, unknown>, antrag: string, pru
     if (pruefung.einreichung) ziel.einreichung = pruefung.einreichung;
     else delete ziel.einreichung;
   }
-  ziel.fakten = zusammen(gelesen.fakten, basis.fakten, pruefung.fakten);
-  ziel.festlegungen = zusammen(gelesen.festlegungen, basis.festlegungen, pruefung.festlegungen);
+  ziel.fakten = zusammen('Angabe', datei.fakten, gelesen.fakten, basis.fakten, pruefung.fakten);
+  ziel.festlegungen = zusammen('Festlegung', datei.festlegungen, gelesen.festlegungen, basis.festlegungen, pruefung.festlegungen);
   const neueProtokolle = pruefung.protokolle.filter((p) => !basis.protokolle.some((b) => b.am === p.am));
-  ziel.protokolle = [...gelesen.protokolle, ...neueProtokolle.filter((p) => !gelesen.protokolle.some((g) => g.am === p.am))];
+  const protokolleRoh = Array.isArray(datei.protokolle) ? (datei.protokolle as unknown[]) : [];
+  ziel.protokolle = [...protokolleRoh, ...neueProtokolle.filter((p) => !gelesen.protokolle.some((g) => g.am === p.am))];
   pruefungen[antrag] = ziel;
   abschnitt.pruefungen = pruefungen;
   const out: Record<string, unknown> = { ...roh, baurecht: abschnitt };

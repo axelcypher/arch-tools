@@ -72,15 +72,20 @@ export interface StandErgebnis {
   fehler?: string;
   /** spätere Fassungen, die nach dem Stichtag in Kraft treten */
   kuenftige?: { gueltigAb: string; url: string }[];
+  /** Zum Stichtag gilt laut Quelle schon eine neuere Fassung (ab diesem Tag), deren Text nicht vorliegt */
+  ueberholtAb?: string;
 }
 
 const TAG = 24 * 60 * 60 * 1000;
 const sicher = (s: string) => s.replace(/[^\w.@-]+/g, '_');
 
-/** Fassung zum Stichtag aus einer Liste: jüngstes Gültig-ab, das nicht nach dem Stichtag liegt */
+/**
+ * Fassung zum Stichtag aus einer Liste: jüngstes Gültig-ab, das nicht nach dem Stichtag liegt – und deren Gültig-bis
+ * (falls bekannt) nicht vor dem Stichtag endet
+ */
 export function fassungZumStichtag<T extends { gueltigAb: string; gueltigBis?: string }>(liste: T[], stichtag: string): T | undefined {
   return [...liste]
-    .filter((f) => f.gueltigAb <= stichtag)
+    .filter((f) => f.gueltigAb <= stichtag && (!f.gueltigBis || f.gueltigBis >= stichtag))
     .sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb))
     .find(() => true);
 }
@@ -138,15 +143,20 @@ export class Rechtsstand {
 
   private async fuerJetzt(norm: NormQuelle, stichtag: string, o: { aktualisieren?: boolean; offline?: boolean }): Promise<StandErgebnis> {
     let v = await this.verzeichnis(norm.id);
+    const juengsteEintrag = () => [...v.fassungen].sort((a, b) => b.abgerufen.localeCompare(a.abgerufen))[0];
     const deckt = fassungZumStichtag(v.fassungen, stichtag);
+    // eine schon angekündigte Fassung, die zum Stichtag gilt, aber noch nicht vorliegt: nicht gedeckt
+    const vorab = v.fassungen.length ? await this.fassungLesen(juengsteEintrag()) : null;
+    const neuer = (bis: { gueltigAb: string } | undefined) => (vorab?.kuenftige ?? []).filter((k) => k.gueltigAb <= stichtag && (!bis || k.gueltigAb > bis.gueltigAb)).map((k) => k.gueltigAb).sort().pop();
+    const gedeckt = !!deckt && !neuer(deckt);
     const alt = !v.geprueft || this.jetzt().getTime() - Date.parse(v.geprueft) > (this.o.gueltig ?? TAG);
     let fehler: string | undefined;
     let neuGeholt: Fassung | null = null;
     // an der Quelle prüfen: auf Wunsch, nach einem Tag, oder wenn noch keine Fassung den Stichtag abdeckt – auch für
     // Stichtage in der Zukunft höchstens einmal am Tag (die künftigen Fassungen kennt die letzte Prüfung)
-    if (norm.quelle.art !== 'verweis' && !o.offline && (o.aktualisieren || alt || !deckt)) {
+    if (norm.quelle.art !== 'verweis' && !o.offline && (o.aktualisieren || alt || !gedeckt)) {
       try {
-        const zuletzt = v.fassungen.length ? await this.fassungLesen([...v.fassungen].sort((a, b) => b.abgerufen.localeCompare(a.abgerufen))[0]) : null;
+        const zuletzt = vorab;
         const f = await fassungHolen(this.h, norm, norm.quelle, { stichtag, vorher: zuletzt ?? undefined, textAusPaket: this.o.textAusPaket });
         v = await this.verzeichnis(norm.id);
         if (f !== 'unveraendert' && !v.fassungen.some((e) => e.kennung === f.kennung)) {
@@ -170,7 +180,8 @@ export class Rechtsstand {
     const vorige = vorigerEintrag ? await this.fassungLesen(vorigerEintrag) : null;
     // künftige Fassungen: aus der zuletzt geholten (nicht nur der zum Stichtag), damit sie auch bei früheren Stichtagen
     // angezeigt werden
-    const juengste = v.fassungen.length ? await this.fassungLesen([...v.fassungen].sort((a, b) => b.abgerufen.localeCompare(a.abgerufen))[0]) : null;
+    const juengste = v.fassungen.length ? await this.fassungLesen(juengsteEintrag()) : null;
+    const ueberholtAb = [...(juengste?.kuenftige ?? []), ...(fassung?.kuenftige ?? [])].filter((k) => k.gueltigAb <= stichtag && (!eintrag || k.gueltigAb > eintrag.gueltigAb)).map((k) => k.gueltigAb).sort().pop();
     const kuenftige = [...(fassung?.kuenftige ?? []), ...(juengste?.kuenftige ?? []), ...v.fassungen.filter((e2) => e2.gueltigAb > stichtag).map((e2) => ({ gueltigAb: e2.gueltigAb, url: '' }))]
       .filter((k, i, l) => k.gueltigAb > stichtag && l.findIndex((x) => x.gueltigAb === k.gueltigAb) === i);
     return {
@@ -180,6 +191,7 @@ export class Rechtsstand {
       ...(v.geprueft ? { geprueft: v.geprueft } : {}),
       ...(fehler ?? v.fehler ? { fehler: fehler ?? v.fehler } : {}),
       ...(kuenftige.length ? { kuenftige } : {}),
+      ...(ueberholtAb ? { ueberholtAb } : {}),
     };
   }
 }

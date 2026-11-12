@@ -66,11 +66,21 @@ export async function flurstueckAbfragen(h: Holen, p: Punkt): Promise<Flurstueck
 
 const mitte = (u: Punkt[]): Punkt => ({ x: u.reduce((s, p) => s + p.x, 0) / u.length, y: u.reduce((s, p) => s + p.y, 0) / u.length });
 
+/** Punkt im Polygon (gerade/ungerade Regel) */
+function innen(p: Punkt, u: Punkt[]): boolean {
+  let drin = false;
+  for (let i = 0, j = u.length - 1; i < u.length; j = i++) {
+    if (u[i].y > p.y !== u[j].y > p.y && p.x < ((u[j].x - u[i].x) * (p.y - u[i].y)) / (u[j].y - u[i].y) + u[i].x) drin = !drin;
+  }
+  return drin;
+}
+
 /**
- * Prüfpunkte für Punktabfragen (WMS): Mittelpunkt, Eckpunkte und Punkte entlang des um den Puffer erweiterten
- * Umrings (alle `abstand` m). Ohne Umring: Punkt und Kreis mit Pufferradius.
+ * Prüfpunkte für Punktabfragen (WMS): Mittelpunkt, Eckpunkte, ein Raster im Inneren des Flurstücks (höchstens 25
+ * Punkte) und Punkte entlang des um den Puffer erweiterten Umrings (alle `abstand` m). Ohne Umring: Punkt und Kreis
+ * mit Pufferradius. Es bleiben Stichproben – kleine Flächen zwischen den Punkten können fehlen.
  */
-export function pruefpunkte(umring: Punkt[] | null, punkt: Punkt, puffer: number, abstand = 10, hoechstens = 64): Punkt[] {
+export function pruefpunkte(umring: Punkt[] | null, punkt: Punkt, puffer: number, abstand = 10, hoechstens = 96): Punkt[] {
   const out: Punkt[] = [];
   if (!umring || umring.length < 3) {
     out.push(punkt);
@@ -79,6 +89,14 @@ export function pruefpunkte(umring: Punkt[] | null, punkt: Punkt, puffer: number
   }
   const m = mitte(umring);
   out.push(m, ...umring);
+  // Raster im Inneren (Biotope, Naturdenkmale auf dem Grundstück)
+  const xs = umring.map((p) => p.x);
+  const ys = umring.map((p) => p.y);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const raster = Math.max(abstand, Math.max(x1 - x0, y1 - y0) / 5);
+  const innere: Punkt[] = [];
+  for (let x = x0 + raster / 2; x < x1; x += raster) for (let y = y0 + raster / 2; y < y1; y += raster) if (innen({ x, y }, umring)) innere.push({ x, y });
+  out.push(...innere.slice(0, 25));
   // Umring um den Puffer nach außen schieben (vom Mittelpunkt weg) und dicht abtasten
   const aussen = umring.map((p) => {
     const dx = p.x - m.x;
@@ -86,15 +104,18 @@ export function pruefpunkte(umring: Punkt[] | null, punkt: Punkt, puffer: number
     const l = Math.hypot(dx, dy) || 1;
     return { x: p.x + (dx / l) * puffer, y: p.y + (dy / l) * puffer };
   });
+  const ring: Punkt[] = [];
   for (let i = 0; i < aussen.length; i++) {
     const a = aussen[i];
     const b = aussen[(i + 1) % aussen.length];
     const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / abstand));
-    for (let k = 0; k < n; k++) out.push({ x: a.x + ((b.x - a.x) * k) / n, y: a.y + ((b.y - a.y) * k) / n });
+    for (let k = 0; k < n; k++) ring.push({ x: a.x + ((b.x - a.x) * k) / n, y: a.y + ((b.y - a.y) * k) / n });
   }
-  if (out.length <= hoechstens) return out;
-  const schritt = out.length / hoechstens;
-  return Array.from({ length: hoechstens }, (_, i) => out[Math.floor(i * schritt)]);
+  // gekürzt wird nur der Ring – Mitte, Ecken und Raster bleiben vollständig
+  const platz = Math.max(16, hoechstens - out.length);
+  if (ring.length <= platz) return [...out, ...ring];
+  const schritt = ring.length / platz;
+  return [...out, ...Array.from({ length: platz }, (_, i) => ring[Math.floor(i * schritt)])];
 }
 
 /* ---------- Abfrage eines Dienstes ---------- */
@@ -118,6 +139,8 @@ export function gfiAus(text: string, attribut?: string): { treffer: boolean; wer
     return { treffer: !!f, ...(f && attribut && f.properties?.[attribut] != null ? { wert: String(f.properties[attribut]) } : {}) };
   }
   if (/ServiceException/i.test(t)) throw new Error(`Dienst meldet einen Fehler: ${/<ServiceException[^>]*>([\s\S]*?)<\/ServiceException>/i.exec(t)?.[1]?.trim() ?? 'unbekannt'}`);
+  // nur eine echte GML-Antwort zählt – eine Wartungs- oder Fehlerseite ist kein „kein Treffer“
+  if (!/<msGMLOutput[\s>]|<(\w+:)?FeatureCollection[\s>]/.test(t)) throw new Error('Antwort des Dienstes nicht im erwarteten Format (kein GML)');
   const treffer = /<\w+_feature>/.test(t) || /<gml:featureMember>/.test(t);
   const wert = treffer && attribut ? tag(t, attribut) : undefined;
   return { treffer, ...(wert ? { wert } : {}) };
@@ -191,12 +214,14 @@ export function alsFakt(def: FaktDef, d: GeodienstDef, e: GeoErgebnis, o: { gena
     return { wert: passend ?? e.wert, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: o.genau ? 'sicher' : 'hinweis', ...(o.genau ? {} : { grund: 'Lage nur ungefähr' }), ...lage };
   }
   if (def.typ !== 'janein') return null;
+  // nicht vollständig beantwortet: kein Ergebnis (ein früherer Wert bleibt) – ein Fehler ist kein „kein Treffer“
+  if (!e.vollstaendigAbgefragt) return null;
   const gruende: string[] = [];
-  if (!e.vollstaendigAbgefragt) gruende.push(`nicht alle Abfragen beantwortet${e.fehler ? ` (${e.fehler})` : ''}`);
   if (!d.vollstaendig) gruende.push('Datensatz nicht als vollständig gekennzeichnet');
   if (!o.genau) gruende.push('Lage nur ungefähr (kein Flurstück bzw. Adresse nicht hausnummerngenau)');
   gruende.push('ob seit dem Datenstand neue Verordnungen bekanntgemacht wurden, prüft die App nicht – Amtsblatt bzw. Auskunft der Behörde');
-  return { wert: false, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: 'hinweis', grund: `Kein Treffer (Flurstück mit ${Math.max(25, d.puffer ?? 25)} m Puffer) – nur Hinweis: ${gruende.join('; ')}`, ...lage };
+  const wo = d.art === 'arcgis' ? `Flurstück mit ${Math.max(25, d.puffer ?? 25)} m Puffer` : `Stichproben im Flurstück und auf einem Ring ${Math.max(25, d.puffer ?? 25)} m um das Flurstück – kleine Flächen dazwischen können fehlen`;
+  return { wert: false, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: 'hinweis', grund: `Kein Treffer (${wo}) – nur Hinweis: ${gruende.join('; ')}`, ...lage };
 }
 
 const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));

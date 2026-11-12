@@ -65,10 +65,32 @@ describe('Rechtsstand', () => {
     expect(r.fehler).toBeTruthy();
   });
 
-  it('Fassung zum Stichtag', () => {
+  it('Fassung zum Stichtag – auch mit Gültig-bis', () => {
     const l = [{ gueltigAb: '2024-01-01' }, { gueltigAb: '2026-09-01' }, { gueltigAb: '2027-05-01' }];
     expect(fassungZumStichtag(l, '2026-11-12')?.gueltigAb).toBe('2026-09-01');
     expect(fassungZumStichtag(l, '2027-05-01')?.gueltigAb).toBe('2027-05-01');
     expect(fassungZumStichtag(l, '2020-01-01')).toBeUndefined();
+    // die Fassung vom 30.10.2026 endet am 30.04.2027 – für den 01.06.2027 deckt sie nichts
+    expect(fassungZumStichtag([{ gueltigAb: '2026-10-30', gueltigBis: '2027-04-30' }], '2027-06-01')).toBeUndefined();
+    expect(fassungZumStichtag([{ gueltigAb: '2026-10-30', gueltigBis: '2027-04-30' }], '2027-04-30')?.gueltigAb).toBe('2026-10-30');
+  });
+
+  it('angekündigte Fassung gilt zum Stichtag: trotz frischer Prüfung neu holen, sonst „überholt ab“', async () => {
+    const { h, zustand } = nrw();
+    const sp = speicherImArbeitsspeicher();
+    const rs = new Rechtsstand(sp, h, { jetzt: () => new Date('2026-11-12T08:00:00Z') });
+    await rs.fuer(norm, '2026-11-12');
+    // die Quelle kündigt eine Fassung ab 01.05.2027 an
+    const v = (await sp.lesen('recht/g/verzeichnis')) as { fassungen: { datei: string }[] };
+    const f = (await sp.lesen(v.fassungen[0].datei)) as Record<string, unknown>;
+    await sp.schreiben(v.fassungen[0].datei, { ...f, kuenftige: [{ gueltigAb: '2027-05-01', url: '' }] });
+    zustand.erreichbar = false;
+    const vorher = zustand.aufrufe;
+    const r = await rs.fuer(norm, '2027-06-01');
+    expect(zustand.aufrufe).toBeGreaterThan(vorher);
+    expect(r.fassung?.gueltigAb).toBe('2026-10-30');
+    expect(r.ueberholtAb).toBe('2027-05-01');
+    // für einen Stichtag vor der neuen Fassung ist nichts überholt
+    expect((await rs.fuer(norm, '2026-12-01')).ueberholtAb).toBeUndefined();
   });
 });

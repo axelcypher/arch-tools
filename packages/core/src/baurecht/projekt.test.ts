@@ -59,6 +59,45 @@ describe('Abschnitt baurecht und Merkmale', () => {
     const kaputt = baurechtAusRoh({ baurecht: { pruefungen: { A: { festlegungen: { x: { ampel: 'lila', grund: 'g' }, y: { ampel: 'rot', grund: '' } }, fakten: { f: { wert: {} } } } } } });
     expect(kaputt.pruefungen.A).toEqual(leerePruefung());
   });
+
+  it('Zusammenführen mit Änderungen einer anderen Instanz: je Eintrag, unbekannte Felder bleiben, Konflikte werden gemeldet', () => {
+    const basis = leerePruefung();
+    basis.fakten.a = { wert: true, herkunft: 'manuell', sicherheit: 'sicher' };
+    basis.festlegungen['x/y/1'] = { ampel: 'rot', grund: 'Grund eins', von: 'A', am: '2026-11-01', automatisch: 'gelb', bestaetigt: '2026-11-01T10:00' };
+    basis.protokolle = [{ am: '2026-11-01T11:00', von: 'A', paket: 'p', einreichung: '2026-12-01', fassungen: {}, zaehler: { rot: 1, gelb: 0, gruen: 0 }, ampeln: {}, offen: 0 }];
+    const geschrieben = pruefungSetzen(roh, 'BAUA 2', basis);
+    // die andere Instanz: neues Feld einer neueren App-Version, neue Angabe b, neue Festlegung, eigenes Protokoll
+    const andere = structuredClone(geschrieben) as { baurecht: { pruefungen: Record<string, Record<string, Record<string, unknown> | unknown[]>> } };
+    const ihre = andere.baurecht.pruefungen['BAUA 2'];
+    (ihre.fakten as Record<string, unknown>).a = { ...(ihre.fakten as Record<string, Record<string, unknown>>).a, zukunft: 42 };
+    (ihre.fakten as Record<string, unknown>).b = { wert: 3, herkunft: 'manuell', sicherheit: 'sicher' };
+    (ihre.festlegungen as Record<string, unknown>)['x/y/2'] = { ampel: 'gelb', grund: 'Grund zwei', von: 'B', am: '2026-11-02', automatisch: 'rot', bestaetigt: '2026-11-02T10:00' };
+    (ihre.festlegungen as Record<string, Record<string, unknown>>)['x/y/1'].grund = 'von B geändert';
+    (ihre.protokolle as unknown[]).push({ am: '2026-11-02T11:00', von: 'B', zukunft: true });
+    // diese Instanz: c neu, Festlegung x/y/1 ebenfalls geändert, ein Protokoll
+    const meine = structuredClone(basis);
+    meine.fakten.c = { wert: 'z', herkunft: 'manuell', sicherheit: 'sicher' };
+    meine.festlegungen['x/y/1'] = { ...basis.festlegungen['x/y/1'], grund: 'von mir geändert' };
+    meine.protokolle = [...basis.protokolle, { ...basis.protokolle[0], am: '2026-11-03T11:00' }];
+    const konflikte: string[] = [];
+    const ergebnis = pruefungSetzen(andere as unknown as Record<string, unknown>, 'BAUA 2', meine, basis, { konflikte });
+    const roheP = (ergebnis.baurecht as { pruefungen: Record<string, Record<string, Record<string, Record<string, unknown>> | unknown[]>> }).pruefungen['BAUA 2'];
+    const f = roheP.fakten as Record<string, Record<string, unknown>>;
+    expect(f.a.zukunft).toBe(42);
+    expect(f.b.wert).toBe(3);
+    expect(f.c.wert).toBe('z');
+    const fl = roheP.festlegungen as Record<string, Record<string, unknown>>;
+    expect(fl['x/y/2'].grund).toBe('Grund zwei');
+    expect(fl['x/y/1'].grund).toBe('von mir geändert');
+    expect(konflikte).toEqual(['Festlegung x/y/1']);
+    expect((roheP.protokolle as { am: string }[]).map((p) => p.am)).toEqual(['2026-11-01T11:00', '2026-11-02T11:00', '2026-11-03T11:00']);
+    expect((roheP.protokolle as Record<string, unknown>[])[1].zukunft).toBe(true);
+  });
+
+  it('fehlt die Sicherheit einer Angabe, gilt sie nur als Hinweis', () => {
+    const p = baurechtAusRoh({ baurecht: { pruefungen: { A: { fakten: { f: { wert: false, herkunft: 'geodienst' } } } } } });
+    expect(p.pruefungen.A.fakten.f.sicherheit).toBe('hinweis');
+  });
 });
 
 describe('Fakten aus dem Projekt', () => {
