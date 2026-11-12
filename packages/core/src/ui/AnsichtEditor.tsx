@@ -231,14 +231,15 @@ export function AnsichtEditor({
                   {zug && zielHier && zug.stelle >= uebrige.length && <li className="av-ed-einfuegen" aria-hidden />}
                   {!x.felder.length && !zielHier && <li className="av-ed-leer muted small-text">Felder rechts anhaken oder hierher ziehen</li>}
                 </ul>
-                {/* die Vorschau der Zeilen nur am gewählten Abschnitt – sonst wird der Aufbau lang */}
-                {gewaehlt && x.felder.length > 0 && <LayoutVorschau abschnitt={x} nach={nach} />}
               </section>
             );
           })}
           <button type="button" className="small av-ed-neu" onClick={abschnittNeu}>
             + Abschnitt
           </button>
+          {/* die Vorschau des gewählten Abschnitts an fester Stelle unter dem Aufbau – beim Wechsel des Abschnitts
+              verschiebt sich darüber nichts (ein Klick trifft, was er treffen soll) */}
+          {aktiverAbschnitt && aktiverAbschnitt.felder.length > 0 && <LayoutVorschau abschnitt={aktiverAbschnitt} nach={nach} />}
         </div>
         <div className="av-ed-katalog" aria-label="Verfügbare Felder">
           <input type="search" placeholder="Felder suchen …" aria-label="Felder suchen" value={suche} onChange={(e) => setSuche(e.target.value)} />
@@ -373,7 +374,7 @@ function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; fel
 function LayoutVorschau({ abschnitt, nach }: { abschnitt: AnsichtAbschnitt; nach: Map<string, FeldDef> }) {
   return (
     <div className="av-ed-vorschau" aria-hidden title="So stehen die Felder in Zeilen">
-      <span className="av-ed-vorschau-titel">Vorschau der Zeilen – in schmalen Fenstern werden die Felder breiter</span>
+      <span className="av-ed-vorschau-titel">Vorschau der Zeilen{abschnitt.titel ? ` von „${abschnitt.titel}“` : ''} – in schmalen Fenstern werden die Felder breiter</span>
       {abschnitt.felder.map((f) => {
         const o = abschnitt.optionen?.[f];
         return (

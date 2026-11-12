@@ -342,14 +342,14 @@ describe('Projektordner', () => {
     eingabe(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW'), ' Entwässerungsgesuch ');
     expect(schema().antragsarten.find((k) => k.kuerzel === 'ENTW')!.name).toBe('Entwässerungsgesuch');
     expect(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW').value).toBe('Entwässerungsgesuch');
-    eingabe(eingabeMit('Schreibweisen von BAUA'), 'ba, BA,  baua');
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA'), 'ba, BA,  baua');
     expect(schema().antragsarten.find((k) => k.kuerzel === 'BAUA')!.synonyme).toEqual(['BA']);
-    expect(eingabeMit('Schreibweisen von BAUA').value).toBe('BA');
+    expect(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA').value).toBe('BA');
     // eine Schreibweise, die schon vergeben ist (Kürzel einer Phase, Schreibweise einer anderen Art), wird nicht gespeichert
-    eingabe(eingabeMit('Schreibweisen von BAUA'), 'BA, GP');
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA'), 'BA, GP');
     expect(meldung().textContent).toBe('„GP“: gibt es schon – es bleibt „BA“.');
-    expect(eingabeMit('Schreibweisen von BAUA').value).toBe('BA');
-    eingabe(eingabeMit('Schreibweisen von DENK'), 'bva');
+    expect(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA').value).toBe('BA');
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von DENK'), 'bva');
     expect(meldung().textContent).toBe('„BVA“: gibt es schon – es bleibt keine Schreibweise.');
     expect(schema().antragsarten.find((k) => k.kuerzel === 'DENK')!.synonyme).toBeUndefined();
     // Leistungsphase: ungültig gemeldet, leer = keine
@@ -410,7 +410,7 @@ describe('Projektordner', () => {
     expect(schema().phasen[0].kuerzel).toBe('BP');
     expect(beispiel()).toBe('HVO GP 261111 GP-04 Grundriss OG.pdf');
     expect(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW').value).toBe('Entwässerungsantrag');
-    expect(eingabeMit('Schreibweisen von BAUA').value).toBe('');
+    expect(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA').value).toBe('');
     expect(eingabeMit('Planphasen: Leistungsphase von AB').value).toBe('');
     expect(index.value).toBe('5');
     // wieder die Vorgabe: nichts mehr wiederherzustellen

@@ -116,7 +116,7 @@ html.zieht * {
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: 14px;
 }
-/* schmales Fenster: Aufbau über dem Katalog, damit jede Feldzeile (Griff, Beschriftung, Breite, ↵, ⛓, ×) Platz hat */
+/* schmales Fenster: Aufbau über dem Katalog, damit jede Feldzeile (Griff, Beschriftung, Breite, neue Zeile, ⛓, ×) Platz hat */
 @container av-editor (max-width: 820px) {
   .av-ed-koerper {
     grid-template-columns: minmax(0, 1fr);

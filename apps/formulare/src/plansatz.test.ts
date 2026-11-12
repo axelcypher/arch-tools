@@ -85,7 +85,7 @@ describe('Plansatz', () => {
     expect(plansatzPruefen(antrag, [], S, { geschosse: 3, art: 'ENTW' }).hinweise).toEqual([]);
     // Vorbescheid: nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO)
     expect(plansatzPruefen(antrag, [], S, { geschosse: 3, art: 'BAUVA' }).hinweise).toEqual([
-      'Projektdatei: 3 Geschosse, 2 Grundrisse erkannt (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW – beim Vorbescheid nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO))',
+      'Projektdatei: 3 Geschosse, 2 Grundrisse erkannt (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW – beim Vorbescheid nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO NRW))',
     ]);
     expect(plansatzPruefen(antrag, [], S, { geschosse: 2 }).hinweise).toEqual([]);
   });
@@ -97,14 +97,17 @@ describe('Plansatz', () => {
     expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss EG.pdf')], [], S).hinweise).toHaveLength(2);
     // Aufteilungspläne (AB, ohne Leistungsphase) bzw. Abgeschlossenheit/Entwässerung: die BauPrüfVO ist nicht die Grundlage
     expect(plansatzPruefen([datei('A ABGE 261111 AB-01 Grundriss EG.pdf')], [], S).hinweise).toEqual([]);
-    expect(plansatzPruefen([datei('A ABGE 261111 GP-01 Grundriss EG.pdf')], [], S, { art: 'ABGE' }).hinweise).toEqual([]);
+    // Abgeschlossenheitsbescheinigung: Grundrisse, Schnitte, Ansichten üblich (WEG) – Hinweise ohne BauPrüfVO, auch für AB
+    const ohneParagraf = ['kein Schnitt erkannt (übliche Bauzeichnungen: Grundrisse, Schnitte, Ansichten)', 'keine Ansicht erkannt (übliche Bauzeichnungen: Grundrisse, Schnitte, Ansichten)'];
+    expect(plansatzPruefen([datei('A ABGE 261111 GP-01 Grundriss EG.pdf')], [], S, { art: 'ABGE' }).hinweise).toEqual(ohneParagraf);
+    expect(plansatzPruefen([datei('A ABGE 261111 AB-01 Grundriss EG.pdf')], [], S, { art: 'ABGE' }).hinweise).toEqual(ohneParagraf);
     // denkmalrechtliche Erlaubnis: Hinweis ohne Paragraphen der BauPrüfVO; Vorbescheid: mit § 16
     expect(plansatzPruefen([datei('A DENK 261111 GP-01 Grundriss EG.pdf'), datei('A DENK 261111 GP-02 Schnitt.pdf')], [], S, { art: 'DENK', geschosse: 2 }).hinweise).toEqual([
       'keine Ansicht erkannt (übliche Bauzeichnungen: Grundrisse, Schnitte, Ansichten)',
       'Projektdatei: 2 Geschosse, 1 Grundriss erkannt',
     ]);
     expect(plansatzPruefen([datei('A BAUVA 261111 GP-01 Lageplan.pdf'), datei('A BAUVA 261111 GP-02 Schnitt.pdf')], [], S, { art: 'BAUVA' }).hinweise).toEqual([
-      'keine Ansicht erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 4 BauPrüfVO NRW – beim Vorbescheid nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO))',
+      'keine Ansicht erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 4 BauPrüfVO NRW – beim Vorbescheid nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO NRW))',
     ]);
     // „Lageplan Ausschnitt“ ist kein Schnitt, „Längsschnitt“ schon
     expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Lageplan Ausschnitt.pdf'), datei('A BAUA 261111 GP-02 Ansicht Nord.pdf')], [], S).hinweise).toEqual([

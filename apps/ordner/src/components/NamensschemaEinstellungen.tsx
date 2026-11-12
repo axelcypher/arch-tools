@@ -86,6 +86,7 @@ export function NamensschemaEinstellungen() {
           Pläne mit Index (z. B. AP-03a) ab Leistungsphase
         </label>
         <LphFeld id={indexId} wert={s.indexAbLph} onChange={(n) => n !== undefined && setzen({ indexAbLph: n })} />
+        <span className="field-hint">Die HOAI kennt die Leistungsphasen 1 bis 9; 0 heißt „von Anfang an“ (immer mit Index).</span>
       </div>
 
       <KuerzelListe
@@ -405,8 +406,11 @@ function KuerzelZeile({
           ) : (
             <input
               value={synonyme}
-              aria-label={`Schreibweisen von ${bezeichnung}`}
+              aria-label={`${titel}: Schreibweisen von ${bezeichnung}`}
               aria-describedby={fehler ? meldungId : undefined}
+              // in der neuen Zeile bleibt eine ungültige Eingabe zum Korrigieren stehen – dann als fehlerhaft markiert
+              aria-invalid={neu && !!fehler ? true : undefined}
+              className={neu && fehler ? 'feld-fehler' : undefined}
               onChange={(e) => {
                 setSynonyme(e.target.value);
                 setFehler('');

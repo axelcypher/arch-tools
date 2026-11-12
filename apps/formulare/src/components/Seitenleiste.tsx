@@ -292,11 +292,13 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                     <button
                       key={d.eintrag.id}
                       role="listitem"
-                      className="nav-eintrag fehlt"
+                      className={`nav-eintrag fehlt${gesperrt ? ' gesperrt' : ''}`}
                       title={
-                        doppelt
-                          ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder entfernen`
-                          : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`
+                        gesperrt
+                          ? `${d.eintrag.titel} fehlt – der Antrag ist eingereicht und gesperrt; Änderungen über einen Nachtrag`
+                          : doppelt
+                            ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder entfernen`
+                            : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`
                       }
                       aria-haspopup={doppelt ? 'menu' : undefined}
                       // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger)
@@ -308,7 +310,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                         <StatusPunkt status="fehlt" />
                       </span>
                       <span className="nav-text">{d.eintrag.titel}</span>
-                      <span className={`nav-unter${doppelt ? ' nav-doppelt' : ''}`}>{doppelt ? 'doppelt?' : 'anlegen'}</span>
+                      {!gesperrt && <span className={`nav-unter${doppelt ? ' nav-doppelt' : ''}`}>{doppelt ? 'doppelt?' : 'anlegen'}</span>}
                     </button>
                   );
                 })}

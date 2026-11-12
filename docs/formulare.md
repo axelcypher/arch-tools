@@ -19,7 +19,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Zuletzt bearbeitet:** Rechts an jedem Formular der Navigation und an jeder Datei im Projektordner (Ordner und
   Ansicht „Antrag“) steht kurz, wann zuletzt geändert wurde („heute 14:30“, „gestern 09:05“, „03.03.“) – beim Formular
   auch nicht gespeicherte Eingaben; der volle Zeitpunkt steht im Tooltip (`zeit.ts`). In einer schmalen Navigation
-  (unter 300 px) entfällt die Angabe, damit die Namen lesbar bleiben – der Tooltip zeigt sie weiter.
+  (unter 260 px – schmaler als die Vorgabe von 300 px) entfällt die Angabe, damit die Namen lesbar bleiben – der
+  Tooltip zeigt sie weiter.
 - **Ohne Produktnamen:** Die Oberfläche nennt kein anderes Programm. Die App liest und schreibt das Dateiformat der
   Formularprojekte (siehe „Dateiformat“) und soll künftig auch ganz ohne das Originalprogramm auskommen.
 - **Seitenleisten** behalten ihre Breite, auch wenn eine Ansicht einen Rollbalken braucht (Platz dafür ist immer
@@ -301,7 +302,9 @@ Anschrift, wie sie in Formularen steht.
   Antragsart = die der Fassung: BAUA, BAUVA, DENK …) – die Stellen nach dem Namensschema (Vorgabe: Code, Art, Datum).
   Fehlt das Datum, heißt die Meldung „Datum JJMMTT fehlt …“, fehlt die Bezeichnung danach, „Bezeichnung fehlt“;
   „Anlage1“ oder „Ansicht2“ sind Bezeichnungen, keine Nummern (Plankürzel stehen in Großbuchstaben). Rechtsklick →
-  „Umbenennen nach Namensformat …“ schlägt den Namen vor (fehlt nur das Datum, wird es eingesetzt): Steht an der Stelle der Antragsart schon ein
+  „Umbenennen nach Namensformat …“ schlägt den Namen vor (fehlt nur das Datum, wird es eingesetzt; eine Plannummer
+  kommt an ihre Stelle im Namensschema, damit der Plan im Plansatz bleibt; der Punkt erscheint nur, wenn der Vorschlag
+  etwas ändert): Steht an der Stelle der Antragsart schon ein
   anderes bekanntes Kürzel (ein verschobener Plan „HVO GP 261111 GP-04 …“), wird nur dieses ersetzt – „HVO BAUA
   261111 GP-04 …“, die Plannummer bleibt und der Plan im Plansatz; sonst kommen Projektcode, Antragsart und Datum der
   Datei davor. Unter „Fehlt im Antragsordner“ stehen die Dokumente des Antragsumfangs ohne Datei.
@@ -454,8 +457,9 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
     verzichten kann und ein Vorbescheid nur die zur Beurteilung seiner Fragen erforderlichen Bauvorlagen braucht, § 16
     BauPrüfVO; nicht bei Plänen ohne Leistungsphase wie den
     Aufteilungsplänen nach § 7 Abs. 4 WEG und nicht bei Entwässerungsanträgen oder Abgeschlossenheitsbescheinigungen
-    (ENTW, ABGE), für die die BauPrüfVO nicht die Grundlage ist; bei der denkmalrechtlichen Erlaubnis (DENK, § 9 DSchG
-    NRW) ohne Paragraphen der BauPrüfVO, beim Vorbescheid mit dem Zusatz „nur, soweit für die Fragen erforderlich
+    (ENTW), für die die BauPrüfVO nicht die Grundlage ist; bei der denkmalrechtlichen Erlaubnis (DENK, § 9 DSchG NRW)
+    und der Abgeschlossenheitsbescheinigung (ABGE, Aufteilungspläne nach § 7 Abs. 4 WEG – auch AB-Pläne) ohne
+    Paragraphen der BauPrüfVO, beim Vorbescheid mit dem Zusatz „nur, soweit für die Fragen erforderlich
     (§ 16 BauPrüfVO)“; „Ausschnitt“ zählt nicht als Schnitt), und – nur wenn die
     Projektdatei Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (Grundrisse für alle Geschosse, § 4 Abs. 2
     BauPrüfVO NRW, beim Vorbescheid mit dem Zusatz zu § 16; nicht beim Entwässerungsantrag, der nur die Geschosse mit
@@ -505,10 +509,12 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   Datei, die danach **neu** hinzukam oder **geändert** wurde, ist gekennzeichnet („neu seit der Einreichung“ bzw.
   „geändert seit der Einreichung“, gelb, mit Summe oben). Ausgenommen sind Dateien, die nach der Einreichung
   erwartungsgemäß kommen (`nachEinreichungErwartet`) – nach der Bürovorgabe die Genehmigung selbst, die
-  Empfangsbestätigung und Nachforderungen, ergänzt um Eingangsbestätigung und Antragsprotokoll sowie die Entscheidung
-  bei den übrigen Antragsarten (Bescheid bzw. Vorbescheid, denkmalrechtliche Erlaubnis, Abgeschlossenheitsbescheinigung,
-  gesiegelter Aufteilungsplan). Antragsunterlagen gelten nie als erwartet, auch wenn ein solches Wort darin steht
-  („Antrag auf Vorbescheid“, „Genehmigungsfreistellung“, „… Genehmigungsverfahren“, „Genehmigungsplanung“). Ist der
+  Empfangsbestätigung und Nachforderungen (der Behörde), ergänzt um Eingangsbestätigung und Antragsprotokoll, die
+  Entscheidung bei den übrigen Antragsarten (Bescheid bzw. Vorbescheid, denkmalrechtliche Erlaubnis,
+  Abgeschlossenheitsbescheinigung, der von der Behörde gesiegelte Aufteilungsplan) und die Mitteilung der Gemeinde zur
+  Genehmigungsfreistellung. Antragsunterlagen gelten nie als erwartet, auch wenn ein solches Wort darin steht
+  („Antrag auf Vorbescheid“, „Genehmigungsfreistellung“, „… Genehmigungsverfahren“, „Genehmigungsplanung“, eine
+  beigefügte Typengenehmigung, der noch nicht gesiegelte Aufteilungsplan, Unterlagen zu einer Nachforderung). Ist der
   Ordner einmal nicht lesbar (Netz nach dem Aufwachen), bleiben „eingereicht“ und der Stand unverändert. Gilt der
   Antrag wieder als in Arbeit, wird der Stand verworfen.
 - **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)

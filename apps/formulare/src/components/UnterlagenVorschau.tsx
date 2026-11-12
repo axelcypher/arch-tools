@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import type { AblageOrdner } from '../ablage';
@@ -90,7 +91,9 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
     return () => window.removeEventListener('keydown', taste);
   });
 
-  return (
+  // per Portal an <body>: die Navigation, in der die Ansicht „Antrag“ steht, ist ein Container (Containerabfrage) –
+  // in manchen Browsern wäre position: fixed sonst auf sie beschränkt
+  return createPortal(
     <div className="vs-ebene" role="dialog" aria-modal="true" aria-label="Antragsunterlagen ansehen">
       <header className="vs-leiste">
         <strong className="vs-titel">
@@ -165,7 +168,8 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
           {aktuell && art !== 'pdf' && art !== 'bild' && <p className="vs-hinweis">Für diese Datei gibt es hier keine Vorschau – „Extern öffnen“ zeigt sie im zugehörigen Programm.</p>}
         </main>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

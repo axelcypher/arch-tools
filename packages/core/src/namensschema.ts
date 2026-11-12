@@ -146,13 +146,18 @@ export interface Namensteile {
   rest: string;
 }
 
+const PLANNUMMER = /^[A-ZÄÖÜ]{1,8}[-_]?\d{1,3}(?:[-–](?:[A-ZÄÖÜ]{1,8}[-_]?)?\d{1,3})?[a-z]?$/;
+
 /**
- * Sieht ein Wort nach einer Plan- oder Dokumentnummer aus? („01“, „03a“, „GP-04“, „GP01-07“, „AP-03a“). Das
- * Plankürzel steht in Großbuchstaben – „Anlage1“ oder „Ansicht2“ sind Bezeichnungen. `auchKlein`: Kürzel in beliebiger
- * Schreibweise („gp-04“), wenn danach noch eine Bezeichnung folgt.
+ * Sieht ein Wort nach einer Plan- oder Dokumentnummer aus? Dokumentnummer „01“, „03a“ (Index klein); Plannummer mit
+ * Plankürzel in Großbuchstaben und Trennzeichen („GP-04“, „AP-03a“, Satz „GP01-07“). Folgt danach noch eine
+ * Bezeichnung (`folgt`), zählen auch „GP04“ oder „gp-04“. So bleiben „Anlage1“, „OG2“ oder „3D“ Bezeichnungen.
  */
-export const istNummer = (wort: string, auchKlein = false) =>
-  /^\d{1,3}[a-z]?$/i.test(wort) || new RegExp('^[A-ZÄÖÜ]{1,8}[-_]?\\d{1,3}(?:[-–](?:[A-ZÄÖÜ]{1,8}[-_]?)?\\d{1,3})?[a-z]?$', auchKlein ? 'i' : '').test(wort);
+export function istNummer(wort: string, folgt = false): boolean {
+  if (/^\d{1,3}[a-z]?$/.test(wort)) return true;
+  if (folgt) return new RegExp(PLANNUMMER.source, 'i').test(wort);
+  return PLANNUMMER.test(wort) && /[-_–]/.test(wort);
+}
 
 /** Zerlegung mit den Stellen der Teile (Wortindex) – für Prüfen und Umbenennen */
 export interface Zerlegung {

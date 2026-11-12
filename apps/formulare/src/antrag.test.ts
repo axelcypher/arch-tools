@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
@@ -254,9 +254,14 @@ describe('Antragsstand bei der Einreichung', () => {
     expect(seitEinreichung(d('BS9 BAUA 261120 Genehmigungsplanung.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
     for (const n of ['HVO BAUVA 261110 01 Antrag auf Vorbescheid.pdf', 'HVO BAUF 261110 Genehmigungsfreistellung.pdf', 'Antrag auf Baugenehmigung.pdf', 'Antrag auf denkmalrechtliche Erlaubnis.pdf'])
       expect(seitEinreichung(d(n, zeit('2026-11-20T10:00')), s)).toBe('neu');
-    // die Entscheidung bei Vorbescheid, DENK und ABGE ist erwartet
-    for (const n of ['Vorbescheid.pdf', 'Denkmalrechtliche Erlaubnis.pdf', 'Abgeschlossenheitsbescheinigung.pdf', 'Aufteilungsplan gesiegelt.pdf', 'Antragsprotokoll Bauportal.pdf'])
+    // die Entscheidung bei Vorbescheid, DENK und ABGE ist erwartet, ebenso die Mitteilung der Gemeinde (BAUF)
+    for (const n of ['Vorbescheid.pdf', 'Denkmalrechtliche Erlaubnis.pdf', 'Abgeschlossenheitsbescheinigung.pdf', 'Aufteilungsplan gesiegelt.pdf', 'Antragsprotokoll Bauportal.pdf', 'Mitteilung der Gemeinde.pdf', 'Nachforderung Kreis.pdf'])
       expect(nachEinreichungErwartet(n)).toBe(true);
+    // eingereichte bzw. nachgereichte Unterlagen des Büros fallen auf: ungesiegelter Aufteilungsplan, Typengenehmigung,
+    // Unterlagen zur Nachforderung
+    for (const n of ['HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', 'Typengenehmigung Garage.pdf', 'Unterlagen zur Nachforderung.pdf', 'Nachreichung auf Nachforderung.pdf'])
+      expect(nachEinreichungErwartet(n)).toBe(false);
+    expect(seitEinreichung(d('HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
     expect(seitEinreichung(liste[4], undefined)).toBeNull();
   });
 });
@@ -272,7 +277,7 @@ describe('Umbenennen nach Namensformat', () => {
   it('sonst kommen Projektcode, Antragsart und Datum nach dem Namensschema davor', () => {
     expect(nameNachFormat('Lageplan vom Vermesser.pdf', o)).toBe('HVO BAUA 261112 Lageplan vom Vermesser.pdf');
     // ein unbekanntes Wort an der Stelle der Antragsart wird nicht ersetzt
-    expect(nameNachFormat('HVO Entwurf 261111 Lageplan.pdf', o)).toBe('HVO BAUA 261112 HVO Entwurf 261111 Lageplan.pdf');
+    expect(nameNachFormat('HVO Entwurf 261111 Lageplan.pdf', o)).toBe('HVO BAUA 261112 Entwurf 261111 Lageplan.pdf');
     // Code und Antragsart da, nur das Datum fehlt: kein doppelter Kopf
     expect(nameNachFormat('HVO BAUA Bauantrag.pdf', o)).toBe('HVO BAUA 261112 Bauantrag.pdf');
     expect(nameNachFormat('HVO GP Grundriss.pdf', o)).toBe('HVO BAUA 261112 Grundriss.pdf');
@@ -287,7 +292,21 @@ describe('Umbenennen nach Namensformat', () => {
     ] as ('code' | 'art' | 'datum' | 'nummer')[][]) {
       const neu = nameNachFormat('Lageplan.pdf', { ...o, reihenfolge });
       expect(antragsNameFehler(neu, { ...o, reihenfolge })).toBeNull();
+      // ein Plan bleibt nach dem Umbenennen ein Plan – die Plannummer steht an ihrer Stelle im Schema
+      for (const plan of ['GP-04 Grundriss.pdf', 'HVO GP 261111 GP-04 Grundriss.pdf', 'HVO GP GP-04 261111 Grundriss.pdf']) {
+        const umbenannt = nameNachFormat(plan, { ...o, reihenfolge });
+        expect(antragsNameFehler(umbenannt, { ...o, reihenfolge })).toBeNull();
+        expect(planNummerAus(dateinameZerlegen(umbenannt, { reihenfolge }, o.codes).nummer)).toEqual({ kuerzel: 'GP', von: 4, bis: 4 });
+      }
     }
+    expect(nameNachFormat('HVO GP GP-04 Grundriss.pdf', { ...o, reihenfolge: ['code', 'art', 'nummer', 'datum'] })).toBe('HVO BAUA GP-04 261112 Grundriss.pdf');
+    // „OG2“, „3D“ sind Bezeichnungen
+    expect(antragsNameFehler('HVO BAUA 261110 OG2.pdf', o)).toBeNull();
+    expect(antragsNameFehler('HVO BAUA 261110 3D Visualisierung.pdf', o)).toBeNull();
+    // ohne Projektcode: kein führendes Leerzeichen
+    expect(nameNachFormat('Lageplan.pdf', { ...o, codes: [] })).toBe('BAUA 261112 Lageplan.pdf');
+    // schon im Format (nur die Bezeichnung fehlt): der Vorschlag ist der Name selbst – das Menü bietet dann nichts an
+    expect(nameNachFormat('HVO BAUA 261110.pdf', o)).toBe('HVO BAUA 261110.pdf');
     expect(antragsNameFehler('HVO 261110 BAUA Bauantrag.pdf', { ...o, reihenfolge: ['code', 'nummer', 'datum', 'art'] })).toBeNull();
     expect(antragsNameFehler('HVO 01 261110 BAUA Bauantrag.pdf', { ...o, reihenfolge: ['code', 'nummer', 'datum', 'art'] })).toBeNull();
     expect(antragsNameFehler('HVO BAUA 01 261110.pdf', { ...o, reihenfolge: ['code', 'art', 'nummer', 'datum'] })).toContain('Bezeichnung fehlt');

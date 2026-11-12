@@ -587,7 +587,7 @@ export function AntragsdatenAnsicht() {
                               title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – Änderungen über einen Nachtrag' : 'Ein Formular, das schon im Projekt liegt (z. B. anders benannt), diesem Eintrag zuordnen'}
                               punkte={() => zuordnenPunkte(u.id)}
                             >
-                              Vorhandenes zuordnen
+                              Zuordnen
                             </MenueKnopf>
                           )}
                         </>

@@ -26,7 +26,10 @@ describe('Namensschema', () => {
       endung: '.pdf',
     });
     expect(['01', '03a', 'GP-04', 'GP01-07', 'AP-03a'].every((w) => istNummer(w))).toBe(true);
-    expect(['Bauantrag', '2026', 'BAUA', 'Anlage1', 'Ansicht2', 'Plan-3'].some((w) => istNummer(w))).toBe(false);
+    expect(['Bauantrag', '2026', 'BAUA', 'Anlage1', 'Ansicht2', 'Plan-3', 'OG2', 'EG1', '3D', 'GP04'].some((w) => istNummer(w))).toBe(false);
+    // mit folgender Bezeichnung auch ohne Trennzeichen bzw. klein
+    expect(['GP04', 'gp-04', 'OG2'].every((w) => istNummer(w, true))).toBe(true);
+    expect(istNummer('3D', true)).toBe(false);
     // klein geschriebene Plannummer nur, wenn eine Bezeichnung folgt
     expect(dateinameZerlegen('hvo gp 261111 gp-04 grundriss.pdf')).toMatchObject({ nummer: 'gp-04', rest: 'grundriss' });
     expect(dateinameZerlegen('BS9 BAUA 261110 Anlage1.pdf')).toMatchObject({ rest: 'Anlage1' });

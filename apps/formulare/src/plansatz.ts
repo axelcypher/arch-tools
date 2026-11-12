@@ -139,16 +139,17 @@ const schnitt = (bezeichnung: string) => /(?<!aus)schnitt|(^|\s)sn(\s|$)/i.test(
 const ansicht = (bezeichnung: string) => /ansicht/i.test(bezeichnung);
 
 /**
- * Antragsarten, für deren Pläne die BauPrüfVO nicht die Grundlage ist und Schnitt bzw. Ansicht nicht geprüft werden:
- * Entwässerungsantrag (Entwässerungssatzung der Gemeinde) und Abgeschlossenheitsbescheinigung (§ 7 Abs. 4 WEG)
+ * Antragsarten, für deren Pläne Schnitt bzw. Ansicht nicht geprüft werden: Entwässerungsantrag (Entwässerungssatzung
+ * der Gemeinde)
  */
-export const ARTEN_OHNE_BAUPRUEFVO = ['ENTW', 'ABGE'];
+export const ARTEN_OHNE_BAUPRUEFVO = ['ENTW'];
 
 /**
- * Antragsarten mit eigener Rechtsgrundlage, bei denen Grundrisse, Schnitte und Ansichten trotzdem üblich sind – die
- * denkmalrechtliche Erlaubnis (§ 9 DSchG NRW): Hinweise ohne Paragraphen der BauPrüfVO
+ * Antragsarten mit eigener Rechtsgrundlage, bei denen Grundrisse, Schnitte und Ansichten trotzdem üblich sind: die
+ * denkmalrechtliche Erlaubnis (§ 9 DSchG NRW) und die Abgeschlossenheitsbescheinigung (Aufteilungspläne nach § 7 Abs. 4
+ * WEG und der Verwaltungsvorschrift dazu) – Hinweise ohne Paragraphen der BauPrüfVO, auch für Pläne ohne LPH (AB)
  */
-export const ARTEN_OHNE_PARAGRAF = ['DENK'];
+export const ARTEN_OHNE_PARAGRAF = ['DENK', 'ABGE'];
 
 /** Längere Lücken (mehr fehlende Nummern am Stück) gelten als vermutlicher Tippfehler – ein Hinweis statt „fehlt“ */
 export const MAX_LUECKE = 10;
@@ -233,9 +234,9 @@ export function plansatzPruefen(
     // braucht nur die zur Beurteilung seiner Fragen erforderlichen (§ 16 BauPrüfVO). Nur bei Plänen einer
     // Leistungsphase – für Sonderfälle ohne LPH (AB, Aufteilungspläne nach § 7 Abs. 4 WEG) gilt die BauPrüfVO nicht.
     const art = o.art ?? '';
-    const pruefen = plaene.some((p) => kuerzelZu(schema.phasen, p.kuerzel)?.lph !== undefined) && !ARTEN_OHNE_BAUPRUEFVO.includes(art);
+    const pruefen = !ARTEN_OHNE_BAUPRUEFVO.includes(art) && (ARTEN_OHNE_PARAGRAF.includes(art) || plaene.some((p) => kuerzelZu(schema.phasen, p.kuerzel)?.lph !== undefined));
     const mitParagraf = pruefen && !ARTEN_OHNE_PARAGRAF.includes(art);
-    const vorbescheid = art === 'BAUVA' ? ' – beim Vorbescheid nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO)' : '';
+    const vorbescheid = art === 'BAUVA' ? ' – beim Vorbescheid nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO NRW)' : '';
     const grundlage = (absatz: string) =>
       mitParagraf ? `Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, ${absatz} BauPrüfVO NRW${vorbescheid}` : 'übliche Bauzeichnungen: Grundrisse, Schnitte, Ansichten';
     if (pruefen && !da.some(schnitt)) hinweise.push(`kein Schnitt erkannt (${grundlage('3')})`);

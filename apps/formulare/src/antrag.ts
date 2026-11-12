@@ -11,7 +11,7 @@
 
 import type { AntragKurz } from '@core/model';
 import type { Kuerzel, NamensTeil } from '@core/namensschema';
-import { dateinameZerlegenMitStellen, kuerzelZu, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import { dateinameZerlegenMitStellen, istNummer, kuerzelZu, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { antragKurzAus } from '@core/serialize';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
@@ -431,17 +431,24 @@ export interface AntragStand {
 
 /**
  * Dateien, die nach der Einreichung erwartungsgemäß in den Antragsordner kommen und deshalb nicht als „neu seit der
- * Einreichung“ gelten. Bürovorgabe: die Genehmigung selbst, die Empfangsbestätigung und Nachforderungen; dazu ergänzt
- * Eingangsbestätigung und Antragsprotokoll sowie die Entscheidung bei den übrigen Antragsarten – Bescheid bzw.
- * Vorbescheid, denkmalrechtliche Erlaubnis (DENK), Abgeschlossenheitsbescheinigung und gesiegelter Aufteilungsplan
- * (ABGE). Antragsunterlagen gelten nie als erwartet, auch wenn ein solches Wort darin steht: „Antrag auf Vorbescheid“,
- * „Antrag auf denkmalrechtliche Erlaubnis“, „Genehmigungsfreistellung“, „Genehmigungsverfahren“, „Genehmigungsplanung“.
+ * Einreichung“ gelten. Bürovorgabe: die Genehmigung selbst, die Empfangsbestätigung und Nachforderungen (der Behörde);
+ * dazu ergänzt Eingangsbestätigung und Antragsprotokoll, die Entscheidung bei den übrigen Antragsarten – Bescheid bzw.
+ * Vorbescheid, denkmalrechtliche Erlaubnis (DENK), Abgeschlossenheitsbescheinigung und der von der Behörde gesiegelte
+ * Aufteilungsplan (ABGE) – sowie die Mitteilung der Gemeinde zur Genehmigungsfreistellung (§ 63 Abs. 3 Satz 5 BauO NRW).
+ * Antragsunterlagen gelten nie als erwartet, auch wenn ein solches Wort darin steht: „Antrag auf Vorbescheid“,
+ * „Genehmigungsfreistellung“, „Genehmigungsverfahren“, „Genehmigungsplanung“, eine beigefügte Typengenehmigung, der
+ * (noch nicht gesiegelte) Aufteilungsplan und die Unterlagen des Büros zu einer Nachforderung.
  */
 export function nachEinreichungErwartet(name: string): boolean {
   const n = name.toLowerCase();
-  if (/antragsprotokoll|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung|nachforderung/.test(n)) return true;
-  if (/antrag|genehmigungsfrei|genehmigungsverfahren|genehmigungsplan/.test(n)) return false;
-  return /genehmigung|bescheid|erlaubnis|abgeschlossenheitsbescheinigung|aufteilungsplan/.test(n);
+  if (/antragsprotokoll|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung/.test(n)) return true;
+  // die Nachforderung der Behörde – nicht, was das Büro darauf nachreicht
+  if (/nachforderung/.test(n)) return !/unterlagen|nachreich|antwort|zur nachforderung|auf nachforderung/.test(n);
+  if (/mitteilung/.test(n) && /gemeinde/.test(n)) return true;
+  // Aufteilungspläne reicht das Büro ein; erwartet ist erst der von der Behörde gesiegelte
+  if (/aufteilungsplan/.test(n)) return /gesiegelt|siegel|beglaubigt|gestempelt/.test(n);
+  if (/antrag|genehmigungsfrei|genehmigungsverfahren|genehmigungsplan|typengenehmigung/.test(n)) return false;
+  return /genehmigung|bescheid|erlaubnis|abgeschlossenheitsbescheinigung/.test(n);
 }
 
 /**
@@ -752,20 +759,27 @@ export function nameNachFormat(name: string, o: { codes: string[]; art: string; 
   const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
   const { woerter, endung, teile, stelle, code } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
   const bekannt = (o.kuerzel ?? []).map((k) => k.toUpperCase());
+  // Teile in der Reihenfolge des Schemas, leere weglassen (kein führendes Leerzeichen ohne Projektcode), dann der Rest
+  const zusammen = (werte: Partial<Record<NamensTeil, string>>, rest: string[]) => `${[...reihenfolge.map((t) => werte[t]).filter(Boolean), ...rest].join(' ')}${endung}`;
   const artBekannt = !!teile.art && (bekannt.includes(teile.art.toUpperCase()) || teile.art.toUpperCase() === o.art.toUpperCase());
-  if (code && gueltigesDatum(teile.datum) && stelle.art !== undefined && artBekannt) {
-    const neu = [...woerter];
-    neu[stelle.art] = o.art;
-    return `${neu.join(' ')}${endung}`;
+  /** die erste Plan- bzw. Dokumentnummer in den übrigen Wörtern an die Stelle „nummer“ (sonst wäre ein Plan danach keiner mehr) */
+  const mitNummer = (rest: string[], nummer: string | undefined): [string | undefined, string[]] => {
+    if (nummer !== undefined) return [nummer, rest];
+    const j = rest.findIndex((w, i) => istNummer(w, i < rest.length - 1));
+    return j < 0 ? [undefined, rest] : [rest[j], rest.filter((_, i) => i !== j)];
+  };
+  const codeStellen = code ? Array.from({ length: code.split(/\s+/).length }, (_, i) => stelle.code! + i) : [];
+  if (code && artBekannt && stelle.art !== undefined) {
+    // Projektcode und ein bekanntes Kürzel an ihren Stellen (verschobener Plan, alte Antragsart): die Antragsart setzen,
+    // ein fehlendes Datum einsetzen – Plannummer und Bezeichnung bleiben, die Nummer an ihrer Stelle im Schema
+    const datumDa = gueltigesDatum(teile.datum);
+    const benutzt = new Set<number>([...codeStellen, stelle.art, ...(datumDa ? [stelle.datum!] : []), ...(teile.nummer !== undefined ? [stelle.nummer!] : [])]);
+    const [nummer, rest] = mitNummer(woerter.filter((_, i) => !benutzt.has(i)), teile.nummer);
+    return zusammen({ code: teile.code, art: o.art, datum: datumDa ? teile.datum : jjmmtt(o.datum), nummer }, rest);
   }
-  // Code und Antragsart da, nur das Datum fehlt („BS9 BAUA Bauantrag.pdf“): Datum einsetzen statt den Kopf zu doppeln
-  const [iCode, iArt, iDatum] = [reihenfolge.indexOf('code'), reihenfolge.indexOf('art'), reihenfolge.indexOf('datum')];
-  if (code && artBekannt && stelle.art !== undefined && !gueltigesDatum(teile.datum) && iCode < iArt && iArt < iDatum) {
-    const kopf = reihenfolge.filter((t) => t !== 'nummer').map((t) => (t === 'code' ? teile.code : t === 'art' ? o.art : jjmmtt(o.datum)));
-    return `${[...kopf, ...woerter.slice(stelle.art + 1)].join(' ')}${endung}`;
-  }
-  const kopf = reihenfolge.filter((t) => t !== 'nummer').map((t) => (t === 'code' ? (codes[0] ?? '') : t === 'art' ? o.art : jjmmtt(o.datum)));
-  return `${kopf.join(' ')} ${name.trim()}`;
+  // sonst: Projektcode, Antragsart und Datum nach dem Schema davor (ein vorhandener Projektcode am Anfang nicht doppelt)
+  const [nummer, rest] = mitNummer(woerter.filter((_, i) => !codeStellen.includes(i)), undefined);
+  return zusammen({ code: code ? teile.code : codes[0], art: o.art, datum: jjmmtt(o.datum), nummer }, rest);
 }
 
 /** bereit: von Hand markiert und seitdem unverändert · offen: noch nicht markiert · name: Namensformat passt nicht · geaendert: nach dem Markieren geändert */

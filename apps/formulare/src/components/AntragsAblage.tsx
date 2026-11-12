@@ -96,7 +96,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     nameNachFormat(name, { codes, art, datum: new Date(geaendert || Date.now()), reihenfolge, kuerzel: [...alleKuerzel(schema.phasen), ...alleKuerzel(schema.antragsarten)] });
   const muster = reihenfolge
     .filter((t) => t !== 'nummer')
-    .map((t) => (t === 'code' ? codes[0] : t === 'art' ? art : 'JJMMTT'))
+    .map((t) => (t === 'code' ? (codes[0] ?? 'Projektcode') : t === 'art' ? art : 'JJMMTT'))
     .join(' ');
 
   const menue = (pfad: string, zustand: Bereitschaft, fehler: string | null, geaendert?: number): MenuePunkt[] => [
@@ -106,7 +106,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       ...(fehler ? { hinweis: 'Namensformat passt nicht' } : {}),
       aktion: () => void bereitUmschalten(pfad),
     },
-    ...(fehler
+    // nur, wenn der Vorschlag etwas ändert (fehlt bloß die Bezeichnung, ist er der Name selbst)
+    ...(fehler && vorschlag(pfad, geaendert) !== pfad
       ? [
           {
             text: 'Umbenennen nach Namensformat …',
@@ -180,7 +181,12 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
               <span className="fo-baum-name">
                 {d.pfad}
                 {(dok || fehler) && <span className="fo-bereit-unter">{fehler ? 'Namensformat passt nicht' : dok!.eintrag.titel}</span>}
-                {seit && <span className={`fo-seit ${seit}`}>{SEIT_EINREICHUNG_TEXT[seit]}</span>}
+                {/* kurz – der Bezug („seit der Einreichung“) steht in der Zeile darüber, voll im Tooltip */}
+                {seit && (
+                  <span className={`fo-seit ${seit}`} title={SEIT_EINREICHUNG_TEXT[seit]}>
+                    {seit === 'neu' ? 'neu' : 'geändert'}
+                  </span>
+                )}
               </span>
               {d.geaendert ? <span className="fo-baum-zeit">{zeitKurz(d.geaendert)}</span> : null}
             </button>

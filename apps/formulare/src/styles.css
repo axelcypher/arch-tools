@@ -302,7 +302,7 @@ button.icon.active {
 .nav {
   container: navigation / inline-size;
 }
-@container navigation (max-width: 300px) {
+@container navigation (max-width: 259px) {
   .nav-zeit,
   .fo-baum-zeit {
     display: none;
@@ -2950,6 +2950,10 @@ button.icon.ex-baum-pfeil {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  /* viele Knöpfe (Anlegen, Zuordnen, Verknüpfen, Bearbeiten): in schmalen Bereichen umbrechen statt den Titel zu kürzen */
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 55%;
 }
 .pu-knoepfe button {
   display: inline-flex;
@@ -4358,13 +4362,23 @@ tr[data-ziehen='danach'] > td {
   background: var(--warn-bg);
   color: var(--warn-text);
 }
-/* Streifen am Namen, nicht hinter dem runden Bereit-Knopf */
+/* Streifen am Namen, nicht hinter dem runden Bereit-Knopf; geöffnet: Akzentkante und Streifen nebeneinander */
 .fo-bereit-zeile.seit-neu > .fo-baum-zeile,
 .fo-bereit-zeile.seit-geaendert > .fo-baum-zeile {
   box-shadow: inset 3px 0 0 var(--warn-border);
 }
+.fo-bereit-zeile.seit-neu > .fo-baum-zeile.aktiv,
+.fo-bereit-zeile.seit-geaendert > .fo-baum-zeile.aktiv {
+  box-shadow:
+    inset 2px 0 0 var(--accent),
+    inset 5px 0 0 var(--warn-border);
+}
 .nav-unter.nav-doppelt {
   color: var(--warn-text);
+  text-transform: none;
+}
+.nav-eintrag.fehlt.gesperrt {
+  opacity: 0.6;
 }
 .fo-bereit-zeile .fo-baum-name {
   white-space: normal;
@@ -4729,14 +4743,10 @@ tr[data-ziehen='danach'] > td {
   background: color-mix(in srgb, var(--text) 10%, transparent);
   color: var(--text);
 }
-/* Planliste: fluchtet mit der Titelspalte der Zeile (Griff, Nummer, Status, Symbol) – im schmalen Fenster weniger Einzug */
+/* Planliste: fluchtet mit der Titelspalte der Zeile (Griff, Nummer, Status, Symbol) – in einem schmalen Hauptbereich
+   (er hängt an der Breite der Navigation, nicht am Fenster) weniger Einzug */
 .pu-plansatz {
-  padding: 0 12px 10px 109px;
-}
-@media (max-width: 900px) {
-  .pu-plansatz {
-    padding-left: 24px;
-  }
+  padding: 0 12px 10px min(109px, 12%);
 }
 .pu-plaene {
   list-style: none;

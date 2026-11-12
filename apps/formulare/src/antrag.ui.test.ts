@@ -348,7 +348,7 @@ describe('Antragsumfang und Vollständigkeit', () => {
     await warte();
     expect(useFormulare.getState().meldung?.text).toContain('Keine Vorlage für „Statistischer Erhebungsbogen“ gefunden');
     // das Formular liegt schon im Projekt, nur anders benannt: zuordnen
-    await klick(knopf(host, 'Vorhandenes zuordnen'));
+    await klick(knopf(host, 'Zuordnen'));
     expect(menuePunkt('004-Erhebung')).toBeDefined();
     await klick(menuePunkt('004-Erhebung'));
     await warte();
@@ -1116,7 +1116,8 @@ describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
     const host = await projektBS9();
     await klick(knopfGenau(host, 'Antrag'));
     await klick(knopf(host.querySelector('.fo-antrag-ablage')!, 'Ansehen'));
-    const ebene = () => host.querySelector('.vs-ebene');
+    // die Vorschau hängt per Portal an <body>
+    const ebene = () => document.querySelector('.vs-ebene');
     const zaehler = () => ebene()!.querySelector('.vs-zaehler')!.textContent;
     expect(zaehler()).toBe('1 / 3');
     expect(ebene()!.querySelector('.vs-name')!.textContent).toBe('A Notiz.txt');
@@ -1243,9 +1244,10 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     await klick(knopfGenau(host, 'Antrag'));
     const zeile = (n: string) => [...host.querySelectorAll<HTMLElement>('.fo-bereit-zeile')].find((z) => z.textContent?.includes(n))!;
-    expect(zeile('GP-03').querySelector('.fo-seit')!.textContent).toBe('neu seit der Einreichung');
+    expect(zeile('GP-03').querySelector('.fo-seit')!.textContent).toBe('neu');
+    expect(zeile('GP-03').querySelector('.fo-seit')!.getAttribute('title')).toBe('neu seit der Einreichung');
     expect(zeile('GP-03').classList.contains('seit-neu')).toBe(true);
-    expect(zeile('Bauantrag').querySelector('.fo-seit')!.textContent).toBe('geändert seit der Einreichung');
+    expect(zeile('Bauantrag').querySelector('.fo-seit')!.textContent).toBe('geändert');
     expect(zeile('Baugenehmigung').querySelector('.fo-seit')).toBeNull();
     expect(zeile('Nachforderung').querySelector('.fo-seit')).toBeNull();
     expect(zeile('Eingangsbestätigung').querySelector('.fo-seit')).toBeNull();
