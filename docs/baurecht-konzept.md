@@ -295,7 +295,7 @@ Am 12.11.2026 geprüft (ohne Anmeldung, Abfrage in EPSG:25832 wie die Stammdaten
 |---|---|---|---|
 | Bund | `bund` | immer | BauGB, BauNVO (auch alte Fassungen), GEG, GEIG, BNatSchG, WHG, StrlSchG, ArbStättV |
 | Land | `nw` | mit `05` beginnt | BauO NRW, BauPrüfVO, Sonderbauverordnung, DSchG NRW, LNatSchG NRW, LWG NRW …; landesweite Geodienste |
-| Kreis | `nw-05974` (Kreis Soest) | mit `05974` beginnt | Landschaftspläne, Kreisverordnungen, Auskünfte des Kreises, Geodienste des Kreises |
+| Kreis | `nw-05974` (Kreis Soest, Gemeindeschlüssel 05974000) | mit `05974` beginnt | Landschaftspläne, Schutzverordnungen für das Kreisgebiet (auch die der Bezirksregierung), Auskünfte, Zuständigkeiten, Geodienste |
 | Gemeinde | `nw-05974040` (Stadt Soest) | gleich ist | Satzungen, Bebauungspläne, Denkmalliste, Fakten zum Ortsrecht |
 
 - Den Gemeindeschlüssel liefert ALKIS (`gmdschl`) zum Flurstück; ohne Abfrage wird er aus den Stammdaten erfragt.
@@ -347,16 +347,25 @@ werden für frühere Stichtage und alte Bebauungspläne gebraucht – und kosten
   "schluessel": "05974040",
   "ueber": "nw-05974",
   /** Hosts, die die Abfragen dieses Moduls brauchen (nur aus dem signierten Paket wirksam) */
-  "hosts": ["www.soest.de"],
+  "hosts": ["www.soest.de", "gis02.soest.de"],
   /** Normen dieses Moduls und woher ihr Text kommt */
   "normen": {
-    "stellplatzsatzung": { "titel": "Stellplatzsatzung der Stadt Soest", "quelle": { "art": "datei", "url": "https://…", "format": "pdf" } }
+    "stellplatzsatzung": { "titel": "Stellplatzsatzung der Stadt Soest", "quelle": { "art": "datei", "format": "pdf",
+      "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Politik_und_Verwaltung/Bekanntmachungen_und_Satzungen/Stellplatzsatzung_-_Soest.pdf" } },
+    "altstadtsatzung": { "titel": "Örtliche Bauvorschrift über die Gestaltung der Altstadt", "quelle": { "art": "zusammengesetzt", "teile": [
+      { "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/13_07_11_Satzung_mit_Geltungsbereich_und_Begruendung.pdf", "fassung": "2013-07-11" },
+      { "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf", "fassung": "2023-11-14" } ] } }
   },
+  /** Übersichtsseiten, deren Links beobachtet werden */
+  "listen": ["https://www.soest.de/politik-verwaltung/ortsrecht-und-satzungen"],
+  /** aufgehobene Dokumente, die noch online stehen */
+  "sperrliste": ["https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Stellplatzsatzung_-_Adam-Kaserne.pdf"],
   /** Fakten, die das Modul setzt oder erfragt */
   "fakten": {
     "ortsrecht.stellplatzsatzung": { "wert": true },
-    "soest.altstadt": { "frage": "Liegt das Grundstück innerhalb des Walls?", "typ": "janein", "hilfe": "Geltungsbereich der Gestaltungssatzung, Karte: …" },
-    "soest.lp": { "geodienst": { "art": "wms", "url": "https://…", "ebene": "…", "vollstaendig": true } }
+    "soest.denkmalbereich": { "geodienst": { "art": "arcgis", "url": "https://gis02.soest.de/arcgis/rest/services/Denkmalschutz/MapServer", "ebene": 5, "vollstaendig": true } },
+    "soest.altstadt": { "frage": "Liegt das Grundstück innerhalb des Walls?", "typ": "janein", "vorschlag": "soest.denkmalbereich",
+      "hilfe": "Geltungsbereich der Altstadtsatzung (Anlage 1)" }
   },
   /** gemeinsame Bedingungen, in den Regeldateien mit { "$": "…" } verwendet */
   "bausteine": {
@@ -605,7 +614,7 @@ wird dort als Regel geschrieben und mit der Fallmatrix getestet.
 | BauNVO | RIS `eli/bund/bgbl-1/1962/s429` (Fassung ab 03.07.2023), alte Fassungen 1962/1968/1977/1990 mitgeliefert | §§ 1–15 nach Gebietsart, §§ 16–21a Maß, § 23 überbaubare Fläche |
 | GEG | gii `geg` – **seit dem G v. 23.7.2026 amtlich „GModG“**, §§ 47–55 und 71–73 weggefallen | § 2 Anwendungsbereich (`geltung`), §§ 10 ff. Neubau, § 36 Änderung bestehender Gebäude; die Auswahl wird an der neuen Fassung erst erarbeitet |
 | GEIG | gii `geig` | §§ 6, 7 (Neubau mit Stellplätzen), § 10 |
-| BNatSchG | RIS `eli/bund/bgbl-1/2009/s2542` (Fassung ab 30.09.2026) | §§ 14, 15, 18 (Eingriffsregelung), § 30 Biotope, § 44 Artenschutz |
+| BNatSchG | RIS `eli/bund/bgbl-1/2009/s2542` (Fassung ab 30.09.2026) | §§ 14, 15, 18 (Eingriffsregelung), § 30 Biotope, § 34 Verträglichkeit in Natura-2000-Gebieten (FFH, Vogelschutz – gilt auch im Innenbereich), § 44 Artenschutz, § 67 Befreiungen |
 | WHG | gii `whg_2009` | §§ 76–78b (Überschwemmungs- und Risikogebiete), § 52 (Wasserschutzgebiete), § 55 Abs. 2 (Niederschlagswasser) |
 | StrlSchG | gii `strlschg` | §§ 121–123 (Radon) |
 | ArbStättV | gii `arbst_ttv_2004` | § 3a, Anhang (nur Nichtwohngebäude mit Arbeitsplätzen) |
@@ -648,7 +657,56 @@ kommen als `datei`-Quelle dazu, sobald die amtliche Fundstelle geklärt ist.
 
 ### 9.3 Kreis Soest (`nw-05974`)
 
-Folgt (Recherche läuft).
+Gemeindeschlüssel des Kreises 05974000, 14 Gemeinden (05974004 Anröchte … 05974056 Wickede (Ruhr); Liste aus dem
+DVG-Dienst von Geobasis NRW). **Untere Bauaufsicht** ist der Kreis für zehn Gemeinden; Lippstadt (große), Soest,
+Warstein und Werl (mittlere kreisangehörige Städte) sind es selbst und führen auch ihr Baulastenverzeichnis. Für
+Vorhaben in Soest bleibt der Kreis zuständig als untere Naturschutz-, Wasser- und Bodenschutzbehörde und als
+Brandschutzdienststelle. Viele Schutzverordnungen erlässt die **Bezirksregierung Arnsberg**; sie stehen trotzdem in
+diesem Modul, weil sie für das Kreisgebiet gelten. (Wird eine Verordnung kreisübergreifend gebraucht, kann ein Modul je
+Regierungsbezirk dazukommen – die dritte Stelle des Gemeindeschlüssels, hier `059`.)
+
+Das Modul setzt die Zuständigkeiten als Fakten (`zustaendig.bauaufsicht`, `zustaendig.baulasten` je
+Gemeindeschlüssel), damit Protokoll und Hinweise die richtige Stelle nennen.
+
+**Für die Stadt Soest gibt es keinen Landschaftsplan.** Im Außenbereich gilt dort die Landschaftsschutzverordnung der
+Bezirksregierung, dazu einzelne Naturschutzgebietsverordnungen.
+
+| Norm | Erlassen von | Stand | Quelle | Geltung → Ampel |
+|---|---|---|---|---|
+| Landschaftsschutzverordnung Kreis Soest (LINFOS LSG-SO-00097, 31 320 ha; u. a. Soest, Bad Sassendorf, Möhnesee, Welver, Werl, Erwitte, Geseke) | Bez.-Reg. Arnsberg | 24.03.2009; **§ 8 neu gefasst durch VO vom 21.07.2026** (Befristung entfallen) | `legaldocs.naturschutzinformationen.nrw.de` (`vo_ar_2009_15.pdf` + `vo_31_2026_arnsberg.pdf`, zusammengesetzt) – nicht die veraltete Kopie auf kreis-soest.de | LINFOS-Treffer → § 3 Abs. 1 Nr. 1 (Verbot baulicher Anlagen) rot, Befreiung nötig |
+| Naturschutzgebiete mit Anteil Soest: SO-060 Standortübungsplatz Büecke, SO-075 Klärteiche Hattrop (beide **einstweilig sichergestellt, befristet**), SO-076 Klärteiche Zuckerfabrik, SO-079 Salzbrink | Bez.-Reg. Arnsberg | 2001–2026 | legaldocs (je Gebiet) | LINFOS-Treffer → rot; Sicherstellung mit Fristende → gelb, wenn das Fristende vor der erwarteten Entscheidung liegt |
+| Landschaftspläne I–VI (Obere Lippetalung/Geseker Unterbörde, Erwitte/Anröchte, Lippetal/Lippstadt-West, Welver, Wickede/Ense, Werl) | Kreis | 2002–2013; Rechtskraft von LP II, III, V noch nicht ermittelt, LP II nur als Scan | kreis-soest.de (PDF) | nur im Außenbereich der jeweiligen Gemeinden; Festsetzungen als Einheiten |
+| Landschaftsplan VIII Warstein | Kreis | Offenlage 06.07.–08.08.2026, dazu einstweilige Sicherstellungen | kreis-soest.de | nicht rechtskräftig → gelb; Sicherstellungen rot |
+| Verordnung Naturdenkmale/geschützte Landschaftsbestandteile im Innenbereich Soest, Welver, Werl | Kreis | 19.05.2014 | kreis-soest.de (PDF) | Frage „Naturdenkmal oder geschützter Bestandteil betroffen?“ → sonst gelb |
+| Überschwemmungsgebietsverordnung ME_LIP_1600 (Ahse, Salzbach, Mühlenbach, Soestbach, Amper Bach, Blögge, Schledde, Rosenau) | Bez.-Reg. Arnsberg | 05.03.2022, unbefristet | bra.nrw.de (PDF) | ÜSG-Dienst Ebene 6 (festgesetzt) bzw. 5 (vorläufig gesichert) → § 78 WHG rot; Genehmigung bei der unteren Wasserbehörde des Kreises |
+| Heilquellenschutzgebiet Bad Sassendorf 451401 (Zone III reicht in den Osten Soests) | Bez.-Reg. Arnsberg | VO 21.09.1987 | bra.nrw.de – **Scan ohne Textebene** | WSG-Dienst (`typ=H`) → rot; Verbote der Zone III von Hand prüfen |
+| Vogelschutzgebiet **Hellwegbörde** DE-4415-401 (48 417 ha, zu 85 % im Kreis, liegt im Stadtgebiet Soest) | EU/Land (Bekanntmachung 17.12.2004) | Maßnahmenplan LANUV 2015 | recht.nrw.de (Bekanntmachung), lanuk.nrw.de (Maßnahmenplan) | LINFOS-Treffer → § 34 BNatSchG (Verträglichkeitsprüfung) rot – **auch im Innenbereich**; Hinweis: Summation aller Eingriffe seit 2004, Bauten mit Kulissenwirkung (Höhe) kritisch, Kataster der Verfahren bei LANUK und Kreis |
+| weitere Natura-2000-Gebiete: VSG Lippe-/Ahsewiesen, Luerwald/Bieberbach, Möhnesee; FFH DE-4414-301 Büecke und Hiddingser Schledde (Soest) | EU/Land | – | LINFOS | wie oben |
+| Regionalplan Arnsberg, Teilabschnitt Kreis Soest/Hochsauerlandkreis | Bez.-Reg. Arnsberg | März 2012 | bra.nrw.de (PDF) | nur Außenbereich: Hinweis zu § 35 Abs. 3 BauGB, gelb |
+
+**Auskünfte** (Fakten mit „Auskunft vom …“, ohne eigene Norm):
+
+| Auskunft | Stelle | Hinweis für die App |
+|---|---|---|
+| Altlasten | Kreis, nur schriftlich (Serviceportal) | ohne Einverständnis der Eigentümer nur ja/nein; etwa eine Woche – früh anstoßen |
+| Kampfmittel | Antrag über die örtliche Ordnungsbehörde (Stadt Soest), die den Kampfmittelbeseitigungsdienst Westfalen-Lippe beauftragt | |
+| Baulasten | Stadt Soest (für die zehn übrigen Gemeinden der Kreis) | nach `zustaendig.baulasten` |
+| Artenschutz-Vorprüfung | Formular „Vorprüfung Artenschutz“ des Kreises als Teil der Bauvorlagen | ob Soest dasselbe Formular nutzt, ist offen |
+| Bergbau, Erdbebenzone | Bez.-Reg. Arnsberg Abt. 6 (GDU); GD NRW | Relevanz für Soest und Dienste noch nicht geklärt → gelb bis Auskunft |
+
+**Geodienste:** Für das Kreismodul vor allem die landesweiten – LINFOS (NSG, LSG, FFH, VSG, Biotope; die
+Detailseiten verlinken die Verordnungstexte auf legaldocs), ÜSG (Ebenen 5 und 6, mit Verweis auf das PDF der
+Verordnung), WSG (Heilquellen- und Trinkwasserschutz, geplant/festgesetzt). Die Dienste des Kreises
+(`gis.kreis-soest.de`) waren aus der Recherche **nicht erreichbar**; Altlasten-, Kompensations- und
+Wiesenweihe-Karten sind ohnehin passwortgeschützt. Beim Bau erneut prüfen.
+
+**Neue Fassungen erkennen:** Amtsblatt des Kreises und Amtsblatt der Bezirksregierung Arnsberg als `liste`-Quellen
+(neue Schutzgebiets-, ÜSG- und WSG-Verordnungen erscheinen dort zuerst); legaldocs für die Texte. **kreis-soest.de
+antwortet auf fehlende Seiten mit HTTP 200** (Titel „Fehler - 404“), alte Adressen ändern sich – der Adapter prüft den
+Inhalt, nicht nur den Status.
+
+Offen für das Modul: Rechtskraft der Landschaftspläne II, III und V; Texterkennung für Scans (LP II, Heilquellen-VO);
+Dienste des Kreises; Erdbebenzone; ob in Soest die Stadt oder der Kreis Artenschutz bei Bauvoranfragen prüft.
 
 ### 9.4 Stadt Soest (`nw-05974040`)
 
@@ -788,6 +846,13 @@ den anderen Apps; unbekannte Abschnitte bleiben.
    als vollständig kennzeichnet (LINFOS, ÜSG, WSG), sonst nein.
 2. Wer pflegt die Module fachlich (Regeln schreiben und nach einer neuen Fassung bestätigen) – nur im Repo oder auch
    über eine Bearbeitungsansicht in der App?
+3. Texterkennung für Satzungen und Verordnungen, die nur als Scan vorliegen (Denkmalbereichssatzung Soest,
+   Landschaftsplan II, Heilquellenschutz Bad Sassendorf): in der App, beim Pflegen des Moduls einmalig, oder
+   Paragrafen ohne Text von Hand?
+4. Quelle für die MVV TB des DIBt, auf die die VV TB NRW dynamisch verweist.
+5. Fachlich zu klären, bevor die Regeln geschrieben werden: Fortgeltung der Soester Satzungen von 1973, Stand der
+   Veränderungssperre Müllingsen, Rechtskraft der Landschaftspläne II, III, V, Lizenz der Soester Geodaten,
+   Erdbebenzone und Bergbau im Kreis.
 
 **Risiken**
 - RIS ist in der Testphase: Adressen, Umfang und Format können sich ändern → Rückfall auf gesetze-im-internet.de,
