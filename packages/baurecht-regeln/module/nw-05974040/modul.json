@@ -392,12 +392,12 @@
       }
     },
     "soest.einfriedungspflicht": {
-      "titel": "Zur öffentlichen Verkehrsfläche hin liegt oder entsteht (auch durch einen Abbruch) ein Vorgarten oder eine Fläche zwischen Gebäuden, oder zur Verkehrsfläche hin ein Garten, ein Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen",
+      "titel": "Zur öffentlichen Verkehrsfläche hin liegt oder entsteht (auch durch einen Abbruch oder Teilabbruch) ein Vorgarten oder eine Fläche zwischen Gebäuden, oder zur Verkehrsfläche hin ein Garten, ein Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen",
       "kurz": "Einfriedigungspflicht zur Straße",
       "gruppe": "grundstueck",
       "typ": "janein",
-      "frage": "Liegt oder entsteht zur öffentlichen Verkehrsfläche hin ein Vorgarten oder eine Lücke zwischen Gebäuden (auch durch den Abbruch) – oder grenzt dort ein Garten, Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen an?",
-      "hilfe": "§ 12 Abs. 1 Altstadtsatzung (gilt für Einfriedigungen zu öffentlichen Verkehrsflächen): Vorgärten und Flächen zwischen Gebäuden sind mit Gitter auf Grünsandsteinsockel oder Bruchsteinmauer einzufriedigen (Nr. 1), Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2). Rückwärtige Gärten ohne Grenze zur Verkehrsfläche zählen nicht.",
+      "frage": "Liegt oder entsteht zur öffentlichen Verkehrsfläche hin ein Vorgarten oder eine Lücke zwischen Gebäuden (auch durch den Abbruch oder Teilabbruch) – oder grenzt dort ein Garten, Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen an?",
+      "hilfe": "§ 12 Abs. 1 Altstadtsatzung (gilt für Einfriedigungen zu öffentlichen Verkehrsflächen): Vorgärten und Flächen zwischen Gebäuden sind mit Gitter auf Grünsandsteinsockel oder Bruchsteinmauer einzufriedigen (Nr. 1), Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2). Rückwärtige Gärten ohne Grenze zur Verkehrsfläche zählen nicht. Auch beim Abbruch eines freistehenden Gebäudes an der Straße entsteht eine solche Fläche; ein Hinterhaus ohne Grenze zur Verkehrsfläche zählt nicht.",
       "wenn": {
         "und": [
           {
@@ -596,14 +596,17 @@
         {
           "und": [
             {
-              "$": "nur_beseitigung"
+              "oder": [
+                {
+                  "$": "nur_beseitigung"
+                },
+                {
+                  "$": "teilbeseitigung"
+                }
+              ]
             },
             {
               "$": "gebaeude"
-            },
-            {
-              "f": "gebaeude.freistehend",
-              "ist": false
             }
           ]
         }
@@ -676,7 +679,14 @@
       "text": "Für Solaranlagen auf Gebäuden der Altstadt ist eine denkmalrechtliche Erlaubnis zu beantragen (dreifach: Lageplan, vermaßte Ansichten, Moduldaten); gestalterisch gilt § 5a der Altstadtsatzung.",
       "url": "https://www.soest.de/wohnen-bauen/photovoltaik-und-solarthermie-auf-altstadt-daechern",
       "wenn": {
-        "$": "soest_altstadt"
+        "und": [
+          {
+            "$": "soest_altstadt"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
       }
     },
     {

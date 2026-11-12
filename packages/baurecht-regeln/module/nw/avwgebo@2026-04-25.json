@@ -53,7 +53,14 @@
         "wenn": {
           "oder": [
             {
-              "$": "freistellung"
+              "und": [
+                {
+                  "$": "freistellung"
+                },
+                {
+                  "$": "vorhaben_29"
+                }
+              ]
             },
             {
               "n": "nw/dschg/15",
@@ -62,16 +69,8 @@
               ]
             },
             {
-              "und": [
-                {
-                  "f": "lage.baulast",
-                  "bekannt": true
-                },
-                {
-                  "f": "lage.baulast",
-                  "ist": true
-                }
-              ]
+              "f": "lage.baulast",
+              "ist": true
             }
           ]
         }
