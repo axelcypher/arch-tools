@@ -440,41 +440,60 @@ export const istHilfsdatei = (pfad: string) => {
 /**
  * Neue Dateien, die nach der Einreichung erwartungsgemäß in den Antragsordner kommen und deshalb nicht als „neu seit der
  * Einreichung“ gelten (nur für Dateien, die nicht im festgehaltenen Stand sind – was eingereicht wurde, wird immer auf
- * „geändert“ und „entfernt“ geprüft). Bürovorgabe: die Genehmigung selbst – auch die genehmigten Bauvorlagen mit
- * Genehmigungsvermerk (§ 74 Abs. 4 Satz 5 BauO NRW 2018) und die Fiktionsbescheinigung (§ 74 Abs. 3 Satz 1 Nr. 4 BauO
- * NRW 2018 i. V. m. § 42a Abs. 3 VwVfG NRW) –, die Empfangsbestätigung und Nachforderungen der Behörde (§ 71 Abs. 1
- * Satz 7). Ergänzt (über die Bürovorgabe hinaus): Eingangsbestätigung (§ 71 Abs. 1 Satz 1), Antragsprotokoll, die
- * Unterrichtung über die Vollständigkeit (§ 71 Abs. 1 Satz 9 BauO NRW 2018 in der Fassung ab 01.09.2026), die
- * Entscheidung bei den übrigen Antragsarten – Bescheid bzw. Vorbescheid, Ablehnung, Anhörung, Gebühren,
- * denkmalrechtliche Erlaubnis (DENK), Abgeschlossenheitsbescheinigung und die von der Behörde gesiegelten
- * Aufteilungspläne (ABGE) – sowie Mitteilung der Gemeinde (§ 63 Abs. 3 Satz 5) oder ihre Erklärung (§ 63 Abs. 2 Satz 1
- * Nr. 4 i. V. m. Abs. 4 Satz 1) bei der Genehmigungsfreistellung. Antragsunterlagen und Schreiben des Büros gelten nie
- * als erwartet, auch wenn ein solches Wort darin steht: „Antrag (auf) Vorbescheid“, „Vorbescheidsantrag“,
- * „Fragestellung Vorbescheid“, „Genehmigungsfreistellung“, „Genehmigungsverfahren“, „Genehmigungsplanung“, eine
- * beigefügte Typengenehmigung oder Bestandsgenehmigung, der Verzicht auf die Genehmigungsfiktion, die (noch nicht
- * gesiegelten) Aufteilungspläne, Mitteilungen an die Gemeinde und die Unterlagen des Büros zu einer Nachforderung.
+ * „geändert“ und „entfernt“ geprüft). Grundsatz: im Zweifel „neu“ – nachgereichte Unterlagen müssen auffallen
+ * (§ 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018).
+ *
+ * Bürovorgabe: die Genehmigung selbst – auch die genehmigten Bauvorlagen mit Genehmigungsvermerk (§ 74 Abs. 4 Satz 5
+ * BauO NRW 2018) und die Fiktionsbescheinigung (§ 74 Abs. 3 Satz 1 Nr. 4 i. V. m. § 42a Abs. 3 VwVfG NRW) –, die
+ * Empfangsbestätigung und Nachforderungen der Behörde (§ 71 Abs. 1 Satz 7). Ergänzt (über die Bürovorgabe hinaus):
+ * Eingangsbestätigung (§ 71 Abs. 1 Satz 1), Antragsprotokoll, die Unterrichtung über die Vollständigkeit (§ 71 Abs. 1
+ * Satz 9 BauO NRW 2018 in der Fassung ab 01.09.2026), die Entscheidung bei den übrigen Antragsarten – Bescheid bzw.
+ * Vorbescheid, Ablehnung, Anhörung, Gebühren, denkmalrechtliche Erlaubnis (DENK), Abgeschlossenheitsbescheinigung und
+ * die von der Behörde gesiegelten Aufteilungspläne (ABGE) – sowie Mitteilung der Gemeinde (§ 63 Abs. 3 Satz 5) oder
+ * ihre Erklärung (§ 63 Abs. 2 Satz 1 Nr. 4 i. V. m. Abs. 4 Satz 1) bei der Genehmigungsfreistellung.
+ *
+ * Vorrang vor diesen Wörtern haben Antragsunterlagen, Bauvorlagen und Schreiben des Büros: alles mit „Antrag“ (außer
+ * dem Bezug „Bescheid zum Bauantrag“, „Genehmigung Bauantrag“), Fragen zum Vorbescheid, Plannummern, Lageplan,
+ * Grundriss, Schnitt, Ansicht, Beschreibung, Nachweis, Berechnung, Statik, Formular, Aufteilungsplan, Checkliste,
+ * Stellungnahme, Antwort, Erwiderung, Ergänzung, Anschreiben, Nachgereichtes, der Verzicht auf die Fiktion und eine
+ * beigefügte Genehmigung des Bestands (Bestandsgenehmigung, „Baugenehmigung von 1972“).
  */
 export function nachEinreichungErwartet(name: string): boolean {
-  const n = name.toLowerCase().replace(/[_]+/g, ' ');
-  if (EINGEREICHT_MUSTER.test(n) || /vollst(ä|ae)ndigkeit/.test(n)) return true;
-  // Bescheinigung über die Genehmigungsfiktion – nicht der Verzicht der Bauherrschaft darauf (§ 74 Abs. 3 Satz 3)
-  if (/fiktion/.test(n)) return !/verzicht/.test(n);
-  // die Nachforderung der Behörde („Nachforderung von Unterlagen“, „Aufforderung zur Behebung der Mängel“) – nicht,
-  // was das Büro darauf nachreicht
-  if (/nachforderung|aufforderung/.test(n))
-    return !/nach(ge)?reich|erg(ä|ae)nz|anschreiben|stellungnahme|antwort|unterlagen ((zur|zum|für|fuer|nach) )?(der |die )?(nachforderung|aufforderung)|(zur|zum|auf|wegen|gem(äß|aess|\.)?) (nachforderung|aufforderung)/.test(n);
-  // Mitteilung bzw. Erklärung der Gemeinde (Stadt) – nicht die des Büros an sie, nicht die Stadtwerke
-  if (/mitteilung|erkl(ä|ae)rung/.test(n) && /gemeinde|stadt(?!werk)/.test(n)) return !/(^|\s)an (die|den)(\s|$)/.test(n);
-  // Aufteilungspläne reicht das Büro ein; erwartet sind erst die von der Behörde gesiegelten
-  if (/aufteilungspl(a|ä|ae)n/.test(n)) return /gesiegelt|siegel|beglaubigt|gestempelt/.test(n);
-  // eine Genehmigung des Bestands legt das Büro bei („Bestandsgenehmigung“, „Baugenehmigung Bestand 1972“)
-  if (/bestandsgenehmigung|bestand(s)? (von |aus )?(19|20)\d\d|(^|\s)(von|aus) (19|20)\d\d(\s|$)/.test(n)) return false;
-  // genehmigte Bauvorlagen (Genehmigungsvermerk, Grünstempel) gehören zur Genehmigung selbst
-  if (/genehmigt|genehmigungsvermerk|gr(ü|ue)nstempel/.test(n)) return true;
-  // jede Antragsunterlage geht vor („Antrag Vorbescheid“, „Vorbescheidsantrag“); nur der Bezug „zum Bauantrag“ zählt nicht
-  const rest = n.replace(/(zum|zu dem|über den|ueber den|auf den|für den|fuer den) bauantrag/g, ' ');
-  if (/antrag|fragestellung|genehmigungsfrei|genehmigungsverfahren|genehmigungsplan|typengenehmigung/.test(rest)) return false;
-  return /genehmigung|bescheid|erlaubnis|abgeschlossenheitsbescheinigung|ablehnung|anh(ö|oe)rung|geb(ü|ue)hrenrechnung|kostenfestsetzung/.test(rest);
+  const roh = (name.split(/[\\/]/).pop() ?? '').replace(/\.[a-z0-9]{1,5}$/i, '');
+  // Unterstriche und Bindestriche zwischen Buchstaben wie Leerzeichen („Bescheid-zum-Bauantrag“, „Antrag_auf_…“)
+  const n = roh
+    .toLowerCase()
+    .replace(/_+/g, ' ')
+    .replace(/(?<=\p{L})-(?=\p{L})/gu, ' ');
+  if (EINGEREICHT_MUSTER.test(n)) return true;
+  // von der Behörde gestempelt bzw. gesiegelt (genehmigte Bauvorlagen, gesiegelte Aufteilungspläne)
+  if (/genehmigt|genehmigungsvermerk|gr(ü|ue)nstempel|gesiegelt|siegel|beglaubigt|gestempelt/.test(n)) return true;
+  // der Bezug auf den Antrag ist keine Antragsunterlage: „Bescheid zum Bauantrag“, „Genehmigung Bauantrag“ (aber
+  // „Vorbescheid Antrag“ ist der Antrag)
+  const rest = n.replace(/(zum|zu dem|zur|über den|ueber den|auf den|für den|fuer den) (bau)?antrag\S*/g, ' ').replace(/(genehmigung|(?<!vor)bescheid|ablehnung) (bau)?antrag\S*/g, '$1');
+  const zuSchreiben = '(nachforderung|aufforderung|anh(ö|oe)rung)';
+  const bueroOderVorlage = new RegExp(
+    [
+      'antrag',
+      '(^|\\s)frage',
+      'genehmigungsfrei|genehmigungsverfahren|genehmigungsplan|typengenehmigung',
+      'verzicht',
+      'lageplan|grundri|schnitt|ansicht|beschreibung|nachweis|berechnung|statik|formular|aufteilungspl|checkliste|intern|pr(ü|ue)fung',
+      'stellungnahme|antwort|erwiderung|erg(ä|ae)nz|anschreiben|nach(ge)?reich',
+      `unterlagen ((zur|zum|für|fuer|nach|aufgrund|infolge|laut|lt\\.?) )?(der |die )?${zuSchreiben}`,
+      `(zur|zum|auf|wegen|gem(äß|aess|\\.)?|nach|aufgrund|infolge|laut|lt\\.?) ${zuSchreiben}`,
+      'bestandsgenehmigung|altgenehmigung|alte (bau)?genehmigung|genehmigung (des )?bestand|bestand(s)? (von |aus )?(19|20)\\d\\d|(von|aus) (19|20)\\d\\d(?!\\d)',
+    ].join('|'),
+  );
+  if (bueroOderVorlage.test(rest)) return false;
+  // Plannummern („GP-03“, „AP-01a“, Satz „GP01-07“) stehen auf Bauvorlagen
+  if (roh.split(/\s+/).some((w) => /[-_]/.test(w) && planNummerAus(w))) return false;
+  if (/vollst(ä|ae)ndigkeit|fiktion|nachforderung|aufforderung/.test(rest)) return true;
+  // Mitteilung bzw. Erklärung der Gemeinde (Stadt) – nicht die des Büros an sie, nicht Baulast, Stadtwerke …
+  const gemeinde = '(gemeinde|stadt)(?!werk|entw)';
+  if (new RegExp(`(mitteilung|erkl(ä|ae)rung) (der |des )?${gemeinde}|${gemeinde}\\S* (mitteilung|erkl(ä|ae)rung)`).test(rest))
+    return !/baulast|entwurfsverfasser|(^|\s)an (die|den) (stadt|gemeinde|bauaufsicht)/.test(rest);
+  return /genehmigung|bescheid|erlaubnis|abgeschlossenheitsbescheinigung|ablehnung|anh(ö|oe)rung|geb(ü|ue)hr|kostenfestsetzung/.test(rest);
 }
 
 /**
@@ -626,7 +645,8 @@ function antragDatenAus(roh: unknown): AntragDaten {
   if (e && typeof e === 'object' && typeof e.datei === 'string' && e.datei && typeof e.datum === 'string' && TAG.test(e.datum)) a.eingereicht = { datei: e.datei, datum: e.datum };
   const st = o.status as Record<string, unknown> | undefined;
   if (st && typeof st === 'object' && typeof st.eingereicht === 'boolean')
-    a.status = { eingereicht: st.eingereicht, ...(st.eingereicht && typeof st.datum === 'string' && TAG.test(st.datum) ? { datum: st.datum } : {}) };
+    // das Datum bleibt auch bei „in Arbeit“ stehen – beim Zurückstellen auf „eingereicht“ gilt wieder derselbe Tag
+  a.status = { eingereicht: st.eingereicht, ...(typeof st.datum === 'string' && TAG.test(st.datum) ? { datum: st.datum } : {}) };
   const stand = standAusRoh(o.stand);
   if (stand) a.stand = stand;
   return a;
@@ -738,16 +758,21 @@ export const istArchiv = (pfad: string) => /(^|\/)_?archiv(\/|$)/i.test(pfad.rep
 export const EINGEREICHT_TIEFE = 6;
 
 /**
- * Eingereicht? – die neueste passende Datei im Ordner des Antrags oder seinen Unterordnern (Archivordner und
- * Office-Sperrdateien ausgenommen); `datei` ist der Pfad relativ zum Ordner des Antrags.
+ * Eingereicht? – der erste Nachweis im Ordner des Antrags oder seinen Unterordnern (Archivordner und Hilfsdateien
+ * ausgenommen): Maßgeblich ist der Eingang (§ 71 Abs. 1 Satz 1 BauO NRW 2018) – eine spätere Eingangsbestätigung
+ * bestätigt nur diesen Eingang, ihr Briefdatum ist nicht der Tag der Einreichung. `datei` ist der Pfad relativ zum
+ * Ordner des Antrags.
  */
 export function eingereichtAus(dateien: Eintrag[]): { datei: string; datum: string } | null {
-  const d = neueste(dateien.filter((d) => !d.ordner && !istArchiv(d.pfad) && !istHilfsdatei(d.pfad) && EINGEREICHT_MUSTER.test(d.pfad.split('/').pop() ?? '')));
-  if (!d) return null;
-  // Datum: aus dem Namen („… 261103 Eingangsbestätigung.pdf“), sonst die Änderungszeit
-  const n = datumAusName(d.pfad);
-  const datum = n ? `${Math.floor(n.tag / 10000)}-${String(Math.floor(n.tag / 100) % 100).padStart(2, '0')}-${String(n.tag % 100).padStart(2, '0')}` : tagVon(d.geaendert ? new Date(d.geaendert) : new Date());
-  return { datei: d.pfad, datum };
+  const nachweise = dateien
+    .filter((d) => !d.ordner && !istArchiv(d.pfad) && !istHilfsdatei(d.pfad) && EINGEREICHT_MUSTER.test(d.pfad.split('/').pop() ?? ''))
+    .map((d) => {
+      // Datum: aus dem Namen („… 261103 Eingangsbestätigung.pdf“), sonst die Änderungszeit
+      const n = datumAusName(d.pfad);
+      const datum = n ? `${Math.floor(n.tag / 10000)}-${String(Math.floor(n.tag / 100) % 100).padStart(2, '0')}-${String(n.tag % 100).padStart(2, '0')}` : tagVon(d.geaendert ? new Date(d.geaendert) : new Date());
+      return { datei: d.pfad, datum };
+    });
+  return nachweise.reduce<{ datei: string; datum: string } | null>((erster, x) => (!erster || x.datum < erster.datum ? x : erster), null);
 }
 
 /* ---------- Dokumente im Antragsordner: Namensformat und „bereit“ ---------- */
@@ -839,8 +864,10 @@ export function nameNachFormat(name: string, o: { codes: string[]; art: string; 
         }
       }
     const { w, i } = rest[0];
-    // „Entw Grundriss“, „Ab 2027 …“: klein geschrieben ist das ein Wort der Bezeichnung, kein Kürzel
-    if (!werte.art && bekannt.has(w.toUpperCase()) && (w === w.toUpperCase() || i === stelle.art)) werte.art = o.art;
+    // „Entw Grundriss“, „Ab 2027 …“: klein geschrieben ist das ein Wort der Bezeichnung, kein Kürzel – außer an der
+    // Stelle der Antragsart mit einem weiteren Kopfteil daneben (Projektcode davor oder ein Datum danach)
+    const mitKopf = !!werte.code || gueltigesDatum(rest[1]?.w);
+    if (!werte.art && bekannt.has(w.toUpperCase()) && (w === w.toUpperCase() || (i === stelle.art && mitKopf))) werte.art = o.art;
     else if (!werte.datum && gueltigesDatum(w)) werte.datum = w;
     else if (!werte.nummer && (istPlannummer(w) || /^\d{1,3}[a-z]?$/.test(w))) werte.nummer = w;
     else break;

@@ -4,7 +4,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
-import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft } from '../antrag';
+import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, istHilfsdatei } from '../antrag';
 import { aktiveFassung, antragsOrdner, dateienVon, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -17,7 +17,7 @@ export const VORSCHAU_ZOOM = [0, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 
 /** Reihenfolge der Antragsunterlagen: zuerst die Dokumente des Antragsumfangs in ihrer Reihenfolge, dann der Rest */
 export function unterlagenReihenfolge(dateien: Eintrag[], umfangDateien: string[]): Eintrag[] {
-  const nurDateien = dateien.filter((d) => !d.ordner && !/^(~\$|\.~lock\.)/.test(d.pfad) && !/^(thumbs\.db|desktop\.ini)$/i.test(d.pfad));
+  const nurDateien = dateien.filter((d) => !d.ordner && !istHilfsdatei(d.pfad));
   const rang = (d: Eintrag) => {
     const i = umfangDateien.findIndex((n) => n.toLowerCase() === d.pfad.toLowerCase());
     return i < 0 ? umfangDateien.length : i;

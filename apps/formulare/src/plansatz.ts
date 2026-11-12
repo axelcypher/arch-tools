@@ -114,8 +114,12 @@ function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | unde
               .find((w) => planNummerAus(w, schema))
           : undefined;
       const erkannt = wort ? planNummerAus(wort, schema) : null;
-      const h =
-        erkannt && `${name} (${ort}): Plannummer ${planSchluessel(erkannt.kuerzel, erkannt.von)} erkannt, sie steht aber nicht an ihrer Stelle im Namensschema – zählt nicht zum Plansatz; umbenennen?`;
+      const nr =
+        erkannt &&
+        (erkannt.bis > erkannt.von
+          ? `${planSchluessel(erkannt.kuerzel, erkannt.von)} bis ${planSchluessel(erkannt.kuerzel, erkannt.bis)}`
+          : `${planSchluessel(erkannt.kuerzel, erkannt.von)}${erkannt.index ?? ''}`);
+      const h = erkannt && `${name} (${ort}): Plannummer ${nr} erkannt, sie steht aber nicht an ihrer Stelle im Namensschema – zählt nicht zum Plansatz; Datei umbenennen (Rechtsklick › Umbenennen)`;
       if (h && !hinweise.includes(h)) hinweise.push(h);
       continue;
     }

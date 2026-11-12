@@ -311,8 +311,9 @@ Anschrift, wie sie in Formularen steht.
   Bauantrag.pdf“ → „HVO BAUA 261111 Bauantrag.pdf“. Fehlt das Datum, kommt das der Datei hinein. Eine Plannummer mit
   Phasenkürzel („GP-04“) kommt auch von weiter hinten an ihre Stelle, damit der Plan im Plansatz bleibt – nur, wenn es
   genau eine ist („Lageplan zu GP-02 und GP-03“ bleibt); Zahlen in der Bezeichnung („Statik Teil 2“, „Lageplan M 1
-  500“, „OG2“) bleiben, wo sie sind. Ein Kürzel in Kleinbuchstaben zählt nur an der Stelle der Antragsart, sonst ist
-  es ein Wort der Bezeichnung („Entw Grundriss“, „Ab 2027 …“). Unter „Fehlt im Antragsordner“ stehen die Dokumente
+  500“, „OG2“) bleiben, wo sie sind. Ein Kürzel in Kleinbuchstaben zählt nur an der Stelle der Antragsart und mit
+  einem weiteren Kopfteil daneben (Projektcode davor oder Datum danach), sonst ist es ein Wort der Bezeichnung („Entw
+  Grundriss“, „Ab 2027 …“). Unter „Fehlt im Antragsordner“ stehen die Dokumente
   des Antragsumfangs ohne Datei.
   Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
   aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` gibt es weiter an anderer Stelle). In der
@@ -458,8 +459,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
     AP-03) (gelb); liegt eine Nummer mehrfach im Antragsordner, zählt die neueste;
   - **Hinweise** (nie sperrend): ältere Fassungen derselben Nummer („alte Fassung?“), ein Satz neben Einzelplänen
     daraus, eine Datei mit Plannummer, die nicht an ihrer Stelle im Namensschema steht (etwa ohne Projektcode:
-    „GP-02 Schnitt.pdf (Quelle): Plannummer GP-02 erkannt, … – zählt nicht zum Plansatz; umbenennen?“, mit dem Ort
-    Antragsordner bzw. Quelle; sonst fiele sie still heraus, und weil die Reihe nicht bei 01 beginnen muss, auch ohne
+    „GP-02 Schnitt.pdf (Quelle): Plannummer GP-02 erkannt, … – zählt nicht zum Plansatz; Datei umbenennen
+    (Rechtsklick › Umbenennen)“, mit dem Ort Antragsordner bzw. Quelle, bei Sätzen „GP-01 bis GP-07“, mit Index „AP-03a“; sonst fiele sie still heraus, und weil die Reihe nicht bei 01 beginnen muss, auch ohne
     Lücke), ein Index, wo ihn das Namensschema des Büros nicht vorsieht (Bürovorgabe: erst ab LPH 5; daraus folgt:
     eine Phase ohne LPH wie AB trägt keinen), „kein Schnitt erkannt“ bzw. „keine Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse,
     Schnitte und Ansichten, § 4 Abs. 1, 3, 4 BauPrüfVO NRW – nur ein Hinweis, weil die Behörde auf Bauvorlagen
@@ -514,39 +515,47 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
 - **Antragsstand bei der Einreichung:** Sobald ein Antrag als eingereicht gilt (erkannt oder von Hand), hält die App
   einmal fest, welche Dateien im Ordner des Antrags liegen – nur Name, Größe und Änderungszeit, **keine Kopie**
   (`stand` im Antrag der Projektdatei; Dateien, die erst nach dem Tag der Einreichung geändert wurden, gehören bei
-  später Erkennung nicht dazu; Office-Sperrdateien, Thumbs.db und desktop.ini nie). Ein späteres Bestätigungsschreiben
-  mit anderem Datum (Antragsprotokoll am Tag der Einreichung, Eingangsbestätigung Tage später) ändert den Stand nicht.
-  In der Ansicht „Antrag“ steht dann „Eingereicht am … – Stand festgehalten“. Jede **eingereichte** Datei wird mit dem
-  Stand verglichen und ist gekennzeichnet, wenn sie danach **geändert** wurde („geändert seit der Einreichung“, gelb,
-  mit Summe oben); verschwundene Dateien auf oberster Ebene des Antragsordners (gelöscht oder verschoben) zählen als
-  **entfernt** (in der Summe, darunter höchstens drei Namen, alle im Tooltip der Summe). Ausgenommen ist nur der
-  Nachweis der Einreichung selbst (Antragsprotokoll, Eingangs- bzw. Empfangsbestätigung). Eine Datei, die **neu**
-  hinzukam, ist „neu seit der Einreichung“ – außer sie kommt erwartungsgemäß (`nachEinreichungErwartet`, nur für neue
-  Dateien): nach der Bürovorgabe die Genehmigung selbst (auch die genehmigten Bauvorlagen mit Genehmigungsvermerk,
+  später Erkennung nicht dazu; Office-Sperrdateien, Thumbs.db und desktop.ini nie). Der Tag ist der des ersten
+  Nachweises (siehe „Eingereicht“); ein späteres Bestätigungsschreiben ändert den Stand nicht, ein früherer Tag (von
+  Hand berichtigt oder ein älterer Nachweis) hält ihn neu fest. In der Ansicht „Antrag“ steht dann „Eingereicht am …
+  – Stand festgehalten“. Jede **eingereichte** Datei auf oberster Ebene des Antragsordners wird mit dem Stand
+  verglichen und ist gekennzeichnet, wenn sie danach **geändert** wurde („geändert seit der Einreichung“, gelb, mit
+  Summe oben); verschwundene (gelöscht oder verschoben) zählen als **entfernt** (in der Summe, darunter bis zu drei
+  Namen, mehr über „n weitere zeigen“, alle auch im Tooltip der Summe). Ausgenommen ist nur der Nachweis der
+  Einreichung selbst (Antragsprotokoll, Eingangs- bzw. Empfangsbestätigung). Eine Datei, die **neu** hinzukam, ist
+  „neu seit der Einreichung“ – außer sie kommt erwartungsgemäß (`nachEinreichungErwartet`, nur für neue Dateien;
+  Grundsatz: im Zweifel „neu“, damit Nachgereichtes auffällt, § 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018): nach der
+  Bürovorgabe die Genehmigung selbst (auch die genehmigten Bauvorlagen mit Genehmigungsvermerk bzw. Grünstempel,
   § 74 Abs. 4 Satz 5 BauO NRW 2018, und die Fiktionsbescheinigung, § 74 Abs. 3 Satz 1 Nr. 4 BauO NRW 2018 i. V. m.
   § 42a Abs. 3 VwVfG NRW), die Empfangsbestätigung und Nachforderungen der Behörde (§ 71 Abs. 1 Satz 7, auch
   „Nachforderung von Unterlagen“ oder „Aufforderung …“). Über die Bürovorgabe hinaus ergänzt: Eingangsbestätigung
   (§ 71 Abs. 1 Satz 1), Antragsprotokoll, die Unterrichtung über die Vollständigkeit (§ 71 Abs. 1 Satz 9 BauO NRW 2018
   in der Fassung ab 01.09.2026), die Entscheidung bei den übrigen Antragsarten (Bescheid – auch „Bescheid zum
-  Bauantrag“ – bzw. Vorbescheid, Ablehnung, Anhörung, Gebührenrechnung bzw. Kostenfestsetzung, denkmalrechtliche
-  Erlaubnis, Abgeschlossenheitsbescheinigung, die von der Behörde gesiegelten Aufteilungspläne) sowie die Mitteilung
-  der Gemeinde (§ 63 Abs. 3 Satz 5) oder ihre Erklärung (§ 63 Abs. 2 Satz 1 Nr. 4 i. V. m. Abs. 4 Satz 1) bei der
-  Genehmigungsfreistellung. Antragsunterlagen und Schreiben des Büros gelten nie als erwartet, auch wenn ein solches
-  Wort darin steht („Antrag (auf) Vorbescheid“, „Vorbescheidsantrag“, „Fragestellung Vorbescheid“,
-  „Genehmigungsfreistellung“, „… Genehmigungsverfahren“, „Genehmigungsplanung“, eine beigefügte Typengenehmigung oder
-  Bestandsgenehmigung, der Verzicht auf die Genehmigungsfiktion, noch nicht gesiegelte Aufteilungspläne, „Mitteilung
-  an die Stadt …“, nachgereichte Unterlagen, Ergänzung, Anschreiben oder Antwort zu einer Nachforderung). Ist der
-  Ordner einmal nicht lesbar (Netz nach dem Aufwachen), bleiben „eingereicht“ und der Stand unverändert, die Ablage
-  sagt „gerade nicht lesbar“ und meldet nichts als „entfernt“. Gilt der Antrag wieder als in Arbeit (Status von Hand,
-  Bestätigung verschoben), verschwinden die Kennzeichen; der Stand bleibt als „zurückgesetzt“ in der Projektdatei:
-  Wird der Antrag mit demselben Datum wieder eingereicht, gilt er wieder (geänderte Dateien bleiben „geändert“); nur
-  eine Einreichung an einem anderen Tag hält den Stand neu fest.
+  Bauantrag“, „Genehmigung Bauantrag“ – bzw. Vorbescheid, Ablehnung, Anhörung, Gebühren bzw. Kostenfestsetzung,
+  denkmalrechtliche Erlaubnis, Abgeschlossenheitsbescheinigung, die von der Behörde gesiegelten Aufteilungspläne)
+  sowie die Mitteilung der Gemeinde (§ 63 Abs. 3 Satz 5) oder ihre Erklärung (§ 63 Abs. 2 Satz 1 Nr. 4 i. V. m.
+  Abs. 4 Satz 1) bei der Genehmigungsfreistellung. **Vorrang** vor diesen Wörtern haben Antragsunterlagen,
+  Bauvorlagen und Schreiben des Büros – sie sind nie „erwartet“: alles mit „Antrag“ („Antrag (auf) Vorbescheid“,
+  „Vorbescheidsantrag“, „Bauantrag Nachforderung“), Fragen zum Vorbescheid, Plannummern („GP-03 … Nachforderung“),
+  Lageplan, Grundriss, Schnitt, Ansicht, Beschreibung, Nachweis, Berechnung, Statik, Formular, Aufteilungsplan,
+  Checkliste, Stellungnahme, Antwort, Erwiderung (auch zur Anhörung), Ergänzung, Anschreiben, Nachgereichtes, der
+  Verzicht auf die Genehmigungsfiktion, „Mitteilung an die Stadt …“, Baulasterklärungen und eine beigefügte
+  Genehmigung des Bestands („Bestandsgenehmigung“, „Altgenehmigung“, „Baugenehmigung von 1972“). Unterstriche und
+  Bindestriche zwischen Wörtern zählen wie Leerzeichen. Ist der Ordner einmal nicht erreichbar (Netz nach dem
+  Aufwachen), bleiben „eingereicht“ und der Stand unverändert; die Ablage warnt oben („gerade nicht erreichbar … Erneut
+  versuchen“), zeigt die zuletzt gelesene Liste und statt „seitdem unverändert“ „Vergleich mit dem Ordner gerade nicht
+  möglich“ – ohne Liste von vorher zählt sie nichts und meldet nichts als fehlend. Gilt der Antrag wieder als in
+  Arbeit (Status von Hand, Nachweis verschoben), verschwinden die Kennzeichen; der Stand bleibt als „zurückgesetzt“ in
+  der Projektdatei: Wird der Antrag mit demselben Datum wieder eingereicht, gilt er wieder (geänderte Dateien bleiben
+  „geändert“); nur eine Einreichung an einem anderen Tag hält den Stand neu fest.
 - **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)
   ausgenommen – ein Dokument, dessen Name `Antragsprotokoll`, `Eingangsbestätigung` oder `Empfangsbestätigung` (auch
   mit „ae“) enthält, gilt der Antrag als **eingereicht** – mit dem Datum im Dateinamen, sonst dem der
-  Datei (bei mehreren der neuesten). Das zeigt die App am Antrag (oben links), in der Navigation und im Menü der
+  Datei. Bei mehreren zählt der **erste Nachweis**: Maßgeblich ist der Eingang (§ 71 Abs. 1 Satz 1 BauO NRW 2018),
+  eine spätere Eingangsbestätigung bestätigt nur diesen Eingang – Status, Stand und Startseite zeigen denselben Tag. Das zeigt die App am Antrag (oben links), in der Navigation und im Menü der
   Fassungen; verschwindet die Datei, ist er es nicht mehr. Der Status lässt sich in den Antragsdaten **von Hand
-  setzen**: „automatisch“ (die Erkennung), „in Arbeit“ oder „eingereicht“ mit Datum (`status` im Antrag). Der **aktive
+  setzen**: „automatisch“ (die Erkennung), „in Arbeit“ oder „eingereicht“ mit Datum (`status` im Antrag; „in Arbeit“
+  behält das Datum, zurück auf „eingereicht“ gilt derselbe Tag). Der **aktive
   Antrag** – derselbe, den das Projekt zeigt – steht zusätzlich in `meta.antrag` der Projektdatei und erscheint auf
   den Startseiten aller Apps als Marke auf der Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in
   Arbeit“); die Startseite von Formulare zeigt ihn auch dann, wenn nicht alle Formulare lesbar sind.

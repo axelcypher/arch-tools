@@ -45,12 +45,16 @@ describe('Plansatz', () => {
     expect(r.plaene.map((p) => p.schluessel)).toEqual(['GP-03']);
     expect(r.hinweise).toEqual(
       expect.arrayContaining([
-        'GP-01 Grundriss.pdf (Quelle): Plannummer GP-01 erkannt, sie steht aber nicht an ihrer Stelle im Namensschema – zählt nicht zum Plansatz; umbenennen?',
-        'GP 261111 GP-02 Schnitt.pdf (Quelle): Plannummer GP-02 erkannt, sie steht aber nicht an ihrer Stelle im Namensschema – zählt nicht zum Plansatz; umbenennen?',
+        'GP-01 Grundriss.pdf (Quelle): Plannummer GP-01 erkannt, sie steht aber nicht an ihrer Stelle im Namensschema – zählt nicht zum Plansatz; Datei umbenennen (Rechtsklick › Umbenennen)',
+        'GP 261111 GP-02 Schnitt.pdf (Quelle): Plannummer GP-02 erkannt, sie steht aber nicht an ihrer Stelle im Namensschema – zählt nicht zum Plansatz; Datei umbenennen (Rechtsklick › Umbenennen)',
       ]),
     );
     // ein Dokument mit Dokumentnummer, das Plannummern nur erwähnt, ist kein falsch benannter Plan
     expect(r.hinweise.join('\n')).not.toContain('Planliste');
+    // Satz und Index bleiben im Hinweis erkennbar
+    const h = plansatzPruefen([datei('GP01-07 Plansatz.pdf'), datei('AP-03a Detail.pdf')], [], S, { codes: ['HVO'] }).hinweise.join('\n');
+    expect(h).toContain('Plannummer GP-01 bis GP-07 erkannt');
+    expect(h).toContain('Plannummer AP-03a erkannt');
   });
 
   it('Quelle: noch nicht verschoben, veraltet nach dem Datum im Namen; leere Quelle ist in Ordnung', () => {

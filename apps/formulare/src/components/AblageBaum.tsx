@@ -1,4 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
+import { istHilfsdatei } from '../antrag';
 import { useEffect, useRef, useState } from 'react';
 import { einfuegeStelle, zeigerZiehen } from '@core/ui/ziehen';
 import type { AblageOrdner } from '../ablage';
@@ -124,7 +125,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
 
   const sichtbar = nachReihenfolge(eintraege, reihe)
     // Besitzerdateien von Office (~$…), Sperrdateien von LibreOffice und Systemdateien sind nur vorübergehend da
-    .filter((e) => !/^(~\$|\.~lock\.)/.test(e.pfad) && !/^(thumbs\.db|desktop\.ini)$/i.test(e.pfad))
+    .filter((e) => !istHilfsdatei(e.pfad))
     .map((e) => ({ e, pfad: rel ? `${rel}/${e.pfad}` : e.pfad }))
     .map((x) => ({ ...x, s: ganz ? ('ganz' as const) : sichtbarkeit(x.pfad, auswahl) }))
     // Dateien nur, wenn ihr Ordner ganz ausgewählt ist (oder sie selbst)

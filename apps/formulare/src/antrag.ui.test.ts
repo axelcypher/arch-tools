@@ -309,6 +309,29 @@ describe('Antragsumfang und Vollständigkeit', () => {
     expect(fehlt()).toBeNull();
   });
 
+  it('doppelter Eintrag im eingereichten Antrag: Klick öffnet kein Menü, nur die Sperrmeldung', async () => {
+    ds.dateien.set('C:/FORMA/BS9/003-Baustatistik.frmsjf', MUSTER);
+    const host = await projektBS9();
+    await act(() =>
+      useAntrag.getState().umfangSetzen([
+        { id: 'statistik', titel: 'Statistischer Erhebungsbogen', art: 'intern', formular: 'Statisti' },
+        { id: 'baustatistik', titel: 'Baustatistik', art: 'intern', formular: 'Erhebung nach HBauStatG' },
+      ]),
+    );
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-03' }));
+    await warte();
+    const fehlt = host.querySelector<HTMLButtonElement>('.nav-eintrag.fehlt')!;
+    expect(fehlt.className).toContain('gesperrt');
+    expect(fehlt.hasAttribute('aria-haspopup')).toBe(false);
+    await klick(fehlt);
+    await warte();
+    expect(document.querySelector('.menue-punkt')).toBeNull();
+    expect(useFormulare.getState().meldung?.text).toContain('ist eingereicht (03.11.2026, von Hand gesetzt) und gesperrt');
+    // das Kontextmenü bleibt (mit gesperrten Punkten)
+    await rechtsklick(fehlt);
+    expect(menuePunkt('Antragsumfang zeigen')).toBeDefined();
+  });
+
   it('Formular anlegen: Meldung schon während der Suche; ein zweiter Aufruf legt kein zweites Formular an', async () => {
     const host = await projektBS9();
     await act(() => useAntrag.getState().umfangSetzen([{ id: 'bauantrag', titel: 'Bauantrag', art: 'intern', formular: 'Bauantrag' }]));
@@ -1272,10 +1295,10 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     expect(host.querySelector('.fo-stand')!.textContent).toContain('1 neu, 1 entfernt seit der Einreichung');
     expect(host.querySelector('.fo-stand')!.getAttribute('title')).toContain('BS9 BAUA 261101 01 Bauantrag.pdf');
-    expect(host.querySelector('.fo-stand-entfernt')!.textContent).toContain('entferntBS9 BAUA 261101 01 Bauantrag.pdf');
+    expect(host.querySelector('.fo-stand-entfernt')!.textContent).toContain('entfernt BS9 BAUA 261101 01 Bauantrag.pdf');
   });
 
-  it('Antragsstand: viele entfernte Dateien – zwei Namen und „und n weitere“, alle im Tooltip', async () => {
+  it('Antragsstand: viele entfernte Dateien – zwei Namen, der Rest aufklappbar (auch per Tastatur), alle im Tooltip', async () => {
     const ordner = `${PROJEKT}/TÖB/BAUA 2`;
     const plaene = [1, 2, 3, 4, 5].map((n) => `BS9 BAUA 261101 GP-0${n} Plan.pdf`);
     for (const n of plaene) ds.dateien.set(`${ordner}/${n}`, new Uint8Array([1]));
@@ -1287,9 +1310,15 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await klick(knopfGenau(host, 'Antrag'));
     expect(host.querySelector('.fo-stand')!.textContent).toContain('4 entfernt seit der Einreichung');
     for (const n of plaene.slice(0, 4)) expect(host.querySelector('.fo-stand')!.getAttribute('title')).toContain(n);
-    const zeilen = [...host.querySelectorAll('.fo-stand-entfernt li')].map((l) => l.textContent);
-    expect(zeilen).toHaveLength(3);
-    expect(zeilen[2]).toContain('und 2 weitere');
+    const zeilen = () => [...host.querySelectorAll('.fo-stand-entfernt li')].map((l) => l.textContent);
+    expect(zeilen()).toHaveLength(3);
+    const mehr = host.querySelector<HTMLButtonElement>('.fo-stand-entfernt button.pk-nav-mehr')!;
+    expect(mehr.textContent).toBe('2 weitere zeigen');
+    expect(mehr.getAttribute('aria-expanded')).toBe('false');
+    await klick(mehr);
+    expect(zeilen()).toHaveLength(5);
+    expect(host.querySelector('.fo-stand-entfernt button.pk-nav-mehr')!.getAttribute('aria-expanded')).toBe('true');
+    expect(zeilen()[4]).toBe('weniger zeigen');
   });
 
   it('Antragsstand: ein vorübergehender Lesefehler verwirft weder „eingereicht“ noch den festgehaltenen Stand', async () => {
@@ -1317,15 +1346,20 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(einmal).toBe(false);
     expect(antragIn('BAUA 2')?.eingereicht).toEqual(vorher.eingereicht);
     expect(antragIn('BAUA 2')?.stand).toEqual(vorher.stand);
-    // die Ablage sagt, dass der Ordner nicht lesbar war – und meldet keine eingereichte Datei als „entfernt“
+    // die Ablage sagt, dass der Ordner nicht erreichbar war, zeigt den zuletzt gelesenen Stand und behauptet weder
+    // „entfernt“ noch „unverändert“
     expect(host.querySelector('.fo-stand-entfernt')).toBeNull();
     expect(host.querySelector('.fo-stand')!.textContent).not.toContain('entfernt');
-    expect(host.textContent).toContain('ist gerade nicht lesbar');
+    expect(host.querySelector('.fo-stand')!.textContent).not.toContain('unverändert');
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('Vergleich mit dem Ordner gerade nicht möglich');
+    expect(host.querySelector('.fo-lesefehler')!.textContent).toContain('ist gerade nicht erreichbar');
+    expect(host.querySelector('.fo-lesefehler')!.textContent).toContain('zuletzt gelesene Stand');
+    expect(host.querySelector('.fo-bereit-kopf')!.textContent).toContain('0 von 2 bereit');
     // beim nächsten Lesen: weiter derselbe Stand, die neue Datei ist „neu seit der Einreichung“
     await act(() => useAntrag.getState().aktualisieren());
     await warte();
     expect(antragIn('BAUA 2')?.stand).toEqual(vorher.stand);
-    expect(host.textContent).not.toContain('ist gerade nicht lesbar');
+    expect(host.querySelector('.fo-lesefehler')).toBeNull();
     expect(host.querySelector('.fo-stand')!.textContent).toContain('1 neu seit der Einreichung');
   });
 
@@ -1344,6 +1378,41 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect((antragIn('BAUA 2')?.stand as { tag: string }).tag).toBe('2026-11-03');
     expect(host.querySelector('.fo-stand')!.textContent).toContain('Eingereicht am 03.11.2026');
     expect(host.querySelector('.fo-stand')!.textContent).toContain('1 geändert seit der Einreichung');
+    // Status und Stand zeigen denselben Tag: den des ersten Nachweises
+    expect(antragIn('BAUA 2')?.eingereicht).toMatchObject({ datei: 'BS9 BAUA 261103 Antragsprotokoll.pdf', datum: '2026-11-03' });
+    // „in Arbeit“ und zurück auf „automatisch“: derselbe Stand gilt wieder, nichts wird neu festgehalten
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: false }));
+    await warte();
+    await act(() => useAntrag.getState().statusSetzen(null));
+    await warte();
+    expect((antragIn('BAUA 2')?.stand as { tag: string; zurueckgesetzt?: true }).tag).toBe('2026-11-03');
+    expect((antragIn('BAUA 2')?.stand as { zurueckgesetzt?: true }).zurueckgesetzt).toBeUndefined();
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('1 geändert seit der Einreichung');
+  });
+
+  it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-03' }));
+    await warte();
+    expect((antragIn('BAUA 2')?.stand as { tag: string }).tag).toBe('2026-11-03');
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1, 2, 3]));
+    // über die Auswahl im Status: „in Arbeit“, dann wieder „eingereicht“ (ohne Datum einzugeben)
+    await klick(antragsdaten(host));
+    const auswahl = () => host.querySelector<HTMLSelectElement>('select[aria-label="Status des Antrags"]')!;
+    const waehle = async (wert: string) => {
+      await act(async () => {
+        auswahl().value = wert;
+        auswahl().dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      await warte();
+    };
+    await waehle('arbeit');
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: false, datum: '2026-11-03' });
+    await waehle('eingereicht');
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
+    expect((antragIn('BAUA 2')?.stand as { tag: string; dateien: { pfad: string; groesse?: number }[] }).dateien[0].groesse).toBe(1);
   });
 
   it('zuletzt bearbeitet: an den Formularen der Navigation und an den Dateien im Projektordner (kurz, voll im Tooltip)', async () => {

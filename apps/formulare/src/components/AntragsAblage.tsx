@@ -79,6 +79,9 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const markiert = bereitJeFassung?.[fassung] ?? [];
   const { bereitUmschalten } = useAntrag.getState();
   const [vorschau, setVorschau] = useState<string | null | undefined>(undefined);
+  const [alleEntfernt, setAlleEntfernt] = useState(false);
+  // Ordner nicht lesbar und noch keine Liste von vorher: nichts zählen, nichts als fehlend melden
+  const ohneListe = lesefehler && !dateien.length;
   const basis = verbinde(ablage.root, ablage.pfad);
   const art = artDerFassung(fassung);
   const codes = projektCodes(projekt);
@@ -146,19 +149,31 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       <p className="nav-ablage-name" title={verbinde(basis, ordner)}>
         {ordner}
       </p>
-      <div className={`fo-bereit-kopf${vollstaendig ? ' vollstaendig' : ''}`} aria-label="Vollständigkeit des Antragsordners">
-        <span>
-          <strong>
-            {bereit} von {liste.length}
-          </strong>{' '}
-          bereit
-          {umfangDa && fehlend.length + fehlendePlaene.length > 0 && ` · ${fehlend.length + fehlendePlaene.length} ${fehlend.length + fehlendePlaene.length === 1 ? 'fehlt' : 'fehlen'}`}
-        </span>
-        <span className="fo-bereit-balken" aria-hidden>
-          <span style={{ width: `${liste.length ? (bereit / liste.length) * 100 : 0}%` }} />
-        </span>
-        {vollstaendig && <span className="fo-bereit-fertig">Alles bereit</span>}
-      </div>
+      {lesefehler && (
+        <p className="warning small-text fo-lesefehler" role="status">
+          Der Ordner {ordner} ist gerade nicht erreichbar (z. B. Netzlaufwerk noch nicht verbunden).
+          {liste.length ? ' Angezeigt wird der zuletzt gelesene Stand.' : ''} Die Liste aktualisiert sich von selbst, sobald er wieder lesbar ist.{' '}
+          <button className="small" onClick={() => void useAntrag.getState().aktualisieren()}>
+            Erneut versuchen
+          </button>
+        </p>
+      )}
+      {/* ohne lesbare Liste keine Zählung – „0 von 0 bereit · 2 fehlen“ wäre eine falsche Aussage */}
+      {!ohneListe && (
+        <div className={`fo-bereit-kopf${vollstaendig ? ' vollstaendig' : ''}`} aria-label="Vollständigkeit des Antragsordners">
+          <span>
+            <strong>
+              {bereit} von {liste.length}
+            </strong>{' '}
+            bereit
+            {umfangDa && fehlend.length + fehlendePlaene.length > 0 && ` · ${fehlend.length + fehlendePlaene.length} ${fehlend.length + fehlendePlaene.length === 1 ? 'fehlt' : 'fehlen'}`}
+          </span>
+          <span className="fo-bereit-balken" aria-hidden>
+            <span style={{ width: `${liste.length ? (bereit / liste.length) * 100 : 0}%` }} />
+          </span>
+          {vollstaendig && <span className="fo-bereit-fertig">Alles bereit</span>}
+        </div>
+      )}
       {stand && (
         <p
           className={`fo-stand${seitText ? ' abweichend' : ''}`}
@@ -166,21 +181,27 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           title={entfernt.length ? `Seit der Einreichung nicht mehr im Ordner:\n${entfernt.map((x) => x.pfad).join('\n')}` : undefined}
         >
           <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} – Stand festgehalten
-          {seitText ? ` · ${seitText} seit der Einreichung` : ' · seitdem unverändert'}
+          {lesefehler ? ' · Vergleich mit dem Ordner gerade nicht möglich' : seitText ? ` · ${seitText} seit der Einreichung` : ' · seitdem unverändert'}
         </p>
       )}
       {stand && entfernt.length > 0 && (
         <ul className="fo-stand-entfernt" aria-label="Seit der Einreichung entfernt">
-          {/* höchstens drei Namen – alle stehen im Tooltip der Summe */}
-          {(entfernt.length > 3 ? entfernt.slice(0, 2) : entfernt).map((x) => (
+          {/* bis zu drei Namen; mehr lassen sich aufklappen (alle auch im Tooltip der Summe) */}
+          {(entfernt.length > 3 && !alleEntfernt ? entfernt.slice(0, 2) : entfernt).map((x) => (
             <li key={x.pfad}>
               <span className="fo-seit entfernt" title="entfernt seit der Einreichung">
                 entfernt
-              </span>
+              </span>{' '}
               <span className="fo-stand-name">{x.pfad}</span>
             </li>
           ))}
-          {entfernt.length > 3 && <li className="fo-stand-weitere">und {entfernt.length - 2} weitere (alle im Tooltip der Zeile darüber)</li>}
+          {entfernt.length > 3 && (
+            <li>
+              <button className="pk-nav-mehr" aria-expanded={alleEntfernt} onClick={() => setAlleEntfernt(!alleEntfernt)}>
+                {alleEntfernt ? 'weniger zeigen' : `${entfernt.length - 2} weitere zeigen`}
+              </button>
+            </li>
+          )}
         </ul>
       )}
       <div className="fo-bereit-knoepfe">
@@ -190,13 +211,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
         <SammelExportKnopf mitText />
       </div>
       {vorschau !== undefined && <UnterlagenVorschau ablage={ablage} start={vorschau ?? undefined} onClose={() => setVorschau(undefined)} />}
-      {lesefehler ? (
-        <p className="nav-leer" role="status">
-          Der Ordner {ordner} ist gerade nicht lesbar – beim nächsten Lesen wird es nachgeholt.
-        </p>
-      ) : (
-        !liste.length && <p className="nav-leer">Im Ordner {ordner} liegen noch keine Dokumente.</p>
-      )}
+      {!lesefehler && !liste.length && <p className="nav-leer">Im Ordner {ordner} liegen noch keine Dokumente.</p>}
       <ul className="fo-baum fo-bereit-liste">
         {liste.map(({ d, fehler, zustand, dok, seit }) => (
           <li key={d.pfad} className={`fo-bereit-zeile ${zustand}${seit ? ` seit-${seit}` : ''}`}>
@@ -235,7 +250,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           </li>
         ))}
       </ul>
-      {umfangDa && fehlend.length + fehlendePlaene.length > 0 && (
+      {umfangDa && !ohneListe && fehlend.length + fehlendePlaene.length > 0 && (
         <>
           <p className="fo-bereit-titel">Fehlt im Antragsordner</p>
           <ul className="fo-baum fo-bereit-fehlt">

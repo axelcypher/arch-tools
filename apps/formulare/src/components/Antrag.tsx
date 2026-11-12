@@ -141,8 +141,12 @@ function AntragStatus() {
   const nachtrag = nachtragName(st, projekt);
   const tag = (iso: string) => iso.split('-').reverse().join('.');
   const wahl = manuell ? (manuell.eingereicht ? 'eingereicht' : 'arbeit') : 'auto';
+  // „in Arbeit“ behält das Datum; zurück auf „eingereicht“ gilt derselbe Tag (sonst der erkannte, dann der des Stands)
+  const bisher = manuell?.datum ?? daten?.eingereicht?.datum ?? daten?.stand?.tag;
   const setzen = (w: string, datum?: string) =>
-    void st.statusSetzen(w === 'auto' ? null : w === 'arbeit' ? { eingereicht: false } : { eingereicht: true, datum: datum ?? manuell?.datum ?? daten?.eingereicht?.datum ?? tagVon(new Date()) });
+    void st.statusSetzen(
+      w === 'auto' ? null : w === 'arbeit' ? { eingereicht: false, ...(bisher ? { datum: bisher } : {}) } : { eingereicht: true, datum: datum ?? bisher ?? tagVon(new Date()) },
+    );
   return (
     <section className={`pu-status${wirksam ? ' eingereicht' : ''}`} aria-label="Status des Antrags">
       <div className="pu-status-text">

@@ -4387,7 +4387,8 @@ tr[data-ziehen='danach'] > td {
 .fo-stand-entfernt {
   list-style: none;
   margin: -2px 0 6px;
-  padding: 0 0 0 20px;
+  /* bündig mit dem Text der Summe: Schloss (1em) + Abstand */
+  padding: 0 0 0 calc(1em + 6px);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -4400,14 +4401,19 @@ tr[data-ziehen='danach'] > td {
 }
 .fo-stand-entfernt .fo-seit {
   flex: none;
+  align-self: baseline;
   margin-top: 0;
 }
 .fo-stand-name {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.fo-stand-weitere {
-  color: var(--muted);
+/* Ordner gerade nicht erreichbar: Warnung über der Zählung */
+.fo-lesefehler {
+  margin: 2px 0 6px;
+}
+.fo-lesefehler button {
+  margin-left: 2px;
 }
 .fo-bereit-zeile .fo-baum-name {
   white-space: normal;

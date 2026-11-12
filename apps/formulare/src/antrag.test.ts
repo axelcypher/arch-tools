@@ -248,8 +248,10 @@ describe('Antragsstand bei der Einreichung', () => {
     expect(seitEinreichung({ ...liste[0], groesse: 11 }, s)).toBe('geaendert');
     expect(seitEinreichung({ ...liste[0], geaendert: liste[0].geaendert + 60_000 }, s)).toBe('geaendert');
     expect(seitEinreichung({ ...liste[0], geaendert: liste[0].geaendert + 1000 }, s)).toBeNull();
-    for (const n of ['BS9 BAUA 261120 Baugenehmigung.pdf', 'Bescheid.pdf', 'Eingangsbestätigung.pdf', 'Empfangsbestaetigung.pdf', 'Nachforderung Statik.pdf'])
+    for (const n of ['BS9 BAUA 261120 Baugenehmigung.pdf', 'Bescheid.pdf', 'Eingangsbestätigung.pdf', 'Empfangsbestaetigung.pdf', 'Nachforderung.pdf'])
       expect(seitEinreichung(d(n, zeit('2026-11-20T10:00')), s)).toBeNull();
+    // im Zweifel „neu“: eine Bauvorlage zur Nachforderung (Statik) ist nachgereicht und muss auffallen
+    expect(seitEinreichung(d('Nachforderung Statik.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
     // „Genehmigungsplanung“ ist keine Genehmigung; Antragsunterlagen gelten nie als erwartet
     expect(seitEinreichung(d('BS9 BAUA 261120 Genehmigungsplanung.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
     for (const n of ['HVO BAUVA 261110 01 Antrag auf Vorbescheid.pdf', 'HVO BAUF 261110 Genehmigungsfreistellung.pdf', 'Antrag auf Baugenehmigung.pdf', 'Antrag auf denkmalrechtliche Erlaubnis.pdf'])
@@ -277,6 +279,14 @@ describe('Antragsstand bei der Einreichung', () => {
       'Ablehnung.pdf',
       'Anhörung vor Ablehnung.pdf',
       'Baugenehmigung Umbau Bestand.pdf',
+      // der Bezug auf den Antrag ist keine Antragsunterlage; Bindestriche wie Leerzeichen
+      'Mitteilung der Gemeinde an den Bauherrn.pdf',
+      'Bescheid-zum-Bauantrag.pdf',
+      'Genehmigung Bauantrag.pdf',
+      'Ablehnung Bauantrag.pdf',
+      'Gebührenbescheid Bauantrag.pdf',
+      'Gebührenfestsetzung.pdf',
+      'Bescheid zur Bauvoranfrage.pdf',
     ])
       expect(nachEinreichungErwartet(n)).toBe(true);
     // eingereichte bzw. nachgereichte Unterlagen des Büros fallen auf: ungesiegelter Aufteilungsplan, Typengenehmigung,
@@ -305,6 +315,31 @@ describe('Antragsstand bei der Einreichung', () => {
       'Mitteilung an die Stadt Baubeginn.pdf',
       'Erklärung Stadtwerke Anschluss.pdf',
       'Unterlagen Nachforderung.pdf',
+      // Bauvorlagen, Plannummern und Antragsunterlagen gehen vor jedem Behördenwort (im Zweifel „neu“)
+      'BS9 BAUA 261120 GP-03 Ansicht Nachforderung.pdf',
+      'BS9 BAUA 261120 Lageplan Nachforderung.pdf',
+      'Baubeschreibung Nachforderung.pdf',
+      'Stellplatznachweis Nachforderung.pdf',
+      'Lageplan nach Nachforderung.pdf',
+      'Lageplan aufgrund Nachforderung.pdf',
+      'Bauantrag Nachforderung.pdf',
+      'Antrag Fiktionsbescheinigung.pdf',
+      'Bauantrag Vollständigkeit.pdf',
+      'Antrag Mitteilung Gemeinde.pdf',
+      'Stellungnahme zur Anhörung.pdf',
+      'Antwort Anhörung.pdf',
+      'Erwiderung Anhörung.pdf',
+      // Bestand, auch mit Endung und Unterstrichen; Fragen; Checkliste; Baulast, Entwurfsverfasser
+      'Baugenehmigung von 1972.pdf',
+      'Baugenehmigung_von_1972.pdf',
+      'Baugenehmigung aus 1985.pdf',
+      'Altgenehmigung.pdf',
+      'Fragen zum Vorbescheid.pdf',
+      'Fragenkatalog Vorbescheid.pdf',
+      'Checkliste Vollständigkeit.pdf',
+      'Erklärung Entwurfsverfasser Stadt.pdf',
+      'Baulasterklärung Stadt.pdf',
+      'Mitteilung-an-die-Stadt.pdf',
     ])
       expect(nachEinreichungErwartet(n)).toBe(false);
     expect(seitEinreichung(d('HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
@@ -376,6 +411,17 @@ describe('Umbenennen nach Namensformat', () => {
     expect(nameNachFormat('Ab 2027 Nutzung.pdf', o)).toBe('HVO BAUA 261112 Ab 2027 Nutzung.pdf');
     expect(nameNachFormat('hvo bva 261111 01 Bauantrag.pdf', o)).toBe('hvo BAUA 261111 01 Bauantrag.pdf');
     expect(nameNachFormat('ENTW Grundriss.pdf', o)).toBe('HVO BAUA 261112 Grundriss.pdf');
+    // auch wenn die Antragsart im Schema vorn steht: ohne weiteren Kopfteil bleibt das Wort
+    for (const reihenfolge of [
+      ['art', 'code', 'datum', 'nummer'],
+      ['nummer', 'art', 'code', 'datum'],
+      ['art', 'datum', 'code', 'nummer'],
+    ] as ('code' | 'art' | 'datum' | 'nummer')[][]) {
+      for (const name of ['Entw Grundriss.pdf', 'Denk Mal.pdf', 'Ab 2027 Nutzung.pdf'])
+        expect(nameNachFormat(name, { ...o, reihenfolge }).replace(/\.pdf$/, '').split(' ')).toContain(name.split(' ')[0]);
+      // mit Datum daneben zählt es als Kürzel
+      expect(nameNachFormat('bva 261111 Antrag.pdf', { ...o, reihenfolge })).not.toContain('bva');
+    }
   });
   it('Rundlauf in allen 24 Reihenfolgen, auch mit einem Projektcode, der wie eine Plannummer aussieht (BS9)', () => {
     const teile = ['code', 'art', 'datum', 'nummer'] as const;
@@ -521,7 +567,7 @@ describe('Anträge: je Antrag eigene Antragsmerkmale, Antragsumfang und Autofill
     expect(aktuellsterAntrag({ ...antraege, BAUVA: { ...antraege.BAUVA, angelegt: '2026-10-01' } }, ['BAUVA', 'BAUA', 'BAUA 2'])).toEqual({ name: 'BAUVA', angelegt: '2026-10-01', eingereicht: { datei: 'Antragsprotokoll.pdf', datum: '2026-03-20' } });
   });
 
-  it('eingereicht: Antragsprotokoll oder Eingangsbestätigung (auch „ae“), die neueste; Sperrdateien zählen nicht', () => {
+  it('eingereicht: Antragsprotokoll oder Eingangsbestätigung (auch „ae“), der erste Nachweis (Tag der Einreichung); Sperrdateien zählen nicht', () => {
     const zeit = new Date(2026, 10, 3, 12).getTime();
     expect(eingereichtAus([{ pfad: 'BS9 BAUA 261101 Bauantrag.pdf', ordner: false, groesse: 1 }])).toBeNull();
     expect(eingereichtAus([{ pfad: '~$Eingangsbestätigung.docx', ordner: false, groesse: 1 }])).toBeNull();
@@ -530,7 +576,7 @@ describe('Anträge: je Antrag eigene Antragsmerkmale, Antragsumfang und Autofill
         { pfad: 'BS9 BAUA 261020 Antragsprotokoll.pdf', ordner: false, groesse: 1, geaendert: zeit - 86400000 * 14 },
         { pfad: 'Eingangsbestaetigung Kreis.pdf', ordner: false, groesse: 1, geaendert: zeit },
       ]),
-    ).toEqual({ datei: 'Eingangsbestaetigung Kreis.pdf', datum: '2026-11-03' });
+    ).toEqual({ datei: 'BS9 BAUA 261020 Antragsprotokoll.pdf', datum: '2026-10-20' });
   });
 
   it('eingereicht: auch in Unterordnern des Antrags – mit Pfad relativ zum Antragsordner', () => {

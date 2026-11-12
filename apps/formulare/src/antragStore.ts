@@ -157,8 +157,10 @@ interface AntragState {
   fassungen: Fassung[];
   /** Dateien im Ordner der aktiven Fassung */
   dateien: Eintrag[];
-  /** der Ordner der aktiven Fassung war beim letzten Lesen da, aber nicht lesbar */
+  /** der Ordner der aktiven Fassung war beim letzten Lesen da, aber nicht lesbar (dann gilt die zuletzt gelesene Liste) */
   dateienLesefehler: boolean;
+  /** Ordner, aus dem `dateien` stammt */
+  dateienOrdner: string | null;
   /** Quellen externer Dokumente: Ordner (relativ) → Dateien darin */
   quellen: Record<string, Eintrag[]>;
   formularInfo: Record<string, FormularInfo>;
@@ -533,7 +535,9 @@ export const useAntrag = create<AntragState>((set, get) => {
     // an einem anderen Tag hält ihn neu fest.
     for (const [name, a] of Object.entries(antraege)) {
       const ein = eingereichtVon(a);
-      if (ein && (!a.stand || (a.stand.zurueckgesetzt && a.stand.tag !== ein.datum)) && listen[name]) {
+      // neu festhalten: noch keiner, nach dem Zurücksetzen an einem anderen Tag, oder der Tag der Einreichung liegt früher
+      // (von Hand berichtigt, ein älterer Nachweis aufgetaucht)
+      if (ein && (!a.stand || (a.stand.zurueckgesetzt && a.stand.tag !== ein.datum) || ein.datum < a.stand.tag) && listen[name]) {
         antraege[name] = { ...a, stand: standAus(listen[name], ein.datum) };
         geaendert = true;
         log.info(`${name}: Antragsstand vom ${ein.datum} festgehalten (${antraege[name].stand!.dateien.length} Dateien)`);
@@ -673,6 +677,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     fassungen: [],
     dateien: [],
     dateienLesefehler: false,
+    dateienOrdner: null,
     quellen: {},
     formularInfo: {},
     dokumente: [],
@@ -849,6 +854,8 @@ export const useAntrag = create<AntragState>((set, get) => {
           // Ordner der Fassung gibt es noch nicht – oder er ist gerade nicht lesbar (Netz nach dem Aufwachen): dann zeigt
           // die Ablage das an und meldet nichts als „entfernt“
           dateienLesefehler = !!get().fassungen.find((f) => f.name === aktiveFassung(get(), projekt))?.vorhanden;
+          // die zuletzt gelesene Liste desselben Ordners bleibt stehen – sonst sähe alles wie gelöscht aus
+          if (dateienLesefehler && get().dateienOrdner === antragsOrdner(get(), projekt)) dateien = get().dateien;
         }
         const ordner = new Set((get().projektdatei?.umfang ?? []).filter((u) => u.art !== 'intern').map((u) => quelleVonEintrag(u, e)));
         for (const o of ordner) {
@@ -881,7 +888,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         }
       }
       if (useFormulare.getState().projekt !== projekt) return;
-      set({ dateien, dateienLesefehler, quellen });
+      set({ dateien, dateienLesefehler, dateienOrdner: dateienLesefehler && !dateien.length ? null : antragsOrdner(get(), projekt), quellen });
       await antragStandPflegen(eingereicht, listen);
       // nach Export, neuer Fassung, Verknüpfen … oder von außen: auch der Projektordner-Baum liest neu
       useFormulare.getState().ordnerNeuLesen();
