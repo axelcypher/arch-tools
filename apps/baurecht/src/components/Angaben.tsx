@@ -66,6 +66,18 @@ export const ohneKlammer = (s: string) => {
 /** Merkmale, die zur Suche passen (Name, Erklärung, Werte) */
 const merkmalPasst = (m: { name: string; werte: string[] }, suche: string) => textPasst(`${MERKMAL_TITEL[m.name] ?? m.name} ${MERKMAL_ERKLAERUNG[m.name]?.text ?? ''} ${m.werte.join(' ')}`, suche);
 
+/** Rückfragen zu einem Antragsmerkmal: stehen direkt unter dem Merkmal (nicht tief in ihrer Gruppe) */
+export const RUECKFRAGEN: Record<string, string[]> = { Vorhaben: ['vorhaben.beseitigung_umfang'] };
+
+/** eine Rückfrage wird gestellt, wenn es die Angabe gibt und ihre Bedingung („wenn“) nicht verneint ist */
+function rueckfrageSichtbar(id: string, stand: Pruefstand, merkmale: Record<string, string>): boolean {
+  const d = stand.auswertung.faktDefs[id];
+  if (!d) return false;
+  if (!d.wenn) return true;
+  const ctx = { merkmale, fakten: stand.auswertung.fakten, einreichung: stand.einreichung, heute: heute(), bausteine: stand.auswertung.text.bausteine };
+  return werten(d.wenn, ctx).w === 'ja';
+}
+
 /** Planungsrecht für diesen Ort bestätigen – danach Fokus auf das Merkmal (der Knopf verschwindet) und eine Ansage */
 function planungsrechtGiltHier() {
   const st = useBaurecht.getState();
@@ -74,7 +86,8 @@ function planungsrechtGiltHier() {
   st.fokusSetzen('merkmal:Planungsrecht');
 }
 
-function Merkmale({ klaerung, suche = '', planungsrechtOffen }: { klaerung: Map<string, number>; suche?: string; planungsrechtOffen?: string }) {
+function Merkmale({ klaerung, suche = '', planungsrechtOffen, stand }: { klaerung: Map<string, number>; suche?: string; planungsrechtOffen?: string; stand: Pruefstand }) {
+  const eigene = useBaurecht((s) => s.pruefung.fakten);
   const merkmale = useBaurecht((s) => s.merkmale);
   const geaendert = useBaurecht((s) => s.merkmaleDatei);
   const fokus = useBaurecht((s) => s.fokus);
@@ -146,6 +159,14 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen }: { klaerung: Map<
                 </button>
               ))}
             </div>
+            {/* Rückfrage zum gewählten Wert (z. B. Umfang der Beseitigung) direkt hier, mit offener Erläuterung */}
+            {(RUECKFRAGEN[m.name] ?? [])
+              .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale))
+              .map((rid) => (
+                <div key={rid} className="br-rueckfrage">
+                  <FaktZeile id={rid} def={stand.auswertung.faktDefs[rid]} wert={stand.auswertung.fakten[rid]} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} erlaeuterungOffen />
+                </div>
+              ))}
             {wert && (
               <div className="br-merkmal-fuss">
                 {e?.werte?.[wert] && <span className="br-leise br-erklaerung">{nb(e.werte[wert])}</span>}
@@ -213,7 +234,7 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   return <TextField value={v === null ? '' : String(v)} onChange={(t) => onWert(t.trim() || undefined)} label={faktName(def, id)} placeholder={id === 'lage.ags' ? '8 Ziffern' : undefined} />;
 }
 
-function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef; wert: FaktWert | undefined; klaert: number; eigen: boolean }) {
+function FaktZeile({ id, def, wert, klaert, eigen, erlaeuterungOffen = false }: { id: string; def: FaktDef; wert: FaktWert | undefined; klaert: number; eigen: boolean; erlaeuterungOffen?: boolean }) {
   const fokus = useBaurecht((s) => s.fokus);
   const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
   const ref = useRef<HTMLDivElement>(null);
@@ -373,7 +394,7 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
       )}
       {def.hilfe &&
         (hilfeLang || wert?.wert != null ? (
-          <details className="br-erklaerung">
+          <details className="br-erklaerung" open={erlaeuterungOffen || undefined}>
             <summary>
               Erläuterung<span className="br-unsichtbar"> zu {name}</span>
             </summary>
@@ -419,9 +440,12 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   const [ordnung, setOrdnung] = useState(() => ({ schluessel, rang: rangBilden() }));
   if (ordnung.schluessel !== schluessel) setOrdnung({ schluessel, rang: rangBilden() });
   const rang = ordnung.schluessel === schluessel ? ordnung.rang : rangBilden();
+  // Rückfragen stehen unter ihrem Merkmal – solange die Merkmale zu sehen sind, nicht noch einmal in der Gruppe
+  const merkmaleSichtbar = !suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche));
+  const alsRueckfrage = new Set(Object.values(RUECKFRAGEN).flat().filter((rid) => rueckfrageSichtbar(rid, stand, merkmale)));
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(auswertung.faktDefs)
-      .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)))
+      .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && !(merkmaleSichtbar && alsRueckfrage.has(id)))
       .filter(([, d]) => !d.wenn || werten(d.wenn, ctx).w !== 'nein')
       .filter(([id, d]) => textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${id}`, suche))
       .map(([id]) => id)
@@ -459,7 +483,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
             </button>
           </div>
         )}
-        {(!suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche))) && <Merkmale klaerung={klaerung} suche={suche} planungsrechtOffen={stand.planungsrechtFrueher} />}
+        {(!suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche))) && <Merkmale klaerung={klaerung} suche={suche} planungsrechtOffen={stand.planungsrechtFrueher} stand={stand} />}
         {suche && !gruppen.length && !VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche)) && (
           <div className="br-leer-zustand" role="status">
             <p>Keine Angabe zu „{suche}“{alle ? '' : ' unter den Angaben, an denen eine Regel hängt'}.</p>

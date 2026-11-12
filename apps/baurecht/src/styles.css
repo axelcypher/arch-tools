@@ -1745,3 +1745,12 @@ h2.br-detail-name {
   margin-top: 3px;
   font-size: 12px;
 }
+/* Rückfrage zu einem Antragsmerkmal (z. B. Umfang der Beseitigung) direkt unter dem Merkmal */
+.br-rueckfrage {
+  margin: 6px 0 2px 10px;
+  padding-left: 8px;
+  border-left: 2px solid var(--accent);
+}
+.br-rueckfrage > .br-fakt {
+  margin: 0;
+}

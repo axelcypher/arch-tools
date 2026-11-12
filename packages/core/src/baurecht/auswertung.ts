@@ -10,6 +10,7 @@
  *  6. Paragraf ohne Regel → gelb
  */
 
+import { VORGABE_MERKMALE } from '../bedingung';
 import type { Fassung } from '../recht/typen';
 import { FAKTEN } from './fakten';
 import type { Bewertung, KurzKontext, TextKontext } from './kurz';
@@ -500,7 +501,34 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // ohne Paragrafen mit wirksamer Festlegung – dort ist nichts mehr zu klären
   // (wirksam = bestätigt, nicht überholt, nicht unwirksam – wie bei Verweisen; ein Entwurf klärt noch nichts)
   const offenAuto = (p: ParagrafErgebnis) => !(p.festlegung?.bestaetigt && !p.ueberholt && !p.unwirksam) && (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0));
-  for (const p of paragrafen) if (offenAuto(p)) for (const o of p.offen) if (!o.startsWith('paragraf:')) zahl.set(o, (zahl.get(o) ?? 0) + 1);
+  // eine Angabe klärt einen Paragrafen nur, wenn ihre Antwort dort etwas ändert: führt jede mögliche Antwort zum
+  // selben Ergebnis (Regeln mit beiden Zweigen, z. B. „Beseitigung, ganz oder teilweise“), zählt sie dort nicht mit
+  const moeglich = (o: string): (string | boolean)[] | null => {
+    if (o.startsWith('merkmal:')) return VORGABE_MERKMALE.find((m) => m.name === o.slice(8))?.werte ?? null;
+    const d = faktDefs[o];
+    if (d?.typ === 'janein') return [true, false];
+    return d?.typ === 'wahl' && d.werte?.length ? d.werte : null;
+  };
+  const ausgang = (id: string, c: KurzKontext): Ampel => {
+    const { n, r } = regelVon.get(id)!;
+    try {
+      const g = werten(n.datei?.regel.geltung, c).w;
+      if (g === 'nein' || (r.entfaellt && werten(r.entfaellt, c).w === 'ja')) return 'gruen';
+      const t = undW(g, werten(r.gilt, c).w);
+      return t === 'ja' ? 'rot' : t === 'nein' ? 'gruen' : 'gelb';
+    } catch {
+      return 'gelb';
+    }
+  };
+  const klaert = (p: ParagrafErgebnis, o: string): boolean => {
+    const werte = moeglich(o);
+    if (!werte || !regelVon.has(p.id)) return true;
+    const mit = (v: string | boolean): KurzKontext =>
+      o.startsWith('merkmal:') ? { ...ctx, merkmale: { ...ctx.merkmale, [o.slice(8)]: String(v) } } : { ...ctx, fakten: { ...ctx.fakten, [o]: { wert: v, herkunft: 'manuell', sicherheit: 'sicher' } } };
+    const aus = new Set(werte.map((v) => ausgang(p.id, mit(v))));
+    return aus.size > 1 || aus.has('gelb');
+  };
+  for (const p of paragrafen) if (offenAuto(p)) for (const o of p.offen) if (!o.startsWith('paragraf:') && klaert(p, o)) zahl.set(o, (zahl.get(o) ?? 0) + 1);
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
 
   const zeigen = (h: Hinweis) => {

@@ -554,3 +554,26 @@ describe('Runde 9: kein falsches Grün über Ort und Schwellen', () => {
     expect(b.ampel).toBe('gelb');
   });
 });
+
+describe('Klärt am meisten: nur Angaben, deren Antwort etwas ändert', () => {
+  it('eine Angabe, bei der jede Antwort zum selben Ergebnis führt, zählt nicht', () => {
+    const m: Modul = { format: 1, id: 'bund', name: 'Bund', ebene: 'bund', version: '2026-11-12', normen: { t: { kurz: 'T', titel: 'Test', thema: 'natur', quelle: { art: 'gii', pfad: 't' } } }, fakten: { 'x.a': { titel: 'A', gruppe: 'vorhaben', typ: 'janein' }, 'x.b': { titel: 'B', gruppe: 'vorhaben', typ: 'janein' } } };
+    const r: Regeldatei = {
+      format: 1,
+      modul: 'bund',
+      norm: 't',
+      fassung: '2026-01-01',
+      version: 1,
+      paragrafen: {
+        // beide Zweige von A führen zu „gilt“ – A klärt hier nichts
+        '1': { gilt: { oder: [{ f: 'x.a', ist: true }, { f: 'x.a', ist: false }] }, grund: 'immer.' },
+        // B entscheidet wirklich
+        '2': { gilt: { f: 'x.b', ist: true }, grund: 'nur mit B.' },
+      },
+    };
+    const pk = paketAusDateien({ 'module/bund/modul.json': m, 'module/bund/t@2026-01-01.json': r }, 'test');
+    const a = auswerten({ paket: pk, module: pk.module, merkmale: {}, fakten: {}, einreichung: '2026-12-01', heute: '2026-11-12', texte: new Map(), festlegungen: {} });
+    expect(a.paragrafen.find((x) => x.id === 'bund/t/1')!.ampel).toBe('gelb');
+    expect(a.klaerung.map((k) => k.id)).toEqual(['x.b']);
+  });
+});
