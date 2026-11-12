@@ -3,7 +3,7 @@ import { dateimuster, nameAus } from './nummer';
 import type { ProjektAngaben } from './stammdaten';
 import { PROJEKT_DATEI } from './stammdaten';
 import type { Struktur } from './struktur';
-import { normPfad, regelGilt, sichererName } from './struktur';
+import { normPfad, ordnerGilt, sichererName } from './struktur';
 
 /**
  * Prüfmodus: vorhandenen Projektordner mit der Struktur vergleichen und Abweichungen melden – auch, ob er eine
@@ -126,7 +126,7 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
       .map((t) => sichererName(nameAus(t, werte)))
       .filter(Boolean)
       .join('/');
-  const regeln = struktur.ordner.filter((r) => regelGilt(r, lph)).map((r) => ({ ...r, pfad: ziel(r.pfad) }));
+  const regeln = struktur.ordner.filter((r) => ordnerGilt(struktur.ordner, r.pfad, lph)).map((r) => ({ ...r, pfad: ziel(r.pfad) }));
   const fehlendeOrdner = regeln.map((r) => r.pfad).filter((p) => p && !da.has(p.toLowerCase()));
   if (fehlendeOrdner.length) befunde.push({ art: 'warnung', titel: `${fehlendeOrdner.length} Ordner der Struktur ${fehlendeOrdner.length === 1 ? 'fehlt' : 'fehlen'}`, pfade: fehlendeOrdner });
   else if (regeln.length) befunde.push({ art: 'ok', titel: `Alle ${regeln.length} Ordner der Struktur sind vorhanden` });

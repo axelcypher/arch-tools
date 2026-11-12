@@ -1,4 +1,4 @@
-//! Desktop-Hülle für das Projektordner-Tool. Alle Befehle – Dialoge, Protokoll, Projektordner und
+//! Desktop-Hülle der App „Projekt“ (früher „Projektordner“; Kennung und Installer-Name bleiben). Alle Befehle – Dialoge, Protokoll, Projektordner und
 //! Konfigurationsordner – stehen gemeinsam für alle Apps in packages/core/tauri/commands.rs.
 //!
 //! Grundsatz: In Projektordnern werden nur neue Ordner und Dateien angelegt; ersetzt wird allein die

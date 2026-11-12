@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
-import type { RahmenStatus } from '@core/platform/rahmen';
-import { ANDOCKEN } from '@core/platform/rahmen';
+import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
+import { AN_APP, AN_RAHMEN, ANDOCKEN, ASSISTENT_NEU, BEREIT, PROJEKT_ANGELEGT, PROJEKT_ANLEGEN, PROJEKT_APP, ZUR_APP } from '@core/platform/rahmen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { UpdateKnopf } from '@core/ui/UpdateKnopf';
 import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
@@ -30,6 +30,13 @@ export function App() {
   const [maximiert, setMaximiert] = useState(false);
   const [menue, setMenue] = useState(false);
   const [logOffen, setLogOffen] = useState(false);
+  /** Apps, die auf Nachrichten hören: Tabs (ihr Fenster) und herausgelöste Fenster (Kennung) */
+  const bereitTabs = useRef(new WeakSet<Window>());
+  const bereitFenster = useRef(new Set<string>());
+  /** Nachrichten an Apps, die (noch) nicht hören – zugestellt, sobald sie sich melden */
+  const warteschlange = useRef(new Map<string, RahmenNachricht[]>());
+  const fensterJetzt = useRef(fenster);
+  fensterJetzt.current = fenster;
 
   // Fenster (Desktop): Knöpfe, Größe
   useEffect(() => {
@@ -49,16 +56,36 @@ export function App() {
     };
   }, [desktop]);
 
-  // Meldungen der Tabs: Name des Projekts, ungespeicherte Änderungen
+  // Meldungen der Tabs: Name des Projekts, ungespeicherte Änderungen; Aufträge zwischen den Apps
   useEffect(() => {
     const hoeren = (e: MessageEvent) => {
-      const d = e.data as Partial<RahmenStatus> | null;
-      if (!d || d.typ !== 'arch-tools:status' || e.origin !== window.location.origin) return;
-      for (const [id, f] of rahmen.current) if (f.contentWindow === e.source) setStatus(id, { name: d.name ?? '', dirty: !!d.dirty });
+      const d = e.data as (Partial<RahmenStatus> & RahmenNachricht) | null;
+      if (!d || e.origin !== window.location.origin) return;
+      if (d.typ === 'arch-tools:status') {
+        for (const [id, f] of rahmen.current) if (f.contentWindow === e.source) setStatus(id, { name: d.name ?? '', dirty: !!d.dirty });
+        return;
+      }
+      verarbeiten.current(d, e.source as Window | null);
     };
     window.addEventListener('message', hoeren);
     return () => window.removeEventListener('message', hoeren);
   }, [setStatus]);
+
+  // dasselbe aus herausgelösten Fenstern (Tauri-Ereignis)
+  useEffect(() => {
+    if (!desktop) return;
+    let ende: (() => void) | undefined;
+    let lebt = true;
+    void import('@tauri-apps/api/event').then(async ({ listen }) => {
+      const aus = await listen<RahmenNachricht>(AN_RAHMEN, (e) => verarbeiten.current(e.payload, null));
+      if (lebt) ende = aus;
+      else aus();
+    });
+    return () => {
+      lebt = false;
+      ende?.();
+    };
+  }, [desktop]);
 
   // herausgelöste Fenster: wieder andocken
   useEffect(() => {
@@ -98,6 +125,45 @@ export function App() {
     oeffnen(id);
   };
 
+  /** Nachricht an eine App – im Tab, im herausgelösten Fenster oder, solange sie noch nicht hört, später */
+  const zustellen = (id: string, n: RahmenNachricht) => {
+    const nachricht = { ...n, an: id };
+    const ziel = rahmen.current.get(id)?.contentWindow;
+    if (ziel && bereitTabs.current.has(ziel)) return ziel.postMessage(nachricht, window.location.origin);
+    if (desktop && fensterJetzt.current.includes(id) && bereitFenster.current.has(id)) {
+      void import('@tauri-apps/api/event').then(({ emit }) => emit(AN_APP, nachricht));
+      return;
+    }
+    warteschlange.current.set(id, [...(warteschlange.current.get(id) ?? []), nachricht]);
+  };
+
+  /** Neues Projekt: der Assistent der Projekt-App – aus einer App (`von`) oder vom Rahmen selbst */
+  const projektAnlegen = (von: string | null, kannOeffnen = false) => {
+    setMenue(false);
+    const info = von && von !== PROJEKT_APP ? appInfo(von) : undefined;
+    log.info(`Neues Projekt anlegen${info ? ` (aus ${info.name})` : ''}`);
+    void oeffnenOderZeigen(PROJEKT_APP);
+    zustellen(PROJEKT_APP, { typ: ASSISTENT_NEU, von: info ? von : null, ...(info ? { vonName: info.name, kannOeffnen } : {}) });
+  };
+
+  /** Aufträge der Apps: hören jetzt, neues Projekt anlegen, zurück zu einer App (mit dem neuen Projekt) */
+  const verarbeiten = useRef<(n: RahmenNachricht, quelle: Window | null) => void>(() => {});
+  verarbeiten.current = (n, quelle) => {
+    const id = [...rahmen.current].find(([, f]) => quelle && f.contentWindow === quelle)?.[0] ?? (n.app && appInfo(n.app) ? n.app : null);
+    if (!id && n.typ !== PROJEKT_ANLEGEN) return;
+    if (n.typ === BEREIT && id) {
+      if (quelle) bereitTabs.current.add(quelle);
+      else bereitFenster.current.add(id);
+      const offen = warteschlange.current.get(id) ?? [];
+      warteschlange.current.delete(id);
+      for (const x of offen) zustellen(id, x);
+    } else if (n.typ === PROJEKT_ANLEGEN) projektAnlegen(id, !!n.kannOeffnen);
+    else if (n.typ === ZUR_APP && n.an && appInfo(n.an)) {
+      void oeffnenOderZeigen(n.an);
+      if (n.ordner) zustellen(n.an, { typ: PROJEKT_ANGELEGT, ordner: n.ordner });
+    }
+  };
+
   const herausloesen = async (id: string) => {
     const info = appInfo(id)!;
     if (status[id]?.dirty && !(await bestaetigen(`${info.name} herauslösen?`, info.beimUmzug, 'Herauslösen'))) return;
@@ -127,6 +193,7 @@ export function App() {
         oeffnen(id);
       });
       void w.once('tauri://destroyed', () => {
+        bereitFenster.current.delete(id);
         fensterZu(id);
         if (!angedocktGerade.current.delete(id)) void sperrenFreigeben(id);
       });
@@ -215,6 +282,13 @@ export function App() {
             </button>
             {menue && (
               <div className="rahmen-menue" role="menu" onMouseLeave={() => setMenue(false)}>
+                <button role="menuitem" className="rahmen-menue-anlegen" onClick={() => projektAnlegen(null)} title="Assistent der App „Projekt“: Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen">
+                  <span className="rahmen-plus-symbol" aria-hidden>
+                    +
+                  </span>
+                  Neues Projekt anlegen …
+                </button>
+                <hr />
                 {zuMenue.length ? (
                   zuMenue.map((a) => (
                     <button key={a.id} role="menuitem" onClick={() => void oeffnenOderZeigen(a.id)}>
@@ -279,6 +353,12 @@ export function App() {
           <div className="rahmen-start">
             <h2>arch-tools</h2>
             <p className="muted">Eine App öffnen – sie erscheint als Tab. Mit ⧉ am Tab läuft sie in einem eigenen Fenster weiter, „Andocken“ holt sie zurück.</p>
+            <div className="rahmen-anlegen">
+              <button className="primary" onClick={() => projektAnlegen(null)}>
+                + Neues Projekt anlegen
+              </button>
+              <span className="muted small-text">Assistent: Stammdaten, Umfang, Beteiligte – dann entstehen Projektordner, Vorlagen und Projektdatei. Auch auf der Projektübersicht jeder App.</span>
+            </div>
             <div className="rahmen-karten">
               {APPS.map((a) => (
                 <button key={a.id} className="rahmen-karte" onClick={() => void oeffnenOderZeigen(a.id)}>

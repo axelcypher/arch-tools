@@ -438,7 +438,7 @@ export const LEISTUNGSPHASEN: { nr: number; label: string }[] = [
   { nr: 9, label: 'Objektbetreuung' },
 ];
 
-/** Angaben der App „Projektordner“ zum Projekt */
+/** Angaben der App „Projekt“ (früher „Projektordner“) zum Projekt – Abschnitt `projektordner` der Projektdatei */
 export interface ProjektordnerAngaben {
   /** Struktur, nach der der Projektordner angelegt bzw. zuletzt ergänzt wurde */
   struktur?: string;
@@ -538,7 +538,7 @@ export interface Project {
   massNutzung?: MassNutzung;
   /** Kostenermittlung nach DIN 276 */
   kosten?: Kosten;
-  /** Angaben der App „Projektordner“ (Struktur, Vorlagen-Presets) */
+  /** Angaben der App „Projekt“ (Struktur, Vorlagen-Presets) */
   projektordner?: ProjektordnerAngaben;
   /** Angaben der App „Formulare“ (Projektumfang, aktive Antragsfassung …) – geprüft wird in der App, hier nur durchgereicht */
   formulare?: unknown;
