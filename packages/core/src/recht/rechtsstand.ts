@@ -142,7 +142,9 @@ export class Rechtsstand {
     const alt = !v.geprueft || this.jetzt().getTime() - Date.parse(v.geprueft) > (this.o.gueltig ?? TAG);
     let fehler: string | undefined;
     let neuGeholt: Fassung | null = null;
-    if (norm.quelle.art !== 'verweis' && !o.offline && (o.aktualisieren || alt || !deckt || stichtag > this.jetzt().toISOString().slice(0, 10))) {
+    // an der Quelle prüfen: auf Wunsch, nach einem Tag, oder wenn noch keine Fassung den Stichtag abdeckt – auch für
+    // Stichtage in der Zukunft höchstens einmal am Tag (die künftigen Fassungen kennt die letzte Prüfung)
+    if (norm.quelle.art !== 'verweis' && !o.offline && (o.aktualisieren || alt || !deckt)) {
       try {
         const zuletzt = v.fassungen.length ? await this.fassungLesen([...v.fassungen].sort((a, b) => b.abgerufen.localeCompare(a.abgerufen))[0]) : null;
         const f = await fassungHolen(this.h, norm, norm.quelle, { stichtag, vorher: zuletzt ?? undefined, textAusPaket: this.o.textAusPaket });
@@ -166,7 +168,11 @@ export class Rechtsstand {
     // vorige Fassung: die nächstältere (für die Gegenüberstellung alt/neu)
     const vorigerEintrag = eintrag ? [...v.fassungen].filter((e) => e !== eintrag && (e.gueltigAb < eintrag.gueltigAb || (e.gueltigAb === eintrag.gueltigAb && e.abgerufen < eintrag.abgerufen))).sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb) || b.abgerufen.localeCompare(a.abgerufen))[0] : undefined;
     const vorige = vorigerEintrag ? await this.fassungLesen(vorigerEintrag) : null;
-    const kuenftige = (fassung?.kuenftige ?? []).filter((k) => k.gueltigAb > stichtag);
+    // künftige Fassungen: aus der zuletzt geholten (nicht nur der zum Stichtag), damit sie auch bei früheren Stichtagen
+    // angezeigt werden
+    const juengste = v.fassungen.length ? await this.fassungLesen([...v.fassungen].sort((a, b) => b.abgerufen.localeCompare(a.abgerufen))[0]) : null;
+    const kuenftige = [...(fassung?.kuenftige ?? []), ...(juengste?.kuenftige ?? []), ...v.fassungen.filter((e2) => e2.gueltigAb > stichtag).map((e2) => ({ gueltigAb: e2.gueltigAb, url: '' }))]
+      .filter((k, i, l) => k.gueltigAb > stichtag && l.findIndex((x) => x.gueltigAb === k.gueltigAb) === i);
     return {
       fassung,
       ...(vorige ? { vorige, aenderungen: fassung ? aenderungen(vorige.summen, fassung.summen) : undefined } : {}),

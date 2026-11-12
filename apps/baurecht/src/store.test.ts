@@ -5,7 +5,7 @@ import type { ParagrafErgebnis } from '@core/baurecht/typen';
 import { projektdateiRoh } from '@core/projektdatei';
 import { beispielOap } from './beispiel.test';
 import { aenderungenAnwenden } from './projekt';
-import { istGeaendert, offeneFestlegungen, useBaurecht } from './store';
+import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from './store';
 
 const ergebnis = (id: string): ParagrafErgebnis =>
   ({ id, modul: 'bund', norm: 'bnatschg', paragraf: '44', titel: 'Artenschutz', ampel: 'gelb', automatisch: 'gelb', gruende: ['x'], hinweise: [], offen: [], unsicher: [], geaendert: [], verwendet: ['merkmal:Vorhaben'], fundstellen: ['44/1'] }) as ParagrafErgebnis;
@@ -43,13 +43,33 @@ describe('Zustand der App', () => {
     expect(istGeaendert(useBaurecht.getState())).toBe(false);
   });
 
-  it('Geodienst überschreibt keine Angaben von Hand und keine bestätigten Werte', () => {
+  it('Geodienst: Angaben von Hand bleiben (Widerspruch wird vermerkt), ein Treffer geht einem bestätigten „kein Treffer“ vor', () => {
     const st = useBaurecht.getState();
-    st.faktSetzen('schutz.lsg', true, 'TP');
-    st.geoFakten({ 'schutz.lsg': { wert: false, herkunft: 'geodienst', sicherheit: 'hinweis' }, 'schutz.nsg': { wert: false, herkunft: 'geodienst', sicherheit: 'hinweis' } });
+    st.faktSetzen('schutz.lsg', false, 'TP');
+    st.geoFakten({ 'schutz.nsg': { wert: false, herkunft: 'geodienst', sicherheit: 'hinweis', lage: '1,1' } });
+    st.faktBestaetigen('schutz.nsg', useBaurecht.getState().pruefung.fakten['schutz.nsg'], 'TP', 'Auskunft UNB vom 02.11.2026', '1,1');
+    st.geoFakten({ 'schutz.lsg': { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS' }, 'schutz.nsg': { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS', lage: '1,1' } });
     const f = useBaurecht.getState().pruefung.fakten;
-    expect(f['schutz.lsg']).toMatchObject({ wert: true, herkunft: 'manuell' });
-    expect(f['schutz.nsg']).toMatchObject({ wert: false, herkunft: 'geodienst' });
+    expect(f['schutz.lsg']).toMatchObject({ wert: false, herkunft: 'manuell' });
+    expect(f['schutz.lsg'].widerspruch).toMatch(/LINFOS meldet „ja“/);
+    expect(f['schutz.nsg']).toMatchObject({ wert: true, herkunft: 'geodienst', sicherheit: 'sicher' });
+    expect(f['schutz.nsg'].bestaetigt).toBeUndefined();
+  });
+
+  it('aufgehobene Festlegungen und neue Bestätigungen sind offen; „ohne“ setzt sie auf den Stand der Datei', () => {
+    const st = useBaurecht.getState();
+    st.festlegen(ergebnis('bund/bnatschg/44'), 'rot', 'Festlegung mit Begründung', 'TP', {}, {});
+    st.festlegungenBestaetigen(['bund/bnatschg/44']);
+    useBaurecht.getState().gespeichert(aenderungenAnwenden(useBaurecht.getState().roh!));
+    expect(offeneFestlegungen(useBaurecht.getState())).toEqual([]);
+    useBaurecht.getState().festlegungAufheben('bund/bnatschg/44');
+    expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
+    useBaurecht.getState().faktBestaetigen('gebaeude.nutzflaeche', { wert: 40, herkunft: 'flaechen', sicherheit: 'hinweis' }, 'TP', 'Modell vollständig geprüft', null);
+    expect(offeneBestaetigungen(useBaurecht.getState())).toEqual(['gebaeude.nutzflaeche']);
+    useBaurecht.getState().aufDateistand(['bund/bnatschg/44'], ['gebaeude.nutzflaeche']);
+    expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toMatchObject({ ampel: 'rot' });
+    expect(useBaurecht.getState().pruefung.fakten['gebaeude.nutzflaeche']).toBeUndefined();
+    expect(istGeaendert(useBaurecht.getState())).toBe(false);
   });
 
   it('anderer Antrag: eigene Prüfung, Merkmale neu gelesen', () => {

@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   web:
     name: Tests & Web-Build
@@ -53,6 +56,8 @@ jobs:
             pkg: formulare
           - app: baurecht
             pkg: baurecht
+            # Tests der Tauri-Hülle (Host-Liste, Umleitungen, Signatur, Ablage) – die Rahmen-App bindet dieselbe Datei ein
+            test: true
           # die Rahmen-App bettet die Web-Builds aller Apps ein
           - app: suite
             pkg: arch-tools-suite
@@ -75,3 +80,5 @@ jobs:
       # generate_context! bettet das Web-Frontend ein – dist muss existieren
       - run: npm run ${{ matrix.build || 'build' }} -w ${{ matrix.pkg }}
       - run: cargo check --manifest-path apps/${{ matrix.app }}/src-tauri/Cargo.toml
+      - if: matrix.test
+        run: cargo test --lib --manifest-path apps/${{ matrix.app }}/src-tauri/Cargo.toml

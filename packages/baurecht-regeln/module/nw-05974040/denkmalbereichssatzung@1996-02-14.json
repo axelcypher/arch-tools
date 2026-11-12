@@ -1,0 +1,100 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "denkmalbereichssatzung",
+  "fassung": "1996-02-14",
+  "version": 1,
+  "geltung": {
+    "oder": [
+      {
+        "f": "schutz.denkmalbereich",
+        "ist": true
+      },
+      {
+        "$": "soest_altstadt"
+      }
+    ]
+  },
+  "geltungGrund": "nur im Denkmalbereich Altstadt Soest (innerhalb der Wallstraßen einschließlich Bahnhofstraße)",
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "beseitigung"
+          }
+        ]
+      },
+      "grund": "Die Soester Altstadt ist als Denkmalbereich unter Schutz gestellt (Gebiet innerhalb der Wallstraßen einschließlich Brüdertor und Bahnhofstraße, Plan 1).",
+      "fundstellen": [
+        "1"
+      ],
+      "verweise": [
+        "nw/dschg/10"
+      ],
+      "stand": {
+        "1": "c2b683e5"
+      }
+    },
+    "2": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "beseitigung"
+          }
+        ]
+      },
+      "grund": "Geschützt ist das historische Erscheinungsbild: Stadtgrundriss, Stadträume, Sichtbeziehungen, das Erscheinungsbild denkmalwerter, erhaltenswerter und räumlich wichtiger Bauten und die Stadtsilhouette (Anlage 1, Pläne 1–4).",
+      "fundstellen": [
+        "2"
+      ],
+      "stand": {
+        "2": "5a8a5d5d"
+      }
+    },
+    "3": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "beseitigung"
+          },
+          {
+            "f": "vorhaben.werbeanlage",
+            "ist": true
+          },
+          {
+            "f": "soest.solaranlage",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Erlaubnispflichtig sind das Beseitigen, Verändern und die Nutzungsänderung baulicher Anlagen im Denkmalbereich – auch wenn sie keine Denkmäler sind (a), das Errichten, Verändern oder Beseitigen von Anlagen in ihrer engeren Umgebung (b) und Veränderungen in den Sichtfeldern auf die Stadtsilhouette (c).",
+      "fundstellen": [
+        "3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Erlaubnis der Unteren Denkmalbehörde der Stadt Soest (vgl. § 9 und § 24 DSchG NRW)"
+      ],
+      "hinweis": "Die Satzung verweist noch auf § 9 DSchG NW 1980; heute gelten §§ 9, 10 und 24 DSchG NRW 2022. Solaranlagen auf Altstadtgebäuden sind laut Stadt erlaubnispflichtig.",
+      "verweise": [
+        "nw/dschg/10",
+        "nw/dschg/24"
+      ],
+      "stand": {
+        "3": "795da17c"
+      }
+    }
+  }
+}

@@ -16,7 +16,9 @@ import type { Bewertung, KurzKontext, TextKontext } from './kurz';
 import { kurzText, offenText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
+import { plusMonate } from '../recht/quellen';
 import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
+import { fundstelleName, paragrafName } from './typen';
 
 export interface TextStand {
   fassung: Fassung | null;
@@ -24,7 +26,14 @@ export interface TextStand {
   vorige?: Fassung | null;
   fehler?: string;
   kuenftige?: { gueltigAb: string; url: string }[];
+  /** letzte erfolgreiche Prüfung an der Quelle (ISO) – für die Altersgrenze des Rechtsstands */
+  geprueft?: string;
 }
+
+/** so lange gilt ein Rechtsstand ohne erfolgreiche Prüfung an der Quelle (Tage) */
+export const RECHTSSTAND_TAGE = 14;
+/** so lange nach der Einreichung wird mit der Entscheidung gerechnet (Monate) – angekündigte Fassungen darin zählen */
+export const ENTSCHEIDUNG_MONATE = 6;
 
 export interface AuswertungsEingabe {
   paket: Paket;
@@ -40,6 +49,10 @@ export interface AuswertungsEingabe {
   festlegungen: Record<string, Festlegung>;
   /** Merkmale, deren Wert der Ableitung widerspricht */
   widersprueche?: Set<string>;
+  /** Altersgrenze des Rechtsstands in Tagen (Vorgabe RECHTSSTAND_TAGE) */
+  rechtsstandTage?: number;
+  /** erwartete Dauer bis zur Entscheidung in Monaten (Vorgabe ENTSCHEIDUNG_MONATE) */
+  entscheidungMonate?: number;
 }
 
 export interface Auswertung {
@@ -80,11 +93,16 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
 }
 
 const zaehlerLeer = (): Record<Ampel, number> => ({ rot: 0, gelb: 0, gruen: 0 });
+/** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */
+const tageSeit = (iso: string, heute: string) => Math.floor((Date.parse(`${heute}T12:00:00`) - Date.parse(iso)) / 86400000);
 const undW = (a: Wahrheit, b: Wahrheit): Wahrheit => (a === 'nein' || b === 'nein' ? 'nein' : a === 'offen' || b === 'offen' ? 'offen' : 'ja');
 
 export function auswerten(e: AuswertungsEingabe): Auswertung {
-  const bausteine: Record<string, Kurz> = Object.assign({}, ...e.paket.module.map((m) => m.bausteine ?? {}));
-  const faktDefs = faktDefinitionen(e.paket.module);
+  // nur die aktiven Module: Bausteine und Fakten inaktiver Module dürfen nichts beeinflussen
+  const bausteine: Record<string, Kurz> = Object.assign({}, ...e.module.map((m) => m.bausteine ?? {}));
+  const faktDefs = faktDefinitionen(e.module);
+  const tageAlt = e.rechtsstandTage ?? RECHTSSTAND_TAGE;
+  const entscheidungBis = plusMonate(e.einreichung, e.entscheidungMonate ?? ENTSCHEIDUNG_MONATE);
   const fakten = modulFakten(e.module, e.fakten);
   const titelCache = new Map<string, string>();
   const text: TextKontext = { fakt: (id) => faktDefs[id], bausteine, paragraf: (id) => titelCache.get(id) };
@@ -97,7 +115,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const stand = e.texte.get(key);
       const datei = regeldateiFuer(e.paket.regeln.get(key), stand?.fassung?.gueltigAb, e.einreichung);
       normen.push({ modul: m, norm, key, datei, stand });
-      for (const [nr, r] of Object.entries(datei?.regel.paragrafen ?? {})) titelCache.set(`${key}/${nr}`, `§ ${nr} ${stand?.fassung?.paragrafen[nr]?.titel || r.titel || ''} ${m.normen[norm].kurz}`.replace(/\s+/g, ' ').trim());
+      for (const [nr, r] of Object.entries(datei?.regel.paragrafen ?? {})) titelCache.set(`${key}/${nr}`, `${paragrafName(nr)} ${stand?.fassung?.paragrafen[nr]?.titel || r.titel || ''} ${m.normen[norm].kurz}`.replace(/\s+/g, ' ').trim());
     }
 
   const ergebnisse = new Map<string, ParagrafErgebnis>();
@@ -113,9 +131,12 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     bausteine,
     widersprueche: e.widersprueche,
     ampel: (id) => {
-      if (ergebnisse.has(id)) return ergebnisse.get(id)!.ampel;
       if (inArbeit.has(id) || !regelVon.has(id)) return undefined;
-      return paragraf(id).ampel;
+      const p = ergebnisse.get(id) ?? paragraf(id);
+      // eine bestätigte, nicht überholte Festlegung zählt – aber nur als Hinweis (eine Entscheidung von Hand trägt kein
+      // automatisches „entfällt“ weiter); Entwürfe und überholte Festlegungen zählen nicht
+      if (p.festlegung?.bestaetigt && !p.ueberholt) return { ampel: p.festlegung.ampel, unsicher: true };
+      return { ampel: p.automatisch };
     },
   };
 
@@ -133,6 +154,35 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     const vorhanden = ergebnisse.get(id);
     if (vorhanden) return vorhanden;
     inArbeit.add(id);
+    try {
+      return paragrafWerten(id);
+    } catch (fehler) {
+      // eine fehlerhafte Regel darf nur ihren Paragrafen treffen – und nie grün machen
+      const { n, nr, r } = regelVon.get(id)!;
+      const kaputt: ParagrafErgebnis = {
+        id,
+        modul: n.modul.id,
+        norm: n.norm,
+        paragraf: nr,
+        titel: n.stand?.fassung?.paragrafen[nr]?.titel || r.titel || '',
+        ampel: 'gelb',
+        automatisch: 'gelb',
+        gruende: [`Regel fehlerhaft – von Hand beurteilen (${fehler instanceof Error ? fehler.message : String(fehler)})`],
+        hinweise: [],
+        offen: [],
+        unsicher: [],
+        geaendert: [],
+        verwendet: [],
+        fundstellen: r.fundstellen ?? [nr],
+      };
+      ergebnisse.set(id, kaputt);
+      return kaputt;
+    } finally {
+      inArbeit.delete(id);
+    }
+  }
+
+  function paragrafWerten(id: string): ParagrafErgebnis {
     const { n, nr, r } = regelVon.get(id)!;
     const fassung = n.stand?.fassung ?? null;
     const def = n.modul.normen[n.norm];
@@ -180,13 +230,18 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     if (ampel === 'gruen') {
       const herab: string[] = [];
       // Einzelfall macht Grün nur gelb, wenn die Regel sagt, wann (sonst nur Hinweis bei Rot)
-      if (r.pruefen?.wenn && pruef.w !== 'nein') herab.push(`Einzelfall: ${r.pruefen.grund}`);
+      // … und auch dann, wenn das „nein“ nur auf Hinweisen oder widersprüchlichen Angaben beruht
+      if (r.pruefen?.wenn && (pruef.w !== 'nein' || pruef.unsicher?.length || pruef.widerspruch?.length)) herab.push(`Einzelfall: ${r.pruefen.grund}`);
       if (r.gruenNurVonHand) herab.push('Kann nur von Hand ausgeschlossen werden (z. B. nach Prüfung vor Ort).');
-      if (geaendert.length) herab.push(`Text seit der Prüfung der Regel geändert (${geaendert.map((k) => `§ ${k.replace('/', ' Abs. ')}`).join(', ')}) – Regel noch nicht nachgezogen.`);
+      if (geaendert.length) herab.push(`Text seit der Prüfung der Regel geändert (${geaendert.map(fundstelleName).join(', ')}) – Regel noch nicht nachgezogen.`);
       if (unsicher.length) herab.push(`Nur Hinweis, nicht gesichert: ${unsicher.map((u) => offenText(u, text)).join(', ')}.`);
-      if (widerspruch.length) herab.push(`Widerspruch zwischen Merkmal und Modell: ${widerspruch.join(', ')}.`);
+      if (widerspruch.length) herab.push(`Widerspruch: ${widerspruch.map((w) => offenText(w, text)).join(', ')} – Angaben widersprechen einander (Merkmal/Modell bzw. von Hand/Geodienst).`);
       if (!fassung && r.stand && g.w !== 'nein') herab.push('Text der Norm nicht verfügbar – nicht an der geltenden Fassung geprüft.');
-      if (fassung && !fassung.paragrafen[nr] && g.w !== 'nein') herab.push(`§ ${nr} steht nicht (mehr) im Text der geltenden Fassung.`);
+      if (fassung && r.stand && !n.stand?.geprueft) herab.push('Rechtsstand nie an der Quelle bestätigt – ob die Fassung noch gilt, ist offen.');
+      else if (fassung && r.stand && n.stand?.geprueft && tageSeit(n.stand.geprueft, e.heute) > tageAlt) herab.push(`Rechtsstand seit ${tageSeit(n.stand.geprueft, e.heute)} Tagen nicht an der Quelle bestätigt – ob die Fassung noch gilt, ist offen.`);
+      const angekuendigt = (n.stand?.kuenftige ?? []).filter((k) => k.gueltigAb > e.einreichung && k.gueltigAb <= entscheidungBis);
+      if (r.stand && angekuendigt.length) herab.push(`Neue Fassung ab ${angekuendigt.map((k) => k.gueltigAb.split('-').reverse().join('.')).join(', ')} angekündigt – voraussichtlich vor der Entscheidung; an der künftigen Fassung prüfen.`);
+      if (fassung && !fassung.paragrafen[nr] && g.w !== 'nein') herab.push(`${paragrafName(nr)} steht nicht (mehr) im Text der geltenden Fassung.`);
       if (herab.length) {
         // der Grund für Gelb zuerst (steht in der Liste), dann warum es sonst grün wäre
         ampel = 'gelb';
@@ -194,7 +249,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       }
     } else if (ampel === 'rot') {
       if (pruef.w === 'ja' && r.pruefen) hinweise.push(`Im Einzelfall prüfen: ${r.pruefen.grund}`);
-      if (geaendert.length) hinweise.push(`Text seit der Prüfung der Regel geändert (${geaendert.map((k) => `§ ${k.replace('/', ' Abs. ')}`).join(', ')}).`);
+      if (geaendert.length) hinweise.push(`Text seit der Prüfung der Regel geändert (${geaendert.map(fundstelleName).join(', ')}).`);
     }
     if (r.hinweis) hinweise.push(r.hinweis);
     if (def.annahme) hinweise.push(`Annahme: ${def.annahme}`);
@@ -213,6 +268,11 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       }
       if (fassung) for (const [k, summe] of Object.entries(fl.stand ?? {})) if (fassung.summen[k] !== summe) gruende2.push(`Text von § ${k.replace('/', ' Abs. ')} geändert`);
       if (gruende2.length) ueberholt = gruende2.join('; ');
+      // ein überholtes „entfällt“ trägt nicht mehr (zur sicheren Seite); strengere Festlegungen bleiben
+      if (ueberholt && fl.ampel === 'gruen') {
+        ampel = 'gelb';
+        gruende.unshift(`Festlegung „entfällt“ überholt (${ueberholt}) – erneut festlegen oder aufheben.`);
+      }
     }
 
     const behoerde = r.behoerde ? werten(r.behoerde, ctx).w : undefined;
@@ -240,7 +300,6 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ...(def.annahme ? { annahme: def.annahme } : {}),
     };
     ergebnisse.set(id, ergebnis);
-    inArbeit.delete(id);
     return ergebnis;
   }
 
@@ -269,6 +328,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ...(!n.datei ? { ohneRegel: true } : {}),
       ...(n.stand?.fehler ? { fehler: n.stand.fehler } : {}),
       ...(n.stand?.kuenftige?.length ? { kuenftige: n.stand.kuenftige } : {}),
+      ...(n.stand?.geprueft ? { geprueft: n.stand.geprueft } : {}),
     };
   });
 

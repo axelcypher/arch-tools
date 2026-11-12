@@ -5,8 +5,9 @@ import { werten } from '@core/baurecht/kurz';
 import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
 import { NumberField, TextField } from '@core/ui/fields';
 import type { Pruefstand } from '../pruefung';
-import { useBaurecht } from '../store';
+import { heute, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
+import { faktBestaetigenOeffnen } from './Dialoge';
 
 const HERKUNFT: Record<FaktWert['herkunft'], string> = {
   stammdaten: 'Stammdaten',
@@ -136,12 +137,21 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
               <span className="br-hinweis-marke" title={wert.grund}>
                 nur Hinweis
               </span>
-              <button type="button" className="small" title={`${wert.grund ?? ''} – als gesichert übernehmen`} onClick={() => useBaurecht.getState().faktBestaetigen(id, wert, benutzer())}>
-                Bestätigen
+              <button type="button" className="small" title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, def.titel, wert)}>
+                Bestätigen …
               </button>
             </>
           )}
-          {wert.bestaetigt && <span className="br-leise">bestätigt {wert.bestaetigt.von}</span>}
+          {wert.bestaetigt && (
+            <span className="br-leise" title={wert.bestaetigt.grund}>
+              bestätigt {wert.bestaetigt.von}
+            </span>
+          )}
+          {wert.widerspruch && (
+            <span className="br-hinweis-marke br-widerspruch" title={wert.widerspruch}>
+              Widerspruch
+            </span>
+          )}
           {eigen && wert.herkunft === 'manuell' && (
             <button type="button" className="small br-link" onClick={() => useBaurecht.getState().faktSetzen(id, undefined, '')} title="Angabe von Hand entfernen">
               zurücksetzen
@@ -166,7 +176,8 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     for (const p of auswertung.paragrafen) for (const v of [...p.verwendet, ...p.offen]) if (!v.startsWith('merkmal:') && !v.startsWith('paragraf:')) s.add(v);
     return s;
   }, [auswertung.paragrafen]);
-  const ctx = { merkmale: useBaurecht.getState().merkmale, fakten: auswertung.fakten, einreichung: stand.einreichung, heute: stand.einreichung, bausteine: auswertung.text.bausteine };
+  const merkmale = useBaurecht((s) => s.merkmale);
+  const ctx = { merkmale, fakten: auswertung.fakten, einreichung: stand.einreichung, heute: heute(), bausteine: auswertung.text.bausteine };
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(auswertung.faktDefs)
       .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)))

@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import type { Paket } from '@core/baurecht/paket';
 import type { BaurechtPruefung } from '@core/baurecht/projekt';
+import { geoZusammenfuehren } from '@core/baurecht/geodienste';
 import { aktiverAntrag, baurechtAusRoh, leerePruefung, merkmaleAusRoh } from '@core/baurecht/projekt';
 import type { Ampel, FaktWert, Festlegung, ParagrafErgebnis } from '@core/baurecht/typen';
 import type { Project } from '@core/model';
@@ -53,12 +54,15 @@ export interface Zustand {
   antragWaehlen: (antrag: string) => void;
   merkmalSetzen: (name: string, wert: string) => void;
   faktSetzen: (id: string, wert: FaktWert['wert'] | undefined, von: string) => void;
-  faktBestaetigen: (id: string, wert: FaktWert, von: string) => void;
+  /** Hinweis als gesichert übernehmen – mit Begründung; bei Geodaten an die Lage gebunden; beim Speichern noch einmal bestätigt */
+  faktBestaetigen: (id: string, wert: FaktWert, von: string, grund: string, lage: string | null) => void;
   geoFakten: (fakten: Record<string, FaktWert>) => void;
   einreichungSetzen: (datum: string) => void;
   festlegen: (p: ParagrafErgebnis, ampel: Ampel, grund: string, von: string, summen: Record<string, string>, werte: Record<string, string | number | boolean | null>) => void;
   festlegungAufheben: (id: string) => void;
   festlegungenBestaetigen: (ids: string[]) => void;
+  /** offene Festlegungen und Bestätigungen auf den Stand der Datei zurücksetzen („ohne diese speichern“) */
+  aufDateistand: (festlegungen: string[], fakten: string[]) => void;
   protokollAnhaengen: (p: BaurechtPruefung['protokolle'][number]) => void;
   paketSetzen: (paket: Paket, meldung: string) => void;
   textSetzen: (key: string, stand: TextStand) => void;
@@ -126,19 +130,15 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     else p.fakten[id] = { wert, herkunft: 'manuell', sicherheit: 'sicher', stand: heute(), quelle: von ? `von Hand (${von})` : 'von Hand' };
     set({ pruefung: p });
   },
-  faktBestaetigen: (id, wert, von) => {
+  faktBestaetigen: (id, wert, von, grund, lage) => {
     const p = kopie(get().pruefung);
-    p.fakten[id] = { ...wert, bestaetigt: { von, am: heute() } };
+    const { widerspruch: _w, ...ohne } = wert;
+    p.fakten[id] = { ...ohne, bestaetigt: { von, am: heute(), grund: grund.trim(), ...(lage && wert.herkunft === 'geodienst' ? { lage } : {}) } };
     set({ pruefung: p });
   },
   geoFakten: (fakten) => {
     const p = kopie(get().pruefung);
-    for (const [id, w] of Object.entries(fakten)) {
-      // Angaben von Hand und bestätigte Werte bleiben
-      const alt = p.fakten[id];
-      if (alt && (alt.herkunft === 'manuell' || alt.bestaetigt)) continue;
-      p.fakten[id] = w;
-    }
+    p.fakten = geoZusammenfuehren(p.fakten, fakten);
     set({ pruefung: p });
   },
   einreichungSetzen: (datum) => {
@@ -164,6 +164,21 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     for (const id of ids) if (p.festlegungen[id]) p.festlegungen[id].bestaetigt = jetzt;
     set({ pruefung: p });
   },
+  aufDateistand: (festlegungen, fakten) => {
+    const s = get();
+    const p = kopie(s.pruefung);
+    for (const id of festlegungen) {
+      const alt = s.pruefungDatei.festlegungen[id];
+      if (alt) p.festlegungen[id] = kopie(alt);
+      else delete p.festlegungen[id];
+    }
+    for (const id of fakten) {
+      const alt = s.pruefungDatei.fakten[id];
+      if (alt) p.fakten[id] = kopie(alt);
+      else delete p.fakten[id];
+    }
+    set({ pruefung: p });
+  },
   protokollAnhaengen: (pr) => {
     const p = kopie(get().pruefung);
     p.protokolle = [...p.protokolle, pr];
@@ -182,10 +197,22 @@ export function istGeaendert(s: Pick<Zustand, 'pruefung' | 'pruefungDatei' | 'me
   return JSON.stringify(s.pruefung) !== JSON.stringify(s.pruefungDatei) || JSON.stringify(s.merkmale) !== JSON.stringify(s.merkmaleDatei);
 }
 
-/** Festlegungen, die seit dem letzten Speichern neu oder geändert sind (brauchen die zweite Bestätigung) */
+/**
+ * Festlegungen, die die zweite Bestätigung brauchen: neu oder geändert (ohne `bestaetigt`) und aufgehoben (in der
+ * Datei, aber nicht mehr in der App – das Aufheben einer Festlegung kann eine Herabstufung sein).
+ */
 export function offeneFestlegungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
-  return Object.entries(s.pruefung.festlegungen)
-    .filter(([id, f]) => !f.bestaetigt || JSON.stringify(f) !== JSON.stringify(s.pruefungDatei.festlegungen[id]))
+  const jetzt = s.pruefung.festlegungen;
+  const neu = Object.entries(jetzt)
     .filter(([, f]) => !f.bestaetigt)
+    .map(([id]) => id);
+  const aufgehoben = Object.keys(s.pruefungDatei.festlegungen).filter((id) => !jetzt[id]);
+  return [...neu, ...aufgehoben];
+}
+
+/** Bestätigungen von Hinweisen (z. B. „kein Schutzgebiet“), die seit dem letzten Speichern neu sind */
+export function offeneBestaetigungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
+  return Object.entries(s.pruefung.fakten)
+    .filter(([id, f]) => f.bestaetigt && JSON.stringify(f.bestaetigt) !== JSON.stringify(s.pruefungDatei.fakten[id]?.bestaetigt))
     .map(([id]) => id);
 }

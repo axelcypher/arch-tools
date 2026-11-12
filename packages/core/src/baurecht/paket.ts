@@ -10,7 +10,7 @@
 import type { Paragraf } from '../recht/index';
 import { sha256 } from '../recht/text';
 import { FAKTEN } from './fakten';
-import type { Kurz, Modul, Regeldatei } from './typen';
+import type { FaktDef, Kurz, Modul, Regeldatei } from './typen';
 
 export const PAKET_FORMAT = 1;
 
@@ -113,13 +113,36 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
     if (m.ebene !== 'bund' && !m.schluessel) fehler.push(`${m.id}: Gemeindeschlüssel fehlt`);
     if (m.ueber && !p.module.some((x) => x.id === m.ueber)) fehler.push(`${m.id}: übergeordnetes Modul „${m.ueber}“ fehlt`);
   }
-  // Fakten und Bausteine sichtbar für ein Modul: die eigenen und die aller anderen Module (Verweise zwischen Ebenen)
-  const fakten = new Set([...Object.keys(FAKTEN), ...p.module.flatMap((m) => Object.keys(m.fakten ?? {}))]);
-  const bausteine = new Set(p.module.flatMap((m) => Object.keys(m.bausteine ?? {})));
-  const pruefe = (wo: string, k: Kurz | undefined) => {
+  // sichtbar für ein Modul: Katalog, das Modul selbst und seine übergeordneten (Kette über `ueber`, Bund immer) –
+  // genau die, die zusammen aktiv sind
+  const kette = (m: Modul): Modul[] => {
+    const out: Modul[] = [];
+    const gesehen = new Set<string>();
+    for (let x: Modul | undefined = m; x && !gesehen.has(x.id); x = p.module.find((y) => y.id === x!.ueber)) {
+      gesehen.add(x.id);
+      out.push(x);
+    }
+    for (const b of p.module.filter((y) => y.ebene === 'bund')) if (!gesehen.has(b.id)) out.push(b);
+    return out;
+  };
+  const sichtbar = (m: Modul) => ({
+    fakten: new Map<string, FaktDef>([...Object.entries(FAKTEN), ...kette(m).reverse().flatMap((x) => Object.entries(x.fakten ?? {}))]),
+    bausteine: new Set(kette(m).flatMap((x) => Object.keys(x.bausteine ?? {}))),
+  });
+  // dieselbe Fakt-Kennung in mehreren Modulen muss dieselbe Art haben
+  const arten = new Map<string, { typ: string; modul: string }>();
+  for (const [id, d] of Object.entries(FAKTEN)) arten.set(id, { typ: d.typ, modul: 'Katalog' });
+  for (const m of p.module)
+    for (const [id, d] of Object.entries(m.fakten ?? {})) {
+      const a = arten.get(id);
+      if (a && a.typ !== d.typ) fehler.push(`${m.id}: Fakt „${id}“ hat die Art „${d.typ}“, in ${a.modul} „${a.typ}“`);
+      else if (!a) arten.set(id, { typ: d.typ, modul: m.id });
+    }
+  const pruefe = (wo: string, m: Modul, k: Kurz | undefined, o: { ohneBekannt?: boolean } = {}) => {
+    const s = sichtbar(m);
     for (const b of blaetter(k)) {
-      if ('f' in b && !fakten.has(b.f)) fehler.push(`${wo}: Fakt „${b.f}“ unbekannt`);
-      if ('$' in b && !bausteine.has(b.$)) fehler.push(`${wo}: Baustein „${b.$}“ unbekannt`);
+      if ('f' in b && !s.fakten.has(b.f)) fehler.push(`${wo}: Fakt „${b.f}“ ist für ${m.id} nicht sichtbar (weder Katalog noch eigenes bzw. übergeordnetes Modul)`);
+      if ('$' in b && !s.bausteine.has(b.$)) fehler.push(`${wo}: Baustein „${b.$}“ ist für ${m.id} nicht sichtbar`);
       if ('m' in b) {
         const w = merkmal.get(b.m);
         if (!w) fehler.push(`${wo}: Merkmal „${b.m}“ unbekannt`);
@@ -127,17 +150,21 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
       }
       if ('n' in b && !alleParagrafen.has(b.n)) fehler.push(`${wo}: Verweis auf „${b.n}“ – diesen Paragrafen gibt es im Paket nicht`);
       if ('f' in b) {
-        const def = FAKTEN[b.f] ?? p.module.map((m) => m.fakten?.[b.f]).find(Boolean);
-        if (def?.typ === 'janein' && b.ist !== undefined && typeof b.ist !== 'boolean') fehler.push(`${wo}: Fakt „${b.f}“ ist ja/nein, verglichen mit „${String(b.ist)}“`);
-        if (def?.typ === 'wahl' && def.werte) for (const x of [...(b.in ?? []), ...(b.ist !== undefined ? [b.ist] : [])]) if (!def.werte.includes(String(x))) fehler.push(`${wo}: Fakt „${b.f}“ hat keinen Wert „${String(x)}“`);
+        if (o.ohneBekannt && b.bekannt !== undefined) fehler.push(`${wo}: „bekannt“ liefert auch bei fehlender Angabe ein festes Ergebnis – in Tatbestand und Ausnahmen nicht erlaubt`);
+        const def = s.fakten.get(b.f);
+        const werte = [...(b.in ?? []), ...(b.ist !== undefined ? [b.ist] : [])];
+        if (def?.typ === 'janein' && werte.some((x) => typeof x !== 'boolean')) fehler.push(`${wo}: Fakt „${b.f}“ ist ja/nein, verglichen mit „${werte.join(', ')}“`);
+        if (def?.typ === 'zahl' && werte.some((x) => typeof x !== 'number')) fehler.push(`${wo}: Fakt „${b.f}“ ist eine Zahl, verglichen mit Text`);
+        if ((def?.typ === 'wahl' || def?.typ === 'text') && werte.some((x) => typeof x !== 'string')) fehler.push(`${wo}: Fakt „${b.f}“ ist Text, verglichen mit „${werte.join(', ')}“`);
+        if (def?.typ === 'wahl' && def.werte) for (const x of werte) if (!def.werte.includes(String(x))) fehler.push(`${wo}: Fakt „${b.f}“ hat keinen Wert „${String(x)}“`);
         if ((b.min !== undefined || b.max !== undefined) && def && def.typ !== 'zahl') fehler.push(`${wo}: Fakt „${b.f}“ ist keine Zahl`);
       }
     }
   };
   for (const m of p.module) {
-    for (const [id, b] of Object.entries(m.bausteine ?? {})) pruefe(`${m.id} Baustein ${id}`, b);
-    for (const [id, f] of Object.entries(m.fakten ?? {})) pruefe(`${m.id} Fakt ${id}`, f.wenn);
-    for (const h of m.hinweise ?? []) pruefe(`${m.id} Hinweis ${h.titel}`, h.wenn);
+    for (const [id, b] of Object.entries(m.bausteine ?? {})) pruefe(`${m.id} Baustein ${id}`, m, b);
+    for (const [id, f] of Object.entries(m.fakten ?? {})) pruefe(`${m.id} Fakt ${id}`, m, f.wenn);
+    for (const h of m.hinweise ?? []) pruefe(`${m.id} Hinweis ${h.titel}`, m, h.wenn);
   }
   for (const [k, l] of p.regeln) {
     const [modulId, norm] = k.split('/');
@@ -147,14 +174,16 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
     for (const { datei, regel } of l) {
       if (regel.format !== PAKET_FORMAT) fehler.push(`${datei}: Format`);
       if (!datei.endsWith(`/${regel.norm}@${regel.fassung}.json`)) fehler.push(`${datei}: Dateiname passt nicht zu Norm und Fassung`);
-      pruefe(`${datei} Geltung`, regel.geltung);
+      if (!datei.startsWith(`module/${regel.modul}/`)) fehler.push(`${datei}: liegt nicht im Ordner seines Moduls „${regel.modul}“`);
+      if (!m) continue;
+      pruefe(`${datei} Geltung`, m, regel.geltung, { ohneBekannt: true });
       for (const [nr, r] of Object.entries(regel.paragrafen)) {
         const wo = `${datei} § ${nr}`;
         if (!r.grund?.trim()) fehler.push(`${wo}: Begründung fehlt`);
-        pruefe(wo, r.gilt);
-        pruefe(wo, r.entfaellt);
-        pruefe(wo, r.pruefen?.wenn);
-        pruefe(wo, r.behoerde);
+        pruefe(wo, m, r.gilt, { ohneBekannt: true });
+        pruefe(wo, m, r.entfaellt, { ohneBekannt: true });
+        pruefe(wo, m, r.pruefen?.wenn);
+        pruefe(wo, m, r.behoerde);
         for (const v of r.verweise ?? []) if (!alleParagrafen.has(v)) fehler.push(`${wo}: Verweis auf „${v}“ – diesen Paragrafen gibt es im Paket nicht`);
         for (const fs of r.fundstellen ?? []) if (fs.split('/')[0] !== nr) fehler.push(`${wo}: Fundstelle „${fs}“ gehört zu einem anderen Paragrafen`);
       }
@@ -197,4 +226,80 @@ export async function signaturPruefen(index: Uint8Array, signatur: string, oeffe
 export async function dateiPasst(index: PaketIndex, pfad: string, daten: Uint8Array): Promise<boolean> {
   const e = index.dateien[pfad];
   return !!e && e.groesse === daten.length && e.sha256 === (await sha256(daten));
+}
+
+/**
+ * Paketversionen vergleichen („2026.11.12-3“ = Version aus package.json, Laufnummer des Releases): true, wenn `a`
+ * neuer ist als `b`. Bei gleicher Version gilt eine Laufnummer nur gegen eine andere Laufnummer – gegen den Build
+ * (ohne Laufnummer) nicht, denn der Build enthält mindestens den Stand seiner Version. Neue Regeln brauchen deshalb
+ * eine neue Version in package.json (der Wächter und das Ausliefern setzen sie voraus).
+ */
+export function paketNeuer(a: string, b: string): boolean {
+  const zerlegen = (v: string) => {
+    const [basis, lauf] = v.split('-', 2);
+    return { basis: basis.split('.').map((x) => Number.parseInt(x, 10) || 0), lauf: lauf === undefined ? null : Number.parseInt(lauf, 10) || 0 };
+  };
+  const [x, y] = [zerlegen(a), zerlegen(b)];
+  for (let i = 0; i < Math.max(x.basis.length, y.basis.length); i++) if ((x.basis[i] ?? 0) !== (y.basis[i] ?? 0)) return (x.basis[i] ?? 0) > (y.basis[i] ?? 0);
+  return x.lauf !== null && y.lauf !== null && x.lauf > y.lauf;
+}
+
+/** Index aus Text lesen und seinen Aufbau prüfen (statt ungeprüfter Übernahme); Text = Fehler */
+export function indexLesen(text: string): PaketIndex | string {
+  let roh: unknown;
+  try {
+    roh = JSON.parse(text);
+  } catch {
+    return 'Index ist kein JSON';
+  }
+  const i = roh as Partial<PaketIndex> | null;
+  if (!i || typeof i !== 'object') return 'Index ist kein Objekt';
+  if (typeof i.paket !== 'string' || !/^\d+(\.\d+)*(-\d+)?$/.test(i.paket)) return 'Index: Paketversion fehlt oder ist ungültig';
+  if (typeof i.format !== 'number') return 'Index: Formatversion fehlt';
+  if (!i.dateien || typeof i.dateien !== 'object') return 'Index: Dateiliste fehlt';
+  for (const [p, d] of Object.entries(i.dateien)) {
+    if (!/^(module|texte)\/[\w.-]+\/[\w.@-]+\.json$/.test(p)) return `Index: unzulässiger Dateipfad „${p}“`;
+    if (!d || typeof d.sha256 !== 'string' || typeof d.groesse !== 'number') return `Index: Prüfsumme oder Größe fehlt für „${p}“`;
+  }
+  if (!Array.isArray(i.hosts) || i.hosts.some((h) => typeof h !== 'string')) return 'Index: Hostliste fehlt';
+  return i as PaketIndex;
+}
+
+export type SigniertesPaket = { paket: Paket; index: PaketIndex } | { fehler: string };
+
+/**
+ * Signiertes Regelpaket übernehmen (nachgeladen oder aus der Ablage): Signatur des Index, Format, jede Datei gegen
+ * Größe und SHA-256 im Index, dann `paketPruefen` gegen die Merkmale dieser App-Version. Ein Fehler irgendwo verwirft
+ * das ganze Paket – es gibt kein halb übernommenes Paket.
+ *
+ * `datei` liefert die Bytes einer Datei des Index (oder null, wenn sie fehlt).
+ */
+export async function signiertesPaket(o: {
+  indexText: string;
+  signatur: string;
+  schluessel: string;
+  datei: (pfad: string) => Promise<Uint8Array | null>;
+  merkmale: { name: string; werte: string[] }[];
+}): Promise<SigniertesPaket> {
+  if (!o.schluessel) return { fehler: 'kein öffentlicher Schlüssel' };
+  if (!(await signaturPruefen(new TextEncoder().encode(o.indexText), o.signatur.trim(), o.schluessel))) return { fehler: 'Signatur ungültig' };
+  const index = indexLesen(o.indexText);
+  if (typeof index === 'string') return { fehler: index };
+  if (index.format !== PAKET_FORMAT) return { fehler: `Format ${index.format} – braucht eine neuere App-Version` };
+  const inhalt: Record<string, unknown> = {};
+  for (const p of Object.keys(index.dateien)) {
+    const d = await o.datei(p);
+    if (!d) return { fehler: `${p} fehlt` };
+    if (!(await dateiPasst(index, p, d))) return { fehler: `${p} passt nicht zum Index` };
+    try {
+      inhalt[p] = JSON.parse(new TextDecoder().decode(d)) as unknown;
+    } catch {
+      return { fehler: `${p} ist kein JSON` };
+    }
+  }
+  const paket = paketAusDateien(inhalt, index.paket, 'nachgeladen');
+  if (!paket.module.length) return { fehler: 'Paket ohne Module' };
+  const fehler = paketPruefen(paket, o.merkmale);
+  if (fehler.length) return { fehler: `Paket passt nicht zu dieser App-Version: ${fehler[0]}${fehler.length > 1 ? ` (und ${fehler.length - 1} weitere)` : ''}` };
+  return { paket, index };
 }

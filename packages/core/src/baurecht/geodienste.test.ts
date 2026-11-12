@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Holen } from '../recht/netz';
-import { alsFakt, dienstAbfragen, flurstueckAus, gfiAus, pruefpunkte } from './geodienste';
-import type { FaktDef, GeodienstDef } from './typen';
+import { alsFakt, dienstAbfragen, faktenZurLage, flurstueckAus, geoZusammenfuehren, gfiAus, pruefpunkte } from './geodienste';
+import type { FaktDef, FaktWert, GeodienstDef } from './typen';
 
 const fixture = (n: string) => readFileSync(new URL(`./__fixtures__/${n}`, import.meta.url), 'utf8');
 const def: FaktDef = { titel: 'Vogelschutzgebiet', gruppe: 'schutz', typ: 'janein' };
@@ -58,4 +58,41 @@ describe('Geodienste', () => {
     expect(e).toMatchObject({ treffer: false, vollstaendigAbgefragt: false });
     expect(alsFakt(def, dienst, e, { genau: true, heute: '2026-11-12' })!.grund).toMatch(/nicht alle Abfragen/);
   }, 20000);
+});
+
+describe('Ergebnisse der Geodienste zusammenführen', () => {
+  const kein: FaktWert = { wert: false, herkunft: 'geodienst', quelle: 'LINFOS', stand: '2026-11-01', sicherheit: 'hinweis', grund: 'Kein Treffer', lage: '1,1' };
+  const treffer: FaktWert = { wert: true, herkunft: 'geodienst', quelle: 'LINFOS', stand: '2026-11-12', sicherheit: 'sicher', lage: '1,1' };
+  const bestaetigt = (f: FaktWert): FaktWert => ({ ...f, bestaetigt: { von: 'TP', am: '2026-11-02', grund: 'Auskunft UNB vom 02.11.', lage: '1,1' } });
+
+  it('ein Treffer geht einem bestätigten „kein Treffer“ vor', () => {
+    const r = geoZusammenfuehren({ 'schutz.lsg': bestaetigt(kein) }, { 'schutz.lsg': treffer });
+    expect(r['schutz.lsg']).toEqual(treffer);
+  });
+
+  it('die Bestätigung bleibt, wenn an derselben Lage wieder kein Treffer kommt – nicht an einer anderen', () => {
+    expect(geoZusammenfuehren({ 'schutz.lsg': bestaetigt(kein) }, { 'schutz.lsg': { ...kein, stand: '2026-11-12' } })['schutz.lsg'].bestaetigt?.von).toBe('TP');
+    expect(geoZusammenfuehren({ 'schutz.lsg': bestaetigt(kein) }, { 'schutz.lsg': { ...kein, lage: '9,9' } })['schutz.lsg'].bestaetigt).toBeUndefined();
+  });
+
+  it('ein Treffer gegen „nein“ von Hand wird als Widerspruch vermerkt, „kein Treffer“ gegen „ja“ von Hand nicht', () => {
+    const vonHand = (wert: boolean): FaktWert => ({ wert, herkunft: 'manuell', sicherheit: 'sicher', quelle: 'von Hand (TP)' });
+    const r = geoZusammenfuehren({ 'schutz.lsg': vonHand(false) }, { 'schutz.lsg': treffer });
+    expect(r['schutz.lsg'].wert).toBe(false);
+    expect(r['schutz.lsg'].herkunft).toBe('manuell');
+    expect(r['schutz.lsg'].widerspruch).toMatch(/LINFOS meldet „ja“/);
+    expect(geoZusammenfuehren({ 'schutz.lsg': vonHand(true) }, { 'schutz.lsg': kein })['schutz.lsg'].widerspruch).toBeUndefined();
+    // stimmt der Dienst später zu, verschwindet der Widerspruch
+    expect(geoZusammenfuehren(r, { 'schutz.lsg': { ...treffer, wert: false, sicherheit: 'sicher' } })['schutz.lsg'].widerspruch).toBeUndefined();
+  });
+
+  it('Ergebnisse und Bestätigungen verfallen, wenn sich die Lage ändert', () => {
+    const f = faktenZurLage({ a: bestaetigt(kein), b: treffer, c: { wert: false, herkunft: 'manuell', sicherheit: 'sicher' } }, '5,5');
+    expect(f.a.bestaetigt).toBeUndefined();
+    expect(f.a.sicherheit).toBe('hinweis');
+    expect(f.b).toMatchObject({ wert: true, sicherheit: 'hinweis' });
+    expect(f.b.grund).toMatch(/Koordinaten/);
+    expect(f.c.sicherheit).toBe('sicher');
+    expect(faktenZurLage({ a: bestaetigt(kein) }, '1,1').a.bestaetigt?.von).toBe('TP');
+  });
 });

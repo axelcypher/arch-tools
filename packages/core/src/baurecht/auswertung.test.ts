@@ -112,7 +112,7 @@ function eingabe(o: Partial<AuswertungsEingabe> = {}): AuswertungsEingabe {
     fakten: { 'lage.ags': sicher('05974040') },
     einreichung: '2026-12-01',
     heute: '2026-11-12',
-    texte: new Map([['bund/bnatschg', { fassung: fassung({ '14/1': 'aaaaaaaa', '14': 'x' }) }]]),
+    texte: new Map([['bund/bnatschg', { fassung: fassung({ '14/1': 'aaaaaaaa', '14': 'x' }), geprueft: '2026-11-12T08:00:00Z' }]]),
     festlegungen: {},
     ...o,
   };
@@ -252,6 +252,39 @@ describe('Ampel je Paragraf', () => {
     expect(p(a, 'bund/bnatschg/44').ueberholt).toBeUndefined();
     const b = auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, merkmale: { Vorhaben: 'Beseitigung', Gebäudeart: 'Einfamilienhaus' } }));
     expect(p(b, 'bund/bnatschg/44').ueberholt).toMatch(/Art des Vorhabens geändert/);
+    // überholtes Grün zählt nicht als grün
+    expect(p(b, 'bund/bnatschg/44').ampel).toBe('gelb');
+  });
+
+  it('Verweis auf einen Paragrafen: Entwurf zählt nicht, bestätigte Festlegung nur als unsicher', () => {
+    const fl = { ampel: 'gruen' as const, grund: 'Sonderfall mit Begründung', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' } };
+    expect(p(auswerten(eingabe()), 'nw/bauo-nrw/2')).toMatchObject({ ampel: 'rot' });
+    expect(p(auswerten(eingabe()), 'nw/bauo-nrw/2').verwendet).toContain('paragraf:nw/bauo-nrw/6');
+    // Entwurf (unbestätigt) auf § 6 grün: § 2 folgt der automatischen Ampel von § 6 (rot)
+    expect(p(auswerten(eingabe({ festlegungen: { 'nw/bauo-nrw/6': fl } })), 'nw/bauo-nrw/2').ampel).toBe('rot');
+    // bestätigt: § 2 entfiele, aber nur auf einer Festlegung – deshalb gelb
+    const b = p(auswerten(eingabe({ festlegungen: { 'nw/bauo-nrw/6': { ...fl, bestaetigt: '2026-11-12T10:00:00Z' } } })), 'nw/bauo-nrw/2');
+    expect(b.ampel).toBe('gelb');
+    expect(b.gruende[0]).toMatch(/Nur Hinweis/);
+  });
+
+  it('Rechtsstand: zu lange nicht an der Quelle bestätigt oder nie bestätigt → gelb', () => {
+    const innen = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Planungsrecht: 'Innenbereich' };
+    const text = (geprueft?: string) => new Map([['bund/bnatschg', { fassung: fassung({ '14/1': 'aaaaaaaa', '14': 'x' }), ...(geprueft ? { geprueft } : {}) }]]);
+    expect(p(auswerten(eingabe({ merkmale: innen, texte: text('2026-11-01T08:00:00Z') })), 'bund/bnatschg/14').ampel).toBe('gruen');
+    const alt = p(auswerten(eingabe({ merkmale: innen, texte: text('2026-10-20T08:00:00Z') })), 'bund/bnatschg/14');
+    expect(alt.ampel).toBe('gelb');
+    expect(alt.gruende[0]).toMatch(/seit 23 Tagen nicht an der Quelle bestätigt/);
+    expect(p(auswerten(eingabe({ merkmale: innen, texte: text() })), 'bund/bnatschg/14').gruende[0]).toMatch(/nie an der Quelle bestätigt/);
+  });
+
+  it('angekündigte Fassung vor der voraussichtlichen Entscheidung → gelb, danach nicht', () => {
+    const innen = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Planungsrecht: 'Innenbereich' };
+    const text = (gueltigAb: string) => new Map([['bund/bnatschg', { fassung: fassung({ '14/1': 'aaaaaaaa', '14': 'x' }), geprueft: '2026-11-12T08:00:00Z', kuenftige: [{ gueltigAb, url: '' }] }]]);
+    const bald = p(auswerten(eingabe({ merkmale: innen, texte: text('2027-01-01') })), 'bund/bnatschg/14');
+    expect(bald.ampel).toBe('gelb');
+    expect(bald.gruende[0]).toMatch(/Neue Fassung ab 01\.01\.2027 angekündigt/);
+    expect(p(auswerten(eingabe({ merkmale: innen, texte: text('2027-09-01') })), 'bund/bnatschg/14').ampel).toBe('gruen');
   });
 
   it('Annahme des Büros und Werte aus dem Modul', () => {

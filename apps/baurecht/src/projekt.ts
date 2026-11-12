@@ -47,7 +47,7 @@ export function aenderungenAnwenden(roh: Record<string, unknown>): Record<string
   let out = roh;
   const namen = new Set([...Object.keys(s.merkmale), ...Object.keys(s.merkmaleDatei)]);
   for (const n of namen) if ((s.merkmale[n] ?? '') !== (s.merkmaleDatei[n] ?? '')) out = merkmalSetzen(out, s.antrag, n, s.merkmale[n] ?? '');
-  return pruefungSetzen(out, s.antrag, s.pruefung);
+  return pruefungSetzen(out, s.antrag, s.pruefung, s.pruefungDatei);
 }
 
 /** Speichern; true, wenn gespeichert wurde */
@@ -57,11 +57,12 @@ export async function speichernJetzt(): Promise<boolean> {
   if (!q) return false;
   if (q.art === 'ordner') {
     let neu: Record<string, unknown> | null = null;
-    await projektdateiSchreiben(tauriProjektordner, q.root, q.pfad, (roh) => (neu = aenderungenAnwenden(roh)));
+    const geschrieben = await projektdateiSchreiben(tauriProjektordner, q.root, q.pfad, (roh) => (neu = aenderungenAnwenden(roh)));
+    // frisch lesen: so steht in der App genau, was in der Datei steht (auch Änderungen anderer Apps)
     const r = await tauriProjektordner.liesMitStand(q.root, q.pfad);
     const roh = r ? projektdateiRoh(r.daten) : neu;
     if (roh) useBaurecht.getState().gespeichert(roh);
-    log.info('Gespeichert', { datei: q.datei });
+    log.info(geschrieben ? 'Gespeichert' : 'Nichts zu speichern – Datei unverändert', { datei: q.datei });
     return true;
   }
   const bytes = projektdateiAendern(q.bytes, aenderungenAnwenden) ?? q.bytes;

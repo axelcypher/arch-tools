@@ -23,21 +23,38 @@ on:
         options: [ausliefern, waechter]
         default: waechter
 
-permissions:
-  contents: write
-  issues: write
+# Rechte je Job (unten); global keine
+permissions: {}
 
 jobs:
   ausliefern:
     name: Regelpaket ausliefern
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.aufgabe == 'ausliefern')
     runs-on: ubuntu-latest
+    permissions:
+      # Release „regeln“ anlegen und Dateien hochladen
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      # Die Apps übernehmen ein Release nur, wenn seine Version neuer ist als die ihres Builds (gleiche Version: der
+      # Build gewinnt). Geänderte Regeln brauchen deshalb eine neue Version in package.json.
+      - name: Version erhöht?
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: |
+          vorher="${{ github.event.before }}"
+          if git diff --quiet "$vorher" "$GITHUB_SHA" -- packages/baurecht-regeln/module packages/baurecht-regeln/texte; then exit 0; fi
+          alt=$(git show "$vorher:packages/baurecht-regeln/package.json" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+          neu=$(node -p "require('./packages/baurecht-regeln/package.json').version")
+          if [ "$alt" = "$neu" ]; then
+            echo "::error::Regeln geändert, aber die Version in packages/baurecht-regeln/package.json ist noch $neu – bitte erhöhen (Datum)."
+            exit 1
+          fi
       - run: npm ci
       - run: npx vitest run --project regeln
       - name: Bauen und signieren
@@ -66,6 +83,10 @@ jobs:
     name: Wächter – Regeln gegen die geltenden Fassungen
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.aufgabe == 'waechter')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Issue anlegen oder ergänzen
+      issues: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

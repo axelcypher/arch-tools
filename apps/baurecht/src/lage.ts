@@ -4,7 +4,7 @@
  */
 
 import { faktDefinitionen } from '@core/baurecht/auswertung';
-import { alsFakt, dienstAbfragen, flurstueckAbfragen } from '@core/baurecht/geodienste';
+import { alsFakt, dienstAbfragen, flurstueckAbfragen, lageKennung } from '@core/baurecht/geodienste';
 import type { FaktWert } from '@core/baurecht/typen';
 import { aktiveModule } from '@core/baurecht/paket';
 import { logger } from '@core/platform/log';
@@ -23,6 +23,8 @@ export async function lageAbfragen(): Promise<LageErgebnis> {
   const k = s.project?.meta.koordinaten;
   if (!k) return { meldung: 'Keine Koordinaten in den Stammdaten – bitte die Adresse des Vorhabens eintragen (die Koordinaten werden dann ermittelt).', fehler: [] };
   const punkt = { x: k.ost, y: k.nord };
+  // Ergebnisse gelten nur für diese Lage (ändern sich die Koordinaten, werden sie wieder zum Hinweis)
+  const lage = lageKennung(k.ost, k.nord);
   const fehler: string[] = [];
   const fakten: Record<string, FaktWert> = {};
   let umring = null as { x: number; y: number }[] | null;
@@ -34,8 +36,9 @@ export async function lageAbfragen(): Promise<LageErgebnis> {
       umring = f.umring.length >= 3 ? f.umring : null;
       const quelle = `ALKIS NRW (Flurstück ${f.gemarkung}, Flur ${f.flur}, ${f.flurstueck})`;
       const genau = k.genauigkeit === 'adresse' || k.genauigkeit === undefined;
-      fakten['lage.ags'] = { wert: f.ags, herkunft: 'geodienst', quelle, stand: heute(), sicherheit: genau ? 'sicher' : 'hinweis', ...(genau ? {} : { grund: 'Koordinaten nur auf Straße oder Ort genau – Flurstück bitte prüfen' }) };
-      fakten['lage.gemeinde'] = { wert: f.gemeinde, herkunft: 'geodienst', quelle, stand: heute(), sicherheit: 'sicher' };
+      const sicherheit = genau ? ({ sicherheit: 'sicher' } as const) : ({ sicherheit: 'hinweis', grund: 'Koordinaten nur auf Straße oder Ort genau – Flurstück bitte prüfen' } as const);
+      fakten['lage.ags'] = { wert: f.ags, herkunft: 'geodienst', quelle, stand: heute(), lage, ...sicherheit };
+      fakten['lage.gemeinde'] = { wert: f.gemeinde, herkunft: 'geodienst', quelle, stand: heute(), lage, ...sicherheit };
     } else fehler.push('Kein Flurstück an den Koordinaten gefunden (außerhalb NRW?)');
   } catch (e) {
     fehler.push(`ALKIS: ${e instanceof Error ? e.message : String(e)}`);
@@ -49,7 +52,7 @@ export async function lageAbfragen(): Promise<LageErgebnis> {
     try {
       const e = await dienstAbfragen(holen, def.geodienst, umring, punkt);
       abgefragt++;
-      const f = alsFakt(def, def.geodienst, e, { genau, heute: heute() });
+      const f = alsFakt(def, def.geodienst, e, { genau, heute: heute(), lage });
       if (f) fakten[id] = f;
       if (e.fehler) fehler.push(`${def.titel}: ${e.fehler}`);
     } catch (e) {

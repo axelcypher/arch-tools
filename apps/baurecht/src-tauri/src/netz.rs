@@ -3,8 +3,10 @@
 //
 // Grundsatz: Die Webansicht darf ins Netz nur über `netz_holen`, und nur zu freigegebenen Hosts – einer festen Liste
 // (amtliche Rechtsquellen, Geodienste, Ortsrecht der Module, Auslieferung des Regelpakets) und den Hosts, die ein
-// gültig signiertes Regelpaket nennt (`netz_hosts_erweitern`, nach Prüfung der Signatur im Frontend). Umleitungen
-// werden einzeln verfolgt und jede Station gegen die Liste geprüft. Die CSP der Webansicht bleibt unverändert.
+// gültig signiertes Regelpaket nennt (`netz_hosts_erweitern` prüft die Signatur des Index hier noch einmal mit dem
+// einkompilierten öffentlichen Schlüssel). Umleitungen werden einzeln verfolgt und jede Station gegen die Liste
+// geprüft. Die Ablage liest und schreibt nur JSON unter <Konfigurationsordner>/baurecht. Die CSP der Webansicht
+// bleibt unverändert.
 
 // Keine `use`-Zeilen auf oberster Ebene: Die Datei wird per include! neben andere Befehlsdateien gelegt (Rahmen-App),
 // gleichnamige Importe würden dort kollidieren.
@@ -94,6 +96,18 @@ fn netz_agent(zeit_ms: u64) -> ureq::Agent {
         .build()
 }
 
+/// Ziel einer Umleitung: absolut (nur https) oder ab der Wurzel desselben Hosts; geprüft wird es wie jede Adresse
+fn netz_umleitung(adresse: &str, ziel: &str) -> Result<String, String> {
+    if ziel.starts_with("https://") {
+        Ok(ziel.to_string())
+    } else if ziel.starts_with('/') && !ziel.starts_with("//") {
+        let host = netz_host(adresse).ok_or_else(|| format!("Umleitung von ungültiger Adresse: {adresse}"))?;
+        Ok(format!("https://{host}{ziel}"))
+    } else {
+        Err(format!("Umleitung nicht unterstützt: {ziel}"))
+    }
+}
+
 fn netz_abrufen(url: String, etag: Option<String>, geaendert: Option<String>, zeit_ms: u64) -> Result<NetzAntwort, String> {
     use std::io::Read;
     let agent = netz_agent(zeit_ms);
@@ -115,14 +129,7 @@ fn netz_abrufen(url: String, etag: Option<String>, geaendert: Option<String>, ze
         let status = antwort.status();
         if (300..400).contains(&status) && status != 304 {
             let ziel = antwort.header("location").ok_or_else(|| format!("Umleitung ohne Ziel: {adresse}"))?;
-            adresse = if ziel.starts_with("https://") {
-                ziel.to_string()
-            } else if ziel.starts_with('/') {
-                let host = netz_host(&adresse).unwrap_or_default();
-                format!("https://{host}{ziel}")
-            } else {
-                return Err(format!("Umleitung nicht unterstützt: {ziel}"));
-            };
+            adresse = netz_umleitung(&adresse, ziel)?;
             continue;
         }
         let kopf = |n: &str| antwort.header(n).map(|s| s.to_string());
@@ -162,13 +169,36 @@ async fn netz_holen(url: String, etag: Option<String>, geaendert: Option<String>
         })
 }
 
-/// Hosts aus einem gültig signierten Regelpaket freigeben (nur gültige DNS-Namen, nur hinzufügen)
-#[tauri::command]
-fn netz_hosts_erweitern(hosts: Vec<String>) -> Result<usize, String> {
+/// öffentlicher Schlüssel des Regelpakets (Base64, 32 Byte; Zeilen mit # sind Kommentare; leer = nicht eingerichtet)
+const REGELN_SCHLUESSEL: &str = include_str!("../../../../packages/baurecht-regeln/schluessel/regeln.pub");
+
+fn regeln_schluessel(text: &str) -> Option<Vec<u8>> {
+    use base64::Engine;
+    let b64: String = text.lines().filter(|z| !z.trim().is_empty() && !z.trim_start().starts_with('#')).flat_map(|z| z.split_whitespace()).collect();
+    if b64.is_empty() {
+        return None;
+    }
+    base64::engine::general_purpose::STANDARD.decode(b64).ok().filter(|k| k.len() == 32)
+}
+
+/// Signatur des Index prüfen (Ed25519) und seine Hosts liefern
+fn regeln_index_hosts(schluessel: &[u8], index: &str, signatur: &str) -> Result<Vec<String>, String> {
+    use base64::Engine;
+    let sig = base64::engine::general_purpose::STANDARD
+        .decode(signatur.split_whitespace().collect::<String>())
+        .map_err(|_| "Signatur nicht lesbar".to_string())?;
+    ring::signature::UnparsedPublicKey::new(&ring::signature::ED25519, schluessel)
+        .verify(index.as_bytes(), &sig)
+        .map_err(|_| "Signatur des Regelpakets ungültig".to_string())?;
+    let wert: serde_json::Value = serde_json::from_str(index).map_err(|e| format!("Index nicht lesbar: {e}"))?;
+    let hosts = wert.get("hosts").and_then(|h| h.as_array()).ok_or_else(|| "Index ohne Hostliste".to_string())?;
+    Ok(hosts.iter().filter_map(|h| h.as_str().map(|s| s.trim().to_ascii_lowercase())).collect())
+}
+
+fn netz_hosts_hinzu(hosts: Vec<String>) -> Result<usize, String> {
     let mut freigaben = netz_freigaben().lock().map_err(|e| e.to_string())?;
     let mut neu = 0;
     for h in hosts {
-        let h = h.trim().to_ascii_lowercase();
         if netz_hostname_gueltig(&h) && freigaben.insert(h.clone()) {
             log::info!("Host freigegeben (Regelpaket): {h}");
             neu += 1;
@@ -177,23 +207,55 @@ fn netz_hosts_erweitern(hosts: Vec<String>) -> Result<usize, String> {
     Ok(neu)
 }
 
-/// Pfad der Ablage prüfen: nur JSON unter einem Ordner „baurecht“ (Konfigurationsordner)
-fn ablage_pfad(pfad: &str) -> Result<std::path::PathBuf, String> {
+/// Hosts aus einem gültig signierten Regelpaket freigeben: die Signatur des Index wird hier geprüft (nicht nur in der
+/// Webansicht); nur gültige DNS-Namen, nur hinzufügen
+#[tauri::command]
+fn netz_hosts_erweitern(index: String, signatur: String) -> Result<usize, String> {
+    let schluessel = regeln_schluessel(REGELN_SCHLUESSEL).ok_or_else(|| "Kein öffentlicher Schlüssel für das Regelpaket".to_string())?;
+    let hosts = regeln_index_hosts(&schluessel, &index, &signatur)?;
+    netz_hosts_hinzu(hosts)
+}
+
+/// Wurzel der Ablage: <Konfigurationsordner>/baurecht – der Konfigurationsordner wie im Frontend
+/// (packages/core/src/platform/konfig.ts): der Ordner aus %APPDATA%\arch-tools\konfig.json oder ohne eigene Wahl
+/// dieser lokale Ordner selbst
+fn ablage_wurzel(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    let basis = tauri::Manager::path(app).config_dir().map_err(|e| e.to_string())?.join("arch-tools");
+    let eigen = std::fs::read_to_string(basis.join("konfig.json"))
+        .ok()
+        .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+        .and_then(|v| v.get("ordner").and_then(|o| o.as_str()).map(|s| s.trim().to_string()))
+        .filter(|s| !s.is_empty());
+    Ok(eigen.map(std::path::PathBuf::from).unwrap_or(basis).join("baurecht"))
+}
+
+/// Pfad der Ablage prüfen: absolut, nur .json/.sig, unterhalb der Wurzel, ohne „..“ – und der schon vorhandene Teil
+/// des Pfads muss auch nach Auflösen von Verknüpfungen unter der (aufgelösten) Wurzel liegen
+fn ablage_pfad(wurzel: &std::path::Path, pfad: &str) -> Result<std::path::PathBuf, String> {
+    let nein = || format!("Ablage nicht erlaubt: {pfad}");
     let p = std::path::PathBuf::from(pfad);
     let ok_name = p.extension().map(|e| e == "json" || e == "sig").unwrap_or(false);
-    let ok_ordner = p.components().any(|c| c.as_os_str() == "baurecht");
-    let ok_rein = !p.components().any(|c| matches!(c, std::path::Component::ParentDir));
-    if ok_name && ok_ordner && ok_rein && p.is_absolute() {
-        Ok(p)
-    } else {
-        Err(format!("Ablage nicht erlaubt: {pfad}"))
+    let ok_rein = p.components().all(|c| !matches!(c, std::path::Component::ParentDir | std::path::Component::CurDir));
+    if !(ok_name && ok_rein && p.is_absolute() && p.starts_with(wurzel) && p != wurzel) {
+        return Err(nein());
     }
+    if let Ok(w) = std::fs::canonicalize(wurzel) {
+        let mut vorhanden = p.as_path();
+        while !vorhanden.exists() {
+            vorhanden = vorhanden.parent().ok_or_else(nein)?;
+        }
+        let echt = std::fs::canonicalize(vorhanden).map_err(|e| format!("{pfad}: {e}"))?;
+        if !echt.starts_with(&w) {
+            return Err(nein());
+        }
+    }
+    Ok(p)
 }
 
 /// Datei der Ablage lesen (Text); `None`, wenn es sie nicht gibt
 #[tauri::command]
-async fn baurecht_ablage_lesen(pfad: String) -> Result<Option<String>, String> {
-    let p = ablage_pfad(&pfad)?;
+async fn baurecht_ablage_lesen(app: tauri::AppHandle, pfad: String) -> Result<Option<String>, String> {
+    let p = ablage_pfad(&ablage_wurzel(&app)?, &pfad)?;
     match std::fs::read_to_string(&p) {
         Ok(s) => Ok(Some(s)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -203,8 +265,8 @@ async fn baurecht_ablage_lesen(pfad: String) -> Result<Option<String>, String> {
 
 /// Datei der Ablage schreiben (Ordner werden angelegt, atomar ersetzt)
 #[tauri::command]
-async fn baurecht_ablage_schreiben(pfad: String, inhalt: String) -> Result<(), String> {
-    let p = ablage_pfad(&pfad)?;
+async fn baurecht_ablage_schreiben(app: tauri::AppHandle, pfad: String, inhalt: String) -> Result<(), String> {
+    let p = ablage_pfad(&ablage_wurzel(&app)?, &pfad)?;
     tauri::async_runtime::spawn_blocking(move || {
         if let Some(eltern) = p.parent() {
             std::fs::create_dir_all(eltern)?;
@@ -221,22 +283,82 @@ mod netz_tests {
     use super::*;
 
     #[test]
-    fn hosts_und_pfade() {
+    fn hosts() {
         assert_eq!(netz_host("https://recht.nrw.de/lrgv/x").as_deref(), Some("recht.nrw.de"));
         assert!(netz_host("http://recht.nrw.de/").is_none());
         assert!(netz_host("https://user@recht.nrw.de/").is_none());
         assert!(netz_host("https://recht.nrw.de:8443/").is_none());
         assert!(netz_erlaubt("https://www.gesetze-im-internet.de/bbaug/xml.zip").is_ok());
         assert!(netz_erlaubt("https://example.com/").is_err());
+        assert!(netz_erlaubt("https://RECHT.NRW.DE/x").is_ok());
         assert!(netz_hostname_gueltig("gis.kreis-unna.de"));
         assert!(!netz_hostname_gueltig("bad host"));
         assert!(!netz_hostname_gueltig("-x.de"));
+        assert!(!netz_hostname_gueltig("localhost"));
+    }
+
+    #[test]
+    fn umleitungen() {
+        // relativ: derselbe Host
+        assert_eq!(netz_umleitung("https://recht.nrw.de/a?b", "/lrgv/x").unwrap(), "https://recht.nrw.de/lrgv/x");
+        // absolut: wird wie jede Adresse geprüft – fremder Host scheitert an der Liste
+        let fremd = netz_umleitung("https://recht.nrw.de/a", "https://boese.example/x").unwrap();
+        assert!(netz_erlaubt(&fremd).is_err());
+        let ok = netz_umleitung("https://github.com/x", "https://objects.githubusercontent.com/y").unwrap();
+        assert!(netz_erlaubt(&ok).is_ok());
+        // kein Wechsel auf http, keine protokollrelativen oder relativen Ziele
+        assert!(netz_umleitung("https://recht.nrw.de/a", "http://recht.nrw.de/b").is_err());
+        assert!(netz_umleitung("https://recht.nrw.de/a", "//boese.example/b").is_err());
+        assert!(netz_umleitung("https://recht.nrw.de/a/b", "c").is_err());
+        assert!(netz_umleitung("https://recht.nrw.de/a", "https://boese.example:444/").map(|u| netz_erlaubt(&u).is_err()).unwrap());
+    }
+
+    #[test]
+    fn signatur_des_index() {
+        use ring::signature::KeyPair;
+        let zufall = ring::rand::SystemRandom::new();
+        let pkcs8 = ring::signature::Ed25519KeyPair::generate_pkcs8(&zufall).unwrap();
+        let paar = ring::signature::Ed25519KeyPair::from_pkcs8(pkcs8.as_ref()).unwrap();
+        let schluessel = paar.public_key().as_ref().to_vec();
+        let index = r#"{"paket":"2026.11.13-1","format":1,"dateien":{},"hosts":["gis.kreis-unna.de","Bad Host"]}"#;
+        use base64::Engine;
+        let sig = base64::engine::general_purpose::STANDARD.encode(paar.sign(index.as_bytes()).as_ref());
+        assert_eq!(regeln_index_hosts(&schluessel, index, &sig).unwrap(), vec!["gis.kreis-unna.de", "bad host"]);
+        // geänderter Index, fremder Schlüssel, kaputte Signatur
+        assert!(regeln_index_hosts(&schluessel, &index.replace("unna", "boese"), &sig).is_err());
+        let anderes = ring::signature::Ed25519KeyPair::from_pkcs8(ring::signature::Ed25519KeyPair::generate_pkcs8(&zufall).unwrap().as_ref()).unwrap();
+        assert!(regeln_index_hosts(anderes.public_key().as_ref(), index, &sig).is_err());
+        assert!(regeln_index_hosts(&schluessel, index, "kein base64!").is_err());
+        // Schlüsseldatei: Kommentare, leer
+        let b64 = base64::engine::general_purpose::STANDARD.encode(&schluessel);
+        assert_eq!(regeln_schluessel(&format!("# Kommentar\n{b64}\n")), Some(schluessel));
+        assert_eq!(regeln_schluessel("# noch nicht eingerichtet\n"), None);
+        assert_eq!(regeln_schluessel("AAAA"), None);
+    }
+
+    #[test]
+    fn ablage_nur_unter_der_wurzel() {
+        let tmp = std::env::temp_dir().join(format!("baurecht-ablage-{}", std::process::id()));
+        let wurzel = tmp.join("konfig").join("baurecht");
+        std::fs::create_dir_all(wurzel.join("recht")).unwrap();
+        let s = |p: &std::path::Path| p.to_string_lossy().into_owned();
+        assert!(ablage_pfad(&wurzel, &s(&wurzel.join("recht").join("x.json"))).is_ok());
+        assert!(ablage_pfad(&wurzel, &s(&wurzel.join("neu").join("tief").join("x.sig"))).is_ok());
+        // anderer Ordner „baurecht“ außerhalb der Wurzel, falsche Endung, „..“, relativ, die Wurzel selbst
+        assert!(ablage_pfad(&wurzel, &s(&tmp.join("anders").join("baurecht").join("x.json"))).is_err());
+        assert!(ablage_pfad(&wurzel, &s(&wurzel.join("x.exe"))).is_err());
+        assert!(ablage_pfad(&wurzel, &s(&wurzel.join("..").join("x.json"))).is_err());
+        assert!(ablage_pfad(&wurzel, "baurecht/x.json").is_err());
+        assert!(ablage_pfad(&wurzel, &s(&wurzel)).is_err());
+        // Verknüpfung in der Ablage, die hinaus zeigt
         #[cfg(unix)]
         {
-            assert!(ablage_pfad("/home/a/arch-tools/baurecht/recht/x.json").is_ok());
-            assert!(ablage_pfad("/home/a/arch-tools/recht/x.json").is_err());
-            assert!(ablage_pfad("/home/a/arch-tools/baurecht/../x.json").is_err());
-            assert!(ablage_pfad("baurecht/x.json").is_err());
+            let draussen = tmp.join("draussen");
+            std::fs::create_dir_all(&draussen).unwrap();
+            let _ = std::fs::remove_file(wurzel.join("link"));
+            std::os::unix::fs::symlink(&draussen, wurzel.join("link")).unwrap();
+            assert!(ablage_pfad(&wurzel, &s(&wurzel.join("link").join("x.json"))).is_err());
         }
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

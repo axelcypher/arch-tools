@@ -50,7 +50,13 @@ function faktAus(roh: unknown): FaktWert | null {
   const herkunft = HERKUNFT.has(String(roh.herkunft)) ? (roh.herkunft as FaktWert['herkunft']) : 'manuell';
   const f: FaktWert = { wert: w, herkunft, sicherheit: roh.sicherheit === 'hinweis' ? 'hinweis' : 'sicher' };
   for (const k of ['quelle', 'stand', 'grund'] as const) if (typeof roh[k] === 'string') f[k] = roh[k] as string;
-  if (istObjekt(roh.bestaetigt) && typeof roh.bestaetigt.von === 'string' && typeof roh.bestaetigt.am === 'string') f.bestaetigt = { von: roh.bestaetigt.von, am: roh.bestaetigt.am };
+  if (istObjekt(roh.bestaetigt) && typeof roh.bestaetigt.von === 'string' && typeof roh.bestaetigt.am === 'string') {
+    f.bestaetigt = { von: roh.bestaetigt.von, am: roh.bestaetigt.am };
+    if (typeof roh.bestaetigt.grund === 'string') f.bestaetigt.grund = roh.bestaetigt.grund;
+    if (typeof roh.bestaetigt.lage === 'string') f.bestaetigt.lage = roh.bestaetigt.lage;
+  }
+  if (typeof roh.lage === 'string') f.lage = roh.lage;
+  if (typeof roh.widerspruch === 'string') f.widerspruch = roh.widerspruch;
   return f;
 }
 
@@ -98,10 +104,44 @@ export function baurechtAusRoh(roh: Record<string, unknown>): BaurechtAbschnitt 
   return baurechtAus(roh.baurecht ?? (istObjekt(roh.erweiterungen) ? roh.erweiterungen.baurecht : undefined));
 }
 
-/** Prüfung eines Antrags in `projekt.json` setzen (alle anderen Abschnitte und Anträge bleiben) */
-export function pruefungSetzen(roh: Record<string, unknown>, antrag: string, pruefung: BaurechtPruefung): Record<string, unknown> {
-  const abschnitt = baurechtAusRoh(roh);
-  abschnitt.pruefungen[antrag] = pruefung;
+/** Abschnitt „baurecht“ roh (für das Zusammenführen: unbekannte Felder neuerer Versionen bleiben erhalten) */
+function baurechtRoh(roh: Record<string, unknown>): Record<string, unknown> {
+  const b = roh.baurecht ?? (istObjekt(roh.erweiterungen) ? roh.erweiterungen.baurecht : undefined);
+  return istObjekt(b) ? structuredClone(b) : {};
+}
+
+/**
+ * Prüfung eines Antrags in `projekt.json` schreiben, zusammengeführt mit dem, was inzwischen in der Datei steht:
+ * Übernommen wird nur, was sich gegenüber `basis` (dem Stand beim Öffnen bzw. letzten Speichern) geändert hat – je
+ * Fakt, je Festlegung, neue Protokolle. Gleichzeitige Änderungen einer anderen Instanz an anderen Einträgen bleiben;
+ * unbekannte Felder (neuerer App-Versionen) ebenso.
+ */
+export function pruefungSetzen(roh: Record<string, unknown>, antrag: string, pruefung: BaurechtPruefung, basis: BaurechtPruefung = leerePruefung()): Record<string, unknown> {
+  const abschnitt = baurechtRoh(roh);
+  const pruefungen = istObjekt(abschnitt.pruefungen) ? abschnitt.pruefungen : {};
+  const datei = istObjekt(pruefungen[antrag]) ? (pruefungen[antrag] as Record<string, unknown>) : {};
+  const gelesen = baurechtAus({ pruefungen: { [antrag]: datei } }).pruefungen[antrag] ?? leerePruefung();
+  const gleich = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  const zusammen = <T>(dateiWerte: Record<string, T>, alt: Record<string, T>, neu: Record<string, T>): Record<string, T> => {
+    const out = { ...dateiWerte };
+    for (const k of new Set([...Object.keys(alt), ...Object.keys(neu)])) {
+      if (gleich(alt[k], neu[k])) continue;
+      if (neu[k] === undefined) delete out[k];
+      else out[k] = neu[k];
+    }
+    return out;
+  };
+  const ziel: Record<string, unknown> = { ...datei };
+  if (pruefung.einreichung !== basis.einreichung) {
+    if (pruefung.einreichung) ziel.einreichung = pruefung.einreichung;
+    else delete ziel.einreichung;
+  }
+  ziel.fakten = zusammen(gelesen.fakten, basis.fakten, pruefung.fakten);
+  ziel.festlegungen = zusammen(gelesen.festlegungen, basis.festlegungen, pruefung.festlegungen);
+  const neueProtokolle = pruefung.protokolle.filter((p) => !basis.protokolle.some((b) => b.am === p.am));
+  ziel.protokolle = [...gelesen.protokolle, ...neueProtokolle.filter((p) => !gelesen.protokolle.some((g) => g.am === p.am))];
+  pruefungen[antrag] = ziel;
+  abschnitt.pruefungen = pruefungen;
   const out: Record<string, unknown> = { ...roh, baurecht: abschnitt };
   if (istObjekt(out.erweiterungen) && 'baurecht' in out.erweiterungen) {
     const { baurecht: _alt, ...rest } = out.erweiterungen;
@@ -222,14 +262,16 @@ export function projektFakten(p: Project, heute = new Date().toISOString().slice
     setze('planung.baunvo', fassung, 'grz', 'GRZ-Nachweis (Plandatum)');
   }
   if (p.storeys.some((s) => s.shapes.length)) {
+    // Werte aus dem Modell sind nur so gut wie das Modell: Hinweis, bis bestätigt ist, dass es vollständig ist
+    const MODELL = 'aus dem Modell des Flächenrechners – bitte bestätigen, dass das Modell vollständig ist';
     const r = computeProject(p);
-    if (r.total.bgf.total > 0) setze('gebaeude.bgf', runde(r.total.bgf.total), 'flaechen', 'Flächenrechner');
-    if (r.total.bri.total > 0) setze('gebaeude.bri', runde(r.total.bri.total), 'flaechen', 'Flächenrechner');
-    if (r.total.nuf.total > 0) setze('gebaeude.nutzflaeche', runde(r.total.nuf.total), 'flaechen', 'Flächenrechner (NUF nach DIN 277)');
+    if (r.total.bgf.total > 0) setze('gebaeude.bgf', runde(r.total.bgf.total), 'flaechen', 'Flächenrechner', 'hinweis', MODELL);
+    if (r.total.bri.total > 0) setze('gebaeude.bri', runde(r.total.bri.total), 'flaechen', 'Flächenrechner', 'hinweis', MODELL);
+    if (r.total.nuf.total > 0) setze('gebaeude.nutzflaeche', runde(r.total.nuf.total), 'flaechen', 'Flächenrechner (NUF nach DIN 277)', 'hinweis', MODELL);
     const wohnungen = r.wohnungen.filter((w) => w.wohnung.trim()).length;
-    if (wohnungen) setze('gebaeude.wohnungen', wohnungen, 'flaechen', 'Flächenrechner (Wohnungen der Räume)');
+    if (wohnungen) setze('gebaeude.wohnungen', wohnungen, 'flaechen', 'Flächenrechner (Wohnungen der Räume)', 'hinweis', MODELL);
     const gk = gebaeudeklasseAbleiten(p);
-    if (gk?.hoehe !== undefined) setze('gebaeude.hoehe', gk.hoehe, 'abgeleitet', 'Flächenrechner (Geschosskoten)', gk.hinweis ? 'hinweis' : 'sicher', gk.hinweis ? 'Geländeoberfläche nicht festgelegt (±0,00 angenommen)' : undefined);
+    if (gk?.hoehe !== undefined) setze('gebaeude.hoehe', gk.hoehe, 'abgeleitet', 'Flächenrechner (Geschosskoten)', 'hinweis', gk.hinweis ? `Geländeoberfläche nicht festgelegt (±0,00 angenommen); ${MODELL}` : `Fußboden des obersten Geschosses mit Räumen – § 2 Abs. 3 BauO NRW meint das oberste Geschoss, in dem ein Aufenthaltsraum möglich ist; ${MODELL}`);
     const garagen = (p.lageplan?.flaechen ?? []).filter((x) => x.nutzung === 'garage' && !x.nachbar);
     if (garagen.length) {
       const flaeche = garagen.reduce((s, g) => s + Math.abs(polygonFlaeche(g.points)), 0);

@@ -210,7 +210,12 @@ export interface FaktWert {
   sicherheit: 'sicher' | 'hinweis';
   /** warum nur Hinweis */
   grund?: string;
-  bestaetigt?: { von: string; am: string };
+  /** von Hand bestätigt: wer, wann, worauf gestützt; bei Geodaten die Lage, für die es gilt */
+  bestaetigt?: { von: string; am: string; grund?: string; lage?: string };
+  /** Lage (Koordinaten), an der ein Geodienst abgefragt wurde */
+  lage?: string;
+  /** widersprechende Angabe (z. B. Treffer im Geodienst gegen „nein“ von Hand) – macht Grün gelb */
+  widerspruch?: string;
 }
 
 /** Festlegung von Hand (Abschnitt 8) */
@@ -283,4 +288,20 @@ export interface NormErgebnis {
   ohneRegel?: boolean;
   fehler?: string;
   kuenftige?: { gueltigAb: string; url: string }[];
+  /** letzte erfolgreiche Prüfung des Texts an der Quelle */
+  geprueft?: string;
+}
+
+/**
+ * Bezeichnung einer Einheit: „§ 6“ für Paragrafen (Nummer, auch „42a“), sonst der Name selbst – Satzungen,
+ * Landschaftspläne und Verordnungslisten gliedern auch nach „C.1“, „SO-060“ oder „Art. 3“.
+ */
+export function paragrafName(nr: string): string {
+  return /^\d/.test(nr) ? `§ ${nr}` : nr;
+}
+
+/** Fundstelle in Worten: „6/1“ → „§ 6 Abs. 1“ */
+export function fundstelleName(fs: string): string {
+  const [nr, abs] = fs.split('/');
+  return abs ? `${paragrafName(nr)} Abs. ${abs}` : paragrafName(nr);
 }

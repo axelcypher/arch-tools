@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { paragrafName } from '@core/baurecht/typen';
 import type { Ampel, NormErgebnis, ParagrafErgebnis } from '@core/baurecht/typen';
 import { EBENEN, THEMEN } from '@core/baurecht/typen';
 import type { Pruefstand } from '../pruefung';
@@ -32,7 +33,7 @@ function ParagrafZeile({ p, gewaehlt }: { p: ParagrafErgebnis; gewaehlt: boolean
     <li>
       <button type="button" className={`br-paragraf${gewaehlt ? ' br-gewaehlt' : ''}`} aria-current={gewaehlt ? 'true' : undefined} onClick={() => useBaurecht.getState().waehlen(p.id)}>
         <AmpelMarke ampel={p.ampel} klein vonHand={vonHand} />
-        <span className="br-paragraf-nr">§ {p.paragraf}</span>
+        <span className="br-paragraf-nr">{paragrafName(p.paragraf)}</span>
         <span className="br-paragraf-titel">{p.titel || '–'}</span>
         <span className="br-paragraf-grund">{p.gruende[0]}</span>
         <span className="br-paragraf-marken">
@@ -137,7 +138,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     w.ampeln.includes(p.ampel) &&
     (!nurHand || !!p.festlegung) &&
     (!nurGeaendert || p.geaendert.length > 0 || !!p.ueberholt) &&
-    (!suche || `§ ${p.paragraf} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`.toLowerCase().includes(suche.toLowerCase()));
+    (!suche || `${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`.toLowerCase().includes(suche.toLowerCase()));
   const gruppen = useMemo(() => {
     const liste = w.gruppierung === 'ebene' ? EBENEN.map((e) => ({ id: e.id, titel: e.titel, normen: auswertung.normen.filter((n) => n.ebene === e.id) })) : THEMEN.map((t) => ({ id: t.id, titel: t.titel, normen: auswertung.normen.filter((n) => n.def.thema === t.id) }));
     return liste.filter((g) => g.normen.length);

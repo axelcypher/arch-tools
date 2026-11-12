@@ -180,6 +180,14 @@ describe('Ortsrecht (Dateien)', () => {
     expect(satzungsDatum(z)).toBe('2022-01-28');
   });
 
+  it('Inhaltsverzeichnis verdrängt den Paragrafen nicht; Datum aus Titel bzw. Ausfertigung, nicht aus Bezugsnormen', () => {
+    const z = ['Satzung über X', 'Inhalt', '§ 1 Geltungsbereich', '§ 2 Pflichten', 'Aufgrund der BauO NRW vom 21.07.2018 …', '§ 1 Geltungsbereich', '(1) Gilt im Stadtgebiet.', '§ 2 Pflichten', '(1) Jeder muss.', 'Soest, den 03.12.2025'];
+    const p = satzungParagrafen(z, 'u');
+    expect(p['1'].text).toEqual(['(1) Gilt im Stadtgebiet.']);
+    expect(p['2'].text).toEqual(['(1) Jeder muss.']);
+    expect(satzungsDatum(z)).toBe('2025-12-03');
+  });
+
   it('Scan ohne Textebene: Text aus dem Regelpaket, nur solange die Datei gleich bleibt', async () => {
     const netz = festesNetz({ 'https://example/scan.pdf': 'PDF-Bytes' });
     const kopf = { id: 's', kurz: 'S', titel: 'Satzung' };

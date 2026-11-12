@@ -28,6 +28,8 @@ base64 = "0.22"
 rusqlite = { version = "0.37", features = ["bundled"] }
 # Baurecht: Abruf der Gesetzestexte, Satzungen und Geodienste (apps/baurecht/src-tauri/src/netz.rs)
 ureq = "2.12"
+# Signatur des Regelpakets (Ed25519) – ring kommt ohnehin mit rustls
+ring = "0.17"
 
 [profile.release]
 codegen-units = 1

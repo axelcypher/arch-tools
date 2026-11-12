@@ -170,6 +170,9 @@ export async function dienstAbfragen(h: Holen, d: GeodienstDef, umring: Punkt[] 
   return { treffer: false, vollstaendigAbgefragt: vollstaendig, ...(fehler ? { fehler } : {}), punkte };
 }
 
+/** Kennung der Lage (Koordinaten auf den Meter) – Ergebnisse und Bestätigungen gelten nur für diese Lage */
+export const lageKennung = (ost: number, nord: number) => `${Math.round(ost)},${Math.round(nord)}`;
+
 /** Quelle mit Lizenzhinweis (z. B. „Datenlizenz Deutschland – Namensnennung 2.0, Land NRW“ verlangt den Vermerk) */
 export const quelleMitLizenz = (d: GeodienstDef) => (d.lizenz ? `${d.quelle} · ${d.lizenz}` : d.quelle);
 
@@ -177,11 +180,15 @@ export const quelleMitLizenz = (d: GeodienstDef) => (d.lizenz ? `${d.quelle} · 
  * Ergebnis einer Abfrage als Fakt. Treffer → sicher (rot ist die sichere Seite). Kein Treffer → Hinweis mit Grund,
  * auch wenn alles andere stimmt (Bedingung 4 nicht automatisch prüfbar).
  */
-export function alsFakt(def: FaktDef, d: GeodienstDef, e: GeoErgebnis, o: { genau: boolean; heute: string }): FaktWert | null {
+export function alsFakt(def: FaktDef, d: GeodienstDef, e: GeoErgebnis, o: { genau: boolean; heute: string; lage?: string }): FaktWert | null {
+  const lage = o.lage ? { lage: o.lage } : {};
   if (e.treffer) {
-    const wert = def.typ === 'janein' ? true : (e.wert ?? null);
-    if (wert === null) return null;
-    return { wert, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: 'sicher' };
+    if (def.typ === 'janein') return { wert: true, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: 'sicher', ...lage };
+    if (e.wert == null) return null;
+    // Attributwerte des Dienstes nur übernehmen, wenn sie zu den Werten des Fakts passen – sonst Hinweis
+    const passend = def.werte?.find((w) => w.trim().toLowerCase() === String(e.wert).trim().toLowerCase().replace(/^zone\s+/, ''));
+    if (def.werte && !passend) return { wert: e.wert, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: 'hinweis', grund: `Wert „${e.wert}“ des Dienstes passt zu keinem der erwarteten Werte (${def.werte.join(', ')}) – bitte prüfen`, ...lage };
+    return { wert: passend ?? e.wert, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: o.genau ? 'sicher' : 'hinweis', ...(o.genau ? {} : { grund: 'Lage nur ungefähr' }), ...lage };
   }
   if (def.typ !== 'janein') return null;
   const gruende: string[] = [];
@@ -189,5 +196,54 @@ export function alsFakt(def: FaktDef, d: GeodienstDef, e: GeoErgebnis, o: { gena
   if (!d.vollstaendig) gruende.push('Datensatz nicht als vollständig gekennzeichnet');
   if (!o.genau) gruende.push('Lage nur ungefähr (kein Flurstück bzw. Adresse nicht hausnummerngenau)');
   gruende.push('ob seit dem Datenstand neue Verordnungen bekanntgemacht wurden, prüft die App nicht – Amtsblatt bzw. Auskunft der Behörde');
-  return { wert: false, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: 'hinweis', grund: `Kein Treffer (Flurstück mit ${Math.max(25, d.puffer ?? 25)} m Puffer) – nur Hinweis: ${gruende.join('; ')}` };
+  return { wert: false, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: 'hinweis', grund: `Kein Treffer (Flurstück mit ${Math.max(25, d.puffer ?? 25)} m Puffer) – nur Hinweis: ${gruende.join('; ')}`, ...lage };
+}
+
+const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));
+/** „kein Treffer“ eines Dienstes: nur Hinweis, nie Grund für einen Widerspruch */
+const keinTreffer = (f: FaktWert) => f.wert === false && f.sicherheit === 'hinweis';
+
+/**
+ * Neue Ergebnisse der Geodienste mit den Angaben der Prüfung zusammenführen (docs/baurecht-konzept.md, 5.2):
+ *
+ *  - Ein Treffer (oder jeder andere sichere Wert) geht einem früheren Ergebnis immer vor – auch einem bestätigten
+ *    „kein Treffer“. Eine Bestätigung bleibt nur, wenn derselbe Wert an derselben Lage wieder herauskommt.
+ *  - Angaben von Hand bleiben; widerspricht ihnen der Dienst (außer mit einem bloßen „kein Treffer“), wird das als
+ *    Widerspruch vermerkt – Grün auf dieser Angabe wird dann gelb, bis jemand die Angabe ändert oder bestätigt.
+ */
+export function geoZusammenfuehren(alt: Record<string, FaktWert>, neu: Record<string, FaktWert>): Record<string, FaktWert> {
+  const out = { ...alt };
+  for (const [id, n] of Object.entries(neu)) {
+    const a = alt[id];
+    if (a?.herkunft === 'manuell') {
+      const { widerspruch: _w, ...ohne } = a;
+      out[id] = a.wert === n.wert || keinTreffer(n) ? ohne : { ...ohne, widerspruch: `${n.quelle ?? 'Geodienst'} meldet „${wertText(n.wert)}“ (${n.stand ?? 'heute'})` };
+      continue;
+    }
+    if (a?.bestaetigt && a.wert === n.wert && (!n.lage || a.bestaetigt.lage === n.lage) && n.sicherheit === 'hinweis') {
+      out[id] = { ...n, bestaetigt: a.bestaetigt };
+      continue;
+    }
+    out[id] = n;
+  }
+  return out;
+}
+
+/**
+ * Angaben aus Geodiensten und ihre Bestätigungen gelten nur für die Lage, an der sie ermittelt wurden. Haben sich die
+ * Koordinaten des Vorhabens geändert, werden sie wieder zum Hinweis (die Bestätigung verfällt).
+ */
+export function faktenZurLage(fakten: Record<string, FaktWert>, lage: string | null): Record<string, FaktWert> {
+  if (!lage) return fakten;
+  const out: Record<string, FaktWert> = {};
+  for (const [id, f] of Object.entries(fakten)) {
+    const verschoben = (f.lage && f.lage !== lage) || (f.bestaetigt?.lage && f.bestaetigt.lage !== lage);
+    if (!verschoben || f.herkunft === 'manuell') {
+      out[id] = f;
+      continue;
+    }
+    const { bestaetigt: _b, ...ohne } = f;
+    out[id] = { ...ohne, sicherheit: 'hinweis', grund: 'Die Koordinaten des Vorhabens haben sich seit der Abfrage geändert – bitte „Lage abfragen“ wiederholen' };
+  }
+  return out;
 }

@@ -1,0 +1,617 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "altstadtsatzung",
+  "fassung": "2023-11-14",
+  "version": 1,
+  "geltung": {
+    "$": "soest_altstadt"
+  },
+  "geltungGrund": "nur in der Altstadt innerhalb des Wallrings (§ 1, Anlage 1)",
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "bauen"
+          },
+          {
+            "$": "nutzungsaenderung"
+          },
+          {
+            "f": "vorhaben.werbeanlage",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Das Grundstück liegt im Geltungsbereich der örtlichen Bauvorschrift über Gestaltung (Altstadt im Wallring einschließlich Bahnhof, Übersichtsplan Anlage 1).",
+      "fundstellen": [
+        "1"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Baudenkmale unterliegen zusätzlich dem Denkmalschutzgesetz und der Denkmalbereichssatzung (Präambel).",
+      "verweise": [
+        "nw-05974040/denkmalbereichssatzung/3"
+      ],
+      "stand": {
+        "1": "498c7c46"
+      }
+    },
+    "3": {
+      "gilt": {
+        "$": "soest_aussen_bauen"
+      },
+      "grund": "In der Altstadt kann eine Unterschreitung der Abstandsflächen bis höchstens 0,125 H zugelassen werden (§ 89 Abs. 1 Nr. 6 BauO NRW); die Erforderlichkeit ist im Einzelfall aus dem historischen Stadtgrundriss abzuleiten und zu begründen.",
+      "fundstellen": [
+        "3/1",
+        "3/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "hinweis": "Geht § 6 BauO NRW vor, soweit die Unterschreitung zugelassen wird – sie ist zu beantragen, nicht automatisch erlaubt.",
+      "verweise": [
+        "nw/bauo-nrw/6"
+      ],
+      "nachweis": [
+        "Begründung der Unterschreitung aus dem historischen Stadtgrundriss (Lageplan, Abstandsflächenplan)"
+      ],
+      "stand": {
+        "3/1": "084252dc",
+        "3/2": "43f7d3b7"
+      }
+    },
+    "4": {
+      "gilt": {
+        "$": "soest_aussen_bauen"
+      },
+      "grund": "Dächer: symmetrische Neigung 45–58°, Krüppelwalm nur bei mehr als einem Vollgeschoss; Dachüberstand Traufe höchstens 0,50 m, Ortgang 0,30 m; Drempel bis 0,50 m; naturrote, nicht glänzende Dachpfannen in S-Form (andere Deckung nur, wenn sie nachweislich dem historischen Bestand des Gebäudes entspricht).",
+      "fundstellen": [
+        "4/1",
+        "4/2",
+        "4/3",
+        "4/4",
+        "4/5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "hinweis": "Absätze 1 und 4 gelten nicht für untergeordnete Anbauten und Nebenanlagen im Sinne des § 14 BauNVO (Abs. 5).",
+      "stand": {
+        "4/1": "6d592df5",
+        "4/2": "c7731041",
+        "4/3": "5b9fed1c",
+        "4/4": "875e6e85",
+        "4/5": "3f9ecc25"
+      }
+    },
+    "5": {
+      "gilt": {
+        "und": [
+          {
+            "$": "bauen"
+          },
+          {
+            "f": "soest.dachaufbauten",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Dachaufbauten: Einzelgauben höchstens 2,00 m breit, Abstand untereinander 1,50 m, zusammen höchstens ein Drittel der Trauflänge, 2,00 m Abstand zum Giebel; Gaubentraufe höchstens 1,80 m über der Dachfläche; Dachflächenfenster nur auf der straßenabgewandten Seite und höchstens 1,10 × 1,20 m; Fledermausgauben unzulässig.",
+      "fundstellen": [
+        "5/1",
+        "5/2",
+        "5/3",
+        "5/4",
+        "5/5",
+        "5/7"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "entfaellt": {
+        "f": "soest.dachaufbauten",
+        "ist": false
+      },
+      "stand": {
+        "5/1": "c8cf6db2",
+        "5/2": "48dcc059",
+        "5/3": "f8bcfeb9",
+        "5/4": "298f72a2",
+        "5/5": "783464d7",
+        "5/7": "18a944c5"
+      }
+    },
+    "6": {
+      "gilt": {
+        "$": "soest_aussen_bauen"
+      },
+      "grund": "Balkone und Loggien nur an den von öffentlichen Verkehrsflächen abgewandten Gebäudeseiten; Dachterrassen nur, wenn von keiner öffentlichen Verkehrsfläche einsehbar.",
+      "fundstellen": [
+        "6/1",
+        "6/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "6/1": "6792ac87",
+        "6/2": "aa98900a"
+      }
+    },
+    "7": {
+      "gilt": {
+        "$": "soest_aussen_bauen"
+      },
+      "grund": "Fenster an einsehbaren Seiten: stehende bis quadratische Formate, geschossweiser Bezug, keine Fensterbänder, Pfeiler mindestens 0,24 m; bei erhaltenswerten Gebäuden der Denkmalbereichssatzung nur Holzfenster in historischer Form; Rollladenkästen nicht sichtbar.",
+      "fundstellen": [
+        "7/1",
+        "7/2",
+        "7/4",
+        "7/6",
+        "7/7"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "7/1": "0b8b98c1",
+        "7/2": "dd3376b0",
+        "7/4": "0bc1687b",
+        "7/6": "4ac93e78",
+        "7/7": "911fcb54"
+      }
+    },
+    "8": {
+      "gilt": {
+        "und": [
+          {
+            "$": "soest_aussen_bauen"
+          },
+          {
+            "$": "nichtwohngebaeude"
+          }
+        ]
+      },
+      "grund": "Schaufenster nur im Erdgeschoss, Bezug zu den Fensterachsen, stehende bis quadratische Formate, Bekleben höchstens 30 % der Scheibe.",
+      "fundstellen": [
+        "8/1",
+        "8/2",
+        "8/3",
+        "8/5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "entfaellt": {
+        "$": "wohngebaeude"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "8/1": "3440eb78",
+        "8/2": "23541978",
+        "8/3": "d4007b56",
+        "8/5": "6ca0778c"
+      }
+    },
+    "9": {
+      "gilt": {
+        "und": [
+          {
+            "$": "soest_aussen_bauen"
+          },
+          {
+            "$": "nichtwohngebaeude"
+          }
+        ]
+      },
+      "grund": "Vordächer und Markisen nur im Erdgeschoss, Kragdächer unzulässig, Vordächer höchstens 1,50 m auskragend und transparent.",
+      "fundstellen": [
+        "9/1",
+        "9/2",
+        "9/4",
+        "9/5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "entfaellt": {
+        "$": "wohngebaeude"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "9/1": "a8939689",
+        "9/2": "63df4d99",
+        "9/4": "d1a704f8",
+        "9/5": "bd353b21"
+      }
+    },
+    "10": {
+      "gilt": {
+        "$": "soest_aussen_bauen"
+      },
+      "grund": "Material an einsehbaren Seiten: Fassaden nur in glattem oder fein- bis mittelkörnigem Putz (Erdgeschosszone auch Grünsandstein), keine metallisch glänzenden Rahmen, keine getönten oder spiegelnden Scheiben, keine Glasbausteine.",
+      "fundstellen": [
+        "10/1",
+        "10/2",
+        "10/3",
+        "10/5",
+        "10/6",
+        "10/7"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "10/1": "02836518",
+        "10/2": "16bf12ec",
+        "10/3": "9127dcfc",
+        "10/5": "43e312f9",
+        "10/6": "eadfe9e7",
+        "10/7": "be170540"
+      }
+    },
+    "11": {
+      "gilt": {
+        "$": "soest_aussen_bauen"
+      },
+      "grund": "Farben: helle Putzfarben (Hellbezugswert mindestens 66) aus dem Weiß-, Gelb-, Braun-, Grün-, Grau- und Blaubereich, ein Hauptton je Gebäude; Fachwerk dunkelbraun mit weißen Gefachen.",
+      "fundstellen": [
+        "11/1",
+        "11/2",
+        "11/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "11/1": "b15492d7",
+        "11/2": "c24d4411",
+        "11/3": "bfd95895"
+      }
+    },
+    "12": {
+      "gilt": {
+        "$": "bauen"
+      },
+      "grund": "Einfriedigungen zu öffentlichen Verkehrsflächen: schmiedeeiserne Gitter (1,00–1,30 m) auf Grünsandsteinsockel oder Bruchsteinmauern (1,60–2,00 m) mit Soester Sattel; Tore aus senkrechten Hölzern oder Schmiedeeisen, Zugang höchstens 1,20 m, Einfahrt 3,50 m.",
+      "fundstellen": [
+        "12/1",
+        "12/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "12/1": "6ddf8d03",
+        "12/2": "919a6257"
+      }
+    },
+    "13": {
+      "gilt": {
+        "$": "bauen"
+      },
+      "grund": "Außenanlagen: Vorgärten begrünen; Einstellplätze versickerungsfähig (Naturstein- oder Betonpflaster mit großem Fugenanteil); Abfallbehälter vom öffentlichen Raum nicht sichtbar.",
+      "fundstellen": [
+        "13/1",
+        "13/2",
+        "13/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "13/1": "12e2826c",
+        "13/2": "a19292e7",
+        "13/3": "bbfac939"
+      }
+    },
+    "14": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "soest_aussen_bauen"
+          },
+          {
+            "f": "technik.waermepumpe",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Technische Anlagen (Lüftung, Klima, Antennen) von keiner öffentlichen Verkehrsfläche einsehbar und in der Farbe des Untergrunds; Wärmepumpen nur an straßenabgewandten Seiten oder hinter Einfriedigungen.",
+      "fundstellen": [
+        "14/1",
+        "14/2",
+        "14/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "14/1": "34c96edb",
+        "14/2": "15f1269a",
+        "14/3": "8d93a4f2"
+      }
+    },
+    "15": {
+      "gilt": {
+        "und": [
+          {
+            "$": "bauen"
+          },
+          {
+            "$": "nw_garage"
+          }
+        ]
+      },
+      "grund": "Garagen, Carports und überdachte Stellplätze mit geneigtem Dach oder begrüntem Flachdach (0–3°, Dachbegrünungsrichtlinie 2008); Tore mit senkrechter Holz- oder Holzoptik-Struktur.",
+      "fundstellen": [
+        "15/1",
+        "15/2",
+        "15/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "entfaellt": {
+        "f": "gebaeude.garage_nutzflaeche",
+        "max": 0
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "15/1": "e73b4008",
+        "15/2": "d21dd6c1",
+        "15/3": "8ec3b906"
+      }
+    },
+    "16": {
+      "gilt": {
+        "f": "planung.abweichung",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "planung.abweichung",
+        "ist": false
+      },
+      "grund": "Abweichungen im Einzelfall (besondere Härte, besserer Einfügung, Intention der Satzung) – jede beabsichtigte Abweichung ist schriftlich und zeichnerisch zu begründen.",
+      "fundstellen": [
+        "16/1",
+        "16/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "verweise": [
+        "nw/bauo-nrw/69"
+      ],
+      "stand": {
+        "16/1": "404180d2",
+        "16/2": "76a35fb9"
+      }
+    },
+    "17": {
+      "gilt": {
+        "und": [
+          {
+            "f": "planung.abweichung",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "$": "aenderung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "planung.abweichung",
+        "ist": false
+      },
+      "grund": "Abweichungen für architektonisch eigenständige Entwurfslösungen bei Neu-, Um- und Anbauten, wenn das Konzept durchkomponiert ist, sich in zeitgemäßer Formensprache auf die Umgebung bezieht und den Belangen der Denkmalbereichssatzung gerecht wird – detailliert schriftlich zu begründen.",
+      "fundstellen": [
+        "17/1",
+        "17/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "17/1": "6ae4fd5a",
+        "17/2": "1effb536"
+      }
+    },
+    "18": {
+      "gilt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "$": "gebaeude"
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "f": "planung.abweichung",
+                "ist": true
+              },
+              {
+                "oder": [
+                  {
+                    "$": "errichtung"
+                  },
+                  {
+                    "$": "aenderung"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Der Gestaltungsbeirat ist zu beteiligen bei Neubauten in der Altstadt und bei Abweichungen nach § 17; er gibt eine Empfehlung ab.",
+      "fundstellen": [
+        "18/1",
+        "18/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei anderen Vorhaben wird der Beirat nur auf Verlangen der Bauherrschaft, des Ausschusses oder der Verwaltung beteiligt.",
+        "wenn": {
+          "und": [
+            {
+              "$": "aenderung"
+            },
+            {
+              "f": "planung.abweichung",
+              "ist": false
+            }
+          ]
+        }
+      },
+      "stand": {
+        "18/1": "0d23fc12",
+        "18/2": "534108bd"
+      }
+    },
+    "5a": {
+      "gilt": {
+        "oder": [
+          {
+            "f": "soest.solaranlage",
+            "ist": true
+          },
+          {
+            "n": "nw/bauo-nrw/42a",
+            "ampel": [
+              "rot"
+            ]
+          }
+        ]
+      },
+      "grund": "Photovoltaik- und Solarthermieanlagen: nur rote Module mit roten bzw. schwarze mit schwarzen Rahmen, zusammenhängende rechteckige Fläche parallel zur Dachfläche (höchstens 0,20 m Abstand), mindestens 0,50 m Abstand zu Traufe, First, Ortgang und Giebel; nicht an Fassaden, Balkonen und Fenstern, nicht freistehend; nicht einsehbare Anlagen dürfen abweichen (Abs. 13).",
+      "fundstellen": [
+        "5a/1",
+        "5a/2",
+        "5a/3",
+        "5a/5",
+        "5a/10",
+        "5a/11",
+        "5a/13"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "soest.solaranlage",
+            "ist": false
+          },
+          {
+            "n": "nw/bauo-nrw/42a",
+            "ampel": [
+              "gruen"
+            ]
+          }
+        ]
+      },
+      "hinweis": "Maßgeblich auch für die Solarpflicht: Festlegungen einer örtlichen Bauvorschrift gehen nach § 42a Abs. 1 Satz 3 BauO NRW vor. Zusätzlich denkmalrechtliche Erlaubnis (Denkmalbereichssatzung § 3).",
+      "verweise": [
+        "nw/bauo-nrw/42a",
+        "nw-05974040/denkmalbereichssatzung/3"
+      ],
+      "stand": {
+        "5a/1": "20721d29",
+        "5a/2": "4901c61c",
+        "5a/3": "499aefa6",
+        "5a/5": "67d68788",
+        "5a/10": "5f258989",
+        "5a/11": "58f33b96",
+        "5a/13": "b4d60e81"
+      }
+    }
+  }
+}

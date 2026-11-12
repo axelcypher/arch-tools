@@ -10,10 +10,14 @@
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
+
 import type { Regeldatei } from '@core/baurecht/typen';
 import { holen } from '@core/recht/netz';
 import { fassungHolen } from '@core/recht/quellen';
 import { paketLaden, WURZEL } from '../test/laden';
+
+/** Ausgabe direkt auf die Konsole (vitest fängt console.log ab) */
+const ausgabe = (t = '') => void process.stdout.write(`${t}\n`);
 
 it('neue Fassung anlegen', async () => {
   const nur = process.env.NUR;
@@ -29,7 +33,7 @@ it('neue Fassung anlegen', async () => {
   const f = await fassungHolen(holen, { id: norm, kurz: def!.kurz, titel: def!.titel }, def!.quelle, { textAusPaket: async (p) => paket.texte.get(p) ?? null });
   if (f === 'unveraendert') return;
   if (f.gueltigAb <= letzte.fassung) {
-    console.log(`${nur}: geltende Fassung ${f.gueltigAb} – keine neuere als die Regeldatei ${letzte.fassung}`);
+    ausgabe(`${nur}: geltende Fassung ${f.gueltigAb} – keine neuere als die Regeldatei ${letzte.fassung}`);
     return;
   }
   const neu: Regeldatei = structuredClone({ ...letzte, fassung: f.gueltigAb, version: 1 });
@@ -44,6 +48,6 @@ it('neue Fassung anlegen', async () => {
   const pfad = join(WURZEL, 'module', modulId, `${norm}@${f.gueltigAb}.json`);
   expect(existsSync(pfad), `${pfad} gibt es schon`).toBe(false);
   writeFileSync(pfad, `${JSON.stringify(neu, null, 2)}\n`);
-  console.log(`${nur}: neue Regeldatei für die Fassung ${f.gueltigAb} angelegt.`);
-  console.log(geaendert.length ? `Geändert – Regeln ansehen: ${geaendert.join(', ')}` : 'Alle Fundstellen unverändert.');
+  ausgabe(`${nur}: neue Regeldatei für die Fassung ${f.gueltigAb} angelegt.`);
+  ausgabe(geaendert.length ? `Geändert – Regeln ansehen: ${geaendert.join(', ')}` : 'Alle Fundstellen unverändert.');
 });

@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import type { Auswertung } from '@core/baurecht/auswertung';
 import { auswerten } from '@core/baurecht/auswertung';
 import type { Paket } from '@core/baurecht/paket';
+import { faktenZurLage, lageKennung } from '@core/baurecht/geodienste';
 import { agsVorschlag, aktiveModule, fehlendeEbenen } from '@core/baurecht/paket';
 import type { GebaeudeklasseAbleitung } from '@core/baurecht/projekt';
 import { gebaeudeklasseAbleiten, projektFakten, widersprueche } from '@core/baurecht/projekt';
@@ -20,8 +21,13 @@ import { heute, useBaurecht } from './store';
 
 const log = logger('rechtsstand');
 
-/** Fakten aus Projektdatei und Prüfung; Angaben der Prüfung (von Hand, Geodienst, bestätigt) gehen vor */
-export function alleFakten(project: Project | null, eigene: Record<string, FaktWert>, module: Modul[]): Record<string, FaktWert> {
+/**
+ * Fakten aus Projektdatei und Prüfung; Angaben der Prüfung (von Hand, Geodienst, bestätigt) gehen vor. Ergebnisse
+ * der Geodienste und ihre Bestätigungen gelten nur an der Lage, an der sie ermittelt wurden.
+ */
+export function alleFakten(project: Project | null, eigeneRoh: Record<string, FaktWert>, module: Modul[]): Record<string, FaktWert> {
+  const k = project?.meta.koordinaten;
+  const eigene = faktenZurLage(eigeneRoh, k ? lageKennung(k.ost, k.nord) : null);
   const f: Record<string, FaktWert> = project ? projektFakten(project, heute()) : {};
   // Gemeindeschlüssel aus der PLZ, wenn ein Gemeindemodul sie nennt – nur Vorschlag, bis er bestätigt ist
   if (!eigene['lage.ags'] && project?.meta.adresse.plz) {
@@ -101,7 +107,7 @@ export async function texteLaden(module: Modul[], stichtag: string, o: { aktuali
       try {
         const r = await rs(st.paket).fuer(n.norm, stichtag, { aktualisieren: o.aktualisieren, offline: !isTauri() });
         if (nr !== lauf) return;
-        useBaurecht.getState().textSetzen(n.key, { fassung: r.fassung, ...(r.vorige ? { vorige: r.vorige } : {}), ...(r.fehler ? { fehler: r.fehler } : {}), ...(r.kuenftige ? { kuenftige: r.kuenftige } : {}) });
+        useBaurecht.getState().textSetzen(n.key, { fassung: r.fassung, ...(r.vorige ? { vorige: r.vorige } : {}), ...(r.fehler ? { fehler: r.fehler } : {}), ...(r.kuenftige ? { kuenftige: r.kuenftige } : {}), ...(r.geprueft ? { geprueft: r.geprueft } : {}) });
       } catch (e) {
         log.warn('Text nicht geholt', { norm: n.key, fehler: String(e) });
         useBaurecht.getState().textSetzen(n.key, { fassung: null, fehler: e instanceof Error ? e.message : String(e) });

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { paragrafName } from '@core/baurecht/typen';
 import type { Ampel } from '@core/baurecht/typen';
 import { EBENEN } from '@core/baurecht/typen';
 import { druckenAls } from '@core/platform/projektDatei';
@@ -7,7 +8,7 @@ import { useEscSchliessen } from '@core/ui/Dialog';
 import { benutzer } from '../benutzer';
 import type { Pruefstand } from '../pruefung';
 import { verwendeteFassungen } from '../pruefung';
-import { useBaurecht } from '../store';
+import { offeneBestaetigungen, offeneFestlegungen, useBaurecht } from '../store';
 import { AMPEL_TEXT, datum } from './Ampel';
 
 /** Prüfprotokoll zum Drucken bzw. als PDF; „Prüfung abschließen“ legt einen Stand in der Projektdatei ab */
@@ -18,6 +19,7 @@ export function Protokoll({ stand, onClose }: { stand: Pruefstand; onClose: () =
   const paket = useBaurecht((s) => s.paket);
   const protokolle = useBaurecht((s) => s.pruefung.protokolle);
   const quelle = useBaurecht((s) => s.quelle);
+  const entwuerfe = useBaurecht((s) => offeneFestlegungen(s).length + offeneBestaetigungen(s).length);
   const [nurRelevant, setNurRelevant] = useState(false);
   useEscSchliessen(onClose);
   if (!project) return null;
@@ -25,7 +27,10 @@ export function Protokoll({ stand, onClose }: { stand: Pruefstand; onClose: () =
   const offen = a.paragrafen.filter((p) => p.ampel === 'gelb');
   const vonHand = a.paragrafen.filter((p) => p.festlegung);
   const ueberholt = a.paragrafen.filter((p) => p.ueberholt);
+  const bestaetigt = Object.entries(a.fakten).filter(([, f]) => f.bestaetigt);
   const abschliessen = () => {
+    // nur ein gespeicherter, zweimal bestätigter Stand wird abgeschlossen
+    if (entwuerfe) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
     useBaurecht.getState().protokollAnhaengen({ am: new Date().toISOString(), von: benutzer(), paket: paket.version, einreichung: stand.einreichung, fassungen: verwendeteFassungen(a), zaehler: a.zaehler, ampeln, offen: offen.length + ueberholt.length });
   };
@@ -40,13 +45,24 @@ export function Protokoll({ stand, onClose }: { stand: Pruefstand; onClose: () =
           <button type="button" onClick={() => druckenAls({ datei, projektName: project.name, zusatz: `Baurecht ${antrag}` })}>
             Drucken / PDF …
           </button>
-          <button type="button" className="primary" onClick={abschliessen} title="Diesen Stand mit Fassungen und Ampeln in der Projektdatei ablegen (danach speichern)">
+          <button
+            type="button"
+            className="primary"
+            onClick={abschliessen}
+            disabled={entwuerfe > 0}
+            title={entwuerfe ? `Erst speichern: ${entwuerfe} Angabe(n) von Hand sind noch Entwurf (zweite Bestätigung fehlt)` : 'Diesen Stand mit Fassungen und Ampeln in der Projektdatei ablegen (danach speichern)'}
+          >
             Prüfung abschließen
           </button>
           <button type="button" onClick={onClose}>
             Schließen
           </button>
         </div>
+        {entwuerfe > 0 && (
+          <p className="report-note no-print br-entwurf-hinweis" role="status">
+            {entwuerfe === 1 ? 'Eine Angabe von Hand ist' : `${entwuerfe} Angaben von Hand sind`} noch Entwurf – vor dem Abschließen speichern und bestätigen. Im Ausdruck sind Entwürfe als solche gekennzeichnet.
+          </p>
+        )}
         <DruckKopf titel={`Baurechtliche Prüfung vor dem Einreichen – ${antrag}`} project={project} stand={new Date()} />
         <h2>Grundlagen</h2>
         <table className="report-table narrow">
@@ -101,7 +117,7 @@ export function Protokoll({ stand, onClose }: { stand: Pruefstand; onClose: () =
                     <table className="report-table">
                       <thead>
                         <tr>
-                          <th style={{ width: '9%' }}>§</th>
+                          <th style={{ width: '9%' }}>Einheit</th>
                           <th style={{ width: '24%' }}>Titel</th>
                           <th style={{ width: '10%' }}>Ampel</th>
                           <th>Begründung</th>
@@ -110,7 +126,7 @@ export function Protokoll({ stand, onClose }: { stand: Pruefstand; onClose: () =
                       <tbody>
                         {ps.map((p) => (
                           <tr key={p.id} className={`br-zeile-${p.ampel}`}>
-                            <td>§ {p.paragraf}</td>
+                            <td>{paragrafName(p.paragraf)}</td>
                             <td>{p.titel}</td>
                             <td className="strong">
                               {AMPEL_TEXT[p.ampel]}
@@ -155,6 +171,19 @@ export function Protokoll({ stand, onClose }: { stand: Pruefstand; onClose: () =
               <li key={p.id}>
                 {a.text.paragraf?.(p.id) ?? p.id}: {AMPEL_TEXT[p.festlegung!.ampel]} statt {AMPEL_TEXT[p.automatisch]} – {p.festlegung!.grund} ({p.festlegung!.von}, {datum(p.festlegung!.am)}
                 {p.festlegung!.bestaetigt ? ', bestätigt' : ', Entwurf'})
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>Keine.</p>
+        )}
+        <h2>Bestätigte Angaben ({bestaetigt.length})</h2>
+        {bestaetigt.length ? (
+          <ul>
+            {bestaetigt.map(([id, f]) => (
+              <li key={id}>
+                {a.faktDefs[id]?.titel ?? id}: {f.wert === true ? 'ja' : f.wert === false ? 'nein' : String(f.wert)} – bisher nur Hinweis ({f.grund ?? f.quelle ?? 'nicht gesichert'}); bestätigt von {f.bestaetigt!.von} am {datum(f.bestaetigt!.am)}
+                {f.bestaetigt!.grund ? `, gestützt auf: ${f.bestaetigt!.grund}` : ''}
               </li>
             ))}
           </ul>

@@ -14,10 +14,14 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
+
 import { holen, holenOk } from '@core/recht/netz';
 import { satzungParagrafen, satzungsDatum } from '@core/recht/quellen';
 import { sha256 } from '@core/recht/text';
 import { paketLaden, WURZEL } from '../test/laden';
+
+/** Ausgabe direkt auf die Konsole (vitest fängt console.log ab) */
+const ausgabe = (t = '') => void process.stdout.write(`${t}\n`);
 
 it('Text eines Scans erkennen', async () => {
   const nur = process.env.NUR;
@@ -41,6 +45,6 @@ it('Text eines Scans erkennen', async () => {
   const ziel = join(WURZEL, 'texte', modulId);
   mkdirSync(ziel, { recursive: true });
   writeFileSync(join(ziel, `${norm}@${datum}.json`), `${JSON.stringify({ quelle: q.url, texterkennung: true, durchgesehen: false, paragrafen }, null, 1)}\n`);
-  console.log(`${nur}: ${Object.keys(paragrafen).length} Paragrafen erkannt → texte/${modulId}/${norm}@${datum}.json`);
-  console.log(`SHA-256 der Datei (in modul.json als quelle.sha256 eintragen): ${await sha256(r.daten)}`);
+  ausgabe(`${nur}: ${Object.keys(paragrafen).length} Paragrafen erkannt → texte/${modulId}/${norm}@${datum}.json`);
+  ausgabe(`SHA-256 der Datei (in modul.json als quelle.sha256 eintragen): ${await sha256(r.daten)}`);
 });

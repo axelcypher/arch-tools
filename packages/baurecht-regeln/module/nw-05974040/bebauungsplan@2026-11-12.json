@@ -1,0 +1,62 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "bebauungsplan",
+  "fassung": "2026-11-12",
+  "version": 1,
+  "geltung": {
+    "oder": [
+      {
+        "$": "bplan_jeder"
+      },
+      {
+        "$": "satzung_baugb"
+      }
+    ]
+  },
+  "geltungGrund": "nur im Geltungsbereich eines Bebauungsplans oder einer Satzung nach dem BauGB",
+  "paragrafen": {
+    "Festsetzungen": {
+      "titel": "Festsetzungen des Bebauungsplans",
+      "gilt": {
+        "oder": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "beseitigung"
+          }
+        ]
+      },
+      "grund": "Festsetzungen des Bebauungsplans (Art und Maß der Nutzung, überbaubare Fläche, Bauweise, Gestaltung, Grünordnung) aus der Planurkunde beachten; Planurkunde und Begründung stehen im Bebauungsplan-Dienst der Stadt.",
+      "fundstellen": [
+        "Festsetzungen"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "91 Bebauungspläne verweisen zusätzlich auf die Altstadtsatzung (Gestaltung). XPlanGML gibt es nur für B 187.",
+      "verweise": [
+        "bund/baugb/30"
+      ]
+    },
+    "Verfahrensstand": {
+      "titel": "Stand des Plans im Dienst der Stadt",
+      "gilt": {
+        "f": "soest.bplan_entwurf",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "soest.bplan_entwurf",
+        "ist": false
+      },
+      "grund": "Der Plan ist im Dienst der Stadt als Entwurf geführt oder ein Bauleitplanverfahren läuft: Planreife (§ 33 BauGB) bzw. Rechtskraft mit der Bekanntmachungsseite der Stadt abgleichen.",
+      "fundstellen": [
+        "Verfahrensstand"
+      ],
+      "verweise": [
+        "bund/baugb/33"
+      ]
+    }
+  }
+}

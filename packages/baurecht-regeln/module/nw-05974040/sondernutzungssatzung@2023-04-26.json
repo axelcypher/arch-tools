@@ -1,0 +1,62 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "sondernutzungssatzung",
+  "fassung": "2023-04-26",
+  "version": 1,
+  "geltung": {
+    "f": "vorhaben.baustelle_oeffentlich",
+    "ist": true
+  },
+  "geltungGrund": "nur bei Gerüst oder Baustelleneinrichtung im öffentlichen Straßenraum",
+  "paragrafen": {
+    "4": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Die Benutzung öffentlicher Straßen über den Gemeingebrauch hinaus – etwa durch Gerüste, Container oder Baustelleneinrichtung – bedarf der Sondernutzungserlaubnis der Stadt.",
+      "fundstellen": [
+        "4/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "4/1": "8ad32326"
+      }
+    },
+    "7": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Die Erlaubnis wird nur auf schriftlichen Antrag erteilt (rechtzeitig vor Beginn, mit Angaben zu Art, Umfang und Dauer).",
+      "fundstellen": [
+        "7/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Antrag auf Sondernutzungserlaubnis bei der Stadt Soest"
+      ],
+      "stand": {
+        "7/1": "32f05f09"
+      }
+    },
+    "9": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Für erlaubnisbedürftige Sondernutzungen werden Gebühren nach dem Gebührentarif erhoben (Gerüste je m² und Monat).",
+      "fundstellen": [
+        "9/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "9/1": "f48e24f7"
+      }
+    }
+  }
+}

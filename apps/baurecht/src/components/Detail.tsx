@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { paragrafName } from '@core/baurecht/typen';
 import { offenText } from '@core/baurecht/kurz';
 import type { ParagrafErgebnis } from '@core/baurecht/typen';
 import type { Paragraf } from '@core/recht/index';
@@ -87,7 +88,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   const absaetze = new Set(p.fundstellen.map((f) => f.split('/')[1] ?? ''));
   const geaendert = new Set(p.geaendert.map((g) => g.split('/')[1] ?? ''));
   const ctx = stand.auswertung.text;
-  const titel = `§ ${p.paragraf} ${norm.def.kurz}`;
+  const titel = `${paragrafName(p.paragraf)} ${norm.def.kurz}`;
   return (
     <aside className="br-detail" aria-label={`Einzelheiten ${titel}`}>
       <header className={`br-detail-kopf br-kopf-${p.ampel}`}>

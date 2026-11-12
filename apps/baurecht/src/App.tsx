@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { FaktWert, Festlegung } from '@core/baurecht/typen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { BreitenLeiste } from '@core/ui/Leiste';
@@ -9,7 +10,7 @@ import { TitleBar } from '@core/ui/TitleBar';
 import { Angaben } from './components/Angaben';
 import { AmpelMarke, AMPEL_LANG } from './components/Ampel';
 import { Detail } from './components/Detail';
-import { BestaetigenDialog, FestlegenDialog, festlegungenBestaetigenFragen } from './components/Dialoge';
+import { BestaetigenDialog, bestaetigenFragen, FaktBestaetigenDialog, FestlegenDialog } from './components/Dialoge';
 import { Bilanz, Kopf } from './components/Kopf';
 import { Protokoll } from './components/Protokoll';
 import { Vorschriften } from './components/Vorschriften';
@@ -17,37 +18,50 @@ import { lageAbfragen } from './lage';
 import { ausProjektwahl, dateiOeffnen, speichernJetzt } from './projekt';
 import { texteLaden, usePruefstand } from './pruefung';
 import { abgelegtesPaket, paketNachladen } from './regelpaket';
-import { istGeaendert, offeneFestlegungen, useBaurecht } from './store';
+import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from './store';
 
 const log = logger('baurecht');
 
-/** Speichern mit zweiter Bestätigung der Festlegungen von Hand; true = gespeichert */
+/**
+ * Speichern mit zweiter Bestätigung: Festlegungen von Hand (neu, geändert oder aufgehoben) und bestätigte Hinweise.
+ * „Ohne diese speichern“ schreibt für sie den Stand der Datei zurück (nichts geht verloren, nichts Unbestätigtes wird
+ * gespeichert) und lässt sie danach als Entwurf in der App. true = gespeichert.
+ */
 export async function speichern(): Promise<boolean> {
   const s = useBaurecht.getState();
   if (!s.quelle) return false;
-  const offen = offeneFestlegungen(s);
-  let entwuerfe: Record<string, (typeof s.pruefung.festlegungen)[string]> = {};
-  if (offen.length) {
-    const a = await festlegungenBestaetigenFragen(offen);
+  const festlegungen = offeneFestlegungen(s);
+  const fakten = offeneBestaetigungen(s);
+  let entwurf: { festlegungen: Record<string, Festlegung | null>; fakten: Record<string, FaktWert | null> } | null = null;
+  if (festlegungen.length || fakten.length) {
+    const a = await bestaetigenFragen({ festlegungen, fakten });
     if (a === 'abbrechen') return false;
-    if (a === 'bestaetigen') useBaurecht.getState().festlegungenBestaetigen(offen);
+    if (a === 'bestaetigen') useBaurecht.getState().festlegungenBestaetigen(festlegungen);
     else {
-      // ohne diese Festlegungen speichern: sie bleiben als Entwurf in der App
-      entwuerfe = Object.fromEntries(offen.map((id) => [id, s.pruefung.festlegungen[id]]));
-      for (const id of offen) useBaurecht.getState().festlegungAufheben(id);
+      entwurf = {
+        festlegungen: Object.fromEntries(festlegungen.map((id) => [id, s.pruefung.festlegungen[id] ?? null])),
+        fakten: Object.fromEntries(fakten.map((id) => [id, s.pruefung.fakten[id] ?? null])),
+      };
+      useBaurecht.getState().aufDateistand(festlegungen, fakten);
     }
   }
   try {
-    const ok = await speichernJetzt();
-    return ok;
+    return await speichernJetzt();
   } catch (e) {
     log.error('Speichern fehlgeschlagen', { fehler: fehlerText(e) });
     await meldung('Speichern fehlgeschlagen', fehlerText(e), e);
     return false;
   } finally {
-    if (Object.keys(entwuerfe).length) {
+    if (entwurf) {
       const p = structuredClone(useBaurecht.getState().pruefung);
-      Object.assign(p.festlegungen, entwuerfe);
+      for (const [id, f] of Object.entries(entwurf.festlegungen)) {
+        if (f) p.festlegungen[id] = f;
+        else delete p.festlegungen[id];
+      }
+      for (const [id, f] of Object.entries(entwurf.fakten)) {
+        if (f) p.fakten[id] = f;
+        else delete p.fakten[id];
+      }
       useBaurecht.setState({ pruefung: p });
     }
   }
@@ -153,6 +167,7 @@ export function App() {
     const p = stand.auswertung.paragrafen.find((x) => x.id === id);
     return { titel: stand.auswertung.text.paragraf?.(id) ?? id, automatisch: p?.automatisch };
   };
+  const faktTitel = (id: string) => stand.auswertung.faktDefs[id]?.titel ?? id;
 
   return (
     <div className="app br-app">
@@ -200,8 +215,9 @@ export function App() {
         />
       )}
       {protokoll && project && <Protokoll stand={stand} onClose={() => setProtokoll(false)} />}
-      <FestlegenDialog />
-      <BestaetigenDialog titel={titel} />
+      <FestlegenDialog fakten={stand.auswertung.fakten} />
+      <FaktBestaetigenDialog />
+      <BestaetigenDialog titel={titel} faktTitel={faktTitel} />
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
     </div>
   );

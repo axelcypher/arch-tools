@@ -14,8 +14,8 @@ export interface KurzKontext {
   einreichung: string;
   heute: string;
   bausteine: Record<string, Kurz>;
-  /** Ampel eines anderen Paragrafen; undefined = unbekannt (offen) */
-  ampel?: (id: string) => Ampel | undefined;
+  /** Ampel eines anderen Paragrafen (unsicher: beruht auf einer Festlegung von Hand); undefined = unbekannt (offen) */
+  ampel?: (id: string) => { ampel: Ampel; unsicher?: boolean } | undefined;
   /** Merkmale, deren Wert der Ableitung aus dem Modell widerspricht */
   widersprueche?: Set<string>;
 }
@@ -72,7 +72,7 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
   }
   if ('m' in k) {
     const v = ctx.merkmale[k.m];
-    const widerspruch = ctx.widersprueche?.has(k.m) ? [k.m] : [];
+    const widerspruch = ctx.widersprueche?.has(k.m) ? [`merkmal:${k.m}`] : [];
     if (!v) return { w: 'offen', offen: [`merkmal:${k.m}`], unsicher: [], widerspruch, verwendet: [`merkmal:${k.m}`] };
     const w = k.in ? aus(k.in.includes(v)) : k.nicht ? aus(!k.nicht.includes(v)) : 'ja';
     return { w, offen: [], unsicher: [], widerspruch, verwendet: [`merkmal:${k.m}`] };
@@ -92,7 +92,7 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
       w = aus((k.min === undefined || n >= k.min) && (k.max === undefined || n <= k.max));
     }
     const unsicher = fw.sicherheit === 'hinweis' && !fw.bestaetigt ? [k.f] : [];
-    return { w, offen: [], unsicher, widerspruch: [], verwendet };
+    return { w, offen: [], unsicher, widerspruch: fw.widerspruch ? [k.f] : [], verwendet };
   }
   if ('tag' in k) {
     const d = k.tag === 'einreichung' ? ctx.einreichung : ctx.heute;
@@ -100,8 +100,9 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
   }
   if ('n' in k) {
     const a = ctx.ampel?.(k.n);
-    if (!a || a === 'gelb') return { w: 'offen', offen: [`paragraf:${k.n}`], unsicher: [], widerspruch: [], verwendet: [] };
-    return { w: aus(k.ampel.includes(a)), offen: [], unsicher: [], widerspruch: [], verwendet: [] };
+    const verwendet = [`paragraf:${k.n}`];
+    if (!a || a.ampel === 'gelb') return { w: 'offen', offen: [`paragraf:${k.n}`], unsicher: [], widerspruch: [], verwendet };
+    return { w: aus(k.ampel.includes(a.ampel)), offen: [], unsicher: a.unsicher ? [`paragraf:${k.n}`] : [], widerspruch: [], verwendet };
   }
   throw new Error(`Unbekannte Bedingung: ${JSON.stringify(k)}`);
 }

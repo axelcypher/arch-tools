@@ -1,0 +1,206 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "entwaesserungssatzung",
+  "fassung": "2025-12-03",
+  "version": 1,
+  "paragrafen": {
+    "9": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Anschluss- und Benutzungszwang für Schmutz- und Niederschlagswasser; im Trennsystem getrennt einleiten; bei Neu- und Umbauten vor der Benutzung anschließen, Zustimmungsverfahren nach § 14 (Abs. 7).",
+      "fundstellen": [
+        "9/1",
+        "9/2",
+        "9/5",
+        "9/6",
+        "9/7"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "9/1": "99e3cc3d",
+        "9/2": "c2b989a4",
+        "9/5": "40a41951",
+        "9/6": "4764ab4c",
+        "9/7": "882114e5"
+      }
+    },
+    "10": {
+      "gilt": {
+        "f": "vorhaben.versickerung",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "vorhaben.versickerung",
+        "ist": false
+      },
+      "grund": "Befreiung vom Anschluss- und Benutzungszwang für Niederschlagswasser auf Antrag, wenn die Beseitigung ohne Beeinträchtigung des Wohls der Allgemeinheit erfolgt (wasserrechtliche Erlaubnis vorlegen).",
+      "fundstellen": [
+        "10/3"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "10/3": "569ec2d5"
+      }
+    },
+    "11": {
+      "gilt": {
+        "f": "vorhaben.versickerung",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "vorhaben.versickerung",
+        "ist": false
+      },
+      "grund": "Versickern, Verrieseln oder ortsnahes Einleiten von Niederschlagswasser braucht vorher eine wasserrechtliche Erlaubnis der unteren Wasserbehörde (Kreis Soest) nach den Regeln der Technik (DWA-A 138); Brauchwassernutzung ist anzuzeigen.",
+      "fundstellen": [
+        "11/1",
+        "11/3"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "wasserrechtliche Erlaubnis der unteren Wasserbehörde des Kreises Soest",
+        "Antrag auf Befreiung bei der SES"
+      ],
+      "stand": {
+        "11/1": "ad0c9d5f",
+        "11/3": "f8684af0"
+      }
+    },
+    "14": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": true
+          },
+          {
+            "$": "beseitigung"
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Herstellung oder Änderung des Anschlusses nur mit vorheriger Zustimmung der SES (Antrag spätestens vier Wochen vorher mit Zeichnungen und Bemessung); Grundleitungen vor dem Verfüllen abnehmen lassen; Abbruch zwei Wochen vor Außerbetriebnahme mitteilen.",
+      "fundstellen": [
+        "14/1",
+        "14/2",
+        "14/4"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Antrag auf Zustimmung zur Einleitung (Vordruck Teil A/B der SES)"
+      ],
+      "stand": {
+        "14/1": "ee5d7dcd",
+        "14/2": "0f696c80",
+        "14/4": "d6787680"
+      }
+    },
+    "15": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              },
+              {
+                "$": "beseitigung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Private Schmutzwasserleitungen sind nach Errichtung oder wesentlicher Änderung unverzüglich von Sachkundigen auf Zustand und Funktion zu prüfen (§ 8 SüwVO Abw NRW); die Bescheinigung ist der SES vorzulegen.",
+      "fundstellen": [
+        "15/1",
+        "15/4",
+        "15/6"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "15/1": "cb9774de",
+        "15/4": "a6ffb074",
+        "15/6": "5d411332"
+      }
+    }
+  }
+}

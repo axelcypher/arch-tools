@@ -1,0 +1,410 @@
+{
+  "format": 1,
+  "id": "nw-05974040",
+  "name": "Stadt Soest",
+  "ebene": "gemeinde",
+  "schluessel": "05974040",
+  "plz": [
+    "59494"
+  ],
+  "ueber": "nw-05974",
+  "version": "2026-11-12",
+  "hosts": [
+    "www.soest.de",
+    "gis02.soest.de",
+    "www.stadtentwaesserung-soest.de"
+  ],
+  "listen": [
+    "https://www.soest.de/politik-verwaltung/ortsrecht-und-satzungen",
+    "https://www.soest.de/politik-verwaltung/bekanntmachungen"
+  ],
+  "sperrliste": [
+    "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Altstadtsatzung_2023.pdf",
+    "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Stellpl__tze_-_Abl__sesummen.pdf",
+    "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Stellplatzsatzung_-_Adam-Kaserne.pdf",
+    "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Abwasserbeseitigungssatzung_2014.pdf"
+  ],
+  "normen": {
+    "altstadtsatzung": {
+      "kurz": "Altstadtsatzung",
+      "titel": "Örtliche Bauvorschrift über Gestaltung der Altstadt Soest (§ 89 BauO NRW) in der Fassung vom 27.09.2023, ausgefertigt 14.11.2023",
+      "thema": "gestaltung",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+        "textebene": false,
+        "sha256": "ec10bad707fc485d880edce489b9469bb5bd3875ca9765d792fa444d21d850bf",
+        "text": "texte/nw-05974040/altstadtsatzung@2023-11-14.json"
+      },
+      "lizenz": "Maßgeblich ist die ausgefertigte Fassung auf gis02.soest.de; ihre Textebene ist falsch kodiert, der Text liegt deshalb korrigiert im Regelpaket. Die Fassung 2023 enthält den vollständigen Satzungstext (§ 2 weggefallen); § 20 lässt die nicht geänderten Paragrafen der Fassung vom 11.07.2013 fortgelten."
+    },
+    "werbeanlagen_altstadt": {
+      "kurz": "Werbeanlagensatzung Altstadt",
+      "titel": "Örtliche Bauvorschrift über Werbeanlagen in der Altstadt Soest vom 12.11.2001, geändert 30.06.2002",
+      "thema": "gestaltung",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Altstadt_Soest_-___rtliche_Bauvorschriften___ber_Werbeanlagen.pdf"
+      }
+    },
+    "denkmalbereichssatzung": {
+      "kurz": "Denkmalbereichssatzung Altstadt",
+      "titel": "Denkmalbereichssatzung Altstadt Soest vom 14.02.1996",
+      "thema": "denkmal",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Denkmalbereichsatzung_13mb.pdf",
+        "textebene": false,
+        "sha256": "4f4d97671ab67f160ff40bd432c24bf76f8d77ec04edb4e05d67d1ac4e2fbf2f",
+        "text": "texte/nw-05974040/denkmalbereichssatzung@1996-02-14.json"
+      }
+    },
+    "stellplatzsatzung": {
+      "kurz": "Stellplatzsatzung",
+      "titel": "Stellplatzsatzung Stadt Soest (Ratsbeschluss 15.12.2021, ausgefertigt 28.01.2022)",
+      "thema": "stellplaetze",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Politik_und_Verwaltung/Bekanntmachungen_und_Satzungen/Stellplatzsatzung_-_Soest.pdf"
+      }
+    },
+    "baumschutzsatzung": {
+      "kurz": "Baumschutzsatzung",
+      "titel": "Satzung zum Schutz des Baumbestandes in der Stadt Soest vom 19.07.2019",
+      "thema": "natur",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Baumschutzsatzung_19.07.2019.pdf"
+      }
+    },
+    "entwaesserungssatzung": {
+      "kurz": "Entwässerungssatzung SES",
+      "titel": "Satzung über die Entwässerung der Grundstücke und den Anschluss an die öffentliche Abwasseranlage der Stadtentwässerung Soest AöR vom 03.12.2025 (in Kraft 01.01.2026)",
+      "thema": "wasser",
+      "erlassen": "Stadtentwässerung Soest AöR",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Abwasserbeseitigungssatzung_SES_2026.pdf"
+      },
+      "lizenz": "Auf der Ortsrecht-Seite unter „Änderung …“ verlinkt, ist aber eine vollständige neue Satzung; die Satzung von 2014 ist aufgehoben."
+    },
+    "sondernutzungssatzung": {
+      "kurz": "Sondernutzungssatzung",
+      "titel": "Satzung über Erlaubnisse und Gebühren für Sondernutzungen an öffentlichen Straßen in der Stadt Soest vom 19.05.2011, zuletzt geändert 26.04.2023",
+      "thema": "sonstiges",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Sondernutzungssatzung_2023.pdf"
+      }
+    },
+    "fernwaerme": {
+      "kurz": "Fernwärmesatzung Britische Siedlung",
+      "titel": "Satzung über den Anschluß- und Benutzungszwang an Einrichtungen zur Versorgung mit Fernwärme im Gebiet der „Britischen Wohnsiedlung“ vom 25.10.1993",
+      "thema": "energie",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Fernw__rme_in_Britischer_Siedlung_-_Anschlu__-_und_Benutzungszwang_zur_Versorgung_mit_Fernw__rme.pdf"
+      }
+    },
+    "historische_ortsteile": {
+      "kurz": "Satzung historische Ortsteile",
+      "titel": "Satzung über besondere Anforderungen an bauliche Anlagen, Werbeanlagen und Automaten in den historischen Ortsteilen der Stadt Soest vom 18.04.1973, geändert 20.05.1980",
+      "thema": "gestaltung",
+      "annahme": "gilt als in Kraft (Annahme des Büros vom 12.11.2026)",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/historische_Ortsteile_-_Anforderungen_an_bauliche_Anlagen.pdf"
+      },
+      "lizenz": "Ob sie neben der Altstadtsatzung (2013/2023) fortgilt, ist ungeklärt; die Altstadtsatzung 2013 hob nur die Fassung von 2001 auf."
+    },
+    "spielplatzsatzung": {
+      "kurz": "Spielplatzsatzung",
+      "titel": "Satzung über die Beschaffenheit und Größe von Spielplätzen für Kleinkinder (Ratsbeschluss 28.08.1973, bekanntgemacht 18.02.1974)",
+      "thema": "bauordnung",
+      "annahme": "gilt als in Kraft (Annahme des Büros vom 12.11.2026)",
+      "quelle": {
+        "art": "datei",
+        "format": "pdf",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Spielpl__tze_-_Beschaffenheit_und_Gr____e.pdf"
+      }
+    },
+    "veraenderungssperre_muellingsen": {
+      "kurz": "Veränderungssperre Müllingsen",
+      "titel": "Veränderungssperre zum Bebauungsplan Nr. 5 „Windenergie Müllingsen“ (Verlängerung bekanntgemacht 2022)",
+      "thema": "planungsrecht",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Politik_und_Verwaltung/Bekanntmachungen_und_Satzungen/2022_06_05_bk_B5_Muelli_Veraenderungssperre_Verlaeng_Internet.pdf"
+      }
+    },
+    "bebauungsplan": {
+      "kurz": "Bebauungsplan Soest",
+      "titel": "Bebauungspläne und Satzungen nach dem BauGB der Stadt Soest (Bauleitplanung, Planurkunden)",
+      "thema": "planungsrecht",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://gis02.soest.de/webappbuilder/apps/2/"
+      },
+      "lizenz": "Geodaten der Stadt Soest – laut Geodatenkatalog dl-de/zero-2.0, auf open.nrw abweichend dl-by-de/2.0 angegeben (ungeklärt); Quelle „Stadt Soest“ wird angezeigt"
+    }
+  },
+  "fakten": {
+    "ortsrecht.stellplatzsatzung": {
+      "titel": "Stellplatzsatzung der Gemeinde (örtliche Bauvorschrift nach § 89 Abs. 1 Nr. 4 BauO NRW)",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "wert": true,
+      "hilfe": "Stellplatzsatzung Stadt Soest vom 28.01.2022 – die Stellplatzverordnung NRW tritt zurück (§ 1 Abs. 2 StellplatzVO NRW)"
+    },
+    "soest.denkmalbereich": {
+      "titel": "Im Denkmalbereich Altstadt Soest (Denkmal-Dienst der Stadt)",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "geodienst": {
+        "art": "arcgis",
+        "url": "https://gis02.soest.de/arcgis/rest/services/Denkmalschutz/MapServer",
+        "ebene": "5",
+        "vollstaendig": true,
+        "puffer": 25,
+        "quelle": "Denkmal-Dienst der Stadt Soest, Ebene „Denkmalbereichssatzung“",
+        "lizenz": "Geodaten der Stadt Soest – laut Geodatenkatalog dl-de/zero-2.0, auf open.nrw abweichend dl-by-de/2.0 angegeben (ungeklärt); Quelle „Stadt Soest“ wird angezeigt"
+      }
+    },
+    "schutz.denkmalbereich": {
+      "titel": "In einem Denkmalbereich",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "nach": {
+        "fakt": "soest.denkmalbereich",
+        "tabelle": {
+          "true": true,
+          "false": false
+        }
+      },
+      "hilfe": "in Soest aus dem Denkmal-Dienst der Stadt (Denkmalbereichssatzung Altstadt)"
+    },
+    "soest.altstadt": {
+      "titel": "In der Altstadt innerhalb des Walls (Geltungsbereich der Altstadtsatzung)",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "vorschlag": "soest.denkmalbereich",
+      "frage": "Liegt das Grundstück in der Altstadt innerhalb des Wallrings (Aldegrever-, Freiligrath-, Dassel-, Bruno-, Immermann-, Nelmannwall, Walburger-Osthofen- und Brüder-Walburger-Wallstraße, Bahnhof)?",
+      "hilfe": "Geltungsbereich der Altstadtsatzung (Anlage 1) und der Werbeanlagensatzung; fast deckungsgleich mit dem Denkmalbereich"
+    },
+    "soest.stellplatzzone": {
+      "titel": "Gebietszone der Stellplatzsatzung",
+      "gruppe": "ortsrecht",
+      "typ": "wahl",
+      "werte": [
+        "1",
+        "2",
+        "3"
+      ],
+      "frage": "In welcher Gebietszone der Stellplatzsatzung liegt das Grundstück?",
+      "hilfe": "Zone 1: ausgeweiteter Bereich um die Brüderstraße bis zum Bahnhof; Zone 2: übrige Altstadt innerhalb der Wälle; Zone 3: Kernstadt außerhalb der Wälle und Ortsteile (Anlagen 1 und 2 der Satzung)",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "soest.stellplatz_abloesung": {
+      "titel": "Notwendige Stellplätze können nicht oder nur unter großen Schwierigkeiten hergestellt werden (Ablösung beabsichtigt)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "weder auf dem Baugrundstück noch im Umkreis von 300 m Fußweg (§ 4 Abs. 1, § 5 Abs. 1 Stellplatzsatzung)",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "soest.baeume": {
+      "titel": "Geschützte Bäume nach der Baumschutzsatzung auf dem Grundstück oder angrenzend",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "frage": "Stehen auf dem Baugrundstück oder auf Nachbargrundstücken Laubbäume mit mindestens 120 cm Stammumfang in 1 m Höhe (mehrstämmig zusammen 150 cm) oder nach Bebauungsplan zu erhaltende Bäume?",
+      "hilfe": "Nicht geschützt: Birken, Hybrid- und Pyramidenpappeln, Obstbäume (außer Walnuss und Esskastanie), Nadelbäume, Wald (§ 3 Abs. 3, § 2 Abs. 3)",
+      "wenn": {
+        "$": "soest_innen"
+      }
+    },
+    "soest.dachaufbauten": {
+      "titel": "Dachgauben, Zwerchhäuser, Dachflächenfenster oder Dacheinschnitte geplant",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "wenn": {
+        "f": "soest.altstadt",
+        "ist": true
+      }
+    },
+    "soest.solaranlage": {
+      "titel": "Photovoltaik- oder Solarthermieanlage geplant",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "auch zur Erfüllung der Solarpflicht nach § 42a BauO NRW",
+      "wenn": {
+        "f": "soest.altstadt",
+        "ist": true
+      }
+    },
+    "soest.historische_ortsteile": {
+      "titel": "In einer Schutzzone der Satzung über historische Ortsteile (1973) oder schützenswerter Bürgerbau",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "frage": "Liegt das Grundstück in einer Schutzzone der Satzung von 1973 (Anlage A I: Fluren 4 und 30–58, Meiningsen Flur 5, Ostönnen Flur 7) oder ist das Gebäude dort als schützenswerter Bürgerbau (Anlage A II) aufgeführt?",
+      "hilfe": "Die Karten der Anlage A I sind nicht online; die Gemarkung der Fluren 4 und 30–58 nennt der Text nicht (vermutlich Soest) – bei der Stadt erfragen"
+    },
+    "soest.fernwaerme": {
+      "titel": "Im Gebiet „Britische Wohnsiedlung“ (Fernwärme-Anschlusszwang)",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "Begrenzt von Arnsberger Straße (B 229), Hartweg/Herzog-Adolf-Weg, Hiddingser Weg/Kaiser-Otto-Weg und Konrad-Coler-Weg (Lageplan der Satzung)"
+    },
+    "soest.muellingsen": {
+      "titel": "Im Geltungsbereich der Veränderungssperre zum B-Plan Nr. 5 „Windenergie Müllingsen“",
+      "gruppe": "planung",
+      "typ": "janein"
+    },
+    "soest.bplan": {
+      "titel": "Bebauungsplan oder Satzung am Grundstück (Dienst der Stadt)",
+      "gruppe": "planung",
+      "typ": "text",
+      "geodienst": {
+        "art": "arcgis",
+        "url": "https://gis02.soest.de/arcgis/rest/services/Bauleitplanung_WFS/MapServer",
+        "ebene": "0",
+        "attribut": "name",
+        "vollstaendig": false,
+        "quelle": "Bebauungsplan-Dienst der Stadt Soest (Satzungen, Planurkunden)",
+        "lizenz": "Geodaten der Stadt Soest – laut Geodatenkatalog dl-de/zero-2.0, auf open.nrw abweichend dl-by-de/2.0 angegeben (ungeklärt); Quelle „Stadt Soest“ wird angezeigt"
+      }
+    },
+    "soest.bplan_entwurf": {
+      "titel": "Plan im Dienst der Stadt noch als Entwurf geführt oder laufendes Bauleitplanverfahren am Grundstück",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "Der Dienst der Stadt führt Pläne teils Monate nach dem Satzungsbeschluss noch als Entwurf (Stand 2000) – Bekanntmachungsseite der Stadt prüfen"
+    }
+  },
+  "bausteine": {
+    "soest_innen": {
+      "oder": [
+        {
+          "$": "bplan"
+        },
+        {
+          "$": "bplan_einfach"
+        },
+        {
+          "$": "innenbereich"
+        },
+        {
+          "und": [
+            {
+              "$": "satzung_baugb"
+            },
+            {
+              "f": "planung.innen",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "soest_altstadt": {
+      "f": "soest.altstadt",
+      "ist": true
+    },
+    "soest_aussen_bauen": {
+      "und": [
+        {
+          "$": "bauen"
+        },
+        {
+          "$": "gebaeude"
+        }
+      ]
+    }
+  },
+  "hinweise": [
+    {
+      "titel": "Digitaler Bauantrag in Soest",
+      "text": "Bauanträge reicht die Stadt Soest seit dem 01.02.2023 digital über „Rathaus online“ (Servicekonto.NRW) ein; die Bauakte ist online einsehbar. Die Stadt verlangt einen eigenen „Nachweis der Gebäudeklasse“.",
+      "url": "https://www.soest.de/politik-verwaltung/dienstleistungen-a-z/bauberatung"
+    },
+    {
+      "titel": "Gestaltungsbeirat",
+      "text": "Neubauten in der Altstadt und Abweichungen nach § 17 der Altstadtsatzung gehen in den Gestaltungsbeirat (tagt etwa alle zwei Monate) – Termin früh einplanen.",
+      "url": "https://www.soest.de/wohnen-bauen/stadtplanung/gestaltungsbeirat",
+      "wenn": {
+        "und": [
+          {
+            "$": "soest_altstadt"
+          },
+          {
+            "oder": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "f": "planung.abweichung",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "titel": "Photovoltaik und Solarthermie in der Altstadt",
+      "text": "Für Solaranlagen auf Gebäuden der Altstadt ist eine denkmalrechtliche Erlaubnis zu beantragen (dreifach: Lageplan, vermaßte Ansichten, Moduldaten); gestalterisch gilt § 5a der Altstadtsatzung.",
+      "url": "https://www.soest.de/wohnen-bauen/photovoltaik-und-solarthermie-auf-altstadt-daechern",
+      "wenn": {
+        "$": "soest_altstadt"
+      }
+    },
+    {
+      "titel": "Antrag auf Entwässerung (SES)",
+      "text": "Anschluss oder Änderung der Grundstücksentwässerung bei der Stadtentwässerung Soest AöR mit den Vordrucken Teil A/B beantragen – spätestens vier Wochen vor den Anschlussarbeiten (§ 14 Entwässerungssatzung).",
+      "url": "https://www.stadtentwaesserung-soest.de/formulare-antraege/",
+      "wenn": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": true
+          }
+        ]
+      }
+    },
+    {
+      "titel": "Denkmäler: Abfrage im Denkmal-Dienst",
+      "text": "Eine Denkmalliste als Liste ist nicht online (Kartei bei der unteren Denkmalbehörde, Übernahme in „Denkmalliste.NRW“ angekündigt). Der Denkmal-Dienst der Stadt zeigt Baudenkmäler nur als Punkte (Pflegestand unklar) und keinen Umgebungsschutz – Baudenkmal und engere Umgebung deshalb bei der unteren Denkmalbehörde bestätigen.",
+      "url": "https://gis02.soest.de/arcgis/rest/services/Denkmalschutz/MapServer"
+    },
+    {
+      "titel": "Sanierungsgebiet",
+      "text": "Die Soester Sanierungssatzungen (Historische Altstadt, Osthofe, Süd-Ost, Gotlandweg) sind im vereinfachten Verfahren beschlossen (§ 144 BauGB ausgeschlossen) – keine Genehmigungspflicht, aber Fördermöglichkeiten.",
+      "wenn": {
+        "f": "planung.sanierungsgebiet",
+        "ist": true
+      }
+    },
+    {
+      "titel": "Bebauungsplan: Stand im Dienst prüfen",
+      "text": "Der Bebauungsplan-Dienst der Stadt hinkt den Bekanntmachungen hinterher (Pläne mit bekanntgemachtem Satzungsbeschluss noch als Entwurf, Platzhalter-Datum). Planurkunde und Stand vor der Einreichung mit der Bekanntmachungsseite abgleichen.",
+      "url": "https://www.soest.de/politik-verwaltung/bekanntmachungen",
+      "wenn": {
+        "$": "bplan_jeder"
+      }
+    }
+  ]
+}

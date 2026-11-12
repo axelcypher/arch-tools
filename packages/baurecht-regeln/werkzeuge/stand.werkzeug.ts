@@ -13,11 +13,15 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { it } from 'vitest';
+
 import type { Regeldatei } from '@core/baurecht/typen';
 import { holen } from '@core/recht/netz';
 import { fassungHolen } from '@core/recht/quellen';
 import type { Fassung } from '@core/recht/typen';
 import { paketLaden, WURZEL } from '../test/laden';
+
+/** Ausgabe direkt auf die Konsole (vitest fängt console.log ab) */
+const ausgabe = (t = '') => void process.stdout.write(`${t}\n`);
 
 const nur = process.env.NUR;
 const uebernehmen = !!process.env.UEBERNEHMEN;
@@ -80,8 +84,8 @@ it('Prüfsummen eintragen', async () => {
       }
       if (geaendert) {
         writeFileSync(pfad, `${JSON.stringify(regel, null, 2)}\n`);
-        console.log(`${key}: Prüfsummen eingetragen (${neueste.datei})`);
-      } else console.log(`${key}: unverändert`);
+        ausgabe(`${key}: Prüfsummen eingetragen (${neueste.datei})`);
+      } else ausgabe(`${key}: unverändert`);
     }
-  if (meldungen.length) console.log(`\nMeldungen:\n${meldungen.map((x) => `  - ${x}`).join('\n')}`);
+  if (meldungen.length) ausgabe(`\nMeldungen:\n${meldungen.map((x) => `  - ${x}`).join('\n')}`);
 });

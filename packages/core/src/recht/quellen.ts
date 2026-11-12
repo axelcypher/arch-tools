@@ -282,8 +282,14 @@ export async function rechtNrwHolen(h: Holen, kopf: NormKopf, ref: { term?: numb
 export function satzungParagrafen(textZeilen: string[], url: string): Record<string, Paragraf> {
   const paragrafen: Record<string, Paragraf> = {};
   let aktuell: { nr: string; titel: string; text: string[] } | null = null;
+  // Inhaltsverzeichnisse nennen jeden Paragrafen einmal ohne (oder mit fremdem) Text – es gilt der Eintrag mit
+  // Absätzen „(1)“, sonst der mit dem meisten Text
+  const gewicht = (t: string[]) => (t.some((z) => /^\(\d/.test(z)) ? 1e6 : 0) + t.join(' ').length;
   const fertig = () => {
-    if (aktuell && !paragrafen[aktuell.nr]) paragrafen[aktuell.nr] = { titel: aktuell.titel, url, text: zusammenfuegen(aktuell.text) };
+    if (!aktuell) return;
+    const neu = { titel: aktuell.titel, url, text: zusammenfuegen(aktuell.text) };
+    const alt = paragrafen[aktuell.nr];
+    if (!alt || gewicht(neu.text) > gewicht(alt.text)) paragrafen[aktuell.nr] = { ...neu, titel: neu.titel || alt?.titel || '' };
   };
   for (const roh of textZeilen) {
     const z = zeileNormal(roh);
@@ -360,10 +366,19 @@ export async function pdfZeilen(daten: Uint8Array): Promise<string[]> {
   return out.map(zeileNormal).filter(Boolean);
 }
 
-/** Datum der Satzung aus dem Text: „vom 28.01.2022“, „Soest, den 14.11.2023“ – das jüngste Datum der Ausfertigung */
+/**
+ * Datum der Satzung aus dem Text: zuerst „… vom 28.01.2022“ im Titel (erste Zeilen), sonst das letzte Datum der
+ * Ausfertigung („Soest, den 14.11.2023“). Daten von Bezugsnormen im Fließtext („BauO NRW vom 21.07.2018“) zählen nicht.
+ */
 export function satzungsDatum(textZeilen: string[]): string | undefined {
-  const kandidaten = textZeilen.flatMap((z) => [...z.matchAll(/(?:vom|den)\s+(\d{1,2}\.\d{1,2}\.\d{4})/g)].map((m) => isoDatum(m[1])!));
-  return kandidaten.sort().pop();
+  // Titel: die ersten Zeilen bis zur Präambel bzw. zum Inhaltsverzeichnis
+  const ende = textZeilen.findIndex((z, i) => i > 0 && /^(Aufgrund|Auf Grund|Der Rat|Die Bezirksregierung|Der Kreistag|Inhalt|Präambel|§)/i.test(z.trim()));
+  const kopf = textZeilen.slice(0, Math.min(ende < 0 ? 4 : ende, 4)).join(' ');
+  const titel = /\b(?:Satzung|Verordnung|Bauvorschrift|Landschaftsplan)\b[^.]{0,200}?\bvom\s+(\d{1,2}\.\d{1,2}\.\d{4})/i.exec(kopf)?.[1];
+  if (titel) return isoDatum(titel);
+  const ausfertigung = textZeilen.flatMap((z) => [...z.matchAll(/^[A-ZÄÖÜ][\wäöüß .()-]{1,40},\s*(?:den\s+)?(\d{1,2}\.\d{1,2}\.\d{4})/g)].map((m) => isoDatum(m[1])!));
+  if (ausfertigung.length) return ausfertigung[ausfertigung.length - 1];
+  return isoDatum(/\bvom\s+(\d{1,2}\.\d{1,2}\.\d{4})/.exec(kopf)?.[1]);
 }
 
 export async function dateiHolen(

@@ -13,30 +13,33 @@ import { paketIndex, paketPruefen } from '@core/baurecht/paket';
 import { VORGABE_MERKMALE } from '@core/bedingung';
 import { paketDateien, paketLaden, WURZEL } from '../test/laden';
 
+/** Ausgabe direkt auf die Konsole (vitest fängt console.log ab) */
+const ausgabe = (t = '') => void process.stdout.write(`${t}\n`);
+
 it('Paket bauen und signieren', async () => {
   const paket = paketLaden();
   expect(paketPruefen(paket, VORGABE_MERKMALE)).toEqual([]);
   const version = process.env.PAKET ?? `${paket.version}-1`;
-  const ausgabe = join(WURZEL, 'ausgabe');
-  rmSync(ausgabe, { recursive: true, force: true });
-  mkdirSync(ausgabe, { recursive: true });
+  const ordner = join(WURZEL, 'ausgabe');
+  rmSync(ordner, { recursive: true, force: true });
+  mkdirSync(ordner, { recursive: true });
   const bytes: Record<string, Uint8Array> = {};
   for (const [pfad, inhalt] of Object.entries(paketDateien())) {
     const b = new TextEncoder().encode(JSON.stringify(inhalt));
     bytes[pfad] = b;
-    writeFileSync(join(ausgabe, pfad.replace(/\//g, '__')), b);
+    writeFileSync(join(ordner, pfad.replace(/\//g, '__')), b);
   }
   const index = await paketIndex(bytes, version, paket.module.flatMap((m) => m.hosts ?? []));
   const indexText = JSON.stringify(index);
-  writeFileSync(join(ausgabe, 'index.json'), indexText);
+  writeFileSync(join(ordner, 'index.json'), indexText);
   const geheim = process.env.BAURECHT_REGELN_SCHLUESSEL;
   if (!geheim) {
-    console.log('Kein privater Schlüssel (BAURECHT_REGELN_SCHLUESSEL) – Index ohne Signatur. Die App lädt nur signierte Pakete nach.');
+    ausgabe('Kein privater Schlüssel (BAURECHT_REGELN_SCHLUESSEL) – Index ohne Signatur. Die App lädt nur signierte Pakete nach.');
     return;
   }
   const roh = Uint8Array.from(atob(geheim.replace(/\s+/g, '')), (c) => c.charCodeAt(0));
   const key = await crypto.subtle.importKey('pkcs8', roh, { name: 'Ed25519' }, false, ['sign']);
   const sig = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, key, new TextEncoder().encode(indexText)));
-  writeFileSync(join(ausgabe, 'index.json.sig'), btoa(String.fromCharCode(...sig)));
-  console.log(`Regelpaket ${version}: ${Object.keys(bytes).length} Dateien, signiert → ${ausgabe}`);
+  writeFileSync(join(ordner, 'index.json.sig'), btoa(String.fromCharCode(...sig)));
+  ausgabe(`Regelpaket ${version}: ${Object.keys(bytes).length} Dateien, signiert → ${ordner}`);
 });
