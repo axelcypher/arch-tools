@@ -4,7 +4,7 @@
 // Regeln (siehe README.md):
 //  - Raster 64 × 64, Kachel vollflächig mit Radius 14
 //  - Linien 4 breit (= 1 px bei 16 px), auf Koordinaten ≡ 2 (mod 4) – scharf bei 16, 32 und 48 px
-//  - Symbol in Weiß, Freiraum ringsum mind. 10
+//  - Symbol in Weiß, Freiraum ringsum mind. 10; keine Buchstaben, Zeichen wie € und § nur gezeichnet (Linie 4)
 //  - genau ein Element in Bernstein: das, was die App ermittelt bzw. hervorbringt
 //  - Bernstein steht nur auf der Kachelfarbe, nie auf Weiß oder weißer Tönung (zu wenig Kontrast); wo es
 //    daran grenzt oder es überlappt, trennt eine Fuge in Kachelfarbe (mind. 2)
@@ -46,6 +46,7 @@ export const FARBEN = {
   kosten: oklch(0.47, 0.14, 18),
   entzerrung: oklch(0.47, 0.13, 296),
   ava: oklch(0.47, 0.13, 335),
+  baurecht: oklch(0.47, 0.07, 240), // Schiefer: der einzige freie Platz zwischen Teal und Blau, gedämpft gegen Verwechslung
 };
 
 const A = BERNSTEIN;
@@ -100,12 +101,30 @@ const SYMBOL = {
     <rect x="43" y="39" width="10" height="10" rx="2"/><rect x="11" y="45" width="10" height="10" rx="2"/>
   </g>`,
 
+  // Paragraf mit Ampel: jede Vorschrift als gilt / prüfen / entfällt; das gelbe Licht ist der Bernstein
+  baurecht: (T) => `
+  <path d="${paragraf(20, 14, 36)}" ${rund} stroke="${W}" stroke-width="4"/>
+  <rect x="34" y="14" width="16" height="36" rx="8" fill="none" stroke="${W}" stroke-width="4"/>
+  <circle cx="42" cy="22" r="3" fill="${W}" opacity=".4"/>
+  <circle cx="42" cy="32" r="3.5" fill="${A}"/>
+  <circle cx="42" cy="42" r="3" fill="${W}" opacity=".4"/>`,
+
   // Klemmbrett der Bauleitung: LV, Aufmaß, Bautagebuch, Mängel
   ava: (T) => `
   <rect x="14" y="14" width="36" height="40" rx="4" fill="none" stroke="${W}" stroke-width="4"/>
   <rect x="23" y="9" width="18" height="10" rx="3" fill="${A}" ${fuge(T, 3)}/>
   <path d="M22 30h4M30 30h12M22 38h4M30 38h12M22 46h4M30 46h8" ${rund} stroke="${W}" stroke-width="4"/>`,
 };
+
+/** § aus zwei versetzten S-Bögen (Linie 4), Mitte cx, oben top, Höhe H */
+function paragraf(cx, top, H) {
+  const l = cx - 6, r = cx + 6, c = cx, off = 13, h = H - off;
+  const S = (y) =>
+    `M${r} ${y + 3.5}C${r - 1} ${y + 1.2} ${c + 2.5} ${y} ${c} ${y}C${l + 2.2} ${y} ${l} ${y + 2.2} ${l} ${y + 5.2}` +
+    `C${l} ${y + 11} ${r} ${y + 10.5} ${r} ${y + 17}C${r} ${y + 21} ${c + 2.5} ${y + h} ${c} ${y + h}` +
+    `C${c - 2.5} ${y + h} ${l + 1} ${y + h - 1.2} ${l} ${y + h - 3.5}`;
+  return S(top) + S(top + off);
+}
 
 export const svg = (id) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="${FARBEN[id]}"/>${SYMBOL[id](FARBEN[id])}
