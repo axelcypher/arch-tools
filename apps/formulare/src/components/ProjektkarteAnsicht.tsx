@@ -154,7 +154,7 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
             {' '}
             · {/* dasselbe Zeichen wie im Ansicht-Editor (nicht das Symbol für „Datei verknüpfen“) */}
             <span role="img" aria-label="verknüpft mit">
-              ⛓
+              {'⛓\uFE0E'}
             </span>{' '}
             {mit.map((k) => k.gruppe).join(', ')}
           </span>
@@ -842,6 +842,7 @@ function Eintrag({
           className="pk-zahl"
           aria-invalid={keineZahl || undefined}
           aria-describedby={warnung ? `${id}-warnung` : undefined}
+          title="Nur ganze Zahlen – andere Zeichen lassen sich nicht tippen"
           value={textWert}
           onKeyDown={(ev) => ev.key.length === 1 && !/\d/.test(ev.key) && !ev.ctrlKey && !ev.metaKey && !ev.altKey && ev.preventDefault()}
           onChange={(ev) => setzen(ev.target.value)}

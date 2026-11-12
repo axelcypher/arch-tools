@@ -348,9 +348,15 @@ html.zieht * {
   display: inline-block;
   flex-shrink: 0;
 }
-.av-ed-link.aktiv {
+/* verknüpft: wie button.active, dazu der Akzentrahmen */
+.av-ed-link.active {
   border-color: var(--accent);
-  color: var(--accent);
+}
+/* Kästchen im Editor: deutlicher Fokusrahmen (der blasse aus base.css ist auf Weiß kaum zu sehen) */
+.av-ed-umbruch input:focus-visible,
+.av-ed-link-liste input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 .av-ed-link-liste {
   position: absolute;

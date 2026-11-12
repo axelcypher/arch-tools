@@ -43,9 +43,9 @@ export function NamensschemaEinstellungen() {
   const zuruecksetzen = async () => {
     if (
       await bestaetigen(
-        'Namensschema zurücksetzen?',
+        'Vorgabe wiederherstellen?',
         'Kürzel, Stellen und Indizes des Büros werden durch die eingebaute Vorgabe ersetzt. Projektdateien behalten ihre Kopie, bis sie ergänzt werden.',
-        'Zurücksetzen',
+        'Wiederherstellen',
       )
     )
       setAllgemein({ namensschema: structuredClone(VORGABE_NAMENSSCHEMA) });
@@ -238,7 +238,8 @@ function KuerzelListe({
         </thead>
         <tbody>
           {liste.map((k, i) => (
-            <KuerzelZeile key={`${i}-${k.kuerzel}`} titel={titel} k={k} andere={belegtOhne(i)} mitLph={mitLph} onChange={(patch) => zeile(i, patch)} onEntfernen={() => void entfernen(i)} />
+            // fester Schlüssel je Zeile: beim Umbenennen eines Kürzels bleibt die Zeile (und der Fokus beim Tab)
+            <KuerzelZeile key={i} titel={titel} k={k} andere={belegtOhne(i)} mitLph={mitLph} onChange={(patch) => zeile(i, patch)} onEntfernen={() => void entfernen(i)} />
           ))}
           {neu && (
             <KuerzelZeile
@@ -300,7 +301,11 @@ function KuerzelZeile({
     setLphZustand(n);
   };
   const [fehler, setFehler] = useState('');
-  useEffect(() => setKuerzel(k.kuerzel), [k.kuerzel]);
+  useEffect(() => {
+    // anderer Eintrag in dieser Zeile (umbenannt, entfernt, zurückgesetzt): Feld und Meldung folgen
+    setKuerzel(k.kuerzel);
+    setFehler('');
+  }, [k.kuerzel]);
   useEffect(() => setName(k.name), [k.name]);
   useEffect(() => setSynonyme(synonymText), [synonymText]);
 

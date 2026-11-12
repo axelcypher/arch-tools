@@ -177,6 +177,17 @@ describe('Formulare', () => {
     expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
   });
 
+  it('fester Kopf der Navigation: Projekt, Antrag und Projektdaten | Antragsdaten rollen nicht mit – darunter „Formulare“', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    const fest = host.querySelector('.nav > .nav-fest')!;
+    expect(fest.querySelector('.fo-projektkopf')).not.toBeNull();
+    expect([...fest.querySelectorAll('.fo-daten strong')].map((s) => s.textContent)).toEqual(['Projektdaten', 'Antragsdaten']);
+    const rollt = host.querySelector('.nav > .nav-rollbereich')!;
+    expect(rollt.querySelector('.fo-daten, .fo-projektkopf')).toBeNull();
+    expect(rollt.querySelector('.nav-kopf-titel')!.textContent).toContain('Formulare');
+  });
+
   it('findet Projekte mit Titel und ihre Formulare (ohne Archiv)', async () => {
     const host = await render();
     // Projektübersicht statt Liste in der Seitenleiste: je Quelle eine Gruppe – bei genau einer Quelle aufgeklappt (P-09)
@@ -669,7 +680,7 @@ describe('Formulare', () => {
     expect(document.querySelector('.av-editor')).toBeNull();
     // auf der Seite: eigene Beschriftung, Herkunft dezent unter dem Feld, Breite im Raster
     expect([...host.querySelectorAll('.pk-eigen .pk-feld-titel')].map((t) => t.textContent)).toEqual(['Ort', 'Bauherrschaft']);
-    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde · ⛓ Bauherr', 'Bauherr · ⛓ Gemeinde']);
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde · ⛓\uFE0E Bauherr', 'Bauherr · ⛓\uFE0E Gemeinde']);
     expect([...host.querySelectorAll<HTMLElement>('.pk-eigen .av-feld')].map((f) => [f.dataset.breite, 'neueZeile' in f.dataset])).toEqual([
       ['4', true],
       ['8', false],

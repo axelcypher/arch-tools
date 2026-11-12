@@ -74,12 +74,29 @@ button.icon.active {
   position: relative;
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   background: var(--nav-bg);
   border-right: 1px solid var(--nav-linie);
   min-width: 0;
 }
+/* fester Kopf der Navigation: Projekt, Antrag, Projektdaten | Antragsdaten – rollt nicht mit */
+.nav-fest {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px 8px;
+  border-bottom: 1px solid var(--nav-linie);
+  /* gleich breit wie die rollende Liste darunter (dort ist Platz für den Rollbalken reserviert) */
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+.nav-fest .fo-daten {
+  margin-bottom: 0;
+}
 .nav-rollbereich {
   flex: 1;
+  min-height: 0;
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -279,6 +296,21 @@ button.icon.active {
 .nav-unter {
   font-size: 11.5px;
   color: var(--muted);
+}
+/* zuletzt bearbeitet – rechts in der Zeile, dezent (voller Zeitpunkt im Tooltip) */
+.nav-zeit,
+.fo-baum-zeit {
+  margin-left: auto;
+  padding-left: 6px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.nav-eintrag.aktiv .nav-zeit {
+  color: inherit;
+  opacity: 0.8;
 }
 .nav-schloss {
   display: inline-flex;
@@ -4289,6 +4321,33 @@ tr[data-ziehen='danach'] > td {
 .fo-bereit-zeile.name .fo-bereit-unter {
   color: var(--fehler-text);
 }
+/* Antragsstand bei der Einreichung: Zeile darüber, Kennzeichen an neuen bzw. geänderten Dateien */
+.fo-stand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.fo-stand.abweichend {
+  color: var(--warn-text);
+  font-weight: 600;
+}
+.fo-seit {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.fo-bereit-zeile.seit-neu,
+.fo-bereit-zeile.seit-geaendert {
+  box-shadow: inset 3px 0 0 var(--warn-border);
+}
 .fo-bereit-zeile .fo-baum-name {
   white-space: normal;
   overflow-wrap: anywhere;
@@ -4718,6 +4777,16 @@ tr[data-ziehen='danach'] > td {
   color: var(--warn-text);
 }
 /* .pu-leer p setzt sonst den Abstand */
+/* Namensvorlage im Export des Projekts: ganze Breite des Rasters */
+.pu-bearbeiten .pu-breit {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pu-breit p {
+  margin: 0;
+}
 .pu-leer .pu-ohne-vorlage {
   margin: 6px 0 0;
   color: var(--warn-text);

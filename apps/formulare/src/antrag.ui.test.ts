@@ -19,6 +19,7 @@ import { useFormulare } from './store';
 import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { readProjectFile, writeArchive } from '@core/archive';
 import { createProject, leereMeta } from '@core/model';
+import { zeitKurz } from './zeit';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -283,6 +284,48 @@ describe('Antragsumfang und Vollständigkeit', () => {
     expect(useFormulare.getState().offen?.name).toBe('002-Bauantrag (2026)');
     expect(host.querySelector('.nav-eintrag.fehlt')).toBeNull();
     expect(useAntrag.getState().projektdatei?.umfang?.find((u) => u.id === 'bauantrag')?.formularDatei).toBe('002-Bauantrag (2026).frmsjf');
+  });
+
+  it('doppelter Eintrag (Baustatistik neben Statistischem Erhebungsbogen): kein stilles Anlegen – zuordnen oder entfernen', async () => {
+    ds.dateien.set('C:/FORMA/BS9/003-Baustatistik.frmsjf', MUSTER);
+    const host = await projektBS9();
+    await act(() =>
+      useAntrag.getState().umfangSetzen([
+        { id: 'statistik', titel: 'Statistischer Erhebungsbogen', art: 'intern', formular: 'Statisti' },
+        { id: 'baustatistik', titel: 'Baustatistik', art: 'intern', formular: 'Erhebung nach HBauStatG' },
+      ]),
+    );
+    await warte();
+    const fehlt = () => host.querySelector<HTMLButtonElement>('.nav-eintrag.fehlt');
+    expect(fehlt()!.textContent).toContain('Baustatistik');
+    expect(fehlt()!.textContent).toContain('doppelt?');
+    expect(fehlt()!.title).toContain('ist schon „Statistischer Erhebungsbogen“ zugeordnet');
+    // Klick öffnet das Menü statt ein zweites Formular anzulegen
+    await klick(fehlt()!);
+    expect([...ds.dateien.keys()].filter((k) => /BS9\/\d+-Baustatistik/.test(k))).toEqual(['C:/FORMA/BS9/003-Baustatistik.frmsjf']);
+    await klick(menuePunkt('Aus dem Antragsumfang entfernen'));
+    await warte();
+    expect(useAntrag.getState().projektdatei?.umfang?.map((u) => u.id)).toEqual(['statistik']);
+    expect(fehlt()).toBeNull();
+  });
+
+  it('Formular anlegen: sofort eine Rückmeldung; ohne Vorlage eine Meldung statt Stillstand; Vorhandenes zuordnen', async () => {
+    ds.dateien.set('C:/FORMA/BS9/004-Erhebung.frmsjf', MUSTER);
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().umfangSetzen([{ id: 'stat', titel: 'Statistischer Erhebungsbogen', art: 'intern', formular: 'Statistischer Erhebungsbogen' }]));
+    await warte();
+    await klick(antragsdaten(host));
+    // keine Vorlage (weder Vorlagenordner noch ein Projekt mit diesem Namen): Meldung mit Hinweis
+    await klick(knopf(host, 'Formular anlegen'));
+    await warte();
+    expect(useFormulare.getState().meldung?.text).toContain('Keine Vorlage für „Statistischer Erhebungsbogen“ gefunden');
+    // das Formular liegt schon im Projekt, nur anders benannt: zuordnen
+    await klick(knopf(host, 'Vorhandenes zuordnen'));
+    expect(menuePunkt('004-Erhebung')).toBeDefined();
+    await klick(menuePunkt('004-Erhebung'));
+    await warte();
+    expect(useAntrag.getState().projektdatei?.umfang?.[0].formularDatei).toBe('004-Erhebung.frmsjf');
+    expect(useAntrag.getState().dokumente[0].formular?.name).toBe('004-Erhebung');
   });
 
   it('Lageplan in die Fassung kopieren und verknüpfen (Kontextmenü im Projektordner) – dann aktuell', async () => {
@@ -857,10 +900,10 @@ describe('Plansatz', () => {
     // Projektordner › Antrag: fehlende Pläne einzeln
     await klick(knopfGenau(host, 'Antrag'));
     const fehlt = [...host.querySelectorAll('.fo-bereit-fehlt li')].map((l) => l.textContent);
-    expect(fehlt).toEqual(['GP-03fehlt', 'GP-05 Ansichtennicht verschoben']);
+    expect(fehlt).toEqual(['GP-03Lücke', 'GP-05 Ansichtennicht verschoben']);
     // der Statuspunkt sagt, was mit dem Plan ist (nicht „nicht vollständig ausgefüllt“)
     expect([...host.querySelectorAll('.fo-bereit-fehlt li .st-punkt')].map((p) => p.getAttribute('aria-label'))).toEqual([
-      'fehlt – Lücke in der fortlaufenden Nummerierung',
+      'Lücke – diese Nummer fehlt in der fortlaufenden Nummerierung',
       'nicht verschoben – liegt erst in der Quelle',
     ]);
     // die Plandateien gehören zum Plansatz
@@ -1151,6 +1194,58 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     expect(antragIn('BAUA')?.eingereicht).toMatchObject({ datei: 'Schriftverkehr/Kreis/Antragsprotokoll Online.pdf' });
     expect(antragIn('BAUA 2')?.eingereicht).toBeUndefined();
+  });
+
+  it('Antragsstand bei der Einreichung: festgehalten (ohne Kopie); danach Hinzugekommenes bzw. Geändertes gekennzeichnet – Bescheid nicht', async () => {
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Eingangsbestätigung.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    // festgehalten: nur Name, Größe, Änderungszeit
+    expect(antragIn('BAUA 2')?.stand).toEqual({
+      tag: '2026-11-03',
+      dateien: expect.arrayContaining([{ pfad: 'BS9 BAUA 261101 01 Bauantrag.pdf', groesse: 1 }, { pfad: 'BS9 BAUA 261103 Eingangsbestätigung.pdf', groesse: 1 }]),
+    });
+    // danach: ein neuer Plan, die Baugenehmigung, eine Nachforderung – und der Bauantrag wird geändert
+    ds.dateien.set(`${ordner}/BS9 BAUA 261120 GP-03 Ansicht.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261125 Baugenehmigung.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/Nachforderung Kreis.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1, 2, 3]));
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    await klick(knopfGenau(host, 'Antrag'));
+    const zeile = (n: string) => [...host.querySelectorAll<HTMLElement>('.fo-bereit-zeile')].find((z) => z.textContent?.includes(n))!;
+    expect(zeile('GP-03').querySelector('.fo-seit')!.textContent).toBe('neu seit der Einreichung');
+    expect(zeile('GP-03').classList.contains('seit-neu')).toBe(true);
+    expect(zeile('Bauantrag').querySelector('.fo-seit')!.textContent).toBe('geändert seit der Einreichung');
+    expect(zeile('Baugenehmigung').querySelector('.fo-seit')).toBeNull();
+    expect(zeile('Nachforderung').querySelector('.fo-seit')).toBeNull();
+    expect(zeile('Eingangsbestätigung').querySelector('.fo-seit')).toBeNull();
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('Eingereicht am 03.11.2026 – Stand festgehalten · 1 neu, 1 geändert seit der Einreichung');
+    // der Stand bleibt, wie er war – auch nach erneutem Lesen
+    expect((antragIn('BAUA 2')?.stand as { dateien: unknown[] }).dateien).toHaveLength(2);
+    // wieder in Arbeit (Bestätigung weg): Stand verworfen, keine Kennzeichen mehr
+    ds.dateien.delete(`${ordner}/BS9 BAUA 261103 Eingangsbestätigung.pdf`);
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(antragIn('BAUA 2')?.stand).toBeUndefined();
+    expect(host.querySelector('.fo-stand')).toBeNull();
+    expect(host.querySelector('.fo-seit')).toBeNull();
+  });
+
+  it('zuletzt bearbeitet: an den Formularen der Navigation und an den Dateien im Projektordner (kurz, voll im Tooltip)', async () => {
+    const zeit = new Date(2026, 2, 3, 9, 5).getTime();
+    ds.geaendert.set('C:/FORMA/BS9/001-Muster.frmsjf', zeit);
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 260303 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.geaendert.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 260303 01 Bauantrag.pdf`, zeit);
+    const host = await projektBS9();
+    const nav = [...host.querySelectorAll<HTMLElement>('.nav-eintrag')].find((b) => b.textContent?.includes('001-Muster'))!;
+    expect(nav.querySelector('.nav-zeit')!.textContent).toBe(zeitKurz(zeit));
+    expect(nav.title).toContain('zuletzt geändert am 03.03.2026, 09:05');
+    await klick(knopfGenau(host, 'Antrag'));
+    const zeile = [...host.querySelectorAll<HTMLElement>('.fo-bereit-zeile')].find((z) => z.textContent?.includes('Bauantrag'))!;
+    expect(zeile.querySelector('.fo-baum-zeit')!.textContent).toBe(zeitKurz(zeit));
+    expect(zeile.querySelector('.fo-baum-zeile')!.getAttribute('title')).toContain('zuletzt geändert am 03.03.2026, 09:05');
   });
 
   it('Status von Hand: eingereicht sperrt Formulare und Antragsdaten, ein Nachtrag entsperrt; die Startseite zeigt den aktiven Antrag', async () => {

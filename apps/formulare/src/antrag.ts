@@ -11,7 +11,7 @@
 
 import type { AntragKurz } from '@core/model';
 import type { Kuerzel, NamensTeil } from '@core/namensschema';
-import { kuerzelZu, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import { dateinameZerlegenMitStellen, kuerzelZu, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { antragKurzAus } from '@core/serialize';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
@@ -60,6 +60,19 @@ export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvor
 
 export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'phase', 'ziel', 'zielpfad'];
 
+/** Hinweis an jeder Namensvorlage – überall derselbe Wortlaut */
+export const ART_HINWEIS = 'Die Antragsart ({Art}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA –, nicht aus einer Einstellung.';
+
+/**
+ * Warnung an einer Namensvorlage mit {Phase} bzw. einem festen Kürzel an der Stelle der Antragsart – überall derselbe
+ * Wortlaut; null, wenn die Vorlage passt
+ */
+export function vorlageArtWarnung(vorlage: string, reihenfolge: NamensTeil[] = VORGABE_NAMENSSCHEMA.reihenfolge): string | null {
+  if (vorlageMitAntragsart(vorlage, reihenfolge) === vorlage) return null;
+  const wort = vorlage.trim().split(/\s+/)[reihenfolge.indexOf('art')];
+  return `An der Stelle der Antragsart steht „${wort}“ – beim Export wird dort die Antragsart des aktiven Antrags ({Art}) eingesetzt.`;
+}
+
 /**
  * Die Antragsart im Dateinamen kommt immer aus dem Antrag (Ordner der aktiven Antragsfassung, „BAUA 2“ → BAUA), nie
  * aus einer Einstellung: Steht in der Vorlage an der Stelle der Antragsart (nach dem Namensschema; Vorgabe: nach dem
@@ -67,10 +80,8 @@ export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner'
  * Kürzel wie „BVA“ (Großbuchstaben, mindestens ein Buchstabe – „2026“ ist keins), wird daraus {Art}. Das gilt nur, wenn
  * die Vorlage das Kürzel an seiner Stelle hat; sonst bleibt sie, wie sie ist.
  */
-/** Hinweis an jeder Namensvorlage – überall derselbe Wortlaut */
-export const ART_HINWEIS = 'Die Antragsart ({Art}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA –, nicht aus einer Einstellung.';
-
 export function vorlageMitAntragsart(vorlage: string, reihenfolge: NamensTeil[] = VORGABE_NAMENSSCHEMA.reihenfolge): string {
+  // die Wörter der Vorlage entsprechen den Teilen des Namens (Platzhalter bzw. festes Wort)
   const teile = vorlage.trim().split(/\s+/);
   const [iCode, iArt] = [reihenfolge.indexOf('code'), reihenfolge.indexOf('art')];
   if (iCode < 0 || iArt < 0 || !/^\{(k(ü|ue)rzel|projekt)\}$/i.test(teile[iCode] ?? '')) return vorlage;
@@ -215,7 +226,7 @@ export const hauptArt = (art: string, arten: Kuerzel[] = []) => kuerzelZu(arten,
 
 /**
  * Name der nächsten Fassung einer Art: „BAUA“, dann „BAUA 2“, „BAUA 3“ … – gezählt über alle gleichwertigen
- * Schreibweisen (BVA und BAUVA), benannt in der übergebenen
+ * Schreibweisen (BVA und BAUVA); der neue Name verwendet die übergebene Schreibweise („BVA“ → „BVA 3“)
  */
 export function naechsteFassung(fassungen: Fassung[], art: string, arten: Kuerzel[] = []): string {
   const haupt = hauptArt(art, arten);
@@ -401,6 +412,69 @@ export interface AntragDaten {
   eingereicht?: { datei: string; datum: string };
   /** von Hand gesetzter Status – gilt statt der Erkennung (fehlt = automatisch) */
   status?: AntragStatusManuell;
+  /** Stand bei der Einreichung: welche Dateien im Ordner des Antrags lagen (nur Name, Größe, Änderungszeit) */
+  stand?: AntragStand;
+}
+
+/** Eine Datei im festgehaltenen Antragsstand – keine Kopie, nur zum Wiedererkennen */
+export interface StandDatei {
+  pfad: string;
+  groesse?: number;
+  geaendert?: number;
+}
+
+/** Antragsstand bei der Einreichung (Tag JJJJ-MM-TT und die Dateien im Ordner des Antrags) */
+export interface AntragStand {
+  tag: string;
+  dateien: StandDatei[];
+}
+
+/**
+ * Dateien, die nach der Einreichung erwartungsgemäß in den Antragsordner kommen und deshalb nicht als „neu seit der
+ * Einreichung“ gelten: Genehmigung bzw. Bescheid, Eingangs- bzw. Empfangsbestätigung, Antragsprotokoll, Nachforderung
+ * („Genehmigungsplanung“ ist keine Genehmigung)
+ */
+export const NACH_EINREICHUNG_ERWARTET = /(bau)?genehmigung(?!splan)|bescheid|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung|antragsprotokoll|nachforderung/i;
+
+/**
+ * Antragsstand festhalten: die Dateien im Ordner des Antrags (ohne Archiv und Sperrdateien). Wird die Einreichung erst
+ * später erkannt, gehören Dateien, die nach dem Tag der Einreichung geändert wurden, nicht dazu – sie gelten dann als
+ * nach der Einreichung hinzugekommen.
+ */
+export function standAus(dateien: Eintrag[], tag: string): AntragStand {
+  const ende = new Date(`${tag}T23:59:59.999`).getTime();
+  return {
+    tag,
+    dateien: dateien
+      .filter((d) => !d.ordner && !istArchiv(d.pfad) && !/^(~\$|\.~lock\.)/.test(d.pfad.split('/').pop() ?? '') && !(d.geaendert && d.geaendert > ende))
+      .map((d) => ({ pfad: d.pfad, groesse: d.groesse, ...(d.geaendert ? { geaendert: d.geaendert } : {}) })),
+  };
+}
+
+/** neu: erst nach der Einreichung dazugekommen · geaendert: danach geändert */
+export type SeitEinreichung = 'neu' | 'geaendert';
+
+export const SEIT_EINREICHUNG_TEXT: Record<SeitEinreichung, string> = { neu: 'neu seit der Einreichung', geaendert: 'geändert seit der Einreichung' };
+
+/** Hat sich eine Datei seit der Einreichung geändert bzw. ist sie neu? Erwartete Dateien (Bescheid …) nie. */
+export function seitEinreichung(d: Pick<Eintrag, 'pfad' | 'groesse' | 'geaendert'>, stand: AntragStand | undefined): SeitEinreichung | null {
+  if (!stand || NACH_EINREICHUNG_ERWARTET.test(d.pfad.split('/').pop() ?? '')) return null;
+  const s = stand.dateien.find((x) => x.pfad.toLowerCase() === d.pfad.toLowerCase());
+  if (!s) return 'neu';
+  const groesse = s.groesse !== undefined && s.groesse !== d.groesse;
+  // Änderungszeit: zwei Sekunden Spielraum (Dateisysteme runden)
+  const zeit = !!s.geaendert && !!d.geaendert && Math.abs(s.geaendert - d.geaendert) > 2000;
+  return groesse || zeit ? 'geaendert' : null;
+}
+
+function standAusRoh(roh: unknown): AntragStand | undefined {
+  if (!roh || typeof roh !== 'object') return undefined;
+  const o = roh as Record<string, unknown>;
+  if (typeof o.tag !== 'string' || !TAG.test(o.tag) || !Array.isArray(o.dateien)) return undefined;
+  const dateien = o.dateien
+    .filter((d): d is Record<string, unknown> => !!d && typeof d === 'object' && typeof (d as { pfad?: unknown }).pfad === 'string')
+    .map((d) => ({ pfad: d.pfad as string, ...(typeof d.groesse === 'number' ? { groesse: d.groesse } : {}), ...(typeof d.geaendert === 'number' ? { geaendert: d.geaendert } : {}) }));
+  return { tag: o.tag, dateien };
 }
 
 /** Von Hand gesetzter Antragsstatus: eingereicht (mit Datum) oder ausdrücklich noch in Arbeit */
@@ -496,6 +570,8 @@ function antragDatenAus(roh: unknown): AntragDaten {
   const st = o.status as Record<string, unknown> | undefined;
   if (st && typeof st === 'object' && typeof st.eingereicht === 'boolean')
     a.status = { eingereicht: st.eingereicht, ...(st.eingereicht && typeof st.datum === 'string' && TAG.test(st.datum) ? { datum: st.datum } : {}) };
+  const stand = standAusRoh(o.stand);
+  if (stand) a.stand = stand;
   return a;
 }
 
@@ -622,30 +698,6 @@ export function eingereichtAus(dateien: Eintrag[]): { datei: string; datum: stri
 /** Antragsart einer Fassung: „BAUA 2“ → „BAUA“ */
 export const artDerFassung = (fassung: string) => fassung.trim().replace(/[\s_-]*\d+$/, '').toUpperCase();
 
-/** Dateiname in Wörtern nach der Reihenfolge des Namensschemas; ein Projektcode darf aus mehreren Wörtern bestehen */
-function zerlegenMitCodes(name: string, codes: string[], reihenfolge: NamensTeil[]) {
-  const endung = /\.[A-Za-z0-9]{1,5}$/.exec(name.trim())?.[0] ?? '';
-  const woerter = name.trim().slice(0, name.trim().length - endung.length).split(/\s+/).filter(Boolean);
-  const teile: Partial<Record<NamensTeil, string>> = {};
-  const stelle: Partial<Record<NamensTeil, number>> = {};
-  let code: string | undefined;
-  let p = 0;
-  for (const t of reihenfolge) {
-    if (t === 'code') {
-      code = codes.find((c) => c.split(/\s+/).every((w, i) => woerter[p + i]?.toLowerCase() === w.toLowerCase()));
-      if (code) {
-        const n = code.split(/\s+/).length;
-        [teile.code, stelle.code] = [woerter.slice(p, p + n).join(' '), p];
-        p += n;
-        continue;
-      }
-    }
-    if (woerter[p] !== undefined) [teile[t], stelle[t]] = [woerter[p], p];
-    p++;
-  }
-  return { woerter, endung, teile, stelle, code };
-}
-
 const gueltigesDatum = (t: string | undefined) => {
   const m = /^(\d{2})(\d{2})(\d{2})$/.exec(t ?? '');
   return !!m && Number(m[2]) >= 1 && Number(m[2]) <= 12 && Number(m[3]) >= 1 && Number(m[3]) <= 31;
@@ -670,11 +722,12 @@ export function antragsNameFehler(name: string, o: { codes: string[]; art: strin
     const davor = reihenfolge[i - 1];
     return davor === 'code' ? 'nach dem Projektcode' : davor === 'art' ? 'nach der Antragsart' : `an Stelle ${i + 1}`;
   };
-  const { woerter, teile, code } = zerlegenMitCodes(name, codes, reihenfolge);
+  // gemeinsame Zerlegung (core): mehrteiliger Projektcode, Nummer nur, wenn sie wie eine aussieht
+  const { teile, code } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
   if (!code) return `Projektcode fehlt ${wo('code')} – ${erwartet}`;
   if (!art || teile.art?.toUpperCase() !== art.toUpperCase()) return `Antragsart ${art || '?'} fehlt ${wo('art')} – ${erwartet}`;
-  const anzahlKopf = code.split(/\s+/).length + 2;
-  if (!/^\d{6}$/.test(teile.datum ?? '') || woerter.length <= anzahlKopf) return `Datum JJMMTT und Name fehlen ${wo('datum')} – ${erwartet}`;
+  // nach den Teilen braucht es eine Bezeichnung (eine Nummer allein genügt nicht)
+  if (!/^\d{6}$/.test(teile.datum ?? '') || !teile.rest) return `Datum JJMMTT und Name fehlen ${wo('datum')} – ${erwartet}`;
   if (!gueltigesDatum(teile.datum)) return `Kein gültiges Datum „${teile.datum}“ – ${erwartet}`;
   return null;
 }
@@ -688,7 +741,7 @@ export function antragsNameFehler(name: string, o: { codes: string[]; art: strin
 export function nameNachFormat(name: string, o: { codes: string[]; art: string; datum: Date; reihenfolge?: NamensTeil[]; kuerzel?: string[] }): string {
   const reihenfolge = o.reihenfolge ?? VORGABE_NAMENSSCHEMA.reihenfolge;
   const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
-  const { woerter, endung, teile, stelle, code } = zerlegenMitCodes(name, codes, reihenfolge);
+  const { woerter, endung, teile, stelle, code } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
   const bekannt = (o.kuerzel ?? []).map((k) => k.toUpperCase());
   if (code && gueltigesDatum(teile.datum) && stelle.art !== undefined && teile.art && (bekannt.includes(teile.art.toUpperCase()) || teile.art.toUpperCase() === o.art.toUpperCase())) {
     const neu = [...woerter];

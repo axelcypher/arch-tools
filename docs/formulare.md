@@ -12,9 +12,13 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 
 - **Aufbau der Oberfläche:** Links die **Navigation** (Projekt, Projektdaten | Antragsdaten, Formulare und – durch
   eine Linie getrennt – Projektordner) auf eigenem, dunklerem Grund wie die Titelleiste; der gewählte Eintrag ist hell
-  hinterlegt und links markiert. Über den Formularen steht hervorgehoben ein Knopf in zwei Hälften: **Projektdaten**
-  (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die Formulare ausgefüllt) und **Antragsdaten** (nur
-  für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang – siehe unten). Aufbau: Dokument › Antrag › Projekt.
+  hinterlegt und links markiert. Der **Kopf der Navigation steht fest** (rollt nicht mit): Projekt, Antrag und darunter
+  ein Knopf in zwei Hälften – **Projektdaten** (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die
+  Formulare ausgefüllt) und **Antragsdaten** (nur für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang –
+  siehe unten); darunter rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
+- **Zuletzt bearbeitet:** Rechts an jedem Formular der Navigation und an jeder Datei im Projektordner (Ordner und
+  Ansicht „Antrag“) steht kurz, wann zuletzt geändert wurde („heute 14:30“, „gestern 09:05“, „03.03.“) – beim Formular
+  auch nicht gespeicherte Eingaben; der volle Zeitpunkt steht im Tooltip (`zeit.ts`).
 - **Ohne Produktnamen:** Die Oberfläche nennt kein anderes Programm. Die App liest und schreibt das Dateiformat der
   Formularprojekte (siehe „Dateiformat“) und soll künftig auch ganz ohne das Originalprogramm auskommen.
 - **Seitenleisten** behalten ihre Breite, auch wenn eine Ansicht einen Rollbalken braucht (Platz dafür ist immer
@@ -255,8 +259,8 @@ Anschrift, wie sie in Formularen steht.
   „Ansicht bearbeiten …“ öffnet den **Ansicht-Editor** (gemeinsam in `packages/core/src/ui/AnsichtEditor.tsx`): rechts
   der Katalog aller Einträge mit Suche (Haken nimmt in den gewählten Abschnitt auf), links die Abschnitte – Felder am
   Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt. Je Feld: **eigene
-  Beschriftung**, **Breite** (¼, ⅓, ½, ⅔, ¾, ganz) und **„↵ neue Zeile“** – so legt man fest, welche Felder in einer Zeile
-  stehen (die Vorschau unter jedem Abschnitt zeigt die Zeilen; in schmalen Abschnitten werden die Felder breiter, in
+  Beschriftung**, **Breite** (¼, ⅓, ½, ⅔, ¾, ganz) und **„neue Zeile“** – so legt man fest, welche Felder in einer Zeile
+  stehen (die Vorschau unter dem gewählten Abschnitt zeigt die Zeilen; in schmalen Abschnitten werden die Felder breiter, in
   schmalen Fenstern steht der Katalog unter dem Aufbau). Ein Feld, das es nicht mehr gibt, steht durchgestrichen da
   und lässt sich nur entfernen. **Verknüpfen (⛓):** Der Knopf öffnet eine kleine Liste „Gemeinsam ausfüllen mit …“
   mit Kästchen (gewählt wird bewusst per Klick bzw. Leertaste, nicht schon mit den Pfeiltasten; Esc schließt die
@@ -430,23 +434,26 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   Ordner der aktiven Fassung und direkt in der Quelle (Vorgabe `Planung/Genehmigungsplanung/pdf`, aus der die Pläne
   in den Antragsordner verschoben werden – eine leere Quelle ist in Ordnung). Unterordner wie `_Archiv` oder `alt`
   zählen nicht (zurückgezogene oder umnummerierte Pläne ergäben sonst Scheinnummern und -lücken); liegt ein Plan auch
-  als DWG neben dem PDF, zählt das PDF. Zugeordnet wird über die Plannummer (ob an Stelle 2 GP oder BAUA steht,
+  als DWG neben dem PDF, zählt das PDF. Ein Projektcode aus mehreren Wörtern („BS 9“) wird erkannt (dieselbe
+  Zerlegung wie beim Namensformat, `dateinameZerlegenMitStellen` in core; die Nummer ist optional). Zugeordnet wird über die Plannummer (ob an Stelle 2 GP oder BAUA steht,
   spielt keine Rolle). Je Plankürzel getrennt:
   - **Lücke:** zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – nach der Bürovorgabe
-    (fortlaufende Nummern) fehlt dann ein Plan (rot, „GP-07 fehlt“). Die Reihe muss nicht bei 01 beginnen, die
+    (fortlaufende Nummern) fehlt dann ein Plan (rot, Zustand „Lücke“; in der Zeile „GP-07 fehlt“). Die Reihe muss nicht bei 01 beginnen, die
     Reihenfolge der Planarten wird nicht geprüft. Fehlen mehr als zehn Nummern am Stück, ist das eher ein Tippfehler
     (GP-41 statt GP-04): dann ein Hinweis statt Dutzender fehlender Pläne;
   - **noch nicht verschoben:** die Nummer liegt nur in der Quelle (gelb);
   - **veraltet:** die Quelle hat eine neuere Fassung – Datum im Namen, bei gleichem Datum der Index (AP-03a nach
     AP-03) (gelb); liegt eine Nummer mehrfach im Antragsordner, zählt die neueste;
   - **Hinweise** (nie sperrend): ältere Fassungen derselben Nummer („alte Fassung?“), ein Satz neben Einzelplänen
-    daraus, ein Index, wo ihn das Namensschema des Büros nicht vorsieht (Bürovorgabe: erst ab LPH 5; bei Phasen ohne
-    LPH wie AB gar nicht), „kein Schnitt erkannt“ bzw. „keine Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse,
+    daraus, ein Index, wo ihn das Namensschema des Büros nicht vorsieht (Bürovorgabe: erst ab LPH 5; daraus folgt:
+    eine Phase ohne LPH wie AB trägt keinen), „kein Schnitt erkannt“ bzw. „keine Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse,
     Schnitte und Ansichten, § 4 Abs. 1, 3, 4 BauPrüfVO NRW – nur ein Hinweis, weil die Behörde auf Bauvorlagen
     verzichten kann und ein Vorbescheid nur die zur Beurteilung seiner Fragen erforderlichen Bauvorlagen braucht, § 16
     BauPrüfVO; nicht bei Plänen ohne Leistungsphase wie den
     Aufteilungsplänen nach § 7 Abs. 4 WEG und nicht bei Entwässerungsanträgen oder Abgeschlossenheitsbescheinigungen
-    (ENTW, ABGE), für die die BauPrüfVO nicht die Grundlage ist; „Ausschnitt“ zählt nicht als Schnitt), und – nur wenn die
+    (ENTW, ABGE), für die die BauPrüfVO nicht die Grundlage ist; bei der denkmalrechtlichen Erlaubnis (DENK, § 9 DSchG
+    NRW) ohne Paragraphen der BauPrüfVO, beim Vorbescheid mit dem Zusatz „nur, soweit für die Fragen erforderlich
+    (§ 16 BauPrüfVO)“; „Ausschnitt“ zählt nicht als Schnitt), und – nur wenn die
     Projektdatei Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (Grundrisse für alle Geschosse, § 4 Abs. 2
     BauPrüfVO NRW; der einzige Weg, auch einen fehlenden letzten
     Grundriss zu bemerken).
@@ -487,6 +494,14 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   Mit der aktiven Fassung wechselt die App auch diese Angaben. Jeder Ordner einer Antragsfassung ist ein Antrag; beim
   ersten Öffnen werden fehlende angelegt (Angelegt-Datum aus dem Ordner). Angaben aus älteren Fassungen der App, die
   für das ganze Projekt galten, werden dabei einmalig in jeden vorhandenen Antrag übernommen.
+- **Antragsstand bei der Einreichung:** Sobald ein Antrag als eingereicht gilt (erkannt oder von Hand), hält die App
+  einmal fest, welche Dateien im Ordner des Antrags liegen – nur Name, Größe und Änderungszeit, **keine Kopie**
+  (`stand` im Antrag der Projektdatei; Dateien, die erst nach dem Tag der Einreichung geändert wurden, gehören bei
+  später Erkennung nicht dazu). In der Ansicht „Antrag“ steht dann „Eingereicht am … – Stand festgehalten“, und jede
+  Datei, die danach **neu** hinzukam oder **geändert** wurde, ist gekennzeichnet („neu seit der Einreichung“ bzw.
+  „geändert seit der Einreichung“, gelb, mit Summe oben). Ausgenommen sind Dateien, die nach der Einreichung
+  erwartungsgemäß kommen: Genehmigung bzw. Bescheid, Eingangs- bzw. Empfangsbestätigung, Antragsprotokoll,
+  Nachforderung (`NACH_EINREICHUNG_ERWARTET`). Gilt der Antrag wieder als in Arbeit, wird der Stand verworfen.
 - **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)
   ausgenommen – ein Dokument, dessen Name `Antragsprotokoll` oder `Eingangsbestätigung` (auch
   `Eingangsbestaetigung`) enthält, gilt der Antrag als **eingereicht** – mit dem Datum im Dateinamen, sonst dem der
@@ -519,7 +534,14 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
 - In der **Navigation** trägt jedes Formular des Antragsumfangs einen Farbpunkt; fehlende Formulare stehen grau
   hinterlegt darunter – ein **Klick legt das Formular an** (aus dem Vorlagenordner, sonst als Kopie des neuesten
   passenden Formulars aus einem anderen Projekt, jeweils mit geleerten Eingaben; schreibgeschützte Textfelder
-  bleiben) und öffnet es – leere Felder mit Angaben aus der Projektkarte sind gleich befüllt.
+  bleiben) und öffnet es – leere Felder mit Angaben aus der Projektkarte sind gleich befüllt. Die Suche meldet sich
+  sofort („Suche eine Vorlage …“); in anderen Projekten sucht sie nur nach dem Namen (im Vorlagenordner auch nach
+  der Kennung) und meldet, wenn sie nichts findet. Ein zweiter Klick legt kein zweites Formular an. Liegt das Formular
+  schon im Projekt, nur anders benannt: Rechtsklick › „Vorhandenes Formular zuordnen“ (in den Antragsdaten „Vorhandenes
+  zuordnen“). **Doppelter Eintrag?** Passt der Titel eines fehlenden Eintrags zu einem Formular, das schon einem
+  anderen Eintrag zugeordnet ist (z. B. „Baustatistik“ neben „Statistischer Erhebungsbogen“), steht dort „doppelt?“ –
+  ein Klick legt dann nichts an, sondern bietet Zuordnen oder „Aus dem Antragsumfang entfernen“ an. Bei einem
+  eingereichten Antrag ist „Formular anlegen“ gesperrt; der Tooltip sagt warum.
 - Die **PDF** entsteht in der App aus dem Formular selbst – so, wie die Formularansicht es zeigt: A4-Blätter, Rahmen,
   Linien, Beschriftungen (auch gedreht), Feldinhalte und Kreuze, Bilder. Echter Text in den PDF-Standardschriften:
   Helvetica hat die Breiten von Arial, Courier die von Courier New – die Zeilen brechen an denselben Stellen um.

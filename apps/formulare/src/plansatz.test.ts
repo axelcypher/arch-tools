@@ -94,6 +94,14 @@ describe('Plansatz', () => {
     // Aufteilungspläne (AB, ohne Leistungsphase) bzw. Abgeschlossenheit/Entwässerung: die BauPrüfVO ist nicht die Grundlage
     expect(plansatzPruefen([datei('A ABGE 261111 AB-01 Grundriss EG.pdf')], [], S).hinweise).toEqual([]);
     expect(plansatzPruefen([datei('A ABGE 261111 GP-01 Grundriss EG.pdf')], [], S, { art: 'ABGE' }).hinweise).toEqual([]);
+    // denkmalrechtliche Erlaubnis: Hinweis ohne Paragraphen der BauPrüfVO; Vorbescheid: mit § 16
+    expect(plansatzPruefen([datei('A DENK 261111 GP-01 Grundriss EG.pdf'), datei('A DENK 261111 GP-02 Schnitt.pdf')], [], S, { art: 'DENK', geschosse: 2 }).hinweise).toEqual([
+      'keine Ansicht erkannt (übliche Bauzeichnungen: Grundrisse, Schnitte, Ansichten)',
+      'Projektdatei: 2 Geschosse, 1 Grundriss erkannt',
+    ]);
+    expect(plansatzPruefen([datei('A BAUVA 261111 GP-01 Lageplan.pdf'), datei('A BAUVA 261111 GP-02 Schnitt.pdf')], [], S, { art: 'BAUVA' }).hinweise).toEqual([
+      'keine Ansicht erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 4 BauPrüfVO NRW – beim Vorbescheid nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO))',
+    ]);
     // „Lageplan Ausschnitt“ ist kein Schnitt, „Längsschnitt“ schon
     expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Lageplan Ausschnitt.pdf'), datei('A BAUA 261111 GP-02 Ansicht Nord.pdf')], [], S).hinweise).toEqual([
       'kein Schnitt erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 3 BauPrüfVO NRW)',
@@ -128,6 +136,12 @@ describe('Plansatz', () => {
     expect(r.hinweise).toContain('GP-04 bis GP-40 fehlen – ungewöhnlich große Lücke vor GP-41: Tippfehler in der Plannummer?');
     // bis zu zehn fehlende Nummern am Stück bleiben einzelne Lücken
     expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss.pdf'), datei('A BAUA 261111 GP-12 Schnitt.pdf')], [], S).luecken).toHaveLength(10);
+  });
+
+  it('mehrteiliger Projektcode („BS 9“): die Pläne werden erkannt', () => {
+    const r = plansatzPruefen([datei('BS 9 BAUA 261111 GP-01 Grundriss EG.pdf'), datei('BS 9 BAUA 261111 GP-02 Schnitt.pdf')], [], S, { codes: ['BS', 'BS 9'] });
+    expect(r.plaene.map((p) => p.schluessel)).toEqual(['GP-01', 'GP-02']);
+    expect(r.plaene[0].bezeichnung).toBe('Grundriss EG');
   });
 
   it('derselbe Plan als PDF und DWG: es zählt das PDF, kein Hinweis auf eine alte Fassung', () => {

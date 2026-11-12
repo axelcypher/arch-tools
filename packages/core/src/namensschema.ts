@@ -146,16 +146,61 @@ export interface Namensteile {
   rest: string;
 }
 
-/** Dateinamen nach dem Schema zerlegen: die ersten vier Wörter in der Reihenfolge des Schemas, der Rest ist die Bezeichnung */
-export function dateinameZerlegen(name: string, schema: Pick<Namensschema, 'reihenfolge'> = VORGABE_NAMENSSCHEMA): Namensteile {
-  const ohne = (name.split(/[\\/]/).pop() ?? name).replace(/\.[A-Za-z0-9]{1,5}$/, '').trim();
-  const woerter = ohne.split(/\s+/).filter(Boolean);
-  const out: Namensteile = { rest: woerter.slice(schema.reihenfolge.length).join(' ') };
-  schema.reihenfolge.forEach((t, i) => {
-    if (woerter[i] !== undefined) out[t] = woerter[i];
-  });
-  return out;
+/** Sieht ein Wort nach einer Plan- oder Dokumentnummer aus? („01“, „03a“, „GP-04“, „GP01-07“, „AP-03a“) */
+export const istNummer = (wort: string) => /^\d{1,3}[a-z]?$/i.test(wort) || /^[A-ZÄÖÜ]{1,8}[-_]?\d{1,3}(?:[-–](?:[A-ZÄÖÜ]{1,8}[-_]?)?\d{1,3})?[a-z]?$/i.test(wort);
+
+/** Zerlegung mit den Stellen der Teile (Wortindex) – für Prüfen und Umbenennen */
+export interface Zerlegung {
+  teile: Namensteile;
+  /** Wortindex je Teil (beim mehrteiligen Projektcode: das erste Wort) */
+  stelle: Partial<Record<NamensTeil, number>>;
+  woerter: string[];
+  /** Endung samt Punkt („.pdf“) bzw. leer */
+  endung: string;
+  /** der erkannte Projektcode aus `codes` (beim Zerlegen ohne Codes: undefined) */
+  code?: string;
 }
+
+/**
+ * Dateinamen nach dem Schema zerlegen: die Teile in der Reihenfolge des Schemas, danach die Bezeichnung. Mit `codes`
+ * darf der Projektcode aus mehreren Wörtern bestehen („BS 9“) – der längste passende gilt. Die Nummer ist optional:
+ * Sie belegt nur dann ein Wort, wenn es nach einer Plan- oder Dokumentnummer aussieht („HVO BAUA 261110 Bauantrag“).
+ */
+export function dateinameZerlegenMitStellen(name: string, schema: Pick<Namensschema, 'reihenfolge'> = VORGABE_NAMENSSCHEMA, codes: string[] = []): Zerlegung {
+  const datei = (name.split(/[\\/]/).pop() ?? name).trim();
+  const endung = /\.[A-Za-z0-9]{1,5}$/.exec(datei)?.[0] ?? '';
+  const woerter = datei
+    .slice(0, datei.length - endung.length)
+    .split(/\s+/)
+    .filter(Boolean);
+  const nachLaenge = [...codes]
+    .map((c) => c.trim())
+    .filter(Boolean)
+    .sort((a, b) => b.split(/\s+/).length - a.split(/\s+/).length || b.length - a.length);
+  const teile: Namensteile = { rest: '' };
+  const stelle: Partial<Record<NamensTeil, number>> = {};
+  let code: string | undefined;
+  let p = 0;
+  for (const t of schema.reihenfolge) {
+    if (woerter[p] === undefined) break;
+    if (t === 'code' && nachLaenge.length) {
+      code = nachLaenge.find((c) => c.split(/\s+/).every((w, i) => woerter[p + i]?.toLowerCase() === w.toLowerCase()));
+      const n = code ? code.split(/\s+/).length : 1;
+      [teile.code, stelle.code] = [woerter.slice(p, p + n).join(' '), p];
+      p += n;
+      continue;
+    }
+    if (t === 'nummer' && !istNummer(woerter[p])) continue;
+    [teile[t], stelle[t]] = [woerter[p], p];
+    p++;
+  }
+  teile.rest = woerter.slice(p).join(' ');
+  return { teile, stelle, woerter, endung, code };
+}
+
+/** Dateinamen nach dem Schema zerlegen (siehe dateinameZerlegenMitStellen) */
+export const dateinameZerlegen = (name: string, schema: Pick<Namensschema, 'reihenfolge'> = VORGABE_NAMENSSCHEMA, codes: string[] = []): Namensteile =>
+  dateinameZerlegenMitStellen(name, schema, codes).teile;
 
 /* ---------- Plannummern ---------- */
 

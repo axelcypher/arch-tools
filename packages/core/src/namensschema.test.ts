@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createProject } from './model';
 import { parseProjectData, serializeProject } from './serialize';
-import { dateinameZerlegen, indexVorgesehen, kuerzelZu, namensschemaAus, planNummerAus, VORGABE_NAMENSSCHEMA, wirksamesNamensschema } from './namensschema';
+import { dateinameZerlegen, dateinameZerlegenMitStellen, indexVorgesehen, istNummer, kuerzelZu, namensschemaAus, planNummerAus, VORGABE_NAMENSSCHEMA, wirksamesNamensschema } from './namensschema';
 
 describe('Namensschema', () => {
   it('zerlegt Dateinamen nach den Stellen: Code, Phase bzw. Antragsart, Datum, Nummer, Rest', () => {
@@ -9,6 +9,24 @@ describe('Namensschema', () => {
     expect(dateinameZerlegen('BS9 BAUA 261110 01 Bauantrag.pdf')).toMatchObject({ art: 'BAUA', nummer: '01', rest: 'Bauantrag' });
     // andere Reihenfolge im Schema
     expect(dateinameZerlegen('261111 HVO GP-04 GP Grundriss.pdf', { reihenfolge: ['datum', 'code', 'nummer', 'art'] })).toMatchObject({ code: 'HVO', art: 'GP', nummer: 'GP-04', datum: '261111' });
+    // die Nummer ist optional: ohne Nummer gehört das Wort zur Bezeichnung
+    expect(dateinameZerlegen('HVO BAUA 261110 Bauantrag.pdf')).toEqual({ code: 'HVO', art: 'BAUA', datum: '261110', rest: 'Bauantrag' });
+    expect(dateinameZerlegen('HVO 261110 BAUA Bauantrag.pdf', { reihenfolge: ['code', 'nummer', 'datum', 'art'] })).toEqual({ code: 'HVO', datum: '261110', art: 'BAUA', rest: 'Bauantrag' });
+    // mehrteiliger Projektcode – der längste passende gilt
+    expect(dateinameZerlegen('BS 9 BAUA 261111 GP-01 Grundriss EG.pdf', VORGABE_NAMENSSCHEMA, ['BS', 'BS 9'])).toEqual({
+      code: 'BS 9',
+      art: 'BAUA',
+      datum: '261111',
+      nummer: 'GP-01',
+      rest: 'Grundriss EG',
+    });
+    expect(dateinameZerlegenMitStellen('BS 9 BAUA 261111 GP-01 Grundriss.pdf', VORGABE_NAMENSSCHEMA, ['BS 9'])).toMatchObject({
+      code: 'BS 9',
+      stelle: { code: 0, art: 2, datum: 3, nummer: 4 },
+      endung: '.pdf',
+    });
+    expect(['01', '03a', 'GP-04', 'GP01-07', 'AP-03a'].every(istNummer)).toBe(true);
+    expect(['Bauantrag', '2026', 'BAUA'].some(istNummer)).toBe(false);
   });
 
   it('Plannummern nur mit Plankürzel: GP-01, GP01, Satz GP01-07, Index – eine reine Zahl ist kein Plan', () => {

@@ -313,8 +313,19 @@ describe('Projektordner', () => {
     const kuerzel = (liste: string, k: string) => eingabeMit(`${liste}: Kürzel ${k}`);
     eingabe(kuerzel('Planphasen', 'BP'), 'bp');
     expect(schema().phasen[0].kuerzel).toBe('BP');
-    eingabe(kuerzel('Planphasen', 'BP'), 'bs');
+    // umbenennen und mit Tab weiter zur Bedeutung: die Zeile bleibt, der Fokus auch
+    const feldBp = kuerzel('Planphasen', 'BP');
+    const bedeutung = eingabeMit('Planphasen: Bedeutung von BP');
+    act(() => {
+      feldBp.focus();
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(feldBp, 'bs');
+      feldBp.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    act(() => bedeutung.focus());
     expect(schema().phasen.map((k) => k.kuerzel)).toEqual(['BS', 'EP', 'GP', 'AP', 'AB']);
+    expect(bedeutung.isConnected).toBe(true);
+    expect(document.activeElement).toBe(bedeutung);
+    act(() => bedeutung.blur());
     // ungültig oder doppelt: das Feld zeigt wieder das alte Kürzel, die Meldung sagt warum
     eingabe(kuerzel('Planphasen', 'EP'), 'E-P');
     expect(schema().phasen[1].kuerzel).toBe('EP');
@@ -392,8 +403,8 @@ describe('Projektordner', () => {
     // Vorgabe wiederherstellen: mit Rückfrage, danach gilt wieder die eingebaute Vorgabe – auch in den Feldern
     act(() => knopf(bereich, 'Vorgabe wiederherstellen').click());
     await warten();
-    expect(host.querySelector('.modal')?.textContent).toContain('Namensschema zurücksetzen?');
-    act(() => knopf(host.querySelector('.modal')!, 'Zurücksetzen').click());
+    expect(host.querySelector('.modal')?.textContent).toContain('Vorgabe wiederherstellen?');
+    act(() => knopf(host.querySelector('.modal')!, 'Wiederherstellen').click());
     await warten();
     expect(schema().reihenfolge).toEqual(['code', 'art', 'datum', 'nummer']);
     expect(schema().phasen[0].kuerzel).toBe('BP');

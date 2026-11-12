@@ -3,7 +3,7 @@ import { Fragment, useState } from 'react';
 import type { AntragsVorlage, KatalogEintrag } from '../antrag';
 import { VORGABE_MERKMALE, bedingungText, hatBedingung, istVorgabeMerkmal } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
-import { ART_HINWEIS, PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, vorlageMitAntragsart, PLANSATZ_QUELLE } from '../antrag';
+import { ART_HINWEIS, vorlageArtWarnung, PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, vorlageMitAntragsart, PLANSATZ_QUELLE } from '../antrag';
 import { Griff, useSortieren } from './Sortieren';
 import { namensschemaVon, useAntrag } from '../antragStore';
 import { useFormulare } from '../store';
@@ -94,10 +94,9 @@ export function AntragEinstellungen() {
             </datalist>
           </label>
         </div>
-        {wirksameVorlage !== e.namensvorlage && (
-          <p className="warning small-text es-art-umstellen">
-            An der Stelle der Antragsart steht „{e.namensvorlage.trim().split(/\s+/)[reihenfolge.indexOf('art')]}“ – beim Export wird dort die Antragsart des aktiven Antrags ({'{Art}'})
-            eingesetzt.{' '}
+        {vorlageArtWarnung(e.namensvorlage, reihenfolge) && (
+          <p className="warning small-text">
+            {vorlageArtWarnung(e.namensvorlage, reihenfolge)}{' '}
             <button className="small" onClick={() => setEinstellungen({ namensvorlage: wirksameVorlage })}>
               Vorlage anpassen
             </button>

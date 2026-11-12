@@ -2,7 +2,7 @@ import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import type { Bereitschaft } from '../antrag';
 import { alleKuerzel } from '@core/namensschema';
-import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, nameNachFormat } from '../antrag';
+import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, nameNachFormat, SEIT_EINREICHUNG_TEXT, seitEinreichung } from '../antrag';
 import { aktiveFassung, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -10,6 +10,7 @@ import { dateiArtVon, useFormulare } from '../store';
 import { dateiMenue, SYMBOL } from './AblageBaum';
 import { StatusPunkt } from './Antrag';
 import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT } from '../plansatz';
+import { zeitKurz, zeitLang } from '../zeit';
 import type { MenuePunkt } from './Menue';
 import { zeigeMenue } from './Menue';
 import { Symbol } from './Symbol';
@@ -58,6 +59,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const fassung = useAntrag((s) => aktiveFassung(s, projekt));
   const ordner = useAntrag((s) => antragsOrdner(s, projekt));
   const bereitJeFassung = useAntrag((s) => s.projektdatei?.bereit);
+  // Antragsstand bei der Einreichung (nur bei eingereichten Anträgen festgehalten)
+  const stand = useAntrag((s) => s.projektdatei?.antraege?.[aktiveFassung(s, projekt)]?.stand);
   const markiert = bereitJeFassung?.[fassung] ?? [];
   const { bereitUmschalten } = useAntrag.getState();
   const [vorschau, setVorschau] = useState<string | null | undefined>(undefined);
@@ -76,8 +79,10 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       const m = markiert.find((b) => b.datei.toLowerCase() === d.pfad.toLowerCase());
       // zugehöriges Dokument: die verknüpfte bzw. gefundene Datei – bei einem Plansatz jede seiner Plandateien
       const dok = dokumentZu(dokumente, d.pfad);
-      return { d, fehler, zustand: bereitschaft(d, m, fehler), dok };
+      return { d, fehler, zustand: bereitschaft(d, m, fehler), dok, seit: seitEinreichung(d, stand) };
     });
+  const seitNeu = liste.filter((x) => x.seit === 'neu').length;
+  const seitGeaendert = liste.filter((x) => x.seit === 'geaendert').length;
   const bereit = liste.filter((x) => x.zustand === 'bereit').length;
   // fehlt ganz: ein Dokument ohne Datei, ein Plansatz ohne einen einzigen Plan
   const fehlend = dokumente.filter((x) => x.status !== 'entfaellt' && (x.plansatz ? !x.plansatz.plaene.length : !x.datei));
@@ -133,6 +138,14 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
         </span>
         {vollstaendig && <span className="fo-bereit-fertig">Alles bereit</span>}
       </div>
+      {stand && (
+        <p className={`fo-stand${seitNeu + seitGeaendert ? ' abweichend' : ''}`} role="status">
+          <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} – Stand festgehalten
+          {seitNeu + seitGeaendert > 0
+            ? ` · ${[seitNeu ? `${seitNeu} neu` : '', seitGeaendert ? `${seitGeaendert} geändert` : ''].filter(Boolean).join(', ')} seit der Einreichung`
+            : ' · seitdem unverändert'}
+        </p>
+      )}
       <div className="fo-bereit-knoepfe">
         <button className="small" disabled={!liste.length} title="Alle Antragsunterlagen groß ansehen und durchblättern (mit Zoom)" onClick={() => setVorschau(null)}>
           <Symbol name="auge" /> Ansehen
@@ -142,8 +155,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       {vorschau !== undefined && <UnterlagenVorschau ablage={ablage} start={vorschau ?? undefined} onClose={() => setVorschau(undefined)} />}
       {!liste.length && <p className="nav-leer">Im Ordner {ordner} liegen noch keine Dokumente.</p>}
       <ul className="fo-baum fo-bereit-liste">
-        {liste.map(({ d, fehler, zustand, dok }) => (
-          <li key={d.pfad} className={`fo-bereit-zeile ${zustand}`}>
+        {liste.map(({ d, fehler, zustand, dok, seit }) => (
+          <li key={d.pfad} className={`fo-bereit-zeile ${zustand}${seit ? ` seit-${seit}` : ''}`}>
             <button
               className="fo-bereit-knopf"
               aria-pressed={zustand === 'bereit'}
@@ -156,7 +169,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
             </button>
             <button
               className={`fo-baum-zeile${offenPfad === `${ordner}/${d.pfad}` ? ' aktiv' : ''}`}
-              title={`${d.pfad}${dok ? ` – ${dok.eintrag.titel}` : ''}${fehler ? `\n${fehler}` : ''}`}
+              title={`${d.pfad}${dok ? ` – ${dok.eintrag.titel}` : ''}${fehler ? `\n${fehler}` : ''}\n${zeitLang(d.geaendert)}`}
               onClick={() => dateiArtVon(d.pfad) && void useFormulare.getState().dateiAnsehen(basis, `${ordner}/${d.pfad}`)}
               onDoubleClick={() => void oeffnePfad(verbinde(basis, `${ordner}/${d.pfad}`)).catch(() => undefined)}
               onContextMenu={(e) => zeigeMenue(e, menue(d.pfad, zustand, fehler, d.geaendert))}
@@ -167,7 +180,9 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
               <span className="fo-baum-name">
                 {d.pfad}
                 {(dok || fehler) && <span className="fo-bereit-unter">{fehler ? 'Namensformat passt nicht' : dok!.eintrag.titel}</span>}
+                {seit && <span className={`fo-seit ${seit}`}>{SEIT_EINREICHUNG_TEXT[seit]}</span>}
               </span>
+              {d.geaendert ? <span className="fo-baum-zeit">{zeitKurz(d.geaendert)}</span> : null}
             </button>
           </li>
         ))}

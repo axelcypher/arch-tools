@@ -37,6 +37,7 @@ import {
   EINGEREICHT_TIEFE,
   eingereichtAus,
   eingereichtVon,
+  standAus,
   naechsteFassung,
   istArchiv,
   neuerAntrag,
@@ -227,7 +228,6 @@ const ctx = () => {
   return { ds: s.ds, projekt: s.projekt, ablage, basis: ablage ? verbinde(ablage.root, ablage.pfad) : null };
 };
 
-/** Einstellungen für das gewählte Projekt */
 /**
  * Einstellungen für das Projekt (global, mit seinen Abweichungen). An der Stelle der Antragsart steht in der
  * Namensvorlage immer {Art} – eine ältere Vorlage mit {Phase} oder einem festen Kürzel dort wird hier umgestellt
@@ -510,7 +510,7 @@ export const useAntrag = create<AntragState>((set, get) => {
    * „Eingereicht“ der Anträge nachführen und `meta.antrag` (zuletzt angelegter Antrag, für die Startseiten) aktuell
    * halten – gespeichert wird nur, wenn sich etwas geändert hat.
    */
-  const antragStandPflegen = async (eingereicht: Record<string, { datei: string; datum: string } | null>) => {
+  const antragStandPflegen = async (eingereicht: Record<string, { datei: string; datum: string } | null>, listen: Record<string, Eintrag[]> = {}) => {
     const pd = get().projektdatei;
     const o = useFormulare.getState().oap;
     // ohne gespeicherte Angaben (z. B. während eine alte formulare.json übernommen wird) nichts schreiben
@@ -524,6 +524,19 @@ export const useAntrag = create<AntragState>((set, get) => {
       antraege[name] = e ? { ...rest, eingereicht: e } : rest;
       geaendert = true;
       log.info(`${name}: ${e ? `eingereicht (${e.datei})` : 'nicht mehr eingereicht'}`);
+    }
+    // Antragsstand bei der Einreichung einmal festhalten (Dateiliste, keine Kopie); wieder in Arbeit: verwerfen
+    for (const [name, a] of Object.entries(antraege)) {
+      const ein = eingereichtVon(a);
+      if (ein && !a.stand && listen[name]) {
+        antraege[name] = { ...a, stand: standAus(listen[name], ein.datum) };
+        geaendert = true;
+        log.info(`${name}: Antragsstand vom ${ein.datum} festgehalten (${antraege[name].stand!.dateien.length} Dateien)`);
+      } else if (!ein && a.stand) {
+        const { stand: _, ...rest } = a;
+        antraege[name] = rest;
+        geaendert = true;
+      }
     }
     const neu = geaendert ? { ...pd, antraege } : pd;
     const kurz = antragKurzVon(antraegeVon(neu), aktiveFassung({ ...get(), projektdatei: neu }, useFormulare.getState().projekt));
@@ -733,6 +746,8 @@ export const useAntrag = create<AntragState>((set, get) => {
         if (await projektdateiSchreiben({ ...pd, antraege })) {
           log.info(`${fassung}: Status ${status ? (status.eingereicht ? `eingereicht (${status.datum ?? 'ohne Datum'}, von Hand)` : 'in Arbeit (von Hand)') : 'automatisch'}`);
           get().neuBerechnen();
+          // Antragsstand festhalten bzw. verwerfen (braucht die Dateiliste des Antragsordners)
+          void get().aktualisieren();
         }
       } catch (e) {
         fehler(`Status von ${fassung}`, e);
@@ -840,10 +855,13 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
       // eingereicht? – Antragsprotokoll bzw. Eingangsbestätigung im Ordner eines Antrags, auch in Unterordnern
       const eingereicht: Record<string, ReturnType<typeof eingereichtAus>> = {};
+      // die Listen dienen auch dem Antragsstand bei der Einreichung
+      const listen: Record<string, Eintrag[]> = {};
       if (basis) {
         for (const f of get().fassungen) {
           try {
-            eingereicht[f.name] = eingereichtAus(await ds.liste(verbinde(basis, `${e.antragsordner.replace(/^\/+|\/+$/g, '')}/${f.name}`), EINGEREICHT_TIEFE));
+            listen[f.name] = await ds.liste(verbinde(basis, `${e.antragsordner.replace(/^\/+|\/+$/g, '')}/${f.name}`), EINGEREICHT_TIEFE);
+            eingereicht[f.name] = eingereichtAus(listen[f.name]);
           } catch {
             eingereicht[f.name] = null;
           }
@@ -851,7 +869,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
       if (useFormulare.getState().projekt !== projekt) return;
       set({ dateien, quellen });
-      await antragStandPflegen(eingereicht);
+      await antragStandPflegen(eingereicht, listen);
       // nach Export, neuer Fassung, Verknüpfen … oder von außen: auch der Projektordner-Baum liest neu
       useFormulare.getState().ordnerNeuLesen();
       // Formulare zerlegen (zwischengespeichert), dann rechnen
@@ -1109,7 +1127,14 @@ export const useAntrag = create<AntragState>((set, get) => {
       const s = useFormulare.getState();
       const { ds, projekt } = ctx();
       const u = get().projektdatei?.umfang?.find((x) => x.id === umfangId);
-      if (!ds || !projekt || !u || gesperrt()) return null;
+      if (!ds || !projekt || !u) {
+        meldung('fehler', 'Formular anlegen: kein Projekt bzw. kein Eintrag im Antragsumfang – bitte das Projekt neu laden.');
+        return null;
+      }
+      if (gesperrt() || anlegenLaeuft.has(umfangId)) return null;
+      anlegenLaeuft.add(umfangId);
+      // die Suche kann bei vielen Projekten dauern – sofort sagen, was passiert
+      meldung('info', `Suche eine Vorlage für „${u.titel}“ …`);
       try {
         const vorlage = await vorlageSuchen(u);
         if (!vorlage) throw new Error(`Keine Vorlage für „${u.titel}“ gefunden – bitte in den Einstellungen einen Vorlagenordner mit leeren Formularen angeben`);
@@ -1129,10 +1154,15 @@ export const useAntrag = create<AntragState>((set, get) => {
       } catch (e) {
         fehler(`Formular für „${u.titel}“ anlegen`, e);
         return null;
+      } finally {
+        anlegenLaeuft.delete(umfangId);
       }
     },
   };
 });
+
+/** Formulare, die gerade angelegt werden (je Eintrag des Antragsumfangs) – ein zweiter Klick legt kein zweites an */
+const anlegenLaeuft = new Set<string>();
 
 autofillAnbindung.zustand = (datei) => useAntrag.getState().projektdatei?.felder?.[datei];
 sperrAnbindung.antrag = (p) => (p && p === useFormulare.getState().projekt ? antragSperre(useAntrag.getState(), p) : null);
@@ -1209,9 +1239,11 @@ async function vorlageSuchen(u: UmfangEintrag): Promise<{ name: string; bytes: U
     const b = v && (await ds.lies(v.root, v.rel));
     if (v && b) return { name: v.pfad, bytes: b, herkunft: 'dem Vorlagenordner' };
   }
+  // in den anderen Projekten nur nach dem Namen – jedes Formular aller Projekte zu öffnen, um die Kennung zu lesen,
+  // dauerte bei vielen Projekten Minuten (und sah aus, als passiere nichts)
   const andere = s.projekte.filter((p) => !(p.root === s.projekt?.root && p.ordner === s.projekt?.ordner));
   const alle = (await Promise.all(andere.map((p) => kandidaten(p.root, p.ordner)))).flat();
-  const v = neueste(await passend(alle));
+  const v = neueste(alle.filter((e) => passt(ohneEndung(e.pfad), muster)));
   const b = v && (await ds.lies(v.root, v.rel));
   return v && b ? { name: v.pfad, bytes: b, herkunft: `Projekt ${v.rel.split('/')[0]}` } : null;
 }

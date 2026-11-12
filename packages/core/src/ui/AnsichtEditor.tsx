@@ -126,8 +126,8 @@ export function AnsichtEditor({
       <header className="av-ed-titel">
         <h3>{titel}</h3>
         <p className="muted small-text">
-          {text ?? 'Rechts anhaken, links am Griff ordnen (oder Griff wählen und ↑/↓, Entf entfernt).'} Beschriftung direkt ändern, Breite wählen, ↵ beginnt eine neue Zeile
-          {verknuepfbar ? ', ⛓ füllt Felder gemeinsam aus' : ''}.
+          {text ?? 'Rechts anhaken, links am Griff ordnen (oder Griff wählen und ↑/↓, Entf entfernt).'} Beschriftung direkt ändern, Breite wählen; ein Haken bei „neue Zeile“ lässt das Feld eine neue
+          Zeile beginnen{verknuepfbar ? ', ⛓\uFE0E füllt Felder gemeinsam aus' : ''}.
         </p>
       </header>
       <div className="av-ed-koerper">
@@ -231,7 +231,8 @@ export function AnsichtEditor({
                   {zug && zielHier && zug.stelle >= uebrige.length && <li className="av-ed-einfuegen" aria-hidden />}
                   {!x.felder.length && !zielHier && <li className="av-ed-leer muted small-text">Felder rechts anhaken oder hierher ziehen</li>}
                 </ul>
-                {x.felder.length > 0 && <LayoutVorschau abschnitt={x} nach={nach} />}
+                {/* die Vorschau der Zeilen nur am gewählten Abschnitt – sonst wird der Aufbau lang */}
+                {gewaehlt && x.felder.length > 0 && <LayoutVorschau abschnitt={x} nach={nach} />}
               </section>
             );
           })}
@@ -286,7 +287,7 @@ function FeldLayout({ optionen, def, titel, onChange }: { optionen?: FeldOptione
       </select>
       <label className="av-ed-umbruch" title="Dieses Feld beginnt eine neue Zeile">
         <input type="checkbox" checked={!!optionen?.neueZeile} aria-label={`${titel} beginnt eine neue Zeile`} onChange={(e) => onChange({ neueZeile: e.target.checked })} />
-        <span aria-hidden>↵ Zeile</span>
+        <span aria-hidden>neue Zeile</span>
       </label>
     </span>
   );
@@ -332,14 +333,15 @@ function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; fel
       <button
         ref={knopf}
         type="button"
-        className={`small av-ed-link${mit.length ? ' aktiv' : ''}`}
+        className={`small av-ed-link${mit.length ? ' active' : ''}`}
         aria-label={`${def.titel} verknüpfen${zustand}`}
         aria-expanded={offen}
         aria-controls={offen ? listeId : undefined}
         title={mit.length ? `Verknüpft mit: ${mit.map(name).join(', ')} – wird gemeinsam ausgefüllt` : 'Mit einem anderen Feld verknüpfen – beide werden gemeinsam ausgefüllt'}
         onClick={() => setOffen(!offen)}
       >
-        ⛓{mit.length ? ` ${mit.length}` : ''}
+        {/* ⛓ mit Textdarstellung (U+FE0E) – nicht als farbiges Emoji */}
+        {`⛓\uFE0E${mit.length ? ` ${mit.length}` : ''}`}
       </button>
       {offen && (
         <span

@@ -12,6 +12,7 @@ import type { MenuePunkt } from './Menue';
 import { zeigeMenue } from './Menue';
 import type { SymbolName } from './Symbol';
 import { Symbol } from './Symbol';
+import { zeitKurz, zeitLang } from '../zeit';
 
 export const SYMBOL: Record<ReturnType<typeof dateiArt>, SymbolName> = {
   pdf: 'datei',
@@ -194,7 +195,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
             <button
               className={`fo-baum-zeile${offen === x.pfad ? ' aktiv' : ''}`}
               style={{ paddingLeft: tiefe * 14 + 18 }}
-              title={dateiArtVon(x.e.pfad) ? `${x.e.pfad} – Klick: hier ansehen, Doppelklick: im Programm öffnen` : `${x.e.pfad} – Doppelklick öffnet`}
+              title={`${dateiArtVon(x.e.pfad) ? `${x.e.pfad} – Klick: hier ansehen, Doppelklick: im Programm öffnen` : `${x.e.pfad} – Doppelklick öffnet`}\n${zeitLang(x.e.geaendert)}`}
               onClick={() => dateiArtVon(x.e.pfad) && void dateiAnsehen(basis, x.pfad)}
               onDoubleClick={() => void oeffnePfad(verbinde(basis, x.pfad)).catch(() => undefined)}
               onContextMenu={(e) => zeigeMenue(e, dateiMenue(basis, x.pfad))}
@@ -204,6 +205,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
               </span>
               <span className="fo-baum-name">{x.e.pfad}</span>
               {`${basis}|${x.pfad}` in entwuerfe && <span className="fo-ungespeichert"> ●</span>}
+              {x.e.geaendert ? <span className="fo-baum-zeit">{zeitKurz(x.e.geaendert)}</span> : null}
             </button>
           </li>
         ),

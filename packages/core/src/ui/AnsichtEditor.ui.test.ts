@@ -57,7 +57,7 @@ describe('Ansicht-Editor: Verknüpfen', () => {
     klick(kaestchen(editor, 'Ort (Gemeinde)'));
     expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
     expect(link(editor, 1)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
-    expect(link(editor, 0)!.className).toContain('aktiv');
+    expect(link(editor, 0)!.className).toContain('active');
     // Esc schließt nur die Liste, der Fokus kehrt zum Knopf zurück
     taste(kaestchen(editor, 'Ort (Gemeinde)'), 'Escape');
     expect(editor.querySelector('.av-ed-link-liste')).toBeNull();

@@ -5,11 +5,11 @@ import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
 import { eingereichtVon, PLANSATZ_QUELLE, tagVon } from '../antrag';
-import { ART_HINWEIS, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
+import { ART_HINWEIS, vorlageArtWarnung, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
-import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, namensschema, namensschemaVon, quelleVonEintrag, useAntrag, wirksameEinstellungen } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, namensschemaVon, quelleVonEintrag, useAntrag, wirksameEinstellungen } from '../antragStore';
 import type { PlansatzErgebnis } from '../plansatz';
 import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -95,6 +95,35 @@ export function FassungsWahl() {
 }
 
 /** Antragsdaten (mit dem Antragsumfang) zeigen */
+/**
+ * Menü „Vorhandenes zuordnen“ für einen Eintrag des Antragsumfangs ohne Formular: die Formulare des Projekts (ein schon
+ * anders zugeordnetes mit Hinweis), dazu „Aus dem Antragsumfang entfernen“ – etwa für einen doppelten Eintrag.
+ */
+export function zuordnenPunkte(umfangId: string): MenuePunkt[] {
+  const titel = useAntrag.getState().projektdatei?.umfang?.find((x) => x.id === umfangId)?.titel;
+  if (!titel) return [];
+  return [...formularePunkte(umfangId), { trenner: true }, { text: `„${titel}“ aus dem Antragsumfang entfernen`, symbol: 'muell', aktion: () => void ausUmfangEntfernen(umfangId) }];
+}
+
+/** Die Formulare des Projekts zum Zuordnen (ein schon anders zugeordnetes mit Hinweis) */
+export function formularePunkte(umfangId: string): MenuePunkt[] {
+  const st = useAntrag.getState();
+  const umfang = st.projektdatei?.umfang ?? [];
+  const zugeordnet = new Map(st.dokumente.filter((d) => d.formular && d.eintrag.id !== umfangId).map((d) => [d.formular!.pfad, d.eintrag.titel]));
+  return useFormulare.getState().formulare.map((f) => ({
+    text: f.name,
+    symbol: 'formular' as const,
+    hinweis: zugeordnet.has(f.pfad) ? `schon „${zugeordnet.get(f.pfad)}“` : undefined,
+    aktion: () => void st.umfangSetzen(umfang.map((x) => (x.id === umfangId ? { ...x, formularDatei: f.pfad.split('/').pop() } : x))),
+  }));
+}
+
+/** Einen Eintrag aus dem Antragsumfang nehmen (z. B. einen doppelten) */
+export function ausUmfangEntfernen(umfangId: string) {
+  const st = useAntrag.getState();
+  return st.umfangSetzen((st.projektdatei?.umfang ?? []).filter((x) => x.id !== umfangId));
+}
+
 export function umfangZeigen() {
   if (!useFormulare.getState().projekt) return;
   useFormulare.getState().setHaupt('antrag');
@@ -280,6 +309,8 @@ export function AntragsdatenAnsicht() {
   const katalog = useAntrag((s) => s.katalog);
   const vorlagen = useAntrag((s) => s.vorlagen);
   const dateien = useAntrag((s) => s.dateien);
+  // Namensschema (Projektdatei bzw. Büro) – für die vorgeschlagene Vorlage (BVA → BAUVA)
+  const schema = useFormulare(namensschemaVon);
   const st = useAntrag();
   const { umfangSetzen, verknuepfen, formularAnlegen, aktualisieren } = st;
   const gesperrt = !!antragSperre(st, projekt);
@@ -302,7 +333,7 @@ export function AntragsdatenAnsicht() {
   const fassung = aktiveFassung(st, projekt);
   // Vorschlag: die Vorlage zur Antragsart der aktiven Fassung („BAUA 2“ → BAUA, „BVA“ → BAUVA); keine passende = keine Vorwahl
   const art = st.fassungen.find((f) => f.name === fassung)?.art ?? fassung.replace(/[\s_-]*\d+$/, '');
-  const vorlage = vorlagen.find((v) => v.id === vorlageWahl) ?? vorlageFuer(vorlagen, art, namensschema().antragsarten);
+  const vorlage = vorlagen.find((v) => v.id === vorlageWahl) ?? vorlageFuer(vorlagen, art, schema.antragsarten);
   const ohneVorlage = vorlagen.length > 0 && !vorlage;
   const ordner = antragsOrdner(st, projekt);
   const basis = ablage ? verbinde(ablage.root, ablage.pfad) : null;
@@ -540,9 +571,25 @@ export function AntragsdatenAnsicht() {
                     </div>
                     <div className="pu-knoepfe">
                       {u.art === 'intern' && !d.formular && d.status !== 'entfaellt' && (
-                        <button className="small primary" disabled={gesperrt} onClick={() => void formularAnlegen(u.id)}>
-                          Formular anlegen
-                        </button>
+                        <>
+                          <button
+                            className="small primary"
+                            disabled={gesperrt}
+                            title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – Änderungen über einen Nachtrag' : 'Das Formular aus dem Vorlagenordner bzw. einem anderen Projekt anlegen'}
+                            onClick={() => void formularAnlegen(u.id)}
+                          >
+                            Formular anlegen
+                          </button>
+                          {formulare.length > 0 && (
+                            <MenueKnopf
+                              className="small"
+                              title="Ein Formular, das schon im Projekt liegt (z. B. anders benannt), diesem Eintrag zuordnen"
+                              punkte={() => zuordnenPunkte(u.id)}
+                            >
+                              Vorhandenes zuordnen
+                            </MenueKnopf>
+                          )}
+                        </>
                       )}
                       {d.formular && (
                         <>
@@ -663,21 +710,24 @@ function ExportFuerProjekt() {
             <span className="field-label">Antragsordner</span>
             <input value={ueber?.antragsordner ?? ''} placeholder={global.antragsordner} onChange={(e) => setzen({ antragsordner: e.target.value })} />
           </label>
-          <label>
-            <span className="field-label">Namensvorlage</span>
-            <input value={ueber?.namensvorlage ?? ''} placeholder={global.namensvorlage} onChange={(e) => setzen({ namensvorlage: e.target.value })} aria-describedby="pu-art-hinweis" spellCheck={false} />
-            <span className="field-hint" id="pu-art-hinweis">
+          {/* über die ganze Breite: Feld, darunter Hinweis und ggf. Warnung (wie in den Einstellungen) */}
+          <div className="pu-breit">
+            <label>
+              <span className="field-label">Namensvorlage</span>
+              <input value={ueber?.namensvorlage ?? ''} placeholder={global.namensvorlage} onChange={(e) => setzen({ namensvorlage: e.target.value })} aria-describedby="pu-art-hinweis" spellCheck={false} />
+            </label>
+            <p className="field-hint" id="pu-art-hinweis">
               {ART_HINWEIS}
-            </span>
-            {ueber?.namensvorlage && vorlageMitAntragsart(ueber.namensvorlage, reihenfolge) !== ueber.namensvorlage && (
-              <span className="warning-text small-text">
-                Beim Export steht an der Stelle der Antragsart {'{Art}'}.{' '}
+            </p>
+            {ueber?.namensvorlage && vorlageArtWarnung(ueber.namensvorlage, reihenfolge) && (
+              <p className="warning small-text">
+                {vorlageArtWarnung(ueber.namensvorlage, reihenfolge)}{' '}
                 <button className="small" onClick={() => setzen({ namensvorlage: vorlageMitAntragsart(ueber.namensvorlage!, reihenfolge) })}>
                   Vorlage anpassen
                 </button>
-              </span>
+              </p>
             )}
-          </label>
+          </div>
           <label>
             <span className="field-label">Phase (nur für {'{Phase}'})</span>
             <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} />

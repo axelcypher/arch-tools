@@ -32,14 +32,15 @@ export const PLAN_ZUSTAND_KURZ: Record<PlanZustand, string> = {
   aktuell: 'aktuell',
   veraltet: 'veraltet',
   quelle: 'nicht verschoben',
-  fehlt: 'fehlt',
+  // „Lücke“ (rot, nicht vollständig) – grau „fehlt“ heißt in der Legende ein ganzes fehlendes Dokument
+  fehlt: 'Lücke',
 };
 
 export const PLAN_ZUSTAND_TEXT: Record<PlanZustand, string> = {
   aktuell: 'aktuell im Antragsordner',
   veraltet: 'veraltet – in der Quelle gibt es eine neuere Fassung',
   quelle: 'nicht verschoben – liegt erst in der Quelle',
-  fehlt: 'fehlt – Lücke in der fortlaufenden Nummerierung',
+  fehlt: 'Lücke – diese Nummer fehlt in der fortlaufenden Nummerierung',
 };
 
 export interface PlanEintrag {
@@ -91,7 +92,7 @@ function indexHinweis(schema: Namensschema, kuerzel: string, plan: string): stri
  * Pläne einer Dateiliste je Plannummer; ein Satz (GP01-07) zählt für jede seiner Nummern. Nur Dateien direkt im
  * Ordner (keine Unterordner wie „_Archiv“, „alt“); gibt es zu einem Namen ein PDF, zählt nur das PDF.
  */
-function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | undefined, hinweise: string[]): Map<string, Fund[]> {
+function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | undefined, hinweise: string[], codes: string[]): Map<string, Fund[]> {
   const nach = new Map<string, Fund[]>();
   const direkt = dateien.filter((e) => !e.ordner && !/[\\/]/.test(e.pfad) && !istHilfsdatei(e.pfad));
   const pdfs = new Set(direkt.filter((e) => istPdf(e.pfad)).map((e) => ohneEndung(e.pfad)));
@@ -99,7 +100,8 @@ function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | unde
     const name = e.pfad;
     if (!istPdf(name) && pdfs.has(ohneEndung(name))) continue;
     if (muster?.trim() && !passt(name, muster)) continue;
-    const teile = dateinameZerlegen(name, schema);
+    // mit den Projektcodes: auch ein mehrteiliger Code („BS 9“) steht an seiner Stelle
+    const teile = dateinameZerlegen(name, schema, codes);
     const pn = planNummerAus(teile.nummer, schema);
     if (!pn) continue;
     if (pn.index && !indexVorgesehen(schema, pn.kuerzel)) {
@@ -131,19 +133,25 @@ function neueste(funde: Fund[], codes: string[]): Fund {
   });
 }
 
+/** Planarten an der Bezeichnung: Grundriss, Schnitt („Längsschnitt“, „Schnitt A-A“ – nicht „Ausschnitt“), Ansicht */
 const grundriss = (bezeichnung: string) => /grundri|(^|\s)gr(\s|$)/i.test(bezeichnung);
-// „Längsschnitt“, „Schnitt A-A“ – aber nicht „Ausschnitt“ (Lageplan Ausschnitt)
 const schnitt = (bezeichnung: string) => /(?<!aus)schnitt|(^|\s)sn(\s|$)/i.test(bezeichnung);
+const ansicht = (bezeichnung: string) => /ansicht/i.test(bezeichnung);
 
 /**
- * Antragsarten, für deren Pläne die BauPrüfVO nicht die Grundlage ist: Entwässerungsantrag (Entwässerungssatzung der
- * Gemeinde) und Abgeschlossenheitsbescheinigung (§ 7 Abs. 4 WEG) – dort keine Hinweise mit Bezug auf die BauPrüfVO
+ * Antragsarten, für deren Pläne die BauPrüfVO nicht die Grundlage ist und Schnitt bzw. Ansicht nicht geprüft werden:
+ * Entwässerungsantrag (Entwässerungssatzung der Gemeinde) und Abgeschlossenheitsbescheinigung (§ 7 Abs. 4 WEG)
  */
 export const ARTEN_OHNE_BAUPRUEFVO = ['ENTW', 'ABGE'];
 
+/**
+ * Antragsarten mit eigener Rechtsgrundlage, bei denen Grundrisse, Schnitte und Ansichten trotzdem üblich sind – die
+ * denkmalrechtliche Erlaubnis (§ 9 DSchG NRW): Hinweise ohne Paragraphen der BauPrüfVO
+ */
+export const ARTEN_OHNE_PARAGRAF = ['DENK'];
+
 /** Längere Lücken (mehr fehlende Nummern am Stück) gelten als vermutlicher Tippfehler – ein Hinweis statt „fehlt“ */
 export const MAX_LUECKE = 10;
-const ansicht = (bezeichnung: string) => /ansicht/i.test(bezeichnung);
 
 /**
  * Plansatz prüfen: `antrag` sind die Dateien im Ordner der aktiven Antragsfassung, `quelle` die im Quellordner (auch
@@ -157,8 +165,8 @@ export function plansatzPruefen(
 ): PlansatzErgebnis {
   const codes = o.codes ?? [];
   const hinweise: string[] = [];
-  const imAntrag = sammeln(antrag, schema, o.muster, hinweise);
-  const inQuelle = sammeln(quelle, schema, o.muster, hinweise);
+  const imAntrag = sammeln(antrag, schema, o.muster, hinweise, codes);
+  const inQuelle = sammeln(quelle, schema, o.muster, hinweise, codes);
 
   // ältere Fassungen und Satz neben Einzelplänen im Antragsordner
   const saetzeMitEinzeln = new Set<string>();
@@ -221,16 +229,21 @@ export function plansatzPruefen(
   if (plaene.length && !plaene.some((p) => p.satz)) {
     const da = plaene.filter((p) => p.zustand !== 'fehlt').map((p) => p.bezeichnung ?? '');
     // Bauzeichnungen sind Grundrisse, Schnitte und Ansichten (§ 4 Abs. 1, 3, 4 BauPrüfVO NRW) – fehlt eine Art, ein
-    // Hinweis; er sperrt nicht, weil die Behörde auf Bauvorlagen verzichten kann (§ 1 Abs. 2 BauPrüfVO) und ein
-    // Vorbescheid nur die zur Beurteilung seiner Fragen erforderlichen braucht (§ 16 BauPrüfVO). Nur bei Plänen einer Leistungsphase: für Sonderfälle ohne LPH (AB, Aufteilungspläne
-    // nach § 7 Abs. 4 WEG) ist die BauPrüfVO nicht die Grundlage
-    const bauvorlagen = plaene.some((p) => kuerzelZu(schema.phasen, p.kuerzel)?.lph !== undefined) && !ARTEN_OHNE_BAUPRUEFVO.includes(o.art ?? '');
-    if (bauvorlagen && !da.some(schnitt)) hinweise.push('kein Schnitt erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 3 BauPrüfVO NRW)');
-    if (bauvorlagen && !da.some(ansicht)) hinweise.push('keine Ansicht erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 4 BauPrüfVO NRW)');
+    // Hinweis. Er sperrt nicht: Die Behörde kann auf Bauvorlagen verzichten (§ 1 Abs. 2 BauPrüfVO), ein Vorbescheid
+    // braucht nur die zur Beurteilung seiner Fragen erforderlichen (§ 16 BauPrüfVO). Nur bei Plänen einer
+    // Leistungsphase – für Sonderfälle ohne LPH (AB, Aufteilungspläne nach § 7 Abs. 4 WEG) gilt die BauPrüfVO nicht.
+    const art = o.art ?? '';
+    const pruefen = plaene.some((p) => kuerzelZu(schema.phasen, p.kuerzel)?.lph !== undefined) && !ARTEN_OHNE_BAUPRUEFVO.includes(art);
+    const mitParagraf = pruefen && !ARTEN_OHNE_PARAGRAF.includes(art);
+    const vorbescheid = art === 'BAUVA' ? ' – beim Vorbescheid nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO)' : '';
+    const grundlage = (absatz: string) =>
+      mitParagraf ? `Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, ${absatz} BauPrüfVO NRW${vorbescheid}` : 'übliche Bauzeichnungen: Grundrisse, Schnitte, Ansichten';
+    if (pruefen && !da.some(schnitt)) hinweise.push(`kein Schnitt erkannt (${grundlage('3')})`);
+    if (pruefen && !da.some(ansicht)) hinweise.push(`keine Ansicht erkannt (${grundlage('4')})`);
     // Geschosse der Projektdatei: weniger Grundrisse als Geschosse?
     if (o.geschosse && o.geschosse > 0) {
       const gr = da.filter(grundriss).length;
-      const grundlage = bauvorlagen ? ' (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW)' : '';
+      const grundlage = mitParagraf ? ' (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW)' : '';
       if (gr < o.geschosse) hinweise.push(`Projektdatei: ${o.geschosse} ${o.geschosse === 1 ? 'Geschoss' : 'Geschosse'}, ${gr} ${gr === 1 ? 'Grundriss' : 'Grundrisse'} erkannt${grundlage}`);
     }
   }
