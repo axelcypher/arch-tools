@@ -201,6 +201,7 @@
     },
     "kreis_soest.landschaftsplan": {
       "titel": "Landschaftsplan im Gemeindegebiet",
+      "kurz": "Welcher Landschaftsplan",
       "gruppe": "schutz",
       "typ": "wahl",
       "werte": [
@@ -268,6 +269,7 @@
     },
     "kreis_soest.nsg": {
       "titel": "Naturschutzgebiet am Grundstück",
+      "kurz": "Welches Naturschutzgebiet (Kennung)",
       "gruppe": "schutz",
       "typ": "wahl",
       "werte": [
@@ -297,7 +299,7 @@
     },
     "kreis_soest.hsg_qualitativ": {
       "titel": "Qualitative Schutzzone des Heilquellenschutzgebiets Bad Sassendorf",
-      "kurz": "Heilquellenschutz: qualitative Zone",
+      "kurz": "Welche Heilquellenschutzzone (qual.)",
       "gruppe": "schutz",
       "typ": "wahl",
       "werte": [
@@ -312,7 +314,7 @@
     },
     "kreis_soest.hsg_quantitativ": {
       "titel": "Quantitative Schutzzone des Heilquellenschutzgebiets Bad Sassendorf",
-      "kurz": "Heilquellenschutz: quantitative Zone",
+      "kurz": "Welche Heilquellenschutzzone (quant.)",
       "gruppe": "schutz",
       "typ": "wahl",
       "werte": [
@@ -405,6 +407,9 @@
         {
           "f": "vorhaben.baeume_faellen",
           "ist": true
+        },
+        {
+          "$": "beseitigung"
         }
       ]
     }

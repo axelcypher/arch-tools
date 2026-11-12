@@ -425,7 +425,27 @@
       "pruefen": {
         "grund": "Bei Umnutzung zu Wohnraum gilt § 29 nicht für bestehende Bauteile (§ 47 Abs. 6).",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "und": [
+                  {
+                    "$": "wohngebaeude"
+                  },
+                  {
+                    "$": "gk_1_2"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": false
+                  }
+                ]
+              }
+            }
+          ]
         }
       },
       "grund": "Trennwände zwischen Nutzungseinheiten und zu Räumen mit erhöhter Brand- oder Explosionsgefahr.",
@@ -465,34 +485,41 @@
       "pruefen": {
         "grund": "Innere Brandwände bei ausgedehnten Gebäuden (höchstens 40 m Abstand), bei aneinandergereihten Gebäuden auf demselben Grundstück und bei landwirtschaftlich genutzten Gebäuden (Abs. 2 Nr. 2–4). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "oder": [
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
             {
               "oder": [
                 {
-                  "$": "nichtwohngebaeude"
-                },
-                {
-                  "m": "Gebäudeart",
-                  "in": [
-                    "Mehrfamilienhaus"
-                  ]
-                },
-                {
-                  "und": [
+                  "oder": [
                     {
-                      "f": "gebaeude.landwirtschaft",
-                      "bekannt": true
+                      "$": "nichtwohngebaeude"
                     },
                     {
-                      "f": "gebaeude.landwirtschaft",
-                      "ist": true
+                      "m": "Gebäudeart",
+                      "in": [
+                        "Mehrfamilienhaus"
+                      ]
+                    },
+                    {
+                      "und": [
+                        {
+                          "f": "gebaeude.landwirtschaft",
+                          "bekannt": true
+                        },
+                        {
+                          "f": "gebaeude.landwirtschaft",
+                          "ist": true
+                        }
+                      ]
                     }
                   ]
+                },
+                {
+                  "$": "nutzungsaenderung"
                 }
               ]
-            },
-            {
-              "$": "nutzungsaenderung"
             }
           ]
         }
@@ -644,7 +671,16 @@
       "pruefen": {
         "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "$": "gk_1_2"
+              }
+            }
+          ]
         }
       },
       "titel": "Notwendige Treppenräume, Ausgänge"
@@ -683,7 +719,27 @@
       "pruefen": {
         "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "und": [
+                  {
+                    "$": "wohngebaeude"
+                  },
+                  {
+                    "$": "gk_1_2"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": false
+                  }
+                ]
+              }
+            }
+          ]
         }
       },
       "titel": "Notwendige Flure, offene Gänge"
@@ -979,17 +1035,32 @@
     "45": {
       "titel": "Blitzschutzanlagen",
       "gilt": {
-        "und": [
+        "oder": [
           {
-            "$": "nw_vorhaben_gebaeude"
-          },
-          {
-            "oder": [
+            "und": [
               {
-                "$": "sonderbau"
+                "$": "nw_vorhaben_gebaeude"
               },
               {
-                "$": "gk_4_5"
+                "oder": [
+                  {
+                    "$": "sonderbau"
+                  },
+                  {
+                    "$": "gk_4_5"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "nw.blitzschutz_anlass",
+                "ist": true
               }
             ]
           }
@@ -1002,15 +1073,10 @@
       "behoerde": {
         "$": "nw_prueft_voll"
       },
-      "pruefen": {
-        "grund": "Ob nach Lage (z. B. freistehend, exponiert, Mast oder Turm), Bauart (z. B. weiche Bedachung) oder Nutzung eine Blitzschutzanlage nötig ist, im Einzelfall prüfen – das gilt auch für bauliche Anlagen, die keine Gebäude sind.",
-        "wenn": {
-          "$": "vorhaben_29"
-        }
-      },
       "stand": {
         "45": "1b5ffa74"
-      }
+      },
+      "hinweis": "Ob nach Lage (z. B. freistehend, exponiert, Mast oder Turm), Bauart (z. B. weiche Bedachung) oder Nutzung eine Blitzschutzanlage nötig ist, im Einzelfall prüfen – das gilt auch für bauliche Anlagen, die keine Gebäude sind."
     },
     "46": {
       "gilt": {
@@ -1093,25 +1159,27 @@
             "$": "vorhaben_29"
           },
           {
-            "$": "gebaeude"
+            "oder": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "und": [
+                  {
+                    "m": "Gebäudeart",
+                    "in": [
+                      "kein Gebäude"
+                    ]
+                  },
+                  {
+                    "f": "vorhaben.zu_abfahrtsverkehr",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
-      },
-      "pruefen": {
-        "grund": "Auch Anlagen, die keine Gebäude sind, lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
-        "wenn": {
-          "und": [
-            {
-              "$": "vorhaben_29"
-            },
-            {
-              "m": "Gebäudeart",
-              "in": [
-                "kein Gebäude"
-              ]
-            }
-          ]
-        }
       },
       "grund": "Notwendige Stellplätze, Garagen und Fahrradabstellplätze bei Errichtung, Änderung und Nutzungsänderung mit Zu- oder Abfahrtsverkehr – auf dem Grundstück, in zumutbarer Entfernung oder durch Ablösung nach örtlicher Bauvorschrift.",
       "fundstellen": [
@@ -1123,7 +1191,7 @@
       "nachweis": [
         "Stellplatznachweis, Lageplan (§ 3 Abs. 1 Nr. 14 BauPrüfVO)"
       ],
-      "hinweis": "Zahl nach der Stellplatzsatzung der Gemeinde, sonst nach der StellplatzVO NRW. Abs. 1a: über neuen Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für ein Nichtwohngebäude ist eine PV-Anlage zu errichten (§ 6 SAN-VO).",
+      "hinweis": "Zahl nach der Stellplatzsatzung der Gemeinde, sonst nach der StellplatzVO NRW. Abs. 1a: über neuen Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für ein Nichtwohngebäude ist eine PV-Anlage zu errichten (§ 6 SAN-VO). Auch Anlagen, die keine Gebäude sind, lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
       "verweise": [
         "nw/stellplatzvo/1",
         "nw/san-vo/6"
@@ -1389,39 +1457,53 @@
     },
     "63": {
       "gilt": {
-        "$": "freistellung"
+        "und": [
+          {
+            "$": "freistellung"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
       },
       "pruefen": {
         "grund": "Genehmigungsfreistellung (Neufassung ab 01.09.2026) im Einzelfall prüfen: Abs. 1 Satz 1 Nr. 1 nur im Geltungsbereich eines qualifizierten oder vorhabenbezogenen Bebauungsplans ohne Widerspruch zu Festsetzungen und örtlichen Bauvorschriften (Abs. 2); Nr. 2 auch im Innenbereich (§ 34 BauGB) für Dachgeschossausbau zu Wohnzwecken einschließlich Gauben sowie für Solaranlagen nach § 35 Abs. 1 Nr. 8 b und 9 BauGB; nicht für Sonderbauten (außer Solaranlagen) und nicht für große Wohnvorhaben (über 5 000 m² BGF) oder öffentlich zugängliche Anlagen für mehr als 100 zusätzliche Personen im angemessenen Sicherheitsabstand eines Störfallbetriebs (Abs. 1 Satz 2).",
         "wenn": {
           "und": [
             {
-              "$": "freistellung"
+              "$": "vorhaben_29"
             },
             {
-              "oder": [
+              "und": [
                 {
-                  "m": "Planungsrecht",
-                  "nicht": [
-                    "Bebauungsplan"
+                  "$": "freistellung"
+                },
+                {
+                  "oder": [
+                    {
+                      "m": "Planungsrecht",
+                      "nicht": [
+                        "Bebauungsplan"
+                      ]
+                    },
+                    {
+                      "$": "sonderbau"
+                    },
+                    {
+                      "nicht": {
+                        "f": "planung.befreiung",
+                        "ist": false
+                      }
+                    },
+                    {
+                      "f": "gebaeude.bgf",
+                      "min": 5000
+                    },
+                    {
+                      "f": "gebaeude.besucher",
+                      "min": 101
+                    }
                   ]
-                },
-                {
-                  "$": "sonderbau"
-                },
-                {
-                  "nicht": {
-                    "f": "planung.befreiung",
-                    "ist": false
-                  }
-                },
-                {
-                  "f": "gebaeude.bgf",
-                  "min": 5000
-                },
-                {
-                  "f": "gebaeude.besucher",
-                  "min": 101
                 }
               ]
             }
@@ -1454,7 +1536,21 @@
       "gilt": {
         "oder": [
           {
-            "$": "vereinfacht"
+            "und": [
+              {
+                "$": "vereinfacht"
+              },
+              {
+                "oder": [
+                  {
+                    "$": "vorhaben_29"
+                  },
+                  {
+                    "$": "nw_beseitigung_verfahrensfrei"
+                  }
+                ]
+              }
+            ]
           },
           {
             "und": [
@@ -1491,7 +1587,21 @@
     },
     "65": {
       "gilt": {
-        "$": "baugenehmigung"
+        "und": [
+          {
+            "$": "baugenehmigung"
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "$": "nw_beseitigung_verfahrensfrei"
+              }
+            ]
+          }
+        ]
       },
       "pruefen": {
         "grund": "Das Baugenehmigungsverfahren gilt nur für große Sonderbauten nach § 50 Abs. 2 – Verfahren prüfen.",
@@ -1499,6 +1609,16 @@
           "und": [
             {
               "$": "baugenehmigung"
+            },
+            {
+              "oder": [
+                {
+                  "$": "vorhaben_29"
+                },
+                {
+                  "$": "nw_beseitigung_verfahrensfrei"
+                }
+              ]
             },
             {
               "$": "kein_sonderbau"
@@ -1629,10 +1749,17 @@
       "gilt": {
         "oder": [
           {
-            "$": "nw_genehmigungsbeduerftig"
+            "$": "nw_mit_baugenehmigung"
           },
           {
-            "$": "freistellung"
+            "und": [
+              {
+                "$": "freistellung"
+              },
+              {
+                "$": "vorhaben_29"
+              }
+            ]
           }
         ]
       },
@@ -1731,13 +1858,20 @@
       "gilt": {
         "oder": [
           {
-            "$": "nw_genehmigungsbeduerftig"
+            "$": "nw_mit_baugenehmigung"
           },
           {
-            "$": "freistellung"
+            "und": [
+              {
+                "$": "freistellung"
+              },
+              {
+                "$": "vorhaben_29"
+              }
+            ]
           },
           {
-            "$": "beseitigung"
+            "$": "nw_beseitigung_anzeige"
           }
         ]
       },
@@ -1754,7 +1888,7 @@
         "74/9"
       ],
       "behoerde": {
-        "$": "nw_genehmigungsbeduerftig"
+        "$": "nw_mit_baugenehmigung"
       },
       "hinweis": "Im vereinfachten Verfahren (Anträge ab 01.09.2026) gilt die Genehmigung nach Ablauf der Entscheidungsfrist als erteilt (Genehmigungsfiktion, Abs. 3), wenn die Bauherrschaft nicht in Textform verzichtet; Abweichungen nur, soweit beantragt – alle Abweichungen ausdrücklich beantragen.",
       "verweise": [

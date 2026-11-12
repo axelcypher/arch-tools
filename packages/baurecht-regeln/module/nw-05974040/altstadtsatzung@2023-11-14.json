@@ -247,7 +247,17 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "soest.schaufenster",
+                "ist": false
+              }
+            }
+          ]
         }
       },
       "stand": {
@@ -287,7 +297,17 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "soest.vordach",
+                "ist": false
+              }
+            }
+          ]
         }
       },
       "stand": {
@@ -488,7 +508,17 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "gebaeude.garage_nutzflaeche",
+                "max": 0
+              }
+            }
+          ]
         }
       },
       "stand": {

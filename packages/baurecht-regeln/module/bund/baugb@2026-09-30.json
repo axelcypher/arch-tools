@@ -423,30 +423,37 @@
     "36": {
       "titel": "Einvernehmen der Gemeinde und Zustimmung der höheren Verwaltungsbehörde",
       "gilt": {
-        "oder": [
+        "und": [
           {
-            "n": "bund/baugb/31",
-            "ampel": [
-              "rot"
+            "oder": [
+              {
+                "n": "bund/baugb/31",
+                "ampel": [
+                  "rot"
+                ]
+              },
+              {
+                "n": "bund/baugb/33",
+                "ampel": [
+                  "rot"
+                ]
+              },
+              {
+                "n": "bund/baugb/34",
+                "ampel": [
+                  "rot"
+                ]
+              },
+              {
+                "n": "bund/baugb/35",
+                "ampel": [
+                  "rot"
+                ]
+              }
             ]
           },
           {
-            "n": "bund/baugb/33",
-            "ampel": [
-              "rot"
-            ]
-          },
-          {
-            "n": "bund/baugb/34",
-            "ampel": [
-              "rot"
-            ]
-          },
-          {
-            "n": "bund/baugb/35",
-            "ampel": [
-              "rot"
-            ]
+            "$": "genehmigung"
           }
         ]
       },
@@ -462,6 +469,13 @@
       "stand": {
         "36/1": "34235fdc",
         "36/2": "b57bc9d6"
+      },
+      "entfaellt": {
+        "m": "Verfahren",
+        "in": [
+          "verfahrensfrei",
+          "Genehmigungsfreistellung"
+        ]
       }
     },
     "51": {

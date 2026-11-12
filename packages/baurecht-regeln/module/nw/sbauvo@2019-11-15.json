@@ -200,33 +200,47 @@
     },
     "121": {
       "gilt": {
-        "oder": [
+        "und": [
           {
-            "$": "nw_garage"
+            "$": "vorhaben_29"
           },
           {
-            "f": "gebaeude.stellplaetze",
-            "min": 1
-          },
-          {
-            "f": "vorhaben.stellplaetze_grundstueck",
-            "ist": true
+            "oder": [
+              {
+                "$": "nw_garage"
+              },
+              {
+                "f": "gebaeude.stellplaetze",
+                "min": 1
+              },
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": true
+              }
+            ]
           }
         ]
       },
       "entfaellt": {
-        "und": [
+        "oder": [
           {
-            "f": "gebaeude.garage_nutzflaeche",
-            "max": 0
+            "$": "beseitigung"
           },
           {
-            "f": "gebaeude.stellplaetze",
-            "max": 0
-          },
-          {
-            "f": "vorhaben.stellplaetze_grundstueck",
-            "ist": false
+            "und": [
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "max": 0
+              },
+              {
+                "f": "gebaeude.stellplaetze",
+                "max": 0
+              },
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": false
+              }
+            ]
           }
         ]
       },
@@ -245,11 +259,25 @@
     },
     "122": {
       "gilt": {
-        "$": "nw_garage"
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "nw_garage"
+          }
+        ]
       },
       "entfaellt": {
-        "f": "gebaeude.garage_nutzflaeche",
-        "max": 0
+        "oder": [
+          {
+            "$": "beseitigung"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "max": 0
+          }
+        ]
       },
       "grund": "Garagenarten nach Nutzfläche: Kleingarage bis 100 m², Mittelgarage über 100 bis 1 000 m², Großgarage über 1 000 m²; offene und geschlossene Garagen.",
       "fundstellen": [
@@ -272,19 +300,33 @@
     },
     "131": {
       "gilt": {
-        "f": "gebaeude.garage_nutzflaeche",
-        "min": 0.01,
-        "max": 100
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "min": 0.01,
+            "max": 100
+          }
+        ]
       },
       "entfaellt": {
         "oder": [
           {
-            "f": "gebaeude.garage_nutzflaeche",
-            "max": 0
+            "$": "beseitigung"
           },
           {
-            "f": "gebaeude.garage_nutzflaeche",
-            "min": 100.01
+            "oder": [
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "max": 0
+              },
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "min": 100.01
+              }
+            ]
           }
         ]
       },
@@ -306,12 +348,26 @@
     },
     "132": {
       "gilt": {
-        "f": "gebaeude.garage_nutzflaeche",
-        "min": 100.01
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "min": 100.01
+          }
+        ]
       },
       "entfaellt": {
-        "f": "gebaeude.garage_nutzflaeche",
-        "max": 100
+        "oder": [
+          {
+            "$": "beseitigung"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "max": 100
+          }
+        ]
       },
       "grund": "Mittel- und Großgaragen: Rauch- und Brandabschnitte; dazu Rettungswege, Lüftung, Brandmelde- und Löschanlagen (§§ 133–138).",
       "fundstellen": [
