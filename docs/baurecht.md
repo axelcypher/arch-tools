@@ -46,12 +46,21 @@ Jeder darf festlegen – und bestätigt dafür zweimal:
 1. **Beim Festlegen:** „Von Hand festlegen …“ → Ampel wählen, **Begründung** (Pflicht, mindestens 10 Zeichen) und Name.
    Herabstufungen (gilt → prüfen/entfällt, prüfen → entfällt) werden ausdrücklich angesagt. Die Festlegung ist danach
    ein Entwurf (gestrichelte Marke).
-2. **Beim Speichern:** Neue oder geänderte Festlegungen erscheinen in einer Liste (automatisch → festgelegt,
-   Begründung, Herabstufungen hervorgehoben). „Festlegungen bestätigen und speichern“ geht erst nach dem Haken „Ich habe
-   die Festlegungen geprüft“; „Ohne diese Festlegungen speichern“ speichert den Rest und lässt sie als Entwurf offen.
+2. **Beim Speichern:** Neue, geänderte und **aufgehobene** Festlegungen erscheinen in einer Liste (vorher → nachher,
+   Begründung, Herabstufungen hervorgehoben) – ebenso neu bestätigte Hinweise (siehe unten). „Bestätigen und speichern“
+   geht erst nach dem Haken „Ich habe diese Angaben geprüft“. „Ohne diese Angaben speichern“ schreibt für sie den
+   bisherigen Stand der Datei (eine schon bestätigte Festlegung bleibt also erhalten) und lässt die Änderung in der App
+   als Entwurf offen.
 
 Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald sich danach die automatische Ampel, eine
-beteiligte Angabe oder der Text einer Fundstelle ändert – dann steht ⚠ daran, und das Protokoll zählt sie als offen.
+beteiligte Angabe oder der Text einer Fundstelle ändert – dann steht ⚠ daran, ein überholtes „entfällt“ zählt als
+„prüfen“, und das Protokoll führt sie als offen. Verweist eine Regel auf einen anderen Paragrafen, zählt dort nur die
+automatische Ampel oder eine bestätigte, nicht überholte Festlegung – und auch die nur als unsicher (ein „entfällt“, das
+darauf beruht, wird „prüfen“).
+
+**Hinweise bestätigen:** Angaben, die nur Hinweis sind (z. B. „kein Treffer im Landschaftsschutzgebiet“, Flächen aus
+dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen – nur mit Angabe, worauf die Bestätigung beruht
+(z. B. Auskunft der Behörde mit Datum). Auch sie werden beim Speichern noch einmal bestätigt und stehen im Protokoll.
 
 ## Lage abfragen (Desktop)
 
@@ -60,8 +69,14 @@ die aktiven Module nennen (z. B. Schutzgebiete aus LINFOS, Überschwemmungs- und
 und Bebauungspläne der Stadt Soest) – am **Umring des Flurstücks mit mindestens 25 m Puffer**, auch die Vorstufen
 (vorläufig gesichert, geplant). **Ein Treffer gilt als gesichert. Kein Treffer bleibt ein Hinweis**, auch wenn alles
 andere stimmt: Ob seit dem Datenstand des Dienstes eine neue Verordnung bekanntgemacht wurde, lässt sich nicht
-automatisch prüfen – nach einem Blick ins Amtsblatt bzw. der Auskunft der Behörde „Bestätigen“. So entsteht kein
+automatisch prüfen – nach einem Blick ins Amtsblatt bzw. der Auskunft der Behörde „Bestätigen …“. So entsteht kein
 falsches „entfällt“.
+
+- Ein späterer **Treffer geht immer vor** – auch einem bestätigten „kein Treffer“.
+- Widerspricht ein Dienst einer Angabe von Hand (z. B. Treffer gegen „nein“), bleibt die Angabe, aber sie ist als
+  **Widerspruch** markiert; was nur an ihr hängt, wird „prüfen“, bis sie geändert oder geklärt ist.
+- Ergebnisse und Bestätigungen gelten nur für die **Lage**, an der sie ermittelt wurden. Ändern sich die Koordinaten
+  des Vorhabens, werden sie wieder zum Hinweis.
 
 Gesendet werden nur die Lage des Grundstücks (Koordinaten bzw. Umring) und welche Gesetze gebraucht werden – keine
 Personendaten.
@@ -72,7 +87,11 @@ Personendaten.
   „aktuellste Fassung“, Fassungsliste mit künftigen Fassungen), Ortsrecht als PDF/HTML, MVV TB des DIBt.
 - Jede Norm wird höchstens einmal am Tag an der Quelle geprüft (bedingte Abfragen), „Rechtsstand prüfen“ sofort. Die
   Fassungen liegen im gemeinsamen Konfigurationsordner unter `baurecht/recht/` – für alle Projekte gleich, nie
-  überschrieben; ist eine Quelle nicht erreichbar, arbeitet die App mit dem letzten Stand und sagt es.
+  überschrieben; ist eine Quelle nicht erreichbar, arbeitet die App mit dem letzten Stand und sagt es. Ist eine Norm
+  seit **14 Tagen** nicht mehr an der Quelle bestätigt (oder nie), wird aus „entfällt“ ein „prüfen“.
+- **Künftige Fassungen:** Kündigt die Quelle eine neue Fassung an, die innerhalb von sechs Monaten nach der geplanten
+  Einreichung gilt (voraussichtlich vor der Entscheidung), wird aus „entfällt“ ein „prüfen“ – an der künftigen Fassung
+  prüfen.
 - **Prüfsumme je Absatz:** Jede Regel weiß, an welchem Text sie geprüft ist. Ändert sich ein Absatz, wird aus
   „entfällt“ ein „prüfen“ (aus „gilt“ wird nichts Schwächeres), bis die Regel nachgezogen ist.
 - Ohne Text (Web-Version, Quelle nie erreichbar) bleibt aus demselben Grund alles, was sonst entfiele, gelb.
@@ -80,15 +99,18 @@ Personendaten.
 ## Prüfprotokoll
 
 Kopf aus den Stammdaten, Grundlagen (Stichtag, Module, Regelpaket, Merkmale, Ergebnis), alle Paragrafen je Ebene mit
-Ampel, Begründung und Fassung, offene Punkte, Festlegungen von Hand (mit Name, Datum, Entwurf/bestätigt), Hinweise und
-Auskünfte der Module. „Drucken / PDF …“ schlägt den Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor.
-**„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln, Zähler, Regelpaket) in der Projektdatei ab.
+Ampel, Begründung und Fassung, offene Punkte, Festlegungen von Hand (mit Name, Datum, Entwurf/bestätigt), bestätigte
+Angaben (mit Begründung), Quellen der Geodaten, Hinweise und Auskünfte der Module. „Drucken / PDF …“ schlägt den
+Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
+Zähler, Regelpaket) in der Projektdatei ab – erst, wenn keine Angabe von Hand mehr Entwurf ist.
 
 ## Daten
 
 In `projekt.json` unter `baurecht.pruefungen[<Antrag>]`: geplante Einreichung, Angaben von Hand bzw. aus Geodiensten,
 Festlegungen, abgeschlossene Prüfungen. Die Antragsmerkmale bleiben im Abschnitt `formulare` (eine Quelle mit
-Formulare). Geschrieben wird gezielt (nur `projekt.json`, Zusammenführen bei gleichzeitigen Änderungen).
+Formulare). Geschrieben wird gezielt (nur `projekt.json`): Angaben, Festlegungen und Protokolle werden je Eintrag gegen
+den zuletzt gelesenen Stand zusammengeführt, so gehen gleichzeitige Änderungen anderer Instanzen nicht verloren;
+unbekannte Felder (neuere App-Versionen) bleiben erhalten.
 
 ## Regelpaket
 
@@ -109,11 +131,19 @@ Fassungen, bei Abweichungen ein Issue). **Einrichten:** `npm run schluessel`, pr
 `BAURECHT_REGELN_SCHLUESSEL`, öffentlichen in `packages/baurecht-regeln/schluessel/regeln.pub`. Solange der öffentliche
 Schlüssel fehlt, nutzt die App das Regelpaket ihres Builds.
 
+Übernommen wird ein nachgeladenes Paket nur, wenn die Signatur stimmt, **jede Datei** zu Größe und SHA-256 im Index
+passt und alle Regeln zu dieser App-Version passen (sonst bleibt das bisherige Paket – auch für das im
+Konfigurationsordner abgelegte). Die Paketversion ist `<version aus package.json>-<Laufnummer>`; gegen den Build zählt
+nur eine höhere Version. **Geänderte Regeln brauchen deshalb eine neue Version in `package.json`** – das Ausliefern
+bricht sonst ab.
+
 ## Technik
 
 - Netz nur über den Tauri-Befehl `netz_holen` (`apps/baurecht/src-tauri/src/netz.rs`) zu freigegebenen Hosts; jede
   Umleitung wird einzeln gegen die Liste geprüft; Hosts aus einem gültig signierten Paket kommen dazu. Die CSP der
-  Webansicht bleibt unverändert. Ablage des Rechtsstands über `baurecht_ablage_*` (nur JSON unter `baurecht/`).
+  Webansicht bleibt unverändert. Die Signatur des Index prüft die Tauri-Hülle beim Freigeben der Hosts selbst
+  (öffentlicher Schlüssel einkompiliert). Ablage des Rechtsstands über `baurecht_ablage_*` – nur JSON unter
+  `<Konfigurationsordner>/baurecht`, Verknüpfungen werden aufgelöst.
 - Kern im gemeinsamen Unterbau: `packages/core/src/recht/` (Adapter, Prüfsummen, Rechtsstand),
   `packages/core/src/baurecht/` (Format, Bedingungen, Auswertung, Projektdatei, Geodienste).
 - Entwicklung: `npm run dev:baurecht` (http://localhost:1490), `npm run tauri:dev:baurecht`; Live-Abgleich der Quellen:
