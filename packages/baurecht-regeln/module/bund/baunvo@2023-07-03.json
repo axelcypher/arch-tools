@@ -453,7 +453,7 @@
       "gilt": {
         "und": [
           {
-            "$": "baugebiet"
+            "$": "baugebiet_planreif"
           },
           {
             "f": "vorhaben.freiberuflich",
@@ -499,7 +499,7 @@
       "gilt": {
         "und": [
           {
-            "$": "baugebiet"
+            "$": "baugebiet_planreif"
           },
           {
             "f": "vorhaben.nebenanlage",
@@ -597,7 +597,7 @@
       "gilt": {
         "und": [
           {
-            "$": "bplan_jeder"
+            "$": "bplan_jeder_planreif"
           },
           {
             "f": "planung.hoehe_festgesetzt",
@@ -642,7 +642,7 @@
       "gilt": {
         "oder": [
           {
-            "$": "bplan"
+            "$": "bplan_planreif"
           },
           {
             "und": [
@@ -700,7 +700,7 @@
       "gilt": {
         "oder": [
           {
-            "$": "bplan"
+            "$": "bplan_planreif"
           },
           {
             "und": [
@@ -757,7 +757,7 @@
       "gilt": {
         "und": [
           {
-            "$": "bplan_jeder"
+            "$": "bplan_jeder_planreif"
           },
           {
             "f": "planung.bauweise_festgesetzt",
@@ -805,7 +805,7 @@
       "gilt": {
         "oder": [
           {
-            "$": "bplan"
+            "$": "bplan_planreif"
           },
           {
             "und": [
@@ -960,7 +960,7 @@
       "gilt": {
         "und": [
           {
-            "$": "baugebiet"
+            "$": "baugebiet_planreif"
           },
           {
             "f": "vorhaben.ferienwohnung",
@@ -1008,7 +1008,7 @@
           {
             "oder": [
               {
-                "$": "bplan"
+                "$": "bplan_planreif"
               },
               {
                 "und": [

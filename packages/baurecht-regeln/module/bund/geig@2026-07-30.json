@@ -28,6 +28,21 @@
       "hinweis": "Nachweis über die Unternehmererklärung (§ 13); gemischt genutzte Gebäude nach § 11.",
       "stand": {
         "6": "6a76865c"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "f": "gebaeude.gemischt",
+              "ist": true
+            },
+            {
+              "f": "gebaeude.stellplaetze",
+              "min": 6
+            }
+          ]
+        }
       }
     },
     "7": {
@@ -57,6 +72,21 @@
       "hinweis": "Ausgenommen sind Nichtwohngebäude im Eigentum kleiner und mittlerer Unternehmen bei überwiegender Eigennutzung (§ 1 Abs. 2).",
       "stand": {
         "7": "b973443e"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "f": "gebaeude.gemischt",
+              "ist": true
+            },
+            {
+              "f": "gebaeude.stellplaetze",
+              "min": 7
+            }
+          ]
+        }
       }
     },
     "8": {
@@ -115,6 +145,21 @@
       "stand": {
         "8/1": "77938aab",
         "8/2": "2252aa93"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "f": "gebaeude.gemischt",
+              "ist": true
+            },
+            {
+              "f": "gebaeude.stellplaetze",
+              "min": 11
+            }
+          ]
+        }
       }
     },
     "9": {
@@ -173,6 +218,21 @@
       "stand": {
         "9/1": "72ca0d2a",
         "9/2": "07a6ce23"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "f": "gebaeude.gemischt",
+              "ist": true
+            },
+            {
+              "f": "gebaeude.stellplaetze",
+              "min": 11
+            }
+          ]
+        }
       }
     },
     "10": {
@@ -208,6 +268,21 @@
       ],
       "stand": {
         "10/1": "59f32712"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "f": "gebaeude.gemischt",
+              "ist": true
+            },
+            {
+              "f": "gebaeude.stellplaetze",
+              "min": 21
+            }
+          ]
+        }
       }
     }
   }

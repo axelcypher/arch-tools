@@ -32,6 +32,8 @@ export function paketLaden(): Paket {
  * oder Seite) ohne erkennbares Datum bekommt das Datum des Abrufs. Dort ist „neuere Fassung als die Regeldatei“ kein
  * Befund – eine Änderung zeigen nur die Prüfsummen der Absätze.
  */
-export function ohneFassungsdatum(quelle: QuellenRef, f: Pick<Fassung, 'fassung'>): boolean {
+export function ohneFassungsdatum(f: Pick<Fassung, 'fassung' | 'quelle'>): boolean {
+  // maßgeblich ist die Quelle, aus der die Fassung tatsächlich stammt – bei „ris“ mit Rückfall auf gii ist das gii
+  const quelle: QuellenRef = f.quelle;
   return quelle.art === 'gii' || (quelle.art === 'datei' && !f.fassung.startsWith('vom '));
 }

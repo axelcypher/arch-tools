@@ -38,7 +38,8 @@
       "stand": {
         "1/1": "ae27b5d9",
         "1/2": "9d91608b"
-      }
+      },
+      "titel": "Schutzobjekte und Schutzzwecke"
     },
     "2": {
       "gilt": {
@@ -66,7 +67,8 @@
       "hinweis": "Die städtische Baumschutzsatzung findet keine Anwendung, soweit diese Verordnung den Baum regelt (§ 2 Abs. 2 Baumschutzsatzung Soest).",
       "stand": {
         "2": "699bd2ed"
-      }
+      },
+      "titel": "Verbote"
     },
     "4": {
       "gilt": {
@@ -95,7 +97,8 @@
       "stand": {
         "4/1": "7f1d418c",
         "4/2": "ccc2e069"
-      }
+      },
+      "titel": "Befreiung und Ausnahmen"
     }
   }
 }

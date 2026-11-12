@@ -23,7 +23,8 @@
       },
       "stand": {
         "4/1": "8ad32326"
-      }
+      },
+      "titel": "Erlaubnisbedürftige Sondernutzungen und sonstige Benutzung"
     },
     "7": {
       "gilt": {
@@ -41,7 +42,8 @@
       ],
       "stand": {
         "7/1": "32f05f09"
-      }
+      },
+      "titel": "Erlaubnisantrag"
     },
     "9": {
       "gilt": {
@@ -56,7 +58,8 @@
       },
       "stand": {
         "9/1": "f48e24f7"
-      }
+      },
+      "titel": "Gebühren"
     }
   }
 }

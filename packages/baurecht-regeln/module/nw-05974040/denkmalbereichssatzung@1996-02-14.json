@@ -41,7 +41,8 @@
       ],
       "stand": {
         "1": "c2b683e5"
-      }
+      },
+      "titel": "Räumlicher Geltungsbereich"
     },
     "2": {
       "gilt": {
@@ -60,7 +61,8 @@
       ],
       "stand": {
         "2": "5a8a5d5d"
-      }
+      },
+      "titel": "Sachlicher Geltungsbereich"
     },
     "3": {
       "gilt": {
@@ -98,7 +100,8 @@
       ],
       "stand": {
         "3": "795da17c"
-      }
+      },
+      "titel": "Rechtsfolgen"
     }
   }
 }

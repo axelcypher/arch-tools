@@ -393,20 +393,7 @@
     "42": {
       "titel": "Grundsatz",
       "gilt": {
-        "und": [
-          {
-            "m": "Vorhaben",
-            "in": [
-              "Errichtung",
-              "Änderung",
-              "Nutzungsänderung"
-            ]
-          },
-          {
-            "f": "vorhaben.heizung",
-            "ist": true
-          }
-        ]
+        "$": "geg_heizungsanlage"
       },
       "grund": "Wird eine Heizungsanlage eingebaut oder ersetzt, sind für die gewählte Option (Abs. 2) die Maßgaben der §§ 43 bis 46 zu beachten – bei bestehenden Gebäuden unmittelbar, bei Neubauten die §§ 42 bis 45 entsprechend (§ 10 Abs. 2 Nr. 3).",
       "fundstellen": [
@@ -434,20 +421,7 @@
       "gilt": {
         "und": [
           {
-            "und": [
-              {
-                "m": "Vorhaben",
-                "in": [
-                  "Errichtung",
-                  "Änderung",
-                  "Nutzungsänderung"
-                ]
-              },
-              {
-                "f": "vorhaben.heizung",
-                "ist": true
-              }
-            ]
+            "$": "geg_heizungsanlage"
           },
           {
             "f": "technik.heizung_fossil",
@@ -458,12 +432,26 @@
       "entfaellt": {
         "oder": [
           {
-            "f": "vorhaben.heizung",
+            "f": "technik.heizung_fossil",
             "ist": false
           },
           {
-            "f": "technik.heizung_fossil",
-            "ist": false
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": false
+              }
+            ]
           }
         ]
       },
@@ -488,20 +476,7 @@
       "gilt": {
         "und": [
           {
-            "und": [
-              {
-                "m": "Vorhaben",
-                "in": [
-                  "Errichtung",
-                  "Änderung",
-                  "Nutzungsänderung"
-                ]
-              },
-              {
-                "f": "vorhaben.heizung",
-                "ist": true
-              }
-            ]
+            "$": "geg_heizungsanlage"
           },
           {
             "f": "technik.solarthermie",
@@ -512,12 +487,26 @@
       "entfaellt": {
         "oder": [
           {
-            "f": "vorhaben.heizung",
+            "f": "technik.solarthermie",
             "ist": false
           },
           {
-            "f": "technik.solarthermie",
-            "ist": false
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": false
+              }
+            ]
           }
         ]
       },
@@ -537,20 +526,7 @@
       "gilt": {
         "und": [
           {
-            "und": [
-              {
-                "m": "Vorhaben",
-                "in": [
-                  "Errichtung",
-                  "Änderung",
-                  "Nutzungsänderung"
-                ]
-              },
-              {
-                "f": "vorhaben.heizung",
-                "ist": true
-              }
-            ]
+            "$": "geg_heizungsanlage"
           },
           {
             "f": "technik.biomasse",
@@ -561,12 +537,26 @@
       "entfaellt": {
         "oder": [
           {
-            "f": "vorhaben.heizung",
+            "f": "technik.biomasse",
             "ist": false
           },
           {
-            "f": "technik.biomasse",
-            "ist": false
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": false
+              }
+            ]
           }
         ]
       },

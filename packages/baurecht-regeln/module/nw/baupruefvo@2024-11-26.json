@@ -29,7 +29,8 @@
         "1/1": "ff339212",
         "1/2": "9dec1a27",
         "1/3": "fec666c5"
-      }
+      },
+      "titel": "Allgemeines"
     },
     "2": {
       "gilt": {
@@ -81,7 +82,8 @@
         "2/1": "29ce63d5",
         "2/2": "f9c80e55",
         "2/3": "472b6bb8"
-      }
+      },
+      "titel": "Auszüge aus dem Liegenschaftskataster"
     },
     "3": {
       "gilt": {
@@ -108,7 +110,8 @@
         "3/1": "9720e900",
         "3/2": "5f7b82eb",
         "3/3": "2216913d"
-      }
+      },
+      "titel": "Lageplan"
     },
     "4": {
       "gilt": {
@@ -134,7 +137,8 @@
         "4/1": "82c522ed",
         "4/2": "bd607831",
         "4/3": "7e339c86"
-      }
+      },
+      "titel": "Bauzeichnungen"
     },
     "5": {
       "gilt": {
@@ -161,7 +165,8 @@
         "5/1": "0f452b36",
         "5/2": "dc02d8c2",
         "5/3": "8cfdec2d"
-      }
+      },
+      "titel": "Baubeschreibung und Betriebsbeschreibung"
     },
     "6": {
       "gilt": {
@@ -186,7 +191,8 @@
       ],
       "stand": {
         "6": "1069c4f9"
-      }
+      },
+      "titel": "Berechnungen und Angaben zur Kostenermittlung"
     },
     "8": {
       "gilt": {
@@ -219,7 +225,8 @@
         "wenn": {
           "$": "nutzungsaenderung"
         }
-      }
+      },
+      "titel": "Nachweise der Standsicherheit und des Schallschutzes"
     },
     "9": {
       "gilt": {
@@ -236,7 +243,8 @@
       "stand": {
         "9/1": "e78ffb77",
         "9/2": "c198ec96"
-      }
+      },
+      "titel": "Brandschutzkonzept"
     },
     "10": {
       "gilt": {
@@ -255,7 +263,8 @@
         "10/1": "74be57bb",
         "10/2": "6fa84115",
         "10/3": "13f271b6"
-      }
+      },
+      "titel": "Bauvorlagen zum Bauantrag im vereinfachten Baugenehmigungsverfahren und bei referenzieller Baugenehmigung"
     },
     "11": {
       "gilt": {
@@ -270,7 +279,8 @@
       },
       "stand": {
         "11": "23aa2717"
-      }
+      },
+      "titel": "Bauvorlagen zum Bauantrag im Baugenehmigungsverfahren"
     },
     "12": {
       "gilt": {
@@ -334,7 +344,8 @@
         "wenn": {
           "$": "sonderbau"
         }
-      }
+      },
+      "titel": "Zusätzliche Angaben und Bauvorlagen für besondere Vorhaben"
     },
     "13": {
       "gilt": {
@@ -351,7 +362,8 @@
       "stand": {
         "13/1": "954f312c",
         "13/2": "cfcc0786"
-      }
+      },
+      "titel": "Bauvorlagen für Vorhaben in der Genehmigungsfreistellung"
     },
     "14": {
       "titel": "Bauvorlagen für Werbeanlagen",
@@ -410,7 +422,8 @@
         "15/1": "a62f6b11",
         "15/2": "e2b975b8",
         "15/3": "17d06eae"
-      }
+      },
+      "titel": "Bauvorlagen für die Beseitigung von Anlagen"
     },
     "18": {
       "gilt": {
@@ -426,7 +439,8 @@
       },
       "stand": {
         "18": "f4ebf295"
-      }
+      },
+      "titel": "Eintragung von Baulasten"
     },
     "9a": {
       "gilt": {
@@ -454,7 +468,8 @@
       "stand": {
         "9a/1": "2a20a04c",
         "9a/3": "007673ab"
-      }
+      },
+      "titel": "Barrierefrei-Konzept"
     }
   }
 }

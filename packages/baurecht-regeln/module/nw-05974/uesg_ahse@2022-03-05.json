@@ -38,7 +38,8 @@
       "stand": {
         "1/1": "6451a84d",
         "1/2": "957b729f"
-      }
+      },
+      "titel": "Räumlicher Geltungsbereich und Darstellung"
     },
     "2": {
       "gilt": {
@@ -68,7 +69,8 @@
       ],
       "stand": {
         "2": "19a56899"
-      }
+      },
+      "titel": "Besondere Schutzvorschriften"
     },
     "4": {
       "gilt": {
@@ -80,7 +82,8 @@
       ],
       "stand": {
         "4": "cb64718b"
-      }
+      },
+      "titel": "Inkrafttreten, Außerkrafttreten"
     }
   }
 }

@@ -50,7 +50,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Gebäude"
     },
     "4": {
       "gilt": {
@@ -94,7 +95,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Umfang und Inhalt"
     },
     "19": {
       "gilt": {
@@ -138,7 +140,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Begriff"
     },
     "27": {
       "gilt": {
@@ -170,7 +173,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Niederschlagwasser"
     },
     "23a": {
       "gilt": {
@@ -214,7 +218,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Wärmedämmung und Grenzständige Gebäude"
     }
   }
 }

@@ -9,20 +9,7 @@
       "gilt": {
         "und": [
           {
-            "oder": [
-              {
-                "f": "schutz.denkmal",
-                "ist": true
-              },
-              {
-                "f": "schutz.denkmal_umgebung",
-                "ist": true
-              },
-              {
-                "f": "schutz.denkmalbereich_umgebung",
-                "ist": true
-              }
-            ]
+            "$": "nw_denkmalbezug"
           },
           {
             "oder": [
@@ -37,20 +24,7 @@
         ]
       },
       "entfaellt": {
-        "und": [
-          {
-            "f": "schutz.denkmal",
-            "ist": false
-          },
-          {
-            "f": "schutz.denkmal_umgebung",
-            "ist": false
-          },
-          {
-            "f": "schutz.denkmalbereich_umgebung",
-            "ist": false
-          }
-        ]
+        "$": "nw_kein_denkmalbezug"
       },
       "grund": "Erlaubnispflicht: Beseitigen, Verändern oder Nutzungsänderung eines Baudenkmals und Errichten, Verändern oder Beseitigen von Anlagen in seiner engeren Umgebung, wenn sich dies auf Substanz oder Erscheinungsbild auswirken kann.",
       "fundstellen": [
@@ -71,7 +45,8 @@
         "9/2": "80974a64",
         "9/3": "070d2a01",
         "9/4": "c0a84ccf"
-      }
+      },
+      "titel": "Erlaubnispflichten bei Baudenkmälern"
     },
     "10": {
       "gilt": {
@@ -124,7 +99,8 @@
       "stand": {
         "10/1": "7422f437",
         "10/2": "2e5fd288"
-      }
+      },
+      "titel": "Unterschutzstellung von Denkmalbereichen"
     },
     "13": {
       "titel": "Erlaubnispflichten bei Gartendenkmälern",
@@ -206,7 +182,8 @@
       "stand": {
         "15/2": "f408e156",
         "15/3": "56472223"
-      }
+      },
+      "titel": "Erlaubnispflichten bei Bodendenkmälern"
     },
     "16": {
       "gilt": {
@@ -229,7 +206,8 @@
       "stand": {
         "16/1": "981f0d71",
         "16/2": "18066fe9"
-      }
+      },
+      "titel": "Entdeckung von Bodendenkmälern"
     },
     "24": {
       "gilt": {
@@ -276,7 +254,8 @@
       "stand": {
         "24/1": "3167e814",
         "24/7": "ae6a758c"
-      }
+      },
+      "titel": "Verfahren"
     }
   }
 }

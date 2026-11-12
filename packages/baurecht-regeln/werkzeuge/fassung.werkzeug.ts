@@ -32,8 +32,8 @@ it('neue Fassung anlegen', async () => {
   const letzte = l[l.length - 1].regel;
   const f = await fassungHolen(holen, { id: norm, kurz: def!.kurz, titel: def!.titel }, def!.quelle, { textAusPaket: async (p) => paket.texte.get(p) ?? null });
   if (f === 'unveraendert') return;
-  if (def!.quelle.art === 'datei' && ohneFassungsdatum(def!.quelle, f)) {
-    ausgabe(`${nur}: kein Satzungsdatum in der Datei erkennbar – keine neue Regeldatei; Änderungen zeigen die Prüfsummen (npm run stand)`);
+  if (ohneFassungsdatum(f)) {
+    ausgabe(`${nur}: ${f.quelle.art === 'gii' ? 'gesetze-im-internet.de nennt nur das Datum des Abrufs' : 'kein Satzungsdatum in der Datei erkennbar'} – keine neue Regeldatei; Änderungen zeigen die Prüfsummen (npm run stand)`);
     return;
   }
   if (f.gueltigAb <= letzte.fassung) {

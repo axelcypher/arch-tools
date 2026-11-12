@@ -41,7 +41,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Bebauung der Grundstücke mit Gebäuden"
     },
     "5": {
       "gilt": {
@@ -68,7 +69,8 @@
         "wenn": {
           "$": "nutzungsaenderung"
         }
-      }
+      },
+      "titel": "Zugänge und Zufahrten auf den Grundstücken"
     },
     "6": {
       "gilt": {
@@ -116,7 +118,8 @@
         "6/5": "b62c8746",
         "6/8": "a1cf6d48",
         "6/11": "aa5691a0"
-      }
+      },
+      "titel": "Abstandsflächen"
     },
     "8": {
       "gilt": {
@@ -152,7 +155,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Nicht überbaute Flächen der bebauten Grundstücke, Kinderspielplätze"
     },
     "10": {
       "gilt": {
@@ -176,6 +180,36 @@
         "10/1": "9b2f2ad3",
         "10/3": "004c7f95",
         "10/4": "8a1ed25b"
+      },
+      "titel": "Anlagen der Außenwerbung, Warenautomaten"
+    },
+    "12": {
+      "titel": "Standsicherheit",
+      "gilt": {
+        "$": "bauen"
+      },
+      "grund": "Jede bauliche Anlage muss im Ganzen und in ihren einzelnen Teilen standsicher sein; die Standsicherheit anderer baulicher Anlagen und die Tragfähigkeit des Baugrunds der Nachbargrundstücke dürfen nicht gefährdet werden (Abs. 1).",
+      "fundstellen": [
+        "12/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Standsicherheitsnachweis (§ 68 Abs. 2 BauO NRW, § 10 BauPrüfVO)"
+      ],
+      "hinweis": "Bergbau oder Gefährdung des Untergrunds (Altbergbau, Erdfälle, Senkungen): Auskunft der Bezirksregierung Arnsberg, Abt. 6 (Bergbau und Energie in NRW), bzw. des Geologischen Dienstes einholen; der Standsicherheitsnachweis muss den Baugrund berücksichtigen, in Bergbaugebieten ggf. Anpassungs- und Sicherungsmaßnahmen (§§ 110 ff. BBergG).",
+      "pruefen": {
+        "grund": "Bergbau oder Gefährdung des Untergrunds bekannt bzw. noch nicht erfragt: Baugrund und Standsicherheit mit der Auskunft der Bezirksregierung Arnsberg (Abt. 6) klären – im Einzelfall prüfen.",
+        "wenn": {
+          "nicht": {
+            "f": "lage.bergbau",
+            "ist": false
+          }
+        }
+      },
+      "stand": {
+        "12/1": "ddaa6d1e"
       }
     },
     "14": {
@@ -196,12 +230,40 @@
       "hinweis": "Im vereinfachten Verfahren prüft die Behörde den Brandschutz nur bei Sonderbauten, die keine großen sind (§ 64 Abs. 1 Satz 2) – sonst liegt er in der Verantwortung der Entwurfsverfassenden bzw. Prüfsachverständigen.",
       "stand": {
         "14": "d300710d"
-      }
+      },
+      "titel": "Brandschutz"
     },
     "15": {
       "titel": "Wärme-, Schall-, Erschütterungsschutz",
       "gilt": {
-        "$": "nw_vorhaben_gebaeude"
+        "oder": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "und": [
+              {
+                "$": "nw_kein_gebaeude"
+              },
+              {
+                "oder": [
+                  {
+                    "f": "technik.waermepumpe",
+                    "ist": true
+                  },
+                  {
+                    "f": "technik.feuerstaette",
+                    "ist": true
+                  },
+                  {
+                    "f": "technik.lueftung",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "grund": "Gebäude brauchen einen ihrer Nutzung und den klimatischen Verhältnissen entsprechenden Wärmeschutz und einen ihrer Lage und Nutzung entsprechenden Schallschutz; Geräusche und Erschütterungen ortsfester Einrichtungen sind zu dämmen (Abs. 1–3).",
       "fundstellen": [
@@ -216,9 +278,16 @@
         "Nachweise über Wärme- und Schallschutz (§ 68 BauO NRW, § 12 BauPrüfVO) – im vereinfachten Verfahren nicht geprüft, aber einzuhalten"
       ],
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind: Geräusche und Erschütterungen ortsfester Einrichtungen in baulichen Anlagen oder auf Baugrundstücken sind zu dämmen (Abs. 2 Satz 2, Abs. 3). Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nw_kein_gebaeude"
+            }
+          ]
         }
       },
       "verweise": [
@@ -247,11 +316,19 @@
         "26/2": "1de64c20"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind: Die Anforderungen an das Brandverhalten der Baustoffe gelten für alle baulichen Anlagen (Abs. 1). Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nw_kein_gebaeude"
+            }
+          ]
         }
-      }
+      },
+      "titel": "Allgemeine Anforderungen an das Brandverhalten von Baustoffen und Bauteilen"
     },
     "27": {
       "gilt": {
@@ -275,7 +352,8 @@
       "stand": {
         "27/1": "8db3a791",
         "27/2": "82756974"
-      }
+      },
+      "titel": "Tragende Wände, Stützen"
     },
     "28": {
       "gilt": {
@@ -299,7 +377,8 @@
         "wenn": {
           "$": "nutzungsaenderung"
         }
-      }
+      },
+      "titel": "Außenwände"
     },
     "29": {
       "gilt": {
@@ -312,6 +391,10 @@
           },
           {
             "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.gemischt",
+            "ist": false
           }
         ]
       },
@@ -332,7 +415,8 @@
       "stand": {
         "29/1": "3d5fb522",
         "29/6": "df4e9a5d"
-      }
+      },
+      "titel": "Trennwände"
     },
     "30": {
       "gilt": {
@@ -402,7 +486,8 @@
         "30/1": "565eddc6",
         "30/2": "d5238548",
         "30/3": "3ec7eab0"
-      }
+      },
+      "titel": "Brandwände"
     },
     "31": {
       "gilt": {
@@ -428,7 +513,8 @@
         "31/1": "2cf8be62",
         "31/2": "d0b9c609",
         "31/4": "f2bf4c67"
-      }
+      },
+      "titel": "Decken"
     },
     "32": {
       "gilt": {
@@ -451,7 +537,8 @@
         "wenn": {
           "$": "nutzungsaenderung"
         }
-      }
+      },
+      "titel": "Dächer"
     },
     "33": {
       "gilt": {
@@ -486,7 +573,8 @@
         "33/1": "19a93a34",
         "33/2": "52ed67f1",
         "33/3": "73b0b8d3"
-      }
+      },
+      "titel": "Erster und zweiter Rettungsweg"
     },
     "34": {
       "gilt": {
@@ -509,7 +597,8 @@
         "wenn": {
           "$": "nutzungsaenderung"
         }
-      }
+      },
+      "titel": "Treppen"
     },
     "35": {
       "gilt": {
@@ -533,7 +622,8 @@
         "wenn": {
           "$": "nutzungsaenderung"
         }
-      }
+      },
+      "titel": "Notwendige Treppenräume, Ausgänge"
     },
     "36": {
       "gilt": {
@@ -546,6 +636,10 @@
           },
           {
             "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.gemischt",
+            "ist": false
           }
         ]
       },
@@ -567,7 +661,8 @@
         "wenn": {
           "$": "nutzungsaenderung"
         }
-      }
+      },
+      "titel": "Notwendige Flure, offene Gänge"
     },
     "37": {
       "gilt": {
@@ -592,7 +687,8 @@
         "wenn": {
           "$": "nutzungsaenderung"
         }
-      }
+      },
+      "titel": "Fenster, Türen, sonstige Öffnungen"
     },
     "38": {
       "gilt": {
@@ -609,11 +705,19 @@
         "38/1": "96b40213"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind (z. B. Tribüne, Stützmauer, Rampe): begehbare Flächen an tiefer liegenden Flächen sind zu umwehren. Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nw_kein_gebaeude"
+            }
+          ]
         }
-      }
+      },
+      "titel": "Umwehrungen"
     },
     "39": {
       "gilt": {
@@ -698,7 +802,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Aufzüge"
     },
     "40": {
       "titel": "Leitungsanlagen, Installationsschächte und -kanäle",
@@ -796,7 +901,8 @@
         "42/3": "6be78228",
         "42/4": "75c6d00b",
         "42/7": "d10f1c1c"
-      }
+      },
+      "titel": "Feuerungsanlagen, sonstige Anlagen zur Wärmeerzeugung und zur Energiebereitstellung"
     },
     "43": {
       "titel": "Sanitäre Anlagen, Wasserzähler",
@@ -913,7 +1019,8 @@
       "stand": {
         "46/1": "c5066db3",
         "46/2": "152ea1a2"
-      }
+      },
+      "titel": "Aufenthaltsräume"
     },
     "47": {
       "gilt": {
@@ -952,7 +1059,8 @@
         "47/3": "9fee96be",
         "47/4": "248674df",
         "47/6": "2ba4355d"
-      }
+      },
+      "titel": "Wohnungen"
     },
     "48": {
       "gilt": {
@@ -998,7 +1106,8 @@
       ],
       "stand": {
         "48/1": "56c552ba"
-      }
+      },
+      "titel": "Stellplätze, Garagen und Fahrradabstellplätze"
     },
     "49": {
       "gilt": {
@@ -1017,11 +1126,6 @@
             "und": [
               {
                 "$": "vorhaben_29"
-              },
-              {
-                "nicht": {
-                  "$": "efh_zfh"
-                }
               },
               {
                 "f": "gebaeude.oeffentlich",
@@ -1051,7 +1155,8 @@
         "49/1": "08f17752",
         "49/2": "10067796",
         "49/3": "e5ff3e17"
-      }
+      },
+      "titel": "Barrierefreies Bauen"
     },
     "50": {
       "gilt": {
@@ -1144,7 +1249,8 @@
       "stand": {
         "50/1": "9cd4d05d",
         "50/2": "6725a235"
-      }
+      },
+      "titel": "Sonderbauten"
     },
     "51": {
       "gilt": {
@@ -1165,7 +1271,8 @@
       },
       "entfaellt": {
         "$": "wohngebaeude"
-      }
+      },
+      "titel": "Behelfsbauten und untergeordnete Gebäude"
     },
     "60": {
       "titel": "Grundsatz",
@@ -1256,7 +1363,8 @@
         "62/1": "1c0c0a63",
         "62/2": "81ffc344",
         "62/3": "d5f1a643"
-      }
+      },
+      "titel": "Verfahrensfreie Bauvorhaben, Beseitigung von Anlagen"
     },
     "63": {
       "gilt": {
@@ -1314,7 +1422,8 @@
         "63/1": "d9020d82",
         "63/2": "57fb7e94",
         "63/3": "881ef683"
-      }
+      },
+      "titel": "Genehmigungsfreistellung"
     },
     "64": {
       "gilt": {
@@ -1352,7 +1461,8 @@
       "stand": {
         "64/1": "55cf994d",
         "64/3": "4b3c7b76"
-      }
+      },
+      "titel": "Vereinfachtes Baugenehmigungsverfahren"
     },
     "65": {
       "gilt": {
@@ -1383,7 +1493,8 @@
       ],
       "stand": {
         "65": "7959e34c"
-      }
+      },
+      "titel": "Baugenehmigungsverfahren"
     },
     "67": {
       "gilt": {
@@ -1414,7 +1525,8 @@
         "67/1": "2b2cdef4",
         "67/2": "6e990264",
         "67/3": "f58679c0"
-      }
+      },
+      "titel": "Bauvorlageberechtigung"
     },
     "68": {
       "gilt": {
@@ -1448,7 +1560,8 @@
         "68/2": "c96564fa",
         "68/3": "481bf772",
         "68/4": "a922a9be"
-      }
+      },
+      "titel": "Bautechnische Nachweise"
     },
     "69": {
       "gilt": {
@@ -1484,7 +1597,8 @@
         "69/1": "e6f3891b",
         "69/2": "f5d12910",
         "69/3": "4cc2e650"
-      }
+      },
+      "titel": "Abweichungen"
     },
     "70": {
       "gilt": {
@@ -1501,7 +1615,8 @@
       "stand": {
         "70/1": "88cb92a9",
         "70/2": "1f114dd7"
-      }
+      },
+      "titel": "Bauantrag, Bauvorlagen"
     },
     "72": {
       "titel": "Beteiligung der Nachbarinnen und Nachbarn und der Öffentlichkeit",
@@ -1519,6 +1634,10 @@
               {
                 "f": "planung.befreiung",
                 "ist": true
+              },
+              {
+                "f": "ortsrecht.abweichung",
+                "ist": true
               }
             ]
           }
@@ -1532,6 +1651,10 @@
           },
           {
             "f": "planung.befreiung",
+            "ist": false
+          },
+          {
+            "f": "ortsrecht.abweichung",
             "ist": false
           }
         ]
@@ -1597,7 +1720,8 @@
       "stand": {
         "74/2": "5968fdd8",
         "74/3": "56618f06"
-      }
+      },
+      "titel": "Baugenehmigung, Genehmigungsfiktion, Baubeginn"
     },
     "85": {
       "gilt": {
@@ -1621,7 +1745,8 @@
         "85/1": "187d0b32",
         "85/2": "1a647d82",
         "85/4": "ea22fc50"
-      }
+      },
+      "titel": "Baulasten, Baulastenverzeichnis"
     },
     "90": {
       "gilt": {
@@ -1637,7 +1762,8 @@
       },
       "stand": {
         "90/4": "838610c3"
-      }
+      },
+      "titel": "Übergangsvorschriften"
     },
     "42a": {
       "gilt": {
@@ -1673,7 +1799,8 @@
         "42a/3": "4d9fe24d",
         "42a/4": "f4396162",
         "42a/5": "bf4b6502"
-      }
+      },
+      "titel": "Solaranlagen"
     }
   }
 }

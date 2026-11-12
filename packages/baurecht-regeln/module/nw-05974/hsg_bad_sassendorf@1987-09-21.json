@@ -33,7 +33,8 @@
         "1/2": "3c4bbb44",
         "1/3": "e4f62b89",
         "1/5": "5f7ecf25"
-      }
+      },
+      "titel": "Räumlicher Geltungsbereich"
     },
     "3": {
       "gilt": {
@@ -92,16 +93,42 @@
         "Genehmigung der unteren Wasserbehörde des Kreises Soest (§ 9), soweit nicht eine andere Zulassung mit Einvernehmen der unteren Wasserbehörde genügt (§ 9 Abs. 6)"
       ],
       "pruefen": {
-        "grund": "Die Verordnung gilt nach § 14 vierzig Jahre (bis 16.10.2027). Bei Einreichung danach prüfen, ob eine neue Verordnung gilt.",
+        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind, und gewerblich genutzten Teilen: § 3 Abs. 1 nennt für Zone III u. a. gewerbliche Lagerplätze, Silos, Campingplätze und Fischteiche. Bei Einreichung nach dem 16.10.2027 (Geltungsdauer nach § 14): ob eine neue Verordnung gilt.",
         "wenn": {
-          "tag": "einreichung",
-          "ab": "2027-10-17"
+          "oder": [
+            {
+              "tag": "einreichung",
+              "ab": "2027-10-17"
+            },
+            {
+              "und": [
+                {
+                  "f": "kreis_soest.hsg_qualitativ",
+                  "in": [
+                    "III"
+                  ]
+                },
+                {
+                  "oder": [
+                    {
+                      "$": "nw_kein_gebaeude"
+                    },
+                    {
+                      "f": "gebaeude.gemischt",
+                      "ist": true
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       },
       "stand": {
         "3/1": "e1ca0e24",
         "3/2": "5b6c3631"
-      }
+      },
+      "titel": "Schutz in der Zone III"
     },
     "4": {
       "gilt": {
@@ -147,7 +174,8 @@
       },
       "stand": {
         "4": "d3a3a1e0"
-      }
+      },
+      "titel": "Schutz in der Zone C"
     },
     "5": {
       "gilt": {
@@ -193,7 +221,8 @@
       },
       "stand": {
         "5": "af8d3536"
-      }
+      },
+      "titel": "Schutz in der Zone B"
     },
     "6": {
       "gilt": {
@@ -239,7 +268,8 @@
       "stand": {
         "6/1": "7a24ccac",
         "6/2": "f1624bec"
-      }
+      },
+      "titel": "Schutz in den Zonen I und A"
     },
     "9": {
       "gilt": {
@@ -322,7 +352,32 @@
         "9/2": "d876f415",
         "9/5": "43e5903b",
         "9/6": "5c6fe3ba"
-      }
+      },
+      "pruefen": {
+        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind, und gewerblich genutzten Teilen: § 3 Abs. 1 nennt für Zone III u. a. gewerbliche Lagerplätze, Silos, Campingplätze und Fischteiche.",
+        "wenn": {
+          "und": [
+            {
+              "f": "kreis_soest.hsg_qualitativ",
+              "in": [
+                "III"
+              ]
+            },
+            {
+              "oder": [
+                {
+                  "$": "nw_kein_gebaeude"
+                },
+                {
+                  "f": "gebaeude.gemischt",
+                  "ist": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "titel": "Genehmigungen"
     },
     "10": {
       "gilt": {
@@ -347,7 +402,8 @@
       ],
       "stand": {
         "10/1": "09c93855"
-      }
+      },
+      "titel": "Befreiungen"
     }
   }
 }

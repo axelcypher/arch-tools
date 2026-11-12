@@ -61,6 +61,9 @@
               {
                 "f": "vorhaben.baeume_faellen",
                 "ist": true
+              },
+              {
+                "$": "nutzungsaenderung"
               }
             ]
           }
@@ -113,14 +116,28 @@
       ],
       "nachweis": [
         "Antrag auf Befreiung (§ 67 BNatSchG, § 75 LNatSchG NRW) bzw. Ausnahme nach den textlichen Festsetzungen bei der unteren Naturschutzbehörde des Kreises Soest"
-      ]
+      ],
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die textlichen Festsetzungen verbieten teils auch, bauliche Anlagen in ihrer Nutzungsart zu ändern – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "f": "schutz.lsg",
+              "ist": true
+            }
+          ]
+        }
+      }
     },
     "C.3": {
       "titel": "Naturdenkmale (Festsetzungen C.3)",
       "gilt": {
         "und": [
           {
-            "f": "kreis_soest.lp_nd_lb",
+            "f": "schutz.naturdenkmal",
             "ist": true
           },
           {
@@ -141,7 +158,7 @@
         ]
       },
       "entfaellt": {
-        "f": "kreis_soest.lp_nd_lb",
+        "f": "schutz.naturdenkmal",
         "ist": false
       },
       "grund": "Naturdenkmale des Landschaftsplans (auch Kronentraufbereich) dürfen nicht beseitigt, beschädigt oder verändert werden.",
@@ -150,14 +167,28 @@
       ],
       "nachweis": [
         "Antrag auf Befreiung (§ 67 BNatSchG, § 75 LNatSchG NRW) bzw. Ausnahme nach den textlichen Festsetzungen bei der unteren Naturschutzbehörde des Kreises Soest"
-      ]
+      ],
+      "pruefen": {
+        "grund": "Nutzungsänderung: Die textlichen Festsetzungen verbieten teils auch, bauliche Anlagen in ihrer Nutzungsart zu ändern – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "f": "schutz.naturdenkmal",
+              "ist": true
+            }
+          ]
+        }
+      }
     },
     "C.4": {
       "titel": "Geschützte Landschaftsbestandteile (Festsetzungen C.4)",
       "gilt": {
         "und": [
           {
-            "f": "kreis_soest.lp_nd_lb",
+            "f": "schutz.naturdenkmal",
             "ist": true
           },
           {
@@ -172,13 +203,16 @@
               {
                 "f": "vorhaben.baeume_faellen",
                 "ist": true
+              },
+              {
+                "$": "nutzungsaenderung"
               }
             ]
           }
         ]
       },
       "entfaellt": {
-        "f": "kreis_soest.lp_nd_lb",
+        "f": "schutz.naturdenkmal",
         "ist": false
       },
       "grund": "Geschützte Landschaftsbestandteile (Hecken, Baumreihen, Gewässerufer u. a.) dürfen nicht beseitigt oder beeinträchtigt werden.",

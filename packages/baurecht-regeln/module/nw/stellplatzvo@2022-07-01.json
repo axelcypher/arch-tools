@@ -53,7 +53,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Anwendungsbereich"
     },
     "2": {
       "gilt": {
@@ -102,7 +103,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Notwendige Stellplätze für Kraftfahrzeuge und Fahrräder"
     },
     "3": {
       "gilt": {
@@ -154,7 +156,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Anzahl der notwendigen Stellplätze"
     },
     "4": {
       "gilt": {
@@ -204,7 +207,8 @@
         "f": "ortsrecht.stellplatz_regelt_zahl",
         "ist": true
       },
-      "hinweis": "Verringerung bei integrierter Lage mit ÖPNV-Anbindung oder Mobilitätskonzept – öffentlich-rechtlich zu sichern."
+      "hinweis": "Verringerung bei integrierter Lage mit ÖPNV-Anbindung oder Mobilitätskonzept – öffentlich-rechtlich zu sichern.",
+      "titel": "Verringerung der Anzahl der notwendigen Stellplätze"
     },
     "5": {
       "gilt": {
@@ -255,7 +259,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Erfüllung der Herstellungspflicht"
     },
     "6": {
       "titel": "Nachweis durch Zahlung von Ablösungsbeträgen",
@@ -340,7 +345,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Beschaffenheit von notwendigen Stellplätzen für Kraftfahrzeuge"
     },
     "8": {
       "gilt": {
@@ -387,7 +393,8 @@
             }
           ]
         }
-      }
+      },
+      "titel": "Beschaffenheit von notwendigen Stellplätzen für Fahrräder"
     },
     "9": {
       "gilt": {
@@ -425,7 +432,8 @@
             "ist": true
           }
         ]
-      }
+      },
+      "titel": "Zustimmung der Gemeinde"
     }
   }
 }

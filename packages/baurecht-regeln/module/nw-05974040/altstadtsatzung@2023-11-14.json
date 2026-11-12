@@ -37,7 +37,8 @@
       ],
       "stand": {
         "1": "498c7c46"
-      }
+      },
+      "titel": "Geltungsbereich"
     },
     "3": {
       "gilt": {
@@ -52,9 +53,26 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind, aber wie Gebäude wirken (z. B. Mauern über 2 m): auch sie brauchen Abstandsflächen. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "bauen"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                }
+              ]
+            }
+          ]
         }
       },
       "hinweis": "Geht § 6 BauO NRW vor, soweit die Unterschreitung zugelassen wird – sie ist zu beantragen, nicht automatisch erlaubt.",
@@ -67,7 +85,8 @@
       "stand": {
         "3/1": "084252dc",
         "3/2": "43f7d3b7"
-      }
+      },
+      "titel": "Abstandsflächen"
     },
     "4": {
       "gilt": {
@@ -97,7 +116,8 @@
         "4/3": "5b9fed1c",
         "4/4": "875e6e85",
         "4/5": "3f9ecc25"
-      }
+      },
+      "titel": "Dächer"
     },
     "5": {
       "gilt": {
@@ -141,7 +161,8 @@
         "5/4": "298f72a2",
         "5/5": "783464d7",
         "5/7": "18a944c5"
-      }
+      },
+      "titel": "Dachaufbauten (Dachgauben, Zwerchhäuser, Dachflächenfenster, Dacheinschnitte und Dachverglasungen)"
     },
     "6": {
       "gilt": {
@@ -164,7 +185,8 @@
       "stand": {
         "6/1": "6792ac87",
         "6/2": "aa98900a"
-      }
+      },
+      "titel": "Balkone, Loggien, Dachterrassen"
     },
     "7": {
       "gilt": {
@@ -193,7 +215,8 @@
         "7/4": "0bc1687b",
         "7/6": "4ac93e78",
         "7/7": "911fcb54"
-      }
+      },
+      "titel": "Fenster"
     },
     "8": {
       "gilt": {
@@ -232,7 +255,8 @@
         "8/2": "23541978",
         "8/3": "d4007b56",
         "8/5": "6ca0778c"
-      }
+      },
+      "titel": "Schaufenster"
     },
     "9": {
       "gilt": {
@@ -271,7 +295,8 @@
         "9/2": "63df4d99",
         "9/4": "d1a704f8",
         "9/5": "bd353b21"
-      }
+      },
+      "titel": "Kragdächer, Vordächer und Markisen"
     },
     "10": {
       "gilt": {
@@ -302,7 +327,8 @@
         "10/5": "43e312f9",
         "10/6": "eadfe9e7",
         "10/7": "be170540"
-      }
+      },
+      "titel": "Material"
     },
     "11": {
       "gilt": {
@@ -327,7 +353,8 @@
         "11/1": "b15492d7",
         "11/2": "c24d4411",
         "11/3": "bfd95895"
-      }
+      },
+      "titel": "Farben"
     },
     "12": {
       "gilt": {
@@ -350,7 +377,8 @@
       "stand": {
         "12/1": "6ddf8d03",
         "12/2": "919a6257"
-      }
+      },
+      "titel": "Einfriedigungen"
     },
     "13": {
       "gilt": {
@@ -375,7 +403,8 @@
         "13/1": "12e2826c",
         "13/2": "a19292e7",
         "13/3": "bbfac939"
-      }
+      },
+      "titel": "Außenanlagen"
     },
     "14": {
       "gilt": {
@@ -385,6 +414,10 @@
           },
           {
             "f": "technik.waermepumpe",
+            "ist": true
+          },
+          {
+            "f": "technik.lueftung",
             "ist": true
           }
         ]
@@ -399,16 +432,34 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind (z. B. Antennen- oder Mobilfunkanlage, freistehendes Klimagerät): Abs. 2 nennt technische Anlagen ausdrücklich. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "bauen"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                }
+              ]
+            }
+          ]
         }
       },
       "stand": {
         "14/1": "34c96edb",
         "14/2": "15f1269a",
         "14/3": "8d93a4f2"
-      }
+      },
+      "titel": "Technische Anlagen"
     },
     "15": {
       "gilt": {
@@ -444,7 +495,8 @@
         "15/1": "e73b4008",
         "15/2": "d21dd6c1",
         "15/3": "8ec3b906"
-      }
+      },
+      "titel": "Garagen und überdachte Stellplätze"
     },
     "16": {
       "gilt": {
@@ -485,7 +537,8 @@
       "stand": {
         "16/1": "404180d2",
         "16/2": "76a35fb9"
-      }
+      },
+      "titel": "Abweichungen von Einzelvorschriften dieser Satzung"
     },
     "17": {
       "gilt": {
@@ -540,7 +593,8 @@
       "stand": {
         "17/1": "6ae4fd5a",
         "17/2": "1effb536"
-      }
+      },
+      "titel": "Abweichungen für architektonisch eigenständige Entwurfslösungen"
     },
     "18": {
       "gilt": {
@@ -619,7 +673,8 @@
       "stand": {
         "18/1": "0d23fc12",
         "18/2": "534108bd"
-      }
+      },
+      "titel": "Beirat für Architektur und Stadtgestaltung (Gestaltungsbeirat)"
     },
     "5a": {
       "gilt": {
@@ -676,7 +731,8 @@
         "5a/10": "5f258989",
         "5a/11": "58f33b96",
         "5a/13": "b4d60e81"
-      }
+      },
+      "titel": "Photovoltaikanlagen und Solaranlagen zur Warmwasserbereitung oder zur Heizungsunterstützung"
     }
   }
 }

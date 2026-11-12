@@ -29,7 +29,8 @@
       "hinweis": "§ 8 gilt seit der Verordnung vom 21.07.2026 (Amtsblatt Nr. 31/2026, S. 303) ohne Befristung; die Verordnung tritt für ein Gebiet außer Kraft, sobald dort ein Landschaftsplan rechtswirksam wird. Die Kopie der Verordnung auf kreis-soest.de zeigt diese Änderung nicht.",
       "stand": {
         "1": "4522e90d"
-      }
+      },
+      "titel": "Schutzgebiet"
     },
     "3": {
       "gilt": {
@@ -75,7 +76,8 @@
       "stand": {
         "3/1": "17987128",
         "3/2": "63ace119"
-      }
+      },
+      "titel": "Verbote und Erlaubnisvorbehalte"
     },
     "4": {
       "gilt": {
@@ -98,7 +100,8 @@
       "hinweis": "Greift § 4, entfällt das Verbot des § 3 – der Nachweis (Privilegierung, Bestandsschutz) gehört in die Bauvorlagen.",
       "stand": {
         "4": "187b1bbb"
-      }
+      },
+      "titel": "Nicht betroffene Tätigkeiten"
     },
     "5": {
       "gilt": {
@@ -128,7 +131,8 @@
       "stand": {
         "5/1": "fd56057d",
         "5/2": "7e56b39d"
-      }
+      },
+      "titel": "Ausnahmen und Befreiungen"
     }
   }
 }
