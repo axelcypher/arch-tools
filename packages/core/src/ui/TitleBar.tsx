@@ -224,10 +224,36 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
     return () => window.removeEventListener('mousedown', onDown);
   }, [open]);
 
-  const cur = WAHL.find((w) => w.id === wahl)!;
+  const cur = WAHL.find((w) => w.id === wahl) ?? WAHL[0];
+  const knopf = useRef<HTMLButtonElement>(null);
+  // Fokus beim Öffnen auf die gewählte Option; Esc schließt und gibt den Fokus zurück, ↑/↓ bewegen, Tab hinaus schließt
+  useEffect(() => {
+    if (open) ref.current?.querySelector<HTMLElement>('[role="menuitemradio"][aria-checked="true"]')?.focus();
+  }, [open]);
+  const taste = (e: React.KeyboardEvent) => {
+    if (!open) return;
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      setOpen(false);
+      knopf.current?.focus();
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const el = [...(ref.current?.querySelectorAll<HTMLElement>('[role="menuitemradio"], .titlebar-dropdown input') ?? [])];
+      const i = el.indexOf(document.activeElement as HTMLElement);
+      el[(i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length]?.focus();
+      e.preventDefault();
+    }
+  };
   return (
-    <div className="titlebar-menu" ref={ref}>
-      <button className="titlebar-btn titlebar-schema" title={`Farbschema: ${cur.label}`} aria-label={`Farbschema: ${cur.label}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+    <div
+      className="titlebar-menu"
+      ref={ref}
+      onKeyDown={taste}
+      onBlur={(e) => {
+        if (open && !ref.current?.contains(e.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
+      <button ref={knopf} className="titlebar-btn titlebar-schema" title={`Farbschema: ${cur.label}`} aria-label={`Farbschema: ${cur.label}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
         <SchemaSymbol id={cur.id} />
       </button>
       {open && (

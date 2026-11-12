@@ -37,22 +37,31 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
 - **Angaben (links):** oben **„Klärt am meisten“** – die fehlenden Angaben, die die meisten offenen Paragrafen
   entscheiden würden (Klick springt zur Angabe); dann die Antragsmerkmale als Knöpfe mit Erklärung (eingeklappt, wenn
   alle festgelegt sind; „leeren“ setzt ein Merkmal bewusst zurück); darunter alle Angaben, an denen eine Regel hängt,
-  offene zuerst. Jede Angabe zeigt ihre Herkunft (Stammdaten, Flächenrechner, GRZ-Nachweis, Geodienst,
+  offene zuerst (die Reihenfolge entsteht beim Öffnen, Filtern und Suchen und bleibt dann stehen – eine beantwortete
+  Angabe springt nicht weg). Jede Angabe trägt überall denselben kurzen Titel, die Frage steht darunter. Zahlen stehen
+  deutsch mit Einheit („139,12 m²“), Anzahlen ganzzahlig. Jede Angabe zeigt ihre Herkunft (Stammdaten, Flächenrechner, GRZ-Nachweis, Geodienst,
   Regelmodul, von Hand). **Nur Hinweis** heißt: nicht gesichert (z. B. Geodienst ohne Treffer, Koordinaten nur
   straßengenau, Gemeindeschlüssel von Hand ohne Beleg) – ein solcher Wert kann nie etwas ausschließen, bis er
   **bestätigt** ist; eine Bestätigung lässt sich **zurücknehmen**. „alle Angaben“ zeigt auch Angaben, an denen gerade
   keine Regel hängt. Widerspricht das Merkmal „Planungsrecht“ den Geodaten (Bebauungsplan angegeben, Landschaftsplan
-  gemeldet), wird das als Widerspruch angezeigt und macht betroffenes Grün gelb.
+  gemeldet), wird das als Widerspruch angezeigt und macht betroffenes Grün gelb – auch dann, wenn eine Angabe von Hand
+  dem Treffer eines Dienstes widerspricht. Ebenso wird eine Angabe von Hand widersprüchlich, wenn ein Dienst über eine
+  Tabelle etwas anderes ergibt (z. B. „nicht im Denkmalbereich“ gegen einen Treffer des Denkmal-Dienstes).
 - **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm
   Fassung und Zähler in Worten, darunter die Paragrafen mit Ampel und Hauptgrund (die Angaben, die das Ergebnis
   tragen). Oben das Ergebnis je Ampel (zugleich Ein-/Ausblenden), Suche und Filter „nur von Hand festgelegte“ bzw.
-  „nur geänderte/überholte“, mit Trefferzahl. Marken: „von Hand“ bzw. „von Hand · Entwurf“, „überholt“, „Text
-  geändert“, „eigene Verantwortung“ (prüft die Bauaufsicht nicht).
+  „nur geänderte/überholte“, mit Trefferzahl. Marken: „von Hand“ bzw. „von Hand · Entwurf“, „überholt“, „nicht
+  wirksam“, „Text geändert“, „eigene Verantwortung“ (prüft die Bauaufsicht nicht). Hängt eine Regel an einem anderen
+  Paragrafen, der selbst offen ist, heißt es „hängt an § … (dort offen)“. Ist die Spalte schmaler als 900 px, steht der
+  Grund unter dem Titel.
 - **Einzelheiten (rechts):** Ampel, Begründung in Worten, Hinweise (Ausnahmen, Einzelfall, Vorrang des Ortsrechts,
   Annahmen des Büros), fehlende und unsichere Angaben (Klick springt hin), ob die Bauaufsicht das im Verfahren prüft,
-  womit es nachgewiesen wird, Stand der Regel, aufklappbar die **Regel im Einzelnen**, und der **Gesetzestext** mit den
+  womit es nachgewiesen wird, Stand der Regel, aufklappbar die **Regel im Einzelnen** (eingerückt, je Bedingung ✓ trifft
+  zu, ✗ trifft nicht zu, ? offen, mit dem aktuellen Wert; entschiedene Unterzweige zugeklappt; „keines davon“ für
+  verneinte Gruppen), und der **Gesetzestext** mit den
   Absätzen der Fundstellen hervorgehoben (mit Legende); nach einer Änderung **alt/neu** untereinander mit
-  gestrichenen bzw. unterstrichenen Wörtern – verglichen mit der Fassung, an der die Regel geprüft ist.
+  gestrichenen bzw. unterstrichenen Wörtern – verglichen mit der Fassung, an der die Regel geprüft ist. Die Spalte lässt
+  sich am linken Rand in der Breite ziehen (auch mit ←/→, Pos1/Ende).
 
 ## Von Hand festlegen
 
@@ -65,23 +74,31 @@ Jeder darf festlegen – und bestätigt dafür zweimal:
    Begründung, Herabstufungen hervorgehoben) – ebenso neu bestätigte Hinweise (siehe unten). „Bestätigen und speichern“
    geht erst nach dem Haken „Ich habe diese Angaben geprüft“. „Speichern, diese als Entwurf behalten“ schreibt für sie den
    bisherigen Stand der Datei (eine schon bestätigte Festlegung bleibt also erhalten) und lässt die Änderung in der App
-   als Entwurf offen.
+   als Entwurf offen. Vor einem Antragswechsel, dem Öffnen eines anderen Projekts oder dem Beenden gilt das nicht als
+   „gespeichert“: Die App meldet, dass Entwürfe offen sind, und bleibt, bis sie bestätigt, aufgehoben oder ausdrücklich
+   verworfen („Nicht speichern“) sind.
 
 „Festlegung aufheben“ wirkt sofort; daneben steht „Rückgängig“, der Fokus geht auf „Von Hand festlegen …“. Auch das
-Aufheben einer gespeicherten Festlegung wird beim Speichern noch einmal bestätigt.
+Aufheben einer gespeicherten Festlegung wird beim Speichern noch einmal bestätigt; eine mit „Rückgängig“
+wiederhergestellte Festlegung, die nicht mehr dem Stand der Datei entspricht, ist wieder Entwurf.
 
 Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald sich danach die automatische Ampel, eine
-beteiligte Angabe oder der Text einer Fundstelle ändert (oder sie ohne geprüften Text getroffen wurde) – dann steht
-die Marke „überholt“ daran, ein überholtes „entfällt“ zählt als
-„prüfen“, und das Protokoll führt sie als offen. Verweist eine Regel auf einen anderen Paragrafen, zählt dort nur die
+beteiligte Angabe (auch nur ihre Sicherheit, z. B. ein neuer Widerspruch) oder der Text einer Fundstelle ändert (oder
+sie ohne geprüften Text getroffen wurde und der Text jetzt vorliegt) – dann steht die Marke „überholt“ daran, ein
+überholtes „entfällt“ zählt als „prüfen“, und das Protokoll führt sie als offen. Fehlt dagegen der Systemstand (Text
+nicht verfügbar, Rechtsstand nicht aktuell bestätigt, zum Stichtag gilt schon eine neue Fassung), ist ein festgelegtes
+„entfällt“ **noch nicht wirksam**: Es zählt als „prüfen“, bis der Text geprüft vorliegt – erneutes Festlegen hilft
+dagegen nicht. Verweist eine Regel auf einen anderen Paragrafen, zählt dort nur die
 automatische Ampel oder eine bestätigte, nicht überholte Festlegung – und auch die nur als unsicher (ein „entfällt“, das
 darauf beruht, wird „prüfen“).
 
 **Hinweise bestätigen:** Angaben, die nur Hinweis sind (z. B. „kein Treffer im Landschaftsschutzgebiet“, Flächen aus
 dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen – nur mit Angabe, worauf die Bestätigung beruht
-(z. B. Auskunft der Behörde mit Datum). Der Dialog zeigt vorher, wie viele Vorschriften dadurch herabgestuft werden.
-Auch Bestätigungen werden beim Speichern noch einmal bestätigt und stehen im Prüfprotokoll. Eine bestätigte Angabe
-aus dem Modell gilt nur für genau diesen Wert – ändert sich das Modell, ist sie wieder Hinweis.
+(z. B. Auskunft der Behörde mit Datum). Der Dialog zeigt vorher, wie viele Vorschriften dadurch herabgestuft werden –
+mit genau der Rechnung, die danach gilt. Widerspricht ein Dienst der Angabe, bleibt der Widerspruch auch nach der
+Bestätigung bestehen; der Dialog sagt das. Auch Bestätigungen werden beim Speichern noch einmal bestätigt und stehen
+im Prüfprotokoll. Eine bestätigte Angabe aus dem Modell bzw. aus einer Tabelle des Regelmoduls gilt nur für genau
+diesen Wert – ändert sich das Modell bzw. die Tabelle, ist sie wieder Hinweis.
 
 **Schutzgebiete und Geodaten von Hand** (ja/nein, Auswahl) gibt es nur mit Beleg – wie eine Bestätigung. Widerspricht
 die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch stehen; was nur an ihr hängt, bleibt „prüfen“ (für
@@ -112,8 +129,9 @@ Die ersten Tabstopps sind die Sprungmarken „Zu den Angaben / Vorschriften / Ei
 Fokus haben), danach die Titelleiste. Die Vorschriftenliste ist ein Tabstopp: ↑/↓, Pos1/Ende wählen den Paragrafen.
 Auswahlgruppen (ja/nein, Merkmale) bedienen sich mit ←/→ bzw. ↑/↓ (mit Umlauf), Pos1/Ende. F6 (Umschalt+F6) springt
 zwischen Kopf, Angaben, Vorschriften und Einzelheiten; ist kein Paragraf gewählt, bekommen die Einzelheiten selbst den
-Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr ▾, Filter ▾) schließen mit Esc und geben den Fokus an
-ihren Knopf zurück.
+Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr ▾, Filter ▾, Farbschema) nehmen beim Öffnen den Fokus,
+bedienen sich mit ↑/↓, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie mit Tab
+verlässt. Die Sammelmarke der Warnungen öffnet „Mehr“.
 
 ## Rechtsstand
 

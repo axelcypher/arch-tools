@@ -126,7 +126,7 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   if (def.typ === 'zahl')
     return (
       <span className="br-zahl">
-        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty onChange={(n) => onWert(n)} label={def.titel} digits={2} />
+        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty onChange={(n) => onWert(n)} label={def.titel} digits={def.einheit ? 2 : 0} />
         {def.einheit && <span className="br-leise">{def.einheit}</span>}
       </span>
     );
@@ -161,8 +161,10 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
   return (
     <div ref={ref} className={`br-fakt${wert?.wert == null ? ' br-offen' : ''}${fokus === id ? ' br-fokus' : ''}`}>
       <div className="br-fakt-kopf">
+        {/* überall derselbe kurze Titel (Chips, Protokoll); die Frage als Unterzeile */}
         <span className="br-fakt-titel" title={def.hilfe}>
-          {def.frage ?? def.titel}
+          {def.titel}
+          {def.frage && <span className="br-fakt-frage">{def.frage}</span>}
         </span>
         {wert?.wert == null && klaert > 0 && <span className="br-klaert" title={`klärt ${klaert} Paragrafen`}>klärt {klaert}</span>}
       </div>
@@ -246,17 +248,28 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   }, [auswertung.paragrafen]);
   const merkmale = useBaurecht((s) => s.merkmale);
   const ctx = { merkmale, fakten: auswertung.fakten, einreichung: stand.einreichung, heute: heute(), bausteine: auswertung.text.bausteine };
+  const antrag = useBaurecht((s) => s.antrag);
+  // „offene zuerst, klärt am meisten“ – die Reihenfolge wird beim Öffnen, Filtern und Suchen gebildet und bleibt dann
+  // stehen: eine beantwortete Angabe springt nicht weg (und keine andere rückt unter den Mauszeiger)
+  const ordnung = useRef<{ schluessel: string; rang: Map<string, number> } | null>(null);
+  const vergleich = (a: string, b: string) => {
+    const offenA = auswertung.fakten[a]?.wert == null ? 1 : 0;
+    const offenB = auswertung.fakten[b]?.wert == null ? 1 : 0;
+    return offenB - offenA || (klaerung.get(b) ?? 0) - (klaerung.get(a) ?? 0) || auswertung.faktDefs[a].titel.localeCompare(auswertung.faktDefs[b].titel, 'de');
+  };
+  const schluessel = `${antrag}|${alle}|${suche}`;
+  if (!ordnung.current || ordnung.current.schluessel !== schluessel) {
+    const alleIds = Object.keys(auswertung.faktDefs).sort(vergleich);
+    ordnung.current = { schluessel, rang: new Map(alleIds.map((id, i) => [id, i])) };
+  }
+  const rang = ordnung.current.rang;
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(auswertung.faktDefs)
       .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)))
       .filter(([, d]) => !d.wenn || werten(d.wenn, ctx).w !== 'nein')
       .filter(([id, d]) => !suche || `${d.titel} ${d.frage ?? ''} ${id}`.toLowerCase().includes(suche.toLowerCase()))
-      .sort(([a], [b]) => {
-        const offenA = auswertung.fakten[a]?.wert == null ? 1 : 0;
-        const offenB = auswertung.fakten[b]?.wert == null ? 1 : 0;
-        return offenB - offenA || (klaerung.get(b) ?? 0) - (klaerung.get(a) ?? 0) || auswertung.faktDefs[a].titel.localeCompare(auswertung.faktDefs[b].titel, 'de');
-      })
-      .map(([id]) => id);
+      .map(([id]) => id)
+      .sort((a, b) => (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
     return { ...g, ids };
   }).filter((g) => g.ids.length);
   return (

@@ -66,6 +66,11 @@ function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis;
                 überholt
               </span>
             )}
+            {!p.ueberholt && p.unwirksam && (
+              <span className="br-marke br-marke-warn" title={`Festlegung „entfällt“ noch nicht wirksam: ${p.unwirksam}`}>
+                nicht wirksam
+              </span>
+            )}
             {p.geaendert.length > 0 && (
               <span className="br-marke br-marke-warn" title="Text seit der Prüfung der Regel geändert">
                 Text geändert
@@ -254,24 +259,24 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     if (zeile) zeile.scrollIntoView({ block: 'center' });
     else if (l) l.scrollTop = 0;
   }, [w.gruppierung]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Filter-Menü (schmal): mit Esc bzw. Klick daneben schließen
+  // Filter-Menü (schmal): Klick daneben und Tab hinaus schließen; Esc nur, wenn der Fokus im Menü steht (nicht hinter
+  // einem Dialog)
   const menue = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
-    const zu = (e: Event) => {
+    const zu = (e: MouseEvent) => {
       const m = menue.current;
-      if (!m?.open) return;
-      if (e instanceof globalThis.KeyboardEvent ? e.key === 'Escape' : !m.contains(e.target as Node)) {
-        m.open = false;
-        if (e instanceof globalThis.KeyboardEvent) m.querySelector('summary')?.focus();
-      }
+      if (m?.open && !m.contains(e.target as Node)) m.open = false;
     };
     document.addEventListener('mousedown', zu);
-    document.addEventListener('keydown', zu);
-    return () => {
-      document.removeEventListener('mousedown', zu);
-      document.removeEventListener('keydown', zu);
-    };
+    return () => document.removeEventListener('mousedown', zu);
   }, []);
+  const menueTaste = (e: KeyboardEvent<HTMLDetailsElement>) => {
+    const m = menue.current;
+    if (e.key !== 'Escape' || !m?.open) return;
+    e.stopPropagation();
+    m.open = false;
+    m.querySelector('summary')?.focus();
+  };
   const kaesten = (
     <>
       <label className="toggle">
@@ -350,7 +355,14 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
         <div className="br-filter-zeile2">
           <input className="br-suchfeld" type="search" placeholder="§ oder Stichwort …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Vorschriften durchsuchen" />
           <span className="br-filter-kaesten br-nur-breit">{kaesten}</span>
-          <details className="br-filter-menue br-nur-schmal" ref={menue}>
+          <details
+            className="br-filter-menue br-nur-schmal"
+            ref={menue}
+            onKeyDown={menueTaste}
+            onBlur={(e) => {
+              if (menue.current?.open && !menue.current.contains(e.relatedTarget as Node | null)) menue.current.open = false;
+            }}
+          >
             <summary>
               Filter{nurHand || nurGeaendert ? ` (${Number(nurHand) + Number(nurGeaendert)})` : ''} <span aria-hidden="true">▾</span>
             </summary>

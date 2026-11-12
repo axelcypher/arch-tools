@@ -257,6 +257,22 @@ describe('Ampel je Paragraf', () => {
     expect(p(b, 'bund/bnatschg/44').ampel).toBe('gelb');
   });
 
+  it('Festlegung wird überholt, wenn ein beteiligtes Merkmal widersprüchlich wird (gleicher Wert)', () => {
+    const fl = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, sicherheit: { 'merkmal:Vorhaben': 'sicher' as const } };
+    expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl } })), 'bund/bnatschg/44').ueberholt).toBeUndefined();
+    const b = auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, widersprueche: new Set(['Vorhaben']) }));
+    expect(p(b, 'bund/bnatschg/44').ueberholt).toMatch(/jetzt widersprüchlich/);
+    expect(p(b, 'bund/bnatschg/44').ampel).toBe('gelb');
+    // war das Merkmal schon beim Festlegen widersprüchlich, macht derselbe Widerspruch nichts überholt
+    const c = auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': { ...fl, sicherheit: { 'merkmal:Vorhaben': 'widerspruch' as const } } }, widersprueche: new Set(['Vorhaben']) }));
+    expect(p(c, 'bund/bnatschg/44').ueberholt).toBeUndefined();
+  });
+
+  it('Einzelfall (pruefen.wenn) wirkt nur, wenn die Norm gilt – außerhalb des Anwendungsbereichs bleibt es grün', () => {
+    const a = auswerten(eingabe());
+    for (const q of a.paragrafen.filter((x) => x.gruende[0]?.startsWith('Entfällt mit der Norm'))) expect(q.gruende.join(' ')).not.toMatch(/^Einzelfall:/);
+  });
+
   it('Verweis auf einen Paragrafen: Entwurf zählt nicht, bestätigte Festlegung nur als unsicher', () => {
     const fl = { ampel: 'gruen' as const, grund: 'Sonderfall mit Begründung', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' } };
     expect(p(auswerten(eingabe()), 'nw/bauo-nrw/2')).toMatchObject({ ampel: 'rot' });
@@ -358,7 +374,7 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
     expect(bestaetigt['ortsrecht.satzung'].sicherheit).toBe('sicher');
   });
 
-  it('festgelegtes „entfällt“ ohne Text bzw. mit veraltetem Rechtsstand ist überholt', () => {
+  it('festgelegtes „entfällt“ ohne Text ist überholt, ohne verfügbaren Text bzw. mit veraltetem Rechtsstand nicht wirksam', () => {
     const fl = { ampel: 'gruen' as const, grund: 'Sonderfall mit Begründung', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, stand: { '14/1': 'aaaaaaaa' }, bestaetigt: '2026-11-12T10:00:00Z' };
     const id = 'bund/bnatschg/14';
     // ohne Textstand getroffen (z. B. in der Web-Version): auch mit Text später überholt
@@ -368,10 +384,14 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
     expect(p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: text() })), id).ampel).toBe('gruen');
     const ohne = p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: new Map() })), id);
     expect(ohne.ampel).toBe('gelb');
-    expect(ohne.ueberholt).toMatch(/Text der Norm nicht verfügbar/);
+    // fehlender Systemstand: „noch nicht wirksam“ (erneut festlegen hilft nicht), nicht „überholt“
+    expect(ohne.ueberholt).toBeUndefined();
+    expect(ohne.unwirksam).toMatch(/Text der Norm nicht verfügbar/);
+    expect(ohne.gruende[0]).toMatch(/noch nicht wirksam/);
     const alt = p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: text({ geprueft: '2026-10-01T08:00:00Z' }) })), id);
     expect(alt.ampel).toBe('gelb');
-    expect(alt.ueberholt).toMatch(/Rechtsstand/);
+    expect(alt.ueberholt).toBeUndefined();
+    expect(alt.unwirksam).toMatch(/Rechtsstand/);
   });
 
   describe('„entfällt mit der Norm“', () => {

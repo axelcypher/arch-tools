@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { offenFrage } from '@core/baurecht/kurz';
+import { offenText } from '@core/baurecht/kurz';
 import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
-import { EBENEN, einheitName, normVoll } from '@core/baurecht/typen';
+import { EBENEN, einheitName, normVoll, wertAnzeige } from '@core/baurecht/typen';
 import { druckenAls } from '@core/platform/projektDatei';
 import { DruckKopf } from '@core/ui/DruckKopf';
 import { useEscSchliessen } from '@core/ui/Dialog';
@@ -11,7 +11,7 @@ import { verwendeteFassungen } from '../pruefung';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from '../store';
 import { AMPEL_TEXT, datum } from './Ampel';
 
-const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));
+
 
 /** Herkunft einer gesicherten Angabe in Worten – ohne die Hinweistexte der App („bitte bestätigen …“) */
 function herkunftText(f: FaktWert): string {
@@ -33,6 +33,29 @@ function herkunftText(f: FaktWert): string {
     default:
       return 'von Hand';
   }
+}
+
+/** Gruppe eines offenen Punkts: was fehlt (kurzer Titel der Angabe), woran er hängt oder warum er offen ist */
+function gruppeVon(p: ParagrafErgebnis): string {
+  if (p.ueberholt && p.ampel !== 'gelb') return 'Festlegung überholt – erneut festlegen oder aufheben';
+  if (p.festlegung?.ampel === 'gelb') return 'Von Hand auf „prüfen“ festgelegt – klären';
+  if (p.ueberholt) return 'Festlegung „entfällt“ überholt – erneut festlegen oder aufheben';
+  if (p.unwirksam) return `Festlegung „entfällt“ noch nicht wirksam – ${p.unwirksam}`;
+  return '';
+}
+
+/** Paragrafen je Norm zusammengefasst: „BauNVO §§ 18, 19, 20 · LP I C.1, C.2“ */
+function nachNorm(ps: ParagrafErgebnis[], normen: { id: string; def: { kurz: string } }[]): string {
+  const gruppen = new Map<string, ParagrafErgebnis[]>();
+  for (const p of ps) gruppen.set(`${p.modul}/${p.norm}`, [...(gruppen.get(`${p.modul}/${p.norm}`) ?? []), p]);
+  return [...gruppen.entries()]
+    .map(([id, liste]) => {
+      const kurz = normen.find((n) => n.id === id)?.def.kurz ?? id;
+      const zahlen = liste.every((p) => /^\d/.test(p.paragraf));
+      const nrn = liste.map((p) => p.paragraf).join(', ');
+      return zahlen ? `${kurz} ${liste.length > 1 ? '§§' : '§'} ${nrn}` : `${kurz} ${nrn}`;
+    })
+    .join(' · ');
 }
 
 /** Entwurfsvermerk als Kopfzeile jeder Druckseite (im reservierten oberen Seitenrand, überdruckt keinen Text) */
@@ -108,10 +131,16 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   const gruppen = new Map<string, ParagrafErgebnis[]>();
   for (const p of [...offen, ...ueberholt]) {
-    const k = p.ueberholt && p.ampel !== 'gelb' ? 'Festlegung überholt – erneut festlegen oder aufheben' : p.offen.length ? offenFrage(p.offen[0], a.text) : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, '');
+    const o = p.offen[0];
+    const k =
+      gruppeVon(p) ||
+      (o && !o.startsWith('paragraf:') ? `Es fehlt: ${offenText(o, a.text)}` : o ? `Hängt an ${offenText(o, a.text)} (dort offen)` : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
     gruppen.set(k, [...(gruppen.get(k) ?? []), p]);
   }
   const titel = `Baurechtliche Prüfung vor dem Einreichen – ${antrag}`;
+  // Stand einer Festlegung von Hand: bestätigt/Entwurf und wirksam/überholt/nicht wirksam – getrennt von der Begründung
+  const festlegungStand = (q: ParagrafErgebnis) =>
+    [q.festlegung!.bestaetigt ? 'bestätigt' : 'Entwurf', q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : 'wirksam'].join(' · ');
   const abschliessen = () => {
     if (sperre) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
@@ -151,7 +180,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
           </button>
         </div>
         {entwuerfe > 0 && (
-          <p className="br-meldung br-meldung-warn br-entwurf-hinweis" role="status">
+          <p className="br-meldung br-meldung-warn br-entwurf-hinweis no-print" role="status">
             Entwurf: {entwuerfe === 1 ? 'Eine Angabe von Hand ist noch nicht gespeichert und bestätigt. Sie ist' : `${entwuerfe} Angaben von Hand sind noch nicht gespeichert und bestätigt. Sie sind`} unten als „Entwurf“ bzw. „noch nicht gespeichert“ gekennzeichnet; abschließen lässt sich die Prüfung erst nach dem Speichern.
           </p>
         )}
@@ -195,10 +224,11 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
           <table className="report-table">
             <thead>
               <tr>
-                <th style={{ width: '24%' }}>Paragraf</th>
-                <th style={{ width: '14%' }}>Festlegung</th>
+                <th style={{ width: '22%' }}>Paragraf</th>
+                <th style={{ width: '13%' }}>Festlegung</th>
                 <th>Begründung</th>
-                <th style={{ width: '18%' }}>von, am</th>
+                <th style={{ width: '13%' }}>von, am</th>
+                <th style={{ width: '18%' }}>Stand</th>
               </tr>
             </thead>
             <tbody>
@@ -208,14 +238,11 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                   <td>
                     {AMPEL_TEXT[p.festlegung!.ampel]} <span className="report-meta">(automatisch: {AMPEL_TEXT[p.automatisch]})</span>
                   </td>
-                  <td>
-                    {p.festlegung!.grund}
-                    {p.ueberholt ? ` – überholt: ${p.ueberholt}` : ''}
-                  </td>
+                  <td>{p.festlegung!.grund}</td>
                   <td>
                     {p.festlegung!.von}, {datum(p.festlegung!.am)}
-                    {p.festlegung!.bestaetigt ? ', bestätigt' : <span className="br-entwurf-text"> – Entwurf</span>}
                   </td>
+                  <td className={p.festlegung!.bestaetigt && !p.ueberholt && !p.unwirksam ? '' : 'br-entwurf-text'}>{festlegungStand(p)}</td>
                 </tr>
               ))}
             </tbody>
@@ -239,7 +266,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
               {gesichert.map(([id, f]) => (
                 <tr key={id}>
                   <td className="strong">{a.faktDefs[id]?.titel ?? id}</td>
-                  <td>{wertText(f.wert)}</td>
+                  <td>{wertAnzeige(f.wert, a.faktDefs[id])}</td>
                   <td>{f.herkunft === 'manuell' ? 'von Hand angegeben' : herkunftText(f)}</td>
                   <td>{f.bestaetigt!.grund || '–'}</td>
                   <td>
@@ -278,7 +305,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                   <tr key={k}>
                     <td className="strong">{k}</td>
                     <td>{ps.length}</td>
-                    <td>{ps.map((p) => a.text.paragraf?.(p.id) ?? p.id).join(' · ')}</td>
+                    <td>{nachNorm(ps, a.normen)}</td>
                   </tr>
                 ))}
             </tbody>
@@ -323,7 +350,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                             <td className="strong">{ampelText(p)}</td>
                             <td>
                               {p.festlegung ? `${p.festlegung.grund} (${p.festlegung.von}, ${datum(p.festlegung.am)}; automatisch: ${AMPEL_TEXT[p.automatisch]})` : p.gruende.join(' ')}
-                              {p.ueberholt ? ` – Festlegung überholt: ${p.ueberholt}` : ''}
+                              {(p.ueberholt || p.unwirksam) && <div className="report-meta">{p.ueberholt ? `Festlegung überholt: ${p.ueberholt}` : `Festlegung noch nicht wirksam: ${p.unwirksam}`}</div>}
                             </td>
                           </tr>
                           );
@@ -358,7 +385,8 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             <ul>
               {a.hinweise.map((h, i) => (
                 <li key={i}>
-                  <strong>{h.titel}</strong> ({h.modul}): {h.text}
+                  <strong>{h.titel}</strong>
+                  {h.titel.includes(h.modul) ? '' : ` (${h.modul})`}: {h.text}
                 </li>
               ))}
             </ul>

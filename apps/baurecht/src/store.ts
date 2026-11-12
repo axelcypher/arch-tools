@@ -8,7 +8,9 @@
 import { create } from 'zustand';
 import type { Paket } from '@core/baurecht/paket';
 import type { BaurechtPruefung } from '@core/baurecht/projekt';
-import { geoZusammenfuehren, mitDienst } from '@core/baurecht/geodienste';
+import { angabeVonHand, hinweisBestaetigen } from '@core/baurecht/angaben';
+import { geoZusammenfuehren } from '@core/baurecht/geodienste';
+import { isTauri } from '@core/platform/files';
 import { aktiverAntrag, baurechtAusRoh, leerePruefung, merkmaleAusRoh } from '@core/baurecht/projekt';
 import type { Ampel, FaktWert, Festlegung, ParagrafErgebnis } from '@core/baurecht/typen';
 import type { Project } from '@core/model';
@@ -164,29 +166,14 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   },
   faktSetzen: (id, wert, von, grund, lage) => {
     const p = kopie(get().pruefung);
-    const alt = p.fakten[id];
+    // dieselbe Rechnung wie die Vorschau im Dialog (angabeVonHand): Beleg, Lagebezug, Widerspruch aus dem Dienst
     if (wert === undefined) delete p.fakten[id];
-    else {
-      const f: FaktWert = { wert, herkunft: 'manuell', sicherheit: 'sicher', stand: heute(), quelle: von ? `von Hand (${von})` : 'von Hand' };
-      // Gemeindeschlüssel von Hand steuert Gebietsmodule und Schutzgebietswerte: nur Hinweis, bis er mit Beleg bestätigt ist
-      if (id === 'lage.ags' && !grund?.trim()) Object.assign(f, { sicherheit: 'hinweis', grund: 'von Hand eingetragen – bitte mit Beleg bestätigen (z. B. Flurstücksnachweis) oder „Lage abfragen“' });
-      // mit Beleg: wie eine Bestätigung; bei Lagebezug (Schutzgebiete, Geodaten) an die Lage gebunden – ohne
-      // Koordinaten (lage === null) nur Hinweis, weil sich die Angabe an keine Lage binden lässt
-      if (grund?.trim() && lage !== null) f.bestaetigt = { von, am: heute(), grund: grund.trim(), ...(lage ? { lage } : {}) };
-      if (grund?.trim() && lage === null) Object.assign(f, { sicherheit: 'hinweis', grund: `ohne Koordinaten an keine Lage gebunden – bitte Adresse/Koordinaten in den Stammdaten eintragen (Beleg: ${grund.trim()})` });
-      // das letzte Ergebnis des Dienstes bleibt an der Angabe – daraus der Widerspruch (nicht aus dem Bearbeitungsverlauf)
-      const dienst = alt?.herkunft === 'geodienst' ? { wert: alt.wert, sicherheit: alt.sicherheit, ...(alt.quelle ? { quelle: alt.quelle } : {}), ...(alt.stand ? { stand: alt.stand } : {}) } : alt?.dienst;
-      p.fakten[id] = mitDienst(f, dienst);
-    }
+    else p.fakten[id] = angabeVonHand(p.fakten[id], id, wert, { von, grund, lage, heute: heute(), desktop: isTauri() });
     set({ pruefung: p });
   },
   faktBestaetigen: (id, wert, von, grund, lage) => {
     const p = kopie(get().pruefung);
-    const { widerspruch: _w, ...ohne } = wert;
-    const f: FaktWert = { ...ohne, bestaetigt: { von, am: heute(), grund: grund.trim(), ...(lage ? { lage } : {}) } };
-    // Lagebezug ohne Koordinaten: bleibt Hinweis
-    if (lage === null) Object.assign(f, { bestaetigt: undefined, grund: 'ohne Koordinaten an keine Lage gebunden – bitte Adresse/Koordinaten in den Stammdaten eintragen' });
-    p.fakten[id] = JSON.parse(JSON.stringify(f)) as FaktWert;
+    p.fakten[id] = JSON.parse(JSON.stringify(hinweisBestaetigen(wert, { von, grund, lage, heute: heute() }))) as FaktWert;
     set({ pruefung: p });
   },
   bestaetigungZuruecknehmen: (id) => {
@@ -223,8 +210,15 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     set({ pruefung: p });
   },
   festlegungWiederherstellen: (id, f) => {
-    const p = kopie(get().pruefung);
-    p.festlegungen[id] = kopie(f);
+    const s = get();
+    const p = kopie(s.pruefung);
+    // genau der Stand der Datei: unverändert zurück; sonst als Entwurf – die zweite Bestätigung ist wieder nötig
+    const datei = s.pruefungDatei.festlegungen[id];
+    if (datei && JSON.stringify(datei) === JSON.stringify(f)) p.festlegungen[id] = kopie(f);
+    else {
+      const { bestaetigt: _b, ...entwurf } = kopie(f);
+      p.festlegungen[id] = entwurf;
+    }
     set({ pruefung: p });
   },
   festlegungenBestaetigen: (ids) => {
@@ -272,8 +266,11 @@ export function istGeaendert(s: Pick<Zustand, 'pruefung' | 'pruefungDatei' | 'me
  */
 export function offeneFestlegungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
   const jetzt = s.pruefung.festlegungen;
+  // offen: alles, was nicht bestätigt ist oder vom Stand der Datei abweicht (bestätigt wird nur beim Speichern – eine
+  // abweichende Festlegung mit „bestätigt“ stammt also aus einem älteren Stand und braucht die Bestätigung erneut)
+  const datei = s.pruefungDatei.festlegungen;
   const neu = Object.entries(jetzt)
-    .filter(([, f]) => !f.bestaetigt)
+    .filter(([id, f]) => !f.bestaetigt || JSON.stringify(f) !== JSON.stringify(datei[id]))
     .map(([id]) => id);
   const aufgehoben = Object.keys(s.pruefungDatei.festlegungen).filter((id) => !jetzt[id]);
   return [...neu, ...aufgehoben];

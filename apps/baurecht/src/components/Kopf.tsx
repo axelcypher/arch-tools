@@ -11,9 +11,11 @@ const datumZeit = (iso: string) => {
   return `${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
 };
 
-/** kleines Menü: Knopf mit Liste darunter; Esc und Klick daneben schließen, ↑/↓ bewegen */
-function Menue({ titel, label, children }: { titel: string; label: string; children: (zu: () => void) => React.ReactNode }) {
-  const [offen, setOffen] = useState(false);
+/**
+ * kleines Menü: Knopf mit Liste darunter; Esc, Klick daneben und Tab aus dem Menü schließen, ↑/↓ bewegen. Der Zustand
+ * kommt von außen (die Sammelmarke der Warnungen öffnet dasselbe Menü).
+ */
+function Menue({ titel, label, offen, setOffen, children }: { titel: string; label: string; offen: boolean; setOffen: (o: boolean) => void; children: (zu: () => void) => React.ReactNode }) {
   const rahmen = useRef<HTMLSpanElement>(null);
   const knopf = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -24,7 +26,7 @@ function Menue({ titel, label, children }: { titel: string; label: string; child
     };
     document.addEventListener('mousedown', weg);
     return () => document.removeEventListener('mousedown', weg);
-  }, [offen]);
+  }, [offen, setOffen]);
   const zu = () => {
     setOffen(false);
     knopf.current?.focus();
@@ -42,8 +44,16 @@ function Menue({ titel, label, children }: { titel: string; label: string; child
     }
   };
   return (
-    <span className="br-menue" ref={rahmen} onKeyDown={taste}>
-      <button type="button" ref={knopf} aria-haspopup="menu" aria-expanded={offen} aria-label={label} onClick={() => setOffen(!offen)}>
+    <span
+      className="br-menue"
+      ref={rahmen}
+      onKeyDown={taste}
+      onBlur={(e) => {
+        // Fokus verlässt das Menü (Tab): schließen
+        if (offen && !rahmen.current?.contains(e.relatedTarget as Node | null)) setOffen(false);
+      }}
+    >
+      <button type="button" ref={knopf} aria-haspopup="menu" aria-expanded={offen} onClick={() => setOffen(!offen)} title={label}>
         {titel} <span aria-hidden="true">▾</span>
       </button>
       {offen && (
@@ -79,15 +89,18 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
   const agsWiderspruch = !!ags?.widerspruch;
   const moduleText = stand.module.map((m) => m.name).join(' · ');
   const desktop = isTauri();
-  const warnungen = !laedt.length && desktop ? [nie ? `${nie} nie geprüft` : '', fehler ? `${fehler} nicht abrufbar` : '', geaendert ? `${geaendert} geändert` : '', kuenftig ? `${kuenftig} neue Fassung` : ''].filter(Boolean) : [];
+  const [mehrOffen, setMehrOffen] = useState(false);
   const ungeprueft = desktop && !laedt.length && !zeiten.length;
+  // „nie geprüft“ nur, wenn ein Teil geprüft ist – sonst sagt „Rechtsstand nicht geprüft“ dasselbe
+  const warnungen = !laedt.length && desktop ? [nie && !ungeprueft ? `${nie} nie geprüft` : '', fehler ? `${fehler} nicht abrufbar` : '', geaendert ? `${geaendert} geändert` : '', kuenftig ? `${kuenftig} neue Fassung` : ''].filter(Boolean) : [];
+  const warnText = [ungeprueft ? 'Rechtsstand noch nicht geprüft' : '', ...warnungen].filter(Boolean);
   const zurAgs = () => useBaurecht.getState().fokusSetzen('lage.ags');
   const rechtsstandTitel = `${paket.herkunft === 'nachgeladen' ? 'Regelpaket nachgeladen' : 'Regelpaket des Builds'} ${paket.version}${paketMeldung ? ` – ${paketMeldung}` : ''}${zeiten.length ? ` · Normen zuletzt an der Quelle bestätigt zwischen ${datumZeit(zeiten[0])} und ${datumZeit(zeiten[zeiten.length - 1])}` : ''}`;
   return (
     <div className="toolbar br-kopf" role="group" aria-label="Prüfung">
       <label className="br-kopf-feld">
         <span className="tb-label br-kopf-label">Antrag</span>
-        <select value={antrag} onChange={(e) => onAntrag(e.target.value)} aria-label="Antrag">
+        <select className="br-antrag-wahl" value={antrag} onChange={(e) => onAntrag(e.target.value)} aria-label="Antrag" title={antrag}>
           {antraege.map((a) => (
             <option key={a}>{a}</option>
           ))}
@@ -139,9 +152,10 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
             ))}
           </span>
           <span className="br-kopf-marken br-nur-schmal">
-            <span className="br-marke br-marke-warn" title={[ungeprueft ? 'Rechtsstand noch nicht geprüft' : '', ...warnungen].filter(Boolean).join(' · ')}>
-              Rechtsstand: {(ungeprueft ? 1 : 0) + warnungen.length} {(ungeprueft ? 1 : 0) + warnungen.length === 1 ? 'Warnung' : 'Warnungen'}
-            </span>
+            {/* Sammelmarke als Knopf: öffnet „Mehr“ mit den Warnungen im Einzelnen und „Rechtsstand prüfen“ */}
+            <button type="button" className="br-marke br-marke-warn br-marke-knopf" title={warnText.join(' · ')} aria-haspopup="menu" aria-expanded={mehrOffen} onClick={() => setMehrOffen(!mehrOffen)}>
+              {warnText.length === 1 ? warnText[0] : `Rechtsstand: ${warnText.length} Warnungen`}
+            </button>
           </span>
         </>
       ) : null}
@@ -157,7 +171,7 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
       )}
       {desktop && (
         <span className="br-nur-schmal">
-          <Menue titel="Mehr" label="Weitere Aktionen">
+          <Menue titel="Mehr" label="Mehr – weitere Aktionen" offen={mehrOffen} setOffen={setMehrOffen}>
             {(zu) => (
               <>
                 <button
@@ -182,9 +196,9 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
                 >
                   Rechtsstand prüfen
                 </button>
-                {(ungeprueft || warnungen.length > 0) && (
+                {warnText.length > 0 && (
                   <span className="br-menue-info" role="none">
-                    {[ungeprueft ? 'Rechtsstand noch nicht geprüft' : '', ...warnungen].filter(Boolean).join(' · ')}
+                    {warnText.join(' · ')}
                   </span>
                 )}
               </>

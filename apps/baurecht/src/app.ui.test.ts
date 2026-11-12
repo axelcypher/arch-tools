@@ -17,7 +17,7 @@ vi.mock('@core/platform/files', async (original) => ({
   }),
 }));
 
-const { App, speichern } = await import('./App');
+const { App, speichern, speichernVollstaendig } = await import('./App');
 const { beispielOap } = await import('./beispiel.test');
 const { useBaurecht } = await import('./store');
 
@@ -371,6 +371,82 @@ describe('Baurecht – Oberfläche', () => {
     act(() => k!.click());
     // die Angaben-Leiste übernimmt den Fokuswunsch: der Fokus steht in der Zeile des Gemeindeschlüssels
     expect(document.activeElement?.closest('.br-fakt')?.textContent).toMatch(/Gemeinde/);
+  });
+
+  it('Verlassen mit Entwürfen: „als Entwurf behalten“ meldet nicht „gespeichert“, die Entwürfe bleiben', async () => {
+    const host = render();
+    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    let ergebnis: Promise<boolean> | null = null;
+    await act(async () => {
+      ergebnis = speichernVollstaendig();
+    });
+    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
+    await act(async () => knopf(best, 'Speichern, diese als Entwurf behalten')!.click());
+    // Meldung: die Entwürfe bleiben offen – erst nach „OK“ kommt das Ergebnis
+    const meldung = [...document.querySelectorAll<HTMLElement>('[role="dialog"], [role="alertdialog"]')].find((d) => d.textContent?.includes('Entwürfe bleiben offen'));
+    expect(meldung, 'Meldung „Entwürfe bleiben offen“').toBeTruthy();
+    await act(async () => knopf(meldung!, /OK/)!.click());
+    expect(await ergebnis!).toBe(false);
+    expect(useBaurecht.getState().pruefung.festlegungen[id]).toBeTruthy();
+    expect(useBaurecht.getState().pruefung.festlegungen[id].bestaetigt).toBeUndefined();
+  });
+
+  it('Vorschau mit Widerspruch: der Bestätigen-Dialog sagt, dass der Widerspruch bleibt', async () => {
+    const { angabeVonHand } = await import('@core/baurecht/angaben');
+    const ags = angabeVonHand({ wert: '05974036', herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'ALKIS' }, 'lage.ags', '05974040', { von: 'TP', heute: '2026-11-12' });
+    act(() => useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, fakten: { 'lage.ags': ags } } }));
+    const host = render();
+    act(() => knopf(host, 'alle Angaben')?.click());
+    const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Gemeindeschlüssel/.test(z.textContent ?? '') && !!knopf(z, 'Bestätigen …'))!;
+    act(() => knopf(zeile, 'Bestätigen …')!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
+    expect(dialog.textContent).toMatch(/Widerspruch bleibt: ALKIS meldet „05974036“/);
+    act(() => knopf(dialog, 'Abbrechen')!.click());
+  });
+
+  it('Filter-Menü: Esc im Menü schließt und gibt den Fokus zurück; Esc in einem Dialog lässt es in Ruhe; Tab hinaus schließt', () => {
+    const host = render();
+    const menue = host.querySelector<HTMLDetailsElement>('.br-filter-menue')!;
+    const summary = menue.querySelector('summary')!;
+    act(() => {
+      menue.open = true;
+    });
+    const kasten = menue.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    act(() => kasten.focus());
+    act(() => void kasten.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(menue.open).toBe(false);
+    expect(document.activeElement).toBe(summary);
+    // Esc außerhalb (z. B. in einem Dialog) schließt das Menü nicht
+    act(() => {
+      menue.open = true;
+    });
+    const fremd = document.createElement('button');
+    document.body.appendChild(fremd);
+    act(() => void fremd.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(menue.open).toBe(true);
+    // Fokus verlässt das Menü: schließen
+    act(() => kasten.focus());
+    act(() => {
+      kasten.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: fremd }));
+    });
+    expect(menue.open).toBe(false);
+    fremd.remove();
+  });
+
+  it('Farbschema-Menü: Fokus hinein, ↑/↓ bewegen, Esc schließt und gibt den Fokus zurück', () => {
+    const host = render();
+    const knopfSchema = host.querySelector<HTMLButtonElement>('.titlebar-schema')!;
+    act(() => knopfSchema.focus());
+    act(() => knopfSchema.click());
+    const optionen = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];
+    expect(optionen.length).toBe(3);
+    expect(optionen).toContain(document.activeElement);
+    const vorher = document.activeElement;
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+    expect(document.activeElement).not.toBe(vorher);
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(document.querySelector('[role="menuitemradio"]')).toBeNull();
+    expect(document.activeElement).toBe(knopfSchema);
   });
 
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {

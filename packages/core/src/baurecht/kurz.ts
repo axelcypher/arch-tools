@@ -240,28 +240,65 @@ export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe
   return '';
 }
 
-/** Knoten der Regel als Baum: Blatt in Worten oder „alle“/„eines“/„nicht“ mit Unterpunkten */
+/** Knoten der Regel als Baum: Blatt in Worten oder „alle“/„eines“/„keines“ mit Unterpunkten; mit Kontext ausgewertet */
 export interface KurzKnoten {
   text: string;
   kinder?: KurzKnoten[];
+  /** ausgewertet: trifft zu, trifft nicht zu, offen */
+  w?: Wahrheit;
+  /** der aktuelle Wert eines Blatts („Innenbereich“, „ja“, „nicht angegeben“) */
+  ist?: string;
+  /** Art einer Gruppe (intern, für die Verneinung) */
+  art?: 'und' | 'oder';
 }
 
-/** Regel als eingerückter Baum statt verschachtelter Klammern (für „Regel im Einzelnen“) */
-export function kurzBaum(k: Kurz | undefined, t: TextKontext, tiefe = 0): KurzKnoten {
+/** aktueller Wert eines Blatts in Worten */
+function istWert(k: Kurz, t: TextKontext, ctx: KurzKontext): string | undefined {
+  if ('m' in k) return ctx.merkmale[k.m] ?? 'nicht festgelegt';
+  if ('f' in k) {
+    const f = ctx.fakten[k.f];
+    if (f?.wert == null) return 'nicht angegeben';
+    return wertText(f.wert, t.fakt(k.f)) + (f.sicherheit === 'hinweis' && !f.bestaetigt ? ' (Hinweis)' : '') + (f.widerspruch ? ' (Widerspruch)' : '');
+  }
+  if ('n' in k) {
+    const a = ctx.ampel?.(k.n);
+    return a ? (a.ampel === 'rot' ? 'gilt' : a.ampel === 'gruen' ? 'entfällt' : 'offen') : 'offen';
+  }
+  if ('tag' in k) return datum(k.tag === 'einreichung' ? ctx.einreichung : ctx.heute);
+  return undefined;
+}
+
+/**
+ * Regel als eingerückter Baum statt verschachtelter Klammern (für „Regel im Einzelnen“). Mit Kontext trägt jeder
+ * Knoten seinen Stand (trifft zu / nicht / offen) und jedes Blatt den aktuellen Wert.
+ */
+export function kurzBaum(k: Kurz | undefined, t: TextKontext, ctx?: KurzKontext, tiefe = 0): KurzKnoten {
   if (!k || tiefe > 20) return { text: '' };
-  if ('$' in k) return t.bausteine[k.$] ? kurzBaum(t.bausteine[k.$], t, tiefe + 1) : { text: k.$ };
+  let w: Wahrheit | undefined;
+  if (ctx) {
+    try {
+      w = werten(k, ctx).w;
+    } catch {
+      w = 'offen';
+    }
+  }
+  const mitW = (n: KurzKnoten): KurzKnoten => (w ? { ...n, w } : n);
+  if ('$' in k) return t.bausteine[k.$] ? kurzBaum(t.bausteine[k.$], t, ctx, tiefe + 1) : mitW({ text: k.$ });
   if ('und' in k || 'oder' in k) {
     const roh = 'und' in k ? einebnen('und', k.und, t) : zusammenfassen(einebnen('oder', k.oder, t));
-    const kinder = roh.map((x) => kurzBaum(x, t, tiefe + 1)).filter((x) => x.text || x.kinder?.length);
+    const kinder = roh.map((x) => kurzBaum(x, t, ctx, tiefe + 1)).filter((x) => x.text || x.kinder?.length);
     if (kinder.length === 1) return kinder[0];
-    if (!kinder.length) return { text: 'und' in k ? 'immer' : 'nie' };
-    return { text: 'und' in k ? 'alle folgenden:' : 'mindestens eines davon:', kinder };
+    if (!kinder.length) return mitW({ text: 'und' in k ? 'immer' : 'nie' });
+    return mitW({ text: 'und' in k ? 'alle folgenden:' : 'mindestens eines davon:', kinder, art: 'und' in k ? 'und' : 'oder' });
   }
   if ('nicht' in k && !('m' in k)) {
-    const innen = kurzBaum(k.nicht, t, tiefe + 1);
-    return innen.kinder ? { text: 'nicht zutreffend:', kinder: [innen] } : { text: `nicht: ${innen.text}` };
+    const innen = kurzBaum(k.nicht, t, ctx, tiefe + 1);
+    // „nicht (A oder B)“ = keines davon; „nicht (A und B)“ = nicht alle davon
+    if (innen.kinder) return mitW({ text: innen.art === 'oder' ? 'keines davon:' : 'nicht alle davon:', kinder: innen.kinder });
+    return mitW({ text: `nicht: ${innen.text}`, ...(innen.ist ? { ist: innen.ist } : {}) });
   }
-  return { text: kurzText(k, t, true, tiefe) };
+  const ist = ctx ? istWert(k, t, ctx) : undefined;
+  return mitW({ text: kurzText(k, t, true, tiefe), ...(ist ? { ist } : {}) });
 }
 
 /** fehlende Angabe in Worten – bei Fakten die Frage, wenn es eine gibt („Gilt eine Veränderungssperre?“) */

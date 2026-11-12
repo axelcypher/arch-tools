@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { paragrafName } from '@core/baurecht/typen';
 import { create } from 'zustand';
-import type { Ampel, FaktStatus, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
-import { faktStatus } from '@core/baurecht/typen';
+import type { Ampel, FaktDef, FaktStatus, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
+import { faktStatus, wertAnzeige } from '@core/baurecht/typen';
 import { lageKennung } from '@core/baurecht/geodienste';
+import { angabeVonHand, hinweisBestaetigen } from '@core/baurecht/angaben';
+import { isTauri } from '@core/platform/files';
 import { Modal } from '@core/ui/Dialog';
 import { benutzer, benutzerMerken } from '../benutzer';
-import { useBaurecht } from '../store';
-import { AMPEL_LANG, AMPEL_TEXT, AmpelMarke } from './Ampel';
+import { heute, useBaurecht } from '../store';
+import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke } from './Ampel';
 
 const RANG: Record<Ampel, number> = { rot: 2, gelb: 1, gruen: 0 };
 
@@ -27,7 +29,7 @@ export const festlegenOeffnen = (p: ParagrafErgebnis) => useFestlegen.getState()
  * Angaben der Auswertung (Projektdatei, Module, Geodienste, von Hand): an ihnen hängt die Festlegung, ändern sie sich,
  * ist sie überholt.
  */
-export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }) {
+export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: Record<string, FaktWert>; widerspruchMerkmale?: string[] }) {
   const p = useFestlegen((s) => s.p);
   const schliessen = useFestlegen((s) => s.schliessen);
   const texte = useBaurecht((s) => s.texte);
@@ -67,6 +69,8 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
     for (const v of p.verwendet) {
       werte[v] = v.startsWith('merkmal:') ? (merkmale[v.slice(8)] ?? null) : (fakten[v]?.wert ?? null);
       if (!v.includes(':') && fakten[v]) sicherheit[v] = faktStatus(fakten[v]);
+      // Merkmale: widerspricht eines schon beim Festlegen, macht derselbe Widerspruch die Festlegung nicht überholt
+      if (v.startsWith('merkmal:')) sicherheit[v] = widerspruchMerkmale.includes(v.slice(8)) ? 'widerspruch' : 'sicher';
     }
     benutzerMerken(von);
     useBaurecht.getState().festlegen(p, ampel, grund, von.trim(), summen, werte, sicherheit);
@@ -86,7 +90,10 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
           <label key={a} className={`br-wahl-zeile${ampel === a ? ' br-gewaehlt' : ''}`}>
             <input type="radio" name="ampel" checked={ampel === a} onChange={() => setAmpel(a)} />
             <AmpelMarke ampel={a} />
-            <span>{AMPEL_LANG[a]}</span>
+            <span>
+              {AMPEL_ERKLAERUNG[a]}
+              {a === p.automatisch ? ' (wie automatisch)' : ''}
+            </span>
           </label>
         ))}
       </fieldset>
@@ -171,10 +178,11 @@ export const faktBestaetigenOeffnen = (id: string, titel: string, wert: FaktWert
 export const faktSetzenOeffnen = (id: string, titel: string, wert: FaktWert['wert'], lagebezug = false) =>
   useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'setzen', wert: { wert, herkunft: 'manuell', sicherheit: 'sicher' }, vorher: eintrag(id), lagebezug } });
 
-const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));
+/** Definition einer Angabe (Typ, Einheit) – für die Anzeige der Werte („139,12 m²“, „3“) */
+export type FaktDefVon = (id: string) => FaktDef | undefined;
 
 /** Folgen einer Angabe: wie viele Paragrafen dadurch auf „entfällt“ (bzw. schwächer) gehen – für die Dialoge */
-export type FolgenRechner = (id: string, wert: FaktWert | null) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[] };
+export type FolgenRechner = (id: string, wert: FaktWert | null) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[]; nachher?: FaktWert };
 
 function Folgen({ folgen }: { folgen: ReturnType<FolgenRechner> }) {
   if (!folgen.herab.length) return <p className="br-leise">Keine Vorschrift ändert dadurch ihre Ampel.</p>;
@@ -204,7 +212,7 @@ function Folgen({ folgen }: { folgen: ReturnType<FolgenRechner> }) {
  * Datum). Der Dialog zeigt, welche Vorschriften dadurch herabgestuft werden. Geodaten gelten nur für die aktuelle Lage;
  * beim Speichern wird die Angabe noch einmal abgefragt und steht im Prüfprotokoll.
  */
-export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
+export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { folgen: FolgenRechner; faktDef?: FaktDefVon }) {
   const ziel = useFaktBestaetigen((s) => s.ziel);
   const project = useBaurecht((s) => s.project);
   const [grund, setGrund] = useState('');
@@ -222,13 +230,13 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
     setVerwerfen(false);
     setTimeout(() => feld.current?.focus(), 0);
   }, [ziel]);
+  // Vorschau: genau die Rechnung der Übernahme (angabeVonHand bzw. hinweisBestaetigen) – Lagebezug, Beleg, Widerspruch
   const vorschau = useMemo(() => {
     if (!ziel) return null;
     const k = project?.meta.koordinaten;
-    const lage = k ? lageKennung(k.ost, k.nord) : undefined;
-    // wie beim Übernehmen: mit Lagebezug, aber ohne Koordinaten bleibt die Angabe Hinweis – dann ändert sich nichts
-    if (ziel.lagebezug && !lage) return folgen(ziel.id, ziel.modus === 'setzen' ? { ...ziel.wert, sicherheit: 'hinweis' } : ziel.wert);
-    const neu: FaktWert = { ...ziel.wert, bestaetigt: { von: '', am: '', ...(ziel.modus === 'setzen' ? { grund: 'Vorschau' } : {}), ...(ziel.lagebezug && lage ? { lage } : {}) } };
+    const lage = ziel.lagebezug ? (k ? lageKennung(k.ost, k.nord) : null) : undefined;
+    const o = { von: 'Vorschau', grund: 'Vorschau', lage, heute: heute(), desktop: isTauri() };
+    const neu = ziel.modus === 'setzen' ? angabeVonHand(useBaurecht.getState().pruefung.fakten[ziel.id], ziel.id, ziel.wert.wert, o) : hinweisBestaetigen(ziel.wert, o);
     return folgen(ziel.id, neu);
   }, [ziel, folgen, project]);
   if (!ziel) return null;
@@ -258,7 +266,7 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
   return (
     <Modal titel={ziel.modus === 'setzen' ? 'Angabe von Hand setzen' : 'Angabe bestätigen'} onClose={zu} breit klickDaneben={false}>
       <h3>
-        {ziel.titel}: „{wertText(ziel.wert.wert)}“ {ziel.modus === 'setzen' ? 'von Hand setzen' : 'bestätigen'}
+        {ziel.titel}: „{wertAnzeige(ziel.wert.wert, faktDef(ziel.id))}“ {ziel.modus === 'setzen' ? 'von Hand setzen' : 'bestätigen'}
       </h3>
       {ziel.modus === 'bestaetigen' ? (
         <p className="br-leise-stark">
@@ -268,6 +276,11 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
         <p className="br-leise-stark">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>
       )}
       {vorschau && <Folgen folgen={vorschau} />}
+      {vorschau?.nachher?.widerspruch && (
+        <div className="br-meldung br-meldung-fehler" role="note">
+          <strong>Widerspruch bleibt:</strong> {vorschau.nachher.widerspruch}. Vorschriften, die an dieser Angabe hängen, werden dadurch nicht „entfällt“.
+        </div>
+      )}
       <div className="br-meldung br-meldung-warn" role="note">
         Die Angabe gilt danach als gesichert. Bitte nur angeben, was belegt ist – die Begründung steht im Prüfprotokoll.
         {ziel.lagebezug ? (project?.meta.koordinaten ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten in den Stammdaten lässt sie sich an keine Lage binden und bleibt Hinweis.') : ''}
@@ -289,7 +302,15 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
           aria-required="true"
           aria-invalid={versucht && grund.trim().length < 10}
           aria-describedby={versucht && grund.trim().length < 10 ? fehlerId : undefined}
-          placeholder={geo || ziel.id.startsWith('schutz.') ? 'z. B. Auskunft Untere Naturschutzbehörde vom 03.11.2026, Aktenzeichen …' : 'z. B. Modell geprüft am 12.11.2026 / Flurstücksnachweis vom …'}
+          placeholder={
+            ziel.id.startsWith('lage.')
+              ? 'z. B. Auszug aus dem Liegenschaftskataster vom 03.11.2026 / Flurstücksnachweis'
+              : geo || ziel.id.startsWith('schutz.')
+                ? 'z. B. Auskunft Untere Naturschutzbehörde vom 03.11.2026, Aktenzeichen …'
+                : ziel.wert.herkunft === 'flaechen' || ziel.wert.herkunft === 'grz'
+                  ? 'z. B. Modell vollständig geprüft am 12.11.2026'
+                  : 'z. B. Unterlage, Auskunft oder Prüfung mit Datum'
+          }
         />
         {versucht && grund.trim().length < 10 && (
           <span id={fehlerId} className="field-hint br-fehler-text">
@@ -356,7 +377,8 @@ export function bestaetigenFragen(offen: Offen): Promise<BestaetigenAntwort> {
   );
 }
 
-export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: string) => { titel: string; automatisch?: Ampel; ampel?: Ampel; ueberholt?: string }; faktTitel: (id: string) => string; folgen: (id: string) => ReturnType<FolgenRechner> }) {
+export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => undefined }: {
+  faktDef?: FaktDefVon; titel: (id: string) => { titel: string; automatisch?: Ampel; ampel?: Ampel; ueberholt?: string }; faktTitel: (id: string) => string; folgen: (id: string) => ReturnType<FolgenRechner> }) {
   const offen = useBestaetigen((s) => s.offen);
   const antwort = useBestaetigen((s) => s.antwort);
   const festlegungen = useBaurecht((s) => s.pruefung.festlegungen);
@@ -394,6 +416,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: st
                   {f.von}: {f.grund}
                 </div>
                 {herab && <div className="br-warn-text">Herabstufung</div>}
+                {f.ampel === f.automatisch && <div className="br-leise">wie automatisch – die Festlegung hält die Ampel fest, auch wenn sich Angaben ändern</div>}
                 {t.ampel && t.ampel !== f.ampel && (
                   <div className="br-warn-text">
                     Wirksam bleibt „{AMPEL_TEXT[t.ampel]}“{t.ueberholt ? ` – ${t.ueberholt}` : ''}.
@@ -428,7 +451,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: st
               <div className="br-bestaetigen-kopf">
                 <strong>{faktTitel(id)}</strong>
                 <span className="br-marke">
-                  {f.herkunft === 'manuell' ? 'von Hand' : 'Hinweis bestätigt'}: {wertText(f.wert)}
+                  {f.herkunft === 'manuell' ? 'von Hand' : 'Hinweis bestätigt'}: {wertAnzeige(f.wert, faktDef(id))}
                 </span>
               </div>
               <div className="br-leise-stark">

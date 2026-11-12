@@ -281,6 +281,11 @@ export interface ParagrafErgebnis {
   festlegung?: Festlegung;
   /** Festlegung überholt: warum */
   ueberholt?: string;
+  /**
+   * Festlegung „entfällt“ (noch) nicht wirksam, weil der Systemstand fehlt (Text nicht verfügbar, Rechtsstand nicht
+   * aktuell, neue Fassung zum Stichtag) – kein Fehler der Festlegung, erneutes Festlegen hilft dagegen nicht
+   */
+  unwirksam?: string;
   /** Regeldatei */
   regel?: { datei: string; version: number; fassung: string };
   /** Annahme des Büros */
@@ -319,6 +324,20 @@ export function paragrafName(nr: string): string {
   return /^\d/.test(nr) ? `§ ${nr}` : nr;
 }
 
+/**
+ * Wert einer Angabe für die Anzeige: ja/nein, Zahlen deutsch mit Einheit, Anzahlen (Zahl ohne Einheit) ganzzahlig
+ */
+export function wertAnzeige(w: FaktWert['wert'] | undefined, def?: Pick<FaktDef, 'typ' | 'einheit'>): string {
+  if (w == null) return '–';
+  if (w === true) return 'ja';
+  if (w === false) return 'nein';
+  if (typeof w === 'number') {
+    const anzahl = def?.typ === 'zahl' && !def.einheit && Number.isInteger(w);
+    return `${w.toLocaleString('de-DE', { maximumFractionDigits: anzahl ? 0 : 2 })}${def?.einheit ? ` ${def.einheit}` : ''}`;
+  }
+  return w;
+}
+
 const vergleichbar = (s: string) => s.toLowerCase().replace(/ß/g, 'ss').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/[^a-z0-9]/g, '');
 
 /**
@@ -334,6 +353,8 @@ export function einheitName(nr: string, titel?: string): { nr: string; titel: st
   // Schlüssel in der Klammer am Ende („Naturschutzgebiete (Festsetzungen C.1)“): Klammer weg, Schlüssel vorn
   const m = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(titel);
   if (m && k.length >= 2 && vergleichbar(m[2]).includes(k)) return { nr: '', titel: `${nr} – ${m[1]}` };
+  // längerer Schlüssel steckt schon im Titel („Sperre“ in „Veränderungssperre (§ 14 BauGB)“): nur der Titel
+  if (k.length >= 4 && vergleichbar(titel).includes(k)) return { nr: '', titel };
   return { nr: '', titel: `${nr} – ${titel}` };
 }
 
@@ -354,7 +375,10 @@ export function normTitel(def: { kurz: string; titel: string }): string {
 /** Titel mit Kurzform genau einmal: „Denkmalschutzgesetz (DSchG NRW)“ */
 export function normVoll(def: { kurz: string; titel: string }): string {
   const t = normTitel(def);
-  return vergleichbar(t).includes(vergleichbar(def.kurz)) ? t : `${t} (${def.kurz})`;
+  if (vergleichbar(t).includes(vergleichbar(def.kurz))) return t;
+  // schon eine Klammer am Ende („Gebäudeenergiegesetz (amtlich seit 2026: GModG)“): Kurzform hinein statt zweiter Klammer
+  const m = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(t);
+  return m ? `${m[1]} (${def.kurz}; ${m[2]})` : `${t} (${def.kurz})`;
 }
 
 /** Fundstelle in Worten: „6/1“ → „§ 6 Abs. 1“ */

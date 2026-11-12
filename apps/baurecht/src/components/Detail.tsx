@@ -6,9 +6,10 @@ import type { Festlegung, ParagrafErgebnis } from '@core/baurecht/typen';
 import type { Paragraf } from '@core/recht/index';
 import { absaetze as absaetzeVon, absatzNummer } from '@core/recht/text';
 import { externOeffnen } from '@core/platform/links';
+import { isTauri } from '@core/platform/files';
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
-import { AMPEL_LANG, AMPEL_TEXT, AmpelMarke, datum } from './Ampel';
+import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke, datum } from './Ampel';
 import { festlegenOeffnen } from './Dialoge';
 
 /** Text eines Paragrafen; die Absätze der Fundstellen hervorgehoben, geänderte markiert */
@@ -80,17 +81,59 @@ function Gegenueberstellung({ alt, neu, absatz }: { alt: Paragraf | undefined; n
   );
 }
 
-/** Regel als eingerückter Baum („alle folgenden:“ / „mindestens eines davon:“) */
-function Baum({ k }: { k: KurzKnoten }) {
-  if (!k.kinder) return <li>{k.text}</li>;
+const STAND: Record<'ja' | 'nein' | 'offen', { zeichen: string; wort: string }> = {
+  ja: { zeichen: '✓', wort: 'trifft zu' },
+  nein: { zeichen: '✗', wort: 'trifft nicht zu' },
+  offen: { zeichen: '?', wort: 'offen' },
+};
+
+function Stand({ w }: { w?: KurzKnoten['w'] }) {
+  if (!w) return null;
+  return (
+    <span className={`br-stand br-stand-${w}`} title={STAND[w].wort}>
+      <span aria-hidden="true">{STAND[w].zeichen}</span>
+      <span className="br-unsichtbar">{STAND[w].wort}: </span>
+    </span>
+  );
+}
+
+/**
+ * Regel als eingerückter Baum mit Stand je Knoten (✓ trifft zu, ✗ nicht, ? offen) und dem aktuellen Wert je Blatt.
+ * Entschiedene Unterzweige sind zugeklappt, offene aufgeklappt – so sieht man, was fehlt.
+ */
+function Baum({ k, tiefe = 0 }: { k: KurzKnoten; tiefe?: number }) {
+  if (!k.kinder)
+    return (
+      <li>
+        <Stand w={k.w} />
+        {k.text}
+        {k.ist && <span className="br-ist"> – jetzt: {k.ist}</span>}
+      </li>
+    );
+  const liste = (
+    <ul>
+      {k.kinder.map((x, i) => (
+        <Baum key={i} k={x} tiefe={tiefe + 1} />
+      ))}
+    </ul>
+  );
+  if (tiefe < 2)
+    return (
+      <li>
+        <Stand w={k.w} />
+        {k.text}
+        {liste}
+      </li>
+    );
   return (
     <li>
-      {k.text}
-      <ul>
-        {k.kinder.map((x, i) => (
-          <Baum key={i} k={x} />
-        ))}
-      </ul>
+      <details open={k.w === 'offen' || !k.w}>
+        <summary>
+          <Stand w={k.w} />
+          {k.text} <span className="br-leise">({k.kinder.length})</span>
+        </summary>
+        {liste}
+      </details>
     </li>
   );
 }
@@ -114,6 +157,8 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   useEffect(() => {
     if (aufgehoben && aufgehoben.id !== auswahl) setAufgehoben(null);
   }, [auswahl, aufgehoben]);
+  // alt/neu gilt nur für den Paragrafen, an dem es eingeschaltet wurde
+  useEffect(() => setVergleich(false), [auswahl]);
   useEffect(() => {
     if (aufgehoben) festlegenKnopf.current?.focus();
   }, [aufgehoben]);
@@ -128,7 +173,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
               <dt>
                 <AmpelMarke ampel={a} />
               </dt>
-              <dd>{AMPEL_LANG[a]}</dd>
+              <dd>{AMPEL_ERKLAERUNG[a]}</dd>
             </div>
           ))}
         </dl>
@@ -144,7 +189,8 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   const einheit = einheitName(p.paragraf, p.titel);
   const titel = `${einheit.nr || paragrafName(p.paragraf)} ${norm.def.kurz}`;
   // „Festlegung überholt“ steht als Meldung oben – nicht noch einmal als Grund
-  const gruende = p.ueberholt ? p.gruende.filter((g) => !g.startsWith('Festlegung „entfällt“ überholt')) : p.gruende;
+  const gruende = p.gruende.filter((g) => !(p.ueberholt && g.startsWith('Festlegung „entfällt“ überholt')) && !(p.unwirksam && g.startsWith('Festlegung „entfällt“ noch nicht wirksam')));
+  const zeigeVergleich = vergleich && p.geaendert.length > 0 && !!t?.vorige;
   const aufheben = () => {
     if (!p.festlegung) return;
     setAufgehoben({ id: p.id, f: p.festlegung });
@@ -170,6 +216,12 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             <strong>Festlegung überholt:</strong> {p.ueberholt}. Bitte erneut festlegen oder aufheben.
           </div>
         )}
+        {!p.ueberholt && p.unwirksam && (
+          <div className="br-meldung br-meldung-info" role="status">
+            <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {p.unwirksam}. Bis dahin bleibt der Paragraf „prüfen“.{' '}
+            {isTauri() ? 'Mit „Rechtsstand prüfen“ (Menü „Mehr“) den Text an der Quelle holen; liegt er geprüft vor, zählt die Festlegung – wurde sie ohne Text getroffen, dann am Text erneut festlegen.' : 'Die Gesetzestexte gibt es nur in der Desktop-App – dort prüfen und festlegen.'}
+          </div>
+        )}
         <section>
           <h3>Begründung</h3>
           {p.festlegung && (
@@ -187,7 +239,9 @@ export function Detail({ stand }: { stand: Pruefstand }) {
           {p.hinweise.length > 0 && (
             <ul className="br-hinweise">
               {p.hinweise.map((h, i) => (
-                <li key={i}>{h}</li>
+                <li key={i}>
+                  <strong>Hinweis:</strong> {h}
+                </li>
               ))}
             </ul>
           )}
@@ -251,7 +305,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
               <summary>Regel im Einzelnen</summary>
               <ul className="br-regel-baum">
                 {p.regelteile.map((r) => (
-                  <Baum key={r.titel} k={{ text: `${r.titel}:`, kinder: [kurzBaum(r.kurz, ctx)] }} />
+                  <Baum key={r.titel} k={{ text: `${r.titel}:`, kinder: [kurzBaum(r.kurz, ctx, stand.auswertung.kontext)] }} />
                 ))}
               </ul>
             </details>
@@ -274,19 +328,19 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             </span>
           </div>
           {t?.fassung && <p className="br-leise">{t.fassung.fassung} · abgerufen {datum(t.fassung.abgerufen)}</p>}
-          {text && !vergleich && (
+          {text && !zeigeVergleich && (
             <p className="br-text-legende" aria-hidden="true">
               <span className="br-legende-hervor">Fundstelle der Regel</span>
               {geaendert.size > 0 && <span className="br-legende-geaendert">seit der Prüfung geändert</span>}
             </p>
           )}
-          {vergleich && t?.vorige
+          {zeigeVergleich && t?.vorige
             ? p.geaendert.map((g) => <Gegenueberstellung key={g} alt={t.vorige!.paragrafen[p.paragraf]} neu={text} absatz={g.split('/')[1] ?? ''} />)
             : text ? <ParagrafText p={text} absaetze={absaetze} geaendert={geaendert} /> : <p className="br-leise">{laedt ? 'Text wird geholt …' : norm.def.quelle.art === 'verweis' ? 'Nur Fundstelle – der Text ist nicht frei verfügbar.' : `Text nicht verfügbar${t?.fehler ? `: ${t.fehler}` : ' (Web-Version oder noch nicht geholt)'}.`}</p>}
         </section>
       </div>
       <footer className="br-detail-fuss">
-        <button type="button" className="primary" ref={festlegenKnopf} onClick={() => festlegenOeffnen(p)}>
+        <button type="button" ref={festlegenKnopf} onClick={() => festlegenOeffnen(p)}>
           {p.festlegung ? 'Festlegung ändern …' : 'Von Hand festlegen …'}
         </button>
         {p.festlegung && (
@@ -303,6 +357,8 @@ export function Detail({ stand }: { stand: Pruefstand }) {
               onClick={() => {
                 useBaurecht.getState().festlegungWiederherstellen(aufgehoben.id, aufgehoben.f);
                 setAufgehoben(null);
+                // der Knopf verschwindet – Fokus auf „Festlegung ändern …“
+                setTimeout(() => festlegenKnopf.current?.focus(), 0);
               }}
             >
               Rückgängig

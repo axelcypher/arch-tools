@@ -72,6 +72,8 @@ export interface Auswertung {
   /** Fakten-Definitionen (Katalog + Module) */
   faktDefs: Record<string, FaktDef>;
   text: TextKontext;
+  /** Auswertungskontext (Fakten, Merkmale, Ampeln anderer Paragrafen) – für „Regel im Einzelnen“ mit Stand */
+  kontext: KurzKontext;
 }
 
 /** Fakten-Definitionen aus Katalog und Modulen */
@@ -87,7 +89,15 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
   const agsUnsicher = !ags || (ags.sicherheit === 'hinweis' && !ags.bestaetigt) || !!ags.widerspruch;
   for (const m of module)
     for (const [id, d] of Object.entries(m.fakten ?? {})) {
-      if (out[id] && out[id].herkunft !== 'modul') continue;
+      if (out[id] && out[id].herkunft !== 'modul') {
+        // Angabe von Hand gegen einen Wert, den ein Dienst über den Bezug liefert (z. B. „nicht im Denkmalbereich“ gegen
+        // einen Treffer des Denkmal-Dienstes): Widerspruch – wie beim Dienst am Fakt selbst
+        if (d.nach) {
+          const w = nachWiderspruch(d.nach, out[d.nach.fakt], out[id]);
+          if (w && !out[id].widerspruch) out[id] = { ...out[id], widerspruch: w };
+        }
+        continue;
+      }
       if (d.wert !== undefined)
         out[id] =
           m.ebene !== 'bund' && agsUnsicher
@@ -102,6 +112,9 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
         // Werte der Gebietsmodule hängen am Gemeindeschlüssel, auch wenn sie aus einem anderen Fakt abgeleitet sind;
         // Tabellen, deren Werte von der Lage im Gemeindegebiet abhängen, sind immer nur Hinweis
         const unsicher = (basis.sicherheit === 'hinweis' && !basis.bestaetigt) || (m.ebene !== 'bund' && agsUnsicher) || !!d.nach.hinweis;
+        // eigene Bestätigung des Tabellenwerts (mit Beleg, z. B. Auskunft der Behörde): gilt, solange die Tabelle
+        // denselben Wert liefert
+        const bestaetigt = fakten[id]?.herkunft === 'modul' && fakten[id].bestaetigt && fakten[id].wert === v ? fakten[id].bestaetigt : undefined;
         if (v !== undefined)
           out[id] = {
             wert: v,
@@ -110,10 +123,24 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
             sicherheit: unsicher ? 'hinweis' : 'sicher',
             ...(unsicher ? { grund: d.nach.hinweis ? `Tabelle nach ${d.nach.fakt === 'lage.ags' ? 'Gemeinde' : d.nach.fakt} – hängt von der Lage ab, bitte prüfen` : (basis.grund ?? 'abgeleitet aus einem nicht gesicherten Wert') } : {}),
             ...(basis.widerspruch ? { widerspruch: basis.widerspruch } : {}),
+            ...(bestaetigt ? { bestaetigt } : {}),
           };
       }
     }
   return out;
+}
+
+/** Widerspruch einer Angabe von Hand zu dem Wert, den ein Dienst über den Bezug einer Tabelle ergäbe */
+function nachWiderspruch(nach: NonNullable<FaktDef['nach']>, basis: FaktWert | undefined, f: FaktWert): string | undefined {
+  if (!basis) return undefined;
+  if (basis.widerspruch) return basis.widerspruch;
+  const dienst = basis.herkunft === 'geodienst' ? { wert: basis.wert, sicherheit: basis.sicherheit, quelle: basis.quelle } : basis.dienst;
+  if (!dienst || dienst.wert == null) return undefined;
+  // ein bloßes „kein Treffer“ (Hinweis) widerspricht nicht
+  if (dienst.wert === false && dienst.sicherheit === 'hinweis') return undefined;
+  const v = nach.tabelle[String(dienst.wert)] ?? nach.sonst;
+  if (v === undefined || v === f.wert) return undefined;
+  return `${dienst.quelle ?? 'Geodienst'} ergibt „${v === true ? 'ja' : v === false ? 'nein' : String(v)}“ (über ${nach.fakt})`;
 }
 
 const zaehlerLeer = (): Record<Ampel, number> => ({ rot: 0, gelb: 0, gruen: 0 });
@@ -160,7 +187,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const p = ergebnisse.get(id) ?? paragraf(id);
       // eine bestätigte, nicht überholte Festlegung zählt – aber nur als Hinweis (eine Entscheidung von Hand trägt kein
       // automatisches „entfällt“ weiter); Entwürfe und überholte Festlegungen zählen nicht
-      if (p.festlegung?.bestaetigt && !p.ueberholt) return { ampel: p.festlegung.ampel, unsicher: true };
+      if (p.festlegung?.bestaetigt && !p.ueberholt && !p.unwirksam) return { ampel: p.festlegung.ampel, unsicher: true };
       // beruht die automatische Ampel auf Hinweisen, ist auch der Verweis darauf nur ein Hinweis
       return { ampel: p.automatisch, ...(p.unsicher.length ? { unsicher: true } : {}) };
     },
@@ -258,9 +285,13 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     } else {
       ampel = 'gelb';
       const fehlt = [...new Set([...g.offen, ...gilt.offen])];
-      const fehltText = fehlt.map((o) => offenFrage(o, text)).join(' · ') || 'Angaben';
+      // fehlende Angaben als Fragen; offene Paragrafen, an denen die Regel hängt, als „hängt an“ (nicht „es fehlt“)
+      const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
+      const haengt = fehlt.filter((o) => o.startsWith('paragraf:'));
+      const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenFrage(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} (dort offen)` : ''].filter(Boolean);
+      const satz = teile.join('; ') || 'es fehlt: Angaben';
       // kein Punkt nach einer Frage („… (LINFOS-Kennung)?“)
-      gruende.push(`Offen – es fehlt: ${fehltText}${/[?.!]$/.test(fehltText) ? '' : '.'}`);
+      gruende.push(`Offen – ${satz}${/[?.!)]$/.test(satz) && !satz.endsWith('(dort offen)') ? '' : '.'}`);
       tragend = [g, gilt];
     }
 
@@ -274,15 +305,16 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     // zur sicheren Seite
     if (ampel === 'gruen') {
       const herab: string[] = [];
-      // Einzelfall macht Grün nur gelb, wenn die Regel sagt, wann (sonst nur Hinweis bei Rot)
+      // „entfällt mit der Norm“ hängt am Anwendungsbereich – auch der muss an der geltenden Fassung geprüft sein
+      const mitNorm = g.w === 'nein';
+      // Einzelfall macht Grün nur gelb, wenn die Regel sagt, wann (sonst nur Hinweis bei Rot) – und nur, wenn die Norm
+      // überhaupt gilt: außerhalb ihres Anwendungsbereichs (z. B. außerhalb der Altstadt) gibt es keinen Einzelfall;
       // … und auch dann, wenn das „nein“ nur auf Hinweisen oder widersprüchlichen Angaben beruht
-      if (r.pruefen?.wenn && (pruef.w !== 'nein' || pruef.unsicher?.length || pruef.widerspruch?.length)) herab.push(`Einzelfall: ${r.pruefen.grund}`);
+      if (!mitNorm && r.pruefen?.wenn && (pruef.w !== 'nein' || pruef.unsicher?.length || pruef.widerspruch?.length)) herab.push(`Einzelfall: ${r.pruefen.grund}`);
       if (r.gruenNurVonHand) herab.push('Kann nur von Hand ausgeschlossen werden (z. B. nach Prüfung vor Ort).');
       if (geaendert.length) herab.push(`Text seit der Prüfung der Regel geändert (${geaendert.map(fundstelleName).join(', ')}) – Regel noch nicht nachgezogen.`);
       if (unsicher.length) herab.push(`Nur Hinweis, nicht gesichert: ${unsicher.map((u) => offenText(u, text)).join(', ')}.`);
       if (widerspruch.length) herab.push(`Widerspruch: ${widerspruch.map((w) => offenText(w, text)).join(', ')} – Angaben widersprechen einander (Merkmal/Modell bzw. von Hand/Geodienst).`);
-      // „entfällt mit der Norm“ hängt am Anwendungsbereich – auch der muss an der geltenden Fassung geprüft sein
-      const mitNorm = g.w === 'nein';
       const ns = normStand(n);
       const pruefbar = mitNorm ? ns.hatStand : !!(r.stand && Object.keys(r.stand).length);
       if (mitNorm && ns.geaendert) herab.push('Text der Norm seit der Prüfung der Regeln geändert – ob der Anwendungsbereich gleich geblieben ist, ist offen.');
@@ -312,6 +344,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     const automatisch = ampel;
     const fl = e.festlegungen[id];
     let ueberholt: string | undefined;
+    let unwirksam: string | undefined;
     if (fl) {
       ampel = fl.ampel;
       const gruende2: string[] = [];
@@ -324,21 +357,32 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
           const vorher = fl.sicherheit?.[f] ?? 'sicher';
           const nun = faktStatus(fakten[f]);
           if (nun !== vorher && nun !== 'sicher') gruende2.push(`${offenText(f, text)} jetzt ${nun === 'widerspruch' ? 'widersprüchlich' : 'nur Hinweis'}`);
+        } else if (f.startsWith('merkmal:') && jetzt !== null) {
+          // Merkmal mit gleichem Wert, das inzwischen den Geodaten bzw. dem Modell widerspricht
+          const vorher = fl.sicherheit?.[f] ?? 'sicher';
+          if (e.widersprueche?.has(f.slice(8)) && vorher !== 'widerspruch') gruende2.push(`${offenText(f, text)} jetzt widersprüchlich`);
         }
       }
       if (fassung) for (const [k, summe] of Object.entries(fl.stand ?? {})) if (fassung.summen[k] !== summe) gruende2.push(`Text von ${fundstelleName(k)} geändert`);
-      // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text
+      // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text. Fehlt der Systemstand,
+      // ist es „noch nicht wirksam“ (erneut festlegen hilft nicht); wurde ohne Text festgelegt und liegt er jetzt vor,
+      // ist es überholt (jetzt am Text erneut festlegen)
+      const system: string[] = [];
       if (fl.ampel === 'gruen' && r.stand && Object.keys(r.stand).length) {
-        if (!fassung) gruende2.push('Text der Norm nicht verfügbar');
+        if (!fassung) system.push('Text der Norm nicht verfügbar');
         else if (Object.keys(r.stand).some((k) => !fl.stand?.[k])) gruende2.push('Festlegung ohne geprüften Text getroffen – an der geltenden Fassung erneut festlegen');
-        else if (!n.stand?.geprueft || tageSeit(n.stand.geprueft, e.heute) > tageAlt) gruende2.push('Rechtsstand nicht aktuell an der Quelle bestätigt');
-        else if (n.stand?.ueberholtAb) gruende2.push(`zum Stichtag gilt schon die Fassung ab ${datumText(n.stand.ueberholtAb)}`);
+        else if (!n.stand?.geprueft || tageSeit(n.stand.geprueft, e.heute) > tageAlt) system.push('Rechtsstand nicht aktuell an der Quelle bestätigt');
+        else if (n.stand?.ueberholtAb) system.push(`zum Stichtag gilt schon die Fassung ab ${datumText(n.stand.ueberholtAb)}`);
       }
       if (gruende2.length) ueberholt = gruende2.join('; ');
-      // ein überholtes „entfällt“ trägt nicht mehr (zur sicheren Seite); strengere Festlegungen bleiben
+      if (system.length) unwirksam = system.join('; ');
+      // ein überholtes bzw. nicht wirksames „entfällt“ trägt nicht (zur sicheren Seite); strengere Festlegungen bleiben
       if (ueberholt && fl.ampel === 'gruen') {
         ampel = 'gelb';
         gruende.unshift(`Festlegung „entfällt“ überholt (${ueberholt}) – erneut festlegen oder aufheben.`);
+      } else if (unwirksam && fl.ampel === 'gruen') {
+        ampel = 'gelb';
+        gruende.unshift(`Festlegung „entfällt“ noch nicht wirksam (${unwirksam}) – sie zählt, sobald der Text geprüft vorliegt.`);
       }
     }
 
@@ -363,6 +407,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ...(r.verweise ? { verweise: r.verweise } : {}),
       ...(fl ? { festlegung: fl } : {}),
       ...(ueberholt ? { ueberholt } : {}),
+      ...(unwirksam ? { unwirksam } : {}),
       ...(n.datei ? { regel: { datei: n.datei.datei, version: n.datei.regel.version, fassung: n.datei.regel.fassung } } : {}),
       ...(def.annahme ? { annahme: def.annahme } : {}),
       bedingung: [
@@ -428,6 +473,6 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     }
   };
   const hinweise = e.module.flatMap((m) => (m.hinweise ?? []).filter(zeigen).map((h) => ({ ...h, modul: m.name })));
-  return { normen: normErgebnisse, paragrafen, zaehler, klaerung, hinweise, fakten, faktDefs, text };
+  return { normen: normErgebnisse, paragrafen, zaehler, klaerung, hinweise, fakten, faktDefs, text, kontext: ctx };
 }
 

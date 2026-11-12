@@ -8,7 +8,7 @@ import { ProjektWahl } from '@core/ui/ProjektWahl';
 import { aenderungenSpeichern, fehlerText, meldung } from '@core/ui/Rueckfrage';
 import { TitleBar } from '@core/ui/TitleBar';
 import { Angaben } from './components/Angaben';
-import { AmpelMarke, AMPEL_LANG } from './components/Ampel';
+import { AmpelMarke, AMPEL_ERKLAERUNG } from './components/Ampel';
 import { Detail } from './components/Detail';
 import type { FolgenRechner } from './components/Dialoge';
 import { BestaetigenDialog, bestaetigenFragen, FaktBestaetigenDialog, FestlegenDialog } from './components/Dialoge';
@@ -92,6 +92,20 @@ async function speichernLauf(): Promise<boolean> {
   }
 }
 
+/**
+ * Vor dem Verlassen (anderer Antrag, anderes Projekt, Beenden): true nur, wenn danach nichts Ungespeichertes bleibt.
+ * Wer im Bestätigen-Dialog „als Entwurf behalten“ wählt, bleibt – die Entwürfe gehen sonst stillschweigend verloren.
+ */
+export async function speichernVollstaendig(): Promise<boolean> {
+  const ok = await speichern();
+  if (!ok) return false;
+  if (istGeaendert(useBaurecht.getState())) {
+    await meldung('Entwürfe bleiben offen', 'Gespeichert ist alles außer den Entwürfen. Damit sie nicht verloren gehen, bleibt das Projekt geöffnet: bitte die Entwürfe beim Speichern bestätigen, aufheben oder ausdrücklich verwerfen („Nicht speichern“).');
+    return false;
+  }
+  return true;
+}
+
 /** Bereiche für F6 und die Sprungmarken */
 const BEREICHE = [
   { sel: '.br-kopf', titel: 'Kopf' },
@@ -135,7 +149,7 @@ function Start({ onWahl }: { onWahl: () => void }) {
               <dt>
                 <AmpelMarke ampel={a} />
               </dt>
-              <dd>{AMPEL_LANG[a]}</dd>
+              <dd>{AMPEL_ERKLAERUNG[a]}</dd>
             </div>
           ))}
         </dl>
@@ -149,7 +163,7 @@ function Start({ onWahl }: { onWahl: () => void }) {
             Projektdatei öffnen …
           </button>
         </div>
-        <p className="br-leise">Die Angaben kommen aus der Projektdatei (.oap) – Stammdaten, Antragsmerkmale aus Formulare, Festsetzungen aus dem GRZ-Nachweis, Geschosse aus dem Flächenrechner.</p>
+        <p className="br-leise">Die Angaben kommen aus der Projektdatei (.oap) – Stammdaten, Antragsmerkmale aus der App Formulare, Festsetzungen aus dem GRZ-Nachweis, Geschosse aus dem Flächenrechner.</p>
       </div>
     </div>
   );
@@ -188,7 +202,8 @@ export function App() {
     void texteLaden(stand.module, stand.einreichung);
   }, [project, modulSchluessel, stand.einreichung]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const speichernMitMeldung = useCallback(async () => speichern(), []);
+  // Titelleiste (Beenden, Rahmen-App): nur „gespeichert“, wenn keine Entwürfe übrig bleiben
+  const speichernMitMeldung = useCallback(async () => speichernVollstaendig(), []);
 
   // Strg+S speichern; F6 / Umschalt+F6 springt zwischen Kopf, Angaben, Vorschriften und Einzelheiten
   useEffect(() => {
@@ -210,12 +225,12 @@ export function App() {
   // anderer Antrag: ungespeicherte Festlegungen, Bestätigungen und Merkmale nicht stillschweigend verwerfen
   const antragWechseln = async (antrag: string) => {
     if (antrag === useBaurecht.getState().antrag) return;
-    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichern()))) return;
+    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig()))) return;
     useBaurecht.getState().antragWaehlen(antrag);
   };
 
   const projekteOeffnen = async () => {
-    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichern()))) return;
+    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig()))) return;
     setWahl(true);
   };
 
@@ -232,15 +247,17 @@ export function App() {
 
   const titel = (id: string) => {
     const p = stand.auswertung.paragrafen.find((x) => x.id === id);
-    return { titel: stand.auswertung.text.paragraf?.(id) ?? id, automatisch: p?.automatisch, ampel: p?.ampel, ueberholt: p?.ueberholt };
+    return { titel: stand.auswertung.text.paragraf?.(id) ?? id, automatisch: p?.automatisch, ampel: p?.ampel, ueberholt: p?.ueberholt ?? (p?.unwirksam ? `noch nicht wirksam: ${p.unwirksam}` : undefined) };
   };
   const faktTitel = (id: string) => stand.auswertung.faktDefs[id]?.titel ?? id;
+  const faktDef = (id: string) => stand.auswertung.faktDefs[id];
   // Folgen einer Angabe: Vorschau im Dialog (mit der Angabe gegenüber jetzt) …
   const folgen: FolgenRechner = (id, wert) => {
     const eigene = { ...useBaurecht.getState().pruefung.fakten };
     if (wert) eigene[id] = wert;
     else delete eigene[id];
-    return { herab: herabstufungen(stand.auswertung, auswertungMit(eigene)) };
+    const mit = auswertungMit(eigene);
+    return { herab: herabstufungen(stand.auswertung, mit), nachher: mit.fakten[id] };
   };
   // … und beim Speichern (jetzt gegenüber dem Stand der Datei)
   const folgenSeitDatei = (id: string) => {
@@ -279,9 +296,9 @@ export function App() {
               <Angaben stand={stand} />
             </BreitenLeiste>
             <Vorschriften stand={stand} />
-            <div className="br-leiste-rechts">
+            <BreitenLeiste schluessel="baurecht:leiste-einzelheiten" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1400 ? 360 : 420} min={320} max={680} griffLinks className="br-leiste-rechts">
               <Detail stand={stand} />
-            </div>
+            </BreitenLeiste>
           </div>
         </>
       ) : (
@@ -308,9 +325,9 @@ export function App() {
         />
       )}
       {protokoll && project && <Protokoll stand={stand} onClose={() => setProtokoll(false)} />}
-      <FestlegenDialog fakten={stand.auswertung.fakten} />
-      <FaktBestaetigenDialog folgen={folgen} />
-      <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} />
+      <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} />
+      <FaktBestaetigenDialog folgen={folgen} faktDef={faktDef} />
+      <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} faktDef={faktDef} />
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
     </div>
   );

@@ -8,7 +8,7 @@ import type { Auswertung } from '@core/baurecht/auswertung';
 import { auswerten } from '@core/baurecht/auswertung';
 import type { Paket } from '@core/baurecht/paket';
 import { faktenZurLage, lageKennung } from '@core/baurecht/geodienste';
-import { agsVorschlag, aktiveModule, fehlendeEbenen } from '@core/baurecht/paket';
+import { agsVorschlag, aktiveModule, fehlendeEbenen, regeldateiFuer } from '@core/baurecht/paket';
 import type { GebaeudeklasseAbleitung } from '@core/baurecht/projekt';
 import { gebaeudeklasseAbleiten, projektFakten, widersprueche } from '@core/baurecht/projekt';
 import type { Ampel, FaktWert, Modul } from '@core/baurecht/typen';
@@ -60,6 +60,8 @@ export interface Pruefstand {
   einreichung: string;
   gk: GebaeudeklasseAbleitung | null;
   widersprueche: string[];
+  /** Merkmale, die den Geodaten bzw. dem Modell widersprechen */
+  widerspruchMerkmale: string[];
 }
 
 /** die Auswertung zum aktuellen Stand (memoisiert) */
@@ -90,7 +92,7 @@ export function pruefstandBerechnen(
   const gk = project ? gebaeudeklasseAbleiten(project, { freistehend: (fakten['gebaeude.freistehend']?.wert as boolean | undefined) ?? null, landwirtschaft: (fakten['gebaeude.landwirtschaft']?.wert as boolean | undefined) ?? null }) : null;
   const w = widersprueche(merkmale, gk, fakten);
   const auswertung = auswerten({ paket, module, merkmale, fakten, einreichung, heute: heute(), texte: new Map(Object.entries(texte)), festlegungen, widersprueche: w.merkmale });
-  return { auswertung, module, fehlend: fehlendeEbenen(paket.module, ags), ags, einreichung, gk, widersprueche: w.texte };
+  return { auswertung, module, fehlend: fehlendeEbenen(paket.module, ags), ags, einreichung, gk, widersprueche: w.texte, widerspruchMerkmale: [...w.merkmale] };
 }
 
 const RANG = { rot: 2, gelb: 1, gruen: 0 } as const;
@@ -138,8 +140,9 @@ export async function texteLaden(module: Modul[], stichtag: string, o: { aktuali
       if (n.norm.quelle.art === 'verweis') continue;
       try {
         // für alt/neu: die Prüfsummen der Regeln (Fassung, an der sie geprüft sind)
-        const regeln = st.paket.regeln.get(n.key);
-        const regelStand = Object.assign({}, ...Object.values(regeln?.[regeln.length - 1]?.regel.paragrafen ?? {}).map((p) => p.stand ?? {})) as Record<string, string>;
+        // die Regeldatei, die zum Stichtag gilt (nicht einfach die neueste – z. B. FStrG mit zwei Fassungen)
+        const regeln = regeldateiFuer(st.paket.regeln.get(n.key), undefined, stichtag);
+        const regelStand = Object.assign({}, ...Object.values(regeln?.regel.paragrafen ?? {}).map((p) => p.stand ?? {})) as Record<string, string>;
         const r = await rs(st.paket).fuer(n.norm, stichtag, { aktualisieren: o.aktualisieren, offline: !isTauri(), regelStand });
         if (nr !== lauf) return;
         useBaurecht.getState().textSetzen(n.key, { fassung: r.fassung, ...(r.vorige ? { vorige: r.vorige } : {}), ...(r.fehler ? { fehler: r.fehler } : {}), ...(r.kuenftige ? { kuenftige: r.kuenftige } : {}), ...(r.geprueft ? { geprueft: r.geprueft } : {}), ...(r.ueberholtAb ? { ueberholtAb: r.ueberholtAb } : {}), stichtag });

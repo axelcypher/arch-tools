@@ -322,7 +322,9 @@ export function widersprueche(merkmale: Record<string, string>, gk: Gebaeudeklas
   const texte: string[] = [];
   // Planungsrecht gegen Geodaten und Stammdaten: die Grenze Innen-/Außenbereich ist die typische Fehleinordnung
   const pr = merkmale['Planungsrecht'];
-  const ja = (id: string) => fakten[id]?.wert === true;
+  // „ja“ auch, wenn nur ein Dienst „ja“ meldet und die Angabe von Hand dagegen steht – der Widerspruch darf den Abgleich
+  // nicht aufheben
+  const ja = (id: string) => fakten[id]?.wert === true || fakten[id]?.dienst?.wert === true;
   const bplan = [fakten['planung.bplan_nr']?.wert, fakten['soest.bplan']?.wert].find((w) => typeof w === 'string' && w.trim());
   if ((pr === 'Innenbereich' || pr === 'Außenbereich') && bplan) {
     out.add('Planungsrecht');

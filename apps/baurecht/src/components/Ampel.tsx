@@ -8,6 +8,13 @@ export const AMPEL_LANG: Record<Ampel, string> = {
   gruen: 'Entfällt auf jeden Fall',
 };
 
+/** Erklärung neben der Marke (Legenden, Auswahl) – ohne das Wort der Marke zu wiederholen */
+export const AMPEL_ERKLAERUNG: Record<Ampel, string> = {
+  rot: 'muss beachtet und im Antrag berücksichtigt werden',
+  gelb: 'von Hand klären – eine Angabe fehlt oder es kommt auf den Einzelfall an',
+  gruen: 'auf jeden Fall nicht einschlägig',
+};
+
 /** Ampel als Punkt mit Wort */
 export function AmpelMarke({ ampel, klein = false, ohneText = false, vonHand = false }: { ampel: Ampel; klein?: boolean; ohneText?: boolean; vonHand?: boolean }) {
   return (

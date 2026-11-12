@@ -32,16 +32,16 @@ describe('Zustand der App', () => {
     expect(istGeaendert(useBaurecht.getState())).toBe(true);
     expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
     useBaurecht.getState().festlegungenBestaetigen(['bund/bnatschg/44']);
-    expect(offeneFestlegungen(useBaurecht.getState())).toEqual([]);
     const roh = aenderungenAnwenden(useBaurecht.getState().roh!);
     expect(merkmaleAusRoh(roh, 'BAUA 1')['Gebäudeklasse']).toBe('2');
     const p = baurechtAusRoh(roh).pruefungen['BAUA 1'];
     expect(p.festlegungen['bund/bnatschg/44']).toMatchObject({ ampel: 'gruen', automatisch: 'gelb', von: 'TP', stand: { '44/1': 'abcd1234' } });
     expect(p.festlegungen['bund/bnatschg/44'].bestaetigt).toMatch(/^\d{4}-/);
     expect(p.fakten['gebaeude.beheizt']).toMatchObject({ wert: true, herkunft: 'manuell' });
-    // nach dem Speichern gilt der neue Stand als unverändert
+    // nach dem Speichern gilt der neue Stand als unverändert, nichts ist mehr offen
     useBaurecht.getState().gespeichert(roh);
     expect(istGeaendert(useBaurecht.getState())).toBe(false);
+    expect(offeneFestlegungen(useBaurecht.getState())).toEqual([]);
   });
 
   it('Geodienst: Angaben von Hand bleiben (Widerspruch wird vermerkt), ein Treffer geht einem bestätigten „kein Treffer“ vor', () => {
@@ -135,6 +135,25 @@ describe('Zustand der App', () => {
     expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toBeUndefined();
     useBaurecht.getState().festlegungWiederherstellen('bund/bnatschg/44', f);
     expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toEqual(f);
+  });
+
+  it('Rückgängig nach dem Speichern: die Festlegung ist wieder Entwurf und braucht die zweite Bestätigung', () => {
+    const st = useBaurecht.getState();
+    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'Begehung am 03.11.2026 ohne Befund', 'TP', {}, {});
+    st.festlegungenBestaetigen(['bund/bnatschg/44']);
+    useBaurecht.getState().gespeichert(aenderungenAnwenden(useBaurecht.getState().roh!));
+    const f = structuredClone(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']);
+    expect(f.bestaetigt).toBeTruthy();
+    // aufheben und speichern (bestätigt), dann Rückgängig
+    useBaurecht.getState().festlegungAufheben('bund/bnatschg/44');
+    useBaurecht.getState().gespeichert(aenderungenAnwenden(useBaurecht.getState().roh!));
+    useBaurecht.getState().festlegungWiederherstellen('bund/bnatschg/44', f);
+    const jetzt = useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44'];
+    expect(jetzt.bestaetigt).toBeUndefined();
+    expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
+    // auch eine abweichende Festlegung mit altem „bestätigt“ gilt als offen
+    useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, festlegungen: { 'bund/bnatschg/44': f } } });
+    expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
   });
 
   it('anderer Antrag: eigene Prüfung, Merkmale neu gelesen', () => {

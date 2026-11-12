@@ -394,7 +394,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   background: var(--panel);
 }
 .br-leiste-rechts {
-  width: clamp(360px, 30vw, 480px);
   flex-shrink: 0;
   border-left: 1px solid var(--border);
   background: var(--panel);
@@ -868,8 +867,9 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   padding: 0 0 4px;
 }
 .br-paragraf {
+  /* breit: Titel gewichtiger als der Grund; schmal (Container): Grund unter dem Titel */
   display: grid;
-  grid-template-columns: 78px 64px minmax(140px, 1.1fr) minmax(0, 2fr);
+  grid-template-columns: 78px 64px minmax(200px, 1.3fr) minmax(0, 1fr);
   align-items: baseline;
   gap: 8px;
   width: 100%;
@@ -1167,6 +1167,12 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   color: var(--fehler-text);
   border: 1px solid var(--fehler-border);
 }
+/* Systemstand (kein Fehler der Festlegung): neutral */
+.br-meldung-info {
+  background: var(--accent-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
 .br-verwerfen {
   display: flex;
   align-items: center;
@@ -1361,7 +1367,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   }
 }
 
-@media (max-width: 1280px) {
+@container vorschriften (max-width: 900px) {
   .br-paragraf {
     grid-template-columns: 70px 56px minmax(0, 1fr);
   }
@@ -1487,4 +1493,69 @@ h2.br-detail-name {
 /* Protokoll-Tabellen: oben ausrichten (lange Listen von Paragrafen) */
 .br-protokoll .report-table td {
   vertical-align: top;
+}
+
+/* Stand je Knoten in „Regel im Einzelnen“ – Zeichen und Farbe, Wort für Screenreader */
+.br-stand {
+  display: inline-block;
+  width: 1.2em;
+  font-weight: 700;
+}
+.br-stand-ja {
+  color: var(--ok-text);
+}
+.br-stand-nein {
+  color: var(--fehler-text);
+}
+.br-stand-offen {
+  color: var(--warn-text);
+}
+.br-ist {
+  color: var(--br-leise-stark);
+  font-size: 12px;
+}
+.br-regel-baum details > summary {
+  cursor: pointer;
+  min-height: 24px;
+}
+
+/* lange Antragsnamen kürzen (voller Name im Tooltip) */
+.br-antrag-wahl {
+  max-width: 220px;
+  text-overflow: ellipsis;
+}
+.br-marke-knopf {
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  min-height: 24px;
+}
+.br-marke-knopf:hover:not(:disabled) {
+  background: var(--warn-bg);
+  text-decoration: underline;
+}
+
+.br-fakt-frage {
+  display: block;
+  font-weight: normal;
+  font-size: 12px;
+  color: var(--br-leise-stark);
+  margin-top: 1px;
+}
+
+/* Protokoll: Abstand zwischen Hinweis und Titel */
+.br-entwurf-hinweis {
+  margin-bottom: 14px;
+}
+
+/* Startfokus in Dialogen sichtbar, auch wenn der Dialog über Strg+S kam (dann greift :focus-visible nicht) */
+.modal input[type='checkbox']:focus,
+.modal input[type='radio']:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Einzelheiten ohne Auswahl (F6): Fokusrahmen im Stil der App */
+.br-detail:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
