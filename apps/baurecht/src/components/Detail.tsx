@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
-import { paragrafName } from '@core/baurecht/typen';
-import { offenText } from '@core/baurecht/kurz';
-import type { ParagrafErgebnis } from '@core/baurecht/typen';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { einheitName, paragrafName } from '@core/baurecht/typen';
+import type { KurzKnoten } from '@core/baurecht/kurz';
+import { kurzBaum, offenText } from '@core/baurecht/kurz';
+import type { Festlegung, ParagrafErgebnis } from '@core/baurecht/typen';
 import type { Paragraf } from '@core/recht/index';
 import { absaetze as absaetzeVon, absatzNummer } from '@core/recht/text';
 import { externOeffnen } from '@core/platform/links';
@@ -79,6 +80,21 @@ function Gegenueberstellung({ alt, neu, absatz }: { alt: Paragraf | undefined; n
   );
 }
 
+/** Regel als eingerückter Baum („alle folgenden:“ / „mindestens eines davon:“) */
+function Baum({ k }: { k: KurzKnoten }) {
+  if (!k.kinder) return <li>{k.text}</li>;
+  return (
+    <li>
+      {k.text}
+      <ul>
+        {k.kinder.map((x, i) => (
+          <Baum key={i} k={x} />
+        ))}
+      </ul>
+    </li>
+  );
+}
+
 const BEHOERDE: Record<string, string> = {
   ja: 'Prüft die Bauaufsicht im gewählten Verfahren.',
   nein: 'Prüft die Bauaufsicht nicht – gilt trotzdem (eigene Verantwortung der Entwurfsverfassenden).',
@@ -90,11 +106,20 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   const auswahl = useBaurecht((s) => s.auswahl);
   const texte = useBaurecht((s) => s.texte);
   const [vergleich, setVergleich] = useState(false);
+  // nach „Festlegung aufheben“: Rückgängig anbieten, Fokus auf „Von Hand festlegen …“
+  const [aufgehoben, setAufgehoben] = useState<{ id: string; f: Festlegung } | null>(null);
+  const festlegenKnopf = useRef<HTMLButtonElement>(null);
   const laedtListe = useBaurecht((s) => s.laedt);
   const p: ParagrafErgebnis | undefined = useMemo(() => stand.auswertung.paragrafen.find((x) => x.id === auswahl), [stand.auswertung.paragrafen, auswahl]);
+  useEffect(() => {
+    if (aufgehoben && aufgehoben.id !== auswahl) setAufgehoben(null);
+  }, [auswahl, aufgehoben]);
+  useEffect(() => {
+    if (aufgehoben) festlegenKnopf.current?.focus();
+  }, [aufgehoben]);
   if (!p)
     return (
-      <aside className="br-detail br-detail-leer" aria-label="Einzelheiten">
+      <aside className="br-detail br-detail-leer" aria-label="Einzelheiten" tabIndex={-1}>
         <h2>Einzelheiten</h2>
         <p>Paragraf in der Liste wählen: Begründung, beteiligte Angaben, Text in der maßgeblichen Fassung und Festlegung von Hand.</p>
         <dl className="br-legende">
@@ -116,13 +141,23 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   const absaetze = new Set(p.fundstellen.map((f) => f.split('/')[1] ?? ''));
   const geaendert = new Set(p.geaendert.map((g) => g.split('/')[1] ?? ''));
   const ctx = stand.auswertung.text;
-  const titel = `${paragrafName(p.paragraf)} ${norm.def.kurz}`;
+  const einheit = einheitName(p.paragraf, p.titel);
+  const titel = `${einheit.nr || paragrafName(p.paragraf)} ${norm.def.kurz}`;
+  // „Festlegung überholt“ steht als Meldung oben – nicht noch einmal als Grund
+  const gruende = p.ueberholt ? p.gruende.filter((g) => !g.startsWith('Festlegung „entfällt“ überholt')) : p.gruende;
+  const aufheben = () => {
+    if (!p.festlegung) return;
+    setAufgehoben({ id: p.id, f: p.festlegung });
+    useBaurecht.getState().festlegungAufheben(p.id);
+  };
   return (
-    <aside className="br-detail" aria-label={`Einzelheiten ${titel}`}>
+    <aside className="br-detail" aria-label={`Einzelheiten ${titel}`} tabIndex={-1}>
       <header className={`br-detail-kopf br-kopf-${p.ampel}`}>
         <div className="br-detail-titel">
-          <span className="br-detail-nr">{titel}</span>
-          <h2 className="br-detail-name">{p.titel || titel}</h2>
+          <span className="br-detail-nr">
+            {einheit.nr ? titel : norm.def.kurz}
+          </span>
+          <h2 className="br-detail-name">{einheit.titel || titel}</h2>
         </div>
         <div className="br-detail-ampel">
           <AmpelMarke ampel={p.ampel} />
@@ -145,7 +180,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             </p>
           )}
           <ul className="br-gruende">
-            {p.gruende.map((g, i) => (
+            {gruende.map((g, i) => (
               <li key={i}>{g}</li>
             ))}
           </ul>
@@ -211,12 +246,12 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             </p>
           )}
           {p.annahme && <p className="br-leise">Annahme: {p.annahme}</p>}
-          {p.bedingung?.length ? (
+          {p.regelteile?.length ? (
             <details className="br-regel-einzeln">
               <summary>Regel im Einzelnen</summary>
-              <ul>
-                {p.bedingung.map((b) => (
-                  <li key={b}>{b}</li>
+              <ul className="br-regel-baum">
+                {p.regelteile.map((r) => (
+                  <Baum key={r.titel} k={{ text: `${r.titel}:`, kinder: [kurzBaum(r.kurz, ctx)] }} />
                 ))}
               </ul>
             </details>
@@ -227,8 +262,8 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             <h3>Gesetzestext</h3>
             <span>
               {p.geaendert.length > 0 && t?.vorige && (
-                <button type="button" className="small" aria-pressed={vergleich} onClick={() => setVergleich(!vergleich)}>
-                  {vergleich ? 'Text' : 'alt/neu'}
+                <button type="button" className="small" aria-pressed={vergleich} onClick={() => setVergleich(!vergleich)} title="Fassung, an der die Regel geprüft ist, und geltende Fassung gegenüberstellen">
+                  alt/neu vergleichen
                 </button>
               )}{' '}
               {text?.url && (
@@ -251,13 +286,28 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         </section>
       </div>
       <footer className="br-detail-fuss">
-        <button type="button" className="primary" onClick={() => festlegenOeffnen(p)}>
+        <button type="button" className="primary" ref={festlegenKnopf} onClick={() => festlegenOeffnen(p)}>
           {p.festlegung ? 'Festlegung ändern …' : 'Von Hand festlegen …'}
         </button>
         {p.festlegung && (
-          <button type="button" className="danger" onClick={() => useBaurecht.getState().festlegungAufheben(p.id)}>
+          <button type="button" className="danger" onClick={aufheben}>
             Festlegung aufheben
           </button>
+        )}
+        {aufgehoben && !p.festlegung && (
+          <span className="br-aufgehoben" role="status">
+            Festlegung aufgehoben.{' '}
+            <button
+              type="button"
+              className="small"
+              onClick={() => {
+                useBaurecht.getState().festlegungWiederherstellen(aufgehoben.id, aufgehoben.f);
+                setAufgehoben(null);
+              }}
+            >
+              Rückgängig
+            </button>
+          </span>
         )}
       </footer>
     </aside>

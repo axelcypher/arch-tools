@@ -254,6 +254,8 @@ export interface ParagrafErgebnis {
   id: string;
   /** die Regel in Worten (Geltung, Tatbestand, Ausnahme, Einzelfall) – für „Regel im Einzelnen“ */
   bedingung?: string[];
+  /** dieselbe Bedingung als Regelteile (für die Darstellung als Baum) */
+  regelteile?: { titel: string; kurz: Kurz }[];
   modul: string;
   norm: string;
   paragraf: string;
@@ -315,6 +317,44 @@ export interface NormErgebnis {
  */
 export function paragrafName(nr: string): string {
   return /^\d/.test(nr) ? `§ ${nr}` : nr;
+}
+
+const vergleichbar = (s: string) => s.toLowerCase().replace(/ß/g, 'ss').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/[^a-z0-9]/g, '');
+
+/**
+ * Paragraf bzw. benannte Einheit (Satzungsteil, Liste, Gebiet) mit Titel – ohne Doppelung: „SO-060“ mit Titel
+ * „SO-060 Standortübungsplatz …“ nur einmal, ein Schlüssel wie „Massnahmenplan“ nicht neben „Maßnahmenplan“.
+ * `nr` ist leer bei benannten Einheiten, die im Titel stehen.
+ */
+export function einheitName(nr: string, titel?: string): { nr: string; titel: string } {
+  if (/^\d/.test(nr)) return { nr: `§ ${nr}`, titel: titel ?? '' };
+  if (!titel) return { nr: '', titel: nr };
+  const k = vergleichbar(nr);
+  if (vergleichbar(titel).startsWith(k)) return { nr: '', titel };
+  // Schlüssel in der Klammer am Ende („Naturschutzgebiete (Festsetzungen C.1)“): Klammer weg, Schlüssel vorn
+  const m = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(titel);
+  if (m && k.length >= 2 && vergleichbar(m[2]).includes(k)) return { nr: '', titel: `${nr} – ${m[1]}` };
+  return { nr: '', titel: `${nr} – ${titel}` };
+}
+
+/** Einheit mit Titel in einer Zeile: „§ 5 Zugänge“, „SO-060 Standortübungsplatz …“ */
+export function einheitVoll(nr: string, titel?: string): string {
+  const e = einheitName(nr, titel);
+  return [e.nr, e.titel].filter(Boolean).join(' ');
+}
+
+/** Titel einer Norm ohne angehängte Kurzform, wenn die schon im Titel steht („Landeswassergesetz (LWG)“ → „Landeswassergesetz“) */
+export function normTitel(def: { kurz: string; titel: string }): string {
+  const m = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(def.titel);
+  if (!m) return def.titel;
+  const [k, inner] = [vergleichbar(def.kurz), vergleichbar(m[2])];
+  return k && (inner.includes(k) || k.includes(inner)) ? m[1] : def.titel;
+}
+
+/** Titel mit Kurzform genau einmal: „Denkmalschutzgesetz (DSchG NRW)“ */
+export function normVoll(def: { kurz: string; titel: string }): string {
+  const t = normTitel(def);
+  return vergleichbar(t).includes(vergleichbar(def.kurz)) ? t : `${t} (${def.kurz})`;
 }
 
 /** Fundstelle in Worten: „6/1“ → „§ 6 Abs. 1“ */

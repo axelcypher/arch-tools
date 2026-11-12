@@ -141,7 +141,7 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
           <button type="button" onClick={zu}>
             Abbrechen
           </button>
-          <button type="button" className="primary" onClick={festlegen} aria-disabled={!ok}>
+          <button type="button" className="primary" onClick={festlegen}>
             Festlegen
           </button>
         </div>
@@ -318,7 +318,7 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
           <button type="button" onClick={zu}>
             Abbrechen
           </button>
-          <button type="button" className="primary" onClick={bestaetigen} aria-disabled={!ok || veraltet}>
+          <button type="button" className="primary" onClick={bestaetigen}>
             {ziel.modus === 'setzen' ? 'Übernehmen' : 'Bestätigen'}
           </button>
         </div>
@@ -365,12 +365,15 @@ export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: st
   const [geprueft, setGeprueft] = useState(false);
   useEffect(() => setGeprueft(false), [offen]);
   if (!offen || !antwort) return null;
-  const anzahl = offen.festlegungen.length + offen.fakten.length;
+  // getrennt gezählt: Festlegungen von Hand und gesicherte Angaben
+  const nf = offen.festlegungen.length;
+  const na = offen.fakten.length;
+  const teile = [nf ? (nf === 1 ? 'eine Festlegung von Hand' : `${nf} Festlegungen von Hand`) : '', na ? (na === 1 ? 'eine gesicherte Angabe' : `${na} gesicherte Angaben`) : ''].filter(Boolean);
   return (
     <Modal titel="Vor dem Speichern bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false}>
       <h3>Vor dem Speichern bestätigen</h3>
       <p>
-        Seit dem letzten Speichern {anzahl === 1 ? 'ist eine Festlegung bzw. Bestätigung' : `sind ${anzahl} Festlegungen bzw. Bestätigungen`} neu, geändert oder aufgehoben. Bitte noch einmal prüfen – alles steht mit Begründung und Namen im Prüfprotokoll.
+        Seit dem letzten Speichern {nf + na === 1 ? 'ist' : 'sind'} {teile.join(' und ')} neu, geändert oder aufgehoben. Bitte noch einmal prüfen – alles steht mit Begründung und Namen im Prüfprotokoll.
       </p>
       <ul className="br-bestaetigen-liste">
         {offen.festlegungen.map((id) => {
@@ -431,7 +434,6 @@ export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: st
               <div className="br-leise-stark">
                 {f.bestaetigt.von}: {f.bestaetigt.grund ?? '–'}
               </div>
-              {fo.herab.length > 0 && <div className="br-warn-text">Herabstufung ({fo.herab.length})</div>}
               <Folgen folgen={fo} />
             </li>
           );
@@ -444,8 +446,8 @@ export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: st
         <button type="button" onClick={() => antwort('abbrechen')}>
           Abbrechen
         </button>
-        <button type="button" onClick={() => antwort('ohne')} title="speichert alles andere mit dem bisherigen Stand dieser Angaben; sie bleiben als Entwurf offen">
-          Ohne diese Angaben speichern
+        <button type="button" onClick={() => antwort('ohne')} title="Speichert alles andere; für diese Angaben bleibt in der Datei der bisherige Stand. In der App bleiben sie als Entwurf erhalten.">
+          Speichern, diese als Entwurf behalten
         </button>
         <button type="button" className="primary" disabled={!geprueft} onClick={() => antwort('bestaetigen')}>
           Bestätigen und speichern

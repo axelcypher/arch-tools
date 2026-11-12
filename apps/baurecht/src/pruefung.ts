@@ -32,7 +32,7 @@ export function alleFakten(project: Project | null, eigeneRoh: Record<string, Fa
   // Gemeindeschlüssel aus der PLZ, wenn ein Gemeindemodul sie nennt – nur Vorschlag, bis er bestätigt ist
   if (project?.meta.adresse.plz) {
     const v = agsVorschlag(module, project.meta.adresse.plz);
-    if (v) basis['lage.ags'] = { wert: v, herkunft: 'abgeleitet', quelle: `PLZ ${project.meta.adresse.plz}`, sicherheit: 'hinweis', grund: 'aus der Postleitzahl vorgeschlagen – bitte bestätigen oder über „Lage abfragen“ ermitteln', stand: heute() };
+    if (v) basis['lage.ags'] = { wert: v, herkunft: 'abgeleitet', quelle: `PLZ ${project.meta.adresse.plz}`, sicherheit: 'hinweis', grund: `aus der Postleitzahl vorgeschlagen – bitte bestätigen${isTauri() ? ' oder über „Lage abfragen“ ermitteln' : ''}`, stand: heute() };
   }
   const out = { ...basis };
   for (const [id, e] of Object.entries(eigene)) {

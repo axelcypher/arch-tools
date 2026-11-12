@@ -180,11 +180,35 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   );
 }
 
-const WAHL: { id: ThemeWahl; label: string; icon: string }[] = [
-  { id: 'system', label: 'wie System', icon: '◐' },
-  { id: 'hell', label: 'Hell', icon: '☀' },
-  { id: 'dunkel', label: 'Dunkel', icon: '☾' },
+const WAHL: { id: ThemeWahl; label: string }[] = [
+  { id: 'system', label: 'wie System' },
+  { id: 'hell', label: 'Hell' },
+  { id: 'dunkel', label: 'Dunkel' },
 ];
+
+/** Symbol des Farbschemas als SVG in 16 px (Glyphen wie ◐ fallen je nach Schrift winzig aus) */
+function SchemaSymbol({ id }: { id: ThemeWahl }) {
+  const p = { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, 'aria-hidden': true } as const;
+  if (id === 'hell')
+    return (
+      <svg {...p}>
+        <circle cx="8" cy="8" r="3" />
+        <path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3" strokeLinecap="round" />
+      </svg>
+    );
+  if (id === 'dunkel')
+    return (
+      <svg {...p}>
+        <path d="M13 9.6A5.5 5.5 0 0 1 6.4 3a5.5 5.5 0 1 0 6.6 6.6z" strokeLinejoin="round" />
+      </svg>
+    );
+  return (
+    <svg {...p}>
+      <circle cx="8" cy="8" r="5.5" />
+      <path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 
 export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean }) {
   const { wahl, setWahl, canvasDunkel, setCanvasDunkel } = useTheme();
@@ -204,7 +228,7 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
   return (
     <div className="titlebar-menu" ref={ref}>
       <button className="titlebar-btn titlebar-schema" title={`Farbschema: ${cur.label}`} aria-label={`Farbschema: ${cur.label}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span aria-hidden>{cur.icon}</span>
+        <SchemaSymbol id={cur.id} />
       </button>
       {open && (
         <div className="titlebar-dropdown" role="menu">
@@ -220,7 +244,10 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
                 setOpen(false);
               }}
             >
-              <span className="tb-icon">{w.icon}</span> {w.label}
+              <span className="tb-icon">
+                <SchemaSymbol id={w.id} />
+              </span>{' '}
+              {w.label}
             </button>
           ))}
           {zeichenflaeche && (

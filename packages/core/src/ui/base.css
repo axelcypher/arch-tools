@@ -109,20 +109,21 @@ body,
   width: auto !important;
 }
 .leiste-griff {
+  /* 10 px Greiffläche, die Linie in der Mitte */
   position: absolute;
   top: 0;
-  right: -3px;
-  width: 6px;
+  right: -5px;
+  width: 10px;
   height: 100%;
   cursor: col-resize;
   z-index: 3;
 }
 .leiste-griff:hover {
-  background: var(--accent-soft);
+  background: linear-gradient(to right, transparent 3px, var(--accent-soft) 3px, var(--accent-soft) 7px, transparent 7px);
   outline: none;
 }
 .leiste-griff:focus-visible {
-  background: var(--accent);
+  background: linear-gradient(to right, transparent 3px, var(--accent) 3px, var(--accent) 7px, transparent 7px);
   outline: none;
 }
 /* andere Browser (Web-Version): Standard-Eigenschaften */
@@ -1663,7 +1664,11 @@ input.feld-fehler:focus {
 }
 
 /* Farbschema-Knopf: Symbol gut erkennbar */
-.titlebar-schema span {
-  font-size: 15px;
-  line-height: 1;
+.titlebar-schema svg,
+.titlebar-dropdown .tb-icon svg {
+  display: block;
+}
+.titlebar-dropdown .tb-icon {
+  display: inline-flex;
+  vertical-align: -3px;
 }

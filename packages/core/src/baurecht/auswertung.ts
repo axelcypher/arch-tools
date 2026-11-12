@@ -18,7 +18,7 @@ import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { plusMonate } from '../recht/quellen';
 import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
-import { faktStatus, fundstelleName, paragrafName } from './typen';
+import { einheitVoll, faktStatus, fundstelleName, paragrafName } from './typen';
 
 export interface TextStand {
   fassung: Fassung | null;
@@ -140,7 +140,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const stand = e.texte.get(key);
       const datei = regeldateiFuer(e.paket.regeln.get(key), stand?.fassung?.gueltigAb, e.einreichung);
       normen.push({ modul: m, norm, key, datei, stand });
-      for (const [nr, r] of Object.entries(datei?.regel.paragrafen ?? {})) titelCache.set(`${key}/${nr}`, `${paragrafName(nr)} ${stand?.fassung?.paragrafen[nr]?.titel || r.titel || ''} ${m.normen[norm].kurz}`.replace(/\s+/g, ' ').trim());
+      for (const [nr, r] of Object.entries(datei?.regel.paragrafen ?? {})) titelCache.set(`${key}/${nr}`, `${einheitVoll(nr, stand?.fassung?.paragrafen[nr]?.titel || r.titel || '')} ${m.normen[norm].kurz}`.replace(/\s+/g, ' ').trim());
     }
 
   const ergebnisse = new Map<string, ParagrafErgebnis>();
@@ -258,7 +258,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     } else {
       ampel = 'gelb';
       const fehlt = [...new Set([...g.offen, ...gilt.offen])];
-      gruende.push(`Offen – es fehlt: ${fehlt.map((o) => offenFrage(o, text)).join(' · ') || 'Angaben'}.`);
+      const fehltText = fehlt.map((o) => offenFrage(o, text)).join(' · ') || 'Angaben';
+      // kein Punkt nach einer Frage („… (LINFOS-Kennung)?“)
+      gruende.push(`Offen – es fehlt: ${fehltText}${/[?.!]$/.test(fehltText) ? '' : '.'}`);
       tragend = [g, gilt];
     }
 
@@ -369,6 +371,12 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
         r.entfaellt ? `Entfällt, wenn: ${kurzText(r.entfaellt, text)}` : '',
         r.pruefen?.wenn ? `Einzelfall, wenn: ${kurzText(r.pruefen.wenn, text)}` : '',
       ].filter(Boolean),
+      regelteile: [
+        ...(n.datei?.regel.geltung ? [{ titel: 'Die Norm gilt, wenn', kurz: n.datei.regel.geltung }] : []),
+        ...(r.gilt ? [{ titel: 'Gilt, wenn', kurz: r.gilt }] : []),
+        ...(r.entfaellt ? [{ titel: 'Entfällt, wenn', kurz: r.entfaellt }] : []),
+        ...(r.pruefen?.wenn ? [{ titel: 'Einzelfall, wenn', kurz: r.pruefen.wenn }] : []),
+      ],
     };
     ergebnisse.set(id, ergebnis);
     return ergebnis;

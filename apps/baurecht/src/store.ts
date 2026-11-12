@@ -71,6 +71,8 @@ export interface Zustand {
   einreichungSetzen: (datum: string) => void;
   festlegen: (p: ParagrafErgebnis, ampel: Ampel, grund: string, von: string, summen: Record<string, string>, werte: Record<string, string | number | boolean | null>, sicherheit?: Festlegung['sicherheit']) => void;
   festlegungAufheben: (id: string) => void;
+  /** „Rückgängig“ nach dem Aufheben: die vorige Festlegung unverändert zurück */
+  festlegungWiederherstellen: (id: string, f: Festlegung) => void;
   festlegungenBestaetigen: (ids: string[]) => void;
   /** offene Festlegungen und Bestätigungen auf den Stand der Datei zurücksetzen („ohne diese speichern“) */
   aufDateistand: (festlegungen: string[], fakten: string[]) => void;
@@ -218,6 +220,11 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   festlegungAufheben: (id) => {
     const p = kopie(get().pruefung);
     delete p.festlegungen[id];
+    set({ pruefung: p });
+  },
+  festlegungWiederherstellen: (id, f) => {
+    const p = kopie(get().pruefung);
+    p.festlegungen[id] = kopie(f);
     set({ pruefung: p });
   },
   festlegungenBestaetigen: (ids) => {

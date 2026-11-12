@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { offenFrage } from '@core/baurecht/kurz';
 import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
-import { EBENEN, paragrafName } from '@core/baurecht/typen';
+import { EBENEN, einheitName, normVoll } from '@core/baurecht/typen';
 import { druckenAls } from '@core/platform/projektDatei';
 import { DruckKopf } from '@core/ui/DruckKopf';
 import { useEscSchliessen } from '@core/ui/Dialog';
@@ -12,6 +12,31 @@ import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } f
 import { AMPEL_TEXT, datum } from './Ampel';
 
 const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));
+
+/** Herkunft einer gesicherten Angabe in Worten – ohne die Hinweistexte der App („bitte bestätigen …“) */
+function herkunftText(f: FaktWert): string {
+  switch (f.herkunft) {
+    case 'geodienst':
+      return `Geodienst${f.quelle ? ` ${f.quelle}` : ''}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`;
+    case 'abgeleitet':
+      return `abgeleitet${f.quelle ? ` aus ${f.quelle}` : ''}`;
+    case 'flaechen':
+      return 'Flächenrechner (Modell)';
+    case 'grz':
+      return 'GRZ-Nachweis';
+    case 'stammdaten':
+      return 'Stammdaten des Projekts';
+    case 'merkmal':
+      return 'Antragsmerkmal';
+    case 'modul':
+      return `Regelmodul${f.quelle ? ` (${f.quelle})` : ''}`;
+    default:
+      return 'von Hand';
+  }
+}
+
+/** Entwurfsvermerk als Kopfzeile jeder Druckseite (im reservierten oberen Seitenrand, überdruckt keinen Text) */
+const ENTWURF_DRUCK = `@media print { @page { margin-top: 20mm; @top-center { content: 'ENTWURF – enthält nicht gespeicherte bzw. nicht bestätigte Angaben von Hand'; font: 700 14pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
 /** Modulstände sind Daten (JJJJ-MM-TT) – im Protokoll wie alle Daten als TT.MM.JJJJ */
 const stand = (v: string) => (/^\d{4}-\d\d-\d\d$/.test(v) ? datum(v) : v);
 
@@ -22,8 +47,8 @@ function ampelText(p: ParagrafErgebnis): string {
 }
 
 /**
- * Prüfprotokoll zum Drucken bzw. als PDF. Aufbau: Grundlagen, dann was zu tun ist (offene Punkte, Festlegungen von
- * Hand, bestätigte Angaben), dann alle Vorschriften je Ebene. „Prüfung abschließen“ legt einen Stand in der
+ * Prüfprotokoll zum Drucken bzw. als PDF. Aufbau: Grundlagen, Festlegungen von Hand und gesicherte Angaben, offene
+ * Punkte als Tabelle (was fehlt – Anzahl – Paragrafen), dann alle Vorschriften je Ebene. „Prüfung abschließen“ legt einen Stand in der
  * Projektdatei ab – erst, wenn nichts mehr Entwurf ist.
  */
 export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; onClose: () => void }) {
@@ -76,16 +101,17 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const vonHand = a.paragrafen.filter((p) => p.festlegung);
   const ausEntwurf = vonHand.filter((p) => !p.festlegung!.bestaetigt);
   const ueberholt = a.paragrafen.filter((p) => p.ueberholt && p.ampel !== 'gelb');
-  const bestaetigt = Object.entries(a.fakten).filter(([, f]) => f.bestaetigt);
+  const gesichert = Object.entries(a.fakten).filter(([, f]) => f.bestaetigt);
   // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
   const sperre = entwuerfe ? `Erst speichern: ${entwuerfe === 1 ? 'eine Angabe von Hand ist' : `${entwuerfe} Angaben von Hand sind`} noch Entwurf (zweite Bestätigung fehlt)` : ungespeichertGesamt ? 'Erst speichern: Es gibt ungespeicherte Änderungen' : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   const gruppen = new Map<string, ParagrafErgebnis[]>();
   for (const p of [...offen, ...ueberholt]) {
-    const k = p.ueberholt && p.ampel !== 'gelb' ? 'Festlegung überholt' : p.offen.length ? `Es fehlt: ${offenFrage(p.offen[0], a.text)}` : p.gruende[0].replace(/\s*\(.*$/, '');
+    const k = p.ueberholt && p.ampel !== 'gelb' ? 'Festlegung überholt – erneut festlegen oder aufheben' : p.offen.length ? offenFrage(p.offen[0], a.text) : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, '');
     gruppen.set(k, [...(gruppen.get(k) ?? []), p]);
   }
+  const titel = `Baurechtliche Prüfung vor dem Einreichen – ${antrag}`;
   const abschliessen = () => {
     if (sperre) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
@@ -95,17 +121,18 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const geo = [...new Set(Object.values(a.fakten).filter((f) => f.herkunft === 'geodienst' && f.quelle).map((f) => `${f.quelle}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`))];
   return (
     <div className="report-backdrop br-protokoll-hintergrund">
-      <div className="report br-protokoll" role="dialog" aria-modal="true" aria-labelledby="br-protokoll-titel" ref={fenster}>
-        {entwuerfe > 0 && (
-          <div className="br-entwurf-druck" aria-hidden="true">
-            ENTWURF – enthält nicht gespeicherte bzw. nicht bestätigte Angaben von Hand
-          </div>
-        )}
+      <div className="report br-protokoll" role="dialog" aria-modal="true" aria-label={titel} ref={fenster}>
+        {entwuerfe > 0 && <style>{ENTWURF_DRUCK}</style>}
         <div className="report-actions no-print br-protokoll-aktionen">
           <label className="toggle">
             <input type="checkbox" checked={nurRelevant} onChange={(e) => setNurRelevant(e.target.checked)} /> ohne „entfällt“
           </label>
           <span className="tb-spacer" />
+          {sperre && (
+            <span className="br-sperre" id="br-sperre-grund">
+              {sperre}
+            </span>
+          )}
           <button type="button" onClick={() => druckenAls({ datei, projektName: project.name, zusatz: `Baurecht ${antrag}` })}>
             Drucken / PDF …
           </button>
@@ -114,6 +141,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             className="primary"
             onClick={abschliessen}
             disabled={!!sperre}
+            aria-describedby={sperre ? 'br-sperre-grund' : undefined}
             title={sperre || 'Diesen Stand mit Fassungen und Ampeln in der Projektdatei ablegen (danach speichern)'}
           >
             Prüfung abschließen
@@ -127,8 +155,8 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             Entwurf: {entwuerfe === 1 ? 'Eine Angabe von Hand ist noch nicht gespeichert und bestätigt. Sie ist' : `${entwuerfe} Angaben von Hand sind noch nicht gespeichert und bestätigt. Sie sind`} unten als „Entwurf“ bzw. „noch nicht gespeichert“ gekennzeichnet; abschließen lässt sich die Prüfung erst nach dem Speichern.
           </p>
         )}
-        <DruckKopf titel={`Baurechtliche Prüfung vor dem Einreichen – ${antrag}`} project={project} stand={new Date()} />
-        <h2 id="br-protokoll-titel">Grundlagen</h2>
+        <DruckKopf titel={titel} project={project} stand={new Date()} />
+        <h2>Grundlagen</h2>
         <table className="report-table narrow">
           <tbody>
             <tr>
@@ -162,55 +190,101 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
         </table>
         {pruefstand.widersprueche.length > 0 && <p className="report-note">Widerspruch: {pruefstand.widersprueche.join('; ')}</p>}
 
-        <h2>Offene Punkte ({offen.length + ueberholt.length + ohneRegel.length})</h2>
-        {offen.length + ueberholt.length + ohneRegel.length ? (
-          <ul className="br-protokoll-liste">
-            {ohneRegel.length > 0 && (
-              <li>
-                <strong>Keine Regeldatei – von Hand beurteilen ({ohneRegel.length}):</strong> {ohneRegel.map((n) => `${n.def.titel} (${n.def.kurz})`).join(' · ')}
-              </li>
-            )}
-            {[...gruppen.entries()]
-              .sort((x, y) => y[1].length - x[1].length)
-              .map(([k, ps]) => (
-                <li key={k}>
-                  <strong>
-                    {k} – {ps.length === 1 ? '1 Paragraf' : `${ps.length} Paragrafen`}:
-                  </strong>{' '}
-                  {ps.map((p) => a.text.paragraf?.(p.id) ?? p.id).join(' · ')}
-                </li>
-              ))}
-          </ul>
-        ) : (
-          <p>Keine – alle Vorschriften sind eingeordnet.</p>
-        )}
         <h2>Festlegungen von Hand ({vonHand.length})</h2>
         {vonHand.length ? (
-          <ul className="br-protokoll-liste">
-            {vonHand.map((p) => (
-              <li key={p.id}>
-                <strong>{a.text.paragraf?.(p.id) ?? p.id}</strong>: {AMPEL_TEXT[p.festlegung!.ampel]} statt {AMPEL_TEXT[p.automatisch]} – {p.festlegung!.grund} ({p.festlegung!.von}, {datum(p.festlegung!.am)}
-                {p.festlegung!.bestaetigt ? ', bestätigt' : ''})
-                {!p.festlegung!.bestaetigt && <span className="br-entwurf-text"> – Entwurf</span>}
-              </li>
-            ))}
-          </ul>
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th style={{ width: '24%' }}>Paragraf</th>
+                <th style={{ width: '14%' }}>Festlegung</th>
+                <th>Begründung</th>
+                <th style={{ width: '18%' }}>von, am</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vonHand.map((p) => (
+                <tr key={p.id}>
+                  <td className="strong">{a.text.paragraf?.(p.id) ?? p.id}</td>
+                  <td>
+                    {AMPEL_TEXT[p.festlegung!.ampel]} <span className="report-meta">(automatisch: {AMPEL_TEXT[p.automatisch]})</span>
+                  </td>
+                  <td>
+                    {p.festlegung!.grund}
+                    {p.ueberholt ? ` – überholt: ${p.ueberholt}` : ''}
+                  </td>
+                  <td>
+                    {p.festlegung!.von}, {datum(p.festlegung!.am)}
+                    {p.festlegung!.bestaetigt ? ', bestätigt' : <span className="br-entwurf-text"> – Entwurf</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : (
           <p>Keine.</p>
         )}
-        <h2>Bestätigte Angaben ({bestaetigt.length})</h2>
-        {bestaetigt.length ? (
-          <ul className="br-protokoll-liste">
-            {bestaetigt.map(([id, f]) => (
-              <li key={id}>
-                <strong>{a.faktDefs[id]?.titel ?? id}</strong>: {wertText(f.wert)} – {f.herkunft === 'manuell' ? 'von Hand angegeben' : `bisher nur Hinweis (${f.grund ?? f.quelle ?? 'nicht gesichert'})`}; {f.herkunft === 'manuell' ? 'angegeben' : 'bestätigt'} von {f.bestaetigt!.von} am {datum(f.bestaetigt!.am)}
-                {f.bestaetigt!.grund ? `, gestützt auf: ${f.bestaetigt!.grund}` : ''}
-                {ungespeichert.has(id) && <span className="br-entwurf-text"> – noch nicht gespeichert</span>}
-              </li>
-            ))}
-          </ul>
+        <h2>Gesicherte Angaben ({gesichert.length})</h2>
+        {gesichert.length ? (
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th style={{ width: '24%' }}>Angabe</th>
+                <th style={{ width: '12%' }}>Wert</th>
+                <th style={{ width: '20%' }}>Herkunft</th>
+                <th>gestützt auf</th>
+                <th style={{ width: '18%' }}>gesichert von, am</th>
+              </tr>
+            </thead>
+            <tbody>
+              {gesichert.map(([id, f]) => (
+                <tr key={id}>
+                  <td className="strong">{a.faktDefs[id]?.titel ?? id}</td>
+                  <td>{wertText(f.wert)}</td>
+                  <td>{f.herkunft === 'manuell' ? 'von Hand angegeben' : herkunftText(f)}</td>
+                  <td>{f.bestaetigt!.grund || '–'}</td>
+                  <td>
+                    {f.bestaetigt!.von}, {datum(f.bestaetigt!.am)}
+                    {ungespeichert.has(id) && <span className="br-entwurf-text"> – noch nicht gespeichert</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : (
           <p>Keine.</p>
+        )}
+
+        <h2>Offene Punkte ({offen.length + ueberholt.length + ohneRegel.length})</h2>
+        {offen.length + ueberholt.length + ohneRegel.length ? (
+          <table className="report-table br-protokoll-offen">
+            <thead>
+              <tr>
+                <th style={{ width: '32%' }}>Was fehlt bzw. zu klären ist</th>
+                <th style={{ width: '8%' }}>Anzahl</th>
+                <th>Paragrafen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ohneRegel.length > 0 && (
+                <tr>
+                  <td className="strong">Keine Regeldatei – von Hand beurteilen</td>
+                  <td>{ohneRegel.length}</td>
+                  <td>{ohneRegel.map((n) => normVoll(n.def)).join(' · ')}</td>
+                </tr>
+              )}
+              {[...gruppen.entries()]
+                .sort((x, y) => y[1].length - x[1].length)
+                .map(([k, ps]) => (
+                  <tr key={k}>
+                    <td className="strong">{k}</td>
+                    <td>{ps.length}</td>
+                    <td>{ps.map((p) => a.text.paragraf?.(p.id) ?? p.id).join(' · ')}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>Keine – alle Vorschriften sind eingeordnet.</p>
         )}
 
         {EBENEN.map((e) => {
@@ -225,7 +299,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                 return (
                   <div key={n.id} className="br-protokoll-norm">
                     <h3>
-                      {n.def.titel} ({n.def.kurz}){' '}
+                      {normVoll(n.def)}{' '}
                       <span className="report-meta">
                         {n.fassung ? `– ${n.fassung.text}, abgerufen ${datum(n.fassung.abgerufen)}` : n.def.quelle.art === 'verweis' ? '– nur Fundstelle' : '– Text nicht abgerufen'}
                       </span>
@@ -240,17 +314,20 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                         </tr>
                       </thead>
                       <tbody>
-                        {ps.map((p) => (
+                        {ps.map((p) => {
+                          const e = einheitName(p.paragraf, p.titel);
+                          return (
                           <tr key={p.id} className={`br-zeile-${p.ampel}`}>
-                            <td>{paragrafName(p.paragraf)}</td>
-                            <td>{p.titel}</td>
+                            <td>{e.nr}</td>
+                            <td>{e.titel}</td>
                             <td className="strong">{ampelText(p)}</td>
                             <td>
                               {p.festlegung ? `${p.festlegung.grund} (${p.festlegung.von}, ${datum(p.festlegung.am)}; automatisch: ${AMPEL_TEXT[p.automatisch]})` : p.gruende.join(' ')}
                               {p.ueberholt ? ` – Festlegung überholt: ${p.ueberholt}` : ''}
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                         {n.ohneRegel && (
                           <tr>
                             <td colSpan={4}>Keine Regeldatei – von Hand beurteilen.</td>

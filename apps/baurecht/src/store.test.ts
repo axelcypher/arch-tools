@@ -100,6 +100,43 @@ describe('Zustand der App', () => {
     expect(jetzt.grund).toMatch(/seit der Bestätigung geändert/);
   });
 
+  it('gespeichert mit „seit“: Änderungen während des Schreibens bleiben in der App und gelten als ungespeichert', () => {
+    useBaurecht.getState().faktSetzen('gebaeude.beheizt', true, 'TP');
+    const vorher = useBaurecht.getState();
+    const seit = { pruefung: structuredClone(vorher.pruefung), merkmale: { ...vorher.merkmale } };
+    const roh = aenderungenAnwenden(vorher.roh!);
+    // während des Schreibens: weitere Angabe, Merkmal geändert, Einreichung gesetzt
+    useBaurecht.getState().faktSetzen('gebaeude.wohnungen', 3, 'TP');
+    useBaurecht.getState().merkmalSetzen('Gebäudeklasse', '3');
+    useBaurecht.getState().einreichungSetzen('2027-01-15');
+    useBaurecht.getState().gespeichert(roh, undefined, seit);
+    const s = useBaurecht.getState();
+    expect(s.pruefungDatei.fakten['gebaeude.beheizt']).toMatchObject({ wert: true });
+    expect(s.pruefungDatei.fakten['gebaeude.wohnungen']).toBeUndefined();
+    expect(s.pruefung.fakten['gebaeude.wohnungen']).toMatchObject({ wert: 3 });
+    expect(s.merkmale['Gebäudeklasse']).toBe('3');
+    expect(s.pruefung.einreichung).toBe('2027-01-15');
+    expect(istGeaendert(s)).toBe(true);
+  });
+
+  it('gespeichert ohne „seit“: der Stand der Datei gilt, nichts ist ungespeichert', () => {
+    useBaurecht.getState().faktSetzen('gebaeude.beheizt', true, 'TP');
+    const roh = aenderungenAnwenden(useBaurecht.getState().roh!);
+    useBaurecht.getState().gespeichert(roh);
+    expect(useBaurecht.getState().pruefung.fakten['gebaeude.beheizt']).toMatchObject({ wert: true });
+    expect(istGeaendert(useBaurecht.getState())).toBe(false);
+  });
+
+  it('aufgehobene Festlegung lässt sich unverändert wiederherstellen (Rückgängig)', () => {
+    const st = useBaurecht.getState();
+    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'Begehung am 03.11.2026 ohne Befund', 'TP', { '44/1': 'abcd1234' }, {});
+    const f = structuredClone(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']);
+    useBaurecht.getState().festlegungAufheben('bund/bnatschg/44');
+    expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toBeUndefined();
+    useBaurecht.getState().festlegungWiederherstellen('bund/bnatschg/44', f);
+    expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toEqual(f);
+  });
+
   it('anderer Antrag: eigene Prüfung, Merkmale neu gelesen', () => {
     useBaurecht.getState().faktSetzen('gebaeude.beheizt', true, 'TP');
     useBaurecht.getState().antragWaehlen('BAUA 2');

@@ -240,6 +240,30 @@ export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe
   return '';
 }
 
+/** Knoten der Regel als Baum: Blatt in Worten oder „alle“/„eines“/„nicht“ mit Unterpunkten */
+export interface KurzKnoten {
+  text: string;
+  kinder?: KurzKnoten[];
+}
+
+/** Regel als eingerückter Baum statt verschachtelter Klammern (für „Regel im Einzelnen“) */
+export function kurzBaum(k: Kurz | undefined, t: TextKontext, tiefe = 0): KurzKnoten {
+  if (!k || tiefe > 20) return { text: '' };
+  if ('$' in k) return t.bausteine[k.$] ? kurzBaum(t.bausteine[k.$], t, tiefe + 1) : { text: k.$ };
+  if ('und' in k || 'oder' in k) {
+    const roh = 'und' in k ? einebnen('und', k.und, t) : zusammenfassen(einebnen('oder', k.oder, t));
+    const kinder = roh.map((x) => kurzBaum(x, t, tiefe + 1)).filter((x) => x.text || x.kinder?.length);
+    if (kinder.length === 1) return kinder[0];
+    if (!kinder.length) return { text: 'und' in k ? 'immer' : 'nie' };
+    return { text: 'und' in k ? 'alle folgenden:' : 'mindestens eines davon:', kinder };
+  }
+  if ('nicht' in k && !('m' in k)) {
+    const innen = kurzBaum(k.nicht, t, tiefe + 1);
+    return innen.kinder ? { text: 'nicht zutreffend:', kinder: [innen] } : { text: `nicht: ${innen.text}` };
+  }
+  return { text: kurzText(k, t, true, tiefe) };
+}
+
 /** fehlende Angabe in Worten – bei Fakten die Frage, wenn es eine gibt („Gilt eine Veränderungssperre?“) */
 export function offenText(id: string, t: TextKontext): string {
   if (id.startsWith('merkmal:')) return MERKMAL_TITEL[id.slice(8)] ?? id.slice(8);

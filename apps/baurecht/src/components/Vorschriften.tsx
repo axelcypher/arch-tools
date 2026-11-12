@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Ampel, NormErgebnis, ParagrafErgebnis } from '@core/baurecht/typen';
-import { EBENEN, paragrafName, THEMEN } from '@core/baurecht/typen';
+import { EBENEN, einheitName, normTitel, paragrafName, THEMEN } from '@core/baurecht/typen';
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
 import { AMPEL_TEXT, AmpelMarke, datum } from './Ampel';
@@ -40,7 +40,7 @@ function VonHand({ p }: { p: ParagrafErgebnis }) {
 }
 
 function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis; gewaehlt: boolean; tabStop: boolean; onFokus: () => void }) {
-  const nummer = /^\d/.test(p.paragraf);
+  const e = einheitName(p.paragraf, p.titel);
   return (
     <li>
       <button
@@ -54,10 +54,10 @@ function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis;
       >
         <AmpelMarke ampel={p.ampel} klein vonHand={!!p.festlegung} />
         {/* Paragrafen mit Nummer in der Spalte; benannte Einheiten (Satzungen, Listen) stehen im Titel – nicht doppelt */}
-        <span className="br-paragraf-nr">{nummer ? paragrafName(p.paragraf) : ''}</span>
+        <span className="br-paragraf-nr">{e.nr}</span>
         <span className="br-paragraf-kopf">
           <span className="br-paragraf-titel" lang="de">
-            {nummer ? p.titel || '–' : p.titel && p.titel.startsWith(p.paragraf) ? p.titel : `${p.paragraf}${p.titel ? ` – ${p.titel}` : ''}`}
+            {e.titel || '–'}
           </span>
           <span className="br-paragraf-marken">
             <VonHand p={p} />
@@ -84,8 +84,10 @@ function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis;
   );
 }
 
-/** Zähler einer Norm – als Wörter, nicht nur als Farbe */
-function Zaehler({ z }: { z: Record<Ampel, number> }) {
+/** Zähler einer Norm – als Wörter, nicht nur als Farbe; gezählt werden die sichtbaren Zeilen („von 25“, wenn gefiltert) */
+function Zaehler({ sichtbar, gesamt }: { sichtbar: ParagrafErgebnis[]; gesamt: number }) {
+  const z = { rot: 0, gelb: 0, gruen: 0 };
+  for (const p of sichtbar) z[p.ampel]++;
   return (
     <span className="br-zaehler">
       {AMPELN.map((a) =>
@@ -95,6 +97,7 @@ function Zaehler({ z }: { z: Record<Ampel, number> }) {
           </span>
         ) : null,
       )}
+      {sichtbar.length < gesamt && <span className="br-zaehler-von">von {gesamt}</span>}
     </span>
   );
 }
@@ -128,10 +131,10 @@ function NormKarte({
           {offen ? '▾' : '▸'}
         </span>
         <span className="br-norm-name" id={id}>
-          <strong>{n.def.kurz}</strong> <span className="br-leise">{n.def.titel}</span>
+          <strong>{n.def.kurz}</strong> <span className="br-leise">{normTitel(n.def)}</span>
           {n.geltung === 'nein' && <span className="br-norm-entfaellt-text"> · Norm berührt das Vorhaben nicht</span>}
         </span>
-        <Zaehler z={n.zaehler} />
+        <Zaehler sichtbar={sichtbar} gesamt={n.paragrafen.length} />
       </button>
       {offen && (
         <div className="br-norm-inhalt">
@@ -172,6 +175,12 @@ function NormKarte({
     </section>
   );
 }
+
+const ORDNUNGEN = [
+  ['offen', 'offen zuerst'],
+  ['ebene', 'nach Ebene'],
+  ['thema', 'nach Thema'],
+] as const;
 
 const GRUPPE_OFFEN: { id: Ampel; titel: string }[] = [
   { id: 'gelb', titel: 'Prüfen – von Hand klären' },
@@ -233,6 +242,46 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   useEffect(() => {
     if (auswahl) setFokus(`p:${auswahl}`);
   }, [auswahl]);
+  // anderer Ordnung: die gewählte Zeile mittig einblenden, sonst an den Anfang
+  const ersterLauf = useRef(true);
+  useEffect(() => {
+    if (ersterLauf.current) {
+      ersterLauf.current = false;
+      return;
+    }
+    const l = liste.current;
+    const zeile = auswahl ? l?.querySelector<HTMLElement>(`[data-roving="p:${CSS.escape(auswahl)}"]`) : null;
+    if (zeile) zeile.scrollIntoView({ block: 'center' });
+    else if (l) l.scrollTop = 0;
+  }, [w.gruppierung]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Filter-Menü (schmal): mit Esc bzw. Klick daneben schließen
+  const menue = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const zu = (e: Event) => {
+      const m = menue.current;
+      if (!m?.open) return;
+      if (e instanceof globalThis.KeyboardEvent ? e.key === 'Escape' : !m.contains(e.target as Node)) {
+        m.open = false;
+        if (e instanceof globalThis.KeyboardEvent) m.querySelector('summary')?.focus();
+      }
+    };
+    document.addEventListener('mousedown', zu);
+    document.addEventListener('keydown', zu);
+    return () => {
+      document.removeEventListener('mousedown', zu);
+      document.removeEventListener('keydown', zu);
+    };
+  }, []);
+  const kaesten = (
+    <>
+      <label className="toggle">
+        <input type="checkbox" checked={nurHand} onChange={(e) => setNurHand(e.target.checked)} /> nur von Hand festgelegte
+      </label>
+      <label className="toggle">
+        <input type="checkbox" checked={nurGeaendert} onChange={(e) => setNurGeaendert(e.target.checked)} /> nur geänderte/überholte
+      </label>
+    </>
+  );
   const taste = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
     const el = [...(liste.current?.querySelectorAll<HTMLButtonElement>('[data-roving]') ?? [])];
@@ -249,6 +298,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   return (
     <main className="br-vorschriften" aria-label="Vorschriften">
       <div className="br-filter" role="group" aria-label="Ergebnis und Filter">
+        <div className="br-filter-zeile">
         <span className="br-segment br-bilanz" role="group" aria-label="Ergebnis – Ampeln ein- und ausblenden">
           {AMPELN.map((a) => {
             const an = w.ampeln.includes(a);
@@ -281,31 +331,35 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
             <span key={a} className={`br-balken-${a}`} style={{ width: `${(zaehler[a] / summe) * 100}%` }} />
           ))}
         </span>
-        <span className="br-segment br-ordnung" role="group" aria-label="Ordnung">
-          {(
-            [
-              ['offen', 'offen zuerst'],
-              ['ebene', 'nach Ebene'],
-              ['thema', 'nach Thema'],
-            ] as const
-          ).map(([g, t]) => (
+        {/* breit: Segmente; schmal (Container unter 640 px): Auswahlliste */}
+        <span className="br-segment br-ordnung br-nur-breit" role="group" aria-label="Ordnung">
+          {ORDNUNGEN.map(([g, t]) => (
             <button key={g} type="button" className={w.gruppierung === g ? 'active' : ''} aria-pressed={w.gruppierung === g} onClick={() => setze({ ...w, gruppierung: g })}>
               {t}
             </button>
           ))}
         </span>
-        <span className="br-filter-zeile2">
+        <select className="br-ordnung-wahl br-nur-schmal" value={w.gruppierung} onChange={(e) => setze({ ...w, gruppierung: e.target.value as Gruppierung })} aria-label="Ordnung">
+          {ORDNUNGEN.map(([g, t]) => (
+            <option key={g} value={g}>
+              {t}
+            </option>
+          ))}
+        </select>
+        </div>
+        <div className="br-filter-zeile2">
           <input className="br-suchfeld" type="search" placeholder="§ oder Stichwort …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Vorschriften durchsuchen" />
-          <label className="toggle">
-            <input type="checkbox" checked={nurHand} onChange={(e) => setNurHand(e.target.checked)} /> nur von Hand festgelegte
-          </label>
-          <label className="toggle">
-            <input type="checkbox" checked={nurGeaendert} onChange={(e) => setNurGeaendert(e.target.checked)} /> nur geänderte/überholte
-          </label>
+          <span className="br-filter-kaesten br-nur-breit">{kaesten}</span>
+          <details className="br-filter-menue br-nur-schmal" ref={menue}>
+            <summary>
+              Filter{nurHand || nurGeaendert ? ` (${Number(nurHand) + Number(nurGeaendert)})` : ''} <span aria-hidden="true">▾</span>
+            </summary>
+            <div className="br-filter-menue-inhalt">{kaesten}</div>
+          </details>
           <span className="br-leise" role="status">
             {ampelHinweis}
           </span>
-        </span>
+        </div>
       </div>
       <div className="br-treffer" aria-live="polite">
         {filterAktiv ? (

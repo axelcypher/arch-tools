@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { isTauri } from '@core/platform/files';
 import type { Pruefstand } from '../pruefung';
 import { heute, useBaurecht } from '../store';
@@ -10,7 +11,55 @@ const datumZeit = (iso: string) => {
   return `${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
 };
 
-/** Kopfleiste in einer Zeile: Antrag, Einreichung, Module, Rechtsstand, Aktionen */
+/** kleines Menü: Knopf mit Liste darunter; Esc und Klick daneben schließen, ↑/↓ bewegen */
+function Menue({ titel, label, children }: { titel: string; label: string; children: (zu: () => void) => React.ReactNode }) {
+  const [offen, setOffen] = useState(false);
+  const rahmen = useRef<HTMLSpanElement>(null);
+  const knopf = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!offen) return;
+    rahmen.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not([disabled])')?.focus();
+    const weg = (e: MouseEvent) => {
+      if (!rahmen.current?.contains(e.target as Node)) setOffen(false);
+    };
+    document.addEventListener('mousedown', weg);
+    return () => document.removeEventListener('mousedown', weg);
+  }, [offen]);
+  const zu = () => {
+    setOffen(false);
+    knopf.current?.focus();
+  };
+  const taste = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      zu();
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const el = [...(rahmen.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ?? [])];
+      const i = el.indexOf(document.activeElement as HTMLButtonElement);
+      el[(i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length]?.focus();
+      e.preventDefault();
+    }
+  };
+  return (
+    <span className="br-menue" ref={rahmen} onKeyDown={taste}>
+      <button type="button" ref={knopf} aria-haspopup="menu" aria-expanded={offen} aria-label={label} onClick={() => setOffen(!offen)}>
+        {titel} <span aria-hidden="true">▾</span>
+      </button>
+      {offen && (
+        <span className="br-menue-liste" role="menu" aria-label={label}>
+          {children(zu)}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Kopfleiste in einer Zeile: Antrag, Einreichung, Module, Rechtsstand, Aktionen. Unter 1600 px (Breite der App)
+ * wandern „Lage abfragen“ und „Rechtsstand prüfen“ in „Mehr ▾“, die Warnungen werden zu einer Sammelmarke; „Speichern“
+ * wird nie verdrängt (die Liste der Module kürzt sich zuerst).
+ */
 export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, onAntrag, lageLaeuft }: { stand: Pruefstand; onRechtsstand: () => void; onLage: () => void; onProtokoll: () => void; onSpeichern: () => void; onAntrag: (antrag: string) => void; lageLaeuft: boolean }) {
   const antrag = useBaurecht((s) => s.antrag);
   const antraege = useBaurecht((s) => s.antraege);
@@ -29,19 +78,24 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
   const agsVorschlag = ags?.sicherheit === 'hinweis' && !ags.bestaetigt && !ags.widerspruch;
   const agsWiderspruch = !!ags?.widerspruch;
   const moduleText = stand.module.map((m) => m.name).join(' · ');
+  const desktop = isTauri();
+  const warnungen = !laedt.length && desktop ? [nie ? `${nie} nie geprüft` : '', fehler ? `${fehler} nicht abrufbar` : '', geaendert ? `${geaendert} geändert` : '', kuenftig ? `${kuenftig} neue Fassung` : ''].filter(Boolean) : [];
+  const ungeprueft = desktop && !laedt.length && !zeiten.length;
+  const zurAgs = () => useBaurecht.getState().fokusSetzen('lage.ags');
+  const rechtsstandTitel = `${paket.herkunft === 'nachgeladen' ? 'Regelpaket nachgeladen' : 'Regelpaket des Builds'} ${paket.version}${paketMeldung ? ` – ${paketMeldung}` : ''}${zeiten.length ? ` · Normen zuletzt an der Quelle bestätigt zwischen ${datumZeit(zeiten[0])} und ${datumZeit(zeiten[zeiten.length - 1])}` : ''}`;
   return (
     <div className="toolbar br-kopf" role="group" aria-label="Prüfung">
       <label className="br-kopf-feld">
-        <span className="tb-label">Antrag</span>
-        <select value={antrag} onChange={(e) => onAntrag(e.target.value)}>
+        <span className="tb-label br-kopf-label">Antrag</span>
+        <select value={antrag} onChange={(e) => onAntrag(e.target.value)} aria-label="Antrag">
           {antraege.map((a) => (
             <option key={a}>{a}</option>
           ))}
         </select>
       </label>
       <label className="br-kopf-feld" title="Stichtag der Prüfung: Fassung der Gesetze am Tag der Einreichung (z. B. § 42a, § 90 BauO NRW)">
-        <span className="tb-label">Einreichung</span>
-        <input type="date" value={einreichung ?? heute()} min="2018-01-01" onChange={(e) => useBaurecht.getState().einreichungSetzen(e.target.value === heute() ? '' : e.target.value)} />
+        <span className="tb-label br-kopf-label">Einreichung</span>
+        <input type="date" value={einreichung ?? heute()} min="2018-01-01" aria-label="Geplante Einreichung (Stichtag)" onChange={(e) => useBaurecht.getState().einreichungSetzen(e.target.value === heute() ? '' : e.target.value)} />
       </label>
       {/* Module kürzen sich zuerst; Warnungen sind eigene Marken und werden nie gekürzt */}
       <span className="br-module-text" title={`Regelmodule: ${stand.module.map((m) => `${m.name} (Stand ${m.version})`).join(', ')}`}>
@@ -49,50 +103,94 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
       </span>
       <span className="br-kopf-marken">
         {agsWiderspruch && (
-          <span className="br-modul-chip br-modul-widerspruch" title={`Gemeindeschlüssel widersprüchlich: ${ags?.widerspruch ?? ''} – bitte klären. Bis dahin gelten die Werte der Gebietsmodule nur als Hinweis.`}>
+          <button type="button" className="br-modul-chip br-modul-widerspruch" onClick={zurAgs} title={`Gemeindeschlüssel widersprüchlich: ${ags?.widerspruch ?? ''} – bis zur Klärung gelten die Werte der Gebietsmodule nur als Hinweis. Klick: zur Angabe.`}>
             Gemeinde widersprüchlich
-          </span>
+          </button>
         )}
         {agsVorschlag && (
-          <span className="br-modul-chip br-modul-fehlt" title="Der Gemeindeschlüssel ist nur vorgeschlagen bzw. von Hand ohne Beleg eingetragen – bitte in den Angaben bestätigen oder „Lage abfragen“. Bis dahin gelten die Werte der Gebietsmodule nur als Hinweis.">
+          <button type="button" className="br-modul-chip br-modul-fehlt" onClick={zurAgs} title={`Der Gemeindeschlüssel ist nur vorgeschlagen – bis zur Bestätigung gelten die Werte der Gebietsmodule nur als Hinweis. Klick: zur Angabe${desktop ? ' (oder „Lage abfragen“)' : ''}.`}>
             Gemeinde unbestätigt
-          </span>
+          </button>
         )}
         {stand.fehlend.map((e) => (
-          <span key={e} className="br-modul-chip br-modul-fehlt" title={stand.ags ? `Für diesen Gemeindeschlüssel gibt es kein ${MODUL_TEXT[e]} – die Vorschriften dieser Ebene von Hand prüfen.` : 'Gemeindeschlüssel fehlt – „Lage abfragen“ oder in den Angaben eintragen.'}>
+          <span key={e} className="br-modul-chip br-modul-fehlt" title={stand.ags ? `Für diesen Gemeindeschlüssel gibt es kein ${MODUL_TEXT[e]} – die Vorschriften dieser Ebene von Hand prüfen.` : `Gemeindeschlüssel fehlt – ${desktop ? '„Lage abfragen“ oder ' : ''}in den Angaben eintragen.`}>
             {stand.ags ? `kein ${MODUL_TEXT[e]}` : `${EBENE_TEXT[e]}: Gemeindeschlüssel fehlt`}
           </span>
         ))}
       </span>
-      <span className="tb-spacer" />
-      <span className="br-rechtsstand" aria-live="polite" title={`${paket.herkunft === 'nachgeladen' ? 'Regelpaket nachgeladen' : 'Regelpaket des Builds'} ${paket.version}${paketMeldung ? ` – ${paketMeldung}` : ''}${zeiten.length ? ` · Normen zuletzt an der Quelle bestätigt zwischen ${datumZeit(zeiten[0])} und ${datumZeit(zeiten[zeiten.length - 1])}` : ''}`}>
+      <span className="br-rechtsstand" aria-live="polite" title={rechtsstandTitel}>
         {laedt.length ? (
           <span className="br-laedt">{laedt.length} Texte werden geholt …</span>
-        ) : !isTauri() ? (
+        ) : !desktop ? (
           <span className="br-leise">Web-Version: ohne Gesetzestexte</span>
         ) : zeiten.length ? (
           <span className="br-rechtsstand-zeit">Rechtsstand {datumZeit(zeiten[0])}</span>
-        ) : (
-          <span className="br-warn-text">Rechtsstand noch nicht geprüft</span>
-        )}
+        ) : null}
       </span>
-      {!laedt.length && isTauri() && (nie || fehler || geaendert || kuenftig) ? (
-        <span className="br-kopf-marken" aria-label="Warnungen zum Rechtsstand">
-          {nie ? <span className="br-marke br-marke-warn">{nie} nie geprüft</span> : null}
-          {fehler ? <span className="br-marke br-marke-warn">{fehler} nicht abrufbar</span> : null}
-          {geaendert ? <span className="br-marke br-marke-warn">{geaendert} geändert</span> : null}
-          {kuenftig ? <span className="br-marke br-marke-warn">{kuenftig} neue Fassung</span> : null}
-        </span>
+      {/* Warnungen: breit einzeln, schmal als Sammelmarke – nie gekürzt */}
+      {ungeprueft || warnungen.length ? (
+        <>
+          <span className="br-kopf-marken br-nur-breit" aria-label="Warnungen zum Rechtsstand">
+            {ungeprueft && <span className="br-marke br-marke-warn">Rechtsstand nicht geprüft</span>}
+            {warnungen.map((w) => (
+              <span key={w} className="br-marke br-marke-warn">
+                {w}
+              </span>
+            ))}
+          </span>
+          <span className="br-kopf-marken br-nur-schmal">
+            <span className="br-marke br-marke-warn" title={[ungeprueft ? 'Rechtsstand noch nicht geprüft' : '', ...warnungen].filter(Boolean).join(' · ')}>
+              Rechtsstand: {(ungeprueft ? 1 : 0) + warnungen.length} {(ungeprueft ? 1 : 0) + warnungen.length === 1 ? 'Warnung' : 'Warnungen'}
+            </span>
+          </span>
+        </>
       ) : null}
-      {isTauri() && (
-        <button type="button" onClick={onLage} disabled={lageLaeuft} title="Gemeindeschlüssel, Flurstück und Schutzgebiete aus den Geodiensten am Grundstück">
-          {lageLaeuft ? 'Lage …' : 'Lage abfragen'}
-        </button>
+      {desktop && (
+        <span className="br-kopf-aktionen br-nur-breit">
+          <button type="button" onClick={onLage} disabled={lageLaeuft} title="Gemeindeschlüssel, Flurstück und Schutzgebiete aus den Geodiensten am Grundstück">
+            {lageLaeuft ? 'Lage …' : 'Lage abfragen'}
+          </button>
+          <button type="button" onClick={onRechtsstand} disabled={laedt.length > 0} title="Alle Texte sofort an der Quelle prüfen">
+            Rechtsstand prüfen
+          </button>
+        </span>
       )}
-      {isTauri() && (
-        <button type="button" onClick={onRechtsstand} disabled={laedt.length > 0} title="Alle Texte sofort an der Quelle prüfen">
-          Rechtsstand prüfen
-        </button>
+      {desktop && (
+        <span className="br-nur-schmal">
+          <Menue titel="Mehr" label="Weitere Aktionen">
+            {(zu) => (
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={lageLaeuft}
+                  onClick={() => {
+                    zu();
+                    onLage();
+                  }}
+                >
+                  {lageLaeuft ? 'Lage wird abgefragt …' : 'Lage abfragen'}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={laedt.length > 0}
+                  onClick={() => {
+                    zu();
+                    onRechtsstand();
+                  }}
+                >
+                  Rechtsstand prüfen
+                </button>
+                {(ungeprueft || warnungen.length > 0) && (
+                  <span className="br-menue-info" role="none">
+                    {[ungeprueft ? 'Rechtsstand noch nicht geprüft' : '', ...warnungen].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+              </>
+            )}
+          </Menue>
+        </span>
       )}
       <button type="button" onClick={onProtokoll} title="Prüfprotokoll ansehen, drucken, abschließen">
         Prüfprotokoll

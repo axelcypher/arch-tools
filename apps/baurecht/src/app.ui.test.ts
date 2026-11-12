@@ -59,7 +59,7 @@ function festlegen(host: HTMLElement, grund: string, ampel?: 'rot' | 'gelb' | 'g
 }
 
 /** speichern und im Bestätigungsdialog antworten */
-async function speichernMit(antwort: 'Bestätigen und speichern' | 'Ohne diese Angaben speichern' | 'Abbrechen'): Promise<HTMLElement> {
+async function speichernMit(antwort: 'Bestätigen und speichern' | 'Speichern, diese als Entwurf behalten' | 'Abbrechen'): Promise<HTMLElement> {
   let fertig: Promise<boolean> | null = null;
   await act(async () => {
     fertig = speichern();
@@ -126,11 +126,11 @@ describe('Baurecht – Oberfläche', () => {
     expect(useBaurecht.getState().pruefung.festlegungen[ids[0]].bestaetigt).toMatch(/^\d{4}-/);
   });
 
-  it('„Ohne diese Angaben speichern“: Entwurf bleibt in der App, nicht in der Datei', async () => {
+  it('„Speichern, diese als Entwurf behalten“: Entwurf bleibt in der App, nicht in der Datei', async () => {
     const host = render();
     festlegen(host, 'Sonderfall laut Vorbescheid vom 01.10.2026');
     const id = Object.keys(useBaurecht.getState().pruefung.festlegungen)[0];
-    await speichernMit('Ohne diese Angaben speichern');
+    await speichernMit('Speichern, diese als Entwurf behalten');
     expect(inDatei()?.festlegungen[id]).toBeUndefined();
     const f = useBaurecht.getState().pruefung.festlegungen[id];
     expect(f).toBeTruthy();
@@ -146,7 +146,7 @@ describe('Baurecht – Oberfläche', () => {
     // ändern (Herabstufung auf grün) und ohne Bestätigung speichern
     festlegen(host, 'Zweite Festlegung, noch nicht abgestimmt', 'gruen', id);
     expect(useBaurecht.getState().pruefung.festlegungen[id]).toMatchObject({ ampel: 'gruen' });
-    await speichernMit('Ohne diese Angaben speichern');
+    await speichernMit('Speichern, diese als Entwurf behalten');
     expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'rot', grund: 'Erste Festlegung, mit Bauaufsicht abgestimmt' });
     expect(inDatei().festlegungen[id].bestaetigt).toMatch(/^\d{4}-/);
     // in der App bleibt der Entwurf
@@ -161,7 +161,7 @@ describe('Baurecht – Oberfläche', () => {
     await speichernMit('Bestätigen und speichern');
     act(() => knopf(host, /Festlegung aufheben/)!.click());
     expect(useBaurecht.getState().pruefung.festlegungen[id]).toBeUndefined();
-    const dialog = await speichernMit('Ohne diese Angaben speichern');
+    const dialog = await speichernMit('Speichern, diese als Entwurf behalten');
     expect(dialog.textContent).toMatch(/Festlegung aufgehoben/);
     expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'rot' });
     expect(useBaurecht.getState().pruefung.festlegungen[id]).toBeUndefined();
@@ -182,7 +182,7 @@ describe('Baurecht – Oberfläche', () => {
     tippen(dialog.querySelector('textarea')!, 'Flächen im Modell vollständig, geprüft am 12.11.2026');
     act(() => knopf(dialog, 'Bestätigen')!.click());
     const [id] = Object.entries(useBaurecht.getState().pruefung.fakten).find(([, f]) => f.bestaetigt)!;
-    const inhalt = await speichernMit('Ohne diese Angaben speichern');
+    const inhalt = await speichernMit('Speichern, diese als Entwurf behalten');
     expect(inhalt.textContent).toMatch(/Hinweis bestätigt/);
     expect(inDatei()?.fakten[id]?.bestaetigt).toBeUndefined();
     expect(useBaurecht.getState().pruefung.fakten[id].bestaetigt?.grund).toMatch(/vollständig/);
@@ -269,6 +269,108 @@ describe('Baurecht – Oberfläche', () => {
     expect(dialog.textContent).toMatch(/Keine Vorschrift ändert dadurch ihre Ampel/);
     expect(dialog.textContent).toMatch(/Ohne Koordinaten/);
     act(() => knopf(dialog, 'Abbrechen')!.click());
+  });
+
+  it('Pfeiltasten in Auswahlgruppen: →/← wandern (mit Umlauf), Pos1/Ende springen', () => {
+    const host = render();
+    if (!host.querySelector('[data-merkmal="Planungsrecht"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
+    const gruppe = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"] .br-segment')!;
+    const knoepfe = [...gruppe.querySelectorAll<HTMLButtonElement>(':scope > button')];
+    expect(knoepfe.length).toBeGreaterThan(2);
+    const taste = (key: string) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+    act(() => knoepfe[0].focus());
+    taste('ArrowRight');
+    expect(document.activeElement).toBe(knoepfe[1]);
+    taste('End');
+    expect(document.activeElement).toBe(knoepfe.at(-1));
+    taste('ArrowRight');
+    expect(document.activeElement).toBe(knoepfe[0]);
+    taste('ArrowLeft');
+    expect(document.activeElement).toBe(knoepfe.at(-1));
+    taste('Home');
+    expect(document.activeElement).toBe(knoepfe[0]);
+  });
+
+  it('F6 ohne gewählten Paragrafen: die Einzelheiten bekommen selbst den Fokus, nichts hängt', () => {
+    act(() => useBaurecht.getState().waehlen(null));
+    const host = render();
+    const liste = host.querySelector<HTMLElement>('.br-vorschriften-liste [data-roving][tabindex="0"]')!;
+    act(() => liste.focus());
+    const f6 = (shift = false) => act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F6', shiftKey: shift, bubbles: true })));
+    f6();
+    expect(document.activeElement).toBe(host.querySelector('.br-detail'));
+    f6();
+    expect(host.querySelector('.br-kopf')!.contains(document.activeElement)).toBe(true);
+    f6(true);
+    expect(document.activeElement).toBe(host.querySelector('.br-detail'));
+    f6(true);
+    expect(host.querySelector('.br-vorschriften-liste')!.contains(document.activeElement)).toBe(true);
+  });
+
+  it('Festlegung aufheben: Fokus auf „Von Hand festlegen …“, Rückgängig stellt sie wieder her', () => {
+    const host = render();
+    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    const vorher = structuredClone(useBaurecht.getState().pruefung.festlegungen[id]);
+    act(() => knopf(host, 'Festlegung aufheben')!.click());
+    expect(useBaurecht.getState().pruefung.festlegungen[id]).toBeUndefined();
+    expect(document.activeElement?.textContent).toBe('Von Hand festlegen …');
+    expect(host.querySelector('.br-aufgehoben')?.textContent).toMatch(/Festlegung aufgehoben/);
+    act(() => knopf(host, 'Rückgängig')!.click());
+    expect(useBaurecht.getState().pruefung.festlegungen[id]).toEqual(vorher);
+    expect(host.querySelector('.br-aufgehoben')).toBeNull();
+  });
+
+  it('Prüfprotokoll: Name des Dialogs, Festlegungen und gesicherte Angaben vor den offenen Punkten, Sperrgrund sichtbar', () => {
+    const host = render();
+    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    expect(d.getAttribute('aria-label')).toMatch(/^Baurechtliche Prüfung vor dem Einreichen – BAUA 1/);
+    const h2 = [...d.querySelectorAll('h2')].map((h) => h.textContent ?? '');
+    const i = (t: string) => h2.findIndex((x) => x.startsWith(t));
+    expect(i('Grundlagen')).toBeLessThan(i('Festlegungen von Hand'));
+    expect(i('Festlegungen von Hand')).toBeLessThan(i('Gesicherte Angaben'));
+    expect(i('Gesicherte Angaben')).toBeLessThan(i('Offene Punkte'));
+    expect(d.querySelector('.br-protokoll-offen thead')?.textContent).toMatch(/Was fehlt.*Anzahl.*Paragrafen/);
+    // Entwurf: Abschließen gesperrt, der Grund steht sichtbar daneben
+    expect(knopf(d, 'Prüfung abschließen')!.disabled).toBe(true);
+    expect(d.querySelector('.br-sperre')?.textContent).toMatch(/Erst speichern/);
+    // keine doppelten Kurzformen in den Überschriften der Normen
+    for (const h3 of d.querySelectorAll('.br-protokoll-norm h3')) expect(h3.textContent).not.toMatch(/\(([^()]+)\) \(\1\)/);
+    act(() => knopf(d, 'Schließen')!.click());
+  });
+
+  it('Fokusfalle im Protokoll: Tab bleibt drin; liegt ein Dialog darüber, führt der den Fokus', () => {
+    const host = render();
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    const ziele = [...d.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex="0"]')];
+    const tab = (shift = false) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: shift, bubbles: true, cancelable: true })));
+    act(() => ziele.at(-1)!.focus());
+    tab();
+    expect(document.activeElement).toBe(ziele[0]);
+    tab(true);
+    expect(document.activeElement).toBe(ziele.at(-1));
+    // ein Dialog über dem Protokoll: die Falle greift nicht ein
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    const b = document.createElement('button');
+    modal.appendChild(b);
+    document.body.appendChild(modal);
+    act(() => b.focus());
+    tab();
+    expect(document.activeElement).toBe(b);
+    modal.remove();
+    act(() => knopf(d, 'Schließen')!.click());
+  });
+
+  it('Kopf: „Gemeinde unbestätigt“ ist ein Knopf und führt zum Gemeindeschlüssel', () => {
+    const host = render();
+    const k = knopf(host.querySelector('.br-kopf')!, 'Gemeinde unbestätigt');
+    expect(k, 'Marke als Knopf').toBeTruthy();
+    act(() => k!.click());
+    // die Angaben-Leiste übernimmt den Fokuswunsch: der Fokus steht in der Zeile des Gemeindeschlüssels
+    expect(document.activeElement?.closest('.br-fakt')?.textContent).toMatch(/Gemeinde/);
   });
 
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {

@@ -100,12 +100,27 @@ const BEREICHE = [
   { sel: '.br-detail', titel: 'Einzelheiten' },
 ];
 
-/** in einen Bereich springen: auf den Tabstopp der Liste bzw. das erste Bedienelement */
-function bereichFokussieren(sel: string) {
+/**
+ * in einen Bereich springen: auf den Tabstopp der Liste bzw. das erste Bedienelement; ein Bereich ohne Bedienelement,
+ * der selbst fokussierbar ist (Einzelheiten ohne Auswahl, tabindex -1), bekommt den Fokus selbst. true = gesprungen.
+ */
+function bereichFokussieren(sel: string): boolean {
   const b = document.querySelector<HTMLElement>(sel);
-  if (!b) return;
-  const ziel = b.querySelector<HTMLElement>('[data-roving][tabindex="0"]') ?? b.querySelector<HTMLElement>('button:not([disabled]), input, select, textarea, [tabindex="0"]');
-  ziel?.focus();
+  if (!b) return false;
+  const ziel = b.querySelector<HTMLElement>('[data-roving][tabindex="0"]') ?? b.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea, [tabindex="0"]') ?? (b.hasAttribute('tabindex') ? b : null);
+  if (!ziel) return false;
+  ziel.focus();
+  return document.activeElement === ziel;
+}
+
+/** F6 / Umschalt+F6: zum nächsten Bereich mit Fokusziel – Bereiche ohne Ziel werden übersprungen */
+export function bereichWechseln(rueckwaerts: boolean) {
+  const n = BEREICHE.length;
+  const i = BEREICHE.findIndex((b) => document.querySelector(b.sel)?.contains(document.activeElement));
+  for (let k = 1; k <= n; k++) {
+    const j = i < 0 ? (rueckwaerts ? n - k : k - 1) : (i + (rueckwaerts ? n - k : k)) % n;
+    if (bereichFokussieren(BEREICHE[j].sel)) return;
+  }
 }
 
 function Start({ onWahl }: { onWahl: () => void }) {
@@ -185,9 +200,7 @@ export function App() {
       }
       if (e.key === 'F6' && !document.querySelector('[role="dialog"]')) {
         e.preventDefault();
-        const i = BEREICHE.findIndex((b) => document.querySelector(b.sel)?.contains(document.activeElement));
-        const n = BEREICHE.length;
-        bereichFokussieren(BEREICHE[(i < 0 ? 0 : i + (e.shiftKey ? n - 1 : 1)) % n].sel);
+        bereichWechseln(e.shiftKey);
       }
     };
     window.addEventListener('keydown', taste);
@@ -241,16 +254,19 @@ export function App() {
 
   return (
     <div className="app br-app">
+      {/* Sprungmarken als erste Tabstopps (vor der Titelleiste); sichtbar, sobald sie den Fokus haben */}
+      {project && (
+        <nav className="br-sprung" aria-label="Sprungmarken (auch F6)">
+          {BEREICHE.slice(1).map((b) => (
+            <button key={b.sel} type="button" onClick={() => bereichFokussieren(b.sel)}>
+              Zu den {b.titel}
+            </button>
+          ))}
+        </nav>
+      )}
       <TitleBar app="Baurecht" name={name} dirty={dirty} zeichenflaeche={false} onOpenLog={() => setLogOffen(true)} onProjekte={() => void projekteOeffnen()} onSpeichern={quelle ? speichernMitMeldung : undefined} />
       {project ? (
         <>
-          <nav className="br-sprung" aria-label="Sprungmarken (auch F6)">
-            {BEREICHE.slice(1).map((b) => (
-              <button key={b.sel} type="button" onClick={() => bereichFokussieren(b.sel)}>
-                Zu den {b.titel === 'Angaben' ? 'Angaben' : b.titel === 'Vorschriften' ? 'Vorschriften' : 'Einzelheiten'}
-              </button>
-            ))}
-          </nav>
           <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} onAntrag={(a) => void antragWechseln(a)} lageLaeuft={lageLaeuft} />
           {!isTauri() && (
             <div className="br-hinweisband" role="note">
@@ -258,7 +274,8 @@ export function App() {
             </div>
           )}
           <div className="workspace br-arbeit">
-            <BreitenLeiste schluessel="baurecht:leiste-angaben" vorgabe={330} min={260} max={520} className="br-leiste-links">
+            {/* schmale Fenster: die Angaben-Leiste startet schmaler, damit die Liste Platz behält */}
+            <BreitenLeiste schluessel="baurecht:leiste-angaben" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1200 ? 260 : 330} min={240} max={520} className="br-leiste-links">
               <Angaben stand={stand} />
             </BreitenLeiste>
             <Vorschriften stand={stand} />

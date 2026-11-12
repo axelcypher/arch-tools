@@ -22,9 +22,18 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Wohnungen aus dem Flächenrechner.
 - **Kopfleiste:** Antrag, **geplante Einreichung** (Stichtag – z. B. § 42a BauO NRW knüpft an das Datum des
   Bauantrags an, § 90 an das Verfahrensrecht zur Zeit der Antragstellung), die aktiven Regelmodule, der Rechtsstand
-  (Datum des ältesten Stands der aktiven Normen), Warnmarken (nie geprüft, nicht abrufbar, geändert, neue Fassung,
-  Gemeinde unbestätigt bzw. widersprüchlich – sie werden nie gekürzt), **Lage abfragen**, **Rechtsstand prüfen**,
-  **Prüfprotokoll**, **Speichern** (Strg+S). „≡ Fehlerprotokoll“ in der Titelleiste ist die Fehlersuche der App.
+  (Datum des ältesten Stands der aktiven Normen), Warnmarken (nie geprüft, nicht abrufbar, geändert, neue Fassung),
+  **Lage abfragen**, **Rechtsstand prüfen**, **Prüfprotokoll**, **Speichern** (Strg+S). „Gemeinde unbestätigt“ bzw.
+  „widersprüchlich“ ist ein Knopf und springt zum Gemeindeschlüssel. Ist die App schmaler als 1600 px, stehen „Lage
+  abfragen“ und „Rechtsstand prüfen“ unter **Mehr ▾** und die Warnungen zum Rechtsstand als eine Sammelmarke („2
+  Warnungen“, Einzelheiten im Tooltip und im Menü); unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld.
+  Gekürzt wird nur die Liste der Module, Warnungen und „Speichern“ nie. „≡ Fehlerprotokoll“ in der Titelleiste ist die
+  Fehlersuche der App.
+- **Filterleiste:** Ampelzähler (blenden ein/aus), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und
+  die Kästchen „nur von Hand festgelegte“ / „nur geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px,
+  wird die Ordnung zur Auswahlliste, die Kästchen wandern in **Filter ▾** und der Balken entfällt. Die Zähler an den
+  Normen zählen die sichtbaren Zeilen („11 prüfen von 14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im
+  Blick.
 - **Angaben (links):** oben **„Klärt am meisten“** – die fehlenden Angaben, die die meisten offenen Paragrafen
   entscheiden würden (Klick springt zur Angabe); dann die Antragsmerkmale als Knöpfe mit Erklärung (eingeklappt, wenn
   alle festgelegt sind; „leeren“ setzt ein Merkmal bewusst zurück); darunter alle Angaben, an denen eine Regel hängt,
@@ -54,9 +63,12 @@ Jeder darf festlegen – und bestätigt dafür zweimal:
    ein Entwurf (gestrichelte Marke).
 2. **Beim Speichern:** Neue, geänderte und **aufgehobene** Festlegungen erscheinen in einer Liste (vorher → nachher,
    Begründung, Herabstufungen hervorgehoben) – ebenso neu bestätigte Hinweise (siehe unten). „Bestätigen und speichern“
-   geht erst nach dem Haken „Ich habe diese Angaben geprüft“. „Ohne diese Angaben speichern“ schreibt für sie den
+   geht erst nach dem Haken „Ich habe diese Angaben geprüft“. „Speichern, diese als Entwurf behalten“ schreibt für sie den
    bisherigen Stand der Datei (eine schon bestätigte Festlegung bleibt also erhalten) und lässt die Änderung in der App
    als Entwurf offen.
+
+„Festlegung aufheben“ wirkt sofort; daneben steht „Rückgängig“, der Fokus geht auf „Von Hand festlegen …“. Auch das
+Aufheben einer gespeicherten Festlegung wird beim Speichern noch einmal bestätigt.
 
 Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald sich danach die automatische Ampel, eine
 beteiligte Angabe oder der Text einer Fundstelle ändert (oder sie ohne geprüften Text getroffen wurde) – dann steht
@@ -96,8 +108,12 @@ Personendaten.
 
 ## Bedienung mit der Tastatur
 
-Die Vorschriftenliste ist ein Tabstopp: ↑/↓, Pos1/Ende wählen den Paragrafen. F6 (Umschalt+F6) springt zwischen Kopf,
-Angaben, Vorschriften und Einzelheiten; dieselben Sprungmarken erscheinen beim ersten Tab.
+Die ersten Tabstopps sind die Sprungmarken „Zu den Angaben / Vorschriften / Einzelheiten“ (sichtbar, sobald sie den
+Fokus haben), danach die Titelleiste. Die Vorschriftenliste ist ein Tabstopp: ↑/↓, Pos1/Ende wählen den Paragrafen.
+Auswahlgruppen (ja/nein, Merkmale) bedienen sich mit ←/→ bzw. ↑/↓ (mit Umlauf), Pos1/Ende. F6 (Umschalt+F6) springt
+zwischen Kopf, Angaben, Vorschriften und Einzelheiten; ist kein Paragraf gewählt, bekommen die Einzelheiten selbst den
+Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr ▾, Filter ▾) schließen mit Esc und geben den Fokus an
+ihren Knopf zurück.
 
 ## Rechtsstand
 
@@ -119,10 +135,13 @@ Angaben, Vorschriften und Einzelheiten; dieselben Sprungmarken erscheinen beim e
 
 ## Prüfprotokoll
 
-Kopf aus den Stammdaten, Grundlagen (Stichtag, Module, Regelpaket, Merkmale, Ergebnis), dann was zu tun ist: offene
-Punkte (gruppiert nach der fehlenden Angabe), Festlegungen von Hand (mit Name, Datum, Entwurf/bestätigt), bestätigte
-Angaben (mit Begründung); danach alle Paragrafen je Ebene mit Ampel, Begründung und Fassung, Quellen der Geodaten,
-Hinweise und Auskünfte der Module. Enthält es Entwürfe, steht „ENTWURF“ auf jeder Druckseite. „Drucken / PDF …“ schlägt den
+Kopf aus den Stammdaten, Grundlagen (Stichtag, Module, Regelpaket, Merkmale, Ergebnis), dann **Festlegungen von Hand**
+(Ampel, automatisch, Begründung, Name, Datum, Entwurf/bestätigt) und **gesicherte Angaben** (Wert, Herkunft, worauf
+gestützt, von wem) als Tabellen, dann die **offenen Punkte** als Tabelle „Was fehlt – Anzahl – Paragrafen“; danach
+alle Paragrafen je Ebene mit Ampel, Begründung und Fassung, Quellen der Geodaten, Hinweise und Auskünfte der Module.
+Enthält es Entwürfe, steht „ENTWURF …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
+Überschriften werden nicht von ihrer Tabelle getrennt. Warum „Prüfung abschließen“ gesperrt ist, steht sichtbar
+neben dem Knopf. „Drucken / PDF …“ schlägt den
 Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
 Zähler, Regelpaket) in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen
 ist.
