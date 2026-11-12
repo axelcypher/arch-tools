@@ -20,7 +20,7 @@ import { einstellungenLaden, einstellungenSpeichern, VORGABE } from './einstellu
 import { aslvLesen, aslvNeu, aslvSchreiben } from './format/aslv';
 import { eigenLesen, eigenSchreiben } from './format/eigen';
 import type { Lv } from './lv/modell';
-import { heuteIso, leeresLv } from './lv/modell';
+import { heuteIso, leeresLv, xmlIdsUebernehmen } from './lv/modell';
 import type { Gewerk, LvDatei, LvFormat, Projektstruktur } from './projekt';
 import { projektLesen } from './projekt';
 import { gewerkZweistellig } from './abrechnung/gewerk';
@@ -250,8 +250,14 @@ export const useAva = create<AvaZustand>((set, get) => ({
     const r = await fs.lies(projekt.ordner, lv.datei.pfad);
     const aktuell = get().lv;
     if (r && aktuell && aktuell.datei.pfad === lv.datei.pfad) {
-      // Weitergearbeitet, während gespeichert wurde? Dann bleibt der neue Stand ungespeichert.
-      set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis: lv.lv } });
+      // neue Elemente kennen jetzt ihre Kennung in der Datei; weitergearbeitet, während gespeichert wurde? Dann bleibt
+      // der neue Stand ungespeichert (mit den Kennungen).
+      if (lv.format === 'aslv') {
+        const gelesen = aslvLesen(r.daten).lv;
+        const basis = xmlIdsUebernehmen(lv.lv, lv.lv, gelesen);
+        const jetzt = aktuell.lv === lv.lv ? basis : xmlIdsUebernehmen(aktuell.lv, lv.lv, gelesen);
+        set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis, lv: jetzt, verlauf: aktuell.verlauf.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)), zukunft: aktuell.zukunft.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)) } });
+      } else set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis: lv.lv } });
     }
     log.info('LV gespeichert', lv.datei.pfad);
     return true;

@@ -28,6 +28,15 @@ describe('Zustand der App mit einem Projekt im Speicher', () => {
     expect(lvGeaendert(useAva.getState().lv)).toBe(false);
     const datei = await useAva.getState().fs.lies(p.ordner, g8.lvs[0].pfad);
     expect(positionen(aslvLesen(datei!.daten).lv).map((x) => x.pos.kurztext)).toContain('Fensterbank außen');
+    // zweites Speichern nach einer weiteren Änderung legt die neue Position nicht noch einmal an
+    useAva.getState().lvAendern((l) => ({ ...l, kopf: { ...l.kopf, vergabeart: 'Beschränkte Ausschreibung' } }));
+    expect(await useAva.getState().lvSpeichern()).toBe(true);
+    const zweimal = await useAva.getState().fs.lies(p.ordner, g8.lvs[0].pfad);
+    expect(positionen(aslvLesen(zweimal!.daten).lv).filter((x) => x.pos.kurztext === 'Fensterbank außen')).toHaveLength(1);
+    expect(aslvLesen(zweimal!.daten).lv.kopf.vergabeart).toBe('Beschränkte Ausschreibung');
+    // ohne Änderung bleibt die Datei, wie sie ist
+    expect(await useAva.getState().lvSpeichern()).toBe(true);
+    expect((await useAva.getState().fs.lies(p.ordner, g8.lvs[0].pfad))!.daten).toBe(zweimal!.daten);
     await useAva.getState().kkSchreiben((kk) => auftragEintragen(kk.kk, { gewerk: 'G8', text: 'Nachtrag 1', betrag: 1000 }).aenderungen);
     expect(useAva.getState().projekt!.kk!.kk.gewerke.find((g) => g.gewerk === 'G8')!.anschlag.summe).toBeCloseTo(55269.87, 2);
     await useAva.getState().avaAendern((a) => ({ ...a, zahler: 'bank@example.org' }));

@@ -334,6 +334,35 @@ export function neuNummerieren(elemente: LvElement[], maske: OzMaske, tiefe = 0)
   });
 }
 
+/**
+ * Nach dem Speichern einer LV-Datei: die Kennungen der Datei (xmlId) aus dem frisch gelesenen LV in das Modell
+ * übernehmen – zugeordnet über die Reihenfolge, die beim Schreiben dieselbe ist. Sonst legte das nächste Speichern
+ * neu angelegte Elemente noch einmal an.
+ */
+export function xmlIdsUebernehmen(modell: Lv, gespeichert: Lv, gelesen: Lv): Lv {
+  const ids = new Map<string, number>();
+  const parallel = (a: LvElement[], b: LvElement[]) => {
+    a.forEach((e, i) => {
+      const x = b[i];
+      if (!x || x.art !== e.art) return;
+      if (x.xmlId !== undefined) ids.set(e.id, x.xmlId);
+      if (e.art === 'abschnitt' && x.art === 'abschnitt') parallel(e.kinder, x.kinder);
+    });
+  };
+  parallel(gespeichert.elemente, gelesen.elemente);
+  let geaendert = false;
+  const setze = (liste: LvElement[]): LvElement[] =>
+    liste.map((e) => {
+      const xmlId = ids.get(e.id);
+      const kinder = e.art === 'abschnitt' ? setze(e.kinder) : undefined;
+      if ((xmlId === undefined || xmlId === e.xmlId) && (!kinder || kinder === (e as Abschnitt).kinder)) return e;
+      geaendert = true;
+      return { ...e, ...(xmlId !== undefined ? { xmlId } : {}), ...(kinder ? { kinder } : {}) } as LvElement;
+    });
+  const elemente = setze(modell.elemente);
+  return geaendert ? { ...modell, elemente } : modell;
+}
+
 /** Kopie eines Elements mit neuen Kennungen (ohne Bezug zur Datei) */
 export function elementKopie(el: LvElement): LvElement {
   const basis = { ...structuredClone(el), id: neueId(), xmlId: undefined };
