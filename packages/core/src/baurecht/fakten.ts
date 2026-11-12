@@ -125,7 +125,7 @@ const KATALOG: Record<string, FaktDef> = {
   'gebaeude.gastbetten': z('Gastbetten (Beherbergung)', 'gebaeude'),
   'gebaeude.verkaufsflaeche': z('Verkaufsfläche', 'gebaeude', 'm²'),
   'gebaeude.garage_nutzflaeche': z('Nutzfläche von Garagen', 'gebaeude', 'm²', 'Kleingarage bis 100 m², Mittelgarage bis 1 000 m², Großgarage darüber'),
-  'gebaeude.stellplaetze': z('Kfz-Stellplätze im oder am Gebäude', 'gebaeude', undefined, 'für die Ladeinfrastruktur nach GEIG'),
+  'gebaeude.stellplaetze': z('Kfz-Stellplätze im oder am Gebäude', 'gebaeude', 'Stellplätze', 'für die Ladeinfrastruktur nach GEIG'),
 
   /* ---------- Technik ---------- */
   'technik.feuerstaette': j('Feuerstätte (Heizung mit Verbrennung, Kamin)', 'technik'),

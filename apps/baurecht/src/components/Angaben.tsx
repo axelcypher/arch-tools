@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FAKT_GRUPPEN, faktName } from '@core/baurecht/typen';
+import { FAKT_GRUPPEN, faktName, zaehlEinheit } from '@core/baurecht/typen';
 import { aktuelleLage } from '../pruefung';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
 import { werten } from '@core/baurecht/kurz';
@@ -136,7 +136,7 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   if (def.typ === 'zahl')
     return (
       <span className="br-zahl">
-        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty onChange={(n) => onWert(n)} label={faktName(def, id)} digits={def.einheit ? 2 : 0} />
+        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty onChange={(n) => onWert(n)} label={faktName(def, id)} digits={zaehlEinheit(def.einheit) ? 0 : 2} />
         {def.einheit && <span className="br-leise">{def.einheit}</span>}
       </span>
     );

@@ -334,14 +334,17 @@ export function paragrafName(nr: string): string {
 /**
  * Wert einer Angabe für die Anzeige: ja/nein, Zahlen deutsch mit Einheit, Anzahlen (Zahl ohne Einheit) ganzzahlig
  */
+/** Einheiten, die Anzahlen zählen (Stellplätze …): ganzzahlig wie Zahlen ohne Einheit */
+export const zaehlEinheit = (e?: string): boolean => !e || /plätze|stück|wohnungen|betten|geschosse/i.test(e);
+
 export function wertAnzeige(w: FaktWert['wert'] | undefined, def?: Pick<FaktDef, 'typ' | 'einheit'>): string {
   if (w == null) return '–';
   if (w === true) return 'ja';
   if (w === false) return 'nein';
   if (typeof w === 'number') {
-    const anzahl = def?.typ === 'zahl' && !def.einheit && Number.isInteger(w);
+    const anzahl = def?.typ === 'zahl' && zaehlEinheit(def.einheit) && Number.isInteger(w);
     // wie in den Eingabefeldern: mit Einheit zwei Nachkommastellen, wenn es welche gibt („2,90 m“, „40 m²“)
-    const stellen = anzahl || Number.isInteger(w) ? { maximumFractionDigits: 0 } : def?.einheit ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 2 };
+    const stellen = anzahl || Number.isInteger(w) ? { maximumFractionDigits: 0 } : def?.einheit && !zaehlEinheit(def.einheit) ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 2 };
     return `${w.toLocaleString('de-DE', stellen)}${def?.einheit ? ` ${def.einheit}` : ''}`;
   }
   return w;
