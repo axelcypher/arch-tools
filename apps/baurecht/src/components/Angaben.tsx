@@ -168,13 +168,15 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
   // nach Zurücknehmen/Zurücksetzen verschwindet der Knopf – Fokus auf das erste Bedienelement der Angabe
   const fokusZurZeile = () => setTimeout(() => ref.current?.querySelector<HTMLElement>('button:not([disabled]), input, select')?.focus(), 0);
   const hilfeLang = (def.hilfe?.length ?? 0) > 90;
+  // Unterzeile: die Frage, sonst der ausführliche Titel – aber nicht, wenn er nur den kurzen Namen wiederholt
+  const unterzeile = def.frage ?? (def.kurz && !def.titel.startsWith(def.kurz) ? def.titel : undefined);
   return (
     <div ref={ref} data-fakt={id} className={`br-fakt${wert?.wert == null ? ' br-offen' : ''}${fokus === id ? ' br-fokus' : ''}`}>
       <div className="br-fakt-kopf">
         {/* überall derselbe kurze Titel (Chips, Protokoll); die Frage als Unterzeile */}
-        <span className="br-fakt-titel" title={def.hilfe}>
+        <span className="br-fakt-titel" title={def.kurz ? def.titel : def.hilfe}>
           {nb(faktName(def, id))}
-          {(def.frage ?? (def.kurz ? def.titel : undefined)) && <span className="br-fakt-frage">{nb(def.frage ?? def.titel)}</span>}
+          {unterzeile && <span className="br-fakt-frage">{nb(unterzeile)}</span>}
         </span>
         {wert?.wert == null && klaert > 0 && <span className="br-klaert" title={`klärt ${klaert} Paragrafen`}>klärt {klaert}</span>}
       </div>
