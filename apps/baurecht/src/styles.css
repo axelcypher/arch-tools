@@ -1754,3 +1754,12 @@ h2.br-detail-name {
 .br-rueckfrage > .br-fakt {
   margin: 0;
 }
+.br-rueckfrage-zu {
+  margin: 0 0 4px;
+  font-size: 12px;
+}
+/* Hinweis zum Planungsrecht: knapp, neutral (kein Widerspruch) */
+.br-planungsrecht-hinweis {
+  font-size: 12px;
+  padding: 4px 8px;
+}

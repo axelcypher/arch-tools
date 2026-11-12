@@ -121,7 +121,8 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   auswahl: null,
   fokus: null,
   ansage: '',
-  ansagen: (text) => set({ ansage: text }),
+  // derselbe Text noch einmal: unsichtbar verändert, damit der Screenreader ihn erneut vorliest
+  ansagen: (text) => set((s) => ({ ansage: s.ansage === text ? `${text}\u200b` : text })),
 
   projektSetzen: (quelle, project, roh) => {
     const antrag = aktiverAntrag(roh);

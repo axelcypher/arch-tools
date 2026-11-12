@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FAKT_GRUPPEN, faktName, ortsgebunden, zaehlEinheit } from '@core/baurecht/typen';
 import { aktuelleLage, OHNE_LAGEBEZUG } from '../pruefung';
 import { textPasst } from '../suche';
+import { ortVon } from '@core/baurecht/ort';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
 import { werten } from '@core/baurecht/kurz';
 import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
@@ -104,25 +105,58 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, stand }: { klaerun
   useEffect(() => {
     if (fokus?.startsWith('merkmal:')) setAuf(true);
   }, [fokus]);
+  // Fokus erst setzen, wenn die Gruppe offen ist (sonst gibt es das Merkmal noch nicht – der Fokus fiele auf die Seite)
   useEffect(() => {
-    if (!fokus?.startsWith('merkmal:') || !ref.current) return;
+    if (!fokus?.startsWith('merkmal:') || !ref.current || !auf) return;
     const el = ref.current.querySelector<HTMLElement>(`[data-merkmal="${CSS.escape(fokus.slice(8))}"]`);
     if (el) {
       inBereichZeigen(el.closest<HTMLElement>('.br-angaben-liste'), el, 'mitte');
-      el.querySelector<HTMLElement>('button')?.focus();
+      // auf den gewählten Wert (nicht den ersten Knopf – ein weiteres Enter änderte sonst das Merkmal)
+      (el.querySelector<HTMLElement>('button[aria-pressed="true"]') ?? el.querySelector<HTMLElement>('button'))?.focus();
     }
     useBaurecht.getState().fokusSetzen(null);
-  }, [fokus]);
+  }, [fokus, auf]);
+  // offene Rückfragen (z. B. Umfang der Beseitigung) zählen im Kopf mit – sonst stünde dort „alle festgelegt“
+  const rueckfragenOffen = Object.values(RUECKFRAGEN)
+    .flat()
+    .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale) && stand.auswertung.fakten[rid]?.wert == null).length;
+  const standText = fehlen ? `${fehlen} offen` : rueckfragenOffen ? `${rueckfragenOffen === 1 ? 'eine Rückfrage' : `${rueckfragenOffen} Rückfragen`} offen` : 'alle festgelegt';
+  // Merkmal mit Rückfrage gewählt: Ansage und die Rückfrage in den Blick
+  const setzen = (name: string, w: string) => {
+    useBaurecht.getState().merkmalSetzen(name, w);
+    const rid = (RUECKFRAGEN[name] ?? []).find((r) => rueckfrageSichtbar(r, stand, { ...merkmale, [name]: w }));
+    if (rid) {
+      useBaurecht.getState().ansagen(`Rückfrage: ${faktName(stand.auswertung.faktDefs[rid], rid)}`);
+      setTimeout(() => {
+        const z = ref.current?.querySelector<HTMLElement>(`[data-fakt="${CSS.escape(rid)}"]`);
+        if (z) inBereichZeigen(z.closest<HTMLElement>('.br-angaben-liste'), z, 'naechst');
+      }, 0);
+    }
+  };
   return (
     <section ref={ref} className="br-angaben-gruppe" aria-labelledby="br-merkmale">
       <h3 id="br-merkmale">
         {/* während der Suche fest aufgeklappt (zeigt die passenden Merkmale) – der Knopf ist dann ohne Wirkung und deshalb aus */}
         {/* aria-disabled statt disabled: die Überschrift bleibt gut lesbar (sie beschriftet die sichtbare Gruppe) */}
         <button type="button" className="br-gruppe-knopf" aria-expanded={auf} aria-disabled={suche ? true : undefined} title={suche ? 'Während der Suche aufgeklappt' : undefined} onClick={() => !suche && setAuf(!auf)}>
-          <span aria-hidden="true">{suche ? '' : auf ? '▾' : '▸'}</span> Antragsmerkmale <span className="br-gruppe-stand">{fehlen ? `${fehlen} offen` : 'alle festgelegt'}</span>
+          <span aria-hidden="true">{suche ? '' : auf ? '▾' : '▸'}</span> Antragsmerkmale <span className="br-gruppe-stand">{standText}</span>
         </button>
       </h3>
       {auf && <p className="br-leise">Gemeinsam mit der App Formulare – gilt für den ganzen Antrag.</p>}
+      {/* eingeklappt (alle Merkmale gesetzt): die Rückfragen bleiben trotzdem sichtbar – sonst stünden sie nirgends */}
+      {!auf &&
+        Object.entries(RUECKFRAGEN).flatMap(([name, ids]) =>
+          ids
+            .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale))
+            .map((rid) => (
+              <div key={rid} className="br-rueckfrage" role="group" aria-label={`Rückfrage zu ${MERKMAL_TITEL[name] ?? name}`}>
+                <p className="br-leise br-rueckfrage-zu">
+                  Zu {MERKMAL_TITEL[name] ?? name}: „{merkmale[name]}“
+                </p>
+                <FaktZeile id={rid} def={stand.auswertung.faktDefs[rid]} wert={stand.auswertung.fakten[rid]} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} alsKnoepfe />
+              </div>
+            )),
+        )}
       {auf && sichtbar.map((m) => {
         const e = MERKMAL_ERKLAERUNG[m.name];
         const wert = merkmale[m.name] ?? '';
@@ -153,26 +187,24 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, stand }: { klaerun
                   aria-pressed={wert === w}
                   title={e?.werte?.[w] ? `${w}: ${e.werte[w]}` : w}
                   // derselbe Wert erneut gewählt bestätigt das Planungsrecht für diesen Ort
-                  onClick={() => (wert !== w ? useBaurecht.getState().merkmalSetzen(m.name, w) : m.name === 'Planungsrecht' && planungsrechtOffen && useBaurecht.getState().planungsrechtBestaetigen())}
+                  onClick={() => {
+                    if (wert !== w) return setzen(m.name, w);
+                    if (m.name === 'Planungsrecht' && planungsrechtOffen) {
+                      useBaurecht.getState().planungsrechtBestaetigen();
+                      useBaurecht.getState().ansagen('Planungsrecht für diesen Ort bestätigt');
+                    }
+                  }}
                 >
                   {w}
                 </button>
               ))}
             </div>
-            {/* Rückfrage zum gewählten Wert (z. B. Umfang der Beseitigung) direkt hier, mit offener Erläuterung */}
-            {(RUECKFRAGEN[m.name] ?? [])
-              .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale))
-              .map((rid) => (
-                <div key={rid} className="br-rueckfrage">
-                  <FaktZeile id={rid} def={stand.auswertung.faktDefs[rid]} wert={stand.auswertung.fakten[rid]} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} erlaeuterungOffen />
-                </div>
-              ))}
             {wert && (
               <div className="br-merkmal-fuss">
                 {e?.werte?.[wert] && <span className="br-leise br-erklaerung">{nb(e.werte[wert])}</span>}
                 {m.name === 'Planungsrecht' && planungsrechtOffen && (
-                  <button type="button" className="small" onClick={planungsrechtGiltHier} title={`${planungsrechtOffen} – für diesen Ort bestätigen`}>
-                    Gilt hier
+                  <button type="button" className="small" onClick={planungsrechtGiltHier} title={planungsrechtOffen}>
+                    Für diesen Ort bestätigen
                   </button>
                 )}
                 <button type="button" className="small br-link" aria-label={`${MERKMAL_TITEL[m.name] ?? m.name} leeren`} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title="Merkmal für den ganzen Antrag leeren (auch in Formulare)">
@@ -180,6 +212,14 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, stand }: { klaerun
                 </button>
               </div>
             )}
+            {/* Rückfrage zum gewählten Wert (z. B. Umfang der Beseitigung) direkt unter der Erklärung des Werts */}
+            {(RUECKFRAGEN[m.name] ?? [])
+              .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale))
+              .map((rid) => (
+                <div key={rid} className="br-rueckfrage">
+                  <FaktZeile id={rid} def={stand.auswertung.faktDefs[rid]} wert={stand.auswertung.fakten[rid]} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} alsKnoepfe />
+                </div>
+              ))}
           </div>
         );
       })}
@@ -193,7 +233,7 @@ export const wieAngezeigt = (n: number, def: Pick<FaktDef, 'einheit'>): number =
 /** id der Unterzeile (Frage bzw. Rest des Titels) als Beschreibung der Eingabe – nur, wenn es sie gibt */
 const beschreibung = (def: FaktDef, id: string) => (def.frage || (def.kurz && def.titel !== def.kurz) ? `br-frage-${id}` : undefined);
 
-function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void }) {
+function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void; alsKnoepfe?: boolean }) {
   const v = wert?.wert ?? null;
   // eine Angabe von Hand, die nur noch Hinweis ist (z. B. zu einer früheren Lage): derselbe Wert lässt sich erneut setzen
   // (für alle Typen zusätzlich der Knopf „für diese Lage übernehmen“ in der Fußzeile)
@@ -220,6 +260,17 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
         {def.einheit && <span className="br-leise">{def.einheit}</span>}
       </span>
     );
+  // Rückfragen mit langen Werten als senkrechte Knöpfe – eine Auswahlliste schnitte gerade das Unterscheidende ab
+  if (def.typ === 'wahl' && alsKnoepfe)
+    return (
+      <div className="br-segment br-segment-senkrecht" role="group" aria-label={faktName(def, id)} aria-describedby={beschreibung(def, id)} onKeyDown={segmentTaste}>
+        {(def.werte ?? []).map((w, i) => (
+          <button key={w} type="button" tabIndex={tabStopp(v === w, i === 0, v === null)} aria-pressed={v === w} className={v === w ? 'active' : ''} onClick={() => (v !== w || neuBinden) && onWert(w)}>
+            {w}
+          </button>
+        ))}
+      </div>
+    );
   if (def.typ === 'wahl')
     return (
       <select aria-label={faktName(def, id)} aria-describedby={beschreibung(def, id)} title={def.kurz ? def.titel : undefined} value={v === null ? '' : String(v)} onChange={(e) => onWert(e.target.value || undefined)}>
@@ -234,14 +285,16 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   return <TextField value={v === null ? '' : String(v)} onChange={(t) => onWert(t.trim() || undefined)} label={faktName(def, id)} placeholder={id === 'lage.ags' ? '8 Ziffern' : undefined} />;
 }
 
-function FaktZeile({ id, def, wert, klaert, eigen, erlaeuterungOffen = false }: { id: string; def: FaktDef; wert: FaktWert | undefined; klaert: number; eigen: boolean; erlaeuterungOffen?: boolean }) {
+function FaktZeile({ id, def, wert, klaert, eigen, erlaeuterungOffen = false, alsKnoepfe = false }: { id: string; def: FaktDef; wert: FaktWert | undefined; klaert: number; eigen: boolean; erlaeuterungOffen?: boolean; alsKnoepfe?: boolean }) {
   const fokus = useBaurecht((s) => s.fokus);
   const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (fokus === id && ref.current) {
+    // „<id>:bestaetigen“: direkt auf „Bestätigen …“ (z. B. vom Hinweis an festen Modulwerten zum Gemeindeschlüssel)
+    if ((fokus === id || fokus === `${id}:bestaetigen`) && ref.current) {
       inBereichZeigen(ref.current.closest<HTMLElement>('.br-angaben-liste'), ref.current, 'mitte');
-      ref.current.querySelector<HTMLElement>('button, input, select')?.focus();
+      const ziel = fokus.endsWith(':bestaetigen') ? ref.current.querySelector<HTMLElement>('button[data-bestaetigen]') : null;
+      (ziel ?? ref.current.querySelector<HTMLElement>('[aria-pressed="true"], .br-segment [tabindex="0"]') ?? ref.current.querySelector<HTMLElement>('button, input, select'))?.focus();
       useBaurecht.getState().fokusSetzen(null);
     }
   }, [fokus, id]);
@@ -254,7 +307,8 @@ function FaktZeile({ id, def, wert, klaert, eigen, erlaeuterungOffen = false }: 
   const lage = aktuelleLage(project).lage;
   const andereLage = !!wert && lagebezug(def, wert) && (!lage || (!!wert.lage && wert.lage !== lage));
   // nach Zurücknehmen/Zurücksetzen verschwindet der Knopf – Fokus auf das erste Bedienelement der Angabe
-  const fokusZurZeile = () => setTimeout(() => ref.current?.querySelector<HTMLElement>('button:not([disabled]), input, select')?.focus(), 0);
+  // auf den gewählten Wert bzw. den Tabstopp der Gruppe – nicht auf einen beliebigen ersten Knopf
+  const fokusZurZeile = () => setTimeout(() => (ref.current?.querySelector<HTMLElement>('[aria-pressed="true"], .br-segment [tabindex="0"]') ?? ref.current?.querySelector<HTMLElement>('button:not([disabled]), input, select'))?.focus(), 0);
   const hilfeLang = (def.hilfe?.length ?? 0) > 90;
   // Unterzeile: die Frage, sonst der ausführliche Titel – aber nicht, wenn er nur den kurzen Namen wiederholt
   const rest = def.kurz && def.titel.startsWith(def.kurz) ? def.titel.slice(def.kurz.length).trim() : '';
@@ -286,8 +340,8 @@ function FaktZeile({ id, def, wert, klaert, eigen, erlaeuterungOffen = false }: 
               {/Gemeindeschlüssel/.test(wert.grund ?? '') ? (
                 <span className="br-fester-grund">
                   <span className="br-leise-stark">gilt erst mit bestätigtem Gemeindeschlüssel</span>{' '}
-                  <button type="button" className="small" onClick={() => useBaurecht.getState().fokusSetzen('lage.ags')}>
-                    Gemeindeschlüssel bestätigen …
+                  <button type="button" className="small br-link" aria-label={`${name}: zum Gemeindeschlüssel`} onClick={() => useBaurecht.getState().fokusSetzen('lage.ags:bestaetigen')}>
+                    Zum Gemeindeschlüssel
                   </button>
                 </span>
               ) : (
@@ -301,6 +355,7 @@ function FaktZeile({ id, def, wert, klaert, eigen, erlaeuterungOffen = false }: 
           id={id}
           def={def}
           wert={wert}
+          alsKnoepfe={alsKnoepfe}
           onWert={(v) => {
             // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
             if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
@@ -343,7 +398,7 @@ function FaktZeile({ id, def, wert, klaert, eigen, erlaeuterungOffen = false }: 
                   )}
                 </>
               ) : (
-                <button type="button" className="small" aria-label={`${name} bestätigen …`} title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, name, wert, lagebezug(def, wert))}>
+                <button type="button" className="small" data-bestaetigen="" aria-label={`${name} bestätigen …`} title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, name, wert, lagebezug(def, wert))}>
                   Bestätigen …
                 </button>
               )}
@@ -422,6 +477,13 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   }, [auswertung.paragrafen]);
   const merkmale = useBaurecht((s) => s.merkmale);
   const ansage = useBaurecht((s) => s.ansage);
+  const ortAnzeige = ortVon(useBaurecht((s) => s.project))?.anzeige;
+  // Ansagen nach kurzer Zeit leeren – derselbe Text wird dann beim nächsten Mal wieder vorgelesen
+  useEffect(() => {
+    if (!ansage) return;
+    const t = setTimeout(() => useBaurecht.setState({ ansage: '' }), 1500);
+    return () => clearTimeout(t);
+  }, [ansage]);
   const ctx = { merkmale, fakten: auswertung.fakten, einreichung: stand.einreichung, heute: heute(), bausteine: auswertung.text.bausteine };
   const antrag = useBaurecht((s) => s.antrag);
   const projektKennung = useBaurecht((s) => (s.quelle ? (s.quelle.art === 'datei' ? s.quelle.name : s.quelle.datei) : ''));
@@ -442,12 +504,17 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   const rang = ordnung.schluessel === schluessel ? ordnung.rang : rangBilden();
   // Rückfragen stehen unter ihrem Merkmal – solange die Merkmale zu sehen sind, nicht noch einmal in der Gruppe
   const merkmaleSichtbar = !suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche));
-  const alsRueckfrage = new Set(Object.values(RUECKFRAGEN).flat().filter((rid) => rueckfrageSichtbar(rid, stand, merkmale)));
+  const alsRueckfrage = new Set(
+    Object.entries(RUECKFRAGEN)
+      .filter(([name]) => !suche || VORGABE_MERKMALE.some((m) => m.name === name && merkmalPasst(m, suche)))
+      .flatMap(([, ids]) => ids)
+      .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale)),
+  );
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(auswertung.faktDefs)
       .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && !(merkmaleSichtbar && alsRueckfrage.has(id)))
       .filter(([, d]) => !d.wenn || werten(d.wenn, ctx).w !== 'nein')
-      .filter(([id, d]) => textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${id}`, suche))
+      .filter(([id, d]) => textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${(d.werte ?? []).join(' ')} ${id}`, suche))
       .map(([id]) => id)
       .sort((a, b) => (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
     return { ...g, ids };
@@ -476,10 +543,11 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
             </div>
           ))}
         {stand.planungsrechtHinweis && (
-          <div className="br-meldung br-meldung-warn" role="status">
-            {stand.planungsrechtHinweis}.{' '}
-            <button type="button" className="small" onClick={planungsrechtGiltHier} title="Das Planungsrecht gilt so für dieses Grundstück – für diesen Ort bestätigen">
-              Gilt hier
+          // knapp (eine Zeile): der häufige Fall „noch nicht bestätigt“ kurz, die Anschrift im Titel und im Namen des Knopfs
+          <div className="br-meldung br-meldung-info br-planungsrecht-hinweis" role="status" title={stand.planungsrechtHinweis}>
+            <span>{/noch nicht bestätigt$/.test(stand.planungsrechtFrueher ?? '') ? 'Planungsrecht für diesen Ort noch nicht bestätigt.' : `${stand.planungsrechtHinweis}.`}</span>{' '}
+            <button type="button" className="small" onClick={planungsrechtGiltHier} aria-label={`Planungsrecht „${useBaurecht.getState().merkmale['Planungsrecht'] ?? ''}“ für ${ortAnzeige ?? 'diesen Ort'} bestätigen`} title="Das Planungsrecht gilt so für dieses Grundstück – bis dahin zählt es nicht als gesichert">
+              Bestätigen
             </button>
           </div>
         )}

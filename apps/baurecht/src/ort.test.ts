@@ -40,7 +40,7 @@ describe('Ort: Festlegungen und Planungsrecht nach einem Adresswechsel', () => {
     };
     expect(stand().ueberholt ?? '').not.toMatch(/Ort/);
     umziehen('Andere Straße 9');
-    expect(stand().ueberholt).toMatch(/Ort seit der Festlegung: Anschrift/);
+    expect(stand().ueberholt).toMatch(/Ort geändert: Anschrift/);
     expect(stand().ampel).not.toBe('gruen');
   });
 
@@ -48,9 +48,9 @@ describe('Ort: Festlegungen und Planungsrecht nach einem Adresswechsel', () => {
     const st = useBaurecht.getState();
     // aus Formulare bzw. der Datei, nie in Baurecht bestätigt: nicht gesichert, mit eigenem Grund (kein Widerspruch)
     const s0 = useBaurecht.getState();
-    expect(planungsrechtVerschoben(s0.project, s0.merkmale, s0.pruefung.planungsrechtOrt)).toMatch(/noch für keinen Ort bestätigt/);
+    expect(planungsrechtVerschoben(s0.project, s0.merkmale, s0.pruefung.planungsrechtOrt)).toMatch(/noch nicht bestätigt/);
     const p0 = pruefstandBerechnen(s0.paket, s0.project, s0.merkmale, s0.pruefung.fakten, {}, '2026-12-01', {}, s0.pruefung.planungsrechtOrt);
-    expect(p0.planungsrechtHinweis).toMatch(/^Planungsrecht „.+“ noch für keinen Ort bestätigt/);
+    expect(p0.planungsrechtHinweis).toMatch(/^Planungsrecht „.+“ für .+ noch nicht bestätigt$/);
     expect(p0.auswertung.paragrafen.some((x) => x.gruende.some((g) => g.includes('Nicht gesichert: Planungsrecht')))).toBe(true);
     expect(p0.auswertung.paragrafen.some((x) => x.gruende.some((g) => /Widerspruch: Planungsrecht/.test(g)))).toBe(false);
     st.merkmalSetzen('Planungsrecht', 'Innenbereich');
@@ -59,7 +59,7 @@ describe('Ort: Festlegungen und Planungsrecht nach einem Adresswechsel', () => {
     expect(planungsrechtVerschoben(s1.project, s1.merkmale, s1.pruefung.planungsrechtOrt)).toBeUndefined();
     umziehen('Andere Straße 9');
     const s2 = useBaurecht.getState();
-    expect(planungsrechtVerschoben(s2.project, s2.merkmale, s2.pruefung.planungsrechtOrt)).toMatch(/früheren Ort \(Anschrift/);
+    expect(planungsrechtVerschoben(s2.project, s2.merkmale, s2.pruefung.planungsrechtOrt)).toMatch(/war für .+ bestätigt – für .+ noch nicht/);
     const p = pruefstandBerechnen(s2.paket, s2.project, s2.merkmale, s2.pruefung.fakten, {}, '2026-12-01', {}, s2.pruefung.planungsrechtOrt);
     expect(p.planungsrechtFrueher).toBeDefined();
     expect(p.widerspruchMerkmale).toContain('Planungsrecht');
@@ -116,7 +116,9 @@ describe('Paragrafensuche, Runde 10', () => {
   const treffer = (q: string) => normen.flatMap((n) => n.paragrafen.filter((p) => suchTreffer(q, normen)(p, n)).map((p) => `${n.def.kurz} ${p.paragraf}`));
   it('Absatz zählt nicht zur Nummer, unbekannter § ergibt nichts, Zahlen nur als ganzes Wort', () => {
     expect(treffer('§ 6 Abs. 1 BauO NRW')).toEqual(['BauO NRW 6']);
-    expect(treffer('§ 1 BauNVO')).toEqual([]);
+    // unbekannter §, aber genannte Norm: die Norm
+    expect(treffer('§ 1 BauNVO')).toEqual(['BauNVO 10', 'BauNVO 11']);
+    expect(treffer('§ 99')).toEqual([]);
     expect(treffer('1 sonder')).toEqual([]);
   });
 });
@@ -182,5 +184,36 @@ describe('Design Runde 9: Suche und Unterzeilen', () => {
     expect(merkmalUnterzeile('Gebäudeklasse', 'Gebäudeklasse (§ 2 Abs. 3 BauO NRW)')).toBe('§ 2 Abs. 3 BauO NRW');
     expect(merkmalUnterzeile('Planungsrecht', 'Planungsrechtliche Lage (§§ 30, 34, 35 BauGB)')).toBe('Planungsrechtliche Lage (§§ 30, 34, 35 BauGB)');
     expect(ohneKlammer('(a (b) c)')).toBe('(a (b) c)');
+  });
+});
+
+describe('Paragrafensuche, Runde 11: Satzzeichen, mehrere Nummern, Nr. mit Buchstabe', () => {
+  const para = (paragraf: string, titel: string) => ({ paragraf, titel, gruende: [] }) as unknown as ParagrafErgebnis;
+  const norm = (kurz: string, titel: string, paragrafen: ParagrafErgebnis[]) => ({ def: { kurz, titel }, paragrafen }) as unknown as NormErgebnis;
+  const normen = [norm('BauGB', 'Baugesetzbuch', [para('30', 'B-Plan'), para('34', 'Innenbereich'), para('35', 'Außenbereich')]), norm('BauO NRW', 'Landesbauordnung', [para('62', 'Verfahrensfrei')])];
+  const treffer = (q: string) => normen.flatMap((n) => n.paragrafen.filter((p) => suchTreffer(q, normen)(p, n)).map((p) => `${n.def.kurz} ${p.paragraf}`));
+  it('übliche Schreibweisen', () => {
+    expect(treffer('§ 34 BauGB.')).toEqual(['BauGB 34']);
+    expect(treffer('§ 34, BauGB')).toEqual(['BauGB 34']);
+    expect(treffer('§§ 30, 34 BauGB')).toEqual(['BauGB 30', 'BauGB 34']);
+    expect(treffer('§ 62 Abs. 1 Satz 1 Nr. 1 a BauO NRW')).toEqual(['BauO NRW 62']);
+  });
+});
+
+describe('Runde 11: ältere Angaben', () => {
+  beforeEach(() => {
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+  });
+  it('„vollständiger Abbruch: ja“ wird Vorschlag für den Umfang; Zahlen als Text werden gelesen oder sind Hinweis', () => {
+    const s = useBaurecht.getState();
+    const m = (wert: FaktWert['wert']): FaktWert => ({ wert, herkunft: 'manuell', sicherheit: 'sicher' });
+    const f = alleFakten(s.project, { 'vorhaben.beseitigung_vollstaendig': m(true), 'gebaeude.hoehe': m('7,5'), 'gebaeude.bgf': m('viel') }, s.paket.module);
+    expect(f['vorhaben.beseitigung_umfang']).toMatchObject({ wert: 'vollständiger Abbruch ohne Ersatzbau', sicherheit: 'hinweis' });
+    expect(f['gebaeude.hoehe']).toMatchObject({ wert: 7.5, sicherheit: 'sicher' });
+    expect(f['gebaeude.bgf']).toMatchObject({ sicherheit: 'hinweis', grund: expect.stringMatching(/keine Zahl/) });
+    // bestätigt: gilt als gesichert
+    const best = alleFakten(s.project, { 'vorhaben.beseitigung_vollstaendig': m(true), 'vorhaben.beseitigung_umfang': { wert: 'vollständiger Abbruch ohne Ersatzbau', herkunft: 'abgeleitet', sicherheit: 'hinweis', bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Abbruchantrag geprüft' } } }, s.paket.module);
+    expect(best['vorhaben.beseitigung_umfang'].bestaetigt).toBeDefined();
   });
 });

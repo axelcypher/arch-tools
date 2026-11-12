@@ -36,5 +36,6 @@ export function textPasst(text: string, suche: string): boolean {
   const q = suchNorm(suche);
   if (!q) return true;
   const t = suchNorm(text);
-  return q.split(' ').every((x) => wortPasst(t, x) || (SYNONYME[x] ?? []).some((s) => t.includes(s)));
+  // Synonyme nur am Wortanfang („Umbau“ → „Änderung“, nicht „Veränderungssperre“)
+  return q.split(' ').every((x) => wortPasst(t, x) || (SYNONYME[x] ?? []).some((s) => new RegExp(`(^|[^a-zäöüß0-9])${esc(s)}`).test(t)));
 }

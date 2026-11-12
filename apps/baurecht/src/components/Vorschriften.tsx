@@ -192,30 +192,43 @@ function NormKarte({
  */
 export function suchTreffer(suche: string, normen: NormErgebnis[] = []): (p: ParagrafErgebnis, n: NormErgebnis) => boolean {
   const norm = suchNorm;
-  const q = norm(suche);
-  if (!q) return () => true;
+  if (!norm(suche)) return () => true;
   // Volltext (Kürzel am Wortanfang, Zahlen als ganzes Wort, Synonyme – dieselbe Suche wie in den Angaben)
   const volltext = (p: ParagrafErgebnis, n: NormErgebnis) => textPasst(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`, suche);
-  // „§ 6 Abs. 1 BauO NRW“, „§ 34 I BauGB“: Absatz, Satz, Nummer und römische Absatzziffern gehören nicht zur
-  // Paragrafennummer; mit „§“ ist es die erste Zahl danach
-  const ohneAbsatz = q
-    .replace(/(?:^| )(?:abs|absatz|satz|nr|s|ziff)\.? ?\d+[a-z]?(?= |$)/g, ' ')
-    .replace(/(?:^| )[ivx]{1,4}(?= |$)/g, ' ')
+  // Zitat zerlegen: Satzzeichen weg; „Abs./Satz/Nr./Ziff. n (a)“ und römische Absatzziffern gehören nicht zur Nummer;
+  // mit „§“ bzw. „§§“ sind die Zahlen direkt danach die Nummern („§§ 30, 34 BauGB“), sonst die erste freie Zahl
+  const q = norm(suche.replace(/[.,;:]/g, ' '))
+    .replace(/(?:^| )(?:abs|absatz|satz|nr|ziff|buchst|s)\.? ?\d+(?: [a-z])?(?= |$)/g, ' ')
+    // römische Absatzziffern nur direkt nach einer Nummer („34 I“) – „LP II“ ist eine Norm
+    .replace(/(\d+[a-z]?) [ivx]{1,4}(?= |$)/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
-  const nachParagraf = suche.includes('§') ? /§\s*(\d+[a-z]?)/i.exec(suche)?.[1]?.toLowerCase() : undefined;
-  const nr = nachParagraf ?? /(?:^| )(\d+[a-z]?)(?= |$)/.exec(ohneAbsatz)?.[1];
-  if (!nr) return volltext;
-  const rest = ohneAbsatz.replace(new RegExp(`(^| )${nr}(?= |$)`), ' ').replace(/\s+/g, ' ').trim();
-  const ohne = (s: string) => norm(s).replace(/ /g, '');
+  const tokens = q.split(' ').filter(Boolean);
+  const istNr = (t: string) => /^\d+[a-z]?$/.test(t);
+  let nrs: string[] = [];
+  if (suche.includes('§')) {
+    const nach = norm(suche.slice(suche.indexOf('§')).replace(/[.,;:]/g, ' ')).split(' ').filter(Boolean);
+    for (const t of nach) {
+      if (istNr(t)) nrs.push(t);
+      else if (t !== 'und' && t !== 'bis' && t !== '§') break;
+    }
+  }
+  if (!nrs.length) {
+    const erste = tokens.find(istNr);
+    if (erste) nrs = [erste];
+  }
+  if (!nrs.length) return volltext;
+  const rest = tokens.filter((t) => !istNr(t) && t !== 'und' && t !== 'bis').join(' ');
+  const ohne = (x: string) => norm(x).replace(/ /g, '');
   // Norm: genau die Kurzform („BauO NRW“ ist nicht „SAN-VO … BauO NRW“), sonst Kurzform enthält bzw. Titel enthält
   const stufen: ((n: NormErgebnis) => boolean)[] = rest ? [(n) => ohne(n.def.kurz) === ohne(rest), (n) => ohne(n.def.kurz).includes(ohne(rest)), (n) => norm(n.def.titel).includes(rest)] : [() => true];
-  for (const s of stufen) {
-    const passt = (p: ParagrafErgebnis, n: NormErgebnis) => p.paragraf.toLowerCase() === nr && s(n);
+  for (const st of stufen) {
+    const passt = (p: ParagrafErgebnis, n: NormErgebnis) => nrs.includes(p.paragraf.toLowerCase()) && st(n);
     if (!normen.length || normen.some((n) => n.paragrafen.some((p) => passt(p, n)))) return passt;
   }
-  // ausdrücklich nach einem Paragrafen gefragt („§ 1 BauNVO“), den die Regeln nicht kennen: kein Treffer statt
-  // Volltext (der Leerzustand sagt das)
+  // keinen dieser Paragrafen gibt es in den Regeln – dann die Norm selbst, wenn sie genannt ist („§ 1 BauNVO“ → BauNVO)
+  if (rest) for (const st of stufen.slice(0, 2)) if (normen.some(st)) return (_p, n) => st(n);
+  // ausdrücklich nach einem Paragrafen gefragt, ohne Norm und ohne Treffer: nichts (der Leerzustand sagt das)
   if (suche.includes('§')) return () => false;
   return volltext;
 }
@@ -462,8 +475,21 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       </div>
       {ohneOrt.length > 0 && (
         <div className="br-meldung br-meldung-warn br-ohne-ort" role="status">
-          {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt.{' '}
-          <button type="button" className="small" onClick={() => useBaurecht.getState().festlegungenOrtUebernehmen(ohneOrt)} title="Dem jetzigen Ort zuordnen – als Entwurf; beim Speichern wird jede noch einmal bestätigt">
+          {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt. Übernehmen ordnet {ohneOrt.length === 1 ? 'sie' : 'sie alle'} dem jetzigen Ort zu – als Entwurf, beim Speichern zu bestätigen.{' '}
+          <button type="button" className="small br-link" onClick={() => setNurGeaendert(true)} title="Nur die geänderten bzw. überholten Paragrafen zeigen">
+            zeigen
+          </button>{' '}
+          <button
+            type="button"
+            className="small"
+            onClick={() => {
+              useBaurecht.getState().festlegungenOrtUebernehmen(ohneOrt);
+              // die Meldung verschwindet – Ansage und Fokus ins Suchfeld statt auf die Seite
+              useBaurecht.getState().ansagen(`${ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`);
+              setTimeout(() => suchfeld.current?.focus(), 0);
+            }}
+            title="Dem jetzigen Ort zuordnen – als Entwurf; beim Speichern wird jede noch einmal bestätigt"
+          >
             Für diesen Ort übernehmen
           </button>
         </div>

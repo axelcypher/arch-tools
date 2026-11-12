@@ -270,14 +270,21 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
 
 /** „Klärt am meisten“: die Angaben, die die meisten offenen Paragrafen entscheiden (oben in den Angaben) */
 export function Klaeren({ stand }: { stand: Pruefstand }) {
-  const { klaerung } = stand.auswertung;
-  if (!klaerung.length) return null;
+  // fehlende Angaben und Hinweise, deren Bestätigung entscheidet – zusammen nach Wirkung geordnet
+  const liste = [...stand.auswertung.klaerung.map((k) => ({ ...k, bestaetigen: false })), ...(stand.auswertung.bestaetigen ?? []).map((k) => ({ ...k, bestaetigen: true }))].sort((a, b) => b.anzahl - a.anzahl).slice(0, 4);
+  if (!liste.length) return null;
   return (
     <div className="br-klaeren" role="group" aria-label="Angaben, die am meisten klären">
       <h3 className="br-klaeren-titel">Klärt am meisten</h3>
-      {klaerung.slice(0, 4).map((k) => (
-        <button key={k.id} type="button" className="br-chip-knopf" onClick={() => useBaurecht.getState().fokusSetzen(k.id)} title={`Diese Angabe entscheidet ${k.anzahl} offene Paragrafen`}>
-          {k.titel} <span className="br-chip-zahl">klärt {k.anzahl}</span>
+      {liste.map((k) => (
+        <button
+          key={k.id}
+          type="button"
+          className="br-chip-knopf"
+          onClick={() => useBaurecht.getState().fokusSetzen(k.bestaetigen ? `${k.id}:bestaetigen` : k.id)}
+          title={k.bestaetigen ? `Bestätigen entscheidet ${k.anzahl} Paragrafen, die nur wegen dieses Hinweises offen sind` : `Diese Angabe entscheidet ${k.anzahl} offene Paragrafen`}
+        >
+          {k.titel} <span className="br-chip-zahl">{k.bestaetigen ? 'bestätigen klärt' : 'klärt'} {k.anzahl}</span>
         </button>
       ))}
     </div>

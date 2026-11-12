@@ -28,10 +28,13 @@ export function ortVon(project: Project | null): Ort | undefined {
  */
 export function planungsrechtOhneOrt(wert: string | undefined, gemerkt: Ort | undefined, jetzt: Ort | undefined): string | undefined {
   if (!wert || !jetzt) return undefined;
-  if (!gemerkt) return 'noch für keinen Ort bestätigt (aus Formulare oder einer älteren Datei)';
-  if (gemerkt.wert !== undefined && gemerkt.wert !== wert) return `seit der Bestätigung geändert (bestätigt war „${gemerkt.wert}“)`;
+  const hier = jetzt.anzeige ?? 'diesen Ort';
+  // ohne gemerkten Ort oder Wert (Formulare, ältere Datei): noch nicht bestätigt
+  if (!gemerkt || gemerkt.wert === undefined) return `für ${hier} noch nicht bestätigt`;
+  if (gemerkt.wert !== wert) return `seit der Bestätigung geändert (bestätigt war „${gemerkt.wert}“)`;
   const weg = ortGeaendert(gemerkt, jetzt);
-  return weg ? `gehört zu einem früheren Ort (${weg}${gemerkt.anzeige && gemerkt.adresse !== jetzt.adresse ? `; bestätigt für ${gemerkt.anzeige}` : ''})` : undefined;
+  if (!weg) return undefined;
+  return gemerkt.adresse !== jetzt.adresse ? `war für ${gemerkt.anzeige ?? 'einen früheren Ort'} bestätigt – für ${hier} noch nicht` : `für ${hier} nicht mehr bestätigt (${weg})`;
 }
 
 /** warum ein Ort nicht mehr der von damals ist; undefined = derselbe Ort (bzw. kein Vergleich möglich) */

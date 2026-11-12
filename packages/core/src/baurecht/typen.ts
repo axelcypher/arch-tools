@@ -308,6 +308,8 @@ export interface ParagrafErgebnis {
   fundstellen: string[];
   verweise?: string[];
   festlegung?: Festlegung;
+  /** die fehlenden Angaben, deren Antwort hier etwas ändert (so zählen „Klärt am meisten“ und das Protokoll) */
+  klaerend?: string[];
   /** Festlegung überholt: warum */
   ueberholt?: string;
   /**

@@ -55,6 +55,12 @@ export function alleFakten(project: Project | null, eigeneRoh: Record<string, Fa
   }
   const out = { ...basis };
   const defs = { ...FAKTEN, ...faktDefinitionen(module) };
+  // frühere Angabe „vollständiger Abbruch ohne Ersatzbau: ja“ (bis Regelpaket 2026.11.12.9): als Vorschlag für den
+  // Umfang übernehmen – nur Hinweis, bis er bestätigt bzw. neu gewählt ist
+  const alt = eigene['vorhaben.beseitigung_vollstaendig'];
+  // (als Wert aus der Projektdatei, damit „Bestätigen …“ wie bei anderen Vorschlägen greift)
+  if (alt?.wert === true && defs['vorhaben.beseitigung_umfang'])
+    out['vorhaben.beseitigung_umfang'] = basis['vorhaben.beseitigung_umfang'] = { wert: 'vollständiger Abbruch ohne Ersatzbau', herkunft: 'abgeleitet', sicherheit: 'hinweis', quelle: 'frühere Angabe', grund: 'aus der früheren Angabe „Vollständiger Abbruch ohne Ersatzbau: ja“ übernommen – bitte bestätigen oder neu wählen' };
   for (const [id, e] of Object.entries(eigene)) {
     // eine Bestätigung eines Werts aus der Projektdatei (Modell, Stammdaten, Vorschlag) gilt nur für genau diesen Wert –
     // ändert sich das Modell, gilt wieder der neue Wert als Hinweis
@@ -85,6 +91,12 @@ function pruefeEigene(id: string, e: FaktWert, def: FaktDef | undefined): FaktWe
     const { bestaetigt: _b, ...ohne } = f;
     return { ...ohne, ...extra, sicherheit: 'hinweis', grund };
   };
+  // Zahl als Text (ältere Datei, Import): lesen wie eine Eingabe, sonst nur Hinweis
+  if (def?.typ === 'zahl' && typeof f.wert === 'string') {
+    const n = Number(f.wert.trim().replace(/\./g, '').replace(',', '.'));
+    if (!f.wert.trim() || !Number.isFinite(n)) return hinweis(`keine Zahl („${f.wert}“) – bitte korrigieren`);
+    f = { ...f, wert: n };
+  }
   if (typeof f.wert === 'number') {
     if (f.wert < 0) return hinweis(`negativer Wert (${wertAnzeige(f.wert, def)}) – bitte korrigieren`);
     if (zaehlEinheit(def?.einheit) && def?.typ === 'zahl' && !Number.isInteger(f.wert)) return hinweis(`Anzahl nicht ganzzahlig (${String(f.wert).replace('.', ',')}) – bitte korrigieren`);
@@ -158,7 +170,7 @@ export function pruefstandBerechnen(
   if (planungsrechtFrueher) {
     w.merkmale.add('Planungsrecht');
     vorbehalte['Planungsrecht'] = `Planungsrecht „${merkmale['Planungsrecht']}“ ${planungsrechtFrueher}`;
-    w.texte.push(`${vorbehalte['Planungsrecht']} – bis zur Bestätigung für diesen Ort nicht gesichert`);
+    w.texte.push(vorbehalte['Planungsrecht']);
   }
   const planungsrechtHinweis = planungsrechtFrueher ? w.texte[w.texte.length - 1] : undefined;
   const auswertung = auswerten({ paket, module, merkmale, fakten, einreichung, heute: heute(), texte: new Map(Object.entries(texte)), festlegungen, widersprueche: w.merkmale, vorbehalte, ort });

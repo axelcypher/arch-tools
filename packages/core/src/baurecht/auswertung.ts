@@ -72,6 +72,8 @@ export interface Auswertung {
   zaehler: Record<Ampel, number>;
   /** fehlende Angaben, sortiert nach Zahl der gelben Paragrafen, die sie klären würden */
   klaerung: { id: string; titel: string; anzahl: number }[];
+  /** Hinweise, deren Bestätigung Paragrafen entscheidet (gelb nur, weil die Angabe nicht gesichert ist) */
+  bestaetigen: { id: string; titel: string; anzahl: number }[];
   hinweise: (Hinweis & { modul: string })[];
   /** Fakten inkl. der Werte, die Module setzen */
   fakten: Record<string, FaktWert>;
@@ -384,13 +386,14 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
         } else if (f.startsWith('merkmal:') && jetzt !== null) {
           // Merkmal mit gleichem Wert, das inzwischen den Geodaten bzw. dem Modell widerspricht
           const vorher = fl.sicherheit?.[f] ?? 'sicher';
-          if (e.widersprueche?.has(f.slice(8)) && vorher !== 'widerspruch') gruende2.push(`${offenText(f, text)} jetzt widersprüchlich`);
+          // mit eigenem Vorbehalt (Planungsrecht nicht für diesen Ort bestätigt) dessen Grund, sonst „widersprüchlich“
+          if (e.widersprueche?.has(f.slice(8)) && vorher !== 'widerspruch') gruende2.push(e.vorbehalte?.[f.slice(8)] ? `${offenText(f, text)} nicht gesichert (${e.vorbehalte[f.slice(8)]})` : `${offenText(f, text)} jetzt widersprüchlich`);
         }
       }
       if (fassung) for (const [k, summe] of Object.entries(fl.stand ?? {})) if (fassung.summen[k] !== summe) gruende2.push(`Text von ${fundstelleName(k)} geändert`);
       // eine Festlegung von Hand gilt für den Ort, an dem sie getroffen wurde (Begehung, Abstimmung, Planstand)
       const ortWeg = ortGeaendert(fl.ort, e.ort);
-      if (ortWeg) gruende2.push(`Ort seit der Festlegung: ${ortWeg}`);
+      if (ortWeg) gruende2.push(fl.ort ? `Ort geändert: ${ortWeg}` : 'ohne Ortsangabe getroffen (ältere Datei)');
       // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text. Fehlt der Systemstand,
       // ist es „noch nicht wirksam“ (erneut festlegen hilft nicht); wurde ohne Text festgelegt und liegt er jetzt vor,
       // ist es überholt (jetzt am Text erneut festlegen)
@@ -528,8 +531,16 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     const aus = new Set(werte.map((v) => ausgang(p.id, mit(v))));
     return aus.size > 1 || aus.has('gelb');
   };
-  for (const p of paragrafen) if (offenAuto(p)) for (const o of p.offen) if (!o.startsWith('paragraf:') && klaert(p, o)) zahl.set(o, (zahl.get(o) ?? 0) + 1);
+  for (const p of paragrafen) {
+    if (!offenAuto(p)) continue;
+    p.klaerend = p.offen.filter((o) => !o.startsWith('paragraf:') && klaert(p, o));
+    for (const o of p.klaerend) zahl.set(o, (zahl.get(o) ?? 0) + 1);
+  }
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
+  // gelb nur wegen eines Hinweises (nichts fehlt): bestätigen klärt – Angaben, keine Merkmale
+  const zahlB = new Map<string, number>();
+  for (const p of paragrafen) if (offenAuto(p) && p.ampel === 'gelb' && !p.offen.length) for (const u of p.unsicher) if (!u.includes(':')) zahlB.set(u, (zahlB.get(u) ?? 0) + 1);
+  const bestaetigen = [...zahlB.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
 
   const zeigen = (h: Hinweis) => {
     try {
@@ -539,6 +550,6 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     }
   };
   const hinweise = e.module.flatMap((m) => (m.hinweise ?? []).filter(zeigen).map((h) => ({ ...h, modul: m.name })));
-  return { normen: normErgebnisse, paragrafen, zaehler, klaerung, hinweise, fakten, faktDefs, text, kontext: ctx };
+  return { normen: normErgebnisse, paragrafen, zaehler, klaerung, bestaetigen, hinweise, fakten, faktDefs, text, kontext: ctx };
 }
 

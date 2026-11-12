@@ -156,19 +156,22 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const ueberholt = a.paragrafen.filter((p) => p.ueberholt && p.ampel !== 'gelb');
   const gesichert = Object.entries(a.fakten).filter(([, f]) => f.bestaetigt);
   // Angaben von Hand ohne Beleg: auch sie tragen Ampeln (z. B. „Kampfmittelverdacht: nein“) – mit wer und wann
-  const vonHandOhneBeleg = Object.entries(a.fakten).filter(([id, f]) => id in eigeneFakten && id !== 'antrag.einreichung' && f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null);
+  // nur Angaben, die das Regelpaket kennt (eine Angabe einer früheren Fassung stünde sonst mit ihrer rohen Kennung da)
+  const vonHandOhneBeleg = Object.entries(a.fakten).filter(([id, f]) => id in eigeneFakten && !!a.faktDefs[id] && id !== 'antrag.einreichung' && f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null);
   // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
   const sperre = entwuerfe ? `Erst speichern: ${entwurfText} ${entwuerfe === 1 ? 'ist' : 'sind'} noch Entwurf (zweite Bestätigung fehlt)` : ungespeichertGesamt ? 'Erst speichern: Es gibt ungespeicherte Änderungen' : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   // fehlende Angaben genau wie „Klärt am meisten“ gezählt (ein Paragraf kann unter mehreren Angaben stehen)
   const gruppen = new Map<string, ParagrafErgebnis[]>();
-  for (const k of a.klaerung) gruppen.set(`Es fehlt: ${k.titel}`, a.paragrafen.filter((p) => !(p.festlegung?.bestaetigt && !p.ueberholt && !p.unwirksam) && (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0)) && p.offen.includes(k.id)));
+  // dieselben Paare (Paragraf, klärende Angabe) wie „Klärt am meisten“ – aus der Auswertung, nicht neu gezählt
+  for (const k of a.klaerung) gruppen.set(`Es fehlt: ${k.titel}`, a.paragrafen.filter((p) => p.klaerend?.includes(k.id)));
   for (const p of [...offen, ...ueberholt]) {
     const sonder = gruppeVon(p);
-    if (!sonder && p.offen.some((o) => !o.startsWith('paragraf:'))) continue; // steht schon unter seinen fehlenden Angaben
+    if (!sonder && (p.klaerend?.length ?? 0) > 0) continue; // steht schon unter seinen klärenden Angaben
+    // sonst nach dem Grund: hängt an einem offenen Paragrafen, oder die fehlenden Angaben entscheiden nur zusammen
     const o = p.offen[0];
-    const k = sonder || (o ? `Hängt an ${offenText(o, a.text)} (dort offen)` : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
+    const k = sonder || (o?.startsWith('paragraf:') ? `Hängt an ${offenText(o, a.text)} (dort offen)` : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
     gruppen.set(k, [...(gruppen.get(k) ?? []), p]);
   }
   // Gruppen mit nur einem Paragrafen kommen zusammen in eine Zeile „Weitere“
@@ -265,7 +268,11 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             <tr>
               <td>Antragsmerkmale</td>
               {/* Reihenfolge und Namen wie in der Leiste */}
-              <td>{VORGABE_MERKMALE.filter((m) => merkmale[m.name]).map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}`).join(' · ') || '–'}</td>
+              <td>
+                {VORGABE_MERKMALE.filter((m) => merkmale[m.name])
+                  .map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${m.name === 'Planungsrecht' && pruefstand.planungsrechtFrueher ? ' (nicht für diesen Ort bestätigt)' : ''}`)
+                  .join(' · ') || '–'}
+              </td>
             </tr>
             <tr>
               <td>Ergebnis</td>
@@ -276,7 +283,11 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             </tr>
           </tbody>
         </table>
-        {pruefstand.widersprueche.length > 0 && <p className="report-note">Widerspruch: {pruefstand.widersprueche.join('; ')}</p>}
+        {/* echte Widersprüche und der Vorbehalt beim Planungsrecht getrennt – das Planungsrecht widerspricht nichts */}
+        {pruefstand.widersprueche.some((w) => w !== pruefstand.planungsrechtHinweis) && (
+          <p className="report-note">Widerspruch: {pruefstand.widersprueche.filter((w) => w !== pruefstand.planungsrechtHinweis).join('; ')}</p>
+        )}
+        {pruefstand.planungsrechtHinweis && <p className="report-note">Nicht gesichert: {pruefstand.planungsrechtHinweis}.</p>}
 
         <h2>Festlegungen von Hand ({vonHand.length})</h2>
         {vonHand.length ? (
