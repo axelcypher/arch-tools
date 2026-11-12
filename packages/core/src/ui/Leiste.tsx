@@ -17,11 +17,13 @@ const lesen = (schluessel: string, vorgabe: number, min: number, max: number) =>
 };
 
 /** Gemerkte Breite einer Leiste */
-export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180, max = 560): [number, (b: number) => void] {
+export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180, max = 560): [number, (b: number, merken?: boolean) => void] {
   const [breite, setBreiteRoh] = useState(() => lesen(schluessel, vorgabe, min, max));
-  const setBreite = (b: number) => {
+  /** `merken: false`: nur für diese Sitzung (z. B. eine an ein schmales Fenster angeglichene Breite) */
+  const setBreite = (b: number, merken = true) => {
     const n = Math.round(Math.min(max, Math.max(min, b)));
     setBreiteRoh(n);
+    if (!merken) return;
     try {
       localStorage.setItem(schluessel, String(n));
     } catch {
@@ -60,7 +62,7 @@ function angleichen(griff: HTMLElement | null) {
   for (const c of leiste?.parentElement?.children ?? []) if (c !== leiste && c.classList.contains('leiste')) c.dispatchEvent(new CustomEvent(ANGLEICHEN));
 }
 
-export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern', min, max, links = false, ist, mitteMin }: { breite: number; setBreite: (b: number) => void; vorgabe?: number; titel?: string; min?: number; max?: number; links?: boolean; ist?: number; mitteMin?: number }) {
+export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern', min, max, links = false, ist, mitteMin }: { breite: number; setBreite: (b: number, merken?: boolean) => void; vorgabe?: number; titel?: string; min?: number; max?: number; links?: boolean; ist?: number; mitteMin?: number }) {
   const richtung = links ? -1 : 1;
   const griff = useRef<HTMLDivElement>(null);
   // nie breiter als der verfügbare Platz (die Mitte behält ihre Mindestbreite) – sonst entstünde eine tote Zone
@@ -68,13 +70,20 @@ export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern'
   // verkleinern nichts). Ist die Leiste schon geschrumpft (gezeichnet schmaler als gesetzt), fehlt der Platz ohnehin.
   // Schrumpfen frei bis min, von der gezeichneten Breite aus.
   const setzen = (b: number) => {
-    // geschrumpfte Nachbarleisten auf ihre gezeichnete Breite festhalten – sonst holten sie sich den frei werdenden
-    // Platz zurück (← an den Angaben machte die Einzelheiten breiter statt die Mitte)
-    angleichen(griff.current);
-    if (b <= jetzt) return setBreite(b);
-    if (jetzt < breite - 1) return;
+    const unten = Math.max(min ?? 0, b);
+    if (b < jetzt) {
+      if (unten >= jetzt) return; // schon am Minimum: nichts ändert sich, auch nicht bei den Nachbarn
+      // geschrumpfte Nachbarleisten für diese Sitzung auf ihre gezeichnete Breite festhalten – sonst holten sie sich den
+      // frei werdenden Platz zurück (← an den Angaben machte die Einzelheiten breiter statt die Mitte)
+      angleichen(griff.current);
+      return setBreite(b);
+    }
+    if (b === jetzt || jetzt < breite - 1) return;
     const ziel = Math.min(b, Math.max(min ?? 0, verfuegbar(griff.current, mitteMin)));
-    if (ziel > jetzt) setBreite(ziel);
+    if (ziel > jetzt) {
+      angleichen(griff.current);
+      setBreite(ziel);
+    }
   };
   // die tatsächliche Breite (eine Leiste kann bei schmalen Fenstern schrumpfen): für Screenreader und als Ausgangspunkt
   // beim Ziehen – sonst gäbe es eine tote Zone zwischen gemerkter und sichtbarer Breite
@@ -106,7 +115,7 @@ export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern'
         }
         if (e.key === 'Home' && min !== undefined) {
           e.preventDefault();
-          setBreite(min);
+          setzen(min);
         }
         if (e.key === 'End' && max !== undefined) {
           e.preventDefault();
@@ -161,7 +170,7 @@ export function BreitenLeiste({
     // Nachbarleiste wird gezogen: eine geschrumpfte Breite festhalten (gesetzt = gezeichnet)
     const angleichenAuf = () => {
       const w = Math.round(el.getBoundingClientRect().width);
-      if (w > 0 && w < parseFloat(el.style.width) - 1) setBreiteRef.current(w);
+      if (w > 0 && w < parseFloat(el.style.width) - 1) setBreiteRef.current(w, false);
     };
     el.addEventListener(ANGLEICHEN, angleichenAuf);
     if (el.parentElement) {

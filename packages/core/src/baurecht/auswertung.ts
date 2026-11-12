@@ -54,6 +54,8 @@ export interface AuswertungsEingabe {
   festlegungen: Record<string, Festlegung>;
   /** Merkmale, deren Wert der Ableitung widerspricht */
   widersprueche?: Set<string>;
+  /** Merkmale, die aus einem anderen Grund als einem Widerspruch nicht gesichert sind (Name → Grund in Worten) */
+  vorbehalte?: Record<string, string>;
   /** Ort des Vorhabens jetzt – Festlegungen zu einem anderen Ort sind überholt (fehlt = kein Vergleich) */
   ort?: Ort;
   /** Altersgrenze des Rechtsstands in Tagen (Vorgabe RECHTSSTAND_TAGE) */
@@ -326,7 +328,11 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       if (r.gruenNurVonHand) herab.push('Kann nur von Hand ausgeschlossen werden (z. B. nach Prüfung vor Ort).');
       if (geaendert.length) herab.push(`Text seit der Prüfung der Regel geändert (${geaendert.map(fundstelleName).join(', ')}) – Regel noch nicht nachgezogen.`);
       if (unsicher.length) herab.push(`Nur Hinweis, nicht gesichert: ${unsicher.map((u) => offenText(u, text)).join(', ')}.`);
-      if (widerspruch.length) herab.push(`Widerspruch: ${widerspruch.map((w) => offenText(w, text)).join(', ')} – Angaben widersprechen einander (Merkmal/Modell bzw. von Hand/Geodienst).`);
+      // Merkmale mit eigenem Vorbehalt (z. B. Planungsrecht noch nicht für diesen Ort bestätigt) mit ihrem Grund
+      const vorbehalt = widerspruch.filter((w) => w.startsWith('merkmal:') && e.vorbehalte?.[w.slice(8)]);
+      const echt = widerspruch.filter((w) => !vorbehalt.includes(w));
+      for (const v of vorbehalt) herab.push(`Nicht gesichert: ${e.vorbehalte![v.slice(8)]}.`);
+      if (echt.length) herab.push(`Widerspruch: ${echt.map((w) => offenText(w, text)).join(', ')} – Angaben widersprechen einander (Merkmal/Modell bzw. von Hand/Geodienst).`);
       const ns = normStand(n);
       const pruefbar = mitNorm ? ns.hatStand : !!(r.stand && Object.keys(r.stand).length);
       if (mitNorm && ns.geaendert) herab.push('Text der Norm seit der Prüfung der Regeln geändert – ob der Anwendungsbereich gleich geblieben ist, ist offen.');

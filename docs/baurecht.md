@@ -38,8 +38,12 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Beleg). Die frühere Lage bleibt dabei vermerkt („Angabe zu einer früheren Lage“), auch bei Angaben mit Beleg.
   Gespeichert wird, was das Feld zeigt: Anzahlen (z. B. Stellplätze) ganzzahlig, andere Zahlen auf zwei Nachkommastellen,
   keine negativen Werte. Schwellen „über x“ (im Regelschema „x,01“) gelten als echtes „größer als x“ – 22,005 m sind
-  über 22 m. Ist das **Planungsrecht** einem früheren Ort zugeordnet (Adresse geändert, seit es in Baurecht gesetzt
-  wurde), steht oben ein Hinweis; bis „Gilt auch hier“ zählt es nicht als gesichert.
+  über 22 m. Das **Planungsrecht** zählt erst als gesichert, wenn es für genau diesen Ort und Wert bestätigt ist: in
+  Baurecht gesetzt oder mit „Gilt hier“ bestätigt. Ein Wert aus Formulare oder einer älteren Datei, ein seither
+  geänderter Wert und ein Umzug (Anschrift, Grundstück, Koordinaten) zeigen oben einen Hinweis; was daran hängt, kann
+  bis dahin nicht sicher entfallen (in den Begründungen und im Protokoll „Nicht gesichert: Planungsrecht …“). Angaben
+  von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative Werte und halbe Anzahlen sind nur Hinweis,
+  Angaben zur Lage ohne Lagebezug ebenso („Für diese Lage übernehmen“).
 - **Filterleiste:** Ampelzähler (blenden ein/aus), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und
   die Kästchen „nur von Hand festgelegte“ / „nur geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px,
   wird die Ordnung zur Auswahlliste, die Kästchen wandern in **Filter ▾** und der Balken entfällt. Die Zähler an den
@@ -108,7 +112,8 @@ wiederhergestellte Festlegung, die nicht mehr dem Stand der Datei entspricht, is
 Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald die automatische Ampel danach strenger wird als
 damals und als die Festlegung (wird sie schwächer oder kommt sie bei der Festlegung an, bleibt die Festlegung richtig),
 sobald sich der **Ort** ändert (Anschrift, Grundstück oder Koordinaten – eine Festlegung gilt für den Ort, an dem sie
-getroffen wurde; eine Festlegung ohne Ortsangabe gilt als überholt),
+getroffen wurde; eine Festlegung ohne Ortsangabe – aus einer älteren Datei – gilt als überholt; über der Liste ordnet
+„Für diesen Ort übernehmen“ alle in einem Schritt dem jetzigen Ort zu, als Entwurf, der beim Speichern bestätigt wird),
 sobald sich eine beteiligte Angabe (auch nur ihre Sicherheit, z. B. ein neuer Widerspruch) oder der Text einer Fundstelle ändert (oder
 sie ohne geprüften Text getroffen wurde und der Text jetzt vorliegt) – dann steht die Marke „überholt“ daran, ein
 überholtes „entfällt“ zählt mindestens als „prüfen“, ein überholtes „prüfen“ hält ein automatisches „gilt“ nicht auf
@@ -159,8 +164,9 @@ zwischen Kopf, Angaben, Vorschriften und Einzelheiten; ist kein Paragraf gewähl
 Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr ▾, Filter ▾, Farbschema) nehmen beim Öffnen den Fokus,
 bedienen sich mit ↑/↓ und Pos1/Ende, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie
 mit Tab verlässt; ihre Einträge sind keine eigenen Tabstopps; ↓/↑ auf dem geschlossenen Knopf „Mehr“ öffnet es.
-Die Suche in den Vorschriften findet „§ 6 BauO NRW“ genau (Norm nach Kurzform); findet sie keinen Paragrafen, sucht sie
-im Text; Kürzel (bis drei Zeichen, z. B. „GK“, „GRZ“) nur am Wortanfang und auch ausgeschrieben. Nach Suche, Filter und
+Die Suche in den Vorschriften findet „§ 6 BauO NRW“ und „§ 6 Abs. 1 BauO NRW“ genau (Norm nach Kurzform); ein „§“, den
+die Regeln nicht kennen, ergibt keinen Treffer; ohne „§“ und ohne Paragrafentreffer sucht sie im Text (Zahlen als ganzes
+Wort, Kürzel bis drei Zeichen wie „GK“, „GRZ“ nur am Wortanfang und auch ausgeschrieben). Nach Suche, Filter und
 „Filter zurücksetzen“ bleibt die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc gibt
 den Fokus an den Öffner zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an der
 Angabe bzw. am Knopf.

@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FAKT_GRUPPEN, faktName, ortsgebunden, zaehlEinheit } from '@core/baurecht/typen';
-import { aktuelleLage } from '../pruefung';
+import { aktuelleLage, OHNE_LAGEBEZUG } from '../pruefung';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
 import { werten } from '@core/baurecht/kurz';
 import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
@@ -252,7 +252,7 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
               {andereLage ? (
                 <>
                   <span className="br-leise-stark" title={wert.grund}>
-                    {!lage ? 'ohne gültige Koordinaten nicht bestätigbar' : wert.herkunft === 'manuell' && !wert.bestaetigt ? 'Angabe zu einer früheren Lage' : 'Ergebnis einer früheren Lage – „Lage abfragen“'}
+                    {!lage ? 'ohne gültige Koordinaten nicht bestätigbar' : wert.lage === OHNE_LAGEBEZUG ? 'Angabe ohne Lagebezug (ältere Datei)' : wert.herkunft === 'manuell' && !wert.bestaetigt ? 'Angabe zu einer früheren Lage' : 'Ergebnis einer früheren Lage – „Lage abfragen“'}
                   </span>
                   {/* Angabe von Hand zu einer früheren Lage: für die aktuelle Lage übernehmen (gleicher Wert, neu gebunden) */}
                   {lage && wert.herkunft === 'manuell' && (
@@ -385,16 +385,18 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       </div>
       <div className="br-angaben-liste">
         {!suche && <Klaeren stand={stand} />}
-        {stand.widersprueche.map((w) => (
-          <div key={w} className="br-meldung br-meldung-warn" role="status">
-            {w}
-          </div>
-        ))}
-        {stand.planungsrechtFrueher && (
+        {stand.widersprueche
+          .filter((w) => w !== stand.planungsrechtHinweis)
+          .map((w) => (
+            <div key={w} className="br-meldung br-meldung-warn" role="status">
+              {w}
+            </div>
+          ))}
+        {stand.planungsrechtHinweis && (
           <div className="br-meldung br-meldung-warn" role="status">
-            Planungsrecht „{useBaurecht.getState().merkmale['Planungsrecht']}“ gehört zu einem früheren Ort ({stand.planungsrechtFrueher}) – bitte prüfen. Bis dahin zählt es nicht als gesichert.{' '}
-            <button type="button" className="small" onClick={() => useBaurecht.getState().planungsrechtBestaetigen()}>
-              Gilt auch hier
+            {stand.planungsrechtHinweis}.{' '}
+            <button type="button" className="small" onClick={() => useBaurecht.getState().planungsrechtBestaetigen()} title="Das Planungsrecht gilt so für dieses Grundstück – für diesen Ort bestätigen">
+              Gilt hier
             </button>
           </div>
         )}

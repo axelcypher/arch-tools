@@ -199,14 +199,19 @@ export function suchTreffer(suche: string, normen: NormErgebnis[] = []): (p: Par
   // Volltext: kurze Wörter (Kürzel) nur am Wortanfang („GK“ trifft nicht „Zulässigkeit“), längere auch im Wort
   // (zusammengesetzte Wörter: „flächen“ in „Abstandsflächen“); gängige Kürzel auch ausgeschrieben
   const woerter = q.split(' ').map((x) => ({ x, lang: KUERZEL[x] }));
-  const amAnfang = (text: string, wort: string) => new RegExp(`(^|[^a-zäöüß0-9])${wort.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(text);
+  const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const amAnfang = (text: string, wort: string) => new RegExp(`(^|[^a-zäöüß0-9])${esc(wort)}`).test(text);
+  // Zahlen nur als ganzes Wort („1“ trifft nicht „10“)
+  const ganz = (text: string, wort: string) => new RegExp(`(^|[^0-9])${esc(wort)}([^0-9]|$)`).test(text);
   const volltext = (p: ParagrafErgebnis, n: NormErgebnis) => {
     const text = norm(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`);
-    return woerter.every(({ x, lang }) => (x.length <= 3 ? amAnfang(text, x) : text.includes(x)) || (!!lang && text.includes(lang)));
+    return woerter.every(({ x, lang }) => (/^\d/.test(x) ? ganz(text, x) : x.length <= 3 ? amAnfang(text, x) : text.includes(x)) || (!!lang && text.includes(lang)));
   };
-  const nr = /(?:^| )(\d+[a-z]?)(?= |$)/.exec(q)?.[1];
+  // „§ 6 Abs. 1 BauO NRW“: Absatz, Satz und Nummer gehören nicht zur Paragrafennummer
+  const ohneAbsatz = q.replace(/(?:^| )(?:abs|absatz|satz|nr|s)\.? ?\d+[a-z]?(?= |$)/g, ' ').replace(/\s+/g, ' ').trim();
+  const nr = /(?:^| )(\d+[a-z]?)(?= |$)/.exec(ohneAbsatz)?.[1];
   if (!nr) return volltext;
-  const rest = q.replace(nr, ' ').replace(/\s+/g, ' ').trim();
+  const rest = ohneAbsatz.replace(nr, ' ').replace(/\s+/g, ' ').trim();
   const ohne = (s: string) => norm(s).replace(/ /g, '');
   // Norm: genau die Kurzform („BauO NRW“ ist nicht „SAN-VO … BauO NRW“), sonst Kurzform enthält bzw. Titel enthält
   const stufen: ((n: NormErgebnis) => boolean)[] = rest ? [(n) => ohne(n.def.kurz) === ohne(rest), (n) => ohne(n.def.kurz).includes(ohne(rest)), (n) => norm(n.def.titel).includes(rest)] : [() => true];
@@ -214,6 +219,9 @@ export function suchTreffer(suche: string, normen: NormErgebnis[] = []): (p: Par
     const passt = (p: ParagrafErgebnis, n: NormErgebnis) => p.paragraf.toLowerCase() === nr && s(n);
     if (!normen.length || normen.some((n) => n.paragrafen.some((p) => passt(p, n)))) return passt;
   }
+  // ausdrücklich nach einem Paragrafen gefragt („§ 1 BauNVO“), den die Regeln nicht kennen: kein Treffer statt
+  // Volltext (der Leerzustand sagt das)
+  if (suche.includes('§')) return () => false;
   return volltext;
 }
 
@@ -245,6 +253,8 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     merken(n);
   };
   const { auswertung } = stand;
+  // Festlegungen aus einer älteren Datei ohne Ortsangabe: in einem Schritt dem jetzigen Ort zuordnen (als Entwurf)
+  const ohneOrt = auswertung.paragrafen.filter((p) => p.festlegung && !p.festlegung.ort).map((p) => p.id);
   const passt = useMemo(() => suchTreffer(suche, auswertung.normen), [suche, auswertung.normen]);
   const filter = (p: ParagrafErgebnis, n: NormErgebnis) =>
     w.ampeln.includes(p.ampel) &&
@@ -455,6 +465,14 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
           </span>
         </div>
       </div>
+      {ohneOrt.length > 0 && (
+        <div className="br-meldung br-meldung-warn br-ohne-ort" role="status">
+          {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt.{' '}
+          <button type="button" className="small" onClick={() => useBaurecht.getState().festlegungenOrtUebernehmen(ohneOrt)} title="Dem jetzigen Ort zuordnen – als Entwurf; beim Speichern wird jede noch einmal bestätigt">
+            Für diesen Ort übernehmen
+          </button>
+        </div>
+      )}
       <div className="br-treffer" aria-live="polite">
         {filterAktiv ? (
           <>

@@ -1734,3 +1734,8 @@ h2.br-detail-name {
   }
 }
 
+
+/* Festlegungen ohne Ortsangabe (ältere Datei): Sammelaktion über der Liste */
+.br-ohne-ort {
+  margin: 6px 14px 0;
+}

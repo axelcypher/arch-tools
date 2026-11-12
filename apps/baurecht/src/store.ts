@@ -56,7 +56,8 @@ export interface Zustand {
    * nach dem Speichern: Stand der Datei übernehmen. `seit` ist der Stand bei Beginn des Speicherns – was sich seitdem in
    * der App geändert hat (z. B. Ergebnisse von „Lage abfragen“), wird auf den neuen Stand gesetzt, nicht verworfen.
    */
-  gespeichert: (roh: Record<string, unknown>, quelle?: Projektquelle, seit?: { pruefung: BaurechtPruefung; merkmale: Record<string, string> }) => void;
+  /** `project`: das Projekt, frisch aus der gespeicherten Datei gelesen (Projektordner) */
+  gespeichert: (roh: Record<string, unknown>, quelle?: Projektquelle, seit?: { pruefung: BaurechtPruefung; merkmale: Record<string, string> }, project?: Project) => void;
   schliessen: () => void;
   antragWaehlen: (antrag: string) => void;
   merkmalSetzen: (name: string, wert: string) => void;
@@ -76,6 +77,8 @@ export interface Zustand {
   einreichungSetzen: (datum: string) => void;
   festlegen: (p: ParagrafErgebnis, ampel: Ampel, grund: string, von: string, summen: Record<string, string>, werte: Record<string, string | number | boolean | null>, sicherheit?: Festlegung['sicherheit']) => void;
   festlegungAufheben: (id: string) => void;
+  /** Festlegungen ohne Ortsangabe (ältere Datei) dem jetzigen Ort zuordnen – als Entwurf, bestätigt wird beim Speichern */
+  festlegungenOrtUebernehmen: (ids: string[]) => void;
   /** „Rückgängig“ nach dem Aufheben: die vorige Festlegung unverändert zurück */
   festlegungWiederherstellen: (id: string, f: Festlegung) => void;
   festlegungenBestaetigen: (ids: string[]) => void;
@@ -122,7 +125,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const pruefung = baurechtAusRoh(roh).pruefungen[antrag] ?? leerePruefung();
     set({ quelle, project, roh, antrag, antraege: antraege.includes(antrag) ? antraege : [...antraege, antrag], merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null, fokus: null });
   },
-  gespeichert: (roh, quelle, seit) => {
+  gespeichert: (roh, quelle, seit, project) => {
     const s = get();
     const merkmaleDatei = merkmaleAusRoh(roh, s.antrag);
     const pruefungDatei = baurechtAusRoh(roh).pruefungen[s.antrag] ?? leerePruefung();
@@ -149,9 +152,16 @@ export const useBaurecht = create<Zustand>((set, get) => ({
         if (s.pruefung.einreichung) pruefung.einreichung = s.pruefung.einreichung;
         else delete pruefung.einreichung;
       }
+      // wie die Einreichung: ein während des Speicherns bestätigter Ort des Planungsrechts bleibt erhalten
+      if (!gleich(s.pruefung.planungsrechtOrt, seit.pruefung.planungsrechtOrt)) {
+        if (s.pruefung.planungsrechtOrt) pruefung.planungsrechtOrt = kopie(s.pruefung.planungsrechtOrt);
+        else delete pruefung.planungsrechtOrt;
+      }
       for (const pr of s.pruefung.protokolle) if (!seit.pruefung.protokolle.some((x) => x.am === pr.am) && !pruefung.protokolle.some((x) => x.am === pr.am)) pruefung.protokolle.push(pr);
     }
-    set({ roh, quelle: quelle ?? s.quelle, merkmale, merkmaleDatei, pruefung, pruefungDatei: kopie(pruefungDatei) });
+    // das Projekt neu aus der Datei, wenn sie frisch gelesen wurde – sonst blieben Änderungen anderer Apps (Adresse,
+    // Koordinaten) für die Ortsbindung unsichtbar
+    set({ roh, quelle: quelle ?? s.quelle, merkmale, merkmaleDatei, pruefung, pruefungDatei: kopie(pruefungDatei), ...(project ? { project } : {}) });
   },
   schliessen: () => set({ quelle: null, project: null, roh: null, antrag: 'Projekt', antraege: [], merkmale: {}, merkmaleDatei: {}, pruefung: leerePruefung(), pruefungDatei: leerePruefung(), auswahl: null }),
   antragWaehlen: (antrag) => {
@@ -169,7 +179,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     if (name === 'Planungsrecht') {
       const p = kopie(get().pruefung);
       const o = ortVon(get().project);
-      if (wert && o) p.planungsrechtOrt = o;
+      if (wert && o) p.planungsrechtOrt = { ...o, wert };
       else delete p.planungsrechtOrt;
       set({ merkmale: m, pruefung: p });
       return;
@@ -178,9 +188,10 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   },
   planungsrechtBestaetigen: () => {
     const o = ortVon(get().project);
-    if (!o) return;
+    const wert = get().merkmale['Planungsrecht'];
+    if (!o || !wert) return;
     const p = kopie(get().pruefung);
-    p.planungsrechtOrt = o;
+    p.planungsrechtOrt = { ...o, wert };
     set({ pruefung: p });
   },
   faktSetzen: (id, wert, von, grund, lage) => {
@@ -223,6 +234,18 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const ort = ortVon(get().project);
     const f: Festlegung = { ampel, grund: grund.trim(), von, am: heute(), automatisch: e.automatisch, fakten: werte, stand: summen, ...(sicherheit && Object.keys(sicherheit).length ? { sicherheit } : {}), ...(ort ? { ort } : {}) };
     p.festlegungen[e.id] = f;
+    set({ pruefung: p });
+  },
+  festlegungenOrtUebernehmen: (ids) => {
+    const ort = ortVon(get().project);
+    if (!ort) return;
+    const p = kopie(get().pruefung);
+    for (const id of ids) {
+      const f = p.festlegungen[id];
+      if (!f || f.ort) continue;
+      const { bestaetigt: _b, ...entwurf } = f;
+      p.festlegungen[id] = { ...entwurf, ort };
+    }
     set({ pruefung: p });
   },
   festlegungAufheben: (id) => {

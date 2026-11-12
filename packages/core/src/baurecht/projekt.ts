@@ -86,7 +86,8 @@ function festlegungAus(roh: unknown): Festlegung | null {
 }
 
 function ortAus(roh: unknown): Ort | undefined {
-  return istObjekt(roh) && typeof roh.adresse === 'string' && (roh.lage === null || typeof roh.lage === 'string') ? { adresse: roh.adresse, lage: roh.lage } : undefined;
+  if (!istObjekt(roh) || typeof roh.adresse !== 'string' || !(roh.lage === null || typeof roh.lage === 'string')) return undefined;
+  return { adresse: roh.adresse, lage: roh.lage, ...(typeof roh.wert === 'string' ? { wert: roh.wert } : {}) };
 }
 
 /** Abschnitt prüfen; Unbekanntes fällt weg, Gültiges bleibt */
@@ -160,6 +161,8 @@ export function pruefungSetzen(roh: Record<string, unknown>, antrag: string, pru
     else delete ziel.einreichung;
   }
   if (!gleich(pruefung.planungsrechtOrt, basis.planungsrechtOrt)) {
+    // wie bei der Einreichung: hat inzwischen jemand anderes den Ort des Planungsrechts geändert, wird das gemeldet
+    if (!gleich(gelesen.planungsrechtOrt, basis.planungsrechtOrt) && !gleich(gelesen.planungsrechtOrt, pruefung.planungsrechtOrt)) o.konflikte?.push('Ort des Planungsrechts');
     if (pruefung.planungsrechtOrt) ziel.planungsrechtOrt = pruefung.planungsrechtOrt;
     else delete ziel.planungsrechtOrt;
   }

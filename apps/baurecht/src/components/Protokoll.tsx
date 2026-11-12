@@ -9,7 +9,7 @@ import { DruckKopf } from '@core/ui/DruckKopf';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { benutzer } from '../benutzer';
 import type { Pruefstand } from '../pruefung';
-import { aktuelleLage, verwendeteFassungen } from '../pruefung';
+import { aktuelleLage, OHNE_LAGEBEZUG, verwendeteFassungen } from '../pruefung';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from '../store';
 import { AMPEL_TEXT, datum, nb } from './Ampel';
 
@@ -92,7 +92,8 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   // „frühere Lage“ nur, wenn die Angabe wirklich an einer anderen Lage hängt (nicht beim Gemeindeschlüssel von Hand,
   // der an der aktuellen Lage absichtlich Hinweis bleibt)
   const lageJetzt = aktuelleLage(project).lage;
-  const lageVermerk = (e: FaktWert | undefined) => {
+  const lageVermerk = (e: FaktWert | undefined, abgeleitet?: FaktWert) => {
+    if (abgeleitet?.lage === OHNE_LAGEBEZUG) return ' (ohne Lagebezug, ältere Datei)';
     const gebunden = e?.lage ?? e?.bestaetigt?.lage;
     if (!gebunden) return '';
     return !lageJetzt ? ' (ohne gültige Koordinaten)' : gebunden !== lageJetzt ? ' (frühere Lage)' : '';
@@ -355,7 +356,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                   <td>
                     {wertAnzeige(f.wert, a.faktDefs[id])}
                     {/* nur noch Hinweis (frühere Lage, ohne Koordinaten): gekennzeichnet, nicht wie eine geltende Angabe */}
-                    {f.sicherheit === 'hinweis' && <span className="br-entwurf-text"> – nur Hinweis{lageVermerk(eigeneFakten[id])}</span>}
+                    {f.sicherheit === 'hinweis' && <span className="br-entwurf-text"> – nur Hinweis{lageVermerk(eigeneFakten[id], f)}</span>}
                   </td>
                   <td>
                     {/^von Hand \((.+)\)$/.exec(f.quelle ?? '')?.[1] ?? '–'}

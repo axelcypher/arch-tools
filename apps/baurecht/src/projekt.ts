@@ -11,6 +11,7 @@ import { logger } from '@core/platform/log';
 import { projektdateiSchreiben, tauriProjektordner } from '@core/platform/projektordner';
 import { projektdateiAendern, projektdateiRoh } from '@core/projektdatei';
 import type { GewaehltesProjekt } from '@core/ui/ProjektWahl';
+import type { Project } from '@core/model';
 import type { Projektquelle } from './store';
 import { useBaurecht } from './store';
 
@@ -75,7 +76,13 @@ export async function speichernJetzt(konflikte: string[] = []): Promise<boolean>
     // frisch lesen: so steht in der App genau, was in der Datei steht (auch Änderungen anderer Apps)
     const r = await tauriProjektordner.liesMitStand(q.root, q.pfad);
     const roh = r ? projektdateiRoh(r.daten) : neu;
-    if (roh) useBaurecht.getState().gespeichert(roh, undefined, seit);
+    let project: Project | undefined;
+    try {
+      project = r ? readProjectFile(r.daten) : undefined;
+    } catch {
+      project = undefined;
+    }
+    if (roh) useBaurecht.getState().gespeichert(roh, undefined, seit, project);
     log.info(geschrieben ? 'Gespeichert' : 'Nichts zu speichern – Datei unverändert', { datei: q.datei, konflikte: konflikte.length });
     return true;
   }

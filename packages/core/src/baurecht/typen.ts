@@ -253,6 +253,8 @@ export interface FaktWert {
 export interface Ort {
   adresse: string;
   lage: string | null;
+  /** nur beim Planungsrecht: der Wert des Merkmals, der für diesen Ort bestätigt ist */
+  wert?: string;
 }
 
 export interface Festlegung {
