@@ -453,8 +453,8 @@ describe('Baurecht – Oberfläche', () => {
     const host = render();
     const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'gelb');
     const fl = useBaurecht.getState().pruefung.festlegungen[id];
-    // eine beteiligte Angabe hat sich seit dem Festlegen geändert: die Festlegung ist überholt
-    act(() => useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, festlegungen: { [id]: { ...fl, automatisch: fl.automatisch === 'rot' ? 'gruen' : 'rot' } } } }));
+    // eine beteiligte Angabe hat sich seit dem Festlegen geändert (damals „Beseitigung“): die Festlegung ist überholt
+    act(() => useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, festlegungen: { [id]: { ...fl, fakten: { ...fl.fakten, 'merkmal:Vorhaben': 'Beseitigung' } } } } }));
     let fertig: Promise<boolean> | null = null;
     await act(async () => {
       fertig = speichern();

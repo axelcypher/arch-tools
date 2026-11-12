@@ -126,8 +126,12 @@ export function tragendeBlaetter(k: Kurz | undefined, ctx: KurzKontext, w: Wahrh
     const teile = 'und' in k ? k.und : k.oder;
     const entscheidet: Wahrheit = 'und' in k ? 'nein' : 'ja';
     if (w === entscheidet) {
-      const t = teile.find((x) => werten(x, ctx, tiefe + 1).w === w);
-      return t ? tragendeBlaetter(t, ctx, w, tiefe + 1) : [];
+      // derselbe Teil wie in werten: der sicherste der entscheidenden (sonst nennte die Begründung einen bloßen Hinweis)
+      const kandidaten = teile.map((x) => ({ x, b: werten(x, ctx, tiefe + 1) })).filter((c) => c.b.w === w);
+      if (!kandidaten.length) return [];
+      const gewicht = (b: Bewertung) => b.unsicher.length + b.widerspruch.length;
+      const t = kandidaten.reduce((a, c) => (gewicht(c.b) < gewicht(a.b) ? c : a)).x;
+      return tragendeBlaetter(t, ctx, w, tiefe + 1);
     }
     return teile.flatMap((x) => tragendeBlaetter(x, ctx, w, tiefe + 1));
   }
@@ -286,14 +290,18 @@ function istWert(k: Kurz, t: TextKontext, ctx: KurzKontext): string | undefined 
 export function kurzBaum(k: Kurz | undefined, t: TextKontext, ctx?: KurzKontext, tiefe = 0): KurzKnoten {
   if (!k || tiefe > 20) return { text: '' };
   let w: Wahrheit | undefined;
+  // Stand beruht nur auf Hinweisen, Widersprüchen oder einer Festlegung (bei Verweisen): Zeichen in Klammern
+  let knotenUnsicher = false;
   if (ctx) {
     try {
-      w = werten(k, ctx).w;
+      const b = werten(k, ctx);
+      w = b.w;
+      knotenUnsicher = w !== 'offen' && b.unsicher.length + b.widerspruch.length > 0;
     } catch {
       w = 'offen';
     }
   }
-  const mitW = (n: KurzKnoten): KurzKnoten => (w ? { ...n, w } : n);
+  const mitW = (n: KurzKnoten): KurzKnoten => (w ? { ...n, w, ...(knotenUnsicher || n.unsicher ? { unsicher: true } : {}) } : n);
   if ('$' in k) return t.bausteine[k.$] ? kurzBaum(t.bausteine[k.$], t, ctx, tiefe + 1) : mitW({ text: k.$ });
   if ('und' in k || 'oder' in k) {
     const roh = 'und' in k ? einebnen('und', k.und, t) : zusammenfassen(einebnen('oder', k.oder, t));

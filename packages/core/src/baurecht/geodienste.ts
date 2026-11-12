@@ -275,8 +275,9 @@ export function faktenZurLage(fakten: Record<string, FaktWert>, lage: string | n
     // Gemeindeschlüssel aus ALKIS oder ein bestätigtes „kein Schutzgebiet“
     const gebunden = !!f.lage || !!f.bestaetigt?.lage;
     const verschoben = lage ? (f.lage && f.lage !== lage) || (f.bestaetigt?.lage && f.bestaetigt.lage !== lage) : gebunden;
-    // Angaben von Hand ohne Lagebezug bleiben; mit Beleg für eine Lage (Schutzgebiete) verfallen sie wie Geodaten
-    if (!verschoben || (f.herkunft === 'manuell' && !f.bestaetigt?.lage)) {
+    // Angaben von Hand ohne Lagebezug bleiben; an eine Lage gebunden (mit Beleg oder als Angabe zur Lage) verfallen sie
+    // wie Geodaten
+    if (!verschoben || (f.herkunft === 'manuell' && !f.bestaetigt?.lage && !f.lage)) {
       out[id] = f;
       continue;
     }

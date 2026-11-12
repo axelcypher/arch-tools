@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { zeigerZiehen } from './ziehen';
 
 /**
@@ -36,31 +36,34 @@ export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180,
  * Fensterrand, links für Leisten am rechten Rand (Ziehen nach links macht sie breiter). Tastatur: ←/→ in 16-px-Schritten,
  * Pos1/Ende auf Mindest- bzw. Höchstbreite.
  */
-export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern', min, max, links = false }: { breite: number; setBreite: (b: number) => void; vorgabe?: number; titel?: string; min?: number; max?: number; links?: boolean }) {
+export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern', min, max, links = false, ist }: { breite: number; setBreite: (b: number) => void; vorgabe?: number; titel?: string; min?: number; max?: number; links?: boolean; ist?: number }) {
   const richtung = links ? -1 : 1;
+  // die tatsächliche Breite (eine Leiste kann bei schmalen Fenstern schrumpfen): für Screenreader und als Ausgangspunkt
+  // beim Ziehen – sonst gäbe es eine tote Zone zwischen gemerkter und sichtbarer Breite
+  const jetzt = ist ?? breite;
   return (
     <div
       className={`leiste-griff${links ? ' leiste-griff-links' : ''}`}
       role="separator"
       aria-orientation="vertical"
       aria-label={titel}
-      aria-valuenow={breite}
-      {...(min !== undefined ? { 'aria-valuemin': min } : {})}
+      aria-valuenow={jetzt}
+      {...(min !== undefined ? { 'aria-valuemin': Math.min(min, jetzt) } : {})}
       {...(max !== undefined ? { 'aria-valuemax': max } : {})}
-      aria-valuetext={`${breite} Pixel`}
+      aria-valuetext={`${jetzt} Pixel`}
       tabIndex={0}
       title={`${titel} – ziehen${vorgabe ? ', Doppelklick: Vorgabe' : ''}`}
       onPointerDown={(e) => {
         e.preventDefault();
         const x0 = e.clientX;
-        const b0 = breite;
+        const b0 = jetzt;
         zeigerZiehen(e, { schwelle: 0, bewegen: (ev) => setBreite(b0 + richtung * (ev.clientX - x0)), ende: () => undefined });
       }}
       onDoubleClick={() => vorgabe && setBreite(vorgabe)}
       onKeyDown={(e) => {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
           e.preventDefault();
-          setBreite(breite + richtung * (e.key === 'ArrowLeft' ? -16 : 16));
+          setBreite(jetzt + richtung * (e.key === 'ArrowLeft' ? -16 : 16));
         }
         if (e.key === 'Home' && min !== undefined) {
           e.preventDefault();
@@ -95,10 +98,20 @@ export function BreitenLeiste({
   children: ReactNode;
 }) {
   const [breite, setBreite] = useLeistenBreite(schluessel, vorgabe, min, max);
+  // tatsächliche Breite messen (die Leiste darf per CSS schrumpfen)
+  const rahmen = useRef<HTMLDivElement>(null);
+  const [ist, setIst] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    const el = rahmen.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setIst(Math.round(el.getBoundingClientRect().width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
-    <div className={`leiste ${className}`} style={{ width: breite }}>
+    <div ref={rahmen} className={`leiste ${className}`} style={{ width: breite }}>
       {children}
-      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} min={min ?? 180} max={max ?? 560} links={griffLinks} />
+      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} min={min ?? 180} max={max ?? 560} links={griffLinks} ist={ist || undefined} />
     </div>
   );
 }

@@ -294,6 +294,40 @@ describe('Ampel je Paragraf', () => {
     expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': streng } })), 'bund/bnatschg/44').ampel).toBe('rot');
   });
 
+  it('Automatik kommt bei der Festlegung an (z. B. nach „Rechtsstand prüfen“) bzw. wird schwächer: nicht überholt', () => {
+    // „entfällt“ festgelegt, als die Automatik „prüfen“ sagte – jetzt sagt sie auch „entfällt“
+    const fl = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'gelb' as const, fakten: {} };
+    const a = auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, merkmale: { Vorhaben: 'Beseitigung', Gebäudeart: 'Einfamilienhaus' } }));
+    const q = p(a, 'bund/bnatschg/44');
+    if (q.automatisch !== 'rot') expect(q.ueberholt ?? '').not.toMatch(/automatisch jetzt/);
+    // „gilt“ festgelegt, die Automatik wird schwächer: die strengere Festlegung bleibt richtig
+    const streng = { ...fl, ampel: 'rot' as const, automatisch: 'rot' as const };
+    const b = p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': streng }, merkmale: { Vorhaben: 'Beseitigung', Gebäudeart: 'Einfamilienhaus' } })), 'bund/bnatschg/44');
+    expect(b.ueberholt ?? '').not.toMatch(/automatisch jetzt/);
+    expect(b.ampel).toBe('rot');
+  });
+
+  it('Verweis auf einen Paragrafen mit Entwurf bzw. überholter Festlegung: sieht die strengere Ampel, als Hinweis', () => {
+    // ein Paragraf, dessen Automatik schwächer als „gilt“ ist; darauf ein Entwurf „gilt“
+    const ziel = auswerten(eingabe()).paragrafen.find((x) => x.automatisch !== 'rot')!;
+    const fl = { ampel: 'rot' as const, grund: 'gilt nach Abstimmung', von: 'TP', am: '2026-11-12', automatisch: ziel.automatisch, fakten: {} };
+    const a = auswerten(eingabe({ festlegungen: { [ziel.id]: fl } }));
+    expect(p(a, ziel.id).ampel).toBe('rot');
+    const ref = a.kontext.ampel?.(ziel.id);
+    expect(ref?.ampel).toBe('rot');
+    expect(ref?.unsicher).toBe(true);
+  });
+
+  it('„Klärt am meisten“ zählt keine Paragrafen mit wirksamer Festlegung', () => {
+    const vorher = auswerten(eingabe({ merkmale: {} }));
+    const k = vorher.klaerung[0];
+    expect(k).toBeTruthy();
+    const ps = vorher.paragrafen.filter((x) => x.offen.includes(k.id));
+    const festlegungen = Object.fromEntries(ps.map((x) => [x.id, { ampel: 'gelb' as const, grund: 'von Hand geklärt', von: 'TP', am: '2026-11-12', automatisch: x.automatisch, fakten: {} }]));
+    const nachher = auswerten(eingabe({ merkmale: {}, festlegungen }));
+    expect(nachher.klaerung.find((x) => x.id === k.id)?.anzahl ?? 0).toBe(0);
+  });
+
   it('Einzelfall (pruefen.wenn) wirkt nur, wenn die Norm gilt – außerhalb des Anwendungsbereichs bleibt es grün', () => {
     const a = auswerten(eingabe());
     for (const q of a.paragrafen.filter((x) => x.gruende[0]?.startsWith('Entfällt mit der Norm'))) expect(q.gruende.join(' ')).not.toMatch(/^Einzelfall:/);

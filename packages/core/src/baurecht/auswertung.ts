@@ -190,6 +190,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // eine bestätigte, nicht überholte Festlegung zählt – aber nur als Hinweis (eine Entscheidung von Hand trägt kein
       // automatisches „entfällt“ weiter); Entwürfe und überholte Festlegungen zählen nicht
       if (p.festlegung?.bestaetigt && !p.ueberholt && !p.unwirksam) return { ampel: p.festlegung.ampel, unsicher: true };
+      // Entwurf bzw. überholte oder nicht wirksame Festlegung: zählt nicht – außer sie ist strenger als die Automatik,
+      // dann sieht der Verweis die strengere (angezeigte) Ampel, als Hinweis (sonst schwächte sie auf Umwegen doch ab)
+      if (p.festlegung && RANG[p.ampel] > RANG[p.automatisch]) return { ampel: p.ampel, unsicher: true };
       // beruht die automatische Ampel auf Hinweisen, ist auch der Verweis darauf nur ein Hinweis
       return { ampel: p.automatisch, ...(p.unsicher.length ? { unsicher: true } : {}) };
     },
@@ -351,7 +354,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     if (fl) {
       ampel = fl.ampel;
       const gruende2: string[] = [];
-      if (fl.automatisch !== automatisch) gruende2.push(`automatisch jetzt ${automatisch === 'rot' ? 'rot' : automatisch === 'gruen' ? 'grün' : 'gelb'} statt ${fl.automatisch === 'rot' ? 'rot' : fl.automatisch === 'gruen' ? 'grün' : 'gelb'}`);
+      // überholt nur, wenn die Automatik jetzt strenger ist als damals und als die Festlegung (wird sie schwächer oder
+      // kommt sie bei der Festlegung an – z. B. nach „Rechtsstand prüfen“ –, bleibt die Festlegung richtig)
+      if (fl.automatisch !== automatisch && RANG[automatisch] > RANG[fl.automatisch] && RANG[automatisch] > RANG[fl.ampel]) gruende2.push(`automatisch jetzt ${automatisch === 'rot' ? 'rot' : automatisch === 'gruen' ? 'grün' : 'gelb'} statt ${fl.automatisch === 'rot' ? 'rot' : fl.automatisch === 'gruen' ? 'grün' : 'gelb'}`);
       for (const [f, alt] of Object.entries(fl.fakten ?? {})) {
         const jetzt = f.startsWith('merkmal:') ? (e.merkmale[f.slice(8)] ?? null) : (fakten[f]?.wert ?? null);
         if (jetzt !== alt) gruende2.push(`${offenText(f, text)} geändert`);
@@ -474,7 +479,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
 
   // Was klärt am meisten: fehlende Angaben an automatisch gelben Paragrafen
   const zahl = new Map<string, number>();
-  for (const p of paragrafen) if (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length)) for (const o of p.offen) if (!o.startsWith('paragraf:')) zahl.set(o, (zahl.get(o) ?? 0) + 1);
+  // ohne Paragrafen mit wirksamer Festlegung – dort ist nichts mehr zu klären
+  const offenAuto = (p: ParagrafErgebnis) => !(p.festlegung && !p.ueberholt && !p.unwirksam) && (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0));
+  for (const p of paragrafen) if (offenAuto(p)) for (const o of p.offen) if (!o.startsWith('paragraf:')) zahl.set(o, (zahl.get(o) ?? 0) + 1);
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
 
   const zeigen = (h: Hinweis) => {

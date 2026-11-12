@@ -123,3 +123,33 @@ describe('ein sicherer Teil entscheidet sicher', () => {
     expect(nur.unsicher).toEqual(['schutz.landschaftsplan']);
   });
 });
+
+describe('Angaben zur Lage von Hand', () => {
+  it('werden an die Lage gebunden (auch ohne Beleg) und verfallen bei anderer bzw. fehlender Lage', () => {
+    const f = angabeVonHand(undefined, 'lage.altlasten', false, { von: 'TP', lage: '438091,5713737', heute: '2026-11-12' });
+    expect(f).toMatchObject({ wert: false, sicherheit: 'sicher', lage: '438091,5713737' });
+    expect(faktenZurLage({ 'lage.altlasten': f }, '438091,5713737')['lage.altlasten'].sicherheit).toBe('sicher');
+    expect(faktenZurLage({ 'lage.altlasten': f }, '1,1')['lage.altlasten'].sicherheit).toBe('hinweis');
+    expect(faktenZurLage({ 'lage.altlasten': f }, null)['lage.altlasten'].sicherheit).toBe('hinweis');
+    // Gemeindeschlüssel mit Beleg: an die Lage gebunden; ohne Koordinaten nur Hinweis
+    const ags = angabeVonHand(undefined, 'lage.ags', '05974040', { von: 'TP', grund: 'Flurstücksnachweis', lage: '438091,5713737', heute: '2026-11-12' });
+    expect(ags.bestaetigt?.lage).toBe('438091,5713737');
+    expect(faktenZurLage({ 'lage.ags': ags }, null)['lage.ags']).toMatchObject({ sicherheit: 'hinweis' });
+    expect(angabeVonHand(undefined, 'lage.altlasten', false, { von: 'TP', lage: null, heute: '2026-11-12' }).sicherheit).toBe('hinweis');
+  });
+});
+
+describe('Begründung nennt den tragenden, sicheren Teil', () => {
+  it('bei „und = nein“ mit sicherem und unsicherem Nein: der sichere wird genannt', async () => {
+    const { tragendeBlaetter } = await import('./kurz');
+    const ctx = {
+      merkmale: { Planungsrecht: 'Innenbereich' },
+      fakten: { 'schutz.lsg': { wert: false, herkunft: 'geodienst' as const, sicherheit: 'hinweis' as const } },
+      einreichung: '2026-11-12',
+      heute: '2026-11-12',
+      bausteine: {},
+    };
+    const regel = { und: [{ f: 'schutz.lsg', ist: true }, { m: 'Planungsrecht', in: ['Außenbereich'] }] };
+    expect(tragendeBlaetter(regel, ctx, 'nein')).toEqual([{ m: 'Planungsrecht', in: ['Außenbereich'] }]);
+  });
+});

@@ -83,6 +83,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const quelle = useBaurecht((s) => s.quelle);
   const offeneF = useBaurecht((s) => offeneFestlegungen(s).join('|'));
   const offeneB = useBaurecht((s) => offeneBestaetigungen(s).join('|'));
+  const eigeneFakten = useBaurecht((s) => s.pruefung.fakten);
   const ungespeichertGesamt = useBaurecht(istGeaendert);
   const laedt = useBaurecht((s) => s.laedt.length);
   const [nurRelevant, setNurRelevant] = useState(false);
@@ -129,14 +130,14 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const ueberholt = a.paragrafen.filter((p) => p.ueberholt && p.ampel !== 'gelb');
   const gesichert = Object.entries(a.fakten).filter(([, f]) => f.bestaetigt);
   // Angaben von Hand ohne Beleg: auch sie tragen Ampeln (z. B. „Kampfmittelverdacht: nein“) – mit wer und wann
-  const vonHandOhneBeleg = Object.entries(a.fakten).filter(([, f]) => f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null);
+  const vonHandOhneBeleg = Object.entries(a.fakten).filter(([id, f]) => id in eigeneFakten && id !== 'antrag.einreichung' && f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null);
   // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
   const sperre = entwuerfe ? `Erst speichern: ${entwurfText} ${entwuerfe === 1 ? 'ist' : 'sind'} noch Entwurf (zweite Bestätigung fehlt)` : ungespeichertGesamt ? 'Erst speichern: Es gibt ungespeicherte Änderungen' : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   // fehlende Angaben genau wie „Klärt am meisten“ gezählt (ein Paragraf kann unter mehreren Angaben stehen)
   const gruppen = new Map<string, ParagrafErgebnis[]>();
-  for (const k of a.klaerung) gruppen.set(`Es fehlt: ${k.titel}`, a.paragrafen.filter((p) => (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0)) && p.offen.includes(k.id)));
+  for (const k of a.klaerung) gruppen.set(`Es fehlt: ${k.titel}`, a.paragrafen.filter((p) => !(p.festlegung && !p.ueberholt && !p.unwirksam) && (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0)) && p.offen.includes(k.id)));
   for (const p of [...offen, ...ueberholt]) {
     const sonder = gruppeVon(p);
     if (!sonder && p.offen.some((o) => !o.startsWith('paragraf:'))) continue; // steht schon unter seinen fehlenden Angaben

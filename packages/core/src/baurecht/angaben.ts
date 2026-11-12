@@ -36,6 +36,10 @@ export function angabeVonHand(alt: FaktWert | undefined, id: string, wert: FaktW
   if (id === 'lage.ags' && !grund) Object.assign(f, { sicherheit: 'hinweis', grund: `von Hand eingetragen – bitte mit Beleg bestätigen (z. B. Flurstücksnachweis)${o.desktop ? ' oder „Lage abfragen“' : ''}` });
   if (grund && o.lage !== null) f.bestaetigt = { von: o.von, am: o.heute, grund, ...(o.lage ? { lage: o.lage } : {}) };
   if (grund && o.lage === null) Object.assign(f, { sicherheit: 'hinweis', grund: `${OHNE_LAGE} (Beleg: ${grund})` });
+  // Angaben zur Lage (Gemeindeschlüssel, Altlasten, Kampfmittel …) gelten auch ohne Beleg nur für diese Lage: ändert
+  // sich die Adresse, werden sie zum Hinweis; ohne Koordinaten sind sie von vornherein nur Hinweis
+  if (!grund && o.lage) f.lage = o.lage;
+  if (!grund && o.lage === null) Object.assign(f, { sicherheit: 'hinweis', grund: OHNE_LAGE });
   return mitDienst(f, dienstVon(alt));
 }
 

@@ -55,8 +55,10 @@ function Menue({ titel, label, offen, setOffen, children }: { titel: string; lab
       ref={rahmen}
       onKeyDown={taste}
       onBlur={(e) => {
-        // Fokus verlässt das Menü (Tab): schließen
-        if (offen && !rahmen.current?.contains(e.relatedTarget as Node | null)) setOffen(false);
+        // Fokus verlässt das Menü (Tab): schließen – nicht aber, wenn er auf einen Öffner geht (die Sammelmarke schaltet
+        // das Menü selbst um; sonst schlösse der Fokuswechsel und der Klick öffnete wieder)
+        const ziel = e.relatedTarget as Element | null;
+        if (offen && !rahmen.current?.contains(ziel) && !ziel?.closest?.('[data-menue-oeffner]')) setOffen(false);
       }}
     >
       <button type="button" ref={knopf} data-menue-oeffner="" aria-haspopup="menu" aria-expanded={offen} onClick={() => setOffen(!offen)} title={label}>

@@ -29,7 +29,7 @@ export function segmentTaste(e: KeyboardEvent<HTMLElement>) {
 const tabStopp = (gewaehlt: boolean, erster: boolean, keinerGewaehlt: boolean) => (gewaehlt || (keinerGewaehlt && erster) ? 0 : -1);
 
 /** Angaben, die an der Lage hängen (Schutzgebiete jedes Moduls, Werte aus Geodiensten): an die Lage gebunden */
-export const lagebezug = (def: FaktDef, wert: FaktWert | undefined) => def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst';
+export const lagebezug = (def: FaktDef, wert: FaktWert | undefined) => def.gruppe === 'schutz' || def.gruppe === 'lage' || !!def.geodienst || wert?.herkunft === 'geodienst';
 
 /** Angaben, die von Hand nur mit Begründung gesetzt werden: Schutzgebiete und Werte aus Geodiensten (ja/nein, Auswahl) */
 export const mitBeleg = (def: FaktDef, wert: FaktWert | undefined) => (def.typ === 'janein' || def.typ === 'wahl') && (def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst' || wert?.herkunft === 'modul');
@@ -114,7 +114,7 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   const v = wert?.wert ?? null;
   if (def.typ === 'janein')
     return (
-      <div className="br-segment" role="group" aria-label={def.titel} onKeyDown={segmentTaste}>
+      <div className="br-segment" role="group" aria-label={faktName(def, id)} title={def.kurz ? def.titel : undefined} onKeyDown={segmentTaste}>
         {[
           [true, 'ja'],
           [false, 'nein'],
@@ -128,13 +128,13 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   if (def.typ === 'zahl')
     return (
       <span className="br-zahl">
-        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty onChange={(n) => onWert(n)} label={def.titel} digits={def.einheit ? 2 : 0} />
+        <NumberField value={typeof v === 'number' ? v : undefined} allowEmpty onChange={(n) => onWert(n)} label={faktName(def, id)} digits={def.einheit ? 2 : 0} />
         {def.einheit && <span className="br-leise">{def.einheit}</span>}
       </span>
     );
   if (def.typ === 'wahl')
     return (
-      <select aria-label={def.titel} value={v === null ? '' : String(v)} onChange={(e) => onWert(e.target.value || undefined)}>
+      <select aria-label={faktName(def, id)} title={def.kurz ? def.titel : undefined} value={v === null ? '' : String(v)} onChange={(e) => onWert(e.target.value || undefined)}>
         <option value="">– nicht festgelegt –</option>
         {(def.werte ?? []).map((w) => (
           <option key={w} value={w}>
@@ -143,7 +143,7 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
         ))}
       </select>
     );
-  return <TextField value={v === null ? '' : String(v)} onChange={(t) => onWert(t.trim() || undefined)} label={def.titel} placeholder={id === 'lage.ags' ? '8 Ziffern' : undefined} />;
+  return <TextField value={v === null ? '' : String(v)} onChange={(t) => onWert(t.trim() || undefined)} label={faktName(def, id)} placeholder={id === 'lage.ags' ? '8 Ziffern' : undefined} />;
 }
 
 function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef; wert: FaktWert | undefined; klaert: number; eigen: boolean }) {
@@ -198,7 +198,8 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
           onWert={(v) => {
             // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
             if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
-            else useBaurecht.getState().faktSetzen(id, v, benutzer());
+            // Angaben zur Lage an die aktuelle Lage binden (ohne gültige Koordinaten: null → nur Hinweis)
+            else useBaurecht.getState().faktSetzen(id, v, benutzer(), undefined, lagebezug(def, wert) ? aktuelleLage(useBaurecht.getState().project).lage : undefined);
           }}
         />
       )}
@@ -303,8 +304,12 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     return offenB - offenA || (klaerung.get(b) ?? 0) - (klaerung.get(a) ?? 0) || auswertung.faktDefs[a].titel.localeCompare(auswertung.faktDefs[b].titel, 'de');
   };
   const schluessel = `${projektKennung}|${antrag}|${alle}|${suche}|${stand.module.map((m) => m.id).join(',')}`;
-  // bewusst nur am Schlüssel: ein Schnappschuss der Reihenfolge, nicht bei jeder Antwort neu
-  const rang = useMemo(() => new Map(Object.keys(auswertung.faktDefs).sort(vergleich).map((id, i) => [id, i])), [schluessel]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Schnappschuss der Reihenfolge je Schlüssel – abgeleiteter Zustand (React: „Informationen aus vorigen Renderläufen
+  // speichern“), nicht bei jeder Antwort neu
+  const rangBilden = () => new Map(Object.keys(auswertung.faktDefs).sort(vergleich).map((id, i) => [id, i]));
+  const [ordnung, setOrdnung] = useState(() => ({ schluessel, rang: rangBilden() }));
+  if (ordnung.schluessel !== schluessel) setOrdnung({ schluessel, rang: rangBilden() });
+  const rang = ordnung.schluessel === schluessel ? ordnung.rang : rangBilden();
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(auswertung.faktDefs)
       .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)))
