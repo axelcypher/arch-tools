@@ -69,6 +69,38 @@
       "stand": {
         "123/1": "f4cdf0cf",
         "123/4": "758e00e4"
+      },
+      "pruefen": {
+        "grund": "Bauliche Veränderung, die den Luftwechsel erheblich vermindert (z. B. Fenstertausch, Dämmung): Maßnahmen zum Schutz vor Radon sollen in Betracht gezogen werden (Abs. 4) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "f": "vorhaben.aussenbauteile",
+              "ist": true
+            },
+            {
+              "oder": [
+                {
+                  "$": "wohngebaeude"
+                },
+                {
+                  "f": "gebaeude.aufenthaltsraeume",
+                  "ist": true
+                }
+              ]
+            }
+          ]
+        }
       }
     }
   }

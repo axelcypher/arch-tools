@@ -325,6 +325,43 @@
       },
       "hinweis": "Läden, Büros oder Praxen in einem Wohngebäude mit nicht unerheblichem Anteil werden getrennt als Nichtwohngebäude behandelt (§ 106 Abs. 1)."
     },
+    "34": {
+      "titel": "Aufrechterhaltung der energetischen Qualität; entgegenstehende Rechtsvorschriften",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.aussenbauteile",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Außenbauteile eines bestehenden Gebäudes dürfen nicht so verändert werden, dass die energetische Qualität des Gebäudes verschlechtert wird – ausgenommen Änderungen bis 10 % der Fläche der jeweiligen Bauteilgruppe nach Anlage 7 (Abs. 1).",
+      "fundstellen": [
+        "34/1",
+        "34/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Die Anforderungen an bestehende Gebäude gelten nicht, soweit sie Vorschriften zur Standsicherheit, zum Brand-, Schall-, Arbeits- oder Gesundheitsschutz widersprechen (Abs. 2).",
+      "verweise": [
+        "bund/geg/36"
+      ],
+      "stand": {
+        "34/1": "51a4c0b5",
+        "34/2": "293e3f33"
+      }
+    },
     "36": {
       "titel": "Anforderungen an ein bestehendes Gebäude bei Änderung",
       "gilt": {

@@ -214,7 +214,7 @@
         "kein Landschaftsplan"
       ],
       "frage": "Welcher Landschaftsplan des Kreises Soest gilt am Grundstück (nur Außenbereich)?",
-      "hilfe": "Übersichtskarte der Landschaftspläne des Kreises Soest (Stand 11/2019). In Erwitte, Geseke, Lippstadt und Warstein hängt es von der Lage ab (LP I/II/III bzw. LP VIII nur südlich der B 516).",
+      "hilfe": "Übersichtskarte der Landschaftspläne des Kreises Soest (Stand 11/2019). Die Tabelle nennt nur Gemeinden, die ganz einem Landschaftsplan bzw. keinem zugeordnet sind; in Anröchte, Erwitte, Geseke, Lippstadt und Warstein hängt es von der Lage ab (LP I/II/III bzw. LP VIII nur südlich der B 516) – dort bitte angeben.",
       "nach": {
         "fakt": "lage.ags",
         "tabelle": {
@@ -226,10 +226,21 @@
           "05974052": "VI",
           "05974056": "V",
           "05974012": "V",
-          "05974024": "III",
-          "05974004": "II"
-        },
-        "hinweis": true
+          "05974024": "III"
+        }
+      }
+    },
+    "schutz.landschaftsplan": {
+      "titel": "Im Geltungsbereich eines Landschaftsplans",
+      "kurz": "Landschaftsplan",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "im Kreis Soest: in Gemeinden ohne Landschaftsplan (Soest, Bad Sassendorf, Möhnesee, Rüthen) folgt „nein“ aus der Gemeinde; sonst nach der Festsetzungskarte des Landschaftsplans",
+      "nach": {
+        "fakt": "kreis_soest.landschaftsplan",
+        "tabelle": {
+          "kein Landschaftsplan": false
+        }
       }
     },
     "kreis_soest.lsg_vo": {

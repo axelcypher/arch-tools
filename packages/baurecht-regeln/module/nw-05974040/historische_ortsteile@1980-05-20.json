@@ -113,7 +113,13 @@
         "5/1": "2a2fce8f",
         "5/2": "98077b50"
       },
-      "titel": "Erhaltung des historisch gewachsenen Stadtbildes und Grundrisses"
+      "titel": "Erhaltung des historisch gewachsenen Stadtbildes und Grundrisses",
+      "pruefen": {
+        "grund": "Nutzungsänderung: Erhaltung des historisch gewachsenen Stadtbildes – ob die neue Nutzung das Ortsbild prägende Anlagen verändert, im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      }
     },
     "6": {
       "gilt": {
@@ -154,12 +160,16 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Nur, wenn das Gebäude in Anlage A II aufgeführt ist – bei der Stadt erfragen."
+        "grund": "Nutzungsänderung eines Bürgerbaus (Anlage A II): ob die besonderen Anforderungen berührt sind, im Einzelfall prüfen.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
       },
       "stand": {
         "7/1": "710b3be7"
       },
-      "titel": "Besondere Anforderungen"
+      "titel": "Besondere Anforderungen",
+      "hinweis": "Nur, wenn das Gebäude in Anlage A II (schützenswerte Bürgerbauten) aufgeführt ist – bei der Stadt erfragen."
     },
     "8": {
       "gilt": {
@@ -173,12 +183,33 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Nur, wenn das Gebäude in Anlage A III aufgeführt ist; maßgeblich ist heute daneben das DSchG NRW."
+        "grund": "Im Einzelfall prüfen: bei einer Nutzungsänderung eines Baudenkmals (Anlage A III) und bei baulichen Anlagen, die keine Gebäude sind (z. B. Mauern, technische Anlagen) an oder bei einem Baudenkmal.",
+        "wenn": {
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "bauen"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       },
       "stand": {
         "8/1": "1219d385"
       },
-      "titel": "Besondere Anforderungen an bauliche Anlagen"
+      "titel": "Besondere Anforderungen an bauliche Anlagen",
+      "hinweis": "Nur, wenn das Gebäude in Anlage A III aufgeführt ist; maßgeblich ist heute daneben das DSchG NRW."
     }
   }
 }
