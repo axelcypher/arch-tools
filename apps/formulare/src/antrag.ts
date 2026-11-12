@@ -907,6 +907,60 @@ export function antraegeVon(pd: ProjektDatei): Record<string, AntragDaten> {
 }
 
 /** Zu speichernder Abschnitt „formulare“ */
+/** Darstellung zum Vergleichen: Schlüssel sortiert, fehlend und undefined gleich */
+export function stabil(x: unknown): string {
+  return (
+    JSON.stringify(x, (_k, v: unknown) =>
+      v && typeof v === 'object' && !Array.isArray(v)
+        ? Object.fromEntries(
+            Object.keys(v)
+              .sort()
+              .map((k) => [k, (v as Record<string, unknown>)[k]]),
+          )
+        : v,
+    ) ?? 'undefined'
+  );
+}
+
+/**
+ * Eine Änderung auf den frisch gelesenen Abschnitt anwenden: Nur was sich zwischen `vorher` und `nachher` (die
+ * Angaben des Aufrufers vor bzw. nach seiner Änderung) unterscheidet, kommt hinein – je Antrag und Feld. Was andere
+ * inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein gleichzeitiges Laden), bleibt. Einen Antrag, den es im
+ * frischen Abschnitt nicht gibt, übernimmt die Änderung ganz.
+ */
+export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null, nachher: ProjektDatei): Abschnitt {
+  const alt = vorher ? antraegeVon(vorher) : {};
+  const neu = antraegeVon(nachher);
+  const antraege: Record<string, AntragDaten> = { ...frisch.antraege };
+  for (const name of new Set([...Object.keys(alt), ...Object.keys(neu)])) {
+    const a = alt[name] as Record<string, unknown> | undefined;
+    const n = neu[name] as Record<string, unknown> | undefined;
+    if (stabil(a) === stabil(n)) continue;
+    if (!n) {
+      delete antraege[name];
+      continue;
+    }
+    const f = antraege[name] as Record<string, unknown> | undefined;
+    if (!f) {
+      antraege[name] = n as AntragDaten;
+      continue;
+    }
+    const z: Record<string, unknown> = { ...f };
+    for (const k of new Set([...Object.keys(a ?? {}), ...Object.keys(n)])) {
+      if (stabil(a?.[k]) === stabil(n[k])) continue;
+      if (n[k] === undefined) delete z[k];
+      else z[k] = n[k];
+    }
+    antraege[name] = z as AntragDaten;
+  }
+  const out: Abschnitt = { ...frisch, antraege };
+  if (stabil(vorher?.aktiveFassung) !== stabil(nachher.aktiveFassung)) {
+    if (nachher.aktiveFassung) out.aktiveFassung = nachher.aktiveFassung;
+    else delete out.aktiveFassung;
+  }
+  return out;
+}
+
 export function abschnittVon(pd: ProjektDatei): Record<string, unknown> {
   const antraege = antraegeVon(pd);
   return { ...(pd.aktiveFassung ? { aktiveFassung: pd.aktiveFassung } : {}), ...(Object.keys(antraege).length ? { antraege } : {}) };

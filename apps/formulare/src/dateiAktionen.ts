@@ -204,7 +204,7 @@ export async function verknuepfen(basis: string, pfad: string, umfangId: string)
       if (useFormulare.getState().projekt !== projekt) {
         useFormulare
           .getState()
-          .setMeldung({ art: 'info', text: `In ${aktiveFassung(st, projekt)} von ${projekt.ordner} kopiert: ${name} – nicht verknüpft, weil inzwischen ein anderes Projekt geöffnet ist.` });
+          .setMeldung({ art: 'info', text: `„${name}“ in ${aktiveFassung(st, projekt)} von ${projekt.ordner} kopiert, aber nicht verknüpft – inzwischen ist ein anderes Projekt offen.` });
         return;
       }
       useFormulare.getState().setMeldung({ art: 'info', text: `In ${aktiveFassung(st, projekt)} kopiert und verknüpft: ${name}` });

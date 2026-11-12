@@ -3,7 +3,7 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { aenderungAnwenden, stabil, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -854,5 +854,41 @@ describe('Anträge: je Antrag eigene Antragsmerkmale, Antragsumfang und Autofill
     expect(eingereichtAus([{ pfad: '_archiv/Eingangsbestätigung.pdf', ordner: false, groesse: 1 }])).toBeNull();
     expect(eingereichtAus([{ pfad: 'Schriftverkehr/Archiv/Antragsprotokoll.pdf', ordner: false, groesse: 1 }])).toBeNull();
     expect(eingereichtAus([{ pfad: 'Archivierung/Antragsprotokoll.pdf', ordner: false, groesse: 1 }])).not.toBeNull();
+  });
+});
+
+describe('Änderung auf den frisch gelesenen Abschnitt anwenden', () => {
+  const umfang = [{ id: 'muster', titel: 'Musterformular', art: 'intern' as const, formular: 'Muster' }];
+  it('nur geänderte Felder je Antrag – was ein anderer inzwischen gespeichert hat, bleibt', () => {
+    const vorher = { ansicht: 'BAUA 2', antraege: { 'BAUA 2': { angelegt: '2026-11-01' } } };
+    const nachher = { ...vorher, umfang };
+    // inzwischen woanders: BAUA 2 eingereicht, ein neuer Antrag BAUVA
+    const frisch = { antraege: { 'BAUA 2': { angelegt: '2026-11-01', status: { eingereicht: true, datum: '2026-11-10' } }, BAUVA: { angelegt: '2026-11-02' } } };
+    const a = aenderungAnwenden(frisch, vorher, nachher);
+    expect(a.antraege['BAUA 2']).toEqual({ angelegt: '2026-11-01', status: { eingereicht: true, datum: '2026-11-10' }, umfang });
+    expect(a.antraege.BAUVA).toEqual({ angelegt: '2026-11-02' });
+  });
+  it('ein entferntes Feld wird entfernt, ein fehlender Antrag ganz übernommen, die aktive Fassung nur bei Änderung', () => {
+    const vorher = { ansicht: 'BAUA', aktiveFassung: 'BAUA', umfang, antraege: { BAUA: { angelegt: '2026-11-01' } } };
+    const nachher = { ansicht: 'BAUA', aktiveFassung: 'BAUA', antraege: { BAUA: { angelegt: '2026-11-01' }, 'BAUA 2': { angelegt: '2026-11-12' } } };
+    const frisch = { aktiveFassung: 'BAUVA', antraege: { BAUA: { angelegt: '2026-11-01', umfang, merkmale: { gk: '3' } } } };
+    const a = aenderungAnwenden(frisch, vorher, nachher);
+    expect(a.antraege.BAUA).toEqual({ angelegt: '2026-11-01', merkmale: { gk: '3' } });
+    expect(a.antraege['BAUA 2']).toEqual({ angelegt: '2026-11-12' });
+    expect(a.aktiveFassung).toBe('BAUVA');
+    expect(aenderungAnwenden(frisch, vorher, { ...nachher, aktiveFassung: 'BAUA 2' }).aktiveFassung).toBe('BAUA 2');
+  });
+  it('fehlende Anträge ergänzen (Laden): vorhandene bleiben unberührt, auch mit Antragsumfang', () => {
+    const vorher = { antraege: {} };
+    const nachher = { ansicht: 'BAUA', antraege: { BAUA: { angelegt: '2026-11-12' }, 'BAUA 2': { angelegt: '2026-11-12' } } };
+    const frisch = { antraege: { BAUA: { angelegt: '2026-11-01', umfang } } };
+    const a = aenderungAnwenden(frisch, vorher, nachher);
+    expect(a.antraege.BAUA.umfang).toEqual(umfang);
+    expect(a.antraege['BAUA 2']).toEqual({ angelegt: '2026-11-12' });
+  });
+  it('stabil: Reihenfolge der Schlüssel egal, undefined wie fehlend', () => {
+    expect(stabil({ a: 1, b: { c: 2, d: 3 } })).toBe(stabil({ b: { d: 3, c: 2 }, a: 1 }));
+    expect(stabil({ a: 1, b: undefined })).toBe(stabil({ a: 1 }));
+    expect(stabil(undefined)).toBe('undefined');
   });
 });

@@ -480,6 +480,29 @@ describe('Formulare', () => {
     expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);
   });
 
+  const landOeffnen = async (zahl: number) => {
+    const k = projektkarte();
+    k.eintraege.find((e) => e.gruppe === 101 && e.id === 60)!.zahl = zahl;
+    ds.projektkarten.set(KARTE, k);
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await gruppeWaehlen(host, 'Projektdaten');
+    return () => kartenFeld<HTMLSelectElement>(host, 'Land');
+  };
+  it('Projektkarte: Auswahlliste liest die Nummer wie SJ Office (0 = erste Möglichkeit nach der leeren Zeile)', async () => {
+    const land = await landOeffnen(0);
+    expect(land().selectedOptions[0].textContent).toBe('Bayern');
+  });
+  it('Projektkarte: eine Nummer außerhalb der Liste ist sichtbar („bitte neu wählen“) und verschwindet nach einer gültigen Wahl', async () => {
+    const land = await landOeffnen(2);
+    expect(land().selectedOptions[0].textContent).toBe('(Auswahl nicht in der Liste – bitte neu wählen)');
+    expect([...land().options].map((o) => o.textContent)).toEqual(['– keine Angabe –', '(Auswahl nicht in der Liste – bitte neu wählen)', 'Bayern', 'Nordrhein-Westfalen']);
+    waehle(land(), '2');
+    expect(land().selectedOptions[0].textContent).toBe('Nordrhein-Westfalen');
+    expect([...land().options].map((o) => o.textContent)).not.toContain('(Auswahl nicht in der Liste – bitte neu wählen)');
+  });
+
   it('Projektkarte: Art der Nutzung als Auswahl – eine eigene Angabe bleibt erhalten; Anzahl nur als ganze Zahl', async () => {
     const k = projektkarte();
     k.eintraege.push(
