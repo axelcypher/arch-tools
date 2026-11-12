@@ -52,15 +52,14 @@ export function NamensschemaEinstellungen() {
   };
 
   return (
-    <section className="po-namensschema" aria-label="Namensschema: Kürzel und Plannummern">
-      <h2>Namensschema: Kürzel und Plannummern</h2>
+    <section className="po-namensschema" aria-labelledby="po-namensschema-titel">
+      <h2 id="po-namensschema-titel">Namensschema: Kürzel und Plannummern</h2>
       <p className="muted small-text">
-        Gilt für alle Apps: Formulare erkennt daran Antragsordner (BAUA, BAUA 2 …) und die Pläne eines Plansatzes (Plannummer mit Plankürzel, z. B. GP-04, oder GP01-07 für einen zusammengefassten
-        Satz). Neue Projektdateien bekommen eine Kopie; beim Ergänzen eines Projekts wird sie auf den Stand des Büros gebracht. Wie die Dateien des Büros insgesamt heißen, legt das „Dateinamenschema
-        für Pläne“ der Struktur fest – hier geht es nur um die Kürzel und ihre Stellen.
+        Gilt für alle Apps – Formulare erkennt daran Antragsordner und die Pläne eines Plansatzes (GP-04, GP01-07). Neue Projektdateien bekommen eine Kopie, das Ergänzen eines Projekts bringt sie auf
+        den Stand des Büros; die übrigen Teile der Dateinamen regelt das „Dateinamenschema für Pläne“ der Struktur.
       </p>
 
-      <h3>Aufbau des Dateinamens</h3>
+      <h3>Stellen der Teile im Dateinamen</h3>
       <div className="po-stellen">
         {s.reihenfolge.map((t, i) => (
           <label key={i}>
@@ -100,7 +99,12 @@ export function NamensschemaEinstellungen() {
         onChange={(antragsarten) => setzen({ antragsarten })}
       />
       <div className="po-namensschema-fuss">
-        <button className="small" disabled={!allgemein.namensschema} title="Die eingebaute Vorgabe wiederherstellen (mit Rückfrage)" onClick={() => void zuruecksetzen()}>
+        <button
+          className="small"
+          disabled={JSON.stringify(namensschemaAus(allgemein.namensschema) ?? VORGABE_NAMENSSCHEMA) === JSON.stringify(VORGABE_NAMENSSCHEMA)}
+          title="Die eingebaute Vorgabe wiederherstellen (mit Rückfrage)"
+          onClick={() => void zuruecksetzen()}
+        >
           Vorgabe wiederherstellen
         </button>
       </div>
@@ -113,14 +117,32 @@ export function NamensschemaEinstellungen() {
  * wird nicht gekappt oder verworfen, sondern bleibt zum Korrigieren stehen – mit Meldung am Feld (wie NumberField).
  * Leer heißt „keine“, wo das erlaubt ist (Phase ohne LPH).
  */
-function LphFeld({ wert, leerErlaubt = false, label, onChange }: { wert: number | undefined; leerErlaubt?: boolean; label?: string; onChange: (n: number | undefined) => void }) {
+function LphFeld({
+  wert,
+  leerErlaubt = false,
+  label,
+  onChange,
+  meldung,
+}: {
+  wert: number | undefined;
+  leerErlaubt?: boolean;
+  label?: string;
+  onChange: (n: number | undefined) => void;
+  /** in einer Tabelle: die Meldung steht nicht am Feld, sondern in der Meldungszeile darunter (Kennung und Weitergabe) */
+  meldung?: { id: string; setzen: (text: string) => void };
+}) {
   const text = wert === undefined ? '' : String(wert);
-  const meldungId = useId();
+  const eigeneId = useId();
+  const meldungId = meldung?.id ?? eigeneId;
   const [eingabe, setEingabe] = useState(text);
-  const [fehler, setFehler] = useState('');
+  const [fehler, setFehlerZustand] = useState('');
+  const setFehler = (f: string) => {
+    setFehlerZustand(f);
+    meldung?.setzen(f);
+  };
   useEffect(() => {
     setEingabe(text);
-    setFehler('');
+    setFehlerZustand('');
   }, [text]);
   const uebernehmen = () => {
     const t = eingabe.trim();
@@ -155,7 +177,7 @@ function LphFeld({ wert, leerErlaubt = false, label, onChange }: { wert: number 
           }
         }}
       />
-      {fehler && (
+      {fehler && !meldung && (
         <span className="feld-meldung" role="alert" id={meldungId}>
           {fehler}
         </span>
@@ -358,7 +380,13 @@ function KuerzelZeile({
         </td>
         <td>
           {mitLph ? (
-            <LphFeld wert={neu ? lph : k.lph} leerErlaubt label={`Leistungsphase von ${bezeichnung}`} onChange={(n) => (neu ? setLph(n) : onChange({ lph: n }))} />
+            <LphFeld
+              wert={neu ? lph : k.lph}
+              leerErlaubt
+              label={`Leistungsphase von ${bezeichnung}`}
+              meldung={{ id: meldungId, setzen: setFehler }}
+              onChange={(n) => (neu ? setLph(n) : onChange({ lph: n }))}
+            />
           ) : (
             <input
               value={synonyme}

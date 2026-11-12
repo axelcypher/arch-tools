@@ -883,6 +883,27 @@ describe('Plansatz', () => {
     expect(knopf(zeile, 'Pläne zeigen')).toBeUndefined();
   });
 
+  it('verschobener Plan mit der Phase im Namen: „Umbenennen nach Namensformat“ ersetzt nur die Phase – er bleibt im Plansatz', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 GP 261111 GP-01 Grundriss EG.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().umfangSetzen([{ id: 'plaene', titel: 'Bauzeichnungen', art: 'plansatz', quelle: 'Planung' }]));
+    await warte();
+    await klick(knopfGenau(host, 'Antrag'));
+    const zeile = () => [...host.querySelectorAll<HTMLElement>('.fo-bereit-zeile')].find((z) => z.textContent?.includes('GP-01'))!;
+    // im Antragsordner steht statt der Phase die Antragsart – so kann der Plan nicht bereit sein
+    expect(zeile().classList.contains('name')).toBe(true);
+    expect(zeile().textContent).toContain('Namensformat passt nicht');
+    await rechtsklick(zeile().querySelector('.fo-baum-zeile')!);
+    await klick(menuePunkt('Umbenennen nach Namensformat'));
+    const feld = host.querySelector<HTMLInputElement>('.modal.rf input')!;
+    expect(feld.value).toBe('BS9 BAUA 261111 GP-01 Grundriss EG.pdf');
+    await klick(knopf(host.querySelector('.modal.rf')!, 'Umbenennen'));
+    await warte();
+    expect(ds.dateien.has(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261111 GP-01 Grundriss EG.pdf`)).toBe(true);
+    // die Plannummer bleibt: weiterhin GP-01 im Plansatz, aktuell
+    expect(useAntrag.getState().dokumente[0].plansatz!.plaene.map((p) => [p.schluessel, p.zustand])).toEqual([['GP-01', 'aktuell']]);
+  });
+
   it('Plansatz-Zeile: „n Hinweise“ vor der Quelle, öffnet die Liste und führt zu den Hinweisen', async () => {
     ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261111 GP-01 Grundriss EG.pdf`, new Uint8Array([1]));
     ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261111 GP-02 Grundriss OG.pdf`, new Uint8Array([1]));

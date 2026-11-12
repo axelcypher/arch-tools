@@ -4,7 +4,7 @@ import { useEscSchliessen } from '@core/ui/Dialog';
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft } from '../antrag';
-import { aktiveFassung, antragsOrdner, dateienVon, dokumentZu, projektCodes, useAntrag } from '../antragStore';
+import { aktiveFassung, antragsOrdner, dateienVon, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { pdfOeffnen, pdfSchliessen } from '../dokumente/pdf';
@@ -49,7 +49,8 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
 
   const aktuell = liste[Math.min(index, liste.length - 1)];
   const art = aktuell ? dateiArt(aktuell.pfad) : 'sonst';
-  const fehlerName = aktuell ? antragsNameFehler(aktuell.pfad, { codes: projektCodes(projekt), art: artDerFassung(fassung) }) : null;
+  const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
+  const fehlerName = aktuell ? antragsNameFehler(aktuell.pfad, { codes: projektCodes(projekt), art: artDerFassung(fassung), reihenfolge }) : null;
   const zustand = aktuell
     ? bereitschaft(
         aktuell,

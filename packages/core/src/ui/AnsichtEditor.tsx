@@ -323,7 +323,12 @@ function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; fel
     knopf.current?.focus();
   };
   return (
-    <span className="av-ed-link-huelle" ref={huelle}>
+    <span
+      className="av-ed-link-huelle"
+      ref={huelle}
+      // verlässt der Fokus Knopf und Liste (Tab), schließt die Liste – sie läge sonst über den nächsten Zeilen
+      onBlur={(e) => offen && !huelle.current?.contains(e.relatedTarget as Node | null) && setOffen(false)}
+    >
       <button
         ref={knopf}
         type="button"

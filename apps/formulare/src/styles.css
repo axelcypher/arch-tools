@@ -1276,7 +1276,6 @@ button.icon.fo-gl-zaehlt.an {
   opacity: 0.8;
 }
 .pk-feld input[type='text'],
-.pk-feld input[type='number'],
 .pk-feld select,
 .pk-feld textarea {
   width: 100%;
@@ -1290,7 +1289,6 @@ button.icon.fo-gl-zaehlt.an {
   font-variant-numeric: tabular-nums;
 }
 .pk-feld.geaendert input[type='text'],
-.pk-feld.geaendert input[type='number'],
 .pk-feld.geaendert select,
 .pk-feld.geaendert textarea {
   border-color: var(--sel);
@@ -1299,8 +1297,7 @@ button.icon.fo-gl-zaehlt.an {
 .pk-feld.geaendert .pk-feld-titel {
   color: var(--sel);
 }
-.pk-feld.warnung input[type='text'],
-.pk-feld.warnung input[type='number'] {
+.pk-feld.warnung input[type='text'] {
   border-color: var(--warn-border);
 }
 .pk-warnung {
@@ -4720,7 +4717,8 @@ tr[data-ziehen='danach'] > td {
 .pu-plan.veraltet .pu-plan-zustand {
   color: var(--warn-text);
 }
-.pu-ohne-vorlage {
+/* .pu-leer p setzt sonst den Abstand */
+.pu-leer .pu-ohne-vorlage {
   margin: 6px 0 0;
   color: var(--warn-text);
 }

@@ -69,6 +69,16 @@ describe('Ansicht-Editor: Verknüpfen', () => {
     expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen');
   });
 
+  it('die Liste schließt, wenn der Fokus sie verlässt (Tab) – nicht beim Wechsel zwischen ihren Kästchen', () => {
+    const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1', 'ort2'] }] });
+    klick(link(editor, 0)!);
+    const kasten = kaestchen(editor, 'Ort (Gemeinde)');
+    act(() => void kasten.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: link(editor, 0) })));
+    expect(editor.querySelector('.av-ed-link-liste')).not.toBeNull();
+    act(() => void kasten.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: zeile(editor, 1).querySelector('input') })));
+    expect(editor.querySelector('.av-ed-link-liste')).toBeNull();
+  });
+
   it('Pfeiltasten am Knopf verknüpfen nichts (anders als bei einer Auswahlliste)', () => {
     const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1', 'ort2'] }], verknuepfungen: [['ort1', 'ort2']] });
     link(editor, 0)!.focus();

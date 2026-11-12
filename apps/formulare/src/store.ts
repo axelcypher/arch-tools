@@ -297,11 +297,10 @@ interface FormulareState extends Gespeichert {
   sperrdateiAufheben: (pfad: string, daten: Uint8Array) => Promise<boolean>;
   karteLaden: () => Promise<void>;
   karteSetzen: (gruppe: number, id: number, wert: PkWert) => void;
-  /** mehrere Einträge in einem Schritt (Übernehmen, Leeren) */
-  /** mehrere Einträge in einem Schritt; verknüpfte Einträge werden mitgefüllt; `zusammenfassen` führt einen gleichen Schritt beim Tippen fort */
   /**
-   * Mehrere Einträge in einem Schritt. Verknüpfte Einträge (eigene Ansicht) werden mitgefüllt – außer bei
-   * `ohneVerknuepfungen` (Verwerfen, Gruppe leeren: betrifft nur die genannten Einträge)
+   * Mehrere Einträge in einem Schritt (Übernehmen, Leeren, Verwerfen). Verknüpfte Einträge (eigene Ansicht) werden
+   * mitgefüllt – außer bei `ohneVerknuepfungen` (Verwerfen, Gruppe leeren: nur die genannten Einträge);
+   * `zusammenfassen` führt einen gleichen Schritt beim Tippen fort
    */
   karteMehrere: (werte: KartenWert[], titel: string, o?: { zusammenfassen?: boolean; ohneVerknuepfungen?: boolean }) => void;
   /** liefert den Schlüssel des betroffenen Eintrags (zum Hinspringen) */

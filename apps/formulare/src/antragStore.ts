@@ -20,6 +20,7 @@ import {
   dateiname,
   einstellungenAus,
   einstellungenFuer,
+  vorlageMitAntragsart,
   externStatus,
   fassungenAus,
   formularStatus,
@@ -227,8 +228,15 @@ const ctx = () => {
 };
 
 /** Einstellungen für das gewählte Projekt */
-export const wirksameEinstellungen = (s: Pick<AntragState, 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null) =>
-  einstellungenFuer(s.einstellungen, p ? s.ueberschreibungen[p.ordner] : undefined);
+/**
+ * Einstellungen für das Projekt (global, mit seinen Abweichungen). An der Stelle der Antragsart steht in der
+ * Namensvorlage immer {Art} – eine ältere Vorlage mit {Phase} oder einem festen Kürzel dort wird hier umgestellt
+ * (nach der Reihenfolge des Namensschemas); gespeichert bleibt sie, wie sie ist.
+ */
+export const wirksameEinstellungen = (s: Pick<AntragState, 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null) => {
+  const e = einstellungenFuer(s.einstellungen, p ? s.ueberschreibungen[p.ordner] : undefined);
+  return { ...e, namensvorlage: vorlageMitAntragsart(e.namensvorlage, namensschema().reihenfolge) };
+};
 
 /** Die aktive Antragsfassung: gewählt, sonst die neueste der Standardart, sonst die Standardart selbst */
 export function aktiveFassung(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null): string {
@@ -260,15 +268,24 @@ export async function ordnerAufloesen(ds: { liste: (pfad: string, tiefe: number)
 /** Formular in einem Archivordner – wird beim Sammel-Export ausgelassen */
 export { istArchiv };
 
-/** Namensschema des Projekts: das der Projektdatei, sonst das des Büros, sonst die Vorgabe */
-export function namensschema(): Namensschema {
-  const f = useFormulare.getState();
-  return wirksamesNamensschema(f.oap && f.oap !== 'fehlt' ? f.oap.projekt.namensschema : undefined, f.namensschemaBuero);
+let schemaZuletzt: { projekt: unknown; buero: unknown; schema: Namensschema } | null = null;
+/**
+ * Namensschema des Projekts: das der Projektdatei, sonst das des Büros, sonst die Vorgabe. Aus einem Zustand des
+ * Formulare-Stores – zwischengespeichert, solange sich beide Quellen nicht ändern (auch als Selektor geeignet).
+ */
+export function namensschemaVon(f: Pick<ReturnType<typeof useFormulare.getState>, 'oap' | 'namensschemaBuero'>): Namensschema {
+  const projekt = f.oap && f.oap !== 'fehlt' ? f.oap.projekt.namensschema : undefined;
+  if (!schemaZuletzt || schemaZuletzt.projekt !== projekt || schemaZuletzt.buero !== f.namensschemaBuero)
+    schemaZuletzt = { projekt, buero: f.namensschemaBuero, schema: wirksamesNamensschema(projekt, f.namensschemaBuero) };
+  return schemaZuletzt.schema;
 }
 
+/** Namensschema des gewählten Projekts (siehe namensschemaVon) */
+export const namensschema = (): Namensschema => namensschemaVon(useFormulare.getState());
+
 /** Antragsarten, an denen Ordner im Antragsordner erkannt werden: die der Einstellungen zuerst, dann die des Namensschemas */
-export const antragsarten = (e: Pick<ExportEinstellungen, 'arten'>, synonyme = true) => [
-  ...new Set([...e.arten.map((a) => a.toUpperCase()), ...(synonyme ? alleKuerzel(namensschema().antragsarten) : namensschema().antragsarten.map((k) => k.kuerzel))]),
+export const antragsarten = (e: Pick<ExportEinstellungen, 'arten'>, synonyme = true, schema: Namensschema = namensschema()) => [
+  ...new Set([...e.arten.map((a) => a.toUpperCase()), ...(synonyme ? alleKuerzel(schema.antragsarten) : schema.antragsarten.map((k) => k.kuerzel))]),
 ];
 
 /** Stand „eingereicht“ des aktiven Antrags (von Hand gesetzt vor erkannt); null = in Arbeit */
@@ -611,7 +628,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       let neu: typeof liste;
       if (markiert) neu = liste.filter((b) => b.datei.toLowerCase() !== datei.toLowerCase());
       else {
-        const fehlerText = antragsNameFehler(datei, { codes: projektCodes(projekt), art: artDerFassung(fassung) });
+        const fehlerText = antragsNameFehler(datei, { codes: projektCodes(projekt), art: artDerFassung(fassung), reihenfolge: namensschema().reihenfolge });
         if (fehlerText) {
           meldung('fehler', `„${datei}“ kann nicht als bereit markiert werden: ${fehlerText}.`);
           return;
@@ -1224,7 +1241,8 @@ useFormulare.subscribe((s, vorher) => {
   // Namensschema des Büros (gemeinsame Einstellungen) oder das bzw. die Geschosse derselben Projektdatei geändert:
   // Antragsordner und Plansätze neu erkennen – nicht erst beim nächsten Takt. Eine neu gewählte oder eben angelegte
   // Projektdatei laden die Zweige unten bzw. der Aufrufer.
-  const dieselbe = s.oap && s.oap !== 'fehlt' && vorher.oap && vorher.oap !== 'fehlt' && s.oap.pfad === vorher.oap.pfad;
+  // (die Projektdatei wird nur verglichen, wenn sie sich geändert hat – nicht bei jedem Tastendruck)
+  const dieselbe = s.oap !== vorher.oap && s.oap && s.oap !== 'fehlt' && vorher.oap && vorher.oap !== 'fehlt' && s.oap.pfad === vorher.oap.pfad;
   const schemaNeu = s.namensschemaBuero !== vorher.namensschemaBuero || (!!dieselbe && schemaDerProjektdatei(s.oap as Exclude<OapStand, 'fehlt' | null>) !== schemaDerProjektdatei(vorher.oap as Exclude<OapStand, 'fehlt' | null>));
   if (s.projekt !== vorher.projekt || s.ablage !== vorher.ablage || s.ds !== vorher.ds) {
     zerlegt.clear();

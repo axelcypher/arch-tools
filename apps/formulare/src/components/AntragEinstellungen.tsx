@@ -3,9 +3,10 @@ import { Fragment, useState } from 'react';
 import type { AntragsVorlage, KatalogEintrag } from '../antrag';
 import { VORGABE_MERKMALE, bedingungText, hatBedingung, istVorgabeMerkmal } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
-import { PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, vorlageMitAntragsart, PLANSATZ_QUELLE } from '../antrag';
+import { ART_HINWEIS, PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, vorlageMitAntragsart, PLANSATZ_QUELLE } from '../antrag';
 import { Griff, useSortieren } from './Sortieren';
-import { useAntrag } from '../antragStore';
+import { namensschemaVon, useAntrag } from '../antragStore';
+import { useFormulare } from '../store';
 import { waehleOrdner } from '../dateisystem';
 import { Symbol } from './Symbol';
 
@@ -38,7 +39,10 @@ export function AntragEinstellungen() {
   const vorlageSetzen = (id: string, teil: Partial<AntragsVorlage>) => setVorlagen(vorlagen.map((v) => (v.id === id ? { ...v, ...teil } : v)));
   const inVorlage = (v: AntragsVorlage, kid: string, an: boolean) => vorlageSetzen(v.id, { dokumente: an ? [...v.dokumente.filter((d) => d !== kid), kid] : v.dokumente.filter((d) => d !== kid) });
   const [bedingungOffen, setBedingungOffen] = useState<string | null>(null);
-  const beispiel = dateiname(e.namensvorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
+  // beim Export steht an der Stelle der Antragsart immer {Art} (nach dem Namensschema)
+  const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
+  const wirksameVorlage = vorlageMitAntragsart(e.namensvorlage, reihenfolge);
+  const beispiel = dateiname(wirksameVorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
 
   const zeileSetzen = (i: number, teil: Partial<KatalogEintrag>) => setKatalog(katalog.map((k, n) => (n === i ? { ...k, ...teil } : k)));
 
@@ -75,27 +79,30 @@ export function AntragEinstellungen() {
         <div className="es-raster">
           <label className="es-breit">
             <span className="field-label">Namensvorlage</span>
-            <input
-              value={e.namensvorlage}
-              onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })}
-              onBlur={(x) => x.target.value !== vorlageMitAntragsart(x.target.value) && setEinstellungen({ namensvorlage: vorlageMitAntragsart(x.target.value) })}
-              aria-label="Namensvorlage"
-              spellCheck={false}
-            />
-            <span className="field-hint">Die Antragsart ({'{Art}'}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA –, nicht aus einer Einstellung.</span>
+            <input value={e.namensvorlage} onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })} aria-label="Namensvorlage" aria-describedby="es-art-hinweis" spellCheck={false} />
+            <span className="field-hint" id="es-art-hinweis">
+              {ART_HINWEIS}
+            </span>
           </label>
-          {/{phase}/i.test(e.namensvorlage) && (
-            <label>
-              <span className="field-label">Phase (für {'{Phase}'})</span>
-              <input value={e.phase} list="es-phasen" onChange={(x) => setEinstellungen({ phase: x.target.value })} aria-label="Phase" />
-              <datalist id="es-phasen">
-                {['BP', 'EP', 'GP', 'AP'].map((p) => (
-                  <option key={p} value={p} />
-                ))}
-              </datalist>
-            </label>
-          )}
+          <label>
+            <span className="field-label">Phase (nur für {'{Phase}'})</span>
+            <input value={e.phase} list="es-phasen" onChange={(x) => setEinstellungen({ phase: x.target.value })} aria-label="Phase" />
+            <datalist id="es-phasen">
+              {['BP', 'EP', 'GP', 'AP'].map((p) => (
+                <option key={p} value={p} />
+              ))}
+            </datalist>
+          </label>
         </div>
+        {wirksameVorlage !== e.namensvorlage && (
+          <p className="warning small-text es-art-umstellen">
+            An der Stelle der Antragsart steht „{e.namensvorlage.trim().split(/\s+/)[reihenfolge.indexOf('art')]}“ – beim Export wird dort die Antragsart des aktiven Antrags ({'{Art}'})
+            eingesetzt.{' '}
+            <button className="small" onClick={() => setEinstellungen({ namensvorlage: wirksameVorlage })}>
+              Vorlage anpassen
+            </button>
+          </p>
+        )}
         <div className="es-platzhalter">
           {PLATZHALTER.map((p) => (
             <button key={p.name} className="small" title={p.text} onClick={() => setEinstellungen({ namensvorlage: `${e.namensvorlage} ${p.name}`.trim() })}>

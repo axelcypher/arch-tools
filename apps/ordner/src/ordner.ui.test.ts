@@ -345,6 +345,11 @@ describe('Projektordner', () => {
     eingabe(eingabeMit('Leistungsphase von AB'), '15');
     expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBeUndefined();
     expect(eingabeMit('Leistungsphase von AB').getAttribute('aria-invalid')).toBe('true');
+    // die Meldung steht in der Meldungszeile der Tabelle, nicht in der schmalen LPH-Spalte
+    const lphMeldung = eingabeMit('Leistungsphase von AB').closest('tr')!.nextElementSibling!.querySelector<HTMLElement>('.feld-meldung')!;
+    expect(lphMeldung.textContent).toBe('„15“: Leistungsphase 0 bis 9 (ganze Zahl).');
+    expect(lphMeldung.closest('td')!.getAttribute('colspan')).toBe('4');
+    expect(eingabeMit('Leistungsphase von AB').getAttribute('aria-describedby')).toBe(lphMeldung.id);
     eingabe(eingabeMit('Leistungsphase von AB'), '6');
     expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBe(6);
     eingabe(eingabeMit('Leistungsphase von AB'), '');
@@ -397,6 +402,8 @@ describe('Projektordner', () => {
     expect(eingabeMit('Schreibweisen von BAUA').value).toBe('');
     expect(eingabeMit('Leistungsphase von AB').value).toBe('');
     expect(index.value).toBe('5');
+    // wieder die Vorgabe: nichts mehr wiederherzustellen
+    expect(knopf(bereich, 'Vorgabe wiederherstellen').disabled).toBe(true);
   });
 
   it('Struktur von einem anderen Rechner geändert: Meldung statt Überschreiben, neu laden oder eigene Fassung speichern (P-02)', async () => {

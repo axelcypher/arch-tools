@@ -10,8 +10,8 @@
  */
 
 import type { AntragKurz } from '@core/model';
-import type { Kuerzel } from '@core/namensschema';
-import { kuerzelZu } from '@core/namensschema';
+import type { Kuerzel, NamensTeil } from '@core/namensschema';
+import { kuerzelZu, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { antragKurzAus } from '@core/serialize';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
@@ -62,14 +62,22 @@ export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner'
 
 /**
  * Die Antragsart im Dateinamen kommt immer aus dem Antrag (Ordner der aktiven Antragsfassung, „BAUA 2“ → BAUA), nie
- * aus einer Einstellung: Steht in der Vorlage nach dem Kürzel {Phase} (die Vorgabe früherer Fassungen – dann stand dort
- * der Wert der Einstellung „Phase“) oder ein festes Kürzel wie „BVA“, wird daraus {Art}. Sonst bleibt die Vorlage.
+ * aus einer Einstellung: Steht in der Vorlage an der Stelle der Antragsart (nach dem Namensschema; Vorgabe: nach dem
+ * Kürzel) {Phase} – die Vorgabe früherer Fassungen, dann stand dort der Wert der Einstellung „Phase“ – oder ein festes
+ * Kürzel wie „BVA“ (Großbuchstaben, mindestens ein Buchstabe – „2026“ ist keins), wird daraus {Art}. Das gilt nur, wenn
+ * die Vorlage das Kürzel an seiner Stelle hat; sonst bleibt sie, wie sie ist.
  */
-export function vorlageMitAntragsart(vorlage: string): string {
-  const m = /^(\s*\{(?:k(?:ü|ue)rzel|projekt)\}\s+)(\S+)/i.exec(vorlage);
-  if (!m) return vorlage;
-  const zweites = m[2];
-  return /^\{phase\}$/i.test(zweites) || /^[A-ZÄÖÜ0-9]{2,8}$/.test(zweites) ? `${m[1]}{Art}${vorlage.slice(m[0].length)}` : vorlage;
+/** Hinweis an jeder Namensvorlage – überall derselbe Wortlaut */
+export const ART_HINWEIS = 'Die Antragsart ({Art}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA –, nicht aus einer Einstellung.';
+
+export function vorlageMitAntragsart(vorlage: string, reihenfolge: NamensTeil[] = VORGABE_NAMENSSCHEMA.reihenfolge): string {
+  const teile = vorlage.trim().split(/\s+/);
+  const [iCode, iArt] = [reihenfolge.indexOf('code'), reihenfolge.indexOf('art')];
+  if (iCode < 0 || iArt < 0 || !/^\{(k(ü|ue)rzel|projekt)\}$/i.test(teile[iCode] ?? '')) return vorlage;
+  const t = teile[iArt];
+  if (!t || !(/^\{phase\}$/i.test(t) || /^(?=.*[A-ZÄÖÜ])[A-ZÄÖÜ0-9]{2,8}$/.test(t))) return vorlage;
+  teile[iArt] = '{Art}';
+  return teile.join(' ');
 }
 
 /** Einstellungen für ein Projekt: global, mit den Abweichungen des Projekts */
@@ -79,7 +87,6 @@ export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUebe
     const v = ueber?.[k];
     if (v !== undefined && v !== '') (out as Record<string, unknown>)[k] = v;
   }
-  out.namensvorlage = vorlageMitAntragsart(out.namensvorlage);
   return out;
 }
 
@@ -91,8 +98,7 @@ export function einstellungenAus(roh: unknown): ExportEinstellungen {
   return {
     antragsordner: text('antragsordner'),
     arten: arten.length ? arten : VORGABE_EXPORT.arten,
-    // ältere Vorlagen mit {Phase} bzw. einem festen Kürzel an der Stelle der Antragsart: dort steht jetzt {Art}
-    namensvorlage: vorlageMitAntragsart(text('namensvorlage') || VORGABE_EXPORT.namensvorlage),
+    namensvorlage: text('namensvorlage') || VORGABE_EXPORT.namensvorlage,
     phase: text('phase'),
     ziel: o.ziel === 'pfad' ? 'pfad' : 'aktiv',
     zielpfad: text('zielpfad'),
@@ -616,25 +622,81 @@ export function eingereichtAus(dateien: Eintrag[]): { datei: string; datum: stri
 /** Antragsart einer Fassung: „BAUA 2“ → „BAUA“ */
 export const artDerFassung = (fassung: string) => fassung.trim().replace(/[\s_-]*\d+$/, '').toUpperCase();
 
+/** Dateiname in Wörtern nach der Reihenfolge des Namensschemas; ein Projektcode darf aus mehreren Wörtern bestehen */
+function zerlegenMitCodes(name: string, codes: string[], reihenfolge: NamensTeil[]) {
+  const endung = /\.[A-Za-z0-9]{1,5}$/.exec(name.trim())?.[0] ?? '';
+  const woerter = name.trim().slice(0, name.trim().length - endung.length).split(/\s+/).filter(Boolean);
+  const teile: Partial<Record<NamensTeil, string>> = {};
+  const stelle: Partial<Record<NamensTeil, number>> = {};
+  let code: string | undefined;
+  let p = 0;
+  for (const t of reihenfolge) {
+    if (t === 'code') {
+      code = codes.find((c) => c.split(/\s+/).every((w, i) => woerter[p + i]?.toLowerCase() === w.toLowerCase()));
+      if (code) {
+        const n = code.split(/\s+/).length;
+        [teile.code, stelle.code] = [woerter.slice(p, p + n).join(' '), p];
+        p += n;
+        continue;
+      }
+    }
+    if (woerter[p] !== undefined) [teile[t], stelle[t]] = [woerter[p], p];
+    p++;
+  }
+  return { woerter, endung, teile, stelle, code };
+}
+
+const gueltigesDatum = (t: string | undefined) => {
+  const m = /^(\d{2})(\d{2})(\d{2})$/.exec(t ?? '');
+  return !!m && Number(m[2]) >= 1 && Number(m[2]) <= 12 && Number(m[3]) >= 1 && Number(m[3]) <= 31;
+};
+
 /**
- * Prüft das Namensformat einer Datei im Antragsordner: `<Projektcode> <Antragsart> <JJMMTT> <Rest>` – z. B.
- * „BS9 BAUA 261110 Bauantrag.pdf“. Projektcode ist das Projektkürzel (oder der Projektcode der Projektdatei), die
- * Antragsart die der Fassung (BAUA, BAUVA, DENK …). Liefert null, wenn der Name passt, sonst den Grund.
+ * Prüft das Namensformat einer Datei im Antragsordner: Projektcode, Antragsart und JJMMTT an ihren Stellen nach dem
+ * Namensschema (Vorgabe `<Projektcode> <Antragsart> <JJMMTT> <Rest>`, z. B. „BS9 BAUA 261110 Bauantrag.pdf“), danach
+ * mindestens ein Wort. Projektcode ist das Projektkürzel (oder der Projektcode der Projektdatei), die Antragsart die der
+ * Fassung (BAUA, BAUVA, DENK …). Liefert null, wenn der Name passt, sonst den Grund.
  */
-export function antragsNameFehler(name: string, o: { codes: string[]; art: string }): string | null {
+export function antragsNameFehler(name: string, o: { codes: string[]; art: string; reihenfolge?: NamensTeil[] }): string | null {
+  const reihenfolge = o.reihenfolge ?? VORGABE_NAMENSSCHEMA.reihenfolge;
   const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
   const art = o.art.trim();
-  const erwartet = `erwartet „${codes[0] ?? 'Projektcode'} ${art || 'Antragsart'} JJMMTT …“`;
-  const t = name.trim();
-  const code = codes.find((c) => t.toLowerCase().startsWith(`${c.toLowerCase()} `));
-  if (!code) return `Projektcode fehlt am Anfang – ${erwartet}`;
-  const rest = t.slice(code.length + 1).trimStart();
-  if (!art || !rest.toUpperCase().startsWith(`${art.toUpperCase()} `)) return `Antragsart ${art || '?'} fehlt nach dem Projektcode – ${erwartet}`;
-  const m = /^(\d{2})(\d{2})(\d{2})(\s+\S.*)$/.exec(rest.slice(art.length + 1).trimStart());
-  if (!m) return `Datum JJMMTT und Name fehlen nach der Antragsart – ${erwartet}`;
-  const [monat, tag] = [Number(m[2]), Number(m[3])];
-  if (monat < 1 || monat > 12 || tag < 1 || tag > 31) return `Kein gültiges Datum „${m[1]}${m[2]}${m[3]}“ – ${erwartet}`;
+  const muster = reihenfolge.filter((t) => t !== 'nummer').map((t) => (t === 'code' ? (codes[0] ?? 'Projektcode') : t === 'art' ? art || 'Antragsart' : 'JJMMTT'));
+  const erwartet = `erwartet „${muster.join(' ')} …“`;
+  // „am Anfang“, „nach dem Projektcode“ … (bei der Vorgabe-Reihenfolge wie gewohnt), sonst „an Stelle n“
+  const wo = (t: NamensTeil) => {
+    const i = reihenfolge.indexOf(t);
+    if (i === 0) return 'am Anfang';
+    const davor = reihenfolge[i - 1];
+    return davor === 'code' ? 'nach dem Projektcode' : davor === 'art' ? 'nach der Antragsart' : `an Stelle ${i + 1}`;
+  };
+  const { woerter, teile, code } = zerlegenMitCodes(name, codes, reihenfolge);
+  if (!code) return `Projektcode fehlt ${wo('code')} – ${erwartet}`;
+  if (!art || teile.art?.toUpperCase() !== art.toUpperCase()) return `Antragsart ${art || '?'} fehlt ${wo('art')} – ${erwartet}`;
+  const anzahlKopf = code.split(/\s+/).length + 2;
+  if (!/^\d{6}$/.test(teile.datum ?? '') || woerter.length <= anzahlKopf) return `Datum JJMMTT und Name fehlen ${wo('datum')} – ${erwartet}`;
+  if (!gueltigesDatum(teile.datum)) return `Kein gültiges Datum „${teile.datum}“ – ${erwartet}`;
   return null;
+}
+
+/**
+ * Vorschlag „Umbenennen nach Namensformat“: Hat der Name schon Projektcode und Datum an ihren Stellen und an der Stelle
+ * der Antragsart ein anderes bekanntes Kürzel (z. B. die Phase GP eines verschobenen Plans), wird nur dieses ersetzt –
+ * „HVO GP 261111 GP-04 Grundriss.pdf“ → „HVO BAUA 261111 GP-04 Grundriss.pdf“, die Plannummer bleibt. Sonst kommen
+ * Projektcode, Antragsart und Datum nach dem Namensschema vor den bisherigen Namen.
+ */
+export function nameNachFormat(name: string, o: { codes: string[]; art: string; datum: Date; reihenfolge?: NamensTeil[]; kuerzel?: string[] }): string {
+  const reihenfolge = o.reihenfolge ?? VORGABE_NAMENSSCHEMA.reihenfolge;
+  const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
+  const { woerter, endung, teile, stelle, code } = zerlegenMitCodes(name, codes, reihenfolge);
+  const bekannt = (o.kuerzel ?? []).map((k) => k.toUpperCase());
+  if (code && gueltigesDatum(teile.datum) && stelle.art !== undefined && teile.art && (bekannt.includes(teile.art.toUpperCase()) || teile.art.toUpperCase() === o.art.toUpperCase())) {
+    const neu = [...woerter];
+    neu[stelle.art] = o.art;
+    return `${neu.join(' ')}${endung}`;
+  }
+  const kopf = reihenfolge.filter((t) => t !== 'nummer').map((t) => (t === 'code' ? (codes[0] ?? '') : t === 'art' ? o.art : jjmmtt(o.datum)));
+  return `${kopf.join(' ')} ${name.trim()}`;
 }
 
 /** bereit: von Hand markiert und seitdem unverändert · offen: noch nicht markiert · name: Namensformat passt nicht · geaendert: nach dem Markieren geändert */

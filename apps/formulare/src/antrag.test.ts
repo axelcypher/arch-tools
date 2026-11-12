@@ -3,7 +3,7 @@ import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { VORGABE_EXPORT, einstellungenAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { VORGABE_EXPORT, einstellungenAus, nameNachFormat, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -36,12 +36,19 @@ describe('Dateinamen aus der Vorlage', () => {
     // eigene Vorlagen ohne Kürzel vorn bleiben, ebenso ein Wort, das kein Kürzel ist
     expect(vorlageMitAntragsart('{Name} {Datum}')).toBe('{Name} {Datum}');
     expect(vorlageMitAntragsart('{Kürzel} Antrag {Datum}')).toBe('{Kürzel} Antrag {Datum}');
-    // gespeicherte Einstellungen und Abweichungen des Projekts werden so gelesen
+    // reine Zahlen sind kein Kürzel
+    expect(vorlageMitAntragsart('{Kürzel} 2026 {Name}')).toBe('{Kürzel} 2026 {Name}');
+    expect(vorlageMitAntragsart('{Kürzel} 01 {Name}')).toBe('{Kürzel} 01 {Name}');
+    // nach der Reihenfolge des Namensschemas: Antragsart an Stelle 3
+    expect(vorlageMitAntragsart('{Kürzel} {Datum} {Phase} {Name}', ['code', 'datum', 'art', 'nummer'])).toBe('{Kürzel} {Datum} {Art} {Name}');
+    expect(vorlageMitAntragsart('{Kürzel} {Phase} {Datum} {Name}', ['code', 'datum', 'art', 'nummer'])).toBe('{Kürzel} {Phase} {Datum} {Name}');
+    // gespeichert bleibt die Vorlage, wie sie ist – eingesetzt wird beim Export (wirksameEinstellungen)
     const alt = einstellungenAus({ namensvorlage: '{Kürzel} {Phase} {Datum} {Nr} {Name}', phase: 'BVA' });
-    expect(alt.namensvorlage).toBe('{Kürzel} {Art} {Datum} {Nr} {Name}');
-    expect(einstellungenFuer(VORGABE_EXPORT, { namensvorlage: '{Kürzel} {Phase} {Datum} {Name}', phase: 'BVA' }).namensvorlage).toBe('{Kürzel} {Art} {Datum} {Name}');
+    expect(alt.namensvorlage).toBe('{Kürzel} {Phase} {Datum} {Nr} {Name}');
     // im Antrag „BAUA 2“ heißt die Datei also BAUA, auch wenn „Phase“ BVA ist
-    expect(dateiname(alt.namensvorlage, { kuerzel: 'BS9', phase: alt.phase, datum: new Date(2026, 10, 12), nr: '01', name: 'Bauantrag', antrag: 'BAUA 2', art: artDerFassung('BAUA 2') })).toBe('BS9 BAUA 261112 01 Bauantrag');
+    expect(dateiname(vorlageMitAntragsart(alt.namensvorlage), { kuerzel: 'BS9', phase: alt.phase, datum: new Date(2026, 10, 12), nr: '01', name: 'Bauantrag', antrag: 'BAUA 2', art: artDerFassung('BAUA 2') })).toBe(
+      'BS9 BAUA 261112 01 Bauantrag',
+    );
   });
 });
 
@@ -217,6 +224,22 @@ describe('Antragsvorlagen und Reihenfolge', () => {
   });
 });
 
+describe('Umbenennen nach Namensformat', () => {
+  const datum = new Date(2026, 10, 12);
+  const o = { codes: ['HVO'], art: 'BAUA', datum, kuerzel: ['BP', 'EP', 'GP', 'AP', 'AB', 'BAUA', 'BAUVA', 'BVA'] };
+  it('verschobener Plan: nur die Phase an der Stelle der Antragsart wird ersetzt – die Plannummer bleibt', () => {
+    expect(nameNachFormat('HVO GP 261111 GP-04 Grundriss OG.pdf', o)).toBe('HVO BAUA 261111 GP-04 Grundriss OG.pdf');
+    expect(nameNachFormat('hvo bva 261111 01 Bauantrag.pdf', o)).toBe('hvo BAUA 261111 01 Bauantrag.pdf');
+    expect(antragsNameFehler(nameNachFormat('HVO GP 261111 GP-04 Grundriss OG.pdf', o), o)).toBeNull();
+  });
+  it('sonst kommen Projektcode, Antragsart und Datum nach dem Namensschema davor', () => {
+    expect(nameNachFormat('Lageplan vom Vermesser.pdf', o)).toBe('HVO BAUA 261112 Lageplan vom Vermesser.pdf');
+    // ein unbekanntes Wort an der Stelle der Antragsart wird nicht ersetzt
+    expect(nameNachFormat('HVO Entwurf 261111 Lageplan.pdf', o)).toBe('HVO BAUA 261112 HVO Entwurf 261111 Lageplan.pdf');
+    expect(nameNachFormat('Lageplan.pdf', { ...o, reihenfolge: ['datum', 'code', 'art', 'nummer'] })).toBe('261112 HVO BAUA Lageplan.pdf');
+  });
+});
+
 describe('Dokumente im Antragsordner: Namensformat und „bereit“', () => {
   const o = { codes: ['MUS', '2026-014'], art: 'BAUA' };
   it('Namensformat „<Projektcode> <Antragsart> <JJMMTT> …“', () => {
@@ -229,6 +252,13 @@ describe('Dokumente im Antragsordner: Namensformat und „bereit“', () => {
     expect(antragsNameFehler('MUS BAUA 261110.pdf', o)).toContain('Datum JJMMTT und Name fehlen');
     expect(antragsNameFehler('MUS BAUA 261310 Bauantrag.pdf', o)).toContain('Kein gültiges Datum');
     expect(antragsNameFehler('MUS BAUA 261110 Bauantrag.pdf', { codes: ['MUS'], art: artDerFassung('BAUA 2') })).toBeNull();
+    // Projektcode aus mehreren Wörtern
+    expect(antragsNameFehler('BS 9 BAUA 261110 Bauantrag.pdf', { codes: ['BS 9'], art: 'BAUA' })).toBeNull();
+    // andere Reihenfolge im Namensschema: Datum vorn
+    const r = { ...o, reihenfolge: ['datum', 'code', 'art', 'nummer'] as ('datum' | 'code' | 'art' | 'nummer')[] };
+    expect(antragsNameFehler('261110 MUS BAUA Bauantrag.pdf', r)).toBeNull();
+    expect(antragsNameFehler('MUS BAUA 261110 Bauantrag.pdf', r)).toContain('Projektcode fehlt an Stelle 2');
+    expect(antragsNameFehler('MUS BAUA 261110 Bauantrag.pdf', r)).toContain('erwartet „JJMMTT MUS BAUA …“');
     expect(artDerFassung('bauva3')).toBe('BAUVA');
   });
 

@@ -140,6 +140,9 @@ const schnitt = (bezeichnung: string) => /(?<!aus)schnitt|(^|\s)sn(\s|$)/i.test(
  * Gemeinde) und Abgeschlossenheitsbescheinigung (§ 7 Abs. 4 WEG) – dort keine Hinweise mit Bezug auf die BauPrüfVO
  */
 export const ARTEN_OHNE_BAUPRUEFVO = ['ENTW', 'ABGE'];
+
+/** Längere Lücken (mehr fehlende Nummern am Stück) gelten als vermutlicher Tippfehler – ein Hinweis statt „fehlt“ */
+export const MAX_LUECKE = 10;
 const ansicht = (bezeichnung: string) => /ansicht/i.test(bezeichnung);
 
 /**
@@ -186,6 +189,14 @@ export function plansatzPruefen(
       const a = imAntrag.get(k);
       const q = inQuelle.get(k);
       if (!a && !q) {
+        // eine sehr große Lücke ist eher ein Tippfehler in einer Plannummer (GP-41 statt GP-04): ein Hinweis statt
+        // Dutzender fehlender Pläne
+        const naechste = liste.find((x) => x > nr)!;
+        if (naechste - nr > MAX_LUECKE) {
+          hinweise.push(`${k} bis ${planSchluessel(kuerzel, naechste - 1)} fehlen – ungewöhnlich große Lücke vor ${planSchluessel(kuerzel, naechste)}: Tippfehler in der Plannummer?`);
+          nr = naechste - 1;
+          continue;
+        }
         luecken.push(k);
         plaene.push({ schluessel: k, kuerzel, nr, zustand: 'fehlt' });
         continue;
@@ -211,7 +222,7 @@ export function plansatzPruefen(
     const da = plaene.filter((p) => p.zustand !== 'fehlt').map((p) => p.bezeichnung ?? '');
     // Bauzeichnungen sind Grundrisse, Schnitte und Ansichten (§ 4 Abs. 1, 3, 4 BauPrüfVO NRW) – fehlt eine Art, ein
     // Hinweis; er sperrt nicht, weil die Behörde auf Bauvorlagen verzichten kann (§ 1 Abs. 2 BauPrüfVO) und ein
-    // Vorbescheid weniger braucht. Nur bei Plänen einer Leistungsphase: für Sonderfälle ohne LPH (AB, Aufteilungspläne
+    // Vorbescheid nur die zur Beurteilung seiner Fragen erforderlichen braucht (§ 16 BauPrüfVO). Nur bei Plänen einer Leistungsphase: für Sonderfälle ohne LPH (AB, Aufteilungspläne
     // nach § 7 Abs. 4 WEG) ist die BauPrüfVO nicht die Grundlage
     const bauvorlagen = plaene.some((p) => kuerzelZu(schema.phasen, p.kuerzel)?.lph !== undefined) && !ARTEN_OHNE_BAUPRUEFVO.includes(o.art ?? '');
     if (bauvorlagen && !da.some(schnitt)) hinweise.push('kein Schnitt erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 3 BauPrüfVO NRW)');

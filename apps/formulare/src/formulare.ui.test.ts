@@ -9,7 +9,7 @@ import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import { sperreVermerken } from './eigeneSperren';
-import { mitAenderungen, useFormulare } from './store';
+import { kartenVerknuepfbar, mitAenderungen, useFormulare } from './store';
 import { einstiegsAktionen, farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -519,8 +519,9 @@ describe('Formulare', () => {
     expect(anzahl().value).toBe('ca. 3');
     expect(anzahl().getAttribute('aria-invalid')).toBe('true');
     expect(host.textContent).toContain('„ca. 3“ ist keine ganze Zahl – bitte als Zahl eintragen');
-    // die Warnung steht direkt unter dem Feld (vor der Herkunft)
+    // die Warnung steht direkt unter dem Feld (vor der Herkunft) und ist mit ihm verbunden
     expect(anzahl().nextElementSibling?.className).toBe('pk-warnung');
+    expect(anzahl().getAttribute('aria-describedby')).toBe(anzahl().nextElementSibling!.id);
     eingabe(anzahl(), '3');
     expect(anzahl().value).toBe('3');
     expect(host.textContent).not.toContain('keine ganze Zahl');
@@ -668,7 +669,7 @@ describe('Formulare', () => {
     expect(document.querySelector('.av-editor')).toBeNull();
     // auf der Seite: eigene Beschriftung, Herkunft dezent unter dem Feld, Breite im Raster
     expect([...host.querySelectorAll('.pk-eigen .pk-feld-titel')].map((t) => t.textContent)).toEqual(['Ort', 'Bauherrschaft']);
-    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde · verknüpft mit Bauherr', 'Bauherr · verknüpft mit Gemeinde']);
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde · ⛓ Bauherr', 'Bauherr · ⛓ Gemeinde']);
     expect([...host.querySelectorAll<HTMLElement>('.pk-eigen .av-feld')].map((f) => [f.dataset.breite, 'neueZeile' in f.dataset])).toEqual([
       ['4', true],
       ['8', false],
@@ -715,6 +716,49 @@ describe('Formulare', () => {
     // eine Eingabe dagegen füllt beide
     act(() => useFormulare.getState().karteSetzen(201, 110, 'Münster'));
     expect(aenderungen()).toMatchObject({ '201:110': 'Münster', '232:110': 'Münster' });
+  });
+
+  it('Projektkarte: Verknüpfungen je Art – Text in Text (ohne Zeilenumbruch), Auswahl über den Text der Wahl, Kästchen in Kästchen', async () => {
+    const k = projektkarte();
+    k.eintraege.push(
+      { gruppe: 101, id: 200, typ: 16, titel: 'Denkmal', text: 'Baudenkmal', zahl: 0 },
+      { gruppe: 101, id: 210, typ: 16, titel: 'Denkmalbereich', text: 'Denkmalbereich', zahl: 0 },
+    );
+    ds.projektkarten.set(KARTE, k);
+    localStorage.setItem(
+      'formulare:ansicht:projektkarte',
+      JSON.stringify({
+        abschnitte: [{ id: 'a1', titel: 'A', felder: ['101:30', '232:110', '201:210', '232:210', '101:60', '101:200', '101:210'] }],
+        // mehrzeilig ↔ einzeilig, Anrede ↔ Anrede (gleiche Möglichkeiten), Land ↔ Anrede (andere Möglichkeiten), Kästchen ↔ Kästchen
+        verknuepfungen: [['101:30', '232:110'], ['201:210', '232:210', '101:60'], ['101:200', '101:210']],
+      }),
+    );
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    const aenderungen = () => useFormulare.getState().karte!.aenderungen;
+    // mehrzeiliger Text ins einzeilige Feld: ohne Zeilenumbruch
+    act(() => useFormulare.getState().karteSetzen(101, 30, 'Neubau\nZweifamilienhaus'));
+    expect(aenderungen()).toMatchObject({ '101:30': 'Neubau\nZweifamilienhaus', '232:110': 'Neubau Zweifamilienhaus' });
+    // Auswahl über den Text der Wahl: Anrede 2 („Sehr geehrter Herr“) auch in der anderen Anrede; „Land“ kennt den Text
+    // nicht und bleibt unverändert
+    act(() => useFormulare.getState().karteSetzen(201, 210, 2));
+    expect(aenderungen()['232:210']).toBe(2);
+    expect(aenderungen()['101:60']).toBeUndefined();
+    // keine Angabe überträgt sich ebenso
+    act(() => useFormulare.getState().karteSetzen(201, 210, null));
+    expect(aenderungen()['232:210']).toBeUndefined();
+    // Kästchen in Kästchen
+    act(() => useFormulare.getState().karteSetzen(101, 200, 1));
+    expect(aenderungen()).toMatchObject({ '101:200': 1, '101:210': 1 });
+    // unpassende Paare bietet der Editor gar nicht an
+    const eintrag = (g: number, id: number) => k.eintraege.find((e) => e.gruppe === g && e.id === id)!;
+    expect(kartenVerknuepfbar(eintrag(101, 30), eintrag(232, 110))).toBe(true);
+    expect(kartenVerknuepfbar(eintrag(201, 210), eintrag(101, 60))).toBe(true);
+    expect(kartenVerknuepfbar(eintrag(101, 200), eintrag(101, 210))).toBe(true);
+    expect(kartenVerknuepfbar(eintrag(101, 200), eintrag(232, 110))).toBe(false);
+    expect(kartenVerknuepfbar(eintrag(201, 210), eintrag(232, 110))).toBe(false);
+    expect(kartenVerknuepfbar(eintrag(101, 30), undefined)).toBe(false);
   });
 
   it('Projektkarte: einzelne Einträge ausblenden – bei Beteiligten für alle, mit ungespeicherter Änderung sichtbar', async () => {

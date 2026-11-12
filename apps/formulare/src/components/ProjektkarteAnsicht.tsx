@@ -152,7 +152,11 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
         {mit.length > 0 && (
           <span className="pk-eigen-link" title={`Verknüpft – wird gemeinsam ausgefüllt mit: ${mit.map((k) => `${k.titel} (${k.gruppe})`).join(', ')}`}>
             {' '}
-            · <Symbol name="link" titel="verknüpft mit" /> {mit.map((k) => k.gruppe).join(', ')}
+            · {/* dasselbe Zeichen wie im Ansicht-Editor (nicht das Symbol für „Datei verknüpfen“) */}
+            <span role="img" aria-label="verknüpft mit">
+              ⛓
+            </span>{' '}
+            {mit.map((k) => k.gruppe).join(', ')}
           </span>
         )}
       </>
@@ -736,7 +740,12 @@ function Zelle({
       </div>
       {children}
       {/* die Warnung gehört direkt unter das Feld, die Herkunft danach */}
-      {warnung && <div className="pk-warnung">{warnung}</div>}
+      {warnung && (
+        // die Kennung verbindet die Warnung mit dem Eingabefeld (aria-describedby)
+        <div className="pk-warnung" id={htmlFor ? `${htmlFor}-warnung` : undefined}>
+          {warnung}
+        </div>
+      )}
       {unter && <div className="pk-feld-unter">{unter}</div>}
     </div>
   );
@@ -805,7 +814,14 @@ function Eintrag({
   if (art === 'mehrzeilig') {
     return (
       <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
-        <textarea id={id} data-pk={s} rows={Math.max(2, Math.min(10, textWert.split('\n').length + 1))} value={textWert} onChange={(ev) => setzen(ev.target.value)} />
+        <textarea
+          id={id}
+          data-pk={s}
+          rows={Math.max(2, Math.min(10, textWert.split('\n').length + 1))}
+          value={textWert}
+          aria-describedby={warnung ? `${id}-warnung` : undefined}
+          onChange={(ev) => setzen(ev.target.value)}
+        />
       </Zelle>
     );
   }
@@ -825,6 +841,7 @@ function Eintrag({
           spellCheck={false}
           className="pk-zahl"
           aria-invalid={keineZahl || undefined}
+          aria-describedby={warnung ? `${id}-warnung` : undefined}
           value={textWert}
           onKeyDown={(ev) => ev.key.length === 1 && !/\d/.test(ev.key) && !ev.ctrlKey && !ev.metaKey && !ev.altKey && ev.preventDefault()}
           onChange={(ev) => setzen(ev.target.value)}
@@ -832,7 +849,16 @@ function Eintrag({
       ) : vorschlaege ? (
         <AuswahlMitText id={id} schluessel={s} wert={textWert} vorschlaege={vorschlaege} onChange={setzen} />
       ) : (
-        <input id={id} data-pk={s} type="text" value={textWert} spellCheck={false} className={e === 'm²' ? 'pk-zahl' : undefined} onChange={(ev) => setzen(ev.target.value)} />
+        <input
+          id={id}
+          data-pk={s}
+          type="text"
+          value={textWert}
+          spellCheck={false}
+          className={e === 'm²' ? 'pk-zahl' : undefined}
+          aria-describedby={warnung ? `${id}-warnung` : undefined}
+          onChange={(ev) => setzen(ev.target.value)}
+        />
       )}
     </Zelle>
   );

@@ -117,6 +117,19 @@ describe('Plansatz', () => {
     expect(r.luecken).toEqual([]);
   });
 
+  it('eine sehr große Lücke (Tippfehler GP-41 statt GP-04) ist ein Hinweis, keine Liste fehlender Pläne', () => {
+    const r = plansatzPruefen(
+      [datei('A BAUA 261111 GP-01 Grundriss.pdf'), datei('A BAUA 261111 GP-02 Schnitt.pdf'), datei('A BAUA 261111 GP-03 Ansicht.pdf'), datei('A BAUA 261111 GP-41 Ansicht Süd.pdf')],
+      [],
+      S,
+    );
+    expect(r.luecken).toEqual([]);
+    expect(r.plaene.map((p) => p.schluessel)).toEqual(['GP-01', 'GP-02', 'GP-03', 'GP-41']);
+    expect(r.hinweise).toContain('GP-04 bis GP-40 fehlen – ungewöhnlich große Lücke vor GP-41: Tippfehler in der Plannummer?');
+    // bis zu zehn fehlende Nummern am Stück bleiben einzelne Lücken
+    expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss.pdf'), datei('A BAUA 261111 GP-12 Schnitt.pdf')], [], S).luecken).toHaveLength(10);
+  });
+
   it('derselbe Plan als PDF und DWG: es zählt das PDF, kein Hinweis auf eine alte Fassung', () => {
     const r = plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss.pdf'), datei('A BAUA 261111 GP-01 Grundriss.dwg', 99)], [], S);
     expect(r.plaene[0].datei!.pfad).toBe('A BAUA 261111 GP-01 Grundriss.pdf');

@@ -1,7 +1,7 @@
 /**
  * Namensschema des Büros – gemeinsam für alle Apps: welche Kürzel es gibt (Planphasen wie GP, Antrags- und
  * Verfahrensarten wie BAUA oder BAUF – die Genehmigungsfreistellung ist kein Antrag, sondern eine Vorlage bei der
- * Bauaufsichtsbehörde nach § 63 Abs. 3 BauO NRW 2018),
+ * Bauaufsichtsbehörde nach § 63 Abs. 3 BauO NRW 2018 in der Fassung ab 01.09.2026),
  * an welcher Stelle im Dateinamen Code, Phase bzw. Antragsart, Datum und Plannummer stehen und ab welcher
  * Leistungsphase Pläne einen Index tragen (AP-03a).
  *

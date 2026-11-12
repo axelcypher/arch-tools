@@ -293,8 +293,11 @@ Anschrift, wie sie in Formularen steht.
   Projektdatei (.oap) und gilt für alle im Büro. Wird die Datei danach geändert, gilt sie nicht mehr als bereit.
   Bereit sein können nur Dateien im **Namensformat `<Projektcode> <Antragsart> <JJMMTT> …`**, z. B.
   „MUS BAUA 261110 01 Bauantrag.pdf“ (Projektcode = Kürzel des FORMA-Projekts oder Projektcode der Projektdatei,
-  Antragsart = die der Fassung: BAUA, BAUVA, DENK …). Rechtsklick → „Umbenennen nach Namensformat …“ schlägt den
-  Namen vor (Datum der Datei). Unter „Fehlt im Antragsordner“ stehen die Dokumente des Antragsumfangs ohne Datei.
+  Antragsart = die der Fassung: BAUA, BAUVA, DENK …) – die Stellen nach dem Namensschema (Vorgabe: Code, Art, Datum).
+  Rechtsklick → „Umbenennen nach Namensformat …“ schlägt den Namen vor: Steht an der Stelle der Antragsart schon ein
+  anderes bekanntes Kürzel (ein verschobener Plan „HVO GP 261111 GP-04 …“), wird nur dieses ersetzt – „HVO BAUA
+  261111 GP-04 …“, die Plannummer bleibt und der Plan im Plansatz; sonst kommen Projektcode, Antragsart und Datum der
+  Datei davor. Unter „Fehlt im Antragsordner“ stehen die Dokumente des Antragsumfangs ohne Datei.
   Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
   aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` gibt es weiter an anderer Stelle). In der
   Unterlagen-Vorschau stehen die Pläne eines Plansatzes an seiner Stelle im Antragsumfang.
@@ -396,15 +399,17 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
 - **Dateiname** nach der Namensvorlage, Vorgabe `{Kürzel} {Art} {Datum} {Nr} {Name}` → „BS9 BAUA 261110 03
   Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Die **Antragsart kommt immer aus dem
   Antrag** (Ordner der aktiven Fassung, „BAUA 2“ → BAUA), nie aus einer Einstellung: Steht in einer Vorlage nach dem
-  Kürzel noch `{Phase}` (die Vorgabe früherer Fassungen – dort stand dann der Wert der Einstellung „Phase“, z. B.
-  BVA im Bauantrag) oder ein festes Kürzel, wird daraus beim Lesen `{Art}` (`vorlageMitAntragsart`); das gilt für die
-  Einstellungen und für die Abweichungen eines Projekts. Weitere Platzhalter: `{Antrag}`, `{Phase}` (das Feld „Phase“
-  erscheint nur, wenn die Vorlage es nutzt), `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im
+  Kürzel (bzw. an der Stelle der Antragsart nach dem Namensschema) noch `{Phase}` – die Vorgabe früherer Fassungen,
+  dort stand dann der Wert der Einstellung „Phase“, z. B. BVA im Bauantrag – oder ein festes Kürzel (mindestens ein
+  Buchstabe; „2026“ zählt nicht), setzt der Export dort `{Art}` ein (`vorlageMitAntragsart`, in
+  `wirksameEinstellungen`). Gespeichert bleibt die Vorlage, wie sie ist; die Einstellungen (global und je Projekt)
+  zeigen dann einen Hinweis mit „Vorlage anpassen“. Weitere Platzhalter: `{Antrag}`, `{Phase}` (Feld „Phase (nur für
+  {Phase})“), `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im
   Antragsumfang, sonst der Formularname ohne laufende Nummer und Jahr.
 - **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
-  Namensschemas), Namensvorlage (und Phase, falls die Vorlage `{Phase}` nutzt), Ziel (aktive Antragsfassung oder fester Ordner, z. B. `TÖB/{Antrag}/Formulare`), Ordner der
+  Namensschemas), Namensvorlage und Phase (nur für `{Phase}`), Ziel (aktive Antragsfassung oder fester Ordner, z. B. `TÖB/{Antrag}/Formulare`), Ordner der
   Berechnungen, Vorlagenordner für neue Formulare und der **Katalog der Antragsdokumente**. Je Projekt lassen sich
-  Antragsordner, Namensvorlage, Phase (nur mit `{Phase}`) und Ziel abweichend einstellen (Antragsdaten › „Export für …“,
+  Antragsordner, Namensvorlage, Phase (nur für `{Phase}`) und Ziel abweichend einstellen (Antragsdaten › „Export für …“,
   „Vorgabe verwenden“ setzt zurück) – wie die angezeigten Pfade im Projektordner.
 - **Antragsdaten** (Navigation, rechte Hälfte neben „Projektdaten“): alles, was nur für den aktiven Antrag gilt –
   **Status** (siehe „Eingereicht“), **Antragsmerkmale** und **Antragsumfang**, dazu „Export für …“ (gilt für alle
@@ -429,7 +434,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   spielt keine Rolle). Je Plankürzel getrennt:
   - **Lücke:** zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – nach der Bürovorgabe
     (fortlaufende Nummern) fehlt dann ein Plan (rot, „GP-07 fehlt“). Die Reihe muss nicht bei 01 beginnen, die
-    Reihenfolge der Planarten wird nicht geprüft;
+    Reihenfolge der Planarten wird nicht geprüft. Fehlen mehr als zehn Nummern am Stück, ist das eher ein Tippfehler
+    (GP-41 statt GP-04): dann ein Hinweis statt Dutzender fehlender Pläne;
   - **noch nicht verschoben:** die Nummer liegt nur in der Quelle (gelb);
   - **veraltet:** die Quelle hat eine neuere Fassung – Datum im Namen, bei gleichem Datum der Index (AP-03a nach
     AP-03) (gelb); liegt eine Nummer mehrfach im Antragsordner, zählt die neueste;
@@ -437,7 +443,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
     daraus, ein Index, wo ihn das Namensschema des Büros nicht vorsieht (Bürovorgabe: erst ab LPH 5; bei Phasen ohne
     LPH wie AB gar nicht), „kein Schnitt erkannt“ bzw. „keine Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse,
     Schnitte und Ansichten, § 4 Abs. 1, 3, 4 BauPrüfVO NRW – nur ein Hinweis, weil die Behörde auf Bauvorlagen
-    verzichten kann und ein Vorbescheid weniger braucht; nicht bei Plänen ohne Leistungsphase wie den
+    verzichten kann und ein Vorbescheid nur die zur Beurteilung seiner Fragen erforderlichen Bauvorlagen braucht, § 16
+    BauPrüfVO; nicht bei Plänen ohne Leistungsphase wie den
     Aufteilungsplänen nach § 7 Abs. 4 WEG und nicht bei Entwässerungsanträgen oder Abgeschlossenheitsbescheinigungen
     (ENTW, ABGE), für die die BauPrüfVO nicht die Grundlage ist; „Ausschnitt“ zählt nicht als Schnitt), und – nur wenn die
     Projektdatei Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (Grundrisse für alle Geschosse, § 4 Abs. 2
@@ -449,7 +456,7 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   Antragsordner“. Ein optionales Muster grenzt die Pläne ein.
 - **Namensschema:** Kürzel (Planphasen BP, EP, GP, AP, AB; Antrags- und Verfahrensarten BAUA, BAUVA/BVA (Antrag auf
   Vorbescheid, § 77 BauO NRW 2018), BAUF (Genehmigungsfreistellung – kein Antrag, sondern Vorlage bei der
-  Bauaufsichtsbehörde, § 63 Abs. 3 BauO NRW 2018), DENK, ABGE,
+  Bauaufsichtsbehörde, § 63 Abs. 3 BauO NRW 2018 in der Fassung ab 01.09.2026), DENK, ABGE,
   ENTW), die Stellen der Teile im Dateinamen (Code, Phase bzw. Antragsart, Datum, Nummer) und „Index ab
   Leistungsphase“ kommen aus dem gemeinsamen Namensschema (`packages/core/src/namensschema.ts`): das der
   Projektdatei, sonst das des Büros (Projektordner › Einstellungen), sonst die Vorgabe. Antragsordner werden an den

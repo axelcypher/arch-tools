@@ -5,11 +5,11 @@ import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
 import { eingereichtVon, PLANSATZ_QUELLE, tagVon } from '../antrag';
-import { STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
+import { ART_HINWEIS, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
-import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, namensschema, quelleVonEintrag, useAntrag, wirksameEinstellungen } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, namensschema, namensschemaVon, quelleVonEintrag, useAntrag, wirksameEinstellungen } from '../antragStore';
 import type { PlansatzErgebnis } from '../plansatz';
 import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -51,8 +51,8 @@ export function FassungsWahl() {
   const aktiv = useAntrag((s) => aktiveFassung(s, projekt));
   // Antragsarten aus den Einstellungen und dem Namensschema (der Projektdatei bzw. des Büros); der Selektor liefert ein
   // neues Feld, useShallow vergleicht den Inhalt
-  useFormulare(useShallow((s) => [s.oap, s.namensschemaBuero]));
-  const arten = useAntrag(useShallow((s) => antragsarten(wirksameEinstellungen(s, projekt), false)));
+  const schema = useFormulare(namensschemaVon);
+  const arten = useAntrag(useShallow((s) => antragsarten(wirksameEinstellungen(s, projekt), false, schema)));
   const dokumente = useAntrag((s) => s.dokumente);
   const antraege = useAntrag((s) => s.projektdatei?.antraege);
   const { fassungWaehlen } = useAntrag.getState();
@@ -69,7 +69,7 @@ export function FassungsWahl() {
     })),
     ...(fassungen.length ? [{ trenner: true as const }] : []),
     ...arten.map((a) => {
-      const neu = naechsteFassung(fassungen, a, namensschema().antragsarten);
+      const neu = naechsteFassung(fassungen, a, schema.antragsarten);
       return { text: `Neue Fassung „${neu}“ anlegen`, symbol: 'plus' as const, hinweis: 'mit den Vorgaben der Antragsmerkmale', aktion: () => void fassungWaehlen(neu, true) };
     }),
   ];
@@ -255,7 +255,7 @@ function PlansatzListe({ id, r, basis, ordner }: { id: string; r: PlansatzErgebn
         <div className="pu-plan-hinweise" role="note" tabIndex={-1} aria-label="Hinweise zum Plansatz">
           {r.hinweise.map((h) => (
             <p key={h} className="pu-plan-hinweis small-text">
-              <Symbol name="info" /> {h}
+              <Symbol name="warnung" /> {h}
             </p>
           ))}
         </div>
@@ -603,7 +603,9 @@ export function AntragsdatenAnsicht() {
                         </label>
                       )}
                       <label>
-                        <span className="field-label">{u.art === 'plansatz' ? 'Nur Pläne nach Muster (* ? ;, leer = alle)' : 'Muster der Datei (* ? ;)'}</span>
+                        <span className="field-label" title="Platzhalter: * beliebig viele Zeichen, ? ein Zeichen; mehrere Muster mit ; trennen">
+                          {u.art === 'plansatz' ? 'Nur Pläne nach Muster (leer = alle)' : 'Muster der Datei'}
+                        </span>
                         <input value={u.muster ?? ''} placeholder={u.art === 'plansatz' ? 'alle Pläne mit Plannummer' : `*${u.titel}*`} onChange={(e) => setzen(u.id, { muster: e.target.value || undefined })} />
                       </label>
                       <div className="pu-bedingung-editor">
@@ -644,6 +646,7 @@ function ExportFuerProjekt() {
   const projekt = useFormulare((s) => s.projekt);
   const ueber = useAntrag((s) => (projekt ? s.ueberschreibungen[projekt.ordner] : undefined));
   const global = useAntrag((s) => s.einstellungen);
+  const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
   const { setUeberschreibung } = useAntrag.getState();
   const [offen, setOffen] = useState(!!ueber);
   if (!projekt) return null;
@@ -662,21 +665,23 @@ function ExportFuerProjekt() {
           </label>
           <label>
             <span className="field-label">Namensvorlage</span>
-            <input
-              value={ueber?.namensvorlage ?? ''}
-              placeholder={global.namensvorlage}
-              onChange={(e) => setzen({ namensvorlage: e.target.value })}
-              onBlur={(e) => e.target.value !== vorlageMitAntragsart(e.target.value) && setzen({ namensvorlage: vorlageMitAntragsart(e.target.value) })}
-              spellCheck={false}
-            />
-            <span className="field-hint">Die Antragsart kommt immer aus dem aktiven Antrag.</span>
+            <input value={ueber?.namensvorlage ?? ''} placeholder={global.namensvorlage} onChange={(e) => setzen({ namensvorlage: e.target.value })} aria-describedby="pu-art-hinweis" spellCheck={false} />
+            <span className="field-hint" id="pu-art-hinweis">
+              {ART_HINWEIS}
+            </span>
+            {ueber?.namensvorlage && vorlageMitAntragsart(ueber.namensvorlage, reihenfolge) !== ueber.namensvorlage && (
+              <span className="warning-text small-text">
+                Beim Export steht an der Stelle der Antragsart {'{Art}'}.{' '}
+                <button className="small" onClick={() => setzen({ namensvorlage: vorlageMitAntragsart(ueber.namensvorlage!, reihenfolge) })}>
+                  Vorlage anpassen
+                </button>
+              </span>
+            )}
           </label>
-          {/{phase}/i.test(ueber?.namensvorlage || global.namensvorlage) && (
-            <label>
-              <span className="field-label">Phase (für {'{Phase}'})</span>
-              <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} />
-            </label>
-          )}
+          <label>
+            <span className="field-label">Phase (nur für {'{Phase}'})</span>
+            <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} />
+          </label>
           <label>
             <span className="field-label">Ziel</span>
             <select value={ueber?.ziel ?? ''} onChange={(e) => setzen({ ziel: (e.target.value || undefined) as ExportUeberschreibung['ziel'] })}>

@@ -1,8 +1,9 @@
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import type { Bereitschaft } from '../antrag';
-import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, jjmmtt } from '../antrag';
-import { aktiveFassung, antragsOrdner, dokumentZu, projektCodes, useAntrag } from '../antragStore';
+import { alleKuerzel } from '@core/namensschema';
+import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, nameNachFormat } from '../antrag';
+import { aktiveFassung, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
@@ -63,12 +64,15 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const basis = verbinde(ablage.root, ablage.pfad);
   const art = artDerFassung(fassung);
   const codes = projektCodes(projekt);
+  // Stellen von Projektcode, Antragsart und Datum nach dem Namensschema (der Projektdatei bzw. des Büros)
+  const schema = useFormulare(namensschemaVon);
+  const reihenfolge = schema.reihenfolge;
 
   const liste = dateien
     .filter((d) => !d.ordner && !/^(~\$|\.~lock\.)/.test(d.pfad) && !/^(thumbs\.db|desktop\.ini)$/i.test(d.pfad))
     .sort((a, b) => a.pfad.localeCompare(b.pfad, 'de', { numeric: true, sensitivity: 'base' }))
     .map((d) => {
-      const fehler = antragsNameFehler(d.pfad, { codes, art });
+      const fehler = antragsNameFehler(d.pfad, { codes, art, reihenfolge });
       const m = markiert.find((b) => b.datei.toLowerCase() === d.pfad.toLowerCase());
       // zugehöriges Dokument: die verknüpfte bzw. gefundene Datei – bei einem Plansatz jede seiner Plandateien
       const dok = dokumentZu(dokumente, d.pfad);
@@ -82,7 +86,13 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     x.status !== 'entfaellt' && x.plansatz ? x.plansatz.plaene.filter((p) => p.zustand === 'fehlt' || p.zustand === 'quelle').map((p) => ({ dok: x, p })) : [],
   );
   const vollstaendig = liste.length > 0 && bereit === liste.length && !fehlend.length && !fehlendePlaene.length;
-  const vorschlag = (name: string, geaendert?: number) => `${codes[0]} ${art} ${jjmmtt(new Date(geaendert || Date.now()))} ${name}`;
+  // Umbenennen: bei einem verschobenen Plan nur die Phase durch die Antragsart ersetzen, sonst Kopf davor (antrag.ts)
+  const vorschlag = (name: string, geaendert?: number) =>
+    nameNachFormat(name, { codes, art, datum: new Date(geaendert || Date.now()), reihenfolge, kuerzel: [...alleKuerzel(schema.phasen), ...alleKuerzel(schema.antragsarten)] });
+  const muster = reihenfolge
+    .filter((t) => t !== 'nummer')
+    .map((t) => (t === 'code' ? codes[0] : t === 'art' ? art : 'JJMMTT'))
+    .join(' ');
 
   const menue = (pfad: string, zustand: Bereitschaft, fehler: string | null, geaendert?: number): MenuePunkt[] => [
     {
@@ -96,7 +106,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           {
             text: 'Umbenennen nach Namensformat …',
             symbol: 'stift' as const,
-            aktion: () => void umbenennen(basis, `${ordner}/${pfad}`, vorschlag(pfad, geaendert), `Dateien im Antragsordner heißen „${codes[0]} ${art} JJMMTT …“.`),
+            aktion: () => void umbenennen(basis, `${ordner}/${pfad}`, vorschlag(pfad, geaendert), `Dateien im Antragsordner heißen „${muster} …“.`),
           },
         ]
       : []),

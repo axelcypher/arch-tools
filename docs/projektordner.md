@@ -115,12 +115,12 @@ Eintrag `namensschema`; `packages/core/src/namensschema.ts`):
 - **Aufbau des Dateinamens:** welche Stelle Projektcode, Phase bzw. Antragsart, Datum (JJMMTT) und Plannummer haben –
   Vorgabe „HVO GP 261111 GP-04 Grundriss OG.pdf“ (im Antragsordner steht die Antragsart statt der Phase, die
   Plannummer bleibt).
-- **Planphasen** mit Kürzel, Bedeutung und Leistungsphase: BP Grundlagenermittlung, EP Entwurfsplanung,
-  GP Genehmigungsplanung, AP Ausführungsplanung, AB Abgeschlossenheitsbescheinigung (Sonderfall; Aufteilungspläne
+- **Planphasen** mit Kürzel, Bedeutung und Leistungsphase: BP Grundlagenermittlung (LPH 1), EP Entwurfsplanung
+  (LPH 3), GP Genehmigungsplanung (LPH 4), AP Ausführungsplanung (LPH 5), AB Abgeschlossenheitsbescheinigung (Sonderfall; Aufteilungspläne
   nach § 7 Abs. 4 WEG).
 - **Antrags- und Verfahrensarten** mit gleichwertigen Schreibweisen: BAUA Bauantrag, BAUVA Bauvoranfrage (Antrag auf
   Vorbescheid, § 77 BauO NRW 2018; auch BVA), BAUF Genehmigungsfreistellung (kein Antrag, sondern Vorlage bei der
-  Bauaufsichtsbehörde, § 63 Abs. 3 BauO NRW 2018), DENK Denkmalrechtliche Erlaubnis, ABGE
+  Bauaufsichtsbehörde, § 63 Abs. 3 BauO NRW 2018 in der Fassung ab 01.09.2026), DENK Denkmalrechtliche Erlaubnis, ABGE
   Abgeschlossenheitsbescheinigung, ENTW Entwässerungsantrag.
 - **Bearbeiten:** Kürzel, Bedeutung, Schreibweisen und Leistungsphasen werden beim Verlassen des Felds übernommen
   (Schreibweisen bereinigt: groß, ohne Doppelte). Kürzel und Schreibweisen bestehen aus Großbuchstaben und Ziffern
@@ -137,13 +137,15 @@ Eintrag `namensschema`; `packages/core/src/namensschema.ts`):
 Jede **neue Projektdatei** bekommt eine Kopie (Abschnitt `namensschema`); beim **Ergänzen** eines Projekts wird
 eine fehlende oder abweichende Kopie auf den Stand des Büros gebracht (in der Vorschau als Änderung „Namensschema“
 bzw. „Namensschema (Stand des Büros)“; verglichen wird in gelesener Form, die Reihenfolge der Einträge in der Datei
-spielt keine Rolle). Alle Apps lesen zuerst die der Projektdatei, sonst die des Büros, sonst die Vorgabe.
+spielt keine Rolle). Alle Apps lesen zuerst die der Projektdatei, sonst die des Büros, sonst die Vorgabe. Formulare
+erkennt daran Antragsordner und die Pläne eines Plansatzes und prüft und vergibt danach die Dateinamen im
+Antragsordner (Stellen von Projektcode, Antragsart und Datum, „Umbenennen nach Namensformat“, Namensvorlage des
+Exports).
 
 > **Alle Rechner gleichzeitig aktualisieren:** Jede App liest das Namensschema geprüft ein und schreibt es so zurück.
 > Eine ältere Fassung, die eine Projektdatei speichert, kann daher Angaben einer neueren verlieren (z. B. unbekannte
 > Felder des Namensschemas; Formulare bis 0.35 kennt die Dokumentart „Plansatz“ nicht und speichert sie als
-> Formular). Formulare erkennt daran Antragsordner und die Pläne eines
-Plansatzes.
+> Formular).
 
 ### Struktur
 
