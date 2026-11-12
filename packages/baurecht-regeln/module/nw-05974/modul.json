@@ -234,6 +234,7 @@
     },
     "kreis_soest.lsg_vo": {
       "titel": "Gemeinde im Geltungsbereich der Landschaftsschutzverordnung Kreis Soest (ohne rechtskräftigen Landschaftsplan)",
+      "kurz": "Landschaftsschutz-VO Kreis Soest",
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "§ 1 der Verordnung: Erwitte, Geseke, Rüthen, Soest, Warstein, Werl, Anröchte, Bad Sassendorf, Möhnesee, Welver; nach § 8 tritt sie außer Kraft, wo ein Landschaftsplan rechtswirksam wird (Welver: LP IV, Werl: LP VI). In Erwitte, Geseke und Anröchte je nach Lage (LP I/II).",
@@ -274,6 +275,7 @@
     },
     "kreis_soest.hsg": {
       "titel": "Im Heilquellenschutzgebiet Bad Sassendorf",
+      "kurz": "Heilquellenschutzgebiet Bad Sassendorf",
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "Zone III reicht in den Osten der Stadt Soest; Karten 1:5000 bei der Bezirksregierung Arnsberg, Übersicht im WSG-Dienst NRW",
@@ -284,6 +286,7 @@
     },
     "kreis_soest.hsg_qualitativ": {
       "titel": "Qualitative Schutzzone des Heilquellenschutzgebiets Bad Sassendorf",
+      "kurz": "Heilquellenschutz: qualitative Zone",
       "gruppe": "schutz",
       "typ": "wahl",
       "werte": [
@@ -298,6 +301,7 @@
     },
     "kreis_soest.hsg_quantitativ": {
       "titel": "Quantitative Schutzzone des Heilquellenschutzgebiets Bad Sassendorf",
+      "kurz": "Heilquellenschutz: quantitative Zone",
       "gruppe": "schutz",
       "typ": "wahl",
       "werte": [
@@ -313,6 +317,7 @@
     },
     "kreis_soest.naturdenkmal": {
       "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil der Kreisverordnung (Innenbereich Soest, Welver, Werl) betroffen",
+      "kurz": "Naturdenkmal der Kreisverordnung",
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "Anlage der Verordnung vom 19.05.2014 (Gemarkung, Flur, Flurstück je Objekt); bei Bäumen auch der Kronentraufbereich",
@@ -327,6 +332,7 @@
     },
     "kreis_soest.vsg_hellweg": {
       "titel": "Im EU-Vogelschutzgebiet Hellwegbörde (DE-4415-401)",
+      "kurz": "Vogelschutzgebiet Hellwegbörde",
       "gruppe": "schutz",
       "typ": "janein",
       "wenn": {
@@ -336,6 +342,7 @@
     },
     "schutz.naturdenkmal": {
       "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil betroffen",
+      "kurz": "Naturdenkmal oder Landschaftsbestandteil",
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "im Kreis Soest: Naturdenkmale und geschützte Landschaftsbestandteile der Kreisverordnung vom 19.05.2014 (Innenbereich Soest, Welver, Werl) und der Landschaftspläne (Festsetzungskarte, Kapitel C.3/C.4); bei Bäumen auch der Kronentraufbereich – ist ein Objekt der Kreisverordnung angegeben, folgt „ja“ daraus",

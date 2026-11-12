@@ -8,6 +8,7 @@ import type { Auswertung } from '@core/baurecht/auswertung';
 import { auswerten } from '@core/baurecht/auswertung';
 import type { Paket } from '@core/baurecht/paket';
 import { faktenZurLage, lageKennung } from '@core/baurecht/geodienste';
+import { koordinatenVeraltet } from '@core/platform/geokodierung';
 import { agsVorschlag, aktiveModule, fehlendeEbenen, regeldateiFuer } from '@core/baurecht/paket';
 import type { GebaeudeklasseAbleitung } from '@core/baurecht/projekt';
 import { gebaeudeklasseAbleiten, projektFakten, widersprueche } from '@core/baurecht/projekt';
@@ -25,9 +26,24 @@ const log = logger('rechtsstand');
  * Fakten aus Projektdatei und Prüfung; Angaben der Prüfung (von Hand, Geodienst, bestätigt) gehen vor. Ergebnisse
  * der Geodienste und ihre Bestätigungen gelten nur an der Lage, an der sie ermittelt wurden.
  */
-export function alleFakten(project: Project | null, eigeneRoh: Record<string, FaktWert>, module: Modul[]): Record<string, FaktWert> {
+/**
+ * Lage des Vorhabens für die Bindung von Geodaten: nur aus Koordinaten, die zur aktuellen Adresse gehören. Fehlen sie
+ * oder passen sie nicht mehr (Adresse geändert, Geokodierung gescheitert), gibt es keine Lage.
+ */
+export function aktuelleLage(project: Project | null): { lage: string | null; problem?: 'fehlen' | 'veraltet' } {
   const k = project?.meta.koordinaten;
-  const eigene = faktenZurLage(eigeneRoh, k ? lageKennung(k.ost, k.nord) : null);
+  if (!project || !k) return { lage: null, problem: project ? 'fehlen' : undefined };
+  if (koordinatenVeraltet(project.meta)) return { lage: null, problem: 'veraltet' };
+  return { lage: lageKennung(k.ost, k.nord) };
+}
+
+export function alleFakten(project: Project | null, eigeneRoh: Record<string, FaktWert>, module: Modul[]): Record<string, FaktWert> {
+  const l = aktuelleLage(project);
+  const eigene = faktenZurLage(
+    eigeneRoh,
+    l.lage,
+    l.problem === 'veraltet' ? 'Die Adresse wurde geändert, die Koordinaten passen nicht mehr dazu – Ergebnis einer früheren Lage, nur Hinweis; „Lage abfragen“ bzw. Koordinaten aktualisieren' : undefined,
+  );
   const basis: Record<string, FaktWert> = project ? projektFakten(project, heute()) : {};
   // Gemeindeschlüssel aus der PLZ, wenn ein Gemeindemodul sie nennt – nur Vorschlag, bis er bestätigt ist
   if (project?.meta.adresse.plz) {

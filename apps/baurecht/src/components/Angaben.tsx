@@ -1,6 +1,7 @@
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FAKT_GRUPPEN } from '@core/baurecht/typen';
+import { FAKT_GRUPPEN, faktName } from '@core/baurecht/typen';
+import { aktuelleLage } from '../pruefung';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
 import { werten } from '@core/baurecht/kurz';
 import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
@@ -10,6 +11,7 @@ import { heute, offeneBestaetigungen, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
 import { faktBestaetigenOeffnen, faktSetzenOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
+import { nb } from './Ampel';
 
 /**
  * Segmentgruppe mit einem Tabstopp: ←/→ (bzw. ↑/↓) bewegt den Fokus, Leertaste/Eingabe wählt. Tabstopp ist der
@@ -96,7 +98,7 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
             {wert && (
               <div className="br-merkmal-fuss">
                 {e?.werte?.[wert] && <span className="br-leise br-erklaerung">{e.werte[wert]}</span>}
-                <button type="button" className="small br-link" onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title="Merkmal für den ganzen Antrag leeren (auch in Formulare)">
+                <button type="button" className="small br-link" aria-label={`${m.name} leeren`} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title="Merkmal für den ganzen Antrag leeren (auch in Formulare)">
                   leeren
                 </button>
               </div>
@@ -158,13 +160,21 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
   const unsicher = wert?.sicherheit === 'hinweis' && !wert.bestaetigt;
   // feste Werte des Moduls sind nicht änderbar; Werte nach Tabelle (z. B. Landschaftsplan nach Gemeinde) mit Beleg schon
   const fest = wert?.herkunft === 'modul' && def.wert !== undefined;
+  const name = faktName(def, id);
+  // Lagebezug: bestätigen lässt sich nur ein Ergebnis der aktuellen Lage (sonst bliebe die Bestätigung wirkungslos)
+  const project = useBaurecht((s) => s.project);
+  const lage = aktuelleLage(project).lage;
+  const andereLage = !!wert && lagebezug(def, wert) && (!lage || (!!wert.lage && wert.lage !== lage));
+  // nach Zurücknehmen/Zurücksetzen verschwindet der Knopf – Fokus auf das erste Bedienelement der Angabe
+  const fokusZurZeile = () => setTimeout(() => ref.current?.querySelector<HTMLElement>('button:not([disabled]), input, select')?.focus(), 0);
+  const hilfeLang = (def.hilfe?.length ?? 0) > 90;
   return (
-    <div ref={ref} className={`br-fakt${wert?.wert == null ? ' br-offen' : ''}${fokus === id ? ' br-fokus' : ''}`}>
+    <div ref={ref} data-fakt={id} className={`br-fakt${wert?.wert == null ? ' br-offen' : ''}${fokus === id ? ' br-fokus' : ''}`}>
       <div className="br-fakt-kopf">
         {/* überall derselbe kurze Titel (Chips, Protokoll); die Frage als Unterzeile */}
         <span className="br-fakt-titel" title={def.hilfe}>
-          {def.titel}
-          {def.frage && <span className="br-fakt-frage">{def.frage}</span>}
+          {nb(faktName(def, id))}
+          {(def.frage ?? (def.kurz ? def.titel : undefined)) && <span className="br-fakt-frage">{nb(def.frage ?? def.titel)}</span>}
         </span>
         {wert?.wert == null && klaert > 0 && <span className="br-klaert" title={`klärt ${klaert} Paragrafen`}>klärt {klaert}</span>}
       </div>
@@ -185,7 +195,7 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
           wert={wert}
           onWert={(v) => {
             // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
-            if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, def.titel, v, lagebezug(def, wert));
+            if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
             else useBaurecht.getState().faktSetzen(id, v, benutzer());
           }}
         />
@@ -199,9 +209,15 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
               <span className="br-hinweis-marke" title={wert.grund}>
                 nur Hinweis
               </span>
-              <button type="button" className="small" title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, def.titel, wert, lagebezug(def, wert))}>
-                Bestätigen …
-              </button>
+              {andereLage ? (
+                <span className="br-leise-stark" title={wert.grund}>
+                  {lage ? 'Ergebnis einer früheren Lage – „Lage abfragen“' : 'ohne gültige Koordinaten nicht bestätigbar'}
+                </span>
+              ) : (
+                <button type="button" className="small" aria-label={`${name} bestätigen …`} title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, name, wert, lagebezug(def, wert))}>
+                  Bestätigen …
+                </button>
+              )}
             </>
           )}
           {wert.bestaetigt && (
@@ -211,7 +227,16 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
               </span>
               {entwurf && <span className="br-marke br-marke-entwurf">Entwurf</span>}
               {eigen && (
-                <button type="button" className="small br-link" onClick={() => useBaurecht.getState().bestaetigungZuruecknehmen(id)} title="Bestätigung bzw. Angabe mit Beleg zurücknehmen – es gilt wieder der Hinweis">
+                <button
+                  type="button"
+                  className="small br-link"
+                  aria-label={`${name}: Bestätigung zurücknehmen`}
+                  onClick={() => {
+                    useBaurecht.getState().bestaetigungZuruecknehmen(id);
+                    fokusZurZeile();
+                  }}
+                  title="Bestätigung bzw. Angabe mit Beleg zurücknehmen – es gilt wieder der Hinweis"
+                >
                   zurücknehmen
                 </button>
               )}
@@ -223,13 +248,31 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
             </span>
           )}
           {eigen && wert.herkunft === 'manuell' && !wert.bestaetigt && (
-            <button type="button" className="small br-link" onClick={() => useBaurecht.getState().faktSetzen(id, undefined, '')} title="Angabe von Hand entfernen">
+            <button
+              type="button"
+              className="small br-link"
+              aria-label={`${name}: Angabe von Hand zurücksetzen`}
+              onClick={() => {
+                useBaurecht.getState().faktSetzen(id, undefined, '');
+                fokusZurZeile();
+              }}
+              title="Angabe von Hand entfernen"
+            >
               zurücksetzen
             </button>
           )}
         </div>
       )}
-      {def.hilfe && wert?.wert == null && <div className="br-leise br-erklaerung">{def.hilfe}</div>}
+      {def.hilfe &&
+        wert?.wert == null &&
+        (hilfeLang ? (
+          <details className="br-erklaerung">
+            <summary>Erläuterung</summary>
+            <div className="br-leise">{nb(def.hilfe ?? '')}</div>
+          </details>
+        ) : (
+          <div className="br-leise br-erklaerung">{nb(def.hilfe ?? '')}</div>
+        ))}
     </div>
   );
 }
@@ -249,20 +292,17 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   const merkmale = useBaurecht((s) => s.merkmale);
   const ctx = { merkmale, fakten: auswertung.fakten, einreichung: stand.einreichung, heute: heute(), bausteine: auswertung.text.bausteine };
   const antrag = useBaurecht((s) => s.antrag);
-  // „offene zuerst, klärt am meisten“ – die Reihenfolge wird beim Öffnen, Filtern und Suchen gebildet und bleibt dann
-  // stehen: eine beantwortete Angabe springt nicht weg (und keine andere rückt unter den Mauszeiger)
-  const ordnung = useRef<{ schluessel: string; rang: Map<string, number> } | null>(null);
+  const projektKennung = useBaurecht((s) => (s.quelle ? (s.quelle.art === 'datei' ? s.quelle.name : s.quelle.datei) : ''));
+  // „offene zuerst, klärt am meisten“ – die Reihenfolge wird beim Öffnen, beim Wechsel von Projekt, Antrag oder
+  // Modulsatz, beim Filtern und Suchen gebildet und bleibt dann stehen: eine beantwortete Angabe springt nicht weg
   const vergleich = (a: string, b: string) => {
     const offenA = auswertung.fakten[a]?.wert == null ? 1 : 0;
     const offenB = auswertung.fakten[b]?.wert == null ? 1 : 0;
     return offenB - offenA || (klaerung.get(b) ?? 0) - (klaerung.get(a) ?? 0) || auswertung.faktDefs[a].titel.localeCompare(auswertung.faktDefs[b].titel, 'de');
   };
-  const schluessel = `${antrag}|${alle}|${suche}`;
-  if (!ordnung.current || ordnung.current.schluessel !== schluessel) {
-    const alleIds = Object.keys(auswertung.faktDefs).sort(vergleich);
-    ordnung.current = { schluessel, rang: new Map(alleIds.map((id, i) => [id, i])) };
-  }
-  const rang = ordnung.current.rang;
+  const schluessel = `${projektKennung}|${antrag}|${alle}|${suche}|${stand.module.map((m) => m.id).join(',')}`;
+  // bewusst nur am Schlüssel: ein Schnappschuss der Reihenfolge, nicht bei jeder Antwort neu
+  const rang = useMemo(() => new Map(Object.keys(auswertung.faktDefs).sort(vergleich).map((id, i) => [id, i])), [schluessel]); // eslint-disable-line react-hooks/exhaustive-deps
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(auswertung.faktDefs)
       .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)))

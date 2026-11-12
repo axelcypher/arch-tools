@@ -6,6 +6,8 @@
 import { faktDefinitionen } from '@core/baurecht/auswertung';
 import { alsFakt, dienstAbfragen, flurstueckAbfragen, lageKennung } from '@core/baurecht/geodienste';
 import type { FaktWert } from '@core/baurecht/typen';
+import { faktName } from '@core/baurecht/typen';
+import { koordinatenVeraltet } from '@core/platform/geokodierung';
 import { aktiveModule } from '@core/baurecht/paket';
 import { logger } from '@core/platform/log';
 import { holen } from '@core/recht/netz';
@@ -22,6 +24,7 @@ export async function lageAbfragen(): Promise<LageErgebnis> {
   const s = useBaurecht.getState();
   const k = s.project?.meta.koordinaten;
   if (!k) return { meldung: 'Keine Koordinaten in den Stammdaten – bitte die Adresse des Vorhabens eintragen (die Koordinaten werden dann ermittelt).', fehler: [] };
+  if (s.project && koordinatenVeraltet(s.project.meta)) return { meldung: 'Die Koordinaten passen nicht zur Adresse in den Stammdaten (Adresse geändert). Bitte die Koordinaten in den Stammdaten aktualisieren und dann die Lage erneut abfragen.', fehler: [] };
   const punkt = { x: k.ost, y: k.nord };
   // Ergebnisse gelten nur für diese Lage (ändern sich die Koordinaten, werden sie wieder zum Hinweis)
   const lage = lageKennung(k.ost, k.nord);
@@ -69,7 +72,7 @@ export async function lageAbfragen(): Promise<LageErgebnis> {
   }
   jetzt.geoFakten(fakten);
   log.info('Lage abgefragt', { ags, dienste: abgefragt, fehler: fehler.length });
-  const treffer = Object.entries(fakten).filter(([id, f]) => id.startsWith('schutz.') && f.wert === true).map(([id]) => defs[id]?.titel ?? id);
+  const treffer = Object.entries(fakten).filter(([id, f]) => id.startsWith('schutz.') && f.wert === true).map(([id]) => faktName(defs[id], id));
   return {
     meldung: `${ags ? `Gemeindeschlüssel ${ags}` : 'Kein Flurstück'} · ${abgefragt} Dienste abgefragt${treffer.length ? ` · Treffer: ${treffer.join(', ')}` : ' · keine Treffer (nur Hinweis, bitte bestätigen)'}`,
     fehler,

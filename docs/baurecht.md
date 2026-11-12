@@ -29,6 +29,10 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Warnungen“, Einzelheiten im Tooltip und im Menü); unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld.
   Gekürzt wird nur die Liste der Module, Warnungen und „Speichern“ nie. „≡ Fehlerprotokoll“ in der Titelleiste ist die
   Fehlersuche der App.
+- **Koordinaten:** Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur, solange die Koordinaten zur
+  Adresse in den Stammdaten passen. Fehlen sie oder wurde die Adresse geändert, sind sie nur noch Hinweis (auch der
+  Gemeindeschlüssel aus ALKIS); der Kopf zeigt „Keine Koordinaten“ bzw. „Koordinaten veraltet“, „Bestätigen …“ wird
+  dann nicht angeboten.
 - **Filterleiste:** Ampelzähler (blenden ein/aus), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und
   die Kästchen „nur von Hand festgelegte“ / „nur geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px,
   wird die Ordnung zur Auswahlliste, die Kästchen wandern in **Filter ▾** und der Balken entfällt. Die Zähler an den
@@ -38,7 +42,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   entscheiden würden (Klick springt zur Angabe); dann die Antragsmerkmale als Knöpfe mit Erklärung (eingeklappt, wenn
   alle festgelegt sind; „leeren“ setzt ein Merkmal bewusst zurück); darunter alle Angaben, an denen eine Regel hängt,
   offene zuerst (die Reihenfolge entsteht beim Öffnen, Filtern und Suchen und bleibt dann stehen – eine beantwortete
-  Angabe springt nicht weg). Jede Angabe trägt überall denselben kurzen Titel, die Frage steht darunter. Zahlen stehen
+  Angabe springt nicht weg). Jede Angabe trägt überall denselben kurzen Namen (höchstens 40 Zeichen – in der Liste, in
+  „Klärt am meisten“, in Begründungen und im Protokoll); Frage bzw. ausführlicher Titel stehen darunter, lange
+  Erläuterungen sind einklappbar. Zahlen stehen
   deutsch mit Einheit („139,12 m²“), Anzahlen ganzzahlig. Jede Angabe zeigt ihre Herkunft (Stammdaten, Flächenrechner, GRZ-Nachweis, Geodienst,
   Regelmodul, von Hand). **Nur Hinweis** heißt: nicht gesichert (z. B. Geodienst ohne Treffer, Koordinaten nur
   straßengenau, Gemeindeschlüssel von Hand ohne Beleg) – ein solcher Wert kann nie etwas ausschließen, bis er
@@ -52,7 +58,8 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   tragen). Oben das Ergebnis je Ampel (zugleich Ein-/Ausblenden), Suche und Filter „nur von Hand festgelegte“ bzw.
   „nur geänderte/überholte“, mit Trefferzahl. Marken: „von Hand“ bzw. „von Hand · Entwurf“, „überholt“, „nicht
   wirksam“, „Text geändert“, „eigene Verantwortung“ (prüft die Bauaufsicht nicht). Hängt eine Regel an einem anderen
-  Paragrafen, der selbst offen ist, heißt es „hängt an § … (dort offen)“. Ist die Spalte schmaler als 900 px, steht der
+  Paragrafen, der selbst offen ist, heißt es „hängt an § … (dort offen)“; in den Einzelheiten steht das unter „Hängt an“
+  (getrennt von den fehlenden Angaben). Ist die Spalte schmaler als 900 px, steht der
   Grund unter dem Titel.
 - **Einzelheiten (rechts):** Ampel, Begründung in Worten, Hinweise (Ausnahmen, Einzelfall, Vorrang des Ortsrechts,
   Annahmen des Büros), fehlende und unsichere Angaben (Klick springt hin), ob die Bauaufsicht das im Verfahren prüft,
@@ -61,7 +68,8 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   verneinte Gruppen), und der **Gesetzestext** mit den
   Absätzen der Fundstellen hervorgehoben (mit Legende); nach einer Änderung **alt/neu** untereinander mit
   gestrichenen bzw. unterstrichenen Wörtern – verglichen mit der Fassung, an der die Regel geprüft ist. Die Spalte lässt
-  sich am linken Rand in der Breite ziehen (auch mit ←/→, Pos1/Ende).
+  sich am linken Rand in der Breite ziehen (auch mit ←/→, Pos1/Ende). Beide Leisten schrumpfen bei schmalen Fenstern,
+  die Mitte behält mindestens 420 px.
 
 ## Von Hand festlegen
 
@@ -72,7 +80,9 @@ Jeder darf festlegen – und bestätigt dafür zweimal:
    ein Entwurf (gestrichelte Marke).
 2. **Beim Speichern:** Neue, geänderte und **aufgehobene** Festlegungen erscheinen in einer Liste (vorher → nachher,
    Begründung, Herabstufungen hervorgehoben) – ebenso neu bestätigte Hinweise (siehe unten). „Bestätigen und speichern“
-   geht erst nach dem Haken „Ich habe diese Angaben geprüft“. „Speichern, diese als Entwurf behalten“ schreibt für sie den
+   geht erst nach dem Haken „Ich habe diese … geprüft“. Ist eine Festlegung inzwischen **überholt**, sagt die Liste das,
+   und „Bestätigen und speichern“ ist gesperrt, bis sie erneut festgelegt oder aufgehoben ist; „noch nicht wirksam“
+   wird ebenfalls angezeigt. „Speichern, diese als Entwurf behalten“ schreibt für sie den
    bisherigen Stand der Datei (eine schon bestätigte Festlegung bleibt also erhalten) und lässt die Änderung in der App
    als Entwurf offen. Vor einem Antragswechsel, dem Öffnen eines anderen Projekts oder dem Beenden gilt das nicht als
    „gespeichert“: Die App meldet, dass Entwürfe offen sind, und bleibt, bis sie bestätigt, aufgehoben oder ausdrücklich
@@ -85,7 +95,8 @@ wiederhergestellte Festlegung, die nicht mehr dem Stand der Datei entspricht, is
 Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald sich danach die automatische Ampel, eine
 beteiligte Angabe (auch nur ihre Sicherheit, z. B. ein neuer Widerspruch) oder der Text einer Fundstelle ändert (oder
 sie ohne geprüften Text getroffen wurde und der Text jetzt vorliegt) – dann steht die Marke „überholt“ daran, ein
-überholtes „entfällt“ zählt als „prüfen“, und das Protokoll führt sie als offen. Fehlt dagegen der Systemstand (Text
+überholtes „entfällt“ zählt mindestens als „prüfen“, ein überholtes „prüfen“ hält ein automatisches „gilt“ nicht auf
+(es gilt dann die automatische Ampel), und das Protokoll führt sie als offen. Fehlt dagegen der Systemstand (Text
 nicht verfügbar, Rechtsstand nicht aktuell bestätigt, zum Stichtag gilt schon eine neue Fassung), ist ein festgelegtes
 „entfällt“ **noch nicht wirksam**: Es zählt als „prüfen“, bis der Text geprüft vorliegt – erneutes Festlegen hilft
 dagegen nicht. Verweist eine Regel auf einen anderen Paragrafen, zählt dort nur die
@@ -131,7 +142,9 @@ Auswahlgruppen (ja/nein, Merkmale) bedienen sich mit ←/→ bzw. ↑/↓ (mit U
 zwischen Kopf, Angaben, Vorschriften und Einzelheiten; ist kein Paragraf gewählt, bekommen die Einzelheiten selbst den
 Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr ▾, Filter ▾, Farbschema) nehmen beim Öffnen den Fokus,
 bedienen sich mit ↑/↓, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie mit Tab
-verlässt. Die Sammelmarke der Warnungen öffnet „Mehr“.
+verlässt; ihre Einträge sind keine eigenen Tabstopps. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc gibt
+den Fokus an den Öffner zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an der
+Angabe bzw. am Knopf.
 
 ## Rechtsstand
 
@@ -157,7 +170,9 @@ Kopf aus den Stammdaten, Grundlagen (Stichtag, Module, Regelpaket, Merkmale, Erg
 (Ampel, automatisch, Begründung, Name, Datum, Entwurf/bestätigt) und **gesicherte Angaben** (Wert, Herkunft, worauf
 gestützt, von wem) als Tabellen, dann die **offenen Punkte** als Tabelle „Was fehlt – Anzahl – Paragrafen“; danach
 alle Paragrafen je Ebene mit Ampel, Begründung und Fassung, Quellen der Geodaten, Hinweise und Auskünfte der Module.
-Enthält es Entwürfe, steht „ENTWURF …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
+Angaben von Hand ohne Beleg stehen in einer eigenen Tabelle (mit wer und wann). Die offenen Punkte zählen wie „Klärt am
+meisten“ (ein Paragraf kann unter mehreren Angaben stehen); Punkte mit nur einem Paragrafen stehen gesammelt unter
+„Weitere“. Enthält es Entwürfe, steht „ENTWURF …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
 Überschriften werden nicht von ihrer Tabelle getrennt. Warum „Prüfung abschließen“ gesperrt ist, steht sichtbar
 neben dem Knopf. „Drucken / PDF …“ schlägt den
 Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { angabeVonHand, hinweisBestaetigen } from './angaben';
 import { modulFakten } from './auswertung';
+import { faktenZurLage } from './geodienste';
 import { widersprueche } from './projekt';
 import type { FaktWert, Modul } from './typen';
 
@@ -80,5 +81,45 @@ describe('Bestätigung eines Tabellenwerts', () => {
     const anders = modulFakten([modul], { 'lage.ags': agsHinweis, 'x.landschaftsplan': { ...best, wert: 'LP II' } });
     expect(anders['x.landschaftsplan'].bestaetigt).toBeUndefined();
     expect(anders['x.landschaftsplan'].wert).toBe('kein Landschaftsplan');
+  });
+});
+
+describe('Lagebindung ohne gültige Koordinaten', () => {
+  it('ohne Lage werden alle lagegebundenen Angaben Hinweis – auch der Gemeindeschlüssel aus ALKIS und ein bestätigtes „kein Schutzgebiet“', () => {
+    const f = faktenZurLage(
+      {
+        'lage.ags': { wert: '05974040', herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'ALKIS', lage: '438091,5713737' },
+        'schutz.lsg': { wert: false, herkunft: 'geodienst', sicherheit: 'hinweis', lage: '438091,5713737', bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Auskunft UNB', lage: '438091,5713737' } },
+        'gebaeude.beheizt': { wert: true, herkunft: 'manuell', sicherheit: 'sicher' },
+      },
+      null,
+    );
+    expect(f['lage.ags']).toMatchObject({ sicherheit: 'hinweis' });
+    expect(f['lage.ags'].grund).toMatch(/früheren Lage/);
+    expect(f['schutz.lsg'].bestaetigt).toBeUndefined();
+    expect(f['schutz.lsg'].sicherheit).toBe('hinweis');
+    // ohne Lagebezug bleibt eine Angabe von Hand, wie sie ist
+    expect(f['gebaeude.beheizt']).toMatchObject({ sicherheit: 'sicher' });
+  });
+});
+
+describe('ein sicherer Teil entscheidet sicher', () => {
+  it('„und = nein“: ein gesichertes Nein trägt, ein unsicheres Nein daneben wertet nicht ab; ohne gesichertes bleibt es unsicher', async () => {
+    const { werten } = await import('./kurz');
+    const ctx = {
+      merkmale: { Planungsrecht: 'Innenbereich' },
+      fakten: { 'schutz.landschaftsplan': { wert: false, herkunft: 'modul' as const, sicherheit: 'hinweis' as const } },
+      einreichung: '2026-11-12',
+      heute: '2026-11-12',
+      bausteine: {},
+    };
+    const regel = { und: [{ m: 'Planungsrecht', in: ['Außenbereich'] }, { f: 'schutz.landschaftsplan', ist: true }] };
+    const b = werten(regel, ctx);
+    expect(b.w).toBe('nein');
+    expect(b.unsicher).toEqual([]);
+    // nur das unsichere Nein: bleibt unsicher
+    const nur = werten({ und: [{ m: 'Planungsrecht', in: ['Außenbereich', 'Innenbereich'] }, { f: 'schutz.landschaftsplan', ist: true }] }, ctx);
+    expect(nur.w).toBe('nein');
+    expect(nur.unsicher).toEqual(['schutz.landschaftsplan']);
   });
 });

@@ -4,7 +4,7 @@ import type { Ampel, NormErgebnis, ParagrafErgebnis } from '@core/baurecht/typen
 import { EBENEN, einheitName, normTitel, paragrafName, THEMEN } from '@core/baurecht/typen';
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
-import { AMPEL_TEXT, AmpelMarke, datum } from './Ampel';
+import { AMPEL_TEXT, AmpelMarke, datum, nb } from './Ampel';
 
 type Gruppierung = 'offen' | 'ebene' | 'thema';
 
@@ -57,7 +57,7 @@ function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis;
         <span className="br-paragraf-nr">{e.nr}</span>
         <span className="br-paragraf-kopf">
           <span className="br-paragraf-titel" lang="de">
-            {e.titel || '–'}
+            {nb(e.titel || '–')}
           </span>
           <span className="br-paragraf-marken">
             <VonHand p={p} />
@@ -83,7 +83,7 @@ function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis;
             )}
           </span>
         </span>
-        <span className="br-paragraf-grund">{p.gruende[0]}</span>
+        <span className="br-paragraf-grund">{nb(p.gruende[0] ?? '')}</span>
       </button>
     </li>
   );
@@ -272,10 +272,19 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   }, []);
   const menueTaste = (e: KeyboardEvent<HTMLDetailsElement>) => {
     const m = menue.current;
-    if (e.key !== 'Escape' || !m?.open) return;
-    e.stopPropagation();
-    m.open = false;
-    m.querySelector('summary')?.focus();
+    if (!m?.open) return;
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      m.open = false;
+      m.querySelector('summary')?.focus();
+    }
+    // ↑/↓ zwischen den Kästchen des Menüs
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const el = [...m.querySelectorAll<HTMLInputElement>('.br-filter-menue-inhalt input')];
+      const i = el.indexOf(document.activeElement as HTMLInputElement);
+      el[(i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length]?.focus();
+      e.preventDefault();
+    }
   };
   const kaesten = (
     <>
@@ -359,6 +368,10 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
             className="br-filter-menue br-nur-schmal"
             ref={menue}
             onKeyDown={menueTaste}
+            onToggle={(e) => {
+              // beim Öffnen den Fokus ins Menü
+              if ((e.currentTarget as HTMLDetailsElement).open) (e.currentTarget as HTMLDetailsElement).querySelector<HTMLInputElement>('.br-filter-menue-inhalt input')?.focus();
+            }}
             onBlur={(e) => {
               if (menue.current?.open && !menue.current.contains(e.relatedTarget as Node | null)) menue.current.open = false;
             }}

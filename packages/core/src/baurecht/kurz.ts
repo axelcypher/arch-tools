@@ -6,6 +6,7 @@
 
 import { MERKMAL_TITEL } from './fakten';
 import type { Ampel, FaktDef, FaktWert, Kurz, Wahrheit } from './typen';
+import { faktName } from './typen';
 
 export interface KurzKontext {
   merkmale: Record<string, string>;
@@ -57,8 +58,15 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
     if (!teile.length) return 'und' in k ? leer() : { ...leer(), w: 'nein' };
     const entscheidet: Wahrheit = 'und' in k ? 'nein' : 'ja';
     const ws = teile.map((t) => t.w);
-    // nur die Teile, die das Ergebnis tragen, zählen für offen/unsicher
-    if (ws.includes(entscheidet)) return vereinen(entscheidet, teile.filter((t) => t.w === entscheidet));
+    // nur die Teile, die das Ergebnis tragen, zählen für offen/unsicher – und von ihnen der sicherste: ein einziger
+    // gesicherter Teil entscheidet „und = nein“ bzw. „oder = ja“ sicher, unsichere Nebenteile werten das nicht ab
+    // (z. B. „Innenbereich“ schließt einen Landschaftsplan aus, auch wenn der Plan im Gemeindegebiet nur Hinweis ist)
+    if (ws.includes(entscheidet)) {
+      const tragend = teile.filter((t) => t.w === entscheidet);
+      const gewicht = (t: Bewertung) => t.unsicher.length + t.widerspruch.length;
+      const best = tragend.reduce((a, b) => (gewicht(b) < gewicht(a) ? b : a));
+      return { ...vereinen(entscheidet, [best]), verwendet: [...new Set(tragend.flatMap((t) => t.verwendet))] };
+    }
     if (ws.includes('offen')) return vereinen('offen', teile);
     return vereinen('und' in k ? 'ja' : 'nein', teile);
   }
@@ -134,7 +142,7 @@ export function istText(k: Kurz, ctx: KurzKontext, t: TextKontext): string {
   if ('f' in k) {
     const def = t.fakt(k.f);
     const v = ctx.fakten[k.f]?.wert;
-    const name = def?.titel ?? k.f;
+    const name = faktName(def, k.f);
     if (v === null || v === undefined || v === '') return `${name}: nicht angegeben`;
     if (typeof v === 'boolean') return `${name}: ${v ? 'ja' : 'nein'}`;
     if (typeof v === 'number') return `${name}: ${wertText(v, def)}`;
@@ -168,7 +176,8 @@ const zahl = (n: number) => n.toLocaleString('de-DE');
 
 function wertText(v: string | number | boolean, def?: FaktDef): string {
   if (typeof v === 'boolean') return v ? 'ja' : 'nein';
-  if (typeof v === 'number') return `${zahl(v)}${def?.einheit ? ` ${def.einheit}` : ''}`;
+  // wie in den Eingabefeldern: Werte mit Einheit und Nachkommastellen mit zwei Stellen („2,90 m“)
+  if (typeof v === 'number') return `${def?.einheit && !Number.isInteger(v) ? v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : zahl(v)}${def?.einheit ? ` ${def.einheit}` : ''}`;
   return v;
 }
 
@@ -217,7 +226,7 @@ export function kurzText(k: Kurz | undefined, t: TextKontext, oben = true, tiefe
   }
   if ('f' in k) {
     const def = t.fakt(k.f);
-    const name = def?.titel ?? k.f;
+    const name = faktName(def, k.f);
     if (k.bekannt !== undefined) return k.bekannt ? `${name} bekannt` : `${name} unbekannt`;
     if (def?.typ === 'janein' && typeof k.ist === 'boolean') return `${name}: ${k.ist ? 'ja' : 'nein'}`;
     if (k.ist !== undefined) return `${name}: ${typeof k.ist === 'string' ? `„${k.ist}“` : wertText(k.ist, def)}`;
@@ -248,6 +257,8 @@ export interface KurzKnoten {
   w?: Wahrheit;
   /** der aktuelle Wert eines Blatts („Innenbereich“, „ja“, „nicht angegeben“) */
   ist?: string;
+  /** der Wert ist nur Hinweis bzw. widersprüchlich – das ✓/✗ trägt dann nichts aus */
+  unsicher?: boolean;
   /** Art einer Gruppe (intern, für die Verneinung) */
   art?: 'und' | 'oder';
 }
@@ -292,20 +303,26 @@ export function kurzBaum(k: Kurz | undefined, t: TextKontext, ctx?: KurzKontext,
     return mitW({ text: 'und' in k ? 'alle folgenden:' : 'mindestens eines davon:', kinder, art: 'und' in k ? 'und' : 'oder' });
   }
   if ('nicht' in k && !('m' in k)) {
-    const innen = kurzBaum(k.nicht, t, ctx, tiefe + 1);
+    // positiv formuliert, wo es geht: „nicht (Fakt: nein)“ → „Fakt: ja“, „nicht (Merkmal: A)“ → „Merkmal: alles außer A“
+    const n = k.nicht;
+    if ('f' in n && typeof n.ist === 'boolean' && t.fakt(n.f)?.typ === 'janein') return kurzBaum({ ...n, ist: !n.ist }, t, ctx, tiefe + 1);
+    if ('m' in n && n.in) return kurzBaum({ m: n.m, nicht: n.in }, t, ctx, tiefe + 1);
+    const innen = kurzBaum(n, t, ctx, tiefe + 1);
     // „nicht (A oder B)“ = keines davon; „nicht (A und B)“ = nicht alle davon
     if (innen.kinder) return mitW({ text: innen.art === 'oder' ? 'keines davon:' : 'nicht alle davon:', kinder: innen.kinder });
-    return mitW({ text: `nicht: ${innen.text}`, ...(innen.ist ? { ist: innen.ist } : {}) });
+    return mitW({ text: `trifft nicht zu: ${innen.text}`, ...(innen.ist ? { ist: innen.ist } : {}), ...(innen.unsicher ? { unsicher: true } : {}) });
   }
   const ist = ctx ? istWert(k, t, ctx) : undefined;
-  return mitW({ text: kurzText(k, t, true, tiefe), ...(ist ? { ist } : {}) });
+  const f = 'f' in k && ctx ? ctx.fakten[k.f] : undefined;
+  const unsicher = !!f && f.wert != null && ((f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch);
+  return mitW({ text: kurzText(k, t, true, tiefe), ...(ist ? { ist } : {}), ...(unsicher ? { unsicher: true } : {}) });
 }
 
 /** fehlende Angabe in Worten – bei Fakten die Frage, wenn es eine gibt („Gilt eine Veränderungssperre?“) */
 export function offenText(id: string, t: TextKontext): string {
   if (id.startsWith('merkmal:')) return MERKMAL_TITEL[id.slice(8)] ?? id.slice(8);
   if (id.startsWith('paragraf:')) return t.paragraf?.(id.slice(9)) ?? id.slice(9);
-  return t.fakt(id)?.titel ?? id;
+  return faktName(t.fakt(id), id);
 }
 
 /** fehlende Angaben als Fragen (für Begründungen): Fakten mit Frage als Frage, sonst der Titel */

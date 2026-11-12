@@ -3,11 +3,11 @@ import { paragrafName } from '@core/baurecht/typen';
 import { create } from 'zustand';
 import type { Ampel, FaktDef, FaktStatus, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
 import { faktStatus, wertAnzeige } from '@core/baurecht/typen';
-import { lageKennung } from '@core/baurecht/geodienste';
 import { angabeVonHand, hinweisBestaetigen } from '@core/baurecht/angaben';
 import { isTauri } from '@core/platform/files';
 import { Modal } from '@core/ui/Dialog';
 import { benutzer, benutzerMerken } from '../benutzer';
+import { aktuelleLage } from '../pruefung';
 import { heute, useBaurecht } from '../store';
 import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke } from './Ampel';
 
@@ -118,9 +118,12 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
           onChange={(e) => setGrund(e.target.value)}
           aria-required="true"
           aria-invalid={versucht && grund.trim().length < 10}
-          aria-describedby={versucht && grund.trim().length < 10 ? 'br-festlegen-fehler' : undefined}
-          placeholder="z. B. Begehung am 03.11.2026 ohne Befund, Bericht im Projektordner"
+          aria-describedby={versucht && grund.trim().length < 10 ? 'br-festlegen-fehler br-festlegen-beispiel' : 'br-festlegen-beispiel'}
+          placeholder="Worauf beruht die Einordnung?"
         />
+        <span id="br-festlegen-beispiel" className="field-hint br-leise">
+          Beispiel: Begehung am 03.11.2026 ohne Befund, Bericht im Projektordner
+        </span>
         {versucht && grund.trim().length < 10 && (
           <span id="br-festlegen-fehler" className="field-hint br-fehler-text">
             Bitte begründen (mindestens 10 Zeichen) – die Begründung steht im Prüfprotokoll.
@@ -174,9 +177,26 @@ interface FaktZiel {
 
 const useFaktBestaetigen = create<{ ziel: FaktZiel | null }>(() => ({ ziel: null }));
 const eintrag = (id: string) => JSON.stringify(useBaurecht.getState().pruefung.fakten[id] ?? null);
-export const faktBestaetigenOeffnen = (id: string, titel: string, wert: FaktWert, lagebezug = false) => useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'bestaetigen', wert, vorher: eintrag(id), lagebezug } });
-export const faktSetzenOeffnen = (id: string, titel: string, wert: FaktWert['wert'], lagebezug = false) =>
+/** Element, das den Dialog geöffnet hat – dorthin geht der Fokus zurück (gibt es es nicht mehr: in die Zeile der Angabe) */
+let oeffner: HTMLElement | null = null;
+const merken = () => {
+  oeffner = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+};
+function fokusZurueck(id: string) {
+  setTimeout(() => {
+    if (oeffner?.isConnected) oeffner.focus();
+    else document.querySelector<HTMLElement>(`[data-fakt="${CSS.escape(id)}"] :is(button:not([disabled]), input, select)`)?.focus();
+    oeffner = null;
+  }, 0);
+}
+export const faktBestaetigenOeffnen = (id: string, titel: string, wert: FaktWert, lagebezug = false) => {
+  merken();
+  useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'bestaetigen', wert, vorher: eintrag(id), lagebezug } });
+};
+export const faktSetzenOeffnen = (id: string, titel: string, wert: FaktWert['wert'], lagebezug = false) => {
+  merken();
   useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'setzen', wert: { wert, herkunft: 'manuell', sicherheit: 'sicher' }, vorher: eintrag(id), lagebezug } });
+};
 
 /** Definition einer Angabe (Typ, Einheit) – für die Anzeige der Werte („139,12 m²“, „3“) */
 export type FaktDefVon = (id: string) => FaktDef | undefined;
@@ -233,14 +253,17 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
   // Vorschau: genau die Rechnung der Übernahme (angabeVonHand bzw. hinweisBestaetigen) – Lagebezug, Beleg, Widerspruch
   const vorschau = useMemo(() => {
     if (!ziel) return null;
-    const k = project?.meta.koordinaten;
-    const lage = ziel.lagebezug ? (k ? lageKennung(k.ost, k.nord) : null) : undefined;
+    const lage = ziel.lagebezug ? aktuelleLage(project).lage : undefined;
     const o = { von: 'Vorschau', grund: 'Vorschau', lage, heute: heute(), desktop: isTauri() };
     const neu = ziel.modus === 'setzen' ? angabeVonHand(useBaurecht.getState().pruefung.fakten[ziel.id], ziel.id, ziel.wert.wert, o) : hinweisBestaetigen(ziel.wert, o);
     return folgen(ziel.id, neu);
   }, [ziel, folgen, project]);
   if (!ziel) return null;
-  const schliessen = () => useFaktBestaetigen.setState({ ziel: null });
+  const schliessen = () => {
+    const id = ziel.id;
+    useFaktBestaetigen.setState({ ziel: null });
+    fokusZurueck(id);
+  };
   const zu = () => (grund.trim() ? setVerwerfen(true) : schliessen());
   const ok = grund.trim().length >= 10 && von.trim().length > 0;
   const bestaetigen = () => {
@@ -253,10 +276,9 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
       setVeraltet(true);
       return;
     }
-    const k = project?.meta.koordinaten;
     benutzerMerken(von);
-    // Lagebezug (Schutzgebiete, Geodaten): an die aktuelle Lage binden; ohne Koordinaten bleibt es Hinweis (null)
-    const lage = ziel.lagebezug ? (k ? lageKennung(k.ost, k.nord) : null) : undefined;
+    // Lagebezug (Schutzgebiete, Geodaten): an die aktuelle Lage binden; ohne gültige Koordinaten bleibt es Hinweis (null)
+    const lage = ziel.lagebezug ? aktuelleLage(project).lage : undefined;
     if (ziel.modus === 'setzen') useBaurecht.getState().faktSetzen(ziel.id, ziel.wert.wert, von.trim(), grund, lage);
     else useBaurecht.getState().faktBestaetigen(ziel.id, ziel.wert, von.trim(), grund, lage);
     schliessen();
@@ -283,7 +305,7 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
       )}
       <div className="br-meldung br-meldung-warn" role="note">
         Die Angabe gilt danach als gesichert. Bitte nur angeben, was belegt ist – die Begründung steht im Prüfprotokoll.
-        {ziel.lagebezug ? (project?.meta.koordinaten ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten in den Stammdaten lässt sie sich an keine Lage binden und bleibt Hinweis.') : ''}
+        {ziel.lagebezug ? (aktuelleLage(project).lage ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten, die zur Adresse passen, lässt sie sich an keine Lage binden und bleibt Hinweis.') : ''}
       </div>
       {veraltet && (
         <div className="br-meldung br-meldung-fehler" role="alert">
@@ -301,17 +323,19 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
           onChange={(e) => setGrund(e.target.value)}
           aria-required="true"
           aria-invalid={versucht && grund.trim().length < 10}
-          aria-describedby={versucht && grund.trim().length < 10 ? fehlerId : undefined}
-          placeholder={
-            ziel.id.startsWith('lage.')
-              ? 'z. B. Auszug aus dem Liegenschaftskataster vom 03.11.2026 / Flurstücksnachweis'
-              : geo || ziel.id.startsWith('schutz.')
-                ? 'z. B. Auskunft Untere Naturschutzbehörde vom 03.11.2026, Aktenzeichen …'
-                : ziel.wert.herkunft === 'flaechen' || ziel.wert.herkunft === 'grz'
-                  ? 'z. B. Modell vollständig geprüft am 12.11.2026'
-                  : 'z. B. Unterlage, Auskunft oder Prüfung mit Datum'
-          }
+          aria-describedby={versucht && grund.trim().length < 10 ? `${fehlerId} br-fakt-beispiel` : 'br-fakt-beispiel'}
+          placeholder="Beleg: Unterlage oder Auskunft mit Datum"
         />
+        <span id="br-fakt-beispiel" className="field-hint br-leise">
+          Beispiel:{' '}
+          {ziel.id.startsWith('lage.')
+            ? 'Auszug aus dem Liegenschaftskataster vom 03.11.2026'
+            : geo || ziel.id.startsWith('schutz.')
+              ? 'Auskunft der Unteren Naturschutzbehörde vom 03.11.2026, Aktenzeichen …'
+              : ziel.wert.herkunft === 'flaechen' || ziel.wert.herkunft === 'grz'
+                ? 'Modell vollständig geprüft am 12.11.2026'
+                : 'Unterlage, Auskunft oder Prüfung mit Datum'}
+        </span>
         {versucht && grund.trim().length < 10 && (
           <span id={fehlerId} className="field-hint br-fehler-text">
             Bitte angeben, worauf die Angabe beruht (mindestens 10 Zeichen).
@@ -378,7 +402,7 @@ export function bestaetigenFragen(offen: Offen): Promise<BestaetigenAntwort> {
 }
 
 export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => undefined }: {
-  faktDef?: FaktDefVon; titel: (id: string) => { titel: string; automatisch?: Ampel; ampel?: Ampel; ueberholt?: string }; faktTitel: (id: string) => string; folgen: (id: string) => ReturnType<FolgenRechner> }) {
+  faktDef?: FaktDefVon; titel: (id: string) => { titel: string; automatisch?: Ampel; ampel?: Ampel; ueberholt?: string; unwirksam?: string }; faktTitel: (id: string) => string; folgen: (id: string) => ReturnType<FolgenRechner> }) {
   const offen = useBestaetigen((s) => s.offen);
   const antwort = useBestaetigen((s) => s.antwort);
   const festlegungen = useBaurecht((s) => s.pruefung.festlegungen);
@@ -386,7 +410,11 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
   const fakten = useBaurecht((s) => s.pruefung.fakten);
   const [geprueft, setGeprueft] = useState(false);
   useEffect(() => setGeprueft(false), [offen]);
+  // Folgen je Angabe einmal je Öffnen (volle Auswertung je Angabe – nicht bei jedem Haken neu)
+  const folgenJe = useMemo(() => (offen ? Object.fromEntries(offen.fakten.map((id) => [id, folgen(id)])) : {}), [offen]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!offen || !antwort) return null;
+  // überholte Festlegungen lassen sich so nicht bestätigen – erst erneut festlegen oder aufheben
+  const ueberholte = offen.festlegungen.filter((id) => festlegungen[id] && titel(id).ueberholt);
   // getrennt gezählt: Festlegungen von Hand und gesicherte Angaben
   const nf = offen.festlegungen.length;
   const na = offen.fakten.length;
@@ -408,18 +436,29 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
               <li key={id} className={herab ? 'br-herab' : ''}>
                 <div className="br-bestaetigen-kopf">
                   <strong>{t.titel}</strong>
-                  <span className="br-bestaetigen-ampeln">
-                    <AmpelMarke ampel={f.automatisch} klein /> <span aria-label="wird zu">→</span> <AmpelMarke ampel={f.ampel} klein />
-                  </span>
+                  {f.ampel === f.automatisch ? (
+                    <span className="br-bestaetigen-ampeln">
+                      bleibt <AmpelMarke ampel={f.ampel} klein /> <span className="br-leise">(wie automatisch)</span>
+                    </span>
+                  ) : (
+                    <span className="br-bestaetigen-ampeln">
+                      <AmpelMarke ampel={f.automatisch} klein /> <span aria-label="wird zu">→</span> <AmpelMarke ampel={f.ampel} klein />
+                    </span>
+                  )}
                 </div>
                 <div className="br-leise-stark">
                   {f.von}: {f.grund}
                 </div>
                 {herab && <div className="br-warn-text">Herabstufung</div>}
-                {f.ampel === f.automatisch && <div className="br-leise">wie automatisch – die Festlegung hält die Ampel fest, auch wenn sich Angaben ändern</div>}
-                {t.ampel && t.ampel !== f.ampel && (
+                {f.ampel === f.automatisch && <div className="br-leise">Die Festlegung hält die Ampel fest, auch wenn sich Angaben ändern.</div>}
+                {t.ueberholt && (
+                  <div className="br-fehler-text">
+                    <strong>Überholt:</strong> {t.ueberholt}. So nicht bestätigbar – bitte erneut festlegen oder aufheben.
+                  </div>
+                )}
+                {!t.ueberholt && t.unwirksam && (
                   <div className="br-warn-text">
-                    Wirksam bleibt „{AMPEL_TEXT[t.ampel]}“{t.ueberholt ? ` – ${t.ueberholt}` : ''}.
+                    <strong>Noch nicht wirksam:</strong> {t.unwirksam}. Sie wird gespeichert, zählt aber erst mit geprüftem Text{t.ampel ? ` – bis dahin „${AMPEL_TEXT[t.ampel]}“` : ''}.
                   </div>
                 )}
               </li>
@@ -445,7 +484,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
         {offen.fakten.map((id) => {
           const f = fakten[id];
           if (!f?.bestaetigt) return null;
-          const fo = folgen(id);
+          const fo = folgenJe[id] ?? { herab: [] };
           return (
             <li key={id} className={fo.herab.length ? 'br-herab' : ''}>
               <div className="br-bestaetigen-kopf">
@@ -462,8 +501,13 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
           );
         })}
       </ul>
+      {ueberholte.length > 0 && (
+        <div className="br-meldung br-meldung-fehler" role="alert">
+          {ueberholte.length === 1 ? 'Eine Festlegung ist überholt' : `${ueberholte.length} Festlegungen sind überholt`} – „Bestätigen und speichern“ geht erst, wenn sie erneut festgelegt oder aufgehoben sind. „Speichern, diese als Entwurf behalten“ geht.
+        </div>
+      )}
       <label className="toggle br-geprueft">
-        <input type="checkbox" checked={geprueft} onChange={(e) => setGeprueft(e.target.checked)} /> Ich habe diese Angaben geprüft.
+        <input type="checkbox" checked={geprueft} disabled={ueberholte.length > 0} onChange={(e) => setGeprueft(e.target.checked)} /> Ich habe {nf && na ? 'diese Festlegungen und Angaben' : nf ? (nf === 1 ? 'diese Festlegung' : 'diese Festlegungen') : na === 1 ? 'diese Angabe' : 'diese Angaben'} geprüft.
       </label>
       <div className="dialog-buttons">
         <button type="button" onClick={() => antwort('abbrechen')}>
@@ -472,7 +516,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
         <button type="button" onClick={() => antwort('ohne')} title="Speichert alles andere; für diese Angaben bleibt in der Datei der bisherige Stand. In der App bleiben sie als Entwurf erhalten.">
           Speichern, diese als Entwurf behalten
         </button>
-        <button type="button" className="primary" disabled={!geprueft} onClick={() => antwort('bestaetigen')}>
+        <button type="button" className="primary" disabled={!geprueft || ueberholte.length > 0} onClick={() => antwort('bestaetigen')}>
           Bestätigen und speichern
         </button>
       </div>

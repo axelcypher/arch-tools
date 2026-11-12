@@ -1,5 +1,8 @@
 import type { Ampel } from '@core/baurecht/typen';
 
+/** geschütztes Leerzeichen nach §, §§, Abs., Nr., Satz – „§ 33 Abs. 1“ bricht nicht zwischen Zeichen und Nummer um */
+export const nb = (s: string): string => s.replace(/(§§?|Abs\.|Nr\.|Satz|Art\.) (?=[\dIVX])/g, '$1\u00a0');
+
 /** Ampel in Worten – nie nur Farbe */
 export const AMPEL_TEXT: Record<Ampel, string> = { rot: 'gilt', gelb: 'prüfen', gruen: 'entfällt' };
 export const AMPEL_LANG: Record<Ampel, string> = {

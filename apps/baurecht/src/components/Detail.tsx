@@ -9,7 +9,7 @@ import { externOeffnen } from '@core/platform/links';
 import { isTauri } from '@core/platform/files';
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
-import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke, datum } from './Ampel';
+import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke, datum, nb } from './Ampel';
 import { festlegenOeffnen } from './Dialoge';
 
 /** Text eines Paragrafen; die Absätze der Fundstellen hervorgehoben, geänderte markiert */
@@ -87,12 +87,14 @@ const STAND: Record<'ja' | 'nein' | 'offen', { zeichen: string; wort: string }> 
   offen: { zeichen: '?', wort: 'offen' },
 };
 
-function Stand({ w }: { w?: KurzKnoten['w'] }) {
+function Stand({ w, unsicher }: { w?: KurzKnoten['w']; unsicher?: boolean }) {
   if (!w) return null;
+  // nur Hinweis: das Zeichen in Klammern – es trägt das Ergebnis nicht (zur sicheren Seite)
+  const wort = unsicher ? `${STAND[w].wort}, aber nur Hinweis – zählt nicht als gesichert` : STAND[w].wort;
   return (
-    <span className={`br-stand br-stand-${w}`} title={STAND[w].wort}>
-      <span aria-hidden="true">{STAND[w].zeichen}</span>
-      <span className="br-unsichtbar">{STAND[w].wort}: </span>
+    <span className={`br-stand br-stand-${unsicher ? 'unsicher' : w}`} title={wort}>
+      <span aria-hidden="true">{unsicher ? `(${STAND[w].zeichen})` : STAND[w].zeichen}</span>
+      <span className="br-unsichtbar">{wort}: </span>
     </span>
   );
 }
@@ -105,8 +107,8 @@ function Baum({ k, tiefe = 0 }: { k: KurzKnoten; tiefe?: number }) {
   if (!k.kinder)
     return (
       <li>
-        <Stand w={k.w} />
-        {k.text}
+        <Stand w={k.w} unsicher={k.unsicher} />
+        {nb(k.text)}
         {k.ist && <span className="br-ist"> – jetzt: {k.ist}</span>}
       </li>
     );
@@ -218,8 +220,8 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         )}
         {!p.ueberholt && p.unwirksam && (
           <div className="br-meldung br-meldung-info" role="status">
-            <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {p.unwirksam}. Bis dahin bleibt der Paragraf „prüfen“.{' '}
-            {isTauri() ? 'Mit „Rechtsstand prüfen“ (Menü „Mehr“) den Text an der Quelle holen; liegt er geprüft vor, zählt die Festlegung – wurde sie ohne Text getroffen, dann am Text erneut festlegen.' : 'Die Gesetzestexte gibt es nur in der Desktop-App – dort prüfen und festlegen.'}
+            <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {p.unwirksam}. Bis dahin gilt „{AMPEL_TEXT[p.ampel]}“.{' '}
+            {isTauri() ? 'Mit „Rechtsstand prüfen“ den Text an der Quelle holen; liegt er geprüft vor, zählt die Festlegung – wurde sie ohne Text getroffen, dann am Text erneut festlegen.' : 'Die Gesetzestexte gibt es nur in der Desktop-App – dort prüfen und festlegen.'}
           </div>
         )}
         <section>
@@ -233,24 +235,24 @@ export function Detail({ stand }: { stand: Pruefstand }) {
           )}
           <ul className="br-gruende">
             {gruende.map((g, i) => (
-              <li key={i}>{g}</li>
+              <li key={i}>{nb(g)}</li>
             ))}
           </ul>
           {p.hinweise.length > 0 && (
             <ul className="br-hinweise">
               {p.hinweise.map((h, i) => (
                 <li key={i}>
-                  <strong>Hinweis:</strong> {h}
+                  <strong>Hinweis:</strong> {nb(h)}
                 </li>
               ))}
             </ul>
           )}
         </section>
-        {p.offen.length > 0 && (
+        {p.offen.some((o) => !o.startsWith('paragraf:')) && (
           <section>
             <h3>Fehlende Angaben</h3>
             <div className="br-chips">
-              {p.offen.map((o) => (
+              {p.offen.filter((o) => !o.startsWith('paragraf:')).map((o) => (
                 <button
                   key={o}
                   type="button"
@@ -261,6 +263,21 @@ export function Detail({ stand }: { stand: Pruefstand }) {
                   {offenText(o, ctx)}
                 </button>
               ))}
+            </div>
+          </section>
+        )}
+        {p.offen.some((o) => o.startsWith('paragraf:')) && (
+          <section>
+            <h3>Hängt an</h3>
+            <p className="br-leise-stark">Diese Paragrafen sind selbst noch offen – ist dort entschieden, entscheidet sich auch dieser.</p>
+            <div className="br-chips">
+              {p.offen
+                .filter((o) => o.startsWith('paragraf:'))
+                .map((o) => (
+                  <button key={o} type="button" className="br-chip-knopf" onClick={() => useBaurecht.getState().waehlen(o.slice(9))} title="zum Paragrafen">
+                    {nb(offenText(o, ctx))}
+                  </button>
+                ))}
             </div>
           </section>
         )}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FaktWert, Festlegung } from '@core/baurecht/typen';
+import { faktName } from '@core/baurecht/typen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { BreitenLeiste } from '@core/ui/Leiste';
@@ -247,9 +248,9 @@ export function App() {
 
   const titel = (id: string) => {
     const p = stand.auswertung.paragrafen.find((x) => x.id === id);
-    return { titel: stand.auswertung.text.paragraf?.(id) ?? id, automatisch: p?.automatisch, ampel: p?.ampel, ueberholt: p?.ueberholt ?? (p?.unwirksam ? `noch nicht wirksam: ${p.unwirksam}` : undefined) };
+    return { titel: stand.auswertung.text.paragraf?.(id) ?? id, automatisch: p?.automatisch, ampel: p?.ampel, ueberholt: p?.ueberholt, unwirksam: p?.unwirksam };
   };
-  const faktTitel = (id: string) => stand.auswertung.faktDefs[id]?.titel ?? id;
+  const faktTitel = (id: string) => faktName(stand.auswertung.faktDefs[id], id);
   const faktDef = (id: string) => stand.auswertung.faktDefs[id];
   // Folgen einer Angabe: Vorschau im Dialog (mit der Angabe gegenüber jetzt) …
   const folgen: FolgenRechner = (id, wert) => {

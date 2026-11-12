@@ -9,7 +9,46 @@ import type { FaktDef } from './typen';
 const j = (titel: string, gruppe: FaktDef['gruppe'], hilfe?: string, frage?: string): FaktDef => ({ titel, gruppe, typ: 'janein', ...(hilfe ? { hilfe } : {}), ...(frage ? { frage } : {}) });
 const z = (titel: string, gruppe: FaktDef['gruppe'], einheit?: string, hilfe?: string): FaktDef => ({ titel, gruppe, typ: 'zahl', ...(einheit ? { einheit } : {}), ...(hilfe ? { hilfe } : {}) });
 
-export const FAKTEN: Record<string, FaktDef> = {
+/** kurze Namen (höchstens 40 Zeichen) für Angaben mit langem Titel – überall derselbe Name; der Titel erklärt */
+const KURZ: Record<string, string> = {
+  'schutz.wsg_zone': 'Zone Wasser-/Heilquellenschutz',
+  'gebaeude.arbeitsstaette': 'Arbeitsstätte',
+  'gebaeude.aufenthaltsraeume': 'Aufenthaltsräume oder Arbeitsplätze',
+  'gebaeude.behelfsbau': 'Behelfsbau oder Fliegender Bau',
+  'gebaeude.landwirtschaft': 'Land- oder forstwirtschaftliches Gebäude',
+  'gebaeude.oeffentlich': 'Öffentlich zugänglich',
+  'lage.altlasten': 'Altlast oder Altlastverdacht',
+  'lage.bergbau': 'Bergbau oder unsicherer Untergrund',
+  'lage.gewaesser': 'Grundstück am Gewässer',
+  'lage.strasse_ausserorts': 'An klassifizierter Straße außerorts',
+  'lage.zufahrt_neu': 'Neue oder geänderte Zufahrt',
+  'planung.abweichung': 'Abweichung von der Bauordnung',
+  'planung.befreiung': 'Befreiung vom Bebauungsplan',
+  'planung.planaufstellung': 'Bebauungsplan in Aufstellung',
+  'planung.wohnungsbau_246e': 'Wohnungsbau nach § 246e BauGB',
+  'schutz.baum': 'Geschützte Bäume betroffen',
+  'schutz.bodendenkmal': 'Bodendenkmal (auch vermutet)',
+  'schutz.denkmal': 'Baudenkmal auf dem Grundstück',
+  'schutz.denkmal_umgebung': 'Umgebung eines Baudenkmals',
+  'schutz.landschaftsplan': 'Landschaftsplan',
+  'schutz.natura_nah': 'Natura-2000-Gebiet in der Nähe',
+  'schutz.nsg': 'Naturschutzgebiet',
+  'schutz.risikogebiet': 'Hochwasser-Risikogebiet (HQextrem)',
+  'schutz.uesg': 'Überschwemmungsgebiet',
+  'technik.batteriespeicher': 'Batteriespeicher oder Betriebsraum',
+  'technik.brennstofflager': 'Brennstofflager',
+  'technik.feuerstaette': 'Feuerstätte',
+  'vorhaben.baustelle_oeffentlich': 'Baustelle im Straßenraum',
+  'vorhaben.boden_800': 'Über 800 m³ Bodenmaterial',
+  'vorhaben.dach_fassade': 'Arbeiten an Dach oder Fassade',
+  'vorhaben.entwaesserung': 'Entwässerung neu oder geändert',
+  'vorhaben.erdarbeiten': 'Erdarbeiten',
+  'vorhaben.erstbebauung': 'Erstbebauung (nach 1996)',
+  'vorhaben.grundwasser': 'Eingriff ins Grundwasser',
+  'vorhaben.versickerung': 'Versickerung oder Einleitung',
+};
+
+const KATALOG: Record<string, FaktDef> = {
   /* ---------- Lage ---------- */
   'lage.ags': { titel: 'Gemeindeschlüssel', gruppe: 'lage', typ: 'text', hilfe: 'Amtlicher Gemeindeschlüssel (8 Ziffern), z. B. 05974040 für Soest – aus ALKIS zum Flurstück oder von Hand' },
   'lage.gemeinde': { titel: 'Gemeinde', gruppe: 'lage', typ: 'text' },
@@ -97,6 +136,8 @@ export const FAKTEN: Record<string, FaktDef> = {
   /* ---------- Antrag ---------- */
   'antrag.einreichung': { titel: 'Geplantes Einreichungsdatum', gruppe: 'antrag', typ: 'text' },
 };
+
+export const FAKTEN: Record<string, FaktDef> = Object.fromEntries(Object.entries(KATALOG).map(([id, d]) => [id, KURZ[id] ? { ...d, kurz: KURZ[id] } : d]));
 
 /** Merkmale aus Formulare (Antragsmerkmale) – Titel für die Anzeige */
 export const MERKMAL_TITEL: Record<string, string> = {

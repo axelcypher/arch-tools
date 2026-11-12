@@ -160,6 +160,7 @@
   "fakten": {
     "ortsrecht.stellplatzsatzung": {
       "titel": "Stellplatzsatzung der Gemeinde (örtliche Bauvorschrift nach § 89 Abs. 1 Nr. 4 BauO NRW)",
+      "kurz": "Stellplatzsatzung der Gemeinde",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "wert": true,
@@ -167,6 +168,7 @@
     },
     "soest.denkmalbereich": {
       "titel": "Im Denkmalbereich Altstadt Soest (Denkmal-Dienst der Stadt)",
+      "kurz": "Denkmalbereich Altstadt (Dienst)",
       "gruppe": "schutz",
       "typ": "janein",
       "geodienst": {
@@ -194,6 +196,7 @@
     },
     "soest.altstadt": {
       "titel": "In der Altstadt innerhalb des Walls (Geltungsbereich der Altstadtsatzung)",
+      "kurz": "Altstadt innerhalb des Walls",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "vorschlag": "soest.denkmalbereich",
@@ -217,6 +220,7 @@
     },
     "soest.stellplatz_abloesung": {
       "titel": "Notwendige Stellplätze können nicht oder nur unter großen Schwierigkeiten hergestellt werden (Ablösung beabsichtigt)",
+      "kurz": "Stellplätze nicht herstellbar",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "weder auf dem Baugrundstück noch im Umkreis von 300 m Fußweg (§ 4 Abs. 1, § 5 Abs. 1 Stellplatzsatzung)",
@@ -226,6 +230,7 @@
     },
     "soest.baeume": {
       "titel": "Geschützte Bäume nach der Baumschutzsatzung auf dem Grundstück oder angrenzend",
+      "kurz": "Geschützte Bäume (Baumschutzsatzung)",
       "gruppe": "schutz",
       "typ": "janein",
       "frage": "Stehen auf dem Baugrundstück oder auf Nachbargrundstücken Laubbäume mit mindestens 120 cm Stammumfang in 1 m Höhe (mehrstämmig zusammen 150 cm) oder nach Bebauungsplan zu erhaltende Bäume?",
@@ -236,6 +241,7 @@
     },
     "soest.dachaufbauten": {
       "titel": "Dachgauben, Zwerchhäuser, Dachflächenfenster oder Dacheinschnitte geplant",
+      "kurz": "Gauben oder Dachfenster geplant",
       "gruppe": "vorhaben",
       "typ": "janein",
       "wenn": {
@@ -245,6 +251,7 @@
     },
     "soest.solaranlage": {
       "titel": "Photovoltaik- oder Solarthermieanlage geplant",
+      "kurz": "PV- oder Solarthermieanlage geplant",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "auch zur Erfüllung der Solarpflicht nach § 42a BauO NRW",
@@ -255,6 +262,7 @@
     },
     "soest.historische_ortsteile": {
       "titel": "In einer Schutzzone der Satzung über historische Ortsteile (1973) oder schützenswerter Bürgerbau",
+      "kurz": "Historischer Ortsteil (Satzung 1973)",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "frage": "Liegt das Grundstück in einer Schutzzone der Satzung von 1973 (Anlage A I: Fluren 4 und 30–58, Meiningsen Flur 5, Ostönnen Flur 7) oder ist das Gebäude dort als schützenswerter Bürgerbau (Anlage A II) aufgeführt?",
@@ -262,17 +270,20 @@
     },
     "soest.fernwaerme": {
       "titel": "Im Gebiet „Britische Wohnsiedlung“ (Fernwärme-Anschlusszwang)",
+      "kurz": "Britische Wohnsiedlung (Fernwärme)",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "hilfe": "Begrenzt von Arnsberger Straße (B 229), Hartweg/Herzog-Adolf-Weg, Hiddingser Weg/Kaiser-Otto-Weg und Konrad-Coler-Weg (Lageplan der Satzung)"
     },
     "soest.muellingsen": {
       "titel": "Im Geltungsbereich der Veränderungssperre zum B-Plan Nr. 5 „Windenergie Müllingsen“",
+      "kurz": "Veränderungssperre Müllingsen",
       "gruppe": "planung",
       "typ": "janein"
     },
     "soest.bplan": {
       "titel": "Bebauungsplan oder Satzung am Grundstück (Dienst der Stadt)",
+      "kurz": "Bebauungsplan am Grundstück (Dienst)",
       "gruppe": "planung",
       "typ": "text",
       "geodienst": {
@@ -287,12 +298,14 @@
     },
     "soest.bplan_entwurf": {
       "titel": "Plan im Dienst der Stadt noch als Entwurf geführt oder laufendes Bauleitplanverfahren am Grundstück",
+      "kurz": "Bebauungsplan im Verfahren (Dienst)",
       "gruppe": "planung",
       "typ": "janein",
       "hilfe": "Der Dienst der Stadt führt Pläne teils Monate nach dem Satzungsbeschluss noch als Entwurf (Stand 2000) – Bekanntmachungsseite der Stadt prüfen"
     },
     "ortsrecht.stellplatz_regelt_zahl": {
       "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Pflicht und Zahl der notwendigen Stellplätze",
+      "kurz": "Ortsrecht regelt Stellplatzzahl",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "wert": true,
@@ -300,6 +313,7 @@
     },
     "ortsrecht.stellplatz_regelt_lage": {
       "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Lage und Herstellung der Stellplätze (Entfernung, Sicherung)",
+      "kurz": "Ortsrecht regelt Lage der Stellplätze",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "wert": true,
@@ -307,6 +321,7 @@
     },
     "ortsrecht.stellplatz_regelt_kfz": {
       "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Größe und Beschaffenheit der Kfz-Stellplätze einschließlich der Stellplätze für Menschen mit Behinderung",
+      "kurz": "Ortsrecht regelt Kfz-Stellplätze",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "wert": false,
@@ -314,6 +329,7 @@
     },
     "ortsrecht.stellplatz_regelt_fahrrad": {
       "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt die Beschaffenheit der Fahrradabstellplätze",
+      "kurz": "Ortsrecht regelt Fahrradplätze",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "wert": true,
@@ -321,6 +337,7 @@
     },
     "ortsrecht.stellplatz_regelt_abloesung": {
       "titel": "Die Stellplatzsatzung regelt die Ablösung notwendiger Stellplätze",
+      "kurz": "Satzung regelt Stellplatzablösung",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "wert": true,
@@ -328,6 +345,7 @@
     },
     "soest.schaufenster": {
       "titel": "Schaufenster oder Ladeneingänge werden hergestellt oder geändert",
+      "kurz": "Schaufenster oder Ladeneingänge",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "§ 8 Altstadtsatzung – auch an Wohn- und Geschäftshäusern",
@@ -338,6 +356,7 @@
     },
     "soest.vordach": {
       "titel": "Vordächer, Kragdächer oder Markisen werden angebracht oder geändert",
+      "kurz": "Vordächer oder Markisen geplant",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "§ 9 Altstadtsatzung – auch das Vordach über einer Haustür",

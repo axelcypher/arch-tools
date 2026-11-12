@@ -181,12 +181,14 @@
   "fakten": {
     "ortsrecht.stellplatzsatzung": {
       "titel": "Stellplatzsatzung der Gemeinde (örtliche Bauvorschrift nach § 89 Abs. 1 Nr. 4 BauO NRW)",
+      "kurz": "Stellplatzsatzung der Gemeinde",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – auch Stellplatzregeln im Bebauungsplan zählen (§ 1 Abs. 2 StellplatzVO NRW)"
     },
     "nw.stellplatzflaeche": {
       "titel": "Notwendige Kfz-Stellplätze für ein Nichtwohngebäude auf einer neu errichteten Stellplatzfläche",
+      "kurz": "Stellplatzfläche eines Nichtwohngebäudes",
       "gruppe": "grundstueck",
       "typ": "zahl",
       "hilfe": "für die Photovoltaik-Pflicht über Stellplatzflächen (§ 48 Abs. 1a BauO NRW, § 6 SAN-VO NRW): mehr als 35 – auch wenn die Stellplatzfläche selbst das Vorhaben ist; Stellplätze für Wohnnutzung zählen nicht",
@@ -207,6 +209,7 @@
     },
     "nw.grenzabstand_unter_2_5": {
       "titel": "Außenwand an der Nachbargrenze oder weniger als 2,50 m davon entfernt (Gebäudeabschlusswand)",
+      "kurz": "Außenwand unter 2,50 m zur Grenze",
       "gruppe": "grundstueck",
       "typ": "janein",
       "hilfe": "§ 30 Abs. 2 Nr. 1 BauO NRW: dann Brandwand bzw. Gebäudeabschlusswand nach § 30 Abs. 3"
@@ -219,12 +222,14 @@
     },
     "nw.elt_betriebsraum": {
       "titel": "Elektrischer Betriebsraum nach § 143 SBauVO",
+      "kurz": "Elektrischer Betriebsraum",
       "gruppe": "technik",
       "typ": "janein",
       "hilfe": "Transformatoren und Schaltanlagen über 1 kV, ortsfeste Stromerzeugungsaggregate oder zentrale Batterieanlagen für bauordnungsrechtlich vorgeschriebene sicherheitstechnische Anlagen im Gebäude – nicht der Batteriespeicher einer PV-Anlage"
     },
     "nw.feste_brennstoffe_50kw": {
       "titel": "Feuerstätten für feste Brennstoffe mit zusammen mehr als 50 kW Nennleistung",
+      "kurz": "Feststofffeuerung über 50 kW",
       "gruppe": "technik",
       "typ": "janein",
       "hilfe": "§ 6 FeuVO NRW: dann eigener Heizraum",
@@ -235,6 +240,7 @@
     },
     "nw.nachbarrecht": {
       "titel": "Privatrechtliche Nachbarfragen (NachbG NRW)",
+      "kurz": "Nachbarrechtliche Fragen",
       "gruppe": "grundstueck",
       "typ": "wahl",
       "werte": [
@@ -245,6 +251,7 @@
     },
     "schutz.nsg": {
       "titel": "Naturschutzgebiet (auch einstweilig sichergestellt)",
+      "kurz": "Naturschutzgebiet",
       "gruppe": "schutz",
       "typ": "janein",
       "geodienst": {
@@ -316,6 +323,7 @@
     },
     "schutz.uesg": {
       "titel": "Überschwemmungsgebiet (festgesetzt oder vorläufig gesichert)",
+      "kurz": "Überschwemmungsgebiet",
       "gruppe": "schutz",
       "typ": "janein",
       "geodienst": {
@@ -340,6 +348,7 @@
     },
     "ortsrecht.stellplatz_regelt_zahl": {
       "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Pflicht und Zahl der notwendigen Stellplätze",
+      "kurz": "Ortsrecht regelt Stellplatzzahl",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
@@ -349,6 +358,7 @@
     },
     "ortsrecht.stellplatz_regelt_lage": {
       "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Lage und Herstellung der Stellplätze (Entfernung, Sicherung)",
+      "kurz": "Ortsrecht regelt Lage der Stellplätze",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
@@ -358,6 +368,7 @@
     },
     "ortsrecht.stellplatz_regelt_kfz": {
       "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Größe und Beschaffenheit der Kfz-Stellplätze einschließlich der Stellplätze für Menschen mit Behinderung",
+      "kurz": "Ortsrecht regelt Kfz-Stellplätze",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
@@ -367,6 +378,7 @@
     },
     "ortsrecht.stellplatz_regelt_fahrrad": {
       "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt die Beschaffenheit der Fahrradabstellplätze",
+      "kurz": "Ortsrecht regelt Fahrradplätze",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
@@ -376,6 +388,7 @@
     },
     "ortsrecht.stellplatz_regelt_abloesung": {
       "titel": "Die Stellplatzsatzung regelt die Ablösung notwendiger Stellplätze",
+      "kurz": "Satzung regelt Stellplatzablösung",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
@@ -385,24 +398,28 @@
     },
     "lage.zufahrt_klassifiziert": {
       "titel": "Neue oder wesentlich geänderte Zufahrt (auch mittelbar) zu einer Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt",
+      "kurz": "Zufahrt zu Landes- oder Kreisstraße",
       "gruppe": "grundstueck",
       "typ": "janein",
       "hilfe": "Zustimmung der Straßenbaubehörde nach § 25 Abs. 1 Nr. 2 StrWG NRW – unabhängig vom Abstand des Gebäudes"
     },
     "lage.anschluss_klassifiziert": {
       "titel": "Grundstück an eine Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt angeschlossen (auch bestehend, auch mittelbar über eine Zufahrt)",
+      "kurz": "Anschluss an Landes- oder Kreisstraße",
       "gruppe": "grundstueck",
       "typ": "janein",
       "hilfe": "§ 25 Abs. 1 Satz 1 Nr. 2 StrWG NRW: auch bei erheblicher Änderung oder anderer Nutzung des bestehenden Anschlusses"
     },
     "schutz.denkmalbereich_umgebung": {
       "titel": "Engere Umgebung eines Denkmalbereichs (z. B. Sichtbezug auf eine geschützte Altstadt)",
+      "kurz": "Umgebung eines Denkmalbereichs",
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "§ 5 Abs. 3 DSchG NRW – bei der Unteren Denkmalbehörde erfragen"
     },
     "vorhaben.stellplatz_abloesung": {
       "titel": "Notwendige Stellplätze sollen abgelöst werden (Ablösungsbetrag)",
+      "kurz": "Stellplatzablösung beabsichtigt",
       "gruppe": "vorhaben",
       "typ": "janein",
       "wenn": {
@@ -411,6 +428,7 @@
     },
     "vorhaben.andere_gestattung": {
       "titel": "Das Vorhaben braucht eine andere Gestattung, die die Baugenehmigung einschließt (z. B. wasserrechtliche Zulassung, Anlage der öffentlichen Versorgung, Abfallentsorgungsanlage)",
+      "kurz": "Andere Gestattung schließt Bau ein",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "§ 61 BauO NRW",
@@ -420,6 +438,7 @@
     },
     "technik.lueftung": {
       "titel": "Lüftungs-, Klima- oder raumlufttechnische Anlage geplant (auch freistehend)",
+      "kurz": "Lüftungs- oder Klimaanlage",
       "gruppe": "technik",
       "typ": "janein",
       "wenn": {
@@ -428,6 +447,7 @@
     },
     "gebaeude.abfallraum": {
       "titel": "Feste Abfallstoffe werden im Gebäude aufbewahrt (Müllraum)",
+      "kurz": "Müllraum im Gebäude",
       "gruppe": "gebaeude",
       "typ": "janein",
       "wenn": {
@@ -436,18 +456,21 @@
     },
     "schutz.gartendenkmal": {
       "titel": "Gartendenkmal auf dem Grundstück oder in seiner engeren Umgebung",
+      "kurz": "Gartendenkmal",
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "§ 13 DSchG NRW (z. B. historische Park- und Gartenanlage) – Denkmalliste der Gemeinde"
     },
     "ortsrecht.abweichung": {
       "titel": "Abweichung von einer örtlichen Bauvorschrift beabsichtigt (Gestaltungs-, Werbeanlagen- oder Stellplatzsatzung)",
+      "kurz": "Abweichung von örtlicher Bauvorschrift",
       "gruppe": "ortsrecht",
       "typ": "janein",
       "hilfe": "§ 69 Abs. 1 und 3 BauO NRW: Abweichungen von örtlichen Bauvorschriften (§ 89) sind gesondert zu beantragen; die Satzungen nennen oft eigene Voraussetzungen"
     },
     "nw.landwirtschaft_angebaut": {
       "titel": "Wohngebäude mit angebautem landwirtschaftlich (oder vergleichbar) genutztem Gebäude bzw. Gebäudeteil",
+      "kurz": "Angebautes landwirtschaftliches Gebäude",
       "gruppe": "gebaeude",
       "typ": "janein",
       "hilfe": "§ 30 Abs. 2 Nr. 4 BauO NRW: Brandwand zwischen Wohnteil und Stall, Scheune oder Remise – z. B. Altenteilerhaus am Stall",
@@ -457,6 +480,7 @@
     },
     "vorhaben.nutzung_befristet": {
       "titel": "Nutzungsänderung auf höchstens zwölf Monate befristet (außerhalb des Außenbereichs)",
+      "kurz": "Befristete Nutzungsänderung",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "§ 64 Abs. 3 BauO NRW: Nutzungsänderungsanzeige einen Monat vor Aufnahme der Nutzung",

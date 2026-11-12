@@ -432,6 +432,7 @@
   "fakten": {
     "planung.innen": {
       "titel": "Im Zusammenhang bebauter Ortsteil (§ 34 BauGB)",
+      "kurz": "Im Zusammenhang bebauter Ortsteil",
       "gruppe": "planung",
       "typ": "janein",
       "frage": "Richtet sich die Zulässigkeit im Übrigen nach § 34 BauGB (Innenbereich) – nicht nach § 35 (Außenbereich)?",
@@ -449,6 +450,7 @@
     },
     "planung.mass_festgesetzt": {
       "titel": "Maß der baulichen Nutzung im einfachen Bebauungsplan festgesetzt",
+      "kurz": "Maß der Nutzung festgesetzt",
       "gruppe": "planung",
       "typ": "janein",
       "wenn": {
@@ -457,6 +459,7 @@
     },
     "planung.baugrenzen_festgesetzt": {
       "titel": "Überbaubare Grundstücksfläche (Baugrenzen, Baulinien) im einfachen Bebauungsplan festgesetzt",
+      "kurz": "Baugrenzen oder Baulinien festgesetzt",
       "gruppe": "planung",
       "typ": "janein",
       "wenn": {
@@ -465,6 +468,7 @@
     },
     "planung.hoehe_festgesetzt": {
       "titel": "Höhe baulicher Anlagen im Bebauungsplan festgesetzt (Trauf-, First-, Gebäudehöhe)",
+      "kurz": "Höhe im Bebauungsplan festgesetzt",
       "gruppe": "planung",
       "typ": "janein",
       "wenn": {
@@ -473,6 +477,7 @@
     },
     "planung.bauweise_festgesetzt": {
       "titel": "Bauweise im Bebauungsplan festgesetzt (offen, geschlossen, abweichend)",
+      "kurz": "Bauweise festgesetzt",
       "gruppe": "planung",
       "typ": "janein",
       "wenn": {
@@ -481,6 +486,7 @@
     },
     "planung.so_erholung": {
       "titel": "Sondergebiet, das der Erholung dient (§ 10 BauNVO)",
+      "kurz": "Sondergebiet Erholung (§ 10 BauNVO)",
       "gruppe": "planung",
       "typ": "janein",
       "hilfe": "ja = Wochenendhaus-, Ferienhaus-, Campingplatzgebiet; nein = sonstiges Sondergebiet (§ 11 BauNVO)",
@@ -491,6 +497,7 @@
     },
     "vorhaben.aussenbauteile": {
       "titel": "Außenbauteile beheizter oder gekühlter Räume werden erneuert, ersetzt oder erstmals eingebaut",
+      "kurz": "Außenbauteile erneuert oder ersetzt",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "Dach, Außenwand, Fenster, Kellerdecke … – ausgenommen Änderungen bis 10 % der Fläche der jeweiligen Bauteilgruppe (§ 36 Satz 2 GEG)",
@@ -507,6 +514,7 @@
     },
     "vorhaben.erweiterung_beheizt": {
       "titel": "Erweiterung oder Ausbau um beheizte oder gekühlte Räume",
+      "kurz": "Erweiterung um beheizte Räume",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "§ 39 GEG; über 50 m² zusätzlich sommerlicher Wärmeschutz",
@@ -523,17 +531,20 @@
     },
     "vorhaben.heizung": {
       "titel": "Heizungsanlage wird eingebaut oder ersetzt",
+      "kurz": "Heizung wird eingebaut oder ersetzt",
       "gruppe": "technik",
       "typ": "janein"
     },
     "technik.heizoel": {
       "titel": "Neue Heizölverbraucheranlage (Ölheizung, Öltank)",
+      "kurz": "Neue Ölheizung bzw. Öltank",
       "gruppe": "technik",
       "typ": "janein",
       "hilfe": "in Überschwemmungs- und Risikogebieten verboten bzw. eingeschränkt (§ 78c WHG)"
     },
     "gebaeude.kmu": {
       "titel": "Eigentum eines kleinen oder mittleren Unternehmens, überwiegend selbst genutzt",
+      "kurz": "Eigentum eines KMU, selbst genutzt",
       "gruppe": "gebaeude",
       "typ": "janein",
       "hilfe": "Nichtwohngebäude solcher Unternehmen sind vom GEIG ausgenommen (§ 1 Abs. 2 GEIG)",
@@ -543,6 +554,7 @@
     },
     "vorhaben.nebenanlage": {
       "titel": "Nebenanlagen geplant (z. B. Gartenhaus, Schwimmbecken, Wärmepumpe oder Solaranlage außerhalb des Gebäudes)",
+      "kurz": "Nebenanlagen geplant",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "untergeordnete Nebenanlagen nach § 14 BauNVO; Garagen und Stellplätze regelt § 12",
@@ -552,6 +564,7 @@
     },
     "vorhaben.groessere_renovierung": {
       "titel": "Größere Renovierung, die den Parkplatz oder die elektrische Infrastruktur umfasst",
+      "kurz": "Größere Renovierung (Parkplatz/Elektrik)",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "§§ 8, 9 GEIG – bei Gebäuden mit mehr als zehn Stellplätzen im oder am Gebäude",
@@ -568,6 +581,7 @@
     },
     "planung.planreife": {
       "titel": "Vorhaben nach § 33 BauGB zulässig (Planreife; Festsetzungen schriftlich anerkannt, Erschließung gesichert)",
+      "kurz": "Planreife nach § 33 BauGB",
       "gruppe": "planung",
       "typ": "janein",
       "hilfe": "Ein Aufstellungsbeschluss allein genügt nicht – § 33 Abs. 1 Nr. 1–4 BauGB",
@@ -578,6 +592,7 @@
     },
     "planung.zurueckstellung": {
       "titel": "Die Gemeinde hat die Zurückstellung des Baugesuchs beantragt (§ 15 BauGB)",
+      "kurz": "Zurückstellung beantragt (§ 15 BauGB)",
       "gruppe": "planung",
       "typ": "janein",
       "hilfe": "bei der Gemeinde erfragen, solange ein Bebauungsplan oder ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird – die Gemeinde kann die Zurückstellung auch noch nach Eingang des Bauantrags beantragen",
@@ -596,6 +611,7 @@
     },
     "vorhaben.freiberuflich": {
       "titel": "Räume oder Gebäude für freiberuflich Tätige (z. B. Büro, Praxis, Kanzlei)",
+      "kurz": "Räume für freie Berufe",
       "gruppe": "vorhaben",
       "typ": "janein",
       "wenn": {
@@ -604,6 +620,7 @@
     },
     "vorhaben.ferienwohnung": {
       "titel": "Ferienwohnungen (ständig wechselnde Gäste gegen Entgelt)",
+      "kurz": "Ferienwohnungen",
       "gruppe": "vorhaben",
       "typ": "janein",
       "wenn": {
@@ -612,24 +629,28 @@
     },
     "vorhaben.erdaufschluss": {
       "titel": "Bohrungen oder Arbeiten, die bis ins Grundwasser reichen können (z. B. Erdwärmesonde, tiefe Gründung, Brunnen)",
+      "kurz": "Bohrungen bis ins Grundwasser möglich",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "Anzeige einen Monat vor Beginn (§ 49 WHG)"
     },
     "lage.bundesfernstrasse": {
       "titel": "An einer Bundesautobahn (bis 100 m) oder Bundesstraße (außerhalb der Ortsdurchfahrt bis 40 m, in der Ortsdurchfahrt angrenzend) – auch geplant –, oder Zufahrt dorthin",
+      "kurz": "An Bundesautobahn oder Bundesstraße",
       "gruppe": "grundstueck",
       "typ": "janein",
       "hilfe": "Anbauverbot bzw. Zustimmung der Straßenbaubehörde (§ 9 Abs. 1, 2 FStrG); bei geplanten Bundesfernstraßen ab Auslegung der Pläne im Planfeststellungsverfahren (Abs. 4); in Ortsdurchfahrten sind die Belange nach Abs. 2 bei der Baugenehmigung zu beachten (Abs. 3a)"
     },
     "schutz.naturdenkmal": {
       "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil betroffen",
+      "kurz": "Naturdenkmal oder Landschaftsbestandteil",
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "§§ 28, 29 BNatSchG – festgesetzt durch Schutzverordnung oder Landschaftsplan (Festsetzungskarte); bei Bäumen auch der Kronentraufbereich. Baumschutzsatzungen siehe „Geschützte Bäume“"
     },
     "gebaeude.gemischt": {
       "titel": "Gemischt genutzt: nicht unerheblicher Teil mit der jeweils anderen Nutzung",
+      "kurz": "Gemischt genutztes Gebäude",
       "gruppe": "gebaeude",
       "typ": "janein",
       "frage": "Hat das Gebäude einen nicht unerheblichen Teil mit anderer Nutzung – Läden, Büros oder Praxen in einem Wohngebäude bzw. Wohnungen in einem Nichtwohngebäude?",
@@ -640,6 +661,7 @@
     },
     "technik.heizung_fossil": {
       "titel": "Heizungsanlage mit Gas, Heizöl oder Flüssiggas (auch als Hybridheizung)",
+      "kurz": "Gas- oder Ölheizung (auch hybrid)",
       "gruppe": "technik",
       "typ": "janein",
       "hilfe": "§ 43 GEG: steigender Anteil an Biomethan bzw. grünen Brennstoffen ab 2029; bei Neubauten über § 10 Abs. 2 Nr. 3 entsprechend",
@@ -650,6 +672,7 @@
     },
     "technik.solarthermie": {
       "titel": "Solarthermische Anlage für Heizung oder Warmwasser",
+      "kurz": "Solarthermie",
       "gruppe": "technik",
       "typ": "janein",
       "hilfe": "§ 44 GEG: Kollektoren mit „Solar Keymark“",
@@ -660,6 +683,7 @@
     },
     "technik.biomasse": {
       "titel": "Heizungsanlage für feste Biomasse (Pellet- oder Holzkessel, wasserführender Ofen)",
+      "kurz": "Biomasseheizung (Pellets, Holz)",
       "gruppe": "technik",
       "typ": "janein",
       "hilfe": "§ 45 GEG",
@@ -670,6 +694,7 @@
     },
     "technik.stromdirekt": {
       "titel": "Stromdirektheizung (z. B. Elektro-, Infrarot- oder Nachtspeicherheizung als Heizung)",
+      "kurz": "Stromdirektheizung",
       "gruppe": "technik",
       "typ": "janein",
       "hilfe": "§ 46 GEG (bestehende Gebäude mit Wohnungen) bzw. § 10 Abs. 4 GEG (Neubau)",
@@ -680,6 +705,7 @@
     },
     "planung.fnp_verfahren": {
       "titel": "Flächennutzungsplan mit Konzentrationszonen in Aufstellung (privilegiertes Vorhaben im Außenbereich)",
+      "kurz": "FNP mit Konzentrationszonen in Arbeit",
       "gruppe": "planung",
       "typ": "janein",
       "frage": "Ist das Vorhaben nach § 35 Abs. 1 Nr. 2–6 BauGB privilegiert (z. B. Windenergie, Biogas, Tierhaltung) und hat die Gemeinde beschlossen, einen Flächennutzungsplan mit Konzentrationszonen aufzustellen, zu ändern oder zu ergänzen?",
@@ -690,12 +716,14 @@
     },
     "planung.umlegung": {
       "titel": "Grundstück in einem Umlegungsgebiet (Umlegungsbeschluss bekannt gemacht)",
+      "kurz": "Im Umlegungsgebiet",
       "gruppe": "planung",
       "typ": "janein",
       "hilfe": "§ 51 BauGB: Verfügungs- und Veränderungssperre – bei der Umlegungsstelle bzw. Gemeinde erfragen"
     },
     "vorhaben.stellplaetze_grundstueck": {
       "titel": "Stellplätze oder Garagen auf dem Grundstück geplant (auch offene und notwendige Stellplätze)",
+      "kurz": "Stellplätze oder Garagen geplant",
       "gruppe": "grundstueck",
       "typ": "janein",
       "hilfe": "auch Stellplätze, die die Stellplatzsatzung bzw. die StellplatzVO verlangt – unabhängig davon, ob sie am Gebäude liegen (§ 12 BauNVO, Teil 5 SBauVO)",

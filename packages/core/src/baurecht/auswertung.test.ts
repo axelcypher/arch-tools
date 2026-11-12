@@ -159,6 +159,18 @@ describe('Module und Regeldateien', () => {
     expect(f.some((x) => /bund\/x\/1/.test(x))).toBe(true);
     expect(f.some((x) => /Begründung fehlt/.test(x))).toBe(true);
   });
+
+  it('Prüfung des Pakets meldet Bausteine gleichen Namens in mehreren Modulen', () => {
+    const doppelt = paketAusDateien(
+      {
+        'module/bund/modul.json': bund,
+        'module/nw/modul.json': { ...land, bausteine: { neubau: { nie: true } } },
+        'module/bund/bnatschg@2026-09-30.json': bnatschg,
+      },
+      'x',
+    );
+    expect(paketPruefen(doppelt, VORGABE_MERKMALE).some((x) => /Baustein „neubau“ ist mehrfach definiert \(bund, nw\)/.test(x))).toBe(true);
+  });
 });
 
 describe('Ampel je Paragraf', () => {
@@ -253,8 +265,9 @@ describe('Ampel je Paragraf', () => {
     expect(p(a, 'bund/bnatschg/44').ueberholt).toBeUndefined();
     const b = auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, merkmale: { Vorhaben: 'Beseitigung', Gebäudeart: 'Einfamilienhaus' } }));
     expect(p(b, 'bund/bnatschg/44').ueberholt).toMatch(/Art des Vorhabens geändert/);
-    // überholtes Grün zählt nicht als grün
-    expect(p(b, 'bund/bnatschg/44').ampel).toBe('gelb');
+    // überholtes Grün zählt nicht als grün – es gilt die automatische Ampel (hier „gilt“), mindestens „prüfen“
+    expect(p(b, 'bund/bnatschg/44').ampel).toBe(p(b, 'bund/bnatschg/44').automatisch === 'rot' ? 'rot' : 'gelb');
+    expect(p(b, 'bund/bnatschg/44').ampel).not.toBe('gruen');
   });
 
   it('Festlegung wird überholt, wenn ein beteiligtes Merkmal widersprüchlich wird (gleicher Wert)', () => {
@@ -262,10 +275,23 @@ describe('Ampel je Paragraf', () => {
     expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl } })), 'bund/bnatschg/44').ueberholt).toBeUndefined();
     const b = auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, widersprueche: new Set(['Vorhaben']) }));
     expect(p(b, 'bund/bnatschg/44').ueberholt).toMatch(/jetzt widersprüchlich/);
-    expect(p(b, 'bund/bnatschg/44').ampel).toBe('gelb');
+    expect(p(b, 'bund/bnatschg/44').ampel).toBe('rot');
     // war das Merkmal schon beim Festlegen widersprüchlich, macht derselbe Widerspruch nichts überholt
     const c = auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': { ...fl, sicherheit: { 'merkmal:Vorhaben': 'widerspruch' as const } } }, widersprueche: new Set(['Vorhaben']) }));
     expect(p(c, 'bund/bnatschg/44').ueberholt).toBeUndefined();
+  });
+
+  it('überholtes „prüfen“ hält ein automatisches „gilt“ nicht auf', () => {
+    // „prüfen“ festgelegt, als die Automatik noch „prüfen“ sagte – jetzt sagt sie „gilt“
+    const fl = { ampel: 'gelb' as const, grund: 'Abstimmung offen', von: 'TP', am: '2026-11-12', automatisch: 'gelb' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' } };
+    const q = p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl } })), 'bund/bnatschg/44');
+    expect(q.automatisch).toBe('rot');
+    expect(q.ueberholt).toMatch(/automatisch jetzt rot/);
+    expect(q.ampel).toBe('rot');
+    expect(q.gruende[0]).toMatch(/es gilt die automatische Ampel/);
+    // eine nicht überholte, strengere Festlegung bleibt
+    const streng = { ...fl, ampel: 'rot' as const, automatisch: 'rot' as const };
+    expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': streng } })), 'bund/bnatschg/44').ampel).toBe('rot');
   });
 
   it('Einzelfall (pruefen.wenn) wirkt nur, wenn die Norm gilt – außerhalb des Anwendungsbereichs bleibt es grün', () => {
@@ -379,17 +405,18 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
     const id = 'bund/bnatschg/14';
     // ohne Textstand getroffen (z. B. in der Web-Version): auch mit Text später überholt
     const ohneStand = p(auswerten(eingabe({ festlegungen: { [id]: { ...fl, stand: {} } }, texte: text() })), id);
-    expect(ohneStand.ampel).toBe('gelb');
+    // fällt auf die automatische Ampel zurück („gilt“), nie auf „entfällt“
+    expect(ohneStand.ampel).toBe('rot');
     expect(ohneStand.ueberholt).toMatch(/ohne geprüften Text/);
     expect(p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: text() })), id).ampel).toBe('gruen');
     const ohne = p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: new Map() })), id);
-    expect(ohne.ampel).toBe('gelb');
+    expect(ohne.ampel).toBe('rot');
     // fehlender Systemstand: „noch nicht wirksam“ (erneut festlegen hilft nicht), nicht „überholt“
     expect(ohne.ueberholt).toBeUndefined();
     expect(ohne.unwirksam).toMatch(/Text der Norm nicht verfügbar/);
     expect(ohne.gruende[0]).toMatch(/noch nicht wirksam/);
     const alt = p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: text({ geprueft: '2026-10-01T08:00:00Z' }) })), id);
-    expect(alt.ampel).toBe('gelb');
+    expect(alt.ampel).toBe('rot');
     expect(alt.ueberholt).toBeUndefined();
     expect(alt.unwirksam).toMatch(/Rechtsstand/);
   });

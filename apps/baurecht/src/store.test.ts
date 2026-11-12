@@ -156,6 +156,31 @@ describe('Zustand der App', () => {
     expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
   });
 
+  it('Adresse geändert, Koordinaten passen nicht mehr: Ergebnisse und Bestätigungen zur Lage gelten nur als Hinweis', async () => {
+    const { aktuelleLage } = await import('./pruefung');
+    const { lageKennung } = await import('@core/baurecht/geodienste');
+    const s = useBaurecht.getState();
+    const k = s.project!.meta.koordinaten!;
+    const lage = lageKennung(k.ost, k.nord);
+    const eigene = {
+      'lage.ags': { wert: '05974040', herkunft: 'geodienst' as const, sicherheit: 'sicher' as const, quelle: 'ALKIS', lage },
+      'schutz.lsg': { wert: false, herkunft: 'geodienst' as const, sicherheit: 'hinweis' as const, lage, bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Auskunft UNB', lage } },
+    };
+    expect(aktuelleLage(s.project).lage).toBe(lage);
+    expect(alleFakten(s.project, eigene, s.paket.module)['lage.ags'].sicherheit).toBe('sicher');
+    // Adresse nach München geändert, Koordinaten noch die alten
+    const verlegt = { ...s.project!, meta: { ...s.project!.meta, adresse: { strasse: 'Marienplatz 1', plz: '80331', ort: 'München' } } };
+    expect(aktuelleLage(verlegt)).toEqual({ lage: null, problem: 'veraltet' });
+    const f = alleFakten(verlegt, eigene, s.paket.module);
+    expect(f['lage.ags'].sicherheit).toBe('hinweis');
+    expect(f['schutz.lsg'].bestaetigt).toBeUndefined();
+    expect(f['schutz.lsg'].grund).toMatch(/Adresse wurde geändert/);
+    // ganz ohne Koordinaten ebenso
+    const ohne = { ...s.project!, meta: { ...s.project!.meta, koordinaten: undefined } };
+    expect(aktuelleLage(ohne).problem).toBe('fehlen');
+    expect(alleFakten(ohne, eigene, s.paket.module)['lage.ags'].sicherheit).toBe('hinweis');
+  });
+
   it('anderer Antrag: eigene Prüfung, Merkmale neu gelesen', () => {
     useBaurecht.getState().faktSetzen('gebaeude.beheizt', true, 'TP');
     useBaurecht.getState().antragWaehlen('BAUA 2');

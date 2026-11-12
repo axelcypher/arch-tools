@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { isTauri } from '@core/platform/files';
 import type { Pruefstand } from '../pruefung';
+import { aktuelleLage } from '../pruefung';
 import { heute, useBaurecht } from '../store';
 
 const EBENE_TEXT = { land: 'Land', kreis: 'Kreis', gemeinde: 'Gemeinde' } as const;
@@ -18,18 +19,23 @@ const datumZeit = (iso: string) => {
 function Menue({ titel, label, offen, setOffen, children }: { titel: string; label: string; offen: boolean; setOffen: (o: boolean) => void; children: (zu: () => void) => React.ReactNode }) {
   const rahmen = useRef<HTMLSpanElement>(null);
   const knopf = useRef<HTMLButtonElement>(null);
+  // wer das Menü geöffnet hat (Knopf „Mehr“ oder die Sammelmarke) – dorthin geht der Fokus zurück
+  const oeffner = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!offen) return;
+    oeffner.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     rahmen.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not([disabled])')?.focus();
     const weg = (e: MouseEvent) => {
-      if (!rahmen.current?.contains(e.target as Node)) setOffen(false);
+      const ziel = e.target as Element | null;
+      // Klicks auf einen Öffner schalten selbst um (sonst schlösse mousedown und der Klick öffnete wieder)
+      if (!rahmen.current?.contains(ziel) && !ziel?.closest?.('[data-menue-oeffner]')) setOffen(false);
     };
     document.addEventListener('mousedown', weg);
     return () => document.removeEventListener('mousedown', weg);
   }, [offen, setOffen]);
   const zu = () => {
     setOffen(false);
-    knopf.current?.focus();
+    (oeffner.current?.isConnected ? oeffner.current : knopf.current)?.focus();
   };
   const taste = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -53,7 +59,7 @@ function Menue({ titel, label, offen, setOffen, children }: { titel: string; lab
         if (offen && !rahmen.current?.contains(e.relatedTarget as Node | null)) setOffen(false);
       }}
     >
-      <button type="button" ref={knopf} aria-haspopup="menu" aria-expanded={offen} onClick={() => setOffen(!offen)} title={label}>
+      <button type="button" ref={knopf} data-menue-oeffner="" aria-haspopup="menu" aria-expanded={offen} onClick={() => setOffen(!offen)} title={label}>
         {titel} <span aria-hidden="true">▾</span>
       </button>
       {offen && (
@@ -95,6 +101,13 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
   const warnungen = !laedt.length && desktop ? [nie && !ungeprueft ? `${nie} nie geprüft` : '', fehler ? `${fehler} nicht abrufbar` : '', geaendert ? `${geaendert} geändert` : '', kuenftig ? `${kuenftig} neue Fassung` : ''].filter(Boolean) : [];
   const warnText = [ungeprueft ? 'Rechtsstand noch nicht geprüft' : '', ...warnungen].filter(Boolean);
   const zurAgs = () => useBaurecht.getState().fokusSetzen('lage.ags');
+  const project = useBaurecht((s) => s.project);
+  const lageProblem = aktuelleLage(project).problem;
+  const lageText = lageProblem === 'fehlen' ? 'Keine Koordinaten' : lageProblem === 'veraltet' ? 'Koordinaten veraltet' : '';
+  const lageTitel =
+    lageProblem === 'veraltet'
+      ? 'Die Adresse wurde geändert, die Koordinaten passen nicht mehr dazu. Ergebnisse der Geodienste und Bestätigungen zur Lage gelten bis zur Aktualisierung nur als Hinweis.'
+      : 'Keine Koordinaten zum Vorhaben (Adresse in den Stammdaten eintragen). Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur als Hinweis.';
   const rechtsstandTitel = `${paket.herkunft === 'nachgeladen' ? 'Regelpaket nachgeladen' : 'Regelpaket des Builds'} ${paket.version}${paketMeldung ? ` – ${paketMeldung}` : ''}${zeiten.length ? ` · Normen zuletzt an der Quelle bestätigt zwischen ${datumZeit(zeiten[0])} und ${datumZeit(zeiten[zeiten.length - 1])}` : ''}`;
   return (
     <div className="toolbar br-kopf" role="group" aria-label="Prüfung">
@@ -125,6 +138,16 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
             Gemeinde unbestätigt
           </button>
         )}
+        {lageText &&
+          (desktop ? (
+            <button type="button" className="br-modul-chip br-modul-fehlt" onClick={onLage} title={`${lageTitel} Klick: Lage abfragen.`}>
+              {lageText}
+            </button>
+          ) : (
+            <span className="br-modul-chip br-modul-fehlt" title={lageTitel} tabIndex={0}>
+              {lageText}
+            </span>
+          ))}
         {stand.fehlend.map((e) => (
           <span key={e} className="br-modul-chip br-modul-fehlt" title={stand.ags ? `Für diesen Gemeindeschlüssel gibt es kein ${MODUL_TEXT[e]} – die Vorschriften dieser Ebene von Hand prüfen.` : `Gemeindeschlüssel fehlt – ${desktop ? '„Lage abfragen“ oder ' : ''}in den Angaben eintragen.`}>
             {stand.ags ? `kein ${MODUL_TEXT[e]}` : `${EBENE_TEXT[e]}: Gemeindeschlüssel fehlt`}
@@ -153,7 +176,7 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
           </span>
           <span className="br-kopf-marken br-nur-schmal">
             {/* Sammelmarke als Knopf: öffnet „Mehr“ mit den Warnungen im Einzelnen und „Rechtsstand prüfen“ */}
-            <button type="button" className="br-marke br-marke-warn br-marke-knopf" title={warnText.join(' · ')} aria-haspopup="menu" aria-expanded={mehrOffen} onClick={() => setMehrOffen(!mehrOffen)}>
+            <button type="button" className="br-marke br-marke-warn br-marke-knopf" data-menue-oeffner="" title={warnText.join(' · ')} aria-haspopup="menu" aria-expanded={mehrOffen} onClick={() => setMehrOffen(!mehrOffen)}>
               {warnText.length === 1 ? warnText[0] : `Rechtsstand: ${warnText.length} Warnungen`}
             </button>
           </span>
@@ -177,6 +200,7 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
                 <button
                   type="button"
                   role="menuitem"
+                  tabIndex={-1}
                   disabled={lageLaeuft}
                   onClick={() => {
                     zu();
@@ -188,6 +212,7 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
                 <button
                   type="button"
                   role="menuitem"
+                  tabIndex={-1}
                   disabled={laedt.length > 0}
                   onClick={() => {
                     zu();

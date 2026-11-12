@@ -37,7 +37,8 @@ describe('Regel als Baum', () => {
     expect(b.kinder?.[0].text).toBe('Angabe A: ja');
     expect(b.kinder?.[1]).toMatchObject({ text: 'mindestens eines davon:', kinder: [{ text: 'Angabe B: ja' }, { text: 'Angabe C: ja' }] });
     expect(kurzBaum({ und: [{ f: 'a', ist: false }] }, t)).toEqual({ text: 'Angabe A: nein' });
-    expect(kurzBaum({ nicht: { f: 'a', ist: true } }, t)).toEqual({ text: 'nicht: Angabe A: ja' });
+    // positiv formuliert: „nicht (A: ja)“ → „A: nein“
+    expect(kurzBaum({ nicht: { f: 'a', ist: true } }, t)).toEqual({ text: 'Angabe A: nein' });
     // verneinte Gruppen: „keines davon“ bzw. „nicht alle davon“
     expect(kurzBaum({ nicht: { $: 'bs' } }, t).text).toBe('keines davon:');
     expect(kurzBaum({ nicht: { und: [{ f: 'a', ist: true }, { f: 'b', ist: true }] } }, t).text).toBe('nicht alle davon:');

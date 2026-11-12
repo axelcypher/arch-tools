@@ -263,11 +263,14 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
             <button
               key={w.id}
               role="menuitemradio"
+              tabIndex={-1}
               aria-checked={wahl === w.id}
               className={wahl === w.id ? 'active' : ''}
               onClick={() => {
                 setWahl(w.id);
                 setOpen(false);
+                // Menü schließt: Fokus zurück auf den Knopf (sonst fiele er auf die Seite)
+                setTimeout(() => knopf.current?.focus(), 0);
               }}
             >
               <span className="tb-icon">

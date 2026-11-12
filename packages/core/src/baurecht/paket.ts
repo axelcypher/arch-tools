@@ -256,6 +256,11 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
   const alleBausteine = new Map<string, Kurz[]>();
   for (const m of p.module) for (const [id, b] of Object.entries(m.bausteine ?? {})) alleBausteine.set(id, [...(alleBausteine.get(id) ?? []), b]);
   fehler.push(...zyklen(alleBausteine));
+  // Bausteine teilen sich einen Namensraum (die Auswertung nimmt den des letzten aktiven Moduls): ein zweiter Baustein
+  // gleichen Namens würde z. B. einen Bundesbaustein für eine Gemeinde still umdefinieren
+  const bausteinVon = new Map<string, string[]>();
+  for (const m of p.module) for (const id of Object.keys(m.bausteine ?? {})) bausteinVon.set(id, [...(bausteinVon.get(id) ?? []), m.id]);
+  for (const [id, mods] of bausteinVon) if (mods.length > 1) fehler.push(`Baustein „${id}“ ist mehrfach definiert (${mods.join(', ')}) – Namen von Bausteinen müssen eindeutig sein`);
   for (const m of p.module) {
     for (const [id, b] of Object.entries(m.bausteine ?? {})) pruefe(`${m.id} Baustein ${id}`, m, b);
     for (const [id, f] of Object.entries(m.fakten ?? {})) pruefe(`${m.id} Fakt ${id}`, m, f.wenn);

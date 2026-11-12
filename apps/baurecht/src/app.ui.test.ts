@@ -257,18 +257,17 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(dialog, 'Abbrechen')!.click());
   });
 
-  it('Vorschau ohne Koordinaten: eine Angabe mit Lagebezug bleibt Hinweis, die Vorschau zeigt keine Wirkung', () => {
+  it('ohne Koordinaten: eine Angabe mit Lagebezug lässt sich nicht bestätigen (bliebe wirkungslos), die Zeile sagt warum', () => {
     act(() => useBaurecht.getState().geoFakten({ 'schutz.lsg': { wert: false, herkunft: 'geodienst', sicherheit: 'hinweis', quelle: 'LINFOS', grund: 'kein Treffer' } }));
     const p = useBaurecht.getState().project!;
     act(() => useBaurecht.setState({ project: { ...p, meta: { ...p.meta, koordinaten: undefined } } }));
     const host = render();
     act(() => knopf(host, 'alle Angaben')?.click());
-    const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Landschaftsschutzgebiet/.test(z.textContent ?? '') && !!knopf(z, 'Bestätigen …'))!;
-    act(() => knopf(zeile, 'Bestätigen …')!.click());
-    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
-    expect(dialog.textContent).toMatch(/Keine Vorschrift ändert dadurch ihre Ampel/);
-    expect(dialog.textContent).toMatch(/Ohne Koordinaten/);
-    act(() => knopf(dialog, 'Abbrechen')!.click());
+    const zeile = host.querySelector<HTMLElement>('[data-fakt="schutz.lsg"]')!;
+    expect(zeile.textContent).toMatch(/ohne gültige Koordinaten nicht bestätigbar/);
+    expect(knopf(zeile, 'Bestätigen …')).toBeUndefined();
+    // der Kopf sagt, dass die Koordinaten fehlen
+    expect(host.querySelector('.br-kopf')!.textContent).toMatch(/Keine Koordinaten/);
   });
 
   it('Pfeiltasten in Auswahlgruppen: →/← wandern (mit Umlauf), Pos1/Ende springen', () => {
@@ -331,7 +330,8 @@ describe('Baurecht – Oberfläche', () => {
     expect(i('Grundlagen')).toBeLessThan(i('Festlegungen von Hand'));
     expect(i('Festlegungen von Hand')).toBeLessThan(i('Gesicherte Angaben'));
     expect(i('Gesicherte Angaben')).toBeLessThan(i('Offene Punkte'));
-    expect(d.querySelector('.br-protokoll-offen thead')?.textContent).toMatch(/Was fehlt.*Anzahl.*Paragrafen/);
+    expect(d.querySelector('.br-protokoll-offen thead')?.textContent).toMatch(/Was fehlt.*Paragrafen.*Paragrafen/);
+    expect(d.textContent).toMatch(/Angaben von Hand ohne Beleg/);
     // Entwurf: Abschließen gesperrt, der Grund steht sichtbar daneben
     expect(knopf(d, 'Prüfung abschließen')!.disabled).toBe(true);
     expect(d.querySelector('.br-sperre')?.textContent).toMatch(/Erst speichern/);
@@ -447,6 +447,42 @@ describe('Baurecht – Oberfläche', () => {
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.querySelector('[role="menuitemradio"]')).toBeNull();
     expect(document.activeElement).toBe(knopfSchema);
+  });
+
+  it('zweite Bestätigung: eine überholte Festlegung wird angesagt und lässt sich so nicht bestätigen', async () => {
+    const host = render();
+    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'gelb');
+    const fl = useBaurecht.getState().pruefung.festlegungen[id];
+    // eine beteiligte Angabe hat sich seit dem Festlegen geändert: die Festlegung ist überholt
+    act(() => useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, festlegungen: { [id]: { ...fl, automatisch: fl.automatisch === 'rot' ? 'gruen' : 'rot' } } } }));
+    let fertig: Promise<boolean> | null = null;
+    await act(async () => {
+      fertig = speichern();
+    });
+    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
+    expect(best.textContent).toMatch(/Überholt:/);
+    expect(best.querySelector<HTMLInputElement>('input[type="checkbox"]')!.disabled).toBe(true);
+    expect(knopf(best, 'Bestätigen und speichern')!.disabled).toBe(true);
+    await act(async () => knopf(best, 'Abbrechen')!.click());
+    expect(await fertig!).toBe(false);
+  });
+
+  it('nach „Bestätigen“ einer Angabe bleibt der Fokus in ihrer Zeile', () => {
+    const host = render();
+    act(() => knopf(host, 'alle Angaben')?.click());
+    const b = [...host.querySelectorAll<HTMLButtonElement>('button')].find((x) => x.textContent?.trim() === 'Bestätigen …' && !x.closest('.br-fakt')?.textContent?.includes('Gemeindeschlüssel'))!;
+    expect(b, 'ein Hinweis zum Bestätigen').toBeTruthy();
+    const id = b.closest<HTMLElement>('[data-fakt]')!.dataset.fakt!;
+    expect(b.getAttribute('aria-label')).toMatch(/ bestätigen …$/);
+    act(() => b.focus());
+    act(() => b.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
+    tippen(dialog.querySelector('textarea')!, 'Modell vollständig geprüft am 12.11.2026');
+    vi.useFakeTimers();
+    act(() => knopf(dialog, 'Bestätigen')!.click());
+    act(() => void vi.runAllTimers());
+    vi.useRealTimers();
+    expect(document.activeElement?.closest('[data-fakt]')?.getAttribute('data-fakt')).toBe(id);
   });
 
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {

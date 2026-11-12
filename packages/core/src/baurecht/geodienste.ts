@@ -268,18 +268,22 @@ export function geoZusammenfuehren(alt: Record<string, FaktWert>, neu: Record<st
  * Angaben aus Geodiensten und ihre Bestätigungen gelten nur für die Lage, an der sie ermittelt wurden. Haben sich die
  * Koordinaten des Vorhabens geändert, werden sie wieder zum Hinweis (die Bestätigung verfällt).
  */
-export function faktenZurLage(fakten: Record<string, FaktWert>, lage: string | null): Record<string, FaktWert> {
-  if (!lage) return fakten;
+export function faktenZurLage(fakten: Record<string, FaktWert>, lage: string | null, ohneLage = OHNE_LAGE): Record<string, FaktWert> {
   const out: Record<string, FaktWert> = {};
   for (const [id, f] of Object.entries(fakten)) {
-    const verschoben = (f.lage && f.lage !== lage) || (f.bestaetigt?.lage && f.bestaetigt.lage !== lage);
+    // ohne (gültige) Koordinaten gehört kein lagegebundenes Ergebnis mehr sicher zum Vorhaben – auch nicht der
+    // Gemeindeschlüssel aus ALKIS oder ein bestätigtes „kein Schutzgebiet“
+    const gebunden = !!f.lage || !!f.bestaetigt?.lage;
+    const verschoben = lage ? (f.lage && f.lage !== lage) || (f.bestaetigt?.lage && f.bestaetigt.lage !== lage) : gebunden;
     // Angaben von Hand ohne Lagebezug bleiben; mit Beleg für eine Lage (Schutzgebiete) verfallen sie wie Geodaten
     if (!verschoben || (f.herkunft === 'manuell' && !f.bestaetigt?.lage)) {
       out[id] = f;
       continue;
     }
     const { bestaetigt: _b, ...ohne } = f;
-    out[id] = { ...ohne, sicherheit: 'hinweis', grund: 'Die Koordinaten des Vorhabens haben sich seit der Abfrage geändert – bitte „Lage abfragen“ wiederholen' };
+    out[id] = { ...ohne, sicherheit: 'hinweis', grund: lage ? 'Die Koordinaten des Vorhabens haben sich seit der Abfrage geändert – bitte „Lage abfragen“ wiederholen' : ohneLage };
   }
   return out;
 }
+
+const OHNE_LAGE = 'Keine gültigen Koordinaten zum Vorhaben – das Ergebnis gehört zu einer früheren Lage und gilt nur als Hinweis';

@@ -154,6 +154,8 @@ export interface GeodienstDef {
 
 export interface FaktDef {
   titel: string;
+  /** kurzer Name (höchstens 40 Zeichen), überall statt des Titels; der Titel steht dann als Erläuterung darunter */
+  kurz?: string;
   gruppe: FaktGruppe;
   typ: FaktTyp;
   werte?: string[];
@@ -200,6 +202,11 @@ export interface Modul {
   listen?: string[];
   sperrliste?: string[];
   hinweise?: Hinweis[];
+}
+
+/** Name einer Angabe für die Anzeige: der kurze Name, sonst der Titel */
+export function faktName(def: Pick<FaktDef, 'titel' | 'kurz'> | undefined, id = ''): string {
+  return def?.kurz ?? def?.titel ?? id;
 }
 
 /** wie gesichert ein Fakt ist: sicher (auch bestätigt), nur Hinweis, widersprüchlich */
@@ -333,7 +340,9 @@ export function wertAnzeige(w: FaktWert['wert'] | undefined, def?: Pick<FaktDef,
   if (w === false) return 'nein';
   if (typeof w === 'number') {
     const anzahl = def?.typ === 'zahl' && !def.einheit && Number.isInteger(w);
-    return `${w.toLocaleString('de-DE', { maximumFractionDigits: anzahl ? 0 : 2 })}${def?.einheit ? ` ${def.einheit}` : ''}`;
+    // wie in den Eingabefeldern: mit Einheit zwei Nachkommastellen, wenn es welche gibt („2,90 m“, „40 m²“)
+    const stellen = anzahl || Number.isInteger(w) ? { maximumFractionDigits: 0 } : def?.einheit ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 2 };
+    return `${w.toLocaleString('de-DE', stellen)}${def?.einheit ? ` ${def.einheit}` : ''}`;
   }
   return w;
 }

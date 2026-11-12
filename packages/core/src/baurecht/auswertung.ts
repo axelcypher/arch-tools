@@ -13,7 +13,7 @@
 import type { Fassung } from '../recht/typen';
 import { FAKTEN } from './fakten';
 import type { Bewertung, KurzKontext, TextKontext } from './kurz';
-import { kurzText, offenFrage, offenText, warumText, werten } from './kurz';
+import { kurzText, offenText, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { plusMonate } from '../recht/quellen';
@@ -144,6 +144,8 @@ function nachWiderspruch(nach: NonNullable<FaktDef['nach']>, basis: FaktWert | u
 }
 
 const zaehlerLeer = (): Record<Ampel, number> => ({ rot: 0, gelb: 0, gruen: 0 });
+/** Strenge einer Ampel: gilt > prüfen > entfällt */
+const RANG: Record<Ampel, number> = { gruen: 0, gelb: 1, rot: 2 };
 const datumText = (iso: string) => iso.slice(0, 10).split('-').reverse().join('.');
 /** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */
 const tageSeit = (iso: string, heute: string) => Math.floor((Date.parse(`${heute}T12:00:00`) - Date.parse(iso)) / 86400000);
@@ -277,7 +279,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ampel = 'rot';
       gruende.push(r.grund);
       tragend = [g, gilt];
-      if (entf?.w === 'offen') hinweise.push(`Ausnahme möglich – es fehlt: ${entf.offen.map((o) => offenFrage(o, text)).join(' · ')}`);
+      if (entf?.w === 'offen') hinweise.push(`Ausnahme möglich – es fehlt: ${entf.offen.map((o) => offenText(o, text)).join(' · ')}`);
     } else if (tatbestand === 'nein') {
       ampel = 'gruen';
       gruende.push(r.gilt ? `Gilt nicht – ${warum(r.gilt, 'nein') || 'Voraussetzung nicht erfüllt'}.` : 'Gilt nicht.');
@@ -288,7 +290,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // fehlende Angaben als Fragen; offene Paragrafen, an denen die Regel hängt, als „hängt an“ (nicht „es fehlt“)
       const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
       const haengt = fehlt.filter((o) => o.startsWith('paragraf:'));
-      const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenFrage(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} (dort offen)` : ''].filter(Boolean);
+      // überall derselbe kurze Name der Angabe (nicht die Frage)
+      const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} (dort offen)` : ''].filter(Boolean);
       const satz = teile.join('; ') || 'es fehlt: Angaben';
       // kein Punkt nach einer Frage („… (LINFOS-Kennung)?“)
       gruende.push(`Offen – ${satz}${/[?.!)]$/.test(satz) && !satz.endsWith('(dort offen)') ? '' : '.'}`);
@@ -373,15 +376,24 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
         else if (Object.keys(r.stand).some((k) => !fl.stand?.[k])) gruende2.push('Festlegung ohne geprüften Text getroffen – an der geltenden Fassung erneut festlegen');
         else if (!n.stand?.geprueft || tageSeit(n.stand.geprueft, e.heute) > tageAlt) system.push('Rechtsstand nicht aktuell an der Quelle bestätigt');
         else if (n.stand?.ueberholtAb) system.push(`zum Stichtag gilt schon die Fassung ab ${datumText(n.stand.ueberholtAb)}`);
+        else if (n.stand?.stichtag && n.stand.stichtag !== e.einreichung) system.push('Text für einen anderen Stichtag geholt – wird aktualisiert');
+        // wie beim automatischen „entfällt“: eine angekündigte Fassung vor der Entscheidung ist erst noch zu prüfen
+        const angekuendigt = (n.stand?.kuenftige ?? []).filter((k) => k.gueltigAb > e.einreichung && k.gueltigAb <= entscheidungBis);
+        if (angekuendigt.length) system.push(`neue Fassung ab ${angekuendigt.map((k) => datumText(k.gueltigAb)).join(', ')} angekündigt – an der künftigen Fassung prüfen`);
       }
       if (gruende2.length) ueberholt = gruende2.join('; ');
       if (system.length) unwirksam = system.join('; ');
-      // ein überholtes bzw. nicht wirksames „entfällt“ trägt nicht (zur sicheren Seite); strengere Festlegungen bleiben
+      // eine überholte bzw. nicht wirksame Festlegung schwächt nie ab (zur sicheren Seite): ein „entfällt“ wird
+      // mindestens „prüfen“, ein überholtes „prüfen“ hält ein automatisches „gilt“ nicht auf; strengere Festlegungen bleiben
+      const staerker = (a: Ampel, b: Ampel): Ampel => (RANG[a] >= RANG[b] ? a : b);
       if (ueberholt && fl.ampel === 'gruen') {
-        ampel = 'gelb';
+        ampel = staerker(automatisch, 'gelb');
         gruende.unshift(`Festlegung „entfällt“ überholt (${ueberholt}) – erneut festlegen oder aufheben.`);
+      } else if (ueberholt && RANG[fl.ampel] < RANG[automatisch]) {
+        ampel = automatisch;
+        gruende.unshift(`Festlegung „${fl.ampel === 'gelb' ? 'prüfen' : 'entfällt'}“ überholt (${ueberholt}) – es gilt die automatische Ampel; erneut festlegen oder aufheben.`);
       } else if (unwirksam && fl.ampel === 'gruen') {
-        ampel = 'gelb';
+        ampel = staerker(automatisch, 'gelb');
         gruende.unshift(`Festlegung „entfällt“ noch nicht wirksam (${unwirksam}) – sie zählt, sobald der Text geprüft vorliegt.`);
       }
     }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { offenText } from '@core/baurecht/kurz';
 import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
-import { EBENEN, einheitName, normVoll, wertAnzeige } from '@core/baurecht/typen';
+import { EBENEN, einheitName, faktName, normVoll, wertAnzeige } from '@core/baurecht/typen';
 import { druckenAls } from '@core/platform/projektDatei';
 import { DruckKopf } from '@core/ui/DruckKopf';
 import { useEscSchliessen } from '@core/ui/Dialog';
@@ -119,24 +119,34 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   if (!project) return null;
   const a = pruefstand.auswertung;
   const ungespeichert = new Set(offeneB ? offeneB.split('|') : []);
-  const entwuerfe = (offeneF ? offeneF.split('|').length : 0) + ungespeichert.size;
+  const nF = offeneF ? offeneF.split('|').length : 0;
+  const entwuerfe = nF + ungespeichert.size;
+  // getrennt benannt: Festlegungen von Hand und gesicherte Angaben
+  const entwurfText = [nF ? (nF === 1 ? 'eine Festlegung von Hand' : `${nF} Festlegungen von Hand`) : '', ungespeichert.size ? (ungespeichert.size === 1 ? 'eine gesicherte Angabe' : `${ungespeichert.size} gesicherte Angaben`) : ''].filter(Boolean).join(' und ');
   const offen = a.paragrafen.filter((p) => p.ampel === 'gelb');
   const vonHand = a.paragrafen.filter((p) => p.festlegung);
   const ausEntwurf = vonHand.filter((p) => !p.festlegung!.bestaetigt);
   const ueberholt = a.paragrafen.filter((p) => p.ueberholt && p.ampel !== 'gelb');
   const gesichert = Object.entries(a.fakten).filter(([, f]) => f.bestaetigt);
+  // Angaben von Hand ohne Beleg: auch sie tragen Ampeln (z. B. „Kampfmittelverdacht: nein“) – mit wer und wann
+  const vonHandOhneBeleg = Object.entries(a.fakten).filter(([, f]) => f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null);
   // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
-  const sperre = entwuerfe ? `Erst speichern: ${entwuerfe === 1 ? 'eine Angabe von Hand ist' : `${entwuerfe} Angaben von Hand sind`} noch Entwurf (zweite Bestätigung fehlt)` : ungespeichertGesamt ? 'Erst speichern: Es gibt ungespeicherte Änderungen' : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
+  const sperre = entwuerfe ? `Erst speichern: ${entwurfText} ${entwuerfe === 1 ? 'ist' : 'sind'} noch Entwurf (zweite Bestätigung fehlt)` : ungespeichertGesamt ? 'Erst speichern: Es gibt ungespeicherte Änderungen' : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
+  // fehlende Angaben genau wie „Klärt am meisten“ gezählt (ein Paragraf kann unter mehreren Angaben stehen)
   const gruppen = new Map<string, ParagrafErgebnis[]>();
+  for (const k of a.klaerung) gruppen.set(`Es fehlt: ${k.titel}`, a.paragrafen.filter((p) => (p.automatisch === 'gelb' || (p.automatisch === 'rot' && p.offen.length > 0)) && p.offen.includes(k.id)));
   for (const p of [...offen, ...ueberholt]) {
+    const sonder = gruppeVon(p);
+    if (!sonder && p.offen.some((o) => !o.startsWith('paragraf:'))) continue; // steht schon unter seinen fehlenden Angaben
     const o = p.offen[0];
-    const k =
-      gruppeVon(p) ||
-      (o && !o.startsWith('paragraf:') ? `Es fehlt: ${offenText(o, a.text)}` : o ? `Hängt an ${offenText(o, a.text)} (dort offen)` : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
+    const k = sonder || (o ? `Hängt an ${offenText(o, a.text)} (dort offen)` : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
     gruppen.set(k, [...(gruppen.get(k) ?? []), p]);
   }
+  // Gruppen mit nur einem Paragrafen kommen zusammen in eine Zeile „Weitere“
+  const einzeln = [...gruppen.entries()].filter(([, ps]) => ps.length === 1);
+  const mehrere = [...gruppen.entries()].filter(([, ps]) => ps.length > 1).sort((x, y) => y[1].length - x[1].length);
   const titel = `Baurechtliche Prüfung vor dem Einreichen – ${antrag}`;
   // Stand einer Festlegung von Hand: bestätigt/Entwurf und wirksam/überholt/nicht wirksam – getrennt von der Begründung
   const festlegungStand = (q: ParagrafErgebnis) =>
@@ -181,7 +191,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
         </div>
         {entwuerfe > 0 && (
           <p className="br-meldung br-meldung-warn br-entwurf-hinweis no-print" role="status">
-            Entwurf: {entwuerfe === 1 ? 'Eine Angabe von Hand ist noch nicht gespeichert und bestätigt. Sie ist' : `${entwuerfe} Angaben von Hand sind noch nicht gespeichert und bestätigt. Sie sind`} unten als „Entwurf“ bzw. „noch nicht gespeichert“ gekennzeichnet; abschließen lässt sich die Prüfung erst nach dem Speichern.
+            Entwurf: {entwurfText.charAt(0).toUpperCase() + entwurfText.slice(1)} {entwuerfe === 1 ? 'ist' : 'sind'} noch nicht gespeichert und bestätigt – unten als „Entwurf“ bzw. „noch nicht gespeichert“ gekennzeichnet. Abschließen lässt sich die Prüfung erst nach dem Speichern.
           </p>
         )}
         <DruckKopf titel={titel} project={project} stand={new Date()} />
@@ -265,7 +275,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             <tbody>
               {gesichert.map(([id, f]) => (
                 <tr key={id}>
-                  <td className="strong">{a.faktDefs[id]?.titel ?? id}</td>
+                  <td className="strong">{faktName(a.faktDefs[id], id)}</td>
                   <td>{wertAnzeige(f.wert, a.faktDefs[id])}</td>
                   <td>{f.herkunft === 'manuell' ? 'von Hand angegeben' : herkunftText(f)}</td>
                   <td>{f.bestaetigt!.grund || '–'}</td>
@@ -281,13 +291,41 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
           <p>Keine.</p>
         )}
 
+        <h2>Angaben von Hand ohne Beleg ({vonHandOhneBeleg.length})</h2>
+        {vonHandOhneBeleg.length ? (
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th style={{ width: '34%' }}>Angabe</th>
+                <th style={{ width: '16%' }}>Wert</th>
+                <th>eingetragen von, am</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vonHandOhneBeleg.map(([id, f]) => (
+                <tr key={id}>
+                  <td className="strong">{faktName(a.faktDefs[id], id)}</td>
+                  <td>{wertAnzeige(f.wert, a.faktDefs[id])}</td>
+                  <td>
+                    {/^von Hand \((.+)\)$/.exec(f.quelle ?? '')?.[1] ?? '–'}
+                    {f.stand ? `, ${datum(f.stand)}` : ''}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>Keine.</p>
+        )}
+
         <h2>Offene Punkte ({offen.length + ueberholt.length + ohneRegel.length})</h2>
         {offen.length + ueberholt.length + ohneRegel.length ? (
+          <>
           <table className="report-table br-protokoll-offen">
             <thead>
               <tr>
                 <th style={{ width: '32%' }}>Was fehlt bzw. zu klären ist</th>
-                <th style={{ width: '8%' }}>Anzahl</th>
+                <th style={{ width: '9%' }}>Paragrafen</th>
                 <th>Paragrafen</th>
               </tr>
             </thead>
@@ -299,17 +337,24 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
                   <td>{ohneRegel.map((n) => normVoll(n.def)).join(' · ')}</td>
                 </tr>
               )}
-              {[...gruppen.entries()]
-                .sort((x, y) => y[1].length - x[1].length)
-                .map(([k, ps]) => (
-                  <tr key={k}>
-                    <td className="strong">{k}</td>
-                    <td>{ps.length}</td>
-                    <td>{nachNorm(ps, a.normen)}</td>
-                  </tr>
-                ))}
+              {mehrere.map(([k, ps]) => (
+                <tr key={k}>
+                  <td className="strong">{k}</td>
+                  <td>{ps.length}</td>
+                  <td>{nachNorm(ps, a.normen)}</td>
+                </tr>
+              ))}
+              {einzeln.length > 0 && (
+                <tr>
+                  <td className="strong">Weitere (je ein Paragraf)</td>
+                  <td>{einzeln.length}</td>
+                  <td>{einzeln.map(([k, ps]) => `${nachNorm(ps, a.normen)}: ${k.replace(/^Es fehlt: /, '')}`).join(' · ')}</td>
+                </tr>
+              )}
             </tbody>
           </table>
+          <p className="report-note">Ein Paragraf kann unter mehreren fehlenden Angaben stehen – gezählt wie unter „Klärt am meisten“.</p>
+          </>
         ) : (
           <p>Keine – alle Vorschriften sind eingeordnet.</p>
         )}
