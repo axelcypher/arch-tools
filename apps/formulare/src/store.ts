@@ -1540,6 +1540,9 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           return;
         }
         set({ oap: { root, pfad: g.pfad, stand: g.stand, projekt: g.projekt, inhalt: { name: g.projekt.name, meta: g.projekt.meta }, kandidaten: g.kandidaten } });
+        // wieder lesbar: die eigene Fehlermeldung von vorhin gilt nicht mehr
+        const m = get().meldung;
+        if (m?.art === 'fehler' && m.text.startsWith(`Projektdatei von ${projekt.ordner} nicht lesbar`)) set({ meldung: null });
         // Ergänzungen der Projektkarte, die noch leer sind (z. B. PLZ des Grundstücks), aus der Projektdatei
         const k = get().karte;
         if (k && k.projekt === projekt) {

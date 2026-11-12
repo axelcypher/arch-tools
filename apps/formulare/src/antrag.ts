@@ -906,7 +906,6 @@ export function antraegeVon(pd: ProjektDatei): Record<string, AntragDaten> {
   return antraege;
 }
 
-/** Zu speichernder Abschnitt „formulare“ */
 /** Darstellung zum Vergleichen: Schlüssel sortiert, fehlend und undefined gleich */
 export function stabil(x: unknown): string {
   return (
@@ -928,6 +927,24 @@ export function stabil(x: unknown): string {
  * inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein gleichzeitiges Laden), bleibt. Einen Antrag, den es im
  * frischen Abschnitt nicht gibt, übernimmt die Änderung ganz.
  */
+const istMap = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+/** eine Zuordnung je Schlüssel ändern: nur was sich zwischen `alt` und `neu` unterscheidet, auf `frisch` */
+function mapAnwenden(frisch: Record<string, unknown>, alt: Record<string, unknown>, neu: Record<string, unknown>): Record<string, unknown> {
+  const z = { ...frisch };
+  for (const k of new Set([...Object.keys(alt), ...Object.keys(neu)])) {
+    if (stabil(alt[k]) === stabil(neu[k])) continue;
+    if (neu[k] === undefined) delete z[k];
+    else z[k] = neu[k];
+  }
+  return z;
+}
+
+/** Abschnitt als Angaben ohne Ansicht – „bereit“ wie beim Schreiben als Feld der Ansicht (antraegeVon holt es von dort) */
+export function alsAngaben(a: Abschnitt): ProjektDatei {
+  const bereit = Object.fromEntries(Object.entries(a.antraege).flatMap(([n, x]) => (x.bereit?.length ? [[n, x.bereit]] : [])));
+  return { ...(a.aktiveFassung ? { aktiveFassung: a.aktiveFassung } : {}), antraege: a.antraege, ...(Object.keys(bereit).length ? { bereit } : {}) };
+}
+
 export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null, nachher: ProjektDatei): Abschnitt {
   const alt = vorher ? antraegeVon(vorher) : {};
   const neu = antraegeVon(nachher);
@@ -945,10 +962,15 @@ export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null
       antraege[name] = n as AntragDaten;
       continue;
     }
+    // den Antrag kannte der Aufrufer nicht, inzwischen gibt es ihn (z. B. von einem anderen Arbeitsplatz angelegt):
+    // er bleibt, wie er ist – der Aufrufer hätte nur Vorgaben eingetragen
+    if (!a) continue;
     const z: Record<string, unknown> = { ...f };
-    for (const k of new Set([...Object.keys(a ?? {}), ...Object.keys(n)])) {
-      if (stabil(a?.[k]) === stabil(n[k])) continue;
+    for (const k of new Set([...Object.keys(a), ...Object.keys(n)])) {
+      if (stabil(a[k]) === stabil(n[k])) continue;
       if (n[k] === undefined) delete z[k];
+      // Zuordnungen (Antragsmerkmale, Autofill je Formular) je Schlüssel – gleichzeitige Einträge anderer bleiben
+      else if (istMap(a[k]) && istMap(n[k]) && istMap(f[k])) z[k] = mapAnwenden(f[k], a[k], n[k]);
       else z[k] = n[k];
     }
     antraege[name] = z as AntragDaten;
@@ -961,6 +983,7 @@ export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null
   return out;
 }
 
+/** Zu speichernder Abschnitt „formulare“ */
 export function abschnittVon(pd: ProjektDatei): Record<string, unknown> {
   const antraege = antraegeVon(pd);
   return { ...(pd.aktiveFassung ? { aktiveFassung: pd.aktiveFassung } : {}), ...(Object.keys(antraege).length ? { antraege } : {}) };

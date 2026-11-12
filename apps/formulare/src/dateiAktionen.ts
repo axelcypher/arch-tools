@@ -197,7 +197,8 @@ export async function verknuepfen(basis: string, pfad: string, umfangId: string)
   const ziel = antragsOrdner(st, projekt);
   try {
     let name = nameVon(pfad);
-    if (ordnerVon(pfad).toLowerCase() !== ziel.toLowerCase()) {
+    const kopiert = ordnerVon(pfad).toLowerCase() !== ziel.toLowerCase();
+    if (kopiert) {
       name = freierName(await namenIn(basis, ziel), name);
       await ds.kopieren(basis, pfad, zusammen(ziel, name));
       // inzwischen ein anderes Projekt: kopiert ist im bisherigen, verknüpft wird nicht (sonst im falschen Projekt)
@@ -207,10 +208,16 @@ export async function verknuepfen(basis: string, pfad: string, umfangId: string)
           .setMeldung({ art: 'info', text: `„${name}“ in ${aktiveFassung(st, projekt)} von ${projekt.ordner} kopiert, aber nicht verknüpft – inzwischen ist ein anderes Projekt offen.` });
         return;
       }
-      useFormulare.getState().setMeldung({ art: 'info', text: `In ${aktiveFassung(st, projekt)} kopiert und verknüpft: ${name}` });
     }
-    await useAntrag.getState().verknuepfen(umfangId, name);
+    const info = await useAntrag.getState().verknuepfen(umfangId, name);
     useDateiAktionen.getState().neu();
+    // die Kopie ist angelegt – gemeldet wird nach dem Speichern, was daraus wurde (nicht noch einmal ziehen)
+    if (kopiert && info.geschrieben) useFormulare.getState().setMeldung({ art: 'info', text: `„${name}“ in ${aktiveFassung(st, projekt)} kopiert und verknüpft.` });
+    else if (kopiert && !info.dialog)
+      useFormulare.getState().setMeldung({
+        art: 'fehler',
+        text: `„${name}“ in ${aktiveFassung(st, projekt)} kopiert, aber nicht verknüpft – ${(info.grund ?? 'nicht gespeichert').replace(/^./, (c) => c.toLowerCase())}. Bitte die Kopie im Antragsumfang verknüpfen (nicht noch einmal ziehen).`,
+      });
   } catch (e) {
     fehler('Verknüpfen', e);
   }

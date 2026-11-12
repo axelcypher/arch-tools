@@ -1982,7 +1982,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
     expect((antragIn('BAUA 2')?.stand as { dateien: unknown[] }).dateien).toHaveLength(1);
-    expect(useFormulare.getState().meldung?.text).toContain('gibt es schon Angaben zum Antrag – sie sind jetzt geladen, die Änderung ist nicht übernommen');
+    expect(useFormulare.getState().meldung?.text).toBe('Im Projektordner gibt es schon Angaben zum Antrag – sie sind jetzt geladen. Die Änderung ist nicht übernommen; bitte prüfen und bei Bedarf noch einmal vornehmen.');
   });
 
   it('Formular anlegen: wird während der Suche nach der Vorlage ein anderes Projekt geöffnet, wird abgebrochen', async () => {
@@ -2081,8 +2081,8 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     const roh = readProjectFile(gut) as unknown as { formulare: { antraege: Record<string, Record<string, unknown>> } };
     roh.formulare.antraege['BAUA 2'] = { ...roh.formulare.antraege['BAUA 2'], status: { eingereicht: false, datum: '2026-11-10' } };
     ds.dateien.set(OAP, writeArchive(roh as unknown as Parameters<typeof writeArchive>[0]));
-    // wieder lesbar: neu gelesen und gespeichert – nur die eigene Änderung, die fremde bleibt
-    useFormulare.setState({ meldung: null });
+    expect(useFormulare.getState().meldung?.art).toBe('fehler');
+    // wieder lesbar: neu gelesen und gespeichert – nur die eigene Änderung, die fremde bleibt; die Lesefehler-Meldung geht
     await act(() => useAntrag.getState().umfangSetzen(null));
     await warte();
     expect(antragIn()?.umfang).toBeUndefined();
@@ -2444,7 +2444,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(await act(() => useAntrag.getState().formularAnlegen('bauantrag'))).toMatch(/Bauantrag/);
     await warte();
     expect(useFormulare.getState().meldung?.art).toBe('fehler');
-    expect(useFormulare.getState().meldung?.text).toMatch(/angelegt.*, aber nicht zugeordnet \(Die Projektdatei ist gerade nicht lesbar\) – bitte über „Zuordnen“ nachholen\.$/);
+    expect(useFormulare.getState().meldung?.text).toMatch(/angelegt \(leer\), aber nicht zugeordnet – die Projektdatei ist gerade nicht lesbar\. Bitte später über „Zuordnen“ nachholen\.$/);
     ds.dateien.set(OAP, gut);
     expect(zugeordnet()).toBeUndefined();
     for (const k of bs9Formulare()) ds.dateien.delete(k);
@@ -2518,6 +2518,251 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     expect(antragIn('BAUA 3')).toBeTruthy();
     expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: false, datum: '2026-10-01' });
+  });
+
+  /** Projektdatei mit eigenem Abschnitt „formulare“ (wie von einem anderen Arbeitsplatz geschrieben) */
+  const oapMit = (bytes: Uint8Array, formulare: (f: Record<string, unknown>) => void) => {
+    const p = readProjectFile(bytes) as unknown as { formulare?: Record<string, unknown> };
+    p.formulare = structuredClone(p.formulare ?? {});
+    formulare(p.formulare);
+    return writeArchive(p as unknown as Parameters<typeof writeArchive>[0]);
+  };
+
+  it('Laden ergänzt nur: „bereit“ und aktive Fassung, die ein anderer Arbeitsplatz inzwischen geändert hat, bleiben', async () => {
+    // vorher: BAUA 2 aktiv, A.pdf bereit
+    ds.dateien.set(OAP, oapMit(neueOap(), (f) => Object.assign(f, { aktiveFassung: 'BAUA 2', antraege: { BAUA: { angelegt: '2026-11-01' }, 'BAUA 2': { angelegt: '2026-11-01', bereit: [{ datei: 'A.pdf' }] } } })));
+    await projektBS9();
+    ds.ordner.add(`${PROJEKT}/TÖB/BAUA 3`);
+    const liste = ds.liste.bind(ds);
+    let los!: () => void;
+    let halten = true;
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (halten && pfad.endsWith('/TÖB') && tiefe === 1) {
+        halten = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return liste(pfad, tiefe);
+    };
+    let laedt!: Promise<void>;
+    act(() => {
+      laedt = useAntrag.getState().laden();
+    });
+    await warte();
+    expect(los).toBeTruthy();
+    // anderswo: A aufgehoben, B bereit, BAUA aktiv
+    ds.dateien.set(
+      OAP,
+      oapMit(ds.dateien.get(OAP)!, (f) => {
+        f.aktiveFassung = 'BAUA';
+        (f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].bereit = [{ datei: 'B.pdf' }];
+      }),
+    );
+    los();
+    await act(() => laedt);
+    await warte();
+    const f = abschnitt() as { aktiveFassung?: string; antraege: Record<string, { bereit?: { datei: string }[] }> };
+    expect(f.antraege['BAUA 3']).toBeTruthy();
+    expect(f.antraege['BAUA 2'].bereit).toEqual([{ datei: 'B.pdf' }]);
+    expect(f.aktiveFassung).toBe('BAUA');
+  });
+
+  it('Formular hinzufügen: der Antragsumfang wird erst beim Schreiben gelesen – Einträge von inzwischen bleiben, eine andere Fassung bekommt nichts', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    const ids = (name: string) => ((antragIn(name)?.umfang as { id: string; formularDatei?: string }[] | undefined) ?? []).map((u) => u.formularDatei ?? u.id);
+    // 1. während die Datei angelegt wird, kommt ein Eintrag „extra“ dazu
+    let halt = einmalAnhalten('formularAnlegen');
+    let laeuft!: Promise<string | null>;
+    act(() => {
+      laeuft = useAntrag.getState().formularHinzufuegen(H24_VORLAGE, true);
+    });
+    await warte();
+    expect(halt.los).toBeTruthy();
+    await act(async () => void (await useAntrag.getState().umfangSetzen([...(useAntrag.getState().projektdatei!.umfang ?? []), { id: 'extra', titel: 'Extra', art: 'extern', quelle: 'Planung', muster: '*Extra*' }])));
+    await warte();
+    halt.los!();
+    const pfad = await act(() => laeuft);
+    await warte();
+    expect(pfad).toMatch(/Bauantrag/);
+    expect(ids('BAUA 2')).toContain('extra');
+    expect(ids('BAUA 2').some((x) => /Bauantrag/.test(x))).toBe(true);
+    // 2. während die Datei angelegt wird, zeigt das Projekt eine andere Fassung: dort wird nichts aufgenommen
+    halt = einmalAnhalten('formularAnlegen');
+    act(() => {
+      laeuft = useAntrag.getState().formularHinzufuegen(H24_VORLAGE, true);
+    });
+    await warte();
+    expect(halt.los).toBeTruthy();
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+    await warte();
+    await act(async () => void (await useAntrag.getState().umfangSetzen([{ id: 'eigen', titel: 'Eigen', art: 'extern', quelle: 'Planung', muster: '*Eigen*' }])));
+    await warte();
+    halt.los!();
+    await act(() => laeuft);
+    await warte();
+    expect(ids('BAUA')).toEqual(['eigen']);
+    expect(useFormulare.getState().meldung?.text).toMatch(/, aber nicht in den Antragsumfang aufgenommen – inzwischen ist eine andere Antragsfassung angezeigt\. Bitte später über „Dokument hinzufügen“ nachholen\.$/);
+  });
+
+  it('Formular hinzufügen bei nicht lesbarer .oap bzw. Projektwechsel beim erneuten Lesen: „nicht aufgenommen“ – nichts Falsches gemeldet', async () => {
+    h24Vorbereiten();
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    const anzahl = () => (antragIn('BAUA 2')?.umfang as unknown[]).length;
+    const vorher = anzahl();
+    const gut = ds.dateien.get(OAP)!;
+    // 1. bleibt unlesbar: angelegt, aber nicht aufgenommen – mit Grund und Weg
+    ds.dateien.set(OAP, new Uint8Array([1, 2, 3]));
+    await act(() => useFormulare.getState().oapLaden());
+    await warte();
+    await act(() => useAntrag.getState().formularHinzufuegen(H24_VORLAGE, true));
+    await warte();
+    expect(useFormulare.getState().meldung?.art).toBe('fehler');
+    expect(useFormulare.getState().meldung?.text).toMatch(/angelegt \(leer\), aber nicht in den Antragsumfang aufgenommen – die Projektdatei ist gerade nicht lesbar\. Bitte später über „Dokument hinzufügen“ nachholen\.$/);
+    ds.dateien.set(OAP, gut);
+    for (const k of bs9Formulare()) ds.dateien.delete(k);
+    // 2. Projektwechsel, während die wieder lesbare .oap neu gelesen wird
+    ds.dateien.set(OAP, new Uint8Array([1, 2, 3]));
+    await act(() => useFormulare.getState().oapLaden());
+    await warte();
+    ds.dateien.set(OAP, gut);
+    const anlegen = ds.formularAnlegen.bind(ds);
+    let scharf = false;
+    ds.formularAnlegen = async (...a: Parameters<typeof anlegen>) => {
+      await anlegen(...a);
+      scharf = true;
+    };
+    const halt = einmalAnhalten('lies', (root, pfad) => scharf && `${root}/${pfad}` === OAP);
+    let laeuft!: Promise<string | null>;
+    act(() => {
+      laeuft = useAntrag.getState().formularHinzufuegen(H24_VORLAGE, true);
+    });
+    for (let i = 0; i < 20 && !halt.los; i++) await warte();
+    expect(halt.los).toBeTruthy();
+    await act(() => useFormulare.getState().projektWaehlen(h24Projekt()));
+    await warte();
+    halt.los!();
+    expect(await act(() => laeuft)).toBeNull();
+    expect(useFormulare.getState().meldung?.text).toMatch(/ in BS9 angelegt, aber nicht in den Antragsumfang aufgenommen und nicht geöffnet – inzwischen ist ein anderes Projekt offen\.$/);
+    expect(anzahl()).toBe(vorher);
+  });
+
+  it('Projektdatei angelegt über den Stammdaten-Dialog: Änderung und gewählte Fassung kommen hinein – keine Meldung „Projektordner zugeordnet“', async () => {
+    // Projektordner mit Antragsordnern (BAUA, BAUA 2), aber ohne .oap
+    ds.dateien.delete(OAP);
+    const host = await projektBS9();
+    expect(useFormulare.getState().oap).toBe('fehlt');
+    // jeder Schreibvorgang: welche Anträge stehen danach in der Datei (keiner darf zwischendurch verschwinden)
+    const ersetzen = ds.projektordner.projektdateiErsetzen.bind(ds.projektordner);
+    const staende: string[][] = [];
+    ds.projektordner.projektdateiErsetzen = async (...a: Parameters<typeof ersetzen>) => {
+      staende.push(Object.keys(((readProjectFile(a[2]).formulare as { antraege?: Record<string, unknown> } | undefined)?.antraege) ?? {}).sort());
+      return ersetzen(...a);
+    };
+    // neue Fassung anlegen: der Dialog fragt die Stammdaten ab – vorher nichts melden
+    useFormulare.setState({ meldung: null });
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA 3', true));
+    await warte();
+    const dialog = useFormulare.getState().stammdatenDialog;
+    expect(dialog).toBeTruthy();
+    expect(useFormulare.getState().meldung?.text ?? '').not.toContain('Neue Antragsfassung');
+    await act(() => useFormulare.getState().projektdateiAnlegen(dialog!.meta));
+    await warte();
+    await warte();
+    const f = abschnitt() as { aktiveFassung?: string; antraege: Record<string, unknown> };
+    expect(f.aktiveFassung).toBe('BAUA 3');
+    expect(Object.keys(f.antraege).sort()).toEqual(['BAUA', 'BAUA 2', 'BAUA 3']);
+    const ab = staende.findIndex((k) => k.includes('BAUA 3'));
+    expect(ab).toBeGreaterThanOrEqual(0);
+    expect(staende.slice(ab).every((k) => k.includes('BAUA 3'))).toBe(true);
+    expect(useFormulare.getState().meldung?.text ?? '').not.toContain('Projektordner zugeordnet');
+    // Antragsumfang festlegen bei gelöschter .oap mit nicht neuester aktiver Fassung: bleibt in dieser Fassung
+    await klick(antragsdaten(host));
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+    await warte();
+    ds.dateien.delete(OAP);
+    await act(() => useFormulare.getState().oapAuffrischen());
+    await warte();
+    await act(async () => void (await useAntrag.getState().umfangSetzen([{ id: 'muster', titel: 'Musterformular', art: 'intern', formular: 'Muster' }])));
+    await warte();
+    const d2 = useFormulare.getState().stammdatenDialog;
+    expect(d2?.grund).toContain('die bisherige nicht mehr (gelöscht oder verschoben)');
+    await act(() => useFormulare.getState().projektdateiAnlegen(d2!.meta));
+    await warte();
+    await warte();
+    const g = abschnitt() as { aktiveFassung?: string };
+    expect(g.aktiveFassung).toBe('BAUA');
+    expect(((antragIn('BAUA')?.umfang as { id: string }[] | undefined) ?? []).map((u) => u.id)).toEqual(['muster']);
+    expect(useFormulare.getState().meldung?.text ?? '').not.toContain('Projektordner zugeordnet');
+  });
+
+  it('Formular anlegen: zeigt das Projekt währenddessen eine andere Fassung, wird dort nicht zugeordnet – auch nicht bei gleichem Eintrag', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    // beide Fassungen mit demselben Antragsumfang (Eintrag „bauantrag“)
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+    await warte();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA 2'));
+    await warte();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    const zugeordnet = (name: string) => ((antragIn(name)?.umfang as { id: string; formularDatei?: string }[]).find((u) => u.id === 'bauantrag') ?? {}).formularDatei;
+    const halt = einmalAnhalten('formularAnlegen');
+    let laeuft!: Promise<string | null>;
+    act(() => {
+      laeuft = useAntrag.getState().formularAnlegen('bauantrag');
+    });
+    for (let i = 0; i < 20 && !halt.los; i++) await warte();
+    expect(halt.los).toBeTruthy();
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+    await warte();
+    halt.los!();
+    await act(() => laeuft);
+    await warte();
+    expect(zugeordnet('BAUA')).toBeUndefined();
+    expect(zugeordnet('BAUA 2')).toBeUndefined();
+    expect(useFormulare.getState().meldung?.text).toMatch(/, aber nicht zugeordnet – inzwischen ist eine andere Antragsfassung angezeigt\. Bitte später über „Zuordnen“ nachholen\.$/);
+  });
+
+  it('Projektdatei samt Ordner verschoben (Ordner fehlt, Projektordner lesbar): die Bindung wird gelöst – der Dialog bietet das Anlegen an', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    const lies = ds.lies.bind(ds);
+    const liste = ds.liste.bind(ds);
+    ds.lies = async (root: string, pfad: string) => (`${root}/${pfad}` === OAP ? null : lies(root, pfad));
+    ds.liste = async (root: string, tiefe: number) => {
+      if (root === `${PROJEKT}/Planung/Berechnungen`) throw new Error('Das System kann den angegebenen Pfad nicht finden');
+      return liste(root, tiefe);
+    };
+    ds.dateien.delete(OAP);
+    await act(() => useFormulare.getState().oapAuffrischen());
+    await warte();
+    await act(async () => void (await useAntrag.getState().umfangSetzen([{ id: 'muster', titel: 'Musterformular', art: 'intern', formular: 'Muster' }])));
+    await warte();
+    expect(useFormulare.getState().stammdatenDialog?.grund).toContain('die bisherige nicht mehr (gelöscht oder verschoben)');
+  });
+
+  it('Verknüpfen mit Kopie bei nicht lesbarer .oap: die Kopie wird gemeldet, kein Erfolg vor dem Speichern', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    ds.dateien.set(OAP, new Uint8Array([1, 2, 3]));
+    await act(() => useFormulare.getState().oapLaden());
+    await warte();
+    await act(() => dateiVerknuepfen(PROJEKT, 'Planung/BS9 Lageplan.pdf', 'lageplan'));
+    await warte();
+    expect(ds.dateien.has(`${PROJEKT}/TÖB/BAUA 2/BS9 Lageplan.pdf`)).toBe(true);
+    expect(useFormulare.getState().meldung?.art).toBe('fehler');
+    expect(useFormulare.getState().meldung?.text).toBe('„BS9 Lageplan.pdf“ in BAUA 2 kopiert, aber nicht verknüpft – die Projektdatei ist gerade nicht lesbar. Bitte die Kopie im Antragsumfang verknüpfen (nicht noch einmal ziehen).');
   });
 
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {

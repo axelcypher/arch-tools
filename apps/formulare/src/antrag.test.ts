@@ -3,7 +3,7 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { aenderungAnwenden, stabil, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { aenderungAnwenden, alsAngaben, stabil, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -878,13 +878,27 @@ describe('Änderung auf den frisch gelesenen Abschnitt anwenden', () => {
     expect(a.aktiveFassung).toBe('BAUVA');
     expect(aenderungAnwenden(frisch, vorher, { ...nachher, aktiveFassung: 'BAUA 2' }).aktiveFassung).toBe('BAUA 2');
   });
-  it('fehlende Anträge ergänzen (Laden): vorhandene bleiben unberührt, auch mit Antragsumfang', () => {
+  it('fehlende Anträge ergänzen (Laden): ein Antrag, den der Aufrufer nicht kannte, bleibt ganz, wie er ist', () => {
     const vorher = { antraege: {} };
-    const nachher = { ansicht: 'BAUA', antraege: { BAUA: { angelegt: '2026-11-12' }, 'BAUA 2': { angelegt: '2026-11-12' } } };
-    const frisch = { antraege: { BAUA: { angelegt: '2026-11-01', umfang } } };
+    const nachher = { ansicht: 'BAUA', antraege: { BAUA: { angelegt: '2026-11-12', merkmale: { gk: '1' } }, 'BAUA 2': { angelegt: '2026-11-12' } } };
+    const frisch = { antraege: { BAUA: { angelegt: '2026-10-01', umfang, merkmale: { gk: '3' } } } };
     const a = aenderungAnwenden(frisch, vorher, nachher);
-    expect(a.antraege.BAUA.umfang).toEqual(umfang);
+    expect(a.antraege.BAUA).toEqual({ angelegt: '2026-10-01', umfang, merkmale: { gk: '3' } });
     expect(a.antraege['BAUA 2']).toEqual({ angelegt: '2026-11-12' });
+  });
+  it('„bereit“: aus dem gelesenen Stand (alsAngaben) und seiner Ansicht ist nichts geändert – Markierungen anderer bleiben', () => {
+    const gelesenAbschnitt = { antraege: { 'BAUA 2': { angelegt: '2026-11-01', bereit: [{ datei: 'A.pdf' }] } } };
+    const gelesen = alsAngaben(structuredClone(gelesenAbschnitt));
+    const ansicht = { ansicht: 'BAUA 2', bereit: { 'BAUA 2': [{ datei: 'A.pdf' }] }, antraege: structuredClone(gelesenAbschnitt.antraege) };
+    // inzwischen: A aufgehoben, B markiert (anderer Arbeitsplatz)
+    const frisch = { antraege: { 'BAUA 2': { angelegt: '2026-11-01', bereit: [{ datei: 'B.pdf' }] } } };
+    expect(aenderungAnwenden(frisch, gelesen, ansicht)).toEqual(frisch);
+  });
+  it('Zuordnungen (Antragsmerkmale) je Schlüssel: gleichzeitige Einträge anderer bleiben', () => {
+    const vorher = { ansicht: 'BAUA', merkmale: { gk: '3' }, antraege: { BAUA: { angelegt: '2026-11-01' } } };
+    const nachher = { ...vorher, merkmale: { gk: '4' } };
+    const frisch = { antraege: { BAUA: { angelegt: '2026-11-01', merkmale: { gk: '3', sonderbau: 'nein' } } } };
+    expect(aenderungAnwenden(frisch, vorher, nachher).antraege.BAUA.merkmale).toEqual({ gk: '4', sonderbau: 'nein' });
   });
   it('stabil: Reihenfolge der Schlüssel egal, undefined wie fehlend', () => {
     expect(stabil({ a: 1, b: { c: 2, d: 3 } })).toBe(stabil({ b: { d: 3, c: 2 }, a: 1 }));

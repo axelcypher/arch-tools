@@ -709,19 +709,23 @@ beschrieben.
   projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im FORMA-Projekt wird noch gelesen und einmalig in die
   Projektdatei übernommen – sie selbst bleibt liegen und wird nicht mehr geschrieben.
   **Schreiben als Änderung:** Jeder Schreibvorgang liest die Projektdatei frisch und trägt nur ein, was er selbst
-  geändert hat – je Antrag und Feld (`aenderungAnwenden`); was inzwischen anderswo gespeichert wurde (ein anderer
-  Arbeitsplatz, ein gleichzeitiges Laden), bleibt. Das Laden ergänzt so nur fehlende Anträge, nie ersetzt es
-  Vorhandenes. Geschrieben wird nur in die Projektdatei, aus der die Angaben stammen, und nur für das Projekt, in dem
+  geändert hat – je Antrag und Feld, Antragsmerkmale und Autofill je Eintrag (`aenderungAnwenden`); was inzwischen
+  anderswo gespeichert wurde (ein anderer Arbeitsplatz, ein gleichzeitiges Laden), bleibt, ebenso ein Antrag, den der
+  Schreibende nicht kannte. Das Laden ergänzt so nur fehlende Anträge, nie ersetzt es Vorhandenes. Geschrieben wird nur in die Projektdatei, aus der die Angaben stammen, und nur für das Projekt, in dem
   die Änderung begonnen hat: Wird währenddessen ein anderes Projekt geöffnet, bricht die Änderung mit Meldung ab
   (Formular anlegen bzw. hinzufügen sagen, was schon geschehen ist: „angelegt, aber nicht zugeordnet …“); wird eine
   andere `.oap` gewählt (auch umbenannt oder neu angelegt nach „nicht lesbar“), lädt die App neu und bindet sich an
   sie. Ist die Datei gerade nicht lesbar (Netz nach dem Aufwachen), liest die App sie beim Speichern erneut und meldet
-  sonst „… nicht gespeichert: Die Projektdatei ist gerade nicht lesbar“. Fehlt sie, obwohl ihr Ordner lesbar ist
+  sonst „… nicht gespeichert: Die Projektdatei ist gerade nicht lesbar“; ist sie wieder lesbar, verschwindet die
+  Fehlermeldung. Fehlt sie, obwohl ihr Ordner lesbar ist
   (gelöscht, verschoben), löst die App die Bindung – dann gilt eine andere `.oap` bzw. der Stammdaten-Dialog bietet das
   Anlegen an; ein nicht erreichbares Netzlaufwerk zählt nicht als gelöscht. Nach dem Zuordnen eines Projektordners
   werden vorhandene Angaben zum Antrag geladen statt überschrieben; zeigt das Projekt danach eine andere Antragsfassung
   (aus dem Projektordner) als die, für die die Änderung gedacht war, wird sie nicht dorthin geschrieben, sondern
-  gemeldet.
+  gemeldet. Nach dem Anlegen einer Projektdatei über den Stammdaten-Dialog kommt die Änderung samt der Fassung, für die
+  sie gedacht war (als aktive), in die neue Datei. Formular hinzufügen bzw. anlegen nehmen in den Antragsumfang nur
+  auf bzw. ordnen nur zu, wenn noch dieselbe Fassung angezeigt wird; Verknüpfen mit Kopie meldet erst nach dem
+  Speichern, ob verknüpft wurde (sonst: „kopiert, aber nicht verknüpft … – nicht noch einmal ziehen“).
 - **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
   Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann
   in der Projektdatei.
