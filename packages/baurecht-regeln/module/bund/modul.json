@@ -110,9 +110,16 @@
       ]
     },
     "aenderung": {
-      "m": "Vorhaben",
-      "in": [
-        "Änderung"
+      "oder": [
+        {
+          "m": "Vorhaben",
+          "in": [
+            "Änderung"
+          ]
+        },
+        {
+          "$": "teilbeseitigung"
+        }
       ]
     },
     "nutzungsaenderung": {
@@ -122,24 +129,45 @@
       ]
     },
     "beseitigung": {
-      "m": "Vorhaben",
-      "in": [
-        "Beseitigung"
+      "und": [
+        {
+          "$": "beseitigung_art"
+        },
+        {
+          "nicht": {
+            "f": "vorhaben.beseitigung_vollstaendig",
+            "ist": false
+          }
+        }
       ]
     },
     "vorhaben_29": {
-      "m": "Vorhaben",
-      "in": [
-        "Errichtung",
-        "Änderung",
-        "Nutzungsänderung"
+      "oder": [
+        {
+          "m": "Vorhaben",
+          "in": [
+            "Errichtung",
+            "Änderung",
+            "Nutzungsänderung"
+          ]
+        },
+        {
+          "$": "teilbeseitigung"
+        }
       ]
     },
     "bauen": {
-      "m": "Vorhaben",
-      "in": [
-        "Errichtung",
-        "Änderung"
+      "oder": [
+        {
+          "m": "Vorhaben",
+          "in": [
+            "Errichtung",
+            "Änderung"
+          ]
+        },
+        {
+          "$": "teilbeseitigung"
+        }
       ]
     },
     "gebaeude": {
@@ -425,6 +453,23 @@
               "ist": true
             }
           ]
+        }
+      ]
+    },
+    "beseitigung_art": {
+      "m": "Vorhaben",
+      "in": [
+        "Beseitigung"
+      ]
+    },
+    "teilbeseitigung": {
+      "und": [
+        {
+          "$": "beseitigung_art"
+        },
+        {
+          "f": "vorhaben.beseitigung_vollstaendig",
+          "ist": false
         }
       ]
     }
@@ -730,6 +775,71 @@
       "wenn": {
         "$": "vorhaben_29"
       }
+    },
+    "vorhaben.beseitigung_vollstaendig": {
+      "titel": "Die Anlage wird vollständig beseitigt – kein Teilabbruch und kein Ersatzbau in diesem Antrag",
+      "kurz": "Vollständiger Abbruch ohne Ersatzbau",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Wird die Anlage vollständig beseitigt, ohne dass in diesem Antrag an ihrer Stelle gebaut wird?",
+      "hilfe": "Ein Teilabbruch (z. B. Anbau, Geschoss, Dach) ist eine Änderung der verbleibenden Anlage (§ 60 Abs. 1 BauO NRW); bei Abbruch mit Ersatzbau den Neubau als Errichtung erfassen. Bei „nein“ prüft die App wie bei einer Änderung.",
+      "wenn": {
+        "m": "Vorhaben",
+        "in": [
+          "Beseitigung"
+        ]
+      }
+    },
+    "planung.sanierung_144_ausgeschlossen": {
+      "titel": "Genehmigungspflicht nach § 144 BauGB in der Sanierungssatzung ausgeschlossen (vereinfachtes Verfahren, § 142 Abs. 4)",
+      "kurz": "Genehmigungspflicht § 144 ausgeschlossen",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "Steht in der Sanierungssatzung (meist § 2 oder § 3): „Die Vorschriften des § 144 BauGB finden keine Anwendung“ bzw. vereinfachtes Verfahren unter Ausschluss von § 144.",
+      "wenn": {
+        "f": "planung.sanierungsgebiet",
+        "ist": true
+      }
     }
-  }
+  },
+  "hinweise": [
+    {
+      "titel": "Teilabbruch oder Ersatzbau",
+      "text": "Die Angabe „vollständiger Abbruch ohne Ersatzbau“ ist verneint: Die App prüft wie bei einer Änderung. Einen Teilabbruch als Änderung der verbleibenden Anlage erfassen (§ 60 Abs. 1 BauO NRW); bei Abbruch mit Ersatzbau den Neubau als eigenen Antrag mit „Errichtung“ anlegen und den Abbruch gesondert prüfen.",
+      "wenn": {
+        "$": "teilbeseitigung"
+      }
+    },
+    {
+      "titel": "Beseitigung mit Angaben zu Bauarbeiten",
+      "text": "Für einen vollständigen Abbruch sind Angaben zu Bauarbeiten gemacht (Dach/Fassade, Außenbauteile, beheizte Erweiterung, Heizung). Gehört dazu ein Teilabbruch oder Ersatzbau, die Art des Vorhabens bzw. die Angabe „vollständiger Abbruch ohne Ersatzbau“ korrigieren.",
+      "wenn": {
+        "und": [
+          {
+            "$": "beseitigung"
+          },
+          {
+            "oder": [
+              {
+                "f": "vorhaben.dach_fassade",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.aussenbauteile",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.erweiterung_beheizt",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

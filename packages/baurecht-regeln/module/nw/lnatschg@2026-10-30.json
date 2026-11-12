@@ -267,19 +267,28 @@
     },
     "39": {
       "gilt": {
-        "f": "vorhaben.baeume_faellen",
-        "ist": true
+        "und": [
+          {
+            "f": "vorhaben.baeume_faellen",
+            "ist": true
+          },
+          {
+            "f": "schutz.hecke_ausgleich",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
-        "f": "vorhaben.baeume_faellen",
-        "ist": false
-      },
-      "pruefen": {
-        "grund": "Geschützt sind Hecken ab 100 m Länge im Außenbereich, Wallhecken und als Ausgleich festgesetzte Anpflanzungen – prüfen, ob solche betroffen sind.",
-        "wenn": {
-          "f": "vorhaben.baeume_faellen",
-          "ist": true
-        }
+        "oder": [
+          {
+            "f": "vorhaben.baeume_faellen",
+            "ist": false
+          },
+          {
+            "f": "schutz.hecke_ausgleich",
+            "ist": false
+          }
+        ]
       },
       "grund": "Gesetzlich geschützte Landschaftsbestandteile (Hecken ab 100 m im Außenbereich, Wallhecken, Kompensationspflanzungen): Beeinträchtigung verboten.",
       "fundstellen": [
@@ -297,12 +306,28 @@
     },
     "41": {
       "gilt": {
-        "f": "schutz.baum",
-        "ist": true
+        "und": [
+          {
+            "f": "schutz.baum",
+            "ist": true
+          },
+          {
+            "f": "schutz.allee",
+            "ist": true
+          }
+        ]
       },
       "entfaellt": {
-        "f": "schutz.baum",
-        "ist": false
+        "oder": [
+          {
+            "f": "schutz.baum",
+            "ist": false
+          },
+          {
+            "f": "schutz.allee",
+            "ist": false
+          }
+        ]
       },
       "grund": "Alleen an öffentlichen oder privaten Verkehrsflächen sind gesetzlich geschützt; Beseitigung und Beschädigung verboten.",
       "fundstellen": [

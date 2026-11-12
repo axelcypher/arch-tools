@@ -28,6 +28,17 @@
                 "ist": true
               }
             ]
+          },
+          {
+            "und": [
+              {
+                "$": "beseitigung"
+              },
+              {
+                "f": "soest.freitreppe",
+                "ist": true
+              }
+            ]
           }
         ]
       },
@@ -113,7 +124,17 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "vorhaben.dach_fassade",
+                "ist": false
+              }
+            }
+          ]
         }
       },
       "hinweis": "Absätze 1 und 4 gelten nicht für untergeordnete Anbauten und Nebenanlagen im Sinne des § 14 BauNVO (Abs. 5).",
@@ -186,7 +207,17 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "vorhaben.dach_fassade",
+                "ist": false
+              }
+            }
+          ]
         }
       },
       "stand": {
@@ -213,7 +244,17 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "vorhaben.dach_fassade",
+                "ist": false
+              }
+            }
+          ]
         }
       },
       "stand": {
@@ -344,7 +385,17 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "vorhaben.dach_fassade",
+                "ist": false
+              }
+            }
+          ]
         }
       },
       "stand": {
@@ -373,7 +424,17 @@
       "pruefen": {
         "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "f": "vorhaben.dach_fassade",
+                "ist": false
+              }
+            }
+          ]
         }
       },
       "stand": {
@@ -425,26 +486,8 @@
       },
       "titel": "Einfriedigungen",
       "entfaellt": {
-        "oder": [
-          {
-            "f": "soest.einfriedung",
-            "ist": false
-          },
-          {
-            "und": [
-              {
-                "$": "aenderung"
-              },
-              {
-                "$": "gebaeude"
-              },
-              {
-                "f": "vorhaben.dach_fassade",
-                "ist": false
-              }
-            ]
-          }
-        ]
+        "f": "soest.einfriedung",
+        "ist": false
       }
     },
     "13": {
@@ -478,14 +521,33 @@
                 ]
               }
             ]
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "beseitigung"
+                  },
+                  {
+                    "$": "aenderung"
+                  }
+                ]
+              },
+              {
+                "f": "soest.freitreppe",
+                "ist": true
+              }
+            ]
           }
         ]
       },
-      "grund": "Außenanlagen: Vorgärten begrünen; Einstellplätze versickerungsfähig (Naturstein- oder Betonpflaster mit großem Fugenanteil); Abfallbehälter vom öffentlichen Raum nicht sichtbar.",
+      "grund": "Außenanlagen: Vorgärten begrünen; Einstellplätze versickerungsfähig (Naturstein- oder Betonpflaster mit großem Fugenanteil); Abfallbehälter vom öffentlichen Raum nicht sichtbar; an öffentlichen Verkehrsflächen gelegene Freitreppen dürfen nicht beseitigt werden, Reparaturen und Erneuerungen nur in Sandstein oder sandsteinähnlichem Betonwerkstein (Abs. 4).",
       "fundstellen": [
         "13/1",
         "13/2",
-        "13/3"
+        "13/3",
+        "13/4"
       ],
       "behoerde": {
         "$": "nw_prueft_kern"
@@ -517,40 +579,53 @@
       "stand": {
         "13/1": "12e2826c",
         "13/2": "a19292e7",
-        "13/3": "bbfac939"
+        "13/3": "bbfac939",
+        "13/4": "fc8298cf"
       },
       "titel": "Außenanlagen",
       "entfaellt": {
-        "oder": [
+        "und": [
           {
-            "und": [
-              {
-                "f": "soest.aussenanlagen",
-                "ist": false
-              },
-              {
-                "f": "vorhaben.stellplaetze_grundstueck",
-                "ist": false
-              }
-            ]
+            "f": "soest.aussenanlagen",
+            "ist": false
           },
           {
-            "und": [
-              {
-                "$": "aenderung"
-              },
-              {
-                "$": "gebaeude"
-              },
-              {
-                "f": "vorhaben.dach_fassade",
-                "ist": false
-              },
-              {
-                "f": "vorhaben.stellplaetze_grundstueck",
-                "ist": false
-              }
-            ]
+            "f": "vorhaben.stellplaetze_grundstueck",
+            "ist": false
+          },
+          {
+            "nicht": {
+              "und": [
+                {
+                  "$": "errichtung"
+                },
+                {
+                  "$": "gebaeude"
+                }
+              ]
+            }
+          },
+          {
+            "nicht": {
+              "und": [
+                {
+                  "oder": [
+                    {
+                      "$": "beseitigung"
+                    },
+                    {
+                      "$": "aenderung"
+                    }
+                  ]
+                },
+                {
+                  "nicht": {
+                    "f": "soest.freitreppe",
+                    "ist": false
+                  }
+                }
+              ]
+            }
           }
         ]
       }
@@ -596,7 +671,17 @@
         "wenn": {
           "oder": [
             {
-              "$": "nutzungsaenderung"
+              "und": [
+                {
+                  "$": "nutzungsaenderung"
+                },
+                {
+                  "nicht": {
+                    "f": "vorhaben.dach_fassade",
+                    "ist": false
+                  }
+                }
+              ]
             },
             {
               "und": [
@@ -628,20 +713,28 @@
             "$": "bauen"
           },
           {
-            "$": "nw_garage"
-          },
-          {
             "oder": [
-              {
-                "$": "errichtung"
-              },
-              {
-                "f": "vorhaben.stellplaetze_grundstueck",
-                "ist": true
-              },
               {
                 "f": "soest.garage",
                 "ist": true
+              },
+              {
+                "und": [
+                  {
+                    "$": "nw_garage"
+                  },
+                  {
+                    "oder": [
+                      {
+                        "$": "errichtung"
+                      },
+                      {
+                        "f": "vorhaben.stellplaetze_grundstueck",
+                        "ist": true
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           }
@@ -657,32 +750,30 @@
         "$": "nw_prueft_kern"
       },
       "entfaellt": {
-        "oder": [
+        "und": [
           {
             "f": "soest.garage",
             "ist": false
           },
           {
-            "f": "gebaeude.garage_nutzflaeche",
-            "max": 0
-          },
-          {
-            "und": [
-              {
-                "$": "aenderung"
-              },
-              {
-                "$": "gebaeude"
-              },
-              {
-                "f": "vorhaben.dach_fassade",
-                "ist": false
-              },
-              {
-                "f": "vorhaben.stellplaetze_grundstueck",
-                "ist": false
-              }
-            ]
+            "nicht": {
+              "und": [
+                {
+                  "$": "nw_garage"
+                },
+                {
+                  "oder": [
+                    {
+                      "$": "errichtung"
+                    },
+                    {
+                      "f": "vorhaben.stellplaetze_grundstueck",
+                      "ist": true
+                    }
+                  ]
+                }
+              ]
+            }
           }
         ]
       },

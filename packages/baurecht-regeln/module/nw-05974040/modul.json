@@ -386,34 +386,7 @@
             "ist": true
           },
           {
-            "oder": [
-              {
-                "$": "errichtung"
-              },
-              {
-                "$": "nutzungsaenderung"
-              },
-              {
-                "und": [
-                  {
-                    "$": "aenderung"
-                  },
-                  {
-                    "nicht": {
-                      "und": [
-                        {
-                          "$": "gebaeude"
-                        },
-                        {
-                          "f": "vorhaben.dach_fassade",
-                          "ist": false
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            ]
+            "$": "vorhaben_29"
           }
         ]
       }
@@ -431,34 +404,7 @@
             "ist": true
           },
           {
-            "oder": [
-              {
-                "$": "errichtung"
-              },
-              {
-                "$": "nutzungsaenderung"
-              },
-              {
-                "und": [
-                  {
-                    "$": "aenderung"
-                  },
-                  {
-                    "nicht": {
-                      "und": [
-                        {
-                          "$": "gebaeude"
-                        },
-                        {
-                          "f": "vorhaben.dach_fassade",
-                          "ist": false
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            ]
+            "$": "vorhaben_29"
           }
         ]
       }
@@ -476,37 +422,57 @@
             "ist": true
           },
           {
+            "$": "vorhaben_29"
+          }
+        ]
+      }
+    },
+    "soest.freitreppe": {
+      "titel": "Freitreppe an einer öffentlichen Verkehrsfläche wird beseitigt, repariert oder erneuert",
+      "kurz": "Freitreppe zur Straße betroffen",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 13 Abs. 4 Altstadtsatzung: Freitreppen an öffentlichen Verkehrsflächen dürfen nicht beseitigt werden; Reparaturen und Erneuerungen nur in Sandstein oder Betonwerkstein mit Struktur und Farbe von Natursandstein.",
+      "wenn": {
+        "und": [
+          {
+            "f": "soest.altstadt",
+            "ist": true
+          },
+          {
             "oder": [
               {
-                "$": "errichtung"
+                "$": "beseitigung_art"
               },
               {
-                "$": "nutzungsaenderung"
-              },
-              {
-                "und": [
-                  {
-                    "$": "aenderung"
-                  },
-                  {
-                    "nicht": {
-                      "und": [
-                        {
-                          "$": "gebaeude"
-                        },
-                        {
-                          "f": "vorhaben.dach_fassade",
-                          "ist": false
-                        }
-                      ]
-                    }
-                  }
-                ]
+                "$": "aenderung"
               }
             ]
           }
         ]
       }
+    },
+    "soest.stellplaetze_entfallen": {
+      "titel": "Durch die Beseitigung fallen notwendige Stellplätze, Garagen oder Fahrradabstellplätze weg",
+      "kurz": "Notwendige Stellplätze fallen weg",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 4 Abs. 1 und 3, § 6 Abs. 1 Satz 2 Stellplatzsatzung: notwendige Stellplätze dauerhaft unterhalten; ihre Entfernung ist ordnungswidrig – Ersatz nachweisen oder mit der Stadt klären",
+      "wenn": {
+        "$": "beseitigung_art"
+      }
+    },
+    "planung.sanierung_144_ausgeschlossen": {
+      "titel": "Genehmigungspflicht nach § 144 BauGB in der Sanierungssatzung ausgeschlossen (vereinfachtes Verfahren, § 142 Abs. 4)",
+      "kurz": "Genehmigungspflicht § 144 ausgeschlossen",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "Alle Soester Sanierungssatzungen (Historische Altstadt 2023, Osthofe, Süd-Ost, Gotlandweg, ISEK 2020) sind im vereinfachten Verfahren unter Ausschluss von § 144 BauGB beschlossen.",
+      "wenn": {
+        "f": "planung.sanierungsgebiet",
+        "ist": true
+      },
+      "wert": true
     }
   },
   "bausteine": {

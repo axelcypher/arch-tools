@@ -170,36 +170,52 @@
     },
     "4": {
       "gilt": {
-        "und": [
+        "oder": [
           {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
+            "und": [
               {
-                "$": "gebaeude"
+                "$": "vorhaben_29"
               },
               {
-                "und": [
+                "oder": [
                   {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
+                    "$": "gebaeude"
                   },
                   {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
+                    "und": [
+                      {
+                        "m": "Gebäudeart",
+                        "in": [
+                          "kein Gebäude"
+                        ]
+                      },
+                      {
+                        "f": "vorhaben.zu_abfahrtsverkehr",
+                        "ist": true
+                      }
+                    ]
                   }
                 ]
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "beseitigung"
+              },
+              {
+                "f": "soest.stellplaetze_entfallen",
+                "ist": true
               }
             ]
           }
         ]
       },
-      "grund": "Stellplätze auf dem Grundstück oder im Umkreis von 300 m Fußweg (Fahrrad 50 m) öffentlich-rechtlich gesichert; wasserdurchlässig – die Satzung nennt einen „Abflussbeiwert mind. 0,5“ (gemeint ist vermutlich höchstens 0,5; mit der Stadt klären); Zufahrten bündeln; Fahrradplätze ebenerdig erreichbar, diebstahlsicher, mindestens 1,5 m² je Rad.",
+      "grund": "Stellplätze auf dem Grundstück oder im Umkreis von 300 m Fußweg (Fahrrad 50 m) öffentlich-rechtlich gesichert; wasserdurchlässig – die Satzung nennt einen „Abflussbeiwert mind. 0,5“ (gemeint ist vermutlich höchstens 0,5; mit der Stadt klären); Zufahrten bündeln; Fahrradplätze ebenerdig erreichbar, diebstahlsicher, mindestens 1,5 m² je Rad; notwendige Stellplätze sind dauerhaft zu unterhalten und dürfen nicht zweckentfremdet werden (Abs. 1, 3).",
       "fundstellen": [
         "4/1",
+        "4/3",
         "4/7",
         "4/8",
         "4/9"
@@ -210,6 +226,7 @@
       "hinweis": "Stellplätze außerhalb des Baugrundstücks brauchen eine Baulast. Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
       "stand": {
         "4/1": "e7ae03ff",
+        "4/3": "14e8aac0",
         "4/7": "807197a7",
         "4/8": "94cf7c3e",
         "4/9": "7fd51111"
@@ -255,6 +272,46 @@
         "Antrag auf Ablösung notwendiger Stellplätze (Ablösevertrag mit der Stadt Soest)"
       ],
       "titel": "Ablösung der Stellplätze"
+    },
+    "6": {
+      "titel": "Ordnungswidrigkeiten",
+      "gilt": {
+        "und": [
+          {
+            "$": "beseitigung"
+          },
+          {
+            "f": "soest.stellplaetze_entfallen",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "nicht": {
+              "$": "beseitigung_art"
+            }
+          },
+          {
+            "f": "soest.stellplaetze_entfallen",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Notwendige Stellplätze und Fahrradabstellplätze dürfen nicht entfernt oder zweckentfremdet werden; das ist ordnungswidrig (Abs. 1 Satz 2) – Ersatz nachweisen oder vor der Beseitigung mit der Stadt klären.",
+      "fundstellen": [
+        "6/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "verweise": [
+        "nw-05974040/stellplatzsatzung/4"
+      ],
+      "stand": {
+        "6/1": "b95663ec"
+      }
     }
   }
 }
