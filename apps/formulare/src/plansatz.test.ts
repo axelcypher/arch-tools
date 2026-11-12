@@ -39,6 +39,20 @@ describe('Plansatz', () => {
     expect(r.plaene.map((p) => p.schluessel)).toEqual(['BP-01', 'BP-02', 'GP-03', 'GP-04']);
   });
 
+  it('ein Plan, dessen Nummer nicht an ihrer Stelle steht, fällt nicht still heraus – Hinweis, nicht gezählt', () => {
+    const quelle = [datei('GP-01 Grundriss.pdf'), datei('GP 261111 GP-02 Schnitt.pdf'), datei('HVO BAUA 261111 GP-03 Ansicht.pdf'), datei('HVO BAUA 261111 01 Planliste GP-01 bis GP-03.pdf')];
+    const r = plansatzPruefen([], quelle, S, { codes: ['HVO'] });
+    expect(r.plaene.map((p) => p.schluessel)).toEqual(['GP-03']);
+    expect(r.hinweise).toEqual(
+      expect.arrayContaining([
+        'GP-01 Grundriss.pdf: sieht nach Plan GP-01 aus, der Name folgt aber nicht dem Namensschema – nicht gezählt',
+        'GP 261111 GP-02 Schnitt.pdf: sieht nach Plan GP-02 aus, der Name folgt aber nicht dem Namensschema – nicht gezählt',
+      ]),
+    );
+    // ein Dokument mit Dokumentnummer, das Plannummern nur erwähnt, ist kein falsch benannter Plan
+    expect(r.hinweise.join('\n')).not.toContain('Planliste');
+  });
+
   it('Quelle: noch nicht verschoben, veraltet nach dem Datum im Namen; leere Quelle ist in Ordnung', () => {
     const antrag = [datei('HVO BAUA 261105 GP-01 Grundriss EG.pdf', 50), datei('HVO BAUA 261111 GP-02 Grundriss OG.pdf', 10)];
     const quelle = [datei('HVO GP 261111 GP-01 Grundriss EG.pdf', 5), datei('HVO GP 261111 GP-03 Schnitt.pdf', 5)];

@@ -3,7 +3,7 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { VORGABE_EXPORT, einstellungenAus, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -257,18 +257,45 @@ describe('Antragsstand bei der Einreichung', () => {
     // die Entscheidung bei Vorbescheid, DENK und ABGE ist erwartet, ebenso die Mitteilung der Gemeinde (BAUF)
     for (const n of ['Vorbescheid.pdf', 'Denkmalrechtliche Erlaubnis.pdf', 'Abgeschlossenheitsbescheinigung.pdf', 'Aufteilungsplan gesiegelt.pdf', 'Antragsprotokoll Bauportal.pdf', 'Mitteilung der Gemeinde.pdf', 'Nachforderung Kreis.pdf'])
       expect(nachEinreichungErwartet(n)).toBe(true);
+    // so heißt auch das Schreiben der Behörde; dazu Vollständigkeitsmitteilung (§ 71), genehmigte Bauvorlagen
+    // (Genehmigungsvermerk), ein Bescheid – auch „zum Bauantrag“ – und Mitteilung bzw. Erklärung der Stadt (BAUF)
+    for (const n of [
+      'HVO BAUA 261120 Nachforderung von Unterlagen.pdf',
+      'Vollständigkeitsmitteilung.pdf',
+      'Vollstaendigkeitsbestaetigung Kreis.pdf',
+      'Genehmigte Bauvorlagen.pdf',
+      'GP-01 Grundriss mit Genehmigungsvermerk.pdf',
+      'Bescheid zum Bauantrag.pdf',
+      'Mitteilung der Stadt.pdf',
+      'Erklärung der Gemeinde.pdf',
+    ])
+      expect(nachEinreichungErwartet(n)).toBe(true);
     // eingereichte bzw. nachgereichte Unterlagen des Büros fallen auf: ungesiegelter Aufteilungsplan, Typengenehmigung,
-    // Unterlagen zur Nachforderung
-    for (const n of ['HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', 'Typengenehmigung Garage.pdf', 'Unterlagen zur Nachforderung.pdf', 'Nachreichung auf Nachforderung.pdf'])
+    // Unterlagen zur Nachforderung, eine beigefügte Genehmigung des Bestands, der Antrag auf Vorbescheid
+    for (const n of [
+      'HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf',
+      'Typengenehmigung Garage.pdf',
+      'Unterlagen zur Nachforderung.pdf',
+      'Nachreichung auf Nachforderung.pdf',
+      'Antwort Nachforderung.pdf',
+      'Baugenehmigung Bestand 1972.pdf',
+      'Antrag auf Vorbescheid.pdf',
+    ])
       expect(nachEinreichungErwartet(n)).toBe(false);
     expect(seitEinreichung(d('HVO ABGE 261110 AB-01 Aufteilungsplan EG.pdf', zeit('2026-11-20T10:00')), s)).toBe('neu');
     expect(seitEinreichung(liste[4], undefined)).toBeNull();
+  });
+  it('entfernt seit der Einreichung: eingereichte Dateien auf oberster Ebene, die fehlen – erwartete nicht', () => {
+    const s = { tag, dateien: [{ pfad: 'BS9 BAUA 261101 01 Bauantrag.pdf' }, { pfad: 'Plaene/GP-01.pdf' }, { pfad: 'BS9 BAUA 261102 Antragsprotokoll.pdf' }, { pfad: 'Lageplan.pdf' }] };
+    expect(entferntSeitEinreichung(['lageplan.PDF'], s).map((x) => x.pfad)).toEqual(['BS9 BAUA 261101 01 Bauantrag.pdf']);
+    expect(entferntSeitEinreichung([], undefined)).toEqual([]);
   });
 });
 
 describe('Umbenennen nach Namensformat', () => {
   const datum = new Date(2026, 10, 12);
-  const o = { codes: ['HVO'], art: 'BAUA', datum, kuerzel: ['BP', 'EP', 'GP', 'AP', 'AB', 'BAUA', 'BAUVA', 'BVA'] };
+  // Kürzel und Plannummern nach dem Vorgabe-Namensschema (BP … AB, BAUA, BAUVA/BVA …)
+  const o = { codes: ['HVO'], art: 'BAUA', datum };
   it('verschobener Plan: nur die Phase an der Stelle der Antragsart wird ersetzt – die Plannummer bleibt', () => {
     expect(nameNachFormat('HVO GP 261111 GP-04 Grundriss OG.pdf', o)).toBe('HVO BAUA 261111 GP-04 Grundriss OG.pdf');
     expect(nameNachFormat('hvo bva 261111 01 Bauantrag.pdf', o)).toBe('hvo BAUA 261111 01 Bauantrag.pdf');
@@ -282,6 +309,29 @@ describe('Umbenennen nach Namensformat', () => {
     expect(nameNachFormat('HVO BAUA Bauantrag.pdf', o)).toBe('HVO BAUA 261112 Bauantrag.pdf');
     expect(nameNachFormat('HVO GP Grundriss.pdf', o)).toBe('HVO BAUA 261112 Grundriss.pdf');
     expect(nameNachFormat('Lageplan.pdf', { ...o, reihenfolge: ['datum', 'code', 'art', 'nummer'] })).toBe('261112 HVO BAUA Lageplan.pdf');
+  });
+  it('was am Anfang schon steht (auch verrutscht), wird übernommen statt verdoppelt', () => {
+    expect(nameNachFormat('HVO 261111 Bauantrag.pdf', o)).toBe('HVO BAUA 261111 Bauantrag.pdf');
+    expect(nameNachFormat('BAUA 261111 Bauantrag.pdf', o)).toBe('HVO BAUA 261111 Bauantrag.pdf');
+    expect(nameNachFormat('261111 Bauantrag.pdf', o)).toBe('HVO BAUA 261111 Bauantrag.pdf');
+    expect(nameNachFormat('BAUA HVO 261111 01 Bauantrag.pdf', o)).toBe('HVO BAUA 261111 01 Bauantrag.pdf');
+    expect(nameNachFormat('GP 261111 GP-01 Grundriss.pdf', o)).toBe('HVO BAUA 261111 GP-01 Grundriss.pdf');
+    // ein ungültiges Datum ist Bezeichnung
+    expect(nameNachFormat('261340 Bauantrag.pdf', o)).toBe('HVO BAUA 261112 261340 Bauantrag.pdf');
+  });
+  it('nur eine echte Plannummer kommt von hinten an ihre Stelle – Zahlen in der Bezeichnung bleiben', () => {
+    expect(nameNachFormat('Statik Teil 2.pdf', o)).toBe('HVO BAUA 261112 Statik Teil 2.pdf');
+    expect(nameNachFormat('Anlage 3 Baubeschreibung.pdf', o)).toBe('HVO BAUA 261112 Anlage 3 Baubeschreibung.pdf');
+    expect(nameNachFormat('Lageplan M 1 500.pdf', o)).toBe('HVO BAUA 261112 Lageplan M 1 500.pdf');
+    expect(nameNachFormat('Grundriss OG2 Ansicht.pdf', o)).toBe('HVO BAUA 261112 Grundriss OG2 Ansicht.pdf');
+    expect(nameNachFormat('Grundriss EG GP-02.pdf', o)).toBe('HVO BAUA 261112 GP-02 Grundriss EG.pdf');
+    // eine Dokumentnummer als erstes Wort der Bezeichnung
+    expect(nameNachFormat('01 Bauantrag.pdf', o)).toBe('HVO BAUA 261112 01 Bauantrag.pdf');
+  });
+  it('gleichwertige Schreibweisen der Antragsart gelten (BVA = BAUVA)', () => {
+    expect(antragsNameFehler('HVO BAUVA 261110 Antrag auf Vorbescheid.pdf', { codes: ['HVO'], art: 'BVA' })).toBeNull();
+    expect(antragsNameFehler('HVO BVA 261110 Antrag auf Vorbescheid.pdf', { codes: ['HVO'], art: 'BAUVA' })).toBeNull();
+    expect(antragsNameFehler('HVO BAUA 261110 Bauantrag.pdf', { codes: ['HVO'], art: 'BVA' })).toContain('Antragsart BVA fehlt');
   });
   it('Rundlauf mit ungewöhnlicher Reihenfolge: der Vorschlag besteht die eigene Prüfung; eine Nummer allein ist keine Bezeichnung', () => {
     for (const reihenfolge of [

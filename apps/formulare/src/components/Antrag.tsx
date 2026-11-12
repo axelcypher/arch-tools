@@ -13,7 +13,7 @@ import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName,
 import type { PlansatzErgebnis } from '../plansatz';
 import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz';
 import { oeffnePfad, verbinde } from '../dateisystem';
-import { ablageVon, useFormulare } from '../store';
+import { ablageVon, formularDatei, useFormulare } from '../store';
 import { useExportDialog } from './ExportDialog';
 import type { MenuePunkt } from './Menue';
 import { MenueKnopf, zeigeMenue } from './Menue';
@@ -94,10 +94,9 @@ export function FassungsWahl() {
   );
 }
 
-/** Antragsdaten (mit dem Antragsumfang) zeigen */
 /**
  * Menü „Vorhandenes zuordnen“ für einen Eintrag des Antragsumfangs ohne Formular: die Formulare des Projekts (ein schon
- * anders zugeordnetes mit Hinweis), dazu „Aus dem Antragsumfang entfernen“ – etwa für einen doppelten Eintrag.
+ * anders zugeordnetes mit Hinweis), dazu „Aus dem Antragsumfang nehmen“ – etwa für einen doppelten Eintrag.
  */
 export function zuordnenPunkte(umfangId: string): MenuePunkt[] {
   const titel = useAntrag.getState().projektdatei?.umfang?.find((x) => x.id === umfangId)?.titel;
@@ -114,7 +113,7 @@ export function formularePunkte(umfangId: string): MenuePunkt[] {
     text: f.name,
     symbol: 'formular' as const,
     hinweis: zugeordnet.has(f.pfad) ? `schon „${zugeordnet.get(f.pfad)}“` : undefined,
-    aktion: () => void st.umfangSetzen(umfang.map((x) => (x.id === umfangId ? { ...x, formularDatei: f.pfad.split('/').pop() } : x))),
+    aktion: () => void st.umfangSetzen(umfang.map((x) => (x.id === umfangId ? { ...x, formularDatei: formularDatei(f.pfad) } : x))),
   }));
 }
 
@@ -124,6 +123,7 @@ export function ausUmfangEntfernen(umfangId: string) {
   return st.umfangSetzen((st.projektdatei?.umfang ?? []).filter((x) => x.id !== umfangId));
 }
 
+/** Antragsdaten (mit dem Antragsumfang) zeigen */
 export function umfangZeigen() {
   if (!useFormulare.getState().projekt) return;
   useFormulare.getState().setHaupt('antrag');
@@ -699,6 +699,7 @@ function ExportFuerProjekt() {
   const [offen, setOffen] = useState(!!ueber);
   if (!projekt) return null;
   const setzen = (teil: ExportUeberschreibung) => setUeberschreibung({ ...ueber, ...teil });
+  const artWarnung = ueber?.namensvorlage ? vorlageArtWarnung(ueber.namensvorlage, reihenfolge) : null;
   return (
     <section className="pu-export">
       <button className="pu-export-kopf" aria-expanded={offen} onClick={() => setOffen(!offen)}>
@@ -711,24 +712,6 @@ function ExportFuerProjekt() {
             <span className="field-label">Antragsordner</span>
             <input value={ueber?.antragsordner ?? ''} placeholder={global.antragsordner} onChange={(e) => setzen({ antragsordner: e.target.value })} />
           </label>
-          {/* über die ganze Breite: Feld, darunter Hinweis und ggf. Warnung (wie in den Einstellungen) */}
-          <div className="pu-breit">
-            <label>
-              <span className="field-label">Namensvorlage</span>
-              <input value={ueber?.namensvorlage ?? ''} placeholder={global.namensvorlage} onChange={(e) => setzen({ namensvorlage: e.target.value })} aria-describedby="pu-art-hinweis" spellCheck={false} />
-            </label>
-            <p className="field-hint" id="pu-art-hinweis">
-              {ART_HINWEIS}
-            </p>
-            {ueber?.namensvorlage && vorlageArtWarnung(ueber.namensvorlage, reihenfolge) && (
-              <p className="warning small-text">
-                {vorlageArtWarnung(ueber.namensvorlage, reihenfolge)}{' '}
-                <button className="small" onClick={() => setzen({ namensvorlage: vorlageMitAntragsart(ueber.namensvorlage!, reihenfolge) })}>
-                  Vorlage anpassen
-                </button>
-              </p>
-            )}
-          </div>
           <label>
             <span className="field-label">Phase</span>
             <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} aria-describedby="pu-phase-hinweis" />
@@ -750,6 +733,31 @@ function ExportFuerProjekt() {
               <input value={ueber?.zielpfad ?? ''} placeholder={global.zielpfad} onChange={(e) => setzen({ zielpfad: e.target.value })} />
             </label>
           )}
+          {/* über die ganze Breite, nach den schmalen Feldern (Tab-Reihenfolge = Lesereihenfolge): Feld, darunter Hinweis
+              und ggf. Warnung (wie in den Einstellungen) */}
+          <div className="pu-breit">
+            <label>
+              <span className="field-label">Namensvorlage</span>
+              <input
+                value={ueber?.namensvorlage ?? ''}
+                placeholder={global.namensvorlage}
+                onChange={(e) => setzen({ namensvorlage: e.target.value })}
+                aria-describedby={artWarnung ? 'pu-art-hinweis pu-art-warnung' : 'pu-art-hinweis'}
+                spellCheck={false}
+              />
+            </label>
+            <p className="field-hint" id="pu-art-hinweis">
+              {ART_HINWEIS}
+            </p>
+            {artWarnung && (
+              <p className="warning small-text" id="pu-art-warnung">
+                {artWarnung}{' '}
+                <button className="small" onClick={() => setzen({ namensvorlage: vorlageMitAntragsart(ueber!.namensvorlage!, reihenfolge) })}>
+                  Vorlage anpassen
+                </button>
+              </p>
+            )}
+          </div>
           {ueber && (
             <div className="pu-bearbeiten-knoepfe">
               <button className="small" onClick={() => setUeberschreibung(null)}>

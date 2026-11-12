@@ -1254,13 +1254,25 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(host.querySelector('.fo-stand')!.textContent).toContain('Eingereicht am 03.11.2026 – Stand festgehalten · 1 neu, 1 geändert seit der Einreichung');
     // der Stand bleibt, wie er war – auch nach erneutem Lesen
     expect((antragIn('BAUA 2')?.stand as { dateien: unknown[] }).dateien).toHaveLength(2);
-    // wieder in Arbeit (Bestätigung weg): Stand verworfen, keine Kennzeichen mehr
+    // wieder in Arbeit (Bestätigung verschoben): keine Kennzeichen mehr – der Stand bleibt aber in der Projektdatei
     ds.dateien.delete(`${ordner}/BS9 BAUA 261103 Eingangsbestätigung.pdf`);
     await act(() => useAntrag.getState().aktualisieren());
     await warte();
-    expect(antragIn('BAUA 2')?.stand).toBeUndefined();
+    expect((antragIn('BAUA 2')?.stand as { tag: string; dateien: unknown[] }).dateien).toHaveLength(2);
     expect(host.querySelector('.fo-stand')).toBeNull();
     expect(host.querySelector('.fo-seit')).toBeNull();
+    // wieder eingereicht mit demselben Datum: derselbe Stand gilt – der geänderte Bauantrag bleibt „geändert“
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Eingangsbestätigung.pdf`, new Uint8Array([1]));
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(zeile('Bauantrag').querySelector('.fo-seit')!.textContent).toBe('geändert');
+    // eine eingereichte Datei verschwindet: „entfernt“ in der Summe und darunter mit Namen
+    ds.dateien.delete(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`);
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('1 neu, 1 entfernt seit der Einreichung');
+    expect(host.querySelector('.fo-stand')!.getAttribute('title')).toContain('BS9 BAUA 261101 01 Bauantrag.pdf');
+    expect(host.querySelector('.fo-stand-entfernt')!.textContent).toContain('entfernt BS9 BAUA 261101 01 Bauantrag.pdf');
   });
 
   it('Antragsstand: ein vorübergehender Lesefehler verwirft weder „eingereicht“ noch den festgehaltenen Stand', async () => {

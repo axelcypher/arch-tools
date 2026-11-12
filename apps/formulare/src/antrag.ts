@@ -10,8 +10,8 @@
  */
 
 import type { AntragKurz } from '@core/model';
-import type { Kuerzel, NamensTeil } from '@core/namensschema';
-import { dateinameZerlegenMitStellen, istNummer, kuerzelZu, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import type { Kuerzel, Namensschema, NamensTeil } from '@core/namensschema';
+import { alleKuerzel, dateinameZerlegenMitStellen, kuerzelZu, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { antragKurzAus } from '@core/serialize';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
@@ -431,24 +431,33 @@ export interface AntragStand {
 
 /**
  * Dateien, die nach der Einreichung erwartungsgemäß in den Antragsordner kommen und deshalb nicht als „neu seit der
- * Einreichung“ gelten. Bürovorgabe: die Genehmigung selbst, die Empfangsbestätigung und Nachforderungen (der Behörde);
- * dazu ergänzt Eingangsbestätigung und Antragsprotokoll, die Entscheidung bei den übrigen Antragsarten – Bescheid bzw.
- * Vorbescheid, denkmalrechtliche Erlaubnis (DENK), Abgeschlossenheitsbescheinigung und der von der Behörde gesiegelte
- * Aufteilungsplan (ABGE) – sowie die Mitteilung der Gemeinde zur Genehmigungsfreistellung (§ 63 Abs. 3 Satz 5 BauO NRW).
+ * Einreichung“ gelten. Bürovorgabe: die Genehmigung selbst (auch die genehmigten Bauvorlagen mit Genehmigungsvermerk,
+ * § 74 Abs. 4 BauO NRW 2018), die Empfangsbestätigung und Nachforderungen der Behörde. Ergänzt (über die Bürovorgabe
+ * hinaus): Eingangsbestätigung, Antragsprotokoll und die Mitteilung über die Vollständigkeit (§ 71 Abs. 1 BauO NRW 2018
+ * in der Fassung ab 01.09.2026), die Entscheidung bei den übrigen Antragsarten – Bescheid bzw. Vorbescheid,
+ * denkmalrechtliche Erlaubnis (DENK), Abgeschlossenheitsbescheinigung und der von der Behörde gesiegelte Aufteilungsplan
+ * (ABGE) – sowie Mitteilung oder Erklärung der Gemeinde (Stadt) bei der Genehmigungsfreistellung (§ 63 BauO NRW 2018).
  * Antragsunterlagen gelten nie als erwartet, auch wenn ein solches Wort darin steht: „Antrag auf Vorbescheid“,
- * „Genehmigungsfreistellung“, „Genehmigungsverfahren“, „Genehmigungsplanung“, eine beigefügte Typengenehmigung, der
- * (noch nicht gesiegelte) Aufteilungsplan und die Unterlagen des Büros zu einer Nachforderung.
+ * „Genehmigungsfreistellung“, „Genehmigungsverfahren“, „Genehmigungsplanung“, eine beigefügte Typengenehmigung, eine
+ * beigefügte Genehmigung des Bestands, der (noch nicht gesiegelte) Aufteilungsplan und die Unterlagen des Büros zu
+ * einer Nachforderung.
  */
 export function nachEinreichungErwartet(name: string): boolean {
   const n = name.toLowerCase();
-  if (/antragsprotokoll|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung/.test(n)) return true;
-  // die Nachforderung der Behörde – nicht, was das Büro darauf nachreicht
-  if (/nachforderung/.test(n)) return !/unterlagen|nachreich|antwort|zur nachforderung|auf nachforderung/.test(n);
-  if (/mitteilung/.test(n) && /gemeinde/.test(n)) return true;
+  if (/antragsprotokoll|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung|vollst(ä|ae)ndigkeits(best(ä|ae)tigung|mitteilung)/.test(n)) return true;
+  // die Nachforderung der Behörde („Nachforderung von Unterlagen“) – nicht, was das Büro darauf nachreicht
+  if (/nachforderung/.test(n)) return !/nachreich|antwort|(zur|zum|auf|wegen) nachforderung/.test(n);
+  if (/mitteilung|erkl(ä|ae)rung/.test(n) && /gemeinde|stadt/.test(n)) return true;
   // Aufteilungspläne reicht das Büro ein; erwartet ist erst der von der Behörde gesiegelte
   if (/aufteilungsplan/.test(n)) return /gesiegelt|siegel|beglaubigt|gestempelt/.test(n);
+  // eine Genehmigung des Bestands legt das Büro bei („Baugenehmigung Bestand 1972“)
+  if (/bestand(?!teil)/.test(n)) return false;
+  // genehmigte Bauvorlagen (Genehmigungsvermerk) gehören zur Genehmigung selbst
+  if (/genehmigt|genehmigungsvermerk/.test(n)) return true;
+  // „Bescheid zum Bauantrag“ ist die Entscheidung – „Antrag auf Vorbescheid“ die Antragsunterlage
+  if (/bescheid/.test(n) && !/antrag (auf|zu[mr]?) /.test(n)) return true;
   if (/antrag|genehmigungsfrei|genehmigungsverfahren|genehmigungsplan|typengenehmigung/.test(n)) return false;
-  return /genehmigung|bescheid|erlaubnis|abgeschlossenheitsbescheinigung/.test(n);
+  return /genehmigung|erlaubnis|abgeschlossenheitsbescheinigung/.test(n);
 }
 
 /**
@@ -470,6 +479,16 @@ export function standAus(dateien: Eintrag[], tag: string): AntragStand {
 export type SeitEinreichung = 'neu' | 'geaendert';
 
 export const SEIT_EINREICHUNG_TEXT: Record<SeitEinreichung, string> = { neu: 'neu seit der Einreichung', geaendert: 'geändert seit der Einreichung' };
+
+/**
+ * Dateien des Stands auf oberster Ebene, die es nicht mehr gibt (gelöscht oder verschoben) – erwartete Dateien nicht;
+ * `vorhanden` sind die Pfade der Dateien im Ordner des Antrags.
+ */
+export function entferntSeitEinreichung(vorhanden: string[], stand: AntragStand | undefined): StandDatei[] {
+  if (!stand) return [];
+  const da = new Set(vorhanden.map((p) => p.toLowerCase()));
+  return stand.dateien.filter((s) => !/[\\/]/.test(s.pfad) && !da.has(s.pfad.toLowerCase()) && !nachEinreichungErwartet(s.pfad));
+}
 
 /** Hat sich eine Datei seit der Einreichung geändert bzw. ist sie neu? Erwartete Dateien (Bescheid …) nie. */
 export function seitEinreichung(d: Pick<Eintrag, 'pfad' | 'groesse' | 'geaendert'>, stand: AntragStand | undefined): SeitEinreichung | null {
@@ -718,18 +737,28 @@ const gueltigesDatum = (t: string | undefined) => {
   return !!m && Number(m[2]) >= 1 && Number(m[2]) <= 12 && Number(m[3]) >= 1 && Number(m[3]) <= 31;
 };
 
+/** Erwarteter Kopf eines Dateinamens im Antragsordner nach dem Namensschema, z. B. „HVO BAUA JJMMTT“ */
+export function antragsMuster(codes: string[], art: string, reihenfolge: NamensTeil[] = VORGABE_NAMENSSCHEMA.reihenfolge): string {
+  const code = codes.map((c) => c.trim()).find(Boolean);
+  return reihenfolge
+    .filter((t) => t !== 'nummer')
+    .map((t) => (t === 'code' ? (code ?? 'Projektcode') : t === 'art' ? art.trim() || 'Antragsart' : 'JJMMTT'))
+    .join(' ');
+}
+
 /**
  * Prüft das Namensformat einer Datei im Antragsordner: Projektcode, Antragsart und JJMMTT an ihren Stellen nach dem
  * Namensschema (Vorgabe `<Projektcode> <Antragsart> <JJMMTT> <Rest>`, z. B. „BS9 BAUA 261110 Bauantrag.pdf“), danach
  * mindestens ein Wort. Projektcode ist das Projektkürzel (oder der Projektcode der Projektdatei), die Antragsart die der
- * Fassung (BAUA, BAUVA, DENK …). Liefert null, wenn der Name passt, sonst den Grund.
+ * Fassung (BAUA, BAUVA, DENK …) – gleichwertige Schreibweisen der Antragsarten des Schemas gelten (BVA = BAUVA).
+ * Liefert null, wenn der Name passt, sonst den Grund.
  */
-export function antragsNameFehler(name: string, o: { codes: string[]; art: string; reihenfolge?: NamensTeil[] }): string | null {
+export function antragsNameFehler(name: string, o: { codes: string[]; art: string; reihenfolge?: NamensTeil[]; schema?: Pick<Namensschema, 'antragsarten'> }): string | null {
   const reihenfolge = o.reihenfolge ?? VORGABE_NAMENSSCHEMA.reihenfolge;
+  const arten = (o.schema ?? VORGABE_NAMENSSCHEMA).antragsarten;
   const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
   const art = o.art.trim();
-  const muster = reihenfolge.filter((t) => t !== 'nummer').map((t) => (t === 'code' ? (codes[0] ?? 'Projektcode') : t === 'art' ? art || 'Antragsart' : 'JJMMTT'));
-  const erwartet = `erwartet „${muster.join(' ')} …“`;
+  const erwartet = `erwartet „${antragsMuster(codes, art, reihenfolge)} …“`;
   // „am Anfang“, „nach dem Projektcode“ … (bei der Vorgabe-Reihenfolge wie gewohnt), sonst „an Stelle n“
   const wo = (t: NamensTeil) => {
     const i = reihenfolge.indexOf(t);
@@ -740,7 +769,7 @@ export function antragsNameFehler(name: string, o: { codes: string[]; art: strin
   // gemeinsame Zerlegung (core): mehrteiliger Projektcode, Nummer nur, wenn sie wie eine aussieht
   const { teile, code } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
   if (!code) return `Projektcode fehlt ${wo('code')} – ${erwartet}`;
-  if (!art || teile.art?.toUpperCase() !== art.toUpperCase()) return `Antragsart ${art || '?'} fehlt ${wo('art')} – ${erwartet}`;
+  if (!art || !teile.art || hauptArt(teile.art, arten) !== hauptArt(art, arten)) return `Antragsart ${art || '?'} fehlt ${wo('art')} – ${erwartet}`;
   if (!/^\d{6}$/.test(teile.datum ?? '')) return `Datum JJMMTT fehlt ${wo('datum')} – ${erwartet}`;
   // nach den Teilen braucht es eine Bezeichnung (eine Nummer allein genügt nicht)
   if (!teile.rest) return `Bezeichnung fehlt – ${erwartet}`;
@@ -749,37 +778,55 @@ export function antragsNameFehler(name: string, o: { codes: string[]; art: strin
 }
 
 /**
- * Vorschlag „Umbenennen nach Namensformat“: Hat der Name schon Projektcode und Datum an ihren Stellen und an der Stelle
- * der Antragsart ein anderes bekanntes Kürzel (z. B. die Phase GP eines verschobenen Plans), wird nur dieses ersetzt –
- * „HVO GP 261111 GP-04 Grundriss.pdf“ → „HVO BAUA 261111 GP-04 Grundriss.pdf“, die Plannummer bleibt. Sonst kommen
- * Projektcode, Antragsart und Datum nach dem Namensschema vor den bisherigen Namen.
+ * Vorschlag „Umbenennen nach Namensformat“: Projektcode, Antragsart, Datum und Nummer nach dem Namensschema vor die
+ * Bezeichnung. Was davon am Anfang des Namens schon steht – auch verrutscht –, wird übernommen statt verdoppelt: der
+ * Projektcode, ein gültiges JJMMTT, eine Plan- oder Dokumentnummer und ein bekanntes Kürzel (Phase oder andere
+ * Antragsart), das die Antragsart ersetzt – „HVO GP 261111 GP-04 Grundriss.pdf“ → „HVO BAUA 261111 GP-04
+ * Grundriss.pdf“, „HVO 261111 Bauantrag.pdf“ → „HVO BAUA 261111 Bauantrag.pdf“. Eine Plannummer mit Phasenkürzel
+ * („GP-04“) kommt auch von weiter hinten an ihre Stelle (sonst wäre der Plan danach keiner mehr); eine bloße Zahl in der
+ * Bezeichnung („Statik Teil 2“, „OG2“) bleibt, wo sie ist.
  */
-export function nameNachFormat(name: string, o: { codes: string[]; art: string; datum: Date; reihenfolge?: NamensTeil[]; kuerzel?: string[] }): string {
+export function nameNachFormat(name: string, o: { codes: string[]; art: string; datum: Date; reihenfolge?: NamensTeil[]; schema?: Pick<Namensschema, 'phasen' | 'antragsarten'> }): string {
   const reihenfolge = o.reihenfolge ?? VORGABE_NAMENSSCHEMA.reihenfolge;
+  const schema = o.schema ?? VORGABE_NAMENSSCHEMA;
   const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
+  // mehrteilige Codes zuerst („BS 9“ vor „BS“)
+  const codesLang = [...codes].sort((a, b) => b.split(/\s+/).length - a.split(/\s+/).length);
   const { woerter, endung, teile, stelle, code } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
-  const bekannt = (o.kuerzel ?? []).map((k) => k.toUpperCase());
-  // Teile in der Reihenfolge des Schemas, leere weglassen (kein führendes Leerzeichen ohne Projektcode), dann der Rest
-  const zusammen = (werte: Partial<Record<NamensTeil, string>>, rest: string[]) => `${[...reihenfolge.map((t) => werte[t]).filter(Boolean), ...rest].join(' ')}${endung}`;
-  const artBekannt = !!teile.art && (bekannt.includes(teile.art.toUpperCase()) || teile.art.toUpperCase() === o.art.toUpperCase());
-  /** die erste Plan- bzw. Dokumentnummer in den übrigen Wörtern an die Stelle „nummer“ (sonst wäre ein Plan danach keiner mehr) */
-  const mitNummer = (rest: string[], nummer: string | undefined): [string | undefined, string[]] => {
-    if (nummer !== undefined) return [nummer, rest];
-    const j = rest.findIndex((w, i) => istNummer(w, i < rest.length - 1));
-    return j < 0 ? [undefined, rest] : [rest[j], rest.filter((_, i) => i !== j)];
-  };
+  const bekannt = new Set([...alleKuerzel(schema.phasen), ...alleKuerzel(schema.antragsarten), o.art].map((k) => k.toUpperCase()));
+  const istPlannummer = (w: string) => !!planNummerAus(w, schema);
+  // ein Projektcode an seiner Stelle im Schema zählt als vorhanden
   const codeStellen = code ? Array.from({ length: code.split(/\s+/).length }, (_, i) => stelle.code! + i) : [];
-  if (code && artBekannt && stelle.art !== undefined) {
-    // Projektcode und ein bekanntes Kürzel an ihren Stellen (verschobener Plan, alte Antragsart): die Antragsart setzen,
-    // ein fehlendes Datum einsetzen – Plannummer und Bezeichnung bleiben, die Nummer an ihrer Stelle im Schema
-    const datumDa = gueltigesDatum(teile.datum);
-    const benutzt = new Set<number>([...codeStellen, stelle.art, ...(datumDa ? [stelle.datum!] : []), ...(teile.nummer !== undefined ? [stelle.nummer!] : [])]);
-    const [nummer, rest] = mitNummer(woerter.filter((_, i) => !benutzt.has(i)), teile.nummer);
-    return zusammen({ code: teile.code, art: o.art, datum: datumDa ? teile.datum : jjmmtt(o.datum), nummer }, rest);
+  const werte: Partial<Record<NamensTeil, string>> = code ? { code: teile.code } : {};
+  let rest = woerter.filter((_, i) => !codeStellen.includes(i));
+  // Kopf: Teile am Anfang übernehmen, bis das erste Wort der Bezeichnung kommt
+  kopf: while (rest.length) {
+    if (!werte.code)
+      for (const c of codesLang) {
+        const n = c.split(/\s+/).length;
+        if (rest.slice(0, n).join(' ').toLowerCase() === c.toLowerCase()) {
+          werte.code = rest.slice(0, n).join(' ');
+          rest = rest.slice(n);
+          continue kopf;
+        }
+      }
+    const w = rest[0];
+    if (!werte.art && bekannt.has(w.toUpperCase())) werte.art = o.art;
+    else if (!werte.datum && gueltigesDatum(w)) werte.datum = w;
+    else if (!werte.nummer && (istPlannummer(w) || /^\d{1,3}[a-z]?$/.test(w))) werte.nummer = w;
+    else break;
+    rest = rest.slice(1);
   }
-  // sonst: Projektcode, Antragsart und Datum nach dem Schema davor (ein vorhandener Projektcode am Anfang nicht doppelt)
-  const [nummer, rest] = mitNummer(woerter.filter((_, i) => !codeStellen.includes(i)), undefined);
-  return zusammen({ code: code ? teile.code : codes[0], art: o.art, datum: jjmmtt(o.datum), nummer }, rest);
+  if (!werte.nummer) {
+    const j = rest.findIndex(istPlannummer);
+    if (j >= 0) {
+      werte.nummer = rest[j];
+      rest = rest.filter((_, i) => i !== j);
+    }
+  }
+  const wert = (t: NamensTeil) => (t === 'code' ? (werte.code ?? codes[0]) : t === 'art' ? o.art : t === 'datum' ? (werte.datum ?? jjmmtt(o.datum)) : werte.nummer);
+  // leere Teile weglassen (kein führendes Leerzeichen ohne Projektcode), dann die Bezeichnung
+  return `${[...reihenfolge.map(wert).filter(Boolean), ...rest].join(' ')}${endung}`;
 }
 
 /** bereit: von Hand markiert und seitdem unverändert · offen: noch nicht markiert · name: Namensformat passt nicht · geaendert: nach dem Markieren geändert */

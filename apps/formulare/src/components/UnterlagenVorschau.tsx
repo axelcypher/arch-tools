@@ -50,8 +50,8 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
 
   const aktuell = liste[Math.min(index, liste.length - 1)];
   const art = aktuell ? dateiArt(aktuell.pfad) : 'sonst';
-  const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
-  const fehlerName = aktuell ? antragsNameFehler(aktuell.pfad, { codes: projektCodes(projekt), art: artDerFassung(fassung), reihenfolge }) : null;
+  const schema = useFormulare(namensschemaVon);
+  const fehlerName = aktuell ? antragsNameFehler(aktuell.pfad, { codes: projektCodes(projekt), art: artDerFassung(fassung), reihenfolge: schema.reihenfolge, schema }) : null;
   const zustand = aktuell
     ? bereitschaft(
         aktuell,

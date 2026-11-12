@@ -12,10 +12,11 @@
  *  - noch nicht verschoben: der Plan liegt nur in der Quelle;
  *  - veraltet: die Quelle hat eine neuere Fassung als der Antragsordner (Datum im Namen, dann Index);
  *  - Hinweise (nie sperrend): ältere Fassungen derselben Nummer, ein zusammengefasster Satz (GP01-07) neben
- *    Einzelplänen daraus, ein Index, wo das Namensschema des Büros keinen vorsieht, kein Schnitt bzw. keine Ansicht
- *    (§ 4 Abs. 1, 3, 4 BauPrüfVO NRW – nur bei Plänen einer Leistungsphase, nicht bei Sonderfällen wie den
- *    Aufteilungsplänen nach WEG) und – mit Geschossen aus der Projektdatei – weniger Grundrisse als Geschosse. Diese
- *    Hinweise fangen auch fehlende Pläne am Ende der Reihe auf, die keine Lücke hinterlassen.
+ *    Einzelplänen daraus, ein Index, wo das Namensschema des Büros keinen vorsieht, eine Datei mit Plannummer, die
+ *    nicht an ihrer Stelle im Namensschema steht (nicht gezählt), kein Schnitt bzw. keine Ansicht (§ 4 Abs. 1, 3, 4
+ *    BauPrüfVO NRW bei Plänen einer Leistungsphase; bei DENK und ABGE ohne Paragraphen, auch für Pläne ohne LPH; nicht
+ *    beim Entwässerungsantrag ENTW) und – mit Geschossen aus der Projektdatei – weniger Grundrisse als Geschosse.
+ *    Diese Hinweise fangen auch fehlende Pläne am Ende der Reihe auf, die keine Lücke hinterlassen.
  */
 
 import type { Namensschema } from '@core/namensschema';
@@ -103,7 +104,19 @@ function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | unde
     // mit den Projektcodes: auch ein mehrteiliger Code („BS 9“) steht an seiner Stelle
     const teile = dateinameZerlegen(name, schema, codes);
     const pn = planNummerAus(teile.nummer, schema);
-    if (!pn) continue;
+    if (!pn) {
+      // sieht nach einem Plan aus, die Plannummer steht aber nicht an ihrer Stelle (etwa ohne Projektcode) – ohne
+      // Hinweis fiele er still heraus, und weil die Reihe nicht bei 01 beginnen muss, auch ohne Lücke
+      const nr =
+        teile.nummer === undefined &&
+        name
+          .replace(/\.[^.]+$/, '')
+          .split(/\s+/)
+          .find((w) => planNummerAus(w, schema));
+      const h = nr && `${name}: sieht nach Plan ${nr} aus, der Name folgt aber nicht dem Namensschema – nicht gezählt`;
+      if (h && !hinweise.includes(h)) hinweise.push(h);
+      continue;
+    }
     if (pn.index && !indexVorgesehen(schema, pn.kuerzel)) {
       const h = indexHinweis(schema, pn.kuerzel, `${planSchluessel(pn.kuerzel, pn.von)}${pn.index}`);
       if (!hinweise.includes(h)) hinweise.push(h);
@@ -139,8 +152,8 @@ const schnitt = (bezeichnung: string) => /(?<!aus)schnitt|(^|\s)sn(\s|$)/i.test(
 const ansicht = (bezeichnung: string) => /ansicht/i.test(bezeichnung);
 
 /**
- * Antragsarten, für deren Pläne Schnitt bzw. Ansicht nicht geprüft werden: Entwässerungsantrag (Entwässerungssatzung
- * der Gemeinde)
+ * Antragsarten, für deren Pläne Schnitt bzw. Ansicht nicht geprüft werden: Entwässerungsantrag (Grundlage in der
+ * Regel die Entwässerungssatzung der Gemeinde)
  */
 export const ARTEN_OHNE_BAUPRUEFVO = ['ENTW'];
 
@@ -233,6 +246,8 @@ export function plansatzPruefen(
     // Hinweis. Er sperrt nicht: Die Behörde kann auf Bauvorlagen verzichten (§ 1 Abs. 2 BauPrüfVO), ein Vorbescheid
     // braucht nur die zur Beurteilung seiner Fragen erforderlichen (§ 16 BauPrüfVO). Nur bei Plänen einer
     // Leistungsphase – für Sonderfälle ohne LPH (AB, Aufteilungspläne nach § 7 Abs. 4 WEG) gilt die BauPrüfVO nicht.
+    // Bei DENK und ABGE (eigene Rechtsgrundlage) wird trotzdem geprüft, auch ohne LPH, nur ohne Paragraphen; beim
+    // Entwässerungsantrag (ENTW) gar nicht.
     const art = o.art ?? '';
     const pruefen = !ARTEN_OHNE_BAUPRUEFVO.includes(art) && (ARTEN_OHNE_PARAGRAF.includes(art) || plaene.some((p) => kuerzelZu(schema.phasen, p.kuerzel)?.lph !== undefined));
     const mitParagraf = pruefen && !ARTEN_OHNE_PARAGRAF.includes(art);

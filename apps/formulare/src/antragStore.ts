@@ -525,17 +525,15 @@ export const useAntrag = create<AntragState>((set, get) => {
       geaendert = true;
       log.info(`${name}: ${e ? `eingereicht (${e.datei})` : 'nicht mehr eingereicht'}`);
     }
-    // Antragsstand bei der Einreichung einmal festhalten (Dateiliste, keine Kopie); wieder in Arbeit: verwerfen
+    // Antragsstand bei der Einreichung einmal festhalten (Dateiliste, keine Kopie). Gilt der Antrag wieder als in Arbeit
+    // (Status von Hand, Eingangsbestätigung verschoben), bleibt der Stand stehen und gilt wieder, sobald der Antrag mit
+    // demselben Datum eingereicht ist; nur eine Einreichung an einem anderen Tag hält ihn neu fest.
     for (const [name, a] of Object.entries(antraege)) {
       const ein = eingereichtVon(a);
-      if (ein && !a.stand && listen[name]) {
+      if (ein && a.stand?.tag !== ein.datum && listen[name]) {
         antraege[name] = { ...a, stand: standAus(listen[name], ein.datum) };
         geaendert = true;
         log.info(`${name}: Antragsstand vom ${ein.datum} festgehalten (${antraege[name].stand!.dateien.length} Dateien)`);
-      } else if (!ein && a.stand) {
-        const { stand: _, ...rest } = a;
-        antraege[name] = rest;
-        geaendert = true;
       }
     }
     const neu = geaendert ? { ...pd, antraege } : pd;
@@ -641,7 +639,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       let neu: typeof liste;
       if (markiert) neu = liste.filter((b) => b.datei.toLowerCase() !== datei.toLowerCase());
       else {
-        const fehlerText = antragsNameFehler(datei, { codes: projektCodes(projekt), art: artDerFassung(fassung), reihenfolge: namensschema().reihenfolge });
+        const fehlerText = antragsNameFehler(datei, { codes: projektCodes(projekt), art: artDerFassung(fassung), reihenfolge: namensschema().reihenfolge, schema: namensschema() });
         if (fehlerText) {
           meldung('fehler', `„${datei}“ kann nicht als bereit markiert werden: ${fehlerText}.`);
           return;

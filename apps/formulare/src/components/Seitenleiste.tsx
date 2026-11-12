@@ -297,7 +297,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                         gesperrt
                           ? `${d.eintrag.titel} fehlt – der Antrag ist eingereicht und gesperrt; Änderungen über einen Nachtrag`
                           : doppelt
-                            ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder entfernen`
+                            ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder aus dem Antragsumfang nehmen`
                             : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`
                       }
                       aria-haspopup={doppelt ? 'menu' : undefined}

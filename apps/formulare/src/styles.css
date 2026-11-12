@@ -2963,8 +2963,7 @@ button.icon.ex-baum-pfeil {
 .pu-bearbeiten {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  /* ein Feld über die ganze Breite lässt keine leeren Zellen davor */
-  grid-auto-flow: dense;
+  /* Felder über die ganze Breite stehen am Ende (kein dense: die Tab-Reihenfolge folgt der Anzeige) */
   gap: 8px 12px;
   padding: 8px 12px 12px;
   border-top: 1px solid var(--line-soft);
@@ -4373,12 +4372,30 @@ tr[data-ziehen='danach'] > td {
     inset 2px 0 0 var(--accent),
     inset 5px 0 0 var(--warn-border);
 }
-.nav-unter.nav-doppelt {
+.nav-eintrag.fehlt .nav-unter.nav-doppelt {
   color: var(--warn-text);
-  text-transform: none;
 }
+/* eingereichter Antrag: der fehlende Eintrag bleibt gedämpft und reagiert nicht wie ein Knopf (Tooltip erklärt) */
 .nav-eintrag.fehlt.gesperrt {
-  opacity: 0.6;
+  cursor: default;
+}
+.nav-eintrag.fehlt.gesperrt:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
+  color: var(--muted);
+}
+/* eingereichte Dateien, die seit der Einreichung aus dem Ordner verschwunden sind */
+.fo-stand-entfernt {
+  list-style: none;
+  margin: -2px 0 6px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+.fo-stand-entfernt .fo-seit {
+  margin-top: 0;
 }
 .fo-bereit-zeile .fo-baum-name {
   white-space: normal;

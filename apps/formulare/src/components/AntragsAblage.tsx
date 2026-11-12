@@ -1,8 +1,7 @@
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import type { Bereitschaft } from '../antrag';
-import { alleKuerzel } from '@core/namensschema';
-import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, nameNachFormat, SEIT_EINREICHUNG_TEXT, seitEinreichung } from '../antrag';
+import { antragsMuster, antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, eingereichtVon, entferntSeitEinreichung, nameNachFormat, SEIT_EINREICHUNG_TEXT, seitEinreichung } from '../antrag';
 import { aktiveFassung, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -59,8 +58,11 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const fassung = useAntrag((s) => aktiveFassung(s, projekt));
   const ordner = useAntrag((s) => antragsOrdner(s, projekt));
   const bereitJeFassung = useAntrag((s) => s.projektdatei?.bereit);
-  // Antragsstand bei der Einreichung (nur bei eingereichten Anträgen festgehalten)
-  const stand = useAntrag((s) => s.projektdatei?.antraege?.[aktiveFassung(s, projekt)]?.stand);
+  // Antragsstand bei der Einreichung – er gilt nur, solange der Antrag als eingereicht gilt
+  const stand = useAntrag((s) => {
+    const a = s.projektdatei?.antraege?.[aktiveFassung(s, projekt)];
+    return eingereichtVon(a) ? a?.stand : undefined;
+  });
   const markiert = bereitJeFassung?.[fassung] ?? [];
   const { bereitUmschalten } = useAntrag.getState();
   const [vorschau, setVorschau] = useState<string | null | undefined>(undefined);
@@ -75,7 +77,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     .filter((d) => !d.ordner && !/^(~\$|\.~lock\.)/.test(d.pfad) && !/^(thumbs\.db|desktop\.ini)$/i.test(d.pfad))
     .sort((a, b) => a.pfad.localeCompare(b.pfad, 'de', { numeric: true, sensitivity: 'base' }))
     .map((d) => {
-      const fehler = antragsNameFehler(d.pfad, { codes, art, reihenfolge });
+      const fehler = antragsNameFehler(d.pfad, { codes, art, reihenfolge, schema });
       const m = markiert.find((b) => b.datei.toLowerCase() === d.pfad.toLowerCase());
       // zugehöriges Dokument: die verknüpfte bzw. gefundene Datei – bei einem Plansatz jede seiner Plandateien
       const dok = dokumentZu(dokumente, d.pfad);
@@ -83,6 +85,12 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     });
   const seitNeu = liste.filter((x) => x.seit === 'neu').length;
   const seitGeaendert = liste.filter((x) => x.seit === 'geaendert').length;
+  // eingereichte Dateien, die seitdem aus dem Ordner verschwunden sind (gelöscht oder verschoben)
+  const entfernt = entferntSeitEinreichung(
+    liste.map((x) => x.d.pfad),
+    stand,
+  );
+  const seitText = [seitNeu ? `${seitNeu} neu` : '', seitGeaendert ? `${seitGeaendert} geändert` : '', entfernt.length ? `${entfernt.length} entfernt` : ''].filter(Boolean).join(', ');
   const bereit = liste.filter((x) => x.zustand === 'bereit').length;
   // fehlt ganz: ein Dokument ohne Datei, ein Plansatz ohne einen einzigen Plan
   const fehlend = dokumente.filter((x) => x.status !== 'entfaellt' && (x.plansatz ? !x.plansatz.plaene.length : !x.datei));
@@ -91,13 +99,9 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     x.status !== 'entfaellt' && x.plansatz ? x.plansatz.plaene.filter((p) => p.zustand === 'fehlt' || p.zustand === 'quelle').map((p) => ({ dok: x, p })) : [],
   );
   const vollstaendig = liste.length > 0 && bereit === liste.length && !fehlend.length && !fehlendePlaene.length;
-  // Umbenennen: bei einem verschobenen Plan nur die Phase durch die Antragsart ersetzen, sonst Kopf davor (antrag.ts)
-  const vorschlag = (name: string, geaendert?: number) =>
-    nameNachFormat(name, { codes, art, datum: new Date(geaendert || Date.now()), reihenfolge, kuerzel: [...alleKuerzel(schema.phasen), ...alleKuerzel(schema.antragsarten)] });
-  const muster = reihenfolge
-    .filter((t) => t !== 'nummer')
-    .map((t) => (t === 'code' ? (codes[0] ?? 'Projektcode') : t === 'art' ? art : 'JJMMTT'))
-    .join(' ');
+  // Umbenennen: Kopf nach dem Namensschema vor die Bezeichnung, Vorhandenes übernehmen (antrag.ts)
+  const vorschlag = (name: string, geaendert?: number) => nameNachFormat(name, { codes, art, datum: new Date(geaendert || Date.now()), reihenfolge, schema });
+  const muster = antragsMuster(codes, art, reihenfolge);
 
   const menue = (pfad: string, zustand: Bereitschaft, fehler: string | null, geaendert?: number): MenuePunkt[] => [
     {
@@ -140,12 +144,23 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
         {vollstaendig && <span className="fo-bereit-fertig">Alles bereit</span>}
       </div>
       {stand && (
-        <p className={`fo-stand${seitNeu + seitGeaendert ? ' abweichend' : ''}`} role="status">
+        <p
+          className={`fo-stand${seitText ? ' abweichend' : ''}`}
+          role="status"
+          title={entfernt.length ? `Seit der Einreichung nicht mehr im Ordner:\n${entfernt.map((x) => x.pfad).join('\n')}` : undefined}
+        >
           <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} – Stand festgehalten
-          {seitNeu + seitGeaendert > 0
-            ? ` · ${[seitNeu ? `${seitNeu} neu` : '', seitGeaendert ? `${seitGeaendert} geändert` : ''].filter(Boolean).join(', ')} seit der Einreichung`
-            : ' · seitdem unverändert'}
+          {seitText ? ` · ${seitText} seit der Einreichung` : ' · seitdem unverändert'}
         </p>
+      )}
+      {stand && entfernt.length > 0 && (
+        <ul className="fo-stand-entfernt" aria-label="Seit der Einreichung entfernt">
+          {entfernt.map((x) => (
+            <li key={x.pfad}>
+              <span className="fo-seit entfernt">entfernt</span> {x.pfad}
+            </li>
+          ))}
+        </ul>
       )}
       <div className="fo-bereit-knoepfe">
         <button className="small" disabled={!liste.length} title="Alle Antragsunterlagen groß ansehen und durchblättern (mit Zoom)" onClick={() => setVorschau(null)}>

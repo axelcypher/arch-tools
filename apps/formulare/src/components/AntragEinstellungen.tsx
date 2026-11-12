@@ -42,6 +42,7 @@ export function AntragEinstellungen() {
   // beim Export steht an der Stelle der Antragsart immer {Art} (nach dem Namensschema)
   const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
   const wirksameVorlage = vorlageMitAntragsart(e.namensvorlage, reihenfolge);
+  const artWarnung = vorlageArtWarnung(e.namensvorlage, reihenfolge);
   const beispiel = dateiname(wirksameVorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
 
   const zeileSetzen = (i: number, teil: Partial<KatalogEintrag>) => setKatalog(katalog.map((k, n) => (n === i ? { ...k, ...teil } : k)));
@@ -67,10 +68,13 @@ export function AntragEinstellungen() {
               defaultValue={e.arten.join(', ')}
               key={e.arten.join(',')}
               aria-label="Antragsarten"
+              aria-describedby="es-arten-hinweis"
               placeholder="BAUA, BAUVA, DENK"
               onBlur={(x) => setEinstellungen({ arten: x.target.value.split(/[,;\s]+/).filter(Boolean).map((a) => a.toUpperCase()) })}
             />
-            <span className="field-hint">Dazu kommen die Antragsarten aus Projektordner › Einstellungen › Namensschema: Kürzel und Plannummern.</span>
+            <span className="field-hint" id="es-arten-hinweis">
+              Dazu kommen die Antragsarten aus Projektordner › Einstellungen › Namensschema: Kürzel und Plannummern.
+            </span>
           </label>
         </div>
       </Karte>
@@ -81,14 +85,20 @@ export function AntragEinstellungen() {
           <div className="es-breit es-feldblock">
             <label>
               <span className="field-label">Namensvorlage</span>
-              <input value={e.namensvorlage} onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })} aria-label="Namensvorlage" aria-describedby="es-art-hinweis" spellCheck={false} />
+              <input
+                value={e.namensvorlage}
+                onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })}
+                aria-label="Namensvorlage"
+                aria-describedby={artWarnung ? 'es-art-hinweis es-art-warnung' : 'es-art-hinweis'}
+                spellCheck={false}
+              />
             </label>
             <p className="field-hint" id="es-art-hinweis">
               {ART_HINWEIS}
             </p>
-            {vorlageArtWarnung(e.namensvorlage, reihenfolge) && (
-              <p className="warning small-text">
-                {vorlageArtWarnung(e.namensvorlage, reihenfolge)}{' '}
+            {artWarnung && (
+              <p className="warning small-text" id="es-art-warnung">
+                {artWarnung}{' '}
                 <button className="small" onClick={() => setEinstellungen({ namensvorlage: wirksameVorlage })}>
                   Vorlage anpassen
                 </button>

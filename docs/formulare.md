@@ -299,15 +299,19 @@ Anschrift, wie sie in Formularen steht.
   Projektdatei (.oap) und gilt für alle im Büro. Wird die Datei danach geändert, gilt sie nicht mehr als bereit.
   Bereit sein können nur Dateien im **Namensformat `<Projektcode> <Antragsart> <JJMMTT> …`**, z. B.
   „MUS BAUA 261110 01 Bauantrag.pdf“ (Projektcode = Kürzel des FORMA-Projekts oder Projektcode der Projektdatei,
-  Antragsart = die der Fassung: BAUA, BAUVA, DENK …) – die Stellen nach dem Namensschema (Vorgabe: Code, Art, Datum).
+  Antragsart = die der Fassung: BAUA, BAUVA, DENK …; gleichwertige Schreibweisen des Namensschemas gelten, im Ordner
+  „BVA“ also auch „HVO BAUVA …“) – die Stellen nach dem Namensschema (Vorgabe: Code, Art, Datum).
   Fehlt das Datum, heißt die Meldung „Datum JJMMTT fehlt …“, fehlt die Bezeichnung danach, „Bezeichnung fehlt“;
   „Anlage1“ oder „Ansicht2“ sind Bezeichnungen, keine Nummern (Plankürzel stehen in Großbuchstaben). Rechtsklick →
-  „Umbenennen nach Namensformat …“ schlägt den Namen vor (fehlt nur das Datum, wird es eingesetzt; eine Plannummer
-  kommt an ihre Stelle im Namensschema, damit der Plan im Plansatz bleibt; der Punkt erscheint nur, wenn der Vorschlag
-  etwas ändert): Steht an der Stelle der Antragsart schon ein
-  anderes bekanntes Kürzel (ein verschobener Plan „HVO GP 261111 GP-04 …“), wird nur dieses ersetzt – „HVO BAUA
-  261111 GP-04 …“, die Plannummer bleibt und der Plan im Plansatz; sonst kommen Projektcode, Antragsart und Datum der
-  Datei davor. Unter „Fehlt im Antragsordner“ stehen die Dokumente des Antragsumfangs ohne Datei.
+  „Umbenennen nach Namensformat …“ schlägt den Namen vor (der Punkt erscheint nur, wenn der Vorschlag etwas ändert):
+  Projektcode, Antragsart, Datum und Nummer nach dem Namensschema vor die Bezeichnung. Was davon am Anfang schon steht,
+  auch verrutscht, wird übernommen statt verdoppelt – der Projektcode, ein gültiges JJMMTT, eine Plan- oder
+  Dokumentnummer und ein bekanntes Kürzel (Phase eines verschobenen Plans, andere Antragsart), das durch die Antragsart
+  ersetzt wird: „HVO GP 261111 GP-04 Grundriss.pdf“ → „HVO BAUA 261111 GP-04 Grundriss.pdf“, „HVO 261111
+  Bauantrag.pdf“ → „HVO BAUA 261111 Bauantrag.pdf“. Fehlt das Datum, kommt das der Datei hinein. Eine Plannummer mit
+  Phasenkürzel („GP-04“) kommt auch von weiter hinten an ihre Stelle, damit der Plan im Plansatz bleibt; Zahlen in der
+  Bezeichnung („Statik Teil 2“, „Lageplan M 1 500“, „OG2“) bleiben, wo sie sind. Unter „Fehlt im Antragsordner“ stehen
+  die Dokumente des Antragsumfangs ohne Datei.
   Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
   aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` gibt es weiter an anderer Stelle). In der
   Unterlagen-Vorschau stehen die Pläne eines Plansatzes an seiner Stelle im Antragsumfang.
@@ -451,15 +455,17 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   - **veraltet:** die Quelle hat eine neuere Fassung – Datum im Namen, bei gleichem Datum der Index (AP-03a nach
     AP-03) (gelb); liegt eine Nummer mehrfach im Antragsordner, zählt die neueste;
   - **Hinweise** (nie sperrend): ältere Fassungen derselben Nummer („alte Fassung?“), ein Satz neben Einzelplänen
-    daraus, ein Index, wo ihn das Namensschema des Büros nicht vorsieht (Bürovorgabe: erst ab LPH 5; daraus folgt:
+    daraus, eine Datei, die nach einem Plan aussieht, deren Plannummer aber nicht an ihrer Stelle im Namensschema
+    steht (etwa ohne Projektcode: „GP-02 Schnitt.pdf“ – „nicht gezählt“; sonst fiele sie still heraus, und weil die
+    Reihe nicht bei 01 beginnen muss, auch ohne Lücke), ein Index, wo ihn das Namensschema des Büros nicht vorsieht (Bürovorgabe: erst ab LPH 5; daraus folgt:
     eine Phase ohne LPH wie AB trägt keinen), „kein Schnitt erkannt“ bzw. „keine Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse,
     Schnitte und Ansichten, § 4 Abs. 1, 3, 4 BauPrüfVO NRW – nur ein Hinweis, weil die Behörde auf Bauvorlagen
     verzichten kann und ein Vorbescheid nur die zur Beurteilung seiner Fragen erforderlichen Bauvorlagen braucht, § 16
-    BauPrüfVO; nicht bei Plänen ohne Leistungsphase wie den
-    Aufteilungsplänen nach § 7 Abs. 4 WEG und nicht bei Entwässerungsanträgen oder Abgeschlossenheitsbescheinigungen
-    (ENTW), für die die BauPrüfVO nicht die Grundlage ist; bei der denkmalrechtlichen Erlaubnis (DENK, § 9 DSchG NRW)
-    und der Abgeschlossenheitsbescheinigung (ABGE, Aufteilungspläne nach § 7 Abs. 4 WEG – auch AB-Pläne) ohne
-    Paragraphen der BauPrüfVO, beim Vorbescheid mit dem Zusatz „nur, soweit für die Fragen erforderlich
+    BauPrüfVO; außerhalb von DENK und ABGE nicht bei Plänen ohne Leistungsphase wie den Aufteilungsplänen nach § 7
+    Abs. 4 WEG und nie beim Entwässerungsantrag (ENTW), für den in der Regel die Entwässerungssatzung der Gemeinde und
+    nicht die BauPrüfVO die Grundlage ist; bei der denkmalrechtlichen Erlaubnis (DENK, § 9 DSchG NRW) und der
+    Abgeschlossenheitsbescheinigung (ABGE, Aufteilungspläne nach § 7 Abs. 4 WEG – auch AB-Pläne) ohne Paragraphen der
+    BauPrüfVO, beim Vorbescheid mit dem Zusatz „nur, soweit für die Fragen erforderlich
     (§ 16 BauPrüfVO)“; „Ausschnitt“ zählt nicht als Schnitt), und – nur wenn die
     Projektdatei Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (Grundrisse für alle Geschosse, § 4 Abs. 2
     BauPrüfVO NRW, beim Vorbescheid mit dem Zusatz zu § 16; nicht beim Entwässerungsantrag, der nur die Geschosse mit
@@ -507,16 +513,23 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   (`stand` im Antrag der Projektdatei; Dateien, die erst nach dem Tag der Einreichung geändert wurden, gehören bei
   später Erkennung nicht dazu). In der Ansicht „Antrag“ steht dann „Eingereicht am … – Stand festgehalten“, und jede
   Datei, die danach **neu** hinzukam oder **geändert** wurde, ist gekennzeichnet („neu seit der Einreichung“ bzw.
-  „geändert seit der Einreichung“, gelb, mit Summe oben). Ausgenommen sind Dateien, die nach der Einreichung
-  erwartungsgemäß kommen (`nachEinreichungErwartet`) – nach der Bürovorgabe die Genehmigung selbst, die
-  Empfangsbestätigung und Nachforderungen (der Behörde), ergänzt um Eingangsbestätigung und Antragsprotokoll, die
-  Entscheidung bei den übrigen Antragsarten (Bescheid bzw. Vorbescheid, denkmalrechtliche Erlaubnis,
-  Abgeschlossenheitsbescheinigung, der von der Behörde gesiegelte Aufteilungsplan) und die Mitteilung der Gemeinde zur
-  Genehmigungsfreistellung. Antragsunterlagen gelten nie als erwartet, auch wenn ein solches Wort darin steht
-  („Antrag auf Vorbescheid“, „Genehmigungsfreistellung“, „… Genehmigungsverfahren“, „Genehmigungsplanung“, eine
-  beigefügte Typengenehmigung, der noch nicht gesiegelte Aufteilungsplan, Unterlagen zu einer Nachforderung). Ist der
-  Ordner einmal nicht lesbar (Netz nach dem Aufwachen), bleiben „eingereicht“ und der Stand unverändert. Gilt der
-  Antrag wieder als in Arbeit, wird der Stand verworfen.
+  „geändert seit der Einreichung“, gelb, mit Summe oben). Eingereichte Dateien, die seitdem aus dem Ordner
+  verschwunden sind (gelöscht oder verschoben), zählen als **entfernt** (in der Summe und darunter mit Namen).
+  Ausgenommen sind Dateien, die nach der Einreichung erwartungsgemäß kommen (`nachEinreichungErwartet`) – nach der
+  Bürovorgabe die Genehmigung selbst (auch die genehmigten Bauvorlagen mit Genehmigungsvermerk, § 74 Abs. 4 BauO NRW
+  2018), die Empfangsbestätigung und Nachforderungen der Behörde (auch „Nachforderung von Unterlagen“). Über die
+  Bürovorgabe hinaus ergänzt: Eingangsbestätigung, Antragsprotokoll und die Mitteilung über die Vollständigkeit
+  (§ 71 Abs. 1 BauO NRW 2018 in der Fassung ab 01.09.2026), die Entscheidung bei den übrigen Antragsarten (Bescheid –
+  auch „Bescheid zum Bauantrag“ – bzw. Vorbescheid, denkmalrechtliche Erlaubnis, Abgeschlossenheitsbescheinigung, der
+  von der Behörde gesiegelte Aufteilungsplan) und Mitteilung oder Erklärung der Gemeinde (Stadt) bei der
+  Genehmigungsfreistellung (§ 63 BauO NRW 2018). Antragsunterlagen gelten nie als erwartet, auch wenn ein solches Wort
+  darin steht („Antrag auf Vorbescheid“, „Genehmigungsfreistellung“, „… Genehmigungsverfahren“,
+  „Genehmigungsplanung“, eine beigefügte Typengenehmigung oder Genehmigung des Bestands, der noch nicht gesiegelte
+  Aufteilungsplan, Unterlagen bzw. Antwort zu einer Nachforderung). Ist der Ordner einmal nicht lesbar (Netz nach dem
+  Aufwachen), bleiben „eingereicht“ und der Stand unverändert. Gilt der Antrag wieder als in Arbeit (Status von Hand,
+  Eingangsbestätigung verschoben), verschwinden die Kennzeichen, der Stand bleibt aber in der Projektdatei: Wird der
+  Antrag mit demselben Datum wieder eingereicht, gilt er wieder (geänderte Dateien bleiben „geändert“); nur eine
+  Einreichung an einem anderen Tag hält den Stand neu fest.
 - **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)
   ausgenommen – ein Dokument, dessen Name `Antragsprotokoll`, `Eingangsbestätigung` oder `Empfangsbestätigung` (auch
   mit „ae“) enthält, gilt der Antrag als **eingereicht** – mit dem Datum im Dateinamen, sonst dem der
