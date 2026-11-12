@@ -200,3 +200,20 @@ async fn ava_mail_entwurf(name: String, contents_base64: String) -> Result<Strin
     log::info!("Mailentwurf geöffnet: {}", p.display());
     Ok(p.display().to_string())
 }
+
+/// Erzeugte Datei (z. B. Deckblatt zum Drucken) im Temp-Ordner ablegen und mit ihrem Programm öffnen.
+#[tauri::command]
+async fn ava_temp_oeffnen(name: String, contents_base64: String) -> Result<String, String> {
+    let bytes = ava_base64(&contents_base64)?;
+    let sauber: String = name
+        .chars()
+        .map(|c| if "\\/:*?\"<>|".contains(c) || c.is_control() { '_' } else { c })
+        .collect();
+    let ordner = std::env::temp_dir().join("arch-tools-ava");
+    std::fs::create_dir_all(&ordner).map_err(|e| format!("{}: {}", ordner.display(), e))?;
+    let zeit = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+    let p = ordner.join(format!("{zeit} {}", sauber.trim()));
+    std::fs::write(&p, &bytes).map_err(|e| format!("{}: {}", p.display(), e))?;
+    ava_starten(&p)?;
+    Ok(p.display().to_string())
+}

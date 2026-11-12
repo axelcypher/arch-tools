@@ -1,0 +1,1344 @@
+/* AVA – Ausschreibung, Vergabe, Abrechnung, Bauleitung. Farben nur über die Variablen aus base.css (hell/dunkel). */
+
+.ava-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.ava-leer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ava-busy {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--panel);
+  padding: 6px 14px;
+  border-radius: 14px;
+  z-index: 50;
+  font-size: 12px;
+  opacity: 0.92;
+}
+
+/* ---------- Navigation ---------- */
+
+.ava-nav {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--titlebar);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.ava-nav-kopf {
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ava-nav-kopf .sd-knopf {
+  display: inline-block;
+}
+
+.ava-nav-kopf > button,
+.ava-nav-kopf .sd-knopf button {
+  align-self: flex-start;
+}
+
+.ava-nav-code {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+
+.ava-nav-name {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.ava-nav-titel {
+  padding: 12px 12px 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.ava-nav-liste {
+  list-style: none;
+  margin: 0;
+  padding: 2px 6px;
+}
+
+.ava-nav-liste li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.ava-nav-liste li:hover {
+  background: var(--hover);
+}
+
+.ava-nav-liste li.active {
+  background: var(--panel);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+.ava-nav-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ava-marke {
+  font-size: 10.5px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--chip-bg);
+  color: var(--muted);
+  white-space: nowrap;
+  font-weight: 400;
+}
+
+.ava-nav-fuss {
+  margin-top: auto;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.ava-kennung {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ---------- Seiten ---------- */
+
+.ava-seite {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 20px 28px;
+}
+
+.ava-seite-kopf {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ava-seite h1,
+.ava-gewerk h1 {
+  font-size: 19px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.ava-seite h2,
+.ava-karte h2 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
+.ava-seite h3,
+.ava-bericht h3 {
+  font-size: 13px;
+  margin: 16px 0 6px;
+}
+
+.ava-kopf-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.ava-kennzahlen {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0 14px;
+}
+
+.ava-kennzahlen .metric {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ava-kennzahlen .metric span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ava-kennzahlen .metric strong {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ava-kennzahlen .metric small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ava-karte {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.ava-hinweise {
+  margin-top: 14px;
+}
+
+.ava-hinweise ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.ava-leer-hinweis {
+  padding: 40px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.ava-leer-hinweis .button-row {
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.ava-link {
+  margin-left: 8px;
+}
+
+/* ---------- Tabellen ---------- */
+
+.ava-tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  font-variant-numeric: tabular-nums;
+}
+
+.ava-tabelle th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.ava-tabelle td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+
+.ava-tabelle td input:not([type='checkbox']):not([type='radio']),
+.ava-tabelle td select {
+  width: 100%;
+  min-width: 60px;
+}
+
+.ava-tabelle .num,
+.ava-tabelle th.num {
+  text-align: right;
+}
+
+.ava-tabelle tfoot td {
+  font-weight: 600;
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+}
+
+.ava-tabelle tr.active td {
+  background: var(--accent-soft);
+}
+
+.ava-klickbar {
+  cursor: pointer;
+}
+
+.ava-klickbar:hover td {
+  background: var(--hover);
+}
+
+.ava-ueber {
+  color: var(--fehler-text);
+}
+
+.ava-unter {
+  color: var(--ok-text);
+}
+
+.ava-balken {
+  width: 90px;
+  height: 8px;
+  background: var(--chip-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.ava-balken > div {
+  height: 100%;
+  background: var(--ok-border);
+}
+
+.ava-balken > div.ava-balken-ueber {
+  background: var(--fehler-border);
+}
+
+.ava-warn-marke {
+  color: var(--warn-text);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.ava-chip {
+  display: inline-block;
+  font-size: 10.5px;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 8px;
+  background: var(--chip-bg);
+  color: var(--muted);
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.ava-chip-ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+
+.ava-mit-hinweis td {
+  background: color-mix(in srgb, var(--warn-bg) 55%, transparent);
+}
+
+.ava-hinweis-zelle {
+  font-size: 11.5px;
+  color: var(--warn-text);
+  max-width: 360px;
+}
+
+.ava-quellen span {
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  font-size: 10.5px;
+  border-radius: 3px;
+  margin-right: 2px;
+  color: var(--muted);
+  background: var(--chip-bg);
+  opacity: 0.45;
+}
+
+.ava-quellen span.an {
+  opacity: 1;
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  font-weight: 600;
+}
+
+.ava-aktionen {
+  white-space: nowrap;
+}
+
+.ava-aktionen button + button {
+  margin-left: 4px;
+}
+
+.ava-ueberfaellig td,
+.ava-notizen li.ava-ueberfaellig {
+  background: color-mix(in srgb, var(--fehler-bg) 60%, transparent);
+}
+
+.ava-breit-zelle {
+  min-width: 260px;
+}
+
+/* ---------- Gewerk ---------- */
+
+.ava-gewerk {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ava-gewerk-kopf {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px 8px;
+  background: var(--panel);
+}
+
+.ava-lv-wahl {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ava-lv-wahl select {
+  max-width: 360px;
+}
+
+.ava-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  align-items: flex-end;
+}
+
+.ava-tabs button {
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  padding: 6px 12px;
+  margin-bottom: -1px;
+}
+
+.ava-tabs button.active {
+  background: var(--bg);
+  border-color: var(--border);
+  font-weight: 600;
+}
+
+.ava-tab-info {
+  margin-left: auto;
+  padding: 0 4px 6px;
+}
+
+.ava-gewerk-inhalt {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.ava-gewerk-inhalt > .ava-seite {
+  padding-top: 12px;
+}
+
+/* ---------- LV-Editor ---------- */
+
+.ava-lv {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ava-suche {
+  margin-left: auto;
+  min-width: 220px;
+}
+
+.ava-lv-koerper {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.ava-lv-tabelle {
+  flex: 1;
+  overflow: auto;
+  outline: none;
+}
+
+.ava-lv-zeilen td {
+  white-space: nowrap;
+}
+
+.ava-lv-zeilen td.ava-kurztext {
+  white-space: normal;
+  min-width: 240px;
+}
+
+.ava-oz {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+  width: 1%;
+}
+
+.ava-lv-zeilen tr {
+  cursor: pointer;
+}
+
+.ava-lv-zeilen tr:hover td {
+  background: var(--hover);
+}
+
+.ava-z-abschnitt td {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--chip-bg) 70%, var(--panel));
+}
+
+.ava-z-hinweis td {
+  font-style: italic;
+  color: var(--muted);
+}
+
+.ava-z-vorbemerkung td {
+  color: var(--text);
+}
+
+.ava-z-ohne-summe td {
+  color: var(--muted);
+}
+
+.ava-zelle-eingabe {
+  padding: 1px 2px !important;
+}
+
+.ava-zelle-eingabe input {
+  width: 92px !important;
+  min-width: 0 !important;
+  border-color: transparent;
+  background: transparent;
+  text-align: right;
+}
+
+.ava-zelle-eingabe input:hover,
+.ava-zelle-eingabe input:focus {
+  border-color: var(--border);
+  background: var(--input-bg);
+}
+
+input.ava-fehler {
+  border-color: var(--danger) !important;
+  background: var(--fehler-bg) !important;
+}
+
+.ava-leer-zelle {
+  padding: 30px !important;
+  text-align: center;
+}
+
+.ava-lv-fuss {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 6px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.ava-panel {
+  width: 430px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 12px 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-gutter: stable;
+}
+
+.ava-panel-kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ava-panel-kopf .ava-chip {
+  margin-left: 0;
+  align-self: flex-start;
+}
+
+.ava-panel-summe {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ava-oz-eingabe {
+  max-width: 120px;
+}
+
+.ava-langtext {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+}
+
+.ava-langtext-leiste {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.ava-langtext-flaeche {
+  min-height: 180px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding: 6px 8px;
+  outline: none;
+  line-height: 1.45;
+  font-size: 12.5px;
+}
+
+.ava-langtext-flaeche p {
+  margin: 0 0 2px;
+}
+
+.ava-langtext-flaeche ul,
+.ava-langtext-flaeche ol {
+  margin: 2px 0;
+  padding-left: 20px;
+}
+
+/* ---------- Felder ---------- */
+
+.ava-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ava-feld-label {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.ava-feld-hinweis {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ava-feld input,
+.ava-feld select,
+.ava-feld textarea {
+  width: 100%;
+}
+
+.ava-feld textarea,
+.ava-bericht textarea,
+.ava-notiz-neu textarea {
+  font: inherit;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text);
+  resize: vertical;
+  width: 100%;
+}
+
+.ava-feld-reihe {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ava-formular {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px 12px;
+  margin: 8px 0;
+}
+
+.ava-feld-breit {
+  grid-column: 1 / -1;
+}
+
+.ava-reihe {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.ava-reihe > input:not([type='checkbox']),
+.ava-reihe > select {
+  flex: 1;
+  min-width: 0;
+}
+
+.ava-klein {
+  max-width: 64px;
+}
+
+.ava-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+/* ---------- Angebote ---------- */
+
+.ava-angebote {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+.ava-bieter-liste {
+  padding: 8px 12px;
+}
+
+.ava-bieter-liste tr {
+  cursor: pointer;
+}
+
+.ava-auftrag td {
+  background: var(--ok-bg) !important;
+}
+
+.ava-ausgeschlossen td {
+  opacity: 0.55;
+}
+
+.ava-erfassen,
+.ava-spiegel {
+  padding: 0 12px 16px;
+}
+
+.ava-erfassen-kopf {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.ava-spiegel-tabelle td,
+.ava-spiegel-tabelle th {
+  white-space: nowrap;
+}
+
+.ava-spiegel-tabelle td.ava-kurztext {
+  white-space: normal;
+  min-width: 200px;
+}
+
+.ava-spiegel-bieter {
+  text-align: center !important;
+  border-left: 1px solid var(--border);
+}
+
+.ava-spiegel-ka {
+  color: var(--muted);
+}
+
+.ava-min {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  font-weight: 600;
+}
+
+.ava-max {
+  color: var(--fehler-text);
+}
+
+.ava-auffaellig {
+  outline: 1.5px solid var(--warn-border);
+  outline-offset: -2px;
+}
+
+.ava-rang {
+  color: var(--accent);
+}
+
+/* ---------- Auftrag ---------- */
+
+.ava-auftrag-seite {
+  padding: 12px 16px 24px;
+  overflow: auto;
+}
+
+/* ---------- Rechnungen ---------- */
+
+.ava-pruefen {
+  width: min(980px, 96vw);
+}
+
+.ava-korrektur {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.ava-rechnung-tabelle td {
+  padding: 3px 6px;
+}
+
+.ava-zwischensumme td {
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+}
+
+.ava-zahlung td {
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--accent-soft);
+  border-top: 2px solid var(--accent);
+}
+
+.ava-bereits {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ava-bereits-kopf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ava-bereits-kopf strong {
+  flex: 1;
+}
+
+.ava-vorschau-zeile {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: var(--accent-soft);
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.ava-nr-gross {
+  font-size: 22px;
+  margin: 8px 0;
+}
+
+.ava-nr-gross strong {
+  font-size: 34px;
+  color: var(--accent);
+}
+
+.ava-dateiname {
+  font-family: Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+  margin: 2px 0;
+}
+
+/* ---------- Rechnungseingang ---------- */
+
+.ava-eingang {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
+  min-height: 0;
+}
+
+.ava-eingang-liste,
+.ava-eingang-ziel {
+  background: var(--panel);
+  overflow-y: auto;
+  padding: 10px 12px;
+}
+
+.ava-eingang-liste {
+  border-right: 1px solid var(--border);
+}
+
+.ava-eingang-ziel {
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ava-eingang-ziel h2,
+.ava-eingang-liste h2 {
+  font-size: 13px;
+  margin: 8px 0 4px;
+}
+
+.ava-eingang-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ava-eingang-vorschau {
+  overflow: auto;
+  background: var(--canvas);
+}
+
+.ava-eingang-ziel .ava-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ava-pdf {
+  padding: 12px;
+}
+
+.ava-pdf-seite {
+  display: block;
+  margin: 0 auto 12px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+  background: #fff;
+  max-width: 100%;
+}
+
+/* Listen mit zweizeiligen Einträgen (Titel, darunter Angaben) */
+.ava-liste-spalte .list li,
+.ava-eingang-liste .list li,
+.ava-eingang-ziel .list li,
+.ava-bib-liste li {
+  display: block;
+}
+
+/* ---------- Bauleitung ---------- */
+
+.ava-zweispaltig {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.ava-liste-spalte {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 10px 12px;
+}
+
+.ava-editor-spalte {
+  overflow-y: auto;
+  padding: 14px 20px 30px;
+}
+
+.ava-bericht {
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ava-tops {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ava-top {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ava-top-erledigt {
+  opacity: 0.6;
+}
+
+.ava-top-nr {
+  width: 44px !important;
+  flex: 0 0 44px !important;
+}
+
+.ava-top-titel {
+  flex: 3 !important;
+  font-weight: 600;
+}
+
+.ava-fotos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ava-notiz-neu {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  max-width: 900px;
+}
+
+.ava-notizen {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ava-notizen li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.ava-notiz-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ava-notiz-text textarea {
+  border-color: transparent;
+  background: transparent;
+}
+
+.ava-notizen li.ava-erledigt {
+  opacity: 0.55;
+}
+
+.ava-mails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.ava-mails .ava-suche {
+  margin-left: 0;
+  max-width: 420px;
+}
+
+.ava-mails-koerper {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.ava-mail-tabelle td.ava-kurztext {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ava-mail-vorschau {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  position: sticky;
+  top: 0;
+}
+
+.ava-mail-vorschau h3 {
+  margin: 0 0 6px;
+}
+
+.ava-mail-text,
+.ava-bib-text {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 12.5px;
+  max-height: 50vh;
+  overflow: auto;
+  background: var(--bg);
+  padding: 8px;
+  border-radius: 4px;
+}
+
+/* ---------- Dialoge ---------- */
+
+.ava-bibliothek {
+  width: min(1000px, 96vw);
+}
+
+.ava-bib-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ava-bib-filter input {
+  flex: 1;
+}
+
+.ava-bib-koerper {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 12px;
+  height: 56vh;
+}
+
+.ava-bib-liste {
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin: 0;
+}
+
+.ava-bib-vorschau {
+  overflow-y: auto;
+}
+
+.ava-bib-vorschau h3 {
+  margin-top: 0;
+}
+
+.ava-einstellungen {
+  width: min(980px, 96vw);
+}
+
+.ava-einst-kopf {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.ava-einst-koerper {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 16px;
+  min-height: 52vh;
+}
+
+.ava-einst-ebenen {
+  margin: 0;
+}
+
+.ava-einst-inhalt {
+  overflow-y: auto;
+  max-height: 64vh;
+  padding-right: 4px;
+}
+
+.ava-mailvorlagen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ava-oz-maske input {
+  width: 100%;
+}
+
+.dialog-buttons .tb-spacer {
+  flex: 1;
+}
+
+/* ---------- Druck ---------- */
+
+.ava-druck {
+  max-width: 1200px;
+  color: #1f2328;
+  padding-top: 64px;
+}
+
+.ava-druck-hoch .ava-druck {
+  max-width: 820px;
+}
+
+.ava-lvd-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+
+.ava-lvd-kopf h1 {
+  margin: 2px 0;
+  font-size: 18px;
+}
+
+.ava-lvd-projekt {
+  white-space: pre-line;
+  font-size: 12px;
+}
+
+.ava-lvd-daten td {
+  padding: 1px 8px;
+  font-size: 11.5px;
+}
+
+.ava-lvd-daten td:first-child {
+  color: #6b7280;
+}
+
+.ava-lvd-ag {
+  font-size: 12px;
+}
+
+.ava-lvd-tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.ava-lvd-tabelle th {
+  text-align: left;
+  border-bottom: 1.5px solid #333;
+  padding: 4px;
+}
+
+.ava-lvd-tabelle th.num,
+.ava-lvd-tabelle td.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ava-lvd-tabelle td {
+  padding: 4px;
+  vertical-align: top;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ava-lvd-abschnitt td {
+  font-weight: 700;
+  background: #f3f4f6;
+}
+
+.ava-lvd-lang {
+  font-weight: 400;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.ava-lvd-lang p {
+  margin: 0;
+}
+
+.ava-lvd-pos,
+.ava-lvd-hinweis {
+  break-inside: avoid;
+}
+
+.ava-lvd-summe {
+  margin: 12px 0 0 auto;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 320px;
+}
+
+.ava-lvd-summe td {
+  padding: 3px 6px;
+}
+
+.ava-lvd-brutto td {
+  font-weight: 700;
+  border-top: 1.5px solid #333;
+}
+
+.ava-lvd-unterschrift {
+  display: flex;
+  gap: 60px;
+  margin-top: 60px;
+  font-size: 11px;
+}
+
+.ava-lvd-unterschrift div {
+  flex: 1;
+  border-top: 1px solid #333;
+  padding-top: 4px;
+}
+
+.ava-spiegel-druck .ava-tabelle {
+  font-size: 10px;
+}
+
+.ava-spiegel-druck .ava-tabelle th {
+  position: static;
+}
+
+.ava-rang-tabelle {
+  max-width: 700px;
+}
+
+@page hoch {
+  size: A4 portrait;
+  margin: 15mm 14mm;
+}
+
+@media print {
+  .ava-druck {
+    padding-top: 0;
+  }
+
+  .ava-druck-hoch {
+    page: hoch;
+  }
+
+  .ava-druck select,
+  .ava-druck .ava-check {
+    display: none;
+  }
+
+  .ava-lvd-tabelle thead {
+    display: table-header-group;
+  }
+}

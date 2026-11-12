@@ -78,6 +78,7 @@ pub fn run() {
             ava_scan_uebernehmen,
             ava_oeffnen,
             ava_mail_entwurf,
+            ava_temp_oeffnen,
             // Rahmen
             rahmen_formulare_freigeben
         ])

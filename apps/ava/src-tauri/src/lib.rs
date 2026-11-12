@@ -37,7 +37,8 @@ pub fn run() {
             ava_umbenennen,
             ava_scan_uebernehmen,
             ava_oeffnen,
-            ava_mail_entwurf
+            ava_mail_entwurf,
+            ava_temp_oeffnen
         ])
         .setup(|app| {
             log::info!("AVA {} gestartet", app.package_info().version);
