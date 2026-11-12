@@ -136,7 +136,12 @@ export function App() {
   // von außen geänderte Dateien übernehmen: beim Zurückkommen ins Fenster und alle 15 s, solange es sichtbar ist
   useEffect(() => {
     const sichtbar = () => document.visibilityState !== 'hidden';
-    const zurueck = () => sichtbar() && void auffrischen(true);
+    const zurueck = () => {
+      if (!sichtbar()) return;
+      void auffrischen(true);
+      // das Namensschema des Büros kann im Projektordner-Tool geändert worden sein
+      void useFormulare.getState().namensschemaNeuLesen();
+    };
     const takt = setInterval(() => sichtbar() && void auffrischen(), 15_000);
     window.addEventListener('focus', zurueck);
     document.addEventListener('visibilitychange', zurueck);

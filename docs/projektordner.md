@@ -115,17 +115,20 @@ Eintrag `namensschema`; `packages/core/src/namensschema.ts`):
 - **Aufbau des Dateinamens:** welche Stelle Projektcode, Phase bzw. Antragsart, Datum (JJMMTT) und Plannummer haben –
   Vorgabe „HVO GP 261111 GP-04 Grundriss OG.pdf“ (im Antragsordner steht die Antragsart statt der Phase, die
   Plannummer bleibt).
-- **Planphasen** mit Kürzel, Bedeutung und Leistungsphase: BP Grundlagenermittlung (Bestand), EP Entwurfsplanung,
+- **Planphasen** mit Kürzel, Bedeutung und Leistungsphase: BP Grundlagenermittlung, EP Entwurfsplanung,
   GP Genehmigungsplanung, AP Ausführungsplanung, AB Aufteilungspläne für die Abgeschlossenheitsbescheinigung
   (§ 7 Abs. 4 WEG, Sonderfall).
 - **Antrags- und Verfahrensarten** mit gleichwertigen Schreibweisen: BAUA Bauantrag, BAUVA Antrag auf Vorbescheid
   bzw. Bauvoranfrage (auch BVA), BAUF Genehmigungsfreistellung, DENK Denkmalrechtliche Erlaubnis, ABGE
   Abgeschlossenheitsbescheinigung, ENTW Entwässerungsantrag.
-- **Bearbeiten:** Kürzel, Bedeutung und Schreibweisen werden beim Verlassen des Felds übernommen; ein Kürzel muss aus
-  Großbuchstaben und Ziffern bestehen (höchstens 8 Zeichen) und darf nicht doppelt vorkommen – sonst bleibt das alte
-  und eine Meldung sagt warum. Die Stellen tauschen beim Umstellen die Plätze; das Beispiel zeigt die Zerlegung.
-  „Vorgabe wiederherstellen“ (mit Rückfrage) setzt die eingebaute Vorgabe.
-- **Index ab Leistungsphase** (Vorgabe 5): erst ab dann tragen Pläne einen Index (AP-03a).
+- **Bearbeiten:** Kürzel, Bedeutung, Schreibweisen und Leistungsphasen werden beim Verlassen des Felds übernommen
+  (Schreibweisen bereinigt: groß, ohne Doppelte). Ein Kürzel muss aus Großbuchstaben und Ziffern bestehen
+  (höchstens 8 Zeichen) und darf nicht doppelt vorkommen – sonst zeigt das Feld wieder das alte und eine Meldung
+  sagt warum. Leistungsphasen gehen von 0 bis 9 (größere Werte werden begrenzt; leer = keine). Ein neues Kürzel
+  („+ Kürzel“) wird erst gespeichert, wenn man die Zeile mit einem gültigen Kürzel verlässt – vorher gilt es in
+  keiner App. Die Stellen tauschen beim Umstellen die Plätze; das Beispiel zeigt die Zerlegung mit den Kürzeln des
+  Schemas. „Vorgabe wiederherstellen“ (mit Rückfrage) setzt die eingebaute Vorgabe, auch in allen Feldern.
+- **Index ab Leistungsphase** (Vorgabe 5, Bürovorgabe): erst ab dann tragen Pläne einen Index (AP-03a).
 
 Jede **neue Projektdatei** bekommt eine Kopie (Abschnitt `namensschema`); beim **Ergänzen** eines Projekts wird
 eine fehlende oder abweichende Kopie auf den Stand des Büros gebracht (in der Vorschau als Änderung „Namensschema“

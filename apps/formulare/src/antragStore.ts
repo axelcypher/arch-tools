@@ -285,7 +285,7 @@ export function antragSperre(s: Pick<AntragState, 'projektdatei' | 'fassungen' |
 /** Name des nächsten Nachtrags (neue Fassung derselben Antragsart) */
 export function nachtragName(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null): string {
   const aktiv = aktiveFassung(s, p);
-  return naechsteFassung(s.fassungen, s.fassungen.find((f) => f.name === aktiv)?.art ?? aktiv.replace(/[\s_-]*\d+$/, ''));
+  return naechsteFassung(s.fassungen, s.fassungen.find((f) => f.name === aktiv)?.art ?? aktiv.replace(/[\s_-]*\d+$/, ''), namensschema().antragsarten);
 }
 
 /** Projektcodes, mit denen Dateien im Antragsordner beginnen dürfen: Kürzel des FORMA-Projekts, Projektcode der .oap */
@@ -1208,7 +1208,15 @@ export function neuerName(vorlage: string, formulare: FormularEintrag[]): string
 /* ---------- mit dem Formulare-Store verbinden ---------- */
 
 let verzoegert: ReturnType<typeof setTimeout> | undefined;
+type OapStand = ReturnType<typeof useFormulare.getState>['oap'];
+/** Was die Erkennung von Antragsordnern und Plänen bestimmt: Namensschema der Projektdatei und Zahl der Geschosse */
+const schemaDerProjektdatei = (o: Exclude<OapStand, 'fehlt' | null>) => JSON.stringify([o.projekt.namensschema ?? null, o.projekt.storeys.length]);
 useFormulare.subscribe((s, vorher) => {
+  // Namensschema des Büros (gemeinsame Einstellungen) oder das bzw. die Geschosse derselben Projektdatei geändert:
+  // Antragsordner und Plansätze neu erkennen – nicht erst beim nächsten Takt. Eine neu gewählte oder eben angelegte
+  // Projektdatei laden die Zweige unten bzw. der Aufrufer.
+  const dieselbe = s.oap && s.oap !== 'fehlt' && vorher.oap && vorher.oap !== 'fehlt' && s.oap.pfad === vorher.oap.pfad;
+  const schemaNeu = s.namensschemaBuero !== vorher.namensschemaBuero || (!!dieselbe && schemaDerProjektdatei(s.oap as Exclude<OapStand, 'fehlt' | null>) !== schemaDerProjektdatei(vorher.oap as Exclude<OapStand, 'fehlt' | null>));
   if (s.projekt !== vorher.projekt || s.ablage !== vorher.ablage || s.ds !== vorher.ds) {
     zerlegt.clear();
     if (s.projekt !== vorher.projekt) useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [] });
@@ -1216,6 +1224,8 @@ useFormulare.subscribe((s, vorher) => {
   } else if (s.oap !== vorher.oap && s.oap && s.oap !== 'fehlt' && (!vorher.oap || (vorher.oap !== 'fehlt' && vorher.oap.pfad !== s.oap.pfad))) {
     // Projektdatei erstmals gelesen bzw. eine andere gewählt: neu laden – dabei entstehen fehlende Anträge (und werden
     // gespeichert). Eine eben angelegte (vorher „fehlt“) lädt der Aufrufer selbst nach dem Speichern.
+    void useAntrag.getState().laden();
+  } else if (schemaNeu) {
     void useAntrag.getState().laden();
   } else if (s.oap !== vorher.oap) {
     // Projektdatei geändert (auch von einer anderen App): Abschnitt „formulare“ übernehmen

@@ -1,5 +1,6 @@
 /**
- * Namensschema des Büros – gemeinsam für alle Apps: welche Kürzel es gibt (Planphasen wie GP, Antragsarten wie BAUA),
+ * Namensschema des Büros – gemeinsam für alle Apps: welche Kürzel es gibt (Planphasen wie GP, Antrags- und
+ * Verfahrensarten wie BAUA oder BAUF – die Genehmigungsfreistellung ist kein Antrag),
  * an welcher Stelle im Dateinamen Code, Phase bzw. Antragsart, Datum und Plannummer stehen und ab welcher
  * Leistungsphase Pläne einen Index tragen (AP-03a).
  *
@@ -30,7 +31,7 @@ export type NamensTeil = 'code' | 'art' | 'datum' | 'nummer';
 export interface Namensschema {
   /** Planphasen: Kürzel an der Stelle „art“ in den Planungsordnern und vor der Plannummer (GP-01) */
   phasen: Kuerzel[];
-  /** Antragsarten: Kürzel an der Stelle „art“ im Antragsordner (statt der Phase) */
+  /** Antrags- und Verfahrensarten: Kürzel an der Stelle „art“ im Antragsordner (statt der Phase) */
   antragsarten: Kuerzel[];
   /** Reihenfolge der Teile im Dateinamen */
   reihenfolge: NamensTeil[];
@@ -47,7 +48,7 @@ export const NAMENS_TEILE: { id: NamensTeil; name: string; beispiel: string }[] 
 
 export const VORGABE_NAMENSSCHEMA: Namensschema = {
   phasen: [
-    { kuerzel: 'BP', name: 'Grundlagenermittlung (Bestand)', lph: 1 },
+    { kuerzel: 'BP', name: 'Grundlagenermittlung', lph: 1 },
     { kuerzel: 'EP', name: 'Entwurfsplanung', lph: 3 },
     { kuerzel: 'GP', name: 'Genehmigungsplanung', lph: 4 },
     { kuerzel: 'AP', name: 'Ausführungsplanung', lph: 5 },
@@ -66,6 +67,9 @@ export const VORGABE_NAMENSSCHEMA: Namensschema = {
 };
 
 const TEILE: NamensTeil[] = ['code', 'art', 'datum', 'nummer'];
+
+/** Leistungsphase 0 bis 9 (HOAI kennt 1 bis 9; 0 = von Anfang an): Zahlen werden begrenzt, alles andere ist keine */
+export const lphAus = (x: unknown): number | undefined => (typeof x === 'number' && Number.isFinite(x) ? Math.min(9, Math.max(0, Math.round(x))) : undefined);
 
 function kuerzelAus(roh: unknown): Kuerzel[] | null {
   if (!Array.isArray(roh)) return null;
@@ -91,7 +95,7 @@ function kuerzelAus(roh: unknown): Kuerzel[] | null {
       kuerzel,
       name: typeof o.name === 'string' ? o.name.trim() : '',
       ...(synonyme.length ? { synonyme } : {}),
-      ...(typeof o.lph === 'number' && o.lph >= 0 && o.lph <= 9 ? { lph: Math.round(o.lph) } : {}),
+      ...(lphAus(o.lph) !== undefined ? { lph: lphAus(o.lph) } : {}),
     });
   }
   return out;
@@ -106,7 +110,7 @@ export function namensschemaAus(roh: unknown): Namensschema | null {
     phasen: kuerzelAus(o.phasen) ?? structuredClone(VORGABE_NAMENSSCHEMA.phasen),
     antragsarten: kuerzelAus(o.antragsarten) ?? structuredClone(VORGABE_NAMENSSCHEMA.antragsarten),
     reihenfolge: reihe.length === TEILE.length && new Set(reihe).size === TEILE.length ? reihe : [...VORGABE_NAMENSSCHEMA.reihenfolge],
-    indexAbLph: typeof o.indexAbLph === 'number' && o.indexAbLph >= 0 && o.indexAbLph <= 10 ? Math.round(o.indexAbLph) : VORGABE_NAMENSSCHEMA.indexAbLph,
+    indexAbLph: lphAus(o.indexAbLph) ?? VORGABE_NAMENSSCHEMA.indexAbLph,
   };
 }
 

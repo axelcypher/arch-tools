@@ -4569,8 +4569,9 @@ tr[data-ziehen='danach'] > td {
   font-size: 11px;
   color: var(--muted);
 }
+/* Kennzeichen der Verknüpfung: nicht anklickbar, daher keine Akzentfarbe – nur etwas kräftiger als die Gruppe */
 .pk-eigen-link {
-  color: var(--accent);
+  color: color-mix(in srgb, var(--text) 35%, var(--muted));
 }
 .pk-auswahl-frei {
   display: flex;
@@ -4651,8 +4652,8 @@ tr[data-ziehen='danach'] > td {
 
 /* Plansatz: Pläne mit Zustand */
 .pu-art.plansatz {
-  background: var(--room-bg);
-  color: var(--room-text);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text);
 }
 /* Planliste: fluchtet mit der Titelspalte der Zeile */
 .pu-plansatz {
@@ -4668,7 +4669,8 @@ tr[data-ziehen='danach'] > td {
 }
 .pu-plan {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 120px;
+  /* feste Spalte, damit die Nummern untereinander fluchten; lange Plankürzel werden gekürzt (voller Text im Tooltip) */
+  grid-template-columns: 76px minmax(0, 1fr) 120px;
   align-items: center;
   gap: 10px;
   padding: 3px 8px;
@@ -4686,8 +4688,16 @@ tr[data-ziehen='danach'] > td {
   background: var(--warn-bg);
 }
 .pu-plan-nr {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+.pu-plan-hinweise:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .pu-plan-name {
   min-width: 0;

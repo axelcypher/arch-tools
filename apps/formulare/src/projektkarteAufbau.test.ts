@@ -12,6 +12,7 @@ describe('Eingaben mit fester Form in der Projektkarte', () => {
     expect(NUTZUNGSARTEN).toContain('Wohnen');
     expect(BAUGEBIETE).toContain('WA – allgemeines Wohngebiet');
     expect(BAUGEBIETE).toContain('Außenbereich (§ 35 BauGB)');
+    expect(BAUGEBIETE).toContain('Fläche für den Gemeinbedarf (§ 9 Abs. 1 Nr. 5 BauGB)');
     expect(BAUGEBIETE.filter((g) => g.startsWith('SO'))).toHaveLength(2);
   });
 

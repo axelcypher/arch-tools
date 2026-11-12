@@ -903,10 +903,9 @@
 .po-kuerzel-tabelle td:first-child input {
   text-transform: uppercase;
 }
-.po-kuerzel-tabelle input[aria-invalid='true'] {
-  border-color: var(--fehler-border);
+.po-kuerzel-tabelle td:first-child input::placeholder {
+  text-transform: none;
 }
-.po-kuerzel-fehler {
-  font-size: 11.5px;
-  color: var(--fehler-text);
+.po-kuerzel-neu input {
+  border-style: dashed;
 }

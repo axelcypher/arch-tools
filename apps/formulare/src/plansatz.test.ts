@@ -41,7 +41,7 @@ describe('Plansatz', () => {
 
   it('Quelle: noch nicht verschoben, veraltet nach dem Datum im Namen; leere Quelle ist in Ordnung', () => {
     const antrag = [datei('HVO BAUA 261105 GP-01 Grundriss EG.pdf', 50), datei('HVO BAUA 261111 GP-02 Grundriss OG.pdf', 10)];
-    const quelle = [datei('Planung/GP/pdf/HVO GP 261111 GP-01 Grundriss EG.pdf', 5), datei('Planung/GP/pdf/HVO GP 261111 GP-03 Schnitt.pdf', 5)];
+    const quelle = [datei('HVO GP 261111 GP-01 Grundriss EG.pdf', 5), datei('HVO GP 261111 GP-03 Schnitt.pdf', 5)];
     const r = plansatzPruefen(antrag, quelle, S);
     expect(r.plaene.map((p) => [p.schluessel, p.zustand])).toEqual([
       ['GP-01', 'veraltet'],
@@ -64,7 +64,7 @@ describe('Plansatz', () => {
     expect(r.plaene.find((p) => p.schluessel === 'GP-02')!.datei!.pfad).toBe('HVO BAUA 261111 GP-02 Grundriss.pdf');
     expect(r.plaene.find((p) => p.schluessel === 'GP-01')!.satz).toBe(true);
     expect(r.hinweise).toEqual([
-      'GP-04a: Index bei GP nicht vorgesehen (erst ab Leistungsphase 5) – zählt als neuere Fassung',
+      'GP-04a: Index bei GP (LPH 4) – nach dem Namensschema des Büros erst ab LPH 5; zählt als neuere Fassung',
       'GP-02: ältere Fassung „HVO BAUA 261101 GP-02 Grundriss.pdf“ liegt auch im Antragsordner – alte Fassung?',
       '„HVO BAUA 261111 GP01-03 Plansatz.pdf“ (Satz) und einzelne Pläne daraus liegen beide im Antragsordner',
     ]);
@@ -87,7 +87,39 @@ describe('Plansatz', () => {
   it('fehlen Schnitt oder Ansicht am Ende der Reihe (keine Lücke), gibt es einen Hinweis nach § 4 BauPrüfVO – ohne Sperre', () => {
     const r = plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss EG.pdf'), datei('A BAUA 261111 GP-02 Grundriss OG.pdf'), datei('A BAUA 261111 GP-03 Schnitt A-A.pdf')], [], S);
     expect(r.status).toBe('aktuell');
-    expect(r.hinweise).toEqual(['keine Ansicht erkannt (Bauzeichnungen: Grundrisse, Schnitte, Ansichten – § 4 Abs. 1 BauPrüfVO NRW)']);
+    expect(r.hinweise).toEqual(['keine Ansicht erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 4 BauPrüfVO NRW)']);
     expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss EG.pdf')], [], S).hinweise).toHaveLength(2);
+    // Aufteilungspläne (AB, ohne Leistungsphase): die BauPrüfVO ist nicht die Grundlage – kein solcher Hinweis
+    expect(plansatzPruefen([datei('A ABGE 261111 AB-01 Grundriss EG.pdf')], [], S).hinweise).toEqual([]);
+  });
+
+  it('Unterordner der Quelle (Archiv, alt) zählen nicht – keine Scheinnummern und Scheinlücken', () => {
+    const antrag = [datei('A BAUA 261111 GP-01 Grundriss.pdf'), datei('A BAUA 261111 GP-02 Schnitt.pdf')];
+    const quelle = [
+      datei('A GP 261111 GP-01 Grundriss.pdf'),
+      datei('_Archiv/A GP 261001 GP-05 Ansicht.pdf'),
+      datei('alt/A GP 261001 GP-04 Ansicht.pdf'),
+      { pfad: '_Archiv', ordner: true, groesse: 0, geaendert: 1 },
+    ];
+    const r = plansatzPruefen(antrag, quelle, S);
+    expect(r.plaene.map((p) => [p.schluessel, p.zustand])).toEqual([
+      ['GP-01', 'aktuell'],
+      ['GP-02', 'aktuell'],
+    ]);
+    expect(r.luecken).toEqual([]);
+  });
+
+  it('derselbe Plan als PDF und DWG: es zählt das PDF, kein Hinweis auf eine alte Fassung', () => {
+    const r = plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss.pdf'), datei('A BAUA 261111 GP-01 Grundriss.dwg', 99)], [], S);
+    expect(r.plaene[0].datei!.pfad).toBe('A BAUA 261111 GP-01 Grundriss.pdf');
+    expect(r.hinweise.filter((h) => h.includes('ältere Fassung'))).toEqual([]);
+  });
+
+  it('veraltet auch nach dem Index: AP-03a in der Quelle bei gleichem Datum ist neuer als AP-03 im Antragsordner', () => {
+    const r = plansatzPruefen([datei('A BAUA 261111 AP-03 Detail.pdf', 50)], [datei('A AP 261111 AP-03a Detail.pdf', 5)], S);
+    expect(r.plaene.map((p) => [p.schluessel, p.zustand])).toEqual([['AP-03', 'veraltet']]);
+    expect(r.hinweise.filter((h) => h.includes('Index'))).toEqual([]);
+    // ein Index bei einer Phase ohne Leistungsphase: das Namensschema sieht keinen vor
+    expect(plansatzPruefen([datei('A ABGE 261111 AB-02b Grundriss.pdf')], [], S).hinweise).toEqual(['AB-02b: für AB sieht das Namensschema des Büros keinen Index vor – zählt als neuere Fassung']);
   });
 });

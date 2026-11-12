@@ -13,6 +13,7 @@ import { cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import { useAntrag } from './antragStore';
 import { useFormulare } from './store';
+import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -492,6 +493,8 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(ds.schreibvorgaenge).toContain('neu Planung/Berechnungen/BS9.oap');
     const p = readProjectFile(ds.dateien.get(`${ORDNER}/Planung/Berechnungen/BS9.oap`)!);
     expect(p.meta).toMatchObject({ projektcode: 'BS9', bauherr: { name: 'Neue Bauherrin' } });
+    // wie im Projektordner-Tool: eine Kopie des Namensschemas des Büros (hier: die Vorgabe)
+    expect(p.namensschema).toEqual(VORGABE_NAMENSSCHEMA);
     expect(knopf(host, 'Projektdatei (.oap)').textContent).toContain('BS9.oap');
     // der Ort neuer Projektdateien gilt für alle Apps
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!)).toMatchObject({ projekte: ['Z:/Projekte'], oapPfad: 'Planung/Berechnungen/{Kürzel}.oap' });

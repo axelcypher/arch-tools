@@ -278,50 +278,84 @@ describe('Projektordner', () => {
     const bereich = host.querySelector<HTMLElement>('.po-namensschema')!;
     const schema = () => useOrdner.getState().allgemein.namensschema!;
     const beispiel = () => bereich.querySelector('code')!.textContent;
+    const eingabeMit = (label: string) => bereich.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
     expect(beispiel()).toBe('HVO GP 261111 GP-04 Grundriss OG.pdf');
     // noch keine eigene Fassung: es gilt die Vorgabe, „Vorgabe wiederherstellen“ ist aus
     expect(knopf(bereich, 'Vorgabe wiederherstellen').disabled).toBe(true);
 
     // Stelle 2 auf Plannummer: die beiden Teile tauschen die Plätze, das Beispiel folgt
-    const stelle2 = bereich.querySelector<HTMLSelectElement>('select[aria-label="Stelle 2"]')!;
+    const stelle = (n: number) => [...bereich.querySelectorAll('.po-stellen label')].find((l) => l.textContent?.startsWith(`Stelle ${n}`))!.querySelector('select')!;
     act(() => {
-      stelle2.value = 'nummer';
-      stelle2.dispatchEvent(new Event('change', { bubbles: true }));
+      stelle(2).value = 'nummer';
+      stelle(2).dispatchEvent(new Event('change', { bubbles: true }));
     });
     expect(schema().reihenfolge).toEqual(['code', 'nummer', 'datum', 'art']);
     expect(beispiel()).toBe('HVO GP-04 261111 GP Grundriss OG.pdf');
     expect(bereich.textContent).toContain('Phase GP, Datum 261111, Plannummer GP-04');
+    expect(bereich.textContent).toContain('die Antragsart (HVO GP-04 261111 BAUA …)');
+
+    // Index ab Leistungsphase: beim Verlassen übernommen, außerhalb des Bereichs begrenzt, leer = bleibt
+    const index = bereich.querySelector<HTMLInputElement>('.po-index input')!;
+    eingabe(index, '12');
+    expect(schema().indexAbLph).toBe(9);
+    expect(index.value).toBe('9');
+    eingabe(index, '');
+    expect(schema().indexAbLph).toBe(9);
+    expect(index.value).toBe('9');
+    eingabe(index, '5');
+    expect(schema().indexAbLph).toBe(5);
 
     // Kürzel ändern: klein getippt, groß übernommen
-    const kuerzel = (liste: string, k: string) => bereich.querySelector<HTMLInputElement>(`input[aria-label="${liste}: Kürzel ${k}"]`)!;
+    const kuerzel = (liste: string, k: string) => eingabeMit(`${liste}: Kürzel ${k}`);
     eingabe(kuerzel('Planphasen', 'BP'), 'bp');
     expect(schema().phasen[0].kuerzel).toBe('BP');
     eingabe(kuerzel('Planphasen', 'BP'), 'bs');
     expect(schema().phasen.map((k) => k.kuerzel)).toEqual(['BS', 'EP', 'GP', 'AP', 'AB']);
-    // ungültig oder doppelt: das alte Kürzel bleibt, die Meldung sagt warum
+    // ungültig oder doppelt: das Feld zeigt wieder das alte Kürzel, die Meldung sagt warum
     eingabe(kuerzel('Planphasen', 'EP'), 'E-P');
     expect(schema().phasen[1].kuerzel).toBe('EP');
-    expect(kuerzel('Planphasen', 'EP').getAttribute('aria-invalid')).toBe('true');
-    expect(bereich.querySelector('[role="alert"]')!.textContent).toBe('„E-P“: nur Großbuchstaben und Ziffern, höchstens 8 Zeichen – es bleibt EP.');
+    expect(kuerzel('Planphasen', 'EP').value).toBe('EP');
+    // die zuletzt erschienene Meldung
+    const meldung = () => [...bereich.querySelectorAll<HTMLElement>('.feld-meldung[role="alert"]')].at(-1)!;
+    expect(meldung().textContent).toBe('„E-P“: nur Großbuchstaben und Ziffern, höchstens 8 Zeichen – es bleibt EP.');
+    expect(kuerzel('Planphasen', 'EP').getAttribute('aria-describedby')).toBe(meldung().id);
     eingabe(kuerzel('Planphasen', 'EP'), 'gp');
-    expect(bereich.querySelector('[role="alert"]')!.textContent).toBe('GP gibt es schon – es bleibt EP.');
+    expect(meldung().textContent).toBe('„gp“: gibt es schon – es bleibt EP.');
     expect(schema().phasen[1].kuerzel).toBe('EP');
 
-    // Bedeutung, Schreibweisen und Leistungsphase
-    eingabe(bereich.querySelector<HTMLInputElement>('input[aria-label="Antrags- und Verfahrensarten: Bedeutung von ENTW"]')!, ' Entwässerungsgesuch ');
+    // Bedeutung, Schreibweisen (bereinigt angezeigt) und Leistungsphase (begrenzt, leer = keine)
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW'), ' Entwässerungsgesuch ');
     expect(schema().antragsarten.find((k) => k.kuerzel === 'ENTW')!.name).toBe('Entwässerungsgesuch');
-    eingabe(bereich.querySelector<HTMLInputElement>('input[aria-label="Schreibweisen von BAUA"]')!, 'ba, BA,  ');
+    expect(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW').value).toBe('Entwässerungsgesuch');
+    eingabe(eingabeMit('Schreibweisen von BAUA'), 'ba, BA,  baua');
     expect(schema().antragsarten.find((k) => k.kuerzel === 'BAUA')!.synonyme).toEqual(['BA']);
-    eingabe(bereich.querySelector<HTMLInputElement>('input[aria-label="Leistungsphase von AB"]')!, '5');
-    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBe(5);
+    expect(eingabeMit('Schreibweisen von BAUA').value).toBe('BA');
+    eingabe(eingabeMit('Leistungsphase von AB'), '15');
+    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBe(9);
+    eingabe(eingabeMit('Leistungsphase von AB'), '');
+    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBeUndefined();
 
-    // neues Kürzel und Entfernen
-    act(() => knopf(bereich.querySelectorAll('.po-kuerzel')[1] as HTMLElement, '+ Kürzel').click());
-    expect(schema().antragsarten.at(-1)).toEqual({ kuerzel: 'NEU', name: '' });
-    act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="NEU entfernen"]')!.click());
-    expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('NEU');
+    // neues Kürzel: erst gespeichert, wenn die Zeile mit einem gültigen Kürzel verlassen wird
+    const antragsarten = bereich.querySelectorAll<HTMLElement>('.po-kuerzel')[1];
+    act(() => knopf(antragsarten, '+ Kürzel').click());
+    expect(knopf(antragsarten, '+ Kürzel').disabled).toBe(true);
+    expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('');
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von neues Kürzel'), 'Wohnungseigentum');
+    expect(schema().antragsarten).toHaveLength(6);
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel'), 'baua');
+    expect(meldung().textContent).toBe('„baua“: gibt es schon – noch nicht gespeichert.');
+    expect(schema().antragsarten).toHaveLength(6);
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel'), 'weg');
+    expect(schema().antragsarten.at(-1)).toEqual({ kuerzel: 'WEG', name: 'Wohnungseigentum' });
+    expect(knopf(antragsarten, '+ Kürzel').disabled).toBe(false);
+    // verwerfen speichert nichts
+    act(() => knopf(antragsarten, '+ Kürzel').click());
+    act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="Neues Kürzel verwerfen"]')!.click());
+    expect(schema().antragsarten).toHaveLength(7);
+    act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="WEG entfernen"]')!.click());
+    expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('WEG');
 
-    // Vorgabe wiederherstellen: mit Rückfrage, danach gilt wieder die eingebaute Vorgabe
+    // Vorgabe wiederherstellen: mit Rückfrage, danach gilt wieder die eingebaute Vorgabe – auch in den Feldern
     act(() => knopf(bereich, 'Vorgabe wiederherstellen').click());
     await warten();
     expect(host.querySelector('.modal')?.textContent).toContain('Namensschema zurücksetzen?');
@@ -330,6 +364,10 @@ describe('Projektordner', () => {
     expect(schema().reihenfolge).toEqual(['code', 'art', 'datum', 'nummer']);
     expect(schema().phasen[0].kuerzel).toBe('BP');
     expect(beispiel()).toBe('HVO GP 261111 GP-04 Grundriss OG.pdf');
+    expect(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW').value).toBe('Entwässerungsantrag');
+    expect(eingabeMit('Schreibweisen von BAUA').value).toBe('');
+    expect(eingabeMit('Leistungsphase von AB').value).toBe('');
+    expect(index.value).toBe('5');
   });
 
   it('Struktur von einem anderen Rechner geändert: Meldung statt Überschreiben, neu laden oder eigene Fassung speichern (P-02)', async () => {

@@ -256,18 +256,22 @@ Anschrift, wie sie in Formularen steht.
   der Katalog aller Einträge mit Suche (Haken nimmt in den gewählten Abschnitt auf), links die Abschnitte – Felder am
   Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt. Je Feld: **eigene
   Beschriftung**, **Breite** (¼, ⅓, ½, ⅔, ¾, ganz) und **„↵ neue Zeile“** – so legt man fest, welche Felder in einer Zeile
-  stehen (die Vorschau unter jedem Abschnitt zeigt die Zeilen). **Verknüpfen (⛓):** Felder mit demselben Inhalt (z. B.
+  stehen (die Vorschau unter jedem Abschnitt zeigt die Zeilen; in schmalen Abschnitten werden die Felder breiter, in
+  schmalen Fenstern steht der Katalog unter dem Aufbau). **Verknüpfen (⛓):** Felder mit demselben Inhalt (z. B.
   Ort des Bauherrn und Ort des Eigentümers) werden gemeinsam ausgefüllt – eine Eingabe trägt den Wert in alle
   verknüpften Einträge der Projektkarte ein – überall in der Projektkarte, auch beim Übernehmen aus einer anderen
   Gruppe; zusammenhängendes Tippen ist ein Schritt im Verlauf. Angeboten werden nur Felder, die zusammenpassen: Text
   in Text (ins einzeilige Feld ohne Zeilenumbrüche), Auswahl in Auswahl über den Text der Wahl (fehlt er im Ziel,
-  bleibt es unverändert), Kästchen in Kästchen. Auf der Seite steht unter jedem Feld dezent, aus welcher Gruppe es
+  bleibt es unverändert), Kästchen in Kästchen; ohne passendes Feld ist ⛓ gesperrt. Auf der Seite steht unter jedem Feld dezent, aus welcher Gruppe es
   stammt und womit es verknüpft ist. Gilt je Benutzer für alle Projekte (`formulare:ansicht:projektkarte`).
 - **Eingaben mit fester Form:** „Art der Nutzung“ ist eine Auswahl gängiger Nutzungen (Wohnen, Büro und Verwaltung,
   Handel …; „andere …“ erlaubt einen eigenen Text, ein vorhandener eigener Text bleibt als „(eigene Angabe)“
-  erhalten), „Art der baulichen Nutzung“ eine Auswahl der Baugebiete nach BauNVO (§§ 2–11, Sondergebiete nach § 10
-  und § 11 getrennt) samt vorhabenbezogenem Bebauungsplan (§ 12 BauGB), Innenbereich (§ 34) und Außenbereich (§ 35);
-  Einträge „Anzahl …“ nehmen nur ganze Zahlen an – ein alter Text wie „ca. 3“ bleibt sichtbar und wird gemeldet.
+  erhalten; Esc oder der Pfeil führt zur Liste zurück), „Art der baulichen Nutzung“ eine Auswahl der Baugebiete nach
+  BauNVO (§§ 2–11, Sondergebiete nach § 10 und § 11 getrennt) samt Fläche für den Gemeinbedarf (§ 9 Abs. 1 Nr. 5
+  BauGB), vorhabenbezogenem Bebauungsplan (§ 12 BauGB), Innenbereich ohne Baugebiet (§ 34 Abs. 1 – im faktischen
+  Baugebiet nach § 34 Abs. 2 wählt man das Baugebiet) und Außenbereich (§ 35); Einträge „Anzahl …“ nehmen nur ganze
+  Zahlen an – Komma, Punkt und Vorzeichen lassen sich nicht tippen, ein alter oder eingefügter Text wie „ca. 3“ oder
+  „1.5“ bleibt unverändert stehen und wird gemeldet.
   Gespeichert wird weiter als Text der Projektkarte.
 - **Büro & Stammdaten** (Einstellungen): je Rolle (Entwurfsverfasser, Bauvorlageberechtigter,
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
@@ -408,34 +412,47 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
 - **Plansatz** (Art eines Dokuments, Vorgabe für „Bauzeichnungen“): ein Eintrag für **alle Pläne**, statt je Grundriss
   einen anzulegen (`plansatz.ts`). Pläne erkennt die App an der **Plannummer mit Plankürzel** an der Stelle „Nummer“
   des Namensschemas – „HVO BAUA 261111 GP-04 Grundriss OG.pdf“; „GP01-07“ ist ein zusammengefasster Satz (Pläne 01 bis
-  07); eine reine Zahl („01 Bauantrag“) ist eine Dokumentnummer der Formulare und zählt nicht. Gesucht wird im Ordner
-  der aktiven Fassung und in der Quelle (Vorgabe `Planung/Genehmigungsplanung/pdf`, aus der die Pläne in den
-  Antragsordner verschoben werden – eine leere Quelle ist in Ordnung); zugeordnet wird über die Plannummer (ob an
-  Stelle 2 GP oder BAUA steht, spielt keine Rolle). Je Plankürzel getrennt:
+  07); eine reine Zahl („01 Bauantrag“) ist eine Dokumentnummer der Formulare und zählt nicht. Gesucht wird direkt im
+  Ordner der aktiven Fassung und direkt in der Quelle (Vorgabe `Planung/Genehmigungsplanung/pdf`, aus der die Pläne
+  in den Antragsordner verschoben werden – eine leere Quelle ist in Ordnung). Unterordner wie `_Archiv` oder `alt`
+  zählen nicht (zurückgezogene oder umnummerierte Pläne ergäben sonst Scheinnummern und -lücken); liegt ein Plan auch
+  als DWG neben dem PDF, zählt das PDF. Zugeordnet wird über die Plannummer (ob an Stelle 2 GP oder BAUA steht,
+  spielt keine Rolle). Je Plankürzel getrennt:
   - **Lücke:** zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – nach der Bürovorgabe
-    (fortlaufende Nummern) fehlt dann ein Plan (rot, „GP-07 fehlt“). Die Reihe muss nicht bei 01 beginnen, die Reihenfolge der Planarten wird nicht geprüft;
+    (fortlaufende Nummern) fehlt dann ein Plan (rot, „GP-07 fehlt“). Die Reihe muss nicht bei 01 beginnen, die
+    Reihenfolge der Planarten wird nicht geprüft;
   - **noch nicht verschoben:** die Nummer liegt nur in der Quelle (gelb);
-  - **veraltet:** die Quelle hat ein neueres Datum im Namen (gelb); liegt eine Nummer mehrfach im Antragsordner, zählt
-    die neueste;
+  - **veraltet:** die Quelle hat eine neuere Fassung – Datum im Namen, bei gleichem Datum der Index (AP-03a nach
+    AP-03) (gelb); liegt eine Nummer mehrfach im Antragsordner, zählt die neueste;
   - **Hinweise** (nie sperrend): ältere Fassungen derselben Nummer („alte Fassung?“), ein Satz neben Einzelplänen
-    daraus, ein Index, wo das Schema keinen vorsieht (erst ab Leistungsphase 5), „kein Schnitt erkannt“ bzw. „keine
-    Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten, § 4 Abs. 1 BauPrüfVO NRW – nur ein
-    Hinweis, weil die Behörde auf Bauvorlagen verzichten kann und ein Vorbescheid weniger braucht), und – nur wenn die Projektdatei
-    Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (der einzige Weg, auch einen fehlenden letzten Grundriss
-    zu bemerken).
-  Die Zeile zeigt „8 Pläne · GP-01 bis GP-08 · GP-07 fehlt“, „Pläne zeigen“ die Liste je Nummer; in der
-  Projektordner-Ansicht „Antrag“ stehen fehlende und noch nicht verschobene Pläne einzeln unter „Fehlt im
+    daraus, ein Index, wo ihn das Namensschema des Büros nicht vorsieht (Bürovorgabe: erst ab LPH 5; bei Phasen ohne
+    LPH wie AB gar nicht), „kein Schnitt erkannt“ bzw. „keine Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse,
+    Schnitte und Ansichten, § 4 Abs. 1, 3, 4 BauPrüfVO NRW – nur ein Hinweis, weil die Behörde auf Bauvorlagen
+    verzichten kann und ein Vorbescheid weniger braucht; nicht bei Plänen ohne Leistungsphase wie den
+    Aufteilungsplänen nach § 7 Abs. 4 WEG, für die die BauPrüfVO nicht die Grundlage ist), und – nur wenn die
+    Projektdatei Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (der einzige Weg, auch einen fehlenden letzten
+    Grundriss zu bemerken).
+  Die Zeile zeigt „8 Pläne · GP-01 bis GP-08 · GP-07 fehlt“, darunter „Pläne zeigen“ (die Liste je Nummer),
+  „n Hinweise“ (öffnet die Liste und führt zu den Hinweisen) und die Quelle; ohne Pläne gibt es nichts aufzuklappen. In
+  der Projektordner-Ansicht „Antrag“ stehen fehlende und noch nicht verschobene Pläne einzeln unter „Fehlt im
   Antragsordner“. Ein optionales Muster grenzt die Pläne ein.
-- **Namensschema:** Kürzel (Planphasen BP, EP, GP, AP, AB; Antragsarten BAUA, BAUVA/BVA (Antrag auf Vorbescheid),
-  BAUF, DENK, ABGE, ENTW), die Stellen der Teile im Dateinamen (Code, Phase bzw. Antragsart, Datum, Nummer) und „Index ab Leistungsphase“ kommen
-  aus dem gemeinsamen Namensschema (`packages/core/src/namensschema.ts`): das der Projektdatei, sonst das des Büros
-  (Projektordner › Einstellungen), sonst die Vorgabe. Antragsordner werden an den Antragsarten der Einstellungen und
-  des Namensschemas erkannt.
+- **Namensschema:** Kürzel (Planphasen BP, EP, GP, AP, AB; Antrags- und Verfahrensarten BAUA, BAUVA/BVA (Antrag auf
+  Vorbescheid), BAUF (Genehmigungsfreistellung – kein Antrag, sondern Einreichen bei der Gemeinde), DENK, ABGE,
+  ENTW), die Stellen der Teile im Dateinamen (Code, Phase bzw. Antragsart, Datum, Nummer) und „Index ab
+  Leistungsphase“ kommen aus dem gemeinsamen Namensschema (`packages/core/src/namensschema.ts`): das der
+  Projektdatei, sonst das des Büros (Projektordner › Einstellungen), sonst die Vorgabe. Antragsordner werden an den
+  Antragsarten der Einstellungen und des Namensschemas erkannt; gleichwertige Schreibweisen (BVA für BAUVA) zählen
+  als dieselbe Art – für die vorgeschlagene Vorlage und die Nummer des nächsten Nachtrags („BVA 2“). Ändert sich das
+  Namensschema (in der Projektdatei oder im Projektordner-Tool, gelesen beim Zurückkommen ins Fenster), werden
+  Antragsordner und Plansätze sofort neu erkannt. Eine in Formulare angelegte Projektdatei bekommt wie im
+  Projektordner-Tool eine Kopie des Büro-Schemas.
 - **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je
   Antragsart – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Im Katalog
   hat jede Vorlage eine Spalte zum Ankreuzen; die Reihenfolge ist die des Katalogs. Beim Festlegen des Antragsumfangs
-  wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen („BAUA 2“ → Bauantrag), eine andere lässt sich
-  wählen; „Dokument hinzufügen › Aus Vorlage ergänzen“ nimmt die fehlenden Dokumente einer weiteren Vorlage dazu.
+  wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen („BAUA 2“ → Bauantrag, „BVA“ → Bauvoranfrage).
+  Gibt es zur Art keine Vorlage (BAUF, ABGE, ENTW …), wird nichts vorgewählt – der Bauantrag passt dort nicht –, die
+  Auswahl bittet um eine Wahl, „Antragsumfang festlegen“ ist bis dahin aus. „Dokument hinzufügen › Aus Vorlage
+  ergänzen“ nimmt die fehlenden Dokumente einer weiteren Vorlage dazu.
   Die früheren „Vorgewählt“-Häkchen werden beim ersten Start zur Vorlage „Bauantrag“.
 - **Reihenfolge ändern:** am Griff ⠿ ziehen – oder den Griff wählen und mit ↑/↓ verschieben – im Katalog, bei den
   Antragsvorlagen und Antragsmerkmalen und im Antragsumfang eines Projekts (dort auch per Rechtsklick „Nach oben“ /

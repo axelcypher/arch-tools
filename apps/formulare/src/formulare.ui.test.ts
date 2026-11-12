@@ -498,6 +498,13 @@ describe('Formulare', () => {
     await klick(knopfMit(host, 'Aus der Liste wählen'));
     expect(nutzung().value).toBe('Atelier');
     expect(optionen()).toContain('Atelier (eigene Angabe)');
+    expect(document.activeElement).toBe(nutzung());
+    // mit der Tastatur: Esc führt ebenso zurück, der Fokus bleibt am Eintrag
+    waehle(nutzung(), '\u0000frei');
+    taste(kartenFeld(host, 'Art der Nutzung'), 'Escape');
+    expect(nutzung().tagName).toBe('SELECT');
+    expect(nutzung().value).toBe('Atelier');
+    expect(document.activeElement).toBe(nutzung());
 
     // ein Wert aus der Liste ersetzt die eigene Angabe; danach heißt der letzte Punkt wieder „andere …“
     waehle(nutzung(), 'Wohnen');
@@ -514,6 +521,16 @@ describe('Formulare', () => {
     eingabe(anzahl(), '3');
     expect(anzahl().value).toBe('3');
     expect(host.textContent).not.toContain('keine ganze Zahl');
+    // Komma, Punkt und Vorzeichen lassen sich nicht tippen; Eingefügtes wird nicht verändert, sondern gemeldet
+    for (const t of [',', '.', '-', 'e']) {
+      const ev = new KeyboardEvent('keydown', { key: t, bubbles: true, cancelable: true });
+      act(() => void anzahl().dispatchEvent(ev));
+      expect(ev.defaultPrevented).toBe(true);
+    }
+    eingabe(anzahl(), '1.5');
+    expect(useFormulare.getState().karte!.aenderungen['101:110']).toBe('1.5');
+    expect(host.textContent).toContain('„1.5“ ist keine ganze Zahl – bitte als Zahl eintragen');
+    eingabe(anzahl(), '3');
 
     await klick(knopfGenau(host, 'Projektkarte speichern'));
     expect(pkText(101, 100).text).toBe('Wohnen');

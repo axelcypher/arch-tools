@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
@@ -42,6 +43,11 @@ describe('Antragsfassungen', () => {
     expect(standardFassung(f, arten)?.name).toBe('BAUA3 Nachreichung');
     expect(naechsteFassung(f, 'BAUA')).toBe('BAUA 4');
     expect(naechsteFassung([], 'BAUA')).toBe('BAUA');
+    // gleichwertige Schreibweisen zählen zusammen (BVA und BAUVA), benannt wird in der gewählten
+    const vb = fassungenAus(['BAUVA', 'BVA 2'], ['BAUVA', 'BVA']);
+    expect(naechsteFassung(vb, 'BVA', VORGABE_NAMENSSCHEMA.antragsarten)).toBe('BVA 3');
+    expect(naechsteFassung(vb, 'BVA')).toBe('BVA 3');
+    expect(naechsteFassung(fassungenAus(['BAUVA'], ['BAUVA', 'BVA']), 'BVA', VORGABE_NAMENSSCHEMA.antragsarten)).toBe('BVA 2');
   });
 });
 
@@ -185,8 +191,13 @@ describe('Antragsvorlagen und Reihenfolge', () => {
     ];
     expect(umfangAusKatalog(VORGABE_KATALOG, vorlagen[0]).map((u) => u.id)).toEqual(['bauantrag', 'kosten']);
     expect(vorlageFuer(vorlagen, 'bauva')?.id).toBe('b');
-    expect(vorlageFuer(vorlagen, 'DENK')?.id).toBe('a');
+    // keine Vorlage zur Art: kein Vorschlag (nicht stillschweigend „Bauantrag“); ohne Art die erste
+    expect(vorlageFuer(vorlagen, 'DENK')).toBeUndefined();
+    expect(vorlageFuer(vorlagen, '')?.id).toBe('a');
     expect(vorlageFuer([], 'BAUA')).toBeUndefined();
+    // gleichwertige Schreibweise nach dem Namensschema: BVA → BAUVA
+    expect(vorlageFuer(vorlagen, 'BVA')).toBeUndefined();
+    expect(vorlageFuer(vorlagen, 'BVA', VORGABE_NAMENSSCHEMA.antragsarten)?.id).toBe('b');
   });
 });
 

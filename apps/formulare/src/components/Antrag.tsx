@@ -9,7 +9,7 @@ import { STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAus
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
-import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, quelleVonEintrag, useAntrag, wirksameEinstellungen } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, namensschema, quelleVonEintrag, useAntrag, wirksameEinstellungen } from '../antragStore';
 import type { PlansatzErgebnis } from '../plansatz';
 import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -69,7 +69,7 @@ export function FassungsWahl() {
     })),
     ...(fassungen.length ? [{ trenner: true as const }] : []),
     ...arten.map((a) => {
-      const neu = naechsteFassung(fassungen, a);
+      const neu = naechsteFassung(fassungen, a, namensschema().antragsarten);
       return { text: `Neue Fassung „${neu}“ anlegen`, symbol: 'plus' as const, hinweis: 'mit den Vorgaben der Antragsmerkmale', aktion: () => void fassungWaehlen(neu, true) };
     }),
   ];
@@ -232,7 +232,9 @@ function PlansatzListe({ id, r, basis, ordner }: { id: string; r: PlansatzErgebn
         <ul className="pu-plaene">
           {r.plaene.map((p) => (
             <li key={p.schluessel} className={`pu-plan ${p.zustand}`} title={PLAN_ZUSTAND_TEXT[p.zustand]}>
-              <span className="pu-plan-nr">{p.schluessel}</span>
+              <span className="pu-plan-nr" title={p.schluessel}>
+                {p.schluessel}
+              </span>
               <span className="pu-plan-name">
                 {p.datei ? (
                   <button className="pu-datei" title="In der App ansehen" onClick={() => basis && void useFormulare.getState().dateiAnsehen(basis, `${ordner}/${p.datei!.pfad}`)}>
@@ -248,11 +250,16 @@ function PlansatzListe({ id, r, basis, ordner }: { id: string; r: PlansatzErgebn
           ))}
         </ul>
       )}
-      {r.hinweise.map((h) => (
-        <p key={h} className="pu-plan-hinweis small-text">
-          <Symbol name="info" /> {h}
-        </p>
-      ))}
+      {r.plaene.length === 0 && <p className="muted small-text">Keine Pläne mit Plannummer in der Quelle und im Antragsordner.</p>}
+      {r.hinweise.length > 0 && (
+        <div className="pu-plan-hinweise" tabIndex={-1} aria-label="Hinweise zum Plansatz">
+          {r.hinweise.map((h) => (
+            <p key={h} className="pu-plan-hinweis small-text">
+              <Symbol name="info" /> {h}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -279,14 +286,24 @@ export function AntragsdatenAnsicht() {
   const [bearbeiten, setBearbeiten] = useState<string | null>(null);
   const [vorlageWahl, setVorlageWahl] = useState<string | null>(null);
   const [plaeneOffen, setPlaeneOffen] = useState<string[]>([]);
+  // „n Hinweise“: Liste öffnen und zu den Hinweisen rollen (auch, wenn sie schon offen ist)
+  const hinweiseZeigen = (id: string) => {
+    if (!plaeneOffen.includes(id)) setPlaeneOffen([...plaeneOffen, id]);
+    setTimeout(() => {
+      const ziel = document.querySelector<HTMLElement>(`#plaene-${CSS.escape(id)} .pu-plan-hinweise`);
+      ziel?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+      ziel?.focus({ preventScroll: true });
+    }, 0);
+  };
   const umfangJetzt = projektdatei?.umfang;
   const sortieren = useSortieren(umfangJetzt?.length ?? 0, (von, nach) => umfangJetzt && void umfangSetzen(verschieben(umfangJetzt, von, nach)));
   if (!ds) return <div className="fo-leer">Antragsdaten gibt es nur in der Desktop-App.</div>;
   if (!projekt) return null;
   const fassung = aktiveFassung(st, projekt);
-  // Vorschlag: die Vorlage zur Antragsart der aktiven Fassung („BAUA 2“ → BAUA)
+  // Vorschlag: die Vorlage zur Antragsart der aktiven Fassung („BAUA 2“ → BAUA, „BVA“ → BAUVA); keine passende = keine Vorwahl
   const art = st.fassungen.find((f) => f.name === fassung)?.art ?? fassung.replace(/[\s_-]*\d+$/, '');
-  const vorlage = vorlagen.find((v) => v.id === vorlageWahl) ?? vorlageFuer(vorlagen, art);
+  const vorlage = vorlagen.find((v) => v.id === vorlageWahl) ?? vorlageFuer(vorlagen, art, namensschema().antragsarten);
+  const ohneVorlage = vorlagen.length > 0 && !vorlage;
   const ordner = antragsOrdner(st, projekt);
   const basis = ablage ? verbinde(ablage.root, ablage.pfad) : null;
   const umfang = projektdatei?.umfang;
@@ -383,7 +400,12 @@ export function AntragsdatenAnsicht() {
           <div className="pu-vorlage">
             <label>
               <span className="field-label">Antragsvorlage</span>
-              <select value={vorlage?.id ?? ''} aria-label="Antragsvorlage" onChange={(e) => setVorlageWahl(e.target.value)}>
+              <select value={vorlage?.id ?? ''} aria-label="Antragsvorlage" aria-describedby={ohneVorlage ? 'pu-ohne-vorlage' : undefined} onChange={(e) => setVorlageWahl(e.target.value)}>
+                {ohneVorlage && (
+                  <option value="" disabled>
+                    – bitte wählen –
+                  </option>
+                )}
                 {vorlagen.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name}
@@ -393,10 +415,15 @@ export function AntragsdatenAnsicht() {
                 {!vorlagen.length && <option value="">ganzer Katalog – {katalog.length} Dokumente</option>}
               </select>
             </label>
-            <button className="primary" disabled={gesperrt} onClick={() => void umfangSetzen(vorlage ? umfangAusKatalog(katalog, vorlage) : katalog.map(alsUmfang))}>
+            <button className="primary" disabled={gesperrt || ohneVorlage} onClick={() => void umfangSetzen(vorlage ? umfangAusKatalog(katalog, vorlage) : katalog.map(alsUmfang))}>
               Antragsumfang festlegen
             </button>
           </div>
+          {ohneVorlage && (
+            <p className="muted small-text" id="pu-ohne-vorlage">
+              Für {art} gibt es keine Antragsvorlage – bitte eine wählen oder unter Einstellungen › Antrag & Export eine anlegen.
+            </p>
+          )}
         </div>
       ) : (
         <>
@@ -468,20 +495,25 @@ export function AntragsdatenAnsicht() {
                               : `keine Quelle in ${u.quelle || wirksameEinstellungen(st, projekt).berechnungsordner || 'dem Projektordner'}`}
                       </span>
                       {u.art === 'plansatz' && d.plansatz ? (
+                        // Reihenfolge: was man anklickt zuerst, die lange Quelle zuletzt (sie wird bei Platzmangel gekürzt)
                         <span className="small-text">
-                          <button className="pu-datei" aria-expanded={plaeneOffen.includes(u.id)} aria-controls={`plaene-${u.id}`} onClick={() => setPlaeneOffen(plaeneOffen.includes(u.id) ? plaeneOffen.filter((x) => x !== u.id) : [...plaeneOffen, u.id])}>
-                            <Symbol name={plaeneOffen.includes(u.id) ? 'pfeilUnten' : 'pfeilRechts'} /> Pläne {plaeneOffen.includes(u.id) ? 'verbergen' : 'zeigen'}
-                          </button>
-                          {' · '}
-                          <span className="muted">Quelle: {quelleVonEintrag(u, wirksameEinstellungen(st, projekt))}</span>
-                          {d.plansatz.hinweise.length > 0 && (
+                          {(d.plansatz.plaene.length > 0 || d.plansatz.hinweise.length > 0) && (
                             <>
-                              {' · '}
-                              <button className="pu-hinweiszahl" title="Hinweise in der Liste der Pläne zeigen" onClick={() => !plaeneOffen.includes(u.id) && setPlaeneOffen([...plaeneOffen, u.id])}>
-                                {d.plansatz.hinweise.length === 1 ? '1 Hinweis' : `${d.plansatz.hinweise.length} Hinweise`}
+                              <button className="pu-datei" aria-expanded={plaeneOffen.includes(u.id)} aria-controls={`plaene-${u.id}`} onClick={() => setPlaeneOffen(plaeneOffen.includes(u.id) ? plaeneOffen.filter((x) => x !== u.id) : [...plaeneOffen, u.id])}>
+                                <Symbol name={plaeneOffen.includes(u.id) ? 'pfeilUnten' : 'pfeilRechts'} /> Pläne {plaeneOffen.includes(u.id) ? 'verbergen' : 'zeigen'}
                               </button>
+                              {' · '}
                             </>
                           )}
+                          {d.plansatz.hinweise.length > 0 && (
+                            <>
+                              <button className="pu-hinweiszahl" title="Zu den Hinweisen unter der Liste der Pläne" aria-controls={`plaene-${u.id}`} onClick={() => hinweiseZeigen(u.id)}>
+                                {d.plansatz.hinweise.length === 1 ? '1 Hinweis' : `${d.plansatz.hinweise.length} Hinweise`}
+                              </button>
+                              {' · '}
+                            </>
+                          )}
+                          <span className="muted">Quelle: {quelleVonEintrag(u, wirksameEinstellungen(st, projekt))}</span>
                           {hatBedingung(u.bedingung) ? <span className="pu-bedingung"> · nur wenn {bedingungText(u.bedingung)}</span> : null}
                         </span>
                       ) : (
@@ -565,7 +597,7 @@ export function AntragsdatenAnsicht() {
                       )}
                       <label>
                         <span className="field-label">{u.art === 'plansatz' ? 'Nur Pläne nach Muster (* ? ;, leer = alle)' : 'Muster der Datei (* ? ;)'}</span>
-                        <input value={u.muster ?? ''} placeholder={u.art === 'plansatz' ? 'alle mit Plannummer' : `*${u.titel}*`} onChange={(e) => setzen(u.id, { muster: e.target.value || undefined })} />
+                        <input value={u.muster ?? ''} placeholder={u.art === 'plansatz' ? 'alle Pläne mit Plannummer' : `*${u.titel}*`} onChange={(e) => setzen(u.id, { muster: e.target.value || undefined })} />
                       </label>
                       <div className="pu-bedingung-editor">
                         <span className="field-label">Nur erforderlich, wenn …</span>

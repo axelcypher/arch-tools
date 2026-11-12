@@ -16,6 +16,7 @@ import { formularPdf } from './forma/pdf';
 import { pdfjs } from './dokumente/pdf';
 import { useAufgeklappt } from './components/ProjektUebersicht';
 import { useFormulare } from './store';
+import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { readProjectFile, writeArchive } from '@core/archive';
 import { createProject, leereMeta } from '@core/model';
 
@@ -857,6 +858,11 @@ describe('Plansatz', () => {
     await klick(knopfGenau(host, 'Antrag'));
     const fehlt = [...host.querySelectorAll('.fo-bereit-fehlt li')].map((l) => l.textContent);
     expect(fehlt).toEqual(['GP-03fehlt', 'GP-05 Ansichtennicht verschoben']);
+    // der Statuspunkt sagt, was mit dem Plan ist (nicht „nicht vollständig ausgefüllt“)
+    expect([...host.querySelectorAll('.fo-bereit-fehlt li .st-punkt')].map((p) => p.getAttribute('aria-label'))).toEqual([
+      'fehlt – Lücke in der fortlaufenden Nummerierung',
+      'nicht verschoben – liegt erst in der Quelle',
+    ]);
     // die Plandateien gehören zum Plansatz
     expect([...host.querySelectorAll('.fo-bereit-zeile')].find((z) => z.textContent?.includes('GP-02'))!.textContent).toContain('Bauzeichnungen');
   });
@@ -870,13 +876,80 @@ describe('Plansatz', () => {
     expect([...host.querySelectorAll('.fo-bereit-fehlt li')].map((l) => l.textContent)).toEqual(['Bauzeichnungen']);
     expect(host.querySelector('.fo-bereit-kopf')!.textContent).toContain('1 fehlt');
     expect(host.querySelector('.fo-bereit-fertig')).toBeNull();
+    // in den Antragsdaten: keine leere Planliste zum Aufklappen
+    await klick(antragsdaten(host));
+    const zeile = host.querySelector<HTMLElement>('.pu-zeile')!;
+    expect(zeile.textContent).toContain('keine Pläne mit Plannummer gefunden');
+    expect(knopf(zeile, 'Pläne zeigen')).toBeUndefined();
+  });
+
+  it('Plansatz-Zeile: „n Hinweise“ vor der Quelle, öffnet die Liste und führt zu den Hinweisen', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261111 GP-01 Grundriss EG.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261111 GP-02 Grundriss OG.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().umfangSetzen([{ id: 'plaene', titel: 'Bauzeichnungen', art: 'plansatz', quelle: 'Planung' }]));
+    await warte();
+    await klick(antragsdaten(host));
+    const zeile = host.querySelector<HTMLElement>('.pu-zeile')!;
+    const unter = zeile.querySelector('.pu-text > .small-text:not(.muted)')!.textContent!;
+    // kein Schnitt, keine Ansicht: zwei Hinweise
+    expect(unter.indexOf('Pläne zeigen')).toBeLessThan(unter.indexOf('2 Hinweise'));
+    expect(unter.indexOf('2 Hinweise')).toBeLessThan(unter.indexOf('Quelle: Planung'));
+    await klick(knopf(zeile, '2 Hinweise'));
+    await warte();
+    const hinweise = host.querySelector<HTMLElement>('#plaene-plaene .pu-plan-hinweise')!;
+    expect(hinweise.textContent).toContain('kein Schnitt erkannt');
+    expect(document.activeElement).toBe(hinweise);
+    // ein zweiter Klick schließt die Liste nicht
+    await klick(knopf(zeile, '2 Hinweise'));
+    await warte();
+    expect(host.querySelector('#plaene-plaene')).not.toBeNull();
   });
 
   it('Antragsordner werden auch an den Antragsarten des Namensschemas erkannt (BVA, ENTW)', async () => {
     ds.ordner.add(`${PROJEKT}/TÖB/BVA`);
     ds.ordner.add(`${PROJEKT}/TÖB/ENTW 2`);
-    await projektBS9();
+    const host = await projektBS9();
     expect(useAntrag.getState().fassungen.map((f) => f.name)).toEqual(expect.arrayContaining(['BAUA', 'BAUA 2', 'BVA', 'ENTW 2']));
+    // BVA ist eine gleichwertige Schreibweise von BAUVA: vorgeschlagen wird die Vorlage der Bauvoranfrage
+    await act(() => useAntrag.getState().fassungWaehlen('BVA'));
+    await warte();
+    await klick(antragsdaten(host));
+    const wahl = () => host.querySelector<HTMLSelectElement>('select[aria-label="Antragsvorlage"]')!;
+    expect(wahl().value).toBe('bauva');
+    expect(knopf(host, 'Antragsumfang festlegen').disabled).toBe(false);
+    // zu ENTW gibt es keine Vorlage: keine Vorwahl „Bauantrag“, sondern die Bitte zu wählen
+    await act(() => useAntrag.getState().fassungWaehlen('ENTW 2'));
+    await warte();
+    expect(wahl().value).toBe('');
+    expect(wahl().selectedOptions[0].textContent).toBe('– bitte wählen –');
+    expect(host.textContent).toContain('Für ENTW gibt es keine Antragsvorlage');
+    expect(knopf(host, 'Antragsumfang festlegen').disabled).toBe(true);
+    act(() => {
+      wahl().value = 'baua';
+      wahl().dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(knopf(host, 'Antragsumfang festlegen').disabled).toBe(false);
+  });
+
+  it('ändert sich das Namensschema des Büros, werden die Antragsordner sofort neu erkannt', async () => {
+    ds.ordner.add(`${PROJEKT}/TÖB/WEGA`);
+    ds.ordner.add(`${PROJEKT}/TÖB/XYZA`);
+    await projektBS9();
+    const namen = () => useAntrag.getState().fassungen.map((f) => f.name);
+    expect(namen()).not.toContain('WEGA');
+    act(() => useFormulare.setState({ namensschemaBuero: { ...VORGABE_NAMENSSCHEMA, antragsarten: [...VORGABE_NAMENSSCHEMA.antragsarten, { kuerzel: 'WEGA', name: 'Test' }] } }));
+    await warte();
+    await warte();
+    expect(namen()).toContain('WEGA');
+    // ebenso, wenn eine andere App das Namensschema derselben Projektdatei ändert
+    const p = readProjectFile(ds.dateien.get(OAP)!);
+    p.namensschema = { ...VORGABE_NAMENSSCHEMA, antragsarten: [{ kuerzel: 'XYZA', name: 'Test' }] };
+    ds.dateien.set(OAP, writeArchive(p));
+    await act(() => useFormulare.getState().oapLaden());
+    await warte();
+    await warte();
+    expect(namen()).toContain('XYZA');
   });
 });
 

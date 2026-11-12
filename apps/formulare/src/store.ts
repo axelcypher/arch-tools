@@ -27,6 +27,7 @@ import type { OapInhalt } from './oap';
 import { OAP_ANGABEN, angabenAus, metaMit } from './oap';
 import type { Project, ProjectMeta } from '@core/model';
 import { createProject, leereMeta } from '@core/model';
+import { wirksamesNamensschema } from '@core/namensschema';
 import { parseProjectData } from '@core/serialize';
 import { VORGABE_OAP_PFAD, projektdateiPfad } from '@core/projektdatei';
 import type { DateiStand } from '@core/platform/projektordner';
@@ -334,6 +335,8 @@ interface FormulareState extends Gespeichert {
   oapWaehlen: (pfad: string | null) => Promise<void>;
   /** gemeinsame Einstellungen (allgemein.json) übernehmen: Stammordner der Projekte, Ort neuer Projektdateien */
   gemeinsamLaden: () => Promise<void>;
+  /** Namensschema des Büros neu lesen (beim Zurückkommen ins Fenster) – gesetzt nur, wenn es sich geändert hat */
+  namensschemaNeuLesen: () => Promise<void>;
   /** Projektdatei gezielt ändern (frisch lesen, nur `projekt.json`); legt sie nicht an – dann false */
   oapAendern: (aendern: (roh: Record<string, unknown>) => Record<string, unknown>) => Promise<boolean>;
   /** Stammdaten-Dialog öffnen, um die fehlende Projektdatei anzulegen; `danach` läuft nach dem Anlegen */
@@ -1573,6 +1576,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!pfad) throw new Error('Kein Ort für neue Projektdateien eingestellt.');
       const p = createProject(meta.kurzname || meta.vorhaben || projekt.titel || projekt.ordner);
       p.meta = meta;
+      // wie im Projektordner-Tool: jede neue Projektdatei trägt eine Kopie des Namensschemas des Büros
+      p.namensschema = wirksamesNamensschema(undefined, get().namensschemaBuero);
       if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, 'Formulare'))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in der Projektkarte auswählen.`);
       log.info(`Projektdatei angelegt: ${pfad}`);
       set({ stammdatenDialog: null, meldung: { art: 'info', text: `Projektdatei angelegt: ${pfad}` } });
@@ -1625,6 +1630,14 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       get().ordnerNeuLesen();
       await get().projektordnerWaehlen(verbinde(stammordner, sauber));
     },
+    namensschemaNeuLesen: async () => {
+      try {
+        const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
+        if (JSON.stringify(roh.namensschema ?? null) !== JSON.stringify(get().namensschemaBuero)) set({ namensschemaBuero: roh.namensschema ?? null });
+      } catch {
+        // gemeinsame Einstellungen nicht lesbar: der bisherige Stand gilt weiter
+      }
+    },
     gemeinsamLaden: async () => {
       try {
         const app = ((await konfigLesen('formulare')) ?? {}) as Record<string, unknown>;
@@ -1632,7 +1645,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         set({ eigeneAdressen, adressbuch: wirksamesAdressbuch(get().adressbuchKarten, eigeneAdressen) });
         if (app.ordnerWahl && typeof app.ordnerWahl === 'object') set({ ordnerWahl: Object.fromEntries(Object.entries(app.ordnerWahl as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string')) });
         const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
-        set({ namensschemaBuero: roh.namensschema ?? null });
+        if (JSON.stringify(roh.namensschema ?? null) !== JSON.stringify(get().namensschemaBuero)) set({ namensschemaBuero: roh.namensschema ?? null });
         const projekte = Array.isArray(roh.projekte) ? roh.projekte.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
         // Stammordner: gemeinsam; gibt es dort noch keine, die bisherigen dieser App übernehmen
         if (projekte.length) {

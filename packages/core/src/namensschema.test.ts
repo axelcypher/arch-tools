@@ -33,7 +33,10 @@ describe('Namensschema', () => {
     const s = namensschemaAus({ phasen: [{ kuerzel: 'gp', name: 'Genehmigung', lph: 4 }, { kuerzel: 'GP' }, { kuerzel: 'zu lang!' }], reihenfolge: ['code', 'code'], indexAbLph: 99 })!;
     expect(s.phasen).toEqual([{ kuerzel: 'GP', name: 'Genehmigung', lph: 4 }]);
     expect(s.reihenfolge).toEqual(VORGABE_NAMENSSCHEMA.reihenfolge);
-    expect(s.indexAbLph).toBe(5);
+    // außerhalb des Bereichs: begrenzt (nicht stillschweigend auf die Vorgabe zurück)
+    expect(s.indexAbLph).toBe(9);
+    expect(namensschemaAus({ indexAbLph: -2, phasen: [{ kuerzel: 'X', lph: 12 }] })!).toMatchObject({ indexAbLph: 0, phasen: [{ kuerzel: 'X', lph: 9 }] });
+    expect(namensschemaAus({ indexAbLph: 'fünf' })!.indexAbLph).toBe(5);
     expect(s.antragsarten).toEqual(VORGABE_NAMENSSCHEMA.antragsarten);
     expect(wirksamesNamensschema(undefined, { indexAbLph: 4 }).indexAbLph).toBe(4);
     expect(wirksamesNamensschema({ indexAbLph: 3 }, { indexAbLph: 4 }).indexAbLph).toBe(3);

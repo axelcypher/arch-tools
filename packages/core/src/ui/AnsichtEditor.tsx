@@ -126,8 +126,8 @@ export function AnsichtEditor({
       <header className="av-ed-titel">
         <h3>{titel}</h3>
         <p className="muted small-text">
-          {text ?? 'Rechts Felder anhaken – sie kommen in den gewählten Abschnitt. Links ordnen: am Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt.'} Je Feld:
-          Beschriftung direkt ändern · Breite ¼ bis ganz · ↵ beginnt eine neue Zeile{verknuepfbar ? ' · ⛓ gemeinsam ausfüllen' : ''}.
+          {text ?? 'Rechts anhaken, links am Griff ordnen (oder Griff wählen und ↑/↓, Entf entfernt).'} Beschriftung direkt ändern, Breite wählen, ↵ beginnt eine neue Zeile
+          {verknuepfbar ? ', ⛓ füllt Felder gemeinsam aus' : ''}.
         </p>
       </header>
       <div className="av-ed-koerper">
@@ -300,12 +300,22 @@ function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; fel
     const d = nach.get(f);
     return d ? `${d.titel}${d.gruppe ? ` (${d.gruppe})` : ''}` : f;
   };
+  // nichts verknüpft und kein passendes Feld: nichts zu wählen
+  const leer = !mit.length && !andere.length;
+  const zustand = mit.length ? ` – verknüpft mit ${mit.length === 1 ? '1 Feld' : `${mit.length} Feldern`}` : '';
   return (
     <select
       className={`av-ed-link${mit.length ? ' aktiv' : ''}`}
       value=""
-      aria-label={`${titel} verknüpfen`}
-      title={mit.length ? `Verknüpft mit: ${mit.map(name).join(', ')} – wird gemeinsam ausgefüllt` : 'Mit einem anderen Feld verknüpfen – beide werden gemeinsam ausgefüllt'}
+      disabled={leer}
+      aria-label={`${titel} verknüpfen${zustand}`}
+      title={
+        mit.length
+          ? `Verknüpft mit: ${mit.map(name).join(', ')} – wird gemeinsam ausgefüllt`
+          : leer
+            ? 'Kein passendes Feld in der Ansicht – verknüpfen lassen sich nur Felder derselben Art'
+            : 'Mit einem anderen Feld verknüpfen – beide werden gemeinsam ausgefüllt'
+      }
       onChange={(e) => {
         const v = e.target.value;
         if (v === '–') onChange(verknuepfungLoesen(a, feld));
@@ -340,7 +350,7 @@ function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; fel
 function LayoutVorschau({ abschnitt, nach }: { abschnitt: AnsichtAbschnitt; nach: Map<string, FeldDef> }) {
   return (
     <div className="av-ed-vorschau" aria-hidden title="So stehen die Felder in Zeilen">
-      <span className="av-ed-vorschau-titel">Vorschau der Zeilen</span>
+      <span className="av-ed-vorschau-titel">Vorschau der Zeilen – in schmalen Fenstern werden die Felder breiter</span>
       {abschnitt.felder.map((f) => {
         const o = abschnitt.optionen?.[f];
         return (

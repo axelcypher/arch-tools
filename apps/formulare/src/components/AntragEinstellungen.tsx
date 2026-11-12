@@ -322,7 +322,7 @@ export function AntragEinstellungen() {
                     )}
                   </td>
                   <td>
-                    <input value={k.muster ?? ''} placeholder={k.art === 'plansatz' ? 'alle Pläne' : `*${k.titel}*`} onChange={(x) => zeileSetzen(i, { muster: x.target.value })} aria-label="Muster" />
+                    <input value={k.muster ?? ''} placeholder={k.art === 'plansatz' ? 'alle Pläne mit Plannummer' : `*${k.titel}*`} onChange={(x) => zeileSetzen(i, { muster: x.target.value })} aria-label="Muster" />
                   </td>
                   {vorlagen.map((v) => (
                     <td key={v.id} className="es-mitte">

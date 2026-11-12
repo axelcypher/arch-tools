@@ -1,22 +1,25 @@
 /**
  * Plansatz: ein Dokument des Antragsumfangs, das alle Pläne umfasst (Grundrisse, Schnitte, Ansichten, Sonderpläne …),
  * statt je Plan einen Eintrag zu brauchen. Erkannt werden Pläne an der Plannummer (Stelle „nummer“ des Namensschemas,
- * mit Plankürzel: „HVO BAUA 261111 GP-04 Grundriss OG.pdf“) – im Antragsordner und in der Quelle (pdf-Ordner der
- * Genehmigungsplanung, aus dem die Pläne in den Antragsordner verschoben werden).
+ * mit Plankürzel: „HVO BAUA 261111 GP-04 Grundriss OG.pdf“) – direkt im Antragsordner und direkt in der Quelle
+ * (pdf-Ordner der Genehmigungsplanung, aus dem die Pläne in den Antragsordner verschoben werden). Unterordner wie
+ * „_Archiv“ oder „alt“ zählen nicht: zurückgezogene oder umnummerierte Pläne ergäben sonst Scheinnummern und -lücken.
+ * Liegt ein Plan auch in einem anderen Format vor (dwg neben pdf), zählt das PDF.
  *
  * Geprüft wird je Plankürzel:
  *  - Lücken: zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – nach der Bürovorgabe (fortlaufende
  *    Nummern) fehlt dann ein Plan (die Reihe muss nicht bei 01 beginnen; die Reihenfolge der Planarten spielt keine Rolle);
  *  - noch nicht verschoben: der Plan liegt nur in der Quelle;
- *  - veraltet: die Quelle hat ein neueres Datum im Namen als der Plan im Antragsordner;
+ *  - veraltet: die Quelle hat eine neuere Fassung als der Antragsordner (Datum im Namen, dann Index);
  *  - Hinweise (nie sperrend): ältere Fassungen derselben Nummer, ein zusammengefasster Satz (GP01-07) neben
- *    Einzelplänen daraus, ein Index, wo das Schema keinen vorsieht, kein Schnitt bzw. keine Ansicht (§ 4 Abs. 1
- *    BauPrüfVO NRW) und – mit Geschossen aus der Projektdatei – weniger Grundrisse als Geschosse. Diese Hinweise fangen
- *    auch fehlende Pläne am Ende der Reihe auf, die keine Lücke hinterlassen.
+ *    Einzelplänen daraus, ein Index, wo das Namensschema des Büros keinen vorsieht, kein Schnitt bzw. keine Ansicht
+ *    (§ 4 Abs. 1, 3, 4 BauPrüfVO NRW – nur bei Plänen einer Leistungsphase, nicht bei Sonderfällen wie den
+ *    Aufteilungsplänen nach WEG) und – mit Geschossen aus der Projektdatei – weniger Grundrisse als Geschosse. Diese
+ *    Hinweise fangen auch fehlende Pläne am Ende der Reihe auf, die keine Lücke hinterlassen.
  */
 
 import type { Namensschema } from '@core/namensschema';
-import { dateinameZerlegen, indexVorgesehen, planNummerAus, planSchluessel } from '@core/namensschema';
+import { dateinameZerlegen, indexVorgesehen, kuerzelZu, planNummerAus, planSchluessel } from '@core/namensschema';
 import type { Status } from './antrag';
 import { passt, standVergleich } from './antrag';
 import type { Eintrag } from './dateisystem';
@@ -71,21 +74,36 @@ interface Fund {
   bezeichnung: string;
 }
 
-const nurName = (pfad: string) => pfad.split('/').pop() ?? pfad;
+const nurName = (pfad: string) => pfad.split(/[\\/]/).pop() ?? pfad;
 const istHilfsdatei = (name: string) => /^(~\$|\.~lock\.)/.test(name) || /^(thumbs\.db|desktop\.ini)$/i.test(name);
+const ohneEndung = (name: string) => name.replace(/\.[^.]+$/, '').toLowerCase();
+const istPdf = (name: string) => /\.pdf$/i.test(name);
 
-/** Pläne einer Dateiliste je Plannummer; ein Satz (GP01-07) zählt für jede seiner Nummern */
+/** Hinweis zu einem Index, den das Namensschema des Büros für diese Phase nicht vorsieht */
+function indexHinweis(schema: Namensschema, kuerzel: string, plan: string): string {
+  const lph = kuerzelZu(schema.phasen, kuerzel)?.lph;
+  return lph === undefined
+    ? `${plan}: für ${kuerzel} sieht das Namensschema des Büros keinen Index vor – zählt als neuere Fassung`
+    : `${plan}: Index bei ${kuerzel} (LPH ${lph}) – nach dem Namensschema des Büros erst ab LPH ${schema.indexAbLph}; zählt als neuere Fassung`;
+}
+
+/**
+ * Pläne einer Dateiliste je Plannummer; ein Satz (GP01-07) zählt für jede seiner Nummern. Nur Dateien direkt im
+ * Ordner (keine Unterordner wie „_Archiv“, „alt“); gibt es zu einem Namen ein PDF, zählt nur das PDF.
+ */
 function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | undefined, hinweise: string[]): Map<string, Fund[]> {
   const nach = new Map<string, Fund[]>();
-  for (const e of dateien) {
-    const name = nurName(e.pfad);
-    if (e.ordner || istHilfsdatei(name)) continue;
+  const direkt = dateien.filter((e) => !e.ordner && !/[\\/]/.test(e.pfad) && !istHilfsdatei(e.pfad));
+  const pdfs = new Set(direkt.filter((e) => istPdf(e.pfad)).map((e) => ohneEndung(e.pfad)));
+  for (const e of direkt) {
+    const name = e.pfad;
+    if (!istPdf(name) && pdfs.has(ohneEndung(name))) continue;
     if (muster?.trim() && !passt(name, muster)) continue;
     const teile = dateinameZerlegen(name, schema);
     const pn = planNummerAus(teile.nummer, schema);
     if (!pn) continue;
     if (pn.index && !indexVorgesehen(schema, pn.kuerzel)) {
-      const h = `${planSchluessel(pn.kuerzel, pn.von)}${pn.index}: Index bei ${pn.kuerzel} nicht vorgesehen (erst ab Leistungsphase ${schema.indexAbLph}) – zählt als neuere Fassung`;
+      const h = indexHinweis(schema, pn.kuerzel, `${planSchluessel(pn.kuerzel, pn.von)}${pn.index}`);
       if (!hinweise.includes(h)) hinweise.push(h);
     }
     for (let nr = pn.von; nr <= pn.bis; nr++) {
@@ -96,12 +114,18 @@ function sammeln(dateien: Eintrag[], schema: Namensschema, muster: string | unde
   return nach;
 }
 
-/** Die neueste Fassung einer Nummer: Datum im Namen, dann Index, dann Änderungszeit; Einzelpläne vor Sätzen */
+/** Stand zweier Fassungen derselben Nummer: Datum im Namen (sonst Änderungszeit), dann Index (AP-03a nach AP-03) */
+function standVon(a: Fund, b: Fund, codes: string[]): number {
+  const v = standVergleich(a.e, b.e, codes);
+  if (v !== 0) return v;
+  return (a.index ?? '').localeCompare(b.index ?? '');
+}
+
+/** Die neueste Fassung einer Nummer: nach dem Stand; bei gleichem Stand Einzelpläne vor Sätzen, dann Änderungszeit */
 function neueste(funde: Fund[], codes: string[]): Fund {
   return funde.reduce((best, f) => {
-    const v = standVergleich(f.e, best.e, codes);
+    const v = standVon(f, best, codes);
     if (v !== 0) return v > 0 ? f : best;
-    if ((f.index ?? '') !== (best.index ?? '')) return (f.index ?? '') > (best.index ?? '') ? f : best;
     if (f.satz !== best.satz) return f.satz ? best : f;
     return (f.e.geaendert ?? 0) > (best.e.geaendert ?? 0) ? f : best;
   });
@@ -156,7 +180,7 @@ export function plansatzPruefen(antrag: Eintrag[], quelle: Eintrag[], schema: Na
       }
       const na = a ? neueste(a, codes) : undefined;
       const nq = q ? neueste(q, codes) : undefined;
-      const zustand: PlanZustand = !na ? 'quelle' : nq && standVergleich(nq.e, na.e, codes) > 0 ? 'veraltet' : 'aktuell';
+      const zustand: PlanZustand = !na ? 'quelle' : nq && standVon(nq, na, codes) > 0 ? 'veraltet' : 'aktuell';
       plaene.push({
         schluessel: k,
         kuerzel,
@@ -173,10 +197,13 @@ export function plansatzPruefen(antrag: Eintrag[], quelle: Eintrag[], schema: Na
   // Nur mit Einzelplänen zählbar (ein Satz verrät nicht, was er enthält):
   if (plaene.length && !plaene.some((p) => p.satz)) {
     const da = plaene.filter((p) => p.zustand !== 'fehlt').map((p) => p.bezeichnung ?? '');
-    // Bauzeichnungen sind Grundrisse, Schnitte und Ansichten (§ 4 Abs. 1 BauPrüfVO NRW) – fehlt eine Art, ein Hinweis;
-    // er sperrt nicht, weil die Behörde auf Bauvorlagen verzichten kann (§ 1 Abs. 2 BauPrüfVO) und ein Vorbescheid weniger braucht
-    if (!da.some(schnitt)) hinweise.push('kein Schnitt erkannt (Bauzeichnungen: Grundrisse, Schnitte, Ansichten – § 4 Abs. 1 BauPrüfVO NRW)');
-    if (!da.some(ansicht)) hinweise.push('keine Ansicht erkannt (Bauzeichnungen: Grundrisse, Schnitte, Ansichten – § 4 Abs. 1 BauPrüfVO NRW)');
+    // Bauzeichnungen sind Grundrisse, Schnitte und Ansichten (§ 4 Abs. 1, 3, 4 BauPrüfVO NRW) – fehlt eine Art, ein
+    // Hinweis; er sperrt nicht, weil die Behörde auf Bauvorlagen verzichten kann (§ 1 Abs. 2 BauPrüfVO) und ein
+    // Vorbescheid weniger braucht. Nur bei Plänen einer Leistungsphase: für Sonderfälle ohne LPH (AB, Aufteilungspläne
+    // nach § 7 Abs. 4 WEG) ist die BauPrüfVO nicht die Grundlage
+    const bauvorlagen = plaene.some((p) => kuerzelZu(schema.phasen, p.kuerzel)?.lph !== undefined);
+    if (bauvorlagen && !da.some(schnitt)) hinweise.push('kein Schnitt erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 3 BauPrüfVO NRW)');
+    if (bauvorlagen && !da.some(ansicht)) hinweise.push('keine Ansicht erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 4 BauPrüfVO NRW)');
     // Geschosse der Projektdatei: weniger Grundrisse als Geschosse?
     if (o.geschosse && o.geschosse > 0) {
       const gr = da.filter(grundriss).length;

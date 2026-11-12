@@ -1,11 +1,22 @@
-import { useState } from 'react';
+import type { FocusEvent } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { Kuerzel, Namensschema, NamensTeil } from '@core/namensschema';
-import { dateinameZerlegen, NAMENS_TEILE, namensschemaAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import { dateinameZerlegen, lphAus, NAMENS_TEILE, namensschemaAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { useOrdner } from '../store';
 
 /** gültiges Kürzel: Großbuchstaben und Ziffern, höchstens 8 Zeichen */
 const KUERZEL = /^[A-Z0-9ÄÖÜ]{1,8}$/;
+
+/** Schreibweisen aus der Eingabe: groß, ohne Doppelte und ohne das Kürzel selbst */
+const schreibweisenAus = (text: string, kuerzel: string) => [
+  ...new Set(
+    text
+      .split(',')
+      .map((x) => x.trim().toUpperCase())
+      .filter((x) => x && x !== kuerzel),
+  ),
+];
 
 /**
  * Namensschema des Büros – gemeinsam für alle Apps (allgemein.json): Planphasen und Antragsarten mit ihren Kürzeln,
@@ -16,8 +27,14 @@ export function NamensschemaEinstellungen() {
   const { allgemein, setAllgemein } = useOrdner();
   const s: Namensschema = allgemein.namensschema ?? VORGABE_NAMENSSCHEMA;
   const setzen = (patch: Partial<Namensschema>) => setAllgemein({ namensschema: namensschemaAus({ ...s, ...patch }) ?? VORGABE_NAMENSSCHEMA });
-  const beispielTeile: Record<NamensTeil, string> = { code: 'HVO', art: 'GP', datum: '261111', nummer: 'GP-04' };
-  const beispiel = `${s.reihenfolge.map((t) => beispielTeile[t]).join(' ')} Grundriss OG.pdf`;
+  // Beispiel mit den Kürzeln des Schemas (GP, sonst die erste Phase; die erste Antragsart)
+  const phase = s.phasen.find((k) => k.kuerzel === 'GP')?.kuerzel ?? s.phasen[0]?.kuerzel ?? 'GP';
+  const antragsart = s.antragsarten[0]?.kuerzel ?? 'BAUA';
+  const name = (art: string) => {
+    const teile: Record<NamensTeil, string> = { code: 'HVO', art, datum: '261111', nummer: `${phase}-04` };
+    return `${s.reihenfolge.map((t) => teile[t]).join(' ')} Grundriss OG.pdf`;
+  };
+  const beispiel = name(phase);
   const zerlegt = dateinameZerlegen(beispiel, s);
 
   const stelleSetzen = (i: number, teil: NamensTeil) => {
@@ -51,7 +68,7 @@ export function NamensschemaEinstellungen() {
         {s.reihenfolge.map((t, i) => (
           <label key={i}>
             <span className="field-label">Stelle {i + 1}</span>
-            <select value={t} aria-label={`Stelle ${i + 1}`} onChange={(e) => stelleSetzen(i, e.target.value as NamensTeil)}>
+            <select value={t} onChange={(e) => stelleSetzen(i, e.target.value as NamensTeil)}>
               {NAMENS_TEILE.map((n) => (
                 <option key={n.id} value={n.id}>
                   {n.name}
@@ -63,11 +80,11 @@ export function NamensschemaEinstellungen() {
       </div>
       <p className="muted small-text">
         Beispiel: <code>{beispiel}</code> – Projektcode {zerlegt.code}, Phase {zerlegt.art}, Datum {zerlegt.datum}, Plannummer {zerlegt.nummer}, Bezeichnung „{zerlegt.rest}“. Im Antragsordner steht
-        statt der Phase die Antragsart (HVO BAUA 261111 GP-04 …); die Plannummer bleibt.
+        statt der Phase die Antragsart ({name(antragsart).replace(/ Grundriss OG\.pdf$/, ' …')}); die Plannummer bleibt.
       </p>
       <label className="po-index">
         <span className="field-label">Pläne mit Index (z. B. AP-03a) ab Leistungsphase</span>
-        <input type="number" min={0} max={9} value={s.indexAbLph} aria-label="Index ab Leistungsphase" onChange={(e) => e.target.value !== '' && setzen({ indexAbLph: Number(e.target.value) })} />
+        <LphFeld wert={s.indexAbLph} onChange={(n) => n !== undefined && setzen({ indexAbLph: n })} />
       </label>
 
       <KuerzelListe titel="Planphasen" text="Kürzel der Planungsphase im Dateinamen und vor der Plannummer (GP-01)." liste={s.phasen} mitLph onChange={(phasen) => setzen({ phasen })} />
@@ -86,13 +103,45 @@ export function NamensschemaEinstellungen() {
   );
 }
 
-function KuerzelListe({ titel, text, liste, mitLph = false, onChange }: { titel: string; text: string; liste: Kuerzel[]; mitLph?: boolean; onChange: (l: Kuerzel[]) => void }) {
-  const zeile = (i: number, patch: Partial<Kuerzel>) => onChange(liste.map((k, j) => (j === i ? { ...k, ...patch } : k)));
-  const neuesKuerzel = () => {
-    let n = 1;
-    while (liste.some((k) => k.kuerzel === (n === 1 ? 'NEU' : `NEU${n}`))) n++;
-    return n === 1 ? 'NEU' : `NEU${n}`;
+/**
+ * Leistungsphase 0 bis 9: übernommen beim Verlassen (oder Enter), Werte außerhalb werden begrenzt. Leer heißt „keine“,
+ * wo das erlaubt ist (Phase ohne LPH), sonst bleibt der alte Wert.
+ */
+function LphFeld({ wert, leerErlaubt = false, label, onChange }: { wert: number | undefined; leerErlaubt?: boolean; label?: string; onChange: (n: number | undefined) => void }) {
+  const text = wert === undefined ? '' : String(wert);
+  const [eingabe, setEingabe] = useState(text);
+  useEffect(() => setEingabe(text), [text]);
+  const uebernehmen = () => {
+    if (eingabe.trim() === '') {
+      if (leerErlaubt && wert !== undefined) onChange(undefined);
+      else setEingabe(text);
+      return;
+    }
+    const n = lphAus(Number(eingabe));
+    if (n === undefined) return setEingabe(text);
+    setEingabe(String(n));
+    if (n !== wert) onChange(n);
   };
+  return (
+    <input
+      type="number"
+      min={0}
+      max={9}
+      step={1}
+      value={eingabe}
+      aria-label={label}
+      onChange={(e) => setEingabe(e.target.value)}
+      onBlur={uebernehmen}
+      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+    />
+  );
+}
+
+function KuerzelListe({ titel, text, liste, mitLph = false, onChange }: { titel: string; text: string; liste: Kuerzel[]; mitLph?: boolean; onChange: (l: Kuerzel[]) => void }) {
+  // ein neues Kürzel wird erst gespeichert, wenn es gültig eingetragen ist (vorher gilt es in keiner App)
+  const [neu, setNeu] = useState(false);
+  const zeile = (i: number, patch: Partial<Kuerzel>) => onChange(liste.map((k, j) => (j === i ? { ...k, ...patch } : k)));
+  const alle = liste.map((x) => x.kuerzel);
   return (
     <div className="po-kuerzel">
       <h3>{titel}</h3>
@@ -118,27 +167,47 @@ function KuerzelListe({ titel, text, liste, mitLph = false, onChange }: { titel:
               key={`${i}-${k.kuerzel}`}
               titel={titel}
               k={k}
-              andere={liste.filter((_, j) => j !== i).map((x) => x.kuerzel)}
+              andere={alle.filter((_, j) => j !== i)}
               mitLph={mitLph}
               onChange={(patch) => zeile(i, patch)}
               onEntfernen={() => onChange(liste.filter((_, j) => j !== i))}
             />
           ))}
+          {neu && (
+            <KuerzelZeile
+              titel={titel}
+              k={{ kuerzel: '', name: '' }}
+              andere={alle}
+              mitLph={mitLph}
+              neu
+              onChange={(k) => {
+                onChange([...liste, { kuerzel: k.kuerzel!, name: k.name ?? '', ...(k.lph !== undefined ? { lph: k.lph } : {}), ...(k.synonyme?.length ? { synonyme: k.synonyme } : {}) }]);
+                setNeu(false);
+              }}
+              onEntfernen={() => setNeu(false)}
+            />
+          )}
         </tbody>
       </table>
-      <button className="small" onClick={() => onChange([...liste, { kuerzel: neuesKuerzel(), name: '' }])}>
+      <button className="small" disabled={neu} title={neu ? 'Erst das neue Kürzel eintragen' : undefined} onClick={() => setNeu(true)}>
         + Kürzel
       </button>
     </div>
   );
 }
 
-/** Eine Zeile: Eingaben werden beim Verlassen übernommen – ein ungültiges Kürzel wird nicht gespeichert, sondern gemeldet */
+/**
+ * Eine Zeile: Eingaben werden beim Verlassen übernommen. Ein ungültiges oder doppeltes Kürzel wird nicht gespeichert –
+ * das Feld zeigt wieder das alte, die Meldung nennt den Grund. Ändert sich das Schema von außen (Vorgabe
+ * wiederhergestellt), folgen die Felder. Eine neue Zeile (`neu`) wird gespeichert, wenn man sie mit einem gültigen
+ * Kürzel verlässt (oder Enter drückt) – so lässt sich zwischen ihren Feldern wechseln, ohne dass sie vorher springt.
+ */
 function KuerzelZeile({
   titel,
   k,
   andere,
   mitLph,
+  neu = false,
   onChange,
   onEntfernen,
 }: {
@@ -146,75 +215,105 @@ function KuerzelZeile({
   k: Kuerzel;
   andere: string[];
   mitLph: boolean;
+  neu?: boolean;
   onChange: (p: Partial<Kuerzel>) => void;
   onEntfernen: () => void;
 }) {
+  const meldungId = useId();
+  const synonymText = (k.synonyme ?? []).join(', ');
   const [kuerzel, setKuerzel] = useState(k.kuerzel);
   const [name, setName] = useState(k.name);
-  const [synonyme, setSynonyme] = useState((k.synonyme ?? []).join(', '));
-  const [fehler, setFehler] = useState('');
-  const kuerzelUebernehmen = () => {
-    const neu = kuerzel.trim().toUpperCase();
-    if (neu === k.kuerzel) return setKuerzel(neu);
-    if (!KUERZEL.test(neu)) return setFehler(`„${kuerzel.trim()}“: nur Großbuchstaben und Ziffern, höchstens 8 Zeichen – es bleibt ${k.kuerzel}.`);
-    if (andere.includes(neu)) return setFehler(`${neu} gibt es schon – es bleibt ${k.kuerzel}.`);
-    setFehler('');
-    onChange({ kuerzel: neu });
+  const [synonyme, setSynonyme] = useState(synonymText);
+  // LPH der neuen Zeile: auch als Ref, weil die Zeile beim Verlassen im selben Ereignis gespeichert wird
+  const [lph, setLphZustand] = useState<number | undefined>(k.lph);
+  const lphRef = useRef<number | undefined>(k.lph);
+  const setLph = (n: number | undefined) => {
+    lphRef.current = n;
+    setLphZustand(n);
   };
+  const [fehler, setFehler] = useState('');
+  useEffect(() => setKuerzel(k.kuerzel), [k.kuerzel]);
+  useEffect(() => setName(k.name), [k.name]);
+  useEffect(() => setSynonyme(synonymText), [synonymText]);
+
+  const grundGegen = (wert: string) => (!KUERZEL.test(wert) ? 'nur Großbuchstaben und Ziffern, höchstens 8 Zeichen' : andere.includes(wert) ? 'gibt es schon' : '');
+  const kuerzelUebernehmen = () => {
+    const getippt = kuerzel.trim();
+    const wert = getippt.toUpperCase();
+    if (neu && !wert) return setKuerzel('');
+    if (wert === k.kuerzel) return setKuerzel(wert);
+    const grund = grundGegen(wert);
+    if (grund) {
+      setKuerzel(k.kuerzel);
+      return setFehler(neu ? `„${getippt}“: ${grund} – noch nicht gespeichert.` : `„${getippt}“: ${grund} – es bleibt ${k.kuerzel}.`);
+    }
+    setFehler('');
+    if (neu) setKuerzel(wert);
+    else onChange({ kuerzel: wert });
+  };
+  /** neue Zeile verlassen: mit gültigem Kürzel speichern */
+  const neuSpeichern = (e: FocusEvent<HTMLTableRowElement>) => {
+    if (!neu || e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    const wert = kuerzel.trim().toUpperCase();
+    if (!wert || grundGegen(wert)) return;
+    onChange({ kuerzel: wert, name: name.trim(), lph: lphRef.current, synonyme: schreibweisenAus(synonyme, wert) });
+  };
+  const schreibweisenUebernehmen = () => {
+    const liste = schreibweisenAus(synonyme, k.kuerzel);
+    setSynonyme(liste.join(', '));
+    if (!neu && liste.join(', ') !== synonymText) onChange({ synonyme: liste });
+  };
+  const bezeichnung = neu ? 'neues Kürzel' : k.kuerzel;
+
   return (
     <>
-      <tr>
+      <tr className={neu ? 'po-kuerzel-neu' : undefined} onBlur={neuSpeichern}>
         <td>
           <input
             value={kuerzel}
-            aria-label={`${titel}: Kürzel ${k.kuerzel}`}
-            aria-invalid={!!fehler}
+            autoFocus={neu}
+            placeholder={neu ? 'z. B. WEG' : undefined}
+            aria-label={`${titel}: Kürzel ${bezeichnung}`}
+            aria-describedby={fehler ? meldungId : undefined}
             onChange={(e) => {
               setKuerzel(e.target.value);
               setFehler('');
             }}
             onBlur={kuerzelUebernehmen}
+            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           />
         </td>
         <td>
-          <input value={name} aria-label={`${titel}: Bedeutung von ${k.kuerzel}`} onChange={(e) => setName(e.target.value)} onBlur={() => name.trim() !== k.name && onChange({ name: name.trim() })} />
+          <input
+            value={name}
+            aria-label={`${titel}: Bedeutung von ${bezeichnung}`}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => !neu && name.trim() !== k.name && onChange({ name: name.trim() })}
+          />
         </td>
         <td>
           {mitLph ? (
-            <input
-              type="number"
-              min={0}
-              max={9}
-              value={k.lph ?? ''}
-              aria-label={`Leistungsphase von ${k.kuerzel}`}
-              onChange={(e) => onChange({ lph: e.target.value === '' ? undefined : Number(e.target.value) })}
-            />
+            <LphFeld wert={neu ? lph : k.lph} leerErlaubt label={`Leistungsphase von ${bezeichnung}`} onChange={(n) => (neu ? setLph(n) : onChange({ lph: n }))} />
           ) : (
-            <input
-              value={synonyme}
-              aria-label={`Schreibweisen von ${k.kuerzel}`}
-              onChange={(e) => setSynonyme(e.target.value)}
-              onBlur={() =>
-                onChange({
-                  synonyme: synonyme
-                    .split(',')
-                    .map((x) => x.trim().toUpperCase())
-                    .filter(Boolean),
-                })
-              }
-            />
+            <input value={synonyme} aria-label={`Schreibweisen von ${bezeichnung}`} onChange={(e) => setSynonyme(e.target.value)} onBlur={schreibweisenUebernehmen} />
           )}
         </td>
         <td>
-          <button className="icon" title="Entfernen" aria-label={`${k.kuerzel} entfernen`} onClick={onEntfernen}>
+          <button className="icon" title={neu ? 'Verwerfen' : 'Entfernen'} aria-label={neu ? 'Neues Kürzel verwerfen' : `${k.kuerzel} entfernen`} onClick={onEntfernen}>
             ×
           </button>
         </td>
       </tr>
-      {fehler && (
+      {(fehler || neu) && (
         <tr>
-          <td colSpan={4} className="po-kuerzel-fehler" role="alert">
-            {fehler}
+          <td colSpan={4}>
+            {fehler ? (
+              <span className="feld-meldung" role="alert" id={meldungId}>
+                {fehler}
+              </span>
+            ) : (
+              <span className="muted small-text">Neues Kürzel – gespeichert, sobald die Zeile mit einem gültigen Kürzel verlassen wird.</span>
+            )}
           </td>
         </tr>
       )}

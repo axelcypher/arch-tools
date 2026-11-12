@@ -11,7 +11,7 @@ import { ausserhalbDerStruktur, pruefe } from './pruefung';
 import { allePruefen, berichtCsv, sammelCsv } from './sammel';
 import type { Stammdaten } from './stammdaten';
 import { beteiligteSammeln, projektEinlesen, projektStatusSetzen } from './projekt';
-import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, metaAus, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
+import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, metaAus, mitAlterProjektJson, platzhalter, projektdateiAenderung, stammAusMeta } from './stammdaten';
 import type { OrdnerRegel, Struktur } from './struktur';
 import { ausruecken, baumOrdnung, baumZeilen, einruecken, hinzufuegen, loeschen, umbenennen, verschieben, zusatzSetzen } from './baum';
 import { aktivePresets, alterOapPfad, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
@@ -224,6 +224,27 @@ describe('Stammdaten', () => {
     expect(readProjectFile(writeArchive(p)).namensschema?.phasen.map((x) => x.kuerzel)).toEqual(['BP', 'EP', 'GP', 'AP', 'AB']);
     const eigen = alsProject(stamm(), { namensschema: { ...structuredClone(VORGABE_NAMENSSCHEMA), indexAbLph: 4 } });
     expect(readProjectFile(writeArchive(eigen)).namensschema?.indexAbLph).toBe(4);
+  });
+
+  it('Ergänzen: ein fehlendes oder abweichendes Namensschema der Projektdatei wird auf den Stand des Büros gebracht', () => {
+    const s = stamm();
+    const struktur = { name: 'Klein', dateischema: '' };
+    const p = alsProject(s, { struktur, presets: [] });
+    const buero = { ...structuredClone(VORGABE_NAMENSSCHEMA), indexAbLph: 4 };
+    // alte Projektdatei ohne Namensschema: „Namensschema“ kommt dazu, sonst bleibt alles
+    const ohne = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner }, s, { struktur, presets: [], namensschema: buero });
+    expect(ohne.teile).toEqual(['Namensschema']);
+    expect(ohne.aendern({ meta: p.meta, fremd: 1 })).toMatchObject({ fremd: 1, namensschema: buero });
+    // abweichendes Schema: auf den Stand des Büros
+    const anders = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: structuredClone(VORGABE_NAMENSSCHEMA) }, s, { struktur, presets: [], namensschema: buero });
+    expect(anders.teile).toEqual(['Namensschema (Stand des Büros)']);
+    expect(anders.aendern({ meta: p.meta }).namensschema).toEqual(buero);
+    // gleich: keine Änderung, der Abschnitt bleibt unberührt
+    const gleich = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: buero }, s, { struktur, presets: [], namensschema: buero });
+    expect(gleich.teile).toEqual([]);
+    expect(gleich.aendern({ meta: p.meta })).not.toHaveProperty('namensschema');
+    // ohne Büro-Schema gilt die Vorgabe
+    expect(projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: structuredClone(VORGABE_NAMENSSCHEMA) }, s, { struktur, presets: [] }).teile).toEqual([]);
   });
 
   it('alte projekt.json (bis 0.2) wird noch gelesen und füllt Lücken der Projektdatei', () => {

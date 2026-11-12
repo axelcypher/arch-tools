@@ -10,6 +10,8 @@
  */
 
 import type { AntragKurz } from '@core/model';
+import type { Kuerzel } from '@core/namensschema';
+import { kuerzelZu } from '@core/namensschema';
 import { antragKurzAus } from '@core/serialize';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
@@ -185,9 +187,19 @@ export function standardFassung(fassungen: Fassung[], arten: string[]): Fassung 
   return auswahl.reduce<Fassung | null>((best, f) => (!best || f.nr > best.nr ? f : best), null);
 }
 
-/** Name der nächsten Fassung einer Art: „BAUA“, dann „BAUA 2“, „BAUA 3“ … */
-export function naechsteFassung(fassungen: Fassung[], art: string): string {
-  const da = fassungen.filter((f) => f.art === art.toUpperCase());
+/**
+ * Hauptkürzel einer Schreibweise nach den Antragsarten des Namensschemas (BVA → BAUVA); unbekannte bleiben, groß
+ * geschrieben. Gleichwertige Schreibweisen zählen so als dieselbe Art.
+ */
+export const hauptArt = (art: string, arten: Kuerzel[] = []) => kuerzelZu(arten, art.trim())?.kuerzel ?? art.trim().toUpperCase();
+
+/**
+ * Name der nächsten Fassung einer Art: „BAUA“, dann „BAUA 2“, „BAUA 3“ … – gezählt über alle gleichwertigen
+ * Schreibweisen (BVA und BAUVA), benannt in der übergebenen
+ */
+export function naechsteFassung(fassungen: Fassung[], art: string, arten: Kuerzel[] = []): string {
+  const haupt = hauptArt(art, arten);
+  const da = fassungen.filter((f) => hauptArt(f.art, arten) === haupt);
   if (!da.length) return art.toUpperCase();
   return `${art.toUpperCase()} ${Math.max(...da.map((f) => f.nr)) + 1}`;
 }
@@ -280,9 +292,15 @@ export function vorlagenAus(roh: unknown, katalog: KatalogEintrag[]): AntragsVor
 /** Die Dokumente einer Vorlage in der Reihenfolge des Katalogs */
 export const dokumenteDerVorlage = (katalog: KatalogEintrag[], v: AntragsVorlage) => katalog.filter((k) => v.dokumente.includes(k.id));
 
-/** Vorschlag für ein Projekt: die Vorlage zur Art der aktiven Antragsfassung, sonst die erste */
-export function vorlageFuer(vorlagen: AntragsVorlage[], art: string | undefined): AntragsVorlage | undefined {
-  return (art && vorlagen.find((v) => v.art?.toLowerCase() === art.toLowerCase())) || vorlagen[0];
+/**
+ * Vorschlag für ein Projekt: die Vorlage zur Art der aktiven Antragsfassung (gleichwertige Schreibweisen wie BVA für
+ * BAUVA zählen mit). Gibt es zu der Art keine Vorlage (z. B. BAUF, ENTW), wird nichts vorgeschlagen – eine Vorlage
+ * „Bauantrag“ passt dort nicht. Ohne Art gilt die erste.
+ */
+export function vorlageFuer(vorlagen: AntragsVorlage[], art: string | undefined, arten: Kuerzel[] = []): AntragsVorlage | undefined {
+  if (!art?.trim()) return vorlagen[0];
+  const haupt = hauptArt(art, arten);
+  return vorlagen.find((v) => v.art && hauptArt(v.art, arten) === haupt);
 }
 
 /** Element `von` an die Stelle `nach` verschieben (nach dem Herausnehmen gezählt) */

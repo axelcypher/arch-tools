@@ -174,13 +174,16 @@ export const istAnzahl = (titel: string) => /^anzahl\b/i.test(titel.trim()) && !
 /**
  * Für „Art der baulichen Nutzung“: die Baugebiete der BauNVO (§ 1 Abs. 2, §§ 2–11) in der Schreibweise des
  * GRZ-Nachweises (packages/core GEBIETSARTEN), das Sondergebiet nach §§ 10 und 11 getrennt, dazu die Fälle ohne
- * Baugebiet (§§ 34, 35 BauGB) und der vorhabenbezogene Bebauungsplan (§ 12 BauGB)
+ * Baugebiet (§§ 34, 35 BauGB), die Fläche für den Gemeinbedarf (§ 9 Abs. 1 Nr. 5 BauGB, z. B. Schule, Kita) und
+ * der vorhabenbezogene Bebauungsplan (§ 12 BauGB). Im faktischen Baugebiet (§ 34 Abs. 2 BauGB) gilt das Baugebiet.
  */
 export const BAUGEBIETE = [
   ...GEBIETSARTEN.filter((g) => g.id !== 'SO').map((g) => g.label),
   'SO – Sondergebiet, das der Erholung dient (§ 10 BauNVO)',
   'SO – sonstiges Sondergebiet (§ 11 BauNVO)',
+  'Fläche für den Gemeinbedarf (§ 9 Abs. 1 Nr. 5 BauGB)',
   'Vorhabenbezogener Bebauungsplan (§ 12 BauGB)',
+  // entspricht die nähere Umgebung einem Baugebiet (§ 34 Abs. 2 BauGB), wählt man das Baugebiet selbst
   'Innenbereich ohne Baugebiet (§ 34 Abs. 1 BauGB)',
   'Außenbereich (§ 35 BauGB)',
 ];

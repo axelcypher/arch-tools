@@ -174,7 +174,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
             ))}
             {fehlendePlaene.map(({ dok, p }) => (
               <li key={`${dok.eintrag.id}|${p.schluessel}`} className="fo-baum-zeile" title={`${dok.eintrag.titel}: ${p.schluessel} – ${PLAN_ZUSTAND_TEXT[p.zustand]}`}>
-                <StatusPunkt status={p.zustand === 'fehlt' ? 'unvollstaendig' : 'offen'} />
+                <StatusPunkt status={p.zustand === 'fehlt' ? 'unvollstaendig' : 'offen'} titel={PLAN_ZUSTAND_TEXT[p.zustand]} />
                 <span className="fo-baum-name">
                   {p.schluessel}
                   {p.bezeichnung ? ` ${p.bezeichnung}` : ''}

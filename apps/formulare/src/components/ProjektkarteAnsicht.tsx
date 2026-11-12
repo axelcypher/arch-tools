@@ -197,7 +197,7 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
       {editor && (
         <AnsichtEditor
           titel="Projektkarte: eigene Ansicht"
-          text="Rechts Einträge der Projektkarte anhaken – sie kommen in den gewählten Abschnitt. Links ordnen: am Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓."
+          text="Rechts Einträge der Projektkarte anhaken, links am Griff ordnen (oder Griff wählen und ↑/↓, Entf entfernt)."
           katalog={katalog}
           ansicht={ansicht}
           onChange={setAnsicht}
@@ -806,11 +806,13 @@ function Eintrag({
       </Zelle>
     );
   }
-  const kern = kernTitel;
+  const vorschlaege = nutzungsarten(kernTitel);
   return (
     <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
-      {istAnzahl(kern) ? (
-        // Anzahl: nur ganze Zahlen (gespeichert als Text, wie in der Projektkarte)
+      {istAnzahl(kernTitel) ? (
+        // Anzahl: nur ganze Zahlen (gespeichert als Text, wie in der Projektkarte). Komma, Punkt, Vorzeichen und
+        // Exponent lassen sich nicht tippen; kommt trotzdem etwas anderes an (Einfügen), bleibt es stehen und wird
+        // gemeldet – nichts wird stillschweigend verändert
         <input
           id={id}
           data-pk={s}
@@ -821,10 +823,11 @@ function Eintrag({
           className="pk-zahl"
           value={keineZahl ? '' : textWert.trim()}
           placeholder={keineZahl ? textWert.trim() : undefined}
-          onChange={(ev) => setzen(ev.target.value.replace(/\D/g, ''))}
+          onKeyDown={(ev) => KEINE_GANZZAHL.includes(ev.key) && ev.preventDefault()}
+          onChange={(ev) => setzen(ev.target.value.trim())}
         />
-      ) : nutzungsarten(kern) ? (
-        <AuswahlMitText id={id} schluessel={s} wert={textWert} vorschlaege={nutzungsarten(kern)!} onChange={setzen} />
+      ) : vorschlaege ? (
+        <AuswahlMitText id={id} schluessel={s} wert={textWert} vorschlaege={vorschlaege} onChange={setzen} />
       ) : (
         <input id={id} data-pk={s} type="text" value={textWert} spellCheck={false} className={e === 'm²' ? 'pk-zahl' : undefined} onChange={(ev) => setzen(ev.target.value)} />
       )}
@@ -839,18 +842,43 @@ function Eintrag({
  */
 function AuswahlMitText({ id, schluessel, wert, vorschlaege, onChange }: { id: string; schluessel: string; wert: string; vorschlaege: string[]; onChange: (w: string) => void }) {
   const [frei, setFrei] = useState(false);
+  const liste = useRef<HTMLSelectElement>(null);
+  const zurueck = useRef(false);
   const eigen = wert.trim() !== '' && !vorschlaege.includes(wert);
+  // zurück zur Liste (Pfeil oder Esc): der Fokus bleibt an diesem Eintrag
+  useEffect(() => {
+    if (!frei && zurueck.current) liste.current?.focus();
+    zurueck.current = false;
+  }, [frei]);
+  const zurListe = () => {
+    zurueck.current = true;
+    setFrei(false);
+  };
   if (frei)
     return (
       <span className="pk-auswahl-frei">
-        <input id={id} data-pk={schluessel} type="text" value={wert} spellCheck={false} autoFocus onChange={(ev) => onChange(ev.target.value)} />
-        <button type="button" className="icon" title="Aus der Liste wählen – die eigene Angabe bleibt erhalten" aria-label="Aus der Liste wählen" onClick={() => setFrei(false)}>
+        <input
+          id={id}
+          data-pk={schluessel}
+          type="text"
+          value={wert}
+          spellCheck={false}
+          autoFocus
+          onChange={(ev) => onChange(ev.target.value)}
+          onKeyDown={(ev) => {
+            if (ev.key !== 'Escape') return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            zurListe();
+          }}
+        />
+        <button type="button" className="icon" title="Aus der Liste wählen (Esc) – die eigene Angabe bleibt erhalten" aria-label="Aus der Liste wählen" onClick={zurListe}>
           <Symbol name="pfeilUnten" />
         </button>
       </span>
     );
   return (
-    <select id={id} data-pk={schluessel} value={wert} onChange={(ev) => (ev.target.value === FREI ? setFrei(true) : onChange(ev.target.value))}>
+    <select ref={liste} id={id} data-pk={schluessel} value={wert} onChange={(ev) => (ev.target.value === FREI ? setFrei(true) : onChange(ev.target.value))}>
       <option value="">– keine Angabe –</option>
       {eigen && <option value={wert}>{wert} (eigene Angabe)</option>}
       {vorschlaege.map((v) => (
@@ -865,6 +893,9 @@ function AuswahlMitText({ id, schluessel, wert, vorschlaege, onChange }: { id: s
 
 /** Wert der Auswahl für „eigene Angabe eingeben“ (kein möglicher Text der Projektkarte) */
 const FREI = '\u0000frei';
+
+/** Tasten, die im Zahlenfeld einer Anzahl keine ganze Zahl ergeben */
+const KEINE_GANZZAHL = [',', '.', 'e', 'E', '+', '-'];
 
 function Kreuze({ karte, eintraege, titelText, unter }: { karte: OffeneKarte; eintraege: PkEintrag[]; titelText?: string; unter?: ReactNode }) {
   const karteSetzen = useFormulare((s) => s.karteSetzen);
