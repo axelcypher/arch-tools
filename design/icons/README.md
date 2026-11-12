@@ -16,7 +16,7 @@ und die daraus erzeugten PNG/ICO/ICNS.
 | <img src="kosten.svg" width="40"> | Kostenermittlung (**NUMIO**) | Euro unter dem Dach | Euro – die ermittelten Kosten | `#9a303c` |
 | <img src="entzerrung.svg" width="40"> | Entzerrung (**RECTIO**) | Fassade in Perspektive | vier Passpunkte | `#63489a` |
 | <img src="ava.svg" width="40"> | AVA (**FABRIO**) | Klemmbrett der Bauleitung | Klammer | `#853a77` |
-| <img src="baurecht.svg" width="40"> | Baurecht (Name offen) | Paragraf mit Ampel | gelbes Licht – „prüfen“ | `#33607e` |
+| <img src="baurecht.svg" width="40"> | Baurecht (**LEXIO**) | Paragraf mit Ampel | gelbes Licht – „prüfen“ | `#33607e` |
 
 Die App Baurecht liegt noch auf dem Branch `claude/nice-fermi-702pde`.
 
