@@ -431,10 +431,18 @@ export interface AntragStand {
 
 /**
  * Dateien, die nach der Einreichung erwartungsgemäß in den Antragsordner kommen und deshalb nicht als „neu seit der
- * Einreichung“ gelten: Genehmigung bzw. Bescheid, Eingangs- bzw. Empfangsbestätigung, Antragsprotokoll, Nachforderung
- * („Genehmigungsplanung“ ist keine Genehmigung)
+ * Einreichung“ gelten. Bürovorgabe: die Genehmigung selbst, die Empfangsbestätigung und Nachforderungen; dazu ergänzt
+ * Eingangsbestätigung und Antragsprotokoll sowie die Entscheidung bei den übrigen Antragsarten – Bescheid bzw.
+ * Vorbescheid, denkmalrechtliche Erlaubnis (DENK), Abgeschlossenheitsbescheinigung und gesiegelter Aufteilungsplan
+ * (ABGE). Antragsunterlagen gelten nie als erwartet, auch wenn ein solches Wort darin steht: „Antrag auf Vorbescheid“,
+ * „Antrag auf denkmalrechtliche Erlaubnis“, „Genehmigungsfreistellung“, „Genehmigungsverfahren“, „Genehmigungsplanung“.
  */
-export const NACH_EINREICHUNG_ERWARTET = /(bau)?genehmigung(?!splan)|bescheid|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung|antragsprotokoll|nachforderung/i;
+export function nachEinreichungErwartet(name: string): boolean {
+  const n = name.toLowerCase();
+  if (/antragsprotokoll|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung|nachforderung/.test(n)) return true;
+  if (/antrag|genehmigungsfrei|genehmigungsverfahren|genehmigungsplan/.test(n)) return false;
+  return /genehmigung|bescheid|erlaubnis|abgeschlossenheitsbescheinigung|aufteilungsplan/.test(n);
+}
 
 /**
  * Antragsstand festhalten: die Dateien im Ordner des Antrags (ohne Archiv und Sperrdateien). Wird die Einreichung erst
@@ -458,7 +466,7 @@ export const SEIT_EINREICHUNG_TEXT: Record<SeitEinreichung, string> = { neu: 'ne
 
 /** Hat sich eine Datei seit der Einreichung geändert bzw. ist sie neu? Erwartete Dateien (Bescheid …) nie. */
 export function seitEinreichung(d: Pick<Eintrag, 'pfad' | 'groesse' | 'geaendert'>, stand: AntragStand | undefined): SeitEinreichung | null {
-  if (!stand || NACH_EINREICHUNG_ERWARTET.test(d.pfad.split('/').pop() ?? '')) return null;
+  if (!stand || nachEinreichungErwartet(d.pfad.split('/').pop() ?? '')) return null;
   const s = stand.dateien.find((x) => x.pfad.toLowerCase() === d.pfad.toLowerCase());
   if (!s) return 'neu';
   const groesse = s.groesse !== undefined && s.groesse !== d.groesse;
@@ -672,7 +680,7 @@ export function aktuellsterAntrag(antraege: Record<string, AntragDaten>, reihe: 
 }
 
 /** Dokumente, die einen Antrag als eingereicht kennzeichnen */
-export const EINGEREICHT_MUSTER = /antragsprotokoll|eingangsbest(ä|ae)tigung/i;
+export const EINGEREICHT_MUSTER = /antragsprotokoll|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung/i;
 
 /** Datei oder Ordner in einem Archivordner (`_archiv`, `archiv`, auch tiefer) */
 export const istArchiv = (pfad: string) => /(^|\/)_?archiv(\/|$)/i.test(pfad.replace(/\\/g, '/'));
@@ -726,8 +734,9 @@ export function antragsNameFehler(name: string, o: { codes: string[]; art: strin
   const { teile, code } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
   if (!code) return `Projektcode fehlt ${wo('code')} – ${erwartet}`;
   if (!art || teile.art?.toUpperCase() !== art.toUpperCase()) return `Antragsart ${art || '?'} fehlt ${wo('art')} – ${erwartet}`;
+  if (!/^\d{6}$/.test(teile.datum ?? '')) return `Datum JJMMTT fehlt ${wo('datum')} – ${erwartet}`;
   // nach den Teilen braucht es eine Bezeichnung (eine Nummer allein genügt nicht)
-  if (!/^\d{6}$/.test(teile.datum ?? '') || !teile.rest) return `Datum JJMMTT und Name fehlen ${wo('datum')} – ${erwartet}`;
+  if (!teile.rest) return `Bezeichnung fehlt – ${erwartet}`;
   if (!gueltigesDatum(teile.datum)) return `Kein gültiges Datum „${teile.datum}“ – ${erwartet}`;
   return null;
 }
@@ -743,10 +752,17 @@ export function nameNachFormat(name: string, o: { codes: string[]; art: string; 
   const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
   const { woerter, endung, teile, stelle, code } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
   const bekannt = (o.kuerzel ?? []).map((k) => k.toUpperCase());
-  if (code && gueltigesDatum(teile.datum) && stelle.art !== undefined && teile.art && (bekannt.includes(teile.art.toUpperCase()) || teile.art.toUpperCase() === o.art.toUpperCase())) {
+  const artBekannt = !!teile.art && (bekannt.includes(teile.art.toUpperCase()) || teile.art.toUpperCase() === o.art.toUpperCase());
+  if (code && gueltigesDatum(teile.datum) && stelle.art !== undefined && artBekannt) {
     const neu = [...woerter];
     neu[stelle.art] = o.art;
     return `${neu.join(' ')}${endung}`;
+  }
+  // Code und Antragsart da, nur das Datum fehlt („BS9 BAUA Bauantrag.pdf“): Datum einsetzen statt den Kopf zu doppeln
+  const [iCode, iArt, iDatum] = [reihenfolge.indexOf('code'), reihenfolge.indexOf('art'), reihenfolge.indexOf('datum')];
+  if (code && artBekannt && stelle.art !== undefined && !gueltigesDatum(teile.datum) && iCode < iArt && iArt < iDatum) {
+    const kopf = reihenfolge.filter((t) => t !== 'nummer').map((t) => (t === 'code' ? teile.code : t === 'art' ? o.art : jjmmtt(o.datum)));
+    return `${[...kopf, ...woerter.slice(stelle.art + 1)].join(' ')}${endung}`;
   }
   const kopf = reihenfolge.filter((t) => t !== 'nummer').map((t) => (t === 'code' ? (codes[0] ?? '') : t === 'art' ? o.art : jjmmtt(o.datum)));
   return `${kopf.join(' ')} ${name.trim()}`;

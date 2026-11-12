@@ -353,17 +353,17 @@ describe('Projektordner', () => {
     expect(meldung().textContent).toBe('„BVA“: gibt es schon – es bleibt keine Schreibweise.');
     expect(schema().antragsarten.find((k) => k.kuerzel === 'DENK')!.synonyme).toBeUndefined();
     // Leistungsphase: ungültig gemeldet, leer = keine
-    eingabe(eingabeMit('Leistungsphase von AB'), '15');
+    eingabe(eingabeMit('Planphasen: Leistungsphase von AB'), '15');
     expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBeUndefined();
-    expect(eingabeMit('Leistungsphase von AB').getAttribute('aria-invalid')).toBe('true');
+    expect(eingabeMit('Planphasen: Leistungsphase von AB').getAttribute('aria-invalid')).toBe('true');
     // die Meldung steht in der Meldungszeile der Tabelle, nicht in der schmalen LPH-Spalte
-    const lphMeldung = eingabeMit('Leistungsphase von AB').closest('tr')!.nextElementSibling!.querySelector<HTMLElement>('.feld-meldung')!;
+    const lphMeldung = eingabeMit('Planphasen: Leistungsphase von AB').closest('tr')!.nextElementSibling!.querySelector<HTMLElement>('.feld-meldung')!;
     expect(lphMeldung.textContent).toBe('„15“: Leistungsphase 0 bis 9 (ganze Zahl).');
     expect(lphMeldung.closest('td')!.getAttribute('colspan')).toBe('4');
-    expect(eingabeMit('Leistungsphase von AB').getAttribute('aria-describedby')).toBe(lphMeldung.id);
-    eingabe(eingabeMit('Leistungsphase von AB'), '6');
+    expect(eingabeMit('Planphasen: Leistungsphase von AB').getAttribute('aria-describedby')).toBe(lphMeldung.id);
+    eingabe(eingabeMit('Planphasen: Leistungsphase von AB'), '6');
     expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBe(6);
-    eingabe(eingabeMit('Leistungsphase von AB'), '');
+    eingabe(eingabeMit('Planphasen: Leistungsphase von AB'), '');
     expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBeUndefined();
 
     // neues Kürzel: erst gespeichert, wenn die Zeile mit einem gültigen Kürzel verlassen wird
@@ -411,7 +411,7 @@ describe('Projektordner', () => {
     expect(beispiel()).toBe('HVO GP 261111 GP-04 Grundriss OG.pdf');
     expect(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW').value).toBe('Entwässerungsantrag');
     expect(eingabeMit('Schreibweisen von BAUA').value).toBe('');
-    expect(eingabeMit('Leistungsphase von AB').value).toBe('');
+    expect(eingabeMit('Planphasen: Leistungsphase von AB').value).toBe('');
     expect(index.value).toBe('5');
     // wieder die Vorgabe: nichts mehr wiederherzustellen
     expect(knopf(bereich, 'Vorgabe wiederherstellen').disabled).toBe(true);

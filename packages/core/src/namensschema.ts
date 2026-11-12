@@ -146,8 +146,13 @@ export interface Namensteile {
   rest: string;
 }
 
-/** Sieht ein Wort nach einer Plan- oder Dokumentnummer aus? („01“, „03a“, „GP-04“, „GP01-07“, „AP-03a“) */
-export const istNummer = (wort: string) => /^\d{1,3}[a-z]?$/i.test(wort) || /^[A-ZÄÖÜ]{1,8}[-_]?\d{1,3}(?:[-–](?:[A-ZÄÖÜ]{1,8}[-_]?)?\d{1,3})?[a-z]?$/i.test(wort);
+/**
+ * Sieht ein Wort nach einer Plan- oder Dokumentnummer aus? („01“, „03a“, „GP-04“, „GP01-07“, „AP-03a“). Das
+ * Plankürzel steht in Großbuchstaben – „Anlage1“ oder „Ansicht2“ sind Bezeichnungen. `auchKlein`: Kürzel in beliebiger
+ * Schreibweise („gp-04“), wenn danach noch eine Bezeichnung folgt.
+ */
+export const istNummer = (wort: string, auchKlein = false) =>
+  /^\d{1,3}[a-z]?$/i.test(wort) || new RegExp('^[A-ZÄÖÜ]{1,8}[-_]?\\d{1,3}(?:[-–](?:[A-ZÄÖÜ]{1,8}[-_]?)?\\d{1,3})?[a-z]?$', auchKlein ? 'i' : '').test(wort);
 
 /** Zerlegung mit den Stellen der Teile (Wortindex) – für Prüfen und Umbenennen */
 export interface Zerlegung {
@@ -190,7 +195,8 @@ export function dateinameZerlegenMitStellen(name: string, schema: Pick<Namenssch
       p += n;
       continue;
     }
-    if (t === 'nummer' && !istNummer(woerter[p])) continue;
+    // Nummer: in Großbuchstaben immer; klein geschrieben nur, wenn danach noch eine Bezeichnung kommt
+    if (t === 'nummer' && !istNummer(woerter[p], woerter[p + 1] !== undefined)) continue;
     [teile[t], stelle[t]] = [woerter[p], p];
     p++;
   }

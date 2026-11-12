@@ -46,9 +46,21 @@ export function zeigeMenueAn(el: HTMLElement, punkte: MenuePunkt[]) {
 }
 
 /** Knopf, der ein Menü aufklappt */
-export function MenueKnopf({ punkte, children, title, className }: { punkte: () => MenuePunkt[]; children: ReactNode; title?: string; className?: string }) {
+export function MenueKnopf({
+  punkte,
+  children,
+  title,
+  className,
+  disabled = false,
+}: {
+  punkte: () => MenuePunkt[];
+  children: ReactNode;
+  title?: string;
+  className?: string;
+  disabled?: boolean;
+}) {
   return (
-    <button className={className} title={title} aria-haspopup="menu" onClick={(e) => zeigeMenueAn(e.currentTarget, punkte())}>
+    <button className={className} title={title} aria-haspopup="menu" disabled={disabled} onClick={(e) => zeigeMenueAn(e.currentTarget, punkte())}>
       {children} <Symbol name="pfeilUnten" />
     </button>
   );

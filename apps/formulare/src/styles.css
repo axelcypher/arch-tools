@@ -297,7 +297,17 @@ button.icon.active {
   font-size: 11.5px;
   color: var(--muted);
 }
-/* zuletzt bearbeitet – rechts in der Zeile, dezent (voller Zeitpunkt im Tooltip) */
+/* zuletzt bearbeitet – rechts in der Zeile, dezent (voller Zeitpunkt im Tooltip); in einer schmalen Navigation
+   entfällt sie (bleibt im Tooltip), damit Namen nicht stark gekürzt bzw. umbrochen werden */
+.nav {
+  container: navigation / inline-size;
+}
+@container navigation (max-width: 300px) {
+  .nav-zeit,
+  .fo-baum-zeit {
+    display: none;
+  }
+}
 .nav-zeit,
 .fo-baum-zeit {
   margin-left: auto;
@@ -2949,6 +2959,8 @@ button.icon.ex-baum-pfeil {
 .pu-bearbeiten {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  /* ein Feld über die ganze Breite lässt keine leeren Zellen davor */
+  grid-auto-flow: dense;
   gap: 8px 12px;
   padding: 8px 12px 12px;
   border-top: 1px solid var(--line-soft);
@@ -4336,6 +4348,8 @@ tr[data-ziehen='danach'] > td {
 }
 .fo-seit {
   display: inline-block;
+  /* in der Spalte des Namens nicht auf die volle Breite strecken – ein kleines Etikett */
+  align-self: flex-start;
   margin-top: 2px;
   padding: 0 5px;
   border-radius: 3px;
@@ -4344,9 +4358,13 @@ tr[data-ziehen='danach'] > td {
   background: var(--warn-bg);
   color: var(--warn-text);
 }
-.fo-bereit-zeile.seit-neu,
-.fo-bereit-zeile.seit-geaendert {
+/* Streifen am Namen, nicht hinter dem runden Bereit-Knopf */
+.fo-bereit-zeile.seit-neu > .fo-baum-zeile,
+.fo-bereit-zeile.seit-geaendert > .fo-baum-zeile {
   box-shadow: inset 3px 0 0 var(--warn-border);
+}
+.nav-unter.nav-doppelt {
+  color: var(--warn-text);
 }
 .fo-bereit-zeile .fo-baum-name {
   white-space: normal;
@@ -4777,6 +4795,15 @@ tr[data-ziehen='danach'] > td {
   color: var(--warn-text);
 }
 /* .pu-leer p setzt sonst den Abstand */
+/* Namensvorlage in den Einstellungen: Feld, Hinweis, Warnung untereinander */
+.es-feldblock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.es-feldblock p {
+  margin: 0;
+}
 /* Namensvorlage im Export des Projekts: ganze Breite des Rasters */
 .pu-bearbeiten .pu-breit {
   grid-column: 1 / -1;

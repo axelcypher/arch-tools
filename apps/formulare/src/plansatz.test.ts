@@ -81,8 +81,12 @@ describe('Plansatz', () => {
     const r = plansatzPruefen(antrag, [], S, { geschosse: 3 });
     expect(r.status).toBe('aktuell');
     expect(r.hinweise).toEqual(['Projektdatei: 3 Geschosse, 2 Grundrisse erkannt (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW)']);
-    // Entwässerungsantrag: die BauPrüfVO ist nicht die Grundlage – kein Paragraph, kein Hinweis zu Schnitt/Ansicht
-    expect(plansatzPruefen(antrag, [], S, { geschosse: 3, art: 'ENTW' }).hinweise).toEqual(['Projektdatei: 3 Geschosse, 2 Grundrisse erkannt']);
+    // Entwässerungsantrag: weder BauPrüfVO noch Grundrisse aller Geschosse (nur die mit Entwässerungsanlagen)
+    expect(plansatzPruefen(antrag, [], S, { geschosse: 3, art: 'ENTW' }).hinweise).toEqual([]);
+    // Vorbescheid: nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO)
+    expect(plansatzPruefen(antrag, [], S, { geschosse: 3, art: 'BAUVA' }).hinweise).toEqual([
+      'Projektdatei: 3 Geschosse, 2 Grundrisse erkannt (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW – beim Vorbescheid nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO))',
+    ]);
     expect(plansatzPruefen(antrag, [], S, { geschosse: 2 }).hinweise).toEqual([]);
   });
 

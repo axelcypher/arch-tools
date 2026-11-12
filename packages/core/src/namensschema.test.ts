@@ -25,8 +25,12 @@ describe('Namensschema', () => {
       stelle: { code: 0, art: 2, datum: 3, nummer: 4 },
       endung: '.pdf',
     });
-    expect(['01', '03a', 'GP-04', 'GP01-07', 'AP-03a'].every(istNummer)).toBe(true);
-    expect(['Bauantrag', '2026', 'BAUA'].some(istNummer)).toBe(false);
+    expect(['01', '03a', 'GP-04', 'GP01-07', 'AP-03a'].every((w) => istNummer(w))).toBe(true);
+    expect(['Bauantrag', '2026', 'BAUA', 'Anlage1', 'Ansicht2', 'Plan-3'].some((w) => istNummer(w))).toBe(false);
+    // klein geschriebene Plannummer nur, wenn eine Bezeichnung folgt
+    expect(dateinameZerlegen('hvo gp 261111 gp-04 grundriss.pdf')).toMatchObject({ nummer: 'gp-04', rest: 'grundriss' });
+    expect(dateinameZerlegen('BS9 BAUA 261110 Anlage1.pdf')).toMatchObject({ rest: 'Anlage1' });
+    expect(dateinameZerlegen('HVO GP 261111 GP-04.pdf')).toMatchObject({ nummer: 'GP-04', rest: '' });
   });
 
   it('Plannummern nur mit Plankürzel: GP-01, GP01, Satz GP01-07, Index – eine reine Zahl ist kein Plan', () => {

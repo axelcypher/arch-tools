@@ -32,6 +32,7 @@ export function NamensschemaEinstellungen() {
     return `${s.reihenfolge.map((t) => teile[t]).join(' ')} Grundriss OG.pdf`;
   };
   const beispiel = name(phase);
+  const indexId = useId();
   const zerlegt = dateinameZerlegen(beispiel, s);
 
   const stelleSetzen = (i: number, teil: NamensTeil) => {
@@ -60,6 +61,7 @@ export function NamensschemaEinstellungen() {
       </p>
 
       <h3>Stellen der Teile im Dateinamen</h3>
+      <p className="muted small-text">Wählt man für eine Stelle einen anderen Teil, tauschen die beiden ihre Plätze.</p>
       <div className="po-stellen">
         {s.reihenfolge.map((t, i) => (
           <label key={i}>
@@ -78,10 +80,13 @@ export function NamensschemaEinstellungen() {
         Beispiel: <code>{beispiel}</code> – Projektcode {zerlegt.code}, Phase {zerlegt.art}, Datum {zerlegt.datum}, Plannummer {zerlegt.nummer}, Bezeichnung „{zerlegt.rest}“. Im Antragsordner steht
         statt der Phase die Antragsart: <code>{name(antragsart).replace(/ Grundriss OG\.pdf$/, ' …')}</code> – die Plannummer bleibt.
       </p>
-      <label className="po-index">
-        <span className="field-label">Pläne mit Index (z. B. AP-03a) ab Leistungsphase</span>
-        <LphFeld wert={s.indexAbLph} onChange={(n) => n !== undefined && setzen({ indexAbLph: n })} />
-      </label>
+      {/* die Meldung des Felds steht unter ihm, nicht im Label (sonst wäre sie Teil seines Namens) */}
+      <div className="po-index">
+        <label className="field-label" htmlFor={indexId}>
+          Pläne mit Index (z. B. AP-03a) ab Leistungsphase
+        </label>
+        <LphFeld id={indexId} wert={s.indexAbLph} onChange={(n) => n !== undefined && setzen({ indexAbLph: n })} />
+      </div>
 
       <KuerzelListe
         titel="Planphasen"
@@ -118,12 +123,14 @@ export function NamensschemaEinstellungen() {
  * Leer heißt „keine“, wo das erlaubt ist (Phase ohne LPH).
  */
 function LphFeld({
+  id,
   wert,
   leerErlaubt = false,
   label,
   onChange,
   meldung,
 }: {
+  id?: string;
   wert: number | undefined;
   leerErlaubt?: boolean;
   label?: string;
@@ -160,6 +167,7 @@ function LphFeld({
   return (
     <>
       <input
+        id={id}
         className={`num${fehler ? ' feld-fehler' : ''}`}
         inputMode="numeric"
         value={eingabe}
@@ -233,7 +241,9 @@ function KuerzelListe({
             <th>Kürzel</th>
             <th>Bedeutung</th>
             <th>{mitLph ? 'LPH' : 'Schreibweisen'}</th>
-            <th />
+            <th>
+              <span className="po-unsichtbar">Entfernen</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -364,7 +374,7 @@ function KuerzelZeile({
           <input
             value={kuerzel}
             autoFocus={neu}
-            placeholder={neu ? 'z. B. WEG' : undefined}
+            placeholder={neu ? (mitLph ? 'z. B. VP' : 'z. B. ABBR') : undefined}
             aria-label={`${titel}: Kürzel ${bezeichnung}`}
             aria-describedby={fehler ? meldungId : undefined}
             onChange={(e) => {
@@ -388,7 +398,7 @@ function KuerzelZeile({
             <LphFeld
               wert={neu ? lph : k.lph}
               leerErlaubt
-              label={`Leistungsphase von ${bezeichnung}`}
+              label={`${titel}: Leistungsphase von ${bezeichnung}`}
               meldung={{ id: meldungId, setzen: setFehler }}
               onChange={(n) => (neu ? setLph(n) : onChange({ lph: n }))}
             />

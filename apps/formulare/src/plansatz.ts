@@ -240,10 +240,11 @@ export function plansatzPruefen(
       mitParagraf ? `Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, ${absatz} BauPrüfVO NRW${vorbescheid}` : 'übliche Bauzeichnungen: Grundrisse, Schnitte, Ansichten';
     if (pruefen && !da.some(schnitt)) hinweise.push(`kein Schnitt erkannt (${grundlage('3')})`);
     if (pruefen && !da.some(ansicht)) hinweise.push(`keine Ansicht erkannt (${grundlage('4')})`);
-    // Geschosse der Projektdatei: weniger Grundrisse als Geschosse?
-    if (o.geschosse && o.geschosse > 0) {
+    // Geschosse der Projektdatei: weniger Grundrisse als Geschosse? (nicht beim Entwässerungsantrag – dort genügen die
+    // Geschosse mit Entwässerungsanlagen)
+    if (o.geschosse && o.geschosse > 0 && art !== 'ENTW') {
       const gr = da.filter(grundriss).length;
-      const grundlage = mitParagraf ? ' (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW)' : '';
+      const grundlage = mitParagraf ? ` (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW${vorbescheid})` : '';
       if (gr < o.geschosse) hinweise.push(`Projektdatei: ${o.geschosse} ${o.geschosse === 1 ? 'Geschoss' : 'Geschosse'}, ${gr} ${gr === 1 ? 'Grundriss' : 'Grundrisse'} erkannt${grundlage}`);
     }
   }

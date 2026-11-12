@@ -77,31 +77,37 @@ export function AntragEinstellungen() {
 
       <Karte titel="Dateiname exportierter PDFs" text={<>Beispiel: <strong>{beispiel}.pdf</strong></>}>
         <div className="es-raster">
-          <label className="es-breit">
-            <span className="field-label">Namensvorlage</span>
-            <input value={e.namensvorlage} onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })} aria-label="Namensvorlage" aria-describedby="es-art-hinweis" spellCheck={false} />
-            <span className="field-hint" id="es-art-hinweis">
+          {/* wie im Export des Projekts: Feld, darunter Hinweis und ggf. Warnung */}
+          <div className="es-breit es-feldblock">
+            <label>
+              <span className="field-label">Namensvorlage</span>
+              <input value={e.namensvorlage} onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })} aria-label="Namensvorlage" aria-describedby="es-art-hinweis" spellCheck={false} />
+            </label>
+            <p className="field-hint" id="es-art-hinweis">
               {ART_HINWEIS}
-            </span>
-          </label>
+            </p>
+            {vorlageArtWarnung(e.namensvorlage, reihenfolge) && (
+              <p className="warning small-text">
+                {vorlageArtWarnung(e.namensvorlage, reihenfolge)}{' '}
+                <button className="small" onClick={() => setEinstellungen({ namensvorlage: wirksameVorlage })}>
+                  Vorlage anpassen
+                </button>
+              </p>
+            )}
+          </div>
           <label>
-            <span className="field-label">Phase (nur für {'{Phase}'})</span>
-            <input value={e.phase} list="es-phasen" onChange={(x) => setEinstellungen({ phase: x.target.value })} aria-label="Phase" />
+            <span className="field-label">Phase</span>
+            <input value={e.phase} list="es-phasen" onChange={(x) => setEinstellungen({ phase: x.target.value })} aria-label="Phase" aria-describedby="es-phase-hinweis" />
             <datalist id="es-phasen">
               {['BP', 'EP', 'GP', 'AP'].map((p) => (
                 <option key={p} value={p} />
               ))}
             </datalist>
+            <span className="field-hint" id="es-phase-hinweis">
+              wird für den Platzhalter {'{Phase}'} eingesetzt
+            </span>
           </label>
         </div>
-        {vorlageArtWarnung(e.namensvorlage, reihenfolge) && (
-          <p className="warning small-text">
-            {vorlageArtWarnung(e.namensvorlage, reihenfolge)}{' '}
-            <button className="small" onClick={() => setEinstellungen({ namensvorlage: wirksameVorlage })}>
-              Vorlage anpassen
-            </button>
-          </p>
-        )}
         <div className="es-platzhalter">
           {PLATZHALTER.map((p) => (
             <button key={p.name} className="small" title={p.text} onClick={() => setEinstellungen({ namensvorlage: `${e.namensvorlage} ${p.name}`.trim() })}>

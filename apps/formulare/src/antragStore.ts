@@ -863,7 +863,8 @@ export const useAntrag = create<AntragState>((set, get) => {
             listen[f.name] = await ds.liste(verbinde(basis, `${e.antragsordner.replace(/^\/+|\/+$/g, '')}/${f.name}`), EINGEREICHT_TIEFE);
             eingereicht[f.name] = eingereichtAus(listen[f.name]);
           } catch {
-            eingereicht[f.name] = null;
+            // nicht lesbar (Netz noch nicht da, Aussetzer): nichts schließen – weder „nicht mehr eingereicht“ noch den
+            // festgehaltenen Antragsstand verwerfen; beim nächsten Lesen wird es nachgeholt
           }
         }
       }

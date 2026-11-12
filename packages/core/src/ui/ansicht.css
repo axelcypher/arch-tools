@@ -310,9 +310,10 @@ html.zieht * {
   border-color: var(--accent);
   background: var(--input-bg);
 }
+/* Platzhalter = Beschriftung aus dem Katalog: gedämpft, damit eine eigene Beschriftung davon absticht */
 .av-ed-label::placeholder {
-  color: var(--text);
-  opacity: 0.72;
+  color: var(--muted);
+  opacity: 1;
 }
 .av-ed-layout {
   display: inline-flex;

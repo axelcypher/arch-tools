@@ -102,7 +102,7 @@ export function FassungsWahl() {
 export function zuordnenPunkte(umfangId: string): MenuePunkt[] {
   const titel = useAntrag.getState().projektdatei?.umfang?.find((x) => x.id === umfangId)?.titel;
   if (!titel) return [];
-  return [...formularePunkte(umfangId), { trenner: true }, { text: `„${titel}“ aus dem Antragsumfang entfernen`, symbol: 'muell', aktion: () => void ausUmfangEntfernen(umfangId) }];
+  return [...formularePunkte(umfangId), { trenner: true }, { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(umfangId) }];
 }
 
 /** Die Formulare des Projekts zum Zuordnen (ein schon anders zugeordnetes mit Hinweis) */
@@ -537,7 +537,7 @@ export function AntragsdatenAnsicht() {
                         <span className="small-text">
                           {(d.plansatz.plaene.length > 0 || d.plansatz.hinweise.length > 0) && (
                             <>
-                              <button className="pu-datei" aria-expanded={plaeneOffen.includes(u.id)} aria-controls={`plaene-${u.id}`} onClick={() => setPlaeneOffen(plaeneOffen.includes(u.id) ? plaeneOffen.filter((x) => x !== u.id) : [...plaeneOffen, u.id])}>
+                              <button className="pu-datei" aria-expanded={plaeneOffen.includes(u.id)} aria-controls={plaeneOffen.includes(u.id) ? `plaene-${u.id}` : undefined} onClick={() => setPlaeneOffen(plaeneOffen.includes(u.id) ? plaeneOffen.filter((x) => x !== u.id) : [...plaeneOffen, u.id])}>
                                 <Symbol name={plaeneOffen.includes(u.id) ? 'pfeilUnten' : 'pfeilRechts'} /> Pläne {plaeneOffen.includes(u.id) ? 'verbergen' : 'zeigen'}
                               </button>
                               {' · '}
@@ -545,7 +545,7 @@ export function AntragsdatenAnsicht() {
                           )}
                           {d.plansatz.hinweise.length > 0 && (
                             <>
-                              <button className="pu-hinweiszahl" title="Zu den Hinweisen unter der Liste der Pläne" aria-controls={`plaene-${u.id}`} onClick={() => hinweiseZeigen(u.id)}>
+                              <button className="pu-hinweiszahl" title="Zu den Hinweisen unter der Liste der Pläne" aria-controls={plaeneOffen.includes(u.id) ? `plaene-${u.id}` : undefined} onClick={() => hinweiseZeigen(u.id)}>
                                 {d.plansatz.hinweise.length === 1 ? '1 Hinweis' : `${d.plansatz.hinweise.length} Hinweise`}
                               </button>
                               {' · '}
@@ -583,7 +583,8 @@ export function AntragsdatenAnsicht() {
                           {formulare.length > 0 && (
                             <MenueKnopf
                               className="small"
-                              title="Ein Formular, das schon im Projekt liegt (z. B. anders benannt), diesem Eintrag zuordnen"
+                              disabled={gesperrt}
+                              title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – Änderungen über einen Nachtrag' : 'Ein Formular, das schon im Projekt liegt (z. B. anders benannt), diesem Eintrag zuordnen'}
                               punkte={() => zuordnenPunkte(u.id)}
                             >
                               Vorhandenes zuordnen
@@ -729,8 +730,11 @@ function ExportFuerProjekt() {
             )}
           </div>
           <label>
-            <span className="field-label">Phase (nur für {'{Phase}'})</span>
-            <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} />
+            <span className="field-label">Phase</span>
+            <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} aria-describedby="pu-phase-hinweis" />
+            <span className="field-hint" id="pu-phase-hinweis">
+              wird für den Platzhalter {'{Phase}'} eingesetzt
+            </span>
           </label>
           <label>
             <span className="field-label">Ziel</span>

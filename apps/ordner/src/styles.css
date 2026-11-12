@@ -911,6 +911,15 @@
 .po-kuerzel-tabelle td:first-child input::placeholder {
   text-transform: none;
 }
+/* nur für Screenreader (Spaltentitel der Entfernen-Knöpfe) */
+.po-unsichtbar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .po-kuerzel-neu input {
   border-style: dashed;
 }

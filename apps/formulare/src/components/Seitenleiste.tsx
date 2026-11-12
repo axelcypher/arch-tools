@@ -3,7 +3,7 @@ import { formularAktualisieren } from '../aktualisieren';
 import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
-import { aktiveFassung, aktiverEingereicht, useAntrag } from '../antragStore';
+import { aktiveFassung, aktiverEingereicht, antragSperre, useAntrag } from '../antragStore';
 import { AntragsAblage, SammelExportKnopf } from './AntragsAblage';
 import type { FormularEintrag } from '../projekte';
 import { formularLoeschen } from '../dateiAktionen';
@@ -13,7 +13,7 @@ import { passt } from '../antrag';
 import { useExportDialog } from './ExportDialog';
 import { useHinzufuegenDialog } from './FormularHinzufuegen';
 import type { MenuePunkt } from './Menue';
-import { zeigeMenue } from './Menue';
+import { zeigeMenue, zeigeMenueAn } from './Menue';
 import { Symbol } from './Symbol';
 import { zeitKurz, zeitLang } from '../zeit';
 
@@ -92,6 +92,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   // Status je Formular und fehlende Formulare des Antragsumfangs
   const statusVon = useMemo(() => new Map(dokumente.filter((d) => d.formular && d.status !== 'entfaellt').map((d) => [d.formular!.pfad, d])), [dokumente]);
   const fehlende = dokumente.filter((d) => d.eintrag.art === 'intern' && !d.formular && d.status === 'fehlt');
+  // eingereichter Antrag: Antragsumfang gesperrt (Zuordnen, Entfernen, Anlegen)
+  const gesperrt = useAntrag((s) => !!antragSperre(s, projekt));
   // zuletzt bearbeitet: Datei oder nicht gespeicherte Eingaben, was später ist
   const formularInfo = useAntrag((s) => s.formularInfo);
   /**
@@ -262,7 +264,6 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                         {doc && <StatusPunkt status={doc.status} />}
                       </span>
                       <span className="nav-text">{f.name}</span>
-                      {formularInfo[f.pfad]?.letzteAenderung ? <span className="nav-zeit">{zeitKurz(formularInfo[f.pfad].letzteAenderung)}</span> : null}
                       {fremd && (
                         <span className="nav-schloss" title="Anderswo geöffnet (Sperrdatei vorhanden)" aria-label="gesperrt">
                           <Symbol name="schloss" />
@@ -273,15 +274,17 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                           ●
                         </span>
                       )}
+                      {/* die Zeit immer als letztes, rechtsbündig – Markierungen davor */}
+                      {formularInfo[f.pfad]?.letzteAenderung ? <span className="nav-zeit">{zeitKurz(formularInfo[f.pfad].letzteAenderung)}</span> : null}
                     </button>
                   );
                 })}
                 {fehlende.map((d) => {
                   const doppelt = doppeltVon(d);
                   const menue = (): MenuePunkt[] => [
-                    { text: 'Formular anlegen', symbol: 'plus', aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id) },
-                    { text: 'Vorhandenes Formular zuordnen', symbol: 'link', unter: formularePunkte(d.eintrag.id) },
-                    { text: 'Aus dem Antragsumfang entfernen', symbol: 'muell', aktion: () => void ausUmfangEntfernen(d.eintrag.id) },
+                    { text: 'Formular anlegen', symbol: 'plus', deaktiviert: gesperrt, aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id) },
+                    ...(formulare.length ? [{ text: 'Vorhandenes Formular zuordnen', symbol: 'link' as const, unter: formularePunkte(d.eintrag.id), deaktiviert: gesperrt }] : []),
+                    { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, deaktiviert: gesperrt, aktion: () => void ausUmfangEntfernen(d.eintrag.id) },
                     { trenner: true },
                     { text: 'Antragsumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
                   ];
@@ -295,7 +298,9 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                           ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder entfernen`
                           : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`
                       }
-                      onClick={(e) => (doppelt ? zeigeMenue(e, menue()) : void useAntrag.getState().formularAnlegen(d.eintrag.id))}
+                      aria-haspopup={doppelt ? 'menu' : undefined}
+                      // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger)
+                      onClick={(e) => (doppelt ? zeigeMenueAn(e.currentTarget, menue()) : void useAntrag.getState().formularAnlegen(d.eintrag.id))}
                       onContextMenu={(e) => zeigeMenue(e, menue())}
                     >
                       <span className="nav-symbol">
@@ -303,7 +308,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                         <StatusPunkt status="fehlt" />
                       </span>
                       <span className="nav-text">{d.eintrag.titel}</span>
-                      <span className="nav-unter">{doppelt ? 'doppelt?' : 'anlegen'}</span>
+                      <span className={`nav-unter${doppelt ? ' nav-doppelt' : ''}`}>{doppelt ? 'doppelt?' : 'anlegen'}</span>
                     </button>
                   );
                 })}

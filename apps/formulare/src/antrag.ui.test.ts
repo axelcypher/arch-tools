@@ -303,10 +303,38 @@ describe('Antragsumfang und Vollständigkeit', () => {
     // Klick öffnet das Menü statt ein zweites Formular anzulegen
     await klick(fehlt()!);
     expect([...ds.dateien.keys()].filter((k) => /BS9\/\d+-Baustatistik/.test(k))).toEqual(['C:/FORMA/BS9/003-Baustatistik.frmsjf']);
-    await klick(menuePunkt('Aus dem Antragsumfang entfernen'));
+    await klick(menuePunkt('Aus dem Antragsumfang nehmen'));
     await warte();
     expect(useAntrag.getState().projektdatei?.umfang?.map((u) => u.id)).toEqual(['statistik']);
     expect(fehlt()).toBeNull();
+  });
+
+  it('Formular anlegen: Meldung schon während der Suche; ein zweiter Aufruf legt kein zweites Formular an', async () => {
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().umfangSetzen([{ id: 'bauantrag', titel: 'Bauantrag', art: 'intern', formular: 'Bauantrag' }]));
+    await warte();
+    // die Suche hält an, bis wir sie freigeben – so lässt sich prüfen, was währenddessen zu sehen ist
+    const liste = ds.liste.bind(ds);
+    let frei!: () => void;
+    const halt = new Promise<void>((r) => (frei = r));
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (pfad.includes('H24')) await halt;
+      return liste(pfad, tiefe);
+    };
+    let erster!: Promise<string | null>;
+    let zweiter!: Promise<string | null>;
+    act(() => {
+      erster = useAntrag.getState().formularAnlegen('bauantrag');
+      zweiter = useAntrag.getState().formularAnlegen('bauantrag');
+    });
+    expect(useFormulare.getState().meldung?.text).toBe('Suche eine Vorlage für „Bauantrag“ …');
+    frei();
+    const [a, b] = await act(async () => Promise.all([erster, zweiter]));
+    expect(a).toBe('BS9/002-Bauantrag (2026).frmsjf');
+    expect(b).toBeNull();
+    // genau ein neues Formular (die .frmtmp daneben ist die Sperre des geöffneten Formulars)
+    expect([...ds.dateien.keys()].filter((k) => /BS9\/\d+-Bauantrag.*\.frmsjf$/.test(k))).toEqual(['C:/FORMA/BS9/002-Bauantrag (2026).frmsjf']);
+    expect(host).toBeTruthy();
   });
 
   it('Formular anlegen: sofort eine Rückmeldung; ohne Vorlage eine Meldung statt Stillstand; Vorhandenes zuordnen', async () => {
@@ -1231,6 +1259,36 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(antragIn('BAUA 2')?.stand).toBeUndefined();
     expect(host.querySelector('.fo-stand')).toBeNull();
     expect(host.querySelector('.fo-seit')).toBeNull();
+  });
+
+  it('Antragsstand: ein vorübergehender Lesefehler verwirft weder „eingereicht“ noch den festgehaltenen Stand', async () => {
+    const ordner = `${PROJEKT}/TÖB/BAUA 2`;
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${ordner}/BS9 BAUA 261103 Eingangsbestätigung.pdf`, new Uint8Array([1]));
+    await projektBS9();
+    const vorher = antragIn('BAUA 2')!;
+    expect(vorher.stand).toBeDefined();
+    // der Ordner des Antrags ist einmal nicht lesbar (z. B. Netz nach dem Aufwachen noch nicht da)
+    const liste = ds.liste.bind(ds);
+    let einmal = true;
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (einmal && pfad.endsWith('/TÖB/BAUA 2')) {
+        einmal = false;
+        throw new Error('Netzlaufwerk nicht erreichbar');
+      }
+      return liste(pfad, tiefe);
+    };
+    // inzwischen ist eine Datei dazugekommen – sie darf nicht in den Stand rutschen
+    ds.dateien.set(`${ordner}/BS9 BAUA 261120 GP-03 Ansicht.pdf`, new Uint8Array([1]));
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(einmal).toBe(false);
+    expect(antragIn('BAUA 2')?.eingereicht).toEqual(vorher.eingereicht);
+    expect(antragIn('BAUA 2')?.stand).toEqual(vorher.stand);
+    // beim nächsten Lesen: weiter derselbe Stand, die neue Datei ist „neu seit der Einreichung“
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(antragIn('BAUA 2')?.stand).toEqual(vorher.stand);
   });
 
   it('zuletzt bearbeitet: an den Formularen der Navigation und an den Dateien im Projektordner (kurz, voll im Tooltip)', async () => {

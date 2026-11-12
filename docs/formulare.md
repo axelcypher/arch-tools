@@ -18,7 +18,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   siehe unten); darunter rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
 - **Zuletzt bearbeitet:** Rechts an jedem Formular der Navigation und an jeder Datei im Projektordner (Ordner und
   Ansicht „Antrag“) steht kurz, wann zuletzt geändert wurde („heute 14:30“, „gestern 09:05“, „03.03.“) – beim Formular
-  auch nicht gespeicherte Eingaben; der volle Zeitpunkt steht im Tooltip (`zeit.ts`).
+  auch nicht gespeicherte Eingaben; der volle Zeitpunkt steht im Tooltip (`zeit.ts`). In einer schmalen Navigation
+  (unter 300 px) entfällt die Angabe, damit die Namen lesbar bleiben – der Tooltip zeigt sie weiter.
 - **Ohne Produktnamen:** Die Oberfläche nennt kein anderes Programm. Die App liest und schreibt das Dateiformat der
   Formularprojekte (siehe „Dateiformat“) und soll künftig auch ganz ohne das Originalprogramm auskommen.
 - **Seitenleisten** behalten ihre Breite, auch wenn eine Ansicht einen Rollbalken braucht (Platz dafür ist immer
@@ -298,7 +299,9 @@ Anschrift, wie sie in Formularen steht.
   Bereit sein können nur Dateien im **Namensformat `<Projektcode> <Antragsart> <JJMMTT> …`**, z. B.
   „MUS BAUA 261110 01 Bauantrag.pdf“ (Projektcode = Kürzel des FORMA-Projekts oder Projektcode der Projektdatei,
   Antragsart = die der Fassung: BAUA, BAUVA, DENK …) – die Stellen nach dem Namensschema (Vorgabe: Code, Art, Datum).
-  Rechtsklick → „Umbenennen nach Namensformat …“ schlägt den Namen vor: Steht an der Stelle der Antragsart schon ein
+  Fehlt das Datum, heißt die Meldung „Datum JJMMTT fehlt …“, fehlt die Bezeichnung danach, „Bezeichnung fehlt“;
+  „Anlage1“ oder „Ansicht2“ sind Bezeichnungen, keine Nummern (Plankürzel stehen in Großbuchstaben). Rechtsklick →
+  „Umbenennen nach Namensformat …“ schlägt den Namen vor (fehlt nur das Datum, wird es eingesetzt): Steht an der Stelle der Antragsart schon ein
   anderes bekanntes Kürzel (ein verschobener Plan „HVO GP 261111 GP-04 …“), wird nur dieses ersetzt – „HVO BAUA
   261111 GP-04 …“, die Plannummer bleibt und der Plan im Plansatz; sonst kommen Projektcode, Antragsart und Datum der
   Datei davor. Unter „Fehlt im Antragsordner“ stehen die Dokumente des Antragsumfangs ohne Datei.
@@ -455,7 +458,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
     NRW) ohne Paragraphen der BauPrüfVO, beim Vorbescheid mit dem Zusatz „nur, soweit für die Fragen erforderlich
     (§ 16 BauPrüfVO)“; „Ausschnitt“ zählt nicht als Schnitt), und – nur wenn die
     Projektdatei Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (Grundrisse für alle Geschosse, § 4 Abs. 2
-    BauPrüfVO NRW; der einzige Weg, auch einen fehlenden letzten
+    BauPrüfVO NRW, beim Vorbescheid mit dem Zusatz zu § 16; nicht beim Entwässerungsantrag, der nur die Geschosse mit
+    Entwässerungsanlagen braucht; der einzige Weg, auch einen fehlenden letzten
     Grundriss zu bemerken).
   Die Zeile zeigt „8 Pläne · GP-01 bis GP-08 · GP-07 fehlt“, darunter „Pläne zeigen“ (die Liste je Nummer),
   „n Hinweise“ (öffnet die Liste und führt zu den Hinweisen) und die Quelle; ohne Pläne gibt es nichts aufzuklappen. In
@@ -500,11 +504,16 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   später Erkennung nicht dazu). In der Ansicht „Antrag“ steht dann „Eingereicht am … – Stand festgehalten“, und jede
   Datei, die danach **neu** hinzukam oder **geändert** wurde, ist gekennzeichnet („neu seit der Einreichung“ bzw.
   „geändert seit der Einreichung“, gelb, mit Summe oben). Ausgenommen sind Dateien, die nach der Einreichung
-  erwartungsgemäß kommen: Genehmigung bzw. Bescheid, Eingangs- bzw. Empfangsbestätigung, Antragsprotokoll,
-  Nachforderung (`NACH_EINREICHUNG_ERWARTET`). Gilt der Antrag wieder als in Arbeit, wird der Stand verworfen.
+  erwartungsgemäß kommen (`nachEinreichungErwartet`) – nach der Bürovorgabe die Genehmigung selbst, die
+  Empfangsbestätigung und Nachforderungen, ergänzt um Eingangsbestätigung und Antragsprotokoll sowie die Entscheidung
+  bei den übrigen Antragsarten (Bescheid bzw. Vorbescheid, denkmalrechtliche Erlaubnis, Abgeschlossenheitsbescheinigung,
+  gesiegelter Aufteilungsplan). Antragsunterlagen gelten nie als erwartet, auch wenn ein solches Wort darin steht
+  („Antrag auf Vorbescheid“, „Genehmigungsfreistellung“, „… Genehmigungsverfahren“, „Genehmigungsplanung“). Ist der
+  Ordner einmal nicht lesbar (Netz nach dem Aufwachen), bleiben „eingereicht“ und der Stand unverändert. Gilt der
+  Antrag wieder als in Arbeit, wird der Stand verworfen.
 - **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)
-  ausgenommen – ein Dokument, dessen Name `Antragsprotokoll` oder `Eingangsbestätigung` (auch
-  `Eingangsbestaetigung`) enthält, gilt der Antrag als **eingereicht** – mit dem Datum im Dateinamen, sonst dem der
+  ausgenommen – ein Dokument, dessen Name `Antragsprotokoll`, `Eingangsbestätigung` oder `Empfangsbestätigung` (auch
+  mit „ae“) enthält, gilt der Antrag als **eingereicht** – mit dem Datum im Dateinamen, sonst dem der
   Datei (bei mehreren der neuesten). Das zeigt die App am Antrag (oben links), in der Navigation und im Menü der
   Fassungen; verschwindet die Datei, ist er es nicht mehr. Der Status lässt sich in den Antragsdaten **von Hand
   setzen**: „automatisch“ (die Erkennung), „in Arbeit“ oder „eingereicht“ mit Datum (`status` im Antrag). Der **aktive
@@ -540,8 +549,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   schon im Projekt, nur anders benannt: Rechtsklick › „Vorhandenes Formular zuordnen“ (in den Antragsdaten „Vorhandenes
   zuordnen“). **Doppelter Eintrag?** Passt der Titel eines fehlenden Eintrags zu einem Formular, das schon einem
   anderen Eintrag zugeordnet ist (z. B. „Baustatistik“ neben „Statistischer Erhebungsbogen“), steht dort „doppelt?“ –
-  ein Klick legt dann nichts an, sondern bietet Zuordnen oder „Aus dem Antragsumfang entfernen“ an. Bei einem
-  eingereichten Antrag ist „Formular anlegen“ gesperrt; der Tooltip sagt warum.
+  ein Klick legt dann nichts an, sondern öffnet am Eintrag ein Menü mit Zuordnen oder „Aus dem Antragsumfang nehmen“.
+  Bei einem eingereichten Antrag sind Anlegen, Zuordnen und Entfernen gesperrt; der Tooltip sagt warum.
 - Die **PDF** entsteht in der App aus dem Formular selbst – so, wie die Formularansicht es zeigt: A4-Blätter, Rahmen,
   Linien, Beschriftungen (auch gedreht), Feldinhalte und Kreuze, Bilder. Echter Text in den PDF-Standardschriften:
   Helvetica hat die Breiten von Arial, Courier die von Courier New – die Zeilen brechen an denselben Stellen um.
