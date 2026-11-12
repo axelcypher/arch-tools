@@ -93,4 +93,21 @@ describe('Rechtsstand', () => {
     // für einen Stichtag vor der neuen Fassung ist nichts überholt
     expect((await rs.fuer(norm, '2026-12-01')).ueberholtAb).toBeUndefined();
   });
+
+  it('geänderter Text bei gleichem Gültig-ab (z. B. dieselbe URL): neue Fassung wird abgelegt und verwendet', async () => {
+    const { h, zustand } = nrw();
+    let uhr = new Date('2026-11-12T08:00:00Z');
+    const sp = speicherImArbeitsspeicher();
+    const rs = new Rechtsstand(sp, h, { jetzt: () => uhr });
+    expect((await rs.fuer(norm, '2026-11-12')).fassung?.paragrafen['1'].text[0]).toMatch(/Erster Text/);
+    zustand.text = '(1) Still geänderter Text';
+    uhr = new Date('2026-11-13T09:00:00Z');
+    const b = await rs.fuer(norm, '2026-11-13');
+    expect(b.fassung?.paragrafen['1'].text[0]).toMatch(/Still geänderter Text/);
+    expect(b.aenderungen?.geaendert).toEqual(['1/1']);
+    expect(await rs.fassungen('g')).toHaveLength(2);
+    // für alt/neu: die Fassung, an der die Regel geprüft ist
+    const regel = (await rs.fuer(norm, '2026-11-13', { regelStand: { '1/1': b.vorige!.summen['1/1'] } })).vorige;
+    expect(regel?.paragrafen['1'].text[0]).toMatch(/Erster Text/);
+  });
 });

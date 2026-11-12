@@ -49,7 +49,11 @@ export interface Zustand {
   fokus: string | null;
 
   projektSetzen: (q: Projektquelle, project: Project, roh: Record<string, unknown>) => void;
-  gespeichert: (roh: Record<string, unknown>, quelle?: Projektquelle) => void;
+  /**
+   * nach dem Speichern: Stand der Datei übernehmen. `seit` ist der Stand bei Beginn des Speicherns – was sich seitdem in
+   * der App geändert hat (z. B. Ergebnisse von „Lage abfragen“), wird auf den neuen Stand gesetzt, nicht verworfen.
+   */
+  gespeichert: (roh: Record<string, unknown>, quelle?: Projektquelle, seit?: { pruefung: BaurechtPruefung; merkmale: Record<string, string> }) => void;
   schliessen: () => void;
   antragWaehlen: (antrag: string) => void;
   merkmalSetzen: (name: string, wert: string) => void;
@@ -57,7 +61,9 @@ export interface Zustand {
    * Angabe von Hand; mit `grund` (Pflicht für Schutzgebiete und Angaben aus Geodiensten) wird sie wie eine Bestätigung
    * beim Speichern noch einmal abgefragt. Widerspricht sie einem Treffer eines Dienstes, bleibt das als Widerspruch.
    */
-  faktSetzen: (id: string, wert: FaktWert['wert'] | undefined, von: string, grund?: string) => void;
+  faktSetzen: (id: string, wert: FaktWert['wert'] | undefined, von: string, grund?: string, lage?: string | null) => void;
+  /** Bestätigung (bzw. Angabe von Hand mit Beleg) zurücknehmen – es gilt wieder der Hinweis bzw. nichts */
+  bestaetigungZuruecknehmen: (id: string) => void;
   /** Hinweis als gesichert übernehmen – mit Begründung; bei Geodaten an die Lage gebunden; beim Speichern noch einmal bestätigt */
   faktBestaetigen: (id: string, wert: FaktWert, von: string, grund: string, lage: string | null) => void;
   geoFakten: (fakten: Record<string, FaktWert>) => void;
@@ -108,11 +114,36 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const pruefung = baurechtAusRoh(roh).pruefungen[antrag] ?? leerePruefung();
     set({ quelle, project, roh, antrag, antraege: antraege.includes(antrag) ? antraege : [...antraege, antrag], merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null, fokus: null });
   },
-  gespeichert: (roh, quelle) => {
+  gespeichert: (roh, quelle, seit) => {
     const s = get();
-    const merkmale = merkmaleAusRoh(roh, s.antrag);
-    const pruefung = baurechtAusRoh(roh).pruefungen[s.antrag] ?? leerePruefung();
-    set({ roh, quelle: quelle ?? s.quelle, merkmale: { ...merkmale }, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung) });
+    const merkmaleDatei = merkmaleAusRoh(roh, s.antrag);
+    const pruefungDatei = baurechtAusRoh(roh).pruefungen[s.antrag] ?? leerePruefung();
+    const merkmale = { ...merkmaleDatei };
+    const pruefung = kopie(pruefungDatei);
+    if (seit) {
+      const gleich = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+      for (const k of new Set([...Object.keys(s.merkmale), ...Object.keys(seit.merkmale)]))
+        if (!gleich(s.merkmale[k], seit.merkmale[k])) {
+          if (s.merkmale[k]) merkmale[k] = s.merkmale[k];
+          else delete merkmale[k];
+        }
+      for (const art of ['fakten', 'festlegungen'] as const) {
+        const jetzt = s.pruefung[art] as Record<string, unknown>;
+        const vorher = seit.pruefung[art] as Record<string, unknown>;
+        const ziel = pruefung[art] as Record<string, unknown>;
+        for (const k of new Set([...Object.keys(jetzt), ...Object.keys(vorher)]))
+          if (!gleich(jetzt[k], vorher[k])) {
+            if (jetzt[k] === undefined) delete ziel[k];
+            else ziel[k] = kopie(jetzt[k]);
+          }
+      }
+      if (s.pruefung.einreichung !== seit.pruefung.einreichung) {
+        if (s.pruefung.einreichung) pruefung.einreichung = s.pruefung.einreichung;
+        else delete pruefung.einreichung;
+      }
+      for (const pr of s.pruefung.protokolle) if (!seit.pruefung.protokolle.some((x) => x.am === pr.am) && !pruefung.protokolle.some((x) => x.am === pr.am)) pruefung.protokolle.push(pr);
+    }
+    set({ roh, quelle: quelle ?? s.quelle, merkmale, merkmaleDatei, pruefung, pruefungDatei: kopie(pruefungDatei) });
   },
   schliessen: () => set({ quelle: null, project: null, roh: null, antrag: 'Projekt', antraege: [], merkmale: {}, merkmaleDatei: {}, pruefung: leerePruefung(), pruefungDatei: leerePruefung(), auswahl: null }),
   antragWaehlen: (antrag) => {
@@ -128,13 +159,16 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     else delete m[name];
     set({ merkmale: m });
   },
-  faktSetzen: (id, wert, von, grund) => {
+  faktSetzen: (id, wert, von, grund, lage) => {
     const p = kopie(get().pruefung);
     const alt = p.fakten[id];
     if (wert === undefined) delete p.fakten[id];
     else {
       const f: FaktWert = { wert, herkunft: 'manuell', sicherheit: 'sicher', stand: heute(), quelle: von ? `von Hand (${von})` : 'von Hand' };
-      if (grund?.trim()) f.bestaetigt = { von, am: heute(), grund: grund.trim() };
+      // Gemeindeschlüssel von Hand steuert Gebietsmodule und Schutzgebietswerte: nur Hinweis, bis er mit Beleg bestätigt ist
+      if (id === 'lage.ags' && !grund?.trim()) Object.assign(f, { sicherheit: 'hinweis', grund: 'von Hand eingetragen – bitte mit Beleg bestätigen (z. B. Flurstücksnachweis) oder „Lage abfragen“' });
+      // mit Beleg: wie eine Bestätigung; bei Lagebezug (Schutzgebiete, Geodaten) an die Lage gebunden
+      if (grund?.trim()) f.bestaetigt = { von, am: heute(), grund: grund.trim(), ...(lage ? { lage } : {}) };
       // ein Ergebnis eines Dienstes (außer einem bloßen „kein Treffer“) bleibt als Widerspruch stehen
       const dienst = alt?.herkunft === 'geodienst' ? alt : undefined;
       if (dienst && dienst.wert !== wert && !(dienst.wert === false && dienst.sicherheit === 'hinweis')) f.widerspruch = `${dienst.quelle ?? 'Geodienst'} meldet „${dienst.wert === true ? 'ja' : dienst.wert === false ? 'nein' : String(dienst.wert)}“ (${dienst.stand ?? ''})`.replace(' ()', '');
@@ -147,6 +181,17 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const p = kopie(get().pruefung);
     const { widerspruch: _w, ...ohne } = wert;
     p.fakten[id] = { ...ohne, bestaetigt: { von, am: heute(), grund: grund.trim(), ...(lage && wert.herkunft === 'geodienst' ? { lage } : {}) } };
+    set({ pruefung: p });
+  },
+  bestaetigungZuruecknehmen: (id) => {
+    const p = kopie(get().pruefung);
+    const f = p.fakten[id];
+    if (!f) return;
+    // Angaben von Hand und Werte aus der Projektdatei fallen weg; Ergebnisse eines Dienstes bleiben – als Hinweis
+    if (f.herkunft === 'geodienst') {
+      const { bestaetigt: _b, ...ohne } = f;
+      p.fakten[id] = ohne;
+    } else delete p.fakten[id];
     set({ pruefung: p });
   },
   geoFakten: (fakten) => {
@@ -223,9 +268,13 @@ export function offeneFestlegungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'
   return [...neu, ...aufgehoben];
 }
 
-/** Bestätigungen von Hinweisen (z. B. „kein Schutzgebiet“), die seit dem letzten Speichern neu sind */
+/**
+ * Bestätigungen von Hinweisen und Angaben mit Beleg (z. B. „kein Schutzgebiet“), die seit dem letzten Speichern neu
+ * oder geändert sind – verglichen werden Wert und Bestätigung, nicht nur die Bestätigung
+ */
 export function offeneBestaetigungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
+  const kern = (f: FaktWert | undefined) => JSON.stringify(f ? { wert: f.wert, bestaetigt: f.bestaetigt ?? null } : null);
   return Object.entries(s.pruefung.fakten)
-    .filter(([id, f]) => f.bestaetigt && JSON.stringify(f.bestaetigt) !== JSON.stringify(s.pruefungDatei.fakten[id]?.bestaetigt))
+    .filter(([id, f]) => f.bestaetigt && kern(f) !== kern(s.pruefungDatei.fakten[id]))
     .map(([id]) => id);
 }

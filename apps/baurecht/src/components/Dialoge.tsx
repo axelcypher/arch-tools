@@ -85,6 +85,11 @@ export function FestlegenDialog({ fakten }: { fakten: Record<string, FaktWert> }
           </label>
         ))}
       </fieldset>
+      {ampel === 'gruen' && !texte[`${p.modul}/${p.norm}`]?.fassung && (
+        <div className="br-meldung br-meldung-warn" role="note">
+          Ohne geprüften Gesetzestext greift „entfällt“ nicht: Die Ampel bleibt „prüfen“, bis der Text vorliegt (Desktop-App) und Sie dort erneut festlegen. Die Begründung wird trotzdem gespeichert.
+        </div>
+      )}
       {herab && (
         <div className="br-meldung br-meldung-warn" role="alert">
           Sie stufen von „{AMPEL_TEXT[p.automatisch]}“ auf „{AMPEL_TEXT[ampel]}“ herab. Das ist erlaubt, wenn der Sonderfall begründet ist – die Festlegung steht im Prüfprotokoll und muss beim Speichern noch einmal bestätigt werden.
@@ -151,13 +156,15 @@ interface FaktZiel {
   wert: FaktWert;
   /** Eintrag der Prüfung beim Öffnen – hat er sich bis zum Bestätigen geändert (z. B. „Lage abfragen“), wird abgebrochen */
   vorher: string;
+  /** die Angabe hängt an der Lage (Geodienst) – gilt nach dem Setzen nur für die aktuelle Lage */
+  lagebezug?: boolean;
 }
 
 const useFaktBestaetigen = create<{ ziel: FaktZiel | null }>(() => ({ ziel: null }));
 const eintrag = (id: string) => JSON.stringify(useBaurecht.getState().pruefung.fakten[id] ?? null);
 export const faktBestaetigenOeffnen = (id: string, titel: string, wert: FaktWert) => useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'bestaetigen', wert, vorher: eintrag(id) } });
-export const faktSetzenOeffnen = (id: string, titel: string, wert: FaktWert['wert']) =>
-  useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'setzen', wert: { wert, herkunft: 'manuell', sicherheit: 'sicher' }, vorher: eintrag(id) } });
+export const faktSetzenOeffnen = (id: string, titel: string, wert: FaktWert['wert'], lagebezug = false) =>
+  useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'setzen', wert: { wert, herkunft: 'manuell', sicherheit: 'sicher' }, vorher: eintrag(id), lagebezug } });
 
 const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));
 
@@ -233,7 +240,7 @@ export function FaktBestaetigenDialog({ folgen }: { folgen: FolgenRechner }) {
     }
     const k = project?.meta.koordinaten;
     benutzerMerken(von);
-    if (ziel.modus === 'setzen') useBaurecht.getState().faktSetzen(ziel.id, ziel.wert.wert, von.trim(), grund);
+    if (ziel.modus === 'setzen') useBaurecht.getState().faktSetzen(ziel.id, ziel.wert.wert, von.trim(), grund, ziel.id.startsWith('schutz.') || ziel.lagebezug ? (k ? lageKennung(k.ost, k.nord) : null) : null);
     else useBaurecht.getState().faktBestaetigen(ziel.id, ziel.wert, von.trim(), grund, k ? lageKennung(k.ost, k.nord) : null);
     schliessen();
   };
@@ -340,7 +347,7 @@ export function bestaetigenFragen(offen: Offen): Promise<BestaetigenAntwort> {
   );
 }
 
-export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: string) => { titel: string; automatisch?: Ampel }; faktTitel: (id: string) => string; folgen: (id: string) => ReturnType<FolgenRechner> }) {
+export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: string) => { titel: string; automatisch?: Ampel; ampel?: Ampel; ueberholt?: string }; faktTitel: (id: string) => string; folgen: (id: string) => ReturnType<FolgenRechner> }) {
   const offen = useBestaetigen((s) => s.offen);
   const antwort = useBestaetigen((s) => s.antwort);
   const festlegungen = useBaurecht((s) => s.pruefung.festlegungen);
@@ -351,10 +358,10 @@ export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: st
   if (!offen || !antwort) return null;
   const anzahl = offen.festlegungen.length + offen.fakten.length;
   return (
-    <Modal titel="Angaben von Hand bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false}>
-      <h3>Angaben von Hand bestätigen</h3>
+    <Modal titel="Vor dem Speichern bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false}>
+      <h3>Vor dem Speichern bestätigen</h3>
       <p>
-        Seit dem letzten Speichern {anzahl === 1 ? 'ist eine Angabe von Hand' : `sind ${anzahl} Angaben von Hand`} neu, geändert oder aufgehoben. Bitte noch einmal prüfen – alles steht mit Begründung und Namen im Protokoll.
+        Seit dem letzten Speichern {anzahl === 1 ? 'ist eine Festlegung bzw. Bestätigung' : `sind ${anzahl} Festlegungen bzw. Bestätigungen`} neu, geändert oder aufgehoben. Bitte noch einmal prüfen – alles steht mit Begründung und Namen im Prüfprotokoll.
       </p>
       <ul className="br-bestaetigen-liste">
         {offen.festlegungen.map((id) => {
@@ -371,10 +378,15 @@ export function BestaetigenDialog({ titel, faktTitel, folgen }: { titel: (id: st
                     <AmpelMarke ampel={f.automatisch} klein /> <span aria-label="wird zu">→</span> <AmpelMarke ampel={f.ampel} klein />
                   </span>
                 </div>
-                <div className="br-leise">
+                <div className="br-leise-stark">
                   {f.von}: {f.grund}
                 </div>
                 {herab && <div className="br-warn-text">Herabstufung</div>}
+                {t.ampel && t.ampel !== f.ampel && (
+                  <div className="br-warn-text">
+                    Wirksam bleibt „{AMPEL_TEXT[t.ampel]}“{t.ueberholt ? ` – ${t.ueberholt}` : ''}.
+                  </div>
+                )}
               </li>
             );
           }

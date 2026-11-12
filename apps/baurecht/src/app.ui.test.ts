@@ -44,8 +44,9 @@ const tippen = (el: HTMLTextAreaElement | HTMLInputElement, wert: string) =>
 const inDatei = () => baurechtAusRoh(projektdateiRoh(geschrieben!)).pruefungen['BAUA 1'];
 
 /** ersten Paragrafen wählen und von Hand festlegen */
-function festlegen(host: HTMLElement, grund: string, ampel?: 'rot' | 'gelb' | 'gruen'): string {
-  act(() => host.querySelector<HTMLButtonElement>('.br-paragraf')!.click());
+function festlegen(host: HTMLElement, grund: string, ampel?: 'rot' | 'gelb' | 'gruen', id?: string): string {
+  // ohne Kennung der erste Paragraf; mit Kennung genau dieser (die Liste ordnet nach Ampel um)
+  act(() => host.querySelector<HTMLButtonElement>(id ? `[data-roving="p:${CSS.escape(id)}"]` : '.br-paragraf')!.click());
   act(() => knopf(host, /^(Von Hand festlegen|Festlegung ändern) …$/)!.click());
   const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand festlegen'))!;
   if (ampel) {
@@ -63,7 +64,7 @@ async function speichernMit(antwort: 'Bestätigen und speichern' | 'Ohne diese A
   await act(async () => {
     fertig = speichern();
   });
-  const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Angaben von Hand bestätigen'))!;
+  const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
   expect(best).toBeTruthy();
   const inhalt = best.cloneNode(true) as HTMLElement;
   if (antwort === 'Bestätigen und speichern') {
@@ -143,7 +144,7 @@ describe('Baurecht – Oberfläche', () => {
     await speichernMit('Bestätigen und speichern');
     expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'rot' });
     // ändern (Herabstufung auf grün) und ohne Bestätigung speichern
-    festlegen(host, 'Zweite Festlegung, noch nicht abgestimmt', 'gruen');
+    festlegen(host, 'Zweite Festlegung, noch nicht abgestimmt', 'gruen', id);
     expect(useBaurecht.getState().pruefung.festlegungen[id]).toMatchObject({ ampel: 'gruen' });
     await speichernMit('Ohne diese Angaben speichern');
     expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'rot', grund: 'Erste Festlegung, mit Bauaufsicht abgestimmt' });

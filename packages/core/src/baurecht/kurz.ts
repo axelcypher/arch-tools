@@ -108,6 +108,51 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
   throw new Error(`Unbekannte Bedingung: ${JSON.stringify(k)}`);
 }
 
+/**
+ * Die Blätter, die ein Ergebnis tragen: bei „und“ = nein das erste Nein, bei „oder“ = ja das erste Ja, sonst alle
+ * Teile. Für Begründungen in Worten („Gilt nicht – Art des Vorhabens: „Beseitigung““) statt der ganzen Bedingung.
+ */
+export function tragendeBlaetter(k: Kurz | undefined, ctx: KurzKontext, w: Wahrheit, tiefe = 0): Kurz[] {
+  if (!k || tiefe > 20 || 'immer' in k || 'nie' in k) return [];
+  if ('und' in k || 'oder' in k) {
+    const teile = 'und' in k ? k.und : k.oder;
+    const entscheidet: Wahrheit = 'und' in k ? 'nein' : 'ja';
+    if (w === entscheidet) {
+      const t = teile.find((x) => werten(x, ctx, tiefe + 1).w === w);
+      return t ? tragendeBlaetter(t, ctx, w, tiefe + 1) : [];
+    }
+    return teile.flatMap((x) => tragendeBlaetter(x, ctx, w, tiefe + 1));
+  }
+  if ('nicht' in k && !('m' in k)) return tragendeBlaetter(k.nicht, ctx, w === 'ja' ? 'nein' : w === 'nein' ? 'ja' : 'offen', tiefe + 1);
+  if ('$' in k) return ctx.bausteine[k.$] ? tragendeBlaetter(ctx.bausteine[k.$], ctx, w, tiefe + 1) : [];
+  return werten(k, ctx, tiefe).w === w ? [k] : [];
+}
+
+/** ein Blatt als tatsächliche Angabe („Art des Vorhabens: „Beseitigung““, „Nutzfläche: 40 m²“) */
+export function istText(k: Kurz, ctx: KurzKontext, t: TextKontext): string {
+  if ('m' in k) return `${MERKMAL_TITEL[k.m] ?? k.m}: „${ctx.merkmale[k.m] ?? '–'}“`;
+  if ('f' in k) {
+    const def = t.fakt(k.f);
+    const v = ctx.fakten[k.f]?.wert;
+    const name = def?.titel ?? k.f;
+    if (v === null || v === undefined || v === '') return `${name}: nicht angegeben`;
+    if (typeof v === 'boolean') return `${name}: ${v ? 'ja' : 'nein'}`;
+    if (typeof v === 'number') return `${name}: ${wertText(v, def)}`;
+    return `${name}: „${v}“`;
+  }
+  if ('tag' in k) return `${k.tag === 'einreichung' ? 'Einreichung' : 'heute'} ${datum(k.tag === 'einreichung' ? ctx.einreichung : ctx.heute)}`;
+  if ('n' in k) {
+    const a = ctx.ampel?.(k.n)?.ampel;
+    return `${t.paragraf?.(k.n) ?? k.n}: ${a === 'rot' ? 'gilt' : a === 'gruen' ? 'entfällt' : 'offen'}`;
+  }
+  return kurzText(k, t);
+}
+
+/** tragende Angaben eines Ergebnisses in Worten, ohne Doppelungen */
+export function warumText(k: Kurz | undefined, ctx: KurzKontext, t: TextKontext, w: Wahrheit): string {
+  return [...new Set(tragendeBlaetter(k, ctx, w).map((b) => istText(b, ctx, t)))].join(' · ');
+}
+
 /* ---------- in Worten ---------- */
 
 export interface TextKontext {

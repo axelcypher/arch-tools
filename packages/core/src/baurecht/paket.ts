@@ -145,7 +145,9 @@ function aufbauFehler(k: unknown, wo: string, out: string[], tiefe = 0): void {
   }
   if (name === 'f' && 'in' in o && (!Array.isArray(o.in) || !(o.in as unknown[]).length)) out.push(`${wo}: Fakt „${String(o.f)}“ mit leerer Liste „in“`);
   if (name === 'n' && (!Array.isArray(o.ampel) || !(o.ampel as unknown[]).length)) out.push(`${wo}: Verweis ohne Ampel`);
+  if (name === 'n' && Array.isArray(o.ampel)) for (const a of o.ampel as unknown[]) if (a !== 'rot' && a !== 'gelb' && a !== 'gruen') out.push(`${wo}: Verweis mit unbekannter Ampel „${String(a)}“`);
   if (name === 'tag' && !o.ab && !o.vor) out.push(`${wo}: Stichtag ohne „ab“ bzw. „vor“`);
+  if (name === 'tag') for (const z of ['ab', 'vor'] as const) if (z in o && !/^\d{4}-\d\d-\d\d$/.test(String(o[z]))) out.push(`${wo}: Stichtag „${z}“ ist kein Datum (JJJJ-MM-TT)`);
 }
 
 /** Bausteine, die sich (über andere) selbst enthalten */
@@ -168,6 +170,12 @@ function zyklen(bausteine: Map<string, Kurz[]>): string[] {
 /** Fehler im Paket: unbekannte Fakten, Bausteine, Merkmalwerte, Verweise, doppelte Module, falsches Format */
 export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[] }[]): string[] {
   const fehler: string[] = [];
+  // Aufbau vorab: ohne Normen bzw. Paragrafen kann nichts weiter geprüft werden (statt eines Absturzes eine Meldung)
+  const istObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+  const kaputt = p.module.filter((m) => !istObj(m) || typeof m.id !== 'string' || !istObj(m.normen));
+  for (const m of kaputt) fehler.push(`${istObj(m) && typeof m.id === 'string' ? m.id : 'Modul'}: Aufbau ungültig (Kennung oder Normen fehlen)`);
+  for (const [k, l] of p.regeln) for (const { datei, regel } of l) if (!istObj(regel) || !istObj(regel.paragrafen)) fehler.push(`${datei ?? k}: Aufbau ungültig (Paragrafen fehlen)`);
+  if (fehler.length) return fehler;
   const ids = new Set<string>();
   const merkmal = new Map(merkmale.map((m) => [m.name, new Set(m.werte)]));
   const alleParagrafen = new Set<string>();
@@ -194,7 +202,11 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
   const sichtbar = (m: Modul) => ({
     fakten: new Map<string, FaktDef>([...Object.entries(FAKTEN), ...kette(m).reverse().flatMap((x) => Object.entries(x.fakten ?? {}))]),
     bausteine: new Set(kette(m).flatMap((x) => Object.keys(x.bausteine ?? {}))),
+    bausteinDefs: new Map<string, Kurz>(kette(m).reverse().flatMap((x) => Object.entries(x.bausteine ?? {}))),
   });
+  /** Blätter mit aufgelösten Bausteinen (für Prüfungen, die auch im Baustein gelten müssen) */
+  const tief = (k: Kurz | undefined, defs: Map<string, Kurz>, tiefe = 0): Kurz[] =>
+    blaetter(k).flatMap((b) => ('$' in b && tiefe < 20 && defs.has(b.$) ? tief(defs.get(b.$), defs, tiefe + 1) : [b]));
   // dieselbe Fakt-Kennung in mehreren Modulen muss dieselbe Art haben
   const arten = new Map<string, { typ: string; modul: string }>();
   for (const [id, d] of Object.entries(FAKTEN)) arten.set(id, { typ: d.typ, modul: 'Katalog' });
@@ -203,6 +215,10 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
       const a = arten.get(id);
       if (a && a.typ !== d.typ) fehler.push(`${m.id}: Fakt „${id}“ hat die Art „${d.typ}“, in ${a.modul} „${a.typ}“`);
       else if (!a) arten.set(id, { typ: d.typ, modul: m.id });
+      // feste Werte und Tabellen müssen zur Art passen
+      const passt = (w: unknown) => (d.typ === 'janein' ? typeof w === 'boolean' : d.typ === 'zahl' ? typeof w === 'number' : typeof w === 'string' && (d.typ !== 'wahl' || !d.werte || d.werte.includes(w)));
+      if (d.wert !== undefined && !passt(d.wert)) fehler.push(`${m.id}: fester Wert von „${id}“ passt nicht zur Art „${d.typ}“`);
+      if (d.nach) for (const w of [...Object.values(d.nach.tabelle), ...(d.nach.sonst !== undefined ? [d.nach.sonst] : [])]) if (!passt(w)) fehler.push(`${m.id}: Tabellenwert „${String(w)}“ von „${id}“ passt nicht zur Art „${d.typ}“`);
     }
   const pruefe = (wo: string, m: Modul, k: Kurz | undefined, o: { ohneBekannt?: boolean } = {}) => {
     if (k === undefined) return;
@@ -213,6 +229,9 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
       return;
     }
     const s = sichtbar(m);
+    // „bekannt“ liefert auch bei fehlender Angabe ein festes Ergebnis – in Tatbestand, Ausnahmen und Geltung nicht
+    // erlaubt, auch nicht über einen Baustein
+    if (o.ohneBekannt && tief(k, s.bausteinDefs).some((b) => 'f' in b && b.bekannt !== undefined)) fehler.push(`${wo}: „bekannt“ liefert auch bei fehlender Angabe ein festes Ergebnis – in Tatbestand und Ausnahmen nicht erlaubt (auch nicht über Bausteine)`);
     for (const b of blaetter(k)) {
       if ('f' in b && !s.fakten.has(b.f)) fehler.push(`${wo}: Fakt „${b.f}“ ist für ${m.id} nicht sichtbar (weder Katalog noch eigenes bzw. übergeordnetes Modul)`);
       if ('$' in b && !s.bausteine.has(b.$)) fehler.push(`${wo}: Baustein „${b.$}“ ist für ${m.id} nicht sichtbar`);
@@ -223,7 +242,7 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
       }
       if ('n' in b && !alleParagrafen.has(b.n)) fehler.push(`${wo}: Verweis auf „${b.n}“ – diesen Paragrafen gibt es im Paket nicht`);
       if ('f' in b) {
-        if (o.ohneBekannt && b.bekannt !== undefined) fehler.push(`${wo}: „bekannt“ liefert auch bei fehlender Angabe ein festes Ergebnis – in Tatbestand und Ausnahmen nicht erlaubt`);
+
         const def = s.fakten.get(b.f);
         const werte = [...(b.in ?? []), ...(b.ist !== undefined ? [b.ist] : [])];
         if (def?.typ === 'janein' && werte.some((x) => typeof x !== 'boolean')) fehler.push(`${wo}: Fakt „${b.f}“ ist ja/nein, verglichen mit „${werte.join(', ')}“`);

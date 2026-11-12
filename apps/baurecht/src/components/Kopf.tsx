@@ -25,7 +25,9 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, l
   // Rechtsstand: der älteste Stand der aktiven Normen (nicht die Uhrzeit des letzten Laufs)
   const zeiten = normen.map((n) => n.geprueft).filter((x): x is string => !!x).sort();
   const nie = normen.length - zeiten.length;
-  const agsVorschlag = stand.auswertung.fakten['lage.ags']?.sicherheit === 'hinweis' && !stand.auswertung.fakten['lage.ags']?.bestaetigt;
+  const ags = stand.auswertung.fakten['lage.ags'];
+  const agsVorschlag = ags?.sicherheit === 'hinweis' && !ags.bestaetigt && !ags.widerspruch;
+  const agsWiderspruch = !!ags?.widerspruch;
   const moduleText = stand.module.map((m) => m.name).join(' · ');
   return (
     <div className="toolbar br-kopf" role="group" aria-label="Prüfung">
@@ -41,11 +43,19 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, l
         <span className="tb-label">Einreichung</span>
         <input type="date" value={einreichung ?? heute()} min="2018-01-01" onChange={(e) => useBaurecht.getState().einreichungSetzen(e.target.value === heute() ? '' : e.target.value)} />
       </label>
-      <span className="br-module" title={`Regelmodule: ${stand.module.map((m) => `${m.name} (Stand ${m.version})`).join(', ')}`}>
-        <span className="br-module-text">{moduleText}</span>
+      {/* Module kürzen sich zuerst; Warnungen sind eigene Marken und werden nie gekürzt */}
+      <span className="br-module-text" title={`Regelmodule: ${stand.module.map((m) => `${m.name} (Stand ${m.version})`).join(', ')}`}>
+        {moduleText}
+      </span>
+      <span className="br-kopf-marken">
+        {agsWiderspruch && (
+          <span className="br-modul-chip br-modul-widerspruch" title={`Gemeindeschlüssel widersprüchlich: ${ags?.widerspruch ?? ''} – bitte klären. Bis dahin gelten die Werte der Gebietsmodule nur als Hinweis.`}>
+            Gemeinde widersprüchlich
+          </span>
+        )}
         {agsVorschlag && (
-          <span className="br-modul-chip br-modul-fehlt" title="Der Gemeindeschlüssel ist nur aus der PLZ vorgeschlagen – bitte in den Angaben bestätigen oder „Lage abfragen“. Bis dahin gelten die Werte der Gebietsmodule nur als Hinweis.">
-            Gemeinde nur vorgeschlagen
+          <span className="br-modul-chip br-modul-fehlt" title="Der Gemeindeschlüssel ist nur vorgeschlagen bzw. von Hand ohne Beleg eingetragen – bitte in den Angaben bestätigen oder „Lage abfragen“. Bis dahin gelten die Werte der Gebietsmodule nur als Hinweis.">
+            Gemeinde unbestätigt
           </span>
         )}
         {stand.fehlend.map((e) => (
@@ -61,17 +71,19 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, l
         ) : !isTauri() ? (
           <span className="br-leise">Web-Version: ohne Gesetzestexte</span>
         ) : zeiten.length ? (
-          <>
-            Rechtsstand {datumZeit(zeiten[0])}
-            {nie ? <span className="br-warn-text"> · {nie} nie geprüft</span> : null}
-            {fehler ? <span className="br-warn-text"> · {fehler} nicht abrufbar</span> : null}
-            {geaendert ? <span className="br-warn-text"> · {geaendert} geändert</span> : null}
-            {kuenftig ? <span className="br-warn-text"> · {kuenftig} neue Fassung angekündigt</span> : null}
-          </>
+          <span className="br-rechtsstand-zeit">Rechtsstand {datumZeit(zeiten[0])}</span>
         ) : (
           <span className="br-warn-text">Rechtsstand noch nicht geprüft</span>
         )}
       </span>
+      {!laedt.length && isTauri() && (nie || fehler || geaendert || kuenftig) ? (
+        <span className="br-kopf-marken" aria-label="Warnungen zum Rechtsstand">
+          {nie ? <span className="br-marke br-marke-warn">{nie} nie geprüft</span> : null}
+          {fehler ? <span className="br-marke br-marke-warn">{fehler} nicht abrufbar</span> : null}
+          {geaendert ? <span className="br-marke br-marke-warn">{geaendert} geändert</span> : null}
+          {kuenftig ? <span className="br-marke br-marke-warn">{kuenftig} neue Fassung</span> : null}
+        </span>
+      ) : null}
       {isTauri() && (
         <button type="button" onClick={onLage} disabled={lageLaeuft} title="Gemeindeschlüssel, Flurstück und Schutzgebiete aus den Geodiensten am Grundstück">
           {lageLaeuft ? 'Lage …' : 'Lage abfragen'}

@@ -141,7 +141,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
             onOpenLog();
           }}
         >
-          <span aria-hidden>≡</span> Protokoll
+          <span aria-hidden>≡</span> Fehlerprotokoll
           {errors > 0 && <span className="titlebar-badge">{errors}</span>}
         </button>
         {rahmen === 'fenster' && isTauri() && (

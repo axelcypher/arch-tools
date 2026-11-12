@@ -237,6 +237,8 @@ export interface Festlegung {
 export interface ParagrafErgebnis {
   /** `modul/norm/§` */
   id: string;
+  /** die Regel in Worten (Geltung, Tatbestand, Ausnahme, Einzelfall) – für „Regel im Einzelnen“ */
+  bedingung?: string[];
   modul: string;
   norm: string;
   paragraf: string;

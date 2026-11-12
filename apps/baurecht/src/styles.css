@@ -166,25 +166,30 @@
   background: var(--input-bg);
   color: var(--text);
 }
-.br-module {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 0 1 auto;
-  overflow: hidden;
-}
 .br-module-text {
+  /* kürzt sich zuerst */
+  flex: 1 1 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
   color: var(--br-leise-stark);
-  min-width: 40px;
+  min-width: 30px;
 }
-.br-module .br-modul-chip {
+/* Warnungen werden nie gekürzt */
+.br-kopf-marken {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   flex-shrink: 0;
+}
+.br-kopf-marken > * {
   white-space: nowrap;
+}
+.br-modul-widerspruch {
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+  border: 1px solid var(--fehler-border);
 }
 .br-modul-chip {
   display: inline-block;
@@ -205,34 +210,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 60px;
-  flex: 0 1 auto;
+  flex: 0 3 auto;
 }
 
-.br-bilanz {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 12px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
-}
-.br-bilanz-zahlen {
-  display: flex;
-  gap: 6px;
-}
-.br-bilanz-zahl {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-}
-.br-bilanz-zahl strong {
-  font-size: 18px;
-  font-variant-numeric: tabular-nums;
-}
 .br-chip-rot {
   background: var(--br-rot-bg);
   color: var(--br-rot);
@@ -550,16 +530,29 @@
   background: var(--bg);
 }
 .br-filter {
-  display: flex;
+  /* zwei feste Zeilen: Ergebnis, Balken und Ordnung; darunter Suche und Filter */
+  display: grid;
+  grid-template-columns: auto minmax(40px, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 6px 10px;
   padding: 7px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+}
+.br-filter-zeile2 {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 .br-filter .br-suchfeld {
-  width: 200px;
+  width: 220px;
+  flex-shrink: 1;
+  min-width: 120px;
+}
+.br-filter-zeile2 .toggle {
+  white-space: nowrap;
 }
 .br-filter-ampel {
   display: inline-flex;
@@ -594,8 +587,8 @@
   text-align: center;
 }
 .br-filter .br-balken {
-  flex: 0 1 140px;
-  min-width: 60px;
+  width: 100%;
+  min-width: 40px;
 }
 .br-treffer {
   padding: 5px 14px 0;
@@ -718,6 +711,8 @@
 .br-paragraf-nr {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .br-paragraf-kopf {
   display: flex;
@@ -1075,13 +1070,13 @@
   max-height: 46vh;
   overflow-y: auto;
 }
-.br-bestaetigen-liste li {
+.br-bestaetigen-liste > li {
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 7px 10px;
   margin-bottom: 6px;
 }
-.br-bestaetigen-liste li.br-herab {
+.br-bestaetigen-liste > li.br-herab {
   border-color: var(--warn-border);
   background: var(--warn-bg);
 }
@@ -1216,4 +1211,53 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
   border: 0;
+}
+
+/* Zielgrößen mindestens 24 px */
+.br-gruppe-knopf,
+.br-angaben .small,
+.br-detail .small,
+.br-chip-knopf,
+.br-app .toggle {
+  min-height: 24px;
+}
+.br-app .toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Einzelheiten: Paragraf als Überschrift, Regel im Einzelnen */
+h2.br-detail-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.br-regel-einzeln {
+  margin-top: 6px;
+}
+.br-regel-einzeln summary {
+  cursor: pointer;
+  color: var(--br-leise-stark);
+}
+.br-regel-einzeln ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--br-leise-stark);
+}
+
+/* Entwurfsvermerk auf jeder Druckseite */
+.br-entwurf-druck {
+  display: none;
+}
+@media print {
+  .br-entwurf-druck {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    font-size: 9px;
+    font-weight: 700;
+    color: #8a5300;
+  }
 }

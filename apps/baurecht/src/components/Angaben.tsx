@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FAKT_GRUPPEN } from '@core/baurecht/typen';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
@@ -5,10 +6,25 @@ import { werten } from '@core/baurecht/kurz';
 import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
 import { NumberField, TextField } from '@core/ui/fields';
 import type { Pruefstand } from '../pruefung';
-import { heute, useBaurecht } from '../store';
+import { heute, offeneBestaetigungen, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
 import { faktBestaetigenOeffnen, faktSetzenOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
+
+/**
+ * Segmentgruppe mit einem Tabstopp: ←/→ (bzw. ↑/↓) bewegt den Fokus, Leertaste/Eingabe wählt. Tabstopp ist der
+ * gewählte Wert, sonst der erste.
+ */
+export function segmentTaste(e: KeyboardEvent<HTMLElement>) {
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return;
+  const knoepfe = [...e.currentTarget.querySelectorAll<HTMLButtonElement>(':scope > button')];
+  const i = knoepfe.indexOf(document.activeElement as HTMLButtonElement);
+  if (i < 0) return;
+  e.preventDefault();
+  const ziel = e.key === 'Home' ? 0 : e.key === 'End' ? knoepfe.length - 1 : (i + (e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 1) + knoepfe.length) % knoepfe.length;
+  knoepfe[ziel].focus();
+}
+const tabStopp = (gewaehlt: boolean, erster: boolean, keinerGewaehlt: boolean) => (gewaehlt || (keinerGewaehlt && erster) ? 0 : -1);
 
 /** Angaben, die von Hand nur mit Begründung gesetzt werden: Schutzgebiete und Werte aus Geodiensten (ja/nein, Auswahl) */
 export const mitBeleg = (def: FaktDef, wert: FaktWert | undefined) => (def.typ === 'janein' || def.typ === 'wahl') && (def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst');
@@ -67,9 +83,9 @@ function Merkmale({ klaerung }: { klaerung: Map<string, number> }) {
               {!wert && n ? <span className="br-klaert" title={`klärt ${n} Paragrafen`}>klärt {n}</span> : null}
               {(geaendert[m.name] ?? '') !== wert && <span className="br-marke" title="noch nicht gespeichert">geändert</span>}
             </div>
-            <div className={`br-segment${m.werte.length >= 3 && m.werte.some((w) => w.length > 14) ? ' br-segment-senkrecht' : ''}`}>
-              {m.werte.map((w) => (
-                <button key={w} type="button" className={wert === w ? 'active' : ''} aria-pressed={wert === w} title={e?.werte?.[w] ? `${w}: ${e.werte[w]}` : w} onClick={() => wert !== w && useBaurecht.getState().merkmalSetzen(m.name, w)}>
+            <div className={`br-segment${m.werte.length >= 3 && m.werte.some((w) => w.length > 14) ? ' br-segment-senkrecht' : ''}`} onKeyDown={segmentTaste}>
+              {m.werte.map((w, i) => (
+                <button key={w} type="button" tabIndex={tabStopp(wert === w, i === 0, !wert)} className={wert === w ? 'active' : ''} aria-pressed={wert === w} title={e?.werte?.[w] ? `${w}: ${e.werte[w]}` : w} onClick={() => wert !== w && useBaurecht.getState().merkmalSetzen(m.name, w)}>
                   {w}
                 </button>
               ))}
@@ -93,12 +109,12 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
   const v = wert?.wert ?? null;
   if (def.typ === 'janein')
     return (
-      <div className="br-segment" role="group" aria-label={def.titel}>
+      <div className="br-segment" role="group" aria-label={def.titel} onKeyDown={segmentTaste}>
         {[
           [true, 'ja'],
           [false, 'nein'],
-        ].map(([w, t]) => (
-          <button key={String(w)} type="button" aria-pressed={v === w} className={v === w ? 'active' : ''} onClick={() => v !== w && onWert(w as boolean)}>
+        ].map(([w, t], i) => (
+          <button key={String(w)} type="button" tabIndex={tabStopp(v === w, i === 0, v === null)} aria-pressed={v === w} className={v === w ? 'active' : ''} onClick={() => v !== w && onWert(w as boolean)}>
             {t as string}
           </button>
         ))}
@@ -127,6 +143,7 @@ function FaktEingabe({ id, def, wert, onWert }: { id: string; def: FaktDef; wert
 
 function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef; wert: FaktWert | undefined; klaert: number; eigen: boolean }) {
   const fokus = useBaurecht((s) => s.fokus);
+  const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (fokus === id && ref.current) {
@@ -162,7 +179,7 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
           wert={wert}
           onWert={(v) => {
             // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
-            if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, def.titel, v);
+            if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, def.titel, v, !!def.geodienst || wert?.herkunft === 'geodienst');
             else useBaurecht.getState().faktSetzen(id, v, benutzer());
           }}
         />
@@ -182,16 +199,24 @@ function FaktZeile({ id, def, wert, klaert, eigen }: { id: string; def: FaktDef;
             </>
           )}
           {wert.bestaetigt && (
-            <span className="br-leise" title={wert.bestaetigt.grund}>
-              bestätigt {wert.bestaetigt.von}
-            </span>
+            <>
+              <span className="br-leise-stark" title={wert.bestaetigt.grund}>
+                {wert.herkunft === 'manuell' ? 'mit Beleg' : 'bestätigt'} ({wert.bestaetigt.von})
+              </span>
+              {entwurf && <span className="br-marke br-marke-entwurf">Entwurf</span>}
+              {eigen && (
+                <button type="button" className="small br-link" onClick={() => useBaurecht.getState().bestaetigungZuruecknehmen(id)} title="Bestätigung bzw. Angabe mit Beleg zurücknehmen – es gilt wieder der Hinweis">
+                  zurücknehmen
+                </button>
+              )}
+            </>
           )}
           {wert.widerspruch && (
             <span className="br-hinweis-marke br-widerspruch" title={wert.widerspruch}>
               Widerspruch
             </span>
           )}
-          {eigen && wert.herkunft === 'manuell' && (
+          {eigen && wert.herkunft === 'manuell' && !wert.bestaetigt && (
             <button type="button" className="small br-link" onClick={() => useBaurecht.getState().faktSetzen(id, undefined, '')} title="Angabe von Hand entfernen">
               zurücksetzen
             </button>
@@ -235,7 +260,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       <div className="br-leiste-kopf">
         <h2>Angaben</h2>
         <label className="toggle" title="auch Angaben zeigen, an denen gerade keine Regel hängt">
-          <input type="checkbox" checked={alle} onChange={(e) => setAlle(e.target.checked)} /> alle
+          <input type="checkbox" checked={alle} onChange={(e) => setAlle(e.target.checked)} /> alle Angaben
         </label>
       </div>
       <div className="br-suche">

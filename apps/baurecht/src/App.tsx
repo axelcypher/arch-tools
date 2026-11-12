@@ -28,7 +28,20 @@ const log = logger('baurecht');
  * „Ohne diese speichern“ schreibt für sie den Stand der Datei zurück (nichts geht verloren, nichts Unbestätigtes wird
  * gespeichert) und lässt sie danach als Entwurf in der App. true = gespeichert.
  */
+let speichertGerade = false;
+
 export async function speichern(): Promise<boolean> {
+  // ein zweites Strg+S während des Speicherns (oder während der Bestätigung) startet keinen zweiten Lauf
+  if (speichertGerade) return false;
+  speichertGerade = true;
+  try {
+    return await speichernLauf();
+  } finally {
+    speichertGerade = false;
+  }
+}
+
+async function speichernLauf(): Promise<boolean> {
   const s = useBaurecht.getState();
   if (!s.quelle) return false;
   const festlegungen = offeneFestlegungen(s);
@@ -49,7 +62,11 @@ export async function speichern(): Promise<boolean> {
     }
   }
   try {
-    return await speichernJetzt();
+    const konflikte: string[] = [];
+    const ok = await speichernJetzt(konflikte);
+    if (ok && konflikte.length)
+      await meldung('Gleichzeitig geändert', `Diese Einträge wurden inzwischen auch an anderer Stelle (andere App-Instanz) geändert; gespeichert ist Ihr Stand:\n\n${konflikte.join('\n')}\n\nBitte prüfen, ob das so stimmt.`);
+    return ok;
   } catch (e) {
     log.error('Speichern fehlgeschlagen', { fehler: fehlerText(e) });
     await meldung('Speichern fehlgeschlagen', fehlerText(e), e);
@@ -195,7 +212,7 @@ export function App() {
 
   const titel = (id: string) => {
     const p = stand.auswertung.paragrafen.find((x) => x.id === id);
-    return { titel: stand.auswertung.text.paragraf?.(id) ?? id, automatisch: p?.automatisch };
+    return { titel: stand.auswertung.text.paragraf?.(id) ?? id, automatisch: p?.automatisch, ampel: p?.ampel, ueberholt: p?.ueberholt };
   };
   const faktTitel = (id: string) => stand.auswertung.faktDefs[id]?.titel ?? id;
   // Folgen einer Angabe: Vorschau im Dialog (mit der Angabe gegenüber jetzt) …

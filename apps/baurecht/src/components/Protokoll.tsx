@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { offenFrage } from '@core/baurecht/kurz';
 import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
 import { EBENEN, paragrafName } from '@core/baurecht/typen';
 import { druckenAls } from '@core/platform/projektDatei';
@@ -7,7 +8,7 @@ import { useEscSchliessen } from '@core/ui/Dialog';
 import { benutzer } from '../benutzer';
 import type { Pruefstand } from '../pruefung';
 import { verwendeteFassungen } from '../pruefung';
-import { offeneBestaetigungen, offeneFestlegungen, useBaurecht } from '../store';
+import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from '../store';
 import { AMPEL_TEXT, datum } from './Ampel';
 
 const wertText = (w: FaktWert['wert']) => (w === true ? 'ja' : w === false ? 'nein' : String(w));
@@ -34,8 +35,38 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const quelle = useBaurecht((s) => s.quelle);
   const offeneF = useBaurecht((s) => offeneFestlegungen(s).join('|'));
   const offeneB = useBaurecht((s) => offeneBestaetigungen(s).join('|'));
+  const ungespeichertGesamt = useBaurecht(istGeaendert);
+  const laedt = useBaurecht((s) => s.laedt.length);
   const [nurRelevant, setNurRelevant] = useState(false);
+  const fenster = useRef<HTMLDivElement>(null);
   useEscSchliessen(onClose);
+  // Fokus: beim Öffnen hinein, Tab bleibt im Protokoll, beim Schließen zurück an die Stelle davor
+  useEffect(() => {
+    const vorher = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const d = fenster.current;
+    d?.querySelector<HTMLElement>('.br-protokoll-aktionen button:not([disabled])')?.focus();
+    const taste = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !d) return;
+      const ziele = [...d.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex="0"]')];
+      if (!ziele.length) return;
+      const [erstes, letztes] = [ziele[0], ziele[ziele.length - 1]];
+      if (!d.contains(document.activeElement)) {
+        e.preventDefault();
+        erstes.focus();
+      } else if (e.shiftKey && document.activeElement === erstes) {
+        e.preventDefault();
+        letztes.focus();
+      } else if (!e.shiftKey && document.activeElement === letztes) {
+        e.preventDefault();
+        erstes.focus();
+      }
+    };
+    document.addEventListener('keydown', taste, true);
+    return () => {
+      document.removeEventListener('keydown', taste, true);
+      if (vorher?.isConnected) vorher.focus();
+    };
+  }, []);
   if (!project) return null;
   const a = pruefstand.auswertung;
   const ungespeichert = new Set(offeneB ? offeneB.split('|') : []);
@@ -45,9 +76,16 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const ausEntwurf = vonHand.filter((p) => !p.festlegung!.bestaetigt);
   const ueberholt = a.paragrafen.filter((p) => p.ueberholt && p.ampel !== 'gelb');
   const bestaetigt = Object.entries(a.fakten).filter(([, f]) => f.bestaetigt);
+  // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
+  const sperre = entwuerfe ? `Erst speichern: ${entwuerfe === 1 ? 'eine Angabe von Hand ist' : `${entwuerfe} Angaben von Hand sind`} noch Entwurf (zweite Bestätigung fehlt)` : ungespeichertGesamt ? 'Erst speichern: Es gibt ungespeicherte Änderungen' : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
+  // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
+  const gruppen = new Map<string, ParagrafErgebnis[]>();
+  for (const p of [...offen, ...ueberholt]) {
+    const k = p.ueberholt && p.ampel !== 'gelb' ? 'Festlegung überholt' : p.offen.length ? `Es fehlt: ${offenFrage(p.offen[0], a.text)}` : p.gruende[0].replace(/\s*\(.*$/, '');
+    gruppen.set(k, [...(gruppen.get(k) ?? []), p]);
+  }
   const abschliessen = () => {
-    // nur ein gespeicherter, zweimal bestätigter Stand wird abgeschlossen
-    if (entwuerfe) return;
+    if (sperre) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
     useBaurecht.getState().protokollAnhaengen({ am: new Date().toISOString(), von: benutzer(), paket: paket.version, einreichung: pruefstand.einreichung, fassungen: verwendeteFassungen(a), zaehler: a.zaehler, ampeln, offen: offen.length + ueberholt.length });
   };
@@ -55,7 +93,12 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const geo = [...new Set(Object.values(a.fakten).filter((f) => f.herkunft === 'geodienst' && f.quelle).map((f) => `${f.quelle}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`))];
   return (
     <div className="report-backdrop br-protokoll-hintergrund">
-      <div className="report br-protokoll" role="dialog" aria-modal="true" aria-labelledby="br-protokoll-titel">
+      <div className="report br-protokoll" role="dialog" aria-modal="true" aria-labelledby="br-protokoll-titel" ref={fenster}>
+        {entwuerfe > 0 && (
+          <div className="br-entwurf-druck" aria-hidden="true">
+            ENTWURF – enthält nicht gespeicherte bzw. nicht bestätigte Angaben von Hand
+          </div>
+        )}
         <div className="report-actions no-print br-protokoll-aktionen">
           <label className="toggle">
             <input type="checkbox" checked={nurRelevant} onChange={(e) => setNurRelevant(e.target.checked)} /> ohne „entfällt“
@@ -68,8 +111,8 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             type="button"
             className="primary"
             onClick={abschliessen}
-            disabled={entwuerfe > 0}
-            title={entwuerfe ? `Erst speichern: ${entwuerfe} Angabe(n) von Hand sind noch Entwurf (zweite Bestätigung fehlt)` : 'Diesen Stand mit Fassungen und Ampeln in der Projektdatei ablegen (danach speichern)'}
+            disabled={!!sperre}
+            title={sperre || 'Diesen Stand mit Fassungen und Ampeln in der Projektdatei ablegen (danach speichern)'}
           >
             Prüfung abschließen
           </button>
@@ -79,7 +122,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
         </div>
         {entwuerfe > 0 && (
           <p className="br-meldung br-meldung-warn br-entwurf-hinweis" role="status">
-            Entwurf: {entwuerfe === 1 ? 'Eine Angabe von Hand ist' : `${entwuerfe} Angaben von Hand sind`} noch nicht gespeichert und bestätigt. Sie sind unten als „Entwurf“ bzw. „noch nicht gespeichert“ gekennzeichnet; abschließen lässt sich die Prüfung erst nach dem Speichern.
+            Entwurf: {entwuerfe === 1 ? 'Eine Angabe von Hand ist noch nicht gespeichert und bestätigt. Sie ist' : `${entwuerfe} Angaben von Hand sind noch nicht gespeichert und bestätigt. Sie sind`} unten als „Entwurf“ bzw. „noch nicht gespeichert“ gekennzeichnet; abschließen lässt sich die Prüfung erst nach dem Speichern.
           </p>
         )}
         <DruckKopf titel={`Baurechtliche Prüfung vor dem Einreichen – ${antrag}`} project={project} stand={new Date()} />
@@ -120,11 +163,16 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
         <h2>Offene Punkte ({offen.length + ueberholt.length})</h2>
         {offen.length + ueberholt.length ? (
           <ul className="br-protokoll-liste">
-            {[...offen, ...ueberholt].map((p) => (
-              <li key={p.id}>
-                <strong>{a.text.paragraf?.(p.id) ?? p.id}</strong>: {p.ueberholt ? `Festlegung überholt (${p.ueberholt})` : p.gruende[0]}
-              </li>
-            ))}
+            {[...gruppen.entries()]
+              .sort((x, y) => y[1].length - x[1].length)
+              .map(([k, ps]) => (
+                <li key={k}>
+                  <strong>
+                    {k} – {ps.length === 1 ? '1 Paragraf' : `${ps.length} Paragrafen`}:
+                  </strong>{' '}
+                  {ps.map((p) => a.text.paragraf?.(p.id) ?? p.id).join(' · ')}
+                </li>
+              ))}
           </ul>
         ) : (
           <p>Keine – alle Vorschriften sind eingeordnet.</p>

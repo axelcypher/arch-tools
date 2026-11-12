@@ -83,10 +83,11 @@ const sicher = (s: string) => s.replace(/[^\w.@-]+/g, '_');
  * Fassung zum Stichtag aus einer Liste: jüngstes Gültig-ab, das nicht nach dem Stichtag liegt – und deren Gültig-bis
  * (falls bekannt) nicht vor dem Stichtag endet
  */
-export function fassungZumStichtag<T extends { gueltigAb: string; gueltigBis?: string }>(liste: T[], stichtag: string): T | undefined {
+export function fassungZumStichtag<T extends { gueltigAb: string; gueltigBis?: string; abgerufen?: string }>(liste: T[], stichtag: string): T | undefined {
   return [...liste]
     .filter((f) => f.gueltigAb <= stichtag && (!f.gueltigBis || f.gueltigBis >= stichtag))
-    .sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb))
+    // bei gleichem Gültig-ab die zuletzt abgerufene (z. B. Ortsrecht, dessen Datum gleich bleibt, mit geändertem Text)
+    .sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb) || (b.abgerufen ?? '').localeCompare(a.abgerufen ?? ''))
     .find(() => true);
 }
 
@@ -131,7 +132,7 @@ export class Rechtsstand {
    * Fassung zum Stichtag. Holt an der Quelle, wenn die letzte Prüfung älter als ein Tag ist, keine Fassung den
    * Stichtag abdeckt oder `aktualisieren` gesetzt ist.
    */
-  fuer(norm: NormQuelle, stichtag: string, o: { aktualisieren?: boolean; offline?: boolean } = {}): Promise<StandErgebnis> {
+  fuer(norm: NormQuelle, stichtag: string, o: { aktualisieren?: boolean; offline?: boolean; regelStand?: Record<string, string> } = {}): Promise<StandErgebnis> {
     const schluessel = `${norm.id}@${stichtag}@${o.aktualisieren ? 1 : 0}`;
     let p = this.laufend.get(schluessel);
     if (!p) {
@@ -141,7 +142,7 @@ export class Rechtsstand {
     return p;
   }
 
-  private async fuerJetzt(norm: NormQuelle, stichtag: string, o: { aktualisieren?: boolean; offline?: boolean }): Promise<StandErgebnis> {
+  private async fuerJetzt(norm: NormQuelle, stichtag: string, o: { aktualisieren?: boolean; offline?: boolean; regelStand?: Record<string, string> }): Promise<StandErgebnis> {
     let v = await this.verzeichnis(norm.id);
     const juengsteEintrag = () => [...v.fassungen].sort((a, b) => b.abgerufen.localeCompare(a.abgerufen))[0];
     const deckt = fassungZumStichtag(v.fassungen, stichtag);
@@ -159,11 +160,23 @@ export class Rechtsstand {
         const zuletzt = vorab;
         const f = await fassungHolen(this.h, norm, norm.quelle, { stichtag, vorher: zuletzt ?? undefined, textAusPaket: this.o.textAusPaket });
         v = await this.verzeichnis(norm.id);
-        if (f !== 'unveraendert' && !v.fassungen.some((e) => e.kennung === f.kennung)) {
-          const datei = `recht/${sicher(norm.id)}/${f.gueltigAb}_${(await kurz(f.kennung))}`;
-          await this.speicher.schreiben(datei, f);
-          v.fassungen.push({ gueltigAb: f.gueltigAb, ...(f.gueltigBis ? { gueltigBis: f.gueltigBis } : {}), kennung: f.kennung, datei, abgerufen: f.abgerufen });
-          neuGeholt = f;
+        if (f !== 'unveraendert') {
+          // gleiche Kennung (z. B. dieselbe URL), aber anderer Text: als neue Fassung ablegen – sonst bliebe der alte Text
+          const gleich = v.fassungen.filter((e) => e.kennung === f.kennung || e.kennung.startsWith(`${f.kennung}#`));
+          let neu = !gleich.length;
+          if (!neu) {
+            const juengste = [...gleich].sort((a, b) => b.abgerufen.localeCompare(a.abgerufen))[0];
+            const alt = await this.fassungLesen(juengste);
+            neu = JSON.stringify(alt?.summen ?? null) !== JSON.stringify(f.summen);
+          }
+          if (neu) {
+            const kennung = gleich.length ? `${f.kennung}#${(await kurz(JSON.stringify(f.summen)))}` : f.kennung;
+            const datei = `recht/${sicher(norm.id)}/${f.gueltigAb}_${(await kurz(kennung))}`;
+            const ablage = { ...f, kennung };
+            await this.speicher.schreiben(datei, ablage);
+            v.fassungen.push({ gueltigAb: f.gueltigAb, ...(f.gueltigBis ? { gueltigBis: f.gueltigBis } : {}), kennung, datei, abgerufen: f.abgerufen });
+            neuGeholt = ablage;
+          }
         }
         v.geprueft = this.jetzt().toISOString();
         delete v.fehler;
@@ -177,7 +190,18 @@ export class Rechtsstand {
     const fassung = eintrag ? await this.fassungLesen(eintrag) : null;
     // vorige Fassung: die nächstältere (für die Gegenüberstellung alt/neu)
     const vorigerEintrag = eintrag ? [...v.fassungen].filter((e) => e !== eintrag && (e.gueltigAb < eintrag.gueltigAb || (e.gueltigAb === eintrag.gueltigAb && e.abgerufen < eintrag.abgerufen))).sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb) || b.abgerufen.localeCompare(a.abgerufen))[0] : undefined;
-    const vorige = vorigerEintrag ? await this.fassungLesen(vorigerEintrag) : null;
+    let vorige = vorigerEintrag ? await this.fassungLesen(vorigerEintrag) : null;
+    // für alt/neu: die Fassung, an der die Regeln geprüft sind (die meisten passenden Prüfsummen) – nicht nur die vorige
+    if (o.regelStand && Object.keys(o.regelStand).length && eintrag) {
+      const passt = (f: Fassung | null) => (f ? Object.entries(o.regelStand!).filter(([k, s]) => f.summen[k] === s).length : -1);
+      let beste = { f: vorige, n: passt(vorige) };
+      for (const e of v.fassungen.filter((x) => x !== eintrag && x !== vorigerEintrag)) {
+        const f = await this.fassungLesen(e);
+        const n = passt(f);
+        if (n > beste.n) beste = { f, n };
+      }
+      if (beste.f && beste.n > 0) vorige = beste.f;
+    }
     // künftige Fassungen: aus der zuletzt geholten (nicht nur der zum Stichtag), damit sie auch bei früheren Stichtagen
     // angezeigt werden
     const juengste = v.fassungen.length ? await this.fassungLesen(juengsteEintrag()) : null;

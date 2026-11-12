@@ -21,7 +21,8 @@ function ParagrafText({ p, absaetze, geaendert }: { p: Paragraf; absaetze: Set<s
         const hervor = absaetze.has(abs) || absaetze.has('');
         return (
           <p key={i} className={`${hervor ? 'br-text-hervor' : ''}${geaendert.has(abs) ? ' br-text-geaendert' : ''}`}>
-            {geaendert.has(abs) && n ? <span className="br-unsichtbar">geändert: </span> : null}
+            {hervor && n ? <span className="br-unsichtbar">Fundstelle der Regel: </span> : null}
+            {geaendert.has(abs) && n ? <span className="br-unsichtbar">seit der Prüfung geändert: </span> : null}
             {z}
           </p>
         );
@@ -119,7 +120,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
       <header className={`br-detail-kopf br-kopf-${p.ampel}`}>
         <div className="br-detail-titel">
           <span className="br-detail-nr">{titel}</span>
-          <span className="br-detail-name">{p.titel}</span>
+          <h2 className="br-detail-name">{p.titel || titel}</h2>
         </div>
         <div className="br-detail-ampel">
           <AmpelMarke ampel={p.ampel} />
@@ -208,6 +209,16 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             </p>
           )}
           {p.annahme && <p className="br-leise">Annahme: {p.annahme}</p>}
+          {p.bedingung?.length ? (
+            <details className="br-regel-einzeln">
+              <summary>Regel im Einzelnen</summary>
+              <ul>
+                {p.bedingung.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
         </section>
         <section>
           <div className="section-head">

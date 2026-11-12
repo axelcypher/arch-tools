@@ -347,6 +347,22 @@ input.num {
   font-variant-numeric: tabular-nums;
 }
 
+/* Fokus sichtbar (Tastatur): Kontrollkästchen, Optionsfelder und Knöpfe mit kräftigem Rahmen im Akzent */
+input[type='checkbox']:focus-visible,
+input[type='radio']:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Platzhalter mit ausreichendem Kontrast (oft die einzige sichtbare Beschriftung eines Suchfelds) */
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
 input:focus,
 select:focus,
 textarea:focus {

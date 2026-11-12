@@ -14,9 +14,9 @@ const AMPELN = ['rot', 'gelb', 'gruen'] as const;
 function gemerkt(): { gruppierung: Gruppierung; ampeln: Ampel[] } {
   try {
     const r = JSON.parse(localStorage.getItem(SPEICHER) ?? '{}') as { gruppierung?: Gruppierung; ampeln?: Ampel[] };
-    return { gruppierung: r.gruppierung === 'thema' || r.gruppierung === 'offen' ? r.gruppierung : 'ebene', ampeln: Array.isArray(r.ampeln) && r.ampeln.length ? r.ampeln : [...AMPELN] };
+    return { gruppierung: r.gruppierung === 'thema' || r.gruppierung === 'ebene' ? r.gruppierung : 'offen', ampeln: Array.isArray(r.ampeln) && r.ampeln.length ? r.ampeln : [...AMPELN] };
   } catch {
-    return { gruppierung: 'ebene', ampeln: [...AMPELN] };
+    return { gruppierung: 'offen', ampeln: [...AMPELN] };
   }
 }
 
@@ -40,6 +40,7 @@ function VonHand({ p }: { p: ParagrafErgebnis }) {
 }
 
 function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis; gewaehlt: boolean; tabStop: boolean; onFokus: () => void }) {
+  const nummer = /^\d/.test(p.paragraf);
   return (
     <li>
       <button
@@ -52,10 +53,11 @@ function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis;
         onClick={() => useBaurecht.getState().waehlen(p.id)}
       >
         <AmpelMarke ampel={p.ampel} klein vonHand={!!p.festlegung} />
-        <span className="br-paragraf-nr">{paragrafName(p.paragraf)}</span>
+        {/* Paragrafen mit Nummer in der Spalte; benannte Einheiten (Satzungen, Listen) stehen im Titel – nicht doppelt */}
+        <span className="br-paragraf-nr">{nummer ? paragrafName(p.paragraf) : ''}</span>
         <span className="br-paragraf-kopf">
           <span className="br-paragraf-titel" lang="de">
-            {p.titel || '–'}
+            {nummer ? p.titel || '–' : p.titel && p.titel.startsWith(p.paragraf) ? p.titel : `${p.paragraf}${p.titel ? ` – ${p.titel}` : ''}`}
           </span>
           <span className="br-paragraf-marken">
             <VonHand p={p} />
@@ -186,6 +188,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   const [nurGeaendert, setNurGeaendert] = useState(false);
   const [zu, setZu] = useState<Set<string>>(new Set());
   const [fokus, setFokus] = useState<string | null>(null);
+  const [ampelHinweis, setAmpelHinweis] = useState('');
   const liste = useRef<HTMLDivElement>(null);
   const setze = (n: typeof w) => {
     setW(n);
@@ -256,7 +259,14 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
                 aria-pressed={an}
                 title={an ? `${AMPEL_TEXT[a]} ausblenden` : `${AMPEL_TEXT[a]} einblenden`}
                 className={`br-filter-ampel br-chip-${a}${an ? ' active' : ''}`}
-                onClick={() => setze({ ...w, ampeln: an ? (w.ampeln.length > 1 ? w.ampeln.filter((x) => x !== a) : w.ampeln) : [...w.ampeln, a] })}
+                onClick={() => {
+                  if (an && w.ampeln.length === 1) {
+                    setAmpelHinweis('Mindestens eine Ampel bleibt eingeblendet.');
+                    return;
+                  }
+                  setAmpelHinweis('');
+                  setze({ ...w, ampeln: an ? w.ampeln.filter((x) => x !== a) : [...w.ampeln, a] });
+                }}
               >
                 <span className="br-filter-haken" aria-hidden="true">
                   {an ? '✓' : ''}
@@ -271,14 +281,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
             <span key={a} className={`br-balken-${a}`} style={{ width: `${(zaehler[a] / summe) * 100}%` }} />
           ))}
         </span>
-        <label className="toggle">
-          <input type="checkbox" checked={nurHand} onChange={(e) => setNurHand(e.target.checked)} /> von Hand
-        </label>
-        <label className="toggle">
-          <input type="checkbox" checked={nurGeaendert} onChange={(e) => setNurGeaendert(e.target.checked)} /> geändert/überholt
-        </label>
-        <span className="tb-spacer" />
-        <span className="br-segment" role="group" aria-label="Ordnung">
+        <span className="br-segment br-ordnung" role="group" aria-label="Ordnung">
           {(
             [
               ['offen', 'offen zuerst'],
@@ -291,7 +294,18 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
             </button>
           ))}
         </span>
-        <input className="br-suchfeld" type="search" placeholder="§ oder Stichwort …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Vorschriften durchsuchen" />
+        <span className="br-filter-zeile2">
+          <input className="br-suchfeld" type="search" placeholder="§ oder Stichwort …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Vorschriften durchsuchen" />
+          <label className="toggle">
+            <input type="checkbox" checked={nurHand} onChange={(e) => setNurHand(e.target.checked)} /> nur von Hand festgelegte
+          </label>
+          <label className="toggle">
+            <input type="checkbox" checked={nurGeaendert} onChange={(e) => setNurGeaendert(e.target.checked)} /> nur geänderte/überholte
+          </label>
+          <span className="br-leise" role="status">
+            {ampelHinweis}
+          </span>
+        </span>
       </div>
       <div className="br-treffer" aria-live="polite">
         {filterAktiv ? (

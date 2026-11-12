@@ -196,7 +196,7 @@ describe('Ampel je Paragraf', () => {
   it('Norm gilt nicht → alle Paragrafen grün', () => {
     const a = auswerten(eingabe({ merkmale: { Vorhaben: 'Errichtung', Gebäudeart: 'kein Gebäude' } }));
     expect(a.normen.find((n) => n.norm === 'bauo-nrw')!.paragrafen.every((x) => x.ampel === 'gruen' || x.paragraf === '42a')).toBe(true);
-    expect(p(a, 'nw/bauo-nrw/6').gruende[0]).toMatch(/Entfällt mit der Norm: nur für Gebäude/);
+    expect(p(a, 'nw/bauo-nrw/6').gruende[0]).toBe('Entfällt mit der Norm – nur für Gebäude (Gebäudeart: „kein Gebäude“).');
   });
 
   it('fehlendes Merkmal → gelb mit offener Angabe; „Was klärt am meisten“', () => {
@@ -339,6 +339,15 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
     expect(p(auswerten(eingabe({ merkmale: innen, texte: text({ stichtag: '2026-11-12' }) })), 'bund/bnatschg/14').gruende[0]).toMatch(/anderen Stichtag/);
   });
 
+  it('Werte nach Tabelle aus einem widersprüchlichen Gemeindeschlüssel sind unsicher und tragen den Widerspruch', () => {
+    const w = modulFakten([bund, land, gemeinde], { 'lage.ags': { ...sicher('05974040'), widerspruch: 'ALKIS meldet „05974024“' } });
+    expect(w['soest.zone']).toMatchObject({ wert: '1', sicherheit: 'hinweis', widerspruch: 'ALKIS meldet „05974024“' });
+    // bestätigter Hinweis: sicher – aber die Bestätigung gehört zum Gemeindeschlüssel, nicht zum abgeleiteten Wert
+    const b = modulFakten([gemeinde], { 'lage.ags': { ...hinweis('05974040'), bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Flurstücksnachweis' } } });
+    expect(b['soest.zone'].sicherheit).toBe('sicher');
+    expect(b['soest.zone'].bestaetigt).toBeUndefined();
+  });
+
   it('feste Werte der Gebietsmodule sind nur so sicher wie der Gemeindeschlüssel (PLZ-Vorschlag)', () => {
     const vorschlag = modulFakten([bund, land, gemeinde], { 'lage.ags': hinweis('05974040') });
     expect(vorschlag['ortsrecht.satzung']).toMatchObject({ wert: true, sicherheit: 'hinweis' });
@@ -350,8 +359,12 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
   });
 
   it('festgelegtes „entfällt“ ohne Text bzw. mit veraltetem Rechtsstand ist überholt', () => {
-    const fl = { ampel: 'gruen' as const, grund: 'Sonderfall mit Begründung', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, bestaetigt: '2026-11-12T10:00:00Z' };
+    const fl = { ampel: 'gruen' as const, grund: 'Sonderfall mit Begründung', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, stand: { '14/1': 'aaaaaaaa' }, bestaetigt: '2026-11-12T10:00:00Z' };
     const id = 'bund/bnatschg/14';
+    // ohne Textstand getroffen (z. B. in der Web-Version): auch mit Text später überholt
+    const ohneStand = p(auswerten(eingabe({ festlegungen: { [id]: { ...fl, stand: {} } }, texte: text() })), id);
+    expect(ohneStand.ampel).toBe('gelb');
+    expect(ohneStand.ueberholt).toMatch(/ohne geprüften Text/);
     expect(p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: text() })), id).ampel).toBe('gruen');
     const ohne = p(auswerten(eingabe({ festlegungen: { [id]: fl }, texte: new Map() })), id);
     expect(ohne.ampel).toBe('gelb');
@@ -402,6 +415,14 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
     expect(f).toMatch(/„oder“ ohne Teile/);
     expect(f).toMatch(/unbekannte Bedingung/);
     expect(f).toMatch(/Baustein-Zyklus: a → b → a|Baustein-Zyklus: b → a → b/);
+    // „bekannt“ über einen Baustein im Tatbestand, unbekannte Ampel im Verweis, falsches Datum, Aufbau
+    const b2: Modul = { ...bund, bausteine: { egal: { f: 'schutz.uesg', bekannt: false } } };
+    const r2: Regeldatei = { ...bnatschg, paragrafen: { '14': { ...bnatschg.paragrafen['14'], gilt: { $: 'egal' }, entfaellt: { n: 'bund/bnatschg/44', ampel: ['grün' as 'gruen'] } }, '44': { ...bnatschg.paragrafen['44'], gilt: { tag: 'einreichung', ab: '1.1.2025' } } } };
+    const f2 = paketPruefen(paketAusDateien({ 'module/bund/modul.json': b2, 'module/bund/bnatschg@2026-09-30.json': r2 }, 'test'), VORGABE_MERKMALE).join('\n');
+    expect(f2).toMatch(/bekannt.*auch nicht über Bausteine/);
+    expect(f2).toMatch(/unbekannter Ampel „grün“/);
+    expect(f2).toMatch(/kein Datum/);
+    expect(paketPruefen(paketAusDateien({ 'module/bund/modul.json': { id: 'bund' }, 'module/bund/bnatschg@2026-09-30.json': { modul: 'bund', norm: 'bnatschg', fassung: '2026-09-30' } }, 'test'), VORGABE_MERKMALE).join(' ')).toMatch(/Aufbau ungültig/);
     // leeres „oder“ als Ausnahme macht nichts grün; die kaputte Geltung macht alles gelb statt abzustürzen
     const a = auswerten({ paket: pk, module: pk.module, merkmale: innen, fakten: {}, einreichung: '2026-12-01', heute: '2026-11-12', texte: new Map(), festlegungen: {} });
     expect(a.paragrafen.every((x) => x.ampel !== 'gruen')).toBe(true);

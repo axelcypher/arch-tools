@@ -13,7 +13,7 @@
 import type { Fassung } from '../recht/typen';
 import { FAKTEN } from './fakten';
 import type { Bewertung, KurzKontext, TextKontext } from './kurz';
-import { kurzText, offenFrage, offenText, werten } from './kurz';
+import { kurzText, offenFrage, offenText, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { plusMonate } from '../recht/quellen';
@@ -97,7 +97,18 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
         const basis = out[d.nach.fakt];
         if (basis?.wert == null) continue;
         const v = d.nach.tabelle[String(basis.wert)] ?? d.nach.sonst;
-        if (v !== undefined) out[id] = { wert: v, herkunft: 'modul', quelle: m.name, sicherheit: basis.sicherheit, ...(basis.bestaetigt ? { bestaetigt: basis.bestaetigt } : {}) };
+        // so sicher wie der Bezug (ein bestätigter Hinweis gilt als sicher); ein Widerspruch am Bezug geht mit; die
+        // Bestätigung selbst wird nicht kopiert – sie gehört zum Bezug, nicht zum abgeleiteten Wert
+        const unsicher = (basis.sicherheit === 'hinweis' && !basis.bestaetigt) || (d.nach.fakt === 'lage.ags' && m.ebene !== 'bund' && agsUnsicher);
+        if (v !== undefined)
+          out[id] = {
+            wert: v,
+            herkunft: 'modul',
+            quelle: `${m.name} (abgeleitet aus ${d.nach.fakt === 'lage.ags' ? 'dem Gemeindeschlüssel' : d.nach.fakt})`,
+            sicherheit: unsicher ? 'hinweis' : 'sicher',
+            ...(unsicher ? { grund: basis.grund ?? 'abgeleitet aus einem nicht gesicherten Wert' } : {}),
+            ...(basis.widerspruch ? { widerspruch: basis.widerspruch } : {}),
+          };
       }
     }
   return out;
@@ -221,27 +232,30 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     const tatbestand = undW(g.w, gilt.w);
     let ampel: Ampel;
     let tragend: Bewertung[] = [];
+    // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `bedingung`
+    const warum = (k: Kurz | undefined, w: Wahrheit) => warumText(k, ctx, text, w);
     if (g.w === 'nein') {
       ampel = 'gruen';
-      gruende.push(`Entfällt mit der Norm: ${n.datei?.regel.geltungGrund ?? `gilt nur bei ${kurzText(n.datei?.regel.geltung, text)}`}`);
+      const w = warum(n.datei?.regel.geltung, 'nein');
+      gruende.push(`Entfällt mit der Norm – ${n.datei?.regel.geltungGrund ?? 'Anwendungsbereich nicht berührt'}${w ? ` (${w})` : ''}.`);
       tragend = [g];
     } else if (entf?.w === 'ja') {
       ampel = 'gruen';
-      gruende.push(`Entfällt: ${kurzText(r.entfaellt, text)}`);
+      gruende.push(`Entfällt – ${warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
       tragend = [entf];
     } else if (tatbestand === 'ja') {
       ampel = 'rot';
       gruende.push(r.grund);
       tragend = [g, gilt];
-      if (entf?.w === 'offen') hinweise.push(`Ausnahme möglich (${kurzText(r.entfaellt, text)}) – es fehlt: ${entf.offen.map((o) => offenFrage(o, text)).join(' · ')}`);
+      if (entf?.w === 'offen') hinweise.push(`Ausnahme möglich – es fehlt: ${entf.offen.map((o) => offenFrage(o, text)).join(' · ')}`);
     } else if (tatbestand === 'nein') {
       ampel = 'gruen';
-      gruende.push(r.gilt ? `Gilt nicht: Voraussetzung ist ${kurzText(r.gilt, text)}` : 'Gilt nicht');
+      gruende.push(r.gilt ? `Gilt nicht – ${warum(r.gilt, 'nein') || 'Voraussetzung nicht erfüllt'}.` : 'Gilt nicht.');
       tragend = [gilt];
     } else {
       ampel = 'gelb';
       const fehlt = [...new Set([...g.offen, ...gilt.offen])];
-      gruende.push(`Offen – es fehlt: ${fehlt.map((o) => offenFrage(o, text)).join(' · ') || 'Angaben'}. Gilt, wenn: ${kurzText(r.gilt ?? n.datei?.regel.geltung, text) || 'die Norm anwendbar ist'}.`);
+      gruende.push(`Offen – es fehlt: ${fehlt.map((o) => offenFrage(o, text)).join(' · ') || 'Angaben'}.`);
       tragend = [g, gilt];
     }
 
@@ -305,6 +319,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text
       if (fl.ampel === 'gruen' && r.stand && Object.keys(r.stand).length) {
         if (!fassung) gruende2.push('Text der Norm nicht verfügbar');
+        else if (Object.keys(r.stand).some((k) => !fl.stand?.[k])) gruende2.push('Festlegung ohne geprüften Text getroffen – an der geltenden Fassung erneut festlegen');
         else if (!n.stand?.geprueft || tageSeit(n.stand.geprueft, e.heute) > tageAlt) gruende2.push('Rechtsstand nicht aktuell an der Quelle bestätigt');
         else if (n.stand?.ueberholtAb) gruende2.push(`zum Stichtag gilt schon die Fassung ab ${datumText(n.stand.ueberholtAb)}`);
       }
@@ -339,6 +354,12 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ...(ueberholt ? { ueberholt } : {}),
       ...(n.datei ? { regel: { datei: n.datei.datei, version: n.datei.regel.version, fassung: n.datei.regel.fassung } } : {}),
       ...(def.annahme ? { annahme: def.annahme } : {}),
+      bedingung: [
+        n.datei?.regel.geltung ? `Die Norm gilt, wenn: ${kurzText(n.datei.regel.geltung, text)}` : '',
+        r.gilt ? `Gilt, wenn: ${kurzText(r.gilt, text)}` : '',
+        r.entfaellt ? `Entfällt, wenn: ${kurzText(r.entfaellt, text)}` : '',
+        r.pruefen?.wenn ? `Einzelfall, wenn: ${kurzText(r.pruefen.wenn, text)}` : '',
+      ].filter(Boolean),
     };
     ergebnisse.set(id, ergebnis);
     return ergebnis;

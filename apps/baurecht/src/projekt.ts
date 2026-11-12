@@ -41,32 +41,40 @@ export async function dateiOeffnen(): Promise<boolean> {
   return true;
 }
 
-/** die Änderungen dieser App auf `projekt.json` anwenden: geänderte Merkmale und die Prüfung des Antrags */
-export function aenderungenAnwenden(roh: Record<string, unknown>): Record<string, unknown> {
+/**
+ * die Änderungen dieser App auf `projekt.json` anwenden: geänderte Merkmale und die Prüfung des Antrags (je Eintrag
+ * zusammengeführt). Einträge, die inzwischen auch eine andere Instanz geändert hat, landen in `konflikte`.
+ */
+export function aenderungenAnwenden(roh: Record<string, unknown>, konflikte: string[] = []): Record<string, unknown> {
   const s = useBaurecht.getState();
   let out = roh;
   const namen = new Set([...Object.keys(s.merkmale), ...Object.keys(s.merkmaleDatei)]);
   for (const n of namen) if ((s.merkmale[n] ?? '') !== (s.merkmaleDatei[n] ?? '')) out = merkmalSetzen(out, s.antrag, n, s.merkmale[n] ?? '');
-  return pruefungSetzen(out, s.antrag, s.pruefung, s.pruefungDatei);
+  return pruefungSetzen(out, s.antrag, s.pruefung, s.pruefungDatei, { konflikte });
 }
 
-/** Speichern; true, wenn gespeichert wurde */
-export async function speichernJetzt(): Promise<boolean> {
+/** Speichern; true, wenn gespeichert wurde. `konflikte` sammelt Einträge, die gleichzeitig anderswo geändert wurden. */
+export async function speichernJetzt(konflikte: string[] = []): Promise<boolean> {
   const s = useBaurecht.getState();
   const q: Projektquelle | null = s.quelle;
   if (!q) return false;
+  // Stand bei Beginn: was sich während des Speicherns ändert, bleibt danach erhalten (gespeichert(…, seit))
+  const seit = { pruefung: structuredClone(s.pruefung), merkmale: { ...s.merkmale } };
   if (q.art === 'ordner') {
     let neu: Record<string, unknown> | null = null;
-    const geschrieben = await projektdateiSchreiben(tauriProjektordner, q.root, q.pfad, (roh) => (neu = aenderungenAnwenden(roh)));
+    const geschrieben = await projektdateiSchreiben(tauriProjektordner, q.root, q.pfad, (roh) => {
+      konflikte.length = 0;
+      return (neu = aenderungenAnwenden(roh, konflikte));
+    });
     // frisch lesen: so steht in der App genau, was in der Datei steht (auch Änderungen anderer Apps)
     const r = await tauriProjektordner.liesMitStand(q.root, q.pfad);
     const roh = r ? projektdateiRoh(r.daten) : neu;
-    if (roh) useBaurecht.getState().gespeichert(roh);
-    log.info(geschrieben ? 'Gespeichert' : 'Nichts zu speichern – Datei unverändert', { datei: q.datei });
+    if (roh) useBaurecht.getState().gespeichert(roh, undefined, seit);
+    log.info(geschrieben ? 'Gespeichert' : 'Nichts zu speichern – Datei unverändert', { datei: q.datei, konflikte: konflikte.length });
     return true;
   }
-  const bytes = projektdateiAendern(q.bytes, aenderungenAnwenden) ?? q.bytes;
+  const bytes = projektdateiAendern(q.bytes, (roh) => aenderungenAnwenden(roh, konflikte)) ?? q.bytes;
   const ok = await saveBinaryFile({ data: bytes, defaultName: q.name, filterName: 'Projektdatei', extension: 'oap', mime: 'application/zip' });
-  if (ok) useBaurecht.getState().gespeichert(projektdateiRoh(bytes), { ...q, bytes });
+  if (ok) useBaurecht.getState().gespeichert(projektdateiRoh(bytes), { ...q, bytes }, seit);
   return ok;
 }

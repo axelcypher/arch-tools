@@ -135,7 +135,9 @@ export function gfiAus(text: string, attribut?: string): { treffer: boolean; wer
   const t = text.trim();
   if (t.startsWith('{')) {
     const j = JSON.parse(t) as { features?: { properties?: Record<string, unknown> }[] };
-    const f = j.features?.[0];
+    // nur eine echte FeatureCollection zählt – ein Fehlerobjekt ist kein „kein Treffer“
+    if (!Array.isArray(j.features)) throw new Error('Antwort des Dienstes nicht im erwarteten Format (keine Features)');
+    const f = j.features[0];
     return { treffer: !!f, ...(f && attribut && f.properties?.[attribut] != null ? { wert: String(f.properties[attribut]) } : {}) };
   }
   if (/ServiceException/i.test(t)) throw new Error(`Dienst meldet einen Fehler: ${/<ServiceException[^>]*>([\s\S]*?)<\/ServiceException>/i.exec(t)?.[1]?.trim() ?? 'unbekannt'}`);
@@ -161,7 +163,8 @@ async function arcgisAbfrage(h: Holen, d: GeodienstDef, ebene: string, umring: P
   const r = await holenOk(h, `${d.url.replace(/\/$/, '')}/${encodeURIComponent(ebene)}/query?${q.toString()}`);
   const j = JSON.parse(alsText(r)) as { features?: { attributes?: Record<string, unknown> }[]; error?: { message?: string } };
   if (j.error) throw new Error(`Dienst meldet einen Fehler: ${j.error.message ?? 'unbekannt'}`);
-  const f = j.features?.[0];
+  if (!Array.isArray(j.features)) throw new Error('Antwort des Dienstes nicht im erwarteten Format (keine Features)');
+  const f = j.features[0];
   return { treffer: !!f, ...(f && d.attribut && f.attributes?.[d.attribut] != null ? { wert: String(f.attributes[d.attribut]) } : {}) };
 }
 
@@ -263,7 +266,8 @@ export function faktenZurLage(fakten: Record<string, FaktWert>, lage: string | n
   const out: Record<string, FaktWert> = {};
   for (const [id, f] of Object.entries(fakten)) {
     const verschoben = (f.lage && f.lage !== lage) || (f.bestaetigt?.lage && f.bestaetigt.lage !== lage);
-    if (!verschoben || f.herkunft === 'manuell') {
+    // Angaben von Hand ohne Lagebezug bleiben; mit Beleg für eine Lage (Schutzgebiete) verfallen sie wie Geodaten
+    if (!verschoben || (f.herkunft === 'manuell' && !f.bestaetigt?.lage)) {
       out[id] = f;
       continue;
     }
