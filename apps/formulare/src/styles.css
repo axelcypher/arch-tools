@@ -2574,6 +2574,11 @@ button.icon.fo-gl-zaehlt.an {
 .menue-punkt.gefahr {
   color: var(--danger);
 }
+/* ausgegraut wirkt auch ein Gefahr-Punkt nicht bedienbar */
+.menue-punkt.gefahr:disabled,
+.menue-punkt.gefahr:disabled .menue-symbol {
+  color: var(--muted);
+}
 .menue-symbol {
   width: 16px;
   display: inline-flex;
@@ -4708,16 +4713,21 @@ tr[data-ziehen='danach'] > td {
 .pu-inhalt {
   display: contents;
 }
-.pu-inhalt.laedt > * {
-  opacity: 0.55;
+.pu-inhalt > * {
   transition: opacity 0.15s;
 }
+.pu-inhalt.laedt > * {
+  opacity: 0.55;
+}
+/* „Antrag … wird geöffnet …“ im Kopf neben der Fassungswahl (immer da als Live-Region, leer ohne Breite) – der Inhalt
+   darunter springt nicht */
 .pu-laedt-hinweis {
-  margin: 0;
+  align-self: center;
   color: var(--muted);
+  white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
-  .pu-inhalt.laedt > * {
+  .pu-inhalt > * {
     transition: none;
   }
 }

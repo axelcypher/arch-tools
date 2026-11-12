@@ -7,7 +7,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { VORGABE_EXPORT, einstellungenAus, jjmmtt, tagVon } from './antrag';
 import { VORGABE_MERKMALE } from './bedingung';
-import { aktiveFassung, exportVorschlag, istArchiv, useAntrag } from './antragStore';
+import { aktiveFassung, exportVorschlag, istArchiv, useAntrag, wechselLaeuft } from './antragStore';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Schreiben } from './forma/cp1252';
 import { felderDerSeite } from './forma/felder';
@@ -97,7 +97,7 @@ beforeEach(() => {
     stammdatenDialog: null,
     ordnerDialog: null,
   });
-  useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, vorlagen: VORLAGEN, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [], projektStatus: {} });
+  useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, vorlagen: VORLAGEN, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [], dokumenteFuer: null, projektStatus: {} });
   useAufgeklappt.setState({ offen: [] });
 });
 afterEach(() => {
@@ -127,6 +127,10 @@ const eingabe = (el: HTMLInputElement, value: string) =>
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, value);
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
+/** Feld verlassen (übernimmt die Eingabe in Feldern, die erst dann speichern) */
+const verlassen = (el: HTMLElement) => act(() => void el.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+/** echte Zeit vergehen lassen (z. B. für verzögerte Hinweise) */
+const zeitVergeht = (ms: number) => act(async () => new Promise<void>((r) => setTimeout(r, ms)));
 
 async function render(): Promise<HTMLElement> {
   const host = document.createElement('div');
@@ -2877,7 +2881,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     // aktiv ist schon BAUA, angezeigt noch BAUA 2: solange wird nichts geändert – auch nicht für die festgehaltene Fassung
     expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA 2');
     const info = await act(() => useAntrag.getState().verknuepfen('lageplan', 'BS9 Lageplan B2.pdf', { ansicht: 'BAUA 2' }));
-    expect(info).toMatchObject({ vorab: 'fassung', grund: 'Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen' });
+    expect(info).toMatchObject({ vorab: 'fassung', grund: 'Antrag BAUA wird gerade geöffnet' });
     expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Nicht verknüpft – Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.' });
     los();
     await act(() => fw);
@@ -3514,6 +3518,13 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     return h;
   };
   const PE = () => (window as unknown as { PointerEvent?: typeof MouseEvent }).PointerEvent ?? MouseEvent;
+  /** zählt die Aufrufe von `laden` (z. B. das Neuladen als Sicherung am Ende des Neu-Prüfens) */
+  const ladenZaehlen = () => {
+    const echt = useAntrag.getState().laden;
+    const z = { anzahl: 0 };
+    useAntrag.setState({ laden: () => (z.anzahl++, echt()) });
+    return z;
+  };
   const nrVon = (fassung: string, id: string) => ((antragIn(fassung)?.umfang as { id: string; nr?: string }[]).find((u) => u.id === id) ?? {}).nr;
 
   it('↑/↓ zweimal schnell nacheinander, während nach dem ersten Schreiben noch neu geprüft wird: die Zeilen stimmen schon – zweimal nach unten', async () => {
@@ -3584,12 +3595,18 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA');
     const inhalt = host.querySelector('.pu-inhalt')!;
     expect(inhalt.hasAttribute('inert')).toBe(true);
-    expect(inhalt.getAttribute('aria-busy')).toBe('true');
+    expect(host.querySelector('.pu')!.getAttribute('aria-busy')).toBe('true');
+    // Hinweis und Abblenden erst nach einem Moment (ein schneller Wechsel flackert nicht); die Live-Region ist schon da
+    expect(host.querySelector('.pu-laedt-hinweis')?.textContent).toBe('');
+    expect(inhalt.classList.contains('laedt')).toBe(false);
+    await zeitVergeht(350);
     expect(host.querySelector('.pu-laedt-hinweis')?.textContent).toBe('Antrag BAUA wird geöffnet …');
+    expect(inhalt.classList.contains('laedt')).toBe(true);
     // trotzdem ausgelöst (z. B. per Tastatur kurz vorher): nichts geändert, mit Grund
     const nr = zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!;
     expect(nr.value).toBe('03');
     eingabe(nr, '031');
+    await verlassen(nr);
     await warte();
     expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Nicht geändert – Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.' });
     await klick(knopf(host.querySelector('.pu-zeile .pu-bearbeiten')!, 'Aus dem Antragsumfang nehmen'));
@@ -3604,19 +3621,22 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(umfangIdsIn('BAUA')).toEqual(['muster', 'bauantrag', 'lageplan']);
     // fertig geöffnet: wieder bedienbar
     expect(host.querySelector('.pu-inhalt')!.hasAttribute('inert')).toBe(false);
-    expect(host.querySelector('.pu-laedt-hinweis')).toBeNull();
+    expect(host.querySelector('.pu-laedt-hinweis')?.textContent).toBe('');
+    expect(host.querySelector('.pu')!.hasAttribute('aria-busy')).toBe(false);
   });
 
   it('Bearbeiten: Felder speichern im beim Speichern gelesenen Umfang – von woanders Ergänztes bleibt, Entferntes verschwindet sofort aus der Ansicht', async () => {
     const host = await mitUmfangInBeiden();
     await klick(host.querySelector<HTMLButtonElement>('[aria-label="Lageplan bearbeiten"]')!);
     eingabe(zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!, '07');
+    await verlassen(zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!);
     await warte();
     expect(nrVon('BAUA 2', 'lageplan')).toBe('07');
     expect(nrVon('BAUA', 'lageplan')).toBeUndefined();
     // ein anderer Arbeitsplatz ergänzt „Statik“: das nächste Speichern behält sie
     await umfangVonAussen('BAUA 2', (u) => [...u, { id: 'statik', titel: 'Statik', art: 'extern' } as { id: string }]);
     eingabe(zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!, '08');
+    await verlassen(zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!);
     await warte();
     expect(umfangIdsIn('BAUA 2')).toEqual(['muster', 'bauantrag', 'lageplan', 'statik']);
     expect(nrVon('BAUA 2', 'lageplan')).toBe('08');
@@ -3638,7 +3658,9 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     for (let i = 0; i < 20 && !h.erreicht; i++) await warte();
     // aktiv schon BAUA (nicht eingereicht), angezeigt noch BAUA 2 – trotzdem nicht bedienbar
     expect(host.querySelector('.pu-inhalt')!.hasAttribute('inert')).toBe(true);
-    eingabe(zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!, '9');
+    const nr = zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!;
+    eingabe(nr, '9');
+    await verlassen(nr);
     await act(async () => void (await useAntrag.getState().merkmalSetzen('Gebäudeklasse', '5')));
     expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Nicht gespeichert – Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.' });
     h.los();
@@ -3797,7 +3819,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(umfangIdsIn('BAUA')).toEqual(['muster', 'bauantrag', 'lageplan']);
   });
 
-  it('Navigation: Menü eines fehlenden Formulars während des Öffnens von BAUA aufgemacht (Zeilen noch von BAUA 2), danach geklickt – nichts in BAUA', async () => {
+  it('Navigation: Menü eines fehlenden Formulars während des Öffnens von BAUA aufgemacht (Zeilen noch von BAUA 2): ausgegraut, auch danach – nichts in BAUA', async () => {
     const host = await mitUmfangInBeiden();
     const h = listeAnhalten((p, t) => p.endsWith('/TÖB/BAUA') && t === 1);
     let fw!: Promise<void>;
@@ -3806,15 +3828,17 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     });
     for (let i = 0; i < 30 && useAntrag.getState().projektdatei?.ansicht !== 'BAUA'; i++) await warte();
     await warte();
-    // Umfang schon BAUA, die Navigation zeigt noch die fehlenden Formulare von BAUA 2
+    // Umfang schon BAUA, die Navigation zeigt noch die fehlenden Formulare von BAUA 2 – ihre Menüpunkte sind ausgegraut
     await rechtsklick(navFehlt(host, 'Bauantrag'));
+    expect(menuePunkt('Aus dem Antragsumfang nehmen').disabled).toBe(true);
+    expect(menuePunkt('Aus dem Antragsumfang nehmen').querySelector('.menue-hinweis')?.textContent).toBe('Antrag wird geöffnet');
     h.los();
     await act(() => fw);
     await warte();
+    // das Menü von vorhin bleibt so – ein Klick ändert nichts
     await klick(menuePunkt('Aus dem Antragsumfang nehmen'));
     await warte();
     expect(umfangIdsIn('BAUA')).toContain('bauantrag');
-    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Nicht entfernt – inzwischen ist Antrag BAUA angezeigt.' });
   });
 
   it('während des Öffnens: „Antragsumfang aufheben“ bzw. ein direktes Setzen ändert nichts; ein Zeilenmenü von vorher gilt danach nicht', async () => {
@@ -3826,7 +3850,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     });
     for (let i = 0; i < 30 && useAntrag.getState().projektdatei?.ansicht !== 'BAUA'; i++) await warte();
     await warte();
-    expect(await act(() => useAntrag.getState().umfangSetzen(null))).toEqual({ grund: 'Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen', vorab: 'fassung' });
+    expect(await act(() => useAntrag.getState().umfangSetzen(null))).toEqual({ grund: 'Antrag BAUA wird gerade geöffnet', vorab: 'fassung' });
     expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Antragsumfang nicht geändert – Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.' });
     // Zeilenmenü der noch angezeigten Zeile von BAUA 2 (per Tastatur erreichbar gewesen), geklickt erst nach dem Öffnen
     await rechtsklick(zeileVon(host, 'Lageplan'));
@@ -3874,6 +3898,204 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     h.los();
     await act(() => fw);
     await warte();
+  });
+
+  it('anderer Arbeitsplatz macht BAUA aktiv (hier noch nicht gelesen), dann eine eigene Änderung: die Ansicht folgt, die Sperre endet', async () => {
+    const host = await mitUmfangInBeiden();
+    const laden = ladenZaehlen();
+    ds.dateien.set(OAP, oapMit(ds.dateien.get(OAP)!, (f) => void (f.aktiveFassung = 'BAUA')));
+    const nr = host.querySelector<HTMLInputElement>('.pu-zeile .pu-nr')!;
+    eingabe(nr, '01');
+    await verlassen(nr);
+    for (let i = 0; i < 12; i++) await warte();
+    // die Änderung ging in die Zeile, in der getippt wurde (BAUA 2) – angezeigt wird jetzt BAUA, bedienbar
+    expect(nrVon('BAUA 2', 'muster')).toBe('01');
+    expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA');
+    expect(wechselLaeuft(useAntrag.getState(), useFormulare.getState().projekt)).toBeNull();
+    expect(host.querySelector('.pu-inhalt')!.hasAttribute('inert')).toBe(false);
+    expect(useAntrag.getState().dokumenteFuer).toBe('BAUA');
+    // die Ansicht folgt schon beim Speichern – ohne das Neuladen als Sicherung
+    expect(laden.anzahl).toBe(0);
+  });
+
+  it('BAUA ausdrücklich gewählt, ein anderer Arbeitsplatz entfernt die aktive Fassung aus der Projektdatei: die vorgegebene wird angezeigt, nichts hängt', async () => {
+    const host = await mitUmfangInBeiden();
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+    await warte();
+    const laden = ladenZaehlen();
+    ds.dateien.set(OAP, oapMit(ds.dateien.get(OAP)!, (f) => void delete f.aktiveFassung));
+    await act(() => useFormulare.getState().oapLaden());
+    for (let i = 0; i < 12; i++) await warte();
+    expect(wechselLaeuft(useAntrag.getState(), useFormulare.getState().projekt)).toBeNull();
+    // schon beim Lesen passend – ohne das Neuladen als Sicherung
+    expect(laden.anzahl).toBe(0);
+    expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA 2');
+    expect(host.querySelector('.pu-inhalt')!.hasAttribute('inert')).toBe(false);
+  });
+
+  it('BAUA öffnen, das Neu-Prüfen hängt beim Lesen eines Formulars, dann zurück zu BAUA 2: Dateien von BAUA gelten in BAUA 2 nie', async () => {
+    await mitUmfangInBeiden();
+    // Formular inzwischen geändert: es wird neu gelesen (Netz) – das hält das Neu-Prüfen nach dem Lesen der Ordner an
+    ds.geaendert.set('C:/FORMA/BS9/001-Muster.frmsjf', 9e12);
+    const lies = ds.lies.bind(ds);
+    const wartende: (() => void)[] = [];
+    let halten = true;
+    ds.lies = async (r: string, pfad: string) => {
+      if (halten && pfad.endsWith('001-Muster.frmsjf')) await new Promise<void>((x) => wartende.push(x));
+      return lies(r, pfad);
+    };
+    let fw1!: Promise<void>;
+    act(() => {
+      fw1 = useAntrag.getState().fassungWaehlen('BAUA');
+    });
+    for (let i = 0; i < 40 && !wartende.length; i++) await warte();
+    halten = false;
+    const h = listeAnhalten((p, t) => p.endsWith('/TÖB/BAUA 2') && t === 1);
+    let fw2!: Promise<void>;
+    act(() => {
+      fw2 = useAntrag.getState().fassungWaehlen('BAUA 2');
+    });
+    for (let i = 0; i < 40 && !h.erreicht; i++) await warte();
+    // die Dateien der Ablage sind nie die von TÖB/BAUA, solange BAUA 2 angezeigt ist
+    expect(useAntrag.getState().dateienOrdner).not.toBe(`${PROJEKT}/TÖB/BAUA`);
+    expect(useAntrag.getState().dateien.map((d) => d.pfad)).not.toContain('BS9 GP 260101 Bauantrag.pdf');
+    h.los();
+    wartende.forEach((x) => x());
+    await act(() => fw1);
+    await act(() => fw2);
+    for (let i = 0; i < 6; i++) await warte();
+    expect(useAntrag.getState().dateienOrdner).toBe(`${PROJEKT}/TÖB/BAUA 2`);
+    expect(useAntrag.getState().dokumenteFuer).toBe('BAUA 2');
+  });
+
+  it('Autofill-Zustand gespeichert, während BAUA geöffnet wird: er kommt in BAUA (den Antrag, der geöffnet wird)', async () => {
+    await mitUmfangInBeiden();
+    const h = listeAnhalten((p, t) => p.endsWith('/TÖB') && t === 1);
+    let fw!: Promise<void>;
+    act(() => {
+      fw = useAntrag.getState().fassungWaehlen('BAUA');
+    });
+    for (let i = 0; i < 40 && !h.erreicht; i++) await warte();
+    await act(() => useAntrag.getState().zustaendeSetzen({ '001-Muster.frmsjf': { felder: { x: { auto: 'Musterstraße 9' } } } as never }));
+    h.los();
+    await act(() => fw);
+    for (let i = 0; i < 6; i++) await warte();
+    expect(antragIn('BAUA 2')?.felder).toBeUndefined();
+    expect(Object.keys((antragIn('BAUA')?.felder as Record<string, unknown> | undefined) ?? {})).toEqual(['001-Muster.frmsjf']);
+    expect(Object.keys(useAntrag.getState().projektdatei?.felder ?? {})).toEqual(['001-Muster.frmsjf']);
+  });
+
+  it('Bearbeiten-Felder: getippt wird im Feld, gespeichert beim Verlassen bzw. mit Enter – bei langsamem Speichern geht nichts verloren, Esc verwirft', async () => {
+    const host = await mitUmfangInBeiden();
+    await klick(host.querySelector<HTMLButtonElement>('[aria-label="Lageplan bearbeiten"]')!);
+    const echt = useFormulare.getState().oapAendern;
+    let los!: () => void;
+    const tor = new Promise<void>((r) => (los = r));
+    let schreiben = 0;
+    useFormulare.setState({ oapAendern: async (f) => (schreiben++, await tor, echt(f)) });
+    const titel = () => host.querySelector<HTMLInputElement>('.pu-zeile .pu-bearbeiten input')!;
+    eingabe(titel(), 'LageplanA');
+    eingabe(titel(), `${titel().value}B`);
+    expect(titel().value).toBe('LageplanAB');
+    expect(schreiben).toBe(0);
+    await verlassen(titel());
+    // das Speichern hängt (Netz): das Feld zeigt weiter das Getippte
+    expect(titel().value).toBe('LageplanAB');
+    los();
+    for (let i = 0; i < 8; i++) await warte();
+    useFormulare.setState({ oapAendern: echt });
+    expect(schreiben).toBe(1);
+    expect(((antragIn('BAUA 2')!.umfang as { id: string; titel: string }[]).find((u) => u.id === 'lageplan') ?? { titel: '' }).titel).toBe('LageplanAB');
+    // Enter übernimmt, Esc verwirft
+    const nr = zeileVon(host, 'LageplanAB').querySelector<HTMLInputElement>('.pu-nr')!;
+    eingabe(nr, '04');
+    act(() => void nr.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    await warte();
+    expect(nrVon('BAUA 2', 'lageplan')).toBe('04');
+    eingabe(nr, '05');
+    act(() => void nr.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    await verlassen(nr);
+    await warte();
+    expect(nr.value).toBe('04');
+    expect(nrVon('BAUA 2', 'lageplan')).toBe('04');
+  });
+
+  it('PDF-Export bzw. alle exportieren, während BAUA geöffnet wird (Ordner schon gelesen): die neuen Dateien stehen danach in der Liste', async () => {
+    await mitUmfangInBeiden();
+    const pfad = useFormulare.getState().formulare[0].pfad;
+    const h = listeAnhalten((p, t) => p.endsWith('/TÖB/BAUA') && t === 6);
+    let fw!: Promise<void>;
+    act(() => {
+      fw = useAntrag.getState().fassungWaehlen('BAUA');
+    });
+    for (let i = 0; i < 40 && !h.erreicht; i++) await warte();
+    let ex!: Promise<string | null>;
+    act(() => {
+      ex = useAntrag.getState().exportieren(pfad, { ordner: 'TÖB/BAUA', name: 'BS9 Neu Export.pdf' }, false);
+    });
+    let alle!: Promise<number>;
+    act(() => {
+      alle = useAntrag.getState().alleExportieren();
+    });
+    for (let i = 0; i < 6; i++) await warte();
+    h.los();
+    await act(() => fw);
+    await act(() => ex);
+    await act(() => alle);
+    for (let i = 0; i < 8; i++) await warte();
+    const imOrdner = [...ds.dateien.keys()].filter((k) => k.startsWith(`${PROJEKT}/TÖB/BAUA/`)).map((k) => k.slice(`${PROJEKT}/TÖB/BAUA/`.length));
+    expect(imOrdner).toContain('BS9 Neu Export.pdf');
+    expect(useAntrag.getState().dateien.map((d) => d.pfad).sort()).toEqual(imOrdner.sort());
+  });
+
+  it('„Antragsumfang aufheben …“: Rückfrage für BAUA 2 offen, inzwischen zeigt das Projekt BAUA – nichts aufgehoben, mit Grund', async () => {
+    const host = await mitUmfangInBeiden();
+    await klick(knopf(host, 'Antragsumfang aufheben'));
+    await aktivVonAussen('BAUA');
+    await klick(knopf(host.querySelector('.modal.rf')!, 'Aufheben'));
+    await warte();
+    expect(umfangIdsIn('BAUA')).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect(umfangIdsIn('BAUA 2')).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Antragsumfang nicht aufgehoben – inzwischen ist Antrag BAUA angezeigt.' });
+  });
+
+  it('während ein Antrag geöffnet wird: „bereit“, Navigation und Ablage ausgegraut mit Hinweis „Antrag wird geöffnet“; die Meldung wie sonst bei „bereit“', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261110 01 Bauantrag.pdf`, new Uint8Array([1]));
+    const host = await mitUmfangInBeiden();
+    await klick(knopfGenau(host, 'Antrag'));
+    const h = listeAnhalten((p, t) => p.endsWith('/TÖB') && t === 1);
+    let fw!: Promise<void>;
+    act(() => {
+      fw = useAntrag.getState().fassungWaehlen('BAUA');
+    });
+    for (let i = 0; i < 40 && !h.erreicht; i++) await warte();
+    const zeile = [...host.querySelectorAll('.fo-antrag-ablage .fo-bereit-zeile')].find((z) => z.textContent?.includes('Bauantrag.pdf'))!;
+    expect(zeile.querySelector<HTMLButtonElement>('.fo-bereit-knopf')).toMatchObject({ disabled: true, title: 'Der Antrag wird gerade geöffnet – gleich wieder möglich' });
+    const punkt = (text: string) => ({ aus: menuePunkt(text).disabled, hinweis: menuePunkt(text).querySelector('.menue-hinweis')?.textContent });
+    await rechtsklick(zeile.querySelector('.fo-baum-zeile')!);
+    expect(punkt('Als bereit markieren')).toEqual({ aus: true, hinweis: 'Antrag wird geöffnet' });
+    act(() => void document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    await rechtsklick(navFehlt(host, 'Bauantrag'));
+    expect(punkt('Formular anlegen')).toEqual({ aus: true, hinweis: 'Antrag wird geöffnet' });
+    act(() => void document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect((dateiMenue(PROJEKT, 'Planung/BS9 Lageplan.pdf') as { text?: string; deaktiviert?: boolean; hinweis?: string }[]).find((x) => x.text?.includes('verknüpfen'))).toMatchObject({ deaktiviert: true, hinweis: 'Antrag wird geöffnet' });
+    // trotzdem ausgelöst: dieselbe Art Meldung wie sonst bei „bereit“
+    await act(() => useAntrag.getState().bereitUmschalten('BS9 BAUA 261110 01 Bauantrag.pdf', { fassung: 'BAUA 2' }));
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Nicht als bereit markiert – Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.' });
+    h.los();
+    await act(() => fw);
+    await warte();
+  });
+
+  it('Sicherung: passen angezeigte und aktive Fassung nach dem Neu-Prüfen nicht zusammen, wird der Antrag neu geladen – die Sperre endet', async () => {
+    const host = await mitUmfangInBeiden();
+    // künstlich: aktiv BAUA, angezeigt BAUA 2 – ohne dass ein Laden läuft
+    act(() => useAntrag.setState({ projektdatei: { ...useAntrag.getState().projektdatei!, aktiveFassung: 'BAUA' } }));
+    expect(wechselLaeuft(useAntrag.getState(), useFormulare.getState().projekt)).toBe('BAUA');
+    await act(() => useAntrag.getState().aktualisieren());
+    for (let i = 0; i < 12; i++) await warte();
+    expect(wechselLaeuft(useAntrag.getState(), useFormulare.getState().projekt)).toBeNull();
+    expect(host.querySelector('.pu-inhalt')!.hasAttribute('inert')).toBe(false);
   });
 
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {

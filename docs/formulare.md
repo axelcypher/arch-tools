@@ -733,10 +733,15 @@ beschrieben.
     „BAUA 3“ anlegen“ sagt die Meldung, dass der Ordner schon angelegt ist („Ordner BAUA 3 angelegt, aber nicht als
     aktive Antragsfassung gespeichert – keine Projektdatei angelegt.“; ohne Projektordner entsteht kein Ordner).
   - **Ein Antrag wird geöffnet:** Während ein Fassungswechsel lädt (auch von außen) – bis Umfang, Zeilen und Dateien
-    der neuen Fassung da sind –, sind die Antragsdaten ausgegraut und nicht bedienbar („Antrag BAUA wird geöffnet
-    …“). Änderungen am Antrag (Antragsumfang, Antragsmerkmale, „bereit“, Formular anlegen bzw. hinzufügen) werden so
-    lange abgewiesen („Nicht entfernt – Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.“), ein
-    PDF-Export verknüpft dann nicht. Innerhalb derselben Fassung werden die Zeilen nach jedem Speichern sofort neu
+    der neuen Fassung da sind –, sind die Antragsdaten nicht bedienbar; dauert es länger als einen Moment, sind sie
+    abgeblendet, und neben der Fassungswahl steht „Antrag BAUA wird geöffnet …“. Auch „Als bereit markieren“, die
+    Menüs der fehlenden Formulare und „Antragsdokument“ in der Navigation sowie Verknüpfen in der Ablage sind so lange
+    ausgegraut („Antrag wird geöffnet“). Änderungen am Antrag werden abgewiesen („Nicht entfernt – Antrag BAUA wird
+    gerade geöffnet; bitte gleich noch einmal versuchen.“, „Nicht als bereit markiert – …“), ein PDF-Export verknüpft
+    dann nicht; Autofill-Zustände kommen in den Antrag, der geöffnet wird. Ein Neu-Prüfen der bisherigen Fassung gilt
+    danach nicht mehr. Macht ein anderer Arbeitsplatz eine andere Fassung aktiv, folgt die Ansicht beim nächsten
+    Speichern bzw. Lesen; passen Ansicht und aktive Fassung einmal nicht zusammen, lädt die App den Antrag neu (die
+    Sperre bleibt nicht hängen). Innerhalb derselben Fassung werden die Zeilen nach jedem Speichern sofort neu
     berechnet (die gelesenen Dateien gelten weiter) – Ziehen und ↑/↓ gehen so immer von der angezeigten Reihenfolge
     aus.
   - **Festgehaltene Fassung:** Änderungen am Antragsumfang aus Zeilen und Menüs – Zeilenmenü, „Formular anlegen“,
@@ -747,15 +752,19 @@ beschrieben.
     entfernt – inzwischen ist Antrag BAUA angezeigt.“, „Nicht verschoben – der Eintrag „Lageplan“ ist inzwischen nicht
     mehr im Antragsumfang.“, „Nicht hinzugefügt – inzwischen gibt es keinen Antragsumfang mehr.“); ist ein Eintrag
     beim Entfernen schon weg, heißt es „„Lageplan“ ist schon nicht mehr im Antragsumfang.“. „Als bereit markieren“
-    gilt ebenso nur für die Fassung der Liste bzw. des Menüs. „Antragsumfang festlegen“ und „Antragsumfang aufheben“
-    (mit Rückfrage) gelten für den angezeigten Antrag.
+    gilt ebenso nur für die Fassung der Liste bzw. des Menüs. „Antragsumfang aufheben …“ fragt nach und hebt nur auf,
+    wenn danach noch der Antrag der Rückfrage angezeigt ist (sonst „Antragsumfang nicht aufgehoben – inzwischen ist
+    Antrag BAUA angezeigt.“). Die Textfelder (Nr., Titel, Formular, Ordner der Quelle, Muster) speichern beim Verlassen
+    bzw. mit Enter, Esc verwirft – ein Schreiben statt eines je Taste.
   - **Nachholen:** Beim Anlegen bzw. Hinzufügen eines Formulars nennt die Meldung den Weg, wenn das Zuordnen nicht
     ging („Bitte später in den Antragsdaten von BAUA 2 über „Zuordnen“ nachholen.“, bei einem schon vorhandenen
     Formular „Bitte später zu Antrag BAUA 2 wechseln und per Rechtsklick auf „…“ in der Navigation ›
     „Antragsdokument“ › „Bauantrag“ zuordnen.“); findet die Zeile das Formular ohnehin über den Namen, heißt es „…
     findet es über den Namen“.
-  - **Eingereicht:** Alle ändernden Menüpunkte und Knöpfe sind ausgegraut, Menüpunkte mit dem Hinweis „Antrag
-    eingereicht“ (Navigation, Zeilenmenü der Antragsdaten, Ablage, „Als bereit markieren“).
+  - **Eingereicht:** Ändernde Menüpunkte sind ausgegraut, mit dem Hinweis „Antrag eingereicht“ (Navigation,
+    Zeilenmenü der Antragsdaten, Ablage, „Als bereit markieren“); ändernde Knöpfe sind ausgegraut mit dem Grund im
+    Tooltip („Formular anlegen“, „Zuordnen“, „PDF“, Nr., „bereit“) bzw. ausgeblendet (Bearbeiten, Datei verknüpfen,
+    Ziehen, „Dokument hinzufügen“, „Antragsumfang aufheben …“).
   - **Verknüpfen in der Ablage** prüft zuerst, ob noch die Fassung des Menüs angezeigt ist (sonst „Nicht kopiert – …“
     bzw. „Nicht verknüpft – inzwischen ist Antrag BAUA angezeigt.“, je nach Menüpunkt) oder gerade ein Antrag
     geöffnet wird, dann die Sperre; erst danach wird kopiert. Gemeldet wird nach dem Speichern, ob verknüpft wurde

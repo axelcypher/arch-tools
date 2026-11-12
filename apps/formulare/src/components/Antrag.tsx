@@ -1,3 +1,4 @@
+import type { InputHTMLAttributes } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { FeldDef } from '@core/ui/ansicht';
@@ -410,6 +411,40 @@ function Merkmale({ gesperrt }: { gesperrt: boolean }) {
 
 const ART_TEXT = { intern: 'Formular', extern: 'Datei', plansatz: 'Plansatz' };
 
+/** Tooltip gesperrter Knöpfe der Antragsdaten */
+const GESPERRT_TITEL = 'Der Antrag ist eingereicht und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen';
+
+/**
+ * Textfeld der Antragsdaten: getippt wird im Feld, gespeichert beim Verlassen bzw. mit Enter – ein Schreiben statt eines
+ * je Taste (auf dem Netzlaufwerk sprang das Feld sonst zurück, und Getipptes ging verloren); Esc verwirft. Bis das
+ * Speichern zurück ist, bleibt das Getippte stehen.
+ */
+function UebernahmeFeld({ wert, onUebernehmen, ...rest }: { wert: string; onUebernehmen: (wert: string) => unknown } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur' | 'onKeyDown'>) {
+  const [entwurf, setEntwurf] = useState<string | null>(null);
+  const uebernehmen = () => {
+    if (entwurf === null) return;
+    if (entwurf === wert) return setEntwurf(null);
+    const v = entwurf;
+    void Promise.resolve(onUebernehmen(v)).finally(() => setEntwurf((e) => (e === v ? null : e)));
+  };
+  return (
+    <input
+      {...rest}
+      value={entwurf ?? wert}
+      onChange={(e) => setEntwurf(e.target.value)}
+      onBlur={uebernehmen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') uebernehmen();
+        else if (e.key === 'Escape' && entwurf !== null) {
+          // Esc verwirft die Eingabe – und schließt nichts anderes
+          e.stopPropagation();
+          setEntwurf(null);
+        }
+      }}
+    />
+  );
+}
+
 /** Pläne eines Plansatzes: je Plannummer Zustand und Datei, dazu Hinweise */
 function PlansatzListe({ id, r, basis, ordner }: { id: string; r: PlansatzErgebnis; basis: string | null; ordner: string }) {
   return (
@@ -471,8 +506,15 @@ export function AntragsdatenAnsicht() {
   const st = useAntrag();
   const { umfangSetzen, verknuepfen, formularAnlegen, aktualisieren } = st;
   const gesperrt = !!antragSperre(st, projekt);
-  // ein Antrag wird gerade geöffnet: seine Antragsdaten sind so lange nicht bedienbar
+  // ein Antrag wird gerade geöffnet: seine Antragsdaten sind so lange nicht bedienbar – Hinweis und Abblenden erst nach
+  // einem Moment (ein schneller Wechsel flackert nicht)
   const wechsel = wechselLaeuft(st, projekt);
+  const [ladenSichtbar, setLadenSichtbar] = useState(false);
+  useEffect(() => {
+    if (!wechsel) return setLadenSichtbar(false);
+    const t = setTimeout(() => setLadenSichtbar(true), 300);
+    return () => clearTimeout(t);
+  }, [wechsel]);
   // Fassung der angezeigten Zeilen – Aktionen aus ihnen gelten nur für sie
   const zf = zeilenFassung(st, projekt);
   const [bearbeiten, setBearbeiten] = useState<string | null>(null);
@@ -520,13 +562,14 @@ export function AntragsdatenAnsicht() {
 
   // Bearbeiten: im dann gelesenen Umfang ändern (nur derselbe Eintrag, dieselbe Fassung)
   const setzen = (id: string, teil: Partial<UmfangEintrag>) =>
-    umfang &&
-    void st.umfangAendern((aktuell) => aktuell.map((u) => (u.id === id ? { ...u, ...teil } : u)), {
-      ansicht: zf,
-      eintrag: id,
-      titel: dokumente.find((d) => d.eintrag.id === id)?.eintrag.titel,
-      was: 'Nicht geändert',
-    });
+    umfang
+      ? st.umfangAendern((aktuell) => aktuell.map((u) => (u.id === id ? { ...u, ...teil } : u)), {
+          ansicht: zf,
+          eintrag: id,
+          titel: dokumente.find((d) => d.eintrag.id === id)?.eintrag.titel,
+          was: 'Nicht geändert',
+        })
+      : undefined;
   const fehlendeKatalog = katalog.filter((k) => !umfang?.some((u) => u.id === k.id));
 
   /**
@@ -588,7 +631,7 @@ export function AntragsdatenAnsicht() {
   };
 
   return (
-    <div className={`pu${gesperrt ? ' gesperrt' : ''}`}>
+    <div className={`pu${gesperrt ? ' gesperrt' : ''}`} aria-busy={!!wechsel || undefined}>
       <div className="pu-kopf">
         <div>
           <h2>Antragsdaten</h2>
@@ -599,6 +642,10 @@ export function AntragsdatenAnsicht() {
           </p>
         </div>
         <div className="pu-kopf-knoepfe">
+          {/* immer da (Live-Region), der Text erst nach einem Moment */}
+          <span className="pu-laedt-hinweis small-text" role="status">
+            {wechsel && ladenSichtbar ? `Antrag ${wechsel} wird geöffnet …` : ''}
+          </span>
           <FassungsWahl />
           <button className="icon" title="Neu prüfen" aria-label="Neu prüfen" onClick={() => void aktualisieren()}>
             <Symbol name="verlauf" />
@@ -611,13 +658,8 @@ export function AntragsdatenAnsicht() {
         </div>
       </div>
 
-      {wechsel && (
-        <p className="pu-laedt-hinweis small-text" role="status">
-          Antrag {wechsel} wird geöffnet …
-        </p>
-      )}
       {/* während ein Antrag geöffnet wird, gehören Zeilen und Angaben noch zum bisherigen – so lange nicht bedienbar */}
-      <div className={`pu-inhalt${wechsel ? ' laedt' : ''}`} inert={!!wechsel} aria-busy={!!wechsel || undefined}>
+      <div className={`pu-inhalt${wechsel && ladenSichtbar ? ' laedt' : ''}`} inert={!!wechsel}>
         <AntragStatus />
 
         <Merkmale gesperrt={gesperrt} />
@@ -715,14 +757,14 @@ export function AntragsdatenAnsicht() {
                     <div className="pu-haupt">
                       {gesperrt ? <span className="sort-griff-platz" /> : <Griff {...sortieren.griff(i, u.titel)} />}
                       <StatusPunkt status={d.status} />
-                      <input
+                      <UebernahmeFeld
                         className="pu-nr"
-                        value={u.nr ?? ''}
+                        wert={u.nr ?? ''}
                         placeholder="Nr."
                         disabled={gesperrt}
                         aria-label={`Nummer von ${u.titel}`}
-                        title="Nummer des Dokuments im Antrag (z. B. 01, 02 …) – steht im Dateinamen des PDF-Exports an der Stelle {Nr} (Namensvorlage in den Einstellungen › Antrag & Export) und sortiert so die Unterlagen im Antragsordner"
-                        onChange={(e) => setzen(u.id, { nr: e.target.value || undefined })}
+                        title="Nummer des Dokuments im Antrag (z. B. 01, 02 …) – steht im Dateinamen des PDF-Exports an der Stelle {Nr} (Namensvorlage in den Einstellungen › Antrag & Export) und sortiert so die Unterlagen im Antragsordner; gespeichert beim Verlassen des Felds bzw. mit Enter"
+                        onUebernehmen={(v) => setzen(u.id, { nr: v || undefined })}
                       />
                       <div className="pu-text">
                         <strong>{u.titel}</strong>
@@ -809,7 +851,12 @@ export function AntragsdatenAnsicht() {
                             >
                               Öffnen
                             </button>
-                            <button className="small" disabled={!basis || gesperrt} onClick={() => useExportDialog.getState().oeffnen(d.formular!.pfad)}>
+                            <button
+                          className="small"
+                          disabled={!basis || gesperrt}
+                          title={gesperrt ? GESPERRT_TITEL : !basis ? 'Ohne Projektordner kein PDF-Export – erst einen Projektordner zuordnen' : 'Das Formular als PDF exportieren'}
+                          onClick={() => useExportDialog.getState().oeffnen(d.formular!.pfad)}
+                        >
                               <Symbol name="export" /> PDF
                             </button>
                           </>
@@ -831,7 +878,7 @@ export function AntragsdatenAnsicht() {
                       <div className="pu-bearbeiten">
                         <label>
                           <span className="field-label">Titel</span>
-                          <input value={u.titel} onChange={(e) => setzen(u.id, { titel: e.target.value })} />
+                          <UebernahmeFeld wert={u.titel} onUebernehmen={(v) => v.trim() && setzen(u.id, { titel: v })} />
                         </label>
                         <label>
                           <span className="field-label">Art</span>
@@ -844,15 +891,15 @@ export function AntragsdatenAnsicht() {
                         {u.art === 'intern' ? (
                           <label>
                             <span className="field-label">Formular (Teil des Namens oder Kennung)</span>
-                            <input value={u.formular ?? ''} placeholder={u.titel} onChange={(e) => setzen(u.id, { formular: e.target.value || undefined, formularDatei: undefined })} />
+                            <UebernahmeFeld wert={u.formular ?? ''} placeholder={u.titel} onUebernehmen={(v) => setzen(u.id, { formular: v || undefined, formularDatei: undefined })} />
                           </label>
                         ) : (
                           <label>
                             <span className="field-label">Ordner der Quelle</span>
-                            <input
-                              value={u.quelle ?? ''}
+                            <UebernahmeFeld
+                              wert={u.quelle ?? ''}
                               placeholder={u.art === 'plansatz' ? PLANSATZ_QUELLE : wirksameEinstellungen(st, projekt).berechnungsordner}
-                              onChange={(e) => setzen(u.id, { quelle: e.target.value || undefined })}
+                              onUebernehmen={(v) => setzen(u.id, { quelle: v || undefined })}
                             />
                           </label>
                         )}
@@ -860,7 +907,11 @@ export function AntragsdatenAnsicht() {
                           <span className="field-label" title="Platzhalter: * beliebig viele Zeichen, ? ein Zeichen; mehrere Muster mit ; trennen">
                             {u.art === 'plansatz' ? 'Nur Pläne nach Muster (leer = alle)' : 'Muster der Datei'}
                           </span>
-                          <input value={u.muster ?? ''} placeholder={u.art === 'plansatz' ? 'alle Pläne mit Plannummer' : `*${u.titel}*`} onChange={(e) => setzen(u.id, { muster: e.target.value || undefined })} />
+                          <UebernahmeFeld
+                          wert={u.muster ?? ''}
+                          placeholder={u.art === 'plansatz' ? 'alle Pläne mit Plannummer' : `*${u.titel}*`}
+                          onUebernehmen={(v) => setzen(u.id, { muster: v || undefined })}
+                        />
                         </label>
                         <div className="pu-bedingung-editor">
                           <span className="field-label">Nur erforderlich, wenn …</span>
@@ -886,18 +937,23 @@ export function AntragsdatenAnsicht() {
               </MenueKnopf>
               <button
                 className="small"
-                title="Antragsumfang entfernen – keine Vollständigkeitsprüfung mehr"
+                title="Antragsumfang aufheben – keine Vollständigkeitsprüfung mehr"
                 onClick={async () => {
+                  // der Antrag beim Öffnen der Rückfrage – aufgehoben wird nur, wenn danach noch er angezeigt ist
+                  const ansicht = projektdatei?.ansicht ?? fassung;
                   const ok = await bestaetigen(
-                    `Antragsumfang von ${fassung} aufheben?`,
+                    `Antragsumfang von ${ansicht} aufheben?`,
                     'Die Einträge samt Zuordnungen und Verknüpfungen fallen weg; die Navigation zeigt dann keine Vollständigkeit mehr. Die Dateien selbst bleiben unverändert.',
                     'Aufheben',
                     true,
                   );
-                  if (ok) await umfangSetzen(null);
+                  if (!ok) return;
+                  const jetzt = useAntrag.getState().projektdatei?.ansicht;
+                  if (jetzt !== ansicht) useFormulare.getState().setMeldung({ art: 'info', text: `Antragsumfang nicht aufgehoben – inzwischen ist Antrag ${jetzt} angezeigt.` });
+                  else await umfangSetzen(null);
                 }}
               >
-                Antragsumfang aufheben
+                Antragsumfang aufheben …
               </button>
             </div>
           </>

@@ -15,7 +15,7 @@ import {
   standBezug,
   standFestgehaltenText,
 } from '../antrag';
-import { aktiveFassung, antragSperre, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag, zeilenFassung } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
@@ -74,6 +74,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const bereitJeFassung = useAntrag((s) => s.projektdatei?.bereit);
   // eingereicht: „bereit“ bleibt, wie es ist (Knopf und Menü ausgegraut, mit Grund)
   const gesperrt = useAntrag((s) => !!antragSperre(s, projekt));
+  // ein Antrag wird gerade geöffnet: „bereit“ so lange auch nicht (wie bei der Sperre, mit eigenem Grund)
+  const wechsel = useAntrag((s) => !!wechselLaeuft(s, projekt));
   // Fassung der angezeigten Liste – „bereit“ gilt nur für sie
   const listeFassung = useAntrag((s) => zeilenFassung(s, projekt));
   // Antragsstand bei der Einreichung – er gilt nur, solange der Antrag als eingereicht gilt
@@ -153,8 +155,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     {
       text: zustand === 'bereit' || zustand === 'geaendert' ? 'Nicht mehr bereit' : 'Als bereit markieren',
       symbol: 'haken',
-      deaktiviert: gesperrt,
-      ...(gesperrt ? { hinweis: 'Antrag eingereicht' } : fehler ? { hinweis: 'Namensformat passt nicht' } : {}),
+      deaktiviert: gesperrt || wechsel,
+      ...(gesperrt ? { hinweis: 'Antrag eingereicht' } : wechsel ? { hinweis: 'Antrag wird geöffnet' } : fehler ? { hinweis: 'Namensformat passt nicht' } : {}),
       aktion: bereitAktion(pfad),
     },
     // nur, wenn der Vorschlag etwas ändert (fehlt bloß die Bezeichnung, ist er der Name selbst)
@@ -261,13 +263,15 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
               title={
                 gesperrt
                   ? 'Der Antrag ist eingereicht und gesperrt – „bereit“ bleibt, wie es ist'
-                  : fehler
-                    ? `${BEREIT_TEXT.name}: ${fehler}`
-                    : zustand === 'bereit'
-                      ? 'Bereit – Klick hebt die Markierung auf'
-                      : `${BEREIT_TEXT[zustand]} – Klick markiert als bereit`
+                  : wechsel
+                    ? 'Der Antrag wird gerade geöffnet – gleich wieder möglich'
+                    : fehler
+                      ? `${BEREIT_TEXT.name}: ${fehler}`
+                      : zustand === 'bereit'
+                        ? 'Bereit – Klick hebt die Markierung auf'
+                        : `${BEREIT_TEXT[zustand]} – Klick markiert als bereit`
               }
-              disabled={!!fehler || gesperrt}
+              disabled={!!fehler || gesperrt || wechsel}
               onClick={() => void bereitUmschalten(d.pfad, { fassung: listeFassung })}
             >
               {ZEICHEN[zustand]}

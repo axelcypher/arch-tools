@@ -3,7 +3,7 @@ import { formularAktualisieren } from '../aktualisieren';
 import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
-import { aktiveFassung, aktiverEingereicht, antragSperre, useAntrag, zeilenFassung } from '../antragStore';
+import { aktiveFassung, aktiverEingereicht, antragSperre, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
 import { AntragsAblage, SammelExportKnopf } from './AntragsAblage';
 import type { FormularEintrag } from '../projekte';
 import { formularLoeschen } from '../dateiAktionen';
@@ -94,8 +94,10 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   const fehlende = dokumente.filter((d) => d.eintrag.art === 'intern' && !d.formular && d.status === 'fehlt');
   // eingereichter Antrag: Antragsumfang gesperrt (Zuordnen, Entfernen, Anlegen)
   const gesperrt = useAntrag((s) => !!antragSperre(s, projekt));
-  // so ausgegraut, mit Grund – wie überall bei eingereichtem Antrag
-  const aus = gesperrt ? { deaktiviert: true, hinweis: 'Antrag eingereicht' } : {};
+  // ein Antrag wird gerade geöffnet: die Zeilen gehören noch zum bisherigen
+  const wechsel = useAntrag((s) => !!wechselLaeuft(s, projekt));
+  // so ausgegraut, mit Grund – wie überall bei eingereichtem bzw. gerade geöffnetem Antrag
+  const aus = gesperrt ? { deaktiviert: true, hinweis: 'Antrag eingereicht' } : wechsel ? { deaktiviert: true, hinweis: 'Antrag wird geöffnet' } : {};
   // zuletzt bearbeitet: Datei oder nicht gespeicherte Eingaben, was später ist
   const formularInfo = useAntrag((s) => s.formularInfo);
   /**
