@@ -124,6 +124,19 @@ describe('Werte der Projektkarte', () => {
     expect(pkAnzeige(land, pkWertVon(land))).toBe('NRW');
     expect(pkZahlAus(land, pkMoeglichkeiten(land).indexOf('NRW'))).toBe(0);
   });
+  it('Auswahlliste ohne leere erste Zeile: kein Versatz; eine erste Zeile aus Leerzeichen gilt als leer', () => {
+    const ohne = eintrag(4, 'NRW\r\nRLP', 0);
+    expect(pkAnzeige(ohne, pkWertVon(ohne))).toBe('NRW');
+    expect(pkZahlAus(ohne, 1)).toBe(1);
+    const leerzeichen = eintrag(4, ' \r\nNRW\r\nRLP', 1);
+    expect(pkAnzeige(leerzeichen, pkWertVon(leerzeichen))).toBe('RLP');
+    expect(pkZahlAus(leerzeichen, 1)).toBe(0);
+    // außerhalb der Liste: Nummer bleibt, angezeigt wird nichts (die Oberfläche bietet „bitte neu wählen“ an)
+    const aussen = eintrag(4, '\r\nNRW\r\nRLP', 2);
+    expect(pkWertVon(aussen)).toBe(3);
+    expect(pkAnzeige(aussen, 3)).toBe('');
+    expect(pkWertPasst(aussen, 3)).toBe(false);
+  });
 
   it('Optionen ohne leere Zeile, Kästchen mit Beschriftung, Texte mit \n', () => {
     const neigung = eintrag(8, 'eben\r\ngeneigt\r\nHanglage', 1);

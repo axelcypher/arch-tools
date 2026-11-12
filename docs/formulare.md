@@ -550,8 +550,10 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   belegen. Was im laufenden Verfahren nachgereicht oder ausgetauscht wird, bleibt im selben Antrag und erscheint als
   „neu“ bzw. „geändert“ (§ 70 Abs. 2 Satz 4, § 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018, § 7 BauPrüfVO NRW); eine neue
   Antragsfassung (Nachtrag) ist es erst nach Rücknahme bzw. Rücknahmefiktion (§ 71 Abs. 1 Satz 8), Ablehnung,
-  Rückgabe der Unterlagen (§ 63 Abs. 4 Satz 3, außer im Fall von Satz 4 – dann als Bauantrag, Antragsart BAUA) oder
-  bei einer Änderung nach der Entscheidung.
+  Rückgabe der Unterlagen (§ 63 Abs. 4 Satz 3) oder bei einer Änderung nach der Entscheidung. Im Fall von § 63 Abs. 4
+  Satz 4 werden die vorgelegten Unterlagen als Bauantrag im vereinfachten Verfahren (§ 64) behandelt – kein Nachtrag;
+  das Büro führt den Vorgang als Antragsart BAUA weiter (Bürovorgabe), die Bauvorlagen dafür gehören schon in die
+  Vorlage (§ 13 Abs. 2 Sätze 2 und 3 BauPrüfVO NRW, dort noch § 63 Abs. 6 Satz 4 alter Zählung).
 - **Neue Dateien nach der Einreichung** sind „neu seit der Einreichung“ – außer sie kommen erwartungsgemäß
   (`nachEinreichungErwartet`, nur für neue Dateien). Grundsatz: **im Zweifel „neu“**, damit nachgereichte Bauvorlagen
   auffallen (§ 70 Abs. 2 Satz 4 und § 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018, § 7 BauPrüfVO NRW). Deshalb gilt eine
@@ -874,7 +876,8 @@ Bei Auswahl, Optionen und Kästchen schreibt die App nur `Ganzzahl`; die Möglic
 Die leere erste Zeile der Auswahlliste steht für „keine Angabe“ (−1); `Ganzzahl` 0 ist die erste Möglichkeit danach.
 So liest SJ Office die Projektkarte: Bei „Land“ ist 0 „NRW“ und 1 „RLP“, bei der Anrede 1 „Sehr geehrter Herr“. Bis
 Formulare 0.35 zählte die App die leere Zeile mit – dort gewählte Auswahlen erscheinen jetzt (wie in SJ Office) um
-eine Möglichkeit versetzt und sind einmal neu zu wählen.
+eine Möglichkeit versetzt und sind einmal neu zu wählen (vor „Daten aktualisieren“ in angefangenen Formularen); eine
+dadurch außerhalb der Liste liegende Nummer zeigt die Auswahl als „(Auswahl nicht in der Liste – bitte neu wählen)“.
 
 Jede Formularseite enthält eine versteckte Liste **`lstbxProkarte`**, die Textfeldern Einträge zuordnet:
 

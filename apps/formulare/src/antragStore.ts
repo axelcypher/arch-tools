@@ -508,7 +508,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     const projekt = erwartet ?? f.projekt;
     if (!f.ds || !projekt) return false;
     if (f.projekt !== projekt) {
-      nichtGespeichert(projekt, 'inzwischen ist ein anderes Projekt geöffnet.');
+      nichtGespeichert(projekt, 'Inzwischen ist ein anderes Projekt geöffnet.');
       return false;
     }
     // nach einem Dialog (Projektordner zuordnen, Projektdatei anlegen): Gibt es dort schon Angaben zum Antrag, werden
@@ -519,11 +519,16 @@ export const useAntrag = create<AntragState>((set, get) => {
       if (g.oap === null) await g.oapLaden();
       if (useFormulare.getState().projekt !== projekt) return;
       if (abschnittRohAusOap()) {
-        meldung('info', 'Im Projektordner gibt es schon Angaben zum Antrag – sie sind jetzt geladen. Die Änderung bitte noch einmal vornehmen.');
+        meldung('info', 'Im Projektordner gibt es schon Angaben zum Antrag – sie sind jetzt geladen, die Änderung ist nicht übernommen. Bitte prüfen und bei Bedarf noch einmal vornehmen.');
         await get().laden();
         return;
       }
-      if (await projektdateiSchreiben(neu, projekt)) await get().laden();
+      if (!(await projektdateiSchreiben(neu, projekt))) return;
+      await get().laden();
+      // gespeichert für die vorher angezeigte Fassung – zeigt das Projekt jetzt eine andere, das sagen
+      const jetzt = get().projektdatei?.ansicht;
+      if (neu.ansicht && jetzt && jetzt !== neu.ansicht && !anderesProjekt(projekt))
+        meldung('info', `Gespeichert für die Antragsfassung „${neu.ansicht}“ – angezeigt wird jetzt die aktive Antragsfassung „${jetzt}“.`);
     };
     if (!ablageVon(f, projekt)) {
       f.projektordnerZuordnen('Die Angaben zum Antrag werden in der Projektdatei (.oap) im Projektordner gespeichert. Für dieses Projekt ist noch kein Projektordner zugeordnet.', nachDialog);
@@ -531,14 +536,29 @@ export const useAntrag = create<AntragState>((set, get) => {
     }
     // noch nicht gelesen – oder gerade nicht lesbar gewesen, obwohl die Angaben aus einer .oap stammen: (neu) lesen
     const q = projektdateiQuelle;
-    if (f.oap === null || (f.oap === 'fehlt' && q?.projekt === projekt && q.oap)) await f.oapLaden();
-    if (useFormulare.getState().projekt !== projekt) {
-      nichtGespeichert(projekt, 'inzwischen ist ein anderes Projekt geöffnet.');
+    const warNichtLesbar = f.oap === 'fehlt' && q?.projekt === projekt && !!q.oap;
+    if (f.oap === null || warNichtLesbar) await f.oapLaden();
+    if (anderesProjekt(projekt)) {
+      nichtGespeichert(projekt, 'Inzwischen ist ein anderes Projekt geöffnet.');
       return false;
+    }
+    // die .oap, aus der die Angaben stammen, gibt es nicht mehr (gelöscht, verschoben): die Bindung lösen – dann gilt
+    // der normale Weg (andere .oap im Projektordner bzw. Stammdaten-Dialog zum Anlegen)
+    if (useFormulare.getState().oap === 'fehlt' && q?.projekt === projekt && q.oap && !(await quelleVorhanden(q.oap))) {
+      if (anderesProjekt(projekt)) return false;
+      projektdateiQuelle = { projekt, oap: null };
     }
     // nur in die .oap, aus der die Angaben stammen
     if (!projektdateiPasst(false)) {
       nichtGespeichert(projekt, useFormulare.getState().oap === 'fehlt' ? 'Die Projektdatei ist gerade nicht lesbar – bitte gleich noch einmal versuchen.' : 'Inzwischen ist eine andere Projektdatei gewählt – bitte noch einmal versuchen.');
+      return false;
+    }
+    // war gerade nicht lesbar und ist es wieder: Was in der Zeit (etwa an einem anderen Arbeitsplatz) geändert wurde,
+    // kennt `neu` nicht – laden statt überschreiben; der nächste Versuch speichert dann normal
+    const jetzt = useFormulare.getState().oap;
+    if (warNichtLesbar && jetzt && jetzt !== 'fehlt') {
+      meldung('info', 'Die Projektdatei war kurz nicht lesbar – die Angaben sind jetzt neu geladen, die Änderung ist nicht übernommen. Bitte prüfen und noch einmal vornehmen.');
+      await get().laden();
       return false;
     }
     const o = useFormulare.getState().oap;
@@ -561,10 +581,30 @@ export const useAntrag = create<AntragState>((set, get) => {
   };
   /** Inzwischen ein anderes Projekt geöffnet? (nach einem await) */
   const anderesProjekt = (projekt: Projekt) => useFormulare.getState().projekt !== projekt;
-  /** Formular im bisherigen Projekt angelegt, inzwischen ist ein anderes offen: nicht verknüpfen, nicht öffnen – sagen */
-  const angelegtImAnderen = (name: string, projekt: Projekt) => {
+  /** Gibt es die Datei der Quelle (`root|pfad`) noch? Nicht lesbar zählt als vorhanden */
+  const quelleVorhanden = async (schluessel: string) => {
+    const ds = useFormulare.getState().ds;
+    const i = schluessel.indexOf('|');
+    if (!ds || i < 0) return true;
+    try {
+      return (await ds.lies(schluessel.slice(0, i), schluessel.slice(i + 1))) !== null;
+    } catch {
+      return true;
+    }
+  };
+  /**
+   * Formular im bisherigen Projekt angelegt, inzwischen ist ein anderes offen: sagen, was geschehen ist (`was`: „,
+   * aber nicht zugeordnet und nicht geöffnet“ bzw. „ und zugeordnet, aber nicht geöffnet“ …) – liefert true, wenn so
+   */
+  const angelegtImAnderen = (name: string, projekt: Projekt, was: string) => {
     if (!anderesProjekt(projekt)) return false;
-    meldung('info', `„${name}“ in ${projekt.ordner} angelegt – nicht verknüpft und nicht geöffnet, weil inzwischen ein anderes Projekt geöffnet ist.`);
+    meldung('info', `„${name}“ in ${projekt.ordner} angelegt${was} – inzwischen ist ein anderes Projekt geöffnet.`);
+    return true;
+  };
+  /** Anlegen abgebrochen, bevor eine Datei entstand (Projektwechsel während der Suche bzw. des Vorbereitens) */
+  const nichtAngelegt = (titel: string, projekt: Projekt) => {
+    if (!anderesProjekt(projekt)) return false;
+    meldung('info', `„${titel}“ nicht angelegt – inzwischen ist ein anderes Projekt geöffnet.`);
     return true;
   };
   /** Ohne Rückfrage speichern (neue Anträge, „eingereicht“) – nur, wenn es eine Projektdatei gibt */
@@ -894,9 +934,10 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
       set({ laedt: true });
       try {
-        // aus welcher .oap gelesen wird (null: noch keine bzw. keine) – wird sie während des Ladens erst gelesen, gilt das
-        // hier Gebaute nicht (es entstünden frische Anträge über gespeicherte), dann neu laden
-        const von = oapSchluessel();
+        // aus welchem Stand der .oap gelesen wird (null: noch keine bzw. keine) – wird sie während des Ladens erst gelesen
+        // oder inzwischen geschrieben (etwa der Antragsumfang nach dem Zuordnen des Projektordners), gilt das hier
+        // Gebaute nicht (es ersetzte Gespeichertes durch frische Anträge), dann neu laden
+        const von = useFormulare.getState().oap;
         let abschnitt = abschnittRohAusOap();
         let ausJson = false;
         if (!abschnitt) {
@@ -929,9 +970,9 @@ export const useAntrag = create<AntragState>((set, get) => {
             // Antragsordner gibt es (noch) nicht
           }
         }
-        // inzwischen ein anderes Projekt gewählt bzw. die .oap erst jetzt gelesen?
+        // inzwischen ein anderes Projekt gewählt bzw. die .oap erst jetzt gelesen oder geändert?
         if (useFormulare.getState().projekt !== projekt) return;
-        if (von !== oapSchluessel()) {
+        if (useFormulare.getState().oap !== von) {
           void get().laden();
           return;
         }
@@ -1093,7 +1134,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         if (anlegen && basis) await ds.ordnerAnlegen(basis, `${wirksameEinstellungen(get(), projekt).antragsordner}/${name}`);
         // inzwischen ein anderes Projekt: der Ordner bleibt im bisherigen, aktiv wird dort nichts
         if (anderesProjekt(projekt)) {
-          meldung('info', `Ordner „${name}“ in ${projekt.ordner} angelegt – nicht als aktive Fassung gesetzt, weil inzwischen ein anderes Projekt geöffnet ist.`);
+          meldung('info', `Ordner „${name}“ in ${projekt.ordner} angelegt – nicht als aktive Antragsfassung gesetzt, weil inzwischen ein anderes Projekt geöffnet ist.`);
           return;
         }
         await projektdateiSchreiben({ ...(get().projektdatei ?? {}), aktiveFassung: name }, projekt);
@@ -1215,20 +1256,22 @@ export const useAntrag = create<AntragState>((set, get) => {
       try {
         const bytes = await ds.lies(v.root, v.pfad);
         if (!bytes) throw new Error(`${v.datei} nicht gefunden`);
-        if (anderesProjekt(projekt)) throw new Error(ABGEBROCHEN);
+        if (nichtAngelegt(v.name, projekt)) return null;
         const name = neuerName(v.datei, s.formulare);
         const pfad = `${projekt.ordner}/${name}`;
         const neu = await mitAutofill(geleert(bytes), projekt);
-        if (anderesProjekt(projekt)) throw new Error(ABGEBROCHEN);
+        if (nichtAngelegt(v.name, projekt)) return null;
+        // noch im eigenen Projekt: dessen Antragsumfang
+        const umfang = get().projektdatei?.umfang;
+        const aufnehmen = inUmfang && !!umfang;
         await ds.formularAnlegen(projekt.root, pfad, neu.bytes);
         log.info(`Formular angelegt: ${pfad} (Vorlage: ${v.herkunft}, ${v.pfad})`);
-        if (angelegtImAnderen(name, projekt)) return null;
+        if (angelegtImAnderen(name, projekt, aufnehmen ? ', aber nicht in den Antragsumfang aufgenommen und nicht geöffnet' : ', aber nicht geöffnet')) return null;
         if (neu.zustand) await get().zustaendeSetzen({ [name]: neu.zustand });
-        const umfang = get().projektdatei?.umfang;
-        if (inUmfang && umfang)
-          await projektdateiSchreiben({ ...(get().projektdatei ?? {}), umfang: [...umfang, { id: `u${Date.now().toString(36)}`, titel: v.name, art: 'intern', formular: v.name, formularDatei: name }] }, projekt);
+        if (aufnehmen)
+          await projektdateiSchreiben({ ...(get().projektdatei ?? {}), umfang: [...umfang!, { id: `u${Date.now().toString(36)}`, titel: v.name, art: 'intern', formular: v.name, formularDatei: name }] }, projekt);
         const formulare = await formulareDesProjekts(ds, projekt);
-        if (angelegtImAnderen(name, projekt)) return null;
+        if (angelegtImAnderen(name, projekt, aufnehmen ? ' und in den Antragsumfang aufgenommen, aber nicht geöffnet' : ', aber nicht geöffnet')) return null;
         useFormulare.setState({ formulare });
         const eintrag = useFormulare.getState().formulare.find((f) => f.pfad === pfad);
         if (eintrag) await useFormulare.getState().formularOeffnen(eintrag);
@@ -1284,19 +1327,19 @@ export const useAntrag = create<AntragState>((set, get) => {
       try {
         const vorlage = await vorlageSuchen(u);
         if (!vorlage) throw new Error(`Keine Vorlage für „${u.titel}“ gefunden – bitte in den Einstellungen einen Vorlagenordner mit leeren Formularen angeben`);
-        if (anderesProjekt(projekt)) throw new Error(ABGEBROCHEN);
+        if (nichtAngelegt(u.titel, projekt)) return null;
         const name = neuerName(vorlage.name, s.formulare);
         const pfad = `${projekt.ordner}/${name}`;
         const neu = await mitAutofill(geleert(vorlage.bytes), projekt);
-        if (anderesProjekt(projekt)) throw new Error(ABGEBROCHEN);
+        if (nichtAngelegt(u.titel, projekt)) return null;
         await ds.formularAnlegen(projekt.root, pfad, neu.bytes);
         log.info(`Formular angelegt: ${pfad} (Vorlage: ${vorlage.herkunft})`);
-        if (angelegtImAnderen(name, projekt)) return null;
+        if (angelegtImAnderen(name, projekt, ', aber nicht zugeordnet und nicht geöffnet')) return null;
         if (neu.zustand) await get().zustaendeSetzen({ [name]: neu.zustand });
         const umfang = get().projektdatei?.umfang ?? [];
         await projektdateiSchreiben({ ...(get().projektdatei ?? {}), umfang: umfang.map((x) => (x.id === u.id ? { ...x, formularDatei: name } : x)) }, projekt);
         const formulare = await formulareDesProjekts(ds, projekt);
-        if (angelegtImAnderen(name, projekt)) return null;
+        if (angelegtImAnderen(name, projekt, ' und zugeordnet, aber nicht geöffnet')) return null;
         useFormulare.setState({ formulare });
         const eintrag = useFormulare.getState().formulare.find((f) => f.pfad === pfad);
         if (eintrag) await useFormulare.getState().formularOeffnen(eintrag);
@@ -1311,9 +1354,6 @@ export const useAntrag = create<AntragState>((set, get) => {
     },
   };
 });
-
-/** Grund, wenn das Anlegen eines Formulars abbricht, weil inzwischen ein anderes Projekt geöffnet ist */
-const ABGEBROCHEN = 'abgebrochen – inzwischen ist ein anderes Projekt geöffnet';
 
 /** Formulare, die gerade angelegt werden (je Eintrag des Antragsumfangs) – ein zweiter Klick legt kein zweites an */
 const anlegenLaeuft = new Set<string>();

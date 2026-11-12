@@ -292,7 +292,7 @@ function AntragStatus() {
           <>
             <span className="muted small-text">
               {manuell
-                ? 'Von Hand gesetzt – Antragsprotokoll bzw. Eingangsbestätigung werden nicht beachtet; Tag und Stand der Einreichung bleiben gespeichert.'
+                ? 'Von Hand gesetzt – Antragsprotokoll, Eingangs- und Empfangsbestätigung werden nicht beachtet; Tag und Stand der Einreichung bleiben gespeichert.'
                 : 'Gilt automatisch als eingereicht, sobald ein Antragsprotokoll, eine Eingangs- oder Empfangsbestätigung im Ordner des Antrags liegt.'}
             </span>
             {manuell && (
@@ -586,7 +586,7 @@ export function AntragsdatenAnsicht() {
             <button
               className="primary"
               disabled={gesperrt || ohneVorlage}
-              title={ohneVorlage ? 'Erst eine Antragsvorlage wählen' : undefined}
+              title={gesperrt ? 'Der Antrag ist eingereicht und gesperrt – zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen' : ohneVorlage ? 'Erst eine Antragsvorlage wählen' : undefined}
               aria-describedby={ohneVorlage ? 'pu-ohne-vorlage' : undefined}
               onClick={() => void umfangSetzen(vorlage ? umfangAusKatalog(katalog, vorlage) : katalog.map(alsUmfang))}
             >

@@ -74,7 +74,7 @@ export const pkMoeglichkeiten = (e: PkEintrag) => (istWahl(e) && pkArt(e) !== 'k
 export type PkWert = string | number | null;
 
 /** Auswahlliste mit leerer erster Zeile: In der Datei zählt sie nicht mit (Ganzzahl = Nummer in der Liste − 1) */
-const versatz = (e: Pick<PkEintrag, 'typ' | 'text'>) => (pkArt(e) === 'auswahl' && /^(\r\n|\r|\n)/.test(e.text) ? 1 : 0);
+const versatz = (e: Pick<PkEintrag, 'typ' | 'text'>) => (pkArt(e) === 'auswahl' && /^[ \t]*(\r\n|\r|\n)/.test(e.text) ? 1 : 0);
 
 export function pkWertVon(e: PkEintrag): PkWert {
   if (!istWahl(e)) return e.text.replace(/\r\n?/g, '\n');

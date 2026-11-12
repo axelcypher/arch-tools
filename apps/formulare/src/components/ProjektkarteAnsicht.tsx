@@ -787,7 +787,9 @@ function Eintrag({
         <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck} htmlFor={id}>
           <select id={id} data-pk={s} value={typeof wert === 'number' ? wert : ''} onChange={(e) => setzen(e.target.value === '' ? null : Number(e.target.value))}>
             <option value="">– keine Angabe –</option>
-            {moeglich.map((m, i) => (m ? <option key={i} value={i}>{m}</option> : null))}
+            {/* gespeicherte Nummer außerhalb der Liste (z. B. aus einer älteren Version gewählt): sichtbar statt stumm leer */}
+            {typeof wert === 'number' && !moeglich[wert]?.trim() && <option value={wert}>(Auswahl nicht in der Liste – bitte neu wählen)</option>}
+            {moeglich.map((m, i) => (m.trim() ? <option key={i} value={i}>{m}</option> : null))}
           </select>
         </Zelle>
       );
