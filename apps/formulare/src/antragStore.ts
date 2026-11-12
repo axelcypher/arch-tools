@@ -49,7 +49,12 @@ import {
   antragsNameFehler,
   artDerFassung,
   ordnerPasst,
+  PLANSATZ_QUELLE,
 } from './antrag';
+import type { Namensschema } from '@core/namensschema';
+import { alleKuerzel, wirksamesNamensschema } from '@core/namensschema';
+import type { PlansatzErgebnis } from './plansatz';
+import { plansatzPruefen } from './plansatz';
 import type { Merkmal } from './bedingung';
 import { merkmaleAus, merkmalVorgaben, mitVorgabeMerkmalen } from './bedingung';
 import type { Eintrag } from './dateisystem';
@@ -115,7 +120,13 @@ export interface DokZustand {
   datei: Eintrag | null;
   /** extern: die Quelle (z. B. die Berechnung) */
   quelle: Eintrag | null;
+  /** Plansatz: alle Pläne mit Zustand, Lücken und Hinweisen */
+  plansatz?: PlansatzErgebnis;
 }
+
+/** Quellordner eines Dokuments (relativ zum Projektordner): angegeben, sonst Berechnungen bzw. Genehmigungsplanung/pdf */
+export const quelleVonEintrag = (u: Pick<UmfangEintrag, 'art' | 'quelle'>, e: Pick<ExportEinstellungen, 'berechnungsordner'>) =>
+  (u.quelle?.trim() || (u.art === 'plansatz' ? PLANSATZ_QUELLE : e.berechnungsordner)).trim();
 
 /** Wohin exportiert wird: Ordner relativ zum Projektordner und Dateiname mit Endung */
 export interface ExportZiel {
@@ -241,6 +252,17 @@ export async function ordnerAufloesen(ds: { liste: (pfad: string, tiefe: number)
 
 /** Formular in einem Archivordner – wird beim Sammel-Export ausgelassen */
 export { istArchiv };
+
+/** Namensschema des Projekts: das der Projektdatei, sonst das des Büros, sonst die Vorgabe */
+export function namensschema(): Namensschema {
+  const f = useFormulare.getState();
+  return wirksamesNamensschema(f.oap && f.oap !== 'fehlt' ? f.oap.projekt.namensschema : undefined, f.namensschemaBuero);
+}
+
+/** Antragsarten, an denen Ordner im Antragsordner erkannt werden: die der Einstellungen zuerst, dann die des Namensschemas */
+export const antragsarten = (e: Pick<ExportEinstellungen, 'arten'>, synonyme = true) => [
+  ...new Set([...e.arten.map((a) => a.toUpperCase()), ...(synonyme ? alleKuerzel(namensschema().antragsarten) : namensschema().antragsarten.map((k) => k.kuerzel))]),
+];
 
 /** Stand „eingereicht“ des aktiven Antrags (von Hand gesetzt vor erkannt); null = in Arbeit */
 export function aktiverEingereicht(s: Pick<AntragState, 'projektdatei' | 'fassungen' | 'einstellungen' | 'ueberschreibungen'>, p: Projekt | null) {
@@ -738,7 +760,7 @@ export const useAntrag = create<AntragState>((set, get) => {
             for (const o of ordner) if (o.geaendert) ordnerZeit.set(o.pfad, o.geaendert);
             fassungen = fassungenAus(
               ordner.map((x) => x.pfad),
-              e.arten,
+              antragsarten(e),
             );
           } catch {
             // Antragsordner gibt es (noch) nicht
@@ -777,7 +799,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         } catch {
           // Ordner der Fassung gibt es noch nicht
         }
-        const ordner = new Set((get().projektdatei?.umfang ?? []).filter((u) => u.art === 'extern').map((u) => (u.quelle ?? e.berechnungsordner).trim()));
+        const ordner = new Set((get().projektdatei?.umfang ?? []).filter((u) => u.art !== 'intern').map((u) => quelleVonEintrag(u, e)));
         for (const o of ordner) {
           try {
             // Schreibweisen der Büros: „Planung/00 Berechnungen“, „Planung/_Berechnungen“, „…/GP/pdf“ …
@@ -857,7 +879,14 @@ export const useAntrag = create<AntragState>((set, get) => {
           if (!formular) return { eintrag: u, status: 'fehlt', formular: null, datei, quelle: null };
           return { eintrag: u, status: formularStatus(formular.fuellstand, formular.letzteAenderung, datei, codes), formular, datei, quelle: null };
         }
-        const quelle = quelleVon(u, st.quellen[(u.quelle ?? e.berechnungsordner).trim()] ?? [], codes);
+        if (u.art === 'plansatz') {
+          const o = useFormulare.getState().oap;
+          const geschosse = o && o !== 'fehlt' ? o.projekt.storeys.length : undefined;
+          const plansatz = plansatzPruefen(st.dateien, st.quellen[quelleVonEintrag(u, e)] ?? [], namensschema(), { codes, geschosse, muster: u.muster });
+          const neueste = plansatz.plaene.find((p) => p.datei)?.datei ?? null;
+          return { eintrag: u, status: plansatz.status, formular: null, datei: neueste, quelle: null, plansatz };
+        }
+        const quelle = quelleVon(u, st.quellen[quelleVonEintrag(u, e)] ?? [], codes);
         return { eintrag: u, status: externStatus(quelle, datei, codes), formular: null, datei, quelle };
       });
       set({ formularInfo, dokumente });

@@ -4634,3 +4634,62 @@ tr[data-ziehen='danach'] > td {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* Plansatz: Pläne mit Zustand */
+.pu-art.plansatz {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pu-plansatz {
+  padding: 0 12px 10px 64px;
+}
+.pu-plaene {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pu-plan {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border-left: 3px solid var(--ok-text);
+  background: var(--bg);
+}
+.pu-plan.fehlt {
+  border-left-color: #d64541;
+  background: var(--fehler-bg);
+}
+.pu-plan.quelle,
+.pu-plan.veraltet {
+  border-left-color: #e3a412;
+  background: var(--warn-bg);
+}
+.pu-plan-nr {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pu-plan-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pu-plan-zustand {
+  color: var(--muted);
+}
+.pu-plan.fehlt .pu-plan-zustand {
+  color: var(--fehler-text);
+}
+.pu-plan-hinweis {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: var(--muted);
+}

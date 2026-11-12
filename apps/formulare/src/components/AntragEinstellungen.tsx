@@ -3,7 +3,7 @@ import { Fragment, useState } from 'react';
 import type { AntragsVorlage, KatalogEintrag } from '../antrag';
 import { VORGABE_MERKMALE, bedingungText, hatBedingung, istVorgabeMerkmal } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
-import { PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus } from '../antrag';
+import { PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, PLANSATZ_QUELLE } from '../antrag';
 import { Griff, useSortieren } from './Sortieren';
 import { useAntrag } from '../antragStore';
 import { waehleOrdner } from '../dateisystem';
@@ -58,7 +58,7 @@ export function AntragEinstellungen() {
             <input value={e.antragsordner} onChange={(x) => setEinstellungen({ antragsordner: x.target.value })} aria-label="Antragsordner" placeholder="TÖB" />
           </label>
           <label>
-            <span className="field-label">Antragsarten (die erste ist der Standard)</span>
+            <span className="field-label">Antragsarten (die erste ist der Standard; dazu die des Namensschemas aus dem Projektordner)</span>
             <input
               defaultValue={e.arten.join(', ')}
               key={e.arten.join(',')}
@@ -311,17 +311,18 @@ export function AntragEinstellungen() {
                     <select value={k.art} onChange={(x) => zeileSetzen(i, { art: x.target.value as KatalogEintrag['art'] })} aria-label="Art">
                       <option value="intern">intern (Formular)</option>
                       <option value="extern">extern (Datei)</option>
+                      <option value="plansatz">Plansatz (Pläne GP-01 …)</option>
                     </select>
                   </td>
                   <td>
                     {k.art === 'intern' ? (
                       <input value={k.formular ?? ''} placeholder={k.titel} onChange={(x) => zeileSetzen(i, { formular: x.target.value })} aria-label="Formular" />
                     ) : (
-                      <input value={k.quelle ?? ''} placeholder={e.berechnungsordner} onChange={(x) => zeileSetzen(i, { quelle: x.target.value })} aria-label="Quelle" />
+                      <input value={k.quelle ?? ''} placeholder={k.art === 'plansatz' ? PLANSATZ_QUELLE : e.berechnungsordner} onChange={(x) => zeileSetzen(i, { quelle: x.target.value })} aria-label="Quelle" />
                     )}
                   </td>
                   <td>
-                    <input value={k.muster ?? ''} placeholder={`*${k.titel}*`} onChange={(x) => zeileSetzen(i, { muster: x.target.value })} aria-label="Muster" />
+                    <input value={k.muster ?? ''} placeholder={k.art === 'plansatz' ? 'alle Pläne' : `*${k.titel}*`} onChange={(x) => zeileSetzen(i, { muster: x.target.value })} aria-label="Muster" />
                   </td>
                   {vorlagen.map((v) => (
                     <td key={v.id} className="es-mitte">

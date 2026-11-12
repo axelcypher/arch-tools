@@ -11,6 +11,7 @@ import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
 import { OrdnerBaum } from './OrdnerBaum';
+import { NamensschemaEinstellungen } from './NamensschemaEinstellungen';
 import type { Struktur } from '../struktur';
 import { ordnerAlsText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from '../struktur';
 
@@ -124,6 +125,7 @@ export function StrukturView() {
     <div className="po-view">
       <section className="po-col">
         <GemeinsameEinstellungen />
+        <NamensschemaEinstellungen />
         <h2>Struktur</h2>
         <p className="muted small-text">
           Ordnerbaum und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur lässt sich als Datei speichern, weitergeben und auf einem anderen Rechner laden – samt den Vorlagen-Presets

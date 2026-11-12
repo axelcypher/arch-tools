@@ -1,3 +1,4 @@
+import type { Namensschema } from './namensschema';
 import type { Point } from './geometry';
 import type { Dach } from './roof';
 import type { DachModell } from './roofMesh';
@@ -542,6 +543,8 @@ export interface Project {
   projektordner?: ProjektordnerAngaben;
   /** Angaben der App „Formulare“ (Projektumfang, aktive Antragsfassung …) – geprüft wird in der App, hier nur durchgereicht */
   formulare?: unknown;
+  /** Namensschema des Projekts (Kürzel, Stellen im Dateinamen, Indizes) – siehe namensschema.ts; fehlt = das des Büros */
+  namensschema?: Namensschema;
   /**
    * Abschnitte der Projektdatei, die diese Programmfassung nicht kennt (von neueren Fassungen oder anderen Apps).
    * Sie werden unverändert wieder geschrieben – keine App verliert Daten einer anderen.

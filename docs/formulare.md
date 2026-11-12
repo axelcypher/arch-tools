@@ -392,6 +392,30 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   auch per Rechtsklick im Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Antragsumfang
   und die aktive Fassung stehen im Abschnitt `formulare` der Projektdatei (`.oap`) im Projektordner und gelten damit
   für alle im Büro (siehe unten).
+- **Plansatz** (Art eines Dokuments, Vorgabe für „Bauzeichnungen“): ein Eintrag für **alle Pläne**, statt je Grundriss
+  einen anzulegen (`plansatz.ts`). Pläne erkennt die App an der **Plannummer mit Plankürzel** an der Stelle „Nummer“
+  des Namensschemas – „HVO BAUA 261111 GP-04 Grundriss OG.pdf“; „GP01-07“ ist ein zusammengefasster Satz (Pläne 01 bis
+  07); eine reine Zahl („01 Bauantrag“) ist eine Dokumentnummer der Formulare und zählt nicht. Gesucht wird im Ordner
+  der aktiven Fassung und in der Quelle (Vorgabe `Planung/Genehmigungsplanung/pdf`, aus der die Pläne in den
+  Antragsordner verschoben werden – eine leere Quelle ist in Ordnung); zugeordnet wird über die Plannummer (ob an
+  Stelle 2 GP oder BAUA steht, spielt keine Rolle). Je Plankürzel getrennt:
+  - **Lücke:** zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – dann fehlt sicher ein Plan
+    (rot, „GP-07 fehlt“). Die Reihe muss nicht bei 01 beginnen, die Reihenfolge der Planarten wird nicht geprüft;
+  - **noch nicht verschoben:** die Nummer liegt nur in der Quelle (gelb);
+  - **veraltet:** die Quelle hat ein neueres Datum im Namen (gelb); liegt eine Nummer mehrfach im Antragsordner, zählt
+    die neueste;
+  - **Hinweise** (nie sperrend): ältere Fassungen derselben Nummer („alte Fassung?“), ein Satz neben Einzelplänen
+    daraus, ein Index, wo das Schema keinen vorsieht (erst ab Leistungsphase 5), und – nur wenn die Projektdatei
+    Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (der einzige Weg, auch einen fehlenden letzten Grundriss
+    zu bemerken).
+  Die Zeile zeigt „8 Pläne · GP-01 bis GP-08 · GP-07 fehlt“, „Pläne zeigen“ die Liste je Nummer; in der
+  Projektordner-Ansicht „Antrag“ stehen fehlende und noch nicht verschobene Pläne einzeln unter „Fehlt im
+  Antragsordner“. Ein optionales Muster grenzt die Pläne ein.
+- **Namensschema:** Kürzel (Planphasen BP, EP, GP, AP, AB; Antragsarten BAUA, BAUVA/BVA, BAUF, DENK, ABGE, ENTW), die
+  Stellen der Teile im Dateinamen (Code, Phase bzw. Antragsart, Datum, Nummer) und „Index ab Leistungsphase“ kommen
+  aus dem gemeinsamen Namensschema (`packages/core/src/namensschema.ts`): das der Projektdatei, sonst das des Büros
+  (Projektordner › Einstellungen), sonst die Vorgabe. Antragsordner werden an den Antragsarten der Einstellungen und
+  des Namensschemas erkannt.
 - **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je
   Antragsart – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Im Katalog
   hat jede Vorlage eine Spalte zum Ankreuzen; die Reihenfolge ist die des Katalogs. Beim Festlegen des Antragsumfangs

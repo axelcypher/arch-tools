@@ -1,3 +1,4 @@
+import type { Namensschema } from '@core/namensschema';
 import { writeArchive } from '@core/archive';
 import type { ProjectMeta, ProjektordnerAngaben } from '@core/model';
 import { projektdateiSchreiben } from '@core/platform/projektordner';
@@ -71,6 +72,8 @@ export interface PlanOptionen {
   jahr?: number;
   /** Ort einer neuen Projektdatei im Projektordner (gemeinsame Einstellung aller Apps) */
   oapPfad?: string;
+  /** Namensschema des Büros – kommt in jede neue Projektdatei (fehlt = die Vorgabe) */
+  namensschema?: Namensschema;
   /** die vorhandene Projektdatei des Ordners (Ergänzen) – sie wird gezielt ergänzt statt neu angelegt */
   projektdatei?: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben } | null;
 }
@@ -307,7 +310,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     projektdatei = { pfad: schonDa.pfad, neu: false, teile: [] };
   } else {
     const pfad = projektdateiPfad(optionen.oapPfad ?? VORGABE_OAP_PFAD, { nummer: s.nummer, kurzname: s.kurzname, vorhaben: s.bezeichnung, jahr: werte.jahr, datum: date });
-    datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date }), { app: `Projektordner ${__APP_VERSION__}`, date }));
+    datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date, namensschema: optionen.namensschema }), { app: `Projektordner ${__APP_VERSION__}`, date }));
     projektdatei = { pfad, neu: true, teile: [] };
   }
 

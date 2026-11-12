@@ -194,12 +194,21 @@ export function naechsteFassung(fassungen: Fassung[], art: string): string {
 
 /* ---------- Katalog und Antragsumfang ---------- */
 
-export type DokArt = 'intern' | 'extern';
+export type DokArt = 'intern' | 'extern' | 'plansatz';
+
+/** Art eines gelesenen Dokuments (unbekannt = intern) */
+const dokArtAus = (v: unknown): DokArt => (v === 'extern' || v === 'plansatz' ? v : 'intern');
+
+/** Quelle eines Plansatzes ohne eigene Angabe: der pdf-Ordner der Genehmigungsplanung */
+export const PLANSATZ_QUELLE = 'Planung/Genehmigungsplanung/pdf';
 
 export interface KatalogEintrag {
   id: string;
   titel: string;
-  /** intern: Formular aus FORMA; extern: Datei aus dem Projektordner (Berechnung, Plan, fremde PDF) */
+  /**
+   * intern: Formular des Projekts; extern: eine Datei aus dem Projektordner (Berechnung, fremde PDF); plansatz: alle Pläne
+   * mit Plannummer (GP-01 …) – geprüft auf Lücken und gegen die Quelle (plansatz.ts)
+   */
   art: DokArt;
   /** intern: Teil des Formularnamens oder Kennung (z. B. „Bauantrag“ oder „nw010005“) */
   formular?: string;
@@ -223,7 +232,8 @@ export const VORGABE_KATALOG: KatalogEintrag[] = [
   // Unterlagen vom Vermesser: Fachplanung/G27 … (auch „Fachplaner“)
   { id: 'lageplan', titel: 'Lageplan', art: 'extern', quelle: 'Fachplanung/G27*', muster: '*Lageplan*', vorgewaehlt: true },
   // Genehmigungsplanung als PDF: Planung/03 Genehmigungsplanung/pdf, …/Genehmigung/pdf, …/GP/pdf
-  { id: 'zeichnungen', titel: 'Bauzeichnungen', art: 'extern', quelle: 'Planung/Genehmigungsplanung/pdf', muster: '*Grundri*;*Schnitt*;*Ansicht*', vorgewaehlt: true },
+  // Plansatz: alle Pläne mit Plannummer (GP-01 …) – Lücken in der Nummernfolge, noch nicht verschobene und veraltete
+  { id: 'zeichnungen', titel: 'Bauzeichnungen', art: 'plansatz', quelle: PLANSATZ_QUELLE, vorgewaehlt: true },
   { id: 'grz', titel: 'Berechnung GRZ/GFZ', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*GRZ*;*GFZ*', vorgewaehlt: true },
   { id: 'flaechen', titel: 'Flächenberechnung', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*Fläche*;*Flaeche*;*BRI*;*Wohnfl*', vorgewaehlt: true },
   { id: 'kosten', titel: 'Kostenermittlung', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*Kosten*', vorgewaehlt: true },
@@ -291,7 +301,7 @@ export function katalogAus(roh: unknown): KatalogEintrag[] {
     .map((e, i) => ({
       id: typeof e.id === 'string' && e.id ? e.id : `k${i + 1}`,
       titel: String(e.titel),
-      art: e.art === 'extern' ? 'extern' : 'intern',
+      art: dokArtAus(e.art),
       formular: typeof e.formular === 'string' ? e.formular : undefined,
       quelle: typeof e.quelle === 'string' ? e.quelle : undefined,
       muster: typeof e.muster === 'string' ? e.muster : undefined,
@@ -401,7 +411,7 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
     out.umfang = o.umfang
       .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object' && typeof (e as { titel?: unknown }).titel === 'string')
       .map((e, i) => {
-        const u: UmfangEintrag = { id: typeof e.id === 'string' && e.id ? e.id : `u${i + 1}`, titel: String(e.titel), art: e.art === 'extern' ? 'extern' : 'intern' };
+        const u: UmfangEintrag = { id: typeof e.id === 'string' && e.id ? e.id : `u${i + 1}`, titel: String(e.titel), art: dokArtAus(e.art) };
         for (const k of ['formular', 'quelle', 'muster', 'nr', 'formularDatei'] as const) if (typeof e[k] === 'string' && e[k]) u[k] = e[k] as string;
         if (e.dateien && typeof e.dateien === 'object')
           u.dateien = Object.fromEntries(Object.entries(e.dateien as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string'));

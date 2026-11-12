@@ -107,6 +107,25 @@ sie nicht, sondern meldet „Die Struktur wurde inzwischen von einem anderen Rec
 „Neu laden“ (die eigene Fassung bleibt über „Rückgängig“ erreichbar) und „Meine Fassung trotzdem speichern“. Beim
 Wechsel in „Einstellungen“ und „Vorlagen“ liest das Tool die Datei frisch.
 
+### Namensschema
+
+Unter „Gemeinsame Einstellungen“ steht das **Namensschema** des Büros – gemeinsam für alle Apps (`allgemein.json`,
+Eintrag `namensschema`; `packages/core/src/namensschema.ts`):
+
+- **Aufbau des Dateinamens:** welche Stelle Projektcode, Phase bzw. Antragsart, Datum (JJMMTT) und Plannummer haben –
+  Vorgabe „HVO GP 261111 GP-04 Grundriss OG.pdf“ (im Antragsordner steht die Antragsart statt der Phase, die
+  Plannummer bleibt).
+- **Planphasen** mit Kürzel, Bedeutung und Leistungsphase: BP Grundlagenermittlung (Bestand), EP Entwurfsplanung,
+  GP Genehmigungsplanung, AP Ausführungsplanung, AB Abgeschlossenheitsbescheinigung (Sonderfall).
+- **Antragsarten** mit gleichwertigen Schreibweisen: BAUA Bauantrag, BAUVA Bauvoranfrage (auch BVA), BAUF
+  Genehmigungsfreistellung, DENK Denkmalrechtliche Erlaubnis, ABGE Abgeschlossenheitsbescheinigung, ENTW
+  Entwässerungsantrag.
+- **Index ab Leistungsphase** (Vorgabe 5): erst ab dann tragen Pläne einen Index (GP-03a).
+
+Jede **neue Projektdatei** bekommt eine Kopie (Abschnitt `namensschema`); alle Apps lesen zuerst die der
+Projektdatei, sonst die des Büros, sonst die Vorgabe. Formulare erkennt daran Antragsordner und die Pläne eines
+Plansatzes.
+
 ### Struktur
 
 Ordnerbaum und Namensschemata gehören dem Büro, nicht dem Tool. Die Struktur lässt sich zusätzlich als JSON-Datei

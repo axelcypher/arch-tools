@@ -8,6 +8,7 @@ import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
 import { dateiMenue, SYMBOL } from './AblageBaum';
 import { StatusPunkt } from './Antrag';
+import { PLAN_ZUSTAND_TEXT } from '../plansatz';
 import type { MenuePunkt } from './Menue';
 import { zeigeMenue } from './Menue';
 import { Symbol } from './Symbol';
@@ -72,8 +73,10 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       return { d, fehler, zustand: bereitschaft(d, m, fehler), dok: dokumente.find((x) => x.datei?.pfad === d.pfad) };
     });
   const bereit = liste.filter((x) => x.zustand === 'bereit').length;
-  const fehlend = dokumente.filter((x) => x.status !== 'entfaellt' && !x.datei);
-  const vollstaendig = liste.length > 0 && bereit === liste.length && !fehlend.length;
+  const fehlend = dokumente.filter((x) => x.status !== 'entfaellt' && x.eintrag.art !== 'plansatz' && !x.datei);
+  // Plansätze: fehlende Nummern und noch nicht verschobene Pläne einzeln
+  const fehlendePlaene = dokumente.flatMap((x) => (x.status !== 'entfaellt' && x.plansatz ? x.plansatz.plaene.filter((p) => p.zustand === 'fehlt' || p.zustand === 'quelle').map((p) => ({ dok: x, p })) : []));
+  const vollstaendig = liste.length > 0 && bereit === liste.length && !fehlend.length && !fehlendePlaene.length;
   const vorschlag = (name: string, geaendert?: number) => `${codes[0]} ${art} ${jjmmtt(new Date(geaendert || Date.now()))} ${name}`;
 
   const menue = (pfad: string, zustand: Bereitschaft, fehler: string | null, geaendert?: number): MenuePunkt[] => [
@@ -108,7 +111,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
             {bereit} von {liste.length}
           </strong>{' '}
           bereit
-          {umfangDa && fehlend.length > 0 && ` · ${fehlend.length} fehlt`}
+          {umfangDa && fehlend.length + fehlendePlaene.length > 0 && ` · ${fehlend.length + fehlendePlaene.length} fehlt`}
         </span>
         <span className="fo-bereit-balken" aria-hidden>
           <span style={{ width: `${liste.length ? (bereit / liste.length) * 100 : 0}%` }} />
@@ -154,7 +157,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           </li>
         ))}
       </ul>
-      {umfangDa && fehlend.length > 0 && (
+      {umfangDa && fehlend.length + fehlendePlaene.length > 0 && (
         <>
           <p className="fo-bereit-titel">Fehlt im Antragsordner</p>
           <ul className="fo-baum fo-bereit-fehlt">
@@ -162,6 +165,16 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
               <li key={x.eintrag.id} className="fo-baum-zeile" title={`${x.eintrag.titel}: noch keine Datei im Ordner ${ordner}`}>
                 <StatusPunkt status={x.status === 'aktuell' ? 'offen' : x.status} />
                 <span className="fo-baum-name">{x.eintrag.titel}</span>
+              </li>
+            ))}
+            {fehlendePlaene.map(({ dok, p }) => (
+              <li key={`${dok.eintrag.id}|${p.schluessel}`} className="fo-baum-zeile" title={`${dok.eintrag.titel}: ${p.schluessel} – ${PLAN_ZUSTAND_TEXT[p.zustand]}`}>
+                <StatusPunkt status={p.zustand === 'fehlt' ? 'unvollstaendig' : 'offen'} />
+                <span className="fo-baum-name">
+                  {p.schluessel}
+                  {p.bezeichnung ? ` ${p.bezeichnung}` : ''}
+                  <span className="fo-bereit-unter">{p.zustand === 'fehlt' ? 'Lücke in der Nummernfolge' : 'noch in der Quelle'}</span>
+                </span>
               </li>
             ))}
           </ul>

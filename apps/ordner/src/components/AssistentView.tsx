@@ -195,7 +195,7 @@ export function AssistentView({
       if (!ordner || !geladen) return null;
       return planen(stamm, struktur, vorlagen, ordner.eintraege, new Date(), { ordner: ordner.name, jahr, oapPfad: allgemein.oapPfad, projektdatei: geladen.projektdatei });
     }
-    return planen(stamm, struktur, vorlagen, vorhandeneNeu, new Date(), { oapPfad: allgemein.oapPfad });
+    return planen(stamm, struktur, vorlagen, vorhandeneNeu, new Date(), { oapPfad: allgemein.oapPfad, namensschema: allgemein.namensschema });
   }, [modus, stamm, struktur, vorlagen, ordner, geladen, vorhandeneNeu, jahr, allgemein.oapPfad]);
   const auszufuehren = useMemo(() => (plan ? nurWasEtwasTut(ohne(plan, abgewaehlt)) : null), [plan, abgewaehlt]);
   const offen = auszufuehren?.schritte ?? [];

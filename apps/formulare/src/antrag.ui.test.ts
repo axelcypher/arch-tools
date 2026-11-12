@@ -829,6 +829,36 @@ describe('Antragsvorlagen und Reihenfolge', () => {
   });
 });
 
+describe('Plansatz', () => {
+  it('ein Eintrag für alle Pläne: Lücke in der Nummernfolge, noch nicht verschobene, Liste je Plan – auch in der Ansicht „Antrag“', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261111 GP-01 Lageplan.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261111 GP-02 Grundriss EG.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261111 GP-04 Schnitt.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261110 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/Planung/BS9 GP 261111 GP-05 Ansichten.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().umfangSetzen([{ id: 'plaene', titel: 'Bauzeichnungen', art: 'plansatz', quelle: 'Planung' }]));
+    await warte();
+    await klick(antragsdaten(host));
+    const zeile = host.querySelector<HTMLElement>('.pu-zeile')!;
+    expect(zeile.className).toContain('unvollstaendig');
+    expect(zeile.textContent).toContain('Plansatz');
+    expect(zeile.textContent).toContain('4 Pläne · GP-01 bis GP-05 · GP-03 fehlt · 1 noch nicht verschoben');
+    await klick(knopf(zeile, 'Pläne zeigen'));
+    expect([...host.querySelectorAll('.pu-plan')].map((p) => [p.querySelector('.pu-plan-nr')!.textContent, p.className.split(' ')[1]])).toEqual([
+      ['GP-01', 'aktuell'],
+      ['GP-02', 'aktuell'],
+      ['GP-03', 'fehlt'],
+      ['GP-04', 'aktuell'],
+      ['GP-05', 'quelle'],
+    ]);
+    // Projektordner › Antrag: fehlende Pläne einzeln
+    await klick(knopfGenau(host, 'Antrag'));
+    const fehlt = [...host.querySelectorAll('.fo-bereit-fehlt li')].map((l) => l.textContent);
+    expect(fehlt).toEqual(['GP-03Lücke in der Nummernfolge', 'GP-05 Ansichtennoch in der Quelle']);
+  });
+});
+
 describe('Projektordner, Ansicht „Antrag“: Dokumente im Antragsordner mit Vollständigkeit', () => {
   it('nur der Ordner der aktiven Fassung; „bereit“ von Hand und nur im Namensformat; Umbenennen nach Format', async () => {
     ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261110 01 Bauantrag.pdf`, new Uint8Array([1]));

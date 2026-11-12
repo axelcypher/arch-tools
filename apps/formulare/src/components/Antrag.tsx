@@ -3,12 +3,14 @@ import type { FeldDef } from '@core/ui/ansicht';
 import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
-import { eingereichtVon, tagVon } from '../antrag';
+import { eingereichtVon, PLANSATZ_QUELLE, tagVon } from '../antrag';
 import { STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
-import { aktiveFassung, antragSperre, antragsOrdner, nachtragName, useAntrag, wirksameEinstellungen } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, quelleVonEintrag, useAntrag, wirksameEinstellungen } from '../antragStore';
+import type { PlansatzErgebnis } from '../plansatz';
+import { PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, useFormulare } from '../store';
 import { useExportDialog } from './ExportDialog';
@@ -46,7 +48,13 @@ export function FassungsWahl() {
   const ablage = useFormulare((s) => ablageVon(s, s.projekt));
   const fassungen = useAntrag((s) => s.fassungen);
   const aktiv = useAntrag((s) => aktiveFassung(s, projekt));
-  const arten = useAntrag((s) => wirksameEinstellungen(s, projekt).arten);
+  // Antragsarten aus den Einstellungen und dem Namensschema (der Projektdatei bzw. des Büros) – außerhalb des Selektors
+  // berechnet, damit er stabile Werte liefert
+  const einstellungen = useAntrag((s) => s.einstellungen);
+  useAntrag((s) => s.ueberschreibungen);
+  useFormulare((s) => s.oap);
+  useFormulare((s) => s.namensschemaBuero);
+  const arten = antragsarten(wirksameEinstellungen({ einstellungen, ueberschreibungen: useAntrag.getState().ueberschreibungen }, projekt), false);
   const dokumente = useAntrag((s) => s.dokumente);
   const antraege = useAntrag((s) => s.projektdatei?.antraege);
   const { fassungWaehlen } = useAntrag.getState();
@@ -216,7 +224,40 @@ function Merkmale({ gesperrt }: { gesperrt: boolean }) {
   );
 }
 
-const ART_TEXT = { intern: 'Formular', extern: 'Datei' };
+const ART_TEXT = { intern: 'Formular', extern: 'Datei', plansatz: 'Plansatz' };
+
+/** Pläne eines Plansatzes: je Plannummer Zustand und Datei, dazu Hinweise */
+function PlansatzListe({ r, basis, ordner }: { r: PlansatzErgebnis; basis: string | null; ordner: string }) {
+  return (
+    <div className="pu-plansatz">
+      {r.plaene.length > 0 && (
+        <ul className="pu-plaene">
+          {r.plaene.map((p) => (
+            <li key={p.schluessel} className={`pu-plan ${p.zustand}`} title={PLAN_ZUSTAND_TEXT[p.zustand]}>
+              <span className="pu-plan-nr">{p.schluessel}</span>
+              <span className="pu-plan-name">
+                {p.datei ? (
+                  <button className="pu-datei" title="In der App ansehen" onClick={() => basis && void useFormulare.getState().dateiAnsehen(basis, `${ordner}/${p.datei!.pfad}`)}>
+                    {p.bezeichnung || p.datei.pfad}
+                  </button>
+                ) : (
+                  (p.bezeichnung ?? '')
+                )}
+                {p.satz && <span className="muted small-text"> (aus Satz)</span>}
+              </span>
+              <span className="pu-plan-zustand small-text">{PLAN_ZUSTAND_TEXT[p.zustand]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {r.hinweise.map((h) => (
+        <p key={h} className="pu-plan-hinweis small-text">
+          <Symbol name="info" /> {h}
+        </p>
+      ))}
+    </div>
+  );
+}
 
 /**
  * Antragsdaten: was nur für den aktiven Antrag gilt – Status (eingereicht?), Antragsmerkmale und Antragsumfang (welche
@@ -239,6 +280,7 @@ export function AntragsdatenAnsicht() {
   const gesperrt = !!antragSperre(st, projekt);
   const [bearbeiten, setBearbeiten] = useState<string | null>(null);
   const [vorlageWahl, setVorlageWahl] = useState<string | null>(null);
+  const [plaeneOffen, setPlaeneOffen] = useState<string[]>([]);
   const umfangJetzt = projektdatei?.umfang;
   const sortieren = useSortieren(umfangJetzt?.length ?? 0, (von, nach) => umfangJetzt && void umfangSetzen(verschieben(umfangJetzt, von, nach)));
   if (!ds) return <div className="fo-leer">Antragsdaten gibt es nur in der Desktop-App.</div>;
@@ -258,7 +300,7 @@ export function AntragsdatenAnsicht() {
   const hinzufuegen = (): MenuePunkt[] => [
     ...fehlendeKatalog.map((k) => ({
       text: k.titel,
-      symbol: (k.art === 'intern' ? 'formular' : 'datei') as 'formular' | 'datei',
+      symbol: (k.art === 'intern' ? 'formular' : k.art === 'plansatz' ? 'stapel' : 'datei') as 'formular' | 'datei' | 'stapel',
       aktion: () => void umfangSetzen([...(umfang ?? []), alsUmfang(k)]),
     })),
     ...(fehlendeKatalog.length ? [{ trenner: true as const }] : []),
@@ -417,14 +459,27 @@ export function AntragsdatenAnsicht() {
                       <strong>{u.titel}</strong>
                       <span className="muted small-text">
                         <span className={`pu-art ${u.art}`}>{ART_TEXT[u.art]}</span>{' '}
-                        {u.art === 'intern'
-                          ? d.formular
-                            ? `${d.formular.name} · ${d.formular.fuellstand.gefuellt} von ${d.formular.fuellstand.gesamt} Angaben`
-                            : 'kein Formular im Projekt'
-                          : d.quelle
-                            ? `Quelle: ${d.quelle.pfad}`
-                            : `keine Quelle in ${u.quelle || wirksameEinstellungen(st, projekt).berechnungsordner || 'dem Projektordner'}`}
+                        {u.art === 'plansatz' && d.plansatz
+                          ? plansatzKurz(d.plansatz)
+                          : u.art === 'intern'
+                            ? d.formular
+                              ? `${d.formular.name} · ${d.formular.fuellstand.gefuellt} von ${d.formular.fuellstand.gesamt} Angaben`
+                              : 'kein Formular im Projekt'
+                            : d.quelle
+                              ? `Quelle: ${d.quelle.pfad}`
+                              : `keine Quelle in ${u.quelle || wirksameEinstellungen(st, projekt).berechnungsordner || 'dem Projektordner'}`}
                       </span>
+                      {u.art === 'plansatz' && d.plansatz ? (
+                        <span className="small-text">
+                          <button className="pu-datei" aria-expanded={plaeneOffen.includes(u.id)} onClick={() => setPlaeneOffen(plaeneOffen.includes(u.id) ? plaeneOffen.filter((x) => x !== u.id) : [...plaeneOffen, u.id])}>
+                            <Symbol name={plaeneOffen.includes(u.id) ? 'pfeilUnten' : 'pfeilRechts'} /> Pläne {plaeneOffen.includes(u.id) ? 'verbergen' : 'zeigen'}
+                          </button>
+                          {' · '}
+                          <span className="muted">Quelle {quelleVonEintrag(u, wirksameEinstellungen(st, projekt))}</span>
+                          {d.plansatz.hinweise.length > 0 && <span className="pu-bedingung"> · {d.plansatz.hinweise.length === 1 ? '1 Hinweis' : `${d.plansatz.hinweise.length} Hinweise`}</span>}
+                          {hatBedingung(u.bedingung) ? <span className="pu-bedingung"> · nur wenn {bedingungText(u.bedingung)}</span> : null}
+                        </span>
+                      ) : (
                       <span className="small-text">
                         {d.datei ? (
                           <button className="pu-datei" title="In der App ansehen" onClick={() => basis && void useFormulare.getState().dateiAnsehen(basis, `${ordner}/${d.datei!.pfad}`)}>
@@ -437,6 +492,7 @@ export function AntragsdatenAnsicht() {
                         <span className="muted">{STATUS_TEXT[d.status]}</span>
                         {hatBedingung(u.bedingung) ? <span className="pu-bedingung"> · nur wenn {bedingungText(u.bedingung)}</span> : null}
                       </span>
+                      )}
                     </div>
                     <div className="pu-knoepfe">
                       {u.art === 'intern' && !d.formular && d.status !== 'entfaellt' && (
@@ -460,7 +516,7 @@ export function AntragsdatenAnsicht() {
                           </button>
                         </>
                       )}
-                      {basis && !gesperrt && (
+                      {basis && !gesperrt && u.art !== 'plansatz' && (
                         <MenueKnopf className="small" title={`Datei in ${ordner} verknüpfen`} punkte={() => dateiMenue(d)}>
                           <Symbol name="link" />
                         </MenueKnopf>
@@ -472,6 +528,7 @@ export function AntragsdatenAnsicht() {
                       )}
                     </div>
                   </div>
+                  {u.art === 'plansatz' && d.plansatz && plaeneOffen.includes(u.id) && <PlansatzListe r={d.plansatz} basis={basis} ordner={ordner} />}
                   {offen && !gesperrt && (
                     <div className="pu-bearbeiten">
                       <label>
@@ -482,7 +539,8 @@ export function AntragsdatenAnsicht() {
                         <span className="field-label">Art</span>
                         <select value={u.art} onChange={(e) => setzen(u.id, { art: e.target.value as UmfangEintrag['art'] })}>
                           <option value="intern">intern – Formular des Projekts</option>
-                          <option value="extern">extern – Datei (Berechnung, Plan, PDF)</option>
+                          <option value="extern">extern – eine Datei (Berechnung, PDF)</option>
+                          <option value="plansatz">Plansatz – alle Pläne mit Plannummer (GP-01 …)</option>
                         </select>
                       </label>
                       {u.art === 'intern' ? (
@@ -493,12 +551,16 @@ export function AntragsdatenAnsicht() {
                       ) : (
                         <label>
                           <span className="field-label">Ordner der Quelle</span>
-                          <input value={u.quelle ?? ''} placeholder={wirksameEinstellungen(st, projekt).berechnungsordner} onChange={(e) => setzen(u.id, { quelle: e.target.value || undefined })} />
+                          <input
+                            value={u.quelle ?? ''}
+                            placeholder={u.art === 'plansatz' ? PLANSATZ_QUELLE : wirksameEinstellungen(st, projekt).berechnungsordner}
+                            onChange={(e) => setzen(u.id, { quelle: e.target.value || undefined })}
+                          />
                         </label>
                       )}
                       <label>
-                        <span className="field-label">Muster der Datei (* ? ;)</span>
-                        <input value={u.muster ?? ''} placeholder={`*${u.titel}*`} onChange={(e) => setzen(u.id, { muster: e.target.value || undefined })} />
+                        <span className="field-label">{u.art === 'plansatz' ? 'Nur Pläne nach Muster (* ? ;, leer = alle)' : 'Muster der Datei (* ? ;)'}</span>
+                        <input value={u.muster ?? ''} placeholder={u.art === 'plansatz' ? 'alle mit Plannummer' : `*${u.titel}*`} onChange={(e) => setzen(u.id, { muster: e.target.value || undefined })} />
                       </label>
                       <div className="pu-bedingung-editor">
                         <span className="field-label">Nur erforderlich, wenn …</span>

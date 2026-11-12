@@ -1,3 +1,4 @@
+import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import ExcelJS from 'exceljs';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
@@ -219,6 +220,10 @@ describe('Stammdaten', () => {
     expect(a.bauherr.kontakte).toEqual([{ art: 'email', wert: 'b@example.org' }]);
     expect(a.beteiligte).toEqual([{ rolle: 'Tragwerk', name: 'Büro Statik', kontakt: '0251 1234' }]);
     expect(stammAusMeta(p.meta).bezeichnung).toBe('Neubau eines Einfamilienhauses');
+    // Namensschema: die Vorgabe bzw. das des Büros kommt in die Projektdatei und bleibt erhalten
+    expect(readProjectFile(writeArchive(p)).namensschema?.phasen.map((x) => x.kuerzel)).toEqual(['BP', 'EP', 'GP', 'AP', 'AB']);
+    const eigen = alsProject(stamm(), { namensschema: { ...structuredClone(VORGABE_NAMENSSCHEMA), indexAbLph: 4 } });
+    expect(readProjectFile(writeArchive(eigen)).namensschema?.indexAbLph).toBe(4);
   });
 
   it('alte projekt.json (bis 0.2) wird noch gelesen und füllt Lücken der Projektdatei', () => {

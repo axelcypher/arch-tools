@@ -1,3 +1,5 @@
+import type { Namensschema } from '@core/namensschema';
+import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { projektWerte } from '@core/excel/projekt';
 import type { ExportContext, Row, Value } from '@core/excel/context';
 import type { Anschrift, Bauherr, Beteiligter, Grundstueck, Kontakt, Project, ProjectMeta, ProjektordnerAngaben, Koordinaten } from '@core/model';
@@ -142,7 +144,7 @@ export function angabenAusProjekt(p: Project): ProjektAngaben {
  * Neue Projektdatei: leere Flächenberechnung mit den Stammdaten, dem Anlagedatum und den Angaben dieses Tools
  * (Struktur, Dateischema, gewählte Presets). Flächenrechner, GRZ-Nachweis, Kostenermittlung und Formulare öffnen sie.
  */
-export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; dateischema: string }; presets?: string[]; date?: Date } = {}): Project {
+export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; dateischema: string }; presets?: string[]; date?: Date; namensschema?: Namensschema } = {}): Project {
   const s = bereinigt(stamm);
   const p = createProject(s.bezeichnung || s.kurzname || s.nummer || 'Neues Projekt');
   p.meta = { ...metaAus(s), angelegt: isoDatum(o.date ?? new Date()) };
@@ -152,6 +154,8 @@ export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; da
       ...(o.presets ? { presets: [...o.presets] } : {}),
     };
   }
+  // Namensschema des Büros: jede Projektdatei trägt ihre Kopie (Kürzel, Stellen, Indizes) – für alle Apps
+  p.namensschema = structuredClone(o.namensschema ?? VORGABE_NAMENSSCHEMA);
   return p;
 }
 

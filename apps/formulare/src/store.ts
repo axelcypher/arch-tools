@@ -219,6 +219,8 @@ interface FormulareState extends Gespeichert {
   adressbuchKarten: { adressen: Adresse[]; stand: number } | null;
   /** eigene Adressen der App (gemeinsamer Konfigurationsordner) */
   eigeneAdressen: EigeneAdresse[];
+  /** Namensschema des Büros (gemeinsame Einstellungen, roh) – es gilt das der Projektdatei, sonst dieses */
+  namensschemaBuero: unknown;
   /** Einlesen läuft: so weit */
   adressbuchLaeuft: { fertig: number; gesamt: number } | null;
   /** Projektdaten.xlsx des gewählten Projekts (nur noch zum Übernehmen alter Angaben); 'fehlt' = keine, null = nicht gesucht */
@@ -933,6 +935,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     adressbuchKarten: lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null),
     adressbuch: wirksamesAdressbuch(lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null), []),
     eigeneAdressen: [],
+    namensschemaBuero: null,
     adressbuchLaeuft: null,
     projektdaten: null,
     oap: null,
@@ -1610,6 +1613,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         set({ eigeneAdressen, adressbuch: wirksamesAdressbuch(get().adressbuchKarten, eigeneAdressen) });
         if (app.ordnerWahl && typeof app.ordnerWahl === 'object') set({ ordnerWahl: Object.fromEntries(Object.entries(app.ordnerWahl as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string')) });
         const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
+        set({ namensschemaBuero: roh.namensschema ?? null });
         const projekte = Array.isArray(roh.projekte) ? roh.projekte.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
         // Stammordner: gemeinsam; gibt es dort noch keine, die bisherigen dieser App übernehmen
         if (projekte.length) {
