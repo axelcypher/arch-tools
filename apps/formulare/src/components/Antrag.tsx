@@ -239,7 +239,7 @@ function AntragStatus() {
   const knoepfe = wirksam && (
     <div className="pu-status-knoepfe">
       <button
-        title={`Neue Antragsfassung „${nachtrag}“ anlegen – nur nach Rücknahme, Ablehnung, Rückgabe der Unterlagen oder für eine Änderung nach der Entscheidung; zum Nachreichen den Status auf „in Arbeit“ setzen`}
+        title={`Neue Antragsfassung „${nachtrag}“ anlegen – nur nach Rücknahme, Ablehnung, Rückgabe der Unterlagen oder für eine Änderung nach der Entscheidung; zum Nachreichen den Status vorübergehend auf „in Arbeit“ setzen`}
         onClick={() => void st.fassungWaehlen(nachtrag, true)}
       >
         <Symbol name="plus" /> Nachtrag „{nachtrag}“ anlegen
@@ -293,7 +293,7 @@ function AntragStatus() {
             <span className="muted small-text">
               {manuell
                 ? 'Von Hand gesetzt – Antragsprotokoll bzw. Eingangsbestätigung werden nicht beachtet; Tag und Stand der Einreichung bleiben gespeichert.'
-                : 'Wird automatisch eingereicht, sobald ein Antragsprotokoll bzw. eine Eingangsbestätigung im Ordner des Antrags liegt.'}
+                : 'Gilt automatisch als eingereicht, sobald ein Antragsprotokoll, eine Eingangs- oder Empfangsbestätigung im Ordner des Antrags liegt.'}
             </span>
             {manuell && (
               <span className="small-text pu-status-anleitung">

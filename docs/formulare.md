@@ -533,15 +533,16 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   geschrieben; ist er gerade nicht erreichbar, ist der Knopf gesperrt bzw. bleibt der bisherige Stand (Fehlermeldung),
   und ändern sich während des Lesens Projekt, Antrag oder Status, wird abgebrochen. Ein so festgehaltener Stand gilt
   vollständig (auch was nach dem Tag der Einreichung, aber vor dem Festhalten neu dazukam oder geändert wurde); danach
-  erscheint „Antragsstand von … neu festgehalten – n Dateien“. Beide Tage stehen dann da – im Status „eingereicht am
+  erscheint „Stand von … neu festgehalten – n Dateien“. Beide Tage stehen dann da – im Status „eingereicht am
   03.11.2026 … · Stand neu festgehalten am 20.11.2026 (n Dateien)“, in der Ablage „Eingereicht am 03.11.2026 – Stand
   neu festgehalten am 20.11.2026“ –, Abweichungen heißen „… seit dem Festhalten“. Angezeigt wird der echte Tag des
   Festhaltens, auch wenn eine Datei eine Änderungszeit in der Zukunft trägt (Uhr des Netzlaufwerks).
   **Vergleich:** In der Ansicht „Antrag“ steht „Eingereicht am … – Stand festgehalten“ (im Status „Stand vom …
   festgehalten (n Dateien)“). Jede **eingereichte** Datei auf oberster Ebene des Antragsordners wird mit dem Stand
   verglichen und ist gekennzeichnet, wenn sie danach **geändert** wurde („geändert seit der Einreichung“, gelb, mit
-  Summe oben); verschwundene (gelöscht oder verschoben) zählen als **entfernt** (in der Summe, darunter bis zu zwei
-  Namen, mehr über „n weitere – zeigen“, alle auch im Tooltip der Summe). Nach dem Neu-Festhalten lauten Summe,
+  Summe oben); verschwundene (gelöscht oder verschoben) zählen als **entfernt** (in der Summe, darunter bis zu drei
+  Namen – bei mehr zwei und „n weitere – zeigen“ –, alle auch im Tooltip der Summe). Verglichen wird nur die oberste
+  Ebene des Antragsordners: Nachreichungen gehören dorthin, nicht in Unterordner. Nach dem Neu-Festhalten lauten Summe,
   Etiketten und Tooltips durchgängig „… seit dem Festhalten“. Ausgenommen ist der **Nachweis der Einreichung** selbst
   (Antragsprotokoll, Eingangs- bzw. Empfangsbestätigung): Steht er im Stand oder trägt er im Namen keinen späteren Tag
   als den der Einreichung (Protokoll vom 03.11., erst am 04.11. gespeichert), ist er nie „neu“ oder „geändert“; ein
@@ -549,8 +550,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
   belegen. Was im laufenden Verfahren nachgereicht oder ausgetauscht wird, bleibt im selben Antrag und erscheint als
   „neu“ bzw. „geändert“ (§ 70 Abs. 2 Satz 4, § 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018, § 7 BauPrüfVO NRW); eine neue
   Antragsfassung (Nachtrag) ist es erst nach Rücknahme bzw. Rücknahmefiktion (§ 71 Abs. 1 Satz 8), Ablehnung,
-  Rückgabe der Unterlagen (§ 63 Abs. 4 Satz 3, außer im Fall von Satz 4) oder bei einer Änderung nach der
-  Entscheidung.
+  Rückgabe der Unterlagen (§ 63 Abs. 4 Satz 3, außer im Fall von Satz 4 – dann als Bauantrag, Antragsart BAUA) oder
+  bei einer Änderung nach der Entscheidung.
 - **Neue Dateien nach der Einreichung** sind „neu seit der Einreichung“ – außer sie kommen erwartungsgemäß
   (`nachEinreichungErwartet`, nur für neue Dateien). Grundsatz: **im Zweifel „neu“**, damit nachgereichte Bauvorlagen
   auffallen (§ 70 Abs. 2 Satz 4 und § 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018, § 7 BauPrüfVO NRW). Deshalb gilt eine
@@ -575,8 +576,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
     (auch „Vorbescheid Verlängerung“ – das kann der Antrag nach § 77 Abs. 1 Satz 3 sein) und Zusammensetzungen wie
     „Gebührenberechnung“ oder „Vollständigkeitserklärung“ zählen nicht.
   - **Füllwörter** – die Behörde (Kreis, Stadt, Gemeinde, Bauamt, Bauaufsicht, Denkmalbehörde …, ohne Ortsnamen),
-    Verbindungswörter (eine Präposition aber nur hinter einem Kernwort, auch mit Datum, Aktenzeichen oder Antragsart
-    dazwischen: „Anhörung vor Ablehnung“, „Gebührenbescheid vom 20.11.2026 zur Baugenehmigung“), Projektcode (auch
+    Verbindungswörter (eine Präposition aber nur hinter einem Kernwort, auch mit Datum, Aktenzeichen, Antragsart oder
+    anderen Füllwörtern dazwischen: „Anhörung vor Ablehnung“, „Gebührenbescheid vom 20.11.2026 zur Baugenehmigung“), Projektcode (auch
     mit Bindestrich oder Unterstrich: „2025-014“, „2025_014“, „BS-9“) und Antragsart, ein Aktenzeichen („Az
     63-1234-26“), ein Datum ab dem Tag der Einreichung – so genau verglichen, wie es angegeben ist: Tag („12.11.2026“,
     „12-11-2026“, „12.11.26“, „261112“, „20261112“), Monat („11-2026“) oder Jahr; ein älteres meint einen beigefügten
@@ -599,7 +600,8 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
 - **Ordner nicht erreichbar:** Ist der Ordner einmal nicht lesbar (Netz nach dem Aufwachen), bleiben „eingereicht“ und
   der Stand unverändert. Die Ablage warnt oben („Ordner gerade nicht erreichbar …“ mit „Erneut versuchen“, das während
   des Versuchs „Wird versucht …“ zeigt und danach „Letzter Versuch 14:32:05 – ohne Erfolg“), zeigt die zuletzt
-  gelesene Liste und in der Summe „beim letzten Lesen: 1 neu, 1 entfernt (Ordner gerade nicht erreichbar)“ bzw.
+  gelesene Liste und in der Summe „beim letzten Lesen: 1 neu, 1 entfernt seit der Einreichung (Ordner gerade nicht
+  erreichbar)“ bzw.
   „Vergleich mit dem Ordner gerade nicht möglich“ statt „seitdem unverändert“ – ohne Liste von vorher zählt sie nichts
   und meldet nichts als fehlend. „Stand neu festhalten …“ ist dann gesperrt.
 - **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)
@@ -704,6 +706,11 @@ beschrieben.
   Antrag zusätzlich als Kurzfassung in `meta.antrag` (für die anderen Apps). Ein früheres `meta.merkmale` bzw.
   projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im FORMA-Projekt wird noch gelesen und einmalig in die
   Projektdatei übernommen – sie selbst bleibt liegen und wird nicht mehr geschrieben.
+  Geschrieben wird nur in die Projektdatei, aus der die Angaben gelesen wurden, und nur für das Projekt, in dem die
+  Änderung begonnen hat: Wird währenddessen ein anderes Projekt oder eine andere `.oap` gewählt, bleibt deren Abschnitt
+  unberührt (Formular anlegen bzw. neue Fassung brechen dann mit Meldung ab). Lässt sich die Datei gerade nicht lesen,
+  liest die App sie beim Speichern erneut und meldet sonst „… nicht gespeichert“. Gibt es nach dem Zuordnen eines
+  Projektordners dort schon Angaben zum Antrag, werden sie geladen statt überschrieben.
 - **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
   Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann
   in der Projektdatei.

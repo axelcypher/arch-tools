@@ -676,7 +676,6 @@ export function imStand(stand: AntragStand): StandDatei[] {
 /** neu: erst nach der Einreichung dazugekommen · geaendert: danach geändert */
 export type SeitEinreichung = 'neu' | 'geaendert';
 
-export const SEIT_EINREICHUNG_TEXT: Record<SeitEinreichung, string> = { neu: 'neu seit der Einreichung', geaendert: 'geändert seit der Einreichung' };
 
 /**
  * Eingereichte Dateien auf oberster Ebene des Antragsordners, die es nicht mehr gibt (gelöscht oder verschoben) – der

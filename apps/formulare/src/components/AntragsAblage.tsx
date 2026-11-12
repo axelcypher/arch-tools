@@ -206,7 +206,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           <Symbol name="schloss" /> Eingereicht am {stand.tag.split('-').reverse().join('.')} – {standFestgehaltenText(stand)}
           {lesefehler
             ? seitText
-              ? ` · beim letzten Lesen: ${seitText} (Ordner gerade nicht erreichbar)`
+              ? ` · beim letzten Lesen: ${seitText} ${bezug} (Ordner gerade nicht erreichbar)`
               : ' · Vergleich mit dem Ordner gerade nicht möglich'
             : seitText
               ? ` · ${seitText} ${bezug}`

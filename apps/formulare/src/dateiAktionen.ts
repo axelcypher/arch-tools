@@ -200,6 +200,13 @@ export async function verknuepfen(basis: string, pfad: string, umfangId: string)
     if (ordnerVon(pfad).toLowerCase() !== ziel.toLowerCase()) {
       name = freierName(await namenIn(basis, ziel), name);
       await ds.kopieren(basis, pfad, zusammen(ziel, name));
+      // inzwischen ein anderes Projekt: kopiert ist im bisherigen, verknüpft wird nicht (sonst im falschen Projekt)
+      if (useFormulare.getState().projekt !== projekt) {
+        useFormulare
+          .getState()
+          .setMeldung({ art: 'info', text: `In ${aktiveFassung(st, projekt)} von ${projekt.ordner} kopiert: ${name} – nicht verknüpft, weil inzwischen ein anderes Projekt geöffnet ist.` });
+        return;
+      }
       useFormulare.getState().setMeldung({ art: 'info', text: `In ${aktiveFassung(st, projekt)} kopiert und verknüpft: ${name}` });
     }
     await useAntrag.getState().verknuepfen(umfangId, name);

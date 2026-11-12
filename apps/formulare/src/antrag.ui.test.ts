@@ -5,7 +5,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
-import { VORGABE_EXPORT, einstellungenAus, jjmmtt } from './antrag';
+import { VORGABE_EXPORT, einstellungenAus, jjmmtt, tagVon } from './antrag';
 import { VORGABE_MERKMALE } from './bedingung';
 import { aktiveFassung, exportVorschlag, istArchiv, useAntrag } from './antragStore';
 import { SpeicherDateisystem } from './dateisystem';
@@ -1689,12 +1689,23 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(ok.className).toContain('danger');
     await klick(ok);
     await warte();
-    expect(useFormulare.getState().meldung?.text).toBe('Antragsstand von BAUA 2 neu festgehalten – 3 Dateien.');
-    // Status und Ablage nennen den Tag des Neu-Festhaltens, nicht nur den der Einreichung
-    expect(host.querySelector('.pu-status-text')!.textContent).toMatch(/Stand neu festgehalten am \d{2}\.\d{2}\.\d{4} \(3 Dateien\)/);
+    expect(useFormulare.getState().meldung?.text).toBe('Stand von BAUA 2 neu festgehalten – 3 Dateien.');
+    // Status und Ablage nennen den (heutigen) Tag des Neu-Festhaltens, nicht nur den der Einreichung
+    const heute = tagVon(new Date()).split('-').reverse().join('.');
+    expect(host.querySelector('.pu-status-text')!.textContent).toContain(`Stand neu festgehalten am ${heute} (3 Dateien)`);
     await klick(knopfGenau(host, 'Antrag'));
-    expect(host.querySelector('.fo-stand')!.textContent).toMatch(/Eingereicht am 03\.11\.2026 – Stand neu festgehalten am \d{2}\.\d{2}\.\d{4} · seitdem unverändert/);
+    expect(host.querySelector('.fo-stand')!.textContent).toContain(`Eingereicht am 03.11.2026 – Stand neu festgehalten am ${heute} · seitdem unverändert`);
     expect([...host.querySelectorAll('.fo-bereit-zeile')].find((z) => z.textContent?.includes('Lageplan'))!.querySelector('.fo-seit')).toBeNull();
+    // danach Geändertes bzw. Entferntes: durchgängig „seit dem Festhalten“ (Summe, Liste, Etiketten)
+    ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1, 2, 3]));
+    ds.geaendert.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, Date.now() + 60_000);
+    ds.dateien.delete(`${ordner}/BS9 BAUA 261101 Lageplan.pdf`);
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(host.querySelector('.fo-stand')!.textContent).toContain('1 geändert, 1 entfernt seit dem Festhalten');
+    expect(host.querySelector('.fo-stand-entfernt')!.getAttribute('aria-label')).toBe('Entfernt seit dem Festhalten');
+    expect(host.querySelector<HTMLElement>('.fo-stand-entfernt .fo-seit')!.title).toBe('entfernt seit dem Festhalten');
+    expect([...host.querySelectorAll<HTMLElement>('.fo-seit.geaendert')].map((e) => e.title)).toEqual(['geändert seit dem Festhalten']);
   });
 
   it('Stand neu festhalten: ändert sich während des Lesens der Status, wird abgebrochen statt Veraltetes zu schreiben', async () => {
@@ -1895,6 +1906,188 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(antragIn('BAUA 2')?.stand).toEqual(vorher);
     expect(ds.dateien.get(H24_OAP)).toBe(h24Vorher);
     expect(useFormulare.getState().meldung?.text).toContain('Stand neu festhalten abgebrochen');
+  });
+
+  /** Schreiben einer Projektdatei einmal anhalten, bis `los()` aufgerufen wird */
+  const schreibenAnhalten = (endung: string) => {
+    const ersetzen = ds.projektordner.projektdateiErsetzen.bind(ds.projektordner);
+    const z: { los: (() => void) | null } = { los: null };
+    let einmal = true;
+    ds.projektordner.projektdateiErsetzen = async (...a: Parameters<typeof ersetzen>) => {
+      if (einmal && a[1].endsWith(endung)) {
+        einmal = false;
+        await new Promise<void>((r) => (z.los = r));
+      }
+      return ersetzen(...a);
+    };
+    return z;
+  };
+  const bs9Projekt = () => useFormulare.getState().projekte.find((p) => p.ordner === 'BS9')!;
+  const h24Projekt = () => useFormulare.getState().projekte.find((p) => p.ordner === 'H24')!;
+
+  it('andere .oap gewählt und fertig geladen, während die bisherige noch schreibt: die Angaben der neuen bleiben', async () => {
+    const KOPIE_REL = 'Planung/Berechnungen/BS9 Kopie.oap';
+    const KOPIE = `${PROJEKT}/${KOPIE_REL}`;
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    await projektBS9();
+    // in der Kopie: Status von Hand „in Arbeit“
+    ds.dateien.set(KOPIE, ds.dateien.get(OAP)!);
+    await act(() => useFormulare.getState().oapWaehlen(KOPIE_REL));
+    await warte();
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: false, datum: '2026-09-09' }));
+    await warte();
+    await act(() => useFormulare.getState().oapWaehlen('Planung/Berechnungen/BS9.oap'));
+    await warte();
+    const kopie = () => (readProjectFile(ds.dateien.get(KOPIE)!).formulare as { antraege?: Record<string, Record<string, unknown>> } | undefined)?.antraege?.['BAUA 2'];
+    expect(kopie()?.status).toEqual({ eingereicht: false, datum: '2026-09-09' });
+    // das Schreiben in BS9.oap hängt; währenddessen wird die Kopie gewählt und fertig geladen
+    const halt = schreibenAnhalten('BS9.oap');
+    let laeuft!: Promise<void>;
+    act(() => {
+      laeuft = useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-05' });
+    });
+    await warte();
+    expect(halt.los).toBeTruthy();
+    await act(() => useFormulare.getState().oapWaehlen(KOPIE_REL));
+    await warte();
+    await warte();
+    halt.los!();
+    await act(() => laeuft);
+    await warte();
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    expect(kopie()?.status).toEqual({ eingereicht: false, datum: '2026-09-09' });
+    expect(useAntrag.getState().projektdatei?.antraege?.['BAUA 2']?.status).toEqual({ eingereicht: false, datum: '2026-09-09' });
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-05' });
+  });
+
+  it('ohne Projektordner geöffnet, beim Zuordnen ein Ordner mit vorhandenen Anträgen: sie werden geladen, nicht überschrieben', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-03' }));
+    await warte();
+    expect((antragIn('BAUA 2')?.stand as { dateien: unknown[] }).dateien).toHaveLength(1);
+    // neu öffnen, ohne dass der Projektordner über den Namen gefunden wird
+    const bs9 = useFormulare.getState().projekt!;
+    await act(() => useFormulare.getState().projektWaehlen(null));
+    await warte();
+    useFormulare.setState({ ablage: [] });
+    await act(() => useFormulare.getState().projektWaehlen(bs9));
+    await warte();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await act(() => useFormulare.getState().projektordnerWaehlen(PROJEKT));
+    await warte();
+    await warte();
+    expect(antragIn('BAUA 2')?.status).toEqual({ eingereicht: true, datum: '2026-11-03' });
+    expect((antragIn('BAUA 2')?.stand as { dateien: unknown[] }).dateien).toHaveLength(1);
+    expect(useFormulare.getState().meldung?.text).toContain('gibt es schon Angaben zum Antrag');
+  });
+
+  it('Formular anlegen: wird während der Suche nach der Vorlage ein anderes Projekt geöffnet, wird abgebrochen', async () => {
+    h24Vorbereiten();
+    const host = await render();
+    await projektOeffnen(host, 'H24');
+    await warte();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    const bauantragIn = (oap: string) =>
+      Object.values((readProjectFile(ds.dateien.get(oap)!).formulare as { antraege?: Record<string, { umfang?: { id: string; formularDatei?: string }[] }> }).antraege ?? {})
+        .flatMap((a) => a.umfang ?? [])
+        .find((u) => u.id === 'bauantrag');
+    expect(bauantragIn(H24_OAP)).toBeTruthy();
+    await act(() => useFormulare.getState().projektWaehlen(bs9Projekt()));
+    await warte();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    // die Suche in den anderen Projekten hängt
+    const liste = ds.liste.bind(ds);
+    let los!: () => void;
+    let einmal = true;
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (einmal && pfad === 'C:/FORMA/H24' && tiefe === 1) {
+        einmal = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return liste(pfad, tiefe);
+    };
+    let laeuft!: Promise<string | null>;
+    act(() => {
+      laeuft = useAntrag.getState().formularAnlegen('bauantrag');
+    });
+    await warte();
+    expect(los).toBeTruthy();
+    await act(() => useFormulare.getState().projektWaehlen(h24Projekt()));
+    await warte();
+    los();
+    expect(await act(() => laeuft)).toBeNull();
+    await warte();
+    expect(useFormulare.getState().meldung?.text).toContain('abgebrochen – inzwischen ist ein anderes Projekt geöffnet');
+    expect(bauantragIn(H24_OAP)?.formularDatei).toBeUndefined();
+    expect(useFormulare.getState().offen?.pfad ?? '').not.toContain('BS9/');
+    expect([...ds.dateien.keys()].filter((k) => k.startsWith('C:/FORMA/BS9/') && /Bauantrag/.test(k))).toEqual([]);
+  });
+
+  it('neue Antragsfassung: wird während des Anlegens des Ordners ein anderes Projekt geöffnet, wird sie dort nicht aktiv', async () => {
+    h24Vorbereiten();
+    const host = await render();
+    await projektOeffnen(host, 'H24');
+    await warte();
+    await act(() => useFormulare.getState().projektWaehlen(bs9Projekt()));
+    await warte();
+    const anlegen = ds.ordnerAnlegen.bind(ds);
+    let los!: () => void;
+    let einmal = true;
+    ds.ordnerAnlegen = async (...a: Parameters<typeof anlegen>) => {
+      if (einmal) {
+        einmal = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return anlegen(...a);
+    };
+    let laeuft!: Promise<void>;
+    act(() => {
+      laeuft = useAntrag.getState().fassungWaehlen('BAUA 3', true);
+    });
+    await warte();
+    expect(los).toBeTruthy();
+    await act(() => useFormulare.getState().projektWaehlen(h24Projekt()));
+    await warte();
+    los();
+    await act(() => laeuft);
+    await warte();
+    const h24 = readProjectFile(ds.dateien.get(H24_OAP)!).formulare as { aktiveFassung?: string; antraege?: Record<string, unknown> } | undefined;
+    expect(h24?.aktiveFassung).not.toBe('BAUA 3');
+    expect(Object.keys(h24?.antraege ?? {})).not.toContain('BAUA 3');
+    expect(useFormulare.getState().meldung?.text).toContain('nicht als aktive Fassung gesetzt');
+    expect(ds.ordner.has(`${PROJEKT}/TÖB/BAUA 3`)).toBe(true);
+  });
+
+  it('Projektdatei kurz nicht lesbar: beim nächsten Speichern neu gelesen – bleibt sie unlesbar, sagt die App es', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    expect(antragIn()?.umfang).toBeTruthy();
+    const gut = ds.dateien.get(OAP)!;
+    ds.dateien.set(OAP, new Uint8Array([1, 2, 3]));
+    await act(() => useFormulare.getState().oapLaden());
+    await warte();
+    expect(useFormulare.getState().oap).toBe('fehlt');
+    // wieder lesbar: die Änderung wird gespeichert
+    ds.dateien.set(OAP, gut);
+    await act(() => useAntrag.getState().umfangSetzen(null));
+    await warte();
+    expect(antragIn()?.umfang).toBeUndefined();
+    // weiter unlesbar: Meldung statt stillem Verwerfen
+    ds.dateien.set(OAP, new Uint8Array([1, 2, 3]));
+    await act(() => useFormulare.getState().oapLaden());
+    await warte();
+    await act(() => useAntrag.getState().merkmalSetzen('Gebäudeklasse', '3'));
+    await warte();
+    expect(useFormulare.getState().meldung?.text).toContain('nicht gespeichert: Die Projektdatei ist gerade nicht lesbar');
   });
 
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {

@@ -4664,26 +4664,27 @@ tr[data-ziehen='danach'] > td {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  /* lange Dateinamen brechen um */
+  overflow-wrap: anywhere;
 }
-/* die Anleitung zum Nachreichen in voller Textfarbe (nicht gedämpft); die gedämpften Zeilen im eingereichten Kasten
-   etwas kräftiger, damit sie auf dem grünen Grund auch hell AA erreichen; lange Dateinamen brechen um */
+/* Kopfzeile des Status (nur das direkte Kind, nicht die Kennwörter der Anleitung) */
+.pu-status-text > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+/* die Anleitung zum Nachreichen in voller Textfarbe (nicht gedämpft), Kennwörter nur halbfett */
 .pu-status-anleitung {
   color: var(--text);
 }
 .pu-status-anleitung strong {
   font-weight: 600;
 }
-.pu-status.eingereicht .muted {
+/* gedämpfte Zeilen und Feldbeschriftungen im eingereichten Kasten etwas kräftiger – auf dem grünen Grund auch hell AA */
+.pu-status.eingereicht .muted,
+.pu-status.eingereicht .field-label {
   color: color-mix(in srgb, var(--text) 15%, var(--muted));
-}
-.pu-status-text {
-  overflow-wrap: anywhere;
-}
-.pu-status-text strong {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
 }
 .pu-status-wahl {
   display: flex;
