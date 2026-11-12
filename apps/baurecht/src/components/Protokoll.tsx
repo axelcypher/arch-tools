@@ -161,6 +161,19 @@ export function Protokoll({ stand, onClose }: { stand: Pruefstand; onClose: () =
         ) : (
           <p>Keine.</p>
         )}
+        {(() => {
+          const geo = [...new Set(Object.values(a.fakten).filter((f) => f.herkunft === 'geodienst' && f.quelle).map((f) => `${f.quelle}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`))];
+          return geo.length ? (
+            <>
+              <h2>Quellen der Geodaten</h2>
+              <ul>
+                {geo.map((g) => (
+                  <li key={g}>{g}</li>
+                ))}
+              </ul>
+            </>
+          ) : null;
+        })()}
         {a.hinweise.length > 0 && (
           <>
             <h2>Hinweise und Auskünfte</h2>

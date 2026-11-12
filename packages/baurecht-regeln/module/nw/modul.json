@@ -325,19 +325,7 @@
       "titel": "Wasser- oder Heilquellenschutzgebiet",
       "gruppe": "schutz",
       "typ": "janein",
-      "geodienst": {
-        "art": "wms",
-        "url": "https://www.wms.nrw.de/umwelt/wasser/wsg",
-        "ebene": "2,4",
-        "vorstufen": [
-          "1",
-          "3"
-        ],
-        "vollstaendig": true,
-        "puffer": 25,
-        "quelle": "WMS Wasserschutzgebiete NRW (LANUK): Heilquellen und Trinkwasser festgesetzt (2, 4), geplant (1, 3)",
-        "lizenz": "LANUK: Nutzung zur Erzielung eines wirtschaftlichen Gewinns kostenpflichtig und nur mit Genehmigung des Herausgebers; keine Gewähr für Richtigkeit und Vollständigkeit"
-      }
+      "hilfe": "Karte: ELWAS-WEB bzw. WMS „Wasserschutzgebiete NRW“ (LANUK). Die automatische Abfrage ist ausgeschaltet: Die Nutzungsbedingungen des Dienstes verlangen für die Nutzung zu Erwerbszwecken eine Genehmigung des Herausgebers – bis sie vorliegt, bitte von Hand eintragen."
     }
   },
   "bausteine": {

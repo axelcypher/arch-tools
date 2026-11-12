@@ -170,6 +170,9 @@ export async function dienstAbfragen(h: Holen, d: GeodienstDef, umring: Punkt[] 
   return { treffer: false, vollstaendigAbgefragt: vollstaendig, ...(fehler ? { fehler } : {}), punkte };
 }
 
+/** Quelle mit Lizenzhinweis (z. B. „Datenlizenz Deutschland – Namensnennung 2.0, Land NRW“ verlangt den Vermerk) */
+export const quelleMitLizenz = (d: GeodienstDef) => (d.lizenz ? `${d.quelle} · ${d.lizenz}` : d.quelle);
+
 /**
  * Ergebnis einer Abfrage als Fakt. Treffer → sicher (rot ist die sichere Seite). Kein Treffer → Hinweis mit Grund,
  * auch wenn alles andere stimmt (Bedingung 4 nicht automatisch prüfbar).
@@ -178,7 +181,7 @@ export function alsFakt(def: FaktDef, d: GeodienstDef, e: GeoErgebnis, o: { gena
   if (e.treffer) {
     const wert = def.typ === 'janein' ? true : (e.wert ?? null);
     if (wert === null) return null;
-    return { wert, herkunft: 'geodienst', quelle: d.quelle, stand: o.heute, sicherheit: 'sicher' };
+    return { wert, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: 'sicher' };
   }
   if (def.typ !== 'janein') return null;
   const gruende: string[] = [];
@@ -186,5 +189,5 @@ export function alsFakt(def: FaktDef, d: GeodienstDef, e: GeoErgebnis, o: { gena
   if (!d.vollstaendig) gruende.push('Datensatz nicht als vollständig gekennzeichnet');
   if (!o.genau) gruende.push('Lage nur ungefähr (kein Flurstück bzw. Adresse nicht hausnummerngenau)');
   gruende.push('ob seit dem Datenstand neue Verordnungen bekanntgemacht wurden, prüft die App nicht – Amtsblatt bzw. Auskunft der Behörde');
-  return { wert: false, herkunft: 'geodienst', quelle: d.quelle, stand: o.heute, sicherheit: 'hinweis', grund: `Kein Treffer (Flurstück mit ${Math.max(25, d.puffer ?? 25)} m Puffer) – nur Hinweis: ${gruende.join('; ')}` };
+  return { wert: false, herkunft: 'geodienst', quelle: quelleMitLizenz(d), stand: o.heute, sicherheit: 'hinweis', grund: `Kein Treffer (Flurstück mit ${Math.max(25, d.puffer ?? 25)} m Puffer) – nur Hinweis: ${gruende.join('; ')}` };
 }
