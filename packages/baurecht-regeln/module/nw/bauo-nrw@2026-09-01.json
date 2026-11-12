@@ -195,16 +195,29 @@
       "gilt": {
         "oder": [
           {
-            "$": "bauen"
+            "m": "Vorhaben",
+            "in": [
+              "Errichtung",
+              "Änderung"
+            ]
           },
           {
             "und": [
               {
-                "$": "beseitigung"
+                "$": "beseitigung_art"
               },
               {
-                "f": "gebaeude.freistehend",
-                "ist": false
+                "oder": [
+                  {
+                    "nicht": {
+                      "$": "nur_beseitigung"
+                    }
+                  },
+                  {
+                    "f": "gebaeude.freistehend",
+                    "ist": false
+                  }
+                ]
               }
             ]
           }
@@ -1460,10 +1473,7 @@
       "gilt": {
         "oder": [
           {
-            "$": "vorhaben_29"
-          },
-          {
-            "$": "beseitigung"
+            "$": "vorhaben_oder_beseitigung"
           }
         ]
       },
@@ -1539,7 +1549,7 @@
       "nachweis": [
         "Bauvorlagen für die Beseitigung (§ 15 BauPrüfVO)"
       ],
-      "hinweis": "Ob ein Vorhaben verfahrensfrei ist, richtet sich nach dem Katalog in Abs. 1; offen, solange das Verfahren nicht festgelegt ist. Bei angebauten Gebäuden die Standsicherheit der angrenzenden Gebäude durch eine berechtigte Person beurteilen lassen (Abs. 3 Satz 4); Artenschutz vor Abbruch prüfen. Bei nicht verfahrensfreier Beseitigung keine Selbst- oder Nachbarschaftshilfe (§ 53 Abs. 2 Satz 2); den Beginn der Beseitigung anzeigen (Abs. 3 Satz 6 mit § 74 Abs. 8).",
+      "hinweis": "Ob ein Vorhaben verfahrensfrei ist, richtet sich nach dem Katalog in Abs. 1; offen, solange das Verfahren nicht festgelegt ist. Bei angebauten Gebäuden die Standsicherheit der angrenzenden Gebäude durch eine berechtigte Person beurteilen lassen (Abs. 3 Satz 4); Artenschutz vor Abbruch prüfen. Bei nicht verfahrensfreier Beseitigung keine Selbst- oder Nachbarschaftshilfe (§ 53 Abs. 2 Satz 2); den Beginn der Beseitigung anzeigen (Abs. 3 Satz 7 mit § 74 Abs. 8).",
       "stand": {
         "62/1": "1c0c0a63",
         "62/2": "81ffc344",

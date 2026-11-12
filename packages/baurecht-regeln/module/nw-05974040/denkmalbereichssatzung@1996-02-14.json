@@ -25,10 +25,7 @@
       "gilt": {
         "oder": [
           {
-            "$": "vorhaben_29"
-          },
-          {
-            "$": "beseitigung"
+            "$": "vorhaben_oder_beseitigung"
           }
         ]
       },
@@ -48,10 +45,7 @@
       "gilt": {
         "oder": [
           {
-            "$": "vorhaben_29"
-          },
-          {
-            "$": "beseitigung"
+            "$": "vorhaben_oder_beseitigung"
           }
         ]
       },
@@ -68,10 +62,7 @@
       "gilt": {
         "oder": [
           {
-            "$": "vorhaben_29"
-          },
-          {
-            "$": "beseitigung"
+            "$": "vorhaben_oder_beseitigung"
           },
           {
             "f": "vorhaben.werbeanlage",

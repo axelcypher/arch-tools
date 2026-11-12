@@ -174,10 +174,9 @@
             "ist": false
           },
           {
-            "m": "Vorhaben",
-            "nicht": [
-              "Errichtung"
-            ]
+            "nicht": {
+              "$": "errichtung"
+            }
           }
         ]
       },

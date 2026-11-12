@@ -374,8 +374,8 @@
       }
     },
     "soest.einfriedung": {
-      "titel": "Einfriedigung zu einer öffentlichen Verkehrsfläche wird errichtet oder geändert (Mauer, Zaun, Gitter, Tor)",
-      "kurz": "Einfriedigung zur Straße",
+      "titel": "Einfriedigung zu einer öffentlichen Verkehrsfläche wird errichtet, geändert oder beseitigt (Mauer, Zaun, Gitter, Tor)",
+      "kurz": "Einfriedigung zur Straße betroffen",
       "gruppe": "vorhaben",
       "typ": "janein",
       "hilfe": "§ 12 Altstadtsatzung: Gestaltung der Einfriedigungen zu öffentlichen Verkehrsflächen",
@@ -386,7 +386,41 @@
             "ist": true
           },
           {
-            "$": "vorhaben_29"
+            "$": "vorhaben_oder_beseitigung"
+          }
+        ]
+      }
+    },
+    "soest.einfriedungspflicht": {
+      "titel": "Zur öffentlichen Verkehrsfläche liegen ein Vorgarten oder eine Fläche zwischen Gebäuden, oder auf dem Grundstück ein Garten, ein Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen",
+      "kurz": "Einfriedigungspflicht zur Straße",
+      "gruppe": "grundstueck",
+      "typ": "janein",
+      "frage": "Liegt zur öffentlichen Verkehrsfläche ein Vorgarten oder eine Lücke zwischen Gebäuden – oder entsteht ein Garten, Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen?",
+      "hilfe": "§ 12 Abs. 1 Altstadtsatzung: Vorgärten und Flächen zwischen Gebäuden sind zur öffentlichen Verkehrsfläche mit Gitter auf Grünsandsteinsockel oder Bruchsteinmauer einzufriedigen (Nr. 1), Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2).",
+      "wenn": {
+        "und": [
+          {
+            "f": "soest.altstadt",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "und": [
+                  {
+                    "$": "vorhaben_29"
+                  },
+                  {
+                    "f": "vorhaben.stellplaetze_grundstueck",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -453,13 +487,23 @@
       }
     },
     "soest.stellplaetze_entfallen": {
-      "titel": "Durch die Beseitigung fallen notwendige Stellplätze, Garagen oder Fahrradabstellplätze weg",
+      "titel": "Notwendige Stellplätze, Garagen oder Fahrradabstellplätze fallen weg oder werden anders genutzt (Beseitigung, Umbau, Nutzungsänderung)",
       "kurz": "Notwendige Stellplätze fallen weg",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "hilfe": "§ 4 Abs. 1 und 3, § 6 Abs. 1 Satz 2 Stellplatzsatzung: notwendige Stellplätze dauerhaft unterhalten; ihre Entfernung ist ordnungswidrig – Ersatz nachweisen oder mit der Stadt klären",
+      "hilfe": "§ 4 Abs. 1 und 3, § 6 Abs. 1 Satz 2 Stellplatzsatzung: notwendige Stellplätze dauerhaft unterhalten, nicht zweckentfremden (z. B. Garage zu Wohnraum); ihre Entfernung ist ordnungswidrig – Ersatz nachweisen oder mit der Stadt klären",
       "wenn": {
-        "$": "beseitigung_art"
+        "oder": [
+          {
+            "$": "beseitigung_art"
+          },
+          {
+            "$": "aenderung"
+          },
+          {
+            "$": "nutzungsaenderung"
+          }
+        ]
       }
     },
     "planung.sanierung_144_ausgeschlossen": {
@@ -473,6 +517,25 @@
         "ist": true
       },
       "wert": true
+    },
+    "planung.planreife": {
+      "titel": "Vorhaben nach § 33 BauGB zulässig (Planreife; Festsetzungen schriftlich anerkannt, Erschließung gesichert)",
+      "kurz": "Planreife nach § 33 BauGB",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "Ein Aufstellungsbeschluss allein genügt nicht – § 33 Abs. 1 Nr. 1–4 BauGB",
+      "wenn": {
+        "oder": [
+          {
+            "f": "planung.planaufstellung",
+            "ist": true
+          },
+          {
+            "f": "soest.bplan_entwurf",
+            "ist": true
+          }
+        ]
+      }
     }
   },
   "bausteine": {

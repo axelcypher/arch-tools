@@ -559,11 +559,11 @@
       }
     },
     "schutz.hecke_ausgleich": {
-      "titel": "Hecke ab 100 m im Außenbereich, Wallhecke oder als Ausgleich festgesetzte Anpflanzung betroffen",
+      "titel": "Geförderte Anpflanzung oder Hecke ab 100 m im Außenbereich, Wallhecke oder als Ausgleich festgesetzte Anpflanzung betroffen",
       "kurz": "Geschützte Hecke/Ausgleichspflanzung",
       "gruppe": "schutz",
       "typ": "janein",
-      "hilfe": "§ 39 LNatSchG NRW: gesetzlich geschützte Landschaftsbestandteile",
+      "hilfe": "§ 39 Abs. 1 LNatSchG NRW: gesetzlich geschützt sind mit öffentlichen Mitteln geförderte Anpflanzungen außerhalb des Waldes und im Außenbereich (Nr. 1), Hecken ab 100 m Länge im Außenbereich und Wallhecken (Nr. 2) sowie Kompensationspflanzungen (Nr. 3)",
       "wenn": {
         "f": "vorhaben.baeume_faellen",
         "ist": true
@@ -645,10 +645,7 @@
     "nw_neubau_gebaeude": {
       "und": [
         {
-          "m": "Vorhaben",
-          "in": [
-            "Errichtung"
-          ]
+          "$": "errichtung"
         },
         {
           "m": "Gebäudeart",

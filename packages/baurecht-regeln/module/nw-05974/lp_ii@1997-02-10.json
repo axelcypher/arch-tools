@@ -52,7 +52,7 @@
           {
             "oder": [
               {
-                "$": "bauen"
+                "$": "bauen_oder_beseitigung"
               },
               {
                 "f": "vorhaben.erdarbeiten",
@@ -64,9 +64,6 @@
               },
               {
                 "$": "nutzungsaenderung"
-              },
-              {
-                "$": "beseitigung"
               }
             ]
           }

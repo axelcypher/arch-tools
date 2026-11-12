@@ -15,10 +15,7 @@
           {
             "oder": [
               {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
+                "$": "vorhaben_oder_beseitigung"
               }
             ]
           }
@@ -94,10 +91,7 @@
           {
             "oder": [
               {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
+                "$": "vorhaben_oder_beseitigung"
               }
             ]
           }
@@ -290,7 +284,7 @@
           }
         ]
       },
-      "grund": "Gesetzlich geschützte Landschaftsbestandteile (Hecken ab 100 m im Außenbereich, Wallhecken, Kompensationspflanzungen): Beeinträchtigung verboten.",
+      "grund": "Gesetzlich geschützte Landschaftsbestandteile (mit öffentlichen Mitteln geförderte Anpflanzungen im Außenbereich, Hecken ab 100 m im Außenbereich, Wallhecken, Kompensationspflanzungen): Beseitigung und Beeinträchtigung verboten.",
       "fundstellen": [
         "39/1",
         "39/2"
@@ -397,10 +391,7 @@
           {
             "oder": [
               {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
+                "$": "vorhaben_oder_beseitigung"
               }
             ]
           }

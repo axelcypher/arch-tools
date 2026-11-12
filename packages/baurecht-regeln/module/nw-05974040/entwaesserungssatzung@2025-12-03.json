@@ -28,7 +28,7 @@
                 "$": "nutzungsaenderung"
               },
               {
-                "$": "beseitigung"
+                "$": "nur_beseitigung"
               }
             ]
           },
@@ -181,7 +181,7 @@
                 "$": "nutzungsaenderung"
               },
               {
-                "$": "beseitigung"
+                "$": "nur_beseitigung"
               }
             ]
           },

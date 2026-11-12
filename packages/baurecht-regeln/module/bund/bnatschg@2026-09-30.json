@@ -119,10 +119,7 @@
           {
             "oder": [
               {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
+                "$": "vorhaben_oder_beseitigung"
               },
               {
                 "f": "vorhaben.erdarbeiten",
@@ -154,10 +151,7 @@
           {
             "oder": [
               {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
+                "$": "vorhaben_oder_beseitigung"
               }
             ]
           },

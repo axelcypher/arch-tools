@@ -29,14 +29,7 @@
       "gilt": {
         "und": [
           {
-            "oder": [
-              {
-                "$": "vorhaben_29"
-              },
-              {
-                "$": "beseitigung"
-              }
-            ]
+            "$": "vorhaben_29"
           },
           {
             "oder": [
@@ -77,7 +70,44 @@
       "hinweis": "91 Bebauungspläne verweisen zusätzlich auf die Altstadtsatzung (Gestaltung). XPlanGML gibt es nur für B 187.",
       "verweise": [
         "bund/baugb/30"
-      ]
+      ],
+      "pruefen": {
+        "grund": "Bei einer Beseitigung binden die Festsetzungen nur ausnahmsweise – Erhaltungsgebote (§ 9 Abs. 1 Nr. 25 b BauGB) oder eine Erhaltungssatzung (§ 172 BauGB) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nur_beseitigung"
+            },
+            {
+              "oder": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "$": "satzung_baugb"
+                },
+                {
+                  "$": "planreif"
+                },
+                {
+                  "und": [
+                    {
+                      "f": "soest.bplan_entwurf",
+                      "ist": true
+                    },
+                    {
+                      "nicht": {
+                        "f": "planung.planreife",
+                        "ist": false
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
     },
     "Verfahrensstand": {
       "titel": "Stand des Plans im Dienst der Stadt",

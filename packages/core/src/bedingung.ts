@@ -82,13 +82,13 @@ export const MERKMAL_ERKLAERUNG: Record<string, { text: string; quelle?: Quelle;
   },
   Gebäudeart: { text: 'Art des Gebäudes (Wohngebäude nach Zahl der Wohnungen)' },
   Vorhaben: {
-    text: 'Art des Vorhabens (§ 60 BauO NRW 2018) – ein Teilabbruch ist eine Änderung, ein Ersatzbau eine Errichtung',
+    text: 'Art des Vorhabens (§ 60 BauO NRW 2018) – bei „Beseitigung“ folgt die Frage nach dem Umfang (ganz, Teilabbruch, mit Ersatzbau)',
     quelle: { gesetz: 'bauo-nrw', paragraf: '60' },
     werte: {
-      Errichtung: 'Neubau einer Anlage, auch als Ersatz für eine abgebrochene – den Abbruch gesondert prüfen',
-      Änderung: 'bauliche Änderung einer bestehenden Anlage, auch Anbau, Aufstockung und Teilabbruch',
+      Errichtung: 'Neubau einer Anlage; Abbruch und Neubau in einem Antrag: „Beseitigung“ mit Umfang „Abbruch mit Ersatzbau“',
+      Änderung: 'bauliche Änderung einer bestehenden Anlage, auch Anbau und Aufstockung',
       Nutzungsänderung: 'andere Nutzung einer bestehenden Anlage, auch ohne bauliche Änderung',
-      Beseitigung: 'vollständiger Abbruch einer Anlage (§ 62 Abs. 3 BauO NRW 2018) – kein Teilabbruch, kein Ersatzbau im selben Antrag',
+      Beseitigung: 'Abbruch einer Anlage (§ 62 Abs. 3 BauO NRW 2018) – ganz oder teilweise, mit oder ohne Ersatzbau; den Umfang fragt die App gleich danach (Teilabbruch wird wie eine Änderung, Ersatzbau wie eine Errichtung geprüft)',
     },
   },
   Planungsrecht: {

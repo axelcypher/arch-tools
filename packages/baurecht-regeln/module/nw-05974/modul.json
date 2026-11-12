@@ -398,7 +398,7 @@
     "kreis_soest_eingriff": {
       "oder": [
         {
-          "$": "bauen"
+          "$": "bauen_oder_beseitigung"
         },
         {
           "f": "vorhaben.erdarbeiten",
@@ -407,9 +407,6 @@
         {
           "f": "vorhaben.baeume_faellen",
           "ist": true
-        },
-        {
-          "$": "beseitigung"
         }
       ]
     }

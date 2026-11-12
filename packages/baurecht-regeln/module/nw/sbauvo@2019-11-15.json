@@ -268,7 +268,7 @@
       "entfaellt": {
         "oder": [
           {
-            "$": "beseitigung"
+            "$": "nur_beseitigung"
           },
           {
             "und": [
@@ -315,7 +315,7 @@
       "entfaellt": {
         "oder": [
           {
-            "$": "beseitigung"
+            "$": "nur_beseitigung"
           },
           {
             "f": "gebaeude.garage_nutzflaeche",
@@ -358,7 +358,7 @@
       "entfaellt": {
         "oder": [
           {
-            "$": "beseitigung"
+            "$": "nur_beseitigung"
           },
           {
             "oder": [
@@ -405,7 +405,7 @@
       "entfaellt": {
         "oder": [
           {
-            "$": "beseitigung"
+            "$": "nur_beseitigung"
           },
           {
             "f": "gebaeude.garage_nutzflaeche",

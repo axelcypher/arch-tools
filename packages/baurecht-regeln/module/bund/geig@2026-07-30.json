@@ -128,7 +128,7 @@
             "$": "errichtung"
           },
           {
-            "$": "beseitigung"
+            "$": "nur_beseitigung"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -175,7 +175,7 @@
                     "$": "errichtung"
                   },
                   {
-                    "$": "beseitigung"
+                    "$": "nur_beseitigung"
                   },
                   {
                     "f": "gebaeude.stellplaetze",
@@ -225,7 +225,7 @@
             "$": "errichtung"
           },
           {
-            "$": "beseitigung"
+            "$": "nur_beseitigung"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -272,7 +272,7 @@
                     "$": "errichtung"
                   },
                   {
-                    "$": "beseitigung"
+                    "$": "nur_beseitigung"
                   },
                   {
                     "f": "gebaeude.stellplaetze",
