@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { ProjektStatus } from '@core/model';
 import { angeheftetLesen, anheftenUmschalten } from '@core/platform/konfig';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
-import { ordnerZeigen } from '@core/platform/projektordner';
+import { ordnerZeigen, statusAusGruppe } from '@core/platform/projektordner';
 import { meldung } from '@core/ui/Rueckfrage';
 import { useProjektordnerListe } from '@core/ui/projektListe';
 import type { KontextEintrag, UebersichtProjekt } from '@core/ui/ProjektUebersicht';
@@ -27,6 +27,7 @@ export function ProjektStart({
   onEinstellungen,
   onPruefen,
   onKatasterEinstellungen,
+  onMails,
 }: {
   fs: ProjektordnerZugriff;
   /** angefangenes neues Projekt („2026-014 EFH Musterweg“), leer ohne */
@@ -40,8 +41,10 @@ export function ProjektStart({
   onPruefen?: (pfad: string) => void;
   /** Einstellungen der Katasterpläne zeigen */
   onKatasterEinstellungen?: () => void;
+  /** Mails des Projekts prüfen und benennen */
+  onMails?: (pfad: string) => void;
 }) {
-  const { allgemein, struktur } = useOrdner();
+  const { allgemein, struktur, setAllgemein } = useOrdner();
   // Nummer und Kurzname aus dem Ordnernamen nach dem Schema der Struktur
   const ausName = useCallback((name: string) => ausOrdnername(struktur.ordnername, name), [struktur.ordnername]);
   const liste = useProjektordnerListe(fs, allgemein.projekte, ausName);
@@ -58,7 +61,9 @@ export function ProjektStart({
 
   const statusSetzen = async (p: UebersichtProjekt, status: ProjektStatus) => {
     try {
-      await projektStatusSetzen(fs, p.schluessel, status);
+      // im Archiv- bzw. Akquiseordner gälte sonst dessen Stand – „aktiv“ dann ausdrücklich in die Projektdatei
+      const gruppe = liste.ordner.find((o) => o.pfad === p.schluessel)?.gruppe;
+      await projektStatusSetzen(fs, p.schluessel, status, { ausdruecklich: !!statusAusGruppe(gruppe) });
       liste.neuLaden();
     } catch (e) {
       await meldung('Status nicht gesetzt', e instanceof Error ? e.message : String(e));
@@ -71,6 +76,7 @@ export function ProjektStart({
     return [
       { label: 'Ergänzen …', aktion: () => onOeffnen(p.schluessel) },
       ...(onPruefen ? [{ label: 'Projekt prüfen', aktion: () => onPruefen(p.schluessel) }] : []),
+      ...(onMails ? [{ label: 'Mails prüfen …', titel: 'Mails (.msg) im Projektordner prüfen und nach dem Schema benennen', aktion: () => onMails(p.schluessel) }] : []),
       {
         label: 'Katasterpläne …',
         titel: 'Katasterauszüge (PDF) und DXF-Pläne aus der QGIS-Vorlage um die Projektadresse exportieren',
@@ -113,6 +119,8 @@ export function ProjektStart({
         kontextMenue={kontextMenue}
         // die Projekt-App hat ihren eigenen Knopf (der Assistent ist hier)
         projektAnlegen={false}
+        // Stammordner per Ziehen umsortieren (gemeinsame Einstellung; der erste nimmt neue Projekte auf)
+        onGruppenOrdnen={(projekte) => setAllgemein({ projekte })}
         kopf={
           <>
             <button className="primary" onClick={onNeu} title="Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen">

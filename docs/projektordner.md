@@ -33,7 +33,15 @@ abfragt, steht danach in der Projektdatei – für alle Apps.
    einen Projektordner an beliebiger Stelle. Der Ordner muss nicht nach dem Schema heißen; ergänzt wird in genau
    diesem Ordner. Aus „Ordner prüfen“ führt „Projekt ergänzen …“ direkt hierher. Ohne eingestellten Stammordner
    (und im Browser) stehen hier zwei Karten: neues Projekt bzw. Projektordner wählen.
-   Gibt es genau einen Stammordner, ist er aufgeklappt. Die Projekte lassen sich sortieren (Ordnername, Nummer –
+   **Sammelordner:** Projekte in Gruppen-, Akquise- und Archivordnern eines Stammordners (auch verschachtelt, etwa
+   „Archiv/2024“) stehen in eigenen Abschnitten („Projekte › Archiv“). Sammelordner erkennt die App am Namen
+   („Archiv“, „_Archiv“, „99 Abgeschlossen“, „Akquise“ …, nicht „2026-014 Stadtarchiv“) oder daran, dass darin Ordner
+   mit Projektnamen liegen; ein Ordner mit Projektdatei oder nummerierten Unterordnern („00 Projekt“, „01 …“) ist ein
+   Projekt. Ohne Status in der Projektdatei gelten Projekte im Archivordner als abgeschlossen (in der Standardansicht
+   ausgeblendet) und in der Akquise als Akquise; „Wieder aktiv“ schreibt dann „aktiv“ ausdrücklich in die Datei.
+   **Reihenfolge der Stammordner:** die Abschnitte der Übersicht ziehen (die Sammelordner wandern mit) oder unter
+   „Einstellungen“ ziehen bzw. ↑ ↓ – gilt für alle Apps; im ersten entstehen neue Projekte.
+   Gibt es genau einen Stammordner, ist er aufgeklappt (ein Archivordner darin nicht). Die Projekte lassen sich sortieren (Ordnername, Nummer –
    neueste zuerst –, zuletzt geändert, Titel) und nach Status filtern (Standard: ohne abgeschlossene; die Wahl gilt
    je Benutzer). Rechtsklick auf ein Projekt: „Ergänzen …“, „Projekt prüfen“, „Im Explorer öffnen“, **„Projekt
    abschließen“** bzw. „Wieder aktiv“, „Als Akquise kennzeichnen“ und „Anheften“ – angeheftete Projekte stehen ganz
@@ -44,7 +52,7 @@ abfragt, steht danach in der Projektdatei – für alle Apps.
    **Stand**: beauftragt (aktiv) oder Akquise – er steht als `meta.status` in der Projektdatei und gilt für den
    Filter der Projektübersicht aller Apps.
    - Neues Projekt: Das Tool trägt die nächste freie Nummer vor (änderbar) – die höchste laufende Nummer unter den
-     Ordnern **aller** Stammordner (auch Archiv oder Akquise; im laufenden Jahr, wenn das Schema ein Jahr enthält)
+     Projektordnern **aller** Stammordner (auch Archiv oder Akquise, auch in deren Sammelordnern; im laufenden Jahr, wenn das Schema ein Jahr enthält)
      plus eins. Passt eine Nummer nicht zum Schema („26-14“ bei `{jahr}-{nr:3}`), steht am Feld ein Hinweis
      („erwartet z. B. 2026-015“); er hält nicht auf. Projektnummer und Kurzname sind Pflicht (Stern); der
      Ordnername, der sich daraus ergibt, steht direkt darunter, Zeichen wie `/ : ?` meldet das Feld schon beim
@@ -129,7 +137,7 @@ mit; was dort schon liegt, gilt und bleibt unverändert.
 
 | Datei | Inhalt |
 |---|---|
-| `allgemein.json` | Stammordner der Projekte (mehrere möglich; im ersten entstehen neue Projekte), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien, Kürzel der Mitarbeiter (Vorschläge für „Bearbeitung“) |
+| `allgemein.json` | Stammordner der Projekte (mehrere möglich, Reihenfolge per Ziehen; im ersten entstehen neue Projekte; Projekte in Gruppen-, Akquise- und Archivordnern darin zählen mit), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien, Kürzel der Mitarbeiter (Vorschläge für „Bearbeitung“) |
 | `projektordner.json` | Struktur samt Bausteinen und Vorlagen-Presets, Vorlagenordner dieser App |
 
 Welcher Konfigurationsordner gilt, steht je Benutzer in `%APPDATA%\arch-tools\konfig.json` – für alle Apps
@@ -315,7 +323,9 @@ Stammordner (mit Suche; ein Klick prüft) oder über „Ordner wählen …“. G
 - Dateien in den Planordnern, die nicht dem **Dateinamenschema** folgen (mit der Projektnummer aus den
   Stammdaten),
 - **überlange Pfade** (mehr als 200 Zeichen ab dem Projektordner – mit Laufwerk und Stammordner droht die
-  Windows-Grenze von 260 Zeichen).
+  Windows-Grenze von 260 Zeichen),
+- **Mails** (.msg), die nicht nach dem Schema `<Projektcode> von|an <Name> <JJMMTT> <Thema>.msg` heißen – nur am
+  Namen; „N Mails benennen …“ führt zu [Mails](#mails).
 
 Die Befunde stehen nach Schwere gruppiert: Fehler, Abweichungen, Hinweise, in Ordnung. „Bericht als CSV …“ speichert
 sie mit allen betroffenen Pfaden (für Excel: Semikolon, UTF-8 mit BOM).
@@ -327,6 +337,52 @@ Abweichungen zuerst. Ein Klick auf ein Projekt zeigt dessen Einzelbericht; „Al
 
 Das Tool meldet nur. Von hier aus lassen sich **fehlende Ordner anlegen** und das **Projekt ergänzen** (im
 Assistenten: fehlende Ordner, Vorlagen und die Projektdatei).
+
+## Mails
+
+Reiter **„Mails“** (auch Rechtsklick auf ein Projekt → „Mails prüfen …“ und aus „Ordner prüfen“): Mails richtig
+ablegen und benennen. Das Schema:
+
+```
+<Projektcode> von|an <Name> <JJMMTT> <Thema>.msg        z. B.  SIS von Peitz 261110 Raumaufteilung.msg
+```
+
+**Prüfen und umbenennen.** Die App sucht im gewählten Projektordner mit allen Unterordnern nach Outlook-Mails (.msg)
+und zeigt die, deren Name nicht passt – mit Grund: kein Schema, anderer Projektcode, E-Mail-Adresse statt Nachname,
+Punkt/Unterstrich im Namen, ungültiges Datum, „AW“/„WG“ am Anfang des Themas, Unterstriche, Dateiendungen im Thema
+(„.docx“), doppelte Leerzeichen. Für jede schlägt sie den Namen **aus der Mail selbst** vor (gelesen ohne Outlook, auch
+ältere ANSI-Nachrichten):
+
+- **von / an und Name:** Absender von außen → „von <Nachname des Absenders>“; Absender aus dem Büro → „an <erster
+  Empfänger von außen>“; eine **Weiterleitung aus dem Büro** (WG/FW) einer Mail von außen → „von <ursprünglicher
+  Absender>“ aus dem Kopf der weitergeleiteten Mail im Text. Der Nachname kommt aus dem Anzeigenamen („Peitz, Rüdiger“,
+  „Rüdiger Peitz | Firma“) oder der Adresse („ruediger.peitz@…“ → Peitz; Sammelpostfächer wie info@ → Name aus der
+  Domain).
+- **Datum:** Empfang (von außen) bzw. Versand (an außen) – nicht das Dateidatum, das sich beim Kopieren ändert.
+- **Thema:** der Betreff ohne „AW:“/„WG:“, ohne Dateiendung, Unterstriche als Leerzeichen. Inhaltlich besser („Raum-
+  aufteilung“ statt „Grundriss Sanierung ESG“) lässt es sich im Feld ändern; Themen, die im Projekt schon vorkommen,
+  stehen als Vorschläge darin. „Mail ansehen“ zeigt Betreff, Von, An, Cc, Gesendet, Empfangen, Anhänge und den Text.
+
+Woran „aus dem Büro“ erkannt wird, stellen die **eigenen Domains** ein (gilt fürs Büro, Konfigurationsordner, Bereich
+`mails`); ohne Einstellung schlägt die App die Domain vor, die in den meisten Mails des Projekts vorkommt, und nimmt bis
+dahin die Richtung aus dem bisherigen Namen. **„Auch korrekt benannte prüfen“** liest auch die richtig benannten Mails
+und meldet ein abweichendes Datum („Datum 261103 – die Mail ist vom 261102 (Versand)“) bzw. eine falsche Richtung. Der
+Projektcode kommt aus der Projektdatei und lässt sich oben ändern.
+
+Umbenannt wird erst auf Klick – einzeln oder alle markierten –, im selben Ordner, die Endung bleibt, und **nie
+überschreibend**: Gibt es den Namen schon, bleibt alles, wie es war. Ist die Mail in Outlook geöffnet, sagt die App
+das. (Befehl `projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von Projekt und
+Rahmen-App.)
+
+**Mails aus Outlook ablegen.** Mails aus dem **klassischen Outlook** lassen sich direkt auf die Fläche „Mails aus Outlook
+hierher ziehen“ ziehen (oder gespeicherte .msg-Dateien wählen). Die App bildet den Namen wie oben, schlägt als Ordner
+den vor, in dem im Projekt die meisten Mails liegen, und legt sie mit „Ablegen“ dort ab – **kopiert** (in Outlook
+bleiben sie; die App meldet beim Ziehen „kopieren“, nie „verschieben“) und nie überschreibend. Liegt dieselbe Mail
+(gleicher Betreff und Versand) schon im Projekt, steht das dabei. Dafür gibt das Fenster das Ziehen & Ablegen an die
+Oberfläche weiter (`dragDropEnabled: false`, wie in der Rahmen-App) – Outlook liefert die Mails dabei als virtuelle
+Dateien, die Chromium/WebView2 als .msg übergibt. Auf einem Büro-PC noch zu bestätigen; das neue Outlook liefert so
+nichts (dort: auf den Desktop ziehen bzw. „Speichern unter“ und dann wählen). Hintergrund und Alternativen (Graph,
+COM, Makro): [docs/outlook-mails.md](outlook-mails.md).
 
 ## Katasterpläne
 
@@ -382,7 +438,7 @@ Die Desktop-App greift nur auf Ordner zu, die im Dialog gewählt bzw. eingestell
 Befehle aller Apps ([packages/core/tauri/commands.rs](../packages/core/tauri/commands.rs)): Ordner und Dateien nur
 neu anlegen, ersetzen allein die Projektdatei – atomar, nur wenn sie seit dem Einlesen niemand geändert hat, und
 mit Sicherungskopie im App-Ordner (`%LOCALAPPDATA%\de.pendzialek.projektordner\Sicherungen`, die neuesten 200).
-Löschen kann das Tool nichts.
+Umbenennen kann sie nur Mails auf ausdrücklichen Klick (nie überschreibend). Löschen kann das Tool nichts.
 
 ## Projektdatei (.oap)
 
@@ -453,6 +509,9 @@ Presets und Bausteine in der Struktur-Datei:
   App „Projekt“ nicht starten. Formulare öffnet das neue Projekt nicht selbst (seine Übersicht zeigt FORMA-Projekte),
   sie wird nur neu geladen.
 - Bausteine sind Kopiervorlagen: Ein später geänderter Baustein ändert bereits eingefügte Ordner nicht.
+- Mails: nur Outlook-Nachrichten (.msg), keine .eml. Das Thema schlägt die App aus dem Betreff vor – eine inhaltliche
+  Zusammenfassung („Raumaufteilung“) setzt man von Hand. Nachrichten nur mit RTF-Text (ohne Klartext/HTML) liefern
+  keinen Text für die Erkennung von Weiterleitungen. Verschieben in einen anderen Ordner gibt es noch nicht.
 - „Projekt abschließen“ setzt nur den Status; ein Verschieben in einen Archiv-Stammordner (als Kopie) und den
   Prüfbericht als PDF gibt es nicht. Ein von Hand ins Archiv verschobenes Projekt zählt beim Nummernvorschlag mit,
   wenn sein Stammordner eingestellt ist. Keine Obsidian-Projektnotiz.

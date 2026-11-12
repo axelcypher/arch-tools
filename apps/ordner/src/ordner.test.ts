@@ -749,6 +749,9 @@ describe('Vorlagen-Presets', () => {
     // „aktiv“ ist der Normalfall und steht nicht in der Datei
     await projektStatusSetzen(fs, basis, 'aktiv');
     expect(readProjectFile(fs.eintraege.get(pfad)!).meta.status).toBeUndefined();
+    // im Archivordner: „aktiv“ ausdrücklich, sonst gälte der Stand des Ordners
+    await projektStatusSetzen(fs, basis, 'aktiv', { ausdruecklich: true });
+    expect(readProjectFile(fs.eintraege.get(pfad)!).meta.status).toBe('aktiv');
     // ohne Projektdatei: verständliche Meldung, nichts wird angelegt
     await fs.ordnerAnlegen('P:/Projekte', '2019-003 Altbau');
     await expect(projektStatusSetzen(fs, 'P:/Projekte/2019-003 Altbau', 'abgeschlossen')).rejects.toThrow(/noch keine Projektdatei/);

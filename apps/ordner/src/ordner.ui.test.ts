@@ -209,6 +209,27 @@ describe('Projekt (früher Projektordner)', () => {
     expect(host.querySelector('[role="tree"]')).toBeNull();
   });
 
+  it('Einstellungen: Stammordner per Ziehen bzw. ↑ ↓ umsortieren – der erste nimmt neue Projekte auf', () => {
+    useOrdner.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['/srv/Projekte', '/srv/Akquise', '/srv/Archiv'] }, stammordner: '/srv/Projekte' });
+    const host = render();
+    act(() => knopf(host, 'Einstellungen').click());
+    const eintraege = () => [...host.querySelectorAll('.po-stammordner li')];
+    const reihe = () => useOrdner.getState().allgemein.projekte;
+    // Archiv ganz nach oben ziehen
+    act(() => eintraege()[2].dispatchEvent(new Event('dragstart', { bubbles: true })));
+    act(() => eintraege()[0].dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true })));
+    act(() => eintraege()[0].dispatchEvent(new Event('drop', { bubbles: true, cancelable: true })));
+    expect(reihe()).toEqual(['/srv/Archiv', '/srv/Projekte', '/srv/Akquise']);
+    expect(useOrdner.getState().stammordner).toBe('/srv/Archiv');
+    expect(eintraege()[0].textContent).toContain('neue Projekte');
+    // mit den Pfeilen
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Archiv nach unten"]')!.click());
+    expect(reihe()).toEqual(['/srv/Projekte', '/srv/Archiv', '/srv/Akquise']);
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Akquise nach oben"]')!.click());
+    expect(reihe()).toEqual(['/srv/Projekte', '/srv/Akquise', '/srv/Archiv']);
+    expect(host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Projekte nach oben"]')!.disabled).toBe(true);
+  });
+
   it('Struktur: Klick-Editor – auswählen, umbenennen, anlegen, Leistungsphasen, ziehen, kopieren, Bausteine, rückgängig', async () => {
     useOrdner.setState({ struktur: { ...STANDARD, ordner: [{ pfad: '05 Protokolle' }, { pfad: '07 Ausschreibung', lph: [6, 7] }, { pfad: '09 Fotos' }] } });
     const host = render();

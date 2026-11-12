@@ -8,6 +8,7 @@ include!("../../../../packages/core/tauri/commands.rs");
 include!("../../../formulare/src-tauri/src/befehle.rs");
 include!("../../../ava/src-tauri/src/befehle.rs");
 include!("../../../../packages/core/tauri/qgis.rs");
+include!("../../../../packages/core/tauri/umbenennen.rs");
 
 /// Die Formulare-App im Tab bzw. Fenster ist zu oder zieht um (Herauslösen, Andocken): ihre Sperrdateien freigeben.
 /// Sonst hielte das Programm sie bis zum Beenden – die nächste Formulare-Instanz sähe die Formulare als „hier
@@ -32,6 +33,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             qgis_suchen,
             qgis_ausfuehren,
+            // Projekt: Dateien umbenennen (Mails)
+            projekt_datei_umbenennen,
             // gemeinsam
             konfig_basis,
             ordner_waehlen,

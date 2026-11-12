@@ -4,6 +4,7 @@ import type { ProjektAngaben } from './stammdaten';
 import { PROJEKT_DATEI } from './stammdaten';
 import type { Struktur } from './struktur';
 import { normPfad, ordnerGilt, sichererName } from './struktur';
+import { MAIL_SCHEMA, mailNamePruefen } from './mail/mailname';
 
 /**
  * Prüfmodus: vorhandenen Projektordner mit der Struktur vergleichen und Abweichungen melden – auch, ob er eine
@@ -28,6 +29,8 @@ export interface Pruefergebnis {
   fehlendeOrdner: string[];
   ordner: number;
   dateien: number;
+  /** Mails (.msg), die nicht nach dem Schema heißen (für „Mails benennen …“) */
+  falscheMails: string[];
 }
 
 const SYSTEMDATEI = /^(thumbs\.db|desktop\.ini|\.ds_store|~\$.*|\..*)$/i;
@@ -138,6 +141,18 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
   /* lose Dateien im Stamm */
   if (lose.length) befunde.push({ art: 'hinweis', titel: `${lose.length} ${lose.length === 1 ? 'Datei liegt' : 'Dateien liegen'} lose im Projektordner`, text: 'Dateien gehören in einen Ordner der Struktur.', pfade: lose });
 
+  /* Mails nach dem Schema „<Projektcode> von|an <Name> <JJMMTT> <Thema>.msg“ – nur am Namen; lesen und umbenennen in „Mails“ */
+  const mails = dateien.filter((e) => /\.msg$/i.test(e.pfad));
+  const falscheMails = projekt?.nummer ? mails.filter((e) => !mailNamePruefen(e.pfad.split('/').pop()!, projekt.nummer).ok).map((e) => e.pfad) : [];
+  if (falscheMails.length)
+    befunde.push({
+      art: 'warnung',
+      titel: `${falscheMails.length} von ${mails.length} ${mails.length === 1 ? 'Mail heißt' : 'Mails heißen'} nicht nach dem Schema`,
+      text: `Schema: ${MAIL_SCHEMA} (Projektcode ${projekt!.nummer}). „Mails benennen …“ schlägt die richtigen Namen aus den Mails vor.`,
+      pfade: falscheMails,
+    });
+  else if (mails.length && projekt?.nummer) befunde.push({ art: 'ok', titel: `Alle ${mails.length} Mails heißen nach dem Schema` });
+
   /* Dateinamenschema */
   const schema = projekt?.dateischema || struktur.dateischema;
   const schemaOrdner = regeln.filter((r) => r.dateischema && r.pfad).map((r) => `${r.pfad.toLowerCase()}/`);
@@ -167,5 +182,5 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
 
   const rang: Record<BefundArt, number> = { fehler: 0, warnung: 1, hinweis: 2, ok: 3 };
   befunde.sort((a, b) => rang[a.art] - rang[b.art]);
-  return { befunde, fehlendeOrdner, ordner: ordner.length, dateien: dateien.length };
+  return { befunde, fehlendeOrdner, ordner: ordner.length, dateien: dateien.length, falscheMails };
 }
