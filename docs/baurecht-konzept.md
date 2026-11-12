@@ -96,15 +96,14 @@ Am 12.11.2026 geprüft:
 | Bund | **gesetze-im-internet.de** | Verzeichnis aller Gesetze `gii-toc.xml` (≈ 6 100 Einträge), je Gesetz `/<kürzel>/xml.zip` | `ETag`/`Last-Modified` am ZIP → bedingte Abfrage (304 = unverändert); im XML `builddate` und `standangabe` („zuletzt geändert durch Art. 8 Abs. 2 G v. 23.7.2026 …“) | **Rückfall und Vollständigkeit**; nur die geltende Fassung, keine künftigen und keine alten |
 | Land NRW | **recht.nrw.de** | Seite je Fassung `/lrgv/<art>/<TTMMJJJJ>-<name>`; Paragrafen in `<section class="legaldoc-article">` (Parser im vorhandenen Skript) | **„Link zur aktuellsten Fassung“** `/taxonomy/term/<id>` (BauO NRW: 32203) leitet per Meta-Refresh auf die geltende Fassung um – ändert sich das Ziel, gibt es eine neue Fassung. Auf der Seite: „Gültig ab“, Vollzitat, Änderungshistorie, PDF | kein Pflegen von URLs mehr. Die Suche der Seite läuft über JavaScript und taugt nicht für den Abruf – die Term-IDs stehen deshalb in den Modulen |
 | Kreis, Gemeinde | Ortsrecht (Satzungen, Verordnungen, Landschaftspläne), meist PDF auf den Seiten der Verwaltung | Adresse je Satzung im Modul | `ETag`/`Last-Modified`, sonst Prüfsumme der Datei; bei geänderter Datei Text neu lesen (pdf.js) und je Paragraf vergleichen | keine einheitliche Quelle – genau dafür gibt es Kreis- und Gemeindemodule |
-| Technische Regeln | VV TB NRW, DIN-Normen | VV TB über recht.nrw.de (zu prüfen); DIN nur als Fundstelle | wie Landesrecht | DIN urheberrechtlich geschützt – kein Text, nur Verweis |
+| Technische Regeln | VV TB NRW mit **MVV TB des DIBt**, DIN-Normen | VV TB NRW und ihre NRW-Anlage auf recht.nrw.de (Term 33148); MVV TB als PDF auf `https://www.dibt.de/de/service/bekanntmachungen` (`…/Technische_Bestimmungen/MVVTB_<Jahr>-<Nr>.pdf`, zuletzt 2025/1, dazu Druckfehlerberichtigungen und „Stand der Umsetzung“ in den Ländern); DIN nur als Fundstelle | MVV TB: neue PDF in der Linkliste (`liste`); **in NRW gilt die zuletzt veröffentlichte Ausgabe sechs Monate nach ihrer Veröffentlichung**, soweit die NRW-Anlage nichts anderes sagt (Nr. 2 VV TB NRW, geprüft) – die App rechnet das Gültig-ab selbst aus | DIN urheberrechtlich geschützt – kein Text, nur Verweis. Bewertet werden die Nummern der MVV TB (z. B. Abschnitt A), nicht die Normen selbst |
 
 ### 4.2 Abruf in der Desktop-App
 
 - Neuer Tauri-Befehl in `packages/core/tauri/commands.rs`, z. B. `netz_holen(url, etag?, geaendert?)` →
   `{ status, url_final, etag, geaendert, inhalt_base64 }`. Er folgt Umleitungen (den Meta-Refresh von recht.nrw.de
   wertet TypeScript aus) und erlaubt **nur freigegebene Hosts**: eine feste Grundliste in der App, ergänzt um die
-  Hosts aus dem **signierten** Regelpaket (ein neues Kreismodul kann so seinen Geodienst mitbringen). Eigene,
-  unsignierte Module des Büros können keine Hosts freischalten; dafür fragt die App einmal nach.
+  Hosts aus dem **signierten** Regelpaket (ein neues Kreismodul kann so seinen Geodienst mitbringen).
 - Die CSP der Webansicht bleibt wie sie ist (heute nur Nominatim), CORS spielt keine Rolle. Laut `docs/suite.md`
   gehört der Befehl auch in die Liste der Rahmen-App.
 - Web-Build: kein Abruf (CORS); er zeigt den mitgelieferten Stand mit Hinweis „Stand der App vom …“.
@@ -162,9 +161,12 @@ Aus der Recherche zum Landesmodul (12.11.2026):
 - **Satzungen ohne konsolidierte Fassung:** Die Altstadtsatzung 2023 lässt die nicht geänderten Paragrafen der Fassung
   von 2013 fortgelten. Eine Norm kann deshalb **aus mehreren Dokumenten zusammengesetzt** sein (Quellenart
   `zusammengesetzt`: Stammfassung plus Änderungen, je Paragraf das jüngste Dokument, das ihn enthält).
-- **Scans ohne Textebene** (Denkmalbereichssatzung, 271 Seiten): Ohne Texterkennung gibt es keine Prüfsumme je Absatz.
-  Die Paragrafen bekommen trotzdem eine Ampel; die Regel trägt dann keine `stand`-Werte, und jede Änderung der Datei
-  macht alle ihre Paragrafen gelb.
+- **Scans ohne Textebene** (Denkmalbereichssatzung Soest, Landschaftsplan II, Heilquellenschutz Bad Sassendorf):
+  **Texterkennung einmal beim Pflegen des Moduls im Repo** (Werkzeug `npm run regeln:texterkennung`, Tesseract mit
+  deutschem Sprachpaket). Der erkannte Text wird von Hand durchgesehen und im Regelpaket als Textdatei im Format
+  `Gesetz`/`Paragraf` mitgeliefert (`texte/<modul>/<norm>@<fassung>.json`) – nur für Scans, alle anderen Texte kommen
+  live. Dazu steht die SHA-256 des Scans im Modul: Ändert sich die Datei an der Quelle, werden alle Paragrafen gelb und
+  der Wächter (4.8) meldet „neu erkennen“. In der App selbst gibt es keine Texterkennung.
 - **Geodienste hinken hinterher** (Bebauungspläne Monate nach der Bekanntmachung noch als Entwurf) → Abgleich mit der
   Bekanntmachungsseite, im Zweifel gelb.
 
@@ -280,10 +282,25 @@ Am 12.11.2026 geprüft (ohne Anmeldung, Abfrage in EPSG:25832 wie die Stammdaten
 - Abgefragt wird **am Flurstück**, nicht nur am Adresspunkt: Umring aus ALKIS, Prüfpunkte im Flurstück; liegt eine
   Grenze näher als ein Puffer (z. B. 10 m) oder ist die Geokodierung nur straßengenau (`koordinaten.genauigkeit`),
   ist der Fakt nur ein Hinweis.
-- Die Dienste sind nicht rechtsverbindlich. Ein Treffer macht rot; kein Treffer macht grün nur bei Datensätzen, die
-  das Modul als **vollständig** kennzeichnet, und mit Puffer (Vorschlag: LINFOS, ÜSG, WSG ja; Lückenhaftes wie
-  Denkmäler nein).
-- Ergebnisse werden mit Quelle und Stand im Projekt gespeichert; „Neu abfragen“ wie bei den Koordinaten.
+- Die Dienste sind nicht rechtsverbindlich. **Ein Treffer macht immer rot.** Kein Treffer macht nur grün, wenn
+  **kein falsches Grün** möglich ist – also nur, wenn alles zutrifft:
+  1. Lage aus dem **ALKIS-Flurstück** (nicht nur Adresspunkt), und das **ganze Flurstück** liegt mit Puffer außerhalb
+     (Puffer je Datensatz im Modul nach dem Maßstab der Verordnungskarte, mindestens 25 m);
+  2. der Datensatz ist im Modul als **amtlich und vollständig** für das Gebiet gekennzeichnet (LINFOS, ÜSG, WSG,
+     Denkmalbereich Soest – nicht: Baudenkmal-Punkte, Bebauungsplan-Dienst);
+  3. auch die **Vorstufen** sind abgefragt und ohne Treffer (vorläufig gesichert, einstweilig sichergestellt, geplant,
+     im Verfahren);
+  4. der Datensatz ist **aktuell**: Die Beobachtung der Amtsblätter (`liste`) kennt keine einschlägige Bekanntmachung,
+     die jünger ist als sein Stand;
+  5. der Dienst hat **gültig geantwortet** – Fehler, Zeitüberschreitung, Wartungsseite oder eine leere Antwort aus
+     einem Gebiet, für das der Dienst nachweislich keine Daten führt, sind kein „kein Treffer“.
+
+  Fehlt eine Bedingung, ist der Fakt nur ein Hinweis → **gelb**. Ein Grün aus einem Geodienst ist immer als solches
+  gekennzeichnet („lt. LINFOS NRW, Stand …, Puffer 25 m“) und steht so im Protokoll; bestätigt die Bearbeitung den
+  Fakt (z. B. nach Auskunft der Behörde), gilt er als gesichert.
+- Ergebnisse werden mit Quelle und Stand im Projekt gespeichert; „Neu abfragen“ wie bei den Koordinaten. Quelle und
+  Lizenzhinweis jedes Datensatzes stehen in der App und im Protokoll – das genügt sowohl einer Lizenz ohne als auch
+  einer mit Namensnennung (betrifft z. B. die Soester Geodaten, deren Lizenz noch nicht geklärt ist).
 
 ---
 
@@ -480,11 +497,19 @@ Der Wächter (4.8) meldet, wann das nötig ist.
 - **Anzeige:** „Regeln: Paket 2026.11.12-1 · Bund, NRW, Kreis Soest, Stadt Soest“; jede Ampel nennt Modul, Datei
   und Version.
 
-### 6.9 Eigene Module des Büros
+### 6.9 Wer was pflegt
 
-Im Konfigurationsordner (`baurecht/eigene/<modul>/`) im selben Format – etwa für eine Gemeinde, für die es noch kein
-Modul gibt, oder für Arbeitshilfen des Büros. Sie sind unsigniert, überall als „eigenes Modul“ gekennzeichnet, dürfen
-keine Hosts freischalten, und eine eigene Regeldatei geht für dieselbe Norm der aus dem Paket vor (deutlich markiert).
+- **Regeln und Module pflegen wir im Repo** (`packages/baurecht-regeln`) – mit Tests, Review und signierter
+  Auslieferung. Eine Bearbeitungsansicht für Regeln in der App gibt es nicht, ebenso keine eigenen Module im
+  Konfigurationsordner.
+- **In der App wird nur von Hand festgelegt** (Abschnitt 8): Ampel je Paragraf mit Begründung, Fakten bestätigen,
+  eigene Normen für einen Einzelfall im Projekt. Das gilt je Projekt und ändert keine Regel.
+- Fehlt ein Modul für eine Gemeinde, sagt die App das; bis es im Paket ist, bleibt das Ortsrecht gelb und wird von Hand
+  beurteilt.
+
+**Ein Modul enthält alles, was im Gebiet gelten kann – nicht nur, was dort häufig vorkommt.** Ob etwas im Einzelfall
+greift, entscheidet die Ampel. Erdbebenzone und Bergbau stehen deshalb im Landesmodul, auch wenn sie in Soest
+voraussichtlich grün oder gelb ausgehen; ein neues Gemeindemodul im Rheinland braucht dafür keine neue Regel.
 
 ### 6.10 Dateigröße
 
@@ -540,7 +565,8 @@ Dazu **„Was klärt am meisten?“**: Je fehlendem Fakt wird gezählt, wie viel
 ### 7.4 Wann grün
 
 Nur wenn **alles** zutrifft: Die Regel schließt nach gesicherten Fakten sicher aus (oder eine Ausnahme greift sicher),
-sie ist an der geltenden Fassung geprüft, nichts ist Einzelfall, und kein Widerspruch steht offen. Am stärksten sind
+sie ist an der geltenden Fassung geprüft, nichts ist Einzelfall, und kein Widerspruch steht offen. Ein Fakt aus einem
+Geodienst ist nur gesichert, wenn die fünf Bedingungen aus 5.4 erfüllt sind oder die Bearbeitung ihn bestätigt hat. Am stärksten sind
 Ausschlüsse, die das Gesetz selbst formuliert – sie werden bevorzugt als `entfaellt` geschrieben.
 
 ### 7.5 Prüft die Behörde – und womit wird es nachgewiesen?
@@ -644,7 +670,8 @@ Alle Texte von recht.nrw.de, als HTML mit Paragrafen; Anlagen teils nur als PDF.
 | Straßen- und Wegegesetz (StrWG NRW) | 27058 | 01.07.2026 | § 20 Zufahrten, § 25 bauliche Anlagen an Straßen (außerhalb der Ortsdurchfahrt bis 40 m von Landes- und Kreisstraßen Zustimmung der Straßenbaubehörde), §§ 18, 19 Sondernutzung |
 | Nachbarrechtsgesetz (NachbG NRW) | 26658 | 29.12.2021 | **Privatrecht – nur als Hinweis**, nie rot: § 1 Abstand 2 m, § 4 Fenster, §§ 7–23a Nachbar- und Grenzwand, Wärmedämmung, § 27 Niederschlagswasser, §§ 32–48 Einfriedigung, Pflanzen |
 | Verwaltungsgebührenordnung (AVwGebO NRW) | 33844 | 25.04.2026 | nur zur Information: Tarifstelle 3.1 (Baurecht), 3.3 (Denkmalschutz) – Tarif nur als PDF |
-| VV Technische Baubestimmungen (VV TB NRW) | 33148 | 21.11.2025 | **verweist dynamisch auf die MVV TB des DIBt** (neue Ausgabe gilt 6 Monate nach Veröffentlichung, ohne neue Fassung auf recht.nrw.de); NRW-Abweichungen nur in der PDF-Anlage → eigene Quelle für die MVV TB nötig (offen) |
+| VV Technische Baubestimmungen (VV TB NRW) | 33148 | 21.11.2025 | **verweist dynamisch auf die MVV TB des DIBt**: Die zuletzt veröffentlichte Ausgabe gilt sechs Monate nach ihrer Veröffentlichung, ohne neue Fassung auf recht.nrw.de; NRW-Abweichungen nur in der PDF-Anlage. Quelle der MVV TB: Bekanntmachungen des DIBt (4.1), eigene Norm `mvv-tb` mit Fassung = Veröffentlichung + 6 Monate |
+| Erdbebenzone (über die technischen Baubestimmungen) | – | – | Fakt `lage.erdbebenzone`. Kein digitaler Dienst gefunden: Karte des GD NRW (2006, laut Katalog analog) und Online-Abfrage des GFZ Potsdam nach Ort/PLZ – beides zu grob für Grün → **gelb, bis die Zone bestätigt ist**; Zone ≥ 1 → rot (Nachweis nach der eingeführten Erdbebennorm). Welche Ausgabe der Norm (DIN EN 1998-1/NA 2011 oder 2023) die MVV TB einführt, beim Schreiben der Regel prüfen |
 
 Geodienste des Landesmoduls: ALKIS (Flurstück, Gemeindeschlüssel), LINFOS (Schutzgebiete, als vollständig
 gekennzeichnet), Überschwemmungs- und Wasserschutzgebiete (Abschnitt 5.4).
@@ -692,7 +719,8 @@ Bezirksregierung, dazu einzelne Naturschutzgebietsverordnungen.
 | Kampfmittel | Antrag über die örtliche Ordnungsbehörde (Stadt Soest), die den Kampfmittelbeseitigungsdienst Westfalen-Lippe beauftragt | |
 | Baulasten | Stadt Soest (für die zehn übrigen Gemeinden der Kreis) | nach `zustaendig.baulasten` |
 | Artenschutz-Vorprüfung | Formular „Vorprüfung Artenschutz“ des Kreises als Teil der Bauvorlagen | ob Soest dasselbe Formular nutzt, ist offen |
-| Bergbau, Erdbebenzone | Bez.-Reg. Arnsberg Abt. 6 (GDU); GD NRW | Relevanz für Soest und Dienste noch nicht geklärt → gelb bis Auskunft |
+| Bergbau | Bez.-Reg. Arnsberg Abt. 6 (GDU) | Regel im Landesmodul; im Kreis gelb bis Auskunft |
+| Erdbebenzone | – | Regel im Landesmodul (9.2); in Soest voraussichtlich Zone 0, aber gelb, bis bestätigt |
 
 **Geodienste:** Für das Kreismodul vor allem die landesweiten – LINFOS (NSG, LSG, FFH, VSG, Biotope; die
 Detailseiten verlinken die Verordnungstexte auf legaldocs), ÜSG (Ebenen 5 und 6, mit Verweis auf das PDF der
@@ -730,9 +758,9 @@ weicht ab – vor dem Bau klären). Hosts: `www.soest.de`, `gis02.soest.de`, `ww
 | Entwässerungssatzung der SES | 03.12.2025, in Kraft 01.01.2026 (ersetzt 2014) | ganzes Stadtgebiet | § 9 Anschluss- und Benutzungszwang, §§ 5, 11 Niederschlagswasser und Versickerung, § 14 Zustimmungsverfahren (eigener Antrag bei der SES), § 15 Zustands- und Funktionsprüfung |
 | Sondernutzungssatzung | 19.05.2011, zuletzt geändert 26.04.2023 | Straßen der Stadt → Frage „Gerüst oder Baustelle im öffentlichen Raum?“ | Erlaubnis, Gebühren |
 | Fernwärme „Britische Wohnsiedlung“ | 25.10.1993 | Teilgebiet → Frage | Anschluss- und Benutzungszwang (Heizungskonzept, GEG) |
-| Satzung historische Ortsteile | 18.04.1973, geändert 1980 | Schutzzonen als Flurliste (Gemarkung im Text nicht genannt) | **Fortgeltung neben der Altstadtsatzung ungeklärt → gelb**, bis geklärt |
-| Spielplatzsatzung | 1973/1974 | Stadtgebiet, Gebäude mit mehr als zwei Wohnungen | stützt sich auf die BauO 1970 – **Fortgeltung ungeklärt → gelb** (§ 8 BauO NRW gilt ohnehin) |
-| Veränderungssperre B-Plan Nr. 5 „Windenergie Müllingsen“ | Verlängerung 2022; heutiger Stand ungeklärt | Teilgebiet | § 14 BauGB – gelb, bis geklärt |
+| Satzung historische Ortsteile | 18.04.1973, geändert 1980 | Schutzzonen als Flurliste (Gemarkung im Text nicht genannt) → Frage | **gilt als in Kraft** (Annahme des Büros vom 12.11.2026, im Modul vermerkt und an der Ampel angezeigt) – im Geltungsbereich rot |
+| Spielplatzsatzung | 1973/1974 | Stadtgebiet, Gebäude mit mehr als zwei Wohnungen | **gilt als in Kraft** (Annahme wie oben) – rot ab drei Wohnungen, neben § 8 BauO NRW |
+| Veränderungssperre B-Plan Nr. 5 „Windenergie Müllingsen“ | Verlängerung 2022; heutiger Stand ungeklärt | Teilgebiet → Frage bzw. Planbereich | im Teilgebiet gelb, bis der Stand geklärt ist (eine abgelaufene Sperre darf nicht grün werden, solange das nicht feststeht) |
 | Bebauungspläne | dynamisch je Projekt | Abfrage am Flurstück (siehe unten) | je Plan eine Norm; Festsetzungen als Einheiten (Maß der Nutzung aus dem GRZ-Nachweis, textliche Festsetzungen von Hand) |
 
 Nur als Hinweis, ohne Ampel: Sanierungssatzungen (alle im vereinfachten Verfahren, § 144 BauGB ausgeschlossen –
@@ -756,8 +784,8 @@ angekündigt). Für den Antrag in Soest außerdem nützlich, ohne Ampel: digital
 (seit 01.02.2023), städtischer Vordruck „Nachweis der Gebäudeklasse“, Artenschutz-Formular als Pflichtangabe,
 Gestaltungsbeirat alle zwei Monate, Antragsvordrucke der SES.
 
-Offen für das Modul: Text von § 3 der Denkmalbereichssatzung (Scan, Texterkennung), Fortgeltung der Satzungen von 1973,
-Stand der Veränderungssperre Müllingsen, Lizenz der Geodaten.
+Offen für das Modul: Texterkennung der Denkmalbereichssatzung (vor allem § 3) beim Pflegen, Stand der
+Veränderungssperre Müllingsen, Lizenz der Geodaten (bis dahin Quelle und Lizenzhinweis anzeigen, 5.4).
 
 ## 10. Daten in der Projektdatei
 
@@ -817,7 +845,8 @@ den anderen Apps; unbekannte Abschnitte bleiben.
 
 **Stufe 1 – Regelpaket und App**
 4. `packages/baurecht-regeln`: Schema, Lader (Kurzform → Bedingungen), Auswahl der Module nach Gemeindeschlüssel,
-   Auswahl der Regeldatei (6.6), Tests, Werkzeug `regeln:fassung`.
+   Auswahl der Regeldatei (6.6), Tests, Werkzeuge `regeln:fassung` und `regeln:texterkennung`; Quelle `mvv-tb`
+   (DIBt, Geltung + 6 Monate).
 5. Module **Bund** (Grundstock), **NRW**, **Kreis Soest**, **Stadt Soest** (Abschnitt 9).
 6. `apps/baurecht` (Port 1490), in der Rahmen-App, Release `baurecht-v<version>`: Fakten aus der Projektdatei und von
    Hand, Ableitung der Gebäudeklasse, Ampel je Paragraf, Festlegung mit doppelter Bestätigung, Prüfprotokoll.
@@ -828,8 +857,8 @@ den anderen Apps; unbekannte Abschnitte bleiben.
 9. Stichtag mit künftigen Fassungen (RIS), Gegenüberstellung alt/neu, CI-Wächter.
 
 **Stufe 3 – Antrag**
-10. Verknüpfung mit dem Antragsumfang in Formulare (roter Paragraf → nötige Bauvorlage bzw. Fachantrag), eigene
-    Module des Büros, weitere Kreise und Gemeinden.
+10. Verknüpfung mit dem Antragsumfang in Formulare (roter Paragraf → nötige Bauvorlage bzw. Fachantrag), weitere
+    Kreise und Gemeinden.
 
 ## 13. Entscheidungen und offene Punkte
 
@@ -841,18 +870,19 @@ den anderen Apps; unbekannte Abschnitte bleiben.
 - Festlegen von Hand darf jeder; dafür doppelte Bestätigung (beim Festlegen und beim Speichern).
 - Name der App: **Baurecht**.
 
+**Entschieden (12.11.2026, zweite Runde)**
+- Grün aus einem Geodienst nur, wenn kein falsches Grün möglich ist – die fünf Bedingungen in 5.4, sonst gelb.
+- Regeln und Module pflegen wir im Repo; in der App wird nur von Hand festgelegt (6.9).
+- Texterkennung für Scans einmal beim Pflegen im Repo, Text im Regelpaket (4.4b).
+- MVV TB aus den Bekanntmachungen des DIBt, Geltung in NRW sechs Monate nach Veröffentlichung (4.1, 9.2).
+- Soester Satzungen von 1973 gelten als in Kraft (Annahme, an der Ampel sichtbar).
+- Module enthalten alles, was im Gebiet gelten kann; lokale Seltenheit (Erdbeben, Bergbau) ist kein Grund, eine Regel
+  wegzulassen (6.9).
+
 **Noch offen**
-1. Reicht „kein Treffer im landesweiten Geodienst“ für Grün? Vorschlag: ja mit Puffer für Datensätze, die das Modul
-   als vollständig kennzeichnet (LINFOS, ÜSG, WSG), sonst nein.
-2. Wer pflegt die Module fachlich (Regeln schreiben und nach einer neuen Fassung bestätigen) – nur im Repo oder auch
-   über eine Bearbeitungsansicht in der App?
-3. Texterkennung für Satzungen und Verordnungen, die nur als Scan vorliegen (Denkmalbereichssatzung Soest,
-   Landschaftsplan II, Heilquellenschutz Bad Sassendorf): in der App, beim Pflegen des Moduls einmalig, oder
-   Paragrafen ohne Text von Hand?
-4. Quelle für die MVV TB des DIBt, auf die die VV TB NRW dynamisch verweist.
-5. Fachlich zu klären, bevor die Regeln geschrieben werden: Fortgeltung der Soester Satzungen von 1973, Stand der
-   Veränderungssperre Müllingsen, Rechtskraft der Landschaftspläne II, III, V, Lizenz der Soester Geodaten,
-   Erdbebenzone und Bergbau im Kreis.
+1. Fachlich, durch das Büro: Stand der Veränderungssperre Müllingsen, Lizenz der Soester Geodaten, Rechtskraft der
+   Landschaftspläne II, III und V. Bis dahin gelb bzw. mit Quellenangabe – nichts davon hält die Umsetzung auf.
+2. Ob die MVV TB 2025/1 die Erdbebennorm in der Ausgabe 2011 oder 2023 einführt – beim Schreiben der Regel klären.
 
 **Risiken**
 - RIS ist in der Testphase: Adressen, Umfang und Format können sich ändern → Rückfall auf gesetze-im-internet.de,
@@ -861,6 +891,6 @@ den anderen Apps; unbekannte Abschnitte bleiben.
   behalten, PDF als letzter Rückfall, der Wächter merkt es zuerst.
 - Ortsrecht liegt meist als PDF vor, Adressen ändern sich beim Umbau einer Website → Modul meldet „Quelle nicht
   erreichbar“, letzter Text bleibt, Paragrafen werden gelb.
-- Geodienste sind nicht rechtsverbindlich und teils unvollständig → Asymmetrie (5.1), Puffer, Kennzeichnung je
-  Datensatz.
+- Geodienste sind nicht rechtsverbindlich und teils unvollständig → Asymmetrie (5.1), die fünf Bedingungen für Grün
+  (5.4), Kennzeichnung je Datensatz.
 - Haftung: Das Protokoll ist eine Arbeitshilfe; der Hinweis „ersetzt keine fachliche Prüfung“ steht darauf.
