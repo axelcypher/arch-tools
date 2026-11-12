@@ -147,6 +147,27 @@ Aus der Recherche zum Landesmodul (12.11.2026):
   Stellplatzverordnung, Anlage der VV TB). Der Adapter findet den Link auf der Seite der Norm über seine Beschriftung
   und erkennt Änderungen an Prüfsumme bzw. `ETag`.
 
+### 4.4b Eigenheiten des Ortsrechts (am Beispiel Soest)
+
+- **Keine Fassungsangaben, keine verlässlichen Kopfzeilen:** soest.de liefert kein `ETag`, und `Last-Modified` ist für
+  viele PDFs dasselbe Datum (vermutlich vom Umzug der Website). Neue Fassungen erkennt die App deshalb an der
+  **SHA-256 des Inhalts** und an **Änderungen der Linkliste** auf der Ortsrecht- und der Bekanntmachungsseite
+  (Quellenart `liste`, 6.3). Ein neuer oder geänderter Link einer Satzung des Moduls → Hinweis „Ortsrecht geändert“,
+  betroffene Paragrafen gelb.
+- **Aufgehobenes bleibt online**, teils unter irreführendem Namen (die neue Entwässerungssatzung heißt „Änderung …“,
+  die alte steht weiter als aktuell da). Das Modul führt eine **Sperrliste**; die App benutzt nur die Dateien, die das
+  Modul nennt.
+- **Die richtige Datei ist nicht immer die verlinkte:** Die Altstadtsatzung auf der Ortsrecht-Seite ist unsigniert, die
+  ausgefertigte liegt auf dem Geoserver. Das Modul nennt die maßgebliche Adresse.
+- **Satzungen ohne konsolidierte Fassung:** Die Altstadtsatzung 2023 lässt die nicht geänderten Paragrafen der Fassung
+  von 2013 fortgelten. Eine Norm kann deshalb **aus mehreren Dokumenten zusammengesetzt** sein (Quellenart
+  `zusammengesetzt`: Stammfassung plus Änderungen, je Paragraf das jüngste Dokument, das ihn enthält).
+- **Scans ohne Textebene** (Denkmalbereichssatzung, 271 Seiten): Ohne Texterkennung gibt es keine Prüfsumme je Absatz.
+  Die Paragrafen bekommen trotzdem eine Ampel; die Regel trägt dann keine `stand`-Werte, und jede Änderung der Datei
+  macht alle ihre Paragrafen gelb.
+- **Geodienste hinken hinterher** (Bebauungspläne Monate nach der Bekanntmachung noch als Entwurf) → Abgleich mit der
+  Bekanntmachungsseite, im Zweifel gelb.
+
 ### 4.5 Prüfen, bevor ersetzt wird
 
 Eine neu abgerufene Fassung wird nur übernommen, wenn sie plausibel ist – sonst bleibt die bisherige, und die App
@@ -282,7 +303,10 @@ Am 12.11.2026 geprüft (ohne Anmeldung, Abfrage in EPSG:25832 wie die Stammdaten
   oben („Für Werl gibt es kein Gemeindemodul – Ortsrecht von Hand prüfen“), und alle Fakten zum Ortsrecht bleiben
   offen (gelb).
 - Module können aufeinander verweisen: Das Landesmodul fragt z. B. den Fakt „Stellplatzsatzung vorhanden“ ab, den das
-  Gemeindemodul setzt (die Stellplatzsatzung geht der Landesregel vor).
+  Gemeindemodul setzt (die Stellplatzsatzung geht der Landesregel vor). Umgekehrt zeigt ein Landesparagraf den
+  Vorrang des Ortsrechts als Hinweis: In der Soester Altstadt bleibt § 6 BauO NRW rot, mit Verweis auf § 3 der
+  Altstadtsatzung (kleinere Abstandsflächen); § 42a BauO NRW verweist auf § 5a der Altstadtsatzung, die nach § 42a
+  Abs. 1 Satz 3 maßgeblich ist.
 
 ### 6.2 Eine Datei je Norm und Fassung
 
@@ -341,8 +365,11 @@ werden für frühere Stichtage und alte Bebauungspläne gebraucht – und kosten
 }
 ```
 
-Quellenarten: `ris` (Werk-ELI), `gii` (Pfad auf gesetze-im-internet.de), `recht-nrw` (Term-ID), `datei` (Adresse einer
-HTML- oder PDF-Datei, Ortsrecht), `verweis` (nur Fundstelle, z. B. DIN).
+Quellenarten: `ris` (Werk-ELI), `gii` (Pfad auf gesetze-im-internet.de), `recht-nrw` (Term-ID; ersatzweise feste
+Adresse), `datei` (Adresse einer HTML- oder PDF-Datei, Ortsrecht; mit `textebene: false` für Scans), `zusammengesetzt`
+(Stammfassung plus Änderungsdokumente), `liste` (Übersichtsseite, deren Links beobachtet werden – z. B. Ortsrecht und
+Bekanntmachungen einer Stadt), `verweis` (nur Fundstelle, z. B. DIN). Dazu je Modul eine `sperrliste` mit Adressen
+aufgehobener Dokumente, die nicht verwendet werden dürfen.
 
 ### 6.4 Regeldatei (`<norm>@<gültig ab>.json`)
 
@@ -625,7 +652,54 @@ Folgt (Recherche läuft).
 
 ### 9.4 Stadt Soest (`nw-05974040`)
 
-Folgt (Recherche läuft).
+Gemeindeschlüssel 05974040 (bestätigt im städtischen Bebauungsplan-Dienst). Die Stadt ist **untere
+Bauaufsichtsbehörde** und **untere Denkmalbehörde**; Naturschutz liegt beim Kreis, Abwasser bei der Stadtentwässerung
+Soest AöR (SES).
+
+**Quellen:** Ortsrecht auf einer Seite mit rund 100 PDF-Links, ohne Datum und Fassung
+(`https://www.soest.de/politik-verwaltung/ortsrecht-und-satzungen`), Bekanntmachungen nach § 17 der Hauptsatzung auf
+derselben Seite, BauGB-Bekanntmachungen unter `…/politik-verwaltung/bekanntmachungen`. Geodienste der Stadt unter
+`https://gis02.soest.de/arcgis/rest/services` (Lizenz laut Geodatenkatalog dl-de/zero-2.0; Angabe auf open.nrw
+weicht ab – vor dem Bau klären). Hosts: `www.soest.de`, `gis02.soest.de`, `www.stadtentwaesserung-soest.de`.
+
+| Norm (Modul) | Stand | Geltungsbereich → Fakt | Paragrafen bzw. Einheiten (erster Umfang) |
+|---|---|---|---|
+| Örtliche Bauvorschrift Gestaltung Altstadt („Altstadtsatzung“) | Änderung vom 27.09.2023, ausgefertigt 14.11.2023; **nicht geänderte Paragrafen der Fassung vom 11.07.2013 gelten fort** (§ 20) | Altstadt im Wallring → `soest.altstadt` (Frage; Vorschlag aus dem Polygon der Denkmalbereichssatzung, nur Hinweis) | § 3 Abstandsflächen (bis 0,125 H – **weicht von § 6 BauO NRW ab**), § 4 Dach (45–58°), § 5 Gauben, § 5a Solaranlagen (**maßgeblich nach § 42a Abs. 1 Satz 3 BauO NRW**), §§ 7–11 Fenster, Material, Farben, § 12 Einfriedungen, § 13 Vorgärten, § 14 Technik/Wärmepumpen, § 15 Garagen mit Gründach, § 18 Gestaltungsbeirat (bei Neubauten Pflicht) |
+| Werbeanlagen Altstadt | 12.11.2001, geändert 30.06.2002 | Altstadt; nur bei Werbeanlage | ganze Satzung |
+| Denkmalbereichssatzung Altstadt | 14.02.1996 | innerhalb der Wallstraßen → Polygon im Denkmal-Dienst (vollständig) | § 3 erlaubnispflichtige Maßnahmen – **Scan ohne Textebene (271 S.)**: Text von Hand prüfen, Änderung nur an der Prüfsumme der Datei erkennbar; Solaranlagen in der Altstadt brauchen laut Stadt eine denkmalrechtliche Erlaubnis |
+| Stellplatzsatzung | Ratsbeschluss 15.12.2021, ausgefertigt 28.01.2022 | ganzes Stadtgebiet, Zonen 1–3 → `soest.stellplatzzone` (Frage, Karte Anlage 2); setzt `ortsrecht.stellplatzsatzung` = ja (Stellplatzverordnung NRW tritt zurück) | Anzahl nach Anlage 3 (Kfz und Fahrrad), Ablöse je Zone, Sonderregel Dachausbau in Gebäuden vor 1993 (Zone 1/2), § 7 hebt ältere Satzungen auf |
+| Baumschutzsatzung | 19.07.2019 | Innenbereich und Bebauungspläne → Frage „geschützte Bäume betroffen (Stammumfang ab 120 cm, mehrstämmig 150 cm)?“ | Schutz, Eintrag im Lageplan, Ersatzpflanzung |
+| Entwässerungssatzung der SES | 03.12.2025, in Kraft 01.01.2026 (ersetzt 2014) | ganzes Stadtgebiet | § 9 Anschluss- und Benutzungszwang, §§ 5, 11 Niederschlagswasser und Versickerung, § 14 Zustimmungsverfahren (eigener Antrag bei der SES), § 15 Zustands- und Funktionsprüfung |
+| Sondernutzungssatzung | 19.05.2011, zuletzt geändert 26.04.2023 | Straßen der Stadt → Frage „Gerüst oder Baustelle im öffentlichen Raum?“ | Erlaubnis, Gebühren |
+| Fernwärme „Britische Wohnsiedlung“ | 25.10.1993 | Teilgebiet → Frage | Anschluss- und Benutzungszwang (Heizungskonzept, GEG) |
+| Satzung historische Ortsteile | 18.04.1973, geändert 1980 | Schutzzonen als Flurliste (Gemarkung im Text nicht genannt) | **Fortgeltung neben der Altstadtsatzung ungeklärt → gelb**, bis geklärt |
+| Spielplatzsatzung | 1973/1974 | Stadtgebiet, Gebäude mit mehr als zwei Wohnungen | stützt sich auf die BauO 1970 – **Fortgeltung ungeklärt → gelb** (§ 8 BauO NRW gilt ohnehin) |
+| Veränderungssperre B-Plan Nr. 5 „Windenergie Müllingsen“ | Verlängerung 2022; heutiger Stand ungeklärt | Teilgebiet | § 14 BauGB – gelb, bis geklärt |
+| Bebauungspläne | dynamisch je Projekt | Abfrage am Flurstück (siehe unten) | je Plan eine Norm; Festsetzungen als Einheiten (Maß der Nutzung aus dem GRZ-Nachweis, textliche Festsetzungen von Hand) |
+
+Nur als Hinweis, ohne Ampel: Sanierungssatzungen (alle im vereinfachten Verfahren, § 144 BauGB ausgeschlossen –
+Förderung), Erschließungs-, Straßenbau- und Anschlussbeitragssatzung (Kosten), Gestaltungshandbuch 2023
+(Erläuterung). **Sperrliste** (online noch abrufbar, aber aufgehoben bzw. ersetzt): Stellplatzablösesatzung 1980,
+Stellplatzsatzung Adam-Kaserne 2020, Abwassersatzung 2014, die unsignierte Fassung der Altstadtsatzung auf der
+Ortsrecht-Seite (maßgeblich ist die ausgefertigte unter `gis02.soest.de/pdf/AS/b049_as.pdf`). Nicht vorhanden:
+Erhaltungssatzung (bis 2023 Teil der Altstadtsatzung, entfallen), Vorkaufsrechtssatzung, eigene Solar- oder
+Dachbegrünungssatzung.
+
+**Geodienste der Stadt** (am 12.11.2026 geprüft):
+
+| Dienst | Abfrage | Liefert | Für die Ampel |
+|---|---|---|---|
+| `Bauleitplanung_WFS` (ArcGIS REST, Ebene 0) | `…/MapServer/0/query?geometry=x,y&geometryType=esriGeometryPoint&inSR=25832&outFields=*&f=json` – zuverlässig; der WFS filtert per BBOX nur in EPSG:4326 (Breite, Länge) | 491 Pläne inkl. Satzungen nach § 34 BauGB: Nr., Name, Ortsteil, Planart, Stand (4000 in Kraft, 2000 Entwurf), Datum (Text, teils Platzhalter), Planurkunde, Begründung, Verweis auf die Altstadtsatzung | Treffer → Bebauungsplan als Norm, Abgleich mit dem Merkmal *Planungsrecht*. **Der Dienst hinkt den Bekanntmachungen um Monate hinterher** (Pläne mit bekanntgemachtem Satzungsbeschluss noch als Entwurf) → Entwurf, Platzhalter-Datum oder neuere Bekanntmachung → gelb |
+| `Denkmalschutz` (MapServer) | Abfrage am Flurstück | Baudenkmal (694 Punkte mit Listennummer), erhaltenswerte Gebäude, sonstige Baudenkmäler, eingetragene Bodendenkmäler, Polygon der Denkmalbereichssatzung | Denkmalbereich: vollständig (Polygon). Baudenkmäler nur als Punkte, Umgebungsschutz nicht abgebildet, Pflegestand unklar → **Treffer rot, kein Treffer gelb** |
+| `Bauleitplanung2024`, `Sanierungsgebiete`, `FNP_2024` (WMS, auch GeoJSON) | GetFeatureInfo | u. a. Schutzgebiete, Sanierungsgebiete, laufende Verfahren, Solarflächen | laufendes Verfahren am Flurstück → gelb (Planreife, § 33 BauGB) |
+
+Eine Denkmalliste als Liste ist nicht online (Kartei bei der unteren Denkmalbehörde; Übernahme in „Denkmalliste.NRW“
+angekündigt). Für den Antrag in Soest außerdem nützlich, ohne Ampel: digitaler Bauantrag über „Rathaus online“
+(seit 01.02.2023), städtischer Vordruck „Nachweis der Gebäudeklasse“, Artenschutz-Formular als Pflichtangabe,
+Gestaltungsbeirat alle zwei Monate, Antragsvordrucke der SES.
+
+Offen für das Modul: Text von § 3 der Denkmalbereichssatzung (Scan, Texterkennung), Fortgeltung der Satzungen von 1973,
+Stand der Veränderungssperre Müllingsen, Lizenz der Geodaten.
 
 ## 10. Daten in der Projektdatei
 
