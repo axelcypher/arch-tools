@@ -3,7 +3,7 @@ import { Fragment, useState } from 'react';
 import type { AntragsVorlage, KatalogEintrag } from '../antrag';
 import { VORGABE_MERKMALE, bedingungText, hatBedingung, istVorgabeMerkmal } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
-import { PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, PLANSATZ_QUELLE } from '../antrag';
+import { PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, vorlageMitAntragsart, PLANSATZ_QUELLE } from '../antrag';
 import { Griff, useSortieren } from './Sortieren';
 import { useAntrag } from '../antragStore';
 import { waehleOrdner } from '../dateisystem';
@@ -58,7 +58,7 @@ export function AntragEinstellungen() {
             <input value={e.antragsordner} onChange={(x) => setEinstellungen({ antragsordner: x.target.value })} aria-label="Antragsordner" placeholder="TÖB" />
           </label>
           <label>
-            <span className="field-label">Antragsarten (die erste ist der Standard; dazu die des Namensschemas aus dem Projektordner)</span>
+            <span className="field-label">Antragsarten (die erste ist der Standard)</span>
             <input
               defaultValue={e.arten.join(', ')}
               key={e.arten.join(',')}
@@ -66,6 +66,7 @@ export function AntragEinstellungen() {
               placeholder="BAUA, BAUVA, DENK"
               onBlur={(x) => setEinstellungen({ arten: x.target.value.split(/[,;\s]+/).filter(Boolean).map((a) => a.toUpperCase()) })}
             />
+            <span className="field-hint">Dazu kommen die Antragsarten aus Projektordner › Einstellungen › Namensschema: Kürzel und Plannummern.</span>
           </label>
         </div>
       </Karte>
@@ -74,17 +75,26 @@ export function AntragEinstellungen() {
         <div className="es-raster">
           <label className="es-breit">
             <span className="field-label">Namensvorlage</span>
-            <input value={e.namensvorlage} onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })} aria-label="Namensvorlage" spellCheck={false} />
+            <input
+              value={e.namensvorlage}
+              onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })}
+              onBlur={(x) => x.target.value !== vorlageMitAntragsart(x.target.value) && setEinstellungen({ namensvorlage: vorlageMitAntragsart(x.target.value) })}
+              aria-label="Namensvorlage"
+              spellCheck={false}
+            />
+            <span className="field-hint">Die Antragsart ({'{Art}'}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA –, nicht aus einer Einstellung.</span>
           </label>
-          <label>
-            <span className="field-label">Phase</span>
-            <input value={e.phase} list="es-phasen" onChange={(x) => setEinstellungen({ phase: x.target.value })} aria-label="Phase" />
-            <datalist id="es-phasen">
-              {['BP', 'EP', 'GP', 'AP'].map((p) => (
-                <option key={p} value={p} />
-              ))}
-            </datalist>
-          </label>
+          {/{phase}/i.test(e.namensvorlage) && (
+            <label>
+              <span className="field-label">Phase (für {'{Phase}'})</span>
+              <input value={e.phase} list="es-phasen" onChange={(x) => setEinstellungen({ phase: x.target.value })} aria-label="Phase" />
+              <datalist id="es-phasen">
+                {['BP', 'EP', 'GP', 'AP'].map((p) => (
+                  <option key={p} value={p} />
+                ))}
+              </datalist>
+            </label>
+          )}
         </div>
         <div className="es-platzhalter">
           {PLATZHALTER.map((p) => (

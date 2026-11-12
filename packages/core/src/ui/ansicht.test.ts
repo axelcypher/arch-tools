@@ -56,9 +56,12 @@ describe('eigene Ansichten', () => {
     expect(feldOptionen(feldOptionenSetzen(b, '201:40', { label: ' ' }), '201:40')).toEqual({ breite: 8 });
     expect(feldEntfernen(b, '201:40').abschnitte[1].optionen).toBeUndefined();
     // robust gelesen
-    expect(ansichtAus({ abschnitte: [{ id: 'x', felder: ['f'], optionen: { f: { label: 'L', breite: 99, neueZeile: 'ja' }, fremd: { label: 'x' } } }] })).toEqual({
+    expect(ansichtAus({ abschnitte: [{ id: 'x', felder: ['f'], optionen: { f: { label: 'L', breite: 'breit', neueZeile: 'ja' }, fremd: { label: 'x' } } }] })).toEqual({
       abschnitte: [{ id: 'x', titel: '', felder: ['f'], optionen: { f: { label: 'L' } } }],
     });
+    // Breiten: nur die angebotenen (¼ ⅓ ½ ⅔ ¾ ganz) – andere auf die nächste gebracht
+    const breite = (b: unknown) => ansichtAus({ abschnitte: [{ id: 'x', felder: ['f'], optionen: { f: { breite: b } } }] })!.abschnitte[0].optionen?.f.breite;
+    expect([5, 7, 10, 11, 99, 1, 6].map(breite)).toEqual([4, 6, 9, 12, 12, 3, 6]);
   });
 
   it('Verknüpfungen: Gruppen verschmelzen, lösen, entfallen mit dem Feld; nur Felder der Ansicht', () => {

@@ -1,6 +1,7 @@
 /**
  * Namensschema des Büros – gemeinsam für alle Apps: welche Kürzel es gibt (Planphasen wie GP, Antrags- und
- * Verfahrensarten wie BAUA oder BAUF – die Genehmigungsfreistellung ist kein Antrag),
+ * Verfahrensarten wie BAUA oder BAUF – die Genehmigungsfreistellung ist kein Antrag, sondern eine Vorlage bei der
+ * Bauaufsichtsbehörde nach § 63 Abs. 3 BauO NRW 2018),
  * an welcher Stelle im Dateinamen Code, Phase bzw. Antragsart, Datum und Plannummer stehen und ab welcher
  * Leistungsphase Pläne einen Index tragen (AP-03a).
  *
@@ -52,11 +53,11 @@ export const VORGABE_NAMENSSCHEMA: Namensschema = {
     { kuerzel: 'EP', name: 'Entwurfsplanung', lph: 3 },
     { kuerzel: 'GP', name: 'Genehmigungsplanung', lph: 4 },
     { kuerzel: 'AP', name: 'Ausführungsplanung', lph: 5 },
-    { kuerzel: 'AB', name: 'Aufteilungspläne (Abgeschlossenheit, § 7 Abs. 4 WEG)' },
+    { kuerzel: 'AB', name: 'Abgeschlossenheitsbescheinigung (Sonderfall – Aufteilungspläne, § 7 Abs. 4 WEG)' },
   ],
   antragsarten: [
     { kuerzel: 'BAUA', name: 'Bauantrag' },
-    { kuerzel: 'BAUVA', name: 'Antrag auf Vorbescheid (Bauvoranfrage)', synonyme: ['BVA'] },
+    { kuerzel: 'BAUVA', name: 'Bauvoranfrage (Antrag auf Vorbescheid, § 77 BauO NRW 2018)', synonyme: ['BVA'] },
     { kuerzel: 'BAUF', name: 'Genehmigungsfreistellung' },
     { kuerzel: 'DENK', name: 'Denkmalrechtliche Erlaubnis' },
     { kuerzel: 'ABGE', name: 'Abgeschlossenheitsbescheinigung' },
@@ -71,26 +72,33 @@ const TEILE: NamensTeil[] = ['code', 'art', 'datum', 'nummer'];
 /** Leistungsphase 0 bis 9 (HOAI kennt 1 bis 9; 0 = von Anfang an): Zahlen werden begrenzt, alles andere ist keine */
 export const lphAus = (x: unknown): number | undefined => (typeof x === 'number' && Number.isFinite(x) ? Math.min(9, Math.max(0, Math.round(x))) : undefined);
 
-function kuerzelAus(roh: unknown): Kuerzel[] | null {
+/** gültiges Kürzel bzw. gültige Schreibweise: Großbuchstaben und Ziffern, höchstens 8 Zeichen */
+export const KUERZEL_MUSTER = /^[A-Z0-9ÄÖÜ]{1,8}$/;
+
+/**
+ * Kürzelliste lesen: ungültige und doppelte Kürzel entfallen; eine Schreibweise entfällt, wenn sie ungültig ist oder
+ * schon vergeben (als Kürzel der Liste, als Schreibweise eines anderen Eintrags oder in `belegt`, z. B. die Phasen) –
+ * sonst wäre nicht eindeutig, welches Kürzel gemeint ist.
+ */
+function kuerzelAus(roh: unknown, belegt: string[] = []): Kuerzel[] | null {
   if (!Array.isArray(roh)) return null;
+  const eintraege = roh.filter((x): x is Record<string, unknown> => !!x && typeof x === 'object');
+  const kuerzelVon = (o: Record<string, unknown>) => (typeof o.kuerzel === 'string' ? o.kuerzel.trim().toUpperCase() : '');
+  const alleKuerzelDerListe = new Set(eintraege.map(kuerzelVon));
   const gesehen = new Set<string>();
+  const vergeben = new Set(belegt);
   const out: Kuerzel[] = [];
-  for (const x of roh) {
-    if (!x || typeof x !== 'object') continue;
-    const o = x as Record<string, unknown>;
-    const kuerzel = typeof o.kuerzel === 'string' ? o.kuerzel.trim().toUpperCase() : '';
-    if (!/^[A-Z0-9ÄÖÜ]{1,8}$/.test(kuerzel) || gesehen.has(kuerzel)) continue;
+  for (const o of eintraege) {
+    const kuerzel = kuerzelVon(o);
+    if (!KUERZEL_MUSTER.test(kuerzel) || gesehen.has(kuerzel) || vergeben.has(kuerzel)) continue;
     gesehen.add(kuerzel);
-    const synonyme = Array.isArray(o.synonyme)
-      ? [
-          ...new Set(
-            o.synonyme
-              .filter((s): s is string => typeof s === 'string')
-              .map((s) => s.trim().toUpperCase())
-              .filter((s) => s && s !== kuerzel),
-          ),
-        ]
-      : [];
+    const synonyme: string[] = [];
+    for (const s of Array.isArray(o.synonyme) ? o.synonyme : []) {
+      const x = typeof s === 'string' ? s.trim().toUpperCase() : '';
+      if (!KUERZEL_MUSTER.test(x) || x === kuerzel || alleKuerzelDerListe.has(x) || vergeben.has(x) || synonyme.includes(x)) continue;
+      synonyme.push(x);
+      vergeben.add(x);
+    }
     out.push({
       kuerzel,
       name: typeof o.name === 'string' ? o.name.trim() : '',
@@ -106,9 +114,11 @@ export function namensschemaAus(roh: unknown): Namensschema | null {
   if (!roh || typeof roh !== 'object') return null;
   const o = roh as Record<string, unknown>;
   const reihe = Array.isArray(o.reihenfolge) ? o.reihenfolge.filter((t): t is NamensTeil => TEILE.includes(t as NamensTeil)) : [];
+  const phasen = kuerzelAus(o.phasen) ?? structuredClone(VORGABE_NAMENSSCHEMA.phasen);
   return {
-    phasen: kuerzelAus(o.phasen) ?? structuredClone(VORGABE_NAMENSSCHEMA.phasen),
-    antragsarten: kuerzelAus(o.antragsarten) ?? structuredClone(VORGABE_NAMENSSCHEMA.antragsarten),
+    phasen,
+    // eine Antragsart darf keine Phase heißen (sonst wäre ein Ordner „GP“ ein Antragsordner)
+    antragsarten: kuerzelAus(o.antragsarten, alleKuerzel(phasen)) ?? structuredClone(VORGABE_NAMENSSCHEMA.antragsarten),
     reihenfolge: reihe.length === TEILE.length && new Set(reihe).size === TEILE.length ? reihe : [...VORGABE_NAMENSSCHEMA.reihenfolge],
     indexAbLph: lphAus(o.indexAbLph) ?? VORGABE_NAMENSSCHEMA.indexAbLph,
   };

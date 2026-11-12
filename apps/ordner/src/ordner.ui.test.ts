@@ -292,18 +292,22 @@ describe('Projektordner', () => {
     expect(schema().reihenfolge).toEqual(['code', 'nummer', 'datum', 'art']);
     expect(beispiel()).toBe('HVO GP-04 261111 GP Grundriss OG.pdf');
     expect(bereich.textContent).toContain('Phase GP, Datum 261111, Plannummer GP-04');
-    expect(bereich.textContent).toContain('die Antragsart (HVO GP-04 261111 BAUA …)');
+    expect(bereich.querySelectorAll('code')[1].textContent).toBe('HVO GP-04 261111 BAUA …');
 
-    // Index ab Leistungsphase: beim Verlassen übernommen, außerhalb des Bereichs begrenzt, leer = bleibt
+    // Index ab Leistungsphase: beim Verlassen übernommen; außerhalb des Bereichs nicht gekappt, sondern gemeldet
     const index = bereich.querySelector<HTMLInputElement>('.po-index input')!;
+    eingabe(index, '4');
+    expect(schema().indexAbLph).toBe(4);
     eingabe(index, '12');
-    expect(schema().indexAbLph).toBe(9);
-    expect(index.value).toBe('9');
+    expect(schema().indexAbLph).toBe(4);
+    expect(index.value).toBe('12');
+    expect(index.className).toContain('feld-fehler');
+    expect(bereich.querySelector('.po-index .feld-meldung')!.textContent).toBe('„12“: Leistungsphase 0 bis 9 (ganze Zahl).');
     eingabe(index, '');
-    expect(schema().indexAbLph).toBe(9);
-    expect(index.value).toBe('9');
+    expect(bereich.querySelector('.po-index .feld-meldung')!.textContent).toBe('Bitte eine Leistungsphase von 0 bis 9 eintragen.');
     eingabe(index, '5');
     expect(schema().indexAbLph).toBe(5);
+    expect(bereich.querySelector('.po-index .feld-meldung')).toBeNull();
 
     // Kürzel ändern: klein getippt, groß übernommen
     const kuerzel = (liste: string, k: string) => eingabeMit(`${liste}: Kürzel ${k}`);
@@ -330,8 +334,19 @@ describe('Projektordner', () => {
     eingabe(eingabeMit('Schreibweisen von BAUA'), 'ba, BA,  baua');
     expect(schema().antragsarten.find((k) => k.kuerzel === 'BAUA')!.synonyme).toEqual(['BA']);
     expect(eingabeMit('Schreibweisen von BAUA').value).toBe('BA');
+    // eine Schreibweise, die schon vergeben ist (Kürzel einer Phase, Schreibweise einer anderen Art), wird nicht gespeichert
+    eingabe(eingabeMit('Schreibweisen von BAUA'), 'BA, GP');
+    expect(meldung().textContent).toBe('„GP“: gibt es schon – es bleibt „BA“.');
+    expect(eingabeMit('Schreibweisen von BAUA').value).toBe('BA');
+    eingabe(eingabeMit('Schreibweisen von DENK'), 'bva');
+    expect(meldung().textContent).toBe('„BVA“: gibt es schon – es bleibt keine Schreibweise.');
+    expect(schema().antragsarten.find((k) => k.kuerzel === 'DENK')!.synonyme).toBeUndefined();
+    // Leistungsphase: ungültig gemeldet, leer = keine
     eingabe(eingabeMit('Leistungsphase von AB'), '15');
-    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBe(9);
+    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBeUndefined();
+    expect(eingabeMit('Leistungsphase von AB').getAttribute('aria-invalid')).toBe('true');
+    eingabe(eingabeMit('Leistungsphase von AB'), '6');
+    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBe(6);
     eingabe(eingabeMit('Leistungsphase von AB'), '');
     expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBeUndefined();
 
@@ -348,11 +363,25 @@ describe('Projektordner', () => {
     eingabe(eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel'), 'weg');
     expect(schema().antragsarten.at(-1)).toEqual({ kuerzel: 'WEG', name: 'Wohnungseigentum' });
     expect(knopf(antragsarten, '+ Kürzel').disabled).toBe(false);
-    // verwerfen speichert nichts
+    // verwerfen (× oder Esc) speichert nichts
     act(() => knopf(antragsarten, '+ Kürzel').click());
     act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="Neues Kürzel verwerfen"]')!.click());
     expect(schema().antragsarten).toHaveLength(7);
+    act(() => knopf(antragsarten, '+ Kürzel').click());
+    act(() => void eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(bereich.querySelector('button[aria-label="Neues Kürzel verwerfen"]')).toBeNull();
+    expect(schema().antragsarten).toHaveLength(7);
+    // entfernen: mit Rückfrage
     act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="WEG entfernen"]')!.click());
+    await warten();
+    expect(host.querySelector('.modal')?.textContent).toContain('WEG entfernen?');
+    act(() => knopf(host.querySelector('.modal')!, 'Abbrechen').click());
+    await warten();
+    expect(schema().antragsarten.map((k) => k.kuerzel)).toContain('WEG');
+    act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="WEG entfernen"]')!.click());
+    await warten();
+    act(() => knopf(host.querySelector('.modal')!, 'Entfernen').click());
+    await warten();
     expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('WEG');
 
     // Vorgabe wiederherstellen: mit Rückfrage, danach gilt wieder die eingebaute Vorgabe – auch in den Feldern

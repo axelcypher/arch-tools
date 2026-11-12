@@ -4,7 +4,7 @@ import { useEscSchliessen } from '@core/ui/Dialog';
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft } from '../antrag';
-import { aktiveFassung, antragsOrdner, projektCodes, useAntrag } from '../antragStore';
+import { aktiveFassung, antragsOrdner, dateienVon, dokumentZu, projektCodes, useAntrag } from '../antragStore';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { pdfOeffnen, pdfSchliessen } from '../dokumente/pdf';
@@ -39,7 +39,8 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
   const ordner = useAntrag((s) => antragsOrdner(s, projekt));
   const bereitJeFassung = useAntrag((s) => s.projektdatei?.bereit);
   const basis = verbinde(ablage.root, ablage.pfad);
-  const liste = useMemo(() => unterlagenReihenfolge(roh, dateien.map((d) => d.datei?.pfad ?? '').filter(Boolean)), [roh, dateien]);
+  // Reihenfolge des Antragsumfangs – die Pläne eines Plansatzes an seiner Stelle
+  const liste = useMemo(() => unterlagenReihenfolge(roh, dateien.flatMap(dateienVon)), [roh, dateien]);
   const [index, setIndex] = useState(() => Math.max(0, start ? liste.findIndex((d) => d.pfad === start) : 0));
   const [zoom, setZoom] = useState(0);
   const [bytes, setBytes] = useState<{ pfad: string; daten: Uint8Array } | null>(null);
@@ -56,7 +57,7 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
         fehlerName,
       )
     : 'offen';
-  const dok = aktuell ? dateien.find((d) => d.datei?.pfad === aktuell.pfad) : undefined;
+  const dok = aktuell ? dokumentZu(dateien, aktuell.pfad) : undefined;
 
   // Datei lesen (nur PDFs und Bilder werden gezeigt)
   useEffect(() => {

@@ -3,7 +3,7 @@ import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { VORGABE_EXPORT, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { VORGABE_EXPORT, einstellungenAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -26,6 +26,22 @@ describe('Dateinamen aus der Vorlage', () => {
 
   it('Einstellungen je Projekt überschreiben nur, was gesetzt ist', () => {
     expect(einstellungenFuer(VORGABE_EXPORT, { phase: 'EP', namensvorlage: '' })).toMatchObject({ phase: 'EP', namensvorlage: VORGABE_EXPORT.namensvorlage, antragsordner: 'TÖB' });
+  });
+
+  it('die Antragsart im Dateinamen kommt immer aus dem Antrag – nicht aus der Einstellung „Phase“ oder einem festen Kürzel', () => {
+    // Vorgabe früherer Fassungen: an Stelle 2 stand {Phase} (Einstellung, z. B. „BVA“) – jetzt die Antragsart des Antrags
+    expect(vorlageMitAntragsart('{Kürzel} {Phase} {Datum} {Nr} {Name}')).toBe('{Kürzel} {Art} {Datum} {Nr} {Name}');
+    expect(vorlageMitAntragsart('{Kuerzel} BVA {Datum} {Name}')).toBe('{Kuerzel} {Art} {Datum} {Name}');
+    expect(vorlageMitAntragsart('{Kürzel} {Art} {Datum} {Nr} {Name}')).toBe('{Kürzel} {Art} {Datum} {Nr} {Name}');
+    // eigene Vorlagen ohne Kürzel vorn bleiben, ebenso ein Wort, das kein Kürzel ist
+    expect(vorlageMitAntragsart('{Name} {Datum}')).toBe('{Name} {Datum}');
+    expect(vorlageMitAntragsart('{Kürzel} Antrag {Datum}')).toBe('{Kürzel} Antrag {Datum}');
+    // gespeicherte Einstellungen und Abweichungen des Projekts werden so gelesen
+    const alt = einstellungenAus({ namensvorlage: '{Kürzel} {Phase} {Datum} {Nr} {Name}', phase: 'BVA' });
+    expect(alt.namensvorlage).toBe('{Kürzel} {Art} {Datum} {Nr} {Name}');
+    expect(einstellungenFuer(VORGABE_EXPORT, { namensvorlage: '{Kürzel} {Phase} {Datum} {Name}', phase: 'BVA' }).namensvorlage).toBe('{Kürzel} {Art} {Datum} {Name}');
+    // im Antrag „BAUA 2“ heißt die Datei also BAUA, auch wenn „Phase“ BVA ist
+    expect(dateiname(alt.namensvorlage, { kuerzel: 'BS9', phase: alt.phase, datum: new Date(2026, 10, 12), nr: '01', name: 'Bauantrag', antrag: 'BAUA 2', art: artDerFassung('BAUA 2') })).toBe('BS9 BAUA 261112 01 Bauantrag');
   });
 });
 

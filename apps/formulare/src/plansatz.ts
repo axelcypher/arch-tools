@@ -132,14 +132,26 @@ function neueste(funde: Fund[], codes: string[]): Fund {
 }
 
 const grundriss = (bezeichnung: string) => /grundri|(^|\s)gr(\s|$)/i.test(bezeichnung);
-const schnitt = (bezeichnung: string) => /schnitt|(^|\s)sn(\s|$)/i.test(bezeichnung);
+// „Längsschnitt“, „Schnitt A-A“ – aber nicht „Ausschnitt“ (Lageplan Ausschnitt)
+const schnitt = (bezeichnung: string) => /(?<!aus)schnitt|(^|\s)sn(\s|$)/i.test(bezeichnung);
+
+/**
+ * Antragsarten, für deren Pläne die BauPrüfVO nicht die Grundlage ist: Entwässerungsantrag (Entwässerungssatzung der
+ * Gemeinde) und Abgeschlossenheitsbescheinigung (§ 7 Abs. 4 WEG) – dort keine Hinweise mit Bezug auf die BauPrüfVO
+ */
+export const ARTEN_OHNE_BAUPRUEFVO = ['ENTW', 'ABGE'];
 const ansicht = (bezeichnung: string) => /ansicht/i.test(bezeichnung);
 
 /**
  * Plansatz prüfen: `antrag` sind die Dateien im Ordner der aktiven Antragsfassung, `quelle` die im Quellordner (auch
  * leer – die Pläne werden verschoben). `geschosse` aus der Projektdatei (fehlt = kein Abgleich).
  */
-export function plansatzPruefen(antrag: Eintrag[], quelle: Eintrag[], schema: Namensschema, o: { codes?: string[]; geschosse?: number; muster?: string } = {}): PlansatzErgebnis {
+export function plansatzPruefen(
+  antrag: Eintrag[],
+  quelle: Eintrag[],
+  schema: Namensschema,
+  o: { codes?: string[]; geschosse?: number; muster?: string; /** Hauptkürzel der Antragsart (BAUA, ENTW …) */ art?: string } = {},
+): PlansatzErgebnis {
   const codes = o.codes ?? [];
   const hinweise: string[] = [];
   const imAntrag = sammeln(antrag, schema, o.muster, hinweise);
@@ -201,13 +213,14 @@ export function plansatzPruefen(antrag: Eintrag[], quelle: Eintrag[], schema: Na
     // Hinweis; er sperrt nicht, weil die Behörde auf Bauvorlagen verzichten kann (§ 1 Abs. 2 BauPrüfVO) und ein
     // Vorbescheid weniger braucht. Nur bei Plänen einer Leistungsphase: für Sonderfälle ohne LPH (AB, Aufteilungspläne
     // nach § 7 Abs. 4 WEG) ist die BauPrüfVO nicht die Grundlage
-    const bauvorlagen = plaene.some((p) => kuerzelZu(schema.phasen, p.kuerzel)?.lph !== undefined);
+    const bauvorlagen = plaene.some((p) => kuerzelZu(schema.phasen, p.kuerzel)?.lph !== undefined) && !ARTEN_OHNE_BAUPRUEFVO.includes(o.art ?? '');
     if (bauvorlagen && !da.some(schnitt)) hinweise.push('kein Schnitt erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 3 BauPrüfVO NRW)');
     if (bauvorlagen && !da.some(ansicht)) hinweise.push('keine Ansicht erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 4 BauPrüfVO NRW)');
     // Geschosse der Projektdatei: weniger Grundrisse als Geschosse?
     if (o.geschosse && o.geschosse > 0) {
       const gr = da.filter(grundriss).length;
-      if (gr < o.geschosse) hinweise.push(`Projektdatei: ${o.geschosse} ${o.geschosse === 1 ? 'Geschoss' : 'Geschosse'}, ${gr} ${gr === 1 ? 'Grundriss' : 'Grundrisse'} erkannt`);
+      const grundlage = bauvorlagen ? ' (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW)' : '';
+      if (gr < o.geschosse) hinweise.push(`Projektdatei: ${o.geschosse} ${o.geschosse === 1 ? 'Geschoss' : 'Geschosse'}, ${gr} ${gr === 1 ? 'Grundriss' : 'Grundrisse'} erkannt${grundlage}`);
     }
   }
 

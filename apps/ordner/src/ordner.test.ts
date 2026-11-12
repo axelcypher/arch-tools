@@ -243,6 +243,9 @@ describe('Stammdaten', () => {
     const gleich = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: buero }, s, { struktur, presets: [], namensschema: buero });
     expect(gleich.teile).toEqual([]);
     expect(gleich.aendern({ meta: p.meta })).not.toHaveProperty('namensschema');
+    // andere Reihenfolge der Schlüssel ist keine Änderung
+    const umgestellt = { indexAbLph: buero.indexAbLph, reihenfolge: buero.reihenfolge, antragsarten: buero.antragsarten, phasen: buero.phasen.map((k) => ({ lph: k.lph, name: k.name, kuerzel: k.kuerzel })) };
+    expect(projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: umgestellt as typeof buero }, s, { struktur, presets: [], namensschema: buero }).teile).toEqual([]);
     // ohne Büro-Schema gilt die Vorgabe
     expect(projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: structuredClone(VORGABE_NAMENSSCHEMA) }, s, { struktur, presets: [] }).teile).toEqual([]);
   });

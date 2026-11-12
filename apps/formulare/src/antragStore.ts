@@ -16,6 +16,7 @@ import type { AntragsVorlage, ExportEinstellungen, ExportUeberschreibung, Fassun
 import {
   anzeigeName,
   dateiImAntrag,
+  hauptArt,
   dateiname,
   einstellungenAus,
   einstellungenFuer,
@@ -123,6 +124,12 @@ export interface DokZustand {
   /** Plansatz: alle Pläne mit Zustand, Lücken und Hinweisen */
   plansatz?: PlansatzErgebnis;
 }
+
+/** Dateien eines Dokuments im Antragsordner: die verknüpfte bzw. gefundene – bei einem Plansatz jede seiner Plandateien */
+export const dateienVon = (d: DokZustand): string[] => (d.plansatz ? [...new Set(d.plansatz.plaene.flatMap((p) => (p.datei ? [p.datei.pfad] : [])))] : d.datei ? [d.datei.pfad] : []);
+
+/** Das Dokument des Antragsumfangs, zu dem eine Datei im Antragsordner gehört (Groß-/Kleinschreibung egal) */
+export const dokumentZu = (dokumente: DokZustand[], pfad: string) => dokumente.find((d) => dateienVon(d).some((p) => p.toLowerCase() === pfad.toLowerCase()));
 
 /** Quellordner eines Dokuments (relativ zum Projektordner): angegeben, sonst Berechnungen bzw. Genehmigungsplanung/pdf */
 export const quelleVonEintrag = (u: Pick<UmfangEintrag, 'art' | 'quelle'>, e: Pick<ExportEinstellungen, 'berechnungsordner'>) =>
@@ -882,7 +889,9 @@ export const useAntrag = create<AntragState>((set, get) => {
         if (u.art === 'plansatz') {
           const o = useFormulare.getState().oap;
           const geschosse = o && o !== 'fehlt' ? o.projekt.storeys.length : undefined;
-          const plansatz = plansatzPruefen(st.dateien, st.quellen[quelleVonEintrag(u, e)] ?? [], namensschema(), { codes, geschosse, muster: u.muster });
+          const schema = namensschema();
+          const art = hauptArt(st.fassungen.find((f) => f.name === fassung)?.art ?? fassung.replace(/[\s_-]*\d+$/, ''), schema.antragsarten);
+          const plansatz = plansatzPruefen(st.dateien, st.quellen[quelleVonEintrag(u, e)] ?? [], schema, { codes, geschosse, muster: u.muster, art });
           // „Datei“ eines Plansatzes: keine einzelne – die Pläne stehen in `plansatz` (je Nummer mit Datei)
           return { eintrag: u, status: plansatz.status, formular: null, datei: null, quelle: null, plansatz };
         }

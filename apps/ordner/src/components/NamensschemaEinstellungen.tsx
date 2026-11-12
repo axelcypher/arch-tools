@@ -1,12 +1,9 @@
 import type { FocusEvent } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Kuerzel, Namensschema, NamensTeil } from '@core/namensschema';
-import { dateinameZerlegen, lphAus, NAMENS_TEILE, namensschemaAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import { alleKuerzel, dateinameZerlegen, KUERZEL_MUSTER, NAMENS_TEILE, namensschemaAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { useOrdner } from '../store';
-
-/** gültiges Kürzel: Großbuchstaben und Ziffern, höchstens 8 Zeichen */
-const KUERZEL = /^[A-Z0-9ÄÖÜ]{1,8}$/;
 
 /** Schreibweisen aus der Eingabe: groß, ohne Doppelte und ohne das Kürzel selbst */
 const schreibweisenAus = (text: string, kuerzel: string) => [
@@ -55,8 +52,8 @@ export function NamensschemaEinstellungen() {
   };
 
   return (
-    <section className="po-namensschema" aria-label="Kürzel und Plannummern">
-      <h2>Kürzel und Plannummern</h2>
+    <section className="po-namensschema" aria-label="Namensschema: Kürzel und Plannummern">
+      <h2>Namensschema: Kürzel und Plannummern</h2>
       <p className="muted small-text">
         Gilt für alle Apps: Formulare erkennt daran Antragsordner (BAUA, BAUA 2 …) und die Pläne eines Plansatzes (Plannummer mit Plankürzel, z. B. GP-04, oder GP01-07 für einen zusammengefassten
         Satz). Neue Projektdateien bekommen eine Kopie; beim Ergänzen eines Projekts wird sie auf den Stand des Büros gebracht. Wie die Dateien des Büros insgesamt heißen, legt das „Dateinamenschema
@@ -80,18 +77,26 @@ export function NamensschemaEinstellungen() {
       </div>
       <p className="muted small-text">
         Beispiel: <code>{beispiel}</code> – Projektcode {zerlegt.code}, Phase {zerlegt.art}, Datum {zerlegt.datum}, Plannummer {zerlegt.nummer}, Bezeichnung „{zerlegt.rest}“. Im Antragsordner steht
-        statt der Phase die Antragsart ({name(antragsart).replace(/ Grundriss OG\.pdf$/, ' …')}); die Plannummer bleibt.
+        statt der Phase die Antragsart: <code>{name(antragsart).replace(/ Grundriss OG\.pdf$/, ' …')}</code> – die Plannummer bleibt.
       </p>
       <label className="po-index">
         <span className="field-label">Pläne mit Index (z. B. AP-03a) ab Leistungsphase</span>
         <LphFeld wert={s.indexAbLph} onChange={(n) => n !== undefined && setzen({ indexAbLph: n })} />
       </label>
 
-      <KuerzelListe titel="Planphasen" text="Kürzel der Planungsphase im Dateinamen und vor der Plannummer (GP-01)." liste={s.phasen} mitLph onChange={(phasen) => setzen({ phasen })} />
+      <KuerzelListe
+        titel="Planphasen"
+        text="Kürzel der Planungsphase im Dateinamen und vor der Plannummer (GP-01)."
+        liste={s.phasen}
+        fremde={alleKuerzel(s.antragsarten)}
+        mitLph
+        onChange={(phasen) => setzen({ phasen })}
+      />
       <KuerzelListe
         titel="Antrags- und Verfahrensarten"
         text="Kürzel der Antrags- bzw. Verfahrensart – Name der Antragsordner (BAUA, BAUA 2 …) und im Dateinamen statt der Phase. Gleichwertige Schreibweisen mit Komma (z. B. BVA)."
         liste={s.antragsarten}
+        fremde={alleKuerzel(s.phasen)}
         onChange={(antragsarten) => setzen({ antragsarten })}
       />
       <div className="po-namensschema-fuss">
@@ -104,44 +109,92 @@ export function NamensschemaEinstellungen() {
 }
 
 /**
- * Leistungsphase 0 bis 9: übernommen beim Verlassen (oder Enter), Werte außerhalb werden begrenzt. Leer heißt „keine“,
- * wo das erlaubt ist (Phase ohne LPH), sonst bleibt der alte Wert.
+ * Leistungsphase 0 bis 9 (ganze Zahl): übernommen beim Verlassen (oder Enter), Esc verwirft. Eine ungültige Eingabe
+ * wird nicht gekappt oder verworfen, sondern bleibt zum Korrigieren stehen – mit Meldung am Feld (wie NumberField).
+ * Leer heißt „keine“, wo das erlaubt ist (Phase ohne LPH).
  */
 function LphFeld({ wert, leerErlaubt = false, label, onChange }: { wert: number | undefined; leerErlaubt?: boolean; label?: string; onChange: (n: number | undefined) => void }) {
   const text = wert === undefined ? '' : String(wert);
+  const meldungId = useId();
   const [eingabe, setEingabe] = useState(text);
-  useEffect(() => setEingabe(text), [text]);
+  const [fehler, setFehler] = useState('');
+  useEffect(() => {
+    setEingabe(text);
+    setFehler('');
+  }, [text]);
   const uebernehmen = () => {
-    if (eingabe.trim() === '') {
-      if (leerErlaubt && wert !== undefined) onChange(undefined);
-      else setEingabe(text);
+    const t = eingabe.trim();
+    if (t === '') {
+      if (leerErlaubt) {
+        setFehler('');
+        if (wert !== undefined) onChange(undefined);
+      } else setFehler('Bitte eine Leistungsphase von 0 bis 9 eintragen.');
       return;
     }
-    const n = lphAus(Number(eingabe));
-    if (n === undefined) return setEingabe(text);
-    setEingabe(String(n));
-    if (n !== wert) onChange(n);
+    if (!/^\d$/.test(t)) return setFehler(`„${t}“: Leistungsphase 0 bis 9 (ganze Zahl).`);
+    setFehler('');
+    if (Number(t) !== wert) onChange(Number(t));
   };
   return (
-    <input
-      type="number"
-      min={0}
-      max={9}
-      step={1}
-      value={eingabe}
-      aria-label={label}
-      onChange={(e) => setEingabe(e.target.value)}
-      onBlur={uebernehmen}
-      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-    />
+    <>
+      <input
+        className={`num${fehler ? ' feld-fehler' : ''}`}
+        inputMode="numeric"
+        value={eingabe}
+        aria-label={label}
+        aria-invalid={fehler ? true : undefined}
+        aria-describedby={fehler ? meldungId : undefined}
+        onChange={(e) => setEingabe(e.target.value)}
+        onBlur={uebernehmen}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') {
+            e.stopPropagation();
+            setEingabe(text);
+            setFehler('');
+          }
+        }}
+      />
+      {fehler && (
+        <span className="feld-meldung" role="alert" id={meldungId}>
+          {fehler}
+        </span>
+      )}
+    </>
   );
 }
 
-function KuerzelListe({ titel, text, liste, mitLph = false, onChange }: { titel: string; text: string; liste: Kuerzel[]; mitLph?: boolean; onChange: (l: Kuerzel[]) => void }) {
+function KuerzelListe({
+  titel,
+  text,
+  liste,
+  fremde,
+  mitLph = false,
+  onChange,
+}: {
+  titel: string;
+  text: string;
+  liste: Kuerzel[];
+  /** Kürzel und Schreibweisen der anderen Liste – auch dort darf es keine Doppelten geben */
+  fremde: string[];
+  mitLph?: boolean;
+  onChange: (l: Kuerzel[]) => void;
+}) {
   // ein neues Kürzel wird erst gespeichert, wenn es gültig eingetragen ist (vorher gilt es in keiner App)
   const [neu, setNeu] = useState(false);
   const zeile = (i: number, patch: Partial<Kuerzel>) => onChange(liste.map((k, j) => (j === i ? { ...k, ...patch } : k)));
-  const alle = liste.map((x) => x.kuerzel);
+  const belegtOhne = (i: number) => [...fremde, ...alleKuerzel(liste.filter((_, j) => j !== i))];
+  const entfernen = async (i: number) => {
+    const k = liste[i];
+    if (
+      await bestaetigen(
+        `${k.kuerzel} entfernen?`,
+        `Das Kürzel ${k.kuerzel}${k.name ? ` (${k.name})` : ''} gilt danach in keiner App mehr – Projektdateien behalten ihre Kopie, bis sie ergänzt werden.`,
+        'Entfernen',
+      )
+    )
+      onChange(liste.filter((_, j) => j !== i));
+  };
   return (
     <div className="po-kuerzel">
       <h3>{titel}</h3>
@@ -150,7 +203,7 @@ function KuerzelListe({ titel, text, liste, mitLph = false, onChange }: { titel:
         <colgroup>
           <col className="po-kuerzel-spalte" />
           <col />
-          <col className="po-kuerzel-zusatz" />
+          <col className={mitLph ? 'po-kuerzel-lph' : 'po-kuerzel-zusatz'} />
           <col className="po-kuerzel-weg" />
         </colgroup>
         <thead>
@@ -163,21 +216,13 @@ function KuerzelListe({ titel, text, liste, mitLph = false, onChange }: { titel:
         </thead>
         <tbody>
           {liste.map((k, i) => (
-            <KuerzelZeile
-              key={`${i}-${k.kuerzel}`}
-              titel={titel}
-              k={k}
-              andere={alle.filter((_, j) => j !== i)}
-              mitLph={mitLph}
-              onChange={(patch) => zeile(i, patch)}
-              onEntfernen={() => onChange(liste.filter((_, j) => j !== i))}
-            />
+            <KuerzelZeile key={`${i}-${k.kuerzel}`} titel={titel} k={k} andere={belegtOhne(i)} mitLph={mitLph} onChange={(patch) => zeile(i, patch)} onEntfernen={() => void entfernen(i)} />
           ))}
           {neu && (
             <KuerzelZeile
               titel={titel}
               k={{ kuerzel: '', name: '' }}
-              andere={alle}
+              andere={belegtOhne(-1)}
               mitLph={mitLph}
               neu
               onChange={(k) => {
@@ -197,10 +242,10 @@ function KuerzelListe({ titel, text, liste, mitLph = false, onChange }: { titel:
 }
 
 /**
- * Eine Zeile: Eingaben werden beim Verlassen übernommen. Ein ungültiges oder doppeltes Kürzel wird nicht gespeichert –
- * das Feld zeigt wieder das alte, die Meldung nennt den Grund. Ändert sich das Schema von außen (Vorgabe
- * wiederhergestellt), folgen die Felder. Eine neue Zeile (`neu`) wird gespeichert, wenn man sie mit einem gültigen
- * Kürzel verlässt (oder Enter drückt) – so lässt sich zwischen ihren Feldern wechseln, ohne dass sie vorher springt.
+ * Eine Zeile: Eingaben werden beim Verlassen übernommen. Ein ungültiges oder schon vergebenes Kürzel (bzw. eine solche
+ * Schreibweise) wird nicht gespeichert – das Feld zeigt wieder den gespeicherten Stand, die Meldung nennt den Grund.
+ * Ändert sich das Schema von außen (Vorgabe wiederhergestellt), folgen die Felder. Eine neue Zeile (`neu`) wird
+ * gespeichert, wenn man sie mit einem gültigen Kürzel verlässt (oder Enter drückt); Esc oder × verwirft sie.
  */
 function KuerzelZeile({
   titel,
@@ -213,6 +258,7 @@ function KuerzelZeile({
 }: {
   titel: string;
   k: Kuerzel;
+  /** schon vergebene Kürzel und Schreibweisen (alle anderen Einträge beider Listen) */
   andere: string[];
   mitLph: boolean;
   neu?: boolean;
@@ -236,13 +282,15 @@ function KuerzelZeile({
   useEffect(() => setName(k.name), [k.name]);
   useEffect(() => setSynonyme(synonymText), [synonymText]);
 
-  const grundGegen = (wert: string) => (!KUERZEL.test(wert) ? 'nur Großbuchstaben und Ziffern, höchstens 8 Zeichen' : andere.includes(wert) ? 'gibt es schon' : '');
+  const grundGegen = (wert: string) => (!KUERZEL_MUSTER.test(wert) ? 'nur Großbuchstaben und Ziffern, höchstens 8 Zeichen' : andere.includes(wert) ? 'gibt es schon' : '');
+  /** ungültige Schreibweisen mit Grund (die eigene Abkürzung zählt als vergeben) */
+  const falscheSchreibweisen = (liste: string[], eigenes: string) => liste.map((x) => ({ x, grund: x === eigenes ? 'ist das Kürzel selbst' : grundGegen(x) })).filter((f) => f.grund);
   const kuerzelUebernehmen = () => {
     const getippt = kuerzel.trim();
     const wert = getippt.toUpperCase();
     if (neu && !wert) return setKuerzel('');
     if (wert === k.kuerzel) return setKuerzel(wert);
-    const grund = grundGegen(wert);
+    const grund = grundGegen(wert) || (schreibweisenAus(synonyme, '').includes(wert) ? 'steht schon bei den Schreibweisen' : '');
     if (grund) {
       setKuerzel(k.kuerzel);
       return setFehler(neu ? `„${getippt}“: ${grund} – noch nicht gespeichert.` : `„${getippt}“: ${grund} – es bleibt ${k.kuerzel}.`);
@@ -251,15 +299,24 @@ function KuerzelZeile({
     if (neu) setKuerzel(wert);
     else onChange({ kuerzel: wert });
   };
-  /** neue Zeile verlassen: mit gültigem Kürzel speichern */
+  /** neue Zeile verlassen: mit gültigem Kürzel (und gültigen Schreibweisen) speichern */
   const neuSpeichern = (e: FocusEvent<HTMLTableRowElement>) => {
     if (!neu || e.currentTarget.contains(e.relatedTarget as Node | null)) return;
     const wert = kuerzel.trim().toUpperCase();
     if (!wert || grundGegen(wert)) return;
-    onChange({ kuerzel: wert, name: name.trim(), lph: lphRef.current, synonyme: schreibweisenAus(synonyme, wert) });
+    const liste = schreibweisenAus(synonyme, wert);
+    if (falscheSchreibweisen(liste, wert).length) return;
+    onChange({ kuerzel: wert, name: name.trim(), lph: lphRef.current, synonyme: liste });
   };
   const schreibweisenUebernehmen = () => {
-    const liste = schreibweisenAus(synonyme, k.kuerzel);
+    const eigenes = neu ? kuerzel.trim().toUpperCase() : k.kuerzel;
+    const liste = schreibweisenAus(synonyme, eigenes);
+    const falsch = falscheSchreibweisen(liste, eigenes);
+    if (falsch.length) {
+      if (!neu) setSynonyme(synonymText);
+      return setFehler(`${falsch.map((f) => `„${f.x}“: ${f.grund}`).join('; ')} – ${neu ? 'noch nicht gespeichert' : `es bleibt ${synonymText ? `„${synonymText}“` : 'keine Schreibweise'}`}.`);
+    }
+    setFehler('');
     setSynonyme(liste.join(', '));
     if (!neu && liste.join(', ') !== synonymText) onChange({ synonyme: liste });
   };
@@ -267,7 +324,15 @@ function KuerzelZeile({
 
   return (
     <>
-      <tr className={neu ? 'po-kuerzel-neu' : undefined} onBlur={neuSpeichern}>
+      <tr
+        className={neu ? 'po-kuerzel-neu' : undefined}
+        onBlur={neuSpeichern}
+        onKeyDown={(e) => {
+          if (!neu || e.key !== 'Escape') return;
+          e.stopPropagation();
+          onEntfernen();
+        }}
+      >
         <td>
           <input
             value={kuerzel}
@@ -295,11 +360,20 @@ function KuerzelZeile({
           {mitLph ? (
             <LphFeld wert={neu ? lph : k.lph} leerErlaubt label={`Leistungsphase von ${bezeichnung}`} onChange={(n) => (neu ? setLph(n) : onChange({ lph: n }))} />
           ) : (
-            <input value={synonyme} aria-label={`Schreibweisen von ${bezeichnung}`} onChange={(e) => setSynonyme(e.target.value)} onBlur={schreibweisenUebernehmen} />
+            <input
+              value={synonyme}
+              aria-label={`Schreibweisen von ${bezeichnung}`}
+              aria-describedby={fehler ? meldungId : undefined}
+              onChange={(e) => {
+                setSynonyme(e.target.value);
+                setFehler('');
+              }}
+              onBlur={schreibweisenUebernehmen}
+            />
           )}
         </td>
         <td>
-          <button className="icon" title={neu ? 'Verwerfen' : 'Entfernen'} aria-label={neu ? 'Neues Kürzel verwerfen' : `${k.kuerzel} entfernen`} onClick={onEntfernen}>
+          <button className="icon" title={neu ? 'Verwerfen (Esc)' : 'Entfernen (mit Rückfrage)'} aria-label={neu ? 'Neues Kürzel verwerfen' : `${k.kuerzel} entfernen`} onClick={onEntfernen}>
             ×
           </button>
         </td>
@@ -312,7 +386,7 @@ function KuerzelZeile({
                 {fehler}
               </span>
             ) : (
-              <span className="muted small-text">Neues Kürzel – gespeichert, sobald die Zeile mit einem gültigen Kürzel verlassen wird.</span>
+              <span className="muted small-text">Neues Kürzel – gespeichert, sobald die Zeile mit einem gültigen Kürzel verlassen wird; Esc verwirft es.</span>
             )}
           </td>
         </tr>

@@ -2,7 +2,7 @@ import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import type { Bereitschaft } from '../antrag';
 import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, jjmmtt } from '../antrag';
-import { aktiveFassung, antragsOrdner, projektCodes, useAntrag } from '../antragStore';
+import { aktiveFassung, antragsOrdner, dokumentZu, projektCodes, useAntrag } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
@@ -71,7 +71,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       const fehler = antragsNameFehler(d.pfad, { codes, art });
       const m = markiert.find((b) => b.datei.toLowerCase() === d.pfad.toLowerCase());
       // zugehöriges Dokument: die verknüpfte bzw. gefundene Datei – bei einem Plansatz jede seiner Plandateien
-      const dok = dokumente.find((x) => x.datei?.pfad === d.pfad || !!x.plansatz?.plaene.some((p) => p.datei?.pfad === d.pfad));
+      const dok = dokumentZu(dokumente, d.pfad);
       return { d, fehler, zustand: bereitschaft(d, m, fehler), dok };
     });
   const bereit = liste.filter((x) => x.zustand === 'bereit').length;

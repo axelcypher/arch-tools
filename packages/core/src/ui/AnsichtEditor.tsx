@@ -1,5 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Ansicht, AnsichtAbschnitt, FeldDef, FeldOptionen } from './ansicht';
 import {
   abschnittVerschieben,
@@ -204,14 +204,17 @@ export function AnsichtEditor({
                           <input
                             className="av-ed-label"
                             value={x.optionen?.[f]?.label ?? ''}
-                            placeholder={def?.titel ?? f}
+                            placeholder={def?.titel ?? x.optionen?.[f]?.label ?? f}
+                            disabled={!def}
                             aria-label={`Beschriftung von ${def?.titel ?? f}`}
-                            title="Eigene Beschriftung – leer: die Beschriftung aus dem Katalog"
+                            title={def ? 'Eigene Beschriftung – leer: die Beschriftung aus dem Katalog' : 'Dieses Feld gibt es hier nicht – es lässt sich nur entfernen'}
                             onChange={(e) => setzen(feldOptionenSetzen(a, f, { label: e.target.value }))}
                           />
-                          <span className="muted small-text">{!def ? 'gibt es hier nicht' : x.optionen?.[f]?.label ? [def.titel, def.gruppe].filter(Boolean).join(' · ') : (def.gruppe ?? '')}</span>
+                          <span className="muted small-text">
+                            {!def ? 'gibt es hier nicht – entfernen' : x.optionen?.[f]?.label ? [def.titel, def.gruppe].filter(Boolean).join(' · ') : (def.gruppe ?? '')}
+                          </span>
                         </span>
-                        <FeldLayout optionen={x.optionen?.[f]} def={def} titel={def?.titel ?? f} onChange={(patch) => setzen(feldOptionenSetzen(a, f, patch))} />
+                        {def && <FeldLayout optionen={x.optionen?.[f]} def={def} titel={def.titel} onChange={(patch) => setzen(feldOptionenSetzen(a, f, patch))} />}
                         {verknuepfbar && def && <Verknuepfung a={a} feld={def} nach={nach} passt={verknuepfbar} onChange={setzen} />}
                         <button
                           type="button"
@@ -272,77 +275,90 @@ export function AnsichtEditor({
 
 /** Breite und Zeilenumbruch eines Felds */
 function FeldLayout({ optionen, def, titel, onChange }: { optionen?: FeldOptionen; def?: FeldDef; titel: string; onChange: (patch: Partial<FeldOptionen>) => void }) {
-  const breite = feldBreite(optionen, def);
   return (
     <span className="av-ed-layout">
-      <select value={breite} aria-label={`Breite von ${titel}`} title="Breite in der Zeile" onChange={(e) => onChange({ breite: Number(e.target.value) })}>
+      <select value={feldBreite(optionen, def)} aria-label={`Breite von ${titel}`} title="Breite in der Zeile" onChange={(e) => onChange({ breite: Number(e.target.value) })}>
         {BREITEN.map((b) => (
           <option key={b.wert} value={b.wert}>
             {b.text}
           </option>
         ))}
-        {!BREITEN.some((b) => b.wert === breite) && <option value={breite}>{breite}/12</option>}
       </select>
       <label className="av-ed-umbruch" title="Dieses Feld beginnt eine neue Zeile">
-        <input type="checkbox" checked={!!optionen?.neueZeile} aria-label={`${titel} beginnt eine neue Zeile`} onChange={(e) => onChange({ neueZeile: e.target.checked })} />↵
+        <input type="checkbox" checked={!!optionen?.neueZeile} aria-label={`${titel} beginnt eine neue Zeile`} onChange={(e) => onChange({ neueZeile: e.target.checked })} />
+        <span aria-hidden>↵ Zeile</span>
       </label>
     </span>
   );
 }
 
-/** Verknüpfung eines Felds mit anderen der Ansicht: sie werden gemeinsam ausgefüllt (nur passende Felder) */
+/**
+ * Verknüpfung eines Felds mit anderen der Ansicht: sie werden gemeinsam ausgefüllt (nur passende Felder). Ein Knopf
+ * öffnet eine kleine Liste mit Kästchen – gewählt wird bewusst (Klick bzw. Leertaste), nicht schon mit den Pfeiltasten
+ * wie bei einer Auswahlliste. Ohne passendes Feld bleibt nur ein Platzhalter (die Zeilen fluchten weiter).
+ */
 function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; feld: FeldDef; nach: Map<string, FeldDef>; passt: (a: FeldDef, b: FeldDef) => boolean; onChange: (a: Ansicht) => void }) {
   const feld = def.id;
-  const titel = def.titel;
+  const [offen, setOffen] = useState(false);
+  const huelle = useRef<HTMLSpanElement>(null);
+  const knopf = useRef<HTMLButtonElement>(null);
+  const listeId = useId();
   const mit = verknuepfteFelder(a, feld);
-  const andere = felderDerAnsicht(a).filter((f) => f !== feld && !mit.includes(f) && nach.has(f) && passt(def, nach.get(f)!));
+  const kandidaten = felderDerAnsicht(a).filter((f) => f !== feld && nach.has(f) && (mit.includes(f) || passt(def, nach.get(f)!)));
+  // außerhalb klicken schließt die Liste
+  useEffect(() => {
+    if (!offen) return;
+    const weg = (e: PointerEvent) => !huelle.current?.contains(e.target as Node) && setOffen(false);
+    document.addEventListener('pointerdown', weg, true);
+    return () => document.removeEventListener('pointerdown', weg, true);
+  }, [offen]);
+  if (!kandidaten.length) return <span className="av-ed-link-platz" aria-hidden />;
   const name = (f: string) => {
     const d = nach.get(f);
     return d ? `${d.titel}${d.gruppe ? ` (${d.gruppe})` : ''}` : f;
   };
-  // nichts verknüpft und kein passendes Feld: nichts zu wählen
-  const leer = !mit.length && !andere.length;
   const zustand = mit.length ? ` – verknüpft mit ${mit.length === 1 ? '1 Feld' : `${mit.length} Feldern`}` : '';
+  const schliessen = () => {
+    setOffen(false);
+    knopf.current?.focus();
+  };
   return (
-    <select
-      className={`av-ed-link${mit.length ? ' aktiv' : ''}`}
-      value=""
-      disabled={leer}
-      aria-label={`${titel} verknüpfen${zustand}`}
-      title={
-        mit.length
-          ? `Verknüpft mit: ${mit.map(name).join(', ')} – wird gemeinsam ausgefüllt`
-          : leer
-            ? 'Kein passendes Feld in der Ansicht – verknüpfen lassen sich nur Felder derselben Art'
-            : 'Mit einem anderen Feld verknüpfen – beide werden gemeinsam ausgefüllt'
-      }
-      onChange={(e) => {
-        const v = e.target.value;
-        if (v === '–') onChange(verknuepfungLoesen(a, feld));
-        else if (v) onChange(verknuepfen(a, feld, v));
-      }}
-    >
-      <option value="">{mit.length ? `⛓ ${mit.length}` : '⛓'}</option>
-      {mit.length > 0 && (
-        <optgroup label="Verknüpft mit">
-          {mit.map((f) => (
-            <option key={f} value="" disabled>
+    <span className="av-ed-link-huelle" ref={huelle}>
+      <button
+        ref={knopf}
+        type="button"
+        className={`small av-ed-link${mit.length ? ' aktiv' : ''}`}
+        aria-label={`${def.titel} verknüpfen${zustand}`}
+        aria-expanded={offen}
+        aria-controls={offen ? listeId : undefined}
+        title={mit.length ? `Verknüpft mit: ${mit.map(name).join(', ')} – wird gemeinsam ausgefüllt` : 'Mit einem anderen Feld verknüpfen – beide werden gemeinsam ausgefüllt'}
+        onClick={() => setOffen(!offen)}
+      >
+        ⛓{mit.length ? ` ${mit.length}` : ''}
+      </button>
+      {offen && (
+        <span
+          className="av-ed-link-liste"
+          id={listeId}
+          role="group"
+          aria-label={`${def.titel} gemeinsam ausfüllen mit`}
+          onKeyDown={(e) => {
+            if (e.key !== 'Escape') return;
+            // Esc schließt nur die Liste, nicht den Editor
+            e.stopPropagation();
+            schliessen();
+          }}
+        >
+          <span className="av-ed-link-titel">Gemeinsam ausfüllen mit …</span>
+          {kandidaten.map((f, i) => (
+            <label key={f}>
+              <input type="checkbox" autoFocus={i === 0} checked={mit.includes(f)} onChange={(e) => onChange(e.target.checked ? verknuepfen(a, feld, f) : verknuepfungLoesen(a, f))} />
               {name(f)}
-            </option>
+            </label>
           ))}
-          <option value="–">Verknüpfung lösen</option>
-        </optgroup>
+        </span>
       )}
-      {andere.length > 0 && (
-        <optgroup label="Verknüpfen mit …">
-          {andere.map((f) => (
-            <option key={f} value={f}>
-              {name(f)}
-            </option>
-          ))}
-        </optgroup>
-      )}
-    </select>
+    </span>
   );
 }
 

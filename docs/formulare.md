@@ -257,21 +257,25 @@ Anschrift, wie sie in Formularen steht.
   Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt. Je Feld: **eigene
   Beschriftung**, **Breite** (¼, ⅓, ½, ⅔, ¾, ganz) und **„↵ neue Zeile“** – so legt man fest, welche Felder in einer Zeile
   stehen (die Vorschau unter jedem Abschnitt zeigt die Zeilen; in schmalen Abschnitten werden die Felder breiter, in
-  schmalen Fenstern steht der Katalog unter dem Aufbau). **Verknüpfen (⛓):** Felder mit demselben Inhalt (z. B.
+  schmalen Fenstern steht der Katalog unter dem Aufbau). Ein Feld, das es nicht mehr gibt, steht durchgestrichen da
+  und lässt sich nur entfernen. **Verknüpfen (⛓):** Der Knopf öffnet eine kleine Liste „Gemeinsam ausfüllen mit …“
+  mit Kästchen (gewählt wird bewusst per Klick bzw. Leertaste, nicht schon mit den Pfeiltasten; Esc schließt die
+  Liste). Felder mit demselben Inhalt (z. B.
   Ort des Bauherrn und Ort des Eigentümers) werden gemeinsam ausgefüllt – eine Eingabe trägt den Wert in alle
   verknüpften Einträge der Projektkarte ein – überall in der Projektkarte, auch beim Übernehmen aus einer anderen
   Gruppe; zusammenhängendes Tippen ist ein Schritt im Verlauf. Angeboten werden nur Felder, die zusammenpassen: Text
   in Text (ins einzeilige Feld ohne Zeilenumbrüche), Auswahl in Auswahl über den Text der Wahl (fehlt er im Ziel,
-  bleibt es unverändert), Kästchen in Kästchen; ohne passendes Feld ist ⛓ gesperrt. Auf der Seite steht unter jedem Feld dezent, aus welcher Gruppe es
-  stammt und womit es verknüpft ist. Gilt je Benutzer für alle Projekte (`formulare:ansicht:projektkarte`).
+  bleibt es unverändert), Kästchen in Kästchen; ohne passendes Feld gibt es keinen Knopf. „Verwerfen“ und „Leeren“
+  einer Gruppe wirken nur auf die eigenen Einträge, nicht über Verknüpfungen. Auf der Seite steht unter jedem Feld
+  (unter einer etwaigen Warnung) dezent, aus welcher Gruppe es stammt und womit es verknüpft ist (Kettensymbol). Gilt je Benutzer für alle Projekte (`formulare:ansicht:projektkarte`).
 - **Eingaben mit fester Form:** „Art der Nutzung“ ist eine Auswahl gängiger Nutzungen (Wohnen, Büro und Verwaltung,
   Handel …; „andere …“ erlaubt einen eigenen Text, ein vorhandener eigener Text bleibt als „(eigene Angabe)“
   erhalten; Esc oder der Pfeil führt zur Liste zurück), „Art der baulichen Nutzung“ eine Auswahl der Baugebiete nach
   BauNVO (§§ 2–11, Sondergebiete nach § 10 und § 11 getrennt) samt Fläche für den Gemeinbedarf (§ 9 Abs. 1 Nr. 5
   BauGB), vorhabenbezogenem Bebauungsplan (§ 12 BauGB), Innenbereich ohne Baugebiet (§ 34 Abs. 1 – im faktischen
   Baugebiet nach § 34 Abs. 2 wählt man das Baugebiet) und Außenbereich (§ 35); Einträge „Anzahl …“ nehmen nur ganze
-  Zahlen an – Komma, Punkt und Vorzeichen lassen sich nicht tippen, ein alter oder eingefügter Text wie „ca. 3“ oder
-  „1.5“ bleibt unverändert stehen und wird gemeldet.
+  Zahlen an – ein Textfeld mit Zifferntastatur, in das sich nur Ziffern tippen lassen; ein alter oder eingefügter
+  Text wie „ca. 3“ oder „1.5“ bleibt unverändert sichtbar, wird gemeldet und lässt sich korrigieren oder leeren.
   Gespeichert wird weiter als Text der Projektkarte.
 - **Büro & Stammdaten** (Einstellungen): je Rolle (Entwurfsverfasser, Bauvorlageberechtigter,
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
@@ -292,7 +296,8 @@ Anschrift, wie sie in Formularen steht.
   Antragsart = die der Fassung: BAUA, BAUVA, DENK …). Rechtsklick → „Umbenennen nach Namensformat …“ schlägt den
   Namen vor (Datum der Datei). Unter „Fehlt im Antragsordner“ stehen die Dokumente des Antragsumfangs ohne Datei.
   Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
-  aktiven Fassung; `{Phase}` gibt es weiter).
+  aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` gibt es weiter an anderer Stelle). In der
+  Unterlagen-Vorschau stehen die Pläne eines Plansatzes an seiner Stelle im Antragsumfang.
 - **Antragsunterlagen ansehen:** „Ansehen“ in der Ansicht „Antrag“ (oder Rechtsklick auf eine Datei → „In der
   Vorschau durchblättern“) zeigt alle Unterlagen der aktiven Fassung im ganzen Fenster – zuerst die Dokumente des
   Antragsumfangs in ihrer Reihenfolge, dann die übrigen. Blättern mit ‹ ›, ← → oder Bild↑/Bild↓ bzw. über die Liste
@@ -388,14 +393,18 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
 - **Aktive Fassung** (oben links am Projekt, „Antrag“): die gewählte, sonst die neueste der Standardart. Über das
   Menü lässt sich umschalten oder eine **neue Fassung anlegen** („BAUA 3“ – der Ordner entsteht sofort). Die aktive
   Fassung ist das voreingestellte Ziel des Exports und der Maßstab der Vollständigkeitsprüfung.
-- **Dateiname** nach der Namensvorlage, Vorgabe `{Kürzel} {Phase} {Datum} {Nr} {Name}` → „BS9 GP 261110 03
-  Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Weitere Platzhalter: `{Antrag}`,
-  `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Antragsumfang, sonst der Formularname ohne
-  laufende Nummer und Jahr.
-- **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard), Namensvorlage und
-  Phase, Ziel (aktive Antragsfassung oder fester Ordner, z. B. `TÖB/{Antrag}/Formulare`), Ordner der
+- **Dateiname** nach der Namensvorlage, Vorgabe `{Kürzel} {Art} {Datum} {Nr} {Name}` → „BS9 BAUA 261110 03
+  Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Die **Antragsart kommt immer aus dem
+  Antrag** (Ordner der aktiven Fassung, „BAUA 2“ → BAUA), nie aus einer Einstellung: Steht in einer Vorlage nach dem
+  Kürzel noch `{Phase}` (die Vorgabe früherer Fassungen – dort stand dann der Wert der Einstellung „Phase“, z. B.
+  BVA im Bauantrag) oder ein festes Kürzel, wird daraus beim Lesen `{Art}` (`vorlageMitAntragsart`); das gilt für die
+  Einstellungen und für die Abweichungen eines Projekts. Weitere Platzhalter: `{Antrag}`, `{Phase}` (das Feld „Phase“
+  erscheint nur, wenn die Vorlage es nutzt), `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im
+  Antragsumfang, sonst der Formularname ohne laufende Nummer und Jahr.
+- **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
+  Namensschemas), Namensvorlage (und Phase, falls die Vorlage `{Phase}` nutzt), Ziel (aktive Antragsfassung oder fester Ordner, z. B. `TÖB/{Antrag}/Formulare`), Ordner der
   Berechnungen, Vorlagenordner für neue Formulare und der **Katalog der Antragsdokumente**. Je Projekt lassen sich
-  Antragsordner, Namensvorlage, Phase und Ziel abweichend einstellen (Antragsdaten › „Export für …“,
+  Antragsordner, Namensvorlage, Phase (nur mit `{Phase}`) und Ziel abweichend einstellen (Antragsdaten › „Export für …“,
   „Vorgabe verwenden“ setzt zurück) – wie die angezeigten Pfade im Projektordner.
 - **Antragsdaten** (Navigation, rechte Hälfte neben „Projektdaten“): alles, was nur für den aktiven Antrag gilt –
   **Status** (siehe „Eingereicht“), **Antragsmerkmale** und **Antragsumfang**, dazu „Export für …“ (gilt für alle
@@ -429,15 +438,18 @@ mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Vor
     LPH wie AB gar nicht), „kein Schnitt erkannt“ bzw. „keine Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse,
     Schnitte und Ansichten, § 4 Abs. 1, 3, 4 BauPrüfVO NRW – nur ein Hinweis, weil die Behörde auf Bauvorlagen
     verzichten kann und ein Vorbescheid weniger braucht; nicht bei Plänen ohne Leistungsphase wie den
-    Aufteilungsplänen nach § 7 Abs. 4 WEG, für die die BauPrüfVO nicht die Grundlage ist), und – nur wenn die
-    Projektdatei Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (der einzige Weg, auch einen fehlenden letzten
+    Aufteilungsplänen nach § 7 Abs. 4 WEG und nicht bei Entwässerungsanträgen oder Abgeschlossenheitsbescheinigungen
+    (ENTW, ABGE), für die die BauPrüfVO nicht die Grundlage ist; „Ausschnitt“ zählt nicht als Schnitt), und – nur wenn die
+    Projektdatei Geschosse kennt – „4 Geschosse, 3 Grundrisse erkannt“ (Grundrisse für alle Geschosse, § 4 Abs. 2
+    BauPrüfVO NRW; der einzige Weg, auch einen fehlenden letzten
     Grundriss zu bemerken).
   Die Zeile zeigt „8 Pläne · GP-01 bis GP-08 · GP-07 fehlt“, darunter „Pläne zeigen“ (die Liste je Nummer),
   „n Hinweise“ (öffnet die Liste und führt zu den Hinweisen) und die Quelle; ohne Pläne gibt es nichts aufzuklappen. In
   der Projektordner-Ansicht „Antrag“ stehen fehlende und noch nicht verschobene Pläne einzeln unter „Fehlt im
   Antragsordner“. Ein optionales Muster grenzt die Pläne ein.
 - **Namensschema:** Kürzel (Planphasen BP, EP, GP, AP, AB; Antrags- und Verfahrensarten BAUA, BAUVA/BVA (Antrag auf
-  Vorbescheid), BAUF (Genehmigungsfreistellung – kein Antrag, sondern Einreichen bei der Gemeinde), DENK, ABGE,
+  Vorbescheid, § 77 BauO NRW 2018), BAUF (Genehmigungsfreistellung – kein Antrag, sondern Vorlage bei der
+  Bauaufsichtsbehörde, § 63 Abs. 3 BauO NRW 2018), DENK, ABGE,
   ENTW), die Stellen der Teile im Dateinamen (Code, Phase bzw. Antragsart, Datum, Nummer) und „Index ab
   Leistungsphase“ kommen aus dem gemeinsamen Namensschema (`packages/core/src/namensschema.ts`): das der
   Projektdatei, sonst das des Büros (Projektordner › Einstellungen), sonst die Vorgabe. Antragsordner werden an den

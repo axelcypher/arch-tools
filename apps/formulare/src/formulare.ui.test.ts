@@ -512,24 +512,31 @@ describe('Formulare', () => {
     expect(optionen().some((o) => o?.includes('(eigene Angabe)'))).toBe(false);
     expect(optionen().at(-1)).toBe('andere …');
 
-    // Anzahl: Zahlenfeld; ein alter Text, der keine ganze Zahl ist, bleibt sichtbar und wird gemeldet
+    // Anzahl: Ziffernfeld; ein alter Text, der keine ganze Zahl ist, bleibt sichtbar (und leerbar) und wird gemeldet
     const anzahl = () => kartenFeld(host, 'Anzahl Wohnungen');
-    expect(anzahl().type).toBe('number');
-    expect(anzahl().value).toBe('');
-    expect(anzahl().placeholder).toBe('ca. 3');
+    expect(anzahl().type).toBe('text');
+    expect(anzahl().inputMode).toBe('numeric');
+    expect(anzahl().value).toBe('ca. 3');
+    expect(anzahl().getAttribute('aria-invalid')).toBe('true');
     expect(host.textContent).toContain('„ca. 3“ ist keine ganze Zahl – bitte als Zahl eintragen');
+    // die Warnung steht direkt unter dem Feld (vor der Herkunft)
+    expect(anzahl().nextElementSibling?.className).toBe('pk-warnung');
     eingabe(anzahl(), '3');
     expect(anzahl().value).toBe('3');
     expect(host.textContent).not.toContain('keine ganze Zahl');
-    // Komma, Punkt und Vorzeichen lassen sich nicht tippen; Eingefügtes wird nicht verändert, sondern gemeldet
-    for (const t of [',', '.', '-', 'e']) {
+    // nur Ziffern lassen sich tippen; Eingefügtes wird nicht verändert, sondern gemeldet
+    for (const t of [',', '.', '-', 'e', 'a', ' ']) {
       const ev = new KeyboardEvent('keydown', { key: t, bubbles: true, cancelable: true });
       act(() => void anzahl().dispatchEvent(ev));
       expect(ev.defaultPrevented).toBe(true);
     }
     eingabe(anzahl(), '1.5');
     expect(useFormulare.getState().karte!.aenderungen['101:110']).toBe('1.5');
+    expect(anzahl().value).toBe('1.5');
     expect(host.textContent).toContain('„1.5“ ist keine ganze Zahl – bitte als Zahl eintragen');
+    const ziffer = new KeyboardEvent('keydown', { key: '7', bubbles: true, cancelable: true });
+    act(() => void anzahl().dispatchEvent(ziffer));
+    expect(ziffer.defaultPrevented).toBe(false);
     eingabe(anzahl(), '3');
 
     await klick(knopfGenau(host, 'Projektkarte speichern'));
@@ -634,8 +641,13 @@ describe('Formulare', () => {
     eingabe(feldZeile(0).querySelector<HTMLInputElement>('.av-ed-label')!, 'Bauherrschaft');
     waehle(feldZeile(0).querySelector<HTMLSelectElement>('select[aria-label^="Breite"]')!, '8');
     await klick(feldZeile(1).querySelector<HTMLInputElement>('input[aria-label$="beginnt eine neue Zeile"]')!);
-    // Ort der Gemeinde mit dem Ort des Bauherrn verknüpfen
-    waehle(feldZeile(1).querySelector<HTMLSelectElement>('select.av-ed-link')!, '201:110');
+    // Ort der Gemeinde mit dem Ort des Bauherrn verknüpfen (Knopf ⛓, dann das Kästchen)
+    const verknuepfeMit = async (zeile: HTMLElement, text: string) => {
+      const knopf = zeile.querySelector<HTMLButtonElement>('button.av-ed-link')!;
+      if (knopf.getAttribute('aria-expanded') !== 'true') await klick(knopf);
+      await klick([...editor.querySelectorAll<HTMLLabelElement>('.av-ed-link-liste label')].find((l) => l.textContent?.startsWith(text))!.querySelector('input')!);
+    };
+    await verknuepfeMit(feldZeile(1), 'Ort (Bauherr)');
     await warte();
     const gespeichert = JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!);
     expect(gespeichert.abschnitte[0].optionen).toEqual({ '201:40': { label: 'Bauherrschaft', breite: 8 }, '232:110': { neueZeile: true } });
@@ -644,7 +656,7 @@ describe('Formulare', () => {
     // Bauherr › Ort wieder heraus
     await klick(feldZeile(2).querySelector<HTMLButtonElement>('.av-ed-weg')!);
     expect(JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!).verknuepfungen).toBeUndefined();
-    waehle(feldZeile(1).querySelector<HTMLSelectElement>('select.av-ed-link')!, '201:40');
+    await verknuepfeMit(feldZeile(1), 'Name/Firma (Bauherr)');
     await warte();
     expect(imAufbau()).toEqual(['Name/Firma', 'Ort']);
     // mit der Tastatur umordnen
@@ -656,7 +668,7 @@ describe('Formulare', () => {
     expect(document.querySelector('.av-editor')).toBeNull();
     // auf der Seite: eigene Beschriftung, Herkunft dezent unter dem Feld, Breite im Raster
     expect([...host.querySelectorAll('.pk-eigen .pk-feld-titel')].map((t) => t.textContent)).toEqual(['Ort', 'Bauherrschaft']);
-    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde · ⛓ Bauherr', 'Bauherr · ⛓ Gemeinde']);
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde · verknüpft mit Bauherr', 'Bauherr · verknüpft mit Gemeinde']);
     expect([...host.querySelectorAll<HTMLElement>('.pk-eigen .av-feld')].map((f) => [f.dataset.breite, 'neueZeile' in f.dataset])).toEqual([
       ['4', true],
       ['8', false],
@@ -677,6 +689,32 @@ describe('Formulare', () => {
     eingabe(name, 'Musterfrau, Erika');
     // Navigation: Zahl der Einträge
     expect([...host.querySelectorAll('.pk-nav-eigen .pk-nav-kurz')].map((k) => k.textContent)).toEqual(['2 Einträge auf einer Seite']);
+  });
+
+  it('Projektkarte: Verwerfen und Gruppe leeren wirken nur auf die eigenen Einträge, nicht über Verknüpfungen', async () => {
+    // Ort des Bauherrn (Musterstadt) ist mit dem Ort der Gemeinde (hier: Köln) verknüpft
+    const k = projektkarte();
+    k.eintraege.find((e) => e.gruppe === 232 && e.id === 110)!.text = 'Köln';
+    ds.projektkarten.set(KARTE, k);
+    localStorage.setItem('formulare:ansicht:projektkarte', JSON.stringify({ abschnitte: [{ id: 'a1', titel: 'Orte', felder: ['201:110', '232:110'] }], verknuepfungen: [['201:110', '232:110']] }));
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    const aenderungen = () => useFormulare.getState().karte!.aenderungen;
+    // in A „Köln“: B ist damit unverändert (gleich dem gespeicherten Wert)
+    act(() => useFormulare.getState().karteSetzen(201, 110, 'Köln'));
+    expect(aenderungen()).toEqual({ '201:110': 'Köln' });
+    // Verwerfen: A zurück auf Musterstadt – B bleibt Köln, keine ungespeicherte Änderung übrig
+    act(() => useFormulare.getState().karteVerwerfen());
+    expect(aenderungen()).toEqual({});
+    // Gruppe Bauherr leeren: der verknüpfte Ort der Gemeinde bleibt
+    await gruppeWaehlen(host, 'Bauherr');
+    await klick(knopfGenau(host, 'Leeren'));
+    expect(aenderungen()['201:110']).toBe('');
+    expect(aenderungen()['232:110']).toBeUndefined();
+    // eine Eingabe dagegen füllt beide
+    act(() => useFormulare.getState().karteSetzen(201, 110, 'Münster'));
+    expect(aenderungen()).toMatchObject({ '201:110': 'Münster', '232:110': 'Münster' });
   });
 
   it('Projektkarte: einzelne Einträge ausblenden – bei Beteiligten für alle, mit ungespeicherter Änderung sichtbar', async () => {

@@ -36,29 +36,56 @@ function render(start: Ansicht) {
   });
   return document.querySelector<HTMLElement>('.av-editor')!;
 }
-const link = (editor: Element, n: number) => editor.querySelectorAll<HTMLSelectElement>('select.av-ed-link')[n];
-const waehle = (el: HTMLSelectElement, value: string) =>
-  act(() => {
-    el.value = value;
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+const zeile = (editor: Element, n: number) => editor.querySelectorAll<HTMLElement>('.av-ed-feld')[n];
+const link = (editor: Element, n: number) => zeile(editor, n).querySelector<HTMLButtonElement>('button.av-ed-link');
+const klick = (el: HTMLElement) => act(() => el.click());
+const taste = (el: Element, key: string) => act(() => void el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })));
+const kaestchen = (editor: Element, text: string) => [...editor.querySelectorAll<HTMLLabelElement>('.av-ed-link-liste label')].find((l) => l.textContent?.includes(text))!.querySelector('input')!;
 
 describe('Ansicht-Editor: Verknüpfen', () => {
-  it('ohne passendes Feld gesperrt; der Zustand steht im zugänglichen Namen', () => {
+  it('Knopf mit Liste: ohne passendes Feld nur ein Platzhalter; der Zustand steht im zugänglichen Namen', () => {
     const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1', 'ort2', 'kreuz'] }] });
-    // das Kästchen hat kein passendes Gegenstück
-    expect(link(editor, 2).disabled).toBe(true);
-    expect(link(editor, 2).title).toContain('Kein passendes Feld');
-    // Ort ↔ Ort: angeboten, nur das passende Feld
-    expect(link(editor, 0).disabled).toBe(false);
-    expect([...link(editor, 0).options].map((o) => o.value)).toEqual(['', 'ort2']);
-    expect(link(editor, 0).getAttribute('aria-label')).toBe('Ort verknüpfen');
-    waehle(link(editor, 0), 'ort2');
-    expect(link(editor, 0).getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
-    expect(link(editor, 1).getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
-    expect(link(editor, 0).className).toContain('aktiv');
+    // das Kästchen hat kein passendes Gegenstück: kein Knopf, ein Platzhalter gleicher Breite
+    expect(link(editor, 2)).toBeNull();
+    expect(zeile(editor, 2).querySelector('.av-ed-link-platz')).not.toBeNull();
+    // Ort ↔ Ort: nur das passende Feld wird angeboten
+    expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen');
+    expect(link(editor, 0)!.getAttribute('aria-expanded')).toBe('false');
+    klick(link(editor, 0)!);
+    expect(link(editor, 0)!.getAttribute('aria-expanded')).toBe('true');
+    expect([...editor.querySelectorAll('.av-ed-link-liste label')].map((l) => l.textContent)).toEqual(['Ort (Gemeinde)']);
+    klick(kaestchen(editor, 'Ort (Gemeinde)'));
+    expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
+    expect(link(editor, 1)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
+    expect(link(editor, 0)!.className).toContain('aktiv');
+    // Esc schließt nur die Liste, der Fokus kehrt zum Knopf zurück
+    taste(kaestchen(editor, 'Ort (Gemeinde)'), 'Escape');
+    expect(editor.querySelector('.av-ed-link-liste')).toBeNull();
+    expect(document.activeElement).toBe(link(editor, 0));
+    expect(document.querySelector('.av-editor')).not.toBeNull();
     // lösen
-    waehle(link(editor, 0), '–');
-    expect(link(editor, 0).getAttribute('aria-label')).toBe('Ort verknüpfen');
+    klick(link(editor, 1)!);
+    klick(kaestchen(editor, 'Ort (Bauherr)'));
+    expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen');
+  });
+
+  it('Pfeiltasten am Knopf verknüpfen nichts (anders als bei einer Auswahlliste)', () => {
+    const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1', 'ort2'] }], verknuepfungen: [['ort1', 'ort2']] });
+    link(editor, 0)!.focus();
+    for (const k of ['ArrowDown', 'ArrowUp', 'ArrowDown']) taste(link(editor, 0)!, k);
+    expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
+    expect(editor.querySelector('.av-ed-link-liste')).toBeNull();
+  });
+
+  it('ein Feld, das es nicht mehr gibt: Beschriftung gesperrt, keine Breite und kein Verknüpfen – nur entfernen', () => {
+    const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1', 'weg'], optionen: { weg: { label: 'Alt' } } }] });
+    const fehlt = zeile(editor, 1);
+    expect(fehlt.className).toContain('fehlt');
+    expect(fehlt.querySelector<HTMLInputElement>('.av-ed-label')!.disabled).toBe(true);
+    expect(fehlt.querySelector('select')).toBeNull();
+    expect(fehlt.querySelector('.av-ed-link')).toBeNull();
+    expect(fehlt.textContent).toContain('gibt es hier nicht – entfernen');
+    klick(fehlt.querySelector<HTMLButtonElement>('.av-ed-weg')!);
+    expect(editor.querySelectorAll('.av-ed-feld')).toHaveLength(1);
   });
 });

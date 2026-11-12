@@ -152,7 +152,7 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
         {mit.length > 0 && (
           <span className="pk-eigen-link" title={`Verknüpft – wird gemeinsam ausgefüllt mit: ${mit.map((k) => `${k.titel} (${k.gruppe})`).join(', ')}`}>
             {' '}
-            · ⛓ {mit.map((k) => k.gruppe).join(', ')}
+            · <Symbol name="link" titel="verknüpft mit" /> {mit.map((k) => k.gruppe).join(', ')}
           </span>
         )}
       </>
@@ -525,6 +525,8 @@ function GruppenEditor({
     karteMehrere(
       eintraege.map((e) => ({ gruppe: gruppe.id, id: e.id, wert: leer(e) })),
       `${gruppe.text} geleert`,
+      // nur diese Gruppe – verknüpfte Felder anderer Gruppen bleiben
+      { ohneVerknuepfungen: true },
     );
     setMeldung({ art: 'info', text: `${gruppe.text} geleert – Strg+Z nimmt es zurück.` });
   };
@@ -733,8 +735,9 @@ function Zelle({
         ) : null}
       </div>
       {children}
-      {unter && <div className="pk-feld-unter">{unter}</div>}
+      {/* die Warnung gehört direkt unter das Feld, die Herkunft danach */}
       {warnung && <div className="pk-warnung">{warnung}</div>}
+      {unter && <div className="pk-feld-unter">{unter}</div>}
     </div>
   );
 }
@@ -810,21 +813,21 @@ function Eintrag({
   return (
     <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
       {istAnzahl(kernTitel) ? (
-        // Anzahl: nur ganze Zahlen (gespeichert als Text, wie in der Projektkarte). Komma, Punkt, Vorzeichen und
-        // Exponent lassen sich nicht tippen; kommt trotzdem etwas anderes an (Einfügen), bleibt es stehen und wird
-        // gemeldet – nichts wird stillschweigend verändert
+        // Anzahl: nur ganze Zahlen (gespeichert als Text, wie in der Projektkarte). Ein Textfeld mit Zifferntastatur
+        // statt eines Zahlenfelds: ein ungültiger Wert („ca. 3“, eingefügt „1.5“) bleibt sichtbar stehen, wird gemeldet
+        // und lässt sich korrigieren oder leeren; das Mausrad ändert nichts. Andere Zeichen als Ziffern lassen sich
+        // nicht tippen – nichts wird stillschweigend verändert
         <input
           id={id}
           data-pk={s}
-          type="number"
-          min={0}
-          step={1}
+          type="text"
           inputMode="numeric"
+          spellCheck={false}
           className="pk-zahl"
-          value={keineZahl ? '' : textWert.trim()}
-          placeholder={keineZahl ? textWert.trim() : undefined}
-          onKeyDown={(ev) => KEINE_GANZZAHL.includes(ev.key) && ev.preventDefault()}
-          onChange={(ev) => setzen(ev.target.value.trim())}
+          aria-invalid={keineZahl || undefined}
+          value={textWert}
+          onKeyDown={(ev) => ev.key.length === 1 && !/\d/.test(ev.key) && !ev.ctrlKey && !ev.metaKey && !ev.altKey && ev.preventDefault()}
+          onChange={(ev) => setzen(ev.target.value)}
         />
       ) : vorschlaege ? (
         <AuswahlMitText id={id} schluessel={s} wert={textWert} vorschlaege={vorschlaege} onChange={setzen} />
@@ -878,7 +881,7 @@ function AuswahlMitText({ id, schluessel, wert, vorschlaege, onChange }: { id: s
       </span>
     );
   return (
-    <select ref={liste} id={id} data-pk={schluessel} value={wert} onChange={(ev) => (ev.target.value === FREI ? setFrei(true) : onChange(ev.target.value))}>
+    <select ref={liste} id={id} data-pk={schluessel} value={wert} title={wert || undefined} onChange={(ev) => (ev.target.value === FREI ? setFrei(true) : onChange(ev.target.value))}>
       <option value="">– keine Angabe –</option>
       {eigen && <option value={wert}>{wert} (eigene Angabe)</option>}
       {vorschlaege.map((v) => (
@@ -893,9 +896,6 @@ function AuswahlMitText({ id, schluessel, wert, vorschlaege, onChange }: { id: s
 
 /** Wert der Auswahl für „eigene Angabe eingeben“ (kein möglicher Text der Projektkarte) */
 const FREI = '\u0000frei';
-
-/** Tasten, die im Zahlenfeld einer Anzahl keine ganze Zahl ergeben */
-const KEINE_GANZZAHL = [',', '.', 'e', 'E', '+', '-'];
 
 function Kreuze({ karte, eintraege, titelText, unter }: { karte: OffeneKarte; eintraege: PkEintrag[]; titelText?: string; unter?: ReactNode }) {
   const karteSetzen = useFormulare((s) => s.karteSetzen);

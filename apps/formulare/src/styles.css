@@ -4655,9 +4655,14 @@ tr[data-ziehen='danach'] > td {
   background: color-mix(in srgb, var(--text) 10%, transparent);
   color: var(--text);
 }
-/* Planliste: fluchtet mit der Titelspalte der Zeile */
+/* Planliste: fluchtet mit der Titelspalte der Zeile (Griff, Nummer, Status, Symbol) – im schmalen Fenster weniger Einzug */
 .pu-plansatz {
   padding: 0 12px 10px 109px;
+}
+@media (max-width: 900px) {
+  .pu-plansatz {
+    padding-left: 24px;
+  }
 }
 .pu-plaene {
   list-style: none;
@@ -4715,6 +4720,10 @@ tr[data-ziehen='danach'] > td {
 .pu-plan.veraltet .pu-plan-zustand {
   color: var(--warn-text);
 }
+.pu-ohne-vorlage {
+  margin: 6px 0 0;
+  color: var(--warn-text);
+}
 .pu-hinweiszahl {
   border: none;
   background: none;
@@ -4723,10 +4732,16 @@ tr[data-ziehen='danach'] > td {
   cursor: pointer;
   text-decoration: underline dotted;
 }
+/* Textlink wie .pu-datei: kein grauer Kasten beim Überfahren */
+.pu-hinweiszahl:hover:not(:disabled) {
+  background: none;
+  text-decoration: underline;
+}
+/* Hinweise zum Plansatz: in derselben Warnfarbe wie „n Hinweise“ in der Zeile */
 .pu-plan-hinweis {
   display: flex;
   align-items: flex-start;
   gap: 6px;
   margin: 6px 0 0;
-  color: var(--muted);
+  color: var(--warn-text);
 }

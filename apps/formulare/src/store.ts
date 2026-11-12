@@ -299,7 +299,11 @@ interface FormulareState extends Gespeichert {
   karteSetzen: (gruppe: number, id: number, wert: PkWert) => void;
   /** mehrere Einträge in einem Schritt (Übernehmen, Leeren) */
   /** mehrere Einträge in einem Schritt; verknüpfte Einträge werden mitgefüllt; `zusammenfassen` führt einen gleichen Schritt beim Tippen fort */
-  karteMehrere: (werte: KartenWert[], titel: string, zusammenfassen?: boolean) => void;
+  /**
+   * Mehrere Einträge in einem Schritt. Verknüpfte Einträge (eigene Ansicht) werden mitgefüllt – außer bei
+   * `ohneVerknuepfungen` (Verwerfen, Gruppe leeren: betrifft nur die genannten Einträge)
+   */
+  karteMehrere: (werte: KartenWert[], titel: string, o?: { zusammenfassen?: boolean; ohneVerknuepfungen?: boolean }) => void;
   /** liefert den Schlüssel des betroffenen Eintrags (zum Hinspringen) */
   karteRueckgaengig: () => string | null;
   karteWiederholen: () => string | null;
@@ -1371,27 +1375,29 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       // verknüpfte Einträge (eigene Ansicht der Projektkarte) bekommen denselben Inhalt – beim Tippen ein Schritt im Verlauf
       if (verknuepfteWerte(k, gruppe, id, wert).length) {
         const e = pkEintrag(k.karte, gruppe, id);
-        get().karteMehrere([{ gruppe, id, wert }], `${e ? pkTitel(e.titel).replace(/:$/, '') : s} (verknüpft)`, true);
+        get().karteMehrere([{ gruppe, id, wert }], `${e ? pkTitel(e.titel).replace(/:$/, '') : s} (verknüpft)`, { zusammenfassen: true });
         return;
       }
       const verlauf = eintragen(k.verlauf, s, vorher, wert, Date.now());
       karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, new Map([[s, wert]])) });
     },
 
-    karteMehrere: (werte, titel, zusammenfassen = false) => {
+    karteMehrere: (werte, titel, o = {}) => {
       const k = get().karte;
       if (!k) return;
+      const { zusammenfassen = false, ohneVerknuepfungen = false } = o;
       // verknüpfte Einträge mitfüllen (sofern nicht ausdrücklich mitgegeben)
       const schon = new Set(werte.map((w) => pkSchluessel(w.gruppe, w.id)));
       const alle = [...werte];
-      for (const w of werte)
-        for (const v of verknuepfteWerte(k, w.gruppe, w.id, w.wert)) {
-          const sv = pkSchluessel(v.gruppe, v.id);
-          if (!schon.has(sv)) {
-            schon.add(sv);
-            alle.push(v);
+      if (!ohneVerknuepfungen)
+        for (const w of werte)
+          for (const v of verknuepfteWerte(k, w.gruppe, w.id, w.wert)) {
+            const sv = pkSchluessel(v.gruppe, v.id);
+            if (!schon.has(sv)) {
+              schon.add(sv);
+              alle.push(v);
+            }
           }
-        }
       const liste = alle.filter((w) => {
         const e = pkEintrag(k.karte, w.gruppe, w.id);
         return !!e && pkWertPasst(e, w.wert);
@@ -1427,7 +1433,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         const [gruppe, id] = s.split(':').map(Number);
         return { gruppe, id, wert: pkWertVon(pkEintrag(k.karte, gruppe, id)!) };
       });
-      get().karteMehrere(zurueck, 'Änderungen verworfen');
+      // nur die geänderten Einträge zurück – nicht über Verknüpfungen auf andere übertragen
+      get().karteMehrere(zurueck, 'Änderungen verworfen', { ohneVerknuepfungen: true });
       set({ meldung: { art: 'info', text: 'Ungespeicherte Änderungen der Projektkarte verworfen – Strg+Z holt sie zurück.' } });
     },
 

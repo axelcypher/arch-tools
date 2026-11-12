@@ -5,9 +5,9 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
-import { VORGABE_EXPORT, jjmmtt } from './antrag';
+import { VORGABE_EXPORT, einstellungenAus, jjmmtt } from './antrag';
 import { VORGABE_MERKMALE } from './bedingung';
-import { istArchiv, useAntrag } from './antragStore';
+import { aktiveFassung, exportVorschlag, istArchiv, useAntrag } from './antragStore';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Schreiben } from './forma/cp1252';
 import { felderDerSeite } from './forma/felder';
@@ -930,6 +930,17 @@ describe('Plansatz', () => {
       wahl().dispatchEvent(new Event('change', { bubbles: true }));
     });
     expect(knopf(host, 'Antragsumfang festlegen').disabled).toBe(false);
+  });
+
+  it('Dateiname beim Export: die Antragsart kommt aus dem aktiven Antrag, auch bei einer alten Vorlage mit {Phase}', async () => {
+    // Einstellungen aus einer früheren Fassung: Vorlage mit {Phase}, Phase „BVA“
+    useAntrag.setState({ einstellungen: einstellungenAus({ ...VORGABE_EXPORT, namensvorlage: '{Kürzel} {Phase} {Datum} {Nr} {Name}', phase: 'BVA' }) });
+    await projektBS9();
+    expect(aktiveFassung(useAntrag.getState(), useFormulare.getState().projekt)).toBe('BAUA 2');
+    expect(exportVorschlag('C:/FORMA/BS9/001-Muster.frmsjf').name).toMatch(/^BS9 BAUA \d{6} /);
+    // auch eine abweichende Vorlage des Projekts mit festem Kürzel
+    act(() => useAntrag.getState().setUeberschreibung({ namensvorlage: '{Kürzel} BVA {Datum} {Name}' }));
+    expect(exportVorschlag('C:/FORMA/BS9/001-Muster.frmsjf').name).toMatch(/^BS9 BAUA \d{6} /);
   });
 
   it('ändert sich das Namensschema des Büros, werden die Antragsordner sofort neu erkannt', async () => {

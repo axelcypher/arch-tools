@@ -80,7 +80,9 @@ describe('Plansatz', () => {
     ];
     const r = plansatzPruefen(antrag, [], S, { geschosse: 3 });
     expect(r.status).toBe('aktuell');
-    expect(r.hinweise).toEqual(['Projektdatei: 3 Geschosse, 2 Grundrisse erkannt']);
+    expect(r.hinweise).toEqual(['Projektdatei: 3 Geschosse, 2 Grundrisse erkannt (Grundrisse für alle Geschosse – § 4 Abs. 2 BauPrüfVO NRW)']);
+    // Entwässerungsantrag: die BauPrüfVO ist nicht die Grundlage – kein Paragraph, kein Hinweis zu Schnitt/Ansicht
+    expect(plansatzPruefen(antrag, [], S, { geschosse: 3, art: 'ENTW' }).hinweise).toEqual(['Projektdatei: 3 Geschosse, 2 Grundrisse erkannt']);
     expect(plansatzPruefen(antrag, [], S, { geschosse: 2 }).hinweise).toEqual([]);
   });
 
@@ -89,8 +91,14 @@ describe('Plansatz', () => {
     expect(r.status).toBe('aktuell');
     expect(r.hinweise).toEqual(['keine Ansicht erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 4 BauPrüfVO NRW)']);
     expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Grundriss EG.pdf')], [], S).hinweise).toHaveLength(2);
-    // Aufteilungspläne (AB, ohne Leistungsphase): die BauPrüfVO ist nicht die Grundlage – kein solcher Hinweis
+    // Aufteilungspläne (AB, ohne Leistungsphase) bzw. Abgeschlossenheit/Entwässerung: die BauPrüfVO ist nicht die Grundlage
     expect(plansatzPruefen([datei('A ABGE 261111 AB-01 Grundriss EG.pdf')], [], S).hinweise).toEqual([]);
+    expect(plansatzPruefen([datei('A ABGE 261111 GP-01 Grundriss EG.pdf')], [], S, { art: 'ABGE' }).hinweise).toEqual([]);
+    // „Lageplan Ausschnitt“ ist kein Schnitt, „Längsschnitt“ schon
+    expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Lageplan Ausschnitt.pdf'), datei('A BAUA 261111 GP-02 Ansicht Nord.pdf')], [], S).hinweise).toEqual([
+      'kein Schnitt erkannt (Bauzeichnungen umfassen Grundrisse, Schnitte und Ansichten – § 4 Abs. 1, 3 BauPrüfVO NRW)',
+    ]);
+    expect(plansatzPruefen([datei('A BAUA 261111 GP-01 Längsschnitt.pdf'), datei('A BAUA 261111 GP-02 Ansicht Nord.pdf')], [], S).hinweise).toEqual([]);
   });
 
   it('Unterordner der Quelle (Archiv, alt) zählen nicht – keine Scheinnummern und Scheinlücken', () => {

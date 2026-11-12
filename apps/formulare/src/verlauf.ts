@@ -79,7 +79,8 @@ export function eintragenMehrere(v: Verlauf, aenderungen: FeldAenderung[], titel
       .join('\n');
   if (zusammenfassen && letzter && letzter.titel === titel && zeit - letzter.zeit < ZUSAMMENFASSEN_MS && felder(letzter.aenderungen) === felder(echte)) {
     const vorher = new Map(letzter.aenderungen.map((a) => [a.feld, a.vorher]));
-    const zusammen = echte.map((a) => ({ feld: a.feld, vorher: vorher.get(a.feld) ?? a.vorher, nachher: a.nachher })).filter((a) => a.vorher !== a.nachher);
+    // „has“ statt „??“: null („keine Angabe“) ist ein gültiger alter Wert
+    const zusammen = echte.map((a) => ({ feld: a.feld, vorher: vorher.has(a.feld) ? vorher.get(a.feld)! : a.vorher, nachher: a.nachher })).filter((a) => a.vorher !== a.nachher);
     const ohne = { ...v, schritte: v.schritte.slice(0, -1), position: v.position - 1 };
     return anhaengen(ohne, zusammen.length ? { zeit, aenderungen: zusammen, titel } : null);
   }

@@ -60,6 +60,18 @@ export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvor
 
 export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'phase', 'ziel', 'zielpfad'];
 
+/**
+ * Die Antragsart im Dateinamen kommt immer aus dem Antrag (Ordner der aktiven Antragsfassung, „BAUA 2“ → BAUA), nie
+ * aus einer Einstellung: Steht in der Vorlage nach dem Kürzel {Phase} (die Vorgabe früherer Fassungen – dann stand dort
+ * der Wert der Einstellung „Phase“) oder ein festes Kürzel wie „BVA“, wird daraus {Art}. Sonst bleibt die Vorlage.
+ */
+export function vorlageMitAntragsart(vorlage: string): string {
+  const m = /^(\s*\{(?:k(?:ü|ue)rzel|projekt)\}\s+)(\S+)/i.exec(vorlage);
+  if (!m) return vorlage;
+  const zweites = m[2];
+  return /^\{phase\}$/i.test(zweites) || /^[A-ZÄÖÜ0-9]{2,8}$/.test(zweites) ? `${m[1]}{Art}${vorlage.slice(m[0].length)}` : vorlage;
+}
+
 /** Einstellungen für ein Projekt: global, mit den Abweichungen des Projekts */
 export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUeberschreibung | undefined): ExportEinstellungen {
   const out = { ...global };
@@ -67,6 +79,7 @@ export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUebe
     const v = ueber?.[k];
     if (v !== undefined && v !== '') (out as Record<string, unknown>)[k] = v;
   }
+  out.namensvorlage = vorlageMitAntragsart(out.namensvorlage);
   return out;
 }
 
@@ -78,7 +91,8 @@ export function einstellungenAus(roh: unknown): ExportEinstellungen {
   return {
     antragsordner: text('antragsordner'),
     arten: arten.length ? arten : VORGABE_EXPORT.arten,
-    namensvorlage: text('namensvorlage') || VORGABE_EXPORT.namensvorlage,
+    // ältere Vorlagen mit {Phase} bzw. einem festen Kürzel an der Stelle der Antragsart: dort steht jetzt {Art}
+    namensvorlage: vorlageMitAntragsart(text('namensvorlage') || VORGABE_EXPORT.namensvorlage),
     phase: text('phase'),
     ziel: o.ziel === 'pfad' ? 'pfad' : 'aktiv',
     zielpfad: text('zielpfad'),

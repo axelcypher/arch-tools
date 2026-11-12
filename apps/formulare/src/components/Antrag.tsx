@@ -5,7 +5,7 @@ import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
 import { eingereichtVon, PLANSATZ_QUELLE, tagVon } from '../antrag';
-import { STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer } from '../antrag';
+import { STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand } from '../antragStore';
@@ -252,7 +252,7 @@ function PlansatzListe({ id, r, basis, ordner }: { id: string; r: PlansatzErgebn
       )}
       {r.plaene.length === 0 && <p className="muted small-text">Keine Pläne mit Plannummer in der Quelle und im Antragsordner.</p>}
       {r.hinweise.length > 0 && (
-        <div className="pu-plan-hinweise" tabIndex={-1} aria-label="Hinweise zum Plansatz">
+        <div className="pu-plan-hinweise" role="note" tabIndex={-1} aria-label="Hinweise zum Plansatz">
           {r.hinweise.map((h) => (
             <p key={h} className="pu-plan-hinweis small-text">
               <Symbol name="info" /> {h}
@@ -415,13 +415,20 @@ export function AntragsdatenAnsicht() {
                 {!vorlagen.length && <option value="">ganzer Katalog – {katalog.length} Dokumente</option>}
               </select>
             </label>
-            <button className="primary" disabled={gesperrt || ohneVorlage} onClick={() => void umfangSetzen(vorlage ? umfangAusKatalog(katalog, vorlage) : katalog.map(alsUmfang))}>
+            <button
+              className="primary"
+              disabled={gesperrt || ohneVorlage}
+              title={ohneVorlage ? 'Erst eine Antragsvorlage wählen' : undefined}
+              aria-describedby={ohneVorlage ? 'pu-ohne-vorlage' : undefined}
+              onClick={() => void umfangSetzen(vorlage ? umfangAusKatalog(katalog, vorlage) : katalog.map(alsUmfang))}
+            >
               Antragsumfang festlegen
             </button>
           </div>
           {ohneVorlage && (
-            <p className="muted small-text" id="pu-ohne-vorlage">
-              Für {art} gibt es keine Antragsvorlage – bitte eine wählen oder unter Einstellungen › Antrag & Export eine anlegen.
+            <p className="pu-ohne-vorlage small-text" id="pu-ohne-vorlage">
+              {art.trim() ? `Für ${art} gibt es keine Antragsvorlage` : 'Für diesen Antrag gibt es keine passende Antragsvorlage'} – bitte eine wählen oder unter Einstellungen › Antrag & Export eine
+              anlegen.
             </p>
           )}
         </div>
@@ -655,12 +662,21 @@ function ExportFuerProjekt() {
           </label>
           <label>
             <span className="field-label">Namensvorlage</span>
-            <input value={ueber?.namensvorlage ?? ''} placeholder={global.namensvorlage} onChange={(e) => setzen({ namensvorlage: e.target.value })} spellCheck={false} />
+            <input
+              value={ueber?.namensvorlage ?? ''}
+              placeholder={global.namensvorlage}
+              onChange={(e) => setzen({ namensvorlage: e.target.value })}
+              onBlur={(e) => e.target.value !== vorlageMitAntragsart(e.target.value) && setzen({ namensvorlage: vorlageMitAntragsart(e.target.value) })}
+              spellCheck={false}
+            />
+            <span className="field-hint">Die Antragsart kommt immer aus dem aktiven Antrag.</span>
           </label>
-          <label>
-            <span className="field-label">Phase</span>
-            <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} />
-          </label>
+          {/{phase}/i.test(ueber?.namensvorlage || global.namensvorlage) && (
+            <label>
+              <span className="field-label">Phase (für {'{Phase}'})</span>
+              <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} />
+            </label>
+          )}
           <label>
             <span className="field-label">Ziel</span>
             <select value={ueber?.ziel ?? ''} onChange={(e) => setzen({ ziel: (e.target.value || undefined) as ExportUeberschreibung['ziel'] })}>

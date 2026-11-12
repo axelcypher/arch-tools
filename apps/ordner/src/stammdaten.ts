@@ -1,5 +1,5 @@
 import type { Namensschema } from '@core/namensschema';
-import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import { namensschemaAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { projektWerte } from '@core/excel/projekt';
 import type { ExportContext, Row, Value } from '@core/excel/context';
 import type { Anschrift, Bauherr, Beteiligter, Grundstueck, Kontakt, Project, ProjectMeta, ProjektordnerAngaben, Koordinaten } from '@core/model';
@@ -200,8 +200,9 @@ export function projektdateiAenderung(
   const alt = basis.projektordner ?? {};
   const poGeaendert = (['struktur', 'dateischema', 'presets'] as const).filter((k) => !gleich(wert(alt[k]), wert(po[k])));
   // Namensschema: fehlt es in der Projektdatei oder weicht es vom Büro ab, wird das des Büros übernommen (beim Ergänzen sichtbar)
-  const schema = ziel.namensschema ?? VORGABE_NAMENSSCHEMA;
-  const schemaNeu = JSON.stringify(basis.namensschema ?? null) !== JSON.stringify(schema);
+  // verglichen in gelesener Form (namensschemaAus) – die Reihenfolge der Schlüssel macht keinen Unterschied
+  const schema = namensschemaAus(ziel.namensschema) ?? structuredClone(VORGABE_NAMENSSCHEMA);
+  const schemaNeu = JSON.stringify(namensschemaAus(basis.namensschema)) !== JSON.stringify(schema);
   const teile = [
     ...geaendert.map(([, t]) => t),
     ...(poGeaendert.includes('presets') ? ['Vorlagen-Presets'] : []),

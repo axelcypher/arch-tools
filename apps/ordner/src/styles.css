@@ -880,8 +880,12 @@
 .po-kuerzel-spalte {
   width: 76px;
 }
+/* Schreibweisen: Platz für „BVA, BAUVORANF“ */
 .po-kuerzel-zusatz {
-  width: 96px;
+  width: 140px;
+}
+.po-kuerzel-lph {
+  width: 72px;
 }
 .po-kuerzel-weg {
   width: 32px;

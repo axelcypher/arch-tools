@@ -37,6 +37,19 @@ describe('Namensschema', () => {
     expect(s.indexAbLph).toBe(9);
     expect(namensschemaAus({ indexAbLph: -2, phasen: [{ kuerzel: 'X', lph: 12 }] })!).toMatchObject({ indexAbLph: 0, phasen: [{ kuerzel: 'X', lph: 9 }] });
     expect(namensschemaAus({ indexAbLph: 'fünf' })!.indexAbLph).toBe(5);
+    // Schreibweisen eindeutig: ungültige, doppelte und schon vergebene entfallen; eine Antragsart heißt nie wie eine Phase
+    const eindeutig = namensschemaAus({
+      phasen: [{ kuerzel: 'GP', synonyme: ['GEN'] }],
+      antragsarten: [
+        { kuerzel: 'BAUA', synonyme: ['BA', 'ba', 'GP', 'B-A', 'BAUVA'] },
+        { kuerzel: 'BAUVA', synonyme: ['BA', 'BVA'] },
+        { kuerzel: 'GEN', name: 'kollidiert mit einer Schreibweise der Phase' },
+      ],
+    })!;
+    expect(eindeutig.antragsarten).toEqual([
+      { kuerzel: 'BAUA', name: '', synonyme: ['BA'] },
+      { kuerzel: 'BAUVA', name: '', synonyme: ['BVA'] },
+    ]);
     expect(s.antragsarten).toEqual(VORGABE_NAMENSSCHEMA.antragsarten);
     expect(wirksamesNamensschema(undefined, { indexAbLph: 4 }).indexAbLph).toBe(4);
     expect(wirksamesNamensschema({ indexAbLph: 3 }, { indexAbLph: 4 }).indexAbLph).toBe(3);

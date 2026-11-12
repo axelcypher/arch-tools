@@ -60,6 +60,10 @@ export const BREITEN: { wert: number; text: string }[] = [
   { wert: 12, text: 'ganz' },
 ];
 
+/** Eine gelesene Breite auf die nächste angebotene (BREITEN) bringen – nur diese kennen Editor und Raster */
+export const breiteAus = (x: unknown): number | undefined =>
+  typeof x === 'number' && Number.isFinite(x) ? BREITEN.reduce((best, b) => (Math.abs(b.wert - x) < Math.abs(best - x) ? b.wert : best), BREITEN[0].wert) : undefined;
+
 /** Breite eines Felds in Spalten von 12 */
 export const feldBreite = (o: FeldOptionen | undefined, f: Pick<FeldDef, 'breit'> | undefined) => o?.breite ?? (f?.breit ? 12 : 4);
 
@@ -87,7 +91,7 @@ export function ansichtAus(roh: unknown): Ansicht | null {
           const o = v as Record<string, unknown>;
           const fo: FeldOptionen = {
             ...(typeof o.label === 'string' && o.label.trim() ? { label: o.label.trim() } : {}),
-            ...(typeof o.breite === 'number' && o.breite >= 1 && o.breite <= 12 ? { breite: Math.round(o.breite) } : {}),
+            ...(breiteAus(o.breite) !== undefined ? { breite: breiteAus(o.breite) } : {}),
             ...(o.neueZeile === true ? { neueZeile: true } : {}),
           };
           if (Object.keys(fo).length) optionen[k] = fo;
