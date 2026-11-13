@@ -8,7 +8,7 @@ const mb = (bytes: number) => (bytes / 1024 / 1024).toLocaleString('de-DE', { mi
  * Knopf in der Titelleiste der Desktop-Apps: zeigt die installierte Version, sucht auf Klick nach Updates
  * und meldet ein gefundenes Update. Die Installation läuft über den Dialog.
  */
-export function UpdateKnopf({ app, dirty }: { app: string; dirty: boolean }) {
+export function UpdateKnopf({ app, dirty, vorInstallation }: { app: string; dirty: boolean; vorInstallation?: () => Promise<boolean> }) {
   const status = useUpdate((s) => s.status);
   const version = useUpdate((s) => s.version);
   const [open, setOpen] = useState(false);
@@ -34,12 +34,13 @@ export function UpdateKnopf({ app, dirty }: { app: string; dirty: boolean }) {
           `v${__APP_VERSION__}`
         )}
       </button>
-      {open && <UpdateDialog app={app} dirty={dirty} onClose={() => setOpen(false)} />}
+      {open && <UpdateDialog app={app} dirty={dirty} vorInstallation={vorInstallation} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-function UpdateDialog({ app, dirty, onClose }: { app: string; dirty: boolean; onClose: () => void }) {
+/** `vorInstallation`: Rückfragen vor dem Neustart (z. B. je Tab mit ungespeicherten Änderungen); false = abbrechen */
+function UpdateDialog({ app, dirty, vorInstallation, onClose }: { app: string; dirty: boolean; vorInstallation?: () => Promise<boolean>; onClose: () => void }) {
   const { status, version, notizen, geladen, gesamt, fehler, suchen, installieren } = useUpdate();
   const laeuft = status === 'laedt' || status === 'installiert';
 
@@ -66,7 +67,13 @@ function UpdateDialog({ app, dirty, onClose }: { app: string; dirty: boolean; on
               Version <strong>{version}</strong> ist verfügbar (installiert: {__APP_VERSION__}).
             </p>
             {notizen && <pre className="update-notizen">{notizen}</pre>}
-            {dirty && <p className="warning">Es gibt ungespeicherte Änderungen. Bitte vorher speichern – die Anwendung wird für das Update beendet und neu gestartet.</p>}
+            {dirty && (
+              <p className="warning">
+                {vorInstallation
+                  ? 'Es gibt ungespeicherte Änderungen. Vor dem Update wird für jede App einzeln gefragt, ob gespeichert werden soll – die Anwendung wird dafür beendet und neu gestartet.'
+                  : 'Es gibt ungespeicherte Änderungen. Bitte vorher speichern – die Anwendung wird für das Update beendet und neu gestartet.'}
+              </p>
+            )}
           </>
         )}
         {status === 'laedt' && (
@@ -92,7 +99,7 @@ function UpdateDialog({ app, dirty, onClose }: { app: string; dirty: boolean; on
           {!laeuft && <button onClick={onClose}>{status === 'verfuegbar' ? 'Später' : 'Schließen'}</button>}
           {(status === 'fehler' || status === 'aus') && <button onClick={() => void suchen()}>{status === 'fehler' ? 'Erneut suchen' : 'Nach Updates suchen'}</button>}
           {status === 'verfuegbar' && (
-            <button className="primary" onClick={() => void installieren()}>
+            <button className="primary" onClick={() => void (async () => (!vorInstallation || (await vorInstallation())) && (await installieren()))()}>
               Jetzt installieren
             </button>
           )}

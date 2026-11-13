@@ -2,26 +2,29 @@ import { useEffect, useRef, useState } from 'react';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
-import { AN_APP, AN_RAHMEN, ANDOCKEN, ASSISTENT_NEU, BEREIT, PROJEKT_ANGELEGT, PROJEKT_ANLEGEN, PROJEKT_APP, ZUR_APP } from '@core/platform/rahmen';
-import { LogDialog } from '@core/ui/LogDialog';
-import { SpeicherortHost, SpeicherortKnopf, SpeicherortZeile } from '@core/ui/Speicherort';
-import { UpdateKnopf } from '@core/ui/UpdateKnopf';
+import { AN_APP, AN_RAHMEN, ANDOCKEN, ASSISTENT_NEU, BEREIT, PROJEKT_ANGELEGT, PROJEKT_ANLEGEN, PROJEKT_APP, speichernImFenster, speichernImTab, ZUR_APP } from '@core/platform/rahmen';
 import { APP_NAMEN } from '@core/appNamen';
+import { LogDialog } from '@core/ui/LogDialog';
+import { MenueHost } from '@core/ui/Menue';
+import { aenderungenSpeichern, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
+import { SpeicherortHost, SpeicherortKnopf, SpeicherortZeile } from '@core/ui/Speicherort';
+import { umzugBestaetigen } from '@core/ui/umzug';
+import { UpdateKnopf } from '@core/ui/UpdateKnopf';
 import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
 import { sperrenFreigeben } from './sperren';
 import { useRahmen } from './store';
-import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from '@core/ui/Rueckfrage';
-import { MenueHost } from '@core/ui/Menue';
-import { speichernImTab } from '@core/platform/rahmen';
 
 const log = logger('rahmen');
 
 type AppWindow = import('@tauri-apps/api/window').Window;
+/** Tauri-Ereignisse (nur Desktop, nachgeladen) */
+const ereignisse = () => import('@tauri-apps/api/event');
 
 /**
  * Rahmen-App: alle Apps in einem Fenster. Jede geöffnete App ist ein Tab (iframe, bleibt beim Wechseln
- * erhalten); „Herauslösen“ öffnet sie in einem eigenen Fenster, „Andocken“ dort holt sie zurück. Mehr kann der
- * Rahmen nicht – alles andere machen die Apps selbst.
+ * erhalten); „Herauslösen“ öffnet sie in einem eigenen Fenster (nur Desktop), „Andocken“ dort holt sie zurück. Beim
+ * Beenden (auch über das System) und vor einem Update fragt der Rahmen für jeden Tab und jedes Fenster mit
+ * ungespeicherten Änderungen nach. Mehr kann der Rahmen nicht – alles andere machen die Apps selbst.
  */
 export function App() {
   const desktop = isTauri();
@@ -40,6 +43,12 @@ export function App() {
   const warteschlange = useRef(new Map<string, RahmenNachricht[]>());
   const fensterJetzt = useRef(fenster);
   fensterJetzt.current = fenster;
+  /** Generation je herausgelöstem Fenster: Ereignisse eines alten Fensters (Andocken, gleich wieder herausgelöst) zählen nicht */
+  const fensterGen = useRef(new Map<string, number>());
+  /** Beenden läuft (Rückfragen offen): ein zweites Alt+F4 fragt nicht noch einmal */
+  const beendet = useRef(false);
+  /** wer auf das Ende eines herausgelösten Fensters wartet (Speichern auf Anfrage: dann „nicht gespeichert“) */
+  const fensterEnde = useRef(new Map<string, Set<() => void>>());
 
   // Fenster (Desktop): Knöpfe, Größe
   useEffect(() => {
@@ -51,7 +60,16 @@ export function App() {
       if (!lebt) return;
       setWin(w);
       setMaximiert(await w.isMaximized());
-      ende = await w.onResized(async () => setMaximiert(await w.isMaximized()));
+      const aus = [
+        await w.onResized(async () => setMaximiert(await w.isMaximized())),
+        // Schließen über das System (Alt+F4, Taskleiste) wie über ×: erst die Rückfragen
+        await w.onCloseRequested((e) => {
+          e.preventDefault();
+          void beendenRef.current();
+        }),
+      ];
+      ende = () => aus.forEach((f) => f());
+      if (!lebt) ende();
     });
     return () => {
       lebt = false;
@@ -65,7 +83,7 @@ export function App() {
       const d = e.data as (Partial<RahmenStatus> & RahmenNachricht) | null;
       if (!d || e.origin !== window.location.origin) return;
       if (d.typ === 'arch-tools:status') {
-        for (const [id, f] of rahmen.current) if (f.contentWindow === e.source) setStatus(id, { name: d.name ?? '', dirty: !!d.dirty });
+        for (const [id, f] of rahmen.current) if (f.contentWindow && f.contentWindow === e.source) setStatus(id, { name: d.name ?? '', dirty: !!d.dirty });
         return;
       }
       verarbeiten.current(d, e.source as Window | null);
@@ -79,8 +97,16 @@ export function App() {
     if (!desktop) return;
     let ende: (() => void) | undefined;
     let lebt = true;
-    void import('@tauri-apps/api/event').then(async ({ listen }) => {
-      const aus = await listen<RahmenNachricht>(AN_RAHMEN, (e) => verarbeiten.current(e.payload, null));
+    void ereignisse().then(async ({ listen }) => {
+      const aus = await listen<RahmenNachricht & Partial<RahmenStatus>>(AN_RAHMEN, (e) => {
+        const d = e.payload;
+        // Meldung eines herausgelösten Fensters: Projekt und ungespeicherte Änderungen (für Rückfragen beim Beenden)
+        if (d?.typ === 'arch-tools:status') {
+          if (d.kennung && useRahmen.getState().fenster.includes(d.kennung)) setStatus(d.kennung, { name: d.name ?? '', dirty: !!d.dirty });
+          return;
+        }
+        verarbeiten.current(d, null);
+      });
       if (lebt) ende = aus;
       else aus();
     });
@@ -88,14 +114,14 @@ export function App() {
       lebt = false;
       ende?.();
     };
-  }, [desktop]);
+  }, [desktop, setStatus]);
 
   // herausgelöste Fenster: wieder andocken
   useEffect(() => {
     if (!desktop) return;
     let ende: (() => void) | undefined;
     let lebt = true;
-    void import('@tauri-apps/api/event').then(async ({ listen }) => {
+    void ereignisse().then(async ({ listen }) => {
       const aus = await listen<{ app: string }>(ANDOCKEN, (e) => {
         const id = e.payload.app;
         if (!appInfo(id)) return;
@@ -134,7 +160,7 @@ export function App() {
     const ziel = rahmen.current.get(id)?.contentWindow;
     if (ziel && bereitTabs.current.has(ziel)) return ziel.postMessage(nachricht, window.location.origin);
     if (desktop && fensterJetzt.current.includes(id) && bereitFenster.current.has(id)) {
-      void import('@tauri-apps/api/event').then(({ emit }) => emit(AN_APP, nachricht));
+      void ereignisse().then(({ emit }) => emit(AN_APP, nachricht));
       return;
     }
     warteschlange.current.set(id, [...(warteschlange.current.get(id) ?? []), nachricht]);
@@ -167,19 +193,24 @@ export function App() {
     }
   };
 
+  /** Tab in ein eigenes Fenster (nur Desktop – im Browser gibt es kein Andocken und keinen Weg zurück) */
   const herausloesen = async (id: string) => {
     const info = appInfo(id)!;
-    if (status[id]?.dirty && !(await bestaetigen(`${info.name} herauslösen?`, info.beimUmzug, 'Herauslösen'))) return;
-    if (!desktop) {
-      window.open(appAdresse(id, 'fenster'), `arch-tools-${id}`);
-      herausgeloest(id);
-      return;
-    }
+    const frame = rahmen.current.get(id);
+    if (status[id]?.dirty && !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false)))) return;
     // Tab zu, Sperren frei – dann das Fenster, das die geöffneten Formulare neu sperrt
     herausgeloest(id);
     await sperrenFreigeben(id);
+    const gen = (fensterGen.current.get(id) ?? 0) + 1;
+    fensterGen.current.set(id, gen);
+    const aktuell = () => fensterGen.current.get(id) === gen;
+    // ein Andocken des alten Fensters gilt nicht für das neue (dessen Ende gibt die Sperren wieder frei)
+    angedocktGerade.current.delete(id);
+    bereitFenster.current.delete(id);
     try {
       const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+      // ein gerade angedocktes Fenster derselben App kann noch bestehen – sonst schlüge das neue fehl (gleiche Kennung)
+      await (await WebviewWindow.getByLabel(fensterLabel(id)))?.destroy();
       const w = new WebviewWindow(fensterLabel(id), {
         url: appAdresse(id, 'fenster'),
         title: info.name,
@@ -191,14 +222,22 @@ export function App() {
         dragDropEnabled: false,
       });
       void w.once('tauri://error', (e) => {
+        if (!aktuell()) return;
         log.error(`Fenster für ${info.name} nicht geöffnet`, e.payload);
         fensterZu(id);
         oeffnen(id);
       });
       void w.once('tauri://destroyed', () => {
+        if (!aktuell()) return;
+        fensterEnde.current.get(id)?.forEach((f) => f());
+        fensterEnde.current.delete(id);
         bereitFenster.current.delete(id);
         fensterZu(id);
-        if (!angedocktGerade.current.delete(id)) void sperrenFreigeben(id);
+        // angedockt: der Tab übernimmt (auch wartende Nachrichten); sonst ist die App zu
+        if (!angedocktGerade.current.delete(id)) {
+          warteschlange.current.delete(id);
+          void sperrenFreigeben(id);
+        }
       });
       log.info(`Herausgelöst: ${info.name}`);
     } catch (e) {
@@ -208,27 +247,81 @@ export function App() {
     }
   };
 
+  /** Speichern auf Anfrage ohne Antwort der App: sagen, warum nichts geschieht */
+  const antwortetNicht = (id: string) => () => {
+    log.warn(`${appInfo(id)?.name} antwortet nicht auf „Speichern“`);
+    void meldung(`${appInfo(id)?.name} antwortet nicht`, 'Die Änderungen wurden nicht gespeichert – die App lädt noch oder reagiert nicht. Sie bleibt geöffnet; bitte dort speichern.');
+  };
+
   /** ungespeicherte Änderungen eines Tabs: speichern (in der App), verwerfen oder abbrechen; true = weiter */
   const tabFreigeben = async (id: string): Promise<boolean> => {
     if (!status[id]?.dirty) return true;
     const frame = rahmen.current.get(id);
-    return aenderungenSpeichern(`${appInfo(id)?.name}${status[id]?.name ? ` – ${status[id].name}` : ''}`, () => (frame ? speichernImTab(frame) : false));
+    return aenderungenSpeichern(`${appInfo(id)?.name}${status[id]?.name ? ` – ${status[id].name}` : ''}`, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false));
   };
 
   const tabSchliessen = async (id: string) => {
     if (status[id]?.dirty && !(await tabFreigeben(id))) return;
     schliessen(id);
+    // Aufträge, die auf die App warteten, gelten nicht beim nächsten Öffnen
+    warteschlange.current.delete(id);
     void sperrenFreigeben(id);
   };
 
-  const fensterSchliessen = async () => {
-    for (const id of tabs) {
-      if (!status[id]?.dirty) continue;
-      waehlen(id);
-      if (!(await tabFreigeben(id))) return;
-    }
-    await win?.close();
+  /** ungespeicherte Änderungen eines herausgelösten Fensters: Rückfrage hier, Speichern im Fenster; true = weiter */
+  const fensterFreigeben = async (id: string): Promise<boolean> => {
+    const s = useRahmen.getState().status[id];
+    if (!s?.dirty) return true;
+    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () =>
+      speichernImFenster(id, {
+        zeitablauf: antwortetNicht(id),
+        // schließt jemand das Fenster, während es speichert, wartet die Rückfrage nicht ewig
+        beiEnde: (f) => {
+          const warten = fensterEnde.current.get(id) ?? new Set();
+          fensterEnde.current.set(id, warten.add(f));
+          return () => warten.delete(f);
+        },
+      }),
+    );
   };
+
+  /** vor dem Beenden bzw. Update: alle Tabs und Fenster mit ungespeicherten Änderungen nacheinander; true = weiter */
+  const allesFreigeben = async (): Promise<boolean> => {
+    const { tabs: offen, fenster: draussen, status: st } = useRahmen.getState();
+    for (const id of offen) {
+      if (!st[id]?.dirty) continue;
+      waehlen(id);
+      if (!(await tabFreigeben(id))) return false;
+    }
+    for (const id of draussen) if (!(await fensterFreigeben(id))) return false;
+    return true;
+  };
+
+  /** Beenden (× oder System): Rückfragen, dann alle herausgelösten Fenster und das Hauptfenster schließen */
+  const fensterSchliessen = async () => {
+    if (beendet.current) return;
+    beendet.current = true;
+    try {
+      if (!(await allesFreigeben())) return;
+      log.info('Arkly wird beendet');
+      const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+      for (const id of useRahmen.getState().fenster) {
+        try {
+          await (await WebviewWindow.getByLabel(fensterLabel(id)))?.destroy();
+        } catch (e) {
+          // ein Fenster ohne Rahmen bliebe zurück (sein „Andocken“ ginge ins Leere) – dann nicht beenden
+          log.error(`Fenster von ${appInfo(id)?.name} ließ sich nicht schließen`, e);
+          await meldung('Arkly nicht beendet', `Das Fenster von ${appInfo(id)?.name} ließ sich nicht schließen. Bitte dort schließen und Arkly erneut beenden.`, e);
+          return;
+        }
+      }
+      await win?.destroy();
+    } finally {
+      beendet.current = false;
+    }
+  };
+  const beendenRef = useRef(fensterSchliessen);
+  beendenRef.current = fensterSchliessen;
 
   const zuMenue = APPS.filter((a) => !tabs.includes(a.id));
 
@@ -254,17 +347,19 @@ export function App() {
                 <span className="rahmen-tab-name">{info.name}</span>
                 {s?.name && <span className="rahmen-tab-projekt">{s.name}</span>}
                 {s?.dirty && <span className="rahmen-tab-dirty" title="Ungespeicherte Änderungen">●</span>}
-                <button
-                  className="rahmen-tab-knopf"
-                  title="In eigenem Fenster öffnen"
-                  aria-label={`${info.name} in eigenem Fenster`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void herausloesen(id);
-                  }}
-                >
-                  ⧉
-                </button>
+                {desktop && (
+                  <button
+                    className="rahmen-tab-knopf"
+                    title="In eigenem Fenster öffnen"
+                    aria-label={`${info.name} in eigenem Fenster`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void herausloesen(id);
+                    }}
+                  >
+                    ⧉
+                  </button>
+                )}
                 <button
                   className="rahmen-tab-knopf"
                   title="Schließen"
@@ -309,7 +404,7 @@ export function App() {
           </div>
         </nav>
         <span className="titlebar-drag" data-tauri-drag-region />
-        {desktop && <UpdateKnopf app={APP_NAMEN.suite.name} dirty={tabs.some((id) => status[id]?.dirty)} />}
+        {desktop && <UpdateKnopf app={APP_NAMEN.suite.name} dirty={[...tabs, ...fenster].some((id) => status[id]?.dirty)} vorInstallation={allesFreigeben} />}
         <SpeicherortKnopf />
         <button className="titlebar-btn" title="Protokoll des Rahmens" onClick={() => setLogOffen(true)}>
           <span aria-hidden>≡</span>
@@ -321,7 +416,7 @@ export function App() {
                 <path d="M0 5.5h10" />
               </svg>
             </button>
-            <button className="wc-btn" title={maximiert ? 'Verkleinern' : 'Maximieren'} aria-label="Maximieren" onClick={() => void win.toggleMaximize()}>
+            <button className="wc-btn" title={maximiert ? 'Wiederherstellen' : 'Maximieren'} aria-label={maximiert ? 'Wiederherstellen' : 'Maximieren'} onClick={() => void win.toggleMaximize()}>
               {maximiert ? (
                 <svg viewBox="0 0 10 10" aria-hidden>
                   <path d="M2.5 0.5h7v7M0.5 2.5h7v7h-7z" />
