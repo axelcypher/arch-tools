@@ -23,6 +23,7 @@ import { Notizen } from './components/bauleitung/Notizen';
 import { Beteiligte } from './components/bauleitung/Beteiligte';
 import { Mailverlauf } from './components/bauleitung/Mailverlauf';
 import { ausstehendesSchreibenAbwarten, lvGeaendert, schreibend, useAva } from './store';
+import { useEntwurf } from './components/eingaben';
 
 const log = logger('app');
 
@@ -75,7 +76,10 @@ export function App() {
   const einstellungenOffen = useAva((s) => s.einstellungenOffen);
   const [logOffen, setLogOffen] = useState(false);
   const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
-  const dirty = lvGeaendert(lv);
+  // begonnene Eingabe im Feld zählt bei offenem LV mit – sonst fragte Arkly beim Schließen nicht, solange der Cursor im
+  // Feld steht, und die Eingabe ginge verloren (vorDemSchliessen übernimmt sie nur in den Speicher)
+  const entwurfOffen = useEntwurf((s) => s.offen);
+  const dirty = lvGeaendert(lv) || (!!lv && entwurfOffen);
   const name = projekt ? `${projekt.meta.projektcode ? `${projekt.meta.projektcode} ` : ''}${projekt.name}${lv ? ` – ${lv.datei.name}` : ''}` : 'Kein Projekt';
 
   useEffect(() => {
@@ -127,12 +131,14 @@ export function App() {
   // Arkly (Schließen, Andocken, Herauslösen, Update-Neustart): laufende Eingabe übernehmen und laufendes Schreiben
   // der Projektdatei, Kostenkontrolle bzw. des LV abwarten
   // (Rückgabe false = ein Schreiben ist gescheitert; Arkly fragt dann nach, statt still zu schließen). Ungespeicherte
-  // LV-Änderungen meldet die TitleBar als dirty – Arkly fragt vorher „Änderungen speichern?“ (onSpeichern)
+  // LV-Änderungen (auch eine begonnene Eingabe im Feld) meldet die TitleBar als dirty – Arkly fragt vorher
+  // „Änderungen speichern?“ (onSpeichern)
   useEffect(() => vorDemSchliessen(ausstehendesSchreibenAbwarten), []);
 
   useEffect(() => {
     const vorEnde = (e: BeforeUnloadEvent) => {
-      if (lvGeaendert(useAva.getState().lv)) e.preventDefault();
+      const { lv } = useAva.getState();
+      if (lvGeaendert(lv) || (!!lv && useEntwurf.getState().offen)) e.preventDefault();
     };
     window.addEventListener('beforeunload', vorEnde);
     return () => window.removeEventListener('beforeunload', vorEnde);

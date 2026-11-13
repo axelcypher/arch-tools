@@ -188,6 +188,46 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
       });
       expect(lvSpeichern).toHaveBeenCalledTimes(1);
       expect(rahmen.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:gespeichert', anfrage: 'a1', ok: true }, window.location.origin);
+
+      // begonnene Eingabe im LV-Feld (Cursor noch im Feld): schon dirty, damit Arkly fragt; Speichern übernimmt sie
+      act(() => useAva.setState({ lv: { lv: basis, basis, format: 'x83', datei: { name: 'LV 1.x83' } } as never }));
+      expect(status().at(-1)?.dirty).toBe(false);
+      const feldHost = document.createElement('div');
+      document.body.appendChild(feldHost);
+      const feldRoot = createRoot(feldHost);
+      const menge = vi.fn(() => useAva.setState({ lv: { ...useAva.getState().lv!, lv: { positionen: [3] } } as never }));
+      act(() => feldRoot.render(createElement(TextEingabe, { wert: '1', onChange: menge })));
+      const feld = feldHost.querySelector('input')!;
+      act(() => {
+        feld.focus();
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(feld, '12');
+        feld.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(menge).not.toHaveBeenCalled();
+      expect(status().at(-1)?.dirty).toBe(true);
+      await act(async () => {
+        window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:speichern', anfrage: 'a2' }, origin: window.location.origin, source: rahmen as never }));
+        await takt();
+      });
+      expect(menge).toHaveBeenCalledWith('12');
+      expect(lvSpeichern).toHaveBeenCalledTimes(2);
+      expect(rahmen.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:gespeichert', anfrage: 'a2', ok: true }, window.location.origin);
+      act(() => feldRoot.unmount());
+
+      // Gegenprobe: ohne offenes LV macht eine begonnene Eingabe (z. B. Stammdaten, speichern beim Verlassen) nicht dirty
+      act(() => useAva.setState({ lv: null }));
+      const zweitHost = document.createElement('div');
+      document.body.appendChild(zweitHost);
+      const zweitRoot = createRoot(zweitHost);
+      act(() => zweitRoot.render(createElement(TextEingabe, { wert: 'a', onChange: () => {} })));
+      const zweit = zweitHost.querySelector('input')!;
+      act(() => {
+        zweit.focus();
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(zweit, 'ab');
+        zweit.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(status().at(-1)?.dirty).toBe(false);
+      act(() => zweitRoot.unmount());
     } finally {
       act(() => root?.unmount());
       root = null;

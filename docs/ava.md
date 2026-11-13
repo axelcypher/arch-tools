@@ -50,7 +50,9 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
   Scheitert dabei ein Speichern, meldet FABRIO „nicht gespeichert“ (Grund im Protokoll) und Arkly fragt nach, statt
   still zu schließen. Ungespeicherte LV-Änderungen sind kein Schreibfehler: FABRIO meldet sie über die Titelleiste als
   geändert (●), Arkly fragt vorher „Änderungen an ‚FABRIO – …‘ speichern?“ und lässt auf *Speichern* das LV speichern
-  (bei .aslv mit der Nachfrage, welche Angaben verloren gingen).
+  (bei .aslv mit der Nachfrage, welche Angaben verloren gingen). Bei offenem LV zählt schon eine begonnene Eingabe im
+  Feld als Änderung, auch wenn der Cursor noch darin steht; *Speichern* übernimmt sie mit. Ohne offenes LV speichern
+  die Felder beim Verlassen selbst, das übernimmt FABRIO vor dem Schließen.
 - **Navigation** (links, Breite ziehbar): Kostenübersicht, Rechnungen, Rechnungseingang; die **Gewerke** aus
   Ordnern, Kostenkontrolle und Prüfungen (Zahl der LV-Dateien, wenn es mehr als eine gibt); **Bauleitung**
   (Objektüberwachung nach HOAI Leistungsphase 8); Einstellungen (Strg+,). Die Einträge sind Knöpfe: mit Tab
