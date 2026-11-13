@@ -172,7 +172,7 @@ export function GrzGfzView() {
             <input type="date" aria-label="Öffentliche Auslegung des Planentwurfs" value={m.auslegungDatum ?? ''} onChange={(e) => setM({ auslegungDatum: e.target.value || undefined })} />
           </Field>
         </div>
-        <p className="field-hint grz-hinweis-zeile">Ohne Inkrafttreten gilt § 34/35 BauGB. Die Auslegung bestimmt die BauNVO-Fassung (§ 25c); leer = wie Inkrafttreten.</p>
+        <p className="field-hint grz-hinweis-zeile">Die Auslegung bestimmt die BauNVO-Fassung (§ 25c); leer = wie Inkrafttreten. Ohne beide Daten: aktuelles Recht (z. B. § 34/35 BauGB).</p>
 
         <h2>
           Festsetzungen
@@ -237,9 +237,9 @@ export function GrzGfzView() {
         </div>
         <p className="field-hint grz-hinweis-zeile">Grund- und Geschossfläche als Höchstmaß in m² (§ 16 Abs. 2) – nur, wenn der Plan sie statt GRZ/GFZ festsetzt.</p>
         {n.recht.baunvo !== '1962' && (
-          <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
+          <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt oder als Ausnahme vorsieht und sie zugelassen ist">
             <input type="checkbox" checked={!!m.garagenGfFrei} onChange={(e) => setM({ garagenGfFrei: e.target.checked || undefined })} />
-            Garagen in Vollgeschossen zählen laut Plan nicht zur Geschossfläche (§ 21a Abs. 4 Nr. 3)
+            Garagen in Vollgeschossen zählen nicht zur Geschossfläche (festgesetzt bzw. als Ausnahme zugelassen, § 21a Abs. 4 Nr. 3)
           </label>
         )}
         <div className="field-row">

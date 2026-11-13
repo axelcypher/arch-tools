@@ -255,7 +255,7 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
   **Geschossfläche:** Nebenanlagen zählen nicht (§ 20 Abs. 4 BauNVO 1990, § 20 Abs. 3 der früheren Fassungen).
   Garagen zählen nach BauNVO 1962 und 1968/1977 nicht, soweit sie nicht auf die Grundfläche angerechnet werden
   (§ 20 Abs. 3 i. V. m. § 19 Abs. 5 BauNVO 1962, § 21a Abs. 4 Nr. 2 BauNVO 1968/1977); nach 1968/1977 und 1990 ganz nicht, wenn der Bebauungsplan das nach § 21a
-  Abs. 4 Nr. 3 festsetzt (Kästchen „Garagen in Vollgeschossen zählen laut Plan nicht zur Geschossfläche“ unter „Maß der baulichen Nutzung“ in den
+  Abs. 4 Nr. 3 festsetzt (Kästchen „Garagen in Vollgeschossen zählen nicht zur Geschossfläche (festgesetzt bzw. als Ausnahme zugelassen)“ unter „Maß der baulichen Nutzung“ in den
   Festsetzungen, ab BauNVO 1968).
 - **BauNVO 1962, § 19 Abs. 5:** Außerhalb von Kern-, Gewerbe- und Industriegebieten werden eingeschossige Garagen und
   überdachte Stellplätze bis 0,1 der Grundstücksfläche nicht angerechnet („bis 0,1 frei“, wie 1968/1977). Im Kern-,
