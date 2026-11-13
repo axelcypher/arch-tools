@@ -12,7 +12,7 @@ erhalten.
   Nach jedem Öffnen erscheint die Ansicht, auch bei einem Projekt ohne Gebäude; dann sagt ein Hinweis oben, dass
   der Gebäudeumriss aus QUADRIO oder einem IFC-Modell kommt. Der IFC-Bericht ist nur dann gelb, wenn er etwas
   meldet, und schließt mit „×“ oder Esc.
-  „Neu“ in der Werkzeugleiste beginnt ein leeres Projekt (mit Rückfrage bei ungespeicherten Änderungen) und
+  „Neu“ in der Werkzeugleiste („Öffnen …“, „Nachweis drucken …“ und „Excel-Export …“ öffnen einen Dialog) beginnt ein leeres Projekt (mit Rückfrage bei ungespeicherten Änderungen) und
   verwirft damit auch den Zwischenstand. Gesperrte Knöpfe nennen im Tooltip den Grund. Der Hinweis
   „Grundstücksfläche fehlt“ springt mit „zum Feld“ in das Feld „Grundstücksfläche [m²]“.
 
