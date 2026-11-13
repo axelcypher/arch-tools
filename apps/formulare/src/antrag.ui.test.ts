@@ -7,7 +7,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { App } from './App';
 import { VORGABE_EXPORT, einstellungenAus, jjmmtt, tagVon } from './antrag';
 import { VORGABE_MERKMALE } from './bedingung';
-import { aktiveFassung, exportVorschlag, istArchiv, useAntrag, wechselLaeuft } from './antragStore';
+import { aktiveFassung, exportVorschlag, istArchiv, useAntrag, wechselLaeuft, type SchreibInfo } from './antragStore';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Schreiben } from './forma/cp1252';
 import { felderDerSeite } from './forma/felder';
@@ -5862,6 +5862,89 @@ describe('Reihenfolge der Formulare in der Navigation', () => {
     expect(useAntrag.getState().projektdatei?.reihenfolge).toBeUndefined();
     expect(ds.dateien.has(OAP)).toBe(false);
     expect(namen(host)).toEqual(['001-Muster']);
+  });
+
+  it('während ein Antragswechsel lädt: nichts verschoben, „wird gerade geöffnet“ – danach wieder möglich', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA 2');
+    // das Lesen des Antragsordners hängt: aktiv ist schon BAUA, angezeigt noch BAUA 2
+    const liste = ds.liste.bind(ds);
+    let los!: () => void;
+    let halten = true;
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (halten && pfad.endsWith('/TÖB') && tiefe === 1) {
+        halten = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return liste(pfad, tiefe);
+    };
+    let fw!: Promise<void>;
+    act(() => {
+      fw = useAntrag.getState().fassungWaehlen('BAUA');
+    });
+    for (let i = 0; i < 20 && !los; i++) await warte();
+    expect(los).toBeTruthy();
+    expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA 2');
+    // über die Tastatur und direkt über die Store-Aktion: nichts geändert, nichts geschrieben
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    const info = await act(() => useAntrag.getState().reihenfolgeSetzen(['002-Anderes.frmsjf', '001-Muster.frmsjf']));
+    expect(info).toEqual({ grund: 'Antrag BAUA wird gerade geöffnet', vorab: 'fassung', erneut: true });
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Reihenfolge nicht geändert – Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.' });
+    expect(useAntrag.getState().projektdatei?.reihenfolge).toBeUndefined();
+    expect(gemerkt()).toBeUndefined();
+    expect(namen(host)).toEqual(['001-Muster', '002-Anderes']);
+    los();
+    await act(() => fw);
+    await warte();
+    expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA');
+    // Gegenprobe: nach dem Öffnen geht es wieder
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    expect(namen(host)).toEqual(['002-Anderes', '001-Muster']);
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+  });
+
+  it('nicht übernommen ohne Ausnahme (während des Schreibens geschlossen): keine Fehlermeldung, kein fremder Stand – die Datei hat die neue Folge', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    await projektBS9();
+    const bs9 = useFormulare.getState().projekt!;
+    // das Schreiben hängt einmal – währenddessen wird das Projekt geschlossen
+    const ersetzen = ds.projektordner.projektdateiErsetzen.bind(ds.projektordner);
+    let los!: () => void;
+    let einmal = true;
+    ds.projektordner.projektdateiErsetzen = async (...a: Parameters<typeof ersetzen>) => {
+      if (einmal) {
+        einmal = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return ersetzen(...a);
+    };
+    let laeuft!: Promise<SchreibInfo>;
+    act(() => {
+      laeuft = useAntrag.getState().reihenfolgeSetzen(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    });
+    for (let i = 0; i < 20 && !los; i++) await warte();
+    expect(los).toBeTruthy();
+    // sofort angezeigt (vor dem Speichern)
+    expect(useAntrag.getState().projektdatei?.reihenfolge).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    await act(() => useFormulare.getState().projektWaehlen(null));
+    await warte();
+    los();
+    const info = await act(() => laeuft);
+    await warte();
+    // geschrieben, aber nicht mehr übernommen (projektdateiSchreiben liefert false, ohne zu werfen): kein „nicht
+    // gespeichert“, und ohne offenes Projekt bleibt kein Stand von BS9 im Store
+    expect(info.geschrieben).toBe(true);
+    expect(info.dialog).toBeUndefined();
+    expect(useFormulare.getState().meldung?.art).not.toBe('fehler');
+    expect(useAntrag.getState().projektdatei).toBeNull();
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    // wieder geöffnet: die gespeicherte Folge
+    await act(() => useFormulare.getState().projektWaehlen(bs9));
+    for (let i = 0; i < 3; i++) await warte();
+    expect(useAntrag.getState().projektdatei?.reihenfolge).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
   });
 
   it('Umbenennen nach dem Verschieben: der Platz ist keine Zuordnung – die Rückfrage spricht nicht vom Antragsumfang', async () => {
