@@ -41,16 +41,26 @@ export interface GewerkAbrechnung {
   /** Summe der Aufträge laut Kostenkontrolle (brutto) */
   kostenanschlag: number | null;
   auftraege: KkZeile[];
-  /** Summe der Rechnungen laut Kostenkontrolle (brutto) */
+  /** Summe der Zahlungsfreigaben laut Kostenkontrolle (Spalte „Kostenfeststellung“ der Mappe) */
   kostenfeststellung: number | null;
   rechnungen: Rechnung[];
-  /** noch abzurechnen: Kostenanschlag − Kostenfeststellung */
+  /** noch auszuzahlen: Kostenanschlag − Zahlungsfreigaben (Kostenfeststellung der Mappe) */
   offen: number | null;
-  /** abgerechnet in % des Kostenanschlags */
+  /** freigegeben in % des Kostenanschlags */
   anteil: number | null;
   blatt?: KkGewerkBlatt;
   uebersicht?: KkUebersichtZeile;
   hinweise: string[];
+}
+
+/**
+ * Rechnungsart und laufende Nummer aus dem Text der Rechnungsliste („Rohbau Muster, AB2“, „Fenster SR 1“): nur ein
+ * Kürzel am Ende des Texts zählt – nicht der Anfang eines Worts („Rohbau“, „Richter“ sind keine Rechnung „R“).
+ */
+export function artAusText(text: string): { art?: string; lfd?: number } {
+  const m = /(?:^|[,;:\s])(TSR|SR|AB|R)\s*(\d{0,3})\s*\.?$/i.exec(text.trim());
+  if (!m) return {};
+  return { art: m[1].toUpperCase(), ...(m[2] ? { lfd: Number(m[2]) } : {}) };
 }
 
 const gleich = (a: number | null | undefined, b: number | null | undefined) => a !== null && a !== undefined && b !== null && b !== undefined && Math.abs(a - b) < 0.015;
@@ -102,9 +112,10 @@ export function gewerkAbrechnung(gewerk: string, kk: Kostenkontrolle | null, g: 
   }
   // Hinweise je Rechnung
   for (const r of rechnungen) {
-    const art = r.datei?.erkannt.art ?? r.datensatz?.art ?? /\b(AB|SR|TSR|R)\s*\d*/i.exec(r.text)?.[1]?.toUpperCase();
+    const ausText = artAusText(r.text);
+    const art = r.datei?.erkannt.art ?? r.datensatz?.art ?? ausText.art;
     if (art) r.art = art;
-    r.lfd = r.datei?.erkannt.lfd ?? r.datensatz?.lfd ?? (Number(/\b(?:AB|SR|TSR)\s*(\d+)/i.exec(r.text)?.[1]) || undefined);
+    r.lfd = r.datei?.erkannt.lfd ?? r.datensatz?.lfd ?? ausText.lfd;
     if (r.liste && r.blatt && r.blatt.nr !== null && !nrGleich(r.blatt.nr, r.liste.nr)) r.hinweise.push(`Im Gewerkblatt mit Nr. ${r.blatt.nr}, in der Rechnungsliste Nr. ${r.liste.nr}.`);
     if (r.liste && r.blatt && !gleich(r.blatt.betrag, r.liste.betrag)) r.hinweise.push('Betrag im Gewerkblatt weicht von der Rechnungsliste ab.');
     if (r.liste && !r.blatt && blatt) r.hinweise.push('Fehlt in der Kostenfeststellung des Gewerkblatts.');
@@ -153,11 +164,16 @@ export function alleGewerke(kk: Kostenkontrolle | null, gewerke: Gewerk[], daten
   return [...s].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
 }
 
-/** Vorige Zahlungen eines Gewerks für das Deckblatt („Davon bereits erhalten“): Rechnungen vor dieser */
-export function vorigeZahlungen(a: GewerkAbrechnung, bisNr?: number | string | null): { text: string; datum?: string; betrag: number }[] {
+/**
+ * Vorige Zahlungen eines Gewerks für das Deckblatt („Davon bisher freigegeben“): Rechnungen vor dieser aus der Reihe
+ * der Abschlags- und Schlussrechnungen. Einzelrechnungen (Art „R“, z. B. Stundenlohn) gehören nicht dazu;
+ * Gutschriften (negative Beträge) zählen mit.
+ */
+export function vorigeZahlungen(a: GewerkAbrechnung, bisNr?: number | string | null, ohneArten: string[] = ['R']): { text: string; datum?: string; betrag: number }[] {
   const grenze = typeof bisNr === 'number' ? bisNr : Number.POSITIVE_INFINITY;
+  const ohne = new Set(ohneArten.map((x) => x.toUpperCase()));
   return a.rechnungen
-    .filter((r) => r.betrag !== null && r.betrag > 0 && (typeof r.nr !== 'number' || r.nr < grenze))
+    .filter((r) => r.betrag !== null && r.betrag !== 0 && !(r.art && ohne.has(r.art.toUpperCase())) && (typeof r.nr !== 'number' || r.nr < grenze))
     .map((r) => ({ text: r.art ? `${r.art} ${r.lfd ?? ''}`.trim() : r.text, datum: r.datum, betrag: r.betrag! }));
 }
 

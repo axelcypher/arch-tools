@@ -26,6 +26,21 @@ export function Textbibliothek({ onClose, onUebernehmen, ersetzen = false }: { o
   const treffer = useMemo(() => vorlagenSuchen(liste ?? [], suche, gruppe || undefined), [liste, suche, gruppe]);
   const v = treffer.find((x) => x.id === gewaehlt) ?? treffer[0];
 
+  /** Tastatur im Suchfeld: ↑/↓ durch die Treffer, Enter übernimmt */
+  const tasten = (e: React.KeyboardEvent) => {
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && treffer.length) {
+      e.preventDefault();
+      const i = treffer.findIndex((x) => x.id === v?.id);
+      const n = treffer[Math.max(0, Math.min(treffer.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
+      setGewaehlt(n.id);
+      document.getElementById(`ava-vorlage-${n.id}`)?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && v) {
+      e.preventDefault();
+      onUebernehmen(v);
+      onClose();
+    }
+  };
+
   const ausLv = async () => {
     if (!lv) return;
     const g = lv.lv.kopf.bezeichnung.replace(/^G\s*\d+\s*/i, '') || 'Allgemein';
@@ -44,8 +59,18 @@ export function Textbibliothek({ onClose, onUebernehmen, ersetzen = false }: { o
     <Modal titel="Vorlagetexte" onClose={onClose} breit className="ava-bibliothek">
       <h2>Vorlagetexte</h2>
       <div className="ava-bib-filter">
-        <input autoFocus placeholder="Suchen in Kurz- und Langtext …" value={suche} onChange={(e) => setSuche(e.target.value)} />
-        <select value={gruppe} onChange={(e) => setGruppe(e.target.value)}>
+        <input
+          autoFocus
+          type="search"
+          placeholder="Suchen in Kurz- und Langtext …"
+          aria-label="Vorlagetexte durchsuchen – ↑/↓ wählen, Enter übernimmt"
+          aria-controls="ava-vorlagen"
+          aria-activedescendant={v ? `ava-vorlage-${v.id}` : undefined}
+          value={suche}
+          onChange={(e) => setSuche(e.target.value)}
+          onKeyDown={tasten}
+        />
+        <select value={gruppe} onChange={(e) => setGruppe(e.target.value)} aria-label="Gruppe">
           <option value="">alle Gruppen</option>
           {gruppen.map((g) => (
             <option key={g}>{g}</option>
@@ -58,11 +83,11 @@ export function Textbibliothek({ onClose, onUebernehmen, ersetzen = false }: { o
         )}
       </div>
       <div className="ava-bib-koerper">
-        <ul className="list ava-bib-liste">
+        <ul className="list ava-bib-liste" id="ava-vorlagen" role="listbox" aria-label="Vorlagetexte">
           {liste === null && <li className="muted">Wird gelesen …</li>}
           {liste && !treffer.length && <li className="muted">{liste.length ? 'Keine Treffer.' : 'Noch keine Vorlagetexte – „Aus diesem LV übernehmen“ oder an einer Position „Als Vorlage speichern“.'}</li>}
           {treffer.map((x) => (
-            <li key={x.id} className={x.id === v?.id ? 'active' : ''} onClick={() => setGewaehlt(x.id)} onDoubleClick={() => (onUebernehmen(x), onClose())}>
+            <li key={x.id} id={`ava-vorlage-${x.id}`} role="option" aria-selected={x.id === v?.id} className={x.id === v?.id ? 'active' : ''} onClick={() => setGewaehlt(x.id)} onDoubleClick={() => (onUebernehmen(x), onClose())}>
               <span className="muted small-text">{x.gruppe}</span>
               <div>{x.kurztext}</div>
             </li>
@@ -80,8 +105,9 @@ export function Textbibliothek({ onClose, onUebernehmen, ersetzen = false }: { o
                 <button className="primary" onClick={() => (onUebernehmen(v), onClose())}>
                   {ersetzen ? 'Texte übernehmen' : 'Als Position einfügen'}
                 </button>
-                <button className="danger" onClick={() => void entfernen(v)}>
-                  Entfernen
+                <span className="tb-spacer" />
+                <button className="small danger" onClick={() => void entfernen(v)} title="Diese Vorlage aus den Vorlagetexten des Büros entfernen">
+                  Vorlage entfernen
                 </button>
               </div>
             </>
