@@ -95,10 +95,15 @@ Geschosshöhe mit einem Hinweis auf ihre Schwäche.
 ### Teile an- und abwählen
 
 Jede Menge ist eine Summe von Teilen, und jedes Teil lässt sich in **Mengen prüfen** einzeln an- oder abwählen:
-mit dem Häkchen im Rechenweg oder per Klick auf das Teil im Grundriss bzw. im 3D-Modell. Abgewählte Teile
-erscheinen grau und durchgestrichen und zählen weder zur Menge noch zu den Kosten. Über dem Rechenweg setzen
-„alle“, „keine“ und „Standard“ die Auswahl der gewählten Menge auf einmal. Die Auswahl wird im Projekt
-gespeichert (nur Abweichungen vom Standard) und gilt auch für Druck, Excel und Kostenstände.
+mit dem Häkchen im Rechenweg (die ganze erste Spalte ist Klickfläche; das Häkchen im Tabellenkopf wählt alle
+Teile an oder ab) oder per Klick auf das Teil im Grundriss bzw. im 3D-Modell. Mit der Tastatur geht es ebenso:
+Tab zum Häkchen oder zum Teil im Grundriss, dann Leertaste (im Grundriss auch Enter); das fokussierte Teil wird
+im Bild hervorgehoben. Abgewählte Teile erscheinen grau und durchgestrichen – auch unter dem Mauszeiger bleiben
+sie grau, nur ihr Umriss wird orange – und zählen weder zur Menge noch zu den Kosten. Über dem Rechenweg setzen
+„alle“, „keine“ und „Standard“ die Auswahl der gewählten Menge auf einmal. In der Mengenliste trägt eine Menge
+mit geänderter Auswahl das Kennzeichen „Auswahl geändert“. Die Auswahl wird im Projekt gespeichert (nur
+Abweichungen vom Standard) und gilt auch für Druck, Excel und Kostenstände. Ist eine Menge von Hand festgelegt,
+wirkt die Auswahl erst, wenn der Handwert entfernt ist.
 
 ### Mengen prüfen
 
