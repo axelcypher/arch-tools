@@ -468,6 +468,12 @@ textarea:focus {
   border-radius: 2px;
   flex: none;
 }
+/* Farbmarke einer Planfarbe (z. B. Nutzung eines Raums): bekommt im dunklen Schema denselben Filter wie die
+   Zeichenfläche, damit Liste und Plan denselben Farbton zeigen */
+.swatch.plan-farbe,
+.plan-farbe {
+  filter: var(--canvas-filter);
+}
 
 .muted {
   color: var(--muted);
@@ -1972,10 +1978,11 @@ button.ph-lokal {
 }
 /* außerhalb der Leisten 24px; in .toolbar gilt deren 28px (beide mit Spezifität null, die Leiste steht vorher) */
 :where(.segment) > :where(button) {
-  min-height: var(--ctl-h-s);
+  /* der Rahmen des Segments (2 × 1px) zählt mit: außen 24px bzw. in Leisten 28px wie die übrigen Knöpfe */
+  min-height: calc(var(--ctl-h-s) - 2px);
 }
 :where(.toolbar) :where(.segment) > :where(button) {
-  min-height: var(--ctl-h);
+  min-height: calc(var(--ctl-h) - 2px);
 }
 .segment > button + button {
   border-left: 1px solid var(--border);

@@ -215,4 +215,31 @@ describe('Prüfregeln', () => {
     // ohne Komma gilt parseNum: „45.00“ ist 45 (sichtbar, weil das Feld danach „45,00“ zeigt)
     expect(zahlLesen('45.00')).toBe(45);
   });
+
+  it('Fehler von außen (ungueltig, fehlerId): rot markiert, aria-invalid, beschrieben von der gemeinsamen Meldung; eigene Meldung kommt dazu', () => {
+    const host = render(
+      createElement(
+        'div',
+        null,
+        createElement(NumberField, { key: 'a', value: 400, onChange: () => {}, ungueltig: true, fehlerId: 'summe', label: 'Teilfläche A' }),
+        createElement(TextField, { key: 'b', value: 'x', onChange: () => {}, ungueltig: true, fehlerId: 'summe', label: 'Name' }),
+        createElement(NumberField, { key: 'c', value: 1, min: 0, max: 2, onChange: () => {}, label: 'ohne' }),
+        createElement('p', { key: 'm', id: 'summe' }, 'Summe der Teilflächen größer als das Grundstück'),
+      ),
+    );
+    const [a, b, c] = [...host.querySelectorAll('input')];
+    for (const el of [a, b]) {
+      expect(el.classList.contains('feld-fehler')).toBe(true);
+      expect(el.getAttribute('aria-invalid')).toBe('true');
+      expect(el.getAttribute('aria-describedby')).toBe('summe');
+    }
+    expect(c.hasAttribute('aria-invalid')).toBe(false);
+    expect(c.hasAttribute('aria-describedby')).toBe(false);
+    // eigene Meldung zusätzlich: beide ids
+    tippen(a, 'abc');
+    act(() => a.blur());
+    const ids = a.getAttribute('aria-describedby')!.split(' ');
+    expect(ids).toContain('summe');
+    expect(document.getElementById(ids.find((i) => i !== 'summe')!)?.textContent).toContain('keine Zahl');
+  });
 });

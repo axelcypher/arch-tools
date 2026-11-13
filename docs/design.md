@@ -80,16 +80,17 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 
 ## Farben
 
-| Variable                           | Bedeutung                                                                                                       |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                  |
-| `--text`, `--muted`                | Text, Nebentext                                                                                                 |
-| `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
-| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                        |
-| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler                                                               |
-| `--sel`                            | Auswahl auf Plänen (Orange)                                                                                     |
-| `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
-| `--danger`                         | zerstörende Aktionen (Löschen)                                                                                  |
+| Variable                           | Bedeutung                                                                                                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                                                                       |
+| `--text`, `--muted`                | Text, Nebentext                                                                                                                                                      |
+| `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                                                                                |
+| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                                                                             |
+| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler                                                                                                                    |
+| `--sel`                            | Auswahl auf Plänen (Orange)                                                                                                                                          |
+| `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben                                                      |
+| `--danger`                         | zerstörende Aktionen (Löschen)                                                                                                                                       |
+| `.plan-farbe`                      | Farbmarke einer Planfarbe in Listen (z. B. Nutzung): bekommt im dunklen Schema denselben Filter wie die Zeichenfläche, damit Liste und Plan denselben Farbton zeigen |
 
 **Auswahl auf Fotos** immer mit Saum zeichnen: Magenta allein hat auf mittleren Fototönen (Putz, Ziegel, Himmel) kaum
 Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, außen 1px weiß, innen 1px `rgba(0, 0, 0, 0.5)`.
@@ -130,6 +131,9 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 - In `.toolbar` und `.report-actions` füllen Felder nicht die Zeile: Auswahllisten sind so breit wie ihr Inhalt,
   Textfelder haben die Standardbreite des Browsers (etwa 20 Zeichen; kürzer mit dem Attribut `size`), Regler 120px.
   Sonst füllen Felder ihre Spalte.
+- **Fehler über mehrere Felder** (z. B. „Summe der Teilflächen > Grundstücksfläche“): die Meldung einmal neben die
+  Felder (`.meldung.fehler` oder `.feld-meldung` mit `id`), an jedem betroffenen `NumberField`/`TextField`
+  `ungueltig` und `fehlerId` setzen – das Feld wird rot markiert, `aria-invalid` und von der Meldung beschrieben.
 - `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht.
 
 ## Umschalter
