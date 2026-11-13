@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
+import { einfuegeStelle, zeigerZiehen } from '@core/ui/ziehen';
 import { Ziehgriff } from '@core/ui/Leiste';
 import { formularAktualisieren } from '../aktualisieren';
 import { useId, useMemo, useState } from 'react';
@@ -10,7 +11,7 @@ import type { FormularEintrag } from '../projekte';
 import { formularLoeschen, formularUmbenennen } from '../dateiAktionen';
 import { AblageBaum } from './AblageBaum';
 import { ausUmfangEntfernen, FassungsWahl, formularePunkte, StatusPunkt, umfangZeigen } from './Antrag';
-import { passt, STATUS_TEXT } from '../antrag';
+import { nachReihenfolge, passt, reihenfolgeMit, STATUS_TEXT } from '../antrag';
 import { useExportDialog } from './ExportDialog';
 import { useHinzufuegenDialog } from './FormularHinzufuegen';
 import type { MenuePunkt } from './Menue';
@@ -107,6 +108,9 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   const formularInfo = useAntrag((s) => s.formularInfo);
   // Sammelprojekt: Ampel der Formulare auf der obersten Ebene ohne Zuordnung im aktiven Antrag
   const stammStatus = useAntrag((s) => s.stammStatus);
+  // Reihenfolge der Formulare (für das ganze Projekt in der Projektdatei); gezogen wird die Zeile, je Liste
+  const reihenfolge = useAntrag((s) => s.projektdatei?.reihenfolge);
+  const [zug, setZug] = useState<{ liste: string; pfad: string; stelle: number } | null>(null);
   /**
    * Doppelter Eintrag? Ein fehlendes Dokument, dessen Titel zu einem Formular passt, das schon einem anderen Eintrag
    * zugeordnet ist (etwa „Baustatistik“ neben „Statistischer Erhebungsbogen“) – dann kein stilles Anlegen eines zweiten
@@ -145,6 +149,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
         : []),
       // der Ordner des Formulars (im Sammelprojekt ggf. der Unterordner des Antrags)
       { text: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(projekt!.root, f.pfad.slice(0, f.pfad.lastIndexOf('/')))).catch(() => undefined) },
+      { text: 'Reihenfolge zurücksetzen (alphabetisch)', symbol: 'neuLaden', deaktiviert: !reihenfolge?.length, aktion: () => void useAntrag.getState().reihenfolgeSetzen([]) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(projekt!.root, f.pfad)) },
       { trenner: true },
       { text: 'Umbenennen …', symbol: 'stift', aktion: () => void formularUmbenennen(f) },
@@ -154,10 +159,55 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
 
   // Sammelprojekt: Formulare im Unterordner des aktiven Antrags bzw. auf der obersten Ebene; wo neue entstehen (mit
   // Leerzeichen am Ende, für „… das Formular in 2. BAUA anlegen“)
-  const imUnterordner = formulare.filter((f) => f.unterordner);
-  const imStamm = formulare.filter((f) => !f.unterordner);
+  const imUnterordner = nachReihenfolge(formulare.filter((f) => f.unterordner), reihenfolge);
+  const imStamm = nachReihenfolge(formulare.filter((f) => !f.unterordner), reihenfolge);
+  const alleFormulare = nachReihenfolge(formulare, reihenfolge);
+  /** Formular in seiner Liste an eine Stelle verschieben (nach dem Herausnehmen gezählt) und die Reihenfolge merken */
+  const verschieben = (liste: FormularEintrag[], pfad: string, stelle: number) => {
+    const f = liste.find((x) => x.pfad === pfad);
+    if (!f) return;
+    const ohne = liste.filter((x) => x.pfad !== pfad);
+    ohne.splice(Math.max(0, Math.min(stelle, ohne.length)), 0, f);
+    if (ohne.every((x, i) => x === liste[i])) return;
+    void useAntrag.getState().reihenfolgeSetzen(reihenfolgeMit(useAntrag.getState().projektdatei?.reihenfolge, ohne.map((x) => formularDatei(x.pfad))));
+  };
+  /** Zeile ziehen (erst ab 5 px – ein Klick bleibt ein Klick); Ziel nach den Mitten der Formularzeilen dieser Liste */
+  const ziehen = (name: string, liste: FormularEintrag[], pfad: string) => (e: ReactPointerEvent<HTMLElement>) => {
+    if (e.button !== 0) return;
+    const huelle = e.currentTarget.closest<HTMLElement>('[data-formular-liste]');
+    let stelle = -1;
+    zeigerZiehen(e, {
+      schwelle: 5,
+      beginn: () => setZug({ liste: name, pfad, stelle: liste.findIndex((x) => x.pfad === pfad) }),
+      bewegen: (ev) => {
+        const zeilen = huelle ? [...huelle.querySelectorAll<HTMLElement>(':scope > [data-formular]')] : [];
+        stelle = einfuegeStelle(zeilen, ev.clientY, zeilen.findIndex((z) => z.dataset.formular === pfad));
+        setZug({ liste: name, pfad, stelle });
+      },
+      ende: (gezogen) => {
+        setZug(null);
+        if (gezogen && stelle >= 0) verschieben(liste, pfad, stelle);
+      },
+    });
+  };
+  /** Alt+↑/↓ an der Zeile: eine Stelle nach oben bzw. unten */
+  const taste = (liste: FormularEintrag[], pfad: string) => (e: ReactKeyboardEvent<HTMLElement>) => {
+    if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    e.preventDefault();
+    const i = liste.findIndex((x) => x.pfad === pfad);
+    verschieben(liste, pfad, e.key === 'ArrowUp' ? i - 1 : i + 1);
+  };
+  /** Markierung beim Ziehen: gezogene Zeile, Einfügestelle davor bzw. nach der letzten */
+  const markierung = (name: string, liste: FormularEintrag[], pfad: string): 'quelle' | 'davor' | 'danach' | undefined => {
+    if (!zug || zug.liste !== name) return undefined;
+    if (zug.pfad === pfad) return 'quelle';
+    const uebrige = liste.filter((x) => x.pfad !== zug.pfad);
+    const i = uebrige.findIndex((x) => x.pfad === pfad);
+    if (i === zug.stelle) return 'davor';
+    return zug.stelle >= uebrige.length && i === uebrige.length - 1 ? 'danach' : undefined;
+  };
   const zielText = sammel ? (sammel.unterordner ? `in ${sammel.unterordner} ` : 'auf der obersten Ebene ') : null;
-  const formularZeile = (f: FormularEintrag) => {
+  const formularZeile = (name: string, liste: FormularEintrag[]) => (f: FormularEintrag) => {
     const aktiv = offen?.pfad === f.pfad;
     const ungespeichert = aktiv ? istGeaendert(offen) : !!projekt && hatEntwurf(projekt, f.pfad);
     const fremd = f.gesperrt && !(aktiv && offen?.sperre.art === 'eigen');
@@ -168,11 +218,14 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     // zuerst, dass es nicht zum Antragsumfang gehört – der Status dahinter (nicht verwechselbar mit „Antragsordner“)
     const stammText = stamm ? `nicht im Antragsumfang von ${fassung} · ${STATUS_TEXT[stamm]}` : '';
     return (
-      <div key={f.pfad} role="listitem">
+      <div key={f.pfad} role="listitem" data-formular={f.pfad} data-ziehen={markierung(name, liste, f.pfad)}>
         <button
           className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
           aria-current={gezeigt ? 'page' : undefined}
-          title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : stamm ? `${f.name}\n${stammText}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}`}
+          aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+          onPointerDown={ziehen(name, liste, f.pfad)}
+          onKeyDown={taste(liste, f.pfad)}
+          title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : stamm ? `${f.name}\n${stammText}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}\nZiehen oder Alt+↑/↓ ändert die Reihenfolge`}
           onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
           onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
         >
@@ -362,8 +415,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                     </>
                   )}
                   {imUnterordner.length + fehlende.length > 0 ? (
-                    <div className="nav-liste" role="list" aria-labelledby={`${gruppenId}-antrag`}>
-                      {imUnterordner.map(formularZeile)}
+                    <div className="nav-liste" role="list" aria-labelledby={`${gruppenId}-antrag`} data-formular-liste="antrag">
+                      {imUnterordner.map(formularZeile('antrag', imUnterordner))}
                       {fehlende.map(fehlendeZeile)}
                     </div>
                   ) : (
@@ -373,16 +426,16 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                     Alle Anträge · oberste Ebene
                   </p>
                   {imStamm.length ? (
-                    <div className="nav-liste" role="list" aria-labelledby={`${gruppenId}-alle`}>
-                      {imStamm.map(formularZeile)}
+                    <div className="nav-liste" role="list" aria-labelledby={`${gruppenId}-alle`} data-formular-liste="alle">
+                      {imStamm.map(formularZeile('alle', imStamm))}
                     </div>
                   ) : (
                     <p className="nav-leer">Keine Formulare für alle Anträge.</p>
                   )}
                 </div>
               ) : (
-                <div className="nav-liste" role="list" aria-label="Formulare">
-                  {formulare.map(formularZeile)}
+                <div className="nav-liste" role="list" aria-label="Formulare" data-formular-liste="formulare">
+                  {alleFormulare.map(formularZeile('formulare', alleFormulare))}
                   {fehlende.map(fehlendeZeile)}
                   {!formulare.length && !fehlende.length && <p className="nav-leer">Keine Formulare in diesem Projekt.</p>}
                 </div>

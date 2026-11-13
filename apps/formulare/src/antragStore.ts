@@ -207,6 +207,11 @@ interface AntragState {
    */
   umfangSetzen: (umfang: UmfangEintrag[] | null, o?: { info?: SchreibInfo; bewegt?: string }) => Promise<SchreibInfo>;
   /**
+   * Reihenfolge der Formulare in der Navigation setzen (Schlüssel nach formularSchluessel; leer = alphabetisch) – für das
+   * ganze Projekt in der Projektdatei, angezeigt sofort; nur, wenn es eine Projektdatei gibt
+   */
+  reihenfolgeSetzen: (reihenfolge: string[]) => Promise<SchreibInfo>;
+  /**
    * Antragsumfang ändern – gelesen wird er erst jetzt (Menüs, Verknüpfen, Formular anlegen halten keinen alten fest).
    * Mit `ansicht` nur, wenn noch diese Fassung angezeigt wird, mit `eintrag` nur, wenn es den Eintrag noch gibt; sonst
    * nennt das Ergebnis den Grund (gemeldet wird er, außer mit `still`)
@@ -1407,6 +1412,28 @@ export const useAntrag = create<AntragState>((set, get) => {
       } catch (e) {
         fehler(`Antragsfassung ${name}`, e);
       }
+    },
+
+    reihenfolgeSetzen: async (reihenfolge) => {
+      const info: SchreibInfo = {};
+      const pd = get().projektdatei;
+      const o = useFormulare.getState().oap;
+      if (!pd || !o || o === 'fehlt') {
+        meldung('info', 'Reihenfolge nicht gespeichert – sie steht in der Projektdatei (.oap), und für dieses Projekt gibt es keine.');
+        return info;
+      }
+      const neu: ProjektDatei = { ...pd };
+      if (reihenfolge.length) neu.reihenfolge = reihenfolge;
+      else delete neu.reihenfolge;
+      // sofort so zeigen; geschrieben wird nur der Unterschied (gleichzeitige Änderungen anderer bleiben)
+      set({ projektdatei: neu });
+      try {
+        await projektdateiSchreiben(neu, undefined, { basis: pd, info });
+      } catch (e) {
+        fehler('Reihenfolge der Formulare nicht gespeichert', e);
+        if (get().projektdatei === neu) set({ projektdatei: pd });
+      }
+      return info;
     },
 
     umfangSetzen: async (umfang, o = {}) => {

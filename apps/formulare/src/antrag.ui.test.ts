@@ -5752,3 +5752,76 @@ describe('Formulare umbenennen', () => {
     expect(ds.dateien.get('C:/FORMA/BS9/002-Anderes.frmsjf')).toBe(MUSTER);
   });
 });
+
+describe('Reihenfolge der Formulare in der Navigation', () => {
+  const namen = (host: HTMLElement, liste = 'formulare') => [...host.querySelectorAll(`[data-formular-liste="${liste}"] > [data-formular] .nav-text`)].map((t) => t.textContent);
+  const zeile = (host: HTMLElement, name: string) => knopf(host, name);
+  const gemerkt = () => (abschnitt() as { reihenfolge?: string[] } | undefined)?.reihenfolge;
+
+  it('Alt+↑/↓ und Ziehen – für das ganze Projekt in der Projektdatei; ein Klick bleibt ein Klick; zurücksetzen', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/003-Dritt.frmsjf', MUSTER);
+    const host = await projektBS9();
+    expect(namen(host)).toEqual(['001-Muster', '002-Anderes', '003-Dritt']);
+    // Tastatur
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    expect(namen(host)).toEqual(['002-Anderes', '001-Muster', '003-Dritt']);
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf', '003-Dritt.frmsjf']);
+    // Gegenprobe: ohne Alt nichts
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+    await warte();
+    expect(namen(host)).toEqual(['002-Anderes', '001-Muster', '003-Dritt']);
+    // Ziehen: „002-Anderes“ ans Ende
+    act(() => void zeile(host, '002-Anderes').dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 0, bubbles: true })));
+    act(() => void window.dispatchEvent(new PointerEvent('pointermove', { clientX: 0, clientY: 40 })));
+    expect(host.querySelector('[data-formular="BS9/002-Anderes.frmsjf"]')!.getAttribute('data-ziehen')).toBe('quelle');
+    act(() => void window.dispatchEvent(new PointerEvent('pointerup', { clientX: 0, clientY: 40 })));
+    await warte();
+    expect(namen(host)).toEqual(['001-Muster', '003-Dritt', '002-Anderes']);
+    expect(useFormulare.getState().offen).toBeNull();
+    // ein Klick ohne Bewegung öffnet das Formular und verschiebt nichts
+    act(() => void zeile(host, '003-Dritt').dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 0, bubbles: true })));
+    act(() => void window.dispatchEvent(new PointerEvent('pointerup', { clientX: 0, clientY: 0 })));
+    await klick(zeile(host, '003-Dritt'));
+    expect(useFormulare.getState().offen?.pfad).toBe('BS9/003-Dritt.frmsjf');
+    expect(namen(host)).toEqual(['001-Muster', '003-Dritt', '002-Anderes']);
+    // zurücksetzen
+    await rechtsklick(zeile(host, '001-Muster'));
+    await klick(menuePunkt('Reihenfolge zurücksetzen'));
+    await warte();
+    expect(namen(host)).toEqual(['001-Muster', '002-Anderes', '003-Dritt']);
+    expect(gemerkt()).toBeUndefined();
+  });
+
+  it('Sammelprojekt: je Gruppe verschoben – die gemerkte Folge der anderen Gruppe bleibt', async () => {
+    ds.dateien.set('C:/FORMA/BS9/2. BAUA/002-Bauantrag (2026).frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/2. BAUA/001-Lageplan.frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/003-Dritt.frmsjf', MUSTER);
+    const host = await projektBS9();
+    expect(namen(host, 'antrag')).toEqual(['001-Lageplan', '002-Bauantrag (2026)']);
+    expect(namen(host, 'alle')).toEqual(['001-Muster', '003-Dritt']);
+    act(() => void zeile(host, '001-Lageplan').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    act(() => void zeile(host, '003-Dritt').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true })));
+    await warte();
+    expect(namen(host, 'antrag')).toEqual(['002-Bauantrag (2026)', '001-Lageplan']);
+    expect(namen(host, 'alle')).toEqual(['003-Dritt', '001-Muster']);
+    expect(gemerkt()).toEqual(['003-Dritt.frmsjf', '001-Muster.frmsjf', '2. BAUA/002-Bauantrag (2026).frmsjf', '2. BAUA/001-Lageplan.frmsjf']);
+  });
+
+  it('umbenannt: die Reihenfolge behält das Formular an seinem Platz', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    await rechtsklick(knopf(host, '001-Muster'));
+    await klick(menuePunkt('Umbenennen'));
+    eingabe(document.querySelector<HTMLInputElement>('.rf input')!, '000-Erstes');
+    await klick(knopf(document.querySelector('.rf')!, 'Umbenennen'));
+    for (let i = 0; i < 3; i++) await warte();
+    // alphabetisch stünde „000-Erstes“ vorn – gemerkt ist es hinter „002-Anderes“
+    expect(namen(host)).toEqual(['002-Anderes', '000-Erstes']);
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '000-Erstes.frmsjf']);
+  });
+});

@@ -308,9 +308,11 @@ Anschrift, wie sie in Formularen steht.
   stehen (die Vorschau unter dem gewählten Abschnitt zeigt die Zeilen; in schmalen Abschnitten werden die Felder
   breiter, in
   schmalen Fenstern steht der Katalog unter dem Aufbau). Ein Feld, das es nicht mehr gibt, steht durchgestrichen da
-  und lässt sich nur entfernen. **Verknüpfen (⛓):** Der Knopf öffnet eine kleine Liste „Gemeinsam ausfüllen mit …“
-  mit Kästchen (gewählt wird bewusst per Klick bzw. Leertaste, nicht schon mit den Pfeiltasten; Esc schließt die
-  Liste). Felder mit demselben Inhalt (z. B.
+  und lässt sich nur entfernen. **Verknüpfen (⛓):** Der Knopf öffnet ein eigenes Auswahlfenster „Gemeinsam ausfüllen:
+  …“ mit **allen** passenden Feldern der Projektkarte – auch solchen, die nicht in der eigenen Ansicht stehen (die der
+  Ansicht tragen „in der Ansicht“) –, nach Gruppen gegliedert und mit Suche; gewählt wird per Kästchen, Esc oder
+  „Fertig“ schließt nur das Auswahlfenster. Eine Verknüpfung gilt, solange mindestens eins ihrer Felder in der Ansicht
+  steht; wird ein Feld aus der Ansicht genommen, löst es sich aus seiner Verknüpfung. Felder mit demselben Inhalt (z. B.
   Ort des Bauherrn und Ort des Eigentümers) werden gemeinsam ausgefüllt – eine Eingabe trägt den Wert in alle
   verknüpften Einträge der Projektkarte ein – überall in der Projektkarte, auch beim Übernehmen aus einer anderen
   Gruppe; zusammenhängendes Tippen ist ein Schritt im Verlauf. Angeboten werden nur Felder, die zusammenpassen: Text
@@ -332,6 +334,11 @@ Anschrift, wie sie in Formularen steht.
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
   Adressen zuerst. In der Projektkarte: „Als Vorgabe festlegen“ bei einer Adresse, **„Vorgaben eintragen“** füllt
   alle leeren Rollen auf einmal, und „Übernehmen von …“ bietet die Vorgabe und die bisherigen Adressen der Rolle an.
+- **Reihenfolge der Formulare:** In der Navigation lässt sich ein Formular an seiner Zeile an eine andere Stelle ziehen
+  (ein Klick ohne Bewegung öffnet es weiter) oder mit Alt+↑/↓ verschieben – im Sammelprojekt je Gruppe. Die
+  Reihenfolge steht in der Projektdatei (`.oap`) und gilt für alle im Büro; Formulare, die noch keinen Platz haben,
+  folgen alphabetisch. „Reihenfolge zurücksetzen (alphabetisch)“ im Kontextmenü eines Formulars hebt sie auf; beim
+  Umbenennen behält das Formular seinen Platz. Ohne Projektdatei bleibt es alphabetisch (mit Hinweis).
 - **Projektordner, Ansicht „Ordner“:** Die Reihenfolge der Ordner einer Ebene lässt sich per Ziehen ändern (oder Ordner
   wählen und Alt+↑/↓); gemerkt je Ebene für alle Projekte, „Reihenfolge dieser Ebene zurücksetzen“ im Kontextmenü
   sortiert wieder alphabetisch. Ein Klick ohne Bewegung klappt weiter auf.
@@ -812,7 +819,9 @@ Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Koste
   wird): einen vorhandenen Ordner wählen oder im Stammordner einen neuen anlegen (Vorschlag „Kürzel Titel“), danach
   folgt bei Bedarf der Stammdaten-Dialog. Die Zuordnung gilt für alle im Büro (gemeinsamer Konfigurationsordner,
   Bereich `formulare`, `ordnerWahl`).
-- **Angaben zum Antrag** stehen im Abschnitt `formulare` von `projekt.json`: `aktiveFassung` und `antraege` – je
+- **Angaben zum Antrag** stehen im Abschnitt `formulare` von `projekt.json`: `aktiveFassung`, `reihenfolge` (Formulare in
+  der Navigation, Schlüssel nach `formularSchluessel`, für das ganze Projekt; beim Zusammenführen gilt sie als Ganzes)
+  und `antraege` – je
   Fassung `angelegt`, `merkmale`, `umfang`, `felder` (Autofill), `bereit` und `eingereicht`; der zuletzt angelegte
   Antrag zusätzlich als Kurzfassung in `meta.antrag` (für die anderen Apps). Ein früheres `meta.merkmale` bzw.
   projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im
@@ -1121,7 +1130,7 @@ einer Sicherungskopie – Formulare nur ohne Sperrdatei daneben, Sperrdateien, P
 **Am Namen eines Formulars hängt** (umbenannt in `formularUmbenennen`, `dateiAktionen.ts`): `formularDatei` im
 Antragsumfang und die Schlüssel der Autofill-Zustände (`felder`) in allen Anträgen – Schlüssel nach
 `formularSchluessel`; im Unterordner eines Sammelprojekts gilt in den Anträgen dieses Unterordners auch eine ältere
-Zuordnung nur mit dem Dateinamen (`formularVerweiseUmbenennen`, `antrag.ts`) –, Entwurf und Verlauf (lokal, Schlüssel
+Zuordnung nur mit dem Dateinamen (`formularVerweiseUmbenennen`, `antrag.ts`) –, sein Platz in `reihenfolge`, Entwurf und Verlauf (lokal, Schlüssel
 `root|pfad`, `formularLokalVerschieben`), die eigenen Einstellungen bei Formularen ohne Kennung (`name|…`,
 `profilSchluessel`) und die Sperrdatei (`.frmtmp` mit gleichem Namen).
 

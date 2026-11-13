@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { UmfangEintrag } from './antrag';
-import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, formularVerweiseUmbenennen, neuerAntrag, pdfOhneZuordnung } from './antrag';
+import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, formularVerweiseUmbenennen, nachReihenfolge, neuerAntrag, pdfOhneZuordnung, reihenfolgeAus, reihenfolgeMit } from './antrag';
 import { merkmalVorgaben } from './bedingung';
 import { ueberschreibungenAus, aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, zielpfadAus, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG, ueberschreibungAus } from './antrag';
 
@@ -1225,5 +1225,42 @@ describe('pdfOhneZuordnung', () => {
   it('eine PDF, die schon einem Dokument des Antragsumfangs gehört, zählt nicht', () => {
     const dateien = [d('BS9 BAUA 261110 Baubeschreibung.pdf')];
     expect(pdfOhneZuordnung('004-Baubeschreibung', dateien, new Set(['bs9 baua 261110 baubeschreibung.pdf']))).toBeNull();
+  });
+});
+
+describe('Reihenfolge der Formulare', () => {
+  const f = (pfad: string) => ({ pfad });
+  it('gemerkte zuerst wie gemerkt, die übrigen danach in ihrer bisherigen Folge; Schlüssel ab dem Formularprojekt', () => {
+    const liste = [f('BS9/001-A.frmsjf'), f('BS9/002-B.frmsjf'), f('BS9/003-C.frmsjf'), f('BS9/2. BAUA/004-D.frmsjf')];
+    expect(nachReihenfolge(liste, ['003-c.frmsjf', '2. BAUA/004-D.frmsjf']).map((x) => x.pfad)).toEqual(['BS9/003-C.frmsjf', 'BS9/2. BAUA/004-D.frmsjf', 'BS9/001-A.frmsjf', 'BS9/002-B.frmsjf']);
+    expect(nachReihenfolge(liste, undefined)).toBe(liste);
+  });
+  it('nach dem Verschieben: die Liste in ihrer Folge, gemerkte anderer Listen dahinter', () => {
+    expect(reihenfolgeMit(['x', 'B', 'y'], ['b', 'a'])).toEqual(['b', 'a', 'x', 'y']);
+    expect(reihenfolgeMit(undefined, ['a'])).toEqual(['a']);
+  });
+  it('lesen: nur Texte, jeder einmal, leer = keine', () => {
+    expect(reihenfolgeAus(['a', 'A', 3, '', 'b'])).toEqual(['a', 'b']);
+    expect(reihenfolgeAus([])).toBeUndefined();
+    expect(reihenfolgeAus('a')).toBeUndefined();
+  });
+  it('steht im Abschnitt und übersteht Lesen, Ansicht und Schreiben; das Zusammenführen nimmt sie nur, wenn der Aufrufer sie ändert', () => {
+    const a = abschnittAus({ aktiveFassung: 'BAUA', reihenfolge: ['b.frmsjf', 'a.frmsjf'], antraege: { BAUA: { merkmale: { GK: '3' } } } });
+    expect(a.reihenfolge).toEqual(['b.frmsjf', 'a.frmsjf']);
+    const pd = ansichtVon(a, 'BAUA', () => ({})).pd;
+    expect(pd.reihenfolge).toEqual(['b.frmsjf', 'a.frmsjf']);
+    expect(abschnittVon(pd)).toMatchObject({ reihenfolge: ['b.frmsjf', 'a.frmsjf'] });
+    // ein anderer Arbeitsplatz hat inzwischen umsortiert, der Aufrufer ändert nur ein Merkmal: dessen Reihenfolge bleibt
+    const frisch = abschnittAus({ ...abschnittVon(pd), reihenfolge: ['a.frmsjf'] });
+    const nurMerkmal = aenderungAnwenden(frisch, pd, { ...pd, merkmale: { GK: '4' } });
+    expect(nurMerkmal.reihenfolge).toEqual(['a.frmsjf']);
+    // ändert der Aufrufer die Reihenfolge, gilt seine – zurückgesetzt entfällt sie
+    expect(aenderungAnwenden(frisch, pd, { ...pd, reihenfolge: ['c.frmsjf'] }).reihenfolge).toEqual(['c.frmsjf']);
+    expect(aenderungAnwenden(frisch, pd, { ...pd, reihenfolge: undefined }).reihenfolge).toBeUndefined();
+  });
+  it('umbenannt: der Schlüssel in der Reihenfolge wandert mit', () => {
+    const { abschnitt, anzahl } = formularVerweiseUmbenennen({ reihenfolge: ['b.frmsjf', 'A.frmsjf'] }, 'a.frmsjf', 'z.frmsjf');
+    expect(anzahl).toBe(1);
+    expect(abschnitt).toEqual({ reihenfolge: ['b.frmsjf', 'z.frmsjf'] });
   });
 });
