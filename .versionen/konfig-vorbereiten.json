@@ -1,0 +1,38 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen und dem Update-Neustart werden auch laufende Schreibvorgänge der gemeinsamen Einstellungen abgewartet."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen und dem Update-Neustart werden auch laufende Schreibvorgänge der gemeinsamen Einstellungen abgewartet."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen und dem Update-Neustart werden auch laufende Schreibvorgänge der gemeinsamen Einstellungen abgewartet."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen und dem Update-Neustart werden auch laufende Schreibvorgänge der gemeinsamen Einstellungen abgewartet."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen und dem Update-Neustart werden auch laufende Schreibvorgänge der gemeinsamen Einstellungen abgewartet."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen und dem Update-Neustart werden auch laufende Schreibvorgänge der gemeinsamen Einstellungen abgewartet."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen und dem Update-Neustart werden auch laufende Schreibvorgänge der gemeinsamen Einstellungen abgewartet."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen und dem Update-Neustart werden auch laufende Schreibvorgänge der gemeinsamen Einstellungen abgewartet."
+  },
+  "suite": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen und dem Update-Neustart werden auch laufende Schreibvorgänge der gemeinsamen Einstellungen abgewartet."
+  }
+}
