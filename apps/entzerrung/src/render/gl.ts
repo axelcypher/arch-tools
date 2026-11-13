@@ -1,5 +1,6 @@
 import { mul } from '../geo/mat';
 import type { Mat3 } from '../geo/mat';
+import { grenzRadius } from '../geo/verzeichnung';
 import type { Kamera } from '../geo/verzeichnung';
 
 /**
@@ -20,6 +21,7 @@ uniform mat3 m;          // gl_FragCoord → idealer Fotopunkt (px), homogen
 uniform vec2 groesse;    // Fotogröße in px
 uniform vec4 linse;      // cx, cy, 1/R², k1
 uniform float k2;
+uniform float grenze2;   // größter eindeutiger idealer Radius² (in halben Bilddiagonalen, wie r2); darüber faltet sich das Bild
 uniform vec4 leer;       // Farbe außerhalb des Fotos
 out vec4 farbe;
 void main() {
@@ -28,6 +30,7 @@ void main() {
   vec2 u = h.xy / h.z;
   vec2 d = u - linse.xy;
   float r2 = dot(d, d) * linse.z;
+  if (r2 > grenze2) { farbe = leer; return; }
   vec2 p = linse.xy + d * (1.0 + linse.w * r2 + k2 * r2 * r2);
   vec2 t = p / groesse;
   if (t.x < 0.0 || t.y < 0.0 || t.x > 1.0 || t.y > 1.0) { farbe = leer; return; }
@@ -74,7 +77,7 @@ export class Renderer {
     gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`Shader: ${gl.getProgramInfoLog(p)}`);
     this.prog = p;
-    for (const n of ['foto', 'm', 'groesse', 'linse', 'k2', 'leer']) this.uni[n] = gl.getUniformLocation(p, n);
+    for (const n of ['foto', 'm', 'groesse', 'linse', 'k2', 'grenze2', 'leer']) this.uni[n] = gl.getUniformLocation(p, n);
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
@@ -83,13 +86,26 @@ export class Renderer {
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   }
 
-  /** Lädt das Foto als Textur. Größere Fotos als die Grafikkarte erlaubt werden verkleinert. */
-  async setzeFoto(bild: ImageBitmap, breite: number, hoehe: number) {
+  /** zuletzt berechneter Grenzradius der Verzeichnung (je k1/k2) */
+  private grenze = { schluessel: '', wert: Infinity };
+  /** zählt Ladevorgänge; nur der jüngste darf die Textur setzen */
+  private generation = 0;
+
+  /**
+   * Lädt das Foto als Textur. Größere Fotos als die Grafikkarte erlaubt werden verkleinert. Liefert false, wenn
+   * inzwischen ein anderes Foto geladen wurde (dann bleibt dessen Textur) oder `aktiv()` false meldet.
+   */
+  async setzeFoto(bild: ImageBitmap, breite: number, hoehe: number, aktiv: () => boolean = () => true): Promise<boolean> {
     const gl = this.gl;
+    const nr = ++this.generation;
     let quelle: ImageBitmap = bild;
     if (bild.width > this.maxTextur || bild.height > this.maxTextur) {
       const f = this.maxTextur / Math.max(bild.width, bild.height);
       quelle = await createImageBitmap(bild, { resizeWidth: Math.floor(bild.width * f), resizeHeight: Math.floor(bild.height * f), resizeQuality: 'high' });
+    }
+    if (nr !== this.generation || !aktiv()) {
+      if (quelle !== bild) quelle.close();
+      return false;
     }
     if (this.tex) gl.deleteTexture(this.tex);
     this.tex = gl.createTexture();
@@ -105,6 +121,7 @@ export class Renderer {
     if (ext) gl.texParameterf(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT) as number));
     if (quelle !== bild) quelle.close();
     this.fotoGroesse = [breite, hoehe];
+    return true;
   }
 
   get hatFoto() {
@@ -143,6 +160,10 @@ export class Renderer {
     gl.uniform2f(this.uni.groesse, this.fotoGroesse[0], this.fotoGroesse[1]);
     gl.uniform4f(this.uni.linse, z.kamera.cx, z.kamera.cy, 1 / (z.kamera.r * z.kamera.r), z.kamera.k1);
     gl.uniform1f(this.uni.k2, z.kamera.k2);
+    const schluessel = `${z.kamera.k1}|${z.kamera.k2}`;
+    if (this.grenze.schluessel !== schluessel) this.grenze = { schluessel, wert: grenzRadius(z.kamera) };
+    const g = this.grenze.wert;
+    gl.uniform1f(this.uni.grenze2, Number.isFinite(g) ? g * g : 1e30);
     gl.uniform4fv(this.uni.leer, z.leer ?? [0, 0, 0, 0]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.disable(gl.SCISSOR_TEST);
@@ -154,6 +175,8 @@ export class Renderer {
    */
   rendereBild(m: Mat3, kamera: Kamera, breite: number, hoehe: number, leer: [number, number, number, number]): ImageData {
     const gl = this.gl;
+    if (!this.tex) throw new Error('Das Foto ist nicht geladen.');
+    if (gl.isContextLost()) throw new Error('Die Grafikausgabe ist verloren gegangen – bitte erneut exportieren.');
     const kachel = Math.min(4096, gl.getParameter(gl.MAX_RENDERBUFFER_SIZE) as number);
     const fb = gl.createFramebuffer();
     const rb = gl.createRenderbuffer();

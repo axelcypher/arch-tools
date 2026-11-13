@@ -35,7 +35,7 @@ export function klick(p: Pt) {
     if (!ebene) return;
     const id = neueId();
     s.aendern(mitEbene(foto.id, ebene.id, (e) => ({ ...e, methode: 'passpunkte', passpunkte: [...e.passpunkte, { id, bild: p }] })));
-    s.setze({ auswahl: { art: 'passpunkt', id } });
+    s.setze({ auswahl: { art: 'passpunkt', id }, fokus: id });
     return;
   }
   const entwurf = [...s.entwurf, p];
@@ -90,7 +90,7 @@ function erzeugen(punkte: Pt[]) {
       return;
     case 'mass':
       aendereEbene((e) => ({ ...e, methode: 'fluchtlinien', fluchtlinien: { ...e.fluchtlinien, masse: [...e.fluchtlinien.masse, { id, a, b }] } }));
-      s.setze({ auswahl: { art: 'mass', id } });
+      s.setze({ auswahl: { art: 'mass', id }, fokus: id });
       return;
     case 'strecke':
     case 'linienzug':
@@ -152,7 +152,7 @@ export function auswahlLoeschen() {
   const s = st();
   const a = s.auswahl;
   const { foto, ebene } = aktuell(s);
-  if (!a || !foto) return;
+  if (!a || !foto || a.art === 'ecke') return;
   if (a.art === 'hilfslinie') {
     s.aendern(mitFoto(foto.id, (f) => ({ ...f, hilfslinien: f.hilfslinien.filter((l) => l.id !== a.id) })));
   } else if (ebene) {
@@ -160,7 +160,8 @@ export function auswahlLoeschen() {
       mitEbene(foto.id, ebene.id, (e) => {
         switch (a.art) {
           case 'ecke':
-            return { ...e, rechteck: { ...e.rechteck, ecken: [] } };
+            // eine Ecke allein lässt sich nicht löschen (die Reihenfolge zählt) – „Ecken neu setzen“ löscht alle
+            return e;
           case 'passpunkt':
             return { ...e, passpunkte: e.passpunkte.filter((q) => q.id !== a.id) };
           case 'waagerecht':
@@ -183,4 +184,14 @@ export function auswahlLoeschen() {
     );
   }
   s.setze({ auswahl: null });
+}
+
+/** Foto- und entzerrte Ansicht wechseln (Taste E); entzerrt nur, wenn die Ebene entzerrbar ist */
+export function ansichtUmschalten() {
+  const s = st();
+  const { foto, ebene } = aktuell(s);
+  if (!foto || !ebene) return;
+  const ziel = s.ansicht === 'foto' ? 'entzerrt' : 'foto';
+  if (ziel === 'entzerrt' && !entzerrung(foto, ebene).ok) return;
+  s.setze({ ansicht: ziel, werkzeug: 'auswahl', entwurf: [], auswahl: null });
 }
