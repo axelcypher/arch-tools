@@ -1,0 +1,3 @@
+{
+  "entzerrung": { "stufe": "minor", "notiz": "Mehrere Fotos auf einmal hinzufügen; eine außerhalb von RECTIO geänderte Entzerrung wird beim Speichern nicht überschrieben, sondern kann unter neuem Namen gespeichert werden." }
+}
