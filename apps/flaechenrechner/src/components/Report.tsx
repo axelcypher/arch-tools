@@ -147,9 +147,15 @@ export function Report() {
             <p className="druck-kopf-normen">
               Grundflächen und Rauminhalte nach DIN 277:2021-08 (Gebührentarif NRW, Tarifstelle 3.1.1.2; § 6 Nr. 1 BauPrüfVO NRW nennt DIN 277-1:2016-01)
               {zeigt('wofl') ? (project.settings.zweiteBV ? ` · Wohnfläche: ${ZWEITE_BV_KURZ}` : ' · Wohnfläche nach WoFlV vom 25.11.2003') : ''}
-              {` · Messverfahren: ${massText ?? 'nicht angegeben'}`}
+              <br />
+              Messverfahren: {massText ?? 'nicht angegeben'}
               {mitPutz ? ' · Putzabzug je Raum' : ''}
-              {unterlagen && ` · Planungsunterlagen: ${unterlagen}`}
+              {unterlagen && (
+                <>
+                  <br />
+                  Planungsunterlagen: {unterlagen}
+                </>
+              )}
               {kontrollZeilen.map((z) => (
                 <span key={z} className="druck-kopf-kontrolle">
                   <br />
@@ -188,9 +194,11 @@ export function Report() {
               </tbody>
             </table>
             <p className="report-note">
-              {S ? 'R = Regelfall der Raumumschließung (allseitig in voller Höhe umschlossen), S = Sonderfall – getrennt ermittelt nach DIN 277:2021-08. ' : 'Alle Flächen und Rauminhalte im Regelfall R (allseitig in voller Höhe umschlossen). '}
-              KGF = BGF − NRF (rechnerisch). BRI nach DIN 277:2021-08 (entspricht für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW) = Σ Umrissfläche × Geschosshöhe bzw.
-              Volumen bis zur Dachhaut, ab UK Bodenplatte.
+              {S
+                ? 'R = Regelfall der Raumumschließung (bei allen Begrenzungsflächen vollständig umschlossen), S = Sonderfall (nicht allseitig umschlossen) – getrennt ermittelt nach DIN 277:2021-08. '
+                : 'Alle Flächen und Rauminhalte im Regelfall R (bei allen Begrenzungsflächen vollständig umschlossen). '}
+              KGF = BGF − NRF (rechnerisch). BRI nach DIN 277:2021-08 = Σ Umrissfläche × Geschosshöhe bzw. Volumen bis zur Dachhaut, ab Unterkante Bodenplatte
+              einschließlich Dämmung darunter.
             </p>
           </section>
         )}
@@ -348,7 +356,7 @@ export function Report() {
                     ])}
                     <tr className="sum">
                       <td />
-                      <td>Summe {sr.name}</td>
+                      <td>Summe {sr.name} (NRF bzw. Wohnfläche)</td>
                       <td />
                       <td />
                       {mitPutz && <td />}

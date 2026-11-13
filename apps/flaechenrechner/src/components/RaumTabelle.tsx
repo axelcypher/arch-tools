@@ -51,7 +51,7 @@ export function RaumTabelle({ onClose }: { onClose: () => void }) {
                   </td>
                   <td>
                     <select
-                      aria-label="R/S"
+                      aria-label="Raumumschließung"
                       value={r.ausserhalbBgf && !r.subtract ? 'aussen' : r.umschliessung}
                       onChange={(e) =>
                         upd(st.id, r.id, (x) => {

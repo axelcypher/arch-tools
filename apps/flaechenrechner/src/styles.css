@@ -775,3 +775,8 @@
   align-items: flex-start;
   white-space: normal;
 }
+
+/* fehlende Pflichtangabe in einer eingeklappten Zeile (z. B. Messverfahren nach DIN 277, 5.1) */
+.fehlt-text {
+  color: var(--warn-text);
+}

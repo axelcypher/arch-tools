@@ -332,8 +332,9 @@ export function computeStorey(storey: Storey, project: Project): StoreyResult {
       const art: AbzugArt | undefined = s.subtract ? (s.abzugArt ?? 'beide') : undefined;
       // Nutzungsart (zweite Ebene) bestimmt die Gruppe mit; ohne Nutzungsart wie bisher
       const gruppe = raumNutzung(s);
-      // außerhalb der BGF (DIN 277, 6.1 a – z. B. ebenerdige Terrasse): nicht in der NRF, nur Wohnfläche
-      const draussen = !s.subtract && !!s.ausserhalbBgf;
+      // außerhalb der BGF (DIN 277, 6.1 a – z. B. ebenerdige Terrasse): nicht in der NRF, nur Wohnfläche; ebenso eine
+      // Abzugsfläche darin – sie mindert nur die Wohnfläche dieser Fläche
+      const draussen = s.subtract ? !!raumUmAbzug(s, storey)?.ausserhalbBgf : !!s.ausserhalbBgf;
       if (art !== 'wofl' && !draussen) {
         t.nutzung[gruppe] += a;
         const bereich = nutzungInfo(gruppe).bereich;

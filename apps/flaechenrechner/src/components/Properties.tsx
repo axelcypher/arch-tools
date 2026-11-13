@@ -174,8 +174,12 @@ function ShapeProperties({ shape }: { shape: Shape }) {
 
       {shape.kind === 'room' && (
         <>
-          <Field label="Nutzungsgruppe (DIN 277)">
-            <select value={raumNutzung(shape)} onChange={(e) => upd((s) => (s.kind === 'room' ? nutzungSetzen(s, e.target.value as Nutzungsgruppe) : s))}>
+          <Field label="Nutzungsgruppe (DIN 277)" hint={shape.ausserhalbBgf && !shape.subtract ? 'außerhalb der BGF – zählt nicht zur NRF' : undefined}>
+            <select
+              value={raumNutzung(shape)}
+              disabled={!!shape.ausserhalbBgf && !shape.subtract}
+              onChange={(e) => upd((s) => (s.kind === 'room' ? nutzungSetzen(s, e.target.value as Nutzungsgruppe) : s))}
+            >
               {NUTZUNGSGRUPPEN.map((n) => (
                 <option key={n.id} value={n.id}>
                   {n.kurz} – {n.label}
@@ -254,8 +258,10 @@ function ShapeProperties({ shape }: { shape: Shape }) {
         <summary>
           Weitere Angaben
           {weitere.length > 0 && <span className="muted"> ({weitere.join(', ')})</span>}
-          <HilfeKnopf thema={shape.kind === 'room' ? ['splitlevel', 'putzabzug'] : 'splitlevel'} titel="Höhenlage und Putzabzug" />
         </summary>
+        <p className="muted small-text">
+          Split-Level und Putzabzug: <HilfeKnopf thema={shape.kind === 'room' ? ['splitlevel', 'putzabzug'] : 'splitlevel'} titel="Höhenlage und Putzabzug" />
+        </p>
         <Field
           label={shape.kind === 'room' ? 'Höhenlage Fußboden [m]' : 'Höhenversatz Körper [m]'}
           hint={shape.kind === 'room' ? 'gegenüber dem Geschoss, negativ = tiefer (Split-Level); leer = wie Umriss' : 'verschiebt den Körper samt Dach, negativ = tiefer (Split-Level)'}
@@ -385,7 +391,16 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
       <Field label="Raumumschließung (DIN 277)">
         <select
           value={umschliessung ?? ''}
-          onChange={(e) => e.target.value && updAll((s) => (s.kind === 'room' ? { ...s, umschliessung: e.target.value as Raumumschliessung, rsVonHand: true } : { ...s, umschliessung: e.target.value as Raumumschliessung }))}
+          onChange={(e) =>
+            e.target.value &&
+            updAll((s) => {
+              if (s.kind !== 'room') return { ...s, umschliessung: e.target.value as Raumumschliessung };
+              // R bzw. S gewählt: eine Fläche „außerhalb der BGF“ gehört dann wieder zur NRF
+              const { ausserhalbBgf: _a, ...rest } = s;
+              void _a;
+              return { ...rest, umschliessung: e.target.value as Raumumschliessung, rsVonHand: true };
+            })
+          }
         >
           {umschliessung === undefined && <option value="">unterschiedlich</option>}
           {UMSCHLIESSUNG.map((u) => (
@@ -425,7 +440,16 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
           <Field label="Wohnfläche (WoFlV)">
             <select
               value={kategorie ?? ''}
-              onChange={(e) => e.target.value && updAll((s) => (s.kind === 'room' ? { ...s, wofl: { ...s.wofl, kategorie: e.target.value as WoflKategorie, faktor: undefined } } : s))}
+              onChange={(e) =>
+                e.target.value &&
+                updAll((s) => {
+                  if (s.kind !== 'room') return s;
+                  // wie die Einzelbearbeitung: eigene Anrechnung ist kein Katalogvorschlag mehr
+                  const { katalog: _k, ...rest } = s;
+                  void _k;
+                  return { ...rest, wofl: { ...s.wofl, kategorie: e.target.value as WoflKategorie, faktor: undefined } };
+                })
+              }
             >
               {kategorie === undefined && <option value="">unterschiedlich</option>}
               {WOFL_KATEGORIEN.map((k) => (

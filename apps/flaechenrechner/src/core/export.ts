@@ -80,8 +80,9 @@ export function projectToCsv(project: Project, result: ProjectResult): string {
         r.storeyName,
         r.nummer,
         r.subtract ? `${r.name} (Abzug)` : r.name,
-        nutzungInfo(r.nutzung).kurz,
-        r.umschliessung,
+        // außerhalb der BGF (ebenerdige Terrasse): keine Nutzungsgruppe der NRF, wie in Bericht und Excel
+        r.ausserhalbBgf ? 'außerhalb BGF' : nutzungInfo(r.nutzung).kurz,
+        r.ausserhalbBgf ? '' : r.umschliessung,
         n(r.area),
         WOFL_KATEGORIEN.find((k) => k.id === r.woflKategorie)?.label ?? '',
         n(r.woflFaktor),

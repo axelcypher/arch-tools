@@ -117,7 +117,7 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
   }
   const storeyFor = (i: number) => storeyByIfcIndex.get(i) ?? storeys[0];
 
-  // Bodenplatte des untersten Geschosses: BRI ab UK Sohle (DIN 277)
+  // Bodenplatte des untersten Geschosses: BRI ab Unterkante Platte einschließlich Dämmung darunter (DIN 277:2021-08, 7.1)
   if (order.length) {
     const unten = order[0];
     const sohle = sohlenDicke(x.elements, unten.elevation);

@@ -145,10 +145,10 @@ export const REGELN: Regel[] = [
     id: 'din277-bauvorlage-nrw',
     bereich: 'din277',
     titel: 'BRI in Bauvorlage und Gebühr (NRW)',
-    kurz: 'Bauvorlage: nachprüfbare BRI-Berechnung nach DIN 277-1:2016-01; Gebührentarif: DIN 277:2021-08 – für den BRI gleich.',
+    kurz: 'Bauvorlage: nachprüfbare BRI-Berechnung (§ 6 Nr. 1 BauPrüfVO nennt DIN 277-1:2016-01); Gebührentarif: DIN 277:2021-08.',
     text: [
       'Die **Bauprüfverordnung NRW** verlangt für Bauanträge eine nachprüfbare Berechnung des Brutto-Rauminhalts nach DIN 277-1:2016-01 (§ 6 Nr. 1 BauPrüfVO). Der **Allgemeine Gebührentarif NRW** (Tarifstelle 3.1.1.2) bemisst die Baugenehmigungsgebühr nach dem Rauminhalt und verweist auf DIN 277:2021-08.',
-      'Für den Brutto-Rauminhalt stimmen beide Ausgaben in der Sache überein; der Bericht nennt deshalb „BRI nach DIN 277:2021-08 (entspricht für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW)“. Die Trennung nach Regelfall R und Sonderfall S und der Rechenweg je Teilkörper gehören zur Nachprüfbarkeit.',
+      'Der Flächenrechner rechnet nach DIN 277:2021-08 und nennt im Bericht beide Fassungen: „DIN 277:2021-08 (Gebührentarif NRW, Tarifstelle 3.1.1.2; § 6 Nr. 1 BauPrüfVO NRW nennt DIN 277-1:2016-01)“. Die Fassung 2021-08 regelt u. a. die Dämmschicht unter der Bodenplatte, Dachaufbauten bis 1,0 m³ und Lufträume über 1,0 m² ausdrücklich – Abweichungen zur Fassung 2016 im Einzelfall prüfen. Die Trennung nach Regelfall R und Sonderfall S und der Rechenweg je Teilkörper gehören zur Nachprüfbarkeit.',
     ],
     quellen: [
       { titel: 'Verordnung über bautechnische Prüfungen (BauPrüfVO NRW)', fundstelle: '§ 6 Nr. 1 BauPrüfVO' },

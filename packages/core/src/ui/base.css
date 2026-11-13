@@ -1119,7 +1119,8 @@ code {
   padding: 0 4px;
   border-radius: 8px;
   background: var(--danger);
-  color: #fff;
+  /* dunkles Schema: dunkle Schrift auf dem helleren Rot (Kontrast) */
+  color: var(--on-accent);
   font-size: 10px;
   line-height: 16px;
   text-align: center;

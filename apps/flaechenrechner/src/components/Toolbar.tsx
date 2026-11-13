@@ -81,6 +81,8 @@ export function Toolbar() {
   const canUndo = useEditor((s) => s.past.length > 0);
   const canRedo = useEditor((s) => s.future.length > 0);
   const dirty = useEditor((s) => s.dirty);
+  // Kalibrieren braucht einen Plan im aktiven Geschoss
+  const hatPlan = useEditor((s) => !!(s.project.storeys.find((x) => x.id === s.activeStoreyId) ?? s.project.storeys[0]).background);
   const st = useEditor.getState();
 
   const [ifcOpen, setIfcOpen] = useState(false);
@@ -163,8 +165,9 @@ export function Toolbar() {
             key={t.id}
             className={tool === t.id ? 'active' : ''}
             aria-pressed={tool === t.id}
+            disabled={t.id === 'calibrate' && !hatPlan && tool !== 'calibrate'}
             onClick={() => st.setTool(t.id)}
-            title={`${t.label}${t.key ? ` (${t.key})` : ''}`}
+            title={t.id === 'calibrate' && !hatPlan ? 'Kalibrieren – zuerst einen Plan laden (rechts unter „Hintergrundplan“)' : `${t.label}${t.key ? ` (${t.key})` : ''}`}
           >
             <span className="tb-icon">{t.icon}</span> {t.label}
           </button>

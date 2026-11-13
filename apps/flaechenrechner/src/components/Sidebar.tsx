@@ -51,55 +51,68 @@ export function Sidebar() {
   const untenAmEnde = index === 0;
   // Vorgabe der Planungsunterlagen: die hinterlegten Pläne (ohne eigene Eingabe)
   const planAuto = planungsunterlagen({ ...project, settings: { ...project.settings, planunterlagen: undefined } });
+  const mass = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.label;
+  const grundlagen = [`Raster ${fmt2(project.settings.gridStep * 100).replace(',00', '')} cm`, `Balkon ${fmt2(project.settings.freisitzFaktor)}`, ...(mass ? [mass] : []), ...(project.settings.zweiteBV ? ['Vergleich II. BV'] : [])];
+  // DIN 277, 5.1: im Bericht anzugeben – fehlt etwas, steht es schon in der eingeklappten Zeile
+  const fehlend = [...(mass ? [] : ['Messverfahren']), ...(planungsunterlagen(project) ? [] : ['Planungsunterlagen'])];
 
   return (
     <aside className="sidebar sidebar-left">
       <section>
         <h2>Projekt</h2>
         <ProjektInfo />
-        <div className="field-row projekt-settings">
-          <Field label="Raster [m]">
-            <NumberField
-              value={project.settings.gridStep}
-              min={0.001}
-              digits={3}
-              onChange={(v) => v && st.update((p) => ({ ...p, settings: { ...p.settings, gridStep: v } }))}
+        {/* Berechnungsgrundlagen eingeklappt, damit Geschosse und Flächen sichtbar bleiben; gesetzte bzw. fehlende Angaben
+            stehen in der Zeile */}
+        <details className="weitere-angaben">
+          <summary>
+            Berechnungsgrundlagen
+            <span className="muted"> ({grundlagen.join(' · ')})</span>
+            {fehlend.length > 0 && <span className="fehlt-text"> – {fehlend.join(', ')} fehlt</span>}
+          </summary>
+          <div className="field-row projekt-settings">
+            <Field label="Raster [m]">
+              <NumberField
+                value={project.settings.gridStep}
+                min={0.001}
+                digits={3}
+                onChange={(v) => v && st.update((p) => ({ ...p, settings: { ...p.settings, gridStep: v } }))}
+              />
+            </Field>
+            <Field label="Balkonfaktor">
+              <NumberField
+                value={project.settings.freisitzFaktor}
+                min={0}
+                max={0.5}
+                onChange={(v) => v !== undefined && st.update((p) => ({ ...p, settings: { ...p.settings, freisitzFaktor: v } }))}
+              />
+            </Field>
+          </div>
+          <Field label="Messverfahren" hint="Maßgrundlage der Flächen (DIN 277, 5.1) – steht im Kopf von Bericht und Excel">
+            <select
+              value={project.settings.massgrundlage ?? ''}
+              onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, massgrundlage: (e.target.value || undefined) as Massgrundlage | undefined } }))}
+            >
+              <option value="">nicht angegeben</option>
+              {MASSGRUNDLAGEN.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Planungsunterlagen" hint={planAuto ? `leer = hinterlegte Pläne (${planAuto})` : 'DIN 277, 5.1 – z. B. Grundrisse 1:100, Stand …'}>
+            <TextField
+              value={project.settings.planunterlagen ?? ''}
+              placeholder="z. B. Grundrisse 1:100, Stand 01.10.2026"
+              onChange={(v) => st.update((p) => ({ ...p, settings: { ...p.settings, planunterlagen: v.trim() || undefined } }))}
             />
           </Field>
-          <Field label="Balkonfaktor">
-            <NumberField
-              value={project.settings.freisitzFaktor}
-              min={0}
-              max={0.5}
-              onChange={(v) => v !== undefined && st.update((p) => ({ ...p, settings: { ...p.settings, freisitzFaktor: v } }))}
-            />
-          </Field>
-        </div>
-        <Field label="Maßgrundlage (Messverfahren)" hint="DIN 277, 5.1 – steht im Kopf von Bericht und Excel">
-          <select
-            value={project.settings.massgrundlage ?? ''}
-            onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, massgrundlage: (e.target.value || undefined) as Massgrundlage | undefined } }))}
-          >
-            <option value="">nicht angegeben</option>
-            {MASSGRUNDLAGEN.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Planungsunterlagen" hint={planAuto ? `leer = hinterlegte Pläne (${planAuto})` : 'DIN 277, 5.1 – z. B. Grundrisse 1:100, Stand …'}>
-          <TextField
-            value={project.settings.planunterlagen ?? ''}
-            placeholder="z. B. Grundrisse 1:100, Stand 01.10.2026"
-            onChange={(v) => st.update((p) => ({ ...p, settings: { ...p.settings, planunterlagen: v.trim() || undefined } }))}
-          />
-        </Field>
-        <label className="toggle block" title="Nur zum Vergleich mit Bestandsberechnungen nach II. BV a. F. (bis 31.12.2003, § 5 WoFlV). Standard bleibt die WoFlV.">
-          <input type="checkbox" checked={!!project.settings.zweiteBV} onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, zweiteBV: e.target.checked || undefined } }))} />
-          Vergleich mit II. BV: Freisitze zu ½
-        </label>
-        {project.settings.zweiteBV && <p className="warning small-text">Vergleichsrechnung – nur Freisitze zur Hälfte, weitere Regeln der II. BV a. F. sind nicht nachgebildet. Für neue Nachweise gilt die WoFlV.</p>}
+          <label className="toggle block" title="Nur zum Vergleich mit Bestandsberechnungen nach II. BV a. F. (bis 31.12.2003, § 5 WoFlV). Standard bleibt die WoFlV.">
+            <input type="checkbox" checked={!!project.settings.zweiteBV} onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, zweiteBV: e.target.checked || undefined } }))} />
+            Vergleich mit II. BV: Freisitze zu ½
+          </label>
+          {project.settings.zweiteBV && <p className="warning small-text">Vergleichsrechnung – nur Freisitze zur Hälfte, weitere Regeln der II. BV a. F. sind nicht nachgebildet. Für neue Nachweise gilt die WoFlV.</p>}
+        </details>
       </section>
 
       <section>
@@ -197,6 +210,7 @@ export function Sidebar() {
                 <span className="swatch" style={{ background: s.subtract ? 'var(--danger)' : nutzungInfo(raumNutzung(s)).color }} aria-hidden />
                 <span className="grow-text">
                   <small>{s.nummer}</small> {s.name}
+                  {s.ausserhalbBgf && !s.subtract && <small className="muted"> (außerhalb BGF)</small>}
                 </span>
                 <span className="num">{fmt2(shapeArea(s) * (s.subtract ? -1 : 1))} m²</span>
               </button>

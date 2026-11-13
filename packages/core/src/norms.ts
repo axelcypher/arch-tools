@@ -53,7 +53,7 @@ export const ZWEITE_BV_TEXT =
 
 /** Raum außerhalb der BGF (DIN 277:2021-08, 6.1 a) – Erläuterung in der Oberfläche */
 export const AUSSERHALB_BGF_HINWEIS =
-  'nicht unterbaut und nicht fest mit dem Gebäude verbunden (z. B. ebenerdige Terrasse): gehört nicht zur BGF und NRF (DIN 277, 6.1 a), zählt aber zur Wohnfläche (§ 2 Abs. 2 Nr. 2 WoFlV)';
+  'nicht unterbaut und nicht fest mit dem Gebäude verbunden (z. B. ebenerdige Terrasse): gehört nicht zur BGF und NRF (DIN 277, 6.1 a), zählt aber zur Wohnfläche, wenn sie ausschließlich zur Wohnung gehört (§ 2 Abs. 2 Nr. 2 WoFlV)';
 
 export const WOFL_KATEGORIEN: { id: WoflKategorie; label: string; faktor: number | null }[] = [
   { id: 'keine', label: 'keine Wohnfläche', faktor: 0 },
@@ -75,7 +75,7 @@ export const WOFL_HINWEIS: Partial<Record<WoflKategorie, string>> = {
 /** Was eine Abzugsfläche im Raum mindert */
 export const ABZUG_ARTEN: { id: AbzugArt; label: string; hint: string }[] = [
   { id: 'beide', label: 'NRF und Wohnfläche', hint: 'z. B. Schornstein, Pfeiler über 0,1 m² und 1,50 m Höhe, Schacht im Raum' },
-  { id: 'wofl', label: 'nur Wohnfläche (§ 3 Abs. 3 WoFlV)', hint: 'z. B. Treppe mit mehr als drei Steigungen samt Treppenabsatz – bleibt Teil der NRF (Verkehrsfläche)' },
+  { id: 'wofl', label: 'nur Wohnfläche (§ 3 Abs. 3 WoFlV)', hint: 'z. B. Treppe mit mehr als drei Steigungen samt Treppenabsatz – bleibt in der NRF des Raums (für VF 9 die Treppe als eigenen Raum zeichnen)' },
   { id: 'din', label: 'nur NRF (DIN 277)', hint: 'z. B. Pfeiler bis 0,1 m², der nach WoFlV zur Wohnfläche zählt' },
 ];
 

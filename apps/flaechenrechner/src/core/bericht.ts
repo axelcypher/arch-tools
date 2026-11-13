@@ -134,8 +134,11 @@ export interface Statistik {
 /** kleinste Raumgröße, ab der ein Wohnraum gezählt wird [m²] */
 export const STATISTIK_MIN_RAUM = 6;
 
-/** Küche (auch Kochnische, Wohnküche) nach dem Raumnamen – zählt in der Statistik unabhängig von der Größe */
-export const istKueche = (name: string) => /k(ü|ue)che|kochnische/i.test(name);
+/**
+ * Küche nach dem Raumnamen – zählt in der Statistik unabhängig von der Größe. Eine Kochnische ist kein eigener Raum
+ * (sie gehört zum Wohnraum) und zählt nicht gesondert.
+ */
+export const istKueche = (name: string) => /k(ü|ue)che/i.test(name) && !/kochnische/i.test(name);
 
 export function statistik(result: ProjectResult): Statistik {
   const wohnungen = result.wohnungen.map((w) => ({
@@ -145,6 +148,6 @@ export function statistik(result: ProjectResult): Statistik {
   }));
   const nuf = new Set<string>(NUF_IDS);
   let sonstige = 0;
-  for (const s of result.storeys) for (const r of s.rooms) if (nuf.has(r.nutzung) && r.woflKategorie === 'keine' && r.abzugArt !== 'wofl') sonstige += r.area;
+  for (const s of result.storeys) for (const r of s.rooms) if (nuf.has(r.nutzung) && r.woflKategorie === 'keine' && r.abzugArt !== 'wofl' && !r.ausserhalbBgf) sonstige += r.area;
   return { wohnungen, wohnflaeche: result.total.wofl, sonstigeNutzflaeche: sonstige, bri: result.total.bri.total };
 }
