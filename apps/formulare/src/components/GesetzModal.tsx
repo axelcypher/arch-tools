@@ -78,7 +78,7 @@ export function GesetzModal() {
   const mitAbsatz = !!q?.absatz && !!bereich && (bereich.von > 0 || bereich.bis < (p?.text.length ?? 0));
 
   return (
-    <Modal titel={q ? 'Gesetzestext' : 'Antragsmerkmale festlegen'} onClose={schliessen} breit className="fo-gesetz">
+    <Modal titel={q ? 'Gesetzestext' : 'Antragsmerkmale festlegen'} kopf onClose={schliessen} breit className="fo-gesetz">
       {offen && merkmale.length > 0 && (
         <div className="fo-gesetz-merkmale">
           <strong>{merkmale.join(', ')} festlegen</strong>
@@ -95,10 +95,10 @@ export function GesetzModal() {
         </div>
       )}
       {q && (
-        <h3>
+        <h4 className="fo-gesetz-para">
           § {q.paragraf} {gesetz?.kurz ?? ''}
           {p && <span className="fo-gesetz-titel"> – {p.titel}</span>}
-        </h3>
+        </h4>
       )}
       {q && gesetz && (
         <p className="muted small-text">

@@ -51,7 +51,9 @@ describe('Gesetzestext-Fenster (B-01)', () => {
     expect(host.querySelector('.fo-gesetz-zeile.markiert')).not.toBeNull();
     act(() => reiter[1].click());
     await warte();
-    expect(host.querySelector('.fo-gesetz h3')!.textContent).toContain('§ 10');
+    // Titel im Kopf des gemeinsamen Modal, der Paragraf darunter als Unterüberschrift
+    expect(host.querySelector('.fo-gesetz > .modal-kopf')!.textContent).toBe('Gesetzestext');
+    expect(host.querySelector('.fo-gesetz h4.fo-gesetz-para')!.textContent).toContain('§ 10');
     act(() => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Schließen')!.click());
     await warte();
     expect(host.querySelector('.fo-gesetz')).toBeNull();

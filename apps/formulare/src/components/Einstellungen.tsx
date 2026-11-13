@@ -211,7 +211,7 @@ function AdressKarte({ a }: { a: Adresse }) {
   );
 }
 
-/** Noch kein Adressbuch: einlesen oder eine Adresse anlegen (`onNeu`; ohne – etwa unter „Büro & Stammdaten“ – führt der Knopf ins Adressbuch) */
+/** Noch kein Adressbuch: einlesen oder eine Adresse hinzufügen (`onNeu`; ohne – etwa unter „Büro & Stammdaten“ – führt der Knopf ins Adressbuch) */
 function AdressbuchLeer({ onNeu }: { onNeu?: () => void }) {
   const laeuft = useFormulare((s) => s.adressbuchLaeuft);
   const projekte = useFormulare((s) => s.projekte.length);
@@ -225,10 +225,10 @@ function AdressbuchLeer({ onNeu }: { onNeu?: () => void }) {
         </button>
         {onNeu ? (
           <button onClick={onNeu}>
-            <Symbol name="plus" /> Adresse anlegen …
+            <Symbol name="plus" /> Adresse hinzufügen
           </button>
         ) : (
-          <button onClick={() => useFormulare.getState().einstellungenOeffnen('adressbuch')}>Zum Adressbuch …</button>
+          <button onClick={() => useFormulare.getState().einstellungenOeffnen('adressbuch')}>Zum Adressbuch</button>
         )}
       </div>
     </div>
@@ -306,6 +306,8 @@ function Adressbuch() {
   const liste = useMemo(() => sucheAdressen(adressbuch?.adressen ?? [], suche), [adressbuch, suche]);
   const auswahl = liste.find((a) => a.schluessel === gewaehlt) ?? liste[0];
   const ausgeblendet = eigene.filter((e) => e.ausgeblendet);
+  /** noch nichts eingelesen: die Knöpfe stehen dann in der Leerseite (nicht doppelt in der Titelzeile) */
+  const leer = !adressbuch && !entwurf;
 
   const neu = () => {
     const a = neueEigeneAdresse();
@@ -337,12 +339,16 @@ function Adressbuch() {
     <>
       <div className="es-titelzeile">
         <h2>Adressbuch</h2>
-        <button className="primary" onClick={neu}>
-          <Symbol name="plus" /> Neue Adresse
-        </button>
-        <button disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()} title="Die Projektdaten (Projektkarten) aller Projekte neu lesen">
-          {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Aus den Projektdaten einlesen'}
-        </button>
+        {!leer && (
+          <>
+            <button className="primary" onClick={neu}>
+              <Symbol name="plus" /> Adresse hinzufügen
+            </button>
+            <button disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()} title="Die Projektdaten (Projektkarten) aller Projekte neu lesen">
+              {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Neu einlesen'}
+            </button>
+          </>
+        )}
       </div>
       <p className="muted">
         Bauherren, Entwurfsverfasser, Behörden, Fachplaner: die Adressen aus den Projektdaten aller Projekte (gleiche erscheinen einmal mit allen Verwendungen) und eure
@@ -350,7 +356,7 @@ function Adressbuch() {
         unverändert; übernommen wird eine Adresse in den Projektdaten mit „Übernehmen von …“.
         {adressbuch && ` ${anzahl(adressbuch.adressen.length, 'Adresse', 'Adressen')}${adressbuch.stand ? `, Projektdaten gelesen ${new Date(adressbuch.stand).toLocaleString('de-DE')}` : ''}.`}
       </p>
-      {!adressbuch && !entwurf ? (
+      {leer ? (
         <AdressbuchLeer onNeu={neu} />
       ) : (
         <div className="es-adressbuch">

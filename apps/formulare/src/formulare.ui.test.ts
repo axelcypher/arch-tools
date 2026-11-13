@@ -920,7 +920,8 @@ describe('Formulare', () => {
     await warte();
     const dialog = host.querySelector<HTMLElement>('.modal.fo-schnellwahl')!;
     expect(dialog.getAttribute('role')).toBe('dialog');
-    expect(dialog.getAttribute('aria-label')).toBe('Schnellwahl');
+    // Titel als sichtbarer Kopf des gemeinsamen Modal, zugleich Name des Dialogs
+    expect(document.getElementById(dialog.getAttribute('aria-labelledby')!)!.textContent).toBe('Schnellwahl');
     const suche = dialog.querySelector<HTMLInputElement>('input[aria-label="Projekt oder Formular suchen"]')!;
     expect(document.activeElement).toBe(suche);
     const treffer = () => [...dialog.querySelectorAll<HTMLElement>('[role="option"]')];
