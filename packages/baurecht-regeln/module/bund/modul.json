@@ -121,6 +121,7 @@
         {
           "m": "Vorhaben",
           "in": [
+            "Erweiterung",
             "Änderung"
           ]
         },
@@ -154,6 +155,7 @@
           "m": "Vorhaben",
           "in": [
             "Errichtung",
+            "Erweiterung",
             "Änderung",
             "Nutzungsänderung"
           ]
@@ -172,6 +174,7 @@
           "m": "Vorhaben",
           "in": [
             "Errichtung",
+            "Erweiterung",
             "Änderung"
           ]
         },
@@ -197,6 +200,15 @@
         "Mehrfamilienhaus"
       ]
     },
+    "wohnnutzung": {
+      "m": "Gebäudeart",
+      "in": [
+        "Einfamilienhaus",
+        "Zweifamilienhaus",
+        "Mehrfamilienhaus",
+        "Wohn- und Geschäftshaus"
+      ]
+    },
     "efh_zfh": {
       "m": "Gebäudeart",
       "in": [
@@ -208,6 +220,13 @@
       "m": "Gebäudeart",
       "in": [
         "Nichtwohngebäude"
+      ]
+    },
+    "nichtwohnnutzung": {
+      "m": "Gebäudeart",
+      "in": [
+        "Nichtwohngebäude",
+        "Wohn- und Geschäftshaus"
       ]
     },
     "bplan": {
@@ -511,6 +530,7 @@
       "m": "Vorhaben",
       "in": [
         "Errichtung",
+        "Erweiterung",
         "Änderung",
         "Nutzungsänderung",
         "Beseitigung"
@@ -520,6 +540,7 @@
       "m": "Vorhaben",
       "in": [
         "Errichtung",
+        "Erweiterung",
         "Änderung",
         "Beseitigung"
       ]
@@ -527,6 +548,7 @@
     "aenderung_oder_beseitigung": {
       "m": "Vorhaben",
       "in": [
+        "Erweiterung",
         "Änderung",
         "Beseitigung"
       ]
@@ -653,7 +675,7 @@
       "typ": "janein",
       "hilfe": "Nichtwohngebäude solcher Unternehmen sind vom GEIG ausgenommen (§ 1 Abs. 2 GEIG)",
       "wenn": {
-        "$": "nichtwohngebaeude"
+        "$": "nichtwohnnutzung"
       }
     },
     "vorhaben.nebenanlage": {

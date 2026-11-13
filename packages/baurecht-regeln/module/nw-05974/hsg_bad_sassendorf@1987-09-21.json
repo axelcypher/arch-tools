@@ -58,7 +58,7 @@
               {
                 "und": [
                   {
-                    "$": "nichtwohngebaeude"
+                    "$": "nichtwohnnutzung"
                   },
                   {
                     "$": "vorhaben_29"
@@ -313,7 +313,7 @@
                   {
                     "und": [
                       {
-                        "$": "nichtwohngebaeude"
+                        "$": "nichtwohnnutzung"
                       },
                       {
                         "$": "vorhaben_29"

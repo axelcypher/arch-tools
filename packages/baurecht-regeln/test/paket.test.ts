@@ -180,6 +180,52 @@ const LAEUFE: Lauf[] = [
   { name: 'Texte passend, alle Fakten nein, mit Sonderbau', fakten: alleFakten('nein'), texte: TEXTE, werte: KLEIN },
 ];
 
+describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
+  // „Erweiterung“ (Anbau, Aufstockung) ist bauordnungsrechtlich eine Änderung (§ 60 BauO NRW); ein Wohn- und
+  // Geschäftshaus muss die Anforderungen an Wohnen und an die gewerbliche Nutzung erfüllen – nie milder als das
+  // strengere von Mehrfamilienhaus und Nichtwohngebäude
+  const RANG: Record<string, number> = { gruen: 0, gelb: 1, rot: 2 };
+  const MATRIX: Record<string, (string | undefined)[]> = {
+    Gebäudeklasse: ['1', '3', '5', undefined],
+    Planungsrecht: ['Bebauungsplan', 'Innenbereich', 'Außenbereich', undefined],
+    Verfahren: ['verfahrensfrei', 'vereinfachtes Verfahren', 'Baugenehmigungsverfahren', undefined],
+  };
+  const FAKTEN: [string, Record<string, FaktWert>, Map<string, TextStand>][] = [
+    ['ohne Fakten', {}, new Map()],
+    ['alle nein', alleFakten('nein'), TEXTE],
+    ['alle ja', alleFakten('ja'), TEXTE],
+  ];
+  const ampeln = (m: Record<string, string>, f: Record<string, FaktWert>, t: Map<string, TextStand>) => new Map(auswerten(eingabe(m, f, t)).paragrafen.map((p) => [p.id, p.automatisch]));
+
+  it('Erweiterung wie Änderung – je Paragraf dieselbe Ampel', { timeout: 600000 }, () => {
+    const fehler: string[] = [];
+    for (const [name, f, t] of FAKTEN)
+      for (const art of ['Einfamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus', 'Nichtwohngebäude', 'kein Gebäude'])
+        for (const m of kombinationen(MATRIX)) {
+          const basis = { ...m, Gebäudeart: art };
+          const aend = ampeln({ ...basis, Vorhaben: 'Änderung' }, f, t);
+          for (const [id, a] of ampeln({ ...basis, Vorhaben: 'Erweiterung' }, f, t)) if (a !== aend.get(id) && fehler.length < 30) fehler.push(`${id}: Erweiterung ${a}, Änderung ${aend.get(id)} (${name}, ${JSON.stringify(basis)})`);
+        }
+    expect(fehler).toEqual([]);
+  });
+
+  it('Wohn- und Geschäftshaus nie milder als Mehrfamilienhaus bzw. Nichtwohngebäude', { timeout: 600000 }, () => {
+    const fehler: string[] = [];
+    for (const [name, f, t] of FAKTEN)
+      for (const vorhaben of ['Errichtung', 'Änderung', 'Nutzungsänderung', 'Beseitigung'])
+        for (const m of kombinationen(MATRIX)) {
+          const basis = { ...m, Vorhaben: vorhaben };
+          const mfh = ampeln({ ...basis, Gebäudeart: 'Mehrfamilienhaus' }, f, t);
+          const nwg = ampeln({ ...basis, Gebäudeart: 'Nichtwohngebäude' }, f, t);
+          for (const [id, a] of ampeln({ ...basis, Gebäudeart: 'Wohn- und Geschäftshaus' }, f, t)) {
+            const soll = Math.max(RANG[mfh.get(id) ?? 'gruen'], RANG[nwg.get(id) ?? 'gruen']);
+            if (RANG[a] < soll && fehler.length < 30) fehler.push(`${id}: W+G ${a}, MFH ${mfh.get(id)}, NWG ${nwg.get(id)} (${name}, ${JSON.stringify(basis)})`);
+          }
+        }
+    expect(fehler).toEqual([]);
+  });
+});
+
 describe('Fallmatrix', () => {
   it('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: 600000 }, () => {
     const fehler: string[] = [];

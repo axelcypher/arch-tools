@@ -13,7 +13,7 @@
             "$": "errichtung"
           },
           {
-            "$": "wohngebaeude"
+            "$": "wohnnutzung"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -59,7 +59,7 @@
             "$": "errichtung"
           },
           {
-            "$": "nichtwohngebaeude"
+            "$": "nichtwohnnutzung"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -116,7 +116,7 @@
             ]
           },
           {
-            "$": "wohngebaeude"
+            "$": "wohnnutzung"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -216,7 +216,7 @@
             ]
           },
           {
-            "$": "nichtwohngebaeude"
+            "$": "nichtwohnnutzung"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -316,7 +316,7 @@
             ]
           },
           {
-            "$": "nichtwohngebaeude"
+            "$": "nichtwohnnutzung"
           },
           {
             "f": "gebaeude.stellplaetze",

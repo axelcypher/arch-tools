@@ -15,7 +15,7 @@
           {
             "oder": [
               {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               },
               {
                 "f": "gebaeude.aufenthaltsraeume",
@@ -50,7 +50,7 @@
           {
             "oder": [
               {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               },
               {
                 "f": "gebaeude.aufenthaltsraeume",
@@ -91,7 +91,7 @@
             {
               "oder": [
                 {
-                  "$": "wohngebaeude"
+                  "$": "wohnnutzung"
                 },
                 {
                   "f": "gebaeude.aufenthaltsraeume",

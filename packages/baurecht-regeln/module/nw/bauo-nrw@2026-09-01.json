@@ -198,6 +198,7 @@
             "m": "Vorhaben",
             "in": [
               "Errichtung",
+              "Erweiterung",
               "Änderung"
             ]
           },
@@ -461,7 +462,8 @@
                 "m": "Gebäudeart",
                 "in": [
                   "Zweifamilienhaus",
-                  "Mehrfamilienhaus"
+                  "Mehrfamilienhaus",
+                  "Wohn- und Geschäftshaus"
                 ]
               },
               {
@@ -580,12 +582,13 @@
                 {
                   "oder": [
                     {
-                      "$": "nichtwohngebaeude"
+                      "$": "nichtwohnnutzung"
                     },
                     {
                       "m": "Gebäudeart",
                       "in": [
-                        "Mehrfamilienhaus"
+                        "Mehrfamilienhaus",
+                        "Wohn- und Geschäftshaus"
                       ]
                     },
                     {
@@ -700,7 +703,7 @@
           {
             "oder": [
               {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               },
               {
                 "f": "gebaeude.aufenthaltsraeume",
@@ -1288,7 +1291,7 @@
           {
             "oder": [
               {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               },
               {
                 "f": "gebaeude.aufenthaltsraeume",
@@ -1322,7 +1325,7 @@
           {
             "oder": [
               {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               },
               {
                 "f": "gebaeude.wohnungen",

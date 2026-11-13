@@ -57,45 +57,49 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   zählen die sichtbaren Zeilen („11 prüfen von 14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im Blick.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch ohne
   Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“ (als Knöpfe, unter der Erklärung des
-  Werts); Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung; beim Ersatzbau folgen
-  dort die Angaben zum Altbau (verfahrensfrei zu beseitigen, Abbruch im Bauantrag mitbeantragt). Offene Rückfragen (auch
-  solche, deren Wert nur Hinweis ist, mit „Bestätigen …“) stehen auch bei eingeklappten Merkmalen da („eine Rückfrage
-  offen“), mit ihrer Erläuterung (gekürzt, „mehr“); eine neue Rückfrage wird angesagt. Eingeklappt Beantwortetes bleibt
-  bis zum Aufklappen kompakt stehen („Umfang der Beseitigung: Abbruch mit Ersatzbau – ändern“), der Fokus geht auf die
-  nächste offene Rückfrage bzw. den Gruppenknopf („Rückfragen beantwortet“). Auf- bzw. Zugeklappt bleibt auch nach einer
-  Suche. Ändert sich ein Merkmal, ordnen sich die Angaben neu. „Klärt am meisten“ zählt eine Angabe bei einem Paragrafen
-  nur, wenn ihre Antwort dort etwas ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht). Eine Angabe,
-  deren Frage gerade nicht gestellt wird, fehlt nicht: Sie steht nicht unter „es fehlt“ und nicht unter „klärt am
-  meisten“ – nur wenn sonst kein Grund für Gelb bliebe, wird sie genannt. „Gestellt“ heißt für Kern, App und Protokoll
-  dasselbe (`frageGestellt`): ohne Bedingung immer, sonst solange das `wenn` nicht sicher „nein“ ergibt (ein „nein“ nur
-  aus Hinweisen verbirgt keine Frage, ein Widerspruch bzw. Vorbehalt an einem Merkmal öffnet keine; Kern, Leiste und
-  Protokoll urteilen im selben Kontext); eine Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es „ja“ ergibt. Eine
-  gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten
-  Auslöser wie dem Umfang der Beseitigung), zählt nicht – weder in den Regeln noch für Ableitungen (bis zum Fixpunkt:
-  eine weggelassene Antwort kann weitere Fragen verbergen); das Protokoll führt solche Antworten gesondert („Antworten
-  auf derzeit nicht gestellte Fragen (ohne Wirkung)“). Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme
-  möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es fehlt dort:
-  …“); die Ampel bleibt „gilt“. Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne
-  Ausweichen auf nicht gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die
-  Ausnahme nur über Hinweise bzw. widersprüchliche Angaben ausgeschlossen, steht „Ausnahme ausgeschlossen, aber nicht
-  gesichert (beruht auf: Wohnungen – nur Hinweis)“ dabei (die Ampel bleibt „gilt“; bei Modulwerten die Quelle, z. B. der
-  Gemeindeschlüssel). Einzelfall einer Regel (`pruefen.wenn`): liegt er vor, wird Grün zu „Einzelfall: …“; ist offen, ob
-  er vorliegt, heißt es „Einzelfall möglich – es fehlt: …“ bzw. „Einzelfall möglich – hängt an § … – dort offen“ (die
-  Angaben stehen unter „es fehlt“ und zählen für „klärt am meisten“ – als eigenes Ergebnis neben rot/grün, eine Angabe,
-  deren Antwort am Einzelfall nichts ändert, klärt nichts); beruht das „kein Einzelfall“ nur auf Hinweisen bzw.
-  widersprüchlichen Angaben, steht das als „Nur Hinweis, nicht gesichert“ bzw. „Widerspruch“ da (bestätigen klärt).
-  Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
-  Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug
-  der Tabelle, wenn er nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –, beim Wert selbst,
-  wenn die Tabelle von der Lage abhängt; sind es mehrere Quellen, beim Wert selbst. Werte, die das Bundesmodul liefert,
-  hängen nicht am Gemeindeschlüssel). Ziele, an denen keine Regel unmittelbar hängt (der Bezug einer Tabelle), stehen
-  dafür in der Liste; ein Sprungziel ohne Zeile schaltet „alle Angaben“ ein; während einer Suche wird die Suche geleert
-  (angesagt), wenn das Ziel nicht unter den Treffern steht. „Für diesen Ort bestätigen“ im Hinweis behält dagegen eine
-  Suche, die das Merkmal ausblendet: der Fokus geht ins Suchfeld, die Wirkung wird angesagt. Gespeicherte Modulwerte
-  gelten nur, solange ein aktives Modul sie für den jetzigen Bezug liefert; beim Speichern fallen die übrigen aus der
-  Datei. Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste (eigener Wert aus Formulare) und eine
-  Angabe mit falschem Typ oder einem Wert außerhalb ihrer Auswahl (ältere Datei, umbenannter Auswahlwert) gelten als
-  offen und sind so gekennzeichnet; Zahlen, die als Text gespeichert sind, werden wie im Eingabefeld gelesen.
+  Werts); Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung; „Erweiterung“ (Anbau,
+  Aufstockung) ist bauordnungsrechtlich eine Änderung und wird wie sie geprüft (je Paragraf dieselbe Ampel, als Test
+  festgehalten); ein „Wohn- und Geschäftshaus“ ist nie milder als das strengere von Mehrfamilienhaus und
+  Nichtwohngebäude (Bausteine `wohnnutzung`/`nichtwohnnutzung` in Anforderungen, `wohngebaeude`/`nichtwohngebaeude` nur
+  in Ausnahmen; als Test festgehalten); beim Ersatzbau folgen dort die Angaben zum Altbau (verfahrensfrei zu beseitigen,
+  Abbruch im Bauantrag mitbeantragt). Offene Rückfragen (auch solche, deren Wert nur Hinweis ist, mit „Bestätigen …“)
+  stehen auch bei eingeklappten Merkmalen da („eine Rückfrage offen“), mit ihrer Erläuterung (gekürzt, „mehr“); eine
+  neue Rückfrage wird angesagt. Eingeklappt Beantwortetes bleibt bis zum Aufklappen kompakt stehen („Umfang der
+  Beseitigung: Abbruch mit Ersatzbau – ändern“), der Fokus geht auf die nächste offene Rückfrage bzw. den Gruppenknopf
+  („Rückfragen beantwortet“). Auf- bzw. Zugeklappt bleibt auch nach einer Suche. Ändert sich ein Merkmal, ordnen sich
+  die Angaben neu. „Klärt am meisten“ zählt eine Angabe bei einem Paragrafen nur, wenn ihre Antwort dort etwas ändert
+  (führen alle Antworten zum selben Ergebnis, zählt sie nicht). Eine Angabe, deren Frage gerade nicht gestellt wird,
+  fehlt nicht: Sie steht nicht unter „es fehlt“ und nicht unter „klärt am meisten“ – nur wenn sonst kein Grund für Gelb
+  bliebe, wird sie genannt. „Gestellt“ heißt für Kern, App und Protokoll dasselbe (`frageGestellt`): ohne Bedingung
+  immer, sonst solange das `wenn` nicht sicher „nein“ ergibt (ein „nein“ nur aus Hinweisen verbirgt keine Frage, ein
+  Widerspruch bzw. Vorbehalt an einem Merkmal öffnet keine; Kern, Leiste und Protokoll urteilen im selben Kontext); eine
+  Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es „ja“ ergibt. Eine gespeicherte Antwort auf eine Frage, die gerade
+  nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten Auslöser wie dem Umfang der Beseitigung), zählt
+  nicht – weder in den Regeln noch für Ableitungen (bis zum Fixpunkt: eine weggelassene Antwort kann weitere Fragen
+  verbergen); das Protokoll führt solche Antworten gesondert („Antworten auf derzeit nicht gestellte Fragen (ohne
+  Wirkung)“). Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen
+  Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“. Unter
+  „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne Ausweichen auf nicht gestellte: eine
+  Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die Ausnahme nur über Hinweise bzw.
+  widersprüchliche Angaben ausgeschlossen, steht „Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: Wohnungen –
+  nur Hinweis)“ dabei (die Ampel bleibt „gilt“; bei Modulwerten die Quelle, z. B. der Gemeindeschlüssel). Einzelfall
+  einer Regel (`pruefen.wenn`): liegt er vor, wird Grün zu „Einzelfall: …“; ist offen, ob er vorliegt, heißt es
+  „Einzelfall möglich – es fehlt: …“ bzw. „Einzelfall möglich – hängt an § … – dort offen“ (die Angaben stehen unter „es
+  fehlt“ und zählen für „klärt am meisten“ – als eigenes Ergebnis neben rot/grün, eine Angabe, deren Antwort am
+  Einzelfall nichts ändert, klärt nichts); beruht das „kein Einzelfall“ nur auf Hinweisen bzw. widersprüchlichen
+  Angaben, steht das als „Nur Hinweis, nicht gesichert“ bzw. „Widerspruch“ da (bestätigen klärt). Hinweise, deren
+  Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines Gebietsmoduls dort,
+  woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug der Tabelle, wenn er
+  nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –, beim Wert selbst, wenn die Tabelle von
+  der Lage abhängt; sind es mehrere Quellen, beim Wert selbst. Werte, die das Bundesmodul liefert, hängen nicht am
+  Gemeindeschlüssel). Ziele, an denen keine Regel unmittelbar hängt (der Bezug einer Tabelle), stehen dafür in der
+  Liste; ein Sprungziel ohne Zeile schaltet „alle Angaben“ ein; während einer Suche wird die Suche geleert (angesagt),
+  wenn das Ziel nicht unter den Treffern steht. „Für diesen Ort bestätigen“ im Hinweis behält dagegen eine Suche, die
+  das Merkmal ausblendet: der Fokus geht ins Suchfeld, die Wirkung wird angesagt. Gespeicherte Modulwerte gelten nur,
+  solange ein aktives Modul sie für den jetzigen Bezug liefert; beim Speichern fallen die übrigen aus der Datei. Nur
+  zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste (eigener Wert aus Formulare) und eine Angabe mit
+  falschem Typ oder einem Wert außerhalb ihrer Auswahl (ältere Datei, umbenannter Auswahlwert) gelten als offen und sind
+  so gekennzeichnet; Zahlen, die als Text gespeichert sind, werden wie im Eingabefeld gelesen.
 - **Angaben (links):** oben **„Klärt am meisten“** – die fehlenden Angaben, die die meisten offenen Paragrafen
   entscheiden würden (Klick springt zur Angabe); dann die Antragsmerkmale als Knöpfe mit Erklärung (eingeklappt, wenn
   alle festgelegt sind; „leeren“ setzt ein Merkmal bewusst zurück); darunter alle Angaben, an denen eine Regel hängt,

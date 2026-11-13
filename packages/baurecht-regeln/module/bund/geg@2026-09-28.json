@@ -163,12 +163,12 @@
           {
             "oder": [
               {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               },
               {
                 "und": [
                   {
-                    "$": "nichtwohngebaeude"
+                    "$": "nichtwohnnutzung"
                   },
                   {
                     "f": "gebaeude.gemischt",
@@ -207,12 +207,12 @@
           {
             "oder": [
               {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               },
               {
                 "und": [
                   {
-                    "$": "nichtwohngebaeude"
+                    "$": "nichtwohnnutzung"
                   },
                   {
                     "f": "gebaeude.gemischt",
@@ -249,12 +249,12 @@
           {
             "oder": [
               {
-                "$": "nichtwohngebaeude"
+                "$": "nichtwohnnutzung"
               },
               {
                 "und": [
                   {
-                    "$": "wohngebaeude"
+                    "$": "wohnnutzung"
                   },
                   {
                     "f": "gebaeude.gemischt",
@@ -293,12 +293,12 @@
           {
             "oder": [
               {
-                "$": "nichtwohngebaeude"
+                "$": "nichtwohnnutzung"
               },
               {
                 "und": [
                   {
-                    "$": "wohngebaeude"
+                    "$": "wohnnutzung"
                   },
                   {
                     "f": "gebaeude.gemischt",
@@ -635,7 +635,7 @@
           {
             "oder": [
               {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               },
               {
                 "f": "gebaeude.wohnungen",

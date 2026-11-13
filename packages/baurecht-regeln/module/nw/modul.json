@@ -705,7 +705,7 @@
           {
             "oder": [
               {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               },
               {
                 "f": "gebaeude.wohnungen",
@@ -834,7 +834,8 @@
               "in": [
                 "Mehrfamilienhaus",
                 "Zweifamilienhaus",
-                "Einfamilienhaus"
+                "Einfamilienhaus",
+                "Wohn- und Geschäftshaus"
               ]
             },
             {
@@ -863,7 +864,7 @@
               "$": "errichtung"
             },
             {
-              "$": "nichtwohngebaeude"
+              "$": "nichtwohnnutzung"
             },
             {
               "tag": "einreichung",
@@ -877,7 +878,7 @@
               "$": "errichtung"
             },
             {
-              "$": "wohngebaeude"
+              "$": "wohnnutzung"
             },
             {
               "tag": "einreichung",
@@ -1197,7 +1198,7 @@
         {
           "oder": [
             {
-              "$": "wohngebaeude"
+              "$": "wohnnutzung"
             },
             {
               "und": [
