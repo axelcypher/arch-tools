@@ -2,10 +2,13 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createOutline, createProject } from '@core/model';
+import { createOutline, createProject, createRoom } from '@core/model';
 import { rectPoints } from '@core/geometry';
 import { ablageLeeren, flaechenLoeschen, rueckgaengig, useEditor } from './store/store';
 import { App } from './App';
+import { nutzungInfo } from '@core/norms';
+import { planFuellungDunkel } from '@core/planFarbe';
+import { useTheme } from '@core/platform/theme';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -191,6 +194,11 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     act(() => useEditor.getState().select(useEditor.getState().project.storeys[0].shapes[0].id));
     rechtsklick(host.querySelector('.vertex-handle')!.parentElement!);
     expect(menue()?.getAttribute('aria-label')).toBe('Eckpunkt');
+    // Erstfokus nie auf dem Gefahr-Punkt: ungefährliche Flächenbefehle vorn, „Punkt löschen“ zuletzt hinter Trenner
+    expect(document.activeElement?.textContent).toMatch(/Fläche kopieren/);
+    const kinder = [...menue()!.children];
+    expect(kinder.at(-1)?.textContent).toMatch(/Punkt 1 löschen/);
+    expect(kinder.at(-2)?.getAttribute('role')).toBe('separator');
     act(() => punkt(/Punkt 1 löschen/).click());
     expect(useEditor.getState().project.storeys[0].shapes[0].points).toHaveLength(3);
     // Gegenprobe: mit drei Punkten gesperrt, Grund im Tooltip, nichts gelöscht
@@ -214,9 +222,18 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     const gesperrt = punkt(/Einfügen/);
     expect(gesperrt.getAttribute('aria-disabled')).toBe('true');
     expect(gesperrt.textContent).toMatch(/Nichts kopiert/);
+    expect(gesperrt.hasAttribute('aria-keyshortcuts')).toBe(false); // gesperrt: Grund statt Kürzel
+    // Kürzel als tasten (vorgelesen), Löschen zuletzt hinter dem Trenner
+    expect(punkt(/Fläche kopieren/).getAttribute('aria-keyshortcuts')).toBe('Control+C');
+    expect(punkt(/Fläche duplizieren/).getAttribute('aria-keyshortcuts')).toBe('Control+D');
+    const kinder = [...menue()!.children];
+    expect(kinder.at(-1)?.classList.contains('gefahr')).toBe(true);
+    expect(kinder.at(-1)?.getAttribute('aria-keyshortcuts')).toBe('Delete');
+    expect(kinder.at(-2)?.getAttribute('role')).toBe('separator');
     act(() => punkt(/Fläche kopieren/).click());
     rechtsklick(flaeche);
     expect(punkt(/Einfügen/).getAttribute('aria-disabled')).toBeNull();
+    expect(punkt(/Einfügen/).getAttribute('aria-keyshortcuts')).toBe('Control+V');
     act(() => punkt(/Einfügen/).click());
     expect(flaechen()).toBe(2);
     rechtsklick(flaeche);
@@ -247,7 +264,7 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     act(() => useEditor.getState().select(null));
     act(() => void svg.dispatchEvent(new MouseEvent('contextmenu', { clientX: 0, clientY: 0, bubbles: true, cancelable: true })));
     expect(menue()?.getAttribute('aria-label')).toBe('Zeichenfläche');
-    expect(punkt(/Alles zeigen/)).toBeDefined();
+    expect(punkt(/Alles zeigen/).getAttribute('aria-keyshortcuts')).toBe('F');
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
   });
 
@@ -286,5 +303,33 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     expect(leiste.textContent).not.toMatch(/[⬉⬠▭⊡↔⇔↶↷📏]/);
     expect(leiste.querySelectorAll('svg.symbol').length).toBeGreaterThanOrEqual(12);
     for (const name of ['Rückgängig', 'Wiederholen', 'Neu', 'Öffnen …', 'Speichern']) expect(leiste.querySelector(`button[aria-label="${name}"]`)).not.toBeNull();
+  });
+});
+
+describe('QUADRIO: Raumfüllung auf der dunklen Zeichenfläche', () => {
+  let vorher: ReturnType<typeof useTheme.getState>;
+  beforeEach(() => {
+    vorher = useTheme.getState();
+    act(() => useTheme.setState({ theme: 'hell', canvasDunkel: true }));
+  });
+  afterEach(() => act(() => useTheme.setState(vorher, true)));
+
+  it('gefiltert (dunkles Schema, Zeichenfläche abgedunkelt): Füllung vorgerechnet; hell bzw. ohne Filter die Nutzungsfarbe', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0, y: 0 }, { x: 4, y: 4 }), '0.01', 'Wohnen'));
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const marke = nutzungInfo('NUF1').color;
+    const host = render();
+    const raum = () => host.querySelector<SVGPathElement>('svg.canvas path[fill-rule="evenodd"]')!;
+    expect(raum().getAttribute('fill')).toBe(marke);
+    expect(raum().getAttribute('fill-opacity')).toBe('0.45');
+    act(() => useTheme.setState({ theme: 'dunkel', canvasDunkel: true }));
+    const dunkel = planFuellungDunkel(marke, 0.45);
+    expect(raum().getAttribute('fill')).toBe(dunkel.farbe);
+    expect(raum().getAttribute('fill-opacity')).toBe(String(dunkel.deckung));
+    expect(dunkel.farbe).not.toBe(marke);
+    // Gegenprobe: dunkles Schema, aber Zeichenfläche hell gelassen – kein Filter, also die Nutzungsfarbe
+    act(() => useTheme.setState({ theme: 'dunkel', canvasDunkel: false }));
+    expect(raum().getAttribute('fill')).toBe(marke);
   });
 });

@@ -24,7 +24,6 @@ Review-Agent `review-design`.
 Werte nicht frei wählen, sondern aus der Skala nehmen.
 
 | Variable | Wert | Verwendung                                                                          |
-| -------- | ---- | ----------------------------------------------------------------------------------- |
 | `--s1`   | 4px  | Abstand innerhalb einer Gruppe (Knopf zu Knopf)                                     |
 | `--s2`   | 8px  | Feld zu Feld, Überschrift zu Inhalt                                                 |
 | `--s3`   | 12px | Innenabstand von Abschnitten                                                        |
@@ -33,7 +32,6 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--s6`   | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten                                    |
 
 | Variable  | Wert | Verwendung                                             |
-| --------- | ---- | ------------------------------------------------------ |
 | `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf |
 | `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen              |
 | `--fs-m`  | 13px | Grundschrift, Abschnittsüberschrift (`.sidebar h2`)    |
@@ -84,7 +82,6 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 ## Farben
 
 | Variable                           | Bedeutung                                                                                                       |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                  |
 | `--text`, `--muted`                | Text, Nebentext                                                                                                 |
 | `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
@@ -278,7 +275,6 @@ Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 ## Richtig und falsch
 
 | Richtig                                                                                                | Falsch                                                         |
-| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
 | Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`)                                   | freie Werte wie `margin: 7px`, `font-size: 12.5px`             |
 | Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)                                               | feste Farben (`#888`, `orange`) in App-CSS                     |
 | `:focus-visible` mit sichtbarem Rahmen                                                                 | `outline: none` ohne Ersatz                                    |
