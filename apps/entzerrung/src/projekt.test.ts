@@ -16,18 +16,37 @@ const datei = vi.hoisted(() => ({
   antwort: null as string | null,
   fragen: [] as string[],
   meldungen: [] as string[],
+  /** Antworten der Reihe nach (überschreibt `antwort`, solange welche da sind) */
+  antworten: [] as string[],
+  knoepfe: [] as string[][],
+  tauri: false,
+  gezeigt: [] as string[],
+  /** so oft scheitert ordnerZeigen noch */
+  zeigenFehler: 0,
 }));
 vi.mock('@core/platform/files', async (original) => ({
   ...(await original<typeof import('@core/platform/files')>()),
   saveMergedFile: (o: SpeicherOptionen) => datei.speichern!(o),
+  isTauri: () => datei.tauri,
   openFileWithPath: () => datei.oeffnen!(),
+}));
+vi.mock('@core/platform/projektordner', async (original) => ({
+  ...(await original<typeof import('@core/platform/projektordner')>()),
+  ordnerZeigen: async (p: string) => {
+    if (datei.zeigenFehler > 0) {
+      datei.zeigenFehler--;
+      throw new Error('kein Explorer');
+    }
+    datei.gezeigt.push(p);
+  },
 }));
 vi.mock('./dateistand', () => ({ dateiStandLesen: async (p: string) => (datei.staende.has(p) ? datei.staende.get(p) : undefined) }));
 vi.mock('@core/ui/Rueckfrage', async (original) => ({
   ...(await original<typeof import('@core/ui/Rueckfrage')>()),
-  fragen: async (f: { titel: string }) => {
+  fragen: async (f: { titel: string; knoepfe: { id: string }[] }) => {
     datei.fragen.push(f.titel);
-    return datei.antwort;
+    datei.knoepfe.push(f.knoepfe.map((k) => k.id));
+    return datei.antworten.length ? datei.antworten.shift()! : datei.antwort;
   },
   meldung: async (titel: string, text: string) => {
     datei.meldungen.push(`${titel}|${text}`);
@@ -86,6 +105,11 @@ beforeEach(() => {
   datei.staende.clear();
   datei.fragen = [];
   datei.meldungen = [];
+  datei.antworten = [];
+  datei.knoepfe = [];
+  datei.tauri = false;
+  datei.gezeigt = [];
+  datei.zeigenFehler = 0;
   datei.antwort = null;
   idb.stand.clear();
   idb.fotos.clear();
@@ -177,6 +201,8 @@ describe('Datei von außen geändert', () => {
     // Abbrechen: nicht gespeichert, weiter ungespeichert
     expect(await speichern()).toBe(false);
     expect(datei.fragen).toEqual(['Datei wurde inzwischen geändert']);
+    // Gegenprobe Browser: kein „Ordner öffnen“
+    expect(datei.knoepfe[0]).toEqual(['abbrechen', 'neu']);
     expect(useEntz.getState().dirty).toBe(true);
     expect(useEntz.getState().dateiname).toBe('C:\\Projekt\\Hof.entz');
     // Unter neuem Namen: Dialog (kein Pfad, keine Prüfung), Vorschlag mit „(Kopie)“
@@ -204,6 +230,39 @@ describe('Datei von außen geändert', () => {
     };
     await speichern();
     expect(o0!).toMatchObject({ pfad: `${root}/Bestand/Nord.entz`, stand });
+  });
+
+  it('„Ordner öffnen“ (Desktop) zeigt den Ordner der Datei und fragt dann erneut', async () => {
+    datei.tauri = true;
+    await geoeffnet();
+    useEntz.getState().aendern((d) => ({ fotos: d.fotos.map((f) => ({ ...f, name: 'Ost' })) }));
+    datei.speichern = async (o) => {
+      throw new DateiVonAussenGeaendert(o.pfad ?? '');
+    };
+    datei.antworten = ['ordner', 'abbrechen'];
+    expect(await speichern()).toBe(false);
+    expect(datei.gezeigt).toEqual(['C:\\Projekt']);
+    expect(datei.fragen).toHaveLength(2);
+    expect(datei.knoepfe[0]).toEqual(['abbrechen', 'ordner', 'neu']);
+    expect(useEntz.getState().dirty).toBe(true);
+  });
+
+  it('Ordner lässt sich nicht öffnen: Meldung, dann wieder die Rückfrage; Laufwerkswurzel mit Trenner', async () => {
+    datei.tauri = true;
+    const z = packen({ fotos: [{ id: 'a1', name: 'Hof', mime: 'image/png', breite: 10, hoehe: 8, linse: { k1: 0, k2: 0 }, hilfslinien: [], ebenen: [] }] }, { a1: bytes(4) });
+    datei.oeffnen = async () => ({ name: 'Hof.entz', pfad: 'C:\\Hof.entz', bytes: z });
+    datei.staende.set('C:\\Hof.entz', { groesse: 1, geaendert: 1 });
+    await oeffnen();
+    datei.speichern = async (o) => {
+      throw new DateiVonAussenGeaendert(o.pfad ?? '');
+    };
+    datei.zeigenFehler = 1;
+    datei.antworten = ['ordner', 'ordner', 'abbrechen'];
+    expect(await speichern()).toBe(false);
+    expect(datei.meldungen).toEqual(['Ordner ließ sich nicht öffnen|C:\\']);
+    expect(datei.fragen).toHaveLength(3);
+    // zweiter Versuch (ohne Fehler) zeigt die Laufwerkswurzel mit Trenner
+    expect(datei.gezeigt).toEqual(['C:\\']);
   });
 
   it('Gegenprobe: im Browser (Stand unbekannt) wird nicht geprüft', async () => {
