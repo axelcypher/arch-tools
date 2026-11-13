@@ -119,7 +119,7 @@ export function DokumenteEinstellungen() {
   const vorlageEntfernen = async (v: AntragsVorlage) => {
     const ausloeser = document.activeElement as HTMLElement | null;
     if (!(await bestaetigen('Vorlage entfernen', `Die Vorlage „${v.name}“ entfernen? Die Antragsdokumente selbst bleiben erhalten.`, 'Entfernen', true))) {
-      fokussieren(ausloeser, `${id}-${v.id}-entfernen`);
+      fokussieren(ausloeser, `${id}-vorlage-${v.id}-entfernen`);
       return;
     }
     setVorlagen(useAntrag.getState().vorlagen.filter((x) => x.id !== v.id));
@@ -205,7 +205,7 @@ export function DokumenteEinstellungen() {
                     </button>
                   </td>
                   <td>
-                    <button id={`${id}-${v.id}-entfernen`} className="icon" aria-label={`Vorlage ${v.name} entfernen`} title="Entfernen" onClick={() => void vorlageEntfernen(v)}>
+                    <button id={`${id}-vorlage-${v.id}-entfernen`} className="icon" aria-label={`Vorlage ${v.name} entfernen`} title="Entfernen" onClick={() => void vorlageEntfernen(v)}>
                       <Symbol name="muell" />
                     </button>
                   </td>

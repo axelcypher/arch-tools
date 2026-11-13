@@ -271,6 +271,18 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     expect(JSON.parse(localStorage.getItem('formulare:vorlagen')!).find((v: { id: string }) => v.id === 'baua').dokumente).toContain('x1');
   });
 
+  it('„Vorgabe wiederherstellen“ der Antragsdokumente schreibt Vorlagen, die ohnehin so abgeleitet würden, nicht fest', async () => {
+    const host = await zeige();
+    const karte = [...host.querySelectorAll('.es-karte')].find((k) => k.querySelector('h3')!.textContent === 'Antragsdokumente')!;
+    await oeffnen('Bauantrag');
+    eingabe(feld(zeile('Bauantrag'), 'Bezeichnung')!, 'Eigener Titel');
+    await warte();
+    await klick(knopf('Vorgabe wiederherstellen', karte));
+    await klick(knopf('Zurücksetzen', document.querySelector('.modal.rf')!));
+    expect(useAntrag.getState().katalog).toEqual(VORGABE_KATALOG);
+    expect(localStorage.getItem('formulare:vorlagen')).toBeNull();
+  });
+
   it('„Vorgabe wiederherstellen“ der Antragsvorlagen: nur bei Abweichung, „Abbrechen“ behält, „Zurücksetzen“ setzt zurück', async () => {
     const host = await zeige();
     const karte = () => [...host.querySelectorAll('.es-karte')].find((k) => k.querySelector('h3')!.textContent === 'Antragsvorlagen')!;
