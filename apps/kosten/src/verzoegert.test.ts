@@ -65,15 +65,31 @@ describe('Zwischenstand: verzögertes Schreiben und Sichern vor dem Schließen',
     expect(fertig).toBe(true);
   });
 
-  it('ohne ausstehende Änderung schreibt sichern() nichts; ein Fehler beim Schreiben blockiert nicht', async () => {
-    const f = vi.fn().mockRejectedValueOnce(new Error('voll')).mockResolvedValue(undefined);
+  it('ohne ausstehende Änderung schreibt sichern() nichts und meldet true', async () => {
+    const f = vi.fn().mockResolvedValue(undefined);
     const z = verzoegertSchreiben(f, 600);
-    await z.sichern();
+    expect(await z.sichern()).toBe(true);
     expect(f).not.toHaveBeenCalled();
     z.anstossen();
-    await z.sichern(); // Fehler wird geschluckt
+    expect(await z.sichern()).toBe(true);
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
+  it('gescheitertes Schreiben: protokolliert, sichern() meldet false, das nächste Schreiben läuft trotzdem', async () => {
+    const fehler = new Error('voll');
+    const f = vi.fn().mockRejectedValueOnce(fehler).mockResolvedValue(undefined);
+    const beiFehler = vi.fn();
+    const z = verzoegertSchreiben(f, 600, beiFehler);
     z.anstossen();
-    await z.sichern();
+    expect(await z.sichern()).toBe(false);
+    expect(beiFehler).toHaveBeenCalledWith(fehler);
+    // ohne neue Änderung bleibt der Zwischenstand veraltet: weiter false, kein erneutes Schreiben
+    expect(await z.sichern()).toBe(false);
+    expect(f).toHaveBeenCalledTimes(1);
+    // Gegenprobe: das nächste Schreiben gelingt, dann wieder true
+    z.anstossen();
+    expect(await z.sichern()).toBe(true);
     expect(f).toHaveBeenCalledTimes(2);
+    expect(beiFehler).toHaveBeenCalledTimes(1);
   });
 });

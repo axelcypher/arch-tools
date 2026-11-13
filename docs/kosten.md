@@ -21,6 +21,8 @@ und Regionalfaktor.
   wiederhergestellt – Speichern / Verwerfen“); vor dem Öffnen eines anderen Projekts wird nachgefragt.
   Der Zwischenstand wird 0,6 s nach der letzten Änderung geschrieben; schließt Arkly das Fenster oder den Tab
   (auch beim Andocken, Beenden oder Update), schreibt NUMIO einen ausstehenden Stand vorher sofort.
+  Lässt sich der Zwischenstand nicht schreiben (z. B. Speicher voll), meldet NUMIO das Arkly; Arkly fragt dann
+  nach, statt still zu schließen. Der Fehler steht im Protokoll.
 - **Speichern:** in dieselbe Projektdatei. QUADRIO und TERRIO (GRZ-Nachweis) zeigen die Kostenermittlung nicht
   an, bewahren sie aber beim Speichern (ab QUADRIO 0.9.4 und TERRIO 0.2.3); umgekehrt bewahrt
   NUMIO alles, was die anderen Apps pflegen. Ändern sich dort Flächen, ändern sich die Kosten

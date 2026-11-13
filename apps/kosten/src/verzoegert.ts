@@ -3,18 +3,28 @@
  * hinaus), `sichern()` führt ein ausstehendes Schreiben sofort aus und wartet, bis es fertig ist. Mehrfaches `sichern()`
  * schreibt nicht doppelt, sondern wartet auf das laufende Schreiben – so kann Arkly es vor dem Schließen aufrufen
  * (vorDemSchliessen), auch wiederholt. Schreibvorgänge laufen nacheinander, nie gleichzeitig.
+ *
+ * `sichern()` liefert, ob der Zwischenstand auf dem neuesten Stand ist: `false`, wenn das letzte Schreiben gescheitert
+ * ist (Arkly fragt dann nach, statt still zu schließen). Ein Fehler geht an `beiFehler` und hält die Kette nicht an.
  */
-export function verzoegertSchreiben(schreiben: () => Promise<void>, ms: number): { anstossen: () => void; sichern: () => Promise<void> } {
+export function verzoegertSchreiben(schreiben: () => Promise<void>, ms: number, beiFehler: (e: unknown) => void = () => undefined): { anstossen: () => void; sichern: () => Promise<boolean> } {
   let uhr: ReturnType<typeof setTimeout> | undefined;
   let ausstehend = false;
-  let laufend: Promise<void> = Promise.resolve();
+  let laufend: Promise<boolean> = Promise.resolve(true);
 
-  const jetzt = (): Promise<void> => {
+  const jetzt = (): Promise<boolean> => {
     clearTimeout(uhr);
     uhr = undefined;
     ausstehend = false;
-    // ein Fehler beim Schreiben hält die Kette nicht an (der Zwischenstand ist nur eine Absicherung)
-    laufend = laufend.then(() => schreiben().catch(() => undefined));
+    laufend = laufend.then(() =>
+      schreiben().then(
+        () => true,
+        (e: unknown) => {
+          beiFehler(e);
+          return false;
+        },
+      ),
+    );
     return laufend;
   };
 
