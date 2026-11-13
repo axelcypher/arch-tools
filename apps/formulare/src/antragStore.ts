@@ -906,7 +906,8 @@ export const useAntrag = create<AntragState>((set, get) => {
           text: `${vorhanden.slice(0, 8).join('\n')}${vorhanden.length > 8 ? `\n… und ${vorhanden.length - 8} weitere` : ''}`,
           knoepfe: [
             { id: 'abbrechen', label: 'Abbrechen' },
-            { id: 'ueberspringen', label: 'Vorhandene überspringen' },
+            // der übliche Weg (Enter): nichts überschreiben, nur die fehlenden exportieren
+            { id: 'ueberspringen', label: 'Vorhandene überspringen', art: 'primary' },
             { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
           ],
         });
