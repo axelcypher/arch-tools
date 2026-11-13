@@ -13,10 +13,10 @@ import { GesetzModal } from './components/GesetzModal';
 import { EinstellungenModal } from './components/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
 import { FormularHinzufuegenDialog, useHinzufuegenDialog } from './components/FormularHinzufuegen';
-import { MenueHost, MenueKnopf } from './components/Menue';
+import { MenueKnopf } from '@core/ui/Menue';
 import { antragSperre, useAntrag } from './antragStore';
 import { DateiAnsicht } from './components/dokumente/DateiAnsicht';
-import { Symbol } from './components/Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import { FelderAnsicht } from './components/FelderAnsicht';
 import { Gliederung } from './components/Gliederung';
 import { EinrichtenPanel } from './components/Einrichten';
@@ -289,11 +289,12 @@ export function App() {
               ariaLabel="Weitere Befehle zum Aktualisieren"
               className="fo-menue-knopf"
               punkte={() => [
-                { text: 'Daten aktualisieren …', symbol: 'neuLaden', deaktiviert: !!grund, aktion: () => useAktualisieren.getState().dialogOeffnen() },
+                { text: 'Daten aktualisieren …', symbol: 'neuLaden', deaktiviert: !!grund, ...(grund ? { hinweis: 'nur ansehen', titel: grund } : {}), aktion: () => useAktualisieren.getState().dialogOeffnen() },
                 {
                   text: 'Manuelle Überschreibungen ignorieren',
                   symbol: offen && ignoriert(offen.pfad) ? 'haken' : undefined,
                   deaktiviert: !!grund,
+                  ...(grund ? { hinweis: 'nur ansehen', titel: grund } : {}),
                   aktion: () => offen && ignorierenSetzen(!ignoriert(offen.pfad)),
                 },
               ]}
@@ -470,7 +471,6 @@ export function App() {
         />
       )}
       {einstellungenOffen && <EinstellungenModal />}
-      <MenueHost />
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
       <GesetzModal />
       {dialog === 'schnellwahl' && <Schnellwahl onClose={() => setDialog(null)} />}

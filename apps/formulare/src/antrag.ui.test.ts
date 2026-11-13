@@ -104,6 +104,8 @@ beforeEach(() => {
   useAufgeklappt.setState({ offen: [] });
 });
 afterEach(() => {
+  // ein offenes Menü (gemeinsamer Store in core) schließen – sonst stünde es im nächsten Test wieder da
+  act(() => void window.dispatchEvent(new Event('blur')));
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
@@ -124,6 +126,8 @@ const klick = async (el: HTMLElement) => {
   await warte();
 };
 const menuePunkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue-punkt')].find((b) => b.textContent?.includes(text))!;
+/** gesperrter Menüpunkt (gemeinsames Menü: aria-disabled, bleibt per Tastatur erreichbar) */
+const gesperrt = (b: Element) => b.getAttribute('aria-disabled') === 'true';
 const rechtsklick = async (el: Element) => {
   act(() => void el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 10, clientY: 10 })));
   await warte();
@@ -907,7 +911,7 @@ describe('Antragsvorlagen und Reihenfolge', () => {
 
     // Reihenfolge: per Kontextmenü und mit der Tastatur am Griff
     await rechtsklick(zeile(host, 'Lageplan'));
-    expect(menuePunkt('Nach oben').disabled).toBe(true);
+    expect(gesperrt(menuePunkt('Nach oben'))).toBe(true);
     await klick(menuePunkt('Nach unten'));
     await warte();
     expect(ids()).toEqual(['muster', 'lageplan', 'bauantrag']);
@@ -1282,10 +1286,10 @@ describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokum
     expect(plus().title).toBe('Der Antrag ist eingereicht und gesperrt – der Antragsumfang bleibt, wie er ist');
     await rechtsklick(zeileIn(host, 'Brandschutzkonzept').querySelector('.fo-baum-zeile')!);
     const punkt = punktGenau(AUFNEHMEN);
-    expect(punkt.disabled).toBe(true);
+    expect(gesperrt(punkt)).toBe(true);
     expect(punkt.textContent).toContain('Antrag eingereicht');
-    expect(punktGenau('Mit fehlendem Dokument verknüpfen').disabled).toBe(true);
-    // ein deaktivierter Punkt klappt sein Untermenü auch beim Überfahren nicht auf (React meldet dort kein mouseenter)
+    expect(gesperrt(punktGenau('Mit fehlendem Dokument verknüpfen'))).toBe(true);
+    // gesperrt (aria-disabled): das gemeinsame Menü klappt sein Untermenü auch beim Überfahren nicht auf
     act(() => void punktGenau('Mit fehlendem Dokument verknüpfen').dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
     expect(document.querySelector('.menue .menue')).toBeNull();
     // auch direkt im Store nichts aufgenommen (Sperre)
@@ -3853,7 +3857,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     const nav = [...host.querySelectorAll<HTMLElement>('.nav-eintrag')].find((b) => b.textContent?.includes('Muster') && !b.classList.contains('fehlt'))!;
     await rechtsklick(nav);
-    expect(menuePunkt('Antragsdokument').disabled).toBe(true);
+    expect(gesperrt(menuePunkt('Antragsdokument'))).toBe(true);
     const punkte = dateiMenue(PROJEKT, 'Planung/BS9 Lageplan.pdf') as { text?: string; deaktiviert?: boolean; hinweis?: string }[];
     expect(punkte.find((x) => x.text === 'In BAUA 2 kopieren und verknüpfen')).toMatchObject({ deaktiviert: true, hinweis: 'Antrag eingereicht' });
     // der Store weist das Ändern selbst ab – mit dem Sperrtext als Grund
@@ -4153,7 +4157,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     const host = await mitUmfangInBeiden();
     await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-03' }));
     await warte();
-    const punkt = (text: string) => ({ aus: menuePunkt(text).disabled, hinweis: menuePunkt(text).querySelector('.menue-hinweis')?.textContent });
+    const punkt = (text: string) => ({ aus: gesperrt(menuePunkt(text)), hinweis: menuePunkt(text).querySelector('.menue-hinweis')?.textContent });
     expect(zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')).toMatchObject({ disabled: true, title: expect.stringMatching(/^Der Antrag ist eingereicht und gesperrt/) });
     await rechtsklick(zeileVon(host, 'Lageplan'));
     expect(punkt('Aus dem Antragsumfang nehmen')).toEqual({ aus: true, hinweis: 'Antrag eingereicht' });
@@ -4289,7 +4293,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     // Umfang schon BAUA, die Navigation zeigt noch die fehlenden Formulare von BAUA 2 – ihre Menüpunkte sind ausgegraut
     await rechtsklick(navFehlt(host, 'Bauantrag'));
-    expect(menuePunkt('Aus dem Antragsumfang nehmen').disabled).toBe(true);
+    expect(gesperrt(menuePunkt('Aus dem Antragsumfang nehmen'))).toBe(true);
     expect(menuePunkt('Aus dem Antragsumfang nehmen').querySelector('.menue-hinweis')?.textContent).toBe('Antrag wird geöffnet');
     h.los();
     await act(() => fw);
@@ -4530,7 +4534,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     for (let i = 0; i < 40 && !h.erreicht; i++) await warte();
     const zeile = [...host.querySelectorAll('.fo-antrag-ablage .fo-bereit-zeile')].find((z) => z.textContent?.includes('Bauantrag.pdf'))!;
     expect(zeile.querySelector<HTMLButtonElement>('.fo-bereit-knopf')).toMatchObject({ disabled: true, title: 'Der Antrag wird gerade geöffnet – gleich wieder möglich' });
-    const punkt = (text: string) => ({ aus: menuePunkt(text).disabled, hinweis: menuePunkt(text).querySelector('.menue-hinweis')?.textContent });
+    const punkt = (text: string) => ({ aus: gesperrt(menuePunkt(text)), hinweis: menuePunkt(text).querySelector('.menue-hinweis')?.textContent });
     await rechtsklick(zeile.querySelector('.fo-baum-zeile')!);
     expect(punkt('Als bereit markieren')).toEqual({ aus: true, hinweis: 'Antrag wird geöffnet' });
     act(() => void document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
@@ -5807,6 +5811,20 @@ describe('Reihenfolge der Formulare in der Navigation', () => {
     expect(namen(host)).toEqual(['001-Muster', '002-Anderes']);
     expect(zeile(host, '001-Muster').title).not.toContain('Reihenfolge');
     expect(zeile(host, '001-Muster').hasAttribute('aria-keyshortcuts')).toBe(false);
+  });
+
+  it('Kontextmenü aus dem gemeinsamen Menü: genau eines, Esc schließt es, der Fokus geht an die Zeile zurück', async () => {
+    const host = await projektBS9();
+    const z = knopf(host, '001-Muster');
+    act(() => z.focus());
+    await rechtsklick(z);
+    expect(document.querySelectorAll('.menue[role="menu"]')).toHaveLength(1);
+    // benannt nach dem Formular (Screenreader: „001-Muster, Menü“)
+    expect(document.querySelector('.menue')!.getAttribute('aria-label')).toBe('001-Muster');
+    expect(document.activeElement?.classList.contains('menue-punkt')).toBe(true);
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(document.querySelector('.menue')).toBeNull();
+    expect(document.activeElement).toBe(z);
   });
 
   it('Rechtsklick und Esc beim Ziehen verschieben nichts; an der Ausgangsstelle keine Einfügestelle', async () => {

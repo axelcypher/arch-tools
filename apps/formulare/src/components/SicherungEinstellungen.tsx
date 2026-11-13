@@ -4,7 +4,7 @@ import { useAntrag } from '../antragStore';
 import type { Sicherung } from '../sicherung';
 import { SICHERUNG_BEREICHE, bereicheIn, sicherungDateiname, sicherungEinspielen, sicherungErstellen, sicherungLesen, sicherungText } from '../sicherung';
 import { useFormulare } from '../store';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 const appVersion = () => (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : undefined);
 

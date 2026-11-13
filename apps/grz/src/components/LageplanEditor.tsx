@@ -10,13 +10,19 @@ import { bounds, pointInPolygon, polygonArea } from '@core/geometry';
 import { LAGEPLAN_NUTZUNGEN, nutzungLabel, versiegelungInfo } from '@core/lageplan';
 import type { Nachweis } from '../massNutzung';
 import { aktiveVariante } from '../massNutzung';
-import { addFlaeche, auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapFlaeche, neueFlaeche, removeFlaeche, useGrz } from '../store';
+import { ablageLeer, addFlaeche, auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapFlaeche, neueFlaeche, removeFlaeche, useGrz } from '../store';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { zeigeMenue } from '@core/ui/Menue';
+import type { SymbolName } from '@core/ui/Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import { beschriftungsPunkt, massstabLaenge } from '../beschriftung';
 import { unterlageKalibrieren, unterlageVerschieben } from '@core/kalibrierung';
 import { frageText, meldung } from '@core/ui/Rueckfrage';
 import { newId } from '@core/model';
 import type { LageplanNutzung, Project, RasterBackground } from '@core/model';
 import { unterlageLesen, UnterlageZuGross } from '../unterlage';
+import { planFuellungDunkel } from '@core/planFarbe';
+import { useZeichenflaecheGefiltert } from '@core/platform/theme';
 import type { Werkzeug } from '../store';
 
 export interface Ausschnitt {
@@ -35,10 +41,11 @@ const ZIEH_PX = 3;
  * Werkzeuge und Tasten wie in QUADRIO. kurz: die zwei, drei wichtigsten Kürzel für die Hilfezeile; alle:
  * vollständige Übersicht hinter „?“
  */
-const WERKZEUGE: { id: Werkzeug; label: string; taste: string; kurz: string[]; alle: string[]; titel: string }[] = [
+const WERKZEUGE: { id: Werkzeug; label: string; symbol?: SymbolName; taste: string; kurz: string[]; alle: string[]; titel: string }[] = [
   {
     id: 'auswahl',
     label: 'Auswahl',
+    symbol: 'auswahl',
     taste: 'V',
     titel: 'Flächen auswählen, verschieben und ändern',
     kurz: ['Klicken: auswählen', 'Ziehen: verschieben', 'Entf: löschen'],
@@ -47,12 +54,13 @@ const WERKZEUGE: { id: Werkzeug; label: string; taste: string; kurz: string[]; a
       'Tab: nächste Fläche · Pfeiltasten: verschieben (1 cm, Umschalt: 10 cm)',
       'Strg+C / Strg+V / Strg+D: kopieren / einfügen / duplizieren',
       'Ziehen: verschieben · Punkt ziehen: ändern (Umschalt: entlang der Gebäudeachse)',
-      '◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: Fläche löschen',
+      '◇ ziehen: Punkt einfügen · Rechtsklick: Menü (Punkt löschen, Kopieren, Einfügen …) · Entf: Fläche löschen',
     ],
   },
   {
     id: 'polygon',
     label: 'Polygon',
+    symbol: 'polygon',
     taste: 'P',
     titel: 'Fläche Punkt für Punkt zeichnen',
     kurz: ['Klicken: Punkt', 'Zahl: Länge eingeben', 'Enter: schließen'],
@@ -65,6 +73,7 @@ const WERKZEUGE: { id: Werkzeug; label: string; taste: string; kurz: string[]; a
   {
     id: 'rechteck',
     label: 'Rechteck',
+    symbol: 'rechteck',
     taste: 'R',
     titel: 'Rechteck an der Gebäudeachse zeichnen',
     kurz: ['Klicken: erste Ecke', 'Zahl: Breite × Tiefe', 'Klicken: Gegenecke'],
@@ -73,12 +82,13 @@ const WERKZEUGE: { id: Werkzeug; label: string; taste: string; kurz: string[]; a
   {
     id: 'grenze',
     label: 'Grenze',
+    // ohne Symbol, bis der core-Satz ein eigenes für die Grundstücksgrenze hat (kein irreführender Ersatz)
     taste: 'G',
     titel: 'Grundstücksgrenze (Flurstück) als Polygon zeichnen',
     kurz: ['Klicken: Punkt', 'Enter: schließen', 'Esc: abbrechen'],
     alle: [
       'Grundstücksgrenze wie ein Polygon zeichnen; mehrere Flurstücke nacheinander',
-      'Ändern im Werkzeug „Auswahl“: Kante anklicken, Punkte ziehen, ◇ einfügen, Rechtsklick löschen · Entf: Flurstück löschen',
+      'Ändern im Werkzeug „Auswahl“: Kante anklicken, Punkte ziehen, ◇ einfügen, Punkt per Rechtsklick-Menü löschen · Entf: Flurstück löschen',
       'Die Fläche wird mit der eingetragenen Grundstücksfläche abgeglichen',
     ],
   },
@@ -119,13 +129,17 @@ type Ziehen =
 
 /**
  * Lageplan: Gebäude (Hauptanlage), Grundstück und Lageplan-Flächen. Bedienung wie in QUADRIO:
- * Flächen auswählen und verschieben, Punkte ziehen, über ◇ einfügen und per Rechtsklick löschen,
+ * Flächen auswählen und verschieben, Punkte ziehen, über ◇ einfügen und per Kontextmenü löschen,
  * als Polygon oder Rechteck zeichnen; Ecken von Gebäude und Flächen werden gefangen.
  */
 export function LageplanEditor({ n }: { n: Nachweis }) {
   const project = useGrz((s) => s.project);
   const selected = useGrz((s) => s.selected);
   const selectedIds = useGrz((s) => s.selectedIds);
+  // dunkle, gefilterte Zeichenfläche: Füllungen so vorrechnen, dass sie nach dem Filter im Ton der Legende erscheinen
+  const gefiltert = useZeichenflaecheGefiltert();
+  const fuellung = (farbe: string, deckung: number) => (gefiltert ? planFuellungDunkel(farbe, deckung) : { farbe, deckung });
+  const anlageFuellung = fuellung('#8a8f99', 0.45);
   const werkzeug = useGrz((s) => s.werkzeug);
   const nutzungVorlage = useGrz((s) => s.nutzungVorlage);
   const st = useGrz.getState();
@@ -407,21 +421,109 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     svgRef.current?.setPointerCapture?.(e.pointerId);
   };
 
+  // Kontextmenü am Eckpunkt (gemeinsames Menü: Tastatur, Esc, gesperrte Punkte mit Grund)
   const onPunktKontext = (e: React.MouseEvent, id: string, index: number) => {
-    e.preventDefault();
-    e.stopPropagation();
     const f = flaechen.find((x) => x.id === id) ?? grenzen.find((g) => g.id === id);
-    if (!f || f.points.length <= 3) return;
-    st.update(
-      (p) =>
-        punkteSetzen(
-          p,
-          id,
-          f.points.filter((_, i) => i !== index),
-        ),
-      undefined,
-      'Punkt löschen',
+    // ohne Fläche (gerade gelöscht): kein Menü, und auch nicht das Menü des Plans darunter
+    if (!f) return zeigeMenue(e, []);
+    const zuWenig = f.points.length <= 3;
+    const art = istGrenze(id) ? 'Ein Flurstück' : 'Eine Fläche';
+    zeigeMenue(
+      e,
+      [
+        {
+          text: `Punkt ${index + 1} löschen`,
+          symbol: 'muell',
+          gefahr: true,
+          deaktiviert: zuWenig,
+          hinweis: zuWenig ? 'Nur noch 3 Punkte' : undefined,
+          titel: zuWenig ? `${art} braucht mindestens drei Punkte` : undefined,
+          // aus dem aktuellen Stand rechnen: bei offenem Menü kann sich die Fläche geändert haben (z. B. Rückgängig)
+          aktion: () =>
+            st.update(
+              (p) => {
+                const aktuell = (p.lageplan?.flaechen ?? []).find((x) => x.id === id) ?? (p.lageplan?.grenze ?? []).find((g) => g.id === id);
+                const q = f.points[index];
+                // Fläche bei offenem Menü geändert (z. B. Rückgängig): nur löschen, wenn der Punkt noch derselbe ist
+                if (!aktuell || aktuell.points.length <= 3 || aktuell.points[index]?.x !== q.x || aktuell.points[index]?.y !== q.y) return p;
+                return punkteSetzen(
+                  p,
+                  id,
+                  aktuell.points.filter((_, i) => i !== index),
+                );
+              },
+              undefined,
+              'Punkt löschen',
+            ),
+        },
+      ],
+      'Eckpunkt',
     );
+  };
+
+  /** „Einfügen“ – gesperrt mit sichtbarem Grund, solange nichts kopiert ist */
+  const einfuegenPunkt = (): MenuePunkt => {
+    const leer = ablageLeer();
+    return {
+      text: 'Einfügen',
+      symbol: 'einfuegen',
+      hinweis: leer ? 'Nichts kopiert' : undefined,
+      tasten: leer ? undefined : 'Strg+V',
+      deaktiviert: leer,
+      titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined,
+      aktion: () => void flaechenEinfuegen(),
+    };
+  };
+
+  /** Befehle für die gewählten Flächen – dieselben wie die Tastenkürzel */
+  const flaechenMenue = (): MenuePunkt[] => {
+    const ids = useGrz.getState().selectedIds;
+    const was = ids.length > 1 ? `${ids.length} Flächen` : 'Fläche';
+    return [
+      { text: `${was} kopieren`, symbol: 'kopie', tasten: 'Strg+C', aktion: () => void flaechenKopieren() },
+      { text: `${was} duplizieren`, symbol: 'stapel', tasten: 'Strg+D', aktion: () => void flaechenDuplizieren() },
+      einfuegenPunkt(),
+      { trenner: true },
+      {
+        text: `${was} löschen`,
+        symbol: 'muell',
+        tasten: 'Entf / Rücktaste',
+        gefahr: true,
+        aktion: () => st.update((p) => removeFlaeche(p, ids), undefined, ids.length > 1 ? 'Flächen löschen' : 'Fläche löschen'),
+      },
+    ];
+  };
+
+  const grenzeMenue = (id: string): MenuePunkt[] => [{ text: 'Flurstück löschen', symbol: 'muell', tasten: 'Entf / Rücktaste', gefahr: true, aktion: () => grenzeLoeschen(id) }];
+
+  // Kontextmenü im Plan (nur im Auswahlwerkzeug und nicht beim Zeichnen): Fläche, Flurstück oder leere Fläche
+  const onPlanKontext = (e: React.MouseEvent) => {
+    if (werkzeug !== 'auswahl' || draft.length || ziehen.current) return void e.preventDefault();
+    const name = (f: { name: string }) => f.name.trim() || 'Fläche';
+    // Kontextmenütaste (ohne Mausposition): das Menü der Auswahl
+    const perTaste = e.clientX === 0 && e.clientY === 0;
+    const p = toWorld(e);
+    const hit = perTaste ? undefined : [...flaechen].reverse().find((f) => pointInPolygon(p, f.points));
+    const grenzTreffer = perTaste || hit ? undefined : grenzen.find((g) => g.points.some((a, i) => abstandZurStrecke(p, a, g.points[(i + 1) % g.points.length]) < FANG_PX * skala()));
+    if (hit) {
+      setGrenzeSel(null);
+      if (!useGrz.getState().selectedIds.includes(hit.id)) st.select(hit.id);
+      const ids = useGrz.getState().selectedIds;
+      return zeigeMenue(e, flaechenMenue(), ids.length > 1 ? `${ids.length} Flächen` : name(hit));
+    }
+    if (grenzTreffer) {
+      st.select(null);
+      setGrenzeSel(grenzTreffer.id);
+      return zeigeMenue(e, grenzeMenue(grenzTreffer.id), grenzTreffer.name);
+    }
+    if (perTaste) {
+      const ids = useGrz.getState().selectedIds;
+      const erste = flaechen.find((f) => f.id === ids[0]);
+      if (erste) return zeigeMenue(e, flaechenMenue(), ids.length > 1 ? `${ids.length} Flächen` : name(erste));
+      const g = grenzen.find((x) => x.id === grenzeSel);
+      if (g) return zeigeMenue(e, grenzeMenue(g.id), g.name);
+    }
+    zeigeMenue(e, [einfuegenPunkt(), { text: 'Einpassen', symbol: 'einpassen', tasten: 'F', aktion: () => setVb(passend) }], 'Lageplan');
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -653,12 +755,12 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         case 'Backspace':
           if (draft.length) setDraft(draft.slice(0, -1));
           else if (grenzeSel && werkzeug === 'auswahl') grenzeLoeschen(grenzeSel);
-          else if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, 'Fläche löschen');
+          else if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, sel.length > 1 ? 'Flächen löschen' : 'Fläche löschen');
           e.preventDefault();
           break;
         case 'Delete':
           if (grenzeSel && werkzeug === 'auswahl') grenzeLoeschen(grenzeSel);
-          else if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, 'Fläche löschen');
+          else if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, sel.length > 1 ? 'Flächen löschen' : 'Fläche löschen');
           break;
         case 'f':
         case 'F':
@@ -730,6 +832,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         <div className="lp-gruppe" role="group" aria-label="Werkzeug">
           {WERKZEUGE.map((w) => (
             <button key={w.id} className={werkzeug === w.id ? 'small active' : 'small'} aria-pressed={werkzeug === w.id} title={`${w.titel} (${w.taste})`} onClick={() => st.setWerkzeug(w.id)}>
+              {w.symbol && (
+                <>
+                  <Symbol name={w.symbol} />{' '}
+                </>
+              )}
               {w.label}
             </button>
           ))}
@@ -775,7 +882,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           }}
         />
         <button className="small" title="Amtlicher Lageplan als Bild (PNG, JPG) oder PDF zum Nachzeichnen" onClick={() => dateiRef.current?.click()}>
-          {unterlage ? 'Ersetzen …' : 'Bild/PDF laden …'}
+          <Symbol name="bild" /> {unterlage ? 'Ersetzen …' : 'Bild/PDF laden …'}
         </button>
         {unterlage && (
           <>
@@ -785,7 +892,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               title="Maßstab an einer bekannten Strecke festlegen"
               onClick={() => st.setWerkzeug('kalibrieren')}
             >
-              Kalibrieren
+              <Symbol name="kalibrieren" /> Kalibrieren
             </button>
             <button
               className={werkzeug === 'ausrichten' ? 'small active' : 'small'}
@@ -793,7 +900,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               title="Unterlage verschieben: Punkt auf der Unterlage → Punkt im Plan"
               onClick={() => st.setWerkzeug('ausrichten')}
             >
-              Ausrichten
+              {/* eigenes Symbol für „Ausrichten“ fehlt im core-Satz – bis dahin das Ziel (Zielpunkt im Plan) */}
+              <Symbol name="ziel" /> Ausrichten
             </button>
             <label className="toggle small-text">
               <input type="checkbox" checked={unterlage.visible} onChange={(e) => setUnterlage({ ...(unterlage as RasterBackground), visible: e.target.checked })} />
@@ -812,7 +920,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               />
             </label>
             <button className="small" title="Unterlage entfernen (rückgängig mit Strg+Z)" onClick={() => setUnterlage(undefined)}>
-              Entfernen
+              <Symbol name="muell" /> Entfernen
             </button>
           </>
         )}
@@ -825,7 +933,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             <span key={g.id} className={grenzeSel === g.id ? 'lp-chip active' : 'lp-chip'}>
               <button
                 className="link"
-                title="Flurstück wählen – Punkte ziehen, ◇ einfügen, Rechtsklick löschen"
+                title="Flurstück wählen – Punkte ziehen, ◇ einfügen, Punkt per Rechtsklick-Menü löschen"
                 onClick={() => {
                   st.setWerkzeug('auswahl');
                   st.select(null);
@@ -835,7 +943,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
                 {g.name} · {fmt2(polygonArea(g.points))} m²
               </button>
               <button className="icon small" aria-label={`${g.name} löschen`} title={`${g.name} löschen (rückgängig mit Strg+Z)`} onClick={() => grenzeLoeschen(g.id)}>
-                ×
+                <Symbol name="schliessen" />
               </button>
             </span>
           ))}
@@ -889,7 +997,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       <div className="lp-plan">
         <div className="canvas-controls lp-plan-steuerung" role="group" aria-label="Ansicht">
           <button className="small" title="Ansicht auf Gebäude, Flächen und Grenze einpassen (F)" onClick={() => setVb(passend)}>
-            Einpassen
+            <Symbol name="einpassen" /> Einpassen
           </button>
           <label className="toggle small-text" title="Nummer, Nutzung und Fläche im Plan">
             <input type="checkbox" checked={beschriften} onChange={(e) => setBeschriften(e.target.checked)} />
@@ -901,7 +1009,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           </label>
           <details className="lp-tasten" ref={tastenRef}>
             <summary className="lp-tasten-knopf" title="Tastenübersicht" aria-label="Tastenübersicht">
-              ?
+              <Symbol name="info" />
             </summary>
             <div className="lp-tasten-liste">
               {WERKZEUGE.map((w) => (
@@ -945,7 +1053,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           onPointerUp={onPointerUp}
           onPointerCancel={gesteAbbrechen}
           onPointerLeave={() => setCursor(null)}
-          onContextMenu={(e) => e.preventDefault()}
+          onContextMenu={onPlanKontext}
         >
           <defs>
             <marker id="lp-pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
@@ -980,26 +1088,29 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               })}
             </g>
           )}
-          {flaechen.map((f) => (
-            <path
-              key={f.id}
-              d={d(punkteVon(f.id, f.points))}
-              fill={versiegelungInfo(f.versiegelung).color}
-              fillOpacity={f.nachbar ? 0.15 : f.variante && f.variante !== variante ? 0.12 : 0.55}
-              className={f.variante && f.variante !== variante ? 'lp-andere-variante' : undefined}
-              stroke={f.nachbar ? 'var(--muted)' : 'var(--text)'}
-              strokeOpacity={f.nachbar ? 1 : 0.7}
-              strokeWidth={k}
-              strokeDasharray={f.nachbar ? `${k * 4} ${k * 3}` : undefined}
-            >
-              <title>{`${f.name} · ${nutzungLabel(f.nutzung)} · ${versiegelungInfo(f.versiegelung).label}${f.nachbar ? ' · Nachbar' : ''}`}</title>
-            </path>
-          ))}
+          {flaechen.map((f) => {
+            const fl = fuellung(versiegelungInfo(f.versiegelung).color, f.nachbar ? 0.15 : f.variante && f.variante !== variante ? 0.12 : 0.55);
+            return (
+              <path
+                key={f.id}
+                d={d(punkteVon(f.id, f.points))}
+                fill={fl.farbe}
+                fillOpacity={fl.deckung}
+                className={f.variante && f.variante !== variante ? 'lp-andere-variante' : undefined}
+                stroke={f.nachbar ? 'var(--muted)' : 'var(--text)'}
+                strokeOpacity={f.nachbar ? 1 : 0.7}
+                strokeWidth={k}
+                strokeDasharray={f.nachbar ? `${k * 4} ${k * 3}` : undefined}
+              >
+                <title>{`${f.name} · ${nutzungLabel(f.nutzung)} · ${versiegelungInfo(f.versiegelung).label}${f.nachbar ? ' · Nachbar' : ''}`}</title>
+              </path>
+            );
+          })}
           {n.hauptanlagePolygone.map((pts, i) => (
             <path key={`h${i}`} d={d(pts)} fill="url(#grz-hatch)" stroke="#1d3f96" strokeWidth={k * 2} fillRule="evenodd" pointerEvents="none" />
           ))}
           {n.anlagenPolygone.map((pts, i) => (
-            <path key={`a${i}`} d={d(pts)} fill="#8a8f99" fillOpacity={0.45} stroke="#1d3f96" strokeWidth={k * 1.5} pointerEvents="none">
+            <path key={`a${i}`} d={d(pts)} fill={anlageFuellung.farbe} fillOpacity={anlageFuellung.deckung} stroke="#1d3f96" strokeWidth={k * 1.5} pointerEvents="none">
               <title>Gebäudeteil als Garage/Nebenanlage</title>
             </path>
           ))}
@@ -1061,7 +1172,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
                   onPointerDown={(e) => onPunktDown(e, griffe.id, griffe.pts, i, false)}
                   onContextMenu={(e) => onPunktKontext(e, griffe.id, i)}
                 >
-                  <title>Ziehen: verschieben · Rechtsklick: löschen</title>
+                  <title>Ziehen: verschieben · Rechtsklick: Menü (Punkt löschen)</title>
                 </circle>
               ))}
             </g>

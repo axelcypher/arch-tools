@@ -1,7 +1,7 @@
 import type { Bedingung, BedingungGruppe, BedingungKontext, BedingungTeil, FeldPruefung, Merkmal, Teilbedingung, Verknuepfung } from '../bedingung';
 import { auswerten, bedingungText, blaetter, gruppe, hatBedingung } from '../bedingung';
 import type { Feld } from '../forma/felder';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 export interface FeldWahl {
   feld: Feld;

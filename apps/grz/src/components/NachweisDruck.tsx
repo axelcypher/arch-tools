@@ -84,10 +84,10 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           <label className="toggle" title="Stand des Nachweises im Kopf – leer: ohne Angabe">
             Stand <input type="date" value={stand} onChange={(e) => setStand(e.target.value)} />
           </label>
-          <button className="primary" onClick={() => druckenAls({ datei: useGrz.getState().datei, projektName: project.name, zusatz: 'GRZ+GFZ' })}>
-            Drucken / PDF
-          </button>
           <button onClick={onClose}>Schließen</button>
+          <button className="primary" onClick={() => druckenAls({ datei: useGrz.getState().datei, projektName: project.name, zusatz: 'GRZ+GFZ' })}>
+            Drucken / PDF …
+          </button>
         </div>
 
         <DruckKopf

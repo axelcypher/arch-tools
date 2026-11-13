@@ -36,7 +36,7 @@ import type { OffenesFormular } from '../store';
 import { useFormulare, useProfil, wertVon } from '../store';
 import type { FeldWahl } from './BedingungEditor';
 import { BedingungEditor } from './BedingungEditor';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 /**
  * Einrichten eines Formulars: links die Gliederung als Baum (Abschnitte, Gruppen, Felder), im Formular lassen sich

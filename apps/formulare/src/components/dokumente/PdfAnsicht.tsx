@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { pdfFelder, pdfjs, pdfOeffnen, pdfSchliessen, textEntfernen, textGroesse, textVormerken } from '../../dokumente/pdf';
 import { frageText } from '../Rueckfrage';
-import { Symbol } from '../Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import type { OffeneDatei } from '../../store';
 import { PDF_ENTWURF, pdfAnbindung, useFormulare } from '../../store';
 import { pdfSpeichern } from '../../dokumente/pdfSpeichern';

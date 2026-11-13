@@ -17,11 +17,11 @@ import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz'
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, formularDatei, useFormulare } from '../store';
 import { useExportDialog } from './ExportDialog';
-import type { MenuePunkt } from './Menue';
-import { MenueKnopf, zeigeMenue } from './Menue';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { MenueKnopf, zeigeMenue } from '@core/ui/Menue';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { Griff, useSortieren } from './Sortieren';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 /** Farbpunkt für den Status eines Dokuments */
 export function StatusPunkt({ status, titel, neben = false }: { status: Status; titel?: string; /** blasser: das Formular steht nicht im Antragsumfang des aktiven Antrags (zählt nicht mit) */ neben?: boolean }) {
@@ -832,7 +832,7 @@ export function AntragsdatenAnsicht() {
                         { text: 'Nach unten', deaktiviert: i === dokumente.length - 1, aktion: () => void eintragVerschieben(u.id, 1, ansichtJetzt, u.titel), ...aus },
                         { trenner: true },
                         { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(u.id, ansichtJetzt, u.titel), ...aus },
-                      ]);
+                      ], u.titel);
                     }}
                   >
                     <div className="pu-haupt">
@@ -950,7 +950,7 @@ export function AntragsdatenAnsicht() {
                           </>
                         )}
                         {basis && !gesperrt && u.art !== 'plansatz' && (
-                          <MenueKnopf className="small" title={`Datei in ${ordner} verknüpfen`} punkte={() => dateiMenue(d)}>
+                          <MenueKnopf className="small" title={`Datei in ${ordner} verknüpfen`} ariaLabel={`${u.titel}: Datei in ${ordner} verknüpfen`} punkte={() => dateiMenue(d)}>
                             <Symbol name="link" />
                           </MenueKnopf>
                         )}

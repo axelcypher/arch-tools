@@ -15,7 +15,8 @@ Review-Agent `review-design`.
 - **Eine Gestalt je Rolle.** Gleiches sieht in allen Apps gleich aus: Abschnittsüberschrift, Feld, Knopf, Tabelle,
   Meldung. Keine App baut eine eigene Variante, wenn es in `base.css` eine gibt.
 - **Nur Variablen, keine festen Farben.** Farben kommen aus den Variablen in `base.css`, damit Hell und Dunkel stimmen.
-  Ausnahme: Zeichenfläche und Papier (Druck), die immer mit hellen Farben arbeiten.
+  Ausnahmen: Zeichenfläche und Papier (Druck), die immer mit hellen Farben arbeiten, und der Schließen-Knopf der
+  Titelleiste (siehe „Farben“, feste Farben).
 - **Tastatur zählt.** Alles, was mit der Maus geht, geht auch mit der Tastatur, und der Fokus ist sichtbar.
 
 ## Skalen
@@ -23,7 +24,6 @@ Review-Agent `review-design`.
 Werte nicht frei wählen, sondern aus der Skala nehmen.
 
 | Variable | Wert | Verwendung                                                                          |
-| -------- | ---- | ----------------------------------------------------------------------------------- |
 | `--s1`   | 4px  | Abstand innerhalb einer Gruppe (Knopf zu Knopf)                                     |
 | `--s2`   | 8px  | Feld zu Feld, Überschrift zu Inhalt                                                 |
 | `--s3`   | 12px | Innenabstand von Abschnitten                                                        |
@@ -32,7 +32,6 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--s6`   | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten                                    |
 
 | Variable  | Wert | Verwendung                                             |
-| --------- | ---- | ------------------------------------------------------ |
 | `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf |
 | `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen              |
 | `--fs-m`  | 13px | Grundschrift, Abschnittsüberschrift (`.sidebar h2`)    |
@@ -83,15 +82,18 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 ## Farben
 
 | Variable                           | Bedeutung                                                                                                       |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                  |
 | `--text`, `--muted`                | Text, Nebentext                                                                                                 |
 | `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
 | `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                        |
 | `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler                                                               |
-| `--sel`                            | Auswahl auf Plänen (Orange)                                                                                     |
+| `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)           |
 | `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
 | `--danger`                         | zerstörende Aktionen (Löschen)                                                                                  |
+
+**Feste Farben – begründete Ausnahmen:** Zeichenfläche und Papier (siehe Grundsätze) sowie der Schließen-Knopf der
+Titelleiste (`.wc-close:hover` in `#c42b1c` mit weißem Symbol), weil Windows ihn in jedem Schema so zeigt und man ihn
+daran erkennt.
 
 **Auswahl auf Fotos** immer mit Saum zeichnen: Magenta allein hat auf mittleren Fototönen (Putz, Ziegel, Himmel) kaum
 Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, außen 1px weiß, innen 1px `rgba(0, 0, 0, 0.5)`.
@@ -104,7 +106,7 @@ wird: `planFuellungDunkel(farbe, deckung)` aus `@core/planFarbe` liefert Farbe u
 sieht danach aus wie die Farbmarke mit der gewünschten Deckung über dem dunklen Grund: gleicher Farbton, dunkler und
 matter (Gelb erscheint als Ocker). Linien, Auswahl und Schraffuren werden nicht vorgerechnet; sie bleiben in den hellen
 Planfarben und laufen durch den Filter. Über einer Unterlage (PDF, Bild) ist der Grund nicht die helle Planfarbe: dort
-`grund` übergeben oder die Abweichung hinnehmen. Die Apps übernehmen das nach und nach (Nachziehliste). Farbmarken in
+`grund` übergeben oder die Abweichung hinnehmen. Die Apps übernehmen das nach und nach (`docs/nachziehen/`). Farbmarken in
 Listen und Legenden bleiben in der Originalfarbe und bekommen nie `--canvas-filter` oder einen eigenen Filter (ihr
 Kontrast zur Seitenleiste fiele unter 3 : 1). `ZEICHENFLAECHE_INVERT`
 und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `--canvas` in `base.css` passen; wer eines
@@ -186,6 +188,8 @@ gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
 - Gleiches Verb überall: Werkzeugleiste „Öffnen …“, Einstieg „Datei öffnen …“ (mit Objekt, weil der Zusammenhang
   fehlt); „Neu“ bzw. „Neues Projekt“.
 - Texte sagen, was zu tun ist, nicht was fehlt; was es nur in der Desktop-App gibt, steht als Fußnote darunter.
+- Ordner im Dateimanager zeigen (`ordnerZeigen`): „Ordner öffnen“, Symbol `ordnerOffen` – nicht „Im Explorer öffnen“
+  (hängt an Windows). Ist der Gegenstand nicht klar, mit Objekt: „Projektordner öffnen“.
 
 ## Symbole
 
@@ -193,11 +197,14 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
 `<Symbol name="lineal" />`. Ohne `titel` ist das Symbol dekorativ, dann trägt der Knopf den Namen (Text oder
 `aria-label`); mit `titel` ist es ein benanntes Bild.
 
-- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `erkennen` (Fläche aus dem Plan), `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`.
+- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `erkennen` (Fläche aus dem Plan), `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`,
+  `grenze` (Grundstücksgrenze mit Grenzpunkten), `ausrichten` (Unterlage auf einen Punkt schieben).
 - Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
   `suche`, `stift`.
 - Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
 - Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`.
+- Listen: `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`) für
+  Zeilenknöpfe „Aktionen“, die ein Menü öffnen – `pfeilUnten` bleibt dem Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
 
 Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑) und keine Schriftzeichen als Symbol.
 
@@ -205,8 +212,8 @@ Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑
 
 `ui/Menue.tsx`: Kontextmenü mit `zeigeMenue(e, punkte, name)` im `onContextMenu`, Aufklappmenü mit `<MenueKnopf>`.
 `name` benennt das Menü für Screenreader (z. B. „Projekt 2019-003“); der Aufklappknopf nimmt seinen eigenen Namen. Punkte
-mit `text`, optional `symbol`, `hinweis` (rechts, z. B. Tastenkürzel), `titel`, `gefahr`, `deaktiviert`, `unter`
-(Untermenü), Trenner mit `{ trenner: true }`.
+mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre), `tasten` (Tastenkürzel, siehe unten),
+`haken` (Umschalter), `bild` (Bild statt Symbol, 16px, z. B. das Symbol einer App), `titel`, `gefahr`, `deaktiviert`, `unter` (Untermenü), Trenner mit `{ trenner: true }`.
 
 - Tastatur: der erste Punkt hat den Fokus, ↑/↓ und Pos1/Ende wandern, → bzw. Enter öffnet ein Untermenü, ← führt
   zurück. Esc schließt nur das Menü (ein Dialog darunter bleibt offen), Tab schließt und gibt den Fokus an den
@@ -215,7 +222,21 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. Tastenkürzel), `titel`,
 - Gesperrte Punkte (`deaktiviert`) mit Grund im `hinweis` („Antrag eingereicht“), statt sie wegzulassen. Sie bleiben
   per Tastatur erreichbar (`aria-disabled`), damit der Grund vorgelesen wird, und führen nichts aus.
 - Ohne Mausposition (Kontextmenütaste) erscheint das Menü am Auslöser.
+- Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner. Der Erstfokus liegt nie auf einem Gefahr-Punkt,
+  sondern auf dem ersten bedienbaren anderen – Rechtsklick plus Enter löscht so nichts. Gibt es nur Gefahr-Punkte,
+  liegt der Fokus auf dem Menü selbst; ↓ bzw. Pos1 erreichen den Punkt.
 - Menüs liegen über Dialogen und Rückfragen; Schatten schwebender Flächen über `--schatten-schwebend`.
+- Tastenkürzel in `tasten` in der Schreibweise deutscher Windows-Menüs: Strg, Umschalt, Alt, Entf, Einfg, Pos1, Ende,
+  Bild↑/Bild↓, Pfeile als ↑ ↓ ← →, Buchstaben groß, verbunden mit „+“ ohne Leerzeichen („Strg+Umschalt+Z“),
+  Alternativen mit „/“ („Entf / Rücktaste“). Sie stehen rechts und werden als `aria-keyshortcuts` vorgelesen (`tastenAria`), nicht als
+  Teil des Namens. `hinweis` nicht mehr für Tastenkürzel verwenden.
+- Umschalter im Menü (an/aus, z. B. „Raster zeigen“) mit `haken: true | false`: Der Punkt wird ein Kästchen
+  (`menuitemcheckbox`, `aria-checked`) und zeigt den Haken anstelle des Symbols. Das Menü schließt nach dem Umschalten
+  wie bei jedem Befehl. Mehrere Schalter, die man oft nacheinander umlegt (Ebenen, Spalten), gehören nicht ins Menü,
+  sondern in eine Seitenleiste oder ein `.segment`.
+- Eigene Öffner ohne `MenueKnopf` (z. B. Zeilenknopf „⋯“ mit `zeigeMenueAn`) tragen `aria-haspopup="menu"`; dann
+  setzt das Menü `aria-expanded` am Öffner selbst. Wer den Zustand im Render braucht, nimmt `useMenueOffen(ref)`.
+- Ein zweiter Klick auf den Öffner eines offenen Menüs schließt es (Knopf wie Zeilenknopf).
 
 ## Seitenleisten
 
@@ -225,7 +246,8 @@ Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 
 ## Meldungen im Inhalt
 
-`.meldung` (neutral) mit `.ok`, `.warnung` oder `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
+`.meldung` (neutral, leicht im Akzent getönt, damit sie sich von Eingabefeldern abhebt) mit `.ok`, `.warnung` oder
+`.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
 für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
 
 ## Meldungen auf der Zeichenfläche
@@ -243,10 +265,16 @@ Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-
 unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
 bleibt immer frei.
 
+## Ungespeicherte Änderungen
+
+Der Knopf „Speichern“ in der Werkzeugleiste bekommt bei ungespeicherten Änderungen die Klasse `ungespeichert`: ein
+Punkt (8px, `--sel` mit Rand in `--text`) außen an der oberen rechten Ecke, der die Breite der Leiste nicht ändert.
+Dazu sagt es der Knopf im `aria-label` („Speichern – ungespeicherte Änderungen“) und im `title`. Der Punkt ● hinter dem
+Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
+
 ## Richtig und falsch
 
 | Richtig                                                                                                | Falsch                                                         |
-| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
 | Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`)                                   | freie Werte wie `margin: 7px`, `font-size: 12.5px`             |
 | Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)                                               | feste Farben (`#888`, `orange`) in App-CSS                     |
 | `:focus-visible` mit sichtbarem Rahmen                                                                 | `outline: none` ohne Ersatz                                    |
@@ -258,22 +286,7 @@ bleibt immer frei.
 
 ## Was die Apps nachziehen
 
-| App                    | Datei und Aufgabe                                                                                                                                                                                                                                                                                                                                                                                                |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RECTIO                 | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                                                                                                                                                                                                               |
-| TERRIO, NUMIO          | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                                                                                                                                                                                                     |
-| FABRIO                 | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                                                                                                                                                                                                            |
-| PERMIO                 | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                                                                                                                                                                                                   |
-| core                   | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                                                                                                                                                                                                              |
-| ATLAS                  | erledigt: Ordner-Editor mit `zeigeMenue`/`MenueKnopf`, `Symbol` statt Schriftzeichen (auch „+ …“-Knöpfe mit `plus`), Meldungen als `.meldung`, Sperre bei unlesbarer Struktur über `disabled`/`deaktiviert` statt `inert`; offen: ↑/↓ zum Umsortieren (Stammordner, Katasterpläne), bis `core` ein Symbol „nach oben“ hat; Zeilenknopf „Aktionen“ zeigt übergangsweise `liste`, bis `core` ein Symbol „mehr“ hat |
-| QUADRIO                | erledigt (Werkzeugleisten-PR): Druckvorschau „Drucken / PDF …“, Umschalter `.segment`, Werkzeugleiste mit `Symbol` (neu: `erkennen`), Kontextmenüs der Zeichenfläche über `zeigeMenue`, Meldungen `.meldung`                                                                                                                                                                                                     |
-| TERRIO, NUMIO          | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                                                                                                                                                                                                                        |
-| NUMIO                  | eigene Umschalter (`.mv-umschalter`) auf `.segment` umstellen                                                                                                                                                                                                                                                                                                                                                    |
-| PERMIO                 | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen                                                                                                                                                                                  |
-| RECTIO                 | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                                                                                                                                                                                                              |
-| TERRIO, RECTIO         | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                                                                                                                                                                                                   |
-| alle                   | eigene Kontextmenüs auf `zeigeMenue` umstellen (TERRIO Lageplan, RECTIO Arbeitsfläche)                                                                                                                                                                                                                                                                                                                           |
-| alle                   | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                                                                                                                                                                                                           |
-| QUADRIO, TERRIO, NUMIO | Raumfüllungen bzw. Lageplanflächen bei `useZeichenflaecheGefiltert()` mit `planFuellungDunkel` vorrechnen (`Canvas.tsx` Deckung 0,45; `LageplanEditor.tsx` alle Deckungen 0,55/0,45/0,15/0,12; NUMIO `MengenPlan.tsx` 0,3); Marken bleiben unverändert                                                                                                                                                           |
-
-Zeilennummern beziehen sich auf den Stand dieser Richtlinie.
+Je App eine Datei in [`docs/nachziehen/`](nachziehen/) (`quadrio.md`, `terrio.md`, `numio.md`, `atlas.md`,
+`rectio.md`, `permio.md`, `fabrio.md`, `arkly.md`). Neue Punkte trägt das Designsystem dort ein, die App löscht erledigte
+Punkte in ihrem eigenen PR (löschen, nicht abhaken). Diese Richtlinie ändert sich dafür nicht – so kommen sich
+App-PRs und Designsystem nicht in die Quere.

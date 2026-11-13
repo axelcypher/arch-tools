@@ -1955,10 +1955,11 @@ button.ph-lokal {
 }
 /* ---------- Meldungen im Inhalt (Dialoge, Seitenleisten) – eine Familie, Art über die zweite Klasse ---------- */
 
+/* neutral leicht im Akzent getönt: sonst sieht die Meldung in Seitenleisten wie ein Eingabefeld aus */
 .meldung {
   padding: 6px 8px;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
   color: var(--text);
   border-radius: var(--radius-s);
   font-size: var(--fs-s);
@@ -1976,6 +1977,31 @@ button.ph-lokal {
   border-color: var(--fehler-border);
   background: var(--fehler-bg);
   color: var(--fehler-text);
+}
+
+/* ungespeicherte Änderungen am Knopf „Speichern“: Punkt (8px) außen an der oberen rechten Ecke – ändert die Breite
+   der Leiste nicht; der Knopf sagt es zusätzlich im aria-label („Speichern – ungespeicherte Änderungen“) */
+button.ungespeichert {
+  position: relative;
+}
+button.ungespeichert::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  /* Rand in Textfarbe: Orange allein hat auf hellem Grund unter 3 : 1 */
+  border: 1px solid var(--text);
+  border-radius: 50%;
+  background: var(--sel);
+}
+@media (forced-colors: active) {
+  button.ungespeichert::after {
+    forced-color-adjust: none;
+    background: Highlight;
+    border-color: CanvasText;
+  }
 }
 
 /* Titelleiste in schmalen Fenstern (und im Tab der Rahmen-App): Knöpfe mit Symbol nur noch als Symbol;
@@ -2088,7 +2114,8 @@ button.ph-lokal {
   background: none;
 }
 .menue-punkt[aria-disabled='true'] .menue-text,
-.menue-punkt[aria-disabled='true'] .menue-symbol {
+.menue-punkt[aria-disabled='true'] .menue-symbol,
+.menue-punkt[aria-disabled='true'] .menue-tasten {
   opacity: 0.6;
 }
 .menue-punkt.gefahr {
@@ -2107,6 +2134,15 @@ button.ph-lokal {
 .menue-punkt.gefahr .menue-symbol {
   color: var(--danger);
 }
+/* Fokus auf dem Menü selbst (nur Gefahr-Punkte, siehe Menue.tsx): sichtbare Marke, auch mit tabindex="-1" */
+.menue:focus-visible {
+  outline: none;
+  box-shadow: var(--schatten-schwebend), inset 0 0 0 2px var(--fokus);
+}
+/* Haken eines angehakten Umschalters ist die Zustandsanzeige: in Textfarbe, nicht blass wie ein Schmucksymbol */
+.menue-punkt[aria-checked='true']:not([aria-disabled='true']) .menue-symbol {
+  color: var(--text);
+}
 .menue-text {
   flex: 1;
   min-width: 0;
@@ -2117,6 +2153,10 @@ button.ph-lokal {
 .menue-hinweis {
   font-size: var(--fs-xs);
   color: var(--muted);
+}
+/* Tastenkürzel nie umbrechen (rechts steht es, weil .menue-text den Platz füllt) */
+.menue-tasten {
+  white-space: nowrap;
 }
 .menue-trenner {
   height: 1px;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readProjectFile, writeArchive } from '@core/archive';
-import type { Project } from '@core/model';
-import { kgEbene, kgInBasis, kgUnter, standardBezug } from './din276';
-import { berechne, bezugLabel, spanneVon, standAus, vergleiche } from './kosten';
+import type { KostenPosition, Project } from '@core/model';
+import { KG_RISIKO, istRisiko, kgEbene, kgInBasis, kgName, kgUnter, standardBezug } from './din276';
+import { berechne, bezugLabel, euro, euroSpanne, faktorVon, spanneVon, standAus, vergleiche } from './kosten';
 import { mengen, mengenAbgeleitet } from './mengen';
 import { addPositionen, mapPosition, removePosition, setKosten } from './store';
 import { projekt, projektMitKosten } from './testdaten';
@@ -135,6 +135,174 @@ describe('Kosten', () => {
     const [p300, , , p540, p700] = projektMitKosten().kosten!.positionen;
     expect([p300, p540, p700].map(bezugLabel)).toEqual(['m² BGF', 'psch', '% von KG 300 + 400']);
     expect(bezugLabel({ bezug: 'menge', einheit: 'lfm' })).toBe('lfm');
+  });
+
+  it('Prozentpositionen hängen nicht von der Reihenfolge ab', () => {
+    // 300 pauschal 1.000.000 € · 700 = 20 % von 300 = 200.000 € · 810 = 10 % von 300 + 700 = 120.000 € → 1.320.000 €
+    const p300: KostenPosition = { id: 'a', kg: '300', bezeichnung: 'Bauwerk', bezug: 'pauschal', mittel: 1000000 };
+    const p700: KostenPosition = { id: 'b', kg: '700', bezeichnung: 'Baunebenkosten', bezug: 'prozent', basis: ['300'], mittel: 20 };
+    const p810: KostenPosition = { id: 'c', kg: '810', bezeichnung: 'Finanzierung', bezug: 'prozent', basis: ['300', '700'], mittel: 10 };
+    const gesamt = (positionen: KostenPosition[]) => berechne(setKosten(projekt(), { positionen })).gesamtNetto[1];
+    expect(gesamt([p300, p700, p810])).toBeCloseTo(1320000, 2);
+    expect(gesamt([p300, p810, p700])).toBeCloseTo(1320000, 2);
+    expect(gesamt([p810, p700, p300])).toBeCloseTo(1320000, 2);
+    // Gegenprobe: ohne KG 700 in der Grundlage nur 10 % von 300
+    expect(gesamt([p300, { ...p810, basis: ['300'] }, p700])).toBeCloseTo(1300000, 2);
+    // ausgeschaltete Prozentposition zählt nicht zur Grundlage, wird aber selbst gerechnet
+    const e = berechne(setKosten(projekt(), { positionen: [p300, p810, { ...p700, aus: true }] }));
+    expect(e.gesamtNetto[1]).toBeCloseTo(1100000, 2);
+    expect(e.positionen[2].kosten[1]).toBeCloseTo(200000, 2);
+  });
+
+  it('Zirkelbezug zwischen Prozentpositionen (auch über mehrere Stufen) wird erkannt und mit 0 € gerechnet', () => {
+    const positionen: KostenPosition[] = [
+      { id: 'a', kg: '300', bezeichnung: 'Bauwerk', bezug: 'pauschal', mittel: 1000000 },
+      { id: 'b', kg: '710', bezeichnung: 'A', bezug: 'prozent', basis: ['300', '820'], mittel: 10 },
+      { id: 'c', kg: '820', bezeichnung: 'B', bezug: 'prozent', basis: ['600'], mittel: 10 },
+      { id: 'd', kg: '610', bezeichnung: 'C', bezug: 'prozent', basis: ['710'], mittel: 10 },
+      // baut nur auf dem Zirkel auf, gehört nicht dazu
+      { id: 'e', kg: '510', bezeichnung: 'D', bezug: 'prozent', basis: ['300', '700'], mittel: 1 },
+    ];
+    const e = berechne(setKosten(projekt(), { positionen }));
+    expect(e.positionen.slice(1, 4).map((x) => x.kosten)).toEqual([
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],
+    ]);
+    expect(e.positionen[1].hinweis).toBe('Zirkelbezug mit KG 820, KG 610 – mit 0 € gerechnet');
+    expect(e.positionen[4].kosten[1]).toBeCloseTo(10000, 2);
+    expect(e.positionen[4].hinweis).toBeUndefined();
+    expect(e.hinweise.join(' ')).toContain('Zirkelbezug zwischen Prozentpositionen (KG 710, KG 820, KG 610)');
+    expect(e.hinweise.join(' ')).not.toContain('ohne Menge oder Kennwert');
+    // Gegenprobe: Kette ohne Rückbezug wird vollständig gerechnet (610 = 10 % von 710 = 10.000 €, 820 = 10 % davon)
+    const kette = berechne(setKosten(projekt(), { positionen: positionen.map((x) => (x.id === 'b' ? { ...x, basis: ['300'] } : x)) }));
+    expect(kette.positionen.map((x) => Math.round(x.kosten[1]))).toEqual([1000000, 100000, 1000, 10000, 11000]);
+    expect(kette.hinweise.join(' ')).not.toContain('Zirkelbezug');
+  });
+
+  it('Grundlage ohne Kosten wird gemeldet', () => {
+    const positionen: KostenPosition[] = [
+      { id: 'a', kg: '300', bezeichnung: 'Bauwerk', bezug: 'pauschal', mittel: 500000 },
+      { id: 'b', kg: '700', bezeichnung: 'Baunebenkosten', bezug: 'prozent', basis: ['400'], mittel: 20 },
+    ];
+    const e = berechne(setKosten(projekt(), { positionen }));
+    expect(e.positionen[1].hinweis).toBe('Grundlage ohne Kosten (KG 400)');
+    expect(e.hinweise.join(' ')).toContain('1 Position ohne Menge oder Kennwert: KG 700 (Grundlage ohne Kosten (KG 400))');
+    // Gegenprobe: Grundlage mit Kosten
+    const ok = berechne(setKosten(projekt(), { positionen: [positionen[0], { ...positionen[1], basis: ['300'] }] }));
+    expect(ok.positionen[1].hinweis).toBeUndefined();
+    expect(ok.hinweise).toEqual([]);
+  });
+
+  it('vertauschte Bandbreite wird sortiert gerechnet und gemeldet', () => {
+    expect(spanneVon({ von: 20, mittel: 10, bis: 5 })).toEqual([5, 10, 20]);
+    expect(spanneVon({ von: 12, bis: 8 })).toEqual([8, 10, 12]);
+    const p = setKosten(projekt(), { positionen: [{ id: 'a', kg: '400', bezeichnung: 'TGA', bezug: 'bgf', von: 700, mittel: 600, bis: 500 }] });
+    const e = berechne(p);
+    // 540 m² BGF × 500 / 600 / 700 €
+    expect(e.gesamtNetto).toEqual([270000, 324000, 378000]);
+    expect(e.positionen[0].hinweis).toBe('von/Mittel/bis nicht aufsteigend – sortiert gerechnet');
+    expect(e.hinweise.join(' ')).toContain('1 Position mit unplausiblen Eingaben – bitte prüfen: KG 400');
+    // Gegenprobe: aufsteigende Eingabe ohne Hinweis
+    const ok = berechne(setKosten(projekt(), { positionen: [{ id: 'a', kg: '400', bezeichnung: 'TGA', bezug: 'bgf', von: 500, mittel: 600, bis: 700 }] }));
+    expect(ok.gesamtNetto).toEqual(e.gesamtNetto);
+    expect(ok.positionen[0].hinweis).toBeUndefined();
+  });
+
+  it('ungültiger Baupreisindex, Regionalfaktor und Umsatzsteuersatz werden gemeldet und ersetzt', () => {
+    const regional0 = berechne(mitKosten({ regionalfaktor: 0 }));
+    expect(regional0.faktor).toBe(1);
+    expect(regional0.gesamtNetto[1]).toBeCloseTo(1642500, 2);
+    expect(regional0.hinweise.join(' ')).toContain('Regionalfaktor ungültig (0)');
+    const index0 = berechne(mitKosten({ indexBasis: 100, indexAktuell: 0, regionalfaktor: 1.1 }));
+    expect(index0.faktor).toBeCloseTo(1.1, 9);
+    expect(index0.hinweise.join(' ')).toContain('Baupreisindex ungültig (Stand der Kennwerte 100, aktuell 0)');
+    expect(faktorVon({ positionen: [], indexBasis: Number.NaN, indexAktuell: 120 })).toBe(1);
+    expect(faktorVon({ positionen: [], regionalfaktor: -1 })).toBe(1);
+    const ust = berechne(mitKosten({ mwst: 190 }));
+    expect(ust.mwst).toBe(19);
+    expect(ust.gesamtBrutto[1]).toBeCloseTo(1642500 * 1.19, 2);
+    expect(ust.hinweise.join(' ')).toContain('Umsatzsteuersatz ungültig (190 %) – mit 19 % gerechnet');
+    expect(berechne(mitKosten({ mwst: -5 })).mwst).toBe(19);
+    // Gegenprobe: gültige Werte, darunter 0 % Umsatzsteuer, ohne Hinweis
+    const ok = berechne(mitKosten({ indexBasis: 100, indexAktuell: 110, regionalfaktor: 0.9, mwst: 0 }));
+    expect(ok.faktor).toBeCloseTo(0.99, 9);
+    expect(ok.mwst).toBe(0);
+    expect(ok.hinweise.join(' ')).not.toContain('ungültig');
+  });
+
+  it('negative Mengen und Kennwerte (etwa aus einer Datei) werden gemeldet', () => {
+    const p = setKosten(projekt(), {
+      positionen: [
+        { id: 'a', kg: '461', bezeichnung: 'Aufzug', bezug: 'menge', menge: -2, einheit: 'Stk', mittel: 45000 },
+        { id: 'b', kg: '420', bezeichnung: 'Heizung', bezug: 'bgf', mittel: -95 },
+        { id: 'c', kg: '700', bezeichnung: 'Nebenkosten', bezug: 'prozent', basis: ['400'], mittel: -5 },
+      ],
+    });
+    const e = berechne(p);
+    expect(e.positionen.map((x) => x.hinweis)).toEqual(['Menge negativ', 'Kennwert negativ', 'Prozentsatz negativ']);
+    expect(e.hinweise.join(' ')).toContain('3 Positionen mit unplausiblen Eingaben – bitte prüfen: KG 461 (Menge negativ), KG 420 (Kennwert negativ), KG 700 (Prozentsatz negativ)');
+    // Gegenprobe
+    const ok = berechne(setKosten(projekt(), { positionen: [{ id: 'a', kg: '461', bezeichnung: 'Aufzug', bezug: 'menge', menge: 2, einheit: 'Stk', mittel: 45000 }] }));
+    expect(ok.positionen[0].hinweis).toBeUndefined();
+  });
+
+  it('Kostenrisiken: gesondert ausgewiesen, nicht in den Kostengruppen, aber in den Gesamtkosten', () => {
+    expect(istRisiko(KG_RISIKO)).toBe(true);
+    expect(istRisiko('300')).toBe(false);
+    expect(kgName(KG_RISIKO)).toBe('Kostenrisiken');
+    expect(standardBezug(KG_RISIKO)).toEqual({ bezug: 'prozent', basis: ['300', '400'] });
+    // 5 % von KG 300 + 400 (1.296.000 €) = 64.800 € und pauschal 10.000 €
+    const p = addPositionen(projektMitKosten(), [
+      { id: 'r1', kg: KG_RISIKO, bezeichnung: 'Baugrund', bezug: 'prozent', basis: ['300', '400'], mittel: 5 },
+      { id: 'r2', kg: KG_RISIKO, bezeichnung: 'Altlasten', bezug: 'pauschal', mittel: 10000 },
+    ]);
+    const e = berechne(p);
+    expect(e.risiko[1]).toBeCloseTo(64800 + 10000, 2);
+    expect(e.kgNetto[1]).toBeCloseTo(1642500, 2);
+    expect(e.gesamtNetto[1]).toBeCloseTo(1642500 + 74800, 2);
+    expect(e.gesamtBrutto[1]).toBeCloseTo((1642500 + 74800) * 1.19, 2);
+    expect(e.summen.map((x) => x.kg)).not.toContain(KG_RISIKO);
+    // Baunebenkosten (KG 700 auf 300 + 400) und Kennwerte des Bauwerks bleiben ohne Risiko
+    expect(e.summen.find((x) => x.kg === '700')!.summe[1]).toBeCloseTo(259200, 2);
+    expect(e.kennwerte.find((x) => x.kurz === 'BGF')!.wert[1]).toBeCloseTo(2856, 2);
+    expect(e.hinweise).toEqual([]);
+    // Kostenstand und Vergleich führen das Risiko als eigene Zeile
+    const stand = standAus(e, 'berechnung', '', '2026-07-01');
+    expect(stand.summen[KG_RISIKO][1]).toBeCloseTo(74800, 2);
+    const v = vergleiche(stand, berechne(mapPosition(p, 'r2', (x) => ({ ...x, aus: true }))));
+    expect(v.zeilen.at(-1)).toMatchObject({ kg: KG_RISIKO, name: 'Kostenrisiken', differenz: -10000 });
+    expect(v.zeilen.reduce((a, z) => a + z.differenz, 0)).toBeCloseTo(v.gesamt.differenz, 6);
+    // Gegenprobe: ohne Risiko-Positionen ist gesamtNetto = kgNetto, kein Schlüssel im Kostenstand
+    const ohne = berechne(projektMitKosten());
+    expect(ohne.risiko).toEqual([0, 0, 0]);
+    expect(ohne.gesamtNetto).toEqual(ohne.kgNetto);
+    expect(standAus(ohne, 'schaetzung', '').summen[KG_RISIKO]).toBeUndefined();
+  });
+
+  it('Kostenrisiken sind keine Grundlage anderer Prozentpositionen', () => {
+    const p = setKosten(projekt(), {
+      positionen: [
+        { id: 'a', kg: '300', bezeichnung: 'Bauwerk', bezug: 'pauschal', mittel: 1000000 },
+        { id: 'r', kg: KG_RISIKO, bezeichnung: 'Risiko', bezug: 'prozent', basis: ['300'], mittel: 10 },
+        { id: 'b', kg: '700', bezeichnung: 'Baunebenkosten', bezug: 'prozent', basis: ['300', KG_RISIKO], mittel: 20 },
+      ],
+    });
+    const e = berechne(p);
+    expect(e.positionen[2].kosten[1]).toBeCloseTo(200000, 2);
+    expect(e.positionen[2].hinweis).toBe('Kostenrisiken sind keine Grundlage – nicht berücksichtigt');
+    expect(e.positionen[1].hinweis).toBeUndefined();
+    expect(e.hinweise.join(' ')).not.toContain('keine gültige Kostengruppe');
+    expect(e.gesamtNetto[1]).toBeCloseTo(1300000, 2);
+  });
+
+  it('Euro-Beträge ohne „-0“ und „NaN“', () => {
+    expect(euro(-0.3)).toBe('0 €');
+    expect(euro(Number.NaN)).toBe('0 €');
+    expect(euro(1234.5)).toBe('1.235 €');
+    expect(euroSpanne([-0.4, 0, 0.4])).toBe('0 €');
+    expect(euroSpanne([Number.NaN, 5, 10])).toBe('0 – 10 €');
+    expect(euroSpanne([-1000, 0, 1000])).toBe('-1.000 – 1.000 €');
   });
 });
 

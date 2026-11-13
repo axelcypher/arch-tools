@@ -11,7 +11,7 @@ import { OAP_ANGABEN, angabenAus } from '../oap';
 import { projektdateiPfad } from '@core/projektdatei';
 import type { Stammadresse } from '../stammdaten';
 import { stammdatenLaden } from '../stammdaten';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import type { FeldDef } from '@core/ui/ansicht';
 import { felderDerAnsicht, useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';

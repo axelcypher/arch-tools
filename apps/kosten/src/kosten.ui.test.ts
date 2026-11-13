@@ -147,7 +147,7 @@ describe('NUMIO', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(KostenDruck, { onClose: () => {} });
     const text = host.textContent ?? '';
-    expect(text).toContain('Kostenschätzung nach DIN 276 (LPh 2)');
+    expect(text).toContain('Kostenschätzung nach DIN 276:2018-12 (LPh 2)');
     expect(text).toContain('Kosten-Test');
     expect(text).toContain('1.7.2026');
     expect(text).toContain('Gesamt brutto');
@@ -182,9 +182,9 @@ describe('NUMIO', () => {
     let zu = false;
     const host = render(KatalogDialog, { onClose: () => (zu = true) });
     expect(host.textContent).toContain('Büro · Stand: 1/2026 · Baupreisindex 130 · 2 Einträge');
-    expect(knopf(host, 'Einträge wählen').disabled).toBe(true);
+    expect(knopf(host, 'Als Positionen übernehmen').disabled).toBe(true);
     act(() => (host.querySelector('thead input[type="checkbox"]') as HTMLInputElement).click());
-    act(() => knopf(host, '2 als Positionen übernehmen').click());
+    act(() => knopf(host, 'Als Positionen übernehmen (2)').click());
     expect(zu).toBe(true);
     expect(kosten().positionen.map((p) => [p.kg, p.mittel, p.quelle])).toEqual([
       ['300', 1800, 'Büro, 1/2026'],
@@ -246,11 +246,11 @@ describe('NUMIO', () => {
     const awf = [...host.querySelectorAll('.ko-table button.link')].find((b) => b.textContent === 'AWF') as HTMLButtonElement;
     await act(async () => awf.click());
     expect(host.querySelector('.mv-bild h2')?.textContent).toBe('AWF – Außenwandfläche: 307,63 m²');
-    expect(host.querySelector('.mv-umschalter button.active')?.textContent).toBe('3D-Modell');
+    expect(host.querySelector('.segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
     expect(host.querySelectorAll('.mp-geschoss')).toHaveLength(0);
     expect(host.querySelector('.mv-rechenweg tbody tr')?.textContent).toContain('ohne 1 Abschnitt an anderen Umrissen');
     // im Grundriss: Wände als Kanten
-    act(() => knopf(host.querySelector('.mv-umschalter')!, 'Grundrisse').click());
+    act(() => knopf(host.querySelector('.mv-kopf .segment')!, 'Grundrisse').click());
     expect(host.querySelectorAll('.mp-teil.kanten')).toHaveLength(3);
 
     // festgelegte Menge: Hinweis, dass das Bild die abgeleitete Menge zeigt
