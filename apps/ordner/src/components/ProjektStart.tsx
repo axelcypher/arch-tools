@@ -78,7 +78,7 @@ export function ProjektStart({
       await meldung('Status nicht gesetzt', e instanceof Error ? e.message : String(e));
     }
   };
-  /** Kontextmenü je Projekt: ergänzen, prüfen, im Explorer öffnen, Status, anheften */
+  /** Kontextmenü je Projekt: ergänzen, prüfen, Ordner öffnen, Status, anheften */
   const kontextMenue = (p: UebersichtProjekt): KontextEintrag[] => {
     const dran = angeheftet.some((a) => a.toLowerCase() === p.schluessel.toLowerCase());
     const status = p.projektStatus ?? 'aktiv';
@@ -91,7 +91,7 @@ export function ProjektStart({
         titel: 'Katasterauszüge (PDF) und DXF-Pläne aus der QGIS-Vorlage um die Projektadresse exportieren',
         aktion: () => setKataster({ basis: p.schluessel, name: p.titel ? `${p.kuerzel} ${p.titel}` : p.kuerzel }),
       },
-      { label: 'Im Explorer öffnen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => void meldung('Ordner ließ sich nicht öffnen', String(e))) },
+      { label: 'Ordner öffnen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => void meldung('Ordner ließ sich nicht öffnen', String(e))) },
       ...(status !== 'abgeschlossen'
         ? [
             {
