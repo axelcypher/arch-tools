@@ -179,7 +179,7 @@ describe('Zwischenstand, Verlauf und Speichern', () => {
       throw new Error('QuotaExceededError');
     });
     const datei = new File(['KG;Bezeichnung;Bezug;Grundlage;von;Mittel;bis\n300;Bauwerk;BGF;;1500;1800;2100'], 'Katalog.csv');
-    vi.spyOn(await import('@core/platform/files'), 'pickFile').mockResolvedValue(datei);
+    vi.spyOn(await import('@core/platform/files'), 'pickFile').mockResolvedValue(datei as never); // Überladung mit einer Datei
     expect(leseKatalog(await datei.text(), datei.name).eintraege).toHaveLength(1);
     useKosten.getState().load(projektMitKosten());
     const host = render(KatalogDialog, { onClose: () => undefined });
