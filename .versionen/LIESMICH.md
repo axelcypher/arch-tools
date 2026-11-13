@@ -49,5 +49,5 @@ prüft die CI sie nicht oder der Release-Lauf baut sie nicht:
 veröffentlichte. Für eine App ohne Tag hebt der Release-Lauf nichts, er übernimmt die Version und baut sie. Der PR,
 der die App anlegt, braucht trotzdem eine Notiz für sie, etwa `{"baurecht": {"stufe": "minor", "notiz": "Erste
 Fassung."}}`. Die Stufe hat dabei keine Wirkung, Arkly hebt für eine neue App immer Minor. Erst ab dem zweiten
-Release zählt die Stufe für die App selbst. Der öffentliche Updater-Schlüssel in `tauri.conf.json` muss derselbe sein wie bei den anderen Apps,
-sonst bricht der Release-Lauf ab.
+Release zählt die Stufe für die App selbst. Der öffentliche Updater-Schlüssel in `tauri.conf.json` muss derselbe
+sein wie bei den anderen Apps, sonst bricht der Release-Lauf ab.
