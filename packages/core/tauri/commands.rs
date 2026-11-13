@@ -533,6 +533,7 @@ async fn projekt_datei_anlegen(root: String, pfad: String, contents_base64: Stri
         Ok(mut f) => {
             // scheitert das Schreiben (Datenträger voll, Netz weg), keine halb geschriebene Datei liegen lassen – sonst
             // gälte sie beim nächsten Versuch als „gibt es schon“
+            // (sync_all kann auf manchen SMB-Freigaben scheitern, obwohl die Daten da sind – dann lieber neu versuchen)
             if let Err(e) = f.write_all(&bytes).and_then(|_| f.sync_all()) {
                 drop(f);
                 let _ = std::fs::remove_file(&p);

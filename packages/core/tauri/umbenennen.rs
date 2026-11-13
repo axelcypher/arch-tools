@@ -14,7 +14,8 @@ fn gleiche_datei(a: &std::path::Path, b: &std::path::Path) -> bool {
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
-        match (std::fs::metadata(a), std::fs::metadata(b)) {
+        // symlink_metadata: zwei Verknüpfungen auf dasselbe Ziel sind nicht dieselbe Datei
+        match (std::fs::symlink_metadata(a), std::fs::symlink_metadata(b)) {
             (Ok(x), Ok(y)) => x.dev() == y.dev() && x.ino() == y.ino(),
             _ => false,
         }
@@ -65,4 +66,24 @@ async fn projekt_datei_umbenennen(root: String, alt: String, neu: String) -> Res
     })?;
     log::info!("Datei umbenannt: {} → {}", von.display(), nach.display());
     Ok(true)
+}
+
+#[cfg(test)]
+mod umbenennen_tests {
+    use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn gleiche_datei_nur_bei_derselben_datei() {
+        let d = std::env::temp_dir().join(format!("umbenennen-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        std::fs::write(d.join("Mail.msg"), "a").unwrap();
+        assert!(gleiche_datei(&d.join("Mail.msg"), &d.join("Mail.msg")));
+        // andere Schreibweise: auf einem Dateisystem mit Groß-/Kleinschreibung eine andere Datei
+        std::fs::write(d.join("mail.msg"), "b").unwrap();
+        assert!(!gleiche_datei(&d.join("Mail.msg"), &d.join("mail.msg")));
+        assert!(!gleiche_datei(&d.join("Mail.msg"), &d.join("x.msg")));
+        let _ = std::fs::remove_dir_all(&d);
+    }
 }

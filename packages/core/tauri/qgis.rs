@@ -57,37 +57,56 @@ fn qgis_gelungen(ausgabe: &str) -> std::collections::HashSet<String> {
         .collect()
 }
 
-/// Programm ausführen, Ausgaben sammeln; nach `limit` beenden. Fehlertext bei Zeitüberschreitung.
+/// Prozess samt allen Kindprozessen beenden. Unter Windows startet qgis_process-qgis(-ltr).bat einen cmd.exe, der
+/// qgis_process.exe und Python startet; `kill()` beendete nur cmd.exe – QGIS liefe verwaist weiter, hielte die
+/// Ausgabe-Pipes und den Temp-Ordner offen. Deshalb dort `taskkill /T /F` für den ganzen Baum.
+fn qgis_beenden(kind: &mut std::process::Child) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let _ = std::process::Command::new("taskkill")
+            .args(["/PID", &kind.id().to_string(), "/T", "/F"])
+            .creation_flags(0x0800_0000)
+            .status();
+    }
+    let _ = kind.kill();
+    let _ = kind.wait();
+}
+
+/// Programm ausführen, Ausgaben sammeln; nach `limit` samt Kindprozessen beenden. Fehlertext bei Zeitüberschreitung.
+/// Die Ausgaben werden höchstens 10 s nach dem Ende abgewartet – hält ein verwaister Enkelprozess die Pipe offen,
+/// geht es ohne den Rest weiter, statt zu hängen.
 fn qgis_mit_zeitlimit(cmd: &mut std::process::Command, limit: std::time::Duration) -> Result<std::process::Output, String> {
     use std::io::Read;
     use std::process::Stdio;
     let mut kind = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(|e| e.to_string())?;
     // Ausgaben in eigenen Fäden lesen – sonst blockiert QGIS bei vollem Puffer und das Zeitlimit liefe ins Leere
-    let mut out = kind.stdout.take().ok_or("keine Ausgabe")?;
-    let mut err = kind.stderr.take().ok_or("keine Fehlerausgabe")?;
-    let lies_out = std::thread::spawn(move || {
-        let mut b = Vec::new();
-        let _ = out.read_to_end(&mut b);
-        b
-    });
-    let lies_err = std::thread::spawn(move || {
-        let mut b = Vec::new();
-        let _ = err.read_to_end(&mut b);
-        b
-    });
+    let out = kind.stdout.take().ok_or("keine Ausgabe")?;
+    let err = kind.stderr.take().ok_or("keine Fehlerausgabe")?;
+    let lesen = |mut r: Box<dyn Read + Send>| {
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let mut b = Vec::new();
+            let _ = r.read_to_end(&mut b);
+            let _ = tx.send(b);
+        });
+        rx
+    };
+    let lies_out = lesen(Box::new(out));
+    let lies_err = lesen(Box::new(err));
+    let frist = std::time::Duration::from_secs(10);
     let beginn = std::time::Instant::now();
     let status = loop {
         match kind.try_wait().map_err(|e| e.to_string())? {
             Some(s) => break s,
             None if beginn.elapsed() >= limit => {
-                let _ = kind.kill();
-                let _ = kind.wait();
+                qgis_beenden(&mut kind);
                 return Err(format!("QGIS hat nach {} Minuten nicht geantwortet und wurde beendet.", limit.as_secs() / 60));
             }
             None => std::thread::sleep(std::time::Duration::from_millis(200)),
         }
     };
-    Ok(std::process::Output { status, stdout: lies_out.join().unwrap_or_default(), stderr: lies_err.join().unwrap_or_default() })
+    Ok(std::process::Output { status, stdout: lies_out.recv_timeout(frist).unwrap_or_default(), stderr: lies_err.recv_timeout(frist).unwrap_or_default() })
 }
 
 /// Ist das der Name eines qgis_process-Aufrufs? (qgis_process, qgis_process.exe, qgis_process-qgis.bat, -qgis-ltr.bat …)
@@ -230,4 +249,40 @@ async fn qgis_ausfuehren(programm: String, skript: String, auftrag: String, vorl
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+#[cfg(test)]
+mod qgis_tests {
+    use super::*;
+
+    #[test]
+    fn gelungene_plaene_aus_der_ausgabe() {
+        let aus = "INFO x\nERGEBNIS {\"id\":\"a\",\"ok\":true}\nERGEBNIS {\"id\":\"b\",\"ok\":false,\"fehler\":\"kaputt\"}\n  Präfix ERGEBNIS {\"id\":\"c\",\"ok\":true}\nERGEBNIS kein json\nERGEBNIS {\"ok\":true}\n";
+        let mut g: Vec<_> = qgis_gelungen(aus).into_iter().collect();
+        g.sort();
+        assert_eq!(g, vec!["a".to_string(), "c".to_string()]);
+        // Gegenprobe: ohne ERGEBNIS-Zeilen nichts
+        assert!(qgis_gelungen("nur Text\n").is_empty());
+    }
+
+    #[test]
+    fn zeitlimit_je_plan_mindestens_fuenf_minuten() {
+        assert_eq!(qgis_zeitlimit(0).as_secs(), 300);
+        assert_eq!(qgis_zeitlimit(1).as_secs(), 300);
+        assert_eq!(qgis_zeitlimit(2).as_secs(), 360);
+        assert_eq!(qgis_zeitlimit(4).as_secs(), 720);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn haengender_prozess_wird_beendet() {
+        let t = std::time::Instant::now();
+        let r = qgis_mit_zeitlimit(std::process::Command::new("sleep").arg("30"), std::time::Duration::from_secs(1));
+        assert!(r.is_err());
+        assert!(t.elapsed().as_secs() < 5);
+        // Gegenprobe: große Ausgabe ohne Hängen, beide Kanäle vollständig
+        let r = qgis_mit_zeitlimit(std::process::Command::new("sh").arg("-c").arg("head -c 300000 /dev/zero; echo fertig >&2"), std::time::Duration::from_secs(10)).unwrap();
+        assert_eq!(r.stdout.len(), 300000);
+        assert_eq!(String::from_utf8_lossy(&r.stderr).trim(), "fertig");
+    }
 }

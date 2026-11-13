@@ -76,6 +76,8 @@ export interface SaveMergedOptions extends Omit<SaveBinaryOptions, 'data'> {
   /**
    * erwarteter Stand der Zieldatei (z. B. aus `liesMitStand`): Weicht er ab, wurde sie inzwischen von außen geändert –
    * dann wird nichts geschrieben (`DateiVonAussenGeaendert`). `null` = die Datei darf es noch nicht geben; fehlt = keine Prüfung.
+   * Nur Desktop; im Browser ohne Wirkung. Gilt auch nach der Wahl im Dialog (bestätigtes Überschreiben einer anderen Datei
+   * scheitert dann). Den neuen Stand nach dem Schreiben liefert `liesMitStand` bzw. der Befehl `datei_stand`.
    */
   stand?: { groesse: number; geaendert: number } | null;
 }
