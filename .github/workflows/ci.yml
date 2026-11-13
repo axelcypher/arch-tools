@@ -19,8 +19,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # Im PR: App-Versionen gegen main und vorhandene Tags prüfen – sonst überspringt der Release eine schon vergebene
-      # Version und die Änderung fehlt im ausgelieferten Stand (scripts/versionen-pruefen.mjs)
+      # Im PR: keine Version geändert, jede geänderte App in einer gültigen Versionsnotiz (.versionen/), keine Notiz
+      # gelöscht – Versionen setzt der Release-Lauf (scripts/versionen-pruefen.mjs, versionen-setzen.mjs)
       - name: Versionen prüfen
         if: github.event_name == 'pull_request'
         env:

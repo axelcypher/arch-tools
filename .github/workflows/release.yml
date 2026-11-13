@@ -58,15 +58,20 @@ jobs:
         with:
           # volle Historie, damit der Versions-Commit auf ein inzwischen weitergeführtes main aufsetzen kann
           fetch-depth: 0
+      # auch beim manuellen Start: so lassen sich liegengebliebene Notizen jederzeit abarbeiten
       - name: Versionen setzen
-        if: github.event_name == 'push'
         env:
           NOTIZEN_AUS: ${{ runner.temp }}/notizen.json
         run: |
+          # immer auf dem neuesten main rechnen, nicht auf dem auslösenden Commit: Hat ein früherer Lauf inzwischen
+          # Versionen gesetzt und Notizen gelöscht, zählte dieser Lauf sonst dieselben Notizen ein zweites Mal
+          git fetch -q origin main
+          git reset -q --hard origin/main
+          start=$(git rev-parse HEAD)
           # ein Fehler hier darf die Releases nie blockieren: dann nur Warnung, gebaut wird, was schon eine neue Version hat
           if ! out=$(node scripts/versionen-setzen.mjs automatisch); then
-            echo "::warning::Versionen nicht automatisch gesetzt (Fehler im Skript, siehe oben) – die Notizen bleiben für den nächsten Lauf liegen."
-            git reset -q --hard "$GITHUB_SHA"
+            echo "::warning::Versionen nicht automatisch gesetzt (Fehler im Skript, siehe oben) – die Notizen bleiben liegen; „Build & Release“ von Hand starten, sobald behoben."
+            git reset -q --hard "$start"
             rm -f "$NOTIZEN_AUS"
             exit 0
           fi
@@ -88,8 +93,8 @@ jobs:
               break
             fi
           done
-          echo "::warning::Versionen ließen sich nicht nach main schreiben (Schutzregel, Netz oder Konflikt). Die Notizen bleiben liegen; der nächste Lauf versucht es erneut."
-          git reset -q --hard "$GITHUB_SHA"
+          echo "::warning::Versionen ließen sich nicht nach main schreiben (Schutzregel, Netz oder Konflikt). Die Notizen bleiben liegen; der nächste Lauf (oder „Build & Release“ von Hand) arbeitet sie ab."
+          git reset -q --hard "$start"
           rm -f "$NOTIZEN_AUS"
       - id: v
         env:
@@ -179,7 +184,7 @@ jobs:
           projectPath: apps/${{ matrix.app }}
           tauriScript: npx tauri
           tagName: ${{ matrix.tag }}
-          # Tag am gebauten Stand (mit automatisch gesetzter Arkly-Version), nicht am auslösenden Commit
+          # Tag am gebauten Stand (mit den automatisch gesetzten Versionen), nicht am auslösenden Commit
           releaseCommitish: ${{ needs.version.outputs.sha }}
           releaseName: ${{ matrix.name }} v${{ matrix.version }}
           releaseBody: |

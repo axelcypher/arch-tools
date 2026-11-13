@@ -1,15 +1,22 @@
 // Tests für scripts/versionen-setzen.mjs – Aufruf: node --test scripts/versionen-setzen.test.mjs
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test } from 'node:test';
-import { erhoehen, hoehere, lockSetzen, neueVersionen, notizenLesen, tagsAus, veroeffentlicht, versionSetzen } from './versionen-setzen.mjs';
+import { after, test } from 'node:test';
+import { automatisch, erhoehen, hoehere, lockSetzen, neueVersionen, notizenLesen, tagsAus, veroeffentlicht, versionSetzen } from './versionen-setzen.mjs';
 import { APPS } from './versionen-pruefen.mjs';
 
 const stand = { flaechenrechner: '0.40.2', grz: '0.28.3', kosten: '0.24.3', ordner: '0.23.3', entzerrung: '0.18.3', formulare: '0.49.4', ava: '0.10.4', suite: '0.30.1' };
 const tags = ['v0.40.2', 'grz-v0.28.3', 'kosten-v0.24.3', 'ordner-v0.23.3', 'entzerrung-v0.18.3', 'formulare-v0.49.4', 'ava-v0.10.4', 'suite-v0.30.1', 'suite-v0.30.0'];
 const e = (app, stufe, notiz = 'Satz.') => ({ app, stufe, notiz });
+const temp = [];
+const tempOrdner = (name) => {
+  const w = mkdtempSync(join(tmpdir(), name));
+  temp.push(w);
+  return w;
+};
+after(() => temp.forEach((w) => rmSync(w, { recursive: true, force: true })));
 
 test('Hilfen: Stufen, Erhöhen, Tags', () => {
   assert.equal(hoehere('patch', 'minor'), 'minor');
@@ -47,16 +54,29 @@ test('über der höchsten veröffentlichten Version, auch wenn main dahinter lie
 
 test('Gegenproben: keine Notizen – nichts; Übergang mit von Hand gehobener, unveröffentlichter Version', () => {
   assert.deepEqual(neueVersionen({ versionen: stand, tags, eintraege: [] }), {});
-  // grz schon von Hand auf 0.29.0 (ohne Tag): bleibt, Arkly kommt mit
-  const r = neueVersionen({ versionen: { ...stand, grz: '0.29.0' }, tags, eintraege: [] });
-  assert.deepEqual(Object.keys(r), ['suite']);
-  assert.equal(r.suite.neu, '0.30.2');
-  // Arkly selbst unveröffentlicht: bleibt
-  assert.equal(neueVersionen({ versionen: { ...stand, suite: '0.31.0' }, tags, eintraege: [e('grz', 'patch')] }).suite, undefined);
+  // grz schon von Hand auf 0.29.0 (ohne Tag, Minor gegenüber 0.28.3): bleibt, zählt für Arkly als Minor
+  const r = neueVersionen({ versionen: { ...stand, grz: '0.29.0' }, tags, eintraege: [e('grz', 'patch', 'Mit Notiz.')] });
+  assert.deepEqual(r.grz, { alt: '0.29.0', neu: '0.29.0', stufe: 'minor', notizen: ['Mit Notiz.'] });
+  assert.equal(r.suite.neu, '0.31.0');
+  // Arkly selbst von Hand gehoben: bleibt, Sätze aber dabei
+  const s = neueVersionen({ versionen: { ...stand, suite: '0.31.0' }, tags, eintraege: [e('grz', 'patch', 'a'), e('suite', 'patch', 'b')] });
+  assert.deepEqual(s.suite, { alt: '0.31.0', neu: '0.31.0', stufe: 'patch', notizen: ['b', 'TERRIO: a'] });
+  // unveröffentlicht, aber NICHT höher als der höchste Tag: gilt nicht als von Hand gehoben, wird über den Tag gehoben
+  const t = neueVersionen({ versionen: { ...stand, grz: '0.28.1' }, tags, eintraege: [e('grz', 'patch')] });
+  assert.equal(t.grz.neu, '0.28.4');
+});
+
+test('Major-Sprung einer App: Arkly Minor; App ohne package.json wird übergangen', () => {
+  const r = neueVersionen({ versionen: stand, tags, eintraege: [e('grz', 'major')] });
+  assert.equal(r.grz.neu, '1.0.0');
+  assert.equal(r.suite.neu, '0.31.0');
+  const ohne = structuredClone(stand);
+  delete ohne.ava;
+  assert.deepEqual(Object.keys(neueVersionen({ versionen: ohne, tags, eintraege: [e('ava', 'minor')] })), []);
 });
 
 function kopie() {
-  const w = mkdtempSync(join(tmpdir(), 'versionen-'));
+  const w = tempOrdner('versionen-');
   for (const a of APPS) for (const p of ['package.json', 'src-tauri/tauri.conf.json', 'src-tauri/Cargo.toml', 'src-tauri/Cargo.lock']) cpSync(`apps/${a}/${p}`, join(w, `apps/${a}/${p}`));
   cpSync('package-lock.json', join(w, 'package-lock.json'));
   return w;
@@ -95,7 +115,7 @@ test('ein Fehler beim Setzen hinterlässt keinen halb gesetzten Stand', () => {
 });
 
 test('Notizen lesen: nur *.json, sortiert, Fehler gesammelt', () => {
-  const w = mkdtempSync(join(tmpdir(), 'notizen-'));
+  const w = tempOrdner('notizen-');
   mkdirSync(join(w, '.versionen'));
   writeFileSync(join(w, '.versionen/LIESMICH.md'), '# Notizen');
   writeFileSync(join(w, '.versionen/b.json'), JSON.stringify({ ava: { stufe: 'minor', notiz: 'B' } }));
@@ -111,6 +131,37 @@ test('Notizen lesen: nur *.json, sortiert, Fehler gesammelt', () => {
     ['grz', 'ava'],
   );
   assert.match(r.fehler[0], /c\.json: kein gültiges JSON/);
+  assert.deepEqual(
+    r.gueltig.map((d) => d.split('/').pop()),
+    ['a.json', 'b.json'],
+  );
   // ohne Ordner: nichts
-  assert.deepEqual(notizenLesen(mkdtempSync(join(tmpdir(), 'leer-'))), { dateien: [], eintraege: [], fehler: [] });
+  assert.deepEqual(notizenLesen(tempOrdner('leer-')), { dateien: [], gueltig: [], eintraege: [], fehler: [] });
+});
+
+test('automatisch: setzt Versionen, löscht gültige Notizen, ungültige bleiben, liefert Sätze und Zusammenfassung', () => {
+  const w = kopie();
+  mkdirSync(join(w, '.versionen'));
+  writeFileSync(join(w, '.versionen/LIESMICH.md'), '# Notizen');
+  writeFileSync(join(w, '.versionen/a.json'), JSON.stringify({ grz: { stufe: 'minor', notiz: 'Neuer Nachweis.' } }));
+  writeFileSync(join(w, '.versionen/b.json'), JSON.stringify({ kosten: { stufe: 'patch', notiz: 'Rundung.' } }));
+  writeFileSync(join(w, '.versionen/kaputt.json'), JSON.stringify({ ava: { stufe: 'riesig', notiz: 'x' } }));
+  const versionen = Object.fromEntries(APPS.map((a) => [a, JSON.parse(readFileSync(join(w, `apps/${a}/package.json`), 'utf8')).version]));
+  const tagsJetzt = APPS.map((a) => (a === 'flaechenrechner' ? `v${versionen[a]}` : `${a}-v${versionen[a]}`));
+  const r = automatisch({ wurzel: w, tags: tagsJetzt });
+  const neuGrz = erhoehen(versionen.grz, 'minor');
+  assert.match(r.zusammenfassung, new RegExp(`^TERRIO ${neuGrz.replace(/\./g, '\\.')}, NUMIO [\\d.]+, Arkly [\\d.]+$`));
+  assert.equal(JSON.parse(readFileSync(join(w, 'apps/grz/package.json'), 'utf8')).version, neuGrz);
+  assert.equal(JSON.parse(readFileSync(join(w, 'package-lock.json'), 'utf8')).packages['apps/grz'].version, neuGrz);
+  assert.deepEqual(r.notizen.grz, 'Neuer Nachweis.');
+  assert.deepEqual(r.notizen.suite, 'TERRIO: Neuer Nachweis.\nNUMIO: Rundung.');
+  assert.equal(existsSync(join(w, '.versionen/a.json')), false);
+  assert.equal(existsSync(join(w, '.versionen/b.json')), false);
+  // ungültig: bleibt liegen, mit Warnung; FABRIO unverändert
+  assert.equal(existsSync(join(w, '.versionen/kaputt.json')), true);
+  assert.equal(existsSync(join(w, '.versionen/LIESMICH.md')), true);
+  assert.match(r.warnungen[0], /kaputt\.json: ava: .*Notiz bleibt liegen/);
+  assert.equal(JSON.parse(readFileSync(join(w, 'apps/ava/package.json'), 'utf8')).version, versionen.ava);
+  // zweiter Lauf: nichts mehr zu tun (die kaputte Notiz zählt nicht)
+  assert.equal(automatisch({ wurzel: w, tags: tagsJetzt }).zusammenfassung, '');
 });

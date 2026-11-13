@@ -58,24 +58,40 @@ export function erhoehen(version, stufe) {
 export function neueVersionen({ versionen, tags, eintraege }) {
   const ergebnis = {};
   const stufeVon = (app) => eintraege.filter((e) => e.app === app).reduce((s, e) => hoehere(s, e.stufe), null);
-  const unveroeffentlicht = (app) => !!versionen[app] && !tags.includes(tagVon(app, versionen[app]));
-  const basisVon = (app) => [versionen[app], veroeffentlicht(app, tags)].filter(Boolean).reduce((m, v) => (vergleich(v, m) > 0 ? v : m));
+  const notizenVon = (app) => eintraege.filter((e) => e.app === app).map((e) => e.notiz);
+  const hoechsteTag = (app) => veroeffentlicht(app, tags);
+  // von Hand gehoben (Übergang) und noch nicht veröffentlicht – nur, wenn höher als die höchste veröffentlichte Version
+  const vonHand = (app) => !!versionen[app] && !tags.includes(tagVon(app, versionen[app])) && (!hoechsteTag(app) || vergleich(versionen[app], hoechsteTag(app)) > 0);
+  const basisVon = (app) => [versionen[app], hoechsteTag(app)].filter(Boolean).reduce((m, v) => (vergleich(v, m) > 0 ? v : m));
   for (const app of APPS.filter((a) => a !== SUITE)) {
+    if (!versionen[app]) continue;
     const stufe = stufeVon(app);
-    if (!stufe || !versionen[app]) continue;
-    // schon von Hand gehoben (Übergang) und noch nicht veröffentlicht: diese Version gilt, wenn sie mindestens so hoch ist
-    const neu = unveroeffentlicht(app) ? versionen[app] : erhoehen(basisVon(app), stufe);
-    ergebnis[app] = { alt: versionen[app], neu, stufe, notizen: eintraege.filter((e) => e.app === app).map((e) => e.notiz) };
+    if (vonHand(app)) {
+      // diese Version gilt; ihre Stufe ergibt sich aus dem Abstand zur höchsten veröffentlichten
+      ergebnis[app] = { alt: versionen[app], neu: versionen[app], stufe: hoehere(stufe, erhoehung(hoechsteTag(app), versionen[app])), notizen: notizenVon(app) };
+    } else if (stufe) {
+      ergebnis[app] = { alt: versionen[app], neu: erhoehen(basisVon(app), stufe), stufe, notizen: notizenVon(app) };
+    }
   }
-  // Arkly enthält alle Apps
-  const andere = APPS.filter((a) => a !== SUITE && (ergebnis[a] || unveroeffentlicht(a)));
-  const abgeleitet = andere.length ? (andere.some((a) => (ergebnis[a]?.stufe ?? 'patch') !== 'patch') ? 'minor' : 'patch') : null;
+  // Arkly enthält alle Apps: neue Version, sobald eine andere App eine bekommt (Minor bei Minor/Major, sonst Patch)
+  const andere = APPS.filter((a) => a !== SUITE && ergebnis[a]);
+  const abgeleitet = andere.length ? (andere.some((a) => ergebnis[a].stufe !== 'patch') ? 'minor' : 'patch') : null;
   const stufe = hoehere(stufeVon(SUITE), abgeleitet);
-  if (stufe && versionen[SUITE] && !unveroeffentlicht(SUITE)) {
-    const notizen = [...eintraege.filter((e) => e.app === SUITE).map((e) => e.notiz), ...andere.filter((a) => ergebnis[a]).flatMap((a) => ergebnis[a].notizen.map((n) => `${NAMEN[a]}: ${n}`))];
-    ergebnis[SUITE] = { alt: versionen[SUITE], neu: erhoehen(basisVon(SUITE), stufe), stufe, notizen };
+  if (stufe && versionen[SUITE]) {
+    const notizen = [...notizenVon(SUITE), ...andere.flatMap((a) => ergebnis[a].notizen.map((n) => `${NAMEN[a]}: ${n}`))];
+    const neu = vonHand(SUITE) ? versionen[SUITE] : erhoehen(basisVon(SUITE), stufe);
+    ergebnis[SUITE] = { alt: versionen[SUITE], neu, stufe, notizen };
   }
   return ergebnis;
+}
+
+/** Art der Erhöhung von `alt` auf `neu` ('major', 'minor', 'patch'; alt fehlt = 'minor') */
+export function erhoehung(alt, neu) {
+  if (!alt) return 'minor';
+  const [a, b] = [alt.split('.').map(Number), neu.split('.').map(Number)];
+  if (b[0] !== a[0]) return 'major';
+  if (b[1] !== a[1]) return 'minor';
+  return 'patch';
 }
 
 /** Version einer App an allen fünf Stellen setzen – erst alles lesen und prüfen, dann schreiben (ganz oder gar nicht) */
@@ -117,21 +133,54 @@ export function lockSetzen(neu, wurzel = '.') {
   writeFileSync(p, `${JSON.stringify(o, null, 2)}\n`);
 }
 
-/** alle Notizen des Ordners lesen (ohne LIESMICH) */
+/** alle Notizen des Ordners lesen (ohne LIESMICH); `gueltig` = Dateien ohne Fehler (nur die werden danach gelöscht) */
 export function notizenLesen(wurzel = '.') {
   const ordner = `${wurzel}/${NOTIZEN}`;
-  if (!existsSync(ordner)) return { dateien: [], eintraege: [], fehler: [] };
+  if (!existsSync(ordner)) return { dateien: [], gueltig: [], eintraege: [], fehler: [] };
   const dateien = readdirSync(ordner)
     .filter((n) => n.endsWith('.json'))
     .sort();
   const eintraege = [];
   const fehler = [];
+  const gueltig = [];
   for (const n of dateien) {
     const r = notizAus(`${NOTIZEN}/${n}`, readFileSync(`${ordner}/${n}`, 'utf8'));
-    eintraege.push(...r.eintraege);
     fehler.push(...r.fehler);
+    // eine fehlerhafte Datei zählt gar nicht und bleibt liegen – sonst bekäme die Änderung still nie eine Version
+    if (r.fehler.length) continue;
+    eintraege.push(...r.eintraege);
+    gueltig.push(`${ordner}/${n}`);
   }
-  return { dateien: dateien.map((n) => `${ordner}/${n}`), eintraege, fehler };
+  return { dateien: dateien.map((n) => `${ordner}/${n}`), gueltig, eintraege, fehler };
+}
+
+/**
+ * Der Ablauf im Release-Lauf (ohne Git, testbar): Notizen lesen, Versionen setzen, gültige Notizen löschen. Liefert
+ * die Zusammenfassung für den Commit (leer = nichts zu tun), die Release-Sätze je App und die Warnungen.
+ */
+export function automatisch({ wurzel = '.', tags }) {
+  const versionen = Object.fromEntries(
+    APPS.filter((x) => existsSync(`${wurzel}/apps/${x}/package.json`)).map((x) => [x, JSON.parse(readFileSync(`${wurzel}/apps/${x}/package.json`, 'utf8')).version]),
+  );
+  const { gueltig, eintraege, fehler } = notizenLesen(wurzel);
+  const neu = neueVersionen({ versionen, tags, eintraege });
+  const geaendert = Object.fromEntries(
+    Object.entries(neu)
+      .filter(([, e]) => e.neu !== e.alt)
+      .map(([app, e]) => [app, e.neu]),
+  );
+  for (const [app, v] of Object.entries(geaendert)) versionSetzen(app, v, wurzel);
+  if (Object.keys(geaendert).length) lockSetzen(geaendert, wurzel);
+  for (const d of gueltig) rmSync(d);
+  const notizen = Object.fromEntries(Object.entries(neu).map(([app, e]) => [app, e.notizen.join('\n')]));
+  const zusammenfassung = Object.keys(geaendert).length
+    ? Object.entries(geaendert)
+        .map(([app, v]) => `${NAMEN[app]} ${v}`)
+        .join(', ')
+    : gueltig.length
+      ? 'Notizen übernommen'
+      : '';
+  return { zusammenfassung, notizen, warnungen: fehler.map((f) => `${f} – Notiz bleibt liegen`) };
 }
 
 /* ---------- Aufruf ---------- */
@@ -147,30 +196,16 @@ function main() {
     console.error('Aufruf: versionen-setzen.mjs automatisch | setzen <app> <x.y.z>');
     process.exit(2);
   }
-  const versionen = Object.fromEntries(APPS.map((x) => [x, JSON.parse(readFileSync(`apps/${x}/package.json`, 'utf8')).version]));
   const tags = tagsAus(execFileSync('git', ['ls-remote', '--tags', '--refs', 'origin'], { encoding: 'utf8' }));
-  const { dateien, eintraege, fehler } = notizenLesen();
-  // eine kaputte Notiz darf die übrigen nicht aufhalten (die PR-Prüfung sollte sie verhindert haben)
-  for (const f of fehler) console.log(`::warning::${f} – übergangen`);
-  const neu = neueVersionen({ versionen, tags, eintraege });
-  for (const [app, e] of Object.entries(neu)) if (e.neu !== e.alt) versionSetzen(app, e.neu);
-  const geaendert = Object.fromEntries(
-    Object.entries(neu)
-      .filter(([, e]) => e.neu !== e.alt)
-      .map(([app, e]) => [app, e.neu]),
-  );
-  if (Object.keys(geaendert).length) lockSetzen(geaendert);
-  for (const d of dateien) rmSync(d);
-  // Release-Notizen je App für den Bau (Datei aus der Umgebung, sonst nicht)
-  if (process.env.NOTIZEN_AUS) writeFileSync(process.env.NOTIZEN_AUS, JSON.stringify(Object.fromEntries(Object.entries(neu).map(([app, e]) => [app, e.notizen.join('\n')]))));
-  const zusammenfassung = Object.entries(neu)
-    .map(([app, e]) => `${NAMEN[app]} ${e.neu}`)
-    .join(', ');
-  if (!zusammenfassung && !dateien.length) {
+  const r = automatisch({ tags });
+  for (const w of r.warnungen) console.log(`::warning::${w}`);
+  // Release-Sätze je App für den Bau (Datei aus der Umgebung)
+  if (process.env.NOTIZEN_AUS) writeFileSync(process.env.NOTIZEN_AUS, JSON.stringify(r.notizen));
+  if (!r.zusammenfassung) {
     console.log('Keine Notizen und keine neuen Versionen.');
     return;
   }
-  console.log(`zusammenfassung=${zusammenfassung || 'nur Notizen entfernt'}`);
+  console.log(`zusammenfassung=${r.zusammenfassung}`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

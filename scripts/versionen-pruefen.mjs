@@ -5,7 +5,8 @@
 //   1. der PR eine App-Version ändert (das macht der Release-Lauf; zurücknehmen und eine Notiz anlegen),
 //   2. Dateien einer App (apps/<app>/…) bzw. des gemeinsamen Kerns (packages/core/…, betrifft alle Apps außer Arkly)
 //      geändert sind, die App aber in keiner Notiz des PRs steht – Doku (*.md) und Tests zählen nicht,
-//   3. eine Notiz des PRs ungültig ist (unbekannte App, Stufe nicht patch/minor/major, Satz fehlt).
+//   3. eine Notiz des PRs ungültig ist (unbekannte App, Stufe nicht patch/minor/major, Satz fehlt),
+//   4. der PR eine Notiz löscht oder umbenennt (etwa durch eine falsche Konfliktauflösung – ihr Satz ginge verloren).
 // „Geändert“ heißt: im PR-Kopf anders als an der Abzweigung vom Ziel-Branch (Merge-Base). Arkly bekommt ihre Version im
 // Release-Lauf, sobald eine andere App eine bekommt; eine Notiz für Arkly braucht es nur bei Änderungen an apps/suite.
 // Aufruf in der CI (nur pull_request, volle Historie): node scripts/versionen-pruefen.mjs <Ziel-Branch> <PR-Kopf-SHA>
@@ -94,10 +95,11 @@ const vorlage = (apps) => JSON.stringify(Object.fromEntries(apps.map((a) => [a, 
 /**
  * Die eigentliche Prüfung (ohne Git, für Tests). `kopf`, `basis`: Version je App im PR-Kopf und an der Abzweigung vom
  * Ziel-Branch; `dateien`: geänderte Dateien zwischen Abzweigung und PR-Kopf; `notizen`: die Notizen des PRs als
- * [{ name, inhalt }]. Liefert die Fehlermeldungen (leer = in Ordnung).
+ * [{ name, inhalt }]; `entfernt`: im PR gelöschte Notizdateien. Liefert die Fehlermeldungen (leer = in Ordnung).
  */
-export function pruefen({ kopf, basis, dateien = [], notizen = [] }) {
+export function pruefen({ kopf, basis, dateien = [], notizen = [], entfernt = [] }) {
   const fehler = [];
+  for (const n of entfernt) fehler.push(`${n}: Versionsnotiz im PR gelöscht oder umbenannt – Notizen anderer PRs nie anfassen (main erneut mergen); die eigene unter neuem Namen neu anlegen.`);
   for (const app of APPS.filter((a) => kopf[a] && basis[a] && kopf[a] !== basis[a])) {
     fehler.push(`${app}: Version ${basis[app]} → ${kopf[app]} im PR geändert. Versionen setzt der Release-Lauf – bitte auf ${basis[app]} zurücksetzen und eine Notiz in ${NOTIZEN}/ anlegen.`);
   }
@@ -143,11 +145,13 @@ function main() {
   const basis = git('merge-base', `origin/${zielBranch}`, kopfRef);
   const dateien = git('diff', '--name-only', basis, kopfRef).split('\n').filter(Boolean);
   // Notizen des PRs: im Kopf vorhanden und gegenüber der Abzweigung neu oder geändert
-  const notizen = git('diff', '--name-only', '--diff-filter=AM', basis, kopfRef, '--', `${NOTIZEN}/`)
-    .split('\n')
-    .filter((p) => p.endsWith('.json'))
-    .map((name) => ({ name, inhalt: git('show', `${kopfRef}:${name}`) }));
-  const fehler = pruefen({ kopf: versionenIn(kopfRef), basis: versionenIn(basis), dateien, notizen });
+  const notizenAus = (filter) =>
+    git('diff', '--name-only', '--no-renames', `--diff-filter=${filter}`, basis, kopfRef, '--', `${NOTIZEN}/`)
+      .split('\n')
+      .filter((p) => p.endsWith('.json'));
+  const entfernt = notizenAus('D');
+  const notizen = notizenAus('AM').map((name) => ({ name, inhalt: git('show', `${kopfRef}:${name}`) }));
+  const fehler = pruefen({ kopf: versionenIn(kopfRef), basis: versionenIn(basis), dateien, notizen, entfernt });
   for (const f of fehler) console.log(`::error::${f}`);
   if (fehler.length) process.exit(1);
   console.log(`Versionen und Notizen in Ordnung${notizen.length ? ` (${notizen.map((n) => n.name).join(', ')})` : ''}.`);

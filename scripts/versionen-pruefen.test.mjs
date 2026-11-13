@@ -75,3 +75,10 @@ test('neue App (an der Abzweigung noch nicht da) gilt nicht als Versionsänderun
   delete ohne.ava;
   assert.deepEqual(pruefen({ kopf: stand, basis: ohne, dateien: ['apps/ava/a.ts'], notizen: [notiz({ ava: { stufe: 'minor', notiz: 'Neu.' } })] }), []);
 });
+
+test('gelöschte oder umbenannte Notiz im PR: Fehler; Gegenprobe ohne', () => {
+  const f = pruefen({ kopf: stand, basis: stand, dateien: ['.versionen/fremd.json'], notizen: [], entfernt: ['.versionen/fremd.json'] });
+  assert.equal(f.length, 1);
+  assert.match(f[0], /fremd\.json: Versionsnotiz im PR gelöscht oder umbenannt/);
+  assert.deepEqual(pruefen({ kopf: stand, basis: stand, dateien: [], notizen: [], entfernt: [] }), []);
+});

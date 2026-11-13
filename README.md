@@ -423,7 +423,10 @@ aktualisieren sich nicht selbst.
   sammelt der Release-Lauf alle Notizen, hebt je App die größte Stufe über die höchste veröffentlichte Version, setzt
   Arkly (Minor, wenn eine App Minor oder Major erhöht, sonst Patch), löscht die Notizen, committet das als
   github-actions nach main und baut daraus; die Sätze stehen in der Release-Notiz (`scripts/versionen-setzen.mjs`).
-  Dateien mit verschiedenen Namen kollidieren nie – parallele PRs streiten nicht mehr um Nummern. Eine neue App gehört
+  Dateien mit verschiedenen Namen kollidieren nie – parallele PRs streiten nicht mehr um Nummern. Dateien im
+  Wurzelverzeichnis (`package.json`, `package-lock.json`, `tsconfig*`) prüft die CI nicht: Ändert sich dort
+  Ausgeliefertes (etwa eine Abhängigkeit), die betroffenen Apps selbst in die Notiz schreiben. Liegengebliebene Notizen
+  arbeitet „Build & Release“ beim nächsten Lauf oder von Hand gestartet ab. Eine neue App gehört
   in beide Listen (`release.yml` und `scripts/versionen-pruefen.mjs`).
 - Für einen lokalen `tauri:build` müssen dieselben beiden Variablen gesetzt sein, sonst scheitert das
   Signieren der Update-Dateien. `tauri:dev` braucht sie nicht.
