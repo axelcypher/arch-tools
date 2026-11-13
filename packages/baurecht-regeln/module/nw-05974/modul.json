@@ -382,6 +382,23 @@
           "true": true
         }
       }
+    },
+    "zustaendig.gemeinde_bauaufsicht": {
+      "titel": "Gemeinde ist selbst untere Bauaufsichtsbehörde (kein Einvernehmen nach § 36 BauGB)",
+      "kurz": "Gemeinde ist selbst Bauaufsicht",
+      "gruppe": "zustaendig",
+      "typ": "janein",
+      "hilfe": "Im Kreis Soest sind Lippstadt (große), Soest, Warstein und Werl (mittlere kreisangehörige Städte) selbst untere Bauaufsichtsbehörde; für die übrigen zehn Gemeinden der Kreis Soest – dort holt der Kreis das Einvernehmen der Gemeinde ein (§ 36 BauGB).",
+      "nach": {
+        "fakt": "lage.ags",
+        "tabelle": {
+          "05974040": true,
+          "05974028": true,
+          "05974044": true,
+          "05974052": true
+        },
+        "sonst": false
+      }
     }
   },
   "bausteine": {

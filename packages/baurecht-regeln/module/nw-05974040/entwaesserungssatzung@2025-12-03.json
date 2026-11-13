@@ -42,16 +42,24 @@
                 "ist": false
               },
               {
-                "nicht": {
-                  "und": [
-                    {
-                      "$": "errichtung"
-                    },
-                    {
-                      "$": "gebaeude"
+                "oder": [
+                  {
+                    "nicht": {
+                      "und": [
+                        {
+                          "$": "errichtung"
+                        },
+                        {
+                          "$": "gebaeude"
+                        }
+                      ]
                     }
-                  ]
-                }
+                  },
+                  {
+                    "f": "gebaeude.aufenthaltsraeume",
+                    "ist": false
+                  }
+                ]
               }
             ]
           },
@@ -78,7 +86,28 @@
         "9/6": "4764ab4c",
         "9/7": "882114e5"
       },
-      "titel": "Anschluss- und Benutzungszwang"
+      "titel": "Anschluss- und Benutzungszwang",
+      "pruefen": {
+        "grund": "Neubau eines Gebäudes ohne Aufenthaltsräume und ohne neue Entwässerung (z. B. Gartenhaus, Garage): Der Anschluss- und Benutzungszwang erfasst auch das Niederschlagswasser vom Dach – entfällt nur, wenn es auf dem Grundstück versickert oder genutzt werden darf (Freistellung) – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "errichtung"
+            },
+            {
+              "$": "gebaeude"
+            },
+            {
+              "f": "vorhaben.entwaesserung",
+              "ist": false
+            },
+            {
+              "f": "gebaeude.aufenthaltsraeume",
+              "ist": false
+            }
+          ]
+        }
+      }
     },
     "10": {
       "gilt": {
@@ -194,7 +223,7 @@
       },
       "titel": "Zustimmungsverfahren",
       "pruefen": {
-        "grund": "Abbruch eines Gebäudes: Hat es einen Anschlusskanal, ist der Abbruch zwei Wochen vor der Außerbetriebnahme der SES mitzuteilen (Abs. 4) – im Einzelfall prüfen. Neubau eines Gebäudes mit Aufenthaltsräumen, aber ohne neue Entwässerung angegeben: nur wenn wirklich kein Anschluss hergestellt oder geändert wird und keine Leitung entsteht (z. B. vorhandener Anschluss unverändert genutzt), entfällt die Vorschrift – im Einzelfall prüfen.",
+        "grund": "Beim Abbruch eines Gebäudes mit Anschlusskanal: der Abbruch ist zwei Wochen vor der Außerbetriebnahme der SES mitzuteilen (Abs. 4). Beim Neubau eines Gebäudes mit Aufenthaltsräumen, aber ohne neue Entwässerung: die Vorschrift entfällt nur, wenn wirklich kein Anschluss hergestellt oder geändert wird und keine Leitung entsteht (z. B. vorhandener Anschluss unverändert genutzt).",
         "wenn": {
           "oder": [
             {
@@ -314,7 +343,7 @@
       },
       "titel": "Zustands- und Funktionsprüfung bei privaten Abwasserleitungen",
       "pruefen": {
-        "grund": "Neubau eines Gebäudes mit Aufenthaltsräumen, aber ohne neue Entwässerung angegeben: nur wenn wirklich kein Anschluss hergestellt oder geändert wird und keine Leitung entsteht (z. B. vorhandener Anschluss unverändert genutzt), entfällt die Vorschrift – im Einzelfall prüfen.",
+        "grund": "Beim Neubau eines Gebäudes mit Aufenthaltsräumen, aber ohne neue Entwässerung: die Vorschrift entfällt nur, wenn wirklich kein Anschluss hergestellt oder geändert wird und keine Leitung entsteht (z. B. vorhandener Anschluss unverändert genutzt).",
         "wenn": {
           "und": [
             {

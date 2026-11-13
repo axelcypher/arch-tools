@@ -252,8 +252,14 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // Angabe mit falschem Typ bzw. einem Wert außerhalb der Auswahl (ältere Datei, umbenannter Auswahlwert) ist offen,
   // nicht „trifft nicht zu“ (sonst entstünde ein falsches Grün)
   // vor UND nach der Ableitung: ein ungültiger Bezug (z. B. „false“ als Text) darf keinen gesicherten Wert ableiten
-  const fakten = gueltigeFakten(modulFakten(e.module, gueltigeFakten(e.fakten, faktDefs)), faktDefs);
   const merkmale = gueltigeMerkmale(e.merkmale);
+  const eingabe = gueltigeFakten(e.fakten, faktDefs);
+  // eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (z. B. nach einem Ortswechsel), leitet keinen
+  // Modulwert ab und zählt nicht (Naturdenkmal der Kreisverordnung außerhalb ihres Gebiets) – nur Bezüge von Tabellen
+  const bezuege = new Set(e.module.flatMap((m) => Object.values(m.fakten ?? {}).flatMap((d) => (d.nach ? [d.nach.fakt] : []))));
+  const vorab: KurzKontext = { merkmale, fakten: eingabe, einreichung: e.einreichung, heute: e.heute, bausteine };
+  const zurAbleitung = Object.fromEntries(Object.entries(eingabe).filter(([id]) => !bezuege.has(id) || frageGestellt(id, faktDefs[id], vorab)));
+  const fakten = gueltigeFakten(modulFakten(e.module, zurAbleitung), faktDefs);
   const titelCache = new Map<string, string>();
   const text: TextKontext = { fakt: (id) => faktDefs[id], bausteine, paragraf: (id) => titelCache.get(id) };
 

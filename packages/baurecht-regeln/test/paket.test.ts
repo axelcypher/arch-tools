@@ -7,6 +7,7 @@ import type { AuswertungsEingabe } from '@core/baurecht/auswertung';
 import type { TextStand } from '@core/baurecht/auswertung';
 import { auswerten, faktDefinitionen } from '@core/baurecht/auswertung';
 import { werten } from '@core/baurecht/kurz';
+import { frageGestellt } from '@core/baurecht/fragen';
 import { aktiveModule, paketPruefen } from '@core/baurecht/paket';
 import { widersprueche } from '@core/baurecht/projekt';
 import type { FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
@@ -264,7 +265,8 @@ describe('Fallmatrix', () => {
 /* ---------- Fragen und Regeln: was nicht gefragt wird, entscheidet nichts ---------- */
 
 /**
- * Eine Angabe, deren Frage die App nicht stellt (Bedingung `wenn` ergibt „nein“), darf keinen Paragrafen gelb machen,
+ * Eine Angabe, deren Frage die App nicht stellt (frageGestellt – dasselbe Kriterium wie Kern und App: Bedingung „nein“,
+ * bei Rückfragen auch „offen“), darf keinen Paragrafen gelb machen,
  * keinen Paragrafen ändern und nicht unter „klärt am meisten“ stehen – sonst fehlt dem Anwender eine Frage, die er
  * nicht beantworten kann. Geprüft an Grundfällen (vollständige, plausible Angaben je Merkmalskombination und Gemeinde):
  * Angaben mit nicht gestellter Frage werden entfernt (so lange, bis sich nichts mehr ändert) und das Ergebnis verglichen.
@@ -333,12 +335,12 @@ describe('Fragen und Regeln', () => {
       const f = { ...fall.f };
       let r = basis;
       for (let runde = 0; runde < 6; runde++) {
-        const weg = Object.keys(f).filter((id) => defs[id]?.wenn && werten(defs[id].wenn!, r.kontext).w === 'nein');
+        const weg = Object.keys(f).filter((id) => !frageGestellt(id, defs[id], r.kontext));
         if (!weg.length) break;
         for (const id of weg) delete f[id];
         r = lauf(fall.ags, fall.m, f);
       }
-      const verborgen = (id: string) => !!defs[id]?.wenn && werten(defs[id].wenn!, r.kontext).w === 'nein';
+      const verborgen = (id: string) => !frageGestellt(id, defs[id], r.kontext);
       const vorher = new Map(basis.paragrafen.map((p) => [p.id, p.automatisch]));
       for (const p of r.paragrafen) {
         if (vorher.get(p.id) !== p.automatisch) melde(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch} ohne nicht gestellte Angaben (${fall.name})`);
@@ -376,7 +378,7 @@ describe('Fragen und Regeln', () => {
       const f = { ...fall.f };
       let r = lauf(fall.ags, fall.m, f);
       for (let runde = 0; runde < 6; runde++) {
-        const weg = Object.keys(f).filter((id) => defs[id]?.wenn && werten(defs[id].wenn!, r.kontext).w === 'nein');
+        const weg = Object.keys(f).filter((id) => !frageGestellt(id, defs[id], r.kontext));
         if (!weg.length) break;
         for (const id of weg) delete f[id];
         r = lauf(fall.ags, fall.m, f);
@@ -386,7 +388,7 @@ describe('Fragen und Regeln', () => {
       for (const id of Object.keys(f).filter((x) => verwendet.has(x))) {
         const { [id]: _w, ...ohne } = f;
         const r2 = lauf(fall.ags, fall.m, ohne);
-        const verborgen = (x: string) => !!defs[x]?.wenn && werten(defs[x].wenn!, r2.kontext).w === 'nein';
+        const verborgen = (x: string) => !frageGestellt(x, defs[x], r2.kontext);
         for (const p of r2.paragrafen) {
           const v = [...p.offen, ...(p.klaerend ?? [])].filter(verborgen);
           if (v.length) melde(`${p.id}: nicht gestellte Frage ${[...new Set(v)].join(', ')} offen, wenn ${id} fehlt (${fall.name})`);
@@ -405,9 +407,10 @@ describe('Fragen und Regeln', () => {
     const ohne = (f: Record<string, FaktWert['wert']>, ...ids: string[]) => Object.fromEntries(Object.entries(f).filter(([k]) => !ids.includes(k)));
     const g = grund();
     // „Im Zusammenhang bebauter Ortsteil“ offen (einfacher B-Plan, Satzung): § 18 BNatSchG und § 36 BauGB gelten so oder so
+    // (§ 36 dort, wo der Kreis Bauaufsicht ist – Bad Sassendorf; in Soest entscheidet die Stadt selbst)
     for (const p of ['einfacher Bebauungsplan', 'Satzung nach BauGB']) {
       expect(ampel({ ...EFH, Vorhaben: 'Errichtung', Planungsrecht: p }, ohne(g, 'planung.innen'), 'bund/bnatschg/18')).toBe('rot');
-      expect(ampel({ ...EFH, Vorhaben: 'Errichtung', Planungsrecht: p }, ohne(g, 'planung.innen'), 'bund/baugb/36')).toBe('rot');
+      expect(lauf('05974008', { ...EFH, Vorhaben: 'Errichtung', Planungsrecht: p }, ohne(g, 'planung.innen')).paragrafen.find((x) => x.id === 'bund/baugb/36')!.automatisch).toBe('rot');
     }
     // Umfang der Beseitigung offen: Altstadt § 12 (und § 1) bei jeder Beseitigung eines Gebäudes, § 74 bei Freistellung
     const alt = { ...ohne(g, 'vorhaben.beseitigung_umfang'), 'soest.altstadt': true, 'soest.einfriedungspflicht': true, 'nw.altbau_verfahrensfrei': true };
@@ -432,6 +435,59 @@ describe('Fragen und Regeln', () => {
     // Verweis auf „rot, Ausnahme möglich“: der Hinweis geht mit
     const r = lauf(SOEST, { ...EFH, Vorhaben: 'Errichtung', Planungsrecht: 'einfacher Bebauungsplan' }, ohne(g, 'planung.innen'));
     expect(r.paragrafen.find((p) => p.id === 'bund/bnatschg/15')!.hinweise.join(' ')).toMatch(/Ausnahme möglich über § 14 BNatSchG/);
+  });
+
+  it('Antworten auf nicht gestellte Fragen ändern nichts – weder „ja“ noch „nein“ (auch nicht über Tabellen der Module)', { timeout: 600000 }, () => {
+    const fehler = new Set<string>();
+    const auswahl = faelle.filter((f) => ['05974008', '05974052'].includes(f.ags) && f.name.includes(' ohne ') && f.m.Planungsrecht === 'Innenbereich' && f.m.Verfahren === 'vereinfachtes Verfahren');
+    for (const fall of auswahl) {
+      const defs = faktDefinitionen(aktiveModule(paket.module, fall.ags));
+      const f = { ...fall.f };
+      let r = lauf(fall.ags, fall.m, f);
+      for (let runde = 0; runde < 6; runde++) {
+        const weg = Object.keys(f).filter((id) => !frageGestellt(id, defs[id], r.kontext));
+        if (!weg.length) break;
+        for (const id of weg) delete f[id];
+        r = lauf(fall.ags, fall.m, f);
+      }
+      const verborgen = Object.entries(defs).filter(([id, d]) => d.typ === 'janein' && !d.nach && d.wert === undefined && !(id in f) && !frageGestellt(id, d, r.kontext)).map(([id]) => id);
+      const vorher = new Map(r.paragrafen.map((p) => [p.id, p.automatisch]));
+      for (const w of [true, false]) {
+        const r2 = lauf(fall.ags, fall.m, { ...f, ...Object.fromEntries(verborgen.map((id) => [id, w])) });
+        for (const p of r2.paragrafen) if (vorher.get(p.id) !== p.automatisch && fehler.size < 40) fehler.add(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch}, wenn nicht gestellte Fragen „${w ? 'ja' : 'nein'}“ sind (${fall.name})`);
+      }
+    }
+    expect([...fehler]).toEqual([]);
+    expect(auswahl.length).toBeGreaterThan(20);
+  });
+
+  it('Fachprüfung Runde 14: § 36 BauGB nur, wo der Kreis Bauaufsicht ist; § 74 und BauPrüfVO § 2 ohne Gelb ohne Wirkung; Entwässerung § 9', () => {
+    const g = grund();
+    const ohne = (f: Record<string, FaktWert['wert']>, ...ids: string[]) => Object.fromEntries(Object.entries(f).filter(([k]) => !ids.includes(k)));
+    const EFH = { Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Sonderbau: 'nein', Verfahren: 'vereinfachtes Verfahren', Vorhaben: 'Errichtung', Planungsrecht: 'Innenbereich' };
+    const p36 = (ags: string) => lauf(ags, EFH, g).paragrafen.find((x) => x.id === 'bund/baugb/36')!;
+    // Soest, Lippstadt, Warstein, Werl und kreisfreie Städte (Dortmund) entscheiden selbst – kein Einvernehmen
+    for (const ags of [SOEST, '05974028', '05974044', '05974052', '05913000']) expect(p36(ags).automatisch, ags).toBe('gruen');
+    // Bad Sassendorf: der Kreis ist Bauaufsicht
+    expect(p36('05974008').automatisch).toBe('rot');
+    // eine kreisangehörige Gemeinde außerhalb des Kreises Soest: Zuständigkeit offen – gilt, Ausnahme möglich (kein Grün)
+    const anders = p36('05958004');
+    expect(anders.automatisch).toBe('rot');
+    expect(anders.offen).toContain('zustaendig.gemeinde_bauaufsicht');
+    // Gemeindeschlüssel nur Hinweis: nicht sicher grün
+    const hinweis = auswerten({ paket, module: aktiveModule(paket.module, SOEST), merkmale: EFH, fakten: { 'lage.ags': { wert: SOEST, herkunft: 'abgeleitet', sicherheit: 'hinweis' }, ...Object.fromEntries(Object.entries(g).map(([k, v]) => [k, sicher(v)])) }, einreichung: '2026-12-01', heute: HEUTE, texte: TEXTE, festlegungen: {} });
+    expect(hinweis.paragrafen.find((x) => x.id === 'bund/baugb/36')!.automatisch).not.toBe('gruen');
+    // § 74: Freistellung, Beseitigung, Umfang offen, Abbruch nicht verfahrensfrei (angebautes EFH) – gilt so oder so
+    const frei = { ...EFH, Verfahren: 'Genehmigungsfreistellung', Vorhaben: 'Beseitigung', Planungsrecht: 'Bebauungsplan' };
+    expect(lauf(SOEST, frei, { ...ohne(g, 'vorhaben.beseitigung_umfang', 'nw.altbau_verfahrensfrei'), 'gebaeude.freistehend': false }).paragrafen.find((x) => x.id === 'nw/bauo-nrw/74')!.automatisch).toBe('rot');
+    // BauPrüfVO § 2: Freistellung, Nutzungsänderung, einfacher B-Plan, „im Zusammenhang bebaut“ offen – gilt so oder so
+    const nae = { ...EFH, Verfahren: 'Genehmigungsfreistellung', Vorhaben: 'Nutzungsänderung', Planungsrecht: 'einfacher Bebauungsplan' };
+    expect(lauf(SOEST, nae, ohne(g, 'planung.innen')).paragrafen.find((x) => x.id === 'nw/baupruefvo/2')!.automatisch).toBe('rot');
+    // Entwässerungssatzung § 9: Gartenhaus ohne Aufenthaltsräume und ohne neue Entwässerung – Einzelfall (Dachwasser)
+    const gh = { Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '1', Sonderbau: 'nein', Verfahren: 'verfahrensfrei', Vorhaben: 'Errichtung', Planungsrecht: 'Innenbereich' };
+    const p9 = lauf(SOEST, gh, { ...g, 'gebaeude.aufenthaltsraeume': false, 'vorhaben.entwaesserung': false }).paragrafen.find((x) => x.id === 'nw-05974040/entwaesserungssatzung/9')!;
+    expect(p9.automatisch).toBe('gelb');
+    expect(p9.gruende.join(' ')).toMatch(/Niederschlagswasser/);
   });
 
   it('Begründungen ohne doppelte Klammern: der Anwendungsbereich endet nicht mit einer Klammer, da ihm die tragende Angabe in Klammern folgt', () => {
@@ -1147,9 +1203,15 @@ describe('Fälle aus dem Fachreview', () => {
     // Fälle E4, I1, X10 (verfahrensfrei), B2, X7 (Freistellung)
     expect(a(mitVerfahren(aussen, 'verfahrensfrei'))('bund/baugb/36')).toBe('gruen');
     expect(a(mitVerfahren(aussen, 'Genehmigungsfreistellung'))('bund/baugb/36')).toBe('gruen');
-    // Gegenproben: im vereinfachten Verfahren rot, ohne Verfahren offen
-    expect(a(aussen)('bund/baugb/36')).toBe('rot');
-    expect(a(mitVerfahren(aussen))('bund/baugb/36')).not.toBe('gruen');
+    // Gegenproben: im vereinfachten Verfahren rot, wo der Kreis Bauaufsicht ist (Bad Sassendorf); in Soest entscheidet die
+    // Stadt selbst – kein Einvernehmen (Fachprüfung Runde 14); ohne Verfahren nicht grün
+    const sassendorf = (m: Record<string, string>) => {
+      const r = auswerten({ ...eingabe(m, { 'lage.ags': sicher('05974008') }, TEXTE), module: aktiveModule(paket.module, '05974008') });
+      return r.paragrafen.find((x) => x.id === 'bund/baugb/36')!.ampel;
+    };
+    expect(sassendorf(aussen)).toBe('rot');
+    expect(a(aussen)('bund/baugb/36')).toBe('gruen');
+    expect(sassendorf(mitVerfahren(aussen))).not.toBe('gruen');
   });
 
   it('Runde 6: § 74 Abs. 8 und BauPrüfVO §§ 1, 15 nur bei der anzuzeigenden Beseitigung bzw. beim Antrag nach § 62 Abs. 3 Satz 2 – nicht bei der verfahrensfreien', () => {

@@ -900,6 +900,13 @@
         "f": "planung.sanierungsgebiet",
         "ist": true
       }
+    },
+    "zustaendig.gemeinde_bauaufsicht": {
+      "titel": "Gemeinde ist selbst untere Bauaufsichtsbehörde (kein Einvernehmen nach § 36 BauGB)",
+      "kurz": "Gemeinde ist selbst Bauaufsicht",
+      "gruppe": "zustaendig",
+      "typ": "janein",
+      "hilfe": "Entscheidet die Gemeinde selbst als Baugenehmigungsbehörde, entfällt ihr Einvernehmen nach § 36 BauGB (BVerwG, Urt. v. 19.08.2004 – 4 C 16.03). Die Landes- und Kreismodule setzen den Wert nach dem Gemeindeschlüssel, wo die Zuständigkeit feststeht."
     }
   },
   "hinweise": [
