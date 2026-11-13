@@ -93,11 +93,34 @@ export function vorlageMitAntragsart(vorlage: string, reihenfolge: NamensTeil[] 
   return teile.join(' ');
 }
 
+/**
+ * Gelesene Abweichungen eines Projekts prüfen (lokaler Speicher, eingespielte Einstellungsdatei): nur Texte, `ziel` nur
+ * „aktiv“ oder „pfad“ – Unbrauchbares entfällt (eine Zahl als Zielpfad legte sonst die Antragsdaten des Projekts lahm)
+ */
+export function ueberschreibungAus(roh: unknown): ExportUeberschreibung {
+  const o = roh && typeof roh === 'object' && !Array.isArray(roh) ? (roh as Record<string, unknown>) : {};
+  const out: ExportUeberschreibung = {};
+  for (const k of UEBERSCHREIBBAR) {
+    const v = o[k];
+    if (k === 'ziel') {
+      if (v === 'aktiv' || v === 'pfad') out.ziel = v;
+    } else if (typeof v === 'string') out[k] = v;
+  }
+  return out;
+}
+
+/** Abweichungen aller Projekte (Kürzel → Abweichungen) prüfen, siehe `ueberschreibungAus` */
+export function ueberschreibungenAus(roh: unknown): Record<string, ExportUeberschreibung> {
+  if (!roh || typeof roh !== 'object' || Array.isArray(roh)) return {};
+  return Object.fromEntries(Object.entries(roh as Record<string, unknown>).map(([k, v]) => [k, ueberschreibungAus(v)]));
+}
+
 /** Einstellungen für ein Projekt: global, mit den Abweichungen des Projekts */
 export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUeberschreibung | undefined): ExportEinstellungen {
   const out = { ...global };
+  const u = ueberschreibungAus(ueber);
   for (const k of UEBERSCHREIBBAR) {
-    const v = ueber?.[k];
+    const v = u[k];
     if (v !== undefined && v !== '') (out as Record<string, unknown>)[k] = v;
   }
   return out;
@@ -382,9 +405,8 @@ export interface UmfangEintrag {
   bedingung?: Bedingung;
 }
 
-/** Angaben der App zum Projekt – Abschnitt „formulare“ der Projektdatei (.oap), für alle im Büro gleich */
 /**
- * Angaben der App zum Projekt, wie sie die Oberfläche sieht: die Werte des **aktiven Antrags** (`ansicht`) – Antragsumfang,
+ * Angaben der App zum Projekt (Abschnitt „formulare“ der Projektdatei .oap, für alle im Büro gleich), wie sie die Oberfläche sieht: die Werte des **aktiven Antrags** (`ansicht`) – Antragsumfang,
  * Antragsmerkmale, Autofill-Zustände – und dazu alle Anträge (`antraege`), wie sie in der Projektdatei stehen.
  * Gespeichert wird im Abschnitt „formulare“ nur `aktiveFassung` und `antraege` (siehe `abschnittVon`).
  */
@@ -1372,7 +1394,6 @@ export function bereitschaft(datei: Pick<Eintrag, 'pfad' | 'geaendert'>, markier
   return 'bereit';
 }
 
-/** Antragsumfang aus den vorgewählten Einträgen des Katalogs */
 /** Antragsumfang aus Katalogeinträgen (ohne Vorlage: die früher vorgewählten) */
 export const umfangAusKatalog = (katalog: KatalogEintrag[], vorlage?: AntragsVorlage): UmfangEintrag[] =>
   (vorlage ? dokumenteDerVorlage(katalog, vorlage) : katalog.filter((k) => k.vorgewaehlt)).map(alsUmfang);

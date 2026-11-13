@@ -31,6 +31,11 @@ export interface PkEintrag {
   text: string;
   /** gewählte Möglichkeit wie in der Datei (4: ohne die leere erste Zeile, 8: ab 0; null oder −1 = keine) bzw. angekreuzt (16: 1) */
   zahl: number | null;
+  /**
+   * Text so, wie er in der Datei steht – nur, wenn er kein gültiges UTF-8 ist (ältere Fassung in Windows-1252, als solche
+   * gelesen). Die Hülle schreibt nur, wenn der Eintrag noch genau diese Bytes enthält; neu kodiert stimmten sie nie.
+   */
+  textRoh?: number[];
 }
 
 export interface Projektkarte {

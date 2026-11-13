@@ -224,6 +224,13 @@ Neustarts übersteht. In die FORMA-Datei kommt sie erst mit „Speichern“; Kol
   Eingaben heruntergeladen, dann die Originaldatei wieder geöffnet; Desktop: Datei inzwischen außerhalb geändert),
   erscheinen sie unter „Frühere Sitzung – nicht in dieser Datei“ (nur zur Ansicht), und der Verlauf beginnt neu.
 - Je Formular bleiben die letzten 500 Schritte, für die 60 zuletzt bearbeiteten Formulare.
+- **Während des Speicherns weitertippen** geht nicht verloren: Was eingegeben wird, während die Datei noch geschrieben
+  wird (langsames Netzlaufwerk), bleibt als ungespeicherte Änderung stehen – auch in der Projektkarte. Ein zweites
+  <kbd>Strg</kbd>+<kbd>S</kbd> in dieser Zeit entfällt.
+- Lässt sich **nicht mehr lokal sichern** (Speicher voll), meldet die App das einmal – dann bald speichern.
+- Der Verlauf der **Projektkarte** wird beim Lesen ebenso abgeglichen: Hat sie jemand anderes geändert, kommen die
+  alten Schritte unter „Frühere Sitzung“, damit <kbd>Strg</kbd>+<kbd>Z</kbd> keine alten Werte über die fremde Änderung
+  schreibt.
 
 ### Projektkarte und Stammdaten
 
@@ -856,8 +863,12 @@ Dokumente aus dem Projektordner erscheinen in der App mit Kopfzeile (Art, Name, 
 - **Bilder** werden angezeigt.
 - Ist eine Datei in **Excel oder Word geöffnet** (Besitzerdatei `~$…`), wird sie nur angezeigt. Hat jemand sie
   **seit dem Öffnen geändert**, wird nicht gespeichert – „Neu laden“ liest die neue Fassung, die eigenen
-  Bearbeitungen bleiben als Entwurf erhalten (bis zum Schließen der App; die Datei ist in der Seitenleiste mit ●
-  markiert).
+  Bearbeitungen in Excel und Word bleiben als Entwurf erhalten (bis zum Schließen der App; die Datei ist in der
+  Seitenleiste mit ● markiert).
+- **Ungespeicherte Bearbeitungen in Dokumenten** gelten nur für diese Sitzung: Die Titelleiste zeigt dann ●, und beim
+  Beenden bzw. vor einem Update fragt die App nach. Eingaben in einer **PDF** hält nur die Ansicht – wer sie verlässt
+  (andere Ansicht, anderes Dokument, Formular oder Projekt, „Neu laden“), wird gefragt: „Speichern / Nicht speichern /
+  Abbrechen“.
 - Vor jedem Speichern legt die App eine **Sicherungskopie** der bisherigen Fassung im App-Ordner an
   (`%LOCALAPPDATA%\de.pendzialek.formulare\Sicherungen`, die letzten 200).
 
@@ -986,6 +997,9 @@ Adressgruppen (Typ 1) haben dieselben Einträge: 10 Branche, 20 Titel, 30 Vornam
 | 16 | Kästchen | Beschriftung (z. B. „Wärmeschutz“) | 1 = angekreuzt |
 
 Bei Auswahl, Optionen und Kästchen schreibt die App nur `Ganzzahl`; die Möglichkeiten in `Texte` bleiben unverändert.
+Texte stehen als UTF-8 darin; ältere Einträge in Windows-1252 werden als solche gelesen. Geschrieben wird ein Eintrag
+nur, wenn er noch genau die gelesenen Bytes enthält – bei einem Windows-1252-Text vergleicht die App deshalb mit
+dessen Rohbytes (neu geschrieben wird immer UTF-8).
 Die leere erste Zeile der Auswahlliste steht für „keine Angabe“ (−1); `Ganzzahl` 0 ist die erste Möglichkeit danach.
 So liest SJ Office die Projektkarte: Bei „Land“ ist 0 „NRW“ und 1 „RLP“, bei der Anrede 1 „Sehr geehrter Herr“. Bis
 Formulare 0.35 zählte die App die leere Zeile mit – dort gewählte Auswahlen erscheinen jetzt (wie in SJ Office) um

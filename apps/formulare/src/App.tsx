@@ -35,7 +35,7 @@ import { springeZuFeld } from './navigation';
 import { zurNaechstenOffenen } from './pruefen';
 import { useVorbelegung } from './merkmalAbgleich';
 import type { Ansicht, OffenesFormular } from './store';
-import { ZOOMSTUFEN, bearbeitungGesperrt, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
+import { ZOOMSTUFEN, bearbeitungGesperrt, dokumenteGeaendert, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
 import { kannRueckgaengig, kannWiederholen } from './verlauf';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
@@ -97,6 +97,9 @@ export function App() {
   const antragGesperrt = useAntrag((s) => !!antragSperre(s, projekt));
   const kartenansicht = haupt === 'projektkarte' && !!projekt;
   const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
+  // Bearbeitungen in Dokumenten (PDF, Excel, Word) gelten nur für diese Sitzung – anders als Formular und Projektkarte,
+  // deren Eingaben als Entwurf einen Neustart überstehen. Beim Beenden bzw. Update wird deshalb nach ihnen gefragt.
+  const dokGeaendert = useFormulare(dokumenteGeaendert);
   const grund = offen ? sperrgrund(offen) : null;
   const name =
     ds && (!projekt || haupt === 'projekte') ? 'Projekte' : haupt === 'projektkarte' && projekt ? `Projektdaten ${projekt.ordner}` : haupt === 'antrag' && projekt ? `Antragsdaten ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
@@ -208,12 +211,13 @@ export function App() {
       <TitleBar
         app="Formulare"
         name={name}
-        dirty={geaendert}
+        dirty={geaendert || dokGeaendert}
         onOpenLog={() => setDialog('log')}
         zeichenflaeche={false}
         onProjekte={ds ? () => useFormulare.getState().setHaupt('projekte') : undefined}
         onSpeichern={
-          offen && haupt === 'formular' && !bearbeitungGesperrt(offen) && offen.sperre.art !== 'fremd'
+          // „Speichern“ beim Beenden speichert nur das Formular – mit offenen Dokument-Bearbeitungen deshalb „Verwerfen?“
+          offen && haupt === 'formular' && !dokGeaendert && !bearbeitungGesperrt(offen) && offen.sperre.art !== 'fremd'
             ? async () => {
                 await speichern();
                 return !istGeaendert(useFormulare.getState().offen);

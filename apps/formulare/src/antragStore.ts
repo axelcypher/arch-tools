@@ -21,6 +21,7 @@ import {
   dateiname,
   einstellungenAus,
   einstellungenFuer,
+  ueberschreibungenAus,
   vorlageMitAntragsart,
   externStatus,
   fassungenAus,
@@ -82,6 +83,7 @@ import { autoWerte } from './autofill';
 import type { DialogArt } from './store';
 import { ablageVon, autofillAnbindung, entwurfVon, formularOrdner, karteMitAenderungen, mitAenderungen, profilFuer as wirksamesProfil, sperrAnbindung, unterordnerAnbindung, useFormulare, wertVon } from './store';
 import { fragen } from '@core/ui/Rueckfrage';
+import { lesen, schreiben } from './speicher';
 
 const log = logger('formulare');
 
@@ -92,21 +94,6 @@ const UEBERSCHREIBUNGEN = 'formulare:export-projekte';
 const MERKMALE = 'formulare:merkmale';
 const PROJEKTSTATUS = 'formulare:projektstatus';
 
-function lesen<T>(schluessel: string, vorgabe: T): T {
-  try {
-    const roh = localStorage.getItem(schluessel);
-    return roh ? (JSON.parse(roh) as T) : vorgabe;
-  } catch {
-    return vorgabe;
-  }
-}
-function schreiben(schluessel: string, wert: unknown) {
-  try {
-    localStorage.setItem(schluessel, JSON.stringify(wert));
-  } catch {
-    // nur für diese Sitzung
-  }
-}
 
 /** Angaben zu einem Formular des Projekts (aus der Datei, mit ungespeicherten Eingaben) */
 export interface FormularInfo {
@@ -199,8 +186,10 @@ interface AntragState {
   /** nur neu berechnen (nach Eingaben im Formular) */
   neuBerechnen: () => void;
   fassungWaehlen: (name: string, anlegen?: boolean) => Promise<void>;
-  /** Antragsumfang setzen – das Ergebnis sagt, ob gespeichert wurde (bzw. ein Dialog es nachholt) */
-  /** `bewegt`: der Eintrag, der verschoben wurde (für das Zusammenführen mit gleichzeitigen Änderungen) */
+  /**
+   * Antragsumfang setzen – das Ergebnis sagt, ob gespeichert wurde (bzw. ein Dialog es nachholt); `bewegt`: der Eintrag,
+   * der verschoben wurde (für das Zusammenführen mit gleichzeitigen Änderungen)
+   */
   umfangSetzen: (umfang: UmfangEintrag[] | null, o?: { info?: SchreibInfo; bewegt?: string }) => Promise<SchreibInfo>;
   /**
    * Antragsumfang ändern – gelesen wird er erst jetzt (Menüs, Verknüpfen, Formular anlegen halten keinen alten fest).
@@ -208,8 +197,10 @@ interface AntragState {
    * nennt das Ergebnis den Grund (gemeldet wird er, außer mit `still`)
    */
   umfangAendern: (aendern: (umfang: UmfangEintrag[]) => UmfangEintrag[] | null, o?: UmfangAenderung) => Promise<SchreibInfo>;
-  /** Datei im Ordner der aktiven Fassung mit einem Dokument verknüpfen; null = Verknüpfung lösen */
-  /** Datei verknüpfen: mit `ansicht` nur, wenn noch diese Fassung angezeigt (und aktiv) ist – für sie wird verknüpft */
+  /**
+   * Datei im Ordner der aktiven Fassung mit einem Dokument verknüpfen (null = Verknüpfung lösen) – mit `ansicht` nur, wenn
+   * noch diese Fassung angezeigt (und aktiv) ist; für sie wird verknüpft
+   */
   verknuepfen: (umfangId: string, dateiname: string | null, o?: Omit<UmfangAenderung, 'eintrag'>) => Promise<SchreibInfo>;
   /**
    * Datei im Antragsordner als neues Dokument (extern) in den Antragsumfang aufnehmen und mit ihr verknüpfen (Quick-Add) –
@@ -226,8 +217,10 @@ interface AntragState {
   formularHinzufuegen: (v: Vorlage, inUmfang: boolean) => Promise<string | null>;
   /** Autofill-Zustand von Formularen (Dateiname im FORMA-Projekt) in die Projektdatei – nur, wenn es eine gibt */
   zustaendeSetzen: (neu: Zustaende) => Promise<void>;
-  /** Datei im Ordner der aktiven Fassung von Hand als „bereit“ markieren bzw. die Markierung aufheben */
-  /** `fassung`: die der angezeigten Liste bzw. des Menüs – ist sie nicht mehr angezeigt, ändert sich nichts */
+  /**
+   * Datei im Ordner der aktiven Fassung von Hand als „bereit“ markieren bzw. die Markierung aufheben; `fassung`: die der
+   * angezeigten Liste bzw. des Menüs – ist sie nicht mehr angezeigt, ändert sich nichts
+   */
   bereitUmschalten: (datei: string, o?: { fassung?: string }) => Promise<void>;
   /** alle Formulare des FORMA-Projekts (ohne Archivordner) als PDF an ihr Exportziel; liefert die Zahl der exportierten */
   alleExportieren: () => Promise<number>;
@@ -388,19 +381,23 @@ export function zielOrdner(s: Parameters<typeof aktiveFassung>[0], p: Projekt | 
 const ohneEndung = (n: string) => n.replace(/\.[^.]+$/, '');
 const nurName = (pfad: string) => pfad.split('/').pop() ?? pfad;
 
-/** Zerlegte Formulare je Datei (nach Größe und Änderungszeit), damit Neuberechnungen nichts neu einlesen */
-const zerlegt = new Map<string, { formular: Formular; felder: Feld[][] }>();
+/**
+ * Zerlegte Formulare je Datei, damit Neuberechnungen nichts neu einlesen – je Datei nur der neueste Stand (Größe und
+ * Änderungszeit); ein älterer fällt beim Speichern weg, statt bis zum Projektwechsel ein ganzes Formular zu belegen
+ */
+const zerlegt = new Map<string, { stand: string; formular: Formular; felder: Feld[][] }>();
 
 async function formularLesen(projekt: Projekt, pfad: string, eintrag: Eintrag | undefined) {
   const s = useFormulare.getState();
   if (s.offen?.projekt === projekt && s.offen.pfad === pfad) return { formular: s.offen.formular, felder: s.offen.felder };
-  const k = `${projekt.root}|${pfad}|${eintrag?.groesse ?? 0}|${eintrag?.geaendert ?? 0}`;
+  const k = `${projekt.root}|${pfad}`;
+  const stand = `${eintrag?.groesse ?? 0}|${eintrag?.geaendert ?? 0}`;
   const da = zerlegt.get(k);
-  if (da) return da;
+  if (da?.stand === stand) return da;
   const bytes = await s.ds!.lies(projekt.root, pfad);
   if (!bytes) throw new Error(`${pfad}: nicht gefunden`);
   const formular = parseFormular(bytes);
-  const neu = { formular, felder: formular.seiten.map((x, i) => felderDerSeite(x, i)) };
+  const neu = { stand, formular, felder: formular.seiten.map((x, i) => felderDerSeite(x, i)) };
   zerlegt.set(k, neu);
   return neu;
 }
@@ -827,7 +824,6 @@ export const useAntrag = create<AntragState>((set, get) => {
     await stillSpeichern(neu, pd);
   };
   const meldung = (art: 'info' | 'fehler', text: string) => useFormulare.getState().setMeldung({ art, text });
-  /** Eingereichter Antrag: nichts ändern, Meldung zeigen – liefert true, wenn gesperrt */
   /**
    * Warum der Antrag gerade nicht geändert werden kann (ohne Punkt): ein Antrag wird gerade geöffnet (`mitWechsel`) bzw.
    * er ist eingereicht – sonst null
@@ -971,7 +967,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     katalog: katalogAus(lesen<unknown>(KATALOG, null)),
     vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
     merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
-    ueberschreibungen: lesen<Record<string, ExportUeberschreibung>>(UEBERSCHREIBUNGEN, {}),
+    ueberschreibungen: ueberschreibungenAus(lesen<unknown>(UEBERSCHREIBUNGEN, {})),
     projektdatei: null,
     fassungen: [],
     dateien: [],
@@ -990,7 +986,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         katalog: katalogAus(lesen<unknown>(KATALOG, null)),
         vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
         merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
-        ueberschreibungen: lesen<Record<string, ExportUeberschreibung>>(UEBERSCHREIBUNGEN, {}),
+        ueberschreibungen: ueberschreibungenAus(lesen<unknown>(UEBERSCHREIBUNGEN, {})),
       });
       void get().laden();
     },
@@ -1289,9 +1285,9 @@ export const useAntrag = create<AntragState>((set, get) => {
       const merkmale = get().projektdatei?.merkmale ?? {};
       for (const f of s.formulare) {
         const eintrag = formularEintrag(f.pfad);
-        const k = `${projekt.root}|${f.pfad}|${eintrag?.groesse ?? 0}|${eintrag?.geaendert ?? 0}`;
+        const gemerkt = zerlegt.get(`${projekt.root}|${f.pfad}`);
         const offen = s.offen?.projekt === projekt && s.offen.pfad === f.pfad ? s.offen : null;
-        const z = offen ? { formular: offen.formular, felder: offen.felder } : zerlegt.get(k);
+        const z = offen ? { formular: offen.formular, felder: offen.felder } : gemerkt?.stand === `${eintrag?.groesse ?? 0}|${eintrag?.geaendert ?? 0}` ? gemerkt : undefined;
         if (!z) continue;
         const { wert, entwurfZeit } = werteVon(projekt, f.pfad);
         formularInfo[f.pfad] = {

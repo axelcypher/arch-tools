@@ -5,6 +5,7 @@ import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import type { SperrProbe } from './forma/sperre';
 import { sperrPfad } from './forma/sperre';
+import { bytesGleich as gleich } from './speicher';
 
 /**
  * Zugriff auf die FORMA-Projektordner. In der Desktop-App über eigene Befehle der Tauri-Hülle, die nur
@@ -40,7 +41,8 @@ export interface Rechner {
  * Text (Typ 1/2), Auswahl und Kästchen die Nummer der Wahl (Typ 4/8/16) – deren Möglichkeiten bleiben unverändert.
  */
 export type PkAenderung = { gruppe: number; id: number; typ: number } & (
-  | { spalte: 'texte'; alt: string; neu: string }
+  /** `altRoh`: der alte Text als Bytes der Datei, wenn er kein UTF-8 war (siehe `PkEintrag.textRoh`) */
+  | { spalte: 'texte'; alt: string; altRoh?: number[]; neu: string }
   | { spalte: 'ganzzahl'; alt: number | null; neu: number | null }
 );
 
@@ -124,6 +126,16 @@ export function pkBytes(s: string): number[] {
 
 const text = pkText;
 
+/** Sind die Bytes gültiges UTF-8? (sonst liest `pkText` sie als Windows-1252) */
+function istUtf8(b: number[]): boolean {
+  try {
+    new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(b));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const tauriDateisystem: Dateisystem = {
   projektordner: tauriProjektordner,
   liste: (root, tiefe) => invoke<Eintrag[]>('fs_list', { root, tiefe }),
@@ -139,14 +151,27 @@ export const tauriDateisystem: Dateisystem = {
     if (!roh) return null;
     return {
       gruppen: roh.gruppen.map((g) => ({ id: g.id, typ: g.typ, text: text(g.text) })),
-      eintraege: roh.inhalte.map((e) => ({ gruppe: e.gruppe, id: e.id, typ: e.typ, titel: text(e.titel), text: text(e.texte), zahl: e.ganzzahl ?? null })),
+      eintraege: roh.inhalte.map((e) => ({
+        gruppe: e.gruppe,
+        id: e.id,
+        typ: e.typ,
+        titel: text(e.titel),
+        text: text(e.texte),
+        zahl: e.ganzzahl ?? null,
+        ...(istUtf8(e.texte) ? {} : { textRoh: [...e.texte] }),
+      })),
     };
   },
   projektkarteSchreiben: (root, pfad, aenderungen) =>
     invoke<void>('prokarte_write', {
       root,
       pfad,
-      aenderungen: aenderungen.map((a) => (a.spalte === 'texte' ? { ...a, alt: [...new TextEncoder().encode(a.alt)], neu: pkBytes(a.neu) } : a)),
+      aenderungen: aenderungen.map((a) => {
+        if (a.spalte !== 'texte') return a;
+        const { altRoh, ...rest } = a;
+        // die Hülle vergleicht Bytes: ein in Windows-1252 gelesener Text steht so in der Datei, nicht als UTF-8
+        return { ...rest, alt: altRoh && pkText(altRoh) === a.alt ? altRoh : [...new TextEncoder().encode(a.alt)], neu: pkBytes(a.neu) };
+      }),
     }),
   sperrePruefen: async (root, pfad) => {
     const p = await invoke<{ inhalt: string; offen: boolean; eigen: boolean; geaendert: number } | null>('lock_probe', { root, pfad });
@@ -181,7 +206,6 @@ export function verbinde(root: string, rel: string): string {
   return `${root.replace(/[\\/]+$/, '')}${sep}${rel.split('/').join(sep)}`;
 }
 
-const gleich = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
 
 /** Dateien von FORMA, die nur FORMA selbst anlegt oder umbenennt */
 export const istFormaDatei = (pfad: string) => /\.(frmsjf|frmtmp|sdb|ini)$/i.test(pfad);

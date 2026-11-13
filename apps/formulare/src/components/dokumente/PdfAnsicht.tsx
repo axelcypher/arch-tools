@@ -5,7 +5,7 @@ import { pdfFelder, pdfjs, pdfOeffnen, pdfSchliessen, textEntfernen, textGroesse
 import { frageText } from '../Rueckfrage';
 import { Symbol } from '../Symbol';
 import type { OffeneDatei } from '../../store';
-import { useFormulare } from '../../store';
+import { PDF_ENTWURF, pdfAnbindung, useFormulare } from '../../store';
 import { DateiKopf, useSpeichernTaste } from './DateiAnsicht';
 
 /** Verweise in der PDF: externe im Browser, interne werden ignoriert (kein Blättern über Links) */
@@ -239,15 +239,28 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
     setVorgemerkt((v) => v.filter((x) => x.id !== id));
   };
 
-  const speichern = useCallback(async () => {
-    if (!doc || !geaendert) return;
+  const speichern = useCallback(async (): Promise<boolean> => {
+    if (!doc || !geaendert) return true;
     try {
-      await dateiSpeichern(await doc.saveDocument());
+      return await dateiSpeichern(await doc.saveDocument());
     } catch (e) {
       setFehler(e instanceof Error ? e.message : String(e));
+      return false;
     }
   }, [doc, geaendert, dateiSpeichern]);
   useSpeichernTaste(() => void speichern(), true);
+
+  // Ungespeicherte Eingaben dem Store melden (● in der Titelleiste, Rückfrage beim Verlassen und Beenden); mit der
+  // Ansicht verfallen sie – dann auch die Meldung
+  useEffect(() => {
+    const { setDateiEntwurf } = useFormulare.getState();
+    setDateiEntwurf(geaendert ? PDF_ENTWURF : null, datei);
+    pdfAnbindung.speichern = speichern;
+    return () => {
+      if (pdfAnbindung.speichern === speichern) delete pdfAnbindung.speichern;
+    };
+  }, [geaendert, speichern, datei]);
+  useEffect(() => () => useFormulare.getState().setDateiEntwurf(null, datei), [datei]);
 
   const massstab = zoom > 0 ? zoom : breite > 0 ? Math.max(0.4, Math.min(3, (breite - 48) / seitenBreite)) : 1;
   const hinweis = fehler

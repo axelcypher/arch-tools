@@ -4,6 +4,7 @@
  * Kolleginnen und Kollegen oder als Vorlage für die Vorgaben der App.
  */
 
+import { ueberschreibungenAus } from './antrag';
 import type { Abweichung } from './vorgabe';
 import { abweichungAus, istLeer } from './vorgabe';
 
@@ -133,7 +134,8 @@ function geprueft(schluessel: string, wert: unknown): unknown {
       return p ? [[k, p]] : [];
     }));
   }
-  if (schluessel === 'formulare:export-projekte') return istObjekt(wert) ? Object.fromEntries(Object.entries(wert).filter(([, v]) => istObjekt(v))) : undefined;
+  // je Projekt nur brauchbare Abweichungen (Texte, Ziel „aktiv“/„pfad“) – eine Zahl als Zielpfad legte die Antragsdaten lahm
+  if (schluessel === 'formulare:export-projekte') return istObjekt(wert) ? ueberschreibungenAus(Object.fromEntries(Object.entries(wert).filter(([, v]) => istObjekt(v)))) : undefined;
   return wert;
 }
 

@@ -3,7 +3,7 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG, ueberschreibungAus, ueberschreibungenAus } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -26,6 +26,16 @@ describe('Dateinamen aus der Vorlage', () => {
 
   it('Einstellungen je Projekt überschreiben nur, was gesetzt ist', () => {
     expect(einstellungenFuer(VORGABE_EXPORT, { phase: 'EP', namensvorlage: '' })).toMatchObject({ phase: 'EP', namensvorlage: VORGABE_EXPORT.namensvorlage, antragsordner: 'TÖB' });
+  });
+
+  it('gelesene Abweichungen je Projekt: nur Texte, Ziel nur „aktiv“/„pfad“ – Unbrauchbares fällt weg statt die App lahmzulegen', () => {
+    expect(ueberschreibungAus({ zielpfad: 5, antragsordner: 'Bauamt', ziel: 'irgendwo', phase: null, namensvorlage: ['x'], fremd: 'y' })).toEqual({ antragsordner: 'Bauamt' });
+    expect(ueberschreibungAus({ ziel: 'pfad', zielpfad: 'D:/Abgabe' })).toEqual({ ziel: 'pfad', zielpfad: 'D:/Abgabe' });
+    expect(ueberschreibungAus('kaputt')).toEqual({});
+    expect(ueberschreibungenAus({ BS5: { zielpfad: 5 }, BS6: { phase: 'EP' } })).toEqual({ BS5: {}, BS6: { phase: 'EP' } });
+    expect(ueberschreibungenAus([1, 2])).toEqual({});
+    // auch was unbesehen hereinkommt, wirkt nicht
+    expect(einstellungenFuer(VORGABE_EXPORT, { zielpfad: 5, antragsordner: 7 } as never)).toMatchObject({ zielpfad: VORGABE_EXPORT.zielpfad, antragsordner: 'TÖB' });
   });
 
   it('die Antragsart im Dateinamen kommt immer aus dem Antrag – nicht aus der Einstellung „Phase“ oder einem festen Kürzel', () => {
