@@ -178,4 +178,30 @@ describe('Prüfregeln', () => {
     expect(zu).toBe(2);
     expect(zahl.value).toBe('1,00');
   });
+
+  it('Zahlenfeld: Anzeige mit Tausenderpunkten, beim Bearbeiten ohne; Enter übernimmt und lässt den Fokus im Feld', () => {
+    const aufrufe: (number | undefined)[] = [];
+    const host = render(createElement(NumberField, { value: 45000, onChange: (v: number | undefined) => aufrufe.push(v) }));
+    const input = host.querySelector('input')!;
+    expect(input.value).toBe('45.000,00');
+    act(() => input.focus());
+    expect(input.value).toBe('45000,00');
+    act(() => input.blur());
+    expect(input.value).toBe('45.000,00');
+    expect(aufrufe).toEqual([]);
+    tippen(input, '1234,5');
+    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    expect(aufrufe).toEqual([1234.5]);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('Textfeld: Enter übernimmt und lässt den Fokus im Feld', () => {
+    const aufrufe: string[] = [];
+    const host = render(createElement(TextField, { value: 'a', onChange: (v: string) => aufrufe.push(v) }));
+    const input = host.querySelector('input')!;
+    tippen(input, 'Haus');
+    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    expect(aufrufe).toEqual(['Haus']);
+    expect(document.activeElement).toBe(input);
+  });
 });

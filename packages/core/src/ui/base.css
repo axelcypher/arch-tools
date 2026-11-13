@@ -256,6 +256,10 @@ button.icon {
   user-select: none;
   margin-right: 6px;
 }
+/* Kästchen nie stauchen, auch bei langem Text daneben */
+.toggle > input {
+  flex: none;
+}
 
 /* ---------- Layout ---------- */
 
@@ -361,6 +365,14 @@ input[type='checkbox'] {
   width: auto;
 }
 
+/* in Werkzeugleisten so breit wie der Inhalt (Filter, Suche), nicht über die ganze Zeile */
+.toolbar :where(input, select) {
+  width: auto;
+}
+.toolbar input[type='range'] {
+  width: 120px;
+}
+
 input[type='range'] {
   padding: 0;
 }
@@ -400,6 +412,11 @@ textarea:focus {
 }
 :where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button.small, button.icon) {
   min-height: var(--ctl-h-s);
+}
+/* kleine Knöpfe auch außerhalb der Leisten mindestens 24px hoch (z. B. „×“ in Tabellen) */
+:where(button.small) {
+  min-height: var(--ctl-h-s);
+  min-width: var(--ctl-h-s);
 }
 
 .button-row {
@@ -579,6 +596,18 @@ textarea:focus {
   width: 620px;
 }
 
+/* für Tabellen (Vorschau, Zuordnung): so breit wie möglich */
+.modal-tabelle {
+  width: min(1200px, 96vw);
+}
+
+/* sichtbarer Kopf des Modal (Prop `kopf`): Titel und zugleich Name des Dialogs */
+.modal-kopf {
+  margin: 0 0 var(--s3);
+  font-size: var(--fs-l);
+  font-weight: 600;
+}
+
 .modal h3 {
   margin: 0 0 10px;
 }
@@ -608,8 +637,20 @@ textarea:focus {
 .dialog-buttons {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 12px;
+}
+/* in langen Dialogen bleiben die Knöpfe unten sichtbar */
+.modal > .dialog-buttons,
+.modal > form > .dialog-buttons {
+  position: sticky;
+  bottom: -18px;
+  margin: 12px -22px -18px;
+  padding: 10px 22px 18px;
+  background: var(--panel);
+  border-top: 1px solid var(--line-soft);
+  z-index: 1;
 }
 
 .placeholder-help {
@@ -694,6 +735,16 @@ code {
   cursor: pointer;
 }
 /* Leerzustand („Foto hinzufügen …“): neutral statt Warnfarbe, mittig auf der Fläche */
+.canvas-message.ok {
+  background: var(--ok-bg);
+  border-color: var(--ok-border);
+  color: var(--ok-text);
+}
+.canvas-message.info {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text);
+}
 .canvas-message.leer {
   top: 50%;
   transform: translate(-50%, -50%);
@@ -751,11 +802,19 @@ code {
 }
 
 .report-actions {
-  position: absolute;
-  top: 16px;
-  right: 16px;
+  /* eigene Zeile über dem Blatt, bleibt beim Blättern oben (überdeckt die Überschrift nicht mehr) */
+  position: sticky;
+  top: -24px;
+  z-index: 2;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
+  margin: -28px -36px 20px;
+  padding: 10px 36px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
 }
 
 .report-header {
@@ -1450,6 +1509,7 @@ code {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   width: 18px;
   height: 18px;
   min-height: 0;
@@ -1465,6 +1525,11 @@ code {
   vertical-align: middle;
 }
 
+.hilfe-knopf::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
 .hilfe-knopf:hover:not(:disabled) {
   background: var(--accent-soft);
 }
@@ -1865,4 +1930,40 @@ button.ph-lokal {
   color: var(--text);
   border-radius: 4px;
   font-size: 12px;
+}
+
+/* ---------- Stammdaten-Knopf in Seitenleisten ---------- */
+
+.sd-knopf {
+  margin-bottom: var(--s2);
+}
+
+/* ---------- Umschalter (Segmente): eine Wahl aus wenigen, z. B. Ansicht oder Modus ---------- */
+
+.segment {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: var(--input-bg);
+}
+.segment > button {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  min-height: var(--ctl-h-s);
+}
+.segment > button + button {
+  border-left: 1px solid var(--border);
+}
+.segment > button:first-child {
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
+}
+.segment > button:last-child {
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+}
+.segment > button[aria-pressed='true'],
+.segment > button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
 }

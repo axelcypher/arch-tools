@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { fmt2, parseNum } from '../format';
+import { parseNum } from '../format';
 import type { Pruefung } from './pruefen';
 import { alle, bereichMeldung, pflicht as pflichtRegel } from './pruefen';
+
+/** Zahl im Feld mit fester Stellenzahl; gruppiert (45.000,00) zur Anzeige, ungruppiert (45000,00) zum Bearbeiten */
+const zahlFormate = new Map<string, Intl.NumberFormat>();
+export function feldZahl(v: number, digits: number, gruppiert: boolean): string {
+  const k = `${digits}${gruppiert}`;
+  let f = zahlFormate.get(k);
+  if (!f) zahlFormate.set(k, (f = new Intl.NumberFormat('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: gruppiert })));
+  return f.format(Object.is(v, -0) || Math.abs(v) < 0.5 * 10 ** -digits ? 0 : v);
+}
 
 /** Zahl in Meldungen: so kurz wie möglich, mindestens eine Nachkommastelle (1,0 · 0,4 · 0,25) */
 const kurz = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 4 });
@@ -54,7 +63,7 @@ function usePendingCommit(commit: () => void) {
  * Eingaben werden übernommen – Hinein- und Herausklicken rundet keinen gespeicherten Wert auf die angezeigten Stellen.
  * Ungültige Eingaben und Werte außerhalb von min/max werden nicht still gekappt oder verworfen: Das Feld wird rot
  * markiert, die Meldung steht darunter, der Wert wird nicht übernommen und die Eingabe bleibt zum Korrigieren stehen.
- * Esc verwirft die Eingabe.
+ * Esc verwirft die Eingabe. Angezeigt wird mit Tausenderpunkten (45.000,00), beim Bearbeiten ohne (45000,00).
  */
 export function NumberField({
   value,
@@ -81,7 +90,9 @@ export function NumberField({
   /** Name des Felds für Screenreader, falls es nicht in einem <label> steht */
   label?: string;
 }) {
-  const format = (v: number | undefined) => (v === undefined ? '' : digits === 2 ? fmt2(v).replace(/\./g, '') : v.toFixed(digits).replace('.', ','));
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const hatFokus = () => !!inputRef.current && document.activeElement === inputRef.current;
+  const format = (v: number | undefined, gruppiert = !hatFokus()) => (v === undefined ? '' : feldZahl(v, digits, gruppiert));
   const zeige = (v: number) => kurz.format(v);
   const [text, setText] = useState(format(value));
   const [fehler, setFehler] = useState<string | null>(null);
@@ -95,7 +106,11 @@ export function NumberField({
 
   const commit = () => {
     pending.done();
-    if (!bearbeitet.current) return;
+    if (!bearbeitet.current) {
+      // nur hinein- und herausgeklickt: Anzeige wieder mit Tausenderpunkten
+      if (!fehler) setText(format(value));
+      return;
+    }
     const text = textRef.current;
     if (text.trim() === '') {
       if (allowEmpty) {
@@ -125,10 +140,17 @@ export function NumberField({
   return (
     <>
       <input
-        ref={pending.ref}
+        ref={(el) => {
+          pending.ref.current = el;
+          inputRef.current = el;
+        }}
         className={`num${fehler ? ' feld-fehler' : ''}`}
         value={text}
-        onFocus={pending.onFocus}
+        onFocus={() => {
+          pending.onFocus();
+          // zum Bearbeiten ohne Tausenderpunkte
+          if (!bearbeitet.current && !fehler) setText(format(value, false));
+        }}
         placeholder={placeholder}
         title={fehler ?? title}
         inputMode="decimal"
@@ -138,11 +160,13 @@ export function NumberField({
         required={pflicht || undefined}
         onChange={(e) => {
           bearbeitet.current = true;
+          pending.onFocus();
           setText(e.target.value);
         }}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          // Enter übernimmt, der Fokus bleibt im Feld (weitertippen oder mit Tab weiter)
+          if (e.key === 'Enter') commit();
           // Esc verwirft eine Eingabe – und schließt dann nicht zugleich den Dialog; ohne Eingabe schließt Esc ihn sofort
           if (e.key === 'Escape' && (bearbeitet.current || fehler)) {
             e.stopPropagation();
@@ -221,10 +245,14 @@ export function TextField({
         aria-required={pflicht || undefined}
         required={pflicht || undefined}
         onFocus={pending.onFocus}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          pending.onFocus();
+          setText(e.target.value);
+        }}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          // Enter übernimmt, der Fokus bleibt im Feld (weitertippen oder mit Tab weiter)
+          if (e.key === 'Enter') commit();
           if (e.key === 'Escape' && textRef.current !== value) {
             e.stopPropagation();
             textRef.current = value;

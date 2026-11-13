@@ -2,11 +2,12 @@ import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import type { PlaceholderDocs } from '../excel/context';
 import type { VorlagenSpeicher } from '../excel/vorlage';
+import { vorlagePruefen } from '../excel/vorlage';
 import type { Project } from '../model';
 import { pickFile, saveBinaryFile } from '../platform/files';
 import { logger } from '../platform/log';
 import { exportDateiname, exportOrdner } from '../platform/projektDatei';
-import { useEscSchliessen } from './Dialog';
+import { Modal } from './Dialog';
 
 const log = logger('excel');
 
@@ -35,9 +36,11 @@ export interface ExcelDialogProps {
   buildSampleTemplate: () => Promise<Uint8Array>;
 }
 
-/** Excel-Export: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
+/**
+ * Excel-Export: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). Enter exportiert, der Erstfokus liegt auf
+ * „Exportieren“; Vorlage wählen, Muster und Platzhalter erscheinen nur bei „Eigene Vorlage“.
+ */
 export function ExcelDialog(props: ExcelDialogProps) {
-  useEscSchliessen(props.onClose);
   const { project, update, onClose, speicher } = props;
   // Zähler, damit Änderungen an der im Browser hinterlegten Vorlage neu gelesen werden
   const [rev, setRev] = useState(0);
@@ -45,6 +48,7 @@ export function ExcelDialog(props: ExcelDialogProps) {
   const [mode, setMode] = useState<'default' | 'template'>(template ? 'template' : 'default');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hinweis, setHinweis] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
 
   const chooseTemplate = async () => {
@@ -55,6 +59,12 @@ export function ExcelDialog(props: ExcelDialogProps) {
       return;
     }
     const daten = new Uint8Array(await f.arrayBuffer());
+    const pruefung = vorlagePruefen(daten);
+    if (pruefung.fehler) {
+      setError(`„${f.name}“: ${pruefung.fehler}`);
+      return;
+    }
+    setHinweis(pruefung.hinweis ?? null);
     // gehört zum Projekt (wird im Archiv mitgespeichert) und gilt künftig auch für neue Projekte
     update((p) => speicher.setzen(p, f.name, daten));
     setError(speicher.setGlobale(f.name, daten) ? null : 'Die Vorlage ist zu groß, um sie für weitere Projekte zu hinterlegen – sie wird nur mit diesem Projekt gespeichert.');
@@ -66,7 +76,7 @@ export function ExcelDialog(props: ExcelDialogProps) {
     update((p) => speicher.entfernen(p));
     speicher.removeGlobale();
     setRev(rev + 1);
-    setMode('default');
+    setHinweis(null);
   };
 
   const downloadSample = async () => {
@@ -81,7 +91,9 @@ export function ExcelDialog(props: ExcelDialogProps) {
     }
   };
 
+  const ohneVorlage = mode === 'template' && !template;
   const doExport = async () => {
+    if (busy || ohneVorlage) return;
     setBusy(true);
     setError(null);
     try {
@@ -105,12 +117,35 @@ export function ExcelDialog(props: ExcelDialogProps) {
     }
   };
 
+  const vorlageKnoepfe = (
+    <div className="button-row indent">
+      <button type="button" className="small" onClick={chooseTemplate}>
+        {template ? 'Andere Vorlage wählen …' : 'Vorlage wählen …'}
+      </button>
+      {template && (
+        <button type="button" className="small danger" onClick={removeTemplate}>
+          Vorlage entfernen
+        </button>
+      )}
+      <button type="button" className="small" onClick={downloadSample} disabled={busy}>
+        Muster-Vorlage herunterladen
+      </button>
+      <button type="button" className="small" aria-expanded={showHelp} onClick={() => setShowHelp(!showHelp)}>
+        {showHelp ? 'Platzhalter ausblenden' : 'Platzhalter anzeigen'}
+      </button>
+    </div>
+  );
+
   return (
-    <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal modal-wide">
-        <h3>Excel-Export</h3>
+    <Modal titel="Excel-Export" kopf breit onClose={onClose}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void doExport();
+        }}
+      >
         <label className="radio-row">
-          <input type="radio" checked={mode === 'default'} onChange={() => setMode('default')} />
+          <input type="radio" name="excel-art" checked={mode === 'default'} onChange={() => setMode('default')} />
           <span>
             <strong>Standardlayout</strong>
             <br />
@@ -118,7 +153,7 @@ export function ExcelDialog(props: ExcelDialogProps) {
           </span>
         </label>
         <label className="radio-row">
-          <input type="radio" checked={mode === 'template'} disabled={!template} onChange={() => setMode('template')} />
+          <input type="radio" name="excel-art" checked={mode === 'template'} onChange={() => setMode('template')} />
           <span>
             <strong>Eigene Vorlage</strong>
             <br />
@@ -130,28 +165,13 @@ export function ExcelDialog(props: ExcelDialogProps) {
                 </span>
               </span>
             ) : (
-              <span className="muted small-text">Noch keine Vorlage hinterlegt.</span>
+              <span className="muted small-text">Noch keine Vorlage hinterlegt – „Vorlage wählen …“.</span>
             )}
           </span>
         </label>
-        <div className="button-row indent">
-          <button className="small" onClick={chooseTemplate}>
-            {template ? 'Andere Vorlage wählen …' : 'Vorlage wählen …'}
-          </button>
-          {template && (
-            <button className="small danger" onClick={removeTemplate}>
-              Vorlage entfernen
-            </button>
-          )}
-          <button className="small" onClick={downloadSample} disabled={busy}>
-            Muster-Vorlage herunterladen
-          </button>
-          <button className="small" onClick={() => setShowHelp(!showHelp)}>
-            {showHelp ? 'Platzhalter ausblenden' : 'Platzhalter anzeigen'}
-          </button>
-        </div>
+        {mode === 'template' && vorlageKnoepfe}
 
-        {showHelp && (
+        {mode === 'template' && showHelp && (
           <div className="placeholder-help">
             <p className="small-text">{props.hilfe}</p>
             {props.docs.map((g) => (
@@ -174,14 +194,21 @@ export function ExcelDialog(props: ExcelDialogProps) {
           </div>
         )}
 
-        {error && <p className="warning">{error}</p>}
+        {hinweis && mode === 'template' && <p className="warning">{hinweis}</p>}
+        {error && (
+          <p className="warning" role="alert">
+            {error}
+          </p>
+        )}
         <div className="dialog-buttons">
-          <button onClick={onClose}>Abbrechen</button>
-          <button className="primary" onClick={doExport} disabled={busy}>
+          <button type="button" onClick={onClose}>
+            Abbrechen
+          </button>
+          <button type="submit" className="primary" disabled={busy || ohneVorlage} title={ohneVorlage ? 'Erst eine Vorlage wählen' : undefined}>
             {busy ? 'Exportiere …' : 'Exportieren'}
           </button>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }
