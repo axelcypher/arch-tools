@@ -2,7 +2,7 @@
 import { act, createElement, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Field, NumberField, TextField } from './fields';
+import { Field, NumberField, TextField, zahlLesen } from './fields';
 import { Modal } from './Dialog';
 import { email, ordnername, plz } from './pruefen';
 
@@ -205,5 +205,14 @@ describe('Prüfregeln', () => {
   it('Zahlenfeld ohne Nachkommastellen bleibt ohne Tausenderpunkte (eindeutig beim Bearbeiten)', () => {
     const host = render(createElement(NumberField, { value: 45000, digits: 0, onChange: () => {} }));
     expect(host.querySelector('input')!.value).toBe('45000');
+  });
+
+  it('zahlLesen: Punkte vor dem Komma sind Tausendertrenner, auch nach dem Bearbeiten; Einheit und Minus wie parseNum', () => {
+    expect(zahlLesen('1.234,50')).toBe(1234.5);
+    expect(zahlLesen('4.50,00 m²')).toBe(450);
+    expect(zahlLesen('-1.2,5')).toBe(-12.5);
+    expect(zahlLesen('1,2,3')).toBeNull();
+    // ohne Komma gilt parseNum: „45.00“ ist 45 (sichtbar, weil das Feld danach „45,00“ zeigt)
+    expect(zahlLesen('45.00')).toBe(45);
   });
 });

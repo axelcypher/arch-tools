@@ -44,6 +44,20 @@ describe('Dialoge: Erstfokus, Name, Kopf', () => {
     expect(host.querySelector('.modal')!.getAttribute('aria-label')).toBe('Excel');
   });
 
+  it('ist der Hauptknopf gesperrt, fällt der Erstfokus auf das gewählte Optionsfeld', async () => {
+    render(
+      createElement(
+        Modal,
+        { titel: 'Excel', onClose: () => {}, children: null },
+        createElement('input', { key: 'a', type: 'radio', name: 'r', defaultChecked: false }),
+        createElement('input', { key: 'b', type: 'radio', name: 'r', defaultChecked: true, 'aria-label': 'gewählt' }),
+        createElement('button', { key: 'k', className: 'primary', disabled: true }, 'Exportieren'),
+      ),
+    );
+    await erstfokus();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('gewählt');
+  });
+
   it('mit Textfeld fällt der Erstfokus auf das erste Textfeld', async () => {
     render(createElement(Modal, { titel: 'Stammdaten', onClose: () => {}, children: null }, createElement('input', { key: 'i' }), knopf('Übernehmen', 'primary')));
     await erstfokus();
