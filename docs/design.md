@@ -109,7 +109,7 @@ wird: `planFuellungDunkel(farbe, deckung)` aus `@core/planFarbe` liefert Farbe u
 sieht danach aus wie die Farbmarke mit der gewünschten Deckung über dem dunklen Grund: gleicher Farbton, dunkler und
 matter (Gelb erscheint als Ocker). Linien, Auswahl und Schraffuren werden nicht vorgerechnet; sie bleiben in den hellen
 Planfarben und laufen durch den Filter. Über einer Unterlage (PDF, Bild) ist der Grund nicht die helle Planfarbe: dort
-`grund` übergeben oder die Abweichung hinnehmen. Die Apps übernehmen das nach und nach (Nachziehliste). Farbmarken in
+`grund` übergeben oder die Abweichung hinnehmen. Die Apps übernehmen das nach und nach (`docs/nachziehen/`). Farbmarken in
 Listen und Legenden bleiben in der Originalfarbe und bekommen nie `--canvas-filter` oder einen eigenen Filter (ihr
 Kontrast zur Seitenleiste fiele unter 3 : 1). `ZEICHENFLAECHE_INVERT`
 und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `--canvas` in `base.css` passen; wer eines
@@ -269,10 +269,10 @@ bleibt immer frei.
 
 ## Ungespeicherte Änderungen
 
-Der Knopf „Speichern“ in der Werkzeugleiste bekommt bei ungespeicherten Änderungen die Klasse `ungespeichert`: ein Punkt
-(8px, `--sel` mit Rand in `--text`) außen an der oberen rechten Ecke, der die Breite der Leiste nicht ändert. Dazu sagt es der Knopf im
-`aria-label` („Speichern – ungespeicherte Änderungen“) und im `title`. Der Punkt ● hinter dem Namen in der Titelleiste
-(`TitleBar`, Feld `dirty`) bleibt davon unberührt.
+Der Knopf „Speichern“ in der Werkzeugleiste bekommt bei ungespeicherten Änderungen die Klasse `ungespeichert`: ein
+Punkt (8px, `--sel` mit Rand in `--text`) außen an der oberen rechten Ecke, der die Breite der Leiste nicht ändert.
+Dazu sagt es der Knopf im `aria-label` („Speichern – ungespeicherte Änderungen“) und im `title`. Der Punkt ● hinter dem
+Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 
 ## Richtig und falsch
 
@@ -289,28 +289,6 @@ Der Knopf „Speichern“ in der Werkzeugleiste bekommt bei ungespeicherten Änd
 
 ## Was die Apps nachziehen
 
-| App                    | Datei und Aufgabe                                                                                                                                                                                                                                      |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| RECTIO                 | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                                                     |
-| TERRIO, NUMIO          | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                                           |
-| FABRIO                 | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                                                  |
-| PERMIO                 | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                                         |
-| core                   | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                                                    |
-| ATLAS                  | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                                                               |
-| QUADRIO                | erledigt (Werkzeugleisten-PR): Druckvorschau „Drucken / PDF …“, Umschalter `.segment`, Werkzeugleiste mit `Symbol` (neu: `erkennen`), Kontextmenüs der Zeichenfläche über `zeigeMenue`, Meldungen `.meldung`                                           |
-| TERRIO, NUMIO          | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                                                              |
-| NUMIO                  | eigene Umschalter (`.mv-umschalter`) auf `.segment` umstellen                                                                                                                                                                                          |
-| PERMIO                 | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen                        |
-| RECTIO                 | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                                                    |
-| TERRIO, RECTIO         | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                                         |
-| alle                   | eigene Kontextmenüs auf `zeigeMenue` umstellen (TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                                                            |
-| alle                   | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                                                 |
-| QUADRIO, TERRIO, NUMIO | Raumfüllungen bzw. Lageplanflächen bei `useZeichenflaecheGefiltert()` mit `planFuellungDunkel` vorrechnen (`Canvas.tsx` Deckung 0,45; `LageplanEditor.tsx` alle Deckungen 0,55/0,45/0,15/0,12; NUMIO `MengenPlan.tsx` 0,3); Marken bleiben unverändert |
-| QUADRIO, PERMIO        | Tastenkürzel in Menüs von `hinweis` auf `tasten` umstellen (`Canvas.tsx` Strg+C, Strg+D, Entf, F; PERMIO `App.tsx` Strg+E)                                                                                                                             |
-| ATLAS                  | Umsortieren mit `Symbol` `nachOben`/`nachUnten` statt ↑/↓; Zeilenknopf „⋯“ mit Symbol `mehr` und `aria-haspopup="menu"` (dann setzt das Menü `aria-expanded`)                                                                                          |
-| alle                   | eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner                                                                                                                                                                   |
-| ATLAS, PERMIO          | „Im Explorer öffnen“ → „Ordner öffnen“ (ATLAS `ProjektStart.tsx`; PERMIO `Seitenleiste.tsx`, `AblageBaum.tsx`)                                                                                                                                         |
-| QUADRIO, TERRIO        | eigenen Punkt `tb-dirty` am Knopf „Speichern“ durch `className="ungespeichert"` ersetzen, eigene CSS-Regel löschen (QUADRIO `Toolbar.tsx`, `styles.css`; TERRIO mit bzw. nach #70 in `App.tsx`, bis dahin „Speichern •“ im Text)                       |
-| TERRIO                 | Lageplan-Werkzeuge „Grenze“ mit `grenze`, „Ausrichten“ mit `ausrichten` (mit bzw. nach #70; dort bisher `ziel`)                                                                                                                                        |
-
-Zeilennummern beziehen sich auf den Stand dieser Richtlinie.
+Je App eine Datei in [`docs/nachziehen/`](nachziehen/) (`quadrio.md`, `terrio.md`, `numio.md`, `atlas.md`,
+`rectio.md`, `permio.md`, `fabrio.md`). Neue Punkte trägt das Designsystem dort ein, die App löscht erledigte Punkte in
+ihrem eigenen PR. Diese Richtlinie ändert sich dafür nicht – so kommen sich App-PRs und Designsystem nicht in die Quere.
