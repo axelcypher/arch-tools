@@ -131,7 +131,8 @@ schon ein Wechsel der Ansicht verwirft diese Eingaben) und alles, was ATLAS sofo
 Änderungen an der Struktur schreibt ATLAS kurz verzögert (zusammengefasst); vor dem Schließen, Andocken, Herauslösen
 und einem Update schreibt es eine noch wartende Änderung sofort und wartet darauf, auch ohne Rückfrage. Ein früher
 gescheitertes Schreiben versucht es dabei erneut. Scheitert dieses letzte Schreiben (etwa bei getrenntem Netzlaufwerk),
-steht es im Protokoll, und die Änderung geht derzeit ohne Rückfrage verloren; die Rückfrage folgt mit Arkly/core.
+steht es im Protokoll, und Arkly fragt „ATLAS konnte nicht speichern“ mit *Erneut versuchen*, *Trotzdem schließen*
+und *Abbrechen*.
 
 ### Neues Projekt aus jeder App
 

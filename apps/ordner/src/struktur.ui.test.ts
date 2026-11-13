@@ -41,22 +41,6 @@ vi.mock('@core/platform/konfig', async (original) => {
   };
 });
 
-/** bei vorDemSchliessen angemeldete Funktionen mitschreiben (sonst unverändert), um ihr Ergebnis prüfen zu können */
-const vorbereitungen_ = vi.hoisted(() => ({ liste: [] as (() => Promise<void> | void)[] }));
-vi.mock('@core/platform/rahmen', async (original) => {
-  const echt = await original<typeof import('@core/platform/rahmen')>();
-  return {
-    ...echt,
-    vorDemSchliessen: (f: () => Promise<void> | void) => {
-      vorbereitungen_.liste.push(f);
-      return echt.vorDemSchliessen(f);
-    },
-  };
-});
-const vorbereitungenAusfuehren = async () => {
-  await Promise.all(vorbereitungen_.liste.map((f) => f()));
-};
-
 const echtesKonfigLaden = useOrdner.getState().konfigLaden;
 const SCHLUESSEL = 'arch-tools:konfig:projektordner';
 const gespeichert = () => JSON.parse(localStorage.getItem(SCHLUESSEL)!) as Record<string, unknown> & { struktur: Record<string, unknown> };
@@ -1203,17 +1187,19 @@ describe('Vor dem Schließen (Rahmen): verzögertes Schreiben nicht verlieren', 
     expect(gespeichert().struktur.name).not.toBe('Trotz Konflikt');
   });
 
-  it('scheitert das letzte Schreiben, wird es protokolliert (ohne die übrigen Vorbereitungen abzuschneiden); ist das Laufwerk wieder da, schreibt das Schließen erneut', async () => {
+  it('scheitert das letzte Schreiben, meldet das Schließen „fehler“ (Arkly fragt nach); ist das Laufwerk wieder da, schreibt „Erneut versuchen“ ohne neue Änderung', async () => {
     useOrdner.setState({ konfigLaden: echtesKonfigLaden });
     await act(() => useOrdner.getState().konfigLaden());
     sicherungen_.scheitern = true;
     act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Laufwerk weg' }));
-    await expect(vorbereitungenAusfuehren()).resolves.toBeUndefined();
+    expect(await schliessenVorbereiten()).toBe('fehler');
     expect(useOrdner.getState().strukturNichtGeschrieben).toBeTruthy();
     expect(getEntries().some((e) => e.message.includes('Vor dem Schließen: Struktur nicht gespeichert'))).toBe(true);
-    // Laufwerk wieder da, OHNE neue Änderung: das Schließen versucht das gescheiterte Schreiben erneut
+    // weiter getrennt: „Erneut versuchen“ meldet wieder „fehler“
+    expect(await schliessenVorbereiten()).toBe('fehler');
+    // Laufwerk wieder da, OHNE neue Änderung: „Erneut versuchen“ schreibt das gescheiterte erneut
     sicherungen_.scheitern = false;
-    await expect(vorbereitungenAusfuehren()).resolves.toBeUndefined();
+    expect(await schliessenVorbereiten()).toBe('fertig');
     expect(gespeichert().struktur.name).toBe('Laufwerk weg');
     expect(useOrdner.getState().strukturNichtGeschrieben).toBeNull();
   });
