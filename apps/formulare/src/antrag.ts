@@ -35,8 +35,6 @@ export interface ExportEinstellungen {
   arten: string[];
   /** Vorlage für den Dateinamen (ohne Endung) */
   namensvorlage: string;
-  /** Phasenkürzel für {Phase}: BP, EP, GP, AP … */
-  phase: string;
   /** Ziel des Exports: Ordner der aktiven Antragsfassung oder ein fester Pfad */
   ziel: 'aktiv' | 'pfad';
   /** fester Zielordner relativ zum Projektordner (Platzhalter erlaubt, z. B. „TÖB/{Antrag}/Formulare“, siehe {@link ZIEL_VARIABLEN}) */
@@ -51,7 +49,6 @@ export const VORGABE_EXPORT: ExportEinstellungen = {
   antragsordner: 'TÖB',
   arten: ['BAUA', 'BAUVA', 'DENK'],
   namensvorlage: '{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}',
-  phase: 'GP',
   ziel: 'aktiv',
   zielpfad: 'TÖB/{Antrag}',
   berechnungsordner: 'Planung/Berechnungen',
@@ -59,9 +56,9 @@ export const VORGABE_EXPORT: ExportEinstellungen = {
 };
 
 /** Was je Projekt abweichen darf (wie die angezeigten Pfade im Projektordner) */
-export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvorlage' | 'phase' | 'ziel' | 'zielpfad' | 'antragsordner'>>;
+export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvorlage' | 'ziel' | 'zielpfad' | 'antragsordner'>>;
 
-export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'phase', 'ziel', 'zielpfad'];
+export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'ziel', 'zielpfad'];
 
 /** Hinweis an jeder Namensvorlage – überall derselbe Wortlaut */
 export const ART_HINWEIS = 'Die Antragsart ({Art}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA –, nicht aus einer Einstellung.';
@@ -79,7 +76,7 @@ export function vorlageArtWarnung(vorlage: string, reihenfolge: NamensTeil[] = V
 /**
  * Die Antragsart im Dateinamen kommt immer aus dem Antrag (Ordner der aktiven Antragsfassung, „BAUA 2“ → BAUA), nie
  * aus einer Einstellung: Steht in der Vorlage an der Stelle der Antragsart (nach dem Namensschema; Vorgabe: nach dem
- * Kürzel) {Phase} – die Vorgabe früherer Fassungen, dann stand dort der Wert der Einstellung „Phase“ – oder ein festes
+ * Kürzel) {Phase} – die Vorgabe früherer Fassungen, dann stand dort der Wert der entfallenen Einstellung „Phase“ – oder ein festes
  * Kürzel wie „BVA“ (Großbuchstaben, mindestens ein Buchstabe – „2026“ ist keins), wird daraus {Art}. Das gilt nur, wenn
  * die Vorlage das Kürzel an seiner Stelle hat; sonst bleibt sie, wie sie ist.
  */
@@ -106,6 +103,23 @@ export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUebe
   return out;
 }
 
+/**
+ * gelesene Abweichungen je Projekt prüfen: nur, was je Projekt abweichen darf (`UEBERSCHREIBBAR`), ohne leere Werte;
+ * Projekte ohne Abweichung entfallen – auch solche, die nur die entfallene Einstellung „Phase“ hatten
+ */
+export function ueberschreibungenAus(roh: unknown): Record<string, ExportUeberschreibung> {
+  const out: Record<string, ExportUeberschreibung> = {};
+  if (!roh || typeof roh !== 'object' || Array.isArray(roh)) return out;
+  for (const [projekt, u] of Object.entries(roh as Record<string, unknown>)) {
+    if (!u || typeof u !== 'object') continue;
+    const o = u as Record<string, unknown>;
+    const sauber = Object.fromEntries(UEBERSCHREIBBAR.filter((k) => typeof o[k] === 'string' && o[k] !== '').map((k) => [k, o[k]])) as ExportUeberschreibung;
+    if (sauber.ziel !== undefined && sauber.ziel !== 'aktiv' && sauber.ziel !== 'pfad') delete sauber.ziel;
+    if (Object.keys(sauber).length) out[projekt] = sauber;
+  }
+  return out;
+}
+
 /** gelesene Einstellungen prüfen und mit der Vorgabe ergänzen */
 export function einstellungenAus(roh: unknown): ExportEinstellungen {
   const o = (roh && typeof roh === 'object' ? roh : {}) as Partial<Record<keyof ExportEinstellungen, unknown>>;
@@ -115,7 +129,6 @@ export function einstellungenAus(roh: unknown): ExportEinstellungen {
     antragsordner: text('antragsordner'),
     arten: arten.length ? arten : VORGABE_EXPORT.arten,
     namensvorlage: text('namensvorlage') || VORGABE_EXPORT.namensvorlage,
-    phase: text('phase'),
     ziel: o.ziel === 'pfad' ? 'pfad' : 'aktiv',
     zielpfad: text('zielpfad'),
     berechnungsordner: text('berechnungsordner'),
@@ -131,8 +144,6 @@ export interface NamensAngaben {
   kurzname?: string;
   vorhaben?: string;
   bearbeiter?: string;
-  /** Phasenkürzel der früheren Einstellung „Phase“ – wird nicht mehr eingesetzt, {Phase} gilt als {Art} */
-  phase?: string;
   datum: Date;
   nr?: string;
   /** Name des Dokuments (Titel im Antragsumfang, sonst der Name des Formulars) */
@@ -173,7 +184,10 @@ export const ZIEL_VARIABLEN: Variable[] = [...GLOBAL_FORMULARE, NAMENS_VARIABLEN
 /** Name des Formulars ohne laufende Nummer davor und Jahr dahinter („005-Bauantrag (2026)“ → „Bauantrag“) */
 export const anzeigeName = (formularName: string) => formularName.replace(/^\s*\d+\s*[-_ ]\s*/, '').replace(/\s*\(\d{4}\)\s*$/, '').trim() || formularName;
 
-/** Dateiname (ohne Endung) aus der Vorlage; Zeichen, die Windows nicht erlaubt, werden zu „-“ */
+/**
+ * Dateiname (ohne Endung) aus der Vorlage; Zeichen, die Windows nicht erlaubt, werden zu „-“. `{Phase}` aus Vorlagen
+ * früherer Fassungen (dort stand der Wert der entfallenen Einstellung „Phase“) gilt als `{Art}`.
+ */
 export function dateiname(vorlage: string, a: NamensAngaben): string {
   const werte: Record<string, Wert> = {
     ...globaleWerte({ projektcode: a.kuerzel, kurzname: a.kurzname, vorhaben: a.vorhaben, bearbeiter: a.bearbeiter, datum: a.datum }),

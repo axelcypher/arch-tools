@@ -3092,12 +3092,6 @@ button.gefahr {
 .es-katalog td {
   padding: 3px 4px;
 }
-.es-mitte {
-  text-align: center;
-}
-.es-mitte input {
-  width: auto;
-}
 
 /* Projektdatei (.oap): Abgleich mit der Projektkarte */
 .pk-abgleich-knoepfe {
@@ -3549,20 +3543,6 @@ button.icon.fo-gl-bed.gesetzt {
   flex-direction: column;
   gap: 2px;
 }
-.es-bedingung {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-}
-.es-bedingung.gesetzt {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.es-bedingung-zeile td {
-  background: var(--bg);
-}
 
 /* ---------- Formular hinzufügen ---------- */
 
@@ -3758,13 +3738,6 @@ tr[data-ziehen='danach'] > td {
   width: 22px;
   padding-right: 0 !important;
 }
-.es-vorlage-spalte {
-  max-width: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
-}
 
 /* Projektumfang aus einer Antragsvorlage */
 .pu-vorlage {
@@ -3778,9 +3751,220 @@ tr[data-ziehen='danach'] > td {
   flex-direction: column;
   gap: 2px;
 }
-/* Katalog mit Spalten je Vorlage: mehr Platz */
-.es-karte:has(> .es-katalog) {
-  max-width: 1180px;
+/* Antragsdokumente: Liste mit Kurzbeschreibung, Angaben aufklappbar (DokumenteEinstellungen) */
+.es-dok-kopf {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+}
+.es-dok-kopf label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.es-dok-kopf select {
+  min-width: 200px;
+}
+.es-dok-kopf .field-hint {
+  padding-bottom: 6px;
+}
+.es-dok-liste {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.es-dok-leer {
+  margin: 0 0 8px;
+}
+.es-dok + .es-dok {
+  border-top: 1px solid var(--border);
+}
+.es-dok-zeile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+}
+/* Haken einer Vorlage: Klickfläche 28 × 28 px */
+.es-dok-haken {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.es-dok-haken:hover {
+  background: var(--nav-hover);
+}
+.es-dok-haken input {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+.es-dok-knopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  white-space: normal;
+}
+.es-dok-knopf:hover {
+  background: var(--nav-hover);
+}
+.es-dok-symbol {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.es-dok-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+.es-dok-text strong,
+.es-dok-unter {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.es-dok-unter {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.es-dok-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+}
+.es-chip {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.es-chip.bedingt {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* geöffnetes Dokument: Akzentrand links (keine Fläche – gedämpfter Text bleibt gut lesbar) */
+.es-dok.offen > .es-dok-zeile {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.es-dok-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px 36px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+.es-dok-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.es-dok-feld input {
+  width: 100%;
+}
+.es-dok-felder {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 14px;
+}
+.es-dok-gruppe {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.es-dok-gruppe legend {
+  margin-bottom: 4px;
+  padding: 0;
+}
+.es-dok-arten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px;
+}
+.es-dok-art {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  cursor: pointer;
+}
+.es-dok-art.gewaehlt {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.es-dok-art input,
+.es-dok-vorlagen input {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 2px 0 0;
+  cursor: pointer;
+}
+.es-dok-art > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.es-dok-vorlagen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+}
+.es-dok-vorlagen label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  cursor: pointer;
+}
+.es-dok-vorlagen input {
+  margin: 0;
+}
+.es-dok-fuss {
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+li.es-dok[data-ziehen='davor'] {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+li.es-dok[data-ziehen='danach'] {
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 /* ---------- Formular einrichten ---------- */

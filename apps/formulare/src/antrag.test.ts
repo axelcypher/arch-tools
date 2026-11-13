@@ -3,14 +3,15 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, zielpfadAus, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { ueberschreibungenAus, aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, zielpfadAus, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
-  it('Kürzel Antragsart JJMMTT [Nr] Name – fehlende Nummer entfällt samt Leerzeichen; {Phase} gilt als {Art}', () => {
-    expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', phase: 'GP', datum, name: 'Bauantrag', antrag: 'BAUA 2' })).toBe('BS9 BAUA 261110 Bauantrag');
-    expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', phase: 'GP', datum, nr: '03', name: 'Baubeschreibung', art: 'DENK' })).toBe('BS9 DENK 261110 03 Baubeschreibung');
-    expect(dateiname('{Kürzel} {Phase} {Datum} {Name}', { kuerzel: 'BS9', phase: 'GP', datum, name: 'Bauantrag', antrag: 'BAUA 2' })).toBe('BS9 BAUA 261110 Bauantrag');
+  it('Kürzel Antragsart JJMMTT [Nr] Name – fehlende Nummer entfällt samt Leerzeichen; {Phase} alter Vorlagen gilt als {Art}', () => {
+    expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', datum, name: 'Bauantrag', antrag: 'BAUA 2' })).toBe('BS9 BAUA 261110 Bauantrag');
+    expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', datum, nr: '03', name: 'Baubeschreibung', art: 'DENK' })).toBe('BS9 DENK 261110 03 Baubeschreibung');
+    expect(dateiname('{Kürzel} {Phase} {Datum} {Name}', { kuerzel: 'BS9', datum, name: 'Bauantrag', antrag: 'BAUA 2' })).toBe('BS9 BAUA 261110 Bauantrag');
+    expect(dateiname('{Name} ({Phase})', { kuerzel: 'BS9', datum, name: 'Bauantrag', art: 'DENK' })).toBe('Bauantrag (DENK)');
   });
 
   it('neue und alte Namen ergeben dasselbe (Gegenprobe); globale Variablen aus der Projektdatei', () => {
@@ -32,7 +33,7 @@ describe('Dateinamen aus der Vorlage', () => {
   });
 
   it('weitere Platzhalter, unbekannte bleiben stehen, unzulässige Zeichen werden zu „-“', () => {
-    expect(dateiname('{Antrag} - {Name} {Kennung}/{Stand} {Unbekannt}', { kuerzel: 'X', phase: '', datum, name: 'A: B?', antrag: 'BAUA 2', kennung: 'nw010005', stand: '2026A' })).toBe(
+    expect(dateiname('{Antrag} - {Name} {Kennung}/{Stand} {Unbekannt}', { kuerzel: 'X', datum, name: 'A: B?', antrag: 'BAUA 2', kennung: 'nw010005', stand: '2026A' })).toBe(
       'BAUA 2 - A- B- nw010005-2026A {Unbekannt}',
     );
   });
@@ -42,8 +43,17 @@ describe('Dateinamen aus der Vorlage', () => {
     expect(anzeigeName('Baubeschreibung')).toBe('Baubeschreibung');
   });
 
+  it('Abweichungen je Projekt: nur Erlaubtes, leere entfallen – auch nur „Phase“ (entfallene Einstellung)', () => {
+    expect(ueberschreibungenAus({ BS9: { phase: 'EP' }, HVO: { phase: 'EP', zielpfad: 'TÖB/Formulare', namensvorlage: '' }, X: null, Y: { ziel: 'woanders' } })).toEqual({
+      HVO: { zielpfad: 'TÖB/Formulare' },
+    });
+    expect(ueberschreibungenAus({ A: { ziel: 'pfad', antragsordner: 'Anträge' } })).toEqual({ A: { ziel: 'pfad', antragsordner: 'Anträge' } });
+    expect(ueberschreibungenAus(null)).toEqual({});
+    expect(ueberschreibungenAus(['x'])).toEqual({});
+  });
+
   it('Einstellungen je Projekt überschreiben nur, was gesetzt ist', () => {
-    expect(einstellungenFuer(VORGABE_EXPORT, { phase: 'EP', namensvorlage: '' })).toMatchObject({ phase: 'EP', namensvorlage: VORGABE_EXPORT.namensvorlage, antragsordner: 'TÖB' });
+    expect(einstellungenFuer(VORGABE_EXPORT, { zielpfad: 'TÖB/Formulare', namensvorlage: '' })).toMatchObject({ zielpfad: 'TÖB/Formulare', namensvorlage: VORGABE_EXPORT.namensvorlage, antragsordner: 'TÖB' });
   });
 
   it('die Antragsart im Dateinamen kommt immer aus dem Antrag – nicht aus der Einstellung „Phase“ oder einem festen Kürzel', () => {
@@ -63,8 +73,10 @@ describe('Dateinamen aus der Vorlage', () => {
     // gespeichert bleibt die Vorlage, wie sie ist – eingesetzt wird beim Export (wirksameEinstellungen)
     const alt = einstellungenAus({ namensvorlage: '{Kürzel} {Phase} {Datum} {Nr} {Name}', phase: 'BVA' });
     expect(alt.namensvorlage).toBe('{Kürzel} {Phase} {Datum} {Nr} {Name}');
-    // im Antrag „BAUA 2“ heißt die Datei also BAUA, auch wenn „Phase“ BVA ist
-    expect(dateiname(vorlageMitAntragsart(alt.namensvorlage), { kuerzel: 'BS9', phase: alt.phase, datum: new Date(2026, 10, 12), nr: '01', name: 'Bauantrag', antrag: 'BAUA 2', art: artDerFassung('BAUA 2') })).toBe(
+    // die entfallene Einstellung „Phase“ wird nicht mehr gelesen
+    expect(alt).not.toHaveProperty('phase');
+    // im Antrag „BAUA 2“ heißt die Datei also BAUA, auch wenn „Phase“ BVA war
+    expect(dateiname(vorlageMitAntragsart(alt.namensvorlage), { kuerzel: 'BS9', datum: new Date(2026, 10, 12), nr: '01', name: 'Bauantrag', antrag: 'BAUA 2', art: artDerFassung('BAUA 2') })).toBe(
       'BS9 BAUA 261112 01 Bauantrag',
     );
   });

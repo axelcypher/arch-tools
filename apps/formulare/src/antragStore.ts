@@ -53,6 +53,7 @@ import {
   quelleVon,
   standardFassung,
   UEBERSCHREIBBAR,
+  ueberschreibungenAus,
   umfangErforderlich,
   vorlagenAus,
   antragsNameFehler,
@@ -107,6 +108,13 @@ function schreiben(schluessel: string, wert: unknown) {
   } catch {
     // nur für diese Sitzung
   }
+}
+/** Abweichungen je Projekt, bereinigt (`ueberschreibungenAus`); Veraltetes (z. B. nur „Phase“) wird dabei auch aus dem Speicher genommen */
+function ueberschreibungenLesen(): Record<string, ExportUeberschreibung> {
+  const roh = lesen<unknown>(UEBERSCHREIBUNGEN, {});
+  const sauber = ueberschreibungenAus(roh);
+  if (JSON.stringify(sauber) !== JSON.stringify(roh ?? {})) schreiben(UEBERSCHREIBUNGEN, sauber);
+  return sauber;
 }
 
 /** Angaben zu einem Formular des Projekts (aus der Datei, mit ungespeicherten Eingaben) */
@@ -977,7 +985,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     katalog: katalogAus(lesen<unknown>(KATALOG, null)),
     vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
     merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
-    ueberschreibungen: lesen<Record<string, ExportUeberschreibung>>(UEBERSCHREIBUNGEN, {}),
+    ueberschreibungen: ueberschreibungenLesen(),
     projektdatei: null,
     fassungen: [],
     dateien: [],
@@ -996,7 +1004,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         katalog: katalogAus(lesen<unknown>(KATALOG, null)),
         vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
         merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
-        ueberschreibungen: lesen<Record<string, ExportUeberschreibung>>(UEBERSCHREIBUNGEN, {}),
+        ueberschreibungen: ueberschreibungenLesen(),
       });
       void get().laden();
     },
@@ -1810,7 +1818,6 @@ export function exportVorschlag(formularPfad: string, datum = new Date()): Expor
     kurzname: meta?.kurzname,
     vorhaben: meta?.vorhaben,
     bearbeiter: meta?.bearbeiter,
-    phase: e.phase,
     datum,
     nr: doc?.eintrag.nr,
     name: doc?.eintrag.titel ?? anzeigeName(formularName),
