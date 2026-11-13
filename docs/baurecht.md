@@ -70,7 +70,8 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht). Eine Angabe, deren Frage gerade nicht gestellt
   wird, fehlt nicht: Sie steht nicht unter „es fehlt“ und nicht unter „klärt am meisten“ – nur wenn sonst kein Grund für
   Gelb bliebe, wird sie genannt. „Gestellt“ heißt für Kern, App und Protokoll dasselbe (`frageGestellt`): ohne Bedingung
-  immer, sonst solange das `wenn` nicht sicher „nein“ ergibt (ein „nein“ nur aus Hinweisen verbirgt keine Frage); eine
+  immer, sonst solange das `wenn` nicht sicher „nein“ ergibt (ein „nein“ nur aus Hinweisen verbirgt keine Frage, ein
+  Widerspruch bzw. Vorbehalt an einem Merkmal öffnet keine; Kern, Leiste und Protokoll urteilen im selben Kontext); eine
   Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es „ja“ ergibt. Eine gespeicherte Antwort auf eine Frage, die gerade
   nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten Auslöser wie dem Umfang der Beseitigung), zählt
   nicht – weder in den Regeln noch für Ableitungen (bis zum Fixpunkt: eine weggelassene Antwort kann weitere Fragen
@@ -258,7 +259,10 @@ Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließe
 Zähler, Regelpaket) in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen
 ist. Danach steht oben eine Meldung („Prüfung vom … abgelegt (… gilt · … prüfen · … entfällt) – zum Übernehmen in die
 Datei speichern“, stehende Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; danach (auch nach Strg+S)
-„Gespeichert – …“ bzw. „Nicht gespeichert – …“ im Dialog. Derselbe Stand (gleiche Ampeln, Fassungen, Regelpaket,
+„Gespeichert – …“ bzw. „Nicht gespeichert – …“ im Dialog, der Fokus geht dann auf „Drucken / PDF …“; jedes Speichern
+bei offenem Protokoll (auch Strg+S) meldet sich in dessen Live-Region, ohne den Fokus zu verschieben. Eine abgelegte,
+noch nicht gespeicherte Prüfung ist auch nach dem Wiederöffnen erkennbar (Meldung mit „Jetzt speichern“, Eintrag „noch
+nicht in der Datei gespeichert“). Derselbe Stand (gleiche Ampeln, Fassungen, Regelpaket,
 Stichtag) wird
 nicht zweimal abgeschlossen; abgeschlossene Prüfungen stehen mit Datum und Uhrzeit. Mit „ohne „entfällt““ vermerkt
 das Ergebnis, dass diese Vorschriften im Ausdruck fehlen. Nach jedem Speichern steht im Kopf kurz

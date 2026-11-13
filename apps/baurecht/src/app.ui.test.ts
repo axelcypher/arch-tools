@@ -1015,7 +1015,45 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => knopf(host, 'Prüfprotokoll')!.click());
     d = document.querySelector<HTMLElement>('.br-protokoll')!;
     expect(d.textContent).toMatch(/noch nicht in der Datei gespeichert/);
-    expect(d.querySelector('.br-sperre')?.textContent).toBe('Abgelegt – zum Übernehmen speichern');
+    // wie direkt nach dem Abschließen: Meldung mit „Jetzt speichern“ (der Sperrtext nicht doppelt)
+    expect(d.querySelector('#br-abgelegt-text')?.textContent).toMatch(/noch nicht in der Datei gespeichert/);
+    expect(knopf(d, 'Jetzt speichern')).toBeTruthy();
+    expect(d.querySelector('.br-sperre')).toBeNull();
+  });
+
+  it('Strg+S bei offenem Protokoll: das Ergebnis steht in der Live-Region des Dialogs, der Fokus bleibt', async () => {
+    const host = render();
+    act(() => useBaurecht.getState().merkmalSetzen('Gebäudeart', 'Doppelhaushälfte'));
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    const druck = knopf(d, 'Drucken / PDF …')!;
+    act(() => druck.focus());
+    await speichernOhneDialog();
+    await warten();
+    expect(d.querySelector('#br-abgelegt-text')?.textContent).toBe('Gespeichert.');
+    expect(document.activeElement).toBe(druck);
+  });
+
+  it('„gestellt“ urteilt in Kern, Leiste und Protokoll gleich – auch mit nicht bestätigtem Planungsrecht (Vorbehalt)', async () => {
+    const { frageGestellt } = await import('@core/baurecht/fragen');
+    const { auswertungMit } = await import('./pruefung');
+    act(() => useBaurecht.getState().faktSetzen('planung.innen', true, 'TP'));
+    const a = auswertungMit(useBaurecht.getState().pruefung.fakten);
+    // das Planungsrecht ist im Beispiel nicht für den Ort bestätigt (Vorbehalt = Widerspruch am Merkmal)
+    expect(a.kontext.widersprueche?.has('Planungsrecht')).toBe(true);
+    const gestellt = frageGestellt('planung.innen', a.faktDefs['planung.innen'], a.kontext);
+    // Kern: die Antwort zählt genau dann
+    expect('planung.innen' in a.fakten).toBe(gestellt);
+    const host = render();
+    act(() => knopf(host, 'alle')?.click());
+    expect(!!host.querySelector('.br-angaben [data-fakt="planung.innen"]')).toBe(gestellt);
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne Beleg'))!.nextElementSibling!.textContent ?? '';
+    const ohneWirkung = /Nicht gestellt – ohne Wirkung:[^\n]*Im Zusammenhang bebauter Ortsteil/.test(d.textContent ?? '');
+    // die Antwort steht im Protokoll – je nachdem in der Tabelle oder unter „ohne Wirkung“, nie gar nicht
+    expect(/Im Zusammenhang bebauter Ortsteil/.test(tabelle) || ohneWirkung).toBe(true);
+    expect(ohneWirkung).toBe(!gestellt);
   });
 });
 

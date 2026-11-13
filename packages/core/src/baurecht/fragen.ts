@@ -11,8 +11,8 @@ export const RUECKFRAGE_IDS: ReadonlySet<string> = new Set(Object.values(RUECKFR
 
 /**
  * Wird die Frage zu dieser Angabe gestellt? Ohne Bedingung („wenn“) immer; sonst, solange die Bedingung nicht sicher
- * „nein“ ergibt (ein „nein“ nur aus Hinweisen oder Widersprüchen verbirgt keine Frage – sonst fiele eine Antwort weg,
- * die zählen könnte). Eine Rückfrage erst, wenn ihre Bedingung „ja“ ergibt – vorher stünde z. B. „Altbau
+ * „nein“ ergibt (ein „nein“ nur aus Hinweisen verbirgt keine Frage – sonst fiele eine Antwort weg, die zählen könnte;
+ * ein Widerspruch bzw. Vorbehalt an einem Merkmal öffnet keine – das Urteil hängt so nicht am Vorbehalt). Eine Rückfrage erst, wenn ihre Bedingung „ja“ ergibt – vorher stünde z. B. „Altbau
  * verfahrensfrei“ vor dem Umfang der Beseitigung. Eine fehlerhafte Bedingung: lieber fragen.
  */
 export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn'> | undefined, ctx: KurzKontext): boolean {
@@ -20,7 +20,7 @@ export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn'> | undefined
   try {
     const b = werten(def.wenn, ctx);
     if (RUECKFRAGE_IDS.has(id)) return b.w === 'ja';
-    return b.w !== 'nein' || b.unsicher.length > 0 || b.widerspruch.length > 0;
+    return b.w !== 'nein' || b.unsicher.length > 0;
   } catch {
     return true;
   }

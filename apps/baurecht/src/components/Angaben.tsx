@@ -10,7 +10,7 @@ import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
 import { MERKMAL_TITEL } from '@core/baurecht/fakten';
 import { NumberField, TextField } from '@core/ui/fields';
 import type { Pruefstand } from '../pruefung';
-import { heute, offeneBestaetigungen, PLANUNGSRECHT, useBaurecht } from '../store';
+import { offeneBestaetigungen, PLANUNGSRECHT, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
 import { faktBestaetigenOeffnen, faktSetzenOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
@@ -72,11 +72,10 @@ const merkmalPasst = (m: { name: string; werte: string[] }, suche: string) => te
 /** offen ist eine Rückfrage ohne Wert oder mit einem Wert, der nur Hinweis ist (z. B. aus einer älteren Angabe) */
 export const rueckfrageOffen = (w: FaktWert | undefined) => w?.wert == null || (w.sicherheit === 'hinweis' && !w.bestaetigt);
 
-/** eine Rückfrage wird gestellt, wenn es die Angabe gibt und ihre Bedingung sicher zutrifft (dasselbe Kriterium wie der Kern) */
-function rueckfrageSichtbar(id: string, stand: Pruefstand, merkmale: Record<string, string>): boolean {
+/** eine Rückfrage wird gestellt, wenn es die Angabe gibt und ihre Bedingung zutrifft – derselbe Kontext wie im Kern */
+function rueckfrageSichtbar(id: string, stand: Pruefstand): boolean {
   const d = stand.auswertung.faktDefs[id];
-  if (!d) return false;
-  return frageGestellt(id, d, { merkmale, fakten: stand.auswertung.fakten, einreichung: stand.einreichung, heute: heute(), bausteine: stand.auswertung.text.bausteine });
+  return !!d && frageGestellt(id, d, stand.auswertung.kontext);
 }
 
 /**
@@ -137,14 +136,14 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
   // offene Rückfragen (z. B. Umfang der Beseitigung) zählen im Kopf mit – sonst stünde dort „alle festgelegt“
   const rueckfragenOffen = Object.values(RUECKFRAGEN)
     .flat()
-    .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale) && rueckfrageOffen(stand.auswertung.fakten[rid])).length;
+    .filter((rid) => rueckfrageSichtbar(rid, stand) && rueckfrageOffen(stand.auswertung.fakten[rid])).length;
   const standText = fehlen ? `${fehlen} offen` : rueckfragenOffen ? `${rueckfragenOffen === 1 ? 'eine Rückfrage' : `${rueckfragenOffen} Rückfragen`} offen` : 'alle festgelegt';
   const setzen = (name: string, w: string) => useBaurecht.getState().merkmalSetzen(name, w);
   // eine Rückfrage erscheint (nach einem Merkmal oder einer Antwort, z. B. „Abbruch mit Ersatzbau“ → Altbau): Ansage
   // und in den Blick – nicht still
   const sichtbareRF = Object.values(RUECKFRAGEN)
     .flat()
-    .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale));
+    .filter((rid) => rueckfrageSichtbar(rid, stand));
   const rfSchluessel = sichtbareRF.join('|');
   const vorherRF = useRef<string[] | null>(null);
   const defsRef = useRef(stand.auswertung.faktDefs);
@@ -203,7 +202,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
           mit Ersatzbau“ vor den Fragen zum Altbau – und die eben gegebene Antwort) */}
       {!auf &&
         Object.entries(RUECKFRAGEN).map(([name, ids]) => {
-          const gestellt = ids.filter((rid) => rueckfrageSichtbar(rid, stand, merkmale));
+          const gestellt = ids.filter((rid) => rueckfrageSichtbar(rid, stand));
           const offen = gestellt.filter((rid) => rueckfrageOffen(stand.auswertung.fakten[rid]));
           if (!offen.length && !gestellt.some((rid) => erledigt.includes(rid))) return null;
           return (
@@ -337,7 +336,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
             )}
             {/* Rückfrage zum gewählten Wert (z. B. Umfang der Beseitigung) direkt unter der Erklärung des Werts */}
             {(RUECKFRAGEN[m.name] ?? [])
-              .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale))
+              .filter((rid) => rueckfrageSichtbar(rid, stand))
               .map((rid) => (
                 <div key={rid} className="br-rueckfrage">
                   <FaktZeile id={rid} def={stand.auswertung.faktDefs[rid]} wert={stand.auswertung.fakten[rid]} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} alsKnoepfe />
@@ -704,7 +703,8 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     const t = setTimeout(() => useBaurecht.setState({ ansage: '' }), 1500);
     return () => clearTimeout(t);
   }, [ansage]);
-  const ctx = { merkmale, fakten: auswertung.fakten, einreichung: stand.einreichung, heute: heute(), bausteine: auswertung.text.bausteine };
+  // derselbe Kontext wie im Kern (geprüfte Merkmale, Widersprüche) – „gestellt“ urteilt überall gleich
+  const ctx = auswertung.kontext;
   const antrag = useBaurecht((s) => s.antrag);
   const projektKennung = useBaurecht((s) => (s.quelle ? (s.quelle.art === 'datei' ? s.quelle.name : s.quelle.datei) : ''));
   // „offene zuerst, klärt am meisten“ – die Reihenfolge wird beim Öffnen, beim Wechsel von Projekt, Antrag oder
@@ -728,13 +728,13 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     Object.entries(RUECKFRAGEN)
       .filter(([name]) => !suche || VORGABE_MERKMALE.some((m) => m.name === name && merkmalPasst(m, suche)))
       .flatMap(([, ids]) => ids)
-      .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale)),
+      .filter((rid) => rueckfrageSichtbar(rid, stand)),
   );
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(auswertung.faktDefs)
       // Rückfragen nur, wenn sie gestellt sind, und dann unter ihrem Merkmal (in der Gruppe nur, wenn das Merkmal wegen
       // der Suche nicht zu sehen ist)
-      .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand, merkmale))))
+      .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))))
       .filter(([id, d]) => frageGestellt(id, d, ctx))
       .filter(([id, d]) => textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${(d.werte ?? []).join(' ')} ${id}`, suche))
       .map(([id]) => id)

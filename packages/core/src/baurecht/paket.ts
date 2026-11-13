@@ -167,6 +167,19 @@ function zyklen(bausteine: Map<string, Kurz[]>): string[] {
   return [...new Set(fehler)];
 }
 
+/** verweist eine Bedingung (auch über Bausteine) auf die Ampel eines Paragrafen („n“)? */
+function verweistAufParagraf(k: unknown, bausteine: Map<string, Kurz[]>, besucht = new Set<string>()): boolean {
+  if (Array.isArray(k)) return k.some((x) => verweistAufParagraf(x, bausteine, besucht));
+  if (!k || typeof k !== 'object') return false;
+  const o = k as Record<string, unknown>;
+  if ('n' in o) return true;
+  if (typeof o.$ === 'string' && !besucht.has(o.$)) {
+    besucht.add(o.$);
+    if ((bausteine.get(o.$) ?? []).some((b) => verweistAufParagraf(b, bausteine, besucht))) return true;
+  }
+  return Object.values(o).some((v) => typeof v === 'object' && verweistAufParagraf(v, bausteine, besucht));
+}
+
 /** Fehler im Paket: unbekannte Fakten, Bausteine, Merkmalwerte, Verweise, doppelte Module, falsches Format */
 export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[] }[]): string[] {
   const fehler: string[] = [];
@@ -263,7 +276,12 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
   for (const [id, mods] of bausteinVon) if (mods.length > 1) fehler.push(`Baustein „${id}“ ist mehrfach definiert (${mods.join(', ')}) – Namen von Bausteinen müssen eindeutig sein`);
   for (const m of p.module) {
     for (const [id, b] of Object.entries(m.bausteine ?? {})) pruefe(`${m.id} Baustein ${id}`, m, b);
-    for (const [id, f] of Object.entries(m.fakten ?? {})) pruefe(`${m.id} Fakt ${id}`, m, f.wenn);
+    for (const [id, f] of Object.entries(m.fakten ?? {})) {
+      pruefe(`${m.id} Fakt ${id}`, m, f.wenn);
+      // ob eine Frage gestellt wird, hängt nur an Angaben und Merkmalen – nicht an der Ampel eines Paragrafen (die
+      // Auswertung bestimmt vorher, welche Antworten zählen)
+      if (f.wenn && verweistAufParagraf(f.wenn, alleBausteine)) fehler.push(`${m.id} Fakt ${id}: die Bedingung („wenn“) darf nicht auf Paragrafen verweisen`);
+    }
     for (const h of m.hinweise ?? []) pruefe(`${m.id} Hinweis ${h.titel}`, m, h.wenn);
   }
   for (const [k, l] of p.regeln) {

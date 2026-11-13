@@ -135,13 +135,21 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const [nurRelevant, setNurRelevant] = useState(false);
   // Meldung nach „Prüfung abschließen“ (mit „Jetzt speichern“, solange nicht gespeichert) – der Fokus geht dorthin;
   // nach dem Speichern (hier oder mit Strg+S) sagt sie das Ergebnis, im Dialog selbst
-  const [abgelegt, setAbgelegt] = useState<{ text: string; speichern: boolean } | null>(null);
+  // beim Öffnen: eine abgelegte, noch nicht gespeicherte Prüfung (Protokoll geschlossen und wieder geöffnet) – mit „Jetzt
+  // speichern“, wie direkt nach dem Abschließen
+  const [abgelegt, setAbgelegt] = useState<{ text: string; speichern: boolean } | null>(() => {
+    const s = useBaurecht.getState();
+    const offen = s.pruefung.protokolle.some((p) => !s.pruefungDatei.protokolle.some((b) => b.am === p.am));
+    return offen ? { text: 'Eine abgeschlossene Prüfung ist noch nicht in der Datei gespeichert.', speichern: true } : null;
+  });
   const meldung = useRef<HTMLDivElement>(null);
   const [speichertJetzt, setSpeichertJetzt] = useState(false);
-  // Fokus: nach dem Abschließen auf „Jetzt speichern“; danach (gespeichert) auf „Drucken / PDF …“ – die Meldung sagt die
-  // Live-Region an, der Fokus liest sie nicht noch einmal
+  // Fokus nur nach eigenem Anlass (Abschließen, „Jetzt speichern“): dann auf „Jetzt speichern“ bzw. danach auf „Drucken /
+  // PDF …“ – die Meldung sagt die Live-Region an; ein Strg+S von anderswo verschiebt den Fokus nicht
+  const fokusNachMeldung = useRef(false);
   useEffect(() => {
-    if (!abgelegt) return;
+    if (!abgelegt || !fokusNachMeldung.current) return;
+    fokusNachMeldung.current = false;
     const knopf = meldung.current?.querySelector<HTMLElement>('button');
     if (knopf) knopf.focus();
     else fenster.current?.querySelector<HTMLElement>('.br-drucken')?.focus();
@@ -149,6 +157,14 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   useEffect(() => {
     if (abgelegt?.speichern && !ungespeichertGesamt) setAbgelegt({ text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false });
   }, [ungespeichertGesamt, abgelegt]);
+  // jedes Speichern, solange das Protokoll offen ist (auch Strg+S): das Ergebnis in der Live-Region des Dialogs – die
+  // Meldung im Kopf liegt hinter dem modalen Protokoll
+  const gespeichertMeldung = useBaurecht((s) => s.gespeichertMeldung);
+  const meldungBeimOeffnen = useRef(gespeichertMeldung);
+  useEffect(() => {
+    if (!gespeichertMeldung || gespeichertMeldung === meldungBeimOeffnen.current) return;
+    setAbgelegt((vorher) => (vorher?.speichern && !istGeaendert(useBaurecht.getState()) ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : vorher?.speichern ? vorher : { text: `${gespeichertMeldung.text}.`, speichern: false }));
+  }, [gespeichertMeldung]);
   const fenster = useRef<HTMLDivElement>(null);
   // Höhe der klebenden Aktionsleiste als CSS-Variable – der feste Tabellenkopf klebt darunter
   useEffect(() => {
@@ -291,6 +307,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     const am = new Date().toISOString();
     useBaurecht.getState().protokollAnhaengen({ am, von: benutzer(), paket: paket.version, einreichung: pruefstand.einreichung, fassungen: verwendeteFassungen(a), zaehler: a.zaehler, ampeln, offen: offen.length + ueberholt.length + ohneRegel.length });
     // sichtbar und angesagt, Fokus auf die Meldung (der Knopf ist danach gesperrt – sonst fiele der Fokus auf die Seite)
+    fokusNachMeldung.current = true;
     setAbgelegt({ text: `Prüfung vom ${datum(am)} abgelegt (${a.zaehler.rot} gilt · ${a.zaehler.gelb} prüfen · ${a.zaehler.gruen} entfällt) – zum Übernehmen in die Datei speichern.`, speichern: true });
   };
   const datei = quelle?.art === 'ordner' ? quelle.datei : quelle?.art === 'datei' ? quelle.name : null;
@@ -341,8 +358,10 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                 disabled={speichertJetzt}
                 onClick={async () => {
                   setSpeichertJetzt(true);
+                  fokusNachMeldung.current = true;
                   const ok = await onSpeichern();
                   setSpeichertJetzt(false);
+                  fokusNachMeldung.current = true;
                   setAbgelegt(ok ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : { text: 'Nicht gespeichert – die Prüfung ist abgelegt, steht aber noch nicht in der Datei.', speichern: true });
                 }}
               >

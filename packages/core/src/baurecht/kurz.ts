@@ -446,8 +446,3 @@ export function offenText(id: string, t: TextKontext): string {
   return faktName(t.fakt(id), id);
 }
 
-/** fehlende Angaben als Fragen (für Begründungen): Fakten mit Frage als Frage, sonst der Titel */
-export function offenFrage(id: string, t: TextKontext): string {
-  if (id.startsWith('merkmal:') || id.startsWith('paragraf:')) return offenText(id, t);
-  return t.fakt(id)?.frage ?? offenText(id, t);
-}

@@ -247,11 +247,11 @@ export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: 
   for (let runde = 0; runde < 8; runde++) {
     const ctx: KurzKontext = { ...rest, fakten: ableiten(gestellt) };
     const naechste = Object.fromEntries(Object.entries(eingabe).filter(([id]) => frageGestellt(id, defs[id], ctx)));
-    const gleich = Object.keys(naechste).length === Object.keys(gestellt).length && Object.keys(naechste).every((id) => id in gestellt);
+    if (Object.keys(naechste).length === Object.keys(gestellt).length && Object.keys(naechste).every((id) => id in gestellt)) return naechste;
     gestellt = naechste;
-    if (gleich) break;
   }
-  return gestellt;
+  // kein Fixpunkt (Bedingungen, die sich gegenseitig ein- und ausschalten): auf der sicheren Seite alle Antworten behalten
+  return eingabe;
 }
 
 /** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */
@@ -273,7 +273,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten
   // Auslöser – z. B. „Altbau verfahrensfrei“ nach zurückgesetztem Umfang), zählt nicht: weder in den Regeln noch für
   // Ableitungen. Bis zum Fixpunkt, denn eine weggelassene Antwort kann weitere Fragen verbergen (oder wieder stellen)
-  const fakten = gueltigeFakten(modulFakten(e.module, gestellteAntworten(eingabe, (f) => gueltigeFakten(modulFakten(e.module, f), faktDefs), faktDefs, { merkmale, einreichung: e.einreichung, heute: e.heute, bausteine })), faktDefs);
+  const fakten = gueltigeFakten(modulFakten(e.module, gestellteAntworten(eingabe, (f) => gueltigeFakten(modulFakten(e.module, f), faktDefs), faktDefs, { merkmale, einreichung: e.einreichung, heute: e.heute, bausteine, widersprueche: e.widersprueche })), faktDefs);
   const titelCache = new Map<string, string>();
   const text: TextKontext = { fakt: (id) => faktDefs[id], bausteine, paragraf: (id) => titelCache.get(id) };
 
