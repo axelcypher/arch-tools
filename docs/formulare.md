@@ -397,9 +397,10 @@ Anschrift, wie sie in Formularen steht.
   Bilder ebenso, andere Dateien öffnet „Mit Programm öffnen“. „Als bereit markieren“ geht auch hier. Esc schließt.
 - **Alle Formulare exportieren:** Knopf in der Ansicht „Antrag“ bzw. ⇪ im Kopf des Abschnitts „FORMA“: alle
   Formulare des FORMA-Projekts als PDF, Name und Ziel wie beim einzelnen Export (Namensvorlage, aktive Fassung).
-  Formulare in `_archiv` bzw. `archiv` bleiben außen vor. Gibt es Dateien schon, fragt die App einmal: „Ersetzen“,
-  „Vorhandene überspringen“ oder „Abbrechen“. Exportierte PDFs im Antragsordner werden mit den Dokumenten des
-  Antragsumfangs verknüpft; am Ende steht, wie viele exportiert, übersprungen oder fehlgeschlagen sind.
+  Formulare in `_archiv` bzw. `archiv` bleiben außen vor. Gibt es Dateien schon, fragt die App einmal: „Vorhandene
+  überspringen“ (Hauptknopf, Enter), „Vorhandene ersetzen“ oder „Abbrechen“. Exportierte PDFs im Antragsordner werden
+  mit den Dokumenten des Antragsumfangs verknüpft; am Ende steht, wie viele exportiert, übersprungen oder
+  fehlgeschlagen sind.
 - **Quellordner mit Schreibweisen der Büros:** Quellen im Antragsumfang (z. B. `Planung/Berechnungen`,
   `Planung/Genehmigungsplanung/pdf`, `Fachplanung/G27*`) werden auch gefunden, wenn der Ordner anders geschrieben ist:
   Nummern, Unterstriche und Punkte vorn („00 Berechnungen“, „__Berechnungen“, „03 Genehmigungsplanung“), gleichwertige
@@ -958,6 +959,14 @@ Programm öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde,
   Abbrechen“.
 - Vor jedem Speichern legt die App eine **Sicherungskopie** der bisherigen Fassung im App-Ordner an
   (`%LOCALAPPDATA%\de.pendzialek.formulare\Sicherungen`, die letzten 200).
+- **Laufendes Schreiben beim Schließen:** Schreibt die App gerade, wartet Arkly vor dem Schließen, Andocken,
+  Herauslösen, Beenden oder einem Update-Neustart darauf, bis zu wenigen Sekunden (`vorDemSchliessen` aus
+  `@core/platform/rahmen`; danach fragt Arkly). Abgewartet wird jeder Schreibbefehl an Dateien und Projektdatei
+  (Formular, Sperrdatei, Projektkarte, Dokumente, Anlegen, Kopieren, Umbenennen, Löschen) und, als ein Vorgang, was nur
+  zusammen stimmt: Speichern samt Warteschlange, Formular umbenennen mit der Projektdatei, Formular anlegen und
+  aufnehmen, PDF-Export mit Verknüpfung. Offene Rückfragen und Lesen gelten nicht als Schreiben; es wird nur gewartet,
+  nichts zusätzlich geschrieben. Ist ein abgewartetes Schreiben gescheitert, meldet die App das (Grund im Protokoll),
+  und Arkly fragt, statt still zu schließen.
 
 ### Sperren
 

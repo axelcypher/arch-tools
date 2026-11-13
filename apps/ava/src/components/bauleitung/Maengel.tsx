@@ -113,8 +113,8 @@ export function Maengel() {
         <h1>Mängel</h1>
       </div>
       <div className="toolbar">
-        <button className="primary" onClick={neu}>
-          + Mangel
+        <button title="Mangel hinzufügen" className="primary" onClick={neu}>
+          <Symbol name="plus" /> Mangel
         </button>
         <select value={gewerk} onChange={(e) => setGewerk(e.target.value)} aria-label="Gewerk">
           <option value="">alle Gewerke</option>
@@ -201,7 +201,7 @@ export function Maengel() {
           {!liste.length && (
             <tr>
               <td colSpan={7} className="muted">
-                {filter === 'offen' && projekt.ava.maengel.length ? 'Keine offenen Mängel – Filter „alle“ zeigt auch erledigte.' : 'Noch keine Mängel – „+ Mangel“ legt einen an.'}
+                {filter === 'offen' && projekt.ava.maengel.length ? 'Keine offenen Mängel – Filter „alle“ zeigt auch erledigte.' : 'Noch keine Mängel – mit „Mangel“ beginnen.'}
               </td>
             </tr>
           )}

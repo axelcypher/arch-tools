@@ -128,3 +128,17 @@ describe('Ansicht-Editor: Verknüpfen', () => {
     expect(editor.querySelectorAll('.av-ed-feld')).toHaveLength(1);
   });
 });
+
+describe('Ansicht-Editor: Abschnitt hinzufügen', () => {
+  it('Knopf mit Symbol plus und Text „Abschnitt“, Tooltip „Abschnitt hinzufügen“ – legt einen Abschnitt an', () => {
+    const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1'] }] });
+    const neu = editor.querySelector<HTMLButtonElement>('button.av-ed-neu')!;
+    expect(neu.textContent?.trim()).toBe('Abschnitt');
+    expect(neu.textContent).not.toContain('+');
+    expect(neu.title).toBe('Abschnitt hinzufügen');
+    expect(neu.querySelector('svg.symbol')).not.toBeNull();
+    const vorher = editor.querySelectorAll('section').length;
+    klick(neu);
+    expect(editor.querySelectorAll('section').length).toBe(vorher + 1);
+  });
+});

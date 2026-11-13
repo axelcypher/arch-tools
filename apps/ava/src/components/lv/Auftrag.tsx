@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { GewerkAngaben } from '../../avaDaten';
 import { auftragEintragen } from '../../abrechnung/kostenkontrolle';
 import { datumDE, euro } from '../../abrechnung/pruefung';
@@ -207,13 +208,13 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
           <div className="button-row">
             <button
               disabled={nurAslv}
-              title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.nachtraege) : 'Neuen Nachtrag anlegen'}
+              title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.nachtraege) : 'Nachtrag hinzufügen'}
               onClick={() => {
                 const nr = Math.max(0, ...lv.nachtraege.map((n) => n.nr), ...[...(s?.nachtraege.keys() ?? [])]) + 1;
                 aendern((l) => ({ ...l, nachtraege: [...l.nachtraege, { nr, titel: `Nachtrag ${nr}`, datum: heuteIso(), status: 'angeboten' }] }));
               }}
             >
-              + Nachtrag
+              <Symbol name="plus" /> Nachtrag
             </button>
           </div>
         </section>

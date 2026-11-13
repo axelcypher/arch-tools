@@ -8,7 +8,7 @@ import { gewerkZweistellig } from '../../abrechnung/gewerk';
 import { datumDE, euro, prozent, pruefen } from '../../abrechnung/pruefung';
 import type { RechnungsDatensatz } from '../../avaDaten';
 import { vollerPfad } from '../../dateien';
-import { gewerkOrdner, useAva } from '../../store';
+import { gewerkOrdner, schreibend, useAva } from '../../store';
 import { RechnungPruefen } from './RechnungPruefen';
 
 /**
@@ -172,7 +172,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
                           return;
                         }
                         try {
-                          const ava = await mailEntwurf(k, r.datensatz!, projekt.ava, v);
+                          const ava = await schreibend(mailEntwurf(k, r.datensatz!, projekt.ava, v));
                           useAva.setState((s) => (s.projekt?.ordner === projekt.ordner ? { projekt: { ...s.projekt, ava } } : {}));
                           setHinweis(`Mailentwurf für Nr. ${String(r.nr ?? '')} geöffnet – bitte im Mailprogramm prüfen und senden.`);
                         } catch (x) {

@@ -8,6 +8,7 @@ import { App } from './App';
 import { VORGABE_EXPORT, einstellungenAus, jjmmtt, tagVon } from './antrag';
 import { VORGABE_MERKMALE } from './bedingung';
 import { aktiveFassung, exportVorschlag, istArchiv, useAntrag, wechselLaeuft, type SchreibInfo } from './antragStore';
+import { ausstehendAbwarten, laufendeSchreibvorgaenge } from './ausstehend';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Schreiben } from './forma/cp1252';
 import { felderDerSeite } from './forma/felder';
@@ -1662,6 +1663,10 @@ describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
     await klick(knopf(host.querySelector('.fo-antrag-ablage')!, 'Alle Formulare exportieren'));
     const dialog = host.querySelector('.modal.rf')!;
     expect(dialog.textContent).toContain('2 Dateien gibt es schon');
+    // Hauptknopf (Enter) rechts außen ist „Vorhandene überspringen“ – nie „Vorhandene ersetzen“
+    expect([...dialog.querySelectorAll('button')].map((b) => b.textContent?.trim()).slice(-3)).toEqual(['Abbrechen', 'Vorhandene ersetzen', 'Vorhandene überspringen']);
+    expect(knopf(dialog, 'Vorhandene überspringen').classList.contains('primary')).toBe(true);
+    expect(knopf(dialog, 'Vorhandene ersetzen').classList.contains('primary')).toBe(false);
     await klick(knopf(dialog, 'Vorhandene überspringen'));
     expect(useFormulare.getState().meldung?.text).toContain('0 von 2 Formularen');
     expect(useFormulare.getState().meldung?.text).toContain('2 vorhandene übersprungen');
@@ -5822,6 +5827,75 @@ describe('Reihenfolge der Formulare in der Navigation', () => {
     expect(namen(host)).toEqual(['001-Muster', '002-Anderes']);
     expect(zeile(host, '001-Muster').title).not.toContain('Reihenfolge');
     expect(zeile(host, '001-Muster').hasAttribute('aria-keyshortcuts')).toBe(false);
+  });
+
+  it('vor dem Schließen: ein laufendes Schreiben der Projektdatei wird abgewartet (Arkly wartet darauf)', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    await projektBS9();
+    const ersetzen = ds.projektordner.projektdateiErsetzen.bind(ds.projektordner);
+    let los!: () => void;
+    let einmal = true;
+    ds.projektordner.projektdateiErsetzen = async (...a: Parameters<typeof ersetzen>) => {
+      if (einmal) {
+        einmal = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return ersetzen(...a);
+    };
+    let laeuft!: Promise<SchreibInfo>;
+    act(() => {
+      laeuft = useAntrag.getState().reihenfolgeSetzen(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    });
+    for (let i = 0; i < 20 && !los; i++) await warte();
+    expect(laufendeSchreibvorgaenge()).toBeGreaterThan(0);
+    let fertig = false;
+    const warten = ausstehendAbwarten().then(() => (fertig = true));
+    await warte();
+    expect(fertig).toBe(false);
+    expect(gemerkt()).toBeUndefined();
+    los();
+    await act(() => warten);
+    // erst nach dem Schreiben fertig – die Datei hat die neue Folge
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    await act(() => laeuft);
+  });
+
+  it('vor dem Schließen: ein laufendes Umbenennen wird ganz abgewartet – danach stimmt auch die Projektdatei', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    // gemerkte Reihenfolge – das Umbenennen schreibt sie in der Projektdatei mit um
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    // das Schreiben der Projektdatei hängt einmal
+    const ersetzen = ds.projektordner.projektdateiErsetzen.bind(ds.projektordner);
+    let los!: () => void;
+    let einmal = true;
+    ds.projektordner.projektdateiErsetzen = async (...a: Parameters<typeof ersetzen>) => {
+      if (einmal) {
+        einmal = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return ersetzen(...a);
+    };
+    await rechtsklick(knopf(host, '001-Muster'));
+    await klick(menuePunkt('Umbenennen'));
+    eingabe(document.querySelector<HTMLInputElement>('.rf input')!, '000-Erstes');
+    await klick(knopf(document.querySelector('.rf')!, 'Umbenennen'));
+    for (let i = 0; i < 20 && !los; i++) await warte();
+    expect(los).toBeTruthy();
+    // die Datei ist schon umbenannt, die Projektdatei noch nicht: vor dem Schließen wird gewartet
+    expect(ds.dateien.has('C:/FORMA/BS9/000-Erstes.frmsjf')).toBe(true);
+    let fertig = false;
+    const warten = ausstehendAbwarten().then(() => (fertig = true));
+    await warte();
+    expect(fertig).toBe(false);
+    los();
+    await act(() => warten);
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '000-Erstes.frmsjf']);
+    // die eigene Sperre am neuen Namen ist wieder weg
+    expect(ds.dateien.has('C:/FORMA/BS9/000-Erstes.frmtmp')).toBe(false);
+    for (let i = 0; i < 3; i++) await warte();
   });
 
   it('Kontextmenü aus dem gemeinsamen Menü: genau eines, Esc schließt es, der Fokus geht an die Zeile zurück', async () => {

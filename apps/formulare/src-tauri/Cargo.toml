@@ -1,6 +1,6 @@
 [package]
 name = "formulare"
-version = "0.55.3"
+version = "0.56.0"
 description = "Bauantragsformulare aus SJ FORMA bequem ausfüllen"
 authors = ["Tobias Pendzialek"]
 license = "MIT"
