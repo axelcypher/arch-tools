@@ -129,8 +129,9 @@ geschieht nicht still: Es gilt „nicht gespeichert“, die Aktion unterbleibt, 
 hineingezogene, noch nicht abgelegte Mails unter „Mails“ (die Mails selbst bleiben im Projektordner bzw. in Outlook;
 schon ein Wechsel der Ansicht verwirft diese Eingaben) und alles, was ATLAS sofort speichert.
 Änderungen an der Struktur schreibt ATLAS kurz verzögert (zusammengefasst); vor dem Schließen, Andocken, Herauslösen
-und einem Update schreibt es eine noch wartende Änderung sofort und wartet darauf, auch ohne Rückfrage. Scheitert
-dieses letzte Schreiben (etwa bei getrenntem Netzlaufwerk), meldet ATLAS den Fehler an den Rahmen, damit er nachfragen kann.
+und einem Update schreibt es eine noch wartende Änderung sofort und wartet darauf, auch ohne Rückfrage. Ein früher
+gescheitertes Schreiben versucht es dabei erneut. Scheitert dieses letzte Schreiben (etwa bei getrenntem Netzlaufwerk),
+steht es im Protokoll, und die Änderung geht derzeit ohne Rückfrage verloren; die Rückfrage folgt mit Arkly/core.
 
 ### Neues Projekt aus jeder App
 

@@ -1203,16 +1203,19 @@ describe('Vor dem Schließen (Rahmen): verzögertes Schreiben nicht verlieren', 
     expect(gespeichert().struktur.name).not.toBe('Trotz Konflikt');
   });
 
-  it('scheitert das letzte Schreiben, meldet die Vorbereitung den Fehler an den Rahmen weiter (statt ihn zu schlucken)', async () => {
+  it('scheitert das letzte Schreiben, wird es protokolliert (ohne die übrigen Vorbereitungen abzuschneiden); ist das Laufwerk wieder da, schreibt das Schließen erneut', async () => {
     useOrdner.setState({ konfigLaden: echtesKonfigLaden });
     await act(() => useOrdner.getState().konfigLaden());
     sicherungen_.scheitern = true;
     act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Laufwerk weg' }));
-    await expect(vorbereitungenAusfuehren()).rejects.toThrow('Struktur nicht gespeichert');
-    // Gegenprobe: Laufwerk wieder da → kein Fehler, gespeichert
-    sicherungen_.scheitern = false;
-    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Laufwerk da' }));
     await expect(vorbereitungenAusfuehren()).resolves.toBeUndefined();
-    expect(gespeichert().struktur.name).toBe('Laufwerk da');
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBeTruthy();
+    expect(getEntries().some((e) => e.message.includes('Vor dem Schließen: Struktur nicht gespeichert'))).toBe(true);
+    // Laufwerk wieder da, OHNE neue Änderung: das Schließen versucht das gescheiterte Schreiben erneut
+    sicherungen_.scheitern = false;
+    await expect(vorbereitungenAusfuehren()).resolves.toBeUndefined();
+    expect(gespeichert().struktur.name).toBe('Laufwerk weg');
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBeNull();
   });
+
 });
