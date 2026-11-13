@@ -182,6 +182,8 @@ jobs:
       # Regelpaket) – ein schwankender Test einer anderen App soll dieses Release nicht kippen; die PR-CI testet ohnehin
       # das ganze Repo. Arkly bettet alle Apps ein: alle Tests. Projektname = Kennung der App (test.name in vite.config.ts).
       - name: Tests (App und eingebundene Pakete)
+        # Windows-Läufer: ohne Angabe wäre es PowerShell
+        shell: bash
         env:
           APP: ${{ matrix.app }}
         run: |
