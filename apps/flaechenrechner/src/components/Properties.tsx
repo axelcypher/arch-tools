@@ -410,7 +410,7 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
           </div>
         )}
       </div>
-      <p className="muted small-text">Änderungen gelten für alle gewählten Flächen. Felder mit „unterschiedlich“ bleiben unverändert, solange nichts gewählt wird.</p>
+      <p className="muted small-text">Gilt für alle gewählten Flächen; „unterschiedlich“ bleibt unverändert.</p>
 
       {rooms.length > 0 && (
         <>
@@ -446,6 +446,7 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
               ))}
             </select>
           </Field>
+          {kategorie !== 'keine' && (
           <Field label="Wohnung">
             <TextField
               value={wohnung ?? ''}
@@ -456,6 +457,7 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
               }}
             />
           </Field>
+          )}
           {(kategorie === 'freisitz' || kategorie === 'individuell') && (
             <Field label="Faktor" hint={kategorie === 'freisitz' ? 'leer = Projektstandard, max. 0,50' : '0 … 1'}>
               <NumberField
@@ -470,8 +472,8 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
           )}
           {rooms.length > 1 && (
             <div className="button-row">
-              <button className="small" onClick={() => void nummerieren()} title="Fortlaufend in der Reihenfolge, in der die Räume gewählt wurden">
-                Gewählte Räume fortlaufend nummerieren …
+              <button className="small" onClick={() => void nummerieren()} title="Gewählte Räume fortlaufend nummerieren – in der Reihenfolge, in der sie gewählt wurden">
+                Nummerieren …
               </button>
             </div>
           )}
@@ -556,7 +558,7 @@ function StoreyProperties() {
   // Bodenplatte gehört zum untersten Geschoss; sonst nur, wenn schon ein Wert gesetzt ist (z. B. nicht unterkellerter Anbau)
   const sohleOben = istUnterstes || !!storey.sohle;
   const sohleFeld = (
-    <Field label="Bodenplatte inkl. Dämmung: UK bis Fußboden [m]" hint={istUnterstes ? undefined : 'nur, wo unter diesem Geschoss kein anderes liegt'}>
+    <Field label="Bodenplatte inkl. Dämmung [m]" hint={istUnterstes ? 'Unterkante bis Fußboden' : 'Unterkante bis Fußboden; nur, wo darunter kein Geschoss liegt'}>
       <NumberField
         value={storey.sohle}
         allowEmpty
@@ -577,8 +579,12 @@ function StoreyProperties() {
         <HilfeKnopf thema={['sohle', 'bri', 'dach']} titel="Geschoss" />
       </h2>
       {/* leeres Geschoss: die nächsten Schritte zuerst (Plan laden, Umriss übernehmen) */}
-      {leer && <UmrissUebernehmen />}
-      {leer && <BackgroundPanel storey={storey} />}
+      {leer && (
+        <div className="plan-einstieg">
+          <UmrissUebernehmen />
+          <BackgroundPanel storey={storey} />
+        </div>
+      )}
       <div className="field-row">
         <Field label="Bezeichnung">
           <TextField value={storey.name} onChange={(v) => upd((s) => ({ ...s, name: v }))} />
@@ -615,18 +621,18 @@ function StoreyProperties() {
       </Field>
       <RaumNummern />
       {(istDachgeschoss(storey) || storey.shapes.some((s) => s.kind === 'outline' && !!s.dach && s.dach.typ !== 'flach')) && (
-        <div className="field-row">
-          <Field label="Dachaufbau ⊥ Dachfläche [m]" hint="bis Innenbekleidung, senkrecht zur Dachfläche gemessen">
+        <>
+          <Field label="Dachaufbau [m]" hint="bis Innenbekleidung, senkrecht zur Dachfläche">
             <NumberField
-              title="Dachaufbau bis Innenbekleidung, senkrecht zur Dachfläche gemessen; für die Höhenlinien (lichte Höhe unter Schrägen)"
+              title="Für die Höhenlinien (lichte Höhe unter Schrägen)"
               value={storey.dachaufbau} allowEmpty min={0} max={2} digits={3} placeholder="0,000" onChange={(v) => upd((s) => ({ ...s, dachaufbau: v || undefined }))} />
           </Field>
-          <Field label="Fußbodenaufbau [m]" hint="nur, wenn die Geschosskote auf dem Rohfußboden liegt">
+          <Field label="Fußbodenaufbau [m]" hint="nur bei Geschosskote auf dem Rohfußboden">
             <NumberField
-              title="Nur, wenn die Geschosskote auf dem Rohfußboden liegt"
+              title="Für die Höhenlinien (lichte Höhe unter Schrägen)"
               value={storey.fussbodenaufbau} allowEmpty min={0} max={1} digits={3} placeholder="0,000" onChange={(v) => upd((s) => ({ ...s, fussbodenaufbau: v || undefined }))} />
           </Field>
-        </div>
+        </>
       )}
       {project.dachModell && (
         <label className="toggle block" title="Ohne Haken reicht der Rauminhalt dort, wo darüber keine BGF liegt (z. B. Dachspitze als eigenes Geschoss), bis unter die Dachhaut.">
@@ -723,8 +729,9 @@ function RaumNummern() {
       </Field>
       {doppelt.size > 0 && <p className="warning small-text">Doppelte Raumnummern: {[...doppelt].join(', ')}</p>}
       {raeume.length > 1 && (
+        <>
+        <p className="muted small-text nummern-titel">Neu nummerieren:</p>
         <div className="button-row nummern-knoepfe">
-          <span className="muted small-text">Neu nummerieren:</span>
           <button className="small" onClick={() => void neu('liste')} title="Räume fortlaufend in der Reihenfolge der Raumliste neu nummerieren">
             nach Liste
           </button>
@@ -732,6 +739,7 @@ function RaumNummern() {
             im Uhrzeigersinn
           </button>
         </div>
+        </>
       )}
     </>
   );
@@ -807,13 +815,13 @@ function Summary() {
         <dl className="summary-kurz">
           <dt>{storey.name} [m²]</dt>
           <dd>
-            BGF <strong>{fmt2(sr.bgf.total)}</strong> · NRF <strong>{fmt2(sr.nrf.total)}</strong> · WoFl <strong>{fmt2(sr.wofl)}</strong>
+            <span className="kz">BGF <strong>{fmt2(sr.bgf.total)}</strong></span> · <span className="kz">NRF <strong>{fmt2(sr.nrf.total)}</strong></span> · <span className="kz">WoFl <strong>{fmt2(sr.wofl)}</strong></span>
           </dd>
           {mehrere && (
             <>
               <dt>Gesamt [m²]</dt>
               <dd>
-                BGF <strong>{fmt2(pr.total.bgf.total)}</strong> · NRF <strong>{fmt2(pr.total.nrf.total)}</strong> · WoFl <strong>{fmt2(pr.total.wofl)}</strong>
+                <span className="kz">BGF <strong>{fmt2(pr.total.bgf.total)}</strong></span> · <span className="kz">NRF <strong>{fmt2(pr.total.nrf.total)}</strong></span> · <span className="kz">WoFl <strong>{fmt2(pr.total.wofl)}</strong></span>
               </dd>
             </>
           )}

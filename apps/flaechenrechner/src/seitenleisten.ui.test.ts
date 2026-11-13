@@ -92,6 +92,24 @@ describe('QUADRIO: Raumtabelle (B3)', () => {
     taste(putz, 'Enter');
     expect(nr()).not.toContain(document.activeElement);
   });
+
+  it('beim Umnummerieren bleibt die Zeilenreihenfolge stehen; erst beim nächsten Öffnen wird neu sortiert', () => {
+    const { p } = haus();
+    const host = render(p);
+    const oeffnen = () => act(() => [...host.querySelectorAll<HTMLButtonElement>('button')].find((x) => x.textContent === 'Raumtabelle …')!.click());
+    oeffnen();
+    const nr = () => [...document.querySelectorAll<HTMLInputElement>('td[data-spalte="nummer"] input')].map((i) => i.value);
+    expect(nr()).toEqual(['0.01', '0.02', '0.03']);
+    const st = useEditor.getState();
+    const erster = st.project.storeys[0].shapes.find((x) => x.kind === 'room' && x.nummer === '0.01')!;
+    act(() => st.update((q) => ({ ...q, storeys: q.storeys.map((g) => ({ ...g, shapes: g.shapes.map((x) => (x.id === erster.id && x.kind === 'room' ? { ...x, nummer: '9.01' } : x)) })) })));
+    expect(nr()).toEqual(['9.01', '0.02', '0.03']);
+    act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(document.querySelector('.raumtabelle')).toBeNull();
+    oeffnen();
+    expect(nr()).toEqual(['0.02', '0.03', '9.01']); // Gegenprobe: neu geöffnet nach Nummer
+  });
 });
 
 describe('QUADRIO: Prüfliste (B8)', () => {

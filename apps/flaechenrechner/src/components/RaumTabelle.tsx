@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from 'react';
+import { useRef } from 'react';
 import { fmt2 } from '@core/format';
 import type { Nutzungsgruppe, Raumumschliessung, RoomShape, Shape, WoflKategorie } from '@core/model';
 import { shapeArea } from '@core/model';
@@ -34,16 +35,20 @@ function zeilenSprung(e: KeyboardEvent<HTMLTableSectionElement>) {
 
 /**
  * Raumtabelle aller Räume des Projekts (F-21): Geschosse wie in der Seitenleiste von oben nach unten, je Geschoss nach
- * Nummer sortiert, mit Zwischensumme und Gesamtsumme. Spalten direkt bearbeitbar (Nr., Bezeichnung, R/S, Nutzung,
+ * Nummer sortiert (Stand beim Öffnen), mit Zwischensumme und Gesamtsumme. Spalten direkt bearbeitbar (Nr., Bezeichnung, R/S, Nutzung,
  * WoFlV-Anrechnung, Faktor, Wohnung, Abzug, Putzabzug). Jede Änderung ist ein eigener Rückgängig-Schritt.
  */
 export function RaumTabelle({ onClose }: { onClose: () => void }) {
   const project = useEditor((s) => s.project);
   const wohnungen = wohnungenImProjekt(project);
   const flaeche = (r: RoomShape) => shapeArea(r) * (r.subtract ? -1 : 1);
+  // Reihenfolge beim Öffnen festhalten: beim Durchnummerieren springen Zeilen sonst unter dem Cursor weg (neue Räume hinten)
+  const reihenfolge = useRef<Map<string, number> | null>(null);
+  if (!reihenfolge.current) reihenfolge.current = new Map(project.storeys.flatMap((st) => nachNummer(st.shapes.filter((s) => s.kind === 'room')).map((r, i) => [r.id, i] as const)));
+  const rang = (id: string) => reihenfolge.current!.get(id) ?? Number.MAX_SAFE_INTEGER;
   const geschosse = [...project.storeys]
     .reverse()
-    .map((st) => ({ st, raeume: nachNummer(st.shapes.filter((s): s is RoomShape => s.kind === 'room')) }))
+    .map((st) => ({ st, raeume: nachNummer(st.shapes.filter((s): s is RoomShape => s.kind === 'room')).sort((a, b) => rang(a.id) - rang(b.id)) }))
     .filter((g) => g.raeume.length > 0);
   const gesamt = geschosse.reduce((a, g) => a + g.raeume.reduce((b, r) => b + flaeche(r), 0), 0);
   const upd = (storeyId: string, id: string, fn: (r: RoomShape) => Shape) => useEditor.getState().update((p) => mapShape(p, storeyId, id, (s) => (s.kind === 'room' ? fn(s) : s)));
