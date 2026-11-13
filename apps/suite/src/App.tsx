@@ -3,7 +3,22 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { isTauri } from '@core/platform/files';
 import { getEntries, logger, logVersion, subscribe } from '@core/platform/log';
 import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
-import { AN_APP, AN_RAHMEN, ANDOCKEN, ASSISTENT_NEU, BEREIT, PROJEKT_ANGELEGT, PROJEKT_ANLEGEN, PROJEKT_APP, speichernImFenster, speichernImTab, ZUR_APP } from '@core/platform/rahmen';
+import {
+  AN_APP,
+  AN_RAHMEN,
+  ANDOCKEN,
+  ASSISTENT_NEU,
+  BEREIT,
+  PROJEKT_ANGELEGT,
+  PROJEKT_ANLEGEN,
+  PROJEKT_APP,
+  speichernImFenster,
+  speichernImTab,
+  tabBrauchtVorbereitung,
+  vorbereitenImFenster,
+  vorbereitenImTab,
+  ZUR_APP,
+} from '@core/platform/rahmen';
 import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import type { MenuePunkt } from '@core/ui/Menue';
@@ -14,6 +29,7 @@ import { dialogVerhaltenEinrichten } from '@core/ui/dialoge';
 import { aenderungenSpeichern, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
 import { SpeicherortHost, SpeicherortKnopf, SpeicherortZeile } from '@core/ui/Speicherort';
 import { umzugBestaetigen } from '@core/ui/umzug';
+import { schreibenAbwarten } from '@core/ui/vorbereiten';
 import { UpdateKnopf } from '@core/ui/UpdateKnopf';
 import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
 import { sperrenFreigeben } from './sperren';
@@ -209,6 +225,7 @@ export function App() {
     const frame = rahmen.current.get(id);
     if (status[id]?.dirty && !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false)))) return;
     // Tab zu, Sperren frei – dann das Fenster, das die geöffneten Formulare neu sperrt
+    if (tabBrauchtVorbereitung(frame) && !(await tabVorbereiten(id))) return;
     herausgeloest(id);
     await sperrenFreigeben(id);
     const gen = (fensterGen.current.get(id) ?? 0) + 1;
@@ -278,6 +295,8 @@ export function App() {
    */
   const tabSchliessen = async (id: string, danach?: () => void): Promise<boolean> => {
     if (useRahmen.getState().status[id]?.dirty && !(await tabFreigeben(id))) return false;
+    // ausstehendes Schreiben der App abwarten (vorDemSchliessen) – nur wenn sie etwas angemeldet hat, sonst sofort
+    if (tabBrauchtVorbereitung(rahmen.current.get(id)) && !(await tabVorbereiten(id))) return false;
     schliessen(id);
     danach?.();
     // Aufträge, die auf die App warteten, gelten nicht beim nächsten Öffnen
@@ -312,7 +331,16 @@ export function App() {
       if (!(await tabFreigeben(id))) return false;
     }
     for (const id of draussen) if (!(await fensterFreigeben(id))) return false;
+    // danach ausstehendes Schreiben abwarten (vorDemSchliessen), in Tabs und herausgelösten Fenstern
+    for (const id of offen) if (tabBrauchtVorbereitung(rahmen.current.get(id)) && !(await tabVorbereiten(id))) return false;
+    for (const id of draussen) if (!(await schreibenAbwarten(appInfo(id)?.name ?? id, () => vorbereitenImFenster(id)))) return false;
     return true;
+  };
+
+  /** ausstehendes Schreiben eines Tabs abwarten; true = weiter (fertig oder trotzdem) */
+  const tabVorbereiten = (id: string) => {
+    const frame = rahmen.current.get(id);
+    return frame ? schreibenAbwarten(appInfo(id)?.name ?? id, () => vorbereitenImTab(frame)) : Promise.resolve(true);
   };
 
   /** Beenden (× oder System): Rückfragen, dann alle herausgelösten Fenster und das Hauptfenster schließen */
@@ -415,7 +443,7 @@ export function App() {
             const s = status[id];
             const name = `${info.name} (${info.was})${s?.name ? ` – ${s.name}` : ''}`;
             return (
-              // Wahl per Tastatur am Tab-Knopf; ⧉ und × sind für die Maus da (Tastatur: Entf, Kontextmenü)
+              // Wahl per Tastatur am Tab-Knopf; ⧉ und × sind für die Maus da (Tastatur: Entf bzw. Strg+F4, Kontextmenü)
               <div key={id} role="presentation" className={`rahmen-tab${id === aktiv ? ' aktiv' : ''}`} onAuxClick={(e) => e.button === 1 && void tabSchliessen(id)} onContextMenu={(e) => tabMenue(e, id)}>
                 <button
                   id={tabKennung(id)}

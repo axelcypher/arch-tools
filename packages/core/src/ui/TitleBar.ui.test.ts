@@ -24,6 +24,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 }));
 
 const { TitleBar } = await import('./TitleBar');
+const { vorDemSchliessen } = await import('../platform/rahmen');
 const { emit, listen } = await import('@tauri-apps/api/event');
 const { clearMocks, mockIPC } = await import('@tauri-apps/api/mocks');
 
@@ -116,5 +117,35 @@ describe('Titelleiste auf dem Desktop', () => {
     await act(async () => void (await emit('arch-tools:an-app', { typ: 'arch-tools:speichern', anfrage: 'a2', an: 'kosten' })));
     await warten();
     expect(speichern).toHaveBeenCalledTimes(2);
+  });
+
+  it('vor dem Schließen wartet das Fenster auf ausstehendes Schreiben (vorDemSchliessen), auch ohne ungespeicherte Änderungen', async () => {
+    let schreiben: (() => void) | undefined;
+    const aus = vorDemSchliessen(() => new Promise<void>((fertig) => (schreiben = fertig)));
+    await render({ dirty: false });
+    await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
+    await warten();
+    expect(fenster.destroy).not.toHaveBeenCalled();
+    await act(async () => schreiben!());
+    await warten();
+    expect(fenster.destroy).toHaveBeenCalled();
+    aus();
+  });
+
+  it('herausgelöstes Fenster: Vorbereitungs-Anfrage des Rahmens wird nach dem Schreiben beantwortet', async () => {
+    window.history.replaceState(null, '', '/?rahmen=fenster&app=ordner');
+    const antworten: { typ: string; anfrage?: string; ok?: boolean }[] = [];
+    await listen<(typeof antworten)[number]>('arch-tools:an-rahmen', (e) => void antworten.push(e.payload));
+    let schreiben: (() => void) | undefined;
+    const aus = vorDemSchliessen(() => new Promise<void>((fertig) => (schreiben = fertig)));
+    await render({ dirty: false });
+    for (let i = 0; i < 5; i++) await warten();
+    await act(async () => void (await emit('arch-tools:an-app', { typ: 'arch-tools:vorbereiten', anfrage: 'v1', an: 'ordner' })));
+    await warten();
+    expect(antworten.some((a) => a.typ === 'arch-tools:vorbereitet')).toBe(false);
+    await act(async () => schreiben!());
+    await warten();
+    expect(antworten.find((a) => a.typ === 'arch-tools:vorbereitet')).toMatchObject({ anfrage: 'v1', ok: true });
+    aus();
   });
 });

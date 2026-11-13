@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { anRahmenMelden, beimUmzug, rahmenApp, rahmenModus, SPEICHERN_ANTWORT_MS, speichernImTab } from './rahmen';
+import { anRahmenMelden, beimUmzug, rahmenApp, rahmenModus, schliessenVorbereiten, SPEICHERN_ANTWORT_MS, speichernImTab, tabBrauchtVorbereitung, VORBEREITEN_MS, vorbereitenImTab, vorDemSchliessen } from './rahmen';
 
 afterEach(() => window.history.replaceState(null, '', '/'));
 
@@ -82,5 +82,47 @@ describe('Rahmen-App: Speichern auf Anfrage', () => {
     expect(beimUmzug('formulare').verliert).toBe(false);
     expect(beimUmzug('kosten')).toEqual({ text: expect.stringContaining('Zwischenstand'), verliert: false });
     expect(beimUmzug(null).verliert).toBe(false);
+  });
+});
+
+describe('Rahmen-App: vor dem Schließen ausstehendes Schreiben abwarten', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('ohne Vorbereitungen sofort; sonst alle abwarten; ein Fehler zählt als fertig; danach abgemeldet', async () => {
+    await expect(schliessenVorbereiten()).resolves.toBe(true);
+    const reihenfolge: string[] = [];
+    const aus1 = vorDemSchliessen(async () => void reihenfolge.push('a'));
+    const aus2 = vorDemSchliessen(() => {
+      reihenfolge.push('b');
+      throw new Error('Netzlaufwerk weg');
+    });
+    await expect(schliessenVorbereiten()).resolves.toBe(true);
+    expect(reihenfolge.sort()).toEqual(['a', 'b']);
+    aus1();
+    aus2();
+    reihenfolge.length = 0;
+    await schliessenVorbereiten();
+    expect(reihenfolge).toEqual([]);
+  });
+
+  it('hängt das Schreiben, gilt nach dem Zeitlimit „nicht fertig“', async () => {
+    vi.useFakeTimers();
+    const aus = vorDemSchliessen(() => new Promise<void>(() => {}));
+    const ergebnis = schliessenVorbereiten();
+    vi.advanceTimersByTime(VORBEREITEN_MS + 1);
+    await expect(ergebnis).resolves.toBe(false);
+    aus();
+  });
+
+  it('Tab ohne Antwort: nach dem Zeitlimit „nicht fertig“; ohne Vorbereitung im Tab sofort', async () => {
+    vi.useFakeTimers();
+    const haengt = { contentWindow: { __archToolsVorbereiten: () => new Promise<boolean>(() => {}), __archToolsVorbereitenNoetig: () => true } } as unknown as HTMLIFrameElement;
+    expect(tabBrauchtVorbereitung(haengt)).toBe(true);
+    const ergebnis = vorbereitenImTab(haengt, 1000);
+    vi.advanceTimersByTime(1600);
+    await expect(ergebnis).resolves.toBe(false);
+    const leer = { contentWindow: {} } as unknown as HTMLIFrameElement;
+    expect(tabBrauchtVorbereitung(leer)).toBe(false);
+    await expect(vorbereitenImTab(leer)).resolves.toBe(true);
   });
 });

@@ -76,6 +76,14 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   (`onCloseRequested`) – fragt bei ungespeicherten Änderungen; danach `destroy`, damit die Rückfrage nicht zweimal kommt.
   Rechte: Hauptfenster `capabilities/default.json`, herausgelöste Fenster `capabilities/fenster.json` (ohne Updates,
   Neustart und neue Fenster).
+- **Ausstehendes Schreiben vor dem Schließen** (`vorDemSchliessen` in `rahmen.ts`): Schreibt eine App verzögert
+  (z. B. ATLAS etwa 400 ms nach einer Änderung), meldet sie mit `vorDemSchliessen(async () => …)` an, was vor dem Ende
+  noch fertig werden muss – die Funktion soll das Schreiben sofort ausführen und abwarten. Das gilt auch, wenn keine
+  ungespeicherten Änderungen gemeldet sind. Abgewartet wird vor dem Schließen des Fensters (× und System), dem
+  Andocken, dem Herauslösen, dem Schließen eines Tabs, dem Beenden von Arkly (alle Tabs und Fenster) und dem
+  Update-Neustart, höchstens 5 s (`VORBEREITEN_MS`). Danach fragt die App „… speichert noch“ – *Trotzdem fortfahren*
+  oder *Abbrechen* (`ui/vorbereiten.ts`). Tabs ruft der Rahmen direkt auf (gleicher Ursprung), herausgelöste Fenster
+  über `arch-tools:vorbereiten`/`arch-tools:vorbereitet`; die Titelleiste richtet die Antwort ein.
 - **Speichern auf Anfrage** (`speichernImTab`, `speichernImFenster`, `speichernAnfragenBeantworten`): Der Rahmen
   schickt `arch-tools:speichern`, die App bestätigt sofort (`arch-tools:speichert`) und meldet danach das Ergebnis
   (`arch-tools:gespeichert`). Kommt binnen 3 s keine Bestätigung (App lädt, hängt, ist abgestürzt), gilt „nicht
@@ -134,6 +142,9 @@ am Tab bzw. in der Titelleiste ● erscheint.
 8. **App reagiert nicht:** Schwer nachzustellen; erwartet ist, dass *Speichern* bei einer hängenden App nach etwa
    3 Sekunden aufgibt und Arkly offen bleibt.
 9. **Neustart:** Eine App herauslösen, Arkly beenden und neu starten. Erwartet: Die App ist wieder als Tab da.
+10. **Verzögertes Schreiben:** In ATLAS etwas ändern und sofort (innerhalb einer halben Sekunde) den Tab schließen
+    bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Mit getrenntem Netzlaufwerk erscheint nach
+    etwa 5 s „ATLAS speichert noch“.
 
 ## Entwicklung
 

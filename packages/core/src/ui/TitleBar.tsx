@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { appNameSetzen } from './appName';
 import { isTauri } from '../platform/files';
-import { andocken, anRahmenMelden, rahmenApp, rahmenModus, speichernAnfragenBeantworten } from '../platform/rahmen';
+import { andocken, anRahmenMelden, rahmenApp, rahmenModus, schliessenVorbereiten, speichernAnfragenBeantworten, vorbereitenAnfragenBeantworten } from '../platform/rahmen';
 import { getEntries, logger, logVersion, subscribe } from '../platform/log';
 import { useTheme } from '../platform/theme';
 import type { ThemeWahl } from '../platform/theme';
@@ -16,6 +16,7 @@ import { MenueHost } from './Menue';
 import { useBuero } from './DruckKopf';
 import { SpeicherortHost, SpeicherortKnopf } from './Speicherort';
 import { umzugBestaetigen } from './umzug';
+import { schreibenAbwarten } from './vorbereiten';
 
 const log = logger('fenster');
 
@@ -58,6 +59,8 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   const speichernRef = useRef(onSpeichern);
   speichernRef.current = onSpeichern;
   useEffect(() => speichernAnfragenBeantworten(onSpeichern ? () => speichernRef.current!() : undefined), [!!onSpeichern]); // eslint-disable-line react-hooks/exhaustive-deps
+  // im Tab bzw. herausgelösten Fenster: ausstehendes Schreiben auf Anfrage des Rahmens abwarten (vorDemSchliessen)
+  useEffect(() => vorbereitenAnfragenBeantworten(), []);
   const [win, setWin] = useState<AppWindow | null>(null);
   const [maximized, setMaximized] = useState(false);
 
@@ -115,6 +118,8 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
           : await bestaetigen('Ungespeicherte Änderungen verwerfen?', 'Die Änderungen gehen beim Beenden verloren.', 'Verwerfen und beenden', true);
         if (!weiter) return;
       }
+      // ausstehendes Schreiben (vorDemSchliessen) abwarten
+      if (!(await schreibenAbwarten(app, () => schliessenVorbereiten()))) return;
       log.info('Fenster wird geschlossen');
       await win?.destroy();
     } finally {
@@ -142,6 +147,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   // Andocken startet die App als Tab neu – bei ungespeicherten Änderungen vorher fragen (wie beim Herauslösen)
   const andockenFragen = async () => {
     if (dirty && !(await umzugBestaetigen(rahmenApp(), app, name, 'andocken', onSpeichern))) return;
+    if (!(await schreibenAbwarten(app, () => schliessenVorbereiten()))) return;
     await andocken();
   };
 

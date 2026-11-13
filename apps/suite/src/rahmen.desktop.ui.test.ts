@@ -124,6 +124,8 @@ const fensterSpeichertMit = (kennung: string, ok: boolean) => {
   const anfragen: string[] = [];
   void listen<{ typ: string; anfrage: string; an: string }>('arch-tools:an-app', (e) => {
     const d = e.payload;
+    // ausstehendes Schreiben: sofort fertig (wie vorbereitenAnfragenBeantworten ohne Vorbereitungen)
+    if (d.typ === 'arch-tools:vorbereiten' && d.an === kennung) void emit('arch-tools:an-rahmen', { typ: 'arch-tools:vorbereitet', anfrage: d.anfrage, ok: true, app: kennung });
     if (d.typ !== 'arch-tools:speichern' || d.an !== kennung) return;
     anfragen.push(d.anfrage);
     void emit('arch-tools:an-rahmen', { typ: 'arch-tools:speichert', anfrage: d.anfrage, app: kennung }).then(() =>
@@ -241,6 +243,35 @@ describe('Rahmen-App auf dem Desktop', () => {
     await act(async () => {});
     expect(useRahmen.getState()).toMatchObject({ tabs: [], fenster: ['entzerrung'] });
     expect(fenster.offen.has('app-entzerrung')).toBe(true);
+  });
+
+  it('ausstehendes Schreiben im Tab (vorDemSchliessen): Schließen wartet darauf; hängt es, Rückfrage „speichert noch“', async () => {
+    const host = await render();
+    act(() => useRahmen.getState().oeffnen('ordner'));
+    const f = frame(host, 'ordner');
+    let schreiben: (() => void) | undefined;
+    const vorbereiten = vi.fn((ms: number) => new Promise<boolean>((fertig) => (schreiben = () => fertig(true))).then((ok) => ok || ms < 0));
+    Object.assign(f.contentWindow!, { __archToolsVorbereiten: vorbereiten, __archToolsVorbereitenNoetig: () => true });
+    await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
+    // wartet: der Tab ist noch da, bis das Schreiben fertig ist
+    expect(vorbereiten).toHaveBeenCalledWith(5000);
+    expect(useRahmen.getState().tabs).toEqual(['ordner']);
+    await act(async () => schreiben!());
+    await act(async () => {});
+    expect(useRahmen.getState().tabs).toEqual([]);
+    // hängt es (Zeitlimit): Rückfrage, Abbrechen lässt den Tab offen
+    act(() => useRahmen.getState().oeffnen('ordner'));
+    const g = frame(host, 'ordner');
+    Object.assign(g.contentWindow!, { __archToolsVorbereiten: async () => false, __archToolsVorbereitenNoetig: () => true });
+    await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
+    await act(async () => {});
+    expect(dialog(host)?.textContent).toContain('ATLAS speichert noch');
+    await antwort(host, 'Abbrechen');
+    expect(useRahmen.getState().tabs).toEqual(['ordner']);
+    await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
+    await act(async () => {});
+    await antwort(host, 'Trotzdem fortfahren');
+    expect(useRahmen.getState().tabs).toEqual([]);
   });
 
   it('Update: vor der Installation dieselben Rückfragen; Abbrechen verhindert sie', async () => {
