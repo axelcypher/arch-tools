@@ -93,7 +93,7 @@ export interface Hinweis extends Element {
 export type LvElement = Abschnitt | Position | Hinweis;
 
 export interface Bieter {
-  /** 0 = Kostenansatz (eigene Kostenberechnung), ab 1 die Bieter */
+  /** 0 = Kostenansatz (vom Planer bepreistes LV), ab 1 die Bieter */
   id: number;
   name: string;
   /** Anschrift (mehrzeilig) */
@@ -180,7 +180,7 @@ export interface LvKopf {
   waehrung: string;
   /** Umsatzsteuer in % */
   mwst: number;
-  /** Kostengliederung, z. B. „din276-08“ */
+  /** Kennung der Kostengliederung im Format der LV-Datei (KGRTyp), z. B. „din276-08“ – eine Formatkennung des Originalprogramms; die Kostengruppen selbst folgen der geltenden DIN 276 */
   kostengliederung?: string;
 }
 
@@ -368,4 +368,28 @@ export function elementKopie(el: LvElement): LvElement {
   const basis = { ...structuredClone(el), id: neueId(), xmlId: undefined };
   if (basis.art === 'abschnitt') basis.kinder = el.art === 'abschnitt' ? el.kinder.map(elementKopie) : [];
   return basis;
+}
+
+/**
+ * Doppelte Ordnungszahlen: vollständige OZ (ohne führende Nullen verglichen) → alle Positionen bzw. Abschnitte mit
+ * dieser OZ. Leer = keine Dubletten. Vor GAEB-Export und Angebotsübernahme prüfen – sonst werden Preise falsch
+ * zugeordnet.
+ */
+export function ozDubletten(lv: Lv): { oz: string; ids: string[] }[] {
+  const norm = (oz: string) =>
+    oz
+      .split('.')
+      .map((t) => t.replace(/^0+(?=\d)/, ''))
+      .join('.');
+  const nachOz = new Map<string, { oz: string; ids: string[] }>();
+  for (const { el, pfad } of durchlaufen(lv.elemente)) {
+    if (el.art === 'hinweis') continue;
+    const oz = ozVoll(pfad, el);
+    if (!oz) continue;
+    const k = `${el.art}:${norm(oz)}`;
+    const e = nachOz.get(k) ?? { oz, ids: [] };
+    e.ids.push(el.id);
+    nachOz.set(k, e);
+  }
+  return [...nachOz.values()].filter((e) => e.ids.length > 1);
 }

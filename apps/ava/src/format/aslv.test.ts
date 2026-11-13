@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import type { Lv, Position } from '../lv/modell';
 import { aendereElement, fuegeEin, leeresLv, neueId, positionen } from '../lv/modell';
 import { summen } from '../lv/rechnen';
-import { aslvEntpacken, aslvLesen, aslvNeu, aslvSchreiben, datumLesen } from './aslv';
+import { aslvEntpacken, aslvLesen, aslvNeu, aslvPacken, aslvSchreiben, aslvVerluste, datumLesen } from './aslv';
+import { eigenLesen } from './eigen';
 import { alsText, kurztextRtf, rtfLesen, rtfSchreiben } from './rtf';
 import { xmlParsen, xmlSchreiben } from './xmlDom';
 
@@ -119,6 +120,38 @@ describe('LV-Datei (.aslv)', () => {
     expect(aslvLesen(ohne).lv.elemente).toHaveLength(2);
   });
 
+  it('Bezeichnung als RTF im LV-Kopf bleibt beim Speichern unverändert', () => {
+    const lv = musterLv();
+    const xml = aslvEntpacken(aslvNeu(lv));
+    const rtf = kurztextRtf('G13 Fliesenarbeiten');
+    expect(xml).toContain('Name="Text1" Value="G13 Fliesenarbeiten"');
+    const mitRtf = aslvPacken(xml.replace('Name="Text1" Value="G13 Fliesenarbeiten"', `Name="Text1" Value="${rtf}"`));
+    const gelesen = aslvLesen(mitRtf).lv;
+    expect(gelesen.kopf.bezeichnung).toBe('G13 Fliesenarbeiten');
+    // unverändert → Byte für Byte gleich
+    expect(aslvSchreiben(mitRtf, gelesen)).toBe(mitRtf);
+    // geändert → wieder RTF mit neuem Text
+    const neu = aslvSchreiben(mitRtf, { ...gelesen, kopf: { ...gelesen.kopf, bezeichnung: 'G13 Fliesen' } });
+    expect(aslvEntpacken(neu)).toContain('{\\rtf1');
+    expect(aslvLesen(neu).lv.kopf.bezeichnung).toBe('G13 Fliesen');
+  });
+
+  it('meldet Angaben, die eine LV-Datei nicht aufnimmt', () => {
+    const lv = musterLv();
+    const datei = aslvLesen(aslvNeu(lv)).lv;
+    expect(aslvVerluste(datei, datei)).toEqual([]);
+    const geaendert = {
+      ...datei,
+      nachtraege: [{ nr: 1, titel: 'Mehrmengen', status: 'angeboten' as const }],
+      bieter: datei.bieter.map((b) => (b.id === 10 ? { ...b, ausgeschlossen: true, angebotsdatum: '2026-01-02' } : b)),
+    };
+    expect(aslvVerluste(datei, geaendert).sort()).toEqual(['bieterAngebotsdatum', 'bieterStatus', 'nachtraege']);
+    // Gegenprobe: nach dem Speichern als .aslv sind sie tatsächlich weg
+    const zurueck = aslvLesen(aslvSchreiben(aslvNeu(lv), geaendert)).lv;
+    expect(zurueck.nachtraege).toEqual([]);
+    expect(zurueck.bieter.find((b) => b.id === 10)?.ausgeschlossen).toBeUndefined();
+  });
+
   it('liest Datumsangaben in beiden Schreibweisen', () => {
     expect(datumLesen('2025-04-10T00:00:01')).toBe('2025-04-10');
     expect(datumLesen('01.12.2025 00:00:01')).toBe('2025-12-01');
@@ -160,4 +193,23 @@ describe.skipIf(!echte.length)('echte LV-Dateien', () => {
       expect(positionen(zurueck).map((x) => alsText(x.pos.langtext))).toEqual(positionen(lv).map((x) => alsText(x.pos.langtext)));
     });
   }
+});
+
+describe('eigenes Format (.oalv)', () => {
+  it('liest fehlerhafte Elemente robust (ohne preise, kinder, langtext)', () => {
+    const roh = { format: 'arch-tools-lv', version: 1, lv: { kopf: { bezeichnung: 'X' }, elemente: [{ art: 'abschnitt', oz: '01', kurztext: 'A' }, { art: 'position', oz: '0010', kurztext: 'P' }, { art: 'unbekannt' }, null] } };
+    const { lv } = eigenLesen(new TextEncoder().encode(JSON.stringify(roh)));
+    expect(lv.elemente.map((e) => e.art)).toEqual(['abschnitt', 'position']);
+    const pos = lv.elemente[1] as Position;
+    expect(pos.preise).toEqual({});
+    expect(pos.menge).toBeNull();
+    expect(pos.positionsart).toBe('normal');
+    expect(() => summen(lv)).not.toThrow();
+  });
+
+  it('lehnt neuere Formatversionen und Fremddateien ab', () => {
+    expect(() => eigenLesen(new TextEncoder().encode(JSON.stringify({ format: 'arch-tools-lv', version: 99, lv: {} })))).toThrow(/neueren Version/);
+    expect(() => eigenLesen(new TextEncoder().encode('{"format":"anders","lv":{}}'))).toThrow(/Keine LV-Datei/);
+    expect(() => eigenLesen(new TextEncoder().encode('kein json'))).toThrow(/kein gültiges JSON/);
+  });
 });

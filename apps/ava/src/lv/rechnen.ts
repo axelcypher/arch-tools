@@ -8,7 +8,14 @@
 import type { Lv, LvElement, Position } from './modell';
 import { zaehltInSumme } from './modell';
 
+/** kaufmännisch auf Cent runden (mit kleinem Ausgleich für Gleitkommafehler: 1,005 → 1,01) */
 export const rund2 = (x: number) => Math.round((x + Math.sign(x) * 1e-9) * 100) / 100;
+
+/** Umsatzsteuer auf einen Nettobetrag, auf Cent gerundet */
+export const ustBetrag = (netto: number, prozent: number) => rund2((rund2(netto) * prozent) / 100);
+
+/** Brutto = Netto (auf Cent) + Umsatzsteuer (auf Cent) – überall gleich gerechnet */
+export const brutto = (netto: number, prozent: number) => rund2(rund2(netto) + ustBetrag(netto, prozent));
 
 export interface BieterSumme {
   /** Summe der Positionen (ohne Nachlass) */
@@ -86,9 +93,9 @@ export function summen(lv: Lv): Summen {
   for (const b of lv.bieter) {
     const ohne = gesamt.get(b.id) ?? 0;
     const netto = rund2(ohne * (1 + (b.nachlass ?? 0) / 100));
-    const mwst = rund2((netto * lv.kopf.mwst) / 100);
+    const mwst = ustBetrag(netto, lv.kopf.mwst);
     const z = zaehler.get(b.id)!;
-    bieter.set(b.id, { ohneNachlass: ohne, netto, mwst, brutto: rund2(netto + mwst), mitPreis: z.mit, ohnePreis: z.ohne });
+    bieter.set(b.id, { ohneNachlass: ohne, netto, mwst, brutto: brutto(netto, lv.kopf.mwst), mitPreis: z.mit, ohnePreis: z.ohne });
   }
   return { bieter, abschnitte, positionen, nachtraege };
 }
@@ -127,13 +134,32 @@ export function spiegelzeile(pos: Position, bieterIds: number[]): Spiegelzeile {
 /** gewertete Bieter: alle außer Kostenansatz und ausgeschlossenen */
 export const gewerteteBieter = (lv: Lv) => lv.bieter.filter((b) => b.id !== 0 && !b.ausgeschlossen).map((b) => b.id);
 
-/** Rangfolge der Bieter nach Angebotssumme netto (nach Nachlass) */
-export function rangfolge(lv: Lv, s = summen(lv)): { id: number; netto: number; rang: number; abstand: number }[] {
+export interface Rang {
+  id: number;
+  netto: number;
+  rang: number;
+  /** Abstand zum Ersten in % */
+  abstand: number;
+  /** zählende Positionen ohne Preis */
+  ohnePreis: number;
+  /** Angebot unvollständig (fehlende Preise): nicht ohne Prüfung werten (§ 16a VOB/A) */
+  unvollstaendig: boolean;
+}
+
+/**
+ * Rangfolge der Bieter nach Angebotssumme netto (nach Nachlass). Unvollständige Angebote (fehlende Preise)
+ * stehen hinter den vollständigen – ihre Summe ist zu niedrig und nicht vergleichbar – und sind gekennzeichnet.
+ */
+export function rangfolge(lv: Lv, s = summen(lv)): Rang[] {
   const liste = gewerteteBieter(lv)
-    .map((id) => ({ id, netto: s.bieter.get(id)?.netto ?? 0 }))
+    .map((id) => {
+      const b = s.bieter.get(id);
+      const ohnePreis = b?.ohnePreis ?? 0;
+      return { id, netto: b?.netto ?? 0, ohnePreis, unvollstaendig: ohnePreis > 0 };
+    })
     .filter((x) => x.netto > 0)
-    .sort((a, b) => a.netto - b.netto);
-  const erst = liste[0]?.netto ?? 0;
+    .sort((a, b) => Number(a.unvollstaendig) - Number(b.unvollstaendig) || a.netto - b.netto);
+  const erst = liste.find((x) => !x.unvollstaendig)?.netto ?? liste[0]?.netto ?? 0;
   return liste.map((x, i) => ({ ...x, rang: i + 1, abstand: erst ? ((x.netto - erst) / erst) * 100 : 0 }));
 }
 
