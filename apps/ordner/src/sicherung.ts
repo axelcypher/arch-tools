@@ -50,6 +50,9 @@ export interface StrukturUnterschied {
   /** Presets: entfallende und neue Namen */
   presetsWeg: string[];
   presetsNeu: string[];
+  /** Bausteine des Struktur-Editors: entfallende und neue Namen */
+  bausteineWeg?: string[];
+  bausteineNeu?: string[];
   /** neuer Name der Struktur, wenn er sich ändert */
   name?: string;
 }
@@ -75,8 +78,19 @@ export function strukturUnterschied(alt: Struktur, neu: Struktur): StrukturUnter
     schemata: SCHEMATA.filter((s) => alt[s.feld] !== neu[s.feld]).map((s) => s.label),
     presetsWeg: alt.presets.filter((p) => !neuPresets.has(p.name.toLowerCase())).map((p) => p.name),
     presetsNeu: neu.presets.filter((p) => !altPresets.has(p.name.toLowerCase())).map((p) => p.name),
+    ...bausteinUnterschied(alt, neu),
     ...(alt.name !== neu.name ? { name: neu.name } : {}),
   };
+}
+
+function bausteinUnterschied(alt: Struktur, neu: Struktur): Pick<StrukturUnterschied, 'bausteineWeg' | 'bausteineNeu'> {
+  const a = alt.bausteine ?? [];
+  const n = neu.bausteine ?? [];
+  const altNamen = new Set(a.map((b) => b.name.toLowerCase()));
+  const neuNamen = new Set(n.map((b) => b.name.toLowerCase()));
+  const weg = a.filter((b) => !neuNamen.has(b.name.toLowerCase())).map((b) => b.name);
+  const dazu = n.filter((b) => !altNamen.has(b.name.toLowerCase())).map((b) => b.name);
+  return { ...(weg.length ? { bausteineWeg: weg } : {}), ...(dazu.length ? { bausteineNeu: dazu } : {}) };
 }
 
 const anzahl = (n: number, eins: string, mehr: string) => `${n} ${n === 1 ? eins : mehr}`;
@@ -90,6 +104,8 @@ export function unterschiedText(u: StrukturUnterschied): string {
   if (u.schemata.length) teile.push(`${anzahl(u.schemata.length, 'Schema ändert', 'Schemata ändern')} sich (${u.schemata.join(', ')})`);
   if (u.presetsWeg.length) teile.push(`${anzahl(u.presetsWeg.length, 'Preset entfällt', 'Presets entfallen')} (${u.presetsWeg.join(', ')})`);
   if (u.presetsNeu.length) teile.push(`${anzahl(u.presetsNeu.length, 'Preset', 'Presets')} neu (${u.presetsNeu.join(', ')})`);
+  if (u.bausteineWeg?.length) teile.push(`${anzahl(u.bausteineWeg.length, 'Baustein entfällt', 'Bausteine entfallen')} (${u.bausteineWeg.join(', ')})`);
+  if (u.bausteineNeu?.length) teile.push(`${anzahl(u.bausteineNeu.length, 'Baustein', 'Bausteine')} neu (${u.bausteineNeu.join(', ')})`);
   if (u.name) teile.push(`Name „${u.name}“`);
   return teile.join(', ');
 }

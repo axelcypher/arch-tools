@@ -11,12 +11,13 @@ export interface AppInfo {
 const ZWISCHENSTAND = 'Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt.';
 
 export const APPS: AppInfo[] = [
-  { id: 'ordner', name: 'Projektordner', text: 'Projekte anlegen und ergänzen, Vorlagen, Ordner prüfen', beimUmzug: 'Ungespeicherte Änderungen gehen verloren – bitte vorher speichern.' },
+  { id: 'ordner', name: 'Projekt', text: 'Projekte anlegen und fortschreiben, Struktur, Vorlagen, Ordner prüfen, Katasterpläne', beimUmzug: 'Ungespeicherte Änderungen gehen verloren – bitte vorher speichern.' },
   { id: 'formulare', name: 'Formulare', text: 'Bauantragsformulare ausfüllen', beimUmzug: 'Nicht gespeicherte Eingaben bleiben als Entwurf erhalten und erscheinen beim erneuten Öffnen des Formulars wieder; ungespeicherte Bearbeitungen in PDF-, Excel- und Word-Dokumenten der Dateiansicht gehen verloren.' },
   { id: 'flaechenrechner', name: 'Flächenrechner', text: 'Flächen und Rauminhalte nach DIN 277 und WoFlV', beimUmzug: ZWISCHENSTAND },
   { id: 'grz', name: 'GRZ-Nachweis', text: 'GRZ/GFZ-Nachweis nach BauNVO und BauO NRW', beimUmzug: ZWISCHENSTAND },
   { id: 'kosten', name: 'Kostenermittlung', text: 'Massen und Kosten nach DIN 276', beimUmzug: ZWISCHENSTAND },
   { id: 'entzerrung', name: 'Entzerrung', text: 'Fotos entzerren und darin messen', beimUmzug: ZWISCHENSTAND },
+  { id: 'ava', name: 'AVA', text: 'Ausschreibung, Vergabe, Abrechnung und Bauleitung', beimUmzug: 'Ungespeicherte Änderungen am LV gehen verloren – bitte vorher speichern (alles andere speichert die App sofort).' },
 ];
 
 export const appInfo = (id: string) => APPS.find((a) => a.id === id);

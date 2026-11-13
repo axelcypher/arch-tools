@@ -96,7 +96,7 @@ export function FotoWahl({
         {!eintraege && <p className="busy">Fotos werden gesucht …</p>}
         {fehler && (
           <p className="warning">
-            Den Fotoordner gibt es nicht oder er ist nicht lesbar: {fehler}. Der Fotoordner ist eine gemeinsame Einstellung aller Apps (in der App „Projektordner“ unter
+            Den Fotoordner gibt es nicht oder er ist nicht lesbar: {fehler}. Der Fotoordner ist eine gemeinsame Einstellung aller Apps (in der App „Projekt“ unter
             Einstellungen); mit „Anderer Ordner …“ lässt sich ein beliebiger wählen.
           </p>
         )}

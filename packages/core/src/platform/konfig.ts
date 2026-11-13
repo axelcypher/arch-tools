@@ -31,7 +31,7 @@ export interface AllgemeineEinstellungen {
   /** Kürzel der Mitarbeiter – Vorschläge für „Bearbeitung“ in den Stammdaten (leer = keine) */
   mitarbeiter?: string[];
   /**
-   * Schema der Projektordner-Namen aus der Struktur des Projektordner-Tools, z. B. „{nummer} {kurzname}“ – damit alle
+   * Schema der Projektordner-Namen aus der Struktur der App „Projekt“, z. B. „{nummer} {kurzname}“ – damit alle
    * Apps Nummer und Kurzname gleich aus dem Ordnernamen ableiten (fehlt = bis zum ersten Leerzeichen die Nummer)
    */
   ordnerSchema?: string;

@@ -1,15 +1,19 @@
-//! Desktop-Hülle für das Projektordner-Tool. Alle Befehle – Dialoge, Protokoll, Projektordner und
+//! Desktop-Hülle der App „Projekt“ (früher „Projektordner“; Kennung und Installer-Name bleiben). Alle Befehle – Dialoge, Protokoll, Projektordner und
 //! Konfigurationsordner – stehen gemeinsam für alle Apps in packages/core/tauri/commands.rs.
 //!
-//! Grundsatz: In Projektordnern werden nur neue Ordner und Dateien angelegt; ersetzt wird allein die
+//! Grundsatz: In Projektordnern werden nur neue Ordner und Dateien angelegt (und auf Wunsch Mails umbenannt); ersetzt wird allein die
 //! Projektdatei (.oap), mit Sicherungskopie. Nichts wird verschoben oder gelöscht, und jeder Pfad bleibt
 //! innerhalb des vom Benutzer gewählten Ordners.
+//!
+//! Mails benennen: Dateien im Projektordner umbenennen (packages/core/tauri/umbenennen.rs) – nur innerhalb des
+//! Projektordners, nie überschreibend.
 //!
 //! Katasterpläne: QGIS im Hintergrund (qgis_process, packages/core/tauri/qgis.rs) – die Pläne werden nur neu
 //! angelegt, nie überschrieben.
 
 include!("../../../../packages/core/tauri/commands.rs");
 include!("../../../../packages/core/tauri/qgis.rs");
+include!("../../../../packages/core/tauri/umbenennen.rs");
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -39,7 +43,8 @@ pub fn run() {
             read_binary_file,
             write_binary_file,
             qgis_suchen,
-            qgis_ausfuehren
+            qgis_ausfuehren,
+            projekt_datei_umbenennen
         ])
         .setup(|app| {
             log::info!("Projektordner {} gestartet", app.package_info().version);

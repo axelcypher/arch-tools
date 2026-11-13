@@ -7,10 +7,11 @@
  */
 
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { create } from 'zustand';
 import type { AntragKurz, ProjektStatus } from '../model';
 import { PROJEKT_STATUS } from '../model';
+import { PROJEKT_ANGELEGT, projektAnlegenMoeglich, projektAnlegenStarten, vomRahmen } from '../platform/rahmen';
 import './projektuebersicht.css';
 
 /** Stufen des Status vom besten zum schlimmsten – Farben wie in der Vollständigkeitsprüfung */
@@ -22,6 +23,10 @@ export interface UebersichtGruppe {
   name: string;
   /** vollständiger Pfad (klein daneben) */
   pfad?: string;
+  /** beim Start aufgeklappt (Vorgabe: nur wenn es genau eine Gruppe gibt) */
+  offen?: boolean;
+  /** Schlüssel zum Umsortieren per Ziehen (z. B. der Stammordner) – Gruppen mit demselben Schlüssel wandern zusammen */
+  ordnen?: string;
 }
 
 export interface UebersichtProjekt {
@@ -160,6 +165,15 @@ export interface ProjektUebersichtProps {
   angeheftet?: string[];
   /** Einträge des eingebauten Kontextmenüs je Karte (Rechtsklick); ersetzt `onKontext` */
   kontextMenue?: (p: UebersichtProjekt) => KontextEintrag[];
+  /**
+   * Knopf „Neues Projekt anlegen“: Vorgabe (true) – in der Rahmen-App startet er den Assistenten der Projekt-App;
+   * eine Funktion ersetzt das, false blendet ihn aus (etwa in der Projekt-App mit eigenem Knopf).
+   */
+  projektAnlegen?: boolean | (() => void);
+  /** ein über den Knopf angelegtes Projekt (Projektordner) – die App öffnet es; die Liste wird ohnehin neu geladen */
+  onAngelegt?: (ordner: string) => void;
+  /** Gruppen per Ziehen umsortiert: die Schlüssel (`ordnen`) in der neuen Reihenfolge – ohne: nicht ziehbar */
+  onGruppenOrdnen?: (schluessel: string[]) => void;
 }
 
 /**
@@ -240,8 +254,31 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
   );
   const [filter, setFilter] = gemerkt<StatusFilter>('arch-tools:uebersicht:status', 'offen', ['offen', 'akquise', 'aktiv', 'abgeschlossen', 'alle']);
   const [menue, setMenue] = useState<{ p: UebersichtProjekt; x: number; y: number } | null>(null);
+  /** Gruppe, die gerade gezogen wird, und wohin (Schlüssel `ordnen`) */
+  const [zieht, setZieht] = useState<string | null>(null);
+  const [ziel, setZiel] = useState<{ schluessel: string; davor: boolean } | null>(null);
+  const ordnen = (von: string, nach: string, davor: boolean) => {
+    const reihe = [...new Set(gruppen.map((g) => g.ordnen).filter((x): x is string => !!x))];
+    if (von === nach || !reihe.includes(von) || !reihe.includes(nach)) return;
+    const ohne = reihe.filter((x) => x !== von);
+    ohne.splice(ohne.indexOf(nach) + (davor ? 0 : 1), 0, von);
+    props.onGruppenOrdnen?.(ohne);
+  };
   const mitStatus = projekte.some((p) => p.projektStatus);
   const einzeln = gruppen.length === 1;
+  const { projektAnlegen = true, onAngelegt } = props;
+  const anlegen = typeof projektAnlegen === 'function' ? projektAnlegen : projektAnlegen && projektAnlegenMoeglich() ? () => projektAnlegenStarten(!!onAngelegt) : null;
+
+  // neues Projekt aus dem Assistenten der Projekt-App: Liste neu laden und – wenn die App das kann – öffnen
+  const angelegt = useRef({ onNeuLaden, onAngelegt });
+  angelegt.current = { onNeuLaden, onAngelegt };
+  useEffect(() => {
+    if (typeof projektAnlegen === 'function' || !projektAnlegen || !projektAnlegenMoeglich()) return;
+    return vomRahmen(PROJEKT_ANGELEGT, (n) => {
+      angelegt.current.onNeuLaden?.();
+      if (n.ordner) angelegt.current.onAngelegt?.(n.ordner);
+    });
+  }, [projektAnlegen]);
 
   // Kontextmenü: Klick daneben oder Esc schließt es
   useEffect(() => {
@@ -293,7 +330,19 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
   const treffer = inGruppen.flatMap((x) => x.treffer);
   const aktivesProjekt = aktiv ? nachSchluessel.get(aktiv) : undefined;
 
-  if (!gruppen.length && props.leer) return <div className="pa">{props.leer}</div>;
+  const anlegenKnopf = anlegen && (
+    <button className="primary pa-anlegen" onClick={anlegen} title="Neues Projekt mit dem Assistenten der Projekt-App anlegen: Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen">
+      <Icon name="plus" /> Neues Projekt anlegen
+    </button>
+  );
+
+  if (!gruppen.length && props.leer)
+    return (
+      <div className="pa">
+        {props.leer}
+        {anlegenKnopf && <div className="pa-leer-anlegen">{anlegenKnopf}</div>}
+      </div>
+    );
 
   const karte = (p: UebersichtProjekt, geoeffnet?: number) => (
     <Karte key={p.schluessel} p={p} geoeffnet={geoeffnet} hervorgehoben={p.schluessel === aktiv} onOeffnen={onOeffnen} onKontext={kontext} status={props.status} marken={props.marken} />
@@ -352,6 +401,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
           </select>
         )}
         {props.kopf}
+        {anlegenKnopf}
         {aktivesProjekt && onZurueck && (
           <button onClick={onZurueck} title="Zurück zum geöffneten Projekt">
             Zurück zu {aktivesProjekt.kuerzel}
@@ -386,10 +436,53 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
 
         {inGruppen.map(({ g, alle, ausgeblendet, treffer: t }) => {
           if (q && !t.length) return null;
-          const auf = !!q || (einzeln ? !zugeklappt.includes(g.id) : aufgeklappt.includes(g.id));
+          const standardOffen = g.offen ?? einzeln;
+          const auf = !!q || (standardOffen ? !zugeklappt.includes(g.id) : aufgeklappt.includes(g.id));
+          const ziehbar = !!props.onGruppenOrdnen && !!g.ordnen && !q;
+          // die Markierung am ersten (davor) bzw. letzten (danach) Abschnitt des Stammordners
+          const gleiche = inGruppen.filter((x) => x.g.ordnen === g.ordnen).map((x) => x.g.id);
+          const zielHier =
+            ziel && g.ordnen === ziel.schluessel && zieht && zieht !== g.ordnen && g.id === (ziel.davor ? gleiche[0] : gleiche[gleiche.length - 1])
+              ? ziel.davor
+                ? ' ziel-davor'
+                : ' ziel-danach'
+              : '';
           return (
-            <section key={g.id} className="pa-abschnitt pa-gruppe">
-              <button className="pa-gruppe-kopf" aria-expanded={auf} onClick={() => umschalten(g.id, einzeln)} disabled={!!q} title={g.pfad}>
+            <section key={g.id} className={`pa-abschnitt pa-gruppe${zielHier}`}>
+              <button
+                className="pa-gruppe-kopf"
+                aria-expanded={auf}
+                onClick={() => umschalten(g.id, standardOffen)}
+                disabled={!!q}
+                title={ziehbar ? `${g.pfad ?? g.name} – zum Umsortieren ziehen` : g.pfad}
+                draggable={ziehbar}
+                onDragStart={(e) => {
+                  setZieht(g.ordnen!);
+                  try {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', g.ordnen!);
+                  } catch {
+                    // ohne Datenübergabe genügt der Zustand
+                  }
+                }}
+                onDragOver={(e) => {
+                  if (!zieht || !g.ordnen || zieht === g.ordnen) return;
+                  e.preventDefault();
+                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  const davor = !r.height || e.clientY - r.top < r.height / 2;
+                  if (ziel?.schluessel !== g.ordnen || ziel.davor !== davor) setZiel({ schluessel: g.ordnen, davor });
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (zieht && g.ordnen) ordnen(zieht, g.ordnen, ziel?.davor ?? true);
+                  setZieht(null);
+                  setZiel(null);
+                }}
+                onDragEnd={() => {
+                  setZieht(null);
+                  setZiel(null);
+                }}
+              >
                 <Icon name={auf ? 'pfeilUnten' : 'pfeilRechts'} />
                 <Icon name="ordner" />
                 <span className="pa-gruppe-name">{g.name}</span>

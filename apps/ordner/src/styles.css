@@ -284,38 +284,390 @@
 .po-ordner-kopf {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+  margin-bottom: 6px;
 }
-.po-baum td {
-  vertical-align: middle;
-  white-space: nowrap;
+.po-ordner-kopf h2 {
+  margin: 0 !important;
 }
-.po-baum td:first-child {
+.po-ordner-kopf .tb-group {
+  margin-left: auto;
+}
+
+/* Struktur: Kopf, Klick-Editor, Seitenleiste */
+.po-struktur {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+.po-struktur-titel {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.po-struktur-titel h2 {
+  margin: 0 0 4px !important;
+}
+.po-struktur-titel .field {
+  margin: 0;
+  min-width: 220px;
+}
+.po-struktur-titel .button-row {
+  margin: 0;
+}
+.po-struktur-kopf > p {
+  margin: 6px 0 0;
+}
+.po-editor {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(300px, 380px);
+  gap: 12px;
+  align-items: start;
+}
+@media (max-width: 980px) {
+  .po-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.po-editor-seite {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  min-width: 0;
+}
+.po-editor-seite .po-col h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+.po-werkzeuge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.po-werkzeuge-trenner {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--border);
+}
+.po-vorschau-lph {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 4px;
+  margin-bottom: 6px;
+}
+.po-vorschau-lph > span:first-child {
+  margin-right: 4px;
+}
+.po-vorschau-lph > span:last-child {
+  margin-left: 6px;
+}
+.po-chip {
+  min-width: 24px;
+  padding: 1px 6px;
+  font-size: 11.5px;
+  line-height: 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--chip-bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.po-chip:hover {
+  border-color: var(--accent);
+}
+.po-chip.aktiv {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.po-chip.teils {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  border-style: dashed;
+}
+.po-editor-meldung {
+  margin: 0 0 6px;
+}
+
+/* der Baum */
+.po-k-baum {
+  min-height: 240px;
+  max-height: calc(100vh - 330px);
+  overflow: auto;
+  padding: 4px 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  font-size: 12.5px;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.po-k-baum:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.po-k-leer {
+  padding: 8px 10px;
+}
+.po-k-zeile {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
+  min-height: 24px;
+  padding-right: 6px;
+  cursor: default;
+  white-space: nowrap;
 }
-.po-baum td:first-child input {
-  min-width: 140px;
-  padding: 2px 5px;
-  font-size: 12px;
+.po-k-zeile:hover {
+  background: var(--hover);
 }
-.po-baum-implizit td:first-child input {
+.po-k-zeile.gewaehlt {
+  background: var(--accent-soft);
+}
+.po-k-baum:focus .po-k-zeile.cursor {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.po-k-zeile.implizit .po-k-name {
   font-style: italic;
 }
-.po-baum-lph label {
-  display: inline-flex;
-  align-items: center;
+.po-k-zeile.entfaellt .po-k-name,
+.po-k-zeile.entfaellt .po-art {
+  opacity: 0.4;
+}
+.po-k-zeile.entfaellt .po-k-name {
+  text-decoration: line-through;
+}
+.po-k-zeile.drop-in {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.po-k-zeile.drop-vor::before,
+.po-k-zeile.drop-nach::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.po-k-zeile.drop-vor::before {
+  top: 0;
+}
+.po-k-zeile.drop-nach::after {
+  bottom: 0;
+}
+.po-k-pfeil {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
   font-size: 11px;
+  line-height: 18px;
+  cursor: pointer;
+}
+.po-k-pfeil[aria-hidden='true'] {
+  cursor: default;
+}
+.po-k-zeile .po-art {
   margin-right: 2px;
 }
-.po-baum-lph input {
-  margin: 0 1px 0 0;
+.po-k-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.po-baum-knoepfe button {
+.po-k-eingabe {
+  min-width: 180px;
+  padding: 1px 5px;
+  font-size: 12.5px;
+}
+.po-k-marke {
+  flex: 0 0 auto;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  line-height: 16px;
+  background: var(--chip-bg);
+  color: var(--muted);
+}
+.po-k-marke.lph {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.po-k-marke.geerbt {
+  border: 1px dashed var(--border);
+  background: none;
+}
+.po-k-marke.schema {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+.po-k-aktionen {
+  display: none;
+  margin-left: auto;
+  gap: 2px;
+}
+.po-k-zeile:hover .po-k-aktionen,
+.po-k-zeile.gewaehlt .po-k-aktionen {
+  display: inline-flex;
+}
+.po-k-aktionen button {
   min-width: 22px;
-  padding: 1px 4px;
+  padding: 0 5px;
+  line-height: 16px;
+}
+.po-k-stamm {
+  margin: 6px;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 12px;
+}
+.po-k-stamm.drop-in {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.po-k-hilfe {
+  margin: 6px 0 0;
+}
+.po-k-pfad {
+  margin: -2px 0 8px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.po-auswahl-panel .field {
+  margin-bottom: 8px;
+}
+.po-auswahl-panel .toggle {
+  display: flex;
+  margin: 8px 0 4px;
+}
+.po-auswahl-panel .button-row {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.po-lph-wahl .po-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 3px 0 4px;
+}
+.po-chips-schnell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.po-chips-schnell button {
+  padding: 0 6px;
+  font-size: 11px;
+}
+.po-baustein-liste {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+.po-baustein-liste > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.po-baustein-liste details {
+  flex: 1;
+  min-width: 0;
+}
+.po-baustein-liste summary {
+  cursor: pointer;
+  font-size: 12.5px;
+}
+.po-baustein-knoepfe {
+  display: flex;
+  gap: 3px;
+}
+.po-baustein-knoepfe button {
+  padding: 1px 6px;
+}
+.po-baustein-inhalt,
+.po-mehrere-vorschau pre {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  max-height: 220px;
+  overflow: auto;
+  font-family: Consolas, 'Cascadia Mono', monospace;
+  font-size: 11.5px;
+  background: var(--code-bg);
+  border-radius: 4px;
+}
+.po-schemata .field {
+  margin-bottom: 8px;
+}
+
+/* Kontextmenü */
+.po-menue {
+  position: fixed;
+  z-index: 1000;
+  min-width: 230px;
+  padding: 4px 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+.po-menue button {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  font-size: 12.5px;
+}
+.po-menue button:hover:not(:disabled) {
+  background: var(--hover);
+}
+.po-menue button.danger {
+  color: var(--danger);
+}
+.po-menue hr {
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* Mehrere Ordner anlegen */
+.po-mehrere {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.po-mehrere .po-ordnertext {
+  min-height: 260px;
+  tab-size: 4;
+}
+.po-mehrere-vorschau pre {
+  max-height: 260px;
+  min-height: 240px;
 }
 .po-ordnermeldungen {
   margin: 6px 0;
@@ -581,6 +933,23 @@
   align-items: center;
   gap: 6px;
 }
+.po-stammordner li[draggable='true'] {
+  cursor: grab;
+}
+.po-stammordner li.zieht {
+  opacity: 0.5;
+}
+.po-stammordner li.ziel-davor {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+.po-stammordner li.ziel-danach {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.po-griff {
+  color: var(--muted);
+  cursor: grab;
+  user-select: none;
+}
 .po-stammordner code {
   flex: 1;
   min-width: 0;
@@ -838,6 +1207,241 @@
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+/* Assistent: Stand, Zusammenfassung */
+.po-assistent .sd-felder > .sd-titel:first-child {
+  display: none;
+}
+.po-statuswahl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin: 6px 0 10px;
+}
+.po-statuswahl .field-label {
+  width: 100%;
+}
+.po-statuswahl input {
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
+}
+.po-steckbrief {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-size: 12.5px;
+}
+.po-steckbrief summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.po-steckbrief table {
+  width: 100%;
+  margin-top: 6px;
+  border-collapse: collapse;
+}
+.po-steckbrief th,
+.po-steckbrief td {
+  padding: 5px 6px;
+  border-top: 1px solid var(--line-soft);
+  text-align: left;
+  vertical-align: top;
+}
+.po-steckbrief th {
+  width: 110px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.po-steckbrief td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+.po-steckbrief ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+/* Mails: prüfen und benennen */
+.po-view.po-mails-view {
+  grid-template-columns: minmax(280px, 340px) minmax(480px, 1fr);
+}
+.po-mails-view .po-projektliste li.active {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.po-mails-kopf {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.po-mails-kopf h3 {
+  margin: 0 !important;
+}
+.po-mails-code {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.po-mails-code input {
+  width: 120px;
+}
+.po-mails-knoepfe {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.po-mailliste {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.po-mail {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel);
+}
+.po-mail.falsch {
+  border-left-color: var(--warn-border);
+}
+.po-mail.erledigt {
+  border-left-color: var(--ok-border);
+}
+.po-mail-kopf {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.po-mail-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.po-mail-ordner {
+  margin-left: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+.po-mail-gruende {
+  margin: 4px 0 6px 24px;
+  padding-left: 14px;
+  font-size: 12px;
+  color: var(--warn-text);
+}
+.po-mail-teile {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 24px;
+}
+.po-mail-teile > * {
+  flex: 0 0 auto;
+}
+.po-mail-teile input,
+.po-mail-teile select {
+  width: auto;
+  padding: 2px 6px;
+  font-size: 12.5px;
+}
+.po-mail-teile input.po-mail-gegenueber {
+  width: 140px;
+}
+.po-mail-teile input.po-mail-datum {
+  width: 72px;
+  font-variant-numeric: tabular-nums;
+}
+.po-mail-teile input.po-mail-thema {
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+.po-mail-neu {
+  margin: 4px 0 0 24px;
+  overflow-wrap: anywhere;
+}
+.po-mail-problem {
+  color: var(--warn-text);
+}
+.po-mail-vorschau {
+  margin: 6px 0 0 24px;
+  font-size: 12px;
+}
+.po-mail-vorschau summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.po-mail-vorschau dl {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 2px 8px;
+  margin: 6px 0;
+}
+.po-mail-vorschau dt {
+  color: var(--muted);
+}
+.po-mail-vorschau dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.po-mail-text {
+  max-height: 220px;
+  overflow: auto;
+  margin: 4px 0 6px;
+  padding: 6px 8px;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 12px;
+  background: var(--code-bg);
+  border-radius: 4px;
+}
+
+/* Mails aus Outlook ablegen */
+.po-ablage {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0;
+  padding: 12px 14px;
+  border: 2px dashed var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  text-align: center;
+}
+.po-ablage.drueber {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.po-ablage-wahl {
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.po-ablage-wahl input {
+  display: none;
+}
+.po-neue {
+  margin-bottom: 14px;
+}
+.po-mail.neu {
+  border-left-color: var(--accent);
+}
+.po-mail-kopf select.po-mail-zielordner {
+  width: auto;
+  margin-left: auto;
+  max-width: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
 }
 
 /* Namensschema (gemeinsame Einstellungen): Tabelle passt in die Spalte, nur „Bedeutung“ wächst */

@@ -298,3 +298,26 @@
 .pa-menue button:focus-visible {
   background: var(--accent-soft);
 }
+
+/* „Neues Projekt anlegen“ (Assistent der Projekt-App über die Rahmen-App) */
+.pa-anlegen {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pa-leer-anlegen {
+  display: flex;
+  justify-content: center;
+  padding: 0 28px 24px;
+}
+
+/* Stammordner per Ziehen umsortieren */
+.pa-gruppe-kopf[draggable='true'] {
+  cursor: grab;
+}
+.pa-gruppe.ziel-davor > .pa-gruppe-kopf {
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+.pa-gruppe.ziel-danach > .pa-gruppe-kopf {
+  box-shadow: inset 0 -3px 0 var(--accent);
+}

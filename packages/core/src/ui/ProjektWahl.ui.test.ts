@@ -115,3 +115,103 @@ describe('Projektwahl (Flächenrechner, GRZ-Nachweis, Kostenermittlung)', () => 
     expect(neu).toHaveBeenCalled();
   });
 });
+
+describe('Neues Projekt anlegen aus jeder App (Rahmen-App)', () => {
+  const echterParent = window.parent;
+  afterEach(() => {
+    Object.defineProperty(window, 'parent', { value: echterParent, configurable: true });
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('eigenständig ohne Knopf; im Tab startet er den Assistenten der Projekt-App und öffnet danach das neue Projekt', async () => {
+    localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['/p'] }));
+    const fs = new SpeicherProjektordner();
+    await fs.ordnerAnlegen('/p', '2025-007 Kita');
+    const zeigen = (gewaehlt: GewaehltesProjekt[]) => {
+      const host = document.createElement('div');
+      document.body.appendChild(host);
+      act(() => {
+        root = createRoot(host);
+        root.render(createElement(ProjektWahl, { app: 'Flächenrechner', fs, onGewaehlt: (g: GewaehltesProjekt) => void gewaehlt.push(g), onNeu: () => {}, onSchliessen: () => {} }));
+      });
+      return host;
+    };
+    // eigenständige App: kein Knopf, „Neues Projekt“ wie bisher
+    let host = zeigen([]);
+    await warten();
+    expect(knopf(host, 'Neues Projekt anlegen')).toBeUndefined();
+    expect(knopf(host, 'Neues Projekt')).toBeTruthy();
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+
+    // im Tab der Rahmen-App
+    const gesendet: unknown[] = [];
+    const rahmen = { postMessage: (d: unknown) => gesendet.push(d) } as unknown as Window;
+    Object.defineProperty(window, 'parent', { value: rahmen, configurable: true });
+    window.history.replaceState(null, '', '/?rahmen=tab&app=flaechenrechner');
+    const gewaehlt: GewaehltesProjekt[] = [];
+    host = zeigen(gewaehlt);
+    await warten();
+    // hört auf den Rahmen; das leere Projekt heißt jetzt „Leer beginnen“
+    expect(gesendet).toContainEqual({ typ: 'arch-tools:bereit', app: 'flaechenrechner' });
+    expect(knopf(host, 'Leer beginnen')).toBeTruthy();
+    act(() => knopf(host, 'Neues Projekt anlegen').click());
+    expect(gesendet).toContainEqual({ typ: 'arch-tools:projekt-anlegen', von: 'flaechenrechner', kannOeffnen: true, app: 'flaechenrechner' });
+
+    // die Projekt-App hat angelegt: neu laden und öffnen (ohne Projektdatei: Stammdaten-Dialog wie beim Klick)
+    await fs.ordnerAnlegen('/p', '2026-014 Neu');
+    const p = createProject('Neubau');
+    p.meta.projektcode = '2026-014';
+    await projektdateiAnlegen(fs, '/p/2026-014 Neu', 'Berechnungen/2026-014.oap', p, 'Test');
+    // fremde Absender zählen nicht
+    act(() =>
+      window.dispatchEvent(
+        new MessageEvent('message', { data: { typ: 'arch-tools:projekt-angelegt', an: 'flaechenrechner', ordner: '/p/2026-014 Neu' }, origin: window.location.origin, source: window }),
+      ),
+    );
+    await warten();
+    expect(gewaehlt).toHaveLength(0);
+    act(() =>
+      window.dispatchEvent(
+        new MessageEvent('message', { data: { typ: 'arch-tools:projekt-angelegt', an: 'flaechenrechner', ordner: '/p/2026-014 Neu' }, origin: window.location.origin, source: rahmen }),
+      ),
+    );
+    await warten();
+    expect(gewaehlt[0]).toMatchObject({ datei: '/p/2026-014 Neu/Berechnungen/2026-014.oap', ordner: '/p/2026-014 Neu' });
+    expect(host.textContent).toContain('Neubau');
+  });
+});
+
+describe('Projektübersicht: Sammelordner und Reihenfolge der Stammordner', () => {
+  it('Projekte in Gruppen-, Akquise- und Archivordnern als eigene Abschnitte; Archiv gilt als abgeschlossen; Stammordner per Ziehen umsortieren', async () => {
+    localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['/a', '/b'] }));
+    const fs = new SpeicherProjektordner();
+    for (const p of ['2026-014 EFH/00 Projekt', '2026-014 EFH/01 Grundlagen', 'Akquise/2026-099 Kita/00 Projekt', '_Archiv/2023-010 Halle/Pläne', 'Wohnungsbau/2025-007 MFH/00 Projekt'])
+      await fs.ordnerAnlegen('/a', p);
+    await fs.ordnerAnlegen('/b', '2026-200 Büro/Pläne');
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(ProjektWahl, { app: 'Flächenrechner', fs, onGewaehlt: () => {}, onSchliessen: () => {} }));
+    });
+    await warten();
+    expect([...host.querySelectorAll('.pa-gruppe-name')].map((x) => x.textContent)).toEqual(['a', 'a › Wohnungsbau', 'a › Akquise', 'a › _Archiv', 'b']);
+    // mehrere Stammordner: eingeklappt; aufklappen zeigt die Projekte, das Archiv ist als abgeschlossen ausgeblendet
+    const kopf = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('.pa-gruppe-kopf')].find((k) => k.querySelector('.pa-gruppe-name')?.textContent === name)!;
+    act(() => kopf('a › _Archiv').click());
+    expect(kopf('a › _Archiv').closest('section')!.textContent).toContain('1 abgeschlossenes Projekt ausgeblendet');
+    act(() => kopf('a › Akquise').click());
+    expect(kopf('a › Akquise').closest('section')!.textContent).toContain('2026-099');
+    // ziehen: „b“ vor „a“ – die Abschnitte von „a“ wandern zusammen
+    const ziehen = (von: HTMLElement, nach: HTMLElement) => {
+      act(() => von.dispatchEvent(new Event('dragstart', { bubbles: true })));
+      act(() => nach.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true })));
+      act(() => nach.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true })));
+    };
+    ziehen(kopf('b'), kopf('a'));
+    await warten();
+    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!).projekte).toEqual(['/b', '/a']);
+    expect([...host.querySelectorAll('.pa-gruppe-name')].map((x) => x.textContent)).toEqual(['b', 'a', 'a › Wohnungsbau', 'a › Akquise', 'a › _Archiv']);
+  });
+});
