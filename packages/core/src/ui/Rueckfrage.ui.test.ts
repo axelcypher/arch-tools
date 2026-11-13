@@ -100,7 +100,7 @@ describe('Rückfrage „Änderungen speichern?“', () => {
 });
 
 describe('Dialoge: Esc', () => {
-  it('Esc schließt den Dialog, verschachtelt nur den obersten; Esc im Zahlenfeld verwirft nur die Eingabe', () => {
+  it('Esc schließt den Dialog, verschachtelt nur den obersten; Esc im Zahlenfeld mit Eingabe verwirft nur die Eingabe', () => {
     const zu: string[] = [];
     function Zwei() {
       const [innen, setInnen] = useState(true);
@@ -130,7 +130,12 @@ describe('Dialoge: Esc', () => {
     esc();
     expect(zu).toEqual(['innen']);
     const feld = host.querySelector('input')!;
-    feld.focus();
+    // mit Eingabe: das erste Esc verwirft nur die Eingabe, das zweite schließt den Dialog
+    act(() => {
+      feld.focus();
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(feld, '5');
+      feld.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     esc(feld);
     expect(zu).toEqual(['innen']);
     esc();
