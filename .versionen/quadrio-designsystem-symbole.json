@@ -1,5 +1,8 @@
 {
-  "flaechenrechner": { "stufe": "minor", "notiz": "Werkzeugleiste mit einheitlichen Symbolen, Kontextmenü der Zeichenfläche (Punkt löschen, Flächen kopieren, duplizieren, einfügen, löschen) auch per Tastatur, „Drucken / PDF …“." },
+  "flaechenrechner": {
+    "stufe": "minor",
+    "notiz": "Werkzeugleiste mit einheitlichen Symbolen, Kontextmenü der Zeichenfläche (Punkt löschen, Flächen kopieren, duplizieren, einfügen, löschen) auch per Tastatur, „Drucken / PDF …“."
+  },
   "grz": { "stufe": "patch", "notiz": "Gemeinsamer Kern: Symbol „Erkennen“, Menü gibt den Fokus auch an Zeichenflächen zurück, Tastenkürzel ruhen bei offenem Menü." },
   "kosten": { "stufe": "patch", "notiz": "Gemeinsamer Kern: Symbol „Erkennen“, Menü gibt den Fokus auch an Zeichenflächen zurück, Tastenkürzel ruhen bei offenem Menü." },
   "ordner": { "stufe": "patch", "notiz": "Gemeinsamer Kern: Symbol „Erkennen“, Menü gibt den Fokus auch an Zeichenflächen zurück, Tastenkürzel ruhen bei offenem Menü." },
