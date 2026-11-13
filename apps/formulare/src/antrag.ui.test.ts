@@ -263,6 +263,12 @@ describe('Antragsfassung und Export', () => {
   it('neue Antragsfassung anlegen: Ordner entsteht, sie wird aktiv und in der Projektdatei vermerkt', async () => {
     const host = await projektBS9();
     await klick(host.querySelector<HTMLButtonElement>('.an-fassung-knopf')!);
+    // die Fassungen sind eine Einfachauswahl: die aktive ist gewählt (menuitemradio), die anderen nicht
+    const fassung = (name: string) => [...document.querySelectorAll<HTMLElement>('.menue-punkt')].find((b) => b.querySelector('.menue-text')?.textContent === name)!;
+    expect(fassung('BAUA 2').getAttribute('role')).toBe('menuitemradio');
+    expect(fassung('BAUA 2').getAttribute('aria-checked')).toBe('true');
+    expect(fassung('BAUA').getAttribute('aria-checked')).toBe('false');
+    expect(fassung('BAUA 2').textContent).not.toContain('aktiv');
     await klick(menuePunkt('Neue Fassung „BAUA 3“'));
     expect(ds.ordner.has(`${PROJEKT}/TÖB/BAUA 3`)).toBe(true);
     expect(abschnitt()).toMatchObject({ aktiveFassung: 'BAUA 3' });

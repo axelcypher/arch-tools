@@ -475,8 +475,8 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   kopieren und – abgesetzt am Ende – **Löschen …** (nach Bestätigung, mit Sicherungskopie im App-Ordner). Rechtsklick
   auf einen Ordner: Einfügen, Neuer Ordner …, Ordner öffnen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`,
   `.frmtmp`, `.sdb`, `.ini`) lassen sich hier nicht umbenennen – Formulare benennt man in der Navigation um (siehe
-  unten). In Auswahllisten im Menü (aktive Fassung, Zuordnung, Verknüpfung) steht beim gewählten Eintrag ein Haken
-  und rechts „aktiv“, „zugeordnet“ bzw. „verknüpft“.
+  unten). In Auswahllisten im Menü (aktive Fassung, Zuordnung, Verknüpfung) ist der gewählte Eintrag mit
+  einem Punkt markiert und wird als „ausgewählt“ vorgelesen (Einfachauswahl).
 - **Formulare umbenennen** (Rechtsklick auf ein Formular › Umbenennen …): nur im selben Ordner und nie über ein
   vorhandenes. Mit dem Namen ändern sich auch alle Verweise darauf: die Zuordnung im Antragsumfang (bestand sie nur
   über den Namen und passte der neue nicht mehr, wird sie festgeschrieben) und die Werte aus der Projektkarte in
