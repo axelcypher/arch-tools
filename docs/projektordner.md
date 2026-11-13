@@ -116,7 +116,8 @@ auch beim Ergänzen.
 **Ungespeicherte Änderungen beim Beenden:** Was beim Beenden verloren ginge, meldet ATLAS als ungespeichert (● in
 der Titelleiste bzw. am Tab der Rahmen-App Arkly): offene Eingaben im Assistenten wie oben, den nicht übernommenen
 Text der Ordnerliste (Struktur, Textansicht) und Änderungen an der Struktur, die wegen eines Konflikts mit einem
-anderen Rechner nicht gespeichert sind. Beim Beenden, vor einem Update und in Arkly beim Schließen des Tabs,
+anderen Rechner oder eines gescheiterten Schreibens („Einstellungen nicht gespeichert“, etwa bei getrenntem
+Netzlaufwerk) nicht gespeichert sind. Beim Beenden, vor einem Update und in Arkly beim Schließen des Tabs,
 Herauslösen und Andocken kommt dann „Änderungen speichern?“. *Speichern* übernimmt nur, was ohne weitere
 Entscheidung geht: den Text der Ordnerliste wie mit „Übernehmen“ (vorher gesichert, mit „Rückgängig“), wenn er
 gültig ist und vom aktuellen Stand ausgeht. Im Assistenten hieße Speichern, den Projektordner anzulegen bzw. die

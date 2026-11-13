@@ -12,7 +12,7 @@ import { SpeicherDateisystem } from './dateisystem';
 import { PLATZHALTER_PROJEKT } from './nummer';
 import { ausfuehren, planen } from './plan';
 import { leereStammdaten } from './stammdaten';
-import { useOrdner } from './store';
+import { NICHT_GESPEICHERT, useOrdner } from './store';
 import { ordnerAlsText, STANDARD } from './struktur';
 
 /**
@@ -26,6 +26,19 @@ vi.mock('./dateisystem', async (original) => {
   // jede Methode geht an das Dateisystem des jeweiligen Tests
   const tauriDateisystem = new Proxy({} as typeof echt.tauriDateisystem, { get: (_, k) => (mock.fs as unknown as Record<string | symbol, (...a: unknown[]) => unknown>)[k].bind(mock.fs) });
   return { ...echt, hatDateisystem: () => mock.desktop, tauriDateisystem };
+});
+
+/** Sicherungen der Struktur scheitern lassen (sonst unverändert) */
+const konfigMock = vi.hoisted(() => ({ sicherungScheitert: false }));
+vi.mock('@core/platform/konfig', async (original) => {
+  const echt = await original<typeof import('@core/platform/konfig')>();
+  return {
+    ...echt,
+    konfigAendern: async (...a: Parameters<typeof echt.konfigAendern>) => {
+      if (a[0] === 'projektordner-sicherungen' && konfigMock.sicherungScheitert) throw new Error('Laufwerk nicht erreichbar');
+      return echt.konfigAendern(...a);
+    },
+  };
 });
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -408,7 +421,8 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
   const setUrl = (u: string) => (window as unknown as { happyDOM: { setURL: (u: string) => void } }).happyDOM.setURL(u);
   beforeEach(() => {
     gesendet = [];
-    useOrdner.setState({ ordnerEntwurf: null, strukturFehler: null, konfigFehler: null });
+    konfigMock.sicherungScheitert = false;
+    useOrdner.setState({ ordnerEntwurf: null, strukturFehler: null, strukturRoh: null, konfigFehler: null });
     Object.defineProperty(window, 'parent', { value: rahmen, configurable: true });
     setUrl('http://localhost:3000/?rahmen=tab&app=ordner');
   });
@@ -463,6 +477,70 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     expect(await speichernAnfragen()).toBe(false);
     expect(useOrdner.getState().struktur).toBe(STANDARD);
     expect(meldungText()).toContain('keinen Ordner');
+  });
+
+  const SICHERUNGEN_KEY = 'arch-tools:konfig:projektordner-sicherungen';
+  const KONFIG_KEY = 'arch-tools:konfig:projektordner';
+
+  it('Speichern auf Anfrage schreibt die übernommene Struktur sofort – nicht erst nach der Wartezeit', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: `${stand}\n99_Sofort`, basis: stand } }));
+    expect(localStorage.getItem(KONFIG_KEY) ?? '').not.toContain('99_Sofort');
+    expect(await speichernAnfragen()).toBe(true);
+    // ohne auf SPEICHERN_NACH_MS zu warten: schon geschrieben, der Stand nachgeführt
+    expect(localStorage.getItem(KONFIG_KEY)).toContain('99_Sofort');
+    expect(useOrdner.getState().konfigStandEigen).toContain('99_Sofort');
+  });
+
+  it('unlesbare Struktur: der Text der Ordnerliste wird nicht still übernommen (die Sperre bleibt)', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ strukturFehler: 'kaputt', strukturRoh: { x: 1 }, ordnerEntwurf: { text: `${stand}\n99_Neu`, basis: stand } }));
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(useOrdner.getState().strukturFehler).toBe('kaputt');
+    expect(useOrdner.getState().ordnerEntwurf).not.toBeNull();
+    expect(localStorage.getItem(SICHERUNGEN_KEY) ?? '').not.toContain('Ordnerliste übernommen.');
+    expect(meldungText()).toContain('nicht lesbar und deshalb gesperrt');
+  });
+
+  it('Konflikt mit Text der Ordnerliste: nicht still übernommen, eine Meldung nennt beides', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ konflikt: { roh: { struktur: STANDARD } }, ordnerEntwurf: { text: `${stand}\n99_Neu`, basis: stand } }));
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(useOrdner.getState().konflikt).not.toBeNull();
+    expect(useOrdner.getState().ordnerEntwurf).not.toBeNull();
+    expect(localStorage.getItem(SICHERUNGEN_KEY) ?? '').not.toContain('Ordnerliste übernommen.');
+    expect(meldungText()).toContain('samt dem Text der Ordnerliste');
+    expect(meldungText().match(/Text der Ordnerliste/g)).toHaveLength(1);
+  });
+
+  it('Sicherung scheitert: nicht übernommen, Entwurf und Struktur bleiben, die Meldung nennt den Grund', async () => {
+    konfigMock.sicherungScheitert = true;
+    render();
+    await warten();
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: `${stand}\n99_Neu`, basis: stand } }));
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(useOrdner.getState().ordnerEntwurf?.text).toBe(`${stand}\n99_Neu`);
+    expect(meldungText()).toContain('Laufwerk nicht erreichbar');
+    expect(dirty()).toBe(true);
+  });
+
+  it('Schreiben gescheitert: meldet „ungespeichert“ (Beenden fragt), Speichern sagt „nicht gespeichert“ – Gegenprobe', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ konfigFehler: 'Einstellungen nicht lesbar: x' }));
+    expect(dirty()).toBe(false);
+    act(() => useOrdner.setState({ konfigFehler: `${NICHT_GESPEICHERT}: Zugriff verweigert` }));
+    expect(dirty()).toBe(true);
+    expect(await speichernAnfragen()).toBe(false);
+    expect(meldungText()).toContain('Zugriff verweigert');
+    act(() => useOrdner.setState({ konfigFehler: null }));
+    expect(dirty()).toBe(false);
   });
 
   it('Konflikt mit einem anderen Rechner: meldet „ungespeichert“, Speichern entscheidet ihn nicht still', async () => {

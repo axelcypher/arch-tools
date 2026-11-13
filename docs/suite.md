@@ -25,7 +25,7 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   als ungespeichert, was beim Beenden verloren ginge: offene Eingaben im Assistenten (geänderte Stammdaten beim
   Ergänzen, im Trockenlauf abgewählte Einträge – nicht den Entwurf eines neuen Projekts, der gespeichert bleibt), den
   nicht übernommenen Text der Ordnerliste und Änderungen an der Struktur, die wegen eines Konflikts mit einem anderen
-  Rechner nicht gespeichert sind. *Speichern* übernimmt dort nur den Text der Ordnerliste (gesichert, mit
+  Rechner oder eines gescheiterten Schreibens nicht gespeichert sind. *Speichern* übernimmt dort nur den Text der Ordnerliste (gesichert, mit
   „Rückgängig“), wenn er gültig ist und vom aktuellen Stand ausgeht; den Projektordner anlegen, die Projektdatei
   schreiben oder einen Konflikt entscheiden tut es nicht still – dann gilt „nicht gespeichert“, die Aktion unterbleibt
   und ATLAS sagt, was noch offen ist. Jede App ist

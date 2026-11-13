@@ -64,12 +64,15 @@ export function App() {
    * Rückfrage beim Schließen, Beenden, Herauslösen, Andocken und Update) – nur, was beim Beenden wirklich verloren ginge:
    * offene Eingaben im Assistenten (nicht der Entwurf eines neuen Projekts: der liegt im lokalen Speicher und übersteht
    * auch ein Beenden), der nicht übernommene Text der Ordnerliste (Struktur, Textansicht) und eigene Änderungen an der
-   * Struktur, die wegen eines Konflikts mit einem anderen Rechner nicht gespeichert sind. Alles Übrige speichert ATLAS
+   * Struktur, die wegen eines Konflikts mit einem anderen Rechner oder eines gescheiterten Schreibens (z. B. Laufwerk
+   * nicht erreichbar) nicht gespeichert sind. Alles Übrige speichert ATLAS
    * sofort (Einstellungen, Vorlagen, Kataster) oder es entsteht neu aus dem Projektordner (Prüfen, Mails).
    */
   const strukturEntwurf = useOrdner((s) => s.ordnerEntwurf !== null);
   const strukturKonflikt = useOrdner((s) => s.konflikt !== null);
-  const dirty = !!assistentOffenText || strukturEntwurf || strukturKonflikt;
+  // das Schreiben der Struktur ist gescheitert (z. B. Netzlaufwerk weg): bis zum nächsten gelungenen Schreiben offen
+  const schreibenGescheitert = useOrdner((s) => !!s.konfigFehler?.startsWith(NICHT_GESPEICHERT));
+  const dirty = !!assistentOffenText || strukturEntwurf || strukturKonflikt || schreibenGescheitert;
 
   /**
    * Speichern auf Anfrage (Rückfrage der Titelleiste bzw. des Rahmens, Knopf „Speichern“): gespeichert wird nur, was
@@ -83,8 +86,10 @@ export function App() {
   const speichernAufAnfrage = async (): Promise<boolean> => {
     const offen: string[] = [];
     const s = useOrdner.getState();
-    if (s.ordnerEntwurf) {
-      if (s.konflikt || s.strukturFehler) offen.push('der Text der Ordnerliste (die Struktur ist gerade gesperrt bzw. im Konflikt)');
+    // im Konflikt bzw. bei unlesbarer Struktur nicht übernehmen: das hieße, die Entscheidung still vorwegzunehmen
+    // (den Konflikt samt dem Text nennt die Meldung unten)
+    if (s.ordnerEntwurf && !s.konflikt) {
+      if (s.strukturFehler) offen.push('der Text der Ordnerliste – die Struktur ist nicht lesbar und deshalb gesperrt');
       else if (s.ordnerEntwurf.basis !== ordnerAlsText(s.struktur.ordner))
         offen.push('der Text der Ordnerliste – er geht von einem älteren Stand aus; bitte unter „Struktur“ prüfen und übernehmen oder verwerfen');
       else {
@@ -99,7 +104,10 @@ export function App() {
     // ausstehendes Schreiben der Struktur jetzt, nicht erst nach der Wartezeit – sonst wäre „gespeichert“ nicht wahr
     await useOrdner.getState().speichernJetzt();
     const n = useOrdner.getState();
-    if (n.konflikt) offen.push('Ihre Änderungen an der Struktur – ein anderer Rechner hat sie inzwischen geändert; bitte „Neu laden“ oder „Meine Fassung trotzdem speichern“ wählen');
+    if (n.konflikt)
+      offen.push(
+        `Ihre Änderungen an der Struktur${n.ordnerEntwurf ? ' samt dem Text der Ordnerliste' : ''} – ein anderer Rechner hat sie inzwischen geändert; bitte „Neu laden“ oder „Meine Fassung trotzdem speichern“ wählen`,
+      );
     else if (n.konfigFehler?.startsWith(NICHT_GESPEICHERT)) offen.push(`die Struktur (${n.konfigFehler})`);
     if (assistentOffen.current)
       offen.push(`im Assistenten ${assistentOffen.current} – „Speichern“ hieße, den Projektordner anzulegen bzw. die Projektdatei zu schreiben; das geschieht nur im Assistenten selbst`);
