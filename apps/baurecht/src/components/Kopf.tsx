@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { MenueKnopf, useMenueOffen, zeigeMenueAn } from '@core/ui/Menue';
+import { Symbol } from '@core/ui/Symbol';
 import { isTauri } from '@core/platform/files';
 import type { Pruefstand } from '../pruefung';
 import { aktuelleLage } from '../pruefung';
-import { heute, useBaurecht } from '../store';
+import { heute, istGeaendert, useBaurecht } from '../store';
 import { datum } from './Ampel';
 
 const EBENE_TEXT = { land: 'Land', kreis: 'Kreis', gemeinde: 'Gemeinde' } as const;
@@ -12,91 +15,6 @@ const datumZeit = (iso: string) => {
   const d = new Date(iso);
   return `${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
 };
-
-/**
- * kleines Menü: Knopf mit Liste darunter; Esc, Klick daneben und Tab aus dem Menü schließen, ↑/↓ bewegen. Der Zustand
- * kommt von außen (die Sammelmarke der Warnungen öffnet dasselbe Menü).
- */
-function Menue({ titel, label, offen, setOffen, children }: { titel: string; label: string; offen: boolean; setOffen: (o: boolean) => void; children: (zu: () => void) => React.ReactNode }) {
-  const rahmen = useRef<HTMLSpanElement>(null);
-  const knopf = useRef<HTMLButtonElement>(null);
-  // wer das Menü geöffnet hat (Knopf „Mehr“ oder die Sammelmarke) – dorthin geht der Fokus zurück
-  const oeffner = useRef<HTMLElement | null>(null);
-  // Mausdruck auf einen Öffner: dessen Klick schaltet das Menü selbst um – nur dann darf der Fokuswechsel dorthin es
-  // nicht schließen (mit der Tastatur auf die Sammelmarke zu gehen, schließt es wie jeder andere Fokuswechsel)
-  const mausAufOeffner = useRef(false);
-  useEffect(() => {
-    if (!offen) return;
-    oeffner.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    rahmen.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not([disabled])')?.focus();
-    const weg = (e: MouseEvent) => {
-      const ziel = e.target as Element | null;
-      // Klicks auf einen Öffner schalten selbst um (sonst schlösse mousedown und der Klick öffnete wieder)
-      if (ziel?.closest?.('[data-menue-oeffner]')) {
-        mausAufOeffner.current = true;
-        setTimeout(() => (mausAufOeffner.current = false), 500);
-      } else if (!rahmen.current?.contains(ziel)) setOffen(false);
-    };
-    document.addEventListener('mousedown', weg);
-    return () => document.removeEventListener('mousedown', weg);
-  }, [offen, setOffen]);
-  const zu = () => {
-    setOffen(false);
-    (oeffner.current?.isConnected ? oeffner.current : knopf.current)?.focus();
-  };
-  const taste = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.stopPropagation();
-      zu();
-    }
-    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
-      const el = [...(rahmen.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ?? [])];
-      if (!el.length) return;
-      const i = el.indexOf(document.activeElement as HTMLButtonElement);
-      const ziel = e.key === 'Home' ? 0 : e.key === 'End' ? el.length - 1 : (i + (e.key === 'ArrowDown' ? 1 : el.length - 1)) % el.length;
-      el[ziel]?.focus();
-      e.preventDefault();
-    }
-  };
-  return (
-    <span
-      className="br-menue"
-      ref={rahmen}
-      onKeyDown={taste}
-      onBlur={(e) => {
-        // Fokus verlässt das Menü (Tab): schließen – nicht aber, wenn er auf einen Öffner geht (die Sammelmarke schaltet
-        // das Menü selbst um; sonst schlösse der Fokuswechsel und der Klick öffnete wieder)
-        const ziel = e.relatedTarget as Element | null;
-        if (offen && !rahmen.current?.contains(ziel) && !(mausAufOeffner.current && ziel?.closest?.('[data-menue-oeffner]'))) setOffen(false);
-      }}
-    >
-      <button
-        type="button"
-        ref={knopf}
-        data-menue-oeffner=""
-        aria-haspopup="menu"
-        aria-expanded={offen}
-        onClick={() => setOffen(!offen)}
-        // wie bei Menüknöpfen üblich: ↓/↑ auf dem geschlossenen Knopf öffnen das Menü
-        onKeyDown={(e) => {
-          if (!offen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-            e.preventDefault();
-            e.stopPropagation();
-            setOffen(true);
-          }
-        }}
-        title={label}
-      >
-        {titel} <span aria-hidden="true">▾</span>
-      </button>
-      {offen && (
-        <span className="br-menue-liste" role="menu" aria-label={label}>
-          {children(zu)}
-        </span>
-      )}
-    </span>
-  );
-}
 
 /** „Gespeichert“ neben dem Knopf – einige Sekunden sichtbar, in einer stehenden Live-Region (wird verlässlich vorgelesen) */
 function GespeichertMeldung() {
@@ -118,11 +36,12 @@ function GespeichertMeldung() {
 
 /**
  * Kopfleiste in einer Zeile: Antrag, Einreichung, Module, Rechtsstand, Aktionen. Unter 1600 px (Breite der App)
- * wandern „Lage abfragen“ und „Rechtsstand prüfen“ in „Mehr ▾“, die Warnungen werden zu einer Sammelmarke; „Speichern“
+ * wandern „Lage abfragen“ und „Rechtsstand prüfen“ in das Menü „Mehr“, die Warnungen werden zu einer Sammelmarke; „Speichern“
  * wird nie verdrängt (die Liste der Module kürzt sich zuerst).
  */
 export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, onAntrag, lageLaeuft }: { stand: Pruefstand; onRechtsstand: () => void; onLage: () => void; onProtokoll: () => void; onSpeichern: () => void; onAntrag: (antrag: string) => void; lageLaeuft: boolean }) {
   const antrag = useBaurecht((s) => s.antrag);
+  const dirty = useBaurecht(istGeaendert);
   const antraege = useBaurecht((s) => s.antraege);
   const einreichung = useBaurecht((s) => s.pruefung.einreichung);
   const laedt = useBaurecht((s) => s.laedt);
@@ -141,7 +60,6 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
   // die Gemeinde zuerst: kürzt sich die Zeile, fällt der Bund weg, nicht die Gemeinde
   const moduleText = [...stand.module].reverse().map((m) => m.name).join(' · ');
   const desktop = isTauri();
-  const [mehrOffen, setMehrOffen] = useState(false);
   const ungeprueft = desktop && !laedt.length && !zeiten.length;
   // „nie geprüft“ nur, wenn ein Teil geprüft ist – sonst sagt „Rechtsstand nicht geprüft“ dasselbe
   const warnungen = !laedt.length && desktop ? [nie && !ungeprueft ? `${nie} nie geprüft` : '', fehler ? `${fehler} nicht abrufbar` : '', geaendert ? `${geaendert} geändert` : '', kuenftig ? `${kuenftig} neue Fassung` : ''].filter(Boolean) : [];
@@ -154,6 +72,21 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
     lageProblem === 'veraltet'
       ? 'Die Adresse wurde geändert, die Koordinaten passen nicht mehr dazu. Ergebnisse der Geodienste und Bestätigungen zur Lage gelten bis zur Aktualisierung nur als Hinweis.'
       : 'Keine Koordinaten zum Vorhaben (Adresse in den Stammdaten eintragen). Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur als Hinweis.';
+  // „Mehr“ (schmal): dieselben Punkte öffnet auch die Sammelmarke der Warnungen; die Warnungen stehen als Hinweis an
+  // „Rechtsstand prüfen“ (dort ist der Weg, sie zu beheben)
+  const mehrPunkte = (): MenuePunkt[] => [
+    { text: 'Lage abfragen', aktion: onLage, deaktiviert: lageLaeuft, hinweis: lageLaeuft ? 'läuft' : undefined },
+    {
+      text: 'Rechtsstand prüfen',
+      aktion: onRechtsstand,
+      deaktiviert: laedt.length > 0,
+      // kurz im Menü (sonst wird es sehr breit), alle Warnungen im Tooltip
+      hinweis: laedt.length ? 'Texte werden geholt' : warnText.length > 1 ? `${warnText.length} Warnungen` : warnText[0],
+      titel: warnText.length ? warnText.join(' · ') : undefined,
+    },
+  ];
+  const marke = useRef<HTMLButtonElement>(null);
+  const markeOffen = useMenueOffen(marke);
   const rechtsstandTitel = `${paket.herkunft === 'nachgeladen' ? 'Regelpaket nachgeladen' : 'Regelpaket des Builds'} ${paket.version}${paketMeldung ? ` – ${paketMeldung}` : ''}${zeiten.length ? ` · Normen zuletzt an der Quelle bestätigt zwischen ${datumZeit(zeiten[0])} und ${datumZeit(zeiten[zeiten.length - 1])}` : ''}`;
   return (
     <div className="toolbar br-kopf" role="group" aria-label="Prüfung">
@@ -222,7 +155,7 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
           </span>
           <span className="br-kopf-marken br-nur-schmal">
             {/* Sammelmarke als Knopf: öffnet „Mehr“ mit den Warnungen im Einzelnen und „Rechtsstand prüfen“ */}
-            <button type="button" className="br-marke br-marke-warn br-marke-knopf" data-menue-oeffner="" title={warnText.join(' · ')} aria-haspopup="menu" aria-expanded={mehrOffen} onClick={() => setMehrOffen(!mehrOffen)}>
+            <button type="button" ref={marke} className="br-marke br-marke-warn br-marke-knopf" title={warnText.join(' · ')} aria-haspopup="menu" aria-expanded={markeOffen} onClick={(e) => zeigeMenueAn(e.currentTarget, mehrPunkte(), 'Mehr – weitere Aktionen')}>
               {warnText.length === 1 ? warnText[0] : `Rechtsstand: ${warnText.length} Warnungen`}
             </button>
           </span>
@@ -240,49 +173,24 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
       )}
       {desktop && (
         <span className="br-nur-schmal">
-          <Menue titel="Mehr" label="Mehr – weitere Aktionen" offen={mehrOffen} setOffen={setMehrOffen}>
-            {(zu) => (
-              <>
-                <button
-                  type="button"
-                  role="menuitem"
-                  tabIndex={-1}
-                  disabled={lageLaeuft}
-                  onClick={() => {
-                    zu();
-                    onLage();
-                  }}
-                >
-                  {lageLaeuft ? 'Lage wird abgefragt …' : 'Lage abfragen'}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  tabIndex={-1}
-                  disabled={laedt.length > 0}
-                  onClick={() => {
-                    zu();
-                    onRechtsstand();
-                  }}
-                >
-                  Rechtsstand prüfen
-                </button>
-                {warnText.length > 0 && (
-                  <span className="br-menue-info" role="none">
-                    {warnText.join(' · ')}
-                  </span>
-                )}
-              </>
-            )}
-          </Menue>
+          <MenueKnopf punkte={mehrPunkte} title="Mehr – weitere Aktionen" name="Mehr – weitere Aktionen">
+            Mehr
+          </MenueKnopf>
         </span>
       )}
       <button type="button" onClick={onProtokoll} title="Prüfprotokoll ansehen, drucken, abschließen">
-        Prüfprotokoll
+        Prüfprotokoll …
       </button>
       <GespeichertMeldung />
-      <button type="button" className="primary" onClick={onSpeichern} title="In der Projektdatei speichern (Strg+S)">
-        Speichern
+      {/* ungespeicherte Änderungen als Punkt in der Ecke (Designsystem) – ändert die Breite der Leiste nicht */}
+      <button
+        type="button"
+        className={dirty ? 'primary ungespeichert' : 'primary'}
+        aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
+        onClick={onSpeichern}
+        title={dirty ? 'Ungespeicherte Änderungen – in der Projektdatei speichern (Strg+S)' : 'In der Projektdatei speichern (Strg+S)'}
+      >
+        <Symbol name="speichern" /> Speichern
       </button>
     </div>
   );

@@ -4,7 +4,7 @@ import { LEISTUNGSPHASEN } from '@core/model';
 import { Modal } from '@core/ui/Dialog';
 import { TextField } from '@core/ui/fields';
 import type { MenuePunkt } from '@core/ui/Menue';
-import { MenueKnopf, zeigeMenue } from '@core/ui/Menue';
+import { MenueKnopf, useMenueOffen, zeigeMenue, zeigeMenueAn } from '@core/ui/Menue';
 import { Symbol } from '@core/ui/Symbol';
 import { bestaetigen, frageText } from '@core/ui/Rueckfrage';
 import type { BaumZeile } from '../baum';
@@ -66,30 +66,38 @@ function ohneLoseTrenner(liste: MenuePunkt[]): MenuePunkt[] {
 }
 
 /**
- * Kontextmenü an einer festen Stelle zeigen (Kontextmenütaste, Knopf „Aktionen“ an der Zeile): ein Mausereignis mit
+ * Kontextmenü an einer festen Stelle zeigen (Kontextmenütaste): ein Mausereignis mit
  * dieser Position für `zeigeMenue`; der Fokus kehrt danach an das Element zurück, das ihn beim Öffnen hatte (den Baum).
  */
 const zeigeMenueBei = (x: number, y: number, punkte: MenuePunkt[], name: string) => zeigeMenue(new MouseEvent('contextmenu', { clientX: x || 1, clientY: y || 1 }), punkte, name);
 
 /**
- * Offen-Zustand des Menüs am Zeilenknopf „Aktionen“ – für `aria-expanded`. `MenueKnopf` passt dort nicht (die Zeile wird
- * beim Öffnen erst gewählt, der Knopf liegt mit `tabIndex -1` außerhalb der Tab-Reihenfolge, er zeigt keinen Aufklapp-Pfeil),
- * und `@core/ui/Menue` gibt seinen Zustand nicht heraus. Das offene Menü steht aber als `.menue[role="menu"]` mit seinem
- * Namen im Dokument: Fehlt es oder trägt es einen anderen Namen (ein anderes Menü ging auf), ist das Zeilenmenü zu.
+ * Zeilenknopf „Aktionen“: öffnet das Kontextmenü der Zeile am Knopf (`zeigeMenueAn`); `aria-expanded` folgt dem Menü
+ * über `useMenueOffen`. Kein `MenueKnopf`: die Zeile wird beim Öffnen erst gewählt, der Knopf liegt mit `tabIndex -1`
+ * außerhalb der Tab-Reihenfolge und zeigt keinen Aufklapp-Pfeil. Bekommt er den Fokus (Mausdruck, Rückgabe nach Esc oder
+ * einer Auswahl), reicht er ihn an den Baum weiter – dort wirken die Pfeiltasten.
  */
-function useZeilenMenue() {
-  const [offen, setOffen] = useState<{ pfad: string; name: string } | null>(null);
-  useEffect(() => {
-    if (!offen) return;
-    const pruefen = () => {
-      if (document.querySelector('.menue[role="menu"]')?.getAttribute('aria-label') !== offen.name) setOffen(null);
-    };
-    const beobachter = new MutationObserver(pruefen);
-    beobachter.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label'] });
-    pruefen();
-    return () => beobachter.disconnect();
-  }, [offen]);
-  return [offen, setOffen] as const;
+function ZeilenKnopf({ pfad, onOeffnen, onFokus }: { pfad: string; onOeffnen: (el: HTMLButtonElement) => void; onFokus: () => void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const offen = useMenueOffen(ref);
+  return (
+    <button
+      ref={ref}
+      className="small icon"
+      tabIndex={-1}
+      title="Aktionen (wie Rechtsklick)"
+      aria-label={`Aktionen für ${pfad}`}
+      aria-haspopup="menu"
+      aria-expanded={offen}
+      onFocus={onFokus}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOeffnen(e.currentTarget);
+      }}
+    >
+      <Symbol name="mehr" />
+    </button>
+  );
 }
 
 /**
@@ -141,7 +149,6 @@ export function OrdnerEditor({
   /** Grund der Sperre für Tooltips (ohne Sperre nichts) */
   const grund = gesperrt ? SPERRGRUND : undefined;
   const gesperrtMelden = () => fehler(`${SPERRGRUND}.`);
-  const [zeilenMenue, setZeilenMenue] = useZeilenMenue();
   const baum = useRef<HTMLDivElement>(null);
   /** die Liste, die dieser Editor zuletzt geschrieben hat – ändert sie sich von außen, beginnt der Verlauf neu */
   const eigene = useRef(ordner);
@@ -465,31 +472,31 @@ export function OrdnerEditor({
   const menueName = (sel: string[]) => (sel.length === 1 ? `Aktionen für ${sel[0].split('/').pop()}` : sel.length ? `Aktionen für ${sel.length} Ordner` : 'Aktionen');
   /** gesperrt (nur lesen): Punkte bleiben sichtbar, der Grund steht im Hinweis; `lesend` (Kopieren, Aufklappen) bleibt bedienbar */
   const sperren = (punkte: MenuePunkt[], lesend: MenuePunkt[] = []): MenuePunkt[] =>
-    gesperrt ? punkte.map((m) => (m.trenner || lesend.includes(m) ? m : { ...m, deaktiviert: true, hinweis: SPERRGRUND_KURZ, titel: SPERRGRUND })) : punkte;
+    gesperrt ? punkte.map((m) => (m.trenner || lesend.includes(m) ? m : { ...m, deaktiviert: true, tasten: undefined, hinweis: SPERRGRUND_KURZ, titel: SPERRGRUND })) : punkte;
   /** Kontextmenü für die Ordner `sel` (die Auswahl beim Öffnen – sie kann sich im selben Klick erst ändern) */
   const kontextPunkte = (sel: string[]): MenuePunkt[] => {
     const einer = sel.length === 1 ? zeile(sel[0]) : undefined;
     const p = einer?.pfad ?? null;
     /** Kopieren ändert nichts – auch beim Lesen erlaubt */
-    const kopierPunkt: MenuePunkt | null = sel.length ? { text: sel.length > 1 ? `${sel.length} Ordner kopieren` : 'Kopieren', symbol: 'kopie', hinweis: 'Strg+C', aktion: () => kopieren(sel) } : null;
+    const kopierPunkt: MenuePunkt | null = sel.length ? { text: sel.length > 1 ? `${sel.length} Ordner kopieren` : 'Kopieren', symbol: 'kopie', tasten: 'Strg+C', aktion: () => kopieren(sel) } : null;
     const liste = ohneLoseTrenner([
-      { text: p ? 'Unterordner anlegen' : 'Ordner anlegen', symbol: 'plus', hinweis: 'Strg+N', aktion: () => anlegen(p ?? '') },
-      ...(p ? [{ text: 'Ordner daneben anlegen', hinweis: 'Strg+Umschalt+N', aktion: () => daneben(p) }] : []),
+      { text: p ? 'Unterordner anlegen' : 'Ordner anlegen', symbol: 'plus', tasten: 'Strg+N', aktion: () => anlegen(p ?? '') },
+      ...(p ? [{ text: 'Ordner daneben anlegen', tasten: 'Strg+Umschalt+N', aktion: () => daneben(p) }] : []),
       {
         text: sel.length > 1 ? `Unterordner in ${sel.length} Ordnern anlegen …` : sel.length ? 'Mehrere Unterordner anlegen …' : 'Mehrere Ordner anlegen …',
         aktion: () => setMehrere(sel.length ? sel : ['']),
       },
       ...bausteine.map((b) => ({ text: `Baustein „${b.name}“ einfügen`, titel: b.ordner.map((o) => o.pfad).join(', '), aktion: () => einfuegenIn(b.ordner, sel, `Baustein „${b.name}“`) })),
       TRENNER,
-      ...(p ? [{ text: 'Umbenennen', symbol: 'stift' as const, hinweis: 'F2', aktion: () => setBearbeitet({ pfad: p, neu: false }) }] : []),
-      ...(p ? [{ text: 'Duplizieren', hinweis: 'Strg+D', titel: 'Kopie samt Unterordnern direkt dahinter', aktion: () => dupl(p) }] : []),
+      ...(p ? [{ text: 'Umbenennen', symbol: 'stift' as const, tasten: 'F2', aktion: () => setBearbeitet({ pfad: p, neu: false }) }] : []),
+      ...(p ? [{ text: 'Duplizieren', tasten: 'Strg+D', titel: 'Kopie samt Unterordnern direkt dahinter', aktion: () => dupl(p) }] : []),
       ...(kopierPunkt ? [kopierPunkt] : []),
       ...(ablage
         ? [
             {
               text: sel.length > 1 ? `Einfügen in ${sel.length} Ordner` : 'Einfügen',
               symbol: 'einfuegen' as const,
-              hinweis: 'Strg+V',
+              tasten: 'Strg+V',
               titel: einfuegenTitel,
               aktion: () => einfuegenIn(ablage, sel, 'Kopie'),
             },
@@ -499,10 +506,10 @@ export function OrdnerEditor({
       TRENNER,
       ...(einer
         ? [
-            { text: 'Nach oben', hinweis: 'Alt+↑', aktion: () => schieben(einer, -1) },
-            { text: 'Nach unten', hinweis: 'Alt+↓', aktion: () => schieben(einer, 1) },
-            ...(!einer.erster ? [{ text: 'In den Ordner davor einrücken', hinweis: 'Alt+→', aktion: () => einr(einer) }] : []),
-            ...(einer.tiefe > 0 ? [{ text: 'Eine Ebene ausrücken', hinweis: 'Alt+←', aktion: () => ausr(einer) }] : []),
+            { text: 'Nach oben', symbol: 'nachOben' as const, tasten: 'Alt+↑', aktion: () => schieben(einer, -1) },
+            { text: 'Nach unten', symbol: 'nachUnten' as const, tasten: 'Alt+↓', aktion: () => schieben(einer, 1) },
+            ...(!einer.erster ? [{ text: 'In den Ordner davor einrücken', tasten: 'Alt+→', aktion: () => einr(einer) }] : []),
+            ...(einer.tiefe > 0 ? [{ text: 'Eine Ebene ausrücken', tasten: 'Alt+←', aktion: () => ausr(einer) }] : []),
           ]
         : []),
       TRENNER,
@@ -511,7 +518,7 @@ export function OrdnerEditor({
             {
               text: sel.length > 1 ? `${sel.length} Ordner löschen …` : zeile(sel[0])?.hatKinder ? 'Löschen …' : 'Löschen',
               symbol: 'muell' as const,
-              hinweis: 'Entf',
+              tasten: 'Entf',
               gefahr: true,
               aktion: () => void loeschenFragen(sel),
             },
@@ -524,7 +531,7 @@ export function OrdnerEditor({
     const kopierPunkt: MenuePunkt = {
       text: 'Kopieren',
       symbol: 'kopie',
-      hinweis: 'Strg+C',
+      tasten: 'Strg+C',
       titel: gewaehlt.length ? 'Markierte Ordner samt Unterordnern kopieren' : 'Erst Ordner markieren',
       deaktiviert: !gewaehlt.length,
       aktion: () => kopieren(gewaehlt),
@@ -536,10 +543,10 @@ export function OrdnerEditor({
     return sperren(
       ohneLoseTrenner([
         kopierPunkt,
-        { text: 'Einfügen', symbol: 'einfuegen', hinweis: 'Strg+V', titel: einfuegenTitel, deaktiviert: !ablage, aktion: () => ablage && einfuegenIn(ablage, gewaehlt, 'Kopie') },
+        { text: 'Einfügen', symbol: 'einfuegen', tasten: 'Strg+V', titel: einfuegenTitel, deaktiviert: !ablage, aktion: () => ablage && einfuegenIn(ablage, gewaehlt, 'Kopie') },
         {
           text: 'Duplizieren',
-          hinweis: 'Strg+D',
+          tasten: 'Strg+D',
           titel: einer ? 'Kopie samt Unterordnern direkt dahinter' : 'Erst einen Ordner markieren',
           deaktiviert: !einer,
           aktion: () => einer && dupl(einer.pfad),
@@ -759,26 +766,15 @@ export function OrdnerEditor({
                     </span>
                   )}
                   <span className="po-k-aktionen">
-                    <button
-                      className="small"
-                      tabIndex={-1}
-                      title="Aktionen (wie Rechtsklick)"
-                      aria-label={`Aktionen für ${z.pfad}`}
-                      aria-haspopup="menu"
-                      aria-expanded={!!zeilenMenue && klein(zeilenMenue.pfad) === klein(z.pfad)}
-                      onClick={(e) => {
-                        e.stopPropagation();
+                    <ZeilenKnopf
+                      pfad={z.pfad}
+                      onFokus={() => baum.current?.focus()}
+                      onOeffnen={(el) => {
                         if (!sel) waehlen(z.pfad);
                         const pfade = sel ? gewaehlt : [z.pfad];
-                        const r = e.currentTarget.getBoundingClientRect();
-                        baum.current?.focus();
-                        zeigeMenueBei(r.left, r.bottom + 2, kontextPunkte(pfade), menueName(pfade));
-                        setZeilenMenue({ pfad: z.pfad, name: menueName(pfade) });
+                        zeigeMenueAn(el, kontextPunkte(pfade), menueName(pfade));
                       }}
-                    >
-                      {/* „liste“ statt „pfeilUnten“ (wäre mit dem Aufklapp-Pfeil verwechselbar); ein Symbol „mehr“ fehlt in core */}
-                      <Symbol name="liste" />
-                    </button>
+                    />
                   </span>
                 </div>
               );
