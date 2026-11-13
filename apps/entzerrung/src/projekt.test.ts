@@ -3,7 +3,8 @@ import { useEntz } from './store';
 
 /**
  * Datenpfade ohne Oberfläche: Speichern (ungespeichert-Kennzeichen, kein Doppelspeichern), Zwischenspeicher in der
- * IndexedDB (Fotos für Rückgängig/Wiederholen bleiben, fehlende werden nachgetragen) und Öffnen mit Pfad.
+ * IndexedDB (Fotos für Rückgängig/Wiederholen bleiben, fehlende werden nachgetragen; vor dem Schließen wird ausstehendes
+ * Schreiben abgeschlossen) und Öffnen mit Pfad.
  */
 
 type SpeicherOptionen = { build: () => Uint8Array; pfad: string | null; vorhandenLesen?: boolean; stand?: { groesse: number; geaendert: number } | null; defaultName: string };
@@ -91,10 +92,11 @@ function attrappe() {
 }
 const idb = attrappe();
 
-const { speichern, verwendeteFotos, oeffnen, fotoImProjektOeffnen, fotosHinzufuegen } = await import('./projekt');
+const { speichern, verwendeteFotos, oeffnen, fotoImProjektOeffnen, fotosHinzufuegen, zwischenspeicherStarten } = await import('./projekt');
+const { schliessenVorbereiten } = await import('@core/platform/rahmen');
 const { SpeicherProjektordner } = await import('@core/platform/projektordner');
 const { DateiVonAussenGeaendert } = await import('@core/platform/files');
-const { standSchreiben } = await import('./speicher');
+const { standSchreiben, fotoSchreiben } = await import('./speicher');
 const { packen } = await import('./datei');
 const { mitEbene } = await import('./store');
 
@@ -328,5 +330,71 @@ describe('Zwischenspeicher', () => {
     await standSchreiben({ doc: a.doc, dateiname: null, dirty: true }, a.bilder);
     expect(idb.fotos.get('f1')).toEqual(bytes(5, 3));
     expect((idb.stand.get('stand') as { doc: { fotos: unknown[] } }).doc.fotos).toHaveLength(1);
+  });
+
+  it('vor dem Schließen (Arkly): ausstehender Stand sofort geschrieben, laufendes Schreiben abgewartet, nie doppelt', async () => {
+    // Testumgebung ohne Browser: nur die Ereignisse, die das Zwischenspeichern braucht
+    const g = globalThis as { window?: unknown };
+    const vorher = g.window;
+    g.window = new EventTarget();
+    try {
+      idb.stand.clear();
+      const ende = await zwischenspeicherStarten();
+      const geschrieben = vi.spyOn(idb.stand, 'set');
+      // ein Foto wird noch in den Zwischenspeicher geschrieben: das Schließen wartet darauf
+      void fotoSchreiben('f9', bytes(3, 9));
+      expect(idb.fotos.has('f9')).toBe(false);
+      expect(await schliessenVorbereiten()).toBe(true);
+      expect(idb.fotos.get('f9')).toEqual(bytes(3, 9));
+      expect(geschrieben).not.toHaveBeenCalled();
+      // der Stand wartet auf den Timer (600 ms); zweimal kurz nacheinander (z. B. „Weiter warten“): ein Schreiben
+      useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 4));
+      const [a, b] = await Promise.all([schliessenVorbereiten(), schliessenVorbereiten()]);
+      expect([a, b]).toEqual([true, true]);
+      expect((idb.stand.get('stand') as { doc: { fotos: { id: string }[] } }).doc.fotos.map((f) => f.id)).toEqual(['f1']);
+      expect(geschrieben).toHaveBeenCalledTimes(1);
+      // der Timer ist erledigt: auch später kein zweites Schreiben desselben Stands (echte Uhr, weil die
+      // IndexedDB-Attrappe auf setTimeout beruht – vorgetäuschte Zeit würde sie anhalten)
+      await new Promise((r) => setTimeout(r, 700));
+      expect(geschrieben).toHaveBeenCalledTimes(1);
+      // Gegenprobe: nach der Abmeldung schreibt das Schließen nichts mehr
+      ende();
+      useEntz.getState().aendern((d) => ({ fotos: d.fotos.slice(1) }));
+      await schliessenVorbereiten();
+      expect(geschrieben).toHaveBeenCalledTimes(1);
+      geschrieben.mockRestore();
+    } finally {
+      g.window = vorher;
+    }
+  });
+
+  it('vor dem Schließen während des Speicherns der .entz: wartet darauf und schreibt danach den gespeicherten Stand', async () => {
+    const g = globalThis as { window?: unknown };
+    const vorher = g.window;
+    g.window = new EventTarget();
+    try {
+      idb.stand.clear();
+      const ende = await zwischenspeicherStarten();
+      useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 5));
+      datei.staende.set('/Projekt/Süd.entz', { groesse: 42, geaendert: 7 });
+      let weiter: (v: string) => void = () => undefined;
+      datei.speichern = (o) => {
+        o.build();
+        return new Promise((r) => (weiter = r));
+      };
+      const lauf = speichern();
+      let fertig = false;
+      const vorbereitet = schliessenVorbereiten().then((ok) => ((fertig = true), ok));
+      await new Promise((r) => setTimeout(r, 20));
+      expect(fertig).toBe(false);
+      weiter('/Projekt/Süd.entz');
+      expect(await lauf).toBe(true);
+      expect(await vorbereitet).toBe(true);
+      // im Zwischenstand steht der gespeicherte Stand, nicht der davor (sonst später falsche Rückfrage „von außen geändert“)
+      expect(idb.stand.get('stand')).toMatchObject({ dirty: false, dateiname: '/Projekt/Süd.entz', dateiStand: { groesse: 42, geaendert: 7 } });
+      ende();
+    } finally {
+      g.window = vorher;
+    }
   });
 });
