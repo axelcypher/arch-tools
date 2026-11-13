@@ -248,6 +248,8 @@ export interface FaktWert {
    * dafür die auslösenden Hinweise als unsicher – bestätigt wird der Auslöser, nicht die Antwort.
    */
   ueberHinweis?: string[];
+  /** nur in der Auswertung: wie `ueberHinweis`, die Frage wird nur wegen dieser widersprüchlichen Angaben gestellt */
+  ueberWiderspruch?: string[];
   /** widersprechende Angabe (z. B. Treffer im Geodienst gegen „nein“ von Hand) – macht Grün gelb */
   widerspruch?: string;
   /** bei Angaben von Hand: das letzte Ergebnis des Dienstes – daraus wird der Widerspruch bei jedem Setzen neu bestimmt */

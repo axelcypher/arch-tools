@@ -863,6 +863,21 @@ describe('Runde 18: nur gestellte Antworten zählen', () => {
     const alt = gestellteAntworten({ h: sicher(true), a: { ...sicher(true), ueberHinweis: ['h'] } }, (f) => f, defs, rest);
     expect(alt.a.ueberHinweis).toBeUndefined();
   });
+
+  it('ebenso über eine widersprüchliche Angabe: die Antwort trägt den Widerspruch des Auslösers, auch in der Kette', () => {
+    const defs = {
+      h: { titel: 'H', gruppe: 'x', typ: 'janein' },
+      a: { titel: 'A', gruppe: 'x', typ: 'janein', wenn: { f: 'h', ist: true } },
+      b: { titel: 'B', gruppe: 'x', typ: 'janein', wenn: { f: 'a', ist: true } },
+    } as unknown as Record<string, import('./typen').FaktDef>;
+    const rest = { merkmale: {}, einreichung: '2026-12-01', heute: '2026-11-13', bausteine: {} };
+    const r = gestellteAntworten({ h: { ...sicher(true), widerspruch: 'Dienst: nein' }, a: sicher(true), b: sicher(false) }, (f) => f, defs, rest);
+    expect(r.a).toMatchObject({ sicherheit: 'sicher', ueberWiderspruch: ['h'] });
+    expect(r.b).toMatchObject({ sicherheit: 'sicher', ueberWiderspruch: ['h'] });
+    expect(r.a.ueberHinweis).toBeUndefined();
+    // ein mitgegebenes Feld zählt nicht
+    expect(gestellteAntworten({ h: sicher(true), a: { ...sicher(true), ueberWiderspruch: ['h'] } }, (f) => f, defs, rest).a.ueberWiderspruch).toBeUndefined();
+  });
 });
 
 describe('Runde 19: Kriterium „gestellt“ und Paketregeln für Fragen', () => {
