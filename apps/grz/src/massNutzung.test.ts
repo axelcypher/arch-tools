@@ -804,4 +804,9 @@ describe('Fachliche Pflichtbefunde Baurecht (P2–P10)', () => {
     expect(leer.hinweise.some((h) => h.includes('§ 34'))).toBe(true);
     expect(leer.hinweise.some((h) => h.startsWith('Inkrafttreten fehlt'))).toBe(false);
   });
+
+  it('Auslegung nach Inkrafttreten meldet vertauschte Daten (Gegenprobe: richtige Reihenfolge ohne Hinweis)', () => {
+    expect(recht({ planDatum: '1980-01-01', auslegungDatum: '1985-01-01' }).hinweise.some((h) => h.includes('vertauscht'))).toBe(true);
+    expect(recht({ planDatum: '1985-01-01', auslegungDatum: '1980-01-01' }).hinweise.some((h) => h.includes('vertauscht'))).toBe(false);
+  });
 });

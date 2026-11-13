@@ -82,7 +82,9 @@ export function rechenweg(n: Nachweis, nr: Map<string, number> = flaechenNummern
     }
   }
   const gf = n.gfJeGeschoss.filter((g) => g.flaeche > 0.005);
-  formeln.push(`GF = ${gf.length ? gf.map((g) => `${g.name} ${m2(g.flaeche)}`).join(' + ') : '0,00 m²'} = ${m2(n.gf)}`);
+  formeln.push(
+    `GF = ${gf.length ? gf.map((g) => (g.abzug ? `${g.name} (${m2(g.flaeche + g.abzug)} − nicht mitgerechnet ${m2(g.abzug)})` : `${g.name} ${m2(g.flaeche)}`)).join(' + ') : '0,00 m²'} = ${m2(n.gf)}`,
+  );
   formeln.push(kennzahlFormel('GFZ = GF / FGst', n.gfz, G));
 
   const flaechen: RechenwegFlaeche[] = [];

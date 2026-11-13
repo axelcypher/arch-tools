@@ -85,6 +85,7 @@ export function recht(m: MassNutzung | undefined): Recht {
     hinweise.push(
       'Ohne Plandatum gilt das aktuelle Recht (z. B. Vorhaben nach § 34 oder § 35 BauGB). Im Innenbereich gibt es keine festgesetzten Maße; die Kennzahlen dienen nur der Orientierung beim Einfügen (§ 34 Abs. 1 BauGB).',
     );
+  if (a && d && a > d) hinweise.push('Die öffentliche Auslegung liegt nach dem Inkrafttreten – Daten prüfen (vertauscht?).');
   if (m?.baunvo) baunvo = m.baunvo;
   if (m?.bauo) bauo = m.bauo;
   return { baunvo, bauo, ausDatum: !!dNvo && !m?.baunvo && !m?.bauo, bauoDatum: dBauo, hinweise };
