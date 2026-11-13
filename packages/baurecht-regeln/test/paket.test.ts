@@ -98,17 +98,48 @@ const WERTE: Record<string, (string | undefined)[]> = {
 
 /**
  * Volle Matrizen (mehrere Minuten Rechenzeit, ohne Netz) nur in der CI (GitHub Actions setzt CI=true) oder mit VOLL=1.
- * Sonst – lokal, in Cloud-Sitzungen – eine feste Stichprobe, damit „npm test“ in wenigen Sekunden durch ist statt
- * minutenlang ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln
+ * Sonst – lokal, in Cloud-Sitzungen – eine feste Stichprobe, damit das Projekt in unter einer Minute durch ist statt
+ * über zehn Minuten ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln (etwa 12 min)
  */
 const VOLL = !!process.env.CI || !!process.env.VOLL;
 /** Zeitgrenze der großen Matrizen: voll großzügig (Windows-Runner), mit Stichprobe knapp – nichts läuft still minutenlang */
 const MATRIX_ZEIT = VOLL ? 600000 : 60000;
-/** feste Stichprobe (jedes k-te Element, höchstens etwa `n`) – mit VOLL die ganze Liste */
+const MATRIX_ZEIT_LANG = VOLL ? 900000 : 60000;
+const ggt = (a: number, b: number): number => (b ? ggt(b, a % b) : a);
+/**
+ * feste Stichprobe von `n` Elementen – mit VOLL die ganze Liste. Nicht „jedes k-te“: die Listen sind kartesische Produkte,
+ * eine feste Schrittweite fiele mit der Schachtelung zusammen und ließe ganze Merkmalswerte aus. Deshalb Index i·p mod
+ * Länge mit p nahe Länge·0,618 (goldener Schnitt) und teilerfremd zur Länge: verschieden, gestreut über alle Stellen.
+ */
 function stichprobe<T>(liste: T[], n: number): T[] {
-  if (VOLL || liste.length <= n) return liste;
-  const k = Math.ceil(liste.length / n);
-  return liste.filter((_, i) => i % k === 0);
+  return VOLL ? liste : stichprobeLokal(liste, n);
+}
+/** die Stichprobe selbst (auch ohne VOLL abrufbar – für den Test, dass sie jeden Merkmalswert erreicht) */
+function stichprobeLokal<T>(liste: T[], n: number): T[] {
+  if (liste.length <= n) return liste;
+  let p = Math.round(liste.length * 0.618);
+  while (ggt(p, liste.length) !== 1) p++;
+  return Array.from({ length: n }, (_, i) => (i * p) % liste.length)
+    .sort((x, y) => x - y)
+    .map((i) => liste[i]);
+}
+
+/**
+ * kleine Auswahl aus einer Merkmalsmatrix (mit VOLL alle Kombinationen): in Fall j hat Merkmal d den Wert Nr.
+ * (j · q_d) mod Anzahl, q_d teilerfremd zu den üblichen Anzahlen (2, 3, 4) – jedes Merkmal durchläuft so alle Werte,
+ * sobald n mindestens so groß ist wie die längste Werteliste, und die Merkmale wechseln nicht im Gleichschritt
+ */
+function matrixAuswahl(werte: Record<string, (string | undefined)[]>, n: number): Record<string, string>[] {
+  if (VOLL) return [...kombinationen(werte)];
+  const q = [1, 5, 7, 11, 13, 17];
+  return Array.from({ length: n }, (_, j) => {
+    const m: Record<string, string> = {};
+    Object.entries(werte).forEach(([k, l], d) => {
+      const w = l[(j * q[d % q.length]) % l.length];
+      if (w) m[k] = w;
+    });
+    return m;
+  });
 }
 
 function* kombinationen(werte: Record<string, (string | undefined)[]>): Generator<Record<string, string>> {
@@ -218,7 +249,7 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
     const fehler: string[] = [];
     for (const [name, f, t] of FAKTEN)
       for (const art of ['Einfamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus', 'Nichtwohngebäude', 'kein Gebäude'])
-        for (const m of stichprobe([...kombinationen(MATRIX)], 6)) {
+        for (const m of matrixAuswahl(MATRIX, 6)) {
           const basis = { ...m, Gebäudeart: art };
           const aend = ampeln({ ...basis, Vorhaben: 'Änderung' }, f, t);
           for (const [id, a] of ampeln({ ...basis, Vorhaben: 'Erweiterung' }, f, t)) if (RANG[a] < RANG[aend.get(id) ?? 'gruen'] && fehler.length < 30) fehler.push(`${id}: Erweiterung ${a}, Änderung ${aend.get(id)} (${name}, ${JSON.stringify(basis)})`);
@@ -230,7 +261,7 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
     const fehler: string[] = [];
     for (const [name, f, t] of FAKTEN)
       for (const vorhaben of ['Errichtung', 'Änderung', 'Nutzungsänderung', 'Beseitigung'])
-        for (const m of stichprobe([...kombinationen(MATRIX)], 6)) {
+        for (const m of matrixAuswahl(MATRIX, 6)) {
           const basis = { ...m, Vorhaben: vorhaben };
           const mfh = ampeln({ ...basis, Gebäudeart: 'Mehrfamilienhaus' }, f, t);
           const nwg = ampeln({ ...basis, Gebäudeart: 'Nichtwohngebäude' }, f, t);
@@ -449,6 +480,17 @@ describe('Fragen und Regeln', () => {
               faelle.push({ name: `${ags} ${lage} ${v} ${art} ${p} ${vf}`, ags, m, f });
             }
 
+  it('die lokale Stichprobe der Grundfälle und der Matrix deckt jeden Wert jedes Merkmals ab', () => {
+    const werteVon = (l: Record<string, string>[], k: string) => new Set(l.map((m) => m[k] ?? '–'));
+    const probe = stichprobeLokal(faelle, 150).map((x) => ({ ...x.m, ags: x.ags, lage: x.name.split(' ')[1] }));
+    const alle = faelle.map((x) => ({ ...x.m, ags: x.ags, lage: x.name.split(' ')[1] }));
+    for (const k of ['ags', 'lage', 'Vorhaben', 'Gebäudeart', 'Planungsrecht', 'Verfahren']) expect(werteVon(probe, k), k).toEqual(werteVon(alle, k));
+    const werte = { Gebäudeklasse: ['1', '3', undefined], Planungsrecht: ['Bebauungsplan', 'Außenbereich', undefined], Verfahren: ['verfahrensfrei', 'vereinfachtes Verfahren', undefined], Sonderbau: ['nein', 'ja'] };
+    const matrix = [...kombinationen(werte)];
+    const mp = VOLL ? matrix : matrixAuswahl(werte, 6);
+    for (const k of ['Gebäudeklasse', 'Planungsrecht', 'Verfahren', 'Sonderbau']) expect(werteVon(mp, k), k).toEqual(werteVon(matrix, k));
+  });
+
   it('§ 47 Abs. 6 BauO NRW: Nutzungsänderung eines Nichtwohngebäudes ohne Wohnung – keine „Ausnahme möglich“ über die nicht gestellte Umnutzung', () => {
     const m = { Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
     const r = lauf(SOEST, m, { ...grund(), 'gebaeude.wohnungen': 0, 'gebaeude.nutzungseinheiten': 3 });
@@ -515,7 +557,7 @@ describe('Fragen und Regeln', () => {
     expect(faelle.length).toBeGreaterThan(500);
   });
 
-  it('je gestellte Angabe einzeln offen: keine nicht gestellte Frage unter „es fehlt“, in `klaerend` oder „klärt am meisten“', { timeout: VOLL ? 900000 : 60000 }, () => {
+  it('je gestellte Angabe einzeln offen: keine nicht gestellte Frage unter „es fehlt“, in `klaerend` oder „klärt am meisten“', { timeout: MATRIX_ZEIT_LANG }, () => {
     const fehler = new Set<string>();
     const melde = (t: string) => {
       if (fehler.size < 60) fehler.add(t);
@@ -533,7 +575,10 @@ describe('Fragen und Regeln', () => {
         auswahl.push({ ...fall, name: `${fall.name} Umfang offen`, f: ohneUmfang });
       }
     }
-    for (const fall of stichprobe(auswahl, 4)) {
+    // die eigens angelegten Varianten („Altbau nein“, „Umfang offen“) immer, dazu eine Stichprobe der Grundfälle
+    const varianten = auswahl.filter((x) => / (Altbau nein|Umfang offen)$/.test(x.name));
+    const geprueft = VOLL ? auswahl : [...stichprobe(auswahl.filter((x) => !varianten.includes(x)), 4), ...varianten.slice(0, 2)];
+    for (const fall of geprueft) {
       const defs = faktDefinitionen(aktiveModule(paket.module, fall.ags));
       // Angaben mit nicht gestellter Frage entfernen (wie im Fall oben)
       const f = { ...fall.f };
@@ -2332,7 +2377,8 @@ describe('Werkzeuge', () => {
       const version = (JSON.parse(readFileSync(join(WURZEL, 'package.json'), 'utf8')) as { version: string }).version;
       const index = (paket: string) => writeFileSync(join(ausgabe, 'index.json'), JSON.stringify({ format: 1, paket, dateien, hosts: [...hosts].sort() }));
       const skript = join(WURZEL, 'werkzeuge', 'index-pruefen.mjs');
-      const pruefen = (run?: string) => spawnSync(process.execPath, [skript, ausgabe], { env: { ...process.env, GITHUB_RUN_NUMBER: run ?? '' }, encoding: 'utf8' });
+      // mit Zeitgrenze: spawnSync blockiert den Worker – ohne sie griffe die Zeitgrenze des Tests erst danach
+      const pruefen = (run?: string) => spawnSync(process.execPath, [skript, ausgabe], { env: { ...process.env, GITHUB_RUN_NUMBER: run ?? '' }, encoding: 'utf8', timeout: 30000 });
       index(`${version}-42`);
       expect(pruefen('42').status, pruefen('42').stderr).toBe(0);
       // ohne Laufnummer: nur das Format
