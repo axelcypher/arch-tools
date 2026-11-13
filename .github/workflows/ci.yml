@@ -103,5 +103,12 @@ jobs:
       # generate_context! bettet das Web-Frontend ein – dist muss existieren
       - run: npm run ${{ matrix.build || 'build' }} -w ${{ matrix.pkg }}
       - run: cargo check --manifest-path apps/${{ matrix.app }}/src-tauri/Cargo.toml
-      - if: matrix.test
+      # Rust-Tests: die geteilten Teile (packages/core/tauri: commands.rs, qgis.rs, umbenennen.rs) stecken per include! in
+      # ATLAS (ordner), die Befehle von PERMIO in formulare – dort laufen ihre #[cfg(test)]-Module
+      - name: Rust-Tests
+        if: matrix.app == 'ordner' || matrix.app == 'formulare'
+        run: cargo test --manifest-path apps/${{ matrix.app }}/src-tauri/Cargo.toml
+      # LEXIO (matrix.test): netz.rs – Hosts, Umleitungen, Signatur des Regelpakets, Ablage
+      - name: Rust-Tests (LEXIO)
+        if: matrix.test
         run: cargo test --lib --manifest-path apps/${{ matrix.app }}/src-tauri/Cargo.toml

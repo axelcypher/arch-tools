@@ -37,6 +37,7 @@ pub fn run() {
             pick_save_path,
             pick_open_path,
             read_binary_file,
+            datei_stand,
             write_binary_file,
             netz_holen,
             netz_hosts_erweitern,
