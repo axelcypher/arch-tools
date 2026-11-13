@@ -340,15 +340,17 @@ export function verzoegertesSchreiben(schreiben: () => Promise<void>, ms = 600):
     if (ausstehend) {
       ausstehend = false;
       // nach einem noch laufenden Schreiben, damit der neuere Stand zuletzt geschrieben wird
-      laufend = laufend.then(schreiben).then(
+      const dieses: Promise<boolean> = laufend.then(schreiben).then(
         () => true,
         (e) => {
-          // protokollieren, als ausstehend merken (der nächste Aufruf schreibt neu) und „nicht gespeichert“ melden
+          // protokollieren und „nicht gespeichert“ melden; als ausstehend merken (der nächste Aufruf schreibt neu) –
+          // außer es hängt schon ein neueres Schreiben dahinter, das den aktuellen Stand ohnehin schreibt
           log.warn('Zwischenstand ließ sich nicht schreiben', e);
-          ausstehend = true;
+          if (laufend === dieses) ausstehend = true;
           return false;
         },
       );
+      laufend = dieses;
     }
     return laufend;
   };
