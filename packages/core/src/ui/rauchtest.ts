@@ -1,7 +1,7 @@
 import { act } from 'react';
 
 /**
- * Rauchtest für die UI-Tests der Apps (nur in Tests verwendet): Farbschema über das Menü ◐ der Titelleiste auf
+ * Rauchtest für die UI-Tests der Apps (nur in Tests verwendet): Farbschema über das Menü „Farbschema“ der Titelleiste auf
  * „Dunkel“ und zurück auf „Hell“ stellen – das Schema am <html>-Element muss sofort wechseln.
  */
 export function farbschemaWechseln(host: HTMLElement, wahl: 'Hell' | 'Dunkel'): string | undefined {

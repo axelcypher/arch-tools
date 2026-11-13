@@ -183,11 +183,32 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   );
 }
 
-const WAHL: { id: ThemeWahl; label: string; icon: string }[] = [
-  { id: 'system', label: 'wie System', icon: '◐' },
-  { id: 'hell', label: 'Hell', icon: '☀' },
-  { id: 'dunkel', label: 'Dunkel', icon: '☾' },
+const WAHL: { id: ThemeWahl; label: string; kurz: string }[] = [
+  { id: 'system', label: 'wie System', kurz: 'Auto' },
+  { id: 'hell', label: 'Hell', kurz: 'Hell' },
+  { id: 'dunkel', label: 'Dunkel', kurz: 'Dunkel' },
 ];
+
+/** Symbol des Farbschemas, gezeichnet statt Schriftzeichen (◐ ☀ ☾ fallen je nach Schrift winzig oder gar nicht aus) */
+function SchemaSymbol({ id }: { id: ThemeWahl }) {
+  return (
+    <svg className="schema-symbol" viewBox="0 0 16 16" width="14" height="14" aria-hidden focusable="false">
+      {id === 'hell' && (
+        <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="8" cy="8" r="3" />
+          <path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1" />
+        </g>
+      )}
+      {id === 'dunkel' && <path d="M10.5 2.2A6 6 0 1 0 13.8 10 4.8 4.8 0 0 1 10.5 2.2Z" fill="currentColor" />}
+      {id === 'system' && (
+        <g>
+          <circle cx="8" cy="8" r="5.75" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M8 2.25a5.75 5.75 0 0 1 0 11.5Z" fill="currentColor" />
+        </g>
+      )}
+    </svg>
+  );
+}
 
 export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean }) {
   const { wahl, setWahl, canvasDunkel, setCanvasDunkel } = useTheme();
@@ -206,8 +227,8 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
   const cur = WAHL.find((w) => w.id === wahl)!;
   return (
     <div className="titlebar-menu" ref={ref}>
-      <button className="titlebar-btn" title={`Farbschema: ${cur.label}`} onClick={() => setOpen(!open)}>
-        <span aria-hidden>{cur.icon}</span>
+      <button className="titlebar-btn" title={`Farbschema: ${cur.label}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <SchemaSymbol id={wahl} /> {cur.kurz}
       </button>
       {open && (
         <div className="titlebar-dropdown" role="menu">
@@ -223,7 +244,10 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
                 setOpen(false);
               }}
             >
-              <span className="tb-icon">{w.icon}</span> {w.label}
+              <span className="tb-icon">
+                <SchemaSymbol id={w.id} />
+              </span>{' '}
+              {w.label}
             </button>
           ))}
           {zeichenflaeche && (

@@ -4,6 +4,22 @@
  */
 
 :root {
+  /* Skalen (docs/design.md): Abstände in 4er-Schritten, Schriftgrade, Ecken, Höhe der Bedienelemente */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --fs-xs: 11px;
+  --fs-s: 12px;
+  --fs-m: 13px;
+  --fs-l: 15px;
+  --fs-xl: 18px;
+  --radius-s: 4px;
+  --radius: 6px;
+  --ctl-h: 28px;
+  --ctl-h-s: 24px;
   --bg: #f3f4f6;
   --panel: #ffffff;
   --border: #d8dbe0;
@@ -13,6 +29,8 @@
   --accent-hover: #2350bf;
   --accent-soft: #e6edfb;
   --sel: #ff7a00;
+  /* Auswahl auf Fotos (RECTIO): Magenta, weil Orange mit Mess- und Markierungsfarben und Fassadentönen kollidiert */
+  --sel-foto: #d81b8c;
   --danger: #c0392b;
   --canvas: #fbfbfa;
   --input-bg: #ffffff;
@@ -43,9 +61,12 @@
   --scroll-thumb: color-mix(in srgb, var(--text) 22%, transparent);
   --scroll-thumb-hover: color-mix(in srgb, var(--text) 38%, transparent);
   --scroll-track: transparent;
+  /* Fokus: Rahmen bei Tastaturbedienung, Saum um das aktive Eingabefeld */
+  --fokus: var(--accent);
+  --fokus-saum: color-mix(in srgb, var(--accent) 35%, transparent);
   color-scheme: light;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  font-size: 13px;
+  font-size: var(--fs-m);
   color: var(--text);
   background: var(--bg);
 }
@@ -273,11 +294,11 @@ button.icon {
 }
 
 .sidebar h2 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  margin: 0 0 8px;
+  /* Satzschreibung statt Versalien: liest sich schneller, auch bei langen Titeln („Referenz · Ebene 1“) */
+  font-size: var(--fs-m);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 var(--s2);
 }
 
 .sidebar h3 {
@@ -346,9 +367,33 @@ input.num {
 }
 
 input:focus,
-select:focus {
-  outline: 2px solid var(--accent-soft);
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--fokus-saum);
+  outline-offset: 0;
   border-color: var(--accent);
+}
+
+/* ---------- Fokus und Zielgrößen ---------- */
+
+/* Tastaturfokus sichtbar an allen Bedienelementen (Maus: kein Rahmen – :focus-visible) */
+:where(button, a[href], summary, [tabindex]:not([tabindex='-1']), [role='button']):focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: 1px;
+}
+:where(input[type='checkbox'], input[type='radio'], input[type='range']):focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+}
+
+/* Bedienelemente in Leisten, Knopfreihen, Dialogen und Feldern mindestens --ctl-h hoch; kleine und Symbolknöpfe
+   --ctl-h-s. :where() hält die Spezifität bei null – App-Regeln mit eigener Höhe gehen vor. */
+:where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button),
+:where(.field) :where(select, input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])) {
+  min-height: var(--ctl-h);
+}
+:where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button.small, button.icon) {
+  min-height: var(--ctl-h-s);
 }
 
 .button-row {
@@ -636,7 +681,21 @@ code {
   padding: 6px 12px;
   border-radius: 4px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+/* Meldung, die sich per Klick schließt (Hand nur dort) */
+.canvas-message.klickbar,
+.canvas-message[title] {
   cursor: pointer;
+}
+/* Leerzustand („Foto hinzufügen …“): neutral statt Warnfarbe, mittig auf der Fläche */
+.canvas-message.leer {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--muted);
+  box-shadow: none;
+  text-align: center;
 }
 
 /* ---------- Griffe an Punkten (Zeichenflächen) ---------- */
@@ -956,6 +1015,7 @@ code {
   --accent-hover: #7aa2ff;
   --accent-soft: #24324f;
   --sel: #ff9a3c;
+  --sel-foto: #ff4fb0;
   --danger: #ef6b5b;
   --input-bg: #262a31;
   --hover: #2b3038;
@@ -1070,6 +1130,10 @@ code {
   height: 26px;
   padding: 0 8px;
   color: var(--muted);
+}
+
+.schema-symbol {
+  vertical-align: -2px;
 }
 
 .titlebar-btn:hover:not(:disabled) {
@@ -1371,6 +1435,7 @@ code {
   justify-content: center;
   width: 18px;
   height: 18px;
+  min-height: 0;
   padding: 0;
   margin-left: 6px;
   border-radius: 50%;
