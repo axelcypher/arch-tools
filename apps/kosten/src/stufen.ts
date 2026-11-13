@@ -2,21 +2,12 @@ import type { KostenStufe } from '@core/model';
 import { KOSTEN_STUFEN } from '@core/model';
 
 /**
- * Stufen der Kostenermittlung, wie NUMIO sie anzeigt: Leistungsphasen nach HOAI 2021 (Anlage 10.1),
- * Gliederungstiefe nach DIN 276:2018-12 und nach HOAI § 2 Abs. 10/11 (die dort auf DIN 276:2008-12 verweist).
+ * Stufen der Kostenermittlung: Bezeichnung und Leistungsphase aus `KOSTEN_STUFEN` (core, HOAI 2021 Anlage 10.1),
+ * dazu die Gliederungstiefe nach DIN 276:2018-12 und nach HOAI § 2 Abs. 10/11 (die dort auf DIN 276:2008-12 verweist).
  * Maßgeblich ist die im Vertrag vereinbarte Fassung.
  */
 
-const LPH: Record<KostenStufe, string> = {
-  rahmen: 'LPh 1, Bedarfsplanung',
-  schaetzung: 'LPh 2',
-  berechnung: 'LPh 3',
-  voranschlag: 'LPh 6',
-  anschlag: 'LPh 7',
-  feststellung: 'LPh 8',
-};
-
-export const STUFEN: { id: KostenStufe; label: string; lph: string }[] = KOSTEN_STUFEN.map((s) => ({ ...s, lph: LPH[s.id] }));
+export const STUFEN: { id: KostenStufe; label: string; lph: string }[] = KOSTEN_STUFEN;
 
 /** Stufe ohne Angabe im Projekt: Kostenschätzung (wie die Vorbelegung der Auswahl) */
 export const STUFE_STANDARD: KostenStufe = 'schaetzung';
