@@ -943,7 +943,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           onPointerDownCapture={() => svgRef.current?.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-        onPointerCancel={gesteAbbrechen}
+          onPointerCancel={gesteAbbrechen}
           onPointerLeave={() => setCursor(null)}
           onContextMenu={(e) => e.preventDefault()}
         >

@@ -412,3 +412,17 @@ describe('Einlesen: Grundstücksfläche', () => {
     expect(mit(612.5)).toBe(612.5);
   });
 });
+
+describe('Einlesen: Anteil an Gemeinschaftsanlagen (§ 21a Abs. 2)', () => {
+  it('übernimmt positive Werte, verwirft 0, negative und Text', () => {
+    const mit = (v: unknown) => {
+      const roh = JSON.parse(serializeProject(createProject('T')));
+      roh.massNutzung = { gemeinschaftsanlagen: v };
+      return parseProject(JSON.stringify(roh)).massNutzung?.gemeinschaftsanlagen;
+    };
+    expect(mit(37.5)).toBe(37.5);
+    expect(mit(0)).toBeUndefined();
+    expect(mit(-3)).toBeUndefined();
+    expect(mit('12')).toBeUndefined();
+  });
+});

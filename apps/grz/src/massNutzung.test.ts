@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { rectPoints } from '@core/geometry';
 import type { LageplanFlaeche, Project, Storey } from '@core/model';
 import { createLageplanFlaeche, createOutline, createProject, createRoom, createStorey } from '@core/model';
-import { anrechnung, massNachweis, recht } from './massNutzung';
+import { anrechnung, massNachweis, pctNah, recht } from './massNutzung';
 import { flaechenNummern, rechenweg } from './rechenweg';
 
 /** Haus wie HSA: UG (Keller), EG, OG je 11,25 × 12 m, DG unter Walmdach 45° ab Fußboden; Grundstück 612,50 m² */
@@ -808,5 +808,62 @@ describe('Fachliche Pflichtbefunde Baurecht (P2–P10)', () => {
   it('Auslegung nach Inkrafttreten meldet vertauschte Daten (Gegenprobe: richtige Reihenfolge ohne Hinweis)', () => {
     expect(recht({ planDatum: '1980-01-01', auslegungDatum: '1985-01-01' }).hinweise.some((h) => h.includes('vertauscht'))).toBe(true);
     expect(recht({ planDatum: '1985-01-01', auslegungDatum: '1980-01-01' }).hinweise.some((h) => h.includes('vertauscht'))).toBe(false);
+  });
+});
+
+describe('Folgerunde: Grenzwerte, absolute GR II, Gemeinschaftsanlagen, Aufenthaltsräume', () => {
+  it('Prozente nahe der Schwelle mit Nachkommastellen und Hinweis (Gegenprobe: weit weg ganzzahlig)', () => {
+    expect(pctNah(0.7496, 0.75)).toBe('74,96 % (knapp am Grenzwert – Rasterprüfung, im Schnitt nachweisen)');
+    expect(pctNah(0.735, 0.75)).toBe('73,5 %');
+    expect(pctNah(0.5, 0.75)).toBe('50 %');
+  });
+
+  it('BauNVO 1990 mit absoluter GR: GR II höchstens 1,5 × GR (Gegenprobe: ohne absolute GR keine Prüfung)', () => {
+    const p = haus('2020-05-01');
+    lageplan(p, flaeche(12, 0, 15, 20, { name: 'Zufahrt', nutzung: 'zufahrt' }));
+    p.massNutzung = { ...p.massNutzung, grAbsolut: 140 };
+    const n = massNachweis(p);
+    expect(n.gr2Absolut?.zulaessig).toBeCloseTo(210, 6);
+    expect(n.gr2Absolut?.flaeche).toBeCloseTo(195, 6);
+    expect(n.gr2Absolut?.status).toBe('ok');
+    p.massNutzung = { ...p.massNutzung, grAbsolut: 120 };
+    expect(massNachweis(p).gr2Absolut?.status).toBe('ueberschritten');
+    p.massNutzung = { ...p.massNutzung, grAbsolut: undefined };
+    expect(massNachweis(p).gr2Absolut).toBeUndefined();
+  });
+
+  it('§ 21a Abs. 2: Anteil an Gemeinschaftsanlagen wird ab 1968 hinzugerechnet, 1962 nicht (mit Hinweis)', () => {
+    const p = haus('2020-05-01');
+    p.massNutzung = { ...p.massNutzung, gemeinschaftsanlagen: 37.5 };
+    const n = massNachweis(p);
+    expect(n.grundstueck.flaeche).toBeCloseTo(650, 6);
+    expect(n.grundstueck.basis).toBeCloseTo(612.5, 6);
+    expect(rechenweg(n).formeln[0]).toContain('Anteil an Gemeinschaftsanlagen');
+    const alt = haus('1965-05-01');
+    alt.massNutzung = { ...alt.massNutzung, gemeinschaftsanlagen: 37.5 };
+    const m = massNachweis(alt);
+    expect(m.grundstueck.flaeche).toBeCloseTo(612.5, 6);
+    expect(m.hinweise.some((h) => h.text.includes('BauNVO 1962 kennt keine Regel'))).toBe(true);
+  });
+
+  it('Wohnraum ohne lichte Höhe: „prüfen“ mit Hinweis statt stillschweigend kein Aufenthaltsraum (Gegenprobe: von Hand festgelegt)', () => {
+    const p = haus('1970-08-01');
+    // DG unter Walmdach: Zimmer in der Ecke mit wenig Höhe
+    p.storeys[3].shapes.push(createRoom(rectPoints({ x: 0.2, y: 0.2 }, { x: 1.5, y: 1.5 }), '9', 'Kinderzimmer'));
+    const n = massNachweis(p);
+    const r = n.raeume.find((x) => x.name === '9 Kinderzimmer')!;
+    expect(r.zuPruefen).toBe(true);
+    expect(r.begruendung.startsWith('prüfen')).toBe(true);
+    expect(n.hinweise.some((h) => h.text.includes('9 Kinderzimmer') && h.text.includes('ohne die geforderte lichte Höhe'))).toBe(true);
+    const q = structuredClone(p);
+    const raum = q.storeys[3].shapes.find((x) => x.kind === 'room' && x.name === 'Kinderzimmer');
+    if (raum && raum.kind === 'room') raum.aufenthalt = 'ja';
+    expect(massNachweis(q).raeume.find((x) => x.name === '9 Kinderzimmer')!.zuPruefen).toBe(false);
+  });
+
+  it('Wohngebäude GK 1/2 nach BauO NRW 2018: 2,30 m statt 2,40 m nur mit Schalter', async () => {
+    const { aufenthaltAnforderung } = await import('./massNutzung');
+    expect(aufenthaltAnforderung('nrw2019', { dachraumOderKeller: false, kleinesWohngebaeude: true }).hoehe).toBe(2.3);
+    expect(aufenthaltAnforderung('nrw2019', { dachraumOderKeller: false, kleinesWohngebaeude: false }).hoehe).toBe(2.4);
   });
 });

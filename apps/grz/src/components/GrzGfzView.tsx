@@ -149,6 +149,11 @@ export function GrzGfzView() {
             />
           </Field>
         </div>
+        {n.recht.baunvo !== '1962' && (
+          <Field label="Anteil an Gemeinschaftsanlagen [m²]" hint="nur bei Festsetzung: wird der Grundstücksfläche hinzugerechnet (§ 21a Abs. 2 BauNVO)">
+            <NumberField value={m.gemeinschaftsanlagen} allowEmpty min={0} onChange={(v) => setM({ gemeinschaftsanlagen: v || undefined })} />
+          </Field>
+        )}
         <h3>Bebauungsplan</h3>
         <div className="field-row grz-bplan-zeile">
           <Field label="Nummer">
@@ -312,12 +317,10 @@ export function GrzGfzView() {
             </Field>
           )}
         </div>
-        {n.recht.bauo === 'nw1962' && (
-          <label className="toggle block">
-            <input type="checkbox" checked={!!m.einfamilienhaus} onChange={(e) => setM({ einfamilienhaus: e.target.checked || undefined })} />
-            Einfamilienhaus (lichte Höhe für Aufenthaltsräume 2,30 statt 2,50 m)
-          </label>
-        )}
+        <label className="toggle block" title={n.recht.bauo === 'nw1962' ? 'BauO NW 1962/1970 § 59' : 'nur, wenn die Bauaufsicht es gestattet (z. B. § 46 Abs. 1 S. 3 BauO NRW 2018)'}>
+          <input type="checkbox" checked={!!m.einfamilienhaus} onChange={(e) => setM({ einfamilienhaus: e.target.checked || undefined })} />
+          {n.recht.bauo === 'nw1962' ? 'Einfamilienhaus (lichte Höhe für Aufenthaltsräume 2,30 statt 2,50 m)' : 'Wohngebäude Gebäudeklasse 1/2: lichte Höhe 2,30 statt 2,40 m gestattet'}
+        </label>
         {gebaeudeteile.length > 0 && (
           <>
             <h3>Gebäudeteile</h3>
@@ -618,6 +621,7 @@ export function GrzGfzView() {
           {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
           <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" />
           {n.grAbsolut && <AbsolutKpi titel={n.recht.baunvo === '1990' ? 'GR I absolut' : 'GR absolut'} a={n.grAbsolut} />}
+          {n.gr2Absolut && <AbsolutKpi titel="GR II absolut (1,5 × GR)" a={n.gr2Absolut} />}
           {n.gfAbsolut && <AbsolutKpi titel="GF absolut" a={n.gfAbsolut} />}
           {n.bmz && <KpiZeile titel="BMZ" k={n.bmz} einheit="Baumasse" kurz="BM" />}
           <div className={`kpi${n.vollgeschosse.status === 'ueberschritten' || n.vollgeschosse.status === 'unterschritten' ? ' alarm' : ''}`}>
@@ -769,7 +773,17 @@ export function GrzGfzView() {
                     <tr key={r.roomId} title={r.anforderung.text}>
                       <td>{project.storeys.find((s) => s.id === r.storeyId)?.name}</td>
                       <td>
-                        <div>{r.name}</div>
+                        <div>
+                          {r.name}
+                          {r.zuPruefen && (
+                            <>
+                              {' '}
+                              <span className="pill warn" title="nach Nutzung Aufenthaltsraum, aber ohne die geforderte lichte Höhe">
+                                prüfen
+                              </span>
+                            </>
+                          )}
+                        </div>
                         <select
                           className={r.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
                           aria-label={`Einstufung ${r.name}`}

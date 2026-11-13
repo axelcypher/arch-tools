@@ -135,7 +135,14 @@ export const useGrz = create<GrzState>()((set, get) => ({
     if (!past.length) return;
     const a = pastAktionen[pastAktionen.length - 1] ?? 'Änderung';
     const zurueck = past[past.length - 1];
-    set({ project: zurueck, past: past.slice(0, -1), future: [project, ...future], pastAktionen: pastAktionen.slice(0, -1), futureAktionen: [a, ...futureAktionen], dirty: weichtAb(zurueck, get().basis) });
+    set({
+      project: zurueck,
+      past: past.slice(0, -1),
+      future: [project, ...future],
+      pastAktionen: pastAktionen.slice(0, -1),
+      futureAktionen: [a, ...futureAktionen],
+      dirty: weichtAb(zurueck, get().basis),
+    });
     auswahlBereinigen(set, get);
   },
   redo: () => {

@@ -154,6 +154,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
                 {n.grundstueck.quelle === 'lageplan' && ' (aus dem Lageplan)'}
                 {n.grundstueck.quelle === 'grenze' && ' (aus der gezeichneten Grenze)'}
                 {n.grundstueck.quelle === 'projektdaten' && n.grundstueck.grenze !== undefined && ` (gezeichnete Grenze ${fmt2(n.grundstueck.grenze)} m²)`}
+                {n.grundstueck.gemeinschaftsanlagen !== undefined && ` – darin ${fmt2(n.grundstueck.gemeinschaftsanlagen)} m² Anteil an Gemeinschaftsanlagen (§ 21a Abs. 2 BauNVO)`}
               </td>
             </tr>
             <tr>
@@ -184,6 +185,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
             {n.grz2 && <KennzahlZeile titel="GRZ II (§ 19 Abs. 4)" kurz="GR II" k={n.grz2} />}
             <KennzahlZeile titel="GFZ" kurz="GF" k={n.gfz} />
             {n.grAbsolut && <AbsolutZeile titel={vor1990 ? 'GR (absolut)' : 'GR I (absolut)'} a={n.grAbsolut} />}
+            {n.gr2Absolut && <AbsolutZeile titel="GR II (1,5 × GR)" a={n.gr2Absolut} />}
             {n.gfAbsolut && <AbsolutZeile titel="GF (absolut)" a={n.gfAbsolut} />}
             {n.bmz && <KennzahlZeile titel="BMZ" kurz="BM" k={n.bmz} />}
             <tr>

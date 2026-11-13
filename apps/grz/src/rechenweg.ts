@@ -59,6 +59,8 @@ export function rechenweg(n: Nachweis, nr: Map<string, number> = flaechenNummern
   const eigene = n.lageplan.filter((l) => !l.nachbar);
   const angerechnet = eigene.reduce((a, l) => a + l.angerechnet, 0) + (n.unterirdisch?.angerechnet ?? 0);
   const formeln: string[] = [];
+  if (n.grundstueck.gemeinschaftsanlagen !== undefined && n.grundstueck.basis !== undefined)
+    formeln.push(`FGst = Grundstück ${m2(n.grundstueck.basis)} + Anteil an Gemeinschaftsanlagen (§ 21a Abs. 2 BauNVO) ${m2(n.grundstueck.gemeinschaftsanlagen)} = ${m2(G!)}`);
   if (vor1990) {
     const garagen = n.garagenFrei ?? 0;
     const teile = [`Hauptanlage ${m2(n.hauptanlage)}`];
