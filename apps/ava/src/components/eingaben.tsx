@@ -36,6 +36,8 @@ export function ZahlEingabe({
   const [text, setText] = useState(zahlDE(wert, stellen));
   const [fehler, setFehler] = useState(false);
   const fokus = useRef(false);
+  // Esc: Verlassen des Felds danach übernimmt nichts (sonst käme der verworfene Text über den alten Zustand doch an)
+  const verworfen = useRef(false);
   useEffect(() => {
     if (!fokus.current) setText(zahlDE(wert, stellen));
   }, [wert, stellen]);
@@ -77,6 +79,10 @@ export function ZahlEingabe({
       }}
       onBlur={() => {
         fokus.current = false;
+        if (verworfen.current) {
+          verworfen.current = false;
+          return;
+        }
         uebernehmen();
       }}
       onChange={(e) => setText(e.target.value)}
@@ -85,8 +91,11 @@ export function ZahlEingabe({
           uebernehmen();
           onEnter?.();
         } else if (e.key === 'Escape') {
+          // geändertes Feld: Esc setzt nur das Feld zurück und schließt nicht zugleich den Dialog
+          if (text !== zahlDE(wert, stellen) || fehler) e.preventDefault();
           setText(zahlDE(wert, stellen));
           setFehler(false);
+          verworfen.current = true;
           (e.target as HTMLInputElement).blur();
         }
       }}
@@ -124,6 +133,7 @@ export function TextEingabe({
 }) {
   const [text, setText] = useState(wert ?? '');
   const fokus = useRef(false);
+  const verworfen = useRef(false);
   useEffect(() => {
     if (!fokus.current) setText(wert ?? '');
   }, [wert]);
@@ -140,6 +150,10 @@ export function TextEingabe({
     },
     onBlur: () => {
       fokus.current = false;
+      if (verworfen.current) {
+        verworfen.current = false;
+        return;
+      }
       if (text !== (wert ?? '')) onChange(text);
     },
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setText(e.target.value),
@@ -152,7 +166,9 @@ export function TextEingabe({
       onKeyDown={(e) => {
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
         if (e.key === 'Escape') {
+          if (text !== (wert ?? '')) e.preventDefault();
           setText(wert ?? '');
+          verworfen.current = true;
           (e.target as HTMLInputElement).blur();
         }
       }}

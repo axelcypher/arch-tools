@@ -111,7 +111,6 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
               </th>
               <th>Stand</th>
               <th title="Wo die Rechnung vorkommt: Rechnungsliste, Gewerkblatt der Kostenkontrolle, PDF im Auftragsordner, Prüfung in der App">Quellen</th>
-              <th>Hinweise</th>
               <th />
             </tr>
           </thead>
@@ -120,7 +119,10 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
               <tr key={`${r.gewerk}${r.schluessel}`} className={r.hinweise.length ? 'ava-mit-hinweis' : ''} onDoubleClick={() => r.datensatz && setAnsehen(r.datensatz)}>
                 <td className="num">{String(r.nr ?? '')}</td>
                 {!gewerk && <td className="ava-kennung">{gewerkZweistellig(r.gewerk)}</td>}
-                <td>{r.text}</td>
+                <td>
+                  {r.text}
+                  {r.hinweise.length > 0 && <div className="ava-hinweis-zelle">{r.hinweise.join(' ')}</div>}
+                </td>
                 <td>{datumDE(r.datum)}</td>
                 <td>{datumDE(r.freigabe)}</td>
                 <td className="num">{euro(r.betrag)}</td>
@@ -133,7 +135,6 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
                   <Quelle an={!!r.datei} text="PDF" titel={r.datei?.name ?? 'PDF im Auftragsordner'} />
                   <Quelle an={!!r.datensatz} text="Prüfung" titel="Prüfung in der App (Projektdatei)" />
                 </td>
-                <td className="ava-hinweis-zelle">{r.hinweise.join(' ')}</td>
                 <td className="ava-aktionen">
                   {r.datei && (
                     <button className="small" onClick={() => oeffnen(r.datei!.pfad)} title={r.datei.name}>

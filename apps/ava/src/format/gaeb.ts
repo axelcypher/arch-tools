@@ -529,7 +529,7 @@ export function angebotUebernehmen(lv: Lv, g: GaebGelesen, bieterId?: number): A
       const ep = preise.get(s);
       if (ep === undefined) {
         // vorhandener Bieter: Preise, die in der neuen Datei fehlen, nicht stehen lassen
-        if (bieterId === undefined || !e.preise[String(id)]) return e;
+        if (bieterId === undefined || !e.preise[String(id)] || (e.nachtrag ?? 0) > 0) return e; // Nachtragspreise stehen nie im Hauptangebot
         const rest = { ...e.preise };
         delete rest[String(id)];
         return { ...e, preise: rest };

@@ -1958,10 +1958,16 @@ input.ava-fehler {
 }
 
 .ava-rechnungen .ava-hinweis-zelle {
-  min-width: 160px;
+  margin-top: 2px;
 }
 
 .ava-rechnungen td.num,
 .ava-rechnungen th.num {
   white-space: nowrap;
+}
+
+/* Textfelder (mehrzeilig) mit demselben Fokusrahmen wie einzeilige Felder (base.css: input/select) */
+textarea:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
 }

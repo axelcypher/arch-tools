@@ -147,6 +147,17 @@ export interface Rang {
 }
 
 /**
+ * Abstand zum günstigsten vollständigen Angebot als Text: „+5,0 %“, beim Ersten leer; unvollständige Angebote sind
+ * nicht vergleichbar (ihre Summe ist durch die fehlenden Preise zu niedrig).
+ */
+export function abstandText(r: Rang): string {
+  if (r.unvollstaendig) return 'nicht vergleichbar';
+  if (r.rang <= 1) return '';
+  const z = r.abstand.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `${r.abstand > 0 ? '+' : ''}${z} %`;
+}
+
+/**
  * Rangfolge der Bieter nach Angebotssumme netto (nach Nachlass). Unvollständige Angebote (fehlende Preise)
  * stehen hinter den vollständigen – ihre Summe ist zu niedrig und nicht vergleichbar – und sind gekennzeichnet.
  */

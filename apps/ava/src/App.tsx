@@ -6,7 +6,8 @@ import { projektdateiSchreiben } from '@core/platform/projektordner';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { LogDialog } from '@core/ui/LogDialog';
 import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
-import { aenderungenSpeichern, meldung } from '@core/ui/Rueckfrage';
+import { aenderungenSpeichern, bestaetigen, meldung } from '@core/ui/Rueckfrage';
+import { ASLV_NICHT_GESPEICHERT, aslvVerluste } from './format/aslv';
 import { TitleBar } from '@core/ui/TitleBar';
 import { Navigation } from './components/Navigation';
 import { Uebersicht } from './components/Uebersicht';
@@ -42,6 +43,20 @@ export async function lvWeiter(): Promise<boolean> {
 export async function lvSpeichernMitMeldung(): Promise<boolean> {
   // laufende Eingabe (Langtext, Zahl- oder Textfeld) zuerst übernehmen – sonst fehlt sie in der Datei
   eingabeAbschliessen();
+  // .aslv kann manche Angaben nicht halten: vor dem Schreiben sagen, was verloren ginge
+  const offen = useAva.getState().lv;
+  if (offen?.format === 'aslv') {
+    const verluste = aslvVerluste(offen.basis, offen.lv);
+    if (
+      verluste.length &&
+      !(await bestaetigen(
+        'Angaben gehen verloren',
+        `Eine LV-Datei (.aslv) kann folgende geänderte Angaben nicht speichern: ${verluste.map((v) => ASLV_NICHT_GESPEICHERT[v]).join(', ')}. Sie fehlen nach dem nächsten Öffnen. Trotzdem speichern?`,
+        'Trotzdem speichern',
+      ))
+    )
+      return false;
+  }
   try {
     return await useAva.getState().lvSpeichern();
   } catch (e) {

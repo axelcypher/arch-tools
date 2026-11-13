@@ -93,6 +93,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
   const projekt = useAva((s) => s.projekt)!;
   const e = useAva((s) => s.einstellungen);
   const [neuerTop, setNeuerTop] = useState<string | null>(null);
+  const [mailHinweis, setMailHinweis] = useState('');
   /** Änderung auf dem frischen Stand des Protokolls (zwei schnelle Eingaben überschreiben sich nicht) */
   const setze = (patch: Partial<Protokoll> | ((x: Protokoll) => Partial<Protokoll>)) =>
     void speichern((a) => ({ ...a, protokolle: a.protokolle.map((x) => (x.id === p.id ? { ...x, ...(typeof patch === 'function' ? patch(x) : patch) } : x)) }));
@@ -111,14 +112,17 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
       }
       const v = e.mail.vorlagen.find((x) => x.id === 'protokoll') ?? e.mail.vorlagen[0];
       const an = p.teilnehmer.map((t) => t.email).filter((x): x is string => !!x);
+      setMailHinweis('');
+      if (!an.length && !(await bestaetigen('Keine E-Mail-Adressen', 'Kein Teilnehmer hat eine E-Mail-Adresse. Den Mailentwurf trotzdem ohne Empfänger erstellen?', 'Ohne Empfänger erstellen'))) return;
       const werte = { ...globaleAva(projekt.meta, projekt.name, e.deckblatt.bearbeiter), Nr: String(p.nr), Protokolldatum: datumKurz(p.datum), Teilnehmer: an.join('; ') };
-      await mitPdfMailen({
+      const ok = await mitPdfMailen({
         an,
         betreff: vorlageFuellen(v?.betreff ?? 'Protokoll Nr. {Nr} vom {Protokolldatum}', werte, MAIL_PROTOKOLL_VARIABLEN),
         text: vorlageFuellen(v?.text ?? '', werte, MAIL_PROTOKOLL_VARIABLEN),
         name,
         pdf: daten,
       });
+      if (ok) setMailHinweis(an.length ? `Mailentwurf an ${an.length} Teilnehmer geöffnet` : 'Mailentwurf ohne Empfänger geöffnet');
     } catch (x) {
       await meldung('PDF nicht erzeugt', String(x instanceof Error ? x.message : x), x);
     }
@@ -299,6 +303,11 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
         <button onClick={() => void pdf('mail')} title="Mailentwurf an alle Teilnehmer mit E-Mail, Protokoll als PDF im Anhang">
           An die Teilnehmer mailen …
         </button>
+        {mailHinweis && (
+          <span className="ava-ok small-text" role="status">
+            {mailHinweis}
+          </span>
+        )}
         <span className="tb-spacer" />
         <button
           className="danger"

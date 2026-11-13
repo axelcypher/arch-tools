@@ -32,7 +32,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
   const vergeben = async (id: number) => {
     const r = rang.find((x) => x.id === id);
     if (r?.unvollstaendig && !(await bestaetigen('Unvollständiges Angebot', `Im Angebot von „${lv!.bieter.find((b) => b.id === id)?.name}“ fehlen ${r.ohnePreis} Preis(e). Angebote ohne alle geforderten Preise sind in der Regel auszuschließen (§ 16a VOB/A) – trotzdem die Vergabe an diesen Bieter vermerken?`, 'Trotzdem vermerken'))) return;
-    aendern((l) => ({ ...l, auftrag: { bieterId: id, datum: l.auftrag?.datum ?? heuteIso() } }));
+    aendern((l) => ({ ...l, auftrag: { bieterId: id, ...(nurAslv ? (l.auftrag?.datum ? { datum: l.auftrag.datum } : {}) : { datum: l.auftrag?.datum ?? heuteIso() }) } }));
   };
 
   const angabenSetzen = (patch: Partial<GewerkAngaben>) =>

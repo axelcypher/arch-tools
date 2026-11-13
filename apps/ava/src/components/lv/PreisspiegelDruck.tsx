@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { heuteIso } from '../../lv/modell';
-import { rangfolge, summen } from '../../lv/rechnen';
+import { rangfolge, summen, abstandText } from '../../lv/rechnen';
 import { datumDE, euro } from '../../abrechnung/pruefung';
 import { useAva } from '../../store';
 import { Druck } from '../Druck';
-import { zahlDE } from '../eingaben';
 import { Preisspiegel } from './Angebote';
 
 /** Preisspiegel zum Drucken (A4 quer) mit Rangfolge und Vergabevorschlag */
@@ -47,7 +46,7 @@ export function PreisspiegelDruck({ onClose }: { onClose: () => void }) {
               </td>
               <td className="num">{euro(r.netto)}</td>
               <td className="num">{euro(s.bieter.get(r.id)?.brutto)}</td>
-              <td className="num">{r.rang > 1 ? `+${zahlDE(r.abstand, 1)} %` : ''}</td>
+              <td className="num">{abstandText(r)}</td>
             </tr>
           ))}
         </tbody>

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { musterLv } from '../__fixtures__/muster';
 import type { Lv, Position } from './modell';
 import { leeresLv, neueId, ozDubletten } from './modell';
-import { auffaellig, brutto, gesamtbetrag, rangfolge, rund2, spiegelzeile, summen, ustBetrag } from './rechnen';
+import { abstandText, auffaellig, brutto, gesamtbetrag, rangfolge, rund2, spiegelzeile, summen, ustBetrag } from './rechnen';
 
 const pos = (oz: string, menge: number | null, preise: Position['preise'], extra: Partial<Position> = {}): Position => ({
   id: neueId(),
@@ -132,5 +132,18 @@ describe('OZ-Dubletten', () => {
     const lv = lvMit([pos('0010', 1, {}), pos('10', 1, {}), pos('0020', 1, {})]);
     expect(ozDubletten(lv).map((d) => [d.oz, d.ids.length])).toEqual([['01.0010', 2]]);
     expect(ozDubletten(musterLv())).toEqual([]);
+  });
+});
+
+describe('abstandText (Abstand zum günstigsten vollständigen Angebot)', () => {
+  const r = (x: Partial<Parameters<typeof abstandText>[0]>) => ({ id: 1, netto: 100, rang: 2, abstand: 5, ohnePreis: 0, unvollstaendig: false, ...x });
+  it('Erster leer, sonst mit Vorzeichen aus der Zahl', () => {
+    expect(abstandText(r({ rang: 1, abstand: 0 }))).toBe('');
+    expect(abstandText(r({ abstand: 5 }))).toBe('+5,0 %');
+  });
+  it('unvollständiges Angebot: „nicht vergleichbar“ statt doppeltem Vorzeichen (Gegenprobe zu „+-95,0 %“)', () => {
+    const t = abstandText(r({ rang: 3, abstand: -95, unvollstaendig: true, ohnePreis: 4 }));
+    expect(t).toBe('nicht vergleichbar');
+    expect(t).not.toContain('+-');
   });
 });

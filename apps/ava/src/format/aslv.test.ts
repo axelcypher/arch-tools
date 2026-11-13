@@ -213,3 +213,16 @@ describe('eigenes Format (.oalv)', () => {
     expect(() => eigenLesen(new TextEncoder().encode('kein json'))).toThrow(/kein gültiges JSON/);
   });
 });
+
+describe('aslvVerluste beim Anlegen aus GAEB', () => {
+  it('Wahlposition in einem neuen LV wird gemeldet (Rückfrage „als .oalv anlegen“), reine Normalpositionen nicht', async () => {
+    const { leeresLv, neueId } = await import('../lv/modell');
+    const { aslvVerluste } = await import('./aslv');
+    const lv = leeresLv('Import');
+    const p = { id: neueId(), art: 'position' as const, oz: '0010', kurztext: 'Fenster', langtext: [], einheit: 'Stck', menge: 1, positionsart: 'normal' as const, preise: {} };
+    lv.elemente = [p, { ...p, id: neueId(), oz: '0020', positionsart: 'wahl' as const }];
+    expect(aslvVerluste(leeresLv(''), lv)).toContain('positionsart');
+    lv.elemente = [p];
+    expect(aslvVerluste(leeresLv(''), lv)).toEqual([]);
+  });
+});

@@ -3,7 +3,7 @@ import { bestaetigen, frageText } from '@core/ui/Rueckfrage';
 import type { Bieter, Position } from '../../lv/modell';
 import { aendereElement, heuteIso } from '../../lv/modell';
 import { ASLV_NICHT_GESPEICHERT } from '../../format/aslv';
-import { auffaellig, gewerteteBieter, rangfolge, spiegelzeile, summen } from '../../lv/rechnen';
+import { auffaellig, gewerteteBieter, rangfolge, spiegelzeile, summen, abstandText } from '../../lv/rechnen';
 import { euro } from '../../abrechnung/pruefung';
 import { useAva } from '../../store';
 import { DatumEingabe, TextEingabe, zahlDE, ZahlEingabe } from '../eingaben';
@@ -156,7 +156,7 @@ export function Angebote() {
                   </td>
                   <td className="num">{euro(sb?.netto)}</td>
                   <td className="num">{euro(sb?.brutto)}</td>
-                  <td className="num">{r && r.rang > 1 ? `+${zahlDE(r.abstand, 1)} %` : ''}</td>
+                  <td className="num">{r ? abstandText(r) : ''}</td>
                   <td className={sb && sb.ohnePreis > 0 && x.id !== 0 ? 'ava-ueber' : ''} title={sb && sb.ohnePreis > 0 ? `${sb.ohnePreis} Position(en) ohne Preis` : undefined}>
                     {sb ? `${sb.mitPreis}/${sb.mitPreis + sb.ohnePreis}` : ''}
                   </td>

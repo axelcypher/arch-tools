@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { bestaetigen, frageText, meldung } from '@core/ui/Rueckfrage';
-import { neuNummerieren } from '../lv/modell';
+import { leeresLv, neuNummerieren } from '../lv/modell';
+import { ASLV_NICHT_GESPEICHERT, aslvVerluste } from '../format/aslv';
 import { gewerkZweistellig } from '../abrechnung/gewerk';
 import { vollerPfad } from '../dateien';
 import type { LvDatei } from '../projekt';
@@ -76,9 +77,16 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
     try {
       const r = await gaebWaehlen(g ? vollerPfad(projekt.ordner, g.pfad) : projekt.ordner);
       if (!r) return;
-      const bez = await frageText('LV aus GAEB anlegen', r.g.lv.kopf.bezeichnung || `${gewerkZweistellig(gewerk)} ${name}`, 'Anlegen', `${r.name} (X${r.g.dp}): ${r.g.lv.elemente.length} Element(e) auf oberster Ebene. Wird als ${einstellungen.lv.neuesFormat === 'aslv' ? 'LV-Datei (.aslv)' : 'eigene LV-Datei (.oalv)'} angelegt.`);
+      // Grund-, Wahl- oder Zulagepositionen o. Ä. hält die .aslv nicht: dann im eigenen Format anlegen (nach Rückfrage)
+      let format = einstellungen.lv.neuesFormat;
+      const verluste = format === 'aslv' ? aslvVerluste(leeresLv(''), r.g.lv) : [];
+      if (verluste.length) {
+        if (!(await bestaetigen('Als eigene LV-Datei anlegen?', `Die GAEB-Datei enthält Angaben, die eine LV-Datei (.aslv) nicht speichern kann: ${verluste.map((v) => ASLV_NICHT_GESPEICHERT[v]).join(', ')}. Als .aslv würden sie verloren gehen und Summen könnten sich ändern. Stattdessen als eigene LV-Datei (.oalv) anlegen?`, 'Als .oalv anlegen'))) return;
+        format = 'oalv';
+      }
+      const bez = await frageText('LV aus GAEB anlegen', r.g.lv.kopf.bezeichnung || `${gewerkZweistellig(gewerk)} ${name}`, 'Anlegen', `${r.name} (X${r.g.dp}): ${r.g.lv.elemente.length} Element(e) auf oberster Ebene. Wird als ${format === 'aslv' ? 'LV-Datei (.aslv)' : 'eigene LV-Datei (.oalv)'} angelegt.`);
       if (!bez) return;
-      await useAva.getState().lvNeu(g, gewerk, einstellungen.lv.neuesFormat, bez, r.g.lv);
+      await useAva.getState().lvNeu(g, gewerk, format, bez, r.g.lv);
     } catch (e) {
       await meldung('GAEB-Import fehlgeschlagen', String(e instanceof Error ? e.message : e), e);
     }
