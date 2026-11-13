@@ -2,8 +2,9 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { NumberField, TextField } from '@core/ui/fields';
 import type { DxfStil, KatasterPlan, VorlageInfo } from '../kataster/kataster';
-import { ausschnitt, KATASTER_VARIABLEN, KATASTER_ZIEL_VARIABLEN, karteVon, planDateiname, planFehler } from '../kataster/kataster';
+import { ausschnitt, KATASTER_VARIABLEN, KATASTER_ZIEL_VARIABLEN, karteVon, planDateiname, planFehler, VORGABE_BESCHRIFTUNG } from '../kataster/kataster';
 import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
+import { bestaetigen } from '@core/ui/Rueckfrage';
 import { useKataster } from '../kataster/katasterStore';
 import { tauriQgis } from '../kataster/qgis';
 import { hatDateisystem } from '../dateisystem';
@@ -47,6 +48,10 @@ function Wahl({ wert, werte, leer, label, onChange }: { wert: string; werte: str
 function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: VorlageInfo | null; erster: boolean; letzter: boolean }) {
   const { planAendern, planEntfernen, planVerschieben } = useKataster.getState();
   const setzen = (patch: Partial<KatasterPlan>) => void planAendern(plan.id, patch);
+  // die Pläne gelten für alle im Büro (gemeinsamer Konfigurationsordner) – vor dem Entfernen nachfragen
+  const entfernen = async () => {
+    if (await bestaetigen(`„${plan.name}“ entfernen?`, 'Der Plan fehlt danach im Export-Dialog – für alle, die diese Einstellungen gemeinsam nutzen.', 'Entfernen', true)) await planEntfernen(plan.id);
+  };
   const layout = info?.layouts.find((l) => l.name === plan.layout);
   const karte = info ? karteVon(info, plan) : null;
   const fehler = planFehler(plan, info);
@@ -56,7 +61,7 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
     <div className={`ka-plan${plan.aktiv ? '' : ' inaktiv'}`}>
       <div className="ka-plan-kopf">
         <label className="ka-aktiv" title="Im Export-Dialog vorgewählt">
-          <input type="checkbox" checked={plan.aktiv} onChange={(e) => setzen({ aktiv: e.target.checked })} />
+          <input type="checkbox" checked={plan.aktiv} aria-label={`${plan.name} im Export vorwählen`} onChange={(e) => setzen({ aktiv: e.target.checked })} />
         </label>
         <span className={`ka-art ${plan.art}`}>{plan.art.toUpperCase()}</span>
         <span className="ka-name">
@@ -68,7 +73,7 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
         <button className="icon" disabled={letzter} title="Nach unten" aria-label={`${plan.name} nach unten`} onClick={() => void planVerschieben(plan.id, 1)}>
           ↓
         </button>
-        <button className="icon" title="Plan entfernen" aria-label={`${plan.name} entfernen`} onClick={() => void planEntfernen(plan.id)}>
+        <button className="icon" title="Plan entfernen" aria-label={`${plan.name} entfernen`} onClick={() => void entfernen()}>
           <Symbol name="muell" />
         </button>
       </div>
@@ -126,7 +131,7 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
           </label>
         ) : (
           <>
-            <label>
+            <label className="ka-zwei">
               <span className="field-label">Stil (Symbolik)</span>
               <select value={plan.stil} aria-label="Stil" onChange={(e) => setzen({ stil: e.target.value as DxfStil })}>
                 {STIL.map((s) => (
@@ -142,15 +147,15 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
             </label>
           </>
         )}
-        <label className="es-breit">
-          <span className="field-label">Beschriftung {plan.art === 'pdf' && <code>[% @plan_beschriftung %]</code>}</span>
-          <TextField
-            value={plan.beschriftung}
-            onChange={(v) => setzen({ beschriftung: v })}
-            label="Beschriftung"
-            placeholder={plan.art === 'pdf' ? 'z. B. Auszug aus der Liegenschaftskarte' : 'für DXF ohne Wirkung'}
-          />
-        </label>
+        {/* DXF hat kein Layout – die Beschriftung hätte keine Wirkung */}
+        {plan.art === 'pdf' && (
+          <label className="es-breit">
+            <span className="field-label">
+              Beschriftung <code>[% @plan_beschriftung %]</code> – Platzhalter wie im Dateinamen
+            </span>
+            <TextField value={plan.beschriftung} onChange={(v) => setzen({ beschriftung: v })} label="Beschriftung" placeholder={VORGABE_BESCHRIFTUNG} />
+          </label>
+        )}
       </div>
       {plan.art === 'pdf' && zeigt && !(plan.breite && plan.hoehe) && (
         <p className="muted small-text">
@@ -178,7 +183,6 @@ export function KatasterEinstellungen() {
   const vi = useKataster((s) => s.vorlageInfo);
   const { aendern, vorlageWaehlen, vorlageInfoLaden, programmSetzen, programmSuchen, planHinzufuegen, vorgabenWiederherstellen } = useKataster.getState();
   const [gefunden, setGefunden] = useState<string[] | null>(null);
-  // Desktop-App (Zugriff auf Dateien und Programme)
   // Desktop-App (Zugriff auf Dateien und Programme) – oder ein Ersatz für QGIS (Tests)
   const eigenerZugriff = useKataster((s) => s.qgis !== tauriQgis);
   const desktop = hatDateisystem() || eigenerZugriff;
@@ -186,7 +190,12 @@ export function KatasterEinstellungen() {
     void useKataster.getState().laden();
   }, []);
   const info = vi?.info ?? null;
-  const beispiel = planDateiname(e.dateiname, { name: 'Katasterauszug A4', art: 'pdf' }, { kuerzel: 'BS9', art: 'BAUA', datum: new Date() });
+  // ersetzt alle Pläne in den gemeinsamen Einstellungen des Büros – nur nach Rückfrage
+  const vorgaben = async () => {
+    if (await bestaetigen('Standardpläne wiederherstellen?', 'Die vier Standardpläne ersetzen alle eingerichteten Pläne; eigene Pläne und Änderungen entfallen – für alle, die diese Einstellungen gemeinsam nutzen.', 'Wiederherstellen', true))
+      await vorgabenWiederherstellen();
+  };
+  const beispiel = planDateiname(e.dateiname, { name: 'Katasterplan A4', art: 'pdf' }, { kuerzel: 'BS9', art: 'BAUA', datum: new Date() });
 
   return (
     <>
@@ -195,9 +204,13 @@ export function KatasterEinstellungen() {
         Exportiert wird je Projekt auf der Startseite: Rechtsklick auf das Projekt → „Katasterpläne …“.
       </p>
       <p className="muted">
-        Katasterauszüge (PDF aus Layouts) und DXF-Pläne (Vektorlayer eines Kartenthemas) kommen aus einem QGIS-Projekt als Vorlage – mit den Diensten (WMS/WFS) und Layouts des Büros. QGIS läuft dafür
+        Katasterpläne (PDF aus Layouts) und DXF-Pläne (Vektorlayer eines Kartenthemas) kommen aus einem QGIS-Projekt als Vorlage – mit den Diensten (WMS/WFS) und Layouts des Büros. QGIS läuft dafür
         unsichtbar im Hintergrund (<code>qgis_process</code>, ab QGIS 3.28). Der Plan wird um die Koordinaten der Projektadresse gelegt (EPSG:25832). Beim ersten Export wird die Vorlage in die
         Projektdatei (.oap) übernommen und danach von dort verwendet; „Vorlage aktualisieren“ im Export-Dialog holt die aktuelle Fassung.
+      </p>
+      <p className="muted">
+        Die Pläne sind eine Arbeits- und Planungsgrundlage, kein amtlicher Auszug aus dem Liegenschaftskataster. Für den Bauantrag bleibt der amtliche Auszug bzw. der amtliche Lageplan nach § 3
+        BauPrüfVO NRW nötig.
       </p>
       {!desktop && <p className="warning small-text">Der Export braucht die Desktop-App (QGIS läuft auf diesem Rechner).</p>}
 
@@ -279,6 +292,12 @@ export function KatasterEinstellungen() {
             <span>
               Ordner im Projektordner
               <TextField value={e.zielpfad} onChange={(v) => void aendern({ zielpfad: v })} label="Ordner der Katasterpläne" placeholder="Kataster" />
+              {e.ziel === 'pfad' && (
+                <span className="ex-feld ka-ziel-platzhalter">
+                  <PlatzhalterHinweise vorlage={e.zielpfad} variablen={KATASTER_ZIEL_VARIABLEN} onAnpassen={(v) => void aendern({ zielpfad: v })} />
+                  <PlatzhalterChips variablen={KATASTER_ZIEL_VARIABLEN} label="Ordner der Katasterpläne" fokusBehalten={false} onEinfuegen={(p) => void aendern({ zielpfad: platzhalterEinfuegen(e.zielpfad, p).text })} />
+                </span>
+              )}
             </span>
           </label>
           <label className={`ex-ziel${e.ziel === 'antrag' ? ' aktiv' : ''}`}>
@@ -286,12 +305,6 @@ export function KatasterEinstellungen() {
             <span>Ordner des aktiven Antrags (z. B. TÖB\BAUA 2) – der Antrag aus der Projektdatei, gepflegt in PERMIO (Formulare)</span>
           </label>
         </div>
-        {e.ziel === 'pfad' && (
-          <div className="ex-feld ka-ziel-platzhalter">
-            <PlatzhalterHinweise vorlage={e.zielpfad} variablen={KATASTER_ZIEL_VARIABLEN} onAnpassen={(v) => void aendern({ zielpfad: v })} />
-            <PlatzhalterChips variablen={KATASTER_ZIEL_VARIABLEN} label="Ordner der Katasterpläne" fokusBehalten={false} onEinfuegen={(p) => void aendern({ zielpfad: platzhalterEinfuegen(e.zielpfad, p).text })} />
-          </div>
-        )}
         <label className="ex-feld">
           <span className="field-label">Dateiname</span>
           <TextField value={e.dateiname} onChange={(v) => void aendern({ dateiname: v })} label="Dateiname der Katasterpläne" />
@@ -310,7 +323,7 @@ export function KatasterEinstellungen() {
             <button className="small" onClick={() => void planHinzufuegen('dxf')}>
               <Symbol name="plus" /> DXF
             </button>
-            <button className="small" title="Die vier Standardpläne wiederherstellen (eigene Pläne entfallen)" onClick={() => void vorgabenWiederherstellen()}>
+            <button className="small" title="Die vier Standardpläne wiederherstellen (eigene Pläne entfallen)" onClick={() => void vorgaben()}>
               Vorgaben
             </button>
           </span>

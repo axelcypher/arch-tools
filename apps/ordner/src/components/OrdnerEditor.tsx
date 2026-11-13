@@ -23,7 +23,7 @@ import {
   zusatzSetzenAlle,
 } from '../baum';
 import type { Baustein, OrdnerRegel } from '../struktur';
-import { lphKette, lphText, ordnerAlsText, ordnerGilt, sichererName } from '../struktur';
+import { lphKette, lphText, ordnerGilt, sichererName } from '../struktur';
 
 const LPH = LEISTUNGSPHASEN.map((l) => l.nr);
 const klein = (p: string) => p.toLowerCase();
@@ -45,6 +45,40 @@ type Wo = 'in' | 'vor' | 'nach';
 interface Menue {
   x: number;
   y: number;
+  /** Kontextmenü der Auswahl oder das Menü „Weitere“ der Werkzeugleiste */
+  art: 'kontext' | 'weitere';
+}
+
+/** Eintrag eines Menüs; `kuerzel` steht sichtbar rechts im Eintrag */
+interface MenueEintrag {
+  label: string;
+  aktion: () => void;
+  kuerzel?: string;
+  /** dasselbe Kürzel für Hilfsmittel (aria-keyshortcuts) */
+  tasten?: string;
+  titel?: string;
+  gefahr?: boolean;
+  aus?: boolean;
+  trenner?: boolean;
+}
+
+/** Meldung im Editor: Erfolg oder Fehler (Fehler als Warnung gestaltet) */
+interface Meldung {
+  art: 'ok' | 'fehler';
+  text: string;
+}
+
+const TRENNER: MenueEintrag = { label: '', aktion: () => {}, trenner: true };
+
+/** Trenner nur zwischen Einträgen – nicht am Anfang, am Ende oder doppelt */
+function ohneLoseTrenner(liste: MenueEintrag[]): MenueEintrag[] {
+  const out: MenueEintrag[] = [];
+  for (const m of liste) {
+    if (m.trenner && (!out.length || out[out.length - 1].trenner)) continue;
+    out.push(m);
+  }
+  while (out.length && out[out.length - 1].trenner) out.pop();
+  return out;
 }
 
 /**
@@ -85,8 +119,12 @@ export function OrdnerEditor({
   const [ziel, setZiel] = useState<{ pfad: string; wo: Wo } | null>(null);
   const [mehrere, setMehrere] = useState<string[] | null>(null);
   const [vorschau, setVorschau] = useState<number[]>([]);
-  const [meldung, setMeldung] = useState<string | null>(null);
+  const [vorschauModus, setVorschauModus] = useState(false);
+  const [meldung, setMeldungZustand] = useState<Meldung | null>(null);
+  const ok = (text: string) => setMeldungZustand({ art: 'ok', text });
+  const fehler = (text: string) => setMeldungZustand({ art: 'fehler', text });
   const baum = useRef<HTMLDivElement>(null);
+  const weitereKnopf = useRef<HTMLButtonElement>(null);
   /** die Liste, die dieser Editor zuletzt geschrieben hat – ändert sie sich von außen, beginnt der Verlauf neu */
   const eigene = useRef(ordner);
 
@@ -99,10 +137,10 @@ export function OrdnerEditor({
     setCursor((c) => (c && da.has(klein(c)) ? c : null));
   }, [ordner]);
 
-  // Meldungen verschwinden nach einer Weile
+  // Meldungen verschwinden nach einer Weile (Fehler etwas später)
   useEffect(() => {
     if (!meldung) return;
-    const t = setTimeout(() => setMeldung(null), 6000);
+    const t = setTimeout(() => setMeldungZustand(null), meldung.art === 'fehler' ? 10000 : 6000);
     return () => clearTimeout(t);
   }, [meldung]);
 
@@ -169,7 +207,7 @@ export function OrdnerEditor({
   const namenSetzen = (pfad: string, name: string) => {
     const neu = umbenennen(ordner, pfad, name);
     if (neu === ordner) {
-      if (name.trim() && name.trim() !== pfad.split('/').pop()) setMeldung(`„${name.trim()}“ gibt es in diesem Ordner schon.`);
+      if (name.trim() && name.trim() !== pfad.split('/').pop()) fehler(`„${name.trim()}“ gibt es in diesem Ordner schon.`);
       return;
     }
     const n = sichererName(name.replace(/[\\/]+/g, ' '));
@@ -198,15 +236,15 @@ export function OrdnerEditor({
     const t = teilbaumVon(ordner, pfade);
     if (!t.length) return;
     setAblage(t);
-    setMeldung(`${obersteAuswahl(pfade).length === 1 ? `„${obersteAuswahl(pfade)[0].split('/').pop()}“` : `${obersteAuswahl(pfade).length} Ordner`} kopiert – markierte Ordner wählen und „Einfügen“.`);
+    ok(`${obersteAuswahl(pfade).length === 1 ? `„${obersteAuswahl(pfade)[0].split('/').pop()}“` : `${obersteAuswahl(pfade).length} Ordner`} kopiert – markierte Ordner wählen und „Einfügen“.`);
   };
   /** Teilbaum (Zwischenablage, Baustein) in die gewählten Ordner einfügen – ohne Auswahl in den Stamm */
   const einfuegenIn = (teil: OrdnerRegel[], wohin: string[], was: string) => {
     const ziele = wohin.length ? wohin : [''];
     const r = einfuegen(ordner, ziele, teil);
-    if (!r.neu.length && r.ordner === ordner) return setMeldung(`${was}: alles schon vorhanden – nichts geändert.`);
+    if (!r.neu.length && r.ordner === ordner) return ok(`${was}: alles schon vorhanden – nichts geändert.`);
     aendern(r.ordner, ziele.filter(Boolean).length ? ziele.filter(Boolean) : r.neu.filter((p) => !p.includes('/')));
-    setMeldung(`${was} in ${ziele.length === 1 ? (ziele[0] ? `„${ziele[0].split('/').pop()}“` : 'den Stamm') : `${ziele.length} Ordner`} eingefügt – ${r.neu.length} neu.`);
+    ok(`${was} in ${ziele.length === 1 ? (ziele[0] ? `„${ziele[0].split('/').pop()}“` : 'den Stamm') : `${ziele.length} Ordner`} eingefügt – ${r.neu.length} neu.`);
   };
   const dupl = (pfad: string) => {
     const r = duplizieren(ordner, pfad);
@@ -215,7 +253,7 @@ export function OrdnerEditor({
   const nachDrop = (pfade: string[], zielPfad: string, wo: Wo) => {
     const r = verschiebenNach(ordner, pfade, zielPfad, wo);
     if (!r)
-      return setMeldung(
+      return fehler(
         zielPfad && obersteAuswahl(pfade).some((p) => klein(zielPfad) === klein(p) || klein(zielPfad).startsWith(`${klein(p)}/`))
           ? 'Ein Ordner lässt sich nicht in sich selbst verschieben.'
           : 'Dort gibt es schon einen Ordner mit diesem Namen.',
@@ -225,7 +263,7 @@ export function OrdnerEditor({
   };
   const alsBaustein = async (pfad: string) => {
     const teil = unterordnerVon(ordner, pfad);
-    if (!teil.length) return setMeldung('Ein Baustein entsteht aus den Unterordnern – dieser Ordner hat keine.');
+    if (!teil.length) return fehler('Ein Baustein entsteht aus den Unterordnern – dieser Ordner hat keine.');
     const name = (
       await frageText(
         'Als Baustein speichern',
@@ -246,7 +284,7 @@ export function OrdnerEditor({
     )
       return;
     onBausteine(da ? bausteine.map((b) => (b === da ? { name: da.name, ordner: teil } : b)) : [...bausteine, { name, ordner: teil }]);
-    setMeldung(`Baustein „${name}“ gespeichert.`);
+    ok(`Baustein „${name}“ gespeichert.`);
   };
   const lphSetzen = (pfade: string[], nr: number) => {
     const alle = pfade.every((p) => zeile(p)?.regel?.lph?.includes(nr));
@@ -260,6 +298,20 @@ export function OrdnerEditor({
       zusatzSetzenAlle(ordner, pfade, () => ({ lph })),
       pfade,
     );
+  /** eine Stelle nach oben bzw. unten unter den Geschwistern */
+  const schieben = (z: BaumZeile, um: -1 | 1) => aendern(verschieben(ordner, z.pfad, um), [z.pfad]);
+  /** in den Ordner davor einrücken bzw. eine Ebene ausrücken */
+  const einr = (z: BaumZeile) => {
+    if (z.erster) return;
+    const geschwister = zeilen.filter((x) => x.tiefe === z.tiefe && klein(elternVon(x.pfad)) === klein(elternVon(z.pfad)));
+    const davor = geschwister[geschwister.findIndex((x) => x.pfad === z.pfad) - 1];
+    aendern(einruecken(ordner, z.pfad), davor ? [`${davor.pfad}/${z.name}`] : undefined);
+  };
+  const ausr = (z: BaumZeile) => {
+    if (z.tiefe === 0) return;
+    const oben = elternVon(elternVon(z.pfad));
+    aendern(ausruecken(ordner, z.pfad), [oben ? `${oben}/${z.name}` : z.name]);
+  };
   const schemaSetzen = (pfade: string[]) => {
     const alle = pfade.every((p) => zeile(p)?.regel?.dateischema);
     aendern(
@@ -269,6 +321,19 @@ export function OrdnerEditor({
   };
 
   /* ---------- Auswahl ---------- */
+
+  /** Kontextmenü per Tastatur: für die Zeile mit der Schreibmarke, unter ihr angeordnet (ohne Schreibmarke am Baum) */
+  const menueTastatur = () => {
+    const z = zeile(cursor);
+    const el = z ? document.getElementById(zeilenId(z.pfad)) : null;
+    if (z && !enthalten(gewaehlt, z.pfad)) waehlen(z.pfad);
+    const r = (el ?? baum.current)?.getBoundingClientRect();
+    setMenue({ x: (r?.left ?? 0) + (el ? 24 + z!.tiefe * 18 : 8), y: el ? (r?.bottom ?? 0) : (r?.top ?? 0) + 8, art: 'kontext' });
+  };
+  const menueSchliessen = (art: Menue['art']) => {
+    setMenue(null);
+    (art === 'weitere' ? weitereKnopf.current : baum.current)?.focus();
+  };
 
   const waehlen = (p: string, e?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) => {
     setMenue(null);
@@ -313,18 +378,13 @@ export function OrdnerEditor({
     if (strg && k === 'd') return tun(() => z && dupl(z.pfad));
     if (e.key === 'Delete') return tun(() => void loeschenFragen(gewaehlt));
     if ((e.key === 'F2' || e.key === 'Enter') && z) return tun(() => setBearbeitet({ pfad: z.pfad, neu: false }));
+    // Umschalt+F10 bzw. die Menütaste: das Kontextmenü der Zeile mit der Schreibmarke
+    if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) return tun(menueTastatur);
     if (e.altKey && z) {
-      if (e.key === 'ArrowUp') return tun(() => aendern(verschieben(ordner, z.pfad, -1), [z.pfad]));
-      if (e.key === 'ArrowDown') return tun(() => aendern(verschieben(ordner, z.pfad, 1), [z.pfad]));
-      if (e.key === 'ArrowRight' && !z.erster) {
-        const geschwister = zeilen.filter((x) => x.tiefe === z.tiefe && klein(elternVon(x.pfad)) === klein(elternVon(z.pfad)));
-        const davor = geschwister[geschwister.findIndex((x) => x.pfad === z.pfad) - 1];
-        return tun(() => aendern(einruecken(ordner, z.pfad), davor ? [`${davor.pfad}/${z.name}`] : undefined));
-      }
-      if (e.key === 'ArrowLeft' && z.tiefe > 0) {
-        const oben = elternVon(elternVon(z.pfad));
-        return tun(() => aendern(ausruecken(ordner, z.pfad), [oben ? `${oben}/${z.name}` : z.name]));
-      }
+      if (e.key === 'ArrowUp') return tun(() => schieben(z, -1));
+      if (e.key === 'ArrowDown') return tun(() => schieben(z, 1));
+      if (e.key === 'ArrowRight' && !z.erster) return tun(() => einr(z));
+      if (e.key === 'ArrowLeft' && z.tiefe > 0) return tun(() => ausr(z));
       return;
     }
     const gehe = (n: number) => {
@@ -347,293 +407,328 @@ export function OrdnerEditor({
     const y = e.clientY - r.top;
     return y < r.height * 0.25 ? 'vor' : y > r.height * 0.75 && !zeile(p)?.hatKinder ? 'nach' : y > r.height * 0.75 && zu.has(klein(p)) ? 'nach' : 'in';
   };
+  /** Darf die gezogene Auswahl dort abgelegt werden? (nicht in sich selbst, kein gleichnamiger Ordner) */
+  const erlaubt = (zielPfad: string, wo: Wo) => !!ziehen && !!verschiebenNach(ordner, ziehen, zielPfad, wo);
+  const ueber = (e: React.DragEvent, zielPfad: string, wo: Wo) => {
+    if (!ziehen) return;
+    if (!erlaubt(zielPfad, wo)) {
+      // verbotenes Ziel: kein Ablegen anbieten (Mauszeiger „nicht erlaubt“), nicht hervorheben
+      try {
+        e.dataTransfer.dropEffect = 'none';
+      } catch {
+        // ohne Datenübergabe (Tests)
+      }
+      if (ziel) setZiel(null);
+      return;
+    }
+    e.preventDefault();
+    try {
+      e.dataTransfer.dropEffect = 'move';
+    } catch {
+      // ohne Datenübergabe (Tests)
+    }
+    if (!ziel || ziel.pfad !== zielPfad || ziel.wo !== wo) setZiel({ pfad: zielPfad, wo });
+  };
 
   /* ---------- Darstellung ---------- */
 
-  const vorschauAktiv = vorschau.length > 0;
+  const vorschauAktiv = vorschauModus && vorschau.length > 0;
   const entstehen = vorschauAktiv ? zeilen.filter((z) => ordnerGilt(ordner, z.pfad, vorschau)).length : zeilen.length;
-  const menueEintraege = (): { label: string; aktion: () => void; titel?: string; gefahr?: boolean; aus?: boolean; trenner?: boolean }[] => {
+  const vorschauBeenden = () => {
+    setVorschauModus(false);
+    setVorschau([]);
+  };
+  const einfuegenTitel = ablage ? `${ablage.length} kopierte Ordner – gleichnamige werden zusammengeführt` : 'Erst Ordner kopieren';
+  const kontextEintraege = (): MenueEintrag[] => {
     const p = einer?.pfad ?? null;
-    return [
-      { label: p ? 'Unterordner anlegen' : 'Ordner anlegen', titel: 'Strg+N', aktion: () => anlegen(p ?? '') },
-      ...(p ? [{ label: 'Ordner daneben anlegen', titel: 'Strg+Umschalt+N', aktion: () => daneben(p) }] : []),
+    return ohneLoseTrenner([
+      { label: p ? 'Unterordner anlegen' : 'Ordner anlegen', kuerzel: 'Strg+N', tasten: 'Control+N', aktion: () => anlegen(p ?? '') },
+      ...(p ? [{ label: 'Ordner daneben anlegen', kuerzel: 'Strg+Umschalt+N', tasten: 'Control+Shift+N', aktion: () => daneben(p) }] : []),
       { label: gewaehlt.length > 1 ? `Unterordner in ${gewaehlt.length} Ordnern anlegen …` : 'Mehrere Unterordner anlegen …', aktion: () => setMehrere(gewaehlt.length ? gewaehlt : ['']) },
       ...bausteine.map((b) => ({ label: `Baustein „${b.name}“ einfügen`, titel: b.ordner.map((o) => o.pfad).join(', '), aktion: () => einfuegenIn(b.ordner, gewaehlt, `Baustein „${b.name}“`) })),
-      { label: '', aktion: () => {}, trenner: true },
-      ...(p ? [{ label: 'Umbenennen', titel: 'F2', aktion: () => setBearbeitet({ pfad: p, neu: false }) }] : []),
-      ...(p ? [{ label: 'Duplizieren', titel: 'Strg+D – Kopie samt Unterordnern direkt dahinter', aktion: () => dupl(p) }] : []),
-      ...(gewaehlt.length ? [{ label: gewaehlt.length > 1 ? `${gewaehlt.length} Ordner kopieren` : 'Kopieren', titel: 'Strg+C', aktion: () => kopieren(gewaehlt) }] : []),
+      TRENNER,
+      ...(p ? [{ label: 'Umbenennen', kuerzel: 'F2', tasten: 'F2', aktion: () => setBearbeitet({ pfad: p, neu: false }) }] : []),
+      ...(p ? [{ label: 'Duplizieren', kuerzel: 'Strg+D', tasten: 'Control+D', titel: 'Kopie samt Unterordnern direkt dahinter', aktion: () => dupl(p) }] : []),
+      ...(gewaehlt.length ? [{ label: gewaehlt.length > 1 ? `${gewaehlt.length} Ordner kopieren` : 'Kopieren', kuerzel: 'Strg+C', tasten: 'Control+C', aktion: () => kopieren(gewaehlt) }] : []),
       ...(ablage
         ? [
             {
               label: gewaehlt.length > 1 ? `Einfügen in ${gewaehlt.length} Ordner` : 'Einfügen',
-              titel: `Strg+V – ${ordnerAlsText(ablage).split('\n').length} Ordner`,
+              kuerzel: 'Strg+V',
+              tasten: 'Control+V',
+              titel: einfuegenTitel,
               aktion: () => einfuegenIn(ablage, gewaehlt, 'Kopie'),
             },
           ]
         : []),
       ...(p && einer?.hatKinder ? [{ label: 'Unterordner als Baustein speichern …', aktion: () => void alsBaustein(p) }] : []),
-      ...(gewaehlt.length
+      TRENNER,
+      ...(einer
         ? [
-            { label: '', aktion: () => {}, trenner: true },
-            { label: gewaehlt.length > 1 ? `${gewaehlt.length} Ordner löschen` : 'Löschen', titel: 'Entf', gefahr: true, aktion: () => void loeschenFragen(gewaehlt) },
+            { label: 'Nach oben', kuerzel: 'Alt+↑', tasten: 'Alt+ArrowUp', aktion: () => schieben(einer, -1) },
+            { label: 'Nach unten', kuerzel: 'Alt+↓', tasten: 'Alt+ArrowDown', aktion: () => schieben(einer, 1) },
+            ...(!einer.erster ? [{ label: 'In den Ordner davor einrücken', kuerzel: 'Alt+→', tasten: 'Alt+ArrowRight', aktion: () => einr(einer) }] : []),
+            ...(einer.tiefe > 0 ? [{ label: 'Eine Ebene ausrücken', kuerzel: 'Alt+←', tasten: 'Alt+ArrowLeft', aktion: () => ausr(einer) }] : []),
           ]
         : []),
-    ];
+      TRENNER,
+      ...(gewaehlt.length
+        ? [{ label: gewaehlt.length > 1 ? `${gewaehlt.length} Ordner löschen` : 'Löschen', kuerzel: 'Entf', tasten: 'Delete', gefahr: true, aktion: () => void loeschenFragen(gewaehlt) }]
+        : []),
+    ]);
   };
+  const weitereEintraege = (): MenueEintrag[] =>
+    ohneLoseTrenner([
+      { label: 'Kopieren', kuerzel: 'Strg+C', tasten: 'Control+C', titel: 'Markierte Ordner samt Unterordnern kopieren', aus: !gewaehlt.length, aktion: () => kopieren(gewaehlt) },
+      { label: 'Einfügen', kuerzel: 'Strg+V', tasten: 'Control+V', titel: einfuegenTitel, aus: !ablage, aktion: () => ablage && einfuegenIn(ablage, gewaehlt, 'Kopie') },
+      { label: 'Duplizieren', kuerzel: 'Strg+D', tasten: 'Control+D', titel: 'Kopie samt Unterordnern direkt dahinter', aus: !einer, aktion: () => einer && dupl(einer.pfad) },
+      TRENNER,
+      { label: 'Alle aufklappen', aktion: () => setZu(new Set()) },
+      { label: 'Alle zuklappen', aktion: () => setZu(new Set(zeilen.filter((z) => z.hatKinder).map((z) => klein(z.pfad)))) },
+    ]);
 
   return (
     <div className="po-editor">
       <section className="po-col po-editor-baum">
         {kopf}
         <div className="po-werkzeuge" role="toolbar" aria-label="Ordner bearbeiten">
-          <button className="small" title="Ordner im Stamm anlegen" onClick={() => anlegen('')}>
-            + Ordner
-          </button>
-          <button className="small" title="Unterordner im gewählten Ordner (Strg+N)" disabled={!einer} onClick={() => einer && anlegen(einer.pfad)}>
-            + Unterordner
-          </button>
-          <button
-            className="small"
-            title="Mehrere Ordner auf einmal – eine Zeile je Ordner, eingerückt für Unterordner; in allen markierten Ordnern"
-            onClick={() => setMehrere(gewaehlt.length ? gewaehlt : [''])}
-          >
-            Mehrere anlegen …
-          </button>
-          <span className="po-werkzeuge-trenner" />
-          <button className="small" title="Markierte Ordner samt Unterordnern kopieren (Strg+C)" disabled={!gewaehlt.length} onClick={() => kopieren(gewaehlt)}>
-            Kopieren
-          </button>
-          <button
-            className="small"
-            title={ablage ? `In alle markierten Ordner einfügen (Strg+V) – gleichnamige werden zusammengeführt` : 'Erst Ordner kopieren'}
-            disabled={!ablage}
-            onClick={() => ablage && einfuegenIn(ablage, gewaehlt, 'Kopie')}
-          >
-            Einfügen{gewaehlt.length > 1 ? ` (${gewaehlt.length})` : ''}
-          </button>
-          <button className="small" title="Kopie samt Unterordnern direkt dahinter (Strg+D)" disabled={!einer} onClick={() => einer && dupl(einer.pfad)}>
-            Duplizieren
-          </button>
-          <span className="po-werkzeuge-trenner" />
-          <button className="small icon-text" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled={!verlauf.zurueck.length} onClick={rueckgaengig}>
-            ↶
-          </button>
-          <button className="small icon-text" title="Wiederholen (Strg+Y)" aria-label="Wiederholen" disabled={!verlauf.vor.length} onClick={wiederholen}>
-            ↷
-          </button>
-          <span className="po-werkzeuge-trenner" />
-          <button className="small" title="Alle Ordner aufklappen" onClick={() => setZu(new Set())}>
-            Aufklappen
-          </button>
-          <button className="small" title="Alle Ordner zuklappen" onClick={() => setZu(new Set(zeilen.filter((z) => z.hatKinder).map((z) => klein(z.pfad))))}>
-            Zuklappen
-          </button>
-        </div>
-        <div className="po-vorschau-lph" role="group" aria-label="Vorschau für Leistungsphasen">
-          <span className="muted small-text" title="Welche Ordner entstehen bei diesen beauftragten Leistungsphasen? Die übrigen erscheinen blass.">
-            Vorschau für LPh
-          </span>
-          {LPH.map((n) => (
-            <button
-              key={n}
-              className={`po-chip${vorschau.includes(n) ? ' aktiv' : ''}`}
-              aria-pressed={vorschau.includes(n)}
-              aria-label={`Vorschau LPh ${n}`}
-              title={`LPh ${n} ${LEISTUNGSPHASEN[n - 1].label}`}
-              onClick={() => setVorschau((v) => (v.includes(n) ? v.filter((x) => x !== n) : [...v, n].sort((a, b) => a - b)))}
-            >
-              {n}
+          <div className="po-werkzeuge-gruppe">
+            <button className="small" title="Ordner im Stamm anlegen" onClick={() => anlegen('')}>
+              + Ordner
             </button>
-          ))}
-          {vorschauAktiv && (
-            <span className="small-text">
-              {entstehen} von {zeilen.length} Ordnern entstehen{' '}
-              <button className="small" onClick={() => setVorschau([])}>
-                aus
-              </button>
-            </span>
-          )}
+            <button className="small" title="Unterordner im gewählten Ordner (Strg+N)" disabled={!einer} onClick={() => einer && anlegen(einer.pfad)}>
+              + Unterordner
+            </button>
+            <button
+              className="small"
+              title="Mehrere Ordner auf einmal – eine Zeile je Ordner, eingerückt für Unterordner; in allen markierten Ordnern"
+              onClick={() => setMehrere(gewaehlt.length ? gewaehlt : [''])}
+            >
+              Mehrere anlegen …
+            </button>
+          </div>
+          <div className="po-werkzeuge-gruppe">
+            <button className="small icon" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" aria-keyshortcuts="Control+Z" disabled={!verlauf.zurueck.length} onClick={rueckgaengig}>
+              ↶
+            </button>
+            <button className="small icon" title="Wiederholen (Strg+Y)" aria-label="Wiederholen" aria-keyshortcuts="Control+Y" disabled={!verlauf.vor.length} onClick={wiederholen}>
+              ↷
+            </button>
+          </div>
+          <div className="po-werkzeuge-gruppe">
+            <button
+              className={`small${vorschauModus ? ' active' : ''}`}
+              aria-pressed={vorschauModus}
+              title="Ansehen, welche Ordner bei bestimmten beauftragten Leistungsphasen entstehen – ändert nichts"
+              onClick={() => (vorschauModus ? vorschauBeenden() : setVorschauModus(true))}
+            >
+              LPh-Vorschau
+            </button>
+            <button
+              ref={weitereKnopf}
+              className={`small${menue?.art === 'weitere' ? ' active' : ''}`}
+              aria-haspopup="menu"
+              aria-expanded={menue?.art === 'weitere'}
+              onClick={() => {
+                if (menue?.art === 'weitere') return menueSchliessen('weitere');
+                const r = weitereKnopf.current!.getBoundingClientRect();
+                setMenue({ x: r.left, y: r.bottom + 2, art: 'weitere' });
+              }}
+            >
+              Weitere ▾
+            </button>
+          </div>
         </div>
-        {meldung && (
-          <p className="po-meldung po-editor-meldung" role="status">
-            {meldung}
-          </p>
+        {vorschauModus && (
+          <div className="po-vorschau-lph" role="group" aria-labelledby="po-vorschau-titel">
+            <span id="po-vorschau-titel" className="po-vorschau-titel">
+              Vorschau: Welche Ordner entstehen bei LPh …
+            </span>
+            {LPH.map((n) => (
+              <button
+                key={n}
+                className={`po-chip umriss${vorschau.includes(n) ? ' aktiv' : ''}`}
+                aria-pressed={vorschau.includes(n)}
+                aria-label={`Vorschau LPh ${n}`}
+                title={`LPh ${n} ${LEISTUNGSPHASEN[n - 1].label}`}
+                onClick={() => setVorschau((v) => (v.includes(n) ? v.filter((x) => x !== n) : [...v, n].sort((a, b) => a - b)))}
+              >
+                {n}
+              </button>
+            ))}
+            <span className="small-text po-vorschau-stand">
+              {vorschauAktiv ? `${entstehen} von ${zeilen.length} Ordnern entstehen` : 'Leistungsphasen wählen – die übrigen Ordner erscheinen durchgestrichen.'}
+            </span>
+            <button className="small" onClick={vorschauBeenden}>
+              Vorschau beenden
+            </button>
+          </div>
         )}
-        <div
-          ref={baum}
-          className={`po-k-baum${ziehen ? ' zieht' : ''}`}
-          role="tree"
-          aria-label="Ordnerstruktur"
-          aria-multiselectable
-          tabIndex={0}
-          aria-activedescendant={cursor && zeile(cursor) ? zeilenId(cursor) : undefined}
-          onKeyDown={tasten}
-          onContextMenu={(e) => {
-            if (e.target !== e.currentTarget) return;
-            e.preventDefault();
-            setAuswahl([]);
-            setMenue({ x: e.clientX, y: e.clientY });
-          }}
-          onClick={(e) => e.target === e.currentTarget && (setAuswahl([]), setCursor(null))}
-        >
-          {!zeilen.length && <p className="muted small-text po-k-leer">Noch keine Ordner – „+ Ordner“ legt den ersten an.</p>}
-          {sichtbar.map((z) => {
-            const sel = enthalten(gewaehlt, z.pfad);
-            const offen = z.hatKinder && !zu.has(klein(z.pfad));
-            const kette = lphKette(ordner, z.pfad);
-            const geerbt = kette.filter((k) => klein(k.pfad) !== klein(z.pfad));
-            const entfaellt = vorschauAktiv && !ordnerGilt(ordner, z.pfad, vorschau);
-            const dropHier = ziel && klein(ziel.pfad) === klein(z.pfad) ? ` drop-${ziel.wo}` : '';
-            return (
+        <div className="po-k-rahmen">
+          <div
+            ref={baum}
+            className={`po-k-baum${ziehen ? ' zieht' : ''}`}
+            role="tree"
+            aria-label="Ordnerstruktur"
+            aria-multiselectable
+            tabIndex={0}
+            aria-activedescendant={cursor && zeile(cursor) ? zeilenId(cursor) : undefined}
+            onKeyDown={tasten}
+            onContextMenu={(e) => {
+              if (e.target !== e.currentTarget) return;
+              e.preventDefault();
+              // Umschalt+F10 bzw. Menütaste (ohne Mausposition): wie für die Zeile mit der Schreibmarke
+              if (e.button !== 2 || (!e.clientX && !e.clientY)) return menueTastatur();
+              setAuswahl([]);
+              setMenue({ x: e.clientX, y: e.clientY, art: 'kontext' });
+            }}
+            onClick={(e) => e.target === e.currentTarget && (setAuswahl([]), setCursor(null))}
+          >
+            {!zeilen.length && <p className="muted small-text po-k-leer">Noch keine Ordner – „+ Ordner“ legt den ersten an.</p>}
+            {sichtbar.map((z) => {
+              const sel = enthalten(gewaehlt, z.pfad);
+              const offen = z.hatKinder && !zu.has(klein(z.pfad));
+              const kette = lphKette(ordner, z.pfad);
+              const geerbt = kette.filter((k) => klein(k.pfad) !== klein(z.pfad));
+              const entfaellt = vorschauAktiv && !ordnerGilt(ordner, z.pfad, vorschau);
+              const dropHier = ziel && klein(ziel.pfad) === klein(z.pfad) ? ` drop-${ziel.wo}` : '';
+              return (
+                <div
+                  key={z.pfad}
+                  id={zeilenId(z.pfad)}
+                  role="treeitem"
+                  aria-level={z.tiefe + 1}
+                  aria-selected={sel}
+                  aria-expanded={z.hatKinder ? offen : undefined}
+                  aria-label={z.pfad}
+                  className={`po-k-zeile${sel ? ' gewaehlt' : ''}${cursor && klein(cursor) === klein(z.pfad) ? ' cursor' : ''}${entfaellt ? ' entfaellt' : ''}${dropHier}`}
+                  style={{ paddingLeft: 4 + z.tiefe * 18 }}
+                  title={entfaellt ? `${z.pfad} – entsteht bei LPh ${lphText(vorschau)} nicht` : z.regel ? z.pfad : `${z.pfad} – ohne eigene Regel, entsteht über seine Unterordner`}
+                  draggable={!bearbeitet}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    waehlen(z.pfad, e);
+                    baum.current?.focus();
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    setBearbeitet({ pfad: z.pfad, neu: false });
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!sel) waehlen(z.pfad);
+                    setMenue({ x: e.clientX, y: e.clientY, art: 'kontext' });
+                  }}
+                  onDragStart={(e) => {
+                    const pfade = sel ? gewaehlt : [z.pfad];
+                    if (!sel) waehlen(z.pfad);
+                    setZiehen(obersteAuswahl(pfade));
+                    try {
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', pfade.join('\n'));
+                    } catch {
+                      // ohne Datenübergabe (z. B. in Tests) genügt der Zustand
+                    }
+                  }}
+                  onDragOver={(e) => ueber(e, z.pfad, zielAus(e, z.pfad))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (ziehen) nachDrop(ziehen, z.pfad, zielAus(e, z.pfad));
+                    setZiehen(null);
+                    setZiel(null);
+                  }}
+                  onDragEnd={() => {
+                    setZiehen(null);
+                    setZiel(null);
+                  }}
+                >
+                  <button
+                    className="po-k-pfeil"
+                    tabIndex={-1}
+                    aria-label={z.hatKinder ? `${z.pfad} ${offen ? 'zuklappen' : 'aufklappen'}` : undefined}
+                    aria-hidden={!z.hatKinder}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (z.hatKinder) umklappen(z.pfad);
+                    }}
+                  >
+                    {z.hatKinder ? (offen ? '▾' : '▸') : ''}
+                  </button>
+                  <span className="po-art ordner" aria-hidden />
+                  {bearbeitet && klein(bearbeitet.pfad) === klein(z.pfad) ? (
+                    <NamenEingabe
+                      name={z.name}
+                      onFertig={(v) => {
+                        setBearbeitet(null);
+                        if (v !== null) namenSetzen(z.pfad, v);
+                        baum.current?.focus();
+                      }}
+                    />
+                  ) : (
+                    <span className="po-k-name">{z.name}</span>
+                  )}
+                  {!!z.regel?.lph?.length && (
+                    <span className="po-k-marke lph" title={`entsteht nur mit LPh ${lphText(z.regel.lph)}`}>
+                      LPh {lphText(z.regel.lph)}
+                    </span>
+                  )}
+                  {!z.regel?.lph?.length && geerbt.length > 0 && (
+                    <span className="po-k-marke geerbt" title={`erbt die Leistungsphasen von „${geerbt[geerbt.length - 1].pfad}“`}>
+                      LPh {lphText(geerbt[geerbt.length - 1].lph)}
+                    </span>
+                  )}
+                  {z.regel?.dateischema && (
+                    <span className="po-k-marke schema" title="Dateien darin werden gegen das Dateinamenschema geprüft">
+                      Schema
+                    </span>
+                  )}
+                  <span className="po-k-aktionen">
+                    <button
+                      className="small"
+                      tabIndex={-1}
+                      title="Aktionen (wie Rechtsklick)"
+                      aria-label={`Aktionen für ${z.pfad}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!sel) waehlen(z.pfad);
+                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setMenue({ x: r.left, y: r.bottom, art: 'kontext' });
+                      }}
+                    >
+                      ⋯
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
+            {ziehen && (
               <div
-                key={z.pfad}
-                id={zeilenId(z.pfad)}
-                role="treeitem"
-                aria-level={z.tiefe + 1}
-                aria-selected={sel}
-                aria-expanded={z.hatKinder ? offen : undefined}
-                aria-label={z.pfad}
-                className={`po-k-zeile${sel ? ' gewaehlt' : ''}${cursor && klein(cursor) === klein(z.pfad) ? ' cursor' : ''}${z.regel ? '' : ' implizit'}${entfaellt ? ' entfaellt' : ''}${dropHier}`}
-                style={{ paddingLeft: 4 + z.tiefe * 18 }}
-                title={entfaellt ? `${z.pfad} – entsteht bei LPh ${lphText(vorschau)} nicht` : z.pfad}
-                draggable={!bearbeitet}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  waehlen(z.pfad, e);
-                  baum.current?.focus();
-                }}
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  setBearbeitet({ pfad: z.pfad, neu: false });
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (!sel) waehlen(z.pfad);
-                  setMenue({ x: e.clientX, y: e.clientY });
-                }}
-                onDragStart={(e) => {
-                  const pfade = sel ? gewaehlt : [z.pfad];
-                  if (!sel) waehlen(z.pfad);
-                  setZiehen(obersteAuswahl(pfade));
-                  try {
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', pfade.join('\n'));
-                  } catch {
-                    // ohne Datenübergabe (z. B. in Tests) genügt der Zustand
-                  }
-                }}
-                onDragOver={(e) => {
-                  if (!ziehen) return;
-                  e.preventDefault();
-                  const wo = zielAus(e, z.pfad);
-                  if (!ziel || ziel.pfad !== z.pfad || ziel.wo !== wo) setZiel({ pfad: z.pfad, wo });
-                }}
+                className={`po-k-stamm${ziel?.pfad === '' ? ' drop-in' : ''}`}
+                onDragOver={(e) => ueber(e, '', 'in')}
                 onDrop={(e) => {
                   e.preventDefault();
-                  e.stopPropagation();
-                  if (ziehen) nachDrop(ziehen, z.pfad, zielAus(e, z.pfad));
-                  setZiehen(null);
-                  setZiel(null);
-                }}
-                onDragEnd={() => {
+                  nachDrop(ziehen, '', 'in');
                   setZiehen(null);
                   setZiel(null);
                 }}
               >
-                <button
-                  className="po-k-pfeil"
-                  tabIndex={-1}
-                  aria-label={z.hatKinder ? `${z.pfad} ${offen ? 'zuklappen' : 'aufklappen'}` : undefined}
-                  aria-hidden={!z.hatKinder}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (z.hatKinder) umklappen(z.pfad);
-                  }}
-                >
-                  {z.hatKinder ? (offen ? '▾' : '▸') : ''}
-                </button>
-                <span className="po-art ordner" aria-hidden />
-                {bearbeitet && klein(bearbeitet.pfad) === klein(z.pfad) ? (
-                  <NamenEingabe
-                    name={z.name}
-                    onFertig={(v) => {
-                      setBearbeitet(null);
-                      if (v !== null) namenSetzen(z.pfad, v);
-                      baum.current?.focus();
-                    }}
-                  />
-                ) : (
-                  <span className="po-k-name">{z.name}</span>
-                )}
-                {!!z.regel?.lph?.length && (
-                  <span className="po-k-marke lph" title={`entsteht nur mit LPh ${lphText(z.regel.lph)}`}>
-                    LPh {lphText(z.regel.lph)}
-                  </span>
-                )}
-                {!z.regel?.lph?.length && geerbt.length > 0 && (
-                  <span className="po-k-marke geerbt" title={`erbt die Leistungsphasen von „${geerbt[geerbt.length - 1].pfad}“`}>
-                    LPh {lphText(geerbt[geerbt.length - 1].lph)}
-                  </span>
-                )}
-                {z.regel?.dateischema && (
-                  <span className="po-k-marke schema" title="Dateien darin werden gegen das Dateinamenschema geprüft">
-                    Schema
-                  </span>
-                )}
-                <span className="po-k-aktionen">
-                  <button
-                    className="small"
-                    tabIndex={-1}
-                    title="Unterordner anlegen"
-                    aria-label={`Unterordner in ${z.pfad}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      anlegen(z.pfad);
-                    }}
-                  >
-                    +
-                  </button>
-                  <button
-                    className="small"
-                    tabIndex={-1}
-                    title="Weitere Aktionen"
-                    aria-label={`Aktionen für ${z.pfad}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!sel) waehlen(z.pfad);
-                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      setMenue({ x: r.left, y: r.bottom });
-                    }}
-                  >
-                    ⋯
-                  </button>
-                </span>
+                Hierher ziehen: {ziehen.length > 1 ? `${ziehen.length} Ordner ` : ''}in den Stamm des Projektordners
               </div>
-            );
-          })}
-          {ziehen && (
-            <div
-              className={`po-k-stamm${ziel?.pfad === '' ? ' drop-in' : ''}`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                if (ziel?.pfad !== '') setZiel({ pfad: '', wo: 'in' });
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                nachDrop(ziehen, '', 'in');
-                setZiehen(null);
-                setZiel(null);
-              }}
-            >
-              Hierher ziehen: in den Stamm des Projektordners
-            </div>
+            )}
+          </div>
+          {meldung && (
+            <p className={`po-editor-meldung ${meldung.art === 'fehler' ? 'warning' : 'po-meldung'}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+              <span>{meldung.text}</span>
+              <button className="small icon" aria-label="Meldung schließen" title="Schließen" onClick={() => setMeldungZustand(null)}>
+                ×
+              </button>
+            </p>
           )}
         </div>
         <p className="muted small-text po-k-hilfe">
-          Klicken wählt, Strg/Umschalt wählt mehrere; Doppelklick oder F2 benennt um; ziehen verschiebt (auf einen Ordner: hinein, an den Rand: davor bzw. dahinter); Rechtsklick für alle Aktionen.
-          Strg+N Unterordner, Strg+C/V kopieren und in alle markierten einfügen, Strg+D duplizieren, Alt+Pfeile verschieben und ein-/ausrücken, Strg+Z rückgängig.
+          Rechtsklick oder Umschalt+F10 zeigt alle Aktionen mit ihren Tastenkürzeln. Ziehen verschiebt: auf einen Ordner hinein, an seinen Rand davor bzw. dahinter.
         </p>
       </section>
 
@@ -648,9 +743,11 @@ export function OrdnerEditor({
           {einer && (
             <>
               <h3>{einer.name}</h3>
-              <p className="po-k-pfad small-text" title={einer.pfad}>
-                {einer.pfad.split('/').join(' › ')}
-              </p>
+              {einer.tiefe > 0 && (
+                <p className="po-k-pfad small-text" title={einer.pfad}>
+                  {einer.pfad.split('/').join(' › ')}
+                </p>
+              )}
               <label className="field">
                 <span className="field-label">Name</span>
                 <TextField key={einer.pfad} value={einer.name} label="Name des Ordners" onChange={(v) => namenSetzen(einer.pfad, v)} />
@@ -671,20 +768,6 @@ export function OrdnerEditor({
                 {einer.regel ? '' : ' · ohne eigene Regel (entsteht über seine Unterordner)'}
               </p>
               <div className="button-row">
-                <button className="small" onClick={() => anlegen(einer.pfad)}>
-                  + Unterordner
-                </button>
-                <button className="small" onClick={() => setMehrere([einer.pfad])}>
-                  Mehrere …
-                </button>
-                <button className="small" onClick={() => dupl(einer.pfad)}>
-                  Duplizieren
-                </button>
-                {einer.hatKinder && (
-                  <button className="small" title="Die Unterordner als Baustein speichern – z. B. den Aufbau eines Gewerkeordners" onClick={() => void alsBaustein(einer.pfad)}>
-                    Als Baustein …
-                  </button>
-                )}
                 <button className="small danger" onClick={() => void loeschenFragen([einer.pfad])}>
                   Löschen
                 </button>
@@ -722,14 +805,8 @@ export function OrdnerEditor({
                 Dateinamen prüfen (Dateischema)
               </label>
               <div className="button-row">
-                <button className="small" title="In jedem markierten Ordner dieselben Unterordner anlegen" onClick={() => setMehrere(gewaehlt)}>
-                  Unterordner in allen …
-                </button>
-                <button className="small" onClick={() => kopieren(gewaehlt)}>
-                  Kopieren
-                </button>
                 <button className="small danger" onClick={() => void loeschenFragen(gewaehlt)}>
-                  Löschen
+                  {gewaehlt.length} Ordner löschen
                 </button>
               </div>
             </>
@@ -777,7 +854,7 @@ export function OrdnerEditor({
                     onClick={async () => {
                       const n = (await frageText('Baustein umbenennen', b.name, 'Umbenennen'))?.trim();
                       if (!n || n === b.name) return;
-                      if (bausteine.some((x) => x !== b && klein(x.name) === klein(n))) return setMeldung(`Einen Baustein „${n}“ gibt es schon.`);
+                      if (bausteine.some((x) => x !== b && klein(x.name) === klein(n))) return fehler(`Einen Baustein „${n}“ gibt es schon.`);
                       onBausteine(bausteine.map((x) => (x === b ? { ...b, name: n } : x)));
                     }}
                   >
@@ -803,27 +880,14 @@ export function OrdnerEditor({
       </aside>
 
       {menue && (
-        <KontextMenue x={menue.x} y={menue.y} onClose={() => setMenue(null)}>
-          {menueEintraege().map((m, i) =>
-            m.trenner ? (
-              <hr key={`t${i}`} />
-            ) : (
-              <button
-                key={m.label}
-                role="menuitem"
-                className={m.gefahr ? 'danger' : undefined}
-                title={m.titel}
-                disabled={m.aus}
-                onClick={() => {
-                  setMenue(null);
-                  m.aktion();
-                }}
-              >
-                {m.label}
-              </button>
-            ),
-          )}
-        </KontextMenue>
+        <KontextMenue
+          x={menue.x}
+          y={menue.y}
+          label={menue.art === 'weitere' ? 'Weitere Aktionen' : einer ? `Aktionen für ${einer.name}` : gewaehlt.length ? `Aktionen für ${gewaehlt.length} Ordner` : 'Aktionen'}
+          eintraege={menue.art === 'weitere' ? weitereEintraege() : kontextEintraege()}
+          oeffner={menue.art === 'weitere' ? weitereKnopf.current : null}
+          onClose={() => menueSchliessen(menue.art)}
+        />
       )}
 
       {mehrere && (
@@ -921,12 +985,35 @@ function LphHinweis({ kette, pfad }: { kette: { pfad: string; lph: number[] }[];
   return <p className="po-hinweis small-text">Entsteht nur, wenn auch {oben.map((k) => `„${k.pfad}“ (LPh ${lphText(k.lph)})`).join(' und ')} entsteht – Unterordner erben die Leistungsphasen.</p>;
 }
 
-/** Kontextmenü an der Mausposition; Klick daneben und Esc schließen */
-function KontextMenue({ x, y, onClose, children }: { x: number; y: number; onClose: () => void; children: ReactNode }) {
+/**
+ * Menü an der Maus- bzw. Zeilenposition (Kontextmenü) oder unter einem Knopf („Weitere“). Ganz per Tastatur
+ * bedienbar: beim Öffnen steht der Fokus auf dem ersten Eintrag; Pfeil auf/ab (umlaufend), Pos1/Ende, Enter bzw.
+ * Leertaste führen aus; Esc, Tab und ein Klick daneben schließen. Danach kehrt der Fokus zurück (siehe `onClose`).
+ * Tastenkürzel stehen sichtbar rechts im Eintrag.
+ */
+function KontextMenue({
+  x,
+  y,
+  label,
+  eintraege,
+  oeffner,
+  onClose,
+}: {
+  x: number;
+  y: number;
+  label: string;
+  eintraege: MenueEintrag[];
+  /** Knopf, der das Menü öffnet – ein Klick darauf schaltet selbst um und zählt nicht als „daneben“ */
+  oeffner?: HTMLElement | null;
+  onClose: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+  const schliessen = useRef(onClose);
+  schliessen.current = onClose;
   useEscSchliessen(onClose);
   useEffect(() => {
-    const zu = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && onClose();
+    // Klick daneben schließt (den Fokus übernimmt danach das angeklickte Element)
+    const zu = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && !oeffner?.contains(e.target as Node) && schliessen.current();
     window.addEventListener('pointerdown', zu);
     // im Fenster halten
     const el = ref.current;
@@ -934,12 +1021,58 @@ function KontextMenue({ x, y, onClose, children }: { x: number; y: number; onClo
       const r = el.getBoundingClientRect();
       if (r.right > window.innerWidth) el.style.left = `${Math.max(4, window.innerWidth - r.width - 4)}px`;
       if (r.bottom > window.innerHeight) el.style.top = `${Math.max(4, window.innerHeight - r.height - 4)}px`;
+      el.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')?.focus();
     }
     return () => window.removeEventListener('pointerdown', zu);
-  }, [onClose]);
+  }, []);
+  const tasten = (e: React.KeyboardEvent) => {
+    const knoepfe = [...(ref.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? [])];
+    if (!knoepfe.length) return;
+    const i = knoepfe.indexOf(document.activeElement as HTMLButtonElement);
+    const gehe = (n: number) => {
+      e.preventDefault();
+      e.stopPropagation();
+      knoepfe[(n + knoepfe.length) % knoepfe.length].focus();
+    };
+    if (e.key === 'ArrowDown') return gehe(i + 1);
+    if (e.key === 'ArrowUp') return gehe(i < 0 ? -1 : i - 1);
+    if (e.key === 'Home') return gehe(0);
+    if (e.key === 'End') return gehe(-1);
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      e.stopPropagation();
+      schliessen.current();
+    }
+  };
   return (
-    <div ref={ref} className="po-menue" role="menu" style={{ left: x, top: y }}>
-      {children}
+    <div ref={ref} className="po-menue" role="menu" aria-label={label} style={{ left: x, top: y }} onKeyDown={tasten}>
+      {eintraege.map((m, i) =>
+        m.trenner ? (
+          <hr key={`t${i}`} role="separator" />
+        ) : (
+          <button
+            key={m.label}
+            role="menuitem"
+            tabIndex={-1}
+            className={m.gefahr ? 'danger' : undefined}
+            title={m.titel}
+            aria-label={m.label}
+            aria-keyshortcuts={m.tasten}
+            disabled={m.aus}
+            onClick={() => {
+              schliessen.current();
+              m.aktion();
+            }}
+          >
+            <span className="po-menue-label">{m.label}</span>
+            {m.kuerzel && (
+              <kbd className="po-menue-kuerzel" aria-hidden>
+                {m.kuerzel}
+              </kbd>
+            )}
+          </button>
+        ),
+      )}
     </div>
   );
 }

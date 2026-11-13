@@ -68,11 +68,23 @@ interface OrdnerState {
   konfigStandEigen: string | null;
   /** projektordner.json wurde inzwischen anderswo geändert: deren Inhalt; nichts wird geschrieben, bis entschieden ist */
   konflikt: { roh: unknown } | null;
+  /**
+   * Die Struktur in projektordner.json ließ sich nicht lesen (z. B. Format einer neueren Fassung): der Grund. Angezeigt
+   * wird solange die Vorgabe, geschrieben wird nichts (auch nicht das Ordnerschema für alle Apps), bis die Struktur
+   * bewusst ersetzt wird (`strukturErsetzen` – vorher wird der unlesbare Inhalt gesichert).
+   */
+  strukturFehler: string | null;
+  /** Rohinhalt von projektordner.json beim letzten Lesen bzw. Schreiben – Felder, die dieses Tool nicht kennt, bleiben beim Schreiben erhalten */
+  rohEigen: Record<string, unknown>;
   /** die Struktur vor der letzten Ersetzung („Rückgängig“) – entfällt mit der nächsten Änderung */
   rueckgaengig: { struktur: Struktur; text: string } | null;
   setStamm: (patch: Partial<Stammdaten>) => void;
   setStruktur: (s: Struktur) => void;
-  /** Struktur als Ganzes ersetzen (Standard, Laden, Sicherung, Ordnerliste): vorher sichern, „Rückgängig“ anbieten */
+  /**
+   * Struktur als Ganzes ersetzen (Vorgabe, Laden, Sicherung, Ordnerliste aus der Textansicht): vorher sichern,
+   * „Rückgängig“ anbieten. Ohne Sicherung nur auf ausdrücklichen Wunsch (`sicherung: false`); eine unlesbare Struktur
+   * (`strukturFehler`) wird immer gesichert.
+   */
   strukturErsetzen: (neu: Struktur, grund: string, optionen?: { sicherung?: boolean }) => Promise<void>;
   /** die letzte Ersetzung zurücknehmen */
   strukturRueckgaengig: () => void;
@@ -109,6 +121,9 @@ function ladeLokal(): Lokal {
   }
 }
 
+/** Rohinhalt als Objekt (sonst leer) */
+const alsObjekt = (roh: unknown): Record<string, unknown> => (roh && typeof roh === 'object' && !Array.isArray(roh) ? (roh as Record<string, unknown>) : {});
+
 const strukturAus = (roh: unknown): Struktur => {
   try {
     return roh ? strukturAusJson(JSON.stringify(roh)) : STANDARD;
@@ -130,9 +145,38 @@ const fehlertext = (e: unknown) => (e instanceof Error ? e.message : String(e));
 /** so lange nach der letzten Änderung wird projektordner.json geschrieben */
 export const SPEICHERN_NACH_MS = 400;
 
+/** Felder der Struktur, die dieses Tool selbst schreibt – alle übrigen (von neueren Fassungen) bleiben unverändert */
+const STRUKTUR_FELDER = new Set(['name', 'nummernschema', 'ordnername', 'dateischema', 'ordner', 'vorlagenname', 'presets', 'bausteine']);
+
+/**
+ * Inhalt von projektordner.json lesen. Lässt sich die Struktur nicht lesen, gilt nicht still die Vorgabe als gespeichert:
+ * `strukturFehler` nennt den Grund und sperrt das Schreiben (siehe dort).
+ */
 const eigenAus = (roh: unknown) => {
-  const eigen = (roh ?? {}) as { struktur?: unknown; vorlagenordner?: unknown };
-  return { struktur: strukturAus(eigen.struktur), vorlagenordner: typeof eigen.vorlagenordner === 'string' ? eigen.vorlagenordner : '' };
+  const eigen = alsObjekt(roh);
+  let struktur = STANDARD;
+  let fehler: string | null = roh != null && roh !== eigen ? 'kein JSON-Objekt' : null;
+  if (!fehler && eigen.struktur != null) {
+    try {
+      struktur = strukturAusJson(JSON.stringify(eigen.struktur));
+    } catch (e) {
+      fehler = fehlertext(e);
+    }
+  }
+  return {
+    struktur,
+    vorlagenordner: typeof eigen.vorlagenordner === 'string' ? eigen.vorlagenordner : '',
+    rohEigen: eigen,
+    strukturFehler: fehler
+      ? `Die Struktur in projektordner.json lässt sich nicht lesen (${fehler}). Angezeigt wird die Vorgabe; gespeichert wird nichts, bis Sie die Struktur bewusst ersetzen – über „Struktur laden …“, eine Sicherung oder „Vorgabe wiederherstellen …“. Der bisherige Inhalt wird dann vorher gesichert.`
+      : null,
+  };
+};
+
+/** zu schreibender Inhalt: der Rohinhalt mit der eigenen Struktur und dem Vorlagenordner – unbekannte Felder bleiben */
+const eigenesMit = (roh: Record<string, unknown>, struktur: Struktur, vorlagenordner: string) => {
+  const fremd = Object.fromEntries(Object.entries(alsObjekt(roh.struktur)).filter(([k]) => !STRUKTUR_FELDER.has(k)));
+  return { ...roh, struktur: { ...fremd, ...struktur }, vorlagenordner };
 };
 
 export const useOrdner = create<OrdnerState>()((set, get) => {
@@ -141,11 +185,12 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
   /** jetzt schreiben – nur, wenn die Datei seit dem Lesen unverändert ist; sonst Konflikt melden */
   const jetztSpeichern = (): Promise<void> => {
     schreiben = schreiben.then(async () => {
-      const { struktur, vorlagenordner, konfigStandEigen, konflikt } = get();
-      if (konflikt) return;
+      const { struktur, vorlagenordner, konfigStandEigen, konflikt, strukturFehler, rohEigen } = get();
+      if (konflikt || strukturFehler) return;
       try {
-        const r = await konfigSchreibenWennUnveraendert(BEREICH, { struktur, vorlagenordner }, konfigStandEigen);
-        if (r.ok) set({ konfigStandEigen: r.stand });
+        const wert = eigenesMit(rohEigen, struktur, vorlagenordner);
+        const r = await konfigSchreibenWennUnveraendert(BEREICH, wert, konfigStandEigen);
+        if (r.ok) set({ konfigStandEigen: r.stand, rohEigen: wert });
         else set({ konflikt: { roh: r.aktuell } });
       } catch (e) {
         set({ konfigFehler: `Einstellungen nicht gespeichert: ${fehlertext(e)}` });
@@ -186,21 +231,26 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     geladen: false,
     konfigStandEigen: null,
     konflikt: null,
+    strukturFehler: null,
+    rohEigen: {},
     rueckgaengig: null,
     setStruktur: (struktur) => {
       set({ struktur, rueckgaengig: null });
       eigeneSpeichern();
     },
     strukturErsetzen: async (neu, grund, { sicherung = true } = {}) => {
-      const { struktur: alt, vorlagenordner } = get();
-      if (sicherung) {
+      const { struktur: alt, vorlagenordner, strukturFehler, rohEigen } = get();
+      if (sicherung || strukturFehler) {
+        // eine unlesbare Struktur wird so gesichert, wie sie in der Datei steht
+        const inhalt = { struktur: (strukturFehler ? rohEigen.struktur : alt) as Struktur, vorlagenordner };
         try {
-          await konfigAendern(SICHERUNGEN, (roh) => sicherungenMit(roh, { name: sicherungsName(new Date()), grund: `vor: ${grund}`, inhalt: { struktur: alt, vorlagenordner } }));
+          await konfigAendern(SICHERUNGEN, (roh) => sicherungenMit(roh, { name: sicherungsName(new Date()), grund: `vor: ${grund}`, inhalt }));
         } catch (e) {
           throw new Error(`Die Sicherung der bisherigen Struktur ließ sich nicht anlegen – die Struktur bleibt unverändert. (${fehlertext(e)})`);
         }
       }
-      set({ struktur: neu, rueckgaengig: { struktur: alt, text: grund } });
+      // die unlesbare Fassung lässt sich nicht „rückgängig“ herstellen – sie liegt in den Sicherungen
+      set({ struktur: neu, strukturFehler: null, rueckgaengig: strukturFehler ? null : { struktur: alt, text: grund } });
       eigeneSpeichern();
     },
     strukturRueckgaengig: () => {
@@ -232,7 +282,8 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
         set({ ...eigenAus(k.roh), konfigStandEigen: konfigStand(k.roh), konflikt: null, rueckgaengig: { struktur: eigene, text: 'Die Struktur des anderen Rechners wurde geladen.' } });
         return;
       }
-      set({ konfigStandEigen: konfigStand(k.roh), konflikt: null });
+      // die Felder der anderen Fassung, die dieses Tool nicht kennt, bleiben erhalten
+      set({ konfigStandEigen: konfigStand(k.roh), rohEigen: alsObjekt(k.roh), konflikt: null, strukturFehler: null });
       await jetztSpeichern();
     },
     setStammordner: (p) => allgemeinSetzen({ projekte: [p, ...get().allgemein.projekte.filter((x) => x !== p)].filter(Boolean) }),
@@ -297,7 +348,8 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
 // Schema der Projektordner-Namen für alle Apps (gleiche Ableitung von Nummer und Kurzname, P-09): nachgeführt, sobald
 // die Einstellungen gelesen sind und wenn es sich ändert
 useOrdner.subscribe((s, vorher) => {
-  if (!s.geladen || (s.struktur === vorher.struktur && s.geladen === vorher.geladen)) return;
+  // eine unlesbare Struktur (es gilt nur vorläufig die Vorgabe) schreibt nichts in die gemeinsamen Einstellungen
+  if (!s.geladen || s.strukturFehler || (s.struktur === vorher.struktur && s.geladen === vorher.geladen && s.strukturFehler === vorher.strukturFehler)) return;
   if (s.struktur.ordnername !== s.allgemein.ordnerSchema) s.setAllgemein({ ordnerSchema: s.struktur.ordnername });
 });
 

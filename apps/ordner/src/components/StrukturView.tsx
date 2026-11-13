@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
-import { bestaetigen } from '@core/ui/Rueckfrage';
+import { bestaetigen, fragen } from '@core/ui/Rueckfrage';
 import { OAP_VARIABLEN, projektdateiPfad } from '@core/projektdatei';
 import { hatDateisystem, waehleOrdner } from '../dateisystem';
 import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT } from '../nummer';
 import { SchemaFeld } from './SchemaFeld';
+import { Symbol } from './Symbol';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
@@ -39,37 +40,88 @@ export function StrukturView() {
   const struktur = useOrdner((s) => s.struktur);
   const setStruktur = useOrdner((s) => s.setStruktur);
   const strukturErsetzen = useOrdner((s) => s.strukturErsetzen);
+  const strukturFehler = useOrdner((s) => s.strukturFehler);
   const rueckgaengig = useOrdner((s) => s.rueckgaengig);
   const strukturRueckgaengig = useOrdner((s) => s.strukturRueckgaengig);
   const sicherungenLesen = useOrdner((s) => s.sicherungenLesen);
   const [sicherungen, setSicherungen] = useState<Sicherung[] | null>(null);
   /** Ordnerliste als Baum oder – für Geübte – als Text */
   const [ordnerAnsicht, setOrdnerAnsicht] = useState<'baum' | 'text'>('baum');
-  const [text, setText] = useState(() => ordnerAlsText(struktur.ordner));
+  const stand = ordnerAlsText(struktur.ordner);
+  const [text, setText] = useState(stand);
+  /** der Stand, von dem der Text der Textansicht ausgeht – kommt die Struktur neu herein, folgt nur ein unveränderter Text */
+  const basis = useRef(stand);
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
 
-  useEffect(() => setText(ordnerAlsText(struktur.ordner)), [struktur.ordner]);
+  useEffect(() => {
+    if (text === basis.current) {
+      basis.current = stand;
+      setText(stand);
+    }
+    // nur bei neuem Stand: ungespeicherter Text bleibt stehen
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stand]);
 
   const set = (patch: Partial<Struktur>) => setStruktur({ ...struktur, ...patch });
   // Meldungen zur Ordnerliste (doppelte Zeilen, falsche LPh, entfernte Zeichen) – vor dem Übernehmen sichtbar
   const gelesen = useMemo(() => ordnerAusTextMitMeldungen(text), [text]);
-  const ordnerUebernehmen = () => {
+  const geaendert = text !== stand;
+  /** der Text geht von einem älteren Stand aus (die Struktur kam inzwischen neu herein) */
+  const veraltet = geaendert && basis.current !== stand;
+  const textVerwerfen = () => {
+    basis.current = stand;
+    setText(stand);
+  };
+  /** Ordnerliste aus der Textansicht übernehmen – wie jedes Ersetzen der Struktur vorher gesichert, mit „Rückgängig“ */
+  const ordnerUebernehmen = async (): Promise<boolean> => {
     const { ordner } = gelesen;
-    if (!ordner.length) return setMeldung({ art: 'fehler', text: 'Die Liste enthält keinen Ordner – die bisherige Struktur bleibt bestehen.' });
-    setMeldung(null);
-    void strukturErsetzen({ ...struktur, ordner }, 'Ordnerliste übernommen.', { sicherung: false });
+    if (!ordner.length) {
+      setMeldung({ art: 'fehler', text: 'Die Liste enthält keinen Ordner – die bisherige Struktur bleibt bestehen.' });
+      return false;
+    }
+    try {
+      await strukturErsetzen({ ...struktur, ordner }, 'Ordnerliste übernommen.');
+      basis.current = ordnerAlsText(ordner);
+      setText(basis.current);
+      setMeldung(null);
+      return true;
+    } catch (e) {
+      setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
+      return false;
+    }
+  };
+  /** zur Baumansicht: offene Änderungen erst übernehmen oder verwerfen */
+  const zumBaum = async () => {
+    if (ordnerAnsicht === 'baum') return;
+    if (geaendert) {
+      const a = await fragen({
+        titel: 'Geänderte Ordnerliste übernehmen?',
+        text: `Der Text ist noch nicht übernommen${gelesen.meldungen.length ? ` (${gelesen.meldungen.length} ${gelesen.meldungen.length === 1 ? 'Meldung' : 'Meldungen'})` : ''}. „Übernehmen“ ersetzt die Ordnerliste – vorher gesichert, mit „Rückgängig“; „Verwerfen“ zeigt wieder die bisherige.`,
+        knoepfe: [
+          { id: 'abbrechen', label: 'Abbrechen' },
+          { id: 'verwerfen', label: 'Verwerfen', art: 'danger' },
+          { id: 'uebernehmen', label: 'Übernehmen', art: 'primary' },
+        ],
+      });
+      if (a === 'uebernehmen' && !(await ordnerUebernehmen())) return;
+      if (a === 'verwerfen') textVerwerfen();
+      if (a !== 'uebernehmen' && a !== 'verwerfen') return;
+    }
+    setOrdnerAnsicht('baum');
   };
 
   /**
-   * Bürostruktur ersetzen (Standard, Laden, Sicherung): erst die Rückfrage mit Vorschau der Änderung, dann sichern,
+   * Bürostruktur ersetzen (Vorgabe, Laden, Sicherung): erst die Rückfrage mit Vorschau der Änderung, dann sichern,
    * ersetzen und „Rückgängig“ anbieten.
    */
   const ersetzen = async (neu: Struktur, titel: string, grund: string) => {
-    if (strukturAlsJson(neu) === strukturAlsJson(struktur)) return setMeldung({ art: 'ok', text: 'Keine Änderung – die Struktur entspricht schon dieser Fassung.' });
-    const was = unterschiedText(strukturUnterschied(struktur, neu)) || 'Ordner und Schemata bleiben, Einzelheiten der Presets ändern sich';
+    if (!strukturFehler && strukturAlsJson(neu) === strukturAlsJson(struktur)) return setMeldung({ art: 'ok', text: 'Keine Änderung – die Struktur entspricht schon dieser Fassung.' });
+    const was = strukturFehler
+      ? 'Die bisherige, nicht lesbare Struktur wird ersetzt'
+      : unterschiedText(strukturUnterschied(struktur, neu)) || 'Ordner und Schemata bleiben, Einzelheiten der Presets ändern sich';
     const ok = await bestaetigen(
       titel,
-      `${was}. Die Bürostruktur gilt für alle, die diesen Konfigurationsordner nutzen. Vorher wird der bisherige Stand gesichert; „Rückgängig“ stellt ihn wieder her.`,
+      `${was}. Die Bürostruktur gilt für alle, die diesen Konfigurationsordner nutzen. Vorher wird der bisherige Stand gesichert${strukturFehler ? '' : '; „Rückgängig“ stellt ihn wieder her'}.`,
       'Ersetzen',
       true,
     );
@@ -89,6 +141,16 @@ export function StrukturView() {
     } catch (e) {
       setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
     }
+  };
+  /** Sicherung wiederherstellen – auch eine, deren Struktur sich (noch) nicht lesen lässt, wird erst geprüft */
+  const sicherungWiederherstellen = (x: Sicherung) => {
+    let s: Struktur;
+    try {
+      s = strukturAusJson(JSON.stringify(x.inhalt.struktur));
+    } catch (e) {
+      return setMeldung({ art: 'fehler', text: `Die Sicherung ${x.name} lässt sich nicht lesen: ${e instanceof Error ? e.message : String(e)}` });
+    }
+    void ersetzen(s, `Sicherung ${x.name} wiederherstellen?`, `Sicherung ${x.name} wiederhergestellt.`);
   };
 
   const laden = async () => {
@@ -118,7 +180,6 @@ export function StrukturView() {
 
   const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
   const dateiBeispiel = (schema: string) => nameAus(schema, { ...beispiel, plannummer: 'A-101', index: 'b', titel: 'Grundriss EG' });
-  const geaendert = text !== ordnerAlsText(struktur.ordner);
 
   const ordnerKopf = (
     <div className="po-ordner-kopf">
@@ -127,7 +188,7 @@ export function StrukturView() {
         {struktur.ordner.length} Ordner, davon {struktur.ordner.filter((o) => o.lph?.length).length} an Leistungsphasen gebunden
       </span>
       <div className="tb-group" role="group" aria-label="Ansicht der Ordnerliste">
-        <button className={`small${ordnerAnsicht === 'baum' ? ' active' : ''}`} aria-pressed={ordnerAnsicht === 'baum'} onClick={() => setOrdnerAnsicht('baum')}>
+        <button className={`small${ordnerAnsicht === 'baum' ? ' active' : ''}`} aria-pressed={ordnerAnsicht === 'baum'} onClick={() => void zumBaum()}>
           Baum
         </button>
         <button
@@ -142,39 +203,45 @@ export function StrukturView() {
     </div>
   );
 
+  // Namensschemata: gelten für die ganze Struktur, nicht für den gewählten Ordner – daher im Kopf; Platzhalter-Chips nur im Fokus
   const schemata = (
-    <section className="po-col po-schemata" aria-label="Namensschemata">
-      <h3>Namen</h3>
-      <Field label="Projektnummer">
-        <SchemaFeld
-          label="Projektnummer"
-          value={struktur.nummernschema}
-          platzhalter={PLATZHALTER_NUMMER}
-          vorschau={(t) => `Beispiel: ${nummerAus(t, 14)}`}
-          onChange={(v) => set({ nummernschema: v.trim() || struktur.nummernschema })}
-        />
-      </Field>
-      <Field label="Name des Projektordners">
-        <SchemaFeld
-          label="Name des Projektordners"
-          value={struktur.ordnername}
-          platzhalter={PLATZHALTER_PROJEKT}
-          vorschau={(t) => `Beispiel: ${sichererName(nameAus(t, beispiel))}`}
-          onChange={(v) => set({ ordnername: v.trim() || struktur.ordnername })}
-        />
-      </Field>
-      <Field label="Dateinamenschema für Pläne">
-        <SchemaFeld
-          label="Dateinamenschema für Pläne"
-          value={struktur.dateischema}
-          platzhalter={PLATZHALTER_PLAN}
-          vorschau={(t) =>
-            `Beispiel: ${dateiBeispiel(t)}.pdf${dateimuster(t, beispiel.nummer).test(dateiBeispiel(t)) ? '' : ' (das Schema erkennt sein eigenes Beispiel nicht – bitte Trennzeichen prüfen)'}`
-          }
-          onChange={(v) => set({ dateischema: v.trim() })}
-        />
-      </Field>
-    </section>
+    <div className="po-schemata" role="group" aria-labelledby="po-schemata-titel">
+      <h3 id="po-schemata-titel">Namen</h3>
+      <div className="po-schemata-felder">
+        <Field label="Projektnummer">
+          <SchemaFeld
+            label="Projektnummer"
+            value={struktur.nummernschema}
+            platzhalter={PLATZHALTER_NUMMER}
+            kompakt
+            vorschau={(t) => `Beispiel: ${nummerAus(t, 14)}`}
+            onChange={(v) => set({ nummernschema: v.trim() || struktur.nummernschema })}
+          />
+        </Field>
+        <Field label="Name des Projektordners">
+          <SchemaFeld
+            label="Name des Projektordners"
+            value={struktur.ordnername}
+            platzhalter={PLATZHALTER_PROJEKT}
+            kompakt
+            vorschau={(t) => `Beispiel: ${sichererName(nameAus(t, beispiel))}`}
+            onChange={(v) => set({ ordnername: v.trim() || struktur.ordnername })}
+          />
+        </Field>
+        <Field label="Dateinamenschema für Pläne">
+          <SchemaFeld
+            label="Dateinamenschema für Pläne"
+            value={struktur.dateischema}
+            platzhalter={PLATZHALTER_PLAN}
+            kompakt
+            vorschau={(t) =>
+              `Beispiel: ${dateiBeispiel(t)}.pdf${dateimuster(t, beispiel.nummer).test(dateiBeispiel(t)) ? '' : ' (das Schema erkennt sein eigenes Beispiel nicht – bitte Trennzeichen prüfen)'}`
+            }
+            onChange={(v) => set({ dateischema: v.trim() })}
+          />
+        </Field>
+      </div>
+    </div>
   );
 
   return (
@@ -189,19 +256,25 @@ export function StrukturView() {
             <button onClick={() => void laden()}>Struktur laden …</button>
             <button onClick={() => void speichern()}>Struktur speichern …</button>
             <button
-              title="Ordner und Namensschemata auf die neutrale Vorgabe zurücksetzen – Presets, Bausteine und Dateinamen der Vorlagen bleiben"
+              title="Ordner und Namensschemata auf die neutrale Vorgabe zurücksetzen – Presets, Bausteine und Dateinamen der Vorlagen bleiben (mit Rückfrage)"
               onClick={() =>
                 void ersetzen(
                   { ...STANDARD, vorlagenname: struktur.vorlagenname, presets: struktur.presets, ...(struktur.bausteine ? { bausteine: struktur.bausteine } : {}) },
-                  'Standardstruktur wiederherstellen?',
-                  'Neutrale Standardstruktur wiederhergestellt; die Vorlagen-Presets bleiben.',
+                  'Vorgabe wiederherstellen?',
+                  'Neutrale Vorgabe wiederhergestellt; die Vorlagen-Presets bleiben.',
                 )
               }
             >
-              Standard
+              Vorgabe wiederherstellen …
             </button>
-            <button title="Frühere Fassungen der Struktur – vor jedem Ersetzen gesichert (die letzten zehn)" onClick={() => void sicherungenZeigen()}>
-              Sicherungen …
+            <button
+              className={sicherungen ? 'active' : undefined}
+              aria-expanded={!!sicherungen}
+              aria-controls="po-sicherungen"
+              title="Frühere Fassungen der Struktur – vor jedem Ersetzen gesichert (die letzten zehn)"
+              onClick={() => void sicherungenZeigen()}
+            >
+              Sicherungen
             </button>
           </div>
         </div>
@@ -209,7 +282,16 @@ export function StrukturView() {
           Ordnerbaum, Bausteine und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur gilt für alle, die diesen Konfigurationsordner nutzen, und lässt sich als Datei speichern, weitergeben
           und auf einem anderen Rechner laden – samt den Vorlagen-Presets (unter „Vorlagen“).
         </p>
-        {meldung && <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'}>{meldung.text}</p>}
+        {strukturFehler && (
+          <p className="warning po-struktur-fehler" role="alert">
+            {strukturFehler}
+          </p>
+        )}
+        {meldung && (
+          <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+            {meldung.text}
+          </p>
+        )}
         {rueckgaengig && (
           <p className="po-meldung po-rueckgaengig">
             {rueckgaengig.text}{' '}
@@ -219,16 +301,16 @@ export function StrukturView() {
           </p>
         )}
         {sicherungen && (
-          <div className="po-sicherungen">
+          <div className="po-sicherungen" id="po-sicherungen">
             <span className="field-label">Sicherungen der Struktur</span>
             {!sicherungen.length && <p className="muted small-text">Noch keine – eine Sicherung entsteht vor jedem Ersetzen der Struktur.</p>}
             <ul className="list">
               {sicherungen.map((x) => (
                 <li key={`${x.name}:${x.grund}`}>
                   <span title={x.grund}>
-                    {x.name.replace(/^projektordner\.json\.bak-/, '')} · „{x.inhalt.struktur.name}“ · {x.grund}
+                    {x.name.replace(/^projektordner\.json\.bak-/, '')} · „{typeof x.inhalt.struktur?.name === 'string' ? x.inhalt.struktur.name : 'nicht lesbar'}“ · {x.grund}
                   </span>
-                  <button className="small" onClick={() => void ersetzen(x.inhalt.struktur, `Sicherung ${x.name} wiederherstellen?`, `Sicherung ${x.name} wiederhergestellt.`)}>
+                  <button className="small" onClick={() => sicherungWiederherstellen(x)}>
                     Wiederherstellen
                   </button>
                 </li>
@@ -236,6 +318,7 @@ export function StrukturView() {
             </ul>
           </div>
         )}
+        {schemata}
       </section>
 
       {ordnerAnsicht === 'baum' ? (
@@ -248,25 +331,22 @@ export function StrukturView() {
             setStruktur(b.length ? { ...rest, bausteine: b } : rest);
           }}
           kopf={ordnerKopf}
-          seite={schemata}
         />
       ) : (
-        <div className="po-editor">
+        <div className="po-editor po-editor-text">
           <section className="po-col po-editor-baum">
             {ordnerKopf}
             <p className="muted small-text">
               Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist
-              (Unterordner erben sie); <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft.
+              (Unterordner erben sie); <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft. Änderungen gelten erst mit „Ordnerliste übernehmen“.
             </p>
-            <textarea
-              className="po-ordnertext"
-              aria-label="Ordnerliste"
-              value={text}
-              spellCheck={false}
-              onChange={(e) => setText(e.target.value)}
-              // mit Meldungen nicht still beim Verlassen übernehmen – erst nach Durchsicht über den Knopf
-              onBlur={() => geaendert && !gelesen.meldungen.length && ordnerUebernehmen()}
-            />
+            <textarea className="po-ordnertext" aria-label="Ordnerliste" value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} />
+            {veraltet && (
+              <p className="warning po-text-veraltet" role="status">
+                Die Ordnerliste wurde inzwischen geändert (z. B. auf einem anderen Rechner). Der Text oben geht noch vom alten Stand aus: „Ordnerliste übernehmen“ ersetzt den neuen Stand durch ihn,
+                „Verwerfen“ zeigt den neuen Stand.
+              </p>
+            )}
             {gelesen.meldungen.length > 0 && (
               <div className="warning po-ordnermeldungen">
                 <ul>
@@ -278,12 +358,15 @@ export function StrukturView() {
               </div>
             )}
             <div className="button-row">
-              <button className="primary" disabled={!geaendert} onClick={ordnerUebernehmen}>
+              <button className="primary" disabled={!geaendert} onClick={() => void ordnerUebernehmen()}>
                 Ordnerliste übernehmen
               </button>
+              <button disabled={!geaendert} onClick={textVerwerfen}>
+                Verwerfen
+              </button>
+              {geaendert && <span className="muted small-text">noch nicht übernommen</span>}
             </div>
           </section>
-          <aside className="po-editor-seite">{schemata}</aside>
         </div>
       )}
     </div>
@@ -367,7 +450,7 @@ function GemeinsameEinstellungen() {
       {konfigFehler && <p className="warning">{konfigFehler}</p>}
       {meldung && <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'}>{meldung.text}</p>}
 
-      <span className="field-label">Stammordner der Projekte</span>
+      <h3 className="po-abschnitt">Stammordner der Projekte</h3>
       <p className="muted small-text">
         Reihenfolge wie in der Projektübersicht aller Apps – zum Umsortieren ziehen (oder ↑ ↓; auch die Abschnitte der Projektübersicht lassen sich ziehen). Im ersten entstehen neue Projekte. Projekte
         in Gruppen-, Akquise- und Archivordnern darin werden mit erfasst.
@@ -410,24 +493,35 @@ function GemeinsameEinstellungen() {
             </span>
             <code title={p}>{p}</code>
             {i === 0 ? (
-              <span className="muted small-text">neue Projekte</span>
+              <span className="muted small-text po-stamm-neu">neue Projekte</span>
             ) : (
-              <button className="small" title="Neue Projekte hier anlegen" onClick={() => setAllgemein({ projekte: [p, ...allgemein.projekte.filter((x) => x !== p)] })}>
-                für neue
+              <button
+                className="small po-stamm-neu"
+                title="Neue Projekte in diesem Stammordner anlegen (er rückt an die erste Stelle)"
+                onClick={() => setAllgemein({ projekte: [p, ...allgemein.projekte.filter((x) => x !== p)] })}
+              >
+                Neue Projekte hier
               </button>
             )}
-            <button className="small" title="nach oben" aria-label={`${p} nach oben`} disabled={i === 0} onClick={() => verschieben(i, i - 1)}>
+            <button className="icon" title="Nach oben" aria-label={`${p} nach oben`} disabled={i === 0} onClick={() => verschieben(i, i - 1)}>
               ↑
             </button>
-            <button className="small" title="nach unten" aria-label={`${p} nach unten`} disabled={i === allgemein.projekte.length - 1} onClick={() => verschieben(i, i + 2)}>
+            <button className="icon" title="Nach unten" aria-label={`${p} nach unten`} disabled={i === allgemein.projekte.length - 1} onClick={() => verschieben(i, i + 2)}>
               ↓
             </button>
-            <button className="small" title="Aus der Liste nehmen – am Ordner ändert sich nichts" onClick={() => setAllgemein({ projekte: allgemein.projekte.filter((x) => x !== p) })}>
-              ×
+            <button
+              className="icon"
+              title="Aus der Liste nehmen – am Ordner ändert sich nichts"
+              aria-label={`${p} entfernen`}
+              onClick={() => setAllgemein({ projekte: allgemein.projekte.filter((x) => x !== p) })}
+            >
+              <Symbol name="muell" />
             </button>
           </li>
         ))}
-        {!allgemein.projekte.length && <li className="muted">noch keiner</li>}
+        {!allgemein.projekte.length && (
+          <li className="muted">{desktop ? 'Noch kein Stammordner – mit „+ Stammordner“ hinzufügen.' : 'Noch kein Stammordner – hinzufügen lässt er sich nur in der Desktop-App.'}</li>
+        )}
       </ul>
       {desktop && (
         <div className="button-row">

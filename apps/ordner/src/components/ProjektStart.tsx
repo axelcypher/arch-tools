@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ProjektStatus } from '@core/model';
 import { angeheftetLesen, anheftenUmschalten } from '@core/platform/konfig';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
@@ -19,6 +19,7 @@ import { KatasterDialog } from './KatasterDialog';
  */
 export function ProjektStart({
   fs,
+  sichtbar = true,
   entwurf,
   onNeu,
   onLeerNeu,
@@ -30,6 +31,8 @@ export function ProjektStart({
   onMails,
 }: {
   fs: ProjektordnerZugriff;
+  /** ausgeblendet (andere Ansicht der App): bleibt eingehängt; beim Wiederzeigen wird die Liste frisch gelesen */
+  sichtbar?: boolean;
   /** angefangenes neues Projekt („2026-014 EFH Musterweg“), leer ohne */
   entwurf: string;
   onNeu: () => void;
@@ -51,6 +54,12 @@ export function ProjektStart({
   const [angeheftet, setAngeheftet] = useState<string[]>([]);
   // Katasterpläne eines Projekts exportieren
   const [kataster, setKataster] = useState<{ basis: string; name: string } | null>(null);
+  // wieder sichtbar: Projekte frisch lesen – inzwischen kann ein Kollege oder eine andere App etwas geändert haben
+  const warSichtbar = useRef(sichtbar);
+  useEffect(() => {
+    if (sichtbar && !warSichtbar.current) liste.neuLaden();
+    warSichtbar.current = sichtbar;
+  }, [sichtbar]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     let aktuell = true;
     void angeheftetLesen().then((a) => aktuell && setAngeheftet(a));
@@ -100,7 +109,11 @@ export function ProjektStart({
 
   return (
     <>
-      {kataster && <KatasterDialog basis={kataster.basis} name={kataster.name} onClose={() => setKataster(null)} onEinstellungen={onKatasterEinstellungen} />}
+      {kataster && <KatasterDialog basis={kataster.basis} name={kataster.name} onClose={() => setKataster(null)} onEinstellungen={onKatasterEinstellungen} onStammdaten={() => {
+            const basis = kataster.basis;
+            setKataster(null);
+            onOeffnen(basis);
+          }} />}
       <ProjektUebersicht
         titel="Projekte"
         gruppen={liste.gruppen}
@@ -126,7 +139,11 @@ export function ProjektStart({
             <button className="primary" onClick={onNeu} title="Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen">
               {entwurf ? `Weiter mit ${entwurf}` : 'Neues Projekt'}
             </button>
-            {entwurf && <button onClick={onLeerNeu}>Neues Projekt (leer)</button>}
+            {entwurf && (
+              <button onClick={onLeerNeu} title="Den angefangenen Entwurf verwerfen und ein neues Projekt mit leerem Formular beginnen">
+                Leer beginnen
+              </button>
+            )}
             <button onClick={onAndererOrdner} title="Einen Projektordner außerhalb der Stammordner ergänzen">
               Anderen Ordner …
             </button>

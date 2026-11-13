@@ -187,11 +187,6 @@
 }
 
 /* Prüfen */
-.po-befundgruppe h4 {
-  margin: 12px 0 4px;
-  font-size: 12px;
-  color: var(--muted);
-}
 .po-projekt-knopf {
   border: none;
   background: none;
@@ -251,6 +246,31 @@
   color: var(--muted);
   user-select: text;
   -webkit-user-select: text;
+}
+.po-bericht-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.po-bericht-kopf > button {
+  flex: 0 0 auto;
+}
+.po-befund-inhalt {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.po-pfade-klapp summary {
+  margin-top: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+.po-befund-aktion {
+  margin-top: 6px;
 }
 
 /* Struktur */
@@ -318,6 +338,7 @@
 .po-struktur-titel .field {
   margin: 0;
   min-width: 220px;
+  max-width: 320px;
 }
 .po-struktur-titel .button-row {
   margin: 0;
@@ -348,31 +369,40 @@
   margin: 0 0 6px;
   font-size: 13px;
 }
+/* Werkzeugleiste: Gruppen statt Trennstrichen – beim Umbruch bleibt keine Gruppe zerrissen und kein Strich verwaist */
 .po-werkzeuge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-bottom: 6px;
+}
+.po-werkzeuge-gruppe {
+  display: flex;
+  gap: 4px;
+}
+/* LPh-Vorschau: eigener Modus mit Rahmen, Chips als Umriss (ansehen statt Regel setzen) */
+.po-vorschau-lph {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
   margin-bottom: 6px;
+  padding: 5px 8px;
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
 }
-.po-werkzeuge-trenner {
-  width: 1px;
-  height: 18px;
-  margin: 0 4px;
-  background: var(--border);
-}
-.po-vorschau-lph {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 3px 4px;
-  margin-bottom: 6px;
-}
-.po-vorschau-lph > span:first-child {
+.po-vorschau-titel {
   margin-right: 4px;
+  font-size: 12px;
+  font-weight: 600;
 }
-.po-vorschau-lph > span:last-child {
-  margin-left: 6px;
+.po-vorschau-stand {
+  margin: 0 4px 0 6px;
+  color: var(--muted);
+}
+.po-vorschau-lph > button:last-child {
+  margin-left: auto;
 }
 .po-chip {
   min-width: 24px;
@@ -398,8 +428,35 @@
   border-color: var(--accent);
   border-style: dashed;
 }
+.po-chip.umriss {
+  background: transparent;
+  border-radius: 4px;
+}
+.po-chip.umriss.aktiv {
+  background: transparent;
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+/* Meldungen über dem unteren Rand des Baums – der Baum springt nicht */
+.po-k-rahmen {
+  position: relative;
+}
 .po-editor-meldung {
-  margin: 0 0 6px;
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--text) 22%, transparent);
+}
+.po-editor-meldung > span {
+  flex: 1;
 }
 
 /* der Baum */
@@ -441,9 +498,6 @@
 }
 .po-k-baum:focus .po-k-zeile.cursor {
   box-shadow: inset 0 0 0 1px var(--accent);
-}
-.po-k-zeile.implizit .po-k-name {
-  font-style: italic;
 }
 .po-k-zeile.entfaellt .po-k-name,
 .po-k-zeile.entfaellt .po-art {
@@ -534,7 +588,12 @@
   padding: 0 5px;
   line-height: 16px;
 }
+/* beim Ziehen immer sichtbar: klebt am unteren Rand des sichtbaren Baums */
 .po-k-stamm {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--input-bg);
   margin: 6px;
   padding: 8px;
   border: 1px dashed var(--border);
@@ -622,8 +681,25 @@
   background: var(--code-bg);
   border-radius: 4px;
 }
+.po-schemata h3 {
+  margin: 12px 0 4px;
+  font-size: 13px;
+}
+.po-schemata-felder {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 14px;
+}
+@media (max-width: 900px) {
+  .po-schemata-felder {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .po-schemata .field {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+}
+.po-editor.po-editor-text {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* Kontextmenü */
@@ -635,11 +711,14 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--text) 18%, transparent);
   display: flex;
   flex-direction: column;
 }
 .po-menue button {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
   padding: 5px 14px;
   border: none;
   border-radius: 0;
@@ -650,6 +729,19 @@
 }
 .po-menue button:hover:not(:disabled) {
   background: var(--hover);
+}
+.po-menue button:focus {
+  outline: none;
+  background: var(--accent-soft);
+}
+.po-menue button:disabled {
+  color: var(--muted);
+}
+.po-menue-kuerzel {
+  color: var(--muted);
+  font: inherit;
+  font-size: 11.5px;
+  white-space: nowrap;
 }
 .po-menue button.danger {
   color: var(--danger);
@@ -740,6 +832,35 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
+  padding: 0;
+}
+/* der ganze Eintrag ist ein Knopf – per Tab erreichbar, Enter/Leertaste wählt */
+.po-preset-knopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.po-preset-knopf:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.po-platzhalter-klapp {
+  margin-top: 8px;
+}
+.po-platzhalter-klapp summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
 }
 .po-standard {
   align-self: center;
@@ -815,8 +936,22 @@
 }
 
 /* Assistent */
+/* bleibt beim Wechsel der Ansicht eingehängt: nur ausblenden, sonst ohne eigenen Kasten */
+.po-assistent-huelle {
+  display: contents;
+}
+.po-assistent-huelle[hidden] {
+  display: none;
+}
 .po-view.po-assistent {
   grid-template-columns: minmax(0, 940px);
+}
+/* Überschriften bekommen den Fokus beim Schrittwechsel (Hilfsmittel lesen sie vor) – ohne Rahmen */
+.po-assistent h2[tabindex='-1']:focus {
+  outline: none;
+}
+.po-assistent .po-plan {
+  max-height: 32vh;
 }
 .po-schritte {
   display: flex;
@@ -854,12 +989,37 @@
 .po-weiter-grund {
   align-self: center;
   font-size: 12px;
-  color: var(--warn-text);
+  color: var(--danger);
 }
-.po-schritte li.aktiv .po-schritt-nr,
-.po-schritte li.erledigt .po-schritt-nr {
+.po-weiter-grund:empty {
+  display: none;
+}
+/* steht rechts direkt neben „Weiter“ */
+.po-weiter-grund:not(:empty) {
+  margin-left: auto;
+}
+.po-navigation .po-weiter-grund:not(:empty) + .primary {
+  margin-left: 0;
+}
+.po-weiter-grund .po-mehr {
+  color: var(--danger);
+  text-decoration: underline;
+}
+.po-sperr-grund {
+  align-self: center;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+.po-schritte li.aktiv .po-schritt-nr {
   background: var(--accent);
   color: var(--on-accent);
+}
+.po-schritte li.erledigt .po-schritt-nr {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  box-shadow: inset 0 0 0 1px var(--ok-border);
 }
 .po-kontext {
   margin: 0 0 10px;
@@ -892,6 +1052,23 @@
 .po-projektliste li {
   cursor: pointer;
   font-size: 12.5px;
+}
+.po-start .po-projekt-knopf {
+  flex: 1;
+  min-width: 0;
+}
+.po-vorlagenwahl {
+  margin: 10px 0 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+.po-vorlagenwahl legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
 }
 .po-karte .po-suche {
   width: 100%;
@@ -931,12 +1108,39 @@
 .po-navigation .primary {
   margin-left: auto;
 }
+.po-navigation .po-sperr-grund + .primary,
+.po-navigation .busy + .primary {
+  margin-left: 0;
+}
+/* im Assistenten bleibt die Navigation unten sichtbar – auch bei langem Trockenlauf */
+.po-assistent .po-navigation {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-bottom: -12px;
+  padding-bottom: 12px;
+  background: var(--panel);
+}
 
 /* Einstellungen */
+/* Abschnitt der gemeinsamen Einstellungen (Stammordner) – so groß wie die übrigen Abschnittsüberschriften */
+h3.po-abschnitt {
+  margin: 18px 0 2px;
+  font-size: 14px;
+}
+.po-stammordner {
+  margin-bottom: 12px;
+}
 .po-stammordner li {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+/* „neue Projekte“ und „Neue Projekte hier“ gleich breit – die Pfade stehen bündig */
+.po-stamm-neu {
+  flex: 0 0 auto;
+  min-width: 132px;
+  text-align: center;
 }
 .po-stammordner li[draggable='true'] {
   cursor: grab;
@@ -1132,15 +1336,61 @@
   color: var(--muted);
 }
 .ka-art.pdf {
-  background: var(--fehler-bg);
-  color: var(--fehler-text);
+  /* neutral – Rot läse sich wie ein Fehler */
+  background: var(--chip-bg);
+  color: var(--text);
 }
 .ka-art.dxf {
   background: var(--accent-soft);
   color: var(--accent);
 }
+/* Felder einer Plankarte im Raster; Zahlenfelder bleiben kurz */
+.es-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 12px;
+  align-items: end;
+}
+.es-raster > label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.es-raster input:not([type='checkbox']) {
+  width: 100%;
+}
+.es-breit {
+  grid-column: 1 / -1;
+}
+/* Auswahl mit langen Einträgen (Stil der DXF) über zwei Spalten */
+.es-raster > .ka-zwei {
+  grid-column: span 2;
+}
 .ka-raster select {
   width: 100%;
+}
+.ka-fehlt .po-link {
+  margin-left: 6px;
+}
+/* Knopf, der wie ein Verweis aussieht (Einstellungen öffnen, Datei wählen …) */
+button.po-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+button.po-link:hover:not(:disabled) {
+  background: none;
+  color: var(--accent-hover);
+}
+button.po-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 .ka-check {
   flex-direction: row !important;
@@ -1427,13 +1677,13 @@
   border-color: var(--accent);
   background: var(--accent-soft);
 }
-.po-ablage-wahl {
-  color: var(--accent);
-  cursor: pointer;
-  text-decoration: underline;
+.po-mail-kopf .po-mail-verwerfen {
+  flex: 0 0 auto;
+  align-self: center;
 }
-.po-ablage-wahl input {
-  display: none;
+/* ohne Ordnerwahl (nicht lesbar) steht „×“ am Zeilenende */
+.po-mail-kopf .po-mail-verwerfen.rechts {
+  margin-left: auto;
 }
 .po-neue {
   margin-bottom: 14px;
@@ -1535,5 +1785,5 @@
 
 /* Platzhalter des festen Ablageordners (Katasterpläne): eingerückt unter „Ordner im Projektordner“ */
 .ka-ziel-platzhalter {
-  margin-left: 24px;
+  margin-top: 4px;
 }

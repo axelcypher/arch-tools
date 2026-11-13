@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MsgKopf } from '@core/mail/msg';
 import { msgKopf } from '@core/mail/msg';
 import type { ProjektordnerEintrag } from '@core/platform/projektordner';
@@ -51,12 +51,27 @@ interface NeueMail {
   ordner: string;
   /** dieselbe Mail liegt schon im Projekt (gleicher Betreff und Versand) */
   schonDa?: string;
+  /** dieselbe Mail ist in dieser Ablage schon dabei (Name, unter dem sie ankam) */
+  doppelt?: string;
   status?: { art: 'ok' | 'fehler'; text: string };
 }
 
 const name = (pfad: string) => pfad.split('/').pop() ?? pfad;
 const ordnerVon = (pfad: string) => pfad.split('/').slice(0, -1).join('/');
 const istFalsch = (z: Zeile) => !z.befund.ok || z.inhalt.length > 0;
+/** dieselbe Nachricht? Betreff und Versandzeit gleich – ohne Versandzeit (Entwurf) nie */
+const gleicheMail = (a: MsgKopf, b: MsgKopf) => !!a.gesendet && !!b.gesendet && a.gesendet.getTime() === b.gesendet.getTime() && a.betreff === b.betreff;
+/** JJMMTT eines Tages und der Nachbartage – zum Vorfiltern der Mails, deren Kopf für den Abgleich gelesen wird */
+const tageUm = (d?: Date) =>
+  d
+    ? [-1, 0, 1].map((v) => {
+        const x = new Date(d.getTime() + v * 86400000);
+        return `${String(x.getFullYear() % 100).padStart(2, '0')}${String(x.getMonth() + 1).padStart(2, '0')}${String(x.getDate()).padStart(2, '0')}`;
+      })
+    : [];
+/** Klartext statt der technischen Meldung des Lesers (die steht im Tooltip und im Protokoll) */
+const LESEFEHLER = 'Die Datei ist keine lesbare Outlook-Mail.';
+let naechsteId = 1;
 const tag = (d?: Date) => (d ? d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–');
 
 /** Teile vergleichen, die aus der Nachricht folgen: Datum, Richtung und – wenn die Richtung stimmt – nichts weiter */
@@ -91,6 +106,12 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   const [eigeneText, setEigeneText] = useState('');
   const [neue, setNeue] = useState<NeueMail[]>([]);
   const [ziehtDrueber, setZiehtDrueber] = useState(false);
+  const dateiWahl = useRef<HTMLInputElement>(null);
+  const projektListe = useRef<HTMLUListElement>(null);
+  /** Kennung des Einlesens: nach einem Projektwechsel verwirft ein noch laufender alter Lauf seine Ergebnisse */
+  const lauf = useRef(0);
+  const zeilenRef = useRef<Zeile[]>([]);
+  zeilenRef.current = zeilen;
 
   useEffect(() => {
     if (!einstellungenGeladen) void useMails.getState().laden();
@@ -130,20 +151,24 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     }
   };
 
-  /** Nachrichten nacheinander lesen (die falsch benannten zuerst) */
-  const allesLesen = async (o: GeladenerOrdner & { code: string }, liste: Zeile[], auchRichtige: boolean) => {
-    const offen = liste.filter((z) => !z.kopf && !z.lesefehler && (auchRichtige || !z.befund.ok));
+  /** Nachrichten nacheinander lesen (die falsch benannten zuerst); `kennung` = Lauf, zu dem das Einlesen gehört */
+  const allesLesen = async (o: GeladenerOrdner & { code: string }, liste: Zeile[], auchRichtige: boolean, kennung = lauf.current) => {
+    // noch nicht bewertet (ein nur zum Raten bzw. Abgleich gelesener Kopf zählt nicht)
+    const offen = liste.filter((z) => !z.vorschlag && !z.lesefehler && (auchRichtige || !z.befund.ok));
     let i = 0;
     for (const z of offen) {
+      if (kennung !== lauf.current) return;
       setLaeuft(`Mails werden gelesen … ${++i} / ${offen.length}`);
       const neu = await lesen(o, z);
+      if (kennung !== lauf.current) return;
       setZeilen((alt) => alt.map((x) => (x.pfad === z.pfad ? { ...neu, gewaehlt: neu.gewaehlt, offen: x.offen } : x)));
     }
     setLaeuft(null);
   };
 
-  const auswerten = async (o: GeladenerOrdner) => {
+  const auswerten = async (o: GeladenerOrdner, kennung = ++lauf.current) => {
     const g = await projektEinlesen(o);
+    if (kennung !== lauf.current) return;
     const code = g.angaben?.nummer || ausOrdnername(struktur.ordnername, o.name).nummer || o.name.split(' ')[0];
     const p = { ...o, code };
     const liste: Zeile[] = o.eintraege
@@ -155,12 +180,14 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     log.info(`Mails eingelesen: ${o.name}`, { mails: liste.length, falsch: liste.filter((z) => !z.befund.ok).length });
     setProjekt(p);
     setZeilen(liste);
-    await allesLesen(p, liste, false);
+    setNeue([]);
+    await allesLesen(p, liste, false, kennung);
     // ohne eigene Domain: ein paar korrekt benannte Mails lesen, um sie zu erraten (nur den Kopf, ohne sie zu bewerten)
     if (!useMails.getState().eigene.length) {
       for (const z of liste.filter((x) => x.befund.ok).slice(0, 6)) {
         try {
           const kopf = msgKopf(await p.lies(z.pfad), { mitText: true });
+          if (kennung !== lauf.current) return;
           setZeilen((alt) => alt.map((x) => (x.pfad === z.pfad ? { ...x, kopf } : x)));
         } catch {
           // nicht lesbar: zählt beim Raten nicht
@@ -171,11 +198,14 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
 
   const ladenPfad = async (pfad: string) => {
     if (!fs) return;
+    const kennung = ++lauf.current;
     setFehler(null);
     setLaeuft('Projektordner wird gelesen …');
     try {
-      await auswerten(await ladeProjektordner(pfad, fs));
+      const o = await ladeProjektordner(pfad, fs);
+      if (kennung === lauf.current) await auswerten(o, kennung);
     } catch (e) {
+      if (kennung !== lauf.current) return;
       setFehler(e instanceof Error ? e.message : String(e));
       setLaeuft(null);
     }
@@ -217,15 +247,19 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
 
   const umbenennen = async (liste: Zeile[]) => {
     if (!projekt || !fs?.umbenennen) return;
+    const kennung = lauf.current;
     setFehler(null);
     let i = 0;
     let erfolgreich = 0;
     for (const z of liste) {
       const t = ziel(z);
       if (!t || t.problem) continue;
+      if (kennung !== lauf.current) return;
       setLaeuft(`Mails werden umbenannt … ${++i} / ${liste.length}`);
       try {
         const ok = await fs.umbenennen(projekt.pfad, z.pfad, t.pfad);
+        // inzwischen ein anderes Projekt gewählt: dessen Zeilen nicht anfassen (umbenannt ist trotzdem)
+        if (kennung !== lauf.current) return log.info(`Mail umbenannt: ${z.pfad} → ${t.pfad}`);
         if (!ok) {
           umschalten(z.pfad, { status: { art: 'fehler', text: 'Den Namen gibt es schon – nichts geändert.' } });
           continue;
@@ -260,13 +294,25 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     );
   };
 
-  /** eigene Domains geändert: Vorschläge der nicht bearbeiteten Zeilen neu bilden */
+  /**
+   * eigene Domains geändert: Vorschläge der gelesenen Zeilen neu bilden. Funktional nachgeführt – was ein noch
+   * laufendes Einlesen oder eine Eingabe inzwischen geändert hat, bleibt erhalten; nach einem Projektwechsel nichts.
+   */
   const eigeneSetzen = async (liste: string[]) => {
+    const kennung = lauf.current;
     await setEigene(liste);
-    if (!projekt) return;
+    if (!projekt || kennung !== lauf.current) return;
     const neu = useMails.getState().eigene;
-    const ergebnis = await Promise.all(zeilen.map((z) => (z.kopf ? lesen(projekt, { ...z, inhalt: [] }, neu) : z)));
-    setZeilen(ergebnis);
+    const ergebnis = await Promise.all(zeilenRef.current.filter((z) => z.kopf).map((z) => lesen(projekt, { ...z, inhalt: [] }, neu)));
+    if (kennung !== lauf.current) return;
+    const nachPfad = new Map(ergebnis.map((z) => [z.pfad, z]));
+    setZeilen((alt) =>
+      alt.map((x) => {
+        const n = nachPfad.get(x.pfad);
+        if (!n) return x;
+        return { ...n, teile: x.bearbeitet && x.teile ? x.teile : n.teile, bearbeitet: x.bearbeitet, offen: x.offen, status: x.status, gewaehlt: x.gewaehlt || n.gewaehlt };
+      }),
+    );
   };
 
   /* ---------- Aus Outlook ablegen ---------- */
@@ -285,9 +331,36 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     return mitMails ?? ordnerListe.find((o) => /schriftverkehr|korrespondenz|mail/i.test(o)) ?? '';
   };
 
+  /**
+   * Köpfe der Mails im Projekt, die dieselbe Nachricht sein könnten: schon gelesene, dazu die noch ungelesenen, deren
+   * Name nicht dem Schema folgt oder deren Datum im Namen zum Versand bzw. Empfang passt (± ein Tag). Nachgelesene Köpfe
+   * kommen in die Zeilen (ohne sie zu bewerten).
+   */
+  const koepfeZumAbgleich = async (o: GeladenerOrdner & { code: string }, mails: MsgKopf[], kennung: number): Promise<{ pfad: string; kopf: MsgKopf }[]> => {
+    const tage = new Set(mails.flatMap((k) => [...tageUm(k.gesendet), ...tageUm(k.empfangen)]));
+    const out: { pfad: string; kopf: MsgKopf }[] = [];
+    const gelesen = new Map<string, MsgKopf>();
+    for (const z of zeilenRef.current) {
+      if (z.kopf) out.push({ pfad: z.pfad, kopf: z.kopf });
+      else if (!z.lesefehler && (!z.befund.teile || tage.has(z.befund.teile.datum))) {
+        try {
+          const kopf = msgKopf(await o.lies(z.pfad), { mitText: true });
+          if (kennung !== lauf.current) return [];
+          gelesen.set(z.pfad, kopf);
+          out.push({ pfad: z.pfad, kopf });
+        } catch {
+          // nicht lesbar: taugt nicht zum Abgleich
+        }
+      }
+    }
+    if (gelesen.size) setZeilen((alt) => alt.map((x) => (gelesen.has(x.pfad) && !x.kopf ? { ...x, kopf: gelesen.get(x.pfad) } : x)));
+    return out;
+  };
+
   /** Dateien aus Outlook (Ziehen) oder dem Dateidialog: lesen und Vorschläge bilden */
   const hinzufuegen = async (dateien: File[]) => {
     if (!projekt) return;
+    const kennung = lauf.current;
     const msg = dateien.filter((f) => /\.msg$/i.test(f.name));
     if (!msg.length) return setFehler(dateien.length ? 'Nur Outlook-Mails (.msg) lassen sich hier ablegen – aus dem klassischen Outlook direkt hierher ziehen.' : null);
     setFehler(null);
@@ -295,18 +368,38 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     const neu: NeueMail[] = [];
     for (const f of msg) {
       const daten = new Uint8Array(await f.arrayBuffer());
-      const m: NeueMail = { id: Math.random(), herkunft: f.name, daten, ordner };
+      const m: NeueMail = { id: naechsteId++, herkunft: f.name, daten, ordner };
       try {
         m.kopf = msgKopf(daten, { mitText: true });
         m.vorschlag = mailVorschlag(m.kopf, { code: projekt.code, eigene });
         m.teile = m.vorschlag.teile;
-        const gleich = zeilen.find((z) => z.kopf && z.kopf.betreff === m.kopf!.betreff && z.kopf.gesendet?.getTime() === m.kopf!.gesendet?.getTime());
-        if (gleich) m.schonDa = gleich.pfad;
       } catch (e) {
         m.lesefehler = e instanceof Error ? e.message : String(e);
+        log.warn(`Mail nicht lesbar: ${f.name}`, m.lesefehler);
       }
       neu.push(m);
     }
+    // Doppelte: gegen alle Mails im Projekt, gegen die schon zum Ablegen bereiten und innerhalb dieses Drops
+    const gelesen = neu.filter((m) => m.kopf);
+    if (gelesen.length) {
+      if (laeuft === null) setLaeuft('Mails im Projekt werden abgeglichen …');
+      const imProjekt = await koepfeZumAbgleich(
+        projekt,
+        gelesen.map((m) => m.kopf!),
+        kennung,
+      );
+      if (laeuft === null) setLaeuft(null);
+      if (kennung !== lauf.current) return;
+      const vorher: { herkunft: string; kopf: MsgKopf }[] = neue.filter((m) => m.kopf).map((m) => ({ herkunft: m.herkunft, kopf: m.kopf! }));
+      for (const m of gelesen) {
+        const da = imProjekt.find((z) => gleicheMail(z.kopf, m.kopf!));
+        if (da) m.schonDa = da.pfad;
+        const dabei = vorher.find((x) => gleicheMail(x.kopf, m.kopf!));
+        if (dabei) m.doppelt = dabei.herkunft;
+        vorher.push({ herkunft: m.herkunft, kopf: m.kopf! });
+      }
+    }
+    if (kennung !== lauf.current) return;
     log.info(`Mails zum Ablegen: ${neu.length}`, { projekt: projekt.name });
     setNeue((alt) => [...alt, ...neu]);
   };
@@ -331,11 +424,14 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
 
   const ablegen = async (liste: NeueMail[]) => {
     if (!projekt || !fs) return;
+    const kennung = lauf.current;
     for (const m of liste) {
       const t = neuZiel(m);
       if (!t || t.problem || m.status?.art === 'ok') continue;
+      if (kennung !== lauf.current) return;
       try {
         const ok = await fs.dateiAnlegen(projekt.pfad, t.pfad, m.daten);
+        if (kennung !== lauf.current) return log.info(`Mail abgelegt: ${t.pfad}`);
         if (!ok) {
           setNeue((alt) => alt.map((x) => (x.id === m.id ? { ...x, status: { art: 'fehler', text: 'Den Namen gibt es schon – nichts geändert.' } } : x)));
           continue;
@@ -381,6 +477,19 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   );
   // Themen, die im Projekt schon vorkommen – als Vorschläge für einheitliche Namen
   const themen = useMemo(() => [...new Set(zeilen.filter((z) => z.befund.ok && z.befund.teile).map((z) => z.befund.teile!.thema))].sort((a, b) => a.localeCompare(b, 'de')), [zeilen]);
+  const projektKnoepfe = () => [...(projektListe.current?.querySelectorAll<HTMLButtonElement>('button.po-projekt-knopf') ?? [])];
+  /** Pfeil hoch/runter in der Projektliste; oben angekommen zurück in die Suche */
+  const listeTaste = (e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const knoepfe = projektKnoepfe();
+    const i = knoepfe.indexOf(document.activeElement as HTMLButtonElement);
+    if (i < 0) return;
+    e.preventDefault();
+    if (e.key === 'ArrowDown') knoepfe[Math.min(i + 1, knoepfe.length - 1)].focus();
+    else if (i === 0) projektListe.current?.parentElement?.querySelector<HTMLInputElement>('input.po-suche')?.focus();
+    else knoepfe[i - 1].focus();
+  };
+  const ohneDomain = !eigene.length && zeilen.some((z) => z.vorschlag);
   const gefiltert = suche.trim() ? projekte.filter((p) => `${p.gruppe ?? ''} ${p.name}`.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
 
   return (
@@ -394,12 +503,28 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
         </p>
         {fs && roots.length > 0 && (
           <>
-            <input className="po-suche" value={suche} placeholder="Projekt suchen …" aria-label="Projekt suchen" onChange={(e) => setSuche(e.target.value)} />
-            <ul className="list po-projektliste">
+            <input
+              className="po-suche"
+              value={suche}
+              placeholder="Projekt suchen …"
+              aria-label="Projekt suchen"
+              onChange={(e) => setSuche(e.target.value)}
+              onKeyDown={(e) => {
+                // Enter lädt den ersten Treffer, Pfeil runter springt in die Liste
+                if (e.key === 'Enter' && gefiltert[0]) void ladenPfad(gefiltert[0].pfad);
+                else if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  projektKnoepfe()[0]?.focus();
+                }
+              }}
+            />
+            <ul className="list po-projektliste" ref={projektListe} onKeyDown={listeTaste}>
               {gefiltert.slice(0, 300).map((p) => (
-                <li key={p.pfad} className={projekt?.pfad === p.pfad ? 'active' : ''} onClick={() => void ladenPfad(p.pfad)} title={p.pfad}>
-                  {p.gruppe && <span className="muted small-text">{p.gruppe} › </span>}
-                  {p.name}
+                <li key={p.pfad} className={projekt?.pfad === p.pfad ? 'active' : ''} title={p.pfad}>
+                  <button className="po-projekt-knopf" aria-current={projekt?.pfad === p.pfad ? 'true' : undefined} onClick={() => void ladenPfad(p.pfad)}>
+                    {p.gruppe && <span className="muted small-text">{p.gruppe} › </span>}
+                    {p.name}
+                  </button>
                 </li>
               ))}
               {!gefiltert.length && <li className="muted">Kein Projekt passt zur Suche.</li>}
@@ -407,7 +532,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
           </>
         )}
         <div className="button-row">
-          <button onClick={() => void ordnerWaehlen()}>{desktop ? 'Anderen Ordner wählen …' : 'Projektordner einlesen …'}</button>
+          <button onClick={() => void ordnerWaehlen()}>{!desktop ? 'Projektordner einlesen …' : projekt ? 'Anderen Ordner wählen …' : 'Projektordner wählen …'}</button>
         </div>
         {!fs && <p className="muted small-text">Im Browser lassen sich die Mails nur prüfen; umbenennen kann die Desktop-App.</p>}
 
@@ -444,7 +569,13 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
               <h3>{projekt.name}</h3>
               <label className="po-mails-code">
                 <span className="field-label">Projektcode</span>
-                <input defaultValue={projekt.code} key={projekt.pfad} aria-label="Projektcode" onBlur={(e) => e.target.value.trim() !== projekt.code && codeSetzen(e.target.value)} />
+                <input
+                  defaultValue={projekt.code}
+                  key={projekt.pfad}
+                  aria-label="Projektcode"
+                  onBlur={(e) => e.target.value.trim() !== projekt.code && codeSetzen(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                />
               </label>
             </div>
             <p className="small-text">
@@ -491,18 +622,22 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
               <strong>Mails aus Outlook hierher ziehen</strong>
               <span className="muted small-text">
                 Aus dem klassischen Outlook direkt hierher – sie werden mit dem richtigen Namen im gewählten Ordner abgelegt (kopiert, in Outlook bleiben sie). Oder gespeicherte .msg-Dateien{' '}
-                <label className="po-ablage-wahl">
+                <button className="po-link" onClick={() => dateiWahl.current?.click()}>
                   wählen …
-                  <input
-                    type="file"
-                    accept=".msg"
-                    multiple
-                    onChange={(e) => {
-                      void hinzufuegen([...(e.target.files ?? [])]);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
+                </button>
+                <input
+                  ref={dateiWahl}
+                  type="file"
+                  accept=".msg"
+                  multiple
+                  hidden
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  onChange={(e) => {
+                    void hinzufuegen([...(e.target.files ?? [])]);
+                    e.target.value = '';
+                  }}
+                />
               </span>
             </div>
             {neue.length > 0 && (
@@ -527,16 +662,32 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                       <li key={m.id} className="po-mail neu">
                         <div className="po-mail-kopf">
                           <span className="po-mail-name">{m.herkunft}</span>
-                          <select className="po-mail-zielordner" value={m.ordner} aria-label={`Ordner für ${m.herkunft}`} onChange={(e) => neuAendern(m.id, { ordner: e.target.value })}>
-                            {ordnerListe.map((o) => (
-                              <option key={o} value={o}>
-                                {o || '(Stamm des Projektordners)'}
-                              </option>
-                            ))}
-                          </select>
+                          {/* nicht lesbar: kein Ordner zu wählen – nur verwerfen */}
+                          {!m.lesefehler && (
+                            <select className="po-mail-zielordner" value={m.ordner} aria-label={`Ordner für ${m.herkunft}`} onChange={(e) => neuAendern(m.id, { ordner: e.target.value })}>
+                              {ordnerListe.map((o) => (
+                                <option key={o} value={o}>
+                                  {o || '(Stamm des Projektordners)'}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          <button
+                            className={`icon po-mail-verwerfen${m.lesefehler ? ' rechts' : ''}`}
+                            title="Nicht ablegen"
+                            aria-label={`${m.herkunft} verwerfen`}
+                            onClick={() => setNeue((alt) => alt.filter((x) => x.id !== m.id))}
+                          >
+                            ×
+                          </button>
                         </div>
-                        {m.lesefehler && <p className="warning small-text">Nicht lesbar: {m.lesefehler}</p>}
+                        {m.lesefehler && (
+                          <p className="warning small-text" title={m.lesefehler}>
+                            {LESEFEHLER}
+                          </p>
+                        )}
                         {m.schonDa && <p className="po-hinweis small-text">Diese Mail liegt schon im Projekt: {m.schonDa}</p>}
+                        {m.doppelt && <p className="po-hinweis small-text">Diese Mail ist in dieser Ablage doppelt – schon dabei als {m.doppelt}</p>}
                         {m.teile && (
                           <>
                             <div className="po-mail-teile" role="group" aria-label={`Name für ${m.herkunft}`}>
@@ -550,9 +701,6 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                               <input className="po-mail-thema" value={m.teile.thema} aria-label="Thema" list="po-mail-themen" onChange={(e) => neuAendern(m.id, { thema: e.target.value })} />
                               <button className="small" disabled={!fs || !!t?.problem} title={t?.problem ?? `→ ${t?.pfad}`} onClick={() => void ablegen([m])}>
                                 Ablegen
-                              </button>
-                              <button className="small" title="Nicht ablegen" aria-label={`${m.herkunft} verwerfen`} onClick={() => setNeue((alt) => alt.filter((x) => x.id !== m.id))}>
-                                ×
                               </button>
                             </div>
                             <p className="small-text po-mail-neu">
@@ -568,6 +716,9 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                   })}
                 </ul>
               </div>
+            )}
+            {ohneDomain && (
+              <p className="po-hinweis small-text">Ohne eigene Domain gilt die Richtung (von/an) aus dem bisherigen Namen – links unter „Eigene Domains“ eintragen, dann erkennt die App sie selbst.</p>
             )}
             {!sichtbar.length && <p className="po-meldung">{zeilen.length ? 'Alle Mails sind nach dem Schema benannt.' : 'In diesem Projektordner gibt es keine Mails (.msg).'}</p>}
             <ul className="po-mailliste">
@@ -590,7 +741,11 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                         ))}
                       </ul>
                     )}
-                    {z.lesefehler && <p className="warning small-text">Nicht lesbar: {z.lesefehler}</p>}
+                    {z.lesefehler && (
+                      <p className="warning small-text" title={z.lesefehler}>
+                        {LESEFEHLER}
+                      </p>
+                    )}
                     {!z.teile && !z.lesefehler && !z.befund.ok && <p className="muted small-text">wird gelesen …</p>}
                     {z.teile && (
                       <>

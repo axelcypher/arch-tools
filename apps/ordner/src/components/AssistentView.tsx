@@ -9,11 +9,11 @@ import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { anRahmen, ZUR_APP } from '@core/platform/rahmen';
 import { StammdatenFelder } from '@core/ui/Stammdaten';
-import type { Dateisystem, Eintrag } from '../dateisystem';
+import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import { ausOrdnername, naechsteNummer, nummerPasst } from '../nummer';
 import type { Ergebnis, Plan } from '../plan';
-import { ausfuehren, nichtVorausgewaehlt, ohne, planen, tutEtwas } from '../plan';
+import { ausfuehren, nichtVorausgewaehlt, ohne, planen, tutEtwas, zielordnerVorhanden } from '../plan';
 import type { GeladenerOrdner, GeladenesProjekt } from '../projekt';
 import { beteiligteSammeln, projektEinlesen } from '../projekt';
 import type { Stammdaten } from '../stammdaten';
@@ -60,12 +60,24 @@ const RUECKGAENGIG_MS = 10_000;
 /** „1 Datei“, „2 Dateien“ */
 const anzahlDateien = (n: number) => `${n} ${n === 1 ? 'Datei' : 'Dateien'}`;
 
-/** Satz zur Projektdatei je Lage: neu angelegt, auf dem Desktop gezielt ergänzt; im Browser (ZIP) kein Satz zum Ergänzen */
-function projektdateiSatz(modus: Modus | null, desktop: boolean, neu: boolean): string {
+/**
+ * Satz zur Projektdatei je Lage: neu angelegt, auf dem Desktop gezielt ergänzt, nicht lesbar (bleibt unverändert); im
+ * Browser (ZIP) kein Satz zum Ergänzen
+ */
+function projektdateiSatz(modus: Modus | null, desktop: boolean, neu: boolean, nichtLesbar = false): string {
   if (neu) return 'Die Projektdatei wird neu angelegt.';
+  if (nichtLesbar) return 'Die Projektdatei ist nicht lesbar und bleibt unverändert – die Stammdaten werden nicht gespeichert.';
   if (modus === 'ergaenzen' && desktop) return 'Die Projektdatei wird gezielt ergänzt (vorher gesichert).';
   return '';
 }
+
+/** Meldungen, die an einem Feld stehen, mit dem Index des Felds in den Stammdaten (Nummer, Kurzname) und dem Kurznamen für „Noch offen“ */
+const AM_FELD: Record<string, { feld: number; kurz: string }> = {
+  'Die Projektnummer fehlt.': { feld: 0, kurz: 'Projektnummer' },
+  'Der Kurzname fehlt.': { feld: 1, kurz: 'Kurzname' },
+};
+/** „Noch offen: …“ – kurz; was nicht an einem Feld steht, betrifft den Ordnernamen (die Meldung steht darüber) */
+const offenKurz = (f: string) => AM_FELD[f]?.kurz ?? (f.endsWith('…') ? f : 'Ordnername (siehe Meldung)');
 
 /** nur, was etwas tut (Neues anlegen, die Projektdatei ergänzen) */
 const nurWasEtwasTut = (plan: Plan): Plan => ({ ...plan, schritte: plan.schritte.filter(tutEtwas) });
@@ -76,6 +88,7 @@ const nurWasEtwasTut = (plan: Plan): Plan => ({ ...plan, schritte: plan.schritte
  * Projektdatei (.oap) des Projektordners; fehlt sie, wird sie angelegt. Gelöscht wird nichts.
  */
 export function AssistentView({
+  sichtbar = true,
   start,
   auftrag,
   onEinstellungen,
@@ -83,6 +96,8 @@ export function AssistentView({
   onKatasterEinstellungen,
   onMails,
 }: {
+  /** ausgeblendet (andere Ansicht der App): bleibt eingehängt, damit Schritt und Eingaben erhalten bleiben – setzt aber keinen Fokus */
+  sichtbar?: boolean;
   start?: GeladenerOrdner | null;
   /** neues Projekt im Auftrag einer anderen App: gleich mit den Stammdaten beginnen, danach zurück */
   auftrag?: Auftrag | null;
@@ -105,7 +120,6 @@ export function AssistentView({
   const [stammE, setStammE] = useState<Stammdaten | null>(null);
   const [projekte, setProjekte] = useState<string[]>([]);
   const [suche, setSuche] = useState('');
-  const [vorhandeneNeu, setVorhandeneNeu] = useState<Eintrag[]>([]);
   const [abgewaehlt, setAbgewaehlt] = useState<Set<string>>(new Set());
   const [nurNeu, setNurNeu] = useState(true);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -122,6 +136,11 @@ export function AssistentView({
   const [versucht, setVersucht] = useState(false);
   const [beteiligtVorschlaege, setBeteiligtVorschlaege] = useState<Beteiligter[] | null>(null);
   const weiterKnopf = useRef<HTMLButtonElement>(null);
+  /** besuchte Schritte – nur sie gelten in der Schrittleiste als erledigt */
+  const [besucht, setBesucht] = useState<Set<SchrittId>>(() => new Set(start || auftrag ? ['start', 'stammdaten'] : ['start']));
+  const bereich = useRef<HTMLElement>(null);
+  /** Schritt, für den der Fokus schon gesetzt ist (nur einmal je Schrittwechsel) */
+  const fokusBei = useRef<string | null>(null);
 
   // Projektordner im Stammordner: Auswahl zum Ergänzen und Nummernvorschlag
   useEffect(() => {
@@ -179,17 +198,20 @@ export function AssistentView({
     setAbgewaehlt(new Set());
     if (!ordner) return;
     let aktuell = true;
-    projektEinlesen(ordner).then((g) => {
-      if (!aktuell) return;
-      setGeladen(g);
-      if (g.angaben) {
-        const { angelegt: _a, struktur: _s, dateischema: _d, ...stamm } = g.angaben;
-        setStammE(stamm);
-      } else {
-        // ohne Projektdatei: Nummer und Kurzname aus dem Ordnernamen vorschlagen
-        setStammE({ ...leereStammdaten(), ...ausOrdnername(struktur.ordnername, ordner.name), bearbeiter: entwurf.bearbeiter });
-      }
-    });
+    projektEinlesen(ordner).then(
+      (g) => {
+        if (!aktuell) return;
+        setGeladen(g);
+        if (g.angaben) {
+          const { angelegt: _a, struktur: _s, dateischema: _d, ...stamm } = g.angaben;
+          setStammE(stamm);
+        } else {
+          // ohne Projektdatei: Nummer und Kurzname aus dem Ordnernamen vorschlagen
+          setStammE({ ...leereStammdaten(), ...ausOrdnername(struktur.ordnername, ordner.name), bearbeiter: entwurf.bearbeiter });
+        }
+      },
+      (e) => aktuell && setFehler(`Der Projektordner ließ sich nicht lesen: ${e instanceof Error ? e.message : String(e)}`),
+    );
     return () => {
       aktuell = false;
     };
@@ -201,30 +223,26 @@ export function AssistentView({
     else setStamm(patch);
   };
 
-  // neues Projekt: gibt es den Ordner im Stammordner schon?
+  // neues Projekt: gibt es den Ordner im Stammordner schon? Dann nicht hineinlegen, sondern das Projekt ergänzen
   const neuerName = useMemo(() => (modus === 'neu' ? planen(entwurf, struktur, []).ordner : ''), [modus, entwurf, struktur]);
   const gibtEsSchon = modus === 'neu' && !!neuerName && projekte.some((p) => p.toLowerCase() === neuerName.toLowerCase());
-  useEffect(() => {
-    if (!desktop || !gibtEsSchon) return setVorhandeneNeu([]);
-    let aktuell = true;
-    tauriDateisystem.liste(verbinde(stammordner, neuerName), 12).then(
-      (l) => aktuell && setVorhandeneNeu(l),
-      () => aktuell && setVorhandeneNeu([]),
-    );
-    return () => {
-      aktuell = false;
-    };
-  }, [desktop, gibtEsSchon, stammordner, neuerName]);
 
   const jahr = geladen?.angaben && /^\d{4}/.test(geladen.angaben.angelegt) ? Number(geladen.angaben.angelegt.slice(0, 4)) : undefined;
   const plan = useMemo(() => {
     if (!stamm || !modus) return null;
     if (modus === 'ergaenzen') {
       if (!ordner || !geladen) return null;
-      return planen(stamm, struktur, vorlagen, ordner.eintraege, new Date(), { ordner: ordner.name, jahr, oapPfad: allgemein.oapPfad, namensschema: allgemein.namensschema, projektdatei: geladen.projektdatei });
+      return planen(stamm, struktur, vorlagen, ordner.eintraege, new Date(), {
+        ordner: ordner.name,
+        jahr,
+        oapPfad: allgemein.oapPfad,
+        namensschema: allgemein.namensschema,
+        projektdatei: geladen.projektdatei,
+        ...(ordner.pfad ? { ort: ordner.pfad } : {}),
+      });
     }
-    return planen(stamm, struktur, vorlagen, vorhandeneNeu, new Date(), { oapPfad: allgemein.oapPfad, namensschema: allgemein.namensschema });
-  }, [modus, stamm, struktur, vorlagen, ordner, geladen, vorhandeneNeu, jahr, allgemein.oapPfad, allgemein.namensschema]);
+    return planen(stamm, struktur, vorlagen, [], new Date(), { oapPfad: allgemein.oapPfad, namensschema: allgemein.namensschema, ...(desktop && stammordner ? { ort: stammordner } : {}) });
+  }, [modus, stamm, struktur, vorlagen, ordner, geladen, jahr, allgemein.oapPfad, allgemein.namensschema, desktop, stammordner]);
   const auszufuehren = useMemo(() => (plan ? nurWasEtwasTut(ohne(plan, abgewaehlt)) : null), [plan, abgewaehlt]);
   const offen = auszufuehren?.schritte ?? [];
   const vorschlag = useMemo(() => naechsteNummer(struktur.nummernschema, alleNamen), [struktur.nummernschema, alleNamen]);
@@ -241,6 +259,7 @@ export function AssistentView({
 
   const neuBeginnen = () => {
     setModus('neu');
+    setBesucht(new Set(['start', 'stammdaten']));
     setVorbelegt(false);
     setVersucht(false);
     setOrdner(null);
@@ -251,6 +270,7 @@ export function AssistentView({
   };
   const ergaenzenMit = (o: GeladenerOrdner) => {
     setModus('ergaenzen');
+    setBesucht(new Set(['start', 'stammdaten']));
     setVersucht(false);
     setOrdner(o);
     setErgebnis(null);
@@ -279,7 +299,11 @@ export function AssistentView({
       return;
     }
     const o = await waehleOrdnerImBrowser();
-    if (o) ergaenzenMit({ pfad: '', name: o.name, eintraege: o.eintraege, lies: o.lies });
+    if (o) {
+      ergaenzenMit({ pfad: '', name: o.name, eintraege: o.eintraege, lies: o.lies });
+      // auch ein gleichnamiger Ordner wird neu gelesen
+      setLesung((n) => n + 1);
+    }
   };
   const stammWaehlen = async () => {
     const p = await waehleOrdner('Stammordner für Projekte wählen');
@@ -309,6 +333,7 @@ export function AssistentView({
     setAbschluss(null);
     setErgebnis(null);
     setModus(null);
+    setBesucht(new Set(['start']));
     setSchritt('start');
   };
 
@@ -320,6 +345,15 @@ export function AssistentView({
       if (modus === 'neu') {
         if (desktop) {
           setLaeuft('Projektordner wird angelegt …');
+          // frisch nachsehen: Ein Kollege kann den Ordner inzwischen angelegt haben (gleiche Nummer) – dann nichts hineinlegen
+          const schonDa = await zielordnerVorhanden(tauriDateisystem, stammordner, auszufuehren.ordner);
+          if (schonDa) {
+            setProjekte((l) => (l.some((p) => p.toLowerCase() === schonDa.toLowerCase()) ? l : [schonDa, ...l]));
+            setFehler(
+              `Den Ordner „${schonDa}“ gibt es inzwischen im Stammordner – vermutlich hat ihn gerade jemand anderes angelegt. Es wurde nichts angelegt. Bitte die Projektnummer prüfen oder das vorhandene Projekt ergänzen.`,
+            );
+            return;
+          }
           const liste = await ausfuehren(tauriDateisystem, stammordner, auszufuehren, { fortschritt: (i, n) => setLaeuft(`Projektordner wird angelegt … ${i} / ${n}`) });
           log.info(`Projektordner angelegt: ${auszufuehren.ordner}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, fehler: liste.filter((x) => x.status === 'fehler').length, presets: auszufuehren.presets });
           fertig(auszufuehren.ordner, verbinde(stammordner, auszufuehren.ordner), liste);
@@ -362,21 +396,62 @@ export function AssistentView({
   /* ---------- Prüfen je Schritt ---------- */
 
   const stammFehler = !stamm ? ['Die Stammdaten werden gelesen …'] : modus === 'neu' ? (plan?.fehler ?? []) : stamm.nummer.trim() ? [] : ['Die Projektnummer fehlt.'];
-  // Meldungen, die an einem Feld stehen (Nummer, Kurzname) – nicht noch einmal als Kasten
-  const AM_FELD = ['Die Projektnummer fehlt.', 'Der Kurzname fehlt.'];
   const kannWeiter = (id: SchrittId) => (id === 'start' ? !!modus && (modus === 'neu' || !!stamm) : id === 'stammdaten' ? !stammFehler.length : true);
   const index = SCHRITTE.findIndex((s) => s.id === schritt);
   const naechster = SCHRITTE[index + 1];
   const voriger = SCHRITTE[index - 1];
-  // ein Schritt ist erreichbar, wenn alle davor taugen
-  const erreichbar = (i: number) => !!modus && SCHRITTE.slice(0, i).every((s) => kannWeiter(s.id));
+  // ein Schritt ist erreichbar, wenn alle davor taugen – nach dem Anlegen (Abschlussseite) keiner mehr
+  const erreichbar = (i: number) => !!modus && !abschluss && SCHRITTE.slice(0, i).every((s) => kannWeiter(s.id));
+  // warum ein Schritt gesperrt ist (als Hinweis an der Schrittleiste)
+  const gesperrtGrund = !modus
+    ? 'Erst ein Projekt wählen'
+    : abschluss
+      ? 'Das Projekt ist angelegt – „Nächstes Projekt“ beginnt von vorn'
+      : !stamm
+        ? 'Die Stammdaten werden gelesen …'
+        : modus === 'neu'
+          ? 'Erst Projektnummer und Kurzname eintragen'
+          : 'Erst die Projektnummer eintragen';
 
+  /** ein Feld der Stammdaten fokussieren (0 = Projektnummer, 1 = Kurzname) */
+  const feldFokussieren = (i: number) => bereich.current?.querySelectorAll<HTMLInputElement>('.sd-felder input')[i]?.focus();
+  const geheZu = (id: SchrittId) => {
+    setSchritt(id);
+    setBesucht((b) => (b.has(id) ? b : new Set(b).add(id)));
+  };
   const weiterGehen = () => {
     if (!naechster) return;
-    if (!kannWeiter(schritt)) return setVersucht(true);
+    if (!kannWeiter(schritt)) {
+      setVersucht(true);
+      // zum ersten Feld, an dem etwas fehlt
+      const erstes = stammFehler.map((f) => AM_FELD[f]?.feld).find((x) => x !== undefined);
+      if (erstes !== undefined) feldFokussieren(erstes);
+      return;
+    }
     setVersucht(false);
-    setSchritt(naechster.id);
+    geheZu(naechster.id);
   };
+
+  // Fokus nach jedem Schrittwechsel: in den Stammdaten das erste offene Feld, sonst die Überschrift des Schritts
+  // (nicht, solange der Assistent ausgeblendet ist – dann beim nächsten Wechsel)
+  const fokusZiel = schritt === 'start' ? null : `${schritt}${abschluss ? ':fertig' : ''}`;
+  useEffect(() => {
+    if (!fokusZiel) {
+      fokusBei.current = null;
+      return;
+    }
+    if (!sichtbar || fokusBei.current === fokusZiel || !bereich.current) return;
+    let ziel: HTMLElement | null | undefined;
+    if (schritt === 'stammdaten' && !abschluss) {
+      const felder = bereich.current.querySelectorAll<HTMLInputElement>('.sd-felder input');
+      // die Stammdaten werden noch gelesen: später
+      if (!felder.length) return;
+      ziel = stamm?.nummer.trim() && felder[1] ? felder[1] : felder[0];
+    } else ziel = bereich.current.querySelector<HTMLElement>('h2');
+    if (!ziel) return;
+    ziel.focus();
+    fokusBei.current = fokusZiel;
+  });
   // Strg+Enter = „Weiter“ – nach dem Übernehmen des Feldes, in dem der Fokus steht (Enter verlässt das Feld)
   const tasten = (e: React.KeyboardEvent) => {
     if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || schritt === 'start') return;
@@ -384,10 +459,26 @@ export function AssistentView({
     setTimeout(() => weiterKnopf.current?.click(), 0);
   };
   const neueEintraege = (plan?.schritte ?? []).filter((x) => !x.vorhanden).map((x) => x.pfad);
+  /** warum „Anlegen“ bzw. „Ergänzen“ gesperrt ist – null = es kann losgehen */
+  const anlegenSperre = !plan
+    ? null
+    : plan.fehler.length
+      ? `Noch offen: ${plan.fehler.map(offenKurz).join(', ')}`
+      : modus === 'neu' && desktop && !stammordner
+        ? 'Erst den Stammordner für Projekte wählen.'
+        : modus === 'neu' && gibtEsSchon
+          ? 'Den Projektordner gibt es schon – das Projekt ergänzen oder Nummer bzw. Kurzname ändern.'
+          : !offen.length
+            ? abgewaehlt.size
+              ? 'Nichts anzulegen – alle neuen Einträge sind abgewählt.'
+              : 'Nichts anzulegen – alles ist schon vorhanden.'
+            : null;
 
   const nichtAutomatisch = useMemo(() => nichtVorausgewaehlt(struktur, vorlagen), [struktur, vorlagen]);
   const presetsAktiv = aktivePresets(struktur, stamm?.presets, nichtAutomatisch.keys()).presets;
-  const ohneProjektdatei = modus === 'ergaenzen' && geladen && !geladen.projektdatei;
+  // Projektdatei vorhanden, aber nicht lesbar: Sie bleibt unverändert – die Stammdaten werden nicht gespeichert
+  const oapNichtLesbar = modus === 'ergaenzen' && !!geladen?.quelle.fehler;
+  const ohneProjektdatei = modus === 'ergaenzen' && geladen && !geladen.projektdatei && !oapNichtLesbar;
 
   /* ---------- Darstellung ---------- */
 
@@ -401,6 +492,7 @@ export function AssistentView({
         {(fehler || laeuft) && <p className={fehler ? 'warning' : 'busy'}>{fehler ?? laeuft}</p>}
         <ProjektStart
           fs={tauriDateisystem}
+          sichtbar={sichtbar}
           entwurf={entwurfText}
           onNeu={neuBeginnen}
           onLeerNeu={() => {
@@ -420,23 +512,33 @@ export function AssistentView({
 
   return (
     <div className="po-view einspaltig po-assistent">
-      <section className="po-col" onKeyDown={tasten}>
+      <section className="po-col" onKeyDown={tasten} ref={bereich}>
         <ol className="po-schritte" aria-label="Schritte">
-          {SCHRITTE.map((s, i) => (
-            <li key={s.id} className={`${s.id === schritt ? 'aktiv' : ''}${i < index ? ' erledigt' : ''}`} aria-current={s.id === schritt ? 'step' : undefined}>
-              <button disabled={!erreichbar(i) && s.id !== schritt} onClick={() => setSchritt(s.id)}>
-                <span className="po-schritt-nr">{i + 1}</span>
-                {s.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : s.label}
-              </button>
-            </li>
-          ))}
+          {SCHRITTE.map((s, i) => {
+            const aktiv = s.id === schritt;
+            // nach dem Anlegen ist die Schrittleiste nur noch Rückblick
+            const gesperrt = !!abschluss || (!erreichbar(i) && !aktiv);
+            // erledigt: besucht und vollständig – nicht schon, weil der Schritt vor dem aktuellen liegt
+            const erledigt = !aktiv && (abschluss ? true : besucht.has(s.id) && kannWeiter(s.id) && erreichbar(i));
+            const label = s.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : s.label;
+            return (
+              <li key={s.id} className={`${aktiv ? 'aktiv' : ''}${erledigt ? ' erledigt' : ''}`} aria-current={aktiv ? 'step' : undefined} title={gesperrt ? gesperrtGrund : undefined}>
+                <button disabled={gesperrt} onClick={() => geheZu(s.id)} aria-label={erledigt ? `${label} (erledigt)` : undefined}>
+                  <span className="po-schritt-nr" aria-hidden>
+                    {erledigt ? '✓' : i + 1}
+                  </span>
+                  {label}
+                </button>
+              </li>
+            );
+          })}
         </ol>
-        {modus && schritt !== 'start' && (
+        {modus && schritt !== 'start' && !abschluss && (
           <p className="po-kontext">
             {modus === 'neu' ? (
               <>
-                Neues Projekt: <strong>{abschluss?.ordner || plan?.ordner || 'noch ohne Namen'}</strong>
-                {zurueckZu && !abschluss && (
+                Neues Projekt: <strong>{plan?.ordner || 'noch ohne Namen'}</strong>
+                {zurueckZu && (
                   <>
                     {' '}
                     · aus {zurueckZu.name}{' '}
@@ -449,7 +551,14 @@ export function AssistentView({
             ) : (
               <>
                 Ergänzen: <strong>{ordner?.name}</strong>
-                {geladen && (geladen.projektdatei ? ` · Projektdatei ${geladen.projektdatei.pfad}` : ' · noch ohne Projektdatei – sie wird angelegt')}
+                {geladen &&
+                  (geladen.projektdatei ? (
+                    <span title={geladen.projektdatei.pfad}> · Projektdatei vorhanden</span>
+                  ) : oapNichtLesbar ? (
+                    <span title={geladen.quelle.pfad}> · Projektdatei nicht lesbar – sie bleibt unverändert</span>
+                  ) : (
+                    ' · noch ohne Projektdatei – sie wird angelegt'
+                  ))}
               </>
             )}
           </p>
@@ -485,11 +594,23 @@ export function AssistentView({
               </p>
               {desktop && projekte.length > 0 && (
                 <>
-                  <input className="po-suche" value={suche} placeholder="Projekt suchen …" onChange={(e) => setSuche(e.target.value)} />
+                  <input
+                    className="po-suche"
+                    value={suche}
+                    placeholder="Projekt suchen …"
+                    aria-label="Projekt suchen"
+                    onChange={(e) => setSuche(e.target.value)}
+                    // Enter öffnet den ersten Treffer
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && gefiltert.length && !laeuft) void ordnerLaden(verbinde(stammordner, gefiltert[0]));
+                    }}
+                  />
                   <ul className="list po-projektliste">
                     {gefiltert.slice(0, 200).map((p) => (
-                      <li key={p} onClick={() => void ordnerLaden(verbinde(stammordner, p))} title={verbinde(stammordner, p)}>
-                        {p}
+                      <li key={p} title={verbinde(stammordner, p)}>
+                        <button className="po-projekt-knopf" disabled={!!laeuft} onClick={() => void ordnerLaden(verbinde(stammordner, p))}>
+                          {p}
+                        </button>
                       </li>
                     ))}
                     {!gefiltert.length && <li className="muted">Kein Projekt passt zur Suche.</li>}
@@ -509,7 +630,7 @@ export function AssistentView({
 
         {schritt === 'stammdaten' && stamm && (
           <>
-            <h2>Stammdaten</h2>
+            <h2 tabIndex={-1}>Stammdaten</h2>
             {ohneProjektdatei && (
               <p className="po-hinweis">
                 In diesem Ordner liegt noch keine Projektdatei (.oap).{' '}
@@ -522,12 +643,23 @@ export function AssistentView({
                 damit angelegt.
               </p>
             )}
-            {geladen?.quelle.fehler && <p className="warning">Die Projektdatei {geladen.quelle.pfad} ist nicht lesbar: {geladen.quelle.fehler}</p>}
+            {geladen?.quelle.fehler && (
+              <p className="warning">
+                Die Projektdatei {geladen.quelle.pfad} ist nicht lesbar: {geladen.quelle.fehler}
+                {oapNichtLesbar && (
+                  <>
+                    {' '}
+                    Sie bleibt unverändert. Was hier an Stammdaten steht, wird <strong>nicht gespeichert</strong> – es dient nur den Namen neuer Ordner und Vorlagen. Ergänzt werden nur fehlende
+                    Ordner und Vorlagen.
+                  </>
+                )}
+              </p>
+            )}
             <StammdatenFelder
               meta={formularMeta(stamm)}
               onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
               bereiche={['projekt']}
-              nummerHinweis={modus === 'neu' ? `Schema ${struktur.nummernschema}` : undefined}
+              nummerHinweis={modus === 'neu' ? `z. B. ${nummerBeispiel}` : undefined}
               nummerVorschlag={modus === 'neu' && desktop && alleNamen.length ? vorschlag : undefined}
               nummerPruefen={modus === 'neu' ? nummerPruefen : undefined}
               // beim Ergänzen wird der vorhandene Ordner nicht umbenannt
@@ -545,15 +677,8 @@ export function AssistentView({
                 </button>
               </p>
             )}
-            {modus === 'neu' && (
-              <div className="button-row">
-                <button className="small" onClick={neuesProjekt} title="Formular leeren (Bearbeitung bleibt stehen)">
-                  Formular leeren
-                </button>
-              </div>
-            )}
             {stammFehler
-              .filter((f) => !AM_FELD.includes(f))
+              .filter((f) => !AM_FELD[f])
               .map((f) => (
                 <p key={f} className="warning">
                   {f}
@@ -564,7 +689,7 @@ export function AssistentView({
 
         {schritt === 'grundstueck' && stamm && (
           <>
-            <h2>Grundstück</h2>
+            <h2 tabIndex={-1}>Grundstück</h2>
             <p className="muted small-text">Flurstück, Bebauungsplan und Aktenzeichen – Grundlage für Katasterpläne, Nachweise und Formulare. Was noch nicht bekannt ist, lässt sich später ergänzen.</p>
             <StammdatenFelder meta={formularMeta(stamm)} onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))} bereiche={['grundstueck']} fehlerZeigen={versucht} />
           </>
@@ -572,15 +697,16 @@ export function AssistentView({
 
         {schritt === 'bauherr' && stamm && (
           <>
-            <h2>Bauherr</h2>
+            <h2 tabIndex={-1}>Bauherr</h2>
+            <p className="muted small-text">Name, Anschrift und Kontakt – für Bauantrag, Formulare und Schreiben. Was noch nicht bekannt ist, lässt sich später ergänzen.</p>
             <StammdatenFelder meta={formularMeta(stamm)} onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))} bereiche={['bauherr']} fehlerZeigen={versucht} />
           </>
         )}
 
         {schritt === 'umfang' && stamm && (
           <>
-            <h2>Umfang</h2>
-            <p className="muted small-text">Beauftragte Leistungsphasen: Ordner und Vorlagen, die an Leistungsphasen gebunden sind, entstehen nur für die beauftragten. Ohne Auswahl entsteht alles.</p>
+            <h2 tabIndex={-1}>Umfang</h2>
+            <p className="muted small-text">Beauftragte Leistungsphasen: Ordner und Vorlagen, die an Leistungsphasen gebunden sind, entstehen nur für die beauftragten. Keine Auswahl = alle Ordner.</p>
             <StammdatenFelder
               meta={formularMeta(stamm)}
               onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
@@ -592,11 +718,8 @@ export function AssistentView({
 
         {schritt === 'beteiligte' && stamm && (
           <>
-            <h2>Beteiligte</h2>
-            <p className="muted small-text">
-              Wer schon bekannt ist: Fachplaner, Gutachter, Behörden. Die Rolle hat Vorschläge, der Name Vorschläge aus früheren Projekten (Rolle und Kontakt werden dann ergänzt). Weitere lassen sich jederzeit
-              über „Ergänzen“ nachtragen.
-            </p>
+            <h2 tabIndex={-1}>Beteiligte</h2>
+            <p className="muted small-text">Fachplaner, Gutachter, Behörden – mit Vorschlägen aus früheren Projekten. Später jederzeit ergänzbar.</p>
             <StammdatenFelder
               meta={formularMeta(stamm)}
               onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
@@ -609,24 +732,19 @@ export function AssistentView({
 
         {schritt === 'vorlagen' && stamm && (
           <>
-            <h2>Vorlagen</h2>
+            <h2 tabIndex={-1}>Vorlagen</h2>
             <VorlagenordnerZeile />
-            <span className="field-label">Vorlagen-Presets</span>
-            <PresetAuswahl struktur={struktur} auswahl={stamm.presets} onChange={(presets) => aendereStamm({ presets })} nichtAutomatisch={nichtAutomatisch} />
-            <ul className="po-hinweise">
-              {presetsAktiv.map((p) => (
-                <li key={p.name}>
-                  {p.name}: {p.eintraege.length} {p.eintraege.length === 1 ? 'Zuordnung' : 'Zuordnungen'}
-                </li>
-              ))}
-            </ul>
+            <fieldset className="po-vorlagenwahl">
+              <legend>Welche Vorlagen?</legend>
+              <PresetAuswahl struktur={struktur} auswahl={stamm.presets} onChange={(presets) => aendereStamm({ presets })} nichtAutomatisch={nichtAutomatisch} />
+            </fieldset>
             <p className="muted small-text">Welche Datei wohin kommt und wie sie heißt, steht unter „Vorlagen“. Die Auswahl wird in der Projektdatei vermerkt.</p>
           </>
         )}
 
         {schritt === 'ausfuehren' && modus === 'neu' && abschluss && (
           <div className="po-abschluss">
-            <h2>{desktop ? 'Projekt angelegt' : 'Projekt als ZIP heruntergeladen'}</h2>
+            <h2 tabIndex={-1}>{desktop ? 'Projekt angelegt' : 'Projekt als ZIP heruntergeladen'}</h2>
             <p className="po-abschluss-name">
               <strong>{abschluss.ordner}</strong>
               {!desktop && <span className="muted small-text"> ({abschluss.ordner}.zip – entpacken, wo das Projekt liegen soll)</span>}
@@ -661,7 +779,7 @@ export function AssistentView({
 
         {schritt === 'ausfuehren' && !(modus === 'neu' && abschluss) && (
           <>
-            <h2>{modus === 'ergaenzen' ? 'Ergänzen' : 'Anlegen'}</h2>
+            <h2 tabIndex={-1}>{modus === 'ergaenzen' ? 'Ergänzen' : 'Anlegen'}</h2>
             {modus === 'neu' && (
               <div className="po-ort">
                 <div>
@@ -679,7 +797,7 @@ export function AssistentView({
                 )}
               </div>
             )}
-            {stamm && <Steckbrief stamm={stamm} presets={presetsAktiv.map((p) => p.name)} onSchritt={setSchritt} />}
+            {stamm && <Steckbrief stamm={stamm} presets={presetsAktiv.map((p) => p.name)} onSchritt={geheZu} nichtGespeichert={oapNichtLesbar} />}
             {plan && (
               <>
                 <h3>
@@ -704,11 +822,14 @@ export function AssistentView({
                     nur zeigen, was sich ändert
                   </label>
                 )}
-                {neueEintraege.length > 1 && (
+                {/* „alles abwählen“ nur beim Ergänzen – beim neuen Projekt hieße das: nichts anlegen */}
+                {((modus === 'ergaenzen' && neueEintraege.length > 1) || abgewaehlt.size > 0) && (
                   <div className="button-row po-auswahl">
-                    <button className="small" title="Nichts Neues anlegen – dann einzelne Einträge wieder anwählen" onClick={() => setAbgewaehlt(new Set(neueEintraege))}>
-                      Alle neuen Einträge abwählen
-                    </button>
+                    {modus === 'ergaenzen' && neueEintraege.length > 1 && (
+                      <button className="small" title="Nichts Neues anlegen – dann einzelne Einträge wieder anwählen" onClick={() => setAbgewaehlt(new Set(neueEintraege))}>
+                        Alle neuen Einträge abwählen
+                      </button>
+                    )}
                     {abgewaehlt.size > 0 && (
                       <button className="small" onClick={() => setAbgewaehlt(new Set())}>
                         Alle wieder wählen
@@ -716,20 +837,22 @@ export function AssistentView({
                     )}
                   </div>
                 )}
-                <PlanTabelle plan={plan} abgewaehlt={abgewaehlt} onUmschalten={umschalten} nurNeu={modus === 'ergaenzen' && nurNeu} />
+                <PlanTabelle plan={plan} abgewaehlt={abgewaehlt} onUmschalten={umschalten} nurNeu={modus === 'ergaenzen' && nurNeu} neuOhneVermerk={modus === 'neu'} />
                 <PlanMeldungen plan={plan} />
                 {modus === 'ergaenzen' && !desktop && plan.projektdatei.teile.length > 0 && (
                   <p className="muted small-text">Die vorhandene Projektdatei lässt sich nur in der Desktop-App ergänzen; die ZIP-Datei enthält nur Neues.</p>
                 )}
-                <div className="button-row">
-                  <button className="primary" disabled={!!laeuft || plan.fehler.length > 0 || (modus === 'neu' && desktop && !stammordner) || !offen.length} onClick={() => void ausfuehrenJetzt()}>
-                    {modus === 'neu' ? (desktop ? 'Projektordner anlegen' : 'Als ZIP herunterladen') : desktop ? 'Projekt ergänzen' : 'Neues als ZIP herunterladen'}
-                  </button>
-                  {laeuft && <span className="busy">{laeuft}</span>}
-                </div>
+                {modus === 'neu' && gibtEsSchon && (
+                  <p className="po-hinweis">
+                    Den Ordner „{neuerName}“ gibt es im Stammordner schon – hier entsteht kein zweites Projekt darin.{' '}
+                    <button className="small" onClick={() => void ordnerLaden(verbinde(stammordner, neuerName))}>
+                      Dieses Projekt ergänzen
+                    </button>
+                  </p>
+                )}
                 <p className="muted small-text">
                   Ordner und Dateien werden nur neu angelegt; Vorhandenes bleibt unverändert, nichts wird verschoben oder gelöscht.{' '}
-                  {projektdateiSatz(modus, desktop, plan.projektdatei.neu)} Einzelne Einträge lassen sich abwählen.
+                  {projektdateiSatz(modus, desktop, plan.projektdatei.neu, oapNichtLesbar)} Einzelne Einträge lassen sich abwählen.
                 </p>
               </>
             )}
@@ -751,23 +874,63 @@ export function AssistentView({
           </>
         )}
 
-        {schritt !== 'start' && (
+        {/* nach dem Anlegen (Abschlussseite) keine Navigation mehr – sie führte in den schon geleerten Entwurf */}
+        {schritt !== 'start' && !abschluss && (
           <div className="button-row po-navigation">
-            {voriger && <button onClick={() => setSchritt(voriger.id)}>← {voriger.id === 'start' ? 'Anderes Projekt' : voriger.label}</button>}
+            {voriger && <button onClick={() => geheZu(voriger.id)}>← {voriger.id === 'start' ? 'Anderes Projekt' : voriger.label}</button>}
+            {/* Grund, warum es nicht weitergeht – dauerhaft im DOM, damit Hilfsmittel die Meldung ansagen */}
+            <span className="po-weiter-grund" role="status">
+              {versucht && !kannWeiter(schritt) && (
+                <>
+                  Noch offen:{' '}
+                  {stammFehler.map((f, i) => (
+                    <span key={f}>
+                      {i > 0 && ', '}
+                      {AM_FELD[f] ? (
+                        <button className="po-mehr" onClick={() => feldFokussieren(AM_FELD[f].feld)}>
+                          {offenKurz(f)}
+                        </button>
+                      ) : (
+                        offenKurz(f)
+                      )}
+                    </span>
+                  ))}
+                </>
+              )}
+            </span>
             {naechster && (
               <button
                 ref={weiterKnopf}
                 className="primary"
-                title={`${schritt === 'stammdaten' && stammFehler.length ? `${stammFehler.join(' ')} ` : ''}(Strg+Enter)`}
+                title={`${schritt === 'stammdaten' && stammFehler.length ? `Noch offen: ${stammFehler.map(offenKurz).join(', ')} ` : ''}(Strg+Enter)`}
+                aria-keyshortcuts="Control+Enter"
                 onClick={weiterGehen}
               >
                 Weiter: {naechster.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : naechster.label} →
               </button>
             )}
-            {versucht && !kannWeiter(schritt) && (
-              <span className="po-weiter-grund" role="status">
-                Noch offen: {stammFehler.map((f) => f.replace(/\.$/, '')).join(', ')}
-              </span>
+            {/* letzter Schritt: die Hauptaktion steht wie „Weiter“ rechts in der Navigation, mit dem Grund, falls gesperrt */}
+            {schritt === 'ausfuehren' && plan && (
+              <>
+                {laeuft ? (
+                  <span className="busy">{laeuft}</span>
+                ) : (
+                  anlegenSperre && (
+                    <span className="po-sperr-grund" id="po-anlegen-grund">
+                      {anlegenSperre}
+                    </span>
+                  )
+                )}
+                <button
+                  className="primary"
+                  disabled={!!laeuft || !!anlegenSperre}
+                  title={anlegenSperre ?? undefined}
+                  aria-describedby={anlegenSperre ? 'po-anlegen-grund' : undefined}
+                  onClick={() => void ausfuehrenJetzt()}
+                >
+                  {modus === 'neu' ? (desktop ? 'Projektordner anlegen' : 'Als ZIP herunterladen') : desktop ? 'Projekt ergänzen' : 'Neues als ZIP herunterladen'}
+                </button>
+              </>
             )}
           </div>
         )}
@@ -796,7 +959,7 @@ function StatusWahl({ status, onChange }: { status?: ProjektStatus; onChange: (s
 }
 
 /** Zusammenfassung vor dem Anlegen bzw. Ergänzen: was in der Projektdatei steht – je Abschnitt mit „ändern“ */
-function Steckbrief({ stamm, presets, onSchritt }: { stamm: Stammdaten; presets: string[]; onSchritt: (s: SchrittId) => void }) {
+function Steckbrief({ stamm, presets, onSchritt, nichtGespeichert = false }: { stamm: Stammdaten; presets: string[]; onSchritt: (s: SchrittId) => void; nichtGespeichert?: boolean }) {
   const s = bereinigt(stamm);
   const leer = <span className="muted">–</span>;
   const kontakte = s.bauherr.kontakte.map((k) => k.wert).join(', ');
@@ -871,7 +1034,7 @@ function Steckbrief({ stamm, presets, onSchritt }: { stamm: Stammdaten; presets:
   ];
   return (
     <details className="po-steckbrief" open>
-      <summary>Zusammenfassung – so steht es in der Projektdatei</summary>
+      <summary>{nichtGespeichert ? 'Zusammenfassung – wird nicht gespeichert (die Projektdatei ist nicht lesbar)' : 'Zusammenfassung – so steht es in der Projektdatei'}</summary>
       <table>
         <tbody>
           {zeilen.map((z) => (

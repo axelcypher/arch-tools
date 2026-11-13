@@ -54,10 +54,16 @@ export interface KatasterEinstellungen {
   plaene: KatasterPlan[];
 }
 
+/**
+ * Beschriftung der PDF-Vorgaben: neutral – der Export aus WMS/WFS ist eine Arbeits- und Planungsgrundlage, kein
+ * amtlicher Auszug aus dem Liegenschaftskataster (für den Bauantrag bleibt der nach § 3 BauPrüfVO NRW nötig).
+ */
+export const VORGABE_BESCHRIFTUNG = 'Kartengrundlage: Liegenschaftskarte (ALKIS), Geobasis NRW, Stand {DATUM:TT.MM.JJJJ} – kein amtlicher Auszug';
+
 export const VORGABE_PLAENE: KatasterPlan[] = [
   {
     id: 'a4',
-    name: 'Katasterauszug A4',
+    name: 'Katasterplan A4',
     art: 'pdf',
     aktiv: true,
     layout: 'Katasterauszug A4',
@@ -67,11 +73,11 @@ export const VORGABE_PLAENE: KatasterPlan[] = [
     dpi: 300,
     stil: 'symbollayer',
     beschriftungen: true,
-    beschriftung: 'Auszug aus der Liegenschaftskarte',
+    beschriftung: VORGABE_BESCHRIFTUNG,
   },
   {
     id: 'a3',
-    name: 'Katasterauszug A3',
+    name: 'Katasterplan A3',
     art: 'pdf',
     aktiv: true,
     layout: 'Katasterauszug A3',
@@ -81,7 +87,7 @@ export const VORGABE_PLAENE: KatasterPlan[] = [
     dpi: 300,
     stil: 'symbollayer',
     beschriftungen: true,
-    beschriftung: 'Auszug aus der Liegenschaftskarte',
+    beschriftung: VORGABE_BESCHRIFTUNG,
   },
   {
     id: 'schwarzplan',
@@ -273,7 +279,7 @@ const GLOBAL_KATASTER: Variable[] = GLOBALE_VARIABLEN.map((v) =>
 export const KATASTER_VARIABLEN: Variable[] = [
   ...GLOBAL_KATASTER,
   { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA' },
-  { name: 'Name', text: 'Name des Plans, z. B. Katasterauszug A4' },
+  { name: 'Name', text: 'Name des Plans, z. B. Katasterplan A4' },
 ];
 /** Variablen im festen Ablageordner */
 export const KATASTER_ZIEL_VARIABLEN: Variable[] = [...GLOBAL_KATASTER, { name: 'Antrag', text: 'aktive Antragsfassung, z. B. BAUA 2' }];
@@ -288,12 +294,23 @@ export function planDateiname(vorlage: string, plan: Pick<KatasterPlan, 'name' |
   return `${sichererDateiname(name) || sichererDateiname(plan.name) || 'Plan'}.${plan.art}`;
 }
 
-/** fester Ablageordner mit eingesetzten Variablen; null, wenn er {Antrag} enthält und kein Antrag aktiv ist */
+/** Beschriftung eines Plans mit eingesetzten Variablen (wie im Dateinamen, z. B. {DATUM:TT.MM.JJJJ}) */
+export function planBeschriftung(text: string, plan: Pick<KatasterPlan, 'name'>, t: Namensteile): string {
+  return ersetzen(text, KATASTER_VARIABLEN, { ...globaleAus(t), Art: t.art, Name: plan.name });
+}
+
+/**
+ * fester Ablageordner mit eingesetzten Variablen; null, wenn er {Antrag} enthält und kein Antrag aktiv ist. Jeder
+ * Ordner wird wie ein Dateiname gesäubert (unter Windows unzulässige Zeichen, Punkt am Ende); leere Teile, „.“ und
+ * „..“ fallen weg – die Ablage bleibt immer im Projektordner.
+ */
 export function katasterZielpfad(zielpfad: string, antrag: string | undefined, t: Namensteile): string | null {
   if (!antrag && platzhalterIn(zielpfad, KATASTER_ZIEL_VARIABLEN).some((f) => f.treffer?.variable.name === 'Antrag')) return null;
   return ersetzen(zielpfad, KATASTER_ZIEL_VARIABLEN, { ...globaleAus(t), Antrag: antrag ?? '' }, { saeubern: (v) => v.replace(/[\\/]+/g, ' ') })
-    .replace(/\\/g, '/')
-    .replace(/^\/+|\/+$/g, '');
+    .split(/[\\/]+/)
+    .map((teil) => (/^\s*\.+\s*$/.test(teil) ? '' : sichererDateiname(teil)))
+    .filter(Boolean)
+    .join('/');
 }
 
 export interface Auftrag {

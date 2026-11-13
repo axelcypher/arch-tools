@@ -55,9 +55,12 @@ export async function allePruefen(fs: Dateisystem, roots: string[], struktur: St
   return out;
 }
 
-/** CSV-Feld (Semikolon, für Excel) */
+/**
+ * CSV-Feld (Semikolon, für Excel). Text, der mit = + - @ (oder Tab/Zeilenumbruch) beginnt, bekommt ein Apostroph
+ * vorangestellt – sonst führte Excel einen Ordnernamen wie „=HYPERLINK(…)“ als Formel aus.
+ */
 const feld = (v: string | number) => {
-  const s = String(v);
+  const s = typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? `'${v}` : String(v);
   return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 /** CSV mit BOM, damit Excel die Umlaute erkennt */
