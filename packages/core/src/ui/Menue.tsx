@@ -2,7 +2,7 @@
  * Gemeinsames Menü aller Apps: Kontextmenü (Rechtsklick, Kontextmenütaste) und Aufklappmenü am Knopf, mit Untermenüs.
  * Tastatur: ↑/↓, Pos1/Ende, → bzw. Enter öffnet ein Untermenü, ← zurück; Esc schließt (über den gemeinsamen
  * Esc-Stapel – ein Dialog darunter bleibt offen), Tab schließt und gibt den Fokus an den Auslöser zurück.
- * `MenueHost` steckt in der Titelleiste (jede App) und in der Rahmen-App. Vorlage: PERMIO (Menue.tsx).
+ * `MenueHost` steckt in der Titelleiste (jede App) und in der Rahmen-App. Richtlinie: docs/design.md, „Menüs“.
  */
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -18,8 +18,12 @@ export type MenuePunkt =
       trenner?: false;
       text: string;
       symbol?: SymbolName;
-      /** rechts daneben, z. B. ein Tastenkürzel */
+      /** rechts daneben, z. B. der Grund, warum der Punkt gesperrt ist */
       hinweis?: string;
+      /** Tastenkürzel, wie es angezeigt wird (z. B. „Strg+C“, „Entf“); steht rechts und wird als aria-keyshortcuts vorgelesen */
+      tasten?: string;
+      /** Umschalter mit Haken: `true`/`false` macht den Punkt zu einem Kästchen (menuitemcheckbox), angehakt bei `true` */
+      haken?: boolean;
       /** Tooltip – z. B. der volle Text, wenn er gekürzt werden kann */
       titel?: string;
       aktion?: () => void;
@@ -37,15 +41,81 @@ interface MenueZustand {
   schliessen: (fokusZurueck?: boolean) => void;
 }
 
+/**
+ * Auslöser mit `aria-haspopup="menu"` bekommen den Offen-Zustand (`aria-expanded`) auch ohne `MenueKnopf`, z. B. der
+ * Zeilenknopf „⋯“. Wer das Attribut selbst über React setzt (wie `MenueKnopf` oder mit `useMenueOffen`), setzt denselben
+ * Wert.
+ */
+function offenZeigen(el: HTMLElement | SVGElement | null | undefined, offen: boolean) {
+  if (el?.getAttribute('aria-haspopup') === 'menu') el.setAttribute('aria-expanded', String(offen));
+}
+
+/** zuletzt per Klick auf den Auslöser geschlossen: der folgende Klick auf denselben Auslöser öffnet nicht wieder */
+let geradeZu: { el: Element; zeit: number } | null = null;
+
 const useMenue = create<MenueZustand>((set, get) => ({
   offen: null,
-  zeigen: (x, y, punkte, ausloeser = null, name) => set({ offen: { x, y, punkte, ausloeser, name } }),
+  zeigen: (x, y, punkte, ausloeser = null, name) => {
+    const vorher = get().offen?.ausloeser;
+    if (vorher !== ausloeser) offenZeigen(vorher, false);
+    set({ offen: { x, y, punkte, ausloeser, name } });
+    offenZeigen(ausloeser, true);
+  },
   schliessen: (fokusZurueck = false) => {
     const ausloeser = get().offen?.ausloeser;
     set({ offen: null });
+    offenZeigen(ausloeser, false);
     if (fokusZurueck && ausloeser?.isConnected) ausloeser.focus();
   },
 }));
+
+/** ob das Menü gerade an diesem Element offen ist – für `aria-expanded` an eigenen Auslösern */
+export function useMenueOffen(ref: { readonly current: Element | null }): boolean {
+  return useMenue((s) => !!s.offen && !!ref.current && s.offen.ausloeser === ref.current);
+}
+
+const TASTEN_ARIA: Record<string, string> = {
+  strg: 'Control',
+  umschalt: 'Shift',
+  shift: 'Shift',
+  alt: 'Alt',
+  entf: 'Delete',
+  einfg: 'Insert',
+  pos1: 'Home',
+  ende: 'End',
+  esc: 'Escape',
+  enter: 'Enter',
+  eingabe: 'Enter',
+  leertaste: 'Space',
+  rücktaste: 'Backspace',
+  tab: 'Tab',
+  'bild↑': 'PageUp',
+  'bild↓': 'PageDown',
+  '↑': 'ArrowUp',
+  '↓': 'ArrowDown',
+  '←': 'ArrowLeft',
+  '→': 'ArrowRight',
+  '+': 'Plus',
+};
+
+/**
+ * Angezeigtes Tastenkürzel → Wert für `aria-keyshortcuts` („Strg+Umschalt+Z“ → „Control+Shift+Z“). Mehrere Kürzel
+ * mit „/“ oder „,“ getrennt werden zu Alternativen (durch Leerzeichen getrennt).
+ */
+export function tastenAria(tasten: string): string {
+  return tasten
+    .split(/\s*[/,]\s*/)
+    .filter(Boolean)
+    .map((kuerzel) =>
+      // „Strg++“: das letzte Plus ist die Taste selbst
+      (kuerzel.match(/\+$|[^+]+/g) ?? [])
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .map((t) => TASTEN_ARIA[t.toLowerCase()] ?? (t.length === 1 ? t.toUpperCase() : t))
+        .join('+'),
+    )
+    .join(' ');
+}
 
 const FOKUSSIERBAR = 'button, input, select, textarea, a[href], [tabindex]';
 
@@ -69,8 +139,13 @@ export function zeigeMenue(e: ReactMouseEvent | MouseEvent, punkte: MenuePunkt[]
 
 /** Menü unter einem Element zeigen (Knopf mit Pfeil) */
 export function zeigeMenueAn(el: HTMLElement, punkte: MenuePunkt[], name?: string) {
+  // zweiter Klick auf den Auslöser eines offenen Menüs: Das Menü hat sich beim Drücken geschlossen und bleibt zu
+  const zu = geradeZu;
+  geradeZu = null;
+  if (zu?.el === el && performance.now() - zu.zeit < 1000) return;
   const r = el.getBoundingClientRect();
-  useMenue.getState().zeigen(r.left, r.bottom + 2, punkte, el, name ?? el.getAttribute('aria-label') ?? el.textContent?.trim() ?? undefined);
+  // leerer Name (Knopf nur mit Symbol) zählt nicht: weiter zum nächsten
+  useMenue.getState().zeigen(r.left, r.bottom + 2, punkte, el, name || el.getAttribute('aria-label') || el.textContent?.trim() || undefined);
 }
 
 /** Knopf, der ein Menü aufklappt */
@@ -94,7 +169,7 @@ export function MenueKnopf({
   name?: string;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
-  const offen = useMenue((s) => !!s.offen && !!ref.current && s.offen.ausloeser === ref.current);
+  const offen = useMenueOffen(ref);
   return (
     <button
       ref={ref}
@@ -125,7 +200,13 @@ export function MenueHost() {
         if (e.key === 'Tab') schliessen(true);
         return;
       }
-      if (e.type === 'pointerdown' && (e.target as Element | null)?.closest?.('.menue')) return;
+      if (e.type === 'pointerdown') {
+        const ziel = e.target as Node | null;
+        if ((ziel as Element | null)?.closest?.('.menue')) return;
+        // Druck auf den Auslöser: schließen und merken, damit der Klick danach das Menü nicht gleich wieder öffnet
+        const ausloeser = useMenue.getState().offen?.ausloeser;
+        if (ausloeser && ziel && ausloeser.contains(ziel)) geradeZu = { el: ausloeser, zeit: performance.now() };
+      }
       schliessen();
     };
     window.addEventListener('pointerdown', weg, true);
@@ -235,7 +316,9 @@ function Liste({
         ) : (
           <button
             key={i}
-            role="menuitem"
+            role={p.haken === undefined ? 'menuitem' : 'menuitemcheckbox'}
+            aria-checked={p.haken === undefined ? undefined : p.haken}
+            aria-keyshortcuts={p.tasten ? tastenAria(p.tasten) : undefined}
             className={`menue-punkt${p.gefahr ? ' gefahr' : ''}${unter?.index === i ? ' offen' : ''}`}
             data-index={i}
             title={p.titel}
@@ -258,9 +341,14 @@ function Liste({
               p.aktion?.();
             }}
           >
-            <span className="menue-symbol">{p.symbol && <Symbol name={p.symbol} />}</span>
+            <span className="menue-symbol">{p.haken ? <Symbol name="haken" /> : p.haken === undefined && p.symbol && <Symbol name={p.symbol} />}</span>
             <span className="menue-text">{p.text}</span>
             {p.hinweis && <span className="menue-hinweis">{p.hinweis}</span>}
+            {p.tasten && (
+              <span className="menue-hinweis menue-tasten" aria-hidden="true">
+                {p.tasten}
+              </span>
+            )}
             {p.unter && <Symbol name="pfeilRechts" />}
           </button>
         ),

@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
-import { act, createElement, Fragment } from 'react';
+import { act, createElement, Fragment, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Modal } from './Dialog';
-import { MenueHost, MenueKnopf, zeigeMenue } from './Menue';
+import { MenueHost, MenueKnopf, tastenAria, useMenueOffen, zeigeMenue, zeigeMenueAn } from './Menue';
 import { Symbol, SYMBOLE } from './Symbol';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -174,6 +174,116 @@ describe('gemeinsames Menü', () => {
     expect(document.activeElement).toBe(feld);
   });
 
+  it('Tastenkürzel: rechts angezeigt, als aria-keyshortcuts vorgelesen und nicht Teil des Namens', () => {
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement(
+          'button',
+          {
+            key: 'z',
+            onContextMenu: (e: React.MouseEvent) =>
+              zeigeMenue(e, [
+                { text: 'Kopieren', tasten: 'Strg+C' },
+                { text: 'Löschen', tasten: 'Entf' },
+              ]),
+          },
+          'Karte',
+        ),
+        createElement(MenueHost, { key: 'h' }),
+      ),
+    );
+    act(() => host.querySelector('button')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
+    const [kopieren, loeschen] = [...host.querySelectorAll('.menue [role="menuitem"]')];
+    expect(kopieren.getAttribute('aria-keyshortcuts')).toBe('Control+C');
+    expect(loeschen.getAttribute('aria-keyshortcuts')).toBe('Delete');
+    const anzeige = kopieren.querySelector('.menue-tasten')!;
+    expect(anzeige.textContent).toBe('Strg+C');
+    expect(anzeige.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('tastenAria übersetzt die deutschen Tastennamen, auch Alternativen und die Plustaste', () => {
+    expect(tastenAria('Strg+Umschalt+Z')).toBe('Control+Shift+Z');
+    expect(tastenAria('Entf / Rücktaste')).toBe('Delete Backspace');
+    expect(tastenAria('Strg++')).toBe('Control+Plus');
+    expect(tastenAria('Alt+↑')).toBe('Alt+ArrowUp');
+    expect(tastenAria('F2')).toBe('F2');
+    expect(tastenAria('Pos1, Ende')).toBe('Home End');
+  });
+
+  it('Umschalter mit Haken: menuitemcheckbox mit aria-checked, Haken nur wenn an', () => {
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement('button', { key: 'z', onContextMenu: (e: React.MouseEvent) => zeigeMenue(e, [{ text: 'Raster', haken: true }, { text: 'Maße', haken: false }, { text: 'Öffnen' }]) }, 'Karte'),
+        createElement(MenueHost, { key: 'h' }),
+      ),
+    );
+    act(() => host.querySelector('button')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
+    const [raster, masse] = [...host.querySelectorAll('.menue [role="menuitemcheckbox"]')];
+    expect(raster.getAttribute('aria-checked')).toBe('true');
+    expect(raster.querySelector('.menue-symbol svg')).not.toBeNull();
+    expect(masse.getAttribute('aria-checked')).toBe('false');
+    expect(masse.querySelector('.menue-symbol svg')).toBeNull();
+    expect(host.querySelectorAll('.menue [role="menuitem"]').length).toBe(1);
+  });
+
+  it('eigener Öffner mit aria-haspopup (Zeilenknopf „⋯“) bekommt aria-expanded; useMenueOffen meldet den Zustand', () => {
+    let offenGemeldet = false;
+    function Zeile() {
+      const ref = useRef<HTMLButtonElement>(null);
+      offenGemeldet = useMenueOffen(ref);
+      return createElement(
+        'button',
+        { ref, tabIndex: -1, 'aria-haspopup': 'menu', 'aria-label': 'Weitere Aktionen', onClick: (e: React.MouseEvent<HTMLButtonElement>) => zeigeMenueAn(e.currentTarget, [{ text: 'Umbenennen' }]) },
+        '⋯',
+      );
+    }
+    const host = render(createElement(Fragment, null, createElement(Zeile, { key: 'z' }), createElement(MenueHost, { key: 'h' })));
+    const knopf = host.querySelector('button')!;
+    act(() => knopf.click());
+    expect(knopf.getAttribute('aria-expanded')).toBe('true');
+    expect(offenGemeldet).toBe(true);
+    expect(host.querySelector('.menue')!.getAttribute('aria-label')).toBe('Weitere Aktionen');
+    taste('Escape');
+    expect(knopf.getAttribute('aria-expanded')).toBe('false');
+    expect(offenGemeldet).toBe(false);
+    expect(document.activeElement).toBe(knopf);
+  });
+
+  it('Knopf nur mit Symbol (leerer Text, kein aria-label): Menü ohne leeren Namen', () => {
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement('button', { key: 'z', onClick: (e: React.MouseEvent<HTMLButtonElement>) => zeigeMenueAn(e.currentTarget, [{ text: 'A' }]) }),
+        createElement(MenueHost, { key: 'h' }),
+      ),
+    );
+    act(() => host.querySelector('button')!.click());
+    expect(host.querySelector('.menue')!.hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('zweiter Klick auf den offenen MenueKnopf schließt das Menü, ein dritter öffnet es wieder', () => {
+    const host = render(createElement(Fragment, null, createElement(MenueKnopf, { key: 'k', punkte: () => [{ text: 'A' }] }, 'Datei'), createElement(MenueHost, { key: 'h' })));
+    const knopf = host.querySelector('button')!;
+    const klick = () =>
+      act(() => {
+        knopf.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        knopf.click();
+      });
+    klick();
+    expect(host.querySelector('.menue')).not.toBeNull();
+    expect(knopf.getAttribute('aria-expanded')).toBe('true');
+    klick();
+    expect(host.querySelector('.menue')).toBeNull();
+    expect(knopf.getAttribute('aria-expanded')).toBe('false');
+    klick();
+    expect(host.querySelector('.menue')).not.toBeNull();
+  });
+
   it('Symbole: dekorativ ohne Titel, mit Titel als Bild benannt; jeder Name hat einen Pfad', () => {
     const host = render(createElement(Fragment, null, createElement(Symbol, { key: 'a', name: 'auswahl' }), createElement(Symbol, { key: 'b', name: 'lineal', titel: 'Messen' })));
     const [a, b] = [...host.querySelectorAll('svg.symbol')];
@@ -182,5 +292,6 @@ describe('gemeinsames Menü', () => {
     expect(b.querySelector('title')?.textContent).toBe('Messen');
     expect(SYMBOLE.length).toBeGreaterThan(30);
     expect(new Set(SYMBOLE).size).toBe(SYMBOLE.length);
+    expect(SYMBOLE).toEqual(expect.arrayContaining(['nachOben', 'nachUnten']));
   });
 });
