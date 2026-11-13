@@ -24,7 +24,7 @@ Grundsätze:
 
 ## Ablage im Projektordner
 
-Vorgabe (alles unter ⚙ Einstellungen › Ablage änderbar):
+Vorgabe (alles unter Einstellungen › Ablage änderbar):
 
 | Ort | Inhalt |
 |---|---|
@@ -45,7 +45,7 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
   Navigation – und automatisch, wenn das Fenster wieder in den Vordergrund kommt.
 - **Navigation** (links, Breite ziehbar): Kostenübersicht, Rechnungen, Rechnungseingang; die **Gewerke** aus
   Ordnern, Kostenkontrolle und Prüfungen (Zahl der LV-Dateien, wenn es mehr als eine gibt); **Bauleitung**
-  (Objektüberwachung nach HOAI Leistungsphase 8); ⚙ Einstellungen (Strg+,). Die Einträge sind Knöpfe: mit Tab
+  (Objektüberwachung nach HOAI Leistungsphase 8); Einstellungen (Strg+,). Die Einträge sind Knöpfe: mit Tab
   erreichbar, Enter öffnet, der aktive Bereich ist für Screenreader markiert.
 - **Kostenübersicht:** je Gewerk Kostenschätzung, Kostenanschlag (Aufträge), Abweichung Kostenanschlag zu
   Kostenschätzung (nur für vergebene Gewerke – ein Gewerk ohne Auftrag erscheint nicht als Einsparung),
@@ -75,7 +75,7 @@ Hinweis „wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.
   Tabelle ändern (deutsche Schreibweise, ungültige Eingaben bleiben rot stehen).
 - Werkzeugleiste in einer Zeile: + Position (im gewählten Abschnitt bzw. hinter der gewählten Position),
   + Abschnitt, „Einfügen ▾“ (+ Hinweis, + Vorbemerkung, „Aus Vorlage …“); Duplizieren (Strg+D, ein Abschnitt
-  bekommt die nächste freie OZ), ↑/↓, ⇤/⇥ (aus dem Abschnitt heraus bzw. in den Abschnitt davor), Entfernen (Entf);
+  bekommt die nächste freie OZ), Nach oben/Nach unten, Ausrücken/Einrücken (aus dem Abschnitt heraus bzw. in den Abschnitt davor; alle mit Symbol), Entfernen (Entf);
   Rückgängig/Wiederholen (Strg+Z/Y); rechts die Suche nach OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
   Treffer eine Meldung mit „Suche leeren“, Esc leert). Tastatur in der Tabelle (Fokus sichtbar): ↑/↓ wählen, Enter
   springt in den Kurztext des Seitenpanels, Esc dort zurück, Einfg neue Position. Bei schmalem Fenster (unter

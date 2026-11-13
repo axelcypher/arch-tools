@@ -17,7 +17,7 @@ import { Dateiliste } from './Dateiliste';
 import { GaebExportDialog, gaebWaehlen } from './lv/Gaeb';
 import { LvKopfDialog } from './lv/LvKopfDialog';
 import { LvDruck } from './lv/LvDruck';
-import { MenueKnopf } from './Menue';
+import { MenueKnopf } from '@core/ui/Menue';
 
 /** `kurz`: Beschriftung bei schmalem Fenster; `kopf`: der LV-Kopf (Auswahl, Neues LV, LV-Befehle, Speichern) gehört dazu */
 const TABS: { id: GewerkTab; text: string; kurz: string; title: string; lv?: boolean; kopf?: boolean }[] = [
@@ -154,29 +154,35 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
               </span>
             )}
             <MenueKnopf
-              text="Neues LV"
               title="Neues LV in diesem Gewerk anlegen – leer oder aus einer GAEB-Datei"
-              rechts
-              punkte={[
-                { text: 'Leeres LV …', title: 'Neues, leeres LV in diesem Gewerk anlegen', aktion: () => void neu() },
-                { text: 'Aus GAEB-Datei (X81–X86) …', title: 'LV aus einer GAEB-Datei als neue LV-Datei in diesem Gewerk anlegen', aktion: () => void ausGaeb() },
+              punkte={() => [
+                { text: 'Leeres LV …', titel: 'Neues, leeres LV in diesem Gewerk anlegen', aktion: () => void neu() },
+                { text: 'Aus GAEB-Datei (X81–X86) …', titel: 'LV aus einer GAEB-Datei als neue LV-Datei in diesem Gewerk anlegen', aktion: () => void ausGaeb() },
               ]}
-            />
+            >
+              Neues LV
+            </MenueKnopf>
             {offenesLv && (
               <MenueKnopf
-                text="LV"
                 title="Befehle für das ganze LV"
-                rechts
-                punkte={[
-                  { text: 'LV-Eigenschaften …', title: 'Bezeichnung, Termine, Vergabeart, Projekt, Auftraggeber, OZ-Maske, Umsatzsteuer', aktion: () => setDialog('kopf') },
-                  { text: 'Neu nummerieren …', title: 'Ordnungszahlen nach der OZ-Maske neu vergeben', aktion: () => void nummerieren() },
-                  { text: 'Drucken …', title: 'Leistungsbeschreibung mit Leistungsverzeichnis drucken bzw. als PDF', aktion: () => setDialog('druck') },
-                  { text: 'GAEB-Export …', title: 'Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)', aktion: () => setDialog('gaeb') },
+                punkte={() => [
+                  { text: 'LV-Eigenschaften …', titel: 'Bezeichnung, Termine, Vergabeart, Projekt, Auftraggeber, OZ-Maske, Umsatzsteuer', aktion: () => setDialog('kopf') },
+                  { text: 'Neu nummerieren …', titel: 'Ordnungszahlen nach der OZ-Maske neu vergeben', aktion: () => void nummerieren() },
+                  { text: 'Drucken …', titel: 'Leistungsbeschreibung mit Leistungsverzeichnis drucken bzw. als PDF', aktion: () => setDialog('druck') },
+                  { text: 'GAEB-Export …', titel: 'Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)', aktion: () => setDialog('gaeb') },
                 ]}
-              />
+              >
+                LV
+              </MenueKnopf>
             )}
             {offenesLv && (
-              <button className={`ava-speichern${lvGeaendert(offenesLv) ? ' primary' : ''}`} onClick={() => void lvSpeichernMitMeldung()} disabled={!lvGeaendert(offenesLv)} title="LV speichern (Strg+S)">
+              <button
+                className={`ava-speichern${lvGeaendert(offenesLv) ? ' ungespeichert' : ''}`}
+                onClick={() => void lvSpeichernMitMeldung()}
+                disabled={!lvGeaendert(offenesLv)}
+                aria-label={lvGeaendert(offenesLv) ? 'Speichern – ungespeicherte Änderungen' : undefined}
+                title={lvGeaendert(offenesLv) ? 'LV speichern (Strg+S) – ungespeicherte Änderungen' : 'LV speichern (Strg+S) – keine Änderungen'}
+              >
                 Speichern
               </button>
             )}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, frageText } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { Bieter, Position } from '../../lv/modell';
 import { aendereElement, heuteIso } from '../../lv/modell';
 import { ASLV_NICHT_GESPEICHERT } from '../../format/aslv';
@@ -175,7 +176,7 @@ export function Angebote() {
                   <td>
                     {x.id !== 0 && lv.auftrag?.bieterId !== x.id && (
                       <button className="small danger" onClick={(e) => (e.stopPropagation(), void bieterEntfernen(x))} title="Bieter entfernen" aria-label={`Bieter ${x.name} entfernen`}>
-                        ×
+                        <Symbol name="schliessen" />
                       </button>
                     )}
                   </td>
