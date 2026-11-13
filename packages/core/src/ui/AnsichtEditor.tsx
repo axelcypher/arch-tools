@@ -1,5 +1,6 @@
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Ansicht, AnsichtAbschnitt, FeldDef, FeldOptionen } from './ansicht';
 import {
   abschnittVerschieben,
@@ -302,9 +303,11 @@ function FeldLayout({ optionen, def, titel, onChange }: { optionen?: FeldOptione
 function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; feld: FeldDef; nach: Map<string, FeldDef>; passt: (a: FeldDef, b: FeldDef) => boolean; onChange: (a: Ansicht) => void }) {
   const feld = def.id;
   const [offen, setOffen] = useState(false);
+  const knopf = useRef<HTMLButtonElement>(null);
   const mit = verknuepfteFelder(a, feld);
-  const kandidaten = useMemo(() => [...nach.values()].filter((f) => f.id !== feld && (mit.includes(f.id) || passt(def, f))), [nach, feld, def, passt, mit.join('|')]);
-  if (!kandidaten.length) return <span className="av-ed-link-platz" aria-hidden />;
+  // am Knopf nur: gibt es überhaupt ein passendes Feld (bricht beim ersten ab) – die Liste baut erst das Auswahlfenster
+  const moeglich = useMemo(() => mit.length > 0 || [...nach.values()].some((f) => f.id !== feld && passt(def, f)), [nach, feld, def, passt, mit.length]);
+  if (!moeglich) return <span className="av-ed-link-platz" aria-hidden />;
   const name = (f: string) => {
     const d = nach.get(f);
     return d ? `${d.titel}${d.gruppe ? ` (${d.gruppe})` : ''}` : f;
@@ -313,6 +316,7 @@ function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; fel
   return (
     <>
       <button
+        ref={knopf}
         type="button"
         className={`small av-ed-link${mit.length ? ' active' : ''}`}
         aria-label={`${def.titel} verknüpfen${zustand}`}
@@ -323,7 +327,24 @@ function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; fel
         {/* ⛓ mit Textdarstellung (U+FE0E) – nicht als farbiges Emoji */}
         {`⛓\uFE0E${mit.length ? ` ${mit.length}` : ''}`}
       </button>
-      {offen && <VerknuepfenAuswahl a={a} def={def} kandidaten={kandidaten} drin={new Set(felderDerAnsicht(a))} onChange={onChange} onSchliessen={() => setOffen(false)} />}
+      {/* außerhalb des Editors eingehängt: sein Container (container-type) wäre sonst der Bezugsrahmen des Hintergrunds */}
+      {offen &&
+        createPortal(
+          <VerknuepfenAuswahl
+            a={a}
+            def={def}
+            nach={nach}
+            passt={passt}
+            drin={new Set(felderDerAnsicht(a))}
+            onChange={onChange}
+            onSchliessen={() => {
+              setOffen(false);
+              // der Editor bleibt offen – der Fokus kehrt zum Knopf zurück (nicht auf die Seite)
+              knopf.current?.focus();
+            }}
+          />,
+          document.body,
+        )}
     </>
   );
 }
@@ -332,14 +353,16 @@ function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; fel
 function VerknuepfenAuswahl({
   a,
   def,
-  kandidaten,
+  nach,
+  passt,
   drin,
   onChange,
   onSchliessen,
 }: {
   a: Ansicht;
   def: FeldDef;
-  kandidaten: FeldDef[];
+  nach: Map<string, FeldDef>;
+  passt: (a: FeldDef, b: FeldDef) => boolean;
   drin: Set<string>;
   onChange: (a: Ansicht) => void;
   onSchliessen: () => void;
@@ -347,6 +370,10 @@ function VerknuepfenAuswahl({
   const [suche, setSuche] = useState('');
   const titelId = useId();
   const mit = verknuepfteFelder(a, def.id);
+  // alle passenden Felder des Katalogs (einmal je Öffnen), dazu die schon verknüpften – auch wenn sie nicht mehr passen
+  const kandidaten = useMemo(() => [...nach.values()].filter((f) => f.id !== def.id && (mit.includes(f.id) || passt(def, f))), [nach, def, passt]); // eslint-disable-line react-hooks/exhaustive-deps
+  // verknüpft, aber im Katalog nicht (mehr) da: zum Lösen angeboten, sonst blieben sie für immer gespeichert
+  const unbekannt = mit.filter((f) => !nach.has(f));
   const q = suche.trim().toLowerCase();
   const gruppen = useMemo(() => {
     const m = new Map<string, FeldDef[]>();
@@ -358,7 +385,7 @@ function VerknuepfenAuswahl({
     return [...m];
   }, [kandidaten, q]);
   return (
-    <Modal titel={`${def.titel} gemeinsam ausfüllen mit`} className="av-verknuepfen" onClose={onSchliessen}>
+    <Modal titel={`Gemeinsam ausfüllen: ${def.titel}${def.gruppe ? ` (${def.gruppe})` : ''}`} className="av-verknuepfen" onClose={onSchliessen}>
       <header className="av-ed-titel">
         <h3 id={titelId}>
           Gemeinsam ausfüllen: {def.titel}
@@ -375,7 +402,7 @@ function VerknuepfenAuswahl({
           <div key={g} className="av-ed-gruppe">
             {g && <div className="av-ed-gruppe-titel">{g}</div>}
             {felder.map((f) => (
-              <label key={f.id} className={`av-ed-kat-feld${mit.includes(f.id) ? ' drin' : ''}`} title={f.hinweis}>
+              <label key={f.id} className="av-ed-kat-feld" title={f.hinweis}>
                 <input type="checkbox" checked={mit.includes(f.id)} onChange={(e) => onChange(e.target.checked ? verknuepfen(a, def.id, f.id) : verknuepfungLoesen(a, f.id))} />
                 <span>{f.titel}</span>
                 {drin.has(f.id) && <span className="muted small-text av-verknuepfen-marke">in der Ansicht</span>}
@@ -383,7 +410,18 @@ function VerknuepfenAuswahl({
             ))}
           </div>
         ))}
-        {!gruppen.length && <p className="muted small-text">Kein passendes Feld passt zu „{suche.trim()}“.</p>}
+        {unbekannt.length > 0 && (
+          <div className="av-ed-gruppe">
+            <div className="av-ed-gruppe-titel">Gibt es hier nicht mehr</div>
+            {unbekannt.map((f) => (
+              <label key={f} className="av-ed-kat-feld" title="Dieses Feld gibt es in der Projektkarte nicht mehr – Haken entfernen löst die Verknüpfung">
+                <input type="checkbox" checked onChange={() => onChange(verknuepfungLoesen(a, f))} />
+                <span>{f}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        {!gruppen.length && !unbekannt.length && <p className="muted small-text">Kein Feld passt zu „{suche.trim()}“.</p>}
       </div>
       <footer className="av-ed-fuss">
         <span className="av-ed-abstand" />

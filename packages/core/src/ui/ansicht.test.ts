@@ -9,6 +9,7 @@ import {
   feldOptionen,
   feldOptionenSetzen,
   feldVerschieben,
+  abschnittEntfernen,
   verknuepfen,
   verknuepfteFelder,
   verknuepfungLoesen,
@@ -88,6 +89,13 @@ describe('eigene Ansichten', () => {
     const c = verknuepfen(a, '201:40', 'ausserhalb');
     expect(c.verknuepfungen).toEqual([['201:40', 'ausserhalb']]);
     expect(feldEntfernen(c, '201:40').verknuepfungen).toBeUndefined();
+    // die Gruppe hängt am einzigen Feld der Ansicht: Abschnitt entfernt bzw. es gelöst – sie entfällt
+    const d = verknuepfen(verknuepfen(a, '201:40', 'aussen-1'), '201:40', 'aussen-2');
+    expect(d.verknuepfungen).toEqual([['201:40', 'aussen-1', 'aussen-2']]);
+    expect(abschnittEntfernen(d, d.abschnitte.find((x) => x.felder.includes('201:40'))!.id).verknuepfungen).toBeUndefined();
+    expect(verknuepfungLoesen(d, '201:40').verknuepfungen).toBeUndefined();
+    // ein Feld außerhalb gelöst: die übrigen bleiben verknüpft
+    expect(verknuepfungLoesen(d, 'aussen-1').verknuepfungen).toEqual([['201:40', 'aussen-2']]);
   });
 
   it('Einfügestelle nach den Mitten der Zeilen, ohne die gezogene', () => {

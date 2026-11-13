@@ -17,6 +17,7 @@ import {
   anzeigeName,
   dateiImAntrag,
   pdfOhneZuordnung,
+  reihenfolgeMit,
   formularSchluessel,
   hauptArt,
   dateiname,
@@ -207,10 +208,11 @@ interface AntragState {
    */
   umfangSetzen: (umfang: UmfangEintrag[] | null, o?: { info?: SchreibInfo; bewegt?: string }) => Promise<SchreibInfo>;
   /**
-   * Reihenfolge der Formulare in der Navigation setzen (Schlüssel nach formularSchluessel; leer = alphabetisch) – für das
-   * ganze Projekt in der Projektdatei, angezeigt sofort; nur, wenn es eine Projektdatei gibt
+   * Reihenfolge der Formulare in der Navigation: `liste` sind die Schlüssel (nach formularSchluessel) einer angezeigten
+   * Liste in ihrer neuen Folge – gemerkte anderer Listen bleiben; null setzt zurück (alphabetisch). Für das ganze Projekt
+   * in der Projektdatei, angezeigt sofort (bei einem Fehlschlag zurückgenommen); nur, wenn es eine Projektdatei gibt
    */
-  reihenfolgeSetzen: (reihenfolge: string[]) => Promise<SchreibInfo>;
+  reihenfolgeSetzen: (liste: string[] | null) => Promise<SchreibInfo>;
   /**
    * Antragsumfang ändern – gelesen wird er erst jetzt (Menüs, Verknüpfen, Formular anlegen halten keinen alten fest).
    * Mit `ansicht` nur, wenn noch diese Fassung angezeigt wird, mit `eintrag` nur, wenn es den Eintrag noch gibt; sonst
@@ -487,9 +489,16 @@ function mitAbschnitt(roh: Record<string, unknown>, neu: ProjektDatei): Record<s
  * Die Änderung eines Aufrufers (`vorher` → `nachher`) in den frisch gelesenen Abschnitt von `roh` eintragen – je Antrag
  * und Feld nur, was er geändert hat (aenderungAnwenden); `meta.antrag` wie bei mitAbschnitt
  */
-function mitAenderung(roh: Record<string, unknown>, vorher: ProjektDatei | null, nachher: ProjektDatei, bewegt?: string, kennzeichen?: { umfangBehalten?: boolean }): Record<string, unknown> {
+function mitAenderung(
+  roh: Record<string, unknown>,
+  vorher: ProjektDatei | null,
+  nachher: ProjektDatei,
+  bewegt?: string,
+  kennzeichen?: { umfangBehalten?: boolean },
+  liste?: string[] | null,
+): Record<string, unknown> {
   const frisch = abschnittAus(roh.formulare ?? (roh.erweiterungen as Record<string, unknown> | undefined)?.formulare, (roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale);
-  return mitAbschnitt(roh, alsAngaben(aenderungAnwenden(frisch, vorher, nachher, { bewegt, kennzeichen })));
+  return mitAbschnitt(roh, alsAngaben(aenderungAnwenden(frisch, vorher, nachher, { bewegt, kennzeichen, liste })));
 }
 
 /** Bedingungen und Texte für umfangAendern */
@@ -621,7 +630,7 @@ export const useAntrag = create<AntragState>((set, get) => {
    * andere in der Datei bleibt. Fehlt die Projektdatei, fragt der Stammdaten-Dialog die Angaben ab, legt sie an und
    * speichert danach; ohne Projektordner wird erst einer zugeordnet. Liefert true, wenn gespeichert wurde.
    */
-  const projektdateiSchreiben = async (neu: ProjektDatei, erwartet?: Projekt, o: { basis?: ProjektDatei | null; info?: SchreibInfo; bewegt?: string } = {}): Promise<boolean> => {
+  const projektdateiSchreiben = async (neu: ProjektDatei, erwartet?: Projekt, o: { basis?: ProjektDatei | null; info?: SchreibInfo; bewegt?: string; liste?: string[] | null } = {}): Promise<boolean> => {
     const f = useFormulare.getState();
     // das Projekt des Aufrufers (nach seinen eigenen await) – sonst landeten seine Angaben im inzwischen geöffneten
     const projekt = erwartet ?? f.projekt;
@@ -718,7 +727,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     const kennzeichen: { umfangBehalten?: boolean } = {};
     const zusammenfuehren = (roh: Record<string, unknown>) => {
       kennzeichen.umfangBehalten = false;
-      return mitAenderung(roh, basis, neu, o.bewegt, kennzeichen);
+      return mitAenderung(roh, basis, neu, o.bewegt, kennzeichen, o.liste);
     };
     if (!(await useFormulare.getState().oapAendern(zusammenfuehren))) await useFormulare.getState().oapLaden();
     info.geschrieben = true;
@@ -1414,25 +1423,38 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
     },
 
-    reihenfolgeSetzen: async (reihenfolge) => {
+    reihenfolgeSetzen: async (liste) => {
       const info: SchreibInfo = {};
-      const pd = get().projektdatei;
+      const f = useFormulare.getState();
+      const projekt = f.projekt;
+      if (!projekt) return info;
+      // ein Antrag wird gerade geöffnet: der Stand im Store gehört noch zum bisherigen – nichts ändern
+      if (wechselLaeuft(get(), projekt)) {
+        meldung('info', 'Reihenfolge nicht geändert – der Antrag wird gerade geöffnet, gleich wieder möglich.');
+        return Object.assign(info, { vorab: 'fassung' as const, erneut: true });
+      }
+      if (f.oap === null && ablageVon(f, projekt)) await f.oapLaden();
+      if (useFormulare.getState().projekt !== projekt) return info;
       const o = useFormulare.getState().oap;
+      const pd = get().projektdatei;
       if (!pd || !o || o === 'fehlt') {
-        meldung('info', 'Reihenfolge nicht gespeichert – sie steht in der Projektdatei (.oap), und für dieses Projekt gibt es keine.');
+        meldung('info', `Reihenfolge nicht gespeichert – sie steht in der Projektdatei (.oap), und ${ablageVon(useFormulare.getState(), projekt) ? 'für dieses Projekt gibt es keine' : 'diesem Projekt ist kein Projektordner zugeordnet'}.`);
         return info;
       }
       const neu: ProjektDatei = { ...pd };
-      if (reihenfolge.length) neu.reihenfolge = reihenfolge;
+      const r = liste ? reihenfolgeMit(pd.reihenfolge, liste) : [];
+      if (r.length) neu.reihenfolge = r;
       else delete neu.reihenfolge;
-      // sofort so zeigen; geschrieben wird nur der Unterschied (gleichzeitige Änderungen anderer bleiben)
+      // sofort so zeigen; geschrieben wird nur die verschobene Liste (gleichzeitige Änderungen anderer bleiben)
       set({ projektdatei: neu });
+      let ok = false;
       try {
-        await projektdateiSchreiben(neu, undefined, { basis: pd, info });
+        ok = await projektdateiSchreiben(neu, projekt, { basis: pd, info, liste });
       } catch (e) {
         fehler('Reihenfolge der Formulare nicht gespeichert', e);
-        if (get().projektdatei === neu) set({ projektdatei: pd });
       }
+      // nicht gespeichert (und kein Dialog, der es nachholt): die Anzeige zurücknehmen
+      if (!ok && !info.dialog && get().projektdatei === neu) set({ projektdatei: pd });
       return info;
     },
 

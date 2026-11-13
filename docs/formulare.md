@@ -338,7 +338,10 @@ Anschrift, wie sie in Formularen steht.
   (ein Klick ohne Bewegung öffnet es weiter) oder mit Alt+↑/↓ verschieben – im Sammelprojekt je Gruppe. Die
   Reihenfolge steht in der Projektdatei (`.oap`) und gilt für alle im Büro; Formulare, die noch keinen Platz haben,
   folgen alphabetisch. „Reihenfolge zurücksetzen (alphabetisch)“ im Kontextmenü eines Formulars hebt sie auf; beim
-  Umbenennen behält das Formular seinen Platz. Ohne Projektdatei bleibt es alphabetisch (mit Hinweis).
+  Umbenennen behält das Formular seinen Platz. Ohne Projektdatei bleibt es alphabetisch, gezogen wird dann nicht.
+  Während ein anderer Antrag geöffnet wird, ändert sich die Reihenfolge nicht (Hinweis); lässt sie sich nicht
+  speichern, springt die Liste zurück. Ein gelöschtes Formular behält seinen gemerkten Platz – ein später gleich
+  benanntes erbt ihn.
 - **Projektordner, Ansicht „Ordner“:** Die Reihenfolge der Ordner einer Ebene lässt sich per Ziehen ändern (oder Ordner
   wählen und Alt+↑/↓); gemerkt je Ebene für alle Projekte, „Reihenfolge dieser Ebene zurücksetzen“ im Kontextmenü
   sortiert wieder alphabetisch. Ein Klick ohne Bewegung klappt weiter auf.
@@ -820,8 +823,8 @@ Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Koste
   folgt bei Bedarf der Stammdaten-Dialog. Die Zuordnung gilt für alle im Büro (gemeinsamer Konfigurationsordner,
   Bereich `formulare`, `ordnerWahl`).
 - **Angaben zum Antrag** stehen im Abschnitt `formulare` von `projekt.json`: `aktiveFassung`, `reihenfolge` (Formulare in
-  der Navigation, Schlüssel nach `formularSchluessel`, für das ganze Projekt; beim Zusammenführen gilt sie als Ganzes)
-  und `antraege` – je
+  der Navigation, Schlüssel nach `formularSchluessel`, für das ganze Projekt; beim Zusammenführen werden nur die
+  Einträge der verschobenen Liste umgesetzt, die anderer Listen bleiben) und `antraege` – je
   Fassung `angelegt`, `merkmale`, `umfang`, `felder` (Autofill), `bereit` und `eingereicht`; der zuletzt angelegte
   Antrag zusätzlich als Kurzfassung in `meta.antrag` (für die anderen Apps). Ein früheres `meta.merkmale` bzw.
   projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im

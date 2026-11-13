@@ -737,6 +737,24 @@ describe('Formulare', () => {
     expect([...host.querySelectorAll('.pk-nav-eigen .pk-nav-kurz')].map((k) => k.textContent)).toEqual(['2 Einträge auf einer Seite']);
   });
 
+  it('Projektkarte: verknüpft mit einem Feld außerhalb der eigenen Ansicht – beide Richtungen füllen gemeinsam', async () => {
+    // nur der Ort der Gemeinde steht in der Ansicht; verknüpft mit dem Ort des Bauherrn (nicht in der Ansicht)
+    localStorage.setItem('formulare:ansicht:projektkarte', JSON.stringify({ abschnitte: [{ id: 'a1', titel: 'Orte', felder: ['232:110'] }], verknuepfungen: [['232:110', '201:110']] }));
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await klick([...host.querySelectorAll<HTMLButtonElement>('.pk-nav-eintrag')].find((b) => b.textContent!.includes('Eigene Ansicht'))!);
+    expect(host.querySelector('.pk-eigen [data-pk="201:110"]')).toBeNull();
+    // in der eigenen Ansicht eingegeben: auch der Ort des Bauherrn
+    eingabe(host.querySelector<HTMLInputElement>('.pk-eigen [data-pk="232:110"]')!, 'Welver');
+    expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '232:110': 'Welver', '201:110': 'Welver' });
+    act(() => void useFormulare.getState().karteRueckgaengig());
+    expect(useFormulare.getState().karte!.aenderungen).toEqual({});
+    // umgekehrt: im Ort des Bauherrn (Gruppenansicht) eingegeben – auch der der Gemeinde
+    act(() => useFormulare.getState().karteSetzen(201, 110, 'Soest'));
+    expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '201:110': 'Soest', '232:110': 'Soest' });
+  });
+
   it('Projektkarte: Verwerfen und Gruppe leeren wirken nur auf die eigenen Einträge, nicht über Verknüpfungen', async () => {
     // Ort des Bauherrn (Musterstadt) ist mit dem Ort der Gemeinde (hier: Köln) verknüpft
     const k = projektkarte();

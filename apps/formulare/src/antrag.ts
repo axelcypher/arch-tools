@@ -1188,7 +1188,7 @@ export function aenderungAnwenden(
   frisch: Abschnitt,
   vorher: ProjektDatei | null,
   nachher: ProjektDatei,
-  o: { bewegt?: string; kennzeichen?: { umfangBehalten?: boolean } } = {},
+  o: { bewegt?: string; kennzeichen?: { umfangBehalten?: boolean }; liste?: string[] | null } = {},
 ): Abschnitt {
   const alt = vorher ? antraegeVon(vorher) : {};
   const neu = antraegeVon(nachher);
@@ -1241,9 +1241,12 @@ export function aenderungAnwenden(
     if (nachher.aktiveFassung) out.aktiveFassung = nachher.aktiveFassung;
     else delete out.aktiveFassung;
   }
-  // die Reihenfolge der Formulare gilt als Ganzes: geändert, dann die des Aufrufers
+  // Reihenfolge der Formulare: verschoben in einer Liste (`o.liste`) – nur deren Einträge umsetzen, die anderer
+  // Listen bleiben, wie sie in der Datei stehen (zwei Arbeitsplätze ordnen verschiedene Gruppen); zurückgesetzt
+  // (`o.liste` null) – entfällt; sonst geändert als Ganzes
   if (stabil(vorher?.reihenfolge) !== stabil(nachher.reihenfolge)) {
-    if (nachher.reihenfolge?.length) out.reihenfolge = nachher.reihenfolge;
+    const r = o.liste ? reihenfolgeMit(frisch.reihenfolge, o.liste) : o.liste === null ? [] : (nachher.reihenfolge ?? []);
+    if (r.length) out.reihenfolge = r;
     else delete out.reihenfolge;
   }
   return out;
@@ -1673,8 +1676,8 @@ export function formularSchluessel(pfad: string): string {
  * Unterordner gehört (`gehoertZu`), auch eine ältere Zuordnung nur mit dem Dateinamen. Einträge ohne `formularDatei`,
  * die das Formular nur über Name bzw. Titel finden und unter dem neuen Namen nicht mehr fänden (`festschreiben`, je
  * Antrag – null: die früher projektweiten Angaben),
- * bekommen den neuen Schlüssel fest. Liefert eine Kopie und die Zahl der umgeschriebenen Verweise; sonst bleibt alles,
- * wie es ist.
+ * bekommen den neuen Schlüssel fest; auch der Platz in `reihenfolge` wandert mit. Liefert eine Kopie, die Zahl der
+ * umgeschriebenen Zuordnungen (ohne die Reihenfolge) und ob die Reihenfolge betroffen war; sonst bleibt alles, wie es ist.
  */
 export function formularVerweiseUmbenennen(
   abschnitt: unknown,
@@ -1682,8 +1685,8 @@ export function formularVerweiseUmbenennen(
   neu: string,
   gehoertZu: (fassung: string) => boolean = () => false,
   festschreiben: (u: UmfangEintrag, fassung: string | null) => boolean = () => false,
-): { abschnitt: unknown; anzahl: number } {
-  if (!abschnitt || typeof abschnitt !== 'object') return { abschnitt, anzahl: 0 };
+): { abschnitt: unknown; anzahl: number; reihenfolge: boolean } {
+  if (!abschnitt || typeof abschnitt !== 'object') return { abschnitt, anzahl: 0, reihenfolge: false };
   const kopie = structuredClone(abschnitt) as Record<string, unknown>;
   const altKlein = alt.toLowerCase();
   const nameKlein = alt.includes('/') ? nurName(alt).toLowerCase() : null;
@@ -1717,16 +1720,18 @@ export function formularVerweiseUmbenennen(
     }
   };
   umschreiben(kopie, false, null);
+  // der Platz in der Reihenfolge der Navigation – keine Zuordnung, eigens gemeldet
+  let reihenfolge = false;
   if (Array.isArray(kopie.reihenfolge)) {
     const i = (kopie.reihenfolge as unknown[]).findIndex((k) => typeof k === 'string' && k.toLowerCase() === altKlein);
     if (i >= 0) {
       (kopie.reihenfolge as unknown[])[i] = neu;
-      anzahl++;
+      reihenfolge = true;
     }
   }
   if (kopie.antraege && typeof kopie.antraege === 'object' && !Array.isArray(kopie.antraege))
     for (const [fassung, d] of Object.entries(kopie.antraege as Record<string, unknown>)) umschreiben(d, gehoertZu(fassung), fassung);
-  return { abschnitt: anzahl ? kopie : abschnitt, anzahl };
+  return { abschnitt: anzahl || reihenfolge ? kopie : abschnitt, anzahl, reihenfolge };
 }
 
 /** Das Formular eines internen Dokuments im Formularprojekt: zugeordnet, sonst nach Name oder Kennung */

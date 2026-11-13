@@ -1209,8 +1209,8 @@ describe('formularVerweiseUmbenennen', () => {
 
   it('nichts zugeordnet: dasselbe Objekt zurück, kein Verweis gezählt', () => {
     const roh = { antraege: { BAUA: { umfang: [{ id: 'a', formularDatei: 'x.frmsjf' }] } } };
-    expect(formularVerweiseUmbenennen(roh, 'y.frmsjf', 'z.frmsjf')).toEqual({ abschnitt: roh, anzahl: 0 });
-    expect(formularVerweiseUmbenennen(undefined, 'y.frmsjf', 'z.frmsjf')).toEqual({ abschnitt: undefined, anzahl: 0 });
+    expect(formularVerweiseUmbenennen(roh, 'y.frmsjf', 'z.frmsjf')).toEqual({ abschnitt: roh, anzahl: 0, reihenfolge: false });
+    expect(formularVerweiseUmbenennen(undefined, 'y.frmsjf', 'z.frmsjf')).toEqual({ abschnitt: undefined, anzahl: 0, reihenfolge: false });
   });
 });
 
@@ -1257,10 +1257,16 @@ describe('Reihenfolge der Formulare', () => {
     // ändert der Aufrufer die Reihenfolge, gilt seine – zurückgesetzt entfällt sie
     expect(aenderungAnwenden(frisch, pd, { ...pd, reihenfolge: ['c.frmsjf'] }).reihenfolge).toEqual(['c.frmsjf']);
     expect(aenderungAnwenden(frisch, pd, { ...pd, reihenfolge: undefined }).reihenfolge).toBeUndefined();
+    // in einer Liste verschoben: nur deren Einträge – die eines anderen Arbeitsplatzes (andere Gruppe) bleiben
+    const andere = abschnittAus({ ...abschnittVon(pd), reihenfolge: ['x.frmsjf', 'y.frmsjf', 'b.frmsjf', 'a.frmsjf'] });
+    expect(aenderungAnwenden(andere, pd, { ...pd, reihenfolge: ['a.frmsjf', 'b.frmsjf'] }, { liste: ['a.frmsjf', 'b.frmsjf'] }).reihenfolge).toEqual(['a.frmsjf', 'b.frmsjf', 'x.frmsjf', 'y.frmsjf']);
+    // zurückgesetzt (liste null): entfällt ganz
+    expect(aenderungAnwenden(andere, pd, { ...pd, reihenfolge: undefined }, { liste: null }).reihenfolge).toBeUndefined();
   });
-  it('umbenannt: der Schlüssel in der Reihenfolge wandert mit', () => {
-    const { abschnitt, anzahl } = formularVerweiseUmbenennen({ reihenfolge: ['b.frmsjf', 'A.frmsjf'] }, 'a.frmsjf', 'z.frmsjf');
-    expect(anzahl).toBe(1);
+  it('umbenannt: der Schlüssel in der Reihenfolge wandert mit – zählt aber nicht als Zuordnung', () => {
+    const { abschnitt, anzahl, reihenfolge } = formularVerweiseUmbenennen({ reihenfolge: ['b.frmsjf', 'A.frmsjf'] }, 'a.frmsjf', 'z.frmsjf');
+    expect(anzahl).toBe(0);
+    expect(reihenfolge).toBe(true);
     expect(abschnitt).toEqual({ reihenfolge: ['b.frmsjf', 'z.frmsjf'] });
   });
 });

@@ -57,7 +57,9 @@ describe('Ansicht-Editor: Verknüpfen', () => {
     expect(link(editor, 0)!.getAttribute('aria-haspopup')).toBe('dialog');
     klick(link(editor, 0)!);
     expect(auswahl()!.getAttribute('role')).toBe('dialog');
-    expect(auswahl()!.getAttribute('aria-label')).toBe('Ort gemeinsam ausfüllen mit');
+    expect(auswahl()!.getAttribute('aria-label')).toBe('Gemeinsam ausfüllen: Ort (Bauherr)');
+    // außerhalb des Editors eingehängt
+    expect(auswahl()!.closest('.av-editor')).toBeNull();
     // nur passende Felder (Text), gegliedert nach Gruppen, das eigene nicht
     expect(gruppenTitel()).toEqual(['Gemeinde']);
     expect(angeboten()).toEqual(['Ort']);
@@ -70,6 +72,8 @@ describe('Ansicht-Editor: Verknüpfen', () => {
     act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(auswahl()).toBeNull();
     expect(document.querySelector('.av-editor')).not.toBeNull();
+    // der Fokus kehrt zum Knopf zurück
+    expect(document.activeElement).toBe(link(editor, 0));
     // lösen
     klick(link(editor, 0)!);
     klick(kaestchen('Ort'));
@@ -92,7 +96,16 @@ describe('Ansicht-Editor: Verknüpfen', () => {
     tippen('gemein');
     expect(angeboten()).toEqual(['Ort']);
     tippen('bauherr');
-    expect(auswahl()!.textContent).toContain('Kein passendes Feld passt zu „bauherr“');
+    expect(auswahl()!.textContent).toContain('Kein Feld passt zu „bauherr“');
+  });
+
+  it('verknüpft mit einem Feld, das es nicht mehr gibt: im Auswahlfenster zum Lösen angeboten', () => {
+    const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1'] }], verknuepfungen: [['ort1', 'weg']] });
+    expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
+    klick(link(editor, 0)!);
+    expect(gruppenTitel()).toContain('Gibt es hier nicht mehr');
+    klick(kaestchen('weg'));
+    expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen');
   });
 
   it('Pfeiltasten am Knopf verknüpfen nichts (anders als bei einer Auswahlliste)', () => {

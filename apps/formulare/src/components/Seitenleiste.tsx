@@ -11,7 +11,7 @@ import type { FormularEintrag } from '../projekte';
 import { formularLoeschen, formularUmbenennen } from '../dateiAktionen';
 import { AblageBaum } from './AblageBaum';
 import { ausUmfangEntfernen, FassungsWahl, formularePunkte, StatusPunkt, umfangZeigen } from './Antrag';
-import { nachReihenfolge, passt, reihenfolgeMit, STATUS_TEXT } from '../antrag';
+import { nachReihenfolge, passt, STATUS_TEXT } from '../antrag';
 import { useExportDialog } from './ExportDialog';
 import { useHinzufuegenDialog } from './FormularHinzufuegen';
 import type { MenuePunkt } from './Menue';
@@ -110,6 +110,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   const stammStatus = useAntrag((s) => s.stammStatus);
   // Reihenfolge der Formulare (für das ganze Projekt in der Projektdatei); gezogen wird die Zeile, je Liste
   const reihenfolge = useAntrag((s) => s.projektdatei?.reihenfolge);
+  // gespeichert wird in der Projektdatei – ohne sie kein Ziehen (sonst sähe es nach Erfolg aus)
+  const sortierbar = useAntrag((s) => !!s.projektdatei) && !!oap && oap !== 'fehlt';
   const [zug, setZug] = useState<{ liste: string; pfad: string; stelle: number } | null>(null);
   /**
    * Doppelter Eintrag? Ein fehlendes Dokument, dessen Titel zu einem Formular passt, das schon einem anderen Eintrag
@@ -149,8 +151,9 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
         : []),
       // der Ordner des Formulars (im Sammelprojekt ggf. der Unterordner des Antrags)
       { text: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(projekt!.root, f.pfad.slice(0, f.pfad.lastIndexOf('/')))).catch(() => undefined) },
-      { text: 'Reihenfolge zurücksetzen (alphabetisch)', symbol: 'neuLaden', deaktiviert: !reihenfolge?.length, aktion: () => void useAntrag.getState().reihenfolgeSetzen([]) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(projekt!.root, f.pfad)) },
+      { trenner: true },
+      { text: 'Reihenfolge zurücksetzen', hinweis: 'alphabetisch', symbol: 'neuLaden', deaktiviert: !reihenfolge?.length, aktion: () => void useAntrag.getState().reihenfolgeSetzen(null) },
       { trenner: true },
       { text: 'Umbenennen …', symbol: 'stift', aktion: () => void formularUmbenennen(f) },
       { text: 'Löschen …', symbol: 'muell', aktion: () => void formularLoeschen(f) },
@@ -169,7 +172,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     const ohne = liste.filter((x) => x.pfad !== pfad);
     ohne.splice(Math.max(0, Math.min(stelle, ohne.length)), 0, f);
     if (ohne.every((x, i) => x === liste[i])) return;
-    void useAntrag.getState().reihenfolgeSetzen(reihenfolgeMit(useAntrag.getState().projektdatei?.reihenfolge, ohne.map((x) => formularDatei(x.pfad))));
+    void useAntrag.getState().reihenfolgeSetzen(ohne.map((x) => formularDatei(x.pfad)));
   };
   /** Zeile ziehen (erst ab 5 px – ein Klick bleibt ein Klick); Ziel nach den Mitten der Formularzeilen dieser Liste */
   const ziehen = (name: string, liste: FormularEintrag[], pfad: string) => (e: ReactPointerEvent<HTMLElement>) => {
@@ -201,6 +204,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   const markierung = (name: string, liste: FormularEintrag[], pfad: string): 'quelle' | 'davor' | 'danach' | undefined => {
     if (!zug || zug.liste !== name) return undefined;
     if (zug.pfad === pfad) return 'quelle';
+    // an der Ausgangsstelle: keine Einfügestelle zeigen (es verschiebt sich nichts)
+    if (zug.stelle === liste.findIndex((x) => x.pfad === zug.pfad)) return undefined;
     const uebrige = liste.filter((x) => x.pfad !== zug.pfad);
     const i = uebrige.findIndex((x) => x.pfad === pfad);
     if (i === zug.stelle) return 'davor';
@@ -222,10 +227,10 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
         <button
           className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
           aria-current={gezeigt ? 'page' : undefined}
-          aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
-          onPointerDown={ziehen(name, liste, f.pfad)}
-          onKeyDown={taste(liste, f.pfad)}
-          title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : stamm ? `${f.name}\n${stammText}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}\nZiehen oder Alt+↑/↓ ändert die Reihenfolge`}
+          aria-keyshortcuts={sortierbar ? 'Alt+ArrowUp Alt+ArrowDown' : undefined}
+          onPointerDown={sortierbar ? ziehen(name, liste, f.pfad) : undefined}
+          onKeyDown={sortierbar ? taste(liste, f.pfad) : undefined}
+          title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : stamm ? `${f.name}\n${stammText}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}${sortierbar ? '\nZiehen oder Alt+↑/↓ ändert die Reihenfolge' : ''}`}
           onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
           onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
         >
