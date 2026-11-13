@@ -2,11 +2,12 @@ import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 import { DateiVonAussenGeaendert, isTauri, istPfad, openFileWithPath, pickFile, saveMergedFile } from '@core/platform/files';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
+import { vorDemSchliessen } from '@core/platform/rahmen';
 import { ordnerZeigen, verbinde } from '@core/platform/projektordner';
 import { fotoEinlesen } from './bilder';
 import { ENDUNG, entpacken, packen } from './datei';
 import { neueId, neuesFoto } from './model';
-import { fotoSchreiben, standLesen, standSchreiben } from './speicher';
+import { fotoSchreiben, schreibenAbgeschlossen, standLesen, standSchreiben } from './speicher';
 import { useEntz } from './store';
 import { aenderungenSpeichern, fragen, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
 import { dateiStandLesen } from './dateistand';
@@ -240,15 +241,25 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
     log.info('Zwischenstand wiederhergestellt', { fotos: z.stand.doc.fotos.length });
   }
   let timer: ReturnType<typeof setTimeout> | undefined;
+  /** das zuletzt angestoßene Schreiben samt Startschutz-Vermerk */
+  let zuletzt: Promise<void> = Promise.resolve();
   const schreiben = () => {
     timer = undefined;
     const a = useEntz.getState();
-    void standSchreiben({ doc: a.doc, dateiname: a.dateiname, dateiStand: a.dateiStand, dirty: a.dirty }, a.bilder, () => verwendeteFotos(useEntz.getState())).then(() => zwischenstandErsetzt(APP));
+    zuletzt = standSchreiben({ doc: a.doc, dateiname: a.dateiname, dateiStand: a.dateiStand, dirty: a.dirty }, a.bilder, () => verwendeteFotos(useEntz.getState()))
+      .then(() => zwischenstandErsetzt(APP))
+      .catch((e) => log.warn('Startschutz-Vermerk fehlgeschlagen', e));
   };
   // beim Schließen den ausstehenden Stand sofort schreiben
   const sofort = () => timer !== undefined && (clearTimeout(timer), schreiben());
   window.addEventListener('pagehide', sofort);
   window.addEventListener('beforeunload', sofort);
+  // vor dem Schließen, Andocken, Herauslösen und Update-Neustart in Arkly: ausstehenden Stand sofort schreiben, dann
+  // alles laufende Schreiben (Stand, Fotos, .entz) abwarten; ein zweiter Aufruf wartet nur noch, statt erneut zu schreiben
+  const abmelden = vorDemSchliessen(async () => {
+    sofort();
+    await Promise.allSettled([zuletzt, schreibenAbgeschlossen(), speichertGerade]);
+  });
   const ende = useEntz.subscribe((s, vorher) => {
     if (s.doc === vorher.doc && s.dateiname === vorher.dateiname && s.dateiStand === vorher.dateiStand && s.dirty === vorher.dirty) return;
     clearTimeout(timer);
@@ -256,6 +267,7 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
   });
   return () => {
     ende();
+    abmelden();
     clearTimeout(timer);
     window.removeEventListener('pagehide', sofort);
     window.removeEventListener('beforeunload', sofort);

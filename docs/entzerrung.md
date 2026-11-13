@@ -130,7 +130,8 @@ mehr ein, das spart bei großen Projekten Zeit.
 Gespeichert wird als `.entz`: ein ZIP mit `entzerrung.json` (Fotos, Ebenen, Referenzen, Messungen) und den
 unveränderten Originalfotos unter `fotos/`. Entzerrt wird bei jedem Öffnen neu. Zusätzlich speichert die
 Anwendung laufend im Browser-Speicher zwischen (IndexedDB) und stellt den Stand nach einem Neustart wieder her;
-beim Schließen wird der letzte Stand sofort geschrieben. Fotos, die Rückgängig/Wiederholen noch braucht, bleiben
+beim Schließen wird der letzte Stand sofort geschrieben. In Arkly warten Schließen, Andocken, Herauslösen und
+Update-Neustart außerdem höchstens 5 s, bis laufendes Schreiben (Zwischenstand, Fotos, `.entz`) fertig ist. Fotos, die Rückgängig/Wiederholen noch braucht, bleiben
 dort erhalten. Beim Öffnen prüft die Anwendung die Datei: Ungültige Zahlen, Punkte und Messungen werden
 verworfen, fehlende Teile ergänzt; bei fehlender Bildgröße oder doppelten Kennungen gilt die Datei als beschädigt.
 
