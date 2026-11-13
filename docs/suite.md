@@ -158,8 +158,9 @@ am Tab bzw. in der Titelleiste ● erscheint.
    und holt FABRIO als Tab zurück. Bei QUADRIO kommt stattdessen „QUADRIO andocken?“ (Änderungen bleiben im
    Zwischenstand).
    Zusätzlich bei FABRIO: im LV eine Menge eintippen, im Feld bleiben (kein ●-Abwarten nötig, es erscheint beim Tippen)
-   und Alt+F4 bzw. „Andocken“. Erwartet: dieselbe Frage; *Speichern* übernimmt die Menge, *Nicht speichern* schließt
-   ohne weitere Rückfrage.
+   und Alt+F4 bzw. „Andocken“. Erwartet: bei Alt+F4 die Frage aus Schritt 4 („Vor dem Beenden speichern?“), bei
+   „Andocken“ dieselbe Frage wie oben; *Speichern* übernimmt die Menge, *Nicht speichern* schließt ohne weitere
+   Rückfrage.
 6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, ⧉. Erwartet: Frage mit *Speichern*; bei RECTIO nur
    „RECTIO herauslösen?“. Bei ATLAS mit geänderten Stammdaten im Assistenten (Ergänzen): Frage mit *Speichern*;
    *Speichern* legt nichts an, ATLAS bleibt als Tab und meldet „Nicht alles gespeichert“. Mit geändertem Text der
