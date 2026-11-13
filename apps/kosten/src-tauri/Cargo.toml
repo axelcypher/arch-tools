@@ -1,6 +1,6 @@
 [package]
 name = "kostenermittlung"
-version = "0.30.0"
+version = "0.31.0"
 description = "Massen- und Kostenermittlung nach DIN 276"
 authors = ["Tobias Pendzialek"]
 license = "MIT"
