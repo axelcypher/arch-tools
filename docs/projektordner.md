@@ -82,8 +82,9 @@ auch beim Ergänzen.
    Ordner).
 6. **Beteiligte:** die schon bekannten Fachplaner, Gutachter und Behörden. Rolle mit Vorschlägen typischer
    Beteiligter (Tragwerksplanung, Prüfingenieur/-in, Brandschutz, Vermessung ÖbVI, TGA, Energieberatung/GEG,
-   Bodengutachten, Bauaufsicht …) oder frei – die typischen stehen außerdem als Knöpfe „+ Tragwerksplanung“ … darunter
-   und legen mit einem Klick eine Zeile an. Name mit Vorschlägen aus den Projektdateien der Stammordner; Rolle und
+   Bodengutachten, Prüfsachverständige für Brandschutz und Standsicherheit, Sachverständige für Schall- und
+   Wärmeschutz, SiGeKo, Bauaufsicht …) oder frei – die typischen stehen außerdem als Knöpfe „+ Tragwerksplanung“ …
+   darunter und legen mit einem Klick eine Zeile an. Name mit Vorschlägen aus den Projektdateien der Stammordner; Rolle und
    Kontakt werden dann ergänzt.
 7. **Vorlagen:** Vorlagenordner und „Welche Vorlagen?“ – die Presets (siehe [Vorlagen](#vorlagen)). Vorausgewählt sind bei neuen
    Projekten die Presets mit „Standard“, bei bestehenden die in der Projektdatei vermerkten.
@@ -551,7 +552,9 @@ Umsetzung (`apps/ordner`): `src/kataster/kataster.ts` (Einstellungen, Auslesen d
 `katasterexport.py` (Processing-Skript, wird mitgeliefert und mit `qgis_process run katasterexport.py --
 AUFTRAG=<json>` ausgeführt). Die Hülle (`packages/core/tauri/qgis.rs`) startet nur ein Programm namens
 `qgis_process…`, legt Skript, Auftrag und Vorlage in einen eigenen temporären Ordner, lässt QGIS dort hineinschreiben
-und legt die Pläne danach am Ziel ab – nur neu, nie überschreibend.
+und legt die Pläne danach am Ziel ab – nur neu, nie überschreibend, und nur Pläne, die das Skript als gelungen meldet
+(`ERGEBNIS … "ok": true`). Antwortet QGIS nicht, beendet die Hülle es nach einem Zeitlimit (je Plan 3 Minuten,
+mindestens 5) und meldet das, statt den Dialog zu sperren.
 
 ## Desktop und Browser
 

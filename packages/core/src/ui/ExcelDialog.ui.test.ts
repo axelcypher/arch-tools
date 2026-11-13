@@ -78,7 +78,7 @@ describe('Excel-Dialog', () => {
 
   it('eine gewählte Datei, die keine Excel-Datei ist, wird abgewiesen und nicht übernommen', async () => {
     const update = vi.fn();
-    vi.mocked(pickFile).mockResolvedValueOnce(new File([new TextEncoder().encode('kein zip')], 'Liste.xlsx'));
+    vi.mocked(pickFile as (accept: string) => Promise<File | null>).mockResolvedValueOnce(new File([new TextEncoder().encode('kein zip')], 'Liste.xlsx'));
     const { host } = zeigen(() => {}, update);
     act(() => host.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1].click());
     await act(async () => {

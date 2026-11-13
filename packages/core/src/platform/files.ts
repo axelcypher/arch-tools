@@ -67,10 +67,27 @@ export async function saveBinaryFile(o: SaveBinaryOptions): Promise<boolean> {
 }
 
 export interface SaveMergedOptions extends Omit<SaveBinaryOptions, 'data'> {
-  /** erzeugt den Dateiinhalt; bekommt den bisherigen Inhalt der Zieldatei (null bei neuer Datei bzw. im Browser) */
+  /** erzeugt den Dateiinhalt; bekommt den bisherigen Inhalt der Zieldatei (null bei neuer Datei, im Browser bzw. mit `vorhandenLesen: false`) */
   build: (vorhanden: Uint8Array | null) => Uint8Array;
   /** ohne Dialog direkt in diese Datei schreiben (vollständiger Pfad, nur Desktop) */
   pfad?: string | null;
+  /** bisherigen Inhalt lesen und an `build` geben (Standard ja) – nein, wenn `build` ihn nicht braucht (große Dateien) */
+  vorhandenLesen?: boolean;
+  /**
+   * erwarteter Stand der Zieldatei (z. B. aus `liesMitStand`): Weicht er ab, wurde sie inzwischen von außen geändert –
+   * dann wird nichts geschrieben (`DateiVonAussenGeaendert`). `null` = die Datei darf es noch nicht geben; fehlt = keine Prüfung.
+   * Nur Desktop; im Browser ohne Wirkung. Gilt auch nach der Wahl im Dialog (bestätigtes Überschreiben einer anderen Datei
+   * scheitert dann). Den neuen Stand nach dem Schreiben liefert `liesMitStand` bzw. der Befehl `datei_stand`.
+   */
+  stand?: { groesse: number; geaendert: number } | null;
+}
+
+/** Speichern abgelehnt: Die Zieldatei wurde seit dem Lesen von außen geändert (bzw. angelegt) */
+export class DateiVonAussenGeaendert extends Error {
+  constructor(pfad: string) {
+    super(`${pfad}: Die Datei wurde inzwischen von außen geändert – nicht gespeichert, damit nichts verloren geht.`);
+    this.name = 'DateiVonAussenGeaendert';
+  }
 }
 
 /**
@@ -91,7 +108,12 @@ export async function saveMergedFile(o: SaveMergedOptions): Promise<string | nul
             extensions: [o.extension, ...(o.moreExtensions ?? [])],
           });
     if (path == null) return null;
-    const vorhanden = await invoke<string | null>('read_binary_file', { path });
+    if (o.stand !== undefined) {
+      const jetzt = await invoke<{ groesse: number; geaendert: number } | null>('datei_stand', { path });
+      const gleich = o.stand == null ? jetzt == null : !!jetzt && jetzt.groesse === o.stand.groesse && jetzt.geaendert === o.stand.geaendert;
+      if (!gleich) throw new DateiVonAussenGeaendert(path);
+    }
+    const vorhanden = o.vorhandenLesen === false ? null : await invoke<string | null>('read_binary_file', { path });
     const data = o.build(vorhanden == null ? null : base64ToBytes(vorhanden));
     await invoke('write_binary_file', { path, contentsBase64: bytesToBase64(data) });
     return path;
@@ -173,18 +195,23 @@ export function base64ToBytes(b64: string): Uint8Array {
   return out;
 }
 
-export function pickFile(accept: string): Promise<File | null> {
+/** Datei im Browser-Dialog wählen; mit `{ mehrere: true }` mehrere auf einmal (leere Liste bei Abbruch) */
+export function pickFile(accept: string): Promise<File | null>;
+export function pickFile(accept: string, o: { mehrere: true }): Promise<File[]>;
+export function pickFile(accept: string, o: { mehrere?: boolean } = {}): Promise<File | null | File[]> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = accept;
+    input.multiple = !!o.mehrere;
     input.style.display = 'none';
     input.addEventListener('change', () => {
-      resolve(input.files?.[0] ?? null);
+      const dateien = [...(input.files ?? [])];
+      resolve(o.mehrere ? dateien : (dateien[0] ?? null));
       input.remove();
     });
     input.addEventListener('cancel', () => {
-      resolve(null);
+      resolve(o.mehrere ? [] : null);
       input.remove();
     });
     document.body.appendChild(input);
