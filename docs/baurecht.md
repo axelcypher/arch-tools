@@ -344,7 +344,7 @@ Einzelfall prüfen“ – das setzt die Auswertung davor.
 Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne
 Schlüssel, Signieren (OpenSSL, Ed25519) und Hochladen in das Release „regeln“ in einem eigenen Job ohne npm; der Wächter
 gleicht wöchentlich mit den geltenden Fassungen ab und legt bei Abweichungen ein Issue an. Signiert wird nur von `main`
-und nur in der GitHub-Umgebung **„regeln“** – diese Umgebung in den Einstellungen des Repos anlegen (Branch- Regel
+und nur in der GitHub-Umgebung **„regeln“** – diese Umgebung in den Einstellungen des Repos anlegen (Branch-Regel
 `main`, Freigabe durch Reviewer) und das Secret `BAURECHT_REGELN_SCHLUESSEL` dort hinterlegen.
 
 **Einrichten:** `npm run schluessel`, privaten Schlüssel als Secret (in der Umgebung „regeln“)
