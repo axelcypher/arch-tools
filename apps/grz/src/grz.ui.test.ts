@@ -530,4 +530,3 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(redo.title).toBe('Wiederholen: Nutzung ändern (Strg+Y)');
   });
 });
-

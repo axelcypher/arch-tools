@@ -192,8 +192,7 @@ export function App() {
       <main className="grz-main">
         {wiederhergestellt !== null && dirty && (
           <div className="grz-bericht grz-wiederhergestellt" role="status">
-            Ungespeicherter Stand vom {datumText(new Date(wiederhergestellt))}{' '}
-            {new Date(wiederhergestellt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} wiederhergestellt –{' '}
+            Ungespeicherter Stand vom {datumText(new Date(wiederhergestellt))} {new Date(wiederhergestellt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} wiederhergestellt –{' '}
             <button className="small" onClick={() => void onSave()}>
               Speichern
             </button>{' '}

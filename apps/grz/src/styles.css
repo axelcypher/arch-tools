@@ -381,7 +381,9 @@ button.link:hover {
   display: block;
   margin-bottom: 6px;
 }
-.grz-3d-fehler { padding: 24px; }
+.grz-3d-fehler {
+  padding: 24px;
+}
 
 /* Lageplan: Nutzung neuer Flächen, genaue Eingabe, Fang und Maße */
 .lp-nutzungen {

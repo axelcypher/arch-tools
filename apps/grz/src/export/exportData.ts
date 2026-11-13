@@ -34,14 +34,14 @@ const FILTERS: Record<string, (r: Row) => boolean> = {
   eigen: (r) => r.nachbar !== 'ja',
   nachbar: (r) => r.nachbar === 'ja',
   zaehlt: (r) => r._anrechnung === 'hauptanlage',
-  'zählt': (r) => r._anrechnung === 'hauptanlage',
+  zählt: (r) => r._anrechnung === 'hauptanlage',
   grz2: (r) => r._anrechnung === 'grz2',
   pruefen: (r) => r._anrechnung === 'pruefen',
-  'prüfen': (r) => r._anrechnung === 'pruefen',
+  prüfen: (r) => r._anrechnung === 'pruefen',
   voll: (r) => r._versiegelung === 'voll',
   teil: (r) => r._versiegelung === 'teil',
   gruen: (r) => r._versiegelung === 'gruen',
-  'grün': (r) => r._versiegelung === 'gruen',
+  grün: (r) => r._versiegelung === 'gruen',
   aufenthalt: (r) => r._aufenthalt === 'ja' || r._aufenthalt === 'treppe',
   gf: (r) => r._gf === 'ja',
 };
@@ -123,7 +123,10 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     'vollgeschosse.roemisch': roemisch(n.vollgeschosse.anzahl),
     'vollgeschosse.zulaessig': n.vollgeschosse.zulaessig ?? '',
     'vollgeschosse.status': STATUS[n.vollgeschosse.status].label,
-    'vollgeschosse.namen': n.geschosse.filter((g) => g.vollgeschoss).map((g) => g.name).join(', '),
+    'vollgeschosse.namen': n.geschosse
+      .filter((g) => g.vollgeschoss)
+      .map((g) => g.name)
+      .join(', '),
     'bilanz.gebaeude': r2(n.bilanz.gebaeude),
     'bilanz.vollversiegelt': r2(n.bilanz.voll),
     'bilanz.teilversiegelt': r2(n.bilanz.teil),
@@ -217,8 +220,28 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
   const formel: Row[] = rw.formeln.map((text, i) => ({ nr: i + 1, text }));
   const teil: Row[] = rw.flaechen.flatMap((f) =>
     f.zerlegung.zerlegt
-      ? f.zerlegung.teile.map((t, i) => ({ flaeche_nr: f.nr, flaeche_name: f.name, name: teilName(f.nr, i, t), art: t.art === 'rechteck' ? 'Rechteck' : 'Dreieck', laenge: r4(t.laenge), breite: r4(t.breite), faktor: t.faktor, flaeche: r4(t.flaeche) }))
-      : [{ flaeche_nr: f.nr, flaeche_name: f.name, name: `${f.nr} Fläche aus Koordinaten`, art: 'Koordinaten', laenge: r4(f.zerlegung.flaeche), breite: 1, faktor: 1, flaeche: r4(f.zerlegung.flaeche) }],
+      ? f.zerlegung.teile.map((t, i) => ({
+          flaeche_nr: f.nr,
+          flaeche_name: f.name,
+          name: teilName(f.nr, i, t),
+          art: t.art === 'rechteck' ? 'Rechteck' : 'Dreieck',
+          laenge: r4(t.laenge),
+          breite: r4(t.breite),
+          faktor: t.faktor,
+          flaeche: r4(t.flaeche),
+        }))
+      : [
+          {
+            flaeche_nr: f.nr,
+            flaeche_name: f.name,
+            name: `${f.nr} Fläche aus Koordinaten`,
+            art: 'Koordinaten',
+            laenge: r4(f.zerlegung.flaeche),
+            breite: 1,
+            faktor: 1,
+            flaeche: r4(f.zerlegung.flaeche),
+          },
+        ],
   );
 
   const hinweis: Row[] = [...n.recht.hinweise, ...sachlicheHinweise(n)].map((text, i) => ({ nr: i + 1, text }));
@@ -238,7 +261,10 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
     group: 'Blöcke, Filter, Modifikatoren',
     keys: [
       ['#geschoss … /geschoss', 'Zeilenblock je Geschoss; raum-Zeilen darin nur für dieses Geschoss'],
-      ['#wenn … /wenn', 'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn lageplan[nachbar]}} (Datensätze vorhanden), {{#wenn grz.ii}} (Wert nicht 0/leer), {{#wenn grz.reserve<0}} (Vergleich), {{#wenn !…}} umgekehrt; im Block je Datensatz'],
+      [
+        '#wenn … /wenn',
+        'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn lageplan[nachbar]}} (Datensätze vorhanden), {{#wenn grz.ii}} (Wert nicht 0/leer), {{#wenn grz.reserve<0}} (Vergleich), {{#wenn !…}} umgekehrt; im Block je Datensatz',
+      ],
       ['geschoss[vollgeschoss] / geschoss[!vollgeschoss] / [oberirdisch]', 'Filter: Vollgeschosse, Nicht-Vollgeschosse, oberirdische Geschosse'],
       ['lageplan[eigen] / lageplan[nachbar]', 'Filter: Flächen des eigenen Grundstücks bzw. der Nachbarn'],
       ['lageplan[zaehlt] / [grz2] / [pruefen]', 'Filter nach Anrechnung auf die Grundfläche'],
@@ -277,7 +303,10 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['unterirdisch.flaeche, unterirdisch.angerechnet', 'Kellergeschoss außerhalb der Hauptanlage [m²] und davon angerechnet'],
       ['grz.ii, grz.ii.zulaessig, grz.ii.flaeche, grz.ii.reserve, grz.ii.status, grz.ii.mit_offenen', 'GRZ II nach § 19 Abs. 4 BauNVO 1990 (sonst leer)'],
       ['garagen.frei', 'anrechnungsfreie Garagenfläche nach § 21a Abs. 3 (1968/1977) [m²]'],
-      ['gr_absolut, gr_absolut.zulaessig, gr_absolut.status, gr_absolut.bezeichnung', 'absolute Festsetzung der Grundfläche: vorhanden, zulässig [m²], Ergebnis (leer ohne Festsetzung); ebenso gf_absolut'],
+      [
+        'gr_absolut, gr_absolut.zulaessig, gr_absolut.status, gr_absolut.bezeichnung',
+        'absolute Festsetzung der Grundfläche: vorhanden, zulässig [m²], Ergebnis (leer ohne Festsetzung); ebenso gf_absolut',
+      ],
       ['bmz, bmz.zulaessig, bmz.status, bmz.baumasse', 'Baumassenzahl (§ 21) und Baumasse [m³], vereinfacht aus Grundfläche × Geschosshöhe der Vollgeschosse'],
       ['vollgeschosse.mindestens, vollgeschosse.zwingend', 'Mindestzahl der Vollgeschosse; „ja“, wenn die Zahl zwingend ist'],
       ['gf, gf.aufenthalt', 'Geschossfläche [m²]; davon Aufenthaltsräume in Nicht-Vollgeschossen'],

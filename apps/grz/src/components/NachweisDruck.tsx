@@ -85,9 +85,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           <tbody>
             <tr>
               <td>Bebauungsplan</td>
-              <td>
-                {[bebauungsplanText(project.meta.bebauungsplan), m.planDatum ? `in Kraft seit ${datumText(m.planDatum)}` : 'kein Datum (aktuelles Recht)'].filter(Boolean).join(', ')}
-              </td>
+              <td>{[bebauungsplanText(project.meta.bebauungsplan), m.planDatum ? `in Kraft seit ${datumText(m.planDatum)}` : 'kein Datum (aktuelles Recht)'].filter(Boolean).join(', ')}</td>
             </tr>
             {m.gebietsart && (
               <tr>
@@ -194,7 +192,9 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
               <th>Nutzung</th>
               <th>Versiegelung</th>
               <th className="num">Fläche [m²]</th>
-              <th className="num" title="außerhalb des Gebäudes, Überlagerungen nur einmal gezählt">eindeutig [m²]</th>
+              <th className="num" title="außerhalb des Gebäudes, Überlagerungen nur einmal gezählt">
+                eindeutig [m²]
+              </th>
               <th className="num">angerechnet auf {grLabel} [m²]</th>
               <th>Anrechnung</th>
             </tr>

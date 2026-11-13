@@ -31,7 +31,10 @@ function lageplan(p: Project, ...f: LageplanFlaeche[]) {
   p.lageplan = { flaechen: [...(p.lageplan?.flaechen ?? []), ...f] };
 }
 
-const flaeche = (x0: number, y0: number, x1: number, y1: number, patch: Partial<LageplanFlaeche>): LageplanFlaeche => ({ ...createLageplanFlaeche(rectPoints({ x: x0, y: y0 }, { x: x1, y: y1 })), ...patch });
+const flaeche = (x0: number, y0: number, x1: number, y1: number, patch: Partial<LageplanFlaeche>): LageplanFlaeche => ({
+  ...createLageplanFlaeche(rectPoints({ x: x0, y: y0 }, { x: x1, y: y1 })),
+  ...patch,
+});
 
 describe('Maß der baulichen Nutzung: anzuwendendes Recht', () => {
   it('wählt BauNVO und Bauordnung nach dem Plandatum', () => {
@@ -259,13 +262,7 @@ describe('Überlagerungen, Gelände am Hang, Split-Level', () => {
     const p = haus('1967-03-14');
     delete p.massNutzung!.gelaende;
     // Gelände rundum −0,2, nur bergseitig +0,3 über dem EG-Fußboden
-    lageplan(
-      p,
-      flaeche(-5, -5, 17, 0, { hoehe: -0.2 }),
-      flaeche(-5, 11.25, 17, 16, { hoehe: 0.3 }),
-      flaeche(-5, 0, 0, 11.25, { hoehe: -0.2 }),
-      flaeche(12, 0, 17, 11.25, { hoehe: -0.2 }),
-    );
+    lageplan(p, flaeche(-5, -5, 17, 0, { hoehe: -0.2 }), flaeche(-5, 11.25, 17, 16, { hoehe: 0.3 }), flaeche(-5, 0, 0, 11.25, { hoehe: -0.2 }), flaeche(12, 0, 17, 11.25, { hoehe: -0.2 }));
     const eg = massNachweis(p).geschosse.find((g) => g.name === 'EG')!;
     // nicht vollständig über dem Gelände → wie ein Kellergeschoss: zählt, weil es im Mittel mehr als 1,40 m herausragt
     expect(eg.oberirdisch).toBe(false);
@@ -304,8 +301,7 @@ describe('Gelände aus dem 3D-Modell', () => {
     // Gelände fällt in y-Richtung von 0,0 (y = 11,25) auf −3,0 (y = 0) und weiter
     const z = (y: number) => -3 + (3 * y) / 11.25;
     const tri: number[] = [];
-    for (let x = -10; x < 22; x += 2)
-      for (let y = -10; y < 22; y += 2) tri.push(x, y, z(y), x + 2, y, z(y), x + 2, y + 2, z(y + 2), x, y, z(y), x + 2, y + 2, z(y + 2), x, y + 2, z(y + 2));
+    for (let x = -10; x < 22; x += 2) for (let y = -10; y < 22; y += 2) tri.push(x, y, z(y), x + 2, y, z(y), x + 2, y + 2, z(y + 2), x, y, z(y), x + 2, y + 2, z(y + 2), x, y + 2, z(y + 2));
     p.gelaendeModell = { name: 'IFC-Gelände', triangles: tri };
     const n = massNachweis(p);
     const ug = n.geschosse.find((g) => g.name === 'UG')!;
@@ -546,4 +542,3 @@ describe('Varianten, 3D-Stufen, IFC-Bericht (G-30 bis G-32)', () => {
     expect(ifcBericht(p, [], 'abgleich').titel).toBe('IFC-Abgleich');
   });
 });
-

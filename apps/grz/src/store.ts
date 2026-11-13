@@ -119,8 +119,7 @@ export const useGrz = create<GrzState>()((set, get) => ({
     if (next === project) return;
     const jetzt = Date.now();
     // zusammenhängend nur, wenn seitdem nichts anderes geschah (auch kein Rückgängig)
-    const anschluss =
-      zusammenfassen !== undefined && letzteAenderung.schluessel === zusammenfassen && jetzt - letzteAenderung.zeit < 800 && letzteAenderung.ergebnis === project && past.length > 0;
+    const anschluss = zusammenfassen !== undefined && letzteAenderung.schluessel === zusammenfassen && jetzt - letzteAenderung.zeit < 800 && letzteAenderung.ergebnis === project && past.length > 0;
     letzteAenderung = { schluessel: zusammenfassen, zeit: jetzt, ergebnis: next };
     set({
       project: next,
@@ -142,7 +141,14 @@ export const useGrz = create<GrzState>()((set, get) => ({
   redo: () => {
     const { past, project, future, pastAktionen, futureAktionen } = get();
     if (!future.length) return;
-    set({ project: future[0], past: [...past, project], future: future.slice(1), pastAktionen: [...pastAktionen, futureAktionen[0] ?? 'Änderung'], futureAktionen: futureAktionen.slice(1), dirty: true });
+    set({
+      project: future[0],
+      past: [...past, project],
+      future: future.slice(1),
+      pastAktionen: [...pastAktionen, futureAktionen[0] ?? 'Änderung'],
+      futureAktionen: futureAktionen.slice(1),
+      dirty: true,
+    });
     auswahlBereinigen(set, get);
   },
   markSaved: (datei, gespeichert, vorher, dokument) => {
@@ -353,11 +359,13 @@ export function flaechenDuplizieren(): number {
 export function auswahlVerschieben(dx: number, dy: number): void {
   const ids = new Set(gewaehlt().map((f) => f.id));
   if (!ids.size) return;
-  useGrz.getState().update(
-    (p) => ({ ...p, lageplan: { ...p.lageplan, flaechen: (p.lageplan?.flaechen ?? []).map((f) => (ids.has(f.id) ? { ...f, points: f.points.map((q) => ({ x: q.x + dx, y: q.y + dy })) } : f)) } }),
-    'pfeil',
-    'Fläche verschieben',
-  );
+  useGrz
+    .getState()
+    .update(
+      (p) => ({ ...p, lageplan: { ...p.lageplan, flaechen: (p.lageplan?.flaechen ?? []).map((f) => (ids.has(f.id) ? { ...f, points: f.points.map((q) => ({ x: q.x + dx, y: q.y + dy })) } : f)) } }),
+      'pfeil',
+      'Fläche verschieben',
+    );
 }
 
 /** Name eines Änderungsschritts an einer Fläche aus den geänderten Feldern */

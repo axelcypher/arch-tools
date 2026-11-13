@@ -56,7 +56,11 @@ const WERKZEUGE: { id: Werkzeug; label: string; taste: string; kurz: string[]; a
     taste: 'P',
     titel: 'Fläche Punkt für Punkt zeichnen',
     kurz: ['Klicken: Punkt', 'Zahl: Länge eingeben', 'Enter: schließen'],
-    alle: ['Klicken: nächster Punkt · Enter, Doppelklick oder Startpunkt: schließen', 'Zahl tippen: Länge und Winkel eingeben', 'Umschalt: entlang der Gebäudeachse · Rück: letzten Punkt löschen · Esc: abbrechen'],
+    alle: [
+      'Klicken: nächster Punkt · Enter, Doppelklick oder Startpunkt: schließen',
+      'Zahl tippen: Länge und Winkel eingeben',
+      'Umschalt: entlang der Gebäudeachse · Rück: letzten Punkt löschen · Esc: abbrechen',
+    ],
   },
   {
     id: 'rechteck',
@@ -216,10 +220,14 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     setEingabe({ a: '', b: '' });
     if (pts.length < 3 || polygonArea(pts) < 0.05) return;
     if (werkzeug === 'grenze') {
-      st.update((p) => {
-        const alt = p.lageplan?.grenze ?? [];
-        return { ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: [...alt, { id: newId('gr'), name: `Flurstück ${alt.length + 1}`, points: pts }] } };
-      }, undefined, 'Grenze zeichnen');
+      st.update(
+        (p) => {
+          const alt = p.lageplan?.grenze ?? [];
+          return { ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: [...alt, { id: newId('gr'), name: `Flurstück ${alt.length + 1}`, points: pts }] } };
+        },
+        undefined,
+        'Grenze zeichnen',
+      );
       return;
     }
     const f = neueFlaeche(useGrz.getState().project, pts, useGrz.getState().nutzungVorlage);
@@ -322,7 +330,10 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     e.stopPropagation();
     const f = flaechen.find((x) => x.id === id);
     if (!f || f.points.length <= 3) return;
-    setzePunkte(id, f.points.filter((_, i) => i !== index));
+    setzePunkte(
+      id,
+      f.points.filter((_, i) => i !== index),
+    );
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -388,11 +399,15 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     if (!z || z.art === 'pan' || !v) return;
     // ein Undo-Schritt je Ziehen; ◇ ohne Bewegung fügt den Mittelpunkt ein
     if (z.started || (z.art === 'punkt' && z.eingefuegt)) {
-      st.update((p) => {
-        let next = p;
-        for (const [id, pts] of v) next = mapFlaeche(next, id, (f) => ({ ...f, points: pts }));
-        return next;
-      }, undefined, z.art === 'punkt' ? (z.eingefuegt ? 'Punkt einfügen' : 'Punkt verschieben') : 'Fläche verschieben');
+      st.update(
+        (p) => {
+          let next = p;
+          for (const [id, pts] of v) next = mapFlaeche(next, id, (f) => ({ ...f, points: pts }));
+          return next;
+        },
+        undefined,
+        z.art === 'punkt' ? (z.eingefuegt ? 'Punkt einfügen' : 'Punkt verschieben') : 'Fläche verschieben',
+      );
     }
   };
 
@@ -642,7 +657,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             <button className={werkzeug === 'kalibrieren' ? 'small active' : 'small'} title="Maßstab an einer bekannten Strecke festlegen" onClick={() => st.setWerkzeug('kalibrieren')}>
               Kalibrieren
             </button>
-            <button className={werkzeug === 'ausrichten' ? 'small active' : 'small'} title="Unterlage verschieben: Punkt auf der Unterlage → Punkt im Plan" onClick={() => st.setWerkzeug('ausrichten')}>
+            <button
+              className={werkzeug === 'ausrichten' ? 'small active' : 'small'}
+              title="Unterlage verschieben: Punkt auf der Unterlage → Punkt im Plan"
+              onClick={() => st.setWerkzeug('ausrichten')}
+            >
               Ausrichten
             </button>
             <label className="toggle small-text">
@@ -665,7 +684,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           </>
         )}
         {grenzen.length > 0 && (
-          <button className="small" title="Gezeichnete Grundstücksgrenze entfernen" onClick={() => st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: undefined } }), undefined, 'Grenze löschen')}>
+          <button
+            className="small"
+            title="Gezeichnete Grundstücksgrenze entfernen"
+            onClick={() => st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: undefined } }), undefined, 'Grenze löschen')}
+          >
             Grenze löschen
           </button>
         )}

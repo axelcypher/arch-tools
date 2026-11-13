@@ -5,19 +5,7 @@ import { areaMP, diffMP, inMP, intersectMP, ringsOf, unionAll, unionMP } from '@
 import { gaubenHoeheAt } from '@core/gaube';
 import type { Point } from '@core/geometry';
 import { bounds, pointInPolygon } from '@core/geometry';
-import type {
-  BauNVOFassung,
-  BauOFassung,
-  Einstufung,
-  Gebietsart,
-  LageplanNutzung,
-  MassNutzung,
-  OutlineShape,
-  Project,
-  RoomShape,
-  Storey,
-  Versiegelung,
-} from '@core/model';
+import type { BauNVOFassung, BauOFassung, Einstufung, Gebietsart, LageplanNutzung, MassNutzung, OutlineShape, Project, RoomShape, Storey, Versiegelung } from '@core/model';
 import { storeyElevations } from '@core/model';
 import { roofFrame, roofHeightFn } from '@core/roof';
 import { meshRoofHeightAt } from '@core/roofMesh';
@@ -266,7 +254,12 @@ export interface AufenthaltAnforderung {
 export function aufenthaltAnforderung(bauo: BauOFassung, o: { dachraumOderKeller: boolean; kleinesWohngebaeude: boolean }): AufenthaltAnforderung {
   if (bauo === 'nw1962') {
     const h = o.dachraumOderKeller || o.kleinesWohngebaeude ? 2.3 : 2.5;
-    return { hoehe: h, anteil: o.dachraumOderKeller ? 2 / 3 : 0.95, ohneUnter: 0, text: `lichte Höhe ${fmtM(h)} (BauO NW 1962/1970 § 59${o.dachraumOderKeller ? ', Dachraum' : o.kleinesWohngebaeude ? ', Einfamilienhaus' : ''})` };
+    return {
+      hoehe: h,
+      anteil: o.dachraumOderKeller ? 2 / 3 : 0.95,
+      ohneUnter: 0,
+      text: `lichte Höhe ${fmtM(h)} (BauO NW 1962/1970 § 59${o.dachraumOderKeller ? ', Dachraum' : o.kleinesWohngebaeude ? ', Einfamilienhaus' : ''})`,
+    };
   }
   if (o.dachraumOderKeller) {
     return { hoehe: 2.2, anteil: 0.5, ohneUnter: 1.5, text: 'lichte Höhe 2,20 m über mindestens die Hälfte der Netto-Raumfläche, Raumteile bis 1,50 m außer Betracht (Dachraum/Kellergeschoss)' };
@@ -513,7 +506,6 @@ export interface Nachweis {
 /** Hinweise für Druck und Excel: nur die sachlichen, ohne Arbeitsanweisungen */
 export const sachlicheHinweise = (n: Pick<Nachweis, 'hinweise'>): string[] => n.hinweise.filter((h) => h.art === 'sachlich').map((h) => h.text);
 
-
 /** Varianten des Lageplans: „A“ und alle an Flächen vergebenen Namen */
 export function varianten(project: Project): string[] {
   const v = new Set(['A', ...(project.lageplan?.flaechen ?? []).flatMap((f) => (f.variante ? [f.variante] : []))]);
@@ -641,7 +633,9 @@ export function massNachweis(project: Project): Nachweis {
         flaeche: A,
         bezugsflaeche: darunter,
         vg: ob && anteil > 0.75,
-        begruendung: !ob ? `Decke im Mittel ${fmtM(ueber)} über Gelände (≤ 1,60 m): kein oberirdisches Geschoss` : `lichte Höhe ≥ 2,30 m auf ${pct(anteil)} der Grundfläche des Geschosses darunter (mehr als 75 % gefordert)`,
+        begruendung: !ob
+          ? `Decke im Mittel ${fmtM(ueber)} über Gelände (≤ 1,60 m): kein oberirdisches Geschoss`
+          : `lichte Höhe ≥ 2,30 m auf ${pct(anteil)} der Grundfläche des Geschosses darunter (mehr als 75 % gefordert)`,
       };
     } else if (re.bauo === 'nw1985') {
       const ob = ueber > 1.6;
@@ -715,9 +709,7 @@ export function massNachweis(project: Project): Nachweis {
   const haupt = unionMP(...hauptTeile);
   const hauptanlage = areaMP(haupt);
   // Gebäudeteile als Garage/Carport bzw. Nebenanlage (aus der IFC): Anlagen statt Hauptanlage
-  const anlagenUmrisse = geschosse
-    .filter(({ st }) => oberirdisch.has(st.id))
-    .flatMap(({ st }) => outlinesOf(st).filter((o) => o.anlage && !o.subtract && o.points.length >= 3));
+  const anlagenUmrisse = geschosse.filter(({ st }) => oberirdisch.has(st.id)).flatMap(({ st }) => outlinesOf(st).filter((o) => o.anlage && !o.subtract && o.points.length >= 3));
   const anlagenMP = diffMP(unionAll(anlagenUmrisse.map((o) => o.points)), haupt);
   const gebaeude = unionMP(haupt, anlagenMP);
   const unterirdisch = diffMP(unionMP(...geschosse.filter(({ st }) => !oberirdisch.has(st.id)).map(({ st }) => grundriss.get(st.id)!)), gebaeude);
@@ -834,7 +826,10 @@ export function massNachweis(project: Project): Nachweis {
       feld: 'grundstueck',
     });
   else if (ausGrenze === undefined && gProjekt !== undefined && ausLageplan !== undefined && Math.abs(gProjekt - ausLageplan) > Math.max(0.5, gProjekt * 0.005)) {
-    hinweise.push({ text: `Grundstücksfläche laut Projektdaten ${fmtA(gProjekt)}, Lageplan-Flächen mit Gebäude ${fmtA(ausLageplan)} – Lageplan unvollständig oder Flächen überlappen.`, art: 'sachlich' });
+    hinweise.push({
+      text: `Grundstücksfläche laut Projektdaten ${fmtA(gProjekt)}, Lageplan-Flächen mit Gebäude ${fmtA(ausLageplan)} – Lageplan unvollständig oder Flächen überlappen.`,
+      art: 'sachlich',
+    });
   }
   const grundstueckPolygone = grenzen.length ? ringsOf(grenzeMP) : eigene.length ? ringsOf(unionMP(unionAll(eigene.map((f) => f.points)), alleGeschosse)) : [];
 
@@ -897,7 +892,12 @@ export function massNachweis(project: Project): Nachweis {
     const pr = pruefungen.find((x) => x.storeyId === st.id)!;
     if (pr.vollgeschoss) return { storeyId: st.id, name: st.name, flaeche: areaMP(geschossFlaeche(st, true)), art: 'vollgeschoss' as const };
     if (vorher1990) {
-      const a = aufenthaltsFlaeche(st, grundriss.get(st.id)!, wand, raeume.filter((x) => x.storeyId === st.id));
+      const a = aufenthaltsFlaeche(
+        st,
+        grundriss.get(st.id)!,
+        wand,
+        raeume.filter((x) => x.storeyId === st.id),
+      );
       if (a > 0) return { storeyId: st.id, name: st.name, flaeche: a, art: 'aufenthalt' as const };
     }
     return { storeyId: st.id, name: st.name, flaeche: 0, art: 'keine' as const };
@@ -905,7 +905,10 @@ export function massNachweis(project: Project): Nachweis {
   const gf = gfJeGeschoss.reduce((a, x) => a + x.flaeche, 0);
   const gfAufenthalt = gfJeGeschoss.filter((x) => x.art === 'aufenthalt').reduce((a, x) => a + x.flaeche, 0);
   if (vorher1990 && gfAufenthalt > 0) {
-    hinweise.push({ text: `${baunvoLabel(re.baunvo)}: Aufenthaltsräume in anderen Geschossen samt Treppenräumen und Umfassungswänden (${fmtM(wand)} Wandzuschlag) zählen zur Geschossfläche.`, art: 'sachlich' });
+    hinweise.push({
+      text: `${baunvoLabel(re.baunvo)}: Aufenthaltsräume in anderen Geschossen samt Treppenräumen und Umfassungswänden (${fmtM(wand)} Wandzuschlag) zählen zur Geschossfläche.`,
+      art: 'sachlich',
+    });
   }
   const gfz = kennzahl(gf, G, m.gfz);
 
@@ -932,7 +935,9 @@ export function massNachweis(project: Project): Nachweis {
   const bmz = m.bmz !== undefined ? kennzahl(baumasse, G, m.bmz) : undefined;
   if (m.bmz !== undefined) hinweise.push({ text: `Baumasse vereinfacht aus Grundfläche × Geschosshöhe der Vollgeschosse (${fmtA(baumasse).replace('m²', 'm³')}).`, art: 'sachlich' });
   if (m.traufhoeheMax !== undefined || m.firsthoeheMax !== undefined) {
-    const t = [m.traufhoeheMax !== undefined && `Traufhöhe höchstens ${fmtM(m.traufhoeheMax)}`, m.firsthoeheMax !== undefined && `Firsthöhe höchstens ${fmtM(m.firsthoeheMax)}`].filter(Boolean).join(', ');
+    const t = [m.traufhoeheMax !== undefined && `Traufhöhe höchstens ${fmtM(m.traufhoeheMax)}`, m.firsthoeheMax !== undefined && `Firsthöhe höchstens ${fmtM(m.firsthoeheMax)}`]
+      .filter(Boolean)
+      .join(', ');
     hinweise.push({ text: `Festgesetzt: ${t} – nicht automatisch geprüft, im Schnitt nachzuweisen.`, art: 'sachlich' });
   }
 

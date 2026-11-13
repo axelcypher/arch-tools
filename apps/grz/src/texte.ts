@@ -97,8 +97,7 @@ export function flaechenVergleich(kurz: string, k: Kennzahl): string | undefined
   return t;
 }
 
-export const HAFTUNG =
-  'Das Tool rechnet nach und zeigt die angewandte Fassung; die Verantwortung für den Nachweis bleibt bei der Entwurfsverfasserin bzw. dem Entwurfsverfasser.';
+export const HAFTUNG = 'Das Tool rechnet nach und zeigt die angewandte Fassung; die Verantwortung für den Nachweis bleibt bei der Entwurfsverfasserin bzw. dem Entwurfsverfasser.';
 
 /** Regel im Nachschlagewerk, die eine Anrechnung begründet */
 export function anrechnungRegelId(a: Anrechnung): string {
