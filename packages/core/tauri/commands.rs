@@ -205,8 +205,135 @@ fn log_plugin<R: tauri::Runtime>(datei: &str) -> tauri::plugin::TauriPlugin<R> {
 #[tauri::command]
 async fn konfig_basis(app: tauri::AppHandle) -> Result<String, String> {
     let dir = tauri::Manager::path(&app).config_dir().map_err(|e| e.to_string())?.join("arch-tools");
-    std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {}", dir.display(), e))?;
+    // darin die lokale Kopie der Einstellungen einer Netzwerkinstallation (Notbetrieb ohne Netzlaufwerk)
+    let kopie = dir.join("netz-kopie");
+    std::fs::create_dir_all(&kopie).map_err(|e| format!("{}: {}", kopie.display(), e))?;
     Ok(dir.display().to_string())
+}
+
+/// Ist der Ordner erreichbar? Mit Zeitlimit: Ein getrenntes Netzlaufwerk lässt die Prüfung sonst lange hängen.
+#[tauri::command]
+async fn ordner_erreichbar(pfad: String) -> bool {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let p = std::path::PathBuf::from(&pfad);
+    std::thread::spawn(move || {
+        let _ = tx.send(p.is_absolute() && p.is_dir());
+    });
+    // hängt die Prüfung, läuft der Faden im Hintergrund zu Ende; die App wartet nicht auf ihn
+    tauri::async_runtime::spawn_blocking(move || rx.recv_timeout(std::time::Duration::from_secs(4)).unwrap_or(false))
+        .await
+        .unwrap_or(false)
+}
+
+/// Namen der Einstellungsdateien (`*.json`) eines Konfigurationsordners, ohne Unterordner und versteckte Dateien.
+/// Fehler, wenn der Ordner nicht lesbar ist; leer, wenn es ihn nicht gibt.
+#[tauri::command]
+async fn konfig_dateien(ordner: String) -> Result<Vec<String>, String> {
+    // auf einem Netzlaufwerk kann das dauern – nicht im asynchronen Befehl blockieren
+    tauri::async_runtime::spawn_blocking(move || {
+        let dir = std::path::Path::new(&ordner);
+        let eintraege = match std::fs::read_dir(dir) {
+            Ok(e) => e,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(e) => return Err(format!("{}: {}", dir.display(), e)),
+        };
+        let mut namen = Vec::new();
+        for e in eintraege {
+            let e = e.map_err(|e| format!("{}: {}", dir.display(), e))?;
+            let name = e.file_name().to_string_lossy().into_owned();
+            if name.ends_with(".json") && !name.starts_with('.') && e.file_type().map(|t| t.is_file()).unwrap_or(false) {
+                namen.push(name);
+            }
+        }
+        namen.sort();
+        Ok(namen)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Sperrdatei neben einer Einstellungsdatei anlegen – nur wenn es sie nicht gibt (`create_new`, das gilt auch auf
+/// Netzlaufwerken) – sonst kurz warten. Die Sperre enthält ein Zeichen dieses Schreibvorgangs. Ob eine Sperre verwaist
+/// ist (abgebrochenes Schreiben), misst die eigene, monotone Uhr: Bleibt dieselbe Sperre (gleiches Zeichen) 10 s lang
+/// liegen, wird sie entfernt – die Uhrzeit des Netzlaufwerks spielt keine Rolle, sie kann von der des Rechners abweichen.
+/// Unmittelbar vor dem Entfernen wird das Zeichen noch einmal verglichen, damit nicht die frische Sperre eines anderen
+/// Rechners verschwindet (ein winziges Zeitfenster zwischen Vergleich und Entfernen bleibt). Bekannte Grenze: Hängt
+/// ein Schreibvorgang länger als 10 s (hängende Freigabe), kann ein anderer Rechner dessen Sperre für verwaist halten;
+/// der erneute Vergleich unter der Sperre verringert dann das Risiko, eine fremde Änderung zu überschreiben, kann es
+/// aber nicht ganz ausschließen.
+fn konfig_sperre(pfad: &std::path::Path) -> Result<(std::path::PathBuf, String), String> {
+    use std::io::Write;
+    let name = pfad.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let sperre = pfad.with_file_name(format!(".{name}.sperre"));
+    let zeichen = format!(
+        "{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)
+    );
+    let beginn = std::time::Instant::now();
+    // gesehene fremde Sperre: ihr Zeichen und seit wann (eigene Uhr)
+    let mut gesehen: Option<(String, std::time::Instant)> = None;
+    while beginn.elapsed() < std::time::Duration::from_secs(20) {
+        match std::fs::OpenOptions::new().write(true).create_new(true).open(&sperre) {
+            Ok(mut f) => {
+                let _ = f.write_all(zeichen.as_bytes());
+                return Ok((sperre, zeichen));
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                let fremd = std::fs::read_to_string(&sperre).unwrap_or_default();
+                match &gesehen {
+                    Some((z, seit)) if *z == fremd => {
+                        if seit.elapsed() >= std::time::Duration::from_secs(10) && std::fs::read_to_string(&sperre).unwrap_or_default() == fremd {
+                            let _ = std::fs::remove_file(&sperre);
+                            gesehen = None;
+                            continue;
+                        }
+                    }
+                    _ => gesehen = Some((fremd, std::time::Instant::now())),
+                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(e) => return Err(format!("{}: {}", sperre.display(), e)),
+        }
+    }
+    Err(format!("{}: wird gerade von einem anderen Rechner geschrieben – bitte erneut versuchen", pfad.display()))
+}
+
+/// Schreibt eine Einstellungsdatei nur, wenn sie noch `erwartet` enthält (Base64; `None` = es gibt sie nicht).
+/// Vergleich und Ersetzen geschehen unter einer Sperrdatei, damit zwei Rechner sich nicht gegenseitig Änderungen
+/// überschreiben. `false`, wenn die Datei inzwischen anders ist – dann wird nichts geschrieben.
+#[tauri::command]
+async fn konfig_schreiben_wenn(pfad: String, erwartet_base64: Option<String>, contents_base64: String) -> Result<bool, String> {
+    let b64 = base64::engine::general_purpose::STANDARD;
+    let erwartet = match erwartet_base64 {
+        Some(e) => Some(b64.decode(e.as_bytes()).map_err(|e| format!("Ungültige Daten: {e}"))?),
+        None => None,
+    };
+    let bytes = b64.decode(contents_base64.as_bytes()).map_err(|e| format!("Ungültige Daten: {e}"))?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let ziel = std::path::Path::new(&pfad);
+        let (sperre, zeichen) = konfig_sperre(ziel)?;
+        let ergebnis = (|| {
+            let aktuell = match std::fs::read(ziel) {
+                Ok(b) => Some(b),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+                Err(e) => return Err(format!("{}: {}", ziel.display(), e)),
+            };
+            if aktuell != erwartet {
+                return Ok(false);
+            }
+            write_atomic(ziel, &bytes).map_err(|e| format!("{}: {}", ziel.display(), e))?;
+            log::info!("Gespeichert: {} ({} Bytes)", ziel.display(), bytes.len());
+            Ok(true)
+        })();
+        // nur die eigene Sperre entfernen
+        if std::fs::read_to_string(&sperre).map(|z| z == zeichen).unwrap_or(false) {
+            let _ = std::fs::remove_file(&sperre);
+        }
+        ergebnis
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Öffnet den Dialog zur Ordnerwahl. `None`, wenn der Benutzer abgebrochen hat.

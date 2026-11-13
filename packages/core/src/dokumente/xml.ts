@@ -35,6 +35,12 @@ const ATTR = /([^\s=/>]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
 export function xmlLesen(quelle: string): XmlElement {
   const wurzel: XmlElement = { name: '#dokument', attr: {}, kinder: [], text: '', start: 0, ende: quelle.length, innenStart: 0, innenEnde: quelle.length };
   const stapel: XmlElement[] = [wurzel];
+  /** Position des nächsten Vorkommens von `ende` ab `ab`; fehlt es (abgeschnittene Datei), Fehler statt Endlosschleife */
+  const finde = (ende: string, ab: number) => {
+    const e = quelle.indexOf(ende, ab);
+    if (e < 0) throw new Error('XML: unvollständig');
+    return e;
+  };
   let i = 0;
   while (i < quelle.length) {
     const lt = quelle.indexOf('<', i);
@@ -45,17 +51,17 @@ export function xmlLesen(quelle: string): XmlElement {
     }
     if (lt > i) oben.text += entschluesseln(quelle.slice(i, lt));
     if (quelle.startsWith('<?', lt)) {
-      i = quelle.indexOf('?>', lt) + 2;
+      i = finde('?>', lt + 2) + 2;
     } else if (quelle.startsWith('<!--', lt)) {
-      i = quelle.indexOf('-->', lt) + 3;
+      i = finde('-->', lt + 4) + 3;
     } else if (quelle.startsWith('<![CDATA[', lt)) {
-      const e = quelle.indexOf(']]>', lt);
+      const e = finde(']]>', lt);
       oben.text += quelle.slice(lt + 9, e);
       i = e + 3;
     } else if (quelle.startsWith('<!', lt)) {
-      i = quelle.indexOf('>', lt) + 1;
+      i = finde('>', lt) + 1;
     } else if (quelle[lt + 1] === '/') {
-      const gt = quelle.indexOf('>', lt);
+      const gt = finde('>', lt);
       const name = quelle.slice(lt + 2, gt).trim();
       const el = stapel.pop();
       if (!el || el.name !== name) throw new Error(`XML: </${name}> passt nicht zu <${el?.name}>`);
@@ -74,6 +80,7 @@ export function xmlLesen(quelle: string): XmlElement {
         else if (c === '>') break;
         j++;
       }
+      if (j >= quelle.length) throw new Error('XML: unvollständig');
       const leer = quelle[j - 1] === '/';
       const inhalt = quelle.slice(lt + 1, leer ? j - 1 : j);
       const name = /^[^\s/>]+/.exec(inhalt)![0];
@@ -84,7 +91,6 @@ export function xmlLesen(quelle: string): XmlElement {
       if (!leer) stapel.push(el);
       i = j + 1;
     }
-    if (i <= 0) throw new Error('XML: unvollständig');
   }
   if (stapel.length !== 1) throw new Error(`XML: <${stapel[stapel.length - 1].name}> nicht geschlossen`);
   return wurzel;
