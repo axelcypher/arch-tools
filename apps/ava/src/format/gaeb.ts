@@ -345,31 +345,13 @@ export function gaebDekodieren(bytes: Uint8Array): string {
   }
 }
 
-/** abgeschnittene Datei erkennen, bevor der Leser sich daran festläuft */
-function vollstaendigPruefen(quelle: string) {
-  const offen: [string, string, string][] = [
-    ['<!--', '-->', 'Kommentar'],
-    ['<![CDATA[', ']]>', 'CDATA-Abschnitt'],
-    ['<?', '?>', 'Verarbeitungsanweisung'],
-  ];
-  for (const [auf, zu, was] of offen) {
-    let i = quelle.indexOf(auf);
-    while (i >= 0) {
-      const e = quelle.indexOf(zu, i + auf.length);
-      if (e < 0) throw new Error(`Die GAEB-Datei ist unvollständig (${was} nicht geschlossen) – vermutlich abgeschnitten. Bitte die Datei neu anfordern.`);
-      i = quelle.indexOf(auf, e + zu.length);
-    }
-  }
-}
-
 export function gaebLesen(bytes: Uint8Array): GaebGelesen {
   const quelle = gaebDekodieren(bytes);
-  vollstaendigPruefen(quelle);
   let doc: XmlElement;
   try {
     doc = xmlLesen(quelle);
   } catch (e) {
-    throw new Error(`Die GAEB-Datei ist beschädigt oder unvollständig: ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`Die GAEB-Datei ist beschädigt oder unvollständig (vermutlich abgeschnitten – bitte neu anfordern): ${e instanceof Error ? e.message : String(e)}`);
   }
   const gaeb = doc.kinder.find((x) => ohnePraefix(x.name) === 'GAEB');
   if (!gaeb) throw new Error('Keine GAEB-XML-Datei (Wurzel „GAEB“ fehlt). GAEB 90/2000 (D8x/P8x) bitte als XML exportieren lassen.');
