@@ -14,7 +14,7 @@ import { VORGABE_SCHLUSSTEXT } from './abrechnung/deckblatt';
 export interface MailVorlage {
   id: string;
   name: string;
-  /** Empfänger; Platzhalter {Zahler} = bezahlender Baubeteiligter, {Firma} = Auftragnehmer */
+  /** Empfänger; Platzhalter z. B. {Zahler} = bezahlender Baubeteiligter, {FirmaMail} = Auftragnehmer */
   an: string;
   cc: string;
   betreff: string;
@@ -70,7 +70,7 @@ export interface AvaEinstellungen {
   lv: {
     /** Format neuer LV-Dateien */
     neuesFormat: 'aslv' | 'oalv';
-    /** Name neuer LV-Dateien: {Kürzel} {Datum} LV {Gewerk} */
+    /** Name neuer LV-Dateien, z. B. {PROJEKT_KUERZEL} {DATUM} LV {Gewerk} – Variablen siehe platzhalter.ts */
     dateiname: string;
   };
 }
@@ -81,24 +81,24 @@ export const VORGABE_MAIL: MailVorlage[] = [
     name: 'Geprüfte Rechnung an den Zahler',
     an: '{Zahler}',
     cc: '',
-    betreff: '{Kürzel} {Projekt} – geprüfte Rechnung {Firma} {Rechnung}',
-    text: 'Guten Tag,\n\nanbei erhalten Sie die geprüfte Rechnung {Rechnung} der Firma {Firma} ({Gewerk}) mit der Bitte um Überweisung von {Betrag}.\n\nMit freundlichen Grüßen\n{Bearbeiter}',
+    betreff: '{PROJEKT_KUERZEL} {PROJEKT_VORHABEN} – geprüfte Rechnung {Firma} {Rechnung}',
+    text: 'Guten Tag,\n\nanbei erhalten Sie die geprüfte Rechnung {Rechnung} der Firma {Firma} ({Gewerk}) mit der Bitte um Überweisung von {Betrag}.\n\nMit freundlichen Grüßen\n{BEARBEITER}',
   },
   {
     id: 'auftrag',
     name: 'Auftrag an die Firma',
-    an: '{Firma-Mail}',
+    an: '{FirmaMail}',
     cc: '',
-    betreff: '{Kürzel} {Projekt} – Auftrag {Gewerk}',
-    text: 'Guten Tag,\n\nanbei erhalten Sie den Auftrag für die {Gewerk}.\n\nMit freundlichen Grüßen\n{Bearbeiter}',
+    betreff: '{PROJEKT_KUERZEL} {PROJEKT_VORHABEN} – Auftrag {Gewerk}',
+    text: 'Guten Tag,\n\nanbei erhalten Sie den Auftrag für die {Gewerk}.\n\nMit freundlichen Grüßen\n{BEARBEITER}',
   },
   {
     id: 'protokoll',
     name: 'Protokoll an die Teilnehmer',
     an: '{Teilnehmer}',
     cc: '',
-    betreff: '{Kürzel} {Projekt} – Protokoll Nr. {Nr} vom {Datum}',
-    text: 'Guten Tag,\n\nanbei das Protokoll der Baubesprechung vom {Datum}. Einwände bitte innerhalb einer Woche.\n\nMit freundlichen Grüßen\n{Bearbeiter}',
+    betreff: '{PROJEKT_KUERZEL} {PROJEKT_VORHABEN} – Protokoll Nr. {Nr} vom {Protokolldatum}',
+    text: 'Guten Tag,\n\nanbei das Protokoll der Baubesprechung vom {Protokolldatum}. Einwände bitte innerhalb einer Woche.\n\nMit freundlichen Grüßen\n{BEARBEITER}',
   },
 ];
 
@@ -118,7 +118,7 @@ export const VORGABE: AvaEinstellungen = {
   scan: { ordner: '', endungen: ['pdf', 'jpg', 'jpeg', 'png', 'tif', 'tiff'] },
   deckblatt: { briefbogen: '', buero: '', bearbeiter: '', fusszeile: '', schlusstext: VORGABE_SCHLUSSTEXT },
   mail: { vorlagen: VORGABE_MAIL },
-  lv: { neuesFormat: 'aslv', dateiname: '{Kürzel} {Datum} LV {Gewerk}' },
+  lv: { neuesFormat: 'aslv', dateiname: '{PROJEKT_KUERZEL} {DATUM} LV {Gewerk}' },
 };
 
 const istObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);

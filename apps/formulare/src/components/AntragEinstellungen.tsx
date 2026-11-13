@@ -1,5 +1,8 @@
+import { useRef } from 'react';
+import { modernisieren } from '@core/platzhalter';
+import { inFeldEinfuegen, PlatzhalterChips, PlatzhalterHinweise } from '@core/ui/Platzhalter';
 import { VORGABE_MERKMALE, istVorgabeMerkmal } from '../bedingung';
-import { ART_HINWEIS, vorlageArtWarnung, PLATZHALTER, VORGABE_EXPORT, dateiname, verschieben, vorlageMitAntragsart } from '../antrag';
+import { ART_HINWEIS, vorlageArtWarnung, NAMENS_VARIABLEN, ZIEL_VARIABLEN, VORGABE_EXPORT, dateiname, verschieben, vorlageMitAntragsart } from '../antrag';
 import { DokumenteEinstellungen } from './DokumenteEinstellungen';
 import { Karte } from './EinstellungsKarte';
 import { Griff, useSortieren } from './Sortieren';
@@ -13,6 +16,9 @@ import { Symbol } from './Symbol';
  * exportierte PDFs heißen und wohin sie kommen, und die grundlegende Liste der Antragsdokumente. Alles gilt für
  * alle Projekte; Abweichungen je Projekt stehen in der Projektkarte unter „Antragsumfang“.
  */
+/** beginnt die Vorlage mit Projektkürzel, Antragsart und Datum JJMMTT (alte oder neue Namen)? Das verlangt der Antragsordner. */
+const beginntRichtig = (vorlage: string) => /^\{PROJEKT_KUERZEL\}\s+\{Art\}\s+\{DATUM\}\s/.test(modernisieren(vorlage.trim(), NAMENS_VARIABLEN));
+
 export function AntragEinstellungen() {
   const e = useAntrag((s) => s.einstellungen);
   const merkmale = useAntrag((s) => s.merkmalDefinitionen);
@@ -22,7 +28,9 @@ export function AntragEinstellungen() {
   const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
   const wirksameVorlage = vorlageMitAntragsart(e.namensvorlage, reihenfolge);
   const artWarnung = vorlageArtWarnung(e.namensvorlage, reihenfolge);
-  const beispiel = dateiname(wirksameVorlage, { kuerzel: 'BS9', datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
+  const vorlageFeld = useRef<HTMLInputElement>(null);
+  const zielFeld = useRef<HTMLInputElement>(null);
+  const beispiel = dateiname(wirksameVorlage, { kuerzel: 'BS9', kurzname: 'EFH Musterweg', datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
 
   return (
     <>
@@ -63,6 +71,7 @@ export function AntragEinstellungen() {
             <label>
               <span className="field-label">Namensvorlage</span>
               <input
+                ref={vorlageFeld}
                 value={e.namensvorlage}
                 onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })}
                 aria-label="Namensvorlage"
@@ -83,21 +92,18 @@ export function AntragEinstellungen() {
             )}
           </div>
         </div>
-        <div className="es-platzhalter">
-          {PLATZHALTER.map((p) => (
-            <button key={p.name} className="small" title={p.text} onClick={() => setEinstellungen({ namensvorlage: `${e.namensvorlage} ${p.name}`.trim() })}>
-              {p.name}
-            </button>
-          ))}
+        <PlatzhalterHinweise vorlage={e.namensvorlage} variablen={NAMENS_VARIABLEN} onAnpassen={(namensvorlage) => setEinstellungen({ namensvorlage })} />
+        <div className="es-platzhalter-zeile">
+          <PlatzhalterChips variablen={NAMENS_VARIABLEN} label="Namensvorlage" onEinfuegen={(p) => inFeldEinfuegen(vorlageFeld.current, e.namensvorlage, p, (namensvorlage) => setEinstellungen({ namensvorlage }))} />
           {e.namensvorlage !== VORGABE_EXPORT.namensvorlage && (
             <button className="small" onClick={() => setEinstellungen({ namensvorlage: VORGABE_EXPORT.namensvorlage })}>
               Vorgabe
             </button>
           )}
         </div>
-        {!/^\{k(ü|ue)rzel\}\s+\{art\}\s+\{datum\}\s/i.test(e.namensvorlage.trim()) && (
+        {!beginntRichtig(e.namensvorlage) && (
           <p className="warning small-text">
-            Dateien im Antragsordner müssen mit „Projektcode Antragsart JJMMTT“ beginnen, sonst lassen sie sich nicht als bereit markieren – die Vorlage sollte mit „{'{Kürzel} {Art} {Datum}'}“
+            Dateien im Antragsordner müssen mit „Projektcode Antragsart JJMMTT“ beginnen, sonst lassen sie sich nicht als bereit markieren – die Vorlage sollte mit „{'{PROJEKT_KUERZEL} {Art} {DATUM}'}“
             beginnen.
           </p>
         )}
@@ -114,9 +120,22 @@ export function AntragEinstellungen() {
           <input type="radio" checked={e.ziel === 'pfad'} onChange={() => setEinstellungen({ ziel: 'pfad' })} />
           <span className="es-breit">
             <strong>Fester Ordner im Projekt</strong>
-            <input value={e.zielpfad} disabled={e.ziel !== 'pfad'} onChange={(x) => setEinstellungen({ zielpfad: x.target.value })} aria-label="Fester Zielordner" placeholder="z. B. TÖB/{Antrag}/Formulare" />
+            <input
+              ref={zielFeld}
+              value={e.zielpfad}
+              disabled={e.ziel !== 'pfad'}
+              onChange={(x) => setEinstellungen({ zielpfad: x.target.value })}
+              aria-label="Fester Zielordner"
+              placeholder="z. B. TÖB/{Antrag}/Formulare"
+            />
           </span>
         </label>
+        {e.ziel === 'pfad' && (
+          <div className="es-ziel-platzhalter">
+            <PlatzhalterHinweise vorlage={e.zielpfad} variablen={ZIEL_VARIABLEN} onAnpassen={(zielpfad) => setEinstellungen({ zielpfad })} />
+            <PlatzhalterChips variablen={ZIEL_VARIABLEN} label="Fester Zielordner" onEinfuegen={(p) => inFeldEinfuegen(zielFeld.current, e.zielpfad, p, (zielpfad) => setEinstellungen({ zielpfad }))} />
+          </div>
+        )}
       </Karte>
 
       <Karte titel="Quellen und Vorlagen">

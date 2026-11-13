@@ -320,8 +320,8 @@ Anschrift, wie sie in Formularen steht.
   verrutscht ganz vorn) und mit einem weiteren Kopfteil daneben (Projektcode davor, Datum oder Projektcode danach),
   sonst ist es ein Wort der Bezeichnung („Entw Grundriss“, „Ab 2027 …“). Unter „Fehlt im Antragsordner“ stehen die
   Dokumente des Antragsumfangs ohne Datei.
-  Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
-  aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` aus alten Vorlagen gilt überall als `{Art}`). In der
+  Die Namensvorlage für exportierte PDFs ist deshalb `{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}` (`{Art}` =
+  Antragsart der aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“). In der
   Unterlagen-Vorschau stehen die Pläne eines Plansatzes an seiner Stelle im Antragsumfang.
   - **Quick-Add:** Gibt es einen Antragsumfang, steht unter einer Datei, die zu keinem seiner Dokumente gehört, „nicht
     im Antragsumfang“ und dahinter ein **+** (Zeilen mit Dokument halten den Platz frei, die Zeitspalte bleibt bündig).
@@ -450,18 +450,20 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
   obersten Ebene wie bisher der Dateiname) – auch beim Export. Größe und Zeit (Status „aktuell“, „zuletzt bearbeitet“)
   gelten je Pfad; die Sperrenliste umfasst den Unterordner des aktiven Antrags, „Im Explorer zeigen“ öffnet den Ordner
   des Formulars.
-- **Dateiname** nach der Namensvorlage, Vorgabe `{Kürzel} {Art} {Datum} {Nr} {Name}` → „BS9 BAUA 261110 03
+- **Dateiname** nach der Namensvorlage, Vorgabe `{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}` → „BS9 BAUA 261110 03
   Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Die **Antragsart kommt immer aus dem Antrag**
   (Ordner der aktiven Fassung, „BAUA 2“ → BAUA), nie aus einer Einstellung: Steht in einer Vorlage nach dem Kürzel
   (bzw. an der Stelle der Antragsart nach dem Namensschema) noch `{Phase}` – die Vorgabe früherer Fassungen, dort
   stand dann der Wert der entfallenen Einstellung „Phase“, z. B. BVA im Bauantrag – oder ein festes Kürzel (mindestens ein
   Buchstabe; „2026“ zählt nicht), setzt der Export dort `{Art}` ein (`vorlageMitAntragsart`, in
   `wirksameEinstellungen`). Gespeichert bleibt die Vorlage, wie sie ist; die Einstellungen (global und je Projekt)
-  zeigen dann einen Hinweis mit „Vorlage anpassen“. `{Phase}` steht auch an
-  anderer Stelle für die Antragsart; die Einstellung „Phase“ gibt es nicht mehr (alte Abweichungen je Projekt, die
-  nur sie enthielten, entfallen beim Lesen). Weitere Platzhalter: `{Antrag}`,
-  `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Antragsumfang, sonst der Formularname
-  ohne laufende Nummer und Jahr.
+  zeigen dann einen Hinweis mit „Vorlage anpassen“. Platzhalter wie in allen Apps ([platzhalter.md](platzhalter.md)):
+  die globalen (`{PROJEKT_KUERZEL}` – hier der Name des Projektordners –, `{PROJEKT_KURZNAME}`, `{PROJEKT_VORHABEN}`,
+  `{BEARBEITER}` aus der Projektdatei, `{DATUM}` als JJMMTT bzw. mit Format, `{JAHR}`, `{JAHR_KURZ}`) und lokal `{Art}`,
+  `{Nr}`, `{Name}`, `{Antrag}`, `{Formular}`, `{Kennung}`, `{Stand}`; `{Name}` ist der Titel im Antragsumfang, sonst der
+  Formularname ohne laufende Nummer und Jahr. Alte Namen (`{Kürzel}`, `{Projekt}`, `{Datum}`, `{Jahr}` …) gelten weiter;
+  `{Phase}` (frühere Einstellung „Phase“, entfallen; alte Abweichungen je Projekt, die nur sie enthielten, entfallen beim Lesen) gilt überall als `{Art}`. Unter der Namensvorlage stehen die Chips, im
+  festen Zielordner `{Antrag}`, `{Art}` und die globalen.
 - **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
   Namensschemas), Namensvorlage, Ziel (aktive Antragsfassung oder fester Ordner, z. B.
   `TÖB/{Antrag}/Formulare`), Ordner der Berechnungen, Vorlagenordner für neue Formulare, Antragsvorlagen und die
@@ -744,10 +746,11 @@ beschrieben.
   Speichern der Projektkarte, beim Festlegen von Antragsumfang, Antragsfassung oder Antragsmerkmalen); im Projektkopf
   steht bis dahin „Keine Projektdatei – Stammdaten erfassen …“. Der Ort kommt aus den gemeinsamen Einstellungen
   (`oapPfad`) und gilt für alle Apps; eine bisher eigene Einstellung dieser App wird beim ersten Start dorthin
-  übernommen. Platzhalter (Groß-/Kleinschreibung egal): `{Kürzel}` (auch `{nummer}`), `{Kurzname}`, `{Vorhaben}`,
-  `{Datum}` (Tag des Anlegens als JJMMTT) und `{Jahr}` – etwa `Organisation/{Kürzel} {Datum} {Vorhaben}.oap` →
+  übernommen. Platzhalter: die globalen ([platzhalter.md](platzhalter.md); alte Namen wie `{Kürzel}`, `{nummer}`,
+  `{Kurzname}`, `{Datum}` gelten weiter) – etwa `Organisation/{PROJEKT_KUERZEL} {DATUM} {PROJEKT_VORHABEN}.oap` →
   `Organisation/BS9 261110 Neubau EFH.oap`; leere Angaben fallen weg. Die Einstellungen (Projektdatei) fügen
-  Platzhalter per Knopf ein, zeigen ein Beispiel und warnen vor unbekannten Platzhaltern (sie blieben so im Namen).
+  Platzhalter per Chip ein, zeigen ein Beispiel, warnen vor unbekannten Platzhaltern (sie blieben so im Namen) und
+  bieten bei alten Namen „Auf neue Namen umstellen“ an.
 - **Fehlt der Projektordner:** „Kein Projektordner – zuordnen …“ im Projektkopf (und automatisch, wenn er gebraucht
   wird): einen vorhandenen Ordner wählen oder im Stammordner einen neuen anlegen (Vorschlag „Kürzel Titel“), danach
   folgt bei Bedarf der Stammdaten-Dialog. Die Zuordnung gilt für alle im Büro (gemeinsamer Konfigurationsordner,

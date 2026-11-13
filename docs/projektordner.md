@@ -53,7 +53,7 @@ abfragt, steht danach in der Projektdatei – für alle Apps.
    Filter der Projektübersicht aller Apps.
    - Neues Projekt: Das Tool trägt die nächste freie Nummer vor (änderbar) – die höchste laufende Nummer unter den
      Projektordnern **aller** Stammordner (auch Archiv oder Akquise, auch in deren Sammelordnern; im laufenden Jahr, wenn das Schema ein Jahr enthält)
-     plus eins. Passt eine Nummer nicht zum Schema („26-14“ bei `{jahr}-{nr:3}`), steht am Feld ein Hinweis
+     plus eins. Passt eine Nummer nicht zum Schema („26-14“ bei `{JAHR}-{Nr:3}`), steht am Feld ein Hinweis
      („erwartet z. B. 2026-015“); er hält nicht auf. Projektnummer und Kurzname sind Pflicht (Stern); der
      Ordnername, der sich daraus ergibt, steht direkt darunter, Zeichen wie `/ : ?` meldet das Feld schon beim
      Tippen. Meldungen erscheinen am Feld erst nach dem Verlassen bzw. nach „Weiter“; „Weiter“ nennt dann sichtbar,
@@ -116,15 +116,15 @@ Angelegt bzw. ergänzt werden
 
 1. die **Ordner** der Struktur,
 2. die **Vorlagen** der gewählten Presets, umbenannt nach dem Schema des Büros und mit ersetzten Platzhaltern,
-3. die **Projektdatei** am eingestellten Ort (Vorgabe `03 Berechnungen/Flächen/{nummer} {kurzname}.oap`; Platzhalter
-   `{Kürzel}` bzw. `{nummer}`, `{Kurzname}`, `{Vorhaben}`, `{Datum}` – hier als JJMMTT – und `{Jahr}`): neu als
+3. die **Projektdatei** am eingestellten Ort (Vorgabe `03 Berechnungen/Flächen/{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}.oap`;
+   alle globalen Platzhalter, siehe [platzhalter.md](platzhalter.md); `{DATUM}` ist JJMMTT): neu als
    leere Flächenberechnung mit Stammdaten, Anlagedatum, Struktur und Presets – Flächenrechner, GRZ-Nachweis,
    Kostenermittlung und Formulare öffnen sie –, beim Ergänzen nur mit den geänderten Stammdaten (gegenüber dem
    Stand beim Einlesen; was eine andere App inzwischen eingetragen hat, bleibt) und den Presets. Hat jemand die
    Datei zwischen Einlesen und Ergänzen geändert, wird nicht geschrieben – dann neu einlesen.
 
-`{jahr}` in Namen ist beim Ergänzen das Jahr, in dem das Projekt angelegt wurde. Enthält der Name einer Vorlage
-`{datum}`, gilt sie als vorhanden, wenn es dieselbe Datei mit einem anderen Datum schon gibt („vorhanden*“).
+`{JAHR}` in Namen ist beim Ergänzen das Jahr, in dem das Projekt angelegt wurde. Enthält der Name einer Vorlage
+`{DATUM}` (auch mit Format), gilt sie als vorhanden, wenn es dieselbe Datei mit einem anderen Datum schon gibt („vorhanden*“).
 
 ## Einstellungen
 
@@ -209,9 +209,13 @@ im Konfigurationsordner, je Sicherung mit Namen `projektordner.json.bak-JJJJ-MM-
 
 | Einstellung | Vorgabe | Platzhalter |
 |---|---|---|
-| Projektnummer | `{jahr}-{nr:3}` → 2026-014 | `{jahr}`, `{jj}`, `{nr}` bzw. `{nr:3}` (führende Nullen) |
-| Name des Projektordners | `{nummer} {kurzname}` | `{nummer}`, `{kurzname}`, `{jahr}` |
-| Dateinamenschema für Pläne | `{nummer}_{plannummer}_{index}_{titel}` | dazu `{datum}` |
+| Projektnummer | `{JAHR}-{Nr:3}` → 2026-014 | `{JAHR}`, `{JAHR_KURZ}`, `{Nr}` bzw. `{Nr:3}` (führende Nullen) |
+| Name des Projektordners | `{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}` | alle globalen |
+| Dateinamenschema für Pläne | `{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}` | alle globalen, dazu `{Plannummer}`, `{Index}`, `{Titel}` |
+
+Unter jedem Schemafeld stehen die Platzhalter als Chips – globale und lokale unterscheidbar, wie in allen Apps
+([platzhalter.md](platzhalter.md)). Gespeicherte Schemata mit alten Namen (`{jahr}-{nr:3}`, `{nummer} {kurzname}`)
+gelten weiter; „Auf neue Namen umstellen“ am Feld stellt sie auf die neuen Namen um.
 
 Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, rechts die Angaben zur Auswahl:
 
@@ -287,7 +291,7 @@ Jede **Zuordnung** darin sagt:
 |---|---|
 | Vorlage | Pfad im Vorlagenordner: eine **Datei** oder ein **Ordner** (alle Dateien darin, mit ihren Unterordnern); leer = der ganze Vorlagenordner |
 | Zielordner im Projekt | Ordner im Projekt, Vorschläge aus der Struktur; Platzhalter erlaubt; leer = Stamm des Projektordners |
-| Dateiname im Projekt | Name nach dem Schema des Büros, z. B. `{nummer} Brief Bauherr`; leer = Dateinamenschema für Vorlagen |
+| Dateiname im Projekt | Name nach dem Schema des Büros, z. B. `{PROJEKT_KUERZEL} Brief Bauherr`; leer = Dateinamenschema für Vorlagen |
 | LPh | nur, wenn eine dieser Leistungsphasen beauftragt ist, z. B. `4` oder `6-7`; leer = immer |
 
 Zugeordnet wird unter **Vorlagen**: Preset wählen, im Baum des Vorlagenordners auf „+“ klicken, Zielordner und
@@ -310,21 +314,22 @@ umbenanntes Preset meldet der Trockenlauf beim Ergänzen als unbekannt.
 So heißt eine Vorlage im Projekt:
 
 1. Gibt die Zuordnung einen **Namen** vor, gilt er.
-2. Enthält der Name der Vorlage selbst Platzhalter (`{nummer} Projektblatt.md`), werden nur diese ersetzt.
-3. Sonst gilt das **Dateinamenschema für Vorlagen** (Vorgabe `{nummer} {name}`):
+2. Enthält der Name der Vorlage selbst Platzhalter (`{PROJEKT_KUERZEL} Projektblatt.md`), werden nur diese ersetzt.
+3. Sonst gilt das **Dateinamenschema für Vorlagen** (Vorgabe `{PROJEKT_KUERZEL} {Name}`):
    `Kostenschätzung.xlsx` → `2026-014 Kostenschätzung.xlsx`.
 
-Platzhalter in Namen – derselbe Satz für Ordnernamen, Dateinamen und den Pfad der Projektdatei, Groß-/Kleinschreibung
-egal: `{nummer}` (gleich: `{kürzel}`, `{projektcode}`), `{kurzname}`, `{vorhaben}`, `{jahr}`, `{jj}`, `{bearbeiter}`,
-`{datum}` (Tag des Anlegens, JJJJ-MM-TT) bzw. `{datum:JJMMTT}` mit eigenem Format (JJJJ, JJ, MM, TT und Trenner) und
-`{name}` (Name der Vorlage ohne Endung). Jedes Schemafeld hat ein Menü „Platzhalter ▾“, das den Platzhalter an der
-Schreibmarke einsetzt; die Vorschau folgt schon beim Tippen, unbekannte Platzhalter sind sofort markiert. Einzige
-Ausnahme: Im Pfad der Projektdatei bleibt `{datum}` ohne Format wie bisher JJMMTT, damit vorhandene Einstellungen
-dieselben Namen ergeben – mit Format (`{datum:JJJJ-MM-TT}`) gilt dasselbe wie überall. Die Endung kommt immer von der Vorlage. **Office-Vorlagen
+Platzhalter in Namen – derselbe Satz für Ordnernamen, Dateinamen und den Pfad der Projektdatei: die globalen
+Variablen der Suite (`{PROJEKT_KUERZEL}`, `{PROJEKT_KURZNAME}`, `{PROJEKT_VORHABEN}`, `{BEARBEITER}`, `{DATUM}` als
+JJMMTT bzw. `{DATUM:JJJJ-MM-TT}` mit eigenem Format, `{JAHR}`, `{JAHR_KURZ}` – Liste in
+[platzhalter.md](platzhalter.md)) und lokal `{Name}` (Name der Vorlage ohne Endung). Unter jedem Schemafeld stehen sie
+als Chips, die den Platzhalter an der Schreibmarke einsetzen; die Vorschau folgt schon beim Tippen, unbekannte
+Platzhalter sind sofort markiert. In den Zuordnungen der Presets erscheinen die Chips erst, wenn das Feld den Fokus
+hat. Alte Namen gelten weiter – `{nummer}`, `{kürzel}`, `{kurzname}`, `{jahr}`, `{jj}`, `{name}` …, auch `{datum}` mit
+seiner bisherigen Bedeutung JJJJ-MM-TT (neu `{DATUM:JJJJ-MM-TT}`). Die Endung kommt immer von der Vorlage. **Office-Vorlagen
 werden zu Dokumenten:** `.dotx` → `.docx`, `.xltx` → `.xlsx`, `.potx` → `.pptx` (auch die Varianten mit Makros) –
 mit umgestelltem Inhaltstyp, sonst öffnet Office die Datei nicht.
 
-Konfigurationen ohne Presets (bis Version 0.1.x) bekommen beim Laden „Alle Vorlagen“ und das Schema `{name}` –
+Konfigurationen ohne Presets (bis Version 0.1.x) bekommen beim Laden „Alle Vorlagen“ und das Schema `{Name}` –
 die Dateinamen bleiben, wie sie waren.
 
 ### Inhalte
@@ -339,7 +344,8 @@ Die Muster sind zum Ersetzen durch die eigenen Dateien gedacht.
 Platzhalter im **Inhalt** stehen in doppelten Klammern, mit denselben Namen wie in den Excel-Vorlagen der anderen
 Werkzeuge: `{{projekt.nummer}}`, `{{projekt.kurzname}}`, `{{projekt.name}}`, `{{projekt.adresse}}`,
 `{{grundstueck.flurtext}}`, `{{bauherr.name}}`, `{{bauherr.adresse}}`, `{{bauherr.email}}`,
-`{{projekt.bearbeiter}}`, `{{projekt.leistungsphasen}}`, `{{beteiligte}}`, `{{datum}}`, `{{datum.iso}}` …
+`{{projekt.bearbeiter}}`, `{{projekt.leistungsphasen}}`, `{{beteiligte}}`, `{{datum}}`, `{{datum.iso}}` …,
+dazu die globalen Variablen der Suite (`{{PROJEKT_KUERZEL}}`, `{{DATUM}}`, `{{DATUM:TT.MM.JJJJ}}` …).
 Die vollständige Liste steht im Tool unter **Vorlagen**.
 
 | Dateiart | Was passiert |
@@ -439,7 +445,9 @@ QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von Formulare; dessen Ei
   üblichen Installationen, unter Windows `…\QGIS 3.x\bin\qgis_process-qgis-ltr.bat`), die Ablage (fester Ordner im
   Projektordner, Vorgabe `Kataster`, oder der Ordner des aktiven Antrags `TÖB/<Antrag>` – der Antrag aus der
   Projektdatei, `meta.antrag`, gepflegt in Formulare) mit Dateinamen
-  (`{Code} {Art} {Datum} {Name}` – passt zum Namensformat des Antragsordners) und die Pläne. Vorgegeben sind
+  (`{PROJEKT_KUERZEL} {Art} {DATUM} {Name}` – passt zum Namensformat des Antragsordners; alle globalen Platzhalter,
+  lokal `{Art}` und `{Name}` des Plans, im festen Ordner `{Antrag}`; alte Namen wie `{Code}` gelten weiter) und die
+  Pläne. Vorgegeben sind
   *Katasterauszug A4* (Layout „Katasterauszug A4“, 1:1000), *Katasterauszug A3* (Layout „Katasterauszug A3“, 1:500),
   *Schwarzplan* (DXF, Kartenthema „Schwarzplan“, 300 × 300 m) und *Katasterplan* (DXF, Kartenthema „Katasterplan“,
   150 × 150 m, je Objekt mit Beschriftungen). Layouts, Kartenobjekte und Kartenthemen stehen zur Auswahl, sobald die
@@ -505,7 +513,7 @@ unter `projektordner`:
     "beteiligte": [{ "rolle": "Tragwerk", "name": "…", "kontakt": "…" }],
     "angelegt": "2026-10-01"
   },
-  "projektordner": { "struktur": "Standard", "dateischema": "{nummer}_{plannummer}_{index}_{titel}", "presets": ["Jedes Projekt", "Bauantrag"] }
+  "projektordner": { "struktur": "Standard", "dateischema": "{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}", "presets": ["Jedes Projekt", "Bauantrag"] }
 }
 ```
 
@@ -523,13 +531,13 @@ Presets und Bausteine in der Struktur-Datei:
 
 ```json
 {
-  "vorlagenname": "{nummer} {name}",
+  "vorlagenname": "{PROJEKT_KUERZEL} {Name}",
   "presets": [
     {
       "name": "Jedes Projekt",
       "standard": true,
       "eintraege": [
-        { "quelle": "Word/Briefbogen.dotx", "ziel": "04 Schriftverkehr/Bauherr", "name": "{nummer} Brief Bauherr" },
+        { "quelle": "Word/Briefbogen.dotx", "ziel": "04 Schriftverkehr/Bauherr", "name": "{PROJEKT_KUERZEL} Brief Bauherr" },
         { "quelle": "Excel/Kostenschätzung.xltx", "ziel": "03 Berechnungen/Kosten" }
       ]
     },

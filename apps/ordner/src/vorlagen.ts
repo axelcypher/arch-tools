@@ -33,9 +33,9 @@ const PLATZHALTER_IM_NAMEN = /\{[^{}]+\}/;
 /**
  * Dateiname einer Vorlage im Projekt.
  *  1. Gibt die Zuordnung einen Namen vor, gilt er.
- *  2. Enthält der Name der Vorlage selbst Platzhalter ({nummer} Projektblatt.md), werden nur diese ersetzt.
- *  3. Sonst gilt das Dateinamenschema für Vorlagen, z. B. „{nummer} {name}“.
- * {name} ist der Name der Vorlage ohne Endung. Die Endung kommt immer von der Vorlage (Office-Vorlagen werden
+ *  2. Enthält der Name der Vorlage selbst Platzhalter ({PROJEKT_KUERZEL} Projektblatt.md), werden nur diese ersetzt.
+ *  3. Sonst gilt das Dateinamenschema für Vorlagen, z. B. „{PROJEKT_KUERZEL} {Name}“.
+ * {Name} ist der Name der Vorlage ohne Endung (alt: {name}). Die Endung kommt immer von der Vorlage (Office-Vorlagen werden
  * zu Dokumenten) und wird angehängt, wenn das Muster sie nicht schon enthält.
  */
 export function zielDateiname(vorlage: string, muster: string | undefined, schema: string, werte: Record<string, string | number>): string {
@@ -43,7 +43,7 @@ export function zielDateiname(vorlage: string, muster: string | undefined, schem
   const basis = alt ? vorlage.slice(0, -alt.length) : vorlage;
   const endung = DOKUMENT_AUS_VORLAGE[alt.toLowerCase()] ?? alt;
   const name = sichererName(nameAus(basis, werte));
-  const m = muster?.trim() || (PLATZHALTER_IM_NAMEN.test(basis) ? '{name}' : schema.trim() || '{name}');
+  const m = muster?.trim() || (PLATZHALTER_IM_NAMEN.test(basis) ? '{Name}' : schema.trim() || '{Name}');
   let out = sichererName(nameAus(m, { ...werte, name }));
   if (alt && out.toLowerCase().endsWith(alt.toLowerCase()) && alt !== endung) out = out.slice(0, -alt.length);
   if (!out) out = name;
@@ -161,9 +161,11 @@ Stelle im Projekt zu und geben ihnen dort einen Namen nach dem Schema des Büros
 
 Platzhalter
 -----------
-In Datei- und Ordnernamen: {nummer}, {kurzname}, {jahr}, {datum}, {bearbeiter}
+In Datei- und Ordnernamen: {PROJEKT_KUERZEL}, {PROJEKT_KURZNAME}, {PROJEKT_VORHABEN}, {JAHR}, {DATUM}, {BEARBEITER}
+(globale Variablen, gleich in allen Apps; alte Namen wie {nummer} gelten weiter)
 In Textdateien, Excel (.xlsx) und Word (.docx): {{projekt.nummer}}, {{projekt.kurzname}}, {{projekt.name}},
-{{projekt.adresse}}, {{bauherr.name}}, {{bauherr.adresse}}, {{projekt.bearbeiter}}, {{datum}} ...
+{{projekt.adresse}}, {{bauherr.name}}, {{bauherr.adresse}}, {{projekt.bearbeiter}}, {{datum}} ...,
+auch die globalen Variablen: {{PROJEKT_KUERZEL}}, {{DATUM:TT.MM.JJJJ}} ...
 Die vollständige Liste zeigt das Tool unter "Vorlagen".
 
 In Excel wird eine Zeile mit {{beteiligter.rolle}}, {{beteiligter.name}}, {{beteiligter.kontakt}} je
@@ -174,7 +176,7 @@ fehlende Dateien ergänzt.
 `,
   },
   {
-    pfad: '00 Projekt/{nummer} Projektblatt.md',
+    pfad: '00 Projekt/{PROJEKT_KUERZEL} Projektblatt.md',
     inhalt: `# Projektblatt {{projekt.nummer}} – {{projekt.kurzname}}
 
 | | |
@@ -200,11 +202,11 @@ fehlende Dateien ergänzt.
 `,
   },
   {
-    pfad: '02 Pläne/{nummer} Planliste.csv',
+    pfad: '02 Pläne/{PROJEKT_KUERZEL} Planliste.csv',
     inhalt: `﻿Projekt;{{projekt.nummer}} {{projekt.kurzname}}\r\nStand;{{datum}}\r\n\r\nPlannummer;Index;Titel;Maßstab;Format;Datum;Verfasser;Verteiler;Bemerkung\r\n`,
   },
   {
-    pfad: '05 Protokolle/{nummer} Besprechungsprotokoll Vorlage.md',
+    pfad: '05 Protokolle/{PROJEKT_KUERZEL} Besprechungsprotokoll Vorlage.md',
     inhalt: `# Besprechungsprotokoll Nr. __
 
 **Projekt:** {{projekt.nummer}} – {{projekt.name}}
@@ -227,11 +229,12 @@ export const PLATZHALTER_DOCS: { gruppe: string; zeilen: [string, string][] }[] 
   {
     gruppe: 'In Datei- und Ordnernamen (einfache Klammern)',
     zeilen: [
-      ['{nummer} (= {kürzel}), {kurzname}, {vorhaben}', 'Projektnummer, Kurzname, Bezeichnung des Vorhabens – Groß-/Kleinschreibung egal'],
-      ['{jahr}, {jj}', 'Jahr, in dem das Projekt angelegt wurde (vier- bzw. zweistellig)'],
-      ['{name}', 'Name der Vorlage ohne Endung (nur Dateinamen im Projekt)'],
-      ['{datum}, {datum:JJMMTT}', 'Tag des Anlegens der Datei, JJJJ-MM-TT bzw. im angegebenen Format – beim Aktualisieren gilt eine Datei mit anderem Datum als vorhanden'],
-      ['{bearbeiter}', 'Bearbeitung'],
+      ['{PROJEKT_KUERZEL}, {PROJEKT_KURZNAME}, {PROJEKT_VORHABEN}', 'global: Projektnummer bzw. -kürzel, Kurzname, Bezeichnung des Vorhabens'],
+      ['{JAHR}, {JAHR_KURZ}', 'global: Jahr, in dem das Projekt angelegt wurde (vier- bzw. zweistellig)'],
+      ['{DATUM}, {DATUM:JJJJ-MM-TT}', 'global: Tag des Anlegens der Datei, JJMMTT bzw. im angegebenen Format – beim Aktualisieren gilt eine Datei mit anderem Datum als vorhanden'],
+      ['{BEARBEITER}', 'global: Bearbeitung'],
+      ['{Name}', 'nur hier: Name der Vorlage ohne Endung (nur Dateinamen im Projekt)'],
+      ['{nummer}, {kürzel}, {kurzname}, {jahr}, {jj}, {datum}, {name} …', 'alte Namen – gelten weiter ({datum} wie bisher JJJJ-MM-TT); „Vorlage anpassen“ stellt auf die neuen um'],
     ],
   },
   {
@@ -244,6 +247,10 @@ export const PLATZHALTER_DOCS: { gruppe: string; zeilen: [string, string][] }[] 
       ['{{bauherr.name}}, {{bauherr.adresse}}, {{bauherr.email}}, {{bauherr.telefon}}', 'Bauherr'],
       ['{{projekt.bearbeiter}}, {{projekt.leistungsphasen}}, {{projekt.ordner}}', 'Bearbeitung, Leistungsphasen, Name des Projektordners'],
       ['{{datum}}, {{datum.iso}}, {{jahr}}', 'Datum des Anlegens'],
+      [
+        '{{PROJEKT_KUERZEL}}, {{PROJEKT_KURZNAME}}, {{PROJEKT_VORHABEN}}, {{BEARBEITER}}, {{DATUM}}, {{JAHR}}, {{JAHR_KURZ}}',
+        'globale Variablen wie in den Namen; Datum mit Format z. B. {{DATUM:TT.MM.JJJJ}}',
+      ],
       ['{{beteiligte}}', 'alle Beteiligten, je Zeile „Rolle: Name (Kontakt)“'],
       ['{{beteiligter.rolle}}, {{beteiligter.name}}, {{beteiligter.kontakt}}', 'nur Excel: Zeile je Beteiligtem'],
       ['{{lph.nr}}, {{lph.name}}', 'nur Excel: Zeile je Leistungsphase'],

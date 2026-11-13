@@ -1,29 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
+import { unbekanntePlatzhalter } from '@core/platzhalter';
+import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
 import type { Platzhalter } from '../nummer';
 
 /**
- * Eingabe eines Namensschemas (P-06): Einfüge-Menü „Platzhalter ▾“ (setzt den Platzhalter an der Schreibmarke ein),
- * Vorschau schon beim Tippen und sofortige Markierung unbekannter Platzhalter. Übernommen wird – wie in den übrigen
- * Feldern – beim Verlassen des Feldes bzw. mit Enter; Esc verwirft die Eingabe.
+ * Eingabe eines Namensschemas (P-06): Platzhalter-Chips wie in allen Apps (global und lokal unterscheidbar; ein Klick
+ * setzt den Platzhalter an der Schreibmarke ein), Vorschau schon beim Tippen, sofortige Markierung unbekannter
+ * Platzhalter und Hinweis auf alte Namen („Vorlage anpassen“). Übernommen wird – wie in den übrigen Feldern – beim
+ * Verlassen des Feldes bzw. mit Enter; Esc verwirft die Eingabe.
  */
 export function SchemaFeld({
   value,
   onChange,
   platzhalter,
   vorschau,
-  unbekannt,
   placeholder,
   label,
+  kompakt,
 }: {
   value: string;
   onChange: (v: string) => void;
   platzhalter: Platzhalter[];
   /** Vorschau zum Text, z. B. „Beispiel: 2026-014 EFH Musterweg“ */
   vorschau?: (text: string) => string;
-  /** unbekannte Platzhalter im Text */
-  unbekannt?: (text: string) => string[];
   placeholder?: string;
   label: string;
+  /** Chips nur, solange das Feld den Fokus hat (Listen mit vielen gleichen Feldern) */
+  kompakt?: boolean;
 }) {
   const [text, setText] = useState(value);
   const textRef = useRef(text);
@@ -35,20 +38,18 @@ export function SchemaFeld({
   };
   const einfuegen = (p: string) => {
     const el = feld.current;
-    const a = el?.selectionStart ?? text.length;
-    const b = el?.selectionEnd ?? text.length;
-    const neu = `${text.slice(0, a)}${p}${text.slice(b)}`;
+    const { text: neu, marke } = platzhalterEinfuegen(text, p, el);
     setText(neu);
     uebernehmen(neu);
     // Schreibmarke hinter den eingefügten Platzhalter
     requestAnimationFrame?.(() => {
       el?.focus();
-      el?.setSelectionRange(a + p.length, a + p.length);
+      el?.setSelectionRange(marke, marke);
     });
   };
-  const fremd = unbekannt?.(text) ?? [];
+  const fremd = unbekanntePlatzhalter(text, platzhalter);
   return (
-    <>
+    <div className={`po-schemafeld-block${kompakt ? ' kompakt' : ''}`}>
       <span className="po-schemafeld">
         <input
           ref={feld}
@@ -69,25 +70,17 @@ export function SchemaFeld({
             }
           }}
         />
-        <select
-          className="po-platzhalter"
-          aria-label={`Platzhalter einfügen: ${label}`}
-          title="Platzhalter an der Schreibmarke einfügen"
-          value=""
-          onChange={(e) => {
-            if (e.target.value) einfuegen(e.target.value);
-          }}
-        >
-          <option value="">Platzhalter ▾</option>
-          {platzhalter.map((p) => (
-            <option key={p.name} value={p.name}>
-              {p.name} – {p.text}
-            </option>
-          ))}
-        </select>
       </span>
       {vorschau && <span className="field-hint po-vorschau">{vorschau(text)}</span>}
-      {fremd.length > 0 && <span className="feld-meldung">Unbekannt, bleibt so im Namen stehen: {fremd.join(', ')}</span>}
-    </>
+      <PlatzhalterHinweise
+        vorlage={text}
+        variablen={platzhalter}
+        onAnpassen={(neu) => {
+          setText(neu);
+          uebernehmen(neu);
+        }}
+      />
+      <PlatzhalterChips variablen={platzhalter} onEinfuegen={einfuegen} label={label} />
+    </div>
   );
 }
