@@ -363,7 +363,7 @@ export function duplicateStorey(
   delete copy.ifcStand;
   delete copy.nummernPraefix;
   delete copy.elevation;
-  // darunter: Fußbodenhöhe aus der Höhe der Kopie (wie „+ Neu“ unter einem Geschoss)
+  // darunter: Fußbodenhöhe aus der Höhe der Kopie (wie „Geschoss …“ unter einem Geschoss)
   if (lage === 'darunter') copy.elevation = neueKote(p, src, lage, copy.hoehe);
   copy.shapes = copy.shapes.map((s) => {
     const { ifcId: _id, ifcStand: _stand, ...rest } = s;

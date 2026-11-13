@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { useMemo, useState } from 'react';
 import { modellRoofParams } from '@core/calc';
 import { fmt2 } from '@core/format';
@@ -321,8 +322,8 @@ function GaubenEditor({ dach, points, onChange }: { dach: Dach; points: OutlineS
         );
       })}
       <div className="button-row">
-        <button className="small" onClick={() => onChange([...gauben, defaultGaube(dach, fr)])}>
-          + Gaube
+        <button className="small" onClick={() => onChange([...gauben, defaultGaube(dach, fr)])} title="Gaube hinzufügen">
+          <Symbol name="plus" /> Gaube
         </button>
       </div>
     </div>
