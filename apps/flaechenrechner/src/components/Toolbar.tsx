@@ -80,7 +80,7 @@ const TOOLS: { id: Tool; label: string; icon: string; title: string }[] = [
 export function Toolbar() {
   const tool = useEditor((s) => s.tool);
   const drawKind = useEditor((s) => s.drawKind);
-  const canUndo = useEditor((s) => s.past.length > 0 || s.entwurf);
+  const canUndo = useEditor((s) => s.past.length > 0 || (s.entwurf && s.mainView === '2d'));
   const canRedo = useEditor((s) => s.future.length > 0);
   const dirty = useEditor((s) => s.dirty);
   // Kalibrieren braucht einen Plan im aktiven Geschoss

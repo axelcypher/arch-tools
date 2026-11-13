@@ -45,7 +45,7 @@ import {
   useEditor,
 } from '../store/store';
 import { escZiel, kantenpunktAufRaster, relativerPunkt, textBreite } from '../core/zeichnen';
-import { planLaden, PlanLadenHost } from './BackgroundPanel';
+import { planLaden } from './BackgroundPanel';
 import { BackgroundLayer } from './BackgroundLayer';
 import { logger } from '@core/platform/log';
 
@@ -557,11 +557,15 @@ export function Canvas() {
     };
   }, [draft, tool, numBuf, calib, mess, applyNumeric, finishShape, storey.id, storey.shapes, storey.background, setTool]);
 
-  // Rückgängig (Strg+Z, ↶) nimmt zuerst den laufenden Entwurf zurück: letzter Punkt, letzter Messpunkt
+  // Rückgängig (Strg+Z, ↶) nimmt zuerst den laufenden Entwurf zurück: letzter Punkt, Kalibrierstrecke, letzter Messpunkt
   useEffect(() => {
     const laufendeMessung = !!mess && !mess.fertig;
-    useEditor.getState().setEntwurf(draft.length > 0 || laufendeMessung);
+    useEditor.getState().setEntwurf(draft.length > 0 || !!calib || laufendeMessung);
     entwurfZuruecknehmenAnmelden(() => {
+      if (calib) {
+        setCalib(null);
+        return true;
+      }
       if (draft.length) {
         setNumBuf('');
         setDraft(draft.slice(0, -1));
@@ -573,7 +577,7 @@ export function Canvas() {
       }
       return false;
     });
-  }, [draft, mess]);
+  }, [draft, mess, calib]);
   useEffect(
     () => () => {
       entwurfZuruecknehmenAnmelden(null);
@@ -1340,7 +1344,6 @@ export function Canvas() {
           </p>
         </div>
       )}
-      <PlanLadenHost />
       {kuerzelOffen && <KuerzelDialog onClose={() => setKuerzelOffen(false)} />}
       <ScaleBar scale={vp.scale} />
       {/* Ansichtsoptionen, Werkzeugoptionen und Meldung untereinander rechts oben – brechen in schmalen Fenstern um,

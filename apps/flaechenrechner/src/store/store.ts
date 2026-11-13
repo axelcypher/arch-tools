@@ -627,6 +627,7 @@ export function entwurfZuruecknehmenAnmelden(fn: (() => boolean) | null) {
 
 /** Strg+Z bzw. ↶: zuerst den laufenden Entwurf (letzter Punkt), erst danach den letzten fertigen Schritt */
 export function rueckgaengig() {
-  if (entwurfZurueck?.()) return;
+  // nur, wenn die Zeichenfläche sichtbar ist – in der 3D-Ansicht wirkt Rückgängig auf das Projekt
+  if (useEditor.getState().mainView === '2d' && entwurfZurueck?.()) return;
   useEditor.getState().undo();
 }

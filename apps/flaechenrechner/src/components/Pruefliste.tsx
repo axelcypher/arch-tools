@@ -4,7 +4,7 @@ import type { PruefArt, PruefEintrag } from '@core/pruefung';
 import type { Project } from '@core/model';
 import { useEditor } from '../store/store';
 import { useKatalog } from '../core/katalog';
-import { planungsunterlagen } from '../core/bericht';
+import { fehlendeAngaben } from '../core/bericht';
 import { anzahl } from '../core/text';
 
 /** Eintrag der Anzeige: eine Meldung oder mehrere gleichartige eines Geschosses zusammengefasst */
@@ -23,7 +23,7 @@ export interface PruefZeile {
 /** Sammeltext für mehrere gleichartige Raummeldungen eines Geschosses */
 const SAMMEL: Record<string, (n: number) => string> = {
   'ohne-wohnung': (n) => `${anzahl(n, 'Raum zählt', 'Räume zählen')} zur Wohnfläche, aber ohne Wohnung – alle wählen und Wohnung eintragen.`,
-  'keine-wofl': (n) => `${anzahl(n, 'Raum zählt', 'Räume zählen')} nicht zur Wohnfläche – richtig z. B. bei Treppenraum, Heizung, Abstellraum außerhalb der Wohnung.`,
+  'keine-wofl': (n) => `${anzahl(n, 'Raum zählt', 'Räume zählen')} nicht zur Wohnfläche – richtig bei Räumen außerhalb der Wohnung, Zubehör- und Geschäftsräumen (§ 2 Abs. 3 WoFlV), z. B. Treppenhaus, Heizungsraum, Keller- oder Abstellraum außerhalb der Wohnung.`,
   dachschraege: (n) => `${anzahl(n, 'Raum', 'Räume')} im Dachgeschoss voll angerechnet – lichte Höhe prüfen (Raumteile unter 2 m nach § 4 WoFlV).`,
   'ohne-katalog': (n) => `${anzahl(n, 'Raumbezeichnung', 'Raumbezeichnungen')} nicht im Raumkatalog – Nutzung und Anrechnung prüfen.`,
   'umriss-pruefen': (n) => `${anzahl(n, 'BGF-Umriss ist', 'BGF-Umrisse sind')} zum Prüfen markiert (übernommen) – Außenmaße kontrollieren.`,
@@ -33,8 +33,9 @@ const SAMMEL: Record<string, (n: number) => string> = {
 export function projektPruefung(project: Project): PruefZeile[] {
   const out: PruefZeile[] = [];
   const zeile = (text: string): PruefZeile => ({ art: 'warnung', storeyId: '', shapeIds: [], text, projekt: true });
-  if (!project.settings.massgrundlage) out.push(zeile('Messverfahren nicht angegeben (DIN 277, 5.1) – unter „Berechnungsgrundlagen“ wählen.'));
-  if (!planungsunterlagen(project)) out.push(zeile('Planungsunterlagen nicht angegeben (DIN 277, 5.1) – unter „Berechnungsgrundlagen“ eintragen.'));
+  const fehlt = fehlendeAngaben(project);
+  if (fehlt.includes('Messverfahren')) out.push(zeile('Messverfahren nicht angegeben (DIN 277, 5.1) – unter „Berechnungsgrundlagen“ wählen.'));
+  if (fehlt.includes('Planungsunterlagen')) out.push(zeile('Planungsunterlagen nicht angegeben (DIN 277, 5.1) – unter „Berechnungsgrundlagen“ eintragen.'));
   return out;
 }
 

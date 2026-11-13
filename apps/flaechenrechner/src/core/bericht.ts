@@ -86,6 +86,11 @@ export function messverfahren(project: Project): string {
  * Welche Abschnitte gedruckt werden: Vorlage, Auswahl, leere Abschnitte entfallen; ein fehlender BRI ist ein Mangel,
  * ebenso (mit Projekt) selbstüberschneidende Flächen, deren Fläche so nicht stimmt.
  */
+/** Pflichtangaben nach DIN 277:2021-08, 5.1, die im Projekt fehlen – für Bericht, Prüfliste und Seitenleiste */
+export function fehlendeAngaben(project: Project): ('Messverfahren' | 'Planungsunterlagen')[] {
+  return [...(messverfahren(project) ? [] : (['Messverfahren'] as const)), ...(planungsunterlagen(project) ? [] : (['Planungsunterlagen'] as const))];
+}
+
 export function berichtPlan(e: BerichtEinstellung, result: ProjectResult, project?: Project): BerichtPlan {
   const gewaehlt = new Set<Abschnitt>(e.vorlage === 'vollstaendig' ? ABSCHNITTE.map((a) => a.id) : e.abschnitte);
   const gesperrt = e.vorlage === 'bauantrag' ? [...BAUANTRAG_PFLICHT] : [];
@@ -107,8 +112,9 @@ export function berichtPlan(e: BerichtEinstellung, result: ProjectResult, projec
     s.shapes.filter((x) => isSelfIntersecting(x.points)).map((x) => `${s.name}: ${x.kind === 'room' ? [x.nummer, x.name].filter(Boolean).join(' ') || 'Raum' : `BGF-Umriss „${x.name}“`}`),
   );
   const bildschirm: string[] = [];
-  if (project && !messverfahren(project)) bildschirm.push('Messverfahren nicht angegeben (DIN 277:2021-08, 5.1) – links unter „Projekt“ → „Berechnungsgrundlagen“ wählen.');
-  if (project && !planungsunterlagen(project))
+  const fehlt = project ? fehlendeAngaben(project) : [];
+  if (fehlt.includes('Messverfahren')) bildschirm.push('Messverfahren nicht angegeben (DIN 277:2021-08, 5.1) – links unter „Projekt“ → „Berechnungsgrundlagen“ wählen.');
+  if (fehlt.includes('Planungsunterlagen'))
     bildschirm.push('Planungsunterlagen nicht angegeben (DIN 277:2021-08, 5.1) – links unter „Projekt“ → „Berechnungsgrundlagen“ eintragen, z. B. „Grundrisse 1:100, Stand …“.');
   if (verdreht.length) warnungen.push(`Selbstüberschneidende Flächen – ihre Fläche ist so nicht korrekt, Eckpunkte prüfen: ${verdreht.join('; ')}.`);
   const sSpalten = [t.bgf.S, t.bri.S, t.nrf.S, t.kgf.S].some((v) => !nah0(v));

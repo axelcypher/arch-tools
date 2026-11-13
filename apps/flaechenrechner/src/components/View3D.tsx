@@ -8,6 +8,7 @@ import { storeyElevations } from '@core/model';
 import { nutzungInfo, raumNutzung } from '@core/norms';
 import { useTheme } from '@core/platform/theme';
 import { useEditor } from '../store/store';
+import { trefferWaehlen } from '../core/auswahl3d';
 
 /**
  * 3D-Ansicht der Rauminhalte: jeder BGF-Umriss als Körper vom Fußboden bis zur Dachhaut
@@ -94,7 +95,7 @@ export default function View3D() {
       const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       const rc = new THREE.Raycaster();
       rc.setFromCamera(ndc, camera);
-      const hit = rc.intersectObjects(three.current!.pickables, false)[0];
+      const hit = trefferWaehlen(rc.intersectObjects(three.current!.pickables, false));
       const st = useEditor.getState();
       if (hit?.object.userData.shapeId) {
         st.setActiveStorey(hit.object.userData.storeyId);
@@ -186,7 +187,7 @@ export default function View3D() {
           });
           const mesh = new THREE.Mesh(geo, mat);
           // Raumflächen sind anwählbar wie die Körper
-          mesh.userData = { shapeId: s.id, storeyId: storey.id };
+          mesh.userData = { shapeId: s.id, storeyId: storey.id, raum: true };
           t.content.add(mesh);
           t.pickables.push(mesh);
         }

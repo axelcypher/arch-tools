@@ -9,7 +9,7 @@ import { shapeArea } from '@core/model';
 import { MASSGRUNDLAGEN, nutzungInfo, raumNutzung } from '@core/norms';
 import { addStorey, moveStorey, removeStorey, useActiveStorey, useEditor } from '../store/store';
 import { Field, NumberField, TextField } from '@core/ui/fields';
-import { planungsunterlagen } from '../core/bericht';
+import { fehlendeAngaben, planungsunterlagen } from '../core/bericht';
 import { ProjektInfo } from './ProjektDialog';
 import { bestaetigen, fragen } from '@core/ui/Rueckfrage';
 import { geschossDuplizierenAktion } from './KopieDialog';
@@ -75,7 +75,7 @@ export function Sidebar() {
     st.select(id);
     anker.current = id;
   };
-  const fehlend = [...(mass ? [] : ['Messverfahren']), ...(planungsunterlagen(project) ? [] : ['Planungsunterlagen'])];
+  const fehlend = fehlendeAngaben(project);
 
   return (
     <aside className="sidebar sidebar-left">

@@ -6,6 +6,7 @@ import { Properties } from './components/Properties';
 import { Report } from './components/Report';
 import { Sidebar } from './components/Sidebar';
 import { KopieDialogHost } from './components/KopieDialog';
+import { PlanLadenHost } from './components/BackgroundPanel';
 import { katalogLaden } from './core/katalog';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
@@ -106,6 +107,8 @@ export function App() {
       )}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
       <KopieDialogHost />
+      {/* außerhalb der Ansichten: die PDF-Seitenwahl ist auch aus der 3D-Ansicht sichtbar */}
+      <PlanLadenHost />
     </div>
   );
 }

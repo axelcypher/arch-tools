@@ -292,7 +292,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
             <tr>
               <th>#</th>
               <th>X [m]</th>
-              <th>Y [m]</th>
+              <th title="nach oben positiv – wie die Koordinatenanzeige der Zeichenfläche">Y [m]</th>
               <th />
             </tr>
           </thead>
@@ -311,9 +311,9 @@ function ShapeProperties({ shape }: { shape: Shape }) {
                 <td>
                   <NumberField
                     label={`Punkt ${i + 1} Y`}
-                    value={p.y}
+                    value={p.y === 0 ? 0 : -p.y}
                     digits={3}
-                    onChange={(v) => v !== undefined && upd((s) => ({ ...s, points: s.points.map((q, j) => (j === i ? { ...q, y: v } : q)) }))}
+                    onChange={(v) => v !== undefined && upd((s) => ({ ...s, points: s.points.map((q, j) => (j === i ? { ...q, y: v === 0 ? 0 : -v } : q)) }))}
                   />
                 </td>
                 <td>
