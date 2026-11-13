@@ -25,6 +25,23 @@ const { useBaurecht } = await import('./store');
 // mehrere volle Auswertungen je Speichern (Folgen je Punkt) – bei paralleler Last mehr als die 5 s der Vorgabe
 vi.setConfig({ testTimeout: 20000 });
 
+// Ausblendungen nach echter Zeit anhalten – „Gespeichert“ im Kopf nach 4 s (components/Kopf.tsx, GespeichertMeldung) und
+// die Ansage nach 1,5 s (components/Angaben.tsx): Auf langsamen Runnern (Windows im Release-Lauf) war die Meldung beim
+// Prüfen sonst schon weg. Kürzere Fristen (Entprellen, Fokus) laufen echt weiter; vi.useFakeTimers() ersetzt den Spion
+// und prüft die Ausblendung selbst.
+const AUSBLENDEN_MS = new Set([1500, 4000]);
+const echtesSetTimeout = globalThis.setTimeout;
+let ausblendenAngehalten: { mockRestore: () => void } | null = null;
+beforeEach(() => {
+  ausblendenAngehalten = vi
+    .spyOn(globalThis, 'setTimeout')
+    .mockImplementation(((fn: () => void, ms?: number, ...args: unknown[]) => (AUSBLENDEN_MS.has(ms ?? 0) ? (0 as unknown as ReturnType<typeof setTimeout>) : echtesSetTimeout(fn, ms, ...args))) as typeof setTimeout);
+});
+afterEach(() => {
+  ausblendenAngehalten?.mockRestore();
+  ausblendenAngehalten = null;
+});
+
 let root: ReturnType<typeof createRoot> | null = null;
 function render(): HTMLElement {
   const host = document.createElement('div');
@@ -840,6 +857,24 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     await speichernOhneDialog();
     expect(host.querySelector('.br-gespeichert')?.getAttribute('role')).toBe('status');
     expect(host.querySelector('.br-gespeichert')?.textContent).toMatch(/^Gespeichert/);
+  });
+
+  it('„Gespeichert“ im Kopf blendet nach 4 s aus (Zeit kontrolliert, unabhängig vom Runner)', async () => {
+    const host = render();
+    await speichernOhneDialog();
+    expect(host.querySelector('.br-gespeichert')?.textContent).toMatch(/^Gespeichert/);
+    // die Meldung erscheint neu, damit ihre Frist unter den falschen Uhren läuft
+    vi.useFakeTimers();
+    try {
+      act(() => useBaurecht.setState({ gespeichertMeldung: { text: 'Gespeichert', am: Date.now() + 1 } }));
+      expect(host.querySelector('.br-gespeichert')?.textContent).toBe('Gespeichert');
+      act(() => void vi.advanceTimersByTime(3900));
+      expect(host.querySelector('.br-gespeichert')?.textContent).toBe('Gespeichert');
+      act(() => void vi.advanceTimersByTime(200));
+      expect(host.querySelector('.br-gespeichert')?.textContent).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Speichern-Dialog: eine geänderte Festlegung nennt den bisherigen Stand mit Datum; der Pfeil ist Text für Screenreader', async () => {
