@@ -131,7 +131,7 @@ describe('QUADRIO: Flächenaufstellung am Bildschirm', () => {
     });
     const bericht = host.querySelector<HTMLElement>('.report')!;
     expect([bericht.getAttribute('role'), bericht.getAttribute('aria-modal'), bericht.getAttribute('aria-label')]).toEqual(['dialog', 'true', 'Flächenaufstellung']);
-    expect(document.activeElement?.textContent).toBe('Schließen');
+    expect(document.activeElement?.textContent).toBe('Drucken / PDF'); // Erstfokus auf dem Hauptknopf (docs/design.md)
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });

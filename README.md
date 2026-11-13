@@ -251,7 +251,8 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
 - **Prüfliste** in der Auswertung (Ampel „Prüfen“): Räume außerhalb bzw. über den Umriss hinaus (je R/S),
   NRF > BGF je Bereich, überlappende Umrisse oder Räume (z. B. versetzt eingefügte Kopie; Abzugsflächen
   ausgenommen), breite Bereiche ohne Raum, doppelte Raumnummern, Räume ohne Wohnung, „keine Wohnfläche“ im
-  Wohngeschoss, „voll“ im Dachgeschoss, S-Umrisse ohne obere Begrenzung, selbstüberschneidende Flächen,
+  Wohngeschoss (eine Meldung je Geschoss), „Keine Wohnfläche erfasst“ im ganzen Projekt trotz Wohnräumen nach
+  Name, „voll“ im Dachgeschoss, S-Umrisse ohne obere Begrenzung, selbstüberschneidende Flächen,
   Abzugsflächen mit eigener, vom umgebenden Raum abweichender Anrechnung bzw. außerhalb aller Räume, Räume nicht im
   Raumkatalog (mit eigenem Katalog), zum Prüfen markierte Umrisse – Warnungen und Hinweise; ein Klick wählt die
   Fläche. Ragt ein Raum über den Umriss, lässt er sich in den Eigenschaften „auf den Umriss beschneiden“

@@ -37,8 +37,7 @@ export function ProjektordnerDialog({ grund }: { grund: string }) {
 
   return (
     // Esc schließt (nicht während einer laufenden Aktion), ein Klick daneben nicht – wie bisher
-    <Modal titel={`Projektordner für ${projekt.ordner}`} onClose={laeuft ? undefined : ordnerDialogSchliessen} breit klickDaneben={false} className="po-dialog">
-      <h3>Projektordner für {projekt.ordner}</h3>
+    <Modal titel={`Projektordner für ${projekt.ordner}`} kopf onClose={laeuft ? undefined : ordnerDialogSchliessen} breit klickDaneben={false} className="po-dialog">
       <p className="muted small-text">{grund}</p>
 
       <section className="po-teil">

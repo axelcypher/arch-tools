@@ -26,12 +26,12 @@ export function Report() {
     if (offen.length) offen.forEach((d) => (d.open = false));
     else setOpen(false);
   });
-  // Bildschirmansicht als Dialog: Fokus beim Öffnen auf „Schließen“, beim Schließen zurück; Tab bleibt im Bericht
+  // Bildschirmansicht als Dialog: Fokus beim Öffnen auf den Hauptknopf „Drucken / PDF“, beim Schließen zurück; Tab bleibt im Bericht
   const berichtRef = useRef<HTMLDivElement>(null);
-  const schliessenRef = useRef<HTMLButtonElement>(null);
+  const druckenRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const vorher = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    schliessenRef.current?.focus();
+    druckenRef.current?.focus();
     return () => {
       if (vorher?.isConnected) vorher.focus();
     };
@@ -193,10 +193,8 @@ export function Report() {
             </div>
           </details>
           <span className="bericht-knoepfe">
-            <button ref={schliessenRef} onClick={() => setOpen(false)}>
-              Schließen
-            </button>
-            <button className="primary" onClick={() => druckenAls({ datei: useEditor.getState().datei, projektName: project.name, zusatz: 'WoFl+BGF+BRI' })}>
+            <button onClick={() => setOpen(false)}>Schließen</button>
+            <button className="primary" ref={druckenRef} onClick={() => druckenAls({ datei: useEditor.getState().datei, projektName: project.name, zusatz: 'WoFl+BGF+BRI' })}>
               Drucken / PDF
             </button>
           </span>
