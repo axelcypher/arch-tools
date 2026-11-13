@@ -491,6 +491,14 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
     expect(auto.entfaelltVorbehalt).toBeUndefined();
     const fest = p(e({ ampel: 'gruen', grund: 'Sonderfall mit Begründung', von: 'TP', am: '2026-11-12', automatisch: 'rot', fakten: { 'merkmal:Vorhaben': 'Errichtung' }, stand: {}, bestaetigt: '2026-11-12T10:00:00Z' }), 'nw/bauo-nrw/6');
     expect(fest.ampel).toBe('gruen');
+    // Fundstelle fehlt im Text: vorher Vorbehalt, danach „noch nicht wirksam“ (nicht „überholt“ – erneut festlegen hülfe nicht)
+    const ohneFs = new Map([['bund/bnatschg', { fassung: fassung({ '14': 'x' }), geprueft: '2026-11-12T08:00:00Z', stichtag: '2026-12-01' }]]);
+    const vorFs = p(auswerten(eingabe({ merkmale: innen, texte: ohneFs })), id);
+    expect(vorFs.entfaelltVorbehalt).toBe('Fundstelle fehlt im Text der geltenden Fassung');
+    const flFs = { ampel: 'gruen' as const, grund: 'Sonderfall mit Begründung', von: 'TP', am: '2026-11-12', automatisch: vorFs.automatisch, fakten: {}, stand: {}, bestaetigt: '2026-11-12T10:00:00Z' };
+    const nachFs = p(auswerten(eingabe({ merkmale: innen, texte: ohneFs, festlegungen: { [id]: flFs } })), id);
+    expect(nachFs.ueberholt).toBeUndefined();
+    expect(nachFs.unwirksam).toBe('Fundstelle fehlt im Text der geltenden Fassung');
     expect(fest.unwirksam).toBeUndefined();
   });
 
@@ -767,6 +775,30 @@ describe('Runde 13 (Fachprüfung): nicht gestellte Fragen fehlen nicht', () => {
     expect(gestellt.hinweise.join(' ')).toMatch(/Ausnahme möglich – es fehlt: B/);
     expect(gestellt.offen).toEqual(['x.b']);
   });
+
+  it('Einzelfall offen nur an einer nicht gestellten Frage: „Einzelfall: …“ ohne „es fehlt“', () => {
+    const r4: Regeldatei = { ...regel, paragrafen: { '4': { gilt: { f: 'x.c', ist: true }, pruefen: { wenn: { f: 'x.b', ist: true }, grund: 'Einzelfall B.' }, grund: 'Test 4.' } } };
+    const p4 = paketAusDateien({ 'module/bund/modul.json': modul, 'module/bund/t@2026-11-13.json': r4 }, 'test');
+    const l = (fakten: Record<string, FaktWert>) =>
+      auswerten({ paket: p4, module: p4.module, merkmale: {}, fakten: { 'lage.ags': sicher('05974040'), ...fakten }, einreichung: '2026-12-01', heute: '2026-11-13', texte: new Map(), festlegungen: {} }).paragrafen.find((x) => x.id === 'bund/t/4')!;
+    const nicht = l({ 'x.a': sicher(false), 'x.c': sicher(false) });
+    expect(nicht.ampel).toBe('gelb');
+    expect(nicht.gruende[0]).toBe('Einzelfall: Einzelfall B.');
+    expect(nicht.offen).toEqual([]);
+    // gestellt: „Einzelfall möglich – es fehlt: B“
+    const ja = l({ 'x.a': sicher(true), 'x.c': sicher(false) });
+    expect(ja.gruende[0]).toBe('Einzelfall möglich – es fehlt: B. Einzelfall B.');
+    expect(ja.klaerend).toEqual(['x.b']);
+  });
+
+  it('Rot, Ausnahme nur über einen Hinweis ausgeschlossen: „Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: …)“', () => {
+    const r5: Regeldatei = { ...regel, paragrafen: { '5': { gilt: { f: 'x.c', ist: true }, entfaellt: { f: 'x.a', ist: true }, grund: 'Test 5.' } } };
+    const p5 = paketAusDateien({ 'module/bund/modul.json': modul, 'module/bund/t@2026-11-13.json': r5 }, 'test');
+    const l = (fakten: Record<string, FaktWert>) =>
+      auswerten({ paket: p5, module: p5.module, merkmale: {}, fakten: { 'lage.ags': sicher('05974040'), ...fakten }, einreichung: '2026-12-01', heute: '2026-11-13', texte: new Map(), festlegungen: {} }).paragrafen.find((x) => x.id === 'bund/t/5')!;
+    expect(l({ 'x.a': hinweis(false), 'x.c': sicher(true) }).hinweise).toContain('Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: A – nur Hinweis)');
+    expect(l({ 'x.a': sicher(false), 'x.c': sicher(true) }).hinweise.join(' ')).not.toMatch(/nicht gesichert/);
+  });
 });
 
 describe('Runde 17: wer einen Modulwert liefert', () => {
@@ -812,6 +844,23 @@ describe('Runde 19: Kriterium „gestellt“ und Paketregeln für Fragen', () =>
     const defF = { wenn: { f: 'x.a', ist: true } } as unknown as import('./typen').FaktDef;
     expect(frageGestellt('x.y', defF, { ...rest, fakten: { 'x.a': hinweis(false) } })).toBe(true);
     expect(frageGestellt('x.y', defF, { ...rest, fakten: { 'x.a': sicher(false) } })).toBe(false);
+  });
+
+  it('der Fixpunkt braucht mehrere Runden: eine weggelassene Antwort stellt eine Frage wieder; lange Ketten', () => {
+    const defs = {
+      a: { titel: 'A', gruppe: 'x', typ: 'janein' },
+      b: { titel: 'B', gruppe: 'x', typ: 'janein', wenn: { f: 'a', ist: true } },
+      c: { titel: 'C', gruppe: 'x', typ: 'janein', wenn: { nicht: { f: 'b', ist: true } } },
+    } as unknown as Record<string, import('./typen').FaktDef>;
+    // a = nein: b fällt weg, damit ist c wieder gestellt (zweite Runde)
+    expect(Object.keys(gestellteAntworten({ a: sicher(false), b: sicher(true), c: sicher(true) }, (f) => f, defs, rest)).sort()).toEqual(['a', 'c']);
+    // Kette aus 12 Fragen nach demselben Muster (k1 nur bei k0 = ja, jede weitere nur, wenn die vorige nicht „ja“ ist):
+    // der Fixpunkt steht erst nach rund 12 Runden – mit einer festen Grenze von 8 bliebe nur k0
+    const kette = Object.fromEntries(
+      Array.from({ length: 12 }, (_, i) => [`k${i}`, { titel: `K${i}`, gruppe: 'x', typ: 'janein', ...(i === 1 ? { wenn: { f: 'k0', ist: true } } : i > 1 ? { wenn: { nicht: { f: `k${i - 1}`, ist: true } } } : {}) }]),
+    ) as unknown as Record<string, import('./typen').FaktDef>;
+    const antworten = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`k${i}`, sicher(i > 0)]));
+    expect(Object.keys(gestellteAntworten(antworten, (f) => f, kette, rest))).toEqual(['k0', 'k2', 'k4', 'k6', 'k8', 'k10']);
   });
 
   it('ohne Fixpunkt: nur Antworten, die in jeder Runde gestellt waren (keine schwankende Antwort trägt eine Ampel)', () => {

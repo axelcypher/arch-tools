@@ -1161,6 +1161,79 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(document.activeElement).toBe(haken);
   });
 
+  it('Festlegen: der Text trifft ein, während der Dialog offen ist – Warnung und Ansage folgen dem aktuellen Stand', () => {
+    const host = render();
+    act(() => host.querySelector<HTMLButtonElement>('.br-paragraf')!.click());
+    const id = useBaurecht.getState().auswahl!;
+    const [modul, norm, nr] = id.split('/');
+    const regel = useBaurecht.getState().paket.regeln.get(`${modul}/${norm}`)!.at(-1)!.regel;
+    const stand = regel.paragrafen[nr].stand ?? {};
+    expect(Object.keys(stand).length).toBeGreaterThan(0);
+    act(() => knopf(host, /^(Von Hand festlegen|Festlegung ändern) …$/)!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand festlegen'))!;
+    act(() => dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')[2].click());
+    const warnung = () => dialog.querySelector('.br-meldung-warn[role="note"]')?.textContent ?? '';
+    expect(warnung()).toMatch(/Ohne geprüften Gesetzestext greift „entfällt“ nicht/);
+    const text = (geprueft: string) =>
+      act(() =>
+        useBaurecht.getState().textSetzen(`${modul}/${norm}`, {
+          fassung: { id: norm, kurz: norm, titel: '', fassung: '', url: '', paragrafen: { [nr]: { titel: 'T', url: '', text: ['(1) …'] } }, gueltigAb: regel.fassung, abgerufen: '', quelle: { art: 'gii', pfad: 'x' }, summen: { ...stand }, kennung: 'x' } as never,
+          geprueft,
+        }),
+      );
+    // veralteter Rechtsstand: „greift noch nicht“ mit Grund
+    text('2025-01-01T08:00:00Z');
+    expect(warnung()).toMatch(/„Entfällt“ greift noch nicht \(Rechtsstand nicht aktuell an der Quelle bestätigt\)/);
+    // aktuell geprüft: keine Warnung, die Ansage ohne „noch nicht wirksam“
+    text(new Date().toISOString());
+    expect(warnung()).toBe('');
+    tippen(dialog.querySelector('textarea')!, 'Begehung am 03.11.2026 ohne Befund');
+    act(() => knopf(dialog, 'Festlegen')!.click());
+    expect(useBaurecht.getState().ansage).toMatch(/von Hand „entfällt“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen$/);
+  });
+
+  it('Festlegen bei veraltetem Text: die Ansage nennt den Grund', () => {
+    const host = render();
+    act(() => host.querySelector<HTMLButtonElement>('.br-paragraf')!.click());
+    const id = useBaurecht.getState().auswahl!;
+    const [modul, norm, nr] = id.split('/');
+    const regel = useBaurecht.getState().paket.regeln.get(`${modul}/${norm}`)!.at(-1)!.regel;
+    act(() =>
+      useBaurecht.getState().textSetzen(`${modul}/${norm}`, {
+        fassung: { id: norm, kurz: norm, titel: '', fassung: '', url: '', paragrafen: { [nr]: { titel: 'T', url: '', text: ['(1) …'] } }, gueltigAb: regel.fassung, abgerufen: '', quelle: { art: 'gii', pfad: 'x' }, summen: { ...(regel.paragrafen[nr].stand ?? {}) }, kennung: 'x' } as never,
+        geprueft: '2025-01-01T08:00:00Z',
+      }),
+    );
+    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'gruen', id);
+    expect(useBaurecht.getState().ansage).toMatch(/festgelegt – noch nicht wirksam \(Rechtsstand nicht aktuell an der Quelle bestätigt\), es bleibt bei/);
+  });
+
+  it('„Rückgängig“ nach Aufheben: angesagt, mit dem Stand nach dem Wiederherstellen (Entwurf, wenn nicht gespeichert)', () => {
+    const host = render();
+    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    // bestätigt, aber nicht gespeichert (z. B. Speichern abgebrochen): beim Wiederherstellen wieder Entwurf
+    act(() => {
+      const p = structuredClone(useBaurecht.getState().pruefung);
+      p.festlegungen[id].bestaetigt = '2026-11-12T10:00:00Z';
+      useBaurecht.setState({ pruefung: p });
+    });
+    act(() => knopf(host.querySelector('.br-detail')!, /Festlegung aufheben/)!.click());
+    act(() => knopf(host.querySelector('.br-detail')!, 'Rückgängig')!.click());
+    expect(useBaurecht.getState().pruefung.festlegungen[id]?.bestaetigt).toBeUndefined();
+    expect(useBaurecht.getState().ansage).toBe('Festlegung wiederhergestellt – „gilt“ (Entwurf)');
+  });
+
+  it('Angaben-Suche: interne Kennungen treffen nicht', () => {
+    const host = render();
+    act(() => knopf(host, 'alle Angaben')?.click());
+    const suche = host.querySelector<HTMLInputElement>('input[aria-label="Angaben durchsuchen"]')!;
+    tippen(suche, 'kampfmittel');
+    expect(host.querySelector('[data-fakt="lage.kampfmittel"]')).not.toBeNull();
+    // „lage.“ steht nur in der Kennung
+    tippen(suche, 'lage.kampf');
+    expect(host.querySelector('[data-fakt="lage.kampfmittel"]')).toBeNull();
+  });
+
   it('Verweis ohne abrufbaren Text: „entfällt“ wirkt sofort – keine Warnung im Dialog, keine „noch nicht wirksam“-Ansage', () => {
     const host = render();
     const id = 'nw-05974/nsg/andere';

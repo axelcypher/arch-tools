@@ -30,8 +30,11 @@ export const festlegenOeffnen = (p: ParagrafErgebnis) => useFestlegen.getState()
  * Angaben der Auswertung (Projektdatei, Module, Geodienste, von Hand): an ihnen hängt die Festlegung, ändern sie sich,
  * ist sie überholt.
  */
-export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: Record<string, FaktWert>; widerspruchMerkmale?: string[] }) {
-  const p = useFestlegen((s) => s.p);
+export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen = [] }: { fakten: Record<string, FaktWert>; widerspruchMerkmale?: string[]; paragrafen?: ParagrafErgebnis[] }) {
+  const beimOeffnen = useFestlegen((s) => s.p);
+  // das aktuelle Ergebnis (der Text kann eintreffen, während der Dialog offen ist) – Warnung, Ansage und Summen passen
+  // so zum selben Stand
+  const p = (beimOeffnen && paragrafen.find((x) => x.id === beimOeffnen.id)) || beimOeffnen;
   const schliessen = useFestlegen((s) => s.schliessen);
   const texte = useBaurecht((s) => s.texte);
   const merkmale = useBaurecht((s) => s.merkmale);
@@ -43,6 +46,7 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
   const feld = useRef<HTMLTextAreaElement>(null);
   const wahl = useRef<HTMLFieldSetElement>(null);
   useEffect(() => {
+    const p = beimOeffnen;
     if (!p) return;
     setVerwerfen(false);
     // Vorgabe: die bisherige Festlegung bzw. die automatische Ampel – eine Herabstufung wählt man bewusst
@@ -52,7 +56,7 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
     setVersucht(false);
     // Startfokus auf die Entscheidung selbst (die gewählte Ampel), nicht erst auf die Begründung
     setTimeout(() => wahl.current?.querySelector<HTMLInputElement>('input:checked')?.focus(), 0);
-  }, [p]);
+  }, [beimOeffnen]);
   if (!p) return null;
   const herab = RANG[ampel] < RANG[p.automatisch];
   const ok = grund.trim().length >= 10 && von.trim().length > 0;

@@ -435,7 +435,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       if (ausnahmeOffen.length) hinweise.push(`Ausnahme möglich – es fehlt: ${ausnahmeOffen.map((o) => offenText(o, text)).join(' · ')}`);
       // die Ausnahme ist nur über Hinweise ausgeschlossen: nicht gesichert – bestätigen (oder berichtigen) klärt
       else if (entf?.w === 'nein' && (entf.unsicher.length || entf.widerspruch.length))
-        hinweise.push(`Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: ${[...entf.unsicher.map((u) => `${offenText(u, text)} – nur Hinweis`), ...entf.widerspruch.map((w) => `${offenText(w, text)} – widersprüchlich`)].join('; ')})`);
+        hinweise.push(`Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: ${[...entf.unsicher.map((u) => `${offenText(u, text)} – nur Hinweis`), ...entf.widerspruch.map((w) => (w.startsWith('merkmal:') && e.vorbehalte?.[w.slice(8)] ? `${offenText(w, text)} – nicht gesichert: ${e.vorbehalte[w.slice(8)]}` : `${offenText(w, text)} – widersprüchlich`))].join('; ')})`);
       // hängt die Regel an einem Paragrafen, der nur „rot, Ausnahme möglich“ ist, und entfiele sie mit dessen Ausnahme:
       // der Hinweis geht mit (die Ampel bleibt rot – zur sicheren Seite)
       for (const v of gilt.verwendet) {
@@ -485,7 +485,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       if (!mitNorm && r.pruefen?.wenn) {
         if (pruef.w === 'ja') herab.push(`Einzelfall: ${r.pruefen.grund}`);
         else if (pruef.w === 'offen') {
-          const fehlt = nurGestellte(pruef.offen ?? []);
+          // nur gestellte Fragen (ohne Rückfall auf nicht gestellte – dann bleibt es bei „Einzelfall: …“)
+          const fehlt = nurGestellteStreng(pruef.offen ?? []);
           const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
           herab.push(angaben.length ? `Einzelfall möglich – es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}. ${r.pruefen.grund}` : `Einzelfall: ${r.pruefen.grund}`);
           offen = fehlt;
@@ -581,7 +582,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // ist es überholt (jetzt am Text erneut festlegen)
       // ohne geprüften Text getroffen, jetzt liegt er vor: überholt (an der geltenden Fassung erneut festlegen) – sonst
       // „noch nicht wirksam“, solange der Systemstand fehlt (erneut festlegen hilft dagegen nicht)
-      const ohneGeprueftenText = fl.ampel === 'gruen' && !!fassung && !!r.stand && Object.keys(r.stand).some((k) => !fl.stand?.[k]);
+      // nur Fundstellen, die der Text jetzt hat – fehlt eine im Text, ist das „noch nicht wirksam“ (systemVorbehalt), nicht
+      // „überholt“ (erneutes Festlegen änderte daran nichts)
+      const ohneGeprueftenText = fl.ampel === 'gruen' && !!fassung && !!r.stand && Object.keys(r.stand).some((k) => !!fassung.summen[k] && !fl.stand?.[k]);
       if (ohneGeprueftenText) gruende2.push('Festlegung ohne geprüften Text getroffen – an der geltenden Fassung erneut festlegen');
       const system = fl.ampel === 'gruen' && !ohneGeprueftenText ? systemVorbehalt : [];
       if (gruende2.length) ueberholt = gruende2.join('; ');

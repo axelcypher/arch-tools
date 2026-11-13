@@ -400,9 +400,11 @@ export function Detail({ stand }: { stand: Pruefstand }) {
               className="small"
               onClick={() => {
                 useBaurecht.getState().festlegungWiederherstellen(aufgehoben.id, aufgehoben.f);
-                // wie beim Festlegen: ein „entfällt“, das noch nicht wirkt, sagt es dazu
-                const vorbehalt = aufgehoben.f.ampel === 'gruen' ? p.entfaelltVorbehalt : undefined;
-                useBaurecht.getState().ansagen(`Festlegung wiederhergestellt – „${AMPEL_TEXT[aufgehoben.f.ampel]}“${aufgehoben.f.bestaetigt ? '' : ' (Entwurf)'}${vorbehalt ? `, noch nicht wirksam (${vorbehalt}), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“` : ''}`);
+                // was jetzt im Stand steht (die Bestätigung entfällt, wenn sie vom Stand der Datei abweicht); wie beim
+                // Festlegen: ein „entfällt“, das noch nicht wirkt, sagt es dazu
+                const wieder = useBaurecht.getState().pruefung.festlegungen[aufgehoben.id] ?? aufgehoben.f;
+                const vorbehalt = wieder.ampel === 'gruen' ? p.entfaelltVorbehalt : undefined;
+                useBaurecht.getState().ansagen(`Festlegung wiederhergestellt – „${AMPEL_TEXT[wieder.ampel]}“${wieder.bestaetigt ? '' : ' (Entwurf)'}${vorbehalt ? `, noch nicht wirksam (${vorbehalt}), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“` : ''}`);
                 setAufgehoben(null);
                 // der Knopf verschwindet – Fokus auf „Festlegung ändern …“
                 setTimeout(() => festlegenKnopf.current?.focus(), 0);

@@ -346,7 +346,7 @@ export function App() {
         />
       )}
       {protokoll && project && <Protokoll stand={stand} onClose={() => setProtokoll(false)} onSpeichern={() => speichern()} />}
-      <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} />
+      <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} paragrafen={stand.auswertung.paragrafen} />
       <FaktBestaetigenDialog folgen={folgen} faktDef={faktDef} />
       <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} faktDef={faktDef} />
       {logOffen && <LogDialog app="Baurecht" onClose={() => setLogOffen(false)} />}
