@@ -5,7 +5,9 @@ import { createProject, leereMeta } from '@core/model';
 import { gleich } from '@core/zusammenfuehren';
 import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
+import { vorDemSchliessen } from '@core/platform/rahmen';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
+import { verzoegertSchreiben } from './verzoegert';
 
 /**
  * Zustand von NUMIO: das Projekt im gemeinsamen Format (.oap) – Gebäude, Geschosse und
@@ -140,6 +142,8 @@ function db(): Promise<IDBDatabase> {
     req.onupgradeneeded = () => req.result.createObjectStore(STORE);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
+    // eine ältere Verbindung blockiert das Öffnen: als Fehler werten, sonst hinge die Schreibkette (verzoegert.ts)
+    req.onblocked = () => reject(new Error('Zwischenspeicher blockiert'));
   });
 }
 
@@ -169,18 +173,31 @@ if (typeof indexedDB !== 'undefined') {
         // kein Zwischenstand
       });
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  // Zwischenstand 600 ms nach der letzten Änderung schreiben; vor dem Schließen (Arkly) sofort und abgewartet
+  const zwischenstand = verzoegertSchreiben(
+    () =>
+      db().then(
+        (d) =>
+          new Promise<void>((fertig) => {
+            const { project, datei, basis } = useKosten.getState();
+            const tx = d.transaction(STORE, 'readwrite');
+            tx.objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
+            tx.oncomplete = () => {
+              zwischenstandErsetzt(DB);
+              d.close();
+              fertig();
+            };
+            tx.onerror = tx.onabort = () => {
+              d.close();
+              fertig();
+            };
+          }),
+      ),
+    600,
+  );
   useKosten.subscribe((s, prev) => {
     if (s.project === prev.project && s.basis === prev.basis) return;
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      const { project, datei, basis } = useKosten.getState();
-      void db()
-        .then((d) => {
-          d.transaction(STORE, 'readwrite').objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
-          zwischenstandErsetzt(DB);
-        })
-        .catch(() => undefined);
-    }, 600);
+    zwischenstand.anstossen();
   });
+  vorDemSchliessen(zwischenstand.sichern);
 }

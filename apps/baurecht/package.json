@@ -1,7 +1,7 @@
 {
   "name": "baurecht",
   "private": true,
-  "version": "0.9.1",
+  "version": "0.9.2",
   "type": "module",
   "description": "Baurecht: Rechtsprüfung vor dem Bauantrag – alle relevanten Vorschriften je Paragraf als Ampel, mit aktuellen Gesetzestexten und austauschbaren Regelmodulen",
   "scripts": {
