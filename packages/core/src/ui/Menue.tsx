@@ -18,6 +18,8 @@ export type MenuePunkt =
       trenner?: false;
       text: string;
       symbol?: SymbolName;
+      /** Bild statt Symbol (z. B. das Symbol einer App), 16px */
+      bild?: string;
       /** rechts daneben, z. B. der Grund, warum der Punkt gesperrt ist */
       hinweis?: string;
       /** Tastenkürzel, wie es angezeigt wird (z. B. „Strg+C“, „Entf“); steht rechts und wird als aria-keyshortcuts vorgelesen */
@@ -380,7 +382,9 @@ function Liste({
               p.aktion?.();
             }}
           >
-            <span className="menue-symbol">{p.haken ? <Symbol name="haken" /> : p.haken === undefined && p.symbol && <Symbol name={p.symbol} />}</span>
+            <span className="menue-symbol">
+              {p.haken !== undefined ? p.haken && <Symbol name="haken" /> : p.bild ? <img src={p.bild} alt="" width={16} height={16} /> : p.symbol && <Symbol name={p.symbol} />}
+            </span>
             <span className="menue-text">{p.text}</span>
             {p.hinweis && <span className="menue-hinweis">{p.hinweis}</span>}
             {p.tasten && (

@@ -225,7 +225,19 @@ describe('gemeinsames Menü', () => {
       createElement(
         Fragment,
         null,
-        createElement('button', { key: 'z', onContextMenu: (e: React.MouseEvent) => zeigeMenue(e, [{ text: 'Raster', haken: true }, { text: 'Maße', haken: false }, { text: 'Öffnen' }]) }, 'Karte'),
+        createElement(
+          'button',
+          {
+            key: 'z',
+            onContextMenu: (e: React.MouseEvent) =>
+              zeigeMenue(e, [
+                { text: 'Raster', haken: true },
+                { text: 'Maße', haken: false },
+                { text: 'Öffnen', bild: 'app.png' },
+              ]),
+          },
+          'Karte',
+        ),
         createElement(MenueHost, { key: 'h' }),
       ),
     );
@@ -236,6 +248,8 @@ describe('gemeinsames Menü', () => {
     expect(masse.getAttribute('aria-checked')).toBe('false');
     expect(masse.querySelector('.menue-symbol svg')).toBeNull();
     expect(host.querySelectorAll('.menue [role="menuitem"]').length).toBe(1);
+    // Bild (z. B. App-Symbol) bei einem normalen Punkt
+    expect(host.querySelector('.menue [role="menuitem"] .menue-symbol img')?.getAttribute('src')).toBe('app.png');
   });
 
   it('eigener Öffner mit aria-haspopup (Zeilenknopf „⋯“) bekommt aria-expanded; useMenueOffen meldet den Zustand', () => {
