@@ -140,7 +140,7 @@ describe('ATLAS (Projektordner)', () => {
     expect(host.querySelector('.sd-lph')?.textContent).toContain('4 Genehmigungsplanung');
     act(() => knopf(host, '1–4 bis Bauantrag').click());
     expect(useOrdner.getState().stamm.leistungsphasen).toEqual([1, 2, 3, 4]);
-    act(() => knopf(host, 'keine').click());
+    act(() => knopf(host, 'ohne Einschränkung').click());
     expect(useOrdner.getState().stamm.leistungsphasen).toEqual([]);
     for (const nr of [1, 2, 3]) act(() => ([...host.querySelectorAll('.sd-lph input')][nr - 1] as HTMLInputElement).click());
     expect(useOrdner.getState().stamm.leistungsphasen).toEqual([1, 2, 3]);

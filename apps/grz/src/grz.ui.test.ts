@@ -159,6 +159,9 @@ describe('TERRIO', () => {
     expect(host.querySelector('.grz-report')).not.toBeNull();
     act(() => btn('Schließen').click());
     act(() => btn('Excel').click());
+    // Vorlagen-Knöpfe erst bei „Eigene Vorlage“
+    expect(host.textContent).not.toContain('Muster-Vorlage herunterladen');
+    act(() => host.querySelectorAll<HTMLInputElement>('.modal input[type="radio"]')[1].click());
     expect(host.textContent).toContain('Muster-Vorlage herunterladen');
   });
 

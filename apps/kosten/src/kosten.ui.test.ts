@@ -167,6 +167,9 @@ describe('NUMIO', () => {
     expect(host.querySelector('.ko-report')).not.toBeNull();
     act(() => knopf(host.querySelector('.ko-report')!, 'Schließen').click());
     act(() => knopf(host, 'Excel').click());
+    // Vorlagen-Knöpfe erst bei „Eigene Vorlage“
+    expect(host.textContent).not.toContain('Muster-Vorlage herunterladen');
+    act(() => host.querySelectorAll<HTMLInputElement>('.modal input[type="radio"]')[1].click());
     expect(host.textContent).toContain('Muster-Vorlage herunterladen');
     act(() => knopf(host, 'Abbrechen').click());
     act(() => knopf(host, 'Kennwertkatalog').click());
