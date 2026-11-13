@@ -45,6 +45,7 @@ export function UpdateKnopf({ app, dirty, vorInstallation }: { app: string; dirt
 function UpdateDialog({ app, dirty, vorInstallation, onClose }: { app: string; dirty: boolean; vorInstallation?: () => Promise<boolean>; onClose: () => void }) {
   const { status, version, notizen, geladen, gesamt, fehler, suchen, installieren } = useUpdate();
   const laeuft = status === 'laedt' || status === 'installiert';
+  const [bereitet, setBereitet] = useState(false);
 
   // während Laden und Installieren nicht schließbar (kein Esc, kein Klick daneben)
   return (
@@ -100,7 +101,18 @@ function UpdateDialog({ app, dirty, vorInstallation, onClose }: { app: string; d
         {status === 'verfuegbar' && (
           <button
             className="primary"
-            onClick={() => void (async () => (!vorInstallation || (await vorInstallation())) && (await schreibenAbwarten(app, () => schliessenVorbereiten())) && (await installieren()))()}
+            disabled={bereitet}
+            onClick={() =>
+              void (async () => {
+                // Rückfragen und Warten auf ausstehendes Schreiben; solange gesperrt (kein zweites Installieren)
+                setBereitet(true);
+                try {
+                  if ((!vorInstallation || (await vorInstallation())) && (await schreibenAbwarten(app, () => schliessenVorbereiten(), 'neu starten'))) await installieren();
+                } finally {
+                  setBereitet(false);
+                }
+              })()
+            }
           >
             Jetzt installieren
           </button>

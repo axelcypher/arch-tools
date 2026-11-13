@@ -77,13 +77,18 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   Rechte: Hauptfenster `capabilities/default.json`, herausgelöste Fenster `capabilities/fenster.json` (ohne Updates,
   Neustart und neue Fenster).
 - **Ausstehendes Schreiben vor dem Schließen** (`vorDemSchliessen` in `rahmen.ts`): Schreibt eine App verzögert
-  (z. B. ATLAS etwa 400 ms nach einer Änderung), meldet sie mit `vorDemSchliessen(async () => …)` an, was vor dem Ende
+  (ATLAS etwa 400 ms nach einer Änderung – die Anmeldung dort steht noch aus), meldet sie mit
+  `vorDemSchliessen(async () => …)` an, was vor dem Ende
   noch fertig werden muss – die Funktion soll das Schreiben sofort ausführen und abwarten. Das gilt auch, wenn keine
   ungespeicherten Änderungen gemeldet sind. Abgewartet wird vor dem Schließen des Fensters (× und System), dem
   Andocken, dem Herauslösen, dem Schließen eines Tabs, dem Beenden von Arkly (alle Tabs und Fenster) und dem
-  Update-Neustart, höchstens 5 s (`VORBEREITEN_MS`). Danach fragt die App „… speichert noch“ – *Trotzdem fortfahren*
-  oder *Abbrechen* (`ui/vorbereiten.ts`). Tabs ruft der Rahmen direkt auf (gleicher Ursprung), herausgelöste Fenster
-  über `arch-tools:vorbereiten`/`arch-tools:vorbereitet`; die Titelleiste richtet die Antwort ein.
+  Update-Neustart, höchstens 5 s (`VORBEREITEN_MS`). Danach fragt die App „… speichert noch“: *Weiter warten*
+  (Hauptknopf, Enter – wartet erneut), *Trotzdem schließen* bzw. *andocken*, *herauslösen*, *beenden*, *neu starten*
+  (Gefahr – die letzte Änderung kann fehlen) oder *Abbrechen* (Esc; Fenster bzw. Tab bleibt offen; `ui/vorbereiten.ts`). Tabs ruft der Rahmen direkt auf (gleicher Ursprung), herausgelöste Fenster
+  über `arch-tools:vorbereiten`/`arch-tools:vorbereitet` (nur Fenster, die schon hören); die Titelleiste richtet die
+  Antwort ein. Während des Wartens sind Schließen, Andocken und „Jetzt installieren“ gegen ein zweites Auslösen
+  gesperrt. Grenzen: Im Browser (Tab schließen, neu laden) und beim Neuladen eines Tabs oder des Rahmens gibt es keinen
+  Hook; nach *Trotzdem …* endet das Fenster auch mitten im Schreiben.
 - **Speichern auf Anfrage** (`speichernImTab`, `speichernImFenster`, `speichernAnfragenBeantworten`): Der Rahmen
   schickt `arch-tools:speichern`, die App bestätigt sofort (`arch-tools:speichert`) und meldet danach das Ergebnis
   (`arch-tools:gespeichert`). Kommt binnen 3 s keine Bestätigung (App lädt, hängt, ist abgestürzt), gilt „nicht
@@ -142,9 +147,10 @@ am Tab bzw. in der Titelleiste ● erscheint.
 8. **App reagiert nicht:** Schwer nachzustellen; erwartet ist, dass *Speichern* bei einer hängenden App nach etwa
    3 Sekunden aufgibt und Arkly offen bleibt.
 9. **Neustart:** Eine App herauslösen, Arkly beenden und neu starten. Erwartet: Die App ist wieder als Tab da.
-10. **Verzögertes Schreiben:** In ATLAS etwas ändern und sofort (innerhalb einer halben Sekunde) den Tab schließen
+10. **Verzögertes Schreiben** (sobald ATLAS `vorDemSchliessen` anmeldet): In ATLAS etwas ändern und sofort (innerhalb einer halben Sekunde) den Tab schließen
     bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Mit getrenntem Netzlaufwerk erscheint nach
-    etwa 5 s „ATLAS speichert noch“.
+    etwa 5 s „ATLAS speichert noch“: Enter bzw. „Weiter warten“ wartet erneut, Esc bzw. „Abbrechen“ lässt Tab bzw.
+    Fenster offen, „Trotzdem schließen“ schließt.
 
 ## Entwicklung
 

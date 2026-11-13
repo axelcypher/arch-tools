@@ -266,12 +266,46 @@ describe('Rahmen-App auf dem Desktop', () => {
     await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     await act(async () => {});
     expect(dialog(host)?.textContent).toContain('ATLAS speichert noch');
+    // Hauptknopf (Enter, Erstfokus) ist „Weiter warten“, nie der Gefahr-Knopf
+    expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Trotzdem schließen', 'Weiter warten']);
+    expect(dialog(host)!.querySelector('button[type="submit"]')?.textContent).toBe('Weiter warten');
+    await antwort(host, 'Weiter warten');
+    expect(dialog(host)?.textContent).toContain('ATLAS speichert noch');
     await antwort(host, 'Abbrechen');
     expect(useRahmen.getState().tabs).toEqual(['ordner']);
     await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     await act(async () => {});
-    await antwort(host, 'Trotzdem fortfahren');
+    await antwort(host, 'Trotzdem schließen');
     expect(useRahmen.getState().tabs).toEqual([]);
+  });
+
+  it('Beenden mit herausgelöstem Fenster: wartet auf dessen Schreiben; meldet es „nicht fertig“, Rückfrage – Abbrechen beendet nicht', async () => {
+    const host = await render();
+    act(() => useRahmen.getState().oeffnen('kosten'));
+    await herausloesen(host, 'NUMIO');
+    // das Fenster hört (bereit) und antwortet auf „vorbereiten“ erst, wenn es soll
+    await senden('arch-tools:an-rahmen', { typ: 'arch-tools:bereit', app: 'kosten' });
+    let antworten: ((ok: boolean) => void) | undefined;
+    void listen<{ typ: string; anfrage: string; an: string }>('arch-tools:an-app', (e) => {
+      const d = e.payload;
+      if (d.typ === 'arch-tools:vorbereiten' && d.an === 'kosten') antworten = (ok) => void emit('arch-tools:an-rahmen', { typ: 'arch-tools:vorbereitet', anfrage: d.anfrage, ok, app: 'kosten' });
+    });
+    await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
+    await senden('x', null);
+    expect(antworten).toBeDefined();
+    expect(fenster.haupt!.destroy).not.toHaveBeenCalled();
+    await act(async () => antworten!(false));
+    await senden('x', null);
+    expect(dialog(host)?.textContent).toContain('NUMIO speichert noch');
+    expect(dialog(host)?.textContent).toContain('Trotzdem beenden');
+    await antwort(host, 'Abbrechen');
+    expect(fenster.haupt!.destroy).not.toHaveBeenCalled();
+    // erneut: diesmal fertig – alles schließt
+    await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
+    await senden('x', null);
+    await act(async () => antworten!(true));
+    await senden('x', null);
+    expect(fenster.haupt!.destroy).toHaveBeenCalled();
   });
 
   it('Update: vor der Installation dieselben Rückfragen; Abbrechen verhindert sie', async () => {

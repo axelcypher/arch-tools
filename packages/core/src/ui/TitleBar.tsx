@@ -119,7 +119,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
         if (!weiter) return;
       }
       // ausstehendes Schreiben (vorDemSchliessen) abwarten
-      if (!(await schreibenAbwarten(app, () => schliessenVorbereiten()))) return;
+      if (!(await schreibenAbwarten(app, () => schliessenVorbereiten(), 'schließen'))) return;
       log.info('Fenster wird geschlossen');
       await win?.destroy();
     } finally {
@@ -145,10 +145,18 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   }, [win]);
 
   // Andocken startet die App als Tab neu – bei ungespeicherten Änderungen vorher fragen (wie beim Herauslösen)
+  const dockt = useRef(false);
   const andockenFragen = async () => {
-    if (dirty && !(await umzugBestaetigen(rahmenApp(), app, name, 'andocken', onSpeichern))) return;
-    if (!(await schreibenAbwarten(app, () => schliessenVorbereiten()))) return;
-    await andocken();
+    // ein zweiter Klick, während Rückfrage oder Warten offen sind, tut nichts
+    if (dockt.current) return;
+    dockt.current = true;
+    try {
+      if (dirty && !(await umzugBestaetigen(rahmenApp(), app, name, 'andocken', onSpeichern))) return;
+      if (!(await schreibenAbwarten(app, () => schliessenVorbereiten(), 'andocken'))) return;
+      await andocken();
+    } finally {
+      dockt.current = false;
+    }
   };
 
   return (

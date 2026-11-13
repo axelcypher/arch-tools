@@ -148,4 +148,23 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(antworten.find((a) => a.typ === 'arch-tools:vorbereitet')).toMatchObject({ anfrage: 'v1', ok: true });
     aus();
   });
+
+  it('Andocken wartet auf ausstehendes Schreiben; ein zweiter Klick währenddessen tut nichts', async () => {
+    window.history.replaceState(null, '', '/?rahmen=fenster&app=kosten');
+    const andocken: unknown[] = [];
+    await listen('arch-tools:andocken', (e) => void andocken.push(e.payload));
+    let schreiben: (() => void) | undefined;
+    const aus = vorDemSchliessen(() => new Promise<void>((fertig) => (schreiben = fertig)));
+    const host = await render({ app: 'NUMIO', dirty: false });
+    const knopf = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!;
+    await act(async () => knopf().click());
+    await act(async () => knopf().click());
+    await warten();
+    expect(andocken).toEqual([]);
+    await act(async () => schreiben!());
+    await warten();
+    expect(andocken).toEqual([{ app: 'kosten' }]);
+    expect(fenster.destroy).toHaveBeenCalledTimes(1);
+    aus();
+  });
 });
