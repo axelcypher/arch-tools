@@ -168,8 +168,8 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
                 punkte={() => [
                   { text: 'LV-Eigenschaften …', titel: 'Bezeichnung, Termine, Vergabeart, Projekt, Auftraggeber, OZ-Maske, Umsatzsteuer', aktion: () => setDialog('kopf') },
                   { text: 'Neu nummerieren …', titel: 'Ordnungszahlen nach der OZ-Maske neu vergeben', aktion: () => void nummerieren() },
-                  { text: 'Drucken …', titel: 'Leistungsbeschreibung mit Leistungsverzeichnis drucken bzw. als PDF', aktion: () => setDialog('druck') },
-                  { text: 'GAEB-Export …', titel: 'Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)', aktion: () => setDialog('gaeb') },
+                  { text: 'Drucken …', symbol: 'drucken', titel: 'Leistungsbeschreibung mit Leistungsverzeichnis drucken bzw. als PDF', aktion: () => setDialog('druck') },
+                  { text: 'GAEB-Export …', symbol: 'export', titel: 'Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)', aktion: () => setDialog('gaeb') },
                 ]}
               >
                 LV
