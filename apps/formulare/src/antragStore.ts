@@ -487,6 +487,8 @@ export interface SchreibInfo {
   erneut?: boolean;
   /** beim Schreiben stand schon ein Antragsumfang in der Datei, wo der Aufrufer keinen kannte – der blieb */
   umfangBehalten?: boolean;
+  /** die beschriebene Projektdatei (`root|pfad`) – auch wenn danach eine andere bzw. keine lesbare geladen ist */
+  oap?: string;
   /** wird der offene Dialog abgebrochen: dies statt der allgemeinen Meldung (z. B. eine Zusage zurücknehmen) */
   beiAbbruch?: (art: DialogArt) => void;
 }
@@ -683,6 +685,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     };
     if (!(await useFormulare.getState().oapAendern(zusammenfuehren))) await useFormulare.getState().oapLaden();
     info.geschrieben = true;
+    if (ziel) info.oap = ziel;
     if (kennzeichen.umfangBehalten) info.umfangBehalten = true;
     // gespeichert: eine eigene „nicht gespeichert“-Meldung von vorhin gilt nicht mehr
     const m = useFormulare.getState().meldung;
@@ -1366,27 +1369,29 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
       try {
         const projekt = useFormulare.getState().projekt;
-        const oap = useFormulare.getState().oap;
         const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
         if (umfang) neu.umfang = umfang;
         else delete neu.umfang;
         const imStore = await projektdateiSchreiben(neu, undefined, { info, bewegt: o.bewegt });
         // festgelegt, während woanders inzwischen schon einer festgelegt war (so beim Zusammenführen bemerkt): der
-        // bleibt – „jetzt geladen“ nur, wenn der Store noch zu dieser Projektdatei gehört (nicht nach einem Wechsel)
-        // und dieselbe Fassung zeigt (nicht, wenn die Ansicht der woanders aktiv gemachten Fassung gefolgt ist)
+        // bleibt – die Meldung sagt, wo, wenn inzwischen ein anderes Projekt bzw. eine andere Projektdatei offen ist;
+        // „jetzt geladen“ nur, wenn der Store noch diese Projektdatei in derselben Fassung zeigt
         if (info.umfangBehalten) {
           delete info.geschrieben;
           info.grund = 'inzwischen ist schon einer festgelegt';
-          const angezeigt = get().projektdatei?.ansicht;
-          if (!imStore || useFormulare.getState().projekt !== projekt) {
-            // inzwischen anderes Projekt bzw. andere Projektdatei: sagen, welche gemeint ist
-            if (projekt && useFormulare.getState().projekt !== projekt)
-              meldung('info', `Antragsumfang in ${projekt.ordner} nicht festgelegt – dort ist inzwischen schon einer festgelegt; jetzt ist ein anderes Projekt offen.`);
-            else if (oap && oap !== 'fehlt')
-              meldung('info', `Antragsumfang in ${nurName(oap.pfad)} nicht festgelegt – dort ist inzwischen schon einer festgelegt; jetzt ist eine andere Projektdatei gewählt.`);
-          } else if (neu.ansicht && angezeigt && angezeigt !== neu.ansicht) {
-            meldung('info', `Antragsumfang für Antrag ${neu.ansicht} nicht festgelegt – für diesen ist inzwischen schon einer festgelegt. Angezeigt wird jetzt Antrag ${angezeigt}, die aktive Antragsfassung.`);
-          } else meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
+          if (projekt && useFormulare.getState().projekt !== projekt) {
+            meldung('info', `Antragsumfang in ${projekt.ordner} nicht festgelegt – dort ist inzwischen schon einer festgelegt; jetzt ist ein anderes Projekt offen.`);
+          } else if (!imStore) {
+            // nur bei einer wirklich anderen, gelesenen Projektdatei – ist sie nicht lesbar, bleibt deren Fehlermeldung stehen
+            const jetzt = oapSchluessel();
+            if (info.oap && jetzt && jetzt !== info.oap)
+              meldung('info', `Antragsumfang in ${nurName(info.oap.slice(info.oap.indexOf('|') + 1))} nicht festgelegt – dort ist inzwischen schon einer festgelegt; jetzt ist eine andere Projektdatei gewählt.`);
+          } else {
+            const angezeigt = get().projektdatei?.ansicht;
+            if (neu.ansicht && angezeigt && angezeigt !== neu.ansicht)
+              meldung('info', `Antragsumfang für Antrag ${neu.ansicht} nicht festgelegt – für diesen ist inzwischen schon einer festgelegt. Angezeigt wird jetzt Antrag ${angezeigt}, die aktive Antragsfassung.`);
+            else meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
+          }
         }
         await get().aktualisieren();
       } catch (e) {

@@ -4809,6 +4809,32 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(meldungen).toContain('Antragsumfang in BS9.oap nicht festgelegt – dort ist inzwischen schon einer festgelegt; jetzt ist eine andere Projektdatei gewählt.');
   });
 
+  it('Festlegen (woanders schon festgelegt), das Neuladen danach scheitert (Netz weg): keine „andere Projektdatei“, die Lesefehlermeldung bleibt', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    ds.dateien.set(OAP, oapMit(ds.dateien.get(OAP)!, (f) => void ((f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].umfang = [{ id: 'ueigen', titel: 'Brandschutzkonzept', art: 'extern' }])));
+    // in der Datei steht schon einer: nichts zu schreiben – das Neuladen danach (zweites Lesen) scheitert
+    const po = ds.projektordner as unknown as { liesMitStand: (r: string, p: string) => Promise<unknown> };
+    const echt = po.liesMitStand.bind(po);
+    let n = 0;
+    po.liesMitStand = async (r: string, p: string) => {
+      if (p.endsWith('BS9.oap') && ++n === 2) throw new Error('Netz weg');
+      return echt(r, p);
+    };
+    const { meldungen, ab } = meldungenSammeln();
+    try {
+      await klick(knopf(host, 'Antragsumfang festlegen'));
+      for (let i = 0; i < 8; i++) await warte();
+    } finally {
+      po.liesMitStand = echt;
+      ab();
+    }
+    expect(n).toBeGreaterThanOrEqual(2);
+    expect(umfangIdsIn('BAUA 2')).toEqual(['ueigen']);
+    expect(meldungen.filter((m) => /andere Projektdatei|jetzt geladen/.test(m))).toEqual([]);
+    expect(useFormulare.getState().meldung?.text).toMatch(/^Projektdatei von BS9 nicht lesbar: .*Netz weg/);
+  });
+
   it('Festlegen: der erste Versuch sieht einen woanders festgelegten, die Datei ändert sich dabei (dort aufgehoben), der zweite schreibt – keine Meldung', async () => {
     const host = await projektBS9();
     await klick(antragsdaten(host));
