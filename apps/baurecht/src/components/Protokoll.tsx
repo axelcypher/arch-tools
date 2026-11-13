@@ -353,18 +353,16 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     if (sperre) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
     const am = new Date().toISOString();
-    useBaurecht
-      .getState()
-      .protokollAnhaengen({
-        am,
-        von: benutzer(),
-        paket: paket.version,
-        einreichung: pruefstand.einreichung,
-        fassungen: verwendeteFassungen(a),
-        zaehler: a.zaehler,
-        ampeln,
-        offen: offen.length + ueberholt.length + ohneRegel.length,
-      });
+    useBaurecht.getState().protokollAnhaengen({
+      am,
+      von: benutzer(),
+      paket: paket.version,
+      einreichung: pruefstand.einreichung,
+      fassungen: verwendeteFassungen(a),
+      zaehler: a.zaehler,
+      ampeln,
+      offen: offen.length + ueberholt.length + ohneRegel.length,
+    });
     // sichtbar und angesagt, Fokus auf die Meldung (der Knopf ist danach gesperrt – sonst fiele der Fokus auf die Seite)
     fokusNachMeldung.current = true;
     setAbgelegt({
