@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { frageText, meldung } from '@core/ui/Rueckfrage';
+import { bestaetigen, frageText, meldung } from '@core/ui/Rueckfrage';
+import { neuNummerieren } from '../lv/modell';
 import { gewerkZweistellig } from '../abrechnung/gewerk';
 import { vollerPfad } from '../dateien';
 import type { LvDatei } from '../projekt';
@@ -12,14 +13,18 @@ import { Angebote } from './lv/Angebote';
 import { AuftragAnsicht } from './lv/Auftrag';
 import { RechnungenAnsicht } from './abrechnung/RechnungenAnsicht';
 import { Dateiliste } from './Dateiliste';
-import { gaebWaehlen } from './lv/Gaeb';
+import { GaebExportDialog, gaebWaehlen } from './lv/Gaeb';
+import { LvKopfDialog } from './lv/LvKopfDialog';
+import { LvDruck } from './lv/LvDruck';
+import { MenueKnopf } from './Menue';
 
-const TABS: { id: GewerkTab; text: string; title: string; lv?: boolean }[] = [
-  { id: 'lv', text: 'Leistungsverzeichnis', title: 'Gliederung, Positionen, Texte, Mengen', lv: true },
-  { id: 'angebote', text: 'Angebote & Preisspiegel', title: 'Bieter, Preise erfassen, Preisspiegel, Rangfolge', lv: true },
-  { id: 'auftrag', text: 'Auftrag & Nachträge', title: 'Vergabe, Auftragssumme, Nachträge, Übernahme in die Kostenkontrolle' },
-  { id: 'rechnungen', text: 'Rechnungen', title: 'Rechnungen dieses Gewerks aus allen Quellen, neue Rechnung prüfen' },
-  { id: 'dateien', text: 'Dateien & Korrespondenz', title: 'Auftrag, Nachträge, Schriftverkehr, Mails' },
+/** `kurz`: Beschriftung bei schmalem Fenster; `kopf`: der LV-Kopf (Auswahl, Neues LV, LV-Befehle, Speichern) gehört dazu */
+const TABS: { id: GewerkTab; text: string; kurz: string; title: string; lv?: boolean; kopf?: boolean }[] = [
+  { id: 'lv', text: 'Leistungsverzeichnis', kurz: 'LV', title: 'Gliederung, Positionen, Texte, Mengen', lv: true, kopf: true },
+  { id: 'angebote', text: 'Angebote & Preisspiegel', kurz: 'Angebote', title: 'Bieter, Preise erfassen, Preisspiegel, Rangfolge', lv: true, kopf: true },
+  { id: 'auftrag', text: 'Auftrag & Nachträge', kurz: 'Auftrag', title: 'Vergabe, Auftragssumme, Nachträge, Übernahme in die Kostenkontrolle', kopf: true },
+  { id: 'rechnungen', text: 'Rechnungen', kurz: 'Rechnungen', title: 'Rechnungen dieses Gewerks aus allen Quellen, neue Rechnung prüfen' },
+  { id: 'dateien', text: 'Dateien & Korrespondenz', kurz: 'Dateien', title: 'Auftrag, Nachträge, Schriftverkehr, Mails' },
 ];
 
 export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab }) {
@@ -30,6 +35,7 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
   const lvs = g ? g.lvs : [];
   const aktuelle = g ? aktuelleLvs(g) : [];
   const [fehler, setFehler] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<'kopf' | 'druck' | 'gaeb' | null>(null);
   const blatt = projekt.kk?.kk.gewerke.find((x) => x.gewerk === gewerk);
   const name = g?.name || blatt?.bezeichnung || '';
 
@@ -80,6 +86,25 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
 
   const offenesLv = lv?.gewerk === gewerk ? lv : null;
   const t = TABS.find((x) => x.id === tab) ?? TABS[0];
+  const zeigeTab = (id: GewerkTab) => useAva.getState().setAnsicht({ art: 'gewerk', gewerk, tab: id });
+
+  const nummerieren = async () => {
+    if (!offenesLv) return;
+    const schritt = offenesLv.lv.ozMaske.position.schritt;
+    if (!(await bestaetigen('Neu nummerieren?', `Alle Abschnitte und Positionen bekommen fortlaufende Ordnungszahlen nach der OZ-Maske (Positionen in Schritten von ${schritt}). Nach dem Versand an die Bieter nicht mehr empfehlenswert.`, 'Neu nummerieren'))) return;
+    useAva.getState().lvAendern((l) => ({ ...l, elemente: neuNummerieren(l.elemente, l.ozMaske) }));
+  };
+
+  /** Tabs mit ←/→, Pos1 und Ende wechseln (Fokus wandert mit) */
+  const tabTasten = (e: React.KeyboardEvent) => {
+    const i = TABS.findIndex((x) => x.id === t.id);
+    const n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : null;
+    if (n === null) return;
+    e.preventDefault();
+    const ziel = TABS[(n + TABS.length) % TABS.length];
+    zeigeTab(ziel.id);
+    requestAnimationFrame(() => document.getElementById(`ava-tab-${ziel.id}`)?.focus());
+  };
 
   return (
     <div className="ava-gewerk">
@@ -97,46 +122,81 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
             )}
           </div>
         </div>
-        <div className="ava-lv-wahl">
-          {lvs.length > 0 && (
-            <select value={offenesLv?.datei.pfad ?? ''} onChange={(e) => void wechsle(lvs.find((l) => l.pfad === e.target.value)!)} title="LV-Datei dieses Gewerks">
-              {!offenesLv && <option value="">LV wählen …</option>}
-              {lvs.map((l) => (
-                <option key={l.pfad} value={l.pfad}>
-                  {l.name}
-                  {l.archiv ? ' (Archiv)' : ''}
-                </option>
-              ))}
-            </select>
-          )}
-          <button onClick={() => void neu()} title="Neues LV in diesem Gewerk anlegen">
-            Neues LV …
-          </button>
-          <button onClick={() => void ausGaeb()} title="LV aus einer GAEB-Datei (X81–X86) als neue LV-Datei in diesem Gewerk anlegen">
-            GAEB-Import …
-          </button>
-          {offenesLv && (
-            <button className={lvGeaendert(offenesLv) ? 'primary' : ''} onClick={() => void lvSpeichernMitMeldung()} disabled={!lvGeaendert(offenesLv)} title="LV speichern (Strg+S)">
-              Speichern
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="ava-tabs" role="tablist">
-        {TABS.map((x) => (
-          <button key={x.id} role="tab" aria-selected={x.id === t.id} className={x.id === t.id ? 'active' : ''} title={x.title} onClick={() => useAva.getState().setAnsicht({ art: 'gewerk', gewerk, tab: x.id })}>
-            {x.text}
-          </button>
-        ))}
-        {offenesLv && (
-          <span className="ava-tab-info muted small-text" title={offenesLv.datei.pfad}>
-            {offenesLv.format === 'aslv' ? 'LV-Datei (.aslv)' : 'eigene LV-Datei (.oalv)'}
-            {offenesLv.datei.archiv ? ' · Archiv' : ''}
-          </span>
+        {t.kopf && (
+          <div className="ava-lv-wahl">
+            {lvs.length > 0 && (
+              <select
+                value={offenesLv?.datei.pfad ?? ''}
+                onChange={(e) => void wechsle(lvs.find((l) => l.pfad === e.target.value)!)}
+                title={offenesLv ? `${offenesLv.datei.pfad} – ${offenesLv.format === 'aslv' ? 'LV-Datei (.aslv)' : 'eigene LV-Datei (.oalv)'}` : 'LV-Datei dieses Gewerks'}
+                aria-label="LV-Datei"
+              >
+                {!offenesLv && <option value="">LV wählen …</option>}
+                {lvs.map((l) => (
+                  <option key={l.pfad} value={l.pfad}>
+                    {l.name}
+                    {l.archiv ? ' (Archiv)' : ''}
+                  </option>
+                ))}
+              </select>
+            )}
+            {offenesLv?.datei.archiv && (
+              <span className="ava-chip" title="Diese LV-Datei liegt in einem Archivordner">
+                Archiv
+              </span>
+            )}
+            <MenueKnopf
+              text="Neues LV"
+              title="Neues LV in diesem Gewerk anlegen – leer oder aus einer GAEB-Datei"
+              rechts
+              punkte={[
+                { text: 'Leeres LV …', title: 'Neues, leeres LV in diesem Gewerk anlegen', aktion: () => void neu() },
+                { text: 'Aus GAEB-Datei (X81–X86) …', title: 'LV aus einer GAEB-Datei als neue LV-Datei in diesem Gewerk anlegen', aktion: () => void ausGaeb() },
+              ]}
+            />
+            {offenesLv && (
+              <MenueKnopf
+                text="LV"
+                title="Befehle für das ganze LV"
+                rechts
+                punkte={[
+                  { text: 'LV-Eigenschaften …', title: 'Bezeichnung, Termine, Vergabeart, Projekt, Auftraggeber, OZ-Maske, Umsatzsteuer', aktion: () => setDialog('kopf') },
+                  { text: 'Neu nummerieren …', title: 'Ordnungszahlen nach der OZ-Maske neu vergeben', aktion: () => void nummerieren() },
+                  { text: 'Drucken …', title: 'Leistungsbeschreibung mit Leistungsverzeichnis drucken bzw. als PDF', aktion: () => setDialog('druck') },
+                  { text: 'GAEB-Export …', title: 'Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)', aktion: () => setDialog('gaeb') },
+                ]}
+              />
+            )}
+            {offenesLv && (
+              <button className={`ava-speichern${lvGeaendert(offenesLv) ? ' primary' : ''}`} onClick={() => void lvSpeichernMitMeldung()} disabled={!lvGeaendert(offenesLv)} title="LV speichern (Strg+S)">
+                Speichern
+              </button>
+            )}
+          </div>
         )}
       </div>
+      <div className="ava-tabs" role="tablist" aria-label="Bereiche des Gewerks" onKeyDown={tabTasten}>
+        {TABS.map((x) => (
+          <button
+            key={x.id}
+            id={`ava-tab-${x.id}`}
+            role="tab"
+            aria-selected={x.id === t.id}
+            aria-controls="ava-gewerk-inhalt"
+            tabIndex={x.id === t.id ? 0 : -1}
+            className={x.id === t.id ? 'active' : ''}
+            title={x.title}
+            onClick={() => zeigeTab(x.id)}
+          >
+            <span className="ava-tab-lang">{x.text}</span>
+            <span className="ava-tab-kurz" aria-hidden="true">
+              {x.kurz}
+            </span>
+          </button>
+        ))}
+      </div>
       {fehler && <div className="warning">{fehler}</div>}
-      <div className="ava-gewerk-inhalt">
+      <div className="ava-gewerk-inhalt" id="ava-gewerk-inhalt" role="tabpanel" aria-labelledby={`ava-tab-${t.id}`}>
         {t.lv && !offenesLv ? (
           <div className="ava-leer-hinweis">
             {lvs.length ? 'LV wählen …' : 'In diesem Gewerk gibt es noch kein Leistungsverzeichnis.'}
@@ -144,6 +204,7 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
               <button className="primary" onClick={() => void neu()}>
                 Neues LV anlegen …
               </button>
+              <button onClick={() => void ausGaeb()}>LV aus GAEB-Datei …</button>
             </div>
           </div>
         ) : t.id === 'lv' ? (
@@ -158,6 +219,9 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
           <Dateiliste gewerk={gewerk} />
         )}
       </div>
+      {offenesLv && dialog === 'kopf' && <LvKopfDialog onClose={() => setDialog(null)} />}
+      {offenesLv && dialog === 'druck' && <LvDruck onClose={() => setDialog(null)} />}
+      {offenesLv && dialog === 'gaeb' && <GaebExportDialog onClose={() => setDialog(null)} />}
     </div>
   );
 }

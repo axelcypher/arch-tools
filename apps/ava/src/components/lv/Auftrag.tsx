@@ -5,7 +5,8 @@ import { auftragEintragen } from '../../abrechnung/kostenkontrolle';
 import { datumDE, euro } from '../../abrechnung/pruefung';
 import type { Nachtrag } from '../../lv/modell';
 import { heuteIso } from '../../lv/modell';
-import { rangfolge, rund2, summen } from '../../lv/rechnen';
+import { brutto, rangfolge, summen } from '../../lv/rechnen';
+import { ASLV_NICHT_GESPEICHERT } from '../../format/aslv';
 import { vollerPfad } from '../../dateien';
 import { gewerkOrdner, useAva } from '../../store';
 import { DatumEingabe, Feld, TextEingabe, ZahlEingabe } from '../eingaben';
@@ -21,7 +22,18 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
   const g = gewerkOrdner(projekt, gewerk);
   const [laeuft, setLaeuft] = useState(false);
   const aendern = useAva.getState().lvAendern;
-  const mwst = (lv?.kopf.mwst ?? 19) / 100;
+  const ust = lv?.kopf.mwst ?? 19;
+  const nurAslv = offen?.format === 'aslv';
+  const aslvHinweis = (was: string) => `${was}: wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.oalv) möglich`;
+
+  const oeffnen = (pfad: string) => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, pfad)).catch((e) => meldung('Datei ließ sich nicht öffnen', pfad, e));
+
+  /** Vergabe vermerken – bei einem unvollständigen Angebot erst nach Rückfrage */
+  const vergeben = async (id: number) => {
+    const r = rang.find((x) => x.id === id);
+    if (r?.unvollstaendig && !(await bestaetigen('Unvollständiges Angebot', `Im Angebot von „${lv!.bieter.find((b) => b.id === id)?.name}“ fehlen ${r.ohnePreis} Preis(e). Angebote ohne alle geforderten Preise sind in der Regel auszuschließen (§ 16a VOB/A) – trotzdem die Vergabe an diesen Bieter vermerken?`, 'Trotzdem vermerken'))) return;
+    aendern((l) => ({ ...l, auftrag: { bieterId: id, datum: l.auftrag?.datum ?? heuteIso() } }));
+  };
 
   const angabenSetzen = (patch: Partial<GewerkAngaben>) =>
     void useAva
@@ -60,10 +72,11 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
           <p className="muted">Kein LV geöffnet – Vergabe und Nachträge stehen im LV. Die Kostenkontrolle lässt sich unten trotzdem pflegen.</p>
         ) : (
           <>
+            <p className="muted small-text">Bieter wählen, an den vergeben wird. Den Auftrag erteilt der Bauherr; hier wird die Vergabe vermerkt.</p>
             <table className="ava-tabelle">
               <thead>
                 <tr>
-                  <th />
+                  <th>Vergabe</th>
                   <th>Rang</th>
                   <th>Bieter</th>
                   <th className="num">netto nach Nachlass</th>
@@ -76,16 +89,17 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                   return (
                     <tr key={r.id} className={lv.auftrag?.bieterId === r.id ? 'ava-auftrag' : ''}>
                       <td>
-                        <input
-                          type="radio"
-                          name="auftrag"
-                          checked={lv.auftrag?.bieterId === r.id}
-                          onChange={() => aendern((l) => ({ ...l, auftrag: { bieterId: r.id, datum: l.auftrag?.datum ?? heuteIso() } }))}
-                          title="Diesem Bieter den Auftrag erteilen"
-                        />
+                        <input type="radio" name="auftrag" checked={lv.auftrag?.bieterId === r.id} onChange={() => void vergeben(r.id)} title="Vergabe an diesen Bieter vermerken" aria-label={`Vergabe an ${b.name} vermerken`} />
                       </td>
                       <td>{r.rang}.</td>
-                      <td>{b.name}</td>
+                      <td>
+                        {b.name}
+                        {r.unvollstaendig && (
+                          <span className="ava-chip ava-chip-warn" title="Angebot ohne alle geforderten Preise – Ausschluss prüfen (§ 16a VOB/A)">
+                            unvollständig ({r.ohnePreis} fehlende Preise)
+                          </span>
+                        )}
+                      </td>
                       <td className="num">{euro(r.netto)}</td>
                       <td className="num">{euro(s?.bieter.get(r.id)?.brutto)}</td>
                     </tr>
@@ -105,17 +119,21 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                 <Feld label="Auftragnehmer">
                   <strong>{auftragBieter?.name}</strong>
                 </Feld>
-                <Feld label="Auftragsdatum">
-                  <DatumEingabe wert={lv.auftrag.datum} onChange={(datum) => aendern((l) => ({ ...l, auftrag: l.auftrag && { ...l.auftrag, datum } }))} />
+                <Feld label="Auftragsdatum" hinweis={nurAslv ? 'nur im eigenen Format (.oalv) speicherbar' : undefined}>
+                  {nurAslv ? (
+                    <input type="date" value={lv.auftrag.datum?.slice(0, 10) ?? ''} disabled title={aslvHinweis(ASLV_NICHT_GESPEICHERT.auftragDatum)} />
+                  ) : (
+                    <DatumEingabe wert={lv.auftrag.datum} onChange={(datum) => aendern((l) => ({ ...l, auftrag: l.auftrag && { ...l.auftrag, datum } }))} />
+                  )}
                 </Feld>
                 <Feld label="Auftragssumme netto" hinweis="leer = Angebot nach Nachlass">
                   <ZahlEingabe wert={lv.auftrag.summeNetto ?? null} stellen={2} onChange={(n) => aendern((l) => ({ ...l, auftrag: l.auftrag && { ...l.auftrag, summeNetto: n ?? undefined } }))} placeholder={euro(s?.bieter.get(lv.auftrag.bieterId)?.netto)} />
                 </Feld>
                 <Feld label="brutto">
-                  <strong>{euro(rund2(auftragNetto * (1 + mwst)))}</strong>
+                  <strong>{euro(brutto(auftragNetto, ust))}</strong>
                 </Feld>
                 <div className="button-row ava-feld-breit">
-                  <button disabled={laeuft} onClick={() => void inKostenkontrolle(`${auftragBieter?.name ?? ''} Auftrag`.trim(), lv.auftrag!.datum, rund2(auftragNetto * (1 + mwst)), auftragBieter?.name)} title="Auftrag als neue Zeile in den Kostenanschlag des Gewerkblatts eintragen">
+                  <button disabled={laeuft} onClick={() => void inKostenkontrolle(`${auftragBieter?.name ?? ''} Auftrag`.trim(), lv.auftrag!.datum, brutto(auftragNetto, ust), auftragBieter?.name)} title="Auftrag als neue Zeile in den Kostenanschlag des Gewerkblatts eintragen">
                     In die Kostenkontrolle übernehmen …
                   </button>
                   <button onClick={() => aendern((l) => ({ ...l, auftrag: null }))} title="Vergabe zurücknehmen">
@@ -131,6 +149,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
       {lv && (
         <section className="ava-karte">
           <h2>Nachträge</h2>
+          {nurAslv && <p className="warning-text small-text">{aslvHinweis(ASLV_NICHT_GESPEICHERT.nachtraege)}. Nachtragspositionen im LV (Feld „Nachtrag“) bleiben erhalten.</p>}
           <table className="ava-tabelle">
             <thead>
               <tr>
@@ -150,25 +169,25 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                   <tr key={n.nr}>
                     <td>{n.nr}</td>
                     <td>
-                      <TextEingabe wert={n.titel} onChange={(titel) => nachtragSetzen(n.nr, { titel })} />
+                      <TextEingabe label={`Bezeichnung Nachtrag ${n.nr}`} wert={n.titel} onChange={(titel) => nachtragSetzen(n.nr, { titel })} />
                     </td>
                     <td>
-                      <DatumEingabe wert={n.datum} onChange={(datum) => nachtragSetzen(n.nr, { datum })} />
+                      <DatumEingabe label={`Datum Nachtrag ${n.nr}`} wert={n.datum} onChange={(datum) => nachtragSetzen(n.nr, { datum })} />
                     </td>
                     <td>
-                      <select value={n.status} onChange={(e) => nachtragSetzen(n.nr, { status: e.target.value as Nachtrag['status'] })}>
+                      <select aria-label={`Status Nachtrag ${n.nr}`} value={n.status} onChange={(e) => nachtragSetzen(n.nr, { status: e.target.value as Nachtrag['status'] })}>
                         <option value="angeboten">angeboten</option>
                         <option value="beauftragt">beauftragt</option>
                         <option value="abgelehnt">abgelehnt</option>
                       </select>
                     </td>
                     <td className="num ava-zelle-eingabe">
-                      <ZahlEingabe wert={n.betrag ?? null} stellen={2} onChange={(betrag) => nachtragSetzen(n.nr, { betrag: betrag ?? undefined })} placeholder={s?.nachtraege.get(n.nr) ? euro(s.nachtraege.get(n.nr)) : 'aus Positionen'} />
+                      <ZahlEingabe label={`Betrag netto Nachtrag ${n.nr}`} wert={n.betrag ?? null} stellen={2} onChange={(betrag) => nachtragSetzen(n.nr, { betrag: betrag ?? undefined })} placeholder={s?.nachtraege.get(n.nr) ? euro(s.nachtraege.get(n.nr)) : 'aus Positionen'} />
                     </td>
-                    <td className="num">{euro(rund2(netto * (1 + mwst)))}</td>
+                    <td className="num">{euro(brutto(netto, ust))}</td>
                     <td>
                       {n.status === 'beauftragt' && (
-                        <button className="small" disabled={laeuft} onClick={() => void inKostenkontrolle(`Nachtrag ${n.nr} ${n.titel}`.trim(), n.datum, rund2(netto * (1 + mwst)))}>
+                        <button className="small" disabled={laeuft} onClick={() => void inKostenkontrolle(`Nachtrag ${n.nr} ${n.titel}`.trim(), n.datum, brutto(netto, ust))}>
                           In die Kostenkontrolle …
                         </button>
                       )}
@@ -187,6 +206,8 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
           </table>
           <div className="button-row">
             <button
+              disabled={nurAslv}
+              title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.nachtraege) : 'Neuen Nachtrag anlegen'}
               onClick={() => {
                 const nr = Math.max(0, ...lv.nachtraege.map((n) => n.nr), ...[...(s?.nachtraege.keys() ?? [])]) + 1;
                 aendern((l) => ({ ...l, nachtraege: [...l.nachtraege, { nr, titel: `Nachtrag ${nr}`, datum: heuteIso(), status: 'angeboten' }] }));
@@ -235,8 +256,8 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                 </tr>
               </tfoot>
             </table>
-            {lv?.auftrag && blatt.anschlag.summe !== null && Math.abs(blatt.anschlag.summe - rund2(auftragNetto * (1 + mwst))) > 0.02 && (
-              <div className="warning">Kostenanschlag in der Kostenkontrolle ({euro(blatt.anschlag.summe)}) weicht von der Auftragssumme im LV ({euro(rund2(auftragNetto * (1 + mwst)))}) ab – Nachträge oder Auftrag noch nicht übernommen?</div>
+            {lv?.auftrag && blatt.anschlag.summe !== null && Math.abs(blatt.anschlag.summe - brutto(auftragNetto, ust)) > 0.02 && (
+              <div className="warning">Kostenanschlag in der Kostenkontrolle ({euro(blatt.anschlag.summe)}) weicht von der Auftragssumme im LV ({euro(brutto(auftragNetto, ust))}) ab – Nachträge oder Auftrag noch nicht übernommen?</div>
             )}
           </>
         )}
@@ -266,15 +287,24 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
       {g && g.auftrag.length > 0 && (
         <section className="ava-karte">
           <h2>Dokumente im Auftragsordner</h2>
-          <ul className="list">
-            {g.auftrag
-              .filter((d) => !d.archiv)
-              .map((d) => (
-                <li key={d.pfad} onDoubleClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, d.pfad))} title="Doppelklick öffnet die Datei">
-                  {d.name}
-                </li>
-              ))}
-          </ul>
+          <table className="ava-tabelle ava-dateien">
+            <tbody>
+              {g.auftrag
+                .filter((d) => !d.archiv)
+                .map((d) => (
+                  <tr key={d.pfad} onDoubleClick={() => oeffnen(d.pfad)}>
+                    <td className="ava-datei-name" title={d.pfad}>
+                      {d.name}
+                    </td>
+                    <td className="ava-datei-aktion">
+                      <button className="small" onClick={() => oeffnen(d.pfad)} aria-label={`${d.name} öffnen`}>
+                        Öffnen
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         </section>
       )}
     </div>

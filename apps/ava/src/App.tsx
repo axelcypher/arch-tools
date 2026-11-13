@@ -40,6 +40,8 @@ export async function lvWeiter(): Promise<boolean> {
 }
 
 export async function lvSpeichernMitMeldung(): Promise<boolean> {
+  // laufende Eingabe (Langtext, Zahl- oder Textfeld) zuerst übernehmen – sonst fehlt sie in der Datei
+  eingabeAbschliessen();
   try {
     return await useAva.getState().lvSpeichern();
   } catch (e) {

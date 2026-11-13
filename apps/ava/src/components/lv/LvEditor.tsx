@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import type { Abschnitt, Hinweis, Lv, LvElement, Position } from '../../lv/modell';
-import { aendereElement, elementKopie, entferneElement, finde, fuegeEin, naechsteOz, neueId, neuNummerieren, ozFormat, zaehltInSumme } from '../../lv/modell';
+import { aendereElement, elementKopie, entferneElement, finde, fuegeEin, naechsteOz, neueId, ozFormat, zaehltInSumme } from '../../lv/modell';
 import { summen } from '../../lv/rechnen';
 import { euro } from '../../abrechnung/pruefung';
 import { useAva } from '../../store';
 import { zahlDE, ZahlEingabe } from '../eingaben';
+import { MenueKnopf } from '../Menue';
 import { ElementPanel } from './ElementPanel';
-import { LvKopfDialog } from './LvKopfDialog';
 import { Textbibliothek } from './Textbibliothek';
-import { LvDruck } from './LvDruck';
-import { GaebExportDialog } from './Gaeb';
 
 interface Zeile {
   el: LvElement;
@@ -46,15 +44,28 @@ export function LvEditor() {
   const lv = offen.lv;
   const zeilen = useMemo(() => zeilenVon(lv), [lv]);
   const s = useMemo(() => summen(lv), [lv]);
-  const [kopfOffen, setKopfOffen] = useState(false);
   const [bibliothek, setBibliothek] = useState<'einfuegen' | null>(null);
-  const [druck, setDruck] = useState(false);
-  const [gaeb, setGaeb] = useState(false);
   const [suche, setSuche] = useState('');
   const tabelle = useRef<HTMLDivElement>(null);
   const aendern = useAva.getState().lvAendern;
   const gewaehlt = auswahl ? finde(lv.elemente, auswahl) : null;
-  const sichtbar = suche.trim() ? zeilen.filter((z) => `${z.oz} ${z.el.kurztext}`.toLowerCase().includes(suche.toLowerCase())) : zeilen;
+  const sichtbar = useMemo(() => {
+    const q = suche.trim().toLowerCase();
+    if (!q) return zeilen;
+    // Treffer samt ihrer Abschnitte (damit der Zusammenhang sichtbar bleibt)
+    const nachId = new Map(zeilen.map((z) => [z.el.id, z]));
+    const zeigen = new Set<string>();
+    for (const z of zeilen) {
+      if (!`${z.oz} ${z.el.kurztext}`.toLowerCase().includes(q)) continue;
+      zeigen.add(z.el.id);
+      for (let e = z.eltern; e && !zeigen.has(e); e = nachId.get(e)?.eltern ?? null) zeigen.add(e);
+    }
+    return zeilen.filter((z) => zeigen.has(z.el.id));
+  }, [zeilen, suche]);
+  const sucheLeeren = () => {
+    setSuche('');
+    tabelle.current?.focus();
+  };
 
   useEffect(() => {
     if (!auswahl) return;
@@ -137,14 +148,14 @@ export function LvEditor() {
     if (!gewaehlt) return;
     const kopie = elementKopie(gewaehlt.el);
     if (kopie.art === 'position') kopie.oz = naechsteOz(gewaehlt.eltern, 'position', lv.ozMaske.position.stellen, lv.ozMaske.position.schritt);
+    else if (kopie.art === 'abschnitt') {
+      // ein kopierter Abschnitt bekommt die nächste freie OZ seiner Ebene (keine doppelte Ordnungszahl)
+      const ebene = lv.ozMaske.ebenen.filter((e) => e.aktiv)[gewaehlt.pfad.length];
+      kopie.oz = naechsteOz(gewaehlt.eltern, 'abschnitt', ebene?.stellen ?? 2, ebene?.schritt ?? 1);
+    }
     const eltern = gewaehlt.pfad[gewaehlt.pfad.length - 1];
     aendern((l) => ({ ...l, elemente: fuegeEin(l.elemente, kopie, eltern?.id ?? null, gewaehlt.index + 1) }));
     useAva.getState().setAuswahl(kopie.id);
-  };
-
-  const nummerieren = async () => {
-    if (!(await bestaetigen('Neu nummerieren?', `Alle Abschnitte und Positionen bekommen fortlaufende Ordnungszahlen nach der OZ-Maske (Positionen in Schritten von ${lv.ozMaske.position.schritt}). Erst nach der Vergabe nicht mehr empfehlenswert.`, 'Neu nummerieren'))) return;
-    aendern((l) => ({ ...l, elemente: neuNummerieren(l.elemente, l.ozMaske) }));
   };
 
   const tasten = (e: React.KeyboardEvent) => {
@@ -163,6 +174,10 @@ export function LvEditor() {
     } else if (e.key === 'Insert') {
       e.preventDefault();
       neu('position');
+    } else if (e.key === 'Enter' && auswahl) {
+      // zum Bearbeiten ins Seitenpanel (Esc dort führt zurück)
+      e.preventDefault();
+      document.querySelector<HTMLElement>('.ava-panel [data-feld="kurztext"]')?.focus();
     }
   };
 
@@ -173,68 +188,74 @@ export function LvEditor() {
     <div className="ava-lv">
       <div className="toolbar ava-lv-leiste">
         <div className="tb-group">
-          <button onClick={() => neu('abschnitt')} title="Neuer Abschnitt (Los, Titel) – hinter dem gewählten bzw. am Ende">
-            + Abschnitt
-          </button>
           <button onClick={() => neu('position')} title="Neue Position – im gewählten Abschnitt bzw. hinter der gewählten Position (Einfg)">
             + Position
           </button>
-          <button onClick={() => neu('hinweis')} title="Hinweistext im Abschnitt">
-            + Hinweis
+          <button onClick={() => neu('abschnitt')} title="Neuer Abschnitt (Los, Titel) – hinter dem gewählten bzw. am Ende">
+            + Abschnitt
           </button>
-          <button onClick={() => neu('vorbemerkung')} title="Vorbemerkung vor der Gliederung">
-            + Vorbemerkung
-          </button>
-          <button onClick={() => setBibliothek('einfuegen')} title="Position aus den Vorlagetexten des Büros einfügen">
-            Aus Vorlage …
-          </button>
+          <MenueKnopf
+            text="Weitere"
+            title="Hinweis, Vorbemerkung oder Position aus den Vorlagetexten einfügen"
+            punkte={[
+              { text: '+ Hinweis', title: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
+              { text: '+ Vorbemerkung', title: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
+              { text: 'Aus Vorlage …', title: 'Position aus den Vorlagetexten des Büros einfügen', aktion: () => setBibliothek('einfuegen') },
+            ]}
+          />
         </div>
         <div className="tb-group">
           <button onClick={duplizieren} disabled={!gewaehlt} title="Duplizieren (Strg+D)">
             Duplizieren
           </button>
-          <button onClick={() => verschieben(-1)} disabled={!gewaehlt || gewaehlt.index === 0} title="Nach oben">
+          <button className="icon" onClick={() => verschieben(-1)} disabled={!gewaehlt || gewaehlt.index === 0} title="Nach oben" aria-label="Nach oben">
             ↑
           </button>
-          <button onClick={() => verschieben(1)} disabled={!gewaehlt || gewaehlt.index >= gewaehlt.eltern.length - 1} title="Nach unten">
+          <button className="icon" onClick={() => verschieben(1)} disabled={!gewaehlt || gewaehlt.index >= gewaehlt.eltern.length - 1} title="Nach unten" aria-label="Nach unten">
             ↓
           </button>
-          <button onClick={() => einruecken(false)} disabled={!gewaehlt?.pfad.length} title="Aus dem Abschnitt heraus (eine Ebene höher)">
-            ←
+          <button className="icon" onClick={() => einruecken(false)} disabled={!gewaehlt?.pfad.length} title="Ausrücken: aus dem Abschnitt heraus (eine Ebene höher)" aria-label="Ausrücken, eine Ebene höher">
+            ⇤
           </button>
-          <button onClick={() => einruecken(true)} disabled={!gewaehlt || !gewaehlt.eltern.slice(0, gewaehlt.index).some((e) => e.art === 'abschnitt')} title="In den Abschnitt davor (eine Ebene tiefer)">
-            →
+          <button
+            className="icon"
+            onClick={() => einruecken(true)}
+            disabled={!gewaehlt || !gewaehlt.eltern.slice(0, gewaehlt.index).some((e) => e.art === 'abschnitt')}
+            title="Einrücken: in den Abschnitt davor (eine Ebene tiefer)"
+            aria-label="Einrücken, in den Abschnitt davor"
+          >
+            ⇥
           </button>
           <button className="danger" onClick={() => void loeschen()} disabled={!gewaehlt} title="Entfernen (Entf)">
             Entfernen
           </button>
         </div>
         <div className="tb-group">
-          <button onClick={() => void nummerieren()} title="Ordnungszahlen neu vergeben">
-            Neu nummerieren
-          </button>
-          <button onClick={() => setKopfOffen(true)} title="Bezeichnung, Termine, Vergabeart, Projekt, Auftraggeber, OZ-Maske, Umsatzsteuer">
-            LV-Eigenschaften …
-          </button>
-          <button onClick={() => setDruck(true)} title="LV drucken bzw. als PDF (Leistungsbeschreibung mit Leistungsverzeichnis)">
-            Drucken …
-          </button>
-          <button onClick={() => setGaeb(true)} title="Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)">
-            GAEB-Export …
-          </button>
-        </div>
-        <div className="tb-group">
-          <button onClick={() => useAva.getState().lvRueckgaengig()} disabled={!offen.verlauf.length} title="Rückgängig (Strg+Z)">
+          <button className="icon" onClick={() => useAva.getState().lvRueckgaengig()} disabled={!offen.verlauf.length} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
             ↶
           </button>
-          <button onClick={() => useAva.getState().lvWiederholen()} disabled={!offen.zukunft.length} title="Wiederholen (Strg+Y)">
+          <button className="icon" onClick={() => useAva.getState().lvWiederholen()} disabled={!offen.zukunft.length} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
             ↷
           </button>
         </div>
-        <input className="ava-suche" placeholder="Suchen (OZ, Kurztext) …" value={suche} onChange={(e) => setSuche(e.target.value)} />
+        <input
+          className="ava-suche"
+          type="search"
+          placeholder="Suchen (OZ, Kurztext) …"
+          aria-label="LV durchsuchen"
+          value={suche}
+          onChange={(e) => setSuche(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && suche) {
+              e.preventDefault();
+              e.stopPropagation();
+              sucheLeeren();
+            }
+          }}
+        />
       </div>
       <div className="ava-lv-koerper">
-        <div className="ava-lv-tabelle" ref={tabelle} tabIndex={0} onKeyDown={tasten}>
+        <div className="ava-lv-tabelle" ref={tabelle} tabIndex={0} onKeyDown={tasten} aria-label="Leistungsverzeichnis – ↑/↓ wählen, Enter bearbeiten, Einfg neue Position, Entf entfernen">
           <table className="ava-tabelle ava-lv-zeilen">
             <thead>
               <tr>
@@ -264,11 +285,12 @@ export function LvEditor() {
                         {el.nachtrag ? <span className="ava-chip">NT {el.nachtrag}</span> : null}
                       </td>
                       <td className="num ava-zelle-eingabe">
-                        <ZahlEingabe wert={el.menge} onChange={(n) => aendern((l) => ({ ...l, elemente: aendereElement(l.elemente, el.id, (p) => ({ ...(p as Position), menge: n })) }))} />
+                        <ZahlEingabe label={`Menge ${z.oz}`} wert={el.menge} onChange={(n) => aendern((l) => ({ ...l, elemente: aendereElement(l.elemente, el.id, (p) => ({ ...(p as Position), menge: n })) }))} />
                       </td>
                       <td>{el.einheit}</td>
                       <td className="num ava-zelle-eingabe">
                         <ZahlEingabe
+                          label={`EP Kostenansatz ${z.oz}`}
                           wert={el.preise['0']?.ep ?? null}
                           stellen={2}
                           onChange={(n) => aendern((l) => ({ ...l, elemente: aendereElement(l.elemente, el.id, (p) => ({ ...(p as Position), preise: { ...(p as Position).preise, '0': { ...(p as Position).preise['0'], ep: n } } })) }))}
@@ -302,6 +324,16 @@ export function LvEditor() {
                   </tr>
                 );
               })}
+              {zeilen.length > 0 && !sichtbar.length && (
+                <tr>
+                  <td colSpan={8} className="muted ava-leer-zelle">
+                    Keine Treffer für „{suche.trim()}“.{' '}
+                    <button className="small" onClick={sucheLeeren}>
+                      Suche leeren
+                    </button>
+                  </td>
+                </tr>
+              )}
               {!zeilen.length && (
                 <tr>
                   <td colSpan={8} className="muted ava-leer-zelle">
@@ -312,7 +344,7 @@ export function LvEditor() {
             </tbody>
           </table>
         </div>
-        <ElementPanel />
+        <ElementPanel onZurueck={() => tabelle.current?.focus()} />
       </div>
       <div className="ava-lv-fuss">
         <span>{positionsZahl} Positionen</span>
@@ -323,7 +355,6 @@ export function LvEditor() {
         <strong>brutto: {euro(ka?.brutto ?? 0)}</strong>
         {(ka?.ohnePreis ?? 0) > 0 && <span className="muted">{ka!.ohnePreis} Position(en) ohne Preis im Kostenansatz</span>}
       </div>
-      {kopfOffen && <LvKopfDialog onClose={() => setKopfOffen(false)} />}
       {bibliothek && (
         <Textbibliothek
           onClose={() => setBibliothek(null)}
@@ -332,8 +363,6 @@ export function LvEditor() {
           }}
         />
       )}
-      {druck && <LvDruck onClose={() => setDruck(false)} />}
-      {gaeb && <GaebExportDialog onClose={() => setGaeb(false)} />}
     </div>
   );
 }

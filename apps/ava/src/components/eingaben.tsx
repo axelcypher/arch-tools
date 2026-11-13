@@ -106,6 +106,7 @@ export function TextEingabe({
   liste,
   autoFocus,
   label,
+  feld,
 }: {
   wert: string | undefined;
   onChange: (s: string) => void;
@@ -118,6 +119,8 @@ export function TextEingabe({
   autoFocus?: boolean;
   /** Beschriftung für Screenreader (aria-label) */
   label?: string;
+  /** Kennung zum Ansprechen per Tastatur (data-feld), z. B. „kurztext“ */
+  feld?: string;
 }) {
   const [text, setText] = useState(wert ?? '');
   const fokus = useRef(false);
@@ -131,6 +134,7 @@ export function TextEingabe({
     title,
     autoFocus,
     'aria-label': label,
+    'data-feld': feld,
     onFocus: () => {
       fokus.current = true;
     },

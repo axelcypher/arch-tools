@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { heuteIso } from '../../lv/modell';
 import { rangfolge, summen } from '../../lv/rechnen';
 import { datumDE, euro } from '../../abrechnung/pruefung';
 import { useAva } from '../../store';
@@ -22,7 +23,7 @@ export function PreisspiegelDruck({ onClose }: { onClose: () => void }) {
           </div>
           <h1>Preisspiegel {lv.kopf.bezeichnung}</h1>
         </div>
-        <div className="muted">Stand {datumDE(new Date().toISOString().slice(0, 10))}</div>
+        <div className="muted">Stand {datumDE(heuteIso())}</div>
       </div>
       <Preisspiegel druck />
       <h3>Rangfolge</h3>
@@ -40,7 +41,10 @@ export function PreisspiegelDruck({ onClose }: { onClose: () => void }) {
           {rang.map((r) => (
             <tr key={r.id}>
               <td>{r.rang}.</td>
-              <td>{lv.bieter.find((b) => b.id === r.id)?.name}</td>
+              <td>
+                {lv.bieter.find((b) => b.id === r.id)?.name}
+                {r.unvollstaendig ? ` – unvollständig (${r.ohnePreis} fehlende Preise)` : ''}
+              </td>
               <td className="num">{euro(r.netto)}</td>
               <td className="num">{euro(s.bieter.get(r.id)?.brutto)}</td>
               <td className="num">{r.rang > 1 ? `+${zahlDE(r.abstand, 1)} %` : ''}</td>
@@ -48,7 +52,10 @@ export function PreisspiegelDruck({ onClose }: { onClose: () => void }) {
           ))}
         </tbody>
       </table>
-      {s.bieter.get(0) && <p className="muted small-text">Kostenansatz: {euro(s.bieter.get(0)!.brutto)} brutto</p>}
+      {rang.some((r) => r.unvollstaendig) && (
+        <p className="small-text">Unvollständige Angebote (fehlende Preise) stehen hinter den vollständigen; ihre Summe ist nicht vergleichbar – Ausschluss prüfen (§ 16a VOB/A).</p>
+      )}
+      {s.bieter.get(0) && <p className="muted small-text">Kostenansatz (bepreistes LV): {euro(s.bieter.get(0)!.brutto)} brutto</p>}
     </Druck>
   );
 }
