@@ -912,7 +912,7 @@ function WoflHinweise({ shape }: { shape: RoomShape }) {
   return (
     <>
       {out.map((t) => (
-        <p key={t} className="hinweis small-text">
+        <p key={t} className="meldung">
           {t}
         </p>
       ))}
@@ -1046,7 +1046,7 @@ function AnHoehenlinienTeilen({ shape, upd }: { shape: RoomShape; upd: (fn: (s: 
   const gleich = shape.wofl.kategorie === 'hoehen' && shape.wofl.anteile && Math.abs(shape.wofl.anteile.h2 - a.h2) < 1e-6 && Math.abs(shape.wofl.anteile.h12 - a.h12) < 1e-6;
   if (gleich) return <p className="muted small-text">Teilflächen aus den Höhenlinien der Dachform abgeleitet (Planmaße).</p>;
   return (
-    <p className="hinweis small-text">
+    <p className="meldung">
       Unter der Dachform: ≥ 2 m {fmt2(a.h2 * f)} m², 1–2 m {fmt2(a.h12 * f)} m², &lt; 1 m {fmt2(a.h01 * f)} m².{' '}
       <button className="small" onClick={() => upd((s) => (s.kind === 'room' ? { ...s, wofl: { ...s.wofl, kategorie: 'hoehen', faktor: undefined, anteile: a } } : s))}>
         Raum an Höhenlinien teilen

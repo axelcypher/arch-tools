@@ -198,7 +198,7 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
   laden …“ und „Kalibrieren“ stehen auch in der Werkzeugleiste. Kantenfang rastet bei aktivem Rasterfang entlang der
   Kante auf das Raster; beim Kalibrieren fängt das Raster nicht. Erkannte BGF-Umrisse tragen „prüfen“, bis ein
   Eckpunkt bearbeitet wurde
-- Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Punkt löschen, Koordinaten-Tabelle
+- Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Menü (am Punkt: Punkt löschen; auf einer Fläche: kopieren, duplizieren, einfügen, löschen; auch per Tastatur), Koordinaten-Tabelle
 - **Abzugsflächen**: am BGF-Umriss z. B. Innenhof, Luftraum über einer Galerie oder Deckenöffnung über 1,0 m², im
   Raum z. B. Schornstein, Pfeiler, Schacht im Raum. Wird ein Raum zur Abzugsfläche, erbt er Anrechnung und Wohnung
   des Raums, in dem er liegt (Anrechnung „keine“)
