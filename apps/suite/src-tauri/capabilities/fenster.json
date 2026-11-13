@@ -1,0 +1,21 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "fenster",
+  "description": "Rechte der herausgelösten App-Fenster: wie eine eigenständige App, aber ohne Updates, Neustart und neue Fenster (das macht das Hauptfenster)",
+  "windows": [
+    "app-*"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "log:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
+    "core:window:allow-is-maximized",
+    "opener:default"
+  ]
+}

@@ -52,6 +52,8 @@ export function App() {
 
   // Ansicht statt Einstieg: nach „Neues Projekt“ und nach jedem Öffnen – auch bei einem Projekt ohne Gebäude und Flächen
   const [neuBegonnen, setNeuBegonnen] = useState(false);
+  // Einstiegskarte statt Ansicht: noch nichts geöffnet oder begonnen (Speichern ruht dann)
+  const einstieg = !hatGebaeude && !hatFlaechen && !neuBegonnen;
   const onNeu = async () => {
     if (!(await weiterNachRueckfrage())) return;
     useGrz.getState().load(createProject());
@@ -116,7 +118,7 @@ export function App() {
       const k = e.key.toLowerCase();
       if (k === 's') {
         e.preventDefault();
-        void onSave(e.shiftKey);
+        if (!einstieg || useGrz.getState().dirty) void onSave(e.shiftKey);
       } else if (k === 'o') {
         e.preventDefault();
         void onOpen();
@@ -156,7 +158,11 @@ export function App() {
           <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
             Öffnen …
           </button>
-          <button onClick={() => void onSave()} title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
+          <button
+            onClick={() => void onSave()}
+            disabled={einstieg && !dirty}
+            title={einstieg && !dirty ? 'Erst ein Projekt öffnen oder neu beginnen' : isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}
+          >
             Speichern{dirty ? ' •' : ''}
           </button>
           {isTauri() && (
@@ -251,7 +257,7 @@ export function App() {
             Das Projekt enthält noch keinen Gebäudeumriss. Gebäude in {appMitWas('flaechenrechner')} zeichnen oder ein IFC-Modell öffnen; Lageplan und Festsetzungen lassen sich schon pflegen.
           </div>
         )}
-        {!hatGebaeude && !hatFlaechen && !neuBegonnen ? (
+        {einstieg ? (
           <ProjektEinstieg
             titel={`${APP_NAMEN.grz.name} – ${APP_NAMEN.grz.was}`}
             text={`Öffnen Sie ein Projekt aus ${appMitWas('flaechenrechner')} oder ein IFC-Modell. Gebäude und Geschosse kommen von dort, den Lageplan zeichnen Sie hier. Gespeichert wird in dieselbe Projektdatei.`}

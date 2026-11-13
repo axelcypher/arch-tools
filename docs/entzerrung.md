@@ -97,6 +97,7 @@ das Foto. Öffnen und Speichern über den Dateidialog bleiben wie bisher.
 | Ziehen auf freier Fläche, mittlere Maustaste oder `Leertaste`+Ziehen | Verschieben |
 | Punkt ziehen | Punkt verschieben (Ecken, Passpunkte, Kanten, Hilfslinien, Messpunkte) |
 | `Enter`, Doppelklick, Rechtsklick | Linienzug, Fläche bzw. Hilfslinie abschließen |
+| Rechtsklick ohne laufendes Zeichnen | Kontextmenü zum angeklickten Element: Alles zeigen, Foto/Entzerrt, Rückgängig, Wiederholen und zuletzt „… löschen“ (z. B. „Strecke 1 löschen“) |
 | `Rücktaste` | letzten Punkt beim Zeichnen zurücknehmen bzw. Auswahl löschen |
 | `Entf` | Auswahl löschen (bei Messungen mit gewähltem Punkt nur diesen Punkt) |
 | `Esc` | Zeichnen abbrechen, Auswahl aufheben, zurück zur Auswahl |
@@ -110,7 +111,7 @@ das Foto. Öffnen und Speichern über den Dateidialog bleiben wie bisher.
 Die Kürzel ohne Strg wirken nur, wenn kein Dialog offen ist und der Fokus nicht auf einem Knopf oder Feld liegt;
 `Tab`, Leertaste und Enter bleiben so der Bedienung mit der Tastatur erhalten. Fotos und Ebenen in der linken
 Leiste sind mit `Tab` erreichbar (Enter wählt, `Entf` entfernt). Beide Seitenleisten lassen sich in der Breite
-ziehen (Doppelklick: Vorgabe), die linke mit „◂ Fotos“ ausblenden.
+ziehen (Doppelklick: Vorgabe), die linke mit „Fotos“ (Pfeil) in der Werkzeugleiste ausblenden.
 
 Beim Schließen fragt die App nach, solange ungespeicherte Änderungen bestehen. „Öffnen …“ merkt sich auf dem
 Desktop den Pfad: „Speichern“ schreibt danach ohne Rückfrage in dieselbe Datei. Ändert man während des

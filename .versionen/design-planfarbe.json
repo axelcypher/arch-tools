@@ -1,0 +1,30 @@
+{
+  "flaechenrechner": {
+    "stufe": "minor",
+    "notiz": "Planfarben bleiben auf der dunklen Zeichenfläche im Farbton der Farbmarke (Hilfsfunktion planFuellungDunkel im gemeinsamen Kern)."
+  },
+  "grz": {
+    "stufe": "minor",
+    "notiz": "Planfarben bleiben auf der dunklen Zeichenfläche im Farbton der Farbmarke (Hilfsfunktion planFuellungDunkel im gemeinsamen Kern)."
+  },
+  "kosten": {
+    "stufe": "minor",
+    "notiz": "Planfarben bleiben auf der dunklen Zeichenfläche im Farbton der Farbmarke (Hilfsfunktion planFuellungDunkel im gemeinsamen Kern)."
+  },
+  "ordner": {
+    "stufe": "minor",
+    "notiz": "Planfarben bleiben auf der dunklen Zeichenfläche im Farbton der Farbmarke (Hilfsfunktion planFuellungDunkel im gemeinsamen Kern)."
+  },
+  "entzerrung": {
+    "stufe": "minor",
+    "notiz": "Planfarben bleiben auf der dunklen Zeichenfläche im Farbton der Farbmarke (Hilfsfunktion planFuellungDunkel im gemeinsamen Kern)."
+  },
+  "formulare": {
+    "stufe": "minor",
+    "notiz": "Planfarben bleiben auf der dunklen Zeichenfläche im Farbton der Farbmarke (Hilfsfunktion planFuellungDunkel im gemeinsamen Kern)."
+  },
+  "ava": {
+    "stufe": "minor",
+    "notiz": "Planfarben bleiben auf der dunklen Zeichenfläche im Farbton der Farbmarke (Hilfsfunktion planFuellungDunkel im gemeinsamen Kern)."
+  }
+}
