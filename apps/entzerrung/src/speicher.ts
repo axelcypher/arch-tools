@@ -40,7 +40,11 @@ function merken<T>(arbeit: Promise<T>): Promise<T> {
   return arbeit;
 }
 
-/** seit dem letzten gelungenen Stand ist ein Schreiben gescheitert (ein gelungener Stand trägt fehlende Fotos nach) */
+/**
+ * seit dem letzten gelungenen Stand ist ein Schreiben gescheitert. Ein gelungener Stand trägt fehlende Fotos seines
+ * Dokuments nach; ein Foto, das erst nach seinem Start dazukam, deckt der Stand ab, den das Hinzufügen selbst auslöst
+ * (es ändert das Dokument, also folgt ein neuer Stand).
+ */
 let gescheitert = false;
 export const schreibenGescheitert = () => gescheitert;
 

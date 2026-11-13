@@ -247,15 +247,18 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   /** das zuletzt angestoßene Schreiben samt Startschutz-Vermerk */
   let zuletzt: Promise<void> = Promise.resolve();
+  /** läuft das zuletzt angestoßene Schreiben noch? (ein älteres, später fertiges ändert das nicht) */
   let standLaeuft = false;
   const schreiben = () => {
     timer = undefined;
     const a = useEntz.getState();
     standLaeuft = true;
-    zuletzt = standSchreiben({ doc: a.doc, dateiname: a.dateiname, dateiStand: a.dateiStand, dirty: a.dirty }, a.bilder, () => verwendeteFotos(useEntz.getState()))
-      .then(() => zwischenstandErsetzt(APP))
+    // den Startschutz-Vermerk erst nach gelungenem Stand ersetzen – sonst lädt der nächste Start den ausgesetzten alten
+    const p: Promise<void> = standSchreiben({ doc: a.doc, dateiname: a.dateiname, dateiStand: a.dateiStand, dirty: a.dirty }, a.bilder, () => verwendeteFotos(useEntz.getState()))
+      .then((ok) => void (ok && zwischenstandErsetzt(APP)))
       .catch((e) => log.warn('Startschutz-Vermerk fehlgeschlagen', e))
-      .finally(() => (standLaeuft = false));
+      .finally(() => zuletzt === p && (standLaeuft = false));
+    zuletzt = p;
   };
   // beim Schließen den ausstehenden Stand sofort schreiben
   const sofort = () => timer !== undefined && (clearTimeout(timer), schreiben());
@@ -264,18 +267,18 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
   // vor dem Schließen, Andocken, Herauslösen und Update-Neustart in Arkly: erst ein laufendes Speichern der .entz abwarten
   // (es ändert danach noch den Stand), dann den ausstehenden – oder zuletzt gescheiterten – Zwischenstand sofort schreiben
   // und alles laufende Schreiben abwarten. Ein zweiter Aufruf wartet nur, statt erneut zu schreiben; nach einem Fehler
-  // („Erneut versuchen“) schreibt er noch einmal. false, wenn ein Schreiben gescheitert ist (der Grund steht im Protokoll):
-  // dann fragt Arkly nach, statt das Fenster zu schließen.
+  // („Erneut versuchen“) schreibt er den Zwischenstand noch einmal. false (der Grund steht im Protokoll), solange ein
+  // Schreiben gescheitert ist – beim Zwischenstand bis zum nächsten gelungenen, bei der .entz, bis wieder gespeichert ist
+  // (die .entz wird nicht von selbst erneut gespeichert, das braucht womöglich einen Dialog). Dann fragt Arkly nach.
   const vorbereiten = async (): Promise<boolean> => {
-    const lief = speichertGerade;
-    await Promise.allSettled([lief]);
+    await Promise.allSettled([speichertGerade]);
     if (timer !== undefined || (schreibenGescheitert() && !standLaeuft)) {
       clearTimeout(timer);
       schreiben();
     }
     await Promise.allSettled([zuletzt]);
     const ok = await schreibenAbgeschlossen();
-    return ok && !(lief && speichernGescheitert);
+    return ok && !(speichernGescheitert && useEntz.getState().dirty);
   };
   const abmelden = vorDemSchliessen(vorbereiten);
   const ende = useEntz.subscribe((s, vorher) => {

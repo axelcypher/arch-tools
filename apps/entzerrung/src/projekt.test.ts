@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEntz } from './store';
 
 /**
@@ -417,57 +417,92 @@ describe('Zwischenspeicher', () => {
       g.window = vorher;
     }
   });
+});
 
-  it('vor dem Schließen: scheitert ein Schreiben (Zwischenstand, Foto, .entz), meldet die Funktion false; erneut versucht und gelungen: true', async () => {
-    const g = globalThis as { window?: unknown };
-    const vorher = g.window;
+describe('vor dem Schließen: gescheitertes Schreiben meldet false („nicht gespeichert“)', () => {
+  const g = globalThis as { window?: unknown };
+  let vorher: unknown;
+  let ende: () => void = () => undefined;
+  const vorbereiten = async () => datei.vorbereitung!();
+  const standFotos = () => (idb.stand.get('stand') as { doc: { fotos: { id: string }[] } }).doc.fotos.map((f) => f.id);
+
+  beforeEach(async () => {
+    vorher = g.window;
     g.window = new EventTarget();
-    try {
-      idb.stand.clear();
-      const ende = await zwischenspeicherStarten();
-      const vorbereiten = datei.vorbereitung!;
-      // Zwischenstand scheitert: false (statt still zu schließen)
-      useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
-      datei.idbFehler = true;
-      expect(await vorbereiten()).toBe(false);
-      expect(idb.stand.has('stand')).toBe(false);
-      // über core: Arkly bekommt „nicht gespeichert“ und fragt nach
-      expect(await schliessenVorbereiten()).toBe('fehler');
-      // „Erneut versuchen“: schreibt noch einmal, jetzt gelingt es
-      datei.idbFehler = false;
-      expect(await vorbereiten()).toBe(true);
-      expect((idb.stand.get('stand') as { doc: { fotos: { id: string }[] } }).doc.fotos.map((f) => f.id)).toEqual(['f1']);
-      // Gegenprobe: nichts mehr ausstehend und nichts gescheitert – true, ohne zu schreiben
-      const geschrieben = vi.spyOn(idb.stand, 'set');
-      expect(await vorbereiten()).toBe(true);
-      expect(geschrieben).not.toHaveBeenCalled();
-      geschrieben.mockRestore();
-      // ein Foto scheitert: false; danach trägt der neu geschriebene Stand die Bilddaten nach
-      idb.fotos.delete('f1');
-      datei.idbFehler = true;
-      expect(await fotoSchreiben('f1', bytes(5, 6))).toBe(false);
-      expect(await vorbereiten()).toBe(false);
-      datei.idbFehler = false;
-      expect(await vorbereiten()).toBe(true);
-      expect(idb.fotos.get('f1')).toEqual(bytes(5, 6));
-      // .entz scheitert während des Wartens: false; Gegenprobe abgebrochenes Speichern (kein Fehler): true
-      let scheitern: (e: Error) => void = () => undefined;
-      datei.speichern = (o) => {
-        o.build();
-        return new Promise((_, nein) => (scheitern = nein));
-      };
-      const lauf = speichern();
-      const ergebnis = vorbereiten();
-      scheitern(new Error('Datenträger voll'));
-      expect(await lauf).toBe(false);
-      expect(await ergebnis).toBe(false);
-      datei.speichern = async (o) => (o.build(), null);
-      const abgebrochen = speichern();
-      expect(await vorbereiten()).toBe(true);
-      expect(await abgebrochen).toBe(false);
-      ende();
-    } finally {
-      g.window = vorher;
-    }
+    idb.stand.clear();
+    idb.fotos.clear();
+    ende = await zwischenspeicherStarten();
+  });
+  afterEach(() => {
+    ende();
+    datei.idbFehler = false;
+    g.window = vorher;
+  });
+
+  it('Zwischenstand scheitert: false, auch über core („fehler“); „Erneut versuchen“ schreibt neu und meldet dann true', async () => {
+    useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
+    datei.idbFehler = true;
+    expect(await vorbereiten()).toBe(false);
+    expect(idb.stand.has('stand')).toBe(false);
+    expect(await schliessenVorbereiten()).toBe('fehler');
+    datei.idbFehler = false;
+    expect(await vorbereiten()).toBe(true);
+    expect(standFotos()).toEqual(['f1']);
+    // Gegenprobe: nichts ausstehend und nichts gescheitert – true, ohne zu schreiben
+    const geschrieben = vi.spyOn(idb.stand, 'set');
+    expect(await vorbereiten()).toBe(true);
+    expect(geschrieben).not.toHaveBeenCalled();
+    geschrieben.mockRestore();
+  });
+
+  it('nach einem Fehler: zwei Aufrufe zugleich schreiben genau einmal und melden dasselbe', async () => {
+    useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
+    datei.idbFehler = true;
+    expect(await vorbereiten()).toBe(false);
+    datei.idbFehler = false;
+    const geschrieben = vi.spyOn(idb.stand, 'set');
+    expect(await Promise.all([vorbereiten(), vorbereiten()])).toEqual([true, true]);
+    expect(geschrieben).toHaveBeenCalledTimes(1);
+    geschrieben.mockRestore();
+  });
+
+  it('Foto scheitert: false; der neu geschriebene Stand trägt die Bilddaten nach', async () => {
+    useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
+    expect(await vorbereiten()).toBe(true);
+    idb.fotos.delete('f1');
+    datei.idbFehler = true;
+    expect(await fotoSchreiben('f1', bytes(5, 6))).toBe(false);
+    expect(await vorbereiten()).toBe(false);
+    datei.idbFehler = false;
+    expect(await vorbereiten()).toBe(true);
+    expect(idb.fotos.get('f1')).toEqual(bytes(5, 6));
+  });
+
+  it('.entz scheitert: false – auch beim erneuten Aufruf, bis wieder gespeichert ist', async () => {
+    useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
+    let scheitern: (e: Error) => void = () => undefined;
+    datei.speichern = (o) => {
+      o.build();
+      return new Promise((_, nein) => (scheitern = nein));
+    };
+    const lauf = speichern();
+    const ergebnis = vorbereiten();
+    scheitern(new Error('Datenträger voll'));
+    expect(await lauf).toBe(false);
+    expect(await ergebnis).toBe(false);
+    // „Erneut versuchen“: die .entz ist weiter nicht gespeichert
+    expect(await vorbereiten()).toBe(false);
+    // wieder gespeichert: true
+    datei.speichern = async (o) => (o.build(), '/Projekt/Süd.entz');
+    expect(await speichern()).toBe(true);
+    expect(await vorbereiten()).toBe(true);
+  });
+
+  it('Gegenprobe: abgebrochenes Speichern der .entz ist kein Fehler', async () => {
+    useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
+    datei.speichern = async (o) => (o.build(), null);
+    const abgebrochen = speichern();
+    expect(await vorbereiten()).toBe(true);
+    expect(await abgebrochen).toBe(false);
   });
 });
