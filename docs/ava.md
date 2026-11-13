@@ -60,7 +60,8 @@ Kopf mit Kennung, Bezeichnung, Auftragnehmer und Ordner. Auf den Tabs Leistungsv
 rechts der **LV-Kopf**: die LV-Dateien des Gewerks (aktuelle zuerst, Archiv gekennzeichnet; Format im Tooltip),
 „Neues LV ▾“ (leer oder aus einer GAEB-Datei X81–X86), „LV ▾“ mit den Befehlen für das ganze LV
 (LV-Eigenschaften, Neu nummerieren, Drucken, GAEB-Export) und „Speichern“ (Strg+S; übernimmt auch die gerade
-laufende Eingabe). Beim Betreten öffnet sich das aktuellste LV. Wer mit ungespeicherten Änderungen das Gewerk
+laufende Eingabe; bei ungespeicherten Änderungen mit Punkt am Knopf und im Namen „Speichern – ungespeicherte
+Änderungen“). Beim Betreten öffnet sich das aktuellste LV. Wer mit ungespeicherten Änderungen das Gewerk
 oder Projekt wechselt, wird gefragt. Die Tabs lassen sich mit ←/→ wechseln; bei schmalem Fenster tragen sie
 kurze Namen (LV, Angebote, Auftrag, Rechnungen, Dateien).
 

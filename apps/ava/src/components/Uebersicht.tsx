@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { meldung } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import { alleGewerke, gewerkAbrechnung } from '../abrechnung/aggregat';
 import { gewerkZweistellig } from '../abrechnung/gewerk';
 import { euro } from '../abrechnung/pruefung';
@@ -159,7 +160,9 @@ export function Uebersicht() {
                     </div>
                   )}
                 </td>
-                <td>{hinweise ? <span className="ava-warn-marke" title={`${hinweise} Hinweis(e)`}>⚠ {hinweise}</span> : null}</td>
+                <td>{hinweise ? <span className="ava-warn-marke" title={`${hinweise} Hinweis(e)`} aria-label={`${hinweise} Hinweis(e)`}>
+                      <Symbol name="warnung" /> {hinweise}
+                    </span> : null}</td>
               </tr>
             );
           })}

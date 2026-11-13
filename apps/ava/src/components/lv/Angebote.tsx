@@ -175,7 +175,7 @@ export function Angebote() {
                   </td>
                   <td>
                     {x.id !== 0 && lv.auftrag?.bieterId !== x.id && (
-                      <button className="small danger" onClick={(e) => (e.stopPropagation(), void bieterEntfernen(x))} title="Bieter entfernen" aria-label={`Bieter ${x.name} entfernen`}>
+                      <button className="small icon danger" onClick={(e) => (e.stopPropagation(), void bieterEntfernen(x))} title="Bieter entfernen" aria-label={`Bieter ${x.name} entfernen`}>
                         <Symbol name="schliessen" />
                       </button>
                     )}

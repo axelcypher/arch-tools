@@ -198,8 +198,8 @@ export function LvEditor() {
           <MenueKnopf
             title="Hinweis, Vorbemerkung oder Position aus den Vorlagetexten einfügen"
             punkte={() => [
-              { text: '+ Hinweis', titel: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
-              { text: '+ Vorbemerkung', titel: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
+              { text: 'Hinweis', symbol: 'plus', titel: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
+              { text: 'Vorbemerkung', symbol: 'plus', titel: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
               { text: 'Aus Vorlage …', titel: 'Position aus den Vorlagetexten des Büros einfügen', aktion: () => setBibliothek('einfuegen') },
             ]}
           >

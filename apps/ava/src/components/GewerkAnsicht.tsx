@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { bestaetigen, frageText, meldung } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import { leeresLv, neuNummerieren } from '../lv/modell';
 import { ASLV_NICHT_GESPEICHERT, aslvVerluste } from '../format/aslv';
 import { gewerkZweistellig } from '../abrechnung/gewerk';
@@ -93,6 +94,7 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
   };
 
   const offenesLv = lv?.gewerk === gewerk ? lv : null;
+  const lvOffenGeaendert = lvGeaendert(offenesLv);
   const t = TABS.find((x) => x.id === tab) ?? TABS[0];
   const zeigeTab = (id: GewerkTab) => useAva.getState().setAnsicht({ art: 'gewerk', gewerk, tab: id });
 
@@ -125,7 +127,7 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
             {[blatt?.auftragnehmer && `Auftragnehmer: ${blatt.auftragnehmer}`, g ? g.pfad : 'Kein Gewerkeordner im Projekt'].filter(Boolean).join(' · ')}
             {g && (
               <button className="small ava-link" onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}>
-                Ordner öffnen
+                <Symbol name="ordnerOffen" /> Ordner öffnen
               </button>
             )}
           </div>
@@ -177,11 +179,11 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
             )}
             {offenesLv && (
               <button
-                className={`ava-speichern${lvGeaendert(offenesLv) ? ' ungespeichert' : ''}`}
+                className={`ava-speichern${lvOffenGeaendert ? ' ungespeichert' : ''}`}
                 onClick={() => void lvSpeichernMitMeldung()}
-                disabled={!lvGeaendert(offenesLv)}
-                aria-label={lvGeaendert(offenesLv) ? 'Speichern – ungespeicherte Änderungen' : undefined}
-                title={lvGeaendert(offenesLv) ? 'LV speichern (Strg+S) – ungespeicherte Änderungen' : 'LV speichern (Strg+S) – keine Änderungen'}
+                disabled={!lvOffenGeaendert}
+                aria-label={lvOffenGeaendert ? 'Speichern – ungespeicherte Änderungen' : undefined}
+                title={lvOffenGeaendert ? 'LV speichern (Strg+S) – ungespeicherte Änderungen' : 'LV speichern (Strg+S) – keine Änderungen'}
               >
                 Speichern
               </button>
@@ -212,7 +214,7 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
           ))}
         </div>
       </div>
-      {fehler && <div className="warning">{fehler}</div>}
+      {fehler && <div className="meldung fehler" role="alert">{fehler}</div>}
       <div className="ava-gewerk-inhalt" id="ava-gewerk-inhalt" role="tabpanel" aria-labelledby={`ava-tab-${t.id}`}>
         {t.lv && !offenesLv ? (
           <div className="ava-leer-hinweis">
