@@ -15,6 +15,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # Im PR: App-Versionen gegen main und vorhandene Tags prüfen – sonst überspringt der Release eine schon vergebene
+      # Version und die Änderung fehlt im ausgelieferten Stand (scripts/versionen-pruefen.mjs)
+      - name: Versionen prüfen
+        if: github.event_name == 'pull_request'
+        env:
+          ZIEL: ${{ github.base_ref }}
+        run: |
+          node --test scripts/versionen-pruefen.test.mjs
+          node scripts/versionen-pruefen.mjs "$ZIEL"
       - run: npm ci
       - run: npm run typecheck
       - run: npm test

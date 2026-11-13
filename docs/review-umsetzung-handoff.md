@@ -23,6 +23,9 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
   nachziehen). Crate-Namen im Cargo.lock: `arch-flaechen-tool` (QUADRIO, Name bleibt absichtlich so),
   `grz-nachweis`, `kostenermittlung`, `projektordner`, `entzerrung`, `formulare`, `ava` und `arch-tools` (Rahmen-App
   Arkly, siehe `docs/suite.md`).
+  - Unmittelbar vor dem Merge `git fetch origin main` und die Versionen gegen das aktuelle main prüfen; die CI prüft es im
+    PR ebenfalls (Schritt „Versionen prüfen“, `scripts/versionen-pruefen.mjs`: Tag noch frei, größer als auf main,
+    Rahmen-App mit hochgesetzt).
   - Änderungen an `packages/core` betreffen **alle** Apps, die den Code nutzen: QUADRIO, TERRIO, NUMIO, ATLAS,
     RECTIO, PERMIO, FABRIO und die Rahmen-App Arkly. Alle betroffenen Apps bumpen.
   - Ein Push auf `main` mit geänderter Version startet sofort den Release-Workflow (Installer und GitHub-Release).

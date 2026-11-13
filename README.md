@@ -398,6 +398,11 @@ aktualisieren sich nicht selbst.
   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`); der öffentliche Schlüssel steht je App in
   `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). Der Workflow bricht ab, wenn er vom Secret
   `TAURI_UPDATER_PUBKEY` abweicht.
+- Ein Release entsteht nur für eine Version, deren Tag es noch nicht gibt. Damit parallele PRs keine Version doppelt
+  vergeben, prüft die CI im PR (`scripts/versionen-pruefen.mjs`, Schritt „Versionen prüfen“): Eine geänderte
+  App-Version darf noch nicht als Tag existieren und muss größer sein als auf dem aktuellen main; wer eine App-Version
+  ändert, setzt auch die Rahmen-App (Arkly) hoch. Schlägt der Schritt fehl: main mergen und die genannte Version über
+  den angegebenen Stand setzen.
 - Für einen lokalen `tauri:build` müssen dieselben beiden Variablen gesetzt sein, sonst scheitert das
   Signieren der Update-Dateien. `tauri:dev` braucht sie nicht.
 - Versionen ohne Updater (Flächenrechner bis 0.9.4, GRZ-Nachweis bis 0.2.3, Kostenermittlung 0.1.0) müssen
