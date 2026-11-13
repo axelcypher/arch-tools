@@ -249,7 +249,7 @@ function PruefungAnsehen({ d, onClose }: { d: RechnungsDatensatz; onClose: () =>
     </tr>
   );
   return (
-    <Modal kopf titel={`Prüfung Nr. ${String(d.nr || '—')} · ${gewerkZweistellig(d.gewerk)} ${d.firma} · ${d.art} ${d.lfd ?? ''}`.trim()} onClose={onClose}>
+    <Modal kopf titel={[`Prüfung Nr. ${String(d.nr || '—')}`, [gewerkZweistellig(d.gewerk), d.firma].filter(Boolean).join(' '), [d.art, d.lfd].filter((x) => x !== undefined && x !== '').join(' ')].filter(Boolean).join(' · ')} onClose={onClose}>
       <p className="small-text">
         Rechnungsdatum {datumDE(d.rechnungsdatum) || '—'}
         {d.eingang ? ` · Eingang ${datumDE(d.eingang)}` : ''} · Freigabe {datumDE(d.freigabe) || '—'}

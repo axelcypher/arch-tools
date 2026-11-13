@@ -1719,7 +1719,6 @@ input.ava-fehler {
 /* Gesamt-Review: Bauleitung */
 
 /* Auswahlfelder in Kopfzeilen nur so breit wie nötig (in Werkzeugleisten macht das base.css) */
-.ava-seite .toolbar select,
 .ava-seite-kopf select,
 .ava-bericht .button-row > select {
   width: auto;
