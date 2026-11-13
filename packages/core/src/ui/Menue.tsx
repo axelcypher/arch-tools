@@ -133,7 +133,7 @@ export function tastenAria(tasten: string): string {
   return (
     tasten
       // Alternativen an „/“, das nicht direkt auf „+“ folgt, und an „, “ – „Strg+/“ und „Strg+,“ bleiben ein Kürzel
-      .split(/(?<!\+)\s*\/\s*|,\s+/)
+      .split(/(?<!\+\s*)\s*\/\s*|,\s+/)
       .filter(Boolean)
       .map((kuerzel) =>
         // „Strg++“: das letzte Plus ist die Taste selbst
