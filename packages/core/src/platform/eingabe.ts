@@ -11,9 +11,9 @@ export function istEingabeZiel(t: EventTarget | null): boolean {
   return t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
 }
 
-/** Ein modaler Dialog bzw. eine Bericht-/Druckansicht ist offen – Kürzel der Zeichenflächen ruhen */
+/** Ein modaler Dialog, eine Bericht-/Druckansicht oder ein Menü ist offen – Kürzel der Zeichenflächen ruhen */
 export function dialogOffen(): boolean {
-  return typeof document !== 'undefined' && !!document.querySelector('.modal-backdrop, .report-backdrop, [aria-modal="true"]');
+  return typeof document !== 'undefined' && !!document.querySelector('.modal-backdrop, .report-backdrop, [aria-modal="true"], .menue[role="menu"]');
 }
 
 /**
