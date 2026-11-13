@@ -299,7 +299,7 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['grz, grz.zulaessig, grz.flaeche, grz.reserve, grz.status', 'GRZ (auf die Stellen der App gerundet), zulässig, angerechnete Grundfläche [m²], Reserve [m²], Ergebnis'],
       ['grz.stellen', 'Nachkommastellen der Kennzahl (mindestens 3, nahe am Grenzwert mehr)'],
       ['grz.zulaessig_flaeche, grz.vergleich', 'zulässige Grundfläche [m²]; Begründung in m², z. B. „GR 135,00 m² < 245,00 m² zulässig“'],
-      ['grz.mit_offenen, grz.flaeche_mit_offenen', 'GRZ bzw. Grundfläche einschließlich der noch nicht eingestuften Flächen („prüfen“)'],
+      ['grz.mit_offenen, grz.flaeche_mit_offenen', 'GRZ bzw. Grundfläche einschließlich der ungeklärten Flächen („prüfen“)'],
       ['grz.offen.bezeichnung, grz.offen.flaeche', '„GRZ II mit ungeklärten Flächen („prüfen“)“ (bzw. GRZ) und die Fläche dazu – leer ohne ungeklärte Flächen'],
       ['unterirdisch.flaeche, unterirdisch.angerechnet', 'Kellergeschoss außerhalb der Hauptanlage [m²] und davon angerechnet'],
       ['grz.ii, grz.ii.zulaessig, grz.ii.flaeche, grz.ii.reserve, grz.ii.status, grz.ii.mit_offenen', 'GRZ II nach § 19 Abs. 4 BauNVO 1990 (sonst leer)'],
