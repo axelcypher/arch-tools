@@ -182,8 +182,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
 
   if (teilweise) {
     return (
-      <Modal titel="Rechnung teilweise erfasst" onClose={laeuft ? undefined : onClose} klickDaneben={false}>
-        <h2>Rechnung teilweise erfasst</h2>
+      <Modal kopf titel="Rechnung teilweise erfasst" onClose={laeuft ? undefined : onClose} klickDaneben={false}>
         <div className="ava-nr-gross">
           Nr. <strong>{String(teilweise.datensatz.nr || '—')}</strong>
         </div>
@@ -206,8 +205,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
 
   if (erfasst) {
     return (
-      <Modal titel="Rechnung erfasst" onClose={onClose}>
-        <h2>Rechnung erfasst</h2>
+      <Modal kopf titel="Rechnung erfasst" onClose={onClose}>
         <div className="ava-nr-gross">
           Nr. <strong>{String(erfasst.d.nr || '—')}</strong>
         </div>
@@ -238,8 +236,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
   }
 
   return (
-    <Modal titel="Neue Rechnung prüfen" onClose={laeuft ? undefined : () => void schliessen()} breit klickDaneben={false} className="ava-pruefen">
-      <h2>Neue Rechnung prüfen</h2>
+    <Modal kopf titel="Neue Rechnung prüfen" onClose={laeuft ? undefined : () => void schliessen()} breit klickDaneben={false} className="ava-pruefen">
       <div className="ava-formular">
         <Feld label="Gewerk">
           <select value={gewerk} onChange={(x) => gewerkWechseln(x.target.value)}>
@@ -403,11 +400,11 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
         <span className="muted small-text">Ablage: {vorschauName}</span>
       </div>
       <div className="dialog-buttons">
-        {fehlt.length > 0 && <span className={versucht ? 'ava-fehlt fehler' : 'ava-fehlt'}>Es fehlt: {fehlt.join(', ')}</span>}
+        {fehlt.length > 0 && <span className={versucht ? 'ava-fehlt fehler' : 'ava-fehlt'}>Noch eintragen: {fehlt.join(', ')}</span>}
         <button onClick={() => void schliessen()} disabled={laeuft}>
           Abbrechen
         </button>
-        <button className="primary" disabled={laeuft} aria-disabled={fehlt.length > 0} onClick={() => void erfassen()} title={fehlt.length ? `Es fehlt: ${fehlt.join(', ')}` : 'In die Kostenkontrolle eintragen, Nummer vergeben, Prüfung in der Projektdatei speichern'}>
+        <button className="primary" disabled={laeuft} aria-disabled={fehlt.length > 0} onClick={() => void erfassen()} title={fehlt.length ? `Noch eintragen: ${fehlt.join(', ')}` : 'In die Kostenkontrolle eintragen, Nummer vergeben, Prüfung in der Projektdatei speichern'}>
           {laeuft ? 'Wird eingetragen …' : `Erfassen & Nr. ${naechsteNr ?? ''} vergeben`}
         </button>
       </div>

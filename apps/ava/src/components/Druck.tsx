@@ -25,10 +25,10 @@ export function Druck({ titel, zusatz, onClose, hoch = false, children, aktionen
       <div className="report ava-druck" role="dialog" aria-modal="true" aria-label={titel} tabIndex={-1} ref={dialog}>
         <div className="report-actions">
           {aktionen}
-          <button className="primary" onClick={() => druckenAls({ projektName: kopf, zusatz })}>
-            Drucken / PDF …
-          </button>
           <button onClick={onClose}>Schließen</button>
+          <button className="primary" onClick={() => druckenAls({ projektName: kopf, zusatz })}>
+            Drucken / PDF
+          </button>
         </div>
         {children}
       </div>

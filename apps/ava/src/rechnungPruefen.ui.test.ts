@@ -93,6 +93,16 @@ describe('Neue Rechnung prüfen: Gewerk- und Artwechsel', () => {
     expect(bisher()).toBe('0,00 €');
   });
 
+  it('Titel im Kopf des Dialogs (Modal kopf): einmal sichtbar, als Name des Dialogs, kein eigenes h2 im Inhalt', () => {
+    zeigen();
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    const kopf = dialog.querySelector('h3.modal-kopf')!;
+    expect(kopf.textContent).toBe('Neue Rechnung prüfen');
+    expect(dialog.getAttribute('aria-labelledby')).toBe(kopf.id);
+    expect(dialog.querySelector('h2')).toBeNull();
+    expect(dialog.textContent!.split('Neue Rechnung prüfen').length - 1).toBe(1);
+  });
+
   it('zeigt sichtbar, was fehlt, und fragt vor dem Verwerfen eingegebener Angaben', async () => {
     const onClose = zeigen();
     expect(document.querySelector('.ava-fehlt')?.textContent).toContain('Netto-Freigabesumme');
