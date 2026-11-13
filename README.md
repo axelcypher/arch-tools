@@ -49,8 +49,12 @@ Namen mit Erklärung – „PERMIO (Formulare)“ –, danach den Namen allein; 
 
 ## Gemeinsame Bedienung aller Apps
 
-- **Farbschema** (◐ in der Titelleiste): Hell, Dunkel oder wie das System – wirkt sofort in allen geöffneten Apps,
-  Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es nur in Apps mit Zeichenfläche bzw. Lageplan.
+Die Regeln für Oberfläche und Bedienung (Skalen, Fokus, Knöpfe, Überschriften, Meldungen) stehen in der
+Designrichtlinie [docs/design.md](docs/design.md).
+
+- **Farbschema** (Menü in der Titelleiste, zeigt „Auto“, „Hell“ oder „Dunkel“): Hell, Dunkel oder wie das System
+  (Auto) – wirkt sofort in allen geöffneten Apps, Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es
+  nur in Apps mit Zeichenfläche bzw. Lageplan.
 - **Speicherort der Einstellungen** (Knopf „Einzelplatz“ bzw. „Netzwerk“ in der Titelleiste jeder App und des Rahmens, in ATLAS auch unter
   „Einstellungen“): *Einzelplatz* – die gemeinsamen Einstellungen liegen nur auf diesem Rechner
   (`%APPDATA%\arch-tools`) – oder *Netzwerkinstallation* – sie liegen in einem Ordner auf dem Netzlaufwerk (NAS,

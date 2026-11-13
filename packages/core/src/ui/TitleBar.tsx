@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { appNameSetzen } from './appName';
 import { isTauri } from '../platform/files';
 import { andocken, anRahmenMelden, rahmenModus, speichernAnfragenBeantworten } from '../platform/rahmen';
@@ -9,6 +10,7 @@ import { UpdateKnopf } from './UpdateKnopf';
 import type { RegelApp } from '../regeln/regelwerk';
 import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
+import { useEscSchliessen } from './Dialog';
 import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from './Rueckfrage';
 import { useBuero } from './DruckKopf';
 import { SpeicherortHost, SpeicherortKnopf } from './Speicherort';
@@ -187,16 +189,59 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   );
 }
 
-const WAHL: { id: ThemeWahl; label: string; icon: string }[] = [
-  { id: 'system', label: 'wie System', icon: '◐' },
-  { id: 'hell', label: 'Hell', icon: '☀' },
-  { id: 'dunkel', label: 'Dunkel', icon: '☾' },
+const WAHL: { id: ThemeWahl; label: string; kurz: string }[] = [
+  { id: 'system', label: 'Auto (wie System)', kurz: 'Auto' },
+  { id: 'hell', label: 'Hell', kurz: 'Hell' },
+  { id: 'dunkel', label: 'Dunkel', kurz: 'Dunkel' },
 ];
+
+/** Symbol des Farbschemas, gezeichnet statt Schriftzeichen (◐ ☀ ☾ fallen je nach Schrift winzig oder gar nicht aus) */
+function SchemaSymbol({ id }: { id: ThemeWahl }) {
+  return (
+    <svg className="schema-symbol" viewBox="0 0 16 16" width="14" height="14" aria-hidden focusable="false">
+      {id === 'hell' && (
+        <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="8" cy="8" r="3" />
+          <path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1" />
+        </g>
+      )}
+      {id === 'dunkel' && <path d="M10.5 2.2A6 6 0 1 0 13.8 10 4.8 4.8 0 0 1 10.5 2.2Z" fill="currentColor" />}
+      {id === 'system' && (
+        <g>
+          <circle cx="8" cy="8" r="5.75" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M8 2.25a5.75 5.75 0 0 1 0 11.5Z" fill="currentColor" />
+        </g>
+      )}
+    </svg>
+  );
+}
 
 export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean }) {
   const { wahl, setWahl, canvasDunkel, setCanvasDunkel } = useTheme();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const knopfRef = useRef<HTMLButtonElement>(null);
+  const kopfId = useId();
+  const listeRef = useRef<HTMLDivElement>(null);
+  const schliessen = () => {
+    setOpen(false);
+    knopfRef.current?.focus();
+  };
+  // Esc schließt das Menü (über den gemeinsamen Esc-Stapel: offene Dialoge darunter bleiben offen)
+  useEscSchliessen(schliessen, open);
+  // beim Öffnen die aktuelle Wahl fokussieren
+  useEffect(() => {
+    if (open) listeRef.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();
+  }, [open]);
+  /** ↑/↓ wechseln zwischen den Einträgen, Pos1/Ende springen an den Anfang/das Ende */
+  const pfeile = (e: ReactKeyboardEvent) => {
+    const eintraege = [...(listeRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? [])];
+    const i = eintraege.indexOf(document.activeElement as HTMLButtonElement);
+    const ziel = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: eintraege.length - 1 }[e.key];
+    if (ziel === undefined || !eintraege.length) return;
+    e.preventDefault();
+    eintraege[(ziel + eintraege.length) % eintraege.length].focus();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -210,26 +255,42 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
   const cur = WAHL.find((w) => w.id === wahl)!;
   return (
     <div className="titlebar-menu" ref={ref}>
-      <button className="titlebar-btn" title={`Farbschema: ${cur.label}`} onClick={() => setOpen(!open)}>
-        <span aria-hidden>{cur.icon}</span>
+      <button
+        ref={knopfRef}
+        className="titlebar-btn"
+        title={`Farbschema: ${cur.label}`}
+        aria-label={`Farbschema: ${cur.label}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <SchemaSymbol id={wahl} /> {cur.kurz}
       </button>
       {open && (
-        <div className="titlebar-dropdown" role="menu">
-          <div className="titlebar-dropdown-head">Farbschema</div>
-          {WAHL.map((w) => (
-            <button
-              key={w.id}
-              role="menuitemradio"
-              aria-checked={wahl === w.id}
-              className={wahl === w.id ? 'active' : ''}
-              onClick={() => {
-                setWahl(w.id);
-                setOpen(false);
-              }}
-            >
-              <span className="tb-icon">{w.icon}</span> {w.label}
-            </button>
-          ))}
+        <div className="titlebar-dropdown">
+          <div className="titlebar-dropdown-head" id={kopfId}>
+            Farbschema
+          </div>
+          <div role="menu" aria-labelledby={kopfId} ref={listeRef} onKeyDown={pfeile}>
+            {WAHL.map((w) => (
+              <button
+                key={w.id}
+                role="menuitemradio"
+                aria-checked={wahl === w.id}
+                className={wahl === w.id ? 'active' : ''}
+                tabIndex={wahl === w.id ? 0 : -1}
+                onClick={() => {
+                  setWahl(w.id);
+                  schliessen();
+                }}
+              >
+                <span className="tb-icon">
+                  <SchemaSymbol id={w.id} />
+                </span>{' '}
+                {w.label}
+              </button>
+            ))}
+          </div>
           {zeichenflaeche && (
             <label className="toggle block">
               <input type="checkbox" checked={canvasDunkel} onChange={(e) => setCanvasDunkel(e.target.checked)} />
