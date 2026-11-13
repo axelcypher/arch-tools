@@ -323,7 +323,8 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
   Tabelle, im Lageplan die Teilflächen gestrichelt mit Nummer und Maßen; im Excel-Standardlayout Formeln und
   Teilflächen als Zeilen mit der Formel Länge × Breite × Faktor.
 - **Zwischenstand:** Die App sichert den Stand laufend im Browser bzw. App-Speicher (0,6 s nach der letzten
-  Änderung; vor dem Schließen, Andocken, Herauslösen und dem Update-Neustart sofort, Arkly wartet darauf). Wird nach einem Neustart ein
+  Änderung; vor dem Schließen, Andocken, Herauslösen und dem Update-Neustart sofort, Arkly wartet darauf; scheitert das
+  Schreiben, fragt Arkly nach, statt still zu schließen). Wird nach einem Neustart ein
   Stand wiederhergestellt, der von der Datei abweicht, gilt er als ungespeichert (Titel „•“); eine Leiste
   „Ungespeicherter Stand vom … wiederhergestellt – Speichern / Verwerfen“ bietet an, ihn zu speichern oder auf den
   Stand der Datei (bzw. ein leeres Projekt) zurückzusetzen.

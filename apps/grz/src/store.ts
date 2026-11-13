@@ -327,19 +327,28 @@ if (typeof indexedDB !== 'undefined') {
 /**
  * Verzögertes Schreiben (Zwischenstand): `planen` schreibt `ms` nach der letzten Änderung; `jetzt` schreibt Ausstehendes
  * sofort und wartet auf das laufende Schreiben. Mehrfaches `jetzt` schreibt nicht doppelt (nichts ausstehend → nur
- * abwarten). Fehler beim Schreiben werden protokolliert und halten das nächste Schreiben nicht auf.
+ * abwarten). `jetzt` liefert `true`, wenn der Stand geschrieben ist, sonst `false` (Fehler protokolliert): Arkly fragt
+ * dann vor dem Schließen nach (vorDemSchliessen). Nach einem Fehler bleibt der Stand ausstehend, der nächste Aufruf
+ * („Erneut versuchen“) schreibt neu; die Kette läuft weiter.
  */
-export function verzoegertesSchreiben(schreiben: () => Promise<void>, ms = 600): { planen: () => void; jetzt: () => Promise<void> } {
+export function verzoegertesSchreiben(schreiben: () => Promise<void>, ms = 600): { planen: () => void; jetzt: () => Promise<boolean> } {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let ausstehend = false;
-  let laufend: Promise<void> = Promise.resolve();
-  const jetzt = (): Promise<void> => {
+  let laufend: Promise<boolean> = Promise.resolve(true);
+  const jetzt = (): Promise<boolean> => {
     clearTimeout(timer);
     if (ausstehend) {
       ausstehend = false;
       // nach einem noch laufenden Schreiben, damit der neuere Stand zuletzt geschrieben wird
-      // Fehler protokollieren und weitermachen: das nächste Schreiben soll trotzdem laufen
-      laufend = laufend.then(schreiben).catch((e) => log.warn('Zwischenstand ließ sich nicht schreiben', e));
+      laufend = laufend.then(schreiben).then(
+        () => true,
+        (e) => {
+          // protokollieren, als ausstehend merken (der nächste Aufruf schreibt neu) und „nicht gespeichert“ melden
+          log.warn('Zwischenstand ließ sich nicht schreiben', e);
+          ausstehend = true;
+          return false;
+        },
+      );
     }
     return laufend;
   };
