@@ -34,7 +34,7 @@ export async function ausstehendesSchreibenAbwarten(ungespeichert: () => boolean
     }
   }
   if (ungespeichert()) {
-    log.error('Vor dem Schließen: ungespeicherte Änderungen');
+    log.warn('Vor dem Schließen: ungespeicherte Änderungen');
     return false;
   }
   return ok;

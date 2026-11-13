@@ -52,9 +52,9 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     let offen = true;
     await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(false);
     await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(false);
-    const fehler = getEntries().filter((e) => e.scope === 'schreiben' && e.level === 'error');
-    expect(fehler).toHaveLength(2);
-    expect(fehler[0].message).toContain('ungespeicherte Änderungen');
+    const warnungen = getEntries().filter((e) => e.scope === 'schreiben' && e.level === 'warn');
+    expect(warnungen).toHaveLength(2);
+    expect(warnungen[0].message).toContain('ungespeicherte Änderungen');
     offen = false; // gespeichert oder verworfen
     await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(true);
   });
