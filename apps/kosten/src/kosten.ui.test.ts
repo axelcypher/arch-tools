@@ -246,11 +246,11 @@ describe('NUMIO', () => {
     const awf = [...host.querySelectorAll('.ko-table button.link')].find((b) => b.textContent === 'AWF') as HTMLButtonElement;
     await act(async () => awf.click());
     expect(host.querySelector('.mv-bild h2')?.textContent).toBe('AWF – Außenwandfläche: 307,63 m²');
-    expect(host.querySelector('.mv-umschalter button.active')?.textContent).toBe('3D-Modell');
+    expect(host.querySelector('.segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
     expect(host.querySelectorAll('.mp-geschoss')).toHaveLength(0);
     expect(host.querySelector('.mv-rechenweg tbody tr')?.textContent).toContain('ohne 1 Abschnitt an anderen Umrissen');
     // im Grundriss: Wände als Kanten
-    act(() => knopf(host.querySelector('.mv-umschalter')!, 'Grundrisse').click());
+    act(() => knopf(host.querySelector('.mv-kopf .segment')!, 'Grundrisse').click());
     expect(host.querySelectorAll('.mp-teil.kanten')).toHaveLength(3);
 
     // festgelegte Menge: Hinweis, dass das Bild die abgeleitete Menge zeigt

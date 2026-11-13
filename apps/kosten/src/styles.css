@@ -402,20 +402,6 @@ button.link:hover {
 .mv-kopf h2 {
   margin: 0;
 }
-.mv-umschalter {
-  display: flex;
-}
-.mv-umschalter button {
-  border-radius: 0;
-  margin-left: -1px;
-}
-.mv-umschalter button:first-child {
-  border-radius: 4px 0 0 4px;
-  margin-left: 0;
-}
-.mv-umschalter button:last-child {
-  border-radius: 0 4px 4px 0;
-}
 .mv-rechenweg .tbl-wrap {
   max-height: calc(100vh - 220px);
   overflow-y: auto;
@@ -666,9 +652,6 @@ button.link:hover {
 }
 
 /* Kennwertkatalog */
-.modal.modal-wide:has(.ko-katalog) {
-  width: 820px;
-}
 .ko-katalog {
   max-height: 46vh;
   overflow: auto;

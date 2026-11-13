@@ -159,11 +159,11 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
           <h2>
             {info.kurz} – {info.label}: {wert(bezug, menge.summe)} {info.einheit}
           </h2>
-          <div className="mv-umschalter" role="group" aria-label="Darstellung">
-            <button aria-pressed={ansicht === 'plan'} className={ansicht === 'plan' ? 'active' : ''} onClick={() => setAnsicht('plan')}>
+          <div className="segment" role="group" aria-label="Darstellung">
+            <button aria-pressed={ansicht === 'plan'} onClick={() => setAnsicht('plan')}>
               Grundrisse
             </button>
-            <button aria-pressed={ansicht === 'raum'} className={ansicht === 'raum' ? 'active' : ''} onClick={() => setAnsicht('raum')}>
+            <button aria-pressed={ansicht === 'raum'} onClick={() => setAnsicht('raum')}>
               3D-Modell
             </button>
           </div>

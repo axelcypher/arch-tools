@@ -122,8 +122,8 @@ describe('NUMIO – Mengen prüfen', () => {
     expect(teil().getAttribute('aria-checked')).toBe('true');
     expect(host.querySelector('.mp-hilfe')?.textContent).toContain('Klick auf ein Teil: an- oder abwählen');
     // Umschalter als Umschaltknöpfe, nicht als Reiter
-    expect(host.querySelector('.mv-umschalter')?.getAttribute('role')).toBe('group');
-    expect(knopf(host.querySelector('.mv-umschalter')!, 'Grundrisse').getAttribute('aria-pressed')).toBe('true');
+    expect(host.querySelector('.mv-kopf .segment')?.getAttribute('role')).toBe('group');
+    expect(knopf(host.querySelector('.mv-kopf .segment')!, 'Grundrisse').getAttribute('aria-pressed')).toBe('true');
     expect(host.querySelector('[role="tab"]')).toBeNull();
   });
 

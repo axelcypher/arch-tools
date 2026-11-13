@@ -179,7 +179,7 @@ export function App() {
       <div className="toolbar">
         <div className="tb-group">
           <button onClick={onOpen} disabled={!!busy} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
-            Öffnen
+            Öffnen …
           </button>
           <button onClick={() => void onSave()} title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
             Speichern
@@ -226,7 +226,7 @@ export function App() {
             disabled={!hatPositionen}
             title={hatPositionen ? 'Druckbare Kostenermittlung – über den Druckdialog auch als PDF (Strg+P)' : 'Erst Positionen anlegen'}
           >
-            Kosten drucken
+            Kosten drucken …
           </button>
           <button onClick={() => setExcelOpen(true)} disabled={!hatPositionen} title={hatPositionen ? 'Kostenermittlung als Excel-Datei – Standardlayout oder eigene Vorlage' : 'Erst Positionen anlegen'}>
             Excel …

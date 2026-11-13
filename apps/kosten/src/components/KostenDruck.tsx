@@ -51,9 +51,9 @@ export function KostenDruck({ onClose }: { onClose: () => void }) {
               Festgehaltene Stände
             </label>
           )}
-          <button onClick={() => druckenAls({ datei: useKosten.getState().datei, projektName: project.name, zusatz: `Kosten ${stufeLabel(project.kosten?.stufe)}` })}>Drucken / PDF</button>
-          <button className="primary" onClick={onClose}>
-            Schließen
+          <button onClick={onClose}>Schließen</button>
+          <button className="primary" onClick={() => druckenAls({ datei: useKosten.getState().datei, projektName: project.name, zusatz: `Kosten ${stufeLabel(project.kosten?.stufe)}` })}>
+            Drucken / PDF
           </button>
         </div>
 

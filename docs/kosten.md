@@ -275,7 +275,7 @@ Verfasser zu belegen ist. Die Kostenfeststellung erscheint im Druck ohne Bandbre
 
 ## Ausgabe
 
-- **Kosten drucken** (Strg+P): Kostenermittlung auf A4 hoch – Grundlagen, Kostenübersicht nach Kostengruppen
+- **Kosten drucken …** (Strg+P): Kostenermittlung auf A4 hoch – Grundlagen, Kostenübersicht nach Kostengruppen
   mit Bandbreite, Kennwerte des Bauwerks (€/m² BGF, €/m³ BRI …), Positionen mit Menge und Kennwert, Mengen
   mit Ermittlung, festgehaltene Stände, Hinweise und Unterschriftszeile. Über den Druckdialog auch als PDF.
 - **Dateinamen:** Druck/PDF und Excel schlagen `<Projektdatei> Kosten <Stufe>` vor, z. B.

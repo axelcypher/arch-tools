@@ -105,8 +105,7 @@ export function KatalogDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal titel="Kennwertkatalog" breit onClose={onClose}>
-      <h3>Kennwertkatalog</h3>
+    <Modal titel="Kennwertkatalog" tabelle kopf onClose={onClose}>
       <p className="muted small-text">
         Eigene Kennwerte als Datei (JSON oder CSV aus Excel). Der zuletzt geladene Katalog bleibt in der App hinterlegt; übernommene Kennwerte stehen mit Quelle im Projekt.
       </p>
