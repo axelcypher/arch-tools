@@ -604,7 +604,7 @@ export function flaechenLoeschen(): number {
   return shapes.length;
 }
 
-/** Zwischenablage leeren (Tests, neues Projekt) */
+/** Zwischenablage leeren (für Tests; Kopieren zwischen Projekten bleibt möglich) */
 export function ablageLeeren() {
   ablage = null;
 }

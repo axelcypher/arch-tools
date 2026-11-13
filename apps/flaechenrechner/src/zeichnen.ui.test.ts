@@ -274,7 +274,9 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     const [eg, og2] = useEditor.getState().project.storeys;
     expect(og2.shapes).toHaveLength(0);
     expect(eg.shapes).toHaveLength(1);
+    const schritte = useEditor.getState().past.length;
     expect(flaechenLoeschen()).toBe(0); // Gegenprobe: ohne Auswahl kein (leerer) Rückgängig-Schritt
+    expect(useEditor.getState().past.length).toBe(schritte);
   });
 
   it('Werkzeugleiste mit SVG-Symbolen statt Schriftzeichen; reine Symbolknöpfe haben einen Namen', () => {
