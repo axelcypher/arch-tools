@@ -94,6 +94,20 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 **Auswahl auf Fotos** immer mit Saum zeichnen: Magenta allein hat auf mittleren Fototönen (Putz, Ziegel, Himmel) kaum
 Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, außen 1px weiß, innen 1px `rgba(0, 0, 0, 0.5)`.
 
+**Planfarben auf der dunklen Zeichenfläche:** Ist „Zeichenfläche im dunklen Schema abdunkeln“ gewählt, wird die
+Zeichenfläche im dunklen Schema als Ganzes gefiltert (`--canvas-filter`). Raumfüllungen in Nutzungsfarbe sähen danach dunkel und im Ton verschoben aus,
+anders als die Farbmarke derselben Nutzung in der Liste. Deshalb Füllungen vorrechnen, solange
+`useZeichenflaecheGefiltert()` (`@core/platform/theme`) wahr ist – als Hook, damit bei jedem Wechsel neu gezeichnet
+wird: `planFuellungDunkel(farbe, deckung)` aus `@core/planFarbe` liefert Farbe und Deckung zum Zeichnen. Die Fläche
+sieht danach aus wie die Farbmarke mit der gewünschten Deckung über dem dunklen Grund: gleicher Farbton, dunkler und
+matter (Gelb erscheint als Ocker). Linien, Auswahl und Schraffuren werden nicht vorgerechnet; sie bleiben in den hellen
+Planfarben und laufen durch den Filter. Über einer Unterlage (PDF, Bild) ist der Grund nicht die helle Planfarbe: dort
+`grund` übergeben oder die Abweichung hinnehmen. Die Apps übernehmen das nach und nach (Nachziehliste). Farbmarken in
+Listen und Legenden bleiben in der Originalfarbe und bekommen nie `--canvas-filter` oder einen eigenen Filter (ihr
+Kontrast zur Seitenleiste fiele unter 3 : 1). `ZEICHENFLAECHE_INVERT`
+und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `--canvas` in `base.css` passen; wer eines
+ändert, ändert das andere mit.
+
 ## Dialoge
 
 - Immer `Modal` aus `ui/Dialog.tsx` statt eines eigenen `div.modal`: Esc, Klick daneben, Rolle, Name und Fokusfalle
@@ -240,21 +254,22 @@ Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-
 
 ## Was die Apps nachziehen
 
-| App            | Datei und Aufgabe                                                                                                                                                                                                               |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RECTIO         | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                              |
-| TERRIO, NUMIO  | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                    |
-| FABRIO         | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                           |
-| PERMIO         | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                  |
-| core           | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                             |
-| ATLAS          | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                                        |
-| QUADRIO        | erledigt (Werkzeugleisten-PR): Druckvorschau „Drucken / PDF …“, Umschalter `.segment`, Werkzeugleiste mit `Symbol` (neu: `erkennen`), Kontextmenüs der Zeichenfläche über `zeigeMenue`, Meldungen `.meldung`                    |
-| TERRIO, NUMIO  | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                                       |
-| NUMIO          | eigene Umschalter (`.mv-umschalter`) auf `.segment` umstellen                                                                                                                                                                   |
-| PERMIO         | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen |
-| RECTIO         | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                             |
-| TERRIO, RECTIO | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                  |
-| alle           | eigene Kontextmenüs auf `zeigeMenue` umstellen (TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                                     |
-| alle           | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                          |
+| App                    | Datei und Aufgabe                                                                                                                                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| RECTIO                 | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                                                     |
+| TERRIO, NUMIO          | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                                           |
+| FABRIO                 | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                                                  |
+| PERMIO                 | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                                         |
+| core                   | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                                                    |
+| ATLAS                  | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                                                               |
+| QUADRIO                | erledigt (Werkzeugleisten-PR): Druckvorschau „Drucken / PDF …“, Umschalter `.segment`, Werkzeugleiste mit `Symbol` (neu: `erkennen`), Kontextmenüs der Zeichenfläche über `zeigeMenue`, Meldungen `.meldung`                                           |
+| TERRIO, NUMIO          | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                                                              |
+| NUMIO                  | eigene Umschalter (`.mv-umschalter`) auf `.segment` umstellen                                                                                                                                                                                          |
+| PERMIO                 | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen                        |
+| RECTIO                 | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                                                    |
+| TERRIO, RECTIO         | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                                         |
+| alle                   | eigene Kontextmenüs auf `zeigeMenue` umstellen (TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                                                            |
+| alle                   | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                                                 |
+| QUADRIO, TERRIO, NUMIO | Raumfüllungen bzw. Lageplanflächen bei `useZeichenflaecheGefiltert()` mit `planFuellungDunkel` vorrechnen (`Canvas.tsx` Deckung 0,45; `LageplanEditor.tsx` alle Deckungen 0,55/0,45/0,15/0,12; NUMIO `MengenPlan.tsx` 0,3); Marken bleiben unverändert |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.
