@@ -247,7 +247,9 @@ describe('Rahmen-App', () => {
     act(() => useRahmen.getState().oeffnen('ava'));
     act(() => tab(host, 'NUMIO').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
     const punkte = [...document.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent?.trim());
-    expect(punkte).toEqual(['SchließenEntf', 'Andere schließen']);
+    expect(punkte).toEqual(['SchließenEntf / Strg+F4', 'Andere schließen']);
+    // Tastenkürzel als aria-keyshortcuts, nicht im Namen
+    expect(document.querySelector('.menue [role="menuitem"]')?.getAttribute('aria-keyshortcuts')).toBe('Delete Control+F4');
     await act(async () => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent === 'Andere schließen') as HTMLButtonElement).click());
     expect(useRahmen.getState()).toMatchObject({ tabs: ['kosten'], aktiv: 'kosten' });
     // mit Änderungen: Rückfrage, Abbrechen hört auf (der Tab mit Änderungen ist gewählt und bleibt)

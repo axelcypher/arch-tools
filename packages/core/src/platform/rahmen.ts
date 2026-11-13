@@ -60,7 +60,6 @@ export function anRahmenMelden(app: string, name: string, dirty: boolean): void 
  * `verliert`: sie gehen verloren (dann bietet die Rückfrage „Speichern“ an).
  */
 export const BEIM_UMZUG: Record<string, { text: string; verliert: boolean }> = {
-  // ATLAS meldet derzeit nie ungespeicherte Änderungen (es speichert sofort) – der Eintrag greift erst, wenn sich das ändert
   ordner: { text: 'Ungespeicherte Änderungen gehen verloren – bitte vorher speichern.', verliert: true },
   formulare: {
     text: 'Nicht gespeicherte Eingaben bleiben als Entwurf erhalten und erscheinen beim erneuten Öffnen des Formulars wieder; ungespeicherte Bearbeitungen in PDF-, Excel- und Word-Dokumenten der Dateiansicht gehen verloren.',
@@ -311,4 +310,115 @@ export const projektAnlegenMoeglich = (): boolean => rahmenModus() !== null && r
 /** Assistenten von ATLAS starten; `kannOeffnen`: diese App öffnet das neue Projekt danach selbst */
 export function projektAnlegenStarten(kannOeffnen = false): void {
   anRahmen({ typ: PROJEKT_ANLEGEN, von: rahmenApp(), kannOeffnen });
+}
+
+/* ---------- Vor dem Schließen: ausstehendes Schreiben abwarten (z. B. verzögertes Speichern) ---------- */
+
+/** so lange warten Schließen, Andocken, Herauslösen und Update-Neustart höchstens auf ausstehendes Schreiben */
+export const VORBEREITEN_MS = 5000;
+const VORBEREITEN = 'arch-tools:vorbereiten';
+const VORBEREITET = 'arch-tools:vorbereitet';
+
+const vorbereitungen = new Set<() => Promise<void> | void>();
+
+/**
+ * App: etwas, das vor dem Ende dieses Fensters bzw. Tabs noch fertig werden muss – etwa ein verzögertes Schreiben
+ * (sofort ausführen und abwarten). Läuft vor dem Schließen (× und System), Andocken, Herauslösen, Schließen des Tabs und
+ * dem Update-Neustart, auch wenn keine ungespeicherten Änderungen gemeldet sind. Sie kann mehrfach aufgerufen werden
+ * (etwa nach „Weiter warten“) und soll dann nicht doppelt schreiben, sondern das laufende Schreiben abwarten. Liefert
+ * die Abmeldung.
+ */
+export function vorDemSchliessen(f: () => Promise<void> | void): () => void {
+  vorbereitungen.add(f);
+  return () => vorbereitungen.delete(f);
+}
+
+/** mit Zeitlimit warten; true = rechtzeitig fertig (ein Fehler zählt als fertig – er ist dann protokolliert) */
+function mitZeitlimit(arbeit: Promise<unknown>, ms: number): Promise<boolean> {
+  return new Promise((fertig) => {
+    const uhr = setTimeout(() => fertig(false), ms);
+    void arbeit.then(
+      () => (clearTimeout(uhr), fertig(true)),
+      () => (clearTimeout(uhr), fertig(true)),
+    );
+  });
+}
+
+/** dieses Fenster bzw. dieser Tab: alle Vorbereitungen ausführen und abwarten; false = Zeitlimit überschritten */
+export function schliessenVorbereiten(ms = VORBEREITEN_MS): Promise<boolean> {
+  if (!vorbereitungen.size) return Promise.resolve(true);
+  return mitZeitlimit(Promise.all([...vorbereitungen].map((f) => Promise.resolve().then(f))), ms);
+}
+
+/** Rahmen: hat der Tab etwas vorzubereiten? (sonst schließt er ohne Warten) */
+export function tabBrauchtVorbereitung(frame: HTMLIFrameElement | undefined): boolean {
+  try {
+    return !!(frame?.contentWindow as (Window & { __archToolsVorbereitenNoetig?: () => boolean }) | null)?.__archToolsVorbereitenNoetig?.();
+  } catch {
+    return false;
+  }
+}
+
+/** Rahmen: einen Tab vorbereiten lassen (gleicher Ursprung – direkter Aufruf); false = Zeitlimit überschritten */
+export function vorbereitenImTab(frame: HTMLIFrameElement, ms = VORBEREITEN_MS): Promise<boolean> {
+  try {
+    const f = (frame.contentWindow as (Window & { __archToolsVorbereiten?: (ms: number) => Promise<boolean> }) | null)?.__archToolsVorbereiten;
+    if (!f) return Promise.resolve(true);
+    // der Tab hält sein eigenes Zeitlimit; hängt er ganz, greift dieses
+    return new Promise((fertig) => {
+      const uhr = setTimeout(() => fertig(false), ms + 500);
+      f(ms).then(
+        (ok) => (clearTimeout(uhr), fertig(ok)),
+        () => (clearTimeout(uhr), fertig(true)),
+      );
+    });
+  } catch {
+    return Promise.resolve(true);
+  }
+}
+
+/** Rahmen: ein herausgelöstes Fenster (Kennung) vorbereiten lassen; false = Zeitlimit überschritten oder keine Antwort */
+export async function vorbereitenImFenster(kennung: string, ms = VORBEREITEN_MS): Promise<boolean> {
+  const { emit, listen } = await import('@tauri-apps/api/event');
+  const anfrage = Math.random().toString(36).slice(2);
+  let fertig: (ok: boolean) => void = () => {};
+  const antwort = new Promise<boolean>((f) => (fertig = f));
+  const aus = await listen<{ typ?: string; anfrage?: string; ok?: boolean }>(AN_RAHMEN, (e) => e.payload?.typ === VORBEREITET && e.payload.anfrage === anfrage && fertig(!!e.payload.ok));
+  try {
+    await emit(AN_APP, { typ: VORBEREITEN, anfrage, an: kennung });
+    // ohne Antwort (Fenster hängt, alte Fassung): wie Zeitablauf
+    return await Promise.race([antwort, new Promise<boolean>((f) => setTimeout(() => f(false), ms + 1000))]);
+  } finally {
+    aus();
+  }
+}
+
+/** Tab bzw. Fenster: Vorbereitungs-Anfragen des Rahmens beantworten (TitleBar richtet das ein). Liefert die Abmeldung. */
+export function vorbereitenAnfragenBeantworten(): () => void {
+  const modus = rahmenModus();
+  if (modus === 'tab') {
+    const w = window as Window & { __archToolsVorbereiten?: (ms: number) => Promise<boolean>; __archToolsVorbereitenNoetig?: () => boolean };
+    w.__archToolsVorbereiten = (ms) => schliessenVorbereiten(ms);
+    w.__archToolsVorbereitenNoetig = () => vorbereitungen.size > 0;
+    return () => {
+      delete w.__archToolsVorbereiten;
+      delete w.__archToolsVorbereitenNoetig;
+    };
+  }
+  if (modus !== 'fenster' || !istTauri()) return () => {};
+  const app = rahmenApp();
+  let aus: (() => void) | undefined;
+  let lebt = true;
+  void import('@tauri-apps/api/event').then(async ({ emit, listen }) => {
+    const u = await listen<RahmenNachricht & { anfrage?: string }>(AN_APP, (e) => {
+      if (e.payload?.typ !== VORBEREITEN || e.payload.an !== app) return;
+      void schliessenVorbereiten().then((ok) => emit(AN_RAHMEN, { typ: VORBEREITET, anfrage: e.payload.anfrage, ok, app }));
+    });
+    if (lebt) aus = u;
+    else u();
+  });
+  return () => {
+    lebt = false;
+    aus?.();
+  };
 }

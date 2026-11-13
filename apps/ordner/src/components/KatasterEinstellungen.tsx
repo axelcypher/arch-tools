@@ -68,10 +68,10 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
           <TextField value={plan.name} onChange={(v) => setzen({ name: v.trim() || plan.name })} label="Name des Plans" />
         </span>
         <button className="icon" disabled={erster} title="Nach oben" aria-label={`${plan.name} nach oben`} onClick={() => void planVerschieben(plan.id, -1)}>
-          ↑
+          <Symbol name="nachOben" />
         </button>
         <button className="icon" disabled={letzter} title="Nach unten" aria-label={`${plan.name} nach unten`} onClick={() => void planVerschieben(plan.id, 1)}>
-          ↓
+          <Symbol name="nachUnten" />
         </button>
         <button className="icon" title="Plan entfernen" aria-label={`${plan.name} entfernen`} onClick={() => void entfernen()}>
           <Symbol name="muell" />
