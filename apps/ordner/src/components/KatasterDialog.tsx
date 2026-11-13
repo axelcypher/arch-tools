@@ -60,8 +60,7 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
   const ersterPlan = e.plaene[0]?.id;
 
   return (
-    <Modal titel="Katasterpläne" onClose={laeuft ? undefined : onClose} breit className="ka-dialog" klickDaneben={!laeuft}>
-      <h3>Katasterpläne exportieren – {name}</h3>
+    <Modal titel={`Katasterpläne exportieren – ${name}`} kopf onClose={laeuft ? undefined : onClose} breit className="ka-dialog" klickDaneben={!laeuft}>
 
       {koordinaten && (
         <p className="muted small-text">

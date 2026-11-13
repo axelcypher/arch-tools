@@ -324,7 +324,7 @@ export function KatasterEinstellungen() {
               <Symbol name="plus" /> DXF
             </button>
             <button className="small" title="Die vier Standardpläne wiederherstellen (eigene Pläne entfallen)" onClick={() => void vorgaben()}>
-              Vorgaben
+              Vorgaben …
             </button>
           </span>
         }

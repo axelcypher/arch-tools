@@ -776,7 +776,7 @@ export function OrdnerEditor({
               </p>
               <div className="button-row">
                 <button className="small danger" onClick={() => void loeschenFragen([einer.pfad])}>
-                  Löschen
+                  Löschen …
                 </button>
               </div>
             </>
@@ -1090,8 +1090,7 @@ function MehrereDialog({ ziele, onAbbrechen, onAnlegen }: { ziele: string[]; onA
   const gelesen = useMemo(() => ausEingerueckt(text), [text]);
   const wo = ziele.filter(Boolean);
   return (
-    <Modal titel="Mehrere Ordner anlegen" onClose={onAbbrechen} klickDaneben={false} breit>
-      <h2>Mehrere Ordner anlegen</h2>
+    <Modal titel="Mehrere Ordner anlegen" kopf onClose={onAbbrechen} klickDaneben={false} breit>
       <p className="muted small-text">
         {wo.length === 0 ? 'Im Stamm des Projektordners' : wo.length === 1 ? `In „${wo[0]}“` : `In jedem der ${wo.length} markierten Ordner`}: eine Zeile je Ordner. Eingerückte Zeilen (Tab oder
         Leerzeichen) werden Unterordner der Zeile darüber, „/“ trennt ebenfalls. Zusätze wie in der Textansicht: <code>| LPh 6-7</code>, <code>| Dateischema</code>. Gleichnamige vorhandene Ordner

@@ -181,12 +181,11 @@ export function StrukturView() {
       <span className="muted small-text">
         {struktur.ordner.length} Ordner, davon {struktur.ordner.filter((o) => o.lph?.length).length} an Leistungsphasen gebunden
       </span>
-      <div className="tb-group" role="group" aria-label="Ansicht der Ordnerliste">
-        <button className={`small${ordnerAnsicht === 'baum' ? ' active' : ''}`} aria-pressed={ordnerAnsicht === 'baum'} onClick={() => void zumBaum()}>
+      <div className="segment" role="group" aria-label="Ansicht der Ordnerliste">
+        <button aria-pressed={ordnerAnsicht === 'baum'} onClick={() => void zumBaum()}>
           Baum
         </button>
         <button
-          className={`small${ordnerAnsicht === 'text' ? ' active' : ''}`}
           aria-pressed={ordnerAnsicht === 'text'}
           title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten"
           onClick={() => setOrdnerAnsicht('text')}
