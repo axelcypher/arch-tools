@@ -4,7 +4,7 @@ import { faktName } from '@core/baurecht/typen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { BreitenLeiste } from '@core/ui/Leiste';
-import { APP_NAMEN } from '@core/appNamen';
+import { APP_NAMEN, appMitWas } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { ProjektWahl } from '@core/ui/ProjektWahl';
 import { aenderungenSpeichern, fehlerText, meldung } from '@core/ui/Rueckfrage';
@@ -159,8 +159,10 @@ function Start({ onWahl }: { onWahl: () => void }) {
   return (
     <div className="br-start">
       <div className="br-start-karte">
-        <h1>{APP_NAMEN.baurecht.name}</h1>
-        <p className="br-start-was">{APP_NAMEN.baurecht.was}</p>
+        <hgroup>
+          <h1>{APP_NAMEN.baurecht.name}</h1>
+          <p className="br-start-was">{APP_NAMEN.baurecht.was}</p>
+        </hgroup>
         <p>Rechtsprüfung vor dem Einreichen eines Antrags: alle Vorschriften, die für das Vorhaben eine Rolle spielen – je Paragraf als Ampel, mit Begründung und dem Text in der maßgeblichen Fassung.</p>
         <dl className="br-legende">
           {(['rot', 'gelb', 'gruen'] as const).map((a) => (
@@ -182,7 +184,7 @@ function Start({ onWahl }: { onWahl: () => void }) {
             Projektdatei öffnen …
           </button>
         </div>
-        <p className="br-leise">Die Angaben kommen aus der Projektdatei (.oap) – Stammdaten, Antragsmerkmale aus der App Formulare, Festsetzungen aus dem GRZ-Nachweis, Geschosse aus dem Flächenrechner.</p>
+        <p className="br-leise">Die Angaben kommen aus der Projektdatei (.oap) – Stammdaten, Antragsmerkmale aus {appMitWas('formulare')}, Festsetzungen aus {appMitWas('grz')}, Geschosse aus {appMitWas('flaechenrechner')}.</p>
       </div>
     </div>
   );

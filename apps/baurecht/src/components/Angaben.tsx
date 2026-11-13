@@ -1,4 +1,4 @@
-import { appMitWas } from '@core/appNamen';
+import { APP_NAMEN, appMitWas } from '@core/appNamen';
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FAKT_GRUPPEN, faktName, ortsgebunden, wertAnzeige, zaehlEinheit } from '@core/baurecht/typen';
@@ -41,8 +41,8 @@ export const mitBeleg = (def: FaktDef, wert: FaktWert | undefined) => (def.typ =
 const HERKUNFT: Record<FaktWert['herkunft'], string> = {
   stammdaten: 'Stammdaten',
   merkmal: 'Merkmal',
-  flaechen: 'Flächenrechner',
-  grz: 'GRZ-Nachweis',
+  flaechen: APP_NAMEN.flaechenrechner.name,
+  grz: APP_NAMEN.grz.name,
   geodienst: 'Geodienst',
   modul: 'Regelmodul',
   abgeleitet: 'abgeleitet',
@@ -309,7 +309,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
             </div>
             {fremd && (
               <p className="br-merkmal-fremd" role="note">
-                Wert „{wert}“ aus {appMitWas('formulare')} passt nicht zur Liste – zählt nicht; bitte einen der Werte wählen.
+                Wert „{wert}“ aus {auf ? APP_NAMEN.formulare.name : appMitWas('formulare')} passt nicht zur Liste – zählt nicht; bitte einen der Werte wählen.
               </p>
             )}
             {wert && (
@@ -317,7 +317,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                 {/* „leeren“ läuft hinter der Erklärung mit – keine eigene Zeile je Merkmal */}
                 <span className="br-leise br-erklaerung">
                   {e?.werte?.[wert] && <>{nb(e.werte[wert])} </>}
-                  <button type="button" className="small br-link br-leeren" aria-label={`${MERKMAL_TITEL[m.name] ?? m.name} leeren`} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title={`Merkmal für den ganzen Antrag leeren (auch in ${appMitWas('formulare')})`}>
+                  <button type="button" className="small br-link br-leeren" aria-label={`${MERKMAL_TITEL[m.name] ?? m.name} leeren`} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title={`Merkmal für den ganzen Antrag leeren – auch in ${appMitWas('formulare')}`}>
                     leeren
                   </button>
                 </span>
@@ -491,7 +491,10 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
       )}
       {wert && wert.wert != null && !fest && (
         <div className="br-fakt-fuss">
-          <span className={`br-herkunft br-herkunft-${wert.herkunft}`}>{HERKUNFT[wert.herkunft]}</span>
+          {/* Apps kurz mit Namen, die Erklärung im Tooltip */}
+          <span className={`br-herkunft br-herkunft-${wert.herkunft}`} title={wert.herkunft === 'flaechen' ? appMitWas('flaechenrechner') : wert.herkunft === 'grz' ? appMitWas('grz') : undefined}>
+            {HERKUNFT[wert.herkunft]}
+          </span>
           {wert.quelle && wert.herkunft !== 'manuell' && <span className="br-leise">{wert.quelle}</span>}
           {unsicher && (
             <>

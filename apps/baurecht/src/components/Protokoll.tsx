@@ -1,3 +1,4 @@
+import { appMitWas } from '@core/appNamen';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { offenText } from '@core/baurecht/kurz';
 import { MERKMAL_TITEL } from '@core/baurecht/fakten';
@@ -25,9 +26,9 @@ function herkunftText(f: FaktWert): string {
     case 'abgeleitet':
       return `abgeleitet${f.quelle ? ` aus ${f.quelle}` : ''}`;
     case 'flaechen':
-      return 'Flächenrechner (Modell)';
+      return `${appMitWas('flaechenrechner')}, Modell`;
     case 'grz':
-      return 'GRZ-Nachweis';
+      return appMitWas('grz');
     case 'stammdaten':
       return 'Stammdaten des Projekts';
     case 'merkmal':

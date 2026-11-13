@@ -202,7 +202,7 @@
         "30/2",
         "30/3"
       ],
-      "hinweis": "Planurkunde mit textlichen Festsetzungen und Begründung beschaffen; Festsetzungen (GRZ, GFZ, Vollgeschosse, Baugrenzen, Höhen) im GRZ-Nachweis erfassen.",
+      "hinweis": "Planurkunde mit textlichen Festsetzungen und Begründung beschaffen; Festsetzungen (GRZ, GFZ, Vollgeschosse, Baugrenzen, Höhen) in TERRIO (GRZ-Nachweis) erfassen.",
       "behoerde": {
         "$": "genehmigung"
       },

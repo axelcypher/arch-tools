@@ -18,9 +18,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
 ## Bedienung
 
 - **Projekt öffnen:** „Projekte“ in der Titelleiste (Desktop: Projektübersicht) bzw. „Projektdatei öffnen …“. Die
-  Angaben kommen aus der Projektdatei (.oap): Stammdaten, **Antragsmerkmale** des aktiven Antrags (gemeinsam mit
-  Formulare – eine Änderung hier gilt dort und umgekehrt), Festsetzungen aus dem GRZ-Nachweis, Geschosse, Räume und
-  Wohnungen aus dem Flächenrechner.
+  Angaben kommen aus der Projektdatei (.oap): Stammdaten, **Antragsmerkmale** des aktiven Antrags (gemeinsam mit PERMIO
+  (Formulare) – eine Änderung hier gilt dort und umgekehrt), Festsetzungen aus TERRIO (GRZ-Nachweis), Geschosse, Räume
+  und Wohnungen aus QUADRIO (Flächenrechner).
 - **Kopfleiste:** Antrag, **geplante Einreichung** (Stichtag – z. B. § 42a BauO NRW knüpft an das Datum des Bauantrags
   an, § 90 an das Verfahrensrecht zur Zeit der Antragstellung), die aktiven Regelmodule, der Rechtsstand (Datum des
   ältesten Stands der aktiven Normen), Warnmarken (nie geprüft, nicht abrufbar, geändert, neue Fassung), **Lage
@@ -110,14 +110,14 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Erläuterungen sind einklappbar (auch nach dem Beantworten). Die Antragsmerkmale tragen dieselben kurzen Namen wie im
   Regelbaum und im Protokoll („Gebäudeart“, „Planungsrecht“), die Erklärung steht darunter. Die Suche findet auch die
   kurzen Namen. Zahlen stehen deutsch mit Einheit („139,12 m²“), Anzahlen ganzzahlig. Jede Angabe zeigt ihre Herkunft
-  (Stammdaten, Flächenrechner, GRZ-Nachweis, Geodienst, Regelmodul, von Hand). **Nur Hinweis** heißt: nicht gesichert
-  (z. B. Geodienst ohne Treffer, Koordinaten nur straßengenau, Gemeindeschlüssel von Hand ohne Beleg) – ein solcher Wert
-  kann nie etwas ausschließen, bis er **bestätigt** ist; eine Bestätigung lässt sich **zurücknehmen**. „alle Angaben“
-  zeigt auch Angaben, an denen gerade keine Regel hängt. Widerspricht das Merkmal „Planungsrecht“ den Geodaten
-  (Bebauungsplan angegeben, Landschaftsplan gemeldet), wird das als Widerspruch angezeigt und macht betroffenes Grün
-  gelb – auch dann, wenn eine Angabe von Hand dem Treffer eines Dienstes widerspricht. Ebenso wird eine Angabe von Hand
-  widersprüchlich, wenn ein Dienst über eine Tabelle etwas anderes ergibt (z. B. „nicht im Denkmalbereich“ gegen einen
-  Treffer des Denkmal-Dienstes).
+  (Stammdaten, QUADRIO, TERRIO, Geodienst, Regelmodul, von Hand – Apps mit Namen, ihre Erklärung im Tooltip). **Nur
+  Hinweis** heißt: nicht gesichert (z. B. Geodienst ohne Treffer, Koordinaten nur straßengenau, Gemeindeschlüssel von
+  Hand ohne Beleg) – ein solcher Wert kann nie etwas ausschließen, bis er **bestätigt** ist; eine Bestätigung lässt sich
+  **zurücknehmen**. „alle Angaben“ zeigt auch Angaben, an denen gerade keine Regel hängt. Widerspricht das Merkmal
+  „Planungsrecht“ den Geodaten (Bebauungsplan angegeben, Landschaftsplan gemeldet), wird das als Widerspruch angezeigt
+  und macht betroffenes Grün gelb – auch dann, wenn eine Angabe von Hand dem Treffer eines Dienstes widerspricht. Ebenso
+  wird eine Angabe von Hand widersprüchlich, wenn ein Dienst über eine Tabelle etwas anderes ergibt (z. B. „nicht im
+  Denkmalbereich“ gegen einen Treffer des Denkmal-Dienstes).
 - **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm
   Fassung und Zähler in Worten, darunter die Paragrafen mit Ampel und Hauptgrund (die Angaben, die das Ergebnis tragen).
   Oben das Ergebnis je Ampel (zugleich Ein-/Ausblenden), Suche und Filter „nur von Hand festgelegte“ bzw. „nur
