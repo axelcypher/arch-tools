@@ -5,11 +5,18 @@ import { planFehler } from '../kataster/kataster';
 import { useKataster } from '../kataster/katasterStore';
 import { Symbol } from './Symbol';
 
+/** Meldung über Fehlendes – mit dem Ort, an dem es sich beheben lässt */
+interface Fehlt {
+  text: string;
+  ziel?: 'einstellungen' | 'stammdaten';
+}
+
 /**
  * Katasterpläne eines Projekts exportieren (Startseite, Rechtsklick auf ein Projekt): Pläne wählen, QGIS-Vorlage des
- * Projekts (aus der Projektdatei) prüfen oder aktualisieren, exportieren – mit Ergebnis je Plan.
+ * Projekts (aus der Projektdatei) prüfen oder aktualisieren, exportieren – mit Ergebnis je Plan. `onEinstellungen` bzw.
+ * `onStammdaten` führen von einer Meldung über Fehlendes dorthin, wo es sich beheben lässt.
  */
-export function KatasterDialog({ basis, name, onClose, onEinstellungen }: { basis: string; name: string; onClose: () => void; onEinstellungen?: () => void }) {
+export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammdaten }: { basis: string; name: string; onClose: () => void; onEinstellungen?: () => void; onStammdaten?: () => void }) {
   const e = useKataster((s) => s.einstellungen);
   const programm = useKataster((s) => s.programm);
   const laeuft = useKataster((s) => s.laeuft);
@@ -25,6 +32,10 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen }: { basi
     void useKataster.getState().projektWaehlen(basis, name);
     return () => void useKataster.getState().projektWaehlen(null);
   }, [basis, name]);
+  const wechseln = (ziel: () => void) => {
+    onClose();
+    ziel();
+  };
 
   const auswahl = gewaehlt ?? e.plaene.filter((p) => p.aktiv).map((p) => p.id);
   const umschalten = (id: string) => setGewaehlt(auswahl.includes(id) ? auswahl.filter((x) => x !== id) : [...auswahl, id]);
@@ -34,50 +45,49 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen }: { basi
   const pv = oapDa ? projektVorlage() : null;
   const info = pv ? projektVorlageInfo() : (globalInfo?.info ?? null);
   const ordner = zielOrdner();
-  const fehlt = [
-    geladen && !oapDa && 'Keine Projektdatei (.oap) im Projektordner.',
-    oapDa && !koordinaten && 'Keine Koordinaten – bitte die Projektadresse in den Stammdaten speichern (die Koordinaten werden dabei abgefragt).',
-    !pv && !e.vorlage && 'Keine QGIS-Vorlage – bitte unter „Katasterpläne“ wählen.',
-    !programm && 'Pfad zu qgis_process fehlt („Katasterpläne“).',
-    geladen && oapDa && ordner === null && 'Kein aktiver Antrag in der Projektdatei – bitte unter „Katasterpläne“ einen festen Ordner für die Ablage wählen.',
-  ].filter((x): x is string => !!x);
+  const fehlt: Fehlt[] = [
+    geladen && !oapDa && { text: 'Keine Projektdatei (.oap) im Projektordner.' },
+    oapDa && !koordinaten && { text: 'Keine Koordinaten – bitte die Projektadresse in den Stammdaten speichern (die Koordinaten werden dabei abgefragt).', ziel: 'stammdaten' as const },
+    !pv && !e.vorlage && { text: 'Keine QGIS-Vorlage – bitte in den Einstellungen unter „Katasterpläne“ wählen.', ziel: 'einstellungen' as const },
+    !programm && { text: 'Pfad zu qgis_process fehlt – bitte in den Einstellungen unter „Katasterpläne“ wählen.', ziel: 'einstellungen' as const },
+    geladen &&
+      oapDa &&
+      ordner === null && {
+        text: 'Kein aktiver Antrag in der Projektdatei – bitte in den Einstellungen unter „Katasterpläne“ einen festen Ordner für die Ablage wählen.',
+        ziel: 'einstellungen' as const,
+      },
+  ].filter((x): x is Fehlt => !!x);
+  const ersterPlan = e.plaene[0]?.id;
 
   return (
-    <Modal titel="Katasterpläne" onClose={laeuft ? undefined : onClose} breit className="ka-dialog" klickDaneben={!laeuft}>
-      <h3>Katasterpläne exportieren – {name}</h3>
+    <Modal titel={`Katasterpläne exportieren – ${name}`} kopf onClose={laeuft ? undefined : onClose} breit className="ka-dialog" klickDaneben={!laeuft}>
 
-      <div className="ka-status">
-        <div>
-          <span className="field-label">QGIS-Vorlage des Projekts</span>
-          {pv ? (
-            <span>
-              <strong>{pv.name}</strong> <span className="muted small-text">übernommen am {pv.datum}</span>
-            </span>
-          ) : (
-            <span className="muted">{e.vorlage ? `Noch keine – beim Export wird ${e.vorlage.split(/[\\/]/).pop()} übernommen.` : 'Noch keine.'}</span>
-          )}
-        </div>
-        {oapDa && e.vorlage && (
-          <button
-            className="small"
-            disabled={laeuft}
-            title={`Die Vorlage der Projektdatei durch die aktuelle Fassung von ${e.vorlage} ersetzen`}
-            onClick={() => void projektVorlageAktualisieren().then((ok) => ok && setAktualisiert(true))}
-          >
-            {pv ? 'Vorlage aktualisieren' : 'Vorlage übernehmen'}
-          </button>
-        )}
-        {aktualisiert && <span className="ka-ok small-text">✓ übernommen</span>}
-      </div>
       {koordinaten && (
         <p className="muted small-text">
-          Mittelpunkt: E {koordinaten.ost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · N{' '}
+          Mittelpunkt (die geokodierte Projektadresse, nicht das Flurstück): E {koordinaten.ost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · N{' '}
           {koordinaten.nord.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (EPSG:25832) · Ablage: {ordner === null ? '–' : ordner || 'Projektordner'}
         </p>
       )}
       {fehlt.map((f) => (
-        <p key={f} className="warning small-text">
-          {f}
+        <p key={f.text} className="warning small-text ka-fehlt">
+          {f.text}
+          {/* Leerzeichen statt Außenabstand: bricht der Knopf um, steht er bündig am Zeilenanfang */}
+          {f.ziel === 'einstellungen' && onEinstellungen && (
+            <>
+              {' '}
+              <button className="po-link" onClick={() => wechseln(onEinstellungen)}>
+                Einstellungen öffnen
+              </button>
+            </>
+          )}
+          {f.ziel === 'stammdaten' && onStammdaten && (
+            <>
+              {' '}
+              <button className="po-link" onClick={() => wechseln(onStammdaten)}>
+                Stammdaten öffnen
+              </button>
+            </>
+          )}
         </p>
       ))}
 
@@ -88,7 +98,8 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen }: { basi
           return (
             <li key={p.id}>
               <label>
-                <input type="checkbox" checked={auswahl.includes(p.id)} disabled={laeuft} onChange={() => umschalten(p.id)} />
+                {/* erster Fokus auf dem ersten Plan – nicht auf „Vorlage übernehmen“, das die Vorlage der Projektdatei ersetzt */}
+                <input type="checkbox" checked={auswahl.includes(p.id)} disabled={laeuft} autoFocus={p.id === ersterPlan} onChange={() => umschalten(p.id)} />
                 <span className={`ka-art ${p.art}`}>{p.art.toUpperCase()}</span>
                 <span className="ka-name">
                   {p.name}
@@ -119,18 +130,34 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen }: { basi
         })}
       </ul>
       {!e.plaene.length && <p className="muted small-text">Keine Pläne eingerichtet („Katasterpläne“).</p>}
+      <div className="ka-status">
+        <div>
+          <span className="field-label">QGIS-Vorlage des Projekts</span>
+          {pv ? (
+            <span>
+              <strong>{pv.name}</strong> <span className="muted small-text">übernommen am {pv.datum}</span>
+            </span>
+          ) : (
+            <span className="muted">{e.vorlage ? `Noch keine – beim Export wird ${e.vorlage.split(/[\\/]/).pop()} übernommen.` : 'Noch keine.'}</span>
+          )}
+        </div>
+        {oapDa && e.vorlage && (
+          <button
+            className="small"
+            disabled={laeuft}
+            title={`Die Vorlage der Projektdatei durch die aktuelle Fassung von ${e.vorlage} ersetzen`}
+            onClick={() => void projektVorlageAktualisieren().then((ok) => ok && setAktualisiert(true))}
+          >
+            {pv ? 'Vorlage aktualisieren' : 'Vorlage übernehmen'}
+          </button>
+        )}
+        {aktualisiert && <span className="ka-ok small-text">✓ übernommen</span>}
+      </div>
       {ausgang?.meldung && <pre className="ka-meldung warning small-text">{ausgang.meldung}</pre>}
 
       <div className="dialog-buttons">
         {onEinstellungen && (
-          <button
-            className="ex-links"
-            disabled={laeuft}
-            onClick={() => {
-              onClose();
-              onEinstellungen();
-            }}
-          >
+          <button className="ex-links" disabled={laeuft} onClick={() => wechseln(onEinstellungen)}>
             <Symbol name="zahnrad" /> Einstellungen
           </button>
         )}
