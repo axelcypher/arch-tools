@@ -74,7 +74,7 @@ const TOOLS: { id: Tool; label: string; icon: string; title: string }[] = [
   { id: 'polygon', label: 'Polygon', icon: '⬠', title: 'Polygon zeichnen – Punkt für Punkt, Längen eintippbar (P)' },
   { id: 'rect', label: 'Rechteck', icon: '▭', title: 'Rechteck zeichnen – zwei Ecken oder Maß, z. B. 4,5x3 (R)' },
   { id: 'detect', label: 'Erkennen', icon: '⊡', title: 'Fläche per Klick aus dem Plan erkennen (E)' },
-  { id: 'measure', label: 'Messen', icon: '⟷', title: 'Strecken und Flächen messen – zählt nicht zur Auswertung (M)' },
+  { id: 'measure', label: 'Messen', icon: '↔', title: 'Strecken und Flächen messen – zählt nicht zur Auswertung (M)' },
 ];
 
 export function Toolbar() {

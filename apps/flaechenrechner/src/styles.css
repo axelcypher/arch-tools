@@ -266,12 +266,6 @@
   white-space: nowrap;
 }
 
-/* Werkzeugsymbole verschieden breit (⟷): nicht in die Beschriftung ragen */
-.toolbar .tb-icon {
-  width: auto;
-  min-width: 1.1em;
-}
-
 /* Werkzeugleiste bis 1600 px etwas knapper, damit sie bei 1440 px in eine Zeile passt */
 @media (max-width: 1600px) {
   .toolbar button {
