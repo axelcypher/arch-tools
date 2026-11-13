@@ -86,7 +86,7 @@ describe('Zwischenstand: verzögertes Schreiben und vorDemSchliessen', () => {
     const z = verzoegertesSchreiben(schreiben);
     const abmelden = vorDemSchliessen(z.jetzt);
     z.planen();
-    await expect(schliessenVorbereiten(1000)).resolves.toBe(true);
+    await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig');
     expect(schreiben).toHaveBeenCalledTimes(1);
     abmelden();
     z.planen();

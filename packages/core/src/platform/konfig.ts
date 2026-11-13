@@ -347,7 +347,11 @@ function nacheinander<T>(f: () => Promise<T>): Promise<T> {
   return p;
 }
 
-/** laufende Schreibvorgänge der Einstellungen vor Schließen, Andocken und Update-Neustart abwarten (für alle Apps) */
+/**
+ * laufende Schreibvorgänge der Einstellungen vor Schließen, Andocken und Update-Neustart abwarten (für alle Apps). Meldet
+ * nie „nicht gespeichert“: Ein gescheiterter Schreibvorgang wird schon seinem Aufrufer gemeldet, „Erneut versuchen“
+ * würde ihn nicht wiederholen, und ein gemerkter Fehler blockierte jedes spätere Schließen.
+ */
 export async function konfigSchreibenAbwarten(): Promise<void> {
   // so lange, bis keine neuen Schreibvorgänge mehr dazukommen (etwa aus der Vorbereitung einer App)
   let k: Promise<unknown>;

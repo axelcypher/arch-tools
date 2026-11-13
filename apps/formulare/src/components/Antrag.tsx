@@ -67,8 +67,8 @@ export function FassungsWahl() {
   const punkte = (): MenuePunkt[] => [
     ...fassungen.map((f) => ({
       text: `${f.name}${eingereichtVon(antraege?.[f.name]) ? ` – eingereicht ${tag(eingereichtVon(antraege?.[f.name])!.datum)}` : ''}`,
-      symbol: f.name === aktiv ? ('haken' as const) : undefined,
-      ...(f.name === aktiv ? { hinweis: 'aktiv' } : {}),
+      // Einfachauswahl: die aktive Fassung ist gewählt
+      gewaehlt: f.name === aktiv,
       aktion: () => void fassungWaehlen(f.name),
     })),
     ...(fassungen.length ? [{ trenner: true as const }] : []),
@@ -713,8 +713,8 @@ export function AntragsdatenAnsicht() {
     return [
       ...pdfs.map((x) => ({
         text: x.pfad,
-        symbol: (d.datei?.pfad === x.pfad ? 'haken' : 'datei') as 'haken' | 'datei',
-        ...(d.datei?.pfad === x.pfad ? { hinweis: 'verknüpft' } : {}),
+        // Einfachauswahl: die verknüpfte Datei ist gewählt
+        gewaehlt: d.datei?.pfad === x.pfad,
         aktion: () => void verknuepfen(d.eintrag.id, x.pfad, o),
       })),
       ...(pdfs.length ? [] : [{ text: `Keine Dateien in ${ordner}`, deaktiviert: true }]),

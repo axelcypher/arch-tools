@@ -364,13 +364,13 @@ describe('Zwischenspeicher', () => {
       // ein Foto wird noch in den Zwischenspeicher geschrieben: das Schließen wartet darauf
       void fotoSchreiben('f9', bytes(3, 9));
       expect(idb.fotos.has('f9')).toBe(false);
-      expect(await schliessenVorbereiten()).toBe(true);
+      expect(await schliessenVorbereiten()).toBe('fertig');
       expect(idb.fotos.get('f9')).toEqual(bytes(3, 9));
       expect(geschrieben).not.toHaveBeenCalled();
       // der Stand wartet auf den Timer (600 ms); zweimal kurz nacheinander (z. B. „Weiter warten“): ein Schreiben
       useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 4));
       const [a, b] = await Promise.all([schliessenVorbereiten(), schliessenVorbereiten()]);
-      expect([a, b]).toEqual([true, true]);
+      expect([a, b]).toEqual(['fertig', 'fertig']);
       expect((idb.stand.get('stand') as { doc: { fotos: { id: string }[] } }).doc.fotos.map((f) => f.id)).toEqual(['f1']);
       expect(geschrieben).toHaveBeenCalledTimes(1);
       // der Timer ist erledigt: auch später kein zweites Schreiben desselben Stands (echte Uhr, weil die
@@ -409,7 +409,7 @@ describe('Zwischenspeicher', () => {
       expect(fertig).toBe(false);
       weiter('/Projekt/Süd.entz');
       expect(await lauf).toBe(true);
-      expect(await vorbereitet).toBe(true);
+      expect(await vorbereitet).toBe('fertig');
       // im Zwischenstand steht der gespeicherte Stand, nicht der davor (sonst später falsche Rückfrage „von außen geändert“)
       expect(idb.stand.get('stand')).toMatchObject({ dirty: false, dateiname: '/Projekt/Süd.entz', dateiStand: { groesse: 42, geaendert: 7 } });
       ende();
