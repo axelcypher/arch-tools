@@ -341,10 +341,10 @@ Anschrift, wie sie in Formularen steht.
   Reihenfolge steht in der Projektdatei (`.oap`) und gilt für alle im Büro; Formulare, die noch keinen Platz haben,
   folgen alphabetisch. „Reihenfolge zurücksetzen“ (alphabetisch) im Kontextmenü eines Formulars hebt sie auf; beim
   Umbenennen behält das Formular seinen Platz. Ohne Projektdatei bleibt es alphabetisch, gezogen wird dann nicht.
-  Während ein anderer Antrag geöffnet wird, ändert sich die Reihenfolge nicht („Reihenfolge nicht geändert – Antrag
-  BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.“); lässt sie sich nicht speichern, springt die Liste
-  zurück. Wird das Projekt während des Speicherns geschlossen, steht die neue Folge trotzdem in der Projektdatei. Ein gelöschtes Formular behält seinen gemerkten Platz – ein später gleich
-  benanntes erbt ihn.
+  Während ein anderer Antrag geöffnet wird, ändert sich die Reihenfolge nicht (z. B. „Reihenfolge nicht geändert –
+  Antrag BAUA wird gerade geöffnet; bitte gleich noch einmal versuchen.“); lässt sie sich nicht speichern, springt die
+  Liste zurück. Wird das Projekt während des Speicherns geschlossen, steht die neue Folge trotzdem in der Projektdatei.
+  Ein gelöschtes Formular behält seinen gemerkten Platz – ein später gleich benanntes erbt ihn.
 - **Projektordner, Ansicht „Ordner“:** Die Reihenfolge der Ordner einer Ebene lässt sich per Ziehen ändern (oder Ordner
   wählen und Alt+↑/↓); gemerkt je Ebene für alle Projekte, „Reihenfolge dieser Ebene zurücksetzen“ im Kontextmenü
   sortiert wieder alphabetisch. Ein Klick ohne Bewegung klappt weiter auf.

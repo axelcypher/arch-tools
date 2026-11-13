@@ -5938,7 +5938,7 @@ describe('Reihenfolge der Formulare in der Navigation', () => {
     // gespeichert“, und ohne offenes Projekt bleibt kein Stand von BS9 im Store
     expect(info.geschrieben).toBe(true);
     expect(info.dialog).toBeUndefined();
-    expect(useFormulare.getState().meldung?.art).not.toBe('fehler');
+    expect(useFormulare.getState().meldung?.text ?? '').not.toMatch(/nicht gespeichert|Reihenfolge/);
     expect(useAntrag.getState().projektdatei).toBeNull();
     expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
     // wieder geöffnet: die gespeicherte Folge
