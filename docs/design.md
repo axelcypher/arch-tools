@@ -184,6 +184,8 @@ gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
 - Gleiches Verb überall: Werkzeugleiste „Öffnen …“, Einstieg „Datei öffnen …“ (mit Objekt, weil der Zusammenhang
   fehlt); „Neu“ bzw. „Neues Projekt“.
 - Texte sagen, was zu tun ist, nicht was fehlt; was es nur in der Desktop-App gibt, steht als Fußnote darunter.
+- Ordner im Dateimanager zeigen (`ordnerZeigen`): „Ordner öffnen“, Symbol `ordnerOffen` – nicht „Im Explorer öffnen“
+  (hängt an Windows). Ist der Gegenstand nicht klar, mit Objekt: „Projektordner öffnen“.
 
 ## Symbole
 
@@ -290,5 +292,6 @@ Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-
 | QUADRIO, PERMIO        | Tastenkürzel in Menüs von `hinweis` auf `tasten` umstellen (`Canvas.tsx` Strg+C, Strg+D, Entf, F; PERMIO `App.tsx` Strg+E)                                                                                                                             |
 | ATLAS                  | Umsortieren mit `Symbol` `nachOben`/`nachUnten` statt ↑/↓; Zeilenknopf „⋯“ mit Symbol `mehr` und `aria-haspopup="menu"` (dann setzt das Menü `aria-expanded`)                                                                                          |
 | alle                   | eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner                                                                                                                                                                   |
+| ATLAS, PERMIO          | „Im Explorer öffnen“ → „Ordner öffnen“ (ATLAS `ProjektStart.tsx`; PERMIO `Seitenleiste.tsx`, `AblageBaum.tsx`)                                                                                                                                         |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.
