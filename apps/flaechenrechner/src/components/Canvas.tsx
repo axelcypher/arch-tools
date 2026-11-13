@@ -14,12 +14,13 @@ import {
 } from '@core/geometry';
 import { fmt2, parseNum } from '@core/format';
 import { NumberField } from '@core/ui/fields';
+import { Modal } from '@core/ui/Dialog';
 import type { Hilfslinie } from '@core/fang';
 import { achsBeschraenkt, achsRechteck, achsRichtungen, eckpunktHilfslinien, gebaeudeAchse, hilfslinienFang, zeichenHilfslinien } from '@core/fang';
 import type { OutlineShape, Shape, Storey } from '@core/model';
 import { createOutline, createRoom, shapeArea } from '@core/model';
-import { nutzungInfo } from '@core/norms';
-import { bgWorldBounds, scaleAround, vectorSegmentGrid } from '../core/background';
+import { nutzungInfo, raumNutzung } from '@core/norms';
+import { bgScale, bgWorldBounds, ohneKontrollmass, scaleAround, vectorSegmentGrid } from '../core/background';
 import { detectOutline, detectRegion } from '@core/detect';
 import { SegmentGrid } from '@core/spatial';
 import { loadImage, rasterEdgeRefiner, rasterMaskProvider } from '../platform/rasterMask';
@@ -807,7 +808,7 @@ export function Canvas() {
     const [a, b] = calib;
     const measured = distance(a, b);
     if (measured < 1e-9 || !(realLength > 0)) return;
-    update((p) => mapStorey(p, storey.id, (s) => ({ ...s, background: scaleAround(bg, realLength / measured, a) })));
+    update((p) => mapStorey(ohneKontrollmass(p, storey.id), storey.id, (s) => ({ ...s, background: scaleAround(bg, realLength / measured, a) })));
     setCalib(null);
     // gleich danach ein Kontrollmaß messen (F-16): zweite bekannte Strecke, möglichst quer zur ersten
     setTool('kontrolle');
@@ -819,7 +820,8 @@ export function Canvas() {
     if (!kontrolle) return;
     const ist = distance(kontrolle[0], kontrolle[1]);
     const abweichung = kontrollAbweichung(ist, soll);
-    update((p) => ({ ...p, settings: { ...p.settings, kontrollmasse: { ...(p.settings.kontrollmasse ?? {}), [storey.id]: { soll, ist, abweichung } } } }));
+    const massstab = storey.background ? bgScale(storey.background) : undefined;
+    update((p) => ({ ...p, settings: { ...p.settings, kontrollmasse: { ...(p.settings.kontrollmasse ?? {}), [storey.id]: { soll, ist, abweichung, ...(massstab ? { massstab } : {}) } } } }));
     setKontrolle(null);
     setTool('select');
     setMessage(`Kontrollmaß: ${kontrollText({ soll, abweichung })}${Math.abs(abweichung) > 0.005 ? ' – größer als 0,5 %: Kalibrierung wiederholen.' : ''}`);
@@ -876,7 +878,7 @@ export function Canvas() {
         strokeWidth: isSel ? 3 : 2,
       };
     }
-    const c = nutzungInfo(s.nutzung).color;
+    const c = nutzungInfo(raumNutzung(s)).color;
     return {
       fill: c,
       fillOpacity: 0.45,
@@ -965,7 +967,7 @@ export function Canvas() {
       break;
     case 'polygon':
       hint = draft.length
-        ? 'Klicken: nächster Punkt · Zahl + Enter: Länge in Mausrichtung · dx;dy + Enter: relativ · Enter/Doppelklick/Startpunkt: schließen · ⇧ entlang der Gebäudeachse'
+        ? 'Klicken: nächster Punkt · Zahl + Enter: Länge in Mausrichtung · dx;dy + Enter: relativ · Enter/Doppelklick/Startpunkt: schließen · Umschalt: entlang der Gebäudeachse'
         : `Ersten Punkt setzen (${drawKind === 'outline' ? 'BGF-Umriss' : 'Raum'})`;
       break;
     case 'rect':
@@ -1212,68 +1214,72 @@ export function Canvas() {
         ) : (
           <span className="hud-hint">
             {hint}{' '}
-            <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)">
+            <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)" aria-label="Bedienhinweise ausblenden">
               ×
             </button>
           </span>
         )}
       </div>
       <ScaleBar scale={vp.scale} />
-      <div className="canvas-controls" title="Alt gedrückt halten: Fang aus · Shift: orthogonal">
-        <label className="toggle">
-          <input type="checkbox" checked={view.snapGrid} onChange={(e) => useEditor.getState().setView({ snapGrid: e.target.checked })} />
-          Raster ({fmt2(gridStep * 100).replace(',00', '')} cm)
-        </label>
-        <label className="toggle">
-          <input type="checkbox" checked={view.snapVertices} onChange={(e) => useEditor.getState().setView({ snapVertices: e.target.checked })} />
-          Punktfang
-        </label>
-        <label className="toggle" title="Fang an der Verlängerung bestehender Kanten und an den Gebäudeachsen (auch bei schräg stehenden, genordeten Plänen)">
-          <input type="checkbox" checked={view.snapGuides} onChange={(e) => useEditor.getState().setView({ snapGuides: e.target.checked })} />
-          Hilfslinien
-        </label>
-        <button className="small" onClick={() => fitRef.current()} title="Alles zeigen (F)">
-          ⤢ Alles
-        </button>
-      </div>
-      {tool === 'detect' && (
-        <div className="canvas-controls detect-controls">
-          <label className="toggle" title="Größte Öffnung (z. B. Türbreite), die beim Erkennen geschlossen wird. Muss kleiner sein als der schmalste Raum.">
-            Lückenschluss
-            <NumberField value={detect.gap} min={0} max={5} onChange={(v) => v !== undefined && useEditor.getState().setDetect({ gap: v })} />m
+      {/* Ansichtsoptionen, Werkzeugoptionen und Meldung untereinander rechts oben – brechen in schmalen Fenstern um,
+          ohne sich zu überdecken */}
+      <div className="canvas-oben">
+        <div className="canvas-controls" title="Alt gedrückt halten: Fang aus · Umschalt: entlang der Gebäudeachse">
+          <label className="toggle">
+            <input type="checkbox" checked={view.snapGrid} onChange={(e) => useEditor.getState().setView({ snapGrid: e.target.checked })} />
+            Raster ({fmt2(gridStep * 100).replace(',00', '')} cm)
           </label>
-          {bg?.type === 'vector' && (
-            <label className="toggle" title="Bögen und Kreise (z. B. Türaufschläge) nicht als Begrenzung verwenden">
-              <input type="checkbox" checked={detect.skipArcs} onChange={(e) => useEditor.getState().setDetect({ skipArcs: e.target.checked })} />
-              Bögen ignorieren
-            </label>
-          )}
-          {bg?.type === 'raster' && (
-            <label className="toggle" title="Dünne Linien (Türaufschläge, Möbel) nicht als Begrenzung verwenden – solange der Raum trotzdem geschlossen ist">
-              <input type="checkbox" checked={detect.ignoreThin} onChange={(e) => useEditor.getState().setDetect({ ignoreThin: e.target.checked })} />
-              dünne Linien ignorieren
-            </label>
-          )}
-          {bg?.type === 'raster' && (
-            <label className="toggle" title="Pixel dunkler als dieser Wert gelten als Wand/Linie">
-              Schwelle
-              <input
-                type="range"
-                min={60}
-                max={250}
-                step={5}
-                value={detect.threshold}
-                onChange={(e) => useEditor.getState().setDetect({ threshold: Number(e.target.value) })}
-              />
-            </label>
-          )}
+          <label className="toggle">
+            <input type="checkbox" checked={view.snapVertices} onChange={(e) => useEditor.getState().setView({ snapVertices: e.target.checked })} />
+            Punktfang
+          </label>
+          <label className="toggle" title="Fang an der Verlängerung bestehender Kanten und an den Gebäudeachsen (auch bei schräg stehenden, genordeten Plänen)">
+            <input type="checkbox" checked={view.snapGuides} onChange={(e) => useEditor.getState().setView({ snapGuides: e.target.checked })} />
+            Hilfslinien
+          </label>
+          <button className="small" onClick={() => fitRef.current()} title="Alles zeigen (F)">
+            ⤢ Alles
+          </button>
         </div>
-      )}
-      {message && (
-        <div className="canvas-message" onClick={() => setMessage(null)}>
-          {message}
-        </div>
-      )}
+        {tool === 'detect' && (
+          <div className="canvas-controls detect-controls">
+            <label className="toggle" title="Größte Öffnung (z. B. Türbreite), die beim Erkennen geschlossen wird. Muss kleiner sein als der schmalste Raum.">
+              Lückenschluss
+              <NumberField value={detect.gap} min={0} max={5} onChange={(v) => v !== undefined && useEditor.getState().setDetect({ gap: v })} />m
+            </label>
+            {bg?.type === 'vector' && (
+              <label className="toggle" title="Bögen und Kreise (z. B. Türaufschläge) nicht als Begrenzung verwenden">
+                <input type="checkbox" checked={detect.skipArcs} onChange={(e) => useEditor.getState().setDetect({ skipArcs: e.target.checked })} />
+                Bögen ignorieren
+              </label>
+            )}
+            {bg?.type === 'raster' && (
+              <label className="toggle" title="Dünne Linien (Türaufschläge, Möbel) nicht als Begrenzung verwenden – solange der Raum trotzdem geschlossen ist">
+                <input type="checkbox" checked={detect.ignoreThin} onChange={(e) => useEditor.getState().setDetect({ ignoreThin: e.target.checked })} />
+                dünne Linien ignorieren
+              </label>
+            )}
+            {bg?.type === 'raster' && (
+              <label className="toggle" title="Pixel dunkler als dieser Wert gelten als Wand/Linie">
+                Schwelle
+                <input
+                  type="range"
+                  min={60}
+                  max={250}
+                  step={5}
+                  value={detect.threshold}
+                  onChange={(e) => useEditor.getState().setDetect({ threshold: Number(e.target.value) })}
+                />
+              </label>
+            )}
+          </div>
+        )}
+        {message && (
+          <div className="canvas-message" role="status" aria-live="polite" title="Klicken zum Ausblenden" onClick={() => setMessage(null)}>
+            {message}
+          </div>
+        )}
+      </div>
 
       {calib && <CalibrationDialog measured={distance(calib[0], calib[1])} onApply={applyCalibration} onCancel={() => setCalib(null)} />}
       {kontrolle && <CalibrationDialog kontrolle measured={distance(kontrolle[0], kontrolle[1])} onApply={applyKontrolle} onCancel={() => setKontrolle(null)} />}
@@ -1296,20 +1302,22 @@ function CalibrationDialog({ measured, onApply, onCancel, kontrolle = false }: {
   const [val, setVal] = useState('');
   // mit Einheit: „12,00 m“, „1200 cm“, „12000 mm“ (ohne Einheit: Meter)
   const v = laengeAusText(val);
+  const titel = kontrolle ? 'Kontrollmaß' : 'Plan kalibrieren';
+  // gemeinsamer Dialog: Esc und Klick daneben brechen ab, der Fokus bleibt im Dialog, Kürzel der Zeichenfläche ruhen
   return (
-    <div className="overlay-dialog" onPointerDown={(e) => e.stopPropagation()}>
+    <Modal titel={titel} onClose={onCancel} className="kalibrier-dialog">
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (v && v > 0) onApply(v);
         }}
       >
-        <h3>{kontrolle ? 'Kontrollmaß' : 'Plan kalibrieren'}</h3>
+        <h3>{titel}</h3>
         <p>
           Gemessene Strecke im aktuellen Maßstab: <strong>{fmt2(measured)} m</strong>
         </p>
-        <label>
-          Tatsächliche Länge (mit Einheit, z. B. 12,00 m · 1200 cm · 12000 mm)
+        <label className="field">
+          <span className="field-label">Tatsächliche Länge (mit Einheit, z. B. 12,00 m · 1200 cm · 12000 mm)</span>
           <input autoFocus value={val} onChange={(e) => setVal(e.target.value)} placeholder="z. B. 10,00 m" />
         </label>
         {v ? (
@@ -1326,7 +1334,7 @@ function CalibrationDialog({ measured, onApply, onCancel, kontrolle = false }: {
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }
 

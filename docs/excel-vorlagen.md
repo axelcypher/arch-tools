@@ -273,7 +273,7 @@ Die vollständige Liste steht im Excel-Dialog unter **Platzhalter anzeigen** und
 der Muster-Vorlage.
 
 Neu im Flächenrechner: `{{raum.hoehenlage}}` (Höhenversatz eines Raums gegenüber seinem Geschoss, negativ =
-tiefer), `{{geschoss.sohle}}` (Dicke der Bodenplatte, ab deren Unterseite der BRI zählt) und `{{bri.unterbau}}`
+tiefer), `{{geschoss.sohle}}` (Dicke der Bodenplatte einschließlich Dämmung darunter, ab deren Unterkante der BRI zählt) und `{{bri.unterbau}}`
 („Bodenplatte“ bzw. „Split-Level“ bei BRI-Teilkörpern unter dem Geschossfußboden).
 
 Der Export schlägt als Dateinamen den Namen der Projektdatei mit Zusatz vor: `… WoFl+BGF+BRI.xlsx`

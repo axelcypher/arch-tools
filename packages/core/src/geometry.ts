@@ -174,6 +174,8 @@ export function snapToGrid(p: Point, step: number): Point {
 
 /** Rundet auf ein Vielfaches von step und beseitigt Fließkomma-Rauschen. */
 export function roundTo(v: number, step: number): number {
+  // ohne gültige Schrittweite (0, negativ, NaN) nicht runden – sonst entstünden NaN-Koordinaten
+  if (!(step > 0) || !Number.isFinite(step)) return v;
   const r = Math.round(v / step) * step;
   return Math.round(r * 1e6) / 1e6;
 }

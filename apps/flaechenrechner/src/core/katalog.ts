@@ -24,6 +24,8 @@ export interface KatalogEintrag {
   /** Nutzungsart (z. B. „7.1“); bestimmt die Nutzungsgruppe mit */
   nutzungsart?: string;
   wofl: WoflKategorie;
+  /** außerhalb der BGF (DIN 277, 6.1 a – z. B. ebenerdige Terrasse): nur Wohnfläche, nicht in der NRF */
+  ausserhalbBgf?: boolean;
 }
 
 export interface Nutzungsart {
@@ -48,7 +50,8 @@ export const VORGABE_KATALOG: KatalogEintrag[] = [
   { name: 'Dusche', nutzung: 'NUF7', nutzungsart: '7.1', wofl: 'voll' },
   { name: 'Diele (in der Wohnung)', nutzung: 'VF', nutzungsart: '9.1', wofl: 'voll' },
   { name: 'Flur (in der Wohnung)', nutzung: 'VF', nutzungsart: '9.1', wofl: 'voll' },
-  { name: 'Flur', nutzung: 'VF', nutzungsart: '9.1', wofl: 'keine' },
+  // Flure in der Wohnung zählen zur Wohnfläche (§ 2 Abs. 1 WoFlV) – ein bloßes „Flur“ setzt deshalb nichts
+  { name: 'Hausflur/Gemeinschaftsflur', nutzung: 'VF', nutzungsart: '9.1', wofl: 'keine' },
   { name: 'Treppenraum', nutzung: 'VF', wofl: 'keine' },
   { name: 'Abstellraum (in der Wohnung)', nutzung: 'NUF7', nutzungsart: '7.3', wofl: 'voll' },
   { name: 'Abstellraum/Keller (außerhalb)', nutzung: 'NUF7', nutzungsart: '7.3', wofl: 'keine' },
@@ -60,7 +63,9 @@ export const VORGABE_KATALOG: KatalogEintrag[] = [
   { name: 'Dachboden', nutzung: 'NUF7', nutzungsart: '7.3', wofl: 'keine' },
   { name: 'Balkon', nutzung: 'NUF1', wofl: 'freisitz' },
   { name: 'Loggia', nutzung: 'NUF1', wofl: 'freisitz' },
-  { name: 'Terrasse', nutzung: 'NUF1', wofl: 'freisitz' },
+  // ebenerdig, nicht unterbaut: nicht in BGF/NRF (DIN 277, 6.1 a), aber Wohnfläche; unterbaut bzw. auf dem Dach: S
+  { name: 'Terrasse (ebenerdig, nicht unterbaut)', nutzung: 'NUF1', wofl: 'freisitz', ausserhalbBgf: true },
+  { name: 'Dachterrasse / Terrasse unterbaut', nutzung: 'NUF1', wofl: 'freisitz' },
   { name: 'Wintergarten (unbeheizbar)', nutzung: 'NUF1', wofl: 'wintergarten' },
   { name: 'Lager', nutzung: 'NUF4', wofl: 'keine' },
   { name: 'Büro', nutzung: 'NUF2', wofl: 'keine' },
@@ -88,9 +93,10 @@ export function katalogAus(roh: unknown): KatalogEintrag[] | null {
     const x = e as Record<string, unknown>;
     if (typeof x.name !== 'string' || !x.name.trim()) continue;
     const art = typeof x.nutzungsart === 'string' && x.nutzungsart.trim() ? x.nutzungsart.trim() : undefined;
-    const nutzung = (GRUPPEN.has(x.nutzung as Nutzungsgruppe) ? x.nutzung : (art && gruppeAusNutzungsart(art)) || 'NUF1') as Nutzungsgruppe;
+    // die Nutzungsart bestimmt die Gruppe (wie in der Rechnung, raumNutzung) – eine abweichende Gruppe gilt nicht
+    const nutzung = ((art && gruppeAusNutzungsart(art)) || (GRUPPEN.has(x.nutzung as Nutzungsgruppe) ? x.nutzung : 'NUF1')) as Nutzungsgruppe;
     const wofl = (KATEGORIEN.has(x.wofl as WoflKategorie) ? x.wofl : 'keine') as WoflKategorie;
-    out.push({ name: x.name.trim(), nutzung, wofl, ...(art ? { nutzungsart: art } : {}) });
+    out.push({ name: x.name.trim(), nutzung, wofl, ...(art ? { nutzungsart: art } : {}), ...(x.ausserhalbBgf === true ? { ausserhalbBgf: true } : {}) });
   }
   return out;
 }
@@ -105,13 +111,15 @@ export function nutzungsartenAus(roh: unknown): Nutzungsart[] | null {
 
 /** Katalogeintrag auf einen Raum anwenden: Name, Nutzung, Nutzungsart und Anrechnung (Wohnung bleibt) */
 export function katalogAnwenden(r: RoomShape, e: KatalogEintrag): RoomShape {
-  const { nutzungsart: _alt, ...rest } = r;
+  const { nutzungsart: _alt, ausserhalbBgf: _aussen, ...rest } = r;
   void _alt;
+  void _aussen;
   return {
     ...rest,
     name: e.name,
     nutzung: e.nutzung,
     ...(e.nutzungsart ? { nutzungsart: e.nutzungsart } : {}),
+    ...(e.ausserhalbBgf ? { ausserhalbBgf: true } : {}),
     katalog: e.name,
     wofl: { ...r.wofl, kategorie: e.wofl, faktor: undefined, anteile: undefined },
   };
@@ -121,6 +129,16 @@ export function katalogAnwenden(r: RoomShape, e: KatalogEintrag): RoomShape {
 export function katalogEintrag(katalog: readonly KatalogEintrag[], name: string): KatalogEintrag | undefined {
   const n = name.trim().toLowerCase();
   return n ? katalog.find((e) => e.name.toLowerCase() === n) : undefined;
+}
+
+/**
+ * Nutzungsgruppe eines Raums setzen: Eine Nutzungsart einer anderen Gruppe passt dann nicht mehr und entfällt (sonst
+ * rechnete raumNutzung weiter mit ihrer Gruppe), ebenso der Bezug zum Katalogeintrag.
+ */
+export function nutzungSetzen(s: RoomShape, g: Nutzungsgruppe): RoomShape {
+  const { nutzungsart, katalog: _k, ...rest } = s;
+  void _k;
+  return { ...rest, nutzung: g, ...(nutzungsart && gruppeAusNutzungsart(nutzungsart) === g ? { nutzungsart } : {}) };
 }
 
 /** Schreibweise ohne Leerzeichen, Punkte, Bindestriche – „WE 01“ = „WE01“ = „we-01“ */

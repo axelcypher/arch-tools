@@ -2,8 +2,9 @@ import { standNachSpeichern } from '@core/platform/projektDatei';
 import { create } from 'zustand';
 import type { Point } from '@core/geometry';
 import type { Project, Shape, ShapeKind, Storey } from '@core/model';
-import { createProject, createStorey, newId } from '@core/model';
+import { createProject, createStorey, leereMeta, newId } from '@core/model';
 import { parseProject, parseProjectData } from '@core/serialize';
+import { gleich } from '@core/zusammenfuehren';
 import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 import type { KopieOptionen, Lage } from '../core/geschosse';
@@ -85,6 +86,11 @@ interface EditorState {
 
   /** basis: Stand der Datei, aus der das Projekt stammt (null bei neuem Projekt); datei: deren Pfad bzw. Name */
   loadProject: (p: Project, basis?: Project | null, datei?: string | null) => void;
+  /**
+   * Zwischenstand nach einem Neustart übernehmen: wie loadProject, aber ungespeichert, wenn er von der Datei
+   * (basis) abweicht bzw. – ohne Datei – nicht leer ist. So fragen Öffnen/Neu/Schließen vor dem Verwerfen nach.
+   */
+  wiederherstellen: (p: Project, basis: Project | null, datei: string | null) => void;
   newProject: () => void;
   /** nach dem Speichern: Datei und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
   markSaved: (gespeichert: Project, datei: string, vorher: Project, dokument: number) => void;
@@ -107,14 +113,16 @@ interface EditorState {
 }
 
 export const useEditor = create<EditorState>((set, get) => {
-  const initial = loadAutosave() ?? createProject();
+  const altbestand = loadAutosave();
+  const initial = altbestand ?? createProject();
   return {
     project: initial,
     basis: null,
     datei: null,
     past: [],
     future: [],
-    dirty: false,
+    // Altbestand aus localStorage hat keine Datei: ungespeichert, sobald er etwas enthält
+    dirty: !!altbestand && !projektLeer(altbestand),
     dokument: 0,
     activeStoreyId: initial.storeys[0].id,
     selectedShapeId: null,
@@ -185,6 +193,12 @@ export const useEditor = create<EditorState>((set, get) => {
         fitRequest: get().fitRequest + 1,
         ifcModel: null,
       });
+    },
+    wiederherstellen: (p, basis, datei) => {
+      get().loadProject(p, basis, datei);
+      const dirty = basis ? !gleich(p, basis) : !projektLeer(p);
+      if (dirty) log.info('Ungespeicherter Zwischenstand wiederhergestellt', { datei });
+      set({ dirty });
     },
     newProject: () => get().loadProject(createProject()),
     markSaved: (gespeichert, datei, vorher, dokument) => {
@@ -437,20 +451,33 @@ function loadAutosave(): Project | null {
   }
 }
 
+/** leeres Projekt wie nach „Neu“: keine Flächen, kein Plan, nur ein Geschoss, ohne Name und Stammdaten */
+export function projektLeer(p: Project): boolean {
+  return p.storeys.length <= 1 && !p.storeys.some((s) => s.shapes.length || s.background) && !p.dateien?.length && p.name === createProject().name && gleich(p.meta, leereMeta());
+}
+
+/**
+ * Gespeicherten Zwischenstand (IndexedDB) übernehmen – nur, solange seit dem Start weder bearbeitet noch ein
+ * anderes Projekt geöffnet wurde (ein langsames Lesen überschreibt sonst das gewählte Projekt).
+ * Formate: bis 0.2 JSON-Text, bis 0.10 das Projekt, seither { project, basis, datei } fürs Zusammenführen.
+ * Gibt zurück, ob übernommen wurde.
+ */
+export function zwischenstandUebernehmen(raw: unknown): boolean {
+  const st = useEditor.getState();
+  if (!raw || st.past.length || st.dirty || st.dokument !== 0) return false;
+  const mitBasis = typeof raw === 'object' && raw !== null && 'project' in raw ? (raw as { project: unknown; basis: unknown; datei?: unknown }) : null;
+  const p = typeof raw === 'string' ? parseProject(raw) : parseProjectData(mitBasis ? mitBasis.project : raw);
+  const basis = mitBasis?.basis ? parseProjectData(mitBasis.basis) : null;
+  zwischenstandWirdGeladen(APP);
+  st.wiederherstellen(p, basis, typeof mitBasis?.datei === 'string' ? mitBasis.datei : null);
+  void restoreIfcModel(p);
+  log.info('Zwischenstand wiederhergestellt', { name: p.name, geschosse: p.storeys.length });
+  return true;
+}
+
 if (typeof indexedDB !== 'undefined' && zwischenstandLadenErlaubt(APP)) {
   idbGet(AUTOSAVE_KEY)
-    .then((raw) => {
-      const st = useEditor.getState();
-      if (!raw || st.past.length || st.dirty) return;
-      // bis 0.2 als JSON-Text, bis 0.10 als Projekt, seither mit Basis fürs Zusammenführen
-      const mitBasis = typeof raw === 'object' && raw !== null && 'project' in raw ? (raw as { project: unknown; basis: unknown; datei?: unknown }) : null;
-      const p = typeof raw === 'string' ? parseProject(raw) : parseProjectData(mitBasis ? mitBasis.project : raw);
-      const basis = mitBasis?.basis ? parseProjectData(mitBasis.basis) : null;
-      zwischenstandWirdGeladen(APP);
-      st.loadProject(p, basis, typeof mitBasis?.datei === 'string' ? mitBasis.datei : null);
-      void restoreIfcModel(p);
-      log.info('Zwischenstand wiederhergestellt', { name: p.name, geschosse: p.storeys.length });
-    })
+    .then(zwischenstandUebernehmen)
     .catch((e) => {
       // kein Autosave vorhanden oder nicht lesbar
       log.warn('Zwischenstand konnte nicht gelesen werden', e);

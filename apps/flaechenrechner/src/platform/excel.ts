@@ -3,7 +3,7 @@ import type { ProjectResult } from '@core/calc';
 import { buildExportContext, PLACEHOLDER_DOCS } from '../core/exportData';
 import { colLetter, excel, fuelleVorlage, NUM, platzhalterBlatt, styleHeader, styleSum, titel as title, toCellValue, writeFormulaResults } from '@core/excel/fill';
 import type { Project } from '@core/model';
-import { NUF_IDS, nutzungInfo } from '@core/norms';
+import { NUF_IDS, nutzungInfo, ZWEITE_BV_KURZ } from '@core/norms';
 import { raumRechenweg } from '../core/raumRechenweg';
 
 const round = (v: number, d: number) => Math.round(v * 10 ** d) / 10 ** d;
@@ -51,7 +51,11 @@ export async function exportDefault(project: Project, result: ProjectResult): Pr
     });
     ws.addRow([]);
     ws.addRow(['R = Regelfall, S = Sonderfall der Raumumschließung. KGF = BGF − NRF. BRI = Σ Umrissfläche × Höhe bzw. Volumen bis zur Dachhaut.']).font = { italic: true, color: { argb: 'FF6B7280' } };
-    ws.addRow([`Grundflächen und Rauminhalte nach DIN 277:2021-08 (BRI entspricht DIN 277-1:2016-01, § 6 BauPrüfVO NRW); Wohnfläche nach WoFlV vom 25.11.2003${ctx.scalars['projekt.massgrundlage_text'] ? `; ${ctx.scalars['projekt.massgrundlage_text']}` : ''}.`]).font = {
+    // wie der Kopf der Flächenaufstellung: Normausgaben, Vergleichsrechnung, Messverfahren und Planungsunterlagen (DIN 277, 5.1)
+    const woflNorm = project.settings.zweiteBV ? `Wohnfläche: ${ZWEITE_BV_KURZ}` : 'Wohnfläche nach WoFlV vom 25.11.2003';
+    const mess = ctx.scalars['projekt.massgrundlage_text'] || 'nicht angegeben';
+    const unterlagen = ctx.scalars['projekt.planunterlagen'] ? `; Planungsunterlagen: ${ctx.scalars['projekt.planunterlagen']}` : '';
+    ws.addRow([`Grundflächen und Rauminhalte nach DIN 277:2021-08 (Gebührentarif NRW, Tarifstelle 3.1.1.2; § 6 Nr. 1 BauPrüfVO NRW nennt DIN 277-1:2016-01); ${woflNorm}; Messverfahren: ${mess}${unterlagen}.`]).font = {
       italic: true,
       color: { argb: 'FF6B7280' },
     };
@@ -145,7 +149,10 @@ export async function exportDefault(project: Project, result: ProjectResult): Pr
         }
         const flaecheTeile = [...teilZeilen, ...(putzZeile ? [putzZeile] : [])].map((t) => `H${t}`);
         const nrfTeile = [...flaecheTeile, ...abzugZeilen.filter((a) => a.nrf).map((a) => `H${a.zeile}`)];
-        const nrf = zeile('NRF des Raums', null, null, null, { formula: `ROUND(SUM(${nrfTeile.join(',')}),2)`, result: round(w.nrf, 2) });
+        // außerhalb der BGF (ebenerdige Terrasse): keine NRF – nur die Wohnfläche folgt
+        const nrf = r.ausserhalbBgf
+          ? zeile('NRF: keine (außerhalb der BGF)', null, null, null, 0)
+          : zeile('NRF des Raums', null, null, null, { formula: `ROUND(SUM(${nrfTeile.join(',')}),2)`, result: round(w.nrf, 2) });
         ws.getRow(nrf).font = { bold: true };
         if (r.wofl.kategorie !== 'keine') {
           const woflTeile = [...flaecheTeile, ...w.zeilen.filter((z) => z.art === 'abzug').flatMap((z, i) => (z.wofl ? [`H${abzugZeilen[i].zeile}`] : []))];
@@ -211,7 +218,7 @@ export async function exportDefault(project: Project, result: ProjectResult): Pr
   // Wohnflächen
   {
     const ws = wb.addWorksheet('Wohnflächen');
-    title(ws, 'Wohnflächen nach WoFlV', project);
+    title(ws, project.settings.zweiteBV ? 'Wohnflächen – Vergleichsrechnung (Freisitze zu ½)' : 'Wohnflächen nach WoFlV', project);
     ws.addRow([]);
     const h = ws.addRow(['Wohnung', 'Räume', 'Grundfläche [m²]', 'Wohnfläche [m²]']).number;
     styleHeader(ws, h);

@@ -4,10 +4,10 @@ import { polygonArea } from '@core/geometry';
 import type { OutlineShape, Project } from '@core/model';
 import { istDachgeschoss } from '@core/model';
 import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
-import { MASSGRUNDLAGEN, NUF_IDS, NUTZUNGSGRUPPEN, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
+import { MASSGRUNDLAGEN, NUF_IDS, NUTZUNGSGRUPPEN, nutzungInfo, WOFL_KATEGORIEN, ZWEITE_BV_KURZ } from '@core/norms';
 import { briKoerper, briRechenweg, rechteckMasse } from '@core/rechenweg';
-import { statistik } from './bericht';
-import { kontrollText } from './background';
+import { planungsunterlagen, statistik } from './bericht';
+import { gueltigesKontrollmass, kontrollText } from './background';
 import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
 
 /**
@@ -64,10 +64,14 @@ export function buildExportContext(project: Project, result: ProjectResult, date
   // Maßgrundlage und Normausgaben für den Kopf (FR-05)
   scalars['projekt.massgrundlage'] = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.label ?? '';
   scalars['projekt.massgrundlage_text'] = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.text ?? '';
-  scalars['projekt.normen'] = 'Wohnfläche nach WoFlV vom 25.11.2003; Grundflächen und Rauminhalte nach DIN 277:2021-08';
+  scalars['projekt.normen'] = `${project.settings.zweiteBV ? `Wohnfläche: ${ZWEITE_BV_KURZ}` : 'Wohnfläche nach WoFlV vom 25.11.2003'}; Grundflächen und Rauminhalte nach DIN 277:2021-08`;
+  scalars['projekt.planunterlagen'] = planungsunterlagen(project);
   // Kontrollmaß nach dem Kalibrieren (F-16), je Geschoss mit Plan
   scalars['projekt.kontrollmass'] = project.storeys
-    .flatMap((s) => (project.settings.kontrollmasse?.[s.id] && s.background ? [`${s.name}: ${kontrollText(project.settings.kontrollmasse[s.id])}`] : []))
+    .flatMap((s) => {
+      const k = gueltigesKontrollmass(project, s);
+      return k ? [`${s.name}: ${kontrollText(k)}`] : [];
+    })
     .join('; ');
 
   const shapesById = new Map(project.storeys.flatMap((st) => st.shapes.map((sh) => [sh.id, sh] as const)));
@@ -86,9 +90,11 @@ export function buildExportContext(project: Project, result: ProjectResult, date
         dachgeschoss: dg.get(s.storeyId) ?? '',
         nummer: r.nummer,
         name: r.name,
-        nutzung: nutzungInfo(r.nutzung).kurz,
-        nutzung_text: nutzungInfo(r.nutzung).label,
-        umschliessung: r.umschliessung,
+        // außerhalb der BGF (ebenerdige Terrasse): keine Nutzungsgruppe der NRF, nur Wohnfläche
+        nutzung: r.ausserhalbBgf ? '' : nutzungInfo(r.nutzung).kurz,
+        nutzung_text: r.ausserhalbBgf ? 'außerhalb der BGF' : nutzungInfo(r.nutzung).label,
+        umschliessung: r.ausserhalbBgf ? '' : r.umschliessung,
+        ausserhalb_bgf: r.ausserhalbBgf ? 'ja' : '',
         flaeche: r2(r.area),
         flaeche_roh: r2(roh),
         putzabzug: sh?.kind === 'room' && sh.putzabzug ? sh.putzabzug : '',
@@ -264,9 +270,10 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
     keys: [
       ['projekt.massgrundlage', 'Maßgrundlage: „Planmaß Rohbau“, „Planmaß Fertigmaß“ oder „Aufmaß“ (Projekt-Einstellung)'],
       ['projekt.massgrundlage_text', 'als Satz, z. B. „Flächen aus Planmaßen (Rohbau), Putzabzug je Raum“'],
+      ['projekt.planunterlagen', 'Planungsunterlagen (DIN 277, 5.1): Eingabe im Projekt, sonst die hinterlegten Pläne je Geschoss'],
       ['projekt.kontrollmass', 'je kalibriertem Plan, z. B. „EG: aus Plan abgegriffen, Maßstab kalibriert, Kontrollmaß 8,00 m: Abweichung +0,12 %“'],
       ['projekt.normen', '„Wohnfläche nach WoFlV vom 25.11.2003; Grundflächen und Rauminhalte nach DIN 277:2021-08“'],
-      ['statistik.wohnungen, statistik.raeume, statistik.sonstige_nutzflaeche', 'Hochbaustatistik: Zahl der Wohnungen, Räume (NUF 1 ab 6 m² inkl. Küche), Nutzfläche ohne Wohnflächenräume [m²]'],
+      ['statistik.wohnungen, statistik.raeume, statistik.sonstige_nutzflaeche', 'Hochbaustatistik: Zahl der Wohnungen, Räume (NUF 1 ab 6 m², Küchen unabhängig von der Größe), Nutzfläche ohne Wohnflächenräume [m²]'],
     ],
   },
   {
@@ -282,7 +289,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['nebenflaeche', 'Summe der Räume ohne Wohnflächenanrechnung [m²]'],
       ['anzahl_raeume', 'Anzahl Räume'],
       ['name, hoehe, nr', 'nur geschoss.*: Bezeichnung, Geschosshöhe, laufende Nr.'],
-      ['sohle', 'nur geschoss.*: Bodenplatte UK Sohle bis Fußboden [m] (BRI ab Unterseite der Sohle)'],
+      ['sohle', 'nur geschoss.*: Bodenplatte inkl. Dämmung darunter, Unterkante bis Fußboden [m] (BRI ab dieser Unterkante)'],
       ['dachgeschoss, art', 'nur geschoss.*: „ja“ bei Dachgeschossen; „Dachgeschoss“ bzw. „Normalgeschoss“'],
     ],
   },
@@ -295,7 +302,8 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['raum.name', 'Raumbezeichnung'],
       ['raum.nutzung', 'Nutzungsgruppe kurz (z. B. NUF 1)'],
       ['raum.nutzung_text', 'Nutzungsgruppe ausgeschrieben'],
-      ['raum.umschliessung', 'R oder S'],
+      ['raum.umschliessung', 'R oder S (leer außerhalb der BGF)'],
+      ['raum.ausserhalb_bgf', '„ja“ bei Flächen außerhalb der BGF (z. B. ebenerdige Terrasse) – nur Wohnfläche, nicht in der NRF'],
       ['raum.flaeche', 'Grundfläche [m²] abzüglich Putzabzug (Abzugsflächen negativ)'],
       ['raum.flaeche_roh', 'Grundfläche ohne Putzabzug [m²]'],
       ['raum.putzabzug', 'Putzabzug in %'],
@@ -365,7 +373,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['wohnung.nr', 'laufende Nummer'],
       ['wohnung.name', 'Bezeichnung'],
       ['wohnung.anzahl_raeume', 'Anzahl Räume'],
-      ['wohnung.raeume_statistik', 'Räume für die Hochbaustatistik: NUF 1 ab 6 m² einschließlich Küche (Zählregel am Erhebungsbogen prüfen)'],
+      ['wohnung.raeume_statistik', 'Räume für die Hochbaustatistik: NUF 1 ab 6 m², Küchen unabhängig von der Größe (Bad, WC, Flur, Abstellräume nicht)'],
       ['wohnung.grundflaeche', 'Summe Grundflächen [m²]'],
       ['wohnung.wofl', 'Wohnfläche [m²]'],
     ],
