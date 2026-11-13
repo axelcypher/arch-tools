@@ -1394,11 +1394,12 @@ describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und d
     const punkt = (name: string) => knopf(host, name).querySelector<HTMLElement>('.nav-symbol .st-punkt');
     // die Baubeschreibung ist keinem Dokument zugeordnet: Ampel aus dem Füllstand (3 von 5 – unvollständig)
     expect(useAntrag.getState().dokumente.some((d) => d.formular?.pfad === 'BS9/004-Baubeschreibung (2026).frmsjf')).toBe(false);
-    expect(punkt('004-Baubeschreibung')!.className).toContain('unvollstaendig');
-    expect(punkt('004-Baubeschreibung')!.title).toBe('nicht vollständig ausgefüllt – nicht im Antragsumfang von BAUA 2');
+    expect(punkt('004-Baubeschreibung')!.className).toBe('st-punkt unvollstaendig neben');
+    expect(punkt('004-Baubeschreibung')!.title).toBe('nicht im Antragsumfang von BAUA 2 · nicht vollständig ausgefüllt');
     expect(knopf(host, '004-Baubeschreibung').title).toContain('nicht im Antragsumfang von BAUA 2');
     // zugeordnete behalten ihre Ampel ohne Hinweis (oberste Ebene und Unterordner)
     expect(punkt('001-Muster')!.title).not.toContain('nicht im Antragsumfang');
+    expect(punkt('001-Muster')!.className).not.toContain('neben');
     expect(punkt('002-Bauantrag (2026)')!.title).not.toContain('nicht im Antragsumfang');
   });
 
@@ -5517,7 +5518,7 @@ describe('Formulare umbenennen', () => {
     await klick(menuePunkt('Umbenennen'));
     // keine Rückfrage, gleich die Meldung
     expect(document.querySelector('.rf input')).toBeNull();
-    expect(useFormulare.getState().meldung?.text).toContain('in FORMA oder auf einem anderen Rechner geöffnet');
+    expect(useFormulare.getState().meldung?.text).toContain('in einem anderen Programm oder auf einem anderen Rechner geöffnet');
     expect(ds.dateien.has(ALT)).toBe(true);
   });
 

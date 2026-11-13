@@ -164,20 +164,21 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     const gezeigt = aktiv && haupt === 'formular';
     const doc = umfangDa ? statusVon.get(f.pfad) : undefined;
     const stamm = !doc && umfangDa ? stammStatus[f.pfad] : undefined;
-    const stammText = stamm ? `${STATUS_TEXT[stamm]} – nicht im Antragsumfang von ${fassung}` : '';
+    // zuerst, dass es nicht zum Antragsumfang gehört – der Status dahinter (nicht verwechselbar mit „Antragsordner“)
+    const stammText = stamm ? `nicht im Antragsumfang von ${fassung} · ${STATUS_TEXT[stamm]}` : '';
     return (
       <div key={f.pfad} role="listitem">
         <button
           className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
           aria-current={gezeigt ? 'page' : undefined}
-          title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : stamm ? `${f.name} – ${stammText}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}`}
+          title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : stamm ? `${f.name}\n${stammText}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}`}
           onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
           onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
         >
           <span className="nav-symbol">
             <Symbol name="formular" />
             {doc && <StatusPunkt status={doc.status} />}
-            {stamm && <StatusPunkt status={stamm} titel={stammText} />}
+            {stamm && <StatusPunkt status={stamm} titel={stammText} neben />}
           </span>
           <span className="nav-text">{f.name}</span>
           {fremd && (
