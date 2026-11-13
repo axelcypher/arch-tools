@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Kopf in der Desktop-Fassung (isTauri) allein gerendert: Menü „Mehr“ und Sammelmarke mit echter Fokusfolge
-import { act, createElement } from 'react';
+// Kopf in der Desktop-Fassung (isTauri) mit dem gemeinsamen Menü (MenueHost): „Mehr“ und Sammelmarke
+import { act, createElement, Fragment } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readProjectFile } from '@core/archive';
@@ -12,6 +12,7 @@ vi.mock('@core/platform/files', async (original) => ({
 }));
 
 const { Kopf } = await import('./components/Kopf');
+const { MenueHost } = await import('@core/ui/Menue');
 const { beispielOap } = await import('./beispiel.test');
 const { useBaurecht } = await import('./store');
 const { pruefstandBerechnen } = await import('./pruefung');
@@ -24,7 +25,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function render(): HTMLElement {
+function render(aufrufe: string[] = [], lageLaeuft = false): HTMLElement {
   const bytes = beispielOap();
   useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
   const s = useBaurecht.getState();
@@ -33,79 +34,111 @@ function render(): HTMLElement {
   document.body.appendChild(host);
   act(() => {
     root = createRoot(host);
-    root.render(createElement(Kopf, { stand, onRechtsstand: () => undefined, onLage: () => undefined, onProtokoll: () => undefined, onSpeichern: () => undefined, onAntrag: () => undefined, lageLaeuft: false }));
+    root.render(
+      createElement(
+        Fragment,
+        null,
+        createElement(Kopf, {
+          key: 'k',
+          stand,
+          onRechtsstand: () => aufrufe.push('rechtsstand'),
+          onLage: () => aufrufe.push('lage'),
+          onProtokoll: () => undefined,
+          onSpeichern: () => undefined,
+          onAntrag: () => undefined,
+          lageLaeuft,
+        }),
+        createElement(MenueHost, { key: 'm' }),
+      ),
+    );
   });
   return host;
 }
 
-/** Klick wie im Browser: mousedown und Fokuswechsel (blur mit relatedTarget) als eigenes Ereignis, dann click */
+/** Klick wie im Browser: pointerdown (das gemeinsame Menü schließt darauf), Fokus, click */
 function klick(el: HTMLElement) {
   act(() => {
-    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    const vorher = document.activeElement;
-    if (vorher instanceof HTMLElement && vorher !== el) vorher.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: el }));
+    el.dispatchEvent(new Event('pointerdown', { bubbles: true }));
     el.focus();
   });
-  act(() => {
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  });
+  act(() => void el.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 }
+const menue = () => document.querySelector<HTMLElement>('[role="menu"]');
+const punkte = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role="menuitem"]')];
+const taste = (key: string) => act(() => void (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
 
 describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
-  it('Sammelmarke öffnet und schließt „Mehr“; Esc gibt den Fokus an die Sammelmarke zurück', () => {
+  it('Sammelmarke öffnet das gemeinsame Menü mit „Lage abfragen“ und „Rechtsstand prüfen“; Esc gibt den Fokus an die Marke zurück', () => {
     const host = render();
     const marke = host.querySelector<HTMLButtonElement>('.br-marke-knopf')!;
     expect(marke, 'Sammelmarke der Warnungen').toBeTruthy();
+    expect(marke.getAttribute('aria-haspopup')).toBe('menu');
     klick(marke);
-    expect(host.querySelector('[role="menu"]')).not.toBeNull();
-    // Fokus steht im Menü; zweiter Klick auf die Marke schließt
-    expect(document.activeElement?.getAttribute('role')).toBe('menuitem');
-    klick(marke);
-    expect(host.querySelector('[role="menu"]')).toBeNull();
-    // erneut öffnen, mit Esc schließen: Fokus zurück an die Marke
-    klick(marke);
-    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
-    expect(host.querySelector('[role="menu"]')).toBeNull();
+    expect(menue()).not.toBeNull();
+    expect(marke.getAttribute('aria-expanded')).toBe('true');
+    expect(punkte().map((p) => p.textContent)).toEqual([expect.stringContaining('Lage abfragen'), expect.stringContaining('Rechtsstand prüfen')]);
+    // die Warnungen stehen kurz als Hinweis an „Rechtsstand prüfen“, vollständig im Tooltip
+    expect(punkte()[1].getAttribute('title')).toBe(marke.title);
+    const n = marke.title.split(' · ').length;
+    expect(punkte()[1].textContent).toContain(n > 1 ? `${n} Warnungen` : marke.title);
+    expect(document.activeElement).toBe(punkte()[0]);
+    taste('Escape');
+    expect(menue()).toBeNull();
     expect(document.activeElement).toBe(marke);
-  });
-
-  it('mit der Tastatur auf die Sammelmarke (ohne Maus) schließt das Menü wie jeder Fokuswechsel', () => {
-    const host = render();
-    const marke = host.querySelector<HTMLButtonElement>('.br-marke-knopf')!;
+    // zweiter Klick auf den Öffner eines offenen Menüs schließt es
     klick(marke);
-    expect(host.querySelector('[role="menu"]')).not.toBeNull();
-    // Umschalt+Tab aus dem Menü landet auf der Sammelmarke – kein Mausdruck
-    act(() => {
-      document.activeElement!.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: marke }));
-      marke.focus();
-    });
-    expect(host.querySelector('[role="menu"]')).toBeNull();
+    expect(menue()).not.toBeNull();
+    klick(marke);
+    expect(menue()).toBeNull();
   });
 
-  it('Menüeinträge sind keine eigenen Tabstopps; Tab hinaus schließt', () => {
-    const host = render();
-    const mehr = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.startsWith('Mehr'))!;
+  it('„Mehr“ ist ein MenueKnopf mit Pfeil-Symbol; ein Punkt führt die Aktion aus', () => {
+    const aufrufe: string[] = [];
+    const host = render(aufrufe);
+    const mehr = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Mehr')!;
+    expect(mehr.getAttribute('aria-haspopup')).toBe('menu');
+    expect(mehr.querySelector('svg.symbol')).not.toBeNull();
+    expect(mehr.textContent).not.toContain('▾');
     klick(mehr);
-    const eintraege = [...host.querySelectorAll<HTMLElement>('[role="menuitem"]')];
-    expect(eintraege.length).toBeGreaterThan(0);
-    for (const e of eintraege) expect(e.tabIndex).toBe(-1);
-    // Fokus verlässt das Menü (z. B. auf „Prüfprotokoll“)
-    const weiter = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Prüfprotokoll')!;
-    act(() => weiter.focus());
-    expect(host.querySelector('[role="menu"]')).toBeNull();
+    expect(document.activeElement).toBe(punkte()[0]);
+    taste('ArrowDown');
+    expect(document.activeElement).toBe(punkte()[1]);
+    act(() => punkte()[1].click());
+    expect(aufrufe).toEqual(['rechtsstand']);
+    expect(menue()).toBeNull();
   });
 
-  it('Pos1 und Ende springen auf den ersten bzw. letzten Eintrag', () => {
+  it('„Speichern“ zeigt ungespeicherte Änderungen mit der Klasse „ungespeichert“ und im Namen', () => {
     const host = render();
-    const mehr = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.startsWith('Mehr'))!;
-    klick(mehr);
-    const eintraege = [...host.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])')];
-    expect(eintraege.length).toBeGreaterThan(1);
-    act(() => eintraege[0].focus());
-    const taste = (key: string) => act(() => void (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
-    taste('End');
-    expect(document.activeElement).toBe(eintraege[eintraege.length - 1]);
-    taste('Home');
-    expect(document.activeElement).toBe(eintraege[0]);
+    const speichern = () => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Speichern')!;
+    expect(speichern().classList.contains('ungespeichert')).toBe(false);
+    expect(speichern().getAttribute('aria-label')).toBe('Speichern');
+    act(() => useBaurecht.getState().einreichungSetzen('2027-03-01'));
+    expect(speichern().classList.contains('ungespeichert')).toBe(true);
+    expect(speichern().getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+  });
+
+  it('gesperrte Punkte: aria-disabled mit Grund im Hinweis, ohne Wirkung, Erstfokus auf dem ersten bedienbaren Punkt', () => {
+    const aufrufe: string[] = [];
+    const host = render(aufrufe, true);
+    const mehr = () => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Mehr')!;
+    klick(mehr());
+    const [lage, rechtsstand] = punkte();
+    expect(lage.getAttribute('aria-disabled')).toBe('true');
+    expect(lage.textContent).toContain('läuft');
+    expect(rechtsstand.getAttribute('aria-disabled')).toBeNull();
+    expect(document.activeElement).toBe(rechtsstand);
+    act(() => lage.click());
+    expect(aufrufe).toEqual([]);
+    expect(menue()).not.toBeNull();
+    taste('Escape');
+    // Texte werden geholt: auch „Rechtsstand prüfen“ gesperrt – erreichbar, der Grund steht daneben
+    act(() => useBaurecht.setState({ laedt: ['bund/baugb'] }));
+    klick(mehr());
+    expect(punkte()[1].getAttribute('aria-disabled')).toBe('true');
+    expect(punkte()[1].textContent).toContain('Texte werden geholt');
+    act(() => punkte()[1].click());
+    expect(aufrufe).toEqual([]);
+    act(() => useBaurecht.setState({ laedt: [] }));
   });
 });

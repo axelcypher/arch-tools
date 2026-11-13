@@ -15,6 +15,7 @@ import { ProjektUebersicht } from './ProjektUebersicht';
 import { StammdatenDialog } from './Stammdaten';
 import './projektwahl.css';
 import { useEscSchliessen } from './Dialog';
+import { Symbol } from './Symbol';
 import { appMitWas } from '../appNamen';
 
 const log = logger('projektwahl');
@@ -187,7 +188,7 @@ export function ProjektWahl({
           {projektAnlegenMoeglich() && (
             <div className="button-row pw-aktionen">
               <button className="primary" onClick={() => projektAnlegenStarten(false)} title={`Neues Projekt mit dem Assistenten von ${appMitWas('ordner')} anlegen`}>
-                + Neues Projekt anlegen
+                <Symbol name="plus" /> Neues Projekt anlegen …
               </button>
             </div>
           )}
