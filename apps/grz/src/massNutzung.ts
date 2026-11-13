@@ -370,7 +370,7 @@ function raeumePruefenRechnen(project: Project, st: Storey, floorZ: number, bauo
         : nachName === 'ja'
           ? erfuellt
             ? `Aufenthaltsraum nach Nutzung; ${anf.text} auf ${pctNah(anteil, anf.anteil)} erfüllt`
-            : `${anf.text} nur auf ${pctNah(anteil, anf.anteil)} – zählt als zum Aufenthalt bestimmter Raum in der GF „mit“ (Spanne); von Hand festlegen`
+            : `${anf.text} nur auf ${pctNah(anteil, anf.anteil)} – zählt als zum Aufenthalt bestimmter Raum in der GF „mit“ (Spanne)`
           : nachName === 'treppe'
             ? 'Treppenraum'
             : 'kein Aufenthaltsraum nach Nutzung';
@@ -1080,7 +1080,10 @@ export function massNachweis(project: Project): Nachweis {
   // § 19 Abs. 4 S. 2: bis 50 % über die GR, höchstens GRZ 0,8 – nie unter der GR selbst; abweichende Festsetzung (S. 3) geht vor
   const gr2Grenze = (gr: number) => (m.grzIIMax !== undefined && G !== undefined ? m.grzIIMax * G : Math.max(gr, Math.min(1.5 * gr, G !== undefined ? 0.8 * G : Infinity)));
   const gr2Absolut = grz2 && m.grAbsolut !== undefined ? absolut(grz2.flaeche, gr2Grenze(m.grAbsolut)) : undefined;
-  const gfAbsolut = absolut(gf, m.gfAbsolut);
+  const gfAbsolutOhne = absolut(gf, m.gfAbsolut);
+  // mit zu prüfenden Aufenthaltsräumen überschritten: „prüfen“ wie bei der GFZ
+  const gfAbsolut =
+    gfAbsolutOhne && gfAbsolutOhne.status === 'ok' && gfMitPruefen !== undefined && gfMitPruefen > gfAbsolutOhne.zulaessig + 1e-9 ? { ...gfAbsolutOhne, status: 'pruefen' as Status } : gfAbsolutOhne;
   const bmz = m.bmz !== undefined ? kennzahl(baumasse, G, m.bmz) : undefined;
   if (m.bmz !== undefined) hinweise.push({ text: `Baumasse vereinfacht aus Grundfläche × Geschosshöhe der Vollgeschosse (${fmtA(baumasse).replace('m²', 'm³')}).`, art: 'sachlich' });
   if (m.traufhoeheMax !== undefined || m.firsthoeheMax !== undefined) {

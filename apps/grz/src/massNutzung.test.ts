@@ -853,7 +853,11 @@ describe('Folgerunde: Grenzwerte, absolute GR II, Gemeinschaftsanlagen, Aufentha
     const n = massNachweis(p);
     const r = n.raeume.find((x) => x.name === '9 Kinderzimmer')!;
     expect(r.zuPruefen).toBe(true);
-    expect(r.begruendung).toContain('von Hand festlegen');
+    expect(r.begruendung).toContain('Spanne');
+    // absolute GF: mit dem Raum überschritten → „prüfen“
+    const q0 = structuredClone(p);
+    q0.massNutzung = { ...q0.massNutzung, gfAbsolut: n.gf + 0.01 };
+    expect(massNachweis(q0).gfAbsolut?.status).toBe('pruefen');
     expect(n.hinweise.some((h) => h.text.includes('9 Kinderzimmer') && h.text.includes('ohne die geforderte lichte Höhe'))).toBe(true);
     // GF als Spanne: mit dem Raum größer, Gegenprobe ohne zu prüfende Räume keine Spanne
     expect(n.gfz.flaecheMitOffenen).toBeGreaterThan(n.gf);
