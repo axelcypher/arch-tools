@@ -18,7 +18,7 @@ import type { AvaDateien, DateiStand } from '../dateien';
 import type { AvaEinstellungen, MailVorlage } from '../einstellungen';
 import { neueId } from '../lv/modell';
 import type { Gewerk } from '../projekt';
-import { nameBilden } from './benennung';
+import { dateinameSicher, nameBilden } from './benennung';
 import type { Wert } from '@core/platzhalter';
 import { globaleAva } from '../platzhalter';
 import type { DeckblattDaten } from './deckblatt';
@@ -55,6 +55,8 @@ export interface Erfassung {
   lfd?: number;
   rechnungsnummer?: string;
   rechnungsdatum?: string;
+  /** Zugang der Rechnung (ab hier laufen die Zahlungsfristen nach § 16 VOB/B) */
+  eingang?: string;
   freigabe?: string;
   /** mit Korrektur (Deckblatt) */
   pruefung?: Pruefung;
@@ -73,6 +75,51 @@ export const artName = (e: AvaEinstellungen, art: string, lfd?: number) => {
 
 /** freigegebener Betrag (Zahlung) einer Erfassung */
 export const zahlbetrag = (er: Erfassung) => (er.pruefung ? pruefen(er.pruefung).zahlung : (er.betrag ?? 0));
+
+/**
+ * Teilerfolg beim Erfassen: Die Rechnung steht schon in der Kostenkontrolle (Nummer vergeben), aber die Projektdatei
+ * ließ sich nicht speichern. Nicht neu erfassen (sonst doppelt mit neuer Nummer), sondern mit
+ * {@link datensatzNachtragen} nur die Projektdatei nachholen.
+ */
+export class TeilweiseErfasst extends Error {
+  constructor(
+    readonly datensatz: RechnungsDatensatz,
+    readonly kk: KkStand | null,
+    readonly ursache: unknown,
+  ) {
+    super(
+      `Die Rechnung ist in der Kostenkontrolle als Nr. ${datensatz.nr || '—'} eingetragen, aber die Projektdatei ließ sich nicht speichern (${ursache instanceof Error ? ursache.message : String(ursache)}). Bitte nicht neu erfassen, sondern „Projektdatei erneut speichern“ wählen.`,
+    );
+    this.name = 'TeilweiseErfasst';
+  }
+}
+
+/** Datensatz in die Projektdatei nachtragen (nach {@link TeilweiseErfasst}); ein schon vorhandener bleibt einmal */
+export function datensatzNachtragen(k: Kontext, d: RechnungsDatensatz): Promise<AvaProjekt> {
+  return avaAendern(k.fs.projektordner, k.ordner, k.oap, (a) => (a.rechnungen.some((r) => r.id === d.id) ? a : { ...a, rechnungen: [...a.rechnungen, d] }));
+}
+
+/**
+ * Teilerfolg beim Ablegen: Der Scan liegt schon im Auftragsordner, aber die Projektdatei ließ sich nicht speichern.
+ * Mit {@link ablageNachtragen} die Datei am Datensatz nachtragen.
+ */
+export class TeilweiseAbgelegt extends Error {
+  constructor(
+    readonly pfad: string,
+    readonly ursache: unknown,
+  ) {
+    super(`Der Scan liegt jetzt unter „${pfad}“, aber die Projektdatei ließ sich nicht speichern (${ursache instanceof Error ? ursache.message : String(ursache)}).`);
+    this.name = 'TeilweiseAbgelegt';
+  }
+}
+
+/** abgelegte Datei am Datensatz eintragen (Status „abgelegt“, „versendet“ bleibt) */
+export function ablageNachtragen(k: Kontext, id: string, pfad: string): Promise<AvaProjekt> {
+  return avaAendern(k.fs.projektordner, k.ordner, k.oap, (a) => ({
+    ...a,
+    rechnungen: a.rechnungen.map((r) => (r.id === id ? { ...r, datei: pfad, status: r.status === 'versendet' ? 'versendet' : 'abgelegt' } : r)),
+  }));
+}
 
 /** Kostenkontrolle neu einlesen */
 export async function kkLaden(fs: AvaDateien, ordner: string, pfad: string): Promise<KkStand> {
@@ -110,6 +157,7 @@ export async function rechnungErfassen(k: Kontext, kkPfad: string | null, er: Er
     firma: er.firma,
     ...(er.rechnungsnummer ? { rechnungsnummer: er.rechnungsnummer } : {}),
     ...(er.rechnungsdatum ? { rechnungsdatum: er.rechnungsdatum } : {}),
+    ...(er.eingang ? { eingang: er.eingang } : {}),
     ...(er.freigabe ? { freigabe: er.freigabe } : {}),
     ...(er.pruefung ? { pruefung: er.pruefung } : {}),
     betrag,
@@ -117,7 +165,14 @@ export async function rechnungErfassen(k: Kontext, kkPfad: string | null, er: Er
     erfasst: jetzt.toISOString(),
     ...(er.bemerkung ? { bemerkung: er.bemerkung } : {}),
   };
-  const ava = await avaAendern(k.fs.projektordner, k.ordner, k.oap, (a) => ({ ...a, rechnungen: [...a.rechnungen, datensatz] }));
+  let ava: AvaProjekt;
+  try {
+    ava = await datensatzNachtragen(k, datensatz);
+  } catch (e) {
+    // die Kostenkontrolle ist schon geschrieben: Teilerfolg melden statt „nicht erfasst“
+    if (kkPfad) throw new TeilweiseErfasst(datensatz, kkNeu, e);
+    throw e;
+  }
   beschreibung.push('Projektdatei: Prüfung gespeichert');
   return { datensatz, kk: kkNeu, ava, beschreibung };
 }
@@ -185,21 +240,37 @@ export function auftragsordner(k: Kontext, g: Gewerk | null, gewerk: string): st
  * Schritt 2: Scan ablegen – umbenannt in den Auftragsordner; mit `deckblatt` wird es digital vorangestellt.
  * Liefert den Pfad der abgelegten Datei.
  */
-export async function scanAblegen(k: Kontext, d: RechnungsDatensatz, g: Gewerk | null, scan: { ordner: string; datei: string }, o: { deckblatt?: boolean; name?: string } = {}): Promise<{ pfad: string; ava: AvaProjekt }> {
-  const name = o.name ?? rechnungsDateiname(k, d);
+export async function scanAblegen(
+  k: Kontext,
+  d: RechnungsDatensatz,
+  g: Gewerk | null,
+  scan: { ordner: string; datei: string },
+  o: { deckblatt?: boolean; name?: string } = {},
+): Promise<{ pfad: string; ava: AvaProjekt; warnung?: string }> {
+  const name = dateinameSicher(o.name ?? rechnungsDateiname(k, d));
+  if (!name || /^\.+$/.test(name)) throw new Error('Bitte einen Dateinamen angeben.');
   const ziel = `${auftragsordner(k, g, d.gewerk)}/${name}`;
+  if (await k.fs.lies(k.ordner, ziel)) throw new Error(`Im Auftragsordner gibt es schon „${name}“ – bitte einen anderen Namen wählen.`);
   let daten: Uint8Array | undefined;
   if (o.deckblatt && /\.pdf$/i.test(scan.datei)) {
     const s = await k.fs.lies(scan.ordner, scan.datei);
     if (!s) throw new Error(`${scan.datei}: Scan nicht gefunden`);
     daten = await deckblattVoranstellen(await deckblattErzeugen(k, d), s.daten);
   }
-  await k.fs.scanUebernehmen(scan.ordner, scan.datei, k.ordner, ziel, daten);
-  const ava = await avaAendern(k.fs.projektordner, k.ordner, k.oap, (a) => ({
-    ...a,
-    rechnungen: a.rechnungen.map((r) => (r.id === d.id ? { ...r, datei: ziel, status: r.status === 'versendet' ? 'versendet' : 'abgelegt' } : r)),
-  }));
-  return { pfad: ziel, ava };
+  let warnung: string | undefined;
+  try {
+    await k.fs.scanUebernehmen(scan.ordner, scan.datei, k.ordner, ziel, daten);
+  } catch (e) {
+    // liegt die Datei trotzdem im Projekt (z. B. Scan nicht löschbar), ist das ein Teilerfolg: Datei eintragen
+    if (!(await k.fs.lies(k.ordner, ziel).catch(() => null))) throw e;
+    warnung = e instanceof Error ? e.message : String(e);
+  }
+  try {
+    const ava = await ablageNachtragen(k, d.id, ziel);
+    return { pfad: ziel, ava, ...(warnung ? { warnung } : {}) };
+  } catch (e) {
+    throw new TeilweiseAbgelegt(ziel, e);
+  }
 }
 
 /** Werte für die Platzhalter der Mailvorlagen */
@@ -218,17 +289,33 @@ export function mailWerte(k: Kontext, d: RechnungsDatensatz, ava: AvaProjekt): R
   };
 }
 
+/**
+ * Empfänger trennen: an „;“ und an „,“ – ein Teil ohne „@“ gehört aber zum nächsten („Müller, Hans <h@example.org>“
+ * bleibt ein Empfänger).
+ */
+export function empfaengerListe(s: string): string[] {
+  const out: string[] = [];
+  for (const teil of s.split(';')) {
+    let offen = '';
+    for (const stueck of teil.split(',')) {
+      offen = offen ? `${offen},${stueck}` : stueck;
+      if (offen.includes('@')) {
+        out.push(offen.trim());
+        offen = '';
+      }
+    }
+    if (offen.trim()) out.push(offen.trim());
+  }
+  return out.filter(Boolean);
+}
+
 /** Mailentwurf mit der abgelegten Rechnung als Anhang öffnen */
 export async function mailEntwurf(k: Kontext, d: RechnungsDatensatz, ava: AvaProjekt, vorlage: MailVorlage, jetzt = new Date()): Promise<AvaProjekt> {
   if (!d.datei) throw new Error('Die Rechnung ist noch nicht abgelegt – zuerst den Scan übernehmen.');
   const pdf = await k.fs.lies(k.ordner, d.datei);
   if (!pdf) throw new Error(`${d.datei}: nicht gefunden`);
   const w = mailWerte(k, d, ava);
-  const liste = (s: string) =>
-    vorlageFuellen(s, w)
-      .split(/[;,]/)
-      .map((x) => x.trim())
-      .filter(Boolean);
+  const liste = (s: string) => empfaengerListe(vorlageFuellen(s, w));
   const an = liste(vorlage.an);
   const name = d.datei.split('/').pop()!;
   const eml = emlBauen({ an, cc: liste(vorlage.cc), betreff: vorlageFuellen(vorlage.betreff, w), text: vorlageFuellen(vorlage.text, w), anhaenge: [{ name, daten: pdf.daten }] }, jetzt);

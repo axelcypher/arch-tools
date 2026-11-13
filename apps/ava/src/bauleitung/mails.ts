@@ -122,8 +122,9 @@ function teilLesen(roh: string, out: { text?: string; html?: string; anhaenge: s
     return;
   }
   const name = param(disp, 'filename') ?? param(typ, 'name');
+  // „100% Rabatt.pdf“: ein einzelnes % ist keine Prozent-Kodierung – dann den Namen unverändert lassen
   if (/attachment/i.test(disp) || (name && !/^text\//i.test(typ))) {
-    if (name) out.anhaenge.push(kopfDekodieren(decodeURIComponent(name)));
+    if (name) out.anhaenge.push(kopfDekodieren(prozentDekodieren(name)));
     return;
   }
   const bytes = enc === 'base64' ? base64Bytes(koerper) : enc === 'quoted-printable' ? qpBytes(koerper) : new Uint8Array([...koerper].map((c) => c.charCodeAt(0) & 0xff));
@@ -212,4 +213,13 @@ export function msgLesen(bytes: Uint8Array): Mail {
 
 export function mailLesen(name: string, bytes: Uint8Array): Mail {
   return /\.msg$/i.test(name) ? msgLesen(bytes) : emlLesen(bytes);
+}
+
+/** Prozent-Kodierung auflösen; ein Name mit „%“, das keine Kodierung ist, bleibt unverändert */
+function prozentDekodieren(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
 }
