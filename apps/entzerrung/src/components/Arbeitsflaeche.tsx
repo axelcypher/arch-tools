@@ -13,6 +13,7 @@ import { mul } from '../geo/mat';
 import type { Pt } from '../geo/mat';
 import { bereichVon, flaecheVon, inEbene, pixelGroesse } from '../geo/messen';
 import { fotosHinzufuegen } from '../projekt';
+import { Symbol } from '@core/ui/Symbol';
 import { kuerzelErlaubt } from '../tastatur';
 import { ECKEN, ECKEN_KURZ } from '../model';
 import type { Ebene, Foto } from '../model';
@@ -402,7 +403,7 @@ export function Arbeitsflaeche() {
             Ein Foto einer ebenen Fläche (Fassade, Wand, Boden) hinzufügen oder ins Fenster ziehen.
           </p>
           <button className="primary" onClick={() => void fotosHinzufuegen()}>
-            Foto hinzufügen …
+            <Symbol name="plus" /> Foto hinzufügen …
           </button>
         </div>
       )}

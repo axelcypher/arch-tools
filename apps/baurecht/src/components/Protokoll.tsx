@@ -414,12 +414,8 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               Jetzt speichern
             </button>
           )}
-          <button type="button" className="br-drucken" data-startfokus="" onClick={() => druckenAls({ datei, projektName: project.name, zusatz: `Baurecht ${antrag}` })}>
-            Drucken / PDF …
-          </button>
           <button
             type="button"
-            className="primary"
             onClick={abschliessen}
             disabled={!!sperre}
             aria-describedby={sperre && !abgelegt?.speichern ? 'br-sperre-grund' : undefined}
@@ -430,9 +426,12 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
           <button type="button" onClick={onClose}>
             Schließen
           </button>
+          <button type="button" className="primary br-drucken" data-startfokus="" onClick={() => druckenAls({ datei, projektName: project.name, zusatz: `Baurecht ${antrag}` })}>
+            Drucken / PDF …
+          </button>
         </div>
         {/* Meldung nach dem Abschließen: der Text in einer stehenden Live-Region, der Knopf daneben (nicht mitgelesen) */}
-        <div ref={meldung} tabIndex={-1} className={abgelegt ? 'br-meldung br-meldung-info no-print br-abgelegt' : 'no-print'}>
+        <div ref={meldung} tabIndex={-1} className={abgelegt ? 'meldung no-print br-abgelegt' : 'no-print'}>
           <span role="status" id="br-abgelegt-text">
             {abgelegt?.text ?? ''}
           </span>
@@ -464,7 +463,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
           )}
         </div>
         {entwuerfe > 0 && (
-          <p className="br-meldung br-meldung-warn br-entwurf-hinweis no-print" role="status">
+          <p className="meldung warnung br-entwurf-hinweis no-print" role="status">
             Entwurf: {entwurfText.charAt(0).toUpperCase() + entwurfText.slice(1)} {entwuerfe === 1 ? 'ist' : 'sind'} noch nicht gespeichert und bestätigt – unten als „Entwurf“ bzw. „noch nicht
             gespeichert“ gekennzeichnet. Abschließen lässt sich die Prüfung erst nach dem Speichern.
           </p>

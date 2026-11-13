@@ -86,7 +86,7 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   Rechte: Hauptfenster `capabilities/default.json`, herausgelöste Fenster `capabilities/fenster.json` (ohne Updates,
   Neustart und neue Fenster).
 - **Ausstehendes Schreiben vor dem Schließen** (`vorDemSchliessen` in `rahmen.ts`): Schreibt eine App verzögert
-  (QUADRIO 600 ms nach einer Änderung in IndexedDB – angemeldet; ATLAS etwa 400 ms – die Anmeldung dort steht noch aus), meldet sie mit
+  (etwa QUADRIO 600 ms nach einer Änderung in IndexedDB, ATLAS etwa 400 ms), meldet sie mit
   `vorDemSchliessen(async () => …)` an, was vor dem Ende
   noch fertig werden muss – die Funktion soll das Schreiben sofort ausführen und abwarten. Das gilt auch, wenn keine
   ungespeicherten Änderungen gemeldet sind. Abgewartet wird vor dem Schließen des Fensters (× und System), dem
@@ -161,10 +161,12 @@ am Tab bzw. in der Titelleiste ● erscheint.
 8. **App reagiert nicht:** Schwer nachzustellen; erwartet ist, dass *Speichern* bei einer hängenden App nach etwa
    3 Sekunden aufgibt und Arkly offen bleibt.
 9. **Neustart:** Eine App herauslösen, Arkly beenden und neu starten. Erwartet: Die App ist wieder als Tab da.
-10. **Verzögertes Schreiben** (QUADRIO; ATLAS, sobald es `vorDemSchliessen` anmeldet): In QUADRIO eine Fläche zeichnen oder verschieben und sofort (innerhalb einer halben Sekunde) den Tab schließen
-    bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Bei QUADRIO (lokales IndexedDB) erscheint die Rückfrage praktisch
-    nie; bei ATLAS mit getrenntem Netzlaufwerk nach etwa 5 s „ATLAS speichert noch“: Enter bzw. „Weiter warten“ wartet erneut, Esc bzw. „Abbrechen“ lässt Tab bzw.
-    Fenster offen, „Trotzdem schließen“ schließt.
+10. **Verzögertes Schreiben** (ATLAS und QUADRIO melden `vorDemSchliessen` an): In ATLAS etwas ändern bzw. in QUADRIO eine Fläche zeichnen oder verschieben und sofort (innerhalb einer halben Sekunde) den Tab schließen
+    bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Mit getrenntem Netzlaufwerk erscheint nach
+    etwa 5 s „ATLAS speichert noch“: Enter bzw. „Weiter warten“ wartet erneut, Esc bzw. „Abbrechen“ lässt Tab bzw.
+    Fenster offen, „Trotzdem schließen“ schließt. Scheitert das Schreiben dagegen sofort mit einem Fehler, schließt das Fenster
+    derzeit ohne Rückfrage; ATLAS protokolliert den Fehler (die Rückfrage dazu baut Arkly/core). Bei QUADRIO (lokales IndexedDB) erscheint die
+    Rückfrage „speichert noch“ praktisch nie.
 
 ## Entwicklung
 

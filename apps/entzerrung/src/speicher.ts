@@ -32,6 +32,23 @@ function oeffnen(): Promise<IDBDatabase> {
 let db: Promise<IDBDatabase> | null = null;
 const verbindung = () => (db ??= oeffnen());
 
+/** laufende Schreibvorgänge (Stand und Fotos), damit das Schließen auf sie warten kann */
+const laufend = new Set<Promise<unknown>>();
+function merken<T>(arbeit: Promise<T>): Promise<T> {
+  laufend.add(arbeit);
+  void arbeit.finally(() => laufend.delete(arbeit)).catch(() => undefined);
+  return arbeit;
+}
+
+/**
+ * wartet, bis kein Schreiben mehr läuft – auch auf solche, die vor dem Ende des letzten laufenden Vorgangs starten.
+ * Nacheinander gestartete Fotos (etwa beim Öffnen) können danach noch folgen; deren Bilddaten trägt der nächste Stand
+ * ohnehin aus `bilder` nach.
+ */
+export async function schreibenAbgeschlossen(): Promise<void> {
+  while (laufend.size) await Promise.allSettled([...laufend]);
+}
+
 function anfrage<T>(store: string, modus: IDBTransactionMode, f: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   return verbindung().then(
     (d) =>
@@ -49,7 +66,11 @@ function anfrage<T>(store: string, modus: IDBTransactionMode, f: (s: IDBObjectSt
  * gelöscht werden nur Fotos, die weder dieses Dokument noch `behalten()` (Dokument und Rückgängig-Verlauf zum
  * Zeitpunkt des Löschens) braucht.
  */
-export async function standSchreiben(s: Stand, bilder: Record<string, Uint8Array> = {}, behalten: () => Set<string> = () => new Set(s.doc.fotos.map((f) => f.id))) {
+export function standSchreiben(s: Stand, bilder: Record<string, Uint8Array> = {}, behalten: () => Set<string> = () => new Set(s.doc.fotos.map((f) => f.id))): Promise<void> {
+  return merken(standSchreibenJetzt(s, bilder, behalten));
+}
+
+async function standSchreibenJetzt(s: Stand, bilder: Record<string, Uint8Array>, behalten: () => Set<string>) {
   try {
     const vorhanden = new Set((await anfrage('fotos', 'readonly', (o) => o.getAllKeys())).map(String));
     for (const f of s.doc.fotos) if (!vorhanden.has(f.id) && bilder[f.id]) await anfrage('fotos', 'readwrite', (o) => o.put(bilder[f.id], f.id));
@@ -62,12 +83,13 @@ export async function standSchreiben(s: Stand, bilder: Record<string, Uint8Array
   }
 }
 
-export async function fotoSchreiben(id: string, daten: Uint8Array) {
-  try {
-    await anfrage('fotos', 'readwrite', (o) => o.put(daten, id));
-  } catch (e) {
-    log.warn('Foto konnte nicht zwischengespeichert werden', e);
-  }
+export function fotoSchreiben(id: string, daten: Uint8Array): Promise<void> {
+  return merken(
+    anfrage('fotos', 'readwrite', (o) => o.put(daten, id)).then(
+      () => undefined,
+      (e) => log.warn('Foto konnte nicht zwischengespeichert werden', e),
+    ),
+  );
 }
 
 export async function standLesen(): Promise<{ stand: Stand; bilder: Record<string, Uint8Array> } | null> {

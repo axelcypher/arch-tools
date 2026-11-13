@@ -11,6 +11,7 @@ import { useOrdner } from './store';
 import { getEntries } from '@core/platform/log';
 import { istReserviert, ordnerAusTextMitMeldungen, sichererName, STANDARD } from './struktur';
 import { SPERRGRUND, SPERRGRUND_KURZ } from './components/StrukturSperre';
+import { schliessenVorbereiten } from '@core/platform/rahmen';
 
 /**
  * Struktur und Vorlagen (Gesamt-Review ATLAS): Kontextmenü per Tastatur, Meldungen, Werkzeugleiste, Ziehen, Textansicht
@@ -21,17 +22,40 @@ import { SPERRGRUND, SPERRGRUND_KURZ } from './components/StrukturSperre';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /** Eingriff in das Schreiben der Sicherungen (sonst unverändert): warten lassen bzw. scheitern lassen */
-const sicherungen_ = vi.hoisted(() => ({ vorher: null as null | (() => Promise<void>) }));
+const sicherungen_ = vi.hoisted(() => ({ vorher: null as null | (() => Promise<void>), schreiben: 0, scheitern: false }));
 vi.mock('@core/platform/konfig', async (original) => {
   const echt = await original<typeof import('@core/platform/konfig')>();
   return {
     ...echt,
+    konfigSchreibenWennUnveraendert: async (...a: Parameters<typeof echt.konfigSchreibenWennUnveraendert>) => {
+      if (a[0] === 'projektordner') {
+        sicherungen_.schreiben++;
+        if (sicherungen_.scheitern) throw new Error('Netzlaufwerk getrennt');
+      }
+      return echt.konfigSchreibenWennUnveraendert(...a);
+    },
     konfigAendern: async (...a: Parameters<typeof echt.konfigAendern>) => {
       if (a[0] === 'projektordner-sicherungen' && sicherungen_.vorher) await sicherungen_.vorher();
       return echt.konfigAendern(...a);
     },
   };
 });
+
+/** bei vorDemSchliessen angemeldete Funktionen mitschreiben (sonst unverändert), um ihr Ergebnis prüfen zu können */
+const vorbereitungen_ = vi.hoisted(() => ({ liste: [] as (() => Promise<void> | void)[] }));
+vi.mock('@core/platform/rahmen', async (original) => {
+  const echt = await original<typeof import('@core/platform/rahmen')>();
+  return {
+    ...echt,
+    vorDemSchliessen: (f: () => Promise<void> | void) => {
+      vorbereitungen_.liste.push(f);
+      return echt.vorDemSchliessen(f);
+    },
+  };
+});
+const vorbereitungenAusfuehren = async () => {
+  await Promise.all(vorbereitungen_.liste.map((f) => f()));
+};
 
 const echtesKonfigLaden = useOrdner.getState().konfigLaden;
 const SCHLUESSEL = 'arch-tools:konfig:projektordner';
@@ -50,6 +74,7 @@ function render(element: ReactElement = createElement(App)): HTMLElement {
 }
 beforeEach(() => {
   sicherungen_.vorher = null;
+  sicherungen_.scheitern = false;
   localStorage.clear();
   useOrdner.setState({
     stamm: leereStammdaten(),
@@ -1149,5 +1174,47 @@ describe('Nachbesserung: Vorlagenordner bei unlesbarer Struktur gesperrt', () =>
     expect(host.querySelector('.po-vorlagenordner-gesperrt')).toBeNull();
     act(() => useOrdner.getState().setVorlagenordner('/anders'));
     expect(useOrdner.getState().vorlagenordner).toBe('/anders');
+  });
+});
+
+describe('Vor dem Schließen (Rahmen): verzögertes Schreiben nicht verlieren', () => {
+  it('schliessenVorbereiten schreibt eine noch wartende Strukturänderung sofort – auch zweimal hintereinander nur einmal', async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    sicherungen_.schreiben = 0;
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Vor dem Schließen' }));
+    // noch entprellt: nichts geschrieben
+    expect(gespeichert().struktur.name).not.toBe('Vor dem Schließen');
+    // zweimal (etwa nach „Weiter warten“), ohne die Wartezeit abzuwarten
+    const [a, b] = await Promise.all([schliessenVorbereiten(), schliessenVorbereiten()]);
+    expect([a, b]).toEqual([true, true]);
+    expect(gespeichert().struktur.name).toBe('Vor dem Schließen');
+    expect(sicherungen_.schreiben).toBe(1);
+  });
+
+  it('Gegenprobe: bei einem Konflikt mit einem anderen Rechner schreibt auch das Schließen nichts (ATLAS fragt vorher)', async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    act(() => useOrdner.setState({ konflikt: { roh: { struktur: { name: 'Fremd', ordner: [] } } } }));
+    sicherungen_.schreiben = 0;
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Trotz Konflikt' }));
+    expect(await schliessenVorbereiten()).toBe(true);
+    expect(sicherungen_.schreiben).toBe(0);
+    expect(gespeichert().struktur.name).not.toBe('Trotz Konflikt');
+  });
+
+  it('scheitert das letzte Schreiben, wird es protokolliert (ohne die übrigen Vorbereitungen abzuschneiden); ist das Laufwerk wieder da, schreibt das Schließen erneut', async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    sicherungen_.scheitern = true;
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Laufwerk weg' }));
+    await expect(vorbereitungenAusfuehren()).resolves.toBeUndefined();
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBeTruthy();
+    expect(getEntries().some((e) => e.message.includes('Vor dem Schließen: Struktur nicht gespeichert'))).toBe(true);
+    // Laufwerk wieder da, OHNE neue Änderung: das Schließen versucht das gescheiterte Schreiben erneut
+    sicherungen_.scheitern = false;
+    await expect(vorbereitungenAusfuehren()).resolves.toBeUndefined();
+    expect(gespeichert().struktur.name).toBe('Laufwerk weg');
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBeNull();
   });
 });

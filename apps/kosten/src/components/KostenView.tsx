@@ -151,15 +151,15 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
             <HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />
           </h2>
           <div className="button-row">
-            <button className="small" title="Leere Position anlegen – Kostengruppe eintragen" onClick={() => neu(neuePosition(''))}>
-              + Position
+            <button className="small" title="Position hinzufügen – leere Zeile, Kostengruppe eintragen" onClick={() => neu(neuePosition(''))}>
+              <Symbol name="plus" /> Position
             </button>
             <button
               className="small"
-              title="Kostenrisiken nach DIN 276 gesondert ausweisen – pauschal oder in % von Kostengruppen; zählt zu keiner Kostengruppe"
+              title="Kostenrisiko hinzufügen – nach DIN 276 gesondert ausgewiesen, pauschal oder in % von Kostengruppen; zählt zu keiner Kostengruppe"
               onClick={() => neu(neueRisikoPosition())}
             >
-              + Kostenrisiko
+              <Symbol name="plus" /> Kostenrisiko
             </button>
             <button
               className="small"

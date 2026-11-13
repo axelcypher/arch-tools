@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from 'react';
+import { Symbol } from '@core/ui/Symbol';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Ampel, NormErgebnis, ParagrafErgebnis } from '@core/baurecht/typen';
 import { EBENEN, einheitName, normTitel, paragrafName, THEMEN } from '@core/baurecht/typen';
@@ -136,8 +137,8 @@ function NormKarte({
     <div role="group" className={`br-norm${n.geltung === 'nein' ? ' br-norm-entfaellt' : ''}`} aria-labelledby={id}>
       <h4 className="br-norm-h">
       <button type="button" className="br-norm-kopf" aria-expanded={offen} onClick={umschalten} tabIndex={tabStop === kopf ? 0 : -1} data-roving={kopf} onFocus={() => setFokus(kopf)}>
-        <span className="br-norm-pfeil" aria-hidden="true">
-          {offen ? '▾' : '▸'}
+        <span className="br-norm-pfeil">
+          <Symbol name={offen ? 'pfeilUnten' : 'pfeilRechts'} />
         </span>
         <span className="br-norm-name" id={id}>
           <strong>{n.def.kurz}</strong> <span className="br-leise">{nb(normTitel(n.def))}</span>
@@ -475,9 +476,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
                   setze({ ...w, ampeln: an ? w.ampeln.filter((x) => x !== a) : [...w.ampeln, a] });
                 }}
               >
-                <span className="br-filter-haken" aria-hidden="true">
-                  {an ? '✓' : ''}
-                </span>
+                <span className="br-filter-haken">{an && <Symbol name="haken" />}</span>
                 <strong>{zaehler[a]}</strong> {AMPEL_TEXT[a]}
               </button>
             );
@@ -520,7 +519,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
             }}
           >
             <summary>
-              Filter{nurHand || nurGeaendert ? ` (${Number(nurHand) + Number(nurGeaendert)})` : ''} <span aria-hidden="true">▾</span>
+              Filter{nurHand || nurGeaendert ? ` (${Number(nurHand) + Number(nurGeaendert)})` : ''} <Symbol name="pfeilUnten" />
             </summary>
             <div className="br-filter-menue-inhalt">{kaesten(true)}</div>
           </details>
@@ -530,7 +529,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
         </div>
       </div>
       {ohneOrt.length > 0 && (
-        <div className="br-meldung br-meldung-warn br-ohne-ort" role="status">
+        <div className="meldung warnung br-ohne-ort" role="status">
           {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt. Übernehmen ordnet {ohneOrt.length === 1 ? 'sie' : 'sie alle'} dem jetzigen Ort zu – als Entwurf, beim Speichern zu bestätigen.{' '}
           <button type="button" className="small br-link" onClick={() => setNurGeaendert(true)} title="Nur die geänderten bzw. überholten Paragrafen zeigen">
             zeigen

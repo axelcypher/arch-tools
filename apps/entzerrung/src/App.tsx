@@ -148,7 +148,7 @@ export function App() {
             </button>
           )}
           <button onClick={() => void fotosHinzufuegen()} title="Fotos hinzufügen (JPEG, PNG, WebP)">
-            + Foto …
+            <Symbol name="plus" /> Foto …
           </button>
           <button onClick={() => setLinksZu((z) => !z)} aria-pressed={!linksZu} title={linksZu ? 'Leiste mit Fotos und Ebenen einblenden' : 'Leiste mit Fotos und Ebenen ausblenden (mehr Platz zum Zeichnen)'}>
             <Symbol name={linksZu ? 'pfeilRechts' : 'pfeilLinks'} /> Fotos

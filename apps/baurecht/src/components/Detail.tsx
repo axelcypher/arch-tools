@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { Symbol } from '@core/ui/Symbol';
 import { einheitName, paragrafName } from '@core/baurecht/typen';
 import type { KurzKnoten } from '@core/baurecht/kurz';
 import { kurzBaum, offenText } from '@core/baurecht/kurz';
@@ -81,9 +83,10 @@ function Gegenueberstellung({ alt, neu, absatz }: { alt: Paragraf | undefined; n
   );
 }
 
-const STAND: Record<'ja' | 'nein' | 'offen', { zeichen: string; wort: string }> = {
-  ja: { zeichen: '✓', wort: 'trifft zu' },
-  nein: { zeichen: '✗', wort: 'trifft nicht zu' },
+// Zeichen aus dem Symbolsatz; für „offen“ gibt es dort noch kein Symbol – übergangsweise das Fragezeichen als Text
+const STAND: Record<'ja' | 'nein' | 'offen', { zeichen: ReactNode; wort: string }> = {
+  ja: { zeichen: <Symbol name="haken" />, wort: 'trifft zu' },
+  nein: { zeichen: <Symbol name="schliessen" />, wort: 'trifft nicht zu' },
   offen: { zeichen: '?', wort: 'offen' },
 };
 
@@ -93,14 +96,14 @@ function Stand({ w, unsicher }: { w?: KurzKnoten['w']; unsicher?: boolean }) {
   const wort = unsicher ? `${STAND[w].wort}, aber nur Hinweis – zählt nicht als gesichert` : STAND[w].wort;
   return (
     <span className={`br-stand br-stand-${unsicher ? 'unsicher' : w}`} title={wort}>
-      <span aria-hidden="true">{unsicher ? `(${STAND[w].zeichen})` : STAND[w].zeichen}</span>
+      <span aria-hidden="true">{unsicher ? <>({STAND[w].zeichen})</> : STAND[w].zeichen}</span>
       <span className="br-unsichtbar">{wort}: </span>
     </span>
   );
 }
 
 /**
- * Regel als eingerückter Baum mit Stand je Knoten (✓ trifft zu, ✗ nicht, ? offen) und dem aktuellen Wert je Blatt.
+ * Regel als eingerückter Baum mit Stand je Knoten (Haken trifft zu, Kreuz nicht, ? offen) und dem aktuellen Wert je Blatt.
  * Entschiedene Unterzweige sind zugeklappt, offene aufgeklappt – so sieht man, was fehlt.
  */
 function Baum({ k, tiefe = 0 }: { k: KurzKnoten; tiefe?: number }) {
@@ -230,12 +233,12 @@ export function Detail({ stand }: { stand: Pruefstand }) {
       </header>
       <div className="br-detail-inhalt">
         {p.ueberholt && (
-          <div className="br-meldung br-meldung-warn" role="status">
+          <div className="meldung warnung" role="status">
             <strong>Festlegung überholt:</strong> {nb(p.ueberholt)}. Bitte erneut festlegen oder aufheben.
           </div>
         )}
         {!p.ueberholt && p.unwirksam && (
-          <div className="br-meldung br-meldung-info" role="status">
+          <div className="meldung" role="status">
             <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {nb(p.unwirksam)}. Bis dahin bleibt es bei „{AMPEL_TEXT[p.ampel]}“.{' '}
             {isTauri() ? 'Mit „Rechtsstand prüfen“ den Text an der Quelle holen; liegt er geprüft vor, zählt die Festlegung – wurde sie ohne Text getroffen, dann am Text erneut festlegen.' : 'Die Gesetzestexte gibt es nur in der Desktop-App – dort prüfen und festlegen.'}
           </div>
@@ -366,7 +369,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
               )}{' '}
               {text?.url && (
                 <button type="button" className="small" onClick={() => void externOeffnen(text.url)} title="Original in der Quelle öffnen">
-                  Original ↗
+                  <Symbol name="extern" /> Original
                 </button>
               )}
             </span>
