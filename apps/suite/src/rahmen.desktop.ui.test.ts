@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-// @vitest-environment-options {"settings":{"disableIframePageLoading":true}}
 // Rahmen-App auf dem Desktop: Herauslösen, Andocken, Beenden (auch über das System), Update – mit nachgebauten Tauri-APIs
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -212,6 +211,28 @@ describe('Rahmen-App auf dem Desktop', () => {
     expect(fenster.haupt!.destroy).toHaveBeenCalled();
   });
 
+  it('Fenster schließt, während es speichert: die Rückfrage endet, Beenden bleibt möglich', async () => {
+    const host = await render();
+    act(() => useRahmen.getState().oeffnen('kosten'));
+    await herausloesen(host, 'NUMIO');
+    await senden('arch-tools:an-rahmen', { typ: 'arch-tools:status', app: 'NUMIO', kennung: 'kosten', name: 'K1', dirty: true });
+    // das Fenster bestätigt nur (Speichern-Dialog offen) und wird dann über sein eigenes × geschlossen
+    void listen<{ typ: string; anfrage: string; an: string }>('arch-tools:an-app', (e) => {
+      if (e.payload.typ === 'arch-tools:speichern') void emit('arch-tools:an-rahmen', { typ: 'arch-tools:speichert', anfrage: e.payload.anfrage, app: 'kosten' });
+    });
+    await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
+    await antwort(host, 'Speichern');
+    await senden('x', null);
+    expect(fenster.haupt!.destroy).not.toHaveBeenCalled();
+    await act(async () => fenster.offen.get('app-kosten')!.destroy());
+    await act(async () => {});
+    // nicht gespeichert: nichts geschlossen; ein neues Beenden geht (das Fenster ist weg, keine Rückfrage mehr)
+    expect(fenster.haupt!.destroy).not.toHaveBeenCalled();
+    await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
+    await act(async () => {});
+    expect(fenster.haupt!.destroy).toHaveBeenCalled();
+  });
+
   it('Update: vor der Installation dieselben Rückfragen; Abbrechen verhindert sie', async () => {
     const host = await render();
     act(() => useRahmen.getState().oeffnen('grz'));
@@ -234,6 +255,8 @@ describe('Rahmen-App auf dem Desktop', () => {
     await act(async () => void vi.advanceTimersByTime(3100));
     await act(async () => {});
     expect(useRahmen.getState().tabs).toEqual(['entzerrung']);
+    // der Nutzer erfährt, warum nichts geschieht
+    expect(dialog(host)?.textContent).toContain('RECTIO antwortet nicht');
   });
 
   it('ein geschlossener Tab nimmt wartende Aufträge mit (kein Assistent beim nächsten Öffnen)', async () => {

@@ -26,7 +26,7 @@ describe('Rahmen-App: Speichern auf Anfrage', () => {
       postMessage: (d: { typ: string; anfrage: string }) =>
         antwort?.(d, (x) => window.dispatchEvent(new MessageEvent('message', { data: x, source: ziel as unknown as Window, origin: window.location.origin }))),
     };
-    return { contentWindow: ziel } as unknown as HTMLIFrameElement;
+    return Object.assign(new EventTarget(), { contentWindow: ziel }) as unknown as HTMLIFrameElement;
   };
   afterEach(() => vi.useRealTimers());
 
@@ -49,6 +49,24 @@ describe('Rahmen-App: Speichern auf Anfrage', () => {
     vi.advanceTimersByTime(SPEICHERN_ANTWORT_MS * 10);
     fertig!();
     await expect(ergebnis).resolves.toBe(true);
+  });
+
+  it('lädt der Tab neu, während er speichert, gilt „nicht gespeichert“; ohne Bestätigung meldet sich der Zeitablauf', async () => {
+    vi.useFakeTimers();
+    const frame = Object.assign(new EventTarget(), {
+      contentWindow: {
+        postMessage: (d: { anfrage: string }) =>
+          window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:speichert', anfrage: d.anfrage }, source: frame.contentWindow as unknown as Window })),
+      },
+    });
+    const ergebnis = speichernImTab(frame as unknown as HTMLIFrameElement);
+    frame.dispatchEvent(new Event('load'));
+    await expect(ergebnis).resolves.toBe(false);
+    const zeitablauf = vi.fn();
+    const still = speichernImTab(tab(null), { zeitablauf });
+    vi.advanceTimersByTime(SPEICHERN_ANTWORT_MS + 1);
+    await expect(still).resolves.toBe(false);
+    expect(zeitablauf).toHaveBeenCalledTimes(1);
   });
 
   it('fremde Antworten (andere Anfrage) zählen nicht', async () => {

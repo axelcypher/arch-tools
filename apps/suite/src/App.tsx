@@ -6,7 +6,7 @@ import { AN_APP, AN_RAHMEN, ANDOCKEN, ASSISTENT_NEU, BEREIT, PROJEKT_ANGELEGT, P
 import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { MenueHost } from '@core/ui/Menue';
-import { aenderungenSpeichern, RueckfrageHost } from '@core/ui/Rueckfrage';
+import { aenderungenSpeichern, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
 import { SpeicherortHost, SpeicherortKnopf, SpeicherortZeile } from '@core/ui/Speicherort';
 import { umzugBestaetigen } from '@core/ui/umzug';
 import { UpdateKnopf } from '@core/ui/UpdateKnopf';
@@ -47,6 +47,8 @@ export function App() {
   const fensterGen = useRef(new Map<string, number>());
   /** Beenden läuft (Rückfragen offen): ein zweites Alt+F4 fragt nicht noch einmal */
   const beendet = useRef(false);
+  /** wer auf das Ende eines herausgelösten Fensters wartet (Speichern auf Anfrage: dann „nicht gespeichert“) */
+  const fensterEnde = useRef(new Map<string, Set<() => void>>());
 
   // Fenster (Desktop): Knöpfe, Größe
   useEffect(() => {
@@ -195,7 +197,7 @@ export function App() {
   const herausloesen = async (id: string) => {
     const info = appInfo(id)!;
     const frame = rahmen.current.get(id);
-    if (status[id]?.dirty && !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame) : false)))) return;
+    if (status[id]?.dirty && !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false)))) return;
     // Tab zu, Sperren frei – dann das Fenster, das die geöffneten Formulare neu sperrt
     herausgeloest(id);
     await sperrenFreigeben(id);
@@ -227,6 +229,8 @@ export function App() {
       });
       void w.once('tauri://destroyed', () => {
         if (!aktuell()) return;
+        fensterEnde.current.get(id)?.forEach((f) => f());
+        fensterEnde.current.delete(id);
         bereitFenster.current.delete(id);
         fensterZu(id);
         // angedockt: der Tab übernimmt (auch wartende Nachrichten); sonst ist die App zu
@@ -243,11 +247,17 @@ export function App() {
     }
   };
 
+  /** Speichern auf Anfrage ohne Antwort der App: sagen, warum nichts geschieht */
+  const antwortetNicht = (id: string) => () => {
+    log.warn(`${appInfo(id)?.name} antwortet nicht auf „Speichern“`);
+    void meldung(`${appInfo(id)?.name} antwortet nicht`, 'Die Änderungen wurden nicht gespeichert – die App lädt noch oder reagiert nicht. Sie bleibt geöffnet; bitte dort speichern.');
+  };
+
   /** ungespeicherte Änderungen eines Tabs: speichern (in der App), verwerfen oder abbrechen; true = weiter */
   const tabFreigeben = async (id: string): Promise<boolean> => {
     if (!status[id]?.dirty) return true;
     const frame = rahmen.current.get(id);
-    return aenderungenSpeichern(`${appInfo(id)?.name}${status[id]?.name ? ` – ${status[id].name}` : ''}`, () => (frame ? speichernImTab(frame) : false));
+    return aenderungenSpeichern(`${appInfo(id)?.name}${status[id]?.name ? ` – ${status[id].name}` : ''}`, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false));
   };
 
   const tabSchliessen = async (id: string) => {
@@ -262,7 +272,17 @@ export function App() {
   const fensterFreigeben = async (id: string): Promise<boolean> => {
     const s = useRahmen.getState().status[id];
     if (!s?.dirty) return true;
-    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () => speichernImFenster(id));
+    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () =>
+      speichernImFenster(id, {
+        zeitablauf: antwortetNicht(id),
+        // schließt jemand das Fenster, während es speichert, wartet die Rückfrage nicht ewig
+        beiEnde: (f) => {
+          const warten = fensterEnde.current.get(id) ?? new Set();
+          fensterEnde.current.set(id, warten.add(f));
+          return () => warten.delete(f);
+        },
+      }),
+    );
   };
 
   /** vor dem Beenden bzw. Update: alle Tabs und Fenster mit ungespeicherten Änderungen nacheinander; true = weiter */
@@ -285,7 +305,16 @@ export function App() {
       if (!(await allesFreigeben())) return;
       log.info('Arkly wird beendet');
       const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-      for (const id of useRahmen.getState().fenster) await (await WebviewWindow.getByLabel(fensterLabel(id)))?.destroy().catch(() => undefined);
+      for (const id of useRahmen.getState().fenster) {
+        try {
+          await (await WebviewWindow.getByLabel(fensterLabel(id)))?.destroy();
+        } catch (e) {
+          // ein Fenster ohne Rahmen bliebe zurück (sein „Andocken“ ginge ins Leere) – dann nicht beenden
+          log.error(`Fenster von ${appInfo(id)?.name} ließ sich nicht schließen`, e);
+          await meldung('Arkly nicht beendet', `Das Fenster von ${appInfo(id)?.name} ließ sich nicht schließen. Bitte dort schließen und Arkly erneut beenden.`, e);
+          return;
+        }
+      }
       await win?.destroy();
     } finally {
       beendet.current = false;

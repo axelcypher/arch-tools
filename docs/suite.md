@@ -76,7 +76,8 @@ Konfigurationsordner) und Projektdateien sind dieselben.
 - **Speichern auf Anfrage** (`speichernImTab`, `speichernImFenster`, `speichernAnfragenBeantworten`): Der Rahmen
   schickt `arch-tools:speichern`, die App bestätigt sofort (`arch-tools:speichert`) und meldet danach das Ergebnis
   (`arch-tools:gespeichert`). Kommt binnen 3 s keine Bestätigung (App lädt, hängt, ist abgestürzt), gilt „nicht
-  gespeichert“ – die Rückfrage endet, der Tab bleibt offen. Was ein Umzug aus Änderungen macht, steht je App in
+  gespeichert“ mit der Meldung „… antwortet nicht“ – die Rückfrage endet, der Tab bleibt offen. Ebenso, wenn das
+  Fenster während des Speicherns zugeht oder der Tab neu lädt; Beenden bleibt danach möglich. Was ein Umzug aus Änderungen macht, steht je App in
   `BEIM_UMZUG` (`rahmen.ts`), die Rückfrage in `ui/umzug.ts`.
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,

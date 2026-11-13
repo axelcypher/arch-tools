@@ -60,6 +60,7 @@ export function anRahmenMelden(app: string, name: string, dirty: boolean): void 
  * `verliert`: sie gehen verloren (dann bietet die Rückfrage „Speichern“ an).
  */
 export const BEIM_UMZUG: Record<string, { text: string; verliert: boolean }> = {
+  // ATLAS meldet derzeit nie ungespeicherte Änderungen (es speichert sofort) – der Eintrag greift erst, wenn sich das ändert
   ordner: { text: 'Ungespeicherte Änderungen gehen verloren – bitte vorher speichern.', verliert: true },
   formulare: {
     text: 'Nicht gespeicherte Eingaben bleiben als Entwurf erhalten und erscheinen beim erneuten Öffnen des Formulars wieder; ungespeicherte Bearbeitungen in PDF-, Excel- und Word-Dokumenten der Dateiansicht gehen verloren.',
@@ -98,28 +99,48 @@ interface SpeichernAntwort {
   ok?: boolean;
 }
 
-/** gemeinsamer Ablauf: Anfrage senden, auf Empfang (mit Zeitlimit) und Ergebnis warten */
-function speichernAnfragen(senden: (anfrage: string) => void, hoeren: (f: (d: SpeichernAntwort) => void) => () => void): Promise<boolean> {
+/** Wahl beim Speichern auf Anfrage */
+export interface SpeichernOptionen {
+  /** keine Empfangsbestätigung binnen SPEICHERN_ANTWORT_MS (z. B. für eine Meldung „antwortet nicht“) */
+  zeitablauf?: () => void;
+  /** meldet das Ende des Ziels (Fenster geschlossen, Tab neu geladen): dann gilt „nicht gespeichert“; liefert die Abmeldung */
+  beiEnde?: (f: () => void) => () => void;
+}
+
+/**
+ * gemeinsamer Ablauf: Anfrage senden, auf Empfang (mit Zeitlimit) und Ergebnis warten. `hoeren` ist schon angemeldet,
+ * bevor gesendet wird – sonst ginge eine schnelle Antwort verloren.
+ */
+function speichernAnfragen(senden: (anfrage: string) => void, hoeren: (f: (d: SpeichernAntwort) => void) => () => void, o: SpeichernOptionen = {}): Promise<boolean> {
   const anfrage = Math.random().toString(36).slice(2);
   return new Promise((fertig) => {
-    let ende = () => {};
+    const aus: (() => void)[] = [];
+    let offen = true;
     const schluss = (ok: boolean) => {
+      if (!offen) return;
+      offen = false;
       clearTimeout(uhr);
-      ende();
+      aus.forEach((f) => f());
       fertig(ok);
     };
-    const uhr = setTimeout(() => schluss(false), SPEICHERN_ANTWORT_MS);
-    ende = hoeren((d) => {
-      if (d.anfrage !== anfrage) return;
-      if (d.typ === SPEICHERT) clearTimeout(uhr);
-      else if (d.typ === GESPEICHERT) schluss(!!d.ok);
-    });
-    senden(anfrage);
+    const uhr = setTimeout(() => {
+      o.zeitablauf?.();
+      schluss(false);
+    }, SPEICHERN_ANTWORT_MS);
+    aus.push(
+      hoeren((d) => {
+        if (d.anfrage !== anfrage) return;
+        if (d.typ === SPEICHERT) clearTimeout(uhr);
+        else if (d.typ === GESPEICHERT) schluss(!!d.ok);
+      }),
+    );
+    if (o.beiEnde) aus.push(o.beiEnde(() => schluss(false)));
+    if (offen) senden(anfrage);
   });
 }
 
-/** Rahmen: den Tab speichern lassen; true, wenn gespeichert wurde (false auch, wenn die App nicht antwortet) */
-export function speichernImTab(frame: HTMLIFrameElement): Promise<boolean> {
+/** Rahmen: den Tab speichern lassen; true, wenn gespeichert wurde (false auch, wenn die App nicht antwortet oder neu lädt) */
+export function speichernImTab(frame: HTMLIFrameElement, o: SpeichernOptionen = {}): Promise<boolean> {
   const ziel = frame.contentWindow;
   if (!ziel) return Promise.resolve(false);
   return speichernAnfragen(
@@ -131,23 +152,34 @@ export function speichernImTab(frame: HTMLIFrameElement): Promise<boolean> {
       window.addEventListener('message', hoeren);
       return () => window.removeEventListener('message', hoeren);
     },
+    {
+      ...o,
+      // lädt der Tab neu (Absturz, „Neu laden“), kommt keine Antwort mehr
+      beiEnde: (f) => {
+        const weg = o.beiEnde?.(f);
+        frame.addEventListener('load', f);
+        return () => {
+          weg?.();
+          frame.removeEventListener('load', f);
+        };
+      },
+    },
   );
 }
 
 /** Rahmen: ein herausgelöstes Fenster (Kennung) speichern lassen; true, wenn gespeichert wurde */
-export async function speichernImFenster(kennung: string): Promise<boolean> {
+export async function speichernImFenster(kennung: string, o: SpeichernOptionen = {}): Promise<boolean> {
   const { emit, listen } = await import('@tauri-apps/api/event');
-  let aus: (() => void) | undefined;
-  let weg = false;
+  // erst anmelden, dann senden
+  let weiter: (d: SpeichernAntwort) => void = () => {};
+  const aus = await listen<SpeichernAntwort & { app?: string }>(AN_RAHMEN, (e) => e.payload?.app === kennung && weiter(e.payload));
   return speichernAnfragen(
     (anfrage) => void emit(AN_APP, { typ: SPEICHERN, anfrage, an: kennung }),
     (f) => {
-      void listen<SpeichernAntwort & { app?: string }>(AN_RAHMEN, (e) => e.payload?.app === kennung && f(e.payload)).then((u) => (weg ? u() : (aus = u)));
-      return () => {
-        weg = true;
-        aus?.();
-      };
+      weiter = f;
+      return aus;
     },
+    o,
   );
 }
 
