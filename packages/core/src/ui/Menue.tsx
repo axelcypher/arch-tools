@@ -35,43 +35,67 @@ export type MenuePunkt =
 
 interface MenueZustand {
   /** `ausloeser`: Element, das das Menü geöffnet hat – bekommt den Fokus nach Esc, Tab oder einer Auswahl zurück */
-  offen: { x: number; y: number; punkte: MenuePunkt[]; ausloeser: HTMLElement | SVGElement | null; name?: string } | null;
-  zeigen: (x: number, y: number, punkte: MenuePunkt[], ausloeser?: HTMLElement | SVGElement | null, name?: string) => void;
+  /** `oeffner`: am Auslöser aufgeklappt (`zeigeMenueAn`), nicht nur dorthin der Fokus zurück (Kontextmenü) */
+  offen: { x: number; y: number; punkte: MenuePunkt[]; ausloeser: HTMLElement | SVGElement | null; name?: string; oeffner: boolean } | null;
+  zeigen: (x: number, y: number, punkte: MenuePunkt[], ausloeser?: HTMLElement | SVGElement | null, name?: string, oeffner?: boolean) => void;
   /** `fokusZurueck`: den Fokus an den Auslöser geben (nicht bei einem Klick daneben – dann gilt, was angeklickt wurde) */
   schliessen: (fokusZurueck?: boolean) => void;
 }
 
+type Offen = NonNullable<MenueZustand['offen']>;
+
 /**
- * Auslöser mit `aria-haspopup="menu"` bekommen den Offen-Zustand (`aria-expanded`) auch ohne `MenueKnopf`, z. B. der
+ * Öffner (`zeigeMenueAn`) mit `aria-haspopup="menu"` bekommen den Offen-Zustand (`aria-expanded`) auch ohne `MenueKnopf`, z. B. der
  * Zeilenknopf „⋯“. Wer das Attribut selbst über React setzt (wie `MenueKnopf` oder mit `useMenueOffen`), setzt denselben
  * Wert.
  */
-function offenZeigen(el: HTMLElement | SVGElement | null | undefined, offen: boolean) {
+function offenZeigen(o: Offen | null | undefined, offen: boolean) {
+  const el = o?.oeffner ? o.ausloeser : null;
   if (el?.getAttribute('aria-haspopup') === 'menu') el.setAttribute('aria-expanded', String(offen));
 }
 
-/** zuletzt per Klick auf den Auslöser geschlossen: der folgende Klick auf denselben Auslöser öffnet nicht wieder */
-let geradeZu: { el: Element; zeit: number } | null = null;
+/**
+ * Druck auf den Öffner eines offenen Menüs schließt es; der zugehörige Klick öffnet es dann nicht wieder. Der Merker gilt
+ * nur bis zu diesem Klick – kommt keiner (Zeiger weggezogen), verwirft ihn der nächste Druck oder Tastendruck.
+ */
+let geradeZu: { el: Element } | null = null;
+function zweitklickMerken(el: Element) {
+  const merker = { el };
+  geradeZu = merker;
+  const verwerfen = () => {
+    if (geradeZu === merker) geradeZu = null;
+    window.removeEventListener('click', nachKlick, true);
+    window.removeEventListener('pointerdown', verwerfen, true);
+    window.removeEventListener('keydown', verwerfen, true);
+  };
+  // nach dem Klick (der Knopf hat ihn dann schon gesehen) verwerfen
+  const nachKlick = () => setTimeout(verwerfen);
+  window.addEventListener('click', nachKlick, true);
+  window.addEventListener('pointerdown', verwerfen, true);
+  window.addEventListener('keydown', verwerfen, true);
+}
 
 const useMenue = create<MenueZustand>((set, get) => ({
   offen: null,
-  zeigen: (x, y, punkte, ausloeser = null, name) => {
-    const vorher = get().offen?.ausloeser;
-    if (vorher !== ausloeser) offenZeigen(vorher, false);
-    set({ offen: { x, y, punkte, ausloeser, name } });
-    offenZeigen(ausloeser, true);
+  zeigen: (x, y, punkte, ausloeser = null, name, oeffner = false) => {
+    const vorher = get().offen;
+    if (vorher && vorher.ausloeser !== ausloeser) offenZeigen(vorher, false);
+    const offen = { x, y, punkte, ausloeser, name, oeffner };
+    set({ offen });
+    offenZeigen(offen, true);
   },
   schliessen: (fokusZurueck = false) => {
-    const ausloeser = get().offen?.ausloeser;
+    const vorher = get().offen;
+    const ausloeser = vorher?.ausloeser;
     set({ offen: null });
-    offenZeigen(ausloeser, false);
+    offenZeigen(vorher, false);
     if (fokusZurueck && ausloeser?.isConnected) ausloeser.focus();
   },
 }));
 
 /** ob das Menü gerade an diesem Element offen ist – für `aria-expanded` an eigenen Auslösern */
 export function useMenueOffen(ref: { readonly current: Element | null }): boolean {
-  return useMenue((s) => !!s.offen && !!ref.current && s.offen.ausloeser === ref.current);
+  return useMenue((s) => !!s.offen?.oeffner && !!ref.current && s.offen.ausloeser === ref.current);
 }
 
 const TASTEN_ARIA: Record<string, string> = {
@@ -89,8 +113,11 @@ const TASTEN_ARIA: Record<string, string> = {
   leertaste: 'Space',
   rücktaste: 'Backspace',
   tab: 'Tab',
+  leer: 'Space',
   'bild↑': 'PageUp',
   'bild↓': 'PageDown',
+  'bild auf': 'PageUp',
+  'bild ab': 'PageDown',
   '↑': 'ArrowUp',
   '↓': 'ArrowDown',
   '←': 'ArrowLeft',
@@ -103,18 +130,22 @@ const TASTEN_ARIA: Record<string, string> = {
  * mit „/“ oder „,“ getrennt werden zu Alternativen (durch Leerzeichen getrennt).
  */
 export function tastenAria(tasten: string): string {
-  return tasten
-    .split(/\s*[/,]\s*/)
-    .filter(Boolean)
-    .map((kuerzel) =>
-      // „Strg++“: das letzte Plus ist die Taste selbst
-      (kuerzel.match(/\+$|[^+]+/g) ?? [])
-        .map((t) => t.trim())
-        .filter(Boolean)
-        .map((t) => TASTEN_ARIA[t.toLowerCase()] ?? (t.length === 1 ? t.toUpperCase() : t))
-        .join('+'),
-    )
-    .join(' ');
+  return (
+    tasten
+      // Alternativen nur an „ / “ bzw. „, “ (mit Leerzeichen) – „Strg+/“ und „Strg+,“ bleiben ein Kürzel
+      .split(/\s+\/\s+|,\s+/)
+      .filter(Boolean)
+      .map((kuerzel) =>
+        // „Strg++“: das letzte Plus ist die Taste selbst
+        (kuerzel.match(/\+$|[^+]+/g) ?? [])
+          .map((t) => t.trim())
+          .filter(Boolean)
+          // unbekannte Namen ohne Leerzeichen: das Leerzeichen trennt in aria-keyshortcuts Alternativen
+          .map((t) => TASTEN_ARIA[t.toLowerCase().replace(/\s+/g, ' ')] ?? (t.length === 1 ? t.toUpperCase() : t.replace(/\s+/g, '')))
+          .join('+'),
+      )
+      .join(' ')
+  );
 }
 
 const FOKUSSIERBAR = 'button, input, select, textarea, a[href], [tabindex]';
@@ -134,8 +165,6 @@ export function zeigeMenue(e: ReactMouseEvent | MouseEvent, punkte: MenuePunkt[]
     x = r.left + 8;
     y = r.top + Math.min(r.height, 24);
   }
-  // ein Kontextmenü ist kein zweiter Klick auf einen Öffner
-  geradeZu = null;
   if (punkte.length) useMenue.getState().zeigen(x, y, punkte, ziel, name);
 }
 
@@ -144,10 +173,10 @@ export function zeigeMenueAn(el: HTMLElement, punkte: MenuePunkt[], name?: strin
   // zweiter Klick auf den Auslöser eines offenen Menüs: Das Menü hat sich beim Drücken geschlossen und bleibt zu
   const zu = geradeZu;
   geradeZu = null;
-  if (zu?.el === el && performance.now() - zu.zeit < 1000) return;
+  if (zu?.el === el) return;
   const r = el.getBoundingClientRect();
   // leerer Name (Knopf nur mit Symbol) zählt nicht: weiter zum nächsten
-  useMenue.getState().zeigen(r.left, r.bottom + 2, punkte, el, name || el.getAttribute('aria-label') || el.textContent?.trim() || undefined);
+  useMenue.getState().zeigen(r.left, r.bottom + 2, punkte, el, name || el.getAttribute('aria-label') || el.textContent?.trim() || undefined, true);
 }
 
 /** Knopf, der ein Menü aufklappt */
@@ -205,9 +234,10 @@ export function MenueHost() {
       if (e.type === 'pointerdown') {
         const ziel = e.target as Node | null;
         if ((ziel as Element | null)?.closest?.('.menue')) return;
-        // Druck auf den Auslöser: schließen und merken, damit der Klick danach das Menü nicht gleich wieder öffnet
-        const ausloeser = useMenue.getState().offen?.ausloeser;
-        if (ausloeser && ziel && ausloeser.contains(ziel)) geradeZu = { el: ausloeser, zeit: performance.now() };
+        // Druck auf den Öffner: schließen und merken, damit der Klick danach das Menü nicht gleich wieder öffnet
+        // (nicht beim Kontextmenü – dessen Fokusziel kann ein fremder Knopf sein, der dann sein eigenes Menü öffnen soll)
+        const o = useMenue.getState().offen;
+        if (o?.oeffner && o.ausloeser && ziel && o.ausloeser.contains(ziel)) zweitklickMerken(o.ausloeser);
       }
       schliessen();
     };

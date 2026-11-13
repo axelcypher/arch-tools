@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, Fragment, useRef } from 'react';
+import { act, createElement, Fragment, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Modal } from './Dialog';
@@ -210,6 +210,11 @@ describe('gemeinsames Menü', () => {
     expect(tastenAria('Alt+↑')).toBe('Alt+ArrowUp');
     expect(tastenAria('F2')).toBe('F2');
     expect(tastenAria('Pos1, Ende')).toBe('Home End');
+    expect(tastenAria('Strg+/')).toBe('Control+/');
+    expect(tastenAria('Strg+,')).toBe('Control+,');
+    expect(tastenAria('Strg + Bild ab')).toBe('Control+PageDown');
+    expect(tastenAria('Umschalt+Leer')).toBe('Shift+Space');
+    expect(tastenAria('Strg+Druck Taste')).toBe('Control+DruckTaste');
   });
 
   it('Umschalter mit Haken: menuitemcheckbox mit aria-checked, Haken nur wenn an', () => {
@@ -282,6 +287,96 @@ describe('gemeinsames Menü', () => {
     expect(knopf.getAttribute('aria-expanded')).toBe('false');
     klick();
     expect(host.querySelector('.menue')).not.toBeNull();
+  });
+
+  it('Kontextmenü, dessen Fokusziel ein fremder Öffner ist: der Öffner bleibt zu und öffnet beim nächsten Klick sein Menü', () => {
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement(
+          'div',
+          { key: 'f', className: 'flaeche', onContextMenu: (e: React.MouseEvent) => zeigeMenue(e, [{ text: 'Kontext' }]) },
+          createElement(MenueKnopf, { punkte: () => [{ text: 'Eigen' }], children: 'Datei' }),
+        ),
+        createElement(MenueHost, { key: 'h' }),
+      ),
+    );
+    const knopf = host.querySelector('button')!;
+    act(() => knopf.focus());
+    // Kontextmenütaste auf der Fläche (ohne Mausposition): Fokusziel ist der Knopf
+    act(() => host.querySelector('.flaeche')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 0, clientY: 0 })));
+    expect(punkte(host)).toEqual(['Kontext']);
+    expect(knopf.getAttribute('aria-expanded')).toBe('false');
+    act(() => {
+      knopf.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      knopf.click();
+    });
+    expect(punkte(host)).toEqual(['Eigen']);
+    expect(knopf.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('Druck auf den offenen Öffner ohne Klick (Zeiger weggezogen): der nächste Klick bzw. Enter öffnet wieder', () => {
+    const host = render(createElement(Fragment, null, createElement(MenueKnopf, { key: 'k', punkte: () => [{ text: 'A' }], children: 'Datei' }), createElement(MenueHost, { key: 'h' })));
+    const knopf = host.querySelector('button')!;
+    act(() => knopf.click());
+    act(() => knopf.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+    expect(host.querySelector('.menue')).toBeNull();
+    // Tastatur: Enter auf dem Knopf löst einen Klick aus
+    act(() => {
+      knopf.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      knopf.click();
+    });
+    expect(host.querySelector('.menue')).not.toBeNull();
+    act(() => knopf.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+    expect(host.querySelector('.menue')).toBeNull();
+    act(() => {
+      knopf.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      knopf.click();
+    });
+    expect(host.querySelector('.menue')).not.toBeNull();
+  });
+
+  it('eigene Öffner: zweiter Klick schließt, Wechsel von A zu B setzt A zurück, ein entfernter Öffner stört nicht', () => {
+    let zeigeB: (an: boolean) => void = () => {};
+    let bOffen = false;
+    function Zeilen() {
+      const [mitB, setMitB] = useState(true);
+      zeigeB = setMitB;
+      const refB = useRef<HTMLButtonElement>(null);
+      bOffen = useMenueOffen(refB);
+      const oeffner = (name: string, ref?: React.RefObject<HTMLButtonElement | null>) =>
+        createElement(
+          'button',
+          { key: name, ref, 'aria-haspopup': 'menu', 'aria-label': name, onClick: (e: React.MouseEvent<HTMLButtonElement>) => zeigeMenueAn(e.currentTarget, [{ text: `Menü ${name}` }]) },
+          '⋯',
+        );
+      return createElement(Fragment, null, oeffner('A'), mitB ? oeffner('B', refB) : null);
+    }
+    const host = render(createElement(Fragment, null, createElement(Zeilen, { key: 'z' }), createElement(MenueHost, { key: 'h' })));
+    const [a, b] = [...host.querySelectorAll('button')];
+    const klick = (el: Element) =>
+      act(() => {
+        el.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        (el as HTMLButtonElement).click();
+      });
+    klick(a);
+    expect(a.getAttribute('aria-expanded')).toBe('true');
+    klick(a);
+    expect(host.querySelector('.menue')).toBeNull();
+    expect(a.getAttribute('aria-expanded')).toBe('false');
+    // A offen, dann B per Tastatur (ohne Druck): A wird zurückgesetzt
+    klick(a);
+    act(() => b.click());
+    expect(punkte(host)).toEqual(['Menü B']);
+    expect(a.getAttribute('aria-expanded')).toBe('false');
+    expect(b.getAttribute('aria-expanded')).toBe('true');
+    expect(bOffen).toBe(true);
+    // B verschwindet bei offenem Menü: kein Fehler, useMenueOffen meldet nicht mehr offen
+    act(() => zeigeB(false));
+    expect(bOffen).toBe(false);
+    taste('Escape');
+    expect(host.querySelector('.menue')).toBeNull();
   });
 
   it('Symbole: dekorativ ohne Titel, mit Titel als Bild benannt; jeder Name hat einen Pfad', () => {
