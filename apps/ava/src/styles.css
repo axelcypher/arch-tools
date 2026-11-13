@@ -424,28 +424,16 @@
   max-width: 360px;
 }
 
+/* Bereiche des Gewerks: gemeinsamer Umschalter (.segment, base.css) in einer Leiste */
 .ava-tabs {
   display: flex;
-  gap: 2px;
-  padding: 0 12px;
+  padding: var(--s2) var(--s3);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  align-items: flex-end;
 }
 
-.ava-tabs button {
-  border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  background: transparent;
-  padding: 6px 12px;
-  margin-bottom: -1px;
-}
-
-.ava-tabs button.active {
-  background: var(--bg);
-  border-color: var(--border);
-  font-weight: 600;
+.ava-tabs .segment > button {
+  padding: 0 var(--s3);
 }
 
 .ava-tab-info {
@@ -1184,6 +1172,7 @@ input.ava-fehler {
   display: flex;
   align-items: baseline;
   gap: 12px;
+  margin: calc(-1 * var(--s1)) 0 var(--s3);
 }
 
 .ava-einst-koerper {
@@ -1422,7 +1411,6 @@ input.ava-fehler {
 }
 
 .ava-nav-knopf:focus-visible,
-.ava-tabs button:focus-visible,
 .ava-klickbar:focus-visible,
 .ava-kennung-knopf:focus-visible {
   outline: 2px solid var(--accent);
@@ -1730,9 +1718,8 @@ input.ava-fehler {
 
 /* Gesamt-Review: Bauleitung */
 
-/* Auswahlfelder und Suche in Werkzeugleisten und Kopfzeilen nur so breit wie nötig (base.css setzt 100 %) */
+/* Auswahlfelder in Kopfzeilen nur so breit wie nötig (in Werkzeugleisten macht das base.css) */
 .ava-seite .toolbar select,
-.ava-seite .toolbar input:not([type='checkbox']),
 .ava-seite-kopf select,
 .ava-bericht .button-row > select {
   width: auto;
@@ -1839,12 +1826,6 @@ input.ava-fehler {
 }
 
 /* Gesamt-Review: Abrechnung */
-
-/* Felder in Werkzeugleisten nicht auf volle Breite (base.css setzt input/select auf 100 %) */
-.ava-seite .toolbar select,
-.ava-seite .toolbar input:not([type='checkbox']):not([type='radio']) {
-  width: auto;
-}
 
 .ava-seite .toolbar .ava-suche {
   width: 260px;

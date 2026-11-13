@@ -182,8 +182,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
 
   if (teilweise) {
     return (
-      <Modal titel="Rechnung teilweise erfasst" onClose={laeuft ? undefined : onClose} klickDaneben={false}>
-        <h2>Rechnung teilweise erfasst</h2>
+      <Modal kopf titel="Rechnung teilweise erfasst" onClose={laeuft ? undefined : onClose} klickDaneben={false}>
         <div className="ava-nr-gross">
           Nr. <strong>{String(teilweise.datensatz.nr || '—')}</strong>
         </div>
@@ -206,8 +205,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
 
   if (erfasst) {
     return (
-      <Modal titel="Rechnung erfasst" onClose={onClose}>
-        <h2>Rechnung erfasst</h2>
+      <Modal kopf titel="Rechnung erfasst" onClose={onClose}>
         <div className="ava-nr-gross">
           Nr. <strong>{String(erfasst.d.nr || '—')}</strong>
         </div>
@@ -238,8 +236,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
   }
 
   return (
-    <Modal titel="Neue Rechnung prüfen" onClose={laeuft ? undefined : () => void schliessen()} breit klickDaneben={false} className="ava-pruefen">
-      <h2>Neue Rechnung prüfen</h2>
+    <Modal kopf titel="Neue Rechnung prüfen" onClose={laeuft ? undefined : () => void schliessen()} breit klickDaneben={false} className="ava-pruefen">
       <div className="ava-formular">
         <Feld label="Gewerk">
           <select value={gewerk} onChange={(x) => gewerkWechseln(x.target.value)}>

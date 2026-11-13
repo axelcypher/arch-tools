@@ -56,8 +56,7 @@ export function Textbibliothek({ onClose, onUebernehmen, ersetzen = false }: { o
   };
 
   return (
-    <Modal titel="Vorlagetexte" onClose={onClose} breit className="ava-bibliothek">
-      <h2>Vorlagetexte</h2>
+    <Modal kopf titel="Vorlagetexte" onClose={onClose} breit className="ava-bibliothek">
       <div className="ava-bib-filter">
         <input
           autoFocus

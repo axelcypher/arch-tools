@@ -143,7 +143,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
                   )}
                   {r.datensatz?.pruefung && (
                     <button className="small" onClick={() => setAnsehen(r.datensatz!)} title="Prüfung ansehen (auch per Doppelklick auf die Zeile)">
-                      Prüfung
+                      Prüfung …
                     </button>
                   )}
                   {r.datensatz && (
@@ -249,10 +249,7 @@ function PruefungAnsehen({ d, onClose }: { d: RechnungsDatensatz; onClose: () =>
     </tr>
   );
   return (
-    <Modal titel={`Prüfung Nr. ${String(d.nr || '—')}`} onClose={onClose}>
-      <h2>
-        Prüfung Nr. {String(d.nr || '—')} · {gewerkZweistellig(d.gewerk)} {d.firma} · {d.art} {d.lfd ?? ''}
-      </h2>
+    <Modal kopf titel={`Prüfung Nr. ${String(d.nr || '—')} · ${gewerkZweistellig(d.gewerk)} ${d.firma} · ${d.art} ${d.lfd ?? ''}`.trim()} onClose={onClose}>
       <p className="small-text">
         Rechnungsdatum {datumDE(d.rechnungsdatum) || '—'}
         {d.eingang ? ` · Eingang ${datumDE(d.eingang)}` : ''} · Freigabe {datumDE(d.freigabe) || '—'}
