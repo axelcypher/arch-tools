@@ -60,7 +60,7 @@ const ZEICHEN: Record<Bereitschaft, string> = { bereit: '✓', offen: '○', nam
  * Projektordner, Ansicht „Antrag“: nur die Dokumente im Ordner der aktiven Antragsfassung (z. B. TÖB/BAUA 2) mit
  * Vollständigkeit. „Bereit“ markiert man von Hand – nur Dateien im Namensformat `<Projektcode> <Antragsart> <JJMMTT> …`;
  * wird eine Datei danach geändert, gilt sie nicht mehr als bereit. Dazu die Dokumente des Antragsumfangs, die im
- * Antragsordner noch fehlen.
+ * Antragsordner noch fehlen, und Quick-Add (+) für Dateien, die zu keinem Dokument des Antragsumfangs gehören.
  */
 export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const projekt = useFormulare((s) => s.projekt)!;
@@ -152,17 +152,27 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
     const fassung = zeilenFassung(useAntrag.getState(), projekt);
     return () => void bereitUmschalten(pfad, { fassung });
   };
-  // Quick-Add: eine Datei ohne Dokument im Antragsumfang als neues aufnehmen bzw. einem fehlenden zuordnen – für die
-  // Fassung der Liste beim Öffnen des Menüs; eingereicht bzw. gerade geöffnet: gesperrt, mit Grund
+  // Quick-Add: eine Datei ohne Dokument im Antragsumfang als neues aufnehmen bzw. mit einem fehlenden verknüpfen – für
+  // die Fassung der Liste beim Öffnen des Menüs; eingereicht bzw. gerade geöffnet: gesperrt, mit Grund
   const sperrHinweis = gesperrt ? { hinweis: 'Antrag eingereicht' } : wechsel ? { hinweis: 'Antrag wird geöffnet' } : {};
+  // verknüpfen lässt sich ein Dokument ohne Datei (ein Plansatz sammelt seine Pläne selbst)
+  const ohneDatei = fehlend.filter((x) => !x.plansatz);
+  const verknuepfenMitFehlendem = async (pfad: string, eintrag: { id: string; titel: string }, ansicht: string) => {
+    const info = await useAntrag.getState().verknuepfen(eintrag.id, pfad, { ansicht, titel: eintrag.titel });
+    // Rückmeldung wie beim Aufnehmen – nur, wenn die Verknüpfung jetzt so im Store steht
+    const st = useAntrag.getState().projektdatei;
+    if (info.geschrieben && useFormulare.getState().projekt === projekt && st?.ansicht === ansicht && st.umfang?.find((u) => u.id === eintrag.id)?.dateien?.[ansicht] === pfad)
+      useFormulare.getState().setMeldung({ art: 'info', text: `„${pfad}“ mit „${eintrag.titel}“ verknüpft.` });
+  };
   const aufnehmenMenue = (pfad: string): MenuePunkt[] => {
     const ansicht = zeilenFassung(useAntrag.getState(), projekt);
     const { titel, nr } = aufnahmeVorschlag(pfad, { codes, reihenfolge });
-    // zuordnen lässt sich ein Dokument ohne Datei (ein Plansatz sammelt seine Pläne selbst)
-    const ohneDatei = fehlend.filter((x) => !x.plansatz);
+    // Verb vorn: wird ein langer Titel gekürzt, bleibt lesbar, was geschieht (voller Text im Tooltip)
+    const text = `Als neues Dokument aufnehmen: „${titel}“`;
     return [
       {
-        text: `Als neues Dokument „${titel}“ aufnehmen`,
+        text,
+        titel: text,
         symbol: 'plus',
         deaktiviert: gesperrt || wechsel,
         ...sperrHinweis,
@@ -171,11 +181,11 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       ...(ohneDatei.length
         ? [
             {
-              text: 'Fehlendem Dokument zuordnen',
+              text: 'Mit fehlendem Dokument verknüpfen',
               symbol: 'link' as const,
               deaktiviert: gesperrt || wechsel,
               ...sperrHinweis,
-              unter: ohneDatei.map((x) => ({ text: x.eintrag.titel, aktion: () => void useAntrag.getState().verknuepfen(x.eintrag.id, pfad, { ansicht, titel: x.eintrag.titel }) })),
+              unter: ohneDatei.map((x) => ({ text: x.eintrag.titel, titel: x.eintrag.titel, aktion: () => void verknuepfenMitFehlendem(pfad, x.eintrag, ansicht) })),
             },
           ]
         : []),
@@ -309,7 +319,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
             </button>
             <button
               className={`fo-baum-zeile${offenPfad === `${ordner}/${d.pfad}` ? ' aktiv' : ''}`}
-              title={`${d.pfad}${dok ? ` – ${dok.eintrag.titel}` : ''}${fehler ? `\n${fehler}` : ''}\n${zeitLang(d.geaendert)}`}
+              title={`${d.pfad}${dok ? ` – ${dok.eintrag.titel}` : umfangDa ? ' – nicht im Antragsumfang' : ''}${fehler ? `\n${fehler}` : ''}\n${zeitLang(d.geaendert)}`}
               onClick={() => dateiArtVon(d.pfad) && void useFormulare.getState().dateiAnsehen(basis, `${ordner}/${d.pfad}`)}
               onDoubleClick={() => void oeffnePfad(verbinde(basis, `${ordner}/${d.pfad}`)).catch(() => undefined)}
               onContextMenu={(e) => zeigeMenue(e, menue(d.pfad, zustand, fehler, d.geaendert, umfangDa && !dok))}
@@ -339,7 +349,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
                     ? 'Der Antrag ist eingereicht und gesperrt – der Antragsumfang bleibt, wie er ist'
                     : wechsel
                       ? 'Der Antrag wird gerade geöffnet – gleich wieder möglich'
-                      : 'Nicht im Antragsumfang – als neues Dokument aufnehmen oder einem fehlenden zuordnen'
+                      : `Nicht im Antragsumfang – als neues Dokument aufnehmen${ohneDatei.length ? ' oder mit einem fehlenden verknüpfen' : ''}`
                 }
                 disabled={gesperrt || wechsel}
                 onClick={(e) => zeigeMenueAn(e.currentTarget, aufnehmenMenue(d.pfad))}
@@ -347,6 +357,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
                 <Symbol name="plus" />
               </button>
             )}
+            {/* Zeilen mit Dokument halten den Platz frei – so bleibt die Zeitspalte bündig */}
+            {umfangDa && dok && <span className="fo-aufnehmen-platz" aria-hidden />}
           </li>
         ))}
       </ul>

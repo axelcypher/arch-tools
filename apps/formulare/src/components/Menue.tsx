@@ -13,6 +13,8 @@ export type MenuePunkt =
       symbol?: SymbolName;
       /** rechts daneben, z. B. ein Tastenkürzel */
       hinweis?: string;
+      /** Tooltip – z. B. der volle Text, wenn er gekürzt werden kann */
+      titel?: string;
       aktion?: () => void;
       deaktiviert?: boolean;
       /** rot (Löschen) */
@@ -92,10 +94,33 @@ export function MenueHost() {
   return <Liste punkte={offen.punkte} x={offen.x} y={offen.y} schliessen={schliessen} wurzel />;
 }
 
-function Liste({ punkte, x, y, schliessen, wurzel = false }: { punkte: MenuePunkt[]; x: number; y: number; schliessen: () => void; wurzel?: boolean }) {
+/**
+ * Eine Menüliste. Tastatur: ↑/↓ wandern, Enter bzw. → öffnet ein Untermenü und setzt den Fokus hinein, ← bzw. Esc führt
+ * aus dem Untermenü zurück zu seinem Punkt (Esc im Hauptmenü schließt). Tasten eines Untermenüs gehen nicht an das
+ * Menü darüber.
+ */
+function Liste({
+  punkte,
+  x,
+  y,
+  schliessen,
+  wurzel = false,
+  fokus = false,
+  zurueck,
+}: {
+  punkte: MenuePunkt[];
+  x: number;
+  y: number;
+  schliessen: () => void;
+  wurzel?: boolean;
+  /** beim Öffnen den ersten Punkt fokussieren (Untermenü per Tastatur geöffnet) */
+  fokus?: boolean;
+  /** Untermenü: zurück zum Punkt im Menü darüber */
+  zurueck?: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [lage, setLage] = useState({ x, y });
-  const [unter, setUnter] = useState<{ index: number; x: number; y: number } | null>(null);
+  const [unter, setUnter] = useState<{ index: number; x: number; y: number; tastatur: boolean } | null>(null);
 
   // im Fenster halten
   useLayoutEffect(() => {
@@ -108,15 +133,40 @@ function Liste({ punkte, x, y, schliessen, wurzel = false }: { punkte: MenuePunk
   }, [x, y]);
 
   useEffect(() => {
-    if (wurzel) ref.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
-  }, [wurzel]);
+    if (wurzel || fokus) ref.current?.querySelector<HTMLButtonElement>(':scope > button:not(:disabled)')?.focus();
+  }, [wurzel, fokus]);
+
+  const oeffnen = (index: number, el: HTMLElement, tastatur: boolean) => {
+    const r = el.getBoundingClientRect();
+    setUnter({ index, x: r.right - 2, y: r.top - 4, tastatur });
+  };
+  // aus dem Untermenü zurück: es schließt, der Fokus kommt auf seinen Punkt
+  const unterZurueck = () => {
+    const index = unter?.index;
+    setUnter(null);
+    ref.current?.querySelector<HTMLButtonElement>(`:scope > button[data-index="${index}"]`)?.focus();
+  };
 
   const tasten = (e: React.KeyboardEvent) => {
     const knoepfe = [...(ref.current?.querySelectorAll<HTMLButtonElement>(':scope > button:not(:disabled)') ?? [])];
-    const i = knoepfe.indexOf(document.activeElement as HTMLButtonElement);
+    const aktiv = document.activeElement as HTMLButtonElement;
+    const i = knoepfe.indexOf(aktiv);
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
+      e.stopPropagation();
       knoepfe[(i + (e.key === 'ArrowDown' ? 1 : -1) + knoepfe.length) % knoepfe.length]?.focus();
+    } else if (e.key === 'ArrowRight' && i >= 0) {
+      const index = Number(aktiv.dataset.index);
+      const p = punkte[index];
+      if (p && !p.trenner && p.unter) {
+        e.preventDefault();
+        e.stopPropagation();
+        oeffnen(index, aktiv, true);
+      }
+    } else if ((e.key === 'ArrowLeft' || e.key === 'Escape') && !wurzel) {
+      e.preventDefault();
+      e.stopPropagation();
+      zurueck?.();
     }
   };
 
@@ -130,16 +180,19 @@ function Liste({ punkte, x, y, schliessen, wurzel = false }: { punkte: MenuePunk
             key={i}
             role="menuitem"
             className={`menue-punkt${p.gefahr ? ' gefahr' : ''}${unter?.index === i ? ' offen' : ''}`}
+            data-index={i}
+            title={p.titel}
             disabled={p.deaktiviert}
             aria-haspopup={p.unter ? 'menu' : undefined}
+            aria-expanded={p.unter ? unter?.index === i : undefined}
             onMouseEnter={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              setUnter(p.unter ? { index: i, x: r.right - 2, y: r.top - 4 } : null);
+              if (p.unter) oeffnen(i, e.currentTarget, false);
+              else setUnter(null);
             }}
             onClick={(e) => {
               if (p.unter) {
-                const r = e.currentTarget.getBoundingClientRect();
-                setUnter({ index: i, x: r.right - 2, y: r.top - 4 });
+                // per Tastatur (Enter/Leertaste – ohne Mausklick, detail 0): der Fokus geht ins Untermenü
+                oeffnen(i, e.currentTarget, e.detail === 0);
                 return;
               }
               schliessen();
@@ -154,7 +207,15 @@ function Liste({ punkte, x, y, schliessen, wurzel = false }: { punkte: MenuePunk
         ),
       )}
       {unter && (punkte[unter.index] as { unter?: MenuePunkt[] }).unter && (
-        <Liste punkte={(punkte[unter.index] as { unter: MenuePunkt[] }).unter} x={unter.x} y={unter.y} schliessen={schliessen} />
+        <Liste
+          key={`${unter.index}|${unter.tastatur}`}
+          punkte={(punkte[unter.index] as { unter: MenuePunkt[] }).unter}
+          x={unter.x}
+          y={unter.y}
+          schliessen={schliessen}
+          fokus={unter.tastatur}
+          zurueck={unterZurueck}
+        />
       )}
     </div>
   );

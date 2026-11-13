@@ -1133,9 +1133,11 @@ describe('Projektordner, Ansicht „Antrag“: Dokumente im Antragsordner mit Vo
 
 describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokument im Antragsumfang', () => {
   const BSK = 'BS9 BAUA 261110 07 Brandschutzkonzept.pdf';
+  const AUFNEHMEN = 'Als neues Dokument aufnehmen: „Brandschutzkonzept“';
   const zeileIn = (host: HTMLElement, name: string) => [...host.querySelectorAll<HTMLElement>('.fo-antrag-ablage .fo-bereit-zeile')].find((z) => z.textContent?.includes(name))!;
   const punktGenau = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue-punkt')].find((b) => b.querySelector('.menue-text')?.textContent === text)!;
   const umfangVon = (fassung: string) => (antragIn(fassung)?.umfang ?? []) as { id: string; titel: string; art: string; nr?: string; dateien?: Record<string, string> }[];
+  const taste = async (key: string) => act(async () => void (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
   const mitUmfang = async () => {
     ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/${BSK}`, new Uint8Array([1]));
     ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/Statik Teil 1.pdf`, new Uint8Array([1]));
@@ -1147,11 +1149,11 @@ describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokum
     return host;
   };
 
-  it('ohne Antragsumfang kein Quick-Add und kein „nicht im Antragsumfang“', async () => {
+  it('ohne Antragsumfang kein Quick-Add, kein „nicht im Antragsumfang“, kein Platzhalter', async () => {
     ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/${BSK}`, new Uint8Array([1]));
     const host = await projektBS9();
     await klick(knopfGenau(host, 'Antrag'));
-    expect(zeileIn(host, 'Brandschutzkonzept').querySelector('.fo-aufnehmen')).toBeNull();
+    expect(zeileIn(host, 'Brandschutzkonzept').querySelector('.fo-aufnehmen, .fo-aufnehmen-platz')).toBeNull();
     expect(zeileIn(host, 'Brandschutzkonzept').textContent).not.toContain('nicht im Antragsumfang');
   });
 
@@ -1159,65 +1161,134 @@ describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokum
     const host = await mitUmfang();
     const zeile = () => zeileIn(host, 'Brandschutzkonzept');
     expect(zeile().querySelector('.fo-bereit-unter')!.textContent).toBe('nicht im Antragsumfang');
+    expect(zeile().querySelector<HTMLElement>('.fo-baum-zeile')!.title).toContain(`${BSK} – nicht im Antragsumfang`);
     const plus = zeile().querySelector<HTMLButtonElement>('.fo-aufnehmen')!;
     expect(plus.getAttribute('aria-label')).toBe(`${BSK} in den Antragsumfang aufnehmen`);
     expect(plus.getAttribute('aria-haspopup')).toBe('menu');
+    expect(plus.title).toBe('Nicht im Antragsumfang – als neues Dokument aufnehmen oder mit einem fehlenden verknüpfen');
+    expect(zeile().querySelector('.fo-aufnehmen-platz')).toBeNull();
     await klick(plus);
-    await klick(punktGenau('Als neues Dokument „Brandschutzkonzept“ aufnehmen'));
+    // voller Text auch als Tooltip (wird ein langer Titel gekürzt)
+    expect(punktGenau(AUFNEHMEN).title).toBe(AUFNEHMEN);
+    await klick(punktGenau(AUFNEHMEN));
     for (let i = 0; i < 4; i++) await warte();
     expect(umfangVon('BAUA 2').filter((u) => u.titel === 'Brandschutzkonzept')).toEqual([expect.objectContaining({ art: 'extern', nr: '07', dateien: { 'BAUA 2': BSK } })]);
     expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: `„Brandschutzkonzept“ in den Antragsumfang von BAUA 2 aufgenommen – verknüpft mit „${BSK}“.` });
-    // jetzt zugeordnet: der Titel steht unter dem Namen, kein Quick-Add mehr – in den Antragsdaten steht er auch
+    // jetzt zugeordnet: der Titel steht unter dem Namen, statt des + ein Platzhalter (Zeitspalte bündig)
     expect(zeile().querySelector('.fo-bereit-unter')!.textContent).toBe('Brandschutzkonzept');
     expect(zeile().querySelector('.fo-aufnehmen')).toBeNull();
+    expect(zeile().querySelector('.fo-aufnehmen-platz')!.getAttribute('aria-hidden')).toBe('true');
     expect(useAntrag.getState().dokumente.find((d) => d.eintrag.titel === 'Brandschutzkonzept')?.datei?.pfad).toBe(BSK);
   });
 
-  it('einem fehlenden Dokument zuordnen – auch aus dem Kontextmenü der Zeile', async () => {
+  it('mit einem fehlenden Dokument verknüpfen – aus dem Kontextmenü der Zeile, mit Meldung', async () => {
     const host = await mitUmfang();
-    // zuordnen lassen sich nur Dokumente ohne Datei, kein Plansatz
+    // verknüpfen lassen sich nur Dokumente ohne Datei, kein Plansatz
     const ohneDatei = useAntrag.getState().dokumente.filter((d) => d.status !== 'entfaellt' && !d.plansatz && !d.datei);
     expect(ohneDatei.length).toBeGreaterThan(0);
     const ziel = ohneDatei[0].eintrag;
     await rechtsklick(zeileIn(host, 'Statik Teil 1.pdf').querySelector('.fo-baum-zeile')!);
-    expect(punktGenau('Als neues Dokument „Statik Teil 1“ aufnehmen')).toBeTruthy();
-    await klick(punktGenau('Fehlendem Dokument zuordnen'));
+    expect(punktGenau('Als neues Dokument aufnehmen: „Statik Teil 1“')).toBeTruthy();
+    await klick(punktGenau('Mit fehlendem Dokument verknüpfen'));
     const angeboten = [...document.querySelectorAll('.menue-punkt .menue-text')].map((t) => t.textContent);
     for (const d of ohneDatei) expect(angeboten).toContain(d.eintrag.titel);
     expect(useAntrag.getState().dokumente.filter((d) => d.plansatz).every((d) => !angeboten.includes(d.eintrag.titel))).toBe(true);
     await klick(punktGenau(ziel.titel));
     for (let i = 0; i < 4; i++) await warte();
     expect(umfangVon('BAUA 2').find((u) => u.id === ziel.id)!.dateien).toEqual({ 'BAUA 2': 'Statik Teil 1.pdf' });
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: `„Statik Teil 1.pdf“ mit „${ziel.titel}“ verknüpft.` });
     expect(zeileIn(host, 'Statik Teil 1.pdf').querySelector('.fo-aufnehmen')).toBeNull();
     // der Name passt nicht zum Format (das steht unter dem Namen) – die Zuordnung nennt der Tooltip
     expect(zeileIn(host, 'Statik Teil 1.pdf').querySelector<HTMLElement>('.fo-baum-zeile')!.title).toContain(`Statik Teil 1.pdf – ${ziel.titel}`);
   });
 
-  it('eingereicht: Quick-Add gesperrt, mit Grund – Knopf und Kontextmenü', async () => {
+  it('Tastatur: Enter öffnet das Untermenü mit Fokus darin, ↓ bleibt dort, ← führt zurück – kein falsches Aufnehmen', async () => {
     const host = await mitUmfang();
+    await klick(zeileIn(host, 'Statik Teil 1.pdf').querySelector<HTMLButtonElement>('.fo-aufnehmen')!);
+    // Fokus auf dem ersten Punkt; ↓ zum Untermenü-Punkt, Enter (ohne Maus: detail 0) öffnet es
+    expect(document.activeElement?.textContent).toContain('Als neues Dokument aufnehmen');
+    await taste('ArrowDown');
+    const eltern = punktGenau('Mit fehlendem Dokument verknüpfen');
+    expect(document.activeElement).toBe(eltern);
+    await act(async () => void eltern.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 })));
+    const unter = () => [...document.querySelectorAll<HTMLButtonElement>('.menue .menue .menue-punkt')];
+    expect(unter().length).toBeGreaterThan(0);
+    expect(document.activeElement).toBe(unter()[0]);
+    expect(eltern.getAttribute('aria-expanded')).toBe('true');
+    // ↓ wandert im Untermenü (nicht im Hauptmenü)
+    await taste('ArrowDown');
+    expect(unter()).toContain(document.activeElement);
+    // ← zurück zum Punkt im Hauptmenü, das Untermenü schließt
+    await taste('ArrowLeft');
+    expect(document.activeElement).toBe(punktGenau('Mit fehlendem Dokument verknüpfen'));
+    expect(unter().length).toBe(0);
+    // → öffnet es wieder, Esc führt zurück (das Menü bleibt offen)
+    await taste('ArrowRight');
+    expect(document.activeElement).toBe(unter()[0]);
+    await taste('Escape');
+    expect(document.querySelector('.menue')).not.toBeNull();
+    expect(document.activeElement).toBe(punktGenau('Mit fehlendem Dokument verknüpfen'));
+  });
+
+  it('Menü in BAUA 2 offen, dann zeigt das Projekt BAUA: nichts aufgenommen, mit Grund', async () => {
+    const host = await mitUmfang();
+    const vorher = umfangVon('BAUA 2').length;
+    await klick(zeileIn(host, 'Brandschutzkonzept').querySelector<HTMLButtonElement>('.fo-aufnehmen')!);
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+    for (let i = 0; i < 4; i++) await warte();
+    await klick(punktGenau(AUFNEHMEN));
+    for (let i = 0; i < 4; i++) await warte();
+    expect(umfangVon('BAUA 2').length).toBe(vorher);
+    expect(umfangVon('BAUA').some((u) => u.titel === 'Brandschutzkonzept')).toBe(false);
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Nicht aufgenommen – inzwischen ist Antrag BAUA angezeigt.' });
+  });
+
+  it('eingereicht bzw. ein Antrag wird geöffnet: Quick-Add gesperrt, mit Grund – Knopf und Kontextmenü', async () => {
+    const host = await mitUmfang();
+    const plus = () => zeileIn(host, 'Brandschutzkonzept').querySelector<HTMLButtonElement>('.fo-aufnehmen')!;
+    // wird geöffnet (die Liste gehört noch zu einer anderen Fassung)
+    act(() => useAntrag.setState({ dokumenteFuer: 'BAUA' }));
+    expect(plus().disabled).toBe(true);
+    expect(plus().title).toBe('Der Antrag wird gerade geöffnet – gleich wieder möglich');
+    act(() => useAntrag.setState({ dokumenteFuer: 'BAUA 2' }));
+    expect(plus().disabled).toBe(false);
     await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-12' }));
     await warte();
-    const plus = zeileIn(host, 'Brandschutzkonzept').querySelector<HTMLButtonElement>('.fo-aufnehmen')!;
-    expect(plus.disabled).toBe(true);
-    expect(plus.title).toBe('Der Antrag ist eingereicht und gesperrt – der Antragsumfang bleibt, wie er ist');
+    expect(plus().disabled).toBe(true);
+    expect(plus().title).toBe('Der Antrag ist eingereicht und gesperrt – der Antragsumfang bleibt, wie er ist');
     await rechtsklick(zeileIn(host, 'Brandschutzkonzept').querySelector('.fo-baum-zeile')!);
-    const punkt = punktGenau('Als neues Dokument „Brandschutzkonzept“ aufnehmen');
+    const punkt = punktGenau(AUFNEHMEN);
     expect(punkt.disabled).toBe(true);
     expect(punkt.textContent).toContain('Antrag eingereicht');
+    expect(punktGenau('Mit fehlendem Dokument verknüpfen').disabled).toBe(true);
     // auch direkt im Store nichts aufgenommen (Sperre)
     const vorher = umfangVon('BAUA 2').length;
     await act(async () => void (await useAntrag.getState().dateiAufnehmen(BSK, { titel: 'Brandschutzkonzept', ansicht: 'BAUA 2' })));
     expect(umfangVon('BAUA 2').length).toBe(vorher);
   });
 
-  it('inzwischen schon verknüpft (z. B. aus einem anderen Fenster): kein zweiter Eintrag, keine Erfolgsmeldung', async () => {
+  it('ohne Dokumente ohne Datei: nur „aufnehmen“ im Menü und im Tooltip', async () => {
+    const host = await mitUmfang();
+    // alle Dokumente ohne Datei entfernen
+    await act(() => useAntrag.getState().umfangAendern((u) => u.filter((x) => useAntrag.getState().dokumente.some((d) => d.eintrag.id === x.id && (d.datei || d.plansatz)))));
+    for (let i = 0; i < 4; i++) await warte();
+    const plus = zeileIn(host, 'Brandschutzkonzept').querySelector<HTMLButtonElement>('.fo-aufnehmen')!;
+    expect(plus.title).toBe('Nicht im Antragsumfang – als neues Dokument aufnehmen');
+    await klick(plus);
+    expect(punktGenau(AUFNEHMEN)).toBeTruthy();
+    expect(punktGenau('Mit fehlendem Dokument verknüpfen')).toBeUndefined();
+  });
+
+  it('im angezeigten Stand schon verknüpft (z. B. doppelter Klick): kein zweiter Eintrag, nichts geschrieben, mit Meldung', async () => {
     await mitUmfang();
     const erster = await act(() => useAntrag.getState().dateiAufnehmen(BSK, { titel: 'Brandschutzkonzept', ansicht: 'BAUA 2' }));
     expect(erster.geschrieben).toBe(true);
-    act(() => useFormulare.getState().setMeldung(null));
-    await act(() => useAntrag.getState().dateiAufnehmen(BSK, { titel: 'Brandschutz', ansicht: 'BAUA 2' }));
+    const bytes = ds.dateien.get(OAP);
+    const zweiter = await act(() => useAntrag.getState().dateiAufnehmen(BSK, { titel: 'Brandschutz', ansicht: 'BAUA 2' }));
+    expect(zweiter).toEqual({ grund: 'schon mit „Brandschutzkonzept“ verknüpft' });
+    expect(ds.dateien.get(OAP)).toBe(bytes);
     expect(umfangVon('BAUA 2').filter((u) => u.dateien?.['BAUA 2'] === BSK).map((u) => u.titel)).toEqual(['Brandschutzkonzept']);
-    expect(useFormulare.getState().meldung).toBeNull();
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: `Nicht aufgenommen – „${BSK}“ ist schon mit „Brandschutzkonzept“ verknüpft.` });
   });
 });
 

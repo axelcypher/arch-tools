@@ -1431,9 +1431,15 @@ export const useAntrag = create<AntragState>((set, get) => {
       const fassung = o.ansicht ?? aktiveFassung(get(), projekt);
       const id = `u${Date.now().toString(36)}`;
       const eintrag: UmfangEintrag = { id, titel: o.titel, art: 'extern', ...(o.nr ? { nr: o.nr } : {}), dateien: { [fassung]: name } };
-      // inzwischen schon mit einem Dokument verknüpft (z. B. im anderen Fenster): kein zweites dazu
-      const schonDa = (umfang: UmfangEintrag[]) => umfang.some((u) => u.dateien?.[fassung]?.toLowerCase() === name.toLowerCase());
-      const info = await get().umfangAendern((umfang) => (schonDa(umfang) ? umfang : [...umfang, eintrag]), { was: 'Nicht aufgenommen', ansicht: o.ansicht, titel: o.titel });
+      // im angezeigten Stand schon mit einem Dokument verknüpft (etwa nach einem doppelten Klick): kein zweites, nichts
+      // schreiben – das sagen; ein anderer Arbeitsplatz, dessen Stand noch nicht geladen ist, wird hier nicht erkannt
+      const pd = get().projektdatei;
+      const schon = pd?.ansicht === fassung ? pd.umfang?.find((u) => u.dateien?.[fassung]?.toLowerCase() === name.toLowerCase()) : undefined;
+      if (schon) {
+        meldung('info', `Nicht aufgenommen – „${name}“ ist schon mit „${schon.titel}“ verknüpft.`);
+        return { grund: `schon mit „${schon.titel}“ verknüpft` };
+      }
+      const info = await get().umfangAendern((umfang) => [...umfang, eintrag], { was: 'Nicht aufgenommen', ansicht: o.ansicht, titel: o.titel });
       // gesagt wird es nur, wenn er jetzt im Antragsumfang steht – in diesem Projekt und dieser Fassung
       const st = get().projektdatei;
       if (info.geschrieben && useFormulare.getState().projekt === projekt && st?.ansicht === fassung && st.umfang?.some((u) => u.id === id))
@@ -1450,12 +1456,13 @@ export const useAntrag = create<AntragState>((set, get) => {
       // der festgehaltenen Fassung (die dann angezeigt und aktiv ist) und nur, wenn es den Eintrag noch gibt
       const umfang = pd?.umfang;
       const wechsel = wechselLaeuft(get(), useFormulare.getState().projekt);
+      // eine andere Fassung angezeigt: das ist der Grund (auch wenn sie keinen Antragsumfang hat)
       const vorab: SchreibInfo['vorab'] = wechsel
         ? 'fassung'
-        : !umfang
-          ? 'umfang'
-          : o.ansicht !== undefined && pd?.ansicht !== o.ansicht
-            ? 'fassung'
+        : o.ansicht !== undefined && pd?.ansicht !== o.ansicht
+          ? 'fassung'
+          : !umfang
+            ? 'umfang'
             : o.eintrag && !umfang.some((x) => x.id === o.eintrag)
               ? 'eintrag'
               : undefined;

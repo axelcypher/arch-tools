@@ -321,12 +321,17 @@ Anschrift, wie sie in Formularen steht.
   aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` gibt es weiter an anderer Stelle). In der
   Unterlagen-Vorschau stehen die Pläne eines Plansatzes an seiner Stelle im Antragsumfang.
   - **Quick-Add:** Gibt es einen Antragsumfang, steht unter einer Datei, die zu keinem seiner Dokumente gehört, „nicht
-    im Antragsumfang“ und dahinter ein **+**. Es bietet (ebenso oben im Rechtsklick-Menü der Zeile) „Als neues Dokument
-    „…“ aufnehmen“ – ein eigenes Dokument (Art extern), verknüpft mit der Datei für die angezeigte Fassung; Titel ist
-    die Bezeichnung nach dem Namensformat („HVO BAUA 261110 07 Brandschutzkonzept.pdf“ → „Brandschutzkonzept“, Nr.
-    07; eine Plannummer wird keine Nr.), sonst der Name ohne Endung – und „Fehlendem Dokument zuordnen“ mit den
-    Dokumenten ohne Datei (kein Plansatz – der sammelt seine Pläne selbst). Titel und Nr. lassen sich danach in den
-    Antragsdaten ändern. Eingereicht bzw. während ein Antrag geöffnet wird, ist beides gesperrt (mit Grund).
+    im Antragsumfang“ und dahinter ein **+** (Zeilen mit Dokument halten den Platz frei, die Zeitspalte bleibt bündig).
+    Es bietet (ebenso oben im Rechtsklick-Menü der Zeile) „Als neues Dokument aufnehmen: „…““ – ein eigenes Dokument
+    (Art extern), verknüpft mit der Datei für die angezeigte Fassung; Titel ist die Bezeichnung nach dem Namensformat
+    („HVO BAUA 261110 07 Brandschutzkonzept.pdf“ → „Brandschutzkonzept“, Nr. 07; eine Plannummer wird keine Nr.), sonst
+    der Name ohne Endung – und, wenn es Dokumente ohne Datei gibt, „Mit fehlendem Dokument verknüpfen“ ▸ mit diesen
+    (kein Plansatz – der sammelt seine Pläne selbst). Beides meldet, was geschehen ist; ist die Datei im angezeigten
+    Stand schon verknüpft, „Nicht aufgenommen – … ist schon mit „…“ verknüpft.“ Titel und Nr. lassen sich danach in den
+    Antragsdaten ändern. Eingereicht bzw. während ein Antrag geöffnet wird, ist beides gesperrt (mit Grund); ist beim
+    Klick inzwischen eine andere Fassung angezeigt, wird nichts aufgenommen („… – inzwischen ist Antrag … angezeigt.“).
+    Menüs lassen sich mit der Tastatur bedienen: ↑/↓, Enter bzw. → öffnet ein Untermenü (der Fokus geht hinein), ← bzw.
+    Esc führt zurück.
 - **Antragsunterlagen ansehen:** „Ansehen“ in der Ansicht „Antrag“ (oder Rechtsklick auf eine Datei → „In der
   Vorschau durchblättern“) zeigt alle Unterlagen der aktiven Fassung im ganzen Fenster – zuerst die Dokumente des
   Antragsumfangs in ihrer Reihenfolge, dann die übrigen. Blättern mit ‹ ›, ← → oder Bild↑/Bild↓ bzw. über die Liste
