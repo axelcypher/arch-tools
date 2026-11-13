@@ -328,9 +328,10 @@ export function Arbeitsflaeche() {
   // ---------- Overlay ----------
   const elemente: ReactNode[] = [];
   if (abb && foto) {
-    if (ansicht === 'foto') fotoOverlay(elemente, abb, foto, ebene, ergebnis, auswahl, griffRunter);
-    if (ansicht === 'foto' && werkzeug === 'ecken' && ebene) eckenVorschau(elemente, abb, ebene.rechteck.ecken, maus && !ziehen.current ? abb.vonSchirm(maus) : null);
-    else if (ebene && entz) ebenenOverlay(elemente, abb, ebene, auswahl, griffRunter, (m) => entzMesswerte(entz, m));
+    if (ansicht === 'foto') {
+      fotoOverlay(elemente, abb, foto, ebene, ergebnis, auswahl, griffRunter);
+      if (werkzeug === 'ecken' && ebene) eckenVorschau(elemente, abb, ebene.rechteck.ecken, maus && !ziehen.current ? abb.vonSchirm(maus) : null);
+    } else if (ebene && entz) ebenenOverlay(elemente, abb, ebene, auswahl, griffRunter, (m) => entzMesswerte(entz, m));
     entwurfOverlay(elemente, abb, entwurf, maus && !ziehen.current ? punktAus(maus, entwurf[entwurf.length - 1] ?? null) : null, werkzeug, ansicht === 'entzerrt' && entz ? (p) => zuEbene(entz, p) : null);
   }
 

@@ -297,6 +297,12 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
         </>
       )}
 
+      {ergebnis.ok &&
+        ergebnis.e.hinweise.map((h) => (
+          <div key={h} className="warning ef-hinweis-ref">
+            {h}
+          </div>
+        ))}
       {ergebnis.ok ? (
         <div className="ef-ok">
           <span>Ebene ist entzerrbar.</span>
@@ -486,7 +492,18 @@ function BildPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
   const aendern = (f: (x: Ebene) => Ebene) => s().aendern(mitEbene(foto.id, ebene.id, f));
   const auto = useMemo(() => autoAufloesung(e, ebene), [e, ebene]);
   const bereich = bereichVon(e, foto, ebene);
-  const a = ausgabe(bereich, ebene.aufloesung ?? auto);
+  let a: ReturnType<typeof ausgabe>;
+  try {
+    a = ausgabe(bereich, ebene.aufloesung ?? auto);
+  } catch (err) {
+    return (
+      <section>
+        <h2>Bild</h2>
+        <div className="warning">{err instanceof Error ? err.message : String(err)}</div>
+        {ebene.ausschnitt && <button onClick={() => aendern((x) => ({ ...x, ausschnitt: undefined }))}>Automatisch</button>}
+      </section>
+    );
+  }
   return (
     <section>
       <h2>Bild</h2>

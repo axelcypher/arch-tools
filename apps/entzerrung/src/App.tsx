@@ -15,7 +15,7 @@ import { FotoLeiste } from './components/FotoLeiste';
 import { entzerrung } from './geo/ebene';
 import { ablegen, fotoImProjektOeffnen, fotosHinzufuegen, neu, oeffnen, speichern, zwischenspeicherStarten } from './projekt';
 import { aktuell, useEntz } from './store';
-import { dialogOffen, kuerzelErlaubt } from './tastatur';
+import { dialogOffen, kuerzelErlaubt, verlaufErlaubt } from './tastatur';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { RechteLeiste } from './components/RechteLeiste';
 
@@ -67,7 +67,7 @@ export function App() {
     return () => window.removeEventListener('beforeunload', vorSchliessen);
   }, []);
 
-  // Tastenkürzel: Strg+S/O auch im Eingabefeld, die übrigen nur ohne offenen Dialog und ohne Fokus auf einem Bedienelement
+  // Tastenkürzel ohne offenen Dialog: Strg+S/O überall, Strg+Z/Y und Esc außer in Textfeldern, die übrigen nicht auf Bedienelementen
   useEffect(() => {
     const taste = (e: KeyboardEvent) => {
       const s = useEntz.getState();
@@ -79,16 +79,24 @@ export function App() {
         void (k === 's' ? speichern() : oeffnen());
         return;
       }
-      if (!kuerzelErlaubt(e)) return;
+      if (!verlaufErlaubt(e)) return;
       if (strg && k === 'z' && !e.shiftKey) {
         e.preventDefault();
         s.rueckgaengig();
-      } else if (strg && (k === 'y' || (k === 'z' && e.shiftKey))) {
+        return;
+      }
+      if (strg && (k === 'y' || (k === 'z' && e.shiftKey))) {
         e.preventDefault();
         s.wiederholen();
-      } else if (strg || e.altKey) return;
-      else if (e.key === 'Escape') abbrechen();
-      else if (e.key === 'Enter') abschliessen();
+        return;
+      }
+      if (strg || e.altKey) return;
+      if (e.key === 'Escape') {
+        abbrechen();
+        return;
+      }
+      if (!kuerzelErlaubt(e)) return;
+      if (e.key === 'Enter') abschliessen();
       else if (e.key === 'Backspace') {
         e.preventDefault();
         if (s.entwurf.length) letztenPunktEntfernen();

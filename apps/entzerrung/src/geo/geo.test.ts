@@ -7,7 +7,7 @@ import { homographie } from './homographie';
 import { abbilden } from './mat';
 import type { Pt } from './mat';
 import { ausgabe, autoAufloesung, autoBereich, messwert, naechsteStufe, rundeAufloesung } from './messen';
-import { entzeichnen, geradheit, kamera, linseGueltig, schaetzeLinse, verzeichnen } from './verzeichnung';
+import { entzeichnen, geradheit, grenzRadius, kamera, linseGueltig, schaetzeLinse, verzeichnen } from './verzeichnung';
 
 /**
  * Synthetische Aufnahme: Fassade in der Ebene Z = 0 (X nach rechts, Y nach oben, Meter), Kamera 12 m davor
@@ -285,6 +285,29 @@ describe('Robustheit: keine still falschen Werte', () => {
     expect(entzerrung(foto({ k1: -0.08, k2: 0.01 }), ebene).ok).toBe(true);
   });
 
+  it('Linse gilt nur, wenn sich das ganze Foto bis über die Ecken zurückrechnen lässt', () => {
+    // k1 = −0,15: der verzeichnete Radius erreicht höchstens 0,994 halbe Diagonalen – Bildecken nicht umkehrbar
+    expect(linseGueltig({ k1: -0.15, k2: 0 })).toBe(false);
+    expect(linseGueltig({ k1: -0.21, k2: 0 })).toBe(false);
+    const r = entzerrung(foto({ k1: -0.15, k2: 0 }), ebene);
+    expect(r.ok ? '' : r.fehler).toMatch(/falten/);
+    // Gegenprobe: geschätzte Werte einer kräftigen Tonne – alle vier Ecken hin und zurück
+    const echt = { k1: -0.12, k2: 0 };
+    const kam = kamera(4000, 3000, echt);
+    const krumm = [0, 1, 2, 3].map((j) => [0, 0.25, 0.5, 0.75, 1].map((t) => verzeichnen(kam, j < 2 ? { x: 4000 * t, y: j === 0 ? 40 : 2960 } : { x: j === 2 ? 40 : 3960, y: 3000 * t })));
+    const s = schaetzeLinse(4000, 3000, krumm);
+    expect(linseGueltig(s)).toBe(true);
+    const k = kamera(4000, 3000, s);
+    for (const p of [{ x: 0, y: 0 }, { x: 4000, y: 0 }, { x: 4000, y: 3000 }, { x: 0, y: 3000 }]) {
+      const q = verzeichnen(k, entzeichnen(k, p));
+      expect(q.x).toBeCloseTo(p.x, 5);
+      expect(q.y).toBeCloseTo(p.y, 5);
+    }
+    expect(linseGueltig({ k1: 0, k2: 0 })).toBe(true);
+    expect(grenzRadius({ k1: 0, k2: 0 })).toBe(Infinity);
+    expect(grenzRadius({ k1: -0.1, k2: 0 })).toBeGreaterThan(1.5);
+  });
+
   it('entzeichnen liefert NaN, wo die Verzeichnung nicht umkehrbar ist', () => {
     const k = kamera(4000, 3000, { k1: -0.9, k2: 0 });
     const p = entzeichnen(k, { x: 3900, y: 2900 });
@@ -314,10 +337,11 @@ describe('Robustheit: keine still falschen Werte', () => {
     });
     const gerade = entzerrung(foto(), pp([[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]));
     expect(gerade.ok ? '' : gerade.fehler).toMatch(/Koordinaten liegen \(fast\) auf einer Geraden/);
-    const gespiegelt = entzerrung(foto(), pp([[0, 0], [10, 0], [10, -6], [0, -6], [5, -3]]));
-    expect(gespiegelt.ok ? '' : gespiegelt.fehler).toMatch(/gespiegelt/);
-    // Gegenprobe
-    expect(entzerrung(foto(), pp([[0, 0], [10, 0], [10, 6], [0, 6], [5, 3]])).ok).toBe(true);
+    // gespiegelt (y nach unten oder gewollt als Deckenspiegel): entzerrbar, aber mit Hinweis
+    const gespiegelt = ok(entzerrung(foto(), pp([[0, 0], [10, 0], [10, -6], [0, -6], [5, -3]])));
+    expect(gespiegelt.hinweise.join()).toMatch(/gespiegelt/);
+    // Gegenprobe: ohne Hinweis
+    expect(ok(entzerrung(foto(), pp([[0, 0], [10, 0], [10, 6], [0, 6], [5, 3]]))).hinweise).toEqual([]);
   });
 
   it('Fluchtlinien: zusammenfallende Fluchtpunkte und fehlende Angaben verständlich gemeldet', () => {

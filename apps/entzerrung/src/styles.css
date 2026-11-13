@@ -536,3 +536,6 @@
   object-fit: cover;
   display: block;
 }
+.ef-hinweis-ref {
+  margin-bottom: 6px;
+}

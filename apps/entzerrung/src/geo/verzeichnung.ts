@@ -68,17 +68,33 @@ export function entzeichnen(k: Kamera, d: Pt): Pt {
 }
 
 /**
- * Ist die Abbildung über das ganze Foto eindeutig (Radius wächst monoton bis in die Bildecken)?
- * Sonst falten sich die Ränder – solche Werte sind unbrauchbar.
+ * Größter idealer Radius (in halben Bilddiagonalen), bis zu dem die Abbildung ideal → verzeichnet eindeutig ist
+ * (Radius wächst streng monoton); `Infinity` ohne Verzeichnung bzw. ohne Knick bis zum Radius 3. Darüber hinaus
+ * faltet sich das Bild – solche idealen Punkte dürfen nicht gezeichnet werden (Doppelbilder am Rand).
+ */
+export function grenzRadius(k: Linse): number {
+  if (ohneVerzeichnung(k)) return Infinity;
+  for (let i = 1; i <= 3000; i++) {
+    const r2 = (i / 1000) ** 2;
+    if (1 + 3 * k.k1 * r2 + 5 * k.k2 * r2 * r2 <= 0.05 || 1 + k.k1 * r2 + k.k2 * r2 * r2 <= 0.05) return (i - 1) / 1000;
+  }
+  return Infinity;
+}
+
+/**
+ * Sind die Werte brauchbar? Die Abbildung muss eindeutig sein, bis der verzeichnete Radius über die Bildecke
+ * hinaus reicht (1,05 halbe Diagonalen), sonst lassen sich Punkte im Randbereich nicht zurückrechnen. Geprüft wird
+ * bis zum idealen Radius 3 – das entspricht einer Tonne, die die Ecken auf ein Drittel heranzieht, weit jenseits
+ * üblicher Objektive.
  */
 export function linseGueltig(k: Linse): boolean {
   if (!Number.isFinite(k.k1) || !Number.isFinite(k.k2)) return false;
-  for (let i = 0; i <= 60; i++) {
-    const r2 = (i / 50) ** 2; // bis 1,2 × halbe Diagonale
-    if (1 + 3 * k.k1 * r2 + 5 * k.k2 * r2 * r2 <= 0.05) return false;
-    if (1 + k.k1 * r2 + k.k2 * r2 * r2 <= 0.05) return false;
-  }
-  return true;
+  if (ohneVerzeichnung(k)) return true;
+  const g = grenzRadius(k);
+  // verzeichneter Radius an der Grenze (bei Infinity: am Prüfende 3)
+  const r = Math.min(g, 3);
+  const r2 = r * r;
+  return r * (1 + k.k1 * r2 + k.k2 * r2 * r2) >= 1.05;
 }
 
 /** mittlere quadratische Abweichung (px) der Punkte von ihrer Ausgleichsgeraden, je Linie und gesamt */

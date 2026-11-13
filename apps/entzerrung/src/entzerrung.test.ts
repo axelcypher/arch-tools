@@ -6,7 +6,7 @@ import { leistenBreite, leistenFeld, pdfPlan, passenderMassstab, pixelZuEbene, p
 import { abbilden } from './geo/mat';
 import { ausgabe } from './geo/messen';
 import { pdfErzeugen, winAnsi } from './export/pdf';
-import { crc32, jpegDichte, jpegMitMassstab, pngMitMassstab } from './export/png';
+import { crc32, jpegDichte, jpegMitMassstab, pngDichte, pngMitMassstab } from './export/png';
 import { entzerrung } from './geo/ebene';
 import { neuesFoto } from './model';
 import { aktuell, ebeneHinzufuegen, useEntz } from './store';
@@ -138,6 +138,13 @@ describe('Maßstab in Bilddateien', () => {
     for (const s of [0.003, 0.02, 0.025]) expect(kopf(s)).toEqual({ kopf: [0, 0, 1, 0, 1], mit: false });
     expect(jpegDichte(0.003)).toBeNull();
     expect(jpegDichte(0.001)).toEqual({ einheit: 2, wert: 10 });
+  });
+
+  it('PNG-Dichte nur, wenn auf 0,1 % genau (sonst ohne Einheit)', () => {
+    expect(pngDichte(0.0025)).toBe(400);
+    expect(pngDichte(0.003)).toBe(333); // 0,1 % daneben – noch zulässig
+    expect(pngDichte(0.03)).toBeNull(); // 33 statt 33,3 px/m: 1 %
+    expect(pngDichte(0.15)).toBeNull();
   });
 });
 

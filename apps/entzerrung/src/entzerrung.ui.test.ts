@@ -187,4 +187,59 @@ describe('RECTIO (Entzerrung)', () => {
     expect(zeilen[0]).toContain('1,26 m');
     expect(zeilen[1]).toContain('nicht messbar');
   });
+
+  it('Fotoansicht mit entzerrbarer Ebene, Messung und Ausschnitt: kein Absturz, Messungen nur entzerrt', () => {
+    // echte Flächengröße, sonst zeichnet die Arbeitsfläche kein Overlay
+    const w = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    const h = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 800 });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => 600 });
+    try {
+      const host = render();
+      act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+      const s = useEntz.getState();
+      const { foto, ebene } = aktuell(s);
+      act(() =>
+        s.aendern(
+          mitEbene(foto!.id, ebene!.id, (e) => ({
+            ...e,
+            rechteck: { ecken: ECKEN, breite: 1.26, hoehe: 1.51 },
+            ausschnitt: { x0: 0, y0: 0, x1: 1.26, y1: 1.51 },
+            messungen: [{ id: 'm1', art: 'strecke', name: 'A', punkte: [ECKEN[0], ECKEN[1]] }],
+          })),
+        ),
+      );
+      expect(host.querySelectorAll('.ef-griff').length).toBeGreaterThan(0); // Ecken in der Fotoansicht
+      expect(host.querySelector('.ef-messung')).toBeNull();
+      // Ecken-Werkzeug zeigt weiterhin nur die Fotoebene
+      act(() => useEntz.getState().setze({ werkzeug: 'ecken' }));
+      expect(host.querySelector('.ef-messung')).toBeNull();
+      // Gegenprobe: entzerrt erscheinen Messung und Ausschnitt
+      act(() => useEntz.getState().setze({ ansicht: 'entzerrt', werkzeug: 'auswahl' }));
+      expect(host.querySelector('.ef-messung')).not.toBeNull();
+      expect(host.querySelector('.ef-ausschnitt')).not.toBeNull();
+      act(() => useEntz.getState().setze({ ansicht: 'foto' }));
+      expect(host.querySelector('.ef-messung')).toBeNull();
+    } finally {
+      if (w) Object.defineProperty(HTMLElement.prototype, 'clientWidth', w);
+      if (h) Object.defineProperty(HTMLElement.prototype, 'clientHeight', h);
+    }
+  });
+
+  it('Strg+Z wirkt auch mit Fokus auf einem Knopf, nicht im Textfeld; Esc auf einem Knopf bricht ab', () => {
+    const host = render();
+    act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+    const taste = (ziel: EventTarget, key: string, ctrlKey = false) => act(() => void ziel.dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey, bubbles: true })));
+    eingabe(feld(host, 'Breite (m)'), '2');
+    expect(aktuell(useEntz.getState()).ebene!.rechteck.breite).toBe(2);
+    // im Textfeld: Rückgängig des Felds, nicht der App
+    taste(feld(host, 'Höhe (m)'), 'z', true);
+    expect(aktuell(useEntz.getState()).ebene!.rechteck.breite).toBe(2);
+    // auf einem Knopf: Rückgängig der App
+    taste(knopf(host, '+ Foto')!, 'z', true);
+    expect(aktuell(useEntz.getState()).ebene!.rechteck.breite).toBeUndefined();
+    act(() => useEntz.getState().setze({ werkzeug: 'ecken' }));
+    taste(knopf(host, '+ Foto')!, 'Escape');
+    expect(useEntz.getState().werkzeug).toBe('auswahl');
+  });
 });

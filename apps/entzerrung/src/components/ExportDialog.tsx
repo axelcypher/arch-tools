@@ -10,7 +10,7 @@ import { exportieren, PAPIER, passenderMassstab, pdfPlan } from '../export/expor
 import type { Format, Papier } from '../export/export';
 import { useEntz } from '../store';
 import { Modal } from '@core/ui/Dialog';
-import { jpegDichte } from '../export/png';
+import { jpegDichte, pngDichte } from '../export/png';
 
 const log = logger('export');
 
@@ -25,6 +25,7 @@ export function ExportDialog({ foto, ebene, e, aufloesung, bereich, onClose }: {
   const [fehler, setFehler] = useState<string | null>(null);
   const plan = pdfPlan(a.bereich, massstab, papier);
   const jpegMitDichte = jpegDichte(a.aufloesung) !== null;
+  const pngMitDichte = pngDichte(a.aufloesung) !== null;
   // Druckauflösung: Bildpixel je Millimeter Papier
   const dpi = (a.breite / plan.bild[0]) * 25.4;
 
@@ -56,7 +57,11 @@ export function ExportDialog({ foto, ebene, e, aufloesung, bereich, onClose }: {
       </p>
       {(
         [
-          ['png', 'PNG', 'verlustfrei; Maßstab 1:1 in den Bilddaten (Pixel je Meter), Auflösung im Dateinamen'],
+          [
+            'png',
+            'PNG',
+            pngMitDichte ? 'verlustfrei; Maßstab 1:1 in den Bilddaten (Pixel je Meter), Auflösung im Dateinamen' : 'verlustfrei; bei dieser groben Auflösung Maßstab nur im Dateinamen',
+          ],
           [
             'jpeg',
             'JPEG',

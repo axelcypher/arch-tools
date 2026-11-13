@@ -14,6 +14,8 @@ export interface Entzerrung {
   kamera: Kamera;
   /** Restabweichungen der überbestimmten Angaben */
   residuen: Residuum[];
+  /** Hinweise, die die Entzerrung nicht verhindern (z. B. gespiegelte Koordinaten) */
+  hinweise: string[];
 }
 
 export interface Residuum {
@@ -55,8 +57,12 @@ export function entzerrung(foto: Foto, ebene: Ebene): Ergebnis {
   }
 }
 
-function fertig(h: Mat3, kam: Kamera, bezug: Pt[], residuen: Residuum[]): Ergebnis {
-  if (!h.every(Number.isFinite) || Math.abs(det(h)) < 1e-300) {
+const RANDBEREICH = 'Ein Punkt liegt im Randbereich, den die Verzeichnungskorrektur nicht erfasst – k1/k2 prüfen oder den Punkt weiter innen setzen.';
+const randbereich = (p: Pt[]) => p.some((q) => !Number.isFinite(q.x) || !Number.isFinite(q.y));
+
+function fertig(h: Mat3, kam: Kamera, bezug: Pt[], residuen: Residuum[], hinweise: string[] = []): Ergebnis {
+  // nur echte Entartung: Pixel → Meter skaliert stark, eine relative Schwelle würde gültige Ebenen ablehnen
+  if (!h.every(Number.isFinite) || det(h) === 0) {
     return { ok: false, fehler: 'Aus den Angaben lässt sich keine Ebene bestimmen – Punkte und Maße prüfen.' };
   }
   // Vorzeichen so, dass die Bezugspunkte vor dem Horizont liegen (w > 0)
@@ -65,7 +71,7 @@ function fertig(h: Mat3, kam: Kamera, bezug: Pt[], residuen: Residuum[]): Ergebn
   else if (!w.every((v) => v > 0)) {
     return { ok: false, fehler: 'Die Punkte lassen sich nicht als ebene Fläche deuten – liegen sie wirklich auf einer Ebene, ist die Reihenfolge richtig?' };
   }
-  return { ok: true, e: { h, hInv: inv(h), kamera: kam, residuen } };
+  return { ok: true, e: { h, hInv: inv(h), kamera: kam, residuen, hinweise } };
 }
 
 function rechteck(ebene: Ebene, kam: Kamera): Ergebnis {
@@ -73,6 +79,7 @@ function rechteck(ebene: Ebene, kam: Kamera): Ergebnis {
   if (ecken.length < 4) return { ok: false, fehler: `Noch ${4 - ecken.length} Ecke${ecken.length === 3 ? '' : 'n'} des Rechtecks setzen.` };
   if (!breite || !hoehe || breite <= 0 || hoehe <= 0) return { ok: false, fehler: 'Breite und Höhe des Rechtecks eingeben.' };
   const ideal = ecken.map((p) => entzeichnen(kam, p));
+  if (randbereich(ideal)) return { ok: false, fehler: RANDBEREICH };
   if (!konvexesViereck(ideal) || drehsinn(ideal) > 0) {
     return { ok: false, fehler: 'Die Ecken ergeben kein passendes Viereck – Reihenfolge prüfen: links unten, rechts unten, rechts oben, links oben.' };
   }
@@ -106,13 +113,15 @@ function passpunkte(ebene: Ebene, kam: Kamera): Ergebnis {
   }
   const ideal = pp.map((p) => entzeichnen(kam, p.bild));
   const ziel = pp.map((p) => ({ x: p.x!, y: p.y! }));
+  if (randbereich(ideal)) return { ok: false, fehler: RANDBEREICH };
   if (aufEinerGeraden(ziel)) return { ok: false, fehler: 'Die eingegebenen Koordinaten liegen (fast) auf einer Geraden – Passpunkte über die Fläche verteilen.' };
   if (aufEinerGeraden(ideal)) return { ok: false, fehler: 'Die Passpunkte liegen im Foto (fast) auf einer Geraden – Punkte über die Fläche verteilen.' };
   const h = homographie(ideal, ziel);
-  // Bild (y nach unten) → Ebene (y nach oben) kehrt den Drehsinn um; sonst wurde y nach unten eingegeben
-  if (drehsinnErhalten(h, ideal)) {
-    return { ok: false, fehler: 'Die Koordinaten ergeben ein gespiegeltes Bild – y zählt nach oben (z. B. Höhe über Gelände), x nach rechts.' };
-  }
+  // Bild (y nach unten) → Ebene (y nach oben) kehrt den Drehsinn um; sonst wurde y nach unten eingegeben – oder
+  // gewollt gespiegelt (Deckenuntersicht mit Grundrisskoordinaten als Deckenspiegel). Deshalb nur ein Hinweis.
+  const hinweise = drehsinnErhalten(h, ideal)
+    ? ['Die Koordinaten ergeben ein gespiegeltes Bild. Gewollt (z. B. Deckenspiegel mit Grundrisskoordinaten)? Sonst prüfen: y zählt nach oben, x nach rechts.']
+    : [];
   const residuen: Residuum[] =
     pp.length > 4
       ? pp.map((p, i) => {
@@ -120,7 +129,7 @@ function passpunkte(ebene: Ebene, kam: Kamera): Ergebnis {
           return { id: p.id, wert: Math.hypot(q.x - ziel[i].x, q.y - ziel[i].y), einheit: 'm' as const };
         })
       : [];
-  return fertig(h, kam, ideal, residuen);
+  return fertig(h, kam, ideal, residuen, hinweise);
 }
 
 /** true, wenn die Punkte (fast) auf einer Geraden liegen (kleinste Streuung ≪ größte) */
@@ -175,6 +184,7 @@ function fluchtlinien(ebene: Ebene, kam: Kamera): Ergebnis {
   const lw = waagerecht.map(id);
   const ls = senkrecht.map(id);
   const lm = mitLaenge.map(id);
+  if (randbereich([...lw, ...ls, ...lm].flatMap((l) => [l.a, l.b]))) return { ok: false, fehler: RANDBEREICH };
   const alle = [...lw, ...ls].flatMap((l) => [l.a, l.b]);
   // normierte Bildkoordinaten: Ursprung im Schwerpunkt der Kanten (liegt sicher vor dem Horizont)
   const t = normierung(alle);

@@ -234,7 +234,7 @@ async function pdfAusBild(c: HTMLCanvasElement, a: Ausgabe, foto: Foto, ebene: E
   plankopf(linien, texte, sb - 2 * RAND, RAND + bh + 5, o.massstab, [
     { text: [o.projekt?.trim(), `${foto.name} – ${ebene.name}`].filter(Boolean).join(' · '), groesse: 9, fett: true },
     { text: `M 1:${o.massstab} – nur bei Druck in tatsächlicher Größe (100 %) · Maße in m · ${new Date().toLocaleDateString('de-DE')}`, groesse: 6.5, farbe: [0.3, 0.3, 0.3] },
-    { text: genauigkeitText(e, ebene, a), groesse: 6.5, farbe: [0.3, 0.3, 0.3] },
+    ...genauigkeitText(e, ebene, a).map((text): KopfZeile => ({ text, groesse: 6.5, farbe: [0.3, 0.3, 0.3] })),
     { text: 'Maße aus entzerrtem Foto ermittelt; sie gelten nur für Punkte in der entzerrten Ebene. Maßgebliche Maße am Bau prüfen.', groesse: 6, farbe: [0.45, 0.45, 0.45] },
   ]);
   return pdfErzeugen({
@@ -308,16 +308,16 @@ function plankopf(linien: PdfLinie[], texte: PdfText[], satz: number, y: number,
   massstabsleiste(linien, texte, l.leiste.x, y + l.leiste.dy, massstab);
 }
 
-/** Zeile zur Genauigkeit: Verfahren, Bildauflösung, Fotopixel in der Bezugsfläche, größte Abweichung */
-function genauigkeitText(e: Entzerrung, ebene: Ebene, a: Ausgabe): string {
+/** Zwei Zeilen zur Genauigkeit: Verfahren und Bildauflösung; Fotopixel in der Bezugsfläche und größter Restfehler */
+function genauigkeitText(e: Entzerrung, ebene: Ebene, a: Ausgabe): string[] {
   const bezug = bezugspunkte(ebene);
   const mitte = { x: bezug.reduce((s, p) => s + p.x, 0) / bezug.length, y: bezug.reduce((s, p) => s + p.y, 0) / bezug.length };
   const px = pixelGroesse(e, mitte);
-  const teile = [`entzerrt nach ${METHODE[ebene.methode]}`, `Bildauflösung ${fmt2(a.aufloesung * 1000)} mm je Pixel`];
-  if (Number.isFinite(px)) teile.push(`Fotopixel in der Bezugsfläche ≈ ${fmt2(px * 1000)} mm`);
+  const zweite: string[] = [];
+  if (Number.isFinite(px)) zweite.push(`Fotopixel in der Bezugsfläche ≈ ${fmt2(px * 1000)} mm`);
   const m = e.residuen.filter((r) => r.einheit === 'm');
-  if (m.length) teile.push(`größte Abweichung der Bezugsmaße ${fmt2(Math.max(...m.map((r) => r.wert)) * 1000)} mm`);
-  return teile.join(' · ');
+  if (m.length) zweite.push(`größter Restfehler der Referenz ${fmt2(Math.max(...m.map((r) => r.wert)) * 1000)} mm`);
+  return [`Entzerrt nach ${METHODE[ebene.methode]} · Bildauflösung ${fmt2(a.aufloesung * 1000)} mm je Pixel`, ...(zweite.length ? [zweite.join(' · ')] : [])];
 }
 
 /** Messungen als Vektoren mit Beschriftung in pt-Größen */

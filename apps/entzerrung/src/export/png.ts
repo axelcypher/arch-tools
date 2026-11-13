@@ -19,18 +19,30 @@ export function crc32(daten: Uint8Array): number {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-/** Fügt nach dem IHDR-Block einen pHYs-Block ein (vorhandene pHYs-Blöcke werden ersetzt). */
+/** Pixel je Meter für pHYs, wenn auf 0,1 % genau als ganze Zahl darstellbar; sonst null */
+export function pngDichte(meterJePixel: number): number | null {
+  if (!(meterJePixel > 0)) return null;
+  const genau = 1 / meterJePixel;
+  const ppm = Math.round(genau);
+  return ppm >= 1 && ppm <= 0xffffffff && Math.abs(ppm - genau) <= 1e-3 * genau ? ppm : null;
+}
+
+/**
+ * Fügt nach dem IHDR-Block einen pHYs-Block ein (vorhandene pHYs-Blöcke werden ersetzt). Lässt sich die Dichte
+ * nicht genau darstellen (sehr grobe Auflösung), steht dort nur „Seitenverhältnis 1:1“ ohne Einheit.
+ */
 export function pngMitMassstab(png: Uint8Array, meterJePixel: number): Uint8Array {
   const sig = [137, 80, 78, 71, 13, 10, 26, 10];
   if (!sig.every((b, i) => png[i] === b)) throw new Error('Kein PNG');
-  const ppm = Math.max(1, Math.round(1 / meterJePixel));
+  const dichte = pngDichte(meterJePixel);
+  const ppm = dichte ?? 1;
   const block = new Uint8Array(4 + 4 + 9 + 4);
   const dv = new DataView(block.buffer);
   dv.setUint32(0, 9);
   block.set([0x70, 0x48, 0x59, 0x73], 4); // pHYs
   dv.setUint32(8, ppm);
   dv.setUint32(12, ppm);
-  block[16] = 1; // Einheit: Meter
+  block[16] = dichte === null ? 0 : 1; // Einheit: Meter bzw. keine
   dv.setUint32(17, crc32(block.subarray(4, 17)));
 
   const teile: Uint8Array[] = [png.subarray(0, 8)];

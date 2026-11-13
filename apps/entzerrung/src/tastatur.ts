@@ -12,5 +12,15 @@ export function aufBedienelement(ziel: EventTarget | null): boolean {
   return !!ziel.closest('input, textarea, select, button, a[href], summary, [contenteditable="true"], [role="separator"], [role="button"], [tabindex]:not(.ef-overlay)');
 }
 
-/** Kürzel ohne Strg (Entf, Enter, Leertaste, E …) */
+/** Fokus in einem Textfeld (dort gelten Rückgängig und Esc des Felds) */
+export function inTextfeld(ziel: EventTarget | null): boolean {
+  if (!(ziel instanceof Element)) return false;
+  if (ziel instanceof HTMLInputElement) return !['checkbox', 'radio', 'button', 'submit', 'range', 'color', 'file'].includes(ziel.type);
+  return !!ziel.closest('textarea, select, [contenteditable="true"]');
+}
+
+/** Kürzel ohne Strg (Entf, Enter, Leertaste, Rücktaste, E …): nicht auf Bedienelementen */
 export const kuerzelErlaubt = (e: KeyboardEvent) => !dialogOffen() && !aufBedienelement(e.target);
+
+/** Strg+Z/Y und Esc: auch auf Knöpfen und Listenzeilen, nur nicht in Textfeldern */
+export const verlaufErlaubt = (e: KeyboardEvent) => !dialogOffen() && !inTextfeld(e.target);
