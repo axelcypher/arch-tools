@@ -9,7 +9,7 @@ import { ExcelDialog } from './ExcelDialog';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import { vorlagenSpeicher } from '../excel/vorlage';
 import { createProject } from '../model';
-import { saveBinaryFile } from '../platform/files';
+import { pickFile, saveBinaryFile } from '../platform/files';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -22,7 +22,7 @@ afterEach(() => {
   localStorage.clear();
 });
 
-function zeigen(onClose = () => {}) {
+function zeigen(onClose = () => {}, update: (fn: unknown) => void = () => {}) {
   const host = document.createElement('div');
   document.body.appendChild(host);
   const exportDefault = vi.fn(async () => new Uint8Array([1]));
@@ -31,7 +31,7 @@ function zeigen(onClose = () => {}) {
     root.render(
       createElement(ExcelDialog, {
         project: createProject('Haus'),
-        update: () => {},
+        update,
         onClose,
         speicher: vorlagenSpeicher('vorlage', 'test-vorlage'),
         standardText: 'Blatt „Flächen“',
@@ -74,5 +74,18 @@ describe('Excel-Dialog', () => {
     expect(host.textContent).toContain('Muster-Vorlage herunterladen');
     const exportieren = [...host.querySelectorAll('button')].find((b) => b.textContent === 'Exportieren')!;
     expect(exportieren.disabled).toBe(true);
+  });
+
+  it('eine gewählte Datei, die keine Excel-Datei ist, wird abgewiesen und nicht übernommen', async () => {
+    const update = vi.fn();
+    vi.mocked(pickFile).mockResolvedValueOnce(new File([new TextEncoder().encode('kein zip')], 'Liste.xlsx'));
+    const { host } = zeigen(() => {}, update);
+    act(() => host.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1].click());
+    await act(async () => {
+      [...host.querySelectorAll('button')].find((b) => b.textContent === 'Vorlage wählen …')!.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain('„Liste.xlsx“: Die Datei ist keine gültige Excel-Datei');
+    expect(update).not.toHaveBeenCalled();
   });
 });

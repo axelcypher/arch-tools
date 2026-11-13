@@ -103,7 +103,7 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 - **Breite:** Standard 380px, `breit` 620px (Formulare), `tabelle` bis 1200px (Vorschauen, Zuordnungen).
 - **Erstfokus** (automatisch, `ui/dialoge.ts`): `autoFocus`, sonst das erste Textfeld, sonst der Hauptknopf
   (`.primary`). Nie „Abbrechen“ – Enter darf nichts verwerfen.
-- **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`): rechtsbündig, Hauptknopf
+- **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`, das dann selbst letztes Kind ist): rechtsbündig, Hauptknopf
   rechts außen, „Abbrechen“ links davon. In langen Dialogen bleiben sie unten stehen (sticky).
 - **Enter** löst den Hauptknopf aus: Inhalt in `<form onSubmit>`, Hauptknopf `type="submit"`, alle anderen
   `type="button"`.
@@ -120,9 +120,14 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 
 ## Felder
 
-- `NumberField` zeigt Zahlen mit Tausenderpunkten (45.000,00) und nimmt sie beim Bearbeiten ohne (45000,00).
-- **Enter** übernimmt die Eingabe, der Fokus bleibt im Feld. **Esc** verwirft eine Eingabe; ohne Eingabe schließt Esc
-  den Dialog.
+- `NumberField` zeigt Zahlen mit Nachkommastellen mit Tausenderpunkten (45.000,00). Beim Fokussieren bleibt der Text
+  unverändert (Cursor und Auswahl stimmen); Punkte vor dem Komma werden beim Lesen immer als Tausendertrenner
+  verstanden, auch wenn nach dem Bearbeiten die Dreiergruppen nicht mehr stimmen. Ganze Zahlen (`digits={0}`) stehen
+  ohne Punkte, weil „45.00“ dort mehrdeutig wäre.
+- **Enter** übernimmt die Eingabe und verlässt das Feld; danach gehören Strg+Z (Rückgängig der App), Entf und die
+  Werkzeugtasten wieder der Arbeitsfläche. Bewusst so, obwohl ein Review „Fokus bleibt im Feld“ wünschte: sonst ginge
+  Strg+Z nach Enter ins leere Rückgängig des Browsers. Weiter zum nächsten Feld mit Tab. **Esc** verwirft eine Eingabe;
+  ohne Eingabe schließt Esc den Dialog.
 - In `.toolbar` und `.report-actions` füllen Felder nicht die Zeile: Auswahllisten sind so breit wie ihr Inhalt,
   Textfelder haben die Standardbreite des Browsers (etwa 20 Zeichen; kürzer mit dem Attribut `size`), Regler 120px.
   Sonst füllen Felder ihre Spalte.
@@ -163,16 +168,16 @@ Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Au
 
 ## Richtig und falsch
 
-| Richtig                                                                          | Falsch                                                         |
-| -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`)             | freie Werte wie `margin: 7px`, `font-size: 12.5px`             |
-| Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)                         | feste Farben (`#888`, `orange`) in App-CSS                     |
-| `:focus-visible` mit sichtbarem Rahmen                                           | `outline: none` ohne Ersatz                                    |
-| Überschriften in Satzschreibung                                                  | Versalien mit Sperrung (`text-transform: uppercase`)           |
-| Symbole als SVG, mit `aria-label` am Knopf                                       | Schriftzeichen wie ◐ ◂ 📏 als einziges Erkennungsmerkmal       |
-| gemeinsame Klassen (`.field`, `.toolbar`, `.canvas-message`)                     | App-eigene Kopien mit leicht anderen Abständen                 |
-| `--sel-foto` mit hellem und dunklem Saum                                         | Magenta-Linie allein auf dem Foto                              |
-| Enter übernimmt; Esc verwirft eine Eingabe, ohne Eingabe schließt Esc den Dialog | Esc muss zweimal gedrückt werden, um einen Dialog zu schließen |
+| Richtig                                                                                                | Falsch                                                         |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`)                                   | freie Werte wie `margin: 7px`, `font-size: 12.5px`             |
+| Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)                                               | feste Farben (`#888`, `orange`) in App-CSS                     |
+| `:focus-visible` mit sichtbarem Rahmen                                                                 | `outline: none` ohne Ersatz                                    |
+| Überschriften in Satzschreibung                                                                        | Versalien mit Sperrung (`text-transform: uppercase`)           |
+| Symbole als SVG, mit `aria-label` am Knopf                                                             | Schriftzeichen wie ◐ ◂ 📏 als einziges Erkennungsmerkmal       |
+| gemeinsame Klassen (`.field`, `.toolbar`, `.canvas-message`)                                           | App-eigene Kopien mit leicht anderen Abständen                 |
+| `--sel-foto` mit hellem und dunklem Saum                                                               | Magenta-Linie allein auf dem Foto                              |
+| Enter übernimmt und verlässt das Feld; Esc verwirft eine Eingabe, ohne Eingabe schließt Esc den Dialog | Esc muss zweimal gedrückt werden, um einen Dialog zu schließen |
 
 ## Was die Apps nachziehen
 

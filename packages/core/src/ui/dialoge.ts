@@ -14,8 +14,8 @@
 const FOKUSSIERBAR = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
 
 /** Textfelder, in die man beim Öffnen gleich schreiben will (keine Kästchen, Auswahllisten, Regler) */
-const TEXTFELD =
-  "input:not([disabled]):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not([readonly]), textarea:not([disabled]):not([readonly])";
+const KEIN_TEXT = ['checkbox', 'radio', 'range', 'file', 'color', 'hidden', 'submit', 'button', 'reset', 'image'];
+const TEXTFELD = `input${KEIN_TEXT.map((t) => `:not([type='${t}'])`).join('')}:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])`;
 
 let eingerichtet = false;
 const vorher = new WeakMap<Element, HTMLElement | null>();

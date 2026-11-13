@@ -645,8 +645,8 @@ textarea:focus {
   margin-top: var(--s3);
 }
 /* in langen Dialogen bleiben die Knöpfe unten sichtbar */
-.modal > .dialog-buttons,
-.modal > form > .dialog-buttons {
+.modal > .dialog-buttons:last-child,
+.modal > form:last-child > .dialog-buttons:last-child {
   position: sticky;
   bottom: calc(-1 * var(--modal-pad-y));
   margin: var(--s3) calc(-1 * var(--modal-pad-x)) calc(-1 * var(--modal-pad-y));

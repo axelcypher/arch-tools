@@ -3,13 +3,24 @@ import { parseNum } from '../format';
 import type { Pruefung } from './pruefen';
 import { alle, bereichMeldung, pflicht as pflichtRegel } from './pruefen';
 
-/** Zahl im Feld mit fester Stellenzahl; gruppiert (45.000,00) zur Anzeige, ungruppiert (45000,00) zum Bearbeiten */
+/** Zahl im Feld mit fester Stellenzahl, gruppiert (45.000,00) oder ohne Tausenderpunkte (45000,00) */
 const zahlFormate = new Map<string, Intl.NumberFormat>();
 export function feldZahl(v: number, digits: number, gruppiert: boolean): string {
   const k = `${digits}${gruppiert}`;
   let f = zahlFormate.get(k);
   if (!f) zahlFormate.set(k, (f = new Intl.NumberFormat('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: gruppiert })));
   return f.format(Object.is(v, -0) || Math.abs(v) < 0.5 * 10 ** -digits ? 0 : v);
+}
+
+/**
+ * Eingabe im Zahlenfeld lesen: wie `parseNum`, aber Punkte vor dem Komma gelten immer als Tausendertrenner – auch wenn
+ * nach dem Bearbeiten einer gruppierten Zahl die Dreiergruppen nicht mehr stimmen („1.24,50“ → 124,5).
+ */
+export function zahlLesen(text: string): number | null {
+  const v = parseNum(text);
+  if (v !== null || !text.includes(',')) return v;
+  const [ganz, ...rest] = text.split(',');
+  return rest.length === 1 ? parseNum(`${ganz.replace(/\./g, '')},${rest[0]}`) : null;
 }
 
 /** Zahl in Meldungen: so kurz wie möglich, mindestens eine Nachkommastelle (1,0 · 0,4 · 0,25) */
@@ -63,7 +74,8 @@ function usePendingCommit(commit: () => void) {
  * Eingaben werden übernommen – Hinein- und Herausklicken rundet keinen gespeicherten Wert auf die angezeigten Stellen.
  * Ungültige Eingaben und Werte außerhalb von min/max werden nicht still gekappt oder verworfen: Das Feld wird rot
  * markiert, die Meldung steht darunter, der Wert wird nicht übernommen und die Eingabe bleibt zum Korrigieren stehen.
- * Esc verwirft die Eingabe. Angezeigt wird mit Tausenderpunkten (45.000,00), beim Bearbeiten ohne (45000,00).
+ * Esc verwirft die Eingabe. Angezeigt wird mit Tausenderpunkten (45.000,00); der Text bleibt beim Fokussieren
+ * unverändert, damit Cursor und Auswahl stimmen – `zahlLesen` liest die Punkte mit.
  */
 export function NumberField({
   value,
@@ -90,9 +102,9 @@ export function NumberField({
   /** Name des Felds für Screenreader, falls es nicht in einem <label> steht */
   label?: string;
 }) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const hatFokus = () => !!inputRef.current && document.activeElement === inputRef.current;
-  const format = (v: number | undefined, gruppiert = !hatFokus()) => (v === undefined ? '' : feldZahl(v, digits, gruppiert));
+  // Tausenderpunkte nur mit Nachkommastellen: dann steht immer ein Komma im Text, und Punkte davor sind eindeutig
+  // Tausendertrenner (ohne Komma wäre „45.00“ nach dem Löschen einer Ziffer mehrdeutig)
+  const format = (v: number | undefined) => (v === undefined ? '' : feldZahl(v, digits, digits > 0));
   const zeige = (v: number) => kurz.format(v);
   const [text, setText] = useState(format(value));
   const [fehler, setFehler] = useState<string | null>(null);
@@ -106,11 +118,7 @@ export function NumberField({
 
   const commit = () => {
     pending.done();
-    if (!bearbeitet.current) {
-      // nur hinein- und herausgeklickt: Anzeige wieder mit Tausenderpunkten
-      if (!fehler) setText(format(value));
-      return;
-    }
+    if (!bearbeitet.current) return;
     const text = textRef.current;
     if (text.trim() === '') {
       if (allowEmpty) {
@@ -120,7 +128,7 @@ export function NumberField({
       } else setFehler(pflicht ? 'Pflichtangabe – bitte eine Zahl eingeben.' : 'Bitte eine Zahl eingeben.');
       return;
     }
-    const v = parseNum(text);
+    const v = zahlLesen(text);
     if (v === null) {
       setFehler(`„${text.trim()}“ ist keine Zahl (z. B. 1.234,5).`);
       return;
@@ -140,17 +148,10 @@ export function NumberField({
   return (
     <>
       <input
-        ref={(el) => {
-          pending.ref.current = el;
-          inputRef.current = el;
-        }}
+        ref={pending.ref}
         className={`num${fehler ? ' feld-fehler' : ''}`}
         value={text}
-        onFocus={() => {
-          pending.onFocus();
-          // zum Bearbeiten ohne Tausenderpunkte
-          if (!bearbeitet.current && !fehler) setText(format(value, false));
-        }}
+        onFocus={pending.onFocus}
         placeholder={placeholder}
         title={fehler ?? title}
         inputMode="decimal"
@@ -160,13 +161,13 @@ export function NumberField({
         required={pflicht || undefined}
         onChange={(e) => {
           bearbeitet.current = true;
-          pending.onFocus();
           setText(e.target.value);
         }}
         onBlur={commit}
         onKeyDown={(e) => {
-          // Enter übernimmt, der Fokus bleibt im Feld (weitertippen oder mit Tab weiter)
-          if (e.key === 'Enter') commit();
+          // Enter übernimmt und verlässt das Feld: danach gehören Strg+Z (Rückgängig der App), Entf und die Werkzeugtasten
+          // wieder der Arbeitsfläche
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           // Esc verwirft eine Eingabe – und schließt dann nicht zugleich den Dialog; ohne Eingabe schließt Esc ihn sofort
           if (e.key === 'Escape' && (bearbeitet.current || fehler)) {
             e.stopPropagation();
@@ -245,14 +246,12 @@ export function TextField({
         aria-required={pflicht || undefined}
         required={pflicht || undefined}
         onFocus={pending.onFocus}
-        onChange={(e) => {
-          pending.onFocus();
-          setText(e.target.value);
-        }}
+        onChange={(e) => setText(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
-          // Enter übernimmt, der Fokus bleibt im Feld (weitertippen oder mit Tab weiter)
-          if (e.key === 'Enter') commit();
+          // Enter übernimmt und verlässt das Feld: danach gehören Strg+Z (Rückgängig der App), Entf und die Werkzeugtasten
+          // wieder der Arbeitsfläche
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           if (e.key === 'Escape' && textRef.current !== value) {
             e.stopPropagation();
             textRef.current = value;

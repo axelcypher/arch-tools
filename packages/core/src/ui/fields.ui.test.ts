@@ -179,29 +179,31 @@ describe('Prüfregeln', () => {
     expect(zahl.value).toBe('1,00');
   });
 
-  it('Zahlenfeld: Anzeige mit Tausenderpunkten, beim Bearbeiten ohne; Enter übernimmt und lässt den Fokus im Feld', () => {
+  it('Zahlenfeld: Tausenderpunkte in der Anzeige, Fokus ändert den Text nicht (Auswahl bleibt), Punkte nach dem Bearbeiten werden gelesen', () => {
     const aufrufe: (number | undefined)[] = [];
     const host = render(createElement(NumberField, { value: 45000, onChange: (v: number | undefined) => aufrufe.push(v) }));
     const input = host.querySelector('input')!;
     expect(input.value).toBe('45.000,00');
-    act(() => input.focus());
-    expect(input.value).toBe('45000,00');
-    act(() => input.blur());
+    act(() => {
+      input.focus();
+      input.select();
+    });
     expect(input.value).toBe('45.000,00');
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
+    act(() => input.blur());
     expect(aufrufe).toEqual([]);
-    tippen(input, '1234,5');
+    // eine Ziffer gelöscht: Dreiergruppen stimmen nicht mehr, gemeint ist trotzdem 4.500,00
+    tippen(input, '4.500,00');
+    act(() => input.blur());
+    tippen(input, '4.50,00');
     act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
-    expect(aufrufe).toEqual([1234.5]);
-    expect(document.activeElement).toBe(input);
+    expect(aufrufe).toEqual([4500, 450]);
+    // Enter verlässt das Feld (Strg+Z und Werkzeugtasten gehören danach wieder der Arbeitsfläche)
+    expect(document.activeElement).not.toBe(input);
   });
 
-  it('Textfeld: Enter übernimmt und lässt den Fokus im Feld', () => {
-    const aufrufe: string[] = [];
-    const host = render(createElement(TextField, { value: 'a', onChange: (v: string) => aufrufe.push(v) }));
-    const input = host.querySelector('input')!;
-    tippen(input, 'Haus');
-    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
-    expect(aufrufe).toEqual(['Haus']);
-    expect(document.activeElement).toBe(input);
+  it('Zahlenfeld ohne Nachkommastellen bleibt ohne Tausenderpunkte (eindeutig beim Bearbeiten)', () => {
+    const host = render(createElement(NumberField, { value: 45000, digits: 0, onChange: () => {} }));
+    expect(host.querySelector('input')!.value).toBe('45000');
   });
 });
