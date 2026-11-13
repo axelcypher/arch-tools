@@ -109,6 +109,9 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
+/** Dialog nach seinem zugänglichen Namen (aria-label bzw. sichtbarer Kopf über aria-labelledby) */
+const dialogMit = (name: string) =>
+  [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => (d.getAttribute('aria-label') ?? document.getElementById(d.getAttribute('aria-labelledby') ?? '')?.textContent) === name) ?? null;
 const warte = async () => {
   for (let i = 0; i < 4; i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
 };
@@ -167,19 +170,19 @@ describe('Antragsfassung und Export', () => {
     await klick(knopf(host, '001-Muster'));
     await klick(knopf(host, 'PDF'));
     await klick(menuePunkt('Als PDF exportieren'));
-    const dialog = host.querySelector('[aria-label="Als PDF exportieren"]')!;
+    const dialog = dialogMit('Als PDF exportieren')!;
     const name = `BS9 BAUA ${jjmmtt(new Date())} Muster.pdf`;
     expect(dialog.querySelector<HTMLInputElement>('input[aria-label="Dateiname"]')!.value).toBe(name);
     expect(dialog.textContent).toContain('TÖB/BAUA 2');
     await klick(knopf(dialog, 'Exportieren'));
     const pdf = ds.dateien.get(`${PROJEKT}/TÖB/BAUA 2/${name}`)!;
     expect(new TextDecoder().decode(pdf.subarray(0, 8))).toBe('%PDF-1.4');
-    expect(host.querySelector('[aria-label="Als PDF exportieren"]')).toBeNull();
+    expect(dialogMit('Als PDF exportieren')).toBeNull();
 
     // gibt es die Datei schon, muss Ersetzen bestätigt werden
     await klick(knopf(host, 'PDF'));
     await klick(menuePunkt('Als PDF exportieren'));
-    const zweiter = host.querySelector('[aria-label="Als PDF exportieren"]')!;
+    const zweiter = dialogMit('Als PDF exportieren')!;
     expect(zweiter.textContent).toContain('gibt es dort schon');
     expect(knopf(zweiter, 'Exportieren').disabled).toBe(true);
   });
@@ -220,7 +223,7 @@ describe('Antragsfassung und Export', () => {
     await klick(knopf(host, '001-Muster'));
     await klick(knopf(host, 'PDF'));
     await klick(menuePunkt('Als PDF exportieren'));
-    await klick(knopf(host.querySelector('[aria-label="Als PDF exportieren"]')!, 'Exportieren'));
+    await klick(knopf(dialogMit('Als PDF exportieren')!, 'Exportieren'));
     await warte();
     expect(baum(`BS9 BAUA ${jjmmtt(new Date())} Muster.pdf`)).toBeDefined();
 
@@ -241,7 +244,7 @@ describe('Antragsfassung und Export', () => {
     await klick(knopf(host, '001-Muster'));
     await klick(knopf(host, 'PDF'));
     await klick(menuePunkt('Als PDF exportieren'));
-    const dialog = host.querySelector('[aria-label="Als PDF exportieren"]')!;
+    const dialog = dialogMit('Als PDF exportieren')!;
     act(() => dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1].click());
     await warte();
     await klick(knopf(dialog, 'Planung'));
@@ -431,7 +434,7 @@ describe('Antragsumfang und Vollständigkeit', () => {
     expect(useAntrag.getState().dokumente[0].status).toBe('offen');
     await klick(knopf(host, 'PDF'));
     await klick(menuePunkt('Als PDF exportieren'));
-    await klick(knopf(host.querySelector('[aria-label="Als PDF exportieren"]')!, 'Exportieren'));
+    await klick(knopf(dialogMit('Als PDF exportieren')!, 'Exportieren'));
     await warte();
     const d = useAntrag.getState().dokumente[0];
     expect(d.status).toBe('aktuell');
@@ -739,9 +742,9 @@ describe('Formular hinzufügen', () => {
     ds.beruehren('C:/FORMA/H24/003-Bauantrag (2026).frmsjf');
     const host = await projektBS9();
     await useAntrag.getState().umfangSetzen([]);
-    await klick(host.querySelector<HTMLButtonElement>('button[aria-label="Formular hinzufügen"]')!);
+    await klick(host.querySelector<HTMLButtonElement>('button[aria-label="Formular hinzufügen …"]')!);
     await warte();
-    const dialog = host.querySelector('[aria-label="Formular hinzufügen"][role="dialog"]')!;
+    const dialog = dialogMit('Formular hinzufügen')!;
     const zeilen = [...dialog.querySelectorAll('.fh-zeile')];
     // je Formular nur eins: der neueste Stand (2026), Musterformulare aus H24 nicht doppelt
     expect(zeilen.map((z) => z.querySelector('strong')!.textContent)).toEqual(['Bauantrag']);
@@ -815,7 +818,7 @@ describe('Projektübersicht', () => {
 });
 
 describe('Angaben zum Antrag in der Projektdatei (.oap)', () => {
-  const dialog = (name: string) => document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${name}"]`);
+  const dialog = dialogMit;
 
   it('eine alte formulare.json wird gelesen und einmalig in die Projektdatei übernommen – sie selbst bleibt liegen', async () => {
     const alt = new TextEncoder().encode(JSON.stringify({ aktiveFassung: 'BAUA', merkmale: { Gebäudeklasse: '2' } }));
@@ -1356,7 +1359,7 @@ describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und d
     expect(useFormulare.getState().sammel).toEqual({ unterordner: '2. BAUA', alle: expect.arrayContaining(['2. BAUA', 'BAUA']) });
     expect(useFormulare.getState().sammel!.alle).toHaveLength(2);
     // „+“ nennt das Ziel neuer Formulare
-    expect(host.querySelector<HTMLButtonElement>('button[aria-label="Formular hinzufügen"]')!.title).toContain('neue entstehen in 2. BAUA');
+    expect(host.querySelector<HTMLButtonElement>('button[aria-label="Formular hinzufügen …"]')!.title).toContain('neue entstehen in 2. BAUA');
     // das Formular im Unterordner öffnet sich wie jedes andere
     await klick(knopf(host, '002-Bauantrag (2026)'));
     expect(useFormulare.getState().offen?.pfad).toBe(UNTER);
@@ -1446,7 +1449,7 @@ describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und d
     expect(gruppen(host)).toEqual([]);
     expect(namenIn(host, 'Formulare')).toEqual(['001-Muster']);
     expect(useFormulare.getState().sammel).toBeNull();
-    expect(host.querySelector<HTMLButtonElement>('button[aria-label="Formular hinzufügen"]')!.title).not.toContain('neue entstehen');
+    expect(host.querySelector<HTMLButtonElement>('button[aria-label="Formular hinzufügen …"]')!.title).not.toContain('neue entstehen');
   });
 
   it('gleicher Name im Unterordner und auf der obersten Ebene: der Antragsumfang findet das im Unterordner – auch nach dem Export', async () => {

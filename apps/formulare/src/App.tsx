@@ -381,7 +381,7 @@ export function App() {
             <button title="Projekt oder Formular suchen (Strg+K)" onClick={() => setDialog('schnellwahl')}>
               <Symbol name="suche" /> Suchen …
             </button>
-            <button className={einstellungenOffen ? 'active' : ''} title="Einstellungen: Ordner, Stammdaten, Adressbuch, Formulare" aria-label="Einstellungen" onClick={() => useFormulare.getState().einstellungenOeffnen()}>
+            <button className={einstellungenOffen ? 'active' : ''} title="Einstellungen: Ordner, Stammdaten, Adressbuch, Formulare" aria-label="Einstellungen …" onClick={() => useFormulare.getState().einstellungenOeffnen()}>
               <Symbol name="zahnrad" />
             </button>
           </div>
