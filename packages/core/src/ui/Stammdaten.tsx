@@ -27,10 +27,13 @@ export const ROLLEN = [
   'Energieberatung / GEG-Nachweis',
   'Bodengutachten',
   // nach den Schnellwahl-Knöpfen (ROLLEN_SCHNELL = die ersten acht), nur als Vorschlag in der Auswahl:
-  // Bescheinigung des Brandschutznachweises bei Gebäudeklasse 4 und 5 ohne Sonderbau und bei Mittelgaragen (§ 68 Abs. 2 BauO NRW)
+  // Bescheinigung, dass das Vorhaben den Anforderungen an den Brandschutz entspricht – bei Gebäudeklasse 4 und 5 ohne
+  // Sonderbau und bei Mittelgaragen (§ 68 Abs. 2 BauO NRW)
   'Prüfsachverständige/-r für Brandschutz',
-  // Schall- und Wärmeschutznachweis, außer bei Wohngebäuden der Gebäudeklassen 1 und 2 (§ 68 Abs. 4 BauO NRW)
-  'Sachverständige/-r Schall- und Wärmeschutz (§ 87 Abs. 2)',
+  // Bescheinigung des Standsicherheitsnachweises, außer Wohngebäude der Gebäudeklassen 1 und 2 u. a. (§ 68 Abs. 3 BauO NRW)
+  'Prüfsachverständige/-r für Standsicherheit',
+  // Schall- und Wärmeschutznachweis, außer Wohngebäude der Gebäudeklassen 1 und 2 (§ 68 Abs. 4 i. V. m. § 87 Abs. 2 BauO NRW)
+  'Staatlich anerkannte/-r Sachverständige/-r für Schall- und Wärmeschutz',
   'SiGeKo (BaustellV)',
   'Bauaufsicht',
   'Bauleitung',
