@@ -6,7 +6,8 @@ import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
 import { eingereichtVon, PLANSATZ_QUELLE, standFestgehaltenText, tagVon } from '../antrag';
-import { ART_HINWEIS, vorlageArtWarnung, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
+import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
+import { ART_HINWEIS, NAMENS_VARIABLEN, ZIEL_VARIABLEN, vorlageArtWarnung, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand, SchreibInfo } from '../antragStore';
@@ -1099,13 +1100,6 @@ function ExportFuerProjekt() {
             <input value={ueber?.antragsordner ?? ''} placeholder={global.antragsordner} onChange={(e) => setzen({ antragsordner: e.target.value })} />
           </label>
           <label>
-            <span className="field-label">Phase</span>
-            <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} aria-label="Phase" aria-describedby="pu-phase-hinweis" />
-            <span className="field-hint" id="pu-phase-hinweis">
-              wird für den Platzhalter {'{Phase}'} eingesetzt
-            </span>
-          </label>
-          <label>
             <span className="field-label">Ziel</span>
             <select value={ueber?.ziel ?? ''} onChange={(e) => setzen({ ziel: (e.target.value || undefined) as ExportUeberschreibung['ziel'] })}>
               <option value="">wie in den Einstellungen ({global.ziel === 'aktiv' ? 'aktive Antragsfassung' : global.zielpfad})</option>
@@ -1117,6 +1111,7 @@ function ExportFuerProjekt() {
             <label>
               <span className="field-label">Fester Ordner</span>
               <input value={ueber?.zielpfad ?? ''} placeholder={global.zielpfad} onChange={(e) => setzen({ zielpfad: e.target.value })} />
+              <PlatzhalterHinweise vorlage={ueber?.zielpfad ?? ''} variablen={ZIEL_VARIABLEN} onAnpassen={(zielpfad) => setzen({ zielpfad })} />
             </label>
           )}
           {/* über die ganze Breite, nach den schmalen Feldern (Tab-Reihenfolge = Lesereihenfolge): Feld, darunter Hinweis
@@ -1143,6 +1138,13 @@ function ExportFuerProjekt() {
                 </button>
               </p>
             )}
+            <PlatzhalterHinweise vorlage={ueber?.namensvorlage ?? ''} variablen={NAMENS_VARIABLEN} onAnpassen={(namensvorlage) => setzen({ namensvorlage })} />
+            <PlatzhalterChips
+              variablen={NAMENS_VARIABLEN}
+              label="Namensvorlage des Projekts"
+              fokusBehalten={false}
+              onEinfuegen={(p) => setzen({ namensvorlage: platzhalterEinfuegen(ueber?.namensvorlage ?? global.namensvorlage, p).text })}
+            />
           </div>
           {ueber && (
             <div className="pu-bearbeiten-knoepfe">

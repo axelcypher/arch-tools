@@ -19,6 +19,7 @@ import {
   formularSchluessel,
   hauptArt,
   dateiname,
+  zielpfadAus,
   einstellungenAus,
   einstellungenFuer,
   vorlageMitAntragsart,
@@ -374,15 +375,18 @@ export const zeilenFassung = (s: Pick<AntragState, 'projektdatei' | 'fassungen' 
 /** Ordner der aktiven Fassung relativ zum Projektordner */
 export const antragsOrdner = (s: Parameters<typeof aktiveFassung>[0], p: Projekt | null) => `${wirksameEinstellungen(s, p).antragsordner.replace(/^\/+|\/+$/g, '')}/${aktiveFassung(s, p)}`;
 
+/** Stammdaten der Projektdatei (.oap) des gewählten Projekts, sofern gelesen – für die globalen Variablen */
+const oapMeta = () => {
+  const o = useFormulare.getState().oap;
+  return o && o !== 'fehlt' ? o.inhalt.meta : undefined;
+};
+
 /** voreingestellter Zielordner des Exports (relativ zum Projektordner) */
 export function zielOrdner(s: Parameters<typeof aktiveFassung>[0], p: Projekt | null): string {
   const e = wirksameEinstellungen(s, p);
   if (e.ziel === 'aktiv' || !e.zielpfad.trim()) return antragsOrdner(s, p);
-  return e.zielpfad
-    .replace(/\{antrag\}/gi, aktiveFassung(s, p))
-    .replace(/\{k(ü|ue)rzel\}/gi, p?.ordner ?? '')
-    .replace(/\\/g, '/')
-    .replace(/^\/+|\/+$/g, '');
+  const meta = oapMeta();
+  return zielpfadAus(e.zielpfad, { kuerzel: p?.ordner ?? '', antrag: aktiveFassung(s, p), art: artVonFassung(s, p, aktiveFassung(s, p)), kurzname: meta?.kurzname, vorhaben: meta?.vorhaben, bearbeiter: meta?.bearbeiter });
 }
 
 const ohneEndung = (n: string) => n.replace(/\.[^.]+$/, '');
@@ -1797,8 +1801,13 @@ export function exportVorschlag(formularPfad: string, datum = new Date()): Expor
   const info = st.formularInfo[formularPfad];
   const doc = st.dokumente.find((d) => d.formular?.pfad === formularPfad);
   const formularName = ohneEndung(nurName(formularPfad));
+  const meta = oapMeta();
   const name = dateiname(e.namensvorlage, {
+    // Projektkürzel ist in den Formularen der Name des Projektordners (wie bisher)
     kuerzel: projekt?.ordner ?? '',
+    kurzname: meta?.kurzname,
+    vorhaben: meta?.vorhaben,
+    bearbeiter: meta?.bearbeiter,
     phase: e.phase,
     datum,
     nr: doc?.eintrag.nr,

@@ -3,7 +3,9 @@ import { Fragment, useState } from 'react';
 import type { AntragsVorlage, KatalogEintrag } from '../antrag';
 import { VORGABE_MERKMALE, bedingungText, hatBedingung, istVorgabeMerkmal } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
-import { ART_HINWEIS, vorlageArtWarnung, PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, vorlageMitAntragsart, PLANSATZ_QUELLE } from '../antrag';
+import { modernisieren } from '@core/platzhalter';
+import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
+import { ART_HINWEIS, vorlageArtWarnung, NAMENS_VARIABLEN, ZIEL_VARIABLEN, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, vorlageMitAntragsart, PLANSATZ_QUELLE } from '../antrag';
 import { Griff, useSortieren } from './Sortieren';
 import { namensschemaVon, useAntrag } from '../antragStore';
 import { useFormulare } from '../store';
@@ -27,6 +29,9 @@ function Karte({ titel, text, children }: { titel: string; text?: ReactNode; chi
  * exportierte PDFs heißen und wohin sie kommen, und die grundlegende Liste der Antragsdokumente. Alles gilt für
  * alle Projekte; Abweichungen je Projekt stehen in der Projektkarte unter „Antragsumfang“.
  */
+/** beginnt die Vorlage mit Projektkürzel, Antragsart und Datum JJMMTT (alte oder neue Namen)? Das verlangt der Antragsordner. */
+const beginntRichtig = (vorlage: string) => /^\{PROJEKT_KUERZEL\}\s+\{Art\}\s+\{DATUM\}\s/.test(modernisieren(vorlage.trim(), NAMENS_VARIABLEN));
+
 export function AntragEinstellungen() {
   const e = useAntrag((s) => s.einstellungen);
   const katalog = useAntrag((s) => s.katalog);
@@ -43,7 +48,7 @@ export function AntragEinstellungen() {
   const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
   const wirksameVorlage = vorlageMitAntragsart(e.namensvorlage, reihenfolge);
   const artWarnung = vorlageArtWarnung(e.namensvorlage, reihenfolge);
-  const beispiel = dateiname(wirksameVorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
+  const beispiel = dateiname(wirksameVorlage, { kuerzel: 'BS9', kurzname: 'EFH Musterweg', datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
 
   const zeileSetzen = (i: number, teil: Partial<KatalogEintrag>) => setKatalog(katalog.map((k, n) => (n === i ? { ...k, ...teil } : k)));
 
@@ -105,34 +110,19 @@ export function AntragEinstellungen() {
               </p>
             )}
           </div>
-          <label>
-            <span className="field-label">Phase</span>
-            <input value={e.phase} list="es-phasen" onChange={(x) => setEinstellungen({ phase: x.target.value })} aria-label="Phase" aria-describedby="es-phase-hinweis" />
-            <datalist id="es-phasen">
-              {['BP', 'EP', 'GP', 'AP'].map((p) => (
-                <option key={p} value={p} />
-              ))}
-            </datalist>
-            <span className="field-hint" id="es-phase-hinweis">
-              wird für den Platzhalter {'{Phase}'} eingesetzt
-            </span>
-          </label>
         </div>
-        <div className="es-platzhalter">
-          {PLATZHALTER.map((p) => (
-            <button key={p.name} className="small" title={p.text} onClick={() => setEinstellungen({ namensvorlage: `${e.namensvorlage} ${p.name}`.trim() })}>
-              {p.name}
-            </button>
-          ))}
+        <PlatzhalterHinweise vorlage={e.namensvorlage} variablen={NAMENS_VARIABLEN} onAnpassen={(namensvorlage) => setEinstellungen({ namensvorlage })} />
+        <div className="es-platzhalter-zeile">
+          <PlatzhalterChips variablen={NAMENS_VARIABLEN} label="Namensvorlage" fokusBehalten={false} onEinfuegen={(p) => setEinstellungen({ namensvorlage: platzhalterEinfuegen(e.namensvorlage, p).text })} />
           {e.namensvorlage !== VORGABE_EXPORT.namensvorlage && (
             <button className="small" onClick={() => setEinstellungen({ namensvorlage: VORGABE_EXPORT.namensvorlage })}>
               Vorgabe
             </button>
           )}
         </div>
-        {!/^\{k(ü|ue)rzel\}\s+\{art\}\s+\{datum\}\s/i.test(e.namensvorlage.trim()) && (
+        {!beginntRichtig(e.namensvorlage) && (
           <p className="warning small-text">
-            Dateien im Antragsordner müssen mit „Projektcode Antragsart JJMMTT“ beginnen, sonst lassen sie sich nicht als bereit markieren – die Vorlage sollte mit „{'{Kürzel} {Art} {Datum}'}“
+            Dateien im Antragsordner müssen mit „Projektcode Antragsart JJMMTT“ beginnen, sonst lassen sie sich nicht als bereit markieren – die Vorlage sollte mit „{'{PROJEKT_KUERZEL} {Art} {DATUM}'}“
             beginnen.
           </p>
         )}
@@ -150,6 +140,12 @@ export function AntragEinstellungen() {
           <span className="es-breit">
             <strong>Fester Ordner im Projekt</strong>
             <input value={e.zielpfad} disabled={e.ziel !== 'pfad'} onChange={(x) => setEinstellungen({ zielpfad: x.target.value })} aria-label="Fester Zielordner" placeholder="z. B. TÖB/{Antrag}/Formulare" />
+            {e.ziel === 'pfad' && (
+              <>
+                <PlatzhalterHinweise vorlage={e.zielpfad} variablen={ZIEL_VARIABLEN} onAnpassen={(zielpfad) => setEinstellungen({ zielpfad })} />
+                <PlatzhalterChips variablen={ZIEL_VARIABLEN} label="Fester Zielordner" fokusBehalten={false} onEinfuegen={(p) => setEinstellungen({ zielpfad: platzhalterEinfuegen(e.zielpfad, p).text })} />
+              </>
+            )}
           </span>
         </label>
       </Karte>

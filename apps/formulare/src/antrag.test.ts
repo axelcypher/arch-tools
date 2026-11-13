@@ -3,14 +3,32 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, zielpfadAus, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
-  it('Kürzel Antragsart JJMMTT [Nr] Name – fehlende Nummer entfällt samt Leerzeichen; {Phase} gibt es weiter', () => {
+  it('Kürzel Antragsart JJMMTT [Nr] Name – fehlende Nummer entfällt samt Leerzeichen; {Phase} gilt als {Art}', () => {
     expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', phase: 'GP', datum, name: 'Bauantrag', antrag: 'BAUA 2' })).toBe('BS9 BAUA 261110 Bauantrag');
     expect(dateiname(VORGABE_EXPORT.namensvorlage, { kuerzel: 'BS9', phase: 'GP', datum, nr: '03', name: 'Baubeschreibung', art: 'DENK' })).toBe('BS9 DENK 261110 03 Baubeschreibung');
-    expect(dateiname('{Kürzel} {Phase} {Datum} {Name}', { kuerzel: 'BS9', phase: 'GP', datum, name: 'Bauantrag' })).toBe('BS9 GP 261110 Bauantrag');
+    expect(dateiname('{Kürzel} {Phase} {Datum} {Name}', { kuerzel: 'BS9', phase: 'GP', datum, name: 'Bauantrag', antrag: 'BAUA 2' })).toBe('BS9 BAUA 261110 Bauantrag');
+  });
+
+  it('neue und alte Namen ergeben dasselbe (Gegenprobe); globale Variablen aus der Projektdatei', () => {
+    const a = { kuerzel: 'BS9', datum, nr: '03', name: 'Bauantrag', antrag: 'BAUA 2', kurzname: 'Kita', bearbeiter: 'TP' };
+    expect(VORGABE_EXPORT.namensvorlage).toBe('{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}');
+    expect(dateiname('{Kürzel} {Art} {Datum} {Nr} {Name}', a)).toBe(dateiname(VORGABE_EXPORT.namensvorlage, a));
+    expect(dateiname('{Projekt} {kuerzel} {Jahr} {jj}', a)).toBe('BS9 BS9 2026 26');
+    expect(dateiname('{PROJEKT_KUERZEL} {PROJEKT_KURZNAME} {BEARBEITER} {DATUM:JJJJ-MM-TT}', a)).toBe('BS9 Kita TP 2026-11-10');
+    // {Kürzel} an der Stelle des Kürzels: ein festes Kürzel bzw. {Phase} an der Stelle der Antragsart wird {Art} – auch mit neuen Namen
+    expect(vorlageMitAntragsart('{PROJEKT_KUERZEL} BVA {DATUM} {Name}')).toBe('{PROJEKT_KUERZEL} {Art} {DATUM} {Name}');
+    expect(vorlageMitAntragsart('{Kürzel} {Phase} {Datum} {Name}')).toBe('{Kürzel} {Art} {Datum} {Name}');
+    expect(vorlageMitAntragsart('{PROJEKT_KURZNAME} BVA {DATUM}')).toBe('{PROJEKT_KURZNAME} BVA {DATUM}');
+  });
+
+  it('fester Zielordner: {Antrag} und globale Variablen, alte Namen gelten weiter', () => {
+    expect(zielpfadAus('TÖB/{Antrag}/Formulare', { kuerzel: 'BS9', antrag: 'BAUA 2' })).toBe('TÖB/BAUA 2/Formulare');
+    expect(zielpfadAus('\\{kürzel}\\{antrag}\\', { kuerzel: 'BS9', antrag: 'BAUA 2' })).toBe('BS9/BAUA 2');
+    expect(zielpfadAus('{PROJEKT_KURZNAME}/{Art}', { kuerzel: 'BS9', antrag: 'DENK', kurzname: 'A/B' })).toBe('A B/DENK');
   });
 
   it('weitere Platzhalter, unbekannte bleiben stehen, unzulässige Zeichen werden zu „-“', () => {
