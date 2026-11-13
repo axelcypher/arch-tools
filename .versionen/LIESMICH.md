@@ -8,8 +8,10 @@ Versionsnummern.
 Eine Änderung am Kern betrifft nur die Apps (außer Arkly), die die Datei einbinden – über Importe, auch über andere
 Kerndateien, bzw. `include!` bei den Rust-Befehlen (`scripts/kern-nutzer.mjs`). Was sich nicht sicher zuordnen lässt
 (Konfiguration wie `package.json`, Typdeklarationen, gelöschte Dateien), gilt für alle. Welche Apps es sind, nennt die
-CI-Meldung samt Vorlage; lokal: `node scripts/versionen-pruefen.mjs main HEAD`. Nur von Tests genutzte Kerndateien
-brauchen keine Notiz.
+CI-Meldung samt Vorlage; lokal: `node scripts/versionen-pruefen.mjs main HEAD` (mit sauberem Arbeitsbaum nach
+`git merge origin/main` – die Zuordnung liest den Arbeitsbaum). Nur von Tests genutzte Kerndateien brauchen keine
+Notiz; eine Kerndatei, die weder eine App noch ein Test einbindet, gilt für alle. Bindet allein Arkly die Datei ein,
+braucht Arkly die Notiz.
 
 ```json
 {

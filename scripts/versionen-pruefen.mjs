@@ -48,17 +48,18 @@ const ausgeliefert = (pfad) => !/\.md$/i.test(pfad) && !/\.test\.[cm]?[jt]sx?$/.
 /**
  * Apps, deren ausgelieferter Code sich laut Dateiliste ändert. Eine Datei in packages/core betrifft die Apps außer
  * Arkly, die sie einbinden (`kernNutzer`: Datei → Apps; Vorgabe aus dem Arbeitsbaum, scripts/kern-nutzer.mjs). Arkly
- * bekommt ihre Version automatisch im Release-Lauf, sobald eine der anderen Apps eine neue hat.
+ * bekommt ihre Version automatisch im Release-Lauf, sobald eine der anderen Apps eine neue hat – eine Notiz für Arkly
+ * braucht es nur, wenn allein Arkly die Datei einbindet.
  */
 export function betroffeneApps(dateien, kernNutzer) {
   const apps = new Set();
   for (const pfad of dateien.filter(ausgeliefert)) {
     if (pfad.startsWith('packages/core/')) {
-      kernNutzer ??= kernNutzerAus(
-        '.',
-        APPS.filter((a) => a !== SUITE),
-      );
-      kernNutzer(pfad).forEach((a) => apps.add(a));
+      kernNutzer ??= kernNutzerAus('.', APPS);
+      // Arkly zieht mit, sobald eine andere App eine Version bekommt; nutzt nur Arkly die Datei, braucht Arkly die Notiz
+      const nutzer = kernNutzer(pfad);
+      const andere = nutzer.filter((a) => a !== SUITE);
+      (andere.length ? andere : nutzer).forEach((a) => apps.add(a));
     }
     const m = /^apps\/([^/]+)\//.exec(pfad);
     if (m && APPS.includes(m[1])) apps.add(m[1]);
