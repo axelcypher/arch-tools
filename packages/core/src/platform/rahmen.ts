@@ -323,7 +323,9 @@ const vorbereitungen = new Set<() => Promise<void> | void>();
 /**
  * App: etwas, das vor dem Ende dieses Fensters bzw. Tabs noch fertig werden muss – etwa ein verzögertes Schreiben
  * (sofort ausführen und abwarten). Läuft vor dem Schließen (× und System), Andocken, Herauslösen, Schließen des Tabs und
- * dem Update-Neustart, auch wenn keine ungespeicherten Änderungen gemeldet sind. Liefert die Abmeldung.
+ * dem Update-Neustart, auch wenn keine ungespeicherten Änderungen gemeldet sind. Sie kann mehrfach aufgerufen werden
+ * (etwa nach „Weiter warten“) und soll dann nicht doppelt schreiben, sondern das laufende Schreiben abwarten. Liefert
+ * die Abmeldung.
  */
 export function vorDemSchliessen(f: () => Promise<void> | void): () => void {
   vorbereitungen.add(f);

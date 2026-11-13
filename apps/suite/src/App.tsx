@@ -226,7 +226,13 @@ export function App() {
     const info = appInfo(id)!;
     const frame = rahmen.current.get(id);
     if (status[id]?.dirty && !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false)))) return;
-    if (tabBrauchtVorbereitung(frame) && !(await tabVorbereiten(id, 'herauslösen'))) return;
+    if (tabBrauchtVorbereitung(frame)) {
+      // während des Wartens kein zweites Herauslösen bzw. Schließen dieses Tabs
+      if (schliesstGerade.current.has(id)) return;
+      schliesstGerade.current.add(id);
+      const weiter = await tabVorbereiten(id, 'herauslösen').finally(() => schliesstGerade.current.delete(id));
+      if (!weiter) return;
+    }
     // Tab zu, Sperren frei – dann das Fenster, das die geöffneten Formulare neu sperrt
     herausgeloest(id);
     await sperrenFreigeben(id);
