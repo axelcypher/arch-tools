@@ -6,6 +6,7 @@ import { gleich } from '@core/zusammenfuehren';
 import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
+import { vorDemSchliessen } from '@core/platform/rahmen';
 
 /**
  * Zustand von TERRIO: das Projekt im gemeinsamen Format (.oap) – Gebäude und Geschosse
@@ -303,20 +304,52 @@ if (typeof indexedDB !== 'undefined') {
         // kein Zwischenstand
       });
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  const zwischenstand = verzoegertesSchreiben(async () => {
+    const { project, datei, basis } = useGrz.getState();
+    const d = await db();
+    await new Promise<void>((resolve, reject) => {
+      const tx = d.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+    zwischenstandErsetzt(DB);
+  });
   useGrz.subscribe((s, prev) => {
     if (s.project === prev.project && s.basis === prev.basis) return;
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      const { project, datei, basis } = useGrz.getState();
-      void db()
-        .then((d) => {
-          d.transaction(STORE, 'readwrite').objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
-          zwischenstandErsetzt(DB);
-        })
-        .catch(() => undefined);
-    }, 600);
+    zwischenstand.planen();
   });
+  // Arkly bzw. Fenster schließen, andocken, herauslösen, Update: ausstehenden Zwischenstand sofort schreiben und abwarten
+  vorDemSchliessen(zwischenstand.jetzt);
+}
+
+/**
+ * Verzögertes Schreiben (Zwischenstand): `planen` schreibt `ms` nach der letzten Änderung; `jetzt` schreibt Ausstehendes
+ * sofort und wartet auf das laufende Schreiben. Mehrfaches `jetzt` schreibt nicht doppelt (nichts ausstehend → nur
+ * abwarten). Fehler beim Schreiben werden verschluckt (der Zwischenstand ist ein Notnagel, kein Speichern).
+ */
+export function verzoegertesSchreiben(schreiben: () => Promise<void>, ms = 600): { planen: () => void; jetzt: () => Promise<void> } {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let ausstehend = false;
+  let laufend: Promise<void> = Promise.resolve();
+  const jetzt = (): Promise<void> => {
+    clearTimeout(timer);
+    if (ausstehend) {
+      ausstehend = false;
+      // nach einem noch laufenden Schreiben, damit der neuere Stand zuletzt geschrieben wird
+      laufend = laufend.then(schreiben).catch(() => undefined);
+    }
+    return laufend;
+  };
+  return {
+    planen: () => {
+      ausstehend = true;
+      clearTimeout(timer);
+      timer = setTimeout(() => void jetzt(), ms);
+    },
+    jetzt,
+  };
 }
 
 /* ---------- Kopieren, Einfügen, Duplizieren, Pfeiltasten ---------- */
