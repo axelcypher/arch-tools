@@ -108,18 +108,18 @@ export function GrzGfzView() {
       undefined,
       'Aufenthaltsraum festlegen',
     );
-  // Grundstücksfläche im Bauland (§ 19 Abs. 3): eingetragener Wert ist maßgebend; Grenze bzw. Lageplan nur als Vergleich oder Ersatz
+  // Grundstücksfläche im Bauland (§ 19 Abs. 3): eingetragener Wert ist maßgebend; Grenze bzw. Lageplan nur als Vergleich oder Ersatz
   const gEingetragen = project.meta.grundstueck.flaeche !== undefined && project.meta.grundstueck.flaeche > 0;
   const ersatzFlaeche = n.grundstueck.grenze ?? n.grundstueck.ausLageplan;
   const grundstueckHinweis = gEingetragen
     ? n.grundstueck.grenze !== undefined
       ? `maßgebend: eingetragener Wert; gezeichnete Grenze ${fmt2(n.grundstueck.grenze)} m²`
-      : 'Nur Bauland hinter der Straßenbegrenzungslinie (§ 19 Abs. 3 BauNVO); bei Bedarf weniger als die Katasterfläche.'
+      : 'Nur Bauland hinter der Straßenbegrenzungslinie (§ 19 Abs. 3 BauNVO); bei Bedarf weniger als die Katasterfläche.'
     : n.grundstueck.grenze !== undefined
       ? `leer: gezeichnete Grenze ${fmt2(n.grundstueck.grenze)} m²`
       : n.grundstueck.ausLageplan !== undefined
         ? `leer: Summe der Lageplan-Flächen mit Gebäude ${fmt2(n.grundstueck.ausLageplan)} m² – besser laut Kataster eintragen`
-        : 'nur die Fläche im Bauland hinter der Straßenbegrenzungslinie (§ 19 Abs. 3 BauNVO)';
+        : 'nur die Fläche im Bauland hinter der Straßenbegrenzungslinie (§ 19 Abs. 3 BauNVO)';
   const vgFehler =
     !m.vollgeschosseZwingend && m.vollgeschosseMin !== undefined && m.vollgeschosseMax !== undefined && m.vollgeschosseMin > m.vollgeschosseMax ? 'Mindestens ist größer als höchstens.' : undefined;
   const vonHand = n.geschosse.filter((g) => !g.automatisch).length;
@@ -149,6 +149,11 @@ export function GrzGfzView() {
             />
           </Field>
         </div>
+        {n.recht.baunvo !== '1962' && (
+          <Field label="Anteil an Gemeinschaftsanlagen [m²]" hint="nur bei Festsetzung: wird der Grundstücksfläche hinzugerechnet (§ 21a Abs. 2 BauNVO)">
+            <NumberField value={m.gemeinschaftsanlagen} allowEmpty min={0} onChange={(v) => setM({ gemeinschaftsanlagen: v || undefined })} />
+          </Field>
+        )}
         <h3>Bebauungsplan</h3>
         <div className="field-row grz-bplan-zeile">
           <Field label="Nummer">
@@ -172,7 +177,7 @@ export function GrzGfzView() {
             <input type="date" aria-label="Öffentliche Auslegung des Planentwurfs" value={m.auslegungDatum ?? ''} onChange={(e) => setM({ auslegungDatum: e.target.value || undefined })} />
           </Field>
         </div>
-        <p className="field-hint grz-hinweis-zeile">Die Auslegung bestimmt die BauNVO-Fassung (§ 25c); leer = wie Inkrafttreten. Ohne beide Daten: aktuelles Recht (z. B. § 34/35 BauGB).</p>
+        <p className="field-hint grz-hinweis-zeile">Die Auslegung bestimmt die BauNVO-Fassung (§ 25c); leer = wie Inkrafttreten. Ohne beide Daten: aktuelles Recht (z. B. § 34/35 BauGB).</p>
 
         <h2>
           Festsetzungen
@@ -218,7 +223,7 @@ export function GrzGfzView() {
           </Field>
         </div>
         {n.recht.baunvo === '1990' && (
-          <Field label="GRZ II höchstens" hint="leer = 1,5 × GRZ, höchstens 0,8 (§ 19 Abs. 4 S. 2)">
+          <Field label="GRZ II höchstens" hint="leer = 1,5 × GRZ, höchstens 0,8 (§ 19 Abs. 4 S. 2)">
             <NumberField value={m.grzIIMax} allowEmpty min={0} max={1} onChange={(v) => setM({ grzIIMax: v })} />
             {grz2Fehler && (
               <span className="feld-meldung" role="alert">
@@ -235,15 +240,15 @@ export function GrzGfzView() {
             <NumberField value={m.gfAbsolut} allowEmpty min={0} onChange={(v) => setM({ gfAbsolut: v })} />
           </Field>
         </div>
-        <p className="field-hint grz-hinweis-zeile">Grund- und Geschossfläche als Höchstmaß in m² (§ 16 Abs. 2) – nur, wenn der Plan sie statt GRZ/GFZ festsetzt.</p>
+        <p className="field-hint grz-hinweis-zeile">Grund- und Geschossfläche als Höchstmaß in m² (§ 16 Abs. 2) – nur, wenn der Plan sie statt GRZ/GFZ festsetzt.</p>
         {n.recht.baunvo !== '1962' && (
           <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt oder als Ausnahme vorsieht und sie zugelassen ist">
             <input type="checkbox" checked={!!m.garagenGfFrei} onChange={(e) => setM({ garagenGfFrei: e.target.checked || undefined })} />
-            Garagen in Vollgeschossen zählen nicht zur Geschossfläche (festgesetzt bzw. als Ausnahme zugelassen, § 21a Abs. 4 Nr. 3)
+            Garagen in Vollgeschossen zählen nicht zur Geschossfläche (festgesetzt bzw. als Ausnahme zugelassen, § 21a Abs. 4 Nr. 3)
           </label>
         )}
         <div className="field-row">
-          <Field label="BMZ" hint="Baumassenzahl (§ 21)">
+          <Field label="BMZ" hint="Baumassenzahl (§ 21)">
             <NumberField value={m.bmz} allowEmpty min={0} max={20} onChange={(v) => setM({ bmz: v })} />
           </Field>
           <span className="field grz-platz" aria-hidden />
@@ -275,7 +280,7 @@ export function GrzGfzView() {
         {n.recht.baunvo === '1990' && (
           <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
             <input type="checkbox" checked={!!m.aufenthaltNichtVollgeschoss} onChange={(e) => setM({ aufenthaltNichtVollgeschoss: e.target.checked || undefined })} />
-            Aufenthaltsräume in Nicht-Vollgeschossen zur Geschossfläche rechnen (§ 20 Abs. 3 S. 2 BauNVO)
+            Aufenthaltsräume in Nicht-Vollgeschossen zur Geschossfläche rechnen (§ 20 Abs. 3 S. 2 BauNVO)
           </label>
         )}
         <h3>Höhen</h3>
@@ -312,16 +317,16 @@ export function GrzGfzView() {
             </Field>
           )}
         </div>
-        {n.recht.bauo === 'nw1962' && (
-          <label className="toggle block">
+        {(n.recht.bauo === 'nw1962' || n.aufenthaltZaehlt) && (
+          <label className="toggle block" title={n.recht.bauo === 'nw1962' ? 'BauO NW 1962/1970 § 59' : 'nur, wenn die Bauaufsicht es gestattet (z. B. § 46 Abs. 1 S. 3 BauO NRW 2018)'}>
             <input type="checkbox" checked={!!m.einfamilienhaus} onChange={(e) => setM({ einfamilienhaus: e.target.checked || undefined })} />
-            Einfamilienhaus (lichte Höhe für Aufenthaltsräume 2,30 statt 2,50 m)
+            {n.recht.bauo === 'nw1962' ? 'Einfamilienhaus (lichte Höhe für Aufenthaltsräume 2,30 statt 2,50 m)' : 'kleines Wohngebäude: lichte Höhe 2,30 statt 2,40 m gestattet'}
           </label>
         )}
         {gebaeudeteile.length > 0 && (
           <>
             <h3>Gebäudeteile</h3>
-            <p className="muted small-text">Angebaute Garagen, Carports oder Gartenhäuser aus der IFC zählen als Anlage (§ 19 Abs. 4 bzw. § 21a), nicht als Hauptanlage.</p>
+            <p className="muted small-text">Angebaute Garagen, Carports oder Gartenhäuser aus der IFC zählen als Anlage (§ 19 Abs. 4 bzw. § 21a), nicht als Hauptanlage.</p>
             {gebaeudeteile.map(({ storey, o }) => (
               <Field key={o.id} label={`${storey} · ${o.name || 'Umriss'} · ${fmt2(polygonArea(o.points))} m²`}>
                 <select value={o.anlage ?? ''} onChange={(e) => setAnlage(o.id, (e.target.value || undefined) as OutlineShape['anlage'])}>
@@ -579,7 +584,8 @@ export function GrzGfzView() {
         </h2>
         <p className="muted small-text">
           {baunvoLabel(n.recht.baunvo)} · Vollgeschosse nach {bauoLabel(n.recht.bauo)}
-          {n.grundstueck.flaeche !== undefined && ` · Grundstück ${fmt2(n.grundstueck.flaeche)} m²${n.grundstueck.quelle === 'lageplan' ? ' (aus dem Lageplan)' : ''}`}
+          {n.grundstueck.flaeche !== undefined &&
+            ` · Grundstück ${n.grundstueck.gemeinschaftsanlagen !== undefined ? `${fmt2(n.grundstueck.basis!)} m² + ${fmt2(n.grundstueck.gemeinschaftsanlagen)} m² Gemeinschaftsanlagen` : `${fmt2(n.grundstueck.flaeche)} m²`}${n.grundstueck.quelle === 'lageplan' ? ' (aus dem Lageplan)' : ''}`}
         </p>
         {vergleich.length > 1 && (
           <div className="grz-varianten">
@@ -615,9 +621,10 @@ export function GrzGfzView() {
         )}
         <div className="kpis">
           <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" kurz={n.recht.baunvo === '1990' ? 'GR I' : 'GR'} />
-          {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
-          <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" />
+          {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
+          <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" offenText="mit zu prüfenden Räumen bis" />
           {n.grAbsolut && <AbsolutKpi titel={n.recht.baunvo === '1990' ? 'GR I absolut' : 'GR absolut'} a={n.grAbsolut} />}
+          {n.gr2Absolut && <AbsolutKpi titel="GR II absolut" a={n.gr2Absolut} zusatz="§ 19 Abs. 4 S. 2" />}
           {n.gfAbsolut && <AbsolutKpi titel="GF absolut" a={n.gfAbsolut} />}
           {n.bmz && <KpiZeile titel="BMZ" k={n.bmz} einheit="Baumasse" kurz="BM" />}
           <div className={`kpi${n.vollgeschosse.status === 'ueberschritten' || n.vollgeschosse.status === 'unterschritten' ? ' alarm' : ''}`}>
@@ -769,7 +776,17 @@ export function GrzGfzView() {
                     <tr key={r.roomId} title={r.anforderung.text}>
                       <td>{project.storeys.find((s) => s.id === r.storeyId)?.name}</td>
                       <td>
-                        <div>{r.name}</div>
+                        <div>
+                          {r.name}
+                          {r.zuPruefen && (
+                            <>
+                              {' '}
+                              <span className="pill warn" title="nach Nutzung Aufenthaltsraum, aber ohne die geforderte lichte Höhe">
+                                prüfen
+                              </span>
+                            </>
+                          )}
+                        </div>
                         <select
                           className={r.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
                           aria-label={`Einstufung ${r.name}`}
@@ -907,11 +924,11 @@ export function kanteSetzen(pts: Point[], i: number, l: number): Point[] {
 }
 
 /** absolute Festsetzung (GR/GF in m²) */
-function AbsolutKpi({ titel, a }: { titel: string; a: NonNullable<ReturnType<typeof massNachweis>['grAbsolut']> }) {
+function AbsolutKpi({ titel, a, zusatz }: { titel: string; a: NonNullable<ReturnType<typeof massNachweis>['grAbsolut']>; zusatz?: string }) {
   return (
     <div className={`kpi${a.status === 'ueberschritten' ? ' alarm' : ''}`}>
       <div className="kpi-head">
-        <span>{titel}</span>
+        <span className="kpi-titel">{titel}</span>
         <StatusPill s={a.status} />
       </div>
       <div className="kpi-value">
@@ -919,6 +936,7 @@ function AbsolutKpi({ titel, a }: { titel: string; a: NonNullable<ReturnType<typ
       </div>
       <div className="kpi-sub">
         zulässig <span className="nowrap">{fmt2(a.zulaessig)} m²</span>
+        {zusatz && <span className="nowrap"> ({zusatz})</span>}
       </div>
     </div>
   );
@@ -975,7 +993,7 @@ export function AnrechnungPill({ a, regel, nutzung, baunvo }: { a: Anrechnung; r
   );
 }
 
-function KpiZeile({ titel, k, einheit, kurz }: { titel: string; k: Kennzahl; einheit: string; kurz: string }) {
+function KpiZeile({ titel, k, einheit, kurz, offenText = 'mit ungeklärten Flächen bis' }: { titel: string; k: Kennzahl; einheit: string; kurz: string; offenText?: string }) {
   // Vergleich der Flächen (ehrlicher als die gerundete Kennzahl) im Tooltip; der Rechenweg zeigt die Formel
   const vergleich = flaechenVergleich(kurz, k);
   return (
@@ -1009,7 +1027,11 @@ function KpiZeile({ titel, k, einheit, kurz }: { titel: string; k: Kennzahl; ein
           </>
         )}
       </div>
-      {k.mitOffenen !== undefined && <div className="kpi-sub kpi-offen">mit ungeklärten Flächen bis {kennzahlWert(k, k.mitOffenen)}</div>}
+      {k.mitOffenen !== undefined && (
+        <div className="kpi-sub kpi-offen">
+          {offenText} {kennzahlWert(k, k.mitOffenen)}
+        </div>
+      )}
     </div>
   );
 }

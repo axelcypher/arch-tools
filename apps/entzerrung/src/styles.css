@@ -350,12 +350,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: var(--ok-bg);
-  border: 1px solid var(--ok-border);
-  color: var(--ok-text);
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 12px;
 }
 .ef-messungen li {
   align-items: center;
@@ -443,10 +437,6 @@
 }
 
 /* Leisten */
-.leiste-griff.ef-griff-links {
-  left: -3px;
-  right: auto;
-}
 .ef-zaehler {
   font-variant-numeric: tabular-nums;
   opacity: 0.75;
@@ -458,15 +448,6 @@
 }
 .ef-schritte li + li {
   margin-top: 6px;
-}
-/* noch fehlende Angaben der Referenz: Hinweis, keine Warnung */
-.ef-fehlt {
-  background: var(--panel);
-  border: 1px dashed var(--warn-border);
-  color: var(--text);
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 12px;
 }
 .ef-tabelle tr.fehlt td:nth-child(2) input,
 .ef-tabelle tr.fehlt td:nth-child(3) input {

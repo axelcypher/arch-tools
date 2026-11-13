@@ -17,7 +17,7 @@ import { ablegen, fotoImProjektOeffnen, fotosHinzufuegen, neu, oeffnen, speicher
 import { aktuell, useEntz } from './store';
 import { dialogOffen, kuerzelErlaubt, verlaufErlaubt } from './tastatur';
 import { BreitenLeiste } from '@core/ui/Leiste';
-import { RechteLeiste } from './components/RechteLeiste';
+import { Symbol } from '@core/ui/Symbol';
 
 export function App() {
   const doc = useEntz((s) => s.doc);
@@ -151,7 +151,7 @@ export function App() {
             + Foto …
           </button>
           <button onClick={() => setLinksZu((z) => !z)} aria-pressed={!linksZu} title={linksZu ? 'Leiste mit Fotos und Ebenen einblenden' : 'Leiste mit Fotos und Ebenen ausblenden (mehr Platz zum Zeichnen)'}>
-            {linksZu ? 'Fotos ▸' : '◂ Fotos'}
+            <Symbol name={linksZu ? 'pfeilRechts' : 'pfeilLinks'} /> Fotos
           </button>
         </div>
         <div className="tb-group">
@@ -170,14 +170,14 @@ export function App() {
           </div>
         )}
         <div className="tb-group">
-          <button onClick={() => useEntz.getState().rueckgaengig()} disabled={!kannZurueck} title="Rückgängig (Strg+Z)">
-            ↶
+          <button onClick={() => useEntz.getState().rueckgaengig()} disabled={!kannZurueck} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
+            <Symbol name="rueckgaengig" />
           </button>
-          <button onClick={() => useEntz.getState().wiederholen()} disabled={!kannVor} title="Wiederholen (Strg+Y)">
-            ↷
+          <button onClick={() => useEntz.getState().wiederholen()} disabled={!kannVor} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
+            <Symbol name="wiederholen" />
           </button>
           <button onClick={() => window.dispatchEvent(new Event('entz:einpassen'))} disabled={!foto} title="Alles zeigen (Pos1)">
-            Einpassen
+            <Symbol name="einpassen" /> Einpassen
           </button>
         </div>
       </div>
@@ -191,9 +191,9 @@ export function App() {
           <Arbeitsflaeche />
           {ziehtDatei && <div className="ef-ablegen">Fotos oder Entzerrungs-Projekt hier ablegen</div>}
         </main>
-        <RechteLeiste schluessel="entzerrung:breite:rechts" vorgabe={310} min={250} max={480}>
+        <BreitenLeiste schluessel="entzerrung:breite:rechts" vorgabe={310} min={250} max={480} seite="rechts">
           <Eigenschaften />
-        </RechteLeiste>
+        </BreitenLeiste>
       </div>
       {wahl === 'projekt' && (
         <ProjektWahl
