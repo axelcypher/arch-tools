@@ -15,7 +15,8 @@ Review-Agent `review-design`.
 - **Eine Gestalt je Rolle.** Gleiches sieht in allen Apps gleich aus: Abschnittsüberschrift, Feld, Knopf, Tabelle,
   Meldung. Keine App baut eine eigene Variante, wenn es in `base.css` eine gibt.
 - **Nur Variablen, keine festen Farben.** Farben kommen aus den Variablen in `base.css`, damit Hell und Dunkel stimmen.
-  Ausnahme: Zeichenfläche und Papier (Druck), die immer mit hellen Farben arbeiten.
+  Ausnahmen: Zeichenfläche und Papier (Druck), die immer mit hellen Farben arbeiten, und der Schließen-Knopf der
+  Titelleiste (siehe „Farben“, feste Farben).
 - **Tastatur zählt.** Alles, was mit der Maus geht, geht auch mit der Tastatur, und der Fokus ist sichtbar.
 
 ## Skalen
@@ -89,7 +90,7 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 | `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
 | `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                        |
 | `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler                                                               |
-| `--sel`                            | Auswahl auf Plänen (Orange)                                                                                     |
+| `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)           |
 | `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
 | `--danger`                         | zerstörende Aktionen (Löschen)                                                                                  |
 
@@ -200,7 +201,7 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
 `aria-label`); mit `titel` ist es ein benanntes Bild.
 
 - Werkzeuge: `auswahl`, `polygon`, `rechteck`, `erkennen` (Fläche aus dem Plan), `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`,
-  `grenze` (Grundstücksgrenze), `ausrichten` (Unterlage auf einen Punkt schieben).
+  `grenze` (Grundstücksgrenze mit Grenzpunkten), `ausrichten` (Unterlage auf einen Punkt schieben).
 - Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
   `suche`, `stift`.
 - Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
@@ -269,7 +270,7 @@ bleibt immer frei.
 ## Ungespeicherte Änderungen
 
 Der Knopf „Speichern“ in der Werkzeugleiste bekommt bei ungespeicherten Änderungen die Klasse `ungespeichert`: ein Punkt
-in Auswahlfarbe außen an der oberen rechten Ecke, der die Breite der Leiste nicht ändert. Dazu sagt es der Knopf im
+(8px, `--sel` mit Rand in `--text`) außen an der oberen rechten Ecke, der die Breite der Leiste nicht ändert. Dazu sagt es der Knopf im
 `aria-label` („Speichern – ungespeicherte Änderungen“) und im `title`. Der Punkt ● hinter dem Namen in der Titelleiste
 (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 
@@ -309,7 +310,7 @@ in Auswahlfarbe außen an der oberen rechten Ecke, der die Breite der Leiste nic
 | ATLAS                  | Umsortieren mit `Symbol` `nachOben`/`nachUnten` statt ↑/↓; Zeilenknopf „⋯“ mit Symbol `mehr` und `aria-haspopup="menu"` (dann setzt das Menü `aria-expanded`)                                                                                          |
 | alle                   | eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner                                                                                                                                                                   |
 | ATLAS, PERMIO          | „Im Explorer öffnen“ → „Ordner öffnen“ (ATLAS `ProjektStart.tsx`; PERMIO `Seitenleiste.tsx`, `AblageBaum.tsx`)                                                                                                                                         |
-| QUADRIO, TERRIO        | eigenen Punkt `tb-dirty` am Knopf „Speichern“ durch `className="ungespeichert"` ersetzen, eigene CSS-Regel löschen (QUADRIO `Toolbar.tsx`, `styles.css`; TERRIO `App.tsx`)                                                                             |
-| TERRIO                 | Lageplan-Werkzeuge „Grenze“ mit `grenze`, „Ausrichten“ mit `ausrichten` statt `ziel`                                                                                                                                                                   |
+| QUADRIO, TERRIO        | eigenen Punkt `tb-dirty` am Knopf „Speichern“ durch `className="ungespeichert"` ersetzen, eigene CSS-Regel löschen (QUADRIO `Toolbar.tsx`, `styles.css`; TERRIO mit bzw. nach #70 in `App.tsx`, bis dahin „Speichern •“ im Text)                       |
+| TERRIO                 | Lageplan-Werkzeuge „Grenze“ mit `grenze`, „Ausrichten“ mit `ausrichten` (mit bzw. nach #70; dort bisher `ziel`)                                                                                                                                        |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.

@@ -72,11 +72,11 @@ const PFADE = {
   speichern: 'M5 3h11l3 3v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V3zM8 3v5h7V3M8 21v-7h8v7',
   einpassen: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5',
   raster: 'M4 4h16v16H4zM4 12h16M12 4v16',
-  /** Grundstücksgrenze: gestrichelter Umring mit Grenzpunkten an den Ecken */
+  /** Grundstücksgrenze: durchgezogener Umring mit Grenzpunkten an den Ecken (wie Flurstücksgrenzen im Lageplan) */
   grenze:
-    'M4.6 14.5L5.2 12.1M5.8 9.9L6.4 7.5M9.5 5.6L11.9 6.2M14.1 6.8L16.5 7.4M18.6 10.6L18.2 12.9M17.8 15.1L17.4 17.4M14.5 19.4L11.6 18.7M9.4 18.3L6.5 17.6M4 18.4a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8zM7 6.4a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8zM19 9.4a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8zM17 21.4a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8z',
-  /** Ausrichten: Punkt der Unterlage auf einen Zielpunkt im Plan schieben */
-  ausrichten: 'M5 19l9-9M14 10H8M14 10v6M18 2v8M14 6h8',
+    'M4 17L7 5l12 3-2 12zM4 18.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2zM7 6.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2zM19 9.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2zM17 21.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z',
+  /** Ausrichten: Punkt der Unterlage auf einen Zielpunkt im Plan schieben – Ziel als Ring mit Strichen (nicht wie plus) */
+  ausrichten: 'M4 20l8-8M12 12H7M12 12v5M17 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM17 1v2M17 11v2M12 7h1M21 7h2',
   /** Fläche aus dem Plan erkennen: gestrichelter Rahmen mit Zeiger */
   erkennen: 'M4 7V4h3M10 4h4M17 4h3v3M4 10v4M4 17v3h3M10 20h1M20 10v1M12 12l8 3-3.5 1.5L15 20l-3-8z',
 } as const;
