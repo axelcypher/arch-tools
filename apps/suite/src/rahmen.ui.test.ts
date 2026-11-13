@@ -113,7 +113,11 @@ describe('Rahmen-App', () => {
     const f = host.querySelector('iframe')!;
     Object.defineProperty(f, 'contentWindow', { value: { postMessage: () => {} }, configurable: true });
     const melden = (ungespeichert: unknown) =>
-      act(() => window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'FABRIO', name: 'LV 1', dirty: true, ungespeichert }, origin: window.location.origin, source: f.contentWindow })));
+      act(() =>
+        window.dispatchEvent(
+          new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'FABRIO', name: 'LV 1', dirty: true, ungespeichert }, origin: window.location.origin, source: f.contentWindow }),
+        ),
+      );
     const dialog = () => host.querySelector('.modal.rf');
     const schliessenUndAbbrechen = async () => {
       act(() => (tab(host, 'FABRIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());

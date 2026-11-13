@@ -25,9 +25,15 @@ export interface RahmenStatus {
   /** Name des geöffneten Projekts */
   name: string;
   dirty: boolean;
-  /** Satz für die Rückfrage bei ungespeicherten Änderungen, z. B. „Das LV hat ungespeicherte Änderungen.“ (sonst der allgemeine) */
+  /**
+   * Satz für die Rückfrage bei ungespeicherten Änderungen, z. B. „Das LV hat ungespeicherte Änderungen.“; leer oder
+   * länger als UNGESPEICHERT_MAX Zeichen: der allgemeine
+   */
   ungespeichert?: string;
 }
+
+/** Höchstlänge des Satzes `ungespeichert` (RahmenStatus), den die Rahmen-App übernimmt */
+export const UNGESPEICHERT_MAX = 200;
 
 /** Ereignis eines herausgelösten Fensters an den Rahmen: wieder als Tab andocken */
 export const ANDOCKEN = 'arch-tools:andocken';

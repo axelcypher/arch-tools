@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { isTauri } from '@core/platform/files';
 import { getEntries, logger, logVersion, subscribe } from '@core/platform/log';
 import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
+import { UNGESPEICHERT_MAX } from '@core/platform/rahmen';
 import {
   AN_APP,
   AN_RAHMEN,
@@ -52,7 +53,7 @@ const ereignisse = () => import('@tauri-apps/api/event');
  */
 const statusAus = (d: Partial<RahmenStatus>) => {
   const satz = typeof d.ungespeichert === 'string' ? d.ungespeichert.trim() : '';
-  return { name: d.name ?? '', dirty: !!d.dirty, ...(satz && satz.length <= 200 ? { ungespeichert: satz } : {}) };
+  return { name: d.name ?? '', dirty: !!d.dirty, ...(satz && satz.length <= UNGESPEICHERT_MAX ? { ungespeichert: satz } : {}) };
 };
 
 /**
@@ -334,16 +335,18 @@ export function App() {
   const fensterFreigeben = async (id: string): Promise<boolean> => {
     const s = useRahmen.getState().status[id];
     if (!s?.dirty) return true;
-    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () =>
-      speichernImFenster(id, {
-        zeitablauf: antwortetNicht(id),
-        // schließt jemand das Fenster, während es speichert, wartet die Rückfrage nicht ewig
-        beiEnde: (f) => {
-          const warten = fensterEnde.current.get(id) ?? new Set();
-          fensterEnde.current.set(id, warten.add(f));
-          return () => warten.delete(f);
-        },
-      }),
+    return aenderungenSpeichern(
+      `${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`,
+      () =>
+        speichernImFenster(id, {
+          zeitablauf: antwortetNicht(id),
+          // schließt jemand das Fenster, während es speichert, wartet die Rückfrage nicht ewig
+          beiEnde: (f) => {
+            const warten = fensterEnde.current.get(id) ?? new Set();
+            fensterEnde.current.set(id, warten.add(f));
+            return () => warten.delete(f);
+          },
+        }),
       s.ungespeichert,
     );
   };
