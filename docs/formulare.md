@@ -29,7 +29,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   zum Punkt darüber, Esc oder Tab im Hauptmenü schließt – Esc nur das Menü, ein Dialog darunter bleibt offen. Nach Esc,
   Tab oder einer Auswahl steht der Fokus wieder auf dem Knopf bzw. Eintrag, der das Menü geöffnet hat; Menüknöpfe
   melden „aufgeklappt“ (`aria-expanded`). Ein gesperrter Punkt bleibt per Tastatur erreichbar und nennt rechts den
-  Grund; er führt nichts aus, sein Untermenü klappt nicht auf.
+  Grund; er führt nichts aus, sein Untermenü klappt nicht auf. Tastenkürzel stehen rechts (z. B. Strg+E) und werden
+  mit vorgelesen; Umschalter („Manuelle Überschreibungen ignorieren“) sind Kästchen mit Haken. Löschen und „Aus dem
+  Antragsumfang nehmen“ stehen abgesetzt am Ende, der Fokus beim Öffnen liegt nie darauf.
 - **Dialoge** nutzen den gemeinsamen Rahmen (`Modal` aus `packages/core/src/ui/Dialog.tsx`): Esc und ein Klick daneben
   schließen (nicht während einer laufenden Aktion), der Fokus springt beim Öffnen hinein, bleibt mit Tab im Dialog
   und kehrt danach an die Stelle davor zurück. Das gilt auch für die Schnellwahl (<kbd>Strg</kbd>+<kbd>K</kbd>; der
@@ -38,7 +40,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Begriffe:** Die Ansicht der Projektkarte heißt in der Oberfläche durchgehend **„Projektdaten“** (Navigation, Titel,
   „Projektdaten speichern“, Suche, Dialoge); „Projektkarte“ erscheint nur noch erklärend in Tooltips. **„ungeklärt“**
   heißt: hängt an einem noch nicht festgelegten Antragsmerkmal; **„offen“** steht nur für fehlende Pflichtangaben.
-  Dateibefehle heißen überall „Mit Programm öffnen“ und „Im Explorer öffnen“ (Symbol Ordner).
+  Dateibefehle heißen überall „Mit Programm öffnen“ und „Ordner öffnen“ (Symbol offener Ordner).
 - **Farben:** Statusfarben kommen immer aus dem Designsystem (`--ok-*`, `--fehler-*`, `--warn-*` in
   `packages/core/src/ui/base.css`), Schrift auf Akzentfarbe aus `--on-accent`; eigene Farben der App – Lila für
   Bedingungen (`--bed-*`), Dateitypen (`--typ-*`) – stehen oben in `styles.css` mit Wert für das dunkle Schema. Status
@@ -452,7 +454,7 @@ Neben den FORMA-Projekten lassen sich die **echten Projektordner** anbinden – 
 schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports und für einfache Dateibefehle.
 
 - **Immer aktuell:** Nach allem, was die App selbst schreibt (Export, neue Fassung, Verknüpfen, Projektdatei,
-  Dateibefehle), liest der Baum neu. Was von außen dazukommt – neue Dokumente im Explorer oder von Kollegen, neue
+  Dateibefehle), liest der Baum neu. Was von außen dazukommt – neue Dokumente im Dateimanager oder von Kollegen, neue
   Formulare und Sperren aus FORMA –, übernimmt die App, sobald das Fenster wieder in den Vordergrund kommt, und alle
   15 Sekunden, solange es sichtbar ist (FORMA-Formulare, Projektordner, Antragsstatus; beim Zurückkommen auch die
   Projektdatei und in der Übersicht die Liste der Projekte).
@@ -464,14 +466,16 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   (`Organisation`, `03 Berechnungen/Flächen`), Platzhalter `*` und `?` je Ebene. Die Vorgabe steht in den
   Einstellungen, je Projekt lässt sie sich über ⚙ ändern. Ordner werden erst beim Aufklappen gelesen.
 - **Klick** auf eine PDF-, Excel-, Word- oder Bilddatei zeigt sie in der App (siehe unten), **Doppelklick** öffnet
-  sie mit ihrem Programm, das Ordnersymbol rechts am Ordner („Im Explorer öffnen“, beim Überfahren oder per Tastatur
-  sichtbar) öffnet ihn im Explorer. Besitzerdateien von Office (`~$…`) werden ausgeblendet.
-- **Rechtsklick** auf eine Datei: Ansehen, Mit Programm öffnen, Im Explorer öffnen, **Kopieren** (danach Rechtsklick
-  auf einen Ordner › Einfügen), **Duplizieren** („Name (Kopie).pdf“), **Umbenennen …**, **Löschen …** (nach
-  Bestätigung, mit Sicherungskopie im App-Ordner), mit einem **Antragsdokument verknüpfen** (liegt die Datei nicht im
-  Ordner der aktiven Fassung, wird sie dorthin kopiert) und Pfad kopieren. Rechtsklick auf einen Ordner: Einfügen,
-  Neuer Ordner …, Im Explorer öffnen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`, `.frmtmp`, `.sdb`,
-  `.ini`) lassen sich hier nicht umbenennen – Formulare benennt man in der Navigation um (siehe unten).
+  sie mit ihrem Programm, das Ordnersymbol rechts am Ordner („Ordner öffnen“, beim Überfahren oder per Tastatur
+  sichtbar) öffnet ihn im Dateimanager. Besitzerdateien von Office (`~$…`) werden ausgeblendet.
+- **Rechtsklick** auf eine Datei: Ansehen, Mit Programm öffnen, Ordner öffnen, **Kopieren** (danach Rechtsklick
+  auf einen Ordner › Einfügen), **Duplizieren** („Name (Kopie).pdf“), **Umbenennen …**, mit einem
+  **Antragsdokument verknüpfen** (liegt die Datei nicht im Ordner der aktiven Fassung, wird sie dorthin kopiert), Pfad
+  kopieren und – abgesetzt am Ende – **Löschen …** (nach Bestätigung, mit Sicherungskopie im App-Ordner). Rechtsklick
+  auf einen Ordner: Einfügen, Neuer Ordner …, Ordner öffnen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`,
+  `.frmtmp`, `.sdb`, `.ini`) lassen sich hier nicht umbenennen – Formulare benennt man in der Navigation um (siehe
+  unten). In Auswahllisten im Menü (aktive Fassung, Zuordnung, Verknüpfung) steht beim gewählten Eintrag ein Haken
+  und rechts „aktiv“, „zugeordnet“ bzw. „verknüpft“.
 - **Formulare umbenennen** (Rechtsklick auf ein Formular › Umbenennen …): nur im selben Ordner und nie über ein
   vorhandenes. Mit dem Namen ändern sich auch alle Verweise darauf: die Zuordnung im Antragsumfang (bestand sie nur
   über den Namen und passte der neue nicht mehr, wird sie festgeschrieben) und die Werte aus der Projektkarte in
@@ -515,7 +519,7 @@ Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in 
   Unterordner vor; im Menü „Vorhandenes Formular zuordnen“ steht der Unterordner als Hinweis. Zugeordnet und für den
   Autofill gemerkt wird ein Formular mit dem Pfad ab dem Formularprojekt („2. BAUA/002-Bauantrag.frmsjf“; auf der
   obersten Ebene wie bisher der Dateiname) – auch beim Export. Größe und Zeit (Status „aktuell“, „zuletzt bearbeitet“)
-  gelten je Pfad; die Sperrenliste umfasst den Unterordner des aktiven Antrags, „Im Explorer öffnen“ öffnet den Ordner
+  gelten je Pfad; die Sperrenliste umfasst den Unterordner des aktiven Antrags, „Ordner öffnen“ öffnet den Ordner
   des Formulars. Formulare der obersten Ebene gehören allen Anträgen: Sind sie im Antragsumfang des aktiven Antrags
   nicht zugeordnet, tragen sie trotzdem einen Farbpunkt aus dem Füllstand und der PDF im Ordner der aktiven Fassung –
   blasser als die übrigen, mit dem Tooltip „nicht im Antragsumfang von BAUA 2 · …“. In der Vollständigkeit zählen sie

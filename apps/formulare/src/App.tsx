@@ -292,7 +292,7 @@ export function App() {
                 { text: 'Daten aktualisieren …', symbol: 'neuLaden', deaktiviert: !!grund, ...(grund ? { hinweis: 'nur ansehen', titel: grund } : {}), aktion: () => useAktualisieren.getState().dialogOeffnen() },
                 {
                   text: 'Manuelle Überschreibungen ignorieren',
-                  symbol: offen && ignoriert(offen.pfad) ? 'haken' : undefined,
+                  haken: !!offen && ignoriert(offen.pfad),
                   deaktiviert: !!grund,
                   ...(grund ? { hinweis: 'nur ansehen', titel: grund } : {}),
                   aktion: () => offen && ignorierenSetzen(!ignoriert(offen.pfad)),
@@ -330,7 +330,7 @@ export function App() {
               <MenueKnopf
                 title="Als PDF exportieren – in den Antragsordner, anderswo ins Projekt oder mit „Speichern unter …“"
                 punkte={() => [
-                  { text: 'Als PDF exportieren …', symbol: 'export', hinweis: 'Strg+E', aktion: () => useExportDialog.getState().oeffnen(offen.pfad) },
+                  { text: 'Als PDF exportieren …', symbol: 'export', tasten: 'Strg+E', aktion: () => useExportDialog.getState().oeffnen(offen.pfad) },
                   { text: 'Speichern unter …', symbol: 'datei', aktion: () => void useAntrag.getState().speichernUnter(offen.pfad) },
                 ]}
               >
