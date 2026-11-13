@@ -229,10 +229,11 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
         </label>
         <label className="toggle" title="gemittelte Geländeoberfläche entlang der Außenwände je Geschoss – Bezug für „Deckenoberkante im Mittel über Gelände“">
           <input type="checkbox" checked={ebene} onChange={(e) => setEbene(e.target.checked)} />
-          Bezugsebene Gelände
+          Gelände im Mittel
         </label>
         <button
           className="small"
+          title="Ansicht auf Gebäude und Gelände einpassen"
           onClick={() => {
             const t = three.current;
             if (!t) return;
@@ -241,7 +242,7 @@ export default function Gelaende3D({ project, n }: { project: Project; n: Nachwe
             t.neu();
           }}
         >
-          ⤢ Alles
+          Einpassen
         </button>
       </div>
       <div className="grz-3d-legende small-text">

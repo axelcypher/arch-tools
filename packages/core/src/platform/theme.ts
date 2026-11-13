@@ -85,7 +85,7 @@ export function themeAnwenden(): void {
   applyTheme(s.theme, s.canvasDunkel);
 }
 
-// Zentral für alle Apps: jede Änderung (Menü ◐, Systemschema, andere Fenster/Tabs) wirkt sofort – ohne Neustart
+// Zentral für alle Apps: jede Änderung (Menü „Farbschema“, Systemschema, andere Fenster/Tabs) wirkt sofort – ohne Neustart
 useTheme.subscribe((s, vorher) => {
   if (s.theme !== vorher.theme || s.canvasDunkel !== vorher.canvasDunkel) applyTheme(s.theme, s.canvasDunkel);
 });

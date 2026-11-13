@@ -444,7 +444,7 @@ describe('Baurecht – Oberfläche', () => {
 
   it('Farbschema-Menü: Fokus hinein, ↑/↓ bewegen, Esc schließt und gibt den Fokus zurück', () => {
     const host = render();
-    const knopfSchema = host.querySelector<HTMLButtonElement>('.titlebar-schema')!;
+    const knopfSchema = host.querySelector<HTMLButtonElement>('.titlebar-menu > button[aria-haspopup="menu"]')!;
     act(() => knopfSchema.focus());
     act(() => knopfSchema.click());
     const optionen = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];

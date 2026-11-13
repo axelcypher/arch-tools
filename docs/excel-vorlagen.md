@@ -300,8 +300,8 @@ Schlüssel); ein Projekt kann also beide Vorlagen enthalten. Das Standardlayout 
 | `{{lageplan.flaeche_eindeutig}}`, `{{lageplan.ueberlagert}}` | eindeutig dieser Fläche zugeordneter Anteil bzw. von anderen Flächen überlagerter Rest – Überlagerungen zählen nur einmal |
 | `{{lageplan.angerechnet}}`, `{{lageplan.angerechnet_bis}}` | tatsächlich auf die GR II (1990) bzw. GR angerechnete Fläche; bei „prüfen“ bis zu welcher Fläche |
 | `{{grz.stellen}}`, `{{grz.zulaessig_flaeche}}`, `{{grz.vergleich}}` | Nachkommastellen wie in der App, zulässige Fläche [m²], Begründung in m²; ebenso `grz.ii.*`, `gfz.*` |
-| `{{grz.offen.bezeichnung}}`, `{{grz.offen.flaeche}}` | offene Spanne („prüfen“): Bezeichnung und Fläche, leer ohne offene Flächen |
-| `{{raum[gf].name}}` | Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume vor 1990 zur Geschossfläche zählen |
+| `{{grz.offen.bezeichnung}}`, `{{grz.offen.flaeche}}` | Spanne der ungeklärten Flächen („prüfen“): Bezeichnung und Fläche, leer ohne ungeklärte Flächen |
+| `{{raum[gf].name}}` | Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume zur Geschossfläche zählen (vor 1990, 1990 nur bei Festsetzung nach § 20 Abs. 3 S. 2) |
 | `{{raum.begruendung}}`, `{{raum.hoehenlage}}` | Ergebnis der Raumprüfung nach Nutzung und lichter Höhe; Höhenversatz des Fußbodens (Split-Level) |
 | `{{hinweis.text}}` | Zeile je Hinweis für die Bauaufsicht (ohne Bedienhinweise der App) |
 | `{{formel.text}}` | Zeile je Formel des Rechenwegs („GRZ I = GR I / FGst = 135,00 m² / 612,50 m² = 0,220“) |

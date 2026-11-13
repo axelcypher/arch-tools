@@ -45,7 +45,15 @@ function zerlegeRinge(ringe: Point[][]): Zerlegung {
   return flaecheZerlegen(polygone);
 }
 
-export function rechenweg(n: Nachweis, nr: Map<string, number>): Rechenweg {
+/**
+ * Nummern der Lageplan-Flächen wie im Druck, in der App und im Excel: eigene Flächen in Listenfolge, 1, 2, 3 …
+ * (Nachbarflächen ohne Nummer)
+ */
+export function flaechenNummern(n: Nachweis): Map<string, number> {
+  return new Map(n.lageplan.filter((l) => !l.nachbar).map((l, i) => [l.id, i + 1]));
+}
+
+export function rechenweg(n: Nachweis, nr: Map<string, number> = flaechenNummern(n)): Rechenweg {
   const G = n.grundstueck.flaeche;
   const vor1990 = n.recht.baunvo !== '1990';
   const eigene = n.lageplan.filter((l) => !l.nachbar);
@@ -58,14 +66,18 @@ export function rechenweg(n: Nachweis, nr: Map<string, number>): Rechenweg {
     if (garagen > 0.005) teile.push(`− Garagen anrechnungsfrei (§ 21a Abs. 3) ${m2(garagen)}`);
     formeln.push(`GR = ${teile.join(' + ').replace('+ −', '−')} = ${m2(n.grz.flaeche)}`);
     formeln.push(kennzahlFormel('GRZ = GR / FGst', n.grz, G));
-    if (n.grz.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ mit offenen Flächen', n.grz, G, true));
+    if (n.grz.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ mit ungeklärten Flächen', n.grz, G, true));
   } else {
-    formeln.push(`GR I = Hauptanlage ${m2(n.hauptanlage)}`);
+    // GR I: Hauptanlage und Flächen, die ihr zugerechnet werden (Einstufung „GRZ I“)
+    const zugerechnet = n.grz.flaeche - n.hauptanlage;
+    formeln.push(
+      zugerechnet > 0.005 ? `GR I = Hauptanlage ${m2(n.hauptanlage)} + der Hauptanlage zugerechnete Flächen ${m2(zugerechnet)} = ${m2(n.grz.flaeche)}` : `GR I = Hauptanlage ${m2(n.hauptanlage)}`,
+    );
     formeln.push(kennzahlFormel('GRZ I = GR I / FGst', n.grz, G));
     if (n.grz2) {
-      formeln.push(`GR II = GR I ${m2(n.hauptanlage)} + Anlagen nach § 19 Abs. 4 BauNVO ${m2(angerechnet)} = ${m2(n.grz2.flaeche)}`);
+      formeln.push(`GR II = GR I ${m2(n.grz.flaeche)} + Anlagen nach § 19 Abs. 4 BauNVO ${m2(n.grz2.flaeche - n.grz.flaeche)} = ${m2(n.grz2.flaeche)}`);
       formeln.push(kennzahlFormel('GRZ II = GR II / FGst', n.grz2, G));
-      if (n.grz2.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ II mit offenen Flächen', n.grz2, G, true));
+      if (n.grz2.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ II mit ungeklärten Flächen', n.grz2, G, true));
     }
   }
   const gf = n.gfJeGeschoss.filter((g) => g.flaeche > 0.005);

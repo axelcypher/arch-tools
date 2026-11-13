@@ -3,6 +3,7 @@ import { act, createElement, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Field, NumberField, TextField } from './fields';
+import { Modal } from './Dialog';
 import { email, ordnername, plz } from './pruefen';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -148,5 +149,33 @@ describe('Prüfregeln', () => {
     expect(email('a@b.de; c@d.org')).toBeNull();
     expect(ordnername('EFH Müller/Weg: 3?')).toBe('/ : ? werden im Ordnernamen entfernt.');
     expect(ordnername('EFH Müller')).toBeNull();
+  });
+
+  it('Esc ohne Eingabe schließt den Dialog sofort; mit Eingabe verwirft das erste Esc nur die Eingabe', () => {
+    let zu = 0;
+    const host = render(
+      createElement(
+        Modal,
+        { titel: 'Test', onClose: () => zu++, children: null },
+        createElement(TextField, { value: 'a', onChange: () => {} }),
+        createElement(NumberField, { value: 1, onChange: () => {} }),
+      ),
+    );
+    const [text, zahl] = [...host.querySelectorAll('input')];
+    const esc = (el: HTMLInputElement) => act(() => el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    act(() => text.focus());
+    esc(text);
+    expect(zu).toBe(1);
+    act(() => zahl.focus());
+    esc(zahl);
+    expect(zu).toBe(2);
+    tippen(text, 'ab');
+    esc(text);
+    expect(zu).toBe(2);
+    expect(text.value).toBe('a');
+    tippen(zahl, '5');
+    esc(zahl);
+    expect(zu).toBe(2);
+    expect(zahl.value).toBe('1,00');
   });
 });
