@@ -119,7 +119,11 @@ export function ExportDialog({ foto, ebene, e, aufloesung, bereich, onClose }: {
           <input type="checkbox" checked={mitMessungen} disabled={!ebene.messungen.length} onChange={(x) => setMitMessungen(x.target.checked)} />
           Messungen einzeichnen{!ebene.messungen.length && <span className="muted"> (noch keine Messungen)</span>}
         </label>
-        {fehler && <div className="warning">{fehler}</div>}
+        {fehler && (
+          <div className="meldung fehler" role="alert">
+            {fehler}
+          </div>
+        )}
         <div className="dialog-buttons">
           {laeuft && <span className="busy">wird erzeugt …</span>}
           <button type="button" onClick={onClose} disabled={laeuft}>
