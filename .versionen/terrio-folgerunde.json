@@ -1,0 +1,9 @@
+{
+  "grz": { "stufe": "minor", "notiz": "Gemeinschaftsanlagen nach § 21a Abs. 2, GR II bei absoluter GR, GF mit zu prüfenden Aufenthaltsräumen als Spanne, Grenzwerte mit Nachkommastellen; Rückgängig, Einstieg, Gesten und Unterlage verbessert." },
+  "flaechenrechner": { "stufe": "patch", "notiz": "Projektdatei: Grundstücksfläche 0 oder negativ gilt als nicht angegeben; neues optionales Feld für Gemeinschaftsanlagen bleibt erhalten." },
+  "kosten": { "stufe": "patch", "notiz": "Projektdatei: Grundstücksfläche 0 oder negativ gilt als nicht angegeben; neues optionales Feld für Gemeinschaftsanlagen bleibt erhalten." },
+  "ordner": { "stufe": "patch", "notiz": "Projektdatei: Grundstücksfläche 0 oder negativ gilt als nicht angegeben; neues optionales Feld für Gemeinschaftsanlagen bleibt erhalten." },
+  "entzerrung": { "stufe": "patch", "notiz": "Projektdatei: Grundstücksfläche 0 oder negativ gilt als nicht angegeben; neues optionales Feld für Gemeinschaftsanlagen bleibt erhalten." },
+  "formulare": { "stufe": "patch", "notiz": "Projektdatei: Grundstücksfläche 0 oder negativ gilt als nicht angegeben; neues optionales Feld für Gemeinschaftsanlagen bleibt erhalten." },
+  "ava": { "stufe": "patch", "notiz": "Projektdatei: Grundstücksfläche 0 oder negativ gilt als nicht angegeben; neues optionales Feld für Gemeinschaftsanlagen bleibt erhalten." }
+}

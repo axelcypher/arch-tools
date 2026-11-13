@@ -317,6 +317,8 @@ export interface RaumPruefung {
   /** größte lichte Höhe im Raum [m] */
   maxHoehe: number;
   erfuellt: boolean;
+  /** nach Nutzung Aufenthaltsraum, aber lichte Höhe nicht erfüllt: nicht still „kein Aufenthaltsraum“, sondern zu prüfen */
+  zuPruefen: boolean;
   /** Ergebnis: Angabe am Raum, sonst Vorschlag (Aufenthaltsraum nur, wenn die lichte Höhe erfüllt ist) */
   ergebnis: 'ja' | 'nein' | 'treppe';
   automatisch: boolean;
@@ -367,12 +369,13 @@ function raeumePruefenRechnen(project: Project, st: Storey, floorZ: number, bauo
         ? 'festgelegt'
         : nachName === 'ja'
           ? erfuellt
-            ? `Aufenthaltsraum nach Nutzung; ${anf.text} auf ${pct(anteil)} erfüllt`
-            : `nach Nutzung Aufenthaltsraum, aber ${anf.text} nur auf ${pct(anteil)} – kein Aufenthaltsraum im Sinne der Bauordnung`
+            ? `Aufenthaltsraum nach Nutzung; ${anf.text} auf ${pctNah(anteil, anf.anteil)} erfüllt`
+            : `${anf.text} nur auf ${pctNah(anteil, anf.anteil)} – zählt als zum Aufenthalt bestimmter Raum in der GF „mit“ (Spanne)`
           : nachName === 'treppe'
             ? 'Treppenraum'
             : 'kein Aufenthaltsraum nach Nutzung';
-      return { storeyId: st.id, roomId: r.id, name, nachName, anforderung: anf, anteil, maxHoehe, erfuellt, ergebnis, automatisch: !r.aufenthalt, begruendung };
+      const zuPruefen = !r.aufenthalt && nachName === 'ja' && !erfuellt;
+      return { storeyId: st.id, roomId: r.id, name, nachName, anforderung: anf, anteil, maxHoehe, erfuellt, zuPruefen, ergebnis, automatisch: !r.aufenthalt, begruendung };
     });
 }
 
@@ -504,13 +507,16 @@ export interface Nachweis {
    * Grundstück: Fläche laut Projektdaten (Kataster), sonst aus der gezeichneten Grenze, sonst aus den Lageplan-Flächen;
    * grenze: Fläche der gezeichneten Grundstücksgrenze
    */
-  grundstueck: { flaeche?: number; ausLageplan?: number; grenze?: number; quelle: 'projektdaten' | 'grenze' | 'lageplan' | 'fehlt' };
+  /** flaeche: maßgebende Fläche (mit Anteil an Gemeinschaftsanlagen); basis: ohne diesen Anteil */
+  grundstueck: { flaeche?: number; basis?: number; gemeinschaftsanlagen?: number; ausLageplan?: number; grenze?: number; quelle: 'projektdaten' | 'grenze' | 'lageplan' | 'fehlt' };
   /** Grundstückslinie ist die gezeichnete Grenze (sonst Umriss der erfassten Flächen) */
   grenzeGezeichnet: boolean;
   /** Gebäudeteile, die als Garage/Nebenanlage gekennzeichnet sind */
   anlagenPolygone: Point[][];
   /** absolute Festsetzungen GR/GF [m²] gegen die vorhandene GR (1990: GR I) bzw. GF */
   grAbsolut?: { flaeche: number; zulaessig: number; status: Status };
+  /** BauNVO 1990 bei absoluter GR: GR II höchstens 1,5 × GR, höchstens GRZ 0,8 (§ 19 Abs. 4 S. 2) */
+  gr2Absolut?: { flaeche: number; zulaessig: number; status: Status };
   gfAbsolut?: { flaeche: number; zulaessig: number; status: Status };
   /** Baumasse (vereinfacht: Grundfläche × Geschosshöhe der Vollgeschosse) und Baumassenzahl, falls festgesetzt */
   baumasse: number;
@@ -689,7 +695,7 @@ export function massNachweis(project: Project): Nachweis {
         vg: ob && anteil > 0.75,
         begruendung: !ob
           ? `Decke im Mittel ${fmtM(ueber)} über Gelände (≤ 1,60 m): kein oberirdisches Geschoss`
-          : `lichte Höhe ≥ 2,30 m auf ${pct(anteil)} der Grundfläche des Geschosses darunter (mehr als 75 % gefordert)`,
+          : `lichte Höhe ≥ 2,30 m auf ${pctNah(anteil, 0.75)} der Grundfläche des Geschosses darunter (mehr als 75 % gefordert)`,
       };
       // kein Vollgeschoss nur, weil das Geschoss darunter größer ist (z. B. EG über Tiefgarage)?
       if (ob && anteil <= 0.75 && A > 0 && hoch / A > 0.75)
@@ -719,9 +725,9 @@ export function massNachweis(project: Project): Nachweis {
         begruendung: !ob
           ? `Decke im Mittel ${fmtM(ueber)} über Gelände (≤ 1,60 m)`
           : staffel
-            ? `Staffelgeschoss: Höhe ≥ 2,30 m (bis OK Dachhaut/Fußboden darüber) auf ${pct(anteil)} der Grundfläche darunter (mehr als zwei Drittel gefordert)`
+            ? `Staffelgeschoss: Höhe ≥ 2,30 m (bis OK Dachhaut/Fußboden darüber) auf ${pctNah(anteil, 2 / 3)} der Grundfläche darunter (mehr als zwei Drittel gefordert)`
             : schraeg
-              ? `geneigte Dachflächen: Höhe ≥ 2,30 m bis OK Dachhaut auf ${pct(anteil)} der eigenen Grundfläche (mehr als drei Viertel gefordert)`
+              ? `geneigte Dachflächen: Höhe ≥ 2,30 m bis OK Dachhaut auf ${pctNah(anteil, 0.75)} der eigenen Grundfläche (mehr als drei Viertel gefordert)`
               : `Geschosshöhe ${vgHoehe ? '≥' : '<'} 2,30 m`,
       };
     } else {
@@ -746,7 +752,7 @@ export function massNachweis(project: Project): Nachweis {
         bezugsflaeche: A,
         vg: vollUeber ? anteil >= 2 / 3 - 1e-9 : keller,
         begruendung: vollUeber
-          ? `lichte Höhe ≥ ${fmtM(soll)} auf ${pct(anteil)} der eigenen Grundfläche (mindestens zwei Drittel gefordert)`
+          ? `lichte Höhe ≥ ${fmtM(soll)} auf ${pctNah(anteil, 2 / 3)} der eigenen Grundfläche (mindestens zwei Drittel gefordert)`
           : keller
             ? `Kellergeschoss ragt im Mittel ${fmtM(ueberKeller)} ${kellerImLichten ? 'im Lichten ' : ''}über Gelände (mehr als 1,40 m): wird angerechnet`
             : `nicht vollständig über der Geländeoberfläche (Fußboden ${fmtM(e - gel.max)} unter dem höchsten Geländepunkt), ${kellerImLichten ? `im Lichten ${fmtM(ueberKeller)}` : `Decke im Mittel ${fmtM(ueber)}`} darüber: kein Vollgeschoss`,
@@ -874,9 +880,18 @@ export function massNachweis(project: Project): Nachweis {
   // 0 oder negativ (z. B. aus einer fremden Datei) gilt wie „nicht angegeben“
   const gEingabe = project.meta.grundstueck.flaeche;
   const gProjekt = gEingabe !== undefined && gEingabe > 0 ? gEingabe : undefined;
-  const G = gProjekt ?? ausGrenze ?? ausLageplan;
+  const gBasis = gProjekt ?? ausGrenze ?? ausLageplan;
+  // § 21a Abs. 2 BauNVO 1968/1977/1990: Anteile an Gemeinschaftsanlagen außerhalb des Baugrundstücks hinzurechnen (1962: keine Regel)
+  const gemeinschaft = re.baunvo !== '1962' && gBasis !== undefined && (m.gemeinschaftsanlagen ?? 0) > 0 ? m.gemeinschaftsanlagen : undefined;
+  const G = gBasis !== undefined ? gBasis + (gemeinschaft ?? 0) : undefined;
+  if (re.baunvo !== '1962' && gBasis === undefined && (m.gemeinschaftsanlagen ?? 0) > 0)
+    hinweise.push({ text: 'Anteil an Gemeinschaftsanlagen nicht berücksichtigt: Die Grundstücksfläche fehlt.', art: 'sachlich' });
+  if (re.baunvo === '1962' && (m.gemeinschaftsanlagen ?? 0) > 0)
+    hinweise.push({ text: 'Anteil an Gemeinschaftsanlagen nicht hinzugerechnet: Die BauNVO 1962 kennt keine Regel wie § 21a Abs. 2 der späteren Fassungen.', art: 'sachlich' });
   const grundstueck: Nachweis['grundstueck'] = {
     flaeche: G,
+    basis: gBasis,
+    gemeinschaftsanlagen: gemeinschaft,
     ausLageplan,
     grenze: ausGrenze,
     quelle: gProjekt !== undefined ? 'projektdaten' : ausGrenze !== undefined ? 'grenze' : ausLageplan !== undefined ? 'lageplan' : 'fehlt',
@@ -1001,6 +1016,32 @@ export function massNachweis(project: Project): Nachweis {
   });
   const gf = gfJeGeschoss.reduce((a, x) => a + x.flaeche, 0);
   const gfAufenthalt = gfJeGeschoss.filter((x) => x.art === 'aufenthalt').reduce((a, x) => a + x.flaeche, 0);
+  // Räume, die nach Nutzung Aufenthaltsräume sind, aber die lichte Höhe nicht erreichen: zum Aufenthalt bestimmt
+  // (§ 2 Abs. 7 BauO NRW) – die GF wird ohne und mit ihnen angegeben (Spanne wie bei der GRZ)
+  const zuPruefen = raeume.filter((r) => r.zuPruefen);
+  let gfMitPruefen: number | undefined;
+  if (zuPruefen.length) {
+    gfMitPruefen = 0;
+    for (const g of gfJeGeschoss) {
+      const eigene = raeume.filter((x) => x.storeyId === g.storeyId);
+      if (!eigene.some((x) => x.zuPruefen) || g.art === 'vollgeschoss') {
+        gfMitPruefen += g.flaeche;
+        continue;
+      }
+      const st = geschosse.find((x) => x.st.id === g.storeyId)!.st;
+      gfMitPruefen += aufenthaltsFlaeche(
+        st,
+        grundriss.get(st.id)!,
+        wand,
+        eigene.map((x) => (x.zuPruefen ? { ...x, ergebnis: 'ja' as const } : x)),
+      );
+    }
+    hinweise.push({
+      text: `Nach Nutzung Aufenthaltsräume, aber ohne die geforderte lichte Höhe: ${zuPruefen.map((r) => r.name).join(', ')}. Als zum Aufenthalt bestimmte Räume zählen sie zur Geschossfläche; die GF ist ohne und mit ihnen angegeben (mit: ${fmtA(gfMitPruefen)}).`,
+      art: 'sachlich',
+      tipp: 'Einstufung je Raum von Hand festlegen.',
+    });
+  }
   if (vorher1990 && gfAufenthalt > 0) {
     hinweise.push({
       text: `${baunvoLabel(re.baunvo)}: Aufenthaltsräume in anderen Geschossen samt Treppenräumen und Umfassungswänden (${fmtM(wand)} Wandzuschlag) zählen zur Geschossfläche.`,
@@ -1015,7 +1056,7 @@ export function massNachweis(project: Project): Nachweis {
     ].filter(Boolean);
     hinweise.push({ text: `Nicht zur Geschossfläche gerechnet (Gebäudeteile in Vollgeschossen): ${teile.join('; ')}.`, art: 'sachlich' });
   }
-  const gfz = kennzahl(gf, G, m.gfz);
+  const gfz = kennzahl(gf, G, m.gfz, gfMitPruefen);
 
   const anzahl = pruefungen.filter((x) => x.vollgeschoss).length;
   const zwingend = !!m.vollgeschosseZwingend && m.vollgeschosseMax !== undefined;
@@ -1036,7 +1077,13 @@ export function massNachweis(project: Project): Nachweis {
   // absolute Festsetzungen und Baumassenzahl
   const absolut = (flaeche: number, zul: number | undefined) => (zul === undefined ? undefined : { flaeche, zulaessig: zul, status: (flaeche > zul + 1e-9 ? 'ueberschritten' : 'ok') as Status });
   const grAbsolut = absolut(grz.flaeche, m.grAbsolut);
-  const gfAbsolut = absolut(gf, m.gfAbsolut);
+  // § 19 Abs. 4 S. 2: bis 50 % über die GR, höchstens GRZ 0,8 – nie unter der GR selbst; abweichende Festsetzung (S. 3) geht vor
+  const gr2Grenze = (gr: number) => (m.grzIIMax !== undefined && G !== undefined ? m.grzIIMax * G : Math.max(gr, Math.min(1.5 * gr, G !== undefined ? 0.8 * G : Infinity)));
+  const gr2Absolut = grz2 && m.grAbsolut !== undefined ? absolut(grz2.flaeche, gr2Grenze(m.grAbsolut)) : undefined;
+  const gfAbsolutOhne = absolut(gf, m.gfAbsolut);
+  // mit zu prüfenden Aufenthaltsräumen überschritten: „prüfen“ wie bei der GFZ
+  const gfAbsolut =
+    gfAbsolutOhne && gfAbsolutOhne.status === 'ok' && gfMitPruefen !== undefined && gfMitPruefen > gfAbsolutOhne.zulaessig + 1e-9 ? { ...gfAbsolutOhne, status: 'pruefen' as Status } : gfAbsolutOhne;
   const bmz = m.bmz !== undefined ? kennzahl(baumasse, G, m.bmz) : undefined;
   if (m.bmz !== undefined) hinweise.push({ text: `Baumasse vereinfacht aus Grundfläche × Geschosshöhe der Vollgeschosse (${fmtA(baumasse).replace('m²', 'm³')}).`, art: 'sachlich' });
   if (m.traufhoeheMax !== undefined || m.firsthoeheMax !== undefined) {
@@ -1073,6 +1120,7 @@ export function massNachweis(project: Project): Nachweis {
     grundstueckPolygone,
     grenzeGezeichnet: grenzen.length > 0,
     grAbsolut,
+    gr2Absolut,
     gfAbsolut,
     baumasse,
     bmz,
@@ -1131,6 +1179,17 @@ function rasterRechnen(project: Project, st: Storey, floorZ: number, gr: MultiPo
 const fmtM = (v: number) => `${(Math.round(v * 100) / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m`;
 const fmtA = (v: number) => `${(Math.round(v * 100) / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`;
 const pct = (v: number) => `${Math.round(v * 100)} %`;
+/**
+ * Anteil nahe an einer Schwelle (⅔, ¾, ½ …) mit Nachkommastellen, damit nie „75 % (mehr als 75 % gefordert)“ dasteht;
+ * innerhalb von ±1 % mit Hinweis auf die Rasterauflösung der Höhenprüfung
+ */
+export const pctNah = (v: number, soll: number): string => {
+  const d = Math.abs(v - soll);
+  if (d >= 0.02) return pct(v);
+  const stellen = d < 0.001 ? 2 : 1;
+  const t = `${(v * 100).toFixed(stellen).replace('.', ',')} %`;
+  return d < 0.01 ? `${t} (knapp am Grenzwert – Rasterprüfung)` : t;
+};
 
 function boundsOf(pts: Point[]) {
   return bounds(pts);
