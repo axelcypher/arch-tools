@@ -385,7 +385,10 @@ export async function vorbereitenImFenster(kennung: string, ms = VORBEREITEN_MS)
   const anfrage = Math.random().toString(36).slice(2);
   let fertig: (e: Vorbereitet) => void = () => {};
   const antwort = new Promise<Vorbereitet>((f) => (fertig = f));
-  const aus = await listen<{ typ?: string; anfrage?: string; ergebnis?: string }>(AN_RAHMEN, (e) => e.payload?.typ === VORBEREITET && e.payload.anfrage === anfrage && fertig(alsVorbereitet(e.payload.ergebnis)));
+  const aus = await listen<{ typ?: string; anfrage?: string; ergebnis?: string }>(
+    AN_RAHMEN,
+    (e) => e.payload?.typ === VORBEREITET && e.payload.anfrage === anfrage && fertig(alsVorbereitet(e.payload.ergebnis)),
+  );
   try {
     await emit(AN_APP, { typ: VORBEREITEN, anfrage, an: kennung });
     // ohne Antwort (Fenster hängt, alte Fassung): wie Zeitablauf
