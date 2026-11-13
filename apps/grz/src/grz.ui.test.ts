@@ -708,3 +708,103 @@ describe('Gesamt-Review: Tastatur, Ausschnitt, Zeichnen, Unterlage, Speichern', 
     expect(st().datei).toBeNull();
   });
 });
+
+describe('Gesamt-Review: Bedienung der Oberfläche', () => {
+  const knopf = (host: ParentNode, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent === t) as HTMLButtonElement;
+  const zeiger = (svg: Element, typ: string, q: { x: number; y: number }, extra: PointerEventInit = {}) =>
+    act(() => svg.dispatchEvent(new PointerEvent(typ, { bubbles: true, button: 0, pointerId: 1, ...bildpunkt(svg, q), ...extra })));
+  const feldMit = (host: HTMLElement, label: string) =>
+    [...host.querySelectorAll('.field')].find((f) => f.querySelector('.field-label')?.textContent === label)!.querySelector('input') as HTMLInputElement;
+
+  it('Grenze: Kante anklicken wählt das Flurstück, Punkt ziehen ändert es, Entf löscht nur dieses', () => {
+    const p = projekt();
+    p.lageplan!.grenze = [
+      { id: 'gr1', name: 'Flurstück 1', points: rectPoints({ x: -5, y: -4 }, { x: 18, y: 16 }) },
+      { id: 'gr2', name: 'Flurstück 2', points: rectPoints({ x: 18, y: -4 }, { x: 25, y: 16 }) },
+    ];
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const svg = host.querySelector('svg.grz-skizze')!;
+    // Klick auf die linke Kante von Flurstück 1
+    zeiger(svg, 'pointerdown', { x: -5, y: 6 });
+    zeiger(svg, 'pointerup', { x: -5, y: 6 });
+    expect(host.querySelector('.lp-chip.active')!.textContent).toContain('Flurstück 1');
+    const griffe = host.querySelectorAll('circle.vertex-handle');
+    expect(griffe).toHaveLength(4);
+    // Ecke (-5|-4) nach (-6|-4) ziehen
+    act(() => griffe[0].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, ...bildpunkt(svg, { x: -5, y: -4 }) })));
+    zeiger(svg, 'pointermove', { x: -6, y: -4 }, { altKey: true });
+    zeiger(svg, 'pointerup', { x: -6, y: -4 });
+    const g1 = useGrz.getState().project.lageplan!.grenze![0];
+    expect(g1.points[0].x).toBeCloseTo(-6, 1);
+    expect(useGrz.getState().pastAktionen.at(-1)).toBe('Punkt verschieben');
+    // Gegenprobe: Lageplan-Flächen unverändert
+    expect(useGrz.getState().project.lageplan!.flaechen.map((f) => f.points)).toEqual(p.lageplan!.flaechen.map((f) => f.points));
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true })));
+    expect(useGrz.getState().project.lageplan!.grenze!.map((g) => g.id)).toEqual(['gr2']);
+  });
+
+  it('Tastenübersicht schließt mit Esc; Leerzustand bietet Zeichnen an; Tabelle mit Nummern wie im Plan', () => {
+    const p = projekt();
+    const flaechen = p.lageplan!.flaechen;
+    p.lageplan!.flaechen = [];
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    expect(host.querySelector('.lp-legende')).toBeNull();
+    act(() => knopf(host.querySelector('.lp-leer')!, 'Polygon zeichnen').click());
+    expect(useGrz.getState().werkzeug).toBe('polygon');
+    expect(host.querySelector('.lp-leer')).toBeNull();
+    const tasten = host.querySelector('details.lp-tasten') as HTMLDetailsElement;
+    tasten.open = true;
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(tasten.open).toBe(false);
+    // Gegenprobe: das zweite Esc wechselt zur Auswahl
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(useGrz.getState().werkzeug).toBe('auswahl');
+    act(() => useGrz.getState().update((x) => ({ ...x, lageplan: { flaechen } }), undefined, 'Flächen'));
+    const nr = [...host.querySelector('.grz-plan .grz-table')!.querySelectorAll('tbody tr:not(.sum) td:first-child')].map((t) => t.textContent);
+    expect(nr).toEqual(['1', '2']);
+    expect([...host.querySelectorAll('.lp-beschriftung')].map((t) => t.textContent?.split(' · ')[0])).toEqual(expect.arrayContaining(['1', '2']));
+  });
+
+  it('Eingaben: Mindestens > höchstens und GRZ II < GRZ melden am Feld; zwingend zeigt ein Feld „Anzahl“', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, planDatum: '2020-01-01', vollgeschosseMin: 3, vollgeschosseMax: 2, grz: 0.4, grzIIMax: 0.3 };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const meldungen = [...host.querySelectorAll('.grz-fest .feld-meldung')].map((m) => m.textContent);
+    expect(meldungen).toEqual(['Kleiner als die GRZ – die GRZ II umfasst die Hauptanlage mit.', 'Mindestens ist größer als höchstens.']);
+    const zwingend = [...host.querySelectorAll('label.toggle')].find((l) => l.textContent?.includes('zwingend'))!.querySelector('input') as HTMLInputElement;
+    act(() => zwingend.click());
+    expect(feldMit(host, 'Anzahl (zwingend)').value).toBe('2');
+    expect(host.querySelectorAll('.grz-fest .feld-meldung')).toHaveLength(1);
+    // Gebiet mit Klartext
+    expect([...host.querySelectorAll('select')].find((x) => [...x.options].some((o) => o.value === 'WA'))!.textContent).toContain('WA – allgemeines Wohngebiet');
+  });
+
+  it('Neues Projekt ohne Gebäude zeigt die Ansicht mit Hinweis statt des Einstiegs', async () => {
+    useGrz.getState().load(createProject());
+    const host = render(App);
+    expect(host.querySelector('.grz-view')).toBeNull();
+    await act(async () => knopf(host, 'Neues Projekt').click());
+    expect(host.querySelector('.grz-view')).not.toBeNull();
+    expect(host.textContent).toContain('noch keinen Gebäudeumriss');
+    expect(host.querySelector('button[aria-label="Rückgängig"]')).not.toBeNull();
+  });
+
+  it('Kennzahl-Karte: kurze Pille, Grund in der Unterzeile, Spanne der ungeklärten Flächen eigene Zeile', () => {
+    const p = projekt();
+    p.meta.grundstueck.flaeche = undefined;
+    p.lageplan!.flaechen = [];
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const karte = host.querySelector('.kpi')!;
+    expect(karte.querySelector('.pill')!.textContent).toBe('fehlt');
+    expect(karte.textContent).toContain('Grundstücksfläche fehlt');
+    act(() => useGrz.getState().load(projekt()));
+    const k2 = host.querySelector('.kpi')!;
+    expect(k2.querySelector('.kpi-offen')!.textContent).toBe('mit ungeklärten Flächen bis 0,294');
+    expect(k2.textContent).toContain('Reserve 110,00 m²');
+    expect(k2.getAttribute('title')).toContain('GR 135,00 m² < 245,00 m² zulässig');
+  });
+});

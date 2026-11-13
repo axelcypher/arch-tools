@@ -119,7 +119,8 @@ export function GrzGfzView() {
       : n.grundstueck.ausLageplan !== undefined
         ? `leer: Summe der Lageplan-Flächen mit Gebäude ${fmt2(n.grundstueck.ausLageplan)} m² – besser laut Kataster eintragen`
         : 'laut Kataster (Fläche des Baulands, § 19 Abs. 3 BauNVO)';
-  const vgFehler = !m.vollgeschosseZwingend && m.vollgeschosseMin !== undefined && m.vollgeschosseMax !== undefined && m.vollgeschosseMin > m.vollgeschosseMax ? 'Mindestens ist größer als höchstens.' : undefined;
+  const vgFehler =
+    !m.vollgeschosseZwingend && m.vollgeschosseMin !== undefined && m.vollgeschosseMax !== undefined && m.vollgeschosseMin > m.vollgeschosseMax ? 'Mindestens ist größer als höchstens.' : undefined;
   const vonHand = n.geschosse.filter((g) => !g.automatisch).length;
   const grz2Fehler = m.grzIIMax !== undefined && m.grz !== undefined && m.grzIIMax < m.grz ? 'Kleiner als die GRZ – die GRZ II umfasst die Hauptanlage mit.' : undefined;
   return (
@@ -400,22 +401,22 @@ export function GrzGfzView() {
               <NumberField value={gleich(mehrere.map((f) => f.hoehe))} allowEmpty placeholder="unterschiedlich" onChange={(v) => v !== undefined && updAlle({ hoehe: v })} />
             </Field>
             <div className="lp-eigenschaften-fuss">
-            <button
-              className="small danger"
-              onClick={() =>
-                st.update(
-                  (p) =>
-                    removeFlaeche(
-                      p,
-                      mehrere.map((f) => f.id),
-                    ),
-                  undefined,
-                  'Flächen löschen',
-                )
-              }
-            >
-              {mehrere.length} Flächen löschen
-            </button>
+              <button
+                className="small danger"
+                onClick={() =>
+                  st.update(
+                    (p) =>
+                      removeFlaeche(
+                        p,
+                        mehrere.map((f) => f.id),
+                      ),
+                    undefined,
+                    'Flächen löschen',
+                  )
+                }
+              >
+                {mehrere.length} Flächen löschen
+              </button>
             </div>
           </div>
         )}

@@ -314,7 +314,9 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const istGrenze = (id: string) => grenzen.some((g) => g.id === id);
   /** Punkte einer Fläche oder eines Flurstücks setzen (ein Undo-Schritt) */
   const punkteSetzen = (p: Project, id: string, pts: Point[]): Project =>
-    istGrenze(id) ? { ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: (p.lageplan?.grenze ?? []).map((g) => (g.id === id ? { ...g, points: pts } : g)) } } : mapFlaeche(p, id, (f) => ({ ...f, points: pts }));
+    istGrenze(id)
+      ? { ...p, lageplan: { flaechen: [], ...p.lageplan, grenze: (p.lageplan?.grenze ?? []).map((g) => (g.id === id ? { ...g, points: pts } : g)) } }
+      : mapFlaeche(p, id, (f) => ({ ...f, points: pts }));
   const grenzeLoeschen = (id: string) => {
     setGrenzeSel(null);
     st.update(
@@ -394,7 +396,16 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     e.stopPropagation();
     const f = flaechen.find((x) => x.id === id) ?? grenzen.find((g) => g.id === id);
     if (!f || f.points.length <= 3) return;
-    st.update((p) => punkteSetzen(p, id, f.points.filter((_, i) => i !== index)), undefined, 'Punkt löschen');
+    st.update(
+      (p) =>
+        punkteSetzen(
+          p,
+          id,
+          f.points.filter((_, i) => i !== index),
+        ),
+      undefined,
+      'Punkt löschen',
+    );
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -697,9 +708,17 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             </button>
           ))}
         </div>
-        <label className="lp-nutzung small-text" title={werkzeug === 'polygon' || werkzeug === 'rechteck' ? 'Nutzung neuer Flächen (Versiegelung passend vorbelegt)' : 'Nutzung neuer Flächen – gilt für Polygon und Rechteck'}>
+        <label
+          className="lp-nutzung small-text"
+          title={werkzeug === 'polygon' || werkzeug === 'rechteck' ? 'Nutzung neuer Flächen (Versiegelung passend vorbelegt)' : 'Nutzung neuer Flächen – gilt für Polygon und Rechteck'}
+        >
           Nutzung
-          <select aria-label="Nutzung neuer Flächen" value={nutzungVorlage} disabled={werkzeug !== 'polygon' && werkzeug !== 'rechteck'} onChange={(e) => st.setNutzungVorlage(e.target.value as LageplanNutzung)}>
+          <select
+            aria-label="Nutzung neuer Flächen"
+            value={nutzungVorlage}
+            disabled={werkzeug !== 'polygon' && werkzeug !== 'rechteck'}
+            onChange={(e) => st.setNutzungVorlage(e.target.value as LageplanNutzung)}
+          >
             {LAGEPLAN_NUTZUNGEN.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.label}
@@ -774,7 +793,12 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         </button>
         {unterlage && (
           <>
-            <button className={werkzeug === 'kalibrieren' ? 'small active' : 'small'} aria-pressed={werkzeug === 'kalibrieren'} title="Maßstab an einer bekannten Strecke festlegen" onClick={() => st.setWerkzeug('kalibrieren')}>
+            <button
+              className={werkzeug === 'kalibrieren' ? 'small active' : 'small'}
+              aria-pressed={werkzeug === 'kalibrieren'}
+              title="Maßstab an einer bekannten Strecke festlegen"
+              onClick={() => st.setWerkzeug('kalibrieren')}
+            >
               Kalibrieren
             </button>
             <button
@@ -875,197 +899,205 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         </div>
       )}
       <div className="lp-plan">
-      <svg
-        ref={svgRef}
-        className={`grz-skizze lp-${werkzeug}`}
-        style={{ cursor: cursorStil }}
-        viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
-        preserveAspectRatio="xMidYMid meet"
-        onClick={onClick}
-        onDoubleClick={onDoubleClick}
-        onPointerDown={onPointerDown}
-        // fokussierbar: Tab wählt dann die nächste Fläche; sonst bleibt Tab die normale Bedienung der Oberfläche
-        tabIndex={0}
-        aria-label="Lageplan"
-        // Fokus per Maus ohne Fokusrahmen (nur Tastatur zeigt ihn)
-        onPointerDownCapture={() => svgRef.current?.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={() => setCursor(null)}
-        onContextMenu={(e) => e.preventDefault()}
-      >
-        <defs>
-          <marker id="lp-pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 Z" fill="var(--sel)" />
-          </marker>
-          <pattern id="grz-hatch" width={k * 8} height={k * 8} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2={k * 8} stroke="var(--accent)" strokeWidth={k * 2} strokeOpacity={0.5} />
-          </pattern>
-        </defs>
-        {unterlage?.visible && unterlage.type === 'raster' && (
-          <image
-            className="lp-unterlage-bild"
-            href={unterlage.dataUrl}
-            x={unterlage.x}
-            y={unterlage.y}
-            width={unterlage.widthPx * unterlage.metersPerPixel}
-            height={unterlage.heightPx * unterlage.metersPerPixel}
-            opacity={unterlage.opacity}
-            preserveAspectRatio="none"
-            pointerEvents="none"
-          />
-        )}
-        {raster && (
-          <g className="lp-raster" pointerEvents="none" stroke="var(--border)" strokeWidth={k * 0.6}>
-            {Array.from({ length: Math.min(400, Math.ceil(vb.w / rw) + 2) }, (_, i) => {
-              const x = (Math.floor(vb.x / rw) + i) * rw;
-              return <line key={`x${i}`} x1={x} y1={vb.y - vb.h} x2={x} y2={vb.y + 2 * vb.h} />;
-            })}
-            {Array.from({ length: Math.min(400, Math.ceil(vb.h / rw) + 2) }, (_, i) => {
-              const y = (Math.floor(vb.y / rw) + i) * rw;
-              return <line key={`y${i}`} x1={vb.x - vb.w} y1={y} x2={vb.x + 2 * vb.w} y2={y} />;
-            })}
-          </g>
-        )}
-        {flaechen.map((f) => (
-          <path
-            key={f.id}
-            d={d(punkteVon(f.id, f.points))}
-            fill={versiegelungInfo(f.versiegelung).color}
-            fillOpacity={f.nachbar ? 0.15 : f.variante && f.variante !== variante ? 0.12 : 0.55}
-            className={f.variante && f.variante !== variante ? 'lp-andere-variante' : undefined}
-            stroke={f.nachbar ? 'var(--muted)' : 'var(--text)'}
-            strokeOpacity={f.nachbar ? 1 : 0.7}
-            strokeWidth={k}
-            strokeDasharray={f.nachbar ? `${k * 4} ${k * 3}` : undefined}
-          >
-            <title>{`${f.name} · ${nutzungLabel(f.nutzung)} · ${versiegelungInfo(f.versiegelung).label}${f.nachbar ? ' · Nachbar' : ''}`}</title>
-          </path>
-        ))}
-        {n.hauptanlagePolygone.map((pts, i) => (
-          <path key={`h${i}`} d={d(pts)} fill="url(#grz-hatch)" stroke="#1d3f96" strokeWidth={k * 2} fillRule="evenodd" pointerEvents="none" />
-        ))}
-        {n.anlagenPolygone.map((pts, i) => (
-          <path key={`a${i}`} d={d(pts)} fill="#8a8f99" fillOpacity={0.45} stroke="#1d3f96" strokeWidth={k * 1.5} pointerEvents="none">
-            <title>Gebäudeteil als Garage/Nebenanlage</title>
-          </path>
-        ))}
-        {n.grundstueckPolygone.map((pts, i) => (
-          <path key={`g${i}`} d={d(pts)} fill="none" stroke="var(--text)" strokeWidth={k * 2.5} strokeDasharray={`${k * 10} ${k * 3} ${k * 2} ${k * 3}`} pointerEvents="none" />
-        ))}
-        {/* Auswahlkontur über der Grundstückslinie, damit sie nicht zerhackt wird */}
-        {flaechen
-          .filter((f) => selectedIds.includes(f.id))
-          .map((f) => (
-            <path key={`s${f.id}`} d={d(punkteVon(f.id, f.points))} fill="none" stroke="var(--sel)" strokeWidth={k * 3} pointerEvents="none" />
-          ))}
-        {grenzeAuswahl && <path d={d(punkteVon(grenzeAuswahl.id, grenzeAuswahl.points))} fill="none" stroke="var(--sel)" strokeWidth={k * 3} pointerEvents="none" />}
-        {beschriftungen.map((b) => (
-          <text key={`b${b.id}`} x={b.p.x} y={b.p.y} fontSize={k * 11} className="lp-beschriftung" textAnchor="middle" dominantBaseline="middle" pointerEvents="none">
-            {b.text}
-          </text>
-        ))}
-        <g className="lp-massstab" pointerEvents="none" data-laenge={ml}>
-          <rect x={vb.x + k * 12} y={vb.y + vb.h - k * 16} width={ml / 2} height={k * 5} fill="#1f2328" />
-          <rect x={vb.x + k * 12 + ml / 2} y={vb.y + vb.h - k * 16} width={ml / 2} height={k * 5} fill="#fff" stroke="#1f2328" strokeWidth={k} />
-          <text x={vb.x + k * 12 + ml} y={vb.y + vb.h - k * 20} fontSize={k * 10} className="lp-beschriftung" textAnchor="middle">
-            {ml.toLocaleString('de-DE')} m
-          </text>
-        </g>
-        <g className="lp-nordpfeil" pointerEvents="none" transform={`translate(${vb.x + vb.w - k * 20} ${vb.y + k * 10})`}>
-          <path d={`M0 0 L${k * 6} ${k * 18} L0 ${k * 14} L${-k * 6} ${k * 18} Z`} fill="#1f2328" />
-          <text x={0} y={k * 30} fontSize={k * 10} className="lp-beschriftung" textAnchor="middle">
-            N
-          </text>
-        </g>
-        {griffe && (
-          <g>
-            {griffe.pts.map((p, i) => {
-              const q = griffe.pts[(i + 1) % griffe.pts.length];
-              const m = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
-              return (
-                <rect
-                  key={`m${i}`}
-                  className="mid-handle"
-                  x={m.x - k * 4}
-                  y={m.y - k * 4}
-                  width={k * 8}
-                  height={k * 8}
-                  transform={`rotate(45 ${m.x} ${m.y})`}
-                  onPointerDown={(e) => onPunktDown(e, griffe.id, griffe.pts, i, true)}
-                >
-                  <title>Ziehen: Punkt einfügen</title>
-                </rect>
-              );
-            })}
-            {griffe.pts.map((p, i) => (
-              <circle
-                key={`v${i}`}
-                className="vertex-handle"
-                cx={p.x}
-                cy={p.y}
-                r={k * 5}
-                onPointerDown={(e) => onPunktDown(e, griffe.id, griffe.pts, i, false)}
-                onContextMenu={(e) => onPunktKontext(e, griffe.id, i)}
-              >
-                <title>Ziehen: verschieben · Rechtsklick: löschen</title>
-              </circle>
-            ))}
-          </g>
-        )}
-        {(werkzeug === 'kalibrieren' || werkzeug === 'ausrichten') && draft.length > 0 && (messEnde ?? cursor) && (
-          <g pointerEvents="none" className="lp-messlinie">
-            <line x1={draft[0].x} y1={draft[0].y} x2={(messEnde ?? cursor)!.x} y2={(messEnde ?? cursor)!.y} stroke="var(--sel)" strokeWidth={k * 2} markerEnd={werkzeug === 'ausrichten' ? 'url(#lp-pfeil)' : undefined} />
-            <circle cx={draft[0].x} cy={draft[0].y} r={k * 4} fill="var(--panel)" stroke="var(--sel)" strokeWidth={k * 1.5} />
-          </g>
-        )}
-        {(entwurf.length > 0 || draft.length > 0) && (
-          <g pointerEvents="none">
-            {werkzeug === 'grenze' ? (
-              <path d={d(entwurf, entwurf.length > 2)} fill="none" stroke="var(--text)" strokeWidth={k * 2.5} strokeDasharray={`${k * 10} ${k * 3} ${k * 2} ${k * 3}`} />
-            ) : (
-              <path d={d(entwurf, werkzeug === 'rechteck' || entwurf.length > 2)} fill="var(--sel)" fillOpacity={0.12} stroke="var(--sel)" strokeWidth={k * 1.5} />
-            )}
-            {draft.map((p, i) => (
-              <circle key={i} cx={p.x} cy={p.y} r={k * (i === 0 ? 5 : 3.5)} fill="var(--panel)" stroke="var(--sel)" strokeWidth={k * 1.5} />
-            ))}
-          </g>
-        )}
-        {cursor && werkzeug !== 'auswahl' && <circle cx={cursor.x} cy={cursor.y} r={k * 3} fill="var(--sel)" pointerEvents="none" />}
-        {kfang && <FangSymbol f={kfang} k={k} />}
-        {cursor && werkzeug === 'kalibrieren' && draft.length > 0 && (
-          <text x={cursor.x + k * 10} y={cursor.y - k * 10} fontSize={k * 11} className="lp-masstext" pointerEvents="none">
-            Strecke {fmt2(Math.hypot(cursor.x - draft[0].x, cursor.y - draft[0].y))} m
-          </text>
-        )}
-        {linien.map((l, i) => {
-          const L = Math.max(vb.w, vb.h) * 2;
-          const o = l.p;
-          return (
-            <line
-              key={`hl${i}`}
-              x1={o.x - l.d.x * L}
-              y1={o.y - l.d.y * L}
-              x2={o.x + l.d.x * L}
-              y2={o.y + l.d.y * L}
-              className={`guide-line guide-${l.art}`}
-              style={{ strokeWidth: k, strokeDasharray: `${k * 6} ${k * 4}` }}
+        <svg
+          ref={svgRef}
+          className={`grz-skizze lp-${werkzeug}`}
+          style={{ cursor: cursorStil }}
+          viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
+          preserveAspectRatio="xMidYMid meet"
+          onClick={onClick}
+          onDoubleClick={onDoubleClick}
+          onPointerDown={onPointerDown}
+          // fokussierbar: Tab wählt dann die nächste Fläche; sonst bleibt Tab die normale Bedienung der Oberfläche
+          tabIndex={0}
+          aria-label="Lageplan"
+          // Fokus per Maus ohne Fokusrahmen (nur Tastatur zeigt ihn)
+          onPointerDownCapture={() => svgRef.current?.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={() => setCursor(null)}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <defs>
+            <marker id="lp-pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 Z" fill="var(--sel)" />
+            </marker>
+            <pattern id="grz-hatch" width={k * 8} height={k * 8} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2={k * 8} stroke="var(--accent)" strokeWidth={k * 2} strokeOpacity={0.5} />
+            </pattern>
+          </defs>
+          {unterlage?.visible && unterlage.type === 'raster' && (
+            <image
+              className="lp-unterlage-bild"
+              href={unterlage.dataUrl}
+              x={unterlage.x}
+              y={unterlage.y}
+              width={unterlage.widthPx * unterlage.metersPerPixel}
+              height={unterlage.heightPx * unterlage.metersPerPixel}
+              opacity={unterlage.opacity}
+              preserveAspectRatio="none"
               pointerEvents="none"
             />
-          );
-        })}
-        {rahmen && (
-          <rect
-            className="select-box"
-            x={Math.min(rahmen[0].x, rahmen[1].x)}
-            y={Math.min(rahmen[0].y, rahmen[1].y)}
-            width={Math.abs(rahmen[1].x - rahmen[0].x)}
-            height={Math.abs(rahmen[1].y - rahmen[0].y)}
-            style={{ strokeWidth: k, strokeDasharray: `${k * 4} ${k * 3}` }}
-            pointerEvents="none"
-          />
-        )}
-      </svg>
+          )}
+          {raster && (
+            <g className="lp-raster" pointerEvents="none" stroke="var(--border)" strokeWidth={k * 0.6}>
+              {Array.from({ length: Math.min(400, Math.ceil(vb.w / rw) + 2) }, (_, i) => {
+                const x = (Math.floor(vb.x / rw) + i) * rw;
+                return <line key={`x${i}`} x1={x} y1={vb.y - vb.h} x2={x} y2={vb.y + 2 * vb.h} />;
+              })}
+              {Array.from({ length: Math.min(400, Math.ceil(vb.h / rw) + 2) }, (_, i) => {
+                const y = (Math.floor(vb.y / rw) + i) * rw;
+                return <line key={`y${i}`} x1={vb.x - vb.w} y1={y} x2={vb.x + 2 * vb.w} y2={y} />;
+              })}
+            </g>
+          )}
+          {flaechen.map((f) => (
+            <path
+              key={f.id}
+              d={d(punkteVon(f.id, f.points))}
+              fill={versiegelungInfo(f.versiegelung).color}
+              fillOpacity={f.nachbar ? 0.15 : f.variante && f.variante !== variante ? 0.12 : 0.55}
+              className={f.variante && f.variante !== variante ? 'lp-andere-variante' : undefined}
+              stroke={f.nachbar ? 'var(--muted)' : 'var(--text)'}
+              strokeOpacity={f.nachbar ? 1 : 0.7}
+              strokeWidth={k}
+              strokeDasharray={f.nachbar ? `${k * 4} ${k * 3}` : undefined}
+            >
+              <title>{`${f.name} · ${nutzungLabel(f.nutzung)} · ${versiegelungInfo(f.versiegelung).label}${f.nachbar ? ' · Nachbar' : ''}`}</title>
+            </path>
+          ))}
+          {n.hauptanlagePolygone.map((pts, i) => (
+            <path key={`h${i}`} d={d(pts)} fill="url(#grz-hatch)" stroke="#1d3f96" strokeWidth={k * 2} fillRule="evenodd" pointerEvents="none" />
+          ))}
+          {n.anlagenPolygone.map((pts, i) => (
+            <path key={`a${i}`} d={d(pts)} fill="#8a8f99" fillOpacity={0.45} stroke="#1d3f96" strokeWidth={k * 1.5} pointerEvents="none">
+              <title>Gebäudeteil als Garage/Nebenanlage</title>
+            </path>
+          ))}
+          {n.grundstueckPolygone.map((pts, i) => (
+            <path key={`g${i}`} d={d(pts)} fill="none" stroke="var(--text)" strokeWidth={k * 2.5} strokeDasharray={`${k * 10} ${k * 3} ${k * 2} ${k * 3}`} pointerEvents="none" />
+          ))}
+          {/* Auswahlkontur über der Grundstückslinie, damit sie nicht zerhackt wird */}
+          {flaechen
+            .filter((f) => selectedIds.includes(f.id))
+            .map((f) => (
+              <path key={`s${f.id}`} d={d(punkteVon(f.id, f.points))} fill="none" stroke="var(--sel)" strokeWidth={k * 3} pointerEvents="none" />
+            ))}
+          {grenzeAuswahl && <path d={d(punkteVon(grenzeAuswahl.id, grenzeAuswahl.points))} fill="none" stroke="var(--sel)" strokeWidth={k * 3} pointerEvents="none" />}
+          {beschriftungen.map((b) => (
+            <text key={`b${b.id}`} x={b.p.x} y={b.p.y} fontSize={k * 11} className="lp-beschriftung" textAnchor="middle" dominantBaseline="middle" pointerEvents="none">
+              {b.text}
+            </text>
+          ))}
+          <g className="lp-massstab" pointerEvents="none" data-laenge={ml}>
+            <rect x={vb.x + k * 12} y={vb.y + vb.h - k * 16} width={ml / 2} height={k * 5} fill="#1f2328" />
+            <rect x={vb.x + k * 12 + ml / 2} y={vb.y + vb.h - k * 16} width={ml / 2} height={k * 5} fill="#fff" stroke="#1f2328" strokeWidth={k} />
+            <text x={vb.x + k * 12 + ml} y={vb.y + vb.h - k * 20} fontSize={k * 10} className="lp-beschriftung" textAnchor="middle">
+              {ml.toLocaleString('de-DE')} m
+            </text>
+          </g>
+          <g className="lp-nordpfeil" pointerEvents="none" transform={`translate(${vb.x + vb.w - k * 20} ${vb.y + k * 10})`}>
+            <path d={`M0 0 L${k * 6} ${k * 18} L0 ${k * 14} L${-k * 6} ${k * 18} Z`} fill="#1f2328" />
+            <text x={0} y={k * 30} fontSize={k * 10} className="lp-beschriftung" textAnchor="middle">
+              N
+            </text>
+          </g>
+          {griffe && (
+            <g>
+              {griffe.pts.map((p, i) => {
+                const q = griffe.pts[(i + 1) % griffe.pts.length];
+                const m = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+                return (
+                  <rect
+                    key={`m${i}`}
+                    className="mid-handle"
+                    x={m.x - k * 4}
+                    y={m.y - k * 4}
+                    width={k * 8}
+                    height={k * 8}
+                    transform={`rotate(45 ${m.x} ${m.y})`}
+                    onPointerDown={(e) => onPunktDown(e, griffe.id, griffe.pts, i, true)}
+                  >
+                    <title>Ziehen: Punkt einfügen</title>
+                  </rect>
+                );
+              })}
+              {griffe.pts.map((p, i) => (
+                <circle
+                  key={`v${i}`}
+                  className="vertex-handle"
+                  cx={p.x}
+                  cy={p.y}
+                  r={k * 5}
+                  onPointerDown={(e) => onPunktDown(e, griffe.id, griffe.pts, i, false)}
+                  onContextMenu={(e) => onPunktKontext(e, griffe.id, i)}
+                >
+                  <title>Ziehen: verschieben · Rechtsklick: löschen</title>
+                </circle>
+              ))}
+            </g>
+          )}
+          {(werkzeug === 'kalibrieren' || werkzeug === 'ausrichten') && draft.length > 0 && (messEnde ?? cursor) && (
+            <g pointerEvents="none" className="lp-messlinie">
+              <line
+                x1={draft[0].x}
+                y1={draft[0].y}
+                x2={(messEnde ?? cursor)!.x}
+                y2={(messEnde ?? cursor)!.y}
+                stroke="var(--sel)"
+                strokeWidth={k * 2}
+                markerEnd={werkzeug === 'ausrichten' ? 'url(#lp-pfeil)' : undefined}
+              />
+              <circle cx={draft[0].x} cy={draft[0].y} r={k * 4} fill="var(--panel)" stroke="var(--sel)" strokeWidth={k * 1.5} />
+            </g>
+          )}
+          {(entwurf.length > 0 || draft.length > 0) && (
+            <g pointerEvents="none">
+              {werkzeug === 'grenze' ? (
+                <path d={d(entwurf, entwurf.length > 2)} fill="none" stroke="var(--text)" strokeWidth={k * 2.5} strokeDasharray={`${k * 10} ${k * 3} ${k * 2} ${k * 3}`} />
+              ) : (
+                <path d={d(entwurf, werkzeug === 'rechteck' || entwurf.length > 2)} fill="var(--sel)" fillOpacity={0.12} stroke="var(--sel)" strokeWidth={k * 1.5} />
+              )}
+              {draft.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r={k * (i === 0 ? 5 : 3.5)} fill="var(--panel)" stroke="var(--sel)" strokeWidth={k * 1.5} />
+              ))}
+            </g>
+          )}
+          {cursor && werkzeug !== 'auswahl' && <circle cx={cursor.x} cy={cursor.y} r={k * 3} fill="var(--sel)" pointerEvents="none" />}
+          {kfang && <FangSymbol f={kfang} k={k} />}
+          {cursor && werkzeug === 'kalibrieren' && draft.length > 0 && (
+            <text x={cursor.x + k * 10} y={cursor.y - k * 10} fontSize={k * 11} className="lp-masstext" pointerEvents="none">
+              Strecke {fmt2(Math.hypot(cursor.x - draft[0].x, cursor.y - draft[0].y))} m
+            </text>
+          )}
+          {linien.map((l, i) => {
+            const L = Math.max(vb.w, vb.h) * 2;
+            const o = l.p;
+            return (
+              <line
+                key={`hl${i}`}
+                x1={o.x - l.d.x * L}
+                y1={o.y - l.d.y * L}
+                x2={o.x + l.d.x * L}
+                y2={o.y + l.d.y * L}
+                className={`guide-line guide-${l.art}`}
+                style={{ strokeWidth: k, strokeDasharray: `${k * 6} ${k * 4}` }}
+                pointerEvents="none"
+              />
+            );
+          })}
+          {rahmen && (
+            <rect
+              className="select-box"
+              x={Math.min(rahmen[0].x, rahmen[1].x)}
+              y={Math.min(rahmen[0].y, rahmen[1].y)}
+              width={Math.abs(rahmen[1].x - rahmen[0].x)}
+              height={Math.abs(rahmen[1].y - rahmen[0].y)}
+              style={{ strokeWidth: k, strokeDasharray: `${k * 4} ${k * 3}` }}
+              pointerEvents="none"
+            />
+          )}
+        </svg>
         {!flaechen.length && !grenzen.length && !draft.length && werkzeug === 'auswahl' && (
           <div className="lp-leer" role="note">
             <p>Noch keine Lageplan-Flächen. Zufahrten, Stellplätze, Terrassen und Grünflächen hier einzeichnen – beim IFC-Import kommen sie aus dem Geschoss „Lageplan“.</p>
