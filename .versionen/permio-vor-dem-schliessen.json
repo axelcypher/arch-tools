@@ -1,3 +1,4 @@
 {
-  "formulare": { "stufe": "patch", "notiz": "Beim Schließen, Andocken oder Update wartet Arkly, bis laufendes Speichern fertig ist; im Sammelexport übernimmt Enter „Vorhandene überspringen“, „Abschnitt“ im Ansicht-Editor mit Plus-Symbol." }
+  "formulare": { "stufe": "patch", "notiz": "Beim Schließen, Andocken oder Update wartet Arkly, bis laufendes Speichern fertig ist; im Sammelexport übernimmt Enter „Vorhandene überspringen“, „Abschnitt“ im Ansicht-Editor mit Plus-Symbol." },
+  "baurecht": { "stufe": "patch", "notiz": "Gemeinsamer Ansicht-Editor: „Abschnitt“ mit Plus-Symbol und Tooltip „Abschnitt hinzufügen“." }
 }

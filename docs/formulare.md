@@ -397,8 +397,8 @@ Anschrift, wie sie in Formularen steht.
   Bilder ebenso, andere Dateien öffnet „Mit Programm öffnen“. „Als bereit markieren“ geht auch hier. Esc schließt.
 - **Alle Formulare exportieren:** Knopf in der Ansicht „Antrag“ bzw. ⇪ im Kopf des Abschnitts „FORMA“: alle
   Formulare des FORMA-Projekts als PDF, Name und Ziel wie beim einzelnen Export (Namensvorlage, aktive Fassung).
-  Formulare in `_archiv` bzw. `archiv` bleiben außen vor. Gibt es Dateien schon, fragt die App einmal: „Ersetzen“,
-  „Vorhandene überspringen“ oder „Abbrechen“. Exportierte PDFs im Antragsordner werden mit den Dokumenten des
+  Formulare in `_archiv` bzw. `archiv` bleiben außen vor. Gibt es Dateien schon, fragt die App einmal: „Vorhandene
+  überspringen“ (Hauptknopf, Enter), „Ersetzen“ oder „Abbrechen“. Exportierte PDFs im Antragsordner werden mit den Dokumenten des
   Antragsumfangs verknüpft; am Ende steht, wie viele exportiert, übersprungen oder fehlgeschlagen sind.
 - **Quellordner mit Schreibweisen der Büros:** Quellen im Antragsumfang (z. B. `Planung/Berechnungen`,
   `Planung/Genehmigungsplanung/pdf`, `Fachplanung/G27*`) werden auch gefunden, wenn der Ordner anders geschrieben ist:
