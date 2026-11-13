@@ -1,4 +1,3 @@
-# auch Verknüpfungen (Arbeitsbäume)
 node_modules
 dist/
 *.tsbuildinfo

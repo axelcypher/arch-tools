@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { DateiStand } from '@core/platform/projektordner';
 import type { Pt } from './geo/mat';
 import { neueEbene, neuesFoto } from './model';
 import type { Dokument, Ebene, Foto } from './model';
@@ -35,6 +36,11 @@ interface Zustand {
   /** Originaldaten der Fotos (nicht im Rückgängig-Verlauf) */
   bilder: Record<string, Uint8Array>;
   dateiname: string | null;
+  /**
+   * Stand der Datei `dateiname` beim Öffnen bzw. letzten Speichern (nur Desktop). Beim Speichern ohne Dialog muss die
+   * Datei noch so sein, sonst wurde sie von außen geändert. `null` = sie darf es noch nicht geben; fehlt = keine Prüfung.
+   */
+  dateiStand?: DateiStand | null;
   dirty: boolean;
   fotoId: string | null;
   ebeneId: string | null;
@@ -61,9 +67,9 @@ interface Zustand {
   waehleFoto: (id: string | null) => void;
   waehleEbene: (id: string) => void;
   fotoHinzufuegen: (id: string, name: string, mime: string, breite: number, hoehe: number, daten: Uint8Array) => void;
-  laden: (doc: Dokument, bilder: Record<string, Uint8Array>, dateiname: string | null, dirty?: boolean) => void;
+  laden: (doc: Dokument, bilder: Record<string, Uint8Array>, dateiname: string | null, dirty?: boolean, dateiStand?: DateiStand | null) => void;
   /** nach dem Speichern: `doc` = der gespeicherte Stand; hat er sich inzwischen geändert, bleibt `dirty` */
-  gespeichert: (dateiname: string, doc?: Dokument) => void;
+  gespeichert: (dateiname: string, doc?: Dokument, dateiStand?: DateiStand | null) => void;
 }
 
 const MAX_VERLAUF = 100;
@@ -118,11 +124,11 @@ export const useEntz = create<Zustand>((set, get) => ({
     get().aendern((d) => ({ fotos: [...d.fotos, foto] }));
     get().waehleFoto(id);
   },
-  laden: (doc, bilder, dateiname, dirty = false) => {
-    set({ doc, bilder, dateiname, dirty, vergangenheit: [], zukunft: [] });
+  laden: (doc, bilder, dateiname, dirty = false, dateiStand) => {
+    set({ doc, bilder, dateiname, dateiStand, dirty, vergangenheit: [], zukunft: [] });
     get().waehleFoto(doc.fotos[0]?.id ?? null);
   },
-  gespeichert: (dateiname, doc) => set((s) => ({ dateiname, dirty: doc !== undefined && s.doc !== doc })),
+  gespeichert: (dateiname, doc, dateiStand) => set((s) => ({ dateiname, dateiStand, dirty: doc !== undefined && s.doc !== doc })),
 }));
 
 /** nach Rückgängig: Auswahl von Foto und Ebene gültig halten */
