@@ -3,6 +3,7 @@ import { APP_NAMEN } from '@core/appNamen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { projektdateiSchreiben } from '@core/platform/projektordner';
+import { vorDemSchliessen } from '@core/platform/rahmen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { LogDialog } from '@core/ui/LogDialog';
 import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
@@ -21,7 +22,7 @@ import { Maengel } from './components/bauleitung/Maengel';
 import { Notizen } from './components/bauleitung/Notizen';
 import { Beteiligte } from './components/bauleitung/Beteiligte';
 import { Mailverlauf } from './components/bauleitung/Mailverlauf';
-import { lvGeaendert, useAva } from './store';
+import { ausstehendesSchreibenAbwarten, lvGeaendert, schreibend, useAva } from './store';
 
 const log = logger('app');
 
@@ -123,6 +124,11 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Arkly (Schließen, Andocken, Herauslösen, Update-Neustart): laufende Eingabe übernehmen und laufendes Schreiben
+  // der Projektdatei, Kostenkontrolle bzw. des LV abwarten
+  // (Rückgabe false = nicht gespeichert; bis core #93 nimmt vorDemSchliessen nur void entgegen und überhört sie)
+  useEffect(() => vorDemSchliessen(ausstehendesSchreibenAbwarten as unknown as () => Promise<void>), []);
+
   useEffect(() => {
     const vorEnde = (e: BeforeUnloadEvent) => {
       if (lvGeaendert(useAva.getState().lv)) e.preventDefault();
@@ -198,7 +204,7 @@ export function App() {
           <Navigation
             onStammdaten={async (meta, neuerName) => {
               try {
-                await projektdateiSchreiben(useAva.getState().fs.projektordner, projekt.ordner, projekt.oap, (roh) => ({ ...roh, name: neuerName, meta }));
+                await schreibend(projektdateiSchreiben(useAva.getState().fs.projektordner, projekt.ordner, projekt.oap, (roh) => ({ ...roh, name: neuerName, meta })));
                 useAva.getState().setMeta(meta, neuerName);
               } catch (e) {
                 await meldung('Stammdaten nicht gespeichert', 'Die Projektdatei ließ sich nicht schreiben.', e);

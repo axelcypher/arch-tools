@@ -15,6 +15,7 @@ import type { AvaProjekt } from './avaDaten';
 import { avaAendern, avaAus, leeresAvaProjekt } from './avaDaten';
 import type { AvaDateien, DateiStand } from './dateien';
 import { tauriDateien } from './dateien';
+import { schreibend } from './schreiben';
 import type { AvaEinstellungen } from './einstellungen';
 import { einstellungenLaden, einstellungenSpeichern, VORGABE } from './einstellungen';
 import { konfigNeuLesen } from '@core/platform/konfig';
@@ -109,6 +110,8 @@ interface AvaZustand {
 /** ungespeicherte Änderungen am LV? */
 export const lvGeaendert = (lv: OffenesLv | null) => !!lv && lv.lv !== lv.basis;
 
+export { ausstehendesSchreibenAbwarten, schreibend } from './schreiben';
+
 export const useAva = create<AvaZustand>((set, get) => ({
   fs: tauriDateien,
   einstellungen: VORGABE,
@@ -188,25 +191,33 @@ export const useAva = create<AvaZustand>((set, get) => ({
     await get().neuLaden();
   },
 
-  async kkSchreiben(f) {
-    const { fs, projekt } = get();
-    if (!projekt?.kk) throw new Error('Keine Kostenkontrolle im Projekt.');
-    const frisch = await kkLaden(fs, projekt.ordner, projekt.kk.pfad);
-    if (await fs.inOffice(projekt.ordner, frisch.pfad)) throw new Error('Die Kostenkontrolle ist gerade in Excel geöffnet – bitte dort schließen, dann erneut versuchen.');
-    const neu = xlsxAendern(frisch.bytes, f(frisch), { ergebnisseAuffrischen: true, heute: new Date() });
-    await fs.ersetzen(projekt.ordner, frisch.pfad, neu, frisch.stand);
-    const kk = await kkLaden(fs, projekt.ordner, frisch.pfad);
-    // inzwischen ein anderes Projekt geöffnet: nicht in dessen Zustand schreiben
-    const p = get().projekt;
-    if (p?.ordner === projekt.ordner) set({ projekt: { ...p, kk, kkFehler: null } });
+  kkSchreiben(f) {
+    return schreibend(
+      (async () => {
+        const { fs, projekt } = get();
+        if (!projekt?.kk) throw new Error('Keine Kostenkontrolle im Projekt.');
+        const frisch = await kkLaden(fs, projekt.ordner, projekt.kk.pfad);
+        if (await fs.inOffice(projekt.ordner, frisch.pfad)) throw new Error('Die Kostenkontrolle ist gerade in Excel geöffnet – bitte dort schließen, dann erneut versuchen.');
+        const neu = xlsxAendern(frisch.bytes, f(frisch), { ergebnisseAuffrischen: true, heute: new Date() });
+        await fs.ersetzen(projekt.ordner, frisch.pfad, neu, frisch.stand);
+        const kk = await kkLaden(fs, projekt.ordner, frisch.pfad);
+        // inzwischen ein anderes Projekt geöffnet: nicht in dessen Zustand schreiben
+        const p = get().projekt;
+        if (p?.ordner === projekt.ordner) set({ projekt: { ...p, kk, kkFehler: null } });
+      })(),
+    );
   },
 
-  async avaAendern(f) {
-    const { fs, projekt } = get();
-    if (!projekt) return;
-    const ava = await avaAendern(fs.projektordner, projekt.ordner, projekt.oap, f);
-    const p = get().projekt;
-    if (p?.ordner === projekt.ordner) set({ projekt: { ...p, ava } });
+  avaAendern(f) {
+    return schreibend(
+      (async () => {
+        const { fs, projekt } = get();
+        if (!projekt) return;
+        const ava = await avaAendern(fs.projektordner, projekt.ordner, projekt.oap, f);
+        const p = get().projekt;
+        if (p?.ordner === projekt.ordner) set({ projekt: { ...p, ava } });
+      })(),
+    );
   },
 
   setMeta(meta, name) {
@@ -250,43 +261,51 @@ export const useAva = create<AvaZustand>((set, get) => ({
     if (!o?.zukunft.length) return;
     set({ lv: { ...o, lv: o.zukunft[0], verlauf: [...o.verlauf, o.lv], zukunft: o.zukunft.slice(1) } });
   },
-  async lvSpeichern() {
-    const { fs, projekt, lv } = get();
-    if (!projekt || !lv) return false;
-    const daten = lv.format === 'aslv' ? aslvSchreiben(lv.bytes, lv.lv) : eigenSchreiben(lv.lv, lv.roh);
-    if (daten !== lv.bytes) await fs.ersetzen(projekt.ordner, lv.datei.pfad, daten, lv.stand);
-    const r = await fs.lies(projekt.ordner, lv.datei.pfad);
-    const aktuell = get().lv;
-    if (r && aktuell && aktuell.datei.pfad === lv.datei.pfad) {
-      // neue Elemente kennen jetzt ihre Kennung in der Datei; weitergearbeitet, während gespeichert wurde? Dann bleibt
-      // der neue Stand ungespeichert (mit den Kennungen).
-      if (lv.format === 'aslv') {
-        const gelesen = aslvLesen(r.daten).lv;
-        const basis = xmlIdsUebernehmen(lv.lv, lv.lv, gelesen);
-        const jetzt = aktuell.lv === lv.lv ? basis : xmlIdsUebernehmen(aktuell.lv, lv.lv, gelesen);
-        set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis, lv: jetzt, verlauf: aktuell.verlauf.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)), zukunft: aktuell.zukunft.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)) } });
-      } else set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis: lv.lv } });
-    }
-    log.info('LV gespeichert', lv.datei.pfad);
-    return true;
+  lvSpeichern() {
+    return schreibend(
+      (async () => {
+        const { fs, projekt, lv } = get();
+        if (!projekt || !lv) return false;
+        const daten = lv.format === 'aslv' ? aslvSchreiben(lv.bytes, lv.lv) : eigenSchreiben(lv.lv, lv.roh);
+        if (daten !== lv.bytes) await fs.ersetzen(projekt.ordner, lv.datei.pfad, daten, lv.stand);
+        const r = await fs.lies(projekt.ordner, lv.datei.pfad);
+        const aktuell = get().lv;
+        if (r && aktuell && aktuell.datei.pfad === lv.datei.pfad) {
+          // neue Elemente kennen jetzt ihre Kennung in der Datei; weitergearbeitet, während gespeichert wurde? Dann bleibt
+          // der neue Stand ungespeichert (mit den Kennungen).
+          if (lv.format === 'aslv') {
+            const gelesen = aslvLesen(r.daten).lv;
+            const basis = xmlIdsUebernehmen(lv.lv, lv.lv, gelesen);
+            const jetzt = aktuell.lv === lv.lv ? basis : xmlIdsUebernehmen(aktuell.lv, lv.lv, gelesen);
+            set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis, lv: jetzt, verlauf: aktuell.verlauf.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)), zukunft: aktuell.zukunft.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)) } });
+          } else set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis: lv.lv } });
+        }
+        log.info('LV gespeichert', lv.datei.pfad);
+        return true;
+      })(),
+    );
   },
-  async lvNeu(g, gewerk, format, bezeichnung, vorlage) {
-    const { fs, projekt, einstellungen } = get();
-    if (!projekt) return;
-    const lv = vorlage ? { ...vorlage, kopf: { ...vorlage.kopf, bezeichnung } } : leeresLv(bezeichnung);
-    lv.kopf.projektName ??= projekt.meta.vorhaben || projekt.name;
-    lv.kopf.projekt ??= [projekt.meta.vorhaben, projekt.meta.adresse.strasse, `${projekt.meta.adresse.plz} ${projekt.meta.adresse.ort}`.trim()].filter(Boolean).join('\n');
-    lv.kopf.nummer ??= gewerk.slice(1);
-    const ordner = g ? g.pfad : `${einstellungen.ablage.gewerke}/${gewerkZweistellig(gewerk)}`;
-    const unter = einstellungen.ablage.lv ? `${ordner}/${einstellungen.ablage.lv}` : ordner;
-    const name = lvDateiname(einstellungen.lv.dateiname, { ...globaleAva(projekt.meta, projekt.name, einstellungen.deckblatt.bearbeiter), Gewerk: gewerkZweistellig(gewerk) }) || bezeichnung;
-    const pfad = `${unter}/${name} ${bezeichnung.replace(/^G\d+\s*/i, '')}`.replace(/\s+$/, '').replace(/[\\:*?"<>|]/g, ' ') + `.${format}`;
-    const daten = format === 'aslv' ? aslvNeu(lv) : eigenSchreiben(lv);
-    if (!(await fs.anlegen(projekt.ordner, pfad, daten))) throw new Error(`${pfad}: Die Datei gibt es schon.`);
-    await get().neuLaden();
-    const r = await fs.lies(projekt.ordner, pfad);
-    const datei: LvDatei = { pfad, name: pfad.split('/').pop()!, groesse: daten.length, geaendert: r?.stand.geaendert ?? 0, archiv: false, format };
-    await get().lvOeffnen(gewerk, datei);
+  lvNeu(g, gewerk, format, bezeichnung, vorlage) {
+    return schreibend(
+      (async () => {
+        const { fs, projekt, einstellungen } = get();
+        if (!projekt) return;
+        const lv = vorlage ? { ...vorlage, kopf: { ...vorlage.kopf, bezeichnung } } : leeresLv(bezeichnung);
+        lv.kopf.projektName ??= projekt.meta.vorhaben || projekt.name;
+        lv.kopf.projekt ??= [projekt.meta.vorhaben, projekt.meta.adresse.strasse, `${projekt.meta.adresse.plz} ${projekt.meta.adresse.ort}`.trim()].filter(Boolean).join('\n');
+        lv.kopf.nummer ??= gewerk.slice(1);
+        const ordner = g ? g.pfad : `${einstellungen.ablage.gewerke}/${gewerkZweistellig(gewerk)}`;
+        const unter = einstellungen.ablage.lv ? `${ordner}/${einstellungen.ablage.lv}` : ordner;
+        const name = lvDateiname(einstellungen.lv.dateiname, { ...globaleAva(projekt.meta, projekt.name, einstellungen.deckblatt.bearbeiter), Gewerk: gewerkZweistellig(gewerk) }) || bezeichnung;
+        const pfad = `${unter}/${name} ${bezeichnung.replace(/^G\d+\s*/i, '')}`.replace(/\s+$/, '').replace(/[\\:*?"<>|]/g, ' ') + `.${format}`;
+        const daten = format === 'aslv' ? aslvNeu(lv) : eigenSchreiben(lv);
+        if (!(await fs.anlegen(projekt.ordner, pfad, daten))) throw new Error(`${pfad}: Die Datei gibt es schon.`);
+        await get().neuLaden();
+        const r = await fs.lies(projekt.ordner, pfad);
+        const datei: LvDatei = { pfad, name: pfad.split('/').pop()!, groesse: daten.length, geaendert: r?.stand.geaendert ?? 0, archiv: false, format };
+        await get().lvOeffnen(gewerk, datei);
+      })(),
+    );
   },
   kontext() {
     const { fs, projekt, einstellungen } = get();
