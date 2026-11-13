@@ -343,7 +343,7 @@ export function widersprueche(merkmale: Record<string, string>, gk: Gebaeudeklas
   // „ja“ auch, wenn nur ein Dienst „ja“ meldet und die Angabe von Hand dagegen steht – der Widerspruch darf den Abgleich
   // nicht aufheben
   const ja = (id: string) => fakten[id]?.wert === true || fakten[id]?.dienst?.wert === true;
-  const bplan = [fakten['planung.bplan_nr']?.wert, fakten['soest.bplan']?.wert].find((w) => typeof w === 'string' && w.trim());
+  const bplan = [fakten['planung.bplan_nr']?.wert, fakten['soest.bplan']?.wert].find((w) => (typeof w === 'string' && w.trim()) || typeof w === 'number');
   if ((pr === 'Innenbereich' || pr === 'Außenbereich') && bplan) {
     out.add('Planungsrecht');
     texte.push(`Planungsrecht „${pr}“ festgelegt, für das Grundstück ist aber ein Bebauungsplan angegeben (${String(bplan)}) – bitte klären`);

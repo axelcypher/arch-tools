@@ -596,10 +596,27 @@ describe('Runde 12: nur zulässige Werte zählen (kein falsches Grün)', () => {
     expect(gueltigeMerkmale({ Vorhaben: 'Umbau', Eigenes: 'x', Gebäudeart: 'Einfamilienhaus' })).toEqual({ Eigenes: 'x', Gebäudeart: 'Einfamilienhaus' });
   });
   it('„bestätigen klärt“ zählt nur Paragrafen, die allein wegen genau dieses Hinweises gelb sind', () => {
-    // § 1 BauO (Testregel): gilt bei „Überschwemmungsgebiet: nein“ – als Hinweis ist er gelb, sonst nichts offen
-    const a = auswerten(eingabe({ fakten: { 'lage.ags': sicher('05974040'), 'schutz.uesg': hinweis(true) } }));
-    const q = p(a, 'nw/bauo-nrw/1');
-    if (q.ampel === 'gelb' && q.bestaetigend) expect(a.bestaetigen.find((b) => b.id === q.bestaetigend)?.anzahl).toBeGreaterThan(0);
+    // § 42a: entfällt bei Nutzfläche höchstens 50 m² – mit einem Hinweis auf 40 m² gelb, und nur deswegen
+    const a = auswerten(eingabe({ fakten: { 'lage.ags': sicher('05974040'), 'gebaeude.nutzflaeche': hinweis(40) } }));
+    const q = p(a, 'nw/bauo-nrw/42a');
+    expect(q.ampel).toBe('gelb');
+    expect(q.bestaetigend).toBe('gebaeude.nutzflaeche');
+    expect(a.bestaetigen.find((b) => b.id === 'gebaeude.nutzflaeche')?.anzahl).toBeGreaterThan(0);
     for (const b of a.bestaetigen) expect(a.paragrafen.filter((x) => x.bestaetigend === b.id).length).toBe(b.anzahl);
+    // bestätigt: grün
+    const b = auswerten(eingabe({ fakten: { 'lage.ags': sicher('05974040'), 'gebaeude.nutzflaeche': { ...hinweis(40), bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Aufmaß' } } } }));
+    expect(p(b, 'nw/bauo-nrw/42a').ampel).toBe('gruen');
+  });
+  it('ein ungültiger Bezug leitet nichts ab; ein gespeicherter Modulwert ohne aktuelle Grundlage gilt nicht weiter', () => {
+    // Gemeindeschlüssel als Zahl (falscher Typ): die Zone der Satzung wird nicht abgeleitet, § 1 der Satzung nicht grün
+    const a = auswerten(eingabe({ fakten: { 'lage.ags': { wert: 5974040, herkunft: 'manuell', sicherheit: 'sicher' } } }));
+    expect(a.fakten['soest.zone']?.wert ?? null).toBeNull();
+    expect(p(a, 'nw-05974040/satzung/1').ampel).not.toBe('gruen');
+    // „Zone 1“ war für 05974040 bestätigt – der Schlüssel ist jetzt ein anderer, die Tabelle liefert nichts: weg
+    const alt = { wert: '1', herkunft: 'modul' as const, sicherheit: 'sicher' as const, bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Auskunft' } };
+    const m = modulFakten(aktiveModule(paket.module, '05974040'), { 'lage.ags': sicher('05974099'), 'soest.zone': alt });
+    expect(m['soest.zone']).toBeUndefined();
+    // derselbe Schlüssel: die Bestätigung gilt weiter
+    expect(modulFakten(aktiveModule(paket.module, '05974040'), { 'lage.ags': sicher('05974040'), 'soest.zone': alt })['soest.zone']?.bestaetigt).toBeDefined();
   });
 });

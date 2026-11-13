@@ -257,3 +257,18 @@ describe('Runde 12: Planungsrecht beim Speichern, Suche', () => {
     expect(textPasst('Einfamilienhaus', 'EFH')).toBe(true);
   });
 });
+
+describe('Runde 13: Gebäudeklasse nur aus gültigen Angaben', () => {
+  beforeEach(() => {
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+  });
+  it('„nein“ als Text ist kein false: die Ableitung wie ohne Angabe', () => {
+    const s = useBaurecht.getState();
+    const m = (wert: FaktWert['wert']): FaktWert => ({ wert, herkunft: 'manuell', sicherheit: 'sicher' });
+    const ohne = pruefstandBerechnen(s.paket, s.project, s.merkmale, {}, {}, '2026-12-01', {}).gk;
+    const text = pruefstandBerechnen(s.paket, s.project, s.merkmale, { 'gebaeude.landwirtschaft': m('nein'), 'gebaeude.freistehend': m('false') }, {}, '2026-12-01', {}).gk;
+    expect(text?.klassen).toEqual(ohne?.klassen);
+  });
+});
+

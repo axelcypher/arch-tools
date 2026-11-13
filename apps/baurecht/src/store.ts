@@ -17,6 +17,7 @@ import type { Ampel, FaktWert, Festlegung, ParagrafErgebnis } from '@core/baurec
 import type { Project } from '@core/model';
 import type { TextStand } from '@core/baurecht/auswertung';
 import { mitgeliefert } from './regelpaket';
+import { VORGABE_MERKMALE } from '@core/bedingung';
 import { benutzer } from './benutzer';
 
 /** Kennung der Bestätigung des Planungsrechts für den Ort – zählt beim Speichern wie eine gesicherte Angabe */
@@ -199,7 +200,8 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   planungsrechtBestaetigen: () => {
     const o = ortVon(get().project);
     const wert = get().merkmale['Planungsrecht'];
-    if (!o || !wert) return;
+    // nur Werte der Liste lassen sich für den Ort bestätigen (ein fremder Wert zählt nicht)
+    if (!o || !wert || !VORGABE_MERKMALE.find((m) => m.name === 'Planungsrecht')?.werte.includes(wert)) return;
     const p = kopie(get().pruefung);
     p.planungsrechtOrt = { ...o, wert, von: benutzer(), am: heute() };
     set({ pruefung: p });

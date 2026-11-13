@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { offenText } from '@core/baurecht/kurz';
+import { offenText, werten } from '@core/baurecht/kurz';
 import { MERKMAL_TITEL } from '@core/baurecht/fakten';
 import { VORGABE_MERKMALE } from '@core/bedingung';
 import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
@@ -98,8 +98,11 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
       return planungsrechtOrt?.von ? ` (für diesen Ort bestätigt: ${planungsrechtOrt.von}${planungsrechtOrt.am ? `, ${datum(planungsrechtOrt.am)}` : ''})` : '';
     }
     if (name === 'Vorhaben') {
+      // nur Rückfragen, die gerade gestellt sind (nach einem Wechsel auf „Errichtung“ zählt der Umfang nicht mehr)
+      const a0 = pruefstand.auswertung;
+      const gestellt = (id: string) => !!a0.faktDefs[id] && (!a0.faktDefs[id].wenn || werten(a0.faktDefs[id].wenn, a0.kontext).w === 'ja');
       const teile = ['vorhaben.beseitigung_umfang', 'nw.altbau_verfahrensfrei', 'nw.beseitigung_mit_beantragt']
-        .filter((id) => pruefstand.auswertung.fakten[id]?.wert != null && pruefstand.auswertung.faktDefs[id])
+        .filter((id) => pruefstand.auswertung.fakten[id]?.wert != null && gestellt(id))
         .map((id) => (id === 'vorhaben.beseitigung_umfang' ? String(pruefstand.auswertung.fakten[id].wert) : `${faktName(pruefstand.auswertung.faktDefs[id], id)}: ${wertAnzeige(pruefstand.auswertung.fakten[id].wert, pruefstand.auswertung.faktDefs[id])}`));
       return teile.length ? ` (${teile.join('; ')})` : '';
     }
@@ -291,7 +294,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
               {/* Reihenfolge und Namen wie in der Leiste */}
               <td>
                 {VORGABE_MERKMALE.filter((m) => merkmale[m.name])
-                  .map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${merkmalVermerk(m.name)}`)
+                  .map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${m.werte.includes(merkmale[m.name]) ? merkmalVermerk(m.name) : ' (nicht in der Liste – zählt nicht)'}`)
                   .join(' · ') || '–'}
               </td>
             </tr>

@@ -126,7 +126,10 @@ export function gueltigeFakten(fakten: Record<string, FaktWert>, defs: Record<st
 
 /** Werte, die Module setzen (fest oder nach einer Tabelle) – Angaben von Hand gehen vor */
 export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): Record<string, FaktWert> {
-  const out = { ...fakten };
+  // gespeicherte Modulwerte (nur wegen einer Bestätigung in der Datei) setzen die Module unten neu – liefert kein aktives
+  // Modul bzw. keine Tabelle mehr einen Wert (anderer Gemeindeschlüssel, Bezug weg), gilt der alte nicht weiter
+  const out: Record<string, FaktWert> = {};
+  for (const [id, f] of Object.entries(fakten)) if (f.herkunft !== 'modul') out[id] = f;
   // Land-, Kreis- und Gemeindemodule gelten nur so sicher wie der Gemeindeschlüssel, über den sie gewählt sind
   const ags = fakten['lage.ags'];
   const agsUnsicher = !ags || (ags.sicherheit === 'hinweis' && !ags.bestaetigt) || !!ags.widerspruch;
@@ -203,7 +206,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // nur zulässige Werte zählen – ein Merkmalwert außerhalb der Werteliste (Formulare erlaubt eigene Werte) oder eine
   // Angabe mit falschem Typ bzw. einem Wert außerhalb der Auswahl (ältere Datei, umbenannter Auswahlwert) ist offen,
   // nicht „trifft nicht zu“ (sonst entstünde ein falsches Grün)
-  const fakten = gueltigeFakten(modulFakten(e.module, e.fakten), faktDefs);
+  // vor UND nach der Ableitung: ein ungültiger Bezug (z. B. „false“ als Text) darf keinen gesicherten Wert ableiten
+  const fakten = gueltigeFakten(modulFakten(e.module, gueltigeFakten(e.fakten, faktDefs)), faktDefs);
   const merkmale = gueltigeMerkmale(e.merkmale);
   const titelCache = new Map<string, string>();
   const text: TextKontext = { fakt: (id) => faktDefs[id], bausteine, paragraf: (id) => titelCache.get(id) };
@@ -582,12 +586,14 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   }
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
   // gelb nur wegen eines Hinweises (nichts fehlt): bestätigen klärt – Angaben, keine Merkmale
-  // nur Paragrafen, die allein wegen genau dieses Hinweises gelb sind; feste Modulwerte hängen am Gemeindeschlüssel –
-  // dort ist zu bestätigen
+  // nur Paragrafen, die allein wegen genau dieses Hinweises gelb sind. Ein Modulwert ist dort zu bestätigen, woher seine
+  // Unsicherheit kommt: beim Gemeindeschlüssel, solange der nicht gesichert ist, sonst beim Bezug der Tabelle
+  const agsW = fakten['lage.ags'];
+  const agsOffen = !agsW || (agsW.sicherheit === 'hinweis' && !agsW.bestaetigt) || !!agsW.widerspruch;
   const zahlB = new Map<string, number>();
   for (const p of paragrafen) {
     if (!p.bestaetigend || p.bestaetigend.includes(':') || !offenAuto(p)) continue;
-    const ziel = fakten[p.bestaetigend]?.herkunft === 'modul' ? 'lage.ags' : p.bestaetigend;
+    const ziel = fakten[p.bestaetigend]?.herkunft === 'modul' ? (agsOffen ? 'lage.ags' : (faktDefs[p.bestaetigend]?.nach?.fakt ?? 'lage.ags')) : p.bestaetigend;
     p.bestaetigend = ziel;
     zahlB.set(ziel, (zahlB.get(ziel) ?? 0) + 1);
   }

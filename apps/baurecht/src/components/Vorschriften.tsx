@@ -190,9 +190,14 @@ function NormKarte({
  * Reihenfolge; die Norm zuerst genau nach ihrer Kurzform, erst dann im Titel). Findet die Paragrafensuche nichts
  * („22 m“, „1996“, „50 kW“), gilt die Volltextsuche über Titel, Norm und Begründungen.
  */
-export function suchTreffer(suche: string, normen: NormErgebnis[] = []): ((p: ParagrafErgebnis, n: NormErgebnis) => boolean) & { hinweis?: string } {
+export function suchTreffer(sucheRoh: string, normen: NormErgebnis[] = []): ((p: ParagrafErgebnis, n: NormErgebnis) => boolean) & { hinweis?: string } {
   const norm = suchNorm;
-  if (!norm(suche)) return () => true;
+  if (!norm(sucheRoh)) return () => true;
+  // benannte Einheiten wie „C.3“ (Landschaftsplan) genau – sonst läse die Suche „3“ als Paragrafennummer
+  const einheit = sucheRoh.trim().toLowerCase();
+  if (/^[a-z]+\.\d+[a-z]?$/.test(einheit) && normen.some((n) => n.paragrafen.some((p) => p.paragraf.toLowerCase() === einheit))) return (p) => p.paragraf.toLowerCase() === einheit;
+  // Bindestrich bzw. Gedankenstrich zwischen Nummern heißt „bis“ („§§ 30–35“)
+  const suche = sucheRoh.replace(/(\d[a-z]?)\s*[–-]\s*(\d)/gi, '$1 bis $2');
   // Volltext (Kürzel am Wortanfang, Zahlen als ganzes Wort, Synonyme – dieselbe Suche wie in den Angaben)
   const volltext = (p: ParagrafErgebnis, n: NormErgebnis) => textPasst(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`, suche);
   // Zitat zerlegen: Satzzeichen weg; „Abs./Satz/Nr./Ziff. n (a)“ und römische Absatzziffern gehören nicht zur Nummer;
@@ -221,7 +226,9 @@ export function suchTreffer(suche: string, normen: NormErgebnis[] = []): ((p: Pa
         nrs.push(t);
         bis = false;
       } else if (t === 'bis') bis = true;
-      else if (t === 'ff' || t === 'f') ab = true;
+      // „ff.“: ab der Nummer; „f.“: die Nummer und die folgende
+      else if (t === 'ff') ab = true;
+      else if (t === 'f' && nrs.length && /^\d+$/.test(nrs[nrs.length - 1])) nrs.push(String(Number.parseInt(nrs[nrs.length - 1], 10) + 1));
       else if (t !== 'und' && t !== '§') break;
     }
   }
@@ -238,7 +245,11 @@ export function suchTreffer(suche: string, normen: NormErgebnis[] = []): ((p: Pa
   const stufen: ((n: NormErgebnis) => boolean)[] = rest ? [(n) => ohne(n.def.kurz) === ohne(rest), (n) => ohne(n.def.kurz).includes(ohne(rest)), (n) => norm(n.def.titel).includes(rest)] : [() => true];
   for (const st of stufen) {
     const passt = (p: ParagrafErgebnis, n: NormErgebnis) => trifftNr(p) && st(n);
-    if (!normen.length || normen.some((n) => n.paragrafen.some((p) => passt(p, n)))) return passt;
+    if (!normen.length || normen.some((n) => n.paragrafen.some((p) => passt(p, n)))) {
+      // teilweise nicht erfasst („§§ 1 bis 3 BauNVO“ ohne § 1): das sagt die Trefferzeile
+      const fehlen = ab ? [] : nrs.filter((nr) => !normen.some((n) => st(n) && n.paragrafen.some((p) => p.paragraf.toLowerCase() === nr)));
+      return fehlen.length ? Object.assign(passt, { hinweis: `${fehlen.length > 1 ? '§§' : '§'} ${fehlen.join(', ')} nicht erfasst` }) : passt;
+    }
   }
   // keinen dieser Paragrafen gibt es in den Regeln – dann die Norm selbst, wenn sie genannt ist („§ 1 BauNVO“ → BauNVO)
   if (rest)

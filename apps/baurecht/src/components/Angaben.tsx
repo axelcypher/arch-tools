@@ -10,7 +10,7 @@ import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
 import { MERKMAL_TITEL } from '@core/baurecht/fakten';
 import { NumberField, TextField } from '@core/ui/fields';
 import type { Pruefstand } from '../pruefung';
-import { heute, offeneBestaetigungen, useBaurecht } from '../store';
+import { heute, offeneBestaetigungen, PLANUNGSRECHT, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
 import { faktBestaetigenOeffnen, faktSetzenOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
@@ -104,6 +104,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, stand }: { klaerun
   const eigene = useBaurecht((s) => s.pruefung.fakten);
   const merkmale = useBaurecht((s) => s.merkmale);
   const geaendert = useBaurecht((s) => s.merkmaleDatei);
+  const planungsrechtEntwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(PLANUNGSRECHT));
   const fokus = useBaurecht((s) => s.fokus);
   const ref = useRef<HTMLElement>(null);
   // ein Wert außerhalb der Werteliste (eigener Wert aus Formulare) zählt als offen – die Auswertung wertet ihn nicht
@@ -167,7 +168,6 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, stand }: { klaerun
         </button>
       </h3>
       {auf && <p className="br-leise">Gemeinsam mit der App Formulare – gilt für den ganzen Antrag.</p>}
-      {/* eingeklappt (alle Merkmale gesetzt): die Rückfragen bleiben trotzdem sichtbar – sonst stünden sie nirgends */}
       {/* eingeklappt: nur die offenen Rückfragen (beantwortete stehen beim aufgeklappten Merkmal), mit einer Beschriftung */}
       {!auf &&
         Object.entries(RUECKFRAGEN).map(([name, ids]) => {
@@ -202,6 +202,12 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, stand }: { klaerun
               {m.name === 'Planungsrecht' && wert && planungsrechtOffen && (
                 <span className="br-info-marke" title={planungsrechtOffen}>
                   nicht für diesen Ort bestätigt
+                </span>
+              )}
+              {/* für den Ort bestätigt, aber noch nicht gespeichert (zweite Bestätigung beim Speichern) */}
+              {m.name === 'Planungsrecht' && !planungsrechtOffen && planungsrechtEntwurf && (
+                <span className="br-marke br-marke-entwurf" title="Bestätigung für diesen Ort – wird beim Speichern noch einmal abgefragt">
+                  Entwurf
                 </span>
               )}
             </div>

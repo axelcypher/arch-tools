@@ -41,7 +41,10 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   über 22 m. Das **Planungsrecht** zählt erst als gesichert, wenn es für genau diesen Ort und Wert bestätigt ist: in
   Baurecht gesetzt oder mit „Bestätigen“ bzw. „Für diesen Ort bestätigen“ bestätigt. Ein Wert aus Formulare oder einer älteren Datei, ein seither
   geänderter Wert und ein Umzug (Anschrift, Grundstück, Koordinaten) zeigen oben einen Hinweis; was daran hängt, kann
-  bis dahin nicht sicher entfallen (in den Begründungen und im Protokoll „Nicht gesichert: Planungsrecht …“). Angaben
+  bis dahin nicht sicher entfallen (in den Begründungen und im Protokoll „Nicht gesichert: Planungsrecht …“). Die
+  Bestätigung sagt ihre Wirkung an („30 Vorschriften entfallen jetzt“), wird beim Speichern mit ihren Folgen noch einmal
+  abgefragt (bis dahin „Entwurf“ am Merkmal) und steht mit Name und Datum im Protokoll. Ein Wert außerhalb der Liste
+  lässt sich nicht für den Ort bestätigen – er zählt ohnehin nicht. Angaben
   von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative Werte und halbe Anzahlen sind nur Hinweis,
   Angaben zur Lage ohne Lagebezug ebenso („Für diese Lage übernehmen“).
 - **Filterleiste:** Ampelzähler (blenden ein/aus), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und
@@ -56,8 +59,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   eingeklappten Merkmalen da („eine Rückfrage offen“). Ändert sich ein Merkmal, ordnen
   sich die Angaben neu. „Klärt am meisten“ zählt eine Angabe bei einem Paragrafen nur, wenn ihre Antwort dort etwas
   ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht).
-  Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (feste Werte
-  eines Gebietsmoduls beim Gemeindeschlüssel). Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste
+  Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
+  Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, sonst beim
+  Bezug der Tabelle). Gespeicherte Modulwerte gelten nur, solange ein aktives Modul sie für den jetzigen Bezug liefert. Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste
   (eigener Wert aus Formulare) und eine Angabe mit falschem Typ oder einem Wert außerhalb ihrer Auswahl (ältere Datei,
   umbenannter Auswahlwert) gelten als offen und sind so gekennzeichnet; Zahlen, die als Text gespeichert sind, werden
   wie im Eingabefeld gelesen.

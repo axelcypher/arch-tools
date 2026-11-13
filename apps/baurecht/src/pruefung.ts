@@ -5,7 +5,7 @@
 
 import { useMemo } from 'react';
 import type { Auswertung } from '@core/baurecht/auswertung';
-import { auswerten, faktDefinitionen } from '@core/baurecht/auswertung';
+import { auswerten, faktDefinitionen, gueltigeFakten, modulFakten } from '@core/baurecht/auswertung';
 import { FAKTEN } from '@core/baurecht/fakten';
 import type { Paket } from '@core/baurecht/paket';
 import { faktenZurLage, lageKennung } from '@core/baurecht/geodienste';
@@ -16,6 +16,7 @@ import { gebaeudeklasseAbleiten, projektFakten, widersprueche } from '@core/baur
 import type { Ampel, FaktDef, FaktWert, Modul, Ort } from '@core/baurecht/typen';
 import { ortsgebunden, wertAnzeige, zaehlEinheit } from '@core/baurecht/typen';
 import { ortVon, planungsrechtOhneOrt } from '@core/baurecht/ort';
+import { VORGABE_MERKMALE } from '@core/bedingung';
 import type { Project } from '@core/model';
 import { isTauri } from '@core/platform/files';
 import { parseNum } from '@core/format';
@@ -27,10 +28,6 @@ import { heute, useBaurecht } from './store';
 const log = logger('rechtsstand');
 
 /**
- * Fakten aus Projektdatei und Prüfung; Angaben der Prüfung (von Hand, Geodienst, bestätigt) gehen vor. Ergebnisse
- * der Geodienste und ihre Bestätigungen gelten nur an der Lage, an der sie ermittelt wurden.
- */
-/**
  * Lage des Vorhabens für die Bindung von Geodaten: nur aus Koordinaten, die zur aktuellen Adresse gehören. Fehlen sie
  * oder passen sie nicht mehr (Adresse geändert, Geokodierung gescheitert), gibt es keine Lage.
  */
@@ -41,6 +38,10 @@ export function aktuelleLage(project: Project | null): { lage: string | null; pr
   return { lage: lageKennung(k.ost, k.nord) };
 }
 
+/**
+ * Fakten aus Projektdatei und Prüfung; Angaben der Prüfung (von Hand, Geodienst, bestätigt) gehen vor. Ergebnisse
+ * der Geodienste und ihre Bestätigungen gelten nur an der Lage, an der sie ermittelt wurden.
+ */
 export function alleFakten(project: Project | null, eigeneRoh: Record<string, FaktWert>, module: Modul[]): Record<string, FaktWert> {
   const l = aktuelleLage(project);
   const eigene = faktenZurLage(
@@ -130,7 +131,10 @@ export interface Pruefstand {
 
 /** Planungsrecht und Ort (siehe planungsrechtOhneOrt): Grund, warum es nicht als gesichert zählt, sonst undefined */
 export function planungsrechtVerschoben(project: Project | null, merkmale: Record<string, string>, gemerkt?: Ort): string | undefined {
-  return planungsrechtOhneOrt(merkmale['Planungsrecht'], gemerkt, ortVon(project));
+  // ein Wert außerhalb der Liste zählt ohnehin nicht (offen) – dafür gibt es keine Ortsbestätigung
+  const wert = merkmale['Planungsrecht'];
+  if (wert && !VORGABE_MERKMALE.find((m) => m.name === 'Planungsrecht')?.werte.includes(wert)) return undefined;
+  return planungsrechtOhneOrt(wert, gemerkt, ortVon(project));
 }
 
 /** die Auswertung zum aktuellen Stand (memoisiert) */
@@ -162,7 +166,11 @@ export function pruefstandBerechnen(
   const fakten = alleFakten(project, eigene, module);
   const einreichung = einreichungRoh ?? heute();
   fakten['antrag.einreichung'] = { wert: einreichung, herkunft: einreichungRoh ? 'manuell' : 'abgeleitet', sicherheit: 'sicher' };
-  const gk = project ? gebaeudeklasseAbleiten(project, { freistehend: (fakten['gebaeude.freistehend']?.wert as boolean | undefined) ?? null, landwirtschaft: (fakten['gebaeude.landwirtschaft']?.wert as boolean | undefined) ?? null }) : null;
+  // Ableitung der Gebäudeklasse und Widersprüche nur aus gültigen Werten („nein“ als Text ist kein false) und strikt
+  const geprueft = gueltigeFakten(modulFakten(module, gueltigeFakten(fakten, faktDefinitionen(module))), faktDefinitionen(module));
+  const janein = (id: string) => (geprueft[id]?.wert === true ? true : geprueft[id]?.wert === false ? false : null);
+  const gk = project ? gebaeudeklasseAbleiten(project, { freistehend: janein('gebaeude.freistehend'), landwirtschaft: janein('gebaeude.landwirtschaft') }) : null;
+  // Widersprüche aus den Rohwerten (zur sicheren Seite: auch eine als Zahl gespeicherte Plannummer zählt als angegeben)
   const w = widersprueche(merkmale, gk, fakten);
   const ort = ortVon(project);
   const planungsrechtFrueher = planungsrechtVerschoben(project, merkmale, planungsrechtOrt);
@@ -191,8 +199,10 @@ export function herabstufungen(alt: Auswertung, neu: Auswertung): { id: string; 
     .map((p) => ({ id: p.id, titel: neu.text.paragraf?.(p.id) ?? p.id, von: vorher.get(p.id)!, nach: p.ampel }));
 }
 
-/** Auswertung des aktuellen Stands mit geänderten Angaben der Prüfung (für Vorschau und Bestätigung) */
-/** `mit.planungsrechtOrt`: ein anderer Ort des Planungsrechts (auch keiner) als der aktuelle – z. B. der Stand der Datei */
+/**
+ * Auswertung des aktuellen Stands mit geänderten Angaben der Prüfung (für Vorschau und Bestätigung). `mit.planungsrechtOrt`:
+ * ein anderer Ort des Planungsrechts (auch keiner) als der aktuelle – z. B. der Stand der Datei
+ */
 export function auswertungMit(eigene: Record<string, FaktWert>, mit?: { planungsrechtOrt: Ort | undefined }): Auswertung {
   const s = useBaurecht.getState();
   const planungsrechtOrt = mit ? mit.planungsrechtOrt : s.pruefung.planungsrechtOrt;
