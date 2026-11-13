@@ -54,7 +54,10 @@ describe('Stammdaten-Dialog', () => {
     eingabe(feld(host, 'Name bzw. Firma'), 'Mustermann');
     eingabe(feld(host, 'E-Mail'), 'a@example.org, b@example.org');
     act(() => ([...host.querySelectorAll('.sd-lph input')][3] as HTMLInputElement).click());
-    act(() => knopf(host, '+ Beteiligter').click());
+    const hinzu = knopf(host, 'Beteiligten hinzufügen');
+    expect(hinzu.querySelector('svg.symbol')).not.toBeNull();
+    expect(hinzu.textContent).not.toContain('+');
+    act(() => hinzu.click());
     eingabe(host.querySelector('.sd-beteiligte input') as HTMLInputElement, 'Tragwerk');
     await act(async () => knopf(host, 'Projektdatei anlegen').click());
     expect(gespeichert).toHaveBeenCalledTimes(1);
@@ -117,7 +120,13 @@ describe('Stammdaten-Dialog', () => {
     );
     // Gegenprobe: die Schnellwahl-Knöpfe bleiben die bisherigen acht – Bodengutachten ja, die neuen Rollen nicht
     const schnell = [...host.querySelectorAll('[aria-label="Beteiligte nach Rolle hinzufügen"] button')].map((b) => b.textContent?.trim() ?? '');
-    expect(schnell).toContain('+ Bodengutachten');
+    expect(schnell).toContain('Bodengutachten');
+    // Schnellknöpfe nach der Regel „Listen“: Symbol plus statt „+“, title mit „hinzufügen“
+    const rollenKnoepfe = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Beteiligte nach Rolle hinzufügen"] button')];
+    const boden = rollenKnoepfe.find((b) => b.textContent?.includes('Bodengutachten'))!;
+    expect(boden.querySelector('svg.symbol')).not.toBeNull();
+    expect(boden.textContent).not.toContain('+');
+    expect(boden.title).toBe('Bodengutachten hinzufügen');
     expect(schnell.some((t) => t.includes('Prüfsachverständige') || t.includes('SiGeKo') || t.includes('Schall'))).toBe(false);
     expect(host.querySelector('button[aria-label="Beteiligten 1 entfernen"]')).not.toBeNull();
     eingabe(rolle, 'Lichtplanung');

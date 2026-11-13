@@ -2,7 +2,7 @@
 import { act, createElement, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { aenderungenSpeichern, bestaetigen, frageText, oeffnenFehlgeschlagen, RueckfrageHost } from './Rueckfrage';
+import { aenderungenSpeichern, bestaetigen, fragen, frageText, oeffnenFehlgeschlagen, RueckfrageHost } from './Rueckfrage';
 import { Modal } from './Dialog';
 import { NumberField } from './fields';
 import { DateiLesenFehler, oeffnenFehlerText } from '../platform/dateiFehler';
@@ -96,6 +96,72 @@ describe('Rückfrage „Änderungen speichern?“', () => {
     await klick(host, 'OK');
     await q;
     expect(text).toBe('Plan.pdf');
+  });
+});
+
+describe('Rückfrage mit Gefahr-Knopf', () => {
+  it('Erstfokus und Enter liegen nie auf dem Gefahr-Knopf: bestaetigen(…, gefahr) – Enter bricht ab', async () => {
+    const host = render(createElement(RueckfrageHost));
+    let ok: boolean | null = null;
+    const p = bestaetigen('Löschen?', 'Die Fläche wird entfernt.', 'Löschen', true).then((v) => (ok = v));
+    await act(async () => {});
+    const loeschen = [...host.querySelectorAll<HTMLButtonElement>('.modal.rf button')].find((b) => b.textContent === 'Löschen')!;
+    expect(loeschen.classList.contains('danger')).toBe(true);
+    expect(document.activeElement?.textContent).toBe('Abbrechen');
+    expect(loeschen.type).toBe('button');
+    // Enter im Dialog: das Formular sendet den Standard – „Abbrechen“
+    await act(async () => host.querySelector('.modal.rf form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    await p;
+    expect(ok).toBe(false);
+  });
+
+  it('nur Gefahr-Knöpfe: kein Standard, Enter tut nichts, der Fokus liegt nicht auf dem Knopf', async () => {
+    const host = render(createElement(RueckfrageHost));
+    let antwort: string | null | undefined;
+    void fragen({ titel: 'Alles verwerfen?', knoepfe: [{ id: 'weg', label: 'Verwerfen', art: 'danger' }] }).then((v) => (antwort = v));
+    await act(async () => {});
+    await act(async () => new Promise((r) => requestAnimationFrame(() => r(undefined))));
+    const knopf = host.querySelector<HTMLButtonElement>('.modal.rf button')!;
+    expect(knopf.type).toBe('button');
+    expect(document.activeElement).not.toBe(knopf);
+    await act(async () => host.querySelector('.modal.rf form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(antwort).toBeUndefined();
+    expect(host.querySelector('.modal.rf')).not.toBeNull();
+    // Esc schließt wie „Abbrechen“ – nie mit der Gefahr-Aktion
+    esc();
+    await act(async () => {});
+    expect(antwort).toBeNull();
+  });
+
+  it('nur ein Gefahr-Knopf: Klick neben den Dialog löst die Aktion nicht aus', async () => {
+    const host = render(createElement(RueckfrageHost));
+    let antwort: string | null | undefined;
+    void fragen({ titel: 'Alles verwerfen?', knoepfe: [{ id: 'weg', label: 'Verwerfen', art: 'danger' }] }).then((v) => (antwort = v));
+    await act(async () => {});
+    const hintergrund = host.querySelector('.modal-backdrop')!;
+    await act(async () => {
+      hintergrund.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    });
+    // geschlossen wie „Abbrechen“
+    expect(host.querySelector('.modal.rf')).toBeNull();
+    expect(antwort).toBeNull();
+  });
+
+  it('ohne Hauptknopf liegt der Standard auf „Abbrechen“, auch wenn weitere ungefährliche Knöpfe folgen', async () => {
+    const host = render(createElement(RueckfrageHost));
+    let antwort: string | null | undefined;
+    void fragen({
+      titel: 'Dateien vorhanden',
+      knoepfe: [
+        { id: 'abbrechen', label: 'Abbrechen' },
+        { id: 'ueberspringen', label: 'Vorhandene überspringen' },
+        { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
+      ],
+    }).then((v) => (antwort = v));
+    await act(async () => {});
+    expect(document.activeElement?.textContent).toBe('Abbrechen');
+    await act(async () => host.querySelector('.modal.rf form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(antwort).toBe('abbrechen');
   });
 });
 

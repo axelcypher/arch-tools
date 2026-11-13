@@ -172,7 +172,9 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
               <button disabled={!!laeuft} onClick={() => void pruefenPfad(g.pfad)}>
                 Erneut prüfen
               </button>
-              <button onClick={() => void oeffneOrdner(g.pfad).catch((e) => setFehler(String(e)))}>Ordner öffnen</button>
+              <button onClick={() => void oeffneOrdner(g.pfad).catch((e) => setFehler(String(e)))}>
+                <Symbol name="ordnerOffen" /> Ordner öffnen
+              </button>
             </>
           )}
           {laeuft && <span className="busy">{laeuft}</span>}

@@ -1120,6 +1120,12 @@ h3.po-abschnitt {
   margin: 18px 0 2px;
   font-size: 14px;
 }
+/* Symbolknöpfe zum Umsortieren und Entfernen: Zielgröße 24px wie button.small (docs/design.md „Zielgrößen“) */
+.ka-plan-kopf button.icon,
+.po-stammordner li button.icon {
+  min-height: var(--ctl-h-s);
+  min-width: var(--ctl-h-s);
+}
 .po-stammordner {
   margin-bottom: 12px;
 }

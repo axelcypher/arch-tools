@@ -158,12 +158,12 @@ describe('ATLAS (Projektordner)', () => {
     // Beteiligte: eigener Schritt, typische Rollen mit einem Klick
     weiter(host);
     expect(host.querySelector('h2')?.textContent).toBe('Beteiligte');
-    act(() => knopf(host, '+ Beteiligter').click());
+    act(() => knopf(host, 'Beteiligten hinzufügen').click());
     eingabe(host.querySelector('.sd-beteiligte input') as HTMLInputElement, 'Tragwerk');
     expect(useOrdner.getState().stamm.beteiligte).toEqual([{ rolle: 'Tragwerk', name: '', kontakt: '' }]);
-    act(() => knopf(host, '+ Vermessung (ÖbVI)').click());
+    act(() => knopf(host, 'Vermessung (ÖbVI)').click());
     expect(useOrdner.getState().stamm.beteiligte[1]).toEqual({ rolle: 'Vermessung (ÖbVI)', name: '', kontakt: '' });
-    expect(knopf(host, '+ Vermessung (ÖbVI)')).toBeUndefined();
+    expect(knopf(host, 'Vermessung (ÖbVI)')).toBeUndefined();
 
     // Vorlagen: Standard-Preset vorausgewählt – mit Strg+Enter (P-12)
     act(() => host.querySelector('.po-col')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })));
@@ -224,7 +224,7 @@ describe('ATLAS (Projektordner)', () => {
     expect(host.querySelector('[role="tree"]')).toBeNull();
   });
 
-  it('Einstellungen: Stammordner per Ziehen bzw. ↑ ↓ umsortieren – der erste nimmt neue Projekte auf', () => {
+  it('Einstellungen: Stammordner per Ziehen bzw. „Nach oben“/„Nach unten“ umsortieren – der erste nimmt neue Projekte auf', () => {
     useOrdner.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['/srv/Projekte', '/srv/Akquise', '/srv/Archiv'] }, stammordner: '/srv/Projekte' });
     const host = render();
     act(() => knopf(host, 'Einstellungen').click());
@@ -237,11 +237,20 @@ describe('ATLAS (Projektordner)', () => {
     expect(reihe()).toEqual(['/srv/Archiv', '/srv/Projekte', '/srv/Akquise']);
     expect(useOrdner.getState().stammordner).toBe('/srv/Archiv');
     expect(eintraege()[0].textContent).toContain('neue Projekte');
-    // mit den Pfeilen
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Archiv nach unten"]')!.click());
+    // mit den Knöpfen: gezeichnete Symbole statt der Schriftzeichen ↑ ↓, Name im aria-label, Tooltip
+    const runter = host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Archiv nach unten"]')!;
+    const hoch = host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Akquise nach oben"]')!;
+    expect(runter.title).toBe('Nach unten');
+    expect(hoch.title).toBe('Nach oben');
+    expect(runter.querySelector('svg.symbol')).not.toBeNull();
+    expect(hoch.querySelector('svg.symbol')).not.toBeNull();
+    expect(host.querySelector('.po-stammordner')!.textContent).not.toMatch(/[↑↓]/);
+    act(() => runter.click());
     expect(reihe()).toEqual(['/srv/Projekte', '/srv/Archiv', '/srv/Akquise']);
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Akquise nach oben"]')!.click());
     expect(reihe()).toEqual(['/srv/Projekte', '/srv/Akquise', '/srv/Archiv']);
+    // Gegenprobe: der letzte kann nicht weiter nach unten
+    expect(host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Archiv nach unten"]')!.disabled).toBe(true);
     expect(host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Projekte nach oben"]')!.disabled).toBe(true);
   });
 
@@ -994,13 +1003,13 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     expect(host.textContent).toContain('LPh 1, 2');
     act(() => knopf(host, 'Neues Projekt').click());
     expect(neu).toBe(1);
-    // Kontextmenü (P-09): ergänzen, prüfen, Katasterpläne, Explorer, abschließen (P-15), anheften
+    // Kontextmenü (P-09): ergänzen, prüfen, Katasterpläne, Ordner öffnen, abschließen (P-15), anheften
     const karteVon = (text: string) => [...host.querySelectorAll('.pa-karte')].find((k) => k.textContent?.includes(text)) as HTMLElement;
     act(() => karteVon('Neubau EFH').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
     expect([...host.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent)).toEqual([
       'Ergänzen …',
       'Katasterpläne …',
-      'Im Explorer öffnen',
+      'Ordner öffnen',
       'Projekt abschließen',
       'Als Akquise kennzeichnen',
       'Anheften',
