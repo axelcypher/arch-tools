@@ -304,7 +304,7 @@ export function StrukturView() {
                     {x.name.replace(/^projektordner\.json\.bak-/, '')} · „{typeof x.inhalt.struktur?.name === 'string' ? x.inhalt.struktur.name : 'nicht lesbar'}“ · {x.grund}
                   </span>
                   <button className="small" onClick={() => sicherungWiederherstellen(x)}>
-                    Wiederherstellen
+                    Wiederherstellen …
                   </button>
                 </li>
               ))}

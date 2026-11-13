@@ -207,7 +207,7 @@ describe('Struktur-Editor', () => {
     taste(document.activeElement!, 'ArrowUp');
     taste(document.activeElement!, 'ArrowUp');
     expect(document.activeElement).toBe(liste[liste.length - 1]);
-    expect(liste[liste.length - 1].getAttribute('aria-label')).toBe('Löschen');
+    expect(liste[liste.length - 1].getAttribute('aria-label')).toBe('Löschen …');
     taste(document.activeElement!, 'Home');
     expect(document.activeElement).toBe(liste[0]);
     taste(document.activeElement!, 'End');

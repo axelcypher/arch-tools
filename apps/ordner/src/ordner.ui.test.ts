@@ -360,7 +360,7 @@ describe('ATLAS (Projektordner)', () => {
     expect(pfade()).not.toContain('11 Videos');
     act(() => z('05 Protokolle').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
     expect([...host.querySelectorAll('.po-menue button')].map((b) => b.getAttribute('aria-label'))).toEqual(
-      expect.arrayContaining(['Unterordner anlegen', 'Baustein „Gewerk“ einfügen', 'Umbenennen', 'Duplizieren', 'Kopieren', 'Einfügen', 'Unterordner als Baustein speichern …', 'Löschen']),
+      expect.arrayContaining(['Unterordner anlegen', 'Baustein „Gewerk“ einfügen', 'Umbenennen', 'Duplizieren', 'Kopieren', 'Einfügen', 'Unterordner als Baustein speichern …', 'Löschen …']),
     );
     // Vorschau für Leistungsphasen (eigener Modus): Ordner, die bei LPh 1–4 nicht entstehen, sind blass
     act(() => knopf(host, 'Unterordner anlegen').click());

@@ -476,7 +476,7 @@ export function OrdnerEditor({
         : []),
       TRENNER,
       ...(gewaehlt.length
-        ? [{ label: gewaehlt.length > 1 ? `${gewaehlt.length} Ordner löschen` : 'Löschen', kuerzel: 'Entf', tasten: 'Delete', gefahr: true, aktion: () => void loeschenFragen(gewaehlt) }]
+        ? [{ label: gewaehlt.length > 1 ? `${gewaehlt.length} Ordner löschen …` : zeile(gewaehlt[0])?.hatKinder ? 'Löschen …' : 'Löschen', kuerzel: 'Entf', tasten: 'Delete', gefahr: true, aktion: () => void loeschenFragen(gewaehlt) }]
         : []),
     ]);
   };
@@ -776,7 +776,7 @@ export function OrdnerEditor({
               </p>
               <div className="button-row">
                 <button className="small danger" onClick={() => void loeschenFragen([einer.pfad])}>
-                  Löschen …
+                  {zeile(einer.pfad)?.hatKinder ? 'Löschen …' : 'Löschen'}
                 </button>
               </div>
             </>
@@ -813,7 +813,7 @@ export function OrdnerEditor({
               </label>
               <div className="button-row">
                 <button className="small danger" onClick={() => void loeschenFragen(gewaehlt)}>
-                  {gewaehlt.length} Ordner löschen
+                  {gewaehlt.length} Ordner löschen …
                 </button>
               </div>
             </>
@@ -1137,10 +1137,10 @@ function MehrereDialog({ ziele, onAbbrechen, onAnlegen }: { ziele: string[]; onA
       )}
       <div className="dialog-buttons">
         <span className="muted small-text po-mehrere-kuerzel">Strg+Enter legt an</span>
+        <button onClick={onAbbrechen}>Abbrechen</button>
         <button className="primary" disabled={!gelesen.ordner.length} onClick={() => onAnlegen(gelesen.ordner)} title="Strg+Enter" aria-keyshortcuts="Control+Enter">
           {wo.length > 1 ? `In ${wo.length} Ordnern anlegen` : 'Anlegen'}
         </button>
-        <button onClick={onAbbrechen}>Abbrechen</button>
       </div>
     </Modal>
   );
