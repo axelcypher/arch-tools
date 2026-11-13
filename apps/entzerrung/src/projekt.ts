@@ -123,7 +123,10 @@ async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
     if (name) {
       const stand = istPfad(name) ? await dateiStandLesen(name) : undefined;
       if (istPfad(name) && stand === undefined) log.warn('Stand nach dem Speichern unbekannt – beim nächsten Speichern keine Prüfung', name);
-      if (gewechselt()) return true;
+      if (gewechselt()) {
+        log.info(`Gespeichert: ${name} (inzwischen ein anderes Dokument geöffnet)`);
+        return true;
+      }
       useEntz.getState().gespeichert(name, s.doc, stand);
       log.info(`Gespeichert: ${name}`);
     }
