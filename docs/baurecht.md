@@ -67,7 +67,11 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Ersatzbau – ändern“), der Fokus geht auf die nächste offene Rückfrage bzw. den Gruppenknopf („Rückfragen
   beantwortet“). Auf- bzw. Zugeklappt bleibt auch nach einer Suche. Ändert sich ein Merkmal, ordnen
   sich die Angaben neu. „Klärt am meisten“ zählt eine Angabe bei einem Paragrafen nur, wenn ihre Antwort dort etwas
-  ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht).
+  ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht). Eine Angabe, deren Frage gerade nicht gestellt
+  wird (ihr `wenn` ergibt „nein“), fehlt nicht: Sie steht nicht unter „es fehlt“ und nicht unter „klärt am meisten“ –
+  nur wenn sonst kein Grund für Gelb bliebe, wird sie genannt. Hängt ein Paragraf an einem anderen, der nur „gilt,
+  Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
+  fehlt dort: …“); die Ampel bleibt „gilt“.
   Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
   Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug
   der Tabelle, wenn er nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –, beim Wert selbst,
@@ -274,7 +278,8 @@ festgelegt.
 Prüfungen des Pakets (`npm test -w @akh/baurecht-regeln`): Format und Verweise, die **Fallmatrix** (kein falsches
 Grün über alle Kombinationen der Merkmale), die Fälle aus den Fachprüfungen und **„Fragen und Regeln“**: Eine Angabe,
 deren Frage nicht gestellt wird (Bedingung `wenn` der Angabe ergibt „nein“), darf in keinem Grundfall einen
-Paragrafen ändern, offen lassen oder unter „klärt am meisten“ stehen. Eine Norm, die an einer nur bedingt gestellten
+Paragrafen ändern, offen lassen oder unter „klärt am meisten“ stehen – auch nicht, wenn eine gestellte Angabe fehlt
+(je Grundfall jede gestellte Angabe einzeln offen gelassen, dazu Altbau „nein“ und Umfang offen). Eine Norm, die an einer nur bedingt gestellten
 Frage hängt, nimmt deshalb deren Bedingung in die Geltung auf (z. B. Heilquellenschutzgebiet Bad Sassendorf nur im
 Wasser- oder Heilquellenschutzgebiet, außerhalb von Bad Sassendorf und Soest „nein“ aus dem Gemeindeschlüssel).
 

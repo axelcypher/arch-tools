@@ -670,3 +670,50 @@ describe('Runde 15: Texte', () => {
     }
   });
 });
+
+describe('Runde 13 (Fachprüfung): nicht gestellte Fragen fehlen nicht', () => {
+  // x.b wird nur gefragt, wenn x.a = ja; die Regel enthält einen Konsensterm mit x.b und der offenen Angabe x.c
+  const modul: Modul = {
+    format: 1,
+    id: 'bund',
+    name: 'Bund',
+    ebene: 'bund',
+    version: '2026-11-13',
+    normen: { t: { kurz: 'T', titel: 'Test', thema: 'natur', quelle: { art: 'gii', pfad: 't' } } },
+    fakten: {
+      'x.a': { titel: 'A', gruppe: 'vorhaben', typ: 'janein' },
+      'x.b': { titel: 'B', gruppe: 'vorhaben', typ: 'janein', wenn: { f: 'x.a', ist: true } },
+      'x.c': { titel: 'C', gruppe: 'vorhaben', typ: 'janein' },
+    },
+  };
+  const regel: Regeldatei = {
+    format: 1,
+    modul: 'bund',
+    norm: 't',
+    fassung: '2026-11-13',
+    version: 1,
+    paragrafen: {
+      '1': { gilt: { oder: [{ und: [{ f: 'x.c', ist: true }, { f: 'x.a', ist: true }] }, { und: [{ f: 'x.c', ist: true }, { f: 'x.b', ist: true }] }] }, grund: 'Test.' },
+      // nur die nicht gestellte Frage ist offen: dann bleibt sie genannt (sonst stünde ein Gelb ohne Grund da)
+      '2': { gilt: { f: 'x.b', ist: true }, grund: 'Test 2.' },
+    },
+  };
+  const p2 = paketAusDateien({ 'module/bund/modul.json': modul, 'module/bund/t@2026-11-13.json': regel }, 'test');
+  const lauf = (fakten: Record<string, FaktWert>) =>
+    auswerten({ paket: p2, module: p2.module, merkmale: {}, fakten: { 'lage.ags': sicher('05974040'), ...fakten }, einreichung: '2026-12-01', heute: '2026-11-13', texte: new Map(), festlegungen: {} });
+  it('nicht unter „es fehlt“, in `offen`, `klaerend` und „klärt am meisten“ – die Ampel bleibt', () => {
+    const a = lauf({ 'x.a': sicher(false) });
+    const q = a.paragrafen.find((x) => x.id === 'bund/t/1')!;
+    expect(q.ampel).toBe('gelb');
+    expect(q.offen).toEqual(['x.c']);
+    expect(q.gruende[0]).not.toMatch(/\bB\b/);
+    expect(q.klaerend ?? []).not.toContain('x.b');
+    expect(a.klaerung.map((k) => k.id)).not.toContain('x.b');
+    // gefragt (x.a = ja): x.b fehlt wieder mit
+    expect(lauf({ 'x.a': sicher(true) }).paragrafen.find((x) => x.id === 'bund/t/1')!.offen).toEqual(expect.arrayContaining(['x.c', 'x.b']));
+    expect(lauf({}).paragrafen.find((x) => x.id === 'bund/t/1')!.offen).toEqual(expect.arrayContaining(['x.c', 'x.b']));
+    // bleibt nur die nicht gestellte Frage: sie wird genannt, klärt aber nichts (keine Frage, die man beantworten kann)
+    expect(a.paragrafen.find((x) => x.id === 'bund/t/2')!.offen).toEqual(['x.b']);
+    expect(a.paragrafen.find((x) => x.id === 'bund/t/2')!.klaerend ?? []).toEqual([]);
+  });
+});

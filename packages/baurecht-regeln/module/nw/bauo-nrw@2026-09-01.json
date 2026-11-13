@@ -392,7 +392,14 @@
       "pruefen": {
         "grund": "Bei Umnutzung zu Wohnraum gilt § 27 nicht für bestehende Bauteile (§ 47 Abs. 6). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
         }
       },
       "grund": "Tragende und aussteifende Wände und Stützen: Feuerwiderstand nach Gebäudeklasse (GK 2–3 feuerhemmend, GK 4 hochfeuerhemmend, GK 5 feuerbeständig; im Kellergeschoss strenger).",
@@ -430,7 +437,14 @@
       "pruefen": {
         "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
         }
       },
       "titel": "Außenwände"
@@ -475,7 +489,7 @@
         ]
       },
       "pruefen": {
-        "grund": "Bei nur einer Nutzungseinheit sind Trennwände nur zum Abschluss von Räumen mit Explosions- oder erhöhter Brandgefahr, zwischen Aufenthaltsräumen und anders genutzten Räumen im Kellergeschoss sowie zu nicht ausgebauten Dachräumen nötig (Abs. 2 Nr. 2 bis 4); bei Umnutzung zu Wohnraum gilt § 29 nicht für bestehende Bauteile (§ 47 Abs. 6) – im Einzelfall prüfen.",
+        "grund": "Bei nur einer Nutzungseinheit sind Trennwände nur zum Abschluss von Räumen mit Explosions- oder erhöhter Brandgefahr, zwischen Aufenthaltsräumen und anders genutzten Räumen im Kellergeschoss sowie zu nicht ausgebauten Dachräumen nötig (Abs. 2 Nr. 2 bis 4); bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum ist § 29 nicht anzuwenden (§ 47 Abs. 6 Satz 2) – im Einzelfall prüfen.",
         "wenn": {
           "und": [
             {
@@ -497,7 +511,14 @@
             {
               "oder": [
                 {
-                  "$": "nutzungsaenderung"
+                  "und": [
+                    {
+                      "$": "nutzungsaenderung"
+                    },
+                    {
+                      "$": "gebaeude"
+                    }
+                  ]
                 },
                 {
                   "und": [
@@ -614,7 +635,14 @@
       "pruefen": {
         "grund": "Bei Umnutzung zu Wohnraum gilt § 31 nicht für bestehende Bauteile (§ 47 Abs. 6). Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
         }
       },
       "grund": "Decken: Feuerwiderstand nach Gebäudeklasse; Öffnungen in Decken nur nach Abs. 4.",
@@ -653,7 +681,14 @@
       "pruefen": {
         "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
         }
       },
       "titel": "Dächer"
@@ -713,7 +748,14 @@
       "pruefen": {
         "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
         }
       },
       "titel": "Treppen"
@@ -746,6 +788,9 @@
               "nicht": {
                 "$": "gk_1_2"
               }
+            },
+            {
+              "$": "gebaeude"
             }
           ]
         }
@@ -829,6 +874,9 @@
                       }
                     ]
                   }
+                },
+                {
+                  "$": "gebaeude"
                 }
               ]
             }
@@ -858,7 +906,14 @@
       "pruefen": {
         "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
         }
       },
       "titel": "Fenster, Türen, sonstige Öffnungen"
@@ -1002,7 +1057,14 @@
       "pruefen": {
         "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
         "wenn": {
-          "$": "nutzungsaenderung"
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
         }
       },
       "stand": {
@@ -1985,6 +2047,21 @@
               },
               {
                 "$": "nw_genehmigungsbeduerftig"
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "freistellung"
+              },
+              {
+                "$": "beseitigung_art"
+              },
+              {
+                "nicht": {
+                  "$": "nw_abbruch_frei"
+                }
               }
             ]
           }

@@ -282,6 +282,29 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     },
   };
 
+  // eine Angabe, deren Frage gerade nicht gestellt wird (ihr `wenn` ergibt „nein“), fehlt nicht: sie steht nicht unter
+  // „es fehlt“, nicht in `offen` und nicht unter „klärt am meisten“ – die Ampel bleibt, wie die Regel sie ergibt
+  const gestelltCache = new Map<string, boolean>();
+  const gestellt = (o: string): boolean => {
+    const d = faktDefs[o];
+    if (!d?.wenn) return true;
+    let g = gestelltCache.get(o);
+    if (g === undefined) {
+      try {
+        g = werten(d.wenn, ctx).w !== 'nein';
+      } catch {
+        g = true;
+      }
+      gestelltCache.set(o, g);
+    }
+    return g;
+  };
+  // nur gestellte Angaben (und Verweise) – bleibt nichts übrig, alle (sonst stünde ein Gelb ohne Grund da)
+  const nurGestellte = (offen: string[]) => {
+    const g = offen.filter((o) => o.startsWith('paragraf:') || gestellt(o));
+    return g.length ? g : offen;
+  };
+
   const geltungCache = new Map<string, Bewertung>();
   const geltung = (n: (typeof normen)[number]): Bewertung => {
     let g = geltungCache.get(n.key);
@@ -370,14 +393,24 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ampel = 'rot';
       gruende.push(r.grund);
       tragend = [g, gilt];
-      if (entf?.w === 'offen') hinweise.push(`Ausnahme möglich – es fehlt: ${entf.offen.map((o) => offenText(o, text)).join(' · ')}`);
+      if (entf?.w === 'offen') hinweise.push(`Ausnahme möglich – es fehlt: ${nurGestellte(entf.offen).map((o) => offenText(o, text)).join(' · ')}`);
+      // hängt die Regel an einem Paragrafen, der nur „rot, Ausnahme möglich“ ist, und entfiele sie mit dessen Ausnahme:
+      // der Hinweis geht mit (die Ampel bleibt rot – zur sicheren Seite)
+      for (const v of gilt.verwendet) {
+        if (!v.startsWith('paragraf:')) continue;
+        const q = ergebnisse.get(v.slice(9));
+        if (!q || q.automatisch !== 'rot' || !q.offen.length || q.festlegung) continue;
+        const ohne = werten(r.gilt, { ...ctx, ampel: (x) => (x === q.id ? { ampel: 'gruen' } : ctx.ampel?.(x)) });
+        if (undW(g.w, ohne.w) === 'ja') continue;
+        hinweise.push(`Ausnahme möglich über ${offenText(v, text)} – es fehlt dort: ${q.offen.map((o) => offenText(o, text)).join(' · ')}`);
+      }
     } else if (tatbestand === 'nein') {
       ampel = 'gruen';
       gruende.push(r.gilt ? `Gilt nicht – ${warum(r.gilt, 'nein') || 'Voraussetzung nicht erfüllt'}.` : 'Gilt nicht.');
       tragend = [gilt];
     } else {
       ampel = 'gelb';
-      const fehlt = [...new Set([...g.offen, ...gilt.offen])];
+      const fehlt = nurGestellte([...new Set([...g.offen, ...gilt.offen])]);
       // fehlende Angaben als Fragen; offene Paragrafen, an denen die Regel hängt, als „hängt an“ (nicht „es fehlt“)
       const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
       const haengt = fehlt.filter((o) => o.startsWith('paragraf:'));
@@ -394,7 +427,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     if (fassung && r.stand) for (const [k, summe] of Object.entries(r.stand)) if (fassung.summen[k] !== summe) geaendert.push(k);
     const unsicher = [...new Set(tragend.flatMap((b) => b.unsicher))];
     const widerspruch = [...new Set(tragend.flatMap((b) => b.widerspruch))];
-    const offen = ampel === 'gelb' ? [...new Set(tragend.flatMap((b) => b.offen))] : entf?.w === 'offen' && ampel === 'rot' ? entf.offen : [];
+    const offen = nurGestellte(ampel === 'gelb' ? [...new Set(tragend.flatMap((b) => b.offen))] : entf?.w === 'offen' && ampel === 'rot' ? entf.offen : []);
 
     // zur sicheren Seite
     if (ampel === 'gruen') {
@@ -614,7 +647,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   };
   for (const p of paragrafen) {
     if (!offenAuto(p)) continue;
-    p.klaerend = p.offen.filter((o) => !o.startsWith('paragraf:') && klaert(p, o));
+    // eine nicht gestellte Frage klärt nichts (sie steht nur da, wenn sonst kein Grund für Gelb bliebe)
+    p.klaerend = p.offen.filter((o) => !o.startsWith('paragraf:') && gestellt(o) && klaert(p, o));
     for (const o of p.klaerend) zahl.set(o, (zahl.get(o) ?? 0) + 1);
   }
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
