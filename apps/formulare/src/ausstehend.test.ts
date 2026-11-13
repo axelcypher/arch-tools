@@ -58,20 +58,20 @@ describe('laufende Schreibvorgänge vor dem Schließen', () => {
     try {
       const a = offen();
       void verfolgen(a.p);
-      let bereit: boolean | null = null;
+      let bereit: string | null = null;
       const vorbereiten = schliessenVorbereiten(2000).then((ok) => (bereit = ok));
       await tick();
       expect(bereit).toBeNull();
       a.fertig();
       await vorbereiten;
-      expect(bereit).toBe(true);
+      expect(bereit).toBe('fertig');
     } finally {
       abmelden();
     }
     // Gegenprobe: abgemeldet wartet der Rahmen nicht auf neues Schreiben
     const b = offen();
     void verfolgen(b.p);
-    expect(await schliessenVorbereiten(2000)).toBe(true);
+    expect(await schliessenVorbereiten(2000)).toBe('fertig');
     b.fertig();
     await ausstehendAbwarten();
   });
@@ -85,7 +85,7 @@ describe('laufende Schreibvorgänge vor dem Schließen', () => {
       const beide = Promise.all([schliessenVorbereiten(2000), schliessenVorbereiten(2000)]);
       await tick();
       a.fertig();
-      expect(await beide).toEqual([true, true]);
+      expect(await beide).toEqual(['fertig', 'fertig']);
       expect(geschrieben).toBe(1);
     } finally {
       abmelden();

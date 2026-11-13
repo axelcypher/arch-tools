@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Scheitert das letzte Speichern vor dem Schließen, fragt die App nach („… konnte nicht speichern“), statt ohne Rückfrage zu schließen."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Scheitert das letzte Speichern vor dem Schließen, fragt die App nach („… konnte nicht speichern“), statt ohne Rückfrage zu schließen."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Scheitert das letzte Speichern vor dem Schließen, fragt die App nach („… konnte nicht speichern“), statt ohne Rückfrage zu schließen."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Scheitert das letzte Speichern vor dem Schließen, fragt die App nach („… konnte nicht speichern“), statt ohne Rückfrage zu schließen."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Scheitert das letzte Speichern vor dem Schließen, fragt die App nach („… konnte nicht speichern“), statt ohne Rückfrage zu schließen."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Scheitert das letzte Speichern vor dem Schließen, fragt die App nach („… konnte nicht speichern“), statt ohne Rückfrage zu schließen."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Scheitert das letzte Speichern vor dem Schließen, fragt die App nach („… konnte nicht speichern“), statt ohne Rückfrage zu schließen."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Scheitert das letzte Speichern vor dem Schließen, fragt die App nach („… konnte nicht speichern“), statt ohne Rückfrage zu schließen."
+  }
+}

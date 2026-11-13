@@ -91,7 +91,7 @@ describe('QUADRIO: Zwischenstand vor dem Schließen (vorDemSchliessen)', () => {
     expect(fertig).toBe(false); // wartet, bis das Schreiben abgeschlossen ist
 
     await alleAbschliessen();
-    expect(await vorbereitet).toBe(true);
+    expect(await vorbereitet).toBe('fertig');
     await zweiter;
     expect(puts).toHaveLength(1);
 
@@ -129,7 +129,7 @@ describe('QUADRIO: Zwischenstand vor dem Schließen (vorDemSchliessen)', () => {
     useEditor.getState().update((p) => ({ ...p, name: `Scheitert (${art})` }));
     const vorbereitet = rahmen.schliessenVorbereiten(5000);
     await alleAbschliessen();
-    expect(await vorbereitet).toBe(true); // erledigt (Fehler ist protokolliert), kein Hängen bis zum Zeitlimit
+    expect(await vorbereitet).toBe('fertig'); // erledigt (Fehler ist protokolliert), kein Hängen bis zum Zeitlimit
 
     useEditor.getState().update((p) => ({ ...p, name: `Danach (${art})` }));
     const danach = mod.zwischenstandSichern();
