@@ -35,7 +35,8 @@ kennt oder deren Angabe nicht passt (`{DATUM:xyz}`), bleiben so stehen und werde
 „Vorgang“ ist, was den Namen erzeugt: der Export eines PDFs, das Anlegen eines Projekts oder einer Datei. Im
 Projektordner ist `{JAHR}` beim Ergänzen eines bestehenden Projekts das Jahr, in dem es angelegt wurde. In der AVA
 ist `{PROJEKT_VORHABEN}` ohne Vorhaben der Name des Projekts und `{BEARBEITER}` zuerst die Angabe aus den
-Einstellungen des Deckblatts.
+Einstellungen des Deckblatts. In Formulare ist `{PROJEKT_KUERZEL}` wie bisher der Name des Projektordners (im Büro
+gleich dem Projektcode); in den Katasterplänen ohne Projektcode der Name des Projekts.
 
 In **Dokumentvorlagen** (Excel, Word, Text – doppelte Klammern, siehe [excel-vorlagen.md](excel-vorlagen.md) und
 [projektordner.md](projektordner.md#vorlagen)) gibt es dieselben globalen Variablen: `{{PROJEKT_KUERZEL}}`,

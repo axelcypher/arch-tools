@@ -270,7 +270,7 @@ const GLOBAL_KATASTER: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PR
 /** Variablen im Dateinamen der Katasterpläne */
 export const KATASTER_VARIABLEN: Variable[] = [
   ...GLOBAL_KATASTER,
-  { name: 'Art', text: 'Antragsart des aktiven Antrags, z. B. BAUA' },
+  { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA' },
   { name: 'Name', text: 'Name des Plans, z. B. Katasterauszug A4' },
 ];
 /** Variablen im festen Ablageordner */
