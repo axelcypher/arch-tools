@@ -127,13 +127,13 @@ const TASTEN_ARIA: Record<string, string> = {
 
 /**
  * Angezeigtes Tastenkürzel → Wert für `aria-keyshortcuts` („Strg+Umschalt+Z“ → „Control+Shift+Z“). Mehrere Kürzel
- * mit „/“ oder „,“ getrennt werden zu Alternativen (durch Leerzeichen getrennt).
+ * mit „/“ (nicht direkt nach „+“) oder „, “ getrennt werden zu Alternativen (durch Leerzeichen getrennt).
  */
 export function tastenAria(tasten: string): string {
   return (
     tasten
-      // Alternativen nur an „ / “ bzw. „, “ (mit Leerzeichen) – „Strg+/“ und „Strg+,“ bleiben ein Kürzel
-      .split(/\s+\/\s+|,\s+/)
+      // Alternativen an „/“, das nicht direkt auf „+“ folgt, und an „, “ – „Strg+/“ und „Strg+,“ bleiben ein Kürzel
+      .split(/(?<!\+)\s*\/\s*|,\s+/)
       .filter(Boolean)
       .map((kuerzel) =>
         // „Strg++“: das letzte Plus ist die Taste selbst

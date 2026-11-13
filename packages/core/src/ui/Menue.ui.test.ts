@@ -211,6 +211,8 @@ describe('gemeinsames Menü', () => {
     expect(tastenAria('F2')).toBe('F2');
     expect(tastenAria('Pos1, Ende')).toBe('Home End');
     expect(tastenAria('Strg+/')).toBe('Control+/');
+    expect(tastenAria('Entf/Rücktaste')).toBe('Delete Backspace');
+    expect(tastenAria('Strg+/ / Esc')).toBe('Control+/ Escape');
     expect(tastenAria('Strg+,')).toBe('Control+,');
     expect(tastenAria('Strg + Bild ab')).toBe('Control+PageDown');
     expect(tastenAria('Umschalt+Leer')).toBe('Shift+Space');
