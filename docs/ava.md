@@ -320,7 +320,8 @@ immer auf dem frisch gelesenen Stand der Datei (`avaDaten.ts`), damit Änderunge
 
 Gemeinsam mit den anderen Apps (`packages/core`): die Excel-Bausteine `dokumente/xml.ts`, `zip.ts`, `xlsx.ts` (von
 PERMIO, der Formular-App, hierher verschoben, mit Zellen mit Typ und dem Nachrechnen `xlsxRechnen.ts`), Projektwahl, Stammdaten,
-Projektdatei, Konfigurationsordner.
+Projektdatei, Konfigurationsordner. Abgeschnittene XML-Dateien (auch GAEB, Excel, Word) führen zum Fehler „XML: unvollständig“
+statt die App einfrieren zu lassen.
 
 Die Tauri-Hülle (`src-tauri/src/befehle.rs`, auch in Arkly eingebunden) ersetzt nur vorhandene Dateien
 der App (`.aslv`, `.asproj`, `.oalv`, `.xlsx`, `.xlsm`, `.pdf`, `.json`) – atomar, nach einer Sicherungskopie
