@@ -680,13 +680,15 @@ describe('Formulare', () => {
     eingabe(feldZeile(0).querySelector<HTMLInputElement>('.av-ed-label')!, 'Bauherrschaft');
     waehle(feldZeile(0).querySelector<HTMLSelectElement>('select[aria-label^="Breite"]')!, '8');
     await klick(feldZeile(1).querySelector<HTMLInputElement>('input[aria-label$="beginnt eine neue Zeile"]')!);
-    // Ort der Gemeinde mit dem Ort des Bauherrn verknüpfen (Knopf ⛓, dann das Kästchen)
-    const verknuepfeMit = async (zeile: HTMLElement, text: string) => {
-      const knopf = zeile.querySelector<HTMLButtonElement>('button.av-ed-link')!;
-      if (knopf.getAttribute('aria-expanded') !== 'true') await klick(knopf);
-      await klick([...editor.querySelectorAll<HTMLLabelElement>('.av-ed-link-liste label')].find((l) => l.textContent?.startsWith(text))!.querySelector('input')!);
+    // Ort der Gemeinde mit dem Ort des Bauherrn verknüpfen (Knopf ⛓ öffnet das Auswahlfenster, dort das Kästchen, „Fertig“)
+    const verknuepfeMit = async (zeile: HTMLElement, gruppe: string, titel: string) => {
+      await klick(zeile.querySelector<HTMLButtonElement>('button.av-ed-link')!);
+      const fenster = document.querySelector<HTMLElement>('.modal.av-verknuepfen')!;
+      const g = [...fenster.querySelectorAll('.av-ed-gruppe')].find((x) => x.querySelector('.av-ed-gruppe-titel')?.textContent === gruppe)!;
+      await klick([...g.querySelectorAll<HTMLLabelElement>('.av-ed-kat-feld')].find((l) => l.querySelector('span')!.textContent === titel)!.querySelector('input')!);
+      await klick([...fenster.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Fertig')!);
     };
-    await verknuepfeMit(feldZeile(1), 'Ort (Bauherr)');
+    await verknuepfeMit(feldZeile(1), 'Bauherr', 'Ort');
     await warte();
     const gespeichert = JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!);
     expect(gespeichert.abschnitte[0].optionen).toEqual({ '201:40': { label: 'Bauherrschaft', breite: 8 }, '232:110': { neueZeile: true } });
@@ -695,7 +697,7 @@ describe('Formulare', () => {
     // Bauherr › Ort wieder heraus
     await klick(feldZeile(2).querySelector<HTMLButtonElement>('.av-ed-weg')!);
     expect(JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!).verknuepfungen).toBeUndefined();
-    await verknuepfeMit(feldZeile(1), 'Name/Firma (Bauherr)');
+    await verknuepfeMit(feldZeile(1), 'Bauherr', 'Name/Firma');
     await warte();
     expect(imAufbau()).toEqual(['Name/Firma', 'Ort']);
     // mit der Tastatur umordnen
@@ -733,6 +735,24 @@ describe('Formulare', () => {
     eingabe(name, 'Musterfrau, Erika');
     // Navigation: Zahl der Einträge
     expect([...host.querySelectorAll('.pk-nav-eigen .pk-nav-kurz')].map((k) => k.textContent)).toEqual(['2 Einträge auf einer Seite']);
+  });
+
+  it('Projektkarte: verknüpft mit einem Feld außerhalb der eigenen Ansicht – beide Richtungen füllen gemeinsam', async () => {
+    // nur der Ort der Gemeinde steht in der Ansicht; verknüpft mit dem Ort des Bauherrn (nicht in der Ansicht)
+    localStorage.setItem('formulare:ansicht:projektkarte', JSON.stringify({ abschnitte: [{ id: 'a1', titel: 'Orte', felder: ['232:110'] }], verknuepfungen: [['232:110', '201:110']] }));
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await klick([...host.querySelectorAll<HTMLButtonElement>('.pk-nav-eintrag')].find((b) => b.textContent!.includes('Eigene Ansicht'))!);
+    expect(host.querySelector('.pk-eigen [data-pk="201:110"]')).toBeNull();
+    // in der eigenen Ansicht eingegeben: auch der Ort des Bauherrn
+    eingabe(host.querySelector<HTMLInputElement>('.pk-eigen [data-pk="232:110"]')!, 'Welver');
+    expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '232:110': 'Welver', '201:110': 'Welver' });
+    act(() => void useFormulare.getState().karteRueckgaengig());
+    expect(useFormulare.getState().karte!.aenderungen).toEqual({});
+    // umgekehrt: im Ort des Bauherrn (Gruppenansicht) eingegeben – auch der der Gemeinde
+    act(() => useFormulare.getState().karteSetzen(201, 110, 'Soest'));
+    expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '201:110': 'Soest', '232:110': 'Soest' });
   });
 
   it('Projektkarte: Verwerfen und Gruppe leeren wirken nur auf die eigenen Einträge, nicht über Verknüpfungen', async () => {
