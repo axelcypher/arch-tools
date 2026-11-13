@@ -127,7 +127,10 @@ ziehen ändert sie, ◇ in der Kantenmitte ziehen fügt einen Punkt ein, Entf/R�
 die Kontextmenütaste) öffnet das gemeinsame Menü der Suite: auf einem Punkt „Punkt löschen“ (gesperrt mit Grund „Nur noch 3 Punkte“, wenn
 nur noch drei Punkte da sind), auf einer Fläche bzw. der Auswahl „kopieren“, „duplizieren“, „Einfügen“ und „löschen“
 (dieselben Befehle wie Strg+C/D/V und Entf), auf der Kante eines Flurstücks „Flurstück löschen“, im Leeren
-„Einfügen“ und „Einpassen“. Das Menü gibt es nur im Werkzeug „Auswahl“ und nicht während des Zeichnens. Mausrad zoomt (nur den Plan), mittlere Maustaste,
+„Einfügen“ und „Einpassen“. Das Menü gibt es nur im Werkzeug „Auswahl“ und nicht während des Zeichnens.
+Im dunklen Schema mit „Zeichenfläche abdunkeln“ werden die Füllungen der Lageplanflächen vorgerechnet
+(`planFuellungDunkel`), damit sie nach dem Filter der Zeichenfläche im Ton der Farbmarken der Flächenbilanz erscheinen;
+die Farbmarken bleiben in der Originalfarbe. Mausrad zoomt (nur den Plan), mittlere Maustaste,
 Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Einpassen“ (F) zeigt alles. Punkte
 werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unter 1 mm bei jedem Zoom. Der
 Ausschnitt (Zoom, Verschiebung) bleibt bei allen Änderungen stehen und wird nur beim Öffnen eines anderen Projekts

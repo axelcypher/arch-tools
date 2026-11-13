@@ -24,6 +24,8 @@ interface RahmenState {
   /** App als Tab öffnen (oder zu ihrem Tab wechseln) */
   oeffnen: (id: string) => void;
   waehlen: (id: string) => void;
+  /** Startseite zeigen (die Tabs bleiben offen) */
+  startseite: () => void;
   schliessen: (id: string) => void;
   setStatus: (id: string, s: TabStatus) => void;
   /** Tab in ein eigenes Fenster verschoben */
@@ -58,6 +60,7 @@ export const useRahmen = create<RahmenState>()((set, get) => ({
   status: {},
   oeffnen: (id) => set((s) => ({ tabs: s.tabs.includes(id) ? s.tabs : [...s.tabs, id], aktiv: id })),
   waehlen: (id) => set({ aktiv: id }),
+  startseite: () => set({ aktiv: null }),
   schliessen: (id) =>
     set((s) => {
       const { [id]: _weg, ...status } = s.status;

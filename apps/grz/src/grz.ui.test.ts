@@ -14,6 +14,9 @@ import { ablageLeeren, useGrz } from './store';
 import { projekt } from './testdaten';
 import { einstiegsAktionen, farbschemaWechseln, stammdatenAendern } from '@core/ui/rauchtest';
 import { MenueHost } from '@core/ui/Menue';
+import { useTheme } from '@core/platform/theme';
+import { planFuellungDunkel } from '@core/planFarbe';
+import { versiegelungInfo } from '@core/lageplan';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -1097,6 +1100,35 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     expect(host.querySelector('#grz-vg-fehler')).toBeNull();
     expect(host.querySelector('#grz-grz2-fehler')).toBeNull();
     expect(host.querySelectorAll('input[aria-invalid="true"]')).toHaveLength(0);
+  });
+
+  it('Lageplan im dunklen Schema mit abgedunkelter Zeichenfläche: Füllungen vorgerechnet (planFuellungDunkel), Legende in Originalfarbe', () => {
+    const ausgang = useTheme.getState();
+    try {
+      useGrz.getState().load(projekt());
+      act(() => useTheme.setState({ theme: 'hell', canvasDunkel: true }));
+      const host = render(GrzGfzView);
+      const f = useGrz.getState().project.lageplan!.flaechen.find((x) => !x.nachbar && !x.variante)!;
+      const pfad = () => [...host.querySelectorAll('svg.grz-skizze path')].find((e) => e.querySelector('title')?.textContent?.startsWith(f.name))!;
+      const farbe = versiegelungInfo(f.versiegelung).color;
+      // hell: Originalfarbe mit Deckung 0,55
+      expect(pfad().getAttribute('fill')).toBe(farbe);
+      expect(pfad().getAttribute('fill-opacity')).toBe('0.55');
+      act(() => useTheme.setState({ theme: 'dunkel', canvasDunkel: true }));
+      const dunkel = planFuellungDunkel(farbe, 0.55);
+      expect(pfad().getAttribute('fill')).toBe(dunkel.farbe);
+      expect(Number(pfad().getAttribute('fill-opacity'))).toBeCloseTo(dunkel.deckung, 6);
+      expect(dunkel.farbe).not.toBe(farbe);
+      // Legende bleibt in der Originalfarbe, ohne Filter
+      const marke = [...host.querySelectorAll<HTMLElement>('.grz-table .swatch')].find((m) => m.parentElement?.textContent?.includes(versiegelungInfo(f.versiegelung).label))!;
+      expect(marke.style.background).not.toBe('');
+      expect(marke.style.filter).toBe('');
+      // Gegenprobe: dunkles Schema ohne Abdunkeln der Zeichenfläche → wieder die Originalfarbe
+      act(() => useTheme.setState({ theme: 'dunkel', canvasDunkel: false }));
+      expect(pfad().getAttribute('fill')).toBe(farbe);
+    } finally {
+      useTheme.setState({ theme: ausgang.theme, canvasDunkel: ausgang.canvasDunkel });
+    }
   });
 
   it('GRZ II < GRZ markiert nur bei BauNVO 1990 (Gegenprobe 1968/1977: altes grzIIMax macht die GRZ nicht ungültig)', () => {

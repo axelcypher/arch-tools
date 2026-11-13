@@ -21,6 +21,8 @@ import { frageText, meldung } from '@core/ui/Rueckfrage';
 import { newId } from '@core/model';
 import type { LageplanNutzung, Project, RasterBackground } from '@core/model';
 import { unterlageLesen, UnterlageZuGross } from '../unterlage';
+import { planFuellungDunkel } from '@core/planFarbe';
+import { useZeichenflaecheGefiltert } from '@core/platform/theme';
 import type { Werkzeug } from '../store';
 
 export interface Ausschnitt {
@@ -134,6 +136,10 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const project = useGrz((s) => s.project);
   const selected = useGrz((s) => s.selected);
   const selectedIds = useGrz((s) => s.selectedIds);
+  // dunkle, gefilterte Zeichenfläche: Füllungen so vorrechnen, dass sie nach dem Filter im Ton der Legende erscheinen
+  const gefiltert = useZeichenflaecheGefiltert();
+  const fuellung = (farbe: string, deckung: number) => (gefiltert ? planFuellungDunkel(farbe, deckung) : { farbe, deckung });
+  const anlageFuellung = fuellung('#8a8f99', 0.45);
   const werkzeug = useGrz((s) => s.werkzeug);
   const nutzungVorlage = useGrz((s) => s.nutzungVorlage);
   const st = useGrz.getState();
@@ -825,7 +831,12 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         <div className="lp-gruppe" role="group" aria-label="Werkzeug">
           {WERKZEUGE.map((w) => (
             <button key={w.id} className={werkzeug === w.id ? 'small active' : 'small'} aria-pressed={werkzeug === w.id} title={`${w.titel} (${w.taste})`} onClick={() => st.setWerkzeug(w.id)}>
-              {w.symbol && <Symbol name={w.symbol} />} {w.label}
+              {w.symbol && (
+                <>
+                  <Symbol name={w.symbol} />{' '}
+                </>
+              )}
+              {w.label}
             </button>
           ))}
         </div>
@@ -1076,26 +1087,29 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               })}
             </g>
           )}
-          {flaechen.map((f) => (
-            <path
-              key={f.id}
-              d={d(punkteVon(f.id, f.points))}
-              fill={versiegelungInfo(f.versiegelung).color}
-              fillOpacity={f.nachbar ? 0.15 : f.variante && f.variante !== variante ? 0.12 : 0.55}
-              className={f.variante && f.variante !== variante ? 'lp-andere-variante' : undefined}
-              stroke={f.nachbar ? 'var(--muted)' : 'var(--text)'}
-              strokeOpacity={f.nachbar ? 1 : 0.7}
-              strokeWidth={k}
-              strokeDasharray={f.nachbar ? `${k * 4} ${k * 3}` : undefined}
-            >
-              <title>{`${f.name} · ${nutzungLabel(f.nutzung)} · ${versiegelungInfo(f.versiegelung).label}${f.nachbar ? ' · Nachbar' : ''}`}</title>
-            </path>
-          ))}
+          {flaechen.map((f) => {
+            const fl = fuellung(versiegelungInfo(f.versiegelung).color, f.nachbar ? 0.15 : f.variante && f.variante !== variante ? 0.12 : 0.55);
+            return (
+              <path
+                key={f.id}
+                d={d(punkteVon(f.id, f.points))}
+                fill={fl.farbe}
+                fillOpacity={fl.deckung}
+                className={f.variante && f.variante !== variante ? 'lp-andere-variante' : undefined}
+                stroke={f.nachbar ? 'var(--muted)' : 'var(--text)'}
+                strokeOpacity={f.nachbar ? 1 : 0.7}
+                strokeWidth={k}
+                strokeDasharray={f.nachbar ? `${k * 4} ${k * 3}` : undefined}
+              >
+                <title>{`${f.name} · ${nutzungLabel(f.nutzung)} · ${versiegelungInfo(f.versiegelung).label}${f.nachbar ? ' · Nachbar' : ''}`}</title>
+              </path>
+            );
+          })}
           {n.hauptanlagePolygone.map((pts, i) => (
             <path key={`h${i}`} d={d(pts)} fill="url(#grz-hatch)" stroke="#1d3f96" strokeWidth={k * 2} fillRule="evenodd" pointerEvents="none" />
           ))}
           {n.anlagenPolygone.map((pts, i) => (
-            <path key={`a${i}`} d={d(pts)} fill="#8a8f99" fillOpacity={0.45} stroke="#1d3f96" strokeWidth={k * 1.5} pointerEvents="none">
+            <path key={`a${i}`} d={d(pts)} fill={anlageFuellung.farbe} fillOpacity={anlageFuellung.deckung} stroke="#1d3f96" strokeWidth={k * 1.5} pointerEvents="none">
               <title>Gebäudeteil als Garage/Nebenanlage</title>
             </path>
           ))}

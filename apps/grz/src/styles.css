@@ -345,11 +345,10 @@ button.link:hover {
   overflow: auto;
   background: var(--bg);
 }
-/* Legende der Flächenbilanz: Farbfeld wie die Planfüllung, im dunklen Schema mit der Zeichenfläche invertiert */
+/* Legende der Flächenbilanz: Farbmarke sichtbar (Inline-Element), Originalfarbe ohne Filter (docs/design.md, Planfarben) */
 .grz-table .swatch {
   display: inline-block;
   vertical-align: middle;
-  filter: var(--canvas-filter);
 }
 
 /* ungespeicherte Änderungen: Punkt außen an der oberen rechten Ecke von „Speichern“ (wie QUADRIO) */

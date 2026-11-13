@@ -843,8 +843,8 @@ export function GrzGfzView() {
                 {VERSIEGELUNGEN.map((v) => (
                   <tr key={v.id}>
                     <td>
-                      {/* wie die Füllung im Plan: Farbe zu 55 % auf hellem Grund, im dunklen Schema mit der Zeichenfläche invertiert */}
-                      <span className="swatch" style={{ background: `color-mix(in srgb, ${v.color} 55%, #fff)` }} /> {v.label}
+                      {/* Farbmarke in der Originalfarbe; der Plan rechnet seine Füllung auf der dunklen Zeichenfläche passend vor (planFuellungDunkel) */}
+                      <span className="swatch" style={{ background: v.color }} /> {v.label}
                     </td>
                     <td className="num">{fmt2(n.bilanz[v.id])} m²</td>
                   </tr>
