@@ -1,10 +1,22 @@
 import { useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
+import { bestaetigen } from '@core/ui/Rueckfrage';
 import type { LvKopf, OzMaske } from '../../lv/modell';
 import { useAva } from '../../store';
 import { DatumEingabe, Feld, TextEingabe, ZahlEingabe } from '../eingaben';
 
-const VERGABEARTEN = ['Freihändige Vergabe', 'Verhandlungsvergabe', 'Beschränkte Ausschreibung', 'Öffentliche Ausschreibung', 'Private Ausschreibung'];
+/** Vorschläge nach VOB/A (Abschnitt 1 und EU) und für private Auftraggeber; freie Eingabe bleibt möglich, vorhandene Werte bleiben erhalten */
+const VERGABEARTEN = [
+  'Öffentliche Ausschreibung',
+  'Beschränkte Ausschreibung mit Teilnahmewettbewerb',
+  'Beschränkte Ausschreibung ohne Teilnahmewettbewerb',
+  'Freihändige Vergabe',
+  'Direktauftrag',
+  'Offenes Verfahren (EU)',
+  'Nicht offenes Verfahren (EU)',
+  'Verhandlungsverfahren (EU)',
+  'Angebotsanfrage (privater Auftraggeber)',
+];
 
 /** Eigenschaften des LV: Kopfangaben, Termine, OZ-Maske, Umsatzsteuer */
 export function LvKopfDialog({ onClose }: { onClose: () => void }) {
@@ -13,6 +25,12 @@ export function LvKopfDialog({ onClose }: { onClose: () => void }) {
   const [m, setM] = useState<OzMaske>(offen.lv.ozMaske);
   const [anteile, setAnteile] = useState(offen.lv.preisanteile.join(', '));
   const p = (patch: Partial<LvKopf>) => setK((x) => ({ ...x, ...patch }));
+  const geaendert = JSON.stringify([k, m, anteile]) !== JSON.stringify([offen.lv.kopf, offen.lv.ozMaske, offen.lv.preisanteile.join(', ')]);
+  /** Abbrechen, Esc: geänderte Angaben nicht ohne Rückfrage verwerfen */
+  const abbrechen = async () => {
+    if (geaendert && !(await bestaetigen('Änderungen verwerfen?', 'Die geänderten LV-Eigenschaften werden nicht übernommen.', 'Verwerfen', true))) return;
+    onClose();
+  };
   const uebernehmen = () => {
     useAva.getState().lvAendern((l) => ({
       ...l,
@@ -26,7 +44,7 @@ export function LvKopfDialog({ onClose }: { onClose: () => void }) {
     onClose();
   };
   return (
-    <Modal titel="LV-Eigenschaften" onClose={onClose} breit>
+    <Modal titel="LV-Eigenschaften" onClose={() => void abbrechen()} breit klickDaneben={false}>
       <h2>LV-Eigenschaften</h2>
       <div className="ava-formular">
         <Feld label="Bezeichnung" breit>
@@ -82,8 +100,8 @@ export function LvKopfDialog({ onClose }: { onClose: () => void }) {
         <Feld label="Währung">
           <TextEingabe wert={k.waehrung} onChange={(waehrung) => p({ waehrung: waehrung || 'EUR' })} />
         </Feld>
-        <Feld label="Preisanteile" hinweis="durch Komma getrennt" breit>
-          <TextEingabe wert={anteile} onChange={setAnteile} />
+        <Feld label="Preisanteile" hinweis={offen.format === 'aslv' ? 'wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.oalv) möglich' : 'durch Komma getrennt'} breit>
+          {offen.format === 'aslv' ? <input value={anteile} disabled /> : <TextEingabe wert={anteile} onChange={setAnteile} />}
         </Feld>
       </div>
       <h3>OZ-Maske</h3>
@@ -102,16 +120,16 @@ export function LvKopfDialog({ onClose }: { onClose: () => void }) {
             <tr key={i}>
               <td>{i + 1}</td>
               <td>
-                <input value={e.name} onChange={(x) => setM({ ...m, ebenen: m.ebenen.map((y, j) => (j === i ? { ...y, name: x.target.value } : y)) })} />
+                <input aria-label={`Name Ebene ${i + 1}`} value={e.name} onChange={(x) => setM({ ...m, ebenen: m.ebenen.map((y, j) => (j === i ? { ...y, name: x.target.value } : y)) })} />
               </td>
               <td className="num">
-                <input type="number" min={1} max={6} value={e.stellen} onChange={(x) => setM({ ...m, ebenen: m.ebenen.map((y, j) => (j === i ? { ...y, stellen: Number(x.target.value) || 1 } : y)) })} />
+                <input aria-label={`Stellen Ebene ${i + 1}`} type="number" min={1} max={6} value={e.stellen} onChange={(x) => setM({ ...m, ebenen: m.ebenen.map((y, j) => (j === i ? { ...y, stellen: Number(x.target.value) || 1 } : y)) })} />
               </td>
               <td className="num">
-                <input type="number" min={1} max={100} value={e.schritt} onChange={(x) => setM({ ...m, ebenen: m.ebenen.map((y, j) => (j === i ? { ...y, schritt: Number(x.target.value) || 1 } : y)) })} />
+                <input aria-label={`Schritt Ebene ${i + 1}`} type="number" min={1} max={100} value={e.schritt} onChange={(x) => setM({ ...m, ebenen: m.ebenen.map((y, j) => (j === i ? { ...y, schritt: Number(x.target.value) || 1 } : y)) })} />
               </td>
               <td>
-                <input type="checkbox" checked={e.aktiv} onChange={(x) => setM({ ...m, ebenen: m.ebenen.map((y, j) => (j === i ? { ...y, aktiv: x.target.checked } : y)) })} />
+                <input aria-label={`Ebene ${i + 1} aktiv`} type="checkbox" checked={e.aktiv} onChange={(x) => setM({ ...m, ebenen: m.ebenen.map((y, j) => (j === i ? { ...y, aktiv: x.target.checked } : y)) })} />
               </td>
             </tr>
           ))}
@@ -119,17 +137,17 @@ export function LvKopfDialog({ onClose }: { onClose: () => void }) {
             <td>Position</td>
             <td />
             <td className="num">
-              <input type="number" min={1} max={6} value={m.position.stellen} onChange={(x) => setM({ ...m, position: { ...m.position, stellen: Number(x.target.value) || 4 } })} />
+              <input aria-label="Stellen der Positionen" type="number" min={1} max={6} value={m.position.stellen} onChange={(x) => setM({ ...m, position: { ...m.position, stellen: Number(x.target.value) || 4 } })} />
             </td>
             <td className="num">
-              <input type="number" min={1} max={100} value={m.position.schritt} onChange={(x) => setM({ ...m, position: { ...m.position, schritt: Number(x.target.value) || 10 } })} />
+              <input aria-label="Schritt der Positionen" type="number" min={1} max={100} value={m.position.schritt} onChange={(x) => setM({ ...m, position: { ...m.position, schritt: Number(x.target.value) || 10 } })} />
             </td>
             <td>✓</td>
           </tr>
         </tbody>
       </table>
       <div className="dialog-buttons">
-        <button onClick={onClose}>Abbrechen</button>
+        <button onClick={() => void abbrechen()}>Abbrechen</button>
         <button className="primary" onClick={uebernehmen}>
           Übernehmen
         </button>

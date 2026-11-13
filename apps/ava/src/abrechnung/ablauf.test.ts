@@ -5,12 +5,12 @@ import { strFromU8 } from 'fflate';
 import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { musterMappe } from '../__fixtures__/muster';
-import { avaAus } from '../avaDaten';
+import { avaAendern, avaAus } from '../avaDaten';
 import { SpeicherDateien } from '../dateien';
 import { VORGABE } from '../einstellungen';
 import { projektLesen } from '../projekt';
 import type { Kontext } from './ablauf';
-import { kkLaden, mailEntwurf, rechnungErfassen, scanAblegen } from './ablauf';
+import { datensatzNachtragen, kkLaden, mailEntwurf, rechnungErfassen, scanAblegen, TeilweiseErfasst } from './ablauf';
 import { neuePruefung, VORGABE_PRUEFUNG } from './pruefung';
 
 const P = '/server/Projekte/P99 Musterhaus';
@@ -58,7 +58,7 @@ describe('Rechnungsprüfung von der Erfassung bis zur Mail', () => {
     const { fs, k } = await aufbau();
     const s = await projektLesen(fs, P, k.e);
     const kkPfad = s.kostenkontrolle!.pfad;
-    const pruefung = { ...neuePruefung(VORGABE_PRUEFUNG, { schluss: true }), forderungNetto: 26110.22, freigabeNetto: 26110.22, bereits: [{ text: 'AB 1', datum: '2025-10-24', betrag: 27824.22 }] };
+    const pruefung = { ...neuePruefung(VORGABE_PRUEFUNG), einbehaltProzent: 0, forderungNetto: 26110.22, freigabeNetto: 26110.22, bereits: [{ text: 'AB 1', datum: '2025-10-24', betrag: 27824.22 }] };
     const r = await rechnungErfassen(k, kkPfad, { gewerk: 'G8', firma: 'Fenster Muster', art: 'SR', lfd: 1, rechnungsdatum: '2025-10-24', freigabe: '2026-01-22', pruefung }, new Date(2026, 0, 22));
     expect(r.datensatz).toMatchObject({ nr: 3, betrag: 3091.58, status: 'erfasst' });
     const kk = (await kkLaden(fs, P, kkPfad)).kk;
@@ -78,5 +78,79 @@ describe('Rechnungsprüfung von der Erfassung bis zur Mail', () => {
     expect(eml).toContain('To: erika@example.org');
     expect(eml).toContain('Content-Disposition: attachment;');
     expect(ava.rechnungen[0].status).toBe('versendet');
+  });
+});
+
+describe('Rechnungsprüfung – Fehlerfälle ohne doppelte Einträge', () => {
+  const erfassung = { gewerk: 'G8', firma: 'Fenster Muster', art: 'AB', lfd: 2, rechnungsdatum: '2025-11-24', freigabe: '2025-11-30', betrag: 1000 };
+
+  it('Projektdatei nicht schreibbar: Teilerfolg mit Nummer, Nachtragen ohne zweite Nummer', async () => {
+    const { fs, k } = await aufbau();
+    const kkPfad = (await projektLesen(fs, P, k.e)).kostenkontrolle!.pfad;
+    const kaputt = { ...k, oap: 'Organisation/fehlt.oap' };
+    const fehler = await rechnungErfassen(kaputt, kkPfad, erfassung).catch((e: unknown) => e);
+    expect(fehler).toBeInstanceOf(TeilweiseErfasst);
+    const t = fehler as TeilweiseErfasst;
+    expect(t.datensatz.nr).toBe(3);
+    expect(t.message).toContain('als Nr. 3 eingetragen');
+    // nachtragen (zweimal) – ein Datensatz, die Kostenkontrolle bekommt keine neue Nummer
+    await datensatzNachtragen(k, t.datensatz);
+    const ava = await datensatzNachtragen(k, t.datensatz);
+    expect(ava.rechnungen.map((r) => r.nr)).toEqual([3]);
+    expect((await kkLaden(fs, P, kkPfad)).kk.rechnungsliste!.rechnungen.filter((r) => r.nr === 3)).toHaveLength(1);
+    expect((await kkLaden(fs, P, kkPfad)).kk.rechnungsliste!.naechsteNr).toBe(4);
+  });
+
+  it('Kostenkontrolle inzwischen geändert: nichts eingetragen, Projektdatei unverändert', async () => {
+    const { fs, k } = await aufbau();
+    const kkPfad = (await projektLesen(fs, P, k.e)).kostenkontrolle!.pfad;
+    const ersetzen = fs.ersetzen.bind(fs);
+    fs.ersetzen = async (root, pfad, daten, stand) => {
+      fs.setze(P, kkPfad, await musterMappe()); // ein Kollege speichert dazwischen
+      return ersetzen(root, pfad, daten, stand);
+    };
+    await expect(rechnungErfassen(k, kkPfad, erfassung)).rejects.toThrow('inzwischen geändert');
+    expect(avaAus(projektdateiRoh((await fs.lies(P, k.oap))!.daten).ava).rechnungen).toHaveLength(0);
+  });
+
+  it('Scan ablegen: vorhandene Datei wird nicht überschrieben, Scan bleibt liegen', async () => {
+    const { fs, k } = await aufbau();
+    const s = await projektLesen(fs, P, k.e);
+    const r = await rechnungErfassen(k, s.kostenkontrolle!.pfad, erfassung);
+    fs.setze(P, 'Gewerke/G08 Fenster/Auftrag/Belegt.pdf', new Uint8Array([9]));
+    await expect(scanAblegen(k, r.datensatz, s.gewerke[1], { ordner: SCANS, datei: 'Scan_20261112_093000.pdf' }, { name: 'Belegt.pdf' })).rejects.toThrow('gibt es schon');
+    expect(await fs.lies(SCANS, 'Scan_20261112_093000.pdf')).not.toBeNull();
+    expect((await fs.lies(P, 'Gewerke/G08 Fenster/Auftrag/Belegt.pdf'))!.daten).toEqual(new Uint8Array([9]));
+    expect(avaAus(projektdateiRoh((await fs.lies(P, k.oap))!.daten).ava).rechnungen[0].datei).toBeUndefined();
+  });
+
+  it('Scan ablegen: unzulässige Zeichen im Namen, Teilerfolg wenn der Scan nicht löschbar ist', async () => {
+    const { fs, k } = await aufbau();
+    const s = await projektLesen(fs, P, k.e);
+    const r = await rechnungErfassen(k, s.kostenkontrolle!.pfad, erfassung);
+    const original = fs.scanUebernehmen.bind(fs);
+    fs.scanUebernehmen = async (_so, _sd, root, ziel, daten) => {
+      fs.setze(root, ziel, daten ?? new Uint8Array([1]));
+      throw new Error('Übernommen, aber der Scan ließ sich nicht aus dem Scanordner entfernen');
+    };
+    const ab = await scanAblegen(k, r.datensatz, s.gewerke[1], { ordner: SCANS, datei: 'Scan_20261112_093000.pdf' }, { name: 'AB2: Fenster/Muster?.pdf' });
+    expect(ab.pfad).toBe('Gewerke/G08 Fenster/Auftrag/AB2 Fenster Muster.pdf');
+    expect(ab.warnung).toContain('nicht aus dem Scanordner entfernen');
+    expect(ab.ava.rechnungen[0]).toMatchObject({ datei: ab.pfad, status: 'abgelegt' });
+    // Gegenprobe: ohne Datei im Projekt bleibt es ein Fehler
+    fs.scanUebernehmen = async () => {
+      throw new Error('Netzlaufwerk weg');
+    };
+    await expect(scanAblegen(k, r.datensatz, s.gewerke[1], { ordner: SCANS, datei: 'Scan_20261112_093000.pdf' }, { name: 'Anders.pdf' })).rejects.toThrow('Netzlaufwerk weg');
+    fs.scanUebernehmen = original;
+  });
+
+  it('avaAendern behält Abschnitte, die diese Version nicht kennt', async () => {
+    const { fs, k } = await aufbau();
+    await avaAendern(fs.projektordner, P, k.oap, (a) => ({ ...a, zukunft: [1, 2] }) as typeof a);
+    await avaAendern(fs.projektordner, P, k.oap, (a) => ({ ...a, zahler: 'z@example.org' }));
+    const roh = projektdateiRoh((await fs.lies(P, k.oap))!.daten).ava as Record<string, unknown>;
+    expect(roh.zukunft).toEqual([1, 2]);
+    expect(roh.zahler).toBe('z@example.org');
   });
 });
