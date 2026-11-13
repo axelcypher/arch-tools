@@ -1,6 +1,6 @@
 {
   "ava": {
     "stufe": "patch",
-    "notiz": "Scheitert beim Schließen in Arkly das Speichern, fragt Arkly jetzt nach, statt still zu schließen."
+    "notiz": "Scheitert beim Schließen in Arkly das Speichern oder hat das offene LV ungespeicherte Änderungen, fragt Arkly jetzt nach, statt still zu schließen."
   }
 }

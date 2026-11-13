@@ -126,8 +126,9 @@ export function App() {
 
   // Arkly (Schließen, Andocken, Herauslösen, Update-Neustart): laufende Eingabe übernehmen und laufendes Schreiben
   // der Projektdatei, Kostenkontrolle bzw. des LV abwarten
-  // (Rückgabe false = ein Schreiben ist gescheitert; Arkly fragt dann nach, statt still zu schließen)
-  useEffect(() => vorDemSchliessen(ausstehendesSchreibenAbwarten), []);
+  // (Rückgabe false = ein Schreiben ist gescheitert oder das offene LV hat ungespeicherte Änderungen; Arkly fragt dann
+  // nach, statt still zu schließen)
+  useEffect(() => vorDemSchliessen(() => ausstehendesSchreibenAbwarten(() => lvGeaendert(useAva.getState().lv))), []);
 
   useEffect(() => {
     const vorEnde = (e: BeforeUnloadEvent) => {
@@ -204,7 +205,7 @@ export function App() {
           <Navigation
             onStammdaten={async (meta, neuerName) => {
               try {
-                await schreibend(projektdateiSchreiben(useAva.getState().fs.projektordner, projekt.ordner, projekt.oap, (roh) => ({ ...roh, name: neuerName, meta })), 'projektdatei');
+                await schreibend(projektdateiSchreiben(useAva.getState().fs.projektordner, projekt.ordner, projekt.oap, (roh) => ({ ...roh, name: neuerName, meta })));
                 useAva.getState().setMeta(meta, neuerName);
               } catch (e) {
                 await meldung('Stammdaten nicht gespeichert', 'Die Projektdatei ließ sich nicht schreiben.', e);

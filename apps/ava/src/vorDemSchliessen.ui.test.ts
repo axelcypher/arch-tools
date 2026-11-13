@@ -47,30 +47,23 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
   });
 
-  it('gescheitertes Schreiben eines Ziels: false mit Grund im Protokoll, auch beim zweiten Aufruf, bis dasselbe Ziel gespeichert ist', async () => {
+  it('ungespeicherte Änderungen nach dem Warten: false mit Protokolleintrag, auch beim zweiten Aufruf, bis gespeichert oder verworfen', async () => {
     clearLog();
-    const p = schreibend(Promise.reject(new Error('Projektdatei gesperrt')), 'projektdatei');
-    p.catch(() => {});
-    await takt(); // schon vor dem Aufruf gescheitert (nicht mehr laufend)
-    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(false);
+    let offen = true;
+    await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(false);
+    await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(false);
     const fehler = getEntries().filter((e) => e.scope === 'schreiben' && e.level === 'error');
-    expect(fehler).toHaveLength(1);
-    expect(fehler[0].message).toContain('projektdatei');
-    expect(fehler[0].data).toContain('Projektdatei gesperrt');
-    // „Erneut versuchen“: weiterhin false, auch wenn ein anderes Ziel gelingt
-    void schreibend(Promise.resolve(), 'kostenkontrolle');
-    void schreibend(Promise.resolve());
-    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(false);
-    // erst ein gelungenes Schreiben desselben Ziels gibt frei
-    void schreibend(Promise.resolve(), 'projektdatei');
-    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
+    expect(fehler).toHaveLength(2);
+    expect(fehler[0].message).toContain('ungespeicherte Änderungen');
+    offen = false; // gespeichert oder verworfen
+    await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(true);
   });
 
-  it('einmalige Aktion ohne Ziel: ein Fehler vor dem Aufruf hält das Schließen nicht auf (die Oberfläche hat ihn gemeldet)', async () => {
-    const p = schreibend(Promise.reject(new Error('Mailentwurf gescheitert')));
+  it('ein Schreiben, das schon vor dem Aufruf gescheitert ist (z. B. Projektdatei), hält das Schließen nicht auf: im Speicher ist nichts ungespeichert', async () => {
+    const p = schreibend(Promise.reject(new Error('Projektdatei gesperrt')));
     p.catch(() => {});
     await takt();
-    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
+    await expect(ausstehendesSchreibenAbwarten(() => false)).resolves.toBe(true);
   });
 
   it('übernimmt die laufende Eingabe genau einmal, auch bei mehrfachem Aufruf', async () => {
@@ -163,12 +156,24 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     await act(takt);
     scheitern();
     await act(async () => void (await expect(gescheitert).resolves.toBe('fehler')));
-    // „Erneut versuchen“ bei nicht gespeichertem Ziel: bleibt „fehler“, bis dasselbe Ziel gespeichert ist
-    schreibend(Promise.reject(new Error('LV gesperrt')), 'lv:/p/LV 1.x83').catch(() => {});
-    await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
-    await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
-    void schreibend(Promise.resolve(), 'lv:/p/LV 1.x83');
-    await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig')));
+    // LV mit ungespeicherten Änderungen (z. B. nach gescheitertem Speichern): bleibt „fehler“, auch bei „Erneut versuchen“
+    const vorher = useAva.getState();
+    try {
+      const alt = { positionen: [] };
+      useAva.setState({ lv: { lv: { positionen: [1] }, basis: alt } as never });
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
+      // gespeichert (Stand = Basis) → fertig
+      useAva.setState({ lv: { lv: alt, basis: alt } as never });
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig')));
+      // verworfen bzw. LV geschlossen → fertig
+      useAva.setState({ lv: { lv: { positionen: [2] }, basis: alt } as never });
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
+      useAva.setState({ lv: null });
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig')));
+    } finally {
+      useAva.setState(vorher, true);
+    }
     // Gegenprobe: nach dem Abbau ist FABRIO abgemeldet – Arkly wartet nicht mehr auf FABRIO
     act(() => root?.unmount());
     root = null;
