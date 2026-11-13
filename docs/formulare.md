@@ -738,7 +738,7 @@ beschrieben.
   `{Kurzname}`, `{Datum}` gelten weiter) – etwa `Organisation/{PROJEKT_KUERZEL} {DATUM} {PROJEKT_VORHABEN}.oap` →
   `Organisation/BS9 261110 Neubau EFH.oap`; leere Angaben fallen weg. Die Einstellungen (Projektdatei) fügen
   Platzhalter per Chip ein, zeigen ein Beispiel, warnen vor unbekannten Platzhaltern (sie blieben so im Namen) und
-  bieten bei alten Namen „Vorlage anpassen“ an.
+  bieten bei alten Namen „Auf neue Namen umstellen“ an.
 - **Fehlt der Projektordner:** „Kein Projektordner – zuordnen …“ im Projektkopf (und automatisch, wenn er gebraucht
   wird): einen vorhandenen Ordner wählen oder im Stammordner einen neuen anlegen (Vorschlag „Kürzel Titel“), danach
   folgt bei Bedarf der Stammdaten-Dialog. Die Zuordnung gilt für alle im Büro (gemeinsamer Konfigurationsordner,

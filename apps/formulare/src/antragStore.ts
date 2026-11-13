@@ -376,8 +376,10 @@ export const zeilenFassung = (s: Pick<AntragState, 'projektdatei' | 'fassungen' 
 export const antragsOrdner = (s: Parameters<typeof aktiveFassung>[0], p: Projekt | null) => `${wirksameEinstellungen(s, p).antragsordner.replace(/^\/+|\/+$/g, '')}/${aktiveFassung(s, p)}`;
 
 /** Stammdaten der Projektdatei (.oap) des gewählten Projekts, sofern gelesen – für die globalen Variablen */
-const oapMeta = () => {
-  const o = useFormulare.getState().oap;
+const oapMeta = (p: Projekt | null) => {
+  const { oap: o, projekt } = useFormulare.getState();
+  // nur die Projektdatei des gewählten Projekts – für ein anderes gibt es keine gelesenen Stammdaten
+  if (!p || !projekt || p.root !== projekt.root || p.ordner !== projekt.ordner) return undefined;
   return o && o !== 'fehlt' ? o.inhalt.meta : undefined;
 };
 
@@ -385,7 +387,7 @@ const oapMeta = () => {
 export function zielOrdner(s: Parameters<typeof aktiveFassung>[0], p: Projekt | null): string {
   const e = wirksameEinstellungen(s, p);
   if (e.ziel === 'aktiv' || !e.zielpfad.trim()) return antragsOrdner(s, p);
-  const meta = oapMeta();
+  const meta = oapMeta(p);
   return zielpfadAus(e.zielpfad, { kuerzel: p?.ordner ?? '', antrag: aktiveFassung(s, p), art: artVonFassung(s, p, aktiveFassung(s, p)), kurzname: meta?.kurzname, vorhaben: meta?.vorhaben, bearbeiter: meta?.bearbeiter });
 }
 
@@ -1801,7 +1803,7 @@ export function exportVorschlag(formularPfad: string, datum = new Date()): Expor
   const info = st.formularInfo[formularPfad];
   const doc = st.dokumente.find((d) => d.formular?.pfad === formularPfad);
   const formularName = ohneEndung(nurName(formularPfad));
-  const meta = oapMeta();
+  const meta = oapMeta(projekt);
   const name = dateiname(e.namensvorlage, {
     // Projektkürzel ist in den Formularen der Name des Projektordners (wie bisher)
     kuerzel: projekt?.ordner ?? '',

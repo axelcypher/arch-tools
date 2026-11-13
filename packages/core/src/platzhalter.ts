@@ -214,6 +214,12 @@ function alsText(wert: Wert, angabe: string | undefined): string | null {
     const f = (angabe ?? 'JJMMTT').trim();
     return DATUMSFORMAT.test(f) ? datumNachFormat(wert, f.toUpperCase()) : null;
   }
+  // ein Jahr als Zahl bzw. vierstelliger Text: Format JJJJ bzw. JJ
+  const jahr = typeof wert === 'number' || /^\d{4}$/.test(wert) ? Number(wert) : null;
+  if (jahr !== null && angabe && DATUMSFORMAT.test(angabe.trim()) && /^J+$/i.test(angabe.trim())) {
+    const f = angabe.trim().toUpperCase();
+    return f === 'JJ' ? String(jahr % 100).padStart(2, '0') : f === 'JJJJ' ? String(jahr) : null;
+  }
   if (typeof wert === 'number') {
     if (!angabe) return String(wert);
     return /^\d+$/.test(angabe.trim()) ? String(wert).padStart(Number(angabe), '0') : null;

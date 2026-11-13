@@ -1659,7 +1659,7 @@ input.feld-fehler:focus {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 .ph-gruppe-titel {
   font-size: 11px;
@@ -1669,13 +1669,17 @@ input.feld-fehler:focus {
 button.ph-chip {
   font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
   font-size: 11px;
-  padding: 1px 6px;
+  padding: 2px 7px;
+  min-height: 22px;
 }
 /* global: gilt überall gleich – Akzentfarbe; lokal: nur hier – neutral mit gestricheltem Rand */
 button.ph-global {
   background: var(--accent-soft);
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   color: var(--text);
+}
+button.ph-global:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 22%, var(--panel));
 }
 button.ph-lokal {
   background: var(--panel);

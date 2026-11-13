@@ -63,7 +63,8 @@ export function globaleAva(meta: Pick<ProjectMeta, 'projektcode' | 'kurzname' | 
 
 /** Name einer neuen LV-Datei (ohne Bezeichnung und Endung); unbekannte Platzhalter fallen weg */
 export function lvDateiname(vorlage: string, werte: Record<string, Wert>): string {
-  return ersetzen(vorlage, LV_NAME_VARIABLEN, werte)
+  // Werte ohne „/“ und andere unzulässige Zeichen – ein „/“ im Vorhaben darf keinen Unterordner ergeben
+  return ersetzen(vorlage, LV_NAME_VARIABLEN, werte, { saeubern: (t) => t.replace(/[\\/:*?"<>|]+/g, ' ') })
     .replace(/\{[^}]*\}/g, '')
     .replace(/\s+/g, ' ')
     .trim();

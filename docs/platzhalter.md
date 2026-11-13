@@ -75,8 +75,10 @@ Ersetzen als Alias erkannt – ohne Rücksicht auf Groß-/Kleinschreibung, mit i
 | `{name}`, `{nr}`, `{plannummer}`, `{index}`, `{titel}` …                                                                       | `{Name}`, `{Nr}`, `{Plannummer}`, `{Index}`, `{Titel}`                           |
 
 Ein exakter neuer Name geht immer vor: `{DATUM}` ist überall die globale Variable, auch wo `{Datum}` früher etwas
-anderes hieß. Enthält eine Einstellung alte Namen, steht am Feld „Alte Schreibweise (funktioniert weiter): {Kürzel} →
-{PROJEKT_KUERZEL} …“ mit dem Knopf **Vorlage anpassen** – erst dieser Klick stellt die Einstellung auf die neuen Namen
+anderes hieß. Wer früher genau `{DATUM}` (groß) geschrieben hatte – die alten Platzhalter achteten nicht auf
+Groß-/Kleinschreibung –, bekommt jetzt die neue Bedeutung: im Projektordner JJMMTT statt JJJJ-MM-TT, in den
+Rechnungsmustern der AVA den Tag des Vorgangs statt des Rechnungsdatums. Das betrifft nur diese eine Schreibweise. Enthält eine Einstellung alte Namen, steht am Feld „Alte Schreibweise (funktioniert weiter): {Kürzel} →
+{PROJEKT_KUERZEL} …“ mit dem Knopf **Auf neue Namen umstellen** – erst dieser Klick stellt die Einstellung auf die neuen Namen
 um, mit gleicher Bedeutung (`{datum}` im Projektordner wird zu `{DATUM:JJJJ-MM-TT}`).
 
 ## Für Entwickler

@@ -3070,14 +3070,18 @@ button.gefahr {
 .es-breit input {
   width: 100%;
 }
-.es-platzhalter {
+.es-platzhalter-zeile {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 4px 10px;
 }
-.es-platzhalter button {
-  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  font-size: 11px;
+.es-platzhalter-zeile .ph-chips {
+  margin-top: 0;
+}
+/* Chips des festen Zielordners: eingerückt unter dem Optionsfeld */
+.es-ziel-platzhalter {
+  margin: -4px 0 8px 24px;
 }
 .es-katalog input,
 .es-katalog select {

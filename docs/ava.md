@@ -193,7 +193,7 @@ noch „Senden“. Vorlagen (Einstellungen › Mailvorlagen) mit den globalen Pl
 Deckblatts – …, siehe [platzhalter.md](platzhalter.md)) und lokal `{Gewerk} {Firma} {FirmaMail} {Rechnung} {Nr}
 {Betrag} {Rechnungsdatum} {Zahler}`, in der Protokollvorlage `{Nr} {Protokolldatum} {Teilnehmer}`. Die Chips unter
 der Vorlage fügen in das zuletzt bearbeitete Feld ein. Alte Namen (`{Kürzel}`, `{Projekt}`, `{Datum}`, `{Firma-Mail}`,
-`{Bearbeiter}`) gelten weiter; „Vorlage anpassen“ stellt um. Mitgeliefert: geprüfte Rechnung an den Zahler, Auftrag
+`{Bearbeiter}`) gelten weiter; „Auf neue Namen umstellen“ stellt um. Mitgeliefert: geprüfte Rechnung an den Zahler, Auftrag
 an die Firma, Protokoll an die Teilnehmer.
 
 ### Kostenkontrolle (Excel)

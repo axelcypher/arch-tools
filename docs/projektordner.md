@@ -215,7 +215,7 @@ im Konfigurationsordner, je Sicherung mit Namen `projektordner.json.bak-JJJJ-MM-
 
 Unter jedem Schemafeld stehen die Platzhalter als Chips – globale und lokale unterscheidbar, wie in allen Apps
 ([platzhalter.md](platzhalter.md)). Gespeicherte Schemata mit alten Namen (`{jahr}-{nr:3}`, `{nummer} {kurzname}`)
-gelten weiter; „Vorlage anpassen“ am Feld stellt sie auf die neuen Namen um.
+gelten weiter; „Auf neue Namen umstellen“ am Feld stellt sie auf die neuen Namen um.
 
 Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, rechts die Angaben zur Auswahl:
 

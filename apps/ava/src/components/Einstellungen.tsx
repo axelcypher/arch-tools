@@ -110,6 +110,7 @@ export function EinstellungenModal() {
                   fokusBehalten={false}
                   onEinfuegen={(p) => setE((x) => ({ ...x, rechnungen: { ...x.rechnungen, muster: [platzhalterEinfuegen(x.rechnungen.muster[0] ?? '', p).text, ...x.rechnungen.muster.slice(1)] } }))}
                 />
+                <span className="ava-feld-hinweis">Ein Klick hängt den Platzhalter an das erste Muster an.</span>
               </div>
               <Feld label="Beispiel für neue Dateien" breit>
                 <code>{nameBilden(e.rechnungen.muster[0] ?? '', { kuerzel: 'K62', nr: 53, firma: 'Witthaut', datum: '2026-11-12', art: 'SR', lfd: 4, gewerk: 'G08' })}.pdf</code>

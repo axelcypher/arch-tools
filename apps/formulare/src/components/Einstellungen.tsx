@@ -602,6 +602,7 @@ function Projektdaten() {
         <div className="es-zeile">
           <input defaultValue={neu} key={neu} placeholder={VORGABE_OAP_PFAD} onBlur={(e) => e.target.value.trim() !== neu && setOapVorlage(e.target.value)} aria-label="Pfad für neue Projektdateien" />
         </div>
+        <PlatzhalterHinweise vorlage={neu} variablen={OAP_VARIABLEN} onAnpassen={setOapVorlage} />
         <div className="es-platzhalter-zeile">
           <PlatzhalterChips variablen={OAP_VARIABLEN} label="Pfad für neue Projektdateien" fokusBehalten={false} onEinfuegen={(p) => setOapVorlage(mitPlatzhalter(neu, p))} />
           {neu !== VORGABE_OAP_PFAD && (
@@ -613,7 +614,6 @@ function Projektdaten() {
         <p className="muted es-beispiel" aria-label="Beispiel für den Pfad">
           Beispiel: <code>{projektdateiPfad(neu, OAP_BEISPIEL)}</code>
         </p>
-        <PlatzhalterHinweise vorlage={neu} variablen={OAP_VARIABLEN} onAnpassen={setOapVorlage} />
       </Karte>
       <Karte titel="Angaben">
         <table className="es-tabelle">

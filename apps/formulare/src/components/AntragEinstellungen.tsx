@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
-import { Fragment, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import type { AntragsVorlage, KatalogEintrag } from '../antrag';
 import { VORGABE_MERKMALE, bedingungText, hatBedingung, istVorgabeMerkmal } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import { modernisieren } from '@core/platzhalter';
-import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
+import { inFeldEinfuegen, PlatzhalterChips, PlatzhalterHinweise } from '@core/ui/Platzhalter';
 import { ART_HINWEIS, vorlageArtWarnung, NAMENS_VARIABLEN, ZIEL_VARIABLEN, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, vorlageMitAntragsart, PLANSATZ_QUELLE } from '../antrag';
 import { Griff, useSortieren } from './Sortieren';
 import { namensschemaVon, useAntrag } from '../antragStore';
@@ -48,6 +48,8 @@ export function AntragEinstellungen() {
   const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
   const wirksameVorlage = vorlageMitAntragsart(e.namensvorlage, reihenfolge);
   const artWarnung = vorlageArtWarnung(e.namensvorlage, reihenfolge);
+  const vorlageFeld = useRef<HTMLInputElement>(null);
+  const zielFeld = useRef<HTMLInputElement>(null);
   const beispiel = dateiname(wirksameVorlage, { kuerzel: 'BS9', kurzname: 'EFH Musterweg', datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
 
   const zeileSetzen = (i: number, teil: Partial<KatalogEintrag>) => setKatalog(katalog.map((k, n) => (n === i ? { ...k, ...teil } : k)));
@@ -91,6 +93,7 @@ export function AntragEinstellungen() {
             <label>
               <span className="field-label">Namensvorlage</span>
               <input
+                ref={vorlageFeld}
                 value={e.namensvorlage}
                 onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })}
                 aria-label="Namensvorlage"
@@ -113,7 +116,7 @@ export function AntragEinstellungen() {
         </div>
         <PlatzhalterHinweise vorlage={e.namensvorlage} variablen={NAMENS_VARIABLEN} onAnpassen={(namensvorlage) => setEinstellungen({ namensvorlage })} />
         <div className="es-platzhalter-zeile">
-          <PlatzhalterChips variablen={NAMENS_VARIABLEN} label="Namensvorlage" fokusBehalten={false} onEinfuegen={(p) => setEinstellungen({ namensvorlage: platzhalterEinfuegen(e.namensvorlage, p).text })} />
+          <PlatzhalterChips variablen={NAMENS_VARIABLEN} label="Namensvorlage" onEinfuegen={(p) => inFeldEinfuegen(vorlageFeld.current, e.namensvorlage, p, (namensvorlage) => setEinstellungen({ namensvorlage }))} />
           {e.namensvorlage !== VORGABE_EXPORT.namensvorlage && (
             <button className="small" onClick={() => setEinstellungen({ namensvorlage: VORGABE_EXPORT.namensvorlage })}>
               Vorgabe
@@ -139,15 +142,22 @@ export function AntragEinstellungen() {
           <input type="radio" checked={e.ziel === 'pfad'} onChange={() => setEinstellungen({ ziel: 'pfad' })} />
           <span className="es-breit">
             <strong>Fester Ordner im Projekt</strong>
-            <input value={e.zielpfad} disabled={e.ziel !== 'pfad'} onChange={(x) => setEinstellungen({ zielpfad: x.target.value })} aria-label="Fester Zielordner" placeholder="z. B. TÖB/{Antrag}/Formulare" />
-            {e.ziel === 'pfad' && (
-              <>
-                <PlatzhalterHinweise vorlage={e.zielpfad} variablen={ZIEL_VARIABLEN} onAnpassen={(zielpfad) => setEinstellungen({ zielpfad })} />
-                <PlatzhalterChips variablen={ZIEL_VARIABLEN} label="Fester Zielordner" fokusBehalten={false} onEinfuegen={(p) => setEinstellungen({ zielpfad: platzhalterEinfuegen(e.zielpfad, p).text })} />
-              </>
-            )}
+            <input
+              ref={zielFeld}
+              value={e.zielpfad}
+              disabled={e.ziel !== 'pfad'}
+              onChange={(x) => setEinstellungen({ zielpfad: x.target.value })}
+              aria-label="Fester Zielordner"
+              placeholder="z. B. TÖB/{Antrag}/Formulare"
+            />
           </span>
         </label>
+        {e.ziel === 'pfad' && (
+          <div className="es-ziel-platzhalter">
+            <PlatzhalterHinweise vorlage={e.zielpfad} variablen={ZIEL_VARIABLEN} onAnpassen={(zielpfad) => setEinstellungen({ zielpfad })} />
+            <PlatzhalterChips variablen={ZIEL_VARIABLEN} label="Fester Zielordner" onEinfuegen={(p) => inFeldEinfuegen(zielFeld.current, e.zielpfad, p, (zielpfad) => setEinstellungen({ zielpfad }))} />
+          </div>
+        )}
       </Karte>
 
       <Karte titel="Quellen und Vorlagen">

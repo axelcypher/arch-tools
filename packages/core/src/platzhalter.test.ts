@@ -42,6 +42,9 @@ describe('Platzhalter der Suite', () => {
     expect(ersetzen('{PROJEKT_KUERZEL} {DATUM} {Nr:3} {Name}', VARS, WERTE)).toBe('BS9 261103 007 Bauantrag');
     expect(ersetzen('{DATUM:JJJJ-MM-TT}/{JAHR}/{JAHR_KURZ}/{JAHR:JJ}', VARS, WERTE)).toBe('2026-11-03/2026/26/26');
     expect(ersetzen('{PROJEKT_KURZNAME} – {PROJEKT_VORHABEN} ({BEARBEITER})', VARS, WERTE)).toBe('EFH Musterweg – Neubau (TP)');
+    // ein Jahr als Zahl oder vierstelliger Text: JJJJ bzw. JJ
+    expect(ersetzen('{JAHR} {JAHR:JJ} {JAHR_KURZ}', VARS, { JAHR: 2024, JAHR_KURZ: '2024' })).toBe('2024 24 24');
+    expect(ersetzen('{JAHR:MM}', VARS, { JAHR: 2024 })).toBe('{JAHR:MM}');
     // Datum als Text JJJJ-MM-TT wird ebenso formatiert
     expect(ersetzen('{DATUM}', VARS, { DATUM: '2026-11-03' })).toBe('261103');
   });

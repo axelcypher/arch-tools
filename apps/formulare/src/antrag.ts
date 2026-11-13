@@ -150,8 +150,8 @@ export interface NamensAngaben {
 const zweistellig = (n: number) => String(n).padStart(2, '0');
 export const jjmmtt = (d: Date) => `${zweistellig(d.getFullYear() % 100)}${zweistellig(d.getMonth() + 1)}${zweistellig(d.getDate())}`;
 
-/** globale Variablen; {Projekt} hieß hier früher das Projektkürzel */
-const GLOBAL_FORMULARE: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PROJEKT_KUERZEL' ? mitAliasen(v.name, ['Projekt']) : v));
+/** globale Variablen; {Projekt} hieß hier früher das Projektkürzel, Quelle ist der Name des Projektordners */
+const GLOBAL_FORMULARE: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PROJEKT_KUERZEL' ? { ...mitAliasen(v.name, ['Projekt']), quelle: 'Name des Projektordners (in den Formularen wie bisher)' } : v));
 
 /**
  * Variablen der Namensvorlage exportierter PDFs: die globalen (@core/platzhalter) und die lokalen der Formulare.

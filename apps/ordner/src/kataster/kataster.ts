@@ -266,7 +266,9 @@ export interface Namensteile {
 }
 
 /** globale Variablen; {Code} hieß hier früher das Projektkürzel */
-const GLOBAL_KATASTER: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PROJEKT_KUERZEL' ? mitAliasen(v.name, ['Code']) : v));
+const GLOBAL_KATASTER: Variable[] = GLOBALE_VARIABLEN.map((v) =>
+  v.name === 'PROJEKT_KUERZEL' ? { ...mitAliasen(v.name, ['Code']), quelle: 'Projektdatei (.oap), Stammdaten „Projektcode“; ohne Projektcode der Name des Projekts' } : v,
+);
 /** Variablen im Dateinamen der Katasterpläne */
 export const KATASTER_VARIABLEN: Variable[] = [
   ...GLOBAL_KATASTER,

@@ -269,7 +269,7 @@ export function KatasterEinstellungen() {
         titel="Ablage"
         text={
           <>
-            Beispiel: <strong>{beispiel}</strong> – Platzhalter wie in allen Apps (siehe Chips unter den Feldern).
+            Beispiel: <strong>{beispiel}</strong> – Platzhalter wie in allen Apps, zum Anklicken unter den Feldern.
           </>
         }
       >
@@ -279,8 +279,6 @@ export function KatasterEinstellungen() {
             <span>
               Ordner im Projektordner
               <TextField value={e.zielpfad} onChange={(v) => void aendern({ zielpfad: v })} label="Ordner der Katasterpläne" placeholder="Kataster" />
-              <PlatzhalterHinweise vorlage={e.zielpfad} variablen={KATASTER_ZIEL_VARIABLEN} onAnpassen={(v) => void aendern({ zielpfad: v })} />
-              <PlatzhalterChips variablen={KATASTER_ZIEL_VARIABLEN} label="Ordner der Katasterpläne" fokusBehalten={false} onEinfuegen={(p) => void aendern({ ziel: 'pfad', zielpfad: platzhalterEinfuegen(e.zielpfad, p).text })} />
             </span>
           </label>
           <label className={`ex-ziel${e.ziel === 'antrag' ? ' aktiv' : ''}`}>
@@ -288,11 +286,17 @@ export function KatasterEinstellungen() {
             <span>Ordner des aktiven Antrags (z. B. TÖB\BAUA 2 – der Antrag aus der Projektdatei, gepflegt in Formulare)</span>
           </label>
         </div>
+        {e.ziel === 'pfad' && (
+          <div className="ex-feld">
+            <PlatzhalterHinweise vorlage={e.zielpfad} variablen={KATASTER_ZIEL_VARIABLEN} onAnpassen={(v) => void aendern({ zielpfad: v })} />
+            <PlatzhalterChips variablen={KATASTER_ZIEL_VARIABLEN} label="Ordner der Katasterpläne" fokusBehalten={false} onEinfuegen={(p) => void aendern({ zielpfad: platzhalterEinfuegen(e.zielpfad, p).text })} />
+          </div>
+        )}
         <label className="ex-feld">
           <span className="field-label">Dateiname</span>
           <TextField value={e.dateiname} onChange={(v) => void aendern({ dateiname: v })} label="Dateiname der Katasterpläne" />
-          <PlatzhalterHinweise vorlage={e.dateiname} variablen={KATASTER_VARIABLEN} onAnpassen={(v) => void aendern({ dateiname: v })} />
         </label>
+        <PlatzhalterHinweise vorlage={e.dateiname} variablen={KATASTER_VARIABLEN} onAnpassen={(v) => void aendern({ dateiname: v })} />
         <PlatzhalterChips variablen={KATASTER_VARIABLEN} label="Dateiname der Katasterpläne" fokusBehalten={false} onEinfuegen={(p) => void aendern({ dateiname: platzhalterEinfuegen(e.dateiname, p).text })} />
       </Karte>
 

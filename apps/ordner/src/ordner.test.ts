@@ -86,6 +86,10 @@ describe('Nummern und Namen', () => {
   it('Ordnername: Platzhalter ersetzt, unzulässige Zeichen entfernt', () => {
     expect(ordnerName(stamm(), STANDARD, TAG)).toBe('2026-014 EFH Musterweg');
     expect(ordnerName(stamm({ kurzname: 'Haus: A/B? ' }), STANDARD, TAG)).toBe('2026-014 Haus A B');
+    // Jahr als Zahl (Anlagejahr): alte und neue Namen, mit Format
+    expect(ordnerName(stamm(), { ...STANDARD, ordnername: '{jahr} {JAHR} {jj} {JAHR_KURZ} {JAHR:JJ} {nummer}' }, TAG, 2024)).toBe('2024 2024 24 24 24 2026-014');
+    expect(nameAus('{jahr}/{JAHR}/{JAHR:JJ}/{jj}', { jahr: 2026 })).toBe('2026/2026/26/26');
+    expect(nameAus('{JAHR:JJ}-{JAHR:JJJJ}', { jahr: '2025' })).toBe('25-2025');
     expect(sichererName('Ende. ')).toBe('Ende');
     expect(nameAus('{nummer}_{{kurzname}}_{unbekannt}', { nummer: '1', kurzname: 'x' })).toBe('1_x_{unbekannt}');
   });

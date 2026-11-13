@@ -6,7 +6,7 @@ import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
 import { eingereichtVon, PLANSATZ_QUELLE, standFestgehaltenText, tagVon } from '../antrag';
-import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
+import { inFeldEinfuegen, PlatzhalterChips, PlatzhalterHinweise } from '@core/ui/Platzhalter';
 import { ART_HINWEIS, NAMENS_VARIABLEN, ZIEL_VARIABLEN, vorlageArtWarnung, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
@@ -1087,6 +1087,8 @@ function ExportFuerProjekt() {
   if (!projekt) return null;
   const setzen = (teil: ExportUeberschreibung) => setUeberschreibung({ ...ueber, ...teil });
   const artWarnung = ueber?.namensvorlage ? vorlageArtWarnung(ueber.namensvorlage, reihenfolge) : null;
+  const vorlageFeld = useRef<HTMLInputElement>(null);
+  const zielFeld = useRef<HTMLInputElement>(null);
   return (
     <section className="pu-export">
       <button className="pu-export-kopf" aria-expanded={offen} onClick={() => setOffen(!offen)}>
@@ -1108,11 +1110,18 @@ function ExportFuerProjekt() {
             </select>
           </label>
           {(ueber?.ziel ?? global.ziel) === 'pfad' && (
-            <label>
-              <span className="field-label">Fester Ordner</span>
-              <input value={ueber?.zielpfad ?? ''} placeholder={global.zielpfad} onChange={(e) => setzen({ zielpfad: e.target.value })} />
+            <div className="pu-breit">
+              <label>
+                <span className="field-label">Fester Ordner</span>
+                <input ref={zielFeld} value={ueber?.zielpfad ?? ''} placeholder={global.zielpfad} onChange={(e) => setzen({ zielpfad: e.target.value })} aria-label="Fester Ordner" />
+              </label>
               <PlatzhalterHinweise vorlage={ueber?.zielpfad ?? ''} variablen={ZIEL_VARIABLEN} onAnpassen={(zielpfad) => setzen({ zielpfad })} />
-            </label>
+              <PlatzhalterChips
+                variablen={ZIEL_VARIABLEN}
+                label="Fester Ordner des Projekts"
+                onEinfuegen={(p) => inFeldEinfuegen(ueber?.zielpfad ? zielFeld.current : null, ueber?.zielpfad || global.zielpfad, p, (zielpfad) => setzen({ zielpfad }))}
+              />
+            </div>
           )}
           {/* über die ganze Breite, nach den schmalen Feldern (Tab-Reihenfolge = Lesereihenfolge): Feld, darunter Hinweis
               und ggf. Warnung (wie in den Einstellungen) */}
@@ -1120,6 +1129,7 @@ function ExportFuerProjekt() {
             <label>
               <span className="field-label">Namensvorlage</span>
               <input
+                ref={vorlageFeld}
                 value={ueber?.namensvorlage ?? ''}
                 placeholder={global.namensvorlage}
                 onChange={(e) => setzen({ namensvorlage: e.target.value })}
@@ -1142,8 +1152,7 @@ function ExportFuerProjekt() {
             <PlatzhalterChips
               variablen={NAMENS_VARIABLEN}
               label="Namensvorlage des Projekts"
-              fokusBehalten={false}
-              onEinfuegen={(p) => setzen({ namensvorlage: platzhalterEinfuegen(ueber?.namensvorlage ?? global.namensvorlage, p).text })}
+              onEinfuegen={(p) => inFeldEinfuegen(ueber?.namensvorlage ? vorlageFeld.current : null, ueber?.namensvorlage || global.namensvorlage, p, (namensvorlage) => setzen({ namensvorlage }))}
             />
           </div>
           {ueber && (

@@ -68,13 +68,26 @@ export function PlatzhalterHinweise({ vorlage, variablen, onAnpassen }: { vorlag
           Alte Schreibweise (funktioniert weiter): {alt.map((a) => `${a.alt} → ${a.neu}`).join(', ')}
           {onAnpassen && (
             <button type="button" className="small" onClick={() => onAnpassen(modernisieren(vorlage, variablen))}>
-              Vorlage anpassen
+              Auf neue Namen umstellen
             </button>
           )}
         </span>
       )}
     </>
   );
+}
+
+/**
+ * Platzhalter in ein Feld einsetzen, das jede Eingabe sofort übernimmt (`setzen`): an der Schreibmarke, sonst
+ * angehängt; danach steht die Schreibmarke hinter dem Platzhalter. Für Chips mit `fokusBehalten` (Vorgabe).
+ */
+export function inFeldEinfuegen(feld: HTMLInputElement | HTMLTextAreaElement | null, text: string, platzhalter: string, setzen: (neu: string) => void) {
+  const { text: neu, marke } = platzhalterEinfuegen(text, platzhalter, feld);
+  setzen(neu);
+  requestAnimationFrame?.(() => {
+    feld?.focus();
+    feld?.setSelectionRange(marke, marke);
+  });
 }
 
 /** Text mit eingefügtem Platzhalter: an der Schreibmarke eines Felds, sonst mit Leerzeichen angehängt */
