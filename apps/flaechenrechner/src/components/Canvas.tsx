@@ -83,7 +83,7 @@ type Drag =
 const VERTEX_SNAP_PX = 10;
 const HINWEIS_KEY = 'arch-flaechen-tool:hinweise-zu';
 /** Deckung der Raumfüllung (Nutzungsfarbe) auf der Zeichenfläche */
-const RAUM_DECKUNG = 0.45;
+const RAUM_DECKUNG = 0.45; // dieselbe Zahl steht in docs/design.md (QUADRIO)
 const EDGE_SNAP_PX = 7;
 const GUIDE_SNAP_PX = 8;
 /** Mausweg in px, ab dem ein Klick als Ziehen gilt: Flächen verschieben erst ab 6 px (kein Verrutschen beim Wählen) */
@@ -1023,7 +1023,8 @@ export function Canvas() {
     return m;
   }, [storey.shapes, view.showRooms]);
 
-  // dunkle Zeichenfläche (Filter): Raumfüllung vorgerechnet, damit sie im Ton der Farbmarke in der Liste erscheint
+  // dunkle Zeichenfläche (Filter): Raumfüllung vorgerechnet, damit sie im Ton der Farbmarke in der Liste erscheint.
+  // Gerechnet wird gegen den Grund der Zeichenfläche, auch über einer Unterlage (PDF/Bild) – bewusst hingenommen (s. @core/planFarbe).
   const gefiltert = useZeichenflaecheGefiltert();
   const raumFuellung = useMemo(() => {
     const cache = new Map<string, { farbe: string; deckung: number }>();

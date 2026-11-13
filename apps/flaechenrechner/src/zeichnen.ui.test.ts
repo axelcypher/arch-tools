@@ -293,7 +293,12 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
 });
 
 describe('QUADRIO: Raumfüllung auf der dunklen Zeichenfläche', () => {
-  afterEach(() => act(() => useTheme.setState({ theme: 'hell', canvasDunkel: true })));
+  let vorher: ReturnType<typeof useTheme.getState>;
+  beforeEach(() => {
+    vorher = useTheme.getState();
+    act(() => useTheme.setState({ theme: 'hell', canvasDunkel: true }));
+  });
+  afterEach(() => act(() => useTheme.setState(vorher, true)));
 
   it('gefiltert (dunkles Schema, Zeichenfläche abgedunkelt): Füllung vorgerechnet; hell bzw. ohne Filter die Nutzungsfarbe', () => {
     const p = createProject('Haus');
