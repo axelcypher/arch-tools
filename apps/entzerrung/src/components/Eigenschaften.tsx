@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { fmt2, fmt3, fmtPlain } from '@core/format';
 import { logger } from '@core/platform/log';
 import { Field, NumberField, TextField } from '@core/ui/fields';
 import { entzerrung } from '../geo/ebene';
 import type { Entzerrung, Ergebnis } from '../geo/ebene';
 import { ausgabe, autoAufloesung, bereichVon, messwert } from '../geo/messen';
-import { schaetzeLinse } from '../geo/verzeichnung';
+import { linseGueltig, schaetzeLinse } from '../geo/verzeichnung';
 import { ECKEN, MESS_NAMEN } from '../model';
 import type { Ebene, Foto, Methode } from '../model';
 import { aktuell, mitEbene, mitFoto, useEntz } from '../store';
@@ -19,24 +19,51 @@ export const WERKZEUG_NAMEN: Record<Werkzeug, string> = {
   auswahl: 'Auswahl',
   hilfslinie: 'Hilfslinie',
   ecken: 'Ecken setzen',
-  passpunkt: 'Passpunkt',
-  waagerecht: 'Waagerechte Kante',
-  senkrecht: 'Senkrechte Kante',
+  passpunkt: 'Passpunkt setzen',
+  waagerecht: 'Waagerechte',
+  senkrecht: 'Senkrechte',
   mass: 'Bekanntes Maß',
   strecke: 'Strecke',
   linienzug: 'Linienzug',
   flaeche: 'Fläche',
-  ausschnitt: 'Ausschnitt',
+  ausschnitt: 'Ausschnitt ziehen',
 };
 
-export function WerkzeugKnopf({ w, children, title }: { w: Werkzeug; children?: ReactNode; title?: string }) {
+/** Knopf für ein Werkzeug; Name immer aus `WERKZEUG_NAMEN`, `anzahl` als Zusatz */
+export function WerkzeugKnopf({ w, anzahl, title, primaer = false }: { w: Werkzeug; anzahl?: number; title?: string; primaer?: boolean }) {
   const aktiv = useEntz((s) => s.werkzeug === w);
   return (
-    <button className={aktiv ? 'active' : ''} title={title} onClick={() => useEntz.getState().setze({ werkzeug: aktiv ? 'auswahl' : w, entwurf: [] })}>
-      {children ?? WERKZEUG_NAMEN[w]}
+    <button
+      className={`${aktiv ? 'active' : ''}${primaer && !aktiv ? ' primary' : ''}`}
+      aria-pressed={aktiv}
+      title={title}
+      onClick={() => useEntz.getState().setze({ werkzeug: aktiv ? 'auswahl' : w, entwurf: [] })}
+    >
+      {WERKZEUG_NAMEN[w]}
+      {anzahl !== undefined && <span className="ef-zaehler"> ({anzahl})</span>}
     </button>
   );
 }
+
+/** Feld der eben gesetzten Zeile (Passpunkt, Maß) fokussieren; Enter übernimmt und gibt den Fokus an die Fläche zurück */
+function useFokusFeld(liste: HTMLElement | null) {
+  const fokus = useEntz((s) => s.fokus);
+  useEffect(() => {
+    if (!fokus || !liste) return;
+    const feld = liste.querySelector<HTMLInputElement>(`[data-fokus="${fokus}"] input`);
+    if (!feld) return;
+    feld.focus();
+    feld.select();
+    useEntz.getState().setze({ fokus: null });
+  }, [fokus, liste]);
+}
+
+/** Enter im Tabellenfeld: übernehmen und zurück zur Zeichenfläche */
+const enterZurFlaeche = (e: ReactKeyboardEvent) => {
+  if (e.key !== 'Enter') return;
+  (e.target as HTMLElement).blur();
+  document.querySelector<SVGSVGElement>('.ef-overlay')?.focus({ preventScroll: true });
+};
 
 /** Rechte Leiste */
 export function Eigenschaften() {
@@ -46,7 +73,29 @@ export function Eigenschaften() {
   const gewuenscht = useEntz((s) => s.ansicht);
   const { foto, ebene } = aktuell({ doc, fotoId, ebeneId });
   const ergebnis = useMemo(() => (foto && ebene ? entzerrung(foto, ebene) : null), [foto, ebene]);
-  if (!foto || !ebene || !ergebnis) return <aside className="sidebar sidebar-right" />;
+  if (!foto || !ebene || !ergebnis) {
+    return (
+      <aside className="sidebar sidebar-right">
+        <section>
+          <h2>So geht es</h2>
+          <ol className="ef-schritte small-text">
+            <li>
+              <strong>Foto</strong> einer ebenen Fläche hinzufügen (Fassade, Wand, Boden, abfotografierter Plan).
+            </li>
+            <li>
+              <strong>Referenz</strong> festlegen: ein bekanntes Rechteck, Passpunkte aus dem Aufmaß oder Fluchtlinien mit zwei Maßen.
+            </li>
+            <li>
+              <strong>Entzerrt</strong> ansehen und Strecken, Linienzüge und Flächen messen.
+            </li>
+            <li>
+              <strong>Exportieren</strong> als Bild oder als PDF im Maßstab.
+            </li>
+          </ol>
+        </section>
+      </aside>
+    );
+  }
   const entzerrt = gewuenscht === 'entzerrt' && ergebnis.ok;
   return (
     <aside className="sidebar sidebar-right">
@@ -68,7 +117,11 @@ export function Eigenschaften() {
 // ---------- Referenz ----------
 
 const METHODEN: { id: Methode; name: string; text: string }[] = [
-  { id: 'rechteck', name: 'Rechteck', text: 'Vier Ecken eines bekannten Rechtecks (Fenster, Tür, Platte) mit Breite und Höhe.' },
+  {
+    id: 'rechteck',
+    name: 'Rechteck',
+    text: 'Vier Ecken eines bekannten Rechtecks in der Messebene (Öffnung an der Putzkante mit nachgemessenem Fertigmaß, Platte) mit Breite und Höhe.',
+  },
   { id: 'passpunkte', name: 'Passpunkte', text: 'Mindestens vier Punkte mit Koordinaten aus dem Aufmaß; mehr Punkte gleichen aus und zeigen Restfehler.' },
   { id: 'fluchtlinien', name: 'Fluchtlinien', text: 'Je zwei waagerechte und senkrechte Kanten nachziehen und zwei bekannte Maße angeben.' },
 ];
@@ -77,6 +130,8 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
   const s = useEntz.getState;
   const aendern = (f: (e: Ebene) => Ebene) => s().aendern(mitEbene(foto.id, ebene.id, f));
   const auswahl = useEntz((x) => x.auswahl);
+  const [tabelle, setTabelle] = useState<HTMLTableElement | null>(null);
+  useFokusFeld(tabelle);
   const rest = (id: string) => (ergebnis.ok ? ergebnis.e.residuen.find((r) => r.id === id) : undefined);
   const restText = (id: string) => {
     const r = rest(id);
@@ -87,9 +142,9 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
   return (
     <section>
       <h2>Referenz · {ebene.name}</h2>
-      <div className="ef-methoden">
+      <div className="ef-methoden" role="group" aria-label="Art der Referenz">
         {METHODEN.map((m) => (
-          <button key={m.id} className={ebene.methode === m.id ? 'active' : ''} title={m.text} onClick={() => aendern((e) => ({ ...e, methode: m.id }))}>
+          <button key={m.id} className={ebene.methode === m.id ? 'active' : ''} aria-pressed={ebene.methode === m.id} title={m.text} onClick={() => aendern((e) => ({ ...e, methode: m.id }))}>
             {m.name}
           </button>
         ))}
@@ -111,9 +166,10 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
             {ebene.rechteck.ecken.length < 4 && <span className="muted"> – als Nächstes {ECKEN[ebene.rechteck.ecken.length]}</span>}
           </p>
           <div className="button-row">
-            {ebene.rechteck.ecken.length < 4 && <WerkzeugKnopf w="ecken" />}
+            {ebene.rechteck.ecken.length < 4 && <WerkzeugKnopf w="ecken" primaer title="Ecken der Reihe nach anklicken: links unten, rechts unten, rechts oben, links oben" />}
             {ebene.rechteck.ecken.length > 0 && (
               <button
+                title="Alle vier Ecken löschen und neu setzen (Strg+Z nimmt es zurück)"
                 onClick={() => {
                   aendern((e) => ({ ...e, rechteck: { ...e.rechteck, ecken: [] } }));
                   s().setze({ werkzeug: 'ecken', entwurf: [] });
@@ -123,16 +179,17 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
               </button>
             )}
           </div>
+          <p className="muted small-text">Ein Rechteck ist nicht überbestimmt: zur Kontrolle ein bekanntes Maß nachmessen, das nicht zur Referenz gehört.</p>
         </>
       )}
 
       {ebene.methode === 'passpunkte' && (
         <>
           <div className="button-row">
-            <WerkzeugKnopf w="passpunkt">Passpunkt setzen</WerkzeugKnopf>
+            <WerkzeugKnopf w="passpunkt" anzahl={ebene.passpunkte.length} primaer={ebene.passpunkte.length < 4} />
           </div>
           {ebene.passpunkte.length > 0 && (
-            <table className="ef-tabelle">
+            <table className="ef-tabelle" ref={setTabelle}>
               <thead>
                 <tr>
                   <th />
@@ -144,17 +201,22 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
               </thead>
               <tbody>
                 {ebene.passpunkte.map((p, i) => (
-                  <tr key={p.id} className={auswahl?.art === 'passpunkt' && auswahl.id === p.id ? 'sel' : ''} onClick={() => s().setze({ auswahl: { art: 'passpunkt', id: p.id } })}>
+                  <tr
+                    key={p.id}
+                    className={`${auswahl?.art === 'passpunkt' && auswahl.id === p.id ? 'sel' : ''}${p.x === undefined || p.y === undefined ? ' fehlt' : ''}`}
+                    onClick={() => s().setze({ auswahl: { art: 'passpunkt', id: p.id } })}
+                    onKeyDown={enterZurFlaeche}
+                  >
                     <td>P{i + 1}</td>
-                    <td>
-                      <NumberField value={p.x} digits={3} allowEmpty onChange={(v) => aendern((e) => ({ ...e, passpunkte: e.passpunkte.map((q) => (q.id === p.id ? { ...q, x: v } : q)) }))} />
+                    <td data-fokus={p.id}>
+                      <NumberField value={p.x} digits={3} allowEmpty label={`P${i + 1} x in m`} onChange={(v) => aendern((e) => ({ ...e, passpunkte: e.passpunkte.map((q) => (q.id === p.id ? { ...q, x: v } : q)) }))} />
                     </td>
                     <td>
-                      <NumberField value={p.y} digits={3} allowEmpty onChange={(v) => aendern((e) => ({ ...e, passpunkte: e.passpunkte.map((q) => (q.id === p.id ? { ...q, y: v } : q)) }))} />
+                      <NumberField value={p.y} digits={3} allowEmpty label={`P${i + 1} y in m`} onChange={(v) => aendern((e) => ({ ...e, passpunkte: e.passpunkte.map((q) => (q.id === p.id ? { ...q, y: v } : q)) }))} />
                     </td>
                     <td className="num muted">{restText(p.id)}</td>
                     <td>
-                      <button className="icon small danger" title="Passpunkt entfernen" onClick={() => aendern((e) => ({ ...e, passpunkte: e.passpunkte.filter((q) => q.id !== p.id) }))}>
+                      <button className="icon small danger" title={`Passpunkt P${i + 1} entfernen`} aria-label={`Passpunkt P${i + 1} entfernen`} onClick={() => aendern((e) => ({ ...e, passpunkte: e.passpunkte.filter((q) => q.id !== p.id) }))}>
                         ×
                       </button>
                     </td>
@@ -170,12 +232,12 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
       {ebene.methode === 'fluchtlinien' && (
         <>
           <div className="button-row">
-            <WerkzeugKnopf w="waagerecht">Waagerecht ({ebene.fluchtlinien.waagerecht.length})</WerkzeugKnopf>
-            <WerkzeugKnopf w="senkrecht">Senkrecht ({ebene.fluchtlinien.senkrecht.length})</WerkzeugKnopf>
-            <WerkzeugKnopf w="mass">Maß ({ebene.fluchtlinien.masse.length})</WerkzeugKnopf>
+            <WerkzeugKnopf w="waagerecht" anzahl={ebene.fluchtlinien.waagerecht.length} />
+            <WerkzeugKnopf w="senkrecht" anzahl={ebene.fluchtlinien.senkrecht.length} />
+            <WerkzeugKnopf w="mass" anzahl={ebene.fluchtlinien.masse.length} />
           </div>
           {ebene.fluchtlinien.masse.length > 0 && (
-            <table className="ef-tabelle">
+            <table className="ef-tabelle" ref={setTabelle}>
               <thead>
                 <tr>
                   <th />
@@ -186,14 +248,20 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
               </thead>
               <tbody>
                 {ebene.fluchtlinien.masse.map((m, i) => (
-                  <tr key={m.id} className={auswahl?.art === 'mass' && auswahl.id === m.id ? 'sel' : ''} onClick={() => s().setze({ auswahl: { art: 'mass', id: m.id } })}>
+                  <tr
+                    key={m.id}
+                    className={`${auswahl?.art === 'mass' && auswahl.id === m.id ? 'sel' : ''}${m.laenge === undefined ? ' fehlt' : ''}`}
+                    onClick={() => s().setze({ auswahl: { art: 'mass', id: m.id } })}
+                    onKeyDown={enterZurFlaeche}
+                  >
                     <td>M{i + 1}</td>
-                    <td>
+                    <td data-fokus={m.id}>
                       <NumberField
                         value={m.laenge}
                         min={0}
                         digits={3}
                         allowEmpty
+                        label={`Länge M${i + 1} in m`}
                         onChange={(v) => aendern((e) => ({ ...e, fluchtlinien: { ...e.fluchtlinien, masse: e.fluchtlinien.masse.map((q) => (q.id === m.id ? { ...q, laenge: v } : q)) } }))}
                       />
                     </td>
@@ -201,7 +269,8 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
                     <td>
                       <button
                         className="icon small danger"
-                        title="Maß entfernen"
+                        title={`Maß M${i + 1} entfernen`}
+                        aria-label={`Maß M${i + 1} entfernen`}
                         onClick={() => aendern((e) => ({ ...e, fluchtlinien: { ...e.fluchtlinien, masse: e.fluchtlinien.masse.filter((q) => q.id !== m.id) } }))}
                       >
                         ×
@@ -228,6 +297,12 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
         </>
       )}
 
+      {ergebnis.ok &&
+        ergebnis.e.hinweise.map((h) => (
+          <div key={h} className="warning ef-hinweis-ref">
+            {h}
+          </div>
+        ))}
       {ergebnis.ok ? (
         <div className="ef-ok">
           <span>Ebene ist entzerrbar.</span>
@@ -236,7 +311,9 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
           </button>
         </div>
       ) : (
-        <div className="warning">{ergebnis.fehler}</div>
+        <div className="ef-fehlt" role="status">
+          {ergebnis.fehler}
+        </div>
       )}
     </section>
   );
@@ -265,6 +342,7 @@ function ObjektivPanel({ foto }: { foto: Foto }) {
     }
   };
   const hat = foto.linse.k1 !== 0 || foto.linse.k2 !== 0;
+  const gueltig = linseGueltig(foto.linse);
   return (
     <section>
       <h2>Objektiv · Verzeichnung</h2>
@@ -273,25 +351,29 @@ function ObjektivPanel({ foto }: { foto: Foto }) {
         bei allen Ebenen dieses Fotos herausgerechnet.
       </p>
       <div className="button-row">
-        <WerkzeugKnopf w="hilfslinie">Hilfslinie ({foto.hilfslinien.length})</WerkzeugKnopf>
-        <button disabled={!linien.length} onClick={schaetzen} title={linien.length >= 3 ? 'k1 und k2 schätzen' : 'mit weniger als drei Linien nur k1'}>
+        <WerkzeugKnopf w="hilfslinie" anzahl={foto.hilfslinien.length} />
+        <button disabled={!linien.length} onClick={schaetzen} title={linien.length >= 3 ? 'Krümmung aus den Hilfslinien ermitteln' : 'Krümmung aus den Hilfslinien ermitteln – mit drei oder mehr Linien genauer'}>
           Verzeichnung schätzen
         </button>
       </div>
-      <div className="field-row">
-        <Field label="k1">
-          <NumberField value={foto.linse.k1} digits={4} onChange={(v) => setzeLinse({ k1: v ?? 0, k2: foto.linse.k2 })} />
-        </Field>
-        <Field label="k2">
-          <NumberField value={foto.linse.k2} digits={4} onChange={(v) => setzeLinse({ k1: foto.linse.k1, k2: v ?? 0 })} />
-        </Field>
-      </div>
-      {foto.linse.vorher !== undefined && foto.linse.nachher !== undefined && (
+      {foto.linse.vorher !== undefined && foto.linse.nachher !== undefined && hat && (
         <p className="small-text">
           Abweichung der Hilfslinien von der Geraden: {fmt2(foto.linse.vorher)} px → <strong>{fmt2(foto.linse.nachher)} px</strong>
         </p>
       )}
+      {!gueltig && <div className="warning">Diese Werte falten das Bild zum Rand hin und werden nicht angewendet – neu schätzen oder zurücksetzen.</div>}
       {fehler && <div className="warning">{fehler}</div>}
+      <details className="ef-feinwerte">
+        <summary>Feinwerte{hat ? ` (k1 ${fmt3(foto.linse.k1)}, k2 ${fmt3(foto.linse.k2)})` : ''}</summary>
+        <div className="field-row">
+          <Field label="k1 (Tonne < 0 < Kissen)">
+            <NumberField value={foto.linse.k1} digits={4} onChange={(v) => setzeLinse({ k1: v ?? 0, k2: foto.linse.k2 })} />
+          </Field>
+          <Field label="k2">
+            <NumberField value={foto.linse.k2} digits={4} onChange={(v) => setzeLinse({ k1: foto.linse.k1, k2: v ?? 0 })} />
+          </Field>
+        </div>
+      </details>
       <div className="button-row">
         <label className="toggle">
           <input type="checkbox" checked={korrigiert} onChange={(e) => s().setze({ korrigiert: e.target.checked })} />
@@ -313,30 +395,51 @@ function MessPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
   const auswahl = useEntz((s) => s.auswahl);
   const s = useEntz.getState;
   const werte = useMemo(() => new Map(ebene.messungen.map((m) => [m.id, messwert(e, m)])), [ebene.messungen, e]);
-  const kopieren = () => {
-    const zeilen = [['Name', 'Art', 'Länge [m]', 'Fläche [m²]'].join('\t')];
+  const [kopiert, setKopiert] = useState<string | null>(null);
+  const kopieren = async () => {
+    const zeilen = [['Name', 'Art', 'Länge bzw. Umfang [m]', 'Fläche [m²]'].join('\t')];
     for (const m of ebene.messungen) {
       const w = werte.get(m.id)!;
-      zeilen.push([m.name, MESS_NAMEN[m.art], fmtPlain(w.laenge, 3), w.flaeche !== undefined ? fmtPlain(w.flaeche, 3) : ''].join('\t'));
+      if (!w.gueltig) zeilen.push([m.name, MESS_NAMEN[m.art], 'nicht messbar', ''].join('\t'));
+      else zeilen.push([m.name, MESS_NAMEN[m.art], fmtPlain(w.laenge, 3), w.flaeche !== undefined ? fmtPlain(w.flaeche, 3) : ''].join('\t'));
     }
-    void navigator.clipboard?.writeText(zeilen.join('\n'));
+    try {
+      if (!navigator.clipboard) throw new Error('Zwischenablage nicht verfügbar');
+      await navigator.clipboard.writeText(zeilen.join('\n'));
+      setKopiert(`${ebene.messungen.length} ${ebene.messungen.length === 1 ? 'Messung' : 'Messungen'} kopiert – in Excel einfügen.`);
+    } catch (e) {
+      log.warn('Kopieren fehlgeschlagen', e);
+      setKopiert('Kopieren nicht möglich – die Zwischenablage ist gesperrt.');
+    }
   };
+  const kopiertRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    if (!kopiert) return;
+    clearTimeout(kopiertRef.current);
+    kopiertRef.current = setTimeout(() => setKopiert(null), 4000);
+    return () => clearTimeout(kopiertRef.current);
+  }, [kopiert]);
   return (
     <section className="grow">
       <div className="section-head">
         <h2>Messen · {ebene.name}</h2>
         {ebene.messungen.length > 0 && (
-          <button className="small" onClick={kopieren} title="Als Tabelle in die Zwischenablage (zum Einfügen in Excel)">
+          <button className="small" onClick={() => void kopieren()} title="Als Tabelle in die Zwischenablage (zum Einfügen in Excel)">
             Kopieren
           </button>
         )}
       </div>
+      {kopiert && (
+        <p className="small-text muted" role="status">
+          {kopiert}
+        </p>
+      )}
       <div className="button-row">
         <WerkzeugKnopf w="strecke" />
         <WerkzeugKnopf w="linienzug" />
-        <WerkzeugKnopf w="flaeche" />
+        <WerkzeugKnopf w="flaeche" title="Geometrische Fläche in der entzerrten Ebene (z. B. Fassaden- oder Wandfläche) – keine Fläche nach DIN 277 oder WoFlV" />
       </div>
-      {!ebene.messungen.length && <p className="muted small-text">Punkte im entzerrten Bild anklicken. Umschalt hält waagerecht/senkrecht, vorhandene Punkte werden gefangen.</p>}
+      {!ebene.messungen.length && <p className="muted small-text">Werkzeug wählen und Punkte im entzerrten Bild anklicken. Umschalt hält waagerecht/senkrecht, vorhandene Punkte werden gefangen.</p>}
       <ul className="list ef-messungen">
         {ebene.messungen.map((m) => {
           const w = werte.get(m.id)!;
@@ -344,22 +447,27 @@ function MessPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
           return (
             <li key={m.id} className={sel ? 'active' : ''} onClick={() => s().setze({ auswahl: { art: 'messung', id: m.id } })}>
               <span className="grow-text">
-                <TextField value={m.name} onChange={(name) => s().aendern(mitEbene(foto.id, ebene.id, (x) => ({ ...x, messungen: x.messungen.map((y) => (y.id === m.id ? { ...y, name } : y)) })))} />
+                <TextField value={m.name} label="Name der Messung" onChange={(name) => s().aendern(mitEbene(foto.id, ebene.id, (x) => ({ ...x, messungen: x.messungen.map((y) => (y.id === m.id ? { ...y, name } : y)) })))} />
               </span>
               <span className="num ef-wert">
-                {w.flaeche !== undefined ? (
+                {!w.gueltig ? (
+                  <span className="ef-ungueltig" title="Ein Punkt liegt nach der geänderten Referenz nicht mehr in der Ebene (hinter dem Horizont) – Punkte neu setzen.">
+                    nicht messbar
+                  </span>
+                ) : w.flaeche !== undefined ? (
                   <>
                     <strong>{fmt2(w.flaeche)} m²</strong>
                     <br />
                     <span className="muted small-text">U {fmt2(w.laenge)} m</span>
                   </>
                 ) : (
-                  <strong>{fmt3(w.laenge)} m</strong>
+                  <strong>{fmt2(w.laenge)} m</strong>
                 )}
               </span>
               <button
                 className="icon small danger"
-                title="Messung entfernen"
+                title={`${m.name} entfernen`}
+                aria-label={`${m.name} entfernen`}
                 onClick={(x) => {
                   x.stopPropagation();
                   s().aendern(mitEbene(foto.id, ebene.id, (y) => ({ ...y, messungen: y.messungen.filter((z) => z.id !== m.id) })));
@@ -384,7 +492,18 @@ function BildPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
   const aendern = (f: (x: Ebene) => Ebene) => s().aendern(mitEbene(foto.id, ebene.id, f));
   const auto = useMemo(() => autoAufloesung(e, ebene), [e, ebene]);
   const bereich = bereichVon(e, foto, ebene);
-  const a = ausgabe(bereich, ebene.aufloesung ?? auto);
+  let a: ReturnType<typeof ausgabe>;
+  try {
+    a = ausgabe(bereich, ebene.aufloesung ?? auto);
+  } catch (err) {
+    return (
+      <section>
+        <h2>Bild</h2>
+        <div className="warning">{err instanceof Error ? err.message : String(err)}</div>
+        {ebene.ausschnitt && <button onClick={() => aendern((x) => ({ ...x, ausschnitt: undefined }))}>Automatisch</button>}
+      </section>
+    );
+  }
   return (
     <section>
       <h2>Bild</h2>
@@ -401,7 +520,7 @@ function BildPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
         </span>
       </p>
       <div className="button-row">
-        <WerkzeugKnopf w="ausschnitt">Ausschnitt ziehen</WerkzeugKnopf>
+        <WerkzeugKnopf w="ausschnitt" title="Rechteck in der entzerrten Ansicht aufziehen – nur dieser Teil wird exportiert" />
         {ebene.ausschnitt && <button onClick={() => aendern((x) => ({ ...x, ausschnitt: undefined }))}>Automatisch</button>}
         <button className="primary" onClick={() => setDialog(true)}>
           Exportieren …

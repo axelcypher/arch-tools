@@ -7,7 +7,7 @@ import { homographie } from './homographie';
 import { abbilden } from './mat';
 import type { Pt } from './mat';
 import { ausgabe, autoAufloesung, autoBereich, messwert, naechsteStufe, rundeAufloesung } from './messen';
-import { entzeichnen, geradheit, kamera, schaetzeLinse, verzeichnen } from './verzeichnung';
+import { entzeichnen, geradheit, grenzRadius, kamera, linseGueltig, schaetzeLinse, verzeichnen } from './verzeichnung';
 
 /**
  * Synthetische Aufnahme: Fassade in der Ebene Z = 0 (X nach rechts, Y nach oben, Meter), Kamera 12 m davor
@@ -268,5 +268,93 @@ describe('Messen und Ausgabe', () => {
     expect(b.x1).toBeGreaterThan(10);
     expect(b.x1).toBeLessThanOrEqual(10 + 30);
     expect(b.y1).toBeLessThanOrEqual(6 + 30);
+  });
+});
+
+describe('Robustheit: keine still falschen Werte', () => {
+  const bild = aufnahme();
+  const ecken = [bild(0, 0), bild(10, 0), bild(10, 6), bild(0, 6)];
+  const ebene: Ebene = { ...neueEbene(1), rechteck: { ecken, breite: 10, hoehe: 6 } };
+
+  it('ungültige Verzeichnungswerte werden gemeldet statt angewendet', () => {
+    const r = entzerrung(foto({ k1: -0.9, k2: 0 }), ebene);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.fehler).toMatch(/falten/);
+    expect(linseGueltig({ k1: NaN, k2: 0 })).toBe(false);
+    // Gegenprobe: übliche Weitwinkel-Werte
+    expect(entzerrung(foto({ k1: -0.08, k2: 0.01 }), ebene).ok).toBe(true);
+  });
+
+  it('Linse gilt nur, wenn sich das ganze Foto bis über die Ecken zurückrechnen lässt', () => {
+    // k1 = −0,15: der verzeichnete Radius erreicht höchstens 0,994 halbe Diagonalen – Bildecken nicht umkehrbar
+    expect(linseGueltig({ k1: -0.15, k2: 0 })).toBe(false);
+    expect(linseGueltig({ k1: -0.21, k2: 0 })).toBe(false);
+    const r = entzerrung(foto({ k1: -0.15, k2: 0 }), ebene);
+    expect(r.ok ? '' : r.fehler).toMatch(/falten/);
+    // Gegenprobe: geschätzte Werte einer kräftigen Tonne – alle vier Ecken hin und zurück
+    const echt = { k1: -0.12, k2: 0 };
+    const kam = kamera(4000, 3000, echt);
+    const krumm = [0, 1, 2, 3].map((j) => [0, 0.25, 0.5, 0.75, 1].map((t) => verzeichnen(kam, j < 2 ? { x: 4000 * t, y: j === 0 ? 40 : 2960 } : { x: j === 2 ? 40 : 3960, y: 3000 * t })));
+    const s = schaetzeLinse(4000, 3000, krumm);
+    expect(linseGueltig(s)).toBe(true);
+    const k = kamera(4000, 3000, s);
+    for (const p of [{ x: 0, y: 0 }, { x: 4000, y: 0 }, { x: 4000, y: 3000 }, { x: 0, y: 3000 }]) {
+      const q = verzeichnen(k, entzeichnen(k, p));
+      expect(q.x).toBeCloseTo(p.x, 5);
+      expect(q.y).toBeCloseTo(p.y, 5);
+    }
+    expect(linseGueltig({ k1: 0, k2: 0 })).toBe(true);
+    expect(grenzRadius({ k1: 0, k2: 0 })).toBe(Infinity);
+    expect(grenzRadius({ k1: -0.1, k2: 0 })).toBeGreaterThan(1.5);
+  });
+
+  it('entzeichnen liefert NaN, wo die Verzeichnung nicht umkehrbar ist', () => {
+    const k = kamera(4000, 3000, { k1: -0.9, k2: 0 });
+    const p = entzeichnen(k, { x: 3900, y: 2900 });
+    expect(Number.isNaN(p.x)).toBe(true);
+    // Gegenprobe: gültige Werte rechnen hin und zurück
+    const g = kamera(4000, 3000, { k1: -0.1, k2: 0 });
+    const q = verzeichnen(g, entzeichnen(g, { x: 3900, y: 2900 }));
+    expect(q.x).toBeCloseTo(3900, 6);
+  });
+
+  it('Messpunkt hinter dem Horizont: nicht messbar statt gespiegelter Länge', () => {
+    const e = ok(entzerrung(foto(), ebene));
+    // Punkt auf der anderen Seite der Fluchtlinie (w < 0)
+    const hinten = { x: 2000, y: -200000 };
+    expect(zuEbene(e, hinten).w).toBeLessThan(0);
+    const m = messwert(e, { id: 'm', art: 'strecke', name: '', punkte: [bild(1, 1), hinten] });
+    expect(m.gueltig).toBe(false);
+    expect(Number.isNaN(m.laenge)).toBe(true);
+    expect(messwert(e, { id: 'm', art: 'strecke', name: '', punkte: [bild(1, 1), bild(4, 5)] }).gueltig).toBe(true);
+  });
+
+  it('Passpunkte: Koordinaten auf einer Geraden bzw. gespiegelt eingegeben', () => {
+    const pp = (koord: [number, number][]) => ({
+      ...neueEbene(1),
+      methode: 'passpunkte' as const,
+      passpunkte: koord.map(([x, y], i) => ({ id: `p${i}`, bild: bild([0, 10, 10, 0, 5][i], [0, 0, 6, 6, 3][i]), x, y })),
+    });
+    const gerade = entzerrung(foto(), pp([[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]));
+    expect(gerade.ok ? '' : gerade.fehler).toMatch(/Koordinaten liegen \(fast\) auf einer Geraden/);
+    // gespiegelt (y nach unten oder gewollt als Deckenspiegel): entzerrbar, aber mit Hinweis
+    const gespiegelt = ok(entzerrung(foto(), pp([[0, 0], [10, 0], [10, -6], [0, -6], [5, -3]])));
+    expect(gespiegelt.hinweise.join()).toMatch(/gespiegelt/);
+    // Gegenprobe: ohne Hinweis
+    expect(ok(entzerrung(foto(), pp([[0, 0], [10, 0], [10, 6], [0, 6], [5, 3]]))).hinweise).toEqual([]);
+  });
+
+  it('Fluchtlinien: zusammenfallende Fluchtpunkte und fehlende Angaben verständlich gemeldet', () => {
+    const l = (id: string, a: Pt, b: Pt) => ({ id, a, b });
+    const fl = (w: ReturnType<typeof l>[], s: ReturnType<typeof l>[], m: (ReturnType<typeof l> & { laenge?: number })[]) => ({ ...neueEbene(1), methode: 'fluchtlinien' as const, fluchtlinien: { waagerecht: w, senkrecht: s, masse: m } });
+    // „senkrechte“ Kanten parallel zu den waagerechten
+    const w = [l('w1', bild(0, 0), bild(10, 0)), l('w2', bild(0, 6), bild(10, 6))];
+    const s2 = [l('s1', bild(0, 2), bild(10, 2)), l('s2', bild(0, 4), bild(10, 4))];
+    const m = [{ ...l('m1', bild(0, 0), bild(10, 0)), laenge: 10 }, { ...l('m2', bild(0, 0), bild(0, 6)), laenge: 6 }];
+    const r = entzerrung(foto(), fl(w, s2, m));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.fehler).not.toMatch(/Matrix/);
+    const leer = entzerrung(foto(), fl(w, [], [{ ...l('m1', bild(0, 0), bild(10, 0)) }, { ...l('m2', bild(0, 0), bild(0, 6)) }]));
+    expect(leer.ok ? '' : leer.fehler).toBe('Es fehlen noch 2 senkrechte Kanten, die Länge von 2 Maßen (rechts eintragen). Am besten als Maße eine Breite und eine Höhe.');
   });
 });

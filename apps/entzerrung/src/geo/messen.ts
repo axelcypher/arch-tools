@@ -10,6 +10,17 @@ export interface Messwert {
   flaeche?: number;
   /** Teillängen je Abschnitt in m */
   abschnitte: number[];
+  /**
+   * false, wenn ein Punkt nicht in der Ebene liegt (hinter dem Horizont, etwa nach geänderter Referenz) –
+   * dann sind Länge und Fläche NaN und werden nicht angezeigt.
+   */
+  gueltig: boolean;
+}
+
+/** Punkt in der Ebene oder null, wenn er hinter dem Horizont bzw. nicht abbildbar ist */
+export function inEbene(e: Entzerrung, q: Pt): Pt | null {
+  const p = zuEbene(e, q);
+  return p.w > 0 && Number.isFinite(p.x) && Number.isFinite(p.y) ? { x: p.x, y: p.y } : null;
 }
 
 export function flaecheVon(p: Pt[]): number {
@@ -22,13 +33,15 @@ export function flaecheVon(p: Pt[]): number {
 }
 
 export function messwert(e: Entzerrung, m: Messung): Messwert {
-  const p = m.punkte.map((q) => zuEbene(e, q));
+  const roh = m.punkte.map((q) => inEbene(e, q));
+  if (roh.some((q) => !q)) return { laenge: NaN, flaeche: m.art === 'flaeche' ? NaN : undefined, abschnitte: [], gueltig: false };
+  const p = roh as Pt[];
   const zu = m.art === 'flaeche' && p.length > 2;
   const abschnitte: number[] = [];
   for (let i = 0; i + 1 < p.length; i++) abschnitte.push(Math.hypot(p[i + 1].x - p[i].x, p[i + 1].y - p[i].y));
   if (zu) abschnitte.push(Math.hypot(p[0].x - p[p.length - 1].x, p[0].y - p[p.length - 1].y));
   const laenge = abschnitte.reduce((s, v) => s + v, 0);
-  return zu ? { laenge, flaeche: flaecheVon(p), abschnitte } : { laenge, abschnitte };
+  return zu ? { laenge, flaeche: flaecheVon(p), abschnitte, gueltig: true } : { laenge, abschnitte, gueltig: true };
 }
 
 /** Größe eines Fotopixels in der Ebene an dieser Stelle (m, Wurzel der Pixelfläche) */
@@ -112,14 +125,24 @@ export interface Ausgabe {
   begrenzt: boolean;
 }
 
+/**
+ * Bildgröße des Bereichs in der Auflösung (bei Bedarf vergröbert). Der zurückgegebene Bereich ist auf ganze
+ * Pixel erweitert (rechts und unten), so dass Bild, Maßstab und Vektoren im Export genau übereinstimmen.
+ */
 export function ausgabe(bereich: Bereich, aufloesung: number): Ausgabe {
+  const { x0, y0, x1, y1 } = bereich;
+  if (![x0, y0, x1, y1].every(Number.isFinite) || !(x1 > x0) || !(y1 > y0)) throw new Error('Der Ausschnitt ist ungültig – Ausschnitt neu ziehen oder „Automatisch“ wählen.');
+  if (!Number.isFinite(aufloesung) || !(aufloesung > 0)) throw new Error('Die Auflösung muss größer als 0 sein.');
   let s = aufloesung;
   let begrenzt = false;
-  const w = bereich.x1 - bereich.x0;
-  const h = bereich.y1 - bereich.y0;
-  while (Math.ceil(w / s) > MAX_KANTE || Math.ceil(h / s) > MAX_KANTE || Math.ceil(w / s) * Math.ceil(h / s) > MAX_PIXEL) {
+  const w = x1 - x0;
+  const h = y1 - y0;
+  while (Math.ceil(w / s - 1e-9) > MAX_KANTE || Math.ceil(h / s - 1e-9) > MAX_KANTE || Math.ceil(w / s - 1e-9) * Math.ceil(h / s - 1e-9) > MAX_PIXEL) {
     s = naechsteStufe(s);
     begrenzt = true;
   }
-  return { bereich, aufloesung: s, breite: Math.max(1, Math.ceil(w / s)), hoehe: Math.max(1, Math.ceil(h / s)), begrenzt };
+  // auf 1e-9 genau ganzzahlig, damit 10 m / 2,5 mm nicht wegen Rundung ein Pixel mehr wird
+  const breite = Math.max(1, Math.ceil(w / s - 1e-9));
+  const hoehe = Math.max(1, Math.ceil(h / s - 1e-9));
+  return { bereich: { x0, x1: x0 + breite * s, y0: y1 - hoehe * s, y1 }, aufloesung: s, breite, hoehe, begrenzt };
 }

@@ -10,10 +10,14 @@ import { FotoWahl } from './components/FotoWahl';
 import { abbrechen, abschliessen, auswahlLoeschen, letztenPunktEntfernen } from './aktionen';
 import { Arbeitsflaeche } from './components/Arbeitsflaeche';
 import { Eigenschaften, WerkzeugKnopf } from './components/Eigenschaften';
+import { ansichtUmschalten } from './aktionen';
 import { FotoLeiste } from './components/FotoLeiste';
 import { entzerrung } from './geo/ebene';
 import { ablegen, fotoImProjektOeffnen, fotosHinzufuegen, neu, oeffnen, speichern, zwischenspeicherStarten } from './projekt';
 import { aktuell, useEntz } from './store';
+import { dialogOffen, kuerzelErlaubt, verlaufErlaubt } from './tastatur';
+import { BreitenLeiste } from '@core/ui/Leiste';
+import { RechteLeiste } from './components/RechteLeiste';
 
 export function App() {
   const doc = useEntz((s) => s.doc);
@@ -54,47 +58,59 @@ export function App() {
     };
   }, []);
 
-  // Tastenkürzel
+  // beim Schließen nachfragen, solange nicht gespeichert ist (der Zwischenstand bleibt ohnehin erhalten)
+  useEffect(() => {
+    const vorSchliessen = (e: BeforeUnloadEvent) => {
+      if (useEntz.getState().dirty) e.preventDefault();
+    };
+    window.addEventListener('beforeunload', vorSchliessen);
+    return () => window.removeEventListener('beforeunload', vorSchliessen);
+  }, []);
+
+  // Tastenkürzel ohne offenen Dialog: Strg+S/O überall, Strg+Z/Y und Esc außer in Textfeldern, die übrigen nicht auf Bedienelementen
   useEffect(() => {
     const taste = (e: KeyboardEvent) => {
       const s = useEntz.getState();
-      const imFeld = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
       const strg = e.ctrlKey || e.metaKey;
-      if (strg && e.key.toLowerCase() === 's') {
+      const k = e.key.toLowerCase();
+      if (strg && (k === 's' || k === 'o')) {
+        if (dialogOffen()) return;
         e.preventDefault();
-        void speichern();
+        void (k === 's' ? speichern() : oeffnen());
         return;
       }
-      if (strg && e.key.toLowerCase() === 'o') {
-        e.preventDefault();
-        void oeffnen();
-        return;
-      }
-      if (imFeld) return;
-      if (strg && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      if (!verlaufErlaubt(e)) return;
+      if (strg && k === 'z' && !e.shiftKey) {
         e.preventDefault();
         s.rueckgaengig();
-      } else if (strg && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+        return;
+      }
+      if (strg && (k === 'y' || (k === 'z' && e.shiftKey))) {
         e.preventDefault();
         s.wiederholen();
-      } else if (e.key === 'Escape') abbrechen();
-      else if (e.key === 'Enter') abschliessen();
+        return;
+      }
+      if (strg || e.altKey) return;
+      if (e.key === 'Escape') {
+        abbrechen();
+        return;
+      }
+      if (!kuerzelErlaubt(e)) return;
+      if (e.key === 'Enter') abschliessen();
       else if (e.key === 'Backspace') {
         e.preventDefault();
         if (s.entwurf.length) letztenPunktEntfernen();
         else auswahlLoeschen();
       } else if (e.key === 'Delete') auswahlLoeschen();
       else if (e.key === 'Home') window.dispatchEvent(new Event('entz:einpassen'));
-      else if (e.key === 'Tab' && !strg) {
-        e.preventDefault();
-        s.setze({ ansicht: s.ansicht === 'foto' ? 'entzerrt' : 'foto', werkzeug: 'auswahl', entwurf: [], auswahl: null });
-      }
+      else if (k === 'e') ansichtUmschalten();
     };
     window.addEventListener('keydown', taste);
     return () => window.removeEventListener('keydown', taste);
   }, []);
 
   const ansichtWechseln = (a: 'foto' | 'entzerrt') => useEntz.getState().setze({ ansicht: a, werkzeug: 'auswahl', entwurf: [], auswahl: null });
+  const [linksZu, setLinksZu] = useState(false);
 
   return (
     <div
@@ -131,41 +147,24 @@ export function App() {
               Fotos des Projekts …
             </button>
           )}
-          <button onClick={() => void fotosHinzufuegen()}>+ Foto</button>
+          <button onClick={() => void fotosHinzufuegen()} title="Fotos hinzufügen (JPEG, PNG, WebP)">
+            + Foto
+          </button>
+          <button onClick={() => setLinksZu((z) => !z)} aria-pressed={!linksZu} title={linksZu ? 'Leiste mit Fotos und Ebenen einblenden' : 'Leiste mit Fotos und Ebenen ausblenden (mehr Platz zum Zeichnen)'}>
+            {linksZu ? 'Fotos ▸' : '◂ Fotos'}
+          </button>
         </div>
         <div className="tb-group">
-          <button className={!entzerrt ? 'active' : ''} disabled={!foto} onClick={() => ansichtWechseln('foto')} title="Foto mit Referenz und Hilfslinien (Tab wechselt)">
+          <button className={!entzerrt ? 'active' : ''} disabled={!foto} onClick={() => ansichtWechseln('foto')} title="Foto mit Referenz und Hilfslinien (Taste E wechselt)" aria-pressed={!entzerrt}>
             Foto
           </button>
-          <button className={entzerrt ? 'active' : ''} disabled={!entzerrbar} onClick={() => ansichtWechseln('entzerrt')} title={entzerrbar ? 'Entzerrte Ebene zum Messen (Tab wechselt)' : 'Erst die Referenz vervollständigen'}>
+          <button className={entzerrt ? 'active' : ''} disabled={!entzerrbar} onClick={() => ansichtWechseln('entzerrt')} title={entzerrbar ? 'Entzerrte Ebene zum Messen (Taste E wechselt)' : 'Erst die Referenz vervollständigen'} aria-pressed={entzerrt}>
             Entzerrt
           </button>
         </div>
         {foto && (
           <div className="tb-group">
-            <WerkzeugKnopf w="auswahl" title="Auswählen, Punkte ziehen, Ansicht verschieben (Esc)" />
-            {entzerrt ? (
-              <>
-                <WerkzeugKnopf w="strecke" />
-                <WerkzeugKnopf w="linienzug" />
-                <WerkzeugKnopf w="flaeche" />
-              </>
-            ) : (
-              ebene && (
-                <>
-                  {ebene.methode === 'rechteck' && <WerkzeugKnopf w="ecken" />}
-                  {ebene.methode === 'passpunkte' && <WerkzeugKnopf w="passpunkt" />}
-                  {ebene.methode === 'fluchtlinien' && (
-                    <>
-                      <WerkzeugKnopf w="waagerecht" />
-                      <WerkzeugKnopf w="senkrecht" />
-                      <WerkzeugKnopf w="mass" />
-                    </>
-                  )}
-                  <WerkzeugKnopf w="hilfslinie" title="Gekrümmte Kante für die Objektivverzeichnung" />
-                </>
-              )
-            )}
+            <WerkzeugKnopf w="auswahl" title="Auswählen, Punkte ziehen, Ansicht verschieben (Esc); Werkzeuge stehen rechts" />
           </div>
         )}
         <div className="tb-group">
@@ -181,12 +180,18 @@ export function App() {
         </div>
       </div>
       <div className="workspace">
-        <FotoLeiste />
+        {!linksZu && (
+          <BreitenLeiste schluessel="entzerrung:breite:links" vorgabe={260} min={190} max={420}>
+            <FotoLeiste />
+          </BreitenLeiste>
+        )}
         <main className="main">
           <Arbeitsflaeche />
           {ziehtDatei && <div className="ef-ablegen">Fotos oder Entzerrungs-Projekt hier ablegen</div>}
         </main>
-        <Eigenschaften />
+        <RechteLeiste schluessel="entzerrung:breite:rechts" vorgabe={310} min={250} max={480}>
+          <Eigenschaften />
+        </RechteLeiste>
       </div>
       {wahl === 'projekt' && (
         <ProjektWahl
@@ -194,6 +199,7 @@ export function App() {
           nurOrdner
           onGewaehlt={(g) => {
             setProjektordner(g.ordner);
+            useEntz.getState().setze({ projekt: [g.project.meta.projektcode, g.project.meta.vorhaben?.trim() || g.project.name].filter((x) => x?.trim()).join(' · ') || null });
             setWahl('fotos');
           }}
           onSchliessen={() => setWahl(null)}

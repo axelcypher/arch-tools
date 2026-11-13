@@ -1,6 +1,6 @@
 import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
-import { istPfad, pickFile, saveMergedFile } from '@core/platform/files';
+import { istPfad, openFileWithPath, saveMergedFile } from '@core/platform/files';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
 import { verbinde } from '@core/platform/projektordner';
 import { fotoEinlesen } from './bilder';
@@ -27,25 +27,45 @@ export async function neu() {
   log.info('Neues Projekt');
 }
 
+/** Projektdatei öffnen: aus dem Dateidialog (auf dem Desktop mit Pfad, damit „Speichern“ in dieselbe Datei schreibt) oder abgelegt */
 export async function oeffnen(datei?: File) {
-  if (!datei && !(await verwerfenOk())) return;
-  const f = datei ?? (await pickFile(`.${ENDUNG}`));
-  if (!f) return;
-  if (datei && !(await verwerfenOk())) return;
+  if (!(await verwerfenOk())) return;
+  let name = datei?.name ?? '';
   try {
-    const { doc, fotos } = entpacken(new Uint8Array(await f.arrayBuffer()));
-    useEntz.getState().laden(doc, fotos, f.name);
+    let gewaehlt: { name: string; pfad: string | null; bytes: Uint8Array } | null;
+    if (datei) {
+      // abgelegte Datei: auf dem Desktop trägt sie ihren Pfad mit (Tauri/Electron), im Browser nicht
+      const pfad = (datei as File & { path?: string }).path;
+      gewaehlt = { name: datei.name, pfad: pfad && istPfad(pfad) ? pfad : null, bytes: new Uint8Array(await datei.arrayBuffer()) };
+    } else gewaehlt = await openFileWithPath({ filterName: 'Entzerrung', extensions: [ENDUNG] });
+    if (!gewaehlt) return;
+    name = gewaehlt.name;
+    const { doc, fotos } = entpacken(gewaehlt.bytes);
+    useEntz.getState().laden(doc, fotos, gewaehlt.pfad ?? gewaehlt.name);
     for (const [id, d] of Object.entries(fotos)) await fotoSchreiben(id, d);
-    log.info(`Geöffnet: ${f.name}`, { fotos: doc.fotos.length });
+    log.info(`Geöffnet: ${gewaehlt.pfad ?? gewaehlt.name}`, { fotos: doc.fotos.length });
   } catch (e) {
     const text = e instanceof Error ? e.message : String(e);
-    log.error(`Öffnen fehlgeschlagen: ${f.name}`, text);
-    await oeffnenFehlgeschlagen(e, f.name, 'Die geöffnete Entzerrung bleibt unverändert.');
+    log.error(`Öffnen fehlgeschlagen: ${name}`, text);
+    await oeffnenFehlgeschlagen(e, name || 'Projektdatei', 'Die geöffnete Entzerrung bleibt unverändert.');
   }
 }
 
-/** true, wenn gespeichert wurde */
-export async function speichern(): Promise<boolean> {
+let speichertGerade: Promise<boolean> | null = null;
+
+/**
+ * true, wenn gespeichert wurde. Ein zweiter Aufruf während des Speicherns wartet auf den ersten. Ändert sich das
+ * Projekt während des Schreibens, bleibt es als ungespeichert markiert.
+ */
+export function speichern(): Promise<boolean> {
+  if (speichertGerade) return speichertGerade;
+  // ein gerade bearbeitetes Feld zuerst übernehmen (Strg+S ohne Verlassen des Felds)
+  if (typeof document !== 'undefined' && document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
+  speichertGerade = speichernJetzt().finally(() => (speichertGerade = null));
+  return speichertGerade;
+}
+
+async function speichernJetzt(): Promise<boolean> {
   const s = useEntz.getState();
   if (!s.doc.fotos.length) return false;
   const vorschlag = s.dateiname ?? `${s.doc.fotos[0].name}.${ENDUNG}`;
@@ -60,7 +80,7 @@ export async function speichern(): Promise<boolean> {
       build: () => packen(s.doc, s.bilder),
     });
     if (name) {
-      useEntz.getState().gespeichert(name);
+      useEntz.getState().gespeichert(name, s.doc);
       log.info(`Gespeichert: ${name}`);
     }
     return !!name;
@@ -75,15 +95,15 @@ export async function speichern(): Promise<boolean> {
 export async function fotosHinzufuegen(dateien?: File[]) {
   let liste = dateien;
   if (!liste) {
-    const f = await pickFile('image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp,.heic');
-    liste = f ? [f] : [];
+    liste = await fotosWaehlen();
   }
   for (const d of liste) {
     try {
       const b = await fotoEinlesen(d);
       const id = neueId();
-      await fotoSchreiben(id, b.daten);
+      // erst ins Dokument, dann in den Zwischenspeicher (so räumt ein laufendes Zwischenspeichern es nicht weg)
       useEntz.getState().fotoHinzufuegen(id, b.name, b.mime, b.breite, b.hoehe, b.daten);
+      await fotoSchreiben(id, b.daten);
       log.info(`Foto hinzugefügt: ${d.name}`, { breite: b.breite, hoehe: b.hoehe });
     } catch (e) {
       const text = e instanceof Error ? e.message : String(e);
@@ -91,6 +111,20 @@ export async function fotosHinzufuegen(dateien?: File[]) {
       await meldung('Foto ließ sich nicht hinzufügen', `${d.name}: ${text}`, e);
     }
   }
+}
+
+/** Dateidialog für Fotos mit Mehrfachauswahl */
+function fotosWaehlen(): Promise<File[]> {
+  if (typeof document === 'undefined') return Promise.resolve([]);
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
+    input.onchange = () => resolve([...(input.files ?? [])]);
+    input.addEventListener('cancel', () => resolve([]));
+    input.click();
+  });
 }
 
 /* ---------- Fotos im Projektordner ---------- */
@@ -123,9 +157,8 @@ export async function fotoImProjektOeffnen(fs: ProjektordnerZugriff, root: strin
     const name = pfad.split('/').pop()!;
     const b = await fotoEinlesen(new File([daten as BlobPart], name));
     const id = neueId();
-    await fotoSchreiben(id, b.daten);
     useEntz.getState().laden({ fotos: [neuesFoto(id, b.name, b.mime, b.breite, b.hoehe)] }, { [id]: b.daten }, ziel);
-    useEntz.getState().waehleFoto(id);
+    await fotoSchreiben(id, b.daten);
     log.info(`Foto geöffnet: ${verbinde(root, pfad)}`, { breite: b.breite, hoehe: b.hoehe });
   } catch (e) {
     const text = e instanceof Error ? e.message : String(e);
@@ -137,7 +170,16 @@ export async function fotoImProjektOeffnen(fs: ProjektordnerZugriff, root: strin
 /** Dateien aus Ziehen & Ablegen: Projektdatei öffnen oder Fotos hinzufügen */
 export async function ablegen(dateien: File[]) {
   const projekt = dateien.find((d) => d.name.toLowerCase().endsWith(`.${ENDUNG}`));
-  if (projekt) return oeffnen(projekt);
+  if (projekt) {
+    const uebrig = dateien.length - 1;
+    await oeffnen(projekt);
+    if (uebrig)
+      await meldung(
+        'Nur die Projektdatei geöffnet',
+        `${uebrig === 1 ? 'Die übrige Datei wurde' : `Die übrigen ${uebrig} Dateien wurden`} nicht hinzugefügt – Fotos bitte nach dem Öffnen getrennt ablegen.`,
+      );
+    return;
+  }
   return fotosHinzufuegen(dateien);
 }
 
@@ -153,12 +195,29 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
     log.info('Zwischenstand wiederhergestellt', { fotos: z.stand.doc.fotos.length });
   }
   let timer: ReturnType<typeof setTimeout> | undefined;
-  return useEntz.subscribe((s, vorher) => {
+  const schreiben = () => {
+    timer = undefined;
+    const a = useEntz.getState();
+    void standSchreiben({ doc: a.doc, dateiname: a.dateiname, dirty: a.dirty }, a.bilder, () => verwendeteFotos(useEntz.getState())).then(() => zwischenstandErsetzt(APP));
+  };
+  // beim Schließen den ausstehenden Stand sofort schreiben
+  const sofort = () => timer !== undefined && (clearTimeout(timer), schreiben());
+  window.addEventListener('pagehide', sofort);
+  window.addEventListener('beforeunload', sofort);
+  const ende = useEntz.subscribe((s, vorher) => {
     if (s.doc === vorher.doc && s.dateiname === vorher.dateiname && s.dirty === vorher.dirty) return;
     clearTimeout(timer);
-    timer = setTimeout(() => {
-      const a = useEntz.getState();
-      void standSchreiben({ doc: a.doc, dateiname: a.dateiname, dirty: a.dirty }).then(() => zwischenstandErsetzt(APP));
-    }, 600);
+    timer = setTimeout(schreiben, 600);
   });
+  return () => {
+    ende();
+    clearTimeout(timer);
+    window.removeEventListener('pagehide', sofort);
+    window.removeEventListener('beforeunload', sofort);
+  };
+}
+
+/** Fotos, die das Dokument oder der Rückgängig-Verlauf noch braucht (die übrigen darf der Zwischenspeicher löschen) */
+export function verwendeteFotos(s: Pick<ReturnType<typeof useEntz.getState>, 'doc' | 'vergangenheit' | 'zukunft'>): Set<string> {
+  return new Set([s.doc, ...s.vergangenheit, ...s.zukunft].flatMap((d) => d.fotos.map((f) => f.id)));
 }
