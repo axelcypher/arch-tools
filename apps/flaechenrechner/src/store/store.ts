@@ -525,7 +525,8 @@ function mitZeitlimit<T>(arbeit: Promise<T>, ms: number): Promise<T> {
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
 /** laufendes Schreiben des Zwischenstands (bis es fertig ist) */
 let laufend: Promise<boolean> | null = null;
-/** ist das letzte Schreiben gescheitert? Dann ist der aktuelle Stand nicht gesichert */
+/** ist das letzte Schreiben gescheitert? Dann ist der aktuelle Stand nicht gesichert. Setzt sich nicht von selbst zurück:
+ *  neu geschrieben wird mit der nächsten Änderung oder beim nächsten Aufruf vor dem Schließen. */
 let letztesGescheitert = false;
 
 /**
