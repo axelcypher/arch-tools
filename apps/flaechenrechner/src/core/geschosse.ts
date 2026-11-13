@@ -221,3 +221,11 @@ export function nachNummer<T extends { nummer: string; name?: string }>(raeume: 
     return a.nummer.localeCompare(b.nummer, 'de', { numeric: true }) || (a.name ?? '').localeCompare(b.name ?? '', 'de');
   });
 }
+
+/** Fortlaufende Nummern ab einer Startnummer („1.05“ → 1.05, 1.06 …); die Endziffern behalten ihre Stellenzahl. null, wenn die Startnummer nicht auf Ziffern endet. */
+export function nummernAb(start: string, anzahl: number): string[] | null {
+  const m = /^(.*?)(\d+)$/.exec(start.trim());
+  if (!m) return null;
+  const [, vorn, ziffern] = m;
+  return Array.from({ length: anzahl }, (_, i) => vorn + String(Number(ziffern) + i).padStart(ziffern.length, '0'));
+}
