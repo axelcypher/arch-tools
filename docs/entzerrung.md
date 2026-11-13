@@ -117,12 +117,13 @@ Beim Schließen fragt die App nach, solange ungespeicherte Änderungen bestehen.
 Desktop den Pfad: „Speichern“ schreibt danach ohne Rückfrage in dieselbe Datei. Ändert man während des
 Speicherns weiter, bleibt das Projekt als ungespeichert markiert.
 
-Wurde die geöffnete `.entz` inzwischen außerhalb von RECTIO geändert oder angelegt (z. B. von einem anderen
-Rechner im Büro), überschreibt „Speichern“ sie nicht. Es erscheint die Meldung „Datei wurde inzwischen
-geändert“. Die Änderungen bleiben in der App, und „Unter neuem Namen speichern …“ legt eine Kopie an (Vorschlag
-„… (Kopie).entz“); danach lassen sich beide Fassungen vergleichen. Das gilt auch für eine neue Entzerrung neben dem Foto: Hat jemand die `.entz`
-inzwischen angelegt, wird sie nicht überschrieben. Beim Speichern liest RECTIO die bisherige Datei nicht mehr ein,
-das spart bei großen Projekten Zeit.
+Wurde die geöffnete `.entz` inzwischen außerhalb von RECTIO geändert oder angelegt (z. B. von einem anderen Rechner
+im Büro), überschreibt „Speichern“ sie nicht. Es erscheint die Meldung „Datei wurde inzwischen geändert“. Die
+Änderungen bleiben in der App, und „Unter neuem Namen speichern …“ legt eine Kopie an (Vorschlag „… (Kopie).entz“);
+danach lassen sich beide Fassungen vergleichen. In der Desktop-App öffnet „Ordner öffnen“ den Ordner der Datei,
+danach erscheint die Rückfrage wieder. Das gilt auch für eine neue Entzerrung neben dem Foto: Hat jemand die
+`.entz` inzwischen angelegt, wird sie nicht überschrieben. Beim Speichern liest RECTIO die bisherige Datei nicht
+mehr ein, das spart bei großen Projekten Zeit.
 
 ## Projektdatei
 
