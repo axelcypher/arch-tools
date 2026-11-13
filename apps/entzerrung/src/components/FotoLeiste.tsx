@@ -18,7 +18,7 @@ export function FotoLeiste() {
         <div className="section-head">
           <h2>Fotos</h2>
           <button className="small" onClick={() => void fotosHinzufuegen()} title="Fotos hinzufügen (JPEG, PNG, WebP)">
-            + Foto
+            + Foto …
           </button>
         </div>
         {!fotos.length && <p className="muted small-text">Noch kein Foto. Fotos lassen sich auch einfach ins Fenster ziehen.</p>}
