@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { rectPoints } from './geometry';
 import type { Project, RoomShape } from './model';
 import { createOutline, createProject, createRoom } from './model';
-import { pruefeGeschoss, raumAufUmriss } from './pruefung';
+import { pruefeGeschoss, pruefeProjekt, raumAufUmriss } from './pruefung';
 
 const rect = (x: number, y: number, w: number, h: number) => rectPoints({ x, y }, { x: x + w, y: y + h });
 
@@ -86,6 +86,7 @@ describe('Prüfliste (F-10)', () => {
     p.storeys[0].shapes.push(flur);
     const e = pruefeGeschoss(p.storeys[0], p).find((x) => x.regel === 'keine-wofl')!;
     expect(e.art).toBe('hinweis');
+    expect(e.text).toMatch(/^1 Raum zählt nicht zur Wohnfläche: 0\.03 Treppenraum – richtig, wenn es sich um Räume außerhalb der Wohnung/);
     const pts = raumAufUmriss(flur, p.storeys[0])!;
     expect(Math.abs(pts.reduce((s, q, i) => s + q.x * pts[(i + 1) % pts.length].y - pts[(i + 1) % pts.length].x * q.y, 0) / 2)).toBeCloseTo(0.5, 6);
   });
@@ -140,5 +141,62 @@ describe('Prüfliste: Sonderfall S und Flächen außerhalb der BGF (DIN 277:2021
     terrasse.ausserhalbBgf = undefined;
     const e = pruefeGeschoss(p.storeys[0], p).find((x) => x.regel === 'raum-ausserhalb')!;
     expect(e.text).toMatch(/außerhalb aller R-Umrisse/);
+  });
+});
+
+describe('Prüfliste: Wohnfläche zusammengefasst (§ 2 Abs. 3 WoFlV)', () => {
+  it('mehrere Räume ohne Wohnfläche im Wohngeschoss: eine Meldung mit allen Räumen, ab sechs gekürzt', () => {
+    const p = haus();
+    for (let i = 0; i < 7; i++) p.storeys[0].shapes.push(createRoom(rect(11.5, i, 0.5, 0.5), `0.1${i}`, 'Abstellraum'));
+    const e = pruefeGeschoss(p.storeys[0], p).filter((x) => x.regel === 'keine-wofl');
+    expect(e).toHaveLength(1);
+    expect(e[0].shapeIds).toHaveLength(7);
+    expect(e[0].text).toMatch(/^7 Räume zählen nicht zur Wohnfläche: 0\.10 Abstellraum, .* und 2 weitere – /);
+  });
+
+  it('kein Raum zählt zur Wohnfläche, aber Wohnräume nach Name: Hinweis je Projekt; bei Büros nicht', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createRoom(rect(0, 0, 4, 4), '0.01', 'Wohnen'));
+    expect(pruefeProjekt(p).filter((x) => x.regel === 'keine-wohnflaeche')).toHaveLength(1);
+    // Gegenprobe: Büro und „Raum“ mit der Vorgabe NUF 1 (nicht von Hand umgestellt) – kein Hinweis
+    const q = createProject('Büro');
+    q.storeys[0].shapes.push(createRoom(rect(0, 0, 4, 4), '0.01', 'Büro'), createRoom(rect(5, 0, 4, 4), '0.02', 'Raum'), createRoom(rect(10, 0, 4, 4), '0.03', 'Praxis'));
+    expect(pruefeProjekt(q).filter((x) => x.regel === 'keine-wohnflaeche')).toHaveLength(0);
+    // Gegenprobe: ein Raum zählt bereits zur Wohnfläche
+    p.storeys[0].shapes[0] = { ...(p.storeys[0].shapes[0] as RoomShape), wofl: { kategorie: 'voll', wohnung: 'WE 01' } };
+    expect(pruefeProjekt(p).filter((x) => x.regel === 'keine-wohnflaeche')).toHaveLength(0);
+  });
+
+  it('genau fünf Räume ohne „und … weitere“', () => {
+    const p = haus();
+    for (let i = 0; i < 5; i++) p.storeys[0].shapes.push(createRoom(rect(11.5, i, 0.5, 0.5), `0.1${i}`, 'Abstellraum'));
+    const e = pruefeGeschoss(p.storeys[0], p).find((x) => x.regel === 'keine-wofl')!;
+    expect(e.text).toMatch(/^5 Räume zählen nicht zur Wohnfläche: 0\.10 Abstellraum, 0\.11 Abstellraum, 0\.12 Abstellraum, 0\.13 Abstellraum, 0\.14 Abstellraum – /);
+    expect(e.text).not.toContain('weitere');
+  });
+
+  it('Projekt-Hinweis: Praxis-, Büro- und Gastronomieräume mit ähnlichem Namen bleiben stumm; Kellergeschoss zählt nicht', () => {
+    const q = createProject('Praxis');
+    for (const [i, n] of ['Wartezimmer', 'Behandlungszimmer', 'Teeküche', 'Gastraum', 'Besprechungszimmer'].entries()) q.storeys[0].shapes.push(createRoom(rect(i * 5, 0, 4, 4), `0.0${i}`, n));
+    expect(pruefeProjekt(q).filter((x) => x.regel === 'keine-wohnflaeche')).toHaveLength(0);
+    const k = createProject('Keller');
+    k.storeys[0].keller = true;
+    k.storeys[0].shapes.push(createRoom(rect(0, 0, 4, 4), '-1.01', 'Wohnen'));
+    expect(pruefeProjekt(k).filter((x) => x.regel === 'keine-wohnflaeche')).toHaveLength(0);
+    k.storeys[0].keller = false; // Gegenprobe: im Normalgeschoss meldet derselbe Raum
+    expect(pruefeProjekt(k).filter((x) => x.regel === 'keine-wohnflaeche')).toHaveLength(1);
+  });
+
+  it('Projekt-Hinweis über mehrere Geschosse: ein Eintrag, Zahl der Geschosse im Text, Räume des ersten Geschosses gewählt', () => {
+    const p = createProject('Haus');
+    const og = { ...createProject('x').storeys[0], id: 'og', name: 'OG' };
+    p.storeys[0].shapes.push(createRoom(rect(0, 0, 4, 4), '0.01', 'Wohnen'));
+    og.shapes = [createRoom(rect(0, 0, 4, 4), '1.01', 'Schlafen'), createRoom(rect(5, 0, 4, 4), '1.02', 'Kinderzimmer')];
+    p.storeys.push(og);
+    const e = pruefeProjekt(p).filter((x) => x.regel === 'keine-wohnflaeche');
+    expect(e).toHaveLength(1);
+    expect(e[0].text).toContain('(Wohnräume in 2 Geschossen)');
+    expect(e[0].storeyId).toBe(p.storeys[0].id);
+    expect(e[0].shapeIds).toHaveLength(1);
   });
 });

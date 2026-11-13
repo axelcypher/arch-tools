@@ -254,6 +254,9 @@ KO 0.11.2 (Patch).
   Dachgeschoss (FR-08), S-Umriss ohne Körperhöhe (FR-10), Raum ohne Katalogeintrag bei eigenem Katalog, zum Prüfen
   markierte Umrisse), alles als Warnung/Hinweis; Ampel „Prüfen“ in der Auswertung, Klick wählt die Fläche; „Auf
   Umriss beschneiden“ in den Raumeigenschaften. Damit auch der Prüflisten-Teil von F-01, FR-02 und FR-08.
+  Nachtrag (QUADRIO 0.40.0): „keine Wohnfläche“ als eine Meldung je Geschoss mit den Räumen (§ 2 Abs. 3 WoFlV);
+  neuer Projekt-Hinweis „Keine Wohnfläche erfasst“, wenn kein Raum zählt, aber Räume nach Name eindeutig Wohnräume
+  sind (Büro, Praxis, Teeküche u. ä. ausgenommen). Die Vorgabe neuer Räume (NUF 1, keine Wohnfläche) bleibt.
 - [x] **F-11** Raumkatalog und Vorgaben für neue Räume – FR 0.21.0: Bezeichnung mit Vorschlagsliste, Katalogname setzt
   Nutzungsgruppe/Nutzungsart und WoFlV-Anrechnung („aus Katalog“, Kennzeichen entfällt bei Änderung von Hand);
   Katalog des Büros `raumkatalog.json` im Konfigurationsordner, sonst Vorgabe mit getrennten Einträgen
