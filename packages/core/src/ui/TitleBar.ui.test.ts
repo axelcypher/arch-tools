@@ -88,6 +88,11 @@ describe('Titelleiste auf dem Desktop', () => {
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
     expect(dialog(host)?.textContent).toContain('Vor dem Beenden speichern?');
     await antwort(host, 'Abbrechen');
+    // leerer Satz: ebenso der Rückfall
+    await act(async () => root!.render(createElement(TitleBar, { app: 'ATLAS', name: 'P1', dirty: true, onOpenLog: () => {}, onSpeichern: async () => true, ungespeichert: ' ' })));
+    await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
+    expect(dialog(host)?.textContent).toContain('Vor dem Beenden speichern?');
+    await antwort(host, 'Abbrechen');
     expect(fenster.destroy).not.toHaveBeenCalled();
   });
 

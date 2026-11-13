@@ -34,6 +34,11 @@ export interface RahmenStatus {
 
 /** Höchstlänge des Satzes `ungespeichert` (RahmenStatus), den die Rahmen-App übernimmt */
 export const UNGESPEICHERT_MAX = 200;
+/** Satz `ungespeichert` geprüft: gekürzt, nicht leer, höchstens UNGESPEICHERT_MAX Zeichen – sonst undefined (allgemeiner Satz) */
+export function ungespeichertSatz(satz: unknown): string | undefined {
+  const s = typeof satz === 'string' ? satz.trim() : '';
+  return s && s.length <= UNGESPEICHERT_MAX ? s : undefined;
+}
 
 /** Ereignis eines herausgelösten Fensters an den Rahmen: wieder als Tab andocken */
 export const ANDOCKEN = 'arch-tools:andocken';

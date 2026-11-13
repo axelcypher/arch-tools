@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { isTauri } from '@core/platform/files';
 import { getEntries, logger, logVersion, subscribe } from '@core/platform/log';
 import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
-import { UNGESPEICHERT_MAX } from '@core/platform/rahmen';
+import { ungespeichertSatz } from '@core/platform/rahmen';
 import {
   AN_APP,
   AN_RAHMEN,
@@ -52,8 +52,8 @@ const ereignisse = () => import('@tauri-apps/api/event');
  * sonst bleibt der allgemeine.
  */
 const statusAus = (d: Partial<RahmenStatus>) => {
-  const satz = typeof d.ungespeichert === 'string' ? d.ungespeichert.trim() : '';
-  return { name: d.name ?? '', dirty: !!d.dirty, ...(satz && satz.length <= UNGESPEICHERT_MAX ? { ungespeichert: satz } : {}) };
+  const satz = ungespeichertSatz(d.ungespeichert);
+  return { name: d.name ?? '', dirty: !!d.dirty, ...(satz ? { ungespeichert: satz } : {}) };
 };
 
 /**
