@@ -247,7 +247,8 @@ niemand geändert hat und sie nicht in Excel geöffnet ist – mit Sicherungskop
 Modal mit den Ebenen Ablage, Rechnungen & Benennung, Prüfung (Vorgaben für USt, Umlage, Einbehalt, Nachlass,
 Skonto), Deckblatt (Briefbogen, Büro, Unterschrift, Schlusstext, Fußzeile), Scanordner (Pfad, Endungen),
 Mailvorlagen und Leistungsverzeichnisse (Format neuer LV-Dateien, Dateiname). Gespeichert im gemeinsamen
-Konfigurationsordner (`ava.json`), also für das ganze Büro; „Vorgabe“ setzt alles zurück.
+Konfigurationsordner (`ava.json`), also für das ganze Büro; „Vorgabe“ setzt alles zurück. Hat ein anderer Rechner
+die Einstellungen inzwischen gespeichert, überschreibt FABRIO sie nicht, sondern meldet es und lädt den neuen Stand.
 
 ## Dateiformate
 

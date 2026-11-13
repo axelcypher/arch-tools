@@ -138,7 +138,8 @@ function RueckfrageDialog({ frage }: { frage: Frage }) {
     useFragen.getState().weg(frage);
     frage.antwort(id, wert);
   };
-  const standard = frage.knoepfe.find((k) => k.art) ?? frage.knoepfe.at(-1)!;
+  // Standard (Enter, Fokus): der Hauptknopf; ohne ihn der erste hervorgehobene, sonst der letzte – nie ohne Not der gefährliche
+  const standard = frage.knoepfe.find((k) => k.art === 'primary') ?? frage.knoepfe.find((k) => k.art) ?? frage.knoepfe.at(-1)!;
   const mitEingabe = frage.wert !== undefined;
   return (
     <Modal titel={frage.titel} onClose={() => ende(frage.knoepfe.length === 1 ? frage.knoepfe[0].id : null)} className="rf" klickDaneben={!mitEingabe}>
