@@ -461,6 +461,24 @@ async fn projekt_liste(root: String, tiefe: u32) -> Result<Vec<ProjektEintrag>, 
     Ok(out)
 }
 
+/// Größe und Änderungszeit einer Datei (vollständiger Pfad), ohne sie zu lesen; `None`, wenn es sie nicht gibt.
+/// Zum Erkennen von Änderungen von außen vor dem Speichern (saveMergedFile).
+#[tauri::command]
+async fn datei_stand(path: String) -> Result<Option<DateiStandAntwort>, String> {
+    match std::fs::metadata(&path) {
+        Ok(m) if m.is_file() => Ok(Some(DateiStandAntwort { groesse: m.len(), geaendert: projekt_ms(&m) })),
+        Ok(_) => Ok(None),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(format!("{}: {}", path, e)),
+    }
+}
+
+#[derive(serde::Serialize)]
+struct DateiStandAntwort {
+    groesse: u64,
+    geaendert: u64,
+}
+
 /// Liest eine Datei unter `root` mit Größe und Änderungszeit; `None`, wenn es sie nicht gibt.
 #[tauri::command]
 async fn projekt_lesen(root: String, pfad: String) -> Result<Option<ProjektDateiInhalt>, String> {
@@ -513,7 +531,14 @@ async fn projekt_datei_anlegen(root: String, pfad: String, contents_base64: Stri
     // create_new: schlägt fehl, wenn die Datei existiert – nie überschreiben
     match std::fs::OpenOptions::new().write(true).create_new(true).open(&p) {
         Ok(mut f) => {
-            f.write_all(&bytes).map_err(|e| format!("{}: {}", p.display(), e))?;
+            // scheitert das Schreiben (Datenträger voll, Netz weg), keine halb geschriebene Datei liegen lassen – sonst
+            // gälte sie beim nächsten Versuch als „gibt es schon“
+            // (sync_all kann auf manchen SMB-Freigaben scheitern, obwohl die Daten da sind – dann lieber neu versuchen)
+            if let Err(e) = f.write_all(&bytes).and_then(|_| f.sync_all()) {
+                drop(f);
+                let _ = std::fs::remove_file(&p);
+                return Err(format!("{}: {}", p.display(), e));
+            }
             log::info!("Datei angelegt: {} ({} Bytes)", p.display(), bytes.len());
             Ok(true)
         }
