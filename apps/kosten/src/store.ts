@@ -5,6 +5,8 @@ import { createProject, leereMeta } from '@core/model';
 import { gleich } from '@core/zusammenfuehren';
 import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
+import { vorDemSchliessen } from '@core/platform/rahmen';
+import { verzoegertSchreiben } from './verzoegert';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 
 /**
@@ -169,18 +171,27 @@ if (typeof indexedDB !== 'undefined') {
         // kein Zwischenstand
       });
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  // Zwischenstand 600 ms nach der letzten Änderung schreiben; vor dem Schließen (Arkly) sofort und abgewartet
+  const zwischenstand = verzoegertSchreiben(
+    () =>
+      db().then(
+        (d) =>
+          new Promise<void>((fertig) => {
+            const { project, datei, basis } = useKosten.getState();
+            const tx = d.transaction(STORE, 'readwrite');
+            tx.objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
+            tx.oncomplete = () => {
+              zwischenstandErsetzt(DB);
+              fertig();
+            };
+            tx.onerror = tx.onabort = () => fertig();
+          }),
+      ),
+    600,
+  );
   useKosten.subscribe((s, prev) => {
     if (s.project === prev.project && s.basis === prev.basis) return;
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      const { project, datei, basis } = useKosten.getState();
-      void db()
-        .then((d) => {
-          d.transaction(STORE, 'readwrite').objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
-          zwischenstandErsetzt(DB);
-        })
-        .catch(() => undefined);
-    }, 600);
+    zwischenstand.anstossen();
   });
+  vorDemSchliessen(zwischenstand.sichern);
 }

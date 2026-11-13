@@ -18,7 +18,8 @@ und Regionalfaktor.
 - **Pflegen:** Stufe und Kostenstand (Preisstand), Faktoren, Mengen, Positionen mit Kennwerten, festgehaltene Stände.
 - **Zwischenstand:** NUMIO hält den Arbeitsstand laufend fest. Nach einem Absturz oder Neuladen kommt ein
   ungespeicherter Stand zurück und bleibt als ungespeichert markiert („•“, Leiste „Ungespeicherter Stand vom …
-  wiederhergestellt – Speichern / Verwerfen“); vor dem Öffnen eines anderen Projekts wird nachgefragt.
+  wiederhergestellt – Speichern / Verwerfen“); vor dem Öffnen eines anderen Projekts wird nachgefragt. Der Zwischenstand wird 0,6 s nach der letzten Änderung geschrieben; schließt Arkly das Fenster
+  oder den Tab (auch beim Andocken, Beenden oder Update), schreibt NUMIO einen ausstehenden Stand vorher sofort.
 - **Speichern:** in dieselbe Projektdatei. QUADRIO und TERRIO (GRZ-Nachweis) zeigen die Kostenermittlung nicht
   an, bewahren sie aber beim Speichern (ab QUADRIO 0.9.4 und TERRIO 0.2.3); umgekehrt bewahrt
   NUMIO alles, was die anderen Apps pflegen. Ändern sich dort Flächen, ändern sich die Kosten
