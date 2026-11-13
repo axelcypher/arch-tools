@@ -123,7 +123,7 @@ am Tab bzw. in der Titelleiste ● erscheint.
    und holt FABRIO als Tab zurück. Bei QUADRIO kommt stattdessen „QUADRIO andocken?“ (Änderungen bleiben im
    Zwischenstand).
 6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, ⧉. Erwartet: Frage mit *Speichern*; bei RECTIO nur
-   „RECTIO herauslösen?“. (ATLAS speichert alles sofort und fragt deshalb nie.)
+   „RECTIO herauslösen?“. (ATLAS meldet keine ungespeicherten Änderungen und fragt deshalb nicht.)
 7. **Update mit Änderungen:** Liegt ein Update vor, in einem Tab und einem herausgelösten Fenster ändern, Update-Knopf
    → „Jetzt installieren“. Erwartet: erst die Fragen je App, *Abbrechen* bricht das Update ab; erst nach den Fragen
    wird geladen und neu gestartet.
