@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wfs:FeatureCollection timeStamp="2026-11-12T10:43:52.862+01:00" numberReturned="1" numberMatched="unknown" xmlns="http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0 https://www.wfs.nrw.de/aaa-suite/schema/AAA-vereinfacht/2.0/schema/ALKIS-vereinfacht.xsd http://www.opengis.net/wfs/2.0 https://www.wfs.nrw.de/aaa-suite/schema/ogc/wfs/2.0/wfs.xsd http://www.opengis.net/gml/3.2 https://www.wfs.nrw.de/aaa-suite/schema/NAS/6.0.1/schema/gml/3.2.1/gml.xsd http://www.isotc211.org/2005/gco https://www.wfs.nrw.de/aaa-suite/schema/NAS/6.0.1/schema/iso/19139/20070417/gco/gco.xsd http://www.isotc211.org/2005/gmd https://www.wfs.nrw.de/aaa-suite/schema/NAS/6.0.1/schema/iso/19139/20070417/gmd/gmd.xsd">
+<wfs:boundedBy>
+<gml:Envelope srsName="urn:ogc:def:crs:EPSG::25832" srsDimension="2">
+<gml:lowerCorner>343838.783 5676674.219</gml:lowerCorner>
+<gml:upperCorner>344368.07 5678381.848</gml:upperCorner>
+</gml:Envelope>
+</wfs:boundedBy>
+<wfs:member>
+<Flurstueck gml:id="DENW20AL00009QJ7FL">
+<gml:identifier codeSpace="urn:adv:oid:">urn:adv:oid:DENW20AL00009QJ7FL</gml:identifier>
+<idflurst>DENW20AL00009QJ7</idflurst>
+<flstkennz>05311000100002______</flstkennz>
+<land>Nordrhein-Westfalen</land>
+<landschl>05</landschl>
+<gemarkung>Altstadt</gemarkung>
+<gemaschl>053110</gemaschl>
+<flur>001</flur>
+<flurschl>053110001</flurschl>
+<flstnrzae>2</flstnrzae>
+<regbezirk>Düsseldorf</regbezirk>
+<regbezschl>051</regbezschl>
+<kreis>Düsseldorf</kreis>
+<kreisschl>05111</kreisschl>
+<gemeinde>Düsseldorf</gemeinde>
+<gmdschl>05111000</gmdschl>
+<oid>DENW20AL00009QJ7FL</oid>
+<aktualit>2024-02-26Z</aktualit>
+<geometrie>
+<gml:MultiSurface gml:id="flurstueck.id.54600355.geometrie.Geom_0" srsName="urn:ogc:def:crs:EPSG::25832" srsDimension="2">
+<gml:surfaceMember>
+<gml:Polygon gml:id="flurstueck.id.54600355.geometrie.Geom_1">
+<gml:exterior>
+<gml:LinearRing>
+<gml:posList>343838.783 5676796.316 343840.111 5676794.917 343848.508 5676786.193 343859.294 5676774.985 343867.689 5676766.26 343868.645 5676765.267 343838.783 5676796.316</gml:posList>
+</gml:LinearRing>
+</gml:exterior>
+</gml:Polygon>
+</gml:surfaceMember>
+</gml:MultiSurface>
+</geometrie>
+<flaeche>256577.0</flaeche>
+<abwrecht>Kein abweichender Rechtszustand</abwrecht>
+<lagebeztxt>Rhein</lagebeztxt>
+<tntxt>Fließgewässer;248375|Unland/Vegetationslose Fläche;6224|Schiffsverkehr;1276|Unland/Vegetationslose Fläche;264|Schiffsverkehr;241|Unland/Vegetationslose Fläche;116|Schiffsverkehr;81</tntxt>
+</Flurstueck>
+</wfs:member>
+</wfs:FeatureCollection>

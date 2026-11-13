@@ -13,6 +13,7 @@ export interface AppInfo {
 
 export const APPS: AppInfo[] = [
   { id: 'ordner', ...APP_NAMEN.ordner, text: 'Projekte anlegen und fortschreiben, Struktur, Vorlagen, Ordner prüfen, Katasterpläne' },
+  { id: 'baurecht', ...APP_NAMEN.baurecht, text: 'Rechtsprüfung vor dem Bauantrag – Vorschriften je Paragraf als Ampel' },
   { id: 'formulare', ...APP_NAMEN.formulare, text: 'Bauantragsformulare ausfüllen' },
   { id: 'flaechenrechner', ...APP_NAMEN.flaechenrechner, text: 'Flächen und Rauminhalte nach DIN 277 und WoFlV' },
   { id: 'grz', ...APP_NAMEN.grz, text: 'GRZ/GFZ-Nachweis nach BauNVO und BauO NRW' },

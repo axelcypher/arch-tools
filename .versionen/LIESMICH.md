@@ -21,7 +21,7 @@ braucht Arkly die Notiz.
 ```
 
 - Schlüssel: Kennung der App – `flaechenrechner` (QUADRIO), `grz` (TERRIO), `kosten` (NUMIO), `ordner` (ATLAS),
-  `entzerrung` (RECTIO), `formulare` (PERMIO), `ava` (FABRIO), `suite` (Arkly).
+  `entzerrung` (RECTIO), `formulare` (PERMIO), `ava` (FABRIO), `baurecht` (LEXIO), `suite` (Arkly).
 - `stufe`: `patch` (Fehlerkorrektur), `minor` (neue Funktion) oder `major`.
 - `notiz`: ein Satz für die Release-Notiz (Deutsch).
 - Arkly braucht eine Notiz nur bei Änderungen an `apps/suite`; sonst setzt der Release-Lauf ihre Version selbst

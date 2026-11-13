@@ -35,8 +35,9 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
     `package-lock.json`), löscht die Notizen, committet als github-actions nach `main` und baut. Danach `main` frisch
     holen. Von Hand setzen, falls nötig: `node scripts/versionen-setzen.mjs setzen <app> x.y.z`.
   - Crate-Namen im Cargo.lock: `arch-flaechen-tool` (QUADRIO), `grz-nachweis`, `kostenermittlung`, `projektordner`,
-    `entzerrung`, `formulare`, `ava` und `arch-tools` (Arkly). Eine neue App in `release.yml` und in
-    `scripts/versionen-pruefen.mjs` eintragen.
+    `entzerrung`, `formulare`, `ava`, `baurecht` (LEXIO) und `arch-tools` (Arkly). Eine neue App in `release.yml`, in
+    `scripts/versionen-pruefen.mjs` (APPS) und in `scripts/versionen-setzen.mjs` (NAMEN) eintragen; ihre Erstversion
+    setzt der PR selbst (der Release-Lauf übernimmt eine unveröffentlichte Version unverändert).
 - **Rust nur über die CI:** Änderungen an `apps/*/src-tauri` (Rust, capabilities, tauri.conf.json außer der
   Versionsnummer) erst als Branch mit PR einreichen, den CI-Job „Tauri-Hülle prüfen“ abwarten und dann per
   Fast-Forward nach `main` bringen. Die Punkte unten sollten fast alle ohne Rust auskommen. Wo ein Punkt Rust

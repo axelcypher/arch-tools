@@ -1,0 +1,235 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "stellplatzsatzung",
+  "fassung": "2022-01-28",
+  "version": 1,
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Die Stellplatzsatzung gilt im ganzen Stadtgebiet; abweichende Regelungen in Bebauungsplänen oder anderen Satzungen gehen vor.",
+      "fundstellen": [
+        "1"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "verweise": [
+        "nw/stellplatzvo/1"
+      ],
+      "stand": {
+        "1": "d1d16bae"
+      },
+      "titel": "Geltungsbereich"
+    },
+    "2": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Bei Errichtung von Anlagen mit Zu- und Abfahrtsverkehr sind notwendige Stellplätze und Fahrradabstellplätze herzustellen, bei Änderung und Nutzungsänderung für den Mehrbedarf; fertig spätestens bei Nutzungsaufnahme (Abs. 4).",
+      "fundstellen": [
+        "2/1",
+        "2/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "verweise": [
+        "nw/bauo-nrw/48"
+      ],
+      "pruefen": {
+        "grund": "Dachgeschossausbau in vor dem 01.01.1993 fertiggestellten Gebäuden der Zonen 1 und 2: Stellplätze müssen nicht hergestellt werden, soweit das auf dem Grundstück nicht oder nur unter großen Schwierigkeiten möglich ist (Abs. 1 Nr. 1).",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "f": "soest.stellplatzzone",
+              "in": [
+                "1",
+                "2"
+              ]
+            }
+          ]
+        }
+      },
+      "stand": {
+        "2/1": "ed5c6210",
+        "2/4": "508bcacb"
+      },
+      "titel": "Herstellungspflicht und Begriffe"
+    },
+    "3": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Anzahl nach Anlage 3 je Nutzung; Bruchteile aufrunden, mindestens ein Stellplatz je Nutzungseinheit; Minderung um bis zu 20 % bei guter ÖPNV-Erschließung (in der Regel bei Bahnhofszugang unter 500 m oder Bushaltestelle unter 300 m vom Hauseingang mit werktags 7–19 Uhr höchstens 15-Minuten-Takt je Richtung, sowie in der gesamten Altstadt).",
+      "fundstellen": [
+        "3/1",
+        "3/5",
+        "3/6"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Stellplatznachweis nach Anlage 3 (Kfz und Fahrrad)"
+      ],
+      "stand": {
+        "3/1": "ee9d3765",
+        "3/5": "8c30d341",
+        "3/6": "8e054a67"
+      },
+      "titel": "Anzahl der notwendigen Stellplätze und Fahrradabstellplätze",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
+    },
+    "4": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "nw_stellplatzanlass"
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "beseitigung_art"
+                  },
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "soest.stellplaetze_entfallen",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Stellplätze auf dem Grundstück oder im Umkreis von 300 m Fußweg (Fahrrad 50 m) öffentlich-rechtlich gesichert; wasserdurchlässig – die Satzung nennt einen „Abflussbeiwert mind. 0,5“ (gemeint ist vermutlich höchstens 0,5; mit der Stadt klären); Zufahrten bündeln; Fahrradplätze ebenerdig erreichbar, diebstahlsicher, mindestens 1,5 m² je Rad; notwendige Stellplätze sind dauerhaft zu unterhalten und dürfen nicht zweckentfremdet werden (Abs. 1, 3).",
+      "fundstellen": [
+        "4/1",
+        "4/3",
+        "4/7",
+        "4/8",
+        "4/9"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Stellplätze außerhalb des Baugrundstücks brauchen eine Baulast. Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+      "stand": {
+        "4/1": "e7ae03ff",
+        "4/3": "14e8aac0",
+        "4/7": "807197a7",
+        "4/8": "94cf7c3e",
+        "4/9": "7fd51111"
+      },
+      "titel": "Beschaffenheit von Stellplätzen und Fahrradabstellplätzen"
+    },
+    "5": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "soest.stellplatz_abloesung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Ist die Herstellung nicht oder nur unter großen Schwierigkeiten möglich, kann sie nach Ermessen der Bauaufsicht abgelöst werden: je Kfz-Stellplatz 6.358 € (Zone 1), 4.375 € (Zone 2), 2.868 € (Zone 3); je Fahrradplatz 1.221,50 € / 983,50 € / 803,50 €.",
+      "fundstellen": [
+        "5/1",
+        "5/2",
+        "5/4",
+        "5/5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Die Ablösung steht im Ermessen der Bauaufsicht – kein Anspruch (Abs. 1); Ablösevertrag vor der Genehmigung schließen."
+      },
+      "stand": {
+        "5/1": "29aa0012",
+        "5/2": "dd588169",
+        "5/4": "921dceee",
+        "5/5": "63da9b3c"
+      },
+      "entfaellt": {
+        "f": "soest.stellplatz_abloesung",
+        "ist": false
+      },
+      "nachweis": [
+        "Antrag auf Ablösung notwendiger Stellplätze (Ablösevertrag mit der Stadt Soest)"
+      ],
+      "titel": "Ablösung der Stellplätze"
+    },
+    "6": {
+      "titel": "Ordnungswidrigkeiten",
+      "gilt": {
+        "oder": [
+          {
+            "n": "nw-05974040/stellplatzsatzung/2",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "beseitigung_art"
+                  },
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "soest.stellplaetze_entfallen",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Ordnungswidrig ist, wer notwendige Stellplätze oder Fahrradabstellplätze bei Errichtung, Änderung oder Nutzungsänderung nicht herstellt (Abs. 1 Satz 1, § 2) oder sie entfernt bzw. zweckentfremdet (Abs. 1 Satz 2, § 4 Abs. 3) – Ersatz nachweisen oder vorher mit der Stadt klären.",
+      "fundstellen": [
+        "6/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "verweise": [
+        "nw-05974040/stellplatzsatzung/2",
+        "nw-05974040/stellplatzsatzung/4"
+      ],
+      "stand": {
+        "6/1": "b95663ec"
+      }
+    }
+  }
+}

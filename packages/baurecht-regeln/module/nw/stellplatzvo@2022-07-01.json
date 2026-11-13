@@ -1,0 +1,248 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "stellplatzvo",
+  "fassung": "2022-07-01",
+  "version": 1,
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Pflicht zur Herstellung notwendiger Stellplätze für Kfz und Fahrräder bei Errichtung oder Nutzungsänderung mit Zu- oder Abgangsverkehr – nur, soweit keine Stellplatzsatzung oder Festsetzung im Bebauungsplan besteht.",
+      "fundstellen": [
+        "1/1",
+        "1/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Stellplatzfestsetzungen im Bebauungsplan gehen ebenfalls vor – im Plan prüfen. Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+      "stand": {
+        "1/1": "cf8b5461",
+        "1/2": "4c2d69d3"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_zahl",
+        "ist": true
+      },
+      "titel": "Anwendungsbereich"
+    },
+    "2": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Notwendige Stellplätze in ausreichender Zahl, Größe und Beschaffenheit; bei Änderung oder Nutzungsänderung nur für den Mehrbedarf.",
+      "fundstellen": [
+        "2/1",
+        "2/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "2/1": "9790f329",
+        "2/2": "5e61cb41"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_zahl",
+        "ist": true
+      },
+      "titel": "Notwendige Stellplätze für Kraftfahrzeuge und Fahrräder",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
+    },
+    "3": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Anzahl nach den Richtzahlen der Anlage; bei Wohngebäuden GK 1 und 2 zählt eine Garagenzufahrt als Stellplatz, gefangene Stellplätze sind zulässig.",
+      "fundstellen": [
+        "3/1",
+        "3/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Stellplatznachweis nach der Anlage (Richtzahlen nur als PDF-Anlage)"
+      ],
+      "stand": {
+        "3/1": "0849eafd",
+        "3/4": "f22f8ca2"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_zahl",
+        "ist": true
+      },
+      "titel": "Anzahl der notwendigen Stellplätze",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
+    },
+    "4": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Verringerung der Anzahl notwendiger Stellplätze (ÖPNV-Lage, Mobilitätskonzept, offensichtliches Missverhältnis).",
+      "fundstellen": [
+        "4/1",
+        "4/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "4/1": "0770478e",
+        "4/2": "dae694c5"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_zahl",
+        "ist": true
+      },
+      "hinweis": "Verringerung bei integrierter Lage mit ÖPNV-Anbindung oder Mobilitätskonzept – öffentlich-rechtlich zu sichern. Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+      "titel": "Verringerung der Anzahl der notwendigen Stellplätze"
+    },
+    "5": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Herstellung auf dem Baugrundstück oder in zumutbarer Entfernung (bis 500 m, bei Wohnungsbau bis 300 m, Fahrräder bis 100 m) mit öffentlich-rechtlicher Sicherung; fertig spätestens bei Nutzungsaufnahme.",
+      "fundstellen": [
+        "5/1",
+        "5/2",
+        "5/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "5/1": "ac392f74",
+        "5/2": "a5b49e1e",
+        "5/3": "297fbd15"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_lage",
+        "ist": true
+      },
+      "titel": "Erfüllung der Herstellungspflicht",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
+    },
+    "6": {
+      "titel": "Nachweis durch Zahlung von Ablösungsbeträgen",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.stellplatz_abloesung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "vorhaben.stellplatz_abloesung",
+            "ist": false
+          },
+          {
+            "f": "ortsrecht.stellplatz_regelt_abloesung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Werden notwendige Stellplätze nicht hergestellt, kann die Pflicht mit Zustimmung der Gemeinde durch einen Ablösungsbetrag erfüllt werden; bei Wohnungsbau nur, soweit keine erhebliche Beeinträchtigung des Verkehrs zu erwarten ist (Abs. 1, 2).",
+      "fundstellen": [
+        "6/1",
+        "6/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "6/1": "ca7fb329",
+        "6/2": "7c4c7794"
+      }
+    },
+    "7": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Größe und Beschaffenheit notwendiger Kfz-Stellplätze; bei Wohngebäuden nach § 49 Abs. 1 BauO NRW mindestens ein Stellplatz für Menschen mit Behinderung (Abs. 2) – gilt neben einer Stellplatzsatzung, soweit diese das nicht regelt (§ 1 Abs. 2).",
+      "fundstellen": [
+        "7"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "7": "d9c70838"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_kfz",
+        "ist": true
+      },
+      "titel": "Beschaffenheit von notwendigen Stellplätzen für Kraftfahrzeuge",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
+    },
+    "8": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Beschaffenheit notwendiger Fahrradabstellplätze.",
+      "fundstellen": [
+        "8"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "8": "34318bc8"
+      },
+      "entfaellt": {
+        "f": "ortsrecht.stellplatz_regelt_fahrrad",
+        "ist": true
+      },
+      "titel": "Beschaffenheit von notwendigen Stellplätzen für Fahrräder",
+      "hinweis": "Auch Anlagen, die keine Gebäude sind (z. B. Sport- oder Stellplatzanlagen), lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist."
+    },
+    "9": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "m": "Verfahren",
+            "in": [
+              "Genehmigungsfreistellung",
+              "verfahrensfrei"
+            ]
+          }
+        ]
+      },
+      "grund": "Ohne Baugenehmigungsverfahren braucht die Bestimmung der Stellplatzzahl in Sonderfällen und die Ablöse die Zustimmung der Gemeinde.",
+      "fundstellen": [
+        "9"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "9": "603187bd"
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "ortsrecht.stellplatz_regelt_zahl",
+            "ist": true
+          },
+          {
+            "f": "ortsrecht.stellplatz_regelt_abloesung",
+            "ist": true
+          }
+        ]
+      },
+      "titel": "Zustimmung der Gemeinde"
+    }
+  }
+}

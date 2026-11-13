@@ -1,0 +1,2238 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "bauo-nrw",
+  "fassung": "2026-09-01",
+  "version": 1,
+  "paragrafen": {
+    "4": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_bauen_gebaeude"
+          }
+        ]
+      },
+      "grund": "Gebäude dürfen nur errichtet werden, wenn das Grundstück in angemessener Breite an einer befahrbaren öffentlichen Verkehrsfläche liegt oder eine öffentlich-rechtlich gesicherte Zufahrt hat und die Zufahrt und die Löschwasserversorgung für den Einsatz der Feuerwehr gesichert sind (Abs. 1); ein Gebäude auf mehreren Grundstücken nur mit öffentlich-rechtlicher Sicherung – auch bei Anbau und Änderung (Abs. 2).",
+      "fundstellen": [
+        "4/1",
+        "4/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Lageplan (§ 3 BauPrüfVO): Zufahrt, Erschließung"
+      ],
+      "hinweis": "Fehlt die Lage an einer öffentlichen Verkehrsfläche, Zufahrt per Baulast sichern; Gebäude über Grundstücksgrenzen nur mit Vereinigungsbaulast (Abs. 2).",
+      "stand": {
+        "4/1": "ebfe8137",
+        "4/2": "fa82acd5"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: Zufahrt, Erreichbarkeit für die Feuerwehr und Löschwasser müssen für die neue Nutzung gesichert sein – auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2); die Bauaufsicht prüft § 4 auch im vereinfachten Verfahren (§ 64 Abs. 1 Nr. 1 b).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        }
+      },
+      "titel": "Bebauung der Grundstücke mit Gebäuden"
+    },
+    "5": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Zu- und Durchgänge sowie Zufahrten für die Feuerwehr auf dem Grundstück.",
+      "fundstellen": [
+        "5/1",
+        "5/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "nachweis": [
+        "Lageplan (§ 3 Abs. 1 Nr. 14 BauPrüfVO): Bewegungsflächen für die Feuerwehr"
+      ],
+      "hinweis": "Bei rückwärtigen Gebäuden und bei Anleiterstellen über 8 m Brüstungshöhe Zufahrt bzw. Aufstellflächen für Hubrettungsfahrzeuge vorsehen.",
+      "stand": {
+        "5/1": "bf4f2d6d",
+        "5/2": "719ce238"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "titel": "Zugänge und Zufahrten auf den Grundstücken"
+    },
+    "6": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung bleiben vorhandene Abstandsflächen nach Abs. 11 Nr. 3 unberührt – prüfen, ob in der Abstandsfläche privilegierte Anlagen (Abs. 8) umgenutzt werden; andere bauliche Anlagen über 2 m (bzw. betretbar über 1 m) brauchen ebenfalls Abstandsflächen (Abs. 1 Satz 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 6 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "wenn": {
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "bauen"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "grund": "Vor den Außenwänden von Gebäuden sind Abstandsflächen freizuhalten: 0,4 H, mindestens 3 m; in Kerngebieten 0,25 H, in Gewerbe- und Industriegebieten 0,2 H; in Kern- und urbanen Gebieten zu öffentlichen Verkehrs-, Grün- und Wasserflächen 0,2 H (Abs. 5 Satz 2, 3); bei Wohngebäuden der Gebäudeklassen 1 und 2 mit nicht mehr als drei oberirdischen Geschossen genügen 3 m (Abs. 5 Satz 5).",
+      "fundstellen": [
+        "6/1",
+        "6/5",
+        "6/8",
+        "6/11"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Lageplan mit Abstandsflächen und Berechnung (§ 3 Abs. 1 Nr. 6 und 12 BauPrüfVO)"
+      ],
+      "hinweis": "Örtliche Bauvorschriften können abweichende Tiefen festlegen (§ 89 Abs. 1 Nr. 6). Bescheinigt eine Vermessungsstelle die Einhaltung auf Grundlage eines amtlichen Lageplans, entfällt die Prüfung durch die Behörde (§ 68 Abs. 5).",
+      "stand": {
+        "6/1": "0630b9a1",
+        "6/5": "b62c8746",
+        "6/8": "a1cf6d48",
+        "6/11": "aa5691a0"
+      },
+      "titel": "Abstandsflächen"
+    },
+    "8": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Nicht überbaute Flächen wasseraufnahmefähig belassen und begrünen (keine Schottergärten, kein Kunstrasen); Veränderungen der Geländeoberfläche nur ohne Nachteile für Nachbarn, Verkehrsflächen und Ortsbild (Abs. 3).",
+      "fundstellen": [
+        "8/1",
+        "8/2",
+        "8/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "nachweis": [
+        "Lageplan (§ 3 Abs. 1 Nr. 14 BauPrüfVO): Aufteilung der nicht überbauten Flächen, Kinderspielplätze"
+      ],
+      "hinweis": "Bei Errichtung von Gebäuden mit mehr als drei Wohnungen ist ein Kleinkinderspielplatz anzulegen (Abs. 2), soweit kein nutzbarer Spielplatz in unmittelbarer Nähe geschaffen wird; die Gemeinde kann das durch Satzung regeln (§ 89 Abs. 1 Nr. 3).",
+      "stand": {
+        "8/1": "3e6f4d1a",
+        "8/2": "56e878e1",
+        "8/3": "0ce27438"
+      },
+      "pruefen": {
+        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Stellplatzanlage, Mast): Abs. 1 gilt für bebaute Grundstücke, auch mit vergleichbaren baulichen Anlagen; Veränderungen der Geländeoberfläche nur ohne Nachteile für Nachbarn und Ortsbild (Abs. 3). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
+        "wenn": {
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nw_kein_gebaeude"
+            }
+          ]
+        }
+      },
+      "titel": "Nicht überbaute Flächen der bebauten Grundstücke, Kinderspielplätze"
+    },
+    "10": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.werbeanlage",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Werbeanlagen: keine Verunstaltung; außerhalb im Zusammenhang bebauter Ortsteile unzulässig, in WS, MD, WR und WA nur an der Stätte der Leistung.",
+      "fundstellen": [
+        "10/1",
+        "10/3",
+        "10/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "nachweis": [
+        "Bauvorlagen für Werbeanlagen (§ 14 BauPrüfVO)"
+      ],
+      "hinweis": "Werbeanlagen bis 1 m² sind verfahrensfrei (§ 62 Abs. 1 Nr. 12), örtliche Bauvorschriften (Werbeanlagensatzung) gelten trotzdem.",
+      "stand": {
+        "10/1": "9b2f2ad3",
+        "10/3": "004c7f95",
+        "10/4": "8a1ed25b"
+      },
+      "titel": "Anlagen der Außenwerbung, Warenautomaten"
+    },
+    "12": {
+      "titel": "Standsicherheit",
+      "gilt": {
+        "oder": [
+          {
+            "m": "Vorhaben",
+            "in": [
+              "Errichtung",
+              "Erweiterung",
+              "Änderung"
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "beseitigung_art"
+              },
+              {
+                "oder": [
+                  {
+                    "nicht": {
+                      "$": "nur_beseitigung"
+                    }
+                  },
+                  {
+                    "f": "gebaeude.freistehend",
+                    "ist": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Jede bauliche Anlage muss im Ganzen und in ihren einzelnen Teilen standsicher sein; die Standsicherheit anderer baulicher Anlagen und die Tragfähigkeit des Baugrunds der Nachbargrundstücke dürfen nicht gefährdet werden (Abs. 1). Gemeinsame Bauteile müssen bei der Beseitigung einer der Anlagen bestehen bleiben können (Abs. 2); bei der Beseitigung angebauter Gebäude ist die Standsicherheit der Nachbargebäude während und nach der Beseitigung nachzuweisen (§ 62 Abs. 3 Satz 4).",
+      "fundstellen": [
+        "12/1",
+        "12/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Standsicherheitsnachweis (§ 68 Abs. 2 BauO NRW, § 10 BauPrüfVO)"
+      ],
+      "hinweis": "Bergbau oder Gefährdung des Untergrunds (Altbergbau, Erdfälle, Senkungen): Auskunft der Bezirksregierung Arnsberg, Abt. 6 (Bergbau und Energie in NRW), bzw. des Geologischen Dienstes einholen; der Standsicherheitsnachweis muss den Baugrund berücksichtigen, in Bergbaugebieten ggf. Anpassungs- und Sicherungsmaßnahmen (§§ 110 ff. BBergG).",
+      "pruefen": {
+        "grund": "Standsicherheit: bei Bergbau oder Gefährdung des Untergrunds (bekannt bzw. noch nicht erfragt – Auskunft der Bezirksregierung Arnsberg, Abt. 6), bei Nutzungsänderung mit geänderten Lasten und bei der Beseitigung mit Erdarbeiten (z. B. Abbruch von Keller oder Fundamenten): Tragfähigkeit des Baugrunds der Nachbargrundstücke (Abs. 1 Satz 2).",
+        "wenn": {
+          "oder": [
+            {
+              "nicht": {
+                "f": "lage.bergbau",
+                "ist": false
+              }
+            },
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "beseitigung"
+                },
+                {
+                  "f": "vorhaben.erdarbeiten",
+                  "ist": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "stand": {
+        "12/1": "ddaa6d1e",
+        "12/2": "a0599c83"
+      }
+    },
+    "14": {
+      "gilt": {
+        "$": "vorhaben_29"
+      },
+      "grund": "Brandschutz: Anlagen – auch solche, die keine Gebäude sind – so anordnen, errichten und ändern, dass der Brandentstehung und -ausbreitung vorgebeugt wird und Rettung und Löscharbeiten möglich sind; ausreichend Löschwasser.",
+      "fundstellen": [
+        "14"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "nachweis": [
+        "Erklärung bzw. Bescheinigung zum Brandschutz (§ 68 Abs. 2 BauO NRW)",
+        "Brandschutzkonzept bei Sonderbauten (§ 9 BauPrüfVO)"
+      ],
+      "hinweis": "Im vereinfachten Verfahren prüft die Behörde den Brandschutz nur bei Sonderbauten, die keine großen sind (§ 64 Abs. 1 Satz 2) – sonst liegt er in der Verantwortung der Entwurfsverfassenden bzw. Prüfsachverständigen.",
+      "stand": {
+        "14": "d300710d"
+      },
+      "titel": "Brandschutz"
+    },
+    "15": {
+      "titel": "Wärme-, Schall-, Erschütterungsschutz",
+      "gilt": {
+        "oder": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "und": [
+              {
+                "$": "nw_kein_gebaeude"
+              },
+              {
+                "oder": [
+                  {
+                    "f": "technik.waermepumpe",
+                    "ist": true
+                  },
+                  {
+                    "f": "technik.feuerstaette",
+                    "ist": true
+                  },
+                  {
+                    "f": "technik.lueftung",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Gebäude brauchen einen ihrer Nutzung und den klimatischen Verhältnissen entsprechenden Wärmeschutz und einen ihrer Lage und Nutzung entsprechenden Schallschutz; Geräusche und Erschütterungen ortsfester Einrichtungen sind zu dämmen (Abs. 1–3).",
+      "fundstellen": [
+        "15/1",
+        "15/2",
+        "15/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "nachweis": [
+        "Nachweise über Wärme- und Schallschutz (§ 68 BauO NRW, § 12 BauPrüfVO) – im vereinfachten Verfahren nicht geprüft, aber einzuhalten"
+      ],
+      "pruefen": {
+        "grund": "Bei Anlagen, die keine Gebäude sind: Geräusche und Erschütterungen ortsfester Einrichtungen in baulichen Anlagen oder auf Baugrundstücken sind zu dämmen (Abs. 2 Satz 2, Abs. 3). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 15 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "wenn": {
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nw_kein_gebaeude"
+            }
+          ]
+        }
+      },
+      "verweise": [
+        "bund/geg/10"
+      ],
+      "stand": {
+        "15/1": "322f146a",
+        "15/2": "2780b6d8",
+        "15/3": "c0ff27b9"
+      }
+    },
+    "26": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Allgemeine Anforderungen an das Brandverhalten von Baustoffen und die Feuerwiderstandsfähigkeit von Bauteilen.",
+      "fundstellen": [
+        "26/1",
+        "26/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "26/1": "2a324c94",
+        "26/2": "1de64c20"
+      },
+      "pruefen": {
+        "grund": "Bei Anlagen, die keine Gebäude sind: Die Anforderungen an das Brandverhalten der Baustoffe gelten für alle baulichen Anlagen (Abs. 1). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
+        "wenn": {
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nw_kein_gebaeude"
+            }
+          ]
+        }
+      },
+      "titel": "Allgemeine Anforderungen an das Brandverhalten von Baustoffen und Bauteilen"
+    },
+    "27": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 27 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        }
+      },
+      "grund": "Tragende und aussteifende Wände und Stützen: Feuerwiderstand nach Gebäudeklasse (GK 2–3 feuerhemmend, GK 4 hochfeuerhemmend, GK 5 feuerbeständig; im Kellergeschoss strenger).",
+      "fundstellen": [
+        "27/1",
+        "27/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "hinweis": "In Gebäudeklasse 1 Anforderungen nur im Kellergeschoss (feuerhemmend).",
+      "stand": {
+        "27/1": "8db3a791",
+        "27/2": "82756974"
+      },
+      "titel": "Tragende Wände, Stützen"
+    },
+    "28": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Außenwände: Brandausbreitung ausreichend lang begrenzen; Anforderungen an nichttragende Teile und Bekleidungen erst ab Gebäudeklasse 4.",
+      "fundstellen": [
+        "28/1",
+        "28/5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "hinweis": "Die Absätze 2 bis 4 Satz 1 gelten nicht für Gebäudeklassen 1 bis 3 (Abs. 5) – bei Wärmedämmverbundsystemen ab GK 4 die Technischen Baubestimmungen beachten.",
+      "stand": {
+        "28/1": "29063c2d",
+        "28/5": "7f52f70d"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 28 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        }
+      },
+      "titel": "Außenwände"
+    },
+    "29": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "m": "Gebäudeart",
+                "in": [
+                  "Zweifamilienhaus",
+                  "Mehrfamilienhaus",
+                  "Wohn- und Geschäftshaus"
+                ]
+              },
+              {
+                "nicht": {
+                  "f": "gebaeude.nutzungseinheiten",
+                  "max": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "wohngebaeude"
+              },
+              {
+                "$": "gk_1_2"
+              },
+              {
+                "f": "gebaeude.gemischt",
+                "ist": false
+              }
+            ]
+          },
+          {
+            "$": "nw_umnutzung_wohnraum"
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Bei nur einer Nutzungseinheit sind Trennwände nur zum Abschluss von Räumen mit Explosions- oder erhöhter Brandgefahr, zwischen Aufenthaltsräumen und anders genutzten Räumen im Kellergeschoss sowie zu nicht ausgebauten Dachräumen nötig (Abs. 2 Nr. 2 bis 4).",
+        "wenn": {
+          "und": [
+            {
+              "und": [
+                {
+                  "nicht": {
+                    "und": [
+                      {
+                        "$": "wohngebaeude"
+                      },
+                      {
+                        "$": "gk_1_2"
+                      },
+                      {
+                        "f": "gebaeude.gemischt",
+                        "ist": false
+                      }
+                    ]
+                  }
+                },
+                {
+                  "$": "nw_vorhaben_gebaeude"
+                },
+                {
+                  "f": "gebaeude.nutzungseinheiten",
+                  "max": 1
+                }
+              ]
+            },
+            {
+              "nicht": {
+                "$": "nw_umnutzung_wohnraum"
+              }
+            }
+          ]
+        }
+      },
+      "grund": "Trennwände zwischen Nutzungseinheiten, zu Räumen mit Explosions- oder erhöhter Brandgefahr, im Kellergeschoss und zum Dachraum (Abs. 2).",
+      "fundstellen": [
+        "29/1",
+        "29/6"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "29/1": "3d5fb522",
+        "29/6": "df4e9a5d"
+      },
+      "titel": "Trennwände"
+    },
+    "30": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "f": "nw.grenzabstand_unter_2_5",
+                "ist": true
+              },
+              {
+                "f": "nw.landwirtschaft_angebaut",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Innere Brandwände bei ausgedehnten Gebäuden (höchstens 40 m Abstand), bei aneinandergereihten Gebäuden auf demselben Grundstück und bei landwirtschaftlich genutzten Gebäuden (Abs. 2 Nr. 2–4). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 30 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "oder": [
+                {
+                  "oder": [
+                    {
+                      "$": "nichtwohnnutzung"
+                    },
+                    {
+                      "m": "Gebäudeart",
+                      "in": [
+                        "Mehrfamilienhaus"
+                      ]
+                    },
+                    {
+                      "und": [
+                        {
+                          "f": "gebaeude.landwirtschaft",
+                          "bekannt": true
+                        },
+                        {
+                          "f": "gebaeude.landwirtschaft",
+                          "ist": true
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "grund": "Gebäudeabschlusswand an der Nachbargrenze oder mit weniger als 2,50 m Abstand: Brandwand bzw. in GK 1–3 Wand nach Abs. 3 (Abs. 2 Nr. 1); Brandwand zwischen Wohngebäude und angebautem landwirtschaftlich genutztem Gebäude bzw. zwischen Wohn- und Betriebsteil (Abs. 2 Nr. 4).",
+      "fundstellen": [
+        "30/1",
+        "30/2",
+        "30/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "30/1": "565eddc6",
+        "30/2": "d5238548",
+        "30/3": "3ec7eab0"
+      },
+      "titel": "Brandwände"
+    },
+    "31": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 31 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        }
+      },
+      "grund": "Decken: Feuerwiderstand nach Gebäudeklasse; Öffnungen in Decken nur nach Abs. 4.",
+      "fundstellen": [
+        "31/1",
+        "31/2",
+        "31/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "hinweis": "In Gebäudeklasse 1 Anforderungen nur an die Decke über dem Kellergeschoss.",
+      "stand": {
+        "31/1": "2cf8be62",
+        "31/2": "d0b9c609",
+        "31/4": "f2bf4c67"
+      },
+      "titel": "Decken"
+    },
+    "32": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Bedachungen widerstandsfähig gegen Flugfeuer und strahlende Wärme (harte Bedachung); Abstände bei weicher Bedachung.",
+      "fundstellen": [
+        "32/1",
+        "32/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "32/1": "9c83b5ca",
+        "32/2": "b9b4ab76"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 32 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        }
+      },
+      "titel": "Dächer"
+    },
+    "33": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "$": "wohnnutzung"
+              },
+              {
+                "f": "gebaeude.aufenthaltsraeume",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Zwei voneinander unabhängige Rettungswege ins Freie für jede Nutzungseinheit mit Aufenthaltsräumen; zweiter Rettungsweg über Rettungsgeräte der Feuerwehr nur, wenn die Feuerwehr sie vorhält.",
+      "fundstellen": [
+        "33/1",
+        "33/2",
+        "33/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "hinweis": "Liegt die Brüstung der Anleiterstelle mehr als 8 m über Gelände, muss die Feuerwehr über Hubrettungsfahrzeuge verfügen (Abs. 3) – frühzeitig mit der Brandschutzdienststelle klären.",
+      "stand": {
+        "33/1": "19a93a34",
+        "33/2": "52ed67f1",
+        "33/3": "73b0b8d3"
+      },
+      "titel": "Erster und zweiter Rettungsweg"
+    },
+    "34": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Notwendige Treppen zu jedem nicht zu ebener Erde liegenden Geschoss und zum benutzbaren Dachraum.",
+      "fundstellen": [
+        "34/1",
+        "34/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "34/1": "fe86eaa5",
+        "34/3": "8db43907"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Werden Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum umgenutzt, ist § 34 nicht anzuwenden (§ 47 Abs. 6 Satz 2).",
+        "wenn": {
+          "und": [
+            {
+              "und": [
+                {
+                  "$": "nutzungsaenderung"
+                },
+                {
+                  "$": "gebaeude"
+                }
+              ]
+            },
+            {
+              "nicht": {
+                "$": "nw_umnutzung_wohnraum"
+              }
+            }
+          ]
+        }
+      },
+      "titel": "Treppen",
+      "entfaellt": {
+        "$": "nw_umnutzung_wohnraum"
+      }
+    },
+    "35": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.aufenthaltsraeume",
+            "ist": false
+          },
+          {
+            "f": "nw.kellergeschoss",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Von jeder Stelle eines Aufenthaltsraums sowie eines Kellergeschosses ist ein notwendiger Treppenraum oder ein Ausgang ins Freie in höchstens 35 m erreichbar, übereinanderliegende Kellergeschosse haben je zwei Ausgänge (Abs. 2, jede Gebäudeklasse); notwendige Treppen liegen in einem eigenen, durchgehenden Treppenraum (Abs. 1, ab Gebäudeklasse 3).",
+      "fundstellen": [
+        "35/1",
+        "35/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "35/1": "5ae5000b",
+        "35/2": "8ee33fb7"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum sind Abs. 1 und 3 bis 8 nicht anzuwenden (§ 47 Abs. 6 Satz 2) – es bleibt Abs. 2 (Ausgang in einen notwendigen Treppenraum oder ins Freie in höchstens 35 m).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "$": "gk_1_2"
+              }
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        }
+      },
+      "titel": "Notwendige Treppenräume, Ausgänge"
+    },
+    "36": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "gebaeude"
+              },
+              {
+                "$": "gk_1_2"
+              }
+            ]
+          },
+          {
+            "$": "nw_umnutzung_wohnraum"
+          }
+        ]
+      },
+      "grund": "Notwendige Flure: Anordnung und Ausbildung für die Nutzung im Brandfall, Breite für den größten zu erwartenden Verkehr.",
+      "fundstellen": [
+        "36/1",
+        "36/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "hinweis": "Weitere Ausnahmen nach Abs. 1 Satz 2 (z. B. innerhalb von Nutzungseinheiten bis 200 m²) prüfen.",
+      "stand": {
+        "36/1": "e0add59e",
+        "36/2": "e58d63fe"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2); werden Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum umgenutzt, ist § 36 nicht anzuwenden (§ 47 Abs. 6 Satz 2). Bei sonstigen Gebäuden der Gebäudeklassen 1 und 2 (auch gemischt genutzten) sind notwendige Flure nur in Kellergeschossen erforderlich (Abs. 1 Satz 2 Nr. 2).",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "und": [
+                    {
+                      "$": "nw_vorhaben_gebaeude"
+                    },
+                    {
+                      "$": "gk_1_2"
+                    },
+                    {
+                      "nicht": {
+                        "und": [
+                          {
+                            "$": "wohngebaeude"
+                          },
+                          {
+                            "$": "gk_1_2"
+                          },
+                          {
+                            "f": "gebaeude.gemischt",
+                            "ist": false
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "und": [
+                    {
+                      "$": "nutzungsaenderung"
+                    },
+                    {
+                      "nicht": {
+                        "und": [
+                          {
+                            "$": "wohngebaeude"
+                          },
+                          {
+                            "$": "gk_1_2"
+                          },
+                          {
+                            "f": "gebaeude.gemischt",
+                            "ist": false
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "$": "gebaeude"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "nicht": {
+                "$": "nw_umnutzung_wohnraum"
+              }
+            }
+          ]
+        }
+      },
+      "titel": "Notwendige Flure, offene Gänge"
+    },
+    "37": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Fenster, Türen und Öffnungen: Wohnungseingangstüren mindestens 0,90 m breit, Rauchableitung aus fensterlosen Kellergeschossen, Fenster als zweiter Rettungsweg mindestens 0,90 × 1,20 m.",
+      "fundstellen": [
+        "37/3",
+        "37/4",
+        "37/5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "37/3": "104b3166",
+        "37/4": "26820259",
+        "37/5": "21c9ba67"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        }
+      },
+      "titel": "Fenster, Türen, sonstige Öffnungen"
+    },
+    "38": {
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Umwehrungen von begehbaren Flächen, die an tiefer liegende Flächen angrenzen; Mindesthöhen der Brüstungen.",
+      "fundstellen": [
+        "38/1"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "38/1": "96b40213"
+      },
+      "pruefen": {
+        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Tribüne, Stützmauer, Rampe): begehbare Flächen an tiefer liegenden Flächen sind zu umwehren. Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
+        "wenn": {
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "nw_kein_gebaeude"
+            }
+          ]
+        }
+      },
+      "titel": "Umwehrungen"
+    },
+    "39": {
+      "gilt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "gebaeude.aufzug",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "m": "Gebäudeart",
+                "nicht": [
+                  "Einfamilienhaus",
+                  "Zweifamilienhaus",
+                  "kein Gebäude"
+                ]
+              },
+              {
+                "f": "nw.geschosse_oberirdisch",
+                "min": 4
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Aufzüge: notwendige Fahrschächte; Aufzugspflicht in Gebäuden mit mehr als drei oberirdischen Geschossen (außer Ein- und Zweifamilienhäusern), barrierefrei erreichbar.",
+      "fundstellen": [
+        "39/1",
+        "39/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "hinweis": "Ausnahmen bei Dachgeschossausbau, Aufstockung um bis zu zwei Geschosse und Nutzungsänderung in bestehenden Gebäuden (Abs. 4 Satz 2).",
+      "stand": {
+        "39/1": "47a740bd",
+        "39/4": "7f77869c"
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "$": "efh_zfh"
+          },
+          {
+            "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.aufzug",
+            "ist": false
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Änderung oder Nutzungsänderung eines Gebäudes mit mehr als drei oberirdischen Geschossen: Aufzugspflicht; Abs. 4 Satz 2 befreit nur beim Dachgeschossausbau, bei der Aufstockung um bis zu zwei Geschosse und bei besonderen Schwierigkeiten.",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "m": "Gebäudeart",
+              "nicht": [
+                "Einfamilienhaus",
+                "Zweifamilienhaus",
+                "kein Gebäude"
+              ]
+            },
+            {
+              "f": "nw.geschosse_oberirdisch",
+              "min": 4
+            }
+          ]
+        }
+      },
+      "titel": "Aufzüge"
+    },
+    "40": {
+      "titel": "Leitungsanlagen, Installationsschächte und -kanäle",
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Leitungen durch raumabschließende Bauteile mit vorgeschriebener Feuerwiderstandsfähigkeit nur, wenn eine Brandausbreitung ausreichend lang nicht zu befürchten ist (Abs. 1 – nicht bei GK 1 und 2, innerhalb von Wohnungen und kleinen Nutzungseinheiten); in notwendigen Treppenräumen und Fluren nur, wenn die Rettungswege nutzbar bleiben (Abs. 2); Installationsschächte (Abs. 3).",
+      "fundstellen": [
+        "40/1",
+        "40/2",
+        "40/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "pruefen": {
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        }
+      },
+      "stand": {
+        "40/1": "5f84162e",
+        "40/2": "616c70fe",
+        "40/3": "b748d1fc"
+      }
+    },
+    "41": {
+      "titel": "Lüftungsanlagen",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.lueftung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.lueftung",
+        "ist": false
+      },
+      "grund": "Lüftungsanlagen müssen betriebssicher sein und dürfen Feuerungsanlagen nicht beeinträchtigen; Lüftungsleitungen grundsätzlich nichtbrennbar, Überbrückung feuerwiderstandsfähiger Bauteile nur mit Vorkehrungen; keine Übertragung von Gerüchen und Staub; nicht in Abgasanlagen (Abs. 1–4).",
+      "fundstellen": [
+        "41/1",
+        "41/2",
+        "41/3",
+        "41/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "41/1": "b2ae0525",
+        "41/2": "5b4e08a7",
+        "41/3": "831411f9",
+        "41/4": "683139c1"
+      }
+    },
+    "42": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "f": "technik.feuerstaette",
+                "ist": true
+              },
+              {
+                "f": "technik.waermepumpe",
+                "ist": true
+              },
+              {
+                "f": "technik.brennstofflager",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Feuerungsanlagen und Anlagen zur Wärmeerzeugung betriebs- und brandsicher; Abgasanlagen; Brennstofflagerung.",
+      "fundstellen": [
+        "42/1",
+        "42/3",
+        "42/4",
+        "42/7"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "nachweis": [
+        "Bescheinigung der bevollmächtigten Bezirksschornsteinfegerin bzw. des Bezirksschornsteinfegers (Abs. 7)"
+      ],
+      "hinweis": "Einzelheiten in der Feuerungsverordnung (FeuVO NRW); Feuerungsanlagen für feste Brennstoffe weniger als 100 m vom Wald nur mit Schutzmaßnahmen (Abs. 1).",
+      "stand": {
+        "42/1": "1a182356",
+        "42/3": "6be78228",
+        "42/4": "75c6d00b",
+        "42/7": "d10f1c1c"
+      },
+      "titel": "Feuerungsanlagen, sonstige Anlagen zur Wärmeerzeugung und zur Energiebereitstellung"
+    },
+    "43": {
+      "titel": "Sanitäre Anlagen, Wasserzähler",
+      "gilt": {
+        "$": "nw_vorhaben_gebaeude"
+      },
+      "grund": "Fensterlose Bäder und Toiletten nur mit wirksamer Lüftung (Abs. 1); jede Wohnung und sonstige Nutzungseinheit braucht einen eigenen Wasserzähler – bei Nutzungsänderung nicht, wenn das nur mit unverhältnismäßigem Mehraufwand möglich ist (Abs. 2).",
+      "fundstellen": [
+        "43/1",
+        "43/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "43/1": "f127c809",
+        "43/2": "71e6e8ec"
+      }
+    },
+    "44": {
+      "titel": "Aufbewahrung fester Abfallstoffe",
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.abfallraum",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.abfallraum",
+        "ist": false
+      },
+      "grund": "Feste Abfallstoffe dürfen in Gebäuden der Gebäudeklassen 3 bis 5 nur in Räumen mit feuerwiderstandsfähigen Wänden und Decken, dicht- und selbstschließenden Abschlüssen, Entleerung vom Freien und ständiger Lüftung aufbewahrt werden (Abs. 1); Abfallschächte nicht betreiben (Abs. 2).",
+      "fundstellen": [
+        "44/1",
+        "44/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "stand": {
+        "44/1": "1528bae5",
+        "44/2": "99320a78"
+      }
+    },
+    "45": {
+      "titel": "Blitzschutzanlagen",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "nw.blitzschutz_anlass",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Bauliche Anlagen, bei denen nach Lage, Bauart oder Nutzung Blitzschlag leicht eintreten oder zu schweren Folgen führen kann, sind mit dauernd wirksamen Blitzschutzanlagen zu versehen.",
+      "fundstellen": [
+        "45"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "45": "1b5ffa74"
+      },
+      "hinweis": "Ob nach Lage (z. B. freistehend, exponiert, Mast oder Turm), Bauart (z. B. weiche Bedachung) oder Nutzung eine Blitzschutzanlage nötig ist, im Einzelfall prüfen – das gilt auch für bauliche Anlagen, die keine Gebäude sind.",
+      "pruefen": {
+        "grund": "Sonderbau: Die SBauVO verlangt Blitzschutzanlagen für Versammlungsstätten (§ 14 Abs. 4), Verkaufsstätten (§ 78) und Hochhäuser (§ 109 Abs. 2); bei anderen Sonderbauten den Anlass nach Lage, Bauart und Nutzung prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "$": "sonderbau"
+            }
+          ]
+        }
+      }
+    },
+    "46": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "$": "wohnnutzung"
+              },
+              {
+                "f": "gebaeude.aufenthaltsraeume",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Aufenthaltsräume: lichte Raumhöhe mindestens 2,40 m (im Dachraum und Keller 2,20 m über mindestens der Hälfte der Fläche), Belichtung und Belüftung, Fensterfläche mindestens 1/8 der Netto-Raumfläche.",
+      "fundstellen": [
+        "46/1",
+        "46/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "hinweis": "Wohngebäude GK 1 und 2: 2,30 m kann gestattet werden; bei Nutzungsänderung eines bestehenden Gebäudes genügt 1/10 Fensterfläche (Abs. 2 Satz 3).",
+      "stand": {
+        "46/1": "c5066db3",
+        "46/2": "152ea1a2"
+      },
+      "titel": "Aufenthaltsräume"
+    },
+    "47": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "$": "wohnnutzung"
+              },
+              {
+                "f": "gebaeude.wohnungen",
+                "min": 1
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Wohnungen: Küche oder Kochnische, Bad und Toilette, Rauchwarnmelder in Schlafräumen, Kinderzimmern und Fluren; in GK 3–5 Abstellflächen.",
+      "fundstellen": [
+        "47/1",
+        "47/2",
+        "47/3",
+        "47/4",
+        "47/6"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "hinweis": "Erleichterungen bei Umnutzung bestehender Gebäude zu Wohnraum (Abs. 6) und bei Aufstockung um ein Geschoss (Abs. 7).",
+      "stand": {
+        "47/1": "f792fdda",
+        "47/2": "0cb393ed",
+        "47/3": "9fee96be",
+        "47/4": "248674df",
+        "47/6": "2ba4355d"
+      },
+      "titel": "Wohnungen"
+    },
+    "48": {
+      "gilt": {
+        "$": "nw_stellplatzanlass"
+      },
+      "grund": "Notwendige Stellplätze, Garagen und Fahrradabstellplätze bei Errichtung, Änderung und Nutzungsänderung von Anlagen, bei denen Zu- oder Abfahrtsverkehr zu erwarten ist – auf dem Grundstück, in zumutbarer Entfernung oder durch Ablösung nach örtlicher Bauvorschrift.",
+      "fundstellen": [
+        "48/1"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Stellplatznachweis, Lageplan (§ 3 Abs. 1 Nr. 14 BauPrüfVO)"
+      ],
+      "hinweis": "Zahl nach der Stellplatzsatzung der Gemeinde, sonst nach der StellplatzVO NRW. Abs. 1a: über neuen Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für ein Nichtwohngebäude ist eine PV-Anlage zu errichten (§ 6 SAN-VO). Auch Anlagen, die keine Gebäude sind, lösen Stellplatzpflichten aus, wenn Zu- oder Abfahrtsverkehr zu erwarten ist.",
+      "verweise": [
+        "nw/stellplatzvo/1",
+        "nw/san-vo/6"
+      ],
+      "stand": {
+        "48/1": "56c552ba"
+      },
+      "titel": "Stellplätze, Garagen und Fahrradabstellplätze"
+    },
+    "49": {
+      "gilt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "nw_vorhaben_gebaeude"
+              },
+              {
+                "$": "nw_wohnungen_gk3_5"
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "gebaeude.oeffentlich",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Die Anforderungen entfallen, soweit sie wegen schwieriger Geländeverhältnisse oder ungünstiger vorhandener Bebauung nur mit unverhältnismäßigem Mehraufwand erfüllbar sind (Abs. 3); Abweichungen nur bei bestehenden Anlagen (§ 69 Abs. 1 Satz 3)."
+      },
+      "grund": "Barrierefreiheit: Wohnungen in Gebäuden der Gebäudeklassen 3 bis 5 und öffentlich zugängliche bauliche Anlagen.",
+      "fundstellen": [
+        "49/1",
+        "49/2",
+        "49/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Nachweis der Barrierefreiheit (Vordruck)",
+        "Barrierefrei-Konzept bei öffentlich zugänglichen großen Sonderbauten (§ 9a BauPrüfVO)"
+      ],
+      "stand": {
+        "49/1": "08f17752",
+        "49/2": "10067796",
+        "49/3": "e5ff3e17"
+      },
+      "titel": "Barrierefreies Bauen"
+    },
+    "50": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "sonderbau"
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Nach den Angaben könnte ein großer Sonderbau vorliegen (Gebäude über 22 m, andere bauliche Anlagen über 30 m Höhe, Garage über 1 000 m², Verkaufsstätte über 2 000 m², Versammlungsstätte über 200 Besucher, Beherbergung über 30 Betten) – Merkmal Sonderbau prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "oder": [
+                {
+                  "und": [
+                    {
+                      "$": "gebaeude"
+                    },
+                    {
+                      "f": "gebaeude.hoehe",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.hoehe",
+                      "min": 22.01
+                    }
+                  ]
+                },
+                {
+                  "und": [
+                    {
+                      "m": "Gebäudeart",
+                      "in": [
+                        "kein Gebäude"
+                      ]
+                    },
+                    {
+                      "f": "gebaeude.hoehe",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.hoehe",
+                      "min": 30.01
+                    }
+                  ]
+                },
+                {
+                  "und": [
+                    {
+                      "f": "gebaeude.garage_nutzflaeche",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.garage_nutzflaeche",
+                      "min": 1000.01
+                    }
+                  ]
+                },
+                {
+                  "und": [
+                    {
+                      "f": "gebaeude.verkaufsflaeche",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.verkaufsflaeche",
+                      "min": 2000.01
+                    }
+                  ]
+                },
+                {
+                  "und": [
+                    {
+                      "f": "gebaeude.besucher",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.besucher",
+                      "min": 201
+                    }
+                  ]
+                },
+                {
+                  "und": [
+                    {
+                      "f": "gebaeude.gastbetten",
+                      "bekannt": true
+                    },
+                    {
+                      "f": "gebaeude.gastbetten",
+                      "min": 31
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "grund": "Sonderbauten: besondere Anforderungen und Erleichterungen im Einzelfall; große Sonderbauten nach Abs. 2 im Baugenehmigungsverfahren (§ 65) mit Brandschutzkonzept.",
+      "fundstellen": [
+        "50/1",
+        "50/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "nachweis": [
+        "Brandschutzkonzept (§ 9 BauPrüfVO)"
+      ],
+      "verweise": [
+        "nw/sbauvo/1",
+        "nw/sbauvo/47",
+        "nw/sbauvo/60",
+        "nw/sbauvo/92"
+      ],
+      "stand": {
+        "50/1": "9cd4d05d",
+        "50/2": "6725a235"
+      },
+      "titel": "Sonderbauten"
+    },
+    "51": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.behelfsbau",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Behelfsbauten und untergeordnete Gebäude: die §§ 26 bis 50 gelten nicht; brennbare Behelfsbauten nur erdgeschossig, Dachräume nicht nutzbar, Brandwände mindestens alle 30 m (Abs. 1) – auch für Wohnzwecke (z. B. Wohncontainer).",
+      "fundstellen": [
+        "51/1",
+        "51/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "51/1": "d5c199a2",
+        "51/2": "558e9621"
+      },
+      "titel": "Behelfsbauten und untergeordnete Gebäude"
+    },
+    "60": {
+      "titel": "Grundsatz",
+      "gilt": {
+        "oder": [
+          {
+            "$": "vorhaben_oder_beseitigung"
+          }
+        ]
+      },
+      "grund": "Errichtung, Änderung, Nutzungsänderung und Beseitigung von Anlagen bedürfen der Baugenehmigung, soweit die §§ 61 bis 63, 78 und 79 nichts anderes bestimmen (Abs. 1). Auch verfahrensfreie und freigestellte Vorhaben sowie das vereinfachte Verfahren entbinden nicht von den Anforderungen des öffentlichen Rechts (Abs. 2).",
+      "fundstellen": [
+        "60/1",
+        "60/2"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "verweise": [
+        "nw/bauo-nrw/62",
+        "nw/bauo-nrw/63",
+        "nw/bauo-nrw/64"
+      ],
+      "stand": {
+        "60/1": "758d2e1b",
+        "60/2": "5320fdbb"
+      }
+    },
+    "61": {
+      "titel": "Vorrang anderer Gestattungsverfahren",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.andere_gestattung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "vorhaben.andere_gestattung",
+        "ist": false
+      },
+      "grund": "Bestimmte andere Gestattungen schließen die Baugenehmigung ein (u. a. Anlagen an Gewässern, Anlagen der öffentlichen Versorgung, Abfallentsorgungsanlagen nach § 35 Abs. 3 KrWG) – außer bei Gebäuden, die Sonderbauten sind; die bauordnungsrechtlichen Anforderungen gelten trotzdem.",
+      "fundstellen": [
+        "61"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "stand": {
+        "61": "6f052ecb"
+      }
+    },
+    "62": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "beseitigung"
+          },
+          {
+            "m": "Verfahren",
+            "in": [
+              "verfahrensfrei"
+            ]
+          }
+        ]
+      },
+      "grund": "Verfahrensfreie Vorhaben (Abs. 1 und 2 – z. B. Garagen bis 50 m² Brutto-Grundfläche mit mittlerer Wandhöhe bis 3 m, nicht im Außenbereich) und Beseitigung (Abs. 3): kein Baugenehmigungsverfahren; die Anforderungen des öffentlichen Rechts gelten trotzdem (§ 60 Abs. 2). Beseitigung im Übrigen mit Anzeige mindestens einen Monat vorher.",
+      "fundstellen": [
+        "62/1",
+        "62/2",
+        "62/3"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Bauvorlagen für die Beseitigung (§ 15 BauPrüfVO)"
+      ],
+      "hinweis": "Ob ein Vorhaben verfahrensfrei ist, richtet sich nach dem Katalog in Abs. 1; offen, solange das Verfahren nicht festgelegt ist. Bei angebauten Gebäuden die Standsicherheit der angrenzenden Gebäude durch eine berechtigte Person beurteilen lassen (Abs. 3 Satz 4); Artenschutz vor Abbruch prüfen. Bei nicht verfahrensfreier Beseitigung keine Selbst- oder Nachbarschaftshilfe (§ 53 Abs. 2 Satz 2); den Beginn der Beseitigung anzeigen (Abs. 3 Satz 7 mit § 74 Abs. 8).",
+      "stand": {
+        "62/1": "1c0c0a63",
+        "62/2": "81ffc344",
+        "62/3": "d5f1a643"
+      },
+      "titel": "Verfahrensfreie Bauvorhaben, Beseitigung von Anlagen"
+    },
+    "63": {
+      "gilt": {
+        "und": [
+          {
+            "$": "freistellung"
+          },
+          {
+            "$": "vorhaben_29"
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Genehmigungsfreistellung (Neufassung ab 01.09.2026): Abs. 1 Satz 1 Nr. 1 nur im Geltungsbereich eines qualifizierten oder vorhabenbezogenen Bebauungsplans ohne Widerspruch zu Festsetzungen und örtlichen Bauvorschriften (Abs. 2) – eine beabsichtigte Abweichung von einer örtlichen Bauvorschrift oder Befreiung schließt die Freistellung aus; Nr. 2 auch im Innenbereich (§ 34 BauGB) für Dachgeschossausbau zu Wohnzwecken einschließlich Gauben sowie für Solaranlagen nach § 35 Abs. 1 Nr. 8 b und 9 BauGB; nicht für Sonderbauten (außer Solaranlagen) und nicht für große Wohnvorhaben (über 5 000 m² BGF) oder öffentlich zugängliche Anlagen für mehr als 100 zusätzliche Personen im angemessenen Sicherheitsabstand eines Störfallbetriebs (Abs. 1 Satz 2).",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "und": [
+                {
+                  "$": "freistellung"
+                },
+                {
+                  "oder": [
+                    {
+                      "m": "Planungsrecht",
+                      "nicht": [
+                        "Bebauungsplan"
+                      ]
+                    },
+                    {
+                      "$": "sonderbau"
+                    },
+                    {
+                      "nicht": {
+                        "f": "planung.befreiung",
+                        "ist": false
+                      }
+                    },
+                    {
+                      "nicht": {
+                        "f": "ortsrecht.abweichung",
+                        "ist": false
+                      }
+                    },
+                    {
+                      "f": "gebaeude.bgf",
+                      "min": 5000
+                    },
+                    {
+                      "f": "gebaeude.besucher",
+                      "min": 101
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "grund": "Genehmigungsfreistellung: Unterlagen bei der Bauaufsicht einreichen; Baubeginn einen Monat nach Eingang, wenn die Gemeinde kein Verfahren verlangt. Keine Prüfung durch Gemeinde und Bauaufsicht.",
+      "fundstellen": [
+        "63/1",
+        "63/2",
+        "63/3",
+        "63/6"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Bauvorlagen nach § 13 BauPrüfVO"
+      ],
+      "hinweis": "Bautechnische Nachweise müssen spätestens bei Baubeginn vorliegen; § 70 Abs. 2 Satz 1 und Abs. 3 sowie § 74 Abs. 7, 8 und 9 gelten entsprechend (Abs. 6).",
+      "stand": {
+        "63/1": "d9020d82",
+        "63/2": "57fb7e94",
+        "63/3": "881ef683",
+        "63/6": "b791849d"
+      },
+      "titel": "Genehmigungsfreistellung"
+    },
+    "64": {
+      "gilt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "vereinfacht"
+              },
+              {
+                "$": "nw_29_oder_frei_beseitigung"
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "nutzungsaenderung"
+              },
+              {
+                "f": "vorhaben.nutzung_befristet",
+                "ist": true
+              },
+              {
+                "nicht": {
+                  "$": "aussen_planrecht"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Vereinfachtes Verfahren: Die Behörde prüft Planungsrecht (§§ 29–38 BauGB), §§ 4, 6, 48, 49 BauO NRW, örtliche Bauvorschriften, beantragte Abweichungen und sonstiges öffentliches Recht ohne eigenes Zulassungsverfahren; Brandschutz nur bei Sonderbauten. Befristete Nutzungsänderungen bis zwölf Monate außerhalb des Außenbereichs: Nutzungsänderungsanzeige einen Monat vor Aufnahme der Nutzung (Abs. 3).",
+      "fundstellen": [
+        "64/1",
+        "64/3"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "hinweis": "Alles andere (z. B. Brandschutz bei Regelbauten, Wärme- und Schallschutz, baulicher Arbeitsschutz) liegt in der Verantwortung der Bauherrschaft und der Entwurfsverfassenden. Große Sonderbauten nach § 50 Abs. 2 gehören ins Baugenehmigungsverfahren (§ 65).",
+      "stand": {
+        "64/1": "55cf994d",
+        "64/3": "4b3c7b76"
+      },
+      "titel": "Vereinfachtes Baugenehmigungsverfahren"
+    },
+    "65": {
+      "gilt": {
+        "und": [
+          {
+            "$": "baugenehmigung"
+          },
+          {
+            "$": "nw_29_oder_frei_beseitigung"
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Das Baugenehmigungsverfahren gilt nur für große Sonderbauten nach § 50 Abs. 2 – Verfahren prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "baugenehmigung"
+            },
+            {
+              "$": "nw_29_oder_frei_beseitigung"
+            },
+            {
+              "$": "kein_sonderbau"
+            }
+          ]
+        }
+      },
+      "grund": "Baugenehmigungsverfahren für große Sonderbauten: volle Prüfung aller Anforderungen der BauO NRW und anderer öffentlich-rechtlicher Vorschriften (ohne baulichen Arbeitsschutz).",
+      "fundstellen": [
+        "65"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "nachweis": [
+        "Bauvorlagen nach § 11 BauPrüfVO mit Brandschutzkonzept"
+      ],
+      "stand": {
+        "65": "7959e34c"
+      },
+      "titel": "Baugenehmigungsverfahren"
+    },
+    "67": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "$": "nw_verfahren_bekannt"
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.behelfsbau",
+        "ist": true
+      },
+      "grund": "Bauvorlagen für die Errichtung und Änderung von Gebäuden erstellt eine bauvorlageberechtigte Person.",
+      "fundstellen": [
+        "67/1",
+        "67/2",
+        "67/3"
+      ],
+      "behoerde": {
+        "$": "nw_genehmigungsbeduerftig"
+      },
+      "hinweis": "Ausnahmen nach Abs. 2 (u. a. Garagen bis 100 m², Wintergärten bis 25 m², Dachgauben, Terrassenüberdachungen).",
+      "stand": {
+        "67/1": "2b2cdef4",
+        "67/2": "6e990264",
+        "67/3": "f58679c0"
+      },
+      "titel": "Bauvorlageberechtigung"
+    },
+    "68": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "nw_verfahren_bekannt"
+          }
+        ]
+      },
+      "grund": "Bautechnische Nachweise für Standsicherheit, Brand-, Wärme- und Schallschutz – für alle nicht verfahrensfreien Vorhaben, auch für bauliche Anlagen, die keine Gebäude sind (Abs. 1).",
+      "fundstellen": [
+        "68/1",
+        "68/2",
+        "68/3",
+        "68/4"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Brandschutz: Erklärung der Entwurfsverfassenden (GK 1–3, Kleingaragen) bzw. Bescheinigung Prüfsachverständige (GK 4–5 ohne Sonderbau, Mittelgaragen)",
+        "Standsicherheit: geprüft durch Prüfsachverständige, spätestens mit der Baubeginnsanzeige",
+        "Schall- und Wärmeschutz: Bescheinigung staatlich anerkannter Sachverständiger (nicht bei Wohngebäuden GK 1–2)"
+      ],
+      "hinweis": "Keine Prüfung des Standsicherheitsnachweises u. a. bei Wohngebäuden GK 1 und 2 und eingeschossigen Gebäuden bis 200 m² (Abs. 3 Satz 5) – dann Nachweis und Erklärung zur stichprobenhaften Kontrolle mit der Baubeginnsanzeige.",
+      "stand": {
+        "68/1": "107e4ea4",
+        "68/2": "c96564fa",
+        "68/3": "481bf772",
+        "68/4": "a922a9be"
+      },
+      "titel": "Bautechnische Nachweise"
+    },
+    "69": {
+      "gilt": {
+        "oder": [
+          {
+            "f": "planung.abweichung",
+            "ist": true
+          },
+          {
+            "f": "planung.befreiung",
+            "ist": true
+          },
+          {
+            "f": "ortsrecht.abweichung",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Abweichungen von der BauO NRW sowie Ausnahmen und Befreiungen von Bebauungsplan, Satzungen und BauNVO sind gesondert zu beantragen und zu begründen.",
+      "fundstellen": [
+        "69/1",
+        "69/2",
+        "69/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Antrag auf Abweichung bzw. Befreiung mit Begründung (Vordruck)"
+      ],
+      "hinweis": "Abweichungen von § 49 nur bei bestehenden Anlagen; über Abweichungen von örtlichen Bauvorschriften entscheidet die Bauaufsicht im Einvernehmen mit der Gemeinde (Abs. 3).",
+      "stand": {
+        "69/1": "e6f3891b",
+        "69/2": "f5d12910",
+        "69/3": "4cc2e650"
+      },
+      "titel": "Abweichungen"
+    },
+    "70": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "nw_mit_baugenehmigung"
+          },
+          {
+            "und": [
+              {
+                "$": "freistellung"
+              },
+              {
+                "$": "vorhaben_29"
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Bauantrag elektronisch bei der unteren Bauaufsichtsbehörde mit allen erforderlichen Bauvorlagen; bei großen Sonderbauten mit Brandschutzkonzept (Abs. 1, 2). Bei der Genehmigungsfreistellung gelten Abs. 2 Satz 1 (vollständige Unterlagen) und Abs. 3 (Zustimmung der Grundstückseigentümer) entsprechend (§ 63 Abs. 6).",
+      "fundstellen": [
+        "70/1",
+        "70/2",
+        "70/3"
+      ],
+      "behoerde": {
+        "$": "nw_genehmigungsbeduerftig"
+      },
+      "stand": {
+        "70/1": "88cb92a9",
+        "70/2": "1f114dd7",
+        "70/3": "089bfc7a"
+      },
+      "titel": "Bauantrag, Bauvorlagen"
+    },
+    "72": {
+      "titel": "Beteiligung der Nachbarinnen und Nachbarn und der Öffentlichkeit",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "f": "planung.abweichung",
+                "ist": true
+              },
+              {
+                "f": "planung.befreiung",
+                "ist": true
+              },
+              {
+                "f": "ortsrecht.abweichung",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "planung.abweichung",
+            "ist": false
+          },
+          {
+            "f": "planung.befreiung",
+            "ist": false
+          },
+          {
+            "f": "ortsrecht.abweichung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Vor Abweichungen (§ 69) und Befreiungen benachrichtigt die Bauaufsicht die Eigentümer angrenzender Grundstücke, wenn nachbarliche Belange berührt sein können (Abs. 1); das entfällt, wenn sie Lageplan und Bauzeichnungen unterschrieben oder auf andere Weise zugestimmt haben (Abs. 2).",
+      "fundstellen": [
+        "72/1",
+        "72/2",
+        "72/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Vor der Einreichung die Unterschriften der Nachbarn auf Lageplan und Bauzeichnungen einholen – das beschleunigt das Verfahren. Bei großen Vorhaben (mehr als 5 000 m² Brutto-Grundfläche für Wohnen, mehr als 100 zusätzliche Besucher, bestimmte Sonderbauten) ist die Öffentlichkeit zu beteiligen (Abs. 3).",
+      "pruefen": {
+        "grund": "Öffentlichkeitsbeteiligung nach Abs. 3 bei großen Vorhaben (Wohnen über 5 000 m² BGF, mehr als 100 zusätzliche Besucher, Sonderbauten nach § 47 Abs. 5 und § 50 Abs. 2 Nr. 8–15).",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "oder": [
+                {
+                  "$": "sonderbau"
+                },
+                {
+                  "f": "gebaeude.besucher",
+                  "min": 101
+                },
+                {
+                  "f": "gebaeude.bgf",
+                  "min": 5000
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "stand": {
+        "72/1": "4ed9844b",
+        "72/2": "dd724384",
+        "72/3": "90fc6d8b"
+      }
+    },
+    "74": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "nw_mit_baugenehmigung"
+          },
+          {
+            "und": [
+              {
+                "$": "freistellung"
+              },
+              {
+                "$": "vorhaben_29"
+              }
+            ]
+          },
+          {
+            "$": "nw_beseitigung_anzeige"
+          },
+          {
+            "und": [
+              {
+                "$": "beseitigung_art"
+              },
+              {
+                "$": "nw_genehmigungsbeduerftig"
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "freistellung"
+              },
+              {
+                "$": "beseitigung_art"
+              },
+              {
+                "nicht": {
+                  "$": "nw_beseitigung_frei_art"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Baugenehmigung: wird erteilt, wenn keine öffentlich-rechtlichen Vorschriften entgegenstehen (Abs. 1); Entscheidungsfrist drei Monate, im vereinfachten Verfahren sechs Wochen ab Vollständigkeit (Abs. 2); Baubeginn erst mit Genehmigung, Bescheinigungen nach § 68 und Baubeginnanzeige (Abs. 6); Absteckung und Unterlagen an der Baustelle (Abs. 7); Baubeginnanzeige eine Woche vorher (Abs. 8); Aufbewahrung der Unterlagen (Abs. 9). Bei der Genehmigungsfreistellung gelten Abs. 7, 8 und 9 Satz 1–2 entsprechend (§ 63 Abs. 6), bei der Beseitigung Abs. 8 (§ 62 Abs. 3).",
+      "fundstellen": [
+        "74/1",
+        "74/2",
+        "74/3",
+        "74/4",
+        "74/5",
+        "74/6",
+        "74/7",
+        "74/8",
+        "74/9"
+      ],
+      "behoerde": {
+        "$": "nw_mit_baugenehmigung"
+      },
+      "hinweis": "Im vereinfachten Verfahren (Anträge ab 01.09.2026) gilt die Genehmigung nach Ablauf der Entscheidungsfrist als erteilt (Genehmigungsfiktion, Abs. 3), wenn die Bauherrschaft nicht in Textform verzichtet; Abweichungen nur, soweit beantragt – alle Abweichungen ausdrücklich beantragen.",
+      "verweise": [
+        "nw/bauo-nrw/90"
+      ],
+      "stand": {
+        "74/1": "78a80121",
+        "74/2": "5968fdd8",
+        "74/3": "56618f06",
+        "74/4": "927e03c6",
+        "74/5": "547403a6",
+        "74/6": "614cd1a0",
+        "74/7": "b0449336",
+        "74/8": "d3f86b45",
+        "74/9": "5d2d5598"
+      },
+      "titel": "Baugenehmigung, Genehmigungsfiktion, Baubeginn",
+      "pruefen": {
+        "grund": "Teilabbruch an einem angebauten Gebäude: Wird ein eigenständiges angebautes Gebäude beseitigt, ist das eine Beseitigung nach § 62 Abs. 3 – anzuzeigen, mit Baubeginnanzeige nach Abs. 8 und Standsicherheitsnachweis für das Nachbargebäude.",
+        "wenn": {
+          "und": [
+            {
+              "$": "teilbeseitigung"
+            },
+            {
+              "f": "gebaeude.freistehend",
+              "ist": false
+            }
+          ]
+        }
+      }
+    },
+    "85": {
+      "gilt": {
+        "f": "lage.baulast",
+        "ist": true
+      },
+      "grund": "Baulasten: Verpflichtungserklärung des Eigentümers gegenüber der Bauaufsicht, Eintragung im Baulastenverzeichnis.",
+      "fundstellen": [
+        "85/1",
+        "85/2",
+        "85/4"
+      ],
+      "behoerde": {
+        "$": "nw_genehmigungsbeduerftig"
+      },
+      "nachweis": [
+        "Antrag auf Eintragung einer Baulast mit Lageplan (§ 18 BauPrüfVO)"
+      ],
+      "hinweis": "Vorhandene Baulasten bei der Bauaufsicht abfragen (Auszug aus dem Baulastenverzeichnis) – sie sind im Lageplan darzustellen und führen zum amtlichen Lageplan (§ 3 Abs. 3 Nr. 4 BauPrüfVO).",
+      "stand": {
+        "85/1": "187d0b32",
+        "85/2": "1a647d82",
+        "85/4": "ea22fc50"
+      },
+      "titel": "Baulasten, Baulastenverzeichnis"
+    },
+    "90": {
+      "gilt": {
+        "tag": "einreichung",
+        "vor": "2026-09-01"
+      },
+      "grund": "Übergangsvorschriften: Für das laufende Verfahren gilt die Genehmigungsfiktion nach Abs. 4 Satz 3; die Übergangsregeln zu Verfahren, die vor dem 01.01.2019 eingeleitet wurden (Abs. 4 Satz 1, „dieses Gesetz“ = BauO NRW 2018), sind heute kaum noch von Bedeutung. Übergangsrecht späterer Änderungen beim jeweiligen Änderungsgesetz prüfen.",
+      "fundstellen": [
+        "90/4"
+      ],
+      "behoerde": {
+        "immer": true
+      },
+      "stand": {
+        "90/4": "838610c3"
+      },
+      "titel": "Übergangsvorschriften"
+    },
+    "42a": {
+      "gilt": {
+        "$": "nw_pv_pflicht_gebaeude"
+      },
+      "entfaellt": {
+        "$": "nw_pv_ausnahme"
+      },
+      "pruefen": {
+        "grund": "Die Pflicht entfällt, soweit sie anderen öffentlich-rechtlichen Pflichten widerspricht, technisch unmöglich oder wirtschaftlich nicht vertretbar ist (Abs. 5, § 5 SAN-VO); Erfüllung auch durch Solarthermie oder PV an anderen Außenflächen (Abs. 6); Befreiung auf Antrag (Abs. 7)."
+      },
+      "grund": "Photovoltaik-Pflicht auf geeigneten Dachflächen bei Errichtung (Bauantrag nach dem 01.01.2024 für Nichtwohngebäude, nach dem 01.01.2025 für Wohngebäude) – gleichgestellt Anbau und Ausbau mit neuer PV-geeigneter Dachfläche (§ 2 Abs. 7 SAN-VO) – und bei vollständiger Erneuerung der Dachhaut ab 01.01.2026.",
+      "fundstellen": [
+        "42a/1",
+        "42a/3",
+        "42a/4",
+        "42a/5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "nachweis": [
+        "Nachweis auf Verlangen mit dem Formular des Ministeriums (§ 8 SAN-VO NRW)"
+      ],
+      "hinweis": "Örtliche Bauvorschriften oder Bebauungsplan sind maßgeblich, wenn sie Festlegungen treffen (Abs. 1 Satz 3). Mindestgröße 30 % der Bruttodachfläche (§ 4 SAN-VO), bei Anbau bzw. Ausbau nur der neuen Dachfläche. Für die Genehmigungsfreistellung zählt der Baubeginn statt der Antragstellung (Abs. 1 Satz 2). Bei vollständiger Erneuerung der Dachhaut kommt es auf den Beginn der Arbeiten an (ab 01.01.2026), nicht auf die Einreichung; für Gebäude im Eigentum von Kommunen gilt die Pflicht schon ab 01.07.2024 (Abs. 3 Satz 2).",
+      "verweise": [
+        "nw/san-vo/1",
+        "nw/san-vo/4",
+        "nw/san-vo/5"
+      ],
+      "stand": {
+        "42a/1": "8b5f001f",
+        "42a/3": "4d9fe24d",
+        "42a/4": "f4396162",
+        "42a/5": "bf4b6502"
+      },
+      "titel": "Solaranlagen"
+    }
+  }
+}

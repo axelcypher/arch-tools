@@ -1,0 +1,47 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "fstrg",
+  "fassung": "2026-07-30",
+  "version": 1,
+  "paragrafen": {
+    "9": {
+      "titel": "Bauliche Anlagen an Bundesfernstraßen",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "lage.bundesfernstrasse",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "lage.bundesfernstrasse",
+            "ist": false
+          },
+          {
+            "$": "nur_beseitigung"
+          }
+        ]
+      },
+      "grund": "An Bundesautobahnen (bis 40 m) und Bundesstraßen außerhalb der Ortsdurchfahrten (bis 20 m) dürfen Hochbauten nicht errichtet werden, auch keine Anschlüsse über Zufahrten (Anbauverbot, Abs. 1); bis 100 m bzw. 40 m bedürfen Baugenehmigungen der Zustimmung der Straßenbaubehörde (Abs. 2).",
+      "fundstellen": [
+        "9/1",
+        "9/2"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "stand": {
+        "9/1": "7b355930",
+        "9/2": "3e2882df"
+      },
+      "hinweis": "Die Zustimmung gilt nach zwei Monaten als erteilt (Abs. 2a). Für Windenergieanlagen, deren Rotor hineinragt (Abs. 2b), Solaranlagen (Abs. 2c) und Anlagen für Wasserstoff (Abs. 2d, seit 2026) wird die Straßenbaubehörde beteiligt bzw. das Vorhaben angezeigt, statt zuzustimmen."
+    }
+  }
+}

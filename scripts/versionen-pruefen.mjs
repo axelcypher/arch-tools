@@ -18,7 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { kernNutzer as kernNutzerAus } from './kern-nutzer.mjs';
 
-export const APPS = ['flaechenrechner', 'grz', 'kosten', 'ordner', 'entzerrung', 'formulare', 'ava', 'suite'];
+export const APPS = ['flaechenrechner', 'grz', 'kosten', 'ordner', 'entzerrung', 'formulare', 'ava', 'baurecht', 'suite'];
 export const SUITE = 'suite';
 export const STUFEN = ['patch', 'minor', 'major'];
 export const NOTIZEN = '.versionen';

@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "vv-tb",
+  "fassung": "2025-11-21",
+  "version": 1,
+  "paragrafen": {
+    "2": {
+      "titel": "Geltung der MVV TB als VV TB NRW",
+      "gilt": {
+        "$": "vorhaben_29"
+      },
+      "grund": "Technische Baubestimmungen: Die zuletzt veröffentlichte MVV TB des DIBt gilt sechs Monate nach ihrer Veröffentlichung als VV TB NRW, mit den landesrechtlichen Anpassungen der Anlage.",
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Die NRW-Anlage mit den Abweichungen steht nur als PDF auf recht.nrw.de; DIN-Normen nur über die Fundstelle (urheberrechtlich geschützt)."
+    }
+  }
+}

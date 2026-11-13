@@ -22,7 +22,7 @@ import { APPS, NOTIZEN, notizAus, STUFEN, SUITE, tagVon, vergleich, versionAusTa
 export { NOTIZEN };
 
 /** Produktnamen für Commit und Release-Notizen (wie packages/core/src/appNamen.ts) */
-export const NAMEN = { flaechenrechner: 'QUADRIO', grz: 'TERRIO', kosten: 'NUMIO', ordner: 'ATLAS', entzerrung: 'RECTIO', formulare: 'PERMIO', ava: 'FABRIO', suite: 'Arkly' };
+export const NAMEN = { flaechenrechner: 'QUADRIO', grz: 'TERRIO', kosten: 'NUMIO', ordner: 'ATLAS', entzerrung: 'RECTIO', formulare: 'PERMIO', ava: 'FABRIO', baurecht: 'LEXIO', suite: 'Arkly' };
 
 /** höchste veröffentlichte Version einer App laut Tags (null = keine) */
 export const veroeffentlicht = (app, tags) =>

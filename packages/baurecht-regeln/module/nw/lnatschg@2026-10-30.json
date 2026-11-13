@@ -1,0 +1,497 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "lnatschg",
+  "fassung": "2026-10-30",
+  "version": 1,
+  "paragrafen": {
+    "7": {
+      "gilt": {
+        "und": [
+          {
+            "f": "schutz.landschaftsplan",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_oder_beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "schutz.landschaftsplan",
+            "ist": false
+          },
+          {
+            "$": "bplan"
+          },
+          {
+            "$": "innenbereich"
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Ein Landschaftsplan kann sich ausnahmsweise auch auf Flächen eines Bebauungsplans oder einer Satzung nach § 34 Abs. 4 BauGB erstrecken (Abs. 2).",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "bplan"
+                },
+                {
+                  "$": "satzung_baugb"
+                }
+              ]
+            },
+            {
+              "nicht": {
+                "f": "schutz.landschaftsplan",
+                "ist": false
+              }
+            }
+          ]
+        }
+      },
+      "grund": "Landschaftsplan: rechtsverbindliche Festsetzungen (Schutzgebiete, Entwicklungsziele, Maßnahmen) im Außenbereich.",
+      "fundstellen": [
+        "7/1",
+        "7/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Befreiungen und Ausnahmen erteilt die untere Naturschutzbehörde (§ 75); im Baugenehmigungsverfahren wird sie beteiligt.",
+      "stand": {
+        "7/1": "34359811",
+        "7/2": "1a62f607"
+      },
+      "titel": "Landschaftsplan"
+    },
+    "23": {
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "f": "schutz.lsg",
+                "ist": true
+              },
+              {
+                "f": "schutz.nsg",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_oder_beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "schutz.lsg",
+            "ist": false
+          },
+          {
+            "f": "schutz.nsg",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Verbote in Natur- und Landschaftsschutzgebieten; Ausnahmen nur, soweit im Landschaftsplan bzw. in der Schutzverordnung vorgesehen.",
+      "fundstellen": [
+        "23/1",
+        "23/5"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Die Verbote stehen in der Schutzverordnung bzw. im Landschaftsplan (Kreis- oder Bezirksebene) – dort die erlaubten Handlungen prüfen; sonst Befreiung nach § 67 BNatSchG / § 75 LNatSchG beantragen.",
+      "stand": {
+        "23/1": "6ed62d2b",
+        "23/5": "5c7c7ad3"
+      },
+      "titel": "Wirkung der Schutzausweisung"
+    },
+    "30": {
+      "gilt": {
+        "und": [
+          {
+            "$": "aussen_planrecht"
+          },
+          {
+            "$": "bauen"
+          }
+        ]
+      },
+      "entfaellt": {
+        "$": "innen_planrecht"
+      },
+      "grund": "Errichtung oder wesentliche Änderung baulicher Anlagen im Außenbereich (auch nach § 30 Abs. 3 BauGB mit § 35) ist ein Eingriff in Natur und Landschaft – im qualifizierten Bebauungsplan, während der Planaufstellung und im Innenbereich gilt die Eingriffsregelung nicht (§ 18 Abs. 2 BNatSchG).",
+      "fundstellen": [
+        "30/1",
+        "30/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Landschaftspflegerischer Begleitplan bzw. Eingriffs-/Ausgleichsbilanzierung"
+      ],
+      "hinweis": "Aufschüttungen und Abgrabungen ab 2 m auf mehr als 400 m² sind ebenfalls Eingriffe (Abs. 1 Nr. 2).",
+      "stand": {
+        "30/1": "2fb89ef9",
+        "30/2": "0ddc0d27"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung im Außenbereich: Veränderungen der Nutzung von Grundflächen (Stellplätze, Zufahrten) können ein Eingriff sein.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "$": "innen_planrecht"
+              }
+            }
+          ]
+        }
+      },
+      "titel": "Eingriffe in Natur und Landschaft"
+    },
+    "31": {
+      "gilt": {
+        "und": [
+          {
+            "$": "aussen_planrecht"
+          },
+          {
+            "$": "bauen"
+          }
+        ]
+      },
+      "entfaellt": {
+        "$": "innen_planrecht"
+      },
+      "grund": "Ausgleichs- und Ersatzmaßnahmen bzw. Ersatzgeld für unvermeidbare Beeinträchtigungen; agrarstrukturelle Belange beachten.",
+      "fundstellen": [
+        "31/1",
+        "31/4",
+        "31/7"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "31/1": "41a1d6bd",
+        "31/4": "f4123ecb",
+        "31/7": "46b41bae"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung im Außenbereich: Veränderungen der Nutzung von Grundflächen (Stellplätze, Zufahrten) können ein Eingriff sein.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "$": "innen_planrecht"
+              }
+            }
+          ]
+        }
+      },
+      "titel": "Ausgleichs- und Ersatzmaßnahmen, Ersatzgeld"
+    },
+    "33": {
+      "gilt": {
+        "und": [
+          {
+            "$": "aussen_planrecht"
+          },
+          {
+            "$": "bauen"
+          }
+        ]
+      },
+      "entfaellt": {
+        "$": "innen_planrecht"
+      },
+      "grund": "Über den Eingriff entscheidet die Bauaufsicht im Benehmen mit der Naturschutzbehörde; ohne Zulassungsverfahren braucht der Eingriff eine Genehmigung der unteren Naturschutzbehörde.",
+      "fundstellen": [
+        "33/1",
+        "33/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "33/1": "085af941",
+        "33/2": "6695c028"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung im Außenbereich: Veränderungen der Nutzung von Grundflächen (Stellplätze, Zufahrten) können ein Eingriff sein.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "$": "innen_planrecht"
+              }
+            }
+          ]
+        }
+      },
+      "titel": "Verfahren"
+    },
+    "39": {
+      "gilt": {
+        "und": [
+          {
+            "f": "vorhaben.baeume_faellen",
+            "ist": true
+          },
+          {
+            "f": "schutz.hecke_ausgleich",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "vorhaben.baeume_faellen",
+            "ist": false
+          },
+          {
+            "f": "schutz.hecke_ausgleich",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Gesetzlich geschützte Landschaftsbestandteile (mit öffentlichen Mitteln geförderte Anpflanzungen im Außenbereich, Hecken ab 100 m im Außenbereich, Wallhecken, Kompensationspflanzungen): Beseitigung und Beeinträchtigung verboten.",
+      "fundstellen": [
+        "39/1",
+        "39/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "39/1": "9eebe419",
+        "39/2": "f178f0b2"
+      },
+      "titel": "Gesetzlich geschützte Landschaftsbestandteile"
+    },
+    "41": {
+      "gilt": {
+        "und": [
+          {
+            "f": "schutz.baum",
+            "ist": true
+          },
+          {
+            "f": "schutz.allee",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "schutz.baum",
+            "ist": false
+          },
+          {
+            "f": "schutz.allee",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Alleen an öffentlichen oder privaten Verkehrsflächen sind gesetzlich geschützt; Beseitigung und Beschädigung verboten.",
+      "fundstellen": [
+        "41/1",
+        "41/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Auch bei neuen Zufahrten durch eine Allee – Kataster des LANUK prüfen (Abs. 4).",
+      "stand": {
+        "41/1": "88425ffc",
+        "41/2": "ce9c97b5"
+      },
+      "titel": "Alleen"
+    },
+    "42": {
+      "gilt": {
+        "f": "schutz.biotop",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "schutz.biotop",
+        "ist": false
+      },
+      "grund": "Gesetzlich geschützte Biotope (§ 30 BNatSchG und Abs. 1, u. a. Magerwiesen, Streuobstbestände ab 2 500 m²): Zerstörung und erhebliche Beeinträchtigung verboten.",
+      "fundstellen": [
+        "42/1",
+        "42/4"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "42/1": "5952a18b",
+        "42/4": "ae0960b1"
+      },
+      "titel": "Gesetzlich geschützte Biotope"
+    },
+    "75": {
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "f": "schutz.lsg",
+                "ist": true
+              },
+              {
+                "f": "schutz.nsg",
+                "ist": true
+              },
+              {
+                "f": "schutz.biotop",
+                "ist": true
+              },
+              {
+                "f": "schutz.landschaftsplan",
+                "ist": true
+              },
+              {
+                "f": "schutz.naturdenkmal",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_oder_beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "schutz.lsg",
+            "ist": false
+          },
+          {
+            "f": "schutz.nsg",
+            "ist": false
+          },
+          {
+            "f": "schutz.biotop",
+            "ist": false
+          },
+          {
+            "f": "schutz.landschaftsplan",
+            "ist": false
+          },
+          {
+            "f": "schutz.naturdenkmal",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Befreiungen nach § 67 Abs. 1 und 2 BNatSchG (auch vom Artenschutz) erteilt die untere Naturschutzbehörde (Abs. 1, Neufassung ab 30.10.2026): Der Naturschutzbeirat nimmt binnen sechs Wochen Stellung; will die Behörde davon abweichen, unterrichtet sie die höhere Naturschutzbehörde, die binnen vier Wochen eine Weisung erteilen kann.",
+      "fundstellen": [
+        "75/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "75/1": "5eac14ee"
+      },
+      "pruefen": {
+        "grund": "Befreiung auch außerhalb von Schutzgebieten (Abs. 1 Satz 1 und 2, Abs. 2): Gehölzbeseitigung in der Schonzeit (§ 39 Abs. 5), Zugriffsverbote des Artenschutzes (§ 44, soweit keine Ausnahme nach § 45 Abs. 7 greift), Festsetzungen eines Landschaftsplans, geschützte Bäume; in Natura-2000-Gebieten Verträglichkeit und Ausnahme nach § 34.",
+        "wenn": {
+          "oder": [
+            {
+              "f": "schutz.baum",
+              "ist": true
+            },
+            {
+              "f": "vorhaben.baeume_faellen",
+              "ist": true
+            },
+            {
+              "f": "schutz.landschaftsplan",
+              "ist": true
+            },
+            {
+              "f": "schutz.ffh",
+              "ist": true
+            },
+            {
+              "f": "schutz.vsg",
+              "ist": true
+            },
+            {
+              "f": "schutz.natura_nah",
+              "ist": true
+            },
+            {
+              "oder": [
+                {
+                  "$": "errichtung"
+                },
+                {
+                  "$": "beseitigung"
+                },
+                {
+                  "und": [
+                    {
+                      "oder": [
+                        {
+                          "$": "aenderung"
+                        },
+                        {
+                          "$": "nutzungsaenderung"
+                        }
+                      ]
+                    },
+                    {
+                      "f": "vorhaben.dach_fassade",
+                      "ist": true
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "titel": "Befreiungen und Ausnahmen",
+      "hinweis": "Mit dem Antrag auf Befreiung rechtzeitig vor dem Bauantrag beginnen – die Beteiligung des Beirats dauert bis zu sechs Wochen."
+    }
+  }
+}

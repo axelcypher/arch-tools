@@ -1,0 +1,39 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "veraenderungssperre_muellingsen",
+  "fassung": "2022-06-05",
+  "version": 1,
+  "geltung": {
+    "f": "soest.muellingsen",
+    "ist": true
+  },
+  "geltungGrund": "nur im Geltungsbereich der Veränderungssperre",
+  "paragrafen": {
+    "Sperre": {
+      "titel": "Veränderungssperre (§ 14 BauGB)",
+      "gilt": {
+        "oder": [
+          {
+            "$": "vorhaben_oder_beseitigung"
+          },
+          {
+            "f": "vorhaben.erdarbeiten",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Vorhaben im Sinne des § 29 BauGB und erhebliche Veränderungen von Grundstücken sind während der Sperre unzulässig; Ausnahme nach § 14 Abs. 2 BauGB im Einvernehmen mit der Gemeinde.",
+      "fundstellen": [
+        "Sperre"
+      ],
+      "pruefen": {
+        "grund": "Höchstdauer nach § 17 BauGB: zwei Jahre, Verlängerung um ein Jahr, ausnahmsweise um ein weiteres (Abs. 1, 2). Nach der Verlängerung 2022 wäre die Sperre spätestens 2024 abgelaufen, sofern sie nicht nach § 17 Abs. 3 neu beschlossen wurde oder der Bebauungsplan inzwischen gilt – bei der Stadt erfragen."
+      },
+      "verweise": [
+        "bund/baugb/14",
+        "bund/baugb/17"
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": { "@core/*": ["../core/src/*"] }
+  },
+  "include": ["test", "werkzeuge", "vitest.config.ts", "vitest.werkzeuge.config.ts", "../core/src/globals.d.ts"]
+}

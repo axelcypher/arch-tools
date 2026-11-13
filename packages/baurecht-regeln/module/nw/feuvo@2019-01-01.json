@@ -1,0 +1,331 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "feuvo",
+  "fassung": "2019-01-01",
+  "version": 1,
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "f": "technik.feuerstaette",
+                "ist": true
+              },
+              {
+                "f": "technik.waermepumpe",
+                "ist": true
+              },
+              {
+                "f": "technik.brennstofflager",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "technik.feuerstaette",
+            "ist": false
+          },
+          {
+            "f": "technik.waermepumpe",
+            "ist": false
+          },
+          {
+            "f": "technik.brennstofflager",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Anwendungsbereich: Feuerstätten, Wärmepumpen und Blockheizkraftwerke zur Raumheizung oder Warmwasserbereitung sowie Gas-Haushaltskochgeräte.",
+      "fundstellen": [
+        "1"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "1": "9fe97b02"
+      },
+      "titel": "Einschränkung des Anwendungsbereichs"
+    },
+    "3": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.feuerstaette",
+        "ist": false
+      },
+      "grund": "Verbrennungsluftversorgung der Feuerstätten.",
+      "fundstellen": [
+        "3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "3": "dab9d51d"
+      },
+      "titel": "Verbrennungsluftversorgung von Feuerstätten"
+    },
+    "4": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.feuerstaette",
+        "ist": false
+      },
+      "grund": "Aufstellung von Feuerstätten und Gasleitungsanlagen (u. a. nicht in Treppenräumen und notwendigen Fluren).",
+      "fundstellen": [
+        "4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "4": "f7b7e9fb"
+      },
+      "titel": "Aufstellung von Feuerstätten, Gasleitungsanlagen"
+    },
+    "5": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.feuerstaette",
+        "ist": false
+      },
+      "grund": "Aufstellräume für Feuerstätten (größere Gas- und Ölfeuerstätten).",
+      "fundstellen": [
+        "5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "5": "48c7cb1b"
+      },
+      "titel": "Aufstellräume für Feuerstätten"
+    },
+    "6": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          },
+          {
+            "f": "nw.feste_brennstoffe_50kw",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "technik.feuerstaette",
+            "ist": false
+          },
+          {
+            "f": "nw.feste_brennstoffe_50kw",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Heizraum für Feuerstätten für feste Brennstoffe mit zusammen mehr als 50 kW: mindestens 8 m³, lichte Höhe 2 m, feuerbeständige Wände und Decken, Lüftung ins Freie.",
+      "fundstellen": [
+        "6/1",
+        "6/2",
+        "6/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "6/1": "8ea833c6",
+        "6/2": "48287736",
+        "6/3": "16027729"
+      },
+      "titel": "Heizräume"
+    },
+    "7": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.feuerstaette",
+        "ist": false
+      },
+      "grund": "Abgasanlagen: Anforderungen an Schornsteine und Abgasleitungen.",
+      "fundstellen": [
+        "7"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "7": "587e94b4"
+      },
+      "titel": "Abgasanlagen"
+    },
+    "9": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.feuerstaette",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.feuerstaette",
+        "ist": false
+      },
+      "grund": "Abführung der Abgase über Dach, Mündungshöhen und Abstände.",
+      "fundstellen": [
+        "9"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "9": "f060639e"
+      },
+      "titel": "Abführung von Abgasen"
+    },
+    "10": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.waermepumpe",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.waermepumpe",
+        "ist": false
+      },
+      "grund": "Wärmepumpen, Blockheizkraftwerke und ortsfeste Verbrennungsmotoren; Anlagen über 50 kW nur in Aufstellräumen.",
+      "fundstellen": [
+        "10/1",
+        "10/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "10/1": "634885d1",
+        "10/2": "0c556535"
+      },
+      "titel": "Wärmepumpen, Blockheizkraftwerke und ortsfeste Verbrennungsmotoren"
+    },
+    "11": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.brennstofflager",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.brennstofflager",
+        "ist": false
+      },
+      "grund": "Brennstofflagerung in Brennstofflagerräumen (größere Mengen Heizöl, Pellets).",
+      "fundstellen": [
+        "11"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "11": "43f0391c"
+      },
+      "titel": "Brennstofflagerung in Brennstofflagerräumen"
+    },
+    "12": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "technik.brennstofflager",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "technik.brennstofflager",
+        "ist": false
+      },
+      "grund": "Brennstofflagerung außerhalb von Brennstofflagerräumen.",
+      "fundstellen": [
+        "12"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "12": "e957d892"
+      },
+      "titel": "Brennstofflagerung außerhalb von Brennstofflagerräumen"
+    }
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "werbeanlagen_altstadt",
+  "fassung": "2002-06-30",
+  "version": 1,
+  "geltung": {
+    "und": [
+      {
+        "$": "vorhaben_29"
+      },
+      {
+        "$": "soest_altstadt"
+      },
+      {
+        "f": "vorhaben.werbeanlage",
+        "ist": true
+      }
+    ]
+  },
+  "geltungGrund": "nur für Werbeanlagen in der Altstadt innerhalb des Wallrings",
+  "paragrafen": {
+    "2": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Werbeanlagen nur an der Stätte der Leistung; unzulässig u. a. an Einfriedigungen (außer Hinweisschildern bis 0,20 m²), an und auf Vordächern und Markisen, auf Dächern und oberhalb der Brüstung des 1. Obergeschosses (Ausnahme im Kerngebiet bei gewerblich genutzten Obergeschossen, Abs. 3).",
+      "fundstellen": [
+        "2/1",
+        "2/2",
+        "2/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "2/1": "05d6aa2d",
+        "2/2": "8d6359a1",
+        "2/3": "372ae7f0"
+      },
+      "titel": "Ort der Werbung"
+    },
+    "3": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Ausleger höchstens 1,0 m vor der Fassade, Schild höchstens 1,20 × 1,00 m und 0,20 m stark, ein Ausleger je Geschäft.",
+      "fundstellen": [
+        "3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "3": "3af10551"
+      },
+      "titel": "Ausleger"
+    },
+    "4": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Flachwerbeanlagen parallel und horizontal auf der Fassade, nur als Schriftzug oder Einzelbuchstaben ohne Transparent: höchstens 0,60 m hoch, 6 m lang, 0,20 m vor der Fassade; Logos und Schilder bis 0,50 m².",
+      "fundstellen": [
+        "4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "4": "dce3d8e0"
+      },
+      "titel": "Flachwerbeanlagen"
+    },
+    "5": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Fahnen als Werbeträger sind unzulässig.",
+      "fundstellen": [
+        "5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "5": "ea305bc7"
+      },
+      "titel": "Fahnen"
+    },
+    "6": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Farbe und Leuchtkraft müssen sich einfügen; bewegliche (laufende) Lichtwerbung und Lichtwerbung mit wechselnd an- und ausgeschalteter Beleuchtung sind unzulässig.",
+      "fundstellen": [
+        "6/1",
+        "6/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "6/1": "4e4adb9b",
+        "6/2": "59198049"
+      },
+      "titel": "Farben und bewegliche Lichtwerbungen"
+    },
+    "8": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Werbeanlagen unter 1 m² und sonst genehmigungsfreie Werbeanlagen sind in der Altstadt genehmigungspflichtig.",
+      "fundstellen": [
+        "8"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "§ 8 stützt sich auf § 86 Abs. 2 BauO NW 1995; § 89 BauO NRW 2018 enthält keine Ermächtigung mehr, eine Genehmigungspflicht für sonst verfahrensfreie Werbeanlagen einzuführen – ob § 8 fortgilt, mit der Bauaufsicht klären."
+      },
+      "stand": {
+        "8": "118c54d1"
+      },
+      "titel": "Einführung des Genehmigungstatbestandes"
+    },
+    "9": {
+      "gilt": {
+        "oder": [
+          {
+            "f": "planung.abweichung",
+            "ist": true
+          },
+          {
+            "f": "ortsrecht.abweichung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "planung.abweichung",
+            "ist": false
+          },
+          {
+            "f": "ortsrecht.abweichung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Abweichungen auf begründeten Antrag bei offenbar nicht beabsichtigter Härte, wenn öffentliche Belange, insbesondere der Denkmalschutz, nicht entgegenstehen.",
+      "fundstellen": [
+        "9"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "9": "b1bb8c6e"
+      },
+      "titel": "Abweichungen"
+    }
+  }
+}

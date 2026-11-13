@@ -1,0 +1,36 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "arbstaettv",
+  "fassung": "2026-05-06",
+  "version": 1,
+  "paragrafen": {
+    "3a": {
+      "titel": "Einrichten und Betreiben von Arbeitsstätten",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.arbeitsstaette",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Arbeitsstätten sind so einzurichten, dass Gefährdungen der Beschäftigten möglichst vermieden werden; bei Einhaltung der Technischen Regeln für Arbeitsstätten (ASR) gilt das als erfüllt (Abs. 1), bei Beschäftigten mit Behinderungen barrierefrei (Abs. 2).",
+      "fundstellen": [
+        "3a/1",
+        "3a/2"
+      ],
+      "hinweis": "Weitergehende Anforderungen des Bauordnungsrechts gehen vor (Abs. 4). Die Bauaufsicht prüft den baulichen Arbeitsschutz nicht.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "3a/1": "300b3174",
+        "3a/2": "fa281aca"
+      }
+    }
+  }
+}

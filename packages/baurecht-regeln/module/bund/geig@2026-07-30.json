@@ -1,0 +1,368 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "geig",
+  "fassung": "2026-07-30",
+  "version": 1,
+  "paragrafen": {
+    "6": {
+      "titel": "Zu errichtende Wohngebäude mit mehr als fünf Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "geig_wohnen"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 6
+          }
+        ]
+      },
+      "grund": "Neues Wohngebäude mit mehr als fünf Stellplätzen im oder am Gebäude: jeder Stellplatz ist mit Leitungsinfrastruktur für die Elektromobilität auszustatten.",
+      "fundstellen": [
+        "6"
+      ],
+      "hinweis": "Nachweis über die Unternehmererklärung (§ 13); gemischt genutzte Gebäude nach § 11.",
+      "stand": {
+        "6": "6a76865c"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
+        "wenn": {
+          "und": [
+            {
+              "$": "gebaeude"
+            },
+            {
+              "$": "errichtung"
+            },
+            {
+              "f": "gebaeude.gemischt",
+              "ist": true
+            },
+            {
+              "f": "gebaeude.stellplaetze",
+              "min": 6
+            }
+          ]
+        }
+      }
+    },
+    "7": {
+      "titel": "Zu errichtende Nichtwohngebäude mit mehr als sechs Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "geig_nichtwohnen"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 7
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.kmu",
+        "ist": true
+      },
+      "grund": "Neues Nichtwohngebäude mit mehr als sechs Stellplätzen: mindestens jeder dritte Stellplatz mit Leitungsinfrastruktur und zusätzlich ein Ladepunkt.",
+      "fundstellen": [
+        "7"
+      ],
+      "hinweis": "Ausgenommen sind Nichtwohngebäude im Eigentum kleiner und mittlerer Unternehmen bei überwiegender Eigennutzung (§ 1 Abs. 2).",
+      "stand": {
+        "7": "b973443e"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
+        "wenn": {
+          "und": [
+            {
+              "$": "gebaeude"
+            },
+            {
+              "$": "errichtung"
+            },
+            {
+              "f": "gebaeude.gemischt",
+              "ist": true
+            },
+            {
+              "f": "gebaeude.stellplaetze",
+              "min": 7
+            }
+          ]
+        }
+      }
+    },
+    "8": {
+      "titel": "Größere Renovierung bestehender Wohngebäude mit mehr als zehn Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "$": "geig_wohnen"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 11
+          },
+          {
+            "f": "vorhaben.groessere_renovierung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "nur_beseitigung"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "max": 10
+          },
+          {
+            "f": "vorhaben.groessere_renovierung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Wird das Gebäude mit mehr als zehn Stellplätzen im oder am Gebäude einer größeren Renovierung unterzogen, die den Parkplatz oder die elektrische Infrastruktur umfasst: jeder Stellplatz mit Leitungsinfrastruktur (Abs. 1, 2).",
+      "fundstellen": [
+        "8/1",
+        "8/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "8/1": "77938aab",
+        "8/2": "2252aa93"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
+        "wenn": {
+          "und": [
+            {
+              "$": "gebaeude"
+            },
+            {
+              "und": [
+                {
+                  "f": "gebaeude.gemischt",
+                  "ist": true
+                },
+                {
+                  "f": "gebaeude.stellplaetze",
+                  "min": 11
+                }
+              ]
+            },
+            {
+              "nicht": {
+                "oder": [
+                  {
+                    "$": "errichtung"
+                  },
+                  {
+                    "$": "nur_beseitigung"
+                  },
+                  {
+                    "f": "gebaeude.stellplaetze",
+                    "max": 10
+                  },
+                  {
+                    "f": "vorhaben.groessere_renovierung",
+                    "ist": false
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "9": {
+      "titel": "Größere Renovierung bestehender Nichtwohngebäude mit mehr als zehn Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "$": "geig_nichtwohnen"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 11
+          },
+          {
+            "f": "vorhaben.groessere_renovierung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "$": "nur_beseitigung"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "max": 10
+          },
+          {
+            "f": "vorhaben.groessere_renovierung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Wird das Gebäude mit mehr als zehn Stellplätzen im oder am Gebäude einer größeren Renovierung unterzogen, die den Parkplatz oder die elektrische Infrastruktur umfasst: mindestens jeder fünfte Stellplatz mit Leitungsinfrastruktur und zusätzlich mindestens ein Ladepunkt (Abs. 1, 2).",
+      "fundstellen": [
+        "9/1",
+        "9/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "9/1": "72ca0d2a",
+        "9/2": "07a6ce23"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
+        "wenn": {
+          "und": [
+            {
+              "$": "gebaeude"
+            },
+            {
+              "und": [
+                {
+                  "f": "gebaeude.gemischt",
+                  "ist": true
+                },
+                {
+                  "f": "gebaeude.stellplaetze",
+                  "min": 11
+                }
+              ]
+            },
+            {
+              "nicht": {
+                "oder": [
+                  {
+                    "$": "errichtung"
+                  },
+                  {
+                    "$": "nur_beseitigung"
+                  },
+                  {
+                    "f": "gebaeude.stellplaetze",
+                    "max": 10
+                  },
+                  {
+                    "f": "vorhaben.groessere_renovierung",
+                    "ist": false
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "10": {
+      "titel": "Bestehende Nichtwohngebäude mit mehr als 20 Stellplätzen",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "$": "geig_nichtwohnen"
+          },
+          {
+            "f": "gebaeude.stellplaetze",
+            "min": 21
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.kmu",
+        "ist": true
+      },
+      "grund": "Bestehendes Nichtwohngebäude mit mehr als 20 Stellplätzen: seit dem 01.01.2025 ist mindestens ein Ladepunkt zu errichten (Abs. 1).",
+      "fundstellen": [
+        "10/1"
+      ],
+      "stand": {
+        "10/1": "59f32712"
+      },
+      "pruefen": {
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
+        "wenn": {
+          "und": [
+            {
+              "$": "gebaeude"
+            },
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "f": "gebaeude.gemischt",
+              "ist": true
+            },
+            {
+              "f": "gebaeude.stellplaetze",
+              "min": 21
+            }
+          ]
+        }
+      }
+    }
+  }
+}

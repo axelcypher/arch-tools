@@ -62,6 +62,25 @@ describe('Farbschema-Menü der Titelleiste', () => {
     expect(document.activeElement).toBe(knopf);
   });
 
+  it('Fokus verlässt das Menü (Tab hinaus): schließt; ohne bekanntes Ziel (Klick auf die Beschriftung, Safari) bleibt es offen', () => {
+    const host = render();
+    const draussen = document.body.appendChild(document.createElement('button'));
+    act(() => host.querySelector<HTMLButtonElement>('.titlebar-menu > button')!.click());
+    const eintrag = host.querySelector<HTMLButtonElement>('[role="menuitemradio"]')!;
+    act(() => void eintrag.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null })));
+    expect(host.querySelector('.titlebar-dropdown')).not.toBeNull();
+    // danach kommt der Klick auf die Beschriftung an: die Option schaltet um, das Menü bleibt offen
+    const kaestchen = host.querySelector<HTMLInputElement>('.titlebar-dropdown input[type="checkbox"]')!;
+    const vorher = kaestchen.checked;
+    act(() => host.querySelector<HTMLLabelElement>('.titlebar-dropdown label.toggle')!.click());
+    expect(host.querySelector<HTMLInputElement>('.titlebar-dropdown input[type="checkbox"]')!.checked).toBe(!vorher);
+    expect(host.querySelector('.titlebar-dropdown')).not.toBeNull();
+    act(() => void eintrag.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: host.querySelector('.titlebar-dropdown input') })));
+    expect(host.querySelector('.titlebar-dropdown')).not.toBeNull();
+    act(() => void eintrag.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: draussen })));
+    expect(host.querySelector('.titlebar-dropdown')).toBeNull();
+  });
+
   it('die Option „Zeichenfläche abdunkeln“ liegt außerhalb der Menürolle', () => {
     const host = render();
     act(() => host.querySelector<HTMLButtonElement>('.titlebar-menu > button')!.click());
