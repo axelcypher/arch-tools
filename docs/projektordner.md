@@ -241,15 +241,15 @@ im Konfigurationsordner, je Sicherung mit Namen `projektordner.json.bak-JJJJ-MM-
 „Sicherungen“ klappt die Liste zum Wiederherstellen auf. Auch „Ordnerliste übernehmen“ (Textansicht) sichert vorher.
 Nach dem Ersetzen nimmt „Rückgängig“ die Änderung zurück, solange nichts anderes geändert wurde.
 
-Lässt sich die Struktur in `projektordner.json` nicht lesen (etwa das Format einer neueren ATLAS-Fassung), zeigt
-ATLAS vorläufig die Vorgabe mit einer Warnung, **schreibt aber nichts** – weder die Struktur noch das Ordnerschema für
-die anderen Apps. Solange **sperrt** ATLAS das Bearbeiten in „Struktur“ (Name, Schemata, Ordnerliste) und „Vorlagen“
-(Presets, Dateinamen): Die Bereiche bleiben sichtbar, aber abgeschwächt und nicht bedienbar – Eingaben gingen sonst
-beim nächsten Laden verloren. Erst wenn die Struktur bewusst ersetzt wird („Angezeigte Struktur übernehmen …“ unter
-der Warnung, „Struktur laden …“, eine Sicherung oder „Vorgabe wiederherstellen …“), wird gespeichert und die Sperre
-aufgehoben; der unlesbare Inhalt kommt vorher in die Sicherungen. Das gilt auch für „Rückgängig“ nach „Neu laden“
-einer für diese Fassung unlesbaren Struktur eines anderen Rechners. Felder, die diese Fassung nicht kennt, bleiben
-beim Speichern erhalten.
+Lässt sich die Struktur in `projektordner.json` nicht lesen (etwa das Format einer neueren ATLAS-Fassung), zeigt ATLAS
+vorläufig die Vorgabe mit einer Warnung, **schreibt aber nichts** – weder die Struktur noch das Ordnerschema für die
+anderen Apps. Solange **sperrt** ATLAS das Bearbeiten in „Struktur“ (Name, Schemata, Ordnerliste) und „Vorlagen“
+(Presets, Dateinamen, Vorlagenordner – auch im Assistenten): Die Bereiche bleiben sichtbar, aber abgeschwächt und
+nicht bedienbar – Eingaben gingen sonst beim nächsten Laden verloren. Erst wenn die Struktur bewusst ersetzt wird
+(„Angezeigte Struktur übernehmen …“ unter der Warnung, „Struktur laden …“, eine Sicherung oder „Vorgabe
+wiederherstellen …“), wird gespeichert und die Sperre aufgehoben; der unlesbare Inhalt kommt vorher in die
+Sicherungen. Das gilt auch für „Rückgängig“ nach „Neu laden“ einer für diese Fassung unlesbaren Struktur eines anderen
+Rechners. Felder, die diese Fassung nicht kennt, bleiben beim Speichern erhalten.
 
 Die **Namensschemata** stehen im Kopf der Struktur (sie gelten für alle Ordner, nicht für den gewählten):
 
@@ -490,13 +490,12 @@ und meldet ein abweichendes Datum („Datum 261103 – die Mail ist vom 261102 (
 Projektcode kommt aus der Projektdatei und lässt sich oben ändern.
 
 Umbenannt wird erst auf Klick – einzeln oder alle markierten (Auswahl und „Umbenennen“ stehen nur da, wenn es
-abweichende Mails gibt) –, im selben Ordner, die Endung bleibt, und **nie
-überschreibend**: Gibt es den Namen schon, bleibt alles, wie es war. Mehrere auf einmal benennt die App erst nach
-einer Rückfrage um („6 Mails umbenennen?“ mit den ersten vier Namen alt → neu und „… und 2 weitere“), denn ein
-Rückgängig gibt es nicht. Würde der vollständige Pfad 260 Zeichen oder länger, steht „Pfad zu lang (… Zeichen,
-Windows erlaubt höchstens 259) – Thema oder Name kürzen“ an der Mail, und Umbenennen bzw. Ablegen bleibt gesperrt. Ist die Mail in Outlook geöffnet, sagt die App
-das. (Befehl `projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von ATLAS und
-Rahmen-App.)
+abweichende Mails gibt) –, im selben Ordner, die Endung bleibt, und **nie überschreibend**: Gibt es den Namen schon,
+bleibt alles, wie es war. Mehrere auf einmal benennt die App erst nach einer Rückfrage um („6 Mails umbenennen?“ mit
+den ersten vier Namen alt → neu und „… und 2 weitere“), denn ein Rückgängig gibt es nicht. Würde der vollständige Pfad
+260 Zeichen oder länger, steht „Pfad zu lang (… Zeichen, Windows erlaubt höchstens 259) – Thema oder Name kürzen“ an
+der Mail, und Umbenennen bzw. Ablegen bleibt gesperrt. Ist die Mail in Outlook geöffnet, sagt die App das. (Befehl
+`projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von ATLAS und Rahmen-App.)
 
 **Mails aus Outlook ablegen.** Mails aus dem **klassischen Outlook** lassen sich direkt auf die Fläche „Mails aus Outlook
 hierher ziehen“ ziehen (oder gespeicherte .msg-Dateien wählen). Die App bildet den Namen wie oben, schlägt als Ordner

@@ -113,6 +113,8 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
   const desktop = hatDateisystem();
   const { vorlagenordner, vorlagenName, vorlagen, vorlagenFehler, vorlagenLaden, setVorlagenordner, ladeVorlagen, setVorlagenImBrowser } = useOrdner();
   const gewaehlt = desktop ? vorlagenordner : vorlagenName;
+  // unlesbare Struktur: der Vorlagenordner steht mit ihr in projektordner.json und wird solange nicht gespeichert – gesperrt
+  const gesperrt = !!useOrdner((s) => s.strukturFehler);
   const waehlen = async () => {
     if (desktop) {
       const p = await waehleOrdner('Vorlagenordner wählen');
@@ -134,7 +136,7 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
           </span>
           {gewaehlt ? <code title={vorlagenordner}>{gewaehlt}</code> : <span className="muted small-text">{leerText}</span>}
         </div>
-        <button className="small" onClick={() => void waehlen()}>
+        <button className="small" disabled={gesperrt} onClick={() => void waehlen()}>
           Wählen …
         </button>
         {desktop && vorlagenordner && (
@@ -146,6 +148,7 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
           <button
             className="small"
             title="Ohne Vorlagenordner arbeiten"
+            disabled={gesperrt}
             onClick={() => {
               setVorlagenordner('');
               setVorlagenImBrowser('', []);
@@ -155,6 +158,7 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
           </button>
         )}
       </div>
+      {gesperrt && <p className="muted small-text po-vorlagenordner-gesperrt">Der Vorlagenordner lässt sich erst wieder ändern, wenn die Bürostruktur lesbar ist (siehe „Struktur“).</p>}
       {vorlagenFehler && <p className="meldung fehler" role="alert">{vorlagenFehler}</p>}
     </>
   );

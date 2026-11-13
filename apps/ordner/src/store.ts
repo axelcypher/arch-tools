@@ -69,6 +69,8 @@ interface OrdnerState {
   konfigStandEigen: string | null;
   /** projektordner.json wurde inzwischen anderswo geändert: deren Inhalt; nichts wird geschrieben, bis entschieden ist */
   konflikt: { roh: unknown } | null;
+  /** „Meine Fassung trotzdem speichern“ läuft (Sichern, Schreiben) – die Knöpfe des Konflikts sind solange gesperrt */
+  konfliktLaeuft: boolean;
   /**
    * Die Struktur in projektordner.json ließ sich nicht lesen (z. B. Format einer neueren Fassung): der Grund. Angezeigt
    * wird solange die Vorgabe, geschrieben wird nichts (auch nicht das Ordnerschema für alle Apps), bis die Struktur
@@ -310,6 +312,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     geladen: false,
     konfigStandEigen: null,
     konflikt: null,
+    konfliktLaeuft: false,
     strukturFehler: null,
     rohEigen: {},
     strukturRoh: null,
@@ -367,23 +370,38 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
         set({ ...eigenAus(k.roh), konfigStandEigen: konfigStand(k.roh), konflikt: null, rueckgaengig: { struktur: eigene, text: 'Die Struktur des anderen Rechners wurde geladen.' } });
         return;
       }
-      // die Fassung des anderen Rechners nicht ungesichert überschreiben – sie kommt so, wie sie in der Datei steht, in die
-      // Sicherungen (auch eine für diese Fassung unlesbare Struktur; ist die Datei kein JSON-Objekt, der ganze Inhalt)
-      const fremd = alsObjekt(k.roh);
-      const fremdeStruktur = k.roh != null && fremd !== k.roh ? { inhalt: k.roh } : fremd.struktur;
-      if (fremdeStruktur != null) {
-        const grund = 'Meine Fassung trotzdem gespeichert – gesichert ist die Fassung des anderen Rechners.';
-        const vorlagenordner = typeof fremd.vorlagenordner === 'string' ? fremd.vorlagenordner : '';
-        const name = await sichern({ struktur: fremdeStruktur as Struktur, vorlagenordner }, grund, 'Die Fassung des anderen Rechners ließ sich nicht sichern – nichts wurde gespeichert.');
-        log.info(`Konflikt in projektordner.json: eigene Fassung gespeichert, die des anderen Rechners liegt in den Sicherungen (${name})`);
+      // läuft schon (Doppelklick): nur eine Sicherung, ein Schreiben
+      if (get().konfliktLaeuft) return;
+      set({ konfliktLaeuft: true });
+      try {
+        // die Fassung des anderen Rechners nicht ungesichert überschreiben – sie kommt so, wie sie in der Datei steht, in die
+        // Sicherungen (auch eine für diese Fassung unlesbare Struktur; ist die Datei kein JSON-Objekt, der ganze Inhalt)
+        const fremd = alsObjekt(k.roh);
+        const fremdeStruktur = k.roh != null && fremd !== k.roh ? { inhalt: k.roh } : fremd.struktur;
+        let name: string | null = null;
+        if (fremdeStruktur != null) {
+          const grund = 'Meine Fassung trotzdem gespeichert – gesichert ist die Fassung des anderen Rechners.';
+          const vorlagenordner = typeof fremd.vorlagenordner === 'string' ? fremd.vorlagenordner : '';
+          name = await sichern({ struktur: fremdeStruktur as Struktur, vorlagenordner }, grund, 'Die Fassung des anderen Rechners ließ sich nicht sichern – nichts wurde gespeichert.');
+        }
+        // während des Sicherns anders entschieden (z. B. „Neu laden“) oder ein neuer Konflikt: nichts überschreiben
+        if (get().konflikt !== k) return;
+        // die Felder der anderen Fassung, die dieses Tool nicht kennt, bleiben erhalten
+        set({ konfigStandEigen: konfigStand(k.roh), rohEigen: fremd, konflikt: null, strukturFehler: null, strukturRoh: null });
+        await jetztSpeichern();
+        // im Protokoll erst, wenn wirklich gespeichert ist (kein neuer Konflikt, kein Schreibfehler)
+        const s = get();
+        if (!s.konflikt && !s.konfigFehler?.startsWith(NICHT_GESPEICHERT))
+          log.info(`Konflikt in projektordner.json: eigene Fassung gespeichert${name ? `, die des anderen Rechners liegt in den Sicherungen (${name})` : ''}`);
+      } finally {
+        set({ konfliktLaeuft: false });
       }
-      // die Felder der anderen Fassung, die dieses Tool nicht kennt, bleiben erhalten
-      set({ konfigStandEigen: konfigStand(k.roh), rohEigen: fremd, konflikt: null, strukturFehler: null, strukturRoh: null });
-      await jetztSpeichern();
     },
     setStammordner: (p) => allgemeinSetzen({ projekte: [p, ...get().allgemein.projekte.filter((x) => x !== p)].filter(Boolean) }),
     // eingelesen wird in App (bei jedem Wechsel des Ordners und der Ansicht)
     setVorlagenordner: (vorlagenordner) => {
+      // unlesbare Struktur: wie die Struktur gesperrt – gespeichert würde der Vorlagenordner ohnehin nicht
+      if (get().strukturFehler) return;
       set({ vorlagenordner, vorlagenFehler: null, ...(vorlagenordner ? {} : { vorlagen: [], vorlagenName: '' }) });
       eigeneSpeichern();
     },

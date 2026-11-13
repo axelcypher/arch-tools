@@ -2,12 +2,13 @@
 import type { ReactElement } from 'react';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { strToU8 } from 'fflate';
 import { VORGABE_ALLGEMEIN } from '@core/platform/konfig';
 import { App } from './App';
 import { leereStammdaten } from './stammdaten';
 import { useOrdner } from './store';
+import { getEntries } from '@core/platform/log';
 import { istReserviert, ordnerAusTextMitMeldungen, sichererName, STANDARD } from './struktur';
 
 /**
@@ -17,6 +18,19 @@ import { istReserviert, ordnerAusTextMitMeldungen, sichererName, STANDARD } from
  */
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+/** Eingriff in das Schreiben der Sicherungen (sonst unverändert): warten lassen bzw. scheitern lassen */
+const sicherungen_ = vi.hoisted(() => ({ vorher: null as null | (() => Promise<void>) }));
+vi.mock('@core/platform/konfig', async (original) => {
+  const echt = await original<typeof import('@core/platform/konfig')>();
+  return {
+    ...echt,
+    konfigAendern: async (...a: Parameters<typeof echt.konfigAendern>) => {
+      if (a[0] === 'projektordner-sicherungen' && sicherungen_.vorher) await sicherungen_.vorher();
+      return echt.konfigAendern(...a);
+    },
+  };
+});
 
 const echtesKonfigLaden = useOrdner.getState().konfigLaden;
 const SCHLUESSEL = 'arch-tools:konfig:projektordner';
@@ -34,6 +48,7 @@ function render(element: ReactElement = createElement(App)): HTMLElement {
   return host;
 }
 beforeEach(() => {
+  sicherungen_.vorher = null;
   localStorage.clear();
   useOrdner.setState({
     stamm: leereStammdaten(),
@@ -819,5 +834,116 @@ describe('Folgerunde: Kleinkram', () => {
     act(() => useOrdner.setState({ struktur: { ...STANDARD, presets: [doppelt[0]] } }));
     expect(host.querySelector('.po-rueckgaengig')).toBeNull();
     expect(useOrdner.getState().struktur.presets[0].eintraege.map((e) => e.quelle)).toEqual(['Erstes.txt']);
+  });
+});
+
+describe('Nachbesserung: Konflikt lösen ohne Rennen', () => {
+  const sicherungenListe = () => JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen') ?? '{"sicherungen":[]}').sicherungen as unknown[];
+  /** eigene Änderung, während ein anderer Rechner geschrieben hat: Konflikt */
+  const konfliktHerstellen = async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    localStorage.setItem(SCHLUESSEL, JSON.stringify({ struktur: { ...STANDARD, name: 'Fremd' }, vorlagenordner: '' }));
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Meine' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(useOrdner.getState().konflikt).not.toBeNull();
+  };
+  const tor = () => {
+    let auf!: () => void;
+    const p = new Promise<void>((r) => (auf = r));
+    sicherungen_.vorher = () => p;
+    return auf;
+  };
+
+  it('Doppelklick auf „Meine Fassung trotzdem speichern“: eine Sicherung, Knöpfe gesperrt, solange es läuft', async () => {
+    // erst die App (sie lädt beim Start die Einstellungen), dann der Konflikt
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    const host = render();
+    await warten();
+    await konfliktHerstellen();
+    await warten();
+    const auf = tor();
+    const meine = () => knopf(host.querySelector('.po-konflikt')!, 'Meine Fassung');
+    act(() => meine().click());
+    await warten();
+    expect(meine().disabled).toBe(true);
+    expect(knopf(host.querySelector('.po-konflikt')!, 'Neu laden').disabled).toBe(true);
+    // zweiter Aufruf (wie ein Doppelklick an der Sperre vorbei) tut nichts
+    await act(() => useOrdner.getState().konfliktLoesen('meine'));
+    auf();
+    await warten();
+    await warten();
+    expect(sicherungenListe()).toHaveLength(1);
+    expect(gespeichert().struktur.name).toBe('Meine');
+    expect(host.querySelector('.po-konflikt')).toBeNull();
+    expect(useOrdner.getState().konfliktLaeuft).toBe(false);
+  });
+
+  it('„Neu laden“ während des Sicherns: die eigene Fassung überschreibt danach nichts; Gegenprobe ohne Dazwischenkommen', async () => {
+    await konfliktHerstellen();
+    const start = Date.now();
+    const auf = tor();
+    let fertig!: Promise<void>;
+    act(() => {
+      fertig = useOrdner.getState().konfliktLoesen('meine');
+    });
+    await act(() => useOrdner.getState().konfliktLoesen('neu-laden'));
+    auf();
+    await act(() => fertig);
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(useOrdner.getState().struktur.name).toBe('Fremd');
+    expect(gespeichert().struktur.name).toBe('Fremd');
+    expect(getEntries().some((e) => e.message.startsWith('Konflikt in projektordner.json: eigene Fassung gespeichert') && e.time.getTime() >= start)).toBe(false);
+    // Gegenprobe: ohne „Neu laden“ wird die eigene Fassung gespeichert und protokolliert
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Meine 2' }));
+    localStorage.setItem(SCHLUESSEL, JSON.stringify({ struktur: { ...STANDARD, name: 'Wieder fremd' }, vorlagenordner: '' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    await act(() => useOrdner.getState().konfliktLoesen('meine'));
+    expect(gespeichert().struktur.name).toBe('Meine 2');
+    expect(getEntries().some((e) => e.message.startsWith('Konflikt in projektordner.json: eigene Fassung gespeichert') && e.time.getTime() >= start)).toBe(true);
+  });
+
+  it('Sicherung scheitert: Datei unverändert, Konflikt bleibt, Meldung erscheint', async () => {
+    // erst die App (sie lädt beim Start die Einstellungen), dann der Konflikt
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    const host = render();
+    await warten();
+    await konfliktHerstellen();
+    await warten();
+    sicherungen_.vorher = async () => {
+      throw new Error('Netzlaufwerk weg');
+    };
+    act(() => knopf(host.querySelector('.po-konflikt')!, 'Meine Fassung').click());
+    await warten();
+    await warten();
+    expect(gespeichert().struktur.name).toBe('Fremd');
+    expect(useOrdner.getState().konflikt).not.toBeNull();
+    expect(host.querySelector('.po-konflikt')).not.toBeNull();
+    const frage = host.querySelector('.modal.rf')!;
+    expect(frage.textContent).toContain('Nicht gespeichert');
+    expect(frage.textContent).toContain('Die Fassung des anderen Rechners ließ sich nicht sichern – nichts wurde gespeichert.');
+    // die Knöpfe sind wieder frei
+    expect(knopf(host.querySelector('.po-konflikt')!, 'Meine Fassung').disabled).toBe(false);
+    act(() => knopf(frage, 'OK').click());
+    await warten();
+  });
+});
+
+describe('Nachbesserung: Vorlagenordner bei unlesbarer Struktur gesperrt', () => {
+  it('VorlagenordnerZeile (in „Vorlagen“, dieselbe im Assistenten): „Wählen …“ gesperrt mit Hinweis, der Store weist ab; Gegenprobe ohne Fehler', async () => {
+    useOrdner.setState({ vorlagenordner: '/v', strukturFehler: 'Die Struktur lässt sich nicht lesen.' });
+    act(() => useOrdner.getState().setVorlagenordner('/anders'));
+    expect(useOrdner.getState().vorlagenordner).toBe('/v');
+    const host = render();
+    act(() => knopf(host, 'Vorlagen').click());
+    const zeile = () => host.querySelector('.po-ort')!.parentElement!;
+    expect(knopf(zeile(), 'Wählen').disabled).toBe(true);
+    expect(host.querySelector('.po-vorlagenordner-gesperrt')?.textContent).toContain('erst wieder ändern, wenn die Bürostruktur lesbar ist');
+    // Gegenprobe
+    act(() => useOrdner.setState({ strukturFehler: null }));
+    expect(knopf(zeile(), 'Wählen').disabled).toBe(false);
+    expect(host.querySelector('.po-vorlagenordner-gesperrt')).toBeNull();
+    act(() => useOrdner.getState().setVorlagenordner('/anders'));
+    expect(useOrdner.getState().vorlagenordner).toBe('/anders');
   });
 });

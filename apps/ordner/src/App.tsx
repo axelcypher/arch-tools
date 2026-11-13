@@ -31,6 +31,7 @@ export function App() {
   const vorlagenordner = useOrdner((s) => s.vorlagenordner);
   const konflikt = useOrdner((s) => s.konflikt);
   const strukturFehler = useOrdner((s) => s.strukturFehler);
+  const konfliktLaeuft = useOrdner((s) => s.konfliktLaeuft);
   const [ansicht, setAnsicht] = useState<Ansicht>('projekt');
   // ein Projekt aus dem Prüfmodus im Assistenten ergänzen: neuer Start des Assistenten
   const [start, setStart] = useState<{ ordner: GeladenerOrdner; nr: number } | null>(null);
@@ -132,11 +133,12 @@ export function App() {
       {konflikt && (
         <div className="warning po-konflikt" role="alert">
           Die Struktur wurde inzwischen von einem anderen Rechner geändert – neu laden? Ihre Änderungen sind noch nicht gespeichert.
-          <button className="small" onClick={() => void useOrdner.getState().konfliktLoesen('neu-laden')}>
+          <button className="small" disabled={konfliktLaeuft} onClick={() => void useOrdner.getState().konfliktLoesen('neu-laden')}>
             Neu laden
           </button>
           <button
             className="small"
+            disabled={konfliktLaeuft}
             title="Ihre Fassung speichern – die des anderen Rechners kommt vorher in die Sicherungen (unter „Struktur“)"
             onClick={() =>
               void useOrdner
