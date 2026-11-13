@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
+import { act, createElement, Fragment, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { LogDialog } from './LogDialog';
@@ -79,5 +79,59 @@ describe('core-Dialoge im gemeinsamen Modal', () => {
     act(() => useHilfe.getState().oeffnen());
     act(() => host.querySelector('.modal-backdrop')!.dispatchEvent(new Event('pointerdown', { bubbles: true })));
     expect(useHilfe.getState().offen).toBe(false);
+  });
+
+  it('Fehlerprotokoll: Klick neben den Dialog schließt (pointerdown), „Leeren“ erklärt sich im Tooltip', () => {
+    const zu = vi.fn();
+    const host = render(createElement(LogDialog, { onClose: zu }));
+    const leeren = [...host.querySelectorAll('button')].find((b) => b.textContent === 'Leeren')!;
+    expect(leeren.title).toMatch(/Logdatei bleibt erhalten/);
+    act(() => host.querySelector('.modal-backdrop')!.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+    expect(zu).toHaveBeenCalledTimes(1);
+  });
+
+  it('Stammdaten: Esc tut nichts, solange gespeichert wird', async () => {
+    const abbrechen = vi.fn();
+    let fertig: () => void = () => {};
+    const speichern = () => new Promise<void>((r) => (fertig = r));
+    const meta = { ...leereMeta(), projektnummer: '2026-001', kurzname: 'Test' };
+    const host = render(createElement(StammdatenDialog, { titel: 'Stammdaten', meta, onSpeichern: speichern, onAbbrechen: abbrechen, projektnummerPflicht: false }));
+    const knopf = host.querySelector<HTMLButtonElement>('.dialog-buttons .primary')!;
+    await act(async () => knopf.click());
+    esc();
+    expect(abbrechen).not.toHaveBeenCalled();
+    await act(async () => fertig());
+    esc();
+    expect(abbrechen).toHaveBeenCalledTimes(1);
+  });
+
+  it('verschachtelt: Regeln über den Stammdaten – Esc schließt nur die Regeln, der Fokus kehrt zurück', async () => {
+    const abbrechen = vi.fn();
+    function Aufbau() {
+      const [sd, setSd] = useState(false);
+      return createElement(
+        Fragment,
+        null,
+        createElement('button', { key: 'k', id: 'oeffner', onClick: () => setSd(true) }, 'Stammdaten …'),
+        sd ? createElement(StammdatenDialog, { key: 's', titel: 'Stammdaten', meta: leereMeta(), onSpeichern: vi.fn(), onAbbrechen: () => (abbrechen(), setSd(false)) }) : null,
+        createElement(Nachschlagewerk, { key: 'n', app: 'flaechen' }),
+      );
+    }
+    const host = render(createElement(Aufbau));
+    const oeffner = host.querySelector<HTMLButtonElement>('#oeffner')!;
+    act(() => oeffner.focus());
+    act(() => oeffner.click());
+    await naechsterFrame();
+    act(() => useHilfe.getState().oeffnen());
+    await naechsterFrame();
+    expect(host.querySelectorAll('.modal').length).toBe(2);
+    esc();
+    expect(useHilfe.getState().offen).toBe(false);
+    expect(abbrechen).not.toHaveBeenCalled();
+    expect(host.querySelectorAll('.modal').length).toBe(1);
+    esc();
+    expect(abbrechen).toHaveBeenCalledTimes(1);
+    await naechsterFrame();
+    expect(document.activeElement).toBe(oeffner);
   });
 });

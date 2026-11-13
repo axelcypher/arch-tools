@@ -91,10 +91,12 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
         </p>
       )}
       {hinweis && <p className="muted small-text">{hinweis}</p>}
-      <div className="button-row log-actions">
+      <div className="dialog-buttons log-actions">
         <button onClick={() => void copy()}>Kopieren</button>
         <button onClick={() => void save()}>Speichern …</button>
-        <button onClick={clearLog}>Leeren</button>
+        <button onClick={clearLog} title="Liste leeren – die Logdatei bleibt erhalten">
+          Leeren
+        </button>
         <span className="tb-spacer" />
         <button className="primary" onClick={onClose}>
           Schließen

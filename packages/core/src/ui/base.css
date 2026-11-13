@@ -1512,6 +1512,15 @@ code {
 .log-actions {
   align-items: center;
 }
+/* Flex-Dialoge: der Abstand unter dem Kopf addiert sich zum gap – Titel und Such- bzw. Filterzeile gehören zusammen */
+.modal-log > .modal-kopf,
+.nachschlagewerk > .modal-kopf {
+  margin-bottom: 0;
+}
+.log-search,
+.nw-suche {
+  min-height: var(--ctl-h-s);
+}
 
 /* ---------- Absturzhinweis ---------- */
 
@@ -1706,6 +1715,11 @@ code {
 }
 
 .nw-fuss {
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+.nw-fuss > p {
   margin: 0;
 }
 

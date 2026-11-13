@@ -423,6 +423,7 @@ export function StammdatenDialog({
   const [name, setName] = useState(nameAnfang ?? '');
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
+  const textId = useId();
   const [versucht, setVersucht] = useState(false);
   const offen = projektnummerPflicht ? stammdatenFehlen(meta) : [];
   const speichern = async () => {
@@ -442,8 +443,12 @@ export function StammdatenDialog({
   };
   return (
     // Klick daneben schließt nicht: ein Formular mit Eingaben; Esc bricht ab wie „Abbrechen“ (nicht, solange gespeichert wird)
-    <Modal titel={titel} kopf breit className="sd-dialog" onClose={laeuft ? undefined : onAbbrechen} klickDaneben={false}>
-      {text && <p className="muted small-text">{text}</p>}
+    <Modal titel={titel} kopf breit className="sd-dialog" onClose={laeuft ? undefined : onAbbrechen} klickDaneben={false} beschreibung={text ? textId : undefined}>
+      {text && (
+        <p className="muted small-text" id={textId}>
+          {text}
+        </p>
+      )}
       {nameAnfang !== undefined && (
         <Field label="Bezeichnung des Projekts">
           <TextField value={name} onChange={setName} />

@@ -143,16 +143,21 @@ export function Nachschlagewerk({ app }: { app: RegelApp }) {
   return (
     <Modal titel="Berechnungsregeln" kopf className="nachschlagewerk" onClose={schliessen}>
       <div className="nw-kopf">
-        <input ref={suchfeld} className="nw-suche" type="search" placeholder="Suchen, z. B. Vollgeschoss, Putzabzug, Balkon …" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input
+          ref={suchfeld}
+          className="nw-suche"
+          type="search"
+          aria-label="Berechnungsregeln durchsuchen"
+          placeholder="Suchen, z. B. Vollgeschoss, Putzabzug, Balkon …"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
         {themen.length > 0 && (
           <label className="toggle small-text" title="nur die Regeln, die an dieser Stelle gelten">
             <input type="checkbox" checked={nurKontext} onChange={(e) => setNurKontext(e.target.checked)} />
             nur {kontext ?? 'dieses Thema'}
           </label>
         )}
-        <button className="small" onClick={schliessen}>
-          Schließen
-        </button>
       </div>
       <div className="nw-inhalt">
         <nav className="nw-liste">
@@ -174,9 +179,14 @@ export function Nachschlagewerk({ app }: { app: RegelApp }) {
         </nav>
         <div className="nw-text">{aktiv ? <RegelAnsicht r={aktiv} /> : null}</div>
       </div>
-      <p className="muted small-text nw-fuss">
-        Wörtliche Zitate aus den amtlichen Texten (Stand Oktober 2026); DIN-Normen sinngemäß. Maßgebend ist der jeweilige Originaltext – die Links führen zu den Quellen.
-      </p>
+      <div className="dialog-buttons nw-fuss">
+        <p className="muted small-text">
+          Wörtliche Zitate aus den amtlichen Texten (Stand Oktober 2026); DIN-Normen sinngemäß. Maßgebend ist der jeweilige Originaltext – die Links führen zu den Quellen.
+        </p>
+        <button className="primary" onClick={schliessen}>
+          Schließen
+        </button>
+      </div>
     </Modal>
   );
 }
