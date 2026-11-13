@@ -9,15 +9,21 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   Namen, wofür die App da ist (den bisherigen Namen), am Tab steht das im Tooltip. Beim Wechseln bleibt jede App, wie
   sie war (sie läuft im Hintergrund weiter). Der Tab zeigt das geöffnete Projekt und ● bei ungespeicherten
   Änderungen; Schließen (× oder mittlere Maustaste) fragt dann „Änderungen an ‚…‘ speichern?“ – *Speichern* lässt
-  die App im Tab speichern, *Nicht speichern* verwirft, *Abbrechen* lässt den Tab offen. Beim Beenden fragt der Rahmen
-  so für jeden Tab mit ungespeicherten Änderungen. Welche Tabs offen waren, steht beim nächsten Start wieder da.
-- **Herauslösen:** ⧉ am Tab öffnet die App in einem **eigenen Fenster** (z. B. auf dem zweiten Bildschirm) – mit
-  eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App startet dabei neu:
+  die App im Tab speichern, *Nicht speichern* verwirft, *Abbrechen* lässt den Tab offen. Beim Beenden – über × wie
+  über das System (Alt+F4, Taskleiste) – und vor der Installation eines Updates fragt der Rahmen so für jeden Tab und
+  jedes herausgelöste Fenster mit ungespeicherten Änderungen; *Speichern* lässt dann die App im Fenster speichern.
+  Danach schließt er auch die herausgelösten Fenster. Welche Tabs offen waren, steht beim nächsten Start wieder da;
+  herausgelöste Apps kommen dann als Tab zurück.
+- **Herauslösen** (nur Desktop): ⧉ am Tab öffnet die App in einem **eigenen Fenster** (z. B. auf dem zweiten
+  Bildschirm) – mit eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App
+  startet dabei neu:
   QUADRIO, TERRIO, NUMIO und RECTIO stellen ungespeicherte Eingaben aus ihrem
   Zwischenstand wieder her; PERMIO behält nicht gespeicherte Eingaben als Entwurf und zeigt sie beim erneuten
   Öffnen des Formulars wieder – nur ungespeicherte Bearbeitungen von PDF-, Excel- und Word-Dokumenten in der
-  Dateiansicht gehen verloren. Bei ungespeicherten Änderungen sagt der Rahmen vorher, was mit ihnen geschieht. Jede App ist
-  höchstens einmal offen – ist sie herausgelöst, holt „+“ bzw. die Startseite ihr Fenster nach vorn.
+  Dateiansicht gehen verloren. Bei ungespeicherten Änderungen fragt der Rahmen vor dem Herauslösen und das Fenster vor
+  dem Andocken, was mit ihnen geschieht; bei ATLAS und FABRIO, die sie verlieren würden, mit *Speichern*. Jede App ist
+  höchstens einmal offen – ist sie herausgelöst, holt „+“ bzw. die Startseite ihr Fenster nach vorn. Im Browser gibt
+  es kein Herauslösen (dort fehlte der Weg zurück).
 - **Neues Projekt anlegen** aus jeder App: Der Knopf auf der Projektübersicht der Apps, „+“ → „Neues Projekt
   anlegen …“ und die Startseite öffnen den Tab von ATLAS mit dem Assistenten; nach dem Anlegen führt „In … öffnen“
   zurück zur App, aus der der Auftrag kam (QUADRIO, TERRIO, NUMIO und RECTIO öffnen das
@@ -62,14 +68,23 @@ Konfigurationsordner) und Projektdateien sind dieselben.
 - **Tabs** sind iframes mit `?rahmen=tab&app=<app>`, herausgelöste Fenster eigene Tauri-Fenster (`app-<app>`) mit
   `?rahmen=fenster&app=<app>`. `packages/core/src/platform/rahmen.ts` erkennt das; die gemeinsame Titelleiste blendet
   im Tab Fensterknöpfe, Ziehen und Updates aus und meldet Projektname und ungespeicherte Änderungen per
-  `postMessage` an den Rahmen; im herausgelösten Fenster zeigt sie „Andocken“ (Tauri-Ereignis `arch-tools:andocken`).
+  `postMessage` an den Rahmen; im herausgelösten Fenster zeigt sie „Andocken“ (Tauri-Ereignis `arch-tools:andocken`)
+  und meldet dasselbe per `arch-tools:an-rahmen` (mit `kennung`). Ihr Schließen – auch über das System
+  (`onCloseRequested`) – fragt bei ungespeicherten Änderungen; danach `destroy`, damit die Rückfrage nicht zweimal kommt.
+  Rechte: Hauptfenster `capabilities/default.json`, herausgelöste Fenster `capabilities/fenster.json` (ohne Updates,
+  Neustart und neue Fenster).
+- **Speichern auf Anfrage** (`speichernImTab`, `speichernImFenster`, `speichernAnfragenBeantworten`): Der Rahmen
+  schickt `arch-tools:speichern`, die App bestätigt sofort (`arch-tools:speichert`) und meldet danach das Ergebnis
+  (`arch-tools:gespeichert`). Kommt binnen 3 s keine Bestätigung (App lädt, hängt, ist abgestürzt), gilt „nicht
+  gespeichert“ – die Rückfrage endet, der Tab bleibt offen. Was ein Umzug aus Änderungen macht, steht je App in
+  `BEIM_UMZUG` (`rahmen.ts`), die Rückfrage in `ui/umzug.ts`.
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
   `arch-tools-entzerrung`, `ava:…`). Gemeinsam sind nur das Farbschema und die Nachricht „Speicherort der Einstellungen gewechselt“ (`arch-tools:konfig-ort`) – beides wirkt über das Ereignis `storage` sofort in allen Tabs und Fenstern.
 - **Nachrichten zwischen den Apps** (`rahmen.ts`: `anRahmen`, `vomRahmen`): Tabs schicken per `postMessage`, herausgelöste
   Fenster per Tauri-Ereignis `arch-tools:an-rahmen`; der Rahmen stellt per `postMessage` bzw. `arch-tools:an-app`
   (mit Empfänger `an`) zu. Eine App meldet sich mit `arch-tools:bereit`, sobald sie hört – Nachrichten an Apps, die
-  noch laden, hält der Rahmen bis dahin zurück. Aufträge: `arch-tools:projekt-anlegen` → `arch-tools:assistent-neu`
+  noch laden, hält der Rahmen bis dahin zurück; schließt die App vorher, verfallen sie. Aufträge: `arch-tools:projekt-anlegen` → `arch-tools:assistent-neu`
   (an ATLAS), `arch-tools:zur-app` → `arch-tools:projekt-angelegt` (an die auftraggebende App). Angenommen wird nur
   vom gleichen Ursprung und von bekannten Apps.
 - **Speicherort der Einstellungen** (`packages/core/src/platform/konfig.ts`, Oberfläche `ui/Speicherort.tsx`): Zeiger

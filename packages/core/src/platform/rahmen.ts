@@ -11,11 +11,13 @@
 
 export type RahmenModus = 'tab' | 'fenster' | null;
 
-/** Nachricht eines Tabs an den Rahmen */
+/** Nachricht eines Tabs bzw. herausgelösten Fensters an den Rahmen */
 export interface RahmenStatus {
   typ: 'arch-tools:status';
   /** Name der App (TitleBar) */
   app: string;
+  /** Kennung der App (nur aus herausgelösten Fenstern – beim Tab erkennt der Rahmen sie am Absender) */
+  kennung?: string | null;
   /** Name des geöffneten Projekts */
   name: string;
   dirty: boolean;
@@ -40,61 +42,150 @@ export function rahmenApp(): string | null {
   return new URLSearchParams(window.location.search).get('app');
 }
 
-/** Im Tab: Name und ungespeicherte Änderungen an den Rahmen melden */
+/** Im Tab bzw. herausgelösten Fenster: Name und ungespeicherte Änderungen an den Rahmen melden */
 export function anRahmenMelden(app: string, name: string, dirty: boolean): void {
-  if (rahmenModus() !== 'tab') return;
+  const modus = rahmenModus();
+  if (!modus) return;
   const nachricht: RahmenStatus = { typ: 'arch-tools:status', app, name, dirty };
   try {
-    window.parent.postMessage(nachricht, window.location.origin);
+    if (modus === 'tab') window.parent.postMessage(nachricht, window.location.origin);
+    else if (istTauri()) void import('@tauri-apps/api/event').then(({ emit }) => emit(AN_RAHMEN, { ...nachricht, kennung: rahmenApp() }));
   } catch {
     // ohne Rahmen nichts zu melden
   }
 }
 
-/** Herausgelöstes Fenster: zurück in den Rahmen (der Rahmen öffnet den Tab, dieses Fenster schließt sich) */
+/**
+ * Was beim Herauslösen bzw. Andocken (die App startet dabei neu) aus ungespeicherten Änderungen wird – je Kennung.
+ * `verliert`: sie gehen verloren (dann bietet die Rückfrage „Speichern“ an).
+ */
+export const BEIM_UMZUG: Record<string, { text: string; verliert: boolean }> = {
+  ordner: { text: 'Ungespeicherte Änderungen gehen verloren – bitte vorher speichern.', verliert: true },
+  formulare: {
+    text: 'Nicht gespeicherte Eingaben bleiben als Entwurf erhalten und erscheinen beim erneuten Öffnen des Formulars wieder; ungespeicherte Bearbeitungen in PDF-, Excel- und Word-Dokumenten der Dateiansicht gehen verloren.',
+    verliert: false,
+  },
+  ava: { text: 'Ungespeicherte Änderungen am LV gehen verloren – bitte vorher speichern (alles andere speichert die App sofort).', verliert: true },
+};
+const ZWISCHENSTAND = { text: 'Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt.', verliert: false };
+/** Umzug einer App (Kennung): Text und ob Änderungen verloren gehen */
+export const beimUmzug = (kennung: string | null) => (kennung && BEIM_UMZUG[kennung]) || ZWISCHENSTAND;
+
+/**
+ * Herausgelöstes Fenster: zurück in den Rahmen (der Rahmen öffnet den Tab, dieses Fenster verschwindet). Die Rückfrage
+ * zu ungespeicherten Änderungen kommt vorher (TitleBar) – `destroy` statt `close`, damit sie nicht ein zweites Mal kommt.
+ */
 export async function andocken(): Promise<void> {
   const app = rahmenApp();
   if (!app) return;
   const [{ emit }, { getCurrentWindow }] = await Promise.all([import('@tauri-apps/api/event'), import('@tauri-apps/api/window')]);
   await emit(ANDOCKEN, { app });
-  await getCurrentWindow().close();
+  await getCurrentWindow().destroy();
 }
 
-/* ---------- Speichern auf Anfrage des Rahmens (Rückfrage „Änderungen speichern?“ beim Schließen eines Tabs) ---------- */
+/* ---------- Speichern auf Anfrage des Rahmens (Rückfrage „Änderungen speichern?“ beim Schließen, Beenden, Update) ---------- */
 
 const SPEICHERN = 'arch-tools:speichern';
+/** Antwort sofort beim Empfang: die App hat die Anfrage – danach darf das Speichern (mit Dialogen) dauern */
+const SPEICHERT = 'arch-tools:speichert';
 const GESPEICHERT = 'arch-tools:gespeichert';
+/** so lange wartet der Rahmen auf die Empfangsbestätigung, sonst gilt „nicht gespeichert“ (App lädt, hängt, hört nicht) */
+export const SPEICHERN_ANTWORT_MS = 3000;
 
-/** Rahmen: den Tab speichern lassen; true, wenn gespeichert wurde */
-export function speichernImTab(frame: HTMLIFrameElement): Promise<boolean> {
-  const ziel = frame.contentWindow;
-  if (!ziel) return Promise.resolve(false);
-  const id = Math.random().toString(36).slice(2);
+interface SpeichernAntwort {
+  typ?: string;
+  anfrage?: string;
+  ok?: boolean;
+}
+
+/** gemeinsamer Ablauf: Anfrage senden, auf Empfang (mit Zeitlimit) und Ergebnis warten */
+function speichernAnfragen(senden: (anfrage: string) => void, hoeren: (f: (d: SpeichernAntwort) => void) => () => void): Promise<boolean> {
+  const anfrage = Math.random().toString(36).slice(2);
   return new Promise((fertig) => {
-    const hoeren = (e: MessageEvent) => {
-      const d = e.data as { typ?: string; id?: string; ok?: boolean } | null;
-      if (e.source !== ziel || !d || d.typ !== GESPEICHERT || d.id !== id) return;
-      window.removeEventListener('message', hoeren);
-      fertig(!!d.ok);
+    let ende = () => {};
+    const schluss = (ok: boolean) => {
+      clearTimeout(uhr);
+      ende();
+      fertig(ok);
     };
-    window.addEventListener('message', hoeren);
-    ziel.postMessage({ typ: SPEICHERN, id }, window.location.origin);
+    const uhr = setTimeout(() => schluss(false), SPEICHERN_ANTWORT_MS);
+    ende = hoeren((d) => {
+      if (d.anfrage !== anfrage) return;
+      if (d.typ === SPEICHERT) clearTimeout(uhr);
+      else if (d.typ === GESPEICHERT) schluss(!!d.ok);
+    });
+    senden(anfrage);
   });
 }
 
-/** Tab: Speichern-Anfragen des Rahmens beantworten (ohne `speichern`: „nicht gespeichert“). Liefert die Abmeldung. */
+/** Rahmen: den Tab speichern lassen; true, wenn gespeichert wurde (false auch, wenn die App nicht antwortet) */
+export function speichernImTab(frame: HTMLIFrameElement): Promise<boolean> {
+  const ziel = frame.contentWindow;
+  if (!ziel) return Promise.resolve(false);
+  return speichernAnfragen(
+    (anfrage) => ziel.postMessage({ typ: SPEICHERN, anfrage }, window.location.origin),
+    (f) => {
+      const hoeren = (e: MessageEvent) => {
+        if (e.source === ziel && e.data) f(e.data as SpeichernAntwort);
+      };
+      window.addEventListener('message', hoeren);
+      return () => window.removeEventListener('message', hoeren);
+    },
+  );
+}
+
+/** Rahmen: ein herausgelöstes Fenster (Kennung) speichern lassen; true, wenn gespeichert wurde */
+export async function speichernImFenster(kennung: string): Promise<boolean> {
+  const { emit, listen } = await import('@tauri-apps/api/event');
+  let aus: (() => void) | undefined;
+  let weg = false;
+  return speichernAnfragen(
+    (anfrage) => void emit(AN_APP, { typ: SPEICHERN, anfrage, an: kennung }),
+    (f) => {
+      void listen<SpeichernAntwort & { app?: string }>(AN_RAHMEN, (e) => e.payload?.app === kennung && f(e.payload)).then((u) => (weg ? u() : (aus = u)));
+      return () => {
+        weg = true;
+        aus?.();
+      };
+    },
+  );
+}
+
+/** Tab bzw. Fenster: Speichern-Anfragen des Rahmens beantworten (ohne `speichern`: „nicht gespeichert“). Liefert die Abmeldung. */
 export function speichernAnfragenBeantworten(speichern: (() => Promise<boolean | void>) | undefined): () => void {
-  if (rahmenModus() !== 'tab') return () => {};
-  const hoeren = async (e: MessageEvent) => {
-    const d = e.data as { typ?: string; id?: string } | null;
-    if (e.source !== window.parent || e.origin !== window.location.origin || !d || d.typ !== SPEICHERN) return;
+  const modus = rahmenModus();
+  if (!modus) return () => {};
+  const beantworten = async (anfrage: string | undefined, antworten: (d: SpeichernAntwort) => void) => {
+    antworten({ typ: SPEICHERT, anfrage });
     let ok = false;
     try {
       ok = speichern ? (await speichern()) !== false : false;
     } catch {
       ok = false;
     }
-    window.parent.postMessage({ typ: GESPEICHERT, id: d.id, ok }, window.location.origin);
+    antworten({ typ: GESPEICHERT, anfrage, ok });
+  };
+  if (modus === 'fenster') {
+    if (!istTauri()) return () => {};
+    const app = rahmenApp();
+    let aus: (() => void) | undefined;
+    let lebt = true;
+    void import('@tauri-apps/api/event').then(async ({ emit, listen }) => {
+      const u = await listen<RahmenNachricht & { anfrage?: string }>(AN_APP, (e) => {
+        if (e.payload?.typ === SPEICHERN && e.payload.an === app) void beantworten(e.payload.anfrage, (d) => void emit(AN_RAHMEN, { ...d, app }));
+      });
+      if (lebt) aus = u;
+      else u();
+    });
+    return () => {
+      lebt = false;
+      aus?.();
+    };
+  }
+  const hoeren = (e: MessageEvent) => {
+    const d = e.data as { typ?: string; anfrage?: string } | null;
+    if (e.source !== window.parent || e.origin !== window.location.origin || !d || d.typ !== SPEICHERN) return;
+    void beantworten(d.anfrage, (a) => window.parent.postMessage(a, window.location.origin));
   };
   window.addEventListener('message', hoeren);
   return () => window.removeEventListener('message', hoeren);

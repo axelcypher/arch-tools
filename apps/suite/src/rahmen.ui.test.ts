@@ -64,6 +64,8 @@ describe('Rahmen-App', () => {
     const host = render();
     act(() => karte(host, 'QUADRIO').click());
     const f = host.querySelector('iframe')!;
+    // happy-dom lädt keine iframes: Ersatz für das Fenster des Tabs (Absender der Meldungen)
+    Object.defineProperty(f, 'contentWindow', { value: { postMessage: () => {} }, configurable: true });
     act(() => {
       window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'QUADRIO', name: 'EFH Musterweg', dirty: true }, origin: window.location.origin, source: f.contentWindow }));
     });
@@ -89,17 +91,27 @@ describe('Rahmen-App', () => {
     expect(confirm).not.toHaveBeenCalled();
   });
 
-  it('Herauslösen (Browser: neues Fenster) nimmt den Tab weg; Andocken holt ihn zurück', () => {
+  it('im Browser kein Herauslösen (dort gäbe es kein Andocken); Andocken holt eine App als Tab zurück', () => {
     const host = render();
     act(() => karte(host, 'RECTIO').click());
-    const offen = vi.fn(() => null);
-    window.open = offen as unknown as typeof window.open;
-    act(() => (tab(host, 'RECTIO').querySelector('button[title="In eigenem Fenster öffnen"]') as HTMLButtonElement).click());
-    expect(offen).toHaveBeenCalledWith('apps/entzerrung/index.html?rahmen=fenster&app=entzerrung', 'arch-tools-entzerrung');
-    expect(useRahmen.getState()).toMatchObject({ tabs: [], fenster: ['entzerrung'] });
+    expect(tab(host, 'RECTIO').querySelector('button[title="In eigenem Fenster öffnen"]')).toBeNull();
+    act(() => useRahmen.getState().herausgeloest('entzerrung'));
     expect(karte(host, 'RECTIO').textContent).toContain('läuft in eigenem Fenster');
     act(() => useRahmen.getState().angedockt('entzerrung'));
     expect(useRahmen.getState()).toMatchObject({ tabs: ['entzerrung'], aktiv: 'entzerrung', fenster: [] });
+  });
+
+  it('Zustand für den nächsten Start: herausgelöste Apps kommen als Tab wieder; kaputter Speicher beginnt leer', () => {
+    act(() => useRahmen.getState().oeffnen('grz'));
+    act(() => useRahmen.getState().oeffnen('kosten'));
+    act(() => useRahmen.getState().herausgeloest('grz'));
+    expect(JSON.parse(localStorage.getItem('arch-tools:rahmen')!)).toEqual({ tabs: ['kosten', 'grz'], aktiv: 'kosten' });
+    // Nachbar beim Schließen: rechts, sonst links
+    act(() => useRahmen.setState({ tabs: ['grz', 'kosten', 'ava'], aktiv: 'kosten', fenster: [] }));
+    act(() => useRahmen.getState().schliessen('kosten'));
+    expect(useRahmen.getState().aktiv).toBe('ava');
+    act(() => useRahmen.getState().schliessen('ava'));
+    expect(useRahmen.getState().aktiv).toBe('grz');
   });
 
   it('Neues Projekt anlegen: aus einer App oder vom Rahmen – der Assistent von ATLAS, danach zurück mit dem neuen Projekt', () => {
