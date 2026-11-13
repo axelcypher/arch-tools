@@ -1,5 +1,6 @@
 import type { DateiArt, Project } from '../model';
 import { addDatei } from '../model';
+import { unzipSync } from 'fflate';
 import { base64ToBytes, bytesToBase64 } from '../platform/files';
 
 /**
@@ -79,4 +80,21 @@ export function vorlagenSpeicher(art: VorlagenSpeicher['art'], key: string): Vor
     setzen: (p, name, daten) => addDatei(p, name, art, daten).project,
     entfernen: (p) => (p.dateien?.some((d) => d.art === art) ? { ...p, dateien: p.dateien.filter((d) => d.art !== art) } : p),
   };
+}
+
+/**
+ * Prüft eine gewählte Vorlage, bevor sie übernommen wird: `fehler` – keine gültige Excel-Datei (.xlsx ist ein
+ * ZIP-Archiv mit xl/workbook.xml); `hinweis` – gültig, aber ohne Platzhalter ({{…}}), der Export wäre nur eine Kopie.
+ */
+export function vorlagePruefen(daten: Uint8Array): { fehler?: string; hinweis?: string } {
+  let dateien: Record<string, Uint8Array>;
+  try {
+    dateien = unzipSync(daten, { filter: (f) => f.name === 'xl/workbook.xml' || f.name === 'xl/sharedStrings.xml' || /^xl\/worksheets\/[^/]+\.xml$/.test(f.name) });
+  } catch {
+    return { fehler: 'Die Datei ist keine gültige Excel-Datei (.xlsx) – sie lässt sich nicht öffnen.' };
+  }
+  if (!dateien['xl/workbook.xml']) return { fehler: 'Die Datei ist keine gültige Excel-Datei (.xlsx) – es fehlt die Arbeitsmappe.' };
+  const text = new TextDecoder();
+  const mitPlatzhalter = Object.entries(dateien).some(([name, d]) => name !== 'xl/workbook.xml' && text.decode(d).includes('{{'));
+  return mitPlatzhalter ? {} : { hinweis: 'In der Vorlage wurden keine Platzhalter ({{…}}) gefunden – der Export enthielte nur die Vorlage selbst. „Platzhalter anzeigen“ listet, was möglich ist.' };
 }

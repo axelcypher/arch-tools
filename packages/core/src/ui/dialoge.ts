@@ -1,6 +1,9 @@
 /**
- * Einheitliches Verhalten aller modalen Dialoge (Elemente mit Klasse „modal“), einmal je App eingerichtet:
- *  - role="dialog" und aria-modal="true", falls nicht gesetzt
+ * Einheitliches Verhalten aller modalen Dialoge (Elemente mit Klasse „modal“ und die Druckvorschau `.report` in
+ * `.report-backdrop`), einmal je App eingerichtet:
+ *  - role="dialog" und aria-modal="true", falls nicht gesetzt; ohne Namen benennt die erste Überschrift den Dialog
+ *  - Erstfokus: `autofocus`, sonst das erste Textfeld (nur Dialoge, nicht die Druckvorschau), sonst der Hauptknopf
+ *    (`.primary`), sonst das gewählte Optionsfeld, sonst das erste fokussierbare Element – nie „Abbrechen“
  *  - Fokus beim Öffnen in den Dialog (sofern er nicht schon darin liegt), beim Schließen zurück an die
  *    Stelle davor (z. B. der Knopf, der ihn geöffnet hat)
  *  - Tab und Umschalt+Tab bleiben im obersten Dialog
@@ -10,23 +13,44 @@
 
 const FOKUSSIERBAR = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
 
+/** Textfelder, in die man beim Öffnen gleich schreiben will (keine Kästchen, Auswahllisten, Regler) */
+const KEIN_TEXT = ['checkbox', 'radio', 'range', 'file', 'color', 'hidden', 'submit', 'button', 'reset', 'image'];
+const TEXTFELD = `input${KEIN_TEXT.map((t) => `:not([type='${t}'])`).join('')}:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])`;
+
 let eingerichtet = false;
 const vorher = new WeakMap<Element, HTMLElement | null>();
 
+const DIALOG = '.modal, .report-backdrop > .report';
+const istDialog = (el: HTMLElement) => el.classList.contains('modal') || (el.classList.contains('report') && !!el.parentElement?.classList.contains('report-backdrop'));
+let ueberschriftNr = 0;
+
 function obersterDialog(): HTMLElement | null {
-  const alle = document.querySelectorAll<HTMLElement>('.modal');
+  const alle = document.querySelectorAll<HTMLElement>(DIALOG);
   return alle.length ? alle[alle.length - 1] : null;
 }
 
 function geoeffnet(d: HTMLElement) {
   if (!d.hasAttribute('role')) d.setAttribute('role', 'dialog');
   if (!d.hasAttribute('aria-modal')) d.setAttribute('aria-modal', 'true');
+  if (!d.hasAttribute('aria-label') && !d.hasAttribute('aria-labelledby')) {
+    const h = d.querySelector<HTMLElement>('h1, h2, h3');
+    if (h) {
+      if (!h.id) h.id = `dialog-titel-${++ueberschriftNr}`;
+      d.setAttribute('aria-labelledby', h.id);
+    }
+  }
   const aktiv = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
   vorher.set(d, aktiv && !d.contains(aktiv) ? aktiv : null);
   // nach dem Rendern: Dialoge, die selbst fokussieren (z. B. ein Suchfeld), haben Vorrang
   requestAnimationFrame(() => {
     if (!d.isConnected || d.contains(document.activeElement)) return;
-    (d.querySelector<HTMLElement>('[autofocus]') ?? d.querySelector<HTMLElement>(FOKUSSIERBAR))?.focus();
+    (
+      d.querySelector<HTMLElement>('[autofocus]') ??
+      (d.classList.contains('modal') ? d.querySelector<HTMLElement>(TEXTFELD) : null) ??
+      d.querySelector<HTMLElement>('button.primary:not([disabled])') ??
+      d.querySelector<HTMLElement>('input[type="radio"]:checked:not([disabled])') ??
+      d.querySelector<HTMLElement>(FOKUSSIERBAR)
+    )?.focus();
   });
 }
 
@@ -40,8 +64,8 @@ export function dialogVerhaltenEinrichten(): void {
   eingerichtet = true;
   const pruefen = (n: Node, fn: (d: HTMLElement) => void) => {
     if (!(n instanceof HTMLElement)) return;
-    if (n.classList.contains('modal')) fn(n);
-    n.querySelectorAll<HTMLElement>('.modal').forEach(fn);
+    if (istDialog(n)) fn(n);
+    n.querySelectorAll<HTMLElement>(DIALOG).forEach(fn);
   };
   new MutationObserver((liste) => {
     for (const m of liste) {
