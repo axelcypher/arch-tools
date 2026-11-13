@@ -14,7 +14,7 @@ import { useEscSchliessen } from '@core/ui/Dialog';
 import { datumText, DruckKopf } from '@core/ui/DruckKopf';
 import { beschriftungsPunkt, massstabLaenge, PT } from '../beschriftung';
 import type { Rechenweg } from '../rechenweg';
-import { rechenweg as rechenwegVon, teilName } from '../rechenweg';
+import { flaechenNummern, rechenweg as rechenwegVon, teilName } from '../rechenweg';
 import { teilFormel } from '@core/flaechenZerlegung';
 
 /** Druckbarer Nachweis des Maßes der baulichen Nutzung (GRZ, GFZ, Vollgeschosse) – über den Druckdialog auch als PDF. */
@@ -34,10 +34,10 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
   const m = project.massNutzung ?? {};
   const G = n.grundstueck.flaeche;
   const eigene = n.lageplan.filter((l) => !l.nachbar);
-  const nr = new Map(eigene.map((l, i) => [l.id, i + 1]));
+  const nr = useMemo(() => flaechenNummern(n), [n]);
   const vor1990 = n.recht.baunvo !== '1990';
   // Aufenthaltsräume in Nicht-Vollgeschossen: vor 1990, 1990 nur bei Festsetzung (§ 20 Abs. 3 S. 2)
-  const mitRaeumen = vor1990 || !!m.aufenthaltNichtVollgeschoss;
+  const mitRaeumen = n.aufenthaltZaehlt;
   const aufenthalt = mitRaeumen ? aufenthaltsraeume(project, n) : [];
   const hinweise = sachlicheHinweise(n);
   const grLabel = vor1990 ? 'GR' : 'GR II';

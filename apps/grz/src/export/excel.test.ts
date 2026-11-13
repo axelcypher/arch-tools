@@ -151,4 +151,29 @@ describe('GRZ-Excel', () => {
     const back = readProjectFile(writeArchive(p, { app: 'Test' }));
     expect(back.dateien?.map((d) => `${d.art}:${d.name}`).sort()).toEqual(['vorlage-grz:GRZ neu.xlsx', 'vorlage:Flächen.xlsx']);
   });
+
+  it('1990 mit Festsetzung nach § 20 Abs. 3 S. 2: Aufenthaltsräume im Excel wie im Nachweis (Gegenprobe ohne Festsetzung)', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, planDatum: '2020-05-01', aufenthaltNichtVollgeschoss: true };
+    const ctx = buildGrzContext(p, new Date(2026, 8, 30));
+    expect(massNachweis(p).aufenthaltZaehlt).toBe(true);
+    expect(ctx.scalars['aufenthalt.titel']).toContain('Aufenthaltsräume');
+    expect(ctx.collections.raum.filter((r) => ctx.filters!.gf(r)).map((r) => r.name)).toEqual(['Zimmer I']);
+    p.massNutzung = { ...p.massNutzung, aufenthaltNichtVollgeschoss: undefined };
+    const ohne = buildGrzContext(p, new Date(2026, 8, 30));
+    expect(ohne.scalars['aufenthalt.titel']).toBe('');
+    expect(ohne.collections.raum.filter((r) => ohne.filters!.gf(r))).toEqual([]);
+  });
+
+  it('lageplan.nr passt zu teil.flaeche_nr: Nachbarflächen ohne Nummer', () => {
+    const p = projekt();
+    p.lageplan!.flaechen.unshift({ ...createLageplanFlaeche(rectPoints({ x: 30, y: 0 }, { x: 35, y: 5 }), 'Nachbar'), nachbar: true });
+    const ctx = buildGrzContext(p, new Date(2026, 8, 30));
+    expect(ctx.collections.lageplan.map((l) => [l.name, l.nr])).toEqual([
+      ['Nachbar', ''],
+      ['Zufahrt', 1],
+      ['Terrasse', 2],
+    ]);
+    expect(new Set(ctx.collections.teil.map((t) => t.flaeche_nr))).toEqual(new Set(['H', '1', '2']));
+  });
 });

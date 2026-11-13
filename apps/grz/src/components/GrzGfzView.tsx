@@ -46,7 +46,7 @@ export function GrzGfzView() {
   const nachweisStand = useDeferredValue(project);
   const n = useMemo(() => massNachweis(nachweisStand), [nachweisStand]);
   // Nummern wie im Druck (eigene Flächen in Listenfolge) und Rechenweg
-  const rw = useMemo(() => rechenweg(n, new Map(n.lageplan.filter((l) => !l.nachbar).map((l, i) => [l.id, i + 1]))), [n]);
+  const rw = useMemo(() => rechenweg(n), [n]);
   // Varianten (Lageplan-Flächen „nur in Variante B“): Kennzahlen nebeneinander, nur wenn es mehr als eine gibt
   const variante = aktiveVariante(nachweisStand);
   const vergleich = useMemo(() => (varianten(nachweisStand).length > 1 ? variantenVergleich(nachweisStand) : []), [nachweisStand]);

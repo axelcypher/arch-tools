@@ -488,6 +488,8 @@ export interface Nachweis {
   garagenFrei?: number;
   gf: number;
   gfAufenthalt: number;
+  /** Aufenthaltsräume in Nicht-Vollgeschossen zählen zur Geschossfläche (vor 1990, 1990 nur bei Festsetzung nach § 20 Abs. 3 S. 2) */
+  aufenthaltZaehlt: boolean;
   gfz: Kennzahl;
   vollgeschosse: { anzahl: number; zulaessig?: number; mindestens?: number; zwingend?: boolean; status: Status };
   geschosse: VollgeschossPruefung[];
@@ -526,7 +528,7 @@ export function variantenVergleich(project: Project): { variante: string; n: Nac
 
 function kennzahl(flaeche: number, g: number | undefined, zul: number | undefined, mitOffenen?: number): Kennzahl {
   const offen = mitOffenen !== undefined && Math.abs(mitOffenen - flaeche) > 1e-9 ? mitOffenen : undefined;
-  if (!g) return { flaeche, flaecheMitOffenen: offen, zulaessig: zul, status: 'fehlt' };
+  if (g === undefined || !(g > 0)) return { flaeche, flaecheMitOffenen: offen, zulaessig: zul, status: 'fehlt' };
   const wert = flaeche / g;
   const mit = offen !== undefined ? offen / g : undefined;
   let status: Status = 'offen';
@@ -800,11 +802,15 @@ export function massNachweis(project: Project): Nachweis {
   }
 
   // Grundstück: Projektdaten (Kataster) vor gezeichneter Grenze vor den erfassten Flächen
-  const ausLageplan = eigene.length ? areaMP(unionMP(unionAll(eigene.map((f) => f.points)), alleGeschosse)) : undefined;
+  const ausLageplanRoh = eigene.length ? areaMP(unionMP(unionAll(eigene.map((f) => f.points)), alleGeschosse)) : 0;
+  const ausLageplan = ausLageplanRoh > 0 ? ausLageplanRoh : undefined;
   const grenzen = (project.lageplan?.grenze ?? []).filter((g) => g.points.length >= 3);
   const grenzeMP = unionAll(grenzen.map((g) => g.points));
-  const ausGrenze = grenzen.length ? areaMP(grenzeMP) : undefined;
-  const gProjekt = project.meta.grundstueck.flaeche;
+  const ausGrenzeRoh = grenzen.length ? areaMP(grenzeMP) : undefined;
+  const ausGrenze = ausGrenzeRoh !== undefined && ausGrenzeRoh > 0 ? ausGrenzeRoh : undefined;
+  // 0 oder negativ (z. B. aus einer fremden Datei) gilt wie „nicht angegeben“
+  const gEingabe = project.meta.grundstueck.flaeche;
+  const gProjekt = gEingabe !== undefined && gEingabe > 0 ? gEingabe : undefined;
   const G = gProjekt ?? ausGrenze ?? ausLageplan;
   const grundstueck: Nachweis['grundstueck'] = {
     flaeche: G,
@@ -853,7 +859,8 @@ export function massNachweis(project: Project): Nachweis {
     let flaeche = hauptanlage + summe((a) => a === 'hauptanlage');
     if (re.baunvo === '1968') {
       const garagen = summe((a) => a === 'garage01');
-      garagenFrei = G ? Math.min(garagen, 0.1 * G) : garagen;
+      // ohne Grundstücksfläche keine anrechnungsfreie Garagenfläche (die GRZ fehlt dann ohnehin)
+      garagenFrei = G !== undefined ? Math.min(garagen, 0.1 * G) : 0;
       flaeche += garagen - garagenFrei;
       garagenAnteil = garagen > 1e-9 ? (garagen - garagenFrei) / garagen : 0;
     }
@@ -976,6 +983,7 @@ export function massNachweis(project: Project): Nachweis {
     garagenFrei,
     gf,
     gfAufenthalt,
+    aufenthaltZaehlt: vorher1990,
     gfz,
     vollgeschosse,
     geschosse: pruefungen,

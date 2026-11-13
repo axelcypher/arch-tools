@@ -9,7 +9,7 @@ import { baunvoLabel, bauoLabel, istAufenthaltsraum, massNachweis, sachlicheHinw
 import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, GRUNDSTUECK_QUELLE, HAFTUNG, kennzahlStellenVon, roemisch, STATUS } from '../texte';
 import { bebauungsplanText, GEBIETSARTEN } from '@core/model';
 import { datumText } from '@core/ui/DruckKopf';
-import { rechenweg, teilName } from '../rechenweg';
+import { flaechenNummern, rechenweg, teilName } from '../rechenweg';
 
 /**
  * Datengrundlage für Excel-Export und Vorlagen des GRZ-Nachweises (Syntax siehe docs/excel-vorlagen.md).
@@ -107,7 +107,7 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     'gelaende.quelle': GELAENDE_QUELLE[n.gelaende.quelle],
     'grz.bezeichnung': n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ',
     'grz.ii.bezeichnung': n.grz2 ? 'GRZ II (§ 19 Abs. 4)' : '',
-    'aufenthalt.titel': n.recht.baunvo === '1990' ? '' : 'Aufenthaltsräume in Nicht-Vollgeschossen',
+    'aufenthalt.titel': n.aufenthaltZaehlt ? 'Aufenthaltsräume in Nicht-Vollgeschossen' : '',
     hauptanlage: r4(n.hauptanlage),
     ...kennzahlWerte('grz', n.grz, n.recht.baunvo === '1990' ? 'GR I' : 'GR'),
     ...kennzahlWerte('grz.ii', n.grz2, 'GR II'),
@@ -162,12 +162,14 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     };
   });
 
-  const lageplan: Row[] = n.lageplan.map((l, i) => {
+  // dieselben Nummern wie im Rechenweg (teil.flaeche_nr) und im Druck; Nachbarflächen ohne Nummer
+  const nummern = flaechenNummern(n);
+  const lageplan: Row[] = n.lageplan.map((l) => {
     const f = project.lageplan?.flaechen.find((x) => x.id === l.id);
     return {
       _anrechnung: l.anrechnung,
       _versiegelung: l.versiegelung,
-      nr: i + 1,
+      nr: nummern.get(l.id) ?? '',
       name: l.name,
       nutzung: nutzungLabel(l.nutzung),
       versiegelung: versiegelungInfo(l.versiegelung).label,
@@ -184,7 +186,6 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
   });
 
   const vg = new Map(n.geschosse.map((g) => [g.storeyId, g.vollgeschoss]));
-  const vor1990 = n.recht.baunvo !== '1990';
   let nr = 0;
   const raum: Row[] = project.storeys
     .filter((s) => vg.has(s.id))
@@ -198,8 +199,8 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
           return {
             _geschossId: s.id,
             _aufenthalt: a,
-            // vor 1990 zählen Aufenthaltsräume in Nicht-Vollgeschossen zur Geschossfläche
-            _gf: vor1990 && !vg.get(s.id) ? 'ja' : '',
+            // vor 1990 (1990 bei Festsetzung nach § 20 Abs. 3 S. 2) zählen Aufenthaltsräume in Nicht-Vollgeschossen zur Geschossfläche
+            _gf: n.aufenthaltZaehlt && !vg.get(s.id) ? 'ja' : '',
             nr: ++nr,
             geschoss: s.name,
             vollgeschoss: vg.get(s.id) ? 'ja' : '',
@@ -216,7 +217,7 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
 
   // nur sachliche Hinweise (Bedienhinweise bleiben in der App)
   // Rechenweg: Formelzeilen und Teilflächen (Länge × Breite × Faktor; ohne Zerlegung die Fläche aus Koordinaten × 1 × 1)
-  const rw = rechenweg(n, new Map(n.lageplan.filter((l) => !l.nachbar).map((l, i) => [l.id, i + 1])));
+  const rw = rechenweg(n, nummern);
   const formel: Row[] = rw.formeln.map((text, i) => ({ nr: i + 1, text }));
   const teil: Row[] = rw.flaechen.flatMap((f) =>
     f.zerlegung.zerlegt
@@ -270,7 +271,7 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['lageplan[zaehlt] / [grz2] / [pruefen]', 'Filter nach Anrechnung auf die Grundfläche'],
       ['lageplan[voll] / [teil] / [gruen]', 'Filter nach Versiegelung'],
       ['raum[aufenthalt]', 'Filter: Aufenthalts- und Treppenräume'],
-      ['raum[gf]', 'Filter: Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume vor 1990 zur Geschossfläche zählen'],
+      ['raum[gf]', 'Filter: Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume zur Geschossfläche zählen (vor 1990, 1990 nur bei Festsetzung nach § 20 Abs. 3 S. 2)'],
       ['[feld=wert] [feld>wert] [!filter]', 'weitere Filter, mehrere mit Komma: raum[aufenthalt,vollgeschoss!=ja]; Vergleiche = != > < >= <= (leere Felder = 0)'],
       ['…|einmal', 'Wert nur in der ersten Zeile der Wiederholung'],
     ],
@@ -294,7 +295,7 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
     group: 'Kennzahlen',
     keys: [
       ['grz.bezeichnung, grz.ii.bezeichnung', '„GRZ“ (vor 1990) bzw. „GRZ I“; „GRZ II (§ 19 Abs. 4)“ oder leer'],
-      ['aufenthalt.titel', '„Aufenthaltsräume in Nicht-Vollgeschossen“ vor 1990, sonst leer'],
+      ['aufenthalt.titel', '„Aufenthaltsräume in Nicht-Vollgeschossen“, wenn sie zur Geschossfläche zählen (vor 1990, 1990 bei Festsetzung nach § 20 Abs. 3 S. 2), sonst leer'],
       ['grz, grz.zulaessig, grz.flaeche, grz.reserve, grz.status', 'GRZ (auf die Stellen der App gerundet), zulässig, angerechnete Grundfläche [m²], Reserve [m²], Ergebnis'],
       ['grz.stellen', 'Nachkommastellen der Kennzahl (mindestens 3, nahe am Grenzwert mehr)'],
       ['grz.zulaessig_flaeche, grz.vergleich', 'zulässige Grundfläche [m²]; Begründung in m², z. B. „GR 135,00 m² < 245,00 m² zulässig“'],
