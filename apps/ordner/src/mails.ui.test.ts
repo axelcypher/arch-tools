@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
+import { act, createElement, Fragment } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { testMsg } from '@core/__fixtures__/msg';
 import { createProject } from '@core/model';
+import { RueckfrageHost } from '@core/ui/Rueckfrage';
 import { VORGABE_ALLGEMEIN } from '@core/platform/konfig';
 import { projektdateiAnlegen } from '@core/platform/projektordner';
 import { MailView } from './components/MailView';
@@ -16,10 +17,12 @@ import { STANDARD } from './struktur';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let root: ReturnType<typeof createRoot> | null = null;
+// einzelne Tests ersetzen setEigene – vor jedem Test wieder die echte Funktion
+const echtesSetEigene = useMails.getState().setEigene;
 beforeEach(() => {
   localStorage.clear();
   useOrdner.setState({ stamm: leereStammdaten(), struktur: STANDARD, allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['/p'] }, konfigLaden: async () => {} });
-  useMails.setState({ eigene: [], geladen: true, fehler: null });
+  useMails.setState({ eigene: [], geladen: true, fehler: null, setEigene: echtesSetEigene });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -213,5 +216,260 @@ describe('Mails prüfen und benennen', () => {
     expect(host.querySelector('.po-neue')).toBeNull();
     expect(host.textContent).toContain('abgelegt (aus Outlook: AW Türen Flurseite.msg)');
     expect(host.textContent).toContain('4 Mails');
+  });
+});
+
+/** Dateisystem, dessen Lesen einzelner Dateien wartet, bis der Test es freigibt */
+class GebremstesDateisystem extends SpeicherDateisystem {
+  readonly sperren = new Map<string, Promise<void>>();
+  override async lies(root: string, pfad: string) {
+    const sperre = [...this.sperren].find(([teil]) => `${root}/${pfad}`.includes(teil))?.[1];
+    if (sperre) await sperre;
+    return super.lies(root, pfad);
+  }
+}
+const schranke = () => {
+  let auf = () => {};
+  const p = new Promise<void>((r) => (auf = r));
+  return { p, auf };
+};
+function zeigen(fs: SpeicherDateisystem, start?: string) {
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  act(() => {
+    root = createRoot(host);
+    root.render(createElement(Fragment, null, createElement(MailView, { fs, start: start ?? '/p/BSP Sanierung' }), createElement(RueckfrageHost)));
+  });
+  return host;
+}
+const fallenLassen = async (host: Element, dateien: File[]) => {
+  const fallen = new Event('drop', { bubbles: true, cancelable: true });
+  Object.defineProperty(fallen, 'dataTransfer', { value: { dropEffect: 'copy', files: dateien } });
+  await act(async () => void host.querySelector('.po-ablage')!.dispatchEvent(fallen));
+  await warten();
+};
+const raumaufteilung = (gesendet?: Date) =>
+  testMsg({
+    betreff: 'AW: Raumaufteilung',
+    vonName: 'Muster, Max',
+    vonMail: 'max.muster@statik-muster.example',
+    an: [{ name: 'Tom Planer', mail: 't.planer@architekten-beispiel.example' }],
+    ...(gesendet ? { gesendet, empfangen: gesendet } : {}),
+  });
+
+describe('Mails ablegen: Doppelte und Lesefehler', () => {
+  it('erkennt eine schon korrekt abgelegte Mail – ohne „Auch korrekt benannte prüfen“', async () => {
+    const fs = await projekt();
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs);
+    await warten();
+    // die korrekt benannte Mail ist noch nicht gelesen
+    expect(host.textContent).not.toContain('Auch korrekt benannte prüfen …');
+    await fallenLassen(host, [new File([raumaufteilung(mittag('2026-10-20'))], 'AW Raumaufteilung.msg')]);
+    expect(host.querySelector('.po-mail.neu')!.textContent).toContain('Diese Mail liegt schon im Projekt: BSP von Muster 261020 Raumaufteilung.msg');
+  });
+
+  it('Gegenprobe: Entwürfe ohne Versandzeit sind nicht doppelt; dieselbe Mail zweimal im selben Drop schon', async () => {
+    const fs = await projekt();
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs);
+    await warten();
+    await fallenLassen(host, [new File([raumaufteilung()], 'Entwurf 1.msg'), new File([raumaufteilung()], 'Entwurf 2.msg')]);
+    expect(host.textContent).not.toContain('liegt schon im Projekt');
+    expect(host.textContent).not.toContain('doppelt');
+    // zwei Mails verwerfen: erst nach Rückfrage – Abbrechen lässt beide stehen
+    act(() => knopf(host, 'Verwerfen').click());
+    await warten();
+    const dialog = () => document.body.querySelector('.modal');
+    expect(dialog()!.textContent).toContain('2 Mails verwerfen?');
+    act(() => knopf(dialog()!, 'Abbrechen').click());
+    await warten();
+    expect(host.textContent).toContain('2 Mails zum Ablegen');
+    act(() => knopf(host, 'Verwerfen').click());
+    await warten();
+    act(() => knopf(dialog()!, 'Verwerfen').click());
+    await warten();
+    expect(host.querySelector('.po-neue')).toBeNull();
+    const mail = testMsg({ betreff: 'Fenster', vonName: 'Muster, Max', vonMail: 'max.muster@statik-muster.example', an: [], gesendet: mittag('2026-11-12'), empfangen: mittag('2026-11-12') });
+    await fallenLassen(host, [new File([mail], 'Fenster.msg'), new File([mail], 'Fenster (Kopie).msg')]);
+    const zeilen = [...host.querySelectorAll('.po-mail.neu')];
+    expect(zeilen[0].textContent).not.toContain('doppelt');
+    expect(zeilen[1].textContent).toContain('Diese Mail ist in dieser Ablage doppelt – schon dabei als Fenster.msg');
+  });
+
+  it('nicht lesbare Mail: Klartext, keine Ordnerwahl, einzeln verwerfbar', async () => {
+    const fs = await projekt();
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs);
+    await warten();
+    await fallenLassen(host, [new File([new Uint8Array([1, 2, 3])], 'Kaputt.msg')]);
+    const zeile = host.querySelector('.po-mail.neu')!;
+    expect(zeile.querySelector('.warning')!.textContent).toBe('Die Datei ist keine lesbare Outlook-Mail.');
+    expect(zeile.querySelector('.warning')!.getAttribute('title')).toBeTruthy();
+    expect(zeile.querySelector('select')).toBeNull();
+    act(() => (zeile.querySelector('.po-mail-kopf button[aria-label="Kaputt.msg verwerfen"]') as HTMLButtonElement).click());
+    expect(host.querySelector('.po-neue')).toBeNull();
+  });
+});
+
+describe('Mails: Bedienung per Tastatur', () => {
+  it('Projektliste aus Knöpfen mit aria-current, Pfeiltasten, Enter aus der Suche; „wählen …“ ist ein Knopf', async () => {
+    const fs = await projekt();
+    await fs.ordnerAnlegen('/p', 'BSP Zweites/Post');
+    const host = zeigen(fs, null as unknown as string);
+    await warten();
+    // im Browser „einlesen“ – „Anderen Ordner wählen …“ erst mit einem Projekt (Desktop)
+    expect(knopf(host, 'Anderen Ordner')).toBeUndefined();
+    const knoepfe = () => [...host.querySelectorAll<HTMLButtonElement>('.po-projektliste button.po-projekt-knopf')];
+    expect(knoepfe().map((b) => b.textContent)).toEqual(['BSP Sanierung', 'BSP Zweites']);
+    const suche = host.querySelector('input.po-suche') as HTMLInputElement;
+    act(() => suche.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+    expect(document.activeElement).toBe(knoepfe()[0]);
+    act(() => knoepfe()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+    expect(document.activeElement).toBe(knoepfe()[1]);
+    act(() => knoepfe()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true })));
+    act(() => knoepfe()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true })));
+    expect(document.activeElement).toBe(suche);
+    eintippen(suche, 'Sanierung');
+    await act(async () => void suche.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    await warten();
+    expect(host.querySelector('.po-mails-kopf h3')!.textContent).toBe('BSP Sanierung');
+    expect(knoepfe()[0].getAttribute('aria-current')).toBe('true');
+    // Datei-Auswahl: ein echter Knopf öffnet das versteckte Dateifeld
+    const feld = host.querySelector('.po-ablage input[type="file"]') as HTMLInputElement;
+    let geoeffnet = 0;
+    feld.click = () => void geoeffnet++;
+    act(() => knopf(host.querySelector('.po-ablage')!, 'wählen …').click());
+    expect(geoeffnet).toBe(1);
+    // der Hinweis auf „Eigene Domains“ steht einmal über der Liste, nicht in jeder Zeile
+    expect(host.querySelectorAll('.po-mails .po-hinweis').length).toBe(1);
+    expect(host.querySelector('.po-mails .po-hinweis')!.textContent).toContain('links unter „Eigene Domains“ eintragen');
+    expect(host.textContent).not.toContain('in den Einstellungen festlegen');
+  });
+});
+
+describe('Mails: Knöpfe der Auswahl', () => {
+  it('„Alle abweichenden wählen“ und „Umbenennen“ nur, wenn es abweichende Mails gibt', async () => {
+    const fs = new SpeicherDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    await projektdateiAnlegen(fs, '/p/BSP Haus', 'BSP.oap', p, 'Test');
+    await fs.dateiAnlegen('/p/BSP Haus', 'BSP von Muster 261020 Raumaufteilung.msg', raumaufteilung(mittag('2026-10-20')));
+    const host = zeigen(fs, '/p/BSP Haus');
+    await warten();
+    expect(host.textContent).toContain('Alle Mails sind nach dem Schema benannt.');
+    expect(knopf(host, 'Alle abweichenden wählen')).toBeUndefined();
+    expect(host.querySelector('.po-mails-auswahl')).toBeNull();
+    // Gegenprobe: mit einer abweichenden Mail sind sie da
+    act(() => root?.unmount());
+    root = null;
+    document.body.innerHTML = '';
+    const host2 = zeigen(await projekt());
+    await warten();
+    expect(knopf(host2, 'Alle abweichenden wählen')).toBeTruthy();
+    expect(host2.querySelector('.po-mails-auswahl button.primary')!.textContent).toContain('1 Mail umbenennen');
+  });
+});
+
+describe('Mails: kein Rennen beim Einlesen', () => {
+  it('Projektwechsel während des Lesens: der alte Lauf schreibt nicht in die Zeilen des neuen Projekts', async () => {
+    const fs = new GebremstesDateisystem();
+    for (const p of ['AAA', 'BBB']) {
+      const projekt = createProject(`Projekt ${p}`);
+      projekt.meta.projektcode = p;
+      await fs.ordnerAnlegen('/p', `${p} Haus/Post`);
+      await projektdateiAnlegen(fs, `/p/${p} Haus`, `${p}.oap`, projekt, 'Test');
+      // gleicher relativer Pfad in beiden Projekten
+      await fs.dateiAnlegen(
+        `/p/${p} Haus`,
+        'Post/falsch benannt.msg',
+        testMsg({ betreff: `Betreff ${p}`, vonName: `Absender ${p}`, vonMail: `x@${p.toLowerCase()}.example`, an: [], gesendet: mittag('2026-11-02') }),
+      );
+    }
+    const s = schranke();
+    fs.sperren.set('/p/AAA Haus/Post', s.p);
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs, '/p/AAA Haus');
+    await warten();
+    expect(host.textContent).toContain('Mails werden gelesen');
+    // zu B wechseln, B liest fertig – dann wird A freigegeben
+    const b = [...host.querySelectorAll<HTMLButtonElement>('button.po-projekt-knopf')].find((x) => x.textContent === 'BBB Haus')!;
+    await act(async () => b.click());
+    await warten();
+    expect(host.querySelector('.po-mail-neu')!.textContent).toContain('BBB von BBB 261102 Betreff BBB.msg');
+    s.auf();
+    await warten();
+    expect(host.querySelector('.po-mails-kopf h3')!.textContent).toBe('BBB Haus');
+    expect(host.querySelector('.po-mail-neu')!.textContent).toContain('BBB von BBB 261102 Betreff BBB.msg');
+    expect(host.textContent).not.toContain('Betreff AAA');
+    expect(host.querySelector('.busy')).toBeNull();
+  });
+
+  it('eigene Domains während des Lesens: inzwischen gelesene Köpfe gehen nicht verloren', async () => {
+    const fs = new GebremstesDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    await projektdateiAnlegen(fs, '/p/BSP Haus', 'BSP.oap', p, 'Test');
+    await fs.dateiAnlegen('/p/BSP Haus', 'Post/eins.msg', testMsg({ betreff: 'Eins', vonName: 'Muster, Max', vonMail: 'max@extern.example', an: [], gesendet: mittag('2026-11-02') }));
+    await fs.dateiAnlegen('/p/BSP Haus', 'Post/zwei.msg', testMsg({ betreff: 'Zwei', vonName: 'Muster, Max', vonMail: 'max@extern.example', an: [], gesendet: mittag('2026-11-03') }));
+    const lesen = schranke();
+    fs.sperren.set('zwei.msg', lesen.p);
+    const speichern = schranke();
+    const echt = useMails.getState().setEigene;
+    useMails.setState({
+      setEigene: async (l: string[]) => {
+        await speichern.p;
+        await echt(l);
+      },
+    });
+    const host = zeigen(fs, '/p/BSP Haus');
+    await warten();
+    // „eins“ ist gelesen, „zwei“ hängt noch – jetzt die Domain eintragen (das Speichern dauert)
+    const domains = host.querySelector('input[aria-label="Eigene Domains"]') as HTMLInputElement;
+    eintippen(domains, 'architekten-beispiel.example');
+    act(() => domains.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+    lesen.auf();
+    await warten();
+    speichern.auf();
+    await warten();
+    const zwei = [...host.querySelectorAll('.po-mail')].find((z) => z.textContent?.includes('zwei.msg'))!;
+    expect(zwei.querySelector('.po-mail-neu')!.textContent).toContain('BSP von Muster 261103 Zwei.msg');
+  });
+
+  it('eigene Domains gespeichert, bevor eine hängende Mail gelesen ist: auch sie bekommt den Vorschlag mit Domain', async () => {
+    const fs = new GebremstesDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    await projektdateiAnlegen(fs, '/p/BSP Haus', 'BSP.oap', p, 'Test');
+    await fs.dateiAnlegen('/p/BSP Haus', 'Post/eins.msg', testMsg({ betreff: 'Eins', vonName: 'Muster, Max', vonMail: 'max@extern.example', an: [], gesendet: mittag('2026-11-02') }));
+    await fs.dateiAnlegen('/p/BSP Haus', 'Post/zwei.msg', testMsg({ betreff: 'Zwei', vonName: 'Muster, Max', vonMail: 'max@extern.example', an: [], gesendet: mittag('2026-11-03') }));
+    const lesen = schranke();
+    fs.sperren.set('zwei.msg', lesen.p);
+    const speichern = schranke();
+    const echt = useMails.getState().setEigene;
+    useMails.setState({
+      setEigene: async (l: string[]) => {
+        await speichern.p;
+        await echt(l);
+      },
+    });
+    const host = zeigen(fs, '/p/BSP Haus');
+    await warten();
+    const neuerName = (datei: string) => [...host.querySelectorAll('.po-mail')].find((z) => z.textContent?.includes(datei))!.querySelector('.po-mail-neu')!.textContent;
+    // Gegenprobe: ohne Domain gilt die Richtung aus dem bisherigen Namen
+    expect(neuerName('eins.msg')).toContain('Richtung aus dem bisherigen Namen');
+    const domains = host.querySelector('input[aria-label="Eigene Domains"]') as HTMLInputElement;
+    eintippen(domains, 'architekten-beispiel.example');
+    act(() => domains.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+    // umgekehrt: erst ist das Speichern fertig, dann erst wird „zwei“ gelesen
+    speichern.auf();
+    await warten();
+    expect(useMails.getState().eigene).toEqual(['architekten-beispiel.example']);
+    expect(neuerName('eins.msg')).toContain('Absender max@extern.example');
+    lesen.auf();
+    await warten();
+    expect(neuerName('zwei.msg')).toContain('Absender max@extern.example');
+    expect(neuerName('zwei.msg')).not.toContain('Richtung aus dem bisherigen Namen');
+    expect(host.querySelector('.busy')).toBeNull();
   });
 });

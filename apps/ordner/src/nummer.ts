@@ -118,11 +118,14 @@ const WERT_SCHLUESSEL: Record<string, string> = {
 /**
  * Platzhalter in Datei- und Ordnernamen ersetzen (alte und neue Namen, siehe {@link PLATZHALTER_PLAN}). `werte` mit den
  * bisherigen Schlüsseln (nummer, kurzname, datum als JJJJ-MM-TT, jahr …) oder den neuen Namen. Ohne Wert bleibt der
- * Platzhalter stehen.
+ * Platzhalter stehen – auch bei leerem Jahr.
  */
 export function nameAus(schema: string, werte: Record<string, string | number>): string {
   const w: Record<string, Wert> = {};
   for (const [k, v] of Object.entries(werte)) w[WERT_SCHLUESSEL[k.toLowerCase()] ?? k] = v;
+  // ein leeres Jahr (Projekt ohne Anlagedatum) ist unbekannt: {JAHR} und {JAHR_KURZ} bleiben stehen statt '' bzw. '00'
+  if (w.JAHR === '') delete w.JAHR;
+  if (w.JAHR_KURZ === '') delete w.JAHR_KURZ;
   if (w.JAHR !== undefined && w.JAHR_KURZ === undefined) w.JAHR_KURZ = String(Number(w.JAHR) % 100).padStart(2, '0');
   return ersetzen(schema, ALLE, w, { ohneWert: 'stehen' });
 }

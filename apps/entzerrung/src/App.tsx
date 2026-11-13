@@ -148,19 +148,21 @@ export function App() {
             </button>
           )}
           <button onClick={() => void fotosHinzufuegen()} title="Fotos hinzufügen (JPEG, PNG, WebP)">
-            + Foto
+            + Foto …
           </button>
           <button onClick={() => setLinksZu((z) => !z)} aria-pressed={!linksZu} title={linksZu ? 'Leiste mit Fotos und Ebenen einblenden' : 'Leiste mit Fotos und Ebenen ausblenden (mehr Platz zum Zeichnen)'}>
             {linksZu ? 'Fotos ▸' : '◂ Fotos'}
           </button>
         </div>
         <div className="tb-group">
-          <button className={!entzerrt ? 'active' : ''} disabled={!foto} onClick={() => ansichtWechseln('foto')} title="Foto mit Referenz und Hilfslinien (Taste E wechselt)" aria-pressed={!entzerrt}>
-            Foto
-          </button>
-          <button className={entzerrt ? 'active' : ''} disabled={!entzerrbar} onClick={() => ansichtWechseln('entzerrt')} title={entzerrbar ? 'Entzerrte Ebene zum Messen (Taste E wechselt)' : 'Erst die Referenz vervollständigen'} aria-pressed={entzerrt}>
-            Entzerrt
-          </button>
+          <div className="segment" role="group" aria-label="Ansicht">
+            <button disabled={!foto} onClick={() => ansichtWechseln('foto')} title="Foto mit Referenz und Hilfslinien (Taste E wechselt)" aria-pressed={!entzerrt}>
+              Foto
+            </button>
+            <button disabled={!entzerrbar} onClick={() => ansichtWechseln('entzerrt')} title={entzerrbar ? 'Entzerrte Ebene zum Messen (Taste E wechselt)' : 'Erst die Referenz vervollständigen'} aria-pressed={entzerrt}>
+              Entzerrt
+            </button>
+          </div>
         </div>
         {foto && (
           <div className="tb-group">

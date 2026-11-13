@@ -21,7 +21,7 @@ const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
   { id: 'mails', label: 'Mails', title: 'Mails (.msg) im Projektordner prüfen und nach dem Schema benennen: Projektcode von|an Name JJMMTT Thema' },
   { id: 'struktur', label: 'Struktur', title: 'Ordnerbaum des Büros zum Klicken – mit Bausteinen für wiederkehrende Unterordner (z. B. Gewerke) – und Namensschemata' },
   { id: 'vorlagen', label: 'Vorlagen', title: 'Vorlagenordner, Dateinamen und Presets: welche Vorlage wohin kommt und wie sie dort heißt' },
-  { id: 'kataster', label: 'Katasterpläne', title: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne – exportiert wird je Projekt (Rechtsklick auf der Startseite)' },
+  { id: 'kataster', label: 'Katasterpläne', title: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne einstellen – exportiert wird je Projekt über die Startseite' },
   { id: 'einstellungen', label: 'Einstellungen', title: 'Gemeinsame Einstellungen aller Apps: Konfigurationsordner, Stammordner, Ort der Projektdatei, Büro, Mitarbeiter' },
 ];
 
@@ -29,6 +29,7 @@ export function App() {
   const struktur = useOrdner((s) => s.struktur);
   const vorlagenordner = useOrdner((s) => s.vorlagenordner);
   const konflikt = useOrdner((s) => s.konflikt);
+  const strukturFehler = useOrdner((s) => s.strukturFehler);
   const [ansicht, setAnsicht] = useState<Ansicht>('projekt');
   // ein Projekt aus dem Prüfmodus im Assistenten ergänzen: neuer Start des Assistenten
   const [start, setStart] = useState<{ ordner: GeladenerOrdner; nr: number } | null>(null);
@@ -100,13 +101,21 @@ export function App() {
       <div className="toolbar">
         <div className="tb-group">
           {ANSICHTEN.map((a) => (
-            <button key={a.id} className={ansicht === a.id ? 'active' : ''} title={a.title} onClick={() => setAnsicht(a.id)}>
+            <button key={a.id} className={ansicht === a.id ? 'active' : ''} aria-pressed={ansicht === a.id} title={a.title} onClick={() => setAnsicht(a.id)}>
               {a.label}
             </button>
           ))}
         </div>
         <span className="muted small-text">Struktur: {struktur.name}</span>
       </div>
+      {strukturFehler && ansicht !== 'struktur' && ansicht !== 'vorlagen' && (
+        <div className="warning po-konflikt" role="alert">
+          Die Bürostruktur ist nicht lesbar – bis zur Klärung gilt die Standardstruktur von ATLAS; neue Projekte entstehen nach ihr.
+          <button className="small" onClick={() => setAnsicht('struktur')}>
+            Zur Struktur
+          </button>
+        </div>
+      )}
       {konflikt && (
         <div className="warning po-konflikt" role="alert">
           Die Struktur wurde inzwischen von einem anderen Rechner geändert – neu laden? Ihre Änderungen sind noch nicht gespeichert.
@@ -119,9 +128,11 @@ export function App() {
         </div>
       )}
       <main className="po-main">
-        {ansicht === 'projekt' && (
+        {/* der Assistent bleibt beim Wechsel der Ansicht eingehängt (nur ausgeblendet): Schritt und Eingaben bleiben erhalten */}
+        <div className="po-assistent-huelle" hidden={ansicht !== 'projekt'}>
           <AssistentView
             key={`${start?.nr ?? 0}-${neustart}-${auftrag?.nr ?? 0}`}
+            sichtbar={ansicht === 'projekt'}
             start={start?.ordner ?? null}
             auftrag={start ? null : auftrag}
             onEinstellungen={() => setAnsicht('einstellungen')}
@@ -132,7 +143,7 @@ export function App() {
             onKatasterEinstellungen={() => setAnsicht('kataster')}
             onMails={mailsPruefen}
           />
-        )}
+        </div>
         {ansicht === 'pruefen' && (
           <PruefView
             key={pruefStart?.nr ?? 0}
