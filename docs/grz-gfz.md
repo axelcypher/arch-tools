@@ -207,6 +207,19 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 
 ### Grundstück und Gelände
 
+- **Gemeinschaftsanlagen (§ 21a Abs. 2 BauNVO 1968/1977/1990):** Setzt der Bebauungsplan es fest, werden Anteile
+  an außerhalb des Baugrundstücks festgesetzten Gemeinschaftsanlagen (1968: § 9 Abs. 1 Nr. 12 und 13 BBauG, 1977:
+  § 9 Abs. 1 Nr. 22 BBauG, heute § 9 Abs. 1 Nr. 22 BauGB; z. B. Gemeinschaftsgaragen im Reihenhausgebiet) der Grundstücksfläche hinzugerechnet: Feld „Anteil an
+  Gemeinschaftsanlagen [m²]“ unter der Grundstücksfläche; der Rechenweg zeigt „FGst = Grundstück + Anteil“, der
+  Druck nennt den Anteil. Nach BauNVO 1962 gibt es die Regel nicht (Hinweis, kein Zuschlag).
+- **Absolute GR und GR II (BauNVO 1990):** Ist die Grundfläche absolut festgesetzt, wird auch die GR II geprüft:
+  höchstens 1,5 × GR, höchstens bis zu einer GRZ von 0,8, nie unter der GR selbst (§ 19 Abs. 4 Satz 2); eine
+  festgesetzte „GRZ II höchstens“ (Satz 3) geht vor – eigene Karte, Zeile im Druck und Platzhalter `gr2_absolut`.
+- **Zu prüfende Aufenthaltsräume:** Räume, die nach Nutzung Aufenthaltsräume sind, aber die lichte Höhe nicht
+  erreichen, sind zum Aufenthalt bestimmt (§ 2 Abs. 7 BauO NRW) und zählen vor 1990 zur Geschossfläche. Die GFZ steht
+  deshalb ohne und mit ihnen („mit zu prüfenden Räumen bis …“, Rechenweg, Drucknotiz), Status „prüfen“, wenn sie
+  mit ihnen überschritten wäre.
+
 - **Grundstücksfläche im Bauland:** Maßgebend ist nach § 19 Abs. 3 BauNVO nur die Fläche des Baugrundstücks im
   Bauland hinter der festgesetzten (sonst tatsächlichen) Straßenbegrenzungslinie – nicht ohne Weiteres die
   Katasterfläche, die Verkehrs-, Grün- oder Waldflächen enthalten kann. Das Feld heißt deshalb „Grundstücksfläche im
@@ -240,8 +253,14 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 - **Räume in Nicht-Vollgeschossen** werden nach der maßgebenden Bauordnung geprüft: Ein Aufenthaltsraum braucht
   nach BauO NW 1962/1970 2,50 m lichte Höhe (2,30 m im Dachraum und im Einfamilienhaus), nach späteren Fassungen
   2,40 m bzw. im Dachraum/Kellergeschoss 2,20 m über mindestens der Hälfte der Grundfläche (Teile unter 1,50 m
-  zählen nicht), in kleinen Wohngebäuden 2,30 m. Die Tabelle zeigt je Raum Einstufung, Höhenlage und Begründung;
-  Räume mit Höhenversatz (Split-Level) werden mit ihrer eigenen Fußbodenhöhe gerechnet.
+  zählen nicht), in Wohngebäuden der Gebäudeklassen 1 und 2 2,30 m, wenn die Bauaufsicht es gestattet (Schalter
+  unter „Annahmen“: vor 1985 „Einfamilienhaus“, danach „Wohngebäude Gebäudeklasse 1/2“). Die Tabelle zeigt je Raum
+  Einstufung, Höhenlage und Begründung; Räume mit Höhenversatz (Split-Level) werden mit ihrer eigenen Fußbodenhöhe
+  gerechnet. Ein Raum, der nach Nutzung Aufenthaltsraum ist, die lichte Höhe aber nicht erreicht, steht als
+  „prüfen“ (Pille und sachlicher Hinweis): vorläufig nicht mitgerechnet; wird er als Aufenthaltsraum genutzt, zählt
+  er trotzdem – dann von Hand festlegen.
+- **Anteile nahe an einer Schwelle** (⅔, ¾, ½) stehen in den Begründungen mit Nachkommastellen; innerhalb von ±1 %
+  mit dem Zusatz „knapp am Grenzwert – Rasterprüfung, im Schnitt nachweisen“.
 - **Höhen:** Das Tool rechnet auf einem Raster über dem Grundriss mit der Höhe bis zur Dachhaut (Dachform mit Gauben
   bzw. IFC-Modell) oder bis zum Fußboden darüber. Lichte Höhe = diese Höhe minus Decken-/Dachaufbau (Standard
   0,30 m, einstellbar; gilt für Dach und Decken).
