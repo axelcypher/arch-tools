@@ -17,7 +17,7 @@ describe('Einstellungen sichern und übertragen', () => {
     expect(Object.keys(s.daten).sort()).toEqual(['formulare:merkmale', 'formulare:profile']);
     expect(bereicheIn(s).map((b) => b.umfang(s.daten[b.schluessel]))).toEqual(['1 Formular', '1 Merkmal']);
     expect(sicherungLesen(sicherungText(s))).toEqual(s);
-    expect(sicherungDateiname(new Date(2026, 10, 10))).toBe('Formulare-Einstellungen 261110.json');
+    expect(sicherungDateiname(new Date(2026, 10, 10))).toBe('PERMIO-Einstellungen 261110.json');
   });
 
   it('fremde oder kaputte Dateien werden mit verständlicher Meldung abgelehnt', () => {

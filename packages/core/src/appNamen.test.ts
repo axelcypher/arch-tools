@@ -26,7 +26,9 @@ const ALT: Record<string, string> = {
 /** WiX-Upgrade-Code, wie ihn Tauri ohne Angabe aus dem Produktnamen ableitet (UUID v5, Namensraum DNS) */
 function upgradeCode(produktName: string): string {
   const ns = Buffer.from('6ba7b8109dad11d180b400c04fd430c8', 'hex');
-  const h = createHash('sha1').update(Buffer.concat([ns, Buffer.from(`${produktName}.exe.app.x64`, 'utf8')])).digest();
+  const h = createHash('sha1')
+    .update(Buffer.concat([ns, Buffer.from(`${produktName}.exe.app.x64`, 'utf8')]))
+    .digest();
   h[6] = (h[6] & 0x0f) | 0x50;
   h[8] = (h[8] & 0x3f) | 0x80;
   const x = h.subarray(0, 16).toString('hex');

@@ -949,7 +949,7 @@ genauso:
 ### Einstellungen sichern und übertragen
 
 Die Einstellungen liegen im Speicher der App auf diesem Rechner. Unter **Einstellungen › Sichern & Übertragen**
-lassen sie sich als JSON-Datei exportieren (`Formulare-Einstellungen JJMMTT.json`) und wieder einspielen – zum
+lassen sie sich als JSON-Datei exportieren (`PERMIO-Einstellungen JJMMTT.json`; bis 0.42 `Formulare-Einstellungen …`) und wieder einspielen – zum
 Sichern, für einen anderen Rechner oder für Kolleginnen und Kollegen. Entwürfe, Verlauf und Formularinhalte
 gehören nicht dazu.
 

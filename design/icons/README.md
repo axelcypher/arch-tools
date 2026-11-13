@@ -6,17 +6,17 @@ Symbole stehen dort an einer Stelle; `node design/icons/erzeugen.mjs` schreibt d
 Ausgerollt in allen Apps: `src-tauri/icon.svg`, `public/favicon.svg` und die daraus erzeugten Icon-Sätze
 (PNG/ICO/ICNS) stammen von hier. Nur Baurecht (LEXIO) folgt mit seiner App.
 
-| | App | Motiv | Bernstein markiert | Kachel |
-|---|---|---|---|---|
-| <img src="suite.svg" width="40"> | **Arkly** (Rahmen-App) | Rundbogen mit Kämpfern | Schlussstein – hält den Bogen zusammen wie der Rahmen die Apps | `#242d42` |
-| <img src="ordner.svg" width="40"> | **ATLAS** (Projekt) | Projektordner mit Struktur | Reiter – das angelegte Projekt | `#006a65` |
-| <img src="formulare.svg" width="40"> | **PERMIO** (Formulare) | Antragsformular mit Eselsohr | Stift, der ausfüllt | `#8f410e` |
-| <img src="flaechenrechner.svg" width="40"> | **QUADRIO** (Flächenrechner) | Grundriss mit drei Räumen | berechneter Raum | `#2855ad` |
-| <img src="grz.svg" width="40"> | **TERRIO** (GRZ-Nachweis) | Grundstück, Grenze gestrichelt | überbaute Fläche | `#256b35` |
-| <img src="kosten.svg" width="40"> | **NUMIO** (Kostenermittlung) | Euro unter dem Dach | Euro – die ermittelten Kosten | `#9a303c` |
-| <img src="entzerrung.svg" width="40"> | **RECTIO** (Entzerrung) | Fassade in Perspektive | vier Passpunkte | `#63489a` |
-| <img src="ava.svg" width="40"> | **FABRIO** (AVA) | Klemmbrett der Bauleitung | Klammer | `#853a77` |
-| <img src="baurecht.svg" width="40"> | **LEXIO** (Baurecht) | Paragraf mit Ampel | gelbes Licht – „prüfen“ | `#33607e` |
+|                                            | App                          | Motiv                          | Bernstein markiert                                             | Kachel    |
+| ------------------------------------------ | ---------------------------- | ------------------------------ | -------------------------------------------------------------- | --------- |
+| <img src="suite.svg" width="40">           | **Arkly** (Rahmen-App)       | Rundbogen mit Kämpfern         | Schlussstein – hält den Bogen zusammen wie der Rahmen die Apps | `#242d42` |
+| <img src="ordner.svg" width="40">          | **ATLAS** (Projekt)          | Projektordner mit Struktur     | Reiter – das angelegte Projekt                                 | `#006a65` |
+| <img src="formulare.svg" width="40">       | **PERMIO** (Formulare)       | Antragsformular mit Eselsohr   | Stift, der ausfüllt                                            | `#8f410e` |
+| <img src="flaechenrechner.svg" width="40"> | **QUADRIO** (Flächenrechner) | Grundriss mit drei Räumen      | berechneter Raum                                               | `#2855ad` |
+| <img src="grz.svg" width="40">             | **TERRIO** (GRZ-Nachweis)    | Grundstück, Grenze gestrichelt | überbaute Fläche                                               | `#256b35` |
+| <img src="kosten.svg" width="40">          | **NUMIO** (Kostenermittlung) | Euro unter dem Dach            | Euro – die ermittelten Kosten                                  | `#9a303c` |
+| <img src="entzerrung.svg" width="40">      | **RECTIO** (Entzerrung)      | Fassade in Perspektive         | vier Passpunkte                                                | `#63489a` |
+| <img src="ava.svg" width="40">             | **FABRIO** (AVA)             | Klemmbrett der Bauleitung      | Klammer                                                        | `#853a77` |
+| <img src="baurecht.svg" width="40">        | **LEXIO** (Baurecht)         | Paragraf mit Ampel             | gelbes Licht – „prüfen“                                        | `#33607e` |
 
 LEXIO (Baurecht) liegt noch auf dem Branch `claude/nice-fermi-702pde`; sein Icon kommt mit der App.
 
