@@ -226,7 +226,8 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
   per Tastatur erreichbar (`aria-disabled`), damit der Grund vorgelesen wird, und führen nichts aus.
 - Ohne Mausposition (Kontextmenütaste) erscheint das Menü am Auslöser.
 - Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner. Der Erstfokus liegt nie auf einem Gefahr-Punkt,
-  sondern auf dem ersten bedienbaren anderen – Rechtsklick plus Enter löscht so nichts.
+  sondern auf dem ersten bedienbaren anderen – Rechtsklick plus Enter löscht so nichts. Gibt es nur Gefahr-Punkte,
+  liegt der Fokus auf dem Menü selbst; ↓ bzw. Pos1 erreichen den Punkt.
 - Menüs liegen über Dialogen und Rückfragen; Schatten schwebender Flächen über `--schatten-schwebend`.
 - Tastenkürzel in `tasten` in der Schreibweise deutscher Windows-Menüs: Strg, Umschalt, Alt, Entf, Einfg, Pos1, Ende,
   Bild↑/Bild↓, Pfeile als ↑ ↓ ← →, Buchstaben groß, verbunden mit „+“ ohne Leerzeichen („Strg+Umschalt+Z“),
@@ -291,4 +292,5 @@ Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 
 Je App eine Datei in [`docs/nachziehen/`](nachziehen/) (`quadrio.md`, `terrio.md`, `numio.md`, `atlas.md`,
 `rectio.md`, `permio.md`, `fabrio.md`, `arkly.md`). Neue Punkte trägt das Designsystem dort ein, die App löscht erledigte
-Punkte in ihrem eigenen PR (löschen, nicht abhaken). Diese Richtlinie ändert sich dafür nicht – so kommen sich App-PRs und Designsystem nicht in die Quere.
+Punkte in ihrem eigenen PR (löschen, nicht abhaken). Diese Richtlinie ändert sich dafür nicht – so kommen sich
+App-PRs und Designsystem nicht in die Quere.

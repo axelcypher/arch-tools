@@ -301,14 +301,12 @@ function Liste({
 
   useEffect(() => {
     if (!(wurzel || fokus)) return;
-    // Erstfokus nie auf einem Gefahr-Punkt (sonst löscht Rechtsklick plus Enter): erster bedienbarer, ungefährlicher Punkt
+    // Erstfokus nie auf einem Gefahr-Punkt (sonst löscht Rechtsklick plus Enter): erster bedienbarer, ungefährlicher Punkt;
+    // gibt es nur Gefahr-Punkte, bekommt das Menü selbst den Fokus – ↓ bzw. Pos1 erreichen dann den Punkt
     const el = ref.current;
-    (
-      el?.querySelector<HTMLButtonElement>(':scope > button:not([aria-disabled="true"]):not(.gefahr)') ??
-      el?.querySelector<HTMLButtonElement>(':scope > button:not(.gefahr)') ??
-      el?.querySelector<HTMLButtonElement>(':scope > button')
-    )?.focus();
-  }, [wurzel, fokus]);
+    (el?.querySelector<HTMLButtonElement>(':scope > button:not([aria-disabled="true"]):not(.gefahr)') ?? el?.querySelector<HTMLButtonElement>(':scope > button:not(.gefahr)') ?? el)?.focus();
+    // auch, wenn ein offenes Menü neue Punkte bekommt (erneut geöffnet, ohne vorher zu schließen)
+  }, [wurzel, fokus, punkte]);
 
   const oeffnen = (index: number, el: HTMLElement, tastatur: boolean) => {
     const r = el.getBoundingClientRect();
@@ -329,7 +327,9 @@ function Liste({
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       e.stopPropagation();
-      knoepfe[(i + (e.key === 'ArrowDown' ? 1 : -1) + knoepfe.length) % knoepfe.length]?.focus();
+      // Fokus auf dem Menü selbst (i = −1): ↓ zum ersten, ↑ zum letzten Punkt
+      const ziel = i < 0 ? (e.key === 'ArrowDown' ? 0 : knoepfe.length - 1) : (i + (e.key === 'ArrowDown' ? 1 : -1) + knoepfe.length) % knoepfe.length;
+      knoepfe[ziel]?.focus();
     } else if (e.key === 'Home' || e.key === 'End') {
       e.preventDefault();
       e.stopPropagation();
@@ -350,7 +350,7 @@ function Liste({
   };
 
   return (
-    <div ref={ref} className="menue" role="menu" aria-label={name} style={{ left: lage.x, top: lage.y }} onKeyDown={tasten} onContextMenu={(e) => e.preventDefault()}>
+    <div ref={ref} className="menue" role="menu" aria-label={name} tabIndex={-1} style={{ left: lage.x, top: lage.y }} onKeyDown={tasten} onContextMenu={(e) => e.preventDefault()}>
       {punkte.map((p, i) =>
         p.trenner ? (
           <div key={i} className="menue-trenner" role="separator" />

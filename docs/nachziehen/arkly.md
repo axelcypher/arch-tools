@@ -4,4 +4,4 @@ Offene Punkte aus der Designrichtlinie ([docs/design.md](../design.md)) für die
 Designsystem ein. Erledigte Punkte löscht die App in ihrem eigenen PR (löschen, nicht abhaken). Dateiangaben beziehen
 sich auf den Stand beim Eintragen.
 
-- Kontextmenü am Tab (`App.tsx`, `tabMenue`) und Menü „+“: Gefahr-Punkte (Schließen, Andere schließen) ans Ende, abgesetzt durch einen Trenner – prüfen
+- Kontextmenü am Tab (`App.tsx`, `tabMenue`) und Menü „+“ prüfen, ob zerstörende Punkte vorkommen; wenn ja, ans Ende hinter einen Trenner. „Schließen“ ist keiner (es fragt bei ungespeicherten Änderungen nach) und bleibt normal.
