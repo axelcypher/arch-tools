@@ -42,13 +42,19 @@ function anfrage<T>(store: string, modus: IDBTransactionMode, f: (s: IDBObjectSt
   );
 }
 
-export async function standSchreiben(s: Stand) {
+/**
+ * Schreibt den Stand. Fotos des Dokuments, die im Zwischenspeicher fehlen, werden aus `bilder` nachgetragen;
+ * gelöscht werden nur Fotos, die weder dieses Dokument noch `behalten()` (Dokument und Rückgängig-Verlauf zum
+ * Zeitpunkt des Löschens) braucht.
+ */
+export async function standSchreiben(s: Stand, bilder: Record<string, Uint8Array> = {}, behalten: () => Set<string> = () => new Set(s.doc.fotos.map((f) => f.id))) {
   try {
+    const vorhanden = new Set((await anfrage('fotos', 'readonly', (o) => o.getAllKeys())).map(String));
+    for (const f of s.doc.fotos) if (!vorhanden.has(f.id) && bilder[f.id]) await anfrage('fotos', 'readwrite', (o) => o.put(bilder[f.id], f.id));
     await anfrage('stand', 'readwrite', (o) => o.put(s, 'stand'));
-    // nicht mehr verwendete Fotos entfernen
-    const ids = new Set(s.doc.fotos.map((f) => f.id));
-    const vorhanden = await anfrage('fotos', 'readonly', (o) => o.getAllKeys());
-    for (const k of vorhanden) if (!ids.has(String(k))) await anfrage('fotos', 'readwrite', (o) => o.delete(k));
+    // erst jetzt fragen, was gebraucht wird: inzwischen hinzugefügte Fotos bleiben
+    const brauchen = behalten();
+    for (const k of vorhanden) if (!brauchen.has(k) && !s.doc.fotos.some((f) => f.id === k)) await anfrage('fotos', 'readwrite', (o) => o.delete(k));
   } catch (e) {
     log.warn('Zwischenspeichern fehlgeschlagen', e);
   }

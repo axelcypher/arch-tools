@@ -1,8 +1,8 @@
 import type { Ebene, Foto } from '../model';
 import { homographie, konvexesViereck } from './homographie';
-import { abbilden, eigenSymmetrisch, inv, kreuz, mul, normierung, skalierung } from './mat';
+import { abbilden, det, eigenSymmetrisch, inv, kreuz, mul, normierung, skalierung } from './mat';
 import type { Mat3, Pt } from './mat';
-import { entzeichnen, kamera, verzeichnen } from './verzeichnung';
+import { entzeichnen, kamera, linseGueltig, verzeichnen } from './verzeichnung';
 import type { Kamera } from './verzeichnung';
 
 /** Ergebnis der Entzerrung einer Ebene */
@@ -14,6 +14,8 @@ export interface Entzerrung {
   kamera: Kamera;
   /** Restabweichungen der überbestimmten Angaben */
   residuen: Residuum[];
+  /** Hinweise, die die Entzerrung nicht verhindern (z. B. gespiegelte Koordinaten) */
+  hinweise: string[];
 }
 
 export interface Residuum {
@@ -37,6 +39,13 @@ export function zuFoto(e: Entzerrung, ebenenPunkt: Pt): Pt & { w: number } {
 
 /** Entzerrung der Ebene oder eine verständliche Meldung, was noch fehlt bzw. nicht stimmt */
 export function entzerrung(foto: Foto, ebene: Ebene): Ergebnis {
+  if (!linseGueltig(foto.linse)) {
+    return {
+      ok: false,
+      fehler:
+        'Die Werte der Verzeichnung (k1, k2) falten das Bild zum Rand hin – k1 und k2 prüfen, neu schätzen oder zurücksetzen. Bei starker Tonne mindestens drei Hilfslinien setzen, dann wird auch k2 geschätzt.',
+    };
+  }
   const kam = kamera(foto.breite, foto.hoehe, foto.linse);
   try {
     switch (ebene.methode) {
@@ -52,14 +61,21 @@ export function entzerrung(foto: Foto, ebene: Ebene): Ergebnis {
   }
 }
 
-function fertig(h: Mat3, kam: Kamera, bezug: Pt[], residuen: Residuum[]): Ergebnis {
+const RANDBEREICH = 'Ein Punkt liegt im Randbereich, den die Verzeichnungskorrektur nicht erfasst – k1/k2 prüfen oder den Punkt weiter innen setzen.';
+const randbereich = (p: Pt[]) => p.some((q) => !Number.isFinite(q.x) || !Number.isFinite(q.y));
+
+function fertig(h: Mat3, kam: Kamera, bezug: Pt[], residuen: Residuum[], hinweise: string[] = []): Ergebnis {
+  // nur echte Entartung: Pixel → Meter skaliert stark, eine relative Schwelle würde gültige Ebenen ablehnen
+  if (!h.every(Number.isFinite) || det(h) === 0) {
+    return { ok: false, fehler: 'Aus den Angaben lässt sich keine Ebene bestimmen – Punkte und Maße prüfen.' };
+  }
   // Vorzeichen so, dass die Bezugspunkte vor dem Horizont liegen (w > 0)
   const w = bezug.map((p) => abbilden(h, p).w);
   if (w.every((v) => v < 0)) h = h.map((v) => -v);
   else if (!w.every((v) => v > 0)) {
     return { ok: false, fehler: 'Die Punkte lassen sich nicht als ebene Fläche deuten – liegen sie wirklich auf einer Ebene, ist die Reihenfolge richtig?' };
   }
-  return { ok: true, e: { h, hInv: inv(h), kamera: kam, residuen } };
+  return { ok: true, e: { h, hInv: inv(h), kamera: kam, residuen, hinweise } };
 }
 
 function rechteck(ebene: Ebene, kam: Kamera): Ergebnis {
@@ -67,6 +83,7 @@ function rechteck(ebene: Ebene, kam: Kamera): Ergebnis {
   if (ecken.length < 4) return { ok: false, fehler: `Noch ${4 - ecken.length} Ecke${ecken.length === 3 ? '' : 'n'} des Rechtecks setzen.` };
   if (!breite || !hoehe || breite <= 0 || hoehe <= 0) return { ok: false, fehler: 'Breite und Höhe des Rechtecks eingeben.' };
   const ideal = ecken.map((p) => entzeichnen(kam, p));
+  if (randbereich(ideal)) return { ok: false, fehler: RANDBEREICH };
   if (!konvexesViereck(ideal) || drehsinn(ideal) > 0) {
     return { ok: false, fehler: 'Die Ecken ergeben kein passendes Viereck – Reihenfolge prüfen: links unten, rechts unten, rechts oben, links oben.' };
   }
@@ -100,7 +117,15 @@ function passpunkte(ebene: Ebene, kam: Kamera): Ergebnis {
   }
   const ideal = pp.map((p) => entzeichnen(kam, p.bild));
   const ziel = pp.map((p) => ({ x: p.x!, y: p.y! }));
+  if (randbereich(ideal)) return { ok: false, fehler: RANDBEREICH };
+  if (aufEinerGeraden(ziel)) return { ok: false, fehler: 'Die eingegebenen Koordinaten liegen (fast) auf einer Geraden – Passpunkte über die Fläche verteilen.' };
+  if (aufEinerGeraden(ideal)) return { ok: false, fehler: 'Die Passpunkte liegen im Foto (fast) auf einer Geraden – Punkte über die Fläche verteilen.' };
   const h = homographie(ideal, ziel);
+  // Bild (y nach unten) → Ebene (y nach oben) kehrt den Drehsinn um; sonst wurde y nach unten eingegeben – oder
+  // gewollt gespiegelt (Deckenuntersicht mit Grundrisskoordinaten als Deckenspiegel). Deshalb nur ein Hinweis.
+  const hinweise = drehsinnErhalten(h, ideal)
+    ? ['Die Koordinaten ergeben ein gespiegeltes Bild. Gewollt (z. B. Deckenspiegel mit Grundrisskoordinaten)? Sonst prüfen: y zählt nach oben, x nach rechts.']
+    : [];
   const residuen: Residuum[] =
     pp.length > 4
       ? pp.map((p, i) => {
@@ -108,7 +133,33 @@ function passpunkte(ebene: Ebene, kam: Kamera): Ergebnis {
           return { id: p.id, wert: Math.hypot(q.x - ziel[i].x, q.y - ziel[i].y), einheit: 'm' as const };
         })
       : [];
-  return fertig(h, kam, ideal, residuen);
+  return fertig(h, kam, ideal, residuen, hinweise);
+}
+
+/** true, wenn die Punkte (fast) auf einer Geraden liegen (kleinste Streuung ≪ größte) */
+function aufEinerGeraden(p: Pt[]): boolean {
+  const mx = p.reduce((s, q) => s + q.x, 0) / p.length;
+  const my = p.reduce((s, q) => s + q.y, 0) / p.length;
+  let sxx = 0;
+  let sxy = 0;
+  let syy = 0;
+  for (const q of p) {
+    sxx += (q.x - mx) ** 2;
+    sxy += (q.x - mx) * (q.y - my);
+    syy += (q.y - my) ** 2;
+  }
+  const { werte } = eigenSymmetrisch([sxx, sxy, sxy, syy], 2);
+  return !(werte[1] > 0) || werte[0] < 1e-6 * werte[1];
+}
+
+/** Determinante der Ableitung von h im Schwerpunkt der Punkte > 0, d. h. die Abbildung spiegelt nicht */
+function drehsinnErhalten(h: Mat3, p: Pt[]): boolean {
+  const c = { x: p.reduce((s, q) => s + q.x, 0) / p.length, y: p.reduce((s, q) => s + q.y, 0) / p.length };
+  const d = Math.max(1, Math.hypot(p[0].x - c.x, p[0].y - c.y) * 1e-3);
+  const a = abbilden(h, c);
+  const bx = abbilden(h, { x: c.x + d, y: c.y });
+  const by = abbilden(h, { x: c.x, y: c.y + d });
+  return (bx.x - a.x) * (by.y - a.y) - (bx.y - a.y) * (by.x - a.x) > 0;
 }
 
 /** Fluchtpunkt (homogen) als bestmöglicher Schnitt der Linien */
@@ -120,17 +171,24 @@ function fluchtpunkt(linien: number[][]): number[] {
 
 function fluchtlinien(ebene: Ebene, kam: Kamera): Ergebnis {
   const { waagerecht, senkrecht, masse } = ebene.fluchtlinien;
-  if (waagerecht.length < 2 || senkrecht.length < 2) {
-    return { ok: false, fehler: `Je mindestens zwei waagerechte und senkrechte Kanten nachziehen (vorhanden: ${waagerecht.length} waagerecht, ${senkrecht.length} senkrecht).` };
-  }
   const mitLaenge = masse.filter((m) => m.laenge !== undefined && m.laenge > 0);
+  const fehlt: string[] = [];
+  if (waagerecht.length < 2) fehlt.push(`${2 - waagerecht.length} waagerechte Kante${waagerecht.length ? '' : 'n'}`);
+  if (senkrecht.length < 2) fehlt.push(`${2 - senkrecht.length} senkrechte Kante${senkrecht.length ? '' : 'n'}`);
   if (mitLaenge.length < 2) {
-    return { ok: false, fehler: 'Zwei bekannte Maße eintragen – am besten eine Breite und eine Höhe.' };
+    const ohne = masse.length - mitLaenge.length;
+    fehlt.push(
+      ohne > 0 && masse.length >= 2
+        ? `die Länge ${ohne === 1 ? 'eines Maßes' : `von ${ohne} Maßen`} (rechts eintragen)`
+        : `${2 - mitLaenge.length} bekannte${mitLaenge.length ? 's Maß' : ' Maße'} mit Länge`,
+    );
   }
+  if (fehlt.length) return { ok: false, fehler: `Es fehlen noch ${fehlt.join(', ')}. Am besten als Maße eine Breite und eine Höhe.` };
   const id = (l: { a: Pt; b: Pt }) => ({ a: entzeichnen(kam, l.a), b: entzeichnen(kam, l.b) });
   const lw = waagerecht.map(id);
   const ls = senkrecht.map(id);
   const lm = mitLaenge.map(id);
+  if (randbereich([...lw, ...ls, ...lm].flatMap((l) => [l.a, l.b]))) return { ok: false, fehler: RANDBEREICH };
   const alle = [...lw, ...ls].flatMap((l) => [l.a, l.b]);
   // normierte Bildkoordinaten: Ursprung im Schwerpunkt der Kanten (liegt sicher vor dem Horizont)
   const t = normierung(alle);
@@ -145,13 +203,17 @@ function fluchtlinien(ebene: Ebene, kam: Kamera): Ergebnis {
   const vw = fluchtpunkt(lw.map(gerade));
   const vs = fluchtpunkt(ls.map(gerade));
   const horizont = kreuz(vw, vs);
-  if (Math.abs(horizont[2]) < 1e-9 * Math.hypot(...horizont)) {
-    throw new Error('Waagerechte und senkrechte Kanten laufen auf denselben Punkt zu – Kanten prüfen.');
+  const hn = Math.hypot(...horizont);
+  if (!(hn > 1e-12)) throw new Error('Waagerechte und senkrechte Kanten laufen auf denselben Punkt zu – Kanten prüfen.');
+  if (Math.abs(horizont[2]) <= 1e-9 * hn) {
+    throw new Error('Die Kanten liegen beiderseits der Fluchtlinie (Horizont) – Kanten prüfen.');
   }
   // projektiver Anteil: Fluchtgerade ins Unendliche, im Schwerpunkt w = 1
   const hp: Mat3 = [1, 0, 0, 0, 1, 0, horizont[0] / horizont[2], horizont[1] / horizont[2], 1];
   // affiner Anteil: Fluchtrichtungen auf die Achsen
-  const a = inv([vw[0], vs[0], 0, vw[1], vs[1], 0, 0, 0, 1]);
+  const richtungen: Mat3 = [vw[0], vs[0], 0, vw[1], vs[1], 0, 0, 0, 1];
+  if (Math.abs(det(richtungen)) < 1e-12) throw new Error('Waagerechte und senkrechte Kanten laufen auf denselben Punkt zu – Kanten prüfen.');
+  const a = inv(richtungen);
   let g = mul(a, mul(hp, t));
 
   // Richtungssinn: im Foto rechts → x wächst, im Foto oben → y wächst
@@ -212,7 +274,7 @@ function fluchtlinien(ebene: Ebene, kam: Kamera): Ergebnis {
       residuen.push({ id: mitLaenge[i].id, wert: Math.abs(Math.hypot(q.x - p.x, q.y - p.y) - mitLaenge[i].laenge!), einheit: 'm' });
     });
   }
-  return fertig(g, kam, alle, residuen);
+  return fertig(g, kam, [...alle, ...lm.flatMap((l) => [l.a, l.b])], residuen);
 }
 
 /** Die Punkte im Foto, aus denen die Ebene bestimmt ist (für Bereich und Auflösung) */
