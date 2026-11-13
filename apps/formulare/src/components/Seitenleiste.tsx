@@ -127,7 +127,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     const zugeordnet = statusVon.get(f.pfad);
     return [
       { text: 'Öffnen', symbol: 'formular', aktion: () => void formularOeffnen(f) },
-      { text: 'Daten aktualisieren', symbol: 'neuLaden', aktion: () => void formularAktualisieren(f) },
+      // im geöffneten Formular mit Vorschau (Dialog), sonst wirkt es sofort
+      { text: offen?.projekt === projekt && offen?.pfad === f.pfad ? 'Daten aktualisieren …' : 'Daten aktualisieren', symbol: 'neuLaden', aktion: () => void formularAktualisieren(f) },
       { text: 'Als PDF exportieren …', symbol: 'export', deaktiviert: !ablage, aktion: () => useExportDialog.getState().oeffnen(f.pfad) },
       { text: 'Speichern unter …', symbol: 'datei', aktion: () => void useAntrag.getState().speichernUnter(f.pfad) },
       { trenner: true },

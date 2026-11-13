@@ -906,7 +906,7 @@ Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Koste
     findet es über den Namen“.
   - **Eingereicht:** Ändernde Menüpunkte sind ausgegraut, mit dem Hinweis „Antrag eingereicht“ (Navigation,
     Zeilenmenü der Antragsdaten, Ablage, „Als bereit markieren“); ändernde Knöpfe sind ausgegraut mit dem Grund im
-    Tooltip („Formular anlegen“, „Zuordnen“, „PDF“, Nr., „bereit“) bzw. ausgeblendet (Bearbeiten, Datei verknüpfen,
+    Tooltip („Formular anlegen“, „Zuordnen“, „PDF …“, Nr., „bereit“) bzw. ausgeblendet (Bearbeiten, Datei verknüpfen,
     Ziehen, „Dokument hinzufügen“, „Antragsumfang aufheben …“).
   - **Verknüpfen in der Ablage** prüft zuerst, ob noch die Fassung des Menüs angezeigt ist (sonst „Nicht kopiert – …“
     bzw. „Nicht verknüpft – inzwischen ist Antrag BAUA angezeigt.“, je nach Menüpunkt) oder gerade ein Antrag

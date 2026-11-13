@@ -95,10 +95,10 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-/** wartet, bis die (im Speicher sofort erledigten) Dateizugriffe durch sind */
 /** Dialog nach seinem zugänglichen Namen (aria-label bzw. sichtbarer Kopf über aria-labelledby) */
 const dialogMit = (name: string) =>
   [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => (d.getAttribute('aria-label') ?? document.getElementById(d.getAttribute('aria-labelledby') ?? '')?.textContent) === name) ?? null;
+/** wartet, bis die (im Speicher sofort erledigten) Dateizugriffe durch sind */
 const warte = () => act(async () => new Promise((r) => setTimeout(r, 0)));
 
 async function render(): Promise<HTMLElement> {

@@ -3629,6 +3629,11 @@ button.icon.fo-gl-bed.gesetzt {
 .fh p {
   margin: 0;
 }
+/* Kopf in Dialogen mit eigenem Abstand (gap): der Abstand darunter kommt allein aus dem gap */
+.ex > .modal-kopf,
+.fh > .modal-kopf {
+  margin-bottom: 0;
+}
 .fh input[type='search'] {
   width: 100%;
 }

@@ -94,7 +94,7 @@ export function SperrenDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <Modal titel={`Sperren in ${projekt?.ordner ?? ''}`} kopf onClose={onClose} breit className="fo-sperren">
+      <Modal titel={projekt ? `Sperren in ${projekt.ordner}` : 'Sperren'} kopf onClose={onClose} breit className="fo-sperren">
         <p className="muted small-text">
           Eine Sperrdatei (<code>.frmtmp</code>) zeigt, dass ein Formular geöffnet ist. Nach einem Absturz bleibt sie liegen und sperrt das Formular für alle – hier lässt sie sich
           aufheben.
