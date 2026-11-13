@@ -1,4 +1,5 @@
 import { APP_NAMEN, appMitWas } from '@core/appNamen';
+import { Symbol } from '@core/ui/Symbol';
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FAKT_GRUPPEN, faktName, ortsgebunden, wertAnzeige, zaehlEinheit } from '@core/baurecht/typen';
@@ -195,7 +196,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
         {/* während der Suche fest aufgeklappt (zeigt die passenden Merkmale) – der Knopf ist dann ohne Wirkung und deshalb aus */}
         {/* aria-disabled statt disabled: die Überschrift bleibt gut lesbar (sie beschriftet die sichtbare Gruppe) */}
         <button type="button" className="br-gruppe-knopf" aria-expanded={auf} aria-disabled={suche ? true : undefined} title={suche ? 'Während der Suche aufgeklappt' : undefined} onClick={() => !suche && setAuf(!auf)}>
-          <span aria-hidden="true">{suche ? '' : auf ? '▾' : '▸'}</span> Antragsmerkmale <span className="br-gruppe-stand">{standText}</span>
+          {!suche && <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} />} Antragsmerkmale <span className="br-gruppe-stand">{standText}</span>
         </button>
       </h3>
       {auf && <p className="br-leise">Gemeinsam mit {appMitWas('formulare')} – gilt für den ganzen Antrag.</p>}
@@ -776,14 +777,14 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         {stand.widersprueche
           .filter((w) => w !== stand.planungsrechtHinweis)
           .map((w) => (
-            <div key={w} className="br-meldung br-meldung-warn" role="status">
+            <div key={w} className="meldung warnung" role="status">
               {w}
             </div>
           ))}
         {stand.planungsrechtHinweis && (
           // knapp (eine Zeile): der häufige Fall „noch nicht bestätigt“ kurz, die Anschrift im Titel und im Namen des Knopfs
           // role="note": ein stehender Hinweis – als Live-Region läse er bei jeder Änderung von „klärt N“ alles neu vor
-          <div className="br-meldung br-meldung-info br-planungsrecht-hinweis" role="note">
+          <div className="meldung br-planungsrecht-hinweis" role="note">
             <span>{/noch nicht bestätigt$/.test(stand.planungsrechtFrueher ?? '') ? 'Planungsrecht für diesen Ort noch nicht bestätigt.' : `${stand.planungsrechtHinweis}.`}</span>{' '}
             <span className="br-bestaetigen-zeile">
               <button type="button" className="small" onClick={() => planungsrechtGiltHier(planungsrechtKlaert, suche && !VORGABE_MERKMALE.some((m) => m.name === 'Planungsrecht' && merkmalPasst(m, suche)) ? () => suchfeld.current?.focus() : undefined)} aria-label={`Für diesen Ort bestätigen: Planungsrecht „${useBaurecht.getState().merkmale['Planungsrecht'] ?? ''}“, ${ortAnzeige ?? 'dieser Ort'}`} title="Das Planungsrecht gilt so für dieses Grundstück – bis dahin zählt es nicht als gesichert">
