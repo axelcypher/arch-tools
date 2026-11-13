@@ -716,6 +716,11 @@ export const GEBIETSARTEN: { id: Gebietsart; label: string }[] = [
 export interface MassNutzung {
   /** Inkrafttreten / Satzungsbeschluss des Bebauungsplans (JJJJ-MM-TT); leer = aktuelles Recht (§ 34/35 BauGB) */
   planDatum?: string;
+  /**
+   * öffentliche Auslegung des Planentwurfs (§ 3 Abs. 2 BauGB, JJJJ-MM-TT): maßgebend für die BauNVO-Fassung
+   * (§ 25c BauNVO 1990, § 25a BauNVO 1977, § 25 BauNVO 1968); leer = Plandatum. Der Vollgeschossbegriff folgt weiter dem Plandatum.
+   */
+  auslegungDatum?: string;
   /** abweichend vom Plandatum */
   baunvo?: BauNVOFassung;
   bauo?: BauOFassung;
@@ -751,6 +756,11 @@ export interface MassNutzung {
   firsthoeheMax?: number;
   /** § 20 Abs. 3 Satz 2 BauNVO 1990: Aufenthaltsräume in Nicht-Vollgeschossen mitrechnen (festgesetzt) */
   aufenthaltNichtVollgeschoss?: boolean;
+  /**
+   * § 21a Abs. 4 Nr. 3 BauNVO 1968/1977/1990: Garagen und Stellplätze in Vollgeschossen bleiben bei der Geschossfläche
+   * unberücksichtigt (nur bei Festsetzung im Bebauungsplan bzw. als Ausnahme zugelassen)
+   */
+  garagenGfFrei?: boolean;
   /** Variante, für die der Nachweis gilt (Lageplan-Flächen mit `variante`); ohne Angabe „A“ */
   variante?: string;
 }

@@ -293,6 +293,7 @@ function normalizeFlaeche(f: Record<string, unknown>): LageplanFlaeche | null {
 function normalizeMassNutzung(m: Record<string, unknown>): MassNutzung {
   const out: MassNutzung = {};
   if (typeof m.planDatum === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.planDatum)) out.planDatum = m.planDatum;
+  if (typeof m.auslegungDatum === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.auslegungDatum)) out.auslegungDatum = m.auslegungDatum;
   if (m.baunvo === '1962' || m.baunvo === '1968' || m.baunvo === '1990') out.baunvo = m.baunvo;
   if (m.bauo === 'nw1962' || m.bauo === 'nw1985' || m.bauo === 'nrw2019') out.bauo = m.bauo;
   for (const k of ['grz', 'gfz', 'vollgeschosseMax', 'grzIIMax', 'gelaende', 'dachaufbau', 'wandzuschlag', 'grAbsolut', 'gfAbsolut', 'bmz', 'vollgeschosseMin', 'traufhoeheMax', 'firsthoeheMax'] as const) {
@@ -301,6 +302,7 @@ function normalizeMassNutzung(m: Record<string, unknown>): MassNutzung {
   if (m.einfamilienhaus === true) out.einfamilienhaus = true;
   if (m.vollgeschosseZwingend === true) out.vollgeschosseZwingend = true;
   if (m.aufenthaltNichtVollgeschoss === true) out.aufenthaltNichtVollgeschoss = true;
+  if (m.garagenGfFrei === true) out.garagenGfFrei = true;
   if (typeof m.gebietsart === 'string' && GEBIETSARTEN.some((g) => g.id === m.gebietsart)) out.gebietsart = m.gebietsart as Gebietsart;
   if (typeof m.stand === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.stand)) out.stand = m.stand;
   if (typeof m.variante === 'string' && m.variante.trim()) out.variante = m.variante.trim();

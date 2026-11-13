@@ -54,11 +54,13 @@ describe('Bericht für die Bauvorlage (F-17)', () => {
 
   it('Messverfahren und Planungsunterlagen fehlen: Warnung (DIN 277:2021-08, 5.1); Pläne gelten als Unterlagen', () => {
     const p = haus();
-    expect(berichtPlan(berichtEinstellung(undefined), computeProject(p), p).warnungen.map((w) => w.split(' (')[0])).toEqual(['Messverfahren nicht angegeben', 'Planungsunterlagen nicht angegeben']);
+    const plan = berichtPlan(berichtEinstellung(undefined), computeProject(p), p);
+    expect(plan.bildschirm.map((w) => w.split(' (')[0])).toEqual(['Messverfahren nicht angegeben', 'Planungsunterlagen nicht angegeben']);
+    expect(plan.warnungen).toEqual([]); // Bedienhinweis, kein fachlicher Mangel – im Druck steht „nicht angegeben“ im Kopf
     p.settings.massgrundlage = 'rohbau';
     p.storeys[0].background = { type: 'raster', name: 'EG_1-100.pdf', dataUrl: 'data:,', widthPx: 10, heightPx: 10, x: 0, y: 0, metersPerPixel: 0.01, opacity: 1, visible: true };
     expect(planungsunterlagen(p)).toBe('EG: EG_1-100.pdf');
-    expect(berichtPlan(berichtEinstellung(undefined), computeProject(p), p).warnungen).toEqual([]);
+    expect(berichtPlan(berichtEinstellung(undefined), computeProject(p), p).bildschirm).toEqual([]);
     p.settings.planunterlagen = 'Grundrisse 1:100, Stand 01.10.2026';
     expect(planungsunterlagen(p)).toBe('Grundrisse 1:100, Stand 01.10.2026');
   });

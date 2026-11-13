@@ -63,7 +63,7 @@ export function rechenweg(n: Nachweis, nr: Map<string, number> = flaechenNummern
     const garagen = n.garagenFrei ?? 0;
     const teile = [`Hauptanlage ${m2(n.hauptanlage)}`];
     if (angerechnet + garagen > 0.005) teile.push(`angerechnete Anlagen ${m2(angerechnet + garagen)}`);
-    if (garagen > 0.005) teile.push(`− Garagen anrechnungsfrei (§ 21a Abs. 3) ${m2(garagen)}`);
+    if (garagen > 0.005) teile.push(`− Garagen anrechnungsfrei (${n.recht.baunvo === '1962' ? '§ 19 Abs. 5 BauNVO 1962' : '§ 21a Abs. 3'}) ${m2(garagen)}`);
     formeln.push(`GR = ${teile.join(' + ').replace('+ −', '−')} = ${m2(n.grz.flaeche)}`);
     formeln.push(kennzahlFormel('GRZ = GR / FGst', n.grz, G));
     if (n.grz.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ mit ungeklärten Flächen', n.grz, G, true));
@@ -74,6 +74,7 @@ export function rechenweg(n: Nachweis, nr: Map<string, number> = flaechenNummern
       zugerechnet > 0.005 ? `GR I = Hauptanlage ${m2(n.hauptanlage)} + der Hauptanlage zugerechnete Flächen ${m2(zugerechnet)} = ${m2(n.grz.flaeche)}` : `GR I = Hauptanlage ${m2(n.hauptanlage)}`,
     );
     formeln.push(kennzahlFormel('GRZ I = GR I / FGst', n.grz, G));
+    if (n.grz.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ I mit ungeklärten Flächen (Terrassen, Wege)', n.grz, G, true));
     if (n.grz2) {
       formeln.push(`GR II = GR I ${m2(n.grz.flaeche)} + Anlagen nach § 19 Abs. 4 BauNVO ${m2(n.grz2.flaeche - n.grz.flaeche)} = ${m2(n.grz2.flaeche)}`);
       formeln.push(kennzahlFormel('GRZ II = GR II / FGst', n.grz2, G));
@@ -81,7 +82,9 @@ export function rechenweg(n: Nachweis, nr: Map<string, number> = flaechenNummern
     }
   }
   const gf = n.gfJeGeschoss.filter((g) => g.flaeche > 0.005);
-  formeln.push(`GF = ${gf.length ? gf.map((g) => `${g.name} ${m2(g.flaeche)}`).join(' + ') : '0,00 m²'} = ${m2(n.gf)}`);
+  formeln.push(
+    `GF = ${gf.length ? gf.map((g) => (g.abzug ? `${g.name} (${m2(g.flaeche + g.abzug)} − nicht mitgerechnet ${m2(g.abzug)})` : `${g.name} ${m2(g.flaeche)}`)).join(' + ') : '0,00 m²'} = ${m2(n.gf)}`,
+  );
   formeln.push(kennzahlFormel('GFZ = GF / FGst', n.gfz, G));
 
   const flaechen: RechenwegFlaeche[] = [];

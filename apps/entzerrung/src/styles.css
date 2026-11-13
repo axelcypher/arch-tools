@@ -318,7 +318,6 @@
 }
 .ef-methoden {
   display: flex;
-  gap: 3px;
   margin-bottom: 6px;
 }
 .ef-methoden button {

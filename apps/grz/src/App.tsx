@@ -154,7 +154,7 @@ export function App() {
             Neu
           </button>
           <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
-            Öffnen
+            Öffnen …
           </button>
           <button onClick={() => void onSave()} title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
             Speichern{dirty ? ' •' : ''}
@@ -174,7 +174,7 @@ export function App() {
         </div>
         <div className="tb-group">
           <button onClick={() => setDruckOpen(true)} disabled={!hatGebaeude} title={hatGebaeude ? 'Druckbarer Nachweis – über den Druckdialog auch als PDF (Strg+P)' : gesperrt}>
-            Nachweis drucken
+            Nachweis drucken …
           </button>
           <button onClick={() => setExcelOpen(true)} disabled={!hatGebaeude} title={hatGebaeude ? 'Nachweis als Excel-Datei – Standardlayout oder eigene Vorlage' : gesperrt}>
             Excel-Export …
