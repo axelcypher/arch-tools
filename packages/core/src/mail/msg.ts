@@ -3,7 +3,7 @@
  * Strom pro MAPI-Eigenschaft („__substg1.0_<Tag><Typ>“) und den Eigenschaften fester Länge in
  * „__properties_version1.0“; Empfänger und Anhänge sind Unterspeicher. Gelesen werden die Angaben, die zum Ablegen
  * und Benennen gebraucht werden: Betreff, Absender, Empfänger, Sende- und Empfangszeit, Anhänge.
- * (Gemeinsam für die Apps „Projekt“ – Mails prüfen und benennen – und „AVA“ – Mailverlauf.)
+ * (Gemeinsam für die Apps ATLAS – Mails prüfen und benennen – und FABRIO – Mailverlauf.)
  */
 
 /** Eintrag im Verzeichnis einer Compound-File-Datei */

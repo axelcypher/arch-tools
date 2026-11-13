@@ -69,7 +69,7 @@ describe('Druck der Formulare (B-02)', () => {
   const core = druckBloecke(BASE).flatMap(regeln);
   const eigene = druckBloecke(FORMULARE).flatMap(regeln);
 
-  it('die Druckregel aus core blendet die App aus – Formulare hebt sie für .fo-main mit höherer Spezifität auf', () => {
+  it('die Druckregel aus core blendet die App aus – PERMIO hebt sie für .fo-main mit höherer Spezifität auf', () => {
     const ausblenden = core.filter(blendetAus).flatMap((r) => r.selektoren.filter((s) => s.startsWith('.app >')));
     expect(ausblenden.length).toBeGreaterThan(0);
     const aufheben = eigene.filter(zeigt).flatMap((r) => r.selektoren.filter((s) => /\.fo-main$/.test(s)));

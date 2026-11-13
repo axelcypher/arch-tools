@@ -1,9 +1,10 @@
-# AVA – Ausschreibung, Vergabe, Abrechnung, Bauleitung
+# FABRIO (AVA)
 
-Die App **AVA** (`apps/ava`, eigene App mit eigenem Installer, auch als Tab der Rahmen-App) ersetzt das
-LV-Programm des Büros: Leistungsverzeichnisse anlegen und bearbeiten, Angebote prüfen, Preisspiegel, Vergabe,
-Nachträge, Rechnungsprüfung und Kostenkontrolle – dazu Bauleitung mit Bautagebuch, Protokollen, Mängeln,
-Notizen, Beteiligten und Mailverlauf.
+Die App **FABRIO** (`apps/ava`, eigene App mit eigenem Installer, auch als Tab in Arkly, der Rahmen-App) ist für
+Ausschreibung, Vergabe, Abrechnung und Bauleitung da und ersetzt das LV-Programm des Büros: Leistungsverzeichnisse
+anlegen und bearbeiten, Angebote prüfen, Preisspiegel, Vergabe, Nachträge, Rechnungsprüfung und Kostenkontrolle –
+dazu Bauleitung mit Bautagebuch, Protokollen, Mängeln, Notizen, Beteiligten und Mailverlauf. Bis Version 0.4.0
+hieß die App „AVA“; Einstellungen und Daten bleiben beim Update erhalten.
 
 Grundsätze:
 
@@ -318,10 +319,10 @@ immer auf dem frisch gelesenen Stand der Datei (`avaDaten.ts`), damit Änderunge
 | `demo.ts` | erfundenes Projekt im Speicher, nur in der Entwicklung (`npm run dev:ava`, Adresse mit `?demo`) |
 
 Gemeinsam mit den anderen Apps (`packages/core`): die Excel-Bausteine `dokumente/xml.ts`, `zip.ts`, `xlsx.ts` (von
-Formulare hierher verschoben, mit Zellen mit Typ und dem Nachrechnen `xlsxRechnen.ts`), Projektwahl, Stammdaten,
+PERMIO, der Formular-App, hierher verschoben, mit Zellen mit Typ und dem Nachrechnen `xlsxRechnen.ts`), Projektwahl, Stammdaten,
 Projektdatei, Konfigurationsordner.
 
-Die Tauri-Hülle (`src-tauri/src/befehle.rs`, auch in der Rahmen-App eingebunden) ersetzt nur vorhandene Dateien
+Die Tauri-Hülle (`src-tauri/src/befehle.rs`, auch in Arkly eingebunden) ersetzt nur vorhandene Dateien
 der App (`.aslv`, `.asproj`, `.oalv`, `.xlsx`, `.xlsm`, `.pdf`, `.json`) – atomar, nach einer Sicherungskopie
 (`%LOCALAPPDATA%\de.pendzialek.ava\Sicherungen`), nur mit dem Stand vom Lesen und nicht, solange Excel sie geöffnet
 hat; benennt um und verschiebt nie überschreibend; übernimmt Scans aus dem Scanordner (der Scan wird erst

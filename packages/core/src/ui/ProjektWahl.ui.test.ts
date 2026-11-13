@@ -24,7 +24,7 @@ const warten = () =>
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith(text)) as HTMLButtonElement;
 const karte = (host: Element, text: string) => [...host.querySelectorAll('.pa-karte')].find((k) => k.textContent?.includes(text)) as HTMLElement;
 
-describe('Projektwahl (Flächenrechner, GRZ-Nachweis, Kostenermittlung)', () => {
+describe('Projektwahl (QUADRIO, TERRIO, NUMIO)', () => {
   it('öffnet die Projektdatei eines Projektordners; ohne Projektdatei: Stammdaten-Dialog, Projektdatei anlegen, öffnen', async () => {
     localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['/p'], oapPfad: 'Berechnungen/{nummer} {kurzname}.oap' }));
     const fs = new SpeicherProjektordner();
@@ -123,7 +123,7 @@ describe('Neues Projekt anlegen aus jeder App (Rahmen-App)', () => {
     window.history.replaceState(null, '', '/');
   });
 
-  it('eigenständig ohne Knopf; im Tab startet er den Assistenten der Projekt-App und öffnet danach das neue Projekt', async () => {
+  it('eigenständig ohne Knopf; im Tab startet er den Assistenten von ATLAS und öffnet danach das neue Projekt', async () => {
     localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['/p'] }));
     const fs = new SpeicherProjektordner();
     await fs.ordnerAnlegen('/p', '2025-007 Kita');
@@ -158,7 +158,7 @@ describe('Neues Projekt anlegen aus jeder App (Rahmen-App)', () => {
     act(() => knopf(host, 'Neues Projekt anlegen').click());
     expect(gesendet).toContainEqual({ typ: 'arch-tools:projekt-anlegen', von: 'flaechenrechner', kannOeffnen: true, app: 'flaechenrechner' });
 
-    // die Projekt-App hat angelegt: neu laden und öffnen (ohne Projektdatei: Stammdaten-Dialog wie beim Klick)
+    // ATLAS hat angelegt: neu laden und öffnen (ohne Projektdatei: Stammdaten-Dialog wie beim Klick)
     await fs.ordnerAnlegen('/p', '2026-014 Neu');
     const p = createProject('Neubau');
     p.meta.projektcode = '2026-014';

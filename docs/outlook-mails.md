@@ -1,7 +1,7 @@
 # Mails aus Outlook in die App – ohne Add-in (Recherche, Stand 12.11.2026)
 
-Frage: Lassen sich Mails aus Outlook in die App „Projekt“ holen, um sie dort zu benennen und abzulegen, **ohne Add-in
-oder sonstige Outlook-seitige Zusätze**? Sonst müsste das Outlook-Makro überarbeitet werden.
+Frage: Lassen sich Mails aus Outlook in die App ATLAS (Projektordner) holen, um sie dort zu benennen und abzulegen, **ohne
+Add-in oder sonstige Outlook-seitige Zusätze**? Sonst müsste das Outlook-Makro überarbeitet werden.
 
 ## Ergebnis
 
@@ -12,7 +12,7 @@ Tauri-App läuft – liest sie seit Chrome 76 beim Ablegen in temporäre Dateien
 (`dragDropEnabled: false`; Tauris eigener Handler kennt nur echte Dateien). Outlook-seitig wird nichts installiert, es
 gibt keine Sicherheitsabfragen, und es geht mit jedem Postfach (Exchange Online, Exchange vor Ort, IMAP).
 
-Umgesetzt in der App „Projekt“, Reiter „Mails“ → „Mails aus Outlook hierher ziehen“ (siehe
+Umgesetzt in ATLAS, Reiter „Mails“ → „Mails aus Outlook hierher ziehen“ (siehe
 [projektordner.md](projektordner.md#mails)). **Noch auf einem Büro-PC zu bestätigen** – belegt ist das Verhalten über
 den Chromium-Quelltext und die Microsoft-Doku zu Outlook-Add-ins in WebView2, nicht in einem Tauri-Fenster selbst.
 Wichtig: beim Ziehen „kopieren“ melden, nie „verschieben“ – sonst kann Outlook die Mail aus dem Postfach nehmen (die App

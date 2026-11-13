@@ -403,7 +403,7 @@ export function StammdatenDialog({
   /** `name`: die geänderte Bezeichnung des Projekts, wenn das Feld gezeigt wird */
   onSpeichern: (meta: ProjectMeta, name?: string) => Promise<void> | void;
   onAbbrechen: () => void;
-  /** Bezeichnung des Projekts mit bearbeiten (z. B. in Flächenrechner, GRZ, Kosten) */
+  /** Bezeichnung des Projekts mit bearbeiten (z. B. in QUADRIO, TERRIO, NUMIO) */
   name?: string;
   /** ohne Projektnummer nicht speichern (Anlegen einer Projektdatei) */
   projektnummerPflicht?: boolean;

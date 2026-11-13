@@ -1,4 +1,5 @@
 import { speichernAbwarten } from '@core/platform/projektDatei';
+import { APP_NAMEN } from '@core/appNamen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { useEffect, useState } from 'react';
 import { isTauri } from '@core/platform/files';
@@ -40,7 +41,7 @@ export function App() {
   const [bericht, setBericht] = useState<IfcBericht | null>(null);
 
   useEffect(() => {
-    document.title = `${dirty ? '• ' : ''}${name} – GRZ-Nachweis`;
+    document.title = `${dirty ? '• ' : ''}${name} – ${APP_NAMEN.grz.name}`;
   }, [name, dirty]);
 
   /** vor Öffnen/Neu: ungespeicherte Änderungen speichern, verwerfen oder abbrechen */
@@ -145,7 +146,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="GRZ-Nachweis" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
+      <TitleBar app={APP_NAMEN.grz.name} name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
       <div className="toolbar">
         <div className="tb-group">
           <button onClick={() => void onNeu()} title="Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)">
@@ -226,7 +227,7 @@ export function App() {
           <ProjektEinstieg
             titel="GRZ-Nachweis"
             text={
-              'Projekt oder IFC öffnen: ein Projekt des Flächenrechners (.oap) oder direkt ein IFC-Modell. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei. „Neues Projekt“ beginnt mit leerem Lageplan.'
+              'Projekt oder IFC öffnen: ein Projekt aus QUADRIO (Flächenrechner, .oap) oder direkt ein IFC-Modell. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei. „Neues Projekt“ beginnt mit leerem Lageplan.'
             }
             onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
             onDateiOeffnen={() => void onOpen()}
@@ -241,7 +242,7 @@ export function App() {
       {excelOpen && <ExcelDialog onClose={() => setExcelOpen(false)} />}
       {projekteOffen && (
         <ProjektWahl
-          app="GRZ-Nachweis"
+          app={APP_NAMEN.grz.name}
           offeneDatei={datei}
           onGewaehlt={async (g) => {
             if (!(await weiterNachRueckfrage())) return;

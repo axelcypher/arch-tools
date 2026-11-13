@@ -2,6 +2,7 @@ import { ansichtLesen, verknuepfteFelder } from '@core/ui/ansicht';
 import { create } from 'zustand';
 import { pickFile, saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
+import { APP_NAMEN } from '@core/appNamen';
 import { aenderungenSpeichern } from '@core/ui/Rueckfrage';
 import type { AblageOrdner } from './ablage';
 import { VORGABE_AUSWAHL, ablageSuchen, auswahlBereinigt, zuordnen } from './ablage';
@@ -1862,9 +1863,9 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!pfad) throw new Error('Kein Ort für neue Projektdateien eingestellt.');
       const p = createProject(meta.kurzname || meta.vorhaben || projekt.titel || projekt.ordner);
       p.meta = meta;
-      // wie im Projektordner-Tool: jede neue Projektdatei trägt eine Kopie des Namensschemas des Büros
+      // wie in ATLAS (Projektordner): jede neue Projektdatei trägt eine Kopie des Namensschemas des Büros
       p.namensschema = wirksamesNamensschema(undefined, get().namensschemaBuero);
-      if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, 'Formulare'))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in den Projektdaten auswählen.`);
+      if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, APP_NAMEN.formulare.name))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in den Projektdaten auswählen.`);
       log.info(`Projektdatei angelegt: ${pfad}`);
       set({ stammdatenDialog: null, meldung: { art: 'info', text: `Projektdatei angelegt: ${pfad}` } });
       get().ordnerNeuLesen();
@@ -2126,7 +2127,7 @@ async function formulareKonfigAendern(patch: Record<string, unknown>) {
   try {
     await konfigAendern('formulare', (roh) => ({ ...((roh ?? {}) as Record<string, unknown>), ...patch }));
   } catch (e) {
-    log.warn(`Einstellungen von Formulare nicht geschrieben: ${fehlertext(e)}`);
+    log.warn(`Einstellungen von PERMIO nicht geschrieben: ${fehlertext(e)}`);
   }
 }
 

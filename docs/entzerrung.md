@@ -1,8 +1,11 @@
-# Entzerrung
+# RECTIO (Entzerrung)
 
-Die **Entzerrung** (`apps/entzerrung`, eigene App mit eigenem Installer) macht aus einem schräg aufgenommenen
-Foto einer ebenen Fläche (Fassade, Innenwand, Boden, abfotografierter Plan) ein maßstäbliches Bild, in dem
-sich Strecken und Flächen messen lassen.
+Die App **RECTIO (Entzerrung)** (`apps/entzerrung`, eigene App mit eigenem Installer) macht aus einem schräg
+aufgenommenen Foto einer ebenen Fläche (Fassade, Innenwand, Boden, abfotografierter Plan) ein maßstäbliches
+Bild, in dem sich Strecken und Flächen messen lassen.
+
+Bis Version 0.12.0 hieß die App „Entzerrung“. Einstellungen und Daten bleiben beim Update erhalten: Kennung
+`de.pendzialek.entzerrung`, Ordner `apps/entzerrung` und die Dateiendung `.entz` bleiben gleich.
 
 ## Ablauf
 
@@ -37,12 +40,12 @@ Fassadenseiten an einer Gebäudeecke.
 
 ## Projekt und Fotoordner
 
-In der Desktop-App beginnt die Entzerrung mit der **Projektübersicht** (wie die anderen Apps; auch über
+In der Desktop-App beginnt RECTIO mit der **Projektübersicht** (wie die anderen Apps; auch über
 „Projekte“ in der Titelleiste): Ein Klick wählt den Projektordner. Hat er noch keine Projektdatei (.oap), werden
 die Stammdaten erfasst und die Projektdatei angelegt.
 
 Danach zeigt **„Fotos des Projekts“** alle Fotos (JPEG, PNG, WebP) im **Fotoordner** des Projekts – einer
-gemeinsamen Einstellung aller Apps, Vorgabe `09 Fotos` (in der App „Projektordner“ unter Einstellungen) – samt
+gemeinsamen Einstellung aller Apps, Vorgabe `09 Fotos`, zu ändern in ATLAS (Projektordner) unter Einstellungen – samt
 allen Unterordnern, gruppiert nach Ordner und mit Suche. „Anderer Ordner …“ wählt einen beliebigen Ordner.
 
 Die Entzerrung eines Fotos liegt **immer neben dem Foto**: gleicher Name, Endung `.entz`

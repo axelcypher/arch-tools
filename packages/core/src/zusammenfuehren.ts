@@ -1,7 +1,7 @@
 import type { Project } from './model';
 
 /**
- * Zusammenführen beim Speichern. Flächenrechner, GRZ-Nachweis und Kostenermittlung arbeiten an derselben
+ * Zusammenführen beim Speichern. QUADRIO, TERRIO und NUMIO arbeiten an derselben
  * Projektdatei, jede App aber an ihrer eigenen Kopie (mit Zwischenspeicher über Neustarts hinweg). Schriebe
  * jede App einfach ihre Kopie zurück, gingen dabei die Änderungen verloren, die eine andere App inzwischen in
  * der Datei gespeichert hat.

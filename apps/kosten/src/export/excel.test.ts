@@ -142,7 +142,7 @@ describe('Kosten-Excel', () => {
     expect(texte(e)[texte(e).length - 1]).toBe('Carport');
   });
 
-  it('Vorlage der Kostenermittlung liegt getrennt von denen der anderen Apps im Archiv', () => {
+  it('Vorlage von NUMIO liegt getrennt von denen der anderen Apps im Archiv', () => {
     let p = projektMitKosten();
     p = addDatei(p, 'Flächen.xlsx', 'vorlage', new Uint8Array([80, 75, 1])).project;
     p = addDatei(p, 'GRZ.xlsx', 'vorlage-grz', new Uint8Array([80, 75, 2])).project;

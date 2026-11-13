@@ -117,7 +117,7 @@ export function ProjektStart({
         ]}
         angeheftet={angeheftet}
         kontextMenue={kontextMenue}
-        // die Projekt-App hat ihren eigenen Knopf (der Assistent ist hier)
+        // ATLAS hat einen eigenen Knopf (der Assistent ist hier)
         projektAnlegen={false}
         // Stammordner per Ziehen umsortieren (gemeinsame Einstellung; der erste nimmt neue Projekte auf)
         onGruppenOrdnen={(projekte) => setAllgemein({ projekte })}

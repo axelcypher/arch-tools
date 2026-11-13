@@ -11,6 +11,7 @@
  * kursiv, unterstrichen.
  */
 
+import { APP_NAMEN } from '@core/appNamen';
 import type { XmlElement } from '@core/dokumente/xml';
 import { alleKinder, xmlLesen } from '@core/dokumente/xml';
 import type { Absatz, Formattext, Lauf } from './rtf';
@@ -128,7 +129,7 @@ export function gaebSchreiben(lv: Lv, o: GaebExport): Uint8Array {
   const xml =
     `<?xml version="1.0" encoding="utf-8"?>\n` +
     `<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA${o.dp}/3.3">` +
-    `<GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>${datum}</Date><Time>${zeit}</Time><ProgSystem>arch-tools AVA</ProgSystem></GAEBInfo>` +
+    `<GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>${datum}</Date><Time>${zeit}</Time><ProgSystem>${APP_NAMEN.ava.name}</ProgSystem></GAEBInfo>` +
     `<PrjInfo><NamePrj>${esc(o.projektNummer ?? lv.kopf.nummer ?? '')}</NamePrj><LblPrj>${esc(o.projektName ?? lv.kopf.projektName ?? lv.kopf.bezeichnung)}</LblPrj><Cur>${esc(lv.kopf.waehrung)}</Cur><CurLbl>${lv.kopf.waehrung === 'EUR' ? 'Euro' : esc(lv.kopf.waehrung)}</CurLbl></PrjInfo>` +
     `<Award><DP>${o.dp}</DP><AwardInfo><Cur>${esc(lv.kopf.waehrung)}</Cur><CurLbl>${lv.kopf.waehrung === 'EUR' ? 'Euro' : esc(lv.kopf.waehrung)}</CurLbl>${offen}${lv.kopf.abgabeort ? `<SubmLoc>${esc(lv.kopf.abgabeort.replace(/\n/g, ', '))}</SubmLoc>` : ''}</AwardInfo>` +
     adresse +

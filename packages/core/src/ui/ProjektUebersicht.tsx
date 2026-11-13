@@ -12,6 +12,7 @@ import { create } from 'zustand';
 import type { AntragKurz, ProjektStatus } from '../model';
 import { PROJEKT_STATUS } from '../model';
 import { PROJEKT_ANGELEGT, projektAnlegenMoeglich, projektAnlegenStarten, vomRahmen } from '../platform/rahmen';
+import { appMitWas } from '../appNamen';
 import './projektuebersicht.css';
 
 /** Stufen des Status vom besten zum schlimmsten – Farben wie in der Vollständigkeitsprüfung */
@@ -166,8 +167,8 @@ export interface ProjektUebersichtProps {
   /** Einträge des eingebauten Kontextmenüs je Karte (Rechtsklick); ersetzt `onKontext` */
   kontextMenue?: (p: UebersichtProjekt) => KontextEintrag[];
   /**
-   * Knopf „Neues Projekt anlegen“: Vorgabe (true) – in der Rahmen-App startet er den Assistenten der Projekt-App;
-   * eine Funktion ersetzt das, false blendet ihn aus (etwa in der Projekt-App mit eigenem Knopf).
+   * Knopf „Neues Projekt anlegen“: Vorgabe (true) – in der Rahmen-App startet er den Assistenten von ATLAS;
+   * eine Funktion ersetzt das, false blendet ihn aus (etwa in ATLAS mit eigenem Knopf).
    */
   projektAnlegen?: boolean | (() => void);
   /** ein über den Knopf angelegtes Projekt (Projektordner) – die App öffnet es; die Liste wird ohnehin neu geladen */
@@ -269,7 +270,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
   const { projektAnlegen = true, onAngelegt } = props;
   const anlegen = typeof projektAnlegen === 'function' ? projektAnlegen : projektAnlegen && projektAnlegenMoeglich() ? () => projektAnlegenStarten(!!onAngelegt) : null;
 
-  // neues Projekt aus dem Assistenten der Projekt-App: Liste neu laden und – wenn die App das kann – öffnen
+  // neues Projekt aus dem Assistenten von ATLAS: Liste neu laden und – wenn die App das kann – öffnen
   const angelegt = useRef({ onNeuLaden, onAngelegt });
   angelegt.current = { onNeuLaden, onAngelegt };
   useEffect(() => {
@@ -331,7 +332,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
   const aktivesProjekt = aktiv ? nachSchluessel.get(aktiv) : undefined;
 
   const anlegenKnopf = anlegen && (
-    <button className="primary pa-anlegen" onClick={anlegen} title="Neues Projekt mit dem Assistenten der Projekt-App anlegen: Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen">
+    <button className="primary pa-anlegen" onClick={anlegen} title={`Neues Projekt mit dem Assistenten von ${appMitWas('ordner')} anlegen: Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`}>
       <Icon name="plus" /> Neues Projekt anlegen
     </button>
   );

@@ -8,7 +8,7 @@ import type { MultiPolygon } from './polygon';
 import { areaMP, diffMP, intersectMP, oeffnen, polygoneOf, unionAll } from './polygon';
 
 /**
- * Plausibilitätsprüfung des Flächenrechners (F-10): reine Funktion, die Hinweise zu einem Projekt liefert. Alle
+ * Plausibilitätsprüfung von QUADRIO (F-10): reine Funktion, die Hinweise zu einem Projekt liefert. Alle
  * Einträge sind Hinweise zum Prüfen, keine Fehler – viele Fälle sind fachlich richtig (z. B. Treppenraum ohne
  * Wohnfläche). Abzugsflächen überlappen absichtlich und werden bei Überlappungen nicht gemeldet.
  */

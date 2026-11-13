@@ -41,7 +41,7 @@ export function entpacken(daten: Uint8Array): { doc: Dokument; fotos: Record<str
   if (!json) throw new Error('Die Datei ist keine Entzerrungs-Projektdatei (entzerrung.json fehlt).');
   const roh = JSON.parse(strFromU8(json)) as { format?: string; version?: number; fotos?: unknown };
   if (roh.format !== FORMAT) throw new Error('Die Datei ist keine Entzerrungs-Projektdatei.');
-  if ((roh.version ?? 0) > 1) throw new Error('Die Datei stammt aus einer neueren Version – bitte die Entzerrung aktualisieren.');
+  if ((roh.version ?? 0) > 1) throw new Error('Die Datei stammt aus einer neueren Version – bitte RECTIO aktualisieren.');
   const fotos: Foto[] = (Array.isArray(roh.fotos) ? roh.fotos : []).map(fotoAus);
   const bilder: Record<string, Uint8Array> = {};
   for (const f of fotos) {

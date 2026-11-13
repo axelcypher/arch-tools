@@ -122,7 +122,7 @@ export function SicherungEinstellungen() {
             <p className="small-text">
               <strong>{geladen.name}</strong>
               <span className="muted">
-                {[datumText(geladen.sicherung.erstellt) && ` · erstellt ${datumText(geladen.sicherung.erstellt)}`, geladen.sicherung.app && ` · Formulare ${geladen.sicherung.app}`]
+                {[datumText(geladen.sicherung.erstellt) && ` · erstellt ${datumText(geladen.sicherung.erstellt)}`, geladen.sicherung.app && ` · PERMIO ${geladen.sicherung.app}`]
                   .filter(Boolean)
                   .join('')}
               </span>

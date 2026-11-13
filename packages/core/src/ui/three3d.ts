@@ -9,7 +9,7 @@ import type { Point3, SolidFaces } from '../roof';
 import { solidFaces } from '../roof';
 
 /**
- * Bausteine der 3D-Ansichten (Flächenrechner, GRZ-Nachweis): Körper der BGF-Umrisse bis zur Dachhaut,
+ * Bausteine der 3D-Ansichten (QUADRIO, TERRIO): Körper der BGF-Umrisse bis zur Dachhaut,
  * Unterbau (Bodenplatte, Split-Level), Prismen, Kamera einpassen, Aufräumen.
  * Koordinaten: Grundriss (x, y) + Höhe z → three.js (x, z, y), y-Achse nach oben.
  */

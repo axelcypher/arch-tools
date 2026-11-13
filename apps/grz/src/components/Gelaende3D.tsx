@@ -12,7 +12,7 @@ import { flaechenStufen, STUFE_M } from '../flaechen3d';
 import { useGrz } from '../store';
 
 /**
- * 3D-Ansicht des GRZ-Nachweises: Gebäude je Geschoss (Vollgeschosse grün, übrige grau), Geländeoberfläche
+ * 3D-Ansicht von TERRIO: Gebäude je Geschoss (Vollgeschosse grün, übrige grau), Geländeoberfläche
  * aus dem Modell bzw. die Lageplan-Flächen auf ihrer Höhe und die gemittelte Geländeoberfläche je Geschoss
  * als Bezugsebene – so lässt sich die Geschossigkeit am Hang nachvollziehen.
  * Koordinaten: Grundriss (x, y) + Höhe z → three.js (x, z, y).

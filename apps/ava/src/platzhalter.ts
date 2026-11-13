@@ -1,5 +1,5 @@
 /**
- * Variablen der AVA – die globalen der Suite (@core/platzhalter) und die lokalen der AVA, je Zusammenhang. Alte Namen
+ * Variablen von FABRIO – die globalen der Suite (@core/platzhalter) und die lokalen von FABRIO, je Zusammenhang. Alte Namen
  * aus gespeicherten Einstellungen gelten weiter: {Kürzel} = {PROJEKT_KUERZEL}, {Projekt} = {PROJEKT_VORHABEN} (ohne
  * Vorhaben der Name des Projekts), {Bearbeiter} = {BEARBEITER}, {Firma-Mail} = {FirmaMail}; {Datum} ist in den
  * Rechnungen das Rechnungsdatum, im Protokoll das Datum der Besprechung und im Namen neuer LV-Dateien der heutige Tag
@@ -9,7 +9,7 @@
 import type { ProjectMeta } from '@core/model';
 import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, type Variable, type Wert } from '@core/platzhalter';
 
-/** globale Variablen mit den alten Namen der AVA */
+/** globale Variablen mit den alten Namen von FABRIO */
 const GLOBAL: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PROJEKT_VORHABEN' ? mitAliasen(v.name, ['Projekt']) : v));
 
 const gewerk: Variable = { name: 'Gewerk', text: 'Gewerk, z. B. G08' };
@@ -54,7 +54,7 @@ export const MAIL_PROTOKOLL_VARIABLEN: Variable[] = [
 export const mailVariablen = (id: string) => (id === 'protokoll' ? MAIL_PROTOKOLL_VARIABLEN : MAIL_RECHNUNG_VARIABLEN);
 
 /**
- * Werte der globalen Variablen in der AVA: {PROJEKT_VORHABEN} ohne Vorhaben der Name des Projekts (wie früher
+ * Werte der globalen Variablen in FABRIO: {PROJEKT_VORHABEN} ohne Vorhaben der Name des Projekts (wie früher
  * {Projekt}), {BEARBEITER} aus den Einstellungen des Deckblatts, sonst aus der Projektdatei.
  */
 export function globaleAva(meta: Pick<ProjectMeta, 'projektcode' | 'kurzname' | 'vorhaben' | 'bearbeiter'>, projektName: string, bearbeiter?: string, datum?: Date): Record<string, Wert> {

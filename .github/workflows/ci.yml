@@ -19,6 +19,12 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # Installer-Hooks (Umbenennung) mit makensis kompilieren – sonst fiele ein Fehler erst im Release auf
+      - name: Installer-Hooks (NSIS) prüfen
+        run: |
+          sudo apt-get update -q >/dev/null
+          sudo apt-get install -y -q nsis >/dev/null
+          bash scripts/nsis-hooks-pruefen.sh
       - uses: actions/upload-artifact@v4
         with:
           name: web-dist

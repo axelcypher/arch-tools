@@ -12,7 +12,7 @@
  *
  * Rückwärtskompatibel: Gespeicherte Vorlagen mit alten Namen ({Kürzel}, {nummer}, {jj} …) funktionieren weiter. Alte
  * Namen werden als Alias erkannt – ohne Rücksicht auf Groß-/Kleinschreibung, aber erst nach einem exakten Treffer, also
- * {DATUM} ist immer die globale Variable; Aliase lokaler Variablen gehen denen der globalen vor. Ein Alias kann eine Angabe mitbringen (im Projektordner war {datum}
+ * {DATUM} ist immer die globale Variable; Aliase lokaler Variablen gehen denen der globalen vor. Ein Alias kann eine Angabe mitbringen (in ATLAS war {datum}
  * JJJJ-MM-TT). Gespeichertes wird nie stillschweigend umgeschrieben; {@link modernisieren} stellt eine Vorlage auf die
  * neuen Namen um, wenn der Nutzer das will („Vorlage anpassen“).
  */
@@ -81,8 +81,8 @@ export function globaleVariable(name: string): Variable {
 }
 
 /**
- * Globale Variable mit anderen bzw. zusätzlichen alten Namen für einen Zusammenhang – z. B. war {datum} im
- * Projektordner JJJJ-MM-TT, {Projekt} in den Formularen das Kürzel. `ersetzen` = nur diese Aliase.
+ * Globale Variable mit anderen bzw. zusätzlichen alten Namen für einen Zusammenhang – z. B. war {datum} in
+ * ATLAS JJJJ-MM-TT, {Projekt} in den Formularen das Kürzel. `ersetzen` = nur diese Aliase.
  */
 export function mitAliasen(name: string, aliase: (string | Alias)[], ersetzen = false): Variable {
   const v = globaleVariable(name);
@@ -154,7 +154,7 @@ function finden(name: string, a: string | undefined, variablen: Variable[]): Auf
   const exakt = variablen.find((v) => v.name === name);
   if (exakt) return { variable: exakt, angabe: a ?? exakt.vorgabe, veraltet: false };
   const n = klein(name);
-  // alte Namen: die der lokalen Variablen zuerst ({Datum} ist in der AVA das Rechnungsdatum, nicht {DATUM})
+  // alte Namen: die der lokalen Variablen zuerst ({Datum} ist in FABRIO das Rechnungsdatum, nicht {DATUM})
   for (const v of [...variablen.filter((x) => !istGlobal(x)), ...variablen.filter((x) => istGlobal(x))]) {
     const alias = v.aliase?.find((x) => klein(aliasName(x)) === n);
     if (alias) return { variable: v, angabe: a ?? (typeof alias === 'string' ? undefined : alias.angabe) ?? v.vorgabe, veraltet: true };

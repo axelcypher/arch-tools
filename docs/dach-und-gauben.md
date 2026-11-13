@@ -1,7 +1,7 @@
 # Dachform und Gauben: Berechnung und Erkennung
 
-Wie der Flächenrechner den Brutto-Rauminhalt (BRI) von Dächern und Gauben berechnet, wie er ihn in
-Rechenweg und Excel-Vorlage ausweist und wie er Dachform und Gauben aus einem IFC-Modell ableitet.
+Wie QUADRIO (Flächenrechner) den Brutto-Rauminhalt (BRI) von Dächern und Gauben berechnet, wie es ihn in
+Rechenweg und Excel-Vorlage ausweist und wie es Dachform und Gauben aus einem IFC-Modell ableitet.
 
 ## 1. Dachform
 

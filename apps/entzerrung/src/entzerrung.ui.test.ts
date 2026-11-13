@@ -45,7 +45,7 @@ const ECKEN = [
   { x: 1482.4, y: 1344.6 },
 ];
 
-describe('Entzerrung', () => {
+describe('RECTIO (Entzerrung)', () => {
   it('defekte Projektdatei: Meldung mit Dateiname, die geöffnete Entzerrung bleibt (Q-6)', async () => {
     const host = render();
     const vorher = useEntz.getState().doc;

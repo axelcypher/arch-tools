@@ -32,10 +32,10 @@ kennt oder deren Angabe nicht passt (`{DATUM:xyz}`), bleiben so stehen und werde
 | `{JAHR}`             | Jahr des Vorgangs, vierstellig                                       | wie `{DATUM}`                                 | `2026`                           |
 | `{JAHR_KURZ}`        | Jahr des Vorgangs, zweistellig                                       | wie `{DATUM}`                                 | `26`                             |
 
-„Vorgang“ ist, was den Namen erzeugt: der Export eines PDFs, das Anlegen eines Projekts oder einer Datei. Im
-Projektordner ist `{JAHR}` beim Ergänzen eines bestehenden Projekts das Jahr, in dem es angelegt wurde. In der AVA
+„Vorgang“ ist, was den Namen erzeugt: der Export eines PDFs, das Anlegen eines Projekts oder einer Datei. In
+ATLAS (Projektordner) ist `{JAHR}` beim Ergänzen eines bestehenden Projekts das Jahr, in dem es angelegt wurde. In FABRIO (AVA)
 ist `{PROJEKT_VORHABEN}` ohne Vorhaben der Name des Projekts und `{BEARBEITER}` zuerst die Angabe aus den
-Einstellungen des Deckblatts. In Formulare ist `{PROJEKT_KUERZEL}` wie bisher der Name des Projektordners (im Büro
+Einstellungen des Deckblatts. In PERMIO (Formulare) ist `{PROJEKT_KUERZEL}` wie bisher der Name des Projektordners (im Büro
 gleich dem Projektcode); in den Katasterplänen ohne Projektcode der Name des Projekts.
 
 In **Dokumentvorlagen** (Excel, Word, Text – doppelte Klammern, siehe [excel-vorlagen.md](excel-vorlagen.md) und
@@ -44,42 +44,42 @@ In **Dokumentvorlagen** (Excel, Word, Text – doppelte Klammern, siehe [excel-v
 
 ## Lokale Variablen je App
 
-| App                     | Einstellung                                        | lokale Variablen                                                                                                                                      |
-| ----------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Formulare               | Namensvorlage exportierter PDFs, fester Zielordner | `{Art}` Antragsart, `{Nr}` Nummer im Antragsumfang, `{Name}` Titel bzw. Formularname, `{Antrag}` aktive Fassung, `{Formular}`, `{Kennung}`, `{Stand}` |
-| Projekt (Projektordner) | Nummernschema                                      | nur `{JAHR}`, `{JAHR_KURZ}` und `{Nr}` bzw. `{Nr:3}` – das Schema bildet die Projektnummer selbst                                                     |
-| Projekt                 | Name des Projektordners, Pfad der Projektdatei     | – (alle globalen)                                                                                                                                     |
-| Projekt                 | Dateinamenschema für Pläne                         | `{Plannummer}`, `{Index}`, `{Titel}`                                                                                                                  |
-| Projekt                 | Dateinamen der Vorlagen im Projekt                 | `{Name}` Name der Vorlage ohne Endung                                                                                                                 |
-| Projekt                 | Katasterpläne: Dateiname, Ablageordner             | `{Art}` Antragsart, `{Name}` Name des Plans; im Ordner `{Antrag}`                                                                                     |
-| AVA                     | Muster der Rechnungsdateien                        | `{Nr}`, `{Art}`, `{Lfd}`, `{Firma}`, `{Rechnungsdatum}`, `{Gewerk}`                                                                                   |
-| AVA                     | Name neuer LV-Dateien                              | `{Gewerk}`                                                                                                                                            |
-| AVA                     | Mailvorlagen (Rechnung)                            | `{Gewerk}`, `{Firma}`, `{FirmaMail}`, `{Rechnung}`, `{Nr}`, `{Betrag}`, `{Rechnungsdatum}`, `{Zahler}`                                                |
-| AVA                     | Mailvorlage Protokoll                              | `{Nr}`, `{Protokolldatum}`, `{Teilnehmer}`                                                                                                            |
+| App    | Einstellung                                        | lokale Variablen                                                                                                                                      |
+| ------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PERMIO | Namensvorlage exportierter PDFs, fester Zielordner | `{Art}` Antragsart, `{Nr}` Nummer im Antragsumfang, `{Name}` Titel bzw. Formularname, `{Antrag}` aktive Fassung, `{Formular}`, `{Kennung}`, `{Stand}` |
+| ATLAS  | Nummernschema                                      | nur `{JAHR}`, `{JAHR_KURZ}` und `{Nr}` bzw. `{Nr:3}` – das Schema bildet die Projektnummer selbst                                                     |
+| ATLAS  | Name des Projektordners, Pfad der Projektdatei     | – (alle globalen)                                                                                                                                     |
+| ATLAS  | Dateinamenschema für Pläne                         | `{Plannummer}`, `{Index}`, `{Titel}`                                                                                                                  |
+| ATLAS  | Dateinamen der Vorlagen im Projekt                 | `{Name}` Name der Vorlage ohne Endung                                                                                                                 |
+| ATLAS  | Katasterpläne: Dateiname, Ablageordner             | `{Art}` Antragsart, `{Name}` Name des Plans; im Ordner `{Antrag}`                                                                                     |
+| FABRIO | Muster der Rechnungsdateien                        | `{Nr}`, `{Art}`, `{Lfd}`, `{Firma}`, `{Rechnungsdatum}`, `{Gewerk}`                                                                                   |
+| FABRIO | Name neuer LV-Dateien                              | `{Gewerk}`                                                                                                                                            |
+| FABRIO | Mailvorlagen (Rechnung)                            | `{Gewerk}`, `{Firma}`, `{FirmaMail}`, `{Rechnung}`, `{Nr}`, `{Betrag}`, `{Rechnungsdatum}`, `{Zahler}`                                                |
+| FABRIO | Mailvorlage Protokoll                              | `{Nr}`, `{Protokolldatum}`, `{Teilnehmer}`                                                                                                            |
 
 ## Alte Namen gelten weiter
 
 Gespeicherte Einstellungen, Strukturen und Projektdateien werden **nicht** umgeschrieben. Alte Namen werden beim
 Ersetzen als Alias erkannt – ohne Rücksicht auf Groß-/Kleinschreibung, mit ihrer bisherigen Bedeutung:
 
-| alt                                                                                                                            | neu                                                                              |
-| ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| `{Kürzel}`, `{Kuerzel}`, `{nummer}`, `{projektcode}`; `{Projekt}` (Formulare), `{projekt}` (Projekt), `{Code}` (Katasterpläne) | `{PROJEKT_KUERZEL}`                                                              |
-| `{Kurzname}`, `{Vorhaben}`, `{Bearbeiter}`; `{Projekt}` (AVA)                                                                  | `{PROJEKT_KURZNAME}`, `{PROJEKT_VORHABEN}`, `{BEARBEITER}`; `{PROJEKT_VORHABEN}` |
-| `{Datum}` bzw. `{datum}` – Formulare, Projektdatei, Katasterpläne, LV-Dateien: JJMMTT                                          | `{DATUM}`                                                                        |
-| `{datum}` im Projektordner (Ordner- und Dateinamen): JJJJ-MM-TT                                                                | `{DATUM:JJJJ-MM-TT}`                                                             |
-| `{Jahr}`, `{jj}`                                                                                                               | `{JAHR}`, `{JAHR_KURZ}`                                                          |
-| `{Datum}` in der AVA (Rechnungen bzw. Protokoll)                                                                               | `{Rechnungsdatum}` bzw. `{Protokolldatum}`                                       |
-| `{Firma-Mail}` (AVA)                                                                                                           | `{FirmaMail}`                                                                    |
-| `{Phase}` (Formulare, frühere Einstellung „Phase“)                                                                             | `{Art}`                                                                          |
-| `{name}`, `{nr}`, `{plannummer}`, `{index}`, `{titel}` …                                                                       | `{Name}`, `{Nr}`, `{Plannummer}`, `{Index}`, `{Titel}`                           |
+| alt                                                                                                                       | neu                                                                              |
+| ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `{Kürzel}`, `{Kuerzel}`, `{nummer}`, `{projektcode}`; `{Projekt}` (PERMIO), `{projekt}` (ATLAS), `{Code}` (Katasterpläne) | `{PROJEKT_KUERZEL}`                                                              |
+| `{Kurzname}`, `{Vorhaben}`, `{Bearbeiter}`; `{Projekt}` (FABRIO)                                                          | `{PROJEKT_KURZNAME}`, `{PROJEKT_VORHABEN}`, `{BEARBEITER}`; `{PROJEKT_VORHABEN}` |
+| `{Datum}` bzw. `{datum}` – Formulare, Projektdatei, Katasterpläne, LV-Dateien: JJMMTT                                     | `{DATUM}`                                                                        |
+| `{datum}` in ATLAS (Ordner- und Dateinamen): JJJJ-MM-TT                                                                   | `{DATUM:JJJJ-MM-TT}`                                                             |
+| `{Jahr}`, `{jj}`                                                                                                          | `{JAHR}`, `{JAHR_KURZ}`                                                          |
+| `{Datum}` in FABRIO (Rechnungen bzw. Protokoll)                                                                           | `{Rechnungsdatum}` bzw. `{Protokolldatum}`                                       |
+| `{Firma-Mail}` (FABRIO)                                                                                                   | `{FirmaMail}`                                                                    |
+| `{Phase}` (PERMIO, frühere Einstellung „Phase“)                                                                           | `{Art}`                                                                          |
+| `{name}`, `{nr}`, `{plannummer}`, `{index}`, `{titel}` …                                                                  | `{Name}`, `{Nr}`, `{Plannummer}`, `{Index}`, `{Titel}`                           |
 
 Ein exakter neuer Name geht immer vor: `{DATUM}` ist überall die globale Variable, auch wo `{Datum}` früher etwas
 anderes hieß. Wer früher genau `{DATUM}` (groß) geschrieben hatte – die alten Platzhalter achteten nicht auf
-Groß-/Kleinschreibung –, bekommt jetzt die neue Bedeutung: im Projektordner JJMMTT statt JJJJ-MM-TT, in den
-Rechnungsmustern der AVA den Tag des Vorgangs statt des Rechnungsdatums. Das betrifft nur diese eine Schreibweise. Enthält eine Einstellung alte Namen, steht am Feld „Alte Schreibweise (funktioniert weiter): {Kürzel} →
+Groß-/Kleinschreibung –, bekommt jetzt die neue Bedeutung: in ATLAS JJMMTT statt JJJJ-MM-TT, in den
+Rechnungsmustern von FABRIO den Tag des Vorgangs statt des Rechnungsdatums. Das betrifft nur diese eine Schreibweise. Enthält eine Einstellung alte Namen, steht am Feld „Alte Schreibweise (funktioniert weiter): {Kürzel} →
 {PROJEKT_KUERZEL} …“ mit dem Knopf **Auf neue Namen umstellen** – erst dieser Klick stellt die Einstellung auf die neuen Namen
-um, mit gleicher Bedeutung (`{datum}` im Projektordner wird zu `{DATUM:JJJJ-MM-TT}`).
+um, mit gleicher Bedeutung (`{datum}` in ATLAS wird zu `{DATUM:JJJJ-MM-TT}`).
 
 ## Für Entwickler
 
@@ -93,4 +93,4 @@ um, mit gleicher Bedeutung (`{datum}` im Projektordner wird zu `{DATUM:JJJJ-MM-T
 - Oberfläche: `PlatzhalterChips` und `PlatzhalterHinweise` aus `@core/ui/Platzhalter`.
 - Lokale Variablen gehören zu ihrer App (z. B. `apps/ava/src/platzhalter.ts`, `PLATZHALTER_PLAN` in
   `apps/ordner/src/nummer.ts`) und folgen derselben Schreibregel. Aliase lokaler Variablen gehen denen der globalen
-  vor (`{Datum}` ist in der AVA das Rechnungsdatum).
+  vor (`{Datum}` ist in FABRIO das Rechnungsdatum).

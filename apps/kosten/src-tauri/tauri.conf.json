@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Kostenermittlung",
-  "version": "0.19.0",
+  "productName": "NUMIO",
+  "version": "0.20.0",
   "identifier": "de.pendzialek.kostenermittlung",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Kostenermittlung",
+        "title": "NUMIO",
         "width": 1400,
         "height": 900,
         "minWidth": 1000,
@@ -46,10 +46,12 @@
       "nsis": {
         "languages": [
           "German"
-        ]
+        ],
+        "installerHooks": "windows/umbenennung.nsh"
       },
       "wix": {
-        "language": "de-DE"
+        "language": "de-DE",
+        "upgradeCode": "efc92532-3046-51e8-98c4-f5ece7e0a386"
       }
     }
   },

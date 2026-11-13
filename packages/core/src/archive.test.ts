@@ -96,7 +96,7 @@ describe('Projektarchiv (.oap)', () => {
   });
 
   it('lehnt fremde ZIP-Dateien ab', () => {
-    expect(() => readProjectFile(zipSync({ 'a.txt': strToU8('x') }))).toThrow(/kein Projektarchiv/);
+    expect(() => readProjectFile(zipSync({ 'a.txt': strToU8('x') }))).toThrow(/keine Projektdatei dieser Apps/);
   });
 
   it('gleiche Originaldatei wird nur einmal gespeichert', () => {
@@ -157,7 +157,7 @@ describe('Abschnitte anderer Apps', () => {
     dateien['projekt.json'] = strToU8(JSON.stringify(roh));
     const gelesen = readProjectFile(zipSync(dateien));
     expect(gelesen.erweiterungen).toEqual({ zukunft: { umfang: [{ nr: '01', titel: 'Bauantrag' }], aktiveFassung: 'BAUA 2' } });
-    // wieder geschrieben (z. B. vom Flächenrechner): der Abschnitt steht unverändert auf der obersten Ebene
+    // wieder geschrieben (z. B. von QUADRIO): der Abschnitt steht unverändert auf der obersten Ebene
     const wieder = JSON.parse(strFromU8(unzipSync(writeArchive(gelesen))['projekt.json'])) as Record<string, unknown>;
     expect(wieder.zukunft).toEqual(roh.zukunft);
     expect(wieder.erweiterungen).toBeUndefined();

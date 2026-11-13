@@ -1,4 +1,5 @@
 import type { Workbook, Worksheet } from 'exceljs';
+import { APP_NAMEN } from '@core/appNamen';
 import { excel, fuelleVorlage, platzhalterBlatt } from '@core/excel/fill';
 import type { Project } from '@core/model';
 import { buildKostenContext, KOSTEN_PLACEHOLDER_DOCS } from './exportData';
@@ -155,7 +156,7 @@ function kostenBlatt(wb: Workbook): Worksheet {
 async function vorlage(mitHilfe: boolean): Promise<Uint8Array> {
   const ExcelJS = await excel();
   const wb: Workbook = new ExcelJS.Workbook();
-  wb.creator = 'Kostenermittlung';
+  wb.creator = APP_NAMEN.kosten.name;
   wb.created = new Date();
   kostenBlatt(wb);
   if (mitHilfe)

@@ -537,7 +537,7 @@ describe('Varianten, 3D-Stufen, IFC-Bericht (G-30 bis G-32)', () => {
       'UG: keine Bodenplatte gefunden – Dicke im Geschoss eintragen, damit der BRI ab UK Sohle rechnet.',
       '3 Räume mit Abzug aus der IFC-Nettofläche übernommen (Nettofläche kleiner als die Zonengeometrie, z. B. 3 % Putzabzug bei Rohbaumaßen).',
       '12 Räume aus IFC-Zonen übernommen.',
-      'Geländeoberfläche aus dem Modell übernommen – der GRZ-Nachweis prüft die Geschossigkeit am tatsächlichen Geländeverlauf.',
+      'Geländeoberfläche aus dem Modell übernommen – TERRIO (GRZ-Nachweis) prüft die Geschossigkeit am tatsächlichen Geländeverlauf.',
     ];
     const b = ifcBericht(p, zeilen, 'import');
     expect(b.titel).toBe('IFC-Import');

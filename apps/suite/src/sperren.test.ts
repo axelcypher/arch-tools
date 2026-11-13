@@ -13,7 +13,7 @@ describe('Sperrdateien der Formulare im Rahmen', () => {
     desktop = true;
   });
 
-  it('gibt sie frei, wenn Formulare zu ist oder umzieht', async () => {
+  it('gibt sie frei, wenn PERMIO zu ist oder umzieht', async () => {
     await sperrenFreigeben('formulare');
     expect(invoke).toHaveBeenCalledWith('rahmen_formulare_freigeben');
   });

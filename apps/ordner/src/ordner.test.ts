@@ -493,7 +493,7 @@ describe('Plan und Anlegen', () => {
     expect(strFromU8(fs.eintraege.get(`${basis}/00 Projekt/2026-014 Projektblatt.md`)!)).toBe('# 2026-014 – Familie Beispiel');
     // keine eigene projekt.json mehr – alles steht in der Projektdatei
     expect(fs.eintraege.has(`${basis}/projekt.json`)).toBe(false);
-    // die Projektdatei öffnen Flächenrechner, GRZ-Nachweis, Kostenermittlung und Formulare
+    // die Projektdatei öffnen QUADRIO, TERRIO, NUMIO und PERMIO
     const p = readProjectFile(fs.eintraege.get(`${basis}/00 Projekt/2026-014 EFH Musterweg.oap`)!);
     expect(p.name).toBe('Neubau eines Einfamilienhauses');
     expect(p.meta).toMatchObject({ projektcode: '2026-014', kurzname: 'EFH Musterweg', bearbeiter: 'TP', angelegt: '2026-10-01', leistungsphasen: [1, 2, 3, 4], adresse: { ort: 'Münster' }, bauherr: { name: 'Familie Beispiel' } });
@@ -696,7 +696,7 @@ describe('Vorlagen-Presets', () => {
     // einzelne Einträge abwählen: mit einem Ordner entfällt sein Inhalt
     expect(ohne(plan, ['06 Genehmigung/Anlagen']).schritte.filter((x) => !x.vorhanden).map((x) => x.pfad)).toEqual(['02 Pläne/Ausführung', '06 Genehmigung/2026-014 Bauantrag.pdf']);
 
-    // inzwischen trägt die Formulare-App ein Aktenzeichen ein – das bleibt erhalten
+    // inzwischen trägt PERMIO (Formulare) ein Aktenzeichen ein – das bleibt erhalten
     const oap = `${basis}/00 Projekt/2026-014 EFH Musterweg.oap`;
     const vonFormulare = readProjectFile(fs.eintraege.get(oap)!);
     vonFormulare.meta.aktenzeichen = '63/123/27';

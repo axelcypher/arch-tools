@@ -299,7 +299,7 @@
   background: var(--accent-soft);
 }
 
-/* „Neues Projekt anlegen“ (Assistent der Projekt-App über die Rahmen-App) */
+/* „Neues Projekt anlegen“ (Assistent von ATLAS über die Rahmen-App) */
 .pa-anlegen {
   display: inline-flex;
   align-items: center;

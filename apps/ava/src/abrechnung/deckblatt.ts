@@ -10,6 +10,7 @@
 
 import type { PDFFont, PDFPage } from 'pdf-lib';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { APP_NAMEN } from '@core/appNamen';
 import type { Pruefung } from './pruefung';
 import { datumDE, euro, pruefen } from './pruefung';
 
@@ -97,7 +98,7 @@ const prozentText = (n: number) => `${n.toLocaleString('de-DE', { maximumFractio
 export async function deckblattPdf(d: DeckblattDaten, briefbogen?: Uint8Array | null): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`${d.kuerzel} ${d.gewerk} ${d.firma} ${d.zahlungsfreigabe} – Rechnungsprüfung`);
-  doc.setCreator('arch-tools AVA');
+  doc.setCreator(APP_NAMEN.ava.name);
   const page = doc.addPage(A4);
   const s: Stift = { page, font: await doc.embedFont(StandardFonts.Helvetica), fett: await doc.embedFont(StandardFonts.HelveticaBold) };
   if (briefbogen) {

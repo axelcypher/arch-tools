@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { APP_NAMEN } from '@core/appNamen';
 import type { Beteiligter, ProjektStatus } from '@core/model';
 import { anschriftEinzeilig, bebauungsplanText, flurText, LEISTUNGSPHASEN } from '@core/model';
 import { zuletztMerken } from '@core/platform/konfig';
@@ -263,7 +264,7 @@ export function AssistentView({
       ergaenzenMit(await ladeProjektordner(pfad));
       setLesung((n) => n + 1);
       // „Zuletzt geöffnet“ – je Benutzer, gemeinsam für alle Apps
-      void zuletztMerken(pfad, 'Projekt').catch(() => undefined);
+      void zuletztMerken(pfad, APP_NAMEN.ordner.name).catch(() => undefined);
     } catch (e) {
       setFehler(e instanceof Error ? e.message : String(e));
     } finally {
@@ -322,7 +323,7 @@ export function AssistentView({
           const liste = await ausfuehren(tauriDateisystem, stammordner, auszufuehren, { fortschritt: (i, n) => setLaeuft(`Projektordner wird angelegt … ${i} / ${n}`) });
           log.info(`Projektordner angelegt: ${auszufuehren.ordner}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, fehler: liste.filter((x) => x.status === 'fehler').length, presets: auszufuehren.presets });
           fertig(auszufuehren.ordner, verbinde(stammordner, auszufuehren.ordner), liste);
-          void zuletztMerken(verbinde(stammordner, auszufuehren.ordner), 'Projekt').catch(() => undefined);
+          void zuletztMerken(verbinde(stammordner, auszufuehren.ordner), APP_NAMEN.ordner.name).catch(() => undefined);
         } else {
           setLaeuft('ZIP wird erstellt …');
           const fs = new SpeicherDateisystem();
@@ -654,7 +655,7 @@ export function AssistentView({
                 </button>
               </p>
             )}
-            {desktop && <p className="muted small-text">Das Projekt steht in allen Apps unter „Zuletzt geöffnet“ – etwa im Flächenrechner zum Weiterarbeiten.</p>}
+            {desktop && <p className="muted small-text">Das Projekt steht in allen Apps unter „Zuletzt geöffnet“ – etwa in QUADRIO (Flächenrechner) zum Weiterarbeiten.</p>}
           </div>
         )}
 

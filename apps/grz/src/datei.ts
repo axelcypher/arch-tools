@@ -1,4 +1,5 @@
 import { ARCHIV_ENDUNG, readProjectFile } from '@core/archive';
+import { APP_NAMEN } from '@core/appNamen';
 import { buildFromIfc } from '@core/ifcImport';
 import { projektAusIfc } from '@core/ifcAbgleich';
 import type { Project } from '@core/model';
@@ -22,7 +23,7 @@ export interface Geoeffnet {
 }
 
 /**
- * Projekt öffnen: Projektarchiv des Flächenrechners (.oap), frühere JSON-Projektdateien
+ * Projekt öffnen: Projektarchiv von QUADRIO (.oap), frühere JSON-Projektdateien
  * oder direkt ein IFC-Modell (Geschosse, BGF-Umrisse, Räume, Dach, Lageplan).
  */
 export async function oeffnen(onProgress?: (msg: string) => void, bisher?: string | null): Promise<Geoeffnet | null> {
@@ -49,9 +50,9 @@ export async function oeffnen(onProgress?: (msg: string) => void, bisher?: strin
   return { project: p, datei: f.pfad ?? f.name, basis: p, bericht: [] };
 }
 
-/** Speichert das Projekt als Archiv (.oap) – dieselbe Datei öffnet auch der Flächenrechner */
+/** Speichert das Projekt als Archiv (.oap) – dieselbe Datei öffnet auch QUADRIO */
 export function speichern(p: Project, datei: string | null, basis: Project | null, unter = false): Promise<ProjektGespeichert | null> {
-  return projektSpeichern({ project: p, basis, datei, unter, app: `GRZ-Nachweis ${__APP_VERSION__}`, fuerDatei: vorlage.mit });
+  return projektSpeichern({ project: p, basis, datei, unter, app: `${APP_NAMEN.grz.name} ${__APP_VERSION__}`, fuerDatei: vorlage.mit });
 }
 
 /** Projekt mit einem neuen Export desselben IFC-Modells aktualisieren – Änderungen von Hand bleiben */
@@ -61,18 +62,18 @@ export async function ifcAktualisierenWaehlen(p: Project, datei: string | null, 
   return { project: r.project, bericht: r.bericht };
 }
 
-/** Hinweise des IFC-Imports, die nur den Flächenrechner betreffen (BRI, Putzabzug, Wohnfläche, Geschossschnitte) */
+/** Hinweise des IFC-Imports, die nur QUADRIO betreffen (BRI, Putzabzug, Wohnfläche, Geschossschnitte) */
 const NUR_FLAECHENRECHNER =
   /\bBRI\b|Rauminhalt|Bodenplatte|UK Sohle|Putzabzug|Nettofläche|Wohnfläche|WoFlV|Wohnung|Zonenkategorie|Geschossschnitte|„Erkennen“|BGF bis zur Dachhaut|Dachform|Dachbauteil/;
 
 export interface IfcBericht {
   titel: 'IFC-Import' | 'IFC-Abgleich';
-  /** Zusammenfassung für den GRZ-Nachweis: Lageplan-Flächen, Geländemodell, Geschosse */
+  /** Zusammenfassung für TERRIO: Lageplan-Flächen, Geländemodell, Geschosse */
   zusammenfassung: string;
   zeilen: string[];
 }
 
-/** Bericht des IFC-Imports bzw. -Abgleichs auf den GRZ-Nachweis zugeschnitten */
+/** Bericht des IFC-Imports bzw. -Abgleichs auf TERRIO zugeschnitten */
 export function ifcBericht(p: Project, zeilen: string[], art: 'import' | 'abgleich'): IfcBericht {
   const geschosse = p.storeys.filter((st) => st.shapes.some((x) => x.kind === 'outline')).map((st) => st.name);
   const lp = p.lageplan?.flaechen.length ?? 0;

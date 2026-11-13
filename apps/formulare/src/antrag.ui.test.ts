@@ -1629,7 +1629,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(readProjectFile(ds.dateien.get(OAP)!).meta.antrag).toMatchObject({ name: 'BAUA 2', eingereicht: { datei: 'BS9 BAUA 261103 Eingangsbestätigung.pdf' } });
     expect(host.querySelector('.an-eingereicht')!.textContent).toContain('eingereicht');
 
-    // Startseite von Formulare
+    // Startseite von PERMIO
     await klick(antragsdaten(host));
     await klick(knopf(host, 'Antragsumfang festlegen'));
     await warte();

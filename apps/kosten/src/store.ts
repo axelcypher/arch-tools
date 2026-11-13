@@ -7,8 +7,8 @@ import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 
 /**
- * Zustand der Kostenermittlung: das Projekt im gemeinsamen Format (.oap) – Gebäude, Geschosse und
- * Flächen kommen aus dem Flächenrechner bzw. der IFC, Kostenpositionen und Kostenstände pflegt dieses Tool.
+ * Zustand von NUMIO: das Projekt im gemeinsamen Format (.oap) – Gebäude, Geschosse und
+ * Flächen kommen aus QUADRIO bzw. der IFC, Kostenpositionen und Kostenstände pflegt dieses Tool.
  */
 
 const log = logger('projekt');
