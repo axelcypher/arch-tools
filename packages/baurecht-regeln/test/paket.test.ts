@@ -327,31 +327,33 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
   });
 });
 
-/** Angaben, die im `wenn` einer anderen Angabe stehen (auch über Bausteine) – sie entscheiden, ob eine Frage gestellt wird */
-const AUSLOESER: ReadonlySet<string> = (() => {
-  const out = new Set<string>();
+/** Auslöser einer Frage (Angaben im `wenn` einer anderen Angabe, auch über Bausteine) → die Angaben, deren Frage sie auslösen */
+const AUSLOESER: ReadonlyMap<string, ReadonlySet<string>> = (() => {
+  const out = new Map<string, Set<string>>();
   const bausteine: Record<string, unknown> = Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {}));
-  const besucht = new Set<string>();
-  const lauf = (k: unknown): void => {
-    if (Array.isArray(k)) k.forEach(lauf);
-    else if (k && typeof k === 'object') {
-      const o = k as Record<string, unknown>;
-      if (typeof o.f === 'string') out.add(o.f);
-      if (typeof o.$ === 'string' && !besucht.has(o.$)) {
-        besucht.add(o.$);
-        lauf(bausteine[o.$]);
+  for (const [id, d] of Object.entries(faktDefinitionen(aktiveModule(paket.module, SOEST)))) {
+    const besucht = new Set<string>();
+    const lauf = (k: unknown): void => {
+      if (Array.isArray(k)) k.forEach(lauf);
+      else if (k && typeof k === 'object') {
+        const o = k as Record<string, unknown>;
+        if (typeof o.f === 'string' && o.f !== id) out.set(o.f, (out.get(o.f) ?? new Set()).add(id));
+        if (typeof o.$ === 'string' && !besucht.has(o.$)) {
+          besucht.add(o.$);
+          lauf(bausteine[o.$]);
+        }
+        Object.values(o).forEach(lauf);
       }
-      Object.values(o).forEach(lauf);
-    }
-  };
-  for (const d of Object.values(faktDefinitionen(aktiveModule(paket.module, SOEST)))) lauf(d.wenn);
+    };
+    lauf(d.wenn);
+  }
   return out;
 })();
 
 describe('Fallmatrix', () => {
   // nur voll sinnvoll: „Herabstufen“ und „Text“ prüfen je Paragraf den ersten grünen Fall – eine Stichprobe prüfte andere
   // Fälle als die CI und deckte nicht dasselbe ab
-  // voll etwa 10 min (Auslöser je grünem Pfad) – deshalb die lange Zeitgrenze
+  // voll mehrere Minuten (Auslöser je Satz tragender Antworten) – deshalb die lange Zeitgrenze
   it.runIf(VOLL)('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: MATRIX_ZEIT_LANG }, () => {
     const fehler: string[] = [];
     const melde = (t: string) => {
@@ -396,10 +398,11 @@ describe('Fallmatrix', () => {
       //    grün sein – sonst wurde der Hinweis wie eine gesicherte Angabe behandelt (je Paragraf und Fakt einmal)
       for (const { m, p, ref } of gruen) {
         for (const v of [...new Set([...p.verwendet, ...ref])]) {
-          // je Paragraf und Fakt einmal; Auslöser einer Frage (stehen im `wenn` einer anderen Angabe) dagegen je grünem Pfad
-          // (die Angaben, auf denen das Grün beruht): Über eine Rückfrage kann ein Hinweis auf einem anderen Pfad ein Grün
-          // tragen (Befund: Umfang der Beseitigung nur Hinweis → „Altbau verfahrensfrei“ gestellt → § 74 BauO NRW grün)
-          const pfad = AUSLOESER.has(v) ? `${p.id}|${v}|${[...p.verwendet].sort().join(',')}` : `${p.id}|${v}`;
+          // je Paragraf und Fakt einmal; ist der Fakt Auslöser einer Frage, deren Antwort das Grün mitträgt, dagegen je Satz
+          // solcher Antworten: Über eine Rückfrage kann ein Hinweis auf einem anderen Pfad ein Grün tragen (Befund: Umfang
+          // der Beseitigung nur Hinweis → „Altbau verfahrensfrei“ gestellt → § 74 BauO NRW grün)
+          const abh = p.verwendet.filter((x) => AUSLOESER.get(v)?.has(x)).sort();
+          const pfad = abh.length ? `${p.id}|${v}|${abh.join(',')}` : `${p.id}|${v}`;
           if (v.includes(':') || !lauf.fakten[v] || geprueftHerab.has(pfad)) continue;
           geprueftHerab.add(pfad);
           const alsHinweis = { ...lauf.fakten, [v]: { ...lauf.fakten[v], sicherheit: 'hinweis' as const, grund: 'Test' } };
@@ -2395,7 +2398,7 @@ describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
     const f = alleFakten('ja');
     expect(f[v]?.wert).toBe('Abbruch mit Ersatzbau');
     // die Fallmatrix prüft den Umfang als Auslöser einer Frage je grünem Pfad (über den Baustein „ersatzbau“)
-    expect(AUSLOESER.has(v)).toBe(true);
+    expect(AUSLOESER.get(v)?.has('nw.altbau_verfahrensfrei')).toBe(true);
     const alle = (ampel: string) => Object.fromEntries(IDS.map((id) => [id, ampel]));
     expect(ampelnBei(f)).toEqual(alle('gruen'));
     expect(ampelnBei({ ...f, [v]: { ...f[v], sicherheit: 'hinweis', grund: 'aus dem Formular' } })).toEqual(alle('gelb'));
@@ -2404,13 +2407,22 @@ describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
     expect(ampelnBei({ ...f, [v]: { ...f[v], sicherheit: 'hinweis', bestaetigt: { von: 'TP', am: '2026-11-13', grund: 'Abbruchantrag' } } })).toEqual(alle('gruen'));
   });
 
-  it('die Antwort auf die nur über den Hinweis gestellte Frage steht als Hinweis mit Grund in der Auswertung', () => {
+  it('die Antwort bleibt gesichert (beantwortet) und trägt den Auslöser; Paragraf nennt und bestätigt den Umfang, nicht die Antwort', () => {
     const f = alleFakten('ja');
-    const a = auswerten(eingabe(m, { ...f, [v]: { ...f[v], sicherheit: 'hinweis' } }, TEXTE));
-    expect(a.fakten['nw.altbau_verfahrensfrei']).toMatchObject({ wert: true, sicherheit: 'hinweis' });
-    expect(a.fakten['nw.altbau_verfahrensfrei'].grund).toMatch(/^Frage nur über den Hinweis .*Beseitigung.* gestellt$/);
-    // gesichert: keine Herabstufung
-    expect(auswerten(eingabe(m, f, TEXTE)).fakten['nw.altbau_verfahrensfrei'].sicherheit).toBe('sicher');
+    const umfangHinweis = { ...f, [v]: { ...f[v], sicherheit: 'hinweis' as const } };
+    const a = auswerten(eingabe(m, umfangHinweis, TEXTE));
+    expect(a.fakten['nw.altbau_verfahrensfrei']).toMatchObject({ wert: true, sicherheit: 'sicher', ueberHinweis: [v] });
+    for (const id of IDS) {
+      const p = a.paragrafen.find((x) => x.id === id)!;
+      expect(p.unsicher, id).toEqual([v]);
+      expect(p.bestaetigend, id).toBe(v);
+      expect(p.gruende.join(' '), id).toMatch(/Nur Hinweis, nicht gesichert: Umfang der Beseitigung/);
+    }
+    // die Antwort selbst zu „bestätigen“ bringt das Grün nicht zurück – der Umfang ist weiter nur Hinweis
+    const altbauBestaetigt = { ...umfangHinweis, 'nw.altbau_verfahrensfrei': { ...f['nw.altbau_verfahrensfrei'], bestaetigt: { von: 'TP', am: '2026-11-13' } } };
+    expect(ampelnBei(altbauBestaetigt)).toEqual(Object.fromEntries(IDS.map((id) => [id, 'gelb'])));
+    // gesichert: keine Markierung
+    expect(auswerten(eingabe(m, f, TEXTE)).fakten['nw.altbau_verfahrensfrei'].ueberHinweis).toBeUndefined();
   });
 });
 

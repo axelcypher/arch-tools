@@ -1474,3 +1474,32 @@ describe('Designsystem: Dialogkopf, Enter, Druckvorschau, Symbole', () => {
   });
 });
 
+describe('Rückfrage, die nur über einen Hinweis gestellt wird', () => {
+  beforeEach(() => {
+    geschrieben = null;
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+  });
+  afterEach(() => {
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+  });
+
+  it('Umfang nur Hinweis, „Altbau verfahrensfrei“ beantwortet: die Antwort gilt als beantwortet, „Bestätigen …“ steht am Umfang', () => {
+    const host = render();
+    act(() => useBaurecht.getState().merkmalSetzen('Vorhaben', 'Beseitigung'));
+    act(() =>
+      useBaurecht.setState((s) => ({
+        pruefung: { ...s.pruefung, fakten: { ...s.pruefung.fakten, 'vorhaben.beseitigung_umfang': { wert: 'Abbruch mit Ersatzbau', herkunft: 'manuell', sicherheit: 'hinweis', grund: 'aus dem Formular' } } },
+      })),
+    );
+    act(() => useBaurecht.getState().faktSetzen('nw.altbau_verfahrensfrei', true, 'TP'));
+    const umfang = host.querySelector('[data-fakt="vorhaben.beseitigung_umfang"]');
+    expect(umfang, 'der Umfang steht als offene Rückfrage da (nur Hinweis)').not.toBeNull();
+    expect(umfang!.querySelector('button[data-bestaetigen]')).not.toBeNull();
+    // die Antwort selbst ist beantwortet: keine offene Zeile mit „Bestätigen …“
+    expect(host.querySelector('[data-fakt="nw.altbau_verfahrensfrei"] button[data-bestaetigen]')).toBeNull();
+    expect(useBaurecht.getState().pruefung.fakten['nw.altbau_verfahrensfrei']).toMatchObject({ wert: true, sicherheit: 'sicher' });
+    expect(useBaurecht.getState().pruefung.fakten['nw.altbau_verfahrensfrei'].ueberHinweis).toBeUndefined();
+  });
+});

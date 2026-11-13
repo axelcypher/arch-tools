@@ -170,6 +170,8 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
             sicherheit: unsicher ? 'hinweis' : 'sicher',
             ...(unsicher ? { grund: d.nach.hinweis ? `Tabelle nach ${d.nach.fakt === 'lage.ags' ? 'Gemeinde' : d.nach.fakt} – hängt von der Lage ab, bitte prüfen` : (basis.grund ?? 'abgeleitet aus einem nicht gesicherten Wert') } : {}),
             ...(basis.widerspruch ? { widerspruch: basis.widerspruch } : {}),
+            // abgeleitet aus einer Antwort, die nur über Hinweise gestellt ist: deren Auslöser gehen mit
+            ...(basis.ueberHinweis?.length ? { ueberHinweis: basis.ueberHinweis } : {}),
             ...(bestaetigt ? { bestaetigt } : {}),
           };
       }
@@ -239,17 +241,27 @@ function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record
 }
 
 /**
- * Antworten auf Fragen, die nur wegen eines Hinweises gestellt werden (frageStand), zählen selbst nur als Hinweis – sonst
- * höbe der Hinweis über die Antwort einen Paragrafen auf „entfällt“ (z. B. „Altbau verfahrensfrei: ja“, gestellt nur, weil
- * der Umfang „Abbruch mit Ersatzbau“ nicht gesichert ist). Eine Bestätigung von Hand bleibt (sie zählt wie bisher).
+ * Antworten auf Fragen, die nur wegen eines Hinweises gestellt werden (frageStand), bekommen diese Hinweise als
+ * `ueberHinweis` mit: Regeln, die die Antwort verwenden, zählen dann den Auslöser als unsicher (kurz.ts) – sonst höbe der
+ * Hinweis über die Antwort einen Paragrafen auf „entfällt“ (z. B. „Altbau verfahrensfrei: ja“, gestellt nur, weil der
+ * Umfang „Abbruch mit Ersatzbau“ nicht gesichert ist). Die Antwort selbst bleibt gesichert (sie ist beantwortet);
+ * bestätigt wird der Auslöser. Bis zum Fixpunkt: eine markierte Antwort kann ihrerseits eine Frage nur über Hinweise
+ * stellen (Kette).
  */
 function ueberHinweisGestellt(antworten: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
-  const ctx: KurzKontext = { ...rest, fakten: ableiten(antworten) };
-  const out: Record<string, FaktWert> = {};
-  for (const [id, w] of Object.entries(antworten)) {
-    const hinweise = frageStand(id, defs[id], ctx).ueberHinweis.filter((h) => h !== id);
-    if (!hinweise.length || w.sicherheit === 'hinweis' || w.wert === null || w.wert === '') out[id] = w;
-    else out[id] = { ...w, sicherheit: 'hinweis', grund: `Frage nur über ${hinweise.length === 1 ? 'den Hinweis' : 'die Hinweise'} ${hinweise.map((h) => defs[h]?.titel ?? h).join(', ')} gestellt` };
+  let out = antworten;
+  let vorher = '';
+  for (let runde = 0; runde <= Object.keys(antworten).length + 1; runde++) {
+    const ctx: KurzKontext = { ...rest, fakten: ableiten(out) };
+    const naechste: Record<string, FaktWert> = {};
+    for (const [id, w] of Object.entries(antworten)) {
+      const hinweise = w.wert === null || w.wert === '' ? [] : [...new Set(frageStand(id, defs[id], ctx).ueberHinweis.filter((h) => h !== id))].sort();
+      naechste[id] = hinweise.length ? { ...w, ueberHinweis: hinweise } : w;
+    }
+    const schluessel = JSON.stringify(Object.entries(naechste).map(([id, w]) => [id, w.ueberHinweis ?? []]));
+    out = naechste;
+    if (schluessel === vorher) break;
+    vorher = schluessel;
   }
   return out;
 }
@@ -257,7 +269,7 @@ function ueberHinweisGestellt(antworten: Record<string, FaktWert>, ableiten: (f:
 /**
  * Die Antworten, deren Frage gestellt wird (frageGestellt) – ausgewertet mit den abgeleiteten Werten (`ableiten`), bis
  * sich nichts mehr ändert (höchstens einige Runden; eine weggelassene Antwort kann weitere Fragen verbergen). Antworten
- * auf Fragen, die nur über einen Hinweis gestellt werden, zählen nur als Hinweis (ueberHinweisGestellt).
+ * auf Fragen, die nur über einen Hinweis gestellt werden, tragen ihn mit (ueberHinweisGestellt).
  */
 export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
   let gestellt = eingabe;

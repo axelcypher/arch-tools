@@ -840,6 +840,26 @@ describe('Runde 18: nur gestellte Antworten zählen', () => {
     expect(Object.keys(gestellteAntworten({ a: hinweis(false), b: sicher(true) }, (f) => f, defs, rest)).sort()).toEqual(['a', 'b']);
     expect(Object.keys(gestellteAntworten({ a: sicher(true), b: sicher(true), c: sicher(true) }, (f) => f, defs, rest)).sort()).toEqual(['a', 'b', 'c']);
   });
+
+  it('Antworten auf nur über Hinweise gestellte Fragen tragen den Auslöser mit – auch in der Kette, nicht mit bestätigtem Auslöser', () => {
+    const defs = {
+      h: { titel: 'H', gruppe: 'x', typ: 'janein' },
+      a: { titel: 'A', gruppe: 'x', typ: 'janein', wenn: { f: 'h', ist: true } },
+      b: { titel: 'B', gruppe: 'x', typ: 'janein', wenn: { f: 'a', ist: true } },
+    } as unknown as Record<string, import('./typen').FaktDef>;
+    const rest = { merkmale: {}, einreichung: '2026-12-01', heute: '2026-11-13', bausteine: {} };
+    // H nur Hinweis → A gestellt über H → B gestellt über A, also ebenfalls über H; die Antworten bleiben gesichert
+    const r = gestellteAntworten({ h: hinweis(true), a: sicher(true), b: sicher(false) }, (f) => f, defs, rest);
+    expect(r.a).toMatchObject({ wert: true, sicherheit: 'sicher', ueberHinweis: ['h'] });
+    expect(r.b).toMatchObject({ wert: false, sicherheit: 'sicher', ueberHinweis: ['h'] });
+    expect(r.h.ueberHinweis).toBeUndefined();
+    // gesichert bzw. bestätigt: keine Markierung
+    const s = gestellteAntworten({ h: sicher(true), a: sicher(true), b: sicher(false) }, (f) => f, defs, rest);
+    expect(s.a.ueberHinweis).toBeUndefined();
+    expect(s.b.ueberHinweis).toBeUndefined();
+    const best = gestellteAntworten({ h: { ...hinweis(true), bestaetigt: { von: 'TP', am: '2026-11-13' } }, a: sicher(true) }, (f) => f, defs, rest);
+    expect(best.a.ueberHinweis).toBeUndefined();
+  });
 });
 
 describe('Runde 19: Kriterium „gestellt“ und Paketregeln für Fragen', () => {
