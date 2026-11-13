@@ -367,7 +367,7 @@ function EigeneNavEintrag({ aktiv, onClick }: { aktiv: boolean; onClick: () => v
         <span className="pk-nav-name">
           <Symbol name="liste" /> Eigene Ansicht
         </span>
-        <span className="pk-nav-kurz">{n ? `${n} ${n === 1 ? 'Eintrag' : 'Einträge'} auf einer Seite` : 'zusammenstellen …'}</span>
+        <span className="pk-nav-kurz">{n ? `${n} ${n === 1 ? 'Eintrag' : 'Einträge'} auf einer Seite` : 'noch leer – zusammenstellen'}</span>
       </button>
     </div>
   );

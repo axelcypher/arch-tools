@@ -69,12 +69,12 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
         <div className="bd-knoepfe">
           {merkmale.length > 0 && (
             <button className="small" onClick={() => anfangen({ art: 'merkmal', merkmal: merkmale[0].name, werte: [] })}>
-              <Symbol name="plus" /> Nur bei Antragsmerkmal …
+              <Symbol name="plus" /> Nur bei Antragsmerkmal
             </button>
           )}
           {felder && wahl.length > 0 && (
             <button className="small" onClick={() => anfangen(feldRegel(wahl[0].feld.schluessel))}>
-              <Symbol name="plus" /> Nur wenn Feld …
+              <Symbol name="plus" /> Nur wenn Feld
             </button>
           )}
           {felder && imFormularWaehlen && (

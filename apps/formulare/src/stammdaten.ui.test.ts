@@ -400,6 +400,16 @@ describe('Einstellungen', () => {
     expect(knoepfe(host, 'Adresse hinzufügen')).toHaveLength(1);
     expect(knoepfe(host, 'Aus den Projektdaten einlesen')).toHaveLength(1);
     expect(knoepfe(host, 'Neu einlesen')).toHaveLength(0);
+    // nur eigene Adressen, nie eingelesen: weiter „Aus den Projektdaten einlesen“
+    eingabe(host.querySelector<HTMLInputElement>('.es-adress-form input[aria-label="Name/Firma"]')!, 'Statik Nord GmbH');
+    await klick(knopf(host.querySelector('.es-adress-form')!, 'Speichern'));
+    expect(useFormulare.getState().adressbuch).toMatchObject({ stand: 0 });
+    expect(knoepfe(host, 'Aus den Projektdaten einlesen')).toHaveLength(1);
+    expect(knoepfe(host, 'Neu einlesen')).toHaveLength(0);
+    // nach dem Einlesen heißt der Knopf „Neu einlesen“
+    await klick(knopf(host, 'Aus den Projektdaten einlesen'));
+    await warte();
+    expect(knoepfe(host, 'Neu einlesen')).toHaveLength(1);
   });
 
   it('Adressbuch bearbeiten: neue Adresse anlegen, eine aus den Projektkarten ändern und ausblenden – gespeichert im Konfigurationsordner', async () => {

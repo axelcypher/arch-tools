@@ -437,7 +437,7 @@ describe('Formulare', () => {
     const nav = [...host.querySelectorAll('.pk-nav-eintrag')].map((b) => [b.querySelector('.pk-nav-name')!.textContent!.trim(), b.querySelector('.pk-nav-kurz')!.textContent]);
     expect(nav).toEqual([
       // oben die eigene Ansicht (noch nicht zusammengestellt); der Antragsumfang steht in den Antragsdaten
-      ['Eigene Ansicht', 'zusammenstellen …'],
+      ['Eigene Ansicht', 'noch leer – zusammenstellen'],
       ['Projektdaten', 'Neubau'],
       ['Bauherr', 'Mustermann, Max · Musterstadt'],
       ['Eigentümer des Baugrundstücks', 'nicht ausgefüllt'],
