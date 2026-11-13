@@ -392,12 +392,12 @@
       }
     },
     "soest.einfriedungspflicht": {
-      "titel": "Zur öffentlichen Verkehrsfläche hin liegt oder entsteht (auch durch einen Abbruch oder Teilabbruch) ein Vorgarten oder eine Fläche zwischen Gebäuden, oder zur Verkehrsfläche hin ein Garten, ein Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen",
+      "titel": "Zur öffentlichen Verkehrsfläche hin ein Vorgarten, eine Fläche zwischen Gebäuden oder ein Garten, Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen – beim Neubau vorhanden oder geplant, beim Abbruch, Teilabbruch bzw. neuen Stellplätzen erst durch das Vorhaben entstehend",
       "kurz": "Einfriedigungspflicht zur Straße",
       "gruppe": "grundstueck",
       "typ": "janein",
-      "frage": "Liegt oder entsteht zur öffentlichen Verkehrsfläche hin ein Vorgarten oder eine Lücke zwischen Gebäuden (auch durch den Abbruch oder Teilabbruch) – oder grenzt dort ein Garten, Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen an?",
-      "hilfe": "§ 12 Abs. 1 Altstadtsatzung (gilt für Einfriedigungen zu öffentlichen Verkehrsflächen): Vorgärten und Flächen zwischen Gebäuden sind mit Gitter auf Grünsandsteinsockel oder Bruchsteinmauer einzufriedigen (Nr. 1), Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2). Rückwärtige Gärten ohne Grenze zur Verkehrsfläche zählen nicht. Auch beim Abbruch eines freistehenden Gebäudes an der Straße entsteht eine solche Fläche; ein Hinterhaus ohne Grenze zur Verkehrsfläche zählt nicht.",
+      "frage": "Neubau: Liegt oder entsteht zur öffentlichen Verkehrsfläche hin ein Vorgarten, eine Lücke zwischen Gebäuden, ein Garten, Lagerplatz oder eine Stellplatzanlage mit mehr als 3 Stellplätzen? Abbruch, Teilabbruch oder neue Stellplätze: Entsteht eine solche Fläche erst durch das Vorhaben?",
+      "hilfe": "§ 12 Abs. 1 Altstadtsatzung (gilt für Einfriedigungen zu öffentlichen Verkehrsflächen): Vorgärten und Flächen zwischen Gebäuden sind mit Gitter auf Grünsandsteinsockel oder Bruchsteinmauer einzufriedigen (Nr. 1), Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2). Rückwärtige Gärten ohne Grenze zur Verkehrsfläche zählen nicht. Beim Abbruch eines freistehenden Gebäudes an der Straße entsteht eine solche Fläche; ein Hinterhaus ohne Grenze zur Verkehrsfläche zählt nicht. Beim Teilabbruch und bei neuen Stellplätzen zählt nur, was durch das Vorhaben neu entsteht – ein vorhandener Vorgarten, an dem nichts geändert wird, muss nicht angepasst werden (Maßstab ist die Baumaßnahme, § 19).",
       "wenn": {
         "und": [
           {

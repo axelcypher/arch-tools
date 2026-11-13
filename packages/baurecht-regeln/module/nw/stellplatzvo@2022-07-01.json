@@ -7,32 +7,7 @@
   "paragrafen": {
     "1": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Pflicht zur Herstellung notwendiger Stellplätze für Kfz und Fahrräder bei Errichtung oder Nutzungsänderung mit Zu- oder Abgangsverkehr – nur, soweit keine Stellplatzsatzung oder Festsetzung im Bebauungsplan besteht.",
       "fundstellen": [
@@ -55,32 +30,7 @@
     },
     "2": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Notwendige Stellplätze in ausreichender Zahl, Größe und Beschaffenheit; bei Änderung oder Nutzungsänderung nur für den Mehrbedarf.",
       "fundstellen": [
@@ -103,32 +53,7 @@
     },
     "3": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Anzahl nach den Richtzahlen der Anlage; bei Wohngebäuden GK 1 und 2 zählt eine Garagenzufahrt als Stellplatz, gefangene Stellplätze sind zulässig.",
       "fundstellen": [
@@ -154,32 +79,7 @@
     },
     "4": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Verringerung der Anzahl notwendiger Stellplätze (ÖPNV-Lage, Mobilitätskonzept, offensichtliches Missverhältnis).",
       "fundstellen": [
@@ -202,32 +102,7 @@
     },
     "5": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Herstellung auf dem Baugrundstück oder in zumutbarer Entfernung (bis 500 m, bei Wohnungsbau bis 300 m, Fahrräder bis 100 m) mit öffentlich-rechtlicher Sicherung; fertig spätestens bei Nutzungsaufnahme.",
       "fundstellen": [
@@ -290,32 +165,7 @@
     },
     "7": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Größe und Beschaffenheit notwendiger Kfz-Stellplätze; bei Wohngebäuden nach § 49 Abs. 1 BauO NRW mindestens ein Stellplatz für Menschen mit Behinderung (Abs. 2) – gilt neben einer Stellplatzsatzung, soweit diese das nicht regelt (§ 1 Abs. 2).",
       "fundstellen": [
@@ -336,32 +186,7 @@
     },
     "8": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Beschaffenheit notwendiger Fahrradabstellplätze.",
       "fundstellen": [

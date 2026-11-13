@@ -323,8 +323,7 @@
           "$": "innen_34"
         },
         {
-          "f": "planung.planreife",
-          "ist": true
+          "$": "planreif"
         }
       ]
     },
@@ -571,21 +570,21 @@
       }
     },
     "planung.hoehe_festgesetzt": {
-      "titel": "Höhe baulicher Anlagen im Bebauungsplan festgesetzt (Trauf-, First-, Gebäudehöhe)",
+      "titel": "Höhe baulicher Anlagen im Bebauungsplan festgesetzt (Trauf-, First-, Gebäudehöhe; bei Planreife im Entwurf)",
       "kurz": "Höhe im Bebauungsplan festgesetzt",
       "gruppe": "planung",
       "typ": "janein",
       "wenn": {
-        "$": "bplan_jeder"
+        "$": "bplan_jeder_planreif"
       }
     },
     "planung.bauweise_festgesetzt": {
-      "titel": "Bauweise im Bebauungsplan festgesetzt (offen, geschlossen, abweichend)",
+      "titel": "Bauweise im Bebauungsplan festgesetzt (offen, geschlossen, abweichend; bei Planreife im Entwurf)",
       "kurz": "Bauweise festgesetzt",
       "gruppe": "planung",
       "typ": "janein",
       "wenn": {
-        "$": "bplan_jeder"
+        "$": "bplan_jeder_planreif"
       }
     },
     "planung.so_erholung": {
@@ -637,7 +636,8 @@
       "titel": "Heizungsanlage wird eingebaut oder ersetzt",
       "kurz": "Heizung wird eingebaut oder ersetzt",
       "gruppe": "technik",
-      "typ": "janein"
+      "typ": "janein",
+      "hilfe": "Beim Neubau fragt die Prüfung die Heizungsart in jedem Fall (§ 10 Abs. 2 Nr. 3 GEG – auch bei Fernwärme)"
     },
     "technik.heizoel": {
       "titel": "Neue Heizölverbraucheranlage (Ölheizung, Öltank)",
@@ -770,8 +770,14 @@
       "typ": "janein",
       "hilfe": "§ 43 GEG: steigender Anteil an Biomethan bzw. grünen Brennstoffen ab 2029; bei Neubauten über § 10 Abs. 2 Nr. 3 entsprechend",
       "wenn": {
-        "f": "vorhaben.heizung",
-        "ist": true
+        "und": [
+          {
+            "$": "gebaeude"
+          },
+          {
+            "$": "geg_heizungsanlage"
+          }
+        ]
       }
     },
     "technik.solarthermie": {
@@ -781,8 +787,14 @@
       "typ": "janein",
       "hilfe": "§ 44 GEG: Kollektoren mit „Solar Keymark“",
       "wenn": {
-        "f": "vorhaben.heizung",
-        "ist": true
+        "und": [
+          {
+            "$": "gebaeude"
+          },
+          {
+            "$": "geg_heizungsanlage"
+          }
+        ]
       }
     },
     "technik.biomasse": {
@@ -792,8 +804,14 @@
       "typ": "janein",
       "hilfe": "§ 45 GEG",
       "wenn": {
-        "f": "vorhaben.heizung",
-        "ist": true
+        "und": [
+          {
+            "$": "gebaeude"
+          },
+          {
+            "$": "geg_heizungsanlage"
+          }
+        ]
       }
     },
     "technik.stromdirekt": {

@@ -34,6 +34,9 @@
         "wenn": {
           "und": [
             {
+              "$": "gebaeude"
+            },
+            {
               "$": "errichtung"
             },
             {
@@ -80,6 +83,9 @@
         "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
         "wenn": {
           "und": [
+            {
+              "$": "gebaeude"
+            },
             {
               "$": "errichtung"
             },
@@ -156,6 +162,9 @@
         "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
         "wenn": {
           "und": [
+            {
+              "$": "gebaeude"
+            },
             {
               "und": [
                 {
@@ -254,6 +263,9 @@
         "wenn": {
           "und": [
             {
+              "$": "gebaeude"
+            },
+            {
               "und": [
                 {
                   "f": "gebaeude.gemischt",
@@ -327,6 +339,9 @@
         "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
         "wenn": {
           "und": [
+            {
+              "$": "gebaeude"
+            },
             {
               "oder": [
                 {

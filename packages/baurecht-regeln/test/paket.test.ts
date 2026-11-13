@@ -261,6 +261,109 @@ describe('Fallmatrix', () => {
   });
 });
 
+/* ---------- Fragen und Regeln: was nicht gefragt wird, entscheidet nichts ---------- */
+
+/**
+ * Eine Angabe, deren Frage die App nicht stellt (Bedingung `wenn` ergibt „nein“), darf keinen Paragrafen gelb machen,
+ * keinen Paragrafen ändern und nicht unter „klärt am meisten“ stehen – sonst fehlt dem Anwender eine Frage, die er
+ * nicht beantworten kann. Geprüft an Grundfällen (vollständige, plausible Angaben je Merkmalskombination und Gemeinde):
+ * Angaben mit nicht gestellter Frage werden entfernt (so lange, bis sich nichts mehr ändert) und das Ergebnis verglichen.
+ */
+describe('Fragen und Regeln', () => {
+  const grund = (): Record<string, FaktWert['wert']> => {
+    const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+    const f: Record<string, FaktWert['wert']> = {};
+    // abgeleitete Angaben (Tabellen der Module, Stellplatzregeln der Satzung) liefern die Module selbst
+    for (const [id, d] of Object.entries(defs)) if (d.typ === 'janein' && !d.nach && d.wert === undefined) f[id] = false;
+    return {
+      ...f,
+      'gebaeude.beheizt': true, 'gebaeude.aufenthaltsraeume': true, 'gebaeude.freistehend': true, 'vorhaben.erdarbeiten': true,
+      'vorhaben.entwaesserung': true, 'vorhaben.stellplaetze_grundstueck': true, 'technik.waermepumpe': true, 'vorhaben.heizung': true,
+      'gebaeude.wohnungen': 1, 'gebaeude.nutzungseinheiten': 1, 'gebaeude.hoehe': 6.5, 'gebaeude.bgf': 200, 'gebaeude.bri': 700,
+      'gebaeude.nutzflaeche': 150, 'gebaeude.besucher': 0, 'gebaeude.gastbetten': 0, 'gebaeude.verkaufsflaeche': 0,
+      'gebaeude.garage_nutzflaeche': 30, 'gebaeude.stellplaetze': 2, 'nw.geschosse_oberirdisch': 2, 'nw.stellplatzflaeche': 0,
+      'lage.erdbebenzone': '0', 'planung.gebietsart': 'WA', 'planung.baunvo': 'aktuell', 'nw.nachbarrecht': 'geklärt',
+      'soest.stellplatzzone': '3', 'kreis_soest.hsg_qualitativ': 'außerhalb', 'kreis_soest.hsg_quantitativ': 'außerhalb',
+    };
+  };
+  const lauf = (ags: string, m: Record<string, string>, f: Record<string, FaktWert['wert']>) =>
+    auswerten({
+      paket,
+      module: aktiveModule(paket.module, ags),
+      merkmale: m,
+      fakten: { 'lage.ags': sicher(ags), ...Object.fromEntries(Object.entries(f).map(([k, v]) => [k, sicher(v)])) },
+      einreichung: '2026-12-01',
+      heute: HEUTE,
+      texte: TEXTE,
+      festlegungen: {},
+    });
+  const UMFAENGE = ['vollständiger Abbruch ohne Ersatzbau', 'Teilabbruch', 'Abbruch mit Ersatzbau'];
+  // Grundfälle: Merkmale × Gemeinde × Lage (ohne bzw. mit Schutzgebieten, Planaufstellung und Altstadt)
+  const LAGEN: Record<string, Record<string, FaktWert['wert']>> = {
+    ohne: {},
+    schutz: { 'schutz.wsg': true, 'schutz.vsg': true, 'schutz.ffh': true, 'planung.planaufstellung': true, 'planung.planreife': true, 'soest.altstadt': true, 'soest.denkmalbereich': true, 'schutz.denkmalbereich': true },
+    // ohne neue Heizung, ohne Aufenthaltsräume, mehrere Nutzungseinheiten und viele Stellplätze
+    anders: { 'vorhaben.heizung': false, 'gebaeude.aufenthaltsraeume': false, 'vorhaben.entwaesserung': false, 'gebaeude.nutzungseinheiten': 3, 'gebaeude.stellplaetze': 40, 'nw.stellplatzflaeche': 40, 'planung.planaufstellung': true },
+  };
+  const faelle: { name: string; ags: string; m: Record<string, string>; f: Record<string, FaktWert['wert']> }[] = [];
+  for (const ags of [SOEST, '05974052', '05974008'])
+    for (const [lage, extra] of Object.entries(LAGEN))
+      for (const v of ['Errichtung', 'Änderung', 'Nutzungsänderung', ...UMFAENGE])
+        for (const art of ['Einfamilienhaus', 'Mehrfamilienhaus', 'Nichtwohngebäude', 'kein Gebäude'])
+          for (const p of ['Bebauungsplan', 'einfacher Bebauungsplan', 'Innenbereich', 'Außenbereich'])
+            for (const vf of ['vereinfachtes Verfahren', 'verfahrensfrei']) {
+              const bes = UMFAENGE.includes(v);
+              const m: Record<string, string> = { Vorhaben: bes ? 'Beseitigung' : v, Gebäudeart: art, Planungsrecht: p, Verfahren: vf, Sonderbau: 'nein' };
+              if (art !== 'kein Gebäude') m.Gebäudeklasse = art === 'Mehrfamilienhaus' ? '4' : '1';
+              const f = { ...grund(), ...extra, ...(bes ? { 'vorhaben.beseitigung_umfang': v, 'nw.altbau_verfahrensfrei': true, 'nw.beseitigung_mit_beantragt': false } : {}) };
+              if (art === 'Mehrfamilienhaus') Object.assign(f, { 'gebaeude.wohnungen': 8, 'gebaeude.nutzungseinheiten': 8, 'gebaeude.hoehe': 11, 'nw.geschosse_oberirdisch': 4, 'gebaeude.stellplaetze': 8 });
+              if (art === 'kein Gebäude') Object.assign(f, { 'gebaeude.aufenthaltsraeume': false, 'gebaeude.beheizt': false, 'vorhaben.entwaesserung': false, 'vorhaben.heizung': false, 'gebaeude.wohnungen': 0 });
+              faelle.push({ name: `${ags} ${lage} ${v} ${art} ${p} ${vf}`, ags, m, f });
+            }
+
+  it('eine Angabe, deren Frage nicht gestellt wird, ändert keinen Paragrafen und steht nicht unter „klärt am meisten“', { timeout: 600000 }, () => {
+    const fehler = new Set<string>();
+    const melde = (t: string) => {
+      if (fehler.size < 60) fehler.add(t);
+    };
+    for (const fall of faelle) {
+      const defs = faktDefinitionen(aktiveModule(paket.module, fall.ags));
+      const basis = lauf(fall.ags, fall.m, fall.f);
+      // Angaben mit nicht gestellter Frage entfernen – bis sich nichts mehr ändert (eine Antwort kann eine Frage verbergen)
+      const f = { ...fall.f };
+      let r = basis;
+      for (let runde = 0; runde < 6; runde++) {
+        const weg = Object.keys(f).filter((id) => defs[id]?.wenn && werten(defs[id].wenn!, r.kontext).w === 'nein');
+        if (!weg.length) break;
+        for (const id of weg) delete f[id];
+        r = lauf(fall.ags, fall.m, f);
+      }
+      const verborgen = (id: string) => !!defs[id]?.wenn && werten(defs[id].wenn!, r.kontext).w === 'nein';
+      const vorher = new Map(basis.paragrafen.map((p) => [p.id, p.automatisch]));
+      for (const p of r.paragrafen) {
+        if (vorher.get(p.id) !== p.automatisch) melde(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch} ohne nicht gestellte Angaben (${fall.name})`);
+        const v = p.offen.filter(verborgen);
+        if (v.length) melde(`${p.id}: offen wegen nicht gestellter Frage ${v.join(', ')} (${fall.name})`);
+      }
+      const k = r.klaerung.filter((x) => verborgen(x.id));
+      if (k.length) melde(`„Klärt am meisten“ nennt nicht gestellte Fragen ${k.map((x) => x.id).join(', ')} (${fall.name})`);
+    }
+    expect([...fehler]).toEqual([]);
+    expect(faelle.length).toBeGreaterThan(500);
+  });
+
+  it('Begründungen ohne doppelte Klammern: der Anwendungsbereich endet nicht mit einer Klammer, da ihm die tragende Angabe in Klammern folgt', () => {
+    const probleme: string[] = [];
+    for (const [key, l] of paket.regeln)
+      for (const { regel } of l) {
+        const g = regel.geltungGrund ?? '';
+        if (g.endsWith(')') || g.includes(') (')) probleme.push(`${key}: ${g}`);
+        for (const [nr, r] of Object.entries(regel.paragrafen)) for (const t of [r.titel ?? '', r.grund ?? '']) if (t.includes(') (')) probleme.push(`${key} § ${nr}: ${t}`);
+      }
+    expect(probleme).toEqual([]);
+  });
+});
+
 /* ---------- Fälle aus dem Fachreview: kein Grün, wo das Gesetz noch greift ---------- */
 
 describe('Fälle aus dem Fachreview', () => {
@@ -1019,7 +1122,8 @@ describe('Fälle aus dem Fachreview', () => {
   ];
   /** Lage: Altstadt, historische Ortsteile, Heilquellenschutzzone III, Überschwemmungsgebiet (damit auch das Ortsrecht geprüft wird) */
   const lage = () => ({
-    ...ja('soest.altstadt', 'soest.historische_ortsteile', 'kreis_soest.hsg', 'schutz.uesg'),
+    // (Heilquellenschutzgebiet seit Runde 12 nur mit „Wasser- oder Heilquellenschutzgebiet“ – dort wird erst gefragt)
+    ...ja('soest.altstadt', 'soest.historische_ortsteile', 'schutz.wsg', 'kreis_soest.hsg', 'schutz.uesg'),
     ...wert('kreis_soest.hsg_qualitativ', 'III'), ...wert('kreis_soest.hsg_quantitativ', 'außerhalb'),
     ...nein('vorhaben.erdarbeiten', 'vorhaben.versickerung', 'vorhaben.grundwasser', 'vorhaben.erstbebauung', 'planung.planaufstellung', 'planung.fnp_verfahren', 'nw.blitzschutz_anlass'),
     // seit Runde 8 gefragt: keine Freitreppe zur Straße, keine notwendigen Stellplätze, die wegfallen; seit Runde 9
@@ -1610,6 +1714,165 @@ describe('Fälle aus dem Fachreview', () => {
     const neu = titel(M4());
     expect(neu.some((t) => t.startsWith('Gebäudeenergiegesetz geändert'))).toBe(true);
     expect(neu).toContain('Photovoltaik und Solarthermie in der Altstadt');
+  });
+
+  /* ---------- Runde 12 ---------- */
+
+  /** Wird die Frage zur Angabe gestellt? (Bedingung `wenn` der Angabe) */
+  const gefragt = (id: string, m: Record<string, string>, f: Record<string, FaktWert> = {}, ags = SOEST) => {
+    const r = auswerten({ ...eingabe(m, f, TEXTE), module: aktiveModule(paket.module, ags), fakten: { 'lage.ags': sicher(ags), ...f } });
+    const w = r.faktDefs[id]?.wenn;
+    return !w || werten(w, r.kontext).w !== 'nein';
+  };
+
+  it('Runde 12: Heilquellenschutz Bad Sassendorf und Vogelschutzgebiet Hellwegbörde nur mit gestellter Frage; außerhalb Bad Sassendorf und Soest kein Heilquellenschutzgebiet', () => {
+    const hsg = ['1', '3', '4', '5', '6', '9', '10'].map((nr) => `nw-05974/hsg_bad_sassendorf/${nr}`);
+    const vsg = 'nw-05974/vsg_hellwegboerde/Schutzzweck';
+    // Fall E1: Neubau in Soest, kein Wasser- bzw. Vogelschutzgebiet – Frage nach HSG/VSG nicht gestellt, Normen grün
+    const r = auswerten(eingabe(M4(), nein('schutz.wsg', 'schutz.vsg'), TEXTE));
+    for (const id of [...hsg, vsg]) expect(r.paragrafen.find((p) => p.id === id)!.automatisch, id).toBe('gruen');
+    expect(r.klaerung.map((k) => k.id)).not.toEqual(expect.arrayContaining(['kreis_soest.hsg']));
+    expect(r.klaerung.map((k) => k.id)).not.toContain('kreis_soest.vsg_hellweg');
+    expect(gefragt('kreis_soest.hsg', M4(), nein('schutz.wsg'))).toBe(false);
+    // Gegenproben: im Wasser- bzw. Heilquellenschutzgebiet wird gefragt; offen → nicht grün
+    expect(gefragt('kreis_soest.hsg', M4(), ja('schutz.wsg'))).toBe(true);
+    const x = a(M4(), { ...ja('schutz.wsg', 'schutz.vsg'), ...ja('vorhaben.erdarbeiten') });
+    expect(x(hsg[0])).toBe('gelb');
+    expect(x(vsg)).toBe('gelb');
+    // Werl, Lippstadt: kein Heilquellenschutzgebiet (§ 1 der Verordnung) – auch im Wasserschutzgebiet grün
+    for (const ags of ['05974052', '05974028']) {
+      const w = inGemeinde(ags, M4(), ja('schutz.wsg'));
+      for (const id of hsg) expect(w(id).automatisch, `${id} (${ags})`).toBe('gruen');
+    }
+    // Bad Sassendorf: hängt von der Lage ab – offen
+    expect(inGemeinde('05974008', M4(), ja('schutz.wsg'))(hsg[0]).automatisch).toBe('gelb');
+  });
+
+  it('Runde 12: Entwässerung – bei Anlagen, die keine Gebäude sind, nur mit neuer oder geänderter Entwässerung (WHG § 55, Entwässerungssatzung §§ 9, 14, 15)', () => {
+    const ids = ['bund/whg/55', ...['9', '14', '15'].map((nr) => `nw-05974040/entwaesserungssatzung/${nr}`)];
+    // Fälle E5, K1, F2: Mauer, Mobilfunkmast, Freiflächen-PV ohne Entwässerung → grün
+    const mauer = M4({ Gebäudeart: 'kein Gebäude', Verfahren: 'verfahrensfrei' });
+    delete (mauer as Record<string, string>).Gebäudeklasse;
+    const ohne = a(mauer, nein('vorhaben.entwaesserung', 'vorhaben.versickerung'));
+    for (const id of ids) expect(ohne(id), id).toBe('gruen');
+    // Gegenproben: mit Entwässerung (Stellplatzanlage) rot; Neubau eines Gebäudes rot auch ohne Angabe
+    const mit = a(mauer, { ...ja('vorhaben.entwaesserung'), ...nein('vorhaben.versickerung') });
+    for (const id of ids) expect(mit(id), id).toBe('rot');
+    const efh = a(M4(), nein('vorhaben.entwaesserung', 'vorhaben.versickerung'));
+    for (const id of ids) expect(efh(id), id).toBe('rot');
+    // Gebäudeart offen: nicht grün
+    const offen = a({ Vorhaben: 'Errichtung', Planungsrecht: 'Innenbereich', Verfahren: 'verfahrensfrei', Sonderbau: 'nein' }, nein('vorhaben.entwaesserung', 'vorhaben.versickerung'));
+    for (const id of ids) expect(offen(id), id).not.toBe('gruen');
+  });
+
+  it('Runde 12: Stellplätze nach § 48 Abs. 1 BauO NRW nur bei Zu- oder Abfahrtsverkehr – Gebäude ohne Aufenthaltsräume (Gartenhaus) fragen danach', () => {
+    const ids = ['nw/bauo-nrw/48', 'nw/stellplatzvo/7', ...['1', '2', '3', '4', '6'].map((nr) => `nw-05974040/stellplatzsatzung/${nr}`)];
+    // Fall H6: verfahrensfreies Gartenhaus 12 m² ohne Aufenthaltsräume, ohne Stellplätze → grün
+    const haus = M4({ Gebäudeart: 'Nichtwohngebäude', Verfahren: 'verfahrensfrei' });
+    const f = { ...nein('gebaeude.aufenthaltsraeume', 'soest.stellplaetze_entfallen'), ...zahl('gebaeude.nutzflaeche', 12) };
+    expect(gefragt('vorhaben.zu_abfahrtsverkehr', haus, f)).toBe(true);
+    const ohne = a(haus, { ...f, ...nein('vorhaben.zu_abfahrtsverkehr') });
+    for (const id of ids) expect(ohne(id), id).toBe('gruen');
+    // Gegenproben: Lagerhalle mit Anlieferung bzw. Gebäude mit Aufenthaltsräumen rot; Angabe offen → nicht grün
+    const halle = a(haus, { ...f, ...ja('vorhaben.zu_abfahrtsverkehr') });
+    for (const id of ids.slice(0, 5)) expect(halle(id), id).toBe('rot');
+    expect(a(haus, ja('gebaeude.aufenthaltsraeume'))('nw/bauo-nrw/48')).toBe('rot');
+    expect(a(haus, f)('nw/bauo-nrw/48')).toBe('gelb');
+    // Wohngebäude: stets Zu- und Abfahrtsverkehr – nicht gefragt, rot auch ohne Angabe zu Aufenthaltsräumen
+    expect(gefragt('vorhaben.zu_abfahrtsverkehr', M4())).toBe(false);
+    expect(a(M4())('nw/bauo-nrw/48')).toBe('rot');
+  });
+
+  it('Runde 12: Altstadt § 12 – beim Teilabbruch und bei neuen Stellplätzen zählt nur die Fläche, die durch das Vorhaben entsteht', () => {
+    const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+    expect(defs['soest.einfriedungspflicht'].frage).toMatch(/Abbruch, Teilabbruch oder neue Stellplätze: Entsteht eine solche Fläche erst durch das Vorhaben\?/);
+    expect(defs['soest.einfriedungspflicht'].hilfe).toMatch(/vorhandener Vorgarten, an dem nichts geändert wird, muss nicht angepasst werden/);
+    // Fall H7: Abbruch eines hinteren Anbaus, Vorgarten vorhanden, nichts entsteht neu → § 12 und § 1 nicht rot
+    const p1 = M4({ Vorhaben: 'Beseitigung', Gebäudeklasse: '2' });
+    const f = { ...nein('soest.einfriedung', 'soest.einfriedungspflicht', 'soest.aussenanlagen', 'soest.garage', 'soest.freitreppe', 'vorhaben.stellplaetze_grundstueck', 'vorhaben.dach_fassade', 'gebaeude.freistehend'), ...umfang('Teilabbruch') };
+    expect(altstadt(p1, f)('nw-05974040/altstadtsatzung/12')).toBe('gruen');
+    expect(altstadt(p1, { ...f, ...ja('soest.einfriedungspflicht') })('nw-05974040/altstadtsatzung/12')).toBe('rot');
+  });
+
+  it('Runde 12: GEG §§ 43–45 – die Heizungsart wird beim Neubau immer gefragt, bei der Änderung nur mit neuer Heizung', () => {
+    const tech = ['technik.heizung_fossil', 'technik.solarthermie', 'technik.biomasse'];
+    const ids = ['43', '44', '45'].map((nr) => `bund/geg/${nr}`);
+    // Fall H1: Neubau, „Heizung eingebaut“ nein (Fernwärme) → gefragt; verneint → grün
+    const f = { ...ja('gebaeude.beheizt'), ...nein('vorhaben.heizung') };
+    for (const id of tech) expect(gefragt(id, M4(), f), id).toBe(true);
+    const neu = a(M4(), { ...f, ...nein(...tech) });
+    for (const id of ids) expect(neu(id), id).toBe('gruen');
+    // Änderung ohne neue Heizung: nicht gefragt, grün
+    const aend = M4({ Vorhaben: 'Änderung' });
+    for (const id of tech) expect(gefragt(id, aend, f), id).toBe(false);
+    for (const id of ids) expect(a(aend, f)(id), id).toBe('gruen');
+    // kein Gebäude: nicht gefragt
+    const mast = M4({ Gebäudeart: 'kein Gebäude' });
+    for (const id of tech) expect(gefragt(id, mast, f), id).toBe(false);
+  });
+
+  it('Runde 12: Planreife nur bei Planaufstellung – Eingriffsregelung im Außenbereich ohne „Ausnahme möglich: Planreife“; Höhe und Bauweise bei Planreife gefragt', () => {
+    const aussen = M4({ Planungsrecht: 'Außenbereich' });
+    // (in Soest fragt die Stadt die Planreife auch bei einem Plan im Verfahren – hier keiner)
+    const r = auswerten(eingabe(aussen, { ...nein('planung.planaufstellung', 'soest.bplan_entwurf'), ...ja('vorhaben.erdarbeiten') }, TEXTE));
+    for (const id of ['bund/bnatschg/14', 'nw/lnatschg/30', 'nw/lnatschg/31', 'nw/lnatschg/33']) {
+      const p = r.paragrafen.find((x) => x.id === id)!;
+      expect(p.automatisch, id).toBe('rot');
+      expect(p.offen, id).not.toContain('planung.planreife');
+      expect(p.hinweise.join(' '), id).not.toMatch(/Planreife/);
+    }
+    expect(r.klaerung.map((k) => k.id)).not.toContain('planung.planreife');
+    // Gegenprobe: Plan in Aufstellung, planreif → Eingriffsregelung entfällt (§ 18 Abs. 2 BNatSchG)
+    const planreif = a(aussen, ja('planung.planaufstellung', 'planung.planreife', 'vorhaben.erdarbeiten'));
+    expect(planreif('bund/bnatschg/14')).toBe('gruen');
+    // Fall P1: Planreife im Außenbereich – Höhe und Bauweise nach dem Entwurf gefragt (§ 33 Abs. 1 Nr. 2 BauGB)
+    for (const id of ['planung.hoehe_festgesetzt', 'planung.bauweise_festgesetzt']) {
+      expect(gefragt(id, aussen, ja('planung.planaufstellung', 'planung.planreife')), id).toBe(true);
+      expect(gefragt(id, aussen, nein('planung.planaufstellung', 'soest.bplan_entwurf')), id).toBe(false);
+    }
+    const p1 = a(aussen, { ...ja('planung.planaufstellung', 'planung.planreife'), ...nein('planung.hoehe_festgesetzt', 'planung.bauweise_festgesetzt') });
+    expect(p1('bund/baunvo/18')).toBe('gruen');
+    expect(p1('bund/baunvo/22')).toBe('gruen');
+  });
+
+  it('Runde 12: Beseitigung – eine offene Angabe, deren Antworten alle dasselbe ergeben, macht nicht gelb (BauPrüfVO §§ 1, 2, 15, BauO NRW § 74)', () => {
+    const UMF = ['vollständiger Abbruch ohne Ersatzbau', 'Teilabbruch', 'Abbruch mit Ersatzbau'];
+    // Fall E0Fjn: freistehendes Nichtwohngebäude GK 1, verfahrensfrei, Altbau verfahrensfrei, nicht mitbeantragt – Umfang offen
+    const m = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Nichtwohngebäude', Verfahren: 'verfahrensfrei' });
+    const f = { ...ja('gebaeude.freistehend', 'nw.altbau_verfahrensfrei'), ...nein('nw.beseitigung_mit_beantragt', 'gebaeude.aufenthaltsraeume') };
+    const offen = a(m, { ...f, ...umfang() });
+    for (const id of ['nw/bauo-nrw/74', 'nw/baupruefvo/1', 'nw/baupruefvo/2', 'nw/baupruefvo/15']) {
+      const je = UMF.map((u) => a(m, { ...f, ...umfang(u) })(id));
+      expect(new Set(je).size, `${id}: ${je.join(', ')}`).toBe(1);
+      expect(offen(id), id).toBe(je[0]);
+    }
+    // Fall E1Bjj: Ersatzbau im vereinfachten Verfahren, Abbruch mitbeantragt – Angabe zum Altbau offen: § 15 gilt so oder so
+    const e = M4({ Vorhaben: 'Beseitigung', Gebäudeklasse: '3' });
+    const g = { ...umfang('Abbruch mit Ersatzbau'), ...ja('nw.beseitigung_mit_beantragt', 'gebaeude.freistehend') };
+    expect(a(e, { ...g, ...ja('nw.altbau_verfahrensfrei') })('nw/baupruefvo/15')).toBe('rot');
+    expect(a(e, { ...g, ...nein('nw.altbau_verfahrensfrei') })('nw/baupruefvo/15')).toBe('rot');
+    expect(a(e, g)('nw/baupruefvo/15')).toBe('rot');
+    // Gegenprobe: Altbau verfahrensfrei und nicht mitbeantragt → § 15 gilt nicht; offen → nicht grün
+    const h = { ...umfang('Abbruch mit Ersatzbau'), ...ja('gebaeude.freistehend') };
+    expect(a(e, { ...h, ...ja('nw.altbau_verfahrensfrei'), ...nein('nw.beseitigung_mit_beantragt') })('nw/baupruefvo/15')).toBe('gruen');
+    expect(a(e, h)('nw/baupruefvo/15')).not.toBe('gruen');
+  });
+
+  it('Runde 12: GEIG §§ 6, 7 – Einzelfall „gemischt genutzt“ nur bei Gebäuden; § 29 BauO NRW bei nur einer Nutzungseinheit Einzelfall', () => {
+    // Fall H3: Stellplatzanlage mit 40 Stellplätzen (kein Gebäude) → GEIG grün
+    const anlage = M4({ Gebäudeart: 'kein Gebäude' });
+    const h3 = a(anlage, { ...zahl('gebaeude.stellplaetze', 40) });
+    expect(h3('bund/geig/6')).toBe('gruen');
+    expect(h3('bund/geig/7')).toBe('gruen');
+    // § 29: Halle bzw. Garage mit einer Nutzungseinheit → gelb (Abs. 2 Nr. 2 bis 4); mehrere → rot
+    const halle = M4({ Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3' });
+    const eine = auswerten(eingabe(halle, zahl('gebaeude.nutzungseinheiten', 1), TEXTE)).paragrafen.find((p) => p.id === 'nw/bauo-nrw/29')!;
+    expect(eine.automatisch).toBe('gelb');
+    expect(eine.gruende.join(' ')).toMatch(/Abs\. 2 Nr\. 2 bis 4/);
+    expect(a(halle, zahl('gebaeude.nutzungseinheiten', 3))('nw/bauo-nrw/29')).toBe('rot');
+    // Mehrfamilienhaus: mehrere Nutzungseinheiten auch ohne Angabe; Wohngebäude GK 1/2 entfällt (Abs. 6)
+    expect(a(M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4' }))('nw/bauo-nrw/29')).toBe('rot');
+    expect(a(M4(), nein('gebaeude.gemischt'))('nw/bauo-nrw/29')).toBe('gruen');
   });
 });
 

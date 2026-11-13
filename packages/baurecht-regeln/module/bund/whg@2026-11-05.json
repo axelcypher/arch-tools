@@ -126,7 +126,14 @@
       "gilt": {
         "oder": [
           {
-            "$": "errichtung"
+            "und": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "$": "gebaeude"
+              }
+            ]
           },
           {
             "f": "vorhaben.entwaesserung",
@@ -147,6 +154,30 @@
       "stand": {
         "55/1": "75bf03cf",
         "55/2": "5fc501d6"
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "vorhaben.entwaesserung",
+            "ist": false
+          },
+          {
+            "f": "vorhaben.versickerung",
+            "ist": false
+          },
+          {
+            "nicht": {
+              "und": [
+                {
+                  "$": "errichtung"
+                },
+                {
+                  "$": "gebaeude"
+                }
+              ]
+            }
+          }
+        ]
       }
     },
     "76": {

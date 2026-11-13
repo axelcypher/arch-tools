@@ -252,6 +252,13 @@ festgelegt.
 | `npm run index -w @akh/baurecht-regeln` | Paket ohne Leerraum bauen, Index mit SHA-256, Signatur (Ed25519) |
 | `npm run schluessel -w @akh/baurecht-regeln` | Schlüsselpaar für die Signatur erzeugen (einmalig) |
 
+Prüfungen des Pakets (`npm test -w @akh/baurecht-regeln`): Format und Verweise, die **Fallmatrix** (kein falsches
+Grün über alle Kombinationen der Merkmale), die Fälle aus den Fachprüfungen und **„Fragen und Regeln“**: Eine Angabe,
+deren Frage nicht gestellt wird (Bedingung `wenn` der Angabe ergibt „nein“), darf in keinem Grundfall einen
+Paragrafen ändern, offen lassen oder unter „klärt am meisten“ stehen. Eine Norm, die an einer nur bedingt gestellten
+Frage hängt, nimmt deshalb deren Bedingung in die Geltung auf (z. B. Heilquellenschutzgebiet Bad Sassendorf nur im
+Wasser- oder Heilquellenschutzgebiet, außerhalb von Bad Sassendorf und Soest „nein“ aus dem Gemeindeschlüssel).
+
 Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne
 Schlüssel, Signieren (OpenSSL, Ed25519) und Hochladen in das Release „regeln“ in einem eigenen Job ohne npm; der
 Wächter gleicht wöchentlich mit den geltenden Fassungen ab und legt bei Abweichungen ein Issue an. Signiert wird nur

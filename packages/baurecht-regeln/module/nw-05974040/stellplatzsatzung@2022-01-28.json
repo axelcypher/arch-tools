@@ -7,32 +7,7 @@
   "paragrafen": {
     "1": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Die Stellplatzsatzung gilt im ganzen Stadtgebiet; abweichende Regelungen in Bebauungsplänen oder anderen Satzungen gehen vor.",
       "fundstellen": [
@@ -51,32 +26,7 @@
     },
     "2": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Bei Errichtung von Anlagen mit Zu- und Abfahrtsverkehr sind notwendige Stellplätze und Fahrradabstellplätze herzustellen, bei Änderung und Nutzungsänderung für den Mehrbedarf; fertig spätestens bei Nutzungsaufnahme (Abs. 4).",
       "fundstellen": [
@@ -121,32 +71,7 @@
     },
     "3": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
       "grund": "Anzahl nach Anlage 3 je Nutzung; Bruchteile aufrunden, mindestens ein Stellplatz je Nutzungseinheit; Minderung um bis zu 20 % bei guter ÖPNV-Erschließung (in der Regel bei Bahnhofszugang unter 500 m oder Bushaltestelle unter 300 m vom Hauseingang mit werktags 7–19 Uhr höchstens 15-Minuten-Takt je Richtung, sowie in der gesamten Altstadt).",
       "fundstellen": [
@@ -172,32 +97,7 @@
       "gilt": {
         "oder": [
           {
-            "und": [
-              {
-                "$": "vorhaben_29"
-              },
-              {
-                "oder": [
-                  {
-                    "$": "gebaeude"
-                  },
-                  {
-                    "und": [
-                      {
-                        "m": "Gebäudeart",
-                        "in": [
-                          "kein Gebäude"
-                        ]
-                      },
-                      {
-                        "f": "vorhaben.zu_abfahrtsverkehr",
-                        "ist": true
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
+            "$": "nw_stellplatzanlass"
           },
           {
             "und": [

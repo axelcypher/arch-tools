@@ -437,7 +437,28 @@
     },
     "29": {
       "gilt": {
-        "$": "nw_vorhaben_gebaeude"
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "m": "Gebäudeart",
+                "in": [
+                  "Zweifamilienhaus",
+                  "Mehrfamilienhaus"
+                ]
+              },
+              {
+                "nicht": {
+                  "f": "gebaeude.nutzungseinheiten",
+                  "max": 1
+                }
+              }
+            ]
+          }
+        ]
       },
       "entfaellt": {
         "und": [
@@ -454,12 +475,9 @@
         ]
       },
       "pruefen": {
-        "grund": "Bei Umnutzung zu Wohnraum gilt § 29 nicht für bestehende Bauteile (§ 47 Abs. 6).",
+        "grund": "Bei nur einer Nutzungseinheit sind Trennwände nur zum Abschluss von Räumen mit Explosions- oder erhöhter Brandgefahr, zwischen Aufenthaltsräumen und anders genutzten Räumen im Kellergeschoss sowie zu nicht ausgebauten Dachräumen nötig (Abs. 2 Nr. 2 bis 4); bei Umnutzung zu Wohnraum gilt § 29 nicht für bestehende Bauteile (§ 47 Abs. 6) – im Einzelfall prüfen.",
         "wenn": {
           "und": [
-            {
-              "$": "nutzungsaenderung"
-            },
             {
               "nicht": {
                 "und": [
@@ -475,11 +493,29 @@
                   }
                 ]
               }
+            },
+            {
+              "oder": [
+                {
+                  "$": "nutzungsaenderung"
+                },
+                {
+                  "und": [
+                    {
+                      "$": "nw_vorhaben_gebaeude"
+                    },
+                    {
+                      "f": "gebaeude.nutzungseinheiten",
+                      "max": 1
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
       },
-      "grund": "Trennwände zwischen Nutzungseinheiten und zu Räumen mit erhöhter Brand- oder Explosionsgefahr.",
+      "grund": "Trennwände zwischen Nutzungseinheiten, zu Räumen mit Explosions- oder erhöhter Brandgefahr, im Kellergeschoss und zum Dachraum (Abs. 2).",
       "fundstellen": [
         "29/1",
         "29/6"
@@ -1217,34 +1253,9 @@
     },
     "48": {
       "gilt": {
-        "und": [
-          {
-            "$": "vorhaben_29"
-          },
-          {
-            "oder": [
-              {
-                "$": "gebaeude"
-              },
-              {
-                "und": [
-                  {
-                    "m": "Gebäudeart",
-                    "in": [
-                      "kein Gebäude"
-                    ]
-                  },
-                  {
-                    "f": "vorhaben.zu_abfahrtsverkehr",
-                    "ist": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "$": "nw_stellplatzanlass"
       },
-      "grund": "Notwendige Stellplätze, Garagen und Fahrradabstellplätze bei Errichtung, Änderung und Nutzungsänderung mit Zu- oder Abfahrtsverkehr – auf dem Grundstück, in zumutbarer Entfernung oder durch Ablösung nach örtlicher Bauvorschrift.",
+      "grund": "Notwendige Stellplätze, Garagen und Fahrradabstellplätze bei Errichtung, Änderung und Nutzungsänderung von Anlagen, bei denen Zu- oder Abfahrtsverkehr zu erwarten ist – auf dem Grundstück, in zumutbarer Entfernung oder durch Ablösung nach örtlicher Bauvorschrift.",
       "fundstellen": [
         "48/1"
       ],
