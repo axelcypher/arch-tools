@@ -125,6 +125,24 @@ describe('Rahmen-App: vor dem Schließen ausstehendes Schreiben abwarten', () =>
     expect(reihenfolge).toEqual([]);
   });
 
+  it('scheitert eine Vorbereitung sofort, werden die anderen trotzdem abgewartet; Ergebnis „fehler“', async () => {
+    let zweiteFertig: (() => void) | undefined;
+    let zweiteDurch = false;
+    const aus1 = vorDemSchliessen(() => Promise.reject(new Error('Netzlaufwerk weg')));
+    const aus2 = vorDemSchliessen(() => new Promise<void>((f) => (zweiteFertig = () => ((zweiteDurch = true), f()))));
+    let ergebnis: string | undefined;
+    const warten = schliessenVorbereiten().then((e) => (ergebnis = e));
+    await new Promise((r) => setTimeout(r, 10));
+    // die erste ist längst gescheitert – das Warten läuft weiter, bis die zweite fertig ist
+    expect(ergebnis).toBeUndefined();
+    zweiteFertig!();
+    await warten;
+    expect(zweiteDurch).toBe(true);
+    expect(ergebnis).toBe('fehler');
+    aus1();
+    aus2();
+  });
+
   it('hängt das Schreiben, gilt nach dem Zeitlimit „nicht fertig“', async () => {
     vi.useFakeTimers();
     const aus = vorDemSchliessen(() => new Promise<void>(() => {}));

@@ -9,6 +9,10 @@
  *   null      eigenständige App (eigener Installer) oder Browser
  */
 
+import { logger } from './log';
+
+const log = logger('rahmen');
+
 export type RahmenModus = 'tab' | 'fenster' | null;
 
 /** Nachricht eines Tabs bzw. herausgelösten Fensters an den Rahmen */
@@ -343,8 +347,10 @@ export function schliessenVorbereiten(ms = VORBEREITEN_MS): Promise<Vorbereitet>
   const alle = Promise.allSettled([...vorbereitungen].map((f) => Promise.resolve().then(f)));
   return new Promise((fertig) => {
     const uhr = setTimeout(() => fertig('zeitlimit'), ms);
+    // jede Vorbereitung einzeln abwarten (eine, die sofort scheitert, schneidet die anderen nicht ab), Gründe protokollieren
     void alle.then((ergebnisse) => {
       clearTimeout(uhr);
+      for (const e of ergebnisse) if (e.status === 'rejected') log.warn('Vorbereitung vor dem Schließen gescheitert', e.reason);
       fertig(ergebnisse.some((e) => e.status === 'rejected' || e.value === false) ? 'fehler' : 'fertig');
     });
   });
