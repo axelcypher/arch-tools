@@ -25,7 +25,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function render(aufrufe: string[] = []): HTMLElement {
+function render(aufrufe: string[] = [], lageLaeuft = false): HTMLElement {
   const bytes = beispielOap();
   useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
   const s = useBaurecht.getState();
@@ -46,7 +46,7 @@ function render(aufrufe: string[] = []): HTMLElement {
           onProtokoll: () => undefined,
           onSpeichern: () => undefined,
           onAntrag: () => undefined,
-          lageLaeuft: false,
+          lageLaeuft,
         }),
         createElement(MenueHost, { key: 'm' }),
       ),
@@ -77,8 +77,10 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     expect(menue()).not.toBeNull();
     expect(marke.getAttribute('aria-expanded')).toBe('true');
     expect(punkte().map((p) => p.textContent)).toEqual([expect.stringContaining('Lage abfragen'), expect.stringContaining('Rechtsstand prüfen')]);
-    // die Warnungen stehen als Hinweis an „Rechtsstand prüfen“
-    expect(punkte()[1].textContent).toContain(marke.title.split(' · ')[0]);
+    // die Warnungen stehen kurz als Hinweis an „Rechtsstand prüfen“, vollständig im Tooltip
+    expect(punkte()[1].getAttribute('title')).toBe(marke.title);
+    const n = marke.title.split(' · ').length;
+    expect(punkte()[1].textContent).toContain(n > 1 ? `${n} Warnungen` : marke.title);
     expect(document.activeElement).toBe(punkte()[0]);
     taste('Escape');
     expect(menue()).toBeNull();
@@ -114,5 +116,29 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     act(() => useBaurecht.getState().einreichungSetzen('2027-03-01'));
     expect(speichern().classList.contains('ungespeichert')).toBe(true);
     expect(speichern().getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+  });
+
+  it('gesperrte Punkte: aria-disabled mit Grund im Hinweis, ohne Wirkung, Erstfokus auf dem ersten bedienbaren Punkt', () => {
+    const aufrufe: string[] = [];
+    const host = render(aufrufe, true);
+    const mehr = () => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Mehr')!;
+    klick(mehr());
+    const [lage, rechtsstand] = punkte();
+    expect(lage.getAttribute('aria-disabled')).toBe('true');
+    expect(lage.textContent).toContain('läuft');
+    expect(rechtsstand.getAttribute('aria-disabled')).toBeNull();
+    expect(document.activeElement).toBe(rechtsstand);
+    act(() => lage.click());
+    expect(aufrufe).toEqual([]);
+    expect(menue()).not.toBeNull();
+    taste('Escape');
+    // Texte werden geholt: auch „Rechtsstand prüfen“ gesperrt – erreichbar, der Grund steht daneben
+    act(() => useBaurecht.setState({ laedt: ['bund/baugb'] }));
+    klick(mehr());
+    expect(punkte()[1].getAttribute('aria-disabled')).toBe('true');
+    expect(punkte()[1].textContent).toContain('Texte werden geholt');
+    act(() => punkte()[1].click());
+    expect(aufrufe).toEqual([]);
+    act(() => useBaurecht.setState({ laedt: [] }));
   });
 });

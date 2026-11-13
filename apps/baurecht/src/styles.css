@@ -187,7 +187,7 @@
 }
 button.br-modul-chip {
   cursor: pointer;
-  min-height: 24px;
+  min-height: var(--ctl-h-s);
   font: inherit;
   font-size: var(--fs-s);
   line-height: 1.2;
@@ -1112,8 +1112,8 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 
 /* Meldungen */
-/* Meldungen im Inhalt: .meldung aus den Grund-Styles; hier nur der Abstand zum Nachbarn */
-.br-app .meldung {
+/* Meldungen im Inhalt: .meldung aus den Grund-Styles; hier nur der Abstand zum Nachbarn (ohne Spezifität – eigene Abstände einzelner Meldungen gehen vor) */
+:where(.br-app) .meldung {
   margin: var(--s2) 0;
   line-height: 1.4;
 }
@@ -1123,8 +1123,8 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   justify-content: flex-end;
   gap: 8px;
 }
-.br-verwerfen span {
-  margin-right: auto;
+.br-verwerfen .meldung {
+  margin: 0 auto 0 0;
 }
 /* Folgen einer Angabe in den Dialogen */
 .br-folgen {
@@ -1147,7 +1147,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 
 /* Dialoge */
-/* Dialogüberschrift als h2 (Ebene unter dem Dialog), Größe aus der Skala */
 .br-wahl {
   border: none;
   padding: 0;
@@ -1380,7 +1379,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-detail .small,
 .br-chip-knopf,
 .br-app .toggle {
-  min-height: 24px;
+  min-height: var(--ctl-h-s);
 }
 .br-app .toggle {
   display: inline-flex;
@@ -1430,7 +1429,7 @@ h2.br-detail-name {
 .br-treffer .br-link {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  min-height: var(--ctl-h-s);
 }
 .br-regel-einzeln > summary {
   padding: 4px 0;
@@ -1504,7 +1503,7 @@ h2.br-detail-name {
 }
 .br-regel-baum details > summary {
   cursor: pointer;
-  min-height: 24px;
+  min-height: var(--ctl-h-s);
 }
 
 /* lange Antragsnamen kürzen (voller Name im Tooltip) */
@@ -1516,7 +1515,7 @@ h2.br-detail-name {
   cursor: pointer;
   font: inherit;
   font-size: var(--fs-xs);
-  min-height: 24px;
+  min-height: var(--ctl-h-s);
 }
 .br-marke-knopf:hover:not(:disabled) {
   background: var(--warn-bg);
@@ -1556,7 +1555,7 @@ h2.br-detail-name {
   cursor: pointer;
   font-size: var(--fs-s);
   color: var(--br-leise-stark);
-  min-height: 24px;
+  min-height: var(--ctl-h-s);
 }
 
 /* Leisten an die Fensterbreite gebunden: sie schrumpfen (bis 240 px), die Mitte behält mindestens 420 px – auch mit
@@ -1622,15 +1621,6 @@ h2.br-detail-name {
   --br-leise-stark: #4b5563;
 }
 
-/* Dialoge: die Knöpfe bleiben unten sichtbar, auch wenn der Inhalt scrollt */
-.br-app .modal .dialog-buttons {
-  position: sticky;
-  bottom: -18px;
-  background: var(--panel);
-  padding: 10px 0 4px;
-  margin-bottom: -4px;
-  border-top: 1px solid var(--line-soft);
-}
 
 /* Schmale Leisten (ab 240 px): lange Wörter trennen statt überlaufen, Stand und Zahl brechen um */
 .br-angaben .br-fakt-titel,
@@ -1707,11 +1697,6 @@ h2.br-detail-name {
 .br-rueckfrage-zu {
   margin: 0 0 4px;
   font-size: var(--fs-s);
-}
-/* Hinweis zum Planungsrecht: knapp, neutral (kein Widerspruch) */
-.br-planungsrecht-hinweis {
-  font-size: var(--fs-s);
-  padding: 4px 8px;
 }
 /* fremder Merkmalwert bzw. Wert, der nicht zur Angabe passt */
 .br-merkmal-fremd {

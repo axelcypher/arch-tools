@@ -28,7 +28,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Punkt an der Ecke des Knopfs, wie in allen Apps). „Gemeinde unbestätigt“ bzw.
   „widersprüchlich“ ist ein Knopf und springt zum Gemeindeschlüssel. Ist die App schmaler als 1600 px, stehen „Lage
   abfragen“ und „Rechtsstand prüfen“ im Menü **Mehr** (das gemeinsame Menü der Suite) und die Warnungen zum Rechtsstand
-  als eine Sammelmarke („2 Warnungen“, Einzelheiten im Tooltip und als Hinweis an „Rechtsstand prüfen“ im Menü); unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld.
+  als eine Sammelmarke („2 Warnungen“, Einzelheiten im Tooltip und ihre Zahl als Hinweis an „Rechtsstand prüfen“ im Menü); unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld.
   Gekürzt wird nur die Liste der Module, Warnungen und „Speichern“ nie. „≡ Fehlerprotokoll“ in der Titelleiste ist die
   Fehlersuche der App.
 - **Koordinaten:** Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur, solange die Koordinaten zur Adresse
@@ -243,8 +243,8 @@ nur am Wortanfang und auch ausgeschrieben, gängige Synonyme wie Abriss/Rückbau
 als „a“ bzw. „ae“ – „Stellpla“, „Stellplaetze“, „Ruckbau“). Die Suche in den Angaben geht über den sichtbaren Text
 (Kurzname, Titel, Frage, Werte), nicht über interne Kennungen. Die Trefferzahl wird angesagt (Angaben wie Vorschriften);
 wer nur sucht, bekommt „Suche leeren“ statt „Filter zurücksetzen“. Nach Suche, Filter und „Filter zurücksetzen“ bleibt
-die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc
-gibt den Fokus an den Öffner zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an
+die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet dasselbe Menü wie „Mehr“ an der Marke selbst (ein zweiter Klick schließt es),
+Esc gibt den Fokus an die Marke zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an
 der Angabe bzw. am Knopf. In den Dialogen „von Hand festlegen“, „Angabe bestätigen“ und „Angabe von Hand setzen“ löst
 Enter (außer im mehrzeiligen Begründungsfeld) den Hauptknopf aus; der Titel steht im Kopf des Dialogs.
 

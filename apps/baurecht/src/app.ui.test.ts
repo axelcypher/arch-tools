@@ -1374,4 +1374,38 @@ describe('Designsystem: Dialogkopf, Enter, Druckvorschau, Symbole', () => {
     expect(document.body.textContent).not.toMatch(/[▾▸✓✗↗→]/);
     expect(host.querySelector('.br-norm-pfeil svg.symbol')).not.toBeNull();
   });
+
+  it('Verwerfen-Abfrage: Absenden (Enter) legt nichts fest, der Dialog bleibt offen', () => {
+    const host = render();
+    act(() => host.querySelector<HTMLButtonElement>('.br-paragraf')!.click());
+    act(() => knopf(host, /^(Von Hand festlegen|Festlegung ändern) …$/)!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand festlegen'))!;
+    tippen(dialog.querySelector('textarea')!, 'Begehung am 03.11.2026 ohne Befund');
+    act(() => knopf(dialog, 'Abbrechen')!.click());
+    const abfrage = dialog.querySelector<HTMLElement>('.br-verwerfen .meldung.warnung[role="alert"]')!;
+    expect(abfrage.textContent).toContain('Verwerfen?');
+    act(() => void dialog.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(dialog.isConnected).toBe(true);
+    expect(Object.keys(useBaurecht.getState().pruefung.festlegungen)).not.toContain(useBaurecht.getState().auswahl);
+  });
+
+  it('„Angabe bestätigen“: Titel im Kopf, Absenden prüft die Begründung und übernimmt', () => {
+    const host = render();
+    act(() => knopf(host, 'alle')?.click());
+    act(() => knopf(host, 'Bestätigen …')!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
+    const kopf = dialog.querySelector<HTMLElement>('.modal-kopf')!;
+    expect(kopf.textContent).toMatch(/bestätigen$/);
+    expect(dialog.getAttribute('aria-labelledby')).toBe(kopf.id);
+    expect(knopf(dialog, 'Bestätigen')!.type).toBe('submit');
+    const absenden = () => act(() => void dialog.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    absenden();
+    expect(dialog.isConnected).toBe(true);
+    expect(dialog.textContent).toMatch(/Bitte angeben, worauf/);
+    tippen(dialog.querySelector('textarea')!, 'Flächen im Modell vollständig, geprüft am 12.11.2026');
+    absenden();
+    expect(dialog.isConnected).toBe(false);
+    expect(Object.values(useBaurecht.getState().pruefung.fakten).some((f) => f.bestaetigt)).toBe(true);
+  });
 });
+

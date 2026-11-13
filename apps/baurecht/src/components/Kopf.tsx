@@ -75,8 +75,15 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
   // „Mehr“ (schmal): dieselben Punkte öffnet auch die Sammelmarke der Warnungen; die Warnungen stehen als Hinweis an
   // „Rechtsstand prüfen“ (dort ist der Weg, sie zu beheben)
   const mehrPunkte = (): MenuePunkt[] => [
-    { text: lageLaeuft ? 'Lage wird abgefragt …' : 'Lage abfragen', aktion: onLage, deaktiviert: lageLaeuft, hinweis: lageLaeuft ? 'läuft' : undefined },
-    { text: 'Rechtsstand prüfen', aktion: onRechtsstand, deaktiviert: laedt.length > 0, hinweis: laedt.length ? 'Texte werden geholt' : warnText.join(' · ') || undefined },
+    { text: 'Lage abfragen', aktion: onLage, deaktiviert: lageLaeuft, hinweis: lageLaeuft ? 'läuft' : undefined },
+    {
+      text: 'Rechtsstand prüfen',
+      aktion: onRechtsstand,
+      deaktiviert: laedt.length > 0,
+      // kurz im Menü (sonst wird es sehr breit), alle Warnungen im Tooltip
+      hinweis: laedt.length ? 'Texte werden geholt' : warnText.length > 1 ? `${warnText.length} Warnungen` : warnText[0],
+      titel: warnText.length ? warnText.join(' · ') : undefined,
+    },
   ];
   const marke = useRef<HTMLButtonElement>(null);
   const markeOffen = useMenueOffen(marke);

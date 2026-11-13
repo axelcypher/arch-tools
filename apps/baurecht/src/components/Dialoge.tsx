@@ -101,87 +101,89 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
           if (!verwerfen) festlegen();
         }}
       >
-      <p className="br-leise">
-        Automatisch: <AmpelMarke ampel={p.automatisch} klein /> {p.gruende[0]}
-      </p>
-      <fieldset className="br-wahl" ref={wahl}>
-        <legend>Ampel</legend>
-        {(['rot', 'gelb', 'gruen'] as const).map((a) => (
-          <label key={a} className={`br-wahl-zeile${ampel === a ? ' br-gewaehlt' : ''}`}>
-            {/* Name nur das Ampelwort, die Erklärung als Beschreibung (sonst hieße der Knopf „gilt muss beachtet …“) */}
-            <input type="radio" name="ampel" checked={ampel === a} onChange={() => setAmpel(a)} aria-label={`${AMPEL_TEXT[a]}${a === p.automatisch ? ' (wie automatisch)' : ''}`} aria-describedby={`br-wahl-${a}`} />
-            <AmpelMarke ampel={a} />
-            <span id={`br-wahl-${a}`}>
-              {AMPEL_ERKLAERUNG[a]}
-              {a === p.automatisch ? ' (wie automatisch)' : ''}
-            </span>
-          </label>
-        ))}
-      </fieldset>
-      {ampel === 'gruen' && p.entfaelltVorbehalt && (
-        <div className="meldung warnung" role="note">
-          {!texte[`${p.modul}/${p.norm}`]?.fassung
-            ? `Ohne geprüften Gesetzestext greift „entfällt“ nicht: Die Ampel bleibt „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“, bis der Text vorliegt (Desktop-App) und Sie dort erneut festlegen.`
-            : `„Entfällt“ greift noch nicht (${p.entfaelltVorbehalt}): Die Ampel bleibt „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“, bis das behoben ist (z. B. „Rechtsstand prüfen“).`}{' '}
-          Die Begründung wird trotzdem gespeichert.
-        </div>
-      )}
-      {herab && (
-        <div className="meldung warnung" role="alert">
-          Sie stufen von „{AMPEL_TEXT[p.automatisch]}“ auf „{AMPEL_TEXT[ampel]}“ herab. Das ist erlaubt, wenn der Sonderfall begründet ist – die Festlegung steht im Prüfprotokoll und muss beim Speichern noch einmal bestätigt werden.
-        </div>
-      )}
-      {/* Feld und Beschriftung getrennt: das Beispiel gehört zur Beschreibung, nicht zum Namen des Felds */}
-      <div className="field">
-        <label className="field-label" htmlFor="br-festlegen-grund">
-          Begründung <span aria-hidden="true">*</span>
-        </label>
-        <textarea
-          id="br-festlegen-grund"
-          ref={feld}
-          rows={4}
-          value={grund}
-          onChange={(e) => setGrund(e.target.value)}
-          required
-          aria-invalid={versucht && grund.trim().length < 10}
-          aria-describedby={versucht && grund.trim().length < 10 ? 'br-festlegen-fehler br-festlegen-beispiel' : 'br-festlegen-beispiel'}
-          placeholder="Worauf beruht die Einordnung?"
-        />
-        <span id="br-festlegen-beispiel" className="field-hint br-leise">
-          Beispiel: Begehung am 03.11.2026 ohne Befund, Bericht im Projektordner
-        </span>
-        {versucht && grund.trim().length < 10 && (
-          <span id="br-festlegen-fehler" className="field-hint br-fehler-text">
-            Bitte begründen (mindestens 10 Zeichen) – die Begründung steht im Prüfprotokoll.
-          </span>
+        <p className="br-leise">
+          Automatisch: <AmpelMarke ampel={p.automatisch} klein /> {p.gruende[0]}
+        </p>
+        <fieldset className="br-wahl" ref={wahl}>
+          <legend>Ampel</legend>
+          {(['rot', 'gelb', 'gruen'] as const).map((a) => (
+            <label key={a} className={`br-wahl-zeile${ampel === a ? ' br-gewaehlt' : ''}`}>
+              {/* Name nur das Ampelwort, die Erklärung als Beschreibung (sonst hieße der Knopf „gilt muss beachtet …“) */}
+              <input type="radio" name="ampel" checked={ampel === a} onChange={() => setAmpel(a)} aria-label={`${AMPEL_TEXT[a]}${a === p.automatisch ? ' (wie automatisch)' : ''}`} aria-describedby={`br-wahl-${a}`} />
+              <AmpelMarke ampel={a} />
+              <span id={`br-wahl-${a}`}>
+                {AMPEL_ERKLAERUNG[a]}
+                {a === p.automatisch ? ' (wie automatisch)' : ''}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+        {ampel === 'gruen' && p.entfaelltVorbehalt && (
+          <div className="meldung warnung" role="note">
+            {!texte[`${p.modul}/${p.norm}`]?.fassung
+              ? `Ohne geprüften Gesetzestext greift „entfällt“ nicht: Die Ampel bleibt „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“, bis der Text vorliegt (Desktop-App) und Sie dort erneut festlegen.`
+              : `„Entfällt“ greift noch nicht (${p.entfaelltVorbehalt}): Die Ampel bleibt „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“, bis das behoben ist (z. B. „Rechtsstand prüfen“).`}{' '}
+            Die Begründung wird trotzdem gespeichert.
+          </div>
         )}
-      </div>
-      <div className="field">
-        <label className="field-label" htmlFor="br-festlegen-von">
-          Festgelegt von <span aria-hidden="true">*</span>
-        </label>
-        <input id="br-festlegen-von" value={von} onChange={(e) => setVon(e.target.value)} required />
-      </div>
-      {verwerfen ? (
-        <div className="meldung warnung dialog-buttons br-verwerfen" role="alert">
-          <span>Die Begründung ist noch nicht übernommen. Verwerfen?</span>
-          <button type="button" onClick={() => setVerwerfen(false)}>
-            Weiter bearbeiten
-          </button>
-          <button type="button" className="danger" onClick={schliessen}>
-            Verwerfen
-          </button>
+        {herab && (
+          <div className="meldung warnung" role="alert">
+            Sie stufen von „{AMPEL_TEXT[p.automatisch]}“ auf „{AMPEL_TEXT[ampel]}“ herab. Das ist erlaubt, wenn der Sonderfall begründet ist – die Festlegung steht im Prüfprotokoll und muss beim Speichern noch einmal bestätigt werden.
+          </div>
+        )}
+        {/* Feld und Beschriftung getrennt: das Beispiel gehört zur Beschreibung, nicht zum Namen des Felds */}
+        <div className="field">
+          <label className="field-label" htmlFor="br-festlegen-grund">
+            Begründung <span aria-hidden="true">*</span>
+          </label>
+          <textarea
+            id="br-festlegen-grund"
+            ref={feld}
+            rows={4}
+            value={grund}
+            onChange={(e) => setGrund(e.target.value)}
+            required
+            aria-invalid={versucht && grund.trim().length < 10}
+            aria-describedby={versucht && grund.trim().length < 10 ? 'br-festlegen-fehler br-festlegen-beispiel' : 'br-festlegen-beispiel'}
+            placeholder="Worauf beruht die Einordnung?"
+          />
+          <span id="br-festlegen-beispiel" className="field-hint br-leise">
+            Beispiel: Begehung am 03.11.2026 ohne Befund, Bericht im Projektordner
+          </span>
+          {versucht && grund.trim().length < 10 && (
+            <span id="br-festlegen-fehler" className="field-hint br-fehler-text">
+              Bitte begründen (mindestens 10 Zeichen) – die Begründung steht im Prüfprotokoll.
+            </span>
+          )}
         </div>
-      ) : (
-        <div className="dialog-buttons">
-          <button type="button" onClick={zu}>
-            Abbrechen
-          </button>
-          <button type="submit" className="primary">
-            Festlegen
-          </button>
+        <div className="field">
+          <label className="field-label" htmlFor="br-festlegen-von">
+            Festgelegt von <span aria-hidden="true">*</span>
+          </label>
+          <input id="br-festlegen-von" value={von} onChange={(e) => setVon(e.target.value)} required />
         </div>
-      )}
+        {verwerfen ? (
+          <div className="dialog-buttons br-verwerfen">
+            <span className="meldung warnung" role="alert">
+              Die Begründung ist noch nicht übernommen. Verwerfen?
+            </span>
+            <button type="button" onClick={() => setVerwerfen(false)}>
+              Weiter bearbeiten
+            </button>
+            <button type="button" className="danger" onClick={schliessen}>
+              Verwerfen
+            </button>
+          </div>
+        ) : (
+          <div className="dialog-buttons">
+            <button type="button" onClick={zu}>
+              Abbrechen
+            </button>
+            <button type="submit" className="primary">
+              Festlegen
+            </button>
+          </div>
+        )}
       </form>
     </Modal>
   );
@@ -333,85 +335,87 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
           if (!verwerfen) bestaetigen();
         }}
       >
-      {ziel.modus === 'bestaetigen' ? (
-        <p className="br-leise-stark">
-          {/* der Grund sagt schon, woher der Wert kommt – die Quelle nur ohne Grund */}
-          Bisher nur Hinweis: {ziel.wert.grund ?? (ziel.wert.quelle ? `${ziel.wert.quelle} – nicht gesichert` : 'nicht gesichert')}
-        </p>
-      ) : (
-        <p className="br-leise-stark">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>
-      )}
-      {vorschau && <Folgen folgen={vorschau} />}
-      {vorschau?.nachher?.widerspruch && (
-        <div className="meldung fehler" role="note">
-          <strong>Widerspruch bleibt:</strong> {vorschau.nachher.widerspruch}. Vorschriften, die an dieser Angabe hängen, werden dadurch nicht „entfällt“.
-        </div>
-      )}
-      <div className="meldung warnung" role="note">
-        Die Angabe gilt danach als gesichert. Bitte nur angeben, was belegt ist – die Begründung steht im Prüfprotokoll.
-        {ziel.lagebezug ? (aktuelleLage(project).lage ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten, die zur Adresse passen, lässt sie sich an keine Lage binden und bleibt Hinweis.') : ''}
-      </div>
-      {veraltet && (
-        <div className="meldung fehler" role="alert">
-          Die Angabe hat sich inzwischen geändert (z. B. durch „Lage abfragen“). Bitte den Dialog schließen und neu prüfen.
-        </div>
-      )}
-      <label className="field">
-        <span className="field-label">
-          Worauf gestützt? <span aria-hidden="true">*</span>
-        </span>
-        <textarea
-          ref={feld}
-          rows={3}
-          value={grund}
-          onChange={(e) => setGrund(e.target.value)}
-          aria-required="true"
-          aria-invalid={versucht && grund.trim().length < 10}
-          aria-describedby={versucht && grund.trim().length < 10 ? `${fehlerId} br-fakt-beispiel` : 'br-fakt-beispiel'}
-          placeholder="Beleg: Unterlage oder Auskunft mit Datum"
-        />
-        <span id="br-fakt-beispiel" className="field-hint br-leise">
-          Beispiel:{' '}
-          {ziel.id.startsWith('lage.')
-            ? 'Auszug aus dem Liegenschaftskataster vom 03.11.2026'
-            : geo || ziel.id.startsWith('schutz.')
-              ? 'Auskunft der Unteren Naturschutzbehörde vom 03.11.2026, Aktenzeichen …'
-              : ziel.wert.herkunft === 'flaechen' || ziel.wert.herkunft === 'grz'
-                ? 'Modell vollständig geprüft am 12.11.2026'
-                : 'Unterlage, Auskunft oder Prüfung mit Datum'}
-        </span>
-        {versucht && grund.trim().length < 10 && (
-          <span id={fehlerId} className="field-hint br-fehler-text">
-            Bitte angeben, worauf die Angabe beruht (mindestens 10 Zeichen).
-          </span>
+        {ziel.modus === 'bestaetigen' ? (
+          <p className="br-leise-stark">
+            {/* der Grund sagt schon, woher der Wert kommt – die Quelle nur ohne Grund */}
+            Bisher nur Hinweis: {ziel.wert.grund ?? (ziel.wert.quelle ? `${ziel.wert.quelle} – nicht gesichert` : 'nicht gesichert')}
+          </p>
+        ) : (
+          <p className="br-leise-stark">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>
         )}
-      </label>
-      <label className="field">
-        <span className="field-label">
-          {ziel.modus === 'setzen' ? 'Angegeben von' : 'Bestätigt von'} <span aria-hidden="true">*</span>
-        </span>
-        <input value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" />
-      </label>
-      {verwerfen ? (
-        <div className="meldung warnung dialog-buttons br-verwerfen" role="alert">
-          <span>Die Begründung ist noch nicht übernommen. Verwerfen?</span>
-          <button type="button" onClick={() => setVerwerfen(false)}>
-            Weiter bearbeiten
-          </button>
-          <button type="button" className="danger" onClick={schliessen}>
-            Verwerfen
-          </button>
+        {vorschau && <Folgen folgen={vorschau} />}
+        {vorschau?.nachher?.widerspruch && (
+          <div className="meldung fehler" role="note">
+            <strong>Widerspruch bleibt:</strong> {vorschau.nachher.widerspruch}. Vorschriften, die an dieser Angabe hängen, werden dadurch nicht „entfällt“.
+          </div>
+        )}
+        <div className="meldung warnung" role="note">
+          Die Angabe gilt danach als gesichert. Bitte nur angeben, was belegt ist – die Begründung steht im Prüfprotokoll.
+          {ziel.lagebezug ? (aktuelleLage(project).lage ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten, die zur Adresse passen, lässt sie sich an keine Lage binden und bleibt Hinweis.') : ''}
         </div>
-      ) : (
-        <div className="dialog-buttons">
-          <button type="button" onClick={zu}>
-            Abbrechen
-          </button>
-          <button type="submit" className="primary">
-            {ziel.modus === 'setzen' ? 'Übernehmen' : 'Bestätigen'}
-          </button>
-        </div>
-      )}
+        {veraltet && (
+          <div className="meldung fehler" role="alert">
+            Die Angabe hat sich inzwischen geändert (z. B. durch „Lage abfragen“). Bitte den Dialog schließen und neu prüfen.
+          </div>
+        )}
+        <label className="field">
+          <span className="field-label">
+            Worauf gestützt? <span aria-hidden="true">*</span>
+          </span>
+          <textarea
+            ref={feld}
+            rows={3}
+            value={grund}
+            onChange={(e) => setGrund(e.target.value)}
+            aria-required="true"
+            aria-invalid={versucht && grund.trim().length < 10}
+            aria-describedby={versucht && grund.trim().length < 10 ? `${fehlerId} br-fakt-beispiel` : 'br-fakt-beispiel'}
+            placeholder="Beleg: Unterlage oder Auskunft mit Datum"
+          />
+          <span id="br-fakt-beispiel" className="field-hint br-leise">
+            Beispiel:{' '}
+            {ziel.id.startsWith('lage.')
+              ? 'Auszug aus dem Liegenschaftskataster vom 03.11.2026'
+              : geo || ziel.id.startsWith('schutz.')
+                ? 'Auskunft der Unteren Naturschutzbehörde vom 03.11.2026, Aktenzeichen …'
+                : ziel.wert.herkunft === 'flaechen' || ziel.wert.herkunft === 'grz'
+                  ? 'Modell vollständig geprüft am 12.11.2026'
+                  : 'Unterlage, Auskunft oder Prüfung mit Datum'}
+          </span>
+          {versucht && grund.trim().length < 10 && (
+            <span id={fehlerId} className="field-hint br-fehler-text">
+              Bitte angeben, worauf die Angabe beruht (mindestens 10 Zeichen).
+            </span>
+          )}
+        </label>
+        <label className="field">
+          <span className="field-label">
+            {ziel.modus === 'setzen' ? 'Angegeben von' : 'Bestätigt von'} <span aria-hidden="true">*</span>
+          </span>
+          <input value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" />
+        </label>
+        {verwerfen ? (
+          <div className="dialog-buttons br-verwerfen">
+            <span className="meldung warnung" role="alert">
+              Die Begründung ist noch nicht übernommen. Verwerfen?
+            </span>
+            <button type="button" onClick={() => setVerwerfen(false)}>
+              Weiter bearbeiten
+            </button>
+            <button type="button" className="danger" onClick={schliessen}>
+              Verwerfen
+            </button>
+          </div>
+        ) : (
+          <div className="dialog-buttons">
+            <button type="button" onClick={zu}>
+              Abbrechen
+            </button>
+            <button type="submit" className="primary">
+              {ziel.modus === 'setzen' ? 'Übernehmen' : 'Bestätigen'}
+            </button>
+          </div>
+        )}
       </form>
     </Modal>
   );
