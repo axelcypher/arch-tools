@@ -894,7 +894,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                         {mail.text && <pre className="po-mail-text">{mail.text.trim().slice(0, 3000)}</pre>}
                         {desktop && !fsVorgabe && projekt.pfad && (
                           <button className="small" onClick={() => void oeffneOrdner(z.ordner ? verbinde(projekt.pfad, z.ordner) : projekt.pfad).catch(() => undefined)}>
-                            Ordner öffnen
+                            <Symbol name="ordnerOffen" /> Ordner öffnen
                           </button>
                         )}
                       </details>
