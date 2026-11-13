@@ -81,9 +81,10 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   `?rahmen=fenster&app=<app>`. `packages/core/src/platform/rahmen.ts` erkennt das; die gemeinsame Titelleiste blendet
   im Tab Fensterknöpfe, Ziehen und Updates aus und meldet Projektname und ungespeicherte Änderungen per
   `postMessage` an den Rahmen; im herausgelösten Fenster zeigt sie „Andocken“ (Tauri-Ereignis `arch-tools:andocken`)
-  und meldet dasselbe per `arch-tools:an-rahmen` (mit `kennung`). Mit `ungespeichert` an der TitleBar kann die App für
-  die Rückfrage des Rahmens (Schließen, Beenden, Update) einen genaueren Satz melden, etwa „Das LV hat ungespeicherte
-  Änderungen.“; ohne ihn (oder leer bzw. länger als 200 Zeichen) steht dort „Das Projekt hat ungespeicherte Änderungen.“. Ihr Schließen – auch über das System
+  und meldet dasselbe per `arch-tools:an-rahmen` (mit `kennung`). Mit `ungespeichert` an der TitleBar kann die App
+  für die Rückfrage des Rahmens (Schließen, Beenden, Update) einen genaueren Satz melden, etwa „Das LV hat
+  ungespeicherte Änderungen.“; ohne ihn (oder leer bzw. länger als 200 Zeichen) steht dort „Das Projekt hat
+  ungespeicherte Änderungen.“. Die eigene Rückfrage der Titelleiste (Schließen mit Speichern) nimmt ihn ebenso. Ihr Schließen – auch über das System
   (`onCloseRequested`) – fragt bei ungespeicherten Änderungen; danach `destroy`, damit die Rückfrage nicht zweimal kommt.
   Rechte: Hauptfenster `capabilities/default.json`, herausgelöste Fenster `capabilities/fenster.json` (ohne Updates,
   Neustart und neue Fenster).

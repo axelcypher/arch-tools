@@ -35,8 +35,9 @@ export interface TitleBarProps {
   /** ungespeicherte Änderungen */
   dirty: boolean;
   /**
-   * Satz für die Rückfrage der Rahmen-App beim Schließen, wenn `dirty` – genauer als der allgemeine („Das Projekt hat
-   * ungespeicherte Änderungen.“), z. B. „Das LV hat ungespeicherte Änderungen.“
+   * Satz für die Rückfragen beim Schließen, wenn `dirty` (Rahmen-App und eigenes Schließen mit Speichern) – genauer als
+   * der allgemeine, z. B. „Das LV hat ungespeicherte Änderungen.“; ein kurzer Satz, höchstens 200 Zeichen (sonst nimmt
+   * die Rahmen-App den allgemeinen „Das Projekt hat ungespeicherte Änderungen.“)
    */
   ungespeichert?: string;
   onOpenLog: () => void;
@@ -119,7 +120,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
     try {
       if (dirty) {
         const weiter = onSpeichern
-          ? await aenderungenSpeichern(name, onSpeichern, 'Vor dem Beenden speichern?')
+          ? await aenderungenSpeichern(name, onSpeichern, ungespeichert ?? 'Vor dem Beenden speichern?')
           : await bestaetigen('Ungespeicherte Änderungen verwerfen?', 'Die Änderungen gehen beim Beenden verloren.', 'Verwerfen und beenden', true);
         if (!weiter) return;
       }

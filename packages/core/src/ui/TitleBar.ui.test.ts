@@ -79,6 +79,18 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(fenster.destroy).toHaveBeenCalled();
   });
 
+  it('mit Speichern: die Rückfrage nennt den Satz der App (ungespeichert), sonst „Vor dem Beenden speichern?“', async () => {
+    const host = await render({ onSpeichern: async () => true, ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
+    await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
+    expect(dialog(host)?.textContent).toContain('Das LV hat ungespeicherte Änderungen.');
+    await antwort(host, 'Abbrechen');
+    await act(async () => root!.render(createElement(TitleBar, { app: 'ATLAS', name: 'P1', dirty: true, onOpenLog: () => {}, onSpeichern: async () => true })));
+    await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
+    expect(dialog(host)?.textContent).toContain('Vor dem Beenden speichern?');
+    await antwort(host, 'Abbrechen');
+    expect(fenster.destroy).not.toHaveBeenCalled();
+  });
+
   it('ohne Änderungen schließt das Fenster ohne Rückfrage', async () => {
     await render({ dirty: false });
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
