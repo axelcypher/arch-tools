@@ -2078,6 +2078,9 @@ button.ph-lokal {
   color: var(--muted);
   cursor: default;
 }
+.menue-punkt[aria-disabled='true']:hover {
+  background: none;
+}
 .menue-punkt[aria-disabled='true'] .menue-text,
 .menue-punkt[aria-disabled='true'] .menue-symbol {
   opacity: 0.6;

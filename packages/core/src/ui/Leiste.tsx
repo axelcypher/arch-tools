@@ -39,12 +39,17 @@ export function Ziehgriff({
   vorgabe,
   titel = 'Breite ändern',
   seite = 'links',
+  min,
+  max,
 }: {
   breite: number;
   setBreite: (b: number) => void;
   vorgabe?: number;
   titel?: string;
   seite?: 'links' | 'rechts';
+  /** Grenzen der Breite (für Screenreader) */
+  min?: number;
+  max?: number;
 }) {
   // rechte Leiste: Griff am linken Rand, nach links ziehen macht sie breiter
   const richtung = seite === 'rechts' ? -1 : 1;
@@ -55,6 +60,8 @@ export function Ziehgriff({
       aria-orientation="vertical"
       aria-label={titel}
       aria-valuenow={breite}
+      aria-valuemin={min}
+      aria-valuemax={max}
       tabIndex={0}
       title={`${titel} – ziehen${vorgabe ? ', Doppelklick: Vorgabe' : ''}`}
       onPointerDown={(e) => {
@@ -97,7 +104,7 @@ export function BreitenLeiste({
   return (
     <div className={`leiste ${className}`} style={{ width: breite }}>
       {children}
-      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} seite={seite} />
+      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} seite={seite} min={min ?? 180} max={max ?? 560} />
     </div>
   );
 }
