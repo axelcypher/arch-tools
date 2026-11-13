@@ -6,7 +6,7 @@ import { pkText } from '../dateisystem';
 import { bezeichner, finde } from './dfm';
 import { memoText, parseFormular } from './formular';
 import type { Projektkarte } from './projektkarte';
-import { ausfuellen, pkAnzeige, pkArt, pkMoeglichkeiten, pkWert, pkWertPasst, pkWertVon, teileAus, zuordnungen } from './projektkarte';
+import { ausfuellen, pkAnzeige, pkArt, pkMoeglichkeiten, pkWert, pkWertPasst, pkWertVon, teileAus, zuordnungen, pkZahlAus } from './projektkarte';
 
 const wert = (werte: Record<string, string>) => (g: number, id: number) => werte[`${g}:${id}`] ?? '';
 
@@ -102,21 +102,46 @@ describe.skipIf(!projekte.length)('Ausfüllen gegen echte FORMA-Projekte', () =>
 
 describe('Werte der Projektkarte', () => {
   const eintrag = (typ: number, text: string, zahl: number | null) => ({ gruppe: 201, id: 210, typ, titel: 'Anrede:', text, zahl });
-  const anrede = eintrag(4, '\r\nSehr geehrte Frau\r\nSehr geehrter Herr\r\nSehr geehrte Damen und Herren,', 2);
+  // Ganzzahl 1 = „Sehr geehrter Herr“: die leere erste Zeile zählt in der Datei nicht mit
+  const anrede = eintrag(4, '\r\nSehr geehrte Frau\r\nSehr geehrter Herr\r\nSehr geehrte Damen und Herren,', 1);
 
-  it('Auswahlliste: die leere erste Zeile zählt mit (Delphi: Items = Texte, ItemIndex = Ganzzahl)', () => {
+  it('Auswahlliste: die leere erste Zeile ist „keine Angabe“ und zählt in der Datei nicht mit (wie SJ Office)', () => {
     expect(pkArt(anrede)).toBe('auswahl');
     expect(pkMoeglichkeiten(anrede)).toEqual(['', 'Sehr geehrte Frau', 'Sehr geehrter Herr', 'Sehr geehrte Damen und Herren,']);
     expect(pkWertVon(anrede)).toBe(2);
     expect(pkAnzeige(anrede, 2)).toBe('Sehr geehrter Herr');
+    expect(pkAnzeige(anrede, pkWertVon({ ...anrede, zahl: 0 }))).toBe('Sehr geehrte Frau');
     expect(pkWertVon({ ...anrede, zahl: -1 })).toBeNull();
     expect(pkWertVon({ ...anrede, zahl: null })).toBeNull();
     expect(pkAnzeige(anrede, null)).toBe('');
+    // zurück in die Datei: Nummer in der Liste − 1; die leere Zeile bzw. keine Wahl
+    expect(pkZahlAus(anrede, 2)).toBe(1);
+    expect(pkZahlAus(anrede, 1)).toBe(0);
+    expect(pkZahlAus(anrede, 0)).toBe(-1);
+    expect(pkZahlAus(anrede, null)).toBeNull();
+    // Land: „NRW“ ist die erste Möglichkeit (Ganzzahl 0), nicht „RLP“
+    const land = eintrag(4, '\r\nNRW\r\nRLP\r\nNDS', 0);
+    expect(pkAnzeige(land, pkWertVon(land))).toBe('NRW');
+    expect(pkZahlAus(land, pkMoeglichkeiten(land).indexOf('NRW'))).toBe(0);
+  });
+  it('Auswahlliste ohne leere erste Zeile: kein Versatz; eine erste Zeile aus Leerzeichen gilt als leer', () => {
+    const ohne = eintrag(4, 'NRW\r\nRLP', 0);
+    expect(pkAnzeige(ohne, pkWertVon(ohne))).toBe('NRW');
+    expect(pkZahlAus(ohne, 1)).toBe(1);
+    const leerzeichen = eintrag(4, ' \r\nNRW\r\nRLP', 1);
+    expect(pkAnzeige(leerzeichen, pkWertVon(leerzeichen))).toBe('RLP');
+    expect(pkZahlAus(leerzeichen, 1)).toBe(0);
+    // außerhalb der Liste: Nummer bleibt, angezeigt wird nichts (die Oberfläche bietet „bitte neu wählen“ an)
+    const aussen = eintrag(4, '\r\nNRW\r\nRLP', 2);
+    expect(pkWertVon(aussen)).toBe(3);
+    expect(pkAnzeige(aussen, 3)).toBe('');
+    expect(pkWertPasst(aussen, 3)).toBe(false);
   });
 
   it('Optionen ohne leere Zeile, Kästchen mit Beschriftung, Texte mit \n', () => {
     const neigung = eintrag(8, 'eben\r\ngeneigt\r\nHanglage', 1);
     expect(pkAnzeige(neigung, pkWertVon(neigung))).toBe('geneigt');
+    expect(pkZahlAus(neigung, 1)).toBe(1);
     const kreuz = eintrag(16, 'Wärmeschutz', 0);
     expect(pkWertVon(kreuz)).toBe(0);
     expect(pkAnzeige(kreuz, 1)).toBe('Wärmeschutz');

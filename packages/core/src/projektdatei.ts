@@ -2,6 +2,7 @@ import type { ZipOptions } from 'fflate';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { ARCHIV_ENDUNG, ARCHIV_FORMAT, isZip } from './archive';
 import { gleich } from './zusammenfuehren';
+import { datumNachFormat, ersetzen, globaleWerte, GLOBALE_VARIABLEN, unbekanntePlatzhalter as unbekannteIn, type Variable } from './platzhalter';
 
 /**
  * Die Projektdatei (.oap) im Projektordner – gemeinsam für alle Apps. Jedes Projekt hat eine; sie gehört keinem
@@ -28,7 +29,7 @@ export interface OrdnerEintrag {
 export const OAP_SUCHTIEFE = 4;
 
 /** Vorgabe für den Ort einer neuen Projektdatei im Projektordner */
-export const VORGABE_OAP_PFAD = '03 Berechnungen/Flächen/{nummer} {kurzname}.oap';
+export const VORGABE_OAP_PFAD = '03 Berechnungen/Flächen/{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}.oap';
 
 const istOap = (e: OrdnerEintrag) => !e.ordner && new RegExp(`\\.${ARCHIV_ENDUNG}$`, 'i').test(e.pfad) && !/(^|\/)(~\$|\.)[^/]*$/.test(e.pfad);
 
@@ -61,61 +62,27 @@ export function sichererDateiname(name: string): string {
     .trim();
 }
 
-/** Platzhalter für den Pfad neuer Projektdateien (Groß-/Kleinschreibung egal) – für die Einstellungen */
-export const OAP_PLATZHALTER: { name: string; text: string }[] = [
-  { name: '{Kürzel}', text: 'Projektkürzel bzw. -nummer (gleich: {nummer}, {projektcode})' },
-  { name: '{Kurzname}', text: 'Kurzname des Projekts' },
-  { name: '{Vorhaben}', text: 'Bezeichnung des Vorhabens' },
-  { name: '{Datum}', text: 'Tag des Anlegens – hier ohne Angabe als JJMMTT (wie bisher); mit Format z. B. {datum:JJJJ-MM-TT}' },
-  { name: '{datum:JJMMTT}', text: 'Tag des Anlegens im angegebenen Format (JJJJ, JJ, MM, TT)' },
-  { name: '{Jahr}', text: 'Jahr des Anlegens (vierstellig)' },
-  { name: '{jj}', text: 'Jahr des Anlegens (zweistellig)' },
-];
-
-const PLATZHALTER_MUSTER = /\{\s*([^{}]*?)\s*\}/g;
-const BEKANNT = /^(nummer|k(?:ü|ue)rzel|projektcode|kurzname|vorhaben|datum(?::\s*[JMT.\-_ ]+)?|jahr|jj)$/i;
-
 /**
- * Datum nach Format: JJJJ (Jahr), JJ (zweistellig), MM, TT, dazwischen Trenner – „JJJJ-MM-TT“ → 2026-11-11, „JJMMTT“ →
- * 261111. Gemeinsam für Dateinamen und den Pfad der Projektdatei.
+ * Variablen für den Pfad neuer Projektdateien: alle globalen (@core/platzhalter). Alte Namen ({nummer}, {Kürzel},
+ * {projektcode}, {kurzname}, {datum} = JJMMTT, {jj} …) gelten weiter.
  */
-export function datumNachFormat(d: Date, format: string): string {
-  const zwei = (n: number) => String(n).padStart(2, '0');
-  return format.replace(/JJJJ|JJ|MM|TT/g, (t) => (t === 'JJJJ' ? String(d.getFullYear()) : t === 'JJ' ? zwei(d.getFullYear() % 100) : t === 'MM' ? zwei(d.getMonth() + 1) : zwei(d.getDate())));
-}
+export const OAP_VARIABLEN: Variable[] = GLOBALE_VARIABLEN;
+
+export { datumNachFormat };
 
 /** Platzhalter der Vorlage, die nicht aufgelöst werden (bleiben so im Pfad stehen) */
-export const unbekanntePlatzhalter = (vorlage: string) => [...new Set([...vorlage.matchAll(PLATZHALTER_MUSTER)].filter((m) => !BEKANNT.test(m[1])).map((m) => m[0]))];
-
-const zweistellig = (n: number) => String(n).padStart(2, '0');
+export const unbekanntePlatzhalter = (vorlage: string) => unbekannteIn(vorlage, OAP_VARIABLEN);
 
 /**
- * Pfad einer neuen Projektdatei im Projektordner aus der Vorlage. Platzhalter: {nummer} bzw. {kürzel} (Projektcode),
- * {kurzname}, {vorhaben}, {datum} (JJMMTT) und {jahr} – siehe {@link OAP_PLATZHALTER}. Fehlt die Endung, wird sie
- * ergänzt; leere Teile (z. B. ohne Kurzname) fallen weg. Unbekannte Platzhalter bleiben stehen.
+ * Pfad einer neuen Projektdatei im Projektordner aus der Vorlage – Variablen siehe {@link OAP_VARIABLEN}. Fehlt die
+ * Endung, wird sie ergänzt; leere Teile (z. B. ohne Kurzname) fallen weg. Unbekannte Platzhalter bleiben stehen.
  */
-export function projektdateiPfad(vorlage: string, werte: { nummer: string; kurzname?: string; vorhaben?: string; jahr?: number | string; datum?: Date }): string {
+export function projektdateiPfad(vorlage: string, werte: { nummer: string; kurzname?: string; vorhaben?: string; bearbeiter?: string; jahr?: number | string; datum?: Date }): string {
   const tag = werte.datum ?? new Date();
-  const ersetzt = (vorlage.trim() || VORGABE_OAP_PFAD).replace(PLATZHALTER_MUSTER, (m, k: string) => {
-    if (!BEKANNT.test(k)) return m;
-    const n = k.toLowerCase();
-    // Werte ohne Trenner und unzulässige Zeichen – ein „/“ im Kurznamen darf keinen Unterordner ergeben
-    if (n === 'kurzname') return sichererDateiname(werte.kurzname ?? '');
-    if (n === 'vorhaben') return sichererDateiname(werte.vorhaben ?? '');
-    if (n === 'jahr') return String(werte.jahr ?? tag.getFullYear());
-    if (n === 'jj') return zweistellig(Number(werte.jahr ?? tag.getFullYear()) % 100);
-    // {datum} ohne Format bleibt hier JJMMTT, damit vorhandene Einstellungen dieselben Namen ergeben
-    if (n.startsWith('datum:'))
-      return datumNachFormat(
-        tag,
-        k
-          .slice(k.indexOf(':') + 1)
-          .trim()
-          .toUpperCase(),
-      );
-    if (n === 'datum') return `${zweistellig(tag.getFullYear() % 100)}${zweistellig(tag.getMonth() + 1)}${zweistellig(tag.getDate())}`;
-    return sichererDateiname(werte.nummer);
-  });
+  const w = globaleWerte({ projektcode: werte.nummer, kurzname: werte.kurzname, vorhaben: werte.vorhaben, bearbeiter: werte.bearbeiter, datum: tag });
+  if (werte.jahr !== undefined) Object.assign(w, { JAHR: String(werte.jahr), JAHR_KURZ: String(Number(werte.jahr) % 100).padStart(2, '0') });
+  // Werte ohne Trenner und unzulässige Zeichen – ein „/“ im Kurznamen darf keinen Unterordner ergeben
+  const ersetzt = ersetzen(vorlage.trim() || VORGABE_OAP_PFAD, OAP_VARIABLEN, w, { saeubern: sichererDateiname });
   const teile = ersetzt
     .split(/[\\/]+/)
     // „BS5 .oap“ (ohne Kurzname) → „BS5.oap“

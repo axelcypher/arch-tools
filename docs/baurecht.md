@@ -369,7 +369,7 @@ bricht sonst ab.
 - Netzfehler: Nur Verbindungsfehler und Zeitüberschreitungen werden wiederholt, nicht „Host nicht freigegeben“ o. Ä.
 - Kern im gemeinsamen Unterbau: `packages/core/src/recht/` (Adapter, Prüfsummen, Rechtsstand),
   `packages/core/src/baurecht/` (Format, Bedingungen, Auswertung, Projektdatei, Geodienste).
-- Entwicklung: `npm run dev:baurecht` (http://localhost:1490), `npm run tauri:dev:baurecht`; Live-Abgleich der Quellen:
+- Entwicklung: `npm run dev:baurecht` (http://localhost:1500), `npm run tauri:dev:baurecht`; Live-Abgleich der Quellen:
   `LIVE=1 npx vitest run packages/core/src/recht/quellen.live.test.ts`.
 
 Die Ergebnisse sind eine Arbeitshilfe und ersetzen keine fachliche Prüfung; die rechtliche Einordnung bleibt bei den

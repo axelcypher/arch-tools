@@ -10,6 +10,7 @@ name: Build & Release
 #   Projektordner    apps/ordner            Tag ordner-v<version>
 #   Entzerrung       apps/entzerrung        Tag entzerrung-v<version>
 #   Formulare        apps/formulare         Tag formulare-v<version>
+#   AVA              apps/ava               Tag ava-v<version>  (Ausschreibung, Vergabe, Abrechnung, Bauleitung)
 #   Baurecht         apps/baurecht          Tag baurecht-v<version>
 #   arch-tools       apps/suite             Tag suite-v<version>  (Rahmen-App: alle Apps in einem Fenster)
 #
@@ -28,7 +29,7 @@ on:
       app:
         description: App
         type: choice
-        options: [alle, flaechenrechner, grz, kosten, ordner, entzerrung, formulare, baurecht, suite]
+        options: [alle, flaechenrechner, grz, kosten, ordner, entzerrung, formulare, ava, baurecht, suite]
         default: alle
 
 permissions:
@@ -54,7 +55,7 @@ jobs:
           PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
         run: |
           apps='[]'
-          for d in flaechenrechner grz kosten ordner entzerrung formulare baurecht suite; do
+          for d in flaechenrechner grz kosten ordner entzerrung formulare ava baurecht suite; do
             # der öffentliche Schlüssel in der App muss zum Signierschlüssel passen, sonst lehnen die Apps jedes Update ab
             k=$(node -p "require('./apps/$d/src-tauri/tauri.conf.json').plugins.updater.pubkey")
             if [ -n "$PUBKEY" ] && [ "$k" != "$(printf '%s' "$PUBKEY" | tr -d '[:space:]')" ]; then
@@ -75,6 +76,7 @@ jobs:
               ordner) tag="$d-v$v"; name="Projektordner"; web="projektordner-web.zip" ;;
               entzerrung) tag="$d-v$v"; name="Entzerrung"; web="entzerrung-web.zip" ;;
               formulare) tag="$d-v$v"; name="Formulare"; web="formulare-web.zip" ;;
+              ava) tag="$d-v$v"; name="AVA"; web="ava-web.zip" ;;
               baurecht) tag="$d-v$v"; name="Baurecht"; web="baurecht-web.zip" ;;
               suite) tag="$d-v$v"; name="arch-tools"; web="arch-tools-web.zip" ;;
             esac

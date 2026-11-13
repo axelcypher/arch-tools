@@ -75,35 +75,45 @@ function KopieDialog({ frage }: { frage: Frage }) {
   const ok = () => frage.antwort({ nummernAnpassen: nummern, wohnung: wohnung === '' ? null : wohnung === '*neu' ? neu.trim() || null : wohnung });
   return (
     <Modal titel={frage.titel} onClose={abbrechen}>
-      <h3>{frage.titel}</h3>
-      <label className="toggle block">
-        <input type="checkbox" checked={nummern} onChange={(e) => setNummern(e.target.checked)} />
-        Raumnummern an {frage.ziel ? `„${frage.ziel}“` : 'das Zielgeschoss'} anpassen (Präfix des Geschosses, fortlaufend)
-      </label>
-      <label className="field">
-        <span className="field-label">Wohnung der Räume mit Wohnflächenanrechnung</span>
-        <select value={wohnung} onChange={(e) => setWohnung(e.target.value)}>
-          <option value="">Wohnung beibehalten</option>
-          {wohnungen.map((w) => (
-            <option key={w} value={w}>
-              {w}
-            </option>
-          ))}
-          <option value="*neu">neue Wohnung …</option>
-        </select>
-      </label>
-      {wohnung === '*neu' && (
-        <label className="field">
-          <span className="field-label">Name der neuen Wohnung</span>
-          <input value={neu} placeholder="z. B. WE 02" onChange={(e) => setNeu(e.target.value)} autoFocus />
+      {/* Formular: Enter übernimmt (wie in den übrigen Dialogen) */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          ok();
+        }}
+      >
+        <h3>{frage.titel}</h3>
+        <label className="toggle block">
+          <input type="checkbox" checked={nummern} onChange={(e) => setNummern(e.target.checked)} />
+          Raumnummern an {frage.ziel ? `„${frage.ziel}“` : 'das Zielgeschoss'} anpassen (Präfix des Geschosses, fortlaufend)
         </label>
-      )}
-      <div className="dialog-buttons">
-        <button onClick={abbrechen}>Abbrechen</button>
-        <button className="primary" onClick={ok}>
-          Übernehmen
-        </button>
-      </div>
+        <label className="field">
+          <span className="field-label">Wohnung der Räume mit Wohnflächenanrechnung</span>
+          <select value={wohnung} onChange={(e) => setWohnung(e.target.value)}>
+            <option value="">Wohnung beibehalten</option>
+            {wohnungen.map((w) => (
+              <option key={w} value={w}>
+                {w}
+              </option>
+            ))}
+            <option value="*neu">neue Wohnung …</option>
+          </select>
+        </label>
+        {wohnung === '*neu' && (
+          <label className="field">
+            <span className="field-label">Name der neuen Wohnung</span>
+            <input value={neu} placeholder="z. B. WE 02" onChange={(e) => setNeu(e.target.value)} autoFocus />
+          </label>
+        )}
+        <div className="dialog-buttons">
+          <button type="button" onClick={abbrechen}>
+            Abbrechen
+          </button>
+          <button type="submit" className="primary">
+            Übernehmen
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }

@@ -8,17 +8,21 @@
  *   Nr. 4 Basiskarte nur nach §§ 34, 35 BauGB (auch im einfachen Bebauungsplan).
  * - Nr. 6 Baubeschreibung entfällt beim Einfamilienhaus; Nr. 8 Barrierefrei-Konzept bei der Errichtung (öffentlich
  *   zugängliche große Sonderbauten, § 9a Abs. 1, § 11 BauPrüfVO – sonst selbst als „zählt nicht“ einstellen); Nr. 9
- *   Betriebsbeschreibung für Betriebe (Nichtwohngebäude).
- * - Nr. 10.1 bis 10.3 Kosten: eine Angabe; die Herstellungssumme bei 10.3.
+ *   Betriebsbeschreibung für Betriebe (Nichtwohngebäude, auch im Wohn- und Geschäftshaus).
+ * - Nr. 10.1 bis 10.3 Kosten: eine Angabe; die Herstellungssumme bei 10.3. Bei einer Änderung und bei baulichen
+ *   Anlagen, die keine Gebäude sind, muss es die Herstellungssumme sein.
  */
 
 import type { FormularProfil } from '../profil';
 import { blatt2, kopf, personen, unterschriften, zusammen } from './antrag';
-import { keinEinfamilienhaus, nurBebauungsplan, nurBetrieb, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte } from './grundlagen';
+import { gebaeudeImVordruck, keinEinfamilienhaus, nurBebauungsplan, nurBetrieb, nurGebaeudeStatistik, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte, ohneHerstellungssumme } from './grundlagen';
 import { angekreuzt, begruendet, gruppeV, ist, q, s, wenn, zaehltNicht } from './hilfen';
 
+const s0 = s(0);
 const s1 = s(1);
 const bauantrag = angekreuzt('0:CheckBox1');
+/** ein Gebäude: „Sonstige bauliche Anlage“ nicht angekreuzt oder eine Gebäudeklasse angekreuzt */
+const gebaeude = gebaeudeImVordruck('0:CheckBox22', s0('CheckBox4', 'CheckBox5', 'CheckBox6', 'CheckBox7', 'CheckBox8'));
 
 export const nw010001_2026I: FormularProfil = zusammen(kopf, personen, blatt2, unterschriften(2), {
   abschnitte: {
@@ -62,8 +66,10 @@ export const nw010001_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
       q('bauo-nrw', '49', 2),
     ),
     '1:CheckBox9': nurBetrieb,
+    '1:CheckBox34': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox35': ohneHerstellungssumme(gebaeude),
     '1:Memo4': wenn(angekreuzt('1:CheckBox36')),
-    '2:CheckBox6': wenn(bauantrag),
+    '2:CheckBox6': nurGebaeudeStatistik(gebaeude, bauantrag),
     '2:CheckBox7': wenn(bauantrag),
   },
 });

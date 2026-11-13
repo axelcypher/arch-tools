@@ -77,7 +77,7 @@ export const nw010004_2026C: FormularProfil = zusammen({
   bedingungen: {
     '0:CheckBox1': begruendet(
       wenn(PLANUNGSRECHT_34_35),
-      'Bei einer Nutzungsänderung gehört der Auszug aus dem Liegenschaftskataster nur zu Vorhaben nach den §§ 34 und 35 BauGB (auch im einfachen Bebauungsplan, § 30 Abs. 3 BauGB).',
+      'Bei einer Nutzungsänderung gehört der Auszug aus dem Liegenschaftskataster nur zu Vorhaben nach den §§ 34 und 35 BauGB (auch im einfachen Bebauungsplan, § 30 Abs. 3 BauGB, und im Bereich einer Satzung nach § 34 Abs. 4 oder § 35 Abs. 6 BauGB).',
       q('baupruefvo', '10', 3),
       q('baupruefvo', '10', 1, undefined, 1),
       q('baugb', '30'),

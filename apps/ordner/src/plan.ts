@@ -1,3 +1,4 @@
+import type { Namensschema } from '@core/namensschema';
 import { writeArchive } from '@core/archive';
 import type { ProjectMeta, ProjektordnerAngaben } from '@core/model';
 import { projektdateiSchreiben } from '@core/platform/projektordner';
@@ -8,7 +9,7 @@ import type { ProjektdateiAenderung, Stammdaten } from './stammdaten';
 import { alsProject, bereinigt, isoDatum, platzhalter, projektdateiAenderung } from './stammdaten';
 import type { Struktur, VorlagenEintrag } from './struktur';
 import type { VorlagenPreset } from './struktur';
-import { aktivePresets, normPfad, regelGilt, sichererName } from './struktur';
+import { aktivePresets, normPfad, ordnerGilt, regelGilt, sichererName } from './struktur';
 import { ausserhalbDerStruktur } from './pruefung';
 import { alsDokument, fuelleVorlage, zielDateiname } from './vorlagen';
 
@@ -71,8 +72,10 @@ export interface PlanOptionen {
   jahr?: number;
   /** Ort einer neuen Projektdatei im Projektordner (gemeinsame Einstellung aller Apps) */
   oapPfad?: string;
+  /** Namensschema des Büros – kommt in jede neue Projektdatei (fehlt = die Vorgabe) */
+  namensschema?: Namensschema;
   /** die vorhandene Projektdatei des Ordners (Ergänzen) – sie wird gezielt ergänzt statt neu angelegt */
-  projektdatei?: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben } | null;
+  projektdatei?: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben; namensschema?: Namensschema } | null;
 }
 
 /** Dateien, die keine Vorlagen sind: Systemdateien, Sperrdateien von Office, die Anleitung im Stamm */
@@ -256,7 +259,8 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
   for (const r of struktur.ordner) {
     const pfad = zielPfad(r.pfad, werte);
     if (!pfad) continue;
-    if (regelGilt(r, s.leistungsphasen)) ordnerSchritt(pfad, 'struktur');
+    // ein Unterordner entsteht nur mit seinem übergeordneten Ordner (Leistungsphasen werden vererbt)
+    if (ordnerGilt(struktur.ordner, r.pfad, s.leistungsphasen)) ordnerSchritt(pfad, 'struktur');
     else ausgeschlossen.push(pfad.toLowerCase());
   }
   if (ausgeschlossen.length) hinweise.push(`${ausgeschlossen.length} Ordner gehören zu nicht beauftragten Leistungsphasen und werden nicht angelegt.`);
@@ -296,7 +300,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
   const schonDa = geladen ? null : projektdateiWaehlen(vorhandene);
   let projektdatei: Plan['projektdatei'];
   if (geladen) {
-    const aenderung = projektdateiAenderung(geladen, s, { struktur, presets: presetNamen });
+    const aenderung = projektdateiAenderung(geladen, s, { struktur, presets: presetNamen, namensschema: optionen.namensschema });
     const eltern = geladen.pfad.split('/').slice(0, -1).join('/');
     if (eltern) ordnerSchritt(eltern, 'projektdatei');
     schritte.set(geladen.pfad.toLowerCase(), { art: 'datei', pfad: geladen.pfad, herkunft: 'projektdatei', vorhanden: true, aenderung });
@@ -307,7 +311,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     projektdatei = { pfad: schonDa.pfad, neu: false, teile: [] };
   } else {
     const pfad = projektdateiPfad(optionen.oapPfad ?? VORGABE_OAP_PFAD, { nummer: s.nummer, kurzname: s.kurzname, vorhaben: s.bezeichnung, jahr: werte.jahr, datum: date });
-    datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date }), { app: `Projektordner ${__APP_VERSION__}`, date }));
+    datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date, namensschema: optionen.namensschema }), { app: `Projekt ${__APP_VERSION__}`, date }));
     projektdatei = { pfad, neu: true, teile: [] };
   }
 

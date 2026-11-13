@@ -89,6 +89,9 @@ describe('Prüfliste „Was fehlt noch?“ (U-03)', () => {
     expect(flurkarte.classList.contains('ungeklaert')).toBe(true);
     expect(flurkarte.querySelector('.fo-gl-offen')!.getAttribute('title')).toContain('Planungsrecht');
     expect(host.querySelector('.fo-gl-pruefliste')!.textContent).toMatch(/\d+ offen\d+ ungeklärt/);
+    // Feldansicht zählt wie die Gliederung: „offen“ ohne die ungeklärten, diese getrennt
+    const [, offenGl, ungeklaertGl] = /(\d+) offen(\d+) ungeklärt/.exec(host.querySelector('.fo-gl-pruef-zahl')!.textContent!)!;
+    expect(knopf(host, 'Offene').textContent).toBe(`Offene (${offenGl}) · ${ungeklaertGl} ungeklärt`);
   });
 
   it('„Nächste offene Angabe“ (Knopf und F8) springt zum ersten offenen Feld, dann weiter', async () => {

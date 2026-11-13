@@ -3,14 +3,15 @@ import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
 import { bestaetigen } from '@core/ui/Rueckfrage';
-import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
+import { OAP_VARIABLEN, projektdateiPfad } from '@core/projektdatei';
 import { hatDateisystem, waehleOrdner } from '../dateisystem';
-import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT, unbekanntePlatzhalterIn } from '../nummer';
+import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT } from '../nummer';
 import { SchemaFeld } from './SchemaFeld';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
-import { OrdnerBaum } from './OrdnerBaum';
+import { OrdnerEditor } from './OrdnerEditor';
+import { NamensschemaEinstellungen } from './NamensschemaEinstellungen';
 import type { Struktur } from '../struktur';
 import { ordnerAlsText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from '../struktur';
 
@@ -31,9 +32,8 @@ const musterWerte = (nummer: string) => {
 };
 
 /**
- * Einstellungen: gemeinsame Einstellungen aller Apps (Konfigurationsordner, Stammordner der Projekte, Ort der
- * Projektdatei, Fotoordner) und die Struktur des Büros – Ordnerbaum und Namensschemata, samt den Vorlagen-Presets
- * als Datei speicher- und ladbar.
+ * Struktur des Büros: Ordnerbaum (Klick-Editor mit Bausteinen, für Geübte auch als Text) und Namensschemata, samt
+ * den Vorlagen-Presets als Datei speicher- und ladbar; vor jedem Ersetzen gesichert.
  */
 export function StrukturView() {
   const struktur = useOrdner((s) => s.struktur);
@@ -117,37 +117,98 @@ export function StrukturView() {
     });
 
   const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
-  const dateiBeispiel = (schema: string) => nameAus(schema, { ...beispiel, projekt: beispiel.nummer, plannummer: 'A-101', index: 'b', titel: 'Grundriss EG' });
+  const dateiBeispiel = (schema: string) => nameAus(schema, { ...beispiel, plannummer: 'A-101', index: 'b', titel: 'Grundriss EG' });
   const geaendert = text !== ordnerAlsText(struktur.ordner);
 
+  const ordnerKopf = (
+    <div className="po-ordner-kopf">
+      <h2>Ordner</h2>
+      <span className="muted small-text">
+        {struktur.ordner.length} Ordner, davon {struktur.ordner.filter((o) => o.lph?.length).length} an Leistungsphasen gebunden
+      </span>
+      <div className="tb-group" role="group" aria-label="Ansicht der Ordnerliste">
+        <button className={`small${ordnerAnsicht === 'baum' ? ' active' : ''}`} aria-pressed={ordnerAnsicht === 'baum'} onClick={() => setOrdnerAnsicht('baum')}>
+          Baum
+        </button>
+        <button
+          className={`small${ordnerAnsicht === 'text' ? ' active' : ''}`}
+          aria-pressed={ordnerAnsicht === 'text'}
+          title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten"
+          onClick={() => setOrdnerAnsicht('text')}
+        >
+          Text (Experte)
+        </button>
+      </div>
+    </div>
+  );
+
+  const schemata = (
+    <section className="po-col po-schemata" aria-label="Namensschemata">
+      <h3>Namen</h3>
+      <Field label="Projektnummer">
+        <SchemaFeld
+          label="Projektnummer"
+          value={struktur.nummernschema}
+          platzhalter={PLATZHALTER_NUMMER}
+          vorschau={(t) => `Beispiel: ${nummerAus(t, 14)}`}
+          onChange={(v) => set({ nummernschema: v.trim() || struktur.nummernschema })}
+        />
+      </Field>
+      <Field label="Name des Projektordners">
+        <SchemaFeld
+          label="Name des Projektordners"
+          value={struktur.ordnername}
+          platzhalter={PLATZHALTER_PROJEKT}
+          vorschau={(t) => `Beispiel: ${sichererName(nameAus(t, beispiel))}`}
+          onChange={(v) => set({ ordnername: v.trim() || struktur.ordnername })}
+        />
+      </Field>
+      <Field label="Dateinamenschema für Pläne">
+        <SchemaFeld
+          label="Dateinamenschema für Pläne"
+          value={struktur.dateischema}
+          platzhalter={PLATZHALTER_PLAN}
+          vorschau={(t) =>
+            `Beispiel: ${dateiBeispiel(t)}.pdf${dateimuster(t, beispiel.nummer).test(dateiBeispiel(t)) ? '' : ' (das Schema erkennt sein eigenes Beispiel nicht – bitte Trennzeichen prüfen)'}`
+          }
+          onChange={(v) => set({ dateischema: v.trim() })}
+        />
+      </Field>
+    </section>
+  );
+
   return (
-    <div className="po-view">
-      <section className="po-col">
-        <GemeinsameEinstellungen />
-        <h2>Struktur</h2>
-        <p className="muted small-text">
-          Ordnerbaum und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur lässt sich als Datei speichern, weitergeben und auf einem anderen Rechner laden – samt den Vorlagen-Presets
-          (unter „Vorlagen“).
-        </p>
-        <div className="button-row">
-          <button onClick={() => void laden()}>Struktur laden …</button>
-          <button onClick={() => void speichern()}>Struktur speichern …</button>
-          <button
-            title="Ordner und Namensschemata auf die neutrale Vorgabe zurücksetzen – Presets und Dateinamen der Vorlagen bleiben"
-            onClick={() =>
-              void ersetzen(
-                { ...STANDARD, vorlagenname: struktur.vorlagenname, presets: struktur.presets },
-                'Standardstruktur wiederherstellen?',
-                'Neutrale Standardstruktur wiederhergestellt; die Vorlagen-Presets bleiben.',
-              )
-            }
-          >
-            Standard
-          </button>
-          <button title="Frühere Fassungen der Struktur – vor jedem Ersetzen gesichert (die letzten zehn)" onClick={() => void sicherungenZeigen()}>
-            Sicherungen …
-          </button>
+    <div className="po-struktur">
+      <section className="po-col po-struktur-kopf">
+        <div className="po-struktur-titel">
+          <h2>Struktur</h2>
+          <Field label="Name der Struktur">
+            <TextField value={struktur.name} onChange={(v) => set({ name: v.trim() || struktur.name })} />
+          </Field>
+          <div className="button-row">
+            <button onClick={() => void laden()}>Struktur laden …</button>
+            <button onClick={() => void speichern()}>Struktur speichern …</button>
+            <button
+              title="Ordner und Namensschemata auf die neutrale Vorgabe zurücksetzen – Presets, Bausteine und Dateinamen der Vorlagen bleiben"
+              onClick={() =>
+                void ersetzen(
+                  { ...STANDARD, vorlagenname: struktur.vorlagenname, presets: struktur.presets, ...(struktur.bausteine ? { bausteine: struktur.bausteine } : {}) },
+                  'Standardstruktur wiederherstellen?',
+                  'Neutrale Standardstruktur wiederhergestellt; die Vorlagen-Presets bleiben.',
+                )
+              }
+            >
+              Standard
+            </button>
+            <button title="Frühere Fassungen der Struktur – vor jedem Ersetzen gesichert (die letzten zehn)" onClick={() => void sicherungenZeigen()}>
+              Sicherungen …
+            </button>
+          </div>
         </div>
+        <p className="muted small-text">
+          Ordnerbaum, Bausteine und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur gilt für alle, die diesen Konfigurationsordner nutzen, und lässt sich als Datei speichern, weitergeben
+          und auf einem anderen Rechner laden – samt den Vorlagen-Presets (unter „Vorlagen“).
+        </p>
         {meldung && <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'}>{meldung.text}</p>}
         {rueckgaengig && (
           <p className="po-meldung po-rueckgaengig">
@@ -175,74 +236,27 @@ export function StrukturView() {
             </ul>
           </div>
         )}
-
-        <Field label="Name der Struktur">
-          <TextField value={struktur.name} onChange={(v) => set({ name: v.trim() || struktur.name })} />
-        </Field>
-        <Field label="Projektnummer">
-          <SchemaFeld
-            label="Projektnummer"
-            value={struktur.nummernschema}
-            platzhalter={PLATZHALTER_NUMMER}
-            vorschau={(t) => `Beispiel: ${nummerAus(t, 14)}`}
-            unbekannt={(t) => unbekanntePlatzhalterIn(t, PLATZHALTER_NUMMER)}
-            onChange={(v) => set({ nummernschema: v.trim() || struktur.nummernschema })}
-          />
-        </Field>
-        <Field label="Name des Projektordners">
-          <SchemaFeld
-            label="Name des Projektordners"
-            value={struktur.ordnername}
-            platzhalter={PLATZHALTER_PROJEKT}
-            vorschau={(t) => `Beispiel: ${sichererName(nameAus(t, beispiel))}`}
-            unbekannt={(t) => unbekanntePlatzhalterIn(t, PLATZHALTER_PROJEKT)}
-            onChange={(v) => set({ ordnername: v.trim() || struktur.ordnername })}
-          />
-        </Field>
-        <Field label="Dateinamenschema für Pläne">
-          <SchemaFeld
-            label="Dateinamenschema für Pläne"
-            value={struktur.dateischema}
-            platzhalter={PLATZHALTER_PLAN}
-            vorschau={(t) =>
-              `Beispiel: ${dateiBeispiel(t)}.pdf${dateimuster(t, beispiel.nummer).test(dateiBeispiel(t)) ? '' : ' (das Schema erkennt sein eigenes Beispiel nicht – bitte Trennzeichen prüfen)'}`
-            }
-            unbekannt={(t) => unbekanntePlatzhalterIn(t, PLATZHALTER_PLAN)}
-            onChange={(v) => set({ dateischema: v.trim() })}
-          />
-        </Field>
       </section>
 
-      <section className="po-col">
-        <div className="po-ordner-kopf">
-          <h2>Ordner</h2>
-          <div className="tb-group" role="group" aria-label="Ansicht der Ordnerliste">
-            <button className={`small${ordnerAnsicht === 'baum' ? ' active' : ''}`} aria-pressed={ordnerAnsicht === 'baum'} onClick={() => setOrdnerAnsicht('baum')}>
-              Baum
-            </button>
-            <button
-              className={`small${ordnerAnsicht === 'text' ? ' active' : ''}`}
-              aria-pressed={ordnerAnsicht === 'text'}
-              title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten"
-              onClick={() => setOrdnerAnsicht('text')}
-            >
-              Text (Experte)
-            </button>
-          </div>
-        </div>
-        {ordnerAnsicht === 'baum' ? (
-          <>
+      {ordnerAnsicht === 'baum' ? (
+        <OrdnerEditor
+          ordner={struktur.ordner}
+          onChange={(ordner) => set({ ordner })}
+          bausteine={struktur.bausteine ?? []}
+          onBausteine={(b) => {
+            const { bausteine: _alt, ...rest } = struktur;
+            setStruktur(b.length ? { ...rest, bausteine: b } : rest);
+          }}
+          kopf={ordnerKopf}
+          seite={schemata}
+        />
+      ) : (
+        <div className="po-editor">
+          <section className="po-col po-editor-baum">
+            {ordnerKopf}
             <p className="muted small-text">
-              Je Ordner: Leistungsphasen – der Ordner entsteht nur, wenn eine davon beauftragt ist (keine = immer) – und „Schema“: Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft.
-              ↑ ↓ verschieben, → macht einen Ordner zum Unterordner des Ordners darüber, ← eine Ebene höher.
-            </p>
-            <OrdnerBaum ordner={struktur.ordner} onChange={(ordner) => set({ ordner })} />
-          </>
-        ) : (
-          <>
-            <p className="muted small-text">
-              Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist;{' '}
-              <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft.
+              Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist
+              (Unterordner erben sie); <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft.
             </p>
             <textarea
               className="po-ordnertext"
@@ -268,11 +282,21 @@ export function StrukturView() {
                 Ordnerliste übernehmen
               </button>
             </div>
-          </>
-        )}
-        <p className="muted small-text">
-          {struktur.ordner.length} Ordner, davon {struktur.ordner.filter((o) => o.lph?.length).length} an Leistungsphasen gebunden
-        </p>
+          </section>
+          <aside className="po-editor-seite">{schemata}</aside>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Einstellungen: die gemeinsamen Einstellungen aller Apps */
+export function EinstellungenView() {
+  return (
+    <div className="po-view einspaltig">
+      <section className="po-col">
+        <GemeinsameEinstellungen />
+        <NamensschemaEinstellungen />
       </section>
     </div>
   );
@@ -284,6 +308,16 @@ function GemeinsameEinstellungen() {
   const { konfig, konfigFehler, allgemein, setAllgemein, konfigOrdnerSetzen, struktur } = useOrdner();
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
   const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
+  /** Stammordner per Ziehen umsortieren: gezogener Eintrag und Ziel */
+  const [zieht, setZieht] = useState<number | null>(null);
+  const [ziel, setZiel] = useState<{ i: number; davor: boolean } | null>(null);
+  /** Eintrag `von` vor die Stelle `vor` setzen (Index in der alten Liste; Länge = ans Ende) */
+  const verschieben = (von: number, vor: number) => {
+    const liste = [...allgemein.projekte];
+    const [x] = liste.splice(von, 1);
+    liste.splice(vor > von ? vor - 1 : vor, 0, x);
+    if (liste.join('|') !== allgemein.projekte.join('|')) setAllgemein({ projekte: liste });
+  };
 
   const konfigWaehlen = async (lokal: boolean) => {
     setMeldung(null);
@@ -307,7 +341,7 @@ function GemeinsameEinstellungen() {
   return (
     <>
       <h2>Gemeinsame Einstellungen</h2>
-      <p className="muted small-text">Gelten für alle Apps (Projektordner, Formulare, Flächenrechner …). Liegt der Konfigurationsordner auf dem Server, gelten sie für das ganze Büro.</p>
+      <p className="muted small-text">Gelten für alle Apps (Projekt, Formulare, Flächenrechner …). Liegt der Konfigurationsordner auf dem Server, gelten sie für das ganze Büro.</p>
       {desktop ? (
         <div className="po-ort">
           <div>
@@ -334,9 +368,46 @@ function GemeinsameEinstellungen() {
       {meldung && <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'}>{meldung.text}</p>}
 
       <span className="field-label">Stammordner der Projekte</span>
-      <ul className="list po-stammordner">
+      <p className="muted small-text">
+        Reihenfolge wie in der Projektübersicht aller Apps – zum Umsortieren ziehen (oder ↑ ↓; auch die Abschnitte der Projektübersicht lassen sich ziehen). Im ersten entstehen neue Projekte. Projekte
+        in Gruppen-, Akquise- und Archivordnern darin werden mit erfasst.
+      </p>
+      <ul className="list po-stammordner" aria-label="Stammordner der Projekte">
         {allgemein.projekte.map((p, i) => (
-          <li key={p}>
+          <li
+            key={p}
+            draggable
+            className={`${zieht === i ? 'zieht' : ''}${ziel && ziel.i === i && zieht !== null && zieht !== i ? (ziel.davor ? ' ziel-davor' : ' ziel-danach') : ''}`}
+            onDragStart={(e) => {
+              setZieht(i);
+              try {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', p);
+              } catch {
+                // ohne Datenübergabe genügt der Zustand
+              }
+            }}
+            onDragOver={(e) => {
+              if (zieht === null) return;
+              e.preventDefault();
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const davor = !r.height || e.clientY - r.top < r.height / 2;
+              if (ziel?.i !== i || ziel.davor !== davor) setZiel({ i, davor });
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (zieht !== null) verschieben(zieht, ziel?.davor === false ? i + 1 : i);
+              setZieht(null);
+              setZiel(null);
+            }}
+            onDragEnd={() => {
+              setZieht(null);
+              setZiel(null);
+            }}
+          >
+            <span className="po-griff" aria-hidden title="Zum Umsortieren ziehen">
+              ⠿
+            </span>
             <code title={p}>{p}</code>
             {i === 0 ? (
               <span className="muted small-text">neue Projekte</span>
@@ -345,6 +416,12 @@ function GemeinsameEinstellungen() {
                 für neue
               </button>
             )}
+            <button className="small" title="nach oben" aria-label={`${p} nach oben`} disabled={i === 0} onClick={() => verschieben(i, i - 1)}>
+              ↑
+            </button>
+            <button className="small" title="nach unten" aria-label={`${p} nach unten`} disabled={i === allgemein.projekte.length - 1} onClick={() => verschieben(i, i + 2)}>
+              ↓
+            </button>
             <button className="small" title="Aus der Liste nehmen – am Ordner ändert sich nichts" onClick={() => setAllgemein({ projekte: allgemein.projekte.filter((x) => x !== p) })}>
               ×
             </button>
@@ -359,13 +436,12 @@ function GemeinsameEinstellungen() {
           </button>
         </div>
       )}
-      <Field label="Projektdatei (.oap) in neuen Projekten" hint="Pfad im Projektordner – {datum} ohne Format hier wie bisher als JJMMTT, mit Format z. B. {datum:JJJJ-MM-TT}">
+      <Field label="Projektdatei (.oap) in neuen Projekten" hint="Pfad im Projektordner – {DATUM} ist JJMMTT, mit Format z. B. {DATUM:JJJJ-MM-TT}">
         <SchemaFeld
           label="Projektdatei (.oap) in neuen Projekten"
           value={allgemein.oapPfad}
-          platzhalter={OAP_PLATZHALTER}
+          platzhalter={OAP_VARIABLEN}
           vorschau={(t) => `Beispiel: ${projektdateiPfad(t, { nummer: beispiel.nummer, kurzname: beispiel.kurzname, vorhaben: beispiel.vorhaben })}`}
-          unbekannt={unbekanntePlatzhalter}
           onChange={(v) => setAllgemein({ oapPfad: v.trim() })}
         />
       </Field>

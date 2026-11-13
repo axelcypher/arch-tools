@@ -7,6 +7,7 @@
 
 import type { PkEintrag, PkGruppe, Projektkarte } from './forma/projektkarte';
 import { pkArt, pkTitel } from './forma/projektkarte';
+import { GEBIETSARTEN } from '@core/model';
 
 /** Adressgruppen (Bauherr, Entwurfsverfasser, Behörden …) haben in FORMA den Typ 1 */
 export const istAdresse = (g: Pick<PkGruppe, 'typ'>) => g.typ === 1;
@@ -161,3 +162,60 @@ export function pruefung(g: PkGruppe, e: PkEintrag, wert: string, land: string):
 export const einheit = (titel: string) => /\[([^\]]+)\]/.exec(titel)?.[1] ?? '';
 /** Titel ohne Einheit und Doppelpunkt */
 export const feldTitel = (titel: string) => pkTitel(titel).replace(/\s*\[[^\]]+\]\s*$/, '');
+
+/* ---------- Eingaben mit fester Form ---------- */
+
+/**
+ * Einträge mit einer Anzahl („Anzahl der Wohnungen“): nur ganze Zahlen – nicht die Zahl der Vollgeschosse, die als
+ * Festsetzung auch „II“, „II–III“ oder „zwingend“ lauten kann (§ 16 Abs. 4 BauNVO)
+ */
+export const istAnzahl = (titel: string) => /^anzahl\b/i.test(titel.trim()) && !/vollgeschoss/i.test(titel);
+
+/**
+ * Für „Art der baulichen Nutzung“: die Baugebiete der BauNVO (§ 1 Abs. 2, §§ 2–11) in der Schreibweise des
+ * GRZ-Nachweises (packages/core GEBIETSARTEN), das Sondergebiet nach §§ 10 und 11 getrennt, dazu die Fälle ohne
+ * Baugebiet (§§ 34, 35 BauGB), die Fläche für den Gemeinbedarf (§ 9 Abs. 1 Nr. 5 BauGB, z. B. Schule, Kita) und
+ * der vorhabenbezogene Bebauungsplan (§ 12 BauGB). Im faktischen Baugebiet (§ 34 Abs. 2 BauGB) gilt das Baugebiet.
+ */
+export const BAUGEBIETE = [
+  ...GEBIETSARTEN.filter((g) => g.id !== 'SO').map((g) => g.label),
+  'SO – Sondergebiet, das der Erholung dient (§ 10 BauNVO)',
+  'SO – sonstiges Sondergebiet (§ 11 BauNVO)',
+  'Fläche für den Gemeinbedarf (§ 9 Abs. 1 Nr. 5 BauGB)',
+  'Vorhabenbezogener Bebauungsplan (§ 12 BauGB)',
+  // entspricht die nähere Umgebung einem Baugebiet (§ 34 Abs. 2 BauGB), wählt man das Baugebiet selbst
+  'Innenbereich ohne Baugebiet (§ 34 Abs. 1 BauGB)',
+  'Außenbereich (§ 35 BauGB)',
+];
+
+/** Gängige Nutzungen eines Gebäudes – für „Art der Nutzung“ (eigene Angaben bleiben möglich) */
+export const NUTZUNGSARTEN = [
+  'Wohnen',
+  'Ferienwohnungen (§ 13a BauNVO)',
+  'Wohnen und Gewerbe (gemischt)',
+  'Büro und Verwaltung',
+  'Handel',
+  'Gewerbe und Handwerk',
+  'Produktion und Industrie',
+  'Lager und Logistik',
+  'Gastronomie',
+  'Beherbergung',
+  'Vergnügungsstätte',
+  'Tankstelle',
+  'Landwirtschaft',
+  'Bildung und Betreuung (Schule, Kita)',
+  'Gesundheit und Pflege',
+  'Kultur und Versammlung',
+  'Sport und Freizeit',
+  'Religiöse Zwecke',
+  'Garage und Stellplätze',
+  'Nebengebäude',
+];
+
+/** Vorschläge für einen Eintrag, falls er eine Art der Nutzung ist – „baulichen“ heißt die Gebietsart nach BauNVO */
+export function nutzungsarten(titel: string): string[] | null {
+  const t = titel.trim().toLowerCase();
+  if (/^art der baulichen nutzung/.test(t)) return BAUGEBIETE;
+  if (/^(art der nutzung|nutzungsart|nutzung)$/.test(t.replace(/:$/, ''))) return NUTZUNGSARTEN;
+  return null;
+}

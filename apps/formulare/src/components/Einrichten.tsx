@@ -160,7 +160,7 @@ export function EinrichtenBaum({ offen }: { offen: OffenesFormular }) {
         {...hervor({ felder: [f.schluessel] })}
       >
         <span className="fo-ein-art" aria-hidden>
-          {f.art === 'kreuz' ? '☐' : 'T'}
+          <Symbol name={f.art === 'kreuz' ? 'kaestchen' : 'textfeld'} />
         </span>
         <span className="fo-ein-name">
           {feldTitel(f, a.profil)}
@@ -530,7 +530,11 @@ function GruppeEinstellungen({ a, g, editor, onFeld, onGruppe }: { a: Aufbau; g:
           {felder.map((f) => (
             <li key={f.feld.schluessel}>
               <button className="fo-ein-link" onClick={() => onFeld(f.feld.schluessel)}>
-                {f.feld.art === 'kreuz' ? '☐ ' : ''}
+                {f.feld.art === 'kreuz' && (
+                  <>
+                    <Symbol name="kaestchen" />{' '}
+                  </>
+                )}
                 {f.titel}
               </button>
               <button className="icon" aria-label={`${f.titel} aus der Gruppe nehmen`} title="Aus der Gruppe nehmen" onClick={() => a.aendern((p) => ausGruppe(p, f.feld.schluessel))}>
@@ -541,7 +545,7 @@ function GruppeEinstellungen({ a, g, editor, onFeld, onGruppe }: { a: Aufbau; g:
         </ul>
       </Abschnitt_>
       <Abschnitt_ titel="Erforderlich">{editor(g.bedingung, (bedingung) => setzen({ bedingung }), alle)}</Abschnitt_>
-      <button className="small gefahr" onClick={() => a.aendern((p) => gruppeAufloesen(p, g.id))}>
+      <button className="small danger" onClick={() => a.aendern((p) => gruppeAufloesen(p, g.id))}>
         Gruppe auflösen – {oben ? 'ihre Teile kommen in die übergeordnete' : 'Felder und Untergruppen zählen wieder einzeln'}
       </button>
     </>

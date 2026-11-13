@@ -1,6 +1,8 @@
+import type { Namensschema } from '@core/namensschema';
+import { namensschemaAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { projektWerte } from '@core/excel/projekt';
 import type { ExportContext, Row, Value } from '@core/excel/context';
-import type { Anschrift, Bauherr, Beteiligter, Grundstueck, Kontakt, Project, ProjectMeta, ProjektordnerAngaben, Koordinaten } from '@core/model';
+import type { Anschrift, Bauherr, Bebauungsplan, Beteiligter, Grundstueck, Kontakt, Project, ProjectMeta, ProjektordnerAngaben, ProjektStatus, Koordinaten } from '@core/model';
 import { createProject, leereAnschrift, LEISTUNGSPHASEN } from '@core/model';
 import { gleich } from '@core/zusammenfuehren';
 import { sichererName } from './struktur';
@@ -21,8 +23,12 @@ export interface Stammdaten {
   aktenzeichen?: string;
   adresse: Anschrift;
   grundstueck: Grundstueck;
+  /** Bebauungsplan (Nummer, Name) – fehlt, wenn keiner erfasst ist */
+  bebauungsplan?: Bebauungsplan;
   bauherr: Bauherr;
   bearbeiter: string;
+  /** Stand: Akquise oder abgeschlossen – fehlt = aktiv (beauftragt) */
+  status?: ProjektStatus;
   /** beauftragte Leistungsphasen (1–9); leer = nicht festgelegt */
   leistungsphasen: number[];
   beteiligte: Beteiligter[];
@@ -62,6 +68,8 @@ export function bereinigt(s: Stammdaten): Stammdaten {
   const t = (v: string) => v.trim();
   const a = (x: Anschrift): Anschrift => ({ strasse: t(x.strasse), plz: t(x.plz), ort: t(x.ort) });
   const vorname = s.bauherr.vorname?.trim();
+  const bp = { nummer: s.bebauungsplan?.nummer?.trim() ?? '', name: s.bebauungsplan?.name?.trim() ?? '' };
+  const bplan = bp.nummer || bp.name ? { ...(bp.nummer ? { nummer: bp.nummer } : {}), ...(bp.name ? { name: bp.name } : {}) } : undefined;
   return {
     nummer: t(s.nummer),
     kurzname: sichererName(s.kurzname),
@@ -69,6 +77,7 @@ export function bereinigt(s: Stammdaten): Stammdaten {
     ...(s.aktenzeichen?.trim() ? { aktenzeichen: s.aktenzeichen.trim() } : {}),
     adresse: a(s.adresse),
     grundstueck: { gemarkung: t(s.grundstueck.gemarkung), flur: t(s.grundstueck.flur), flurstueck: t(s.grundstueck.flurstueck), ...(s.grundstueck.flaeche !== undefined ? { flaeche: s.grundstueck.flaeche } : {}) },
+    ...(bplan ? { bebauungsplan: bplan } : {}),
     bauherr: {
       name: t(s.bauherr.name),
       ...(vorname ? { vorname } : {}),
@@ -76,6 +85,7 @@ export function bereinigt(s: Stammdaten): Stammdaten {
       kontakte: s.bauherr.kontakte.map((k) => ({ art: k.art, wert: t(k.wert) })).filter((k) => k.wert),
     },
     bearbeiter: t(s.bearbeiter),
+    ...(s.status && s.status !== 'aktiv' ? { status: s.status } : {}),
     leistungsphasen: [...new Set(s.leistungsphasen)].sort((x, y) => x - y),
     beteiligte: s.beteiligte.map((b) => ({ rolle: t(b.rolle), name: t(b.name), kontakt: t(b.kontakt) })).filter((b) => b.rolle || b.name || b.kontakt),
     ...(s.presets ? { presets: [...new Set(s.presets.map(t).filter(Boolean))] } : {}),
@@ -99,6 +109,8 @@ export function metaAus(stamm: Stammdaten): ProjectMeta {
   // die ausführliche Bezeichnung ist das Vorhaben (so steht es auch in der Projektkarte von FORMA)
   if (s.bezeichnung) m.vorhaben = s.bezeichnung;
   if (s.aktenzeichen) m.aktenzeichen = s.aktenzeichen;
+  if (s.bebauungsplan) m.bebauungsplan = { ...s.bebauungsplan };
+  if (s.status) m.status = s.status;
   if (s.leistungsphasen.length) m.leistungsphasen = [...s.leistungsphasen];
   if (s.beteiligte.length) m.beteiligte = s.beteiligte.map((b) => ({ ...b }));
   if (s.koordinaten) m.koordinaten = { ...s.koordinaten };
@@ -111,6 +123,8 @@ export function formularMeta(s: Stammdaten): ProjectMeta {
   if (s.kurzname) m.kurzname = s.kurzname;
   if (s.bezeichnung) m.vorhaben = s.bezeichnung;
   if (s.aktenzeichen) m.aktenzeichen = s.aktenzeichen;
+  if (s.bebauungsplan) m.bebauungsplan = s.bebauungsplan;
+  if (s.status) m.status = s.status;
   if (s.koordinaten) m.koordinaten = s.koordinaten;
   return m;
 }
@@ -124,8 +138,10 @@ export function stammAusMeta(m: ProjectMeta, angaben?: ProjektordnerAngaben): St
     ...(m.aktenzeichen ? { aktenzeichen: m.aktenzeichen } : {}),
     adresse: { ...m.adresse },
     grundstueck: { ...m.grundstueck },
+    ...(m.bebauungsplan ? { bebauungsplan: { ...m.bebauungsplan } } : {}),
     bauherr: { ...m.bauherr, adresse: { ...m.bauherr.adresse }, kontakte: m.bauherr.kontakte.map((k) => ({ ...k })) },
     bearbeiter: m.bearbeiter,
+    ...(m.status ? { status: m.status } : {}),
     leistungsphasen: [...(m.leistungsphasen ?? [])],
     beteiligte: (m.beteiligte ?? []).map((b) => ({ ...b })),
     ...(angaben?.presets ? { presets: [...angaben.presets] } : {}),
@@ -142,7 +158,7 @@ export function angabenAusProjekt(p: Project): ProjektAngaben {
  * Neue Projektdatei: leere Flächenberechnung mit den Stammdaten, dem Anlagedatum und den Angaben dieses Tools
  * (Struktur, Dateischema, gewählte Presets). Flächenrechner, GRZ-Nachweis, Kostenermittlung und Formulare öffnen sie.
  */
-export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; dateischema: string }; presets?: string[]; date?: Date } = {}): Project {
+export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; dateischema: string }; presets?: string[]; date?: Date; namensschema?: Namensschema } = {}): Project {
   const s = bereinigt(stamm);
   const p = createProject(s.bezeichnung || s.kurzname || s.nummer || 'Neues Projekt');
   p.meta = { ...metaAus(s), angelegt: isoDatum(o.date ?? new Date()) };
@@ -152,6 +168,8 @@ export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; da
       ...(o.presets ? { presets: [...o.presets] } : {}),
     };
   }
+  // Namensschema des Büros: jede Projektdatei trägt ihre Kopie (Kürzel, Stellen, Indizes) – für alle Apps
+  p.namensschema = structuredClone(o.namensschema ?? VORGABE_NAMENSSCHEMA);
   return p;
 }
 
@@ -162,7 +180,9 @@ const META_TEILE: [keyof ProjectMeta, string][] = [
   ['aktenzeichen', 'Aktenzeichen'],
   ['adresse', 'Adresse'],
   ['grundstueck', 'Grundstück'],
+  ['bebauungsplan', 'Bebauungsplan'],
   ['bauherr', 'Bauherr'],
+  ['status', 'Status'],
   ['bearbeiter', 'Bearbeitung'],
   ['leistungsphasen', 'Leistungsphasen'],
   ['beteiligte', 'Beteiligte'],
@@ -185,13 +205,26 @@ export interface ProjektdateiAenderung {
  * erhalten bleiben), und die Angaben dieses Tools (Struktur, Dateischema, Presets). Gelöscht wird nichts außer
  * dem, was im Assistenten geleert wurde.
  */
-export function projektdateiAenderung(basis: { meta: ProjectMeta; projektordner?: ProjektordnerAngaben }, stamm: Stammdaten, ziel: { struktur: { name: string; dateischema: string }; presets: string[] }): ProjektdateiAenderung {
+export function projektdateiAenderung(
+  basis: { meta: ProjectMeta; projektordner?: ProjektordnerAngaben; namensschema?: Namensschema },
+  stamm: Stammdaten,
+  ziel: { struktur: { name: string; dateischema: string }; presets: string[]; namensschema?: Namensschema },
+): ProjektdateiAenderung {
   const neu = metaAus(stamm);
   const geaendert = META_TEILE.filter(([k]) => !gleich(wert(basis.meta[k]), wert(neu[k])));
   const po: ProjektordnerAngaben = { struktur: ziel.struktur.name, ...(ziel.struktur.dateischema ? { dateischema: ziel.struktur.dateischema } : {}), presets: [...ziel.presets] };
   const alt = basis.projektordner ?? {};
   const poGeaendert = (['struktur', 'dateischema', 'presets'] as const).filter((k) => !gleich(wert(alt[k]), wert(po[k])));
-  const teile = [...geaendert.map(([, t]) => t), ...(poGeaendert.includes('presets') ? ['Vorlagen-Presets'] : []), ...(poGeaendert.some((k) => k !== 'presets') ? ['Struktur'] : [])];
+  // Namensschema: fehlt es in der Projektdatei oder weicht es vom Büro ab, wird das des Büros übernommen (beim Ergänzen sichtbar)
+  // verglichen in gelesener Form (namensschemaAus) – die Reihenfolge der Schlüssel macht keinen Unterschied
+  const schema = namensschemaAus(ziel.namensschema) ?? structuredClone(VORGABE_NAMENSSCHEMA);
+  const schemaNeu = JSON.stringify(namensschemaAus(basis.namensschema)) !== JSON.stringify(schema);
+  const teile = [
+    ...geaendert.map(([, t]) => t),
+    ...(poGeaendert.includes('presets') ? ['Vorlagen-Presets'] : []),
+    ...(poGeaendert.some((k) => k !== 'presets') ? ['Struktur'] : []),
+    ...(schemaNeu ? [basis.namensschema ? 'Namensschema (Stand des Büros)' : 'Namensschema'] : []),
+  ];
   return {
     teile,
     aendern: (roh) => {
@@ -206,7 +239,7 @@ export function projektdateiAenderung(basis: { meta: ProjectMeta; projektordner?
         if (po[k] === undefined) delete projektordner[k];
         else projektordner[k] = structuredClone(po[k]);
       }
-      return { ...roh, meta, ...(poGeaendert.length ? { projektordner } : {}) };
+      return { ...roh, meta, ...(poGeaendert.length ? { projektordner } : {}), ...(schemaNeu ? { namensschema: structuredClone(schema) } : {}) };
     },
   };
 }

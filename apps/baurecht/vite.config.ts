@@ -18,10 +18,10 @@ export default defineConfig({
   base: './',
   clearScreen: false,
   server: {
-    port: 1490,
+    port: 1500,
     strictPort: true,
     host: host || false,
-    hmr: host ? { protocol: 'ws', host, port: 1491 } : undefined,
+    hmr: host ? { protocol: 'ws', host, port: 1501 } : undefined,
     watch: { ignored: ['**/src-tauri/**'] },
     fs: { allow: ['../..'] },
   },

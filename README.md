@@ -9,9 +9,10 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 | **Flächenrechner** | Flächen- und Rauminhaltsberechnung nach DIN 277 und WoFlV | unten |
 | **GRZ-Nachweis** | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
 | **Kostenermittlung** | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
-| **Projektordner** | Projekte mit einem Assistenten anlegen und ergänzen: Stammdaten in der Projektdatei, Ordner nach Schema, Vorlagen-Presets; Ordner prüfen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
+| **Projekt** (früher Projektordner) | Das Setup-Tool: Projekte mit einem Assistenten anlegen und fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte in der Projektdatei, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Mails prüfen, benennen und aus Outlook ablegen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
 | **Entzerrung** | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 | **Formulare** | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
+| **AVA** | Ausschreibung, Vergabe, Abrechnung und Bauleitung: Leistungsverzeichnisse (LV-Dateien des bisherigen LV-Programms oder eigenes Format), Preisspiegel, Aufträge, Rechnungsprüfung mit Deckblatt, Kostenkontrolle (Excel), Bautagebuch, Protokolle, Mängel, Mailverlauf | [docs/ava.md](docs/ava.md) |
 | **Baurecht** | Rechtsprüfung vor dem Bauantrag: alle relevanten Vorschriften je Paragraf als Ampel, Gesetzestexte live aus den amtlichen Quellen, Regeln als austauschbares, signiertes Regelpaket (Bund, NRW, Kreis Soest, Stadt Soest) | [docs/baurecht.md](docs/baurecht.md) |
 | **arch-tools** | Rahmen-App: alle Apps in einem Fenster als Tabs, einzelne in eigene Fenster herauslösen | [docs/suite.md](docs/suite.md) |
 
@@ -33,7 +34,7 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 - **Stammdaten** (Bauvorhaben, Adresse, Gemarkung/Flur/Flurstück, Bebauungsplan Nr./Name, Bauherr, Bearbeitung)
   stehen einmal in der Projektdatei. Jede App zeigt sie mit demselben Dialog („Stammdaten …“) und lässt sie ändern,
   ohne die App zu wechseln; andere Apps sehen die Änderung, sobald das Projekt dort neu geladen wird. Ausdrucke und
-  Excel-Dateien haben denselben Kopf aus diesen Angaben, dazu den Büronamen (Projektordner → Einstellungen) und
+  Excel-Dateien haben denselben Kopf aus diesen Angaben, dazu den Büronamen (Projekt → Einstellungen) und
   „Seite x von y“.
 - **Koordinaten der Projektadresse:** Sobald Straße und PLZ bzw. Ort des Vorhabens eingetragen sind (und bei jeder
   Änderung, spätestens beim Speichern), fragt die App die Lage bei OpenStreetMap (Nominatim) ab und sichert sie in den
@@ -41,12 +42,20 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
   Stammdaten stehen sie als „O … · N …“; **Kopieren** liefert „Ost, Nord“ mit Punkt als Dezimalzeichen, z. B. zum
   Springen in QGIS (Projekt-KBS EPSG:25832). Liegt nur ein Treffer für die Straße oder den Ort vor, steht das dabei;
   „Neu abfragen“ fragt erneut. Gesendet wird nur die Adresse des Vorhabens, eine Abfrage je geänderter Adresse; die
-  Desktop-Apps erlauben dafür in ihrer CSP genau diesen Dienst. Die Umrechnung rechnet die App selbst (Krüger-Reihen,
+  Desktop-Apps erlauben dafür in ihrer CSP genau diesen Dienst (AVA und die Rahmen-App zusätzlich den Wetterdienst
+  Open-Meteo fürs Bautagebuch, nur auf Knopfdruck). Die Umrechnung rechnet die App selbst (Krüger-Reihen,
   im Millimeterbereich genau); WGS84 und ETRS89 weichen um weniger als einen Meter ab.
-- **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch Projektordner und Formulare). Ohne geöffnetes Projekt
+- **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch Projekt und Formulare). Ohne geöffnetes Projekt
   zeigt jede App denselben Einstieg mit denselben Aktionen: *Projekt wählen …* (Desktop: Übersicht mit „zuletzt
   geöffnet“), *Datei öffnen …*, *Neues Projekt*. Die Projektübersicht scrollt als Ganzes (aufgeklappte Quellen werden
   nicht mehr auf die Fensterhöhe gequetscht); „Zuletzt geöffnet“ steht auf einem farbigen Streifen.
+- **Projektübersicht mit Sammelordnern:** Projekte in Gruppen-, Akquise- und Archivordnern der Stammordner stehen in
+  eigenen Abschnitten (Archiv = abgeschlossen, Akquise = Akquise, solange die Projektdatei nichts anderes sagt); die
+  Reihenfolge der Stammordner lässt sich per Ziehen ändern – in der Übersicht und unter „Einstellungen“ der App „Projekt“.
+- **Neues Projekt anlegen** aus jeder App (in der Rahmen-App „arch-tools“): Der Knopf auf der Projektübersicht startet
+  den Assistenten der App „Projekt“ in deren Tab; nach dem Anlegen führt „In … öffnen“ zurück, und Flächenrechner,
+  GRZ-Nachweis, Kostenermittlung und Entzerrung öffnen das neue Projekt gleich. Auch über „+“ und die Startseite des
+  Rahmens. In den einzeln installierten Apps gibt es den Knopf nicht (sie können die App „Projekt“ nicht starten).
 - **Rollbalken** in den Farben des Schemas (schmal, abgerundet); Seitenleisten halten Platz für den Rollbalken frei,
   damit sich ihre Breite beim Wechsel der Ansicht nicht ändert.
 - **Eigene Ansichten** (Ansicht-Editor in `packages/core/src/ui/AnsichtEditor.tsx`): aus einem Katalog von Feldern
@@ -64,7 +73,7 @@ kalibrierten Planbild nachgezeichnet; die Anwendung ermittelt daraus:
 | Kennwert | Grundlage | Ermittlung |
 |---|---|---|
 | **BGF** – Brutto-Grundfläche | DIN 277 | Σ BGF-Umrisse je Geschoss, getrennt nach Raumumschließung **R** (Regelfall) und **S** (Sonderfall) |
-| **BRI** – Brutto-Rauminhalt | DIN 277 | Σ Umrissfläche × Geschosshöhe bzw. Volumen vom Fußboden bis zur Dachhaut (Dachform oder Dach aus IFC), unten ab **UK Bodenplatte** (Sohle) inkl. tiefer liegender Bereiche |
+| **BRI** – Brutto-Rauminhalt | DIN 277 | Σ Umrissfläche × Geschosshöhe bzw. Volumen vom Fußboden bis zur Dachhaut (Dachform oder Dach aus IFC), unten ab **Unterkante Bodenplatte einschließlich Dämmung darunter** inkl. tiefer liegender Bereiche |
 | **NRF** – Netto-Raumfläche | DIN 277 | Σ Räume = NUF 1–7 + TF 8 + VF 9 |
 | **KGF** – Konstruktions-Grundfläche | DIN 277 | BGF − NRF (rechnerisch) |
 | **WoFl** – Wohnfläche | WoFlV § 4 | Σ Raumfläche × Anrechnungsfaktor, gruppiert nach Wohnung |
@@ -72,9 +81,12 @@ kalibrierten Planbild nachgezeichnet; die Anwendung ermittelt daraus:
 Anrechnungsfaktoren WoFlV: lichte Höhe ≥ 2 m → 100 %, 1–2 m → 50 %, < 1 m → 0 % (auch als Teilflächen eines
 Raums nach lichter Höhe), unbeheizbare Wintergärten/Schwimmbäder → 50 %, Balkone/Loggien/Dachgärten/Terrassen →
 i. d. R. 25 % (Projektstandard einstellbar, max. 50 %) sowie ein individueller Faktor. Optional eine
-**Altberechnung nach II. BV** (nur zum Vergleich mit Bestandsberechnungen bis 2003, Balkone dann standardmäßig 50 %,
-deutlicher Hinweis im Bericht). Die **Maßgrundlage** (Planmaß Rohbau, Planmaß Fertigmaß, Aufmaß) wird beim Projekt
-festgehalten.
+**Vergleichsrechnung „II. BV“** (nur zum Vergleich mit Bestandsberechnungen bis 2003): gerechnet wird nach WoFlV,
+nur Balkone, Loggien, Dachgärten und Terrassen zählen standardmäßig zur Hälfte; weitere Regeln der II. BV a. F.
+(§ 44 Abs. 1 Nr. 2, Abs. 2, Abs. 3) sind nicht nachgebildet – so steht es auch im Bericht. **Messverfahren**
+(Maßgrundlage: Planmaß Rohbau, Planmaß Fertigmaß, Aufmaß) und **Planungsunterlagen** (Eingabe, sonst die
+hinterlegten Pläne) werden beim Projekt festgehalten und stehen im Kopf von Bericht und Excel (DIN 277:2021-08, 5.1);
+fehlen sie, warnt der Bericht.
 
 ### Funktionen
 
@@ -104,7 +116,8 @@ festgehalten.
   Einheit aus `$INSUNITS`, Blöcke, Bemaßungen, Texte) sowie **PNG/JPG**; Kalibrierung über eine bekannte Strecke
   (Länge mit Einheit: „12,00 m“, „1200 cm“, „12000 mm“; Fang auf Plankanten und Eckpunkte), danach **Kontrollmaß**
   an einer zweiten Strecke mit Abweichung in % – steht als Maßgrundlage („aus Plan abgegriffen, Maßstab kalibriert,
-  Kontrollmaß … Abweichung x %“) im Berichtskopf und in Excel (`projekt.kontrollmass`)
+  Kontrollmaß … Abweichung x %“) im Berichtskopf und in Excel (`projekt.kontrollmass`). Das Kontrollmaß gilt nur
+  für den Plan im gemessenen Maßstab: Ein neuer Plan, Neukalibrieren oder ein anderer Planmaßstab verwirft es
 - **Fang** auf Raster, Eckpunkte und Kanten (auch DXF-Geometrie und darunterliegendes Geschoss), **Alt** = Fang aus
 - **Hilfslinienfang** für schräg stehende (genordete) Gebäude: Verlängerungen der Nachbarkanten, Gebäudeachsen
   und Fluchten bestehender Eckpunkte; **Shift** hält die Linie auf der Gebäudeachse, Rechtecke richten sich an ihr aus
@@ -126,8 +139,9 @@ festgehalten.
   Quellenangaben, Links und Suche – zentral und je Funktion gefiltert
 - **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ, Rechteck `4,5x3,2`
 - Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Punkt löschen, Koordinaten-Tabelle
-- **Abzugsflächen**: am BGF-Umriss z. B. Innenhof oder Luftraum über einer Galerie, im Raum z. B. Schornstein,
-  Pfeiler, Schacht im Raum
+- **Abzugsflächen**: am BGF-Umriss z. B. Innenhof, Luftraum über einer Galerie oder Deckenöffnung über 1,0 m², im
+  Raum z. B. Schornstein, Pfeiler, Schacht im Raum. Wird ein Raum zur Abzugsfläche, erbt er Anrechnung und Wohnung
+  des Raums, in dem er liegt (Anrechnung „keine“)
 - Mehrere **Geschosse**: „+ Neu“ fügt über oder unter dem aktiven Geschoss ein (Name und Fußbodenhöhe nach der
   Lage, z. B. KG unter dem EG), Geschoss duplizieren (Regelgeschosse, die Kopie heißt nach ihrer Lage),
   darunterliegendes Geschoss einblenden. **Geschossart** Keller-, Normal- oder Dachgeschoss (ohne Angabe nach Name
@@ -161,16 +175,20 @@ festgehalten.
   freie Auswahl der Abschnitte (Grundflächen und Rauminhalte, BRI-Rechenweg, Nutzungsgruppen, Raumlisten,
   Wohnflächen, Hochbaustatistik). In „Bauantrag NRW“ sind die Tabelle nach DIN 277 mit R/S-Trennung und der
   BRI-Rechenweg nicht abwählbar (§ 6 Nr. 1 BauPrüfVO NRW, Gebührentarif 3.1.1.2). Kopf aus den Stammdaten mit
-  Normausgaben („BRI nach DIN 277:2021-08 (entspricht für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW)“, WoFlV vom
-  25.11.2003) und Maßgrundlage, „Seite x von y“, Unterschriftszeilen (Aufsteller, Entwurfsverfasser). BGF, BRI, NRF
+  Normausgaben („DIN 277:2021-08 (Gebührentarif NRW, Tarifstelle 3.1.1.2; § 6 Nr. 1 BauPrüfVO NRW nennt
+  DIN 277-1:2016-01)“, WoFlV vom 25.11.2003), Messverfahren und Planungsunterlagen, „Seite x von y“, Unterschriftszeilen (Aufsteller, Entwurfsverfasser). BGF, BRI, NRF
   und KGF getrennt nach R und S (S-Spalten nur, wenn es einen Sonderfall gibt; ebenso in CSV und Excel:
-  `nrf_r`/`nrf_s`, `kgf_r`/`kgf_s`); leere Abschnitte entfallen, ein fehlender BRI erscheint als Warnung; keine
-  erzwungenen Seitenumbrüche mehr. **Angaben für die Hochbaustatistik**: Wohnfläche und Räume je Wohnung, sonstige
-  Nutzfläche, BRI (Excel `statistik.*`, `wohnung.raeume_statistik`; Zählregeln am Erhebungsbogen prüfen)
+  `nrf_r`/`nrf_s`, `kgf_r`/`kgf_s`); leere Abschnitte entfallen; ein fehlender BRI, fehlendes Messverfahren bzw.
+  fehlende Planungsunterlagen und selbstüberschneidende Flächen erscheinen als Warnung; keine erzwungenen
+  Seitenumbrüche mehr. **Angaben für die Hochbaustatistik**: Wohnfläche und Räume je Wohnung (Wohn- und
+  Aufenthaltsräume ab 6 m², Küchen unabhängig von der Größe), sonstige Nutzfläche, BRI (Excel `statistik.*`,
+  `wohnung.raeume_statistik`; Zählregeln am Erhebungsbogen prüfen)
 - **Prüfliste** in der Auswertung (Ampel „Prüfen“): Räume außerhalb bzw. über den Umriss hinaus (je R/S),
   NRF > BGF je Bereich, überlappende Umrisse oder Räume (z. B. versetzt eingefügte Kopie; Abzugsflächen
   ausgenommen), breite Bereiche ohne Raum, doppelte Raumnummern, Räume ohne Wohnung, „keine Wohnfläche“ im
-  Wohngeschoss, „voll“ im Dachgeschoss, S-Umrisse ohne Körperhöhe – alles als Hinweis; ein Klick wählt die
+  Wohngeschoss, „voll“ im Dachgeschoss, S-Umrisse ohne obere Begrenzung, selbstüberschneidende Flächen,
+  Abzugsflächen mit eigener, vom umgebenden Raum abweichender Anrechnung bzw. außerhalb aller Räume, Räume nicht im
+  Raumkatalog (mit eigenem Katalog), zum Prüfen markierte Umrisse – Warnungen und Hinweise; ein Klick wählt die
   Fläche. Ragt ein Raum über den Umriss, lässt er sich in den Eigenschaften „auf den Umriss beschneiden“
 - **Raumkatalog**: Die Bezeichnung schlägt Raumnamen vor; ein Katalogname setzt Nutzungsgruppe (ggf. Nutzungsart)
   und WoFlV-Anrechnung, gekennzeichnet als Vorschlag „aus Katalog“. Der Katalog des Büros liegt im
@@ -193,8 +211,10 @@ festgehalten.
 - **Massen- und Kostenermittlung nach DIN 276** als eigene App (`apps/kosten`): Mengen aus dem Projekt mit
   Nachweis im Grundriss und im 3D-Modell, Kennwerte mit Bandbreite, Kennwertkatalog, Kostenstände – siehe
   [docs/kosten.md](docs/kosten.md)
-- **Projektordner** als eigene App (`apps/ordner`): Assistent für neue und bestehende Projekte (Stammdaten,
-  Umfang, Vorlagen, Trockenlauf), alles in der Projektdatei (`.oap`) des Projektordners, **Vorlagen-Presets** aus
+- **Projekt** (früher Projektordner) als eigene App (`apps/ordner`): Assistent für neue und bestehende Projekte
+  (Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte, Vorlagen, Zusammenfassung und Trockenlauf), alles in der
+  Projektdatei (`.oap`) des Projektordners, **Struktur-Editor zum Klicken** (Mehrfachauswahl, Ziehen, Kopieren in
+  mehrere Ordner, **Bausteine** für wiederkehrende Unterordner wie Gewerke), **Vorlagen-Presets** aus
   einem eigenen Vorlagenordner (Datei oder Ordner → Zielordner, Dateiname nach dem Schema des Büros,
   `.dotx`/`.xltx` werden Dokumente), Ordner prüfen – siehe [docs/projektordner.md](docs/projektordner.md)
 - **Gemeinsame Basis aller Apps** (`packages/core`): Konfigurationsordner für übergreifende Einstellungen
@@ -224,7 +244,7 @@ festgehalten.
 | `Enter` | Polygon schließen bzw. Zahleneingabe übernehmen |
 | `Backspace` | letzten Punkt bzw. letzte Ziffer entfernen |
 | `Esc` | Abbrechen / Auswahl aufheben |
-| `Entf` | ausgewählte Fläche(n) löschen |
+| `Entf` (oder `Backspace` ohne laufende Eingabe) | ausgewählte Fläche(n) löschen |
 | `Shift`+Klick / `Shift`+Ziehen | Mehrfachauswahl / Auswahlrahmen |
 | `Strg+A` | alle Flächen des Geschosses wählen |
 | `Strg+C` / `Strg+V` / `Strg+D` | Flächen kopieren / einfügen (in ein anderes Geschoss deckungsgleich) / duplizieren |
@@ -238,13 +258,16 @@ festgehalten.
 
 ## Aufbau des Repositorys
 
-Ein Repository mit npm-Workspaces, sieben Apps, einem gemeinsamen Unterbau und dem Regelpaket der App Baurecht:
+Ein Repository mit npm-Workspaces, acht Apps, einem gemeinsamen Unterbau und dem Regelpaket der App Baurecht:
 
 ```
 packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als @core/… eingebunden)
   src/               Geometrie, Projektformat (.oap), IFC-Import, Dachformen und Gauben, DIN-277-
-                     Berechnung, Lageplan-Flächen
+                     Berechnung, Lageplan-Flächen, Namensschema des Büros (namensschema.ts: Kürzel, Stellen im
+                     Dateinamen, Plannummern, Indizes – für alle Apps, je Projektdatei mit Kopie)
   src/excel/         Excel-Vorlagen-Engine (Platzhalter, Blöcke, Formeln), Vorlagenspeicher
+  src/dokumente/     Office-Dateien verlustfrei lesen und zellgenau ändern (XML mit Lage im Quelltext, ZIP, Excel),
+                     Formeln einer Mappe nachrechnen (auch blattübergreifend)
   src/platform/      Speichern/Öffnen (Tauri-Dialog bzw. Download), web-ifc, Protokoll, Farbschema
   src/ui/            Titelleiste, Protokoll-Fenster, Excel-Dialog, Eingabefelder, Dialoge (Dialog.tsx: Esc, Modal;
                      Rueckfrage.tsx: Rückfragen und Meldungen), Grund-Styles (base.css), Ansicht-Editor
@@ -253,9 +276,10 @@ packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als
 apps/flaechenrechner/  Flächenrechner (dieses Tool): Zeichenfläche, Bericht, Excel, DXF/PDF, 3D
 apps/grz/              GRZ/GFZ-Nachweis: Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md
 apps/kosten/           Kostenermittlung nach DIN 276: Mengen, Kennwerte, Kostenstände, Druck, Excel – siehe docs/kosten.md
-apps/ordner/           Projekt-Assistent (neu/ergänzen), Ordner prüfen: Struktur, Vorlagen-Presets, Projektdatei – siehe docs/projektordner.md
+apps/ordner/           App „Projekt“: Assistent (neu/fortschreiben), Struktur-Editor, Vorlagen-Presets, Ordner prüfen, Katasterpläne – siehe docs/projektordner.md
 apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
 apps/formulare/        FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
+apps/ava/              Ausschreibung, Vergabe, Abrechnung, Bauleitung: LV-Formate (.aslv, .oalv, GAEB), Preisspiegel, Kostenkontrolle, Rechnungsprüfung, Bautagebuch – siehe docs/ava.md
 apps/baurecht/         Rechtsprüfung vor dem Bauantrag: Ampel je Paragraf, Rechtsstand, Geodienste, Prüfprotokoll – siehe docs/baurecht.md
 packages/baurecht-regeln/  Regelpaket der App Baurecht (Module je Gebiet, je Norm und Fassung eine Regeldatei), Werkzeuge, Wächter
 apps/suite/            Rahmen-App „arch-tools“: alle Apps in einem Fenster (Tabs, herauslösbare Fenster) – siehe docs/suite.md
@@ -282,10 +306,11 @@ npm install              # alle Workspaces
 npm run dev              # Flächenrechner unter http://localhost:1420
 npm run dev:grz          # GRZ-Nachweis unter http://localhost:1430
 npm run dev:kosten       # Kostenermittlung unter http://localhost:1440
-npm run dev:ordner       # Projektordner unter http://localhost:1450
+npm run dev:ordner       # Projekt (früher Projektordner) unter http://localhost:1450
 npm run dev:entzerrung   # Entzerrung unter http://localhost:1460
 npm run dev:formulare    # Formulare unter http://localhost:1470
-npm run dev:baurecht     # Baurecht unter http://localhost:1490
+npm run dev:ava          # AVA unter http://localhost:1490 (Demo-Projekt: http://localhost:1490/?demo)
+npm run dev:baurecht     # Baurecht unter http://localhost:1500
 npm run dev:suite        # Rahmen-App unter http://localhost:1480 (nach npm run build)
 npm test                 # alle Tests (Unterbau und Apps, vitest)
 npm run typecheck        # TypeScript für alle Workspaces
@@ -294,9 +319,10 @@ npm run build            # Web-Builds aller Apps nach apps/<app>/dist/
 npm run tauri:dev        # Flächenrechner als Desktop-App
 npm run tauri:dev:grz    # GRZ-Nachweis als Desktop-App
 npm run tauri:dev:kosten # Kostenermittlung als Desktop-App
-npm run tauri:dev:ordner # Projektordner als Desktop-App
+npm run tauri:dev:ordner # Projekt als Desktop-App
 npm run tauri:dev:entzerrung # Entzerrung als Desktop-App
 npm run tauri:dev:formulare  # Formulare als Desktop-App
+npm run tauri:dev:ava        # AVA als Desktop-App
 npm run tauri:dev:baurecht   # Baurecht als Desktop-App
 npm run tauri:dev:suite      # Rahmen-App als Desktop-App
 npm run tauri:build -w flaechenrechner   # Windows-Installer unter apps/<app>/src-tauri/target/release/bundle/
@@ -305,8 +331,8 @@ npm run tauri:build -w flaechenrechner   # Windows-Installer unter apps/<app>/sr
 Der Workflow **Build & Release** (GitHub Actions) baut je App die Windows-Installer und veröffentlicht ein
 GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` erhöht wird:
 Flächenrechner als `v<version>`, GRZ-Nachweis als `grz-v<version>`, Kostenermittlung als `kosten-v<version>`,
-Projektordner als `ordner-v<version>`, Entzerrung als `entzerrung-v<version>`, Formulare als `formulare-v<version>`,
-Baurecht als `baurecht-v<version>`,
+Projekt (früher Projektordner) als `ordner-v<version>`, Entzerrung als `entzerrung-v<version>`, Formulare als `formulare-v<version>`,
+AVA als `ava-v<version>`, Baurecht als `baurecht-v<version>`,
 die Rahmen-App als `suite-v<version>`.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.
@@ -335,19 +361,29 @@ aktualisieren sich nicht selbst.
 
 - Die Raumumschließung R/S wird je BGF-Umriss festgelegt; Räume übernehmen sie vom Umriss, in dem sie liegen
   (ein Balkonraum auf einem S-Umriss zählt zur NRF S), lassen sich aber von Hand festlegen. Der IFC-Import setzt
-  Balkone, Loggien und Terrassen auf S. Die Auswertung warnt getrennt, wenn NRF (R) > BGF (R) oder NRF (S) > BGF (S).
-- **S-Umrisse** (Balkon, Loggia, Dachterrasse): Die Körperhöhe ist Pflichtangabe (Unterkante Überdeckung bzw.
-  Oberkante Umwehrung) – ohne sie rechnet der BRI mit der Geschosshöhe und warnt. Die Bodenplatte wird unter
-  S-Umrissen nur auf ausdrücklichen Wunsch angesetzt.
+  Balkone, Loggien und Terrassen auf S und nennt Terrassen im Importbericht. Die Auswertung warnt getrennt, wenn
+  NRF (R) > BGF (R) oder NRF (S) > BGF (S).
+- **Ebenerdige Terrasse** (nicht unterbaut, nicht konstruktiv fest mit dem Gebäude verbunden): gehört nicht zur BGF
+  und NRF (DIN 277:2021-08, 6.1 a), zählt aber zur Wohnfläche (§ 2 Abs. 2 Nr. 2 WoFlV). Im Raum unter
+  „Raumumschließung“ „außerhalb der BGF – nur Wohnfläche“ wählen (Katalog: „Terrasse (ebenerdig, nicht
+  unterbaut)“); unterbaute Terrassen und Dachterrassen sind S.
+- **S-Umrisse** (Balkon, Loggia, Dachterrasse): Die obere Begrenzung ist Pflichtangabe (DIN 277:2021-08, 7.1) –
+  überdeckt bis Oberkante der Überdeckung (bei übereinanderliegenden Balkonen i. d. R. die Geschosshöhe: „überdeckt“
+  bestätigen), nicht überdeckt bis Oberkante Brüstung bzw. Geländer (Körperhöhe), ohne Umwehrung 0. Ohne Angabe
+  rechnet der BRI mit der Geschosshöhe und warnt. Die Bodenplatte wird unter S-Umrissen nur auf ausdrücklichen
+  Wunsch angesetzt.
 - Geschosshöhe und Bodenplatte beziehen sich auf den Fußboden in derselben Bezugsebene wie die Geschosskoten
-  (i. d. R. OK Fertigfußboden); die Bodenplatte zählt von UK Sohle bis zu dieser Bezugsebene.
+  (i. d. R. OK Fertigfußboden); die Bodenplatte zählt von der Unterkante der Boden- bzw. Fundamentplatte
+  einschließlich darunter liegender Dämmschichten bis zu dieser Bezugsebene; Einzel- und Streifenfundamente zählen
+  nicht.
 - KGF wird rechnerisch als BGF − NRF ermittelt; sie ist nur aussagekräftig, wenn alle Räume erfasst sind.
 - Dachschrägen: Anrechnung „Raumteile nach lichter Höhe“ mit Teilflächen ≥ 2 m / 1–2 m / < 1 m (aus dem IFC
   automatisch); die Wohnfläche ergibt sich exakt als ≥ 2 m + ½ × 1–2 m. Steht ein Raum im Dachgeschoss auf „voll“,
   erinnert ein Hinweis daran, die lichte Höhe zu prüfen.
 - **Abzugsflächen im Raum** (§ 3 Abs. 3 WoFlV): Sie erben die WoFlV-Anrechnung und Wohnung des Raums, in dem sie
   liegen, und mindern wahlweise „NRF und Wohnfläche“ (Schornstein, Pfeiler über 0,1 m² und 1,50 m Höhe, Schacht im
-  Raum), „nur Wohnfläche“ (Treppe mit mehr als drei Steigungen samt Absätzen – bleibt Verkehrsfläche der NRF) oder
+  Raum), „nur Wohnfläche“ (Treppe mit mehr als drei Steigungen samt Absätzen – bleibt in der NRF des Raums; für
+  VF 9 die Treppe als eigenen Raum zeichnen) oder
   „nur NRF“ (Pfeiler bis 0,1 m², der zur Wohnfläche zählt).
 - „Automatisch nach Raumname“ ist ein Vorschlag: Treppenhaus/Treppenraum zählt nicht, ein Raum mit Treppe
   (z. B. „Diele/Treppe“) zählt ohne die Treppenfläche, Hauswirtschaftsraum zählt, Waschküche nicht; Räume eines

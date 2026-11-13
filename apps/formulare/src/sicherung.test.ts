@@ -49,7 +49,7 @@ describe('Einstellungen sichern und übertragen', () => {
       }),
     );
     const titel = sicherungEinspielen(s, ['formulare:katalog', 'formulare:profile']);
-    expect(titel).toEqual(['Gliederung der Formulare (Titel, Gruppen, Bedingungen)', 'Antragsdokumente (Katalog)']);
+    expect(titel).toEqual(['Gliederung der Formulare (Titel, Gruppen, Bedingungen)', 'Antragsdokumente']);
     expect(JSON.parse(localStorage.getItem('formulare:katalog')!)).toEqual([{ id: 'neu' }]);
     const profile = JSON.parse(localStorage.getItem('formulare:profile')!);
     expect(Object.keys(profile).sort()).toEqual(['eigenes', 'gleich', 'halb']);
@@ -58,5 +58,13 @@ describe('Einstellungen sichern und übertragen', () => {
     expect(profile.halb.abschnitte).toEqual({ b: { sichtbar: false } });
     // nicht angehakt: bleibt
     expect(JSON.parse(localStorage.getItem('formulare:einstellungen')!).projektordner).toEqual(['C:/FORMA']);
+  });
+
+  it('einspielen: Abweichungen je Projekt werden geprüft – eine Zahl als Zielpfad kommt nicht in den Speicher', () => {
+    const s = sicherungLesen(
+      JSON.stringify({ art: 'formulare-einstellungen', version: 1, daten: { 'formulare:export-projekte': { BS5: { zielpfad: 5, ziel: 'pfad', antragsordner: 'Bauamt' }, BS6: 'kaputt' } } }),
+    );
+    sicherungEinspielen(s, ['formulare:export-projekte']);
+    expect(JSON.parse(localStorage.getItem('formulare:export-projekte')!)).toEqual({ BS5: { ziel: 'pfad', antragsordner: 'Bauamt' } });
   });
 });

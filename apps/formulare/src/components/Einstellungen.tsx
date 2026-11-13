@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
 import { dateiname } from '@core/platform/files';
-import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
+import { OAP_VARIABLEN, projektdateiPfad } from '@core/projektdatei';
+import { PlatzhalterChips, PlatzhalterHinweise } from '@core/ui/Platzhalter';
 import { hatVorgabe } from '../vorgabe';
 import { VORGABEN } from '../vorgaben';
 import type { Adresse } from '../adressbuch';
@@ -11,17 +12,19 @@ import { waehleOrdner } from '../dateisystem';
 import { IN_PROJEKTKARTE } from '../projektdaten';
 import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
 import { AntragEinstellungen } from './AntragEinstellungen';
+import { Karte } from './EinstellungsKarte';
 import { SicherungEinstellungen } from './SicherungEinstellungen';
 import type { EinstellungsBereich } from '../store';
 import { VORGABE_OAP_PFAD, useFormulare } from '../store';
 import { OAP_ANGABEN } from '../oap';
 import type { SymbolName } from './Symbol';
 import { Symbol } from './Symbol';
+import { anzahl } from '../text';
 
 const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; text: string }[] = [
   { id: 'ordner', titel: 'Ordner', symbol: 'ordner', text: 'Formularprojekte, Projektordner, angezeigte Pfade' },
-  { id: 'stammdaten', titel: 'Büro & Stammdaten', symbol: 'buero', text: 'Vorgaben je Rolle für neue Projektkarten' },
-  { id: 'adressbuch', titel: 'Adressbuch', symbol: 'adressen', text: 'Adressen anlegen und pflegen, aus allen Projektkarten' },
+  { id: 'stammdaten', titel: 'Büro & Stammdaten', symbol: 'buero', text: 'Vorgaben je Rolle für die Projektdaten neuer Projekte' },
+  { id: 'adressbuch', titel: 'Adressbuch', symbol: 'adressen', text: 'Adressen anlegen und pflegen, aus den Projektdaten aller Projekte' },
   { id: 'formulare', titel: 'Formulare', symbol: 'formular', text: 'Gliederung und Füllstand je Formular' },
   { id: 'antrag', titel: 'Antrag & Export', symbol: 'export', text: 'PDF-Export, Antragsfassungen, Antragsdokumente' },
   { id: 'projektdaten', titel: 'Projektdatei (.oap)', symbol: 'tabelle', text: 'Projektstammdaten aus dem Projektordner' },
@@ -60,7 +63,7 @@ const ADRESSFELDER: [string, string][] = [
 /** Rollen, für die eine Vorgabe besonders nützlich ist (falls das Adressbuch noch leer ist) */
 const ROLLEN_VORGABE: [number, string][] = [
   [202, 'Entwurfsverfasser'],
-  [206, 'Bauvorlageberechtiger Entwurfsverfasser'],
+  [206, 'Bauvorlageberechtigter Entwurfsverfasser'],
   [204, 'Bauleiter'],
   [231, 'Bauaufsichtsbehörde'],
   [232, 'Gemeinde'],
@@ -118,19 +121,6 @@ export function EinstellungenAnsicht() {
   );
 }
 
-function Karte({ titel, text, children, kopf }: { titel: string; text?: React.ReactNode; children: React.ReactNode; kopf?: React.ReactNode }) {
-  return (
-    <section className="es-karte">
-      <div className="es-karte-kopf">
-        <h3>{titel}</h3>
-        {kopf}
-      </div>
-      {text && <p className="muted small-text">{text}</p>}
-      {children}
-    </section>
-  );
-}
-
 function OrdnerListe({ ordner, onEntfernen }: { ordner: string[]; onEntfernen: (p: string) => void }) {
   if (!ordner.length) return <p className="muted small-text">Noch keiner eingestellt.</p>;
   return (
@@ -160,7 +150,7 @@ function Ordner() {
   return (
     <>
       <h2>Ordner</h2>
-      <Karte titel="Formularprojekte" text="Ordner, in denen die Formularprojekte liegen (je Projekt ein Unterordner mit Kürzel, z. B. „BS5“, mit den Formularen und der Projektkarte). Es können mehrere sein.">
+      <Karte titel="Formularprojekte" text="Ordner, in denen die Formularprojekte liegen (je Projekt ein Unterordner mit Kürzel, z. B. „BS5“, mit den Formularen und den Projektdaten). Es können mehrere sein.">
         <OrdnerListe ordner={projektordner} onEntfernen={(p) => void ordnerEntfernen(p)} />
         <button
           onClick={async () => {
@@ -200,7 +190,7 @@ function Ordner() {
         text={
           <>
             Welche Teile eines Projektordners in der Navigation erscheinen – je Zeile ein Pfad, z. B. <code>Organisation</code> oder <code>Planung/Berechnungen</code>, Platzhalter{' '}
-            <code>*</code> und <code>?</code> je Ebene. Je Projekt änderbar (⚙ beim Projektordner).
+            <code>*</code> und <code>?</code> je Ebene. Je Projekt änderbar (<Symbol name="zahnrad" titel="Zahnrad" /> beim Projektordner in der Navigation).
           </>
         }
       >
@@ -221,18 +211,25 @@ function AdressKarte({ a }: { a: Adresse }) {
   );
 }
 
-function AdressbuchLeer() {
+/** Noch kein Adressbuch: einlesen oder eine Adresse anlegen (`onNeu`; ohne – etwa unter „Büro & Stammdaten“ – führt der Knopf ins Adressbuch) */
+function AdressbuchLeer({ onNeu }: { onNeu?: () => void }) {
   const laeuft = useFormulare((s) => s.adressbuchLaeuft);
   const projekte = useFormulare((s) => s.projekte.length);
   const { adressbuchLaden } = useFormulare.getState();
   return (
     <div className="es-leer">
-      <p>Das Adressbuch sammelt die Adressen aus den Projektkarten aller Projekte ({projekte} Projekte) – und eure eigenen, die ihr hier anlegt.</p>
+      <p>Das Adressbuch sammelt die Adressen aus den Projektdaten aller Projekte ({anzahl(projekte, 'Projekt', 'Projekte')}) – und eure eigenen, die ihr hier anlegt.</p>
       <div className="es-knoepfe">
-        <button className="primary" disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()}>
-          {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Aus den Projektkarten einlesen'}
+        <button className="primary" disabled={!!laeuft || !projekte} title="Die Projektdaten (Projektkarten) aller Projekte lesen" onClick={() => void adressbuchLaden()}>
+          {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Aus den Projektdaten einlesen'}
         </button>
-        <button onClick={() => useFormulare.getState().einstellungenOeffnen('adressbuch')}>Adresse anlegen …</button>
+        {onNeu ? (
+          <button onClick={onNeu}>
+            <Symbol name="plus" /> Adresse anlegen …
+          </button>
+        ) : (
+          <button onClick={() => useFormulare.getState().einstellungenOeffnen('adressbuch')}>Zum Adressbuch …</button>
+        )}
       </div>
     </div>
   );
@@ -252,7 +249,7 @@ function Stammdaten() {
     <>
       <h2>Büro & Stammdaten</h2>
       <p className="muted">
-        Vorgaben je Rolle: Welche Adresse in einer neuen Projektkarte eingesetzt wird (Projektkarte → „Vorgaben eintragen“ bzw. „Übernehmen von …“). Die Adressen stammen
+        Vorgaben je Rolle: Welche Adresse in die Projektdaten eines neuen Projekts eingesetzt wird (Projektdaten → „Vorgaben eintragen“ bzw. „Übernehmen von …“). Die Adressen stammen
         aus dem <button className="es-verweis" onClick={() => einstellungenOeffnen('adressbuch')}>Adressbuch</button> – dort lassen sie sich anlegen und ändern.
       </p>
       {!adressbuch ? (
@@ -324,12 +321,12 @@ function Adressbuch() {
   };
   const entfernen = async (a: Adresse) => {
     if (a.herkunft === 'eigen') {
-      if (await bestaetigen(`„${adressName(a)}“ löschen?`, 'Die Adresse wird aus dem Adressbuch gelöscht. Projektkarten, in die sie übernommen wurde, bleiben unverändert.', 'Löschen'))
+      if (await bestaetigen(`„${adressName(a)}“ löschen?`, 'Die Adresse wird aus dem Adressbuch gelöscht. Projektdaten, in die sie übernommen wurde, bleiben unverändert.', 'Löschen'))
         await eigeneAdresseEntfernen(a.schluessel);
     } else if (
       await bestaetigen(
         `„${adressName(a)}“ ausblenden?`,
-        'Die Adresse steht in Projektkarten und wird dort nicht gelöscht – im Adressbuch erscheint sie nicht mehr (unten wieder einblendbar).',
+        'Die Adresse steht in den Projektdaten von Projekten und wird dort nicht gelöscht – im Adressbuch erscheint sie nicht mehr (unten wieder einblendbar).',
         'Ausblenden',
       )
     )
@@ -343,18 +340,18 @@ function Adressbuch() {
         <button className="primary" onClick={neu}>
           <Symbol name="plus" /> Neue Adresse
         </button>
-        <button disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()} title="Die Projektkarten aller Projekte neu lesen">
-          {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Aus den Projektkarten einlesen'}
+        <button disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()} title="Die Projektdaten (Projektkarten) aller Projekte neu lesen">
+          {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Aus den Projektdaten einlesen'}
         </button>
       </div>
       <p className="muted">
-        Bauherren, Entwurfsverfasser, Behörden, Fachplaner: die Adressen aus den Projektkarten aller Projekte (gleiche erscheinen einmal mit allen Verwendungen) und eure
-        eigenen. Anlegen, ändern und ausblenden lässt sich alles hier – gespeichert im gemeinsamen Konfigurationsordner, für alle im Büro. Die Projektkarten selbst bleiben
-        unverändert; übernommen wird eine Adresse in der Projektkarte mit „Übernehmen von …“.
-        {adressbuch && ` ${adressbuch.adressen.length} Adressen${adressbuch.stand ? `, Projektkarten gelesen ${new Date(adressbuch.stand).toLocaleString('de-DE')}` : ''}.`}
+        Bauherren, Entwurfsverfasser, Behörden, Fachplaner: die Adressen aus den Projektdaten aller Projekte (gleiche erscheinen einmal mit allen Verwendungen) und eure
+        eigenen. Anlegen, ändern und ausblenden lässt sich alles hier – gespeichert im gemeinsamen Konfigurationsordner, für alle im Büro. Die Projektdaten selbst bleiben
+        unverändert; übernommen wird eine Adresse in den Projektdaten mit „Übernehmen von …“.
+        {adressbuch && ` ${anzahl(adressbuch.adressen.length, 'Adresse', 'Adressen')}${adressbuch.stand ? `, Projektdaten gelesen ${new Date(adressbuch.stand).toLocaleString('de-DE')}` : ''}.`}
       </p>
       {!adressbuch && !entwurf ? (
-        <AdressbuchLeer />
+        <AdressbuchLeer onNeu={neu} />
       ) : (
         <div className="es-adressbuch">
           <div className="es-adressliste">
@@ -399,7 +396,12 @@ function Adressbuch() {
                   <label key={id} className={id === '40' || id === '70' ? 'breit' : ''}>
                     <span className="field-label">
                       {titel}
-                      {id === '40' ? ' *' : ''}
+                      {id === '40' && (
+                        <span className="pflicht" aria-hidden>
+                          {' '}
+                          *
+                        </span>
+                      )}
                     </span>
                     <input
                       value={entwurf.texte[id] ?? ''}
@@ -428,17 +430,17 @@ function Adressbuch() {
                   <button className="small" onClick={() => bearbeiten(auswahl)}>
                     <Symbol name="stift" /> Bearbeiten
                   </button>
-                  <button className="small" onClick={() => void entfernen(auswahl)}>
+                  <button className={`small${auswahl.herkunft === 'eigen' ? ' danger' : ''}`} onClick={() => void entfernen(auswahl)}>
                     {auswahl.herkunft === 'eigen' ? 'Löschen …' : 'Ausblenden …'}
                   </button>
                   {auswahl.herkunft === 'geaendert' && (
-                    <button className="small" title="Die eigene Fassung verwerfen – es gilt wieder die aus den Projektkarten" onClick={() => void eigeneAdresseEntfernen(auswahl.schluessel)}>
+                    <button className="small" title="Die eigene Fassung verwerfen – es gilt wieder die aus den Projektdaten" onClick={() => void eigeneAdresseEntfernen(auswahl.schluessel)}>
                       Änderungen verwerfen
                     </button>
                   )}
                 </div>
                 <p className="muted small-text">
-                  {auswahl.herkunft === 'eigen' ? 'Eigene Adresse des Adressbuchs.' : auswahl.herkunft === 'geaendert' ? 'Aus den Projektkarten, im Adressbuch geändert.' : 'Aus den Projektkarten.'}
+                  {auswahl.herkunft === 'eigen' ? 'Eigene Adresse des Adressbuchs.' : auswahl.herkunft === 'geaendert' ? 'Aus den Projektdaten, im Adressbuch geändert.' : 'Aus den Projektdaten.'}
                 </p>
                 <dl>
                   {ADRESSFELDER.filter(([id]) => auswahl.texte[id]?.trim()).map(([id, titel]) => (
@@ -466,7 +468,7 @@ function Adressbuch() {
         </div>
       )}
       {ausgeblendet.length > 0 && (
-        <Karte titel={`Ausgeblendet (${ausgeblendet.length})`} text="Adressen aus den Projektkarten, die im Adressbuch nicht erscheinen.">
+        <Karte titel={`Ausgeblendet (${ausgeblendet.length})`} text="Adressen aus den Projektdaten, die im Adressbuch nicht erscheinen.">
           <ul className="es-liste">
             {ausgeblendet.map((e) => {
               const a = adressbuch?.adressen.find((x) => x.schluessel === e.schluessel) ?? useFormulare.getState().adressbuchKarten?.adressen.find((x) => x.schluessel === e.schluessel);
@@ -525,7 +527,7 @@ function Formulare() {
       </p>
       <p className="muted small-text">
         {Object.keys(VORGABEN).length
-          ? `Für ${Object.keys(VORGABEN).length} Formular(e) bringt die App eine Vorgabe mit (Titel, Gruppen und Bedingungen nach BauO NRW / BauPrüfVO). Eigene Einstellungen gehen vor; gespeichert wird nur, was davon abweicht.`
+          ? `Für ${anzahl(Object.keys(VORGABEN).length, 'Formular', 'Formulare')} bringt die App eine Vorgabe mit (Titel, Gruppen und Bedingungen nach BauO NRW / BauPrüfVO). Eigene Einstellungen gehen vor; gespeichert wird nur, was davon abweicht.`
           : 'Eingebaute Vorgaben (Titel, Gruppen und Bedingungen nach BauO NRW / BauPrüfVO) folgen; eigene Einstellungen gehen ihnen dann vor.'}
       </p>
       {!eintraege.length ? (
@@ -546,12 +548,12 @@ function Formulare() {
                   <strong>{k.replace(/\|/, ' · Stand ')}</strong>
                   <span className="muted small-text">
                     {[
-                      versteckt && `${versteckt} Abschnitt(e) ausgeblendet`,
+                      versteckt && `${anzahl(versteckt, 'Abschnitt', 'Abschnitte')} ausgeblendet`,
                       umbenannt && `${umbenannt} umbenannt`,
-                      felder && `${felder} Feld(er) umbenannt`,
-                      ohne && `${ohne} Feld(er) zählen nicht`,
-                      gruppen && `${gruppen} Gruppe(n)`,
-                      bedingungen && `${bedingungen} Bedingung(en)`,
+                      felder && `${anzahl(felder, 'Feld', 'Felder')} umbenannt`,
+                      ohne && `${anzahl(ohne, 'Feld zählt', 'Felder zählen')} nicht`,
+                      gruppen && anzahl(gruppen, 'Gruppe', 'Gruppen'),
+                      bedingungen && anzahl(bedingungen, 'Bedingung', 'Bedingungen'),
                     ]
                       .filter(Boolean)
                       .join(' · ')}
@@ -584,9 +586,9 @@ function Projektdaten() {
       <h2>Projektdatei (.oap)</h2>
       <p className="muted">
         Die Projektstammdaten kommen aus der Projektdatei im Projektordner – dem gemeinsamen Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und
-        Projektordner (die Daten stehen darin als JSON unter „meta“). Gesucht wird bis vier Ebenen tief; bei mehreren gilt die im Ordner der Berechnungen, sonst die
-        mit dem kürzesten Pfad – je Projekt lässt sich in der Projektkarte eine andere wählen. In der Projektkarte lassen sich die Angaben in beide Richtungen
-        abgleichen; beim Speichern der Projektkarte werden geänderte Angaben in die Projektdatei eingetragen, alles andere darin bleibt unverändert. Eine alte
+        Projektordner. Gesucht wird bis vier Ebenen tief; bei mehreren gilt die im Ordner der Berechnungen, sonst die mit dem kürzesten Pfad – je Projekt lässt sich in
+        den Projektdaten eine andere wählen. In den Projektdaten lassen sich die Angaben in beide Richtungen abgleichen; beim Speichern der Projektdaten werden
+        geänderte Angaben in die Projektdatei eingetragen, alles andere darin bleibt unverändert. Eine alte
         Projektdaten.xlsx wird nur noch gelesen, um ihre Angaben zu übernehmen.
       </p>
       <Karte
@@ -601,28 +603,24 @@ function Projektdaten() {
         <div className="es-zeile">
           <input defaultValue={neu} key={neu} placeholder={VORGABE_OAP_PFAD} onBlur={(e) => e.target.value.trim() !== neu && setOapVorlage(e.target.value)} aria-label="Pfad für neue Projektdateien" />
         </div>
-        <div className="es-platzhalter">
-          {OAP_PLATZHALTER.map((p) => (
-            <button key={p.name} className="small" title={p.text} onClick={() => setOapVorlage(mitPlatzhalter(neu, p.name))}>
-              {p.name}
-            </button>
-          ))}
+        <PlatzhalterHinweise vorlage={neu} variablen={OAP_VARIABLEN} onAnpassen={setOapVorlage} />
+        <div className="es-platzhalter-zeile">
+          <PlatzhalterChips variablen={OAP_VARIABLEN} label="Pfad für neue Projektdateien" fokusBehalten={false} onEinfuegen={(p) => setOapVorlage(mitPlatzhalter(neu, p))} />
           {neu !== VORGABE_OAP_PFAD && (
             <button className="small" onClick={() => setOapVorlage(VORGABE_OAP_PFAD)}>
               Vorgabe
             </button>
           )}
         </div>
-        <p className="muted es-beispiel" aria-label="Beispiel für den Pfad">
+        <p className="muted es-beispiel" role="note" aria-label="Beispiel für den Pfad">
           Beispiel: <code>{projektdateiPfad(neu, OAP_BEISPIEL)}</code>
         </p>
-        {unbekanntePlatzhalter(neu).length > 0 && <p className="warning">Unbekannt, bleibt so im Namen stehen: {unbekanntePlatzhalter(neu).join(', ')}</p>}
       </Karte>
       <Karte titel="Angaben">
         <table className="es-tabelle">
           <thead>
             <tr>
-              <th>In der Projektkarte</th>
+              <th>In den Projektdaten</th>
               <th>In der Projektdatei</th>
             </tr>
           </thead>

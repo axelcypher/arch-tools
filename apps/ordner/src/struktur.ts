@@ -29,10 +29,21 @@ export interface VorlagenEintrag {
   quelle: string;
   /** Zielordner im Projekt (Platzhalter erlaubt); leer = Stamm des Projektordners. Unterordner einer Ordner-Quelle bleiben erhalten. */
   ziel: string;
-  /** Dateiname im Projekt, z. B. „{nummer} Kostenschätzung“; leer = Dateinamenschema für Vorlagen. Die Endung kommt von der Vorlage. */
+  /** Dateiname im Projekt, z. B. „{PROJEKT_KUERZEL} Kostenschätzung“; leer = Dateinamenschema für Vorlagen. Die Endung kommt von der Vorlage. */
   name?: string;
   /** nur, wenn eine dieser Leistungsphasen beauftragt ist (leer = immer) */
   lph?: number[];
+}
+
+/**
+ * Baustein: eine wiederkehrende Unterstruktur, z. B. „Gewerk“ mit Angebote, Vergabe, Rechnungen … – im
+ * Struktur-Editor in beliebig viele Ordner auf einmal eingefügt. Die Pfade sind relativ zu dem Ordner, in den der
+ * Baustein eingefügt wird. Bausteine sind nur eine Eingabehilfe: Eingefügt wird eine Kopie, spätere Änderungen am
+ * Baustein ändern die Struktur nicht.
+ */
+export interface Baustein {
+  name: string;
+  ordner: OrdnerRegel[];
 }
 
 /** Zusammenstellung von Vorlagen, die beim Anlegen oder Aktualisieren eines Projekts ergänzt werden */
@@ -45,19 +56,21 @@ export interface VorlagenPreset {
 
 export interface Struktur {
   name: string;
-  /** Projektnummer, z. B. „{jahr}-{nr:3}“ → 2026-014 */
+  /** Projektnummer, z. B. „{JAHR}-{Nr:3}“ → 2026-014 */
   nummernschema: string;
-  /** Name des Projektordners, z. B. „{nummer} {kurzname}“ */
+  /** Name des Projektordners, z. B. „{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}“ */
   ordnername: string;
-  /** Dateinamenschema für Pläne, z. B. „{nummer}_{plannummer}_{index}_{titel}“ */
+  /** Dateinamenschema für Pläne, z. B. „{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}“ */
   dateischema: string;
   ordner: OrdnerRegel[];
   /**
-   * Dateinamen der Vorlagen im Projekt, z. B. „{nummer} {name}“ ({name} = Name der Vorlage ohne Endung).
+   * Dateinamen der Vorlagen im Projekt, z. B. „{PROJEKT_KUERZEL} {Name}“ ({Name} = Name der Vorlage ohne Endung).
    * Gilt nicht für Vorlagen, deren Name selbst Platzhalter enthält, und nicht, wo eine Zuordnung einen Namen vorgibt.
    */
   vorlagenname: string;
   presets: VorlagenPreset[];
+  /** wiederkehrende Unterstrukturen für den Struktur-Editor (fehlt = keine) */
+  bausteine?: Baustein[];
 }
 
 /** der ganze Vorlagenordner, aufgebaut wie ein Projektordner: jede Datei an denselben Ort */
@@ -65,9 +78,9 @@ export const GANZER_VORLAGENORDNER: VorlagenPreset = { name: 'Alle Vorlagen', st
 
 export const STANDARD: Struktur = {
   name: 'Standard',
-  nummernschema: '{jahr}-{nr:3}',
-  ordnername: '{nummer} {kurzname}',
-  dateischema: '{nummer}_{plannummer}_{index}_{titel}',
+  nummernschema: '{JAHR}-{Nr:3}',
+  ordnername: '{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}',
+  dateischema: '{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}',
   ordner: [
     { pfad: '00 Projekt' },
     { pfad: '01 Grundlagen/Bestand' },
@@ -90,7 +103,7 @@ export const STANDARD: Struktur = {
     { pfad: '08 Bauleitung/Rechnungen', lph: [8] },
     { pfad: '09 Fotos' },
   ],
-  vorlagenname: '{nummer} {name}',
+  vorlagenname: '{PROJEKT_KUERZEL} {Name}',
   presets: [GANZER_VORLAGENORDNER],
 };
 
@@ -243,6 +256,33 @@ export function presetsAus(liste: unknown[]): VorlagenPreset[] {
   return out;
 }
 
+/** Ordnerregel aus der Konfiguration (Pfad bereinigt, LPh 1–9); ohne gültigen Pfad null */
+function regelAus(x: unknown): OrdnerRegel | null {
+  if (!x || typeof x !== 'object' || typeof (x as OrdnerRegel).pfad !== 'string') return null;
+  const r = x as OrdnerRegel;
+  const pfad = normPfad(r.pfad).split('/').map(sichererName).filter(Boolean).join('/');
+  if (!pfad) return null;
+  const lph = Array.isArray(r.lph) ? r.lph.filter((n) => Number.isInteger(n) && n >= 1 && n <= 9) : [];
+  return { pfad, ...(lph.length ? { lph } : {}), ...(r.dateischema === true ? { dateischema: true } : {}) };
+}
+
+/** Bausteine aus der Konfiguration: ohne Namen, doppelt benannte und leere entfallen */
+export function bausteineAus(liste: unknown): Baustein[] {
+  const out: Baustein[] = [];
+  const namen = new Set<string>();
+  for (const x of Array.isArray(liste) ? liste : []) {
+    if (!x || typeof x !== 'object') continue;
+    const o = x as Record<string, unknown>;
+    const name = typeof o.name === 'string' ? o.name.trim() : '';
+    if (!name || namen.has(name.toLowerCase())) continue;
+    const ordner = (Array.isArray(o.ordner) ? o.ordner : []).map(regelAus).filter((r): r is OrdnerRegel => !!r);
+    if (!ordner.length) continue;
+    namen.add(name.toLowerCase());
+    out.push({ name, ordner });
+  }
+  return out;
+}
+
 /** Struktur aus einer Konfigurationsdatei; fehlende Angaben kommen aus der Vorgabe */
 export function strukturAusJson(json: string): Struktur {
   let o: Record<string, unknown>;
@@ -256,25 +296,24 @@ export function strukturAusJson(json: string): Struktur {
   const ordner: OrdnerRegel[] = [];
   for (const x of liste ?? []) {
     if (typeof x === 'string') ordner.push(...ordnerAusText(x));
-    else if (x && typeof x === 'object' && typeof (x as OrdnerRegel).pfad === 'string') {
-      const r = x as OrdnerRegel;
-      const pfad = normPfad(r.pfad).split('/').map(sichererName).filter(Boolean).join('/');
-      if (!pfad) continue;
-      const lph = Array.isArray(r.lph) ? r.lph.filter((n) => Number.isInteger(n) && n >= 1 && n <= 9) : [];
-      ordner.push({ pfad, ...(lph.length ? { lph } : {}), ...(r.dateischema === true ? { dateischema: true } : {}) });
+    else {
+      const r = regelAus(x);
+      if (r) ordner.push(r);
     }
   }
   if (liste && !ordner.length) throw new Error('Die Konfiguration enthält keinen gültigen Ordner.');
   // Konfigurationen ohne Presets (bis Version 0.1.x): der ganze Vorlagenordner wie bisher, Dateinamen unverändert
   const ohnePresets = !Array.isArray(o.presets);
+  const bausteine = bausteineAus(o.bausteine);
   return {
     name: text(o.name, STANDARD.name),
     nummernschema: text(o.nummernschema, STANDARD.nummernschema),
     ordnername: text(o.ordnername, STANDARD.ordnername),
     dateischema: text(o.dateischema, STANDARD.dateischema),
     ordner: liste ? ordner : STANDARD.ordner,
-    vorlagenname: text(o.vorlagenname, ohnePresets ? '{name}' : STANDARD.vorlagenname),
+    vorlagenname: text(o.vorlagenname, ohnePresets ? '{Name}' : STANDARD.vorlagenname),
     presets: ohnePresets ? [GANZER_VORLAGENORDNER] : presetsAus(o.presets as unknown[]),
+    ...(bausteine.length ? { bausteine } : {}),
   };
 }
 
@@ -282,6 +321,26 @@ export const strukturAlsJson = (s: Struktur) => `${JSON.stringify(s, null, 2)}\n
 
 /** Gilt die Regel für ein Projekt mit diesen Leistungsphasen? Ohne Angabe von Phasen gelten alle Ordner. */
 export const regelGilt = (r: { lph?: number[] }, lph: number[]) => !r.lph?.length || !lph.length || r.lph.some((p) => lph.includes(p));
+
+/**
+ * Leistungsphasen eines Ordners samt der übergeordneten Ordner mit eigener Regel – ein Unterordner entsteht nur, wenn
+ * auch sein übergeordneter Ordner entsteht („07 Ausschreibung | LPh 6-7“ gilt für alle Ordner darin). Liefert je
+ * Ebene mit Leistungsphasen den Pfad und die Phasen, oben zuerst.
+ */
+export function lphKette(ordner: OrdnerRegel[], pfad: string): { pfad: string; lph: number[] }[] {
+  const regeln = new Map(ordner.map((r) => [r.pfad.toLowerCase(), r]));
+  const teile = pfad.split('/');
+  const out: { pfad: string; lph: number[] }[] = [];
+  for (let i = 1; i <= teile.length; i++) {
+    const p = teile.slice(0, i).join('/');
+    const r = regeln.get(p.toLowerCase());
+    if (r?.lph?.length) out.push({ pfad: r.pfad, lph: r.lph });
+  }
+  return out;
+}
+
+/** Entsteht der Ordner für ein Projekt mit diesen Leistungsphasen? Auch alle übergeordneten Regeln müssen gelten. */
+export const ordnerGilt = (ordner: OrdnerRegel[], pfad: string, lph: number[]) => lphKette(ordner, pfad).every((k) => regelGilt(k, lph));
 
 /**
  * Presets, die für ein Projekt gelten: die ausgewählten – ohne Auswahl die Standard-Presets der Struktur, außer denen

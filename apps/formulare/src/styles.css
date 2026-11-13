@@ -12,6 +12,22 @@
   --nav-linie: #d3d7de;
   --dok-bg: color-mix(in srgb, var(--bg) 70%, #808080 30%);
   --dok-leiste: color-mix(in srgb, var(--bg) 86%, #808080 14%);
+  /*
+   * Eigene Farben der App (Statusfarben kommen immer aus base.css: --ok-*, --fehler-*, --warn-*):
+   * Bedingungen („nur erforderlich, wenn …“) in Lila, Dateitypen wie die Programme. Kontrast je Schema mind. 4,5:1
+   * für Text, 3:1 für Linien und Symbole.
+   */
+  --bed-text: #7a3aa0;
+  --bed-bg: color-mix(in srgb, #b26ad6 14%, var(--panel));
+  --bed-linie: #9a4fc0;
+  --typ-ordner: #a8790f;
+  --typ-pdf: #c0392b;
+  --typ-excel: #1e7145;
+  --typ-word: #2b579a;
+  /* Schrift auf einer Dateityp-Marke */
+  --on-typ: #ffffff;
+  /* Felder hervorheben (Zeigen in der Gliederung) */
+  --fo-markiert: color-mix(in srgb, #ffc400 24%, transparent);
 }
 :root[data-theme='dunkel'] {
   --nav-bg: #121418;
@@ -20,6 +36,15 @@
   --nav-linie: #2a2e35;
   --dok-bg: #0f1115;
   --dok-leiste: #181b20;
+  --bed-text: #d4a5ee;
+  --bed-bg: color-mix(in srgb, #b26ad6 16%, var(--panel));
+  --bed-linie: #b67ad8;
+  --typ-ordner: #e0b85a;
+  --typ-pdf: #f08a7e;
+  --typ-excel: #6cc69a;
+  --typ-word: #8fb1ea;
+  --on-typ: #10131a;
+  --fo-markiert: color-mix(in srgb, #ffc400 18%, transparent);
 }
 
 .fo-main {
@@ -74,12 +99,29 @@ button.icon.active {
   position: relative;
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   background: var(--nav-bg);
   border-right: 1px solid var(--nav-linie);
   min-width: 0;
 }
+/* fester Kopf der Navigation: Projekt, Antrag, Projektdaten | Antragsdaten – rollt nicht mit */
+.nav-fest {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px 8px;
+  border-bottom: 1px solid var(--nav-linie);
+  /* gleich breit wie die rollende Liste darunter (dort ist Platz für den Rollbalken reserviert) */
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+.nav-fest .fo-daten {
+  margin-bottom: 0;
+}
 .nav-rollbereich {
   flex: 1;
+  min-height: 0;
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -90,18 +132,6 @@ button.icon.active {
   flex-direction: column;
   gap: 10px;
 }
-.nav-griff {
-  position: absolute;
-  top: 0;
-  right: -3px;
-  width: 6px;
-  height: 100%;
-  cursor: col-resize;
-  z-index: 2;
-}
-.nav-griff:hover {
-  background: var(--accent-soft);
-}
 .nav-abschnitt {
   display: flex;
   flex-direction: column;
@@ -110,12 +140,14 @@ button.icon.active {
 }
 .nav-kopf {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
   padding: 0 0 2px;
 }
 .nav-kopf-titel {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -133,9 +165,18 @@ button.icon.active {
   background: none;
   color: var(--text);
 }
+.nav-kopf-titel-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* reicht der Platz nicht, rücken die Knöpfe rechtsbündig in die nächste Zeile (statt abgeschnitten zu werden) */
 .nav-kopf-knoepfe {
   display: flex;
+  flex-shrink: 0;
   gap: 1px;
+  margin-left: auto;
 }
 .nav-inhalt {
   display: flex;
@@ -153,6 +194,16 @@ button.icon.active {
   max-height: 46vh;
   overflow-y: auto;
   overflow-x: hidden;
+}
+/* Sammelprojekt: beide Gruppen der Formulare in einem Rollbereich (nicht je Liste einer) */
+.nav-abschnitt .nav-gruppen {
+  max-height: 46vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.nav-abschnitt .nav-gruppen .nav-liste {
+  max-height: none;
+  overflow: visible;
 }
 .nav-eintrag {
   display: flex;
@@ -230,7 +281,7 @@ button.icon.active {
 .nav-eintrag.fo-eintrag-karte.aktiv:hover:not(:disabled) {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 .nav-eintrag.fo-eintrag-karte.aktiv:hover:not(:disabled) {
@@ -238,10 +289,10 @@ button.icon.active {
 }
 .nav-eintrag.fo-eintrag-karte.aktiv .symbol,
 .nav-eintrag.fo-eintrag-karte.aktiv .fo-ungespeichert {
-  color: #fff;
+  color: var(--on-accent);
 }
 .nav-eintrag.fo-eintrag-karte.aktiv .nav-unter {
-  color: rgba(255, 255, 255, 0.82);
+  color: color-mix(in srgb, var(--on-accent) 82%, transparent);
 }
 .fo-eintrag-karte-text {
   flex: 1;
@@ -280,20 +331,63 @@ button.icon.active {
   font-size: 11.5px;
   color: var(--muted);
 }
+/* zuletzt bearbeitet – rechts in der Zeile, dezent (voller Zeitpunkt im Tooltip); in einer schmalen Navigation
+   entfällt sie (bleibt im Tooltip), damit Namen nicht stark gekürzt bzw. umbrochen werden */
+.nav {
+  container: navigation / inline-size;
+}
+@container navigation (max-width: 259px) {
+  .nav-zeit,
+  .fo-baum-zeit,
+  .fo-aufnehmen-platz {
+    display: none;
+  }
+  /* Projektdaten | Antragsdaten untereinander statt gekürzt („Projekt…“) */
+  .fo-daten {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fo-daten > .nav-eintrag.fo-eintrag-karte:first-child {
+    border-radius: 6px 6px 0 0;
+  }
+  .fo-daten > .nav-eintrag.fo-eintrag-karte:last-child {
+    border-radius: 0 0 6px 6px;
+    border-left-width: 1px;
+    border-top-width: 0;
+  }
+}
+.nav-zeit,
+.fo-baum-zeit {
+  margin-left: auto;
+  padding-left: 6px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.nav-eintrag.aktiv .nav-zeit {
+  color: inherit;
+  opacity: 0.8;
+}
 .nav-schloss {
   display: inline-flex;
   color: var(--danger);
 }
 .nav-klein {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--muted);
 }
 .nav-leer {
   margin: 2px 8px;
   font-size: 12px;
+  color: var(--muted);
+}
+/* Sammelprojekt: Überschriften der Gruppen (Unterordner des aktiven Antrags, oberste Ebene für alle Anträge) */
+.nav-gruppe {
+  margin: 8px 8px 2px;
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--muted);
 }
 .nav-suche {
@@ -429,16 +523,15 @@ button.icon.active {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--muted);
 }
 .fo-gl-fortschritt {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px 6px;
   font-size: 11px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -474,10 +567,8 @@ button.icon.active {
 .fo-gl-seite {
   margin-top: 6px;
   padding: 3px 6px;
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--muted);
 }
 .fo-gl-abschnitt {
@@ -508,8 +599,8 @@ button.icon.active {
   font-variant-numeric: tabular-nums;
 }
 .fo-gl-zahl.voll {
-  background: color-mix(in srgb, #2e9e5b 18%, transparent);
-  color: #2e9e5b;
+  background: var(--ok-bg);
+  color: var(--ok-text);
   font-weight: 700;
 }
 .fo-gl-hinweis {
@@ -551,8 +642,10 @@ button.icon.active {
   width: 20px;
 }
 button.icon.fo-gl-auf {
-  min-width: 20px;
-  height: 20px;
+  /* Trefferfläche 24 × 24, belegt 20 × 20 */
+  min-width: 24px;
+  height: 24px;
+  margin: -2px;
   padding: 0;
 }
 .fo-gl-unter {
@@ -592,9 +685,9 @@ button.icon.fo-gl-auf {
   line-height: 1;
 }
 .fo-gl-status.voll {
-  border-color: #2e9e5b;
-  background: #2e9e5b;
-  color: #fff;
+  border-color: var(--ok-text);
+  background: var(--ok-text);
+  color: var(--ok-bg);
   font-weight: 700;
 }
 .fo-gl-felder {
@@ -656,12 +749,13 @@ button.icon.fo-gl-auf {
   opacity: 0.55;
 }
 button.icon.fo-gl-zaehlt {
-  min-width: 20px;
-  height: 20px;
+  min-width: 24px;
+  height: 24px;
+  margin: -2px;
   padding: 0;
 }
 button.icon.fo-gl-zaehlt.an {
-  color: #2e9e5b;
+  color: var(--ok-text);
 }
 .fo-gl-feldgruppe {
   margin: 2px 0 4px;
@@ -744,31 +838,43 @@ button.icon.fo-gl-zaehlt.an {
   color: var(--muted);
 }
 .fo-baum-symbol.ordner {
-  color: #c99a2e;
+  color: var(--typ-ordner);
 }
 .fo-baum-symbol.pdf {
-  color: #c0392b;
+  color: var(--typ-pdf);
 }
 .fo-baum-symbol.tabelle,
 .fo-baum-symbol.berechnung {
-  color: #1e7145;
+  color: var(--typ-excel);
 }
 .fo-baum-symbol.text {
-  color: #2b579a;
+  color: var(--typ-word);
 }
+/* dezent, beim Überfahren oder per Tastatur sichtbar (wie .pk-nav-aktionen) */
 .fo-baum-oeffnen {
-  visibility: hidden;
+  opacity: 0;
 }
-.fo-baum-knoten:hover .fo-baum-oeffnen {
-  visibility: visible;
+.fo-baum-knoten:hover .fo-baum-oeffnen,
+.fo-baum-knoten:focus-within .fo-baum-oeffnen,
+.fo-baum-oeffnen:focus-visible {
+  opacity: 1;
 }
 
 /* ---------- Inhalt ---------- */
 
 .fo-inhalt {
   flex: 1;
-  min-width: 0;
+  /* bei knapper Fensterbreite (ab 1000 px erlaubt) schrumpfen die Leisten daneben bis auf ihre Mindestbreite */
+  min-width: 320px;
   overflow: auto;
+}
+.fo-main > .nav {
+  flex-shrink: 1;
+  min-width: 220px;
+}
+.fo-main > .leiste {
+  flex-shrink: 1;
+  min-width: 180px;
 }
 .fo-inhalt-papier {
   background: color-mix(in srgb, var(--bg) 70%, #808080 30%);
@@ -790,8 +896,8 @@ button.icon.fo-gl-zaehlt.an {
   color: var(--warn-text);
 }
 .fo-meldung.fehler {
-  background: var(--warn-bg);
-  color: var(--danger);
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
 }
 .fo-leer {
   max-width: 640px;
@@ -819,7 +925,8 @@ button.icon.fo-gl-zaehlt.an {
 
 .fo-verlauf {
   width: 280px;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 220px;
   overflow-y: auto;
   background: var(--panel);
   border-left: 1px solid var(--border);
@@ -963,7 +1070,7 @@ button.icon.fo-gl-zaehlt.an {
   border-left-color: var(--sel);
 }
 .fo-feld.markiert {
-  background: color-mix(in srgb, #ffc400 24%, transparent);
+  background: var(--fo-markiert);
   border-radius: 0 4px 4px 0;
 }
 .fo-feld.umrandet {
@@ -1006,16 +1113,12 @@ button.icon.fo-gl-zaehlt.an {
   align-items: center;
   gap: 6px;
   padding: 2px 6px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--muted);
 }
 .pk-nav-kopf strong {
   color: var(--text);
-  letter-spacing: 0;
-  text-transform: none;
   font-size: 13px;
 }
 .toolbar button {
@@ -1086,7 +1189,8 @@ button.icon.fo-gl-zaehlt.an {
 .pk-nav-zeile > .pk-nav-eintrag {
   flex: 1;
   min-width: 0;
-  padding-right: 48px;
+  /* Platz für Favorit und Ausblenden (je 24 px) */
+  padding-right: 56px;
 }
 .pk-nav-aktionen {
   position: absolute;
@@ -1097,8 +1201,12 @@ button.icon.fo-gl-zaehlt.an {
   gap: 1px;
 }
 .pk-nav-aktionen button {
-  padding: 1px 4px;
-  min-width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  min-width: 24px;
+  height: 24px;
   border: none;
   background: none;
   color: var(--muted);
@@ -1118,6 +1226,9 @@ button.icon.fo-gl-zaehlt.an {
 }
 .pk-nav-zeile.favorit .pk-nav-stern {
   color: var(--accent);
+}
+.pk-nav-zeile.favorit .pk-nav-stern .symbol {
+  fill: currentColor;
 }
 .pk-nav-zeile.ausgeblendet > .pk-nav-eintrag {
   opacity: 0.6;
@@ -1170,9 +1281,16 @@ button.icon.fo-gl-zaehlt.an {
 
 .pk-editor {
   flex: 1;
-  min-width: 0;
+  /* bei knapper Breite schrumpft zuerst die Leiste der Gruppen (bis 180 px), dann erst der Inhalt */
+  min-width: 280px;
   overflow-y: auto;
   padding: 0 28px 48px;
+  /* Raster und Vorschau richten sich nach dem Platz neben den Leisten, nicht nach dem Fenster */
+  container: pk-editor / inline-size;
+}
+.pk > .leiste {
+  flex-shrink: 1;
+  min-width: 180px;
 }
 .pk-kopf {
   position: sticky;
@@ -1305,10 +1423,16 @@ button.icon.fo-gl-zaehlt.an {
   color: var(--warn-text);
 }
 .pk-zurueck {
+  /* Trefferfläche 24 × 24, belegt 16 × 16 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  margin: -4px;
   background: none;
   border: none;
-  padding: 0 4px;
-  line-height: 16px;
+  padding: 0;
   color: var(--muted);
   cursor: pointer;
 }
@@ -1317,11 +1441,15 @@ button.icon.fo-gl-zaehlt.an {
 }
 /* Eintrag ausblenden: dezent, beim Überfahren oder per Tastatur sichtbar */
 .pk-feld-auge {
-  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  margin: -4px -4px -4px auto;
   background: none;
   border: none;
-  padding: 0 4px;
-  line-height: 16px;
+  padding: 0;
   color: var(--muted);
   opacity: 0;
 }
@@ -1392,10 +1520,8 @@ button.icon.fo-gl-zaehlt.an {
   line-height: 1.45;
 }
 .pk-vorschau-titel {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--muted);
   margin-bottom: 6px;
 }
@@ -1404,7 +1530,7 @@ button.icon.fo-gl-zaehlt.an {
   word-break: break-word;
 }
 
-@media (max-width: 1100px) {
+@container pk-editor (max-width: 820px) {
   .pk-koerper.mit-vorschau {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1414,12 +1540,16 @@ button.icon.fo-gl-zaehlt.an {
     margin-top: 10px;
   }
 }
-@media (max-width: 760px) {
+/* schmal (z. B. 1000 px Fenster mit Navigation und Gruppen): 6 Spalten – kurze Felder halb, alle anderen ganz */
+@container pk-editor (max-width: 640px) {
   .pk-raster {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
   .pk-feld {
     grid-column: span 6 !important;
+  }
+  .pk-feld.halb {
+    grid-column: span 3 !important;
   }
 }
 
@@ -1463,23 +1593,21 @@ button.icon.fo-gl-zaehlt.an {
 }
 .dok-art {
   flex-shrink: 0;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
   padding: 1px 6px;
   border-radius: 4px;
-  color: #fff;
+  color: var(--on-typ);
   background: var(--muted);
 }
 .dok-art.pdf {
-  background: #c0392b;
+  background: var(--typ-pdf);
 }
 .dok-art.excel {
-  background: #1e7145;
+  background: var(--typ-excel);
 }
 .dok-art.word {
-  background: #2b579a;
+  background: var(--typ-word);
 }
 .dok-kopf-knoepfe {
   display: flex;
@@ -1685,9 +1813,9 @@ button.icon.fo-gl-zaehlt.an {
 }
 .xl-blaetter button.aktiv {
   background: var(--bg);
-  color: #1e7145;
+  color: var(--typ-excel);
   font-weight: 600;
-  box-shadow: inset 0 2px 0 #1e7145;
+  box-shadow: inset 0 2px 0 var(--typ-excel);
 }
 
 /* Word */
@@ -1827,7 +1955,7 @@ button.icon.fo-gl-zaehlt.an {
 
 /* ---------- Dialoge ---------- */
 
-.fo-schnellwahl-huelle {
+.modal-backdrop:has(> .fo-schnellwahl) {
   align-items: flex-start;
   padding-top: 12vh;
 }
@@ -1845,6 +1973,7 @@ button.icon.fo-gl-zaehlt.an {
   border: none;
   border-radius: 5px;
   padding: 6px 10px;
+  cursor: pointer;
 }
 .sw-eintrag.active {
   background: var(--accent-soft);
@@ -1911,8 +2040,14 @@ button.icon.fo-gl-zaehlt.an {
   --p-markiert: rgba(255, 196, 0, 0.5);
   --p-umrandung: #2a5bd7;
   --p-geaendert: #ff7a00;
-  /* offen: hängt an nicht festgelegten Projektmerkmalen (gilt als erforderlich) */
+  /* ungeklärt: hängt an nicht festgelegten Projektmerkmalen (gilt als erforderlich) */
   --p-offen: rgba(245, 180, 0, 0.22);
+  /* Bedingungen beim Einrichten (Lila wie --bed-*, auf weißem Papier) */
+  --p-bedingung: #9a4fc0;
+  --p-bedingung-fuellung: #8e44b8;
+  /* Autofill: aus den Projektdaten übernommen bzw. von Hand überschrieben (das Papier bleibt hell) */
+  --p-auto: #2a5bd7;
+  --p-fixiert: #b86e00;
   padding: 16px 24px 48px;
   display: flex;
   flex-direction: column;
@@ -2053,10 +2188,9 @@ button.icon.fo-gl-zaehlt.an {
 /* ---------- Kleinteile ---------- */
 
 .fo-art {
-  font-size: 10px;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--muted);
-  letter-spacing: 0.04em;
 }
 
 /* ---------- Projektkarte: Stammdaten und Projektdaten ---------- */
@@ -2077,8 +2211,8 @@ button.icon.fo-gl-zaehlt.an {
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 11.5px;
-  color: #2e9e5b;
-  background: color-mix(in srgb, #2e9e5b 14%, transparent);
+  color: var(--ok-text);
+  background: var(--ok-bg);
   white-space: nowrap;
 }
 .pk-text {
@@ -2093,10 +2227,8 @@ button.icon.fo-gl-zaehlt.an {
 }
 .pk-abgleich th {
   text-align: left;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--muted);
   padding: 6px 8px;
   border-bottom: 1px solid var(--border);
@@ -2353,9 +2485,8 @@ button.icon.fo-gl-zaehlt.an {
 }
 .es-adress-detail h4 {
   margin: 14px 0 4px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--muted);
 }
 .es-adress-detail dl {
@@ -2387,9 +2518,8 @@ button.icon.fo-gl-zaehlt.an {
 }
 .es-tabelle th {
   text-align: left;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--muted);
   padding: 4px 6px;
   border-bottom: 1px solid var(--border);
@@ -2523,10 +2653,19 @@ button.icon.fo-gl-zaehlt.an {
 }
 .menue-punkt:disabled {
   color: var(--muted);
+}
+/* ausgegraut: Text und Symbol blass – der Hinweis (der Grund, z. B. „Antrag eingereicht“) bleibt lesbar */
+.menue-punkt:disabled .menue-text,
+.menue-punkt:disabled .menue-symbol {
   opacity: 0.6;
 }
 .menue-punkt.gefahr {
   color: var(--danger);
+}
+/* ausgegraut wirkt auch ein Gefahr-Punkt nicht bedienbar */
+.menue-punkt.gefahr:disabled,
+.menue-punkt.gefahr:disabled .menue-symbol {
+  color: var(--muted);
 }
 .menue-symbol {
   width: 16px;
@@ -2628,8 +2767,10 @@ button.icon.fo-gl-zaehlt.an {
   align-items: center;
 }
 button.icon.ex-baum-pfeil {
-  min-width: 18px;
-  height: 20px;
+  /* Trefferfläche 24 × 24, belegt 18 × 20 */
+  min-width: 24px;
+  height: 24px;
+  margin: -2px -3px;
   padding: 0;
 }
 .ex-baum-zeile {
@@ -2646,7 +2787,7 @@ button.icon.ex-baum-pfeil {
   text-align: left;
 }
 .ex-baum-zeile .symbol {
-  color: #c99a1a;
+  color: var(--typ-ordner);
 }
 .ex-baum-zeile:hover:not(:disabled) {
   background: var(--hover);
@@ -2680,17 +2821,21 @@ button.icon.ex-baum-pfeil {
   box-shadow: 0 0 0 1.5px var(--nav-bg, var(--panel));
   vertical-align: 0;
 }
+/* fehlt: roter Ring (es gibt noch nichts) – fällt so stärker auf als „unvollständig“ (rot gefüllt) */
 .st-punkt.fehlt {
-  background: #9aa1ad;
+  background: transparent;
+  box-shadow:
+    inset 0 0 0 2px var(--fehler-text),
+    0 0 0 1.5px var(--nav-bg, var(--panel));
 }
 .st-punkt.unvollstaendig {
-  background: #d64541;
+  background: var(--fehler-text);
 }
 .st-punkt.offen {
-  background: #e3a412;
+  background: var(--warn-text);
 }
 .st-punkt.aktuell {
-  background: #2e9e5b;
+  background: var(--ok-text);
 }
 
 /* Symbol eines Formulars in der Navigation mit Statuspunkt rechts unten */
@@ -2724,9 +2869,8 @@ button.icon.ex-baum-pfeil {
 }
 .nav-eintrag.fehlt .nav-unter {
   font-style: normal;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 /* aktive Antragsfassung im Projektkopf */
@@ -2796,6 +2940,7 @@ button.icon.ex-baum-pfeil {
   display: flex;
   align-items: center;
   gap: 4px;
+  position: relative;
 }
 .pu-leer {
   padding: 16px;
@@ -2836,17 +2981,15 @@ button.icon.ex-baum-pfeil {
   border-radius: 6px;
   background: var(--panel);
 }
-.pu-zeile.fehlt {
-  border-left-color: #9aa1ad;
-}
+.pu-zeile.fehlt,
 .pu-zeile.unvollstaendig {
-  border-left-color: #d64541;
+  border-left-color: var(--fehler-text);
 }
 .pu-zeile.offen {
-  border-left-color: #e3a412;
+  border-left-color: var(--warn-text);
 }
 .pu-zeile.aktuell {
-  border-left-color: #2e9e5b;
+  border-left-color: var(--ok-text);
 }
 .pu-haupt {
   display: flex;
@@ -2877,9 +3020,8 @@ button.icon.ex-baum-pfeil {
   display: inline-block;
   padding: 0 5px;
   border-radius: 3px;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 600;
   background: var(--line-soft);
 }
 .pu-art.intern {
@@ -2908,6 +3050,10 @@ button.icon.ex-baum-pfeil {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  /* viele Knöpfe (Anlegen, Zuordnen, Verknüpfen, Bearbeiten): in schmalen Bereichen umbrechen statt den Titel zu kürzen */
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 55%;
 }
 .pu-knoepfe button {
   display: inline-flex;
@@ -2917,6 +3063,7 @@ button.icon.ex-baum-pfeil {
 .pu-bearbeiten {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  /* Felder über die ganze Breite stehen am Ende (kein dense: die Tab-Reihenfolge folgt der Anzeige) */
   gap: 8px 12px;
   padding: 8px 12px 12px;
   border-top: 1px solid var(--line-soft);
@@ -2934,9 +3081,6 @@ button.icon.ex-baum-pfeil {
   grid-column: 1 / -1;
   display: flex;
   gap: 6px;
-}
-button.gefahr {
-  color: var(--danger);
 }
 .pu-unten {
   display: flex;
@@ -2995,14 +3139,18 @@ button.gefahr {
 .es-breit input {
   width: 100%;
 }
-.es-platzhalter {
+.es-platzhalter-zeile {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 4px 10px;
 }
-.es-platzhalter button {
-  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  font-size: 11px;
+.es-platzhalter-zeile .ph-chips {
+  margin-top: 0;
+}
+/* Chips des festen Zielordners: eingerückt unter dem Optionsfeld */
+.es-ziel-platzhalter {
+  margin: -4px 0 8px 24px;
 }
 .es-katalog input,
 .es-katalog select {
@@ -3012,12 +3160,6 @@ button.gefahr {
 }
 .es-katalog td {
   padding: 3px 4px;
-}
-.es-mitte {
-  text-align: center;
-}
-.es-mitte input {
-  width: auto;
 }
 
 /* Projektdatei (.oap): Abgleich mit der Projektkarte */
@@ -3081,7 +3223,7 @@ button.gefahr {
 }
 .bd-gruppe.tiefe-1.oder,
 .bd-gruppe.tiefe-2.oder {
-  border-left-color: #b26ad6;
+  border-left-color: var(--bed-linie);
 }
 .bd-gruppe-kopf {
   display: flex;
@@ -3110,7 +3252,7 @@ button.gefahr {
 }
 .bd-op button.an {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .bd-teile {
   display: flex;
@@ -3133,7 +3275,7 @@ button.gefahr {
   text-align: right;
 }
 .bd-gruppe.oder > .bd-teile > .bd-reihe > .bd-wort {
-  color: #9a4fc0;
+  color: var(--bed-text);
 }
 .bd-regel {
   flex: 1;
@@ -3237,25 +3379,26 @@ button.gefahr {
   color: var(--muted);
 }
 .bd-jetzt.an {
-  background: color-mix(in srgb, #2e9e5b 15%, var(--panel));
-  color: #237a46;
+  background: var(--ok-bg);
+  color: var(--ok-text);
 }
 .bd-weg {
   margin-left: auto;
 }
 
 button.icon.fo-gl-bed {
-  min-width: 20px;
-  height: 20px;
+  min-width: 24px;
+  height: 24px;
+  margin: -2px;
   padding: 0;
 }
 button.icon.fo-gl-bed.gesetzt {
-  color: var(--accent);
+  color: var(--bed-text);
 }
 .fo-gl-bed-text {
   margin: 0 0 3px 30px;
   font-size: 11px;
-  color: var(--accent);
+  color: var(--bed-text);
 }
 .fo-gl-bed-text.entfaellt {
   color: var(--muted);
@@ -3267,7 +3410,7 @@ button.icon.fo-gl-bed.gesetzt {
   flex-shrink: 0;
   padding: 0 5px;
   border-radius: 8px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 16px;
   color: var(--muted);
   border: 1px dashed var(--border);
@@ -3316,7 +3459,7 @@ button.icon.fo-gl-bed.gesetzt {
   flex-shrink: 0;
   padding: 0 5px;
   border-radius: 8px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 16px;
   background: var(--warn-bg);
   border: 1px solid var(--warn-border);
@@ -3337,8 +3480,10 @@ button.icon.fo-gl-bed.gesetzt {
 }
 .fo-gl-pruef-zahl {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  row-gap: 2px;
   padding: 1px 6px;
   font-size: 11.5px;
 }
@@ -3419,8 +3564,9 @@ button.icon.fo-gl-bed.gesetzt {
   white-space: nowrap;
 }
 .fo-gl-hinweise.fehler {
-  color: var(--danger);
-  border-color: var(--danger);
+  background: var(--fehler-bg);
+  border-color: var(--fehler-border);
+  color: var(--fehler-text);
 }
 .fo-pruef-zeile.hinweis {
   border-left-color: var(--warn-border);
@@ -3438,21 +3584,21 @@ button.icon.fo-gl-bed.gesetzt {
   flex-shrink: 0;
   padding: 0 5px;
   border-radius: 8px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 16px;
   color: var(--muted);
   background: var(--line-soft);
 }
 .st-punkt.entfaellt {
   background: transparent;
-  box-shadow: inset 0 0 0 1.5px #9aa1ad;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
 }
 .pu-zeile.entfaellt {
   opacity: 0.6;
   border-left-style: dashed;
 }
 .pu-bedingung {
-  color: var(--accent);
+  color: var(--bed-text);
 }
 .pu-bedingung-editor {
   grid-column: 1 / -1;
@@ -3469,20 +3615,6 @@ button.icon.fo-gl-bed.gesetzt {
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-.es-bedingung {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-}
-.es-bedingung.gesetzt {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.es-bedingung-zeile td {
-  background: var(--bg);
 }
 
 /* ---------- Formular hinzufügen ---------- */
@@ -3646,8 +3778,10 @@ button.icon.fo-gl-bed.gesetzt {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 22px;
+  /* Trefferfläche 24 × 24, belegt 18 × 22 */
+  width: 24px;
+  height: 24px;
+  margin: -1px -3px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -3679,13 +3813,6 @@ tr[data-ziehen='danach'] > td {
   width: 22px;
   padding-right: 0 !important;
 }
-.es-vorlage-spalte {
-  max-width: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
-}
 
 /* Projektumfang aus einer Antragsvorlage */
 .pu-vorlage {
@@ -3699,9 +3826,220 @@ tr[data-ziehen='danach'] > td {
   flex-direction: column;
   gap: 2px;
 }
-/* Katalog mit Spalten je Vorlage: mehr Platz */
-.es-karte:has(> .es-katalog) {
-  max-width: 1180px;
+/* Antragsdokumente: Liste mit Kurzbeschreibung, Angaben aufklappbar (DokumenteEinstellungen) */
+.es-dok-kopf {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+}
+.es-dok-kopf label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.es-dok-kopf select {
+  min-width: 200px;
+}
+.es-dok-kopf .field-hint {
+  padding-bottom: 6px;
+}
+.es-dok-liste {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.es-dok-leer {
+  margin: 0 0 8px;
+}
+.es-dok + .es-dok {
+  border-top: 1px solid var(--border);
+}
+.es-dok-zeile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+}
+/* Haken einer Vorlage: Klickfläche 28 × 28 px */
+.es-dok-haken {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.es-dok-haken:hover {
+  background: var(--nav-hover);
+}
+.es-dok-haken input {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+.es-dok-knopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  white-space: normal;
+}
+.es-dok-knopf:hover {
+  background: var(--nav-hover);
+}
+.es-dok-symbol {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.es-dok-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+.es-dok-text strong,
+.es-dok-unter {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.es-dok-unter {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.es-dok-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+}
+.es-chip {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.es-chip.bedingt {
+  border-color: var(--bed-linie);
+  color: var(--bed-text);
+}
+/* geöffnetes Dokument: Akzentrand links (keine Fläche – gedämpfter Text bleibt gut lesbar) */
+.es-dok.offen > .es-dok-zeile {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.es-dok-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px 36px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+.es-dok-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.es-dok-feld input {
+  width: 100%;
+}
+.es-dok-felder {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 14px;
+}
+.es-dok-gruppe {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.es-dok-gruppe legend {
+  margin-bottom: 4px;
+  padding: 0;
+}
+.es-dok-arten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px;
+}
+.es-dok-art {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  cursor: pointer;
+}
+.es-dok-art.gewaehlt {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.es-dok-art input,
+.es-dok-vorlagen input {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 2px 0 0;
+  cursor: pointer;
+}
+.es-dok-art > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.es-dok-vorlagen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+}
+.es-dok-vorlagen label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  cursor: pointer;
+}
+.es-dok-vorlagen input {
+  margin: 0;
+}
+.es-dok-fuss {
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+li.es-dok[data-ziehen='davor'] {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+li.es-dok[data-ziehen='danach'] {
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 /* ---------- Formular einrichten ---------- */
@@ -3715,10 +4053,8 @@ tr[data-ziehen='danach'] > td {
 }
 .fo-ein-seite-kopf {
   margin: 10px 4px 4px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 .fo-ein-zeile {
@@ -3799,8 +4135,8 @@ tr[data-ziehen='danach'] > td {
   line-height: 16px;
 }
 .fo-ein-zahl.voll {
-  background: color-mix(in srgb, #2e9e5b 15%, var(--panel));
-  color: #237a46;
+  background: var(--ok-bg);
+  color: var(--ok-text);
 }
 .fo-ein-zeile .symbol {
   flex-shrink: 0;
@@ -3817,7 +4153,9 @@ tr[data-ziehen='danach'] > td {
 }
 
 .fo-ein-panel {
-  flex: 0 0 380px;
+  /* schrumpft bei knapper Breite bis 280 px – das Papier daneben behält seine Mindestbreite */
+  flex: 0 1 320px;
+  min-width: 280px;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -3842,8 +4180,8 @@ tr[data-ziehen='danach'] > td {
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: color-mix(in srgb, #b26ad6 14%, var(--panel));
-  color: #7a3aa0;
+  background: var(--bed-bg);
+  color: var(--bed-text);
   font-size: 12.5px;
 }
 .fo-ein-waehlen button {
@@ -3880,10 +4218,8 @@ tr[data-ziehen='danach'] > td {
   border-radius: 8px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
   line-height: 18px;
 }
 .fo-ein-teil {
@@ -3980,7 +4316,7 @@ tr[data-ziehen='danach'] > td {
   border-style: solid;
 }
 .fo-seiten.einrichten .fo-ein-feld.bedingt {
-  border-color: #b26ad6;
+  border-color: var(--p-bedingung);
 }
 .fo-seiten.einrichten .fo-ein-feld.gewaehlt {
   border: 2px solid var(--accent);
@@ -3994,22 +4330,22 @@ tr[data-ziehen='danach'] > td {
   position: absolute;
   top: -8px;
   right: -8px;
+  display: grid;
+  place-content: center;
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: #b26ad6;
-  color: #fff;
+  background: var(--p-bedingung-fuellung);
+  color: var(--p-papier);
   font-size: 10px;
-  line-height: 15px;
-  text-align: center;
   pointer-events: none;
 }
 .fo-seiten.waehlen .fo-ein-feld {
   cursor: crosshair;
-  border-color: #b26ad6;
+  border-color: var(--p-bedingung);
 }
 .fo-seiten.waehlen .fo-ein-feld:hover {
-  background: color-mix(in srgb, #b26ad6 22%, transparent);
+  background: color-mix(in srgb, var(--p-bedingung) 22%, transparent);
 }
 .fo-ein-rahmen {
   z-index: 4;
@@ -4030,10 +4366,10 @@ tr[data-ziehen='danach'] > td {
 }
 /* Autofill: Wert aus der Projektkarte bzw. von Hand überschrieben */
 .fo-memo.auto {
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent, #2f6fdf) 55%, transparent);
+  box-shadow: inset 2px 0 0 var(--p-auto);
 }
 .fo-memo.fixiert {
-  box-shadow: inset 2px 0 0 #c77d00;
+  box-shadow: inset 2px 0 0 var(--p-fixiert);
 }
 .fo-ausfuellen-haken {
   display: flex;
@@ -4049,11 +4385,12 @@ tr[data-ziehen='danach'] > td {
   font-size: 11px;
   padding: 0 5px;
   border-radius: 8px;
-  background: var(--bg-2, rgba(127, 127, 127, 0.12));
+  background: var(--chip-bg);
 }
 .fo-ausfuellen-zeile.manuell .fo-ausfuellen-art,
 .fo-ausfuellen-zeile.unbekannt .fo-ausfuellen-art {
-  background: rgba(199, 125, 0, 0.15);
+  background: var(--warn-bg);
+  color: var(--warn-text);
 }
 .fo-unterlagen {
   margin: 8px 0 12px;
@@ -4255,8 +4592,10 @@ tr[data-ziehen='danach'] > td {
   line-height: 1.3;
 }
 .fo-bereit-knopf {
-  flex: 0 0 22px;
-  height: 20px;
+  /* Trefferfläche 24 × 24, belegt 22 × 20 */
+  flex: 0 0 24px;
+  height: 24px;
+  margin: -2px -1px;
   padding: 0;
   font-size: 12px;
   line-height: 1;
@@ -4288,6 +4627,118 @@ tr[data-ziehen='danach'] > td {
 }
 .fo-bereit-zeile.name .fo-bereit-unter {
   color: var(--fehler-text);
+}
+/* Quick-Add hinter einer Datei ohne Dokument im Antragsumfang; Zeilen mit Dokument halten den Platz frei */
+.fo-bereit-zeile > button.icon.fo-aufnehmen,
+.fo-bereit-zeile > button.icon.fo-aufnehmen:hover:not(:disabled) {
+  flex: 0 0 24px;
+  color: var(--accent);
+}
+.fo-aufnehmen-platz {
+  flex: 0 0 24px;
+}
+/* Antragsstand bei der Einreichung: Zeile darüber, Kennzeichen an neuen bzw. geänderten Dateien */
+.fo-stand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.fo-stand.abweichend {
+  color: var(--warn-text);
+  font-weight: 600;
+}
+.fo-seit {
+  display: inline-block;
+  /* in der Spalte des Namens nicht auf die volle Breite strecken – ein kleines Etikett */
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+/* Streifen am Namen, nicht hinter dem runden Bereit-Knopf; geöffnet: Akzentkante und Streifen nebeneinander */
+.fo-bereit-zeile.seit-neu > .fo-baum-zeile,
+.fo-bereit-zeile.seit-geaendert > .fo-baum-zeile {
+  box-shadow: inset 3px 0 0 var(--warn-border);
+}
+.fo-bereit-zeile.seit-neu > .fo-baum-zeile.aktiv,
+.fo-bereit-zeile.seit-geaendert > .fo-baum-zeile.aktiv {
+  box-shadow:
+    inset 2px 0 0 var(--accent),
+    inset 5px 0 0 var(--warn-border);
+}
+.nav-eintrag.fehlt .nav-unter.nav-doppelt {
+  color: var(--warn-text);
+}
+/* eingereichter Antrag: der fehlende Eintrag bleibt gedämpft und reagiert nicht wie ein Knopf (Tooltip erklärt) */
+.nav-eintrag.fehlt.gesperrt {
+  cursor: default;
+}
+.nav-eintrag.fehlt.gesperrt:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
+  color: var(--muted);
+}
+/* eingereichte Dateien, die seit der Einreichung aus dem Ordner verschwunden sind – bündig mit dem Text der Summe */
+.fo-stand-entfernt {
+  list-style: none;
+  margin: -2px 0 6px;
+  /* bündig mit dem Text der Summe: Schloss (1em) + Abstand */
+  padding: 0 0 0 calc(1em + 6px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11.5px;
+}
+.fo-stand-entfernt li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.fo-stand-entfernt .fo-seit {
+  flex: none;
+  align-self: baseline;
+  margin-top: 0;
+}
+.fo-stand-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+/* Ordner gerade nicht erreichbar: Warnung über der Zählung */
+.fo-lesefehler {
+  margin: 2px 0 6px;
+}
+.fo-lesefehler button {
+  margin-left: 2px;
+}
+.fo-lesefehler button[aria-disabled='true'],
+.fo-lesefehler button[aria-disabled='true']:hover {
+  opacity: 0.65;
+  cursor: progress;
+  background: var(--input-bg);
+}
+/* Knöpfe beim eingereichten Antrag: brechen gemeinsam um */
+.pu-status-knoepfe {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pu-status-knoepfe button[aria-disabled='true'],
+.pu-status-knoepfe button[aria-disabled='true']:hover {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: var(--input-bg);
+}
+/* Meldung zum Datum der Einreichung: eigene Zeile hinter den Knöpfen, verbreitert die Gruppe nicht, nah am Feld */
+.pu-status-wahl .pu-datum-meldung {
+  flex-basis: 100%;
+  contain: inline-size;
+  margin-top: -8px;
 }
 .fo-bereit-zeile .fo-baum-name {
   white-space: normal;
@@ -4336,6 +4787,15 @@ tr[data-ziehen='danach'] > td {
   display: flex;
   flex-direction: column;
   background: var(--bg);
+}
+/* Klasse „modal“ für Startfokus, Fokusfang und Fokusrückgabe (dialoge.ts) – ohne den Rahmen eines Dialogs */
+.vs-ebene.modal {
+  width: auto;
+  max-height: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
 }
 .vs-leiste {
   display: flex;
@@ -4514,12 +4974,27 @@ tr[data-ziehen='danach'] > td {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  /* lange Dateinamen brechen um */
+  overflow-wrap: anywhere;
 }
-.pu-status-text strong {
+/* Kopfzeile des Status (nur das direkte Kind, nicht die Kennwörter der Anleitung) */
+.pu-status-text > strong {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
+}
+/* die Anleitung zum Nachreichen in voller Textfarbe (nicht gedämpft), Kennwörter nur halbfett */
+.pu-status-anleitung {
+  color: var(--text);
+}
+.pu-status-anleitung strong {
+  font-weight: 600;
+}
+/* gedämpfte Zeilen und Feldbeschriftungen im eingereichten Kasten etwas kräftiger – auf dem grünen Grund auch hell AA */
+.pu-status.eingereicht .muted,
+.pu-status.eingereicht .field-label {
+  color: color-mix(in srgb, var(--text) 15%, var(--muted));
 }
 .pu-status-wahl {
   display: flex;
@@ -4534,6 +5009,35 @@ tr[data-ziehen='danach'] > td {
 }
 .pu.gesperrt .pu-liste .pu-zeile {
   opacity: 0.92;
+}
+/* Inhalt der Antragsdaten – eine Ebene nur für „wird geöffnet“ (ohne eigenes Kästchen, die Abstände bleiben) */
+.pu-inhalt {
+  display: contents;
+}
+.pu-inhalt > * {
+  transition: opacity 0.15s;
+}
+.pu-inhalt.laedt > * {
+  opacity: 0.55;
+}
+/* „Antrag … wird geöffnet …“ unter der Fassungswahl, außerhalb des Flusses (immer da als Live-Region) – nichts bricht
+   neu um, nichts springt */
+.pu-laedt-hinweis {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* Meldung an einem Textfeld der Antragsdaten (nicht gespeichert, leerer Titel) */
+.pu-feld-meldung {
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pu-inhalt > * {
+    transition: none;
+  }
 }
 .sort-griff-platz {
   display: inline-block;
@@ -4560,11 +5064,23 @@ tr[data-ziehen='danach'] > td {
   gap: 1px;
   min-width: 0;
 }
-.pk-eigen-gruppe {
-  font-size: 10.5px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+/* Herkunft eines Felds in der eigenen Ansicht: dezent unter dem Eingabefeld */
+.pk-feld-unter {
+  margin-top: 2px;
+  font-size: 11px;
   color: var(--muted);
+}
+/* Kennzeichen der Verknüpfung: nicht anklickbar, daher keine Akzentfarbe – nur etwas kräftiger als die Gruppe */
+.pk-eigen-link {
+  color: color-mix(in srgb, var(--text) 35%, var(--muted));
+}
+.pk-auswahl-frei {
+  display: flex;
+  gap: 4px;
+}
+.pk-auswahl-frei input {
+  flex: 1;
+  min-width: 0;
 }
 .pk-eigen-leer {
   max-width: 560px;
@@ -4633,4 +5149,116 @@ tr[data-ziehen='danach'] > td {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Plansatz: Pläne mit Zustand */
+.pu-art.plansatz {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text);
+}
+/* Planliste: fluchtet mit der Titelspalte der Zeile (Griff, Nummer, Status, Symbol) – in einem schmalen Hauptbereich
+   (er hängt an der Breite der Navigation, nicht am Fenster) weniger Einzug */
+.pu-plansatz {
+  padding: 0 12px 10px min(109px, 12%);
+}
+.pu-plaene {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pu-plan {
+  display: grid;
+  /* feste Spalte, damit die Nummern untereinander fluchten; lange Plankürzel werden gekürzt (voller Text im Tooltip) */
+  grid-template-columns: 76px minmax(0, 1fr) 120px;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border-left: 3px solid var(--ok-text);
+  background: var(--bg);
+}
+.pu-plan.fehlt {
+  border-left-color: var(--fehler-text);
+  background: var(--fehler-bg);
+}
+.pu-plan.quelle,
+.pu-plan.veraltet {
+  border-left-color: var(--warn-text);
+  background: var(--warn-bg);
+}
+.pu-plan-nr {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pu-plan-hinweise:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.pu-plan-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pu-plan-zustand {
+  color: var(--muted);
+}
+.pu-plan.fehlt .pu-plan-zustand {
+  color: var(--fehler-text);
+}
+.pu-plan.quelle .pu-plan-zustand,
+.pu-plan.veraltet .pu-plan-zustand {
+  color: var(--warn-text);
+}
+/* .pu-leer p setzt sonst den Abstand */
+/* Namensvorlage in den Einstellungen: Feld, Hinweis, Warnung untereinander */
+.es-feldblock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.es-feldblock p {
+  margin: 0;
+}
+/* Namensvorlage im Export des Projekts: ganze Breite des Rasters */
+.pu-bearbeiten .pu-breit {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pu-breit p {
+  margin: 0;
+}
+.pu-leer .pu-ohne-vorlage {
+  margin: 6px 0 0;
+  color: var(--warn-text);
+}
+.pu-hinweiszahl {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--warn-text);
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+/* Textlink wie .pu-datei: kein grauer Kasten beim Überfahren */
+.pu-hinweiszahl:hover:not(:disabled) {
+  background: none;
+  text-decoration: underline;
+}
+/* Hinweise zum Plansatz: in derselben Warnfarbe wie „n Hinweise“ in der Zeile */
+.pu-plan-hinweis {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: var(--warn-text);
 }

@@ -5,6 +5,7 @@ import { createProject, leereMeta } from '../model';
 import type { AllgemeineEinstellungen } from '../platform/konfig';
 import { allgemeinAendern, allgemeinLaden, angeheftetLesen, anheftenUmschalten, zuletztMerken } from '../platform/konfig';
 import { logger } from '../platform/log';
+import { projektAnlegenMoeglich, projektAnlegenStarten } from '../platform/rahmen';
 import type { ProjektordnerZugriff } from '../platform/projektordner';
 import { hatOrdnerzugriff, ordnerName, ordnerWaehlen, ordnerZeigen, projektdateiAnlegen, projektdateiFinden, projektdateiKopf, tauriProjektordner, verbinde } from '../platform/projektordner';
 import { projektdateiPfad } from '../projektdatei';
@@ -180,7 +181,15 @@ export function ProjektWahl({
           dateiHinweis={dateiHinweis}
           onNeu={onNeu}
           onSchliessen={onSchliessen}
-        />
+        >
+          {projektAnlegenMoeglich() && (
+            <div className="button-row pw-aktionen">
+              <button className="primary" onClick={() => projektAnlegenStarten(false)} title="Neues Projekt mit dem Assistenten der App „Projekt“ anlegen">
+                + Neues Projekt anlegen
+              </button>
+            </div>
+          )}
+        </ProjektEinstieg>
       </div>
     );
   }
@@ -213,6 +222,10 @@ export function ProjektWahl({
         marken={liste.marken}
         angeheftet={angeheftet}
         kontextMenue={kontextMenue}
+        // ein mit dem Assistenten der Projekt-App angelegtes Projekt gleich öffnen
+        onAngelegt={(ordner) => void oeffnen(ordner)}
+        // Stammordner per Ziehen umsortieren – gilt für alle Apps (gemeinsame Einstellung); der erste nimmt neue Projekte auf
+        onGruppenOrdnen={(projekte) => void allgemeinAendern({ projekte }).then(setAllgemein, (e) => setFehler(e instanceof Error ? e.message : String(e)))}
         kopf={
           <>
             {onDateiOeffnen && (
@@ -220,7 +233,14 @@ export function ProjektWahl({
                 Datei öffnen …
               </button>
             )}
-            {onNeu && <button onClick={onNeu}>Neues Projekt</button>}
+            {onNeu &&
+              (projektAnlegenMoeglich() ? (
+                <button onClick={onNeu} title="Neues, leeres Projekt ohne Projektordner – gespeichert wird später als Datei">
+                  Leer beginnen
+                </button>
+              ) : (
+                <button onClick={onNeu}>Neues Projekt</button>
+              ))}
             {onSchliessen && <button onClick={onSchliessen}>Schließen</button>}
           </>
         }

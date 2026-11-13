@@ -7,24 +7,44 @@
  * - Nr. 2 Maß der baulichen Nutzung: „nur im Bereich eines Bebauungsplans“ (auch eines einfachen); Nr. 3 Flurkarte
  *   und Nr. 4 Basiskarte: „nur bei Vorhaben nach den §§ 34 oder 35 BauGB“ (auch im einfachen Bebauungsplan).
  * - Nr. 6 Baubeschreibung: entfällt beim Einfamilienhaus.
- * - Nr. 7.1 bis 7.3 Kosten: eine Angabe; die Herstellungssumme bei 7.3.
- * - Nr. 8 Betriebsbeschreibung bei jedem gewerblichen oder landwirtschaftlichen Betrieb (Nichtwohngebäude, § 10
- *   Abs. 1 Satz 1 Nr. 4 BauPrüfVO) – der Vordruck führt sie unter den Sonderbauten; Nr. 9 nur für Sonderbauten.
- * - Nr. 11.1 Erklärung zum Brandschutz: Gebäudeklasse 1 bis 3 ohne Sonderbauten; Nr. 11.2 Bescheinigung:
- *   Gebäudeklasse 4 und 5 ohne Sonderbauten, Garagen über 100 m² bis 1.000 m². Bei Sonderbauten keins von beiden
- *   (die Bauaufsichtsbehörde prüft, § 68 Abs. 2 Satz 5 BauO NRW 2018).
+ * - Nr. 7.1 bis 7.3 Kosten: eine Angabe; die Herstellungssumme bei 7.3. Bei einer Änderung und bei baulichen
+ *   Anlagen, die keine Gebäude sind, muss es die Herstellungssumme sein (7.1/7.2 genügen dann nicht).
+ * - Nr. 8 Betriebsbeschreibung bei jedem gewerblichen oder landwirtschaftlichen Betrieb (Nichtwohngebäude, auch im
+ *   Wohn- und Geschäftshaus, § 10 Abs. 1 Satz 1 Nr. 4 BauPrüfVO) – der Vordruck führt sie unter den Sonderbauten;
+ *   Nr. 9 für Sonderbauten und Mittelgaragen (§ 12 BauPrüfVO).
+ * - Nr. 11.1 Erklärung zum Brandschutz: Gebäudeklasse 1 bis 3 ohne Sonderbauten und ohne Mittelgarage; Nr. 11.2
+ *   Bescheinigung: Gebäudeklasse 4 und 5 ohne Sonderbauten und Garagen über 100 m² bis 1.000 m² (Mittelgaragen, auch
+ *   wenn sie als Sonderbau gelten – deren Brandschutz prüft die Behörde nicht, § 64 Abs. 1 Satz 2 BauO NRW 2018). Bei
+ *   anderen Sonderbauten keins von beiden (die Bauaufsichtsbehörde prüft, § 68 Abs. 2 Satz 5), bei baulichen Anlagen,
+ *   die keine Gebäude sind, ebenso.
+ * - Art des Gebäudes und Nr. 12 Baustatistik: nur bei Gebäuden (nicht bei „Sonstige bauliche Anlage“).
  */
 
 import type { FormularProfil } from '../profil';
 import { blatt2, kopf, personen, unterschriften, zusammen } from './antrag';
-import { brandschutzBescheinigung, keinEinfamilienhaus, nurBebauungsplan, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte } from './grundlagen';
-import { angekreuzt, begruendet, gruppeV, ist, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
+import {
+  MIT_BETRIEB,
+  brandschutzBescheinigung,
+  gebaeudeImVordruck,
+  keinEinfamilienhaus,
+  nurBebauungsplan,
+  nurGebaeudeStatistik,
+  nurInnenAussenBasiskarte,
+  nurInnenAussenFlurkarte,
+  ohneHerstellungssumme,
+} from './grundlagen';
+import { angekreuzt, begruendet, gruppeV, ist, nichtAngekreuzt, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
 const s1 = s(1);
 const s2 = s(2);
 const bauantrag = angekreuzt('0:CheckBox1');
 const sonderbau = oder(ist('Sonderbau', 'ja'), angekreuzt('0:CheckBox26'), angekreuzt('0:CheckBox25'));
+/** Garage mit über 100 m² bis 1.000 m² Nutzfläche (Mittelgarage) */
+const mittelgarage = angekreuzt('0:CheckBox24');
+/** ein Gebäude: „Sonstige bauliche Anlage“ nicht angekreuzt oder eine Gebäudeklasse angekreuzt (siehe gebaeudeImVordruck) */
+const gebaeude = gebaeudeImVordruck('0:CheckBox22', s0('CheckBox4', 'CheckBox5', 'CheckBox6', 'CheckBox7', 'CheckBox8'));
+const NUR_GEBAEUDE = 'Nur bei Gebäuden – nicht bei baulichen Anlagen, die keine Gebäude sind („Sonstige bauliche Anlage“).';
 
 export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, unterschriften(2), {
   abschnitte: {
@@ -64,11 +84,20 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
   },
   zaehlt: zaehltNicht('2:CheckBox3'),
   gruppen: [
-    gruppeV('art', 'Art des Gebäudes (alle zutreffenden)', 'eins', s0('CheckBox28', 'CheckBox26', 'CheckBox27', 'CheckBox25', 'CheckBox24')),
+    gruppeV('art', 'Art des Gebäudes (alle zutreffenden)', 'eins', s0('CheckBox28', 'CheckBox26', 'CheckBox27', 'CheckBox25', 'CheckBox24'), {
+      bedingung: begruendet(gebaeude, NUR_GEBAEUDE),
+    }),
     gruppeV('kosten', 'Nr. 7 Rauminhalt, Rohbaukosten oder Herstellungssumme', 'eins', s1('CheckBox7', 'CheckBox8', 'CheckBox9')),
-    // beim Sonderbau weder Erklärung noch Bescheinigung: die Bauaufsichtsbehörde prüft (R-06)
+    // beim Sonderbau weder Erklärung noch Bescheinigung: die Bauaufsichtsbehörde prüft (R-06) – außer bei der
+    // Mittelgarage: deren Brandschutz prüft sie nicht, die Bescheinigung ist Pflicht
     gruppeV('brandschutz', 'Nr. 11 Erklärung oder Bescheinigung zum Brandschutz', 'eins', s2('CheckBox4', 'CheckBox5'), {
-      bedingung: begruendet(wenn(ist('Sonderbau', 'nein')), 'Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure).', q('bauo-nrw', '68', 2, 5)),
+      bedingung: begruendet(
+        oder(mittelgarage, und(ist('Sonderbau', 'nein'), gebaeude)),
+        'Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure) – außer bei Garagen bis 1.000 m² Nutzfläche: Für Mittelgaragen bleibt die Bescheinigung (Nr. 11.2) Pflicht. Bei baulichen Anlagen, die keine Gebäude sind, entfällt Nr. 11.',
+        q('bauo-nrw', '68', 2, 5),
+        q('bauo-nrw', '64', 1, 2),
+        q('bauo-nrw', '68', 2, 3),
+      ),
     }),
   ],
   bedingungen: {
@@ -76,29 +105,33 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
     '1:CheckBox3': nurInnenAussenFlurkarte,
     '1:CheckBox4': nurInnenAussenBasiskarte,
     '1:CheckBox6': keinEinfamilienhaus,
+    '1:CheckBox7': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox8': ohneHerstellungssumme(gebaeude),
     '1:Memo5': wenn(angekreuzt('1:CheckBox9')),
     '2:CheckBox1': begruendet(
-      und(bauantrag, ist('Gebäudeart', 'Nichtwohngebäude')),
-      'Die Betriebsbeschreibung gehört im vereinfachten Verfahren zu jedem gewerblichen oder landwirtschaftlichen Betrieb – nicht nur zu Sonderbauten (der Vordruck führt sie unter den Sonderbauten auf). Bei Wohngebäuden mit gewerblicher Einheit und bei gewerblichen Anlagen ohne Gebäude selbst prüfen.',
+      und(bauantrag, MIT_BETRIEB),
+      'Die Betriebsbeschreibung gehört im vereinfachten Verfahren zu jedem gewerblichen oder landwirtschaftlichen Betrieb – nicht nur zu Sonderbauten (der Vordruck führt sie unter den Sonderbauten auf), auch zum Betrieb in einem Wohn- und Geschäftshaus. Bei gewerblichen Anlagen ohne Gebäude selbst prüfen.',
       q('baupruefvo', '10', 1, 1, 4),
       q('baupruefvo', '5', 2),
       q('baupruefvo', '5', 3),
     ),
     '2:CheckBox2': begruendet(
-      und(bauantrag, sonderbau),
-      'Zusätzliche Angaben nach § 12 BauPrüfVO nur bei Sonderbauten (z. B. Versammlungs-, Beherbergungs-, Verkaufsstätten, Mittel- und Großgaragen). Bei Sonderbauten gehört das Brandschutzkonzept hierher (§ 9 BauPrüfVO).',
+      und(bauantrag, oder(sonderbau, mittelgarage)),
+      'Zusätzliche Angaben nach § 12 BauPrüfVO nur bei Sonderbauten (z. B. Versammlungs-, Beherbergungs-, Verkaufsstätten) und Mittel- oder Großgaragen (Zahl, Abmessung und Kennzeichnung der Einstellplätze und Fahrgassen). Bei Sonderbauten gehört das Brandschutzkonzept hierher (§ 9 BauPrüfVO).',
       q('baupruefvo', '12'),
+      q('baupruefvo', '12', 4),
       q('bauo-nrw', '50', 1),
       q('baupruefvo', '9'),
     ),
     '2:CheckBox4': begruendet(
-      und(ist('Gebäudeklasse', '1', '2', '3'), ist('Sonderbau', 'nein')),
-      'Die Erklärung der Entwurfsverfassenden genügt bei Gebäuden der Gebäudeklassen 1 bis 3 und Kleingaragen. Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure) – dann gehört das Brandschutzkonzept/der Brandschutznachweis zu Nr. 9.',
+      und(ist('Gebäudeklasse', '1', '2', '3'), ist('Sonderbau', 'nein'), nichtAngekreuzt('0:CheckBox24')),
+      'Die Erklärung der Entwurfsverfassenden genügt bei Gebäuden der Gebäudeklassen 1 bis 3 und Kleingaragen – für eine Mittelgarage (über 100 m² bis 1.000 m²) nicht: Für sie ist die Bescheinigung von Prüfsachverständigen nötig (Nr. 11.2); für ein Gebäude der Gebäudeklassen 1 bis 3 daneben ist die Erklärung erforderlich, soweit die Bescheinigung nur die Garage umfasst. Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure) – dann gehört das Brandschutzkonzept/der Brandschutznachweis zu Nr. 9.',
       q('bauo-nrw', '68', 2, 2),
+      q('bauo-nrw', '68', 2, 3),
       q('bauo-nrw', '68', 2, 5),
     ),
-    '2:CheckBox5': brandschutzBescheinigung(oder(und(ist('Gebäudeklasse', '4', '5'), ist('Sonderbau', 'nein')), angekreuzt('0:CheckBox24'))),
-    '2:CheckBox6': wenn(bauantrag),
+    '2:CheckBox5': brandschutzBescheinigung(oder(und(ist('Gebäudeklasse', '4', '5'), ist('Sonderbau', 'nein')), mittelgarage)),
+    '2:CheckBox6': nurGebaeudeStatistik(gebaeude, bauantrag),
     '2:CheckBox7': wenn(bauantrag),
   },
 });

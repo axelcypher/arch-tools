@@ -98,15 +98,15 @@ export const anzeigeKopf: FormularProfil = zusammen(
  * erkennen und bleiben erforderlich.
  */
 export const nachweise = {
-  /** Schall- und Wärmeschutz: nicht bei Wohngebäuden der Gebäudeklassen 1 und 2 */
+  /** Schall- und Wärmeschutz: nicht bei Wohngebäuden der Gebäudeklassen 1 und 2 (ein gemischt genutztes Gebäude ist keins) */
   nichtAbsatz2Gebaeude: begruendet(
-    oder(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude')),
+    oder(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude', 'Wohn- und Geschäftshaus')),
     'Bescheinigungen über Schall- und Wärmeschutz sind nicht erforderlich bei Wohngebäuden der Gebäudeklassen 1 und 2. Der Vordruck (Fassung 2018) nennt noch ‚Gebäude nach § 68 Absatz 2‘ und ‚Wohngebäude mit bis zu zwei Wohnungen‘ – maßgeblich ist das geltende Gesetz.',
     q('bauo-nrw', '68', 4, 2),
   ),
   /** Standsicherheit: wie oben, dazu bauliche Anlagen, die keine Gebäude sind */
   nichtAbsatz2: begruendet(
-    oder(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude', 'kein Gebäude')),
+    oder(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude', 'Wohn- und Geschäftshaus', 'kein Gebäude')),
     'Prüfung und Bescheinigung entfallen u. a. bei Wohngebäuden der Gebäudeklassen 1 und 2 einschließlich ihrer Nebengebäude; die weiteren Ausnahmen (landwirtschaftliche Betriebsgebäude, eingeschossige Gebäude bis 200 m²) erkennt die App nicht.',
     q('bauo-nrw', '68', 3, 5, 2),
   ),

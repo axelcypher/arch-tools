@@ -38,6 +38,11 @@ export interface ProjektordnerZugriff {
   dateienSuchen?(root: string, tiefe: number, endung: string): Promise<OrdnerEintrag[]>;
   /** einen Eintrag eines ZIP-Archivs lesen, ohne das ganze Archiv zu laden; `null`, wenn es ihn nicht gibt */
   zipEintrag?(root: string, pfad: string, name: string): Promise<{ daten: Uint8Array; stand: DateiStand } | null>;
+  /**
+   * Datei umbenennen (App „Projekt“, nur deren Hülle und die Rahmen-App): nur innerhalb von `root`, Endung bleibt, der
+   * Zielordner muss es geben; `false`, wenn es das Ziel schon gibt – überschrieben wird nie.
+   */
+  umbenennen?(root: string, alt: string, neu: string): Promise<boolean>;
 }
 
 async function invoke<T>(befehl: string, args: Record<string, unknown>): Promise<T> {
@@ -60,6 +65,7 @@ export const tauriProjektordner: ProjektordnerZugriff = {
   dateiAnlegen: (root, pfad, daten) => invoke<boolean>('projekt_datei_anlegen', { root, pfad, contentsBase64: bytesToBase64(daten) }),
   projektdateiErsetzen: (root, pfad, daten, stand) => invoke<void>('projekt_oap_ersetzen', { root, pfad, contentsBase64: bytesToBase64(daten), groesse: stand.groesse, geaendert: stand.geaendert }),
   dateienSuchen: (root, tiefe, endung) => invoke<OrdnerEintrag[]>('projekt_dateien_suchen', { root, tiefe, endung }),
+  umbenennen: (root, alt, neu) => invoke<boolean>('projekt_datei_umbenennen', { root, alt, neu }),
   zipEintrag: async (root, pfad, name) => {
     const r = await invoke<{ daten: string; methode: number; groesse: number; geaendert: number } | null>('projekt_zip_eintrag', { root, pfad, name });
     if (!r) return null;
@@ -89,7 +95,11 @@ export function verbinde(root: string, rel: string): string {
 }
 
 /** letzter Teil eines Pfads */
-export const ordnerName = (pfad: string) => pfad.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? pfad;
+export const ordnerName = (pfad: string) =>
+  pfad
+    .replace(/[\\/]+$/, '')
+    .split(/[\\/]/)
+    .pop() ?? pfad;
 
 /* ---------- Projektdatei im Projektordner ---------- */
 
@@ -144,7 +154,14 @@ export async function projektdateiSchreiben(fs: ProjektordnerZugriff, root: stri
  * Eine Originaldatei in die Projektdatei legen (ersetzt die bisherige derselben Art, z. B. die QGIS-Vorlage); liest
  * frisch und versucht es erneut, wenn eine andere App die Datei zwischen Lesen und Schreiben geändert hat.
  */
-export async function projektdateiDateiSetzen(fs: ProjektordnerZugriff, root: string, pfad: string, datei: { id: string; name: string; art: DateiArt; datum: string }, daten: Uint8Array, versuche = 3): Promise<void> {
+export async function projektdateiDateiSetzen(
+  fs: ProjektordnerZugriff,
+  root: string,
+  pfad: string,
+  datei: { id: string; name: string; art: DateiArt; datum: string },
+  daten: Uint8Array,
+  versuche = 3,
+): Promise<void> {
   for (let versuch = 1; ; versuch++) {
     const r = await fs.liesMitStand(root, pfad);
     if (!r) throw new Error(`${pfad}: nicht gefunden`);
@@ -176,19 +193,93 @@ export interface ProjektordnerEintrag {
   pfad: string;
   name: string;
   geaendert: number;
+  /**
+   * Unterordner des Stammordners, in dem das Projekt liegt – ein Gruppen-, Akquise- oder Archivordner („Archiv“,
+   * „Archiv/2024“); fehlt bei Projekten direkt im Stammordner
+   */
+  gruppe?: string;
 }
 
 /**
- * Projektordner in den Stammordnern (nur die oberste Ebene – schnell). Die Projektdatei je Ordner sucht
- * `projektdateiFinden`, ihre Stammdaten liest `projektdateiKopf` – beides am besten erst für sichtbare Karten.
- * Nicht lesbare Stammordner stehen in `fehler`.
+ * Name eines Sammelordners für abgeschlossene bzw. Akquise-Projekte: das Stichwort am Anfang, höchstens nach einer
+ * Sortiernummer („_Archiv“, „99 Abgeschlossen“, „Archiv 2024“, „00_Akquise“) – nicht „2026-014 Stadtarchiv“.
+ */
+export const ARCHIV_NAME = /^(?:\d{1,3}[ _.-]*|[_.\-\s]+)?(?:archiv|abgeschlossen|erledigt|beendet|storniert|ruhend)/i;
+export const AKQUISE_NAME = /^(?:\d{1,3}[ _.-]*|[_.\-\s]+)?(?:akquise|akquisition)/i;
+
+/** Stand eines Projekts aus seinem Sammelordner – gilt, solange die Projektdatei keinen Status nennt */
+export function statusAusGruppe(gruppe: string | undefined): 'akquise' | 'abgeschlossen' | undefined {
+  if (!gruppe) return undefined;
+  const teile = gruppe.split('/');
+  if (teile.some((t) => ARCHIV_NAME.test(t))) return 'abgeschlossen';
+  if (teile.some((t) => AKQUISE_NAME.test(t))) return 'akquise';
+  return undefined;
+}
+
+/** Ordnername, der nach einem Projekt aussieht: Kürzel mit Ziffer bzw. in Großbuchstaben, dann ein Name („2026-014 EFH …“, „SIS Sanierung“) */
+const PROJEKTNAME = /^(?:\S*\d\S*|[A-ZÄÖÜ][A-ZÄÖÜ0-9]{1,7})[\s_-]+\S/;
+/** Unterordner, wie sie in Projekten stehen: nummeriert („00 Projekt“, „01_Grundlagen“) */
+const NUMMERIERT = /^\d{1,3}(?:[ _.-]|$)/;
+
+type Kinder = { ordner: string[]; dateien: string[] };
+
+/**
+ * Ist ein Ordner ein Projekt oder ein Sammelordner (Gruppe, Akquise, Archiv)? Aus seinem Namen und seinen direkten
+ * Einträgen: Akquise-/Archivnamen sammeln; eine Projektdatei, mehrere nummerierte Unterordner oder ein alter
+ * projekt.json machen ein Projekt; sonst sammelt er, wenn darin Ordner mit Projektnamen liegen. Im Zweifel: Projekt
+ * (wie bisher).
+ */
+export function istSammelordner(name: string, k: Kinder): boolean {
+  if (ARCHIV_NAME.test(name) || AKQUISE_NAME.test(name)) return true;
+  if (k.dateien.some((d) => /\.oap$/i.test(d) || d.toLowerCase() === 'projekt.json')) return false;
+  if (k.ordner.filter((o) => NUMMERIERT.test(o)).length >= 2) return false;
+  // „00 Projekt“ ist ein Unterordner eines Projekts, kein Projekt
+  return k.ordner.some((o) => PROJEKTNAME.test(o) && !NUMMERIERT.test(o));
+}
+
+/** so tief werden Sammelordner durchsucht (Archiv/2024/Projekt = 2) */
+const SAMMEL_TIEFE = 3;
+
+/**
+ * Projektordner in den Stammordnern – direkt darin und in Sammelordnern (Gruppen, Akquise, Archiv, auch
+ * verschachtelt bis `SAMMEL_TIEFE`), siehe `istSammelordner`. Gelesen werden je Ordner nur zwei Ebenen. Die
+ * Projektdatei je Ordner sucht `projektdateiFinden`, ihre Stammdaten liest `projektdateiKopf` – beides am besten erst
+ * für sichtbare Karten. Nicht lesbare Stammordner stehen in `fehler`.
  */
 export async function projekteAuflisten(fs: ProjektordnerZugriff, roots: string[]): Promise<{ projekte: ProjektordnerEintrag[]; fehler: { root: string; text: string }[] }> {
   const projekte: ProjektordnerEintrag[] = [];
   const fehler: { root: string; text: string }[] = [];
+  const durchsuchen = async (root: string, ordner: string, gruppe: string, tiefe: number) => {
+    const eintraege = await fs.liste(ordner, 2);
+    const kinder = new Map<string, Kinder>();
+    const oben: { name: string; geaendert: number }[] = [];
+    for (const e of eintraege) {
+      const teile = e.pfad.split('/');
+      if (teile.length === 1) {
+        if (e.ordner && !/^[.~$]/.test(e.pfad)) {
+          oben.push({ name: e.pfad, geaendert: e.geaendert ?? 0 });
+          if (!kinder.has(e.pfad)) kinder.set(e.pfad, { ordner: [], dateien: [] });
+        }
+      } else if (teile.length === 2) {
+        const k = kinder.get(teile[0]) ?? { ordner: [], dateien: [] };
+        (e.ordner ? k.ordner : k.dateien).push(teile[1]);
+        kinder.set(teile[0], k);
+      }
+    }
+    for (const o of oben) {
+      const pfad = verbinde(ordner, o.name);
+      if (tiefe < SAMMEL_TIEFE && istSammelordner(o.name, kinder.get(o.name)!)) {
+        try {
+          await durchsuchen(root, pfad, gruppe ? `${gruppe}/${o.name}` : o.name, tiefe + 1);
+        } catch (e) {
+          fehler.push({ root, text: `${o.name}: ${e instanceof Error ? e.message : String(e)}` });
+        }
+      } else projekte.push({ root, pfad, name: o.name, geaendert: o.geaendert, ...(gruppe ? { gruppe } : {}) });
+    }
+  };
   for (const root of roots) {
     try {
-      for (const e of await fs.liste(root, 1)) if (e.ordner && !/^[.~]/.test(e.pfad)) projekte.push({ root, pfad: verbinde(root, e.pfad), name: e.pfad, geaendert: e.geaendert ?? 0 });
+      await durchsuchen(root, root, '', 1);
     } catch (e) {
       fehler.push({ root, text: e instanceof Error ? e.message : String(e) });
     }
@@ -301,6 +392,21 @@ export class SpeicherProjektordner implements ProjektordnerZugriff {
     const eltern = pfad.split('/').slice(0, -1).join('/');
     if (eltern) await this.ordnerAnlegen(root, eltern);
     this.setze(p, daten);
+    return true;
+  }
+  async umbenennen(root: string, alt: string, neu: string): Promise<boolean> {
+    const von = this.pfad(root, alt);
+    const nach = this.pfad(root, neu);
+    const v = this.eintraege.get(von);
+    if (!(v instanceof Uint8Array)) throw new Error(`${alt}: keine Datei`);
+    const endung = (p: string) => (/\.[^./]+$/.exec(p)?.[0] ?? '').toLowerCase();
+    if (endung(alt) !== endung(neu)) throw new Error(`${neu}: die Endung der Datei darf sich nicht ändern`);
+    const eltern = neu.split('/').slice(0, -1).join('/');
+    if (eltern && this.eintraege.get(this.pfad(root, eltern)) !== null) throw new Error(`${neu}: den Zielordner gibt es nicht`);
+    if (von === nach) return true;
+    if (von.toLowerCase() !== nach.toLowerCase() && this.eintraege.has(nach)) return false;
+    this.eintraege.delete(von);
+    this.setze(nach, v);
     return true;
   }
 

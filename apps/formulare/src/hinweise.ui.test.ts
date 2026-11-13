@@ -164,7 +164,7 @@ describe('Info-Symbole (U-06)', () => {
     const aktiv = document.activeElement as HTMLElement;
     expect(aktiv.classList.contains('fo-entfall-info')).toBe(true);
     expect(aktiv.dataset.info!.split(' ')).toContain('1:CheckBox2');
-    expect(document.querySelector('.fo-tipp')!.textContent).toContain('Offen – hängt ab von: Planungsrecht');
+    expect(document.querySelector('.fo-tipp')!.textContent).toContain('Ungeklärt – hängt ab von: Planungsrecht');
     act(() => {
       aktiv.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     });

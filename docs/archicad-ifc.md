@@ -45,8 +45,10 @@ Umrisses, in dem er liegt (0,000 heißt ausdrücklich: auf dem Geschossfußboden
 Über einem Geschoss darunter (z. B. Keller) verschiebt eine Absenkung nur die Grenze zwischen den Geschossen –
 dieser Rauminhalt steckt schon im Geschoss darunter und wird nicht doppelt gezählt.
 
-Der **BRI** reicht nach DIN 277 bis zur Unterseite der konstruktiven Bodenplatte. Die BGF steht dagegen auf
-OK Fußboden. Der Flächenrechner rechnet deshalb unter dem Geschossfußboden eigene BRI-Teilkörper:
+Der **BRI** reicht nach DIN 277:2021-08 (7.1) im untersten Geschoss bis zur Unterkante der Boden- bzw.
+Fundamentplatte einschließlich darunter liegender Dämmschichten (Einzel- und Streifenfundamente zählen nicht). Die
+BGF steht dagegen auf OK Fußboden. Ist die Dämmung unter der Platte im Modell ein eigenes Bauteil, die erkannte Dicke
+im Geschoss um ihre Stärke ergänzen – der Importbericht erinnert daran. Der Flächenrechner rechnet deshalb unter dem Geschossfußboden eigene BRI-Teilkörper:
 
 - **Bodenplatte:** Umriss des untersten Geschosses (bzw. der Teil eines Geschosses, unter dem kein anderes liegt)
   × Dicke der Bodenplatte. Die Dicke wird aus den Platten unter dem untersten Geschoss erkannt und lässt sich je

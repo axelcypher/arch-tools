@@ -13,6 +13,7 @@ import { cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import { useAntrag } from './antragStore';
 import { useFormulare } from './store';
+import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -159,6 +160,27 @@ describe('Formular einrichten', () => {
     await klick(knopf(host, '001-Muster'));
     return host;
   };
+
+  it('Baum einklappbar (knappe Breite): × im Kopf blendet ihn aus, „Gliederung“ in der Werkzeugleiste zeigt ihn wieder', async () => {
+    const host = await oeffnen();
+    await klick(einrichten(host));
+    expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
+    await klick(knopfMit(gl(host), 'Aufbau ausblenden'));
+    expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).toBeNull();
+    expect(panel(host)).not.toBeNull();
+    const gliederung = [...host.querySelectorAll<HTMLButtonElement>('.toolbar button')].find((b) => b.textContent?.includes('Gliederung'))!;
+    expect(gliederung.getAttribute('aria-pressed')).toBe('false');
+    await klick(gliederung);
+    expect(gliederung.getAttribute('aria-pressed')).toBe('true');
+    expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
+    // die Gliederung außerhalb des Einrichtens bleibt unberührt; beim nächsten Einrichten ist der Baum wieder offen
+    await klick(knopfMit(gl(host), 'Aufbau ausblenden'));
+    await klick(einrichten(host));
+    expect(useFormulare.getState().gliederungOffen).toBe(true);
+    expect(gl(host).querySelector('.fo-gl-abschnitt')).not.toBeNull();
+    await klick(einrichten(host));
+    expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
+  });
 
   it('Abschnitt umbenennen und ausblenden, ein Feld im Formular anklicken und vom Füllstand ausnehmen – gilt in allen Projekten', async () => {
     const host = await oeffnen();
@@ -339,7 +361,7 @@ describe('Einstellungen', () => {
     await klick(knopfMit(host, 'Einstellungen'));
     expect(host.querySelector('.es-nav')).not.toBeNull();
     await klick(knopf(host, 'Adressbuch'));
-    await klick(knopf(host, 'Aus den Projektkarten einlesen'));
+    await klick(knopf(host, 'Aus den Projektdaten einlesen'));
     await warte();
     const namen = [...host.querySelectorAll('.es-adress-eintrag strong')].map((s) => s.textContent);
     expect(namen).toEqual(['Beispiel', 'Kreis Soest', 'Mustermann']);
@@ -357,11 +379,22 @@ describe('Einstellungen', () => {
     expect(host.querySelector('.es-adresse')!.textContent).toContain('Hoher Weg 1');
   });
 
+  it('leeres Adressbuch: „Adresse anlegen …“ öffnet das Formular für eine neue Adresse; unter „Büro & Stammdaten“ führt der Knopf ins Adressbuch', async () => {
+    const host = await render();
+    await klick(knopfMit(host, 'Einstellungen'));
+    await klick(knopf(host, 'Büro & Stammdaten'));
+    expect(knopf(host, 'Adresse anlegen')).toBeUndefined();
+    await klick(knopf(host, 'Zum Adressbuch'));
+    expect(knopf(host, 'Neue Adresse')).toBeDefined();
+    await klick(knopf(host, 'Adresse anlegen'));
+    expect(host.querySelector('form[aria-label="Neue Adresse"]')).not.toBeNull();
+  });
+
   it('Adressbuch bearbeiten: neue Adresse anlegen, eine aus den Projektkarten ändern und ausblenden – gespeichert im Konfigurationsordner', async () => {
     const host = await render();
     await klick(knopfMit(host, 'Einstellungen'));
     await klick(knopf(host, 'Adressbuch'));
-    await klick(knopf(host, 'Aus den Projektkarten einlesen'));
+    await klick(knopf(host, 'Aus den Projektdaten einlesen'));
     await warte();
     const namen = () => [...host.querySelectorAll('.es-adress-eintrag strong')].map((s) => s.textContent);
     const eintrag = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('.es-adress-eintrag')].find((b) => b.textContent?.includes(name))!;
@@ -450,12 +483,12 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     // in der Projektkarte den Namen ändern und speichern: die Projektdatei wird mitgeführt
     act(() => useFormulare.getState().karteSetzen(201, 40, 'Musterfrau'));
     await warte();
-    await klick(knopf(host, 'Projektkarte speichern'));
+    await klick(knopf(host, 'Projektdaten speichern'));
     await warte();
     const p = readProjectFile(ds.dateien.get(OAP)!);
     expect(p.meta).toMatchObject({ projektcode: 'BS9', vorhaben: 'Umbau Wohnhaus', bearbeiter: 'TP', bauherr: { name: 'Musterfrau', adresse: { ort: 'Musterstadt' } } });
     expect(p.name).toBe('EFH Musterstraße');
-    expect(host.textContent).toContain('Projektdatei mitgeführt (1 Angabe(n))');
+    expect(host.textContent).toContain('Projektdatei mitgeführt (1 Angabe)');
     // über den gemeinsamen Zugriff (packages/core): atomar, mit Sicherungskopie, nur wenn seitdem unverändert
     expect(ds.schreibvorgaenge.filter((w) => !w.startsWith('sperre'))).toEqual([
       // beim ersten Öffnen: der Antrag entsteht (Abschnitt „formulare“)
@@ -479,7 +512,7 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(knopf(host, 'Projektdatei (.oap)').textContent).toContain('nicht gefunden');
     act(() => useFormulare.getState().karteSetzen(201, 40, 'Neue Bauherrin'));
     await warte();
-    await klick(knopf(host, 'Projektkarte speichern'));
+    await klick(knopf(host, 'Projektdaten speichern'));
     await warte();
     // gespeichert ist die Projektkarte; statt eines Fehlers fragt der Dialog die Stammdaten ab
     const dialog = document.querySelector('[role="dialog"][aria-label="Projektdatei für BS9 anlegen"]')!;
@@ -492,6 +525,8 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(ds.schreibvorgaenge).toContain('neu Planung/Berechnungen/BS9.oap');
     const p = readProjectFile(ds.dateien.get(`${ORDNER}/Planung/Berechnungen/BS9.oap`)!);
     expect(p.meta).toMatchObject({ projektcode: 'BS9', bauherr: { name: 'Neue Bauherrin' } });
+    // wie im Projektordner-Tool: eine Kopie des Namensschemas des Büros (hier: die Vorgabe)
+    expect(p.namensschema).toEqual(VORGABE_NAMENSSCHEMA);
     expect(knopf(host, 'Projektdatei (.oap)').textContent).toContain('BS9.oap');
     // der Ort neuer Projektdateien gilt für alle Apps
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!)).toMatchObject({ projekte: ['Z:/Projekte'], oapPfad: 'Planung/Berechnungen/{Kürzel}.oap' });
@@ -504,7 +539,7 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     const host = await oeffnen();
     act(() => useFormulare.getState().karteSetzen(101, 30, 'Neubau EFH'));
     await warte();
-    await klick(knopf(host, 'Projektkarte speichern'));
+    await klick(knopf(host, 'Projektdaten speichern'));
     await warte();
     const dialog = document.querySelector('[role="dialog"][aria-label="Projektdatei für BS9 anlegen"]') as HTMLElement;
     expect(useFormulare.getState().stammdatenDialog?.meta.vorhaben).toBe('Neubau EFH');
@@ -519,9 +554,14 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(beispiel()).toBe(`Beispiel: Organisation/BS9 ${heute} Neubau Einfamilienhaus.oap`);
     act(() => useFormulare.getState().setOapVorlage('Organisation/{Kürzel} {Bauherr}.oap'));
     await warte();
-    expect(document.querySelector('.warning')!.textContent).toContain('{Bauherr}');
-    await klick(knopf(document.body, '{Kurzname}'));
-    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{Kürzel} {Bauherr} {Kurzname}.oap');
+    expect(document.querySelector('.feld-meldung')!.textContent).toContain('{Bauherr}');
+    await klick(knopf(document.body, '{PROJEKT_KURZNAME}'));
+    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{Kürzel} {Bauherr} {PROJEKT_KURZNAME}.oap');
+    expect(beispiel()).toBe('Beispiel: Organisation/BS9 {Bauherr} EFH Musterweg.oap');
+    // alte Namen: Hinweis mit „Vorlage anpassen“, erst der Klick stellt um
+    expect(document.querySelector('.ph-veraltet')!.textContent).toContain('{Kürzel} → {PROJEKT_KUERZEL}');
+    await klick(knopf(document.querySelector('.ph-veraltet') as HTMLElement, 'Auf neue Namen umstellen'));
+    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{PROJEKT_KUERZEL} {Bauherr} {PROJEKT_KURZNAME}.oap');
     expect(beispiel()).toBe('Beispiel: Organisation/BS9 {Bauherr} EFH Musterweg.oap');
   });
 
@@ -533,7 +573,7 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     await klick(knopf(host, 'Projektdatei (.oap)'));
     const alt = host.querySelector('.pk-alt')!;
     expect(alt.textContent).toContain('Projektdaten.xlsx (bisher)');
-    await klick(knopf(alt as HTMLElement, 'In die Projektkarte übernehmen (4)'));
+    await klick(knopf(alt as HTMLElement, 'In die Projektdaten übernehmen (4)'));
     expect(useFormulare.getState().karte!.aenderungen).toMatchObject({ '101:30': 'Umbau Wohnhaus', '301:40': 'Musterhausen' });
     expect(ds.dateien.get(PD)).toBe(vorher);
   });
@@ -581,7 +621,7 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     expect(zeile.textContent).toContain('Kreis Soest, Hoher Weg 1');
     expect(zeile.querySelector('input')!.checked).toBe(false);
     await klick(zeile.querySelector('input')!);
-    await klick(knopf(dialog(host)!, '1 Feld(er) übernehmen'));
+    await klick(knopf(dialog(host)!, '1 Feld übernehmen'));
     expect(memo1(host).value).toBe('Kreis Soest, Hoher Weg 1');
     await speichern();
     expect(zustand()).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Soest, Hoher Weg 1' } } });
@@ -625,7 +665,7 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     await act(() => useFormulare.getState().schliessen());
     await karteAendern('Kreis Hamm');
     expect(rueckfrage()!.textContent).toContain('001-Muster');
-    expect(rueckfrage()!.textContent).toContain('1 Feld(er) aktualisieren');
+    expect(rueckfrage()!.textContent).toContain('1 Feld aktualisieren');
     await klick(knopf(rueckfrage()!, 'Unterlagen aktualisieren'));
     await warte();
     expect(rueckfrage()).toBeNull();
@@ -636,7 +676,7 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     expect(zustand()).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Hamm, Hoher Weg 1' } } });
   });
 
-  it('ein neues Formular wird gleich mit den Angaben aus der Projektkarte befüllt', async () => {
+  it('ein neues Formular wird gleich mit den Angaben aus den Projektdaten befüllt', async () => {
     const p = createProject('EFH');
     p.meta = { ...leereMeta(), projektcode: 'BS9' };
     ds.dateien.set(OAP, writeArchive(p));
@@ -653,6 +693,6 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     // Felder ohne Angabe in der Projektkarte bleiben leer
     expect(neu.find((x) => x.name === 'Memo3')!.original).toBe('');
     expect(felderImAntrag()!['002-Muster.frmsjf']).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Soest, Hoher Weg 1' } } });
-    expect(useFormulare.getState().meldung?.text).toContain('mit 1 Angabe(n) aus der Projektkarte befüllt');
+    expect(useFormulare.getState().meldung?.text).toContain('mit 1 Angabe aus den Projektdaten befüllt');
   });
 });

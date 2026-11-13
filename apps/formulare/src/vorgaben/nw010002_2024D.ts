@@ -1,7 +1,8 @@
 /**
  * Anlage I/2 zur VV BauPrüfVO – Antrag im vereinfachten Baugenehmigungsverfahren (§ 64 BauO NRW 2018), ältere
- * Fassung (FORMA-Stand 2024D, 2 Blätter). Inhaltlich dieselben Regeln wie die Fassung 2026 (nw010002.ts), aber
- * andere Komponentennamen und Nummern; die Bausteine aus antrag.ts passen deshalb nicht.
+ * Fassung (FORMA-Stand 2024D, 2 Blätter). Die Regeln folgen wie bei der Fassung 2026 (nw010002.ts) dem geltenden
+ * Gesetz (§ 68 BauO NRW 2018, Fassung ab 01.09.2026, R-10) – nicht dem älteren Wortlaut des Vordrucks; andere
+ * Komponentennamen und Nummern, die Bausteine aus antrag.ts passen deshalb nicht.
  *
  * Blatt 1 (Seite 0): Behörde, Antragsart, Bauherrschaft, Entwurfsverfassende, Baugrundstück, Gebäudeklasse,
  * Vorhaben, Vorbescheid und Bindungen. Blatt 2 (Seite 1): Bauvorlagen Nr. 1 bis 14, Ort/Datum, Unterschriften.
@@ -12,15 +13,18 @@
  * - Nr. 2 Maß der baulichen Nutzung: „nur im Bereich eines Bebauungsplanes oder einer Satzung nach BauGB“.
  * - Nr. 3 Flurkarte und Nr. 4 Basiskarte: „nur bei Vorhaben nach den §§ 34 oder 35 des BauGB“.
  * - Nr. 6 Baubeschreibung: entfällt beim Einfamilienhaus (wie Fassung 2026).
- * - Nr. 7.1 bis 7.3 Kosten: eine Angabe; die Herstellungssumme nur, wenn 7.3 angekreuzt ist.
+ * - Nr. 7.1 bis 7.3 Kosten: eine Angabe; die Herstellungssumme nur, wenn 7.3 angekreuzt ist. Bei einer Änderung und
+ *   bei baulichen Anlagen, die keine Gebäude sind, muss es die Herstellungssumme sein.
  * - Nr. 8 und 9 „Zusätzliche Bauvorlagen für Sonderbauten“: nur bei Sonderbauten (Merkmal oder angekreuzt); die
- *   Betriebsbeschreibung aber bei jedem gewerblichen oder landwirtschaftlichen Betrieb (Nichtwohngebäude, § 10 Abs. 1
- *   Satz 1 Nr. 4 BauPrüfVO), auch ohne Sonderbau (wie Fassung 2026).
- * - Nr. 10 Bescheinigung zum Brandschutz nach dem Wortlaut: „Wohngebäude der Gebäudeklasse 4 und 5,
- *   Nicht-Wohngebäude der Gebäudeklasse 3 bis 5“ (Garagen über 100 m² bis 1.000 m²: kein Merkmal dafür).
- *   Nr. 10 oder Nr. 14 (Erklärung der/des Entwurfsverfassenden): eine Angabe (wie Fassung 2026).
- * - Nr. 11 Bescheinigungen Schall-, Wärmeschutz, Standsicherheit (§ 68 Absatz 2 BauO NRW 2018): Schall- und
- *   Wärmeschutz nur bei Gebäuden (nicht bei „Sonstige bauliche Anlagen“); Standsicherheit immer.
+ *   Betriebsbeschreibung aber bei jedem gewerblichen oder landwirtschaftlichen Betrieb (Nichtwohngebäude, auch im
+ *   Wohn- und Geschäftshaus, § 10 Abs. 1 Satz 1 Nr. 4 BauPrüfVO), auch ohne Sonderbau (wie Fassung 2026).
+ * - Nr. 10 Bescheinigung zum Brandschutz und Nr. 14 Erklärung der/des Entwurfsverfassenden nach § 68 Abs. 2: die
+ *   Erklärung bei Gebäudeklasse 1 bis 3 ohne Sonderbau, die Bescheinigung bei Gebäudeklasse 4 und 5 ohne Sonderbau
+ *   (der ältere Wortlaut „Nicht-Wohngebäude der Gebäudeklasse 3“ gilt nicht mehr); eine Angabe. Bei Sonderbauten prüft
+ *   die Bauaufsichtsbehörde. Garagen über 100 m² bis 1.000 m² haben hier kein Kästchen – dann selbst prüfen.
+ * - Nr. 11 Bescheinigungen Schall-, Wärmeschutz, Standsicherheit nach § 68 Abs. 4 Satz 2 bzw. Abs. 3 Satz 5 Nr. 2:
+ *   nicht bei Wohngebäuden der Gebäudeklassen 1 und 2 (wie bei den Anzeigen, vordruck2018.ts); Schall- und
+ *   Wärmeschutz nur bei Gebäuden (nicht bei „Sonstige bauliche Anlagen“).
  * - Nr. 11.2 Prüfung durch die Bauaufsichtsbehörde: „soweit erforderlich“ – freiwillige Auswahl.
  * - Vorbescheid (Zulässigkeit, Fragestellung): nur beim Antrag auf Vorbescheid. Der Rahmen Panel9 enthält auch die
  *   Bindungen, deshalb hängen die Felder und nicht der Abschnitt an der Bedingung.
@@ -29,21 +33,35 @@
  * - Unterschriften: „die Vordrucke müssen nicht unterschrieben werden“ – zählen nicht.
  */
 
-import type { Teilbedingung } from '../bedingung';
 import type { FormularProfil } from '../profil';
-import { brandschutzBescheinigung, keinEinfamilienhaus, nurBebauungsplan, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte } from './grundlagen';
+import {
+  MIT_BETRIEB,
+  brandschutzBescheinigung,
+  gebaeudeImVordruck,
+  keinEinfamilienhaus,
+  nurBebauungsplan,
+  nurGebaeudeStatistik,
+  nurInnenAussenBasiskarte,
+  nurInnenAussenFlurkarte,
+  ohneHerstellungssumme,
+} from './grundlagen';
 import { angekreuzt, begruendet, fuer, gruppeV, ist, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
+import { nachweise } from './vordruck2018';
 
 const s0 = s(0);
 const s1 = s(1);
-/** Feld leer bzw. Kästchen nicht angekreuzt */
-const leer = (feld: string): Teilbedingung => ({ art: 'feld', feld, pruefung: 'leer' });
 
 const bauantrag = angekreuzt('0:CheckBox1');
 const vorbescheid = wenn(angekreuzt('0:CheckBox2'));
 const sonderbau = oder(ist('Sonderbau', 'ja'), angekreuzt('0:CheckBox21'), angekreuzt('0:CheckBox3'));
-/** ein Gebäude: „Sonstige bauliche Anlagen“ nicht angekreuzt */
-const gebaeude = wenn(leer('0:CheckBox22'));
+/** ein Gebäude: „Sonstige bauliche Anlagen“ nicht angekreuzt oder eine Gebäudeklasse angekreuzt (siehe gebaeudeImVordruck) */
+const gebaeude = gebaeudeImVordruck('0:CheckBox22', s0('CheckBox4', 'CheckBox5', 'CheckBox6', 'CheckBox7', 'CheckBox8'));
+/** Nr. 11 Schall- und Wärmeschutz: nur bei Gebäuden, nicht bei Wohngebäuden der Gebäudeklassen 1 und 2 */
+const schallWaerme = begruendet(
+  und(nachweise.nichtAbsatz2Gebaeude, gebaeude),
+  `${nachweise.nichtAbsatz2Gebaeude.grund} Bei baulichen Anlagen, die keine Gebäude sind („Sonstige bauliche Anlagen“), entfallen sie ebenfalls.`,
+  ...(nachweise.nichtAbsatz2Gebaeude.quellen ?? []),
+);
 
 export const nw010002_2024D: FormularProfil = {
   abschnitte: {
@@ -169,7 +187,15 @@ export const nw010002_2024D: FormularProfil = {
     gruppeV('abweichungen', 'Ausnahme, Befreiung, Abweichung', 'nie', s0('CheckBox9', 'CheckBox10', 'CheckBox11', 'CheckBox16')),
     gruppeV('vorbescheid-art', 'Vorbescheid: planungs- oder bauordnungsrechtliche Zulässigkeit', 'eins', s0('CheckBox12', 'CheckBox13'), { bedingung: vorbescheid }),
     gruppeV('kosten', 'Nr. 7 Rauminhalt, Rohbaukosten oder Herstellungssumme', 'eins', s1('CheckBox7', 'CheckBox8', 'CheckBox9')),
-    gruppeV('brandschutz', 'Nr. 10 Bescheinigung oder Nr. 14 Erklärung zum Brandschutz', 'eins', s1('CheckBox12', 'CheckBox22')),
+    // beim Sonderbau weder Erklärung noch Bescheinigung: die Bauaufsichtsbehörde prüft (wie Fassung 2026)
+    gruppeV('brandschutz', 'Nr. 10 Bescheinigung oder Nr. 14 Erklärung zum Brandschutz', 'eins', s1('CheckBox12', 'CheckBox22'), {
+      bedingung: begruendet(
+        und(ist('Sonderbau', 'nein'), gebaeude),
+        'Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure); bei baulichen Anlagen, die keine Gebäude sind, entfällt die Angabe. Garagen über 100 m² bis 1.000 m² (Mittelgaragen) brauchen auch als Sonderbau die Bescheinigung – das selbst prüfen.',
+        q('bauo-nrw', '68', 2, 5),
+        q('bauo-nrw', '68', 2, 3),
+      ),
+    }),
     gruppeV('pruefung-behoerde', 'Nr. 11.2 Prüfung durch die Bauaufsichtsbehörde (soweit erforderlich)', 'nie', s1('CheckBox16', 'CheckBox17', 'CheckBox18', 'CheckBox19')),
   ],
   bedingungen: {
@@ -187,23 +213,29 @@ export const nw010002_2024D: FormularProfil = {
     '1:CheckBox3': nurInnenAussenFlurkarte,
     '1:CheckBox4': nurInnenAussenBasiskarte,
     '1:CheckBox6': keinEinfamilienhaus,
+    '1:CheckBox7': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox8': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox20': nurGebaeudeStatistik(gebaeude),
     '1:Memo1': wenn(angekreuzt('1:CheckBox9')),
     '1:CheckBox10': begruendet(
-      wenn(ist('Gebäudeart', 'Nichtwohngebäude')),
-      'Die Betriebsbeschreibung gehört zu jedem gewerblichen oder landwirtschaftlichen Betrieb – nicht nur zu Sonderbauten (der Vordruck führt sie unter den Sonderbauten auf). Bei Wohngebäuden mit gewerblicher Einheit und bei gewerblichen Anlagen ohne Gebäude selbst prüfen.',
+      wenn(MIT_BETRIEB),
+      'Die Betriebsbeschreibung gehört zu jedem gewerblichen oder landwirtschaftlichen Betrieb – nicht nur zu Sonderbauten (der Vordruck führt sie unter den Sonderbauten auf), auch zum Betrieb in einem Wohn- und Geschäftshaus. Bei gewerblichen Anlagen ohne Gebäude selbst prüfen.',
       q('baupruefvo', '10', 1, 1, 4),
       q('baupruefvo', '5', 2),
       q('baupruefvo', '5', 3),
     ),
     '1:CheckBox11': sonderbau,
-    '1:CheckBox12': brandschutzBescheinigung(
-      oder(
-        und(ist('Gebäudeklasse', '4', '5'), oder(ist('Gebäudeart', 'Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus'), angekreuzt('0:CheckBox20'))),
-        und(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude')),
-      ),
+    '1:CheckBox12': brandschutzBescheinigung(und(ist('Gebäudeklasse', '4', '5'), ist('Sonderbau', 'nein'))),
+    '1:CheckBox22': begruendet(
+      und(ist('Gebäudeklasse', '1', '2', '3'), ist('Sonderbau', 'nein')),
+      'Die Erklärung der Entwurfsverfassenden genügt bei Gebäuden der Gebäudeklassen 1 bis 3 und Kleingaragen; bei Gebäudeklasse 4 und 5 ist die Bescheinigung von Prüfsachverständigen nötig (Nr. 10). Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz.',
+      q('bauo-nrw', '68', 2, 2),
+      q('bauo-nrw', '68', 2, 3),
+      q('bauo-nrw', '68', 2, 5),
     ),
-    '1:CheckBox13': gebaeude,
-    '1:CheckBox14': gebaeude,
+    // Schall- und Wärmeschutz nur bei Gebäuden und nicht bei Wohngebäuden der Gebäudeklassen 1 und 2; Standsicherheit ebenso (§ 68 Abs. 3 Satz 5 Nr. 2)
+    ...fuer(s1('CheckBox13', 'CheckBox14'), schallWaerme),
+    '1:CheckBox15': nachweise.nichtAbsatz2,
   },
 };
 

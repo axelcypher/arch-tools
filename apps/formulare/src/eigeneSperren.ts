@@ -7,6 +7,7 @@
 
 import { base64ToBytes, bytesToBase64 } from '@core/platform/files';
 import type { Dateisystem } from './dateisystem';
+import { bytesGleich as gleich } from './speicher';
 
 const SCHLUESSEL = 'formulare:eigene-sperren';
 
@@ -34,8 +35,6 @@ function schreiben(liste: Vermerk[]) {
     // ohne Speicher keine Aufräumhilfe nach Abstürzen
   }
 }
-
-const gleich = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
 
 export function sperreVermerken(root: string, pfad: string, inhalt: Uint8Array): void {
   schreiben([...lesen().filter((v) => v.root !== root || v.pfad !== pfad), { root, pfad, inhalt: bytesToBase64(inhalt) }]);

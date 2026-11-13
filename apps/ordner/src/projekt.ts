@@ -1,3 +1,4 @@
+import type { Namensschema } from '@core/namensschema';
 import { readProjectFile } from '@core/archive';
 import type { Beteiligter, ProjectMeta, ProjektordnerAngaben, ProjektStatus } from '@core/model';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
@@ -28,7 +29,7 @@ export interface GeladenesProjekt {
   angaben: ProjektAngaben | null;
   quelle: ProjektQuelle;
   /** die Projektdatei, so wie sie gelesen wurde – Grundlage für gezielte Änderungen */
-  projektdatei: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben } | null;
+  projektdatei: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben; namensschema?: Namensschema } | null;
   /** alle Projektdateien im Ordner */
   kandidaten: string[];
 }
@@ -56,7 +57,7 @@ export async function projektEinlesen(o: GeladenerOrdner, gewaehlt?: string | nu
       // Lücken (etwa Kurzname oder Leistungsphasen aus der Zeit vor der Projektdatei) aus der alten projekt.json
       angaben: alt ? mitAlterProjektJson(angaben, alt) : angaben,
       quelle: { pfad: datei.pfad, ...defekt },
-      projektdatei: { pfad: datei.pfad, meta: p.meta, ...(p.projektordner ? { projektordner: p.projektordner } : {}) },
+      projektdatei: { pfad: datei.pfad, meta: p.meta, ...(p.projektordner ? { projektordner: p.projektordner } : {}), ...(p.namensschema ? { namensschema: p.namensschema } : {}) },
       kandidaten,
     };
   } catch (e) {
@@ -67,14 +68,15 @@ export async function projektEinlesen(o: GeladenerOrdner, gewaehlt?: string | nu
 /**
  * Status eines Projekts setzen (P-15, „Projekt abschließen“): nur `meta.status` in der Projektdatei – frisch gelesen,
  * alles andere bleibt, wie es ist (auch Abschnitte anderer Apps und alle übrigen Einträge des Archivs). „aktiv“ ist
- * der Normalfall und steht nicht in der Datei. Ohne Projektdatei geht es nicht – dann zuerst ergänzen.
+ * der Normalfall und steht nicht in der Datei – außer mit `ausdruecklich` (Projekt in einem Archiv- bzw. Akquiseordner,
+ * dessen Stand sonst gälte). Ohne Projektdatei geht es nicht – dann zuerst ergänzen.
  */
-export async function projektStatusSetzen(fs: ProjektordnerZugriff, projektordner: string, status: ProjektStatus): Promise<void> {
+export async function projektStatusSetzen(fs: ProjektordnerZugriff, projektordner: string, status: ProjektStatus, { ausdruecklich = false } = {}): Promise<void> {
   const datei = await projektdateiFinden(fs, projektordner);
   if (!datei) throw new Error('Das Projekt hat noch keine Projektdatei (.oap) – bitte zuerst im Assistenten ergänzen.');
   await projektdateiSchreiben(fs, projektordner, datei.pfad, (roh) => {
     const meta = { ...((roh.meta ?? {}) as Record<string, unknown>) };
-    if (status === 'aktiv') delete meta.status;
+    if (status === 'aktiv' && !ausdruecklich) delete meta.status;
     else meta.status = status;
     return { ...roh, meta };
   });

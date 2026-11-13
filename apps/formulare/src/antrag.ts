@@ -10,7 +10,12 @@
  */
 
 import type { AntragKurz } from '@core/model';
+import type { Kuerzel, Namensschema, NamensTeil } from '@core/namensschema';
+import { alleKuerzel, dateinameZerlegenMitStellen, kuerzelZu, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import type { FassungsForm } from '@core/fassung';
+import { artDerFassung, fassungAus, fassungsName } from '@core/fassung';
 import { antragKurzAus } from '@core/serialize';
+import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, platzhalterIn, type Variable, type Wert } from '@core/platzhalter';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
 import type { Bedingung } from './bedingung';
@@ -30,11 +35,9 @@ export interface ExportEinstellungen {
   arten: string[];
   /** Vorlage für den Dateinamen (ohne Endung) */
   namensvorlage: string;
-  /** Phasenkürzel für {Phase}: BP, EP, GP, AP … */
-  phase: string;
   /** Ziel des Exports: Ordner der aktiven Antragsfassung oder ein fester Pfad */
   ziel: 'aktiv' | 'pfad';
-  /** fester Zielordner relativ zum Projektordner (Platzhalter erlaubt, z. B. „TÖB/{Antrag}/Formulare“) */
+  /** fester Zielordner relativ zum Projektordner (Platzhalter erlaubt, z. B. „TÖB/{Antrag}/Formulare“, siehe {@link ZIEL_VARIABLEN}) */
   zielpfad: string;
   /** Berechnungen im Projektordner (Quelle externer Dokumente) */
   berechnungsordner: string;
@@ -45,8 +48,7 @@ export interface ExportEinstellungen {
 export const VORGABE_EXPORT: ExportEinstellungen = {
   antragsordner: 'TÖB',
   arten: ['BAUA', 'BAUVA', 'DENK'],
-  namensvorlage: '{Kürzel} {Art} {Datum} {Nr} {Name}',
-  phase: 'GP',
+  namensvorlage: '{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}',
   ziel: 'aktiv',
   zielpfad: 'TÖB/{Antrag}',
   berechnungsordner: 'Planung/Berechnungen',
@@ -54,16 +56,81 @@ export const VORGABE_EXPORT: ExportEinstellungen = {
 };
 
 /** Was je Projekt abweichen darf (wie die angezeigten Pfade im Projektordner) */
-export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvorlage' | 'phase' | 'ziel' | 'zielpfad' | 'antragsordner'>>;
+export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvorlage' | 'ziel' | 'zielpfad' | 'antragsordner'>>;
 
-export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'phase', 'ziel', 'zielpfad'];
+export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'ziel', 'zielpfad'];
+
+/** Hinweis an jeder Namensvorlage – überall derselbe Wortlaut */
+export const ART_HINWEIS = 'Die Antragsart ({Art}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA –, nicht aus einer Einstellung.';
+
+/**
+ * Warnung an einer Namensvorlage mit {Phase} bzw. einem festen Kürzel an der Stelle der Antragsart – überall derselbe
+ * Wortlaut; null, wenn die Vorlage passt
+ */
+export function vorlageArtWarnung(vorlage: string, reihenfolge: NamensTeil[] = VORGABE_NAMENSSCHEMA.reihenfolge): string | null {
+  if (vorlageMitAntragsart(vorlage, reihenfolge) === vorlage) return null;
+  const wort = vorlage.trim().split(/\s+/)[reihenfolge.indexOf('art')];
+  return `An der Stelle der Antragsart steht „${wort}“ – beim Export wird dort die Antragsart des aktiven Antrags ({Art}) eingesetzt.`;
+}
+
+/**
+ * Die Antragsart im Dateinamen kommt immer aus dem Antrag (Ordner der aktiven Antragsfassung, „BAUA 2“ → BAUA), nie
+ * aus einer Einstellung: Steht in der Vorlage an der Stelle der Antragsart (nach dem Namensschema; Vorgabe: nach dem
+ * Kürzel) {Phase} – die Vorgabe früherer Fassungen, dann stand dort der Wert der entfallenen Einstellung „Phase“ – oder ein festes
+ * Kürzel wie „BVA“ (Großbuchstaben, mindestens ein Buchstabe – „2026“ ist keins), wird daraus {Art}. Das gilt nur, wenn
+ * die Vorlage das Kürzel an seiner Stelle hat; sonst bleibt sie, wie sie ist.
+ */
+export function vorlageMitAntragsart(vorlage: string, reihenfolge: NamensTeil[] = VORGABE_NAMENSSCHEMA.reihenfolge): string {
+  // die Wörter der Vorlage entsprechen den Teilen des Namens (Platzhalter bzw. festes Wort)
+  const teile = vorlage.trim().split(/\s+/);
+  const [iCode, iArt] = [reihenfolge.indexOf('code'), reihenfolge.indexOf('art')];
+  // an der Stelle des Kürzels steht genau der Platzhalter des Projektkürzels (neu oder alt: {Kürzel}, {Projekt} …)
+  const code = platzhalterIn(teile[iCode] ?? '', NAMENS_VARIABLEN);
+  if (iCode < 0 || iArt < 0 || code.length !== 1 || code[0].roh !== teile[iCode] || code[0].treffer?.variable.name !== 'PROJEKT_KUERZEL') return vorlage;
+  const t = teile[iArt];
+  if (!t || !(/^\{phase\}$/i.test(t) || /^(?=.*[A-ZÄÖÜ])[A-ZÄÖÜ0-9]{2,8}$/.test(t))) return vorlage;
+  teile[iArt] = '{Art}';
+  return teile.join(' ');
+}
+
+/**
+ * Gelesene Abweichungen eines Projekts prüfen (lokaler Speicher, eingespielte Einstellungsdatei): nur, was je Projekt
+ * abweichen darf (`UEBERSCHREIBBAR`), nur nicht leere Texte, `ziel` nur „aktiv“ oder „pfad“ – Unbrauchbares entfällt
+ * (eine Zahl als Zielpfad legte sonst die Antragsdaten des Projekts lahm)
+ */
+export function ueberschreibungAus(roh: unknown): ExportUeberschreibung {
+  const o = roh && typeof roh === 'object' && !Array.isArray(roh) ? (roh as Record<string, unknown>) : {};
+  const out: ExportUeberschreibung = {};
+  for (const k of UEBERSCHREIBBAR) {
+    const v = o[k];
+    if (k === 'ziel') {
+      if (v === 'aktiv' || v === 'pfad') out.ziel = v;
+    } else if (typeof v === 'string' && v !== '') out[k] = v;
+  }
+  return out;
+}
 
 /** Einstellungen für ein Projekt: global, mit den Abweichungen des Projekts */
 export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUeberschreibung | undefined): ExportEinstellungen {
   const out = { ...global };
+  const u = ueberschreibungAus(ueber);
   for (const k of UEBERSCHREIBBAR) {
-    const v = ueber?.[k];
+    const v = u[k];
     if (v !== undefined && v !== '') (out as Record<string, unknown>)[k] = v;
+  }
+  return out;
+}
+
+/**
+ * gelesene Abweichungen je Projekt prüfen: nur, was je Projekt abweichen darf (`UEBERSCHREIBBAR`), ohne leere Werte;
+ * Projekte ohne Abweichung entfallen – auch solche, die nur die entfallene Einstellung „Phase“ hatten
+ */
+export function ueberschreibungenAus(roh: unknown): Record<string, ExportUeberschreibung> {
+  const out: Record<string, ExportUeberschreibung> = {};
+  if (!roh || typeof roh !== 'object' || Array.isArray(roh)) return out;
+  for (const [projekt, u] of Object.entries(roh as Record<string, unknown>)) {
+    const sauber = ueberschreibungAus(u);
+    if (Object.keys(sauber).length) out[projekt] = sauber;
   }
   return out;
 }
@@ -77,7 +144,6 @@ export function einstellungenAus(roh: unknown): ExportEinstellungen {
     antragsordner: text('antragsordner'),
     arten: arten.length ? arten : VORGABE_EXPORT.arten,
     namensvorlage: text('namensvorlage') || VORGABE_EXPORT.namensvorlage,
-    phase: text('phase'),
     ziel: o.ziel === 'pfad' ? 'pfad' : 'aktiv',
     zielpfad: text('zielpfad'),
     berechnungsordner: text('berechnungsordner'),
@@ -89,7 +155,10 @@ export function einstellungenAus(roh: unknown): ExportEinstellungen {
 
 export interface NamensAngaben {
   kuerzel: string;
-  phase: string;
+  /** aus der Projektdatei (für die übrigen globalen Variablen) */
+  kurzname?: string;
+  vorhaben?: string;
+  bearbeiter?: string;
   datum: Date;
   nr?: string;
   /** Name des Dokuments (Titel im Antragsumfang, sonst der Name des Formulars) */
@@ -107,41 +176,45 @@ export interface NamensAngaben {
 const zweistellig = (n: number) => String(n).padStart(2, '0');
 export const jjmmtt = (d: Date) => `${zweistellig(d.getFullYear() % 100)}${zweistellig(d.getMonth() + 1)}${zweistellig(d.getDate())}`;
 
-/** Platzhalter der Namensvorlage mit Erklärung (für die Einstellungen) */
-export const PLATZHALTER: { name: string; text: string }[] = [
-  { name: '{Kürzel}', text: 'Projektkürzel, z. B. BS9' },
-  { name: '{Phase}', text: 'Phasenkürzel (BP, EP, GP, AP)' },
-  { name: '{Datum}', text: 'Datum des Exports als JJMMTT' },
-  { name: '{Nr}', text: 'Nummer im Antragsumfang (entfällt, wenn leer)' },
-  { name: '{Name}', text: 'Titel im Antragsumfang, sonst Name des Formulars' },
-  { name: '{Art}', text: 'Antragsart der aktiven Fassung, z. B. BAUA (Pflicht im Antragsordner)' },
-  { name: '{Antrag}', text: 'aktive Antragsfassung, z. B. BAUA 2' },
-  { name: '{Formular}', text: 'Dateiname des Formulars' },
-  { name: '{Kennung}', text: 'Kennung des Formulars, z. B. nw010005' },
-  { name: '{Stand}', text: 'Stand des Formulars, z. B. 2026A' },
+/** globale Variablen; {Projekt} hieß hier früher das Projektkürzel, Quelle ist der Name des Projektordners */
+const GLOBAL_FORMULARE: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PROJEKT_KUERZEL' ? { ...mitAliasen(v.name, ['Projekt']), quelle: 'Name des Projektordners (in den Formularen wie bisher)' } : v));
+
+/**
+ * Variablen der Namensvorlage exportierter PDFs: die globalen (@core/platzhalter) und die lokalen der Formulare.
+ * {Phase} aus Vorlagen früherer Fassungen gilt als {Art}.
+ */
+export const NAMENS_VARIABLEN: Variable[] = [
+  ...GLOBAL_FORMULARE,
+  { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA (Pflicht im Antragsordner)', aliase: ['Phase'] },
+  { name: 'Nr', text: 'Nummer im Antragsumfang (entfällt, wenn leer)' },
+  { name: 'Name', text: 'Titel im Antragsumfang, sonst Name des Formulars' },
+  { name: 'Antrag', text: 'aktive Antragsfassung, z. B. BAUA 2' },
+  { name: 'Formular', text: 'Dateiname des Formulars' },
+  { name: 'Kennung', text: 'Kennung des Formulars, z. B. nw010005' },
+  { name: 'Stand', text: 'Stand des Formulars, z. B. 2026A' },
 ];
+/** Variablen im festen Zielordner des Exports */
+export const ZIEL_VARIABLEN: Variable[] = [...GLOBAL_FORMULARE, NAMENS_VARIABLEN.find((v) => v.name === 'Antrag')!, { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA' }];
 
 /** Name des Formulars ohne laufende Nummer davor und Jahr dahinter („005-Bauantrag (2026)“ → „Bauantrag“) */
 export const anzeigeName = (formularName: string) => formularName.replace(/^\s*\d+\s*[-_ ]\s*/, '').replace(/\s*\(\d{4}\)\s*$/, '').trim() || formularName;
 
-/** Dateiname (ohne Endung) aus der Vorlage; Zeichen, die Windows nicht erlaubt, werden zu „-“ */
+/**
+ * Dateiname (ohne Endung) aus der Vorlage; Zeichen, die Windows nicht erlaubt, werden zu „-“. `{Phase}` aus Vorlagen
+ * früherer Fassungen (dort stand der Wert der entfallenen Einstellung „Phase“) gilt als `{Art}`.
+ */
 export function dateiname(vorlage: string, a: NamensAngaben): string {
-  const werte: Record<string, string> = {
-    kürzel: a.kuerzel,
-    kuerzel: a.kuerzel,
-    projekt: a.kuerzel,
-    phase: a.phase,
-    datum: jjmmtt(a.datum),
-    jahr: String(a.datum.getFullYear()),
-    nr: a.nr ?? '',
-    name: a.name,
-    formular: a.formular ?? a.name,
-    antrag: a.antrag ?? '',
-    art: a.art ?? (a.antrag ?? '').replace(/[\s_-]*\d+$/, ''),
-    kennung: a.kennung ?? '',
-    stand: a.stand ?? '',
+  const werte: Record<string, Wert> = {
+    ...globaleWerte({ projektcode: a.kuerzel, kurzname: a.kurzname, vorhaben: a.vorhaben, bearbeiter: a.bearbeiter, datum: a.datum }),
+    Nr: a.nr ?? '',
+    Name: a.name,
+    Formular: a.formular ?? a.name,
+    Antrag: a.antrag ?? '',
+    Art: a.art ?? artDerFassung(a.antrag ?? ''),
+    Kennung: a.kennung ?? '',
+    Stand: a.stand ?? '',
   };
-  const roh = vorlage.replace(/\{([^{}]+)\}/g, (ganz, n: string) => (n.toLowerCase() in werte ? werte[n.toLowerCase()] : ganz));
+  const roh = ersetzen(vorlage, NAMENS_VARIABLEN, werte);
   const sauber = roh
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-')
     .replace(/\s+/g, ' ')
@@ -150,10 +223,21 @@ export function dateiname(vorlage: string, a: NamensAngaben): string {
   return sauber || 'Formular';
 }
 
+/**
+ * Fester Zielordner des Exports mit eingesetzten Variablen ({Antrag}, {PROJEKT_KUERZEL} …; alte Namen wie {antrag},
+ * {Kürzel} gelten weiter), relativ zum Projektordner mit „/“.
+ */
+export function zielpfadAus(zielpfad: string, w: { kuerzel: string; antrag: string; art?: string; kurzname?: string; vorhaben?: string; bearbeiter?: string; datum?: Date }): string {
+  const werte = { ...globaleWerte({ projektcode: w.kuerzel, kurzname: w.kurzname, vorhaben: w.vorhaben, bearbeiter: w.bearbeiter, datum: w.datum }), Antrag: w.antrag, Art: w.art ?? artDerFassung(w.antrag) };
+  return ersetzen(zielpfad, ZIEL_VARIABLEN, werte, { saeubern: (t) => t.replace(/[\\/]+/g, ' ') })
+    .replace(/\\/g, '/')
+    .replace(/^\/+|\/+$/g, '');
+}
+
 /* ---------- Antragsfassungen ---------- */
 
 export interface Fassung {
-  /** Ordnername, z. B. „BAUA 2“ */
+  /** Ordnername, z. B. „BAUA 2“ oder „02. BAUA“ */
   name: string;
   /** Antragsart, z. B. „BAUA“ */
   art: string;
@@ -161,18 +245,16 @@ export interface Fassung {
   nr: number;
   /** Ordner gibt es schon */
   vorhanden: boolean;
+  /** Schreibweise der Nummer (vorn/hinten, Stellen, Punkt) – fehlt ohne Nummer */
+  form?: FassungsForm;
 }
 
-const regexText = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-/** Antragsfassungen aus den Ordnernamen im Antragsordner, nach Art und Nummer sortiert */
+/** Antragsfassungen aus den Ordnernamen im Antragsordner (Nummer hinten oder vorn, @core/fassung), nach Art und Nummer sortiert */
 export function fassungenAus(ordner: string[], arten: string[]): Fassung[] {
   const out: Fassung[] = [];
   for (const name of ordner) {
-    const art = arten.find((a) => new RegExp(`^${regexText(a)}(?:[\\s_-]*\\d+)?(?:\\s.*)?$`, 'i').test(name.trim()));
-    if (!art) continue;
-    const nr = Number(new RegExp(`^${regexText(art)}[\\s_-]*(\\d+)`, 'i').exec(name.trim())?.[1] ?? 1);
-    out.push({ name, art: art.toUpperCase(), nr, vorhanden: true });
+    const f = fassungAus(name, arten);
+    if (f) out.push({ name, art: f.art, nr: f.nr, vorhanden: true, ...(f.form ? { form: f.form } : {}) });
   }
   const index = (a: string) => arten.findIndex((x) => x.toUpperCase() === a);
   return out.sort((a, b) => index(a.art) - index(b.art) || a.nr - b.nr || a.name.localeCompare(b.name, 'de'));
@@ -185,21 +267,45 @@ export function standardFassung(fassungen: Fassung[], arten: string[]): Fassung 
   return auswahl.reduce<Fassung | null>((best, f) => (!best || f.nr > best.nr ? f : best), null);
 }
 
-/** Name der nächsten Fassung einer Art: „BAUA“, dann „BAUA 2“, „BAUA 3“ … */
-export function naechsteFassung(fassungen: Fassung[], art: string): string {
-  const da = fassungen.filter((f) => f.art === art.toUpperCase());
+/**
+ * Hauptkürzel einer Schreibweise nach den Antragsarten des Namensschemas (BVA → BAUVA); unbekannte bleiben, groß
+ * geschrieben. Gleichwertige Schreibweisen zählen so als dieselbe Art.
+ */
+export const hauptArt = (art: string, arten: Kuerzel[] = []) => kuerzelZu(arten, art.trim())?.kuerzel ?? art.trim().toUpperCase();
+
+/**
+ * Name der nächsten Fassung einer Art: „BAUA“, dann „BAUA 2“, „BAUA 3“ … – gezählt über alle gleichwertigen
+ * Schreibweisen (BVA und BAUVA); der neue Name verwendet die übergebene Schreibweise („BVA“ → „BVA 3“) und die
+ * Schreibweise der Nummer der vorhandenen mit der höchsten („02. BAUA“ → „03. BAUA“, „2 BAUA“ → „3 BAUA“)
+ */
+export function naechsteFassung(fassungen: Fassung[], art: string, arten: Kuerzel[] = []): string {
+  const haupt = hauptArt(art, arten);
+  const da = fassungen.filter((f) => hauptArt(f.art, arten) === haupt);
   if (!da.length) return art.toUpperCase();
-  return `${art.toUpperCase()} ${Math.max(...da.map((f) => f.nr)) + 1}`;
+  const nr = Math.max(...da.map((f) => f.nr)) + 1;
+  // Vorlage: die höchste mit Nummer (ohne Nummer gibt es nur „BAUA“ – dann „BAUA 2“); hinten ohne Trenner („BAUA3“)
+  // kommt das übliche Leerzeichen hinein
+  const vorlage = da.filter((f) => f.form).sort((a, b) => b.nr - a.nr)[0]?.form;
+  return fassungsName(art, nr, vorlage && !vorlage.vorn && !vorlage.trenner ? { ...vorlage, trenner: ' ' } : vorlage);
 }
 
 /* ---------- Katalog und Antragsumfang ---------- */
 
-export type DokArt = 'intern' | 'extern';
+export type DokArt = 'intern' | 'extern' | 'plansatz';
+
+/** Art eines gelesenen Dokuments (unbekannt = intern) */
+const dokArtAus = (v: unknown): DokArt => (v === 'extern' || v === 'plansatz' ? v : 'intern');
+
+/** Quelle eines Plansatzes ohne eigene Angabe: der pdf-Ordner der Genehmigungsplanung */
+export const PLANSATZ_QUELLE = 'Planung/Genehmigungsplanung/pdf';
 
 export interface KatalogEintrag {
   id: string;
   titel: string;
-  /** intern: Formular aus FORMA; extern: Datei aus dem Projektordner (Berechnung, Plan, fremde PDF) */
+  /**
+   * intern: Formular des Projekts; extern: eine Datei aus dem Projektordner (Berechnung, fremde PDF); plansatz: alle Pläne
+   * mit Plannummer (GP-01 …) – geprüft auf Lücken und gegen die Quelle (plansatz.ts)
+   */
   art: DokArt;
   /** intern: Teil des Formularnamens oder Kennung (z. B. „Bauantrag“ oder „nw010005“) */
   formular?: string;
@@ -223,7 +329,8 @@ export const VORGABE_KATALOG: KatalogEintrag[] = [
   // Unterlagen vom Vermesser: Fachplanung/G27 … (auch „Fachplaner“)
   { id: 'lageplan', titel: 'Lageplan', art: 'extern', quelle: 'Fachplanung/G27*', muster: '*Lageplan*', vorgewaehlt: true },
   // Genehmigungsplanung als PDF: Planung/03 Genehmigungsplanung/pdf, …/Genehmigung/pdf, …/GP/pdf
-  { id: 'zeichnungen', titel: 'Bauzeichnungen', art: 'extern', quelle: 'Planung/Genehmigungsplanung/pdf', muster: '*Grundri*;*Schnitt*;*Ansicht*', vorgewaehlt: true },
+  // Plansatz: alle Pläne mit Plannummer (GP-01 …) – Lücken in der Nummernfolge, noch nicht verschobene und veraltete
+  { id: 'zeichnungen', titel: 'Bauzeichnungen', art: 'plansatz', quelle: PLANSATZ_QUELLE, vorgewaehlt: true },
   { id: 'grz', titel: 'Berechnung GRZ/GFZ', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*GRZ*;*GFZ*', vorgewaehlt: true },
   { id: 'flaechen', titel: 'Flächenberechnung', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*Fläche*;*Flaeche*;*BRI*;*Wohnfl*', vorgewaehlt: true },
   { id: 'kosten', titel: 'Kostenermittlung', art: 'extern', quelle: 'Planung/Berechnungen', muster: '*Kosten*', vorgewaehlt: true },
@@ -270,9 +377,15 @@ export function vorlagenAus(roh: unknown, katalog: KatalogEintrag[]): AntragsVor
 /** Die Dokumente einer Vorlage in der Reihenfolge des Katalogs */
 export const dokumenteDerVorlage = (katalog: KatalogEintrag[], v: AntragsVorlage) => katalog.filter((k) => v.dokumente.includes(k.id));
 
-/** Vorschlag für ein Projekt: die Vorlage zur Art der aktiven Antragsfassung, sonst die erste */
-export function vorlageFuer(vorlagen: AntragsVorlage[], art: string | undefined): AntragsVorlage | undefined {
-  return (art && vorlagen.find((v) => v.art?.toLowerCase() === art.toLowerCase())) || vorlagen[0];
+/**
+ * Vorschlag für ein Projekt: die Vorlage zur Art der aktiven Antragsfassung (gleichwertige Schreibweisen wie BVA für
+ * BAUVA zählen mit). Gibt es zu der Art keine Vorlage (z. B. BAUF, ENTW), wird nichts vorgeschlagen – eine Vorlage
+ * „Bauantrag“ passt dort nicht. Ohne Art gilt die erste.
+ */
+export function vorlageFuer(vorlagen: AntragsVorlage[], art: string | undefined, arten: Kuerzel[] = []): AntragsVorlage | undefined {
+  if (!art?.trim()) return vorlagen[0];
+  const haupt = hauptArt(art, arten);
+  return vorlagen.find((v) => v.art && hauptArt(v.art, arten) === haupt);
 }
 
 /** Element `von` an die Stelle `nach` verschieben (nach dem Herausnehmen gezählt) */
@@ -291,7 +404,7 @@ export function katalogAus(roh: unknown): KatalogEintrag[] {
     .map((e, i) => ({
       id: typeof e.id === 'string' && e.id ? e.id : `k${i + 1}`,
       titel: String(e.titel),
-      art: e.art === 'extern' ? 'extern' : 'intern',
+      art: dokArtAus(e.art),
       formular: typeof e.formular === 'string' ? e.formular : undefined,
       quelle: typeof e.quelle === 'string' ? e.quelle : undefined,
       muster: typeof e.muster === 'string' ? e.muster : undefined,
@@ -318,9 +431,8 @@ export interface UmfangEintrag {
   bedingung?: Bedingung;
 }
 
-/** Angaben der App zum Projekt – Abschnitt „formulare“ der Projektdatei (.oap), für alle im Büro gleich */
 /**
- * Angaben der App zum Projekt, wie sie die Oberfläche sieht: die Werte des **aktiven Antrags** (`ansicht`) – Antragsumfang,
+ * Angaben der App zum Projekt (Abschnitt „formulare“ der Projektdatei .oap, für alle im Büro gleich), wie sie die Oberfläche sieht: die Werte des **aktiven Antrags** (`ansicht`) – Antragsumfang,
  * Antragsmerkmale, Autofill-Zustände – und dazu alle Anträge (`antraege`), wie sie in der Projektdatei stehen.
  * Gespeichert wird im Abschnitt „formulare“ nur `aktiveFassung` und `antraege` (siehe `abschnittVon`).
  */
@@ -353,6 +465,323 @@ export interface AntragDaten {
   eingereicht?: { datei: string; datum: string };
   /** von Hand gesetzter Status – gilt statt der Erkennung (fehlt = automatisch) */
   status?: AntragStatusManuell;
+  /** Stand bei der Einreichung: welche Dateien im Ordner des Antrags lagen (nur Name, Größe, Änderungszeit) */
+  stand?: AntragStand;
+}
+
+/** Eine Datei im festgehaltenen Antragsstand – keine Kopie, nur zum Wiedererkennen */
+export interface StandDatei {
+  pfad: string;
+  groesse?: number;
+  geaendert?: number;
+}
+
+/** Antragsstand bei der Einreichung (Tag JJJJ-MM-TT und die Dateien im Ordner des Antrags) */
+export interface AntragStand {
+  tag: string;
+  dateien: StandDatei[];
+  /** von Hand neu festgehalten (Zeitpunkt, ms – für die Anzeige) */
+  festgehalten?: number;
+  /** bis zu dieser Änderungszeit (ms) gehört alles vollständig zum von Hand festgehaltenen Stand (mit Spielraum für die Uhr des Netzlaufwerks) */
+  festgehaltenBis?: number;
+}
+
+/** „Stand festgehalten“ bzw. „Stand neu festgehalten am 20.11.2026“ – überall gleich */
+export function standFestgehaltenText(stand: Pick<AntragStand, 'festgehalten'>): string {
+  return stand.festgehalten ? `Stand neu festgehalten am ${tagVon(new Date(stand.festgehalten)).split('-').reverse().join('.')}` : 'Stand festgehalten';
+}
+
+/** Bezug der Kennzeichen: „seit der Einreichung“ bzw. nach dem Neu-Festhalten „seit dem Festhalten“ */
+export const standBezug = (stand: Pick<AntragStand, 'festgehalten'> | undefined) => (stand?.festgehalten ? 'seit dem Festhalten' : 'seit der Einreichung');
+
+/** Hilfsdateien, die nie zu den Unterlagen gehören: Office-Sperrdateien, Thumbs.db, desktop.ini */
+export const istHilfsdatei = (pfad: string) => {
+  const name = pfad.split(/[\\/]/).pop() ?? '';
+  return /^(~\$|\.~lock\.)/.test(name) || /^(thumbs\.db|desktop\.ini)$/i.test(name);
+};
+
+/** Verbindungswörter und Behörden, die in einem Schreiben der Behörde neben dem Kernwort stehen dürfen */
+const FUELLWOERTER = new Set(
+  (
+    'der die das des dem den vom von zum zur zu und für fuer über ueber auf vor nach gem gemäß gemaess im mit inkl az aktenzeichen ' +
+    'kreis landkreis kreisverwaltung städteregion staedteregion stadt stadtverwaltung gemeinde gemeindeverwaltung bauaufsicht ' +
+    'bauaufsichtsbehörde bauaufsichtsbehoerde bauaufsichtsamt bauordnung untere behörde behoerde denkmalbehörde ' +
+    'denkmalbehoerde bauamt bauordnungsamt amt bauportal'
+  ).split(' '),
+);
+/** Kernwörter: was die Behörde schickt (ganze Wörter, abschließend aufgezählt) – eines davon muss im Namen stehen */
+const KERN = new RegExp(
+  '^(' +
+    [
+      // Bestätigung der Behörde (ein Antragsprotokoll ist kein Schreiben der Behörde; ein weiteres, späteres kann einen
+      // weiteren Antrag belegen – der Nachweis der Einreichung selbst ist in seitEinreichung ausgenommen)
+      'eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung',
+      // Entscheidung
+      '(bau|teilbau|nachtrags|nachtragsbau|änderungs|aenderungs|entwässerungs|entwaesserungs)?genehmigung(sbescheid)?',
+      '(vor|bauvor|gebühren|gebuehren|ablehnungs|kosten|kostenfestsetzungs|teil|änderungs|aenderungs|abweichungs|befreiungs|verlängerungs|verlaengerungs)?bescheid',
+      'ablehnung|versagung|erlaubnis|abgeschlossenheitsbescheinigung|kostenfestsetzung|geb(ü|ue)hr(en)?(rechnung|festsetzung)?',
+      // Schreiben im Verfahren
+      'anh(ö|oe)rung(sschreiben)?|nachforderung(en|sschreiben)?|aufforderung(sschreiben)?|unterrichtung',
+      'vollst(ä|ae)ndigkeit(sbest(ä|ae)tigung|smitteilung|sbescheinigung)?|fiktionsbescheinigung|genehmigungsfiktion',
+      '§gemeinde|§rueckgabe',
+    ].join('|') +
+    ')$',
+);
+/** dürfen daneben stehen, genügen aber allein nicht */
+const ZUSATZ = /^(§az|denkmalrechtlich\S*|vereinfacht\S*|(bau)?genehmigungsverfahren|verfahren|genehmigungsfreistellung|freistellung\S*|mitteilung|nebenbestimmungen)$/;
+/** genehmigte Bauvorlagen: das Stempelwort und was auf einer Bauvorlage steht (Planart, Geschoss, Richtung, Bauvorlagen nach BauPrüfVO) */
+const STEMPEL = /^(genehmigt\S*|genehmigungsvermerk|gr(ü|ue)nstempel)$/;
+const VORLAGE =
+  /^(bauvorlagen?|pl(ä|ae|a)ne?|grundri(ss|ß)\S*|schnitt\S*|ansicht\S*|lageplan|baubeschreibung|betriebsbeschreibung|mit|(eg|og|dg|kg|ug|sg)|\d+og|\d+ug|nord\S*|s(ü|ue)d\S*|ost\S*|west\S*|§plannr)$/;
+
+/** Obergrenze für ein Datum der Behörde: ein Jahr nach heute (fängt „720512“ = 2072 ab, ohne von der Uhr abzuhängen) */
+const spaetesterTag = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return tagVon(d);
+};
+
+const gueltigerTag = (t: number, m: number) => m >= 1 && m <= 12 && t >= 1 && t <= 31;
+
+/**
+ * Datum aus „261125“, „20261125“, „12.11.2026“, „12.11.26“ (Tag), „11.2026“ (Monat) bzw. einer Jahreszahl (Jahr) – als
+ * JJJJ-MM-TT, JJJJ-MM bzw. JJJJ, damit ein Vergleich nur so genau ist wie die Angabe; sonst null
+ */
+function datumAusWort(w: string): string | null {
+  const jahr = (j: string) => (j.length === 4 ? j : `20${j}`);
+  let m = /^(20)?(\d{2})(\d{2})(\d{2})$/.exec(w);
+  if (m && gueltigerTag(Number(m[4]), Number(m[3]))) return `20${m[2]}-${m[3]}-${m[4]}`;
+  m = /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/.exec(w);
+  if (m && gueltigerTag(Number(m[1]), Number(m[2]))) return `${jahr(m[3])}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  m = /^(\d{1,2})\.(\d{4})$/.exec(w);
+  if (m && gueltigerTag(1, Number(m[1]))) return `${m[2]}-${m[1].padStart(2, '0')}`;
+  m = /^((19|20)\d{2})$/.exec(w);
+  return m ? m[1] : null;
+}
+/**
+ * Neue Dateien, die nach der Einreichung erwartungsgemäß in den Antragsordner kommen und deshalb nicht als „neu seit der
+ * Einreichung“ gelten (nur für Dateien, die nicht im festgehaltenen Stand sind – was eingereicht wurde, wird immer auf
+ * „geändert“ und „entfernt“ geprüft). Grundsatz: im Zweifel „neu“ – nachgereichte Bauvorlagen müssen auffallen
+ * (§ 70 Abs. 2 Satz 4 und § 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018, § 7 BauPrüfVO NRW). Deshalb eine Positivliste:
+ * Erwartet ist eine Datei nur, wenn ihr Name **ausschließlich** aus einem Schreiben der Behörde besteht – ein Kernwort
+ * und sonst nur Zusätze und Füllwörter. Alles Weitere (eine Bauvorlage, ein Begleitwort des Büros, ein Bestand, ein
+ * Ortsname, eine Dokumentnummer) macht sie zu etwas Nachgereichtem.
+ *
+ * Kernwörter (abschließend) – Bürovorgabe: die Genehmigung selbst (auch die Fiktionsbescheinigung, § 74 Abs. 3 Satz 1
+ * Nr. 4 BauO NRW 2018 i. V. m. § 42a Abs. 3 VwVfG NRW), die Empfangsbestätigung und Nachforderungen der Behörde (§ 71
+ * Abs. 1 Satz 7). Ergänzt: Eingangsbestätigung (§ 71 Abs. 1 Satz 1), die Unterrichtung über die
+ * Vollständigkeit (§ 71 Abs. 1 Satz 9 BauO NRW 2018 in der Fassung ab 01.09.2026), Bescheide (Vorbescheid, Gebühren,
+ * Ablehnung, Abweichung, Befreiung, Verlängerung …), Ablehnung, Anhörung, Kostenfestsetzung, (denkmalrechtliche)
+ * Erlaubnis, Abgeschlossenheitsbescheinigung, Rückgabe der Unterlagen (§ 63 Abs. 4 Satz 3) sowie Mitteilung bzw.
+ * Erklärung der Gemeinde (§ 63 Abs. 3 Satz 5; § 63 Abs. 2 Satz 1 Nr. 4 i. V. m. Abs. 4 Satz 1). Füllwörter: die
+ * Behörde (ohne Ortsnamen), Verbindungswörter, ein Aktenzeichen („Az 63-1234-26“), Projektcode und Antragsart, ein
+ * Datum bzw. Jahr ab dem Tag der Einreichung (ein älteres meint einen beigefügten Bestand, auch im Aktenzeichen; eines
+ * mehr als ein Jahr in der Zukunft zählt nicht),
+ * der Bezug „zum Bauantrag“ bzw. „Genehmigung Bauantrag“ (nur das ganze Wort), feste Wendungen wie „von Unterlagen“,
+ * „an den Bauherrn“ und – nur hinter dem Schreiben der Behörde – „Aufforderung zur Behebung der Mängel“ bzw. „zur
+ * Mängelbeseitigung“ und „Baugenehmigung mit Anlagen“. Eine Präposition vor dem Kernwort („zur Genehmigung“) ist die
+ * Bezeichnung des Büros.
+ *
+ * Genehmigte Bauvorlagen (§ 74 Abs. 4 Satz 5): mit „genehmigt…“, „Genehmigungsvermerk“ oder „Grünstempel“ dürfen auch
+ * Planart, Geschoss, Richtung, Plannummer und Bauvorlagen nach BauPrüfVO im Namen stehen („GP-03 Grundriss OG
+ * genehmigt“); Aufteilungspläne mit „gesiegelt“, „gestempelt“ oder „beglaubigt“.
+ */
+export function nachEinreichungErwartet(name: string, o: { schema?: Pick<Namensschema, 'phasen' | 'antragsarten'>; codes?: string[]; tag?: string } = {}): boolean {
+  const schema = o.schema ?? VORGABE_NAMENSSCHEMA;
+  // zerlegte Umlaute (macOS) zusammenführen, Endung weg
+  const roh = (name.normalize('NFC').split(/[\\/]/).pop() ?? '').replace(/\.[a-z0-9]{1,5}$/i, '');
+  // vom Tag der Einreichung (ohne Stand: ab dem Vorjahr) an ist ein Datum im Namen das der Behörde – höchstens ein Jahr
+  // in der Zukunft
+  const ab = o.tag ?? `${new Date().getFullYear() - 1}-01-01`;
+  const bis = spaetesterTag();
+  // so genau wie die Angabe: Jahr, Monat oder Tag
+  const imZeitraum = (datum: string) => datum >= ab.slice(0, datum.length) && datum <= bis.slice(0, datum.length);
+  // 1. Trennzeichen außer dem Bindestrich vereinheitlichen
+  let text = roh.replace(/[_()[\]{},;]+/g, ' ');
+  // 2. Projektcodes zuerst – genauso vereinheitlicht, Bindestrich und Leerzeichen gleichwertig („2025-014“, „2025_014“);
+  //    nach dem Auflösen der Bindestriche (6.) noch einmal („BS9-BAUA-261110-Nachforderung“)
+  const codeMuster = [...(o.codes ?? [])]
+    .map((x) => x.replace(/[_()[\]{},;]+/g, ' ').trim())
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+    .map(
+      (c) =>
+        new RegExp(
+          `(^|\\s)${c
+            .split(/[-\s]+/)
+            .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('[-\\s]+')}(?=\\s|$)`,
+          'gi',
+        ),
+    );
+  const ohneCodes = (t: string) => codeMuster.reduce((x, m) => x.replace(m, ' '), t);
+  text = ohneCodes(text);
+  // 3. Plannummern erkennen, solange der Bindestrich noch steht („GP-03“, „GP03“, Satz „GP01-07“)
+  text = text
+    .split(/\s+/)
+    .map((w) => (planNummerAus(w, schema) ? '§plannr' : w))
+    .join(' ');
+  // 4. Daten mit Bindestrich als Datum, nur gültige: JJJJ-MM-TT, TT-MM-JJJJ, TT-MM-JJ, MM-JJJJ, JJJJ-MM
+  const alsDatum = (g: string, t: string, m: string, j: string) => (gueltigerTag(Number(t), Number(m)) ? `${t}.${m}.${j}` : g);
+  text = text
+    .replace(/(?<=^|\s)(\d{4})-(\d{2})-(\d{2})(?=\s|$)/g, (g, j, m, t) => alsDatum(g, t, m, j))
+    .replace(/(?<=^|\s)(\d{1,2})-(\d{1,2})-(\d{4}|\d{2})(?=\s|$)/g, (g, t, m, j) => alsDatum(g, t, m, j))
+    .replace(/(?<=^|\s)(\d{1,2})-(\d{4})(?=\s|$)/g, (g, m, j) => (gueltigerTag(1, Number(m)) ? `${m}.${j}` : g))
+    .replace(/(?<=^|\s)(\d{4})-(\d{1,2})(?=\s|$)/g, (g, j, m) => (gueltigerTag(1, Number(m)) ? `${m}.${j}` : g));
+  // 5. Aktenzeichen als Ganzes – eine Jahresangabe vor der Einreichung darin meint einen Bestand. Steht am Ende eine
+  //    Jahresangabe („63-1234-72“, „63-1934-2026“), entscheidet sie allein (die Zahlen davor sind laufende Nummern,
+  //    auch bei „Az 1950-26“); sonst jede vierstellige Jahreszahl („63-1999-0815“, „Nr. 1972“)
+  const abJahr = Number(ab.slice(0, 4));
+  let alt = false;
+  const aktenzeichen = (gruppe: string) => {
+    const zahlen = gruppe.match(/\d+/g) ?? [];
+    const letzte = zahlen[zahlen.length - 1] ?? '';
+    // erst ab drei Zahlengruppen oder mit „Az“/„Nr.“ ist die letzte sicher das Jahr („1972-26“ kann Jahr-Nummer sein)
+    const mitJahr = zahlen.length >= 3 || (zahlen.length > 1 && /^\s*(az|aktenzeichen|nr)/i.test(gruppe));
+    const istJahr = (z: string) => /^(19|20)\d{2}$/.test(z);
+    const jahr = !mitJahr ? null : letzte.length === 2 ? 2000 + Number(letzte) : istJahr(letzte) ? Number(letzte) : null;
+    if (jahr !== null) {
+      if (jahr < abJahr || jahr > abJahr + 1) alt = true;
+    } else if (zahlen.some((z) => istJahr(z) && Number(z) < abJahr)) alt = true;
+    return ' §az ';
+  };
+  text = text
+    .replace(/(^|\s)(az|aktenzeichen|nr)\.?:?\s*[\w./-]*\d[\w./-]*/gi, (g) => aktenzeichen(g))
+    .replace(/(^|\s)\d+(-\d+)+(?=\s|$)/g, (g) => aktenzeichen(g));
+  if (alt) return false;
+  // 6. übrige Bindestriche zwischen Wörtern (dann noch einmal die Codes), 7. sonstige Zeichen
+  text = ohneCodes(text.replace(/(?<=[\p{L}\p{N}])-(?=[\p{L}\p{N}])/gu, ' '))
+    .replace(/[^\p{L}\p{N}.§]+/gu, ' ')
+    // Bezug (nur das ganze Wort „Bauantrag“), Adressat und feste Wendungen
+    .replace(/(^|\s)(zum|zu dem|über den|ueber den|auf den|für den|fuer den) bauantrag(e?s)?(?=\s|$)/gi, ' ')
+    .replace(/(^|\s)(zur|zu der) (bau)?voranfrage(?=\s|$)/gi, ' ')
+    .replace(/(genehmigung\S*|(?<!vor)bescheid\S*|ablehnung\S*) (des )?bauantrag(e?s)?(?=\s|$)/gi, '$1')
+    .replace(/(mitteilung|erkl(ä|ae)rung) (der |des )?(gemeinde|stadt)(?=\s|$)/gi, ' §gemeinde ')
+    .replace(/r(ü|ue)ckgabe (der )?unterlagen/gi, ' §rueckgabe ')
+    .replace(/((bescheinigung|mitteilung|unterrichtung|best(ä|ae)tigung) )?((ü|ue)ber die|der) (vollst(ä|ae)ndigkeit)/gi, ' $6 ')
+    .replace(/bescheinigung (über den |ueber den )?(eintritt (der )?)?genehmigungsfiktion/gi, ' genehmigungsfiktion ')
+    .replace(/(eintritt (der )?)genehmigungsfiktion/gi, ' genehmigungsfiktion ')
+    .replace(/(?<=^|\s)(?!(?:bau)?vorbescheid)(\S*bescheid) (?:über die |ueber die )?verl(?:ä|ae)ngerung(?: der geltungsdauer)?(?: de[rs] (?:vorbescheid\S*|baugenehmigung))?(?=\s|$)/gi, '$1')
+    // nur hinter dem Schreiben der Behörde: „Aufforderung zur Behebung der Mängel“, „Baugenehmigung mit Anlagen“ – sonst
+    // ist „Behebung der Mängel …“ bzw. „… mit Anlagen“ die Antwort des Büros
+    .replace(/((?:auf|nach)forderung\S*) zur (?:m(?:ä|ae)ngelbeseitigung|behebung (?:der |von )?m(?:ä|ae)ngel(?:n)?)(?=\s|$)/gi, '$1')
+    .replace(/((?:\S*genehmigung\S*|\S*bescheid\S*|ablehnung|erlaubnis|nachforderung\S*|aufforderung\S*|anh(?:ö|oe)rung\S*)) mit anlagen?(?=\s|$)/gi, '$1')
+    .replace(/von (fehlenden )?unterlagen|fehlender unterlagen|an (den|die) (bauherr\S*|antragsteller\S*)/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const woerter = text.split(' ').filter(Boolean);
+  const klein = woerter.map((w) => w.toLowerCase().replace(/\.+$/, ''));
+  const arten = new Set(alleKuerzel(schema.antragsarten).map((k) => k.toLowerCase()));
+  const stempel = klein.some((w) => STEMPEL.test(w));
+  const aufteilung = klein.some((w) => /^aufteilungspl/.test(w)) && klein.some((w) => /^(gesiegelt|gestempelt|beglaubigt)$/.test(w));
+  let kern = stempel || aufteilung;
+  // eine Präposition direkt vor dem Kernwort („zur Genehmigung“, „gem. Nachforderung“, „für die Genehmigung“) ist die
+  // Bezeichnung des Büros – außer sie hängt an einem Kernwort davor („Anhörung vor Ablehnung“)
+  const PRAEP = /^(zur|zum|zu|für|fuer|vor|nach|auf|gem|gemäß|gemaess)$/;
+  for (let i = 0; i < klein.length; i++) {
+    if (!PRAEP.test(klein[i])) continue;
+    const naechstes = klein.slice(i + 1).find((w) => !/^(der|die|das|den|dem|des)$/.test(w));
+    // das Wort davor ohne Füllwörter, Daten, Aktenzeichen, Antragsart und Zusätze („Gebührenbescheid vom 20.11.2026 zur …“)
+    const davor = klein
+      .slice(0, i)
+      .filter((w) => !FUELLWOERTER.has(w) && !ZUSATZ.test(w) && !arten.has(w) && !datumAusWort(w))
+      .pop();
+    if (naechstes && KERN.test(naechstes) && !(davor && KERN.test(davor))) return false;
+  }
+  const erlaubt = klein.every((w) => {
+    if (KERN.test(w)) return (kern = true);
+    if (ZUSATZ.test(w) || FUELLWOERTER.has(w) || arten.has(w)) return true;
+    const datum = datumAusWort(w);
+    if (datum) return imZeitraum(datum);
+    if (stempel && (STEMPEL.test(w) || VORLAGE.test(w))) return true;
+    // Schnittbezeichnung „Schnitt A-A“
+    if (stempel && /^[a-z]$/.test(w) && klein.some((x) => /^schnitt/.test(x))) return true;
+    if (aufteilung && /^(aufteilungspl\S*|gesiegelt|gestempelt|beglaubigt)$/.test(w)) return true;
+    return false;
+  });
+  return erlaubt && kern;
+}
+
+/**
+ * Antragsstand festhalten: alle Dateien im Ordner des Antrags (ohne Archiv und Hilfsdateien), verlustfrei. Was nach dem
+ * Tag der Einreichung geändert wurde (etwa wenn die Einreichung erst später erkannt wird), zählt erst beim Vergleich
+ * nicht dazu (`imStand`) – so bleibt der Stand richtig, auch wenn sich der Tag später noch ändert.
+ */
+export function standAus(dateien: Eintrag[], tag: string, festgehalten?: { am: number; bis: number }): AntragStand {
+  return {
+    tag,
+    ...(festgehalten ? { festgehalten: festgehalten.am, festgehaltenBis: festgehalten.bis } : {}),
+    dateien: dateien
+      .filter((d) => !d.ordner && !istArchiv(d.pfad) && !istHilfsdatei(d.pfad))
+      .map((d) => ({ pfad: d.pfad, groesse: d.groesse, ...(d.geaendert ? { geaendert: d.geaendert } : {}) })),
+  };
+}
+
+/**
+ * Einträge des Stands, die zur Einreichung gehören: nicht erst nach dem Tag der Einreichung geändert – bei einem von
+ * Hand neu festgehaltenen Stand alles bis zu diesem Zeitpunkt
+ */
+export function imStand(stand: AntragStand): StandDatei[] {
+  const ende = Math.max(new Date(`${stand.tag}T23:59:59.999`).getTime(), stand.festgehaltenBis ?? stand.festgehalten ?? 0);
+  return stand.dateien.filter((d) => !(d.geaendert && d.geaendert > ende));
+}
+
+/** neu: erst nach der Einreichung dazugekommen · geaendert: danach geändert */
+export type SeitEinreichung = 'neu' | 'geaendert';
+
+
+/**
+ * Eingereichte Dateien auf oberster Ebene des Antragsordners, die es nicht mehr gibt (gelöscht oder verschoben) – der
+ * Nachweis der Einreichung selbst (Antragsprotokoll, Eingangs- bzw. Empfangsbestätigung) nicht; `vorhanden` sind die
+ * Pfade der Dateien im Ordner des Antrags.
+ */
+export function entferntSeitEinreichung(vorhanden: string[], stand: AntragStand | undefined): StandDatei[] {
+  if (!stand) return [];
+  const da = new Set(vorhanden.map((p) => p.toLowerCase()));
+  return imStand(stand).filter((s) => !/[\\/]/.test(s.pfad) && !da.has(s.pfad.toLowerCase()) && !EINGEREICHT_MUSTER.test(s.pfad) && !istHilfsdatei(s.pfad));
+}
+
+/**
+ * Hat sich eine Datei seit der Einreichung geändert bzw. ist sie neu? Was eingereicht wurde, wird immer verglichen
+ * (außer dem Nachweis der Einreichung); eine neue Datei zählt nicht, wenn sie erwartungsgemäß kommt (Bescheid …).
+ */
+export function seitEinreichung(
+  d: Pick<Eintrag, 'pfad' | 'groesse' | 'geaendert'>,
+  stand: AntragStand | undefined,
+  o: { schema?: Pick<Namensschema, 'phasen' | 'antragsarten'>; codes?: string[] } = {},
+): SeitEinreichung | null {
+  if (!stand) return null;
+  const name = d.pfad.split('/').pop() ?? '';
+  const s = imStand(stand).find((x) => x.pfad.toLowerCase() === d.pfad.toLowerCase());
+  // der Nachweis der Einreichung selbst ist nie „neu“: steht er im Stand oder trägt er kein späteres Datum als den Tag der
+  // Einreichung (Antragsprotokoll vom 03.11., erst am 04.11. gespeichert); ein späteres Protokoll bleibt „neu“
+  if (!s && EINGEREICHT_MUSTER.test(name)) {
+    const imStandEingetragen = stand.dateien.some((x) => x.pfad.toLowerCase() === d.pfad.toLowerCase());
+    const n = datumAusName(name, o.codes ?? []);
+    const vom = n ? `${Math.floor(n.tag / 10000)}-${String(Math.floor(n.tag / 100) % 100).padStart(2, '0')}-${String(n.tag % 100).padStart(2, '0')}` : null;
+    if (imStandEingetragen || (vom !== null && vom <= stand.tag)) return null;
+  }
+  if (!s) return nachEinreichungErwartet(name, { ...o, tag: stand.tag }) ? null : 'neu';
+  if (EINGEREICHT_MUSTER.test(name)) return null;
+  const groesse = s.groesse !== undefined && s.groesse !== d.groesse;
+  // Änderungszeit: zwei Sekunden Spielraum (Dateisysteme runden)
+  const zeit = !!s.geaendert && !!d.geaendert && Math.abs(s.geaendert - d.geaendert) > 2000;
+  return groesse || zeit ? 'geaendert' : null;
+}
+
+function standAusRoh(roh: unknown): AntragStand | undefined {
+  if (!roh || typeof roh !== 'object') return undefined;
+  const o = roh as Record<string, unknown>;
+  if (typeof o.tag !== 'string' || !TAG.test(o.tag) || !Array.isArray(o.dateien)) return undefined;
+  const dateien = o.dateien
+    .filter((d): d is Record<string, unknown> => !!d && typeof d === 'object' && typeof (d as { pfad?: unknown }).pfad === 'string')
+    .map((d) => ({ pfad: d.pfad as string, ...(typeof d.groesse === 'number' ? { groesse: d.groesse } : {}), ...(typeof d.geaendert === 'number' ? { geaendert: d.geaendert } : {}) }));
+  return {
+    tag: o.tag,
+    dateien,
+    ...(typeof o.festgehalten === 'number' ? { festgehalten: o.festgehalten } : {}),
+    ...(typeof o.festgehaltenBis === 'number' ? { festgehaltenBis: o.festgehaltenBis } : {}),
+  };
 }
 
 /** Von Hand gesetzter Antragsstatus: eingereicht (mit Datum) oder ausdrücklich noch in Arbeit */
@@ -365,7 +794,8 @@ export interface AntragStatusManuell {
 /** Wirksamer Stand „eingereicht“ eines Antrags: von Hand gesetzt vor erkannt; null = in Arbeit */
 export function eingereichtVon(a: AntragDaten | undefined): { datei?: string; datum: string; manuell?: true } | null {
   if (!a) return null;
-  if (a.status) return a.status.eingereicht ? { datum: a.status.datum ?? a.eingereicht?.datum ?? tagVon(new Date()), manuell: true } : null;
+  // von Hand ohne Datum (nur bei einer von Hand bearbeiteten Projektdatei): der erkannte Tag bzw. der des Stands vor „heute“
+  if (a.status) return a.status.eingereicht ? { datum: a.status.datum ?? a.eingereicht?.datum ?? a.stand?.tag ?? tagVon(new Date()), manuell: true } : null;
   return a.eingereicht ?? null;
 }
 
@@ -397,18 +827,27 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
   const o = (roh && typeof roh === 'object' ? roh : {}) as Record<string, unknown>;
   const out: ProjektDatei = {};
   if (typeof o.aktiveFassung === 'string' && o.aktiveFassung.trim()) out.aktiveFassung = o.aktiveFassung.trim();
-  if (Array.isArray(o.umfang))
-    out.umfang = o.umfang
-      .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object' && typeof (e as { titel?: unknown }).titel === 'string')
-      .map((e, i) => {
-        const u: UmfangEintrag = { id: typeof e.id === 'string' && e.id ? e.id : `u${i + 1}`, titel: String(e.titel), art: e.art === 'extern' ? 'extern' : 'intern' };
-        for (const k of ['formular', 'quelle', 'muster', 'nr', 'formularDatei'] as const) if (typeof e[k] === 'string' && e[k]) u[k] = e[k] as string;
-        if (e.dateien && typeof e.dateien === 'object')
-          u.dateien = Object.fromEntries(Object.entries(e.dateien as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string'));
-        const b = nurMerkmale(bedingungAus(e.bedingung));
-        if (b) u.bedingung = b;
-        return u;
-      });
+  if (Array.isArray(o.umfang)) {
+    const roh = o.umfang.filter((e): e is Record<string, unknown> => !!e && typeof e === 'object' && typeof (e as { titel?: unknown }).titel === 'string');
+    // Kennungen eindeutig: eine fehlende bzw. doppelte bekommt eine freie (`u<n>`, ohne eine ausdrücklich gesetzte zu treffen)
+    const gesetzt = new Set(roh.flatMap((e) => (typeof e.id === 'string' && e.id ? [e.id] : [])));
+    const vergeben = new Set<string>();
+    const kennung = (e: Record<string, unknown>, i: number) => {
+      let id = typeof e.id === 'string' && e.id ? e.id : `u${i + 1}`;
+      for (let n = i + 1; vergeben.has(id) || (id !== e.id && gesetzt.has(id)); n++) id = `u${n}`;
+      vergeben.add(id);
+      return id;
+    };
+    out.umfang = roh.map((e, i) => {
+      const u: UmfangEintrag = { id: kennung(e, i), titel: String(e.titel), art: dokArtAus(e.art) };
+      for (const k of ['formular', 'quelle', 'muster', 'nr', 'formularDatei'] as const) if (typeof e[k] === 'string' && e[k]) u[k] = e[k] as string;
+      if (e.dateien && typeof e.dateien === 'object')
+        u.dateien = Object.fromEntries(Object.entries(e.dateien as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string'));
+      const b = nurMerkmale(bedingungAus(e.bedingung));
+      if (b) u.bedingung = b;
+      return u;
+    });
+  }
   if (o.merkmale && typeof o.merkmale === 'object') {
     const m = Object.fromEntries(Object.entries(o.merkmale as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string' && !!x[1]));
     if (Object.keys(m).length) out.merkmale = m;
@@ -446,8 +885,12 @@ function antragDatenAus(roh: unknown): AntragDaten {
   const e = o.eingereicht as Record<string, unknown> | undefined;
   if (e && typeof e === 'object' && typeof e.datei === 'string' && e.datei && typeof e.datum === 'string' && TAG.test(e.datum)) a.eingereicht = { datei: e.datei, datum: e.datum };
   const st = o.status as Record<string, unknown> | undefined;
-  if (st && typeof st === 'object' && typeof st.eingereicht === 'boolean')
-    a.status = { eingereicht: st.eingereicht, ...(st.eingereicht && typeof st.datum === 'string' && TAG.test(st.datum) ? { datum: st.datum } : {}) };
+  if (st && typeof st === 'object' && typeof st.eingereicht === 'boolean') {
+    // das Datum bleibt auch bei „in Arbeit“ stehen – beim Zurückstellen auf „eingereicht“ gilt wieder derselbe Tag
+    a.status = { eingereicht: st.eingereicht, ...(typeof st.datum === 'string' && TAG.test(st.datum) ? { datum: st.datum } : {}) };
+  }
+  const stand = standAusRoh(o.stand);
+  if (stand) a.stand = stand;
   return a;
 }
 
@@ -525,6 +968,245 @@ export function antraegeVon(pd: ProjektDatei): Record<string, AntragDaten> {
   return antraege;
 }
 
+/** Darstellung zum Vergleichen: Schlüssel sortiert, fehlend und undefined gleich */
+export function stabil(x: unknown): string {
+  return (
+    JSON.stringify(x, (_k, v: unknown) =>
+      v && typeof v === 'object' && !Array.isArray(v)
+        ? Object.fromEntries(
+            Object.keys(v)
+              .sort()
+              .map((k) => [k, (v as Record<string, unknown>)[k]]),
+          )
+        : v,
+    ) ?? 'undefined'
+  );
+}
+
+const istMap = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+/** Felder eines Antrags, die je Eintrag zusammengeführt werden */
+const JE_EINTRAG = new Set(['merkmale', 'felder']);
+/** Text mitten im Satz: erster Buchstabe klein – ein Substantiv am Anfang („Antrag BAUA 2 ist eingereicht …“) bleibt groß */
+export const klein = (t: string) => (/^Antrag/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1));
+/** eine Zuordnung je Schlüssel ändern: nur was sich zwischen `alt` und `neu` unterscheidet, auf `frisch` */
+function mapAnwenden(frisch: Record<string, unknown>, alt: Record<string, unknown>, neu: Record<string, unknown>): Record<string, unknown> {
+  const z = { ...frisch };
+  for (const k of new Set([...Object.keys(alt), ...Object.keys(neu)])) {
+    if (stabil(alt[k]) === stabil(neu[k])) continue;
+    if (neu[k] === undefined) delete z[k];
+    else z[k] = neu[k];
+  }
+  return z;
+}
+
+/** Felder eines Eintrags im Antragsumfang, die je Schlüssel zusammengeführt werden (verknüpfte Datei je Fassung) */
+const FELD_JE_SCHLUESSEL = new Set(['dateien']);
+
+/**
+ * Antragsumfang je Eintrag ändern: nur was sich zwischen `alt` und `neu` unterscheidet, auf `frisch` – entfernte
+ * Einträge, geänderte Felder (verknüpfte Dateien je Fassung), hinzugefügte (hinter ihrem Vorgänger) und eine geänderte
+ * Reihenfolge (der Einträge, die beide kennen). Was andere inzwischen eingetragen, geändert oder entfernt haben, bleibt:
+ * ein woanders entfernter Eintrag kommt durch eine Änderung an ihm nicht zurück. Ohne bisherigen Umfang gilt `neu` ganz
+ * (festgelegt), ohne `neu` keiner (aufgehoben); woanders aufgehoben bleibt aufgehoben. `bewegt`: der Eintrag, den der
+ * Aufrufer verschoben hat (sonst gelten die außerhalb der längsten gemeinsamen Teilfolge als verschoben).
+ */
+export function umfangAnwenden(frisch: UmfangEintrag[] | undefined, alt: UmfangEintrag[] | undefined, neu: UmfangEintrag[] | undefined, bewegt?: string): UmfangEintrag[] | undefined {
+  if (!neu) return undefined;
+  // festgelegt (vorher keiner): ganz – außer woanders ist inzwischen schon einer festgelegt (der bleibt); inzwischen
+  // woanders aufgehoben: bleibt aufgehoben
+  if (!alt) return frisch ?? neu;
+  if (!frisch) return undefined;
+  const altM = new Map(alt.map((u) => [u.id, u]));
+  const neuM = new Map(neu.map((u) => [u.id, u]));
+  // entfernt
+  let z: UmfangEintrag[] = frisch.filter((u) => !(altM.has(u.id) && !neuM.has(u.id)));
+  // geändert – je Feld, nur wo es den Eintrag noch gibt
+  z = z.map((u) => {
+    const a = altM.get(u.id) as Record<string, unknown> | undefined;
+    const n = neuM.get(u.id) as Record<string, unknown> | undefined;
+    if (!a || !n || stabil(a) === stabil(n)) return u;
+    const e: Record<string, unknown> = { ...u };
+    for (const k of new Set([...Object.keys(a), ...Object.keys(n)])) {
+      if (stabil(a[k]) === stabil(n[k])) continue;
+      if (FELD_JE_SCHLUESSEL.has(k)) {
+        const m = mapAnwenden(istMap(e[k]) ? e[k] : {}, istMap(a[k]) ? a[k] : {}, istMap(n[k]) ? n[k] : {});
+        if (Object.keys(m).length) e[k] = m;
+        else delete e[k];
+      } else if (n[k] === undefined) delete e[k];
+      else e[k] = n[k];
+    }
+    return e as unknown as UmfangEintrag;
+  });
+  // verschoben: welche Einträge umziehen – die der Aufrufer nennt (`bewegt`), sonst die außerhalb der längsten
+  // gemeinsamen Teilfolge von `alt` und `neu`; die übrigen behalten ihre Folge (auch eine Umstellung von anderswo)
+  const a = alt.filter((u) => neuM.has(u.id)).map((u) => u.id);
+  const n = neu.filter((u) => altM.has(u.id)).map((u) => u.id);
+  const bleibt = new Set<string>();
+  if (bewegt && altM.has(bewegt) && neuM.has(bewegt) && a.join('\u0000') !== n.join('\u0000')) {
+    for (const id of a) if (id !== bewegt) bleibt.add(id);
+  } else {
+    const l: number[][] = Array.from({ length: a.length + 1 }, () => new Array<number>(n.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i--) for (let j = n.length - 1; j >= 0; j--) l[i][j] = a[i] === n[j] ? l[i + 1][j + 1] + 1 : Math.max(l[i + 1][j], l[i][j + 1]);
+    for (let i = 0, j = 0; i < a.length && j < n.length; ) {
+      if (a[i] === n[j]) {
+        bleibt.add(a[i]);
+        i++;
+        j++;
+      } else if (l[i + 1][j] > l[i][j + 1]) i++;
+      // gleich lang: der in `neu` frühere gilt als verschoben (nach oben gezogen)
+      else j++;
+    }
+  }
+  const verschoben = new Set(n.filter((id) => !bleibt.has(id) && z.some((u) => u.id === id)));
+  // erst alle verschobenen herausnehmen, dann in der Folge von `neu` einsetzen – zusammen mit den hinzugefügten; als
+  // Anker dienen nur Einträge, die bleiben oder schon eingesetzt sind
+  const beiseite = new Map(z.filter((u) => verschoben.has(u.id)).map((u) => [u.id, u]));
+  z = z.filter((u) => !verschoben.has(u.id));
+  const an = (id: string) => z.findIndex((u) => u.id === id);
+  const hinterVorgaenger = (e: UmfangEintrag, i: number) => {
+    for (let k = i - 1; k >= 0; k--) {
+      const j = an(neu[k].id);
+      if (j >= 0) return z.splice(j + 1, 0, e), true;
+    }
+    return false;
+  };
+  const vorNachfolger = (e: UmfangEintrag, i: number) => {
+    for (let k = i + 1; k < neu.length; k++) {
+      const j = an(neu[k].id);
+      if (j >= 0) return z.splice(j, 0, e), true;
+    }
+    return false;
+  };
+  // ein einzeln verschobener Eintrag richtet sich nach den Einträgen, an denen er vorbeizog: nach unten hinter den
+  // letzten, nach oben vor den ersten, der noch da ist – so bleibt die Richtung, auch wenn anderswo umgestellt wurde;
+  // ganz nach oben bzw. unten gezogen bleibt ganz oben bzw. unten
+  const einzeln = verschoben.size === 1;
+  const vorbei = (id: string) => {
+    const ia = a.indexOf(id);
+    const ib = n.indexOf(id);
+    const runter = ib > ia ? a.slice(ia + 1).filter((x) => n.indexOf(x) < ib) : [];
+    const hoch = ib < ia ? a.slice(0, ia).filter((x) => n.indexOf(x) > ib) : [];
+    return { runter, hoch };
+  };
+  // in diesem Schritt schon eingesetzt (hinzugefügt bzw. verschoben) – nach unten zählen sie als Anker mit
+  const eingesetzt = new Set<string>();
+  neu.forEach((e, i) => {
+    const war = beiseite.get(e.id);
+    const dazu = !altM.has(e.id) && an(e.id) < 0;
+    if (!war && !dazu) return;
+    const x = war ?? e;
+    eingesetzt.add(x.id);
+    // ganz nach oben bzw. unten gezogen: dorthin
+    if (war && einzeln && i === neu.length - 1) return void z.push(x);
+    if (war && einzeln && i > 0) {
+      const { runter, hoch } = vorbei(e.id);
+      const anker = runter.length ? [...runter, ...neu.slice(0, i).map((u) => u.id).filter((id) => eingesetzt.has(id))] : hoch;
+      const plaetze = anker.map(an).filter((j) => j >= 0);
+      if (plaetze.length) return void z.splice(runter.length ? Math.max(...plaetze) + 1 : Math.min(...plaetze), 0, x);
+    }
+    if (i === 0) return void z.unshift(x);
+    if (hinterVorgaenger(x, i) || vorNachfolger(x, i)) return;
+    z.push(x);
+  });
+  return z;
+}
+
+/**
+ * „bereit“ je Datei ändern (Groß-/Kleinschreibung gleich): entfernte Markierungen entfernen, neue anhängen, einen
+ * geänderten Stand übernehmen – was andere inzwischen markiert haben, bleibt; woanders Aufgehobenes kommt durch eine
+ * Änderung am Stand nicht zurück
+ */
+export function bereitAnwenden(frisch: BereitEintrag[] | undefined, alt: BereitEintrag[] | undefined, neu: BereitEintrag[] | undefined): BereitEintrag[] | undefined {
+  const k = (b: BereitEintrag) => b.datei.toLowerCase();
+  const altM = new Map((alt ?? []).map((b) => [k(b), b]));
+  const neuM = new Map((neu ?? []).map((b) => [k(b), b]));
+  const z = (frisch ?? []).filter((b) => !(altM.has(k(b)) && !neuM.has(k(b))));
+  for (const b of neu ?? []) {
+    const a = altM.get(k(b));
+    if (a && stabil(a) === stabil(b)) continue;
+    const i = z.findIndex((x) => k(x) === k(b));
+    if (i >= 0) z[i] = b;
+    else if (!a) z.push(b);
+  }
+  return z.length ? z : undefined;
+}
+
+/** Abschnitt als Angaben ohne Ansicht – „bereit“ wie beim Schreiben als Feld der Ansicht (antraegeVon holt es von dort) */
+export function alsAngaben(a: Abschnitt): ProjektDatei {
+  const bereit = Object.fromEntries(Object.entries(a.antraege).flatMap(([n, x]) => (x.bereit?.length ? [[n, x.bereit]] : [])));
+  return { ...(a.aktiveFassung ? { aktiveFassung: a.aktiveFassung } : {}), antraege: a.antraege, ...(Object.keys(bereit).length ? { bereit } : {}) };
+}
+
+/**
+ * Eine Änderung auf den frisch gelesenen Abschnitt anwenden: Nur was sich zwischen `vorher` und `nachher` (die
+ * Angaben des Aufrufers vor bzw. nach seiner Änderung) unterscheidet, kommt hinein – je Antrag und Feld, bei den
+ * Zuordnungen `merkmale` und `felder` je Eintrag, bei „bereit“ je Datei (`bereitAnwenden`), beim Antragsumfang je
+ * Eintrag und Feld (`umfangAnwenden`). Was andere inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein
+ * gleichzeitiges Laden, das eigene vorige Speichern), bleibt. Einen Antrag, den es im frischen Abschnitt nicht gibt,
+ * übernimmt die Änderung ganz; einen, den der Aufrufer nicht kannte, den es inzwischen aber gibt, lässt sie
+ * unverändert. `o.kennzeichen.umfangBehalten`: ein Antragsumfang wurde festgelegt, in der Datei stand aber schon ein
+ * anderer – der blieb.
+ */
+export function aenderungAnwenden(
+  frisch: Abschnitt,
+  vorher: ProjektDatei | null,
+  nachher: ProjektDatei,
+  o: { bewegt?: string; kennzeichen?: { umfangBehalten?: boolean } } = {},
+): Abschnitt {
+  const alt = vorher ? antraegeVon(vorher) : {};
+  const neu = antraegeVon(nachher);
+  const antraege: Record<string, AntragDaten> = { ...frisch.antraege };
+  for (const name of new Set([...Object.keys(alt), ...Object.keys(neu)])) {
+    const a = alt[name] as Record<string, unknown> | undefined;
+    const n = neu[name] as Record<string, unknown> | undefined;
+    if (stabil(a) === stabil(n)) continue;
+    if (!n) {
+      delete antraege[name];
+      continue;
+    }
+    const f = antraege[name] as Record<string, unknown> | undefined;
+    if (!f) {
+      antraege[name] = n as AntragDaten;
+      continue;
+    }
+    // den Antrag kannte der Aufrufer nicht, inzwischen gibt es ihn (z. B. von einem anderen Arbeitsplatz angelegt):
+    // er bleibt, wie er ist – der Aufrufer hätte nur Vorgaben eingetragen
+    if (!a) continue;
+    const z: Record<string, unknown> = { ...f };
+    for (const k of new Set([...Object.keys(a), ...Object.keys(n)])) {
+      if (stabil(a[k]) === stabil(n[k])) continue;
+      if (JE_EINTRAG.has(k)) {
+        // Zuordnungen (Antragsmerkmale, Autofill je Formular) je Eintrag – auch das erste bzw. letzte; gleichzeitige
+        // Einträge anderer bleiben, eine leere Zuordnung entfällt
+        const m = mapAnwenden(istMap(f[k]) ? f[k] : {}, istMap(a[k]) ? a[k] : {}, istMap(n[k]) ? n[k] : {});
+        if (Object.keys(m).length) z[k] = m;
+        else delete z[k];
+      } else if (k === 'bereit') {
+        // je Datei – zwei Markierungen kurz nacheinander bzw. von zwei Arbeitsplätzen bleiben beide
+        const b = bereitAnwenden(f[k] as BereitEintrag[] | undefined, a[k] as BereitEintrag[] | undefined, n[k] as BereitEintrag[] | undefined);
+        if (b) z[k] = b;
+        else delete z[k];
+      } else if (k === 'umfang') {
+        // je Eintrag – zwei Änderungen kurz nacheinander bzw. von zwei Arbeitsplätzen überschreiben sich nicht
+        const u = umfangAnwenden(f[k] as UmfangEintrag[] | undefined, a[k] as UmfangEintrag[] | undefined, n[k] as UmfangEintrag[] | undefined, o.bewegt);
+        // festgelegt, wo der Aufrufer keinen kannte, in der Datei steht aber schon ein anderer: der blieb – das sagen
+        // können (beide Seiten gleich gelesen, so zählen leere Texte nicht; derselbe, etwa nach einem Doppelklick, nicht)
+        if (!a[k] && f[k] && n[k] && o.kennzeichen && stabil(f[k]) !== stabil(projektDateiAus({ umfang: n[k] }).umfang)) o.kennzeichen.umfangBehalten = true;
+        if (u) z[k] = u;
+        else delete z[k];
+      } else if (n[k] === undefined) delete z[k];
+      else z[k] = n[k];
+    }
+    antraege[name] = z as AntragDaten;
+  }
+  const out: Abschnitt = { ...frisch, antraege };
+  if (stabil(vorher?.aktiveFassung) !== stabil(nachher.aktiveFassung)) {
+    if (nachher.aktiveFassung) out.aktiveFassung = nachher.aktiveFassung;
+    else delete out.aktiveFassung;
+  }
+  return out;
+}
+
 /** Zu speichernder Abschnitt „formulare“ */
 export function abschnittVon(pd: ProjektDatei): Record<string, unknown> {
   const antraege = antraegeVon(pd);
@@ -548,7 +1230,7 @@ export function aktuellsterAntrag(antraege: Record<string, AntragDaten>, reihe: 
 }
 
 /** Dokumente, die einen Antrag als eingereicht kennzeichnen */
-export const EINGEREICHT_MUSTER = /antragsprotokoll|eingangsbest(ä|ae)tigung/i;
+export const EINGEREICHT_MUSTER = /antragsprotokoll|eingangsbest(ä|ae)tigung|empfangsbest(ä|ae)tigung/i;
 
 /** Datei oder Ordner in einem Archivordner (`_archiv`, `archiv`, auch tiefer) */
 export const istArchiv = (pfad: string) => /(^|\/)_?archiv(\/|$)/i.test(pfad.replace(/\\/g, '/'));
@@ -557,42 +1239,168 @@ export const istArchiv = (pfad: string) => /(^|\/)_?archiv(\/|$)/i.test(pfad.rep
 export const EINGEREICHT_TIEFE = 6;
 
 /**
- * Eingereicht? – die neueste passende Datei im Ordner des Antrags oder seinen Unterordnern (Archivordner und
- * Office-Sperrdateien ausgenommen); `datei` ist der Pfad relativ zum Ordner des Antrags.
+ * Eingereicht? – der erste Nachweis im Ordner des Antrags oder seinen Unterordnern (Archivordner und Hilfsdateien
+ * ausgenommen): Maßgeblich ist der Eingang (§ 71 Abs. 1 Satz 1 BauO NRW 2018) – eine spätere Eingangsbestätigung
+ * bestätigt nur diesen Eingang, ihr Briefdatum ist nicht der Tag der Einreichung. `datei` ist der Pfad relativ zum
+ * Ordner des Antrags.
  */
 export function eingereichtAus(dateien: Eintrag[]): { datei: string; datum: string } | null {
-  const d = neueste(dateien.filter((d) => !d.ordner && !istArchiv(d.pfad) && !/^(~\$|\.~lock\.)/.test(d.pfad.split('/').pop() ?? '') && EINGEREICHT_MUSTER.test(d.pfad.split('/').pop() ?? '')));
-  if (!d) return null;
-  // Datum: aus dem Namen („… 261103 Eingangsbestätigung.pdf“), sonst die Änderungszeit
-  const n = datumAusName(d.pfad);
-  const datum = n ? `${Math.floor(n.tag / 10000)}-${String(Math.floor(n.tag / 100) % 100).padStart(2, '0')}-${String(n.tag % 100).padStart(2, '0')}` : tagVon(d.geaendert ? new Date(d.geaendert) : new Date());
-  return { datei: d.pfad, datum };
+  const nachweise = dateien
+    .filter((d) => !d.ordner && !istArchiv(d.pfad) && !istHilfsdatei(d.pfad) && EINGEREICHT_MUSTER.test(d.pfad.split('/').pop() ?? ''))
+    .map((d) => {
+      // Datum: aus dem Namen („… 261103 Eingangsbestätigung.pdf“), sonst die Änderungszeit
+      const n = datumAusName(d.pfad);
+      const datum = n ? `${Math.floor(n.tag / 10000)}-${String(Math.floor(n.tag / 100) % 100).padStart(2, '0')}-${String(n.tag % 100).padStart(2, '0')}` : tagVon(d.geaendert ? new Date(d.geaendert) : new Date());
+      return { datei: d.pfad, datum };
+    });
+  return nachweise.reduce<{ datei: string; datum: string } | null>((erster, x) => (!erster || x.datum < erster.datum ? x : erster), null);
 }
 
 /* ---------- Dokumente im Antragsordner: Namensformat und „bereit“ ---------- */
 
-/** Antragsart einer Fassung: „BAUA 2“ → „BAUA“ */
-export const artDerFassung = (fassung: string) => fassung.trim().replace(/[\s_-]*\d+$/, '').toUpperCase();
+/** Antragsart einer Fassung: „BAUA 2“, „02. BAUA“ → „BAUA“ (aus @core/fassung) */
+export { artDerFassung };
+
+const gueltigesDatum = (t: string | undefined) => {
+  const m = /^(\d{2})(\d{2})(\d{2})$/.exec(t ?? '');
+  return !!m && Number(m[2]) >= 1 && Number(m[2]) <= 12 && Number(m[3]) >= 1 && Number(m[3]) <= 31;
+};
+
+/** Erwarteter Kopf eines Dateinamens im Antragsordner nach dem Namensschema, z. B. „HVO BAUA JJMMTT“ */
+export function antragsMuster(codes: string[], art: string, reihenfolge: NamensTeil[] = VORGABE_NAMENSSCHEMA.reihenfolge): string {
+  const code = codes.map((c) => c.trim()).find(Boolean);
+  return reihenfolge
+    .filter((t) => t !== 'nummer')
+    .map((t) => (t === 'code' ? (code ?? 'Projektcode') : t === 'art' ? art.trim() || 'Antragsart' : 'JJMMTT'))
+    .join(' ');
+}
 
 /**
- * Prüft das Namensformat einer Datei im Antragsordner: `<Projektcode> <Antragsart> <JJMMTT> <Rest>` – z. B.
- * „BS9 BAUA 261110 Bauantrag.pdf“. Projektcode ist das Projektkürzel (oder der Projektcode der Projektdatei), die
- * Antragsart die der Fassung (BAUA, BAUVA, DENK …). Liefert null, wenn der Name passt, sonst den Grund.
+ * Prüft das Namensformat einer Datei im Antragsordner: Projektcode, Antragsart und JJMMTT an ihren Stellen nach dem
+ * Namensschema (Vorgabe `<Projektcode> <Antragsart> <JJMMTT> <Rest>`, z. B. „BS9 BAUA 261110 Bauantrag.pdf“), danach
+ * mindestens ein Wort. Projektcode ist das Projektkürzel (oder der Projektcode der Projektdatei), die Antragsart die der
+ * Fassung (BAUA, BAUVA, DENK …) – gleichwertige Schreibweisen der Antragsarten des Schemas gelten (BVA = BAUVA).
+ * Liefert null, wenn der Name passt, sonst den Grund.
  */
-export function antragsNameFehler(name: string, o: { codes: string[]; art: string }): string | null {
+export function antragsNameFehler(name: string, o: { codes: string[]; art: string; reihenfolge?: NamensTeil[]; schema?: Pick<Namensschema, 'antragsarten'> }): string | null {
+  const reihenfolge = o.reihenfolge ?? VORGABE_NAMENSSCHEMA.reihenfolge;
+  const arten = (o.schema ?? VORGABE_NAMENSSCHEMA).antragsarten;
   const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
   const art = o.art.trim();
-  const erwartet = `erwartet „${codes[0] ?? 'Projektcode'} ${art || 'Antragsart'} JJMMTT …“`;
-  const t = name.trim();
-  const code = codes.find((c) => t.toLowerCase().startsWith(`${c.toLowerCase()} `));
-  if (!code) return `Projektcode fehlt am Anfang – ${erwartet}`;
-  const rest = t.slice(code.length + 1).trimStart();
-  if (!art || !rest.toUpperCase().startsWith(`${art.toUpperCase()} `)) return `Antragsart ${art || '?'} fehlt nach dem Projektcode – ${erwartet}`;
-  const m = /^(\d{2})(\d{2})(\d{2})(\s+\S.*)$/.exec(rest.slice(art.length + 1).trimStart());
-  if (!m) return `Datum JJMMTT und Name fehlen nach der Antragsart – ${erwartet}`;
-  const [monat, tag] = [Number(m[2]), Number(m[3])];
-  if (monat < 1 || monat > 12 || tag < 1 || tag > 31) return `Kein gültiges Datum „${m[1]}${m[2]}${m[3]}“ – ${erwartet}`;
+  const erwartet = `erwartet „${antragsMuster(codes, art, reihenfolge)} …“`;
+  // „am Anfang“, „nach dem Projektcode“ … (bei der Vorgabe-Reihenfolge wie gewohnt), sonst „an Stelle n“
+  const wo = (t: NamensTeil) => {
+    const i = reihenfolge.indexOf(t);
+    if (i === 0) return 'am Anfang';
+    const davor = reihenfolge[i - 1];
+    return davor === 'code' ? 'nach dem Projektcode' : davor === 'art' ? 'nach der Antragsart' : `an Stelle ${i + 1}`;
+  };
+  // gemeinsame Zerlegung (core): mehrteiliger Projektcode, Nummer nur, wenn sie wie eine aussieht
+  const { teile, code } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
+  if (!code) return `Projektcode fehlt ${wo('code')} – ${erwartet}`;
+  if (!art || !teile.art || hauptArt(teile.art, arten) !== hauptArt(art, arten)) return `Antragsart ${art || '?'} fehlt ${wo('art')} – ${erwartet}`;
+  if (!/^\d{6}$/.test(teile.datum ?? '')) return `Datum JJMMTT fehlt ${wo('datum')} – ${erwartet}`;
+  // nach den Teilen braucht es eine Bezeichnung (eine Nummer allein genügt nicht)
+  if (!teile.rest) return `Bezeichnung fehlt – ${erwartet}`;
+  if (!gueltigesDatum(teile.datum)) return `Kein gültiges Datum „${teile.datum}“ – ${erwartet}`;
   return null;
+}
+
+/**
+ * Titel und Nummer für eine Datei, die neu in den Antragsumfang kommt (Quick-Add im Antragsordner): im Namensformat
+ * die Bezeichnung nach Projektcode, Antragsart, Datum und Nummer („HVO BAUA 261110 05 Brandschutzkonzept.pdf“ →
+ * „Brandschutzkonzept“, Nr. 05), sonst der Name ohne Endung. Eine Plannummer („GP-04“) wird keine Nr. – die ist eine
+ * Dokumentnummer im Antrag.
+ */
+export function aufnahmeVorschlag(name: string, o: { codes: string[]; reihenfolge?: NamensTeil[] }): { titel: string; nr?: string } {
+  const reihenfolge = o.reihenfolge ?? VORGABE_NAMENSSCHEMA.reihenfolge;
+  const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
+  const { teile, code, woerter } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
+  const ohneEndung = woerter.join(' ');
+  if (!code || !/^\d{6}$/.test(teile.datum ?? '') || !teile.rest) return { titel: ohneEndung || name };
+  return { titel: teile.rest, ...(teile.nummer && /^\d{1,3}[a-z]?$/.test(teile.nummer) ? { nr: teile.nummer } : {}) };
+}
+
+/**
+ * Vorschlag „Umbenennen nach Namensformat“: Projektcode, Antragsart, Datum und Nummer nach dem Namensschema vor die
+ * Bezeichnung. Was davon am Anfang des Namens schon steht – auch verrutscht –, wird übernommen statt verdoppelt: der
+ * Projektcode, ein gültiges JJMMTT, eine Plan- oder Dokumentnummer und ein bekanntes Kürzel (Phase oder andere
+ * Antragsart), das die Antragsart ersetzt – „HVO GP 261111 GP-04 Grundriss.pdf“ → „HVO BAUA 261111 GP-04
+ * Grundriss.pdf“, „HVO 261111 Bauantrag.pdf“ → „HVO BAUA 261111 Bauantrag.pdf“. Eine Plannummer mit Phasenkürzel
+ * („GP-04“) kommt auch von weiter hinten an ihre Stelle (sonst wäre der Plan danach keiner mehr); eine bloße Zahl in der
+ * Bezeichnung („Statik Teil 2“, „OG2“) bleibt, wo sie ist.
+ */
+export function nameNachFormat(name: string, o: { codes: string[]; art: string; datum: Date; reihenfolge?: NamensTeil[]; schema?: Pick<Namensschema, 'phasen' | 'antragsarten'> }): string {
+  const reihenfolge = o.reihenfolge ?? VORGABE_NAMENSSCHEMA.reihenfolge;
+  const schema = o.schema ?? VORGABE_NAMENSSCHEMA;
+  const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
+  // mehrteilige Codes zuerst („BS 9“ vor „BS“)
+  const codesLang = [...codes].sort((a, b) => b.split(/\s+/).length - a.split(/\s+/).length);
+  const { woerter, endung, teile, stelle, code } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
+  const bekannt = new Set([...alleKuerzel(schema.phasen), ...alleKuerzel(schema.antragsarten), o.art].map((k) => k.toUpperCase()));
+  const istPlannummer = (w: string) => !!planNummerAus(w, schema);
+  // ein Projektcode an seiner Stelle im Schema zählt als vorhanden
+  const codeStellen = code ? Array.from({ length: code.split(/\s+/).length }, (_, i) => stelle.code! + i) : [];
+  const werte: Partial<Record<NamensTeil, string>> = code ? { code: teile.code } : {};
+  // die Wörter mit ihrer Stelle im Namen (ein Kürzel klein geschrieben zählt nur an der Stelle der Antragsart)
+  let rest = woerter.map((w, i) => ({ w, i })).filter((x) => !codeStellen.includes(x.i));
+  // Kopf: Teile am Anfang übernehmen, bis das erste Wort der Bezeichnung kommt
+  kopf: while (rest.length) {
+    if (!werte.code)
+      for (const c of codesLang) {
+        const n = c.split(/\s+/).length;
+        const text = rest
+          .slice(0, n)
+          .map((x) => x.w)
+          .join(' ');
+        if (text.toLowerCase() === c.toLowerCase()) {
+          werte.code = text;
+          rest = rest.slice(n);
+          continue kopf;
+        }
+      }
+    const { w, i } = rest[0];
+    // „Entw Grundriss“, „Ab 2027 …“: klein geschrieben ist das ein Wort der Bezeichnung, kein Kürzel – außer an der
+    // Stelle der Antragsart mit einem weiteren Kopfteil daneben (Projektcode davor oder Datum danach) oder verrutscht
+    // ganz vorn vor Projektcode und Datum („bva HVO 261111 …“, nicht „Entw HVO Grundriss“)
+    const folgt = rest.slice(1).map((x) => x.w);
+    const codeDanach = codesLang.find((c) => folgt.slice(0, c.split(/\s+/).length).join(' ').toLowerCase() === c.toLowerCase());
+    const mitKopf = !!werte.code || gueltigesDatum(rest[1]?.w) || !!codeDanach;
+    const vorn = i === 0 && !!codeDanach && gueltigesDatum(folgt[codeDanach.split(/\s+/).length]);
+    if (!werte.art && bekannt.has(w.toUpperCase()) && (w === w.toUpperCase() || (i === stelle.art && mitKopf) || vorn)) werte.art = o.art;
+    else if (!werte.datum && gueltigesDatum(w)) werte.datum = w;
+    else if (!werte.nummer && (istPlannummer(w) || /^\d{1,3}[a-z]?$/.test(w))) werte.nummer = w;
+    else break;
+    rest = rest.slice(1);
+  }
+  // ein Projektcode weiter hinten (verrutscht hinter ein Wort der Bezeichnung): herausnehmen statt doppeln
+  if (!werte.code)
+    for (const c of codesLang) {
+      const n = c.split(/\s+/).length;
+      const j = rest.findIndex((_, k) =>
+        rest
+          .slice(k, k + n)
+          .map((x) => x.w)
+          .join(' ')
+          .toLowerCase() === c.toLowerCase(),
+      );
+      if (j < 0) continue;
+      werte.code = rest
+        .slice(j, j + n)
+        .map((x) => x.w)
+        .join(' ');
+      rest = [...rest.slice(0, j), ...rest.slice(j + n)];
+      break;
+    }
+  // eine Plannummer von weiter hinten nur, wenn sie eindeutig ist („Lageplan zu GP-02 und GP-03“ bleibt)
+  const plannummern = rest.filter((x) => istPlannummer(x.w));
+  if (!werte.nummer && plannummern.length === 1) {
+    werte.nummer = plannummern[0].w;
+    rest = rest.filter((x) => x !== plannummern[0]);
+  }
+  const wert = (t: NamensTeil) => (t === 'code' ? (werte.code ?? codes[0]) : t === 'art' ? o.art : t === 'datum' ? (werte.datum ?? jjmmtt(o.datum)) : werte.nummer);
+  // leere Teile weglassen (kein führendes Leerzeichen ohne Projektcode), dann die Bezeichnung
+  return `${[...reihenfolge.map(wert).filter(Boolean), ...rest.map((x) => x.w)].join(' ')}${endung}`;
 }
 
 /** bereit: von Hand markiert und seitdem unverändert · offen: noch nicht markiert · name: Namensformat passt nicht · geaendert: nach dem Markieren geändert */
@@ -612,7 +1420,6 @@ export function bereitschaft(datei: Pick<Eintrag, 'pfad' | 'geaendert'>, markier
   return 'bereit';
 }
 
-/** Antragsumfang aus den vorgewählten Einträgen des Katalogs */
 /** Antragsumfang aus Katalogeinträgen (ohne Vorlage: die früher vorgewählten) */
 export const umfangAusKatalog = (katalog: KatalogEintrag[], vorlage?: AntragsVorlage): UmfangEintrag[] =>
   (vorlage ? dokumenteDerVorlage(katalog, vorlage) : katalog.filter((k) => k.vorgewaehlt)).map(alsUmfang);
@@ -795,10 +1602,21 @@ export function quelleVon(u: UmfangEintrag, dateien: Eintrag[], codes: string[] 
   );
 }
 
-/** Das Formular eines internen Dokuments im FORMA-Projekt: zugeordnet, sonst nach Name oder Kennung */
+/**
+ * Schlüssel eines Formulars im Formularprojekt (Autofill-Zustand, Zuordnung im Antragsumfang): der Pfad ab dem
+ * Formularprojekt – auf der obersten Ebene der Dateiname, im Unterordner eines Sammelprojekts „2. BAUA/001-….frmsjf“
+ */
+export function formularSchluessel(pfad: string): string {
+  const teile = pfad.split('/');
+  return teile.length > 2 ? teile.slice(1).join('/') : teile[teile.length - 1];
+}
+
+/** Das Formular eines internen Dokuments im Formularprojekt: zugeordnet, sonst nach Name oder Kennung */
 export function formularVon<T extends { pfad: string; name: string; kennung?: string | null }>(u: UmfangEintrag, formulare: T[]): T | null {
   if (u.formularDatei) {
-    const f = formulare.find((x) => nurName(x.pfad).toLowerCase() === u.formularDatei!.toLowerCase());
+    const schluessel = u.formularDatei.toLowerCase();
+    // genau dieses Formular; eine ältere Zuordnung nur mit Dateinamen findet es auch im Unterordner
+    const f = formulare.find((x) => formularSchluessel(x.pfad).toLowerCase() === schluessel) ?? (schluessel.includes('/') ? undefined : formulare.find((x) => nurName(x.pfad).toLowerCase() === schluessel));
     if (f) return f;
   }
   const muster = u.formular || u.titel;
@@ -808,7 +1626,7 @@ export function formularVon<T extends { pfad: string; name: string; kennung?: st
 /* ---------- Vollständigkeit ---------- */
 
 /**
- * grau: fehlt · rot: unvollständig · gelb: ausgefüllt, aber nicht (aktuell) im Antragsordner · grün: aktuell ·
+ * roter Ring: fehlt · rot: unvollständig · gelb: ausgefüllt, aber nicht (aktuell) im Antragsordner · grün: aktuell ·
  * entfällt: nach den Antragsmerkmalen nicht erforderlich
  */
 export type Status = 'fehlt' | 'unvollstaendig' | 'offen' | 'aktuell' | 'entfaellt';
@@ -818,7 +1636,7 @@ export const STATUS_TEXT: Record<Status, string> = {
   fehlt: 'fehlt',
   unvollstaendig: 'nicht vollständig ausgefüllt',
   offen: 'noch nicht (aktuell) im Antragsordner',
-  aktuell: 'liegt aktuell im Antragsordner',
+  aktuell: 'aktuell im Antragsordner',
 };
 
 /** Reihenfolge der Status vom besten zum schlimmsten (ohne „entfällt“) */

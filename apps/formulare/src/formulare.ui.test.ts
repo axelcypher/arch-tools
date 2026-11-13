@@ -9,7 +9,8 @@ import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import { sperreVermerken } from './eigeneSperren';
-import { mitAenderungen, useFormulare } from './store';
+import { kartenVerknuepfbar, mitAenderungen, useFormulare } from './store';
+import { useAktualisieren } from './aktualisieren';
 import { einstiegsAktionen, farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -85,6 +86,8 @@ beforeEach(() => {
   ds.dateien.set('C:/FORMA/BS9/_archiv/000-Alt.frmsjf', MUSTER);
   ds.dateien.set('C:/FORMA/Sonstiges/notiz.txt', new Uint8Array([1]));
   useFormulare.setState({ ds, ...ANFANG, kartenFavoriten: [], kartenAusgeblendet: [], kartenEintraegeAusgeblendet: [] });
+  // keine Rückfrage „Unterlagen aktualisieren“ aus einem früheren Test (sonst bliebe ein Dialog über der App offen)
+  useAktualisieren.setState({ unterlagen: null });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -177,6 +180,17 @@ describe('Formulare', () => {
     expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
   });
 
+  it('fester Kopf der Navigation: Projekt, Antrag und Projektdaten | Antragsdaten rollen nicht mit – darunter „Formulare“', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    const fest = host.querySelector('.nav > .nav-fest')!;
+    expect(fest.querySelector('.fo-projektkopf')).not.toBeNull();
+    expect([...fest.querySelectorAll('.fo-daten strong')].map((s) => s.textContent)).toEqual(['Projektdaten', 'Antragsdaten']);
+    const rollt = host.querySelector('.nav > .nav-rollbereich')!;
+    expect(rollt.querySelector('.fo-daten, .fo-projektkopf')).toBeNull();
+    expect(rollt.querySelector('.nav-kopf-titel')!.textContent).toContain('Formulare');
+  });
+
   it('findet Projekte mit Titel und ihre Formulare (ohne Archiv)', async () => {
     const host = await render();
     // Projektübersicht statt Liste in der Seitenleiste: je Quelle eine Gruppe – bei genau einer Quelle aufgeklappt (P-09)
@@ -204,7 +218,7 @@ describe('Formulare', () => {
     eingabe(feld(host, 'Bauherrschaft', 1), 'Musterweg 7');
     act(() => kreuz(host, 'Sonderbau').click());
     act(() => kreuz(host, 'Wohngebäude').click());
-    expect(host.textContent).toContain('3 Feld(er) geändert');
+    expect(host.textContent).toContain('3 Felder geändert');
     expect(host.textContent).toContain('lokal gesichert');
     expect(ds.dateien.get(FORMULAR)).toBe(MUSTER);
 
@@ -240,7 +254,7 @@ describe('Formulare', () => {
     sperreVermerken('C:/FORMA', 'BS9/001-Muster.frmtmp', alt);
     const host = await render();
     expect(ds.dateien.has(SPERRE)).toBe(false);
-    expect(host.textContent).toContain('Nach einem Absturz liegen gebliebene Sperre(n) entfernt: 001-Muster.');
+    expect(host.textContent).toContain('Nach einem Absturz liegen gebliebene Sperre entfernt: 001-Muster.');
     // fremde Sperren mit anderem Inhalt bleiben unberührt
     const fremd = cp1252Schreiben('[Zugriff]\r\nUser=kollegin\r\nComputer=CAD02\r\nAngemeldet=09.11.2026 08:00:00\r\nInGebrauch=1111\r\n\r\n');
     ds.dateien.set(SPERRE, fremd);
@@ -345,7 +359,7 @@ describe('Formulare', () => {
 
     host = await oeffneMuster(await neustart());
     expect(feld(host, 'Bauherrschaft', 1).value).toBe('Musterweg 7');
-    expect(host.textContent).toContain('2 nicht gespeicherte Eingabe(n) vom letzten Mal wiederhergestellt');
+    expect(host.textContent).toContain('2 nicht gespeicherte Eingaben vom letzten Mal wiederhergestellt');
     expect(ds.dateien.get(FORMULAR)).toBe(MUSTER);
 
     // Rückgängig über den Neustart hinweg – erst das Kästchen, dann die Straße
@@ -429,11 +443,11 @@ describe('Formulare', () => {
     expect(host.querySelector('.pk-vorschau')!.textContent).toContain('Musterweg 1');
 
     eingabe(kartenFeld(host, 'Name/Firma'), 'Musterfrau');
-    expect(host.textContent).toContain('1 Eintrag/Einträge geändert');
+    expect(host.textContent).toContain('1 Eintrag geändert');
     expect(host.querySelector('.pk-feld.geaendert')).not.toBeNull();
     // in der Zwischenzeit ändert jemand in FORMA einen anderen Eintrag – das stört nicht
     pkText(201, 110).text = 'Neustadt';
-    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    await klick(knopfGenau(host, 'Projektdaten speichern'));
     expect(pkText(201, 40).text).toBe('Musterfrau');
     expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);
     expect(kartenFeld(host, 'Ort').value).toBe('Neustadt');
@@ -442,7 +456,7 @@ describe('Formulare', () => {
     // derselbe Eintrag inzwischen anders: nichts wird geschrieben
     eingabe(kartenFeld(host, 'Name/Firma'), 'Beispiel');
     pkText(201, 40).text = 'von FORMA';
-    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    await klick(knopfGenau(host, 'Projektdaten speichern'));
     expect(host.textContent).toContain('inzwischen geändert');
     expect(pkText(201, 40).text).toBe('von FORMA');
   });
@@ -461,11 +475,112 @@ describe('Formulare', () => {
 
     await klick(knopfMit(host, 'Rückgängig'));
     expect(kartenFeld(host, 'PLZ Straße').value).toBe('12345');
-    await klick(knopfGenau(host, 'Projektkarte speichern'));
-    expect(pkText(201, 210).zahl).toBe(2);
+    await klick(knopfGenau(host, 'Projektdaten speichern'));
+    // „Sehr geehrter Herr“ ist die zweite Möglichkeit: Ganzzahl 1 – die leere Zeile zählt in der Datei nicht mit (wie SJ Office)
+    expect(pkText(201, 210).zahl).toBe(1);
     // die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat
     expect(pkText(201, 210).text).toBe(ANREDE);
     expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);
+  });
+
+  const landOeffnen = async (zahl: number) => {
+    const k = projektkarte();
+    k.eintraege.find((e) => e.gruppe === 101 && e.id === 60)!.zahl = zahl;
+    ds.projektkarten.set(KARTE, k);
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await gruppeWaehlen(host, 'Projektdaten');
+    return () => kartenFeld<HTMLSelectElement>(host, 'Land');
+  };
+  it('Projektkarte: Auswahlliste liest die Nummer wie SJ Office (0 = erste Möglichkeit nach der leeren Zeile)', async () => {
+    const land = await landOeffnen(0);
+    expect(land().selectedOptions[0].textContent).toBe('Bayern');
+  });
+  it('Projektkarte: eine Nummer außerhalb der Liste ist sichtbar („bitte neu wählen“) und verschwindet nach einer gültigen Wahl', async () => {
+    const land = await landOeffnen(2);
+    expect(land().selectedOptions[0].textContent).toBe('(Auswahl nicht in der Liste – bitte neu wählen)');
+    expect([...land().options].map((o) => o.textContent)).toEqual(['– keine Angabe –', '(Auswahl nicht in der Liste – bitte neu wählen)', 'Bayern', 'Nordrhein-Westfalen']);
+    waehle(land(), '2');
+    expect(land().selectedOptions[0].textContent).toBe('Nordrhein-Westfalen');
+    expect([...land().options].map((o) => o.textContent)).not.toContain('(Auswahl nicht in der Liste – bitte neu wählen)');
+  });
+
+  it('Projektkarte: Art der Nutzung als Auswahl – eine eigene Angabe bleibt erhalten; Anzahl nur als ganze Zahl', async () => {
+    const k = projektkarte();
+    k.eintraege.push(
+      { gruppe: 101, id: 100, typ: 1, titel: 'Art der Nutzung:', text: 'Eigene Nutzung', zahl: null },
+      { gruppe: 101, id: 110, typ: 1, titel: 'Anzahl Wohnungen:', text: 'ca. 3', zahl: null },
+    );
+    ds.projektkarten.set(KARTE, k);
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    await gruppeWaehlen(host, 'Projektdaten');
+
+    // ein Text, der nicht in der Liste steht, wird als „(eigene Angabe)“ angeboten und nicht überschrieben
+    const nutzung = () => kartenFeld<HTMLSelectElement>(host, 'Art der Nutzung');
+    expect(nutzung().tagName).toBe('SELECT');
+    expect(nutzung().value).toBe('Eigene Nutzung');
+    const optionen = () => [...nutzung().options].map((o) => o.textContent);
+    expect(optionen()).toContain('Eigene Nutzung (eigene Angabe)');
+    expect(optionen()).toContain('Wohnen');
+    expect(optionen().at(-1)).toBe('eigene Angabe ändern …');
+
+    // „eigene Angabe ändern …“ öffnet die Eingabe mit dem Text, der Pfeil führt zur Liste zurück – ohne zu löschen
+    waehle(nutzung(), '\u0000frei');
+    const frei = kartenFeld(host, 'Art der Nutzung');
+    expect(frei.tagName).toBe('INPUT');
+    expect(frei.value).toBe('Eigene Nutzung');
+    eingabe(frei, 'Atelier');
+    await klick(knopfMit(host, 'Aus der Liste wählen'));
+    expect(nutzung().value).toBe('Atelier');
+    expect(optionen()).toContain('Atelier (eigene Angabe)');
+    expect(document.activeElement).toBe(nutzung());
+    // mit der Tastatur: Esc führt ebenso zurück, der Fokus bleibt am Eintrag
+    waehle(nutzung(), '\u0000frei');
+    taste(kartenFeld(host, 'Art der Nutzung'), 'Escape');
+    expect(nutzung().tagName).toBe('SELECT');
+    expect(nutzung().value).toBe('Atelier');
+    expect(document.activeElement).toBe(nutzung());
+
+    // ein Wert aus der Liste ersetzt die eigene Angabe; danach heißt der letzte Punkt wieder „andere …“
+    waehle(nutzung(), 'Wohnen');
+    expect(nutzung().value).toBe('Wohnen');
+    expect(optionen().some((o) => o?.includes('(eigene Angabe)'))).toBe(false);
+    expect(optionen().at(-1)).toBe('andere …');
+
+    // Anzahl: Ziffernfeld; ein alter Text, der keine ganze Zahl ist, bleibt sichtbar (und leerbar) und wird gemeldet
+    const anzahl = () => kartenFeld(host, 'Anzahl Wohnungen');
+    expect(anzahl().type).toBe('text');
+    expect(anzahl().inputMode).toBe('numeric');
+    expect(anzahl().value).toBe('ca. 3');
+    expect(anzahl().getAttribute('aria-invalid')).toBe('true');
+    expect(host.textContent).toContain('„ca. 3“ ist keine ganze Zahl – bitte als Zahl eintragen');
+    // die Warnung steht direkt unter dem Feld (vor der Herkunft) und ist mit ihm verbunden
+    expect(anzahl().nextElementSibling?.className).toBe('pk-warnung');
+    expect(anzahl().getAttribute('aria-describedby')).toBe(anzahl().nextElementSibling!.id);
+    eingabe(anzahl(), '3');
+    expect(anzahl().value).toBe('3');
+    expect(host.textContent).not.toContain('keine ganze Zahl');
+    // nur Ziffern lassen sich tippen; Eingefügtes wird nicht verändert, sondern gemeldet
+    for (const t of [',', '.', '-', 'e', 'a', ' ']) {
+      const ev = new KeyboardEvent('keydown', { key: t, bubbles: true, cancelable: true });
+      act(() => void anzahl().dispatchEvent(ev));
+      expect(ev.defaultPrevented).toBe(true);
+    }
+    eingabe(anzahl(), '1.5');
+    expect(useFormulare.getState().karte!.aenderungen['101:110']).toBe('1.5');
+    expect(anzahl().value).toBe('1.5');
+    expect(host.textContent).toContain('„1.5“ ist keine ganze Zahl – bitte als Zahl eintragen');
+    const ziffer = new KeyboardEvent('keydown', { key: '7', bubbles: true, cancelable: true });
+    act(() => void anzahl().dispatchEvent(ziffer));
+    expect(ziffer.defaultPrevented).toBe(false);
+    eingabe(anzahl(), '3');
+
+    await klick(knopfGenau(host, 'Projektdaten speichern'));
+    expect(pkText(101, 100).text).toBe('Wohnen');
+    expect(pkText(101, 110).text).toBe('3');
   });
 
   it('Projektkarte: Angaben von einer anderen Gruppe übernehmen; eine Adresse als Vorgabe festlegen und eintragen', async () => {
@@ -557,7 +672,31 @@ describe('Formulare', () => {
         .querySelector('input')!;
     await klick(haken('Bauherr', 'Name/Firma'));
     await klick(haken('Gemeinde', 'Ort'));
-    const imAufbau = () => [...editor.querySelectorAll('.av-ed-feld .av-ed-feld-text')].map((t) => t.firstChild!.textContent);
+    await klick(haken('Bauherr', 'Ort'));
+    const imAufbau = () => [...editor.querySelectorAll<HTMLInputElement>('.av-ed-feld .av-ed-label')].map((t) => t.placeholder);
+    expect(imAufbau()).toEqual(['Name/Firma', 'Ort', 'Ort']);
+    // eigene Beschriftung, Breite, neue Zeile
+    const feldZeile = (n: number) => editor.querySelectorAll<HTMLElement>('.av-ed-feld')[n];
+    eingabe(feldZeile(0).querySelector<HTMLInputElement>('.av-ed-label')!, 'Bauherrschaft');
+    waehle(feldZeile(0).querySelector<HTMLSelectElement>('select[aria-label^="Breite"]')!, '8');
+    await klick(feldZeile(1).querySelector<HTMLInputElement>('input[aria-label$="beginnt eine neue Zeile"]')!);
+    // Ort der Gemeinde mit dem Ort des Bauherrn verknüpfen (Knopf ⛓, dann das Kästchen)
+    const verknuepfeMit = async (zeile: HTMLElement, text: string) => {
+      const knopf = zeile.querySelector<HTMLButtonElement>('button.av-ed-link')!;
+      if (knopf.getAttribute('aria-expanded') !== 'true') await klick(knopf);
+      await klick([...editor.querySelectorAll<HTMLLabelElement>('.av-ed-link-liste label')].find((l) => l.textContent?.startsWith(text))!.querySelector('input')!);
+    };
+    await verknuepfeMit(feldZeile(1), 'Ort (Bauherr)');
+    await warte();
+    const gespeichert = JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!);
+    expect(gespeichert.abschnitte[0].optionen).toEqual({ '201:40': { label: 'Bauherrschaft', breite: 8 }, '232:110': { neueZeile: true } });
+    expect(gespeichert.verknuepfungen).toEqual([['232:110', '201:110']]);
+    expect([...editor.querySelectorAll('.av-ed-vorschau-feld')].map((v) => v.textContent)).toEqual(['Bauherrschaft', 'Ort', 'Ort']);
+    // Bauherr › Ort wieder heraus
+    await klick(feldZeile(2).querySelector<HTMLButtonElement>('.av-ed-weg')!);
+    expect(JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!).verknuepfungen).toBeUndefined();
+    await verknuepfeMit(feldZeile(1), 'Name/Firma (Bauherr)');
+    await warte();
     expect(imAufbau()).toEqual(['Name/Firma', 'Ort']);
     // mit der Tastatur umordnen
     taste(editor.querySelectorAll<HTMLElement>('.av-griff')[1], 'ArrowUp');
@@ -566,13 +705,103 @@ describe('Formulare', () => {
     expect(JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!).abschnitte[0].felder).toEqual(['232:110', '201:40']);
     await klick([...editor.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Fertig')!);
     expect(document.querySelector('.av-editor')).toBeNull();
-    // die Felder stehen auf der Seite und lassen sich bearbeiten – mit der Gruppe darüber
-    expect([...host.querySelectorAll('.pk-eigen-gruppe')].map((g) => g.textContent)).toEqual(['Gemeinde', 'Bauherr']);
+    // auf der Seite: eigene Beschriftung, Herkunft dezent unter dem Feld, Breite im Raster
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-titel')].map((t) => t.textContent)).toEqual(['Ort', 'Bauherrschaft']);
+    // Verknüpfung: Symbol „Kette“ (role=img, „verknüpft mit“) statt eines Unicode-Zeichens
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde ·  Bauherr', 'Bauherr ·  Gemeinde']);
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter [role="img"]')].map((k) => [k.getAttribute('aria-label'), !!k.querySelector('svg.symbol')])).toEqual([
+      ['verknüpft mit', true],
+      ['verknüpft mit', true],
+    ]);
+    expect([...host.querySelectorAll<HTMLElement>('.pk-eigen .av-feld')].map((f) => [f.dataset.breite, 'neueZeile' in f.dataset])).toEqual([
+      ['4', true],
+      ['8', false],
+    ]);
+    // verknüpft: eine Eingabe füllt beide Felder (ein Schritt im Verlauf)
     const name = host.querySelector<HTMLInputElement>('.pk-eigen [data-pk="201:40"]')!;
     eingabe(name, 'Musterfrau, Erika');
     expect(useFormulare.getState().karte!.aenderungen['201:40']).toBe('Musterfrau, Erika');
+    expect(useFormulare.getState().karte!.aenderungen['232:110']).toBe('Musterfrau, Erika');
+    act(() => void useFormulare.getState().karteRueckgaengig());
+    expect(useFormulare.getState().karte!.aenderungen).toEqual({});
+    // Zeichen für Zeichen: ein Schritt im Verlauf
+    for (const t of ['M', 'Mu', 'Mus']) eingabe(name, t);
+    expect(useFormulare.getState().karte!.verlauf.schritte).toHaveLength(1);
+    expect(useFormulare.getState().karte!.aenderungen['232:110']).toBe('Mus');
+    act(() => void useFormulare.getState().karteRueckgaengig());
+    expect(useFormulare.getState().karte!.aenderungen).toEqual({});
+    eingabe(name, 'Musterfrau, Erika');
     // Navigation: Zahl der Einträge
     expect([...host.querySelectorAll('.pk-nav-eigen .pk-nav-kurz')].map((k) => k.textContent)).toEqual(['2 Einträge auf einer Seite']);
+  });
+
+  it('Projektkarte: Verwerfen und Gruppe leeren wirken nur auf die eigenen Einträge, nicht über Verknüpfungen', async () => {
+    // Ort des Bauherrn (Musterstadt) ist mit dem Ort der Gemeinde (hier: Köln) verknüpft
+    const k = projektkarte();
+    k.eintraege.find((e) => e.gruppe === 232 && e.id === 110)!.text = 'Köln';
+    ds.projektkarten.set(KARTE, k);
+    localStorage.setItem('formulare:ansicht:projektkarte', JSON.stringify({ abschnitte: [{ id: 'a1', titel: 'Orte', felder: ['201:110', '232:110'] }], verknuepfungen: [['201:110', '232:110']] }));
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    const aenderungen = () => useFormulare.getState().karte!.aenderungen;
+    // in A „Köln“: B ist damit unverändert (gleich dem gespeicherten Wert)
+    act(() => useFormulare.getState().karteSetzen(201, 110, 'Köln'));
+    expect(aenderungen()).toEqual({ '201:110': 'Köln' });
+    // Verwerfen: A zurück auf Musterstadt – B bleibt Köln, keine ungespeicherte Änderung übrig
+    act(() => useFormulare.getState().karteVerwerfen());
+    expect(aenderungen()).toEqual({});
+    // Gruppe Bauherr leeren: der verknüpfte Ort der Gemeinde bleibt
+    await gruppeWaehlen(host, 'Bauherr');
+    await klick(knopfGenau(host, 'Leeren'));
+    expect(aenderungen()['201:110']).toBe('');
+    expect(aenderungen()['232:110']).toBeUndefined();
+    // eine Eingabe dagegen füllt beide
+    act(() => useFormulare.getState().karteSetzen(201, 110, 'Münster'));
+    expect(aenderungen()).toMatchObject({ '201:110': 'Münster', '232:110': 'Münster' });
+  });
+
+  it('Projektkarte: Verknüpfungen je Art – Text in Text (ohne Zeilenumbruch), Auswahl über den Text der Wahl, Kästchen in Kästchen', async () => {
+    const k = projektkarte();
+    k.eintraege.push(
+      { gruppe: 101, id: 200, typ: 16, titel: 'Denkmal', text: 'Baudenkmal', zahl: 0 },
+      { gruppe: 101, id: 210, typ: 16, titel: 'Denkmalbereich', text: 'Denkmalbereich', zahl: 0 },
+    );
+    ds.projektkarten.set(KARTE, k);
+    localStorage.setItem(
+      'formulare:ansicht:projektkarte',
+      JSON.stringify({
+        abschnitte: [{ id: 'a1', titel: 'A', felder: ['101:30', '232:110', '201:210', '232:210', '101:60', '101:200', '101:210'] }],
+        // mehrzeilig ↔ einzeilig, Anrede ↔ Anrede (gleiche Möglichkeiten), Land ↔ Anrede (andere Möglichkeiten), Kästchen ↔ Kästchen
+        verknuepfungen: [['101:30', '232:110'], ['201:210', '232:210', '101:60'], ['101:200', '101:210']],
+      }),
+    );
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    const aenderungen = () => useFormulare.getState().karte!.aenderungen;
+    // mehrzeiliger Text ins einzeilige Feld: ohne Zeilenumbruch
+    act(() => useFormulare.getState().karteSetzen(101, 30, 'Neubau\nZweifamilienhaus'));
+    expect(aenderungen()).toMatchObject({ '101:30': 'Neubau\nZweifamilienhaus', '232:110': 'Neubau Zweifamilienhaus' });
+    // Auswahl über den Text der Wahl: Anrede 2 („Sehr geehrter Herr“) auch in der anderen Anrede; „Land“ kennt den Text
+    // nicht und bleibt unverändert
+    act(() => useFormulare.getState().karteSetzen(201, 210, 2));
+    expect(aenderungen()['232:210']).toBe(2);
+    expect(aenderungen()['101:60']).toBeUndefined();
+    // keine Angabe überträgt sich ebenso
+    act(() => useFormulare.getState().karteSetzen(201, 210, null));
+    expect(aenderungen()['232:210']).toBeUndefined();
+    // Kästchen in Kästchen
+    act(() => useFormulare.getState().karteSetzen(101, 200, 1));
+    expect(aenderungen()).toMatchObject({ '101:200': 1, '101:210': 1 });
+    // unpassende Paare bietet der Editor gar nicht an
+    const eintrag = (g: number, id: number) => k.eintraege.find((e) => e.gruppe === g && e.id === id)!;
+    expect(kartenVerknuepfbar(eintrag(101, 30), eintrag(232, 110))).toBe(true);
+    expect(kartenVerknuepfbar(eintrag(201, 210), eintrag(101, 60))).toBe(true);
+    expect(kartenVerknuepfbar(eintrag(101, 200), eintrag(101, 210))).toBe(true);
+    expect(kartenVerknuepfbar(eintrag(101, 200), eintrag(232, 110))).toBe(false);
+    expect(kartenVerknuepfbar(eintrag(201, 210), eintrag(232, 110))).toBe(false);
+    expect(kartenVerknuepfbar(eintrag(101, 30), undefined)).toBe(false);
   });
 
   it('Projektkarte: einzelne Einträge ausblenden – bei Beteiligten für alle, mit ungespeicherter Änderung sichtbar', async () => {
@@ -616,7 +845,7 @@ describe('Formulare', () => {
     // Memo2 (leer) → „12345 Musterstadt“; Memo1 („Mustermann, Max“) bekäme den leeren Eintrag der Behörde – nicht angeboten
     expect(zeilen.map((z) => [z.querySelector('strong')!.textContent, z.querySelector('input')!.checked])).toEqual([['Bauherrschaft', true]]);
     expect(zeilen[0].textContent).toContain('12345 Musterstadt');
-    await klick(knopf(host, '1 Feld(er) übernehmen'));
+    await klick(knopf(host, '1 Feld übernehmen'));
     expect(feld(host, 'Bauherrschaft', 1).value).toBe('12345 Musterstadt');
     expect(feld(host, 'Bauherrschaft', 0).value).toBe('Mustermann, Max');
 
@@ -655,5 +884,85 @@ describe('Formulare', () => {
     await warte();
     expect(host.querySelector('.fo-schnellwahl')).toBeNull();
     expect(useFormulare.getState().projekt?.ordner).toBe('BS9');
+  });
+
+  it('Schnellwahl als gemeinsamer Dialog: Fokus im Suchfeld, ↓ markiert und rollt den Treffer ins Bild, Esc schließt, Fokus zurück', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    const suchen = knopf(host, 'Suchen');
+    suchen.focus();
+    await klick(suchen);
+    await warte();
+    const dialog = host.querySelector<HTMLElement>('.modal.fo-schnellwahl')!;
+    expect(dialog.getAttribute('role')).toBe('dialog');
+    expect(dialog.getAttribute('aria-label')).toBe('Schnellwahl');
+    const suche = dialog.querySelector<HTMLInputElement>('input[aria-label="Projekt oder Formular suchen"]')!;
+    expect(document.activeElement).toBe(suche);
+    const treffer = () => [...dialog.querySelectorAll<HTMLElement>('[role="option"]')];
+    expect(treffer().length).toBeGreaterThan(1);
+    expect(suche.getAttribute('aria-activedescendant')).toBe(treffer()[0].id);
+    // ↓: der zweite Treffer ist markiert und wird ins Bild gerollt
+    const gerollt: Element[] = [];
+    const vorher = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      gerollt.push(this);
+    };
+    try {
+      taste(suche, 'ArrowDown');
+      await warte();
+    } finally {
+      Element.prototype.scrollIntoView = vorher;
+    }
+    expect(suche.getAttribute('aria-activedescendant')).toBe(treffer()[1].id);
+    expect(treffer()[1].getAttribute('aria-selected')).toBe('true');
+    expect(gerollt).toContain(treffer()[1]);
+    // Tab bleibt im Suchfeld: die Treffer sind keine Bedienelemente (kein Ziel der Fokusfalle), Tab wird abgefangen
+    expect(dialog.querySelectorAll('button, [tabindex]')).toHaveLength(0);
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    act(() => void suche.dispatchEvent(tab));
+    expect(tab.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(suche);
+    // Esc schließt – der Fokus kehrt zum Knopf „Suchen …“ zurück
+    taste(suche, 'Escape');
+    await warte();
+    await warte();
+    expect(host.querySelector('.fo-schnellwahl')).toBeNull();
+    expect(document.activeElement).toBe(suchen);
+  });
+
+  it('Breite der Navigation: Griff aus core – per Tastatur (←/→) und Doppelklick (Vorgabe) bedienbar', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    const griff = host.querySelector<HTMLElement>('.nav .leiste-griff')!;
+    expect(griff.getAttribute('role')).toBe('separator');
+    expect(griff.tabIndex).toBe(0);
+    expect(griff.getAttribute('aria-label')).toBe('Breite der Navigation ändern');
+    const vorher = useFormulare.getState().leisteBreite;
+    taste(griff, 'ArrowRight');
+    expect(useFormulare.getState().leisteBreite).toBe(vorher + 16);
+    act(() => void griff.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
+    expect(useFormulare.getState().leisteBreite).toBe(300);
+  });
+
+  it('Menüknopf: aria-expanded, Esc und Tab schließen das Menü und geben den Fokus an den Knopf zurück', async () => {
+    const host = await oeffneMuster();
+    const pdf = host.querySelector<HTMLButtonElement>('.toolbar button[aria-haspopup="menu"][title^="Als PDF exportieren"]')!;
+    expect(pdf.getAttribute('aria-expanded')).toBe('false');
+    pdf.focus();
+    await klick(pdf);
+    expect(document.querySelector('.menue')).not.toBeNull();
+    expect(pdf.getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement?.classList.contains('menue-punkt')).toBe(true);
+    taste(document.activeElement!, 'Escape');
+    await warte();
+    expect(document.querySelector('.menue')).toBeNull();
+    expect(document.activeElement).toBe(pdf);
+    expect(pdf.getAttribute('aria-expanded')).toBe('false');
+    // Tab schließt ebenfalls (das Menü bleibt nicht offen stehen)
+    await klick(pdf);
+    taste(document.activeElement!, 'Tab');
+    await warte();
+    expect(document.querySelector('.menue')).toBeNull();
+    expect(document.activeElement).toBe(pdf);
   });
 });

@@ -4,6 +4,8 @@
  * Nachschlagen per Name ({{geschoss:EG.bgf}}), benannte Filter und die Zuordnung in Blöcken.
  */
 
+import { ersetzen, GLOBALE_VARIABLEN } from '../platzhalter';
+
 export type Value = string | number;
 /** Datensatz; Schlüssel mit „_“ sind intern (Zuordnung in Blöcken) */
 export type Row = Record<string, Value>;
@@ -96,6 +98,12 @@ export function lookupNamed(key: string, ctx: ExportContext): Value | undefined 
 
 function lookup(key: string, ctx: ExportContext, item?: { collection: string; row: Row }): Value | undefined {
   if (key in ctx.scalars) return ctx.scalars[key];
+  // globale Variable mit Format: {{DATUM:TT.MM.JJJJ}}, {{JAHR:JJ}}
+  const iso = ctx.scalars['DATUM.iso'];
+  if (typeof iso === 'string' && /^(DATUM|JAHR|JAHR_KURZ)\s*:/.test(key)) {
+    const v = ersetzen(`{${key}}`, GLOBALE_VARIABLEN, { DATUM: iso, JAHR: iso, JAHR_KURZ: iso });
+    if (v !== `{${key}}`) return v;
+  }
   if (item && key.startsWith(`${item.collection}.`)) return item.row[key.slice(item.collection.length + 1)];
   return lookupNamed(key, ctx);
 }

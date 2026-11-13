@@ -99,3 +99,92 @@ export function speichernAnfragenBeantworten(speichern: (() => Promise<boolean |
   window.addEventListener('message', hoeren);
   return () => window.removeEventListener('message', hoeren);
 }
+
+/* ---------- Nachrichten zwischen den Apps über den Rahmen (z. B. „Neues Projekt anlegen“ aus jeder App) ---------- */
+
+/** App → Rahmen: den Assistenten der Projekt-App für ein neues Projekt starten */
+export const PROJEKT_ANLEGEN = 'arch-tools:projekt-anlegen';
+/** Rahmen → Projekt-App: Assistent für ein neues Projekt (mit der App, aus der der Auftrag kommt) */
+export const ASSISTENT_NEU = 'arch-tools:assistent-neu';
+/** Projekt-App → Rahmen: zurück zu einer App (`an`), mit dem neu angelegten Projektordner (`ordner`) */
+export const ZUR_APP = 'arch-tools:zur-app';
+/** Rahmen → App: ein neues Projekt wurde angelegt (`ordner`) – Übersicht neu laden, wenn möglich öffnen */
+export const PROJEKT_ANGELEGT = 'arch-tools:projekt-angelegt';
+/** App → Rahmen: hört jetzt auf Nachrichten (vorher angekommene stellt der Rahmen danach zu) */
+export const BEREIT = 'arch-tools:bereit';
+/** Kanäle der herausgelösten Fenster (Tauri-Ereignisse) */
+export const AN_RAHMEN = 'arch-tools:an-rahmen';
+export const AN_APP = 'arch-tools:an-app';
+
+/** Kennung der Projekt-App im Rahmen */
+export const PROJEKT_APP = 'ordner';
+
+export interface RahmenNachricht {
+  typ: string;
+  /** Absender (Kennung der App) – setzt `anRahmen` */
+  app?: string | null;
+  /** Empfänger (Kennung der App) */
+  an?: string | null;
+  /** Auftrag kommt von dieser App (Kennung, Name); `kannOeffnen`: sie öffnet das neue Projekt selbst */
+  von?: string | null;
+  vonName?: string;
+  kannOeffnen?: boolean;
+  /** Projektordner (vollständiger Pfad) */
+  ordner?: string;
+}
+
+const istTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+/** Nachricht an den Rahmen (Tab: postMessage an den Rahmen; herausgelöstes Fenster: Tauri-Ereignis) */
+export function anRahmen(n: RahmenNachricht): void {
+  const modus = rahmenModus();
+  if (!modus) return;
+  const nachricht: RahmenNachricht = { ...n, app: rahmenApp() };
+  try {
+    if (modus === 'tab') window.parent.postMessage(nachricht, window.location.origin);
+    else if (istTauri()) void import('@tauri-apps/api/event').then(({ emit }) => emit(AN_RAHMEN, nachricht));
+    else window.opener?.postMessage(nachricht, window.location.origin);
+  } catch {
+    // ohne Rahmen nichts zu melden
+  }
+}
+
+/**
+ * Auf Nachrichten des Rahmens hören (nur in der Rahmen-App). Meldet sich danach mit `BEREIT` beim Rahmen, damit er
+ * zwischendurch Angekommenes zustellt. Liefert die Abmeldung.
+ */
+export function vomRahmen(typ: string, f: (n: RahmenNachricht) => void): () => void {
+  const modus = rahmenModus();
+  if (!modus) return () => {};
+  const app = rahmenApp();
+  const passt = (d: RahmenNachricht | null) => !!d && d.typ === typ && (!d.an || d.an === app);
+  const hoeren = (e: MessageEvent) => {
+    const d = e.data as RahmenNachricht | null;
+    if (e.origin !== window.location.origin || (e.source !== window.parent && e.source !== window.opener) || !passt(d)) return;
+    f(d!);
+  };
+  window.addEventListener('message', hoeren);
+  let ende: (() => void) | undefined;
+  let lebt = true;
+  if (modus === 'fenster' && istTauri())
+    void import('@tauri-apps/api/event').then(async ({ listen }) => {
+      const aus = await listen<RahmenNachricht>(AN_APP, (e) => passt(e.payload) && f(e.payload));
+      if (lebt) ende = aus;
+      else aus();
+      if (lebt) anRahmen({ typ: BEREIT });
+    });
+  else anRahmen({ typ: BEREIT });
+  return () => {
+    lebt = false;
+    window.removeEventListener('message', hoeren);
+    ende?.();
+  };
+}
+
+/** Lässt sich aus dieser App ein neues Projekt mit dem Assistenten der Projekt-App anlegen? (nur in der Rahmen-App) */
+export const projektAnlegenMoeglich = (): boolean => rahmenModus() !== null && rahmenApp() !== PROJEKT_APP;
+
+/** Assistenten der Projekt-App starten; `kannOeffnen`: diese App öffnet das neue Projekt danach selbst */
+export function projektAnlegenStarten(kannOeffnen = false): void {
+  anRahmen({ typ: PROJEKT_ANLEGEN, von: rahmenApp(), kannOeffnen });
+}

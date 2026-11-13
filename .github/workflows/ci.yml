@@ -32,6 +32,7 @@ jobs:
             apps/ordner/dist
             apps/entzerrung/dist
             apps/formulare/dist
+            apps/ava/dist
             apps/baurecht/dist
             apps/suite/dist
 
@@ -54,6 +55,8 @@ jobs:
             pkg: entzerrung
           - app: formulare
             pkg: formulare
+          - app: ava
+            pkg: ava
           - app: baurecht
             pkg: baurecht
             # Tests der Tauri-Hülle (Host-Liste, Umleitungen, Signatur, Ablage) – die Rahmen-App bindet dieselbe Datei ein

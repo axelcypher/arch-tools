@@ -2,7 +2,7 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { PkEintrag, PkGruppe, PkWert } from '../forma/projektkarte';
 import { pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWertVon } from '../forma/projektkarte';
-import { anschrift, aufbau, einheit, feldTitel, gruppenReihen, istAdresse, pruefung, zusammenfassung } from '../projektkarteAufbau';
+import { anschrift, aufbau, einheit, feldTitel, gruppenReihen, istAdresse, istAnzahl, nutzungsarten, pruefung, zusammenfassung } from '../projektkarteAufbau';
 import type { Adresse } from '../adressbuch';
 import { adressName, adressOrt, adressSchluessel, adressenAusKarte, inRolle } from '../adressbuch';
 import type { Angabe } from '../projektdaten';
@@ -17,7 +17,7 @@ import { felderDerAnsicht, useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import type { KartenWert, OffeneKarte } from '../store';
-import { karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
+import { KARTEN_ANSICHT, kartenVerknuepfbar, karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
 
 /** zuletzt gewählte Gruppe je Projekt (bleibt beim Wechsel zwischen Formular und Projektkarte) */
 const gewaehlt = new Map<string, number>();
@@ -50,21 +50,21 @@ export function ProjektkarteAnsicht() {
     if (!karte) void karteLaden().finally(() => setGeladen(true));
   }, [karte, karteLaden]);
 
-  if (!ds) return <div className="fo-leer">Die Projektkarte gibt es nur in der Desktop-App.</div>;
+  if (!ds) return <div className="fo-leer">Die Projektdaten gibt es nur in der Desktop-App.</div>;
   if (!projekt) return null;
   if (!karte)
     return (
       <div className="fo-leer">
         {geladen ? (
           <>
-            <h2>Keine Projektkarte</h2>
-            <p>
-              Im Projekt <strong>{projekt.ordner}</strong> gibt es keine lesbare Projektkarte.
+            <h2>Keine Projektdaten</h2>
+            <p title="Die Projektdaten stehen in der Projektkarte des Formularprojekts">
+              Im Projekt <strong>{projekt.ordner}</strong> gibt es keine lesbaren Projektdaten.
             </p>
             <button onClick={() => void karteLaden()}>Erneut lesen</button>
           </>
         ) : (
-          <p className="muted">Projektkarte wird gelesen …</p>
+          <p className="muted">Projektdaten werden gelesen …</p>
         )}
       </div>
     );
@@ -98,7 +98,7 @@ function Karte({ karte }: { karte: OffeneKarte }) {
     return () => window.removeEventListener('formulare:pk-sprung', beiSprung);
   });
 
-  if (!alle.length) return <div className="fo-leer">Die Projektkarte enthält keine Einträge.</div>;
+  if (!alle.length) return <div className="fo-leer">Die Projektdaten enthalten keine Einträge.</div>;
 
   return (
     <div className="pk">
@@ -121,8 +121,7 @@ const PROJEKTDATEN = -1;
 /** Kennung der eigenen Ansicht in der Navigation */
 const EIGENE = -3;
 
-/** Schlüssel der eigenen Ansicht der Projektkarte (je Benutzer, für alle Projekte) */
-export const KARTEN_ANSICHT = 'formulare:ansicht:projektkarte';
+export { KARTEN_ANSICHT };
 
 /** Katalog der Projektkarte für den Ansicht-Editor: jeder Eintrag jeder Gruppe (Kennung „Gruppe:Eintrag“) */
 function kartenKatalog(karte: OffeneKarte): FeldDef[] {
@@ -141,15 +140,34 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
   const [ansicht, setAnsicht] = useAnsicht(KARTEN_ANSICHT);
   const [editor, setEditor] = useState(false);
   const katalog = useMemo(() => kartenKatalog(karte), [karte.karte]); // eslint-disable-line react-hooks/exhaustive-deps
-  const feld = (f: FeldDef) => {
+  const feld = (f: FeldDef, o: { label: string; verknuepft: string[] }) => {
     const [g, id] = f.id.split(':').map(Number);
     const gruppe = karte.karte.gruppen.find((x) => x.id === g);
     const eintrag = karte.karte.eintraege.find((e) => e.gruppe === g && e.id === id);
     if (!gruppe || !eintrag) return null;
+    const mit = o.verknuepft.map((v) => katalog.find((k) => k.id === v)).filter((k): k is FeldDef => !!k);
+    const unter = (
+      <>
+        {gruppe.text}
+        {mit.length > 0 && (
+          <span className="pk-eigen-link" title={`Verknüpft – wird gemeinsam ausgefüllt mit: ${mit.map((k) => `${k.titel} (${k.gruppe})`).join(', ')}`}>
+            {' '}
+            · {/* Kette wie im Ansicht-Editor (nicht das Symbol für „Datei verknüpfen“) */}
+            <span role="img" aria-label="verknüpft mit">
+              <Symbol name="kette" />
+            </span>{' '}
+            {mit.map((k) => k.gruppe).join(', ')}
+          </span>
+        )}
+      </>
+    );
     return (
       <div className="pk-eigen-feld">
-        <span className="pk-eigen-gruppe">{gruppe.text}</span>
-        {pkArt(eintrag) === 'kreuz' ? <Kreuze karte={karte} eintraege={[eintrag]} /> : <Eintrag karte={karte} gruppe={gruppe} eintrag={eintrag} breite={12} land={karteText(karte, g, 120)} />}
+        {pkArt(eintrag) === 'kreuz' ? (
+          <Kreuze karte={karte} eintraege={[eintrag]} titelText={o.label} unter={unter} />
+        ) : (
+          <Eintrag karte={karte} gruppe={gruppe} eintrag={eintrag} breite={12} land={karteText(karte, g, 120)} titelText={o.label} unter={unter} />
+        )}
       </div>
     );
   };
@@ -182,17 +200,24 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
       </div>
       {editor && (
         <AnsichtEditor
-          titel="Projektkarte: eigene Ansicht"
-          text="Rechts Einträge der Projektkarte anhaken – sie kommen in den gewählten Abschnitt. Links ordnen: am Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓."
+          titel="Projektdaten: eigene Ansicht"
+          text="Rechts Einträge der Projektdaten anhaken, links am Griff ordnen (oder Griff wählen und ↑/↓, Entf entfernt)."
           katalog={katalog}
           ansicht={ansicht}
           onChange={setAnsicht}
           onSchliessen={() => setEditor(false)}
+          verknuepfbar={(a, b) => kartenVerknuepfbar(eintragVon(karte, a.id), eintragVon(karte, b.id))}
         />
       )}
     </section>
   );
 }
+
+/** Eintrag der Projektkarte zu einer Kennung „Gruppe:Eintrag“ */
+const eintragVon = (karte: OffeneKarte, kennung: string) => {
+  const [g, id] = kennung.split(':').map(Number);
+  return karte.karte.eintraege.find((e) => e.gruppe === g && e.id === id);
+};
 
 /** Leere Adressgruppen mit den Vorgaben der Stammdaten füllen */
 function vorgabenFuer(karte: OffeneKarte, adressen: Adresse[], vorgaben: Record<string, string>): KartenWert[] {
@@ -266,18 +291,18 @@ function Navigation({
   );
 
   return (
-    <nav className="pk-nav" aria-label="Gruppen der Projektkarte">
-      <div className="pk-nav-kopf">
-        <Symbol name="karte" /> Projektkarte <strong>{karte.projekt.ordner}</strong>
+    <nav className="pk-nav" aria-label="Gruppen der Projektdaten">
+      <div className="pk-nav-kopf" title="Projektdaten aus der Projektkarte des Formularprojekts">
+        <Symbol name="karte" /> Projektdaten <strong>{karte.projekt.ordner}</strong>
       </div>
-      <input type="search" className="pk-suche" placeholder="Projektkarte durchsuchen …" value={suche} onChange={(e) => setSuche(e.target.value)} />
+      <input type="search" className="pk-suche" placeholder="Projektdaten durchsuchen …" aria-label="Projektdaten durchsuchen" value={suche} onChange={(e) => setSuche(e.target.value)} />
       {vorgabeGruppen > 0 && !q && (
         <button
           className="pk-vorgaben"
           title="Leere Gruppen mit den Vorgaben aus „Büro & Stammdaten“ füllen"
           onClick={() => {
             karteMehrere(vorschlag, 'Vorgaben eingetragen');
-            setMeldung({ art: 'info', text: `Vorgaben in ${vorgabeGruppen} Gruppe(n) eingetragen – Strg+Z nimmt es zurück.` });
+            setMeldung({ art: 'info', text: `Vorgaben in ${vorgabeGruppen} ${vorgabeGruppen === 1 ? 'Gruppe' : 'Gruppen'} eingetragen – Strg+Z nimmt es zurück.` });
           }}
         >
           <Symbol name="buero" /> Vorgaben eintragen ({vorgabeGruppen})
@@ -396,7 +421,7 @@ function NavEintrag({
           title={favorit ? 'Favorit entfernen' : 'Als Favorit oben anzeigen (gilt für alle Projekte)'}
           onClick={onFavorit}
         >
-          {favorit ? '★' : '☆'}
+          <Symbol name="stern" />
         </button>
         <button
           className="pk-nav-auge"
@@ -504,6 +529,8 @@ function GruppenEditor({
     karteMehrere(
       eintraege.map((e) => ({ gruppe: gruppe.id, id: e.id, wert: leer(e) })),
       `${gruppe.text} geleert`,
+      // nur diese Gruppe – verknüpfte Felder anderer Gruppen bleiben
+      { ohneVerknuepfungen: true },
     );
     setMeldung({ art: 'info', text: `${gruppe.text} geleert – Strg+Z nimmt es zurück.` });
   };
@@ -570,7 +597,7 @@ function GruppenEditor({
             </select>
           )}
           {adresse && gefuellt && !istVorgabe && (
-            <button title={`Diese Adresse in neuen Projektkarten als ${gruppe.text} vorschlagen`} onClick={alsVorgabe}>
+            <button title={`Diese Adresse in den Projektdaten neuer Projekte als ${gruppe.text} vorschlagen`} onClick={alsVorgabe}>
               Als Vorgabe festlegen
             </button>
           )}
@@ -616,7 +643,7 @@ function Abschnitt({ titel, einklappbar, children }: { titel: string; einklappba
       <h3>
         {einklappbar ? (
           <button className="pk-abschnitt-knopf" aria-expanded={auf} onClick={() => setAuf(!auf)}>
-            <span aria-hidden>{auf ? '▾' : '▸'}</span> {titel}
+            <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} /> {titel}
           </button>
         ) : (
           titel
@@ -670,9 +697,12 @@ function Zelle({
   children,
   htmlFor,
   ids,
+  unter,
 }: {
   breite: number;
   titel: string;
+  /** dezent unter dem Eingabefeld (eigene Ansicht: aus welcher Gruppe der Eintrag stammt) */
+  unter?: ReactNode;
   geaendert: boolean;
   hinweis?: string;
   warnung?: string | null;
@@ -685,15 +715,16 @@ function Zelle({
   const aus = useContext(AusblendenKontext);
   const ausgeblendet = !!(aus && ids?.length && aus.istAus(ids));
   return (
-    <div className={`pk-feld${geaendert ? ' geaendert' : ''}${warnung ? ' warnung' : ''}${ausgeblendet ? ' ausgeblendet' : ''}`} style={{ gridColumn: `span ${breite}` }}>
+    // „halb“: kurze Felder (bis 6 von 12 Spalten) – im schmalen Raster (6 Spalten, Containerabfrage) halb so breit, alle anderen ganz
+    <div className={`pk-feld${breite <= 6 ? ' halb' : ''}${geaendert ? ' geaendert' : ''}${warnung ? ' warnung' : ''}${ausgeblendet ? ' ausgeblendet' : ''}`} style={{ gridColumn: `span ${breite}` }}>
       <div className="pk-feld-kopf">
-        <label className="pk-feld-titel" htmlFor={htmlFor}>
+        <label className="pk-feld-titel" htmlFor={htmlFor} title={titel}>
           {titel}
           {hinweis && <span className="pk-einheit"> [{hinweis}]</span>}
         </label>
         {geaendert && onZurueck && (
           <button className="pk-zurueck" title="Auf den gespeicherten Wert zurücksetzen" aria-label={`${titel} zurücksetzen`} onClick={onZurueck}>
-            ↺
+            <Symbol name="rueckgaengig" />
           </button>
         )}
         {aus && ids?.length ? (
@@ -709,12 +740,36 @@ function Zelle({
         ) : null}
       </div>
       {children}
-      {warnung && <div className="pk-warnung">{warnung}</div>}
+      {/* die Warnung gehört direkt unter das Feld, die Herkunft danach */}
+      {warnung && (
+        // die Kennung verbindet die Warnung mit dem Eingabefeld (aria-describedby)
+        <div className="pk-warnung" id={htmlFor ? `${htmlFor}-warnung` : undefined}>
+          {warnung}
+        </div>
+      )}
+      {unter && <div className="pk-feld-unter">{unter}</div>}
     </div>
   );
 }
 
-function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte; gruppe: PkGruppe; eintrag: PkEintrag; breite: number; land: string }) {
+function Eintrag({
+  karte,
+  gruppe,
+  eintrag,
+  breite,
+  land,
+  titelText,
+  unter,
+}: {
+  karte: OffeneKarte;
+  gruppe: PkGruppe;
+  eintrag: PkEintrag;
+  breite: number;
+  land: string;
+  /** eigene Beschriftung (eigene Ansicht) */
+  titelText?: string;
+  unter?: ReactNode;
+}) {
   const karteSetzen = useFormulare((s) => s.karteSetzen);
   const s = pkSchluessel(eintrag.gruppe, eintrag.id);
   const id = `pk-${eintrag.gruppe}-${eintrag.id}`;
@@ -722,7 +777,7 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
   const geaendert = s in karte.aenderungen;
   const setzen = (w: PkWert) => karteSetzen(eintrag.gruppe, eintrag.id, w);
   const zurueck = () => setzen(pkWertVon(eintrag));
-  const titel = feldTitel(eintrag.titel);
+  const titel = titelText || feldTitel(eintrag.titel);
   const art = pkArt(eintrag);
 
   if (art === 'auswahl' || art === 'optionen') {
@@ -730,16 +785,18 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
     // Auswahllisten: erste (leere) Möglichkeit = „keine Angabe“; Optionen: erneuter Klick hebt die Wahl auf
     if (art === 'auswahl' || moeglich.length > 4) {
       return (
-        <Zelle ids={[eintrag.id]} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck} htmlFor={id}>
+        <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck} htmlFor={id}>
           <select id={id} data-pk={s} value={typeof wert === 'number' ? wert : ''} onChange={(e) => setzen(e.target.value === '' ? null : Number(e.target.value))}>
             <option value="">– keine Angabe –</option>
-            {moeglich.map((m, i) => (m ? <option key={i} value={i}>{m}</option> : null))}
+            {/* gespeicherte Nummer außerhalb der Liste (z. B. aus einer älteren Version gewählt): sichtbar statt stumm leer */}
+            {typeof wert === 'number' && !moeglich[wert]?.trim() && <option value={wert}>(Auswahl nicht in der Liste – bitte neu wählen)</option>}
+            {moeglich.map((m, i) => (m.trim() ? <option key={i} value={i}>{m}</option> : null))}
           </select>
         </Zelle>
       );
     }
     return (
-      <Zelle ids={[eintrag.id]} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck}>
+      <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck}>
         <div className="pk-optionen" role="radiogroup" aria-label={titel}>
           {moeglich.map((m, i) => (
             <button key={i} role="radio" aria-checked={wert === i} data-pk={i === 0 ? s : undefined} className={wert === i ? 'active' : ''} onClick={() => setzen(wert === i ? null : i)}>
@@ -752,35 +809,129 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
   }
 
   const textWert = typeof wert === 'string' ? wert : '';
-  const warnung = pruefung(gruppe, eintrag, textWert, land);
+  const kernTitel = feldTitel(eintrag.titel);
+  // Anzahl: ein vorhandener Wert, der keine ganze Zahl ist, bleibt stehen und wird gemeldet
+  const keineZahl = istAnzahl(kernTitel) && textWert.trim() !== '' && !/^\d+$/.test(textWert.trim());
+  const warnung = keineZahl ? `„${textWert.trim()}“ ist keine ganze Zahl – bitte als Zahl eintragen` : pruefung(gruppe, eintrag, textWert, land);
   const e = einheit(eintrag.titel);
   if (art === 'mehrzeilig') {
     return (
-      <Zelle ids={[eintrag.id]} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
-        <textarea id={id} data-pk={s} rows={Math.max(2, Math.min(10, textWert.split('\n').length + 1))} value={textWert} onChange={(ev) => setzen(ev.target.value)} />
+      <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
+        <textarea
+          id={id}
+          data-pk={s}
+          rows={Math.max(2, Math.min(10, textWert.split('\n').length + 1))}
+          value={textWert}
+          aria-describedby={warnung ? `${id}-warnung` : undefined}
+          onChange={(ev) => setzen(ev.target.value)}
+        />
       </Zelle>
     );
   }
+  const vorschlaege = nutzungsarten(kernTitel);
   return (
-    <Zelle ids={[eintrag.id]} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
-      <input
-        id={id}
-        data-pk={s}
-        type="text"
-        value={textWert}
-        spellCheck={false}
-        className={e === 'm²' ? 'pk-zahl' : undefined}
-        onChange={(ev) => setzen(ev.target.value)}
-      />
+    <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
+      {istAnzahl(kernTitel) ? (
+        // Anzahl: nur ganze Zahlen (gespeichert als Text, wie in der Projektkarte). Ein Textfeld mit Zifferntastatur
+        // statt eines Zahlenfelds: ein ungültiger Wert („ca. 3“, eingefügt „1.5“) bleibt sichtbar stehen, wird gemeldet
+        // und lässt sich korrigieren oder leeren; das Mausrad ändert nichts. Andere Zeichen als Ziffern lassen sich
+        // nicht tippen – nichts wird stillschweigend verändert
+        <input
+          id={id}
+          data-pk={s}
+          type="text"
+          inputMode="numeric"
+          spellCheck={false}
+          className="pk-zahl"
+          aria-invalid={keineZahl || undefined}
+          aria-describedby={warnung ? `${id}-warnung` : undefined}
+          title="Nur ganze Zahlen – andere Zeichen lassen sich nicht tippen"
+          value={textWert}
+          onKeyDown={(ev) => ev.key.length === 1 && !/\d/.test(ev.key) && !ev.ctrlKey && !ev.metaKey && !ev.altKey && ev.preventDefault()}
+          onChange={(ev) => setzen(ev.target.value)}
+        />
+      ) : vorschlaege ? (
+        <AuswahlMitText id={id} schluessel={s} wert={textWert} vorschlaege={vorschlaege} onChange={setzen} />
+      ) : (
+        <input
+          id={id}
+          data-pk={s}
+          type="text"
+          value={textWert}
+          spellCheck={false}
+          className={e === 'm²' ? 'pk-zahl' : undefined}
+          aria-describedby={warnung ? `${id}-warnung` : undefined}
+          onChange={(ev) => setzen(ev.target.value)}
+        />
+      )}
     </Zelle>
   );
 }
 
-function Kreuze({ karte, eintraege }: { karte: OffeneKarte; eintraege: PkEintrag[] }) {
+/**
+ * Auswahl aus gängigen Werten (z. B. Art der Nutzung) – gespeichert wird der Text. Ein eigener Text bleibt erhalten: Er
+ * steht als „(eigene Angabe)“ in der Auswahl; „andere …“ öffnet die Eingabe, der Pfeil führt zur Liste zurück, ohne
+ * etwas zu löschen.
+ */
+function AuswahlMitText({ id, schluessel, wert, vorschlaege, onChange }: { id: string; schluessel: string; wert: string; vorschlaege: string[]; onChange: (w: string) => void }) {
+  const [frei, setFrei] = useState(false);
+  const liste = useRef<HTMLSelectElement>(null);
+  const zurueck = useRef(false);
+  const eigen = wert.trim() !== '' && !vorschlaege.includes(wert);
+  // zurück zur Liste (Pfeil oder Esc): der Fokus bleibt an diesem Eintrag
+  useEffect(() => {
+    if (!frei && zurueck.current) liste.current?.focus();
+    zurueck.current = false;
+  }, [frei]);
+  const zurListe = () => {
+    zurueck.current = true;
+    setFrei(false);
+  };
+  if (frei)
+    return (
+      <span className="pk-auswahl-frei">
+        <input
+          id={id}
+          data-pk={schluessel}
+          type="text"
+          value={wert}
+          spellCheck={false}
+          autoFocus
+          onChange={(ev) => onChange(ev.target.value)}
+          onKeyDown={(ev) => {
+            if (ev.key !== 'Escape') return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            zurListe();
+          }}
+        />
+        <button type="button" className="icon" title="Aus der Liste wählen (Esc) – die eigene Angabe bleibt erhalten" aria-label="Aus der Liste wählen" onClick={zurListe}>
+          <Symbol name="pfeilUnten" />
+        </button>
+      </span>
+    );
+  return (
+    <select ref={liste} id={id} data-pk={schluessel} value={wert} title={wert || undefined} onChange={(ev) => (ev.target.value === FREI ? setFrei(true) : onChange(ev.target.value))}>
+      <option value="">– keine Angabe –</option>
+      {eigen && <option value={wert}>{wert} (eigene Angabe)</option>}
+      {vorschlaege.map((v) => (
+        <option key={v} value={v}>
+          {v}
+        </option>
+      ))}
+      <option value={FREI}>{eigen ? 'eigene Angabe ändern …' : 'andere …'}</option>
+    </select>
+  );
+}
+
+/** Wert der Auswahl für „eigene Angabe eingeben“ (kein möglicher Text der Projektkarte) */
+const FREI = '\u0000frei';
+
+function Kreuze({ karte, eintraege, titelText, unter }: { karte: OffeneKarte; eintraege: PkEintrag[]; titelText?: string; unter?: ReactNode }) {
   const karteSetzen = useFormulare((s) => s.karteSetzen);
   const geaendert = eintraege.some((e) => pkSchluessel(e.gruppe, e.id) in karte.aenderungen);
   return (
-    <Zelle breite={12} titel={feldTitel(eintraege[0].titel)} geaendert={geaendert} ids={eintraege.map((e) => e.id)}>
+    <Zelle breite={12} titel={titelText || feldTitel(eintraege[0].titel)} geaendert={geaendert} ids={eintraege.map((e) => e.id)} unter={unter}>
       <div className="pk-kreuze">
         {eintraege.map((e) => (
           <label key={e.id} className="pk-kreuz">
@@ -834,10 +985,10 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
         <div className="pk-aktionen">
           {werte && (
             <>
-              <button disabled={!zurKarte.length} title="Werte der Projektdatei in die Projektkarte übernehmen" onClick={() => oapUebernehmen(zurKarte)}>
+              <button disabled={!zurKarte.length} title="Werte der Projektdatei in die Projektdaten übernehmen" onClick={() => oapUebernehmen(zurKarte)}>
                 Abweichende übernehmen ({zurKarte.length})
               </button>
-              <button disabled={!zurDatei.length} title="Werte der Projektkarte in die Projektdatei eintragen" onClick={() => void oapEintragen(zurDatei)}>
+              <button disabled={!zurDatei.length} title="Werte der Projektdaten in die Projektdatei eintragen" onClick={() => void oapEintragen(zurDatei)}>
                 Abweichende eintragen ({zurDatei.length})
               </button>
             </>
@@ -846,12 +997,12 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
         </div>
       </header>
       <p className="muted pk-text">
-        Die Projektdatei ist das gemeinsame Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner; die Projektstammdaten stehen darin unter
-        „meta“. Beim Speichern der Projektkarte werden geänderte Angaben dort mitgeführt – nur diese, alles andere in der Datei bleibt.
+        Die Projektdatei ist das gemeinsame Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner; darin stehen auch die Projektstammdaten.
+        Beim Speichern der Projektdaten werden geänderte Angaben dort mitgeführt – nur diese, alles andere in der Datei bleibt.
       </p>
       {oap === 'fehlt' && (
         <p className="pk-text">
-          Im Projektordner gibt es noch keine Projektdatei. Der Stammdaten-Dialog legt sie an – vorbelegt mit den Angaben der Projektkarte, unter{' '}
+          Im Projektordner gibt es noch keine Projektdatei. Der Stammdaten-Dialog legt sie an – vorbelegt mit den Projektdaten, unter{' '}
           <code>{projektdateiPfad(vorlage, { nummer: projekt.ordner, kurzname: projekt.titel, vorhaben: karteText(karte, IN_PROJEKTKARTE.vorhaben!.gruppe, IN_PROJEKTKARTE.vorhaben!.id).trim() })}</code>.{' '}
           <button className="small primary" onClick={() => void stammdatenErfassen('Für dieses Projekt gibt es im Projektordner noch keine Projektdatei (.oap). Mit diesen Angaben wird sie angelegt.')}>
             Stammdaten erfassen …
@@ -875,7 +1026,7 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
           <tr>
             <th>Angabe</th>
             <th>Projektdatei</th>
-            <th>Projektkarte</th>
+            <th>Projektdaten</th>
             <th />
           </tr>
         </thead>
@@ -896,7 +1047,7 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
                 ) : (
                   <>
                     {werte && z.inDatei.trim() && (
-                      <button className="small" title="In die Projektkarte übernehmen" onClick={() => oapUebernehmen([z.angabe])}>
+                      <button className="small" title="In die Projektdaten übernehmen" onClick={() => oapUebernehmen([z.angabe])}>
                         Übernehmen
                       </button>
                     )}
@@ -917,12 +1068,12 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
           <strong>Projektdaten.xlsx (bisher)</strong>
           <span className="muted small-text">
             {xlsx.pfad} – wird nicht mehr beschrieben.{' '}
-            {alt.length ? `${alt.length} Angabe(n) weichen von der Projektkarte ab.` : 'Alle erkannten Angaben stimmen mit der Projektkarte überein.'}
+            {alt.length ? `${alt.length === 1 ? '1 Angabe weicht' : `${alt.length} Angaben weichen`} von den Projektdaten ab.` : 'Alle erkannten Angaben stimmen mit den Projektdaten überein.'}
           </span>
           <span className="pk-alt-knoepfe">
             {alt.length > 0 && (
-              <button className="small" title="Angaben der alten xlsx in die Projektkarte übernehmen – beim Speichern kommen sie in die Projektdatei" onClick={() => projektdatenUebernehmen(alt.map((e) => e.angabe as Angabe))}>
-                In die Projektkarte übernehmen ({alt.length})
+              <button className="small" title="Angaben der alten xlsx in die Projektdaten übernehmen – beim Speichern kommen sie in die Projektdatei" onClick={() => projektdatenUebernehmen(alt.map((e) => e.angabe as Angabe))}>
+                In die Projektdaten übernehmen ({alt.length})
               </button>
             )}
             <button className="small" onClick={() => void dateiAnsehen(xlsx.root, xlsx.pfad)}>

@@ -4,11 +4,11 @@ import { fmt2 } from '@core/format';
 import { isSelfIntersecting, perimeter } from '@core/geometry';
 import type { AbzugArt, Nutzungsgruppe, OutlineShape, Raumumschliessung, RoomShape, Shape, WoflKategorie } from '@core/model';
 import { istDachgeschoss, istKellergeschoss, shapeArea, storeyElevations } from '@core/model';
-import { ABZUG_ARTEN, NUTZUNGSGRUPPEN, UMSCHLIESSUNG, WOFL_HINWEIS, WOFL_KATEGORIEN, woflArt, woflFaktor, woflHinweis } from '@core/norms';
+import { ABZUG_ARTEN, AUSSERHALB_BGF_HINWEIS, NUTZUNGSGRUPPEN, UMSCHLIESSUNG, WOFL_HINWEIS, WOFL_KATEGORIEN, raumNutzung, woflArt, woflFaktor, woflHinweis } from '@core/norms';
 import { mapShape, mapStorey, useActiveStorey, useEditor, useSelectedShape, useSelectedShapes } from '../store/store';
 import { BackgroundPanel } from './BackgroundPanel';
 import { Pruefliste } from './Pruefliste';
-import { katalogAnwenden, katalogEintrag, useKatalog, wohnungNormalisieren } from '../core/katalog';
+import { katalogAnwenden, katalogEintrag, nutzungSetzen, useKatalog, wohnungNormalisieren } from '../core/katalog';
 import { wohnungenImProjekt } from '../core/geschosse';
 import { raumAufUmriss } from '@core/pruefung';
 import { gruppeAusNutzungsart } from '@core/norms';
@@ -24,6 +24,7 @@ import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { RoofEditor } from './RoofEditor';
 import { Field, NumberField, TextField } from '@core/ui/fields';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
+import { abzugSetzen } from '../core/abzug';
 
 /** Rechte Seitenleiste: Eigenschaften der Auswahl bzw. des Geschosses + Kurzauswertung. */
 export function Properties() {
@@ -51,6 +52,14 @@ function ShapeProperties({ shape }: { shape: Shape }) {
 
   const area = shapeArea(shape);
   const selfX = isSelfIntersecting(shape.points);
+  // S-Umriss ohne obere Begrenzung (weder Körperhöhe noch „überdeckt“): Pflichtangabe offen
+  const sOffen = shape.kind === 'outline' && shape.umschliessung === 'S' && !shape.subtract && shape.hoehe === undefined && !shape.ueberdeckt;
+  // gesetzte Werte unter „Weitere Angaben“ (in der eingeklappten Zeile sichtbar)
+  const weitere = [
+    shape.versatz ? `${shape.kind === 'room' ? 'Höhenlage' : 'Versatz'} ${fmt2(shape.versatz)} m` : '',
+    shape.kind === 'room' && shape.putzabzug ? `Putzabzug ${fmt2(shape.putzabzug).replace(',00', '')} %` : '',
+    shape.bemerkung ? 'Bemerkung' : '',
+  ].filter(Boolean);
 
   return (
     <section>
@@ -111,7 +120,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
       )}
 
       <label className="toggle block abzug-toggle">
-        <input type="checkbox" checked={shape.subtract} onChange={(e) => upd((s) => ({ ...s, subtract: e.target.checked }))} />
+        <input type="checkbox" checked={shape.subtract} onChange={(e) => upd((s) => abzugSetzen(s, e.target.checked))} />
         <span>
           Abzugsfläche
           <small className="muted"> – wird abgezogen, {shape.kind === 'outline' ? 'z. B. Innenhof, Luftraum über Galerie' : 'z. B. Schornstein, Pfeiler, Schacht im Raum'}</small>
@@ -129,33 +138,29 @@ function ShapeProperties({ shape }: { shape: Shape }) {
         </Field>
       )}
 
-      <Field
-        label={shape.kind === 'room' ? 'Höhenlage Fußboden [m]' : 'Höhenversatz Körper [m]'}
-        hint={
-          shape.kind === 'room'
-            ? 'gegenüber dem Geschoss, negativ = tiefer (Split-Level); leer = auf dem Fußboden des Umrisses. Liegt der Raum tiefer als der Körper seines Umrisses, vergrößert sich der BRI um Raumfläche × Absenkung (wo kein Geschoss darunter liegt).'
-            : 'verschiebt den ganzen Körper samt Dach gegenüber dem Geschossfußboden, negativ = tiefer (Split-Level); seine Höhe bleibt. Räume ohne eigene Höhenlage liegen auf seiner Unterkante.'
-        }
-      >
-        <NumberField value={shape.versatz} allowEmpty min={-20} max={20} digits={3} placeholder={shape.kind === 'room' ? 'wie Umriss' : '0,000'} onChange={(v) => upd((s) => ({ ...s, versatz: s.kind === 'room' ? v : v || undefined }))} />
-      </Field>
-
       {shape.kind === 'outline' && (
         <Field
           label="Körperhöhe für BRI [m]"
-          pflicht={shape.umschliessung === 'S' && !shape.subtract}
+          pflicht={sOffen}
           hint={
             shape.umschliessung === 'S'
-              ? 'Sonderfall S: obere Begrenzung angeben – Unterkante Überdeckung bzw. Oberkante Umwehrung (z. B. Brüstung 1,10 m)'
+              ? 'Sonderfall S (DIN 277, 7.1): nicht überdeckt bis Oberkante Brüstung/Geländer, ohne Umwehrung 0; überdeckt bis Oberkante Überdeckung'
               : `Unterkante bis Oberkante des Körpers (ohne Dach); leer = Geschosshöhe (${fmt2(storey.hoehe)} m)`
           }
         >
-          <NumberField value={shape.hoehe} allowEmpty min={0} pflicht={shape.umschliessung === 'S' && !shape.subtract} onChange={(v) => upd((s) => ({ ...s, hoehe: v }))} placeholder={fmt2(storey.hoehe)} />
+          <NumberField value={shape.hoehe} allowEmpty min={0} pflicht={sOffen} onChange={(v) => upd((s) => ({ ...s, hoehe: v }))} placeholder={fmt2(storey.hoehe)} />
         </Field>
       )}
       {shape.kind === 'outline' && shape.umschliessung === 'S' && !shape.subtract && shape.hoehe === undefined && (
-        <p className="warning small-text">Sonderfall S ohne Körperhöhe: der BRI rechnet mit der vollen Geschosshöhe ({fmt2(storey.hoehe)} m) – bitte die obere Begrenzung eintragen.</p>
+        <label className="toggle block abzug-toggle">
+          <input type="checkbox" checked={!!shape.ueberdeckt} onChange={(e) => upd((s) => (s.kind === 'outline' ? { ...s, ueberdeckt: e.target.checked || undefined } : s))} />
+          <span>
+            überdeckt – bis Oberkante Überdeckung ({fmt2(storey.hoehe)} m Geschosshöhe)
+            <small className="muted"> – z. B. Loggia, Balkon unter dem Balkon darüber</small>
+          </span>
+        </label>
       )}
+      {sOffen && <p className="warning small-text">Sonderfall S ohne obere Begrenzung: überdeckt bestätigen oder die Körperhöhe bis Oberkante Brüstung bzw. Geländer eintragen.</p>}
       {shape.kind === 'outline' && shape.umschliessung === 'S' && !shape.subtract && !!storey.sohle && (
         <label className="toggle block" title="Unter nicht umschlossenen Bereichen (Balkon, Dachterrasse) liegt i. d. R. keine Bodenplatte des Gebäudes">
           <input type="checkbox" checked={!!shape.sohleAnsetzen} onChange={(e) => upd((s) => (s.kind === 'outline' ? { ...s, sohleAnsetzen: e.target.checked || undefined } : s))} />
@@ -169,19 +174,11 @@ function ShapeProperties({ shape }: { shape: Shape }) {
 
       {shape.kind === 'room' && (
         <>
-          <Field label="Nutzungsgruppe (DIN 277)">
+          <Field label="Nutzungsgruppe (DIN 277)" hint={shape.ausserhalbBgf && !shape.subtract ? 'außerhalb der BGF – zählt nicht zur NRF' : undefined}>
             <select
-              value={shape.nutzung}
-              onChange={(e) =>
-                upd((s) => {
-                  if (s.kind !== 'room') return s;
-                  // eine Nutzungsart einer anderen Gruppe passt nicht mehr
-                  const { nutzungsart, katalog: _k, ...rest } = s;
-                  void _k;
-                  const g = e.target.value as Nutzungsgruppe;
-                  return { ...rest, nutzung: g, ...(nutzungsart && gruppeAusNutzungsart(nutzungsart) === g ? { nutzungsart } : {}) };
-                })
-              }
+              value={raumNutzung(shape)}
+              disabled={!!shape.ausserhalbBgf && !shape.subtract}
+              onChange={(e) => upd((s) => (s.kind === 'room' ? nutzungSetzen(s, e.target.value as Nutzungsgruppe) : s))}
             >
               {NUTZUNGSGRUPPEN.map((n) => (
                 <option key={n.id} value={n.id}>
@@ -191,16 +188,6 @@ function ShapeProperties({ shape }: { shape: Shape }) {
             </select>
           </Field>
           <NutzungsartFeld shape={shape} upd={upd} />
-          <Field label="Putzabzug [%]" hint="z. B. 3 % bei Flächen aus Rohbaumaßen (wie Archicad-Zonen)">
-            <NumberField
-              value={shape.putzabzug}
-              allowEmpty
-              min={0}
-              max={20}
-              digits={1}
-              onChange={(v) => upd((s) => (s.kind === 'room' ? { ...s, putzabzug: v || undefined } : s))}
-            />
-          </Field>
           <h3>
             Wohnfläche (WoFlV)
             <HilfeKnopf thema={['wofl', 'putzabzug']} titel="Wohnfläche" />
@@ -257,7 +244,8 @@ function ShapeProperties({ shape }: { shape: Shape }) {
                 </datalist>
               </Field>
               <p className="muted">
-                Anrechenbar: {fmt2(area * woflFaktor(shape.wofl, project.settings) * (shape.subtract ? -1 : 1))} m²
+                {/* Abzug „nur NRF“ mindert die Wohnfläche nicht (wie in computeStorey) */}
+                Anrechenbar: {fmt2(shape.subtract && shape.abzugArt === 'din' ? 0 : area * woflFaktor(shape.wofl, project.settings) * (shape.subtract ? -1 : 1))} m²
                 {shape.wofl.kategorie === 'hoehen' ? '' : ` (Faktor ${fmt2(woflFaktor(shape.wofl, project.settings))})`}
               </p>
             </>
@@ -265,16 +253,37 @@ function ShapeProperties({ shape }: { shape: Shape }) {
         </>
       )}
 
-      <Field label="Bemerkung">
-        <TextField value={shape.bemerkung ?? ''} onChange={(v) => upd((s) => ({ ...s, bemerkung: v || undefined }))} />
-      </Field>
-      {shape.stempel && (
-        <div className="button-row">
-          <button className="small" onClick={() => upd((s) => ({ ...s, stempel: undefined }))} title="Beschriftung wieder automatisch platzieren">
-            Beschriftung zurücksetzen
-          </button>
-        </div>
-      )}
+      {/* Seltenere Angaben eingeklappt; gesetzte Werte stehen in der Zeile, damit nichts Rechenwirksames verborgen bleibt */}
+      <details className="weitere-angaben">
+        <summary>
+          Weitere Angaben
+          {weitere.length > 0 && <span className="muted"> ({weitere.join(', ')})</span>}
+        </summary>
+        <p className="muted small-text">
+          Split-Level und Putzabzug: <HilfeKnopf thema={shape.kind === 'room' ? ['splitlevel', 'putzabzug'] : 'splitlevel'} titel="Höhenlage und Putzabzug" />
+        </p>
+        <Field
+          label={shape.kind === 'room' ? 'Höhenlage Fußboden [m]' : 'Höhenversatz Körper [m]'}
+          hint={shape.kind === 'room' ? 'gegenüber dem Geschoss, negativ = tiefer (Split-Level); leer = wie Umriss' : 'verschiebt den Körper samt Dach, negativ = tiefer (Split-Level)'}
+        >
+          <NumberField value={shape.versatz} allowEmpty min={-20} max={20} digits={3} placeholder={shape.kind === 'room' ? 'wie Umriss' : '0,000'} onChange={(v) => upd((s) => ({ ...s, versatz: s.kind === 'room' ? v : v || undefined }))} />
+        </Field>
+        {shape.kind === 'room' && (
+          <Field label="Putzabzug [%]" hint="z. B. 3 % bei Flächen aus Rohbaumaßen (wie Archicad-Zonen)">
+            <NumberField value={shape.putzabzug} allowEmpty min={0} max={20} digits={1} onChange={(v) => upd((s) => (s.kind === 'room' ? { ...s, putzabzug: v || undefined } : s))} />
+          </Field>
+        )}
+        <Field label="Bemerkung">
+          <TextField value={shape.bemerkung ?? ''} onChange={(v) => upd((s) => ({ ...s, bemerkung: v || undefined }))} />
+        </Field>
+        {shape.stempel && (
+          <div className="button-row">
+            <button className="small" onClick={() => upd((s) => ({ ...s, stempel: undefined }))} title="Beschriftung wieder automatisch platzieren">
+              Beschriftung zurücksetzen
+            </button>
+          </div>
+        )}
+      </details>
 
       <details className="points-editor">
         <summary>Eckpunkte ({shape.points.length})</summary>
@@ -293,6 +302,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
                 <td>{i + 1}</td>
                 <td>
                   <NumberField
+                    label={`Punkt ${i + 1} X`}
                     value={p.x}
                     digits={3}
                     onChange={(v) => v !== undefined && upd((s) => ({ ...s, points: s.points.map((q, j) => (j === i ? { ...q, x: v } : q)) }))}
@@ -300,6 +310,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
                 </td>
                 <td>
                   <NumberField
+                    label={`Punkt ${i + 1} Y`}
                     value={p.y}
                     digits={3}
                     onChange={(v) => v !== undefined && upd((s) => ({ ...s, points: s.points.map((q, j) => (j === i ? { ...q, y: v } : q)) }))}
@@ -310,6 +321,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
                     className="small icon"
                     disabled={shape.points.length <= 3}
                     title="Punkt entfernen"
+                    aria-label={`Punkt ${i + 1} entfernen`}
                     onClick={() => upd((s) => ({ ...s, points: s.points.filter((_, j) => j !== i) }))}
                   >
                     ×
@@ -338,7 +350,7 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
   const rooms = shapes.filter((s) => s.kind === 'room');
   const outlines = shapes.filter((s) => s.kind === 'outline');
   const summe = (list: Shape[]) => list.reduce((a, s) => a + shapeArea(s) * (s.subtract ? -1 : 1), 0);
-  const nutzung = gemeinsam(rooms.map((r) => r.nutzung));
+  const nutzung = gemeinsam(rooms.map((r) => raumNutzung(r)));
   const kategorie = gemeinsam(rooms.map((r) => r.wofl.kategorie));
   const wohnung = gemeinsam(rooms.map((r) => r.wofl.wohnung));
   const umschliessung = gemeinsam(shapes.map((s) => s.umschliessung));
@@ -379,7 +391,16 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
       <Field label="Raumumschließung (DIN 277)">
         <select
           value={umschliessung ?? ''}
-          onChange={(e) => e.target.value && updAll((s) => (s.kind === 'room' ? { ...s, umschliessung: e.target.value as Raumumschliessung, rsVonHand: true } : { ...s, umschliessung: e.target.value as Raumumschliessung }))}
+          onChange={(e) =>
+            e.target.value &&
+            updAll((s) => {
+              if (s.kind !== 'room') return { ...s, umschliessung: e.target.value as Raumumschliessung };
+              // R bzw. S gewählt: eine Fläche „außerhalb der BGF“ gehört dann wieder zur NRF
+              const { ausserhalbBgf: _a, ...rest } = s;
+              void _a;
+              return { ...rest, umschliessung: e.target.value as Raumumschliessung, rsVonHand: true };
+            })
+          }
         >
           {umschliessung === undefined && <option value="">unterschiedlich</option>}
           {UMSCHLIESSUNG.map((u) => (
@@ -390,7 +411,7 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
         </select>
       </Field>
       <Field label="Abzugsfläche">
-        <select value={abzug === undefined ? '' : abzug ? 'ja' : 'nein'} onChange={(e) => e.target.value && updAll((s) => ({ ...s, subtract: e.target.value === 'ja' }))}>
+        <select value={abzug === undefined ? '' : abzug ? 'ja' : 'nein'} onChange={(e) => e.target.value && updAll((s) => abzugSetzen(s, e.target.value === 'ja'))}>
           {abzug === undefined && <option value="">unterschiedlich</option>}
           <option value="nein">nein</option>
           <option value="ja">ja (wird abgezogen)</option>
@@ -407,7 +428,7 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
         <>
           <h3>Räume ({rooms.length})</h3>
           <Field label="Nutzungsgruppe (DIN 277)">
-            <select value={nutzung ?? ''} onChange={(e) => e.target.value && updAll((s) => (s.kind === 'room' ? { ...s, nutzung: e.target.value as Nutzungsgruppe } : s))}>
+            <select value={nutzung ?? ''} onChange={(e) => e.target.value && updAll((s) => (s.kind === 'room' ? nutzungSetzen(s, e.target.value as Nutzungsgruppe) : s))}>
               {nutzung === undefined && <option value="">unterschiedlich</option>}
               {NUTZUNGSGRUPPEN.map((n) => (
                 <option key={n.id} value={n.id}>
@@ -419,7 +440,16 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
           <Field label="Wohnfläche (WoFlV)">
             <select
               value={kategorie ?? ''}
-              onChange={(e) => e.target.value && updAll((s) => (s.kind === 'room' ? { ...s, wofl: { ...s.wofl, kategorie: e.target.value as WoflKategorie, faktor: undefined } } : s))}
+              onChange={(e) =>
+                e.target.value &&
+                updAll((s) => {
+                  if (s.kind !== 'room') return s;
+                  // wie die Einzelbearbeitung: eigene Anrechnung ist kein Katalogvorschlag mehr
+                  const { katalog: _k, ...rest } = s;
+                  void _k;
+                  return { ...rest, wofl: { ...s.wofl, kategorie: e.target.value as WoflKategorie, faktor: undefined } };
+                })
+              }
             >
               {kategorie === undefined && <option value="">unterschiedlich</option>}
               {WOFL_KATEGORIEN.map((k) => (
@@ -433,7 +463,10 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
             <TextField
               value={wohnung ?? ''}
               placeholder={wohnung === undefined ? 'unterschiedlich' : 'z. B. WE 01'}
-              onChange={(v) => updAll((s) => (s.kind === 'room' ? { ...s, wofl: { ...s.wofl, wohnung: v } } : s))}
+              onChange={(v) => {
+                const w = wohnungNormalisieren(v, wohnungenImProjekt(useEditor.getState().project));
+                updAll((s) => (s.kind === 'room' ? { ...s, wofl: { ...s.wofl, wohnung: w } } : s));
+              }}
             />
           </Field>
         </>
@@ -486,26 +519,23 @@ function StoreyProperties() {
           <NumberField value={storey.hoehe} min={0} onChange={(v) => v !== undefined && upd((s) => ({ ...s, hoehe: v }))} />
         </Field>
       </div>
-      <p className="muted small-text">
-        Die Geschosshöhe – Fußboden bis Fußboden darüber bzw. OK Dachhaut, in derselben Bezugsebene wie die Geschosskoten (i. d. R. OK Fertigfußboden) – wird für den BRI
-        verwendet.
-      </p>
+      <p className="muted small-text">Geschosshöhe für den BRI: Fußboden bis Fußboden darüber bzw. OK Dachhaut (Bezugsebene der Geschosskoten).</p>
       <Field
-        label="Bodenplatte: UK Sohle bis Fußboden-Bezugsebene [m]"
+        label="Bodenplatte inkl. Dämmung darunter: Unterkante bis Fußboden [m]"
         hint={
           istUnterstes
-            ? 'DIN 277: Der BRI rechnet ab Unterseite der konstruktiven Sohle. Gilt für alle Teile, unter denen kein Geschoss liegt.'
+            ? 'BRI ab Unterkante Platte samt Dämmung (DIN 277, 7.1); Streifenfundamente zählen nicht. Gilt, wo kein Geschoss darunter liegt.'
             : 'nur nötig, wo unter diesem Geschoss kein anderes liegt (z. B. nicht unterkellerter Anbau)'
         }
       >
         <NumberField value={storey.sohle} allowEmpty min={0} max={3} digits={3} placeholder={istUnterstes ? 'z. B. 0,300' : ''} onChange={(v) => upd((s) => ({ ...s, sohle: v || undefined }))} />
       </Field>
       {istUnterstes && !storey.sohle && storey.shapes.some((s) => s.kind === 'outline') && (
-        <p className="warning small-text">Unterstes Geschoss ohne Bodenplatte: der BRI endet am Fußboden statt an der Unterseite der Sohle.</p>
+        <p className="warning small-text">Unterstes Geschoss ohne Bodenplatte: der BRI endet am Fußboden statt an der Unterkante der Platte.</p>
       )}
       <Field
         label="Geschossart"
-        hint="Kellergeschoss: Räume werden bei „automatisch nach Raumname“ nicht als Wohnfläche vorgeschlagen (Souterrainwohnung: Normalgeschoss wählen). Excel-Vorlagen: Normalgeschosse als Höhe × BGF, Dachgeschosse mit Dachformeln (Filter [normal] / [dg])"
+        hint="Kellergeschoss: keine Wohnfläche vorgeschlagen (Souterrainwohnung: Normalgeschoss). Excel-Filter [normal] / [dg]."
       >
         <select
           value={storey.keller ? 'kg' : storey.dachgeschoss ? 'dg' : storey.keller === false || storey.dachgeschoss === false ? 'normal' : 'auto'}
@@ -545,13 +575,14 @@ function StoreyProperties() {
           <span className="field-label">Wohnfläche aller Räume dieses Geschosses</span>
           <div className="button-row">
             <button
+              className="small"
               title="Nach Raumname: Keller, Technik, Treppen, Garage, Dachboden … keine Wohnfläche; Balkon/Terrasse als Freisitz; übrige Räume anrechnen"
               onClick={() =>
                 upd((s) => ({
                   ...s,
                   shapes: s.shapes.map((sh) => {
                     if (sh.kind !== 'room') return sh;
-                    const art = woflArt(sh.name, s, sh.nutzung);
+                    const art = woflArt(sh.name, s, raumNutzung(sh));
                     // Wohnung bleibt, wie sie ist – nie automatisch „Wohnung = Geschoss“ (WoFlV: Wohnfläche je Wohnung)
                     const wohnung = sh.wofl.wohnung;
                     if (art === 'keine') return { ...sh, wofl: { ...sh.wofl, kategorie: 'keine' as const } };
@@ -563,8 +594,12 @@ function StoreyProperties() {
             >
               automatisch nach Raumname
             </button>
-            <button onClick={() => upd((s) => ({ ...s, shapes: s.shapes.map((sh) => (sh.kind === 'room' ? { ...sh, wofl: { ...sh.wofl, kategorie: 'keine' as const } } : sh)) }))}>
-              keine
+            <button
+              className="small"
+              title="Alle Räume dieses Geschosses auf „keine Wohnfläche“ setzen (rückgängig mit Strg+Z)"
+              onClick={() => upd((s) => ({ ...s, shapes: s.shapes.map((sh) => (sh.kind === 'room' ? { ...sh, wofl: { ...sh.wofl, kategorie: 'keine' as const } } : sh)) }))}
+            >
+              keine Wohnfläche
             </button>
           </div>
         </div>
@@ -674,7 +709,9 @@ function Summary() {
       ) : (
         <>
           {sr.kgf.R < -0.005 && <p className="warning">NRF (R) ist größer als BGF (R) – Raumflächen, Umriss oder Raumumschließung prüfen.</p>}
-          {sr.kgf.S < -0.005 && <p className="warning">NRF (S) ist größer als BGF (S) – fehlt ein S-Umriss (Balkon, Loggia)?</p>}
+          {sr.kgf.S < -0.005 && (
+            <p className="warning">NRF (S) ist größer als BGF (S) – fehlt ein S-Umriss (Balkon, Loggia)? Eine ebenerdige, nicht unterbaute Terrasse gehört nicht zur BGF: im Raum „außerhalb der BGF“ wählen.</p>
+          )}
         </>
       )}
       <Pruefliste />
@@ -693,14 +730,20 @@ function RaumUmschliessung({ shape, upd }: { shape: RoomShape; upd: (fn: (s: Sha
   const auto = !shape.rsVonHand && shape.umschliessung !== 'S';
   const wert = raumUmschliessung(shape, storey);
   const ausUmriss = raumUmschliessung({ ...shape, rsVonHand: false, umschliessung: 'R' }, storey);
+  const draussen = !!shape.ausserhalbBgf && !shape.subtract;
   return (
-    <Field label="Raumumschließung (DIN 277)" hint={UMSCHLIESSUNG.find((u) => u.id === wert)?.label}>
+    <Field label="Raumumschließung (DIN 277)" hint={draussen ? AUSSERHALB_BGF_HINWEIS : UMSCHLIESSUNG.find((u) => u.id === wert)?.label}>
       <select
-        value={auto ? 'auto' : shape.umschliessung}
+        value={draussen ? 'aussen' : auto ? 'auto' : shape.umschliessung}
         onChange={(e) =>
-          upd((s) =>
-            s.kind !== 'room' ? s : e.target.value === 'auto' ? { ...s, umschliessung: 'R', rsVonHand: undefined } : { ...s, umschliessung: e.target.value as Raumumschliessung, rsVonHand: true },
-          )
+          upd((s) => {
+            if (s.kind !== 'room') return s;
+            const { ausserhalbBgf: _a, ...rest } = s;
+            void _a;
+            const v = e.target.value;
+            if (v === 'aussen') return { ...s, ausserhalbBgf: true };
+            return v === 'auto' ? { ...rest, umschliessung: 'R', rsVonHand: undefined } : { ...rest, umschliessung: v as Raumumschliessung, rsVonHand: true };
+          })
         }
       >
         <option value="auto">wie der BGF-Umriss ({ausUmriss})</option>
@@ -709,6 +752,7 @@ function RaumUmschliessung({ shape, upd }: { shape: RoomShape; upd: (fn: (s: Sha
             {u.kurz}
           </option>
         ))}
+        {!shape.subtract && <option value="aussen">außerhalb der BGF – nur Wohnfläche</option>}
       </select>
     </Field>
   );
@@ -804,7 +848,7 @@ function RaumBezeichnung({ shape, upd }: { shape: RoomShape; upd: (fn: (s: Shape
 /** Nutzungsart als zweite Ebene (F-14): Nummer aus dem Katalog des Büros, die Gruppe folgt der ersten Ziffer */
 function NutzungsartFeld({ shape, upd }: { shape: RoomShape; upd: (fn: (s: Shape) => Shape) => void }) {
   const arten = useKatalog((s) => s.nutzungsarten);
-  const passend = arten.filter((a) => gruppeAusNutzungsart(a.nr) === shape.nutzung);
+  const passend = arten.filter((a) => gruppeAusNutzungsart(a.nr) === raumNutzung(shape));
   const bez = arten.find((a) => a.nr === shape.nutzungsart)?.bezeichnung;
   return (
     <Field label="Nutzungsart (optional)" hint={bez ? `${shape.nutzungsart} ${bez}` : 'zweite Ebene unter der Nutzungsgruppe, z. B. 7.1 – die Auswertung summiert weiter je Gruppe'}>

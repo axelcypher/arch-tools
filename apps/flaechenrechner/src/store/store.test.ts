@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { rectPoints } from '@core/geometry';
 import { createOutline, createProject, createRoom } from '@core/model';
-import { mapShape, useEditor } from './store';
+import { mapShape, projektLeer, useEditor, zwischenstandUebernehmen } from './store';
 
 function laden() {
   const p = createProject('Test');
@@ -308,5 +308,49 @@ describe('Raumliste sortiert (F-21)', () => {
     const { nachNummer } = await import('../core/geschosse');
     const r = (nummer: string) => ({ nummer });
     expect(nachNummer([r('1.01'), r('0.10'), r(''), r('0.04'), r('0.09'), r('-1.02'), r('-1.01')]).map((x) => x.nummer)).toEqual(['-1.01', '-1.02', '0.04', '0.09', '0.10', '1.01', '']);
+  });
+});
+
+describe('Zwischenstand nach Neustart', () => {
+  it('mit Änderungen gegenüber der Datei: ungespeichert – Öffnen/Neu fragen nach', () => {
+    const { p, eg, b } = laden();
+    const geaendert = mapShape(p, eg.id, b.id, (s) => ({ ...s, name: 'Wohnen/Essen' }));
+    useEditor.getState().wiederherstellen(geaendert, p, 'C:/Projekte/Haus.oap');
+    expect(useEditor.getState().dirty).toBe(true);
+    expect(useEditor.getState().datei).toBe('C:/Projekte/Haus.oap');
+  });
+
+  it('unverändert gegenüber der Datei: gespeichert', () => {
+    const { p } = laden();
+    useEditor.getState().wiederherstellen(structuredClone(p), p, 'C:/Projekte/Haus.oap');
+    expect(useEditor.getState().dirty).toBe(false);
+  });
+
+  it('ohne Datei: ungespeichert, sobald er Flächen enthält; ein leeres Projekt nicht', () => {
+    const { p } = laden();
+    useEditor.getState().wiederherstellen(p, null, null);
+    expect(useEditor.getState().dirty).toBe(true);
+    const leer = createProject();
+    expect(projektLeer(leer)).toBe(true);
+    useEditor.getState().wiederherstellen(leer, null, null);
+    expect(useEditor.getState().dirty).toBe(false);
+  });
+
+  it('wird nicht übernommen, wenn inzwischen ein Projekt geöffnet wurde', () => {
+    const { p } = laden();
+    const vorher = useEditor.getState().project;
+    const anderes = createProject('Anderes');
+    expect(zwischenstandUebernehmen({ project: anderes, basis: null })).toBe(false);
+    expect(useEditor.getState().project).toBe(vorher);
+    expect(useEditor.getState().project.name).toBe(p.name);
+  });
+
+  it('beim Start übernommen und als ungespeichert markiert', () => {
+    useEditor.setState({ dokument: 0, past: [], dirty: false });
+    const p = createProject('Zwischenstand');
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0, y: 0 }, { x: 3, y: 3 }), '1', 'Wohnen'));
+    expect(zwischenstandUebernehmen({ project: JSON.parse(JSON.stringify(p)), basis: null, datei: null })).toBe(true);
+    expect(useEditor.getState().project.name).toBe('Zwischenstand');
+    expect(useEditor.getState().dirty).toBe(true);
   });
 });

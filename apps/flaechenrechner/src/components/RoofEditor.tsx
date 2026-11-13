@@ -86,12 +86,12 @@ export function RoofEditor({
         <HilfeKnopf thema="dach" titel="Dach" />
       </h3>
       <div className="roof-grid">
-        <button className={!d ? 'roof-choice active' : 'roof-choice'} onClick={() => choose('kein')} title="Kein Dach: Fläche × Höhe">
+        <button className={!d ? 'roof-choice active' : 'roof-choice'} aria-pressed={!d} onClick={() => choose('kein')} title="Kein Dach: Fläche × Höhe">
           <RoofIcon typ={null} />
           <span>ohne</span>
         </button>
         {DACH_TYPEN.map((t) => (
-          <button key={t.id} className={d?.typ === t.id ? 'roof-choice active' : 'roof-choice'} onClick={() => choose(t.id)} title={t.hint}>
+          <button key={t.id} className={d?.typ === t.id ? 'roof-choice active' : 'roof-choice'} aria-pressed={d?.typ === t.id} onClick={() => choose(t.id)} title={t.hint}>
             <RoofIcon typ={t.id} />
             <span>{t.label}</span>
           </button>
@@ -99,6 +99,7 @@ export function RoofEditor({
         {project.dachModell && (
           <button
             className={d?.typ === 'modell' ? 'roof-choice active' : 'roof-choice'}
+            aria-pressed={d?.typ === 'modell'}
             onClick={() => choose('modell')}
             title={`Dachhaut aus dem importierten Modell (${project.dachModell.name})`}
           >
@@ -308,10 +309,10 @@ function GaubenEditor({ dach, points, onChange }: { dach: Dach; points: OutlineS
               </span>
               <span className="button-row">
                 <button className="small" onClick={() => onChange([...gauben.slice(0, i + 1), { ...g, name: undefined }, ...gauben.slice(i + 1)])} title="Gleiche Gaube noch einmal">
-                  duplizieren
+                  Duplizieren
                 </button>
                 <button className="small danger" onClick={() => onChange(gauben.filter((_, k) => k !== i))}>
-                  entfernen
+                  Löschen
                 </button>
               </span>
             </div>

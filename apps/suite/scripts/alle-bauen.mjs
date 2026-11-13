@@ -6,6 +6,6 @@ import { fileURLToPath } from 'node:url';
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const stamm = resolve(hier, '../../..');
-const apps = ['flaechenrechner', 'grz-nachweis', 'kostenermittlung', 'projektordner', 'entzerrung', 'formulare', 'baurecht'];
+const apps = ['flaechenrechner', 'grz-nachweis', 'kostenermittlung', 'projektordner', 'entzerrung', 'formulare', 'ava', 'baurecht'];
 execSync(`npm run build ${apps.map((a) => `-w ${a}`).join(' ')}`, { cwd: stamm, stdio: 'inherit' });
 execSync('npm run build', { cwd: resolve(hier, '..'), stdio: 'inherit' });

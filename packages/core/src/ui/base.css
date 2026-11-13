@@ -221,7 +221,7 @@ button.active.kind-room {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  /* hell: Weiß auf Blau, dunkel: Dunkel auf Hellblau – in beiden Schemata über 4,5:1 */
+  /* hell: Weiß, dunkel: fast Schwarz auf dem helleren Blau – Kontrast mindestens 4,5 : 1 */
   color: var(--on-accent);
 }
 
@@ -1138,13 +1138,13 @@ code {
 
 .titlebar-btn.titlebar-update {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border-radius: 4px;
 }
 
 .titlebar-btn.titlebar-update:hover:not(:disabled) {
   background: var(--accent-hover);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .update-notizen {
@@ -1178,7 +1178,8 @@ code {
   padding: 0 4px;
   border-radius: 8px;
   background: var(--danger);
-  color: #fff;
+  /* dunkles Schema: dunkle Schrift auf dem helleren Rot (Kontrast) */
+  color: var(--on-accent);
   font-size: 10px;
   line-height: 16px;
   text-align: center;
@@ -1605,6 +1606,20 @@ svg[tabindex]:focus:not(:focus-visible) {
 .sd-beteiligte td:last-child {
   width: 30px;
 }
+.sd-beteiligte-knoepfe {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.sd-rollen-schnell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sd-rollen-schnell button {
+  color: var(--muted);
+  border-style: dashed;
+}
 .sd-dialog {
   width: min(680px, 94vw);
 }
@@ -1698,4 +1713,53 @@ input.feld-fehler:focus {
 .titlebar-dropdown .tb-icon {
   display: inline-flex;
   vertical-align: -3px;
+}
+
+/* ---------- Platzhalter-Chips (ui/Platzhalter.tsx): global und lokal unterscheidbar ---------- */
+
+.ph-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+.ph-gruppe {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ph-gruppe-titel {
+  font-size: 11px;
+  color: var(--muted);
+  margin-right: 2px;
+}
+button.ph-chip {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 11px;
+  padding: 2px 7px;
+  min-height: 22px;
+}
+/* global: gilt überall gleich – Akzentfarbe; lokal: nur hier – neutral mit gestricheltem Rand */
+button.ph-global {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--text);
+}
+button.ph-global:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 22%, var(--panel));
+}
+button.ph-lokal {
+  background: var(--panel);
+  border-style: dashed;
+}
+.ph-veraltet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--warn-text);
 }

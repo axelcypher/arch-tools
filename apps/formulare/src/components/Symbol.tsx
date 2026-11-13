@@ -10,6 +10,7 @@ const PFADE = {
   auge: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
   augeZu: 'M3 3l18 18M10.6 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.5 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4.4-1M9.9 9.9a3 3 0 0 0 4.2 4.2',
   pfeilRechts: 'M9 6l6 6-6 6',
+  pfeilLinks: 'M15 6l-6 6 6 6',
   pfeilUnten: 'M6 9l6 6 6-6',
   ordner: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z',
   ordnerOffen: 'M3 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v1H7.5a2 2 0 0 0-1.9 1.4L3.4 18M3 7v10a2 2 0 0 0 2 2h12.6a2 2 0 0 0 1.9-1.4l1.9-6A1.5 1.5 0 0 0 20 10',
@@ -33,6 +34,8 @@ const PFADE = {
   tabelle: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5zM8 12h8M8 16h8M12 12v8',
   bild: 'M4 5h16v14H4zM8.5 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM20 15l-5-5L5 19',
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01',
+  // Warndreieck – für Hinweise in Warnfarbe (Plansatz)
+  warnung: 'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01',
   /** Klammer um mehrere Zeilen: Felder, die zusammen eine Angabe sind */
   gruppe: 'M7 4H5v16h2M17 4h2v16h-2M9 8h6M9 12h6M9 16h6',
   strich: 'M6 12h12',
@@ -49,6 +52,12 @@ const PFADE = {
   ziel: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 1v4M12 19v4M1 12h4M19 12h4',
   /** Verzweigung: nur erforderlich, wenn … */
   bedingung: 'M7 4v10M17 8v1a5 5 0 0 1-5 5H7M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+  /** Favorit (gefüllt über CSS: fill: currentColor) */
+  stern: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3z',
+  /** Verknüpfte Einträge (gemeinsam ausgefüllt) – nicht „Datei verknüpfen“ (link) */
+  kette: 'M9 17H7a5 5 0 0 1 0-10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8',
+  /** leeres Kästchen (Feld zum Ankreuzen) */
+  kaestchen: 'M5 5h14v14H5z',
 } as const;
 
 export type SymbolName = keyof typeof PFADE;

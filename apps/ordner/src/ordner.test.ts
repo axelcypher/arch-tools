@@ -1,3 +1,4 @@
+import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import ExcelJS from 'exceljs';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
@@ -10,10 +11,10 @@ import { ausserhalbDerStruktur, pruefe } from './pruefung';
 import { allePruefen, berichtCsv, sammelCsv } from './sammel';
 import type { Stammdaten } from './stammdaten';
 import { beteiligteSammeln, projektEinlesen, projektStatusSetzen } from './projekt';
-import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, metaAus, mitAlterProjektJson, platzhalter, stammAusMeta } from './stammdaten';
+import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, metaAus, mitAlterProjektJson, platzhalter, projektdateiAenderung, stammAusMeta } from './stammdaten';
 import type { OrdnerRegel, Struktur } from './struktur';
-import { ausruecken, baumOrdnung, baumZeilen, einruecken, hinzufuegen, loeschen, umbenennen, verschieben, zusatzSetzen } from './baum';
-import { aktivePresets, alterOapPfad, GANZER_VORLAGENORDNER, ordnerAlsText, ordnerAusText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
+import { alleLoeschen, ausEingerueckt, ausruecken, baumOrdnung, baumZeilen, duplizieren, einfuegen, einruecken, hinzufuegen, loeschen, obersteAuswahl, teilbaumVon, umbenennen, unterordnerVon, verschieben, verschiebenNach, zusatzSetzen, zusatzSetzenAlle } from './baum';
+import { aktivePresets, alterOapPfad, bausteineAus, GANZER_VORLAGENORDNER, lphKette, ordnerAlsText, ordnerGilt, ordnerAusText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from './struktur';
 import { MAX_SICHERUNGEN, sicherungenAus, sicherungenMit, sicherungsName, strukturUnterschied, unterschiedText } from './sicherung';
 import { alsDokument, fuelleDocx, fuelleText, fuelleVorlage, MUSTER_VORLAGEN, zielDateiname } from './vorlagen';
 
@@ -85,6 +86,10 @@ describe('Nummern und Namen', () => {
   it('Ordnername: Platzhalter ersetzt, unzulässige Zeichen entfernt', () => {
     expect(ordnerName(stamm(), STANDARD, TAG)).toBe('2026-014 EFH Musterweg');
     expect(ordnerName(stamm({ kurzname: 'Haus: A/B? ' }), STANDARD, TAG)).toBe('2026-014 Haus A B');
+    // Jahr als Zahl (Anlagejahr): alte und neue Namen, mit Format
+    expect(ordnerName(stamm(), { ...STANDARD, ordnername: '{jahr} {JAHR} {jj} {JAHR_KURZ} {JAHR:JJ} {nummer}' }, TAG, 2024)).toBe('2024 2024 24 24 24 2026-014');
+    expect(nameAus('{jahr}/{JAHR}/{JAHR:JJ}/{jj}', { jahr: 2026 })).toBe('2026/2026/26/26');
+    expect(nameAus('{JAHR:JJ}-{JAHR:JJJJ}', { jahr: '2025' })).toBe('25-2025');
     expect(sichererName('Ende. ')).toBe('Ende');
     expect(nameAus('{nummer}_{{kurzname}}_{unbekannt}', { nummer: '1', kurzname: 'x' })).toBe('1_x_{unbekannt}');
   });
@@ -166,6 +171,88 @@ describe('Struktur', () => {
     expect(baumOrdnung(STANDARD.ordner)).toEqual(STANDARD.ordner);
   });
 
+  it('Klick-Editor: kopieren und in mehrere Ordner einfügen, Bausteine, duplizieren, verschieben, mehrere anlegen', () => {
+    const o: OrdnerRegel[] = [{ pfad: '07 Ausschreibung', lph: [6, 7] }, { pfad: '07 Ausschreibung/Rohbau/Angebote' }, { pfad: '07 Ausschreibung/Rohbau/Vergabe', dateischema: true }, { pfad: '07 Ausschreibung/Dach' }, { pfad: '08 Bauleitung' }];
+    // oberste Auswahl: Unterordner gewählter Ordner zählen nicht extra
+    expect(obersteAuswahl(['07 Ausschreibung/Rohbau', '07 ausschreibung/rohbau/Angebote', '08 Bauleitung', '08 Bauleitung'])).toEqual(['07 Ausschreibung/Rohbau', '08 Bauleitung']);
+    // Baustein aus den Unterordnern von Rohbau – relativ, mit Regeln
+    const baustein = unterordnerVon(o, '07 Ausschreibung/Rohbau');
+    expect(baustein).toEqual([{ pfad: 'Angebote' }, { pfad: 'Vergabe', dateischema: true }]);
+    // in mehrere Ordner auf einmal; vorhandene werden zusammengeführt, erneutes Einfügen ändert nichts
+    const r = einfuegen(o, ['07 Ausschreibung/Dach', '08 Bauleitung', '07 Ausschreibung/Rohbau'], baustein);
+    expect(r.neu).toEqual(['07 Ausschreibung/Dach/Angebote', '07 Ausschreibung/Dach/Vergabe', '08 Bauleitung/Angebote', '08 Bauleitung/Vergabe']);
+    expect(r.ordner.filter((x) => x.pfad.startsWith('07 Ausschreibung/Dach')).map((x) => x)).toEqual([{ pfad: '07 Ausschreibung/Dach' }, { pfad: '07 Ausschreibung/Dach/Angebote' }, { pfad: '07 Ausschreibung/Dach/Vergabe', dateischema: true }]);
+    const nochmal = einfuegen(r.ordner, ['07 Ausschreibung/Dach'], baustein);
+    expect(nochmal.neu).toEqual([]);
+    expect(nochmal.ordner).toBe(r.ordner);
+    // in den Stamm
+    expect(einfuegen([], [''], [{ pfad: 'A/B' }]).ordner).toEqual([{ pfad: 'A/B' }]);
+    // kopieren: der Ordner selbst samt Inhalt, relativ zu seinem Elternordner
+    expect(teilbaumVon(o, ['07 Ausschreibung/Rohbau'])).toEqual([{ pfad: 'Rohbau/Angebote' }, { pfad: 'Rohbau/Vergabe', dateischema: true }]);
+    expect(einfuegen(o, ['08 Bauleitung'], teilbaumVon(o, ['07 Ausschreibung/Rohbau'])).neu).toEqual(['08 Bauleitung/Rohbau']);
+    // duplizieren: direkt dahinter, Name durchgezählt
+    const d = duplizieren(o, '07 Ausschreibung/Rohbau');
+    expect(d.pfad).toBe('07 Ausschreibung/Rohbau 2');
+    expect(d.ordner.map((x) => x.pfad)).toEqual([
+      '07 Ausschreibung',
+      '07 Ausschreibung/Rohbau/Angebote',
+      '07 Ausschreibung/Rohbau/Vergabe',
+      '07 Ausschreibung/Rohbau 2',
+      '07 Ausschreibung/Rohbau 2/Angebote',
+      '07 Ausschreibung/Rohbau 2/Vergabe',
+      '07 Ausschreibung/Dach',
+      '08 Bauleitung',
+    ]);
+    expect(duplizieren(d.ordner, '07 Ausschreibung/Rohbau').pfad).toBe('07 Ausschreibung/Rohbau 3');
+    // verschieben: hinein, davor, dahinter; nicht in sich selbst, nicht auf einen gleichen Namen
+    expect(verschiebenNach(o, ['07 Ausschreibung/Dach'], '08 Bauleitung', 'in')).toEqual({
+      ordner: [{ pfad: '07 Ausschreibung', lph: [6, 7] }, { pfad: '07 Ausschreibung/Rohbau/Angebote' }, { pfad: '07 Ausschreibung/Rohbau/Vergabe', dateischema: true }, { pfad: '08 Bauleitung' }, { pfad: '08 Bauleitung/Dach' }],
+      pfade: ['08 Bauleitung/Dach'],
+    });
+    expect(verschiebenNach(o, ['07 Ausschreibung/Dach'], '07 Ausschreibung/Rohbau', 'vor')!.ordner.map((x) => x.pfad)).toEqual(['07 Ausschreibung', '07 Ausschreibung/Dach', '07 Ausschreibung/Rohbau/Angebote', '07 Ausschreibung/Rohbau/Vergabe', '08 Bauleitung']);
+    expect(verschiebenNach(o, ['08 Bauleitung'], '07 Ausschreibung', 'vor')!.pfade).toEqual(['08 Bauleitung']);
+    expect(verschiebenNach(o, ['07 Ausschreibung/Rohbau', '08 Bauleitung'], '', 'in')!.ordner.map((x) => x.pfad)).toEqual(['07 Ausschreibung', '07 Ausschreibung/Dach', 'Rohbau/Angebote', 'Rohbau/Vergabe', '08 Bauleitung']);
+    expect(verschiebenNach(o, ['07 Ausschreibung'], '07 Ausschreibung/Rohbau', 'in')).toBeNull();
+    expect(verschiebenNach(einfuegen(o, ['08 Bauleitung'], [{ pfad: 'Dach' }]).ordner, ['07 Ausschreibung/Dach'], '08 Bauleitung', 'in')).toBeNull();
+    // ein Elternordner ohne eigene Regel, der leer würde, bleibt stehen
+    expect(verschiebenNach(o, ['07 Ausschreibung/Rohbau/Angebote', '07 Ausschreibung/Rohbau/Vergabe'], '08 Bauleitung', 'in')!.ordner).toContainEqual({ pfad: '07 Ausschreibung/Rohbau' });
+    // mehrere löschen, Zusätze für mehrere
+    expect(alleLoeschen(o, ['07 Ausschreibung/Rohbau', '07 Ausschreibung/Rohbau/Angebote', '08 Bauleitung']).map((x) => x.pfad)).toEqual(['07 Ausschreibung', '07 Ausschreibung/Dach']);
+    expect(zusatzSetzenAlle(o, ['07 Ausschreibung/Dach', '08 Bauleitung'], (r) => ({ lph: [...(r?.lph ?? []), 8] })).filter((x) => x.lph?.includes(8)).map((x) => x.pfad)).toEqual(['07 Ausschreibung/Dach', '08 Bauleitung']);
+    // mehrere Ordner aus einer eingerückten Liste, mit Zusätzen und Meldungen
+    expect(ausEingerueckt('Rohbau\n\tAngebote\n\tVergabe | Dateischema\n- Dach | LPh 6-7\n    Angebote/Alt\n\n# Kommentar\nRohbau')).toEqual({
+      ordner: [{ pfad: 'Rohbau' }, { pfad: 'Rohbau/Angebote' }, { pfad: 'Rohbau/Vergabe', dateischema: true }, { pfad: 'Dach', lph: [6, 7] }, { pfad: 'Dach/Angebote/Alt' }],
+      meldungen: [{ zeile: 8, text: 'Zeile 8 doppelt zu Zeile 1 – nur die erste gilt.' }],
+    });
+  });
+
+  it('Leistungsphasen werden an Unterordner vererbt – im Plan und in der Prüfung', () => {
+    const o: OrdnerRegel[] = [{ pfad: '07 Ausschreibung', lph: [6, 7] }, { pfad: '07 Ausschreibung/Rohbau/Angebote' }, { pfad: '07 Ausschreibung/Rohbau/Mängel', lph: [8] }, { pfad: '09 Fotos' }];
+    expect(lphKette(o, '07 Ausschreibung/Rohbau/Mängel')).toEqual([{ pfad: '07 Ausschreibung', lph: [6, 7] }, { pfad: '07 Ausschreibung/Rohbau/Mängel', lph: [8] }]);
+    expect(ordnerGilt(o, '07 Ausschreibung/Rohbau/Angebote', [1, 2, 3, 4])).toBe(false);
+    expect(ordnerGilt(o, '07 Ausschreibung/Rohbau/Angebote', [6])).toBe(true);
+    expect(ordnerGilt(o, '07 Ausschreibung/Rohbau/Mängel', [6])).toBe(false);
+    expect(ordnerGilt(o, '07 Ausschreibung/Rohbau/Mängel', [7, 8])).toBe(true);
+    // ohne Leistungsphasen entsteht alles
+    expect(ordnerGilt(o, '07 Ausschreibung/Rohbau/Mängel', [])).toBe(true);
+    const s: Struktur = { ...STANDARD, ordner: o, presets: [] };
+    const pfade = planen(stamm({ leistungsphasen: [1, 2, 3, 4] }), s, [], [], TAG).schritte.filter((x) => x.art === 'ordner' && x.herkunft === 'struktur').map((x) => x.pfad);
+    expect(pfade).toEqual(['09 Fotos']);
+    // Prüfung: Ordner unter einem nicht beauftragten Elternordner fehlen nicht
+    expect(pruefe('2026-014 EFH Musterweg', [{ pfad: '09 Fotos', ordner: true, groesse: 0 }], s, { ...stamm({ leistungsphasen: [1, 2, 3, 4] }), angelegt: '2026-10-01', struktur: '', dateischema: '' }).fehlendeOrdner).toEqual([]);
+    expect(pruefe('2026-014 EFH Musterweg', [{ pfad: '09 Fotos', ordner: true, groesse: 0 }], s, { ...stamm({ leistungsphasen: [6] }), angelegt: '2026-10-01', struktur: '', dateischema: '' }).fehlendeOrdner).toEqual(['07 Ausschreibung', '07 Ausschreibung/Rohbau/Angebote']);
+  });
+
+  it('Bausteine in der Struktur-Datei: Hin und zurück, ungültige entfallen, ohne Bausteine unverändert', () => {
+    const s: Struktur = { ...KLEIN, bausteine: [{ name: 'Gewerk', ordner: [{ pfad: 'Angebote' }, { pfad: 'Vergabe', lph: [6, 7] }] }] };
+    expect(strukturAusJson(strukturAlsJson(s))).toEqual(s);
+    expect(strukturAusJson(strukturAlsJson(KLEIN))).not.toHaveProperty('bausteine');
+    expect(bausteineAus([{ name: ' Gewerk ', ordner: [{ pfad: 'A<>' }, { pfad: '' }, 3] }, { name: 'gewerk', ordner: [{ pfad: 'B' }] }, { name: 'Leer', ordner: [] }, { ordner: [{ pfad: 'C' }] }, 'x'])).toEqual([
+      { name: 'Gewerk', ordner: [{ pfad: 'A' }] },
+    ]);
+    expect(unterschiedText(strukturUnterschied(KLEIN, s))).toBe('1 Baustein neu (Gewerk)');
+  });
+
   it('Konfiguration als JSON: Hin und zurück, Vorgaben für fehlende Angaben, verständliche Fehler', () => {
     expect(strukturAusJson(strukturAlsJson(KLEIN))).toEqual(KLEIN);
     const teil = strukturAusJson('{"name":"Büro","ordner":["A | LPh 2","B/C"],"flaechenprojekt":"03 Flächen/{nummer}.oap"}');
@@ -209,6 +296,19 @@ describe('Stammdaten', () => {
     expect(stammAusMeta(m).koordinaten).toEqual(koordinaten);
   });
 
+  it('Bebauungsplan und Stand (Akquise) aus dem Assistenten gehen in die Projektdatei und zurück; beim Ergänzen als Änderung erkannt', () => {
+    const m = metaAus(stamm({ bebauungsplan: { nummer: ' 112 ', name: '' }, status: 'akquise' }));
+    expect(m.bebauungsplan).toEqual({ nummer: '112' });
+    expect(m.status).toBe('akquise');
+    expect(stammAusMeta(m)).toMatchObject({ bebauungsplan: { nummer: '112' }, status: 'akquise' });
+    // „aktiv“ steht nicht in der Datei, leerer Bebauungsplan entfällt
+    expect(metaAus(stamm({ bebauungsplan: { nummer: ' ', name: '' }, status: 'aktiv' }))).not.toHaveProperty('status');
+    expect(metaAus(stamm({ bebauungsplan: { nummer: ' ', name: '' } }))).not.toHaveProperty('bebauungsplan');
+    // mit der Kopie des Namensschemas (Vorgabe), sonst käme „Namensschema“ als Änderung dazu
+    const basis = { meta: metaAus(stamm()), namensschema: structuredClone(VORGABE_NAMENSSCHEMA) };
+    expect(projektdateiAenderung(basis, stamm({ status: 'akquise', bebauungsplan: { nummer: '5' } }), { struktur: KLEIN, presets: [] }).teile).toEqual(['Bebauungsplan', 'Status', 'Struktur']);
+  });
+
   it('Projektdatei: Stammdaten, Anlagedatum, Struktur und Presets hin und zurück', () => {
     const p = alsProject(stamm({ kurzname: ' EFH Musterweg ', aktenzeichen: '63/1' }), { struktur: KLEIN, presets: ['Alle Vorlagen'], date: TAG });
     expect(p.name).toBe('Neubau eines Einfamilienhauses');
@@ -219,6 +319,34 @@ describe('Stammdaten', () => {
     expect(a.bauherr.kontakte).toEqual([{ art: 'email', wert: 'b@example.org' }]);
     expect(a.beteiligte).toEqual([{ rolle: 'Tragwerk', name: 'Büro Statik', kontakt: '0251 1234' }]);
     expect(stammAusMeta(p.meta).bezeichnung).toBe('Neubau eines Einfamilienhauses');
+    // Namensschema: die Vorgabe bzw. das des Büros kommt in die Projektdatei und bleibt erhalten
+    expect(readProjectFile(writeArchive(p)).namensschema?.phasen.map((x) => x.kuerzel)).toEqual(['BP', 'EP', 'GP', 'AP', 'AB']);
+    const eigen = alsProject(stamm(), { namensschema: { ...structuredClone(VORGABE_NAMENSSCHEMA), indexAbLph: 4 } });
+    expect(readProjectFile(writeArchive(eigen)).namensschema?.indexAbLph).toBe(4);
+  });
+
+  it('Ergänzen: ein fehlendes oder abweichendes Namensschema der Projektdatei wird auf den Stand des Büros gebracht', () => {
+    const s = stamm();
+    const struktur = { name: 'Klein', dateischema: '' };
+    const p = alsProject(s, { struktur, presets: [] });
+    const buero = { ...structuredClone(VORGABE_NAMENSSCHEMA), indexAbLph: 4 };
+    // alte Projektdatei ohne Namensschema: „Namensschema“ kommt dazu, sonst bleibt alles
+    const ohne = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner }, s, { struktur, presets: [], namensschema: buero });
+    expect(ohne.teile).toEqual(['Namensschema']);
+    expect(ohne.aendern({ meta: p.meta, fremd: 1 })).toMatchObject({ fremd: 1, namensschema: buero });
+    // abweichendes Schema: auf den Stand des Büros
+    const anders = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: structuredClone(VORGABE_NAMENSSCHEMA) }, s, { struktur, presets: [], namensschema: buero });
+    expect(anders.teile).toEqual(['Namensschema (Stand des Büros)']);
+    expect(anders.aendern({ meta: p.meta }).namensschema).toEqual(buero);
+    // gleich: keine Änderung, der Abschnitt bleibt unberührt
+    const gleich = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: buero }, s, { struktur, presets: [], namensschema: buero });
+    expect(gleich.teile).toEqual([]);
+    expect(gleich.aendern({ meta: p.meta })).not.toHaveProperty('namensschema');
+    // andere Reihenfolge der Schlüssel ist keine Änderung
+    const umgestellt = { indexAbLph: buero.indexAbLph, reihenfolge: buero.reihenfolge, antragsarten: buero.antragsarten, phasen: buero.phasen.map((k) => ({ lph: k.lph, name: k.name, kuerzel: k.kuerzel })) };
+    expect(projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: umgestellt as typeof buero }, s, { struktur, presets: [], namensschema: buero }).teile).toEqual([]);
+    // ohne Büro-Schema gilt die Vorgabe
+    expect(projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: structuredClone(VORGABE_NAMENSSCHEMA) }, s, { struktur, presets: [] }).teile).toEqual([]);
   });
 
   it('alte projekt.json (bis 0.2) wird noch gelesen und füllt Lücken der Projektdatei', () => {
@@ -655,6 +783,9 @@ describe('Vorlagen-Presets', () => {
     // „aktiv“ ist der Normalfall und steht nicht in der Datei
     await projektStatusSetzen(fs, basis, 'aktiv');
     expect(readProjectFile(fs.eintraege.get(pfad)!).meta.status).toBeUndefined();
+    // im Archivordner: „aktiv“ ausdrücklich, sonst gälte der Stand des Ordners
+    await projektStatusSetzen(fs, basis, 'aktiv', { ausdruecklich: true });
+    expect(readProjectFile(fs.eintraege.get(pfad)!).meta.status).toBe('aktiv');
     // ohne Projektdatei: verständliche Meldung, nichts wird angelegt
     await fs.ordnerAnlegen('P:/Projekte', '2019-003 Altbau');
     await expect(projektStatusSetzen(fs, 'P:/Projekte/2019-003 Altbau', 'abgeschlossen')).rejects.toThrow(/noch keine Projektdatei/);
@@ -681,7 +812,7 @@ describe('Vorlagen-Presets', () => {
     expect(strukturAusJson(strukturAlsJson(MIT_PRESETS))).toEqual(MIT_PRESETS);
     const alt = strukturAusJson('{"name":"Büro","ordner":["A"]}');
     expect(alt.presets).toEqual([GANZER_VORLAGENORDNER]);
-    expect(alt.vorlagenname).toBe('{name}');
+    expect(alt.vorlagenname).toBe('{Name}');
     const roh = strukturAusJson(
       JSON.stringify({
         presets: [

@@ -1,5 +1,5 @@
 /**
- * Katasterpläne im Projektordner-Tool: Einstellungen (QGIS-Vorlage, Pläne, Ablage, Dateiname – für alle im Büro im
+ * Katasterpläne in der App „Projekt“: Einstellungen (QGIS-Vorlage, Pläne, Ablage, Dateiname – für alle im Büro im
  * gemeinsamen Konfigurationsordner, Bereich „kataster“), der Pfad zu qgis_process (je Rechner) und der Export für ein
  * Projekt: Koordinaten und Kopfangaben aus der Projektdatei (.oap), die QGIS-Vorlage des Projekts ebenfalls dort.
  *
@@ -8,6 +8,7 @@
  */
 
 import { create } from 'zustand';
+import { artDerFassung } from '@core/fassung';
 import { openFileWithPath } from '@core/platform/files';
 import { konfigAendern, konfigLesen } from '@core/platform/konfig';
 import { logger } from '@core/platform/log';
@@ -15,7 +16,7 @@ import type { GeladeneProjektdatei, ProjektordnerZugriff } from '@core/platform/
 import { projektdateiDateiSetzen, projektdateiLaden, tauriProjektordner, verbinde } from '@core/platform/projektordner';
 import { fragen } from '@core/ui/Rueckfrage';
 import type { KatasterEinstellungen, KatasterPlan, PlanArt, VorlageInfo } from './kataster';
-import { auftragBauen, ergebnisseLesen, fehlerAuszug, katasterAus, neueKennung, planDateiname, planFehler, VORGABE_KATASTER, vorlageLesen } from './kataster';
+import { auftragBauen, ergebnisseLesen, fehlerAuszug, katasterAus, katasterZielpfad, neueKennung, planDateiname, planFehler, VORGABE_KATASTER, vorlageLesen, type Namensteile } from './kataster';
 import type { QgisZugriff } from './qgis';
 import { tauriQgis } from './qgis';
 import skript from './katasterexport.py?raw';
@@ -41,8 +42,6 @@ function programmLesen(): string {
 
 const fehlertext = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const heute = () => new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-/** Antragsart einer Fassung: „BAUA 2“ → „BAUA“ */
-const artDerFassung = (fassung: string) => fassung.trim().replace(/[\s_-]*\d+$/, '').toUpperCase();
 
 /** Ergebnis je Plan nach dem Export */
 export interface PlanAusgang {
@@ -106,6 +105,8 @@ export interface KatasterState {
   projektVorlageInfo: () => VorlageInfo | null;
   /** Zielordner relativ zum Projektordner; null = kein aktiver Antrag für die Ablage „Antrag“ */
   zielOrdner: () => string | null;
+  /** Werte der Variablen in Dateiname und Ablageordner (Projektdatei, aktiver Antrag, heute) */
+  namensteile: () => Namensteile;
   /** Pläne exportieren; liefert das Ergebnis je Plan (leer bei Abbruch) */
   exportieren: (ids: string[]) => Promise<PlanAusgang[]>;
   ausgangSchliessen: () => void;
@@ -282,15 +283,24 @@ export const useKataster = create<KatasterState>()((set, get) => {
       }
     },
 
+    namensteile: () => {
+      const projekt = get().projekt;
+      const meta = projekt?.oap?.projekt.meta;
+      return {
+        kuerzel: meta?.projektcode?.trim() || projekt?.name || '',
+        art: meta?.antrag ? artDerFassung(meta.antrag.name) : '',
+        datum: new Date(),
+        kurzname: meta?.kurzname,
+        vorhaben: meta?.vorhaben,
+        bearbeiter: meta?.bearbeiter,
+      };
+    },
+
     zielOrdner: () => {
       const e = get().einstellungen;
       const antrag = get().projekt?.oap?.projekt.meta.antrag?.name;
       if (e.ziel === 'antrag' || !e.zielpfad.trim()) return antrag ? `${ANTRAGSORDNER}/${antrag}` : null;
-      if (/\{antrag\}/i.test(e.zielpfad) && !antrag) return null;
-      return e.zielpfad
-        .replace(/\{antrag\}/gi, antrag ?? '')
-        .replace(/\\/g, '/')
-        .replace(/^\/+|\/+$/g, '');
+      return katasterZielpfad(e.zielpfad, antrag, get().namensteile());
     },
 
     exportieren: async (ids) => {
@@ -315,8 +325,7 @@ export const useKataster = create<KatasterState>()((set, get) => {
       const falsch = plaene.flatMap((p) => planFehler(p, info).map((t) => `${p.name}: ${t}`));
       if (falsch.length) return fehlschlag(`Pläne passen nicht zur QGIS-Vorlage des Projekts: ${falsch.join(' ')}`);
 
-      const kuerzel = meta.projektcode?.trim() || projekt.name;
-      const teile = { code: meta.projektcode?.trim() || kuerzel, kuerzel, art: meta.antrag ? artDerFassung(meta.antrag.name) : '', datum: new Date() };
+      const teile = get().namensteile();
       const relativ = new Map(plaene.map((p) => [p.id, `${ordner ? `${ordner}/` : ''}${planDateiname(get().einstellungen.dateiname, p, teile)}`]));
 
       // Vorhandene Dateien: überspringen oder mit neuem Namen ablegen – im Projektordner wird nichts überschrieben
@@ -351,7 +360,7 @@ export const useKataster = create<KatasterState>()((set, get) => {
         if (!auswahl.length) return [];
       }
 
-      const kopf = { titel: meta.vorhaben?.trim() || oap.projekt.name, kennung: teile.code, strasse: meta.adresse?.strasse ?? '', ort: meta.adresse?.ort ?? '', plz: meta.adresse?.plz ?? '' };
+      const kopf = { titel: meta.vorhaben?.trim() || oap.projekt.name, kennung: teile.kuerzel, strasse: meta.adresse?.strasse ?? '', ort: meta.adresse?.ort ?? '', plz: meta.adresse?.plz ?? '' };
       const auftrag = auftragBauen(auswahl, meta.koordinaten, kopf, (p) => verbinde(basis, relativ.get(p.id)!));
       set({ laeuft: true, ausgang: null });
       let ausgang: PlanAusgang[] = [];

@@ -29,8 +29,13 @@ export interface PkEintrag {
   titel: string;
   /** Text (1/2), die Möglichkeiten zeilenweise (4/8) bzw. die Beschriftung des Kästchens (16) */
   text: string;
-  /** gewählte Möglichkeit (4/8, null oder −1 = keine) bzw. angekreuzt (16: 1) */
+  /** gewählte Möglichkeit wie in der Datei (4: ohne die leere erste Zeile, 8: ab 0; null oder −1 = keine) bzw. angekreuzt (16: 1) */
   zahl: number | null;
+  /**
+   * Text so, wie er in der Datei steht – nur, wenn er kein gültiges UTF-8 ist (ältere Fassung in Windows-1252, als solche
+   * gelesen). Die Hülle schreibt nur, wenn der Eintrag noch genau diese Bytes enthält; neu kodiert stimmten sie nie.
+   */
+  textRoh?: number[];
 }
 
 export interface Projektkarte {
@@ -41,8 +46,9 @@ export interface Projektkarte {
 export const pkSchluessel = (gruppe: number, id: number) => `${gruppe}:${id}`;
 
 /**
- * Art eines Eintrags. Auswahllisten (4) beginnen mit einer leeren Zeile – „nichts gewählt“ –, die bei der
- * Nummer der Wahl mitzählt (Delphi: Items = Texte, ItemIndex = Ganzzahl); Optionen (8) haben keine.
+ * Art eines Eintrags. Auswahllisten (4) beginnen mit einer leeren Zeile – „nichts gewählt“ –, die bei der Nummer
+ * der Wahl in der Datei **nicht** mitzählt: `Ganzzahl` 0 ist die erste Möglichkeit danach, −1 die leere Zeile (wie
+ * SJ Office sie liest). Optionen (8) haben keine leere Zeile und zählen ab 0.
  */
 export type PkArt = 'text' | 'mehrzeilig' | 'auswahl' | 'optionen' | 'kreuz';
 
@@ -68,14 +74,25 @@ export const pkMoeglichkeiten = (e: PkEintrag) => (istWahl(e) && pkArt(e) !== 'k
 
 /**
  * Wert eines Eintrags für die Oberfläche: Text mit \n als Zeilenumbruch, bei Auswahl die Nummer der gewählten
- * Möglichkeit (null = keine), bei Kästchen 1 oder 0.
+ * Möglichkeit in `pkMoeglichkeiten` (null = keine), bei Kästchen 1 oder 0.
  */
 export type PkWert = string | number | null;
+
+/** Auswahlliste mit leerer erster Zeile: In der Datei zählt sie nicht mit (Ganzzahl = Nummer in der Liste − 1) */
+const versatz = (e: Pick<PkEintrag, 'typ' | 'text'>) => (pkArt(e) === 'auswahl' && /^[ \t]*(\r\n|\r|\n)/.test(e.text) ? 1 : 0);
 
 export function pkWertVon(e: PkEintrag): PkWert {
   if (!istWahl(e)) return e.text.replace(/\r\n?/g, '\n');
   if (pkArt(e) === 'kreuz') return e.zahl === 1 ? 1 : 0;
-  return e.zahl === null || e.zahl < 0 ? null : e.zahl;
+  return e.zahl === null || e.zahl < 0 ? null : e.zahl + versatz(e);
+}
+
+/** Gegenstück zu `pkWertVon` für Auswahl und Optionen: die Ganzzahl der Datei (null bleibt null, die leere Zeile −1) */
+export function pkZahlAus(e: Pick<PkEintrag, 'typ' | 'text'>, wert: PkWert): number | null {
+  if (typeof wert !== 'number') return null;
+  if (pkArt(e) === 'kreuz') return wert;
+  const z = wert - versatz(e);
+  return z < 0 ? -1 : z;
 }
 
 /** Text eines Werts – so erscheint er in Formularen und Übersichten */
