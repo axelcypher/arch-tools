@@ -813,7 +813,7 @@ describe('Fachliche Pflichtbefunde Baurecht (P2–P10)', () => {
 
 describe('Folgerunde: Grenzwerte, absolute GR II, Gemeinschaftsanlagen, Aufenthaltsräume', () => {
   it('Prozente nahe der Schwelle mit Nachkommastellen und Hinweis (Gegenprobe: weit weg ganzzahlig)', () => {
-    expect(pctNah(0.7496, 0.75)).toBe('74,96 % (knapp am Grenzwert – Rasterprüfung, im Schnitt nachweisen)');
+    expect(pctNah(0.7496, 0.75)).toBe('74,96 % (knapp am Grenzwert – Rasterprüfung)');
     expect(pctNah(0.735, 0.75)).toBe('73,5 %');
     expect(pctNah(0.5, 0.75)).toBe('50 %');
   });
@@ -853,8 +853,12 @@ describe('Folgerunde: Grenzwerte, absolute GR II, Gemeinschaftsanlagen, Aufentha
     const n = massNachweis(p);
     const r = n.raeume.find((x) => x.name === '9 Kinderzimmer')!;
     expect(r.zuPruefen).toBe(true);
-    expect(r.begruendung.startsWith('prüfen')).toBe(true);
+    expect(r.begruendung).toContain('von Hand festlegen');
     expect(n.hinweise.some((h) => h.text.includes('9 Kinderzimmer') && h.text.includes('ohne die geforderte lichte Höhe'))).toBe(true);
+    // GF als Spanne: mit dem Raum größer, Gegenprobe ohne zu prüfende Räume keine Spanne
+    expect(n.gfz.flaecheMitOffenen).toBeGreaterThan(n.gf);
+    expect(rechenweg(n).formeln.some((f) => f.startsWith('GFZ mit zu prüfenden Aufenthaltsräumen'))).toBe(true);
+    expect(massNachweis(haus('1970-08-01')).gfz.flaecheMitOffenen).toBeUndefined();
     const q = structuredClone(p);
     const raum = q.storeys[3].shapes.find((x) => x.kind === 'room' && x.name === 'Kinderzimmer');
     if (raum && raum.kind === 'room') raum.aufenthalt = 'ja';
@@ -865,5 +869,14 @@ describe('Folgerunde: Grenzwerte, absolute GR II, Gemeinschaftsanlagen, Aufentha
     const { aufenthaltAnforderung } = await import('./massNutzung');
     expect(aufenthaltAnforderung('nrw2019', { dachraumOderKeller: false, kleinesWohngebaeude: true }).hoehe).toBe(2.3);
     expect(aufenthaltAnforderung('nrw2019', { dachraumOderKeller: false, kleinesWohngebaeude: false }).hoehe).toBe(2.4);
+  });
+
+  it('GR II absolut nie unter der GR selbst; festgesetzte GRZ II höchstens geht vor', () => {
+    const p = haus('2020-05-01');
+    p.meta.grundstueck.flaeche = 150;
+    p.massNutzung = { ...p.massNutzung, grz: undefined, grAbsolut: 140 };
+    expect(massNachweis(p).gr2Absolut?.zulaessig).toBeCloseTo(140, 6);
+    p.massNutzung = { ...p.massNutzung, grzIIMax: 0.95 };
+    expect(massNachweis(p).gr2Absolut?.zulaessig).toBeCloseTo(142.5, 6);
   });
 });

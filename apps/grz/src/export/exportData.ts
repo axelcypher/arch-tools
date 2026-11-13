@@ -90,7 +90,7 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     stand: m.stand ? datumText(m.stand) : '',
     'stand.text': m.stand ? `Stand ${datumText(m.stand)}` : '',
     ...absolutWerte('gr_absolut', n.grAbsolut, n.recht.baunvo === '1990' ? 'GR I (absolut)' : 'GR (absolut)'),
-    ...absolutWerte('gr2_absolut', n.gr2Absolut, 'GR II (1,5 × GR)'),
+    ...absolutWerte('gr2_absolut', n.gr2Absolut, 'GR II absolut (§ 19 Abs. 4 S. 2)'),
     ...absolutWerte('gf_absolut', n.gfAbsolut, 'GF (absolut)'),
     'grundstueck.gemeinschaftsanlagen': opt(n.grundstueck.gemeinschaftsanlagen, r2),
     ...kennzahlWerte('bmz', n.bmz, 'BM'),

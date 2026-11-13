@@ -370,7 +370,7 @@ function raeumePruefenRechnen(project: Project, st: Storey, floorZ: number, bauo
         : nachName === 'ja'
           ? erfuellt
             ? `Aufenthaltsraum nach Nutzung; ${anf.text} auf ${pctNah(anteil, anf.anteil)} erfüllt`
-            : `prüfen: nach Nutzung Aufenthaltsraum, aber ${anf.text} nur auf ${pctNah(anteil, anf.anteil)} – vorläufig nicht mitgerechnet; wird er als Aufenthaltsraum genutzt, zählt er trotzdem (von Hand festlegen)`
+            : `${anf.text} nur auf ${pctNah(anteil, anf.anteil)} – zählt als zum Aufenthalt bestimmter Raum in der GF „mit“ (Spanne); von Hand festlegen`
           : nachName === 'treppe'
             ? 'Treppenraum'
             : 'kein Aufenthaltsraum nach Nutzung';
@@ -884,6 +884,8 @@ export function massNachweis(project: Project): Nachweis {
   // § 21a Abs. 2 BauNVO 1968/1977/1990: Anteile an Gemeinschaftsanlagen außerhalb des Baugrundstücks hinzurechnen (1962: keine Regel)
   const gemeinschaft = re.baunvo !== '1962' && gBasis !== undefined && (m.gemeinschaftsanlagen ?? 0) > 0 ? m.gemeinschaftsanlagen : undefined;
   const G = gBasis !== undefined ? gBasis + (gemeinschaft ?? 0) : undefined;
+  if (re.baunvo !== '1962' && gBasis === undefined && (m.gemeinschaftsanlagen ?? 0) > 0)
+    hinweise.push({ text: 'Anteil an Gemeinschaftsanlagen nicht berücksichtigt: Die Grundstücksfläche fehlt.', art: 'sachlich' });
   if (re.baunvo === '1962' && (m.gemeinschaftsanlagen ?? 0) > 0)
     hinweise.push({ text: 'Anteil an Gemeinschaftsanlagen nicht hinzugerechnet: Die BauNVO 1962 kennt keine Regel wie § 21a Abs. 2 der späteren Fassungen.', art: 'sachlich' });
   const grundstueck: Nachweis['grundstueck'] = {
@@ -1014,12 +1016,32 @@ export function massNachweis(project: Project): Nachweis {
   });
   const gf = gfJeGeschoss.reduce((a, x) => a + x.flaeche, 0);
   const gfAufenthalt = gfJeGeschoss.filter((x) => x.art === 'aufenthalt').reduce((a, x) => a + x.flaeche, 0);
+  // Räume, die nach Nutzung Aufenthaltsräume sind, aber die lichte Höhe nicht erreichen: zum Aufenthalt bestimmt
+  // (§ 2 Abs. 7 BauO NRW) – die GF wird ohne und mit ihnen angegeben (Spanne wie bei der GRZ)
   const zuPruefen = raeume.filter((r) => r.zuPruefen);
-  if (zuPruefen.length)
+  let gfMitPruefen: number | undefined;
+  if (zuPruefen.length) {
+    gfMitPruefen = 0;
+    for (const g of gfJeGeschoss) {
+      const eigene = raeume.filter((x) => x.storeyId === g.storeyId);
+      if (!eigene.some((x) => x.zuPruefen) || g.art === 'vollgeschoss') {
+        gfMitPruefen += g.flaeche;
+        continue;
+      }
+      const st = geschosse.find((x) => x.st.id === g.storeyId)!.st;
+      gfMitPruefen += aufenthaltsFlaeche(
+        st,
+        grundriss.get(st.id)!,
+        wand,
+        eigene.map((x) => (x.zuPruefen ? { ...x, ergebnis: 'ja' as const } : x)),
+      );
+    }
     hinweise.push({
-      text: `Nach Nutzung Aufenthaltsräume, aber ohne die geforderte lichte Höhe: ${zuPruefen.map((r) => r.name).join(', ')} – vorläufig nicht zur Geschossfläche gerechnet. Werden sie als Aufenthaltsräume genutzt, zählen sie mit (Einstufung von Hand festlegen).`,
+      text: `Nach Nutzung Aufenthaltsräume, aber ohne die geforderte lichte Höhe: ${zuPruefen.map((r) => r.name).join(', ')}. Als zum Aufenthalt bestimmte Räume zählen sie zur Geschossfläche; die GF ist ohne und mit ihnen angegeben (mit: ${fmtA(gfMitPruefen)}).`,
       art: 'sachlich',
+      tipp: 'Einstufung je Raum von Hand festlegen.',
     });
+  }
   if (vorher1990 && gfAufenthalt > 0) {
     hinweise.push({
       text: `${baunvoLabel(re.baunvo)}: Aufenthaltsräume in anderen Geschossen samt Treppenräumen und Umfassungswänden (${fmtM(wand)} Wandzuschlag) zählen zur Geschossfläche.`,
@@ -1034,7 +1056,7 @@ export function massNachweis(project: Project): Nachweis {
     ].filter(Boolean);
     hinweise.push({ text: `Nicht zur Geschossfläche gerechnet (Gebäudeteile in Vollgeschossen): ${teile.join('; ')}.`, art: 'sachlich' });
   }
-  const gfz = kennzahl(gf, G, m.gfz);
+  const gfz = kennzahl(gf, G, m.gfz, gfMitPruefen);
 
   const anzahl = pruefungen.filter((x) => x.vollgeschoss).length;
   const zwingend = !!m.vollgeschosseZwingend && m.vollgeschosseMax !== undefined;
@@ -1055,7 +1077,9 @@ export function massNachweis(project: Project): Nachweis {
   // absolute Festsetzungen und Baumassenzahl
   const absolut = (flaeche: number, zul: number | undefined) => (zul === undefined ? undefined : { flaeche, zulaessig: zul, status: (flaeche > zul + 1e-9 ? 'ueberschritten' : 'ok') as Status });
   const grAbsolut = absolut(grz.flaeche, m.grAbsolut);
-  const gr2Absolut = grz2 && m.grAbsolut !== undefined ? absolut(grz2.flaeche, Math.min(1.5 * m.grAbsolut, G !== undefined ? 0.8 * G : Infinity)) : undefined;
+  // § 19 Abs. 4 S. 2: bis 50 % über die GR, höchstens GRZ 0,8 – nie unter der GR selbst; abweichende Festsetzung (S. 3) geht vor
+  const gr2Grenze = (gr: number) => (m.grzIIMax !== undefined && G !== undefined ? m.grzIIMax * G : Math.max(gr, Math.min(1.5 * gr, G !== undefined ? 0.8 * G : Infinity)));
+  const gr2Absolut = grz2 && m.grAbsolut !== undefined ? absolut(grz2.flaeche, gr2Grenze(m.grAbsolut)) : undefined;
   const gfAbsolut = absolut(gf, m.gfAbsolut);
   const bmz = m.bmz !== undefined ? kennzahl(baumasse, G, m.bmz) : undefined;
   if (m.bmz !== undefined) hinweise.push({ text: `Baumasse vereinfacht aus Grundfläche × Geschosshöhe der Vollgeschosse (${fmtA(baumasse).replace('m²', 'm³')}).`, art: 'sachlich' });
@@ -1161,7 +1185,7 @@ export const pctNah = (v: number, soll: number): string => {
   if (d >= 0.02) return pct(v);
   const stellen = d < 0.001 ? 2 : 1;
   const t = `${(v * 100).toFixed(stellen).replace('.', ',')} %`;
-  return d < 0.01 ? `${t} (knapp am Grenzwert – Rasterprüfung, im Schnitt nachweisen)` : t;
+  return d < 0.01 ? `${t} (knapp am Grenzwert – Rasterprüfung)` : t;
 };
 
 function boundsOf(pts: Point[]) {

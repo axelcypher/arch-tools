@@ -95,7 +95,8 @@ export async function unterlageLesen(datei: File, ausschnitt: { x: number; y: nu
     ? await pdfSeite(await datei.arrayBuffer())
     : await alsDataUrl(datei).then(async (d) => {
         const g = await bildGroesse(d);
-        return verkleinern(d, g.w, g.h);
+        // gelingt das Verkleinern nicht (Speicher), das Bild unverändert übernehmen
+        return verkleinern(d, g.w, g.h).catch(() => ({ dataUrl: d, ...g }));
       });
   const metersPerPixel = Math.min(ausschnitt.w / w, ausschnitt.h / h);
   return { type: 'raster', name: datei.name, dataUrl, widthPx: w, heightPx: h, metersPerPixel, x: ausschnitt.x, y: ausschnitt.y, opacity: 0.5, visible: true };

@@ -208,13 +208,17 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 ### Grundstück und Gelände
 
 - **Gemeinschaftsanlagen (§ 21a Abs. 2 BauNVO 1968/1977/1990):** Setzt der Bebauungsplan es fest, werden Anteile
-  an außerhalb des Baugrundstücks festgesetzten Gemeinschaftsanlagen (§ 9 Abs. 1 Nr. 22 BauGB, z. B.
-  Gemeinschaftsgaragen im Reihenhausgebiet) der Grundstücksfläche hinzugerechnet: Feld „Anteil an
+  an außerhalb des Baugrundstücks festgesetzten Gemeinschaftsanlagen (1968: § 9 Abs. 1 Nr. 12 und 13 BBauG, 1977:
+  § 9 Abs. 1 Nr. 22 BBauG, heute § 9 Abs. 1 Nr. 22 BauGB; z. B. Gemeinschaftsgaragen im Reihenhausgebiet) der Grundstücksfläche hinzugerechnet: Feld „Anteil an
   Gemeinschaftsanlagen [m²]“ unter der Grundstücksfläche; der Rechenweg zeigt „FGst = Grundstück + Anteil“, der
   Druck nennt den Anteil. Nach BauNVO 1962 gibt es die Regel nicht (Hinweis, kein Zuschlag).
 - **Absolute GR und GR II (BauNVO 1990):** Ist die Grundfläche absolut festgesetzt, wird auch die GR II geprüft:
-  höchstens 1,5 × GR, höchstens bis zu einer GRZ von 0,8 (§ 19 Abs. 4 Satz 2) – eigene Karte, Zeile im Druck und
-  Platzhalter `gr2_absolut` im Excel.
+  höchstens 1,5 × GR, höchstens bis zu einer GRZ von 0,8, nie unter der GR selbst (§ 19 Abs. 4 Satz 2); eine
+  festgesetzte „GRZ II höchstens“ (Satz 3) geht vor – eigene Karte, Zeile im Druck und Platzhalter `gr2_absolut`.
+- **Zu prüfende Aufenthaltsräume:** Räume, die nach Nutzung Aufenthaltsräume sind, aber die lichte Höhe nicht
+  erreichen, sind zum Aufenthalt bestimmt (§ 2 Abs. 7 BauO NRW) und zählen vor 1990 zur Geschossfläche. Die GFZ steht
+  deshalb ohne und mit ihnen („mit zu prüfenden Räumen bis …“, Rechenweg, Drucknotiz), Status „prüfen“, wenn sie
+  mit ihnen überschritten wäre.
 
 - **Grundstücksfläche im Bauland:** Maßgebend ist nach § 19 Abs. 3 BauNVO nur die Fläche des Baugrundstücks im
   Bauland hinter der festgesetzten (sonst tatsächlichen) Straßenbegrenzungslinie – nicht ohne Weiteres die

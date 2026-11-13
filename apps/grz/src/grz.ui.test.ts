@@ -818,7 +818,7 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     const host = render(GrzGfzView);
     const hatFeld = () => [...host.querySelectorAll('.field-label')].some((l) => l.textContent === 'Wandzuschlag [m]');
     expect(hatFeld()).toBe(false);
-    const schalter = [...host.querySelectorAll('label.toggle')].find((l) => l.textContent?.includes('§ 20 Abs. 3 S. 2'))!.querySelector('input') as HTMLInputElement;
+    const schalter = [...host.querySelectorAll('label.toggle')].find((l) => l.textContent?.replace(/\u00a0/g, ' ').includes('§ 20 Abs. 3 S. 2'))!.querySelector('input') as HTMLInputElement;
     act(() => schalter.click());
     expect(hatFeld()).toBe(true);
   });
@@ -866,10 +866,10 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     change(host.querySelector('input[aria-label="Öffentliche Auslegung des Planentwurfs"]') as HTMLInputElement, '1989-10-01');
     expect(useGrz.getState().project.massNutzung?.auslegungDatum).toBe('1989-10-01');
     expect(kopf()).toContain('BauNVO 1968/1977');
-    expect([...host.querySelectorAll('label.toggle')].some((l) => l.textContent?.includes('§ 21a Abs. 4 Nr. 3'))).toBe(true);
+    expect([...host.querySelectorAll('label.toggle')].some((l) => l.textContent?.replace(/\u00a0/g, ' ').includes('§ 21a Abs. 4 Nr. 3'))).toBe(true);
     // Gegenprobe: 1962 ohne das Kästchen; Feld heißt „Grundstücksfläche im Bauland“
     act(() => useGrz.getState().update((x) => ({ ...x, massNutzung: { ...x.massNutzung, planDatum: '1965-01-01', auslegungDatum: undefined } }), undefined, 'Datum'));
-    expect([...host.querySelectorAll('label.toggle')].some((l) => l.textContent?.includes('§ 21a Abs. 4 Nr. 3'))).toBe(false);
+    expect([...host.querySelectorAll('label.toggle')].some((l) => l.textContent?.replace(/\u00a0/g, ' ').includes('§ 21a Abs. 4 Nr. 3'))).toBe(false);
     expect(host.querySelector('#grz-grundstueck')!.textContent).toContain('Grundstücksfläche im Bauland');
   });
 });

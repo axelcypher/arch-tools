@@ -185,7 +185,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
             {n.grz2 && <KennzahlZeile titel="GRZ II (§ 19 Abs. 4)" kurz="GR II" k={n.grz2} />}
             <KennzahlZeile titel="GFZ" kurz="GF" k={n.gfz} />
             {n.grAbsolut && <AbsolutZeile titel={vor1990 ? 'GR (absolut)' : 'GR I (absolut)'} a={n.grAbsolut} />}
-            {n.gr2Absolut && <AbsolutZeile titel="GR II (1,5 × GR)" a={n.gr2Absolut} />}
+            {n.gr2Absolut && <AbsolutZeile titel="GR II absolut (§ 19 Abs. 4 S. 2)" a={n.gr2Absolut} />}
             {n.gfAbsolut && <AbsolutZeile titel="GF (absolut)" a={n.gfAbsolut} />}
             {n.bmz && <KennzahlZeile titel="BMZ" kurz="BM" k={n.bmz} />}
             <tr>
@@ -199,6 +199,11 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           </tbody>
         </table>
         {n.garagenFrei !== undefined && n.garagenFrei > 0 && <p className="report-note">{garagenFreiText(n.recht.baunvo, n.garagenFrei)}</p>}
+        {n.gfz.mitOffenen !== undefined && (
+          <p className="report-note">
+            Räume, die nach Nutzung Aufenthaltsräume sind, aber die lichte Höhe nicht erreichen: GFZ mit ihnen {kennzahlWert(n.gfz, n.gfz.mitOffenen)} (GF {fmt2(n.gfz.flaecheMitOffenen!)} m²).
+          </p>
+        )}
         {(n.grz.mitOffenen !== undefined || n.grz2?.mitOffenen !== undefined) && (
           <p className="report-note">
             Ungeklärte Flächen („prüfen“):{' '}

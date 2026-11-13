@@ -88,6 +88,7 @@ export function rechenweg(n: Nachweis, nr: Map<string, number> = flaechenNummern
     `GF = ${gf.length ? gf.map((g) => (g.abzug ? `${g.name} (${m2(g.flaeche + g.abzug)} − nicht mitgerechnet ${m2(g.abzug)})` : `${g.name} ${m2(g.flaeche)}`)).join(' + ') : '0,00 m²'} = ${m2(n.gf)}`,
   );
   formeln.push(kennzahlFormel('GFZ = GF / FGst', n.gfz, G));
+  if (n.gfz.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GFZ mit zu prüfenden Aufenthaltsräumen', n.gfz, G, true));
 
   const flaechen: RechenwegFlaeche[] = [];
   if (n.hauptanlagePolygone.length) flaechen.push({ nr: 'H', name: 'Hauptanlage (Gebäude)', zerlegung: zerlegeRinge(n.hauptanlagePolygone) });
