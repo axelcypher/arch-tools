@@ -155,10 +155,9 @@ button.icon.active {
   background: none;
   border: none;
   padding: 3px 4px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  /* Satzschreibung statt Versalien (docs/design.md, Überschriften) */
+  font-size: var(--fs-s);
+  font-weight: 600;
   color: var(--muted);
 }
 .nav-kopf-titel:hover:not(:disabled) {
@@ -1137,10 +1136,8 @@ button.icon.fo-gl-zaehlt.an {
   margin-bottom: 10px;
 }
 .pk-nav-titel {
-  font-size: 11px;
+  font-size: var(--fs-s);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--muted);
   padding: 4px 8px;
 }
@@ -1348,10 +1345,8 @@ button.icon.fo-gl-zaehlt.an {
 }
 .pk-abschnitt h3 {
   margin: 0 0 10px;
-  font-size: 12px;
+  font-size: var(--fs-s);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--muted);
 }
 .pk-abschnitt-knopf {
@@ -1794,6 +1789,7 @@ button.icon.fo-gl-zaehlt.an {
   font: inherit;
   background: #fff;
   color: #000;
+  /* Ersatz: die bearbeitete Zelle trägt den Rahmen der Auswahl (td.gewaehlt) */
   outline: none;
 }
 .xl-blaetter {
@@ -2609,6 +2605,7 @@ button.icon.fo-gl-zaehlt.an {
   .fo-papier .fo-check.offen input {
     background: transparent !important;
     box-shadow: none !important;
+    /* nur im Druck – auf Papier gibt es keinen Fokus */
     outline: none !important;
     text-decoration: none !important;
     opacity: 1 !important;
@@ -2650,6 +2647,11 @@ button.icon.fo-gl-zaehlt.an {
 .menue-punkt.offen {
   background: var(--accent-soft);
   outline: none;
+}
+/* Tastaturfokus: zusätzlich zum Hintergrund (den auch der Zeiger setzt) der Fokusrahmen, innen – im Menü ist kein Platz für Abstand */
+.menue-punkt:focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: -2px;
 }
 .menue-punkt:disabled {
   color: var(--muted);
@@ -3272,10 +3274,9 @@ button.icon.ex-baum-pfeil {
 .bd-wort {
   flex: 0 0 38px;
   padding-top: 5px;
-  font-size: 11px;
+  /* „wenn“, „und“, „oder“ in Satzschreibung (docs/design.md: keine Versalien) */
+  font-size: var(--fs-xs);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
   color: var(--accent);
   text-align: right;
 }
@@ -4234,10 +4235,8 @@ li.es-dok[data-ziehen='danach'] {
 }
 .fo-ein-teil h4 {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--fs-s);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 .fo-ein-eingabe {
