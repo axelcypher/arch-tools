@@ -254,7 +254,10 @@ Neustarts übersteht. In die FORMA-Datei kommt sie erst mit „Speichern“; Kol
 - **Während des Speicherns weitertippen** geht nicht verloren: Was eingegeben wird, während die Datei noch geschrieben
   wird (langsames Netzlaufwerk), bleibt als ungespeicherte Änderung stehen – auch in der Projektkarte. Ein zweites
   <kbd>Strg</kbd>+<kbd>S</kbd> in dieser Zeit wartet und speichert danach, was inzwischen eingegeben wurde; ein anderes
-  Formular öffnet erst, wenn fertig geschrieben ist (die Sperre fällt nicht vorher). Während eine PDF gespeichert wird,
+  Formular öffnet erst, wenn fertig geschrieben ist (die Sperre fällt nicht vorher). Mehrere Formulare kurz
+  nacheinander angeklickt: Offen ist das zuletzt angeklickte, die anderen lösen ihre schon gesetzte Sperre wieder – und
+  die Liste wird danach neu gelesen, damit an ihnen kein Schloss „anderswo geöffnet“ stehen bleibt (auf dem
+  Netzlaufwerk kann das Lösen länger dauern als das Öffnen des anderen). Während eine PDF gespeichert wird,
   nimmt ihre Ansicht keine Eingaben an. Bearbeitete Dokumente nehmen ihre ungespeicherten Bearbeitungen beim
   Umbenennen mit; beim Löschen entfallen sie (die Rückfrage nennt sie).
 - Lässt sich **nicht mehr lokal sichern** (Speicher voll), meldet die App das einmal – dann bald speichern.
@@ -454,7 +457,20 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   Bestätigung, mit Sicherungskopie im App-Ordner), mit einem **Antragsdokument verknüpfen** (liegt die Datei nicht im
   Ordner der aktiven Fassung, wird sie dorthin kopiert) und Pfad kopieren. Rechtsklick auf einen Ordner: Einfügen,
   Neuer Ordner …, Im Explorer öffnen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`, `.frmtmp`, `.sdb`,
-  `.ini`) lassen sich hier nicht umbenennen.
+  `.ini`) lassen sich hier nicht umbenennen – Formulare benennt man in der Navigation um (siehe unten).
+- **Formulare umbenennen** (Rechtsklick auf ein Formular › Umbenennen …): nur im selben Ordner und nie über ein
+  vorhandenes. Bisher war das gesperrt, weil am Dateinamen mehr hängt als die Datei: die Zuordnung im Antragsumfang und
+  der Autofill-Zustand (in **allen** Anträgen der Projektdatei, Schlüssel nach `formularSchluessel`), die Sperrdatei
+  (`.frmtmp` mit gleichem Namen), ungespeicherte Eingaben und Verlauf (lokal, je Pfad) und bei Formularen ohne Kennung
+  die eigenen Einstellungen (Schlüssel `name|…`). Jetzt gehen alle mit: Die Verweise in der Projektdatei werden
+  umgeschrieben (im Unterordner eines Sammelprojekts auch eine ältere Zuordnung nur mit dem Dateinamen in den Anträgen
+  dieses Unterordners), Eingaben und Verlauf ziehen um, die eigenen Einstellungen werden kopiert (sie gelten auch für
+  gleichnamige Formulare anderer Projekte). Ist das Formular in FORMA oder auf einem anderen Rechner geöffnet
+  (Sperrdatei), wird nicht umbenannt; ist es hier geöffnet, wird es dafür kurz geschlossen (ein laufendes Speichern
+  endet vorher) und danach wieder geöffnet. Während des Umbenennens liegt eine eigene Sperrdatei daneben, damit FORMA
+  es nicht genau dann öffnet. Ist es zugeordnet, aber die Projektdatei nicht beschreibbar, wird nicht umbenannt;
+  scheitert das Schreiben danach, wird die Umbenennung zurückgenommen. FORMA selbst führt keine Liste der Formulare –
+  es liest den Ordner.
 - **Formulare löschen** (Rechtsklick auf ein Formular › Löschen …): nach Rückfrage und mit Sicherungskopie im
   App-Ordner. Ist das Formular hier geöffnet, wird es vorher geschlossen (die Rückfrage warnt vor nicht gespeicherten
   Eingaben); ist es in FORMA oder auf einem anderen Rechner geöffnet (Sperrdatei), wird nicht gelöscht. Sperrdateien,
@@ -488,7 +504,10 @@ Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in 
   Autofill gemerkt wird ein Formular mit dem Pfad ab dem Formularprojekt („2. BAUA/002-Bauantrag.frmsjf“; auf der
   obersten Ebene wie bisher der Dateiname) – auch beim Export. Größe und Zeit (Status „aktuell“, „zuletzt bearbeitet“)
   gelten je Pfad; die Sperrenliste umfasst den Unterordner des aktiven Antrags, „Im Explorer öffnen“ öffnet den Ordner
-  des Formulars.
+  des Formulars. Formulare der obersten Ebene gehören allen Anträgen: Sind sie im Antragsumfang des aktiven Antrags
+  nicht zugeordnet, tragen sie trotzdem einen Farbpunkt – aus dem Füllstand und der PDF im Ordner der aktiven Fassung
+  (gesucht nach dem Namen ohne Nummer und Jahr, „003-Baubeschreibung (2026)“ → „Baubeschreibung“, wie der Export ihn
+  vergibt); Tooltip „… – nicht im Antragsumfang von BAUA 2“. In der Vollständigkeit zählen sie nicht mit.
 - **Dateiname** nach der Namensvorlage, Vorgabe `{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}` → „BS9 BAUA 261110 03
   Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Die **Antragsart kommt immer aus dem Antrag**
   (Ordner der aktiven Fassung, „BAUA 2“ → BAUA), nie aus einer Einstellung: Steht in einer Vorlage nach dem Kürzel
@@ -1093,7 +1112,9 @@ legt nur `.frmtmp` an bzw. löscht sie und ändert in `sj_prokarte.sdb` nur vorh
 Transaktion, und nur, wenn jeder noch den Wert hat, von dem die Änderung ausgeht. Neu anlegen darf sie Dokumente
 (PDF, Excel, Word), Formulare (`.frmsjf`, nie überschreibend) und Ordner; die Projektdatei (`.oap`) schreiben die
 gemeinsamen Befehle aus `packages/core/tauri/commands.rs`;
-kopieren und umbenennen nur ohne zu überschreiben (Dateien von FORMA ausgenommen), löschen nur von Hand und nach
+kopieren und umbenennen nur ohne zu überschreiben (Dateien von FORMA ausgenommen; Formulare benennt der eigene
+Befehl `form_rename` um – nur im selben Ordner, nur ohne Sperrdatei daneben, mit eigener Sperrdatei während des
+Umbenennens), löschen nur von Hand und nach
 einer Sicherungskopie – Formulare nur ohne Sperrdatei daneben, Sperrdateien, Projektkarte und Projekttitel nie. Beim Auflisten liefert sie die Änderungszeit mit (für die Vollständigkeitsprüfung).
 
 ## Kompatibilitätstests

@@ -1384,6 +1384,35 @@ describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und d
     expect(useFormulare.getState().sammel?.unterordner).toBeNull();
   });
 
+  it('oberste Ebene ohne Zuordnung im aktiven Antrag: trotzdem eine Ampel, mit Hinweis', async () => {
+    sammelprojekt();
+    ds.dateien.set('C:/FORMA/BS9/004-Baubeschreibung (2026).frmsjf', MUSTER);
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    for (let i = 0; i < 3; i++) await warte();
+    const punkt = (name: string) => knopf(host, name).querySelector<HTMLElement>('.nav-symbol .st-punkt');
+    // die Baubeschreibung ist keinem Dokument zugeordnet: Ampel aus dem Füllstand (3 von 5 – unvollständig)
+    expect(useAntrag.getState().dokumente.some((d) => d.formular?.pfad === 'BS9/004-Baubeschreibung (2026).frmsjf')).toBe(false);
+    expect(punkt('004-Baubeschreibung')!.className).toContain('unvollstaendig');
+    expect(punkt('004-Baubeschreibung')!.title).toBe('nicht vollständig ausgefüllt – nicht im Antragsumfang von BAUA 2');
+    expect(knopf(host, '004-Baubeschreibung').title).toContain('nicht im Antragsumfang von BAUA 2');
+    // zugeordnete behalten ihre Ampel ohne Hinweis (oberste Ebene und Unterordner)
+    expect(punkt('001-Muster')!.title).not.toContain('nicht im Antragsumfang');
+    expect(punkt('002-Bauantrag (2026)')!.title).not.toContain('nicht im Antragsumfang');
+  });
+
+  it('gewöhnliches Projekt: ein nicht zugeordnetes Formular bekommt keine Ampel', async () => {
+    ds.dateien.set('C:/FORMA/BS9/004-Baubeschreibung (2026).frmsjf', MUSTER);
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    for (let i = 0; i < 3; i++) await warte();
+    expect(knopf(host, '001-Muster').querySelector('.st-punkt')).not.toBeNull();
+    expect(knopf(host, '004-Baubeschreibung').querySelector('.st-punkt')).toBeNull();
+    expect(useAntrag.getState().stammStatus).toEqual({});
+  });
+
   it('gewöhnliches Projekt (ohne Antrags-Unterordner): eine Liste wie bisher, keine Gruppen', async () => {
     ds.dateien.set('C:/FORMA/BS9/Vorlagen/009-Entwurf.frmsjf', MUSTER);
     const host = await projektBS9();
@@ -5407,5 +5436,113 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     await warte();
     expect(antragIn('BAUA 2')?.status).toBeUndefined();
     expect(host.querySelector('.pu.gesperrt')).toBeNull();
+  });
+});
+
+describe('Formulare umbenennen', () => {
+  const ALT = 'C:/FORMA/BS9/001-Muster.frmsjf';
+  const NEU = 'C:/FORMA/BS9/010-Muster neu.frmsjf';
+  const ZUSTAND = { felder: { '0:Name': { auto: 'Mustermann' } } };
+  /** Antragsumfang in BAUA 2 festlegen und im anderen Antrag BAUA eine Zuordnung samt Autofill eintragen */
+  async function mitZuordnungen(host: HTMLElement) {
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await act(() =>
+      useFormulare.getState().oapAendern((roh) => {
+        const f = roh.formulare as { antraege: Record<string, Record<string, unknown>> };
+        f.antraege.BAUA = { ...f.antraege.BAUA, umfang: [{ id: 'm', titel: 'Muster', art: 'intern', formularDatei: '001-Muster.frmsjf' }], felder: { '001-Muster.frmsjf': ZUSTAND } };
+        return roh;
+      }),
+    );
+    await act(() => useAntrag.getState().laden());
+    await warte();
+  }
+  const umbenennen = async (host: HTMLElement, von: string, nach: string) => {
+    await rechtsklick(knopf(host, von));
+    await klick(menuePunkt('Umbenennen'));
+    eingabe(document.querySelector<HTMLInputElement>('.rf input')!, nach);
+    await klick(knopf(document.querySelector('.rf')!, 'Umbenennen'));
+    for (let i = 0; i < 3; i++) await warte();
+  };
+
+  it('Zuordnung und Autofill in allen Anträgen, ungespeicherte Eingaben und das geöffnete Formular gehen mit', async () => {
+    const host = await projektBS9();
+    await mitZuordnungen(host);
+    expect((antragIn('BAUA 2')?.umfang as { id: string; formularDatei?: string }[]).find((u) => u.id === 'muster')?.formularDatei).toBeUndefined();
+    // im aktiven Antrag zugeordnet (über „Antragsdokument“), dann geöffnet und etwas eingegeben, nicht gespeichert
+    await rechtsklick(knopf(host, '001-Muster'));
+    await klick(menuePunkt('Antragsdokument'));
+    await klick([...document.querySelectorAll<HTMLButtonElement>('.menue .menue .menue-punkt')].find((b) => b.textContent?.includes('Musterformular'))!);
+    await klick(knopf(host, '001-Muster'));
+    const o = useFormulare.getState().offen!;
+    const feld = o.felder.flat().find((f) => f.art === 'text' && !f.berechnet)!;
+    act(() => useFormulare.getState().wertSetzen(feld, 'Ungespeichert'));
+    await warte();
+
+    // eigene Einstellungen: das Muster hat eine Kennung, sie hängen nicht am Namen – es bleibt alles, wie es ist
+    const eigene = { abschnitte: {}, zaehlt: { '0:Name': false } } as unknown as ReturnType<typeof useFormulare.getState>['profile'][string];
+    useFormulare.setState({ profile: { 'nw019999|2026A': eigene } });
+
+    await umbenennen(host, '001-Muster', '010-Muster neu');
+    expect(useFormulare.getState().profile).toEqual({ 'nw019999|2026A': eigene });
+    expect(ds.dateien.has(ALT)).toBe(false);
+    expect(ds.dateien.get(NEU)).toBe(MUSTER);
+    // keine Sperrdatei mehr am alten Namen; das umbenannte ist wieder offen (und gesperrt), die Eingabe ist noch da
+    expect(ds.dateien.has('C:/FORMA/BS9/001-Muster.frmtmp')).toBe(false);
+    expect(useFormulare.getState().offen?.pfad).toBe('BS9/010-Muster neu.frmsjf');
+    expect(useFormulare.getState().offen?.aenderungen[feld.schluessel]).toBe('Ungespeichert');
+    // Verweise in beiden Anträgen
+    expect((antragIn('BAUA 2')?.umfang as { id: string; formularDatei?: string }[]).find((u) => u.id === 'muster')?.formularDatei).toBe('010-Muster neu.frmsjf');
+    expect(antragIn('BAUA')?.umfang).toEqual([expect.objectContaining({ formularDatei: '010-Muster neu.frmsjf' })]);
+    expect(antragIn('BAUA')?.felder).toEqual({ '010-Muster neu.frmsjf': ZUSTAND });
+    // die Ampel steht am umbenannten Formular, die Meldung nennt den neuen Namen
+    expect(useAntrag.getState().dokumente.find((d) => d.eintrag.id === 'muster')?.formular?.pfad).toBe('BS9/010-Muster neu.frmsjf');
+    expect(useFormulare.getState().meldung?.text).toContain('„001-Muster“ in „010-Muster neu“ umbenannt');
+  });
+
+  it('eigene Einstellungen eines Formulars ohne Kennung: kopiert, nicht verschoben – und nie über vorhandene', () => {
+    const a = { abschnitte: {}, zaehlt: { '0:A': false } } as unknown as ReturnType<typeof useFormulare.getState>['profile'][string];
+    const b = { abschnitte: {}, zaehlt: { '0:B': false } } as unknown as ReturnType<typeof useFormulare.getState>['profile'][string];
+    useFormulare.setState({ profile: { 'name|Alt': a, 'name|Belegt': b } });
+    useFormulare.getState().profilKopieren('name|Alt', 'name|Neu');
+    useFormulare.getState().profilKopieren('name|Alt', 'name|Belegt');
+    expect(useFormulare.getState().profile).toEqual({ 'name|Alt': a, 'name|Neu': a, 'name|Belegt': b });
+    expect(JSON.parse(localStorage.getItem('formulare:profile')!)).toEqual({ 'name|Alt': a, 'name|Neu': a, 'name|Belegt': b });
+  });
+
+  it('in FORMA geöffnet (Sperrdatei): nicht umbenannt', async () => {
+    ds.dateien.set('C:/FORMA/BS9/001-Muster.frmtmp', cp1252Schreiben('[Zugriff]\r\nUser=k.kollege\r\nComputer=CAD02\r\n'));
+    const host = await projektBS9();
+    await rechtsklick(knopf(host, '001-Muster'));
+    await klick(menuePunkt('Umbenennen'));
+    // keine Rückfrage, gleich die Meldung
+    expect(document.querySelector('.rf input')).toBeNull();
+    expect(useFormulare.getState().meldung?.text).toContain('in FORMA oder auf einem anderen Rechner geöffnet');
+    expect(ds.dateien.has(ALT)).toBe(true);
+  });
+
+  it('Projektdatei nicht schreibbar: die Umbenennung wird zurückgenommen, nichts verliert seine Zuordnung', async () => {
+    const host = await projektBS9();
+    await mitZuordnungen(host);
+    ds.projektordner.projektdateiErsetzen = async () => {
+      throw new Error('Netzlaufwerk weg');
+    };
+    await umbenennen(host, '001-Muster', '010-Muster neu');
+    expect(ds.dateien.has(ALT)).toBe(true);
+    expect(ds.dateien.has(NEU)).toBe(false);
+    expect(antragIn('BAUA')?.felder).toEqual({ '001-Muster.frmsjf': ZUSTAND });
+    expect(useFormulare.getState().meldung).toMatchObject({ art: 'fehler', text: expect.stringContaining('heißt weiter so') });
+    expect(knopf(host, '001-Muster')).toBeDefined();
+  });
+
+  it('einen vorhandenen Namen nimmt es nicht – und ungültige Zeichen auch nicht', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    await umbenennen(host, '001-Muster', '002-anderes');
+    expect(useFormulare.getState().meldung?.text).toContain('gibt es in diesem Ordner schon');
+    await umbenennen(host, '001-Muster', 'Muster: neu');
+    expect(useFormulare.getState().meldung?.text).toContain('nicht erlaubt');
+    expect(ds.dateien.has(ALT)).toBe(true);
+    expect(ds.dateien.get('C:/FORMA/BS9/002-Anderes.frmsjf')).toBe(MUSTER);
   });
 });

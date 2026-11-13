@@ -7,10 +7,10 @@ import { ablageVon, auswahlVon, formularDatei, hatEntwurf, istGeaendert, useForm
 import { aktiveFassung, aktiverEingereicht, antragSperre, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
 import { AntragsAblage, SammelExportKnopf } from './AntragsAblage';
 import type { FormularEintrag } from '../projekte';
-import { formularLoeschen } from '../dateiAktionen';
+import { formularLoeschen, formularUmbenennen } from '../dateiAktionen';
 import { AblageBaum } from './AblageBaum';
 import { ausUmfangEntfernen, FassungsWahl, formularePunkte, StatusPunkt, umfangZeigen } from './Antrag';
-import { passt } from '../antrag';
+import { passt, STATUS_TEXT } from '../antrag';
 import { useExportDialog } from './ExportDialog';
 import { useHinzufuegenDialog } from './FormularHinzufuegen';
 import type { MenuePunkt } from './Menue';
@@ -105,6 +105,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   const aus = gesperrt ? { deaktiviert: true, hinweis: 'Antrag eingereicht' } : wechsel ? { deaktiviert: true, hinweis: 'Antrag wird geöffnet' } : {};
   // zuletzt bearbeitet: Datei oder nicht gespeicherte Eingaben, was später ist
   const formularInfo = useAntrag((s) => s.formularInfo);
+  // Sammelprojekt: Ampel der Formulare auf der obersten Ebene ohne Zuordnung im aktiven Antrag
+  const stammStatus = useAntrag((s) => s.stammStatus);
   /**
    * Doppelter Eintrag? Ein fehlendes Dokument, dessen Titel zu einem Formular passt, das schon einem anderen Eintrag
    * zugeordnet ist (etwa „Baustatistik“ neben „Statistischer Erhebungsbogen“) – dann kein stilles Anlegen eines zweiten
@@ -145,6 +147,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
       { text: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(projekt!.root, f.pfad.slice(0, f.pfad.lastIndexOf('/')))).catch(() => undefined) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(projekt!.root, f.pfad)) },
       { trenner: true },
+      { text: 'Umbenennen …', symbol: 'stift', aktion: () => void formularUmbenennen(f) },
       { text: 'Löschen …', symbol: 'muell', aktion: () => void formularLoeschen(f) },
     ];
   };
@@ -160,18 +163,21 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     const fremd = f.gesperrt && !(aktiv && offen?.sperre.art === 'eigen');
     const gezeigt = aktiv && haupt === 'formular';
     const doc = umfangDa ? statusVon.get(f.pfad) : undefined;
+    const stamm = !doc && umfangDa ? stammStatus[f.pfad] : undefined;
+    const stammText = stamm ? `${STATUS_TEXT[stamm]} – nicht im Antragsumfang von ${fassung}` : '';
     return (
       <div key={f.pfad} role="listitem">
         <button
           className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
           aria-current={gezeigt ? 'page' : undefined}
-          title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}`}
+          title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : stamm ? `${f.name} – ${stammText}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}`}
           onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
           onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
         >
           <span className="nav-symbol">
             <Symbol name="formular" />
             {doc && <StatusPunkt status={doc.status} />}
+            {stamm && <StatusPunkt status={stamm} titel={stammText} />}
           </span>
           <span className="nav-text">{f.name}</span>
           {fremd && (

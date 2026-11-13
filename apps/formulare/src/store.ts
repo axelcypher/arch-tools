@@ -337,6 +337,8 @@ interface FormulareState extends Gespeichert {
   setDateiEntwurf: (wert: unknown, fuer?: Pick<OffeneDatei, 'root' | 'pfad'>) => void;
   /** wirksames Profil eines Formulars speichern (gespeichert wird die Abweichung von der Vorgabe); null = alles auf die Vorgabe */
   profilSetzen: (schluessel: string, profil: FormularProfil | null) => void;
+  /** eigene Einstellungen eines Formulars auch unter einem anderen Schlüssel (umbenanntes Formular ohne Kennung) – nur, wenn dort noch keine stehen */
+  profilKopieren: (von: string, nach: string) => void;
   /** eigene Änderungen an einem Abschnitt, Feld oder einer Gruppe verwerfen – es gilt wieder die Vorgabe */
   eigenesVerwerfen: (schluessel: string, eintrag: Eintrag) => void;
   /** Einstellungen als Modal öffnen – die Ansicht darunter bleibt, wie sie ist */
@@ -580,6 +582,37 @@ function sichernUnter(ablage: string, k: string, aenderungen: Record<string, unk
     }
   }
   return schreiben(VERLAEUFE, Object.fromEntries(reihe.slice(0, MAX_VERLAEUFE))) && ok ? jetzt : null;
+}
+
+/**
+ * Umbenanntes Formular: ungespeicherte Eingaben und Verlauf ziehen unter den neuen Pfad um (Schlüssel root|pfad) –
+ * nichts geht verloren. Liegt unter dem neuen Pfad schon etwas (eine alte Datei gleichen Namens), wird es ersetzt.
+ */
+export function formularLokalVerschieben(projekt: Projekt, von: string, nach: string) {
+  const alt = dokSchluessel({ projekt, pfad: von });
+  const neu = dokSchluessel({ projekt, pfad: nach });
+  if (alt === neu) return;
+  const alle = entwuerfe();
+  if (alt in alle) {
+    alle[neu] = alle[alt];
+    delete alle[alt];
+    schreiben(ENTWUERFE, alle);
+  }
+  const verzeichnis = lesen<Record<string, number>>(VERLAEUFE, {});
+  const verlauf = lesen<unknown>(verlaufSchluessel(alt), null);
+  if (verlauf !== null) {
+    schreiben(verlaufSchluessel(neu), verlauf);
+    try {
+      localStorage.removeItem(verlaufSchluessel(alt));
+    } catch {
+      // ohne Speicher nichts zu löschen
+    }
+  }
+  if (alt in verzeichnis) {
+    verzeichnis[neu] = verzeichnis[alt];
+    delete verzeichnis[alt];
+    schreiben(VERLAEUFE, verzeichnis);
+  }
 }
 
 /* ---------- Formular ---------- */
@@ -1348,7 +1381,13 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         // Zwischen Lesen und Sperren könnte FORMA gespeichert haben: mit Sperre noch einmal lesen
         const frisch = sperre.art === 'eigen' ? ((await ds.lies(projekt.root, eintrag.pfad)) ?? bytes) : bytes;
         // inzwischen ein anderes Formular angeklickt: das gilt – die eigene Sperre dieses Laufs wieder lösen
-        if (ueberholt()) return void (await sperreLoesen());
+        // (auf dem Netzlaufwerk kann das dauern: das andere hat die Liste womöglich schon gelesen, als die Sperre noch
+        // lag – dann stünde hier weiter das Schloss „anderswo geöffnet“; also danach die Liste neu lesen)
+        if (ueberholt()) {
+          await sperreLoesen();
+          if (get().projekt === projekt) await get().formulareNeuLesen();
+          return;
+        }
         await oeffnen(projekt, eintrag.pfad, eintrag.name, frisch, sperre);
         gesperrt = null;
         const offen = get().offen;
@@ -2063,6 +2102,13 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const e = profil && abweichung(vorgabeFuer(schluessel), profil);
       if (e && !abweichungLeer(e)) profile[schluessel] = e;
       else delete profile[schluessel];
+      schreiben(PROFILE, profile);
+      set({ profile });
+    },
+    profilKopieren: (von, nach) => {
+      const e = get().profile[von];
+      if (!e || von === nach || get().profile[nach]) return;
+      const profile = { ...get().profile, [nach]: structuredClone(e) };
       schreiben(PROFILE, profile);
       set({ profile });
     },

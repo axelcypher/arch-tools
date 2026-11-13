@@ -429,6 +429,51 @@ async fn doc_rename(root: String, von: String, nach: String) -> Result<(), Strin
     Ok(())
 }
 
+/// Benennt ein Formular (.frmsjf) im selben Ordner um. Während des Umbenennens liegt eine eigene Sperrdatei neben
+/// dem alten Namen (mit `create_new` – liegt schon eine, ist das Formular in FORMA oder anderswo geöffnet, und es wird
+/// nicht umbenannt); so kann FORMA es nicht genau in diesem Moment öffnen. Das Ziel und seine Sperrdatei dürfen
+/// es noch nicht geben – überschrieben wird nie. Danach wird die eigene Sperre wieder entfernt.
+fn formular_umbenennen(quelle: &Path, ziel: &Path, sperre: &[u8]) -> Result<(), String> {
+    if !endung_ist(quelle, "frmsjf") || !endung_ist(ziel, "frmsjf") {
+        return Err(format!("{}: Nur Formulare (.frmsjf) werden hier umbenannt", quelle.display()));
+    }
+    if quelle.parent() != ziel.parent() {
+        return Err(format!("{}: Formulare werden nur im selben Ordner umbenannt", quelle.display()));
+    }
+    if !quelle.is_file() {
+        return Err(format!("{}: Formular nicht gefunden", quelle.display()));
+    }
+    // nur Groß-/Kleinschreibung geändert: unter Windows ist das dieselbe Datei (auch dieselbe Sperrdatei)
+    let gleiche_datei = quelle.to_string_lossy().to_lowercase() == ziel.to_string_lossy().to_lowercase();
+    if !gleiche_datei && (ziel.exists() || ziel.with_extension("frmtmp").exists()) {
+        return Err(format!("{}: Das Formular gibt es schon", ziel.display()));
+    }
+    let sp = quelle.with_extension("frmtmp");
+    match std::fs::OpenOptions::new().write(true).create_new(true).open(&sp) {
+        Ok(mut f) => f.write_all(sperre).and_then(|_| f.flush()).map_err(|e| format!("{}: {}", sp.display(), e))?,
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+            return Err(format!("{}: Das Formular ist gerade geöffnet (Sperrdatei vorhanden) – bitte erst dort schließen", quelle.display()))
+        }
+        Err(e) => return Err(format!("{}: {}", sp.display(), e)),
+    }
+    let ergebnis = std::fs::rename(quelle, ziel).map_err(|e| match e.raw_os_error() {
+        Some(5) | Some(32) | Some(33) => format!("{}: Das Formular ist in einem anderen Programm geöffnet – bitte dort schließen", quelle.display()),
+        _ => format!("{}: {}", quelle.display(), e),
+    });
+    // die eigene Sperre wieder weg – nur, wenn sie noch genau unseren Inhalt hat
+    if std::fs::read(&sp).is_ok_and(|b| b == sperre) {
+        let _ = std::fs::remove_file(&sp);
+    }
+    ergebnis?;
+    log::info!("Formular umbenannt: {} → {}", quelle.display(), ziel.display());
+    Ok(())
+}
+
+#[tauri::command]
+async fn form_rename(root: String, von: String, nach: String, sperre_base64: String) -> Result<(), String> {
+    formular_umbenennen(&unterhalb(&root, &von)?, &unterhalb(&root, &nach)?, &base64_lesen(&sperre_base64)?)
+}
+
 /// Löscht eine Datei – vorher mit Sicherungskopie im App-Ordner. Dateien von FORMA sind ausgenommen.
 #[tauri::command]
 async fn doc_delete(app: tauri::AppHandle, root: String, pfad: String) -> Result<(), String> {

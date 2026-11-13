@@ -6,13 +6,18 @@
  */
 
 import { create } from 'zustand';
+import { gleicheFassung } from '@core/fassung';
+import { logger } from '@core/platform/log';
 import { aktiveFassung, antragsOrdner, antragSperre, useAntrag, wechselLaeuft } from './antragStore';
 import type { SchreibInfo } from './antragStore';
-import { klein } from './antrag';
+import { abschnittVon, formularSchluessel, formularVerweiseUmbenennen, klein } from './antrag';
 import { bestaetigen, frageText } from './components/Rueckfrage';
 import { nurFormaLoescht, verbinde } from './dateisystem';
+import { parseFormular } from './forma/formular';
+import { sperreSchreiben, zeitstempel } from './forma/sperre';
+import { profilSchluessel } from './profil';
 import type { FormularEintrag } from './projekte';
-import { dateiEntwurfVerschieben, dateiSchluessel, dateiVerlassen, hatEntwurf, useFormulare } from './store';
+import { ablageVon, dateiEntwurfVerschieben, dateiSchluessel, dateiVerlassen, formularLokalVerschieben, hatEntwurf, unterordnerAnbindung, useFormulare } from './store';
 
 interface Zwischenablage {
   basis: string;
@@ -26,6 +31,8 @@ export const useDateiAktionen = create<{ stand: number; ablage: Zwischenablage |
   neu: () => set((s) => ({ stand: s.stand + 1 })),
   merken: (ablage) => set({ ablage }),
 }));
+
+const log = logger('formulare');
 
 const ordnerVon = (pfad: string) => (pfad.includes('/') ? pfad.slice(0, pfad.lastIndexOf('/')) : '');
 const nameVon = (pfad: string) => pfad.split('/').pop() ?? pfad;
@@ -254,4 +261,137 @@ export async function verknuepfen(basis: string, pfad: string, umfangId: string,
   } catch (e) {
     fehler('Verknüpfen', e);
   }
+}
+
+/** Verweise im Abschnitt „formulare“ der rohen Projektdatei umschreiben (auch im früheren Ort `erweiterungen.formulare`) */
+function oapMitUmbenanntem(roh: Record<string, unknown>, alt: string, neu: string, gehoertZu: (fassung: string) => boolean): Record<string, unknown> {
+  if (roh.formulare !== undefined) return { ...roh, formulare: formularVerweiseUmbenennen(roh.formulare, alt, neu, gehoertZu).abschnitt };
+  const erw = roh.erweiterungen as Record<string, unknown> | undefined;
+  if (erw?.formulare !== undefined) return { ...roh, erweiterungen: { ...erw, formulare: formularVerweiseUmbenennen(erw.formulare, alt, neu, gehoertZu).abschnitt } };
+  return roh;
+}
+
+/**
+ * Formular umbenennen (Rechtsklick › Umbenennen …) – nur im selben Ordner, nie über ein vorhandenes. Mit dem Namen
+ * wandern alle Verweise: die Zuordnung im Antragsumfang und der Autofill-Zustand in allen Anträgen der Projektdatei,
+ * ungespeicherte Eingaben und Verlauf (lokal) und – bei einem Formular ohne Kennung – die eigenen Einstellungen
+ * (kopiert; sie gelten auch für gleichnamige Formulare anderer Projekte). In FORMA oder auf einem anderen Rechner
+ * geöffnet (Sperrdatei): nicht umbenannt. Hier geöffnet: kurz geschlossen und danach wieder geöffnet. Lässt sich die
+ * Projektdatei nicht schreiben, wird die Umbenennung zurückgenommen – nichts verliert seine Zuordnung.
+ */
+export async function formularUmbenennen(f: FormularEintrag) {
+  const s = useFormulare.getState();
+  const { ds, projekt } = s;
+  if (!ds || !projekt) return;
+  const hier = () => {
+    const o = useFormulare.getState().offen;
+    return o?.projekt === projekt && o.pfad === f.pfad;
+  };
+  if (f.gesperrt && !(hier() && s.offen?.sperre.art === 'eigen'))
+    return fehler('Umbenennen', new Error(`„${f.name}“ ist gerade in FORMA oder auf einem anderen Rechner geöffnet – bitte erst dort schließen`));
+  const eingabe = await frageText(
+    'Formular umbenennen',
+    f.name,
+    'Umbenennen',
+    `Zuordnung im Antragsumfang, Autofill und nicht gespeicherte Eingaben gehen mit.${hier() ? ' Das Formular wird dafür kurz geschlossen und danach wieder geöffnet.' : ''}`,
+  );
+  const name = eingabe
+    ?.trim()
+    .replace(/\.frmsjf$/i, '')
+    .trim();
+  if (!name || name === f.name) return;
+  if (/[<>:"/\\|?*]/.test(name)) return fehler('Umbenennen', new Error('Diese Zeichen sind in Dateinamen nicht erlaubt: < > : " / \\ | ? *'));
+  if (/\.$/.test(name)) return fehler('Umbenennen', new Error('Ein Dateiname darf nicht auf einen Punkt enden'));
+  const endung = /\.frmsjf$/i.exec(f.pfad)?.[0] ?? '.frmsjf';
+  const ziel = `${ordnerVon(f.pfad)}/${name}${endung}`;
+  const nurSchreibweise = ziel.toLowerCase() === f.pfad.toLowerCase();
+  if (!nurSchreibweise && useFormulare.getState().formulare.some((x) => x.pfad.toLowerCase() === ziel.toLowerCase()))
+    return fehler('Umbenennen', new Error(`„${name}“ gibt es in diesem Ordner schon`));
+  // Verweise in der Projektdatei: im Unterordner eines Sammelprojekts gehören ältere Zuordnungen nur mit dem
+  // Dateinamen zu den Anträgen dieses Unterordners
+  const alt = formularSchluessel(f.pfad);
+  const neu = formularSchluessel(ziel);
+  const gehoertZu = (fassung: string) => {
+    if (!f.unterordner) return false;
+    const w = unterordnerAnbindung.wahl(projekt);
+    return w ? gleicheFassung(f.unterordner, fassung, w.antragsarten, w.arten) : f.unterordner.toLowerCase() === fassung.toLowerCase();
+  };
+  if (ablageVon(useFormulare.getState(), projekt) && useFormulare.getState().oap === null) await useFormulare.getState().oapLaden();
+  const pd = useAntrag.getState().projektdatei;
+  const verweise = pd ? formularVerweiseUmbenennen(abschnittVon(pd), alt, neu, gehoertZu).anzahl : 0;
+  const oap = useFormulare.getState().oap;
+  if (verweise && (!oap || oap === 'fehlt'))
+    return fehler(
+      'Umbenennen',
+      new Error(`„${f.name}“ ist im Antragsumfang zugeordnet, aber die Projektdatei (.oap) lässt sich nicht schreiben – nicht umbenannt, sonst ginge die Zuordnung verloren`),
+    );
+  if (useFormulare.getState().projekt !== projekt) return;
+  // hier geöffnet: schließen – wartet auf ein laufendes Speichern, die eigene Sperre fällt; ungespeicherte Eingaben
+  // bleiben als Entwurf und ziehen unten mit um
+  const warOffen = hier();
+  if (warOffen) {
+    if (!(await dateiVerlassen())) return;
+    await useFormulare.getState().schliessen();
+  }
+  const wiederOeffnen = async (pfad: string) => {
+    if (!warOffen || useFormulare.getState().projekt !== projekt) return;
+    const e = useFormulare.getState().formulare.find((x) => x.pfad === pfad);
+    if (e) await useFormulare.getState().formularOeffnen(e);
+  };
+  // eigene Einstellungen hängen bei Formularen ohne Kennung am Namen
+  let profil: [string, string] | null = null;
+  try {
+    const bytes = await ds.lies(projekt.root, f.pfad);
+    if (bytes) {
+      const formular = parseFormular(bytes);
+      profil = [profilSchluessel(formular, f.name), profilSchluessel(formular, name)];
+    }
+  } catch {
+    // nicht lesbar: ohne eigene Einstellungen
+  }
+  const r = await ds.rechner();
+  const sperre = sperreSchreiben({ benutzer: r.benutzer, computer: r.computer, angemeldet: zeitstempel(new Date()), inGebrauch: String(r.prozess) });
+  try {
+    await ds.formularUmbenennen(projekt.root, f.pfad, ziel, sperre);
+  } catch (e) {
+    fehler('Umbenennen', e);
+    await useFormulare.getState().formulareNeuLesen();
+    return wiederOeffnen(f.pfad);
+  }
+  formularLokalVerschieben(projekt, f.pfad, ziel);
+  log.info(`Formular umbenannt: ${f.pfad} → ${ziel}`);
+  if (verweise) {
+    let grund = '';
+    let geschrieben = false;
+    try {
+      geschrieben = await useFormulare.getState().oapAendern((roh) => oapMitUmbenanntem(roh, alt, neu, gehoertZu));
+    } catch (e) {
+      grund = `: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    if (!geschrieben) {
+      // zurück zum alten Namen – sonst verlöre das Formular seine Zuordnung
+      try {
+        await ds.formularUmbenennen(projekt.root, ziel, f.pfad, sperre);
+        formularLokalVerschieben(projekt, ziel, f.pfad);
+        fehler('Umbenennen', new Error(`Die Projektdatei (.oap) ließ sich nicht schreiben${grund} – „${f.name}“ heißt weiter so`));
+        await useFormulare.getState().formulareNeuLesen();
+        return wiederOeffnen(f.pfad);
+      } catch (e) {
+        fehler(
+          'Umbenennen',
+          new Error(
+            `„${name}“ umbenannt, aber die Projektdatei ließ sich nicht schreiben${grund} und der alte Name nicht wiederherstellen (${e instanceof Error ? e.message : String(e)}) – bitte die Zuordnung in den Antragsdaten prüfen`,
+          ),
+        );
+      }
+    }
+  }
+  if (profil && profil[0] !== profil[1]) useFormulare.getState().profilKopieren(profil[0], profil[1]);
+  if (useFormulare.getState().projekt !== projekt) return;
+  await useFormulare.getState().formulareNeuLesen();
+  await useAntrag.getState().laden();
+  await wiederOeffnen(ziel);
+  const m = useFormulare.getState().meldung;
+  if (!(m?.art === 'fehler' && m.text.startsWith('Umbenennen')))
+    useFormulare.getState().setMeldung({ art: 'info', text: `„${f.name}“ in „${name}“ umbenannt${verweise ? ' – Zuordnung im Antragsumfang und Autofill sind mitgegangen' : ''}.` });
 }
