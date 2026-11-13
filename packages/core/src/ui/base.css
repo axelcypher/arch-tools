@@ -24,7 +24,7 @@
   --panel: #ffffff;
   --border: #d8dbe0;
   --text: #1f2328;
-  --muted: #6b7280;
+  --muted: #5f6673;
   --accent: #2a5bd7;
   --accent-hover: #2350bf;
   --accent-soft: #e6edfb;
@@ -50,6 +50,10 @@
   --fehler-bg: #fbe4e1;
   --fehler-border: #e8a59c;
   --fehler-text: #a3281d;
+  /* Statuspunkte (Ampel): kräftig, nur als Grafik neben einem Wort – nie als einziger Hinweis */
+  --ok-punkt: #2f9a5b;
+  --warn-punkt: #e0a420;
+  --fehler-punkt: #d64534;
   --chip-bg: #eef0f2;
   --on-accent: #ffffff;
   /* Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1 */
@@ -1018,7 +1022,7 @@ code {
     @bottom-right {
       content: 'Seite ' counter(page) ' von ' counter(pages);
       font: 9px 'Segoe UI', system-ui, sans-serif;
-      color: #6b7280;
+      color: #5f6673;
     }
   }
 
@@ -1140,6 +1144,9 @@ code {
   --warn-bg: #3a2c17;
   --warn-border: #8a6420;
   --warn-text: #f3c77a;
+  --ok-punkt: #5fcf8a;
+  --warn-punkt: #f3c35a;
+  --fehler-punkt: #f07a6b;
   --ok-bg: #17311f;
   --ok-border: #2f6b45;
   --ok-text: #8fd6a8;
@@ -1170,7 +1177,7 @@ code {
   --panel: #ffffff;
   --border: #d8dbe0;
   --text: #1f2328;
-  --muted: #6b7280;
+  --muted: #5f6673;
   --accent: #2a5bd7;
   --accent-text: #2a5bd7;
   --on-accent: #ffffff;
@@ -1181,6 +1188,16 @@ code {
   --warn-bg: #fff4e5;
   --warn-border: #f5c26b;
   --warn-text: #8a5300;
+  /* übrige Status- und Punktfarben ebenfalls hell, sonst landen die Werte des dunklen Schemas auf dem Papier */
+  --ok-bg: #e9f6ee;
+  --ok-border: #9fd3b3;
+  --ok-text: #1f6b3d;
+  --fehler-bg: #fbe4e1;
+  --fehler-border: #e8a59c;
+  --fehler-text: #a3281d;
+  --ok-punkt: #2f9a5b;
+  --warn-punkt: #e0a420;
+  --fehler-punkt: #d64534;
   color: var(--text);
 }
 
@@ -1190,7 +1207,7 @@ code {
   --fokus: #2a5bd7;
   --fokus-saum: rgba(42, 91, 215, 0.35);
   --text: #1f2328;
-  --muted: #6b7280;
+  --muted: #5f6673;
   --border: #d8dbe0;
   --panel: #ffffff;
   --accent: #2a5bd7;
@@ -2086,8 +2103,77 @@ button.ungespeichert::after {
 .segment > button[aria-selected='true'],
 .segment > button.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
+}
+
+/* lange oder viele Werte: senkrecht untereinander statt umbrechend (umbrechende Segmente lesen sich treppenartig) */
+.segment.senkrecht {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.segment.senkrecht > button {
+  text-align: left;
+  white-space: normal;
+  border-radius: 0;
+  padding-block: var(--s1);
+}
+/* gewählt: Strichstärke bleibt (sonst ändert sich der Umbruch und die Liste springt) – Tönung plus Akzentlinie links */
+.segment.senkrecht > button[aria-pressed='true'],
+.segment.senkrecht > button[aria-selected='true'],
+.segment.senkrecht > button.active {
+  font-weight: inherit;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.segment.senkrecht > button + button {
+  border-left: none;
+  border-top: 1px solid var(--border);
+}
+.segment.senkrecht > button:first-child {
+  border-radius: var(--radius-s) var(--radius-s) 0 0;
+}
+.segment.senkrecht > button:last-child {
+  border-radius: 0 0 var(--radius-s) var(--radius-s);
+}
+.segment.senkrecht > button:only-child {
+  border-radius: var(--radius-s);
+}
+
+/* Kontrastmodus: Tönung und box-shadow entfallen, die Wahl bleibt als Linie in Highlight sichtbar */
+@media (forced-colors: active) {
+  .segment.senkrecht > button[aria-pressed='true'],
+  .segment.senkrecht > button[aria-selected='true'],
+  .segment.senkrecht > button.active {
+    border-left: 3px solid Highlight;
+  }
+}
+
+/* Statuspunkt (Ampel) neben einem Wort: .statuspunkt.ok | .warnung | .fehler */
+.statuspunkt {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  vertical-align: -1px;
+}
+.statuspunkt.ok {
+  background: var(--ok-punkt);
+}
+.statuspunkt.warnung {
+  background: var(--warn-punkt);
+}
+.statuspunkt.fehler {
+  background: var(--fehler-punkt);
+}
+@media (forced-colors: active) {
+  /* alle drei Zustände gleich – reicht, weil das Wort immer daneben steht */
+  .statuspunkt {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
 }
 
 /* ---------- Symbole (ui/Symbol.tsx) ---------- */
