@@ -4727,6 +4727,140 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(meldungen.filter((m) => /keinen Antragsumfang|nicht mehr im Antragsumfang/.test(m))).toEqual([]);
   });
 
+  /** sammelt alle Meldungen bis `ab()` */
+  const meldungenSammeln = () => {
+    const meldungen: string[] = [];
+    const ab = useFormulare.subscribe((st, vorher) => void (st.meldung && st.meldung !== vorher.meldung && meldungen.push(st.meldung.text)));
+    return { meldungen, ab };
+  };
+
+  it('Doppelklick auf „Antragsumfang festlegen“: festgelegt, keine Meldung „nicht festgelegt“', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    const { meldungen, ab } = meldungenSammeln();
+    const k = knopf(host, 'Antragsumfang festlegen');
+    act(() => {
+      k.click();
+      k.click();
+    });
+    for (let i = 0; i < 8; i++) await warte();
+    ab();
+    expect(umfangIdsIn('BAUA 2')).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual([]);
+  });
+
+  it('Festlegen (woanders schon festgelegt), das Neuladen hängt, inzwischen andere Projektdatei (ohne Umfang) gewählt: kein „er ist jetzt geladen“', async () => {
+    const KOPIE_REL = 'Planung/Berechnungen/BS9 Kopie.oap';
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    ds.dateien.set(`${PROJEKT}/${KOPIE_REL}`, ds.dateien.get(OAP)!);
+    ds.dateien.set(OAP, oapMit(ds.dateien.get(OAP)!, (f) => void ((f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].umfang = [{ id: 'ueigen', titel: 'Brandschutzkonzept', art: 'extern' }])));
+    const po = ds.projektordner as unknown as { liesMitStand: (r: string, p: string) => Promise<unknown> };
+    const echt = po.liesMitStand.bind(po);
+    let los!: () => void;
+    const tor = new Promise<void>((r) => (los = r));
+    let n = 0;
+    po.liesMitStand = async (r: string, p: string) => {
+      const x = await echt(r, p);
+      if (p.endsWith('BS9.oap') && ++n === 2) await tor;
+      return x;
+    };
+    const { meldungen, ab } = meldungenSammeln();
+    try {
+      await klick(knopf(host, 'Antragsumfang festlegen'));
+      for (let i = 0; i < 3; i++) await warte();
+      await act(() => useFormulare.getState().oapWaehlen(KOPIE_REL));
+      for (let i = 0; i < 6; i++) await warte();
+      los();
+      for (let i = 0; i < 8; i++) await warte();
+    } finally {
+      po.liesMitStand = echt;
+      ab();
+    }
+    expect(umfangIdsIn('BAUA 2')).toEqual(['ueigen']);
+    expect(meldungen.filter((m) => /er ist jetzt geladen/.test(m))).toEqual([]);
+  });
+
+  it('Festlegen: der erste Versuch sieht einen woanders festgelegten, die Datei ändert sich dabei (dort aufgehoben), der zweite schreibt – keine Meldung', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    // woanders festgelegt, ohne meta.antrag (so schreibt auch der erste Versuch – meta.antrag kommt hinzu)
+    const p = readProjectFile(oapMit(ds.dateien.get(OAP)!, (f) => void ((f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].umfang = [{ id: 'ueigen', titel: 'Brandschutzkonzept', art: 'extern' }]))) as unknown as { meta: Record<string, unknown> };
+    delete p.meta.antrag;
+    ds.dateien.set(OAP, writeArchive(p as unknown as Parameters<typeof writeArchive>[0]));
+    const po = ds.projektordner as unknown as { projektdateiErsetzen: (...a: unknown[]) => Promise<unknown> };
+    const echt = po.projektdateiErsetzen.bind(po);
+    let einmal = true;
+    po.projektdateiErsetzen = async (...a: unknown[]) => {
+      if (einmal) {
+        einmal = false;
+        // währenddessen woanders aufgehoben – die Datei ist geändert, der Versuch scheitert
+        const q = readProjectFile(oapMit(ds.dateien.get(OAP)!, (f) => void delete (f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].umfang)) as unknown as { meta: Record<string, unknown> };
+        delete q.meta.antrag;
+        ds.dateien.set(OAP, writeArchive(q as unknown as Parameters<typeof writeArchive>[0]));
+        ds.geaendert.set(OAP, (ds.geaendert.get(OAP) ?? 0) + 1000);
+      }
+      return echt(...a);
+    };
+    const { meldungen, ab } = meldungenSammeln();
+    try {
+      await klick(knopf(host, 'Antragsumfang festlegen'));
+      for (let i = 0; i < 8; i++) await warte();
+    } finally {
+      po.projektdateiErsetzen = echt;
+      ab();
+    }
+    expect(einmal).toBe(false);
+    expect(umfangIdsIn('BAUA 2')).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual([]);
+  });
+
+  it('Laden von BS9 hängt, H24 geöffnet (dessen Laden hängt auch), BS9 scheitert: der Aufrufer kommt gleich zurück, keine Meldung zu BS9', async () => {
+    ds.ordner.add('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2');
+    ds.dateien.set('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2/x.pdf', new Uint8Array([1]));
+    await projektBS9();
+    await warte();
+    const po = ds.projektordner as unknown as { liesMitStand: (r: string, p: string) => Promise<unknown> };
+    const echt = po.liesMitStand.bind(po);
+    let losBs9!: () => void;
+    const torBs9 = new Promise<void>((r) => (losBs9 = r));
+    let losH24!: () => void;
+    const torH24 = new Promise<void>((r) => (losH24 = r));
+    let bs9 = true;
+    po.liesMitStand = async (r: string, p: string) => {
+      if (p.endsWith('BS9.oap') && bs9) {
+        bs9 = false;
+        await torBs9;
+        throw new Error('Netz weg');
+      }
+      return echt(r, p);
+    };
+    // das Laden von H24 hängt beim Suchen der Projektdatei
+    const pl = ds.projektordner as unknown as { liste: (r: string, t: number) => Promise<unknown> };
+    const echtListe = pl.liste.bind(pl);
+    pl.liste = async (r: string, t: number) => {
+      if (r.includes('H24')) await torH24;
+      return echtListe(r, t);
+    };
+    let fertig = false;
+    try {
+      const l1 = useFormulare.getState().oapLaden().then(() => (fertig = true));
+      await warte();
+      act(() => void useFormulare.getState().projektWaehlen(useFormulare.getState().projekte.find((x) => x.ordner === 'H24')!));
+      for (let i = 0; i < 4; i++) await warte();
+      losBs9();
+      await act(async () => void (await Promise.race([l1, new Promise((r) => setTimeout(r, 300))])));
+      // das Laden von H24 hängt noch – der Aufrufer von BS9 ist trotzdem zurück
+      expect(fertig).toBe(true);
+      expect(useFormulare.getState().meldung?.text ?? '').not.toMatch(/BS9 nicht lesbar/);
+    } finally {
+      losH24();
+      po.liesMitStand = echt;
+      pl.liste = echtListe;
+      for (let i = 0; i < 6; i++) await warte();
+    }
+  });
+
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {
     const ordner = `${PROJEKT}/TÖB/BAUA 2`;
     ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));

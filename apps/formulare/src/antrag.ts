@@ -1091,7 +1091,8 @@ export function alsAngaben(a: Abschnitt): ProjektDatei {
  * Eintrag und Feld (`umfangAnwenden`). Was andere inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein
  * gleichzeitiges Laden, das eigene vorige Speichern), bleibt. Einen Antrag, den es im frischen Abschnitt nicht gibt,
  * übernimmt die Änderung ganz; einen, den der Aufrufer nicht kannte, den es inzwischen aber gibt, lässt sie
- * unverändert.
+ * unverändert. `o.kennzeichen.umfangBehalten`: ein Antragsumfang wurde festgelegt, in der Datei stand aber schon ein
+ * anderer – der blieb.
  */
 export function aenderungAnwenden(
   frisch: Abschnitt,
@@ -1135,8 +1136,9 @@ export function aenderungAnwenden(
       } else if (k === 'umfang') {
         // je Eintrag – zwei Änderungen kurz nacheinander bzw. von zwei Arbeitsplätzen überschreiben sich nicht
         const u = umfangAnwenden(f[k] as UmfangEintrag[] | undefined, a[k] as UmfangEintrag[] | undefined, n[k] as UmfangEintrag[] | undefined, o.bewegt);
-        // festgelegt, wo der Aufrufer keinen kannte, in der Datei steht aber schon einer: der blieb – das sagen können
-        if (!a[k] && f[k] && n[k] && o.kennzeichen) o.kennzeichen.umfangBehalten = true;
+        // festgelegt, wo der Aufrufer keinen kannte, in der Datei steht aber schon ein anderer: der blieb – das sagen
+        // können (beide Seiten gleich gelesen, so zählen leere Texte nicht; derselbe, etwa nach einem Doppelklick, nicht)
+        if (!a[k] && f[k] && n[k] && o.kennzeichen && stabil(f[k]) !== stabil(projektDateiAus({ umfang: n[k] }).umfang)) o.kennzeichen.umfangBehalten = true;
         if (u) z[k] = u;
         else delete z[k];
       } else if (n[k] === undefined) delete z[k];

@@ -944,6 +944,22 @@ describe('Antragsumfang je Eintrag zusammenführen (umfangAnwenden)', () => {
   });
 });
 
+describe('Kennzeichen „Antragsumfang behalten“ beim Zusammenführen', () => {
+  const abschnitt = (umfang?: UmfangEintrag[]) => ({ antraege: { 'BAUA 2': { angelegt: '2026-11-01', ...(umfang ? { umfang } : {}) } } });
+  const ansicht = (umfang?: UmfangEintrag[]) => ({ ansicht: 'BAUA 2', ...(umfang ? { umfang } : {}), antraege: { 'BAUA 2': { angelegt: '2026-11-01' } } });
+  const e = (id: string, mehr: Partial<UmfangEintrag> = {}): UmfangEintrag => ({ id, titel: id, art: 'extern', ...mehr });
+  const kennzeichen = (frisch?: UmfangEintrag[], neu?: UmfangEintrag[]) => {
+    const k: { umfangBehalten?: boolean } = {};
+    aenderungAnwenden(abschnitt(frisch), ansicht(), ansicht(neu), { kennzeichen: k });
+    return !!k.umfangBehalten;
+  };
+  it('gesetzt, wenn in der Datei schon ein anderer steht; nicht bei gleichem (auch mit leeren Texten) und nicht ohne', () => {
+    expect(kennzeichen([e('x')], [e('a')])).toBe(true);
+    expect(kennzeichen([e('a')], [e('a', { muster: '' })])).toBe(false);
+    expect(kennzeichen(undefined, [e('a')])).toBe(false);
+  });
+});
+
 describe('„bereit“ je Datei zusammenführen (bereitAnwenden)', () => {
   const b = (datei: string, stand?: number) => ({ datei, ...(stand ? { stand } : {}) });
   it('zwei Markierungen kurz nacheinander bzw. von zwei Arbeitsplätzen: beide bleiben; aufheben entfernt nur die eigene', () => {

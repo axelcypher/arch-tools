@@ -1369,13 +1369,13 @@ export const useAntrag = create<AntragState>((set, get) => {
         const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
         if (umfang) neu.umfang = umfang;
         else delete neu.umfang;
-        await projektdateiSchreiben(neu, undefined, { info, bewegt: o.bewegt });
+        const imStore = await projektdateiSchreiben(neu, undefined, { info, bewegt: o.bewegt });
         // festgelegt, während woanders inzwischen schon einer festgelegt war (so beim Zusammenführen bemerkt): der
-        // bleibt – im selben Projekt ist er jetzt geladen
+        // bleibt – „jetzt geladen“ nur, wenn der Store noch zu dieser Projektdatei gehört (nicht nach einem Wechsel)
         if (info.umfangBehalten) {
           delete info.geschrieben;
           info.grund = 'inzwischen ist schon einer festgelegt';
-          if (useFormulare.getState().projekt === projekt) meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
+          if (imStore && useFormulare.getState().projekt === projekt) meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
         }
         await get().aktualisieren();
       } catch (e) {
