@@ -6,8 +6,8 @@ import { gleich } from '@core/zusammenfuehren';
 import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 import { vorDemSchliessen } from '@core/platform/rahmen';
-import { verzoegertSchreiben } from './verzoegert';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
+import { verzoegertSchreiben } from './verzoegert';
 
 /**
  * Zustand von NUMIO: das Projekt im gemeinsamen Format (.oap) – Gebäude, Geschosse und
@@ -142,6 +142,8 @@ function db(): Promise<IDBDatabase> {
     req.onupgradeneeded = () => req.result.createObjectStore(STORE);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
+    // eine ältere Verbindung blockiert das Öffnen: als Fehler werten, sonst hinge die Schreibkette (verzoegert.ts)
+    req.onblocked = () => reject(new Error('Zwischenspeicher blockiert'));
   });
 }
 
@@ -182,9 +184,13 @@ if (typeof indexedDB !== 'undefined') {
             tx.objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
             tx.oncomplete = () => {
               zwischenstandErsetzt(DB);
+              d.close();
               fertig();
             };
-            tx.onerror = tx.onabort = () => fertig();
+            tx.onerror = tx.onabort = () => {
+              d.close();
+              fertig();
+            };
           }),
       ),
     600,

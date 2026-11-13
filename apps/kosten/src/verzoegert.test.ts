@@ -44,6 +44,27 @@ describe('Zwischenstand: verzögertes Schreiben und Sichern vor dem Schließen',
     expect(s.f).toHaveBeenCalledTimes(1);
   });
 
+  it('Änderung während eines laufenden Schreibens: das zweite Schreiben folgt erst danach, sichern() wartet auf beide', async () => {
+    vi.useFakeTimers();
+    const s = schreiber();
+    const z = verzoegertSchreiben(s.f, 600);
+    z.anstossen();
+    await vi.advanceTimersByTimeAsync(600); // erstes Schreiben läuft
+    expect(s.f).toHaveBeenCalledTimes(1);
+    z.anstossen();
+    let fertig = false;
+    void z.sichern().then(() => (fertig = true));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(s.f).toHaveBeenCalledTimes(1); // nicht gleichzeitig
+    s.fertig();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(s.f).toHaveBeenCalledTimes(2);
+    expect(fertig).toBe(false);
+    s.fertig();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fertig).toBe(true);
+  });
+
   it('ohne ausstehende Änderung schreibt sichern() nichts; ein Fehler beim Schreiben blockiert nicht', async () => {
     const f = vi.fn().mockRejectedValueOnce(new Error('voll')).mockResolvedValue(undefined);
     const z = verzoegertSchreiben(f, 600);
