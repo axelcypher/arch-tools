@@ -71,7 +71,12 @@ export function speichern(unterNeuemNamen = false): Promise<boolean> {
 }
 
 const dateiTeil = (pfad: string) => pfad.split(/[\\/]/).pop() ?? pfad;
-const ordnerTeil = (pfad: string) => (istPfad(pfad) ? pfad.slice(0, Math.max(pfad.lastIndexOf('/'), pfad.lastIndexOf('\\'))) || null : null);
+/** Ordner eines Pfads; eine Laufwerkswurzel mit Trenner („C:\\“), sonst wäre „C:“ laufwerksrelativ */
+const ordnerTeil = (pfad: string) => {
+  if (!istPfad(pfad)) return null;
+  const ordner = pfad.slice(0, Math.max(pfad.lastIndexOf('/'), pfad.lastIndexOf('\\')));
+  return /^[A-Za-z]:$/.test(ordner) ? `${ordner}\\` : ordner || null;
+};
 
 async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
   const s = useEntz.getState();
