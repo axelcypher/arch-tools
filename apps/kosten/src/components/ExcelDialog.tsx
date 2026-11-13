@@ -1,6 +1,6 @@
 import { ExcelDialog as Dialog } from '@core/ui/ExcelDialog';
 import { KOSTEN_PLACEHOLDER_DOCS } from '../export/exportData';
-import { stufeLabel } from '../kosten';
+import { stufeLabel } from '../stufen';
 import { useKosten } from '../store';
 import { vorlage } from '../vorlage';
 
@@ -25,7 +25,7 @@ export function ExcelDialog({ onClose }: { onClose: () => void }) {
       }
       docs={KOSTEN_PLACEHOLDER_DOCS}
       datei={datei}
-      zusatz={(p) => `Kosten ${stufeLabel(p.kosten?.stufe ?? 'schaetzung')}`}
+      zusatz={(p) => `Kosten ${stufeLabel(p.kosten?.stufe)}`}
       musterName="Kosten-Vorlage.xlsx"
       exportDefault={async (p) => (await import('../export/excel')).exportDefault(p)}
       exportWithTemplate={async (t, p) => (await import('../export/excel')).exportWithTemplate(t, p)}

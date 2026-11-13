@@ -102,16 +102,26 @@ export function kgUnter(kind: string, vorfahr: string): boolean {
 /** Gehört `kg` zu einer der Grundlagen (gleich oder darunter), z. B. 331 zu „300“? */
 export const kgInBasis = (kg: string, basis: string[]) => basis.some((b) => kg === b || kgUnter(kg, b));
 
+/**
+ * Kostenrisiken: DIN 276:2018-12 verlangt, Risiken in der Kostenermittlung gesondert auszuweisen. Eine Position mit
+ * dieser reservierten Kennung statt einer Kostengruppe zählt nicht in die Summen der Kostengruppen, sondern als
+ * eigener Betrag zu den Gesamtkosten.
+ */
+export const KG_RISIKO = 'risiko';
+export const istRisiko = (kg: string) => kg === KG_RISIKO;
+
 export function kgName(kg: string): string {
+  if (istRisiko(kg)) return 'Kostenrisiken';
   return KOSTENGRUPPEN[kg] ?? '';
 }
 
 /**
- * übliche Bezugsgröße je Kostengruppe (Mengen und Bezugseinheiten nach DIN 277, wie in den gängigen
- * Kennwertsammlungen): Bauwerk je m² BGF, Bauteile je m² Bauteilfläche, Außenanlagen je m² AUF,
- * Baunebenkosten in % von KG 300 + 400.
+ * übliche Bezugsgröße je Kostengruppe (Bezugseinheiten nach DIN 276:2018-12 bzw. den Kennwertsammlungen, z. B. BKI;
+ * Grundflächen und Rauminhalt nach DIN 277): Bauwerk je m² BGF, Bauteile je m² Bauteilfläche, Außenanlagen je
+ * m² AUF, Baunebenkosten in % von KG 300 + 400, Kostenrisiken in % von KG 300 + 400.
  */
 export function standardBezug(kg: string): { bezug: KostenBezug; basis?: string[] } {
+  if (istRisiko(kg)) return { bezug: 'prozent', basis: ['300', '400'] };
   const g = kg1(kg);
   const z = kg2(kg);
   if (g === '100' || g === '200') return { bezug: 'fbg' };

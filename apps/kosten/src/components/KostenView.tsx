@@ -1,22 +1,33 @@
 import { useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import type { Kosten, KostenBezug, KostenPosition, KostenStufe } from '@core/model';
-import { KOSTEN_STUFEN, newId } from '@core/model';
+import { newId } from '@core/model';
 import { Field, NumberField, TextField } from '@core/ui/fields';
-import { istKg, kg1, KG_ERSTE_EBENE, kgName, standardBezug } from '../din276';
+import { istKg, istRisiko, kg1, KG_ERSTE_EBENE, KG_RISIKO, kgName, kgUnter, standardBezug } from '../din276';
 import { gliederung, gliederungFuer } from '../katalog';
 import type { Ergebnis, PositionErgebnis } from '../kosten';
-import { berechne, euro, euroSpanne, standAus, stufeLabel, vergleiche } from '../kosten';
+import { berechne, euro, euroSpanne, standAus, vergleiche } from '../kosten';
 import type { MengenBezug } from '../mengen';
 import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 import { addPositionen, mapPosition, removePosition, setKosten, useKosten } from '../store';
+import { GLIEDERUNGSTIEFE, STUFEN, stufeLabel, stufeVon } from '../stufen';
 import { useBauteile } from '../bauteile';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+const datum = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${Number(iso.slice(8, 10))}.${Number(iso.slice(5, 7))}.${iso.slice(0, 4)}` : iso);
 
-/** Massen- und Kostenermittlung: Grundlagen und Mengen, Positionen nach DIN 276, Übersicht mit Kostenständen */
+/** neue Zeile in den Blick holen und das Feld für die Kostengruppe fokussieren */
+function fokussieren(id: string) {
+  setTimeout(() => {
+    const el = document.querySelector<HTMLInputElement>(`tr[data-pos="${id}"] input[type="text"], tr[data-pos="${id}"] input:not([type])`);
+    el?.scrollIntoView?.({ block: 'nearest' });
+    el?.focus();
+  }, 0);
+}
+
+/** Massen- und Kostenermittlung: Grundlagen und Mengen, Positionen nach DIN 276, Übersicht mit festgehaltenen Ständen */
 export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMenge?: (b: MengenBezug) => void }) {
   const project = useKosten((s) => s.project);
   const waende = useBauteile((s) => s.waende);
@@ -24,152 +35,188 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
   const k: Kosten = project.kosten ?? { positionen: [] };
   const st = useKosten.getState();
   const setK = (patch: Partial<Kosten>) => st.update((p) => setKosten(p, patch));
+  const stufe = stufeVon(k.stufe);
+  const vorhanden = new Set(k.positionen.map((p) => p.kg));
+  const fehlend = (art: 'grob' | 'fein') => gliederung(art).filter((p) => !vorhanden.has(p.kg));
+  const neu = (pos: KostenPosition) => {
+    st.update((p) => addPositionen(p, [pos]));
+    fokussieren(pos.id);
+  };
 
   return (
     <div className="ko-view">
-      <section className="ko-col">
-        <h2>
-          Grundlagen
-          <HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />
-        </h2>
-        <Field label="Projekt">
-          <TextField value={project.name} onChange={(v) => st.update((p) => (v.trim() && v.trim() !== p.name ? { ...p, name: v.trim() } : p))} />
-        </Field>
-        <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }))} />
-        <div className="field-row">
+      <div className="ko-links">
+        <section className="ko-col">
+          <h2>
+            Grundlagen
+            <HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />
+          </h2>
+          <Field label="Projekt">
+            <TextField value={project.name} onChange={(v) => st.update((p) => (v.trim() && v.trim() !== p.name ? { ...p, name: v.trim() } : p))} />
+          </Field>
+          <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }))} />
           <Field label="Stufe">
-            <select value={k.stufe ?? 'schaetzung'} onChange={(ev) => setK({ stufe: ev.target.value as KostenStufe })}>
-              {KOSTEN_STUFEN.map((s) => (
+            <select value={stufe} onChange={(ev) => setK({ stufe: ev.target.value as KostenStufe })}>
+              {STUFEN.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.label} ({s.lph})
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Preisstand">
+          <p className="muted small-text ko-hint">Gliederung: {GLIEDERUNGSTIEFE[stufe]} – maßgeblich ist die im Vertrag vereinbarte Fassung.</p>
+          <Field label="Kostenstand (Preisstand)">
             <input type="date" value={k.datum ?? ''} onChange={(ev) => setK({ datum: ev.target.value || undefined })} />
           </Field>
-        </div>
-        <div className="field-row">
-          <Field label="Baupreisindex Kennwerte" hint={k.katalog?.stand ? `Stand ${k.katalog.stand}` : 'zum Preisstand der Kennwerte'}>
-            <NumberField value={k.indexBasis} allowEmpty min={0} digits={1} onChange={(v) => setK({ indexBasis: v })} />
-          </Field>
-          <Field label="Baupreisindex aktuell">
-            <NumberField value={k.indexAktuell} allowEmpty min={0} digits={1} onChange={(v) => setK({ indexAktuell: v })} />
-          </Field>
-        </div>
-        <div className="field-row">
-          <Field label="Regionalfaktor" hint="1,000 = Bundesdurchschnitt">
-            <NumberField value={k.regionalfaktor} allowEmpty min={0} digits={3} placeholder="1,000" onChange={(v) => setK({ regionalfaktor: v })} />
-          </Field>
-          <Field label="Umsatzsteuer [%]">
-            <NumberField value={k.mwst} allowEmpty min={0} max={100} digits={0} placeholder="19" onChange={(v) => setK({ mwst: v })} />
-          </Field>
-        </div>
-        <label className="toggle block">
-          <input type="checkbox" checked={!!k.kennwerteBrutto} onChange={(ev) => setK({ kennwerteBrutto: ev.target.checked || undefined })} />
-          Kennwerte enthalten die Umsatzsteuer (brutto)
-        </label>
-        <p className="muted small-text">
-          Faktor auf die Kennwerte: <strong>{e.faktor.toLocaleString('de-DE', { maximumFractionDigits: 4 })}</strong>
-          {k.katalog && (
-            <>
-              <br />
-              Kennwerte: {k.katalog.name}
-              {k.katalog.quelle ? ` (${k.katalog.quelle})` : ''}
-              {k.katalog.stand ? `, Stand ${k.katalog.stand}` : ''}
-            </>
-          )}
-        </p>
-
-        <h2>
-          Mengen
-          <HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />
-        </h2>
-        <table className="ko-table">
-          <tbody>
-            {MENGEN_BEZUEGE.map((b) => (
-              <MengeZeile key={b} b={b} e={e} onMenge={onMenge} />
-            ))}
-          </tbody>
-        </table>
-        <p className="muted small-text">
-          Mengen kommen aus dem Projekt; ein eingetragener Wert gilt statt des abgeleiteten (leer = wieder abgeleitet).
-          {onMenge && ' Ein Klick auf das Kürzel zeigt im Grundriss und im 3D-Modell, woraus sich die Menge zusammensetzt.'}
-        </p>
-      </section>
-
-      <section className="ko-col ko-positionen">
-        <h2>
-          Positionen
-          <HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />
-        </h2>
-        <div className="button-row">
-          <button className="small" onClick={() => st.update((p) => addPositionen(p, [neuePosition('300')]))}>
-            + Position
-          </button>
-          <button
-            className="small"
-            title="Leere Positionen der 1. Ebene (KG 300, 400, 500, 700) mit üblicher Bezugsgröße"
-            onClick={() => st.update((p) => addPositionen(p, gliederung('grob')))}
-          >
-            Gliederung 1. Ebene
-          </button>
-          <button
-            className="small"
-            title="Leere Positionen der 2. Ebene für das Bauwerk (KG 310 … 450) mit Bauteilmengen"
-            onClick={() => st.update((p) => addPositionen(p, gliederung('fein')))}
-          >
-            Gliederung 2. Ebene
-          </button>
-          <button className="small" onClick={onKatalog}>
-            Aus Katalog …
-          </button>
-        </div>
-        {!k.positionen.length ? (
-          <p className="muted small-text">
-            Noch keine Positionen. Für eine {stufeLabel(k.stufe)} passt die Gliederung {gliederungFuer(k.stufe) === 'grob' ? '1. Ebene (Kennwerte je m² BGF)' : '2. Ebene (Kennwerte je Bauteilmenge)'} –
-            die Kennwerte trägst du ein oder übernimmst sie aus dem Kennwertkatalog.
-          </p>
-        ) : (
-          <div className="tbl-wrap">
-            <table className="ko-table ko-pos">
-              <thead>
-                <tr>
-                  <th />
-                  <th>KG</th>
-                  <th>Bezeichnung</th>
-                  <th>Bezug</th>
-                  <th className="num">Menge</th>
-                  <th className="num">von</th>
-                  <th className="num">Mittel</th>
-                  <th className="num">bis</th>
-                  <th className="num">Kosten (Mittel)</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {KG_ERSTE_EBENE.filter((g) => e.positionen.some((x) => kg1(x.pos.kg) === g)).map((g) => (
-                  <Gruppe key={g} kg={g} e={e} />
-                ))}
-                {e.positionen
-                  .filter((x) => !istKg(x.pos.kg))
-                  .map((x) => (
-                    <PositionZeile key={x.pos.id} x={x} />
-                  ))}
-              </tbody>
-            </table>
+          <div className="field-row">
+            <Field label="Index Kennwerte">
+              <NumberField value={k.indexBasis} allowEmpty min={0} digits={1} label="Baupreisindex zum Stand der Kennwerte" onChange={(v) => setK({ indexBasis: v })} />
+            </Field>
+            <Field label="Index aktuell">
+              <NumberField value={k.indexAktuell} allowEmpty min={0} digits={1} label="Baupreisindex aktuell" onChange={(v) => setK({ indexAktuell: v })} />
+            </Field>
           </div>
-        )}
-        <p className="muted small-text">
-          Kennwerte netto je Einheit (bei Bezug % der Prozentsatz, bei psch der Betrag). Fehlt „von“ oder „bis“, gilt der Mittelwert. Kosten = Menge × Kennwert × Faktor;
-          Pauschalen und Prozentsätze werden nicht angepasst.
-        </p>
-      </section>
+          <p className="muted small-text ko-hint">
+            Baupreisindex zum Stand der Kennwerte{k.katalog?.stand ? ` (${k.katalog.stand})` : ''} und aktuell; leer = keine Anpassung.
+          </p>
+          <div className="field-row">
+            <Field label="Regionalfaktor">
+              <NumberField value={k.regionalfaktor} allowEmpty min={0} digits={3} placeholder="1,000" onChange={(v) => setK({ regionalfaktor: v })} />
+            </Field>
+            <Field label="Umsatzsteuer [%]">
+              <NumberField value={k.mwst} allowEmpty min={0} max={100} digits={0} placeholder="19" onChange={(v) => setK({ mwst: v })} />
+            </Field>
+          </div>
+          <p className="muted small-text ko-hint">Regionalfaktor 1,000 = Bundesdurchschnitt; leer = 1,000 bzw. 19 %.</p>
+          <label className="toggle block">
+            <input type="checkbox" checked={!!k.kennwerteBrutto} onChange={(ev) => setK({ kennwerteBrutto: ev.target.checked || undefined })} />
+            Kennwerte enthalten die Umsatzsteuer (brutto)
+          </label>
+          <p className="muted small-text">
+            Faktor auf die Kennwerte: <strong>{e.faktor.toLocaleString('de-DE', { maximumFractionDigits: 4 })}</strong>
+            {k.katalog && (
+              <>
+                <br />
+                Kennwerte: {k.katalog.name}
+                {k.katalog.quelle ? ` (${k.katalog.quelle})` : ''}
+                {k.katalog.stand ? `, Stand ${k.katalog.stand}` : ''}
+              </>
+            )}
+          </p>
+        </section>
 
-      <section className="ko-col ko-uebersicht">
-        <Uebersicht e={e} k={k} />
-      </section>
+        <section className="ko-col">
+          <h2>
+            Mengen
+            <HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />
+          </h2>
+          <table className="ko-table ko-mengen">
+            <tbody>
+              {MENGEN_BEZUEGE.map((b) => (
+                <MengeZeile key={b} b={b} e={e} onMenge={onMenge} />
+              ))}
+            </tbody>
+          </table>
+          <p className="muted small-text">
+            Abgeleitet aus dem Projekt; ein eingetragener Wert gilt stattdessen (↺ setzt zurück).
+            {onMenge && ' Klick auf das Kürzel: Herkunft im Grundriss und 3D-Modell.'}
+          </p>
+        </section>
+      </div>
+
+      <div className="ko-rechts">
+        <section className="ko-col ko-positionen">
+          <h2>
+            Positionen
+            <HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />
+          </h2>
+          <div className="button-row">
+            <button className="small" title="Leere Position anlegen – Kostengruppe eintragen" onClick={() => neu(neuePosition(''))}>
+              + Position
+            </button>
+            <button
+              className="small"
+              title="Kostenrisiken nach DIN 276 gesondert ausweisen – pauschal oder in % von Kostengruppen; zählt zu keiner Kostengruppe"
+              onClick={() => neu(neueRisikoPosition())}
+            >
+              + Kostenrisiko
+            </button>
+            <button
+              className="small"
+              disabled={!fehlend('grob').length}
+              title={fehlend('grob').length ? 'Fehlende Positionen der 1. Ebene (KG 300, 400, 500, 700) mit üblicher Bezugsgröße anlegen' : 'Alle Kostengruppen dieser Gliederung sind schon vorhanden'}
+              onClick={() => st.update((p) => addPositionen(p, fehlend('grob')))}
+            >
+              Gliederung 1. Ebene
+            </button>
+            <button
+              className="small"
+              disabled={!fehlend('fein').length}
+              title={
+                fehlend('fein').length
+                  ? `Fehlende Positionen der 2. Ebene mit Bauteilmengen anlegen (KG ${gliederung('fein')
+                      .map((p) => p.kg)
+                      .join(', ')})`
+                  : 'Alle Kostengruppen dieser Gliederung sind schon vorhanden'
+              }
+              onClick={() => st.update((p) => addPositionen(p, fehlend('fein')))}
+            >
+              Gliederung 2. Ebene
+            </button>
+            <button className="small" onClick={onKatalog} title="Kennwerte aus dem Kennwertkatalog als Positionen übernehmen">
+              Kennwertkatalog …
+            </button>
+          </div>
+          {!k.positionen.length ? (
+            <p className="muted small-text">
+              Noch keine Positionen. Für die {stufeLabel(stufe)} passt die Gliederung {gliederungFuer(stufe) === 'grob' ? '1. Ebene (Kennwerte je m² BGF)' : '2. Ebene (Kennwerte je Bauteilmenge)'};
+              die Kennwerte werden eingetragen oder aus dem Kennwertkatalog übernommen.
+            </p>
+          ) : (
+            <div className="tbl-wrap">
+              <table className="ko-table ko-pos">
+                <thead>
+                  <tr>
+                    <th>
+                      <span className="ko-sr">Rechnen</span>
+                    </th>
+                    <th>KG</th>
+                    <th>Bezeichnung</th>
+                    <th>Bezug</th>
+                    <th className="num">Menge</th>
+                    <th className="num">von</th>
+                    <th className="num">Mittel</th>
+                    <th className="num">bis</th>
+                    <th className="num">Kosten (Mittel)</th>
+                    <th>
+                      <span className="ko-sr">Löschen</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {KG_ERSTE_EBENE.filter((g) => e.positionen.some((x) => kg1(x.pos.kg) === g)).map((g) => (
+                    <Gruppe key={g} kg={g} titel={kgName(g)} summe={e.summen.find((s) => s.kg === g)?.summe[1]} e={e} zeilen={e.positionen.filter((x) => kg1(x.pos.kg) === g)} />
+                  ))}
+                  {e.positionen.some((x) => istRisiko(x.pos.kg)) && (
+                    <Gruppe kg="" titel="Kostenrisiken" summe={e.risiko[1]} e={e} zeilen={e.positionen.filter((x) => istRisiko(x.pos.kg))} />
+                  )}
+                  {e.positionen.some((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg)) && (
+                    <Gruppe kg="" titel="Ohne gültige Kostengruppe – wird nicht gerechnet" e={e} zeilen={e.positionen.filter((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg))} />
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="muted small-text">
+            Kennwerte je Einheit, netto{k.kennwerteBrutto ? ' (eingetragen brutto, gerechnet netto)' : ''}; bei % der Prozentsatz, bei psch der Betrag. Fehlt „von“ oder „bis“, gilt der
+            Mittelwert. Der Faktor wirkt nicht auf Pauschalen und Prozentsätze.
+          </p>
+        </section>
+
+        <section className="ko-col ko-uebersicht">
+          <Uebersicht e={e} k={k} />
+        </section>
+      </div>
     </div>
   );
 }
@@ -179,10 +226,15 @@ function neuePosition(kg: string): KostenPosition {
   return { id: newId('kp'), kg, bezeichnung: kgName(kg), bezug: b.bezug, ...(b.basis ? { basis: b.basis } : {}) };
 }
 
+function neueRisikoPosition(): KostenPosition {
+  return { id: newId('kp'), kg: KG_RISIKO, bezeichnung: 'Kostenrisiken', bezug: 'prozent', basis: ['300', '400'] };
+}
+
 function MengeZeile({ b, e, onMenge }: { b: MengenBezug; e: Ergebnis; onMenge?: (b: MengenBezug) => void }) {
   const info = MENGEN_INFO[b];
   const m = e.mengen[b];
   const st = useKosten.getState();
+  const wert = (v: number) => (b === 'we' ? String(v) : fmt2(v));
   const setMenge = (v: number | undefined) =>
     st.update((p) => {
       const mengen = { ...(p.kosten?.mengen ?? {}) };
@@ -201,31 +253,44 @@ function MengeZeile({ b, e, onMenge }: { b: MengenBezug; e: Ergebnis; onMenge?: 
           <strong>{info.kurz}</strong>
         )}{' '}
         <span className="muted small-text">{info.label}</span>
+        {m.festgelegt && <div className="ko-fest small-text">von Hand · abgeleitet {wert(m.abgeleitet)}</div>}
       </td>
       <td className="num ko-menge">
-        <NumberField value={m.festgelegt ? m.wert : undefined} allowEmpty min={0} digits={b === 'we' ? 0 : 2} placeholder={b === 'we' ? String(m.abgeleitet) : fmt2(m.abgeleitet)} onChange={setMenge} />
+        <NumberField
+          value={m.festgelegt ? m.wert : undefined}
+          allowEmpty
+          min={0}
+          digits={b === 'we' ? 0 : 2}
+          placeholder={wert(m.abgeleitet)}
+          label={`${info.label} (leer = abgeleitet ${wert(m.abgeleitet)})`}
+          onChange={setMenge}
+        />
       </td>
-      <td className="muted small-text">{info.einheit}</td>
+      <td className="muted small-text ko-einheit">
+        {info.einheit}
+        {m.festgelegt && (
+          <button className="small icon ko-zurueck" aria-label={`${info.kurz} auf den abgeleiteten Wert zurücksetzen`} title={`Zurücksetzen auf abgeleitet: ${wert(m.abgeleitet)} ${info.einheit}`} onClick={() => setMenge(undefined)}>
+            ↺
+          </button>
+        )}
+      </td>
     </tr>
   );
 }
 
-function Gruppe({ kg, e }: { kg: string; e: Ergebnis }) {
-  const summe = e.summen.find((s) => s.kg === kg);
+function Gruppe({ kg, titel, summe, e, zeilen }: { kg: string; titel: string; summe?: number; e: Ergebnis; zeilen: PositionErgebnis[] }) {
   return (
     <>
       <tr className="ko-gruppe">
         <td />
         <td>{kg}</td>
-        <td colSpan={6}>{kgName(kg)}</td>
-        <td className="num">{summe ? euro(summe.summe[1]) : ''}</td>
+        <td colSpan={6}>{titel}</td>
+        <td className="num">{summe !== undefined ? euro(summe) : ''}</td>
         <td />
       </tr>
-      {e.positionen
-        .filter((x) => kg1(x.pos.kg) === kg)
-        .map((x) => (
-          <PositionZeile key={x.pos.id} x={x} />
-        ))}
+      {zeilen.map((x) => (
+        <PositionZeile key={x.pos.id} x={x} e={e} />
+      ))}
     </>
   );
 }
@@ -237,9 +302,22 @@ const BEZUG_OPTIONEN: { id: KostenBezug; label: string }[] = [
   { id: 'prozent', label: '% von KG' },
 ];
 
-function PositionZeile({ x }: { x: PositionErgebnis }) {
+/** Probleme, die die Zeile selbst betreffen: ungültige Kostengruppe, Doppelerfassung mit einer über- bzw. untergeordneten */
+function zeilenProblem(x: PositionErgebnis, e: Ergebnis): string | undefined {
+  const kg = x.pos.kg;
+  if (istRisiko(kg)) return undefined;
+  if (!kg.trim()) return 'Kostengruppe eintragen (dreistellig, z. B. 331)';
+  if (!istKg(kg)) return 'Keine gültige Kostengruppe (dreistellig, 100–899) – wird nicht gerechnet';
+  if (!x.aktiv) return undefined;
+  const andere = e.positionen.filter((y) => y.aktiv && y !== x && istKg(y.pos.kg) && (kgUnter(kg, y.pos.kg) || kgUnter(y.pos.kg, kg))).map((y) => y.pos.kg);
+  return andere.length ? `Doppelt erfasst mit KG ${[...new Set(andere)].join(', ')} – eine Position ausschalten` : undefined;
+}
+
+function PositionZeile({ x, e }: { x: PositionErgebnis; e: Ergebnis }) {
   const st = useKosten.getState();
   const p = x.pos;
+  const risiko = istRisiko(p.kg);
+  const name = risiko ? 'Kostenrisiko' : `KG ${p.kg || 'neu'}`;
   const upd = (patch: Partial<KostenPosition>) => st.update((pr) => mapPosition(pr, p.id, (q) => ({ ...q, ...patch })));
   const setKg = (kg: string) => {
     const neu = kg.trim();
@@ -253,20 +331,33 @@ function PositionZeile({ x }: { x: PositionErgebnis }) {
     }
     upd(patch);
   };
+  const problem = zeilenProblem(x, e);
+  const hinweis = x.aktiv ? x.hinweis : undefined;
   return (
-    <tr className={`${p.aus ? 'aus' : ''}${x.hinweis && x.aktiv ? ' warn' : ''}`}>
+    <tr data-pos={p.id} className={`${p.aus ? 'aus' : ''}${(hinweis || problem) && !p.aus ? ' warn' : ''}`}>
       <td>
-        <input type="checkbox" checked={!p.aus} title="Position rechnen" onChange={(ev) => upd({ aus: ev.target.checked ? undefined : true })} />
+        <input type="checkbox" checked={!p.aus} aria-label={`${name} rechnen`} title="Position rechnen (ausgeschaltet bleibt sie sichtbar, z. B. als Alternative)" onChange={(ev) => upd({ aus: ev.target.checked ? undefined : true })} />
       </td>
       <td className="ko-kg">
-        <TextField value={p.kg} onChange={setKg} />
+        {risiko ? (
+          <span className="muted" title="Kostenrisiko – zählt zu keiner Kostengruppe">
+            —
+          </span>
+        ) : (
+          <TextField value={p.kg} label="Kostengruppe" zeigen pruefen={(v) => (!v.trim() || istKg(v.trim()) ? null : 'dreistellig, 100–899')} onChange={setKg} />
+        )}
       </td>
       <td>
-        <TextField value={p.bezeichnung} onChange={(v) => upd({ bezeichnung: v })} />
+        <TextField value={p.bezeichnung} label={`Bezeichnung, ${name}`} onChange={(v) => upd({ bezeichnung: v })} />
         {p.quelle && <div className="muted small-text">{p.quelle}</div>}
+        {problem && <div className="warning small-text">{problem}</div>}
       </td>
       <td>
-        <select value={p.bezug} onChange={(ev) => upd({ bezug: ev.target.value as KostenBezug, ...(ev.target.value === 'prozent' && !p.basis ? { basis: ['300', '400'] } : {}) })}>
+        <select
+          value={p.bezug}
+          aria-label={`Bezug, ${name}`}
+          onChange={(ev) => upd({ bezug: ev.target.value as KostenBezug, ...(ev.target.value === 'prozent' && !p.basis ? { basis: ['300', '400'] } : {}) })}
+        >
           {BEZUG_OPTIONEN.map((o) => (
             <option key={o.id} value={o.id}>
               {o.label}
@@ -274,19 +365,19 @@ function PositionZeile({ x }: { x: PositionErgebnis }) {
           ))}
         </select>
         {p.bezug === 'prozent' && (
-          <div className="ko-basis" title="Kostengruppen, auf deren Summe sich der Prozentsatz bezieht">
-            von KG <TextField value={(p.basis ?? []).join(' + ')} onChange={(v) => upd({ basis: v.split(/[\s,+;]+/).filter(Boolean) })} />
+          <div className="ko-basis" title="Kostengruppen, auf deren Summe sich der Prozentsatz bezieht, z. B. „300 + 400“">
+            von KG <TextField value={(p.basis ?? []).join(' + ')} label={`Grundlage in Kostengruppen, ${name}`} onChange={(v) => upd({ basis: v.split(/[\s,+;]+/).filter(Boolean) })} />
           </div>
         )}
         {p.bezug === 'menge' && (
           <div className="ko-basis">
-            Einheit <TextField value={p.einheit ?? ''} placeholder="Stk" onChange={(v) => upd({ einheit: v || undefined })} />
+            Einheit <TextField value={p.einheit ?? ''} placeholder="Stk" label={`Einheit, ${name}`} onChange={(v) => upd({ einheit: v || undefined })} />
           </div>
         )}
       </td>
       <td className="num">
         {p.bezug === 'menge' ? (
-          <NumberField value={p.menge} allowEmpty min={0} onChange={(v) => upd({ menge: v })} />
+          <NumberField value={p.menge} allowEmpty min={0} label={`Menge, ${name}`} onChange={(v) => upd({ menge: v })} />
         ) : p.bezug === 'pauschal' ? (
           '1 psch'
         ) : p.bezug === 'prozent' ? (
@@ -297,16 +388,16 @@ function PositionZeile({ x }: { x: PositionErgebnis }) {
       </td>
       {(['von', 'mittel', 'bis'] as const).map((f) => (
         <td key={f} className="num ko-kw">
-          <NumberField value={p[f]} allowEmpty min={0} onChange={(v) => upd({ [f]: v })} />
+          <NumberField value={p[f]} allowEmpty min={0} label={`${f === 'mittel' ? 'Mittel' : f}, ${name}`} onChange={(v) => upd({ [f]: v })} />
         </td>
       ))}
       <td className="num">
         <strong>{euro(x.kosten[1])}</strong>
         {x.kosten[0] !== x.kosten[2] && <div className="muted small-text">{euroSpanne(x.kosten)}</div>}
-        {x.hinweis && x.aktiv && <div className="warning small-text">{x.hinweis}</div>}
+        {hinweis && <div className="warning small-text">{hinweis}</div>}
       </td>
       <td>
-        <button className="small danger" title="Position löschen" onClick={() => st.update((pr) => removePosition(pr, p.id))}>
+        <button className="small danger ko-loeschen" aria-label={`${name} löschen`} title="Position löschen (Strg+Z stellt sie wieder her)" onClick={() => st.update((pr) => removePosition(pr, p.id))}>
           ×
         </button>
       </td>
@@ -316,22 +407,25 @@ function PositionZeile({ x }: { x: PositionErgebnis }) {
 
 function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
   const st = useKosten.getState();
+  const laedt = useBauteile((s) => s.status === 'laedt');
   const [bemerkung, setBemerkung] = useState('');
   const staende = k.staende ?? [];
   const [vergleichId, setVergleichId] = useState<string | null>(null);
   const vergleich = staende.find((s) => s.id === vergleichId) ?? staende[staende.length - 1];
   const v = vergleich ? vergleiche(vergleich, e) : null;
   const festhalten = () => {
-    const s = standAus(e, k.stufe ?? 'schaetzung', bemerkung.trim());
+    if (laedt) return;
+    const s = standAus(e, stufeVon(k.stufe), bemerkung.trim());
     st.update((p) => setKosten(p, { staende: [...(p.kosten?.staende ?? []), s] }));
     setBemerkung('');
     setVergleichId(s.id);
   };
+  const risiko = e.risiko[0] !== 0 || e.risiko[1] !== 0 || e.risiko[2] !== 0;
 
   return (
     <>
       <h2>{stufeLabel(k.stufe)}</h2>
-      <table className="ko-table">
+      <table className="ko-table ko-summen">
         <thead>
           <tr>
             <th>KG</th>
@@ -343,7 +437,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
         <tbody>
           {e.summen.map((s) => (
             <tr key={s.kg} className={s.ebene === 1 ? 'ko-kg1' : 'ko-kg2'}>
-              <td title={s.name}>
+              <td>
                 {s.kg} {s.name}
               </td>
               <td className="num">{euro(s.summe[0])}</td>
@@ -351,6 +445,14 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
               <td className="num">{euro(s.summe[2])}</td>
             </tr>
           ))}
+          {risiko && (
+            <tr className="ko-kg1">
+              <td>Kostenrisiken</td>
+              <td className="num">{euro(e.risiko[0])}</td>
+              <td className="num">{euro(e.risiko[1])}</td>
+              <td className="num">{euro(e.risiko[2])}</td>
+            </tr>
+          )}
           <tr className="sum">
             <td>Gesamt netto</td>
             <td className="num">{euro(e.gesamtNetto[0])}</td>
@@ -409,27 +511,57 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
         </>
       )}
 
-      <h3>Kostenstände</h3>
+      <h3>Festgehaltene Stände</h3>
       <div className="ko-stand-neu">
-        <TextField value={bemerkung} placeholder="Bemerkung, z. B. „Entwurf Variante A“" onChange={setBemerkung} />
-        <button className="small" onClick={festhalten} title="Aktuelle Kosten und Mengen als Stand festhalten – für Historie und Vorher/Nachher">
+        <input
+          value={bemerkung}
+          aria-label="Bemerkung zum festgehaltenen Stand"
+          placeholder="Bemerkung, z. B. „Entwurf Variante A“"
+          onChange={(ev) => setBemerkung(ev.target.value)}
+          onKeyDown={(ev) => {
+            if (ev.key === 'Enter') {
+              ev.preventDefault();
+              festhalten();
+            }
+          }}
+        />
+        <button
+          className="small"
+          onClick={festhalten}
+          disabled={laedt}
+          title={laedt ? 'Die Wände des IFC-Modells werden noch gelesen …' : 'Aktuelle Kosten und Mengen festhalten – für Historie und Vorher/Nachher (Enter im Feld)'}
+        >
           Stand festhalten
         </button>
       </div>
       {staende.length > 0 && (
         <table className="ko-table">
+          <thead>
+            <tr>
+              <th>Stand</th>
+              <th className="num">Gesamt brutto</th>
+              <th>
+                <span className="ko-sr">Löschen</span>
+              </th>
+            </tr>
+          </thead>
           <tbody>
             {[...staende].reverse().map((s) => (
               <tr key={s.id} className={s.id === vergleich?.id ? 'selected' : ''}>
                 <td>
-                  <button className="link" onClick={() => setVergleichId(s.id)} title="Mit diesem Stand vergleichen">
-                    {new Date(s.datum).toLocaleDateString('de-DE')} · {stufeLabel(s.stufe)}
+                  <button className="link" onClick={() => setVergleichId(s.id)} title="Mit diesem Stand vergleichen" aria-pressed={s.id === vergleich?.id}>
+                    {datum(s.datum)} · {stufeLabel(s.stufe)}
                   </button>
                   {s.bemerkung && <div className="muted small-text">{s.bemerkung}</div>}
                 </td>
                 <td className="num">{euro(s.gesamtBrutto[1])}</td>
                 <td>
-                  <button className="small danger" title="Stand löschen" onClick={() => st.update((p) => setKosten(p, { staende: (p.kosten?.staende ?? []).filter((x) => x.id !== s.id) }))}>
+                  <button
+                    className="small danger ko-loeschen"
+                    aria-label={`Stand vom ${datum(s.datum)} löschen`}
+                    title="Stand löschen (Strg+Z stellt ihn wieder her)"
+                    onClick={() => st.update((p) => setKosten(p, { staende: (p.kosten?.staende ?? []).filter((x) => x.id !== s.id) }))}
+                  >
                     ×
                   </button>
                 </td>
@@ -440,14 +572,20 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
       )}
       {v && vergleich && (
         <>
-          <h3>
-            Vorher/Nachher gegenüber {new Date(vergleich.datum).toLocaleDateString('de-DE')} (Mittel, netto)
-          </h3>
-          <table className="ko-table">
+          <h3>Vorher/Nachher gegenüber {datum(vergleich.datum)} (Mittel, netto)</h3>
+          <table className="ko-table ko-summen">
+            <thead>
+              <tr>
+                <th>KG</th>
+                <th className="num">vorher</th>
+                <th className="num">jetzt</th>
+                <th className="num">Differenz</th>
+              </tr>
+            </thead>
             <tbody>
               {[...v.zeilen, v.gesamt].map((z) => (
                 <tr key={z.kg || 'gesamt'} className={z.kg ? '' : 'sum'}>
-                  <td>{z.kg ? `${z.kg} ${z.name}` : z.name}</td>
+                  <td>{z.kg && !istRisiko(z.kg) ? `${z.kg} ${z.name}` : z.name}</td>
                   <td className="num">{euro(z.vorher)}</td>
                   <td className="num">{euro(z.jetzt)}</td>
                   <td className={`num ${z.differenz > 0.5 ? 'mehr' : z.differenz < -0.5 ? 'weniger' : ''}`}>
@@ -466,10 +604,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
           )}
         </>
       )}
-      <p className="muted small-text">
-        Die Kennwerte sind Eingaben des Anwenders; das Tool rechnet transparent mit den hinterlegten Werten und liefert keine Preise. Preisstand und regionale Faktoren sind
-        dokumentiert.
-      </p>
+      <p className="muted small-text">Die Kennwerte sind Eingaben des Büros; NUMIO rechnet transparent damit und liefert keine Preise.</p>
     </>
   );
 }

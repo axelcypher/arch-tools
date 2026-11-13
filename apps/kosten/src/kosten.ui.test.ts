@@ -147,7 +147,7 @@ describe('NUMIO', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(KostenDruck, { onClose: () => {} });
     const text = host.textContent ?? '';
-    expect(text).toContain('Kostenschätzung nach DIN 276 (LPh 2)');
+    expect(text).toContain('Kostenschätzung nach DIN 276:2018-12 (LPh 2)');
     expect(text).toContain('Kosten-Test');
     expect(text).toContain('1.7.2026');
     expect(text).toContain('Gesamt brutto');
@@ -179,9 +179,9 @@ describe('NUMIO', () => {
     let zu = false;
     const host = render(KatalogDialog, { onClose: () => (zu = true) });
     expect(host.textContent).toContain('Büro · Stand: 1/2026 · Baupreisindex 130 · 2 Einträge');
-    expect(knopf(host, 'Einträge wählen').disabled).toBe(true);
+    expect(knopf(host, 'Als Positionen übernehmen').disabled).toBe(true);
     act(() => (host.querySelector('thead input[type="checkbox"]') as HTMLInputElement).click());
-    act(() => knopf(host, '2 als Positionen übernehmen').click());
+    act(() => knopf(host, 'Als Positionen übernehmen (2)').click());
     expect(zu).toBe(true);
     expect(kosten().positionen.map((p) => [p.kg, p.mittel, p.quelle])).toEqual([
       ['300', 1800, 'Büro, 1/2026'],

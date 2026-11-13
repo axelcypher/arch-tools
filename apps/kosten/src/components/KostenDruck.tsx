@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import type { Spanne } from '@core/model';
-import { KOSTEN_STUFEN } from '@core/model';
-import { istKg, kg1, KG_ERSTE_EBENE, kgName } from '../din276';
+import { istKg, istRisiko, kg1, KG_ERSTE_EBENE, kgName } from '../din276';
 import type { PositionErgebnis } from '../kosten';
-import { berechne, bezugLabel, euro, HAFTUNG, katalogText, stufeLabel } from '../kosten';
+import { berechne, bezugLabel, euro, HAFTUNG, katalogText } from '../kosten';
+import { istSpaeteStufe, ohneBandbreite, SPAETE_STUFE_HINWEIS, STUFEN, stufeLabel, stufeVon } from '../stufen';
 import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useKosten } from '../store';
@@ -13,7 +13,8 @@ import { useEscSchliessen } from '@core/ui/Dialog';
 import { DruckKopf } from '@core/ui/DruckKopf';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
-const datum = (iso: string) => new Date(iso).toLocaleDateString('de-DE');
+// ISO-Datum ohne Umweg über Date (das als UTC gelesen westlich von Greenwich den Vortag ergäbe)
+const datum = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${Number(iso.slice(8, 10))}.${Number(iso.slice(5, 7))}.${iso.slice(0, 4)}` : iso);
 
 /** Druckbare Kostenermittlung nach DIN 276 – über den Druckdialog auch als PDF. */
 export function KostenDruck({ onClose }: { onClose: () => void }) {
@@ -25,10 +26,12 @@ export function KostenDruck({ onClose }: { onClose: () => void }) {
   const [mengen, setMengen] = useState(true);
   const [staende, setStaende] = useState(true);
   const k = project.kosten ?? { positionen: [] };
-  const stufe = KOSTEN_STUFEN.find((s) => s.id === (k.stufe ?? 'schaetzung'));
+  const stufe = STUFEN.find((s) => s.id === stufeVon(k.stufe))!;
   const heute = new Date().toLocaleDateString('de-DE');
   const aktiv = e.positionen.filter((x) => x.aktiv);
-  const bandbreite = Math.round(e.gesamtNetto[0]) !== Math.round(e.gesamtNetto[2]);
+  // Kostenfeststellung: tatsächliche Kosten, keine Bandbreite
+  const bandbreite = !ohneBandbreite(k.stufe) && Math.round(e.gesamtNetto[0]) !== Math.round(e.gesamtNetto[2]);
+  const risiko = aktiv.filter((x) => istRisiko(x.pos.kg));
   const gezeigteMengen = MENGEN_BEZUEGE.filter((b) => e.mengen[b].wert > 0);
 
   return (
@@ -46,22 +49,23 @@ export function KostenDruck({ onClose }: { onClose: () => void }) {
           {(k.staende?.length ?? 0) > 0 && (
             <label className="toggle">
               <input type="checkbox" checked={staende} onChange={(ev) => setStaende(ev.target.checked)} />
-              Kostenstände
+              Festgehaltene Stände
             </label>
           )}
-          <button onClick={() => druckenAls({ datei: useKosten.getState().datei, projektName: project.name, zusatz: `Kosten ${stufeLabel(project.kosten?.stufe ?? 'schaetzung')}` })}>Drucken / PDF</button>
+          <button onClick={() => druckenAls({ datei: useKosten.getState().datei, projektName: project.name, zusatz: `Kosten ${stufeLabel(project.kosten?.stufe)}` })}>Drucken / PDF</button>
           <button className="primary" onClick={onClose}>
             Schließen
           </button>
         </div>
 
-        <DruckKopf titel={`${stufeLabel(k.stufe ?? 'schaetzung')} nach DIN 276${stufe ? ` (${stufe.lph})` : ''}`} project={project} />
+        <DruckKopf titel={`${stufe.label} nach DIN 276:2018-12 (${stufe.lph})`} project={project} />
+        {istSpaeteStufe(k.stufe) && <p className="report-note ko-report-vorbehalt">{SPAETE_STUFE_HINWEIS}</p>}
 
         <h2>Grundlagen</h2>
         <table className="report-table narrow">
           <tbody>
             <tr>
-              <td>Preisstand</td>
+              <td>Kostenstand (Preisstand)</td>
               <td>{k.datum ? datum(k.datum) : 'nicht angegeben'}</td>
             </tr>
             <tr>
@@ -114,6 +118,13 @@ export function KostenDruck({ onClose }: { onClose: () => void }) {
                 <Betraege s={s.summe} bandbreite={bandbreite} />
               </tr>
             ))}
+            {risiko.length > 0 && (
+              <tr className="subtotal">
+                <td />
+                <td>Kostenrisiken</td>
+                <Betraege s={e.risiko} bandbreite={bandbreite} />
+              </tr>
+            )}
             <tr className="sum">
               <td />
               <td>Gesamt netto</td>
@@ -168,6 +179,18 @@ export function KostenDruck({ onClose }: { onClose: () => void }) {
                     ...aktiv.filter((x) => kg1(x.pos.kg) === g).map((x) => <PositionZeile key={x.pos.id} x={x} bandbreite={bandbreite} />),
                   ];
                 })}
+                {risiko.length > 0 && (
+                  <>
+                    <tr className="subtotal">
+                      <td />
+                      <td colSpan={4}>Kostenrisiken</td>
+                      <Betraege s={e.risiko} bandbreite={bandbreite} />
+                    </tr>
+                    {risiko.map((x) => (
+                      <PositionZeile key={x.pos.id} x={x} bandbreite={bandbreite} />
+                    ))}
+                  </>
+                )}
               </tbody>
             </table>
             <p className="report-note">
@@ -207,7 +230,7 @@ export function KostenDruck({ onClose }: { onClose: () => void }) {
 
         {staende && (k.staende?.length ?? 0) > 0 && (
           <>
-            <h2>Kostenstände</h2>
+            <h2>Festgehaltene Stände</h2>
             <table className="report-table">
               <thead>
                 <tr>
@@ -230,7 +253,7 @@ export function KostenDruck({ onClose }: { onClose: () => void }) {
                 ))}
                 <tr className="sum">
                   <td>{heute}</td>
-                  <td>{stufeLabel(k.stufe ?? 'schaetzung')}</td>
+                  <td>{stufeLabel(k.stufe)}</td>
                   <td>aktueller Stand</td>
                   <td className="num">{euro(e.gesamtNetto[1])}</td>
                   <td className="num">{euro(e.gesamtBrutto[1])}</td>

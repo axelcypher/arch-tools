@@ -8,7 +8,8 @@ import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
 import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
 import { createProject } from '@core/model';
-import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
+import { aenderungenSpeichern, bestaetigen, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
+import { datumText } from '@core/ui/DruckKopf';
 import { ExcelDialog } from './components/ExcelDialog';
 import { KatalogDialog } from './components/KatalogDialog';
 import { KostenDruck } from './components/KostenDruck';
@@ -21,6 +22,9 @@ import { useKosten } from './store';
 
 const log = logger('app');
 
+/** Zeilen des IFC-Berichts, die auf ein Problem hinweisen (die übrigen sind Erfolgsmeldungen) */
+const istWarnung = (z: string) => /keine|nicht|fehlt|ohne|Abweichung|prüfen|übersprungen|falsch|Fehler/i.test(z) && !/Abweichung zum Modell 0,0 %/.test(z);
+
 export function App() {
   const name = useKosten((s) => s.project.name);
   const dirty = useKosten((s) => s.dirty);
@@ -31,6 +35,7 @@ export function App() {
   const dateien = useKosten((s) => s.project.dateien);
   const [logOpen, setLogOpen] = useState(false);
   const datei = useKosten((s) => s.datei);
+  const wiederhergestellt = useKosten((s) => s.wiederhergestellt);
   // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
   const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
   const [excelOpen, setExcelOpen] = useState(false);
@@ -40,6 +45,7 @@ export function App() {
   const [menge, setMenge] = useState<MengenBezug>('bgf');
   const [busy, setBusy] = useState<string | null>(null);
   const [bericht, setBericht] = useState<string[]>([]);
+  const berichtDatei = bericht.length ? (datei?.split(/[\\/]/).pop() ?? null) : null;
 
   // Wände des mitgespeicherten IFC-Modells für die Innenwandfläche
   useEffect(() => {
@@ -57,14 +63,17 @@ export function App() {
   };
 
   // „Neues Projekt“: leeres Projekt (z. B. nur Lageplan bzw. Mengen von Hand); verwirft auch den Zwischenstand
-  const [neuBegonnen, setNeuBegonnen] = useState(false);
+  const [begonnen, setBegonnen] = useState(false);
   const onNeu = async () => {
     if (!(await weiterNachRueckfrage())) return;
     useKosten.getState().load(createProject());
     setBericht([]);
-    setNeuBegonnen(true);
+    setBegonnen(true);
     setProjekteOffen(false);
   };
+
+  // Startbildschirm: nur der Einstieg, bis ein Projekt geöffnet oder neu begonnen ist
+  const einstieg = !hatGebaeude && !hatPositionen && !begonnen && !dirty && !datei;
 
   const onOpen = async () => {
     if (!(await weiterNachRueckfrage())) return;
@@ -73,6 +82,7 @@ export function App() {
       if (r) {
         useKosten.getState().load(r.project, r.datei, r.basis);
         setBericht(r.bericht);
+        setBegonnen(true);
       }
     } catch (e) {
       log.error('Öffnen fehlgeschlagen', e instanceof Error ? e.message : String(e));
@@ -83,11 +93,19 @@ export function App() {
   };
 
   const onIfcAktualisieren = async () => {
+    eingabeAbschliessen();
     try {
-      const { project, datei } = useKosten.getState();
+      const { project, datei, dokument } = useKosten.getState();
       const r = await ifcAktualisierenWaehlen(project, datei, setBusy);
       if (r) {
-        useKosten.getState().update(() => r.project);
+        // während des Lesens weitergearbeitet oder ein anderes Projekt geöffnet: nichts überschreiben
+        const jetzt = useKosten.getState();
+        if (jetzt.dokument !== dokument || jetzt.project !== project) {
+          log.info('IFC-Aktualisierung verworfen – Projekt wurde währenddessen geändert');
+          await meldung('IFC nicht übernommen', 'Das Projekt wurde geändert, während das IFC-Modell gelesen wurde. Bitte „IFC aktualisieren …“ erneut aufrufen.');
+          return;
+        }
+        jetzt.update(() => r.project);
         setBericht(r.bericht);
       }
     } catch (e) {
@@ -124,10 +142,13 @@ export function App() {
         void onSave(e.shiftKey);
       } else if (k === 'o') {
         e.preventDefault();
-        void onOpen();
-      } else if (k === 'p' && hatPositionen) {
+        if (!dialogOffen() && !busy) void onOpen();
+      } else if (k === 'p') {
         e.preventDefault();
-        setDruckOpen(true);
+        if (hatPositionen && !dialogOffen()) {
+          eingabeAbschliessen();
+          setDruckOpen(true);
+        }
       } else if ((istEingabeZiel(e.target) || dialogOffen()) && (k === 'z' || k === 'y')) {
         // im Feld: Rückgängig des Browsers für den Text; hinter einem Dialog nichts am Projekt ändern
       } else if (k === 'z' && !e.shiftKey) {
@@ -155,11 +176,11 @@ export function App() {
       <TitleBar app={APP_NAMEN.kosten.name} name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="kosten" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
       <div className="toolbar">
         <div className="tb-group">
-          <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
+          <button onClick={onOpen} disabled={!!busy} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
             Öffnen
           </button>
           <button onClick={() => void onSave()} title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
-            Speichern{dirty ? ' •' : ''}
+            Speichern
           </button>
           {isTauri() && (
             <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
@@ -168,21 +189,26 @@ export function App() {
           )}
           <button
             onClick={() => void onIfcAktualisieren()}
-            disabled={!hatGebaeude}
-            title="Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Ihre Änderungen bleiben"
+            disabled={!hatGebaeude || !!busy}
+            title={
+              hatGebaeude
+                ? 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Änderungen von Hand bleiben'
+                : 'Erst ein Projekt mit Gebäude oder ein IFC-Modell öffnen'
+            }
           >
             IFC aktualisieren …
           </button>
         </div>
         <div className="tb-group">
-          <button className={ansicht === 'kosten' ? 'active' : ''} onClick={() => setAnsicht('kosten')} title="Grundlagen, Positionen und Kostenübersicht">
+          <button className={ansicht === 'kosten' || !hatGebaeude ? 'active' : ''} aria-pressed={ansicht === 'kosten' || !hatGebaeude} onClick={() => setAnsicht('kosten')} title="Grundlagen, Positionen und Kostenübersicht">
             Kosten
           </button>
           <button
-            className={ansicht === 'mengen' ? 'active' : ''}
+            className={ansicht === 'mengen' && hatGebaeude ? 'active' : ''}
+            aria-pressed={ansicht === 'mengen' && hatGebaeude}
             onClick={() => setAnsicht('mengen')}
             disabled={!hatGebaeude}
-            title="Zeigt im Grundriss und im 3D-Modell, aus welchen Flächen sich jede Menge zusammensetzt"
+            title={hatGebaeude ? 'Zeigt im Grundriss und im 3D-Modell, aus welchen Flächen sich jede Menge zusammensetzt' : 'Erst ein Projekt mit Gebäude oder ein IFC-Modell öffnen'}
           >
             Mengen prüfen
           </button>
@@ -193,10 +219,14 @@ export function App() {
           </button>
         </div>
         <div className="tb-group">
-          <button onClick={() => setDruckOpen(true)} disabled={!hatPositionen} title="Druckbare Kostenermittlung – über den Druckdialog auch als PDF (Strg+P)">
+          <button
+            onClick={() => setDruckOpen(true)}
+            disabled={!hatPositionen}
+            title={hatPositionen ? 'Druckbare Kostenermittlung – über den Druckdialog auch als PDF (Strg+P)' : 'Erst Positionen anlegen'}
+          >
             Kosten drucken
           </button>
-          <button onClick={() => setExcelOpen(true)} disabled={!hatPositionen} title="Kostenermittlung als Excel-Datei – Standardlayout oder eigene Vorlage">
+          <button onClick={() => setExcelOpen(true)} disabled={!hatPositionen} title={hatPositionen ? 'Kostenermittlung als Excel-Datei – Standardlayout oder eigene Vorlage' : 'Erst Positionen anlegen'}>
             Excel …
           </button>
         </div>
@@ -211,30 +241,51 @@ export function App() {
         {busy && <span className="busy">{busy}</span>}
       </div>
       <main className="ko-main">
+        {wiederhergestellt !== null && dirty && (
+          <div className="ko-bericht" role="status">
+            Ungespeicherter Stand vom {datumText(new Date(wiederhergestellt))}{' '}
+            {new Date(wiederhergestellt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} wiederhergestellt –{' '}
+            <button className="small" onClick={() => void onSave()}>
+              Speichern
+            </button>{' '}
+            <button
+              className="small"
+              onClick={async () => {
+                const st = useKosten.getState();
+                const ziel = st.basis ? `der Stand der Datei „${st.datei ?? ''}“` : 'ein leeres Projekt';
+                if (await bestaetigen('Zwischenstand verwerfen?', `Die wiederhergestellten Änderungen gehen verloren; geöffnet bleibt ${ziel}.`, 'Verwerfen', true)) useKosten.getState().verwerfen();
+              }}
+            >
+              Verwerfen
+            </button>
+          </div>
+        )}
         {bericht.length > 0 && (
-          <div className="ko-bericht">
-            <strong>IFC-Import:</strong>
+          <div className="ko-bericht ko-bericht-info" role="status">
+            <strong>IFC-Import{berichtDatei ? ` „${berichtDatei}“` : ''}:</strong>
             <ul>
               {bericht.map((z, i) => (
-                <li key={i}>{z}</li>
+                <li key={i} className={istWarnung(z) ? 'warnung' : 'muted'}>
+                  {z}
+                </li>
               ))}
             </ul>
+            <p className="muted small-text">Flächen, Geschosse und Dächer werden in QUADRIO (Flächenrechner) bearbeitet; NUMIO übernimmt sie beim nächsten Öffnen.</p>
             <button className="small" onClick={() => setBericht([])}>
               Schließen
             </button>
           </div>
         )}
-        {!hatGebaeude && !hatPositionen && !neuBegonnen && (
+        {einstieg ? (
           <ProjektEinstieg
             titel="Kostenermittlung nach DIN 276"
-            text={'Projekt oder IFC öffnen: ein Projekt aus QUADRIO (Flächenrechner, .oap) oder direkt ein IFC-Modell. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und Kostenstände pflegt dieses Tool. Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen („Neues Projekt“).'}
+            text={'Projekt oder IFC öffnen: ein Projekt aus QUADRIO (Flächenrechner, .oap) oder direkt ein IFC-Modell. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und festgehaltene Stände pflegt NUMIO. Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen („Neues Projekt“).'}
             onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
             onDateiOeffnen={() => void onOpen()}
             dateiHinweis="Projektdatei (.oap) oder IFC-Modell"
             onNeu={() => void onNeu()}
           />
-        )}
-        {ansicht === 'mengen' && hatGebaeude ? (
+        ) : ansicht === 'mengen' && hatGebaeude ? (
           <MengenView bezug={menge} onBezug={setMenge} />
         ) : (
           <KostenView
@@ -261,6 +312,7 @@ export function App() {
             if (!(await weiterNachRueckfrage())) return;
             useKosten.getState().load(g.project, g.datei, g.project);
             setBericht([]);
+            setBegonnen(true);
             setProjekteOffen(false);
           }}
           onSchliessen={() => setProjekteOffen(false)}

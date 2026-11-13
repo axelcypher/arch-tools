@@ -5,7 +5,8 @@ import type { Point } from '@core/geometry';
 import { distanceToEdges, perimeter, pointInPolygon, polygonArea } from '@core/geometry';
 import type { OutlineShape, Project, RoomShape, Storey } from '@core/model';
 import { roomArea, storeyElevations } from '@core/model';
-import { diffMP } from '@core/polygon';
+import type { MultiPolygon } from '@core/polygon';
+import { areaMP, diffMP, unionAll } from '@core/polygon';
 import { heightFieldSolid, modellSolidFaces } from '@core/modellSolid';
 import { nutzungInfo, woflFaktor } from '@core/norms';
 import type { Point3, SolidFaces } from '@core/roof';
@@ -88,6 +89,12 @@ const UEBERDECKT_TOLERANZ = 0.5;
 const VERSATZ = 0.25;
 /** Raster des Höhenfelds bei Dächern aus dem Gebäudemodell */
 const RASTER = 40;
+/**
+ * Höhe [m] des Fußbodens über dem untersten Geschoss bzw. über ±0,00, bis zu der ein Geschoss dort, wo kein
+ * tieferes Geschoss liegt, auf dem Gelände steht (Gründungsfläche). Höher liegende Geschosse zählen ganz als
+ * Deckenfläche, auch auskragende Teile.
+ */
+const GELAENDE = 1;
 
 /** Fläche eines ebenen 3D-Polygons (Newell) */
 export function flaeche3(poly: Point3[]): number {
@@ -107,6 +114,12 @@ export function flaeche3(poly: Point3[]): number {
 const inhalt = (f: Flaeche3) => flaeche3(f.aussen) - (f.loecher ?? []).reduce((a, l) => a + flaeche3(l), 0);
 const heben = (poly: Point3[], dz: number): Point3[] => poly.map((p) => ({ x: p.x, y: p.y, z: p.z + dz }));
 const ring = (pts: Point[]): [number, number][] => pts.map((p) => [p.x, p.y]);
+/** Flächen eines MultiPolygons als Grundriss-Flächen (ohne den schließenden Punkt der Ringe) */
+const planVon = (storeyId: string, mp: MultiPolygon): PlanFlaeche[] =>
+  mp.map(([aussen, ...loecher]) => {
+    const pts = (r: [number, number][]) => r.slice(0, -1).map(([x, y]) => ({ x, y }));
+    return loecher.length ? { storeyId, points: pts(aussen), loecher: loecher.map(pts) } : { storeyId, points: pts(aussen) };
+  });
 const umrissName = (s: OutlineShape) => `${s.name || 'BGF-Umriss'} (${s.umschliessung})${s.subtract ? ' – Abzug' : ''}`;
 const raumName = (r: RoomShape) => `${[r.nummer, r.name].filter(Boolean).join(' ') || 'Raum'}${r.subtract ? ' – Abzug' : ''}`;
 
@@ -225,27 +238,72 @@ function berechneNachweis(project: Project, result: ProjectResult, waende: IfcWa
   }
 
   /* ---------- Gründung, Baugrube, Decken ---------- */
+  // Gründungsfläche: Flächen der BGF-Umrisse, unter denen kein tieferes Geschoss liegt (auch das EG neben einem
+  // Teilkeller oder ein Anbau neben dem unterkellerten Haus); Deckenfläche: die Flächen über einem tieferen
+  // Geschoss. Geschosse deutlich über dem Gelände zählen ganz als Decke. Ein Umriss, der teils auf dem Gelände,
+  // teils über einem tieferen Geschoss liegt, ergibt je ein Teil in GRF und DEF (Kennung grf-/def- + Umriss).
   const unterstes = reihenfolge.find((x) => bgfVon(x.s.id) > 0) ?? reihenfolge[0];
   const tiefe = unterstes && unterstes.e < -0.2 ? -unterstes.e : 0;
   const grf = neu('grf', 'plan');
   const bgi = neu('bgi', 'plan');
   const def = neu('def', 'plan');
+  const gelaendeBis = unterstes ? Math.max(unterstes.e, 0) + GELAENDE : GELAENDE;
+  /** zählen Teile höherer Geschosse zur Gründungsfläche? */
+  let hoeher = false;
   for (const x of reihenfolge) {
+    // Grundriss aller tieferen Geschosse (ohne Abzugsflächen)
+    const tiefer = reihenfolge.filter((y) => y.e < x.e - 1e-3).flatMap((y) => umrisse(y.s).filter((u) => !u.subtract).map((u) => u.points));
+    const amGelaende = x.e <= gelaendeBis + 1e-9;
+    const unten = amGelaende && tiefer.length ? unionAll(tiefer) : [];
     for (const u of umrisse(x.s)) {
-      const a = (u.subtract ? -1 : 1) * polygonArea(u.points);
+      const sign = u.subtract ? -1 : 1;
+      const flaeche = polygonArea(u.points);
       const teil = { geschoss: x.s.name, bezeichnung: umrissName(u), plan: [{ storeyId: x.s.id, points: u.points }] };
-      if (x === unterstes) {
-        grf.teile.push({ ...teil, id: `grf-${u.id}`, wert: a });
-        if (tiefe > 0) bgi.teile.push({ ...teil, id: `bgi-${u.id}`, ansatz: `${fmt2(a)} m² × ${fmt2(tiefe)} m`, wert: a * tiefe });
-      } else def.teile.push({ ...teil, id: `def-${u.id}`, wert: a });
+      if (x === unterstes && tiefe > 0) bgi.teile.push({ ...teil, id: `bgi-${u.id}`, ansatz: `${fmt2(flaeche)} m² × ${fmt2(tiefe)} m`, wert: sign * flaeche * tiefe });
+      if (!amGelaende || (tiefer.length && !unten.length)) {
+        def.teile.push({ ...teil, id: `def-${u.id}`, wert: sign * flaeche });
+        continue;
+      }
+      if (!tiefer.length) {
+        if (x !== unterstes) hoeher = true;
+        grf.teile.push({ ...teil, id: `grf-${u.id}`, wert: sign * flaeche });
+        continue;
+      }
+      let frei: MultiPolygon;
+      try {
+        // Streifen schmaler als der zulässige Versatz zwischen den Geschossen zählen als überbaut
+        frei = diffMP([[ring(u.points)]], unten).filter((poly) => {
+          const a = areaMP([poly]);
+          const umfang = poly.reduce((acc, r) => acc + perimeter(r.slice(0, -1).map(([px, py]) => ({ x: px, y: py }))), 0);
+          return a > 1e-6 && (2 * a) / umfang >= VERSATZ;
+        });
+      } catch {
+        frei = [];
+      }
+      const aFrei = Math.min(areaMP(frei), flaeche);
+      if (aFrei < 1e-6) {
+        def.teile.push({ ...teil, id: `def-${u.id}`, wert: sign * flaeche });
+        continue;
+      }
+      if (x !== unterstes) hoeher = true;
+      if (aFrei > flaeche - 1e-6) grf.teile.push({ ...teil, id: `grf-${u.id}`, wert: sign * flaeche });
+      else {
+        const ueber = diffMP([[ring(u.points)]], frei);
+        grf.teile.push({ ...teil, id: `grf-${u.id}`, ansatz: `${fmt2(aFrei)} von ${fmt2(flaeche)} m² ohne Geschoss darunter`, wert: sign * aFrei, plan: planVon(x.s.id, frei) });
+        def.teile.push({ ...teil, id: `def-${u.id}`, ansatz: `${fmt2(flaeche - aFrei)} von ${fmt2(flaeche)} m² über einem tieferen Geschoss`, wert: sign * (flaeche - aFrei), plan: planVon(x.s.id, ueber) });
+      }
     }
   }
-  if (unterstes) grf.hinweis = `Unterstes Geschoss mit BGF: ${unterstes.s.name}.`;
+  if (unterstes)
+    grf.hinweis = `Flächen der BGF-Umrisse, unter denen kein tieferes Geschoss liegt – unterstes Geschoss mit BGF: ${unterstes.s.name}${
+      hoeher ? '; dazu Teile höherer Geschosse, die neben einem tieferen auf dem Gelände stehen (Teilunterkellerung, Anbau)' : ''
+    }.`;
   bgi.hinweis =
     tiefe > 0
-      ? `Gründungsfläche × Tiefe des Fußbodens von ${unterstes!.s.name} unter ±0,00 (${fmt2(tiefe)} m) – ohne Arbeitsraum und Böschung.`
+      ? `Grob: Fläche von ${unterstes!.s.name} × Tiefe des Fußbodens unter ±0,00 (${fmt2(tiefe)} m). Kennwertsammlungen beziehen den Baugrubenrauminhalt bis zur Baugrubensohle einschließlich Arbeitsraum und Böschung; für KG 310 Menge ggf. von Hand festlegen.`
       : 'Das unterste Geschoss liegt nicht unter ±0,00 – keine Baugrube abgeleitet.';
-  if (unterstes) def.hinweis = `Alle Geschosse über ${unterstes.s.name}.`;
+  if (unterstes)
+    def.hinweis = `Geschossflächen über einem tieferen Geschoss; Geschosse mehr als ${fmt2(GELAENDE)} m über ${unterstes.s.name} bzw. ±0,00 zählen ganz (auch auskragende Teile).`;
 
   /* ---------- Außenwände und Dach ---------- */
   // Grundriss „umschlossen“ (R, ohne Abzugsflächen) je Geschoss
@@ -485,7 +543,7 @@ function berechneNachweis(project: Project, result: ProjectResult, waende: IfcWa
           plan: [{ storeyId: groesstes.s.id, points: u.points }],
         });
       }
-      auf.hinweis = `Grundstücksfläche abzüglich der überbauten Fläche (${groesstes.s.name}: Geschoss mit der größten BGF ab Geländehöhe).`;
+      auf.hinweis = `Näherung: Grundstücksfläche abzüglich der überbauten Fläche (${groesstes.s.name}: Geschoss mit der größten BGF ab Geländehöhe). Auskragende Teile anderer Geschosse und Teile neben diesem Geschoss sind nicht abgezogen – bei Bedarf Menge von Hand festlegen.`;
     }
   } else {
     fbg.hinweis = 'Die Grundstücksfläche fehlt in den Projektdaten.';
@@ -527,6 +585,8 @@ export const zaehltTeil = (t: Teil, auswahl: Record<string, boolean> | undefined
  * @param waende Wände aus dem IFC-Modell (bauteile.ts); null = keine, Innenwände dann aus den Räumen
  */
 export function mengenNachweis(project: Project, result?: ProjectResult, waende: IfcWand[] | null = null): Nachweis {
+  // `result` gehört nicht zum Schlüssel: Es muss aus denselben Daten berechnet sein wie `project` (so rufen es
+  // mengen.ts und kosten.ts auf); ein abweichendes `result` bei unverändertem Gebäude würde nicht neu gerechnet.
   const schluessel = [project.storeys, project.dachModell, project.settings, project.meta.grundstueck.flaeche, waende];
   if (!zuletzt || !zuletzt.schluessel.every((x, i) => x === schluessel[i])) {
     zuletzt = { schluessel, nachweis: berechneNachweis(project, result ?? computeProject(project), waende) };

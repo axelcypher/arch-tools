@@ -1,10 +1,10 @@
 import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
 import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
 import type { Project } from '@core/model';
-import { KOSTEN_STUFEN } from '@core/model';
-import { kg1, kgName } from '../din276';
+import { istRisiko, kg1, kgName } from '../din276';
 import type { Ergebnis } from '../kosten';
-import { berechne, bezugLabel, HAFTUNG, katalogText, stufeLabel } from '../kosten';
+import { berechne, bezugLabel, HAFTUNG, katalogText } from '../kosten';
+import { istSpaeteStufe, ohneBandbreite, SPAETE_STUFE_HINWEIS, STUFEN, stufeLabel, stufeVon } from '../stufen';
 import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 
 /**
@@ -19,9 +19,13 @@ import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 const r0 = (v: number) => Math.round(v);
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const r4 = (v: number) => Math.round(v * 10000) / 10000;
+/** ISO-Datum als TT.MM.JJJJ, ohne Umweg über Date (UTC) */
+const datum = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${Number(iso.slice(8, 10))}.${Number(iso.slice(5, 7))}.${iso.slice(0, 4)}` : iso);
+/** Schlüssel der Zeile „Kostenrisiken“ im Block #kg (zählt zu keiner Kostengruppe) */
+const RISIKO = 'risiko';
 
 function zugehoerig(child: string, row: Row, parent: string, p: Row): boolean {
-  if (parent === 'kg' && (child === 'position' || child === 'kg2')) return row._kg1 === p.kg;
+  if (parent === 'kg' && (child === 'position' || child === 'kg2')) return row._kg1 === (p._key ?? p.kg);
   if (parent === 'kg2' && child === 'position') return row._kg2 === p.kg;
   return true;
 }
@@ -34,13 +38,20 @@ const FILTERS: Record<string, (r: Row) => boolean> = {
 
 export function buildKostenContext(project: Project, date = new Date(), e: Ergebnis = berechne(project)): ExportContext {
   const k = project.kosten;
-  const stufe = KOSTEN_STUFEN.find((s) => s.id === (k?.stufe ?? 'schaetzung'));
-  const spanne = (name: string, s: [number, number, number]): Record<string, Value> => ({ [name]: r0(s[1]), [`${name}.von`]: r0(s[0]), [`${name}.bis`]: r0(s[2]) });
+  const stufe = STUFEN.find((s) => s.id === stufeVon(k?.stufe))!;
+  // Kostenfeststellung: tatsächliche Kosten ohne Bandbreite – von und bis gleich dem Wert
+  const ohne = ohneBandbreite(k?.stufe);
+  const sp = (s: [number, number, number]): [number, number, number] => (ohne ? [s[1], s[1], s[1]] : s);
+  const spanne = (name: string, s0: [number, number, number]): Record<string, Value> => {
+    const s = sp(s0);
+    return { [name]: r0(s[1]), [`${name}.von`]: r0(s[0]), [`${name}.bis`]: r0(s[2]) };
+  };
   const scalars: Record<string, Value> = {
     ...projektWerte(project, date),
-    stufe: stufeLabel(k?.stufe ?? 'schaetzung'),
-    'stufe.lph': stufe?.lph ?? '',
-    preisstand: k?.datum ? new Date(k.datum).toLocaleDateString('de-DE') : '',
+    stufe: stufeLabel(k?.stufe),
+    'stufe.lph': stufe.lph,
+    'stufe.hinweis': istSpaeteStufe(k?.stufe) ? SPAETE_STUFE_HINWEIS : '',
+    preisstand: k?.datum ? datum(k.datum) : '',
     katalog: katalogText(k?.katalog),
     'katalog.name': k?.katalog?.name ?? '',
     'katalog.quelle': k?.katalog?.quelle ?? '',
@@ -50,6 +61,7 @@ export function buildKostenContext(project: Project, date = new Date(), e: Ergeb
     regionalfaktor: k?.regionalfaktor ?? 1,
     faktor: r4(e.faktor),
     mwst: e.mwst,
+    ...spanne('risiko', e.risiko),
     ...spanne('gesamt.netto', e.gesamtNetto),
     ...spanne('gesamt.brutto', e.gesamtBrutto),
     'gesamt.mwst': r0(e.gesamtBrutto[1] - e.gesamtNetto[1]),
@@ -67,16 +79,22 @@ export function buildKostenContext(project: Project, date = new Date(), e: Ergeb
   }
   for (const s of e.summen) Object.assign(scalars, spanne(`kg${s.kg}`, s.summe));
 
-  const kg: Row[] = e.summen.filter((s) => s.ebene === 1).map((s) => ({ kg: s.kg, name: s.name, von: r0(s.summe[0]), mittel: r0(s.summe[1]), bis: r0(s.summe[2]) }));
+  const zeileKg = (kg: string, name: string, s0: [number, number, number]): Row => {
+    const s = sp(s0);
+    return { kg, name, von: r0(s[0]), mittel: r0(s[1]), bis: r0(s[2]) };
+  };
+  const kg: Row[] = e.summen.filter((s) => s.ebene === 1).map((s) => zeileKg(s.kg, s.name, s.summe));
+  // Kostenrisiken als eigene Zeile nach den Kostengruppen – so enthält die Summe des Blocks das Gesamt netto
+  if (e.positionen.some((x) => x.aktiv && istRisiko(x.pos.kg))) kg.push({ ...zeileKg('', 'Kostenrisiken', e.risiko), _key: RISIKO });
   const kg2: Row[] = e.summen
     .filter((s) => s.ebene === 2)
-    .map((s) => ({ _kg1: kg1(s.kg), kg: s.kg, name: s.name, von: r0(s.summe[0]), mittel: r0(s.summe[1]), bis: r0(s.summe[2]) }));
+    .map((s) => ({ _kg1: kg1(s.kg), ...zeileKg(s.kg, s.name, s.summe) }));
   const position: Row[] = e.positionen.map((x, i) => ({
-    _kg1: kg1(x.pos.kg),
-    _kg2: x.pos.kg[1] !== '0' ? `${x.pos.kg.slice(0, 2)}0` : '',
+    _kg1: istRisiko(x.pos.kg) ? RISIKO : kg1(x.pos.kg),
+    _kg2: istRisiko(x.pos.kg) ? '' : x.pos.kg[1] !== '0' ? `${x.pos.kg.slice(0, 2)}0` : '',
     nr: i + 1,
-    kg: x.pos.kg,
-    kg_name: kgName(x.pos.kg),
+    kg: istRisiko(x.pos.kg) ? '' : x.pos.kg,
+    kg_name: istRisiko(x.pos.kg) ? 'Kostenrisiken' : kgName(x.pos.kg),
     bezeichnung: x.pos.bezeichnung,
     bezug: bezugLabel(x.pos),
     menge: x.pos.bezug === 'prozent' ? r0(x.menge) : r2(x.menge),
@@ -85,8 +103,8 @@ export function buildKostenContext(project: Project, date = new Date(), e: Ergeb
     kennwert_von: r2(x.kennwert[0]),
     kennwert_bis: r2(x.kennwert[2]),
     kosten: r0(x.kosten[1]),
-    kosten_von: r0(x.kosten[0]),
-    kosten_bis: r0(x.kosten[2]),
+    kosten_von: r0(sp(x.kosten)[0]),
+    kosten_bis: r0(sp(x.kosten)[2]),
     aktiv: x.aktiv ? 'ja' : '',
     quelle: x.pos.quelle ?? '',
     bemerkung: x.pos.bemerkung ?? '',
@@ -102,7 +120,7 @@ export function buildKostenContext(project: Project, date = new Date(), e: Ergeb
   }));
   const stand: Row[] = (k?.staende ?? []).map((s, i) => ({
     nr: i + 1,
-    datum: new Date(s.datum).toLocaleDateString('de-DE'),
+    datum: datum(s.datum),
     stufe: stufeLabel(s.stufe),
     bemerkung: s.bemerkung,
     netto: r0(s.gesamtNetto[1]),
@@ -138,7 +156,9 @@ export const KOSTEN_PLACEHOLDER_DOCS: PlaceholderDocs = [
   {
     group: 'Grundlagen und Ergebnis',
     keys: [
-      ['stufe, stufe.lph, preisstand', 'Stufe der Kostenermittlung (z. B. Kostenschätzung), Leistungsphase, Preisstand'],
+      ['stufe, stufe.lph, preisstand', 'Stufe der Kostenermittlung (z. B. Kostenschätzung), Leistungsphase, Kostenstand (Preisstand)'],
+      ['stufe.hinweis', 'bei Kostenvoranschlag, -anschlag und -feststellung: Hinweis, dass mit Kennwerten fortgeschrieben wurde (sonst leer)'],
+      ['risiko, risiko.von, risiko.bis', 'Kostenrisiken (gesondert ausgewiesen, netto; im Gesamt netto enthalten)'],
       ['katalog, katalog.name, katalog.quelle, katalog.stand', 'Herkunft der Kennwerte: in einer Zeile bzw. in Teilen'],
       ['index.basis, index.aktuell, regionalfaktor, faktor', 'Baupreisindex, Regionalfaktor und daraus der Faktor auf die Kennwerte'],
       ['gesamt.netto, gesamt.brutto, gesamt.mwst, mwst', 'Gesamtkosten (Mittel) netto/brutto, Umsatzsteuer in € bzw. %'],
@@ -153,7 +173,7 @@ export const KOSTEN_PLACEHOLDER_DOCS: PlaceholderDocs = [
   {
     group: 'kg.* / kg2.* (Zeile je Kostengruppe)',
     keys: [
-      ['kg.kg, kg.name', 'Kostengruppe und Bezeichnung nach DIN 276'],
+      ['kg.kg, kg.name', 'Kostengruppe und Bezeichnung nach DIN 276; nach den Kostengruppen ggf. die Zeile „Kostenrisiken“ (ohne KG)'],
       ['kg.von, kg.mittel, kg.bis', 'Summe netto'],
     ],
   },
@@ -171,7 +191,7 @@ export const KOSTEN_PLACEHOLDER_DOCS: PlaceholderDocs = [
     group: 'menge.* / stand.* / hinweis.*',
     keys: [
       ['menge.kurz, menge.label, menge.wert, menge.einheit, menge.ermittlung, menge.festgelegt', 'Zeile je Menge'],
-      ['stand.datum, stand.stufe, stand.bemerkung, stand.netto, stand.brutto, stand.brutto_von, stand.brutto_bis', 'Zeile je festgehaltenem Kostenstand'],
+      ['stand.datum, stand.stufe, stand.bemerkung, stand.netto, stand.brutto, stand.brutto_von, stand.brutto_bis', 'Zeile je festgehaltenem Stand'],
       ['hinweis.nr, hinweis.text', 'Zeile je Hinweis'],
     ],
   },

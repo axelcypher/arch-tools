@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Project } from '@core/model';
 import { storeyElevations } from '@core/model';
+import { fmt2 } from '@core/format';
 import { useTheme } from '@core/platform/theme';
 import type { Flaeche3, MengeNachweis, Nachweis, Teil } from '../nachweis';
 
@@ -16,6 +17,7 @@ const FARBE = 0x2a5bd7;
 const FARBE_AKTIV = 0xff7a00;
 const FARBE_ABZUG = 0xc0392b;
 const FARBE_AUS = 0x9aa0a6;
+const KANTE_AKTIV = 0xff7a00;
 
 interface Szene {
   renderer: THREE.WebGLRenderer;
@@ -31,6 +33,8 @@ export default function Mengen3D({
   project,
   nachweis,
   menge,
+  einheit = '',
+  format = fmt2,
   aktiv,
   onAktiv,
   onUmschalten,
@@ -38,6 +42,9 @@ export default function Mengen3D({
   project: Project;
   nachweis: Nachweis;
   menge: MengeNachweis;
+  einheit?: string;
+  /** Zahlformat der Werte (typografisches Minus) */
+  format?: (v: number) => string;
   aktiv: string | null;
   onAktiv: (id: string | null) => void;
   /** Klick auf ein Teil (ohne Drehen): an- bzw. abwählen */
@@ -121,9 +128,11 @@ export default function Mengen3D({
     const onMove = (e: PointerEvent) => {
       if (gedrueckt) return;
       const id = treffer(e);
+      renderer.domElement.style.cursor = id ? 'pointer' : '';
       if (id !== letztes) aktivRef.current((letztes = id));
     };
     const onLeave = () => {
+      renderer.domElement.style.cursor = '';
       if (letztes !== null) aktivRef.current((letztes = null));
     };
     renderer.domElement.addEventListener('pointerdown', onDown);
@@ -135,8 +144,13 @@ export default function Mengen3D({
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener('pointerup', onUp);
+      renderer.domElement.removeEventListener('pointerdown', onDown);
+      renderer.domElement.removeEventListener('pointermove', onMove);
+      renderer.domElement.removeEventListener('pointerleave', onLeave);
       controls.dispose();
       disposeGroup(content);
+      // WebGL-Kontext sofort freigeben (der Browser erlaubt nur wenige gleichzeitig)
+      renderer.forceContextLoss();
       renderer.dispose();
       renderer.domElement.remove();
       three.current = null;
@@ -144,6 +158,7 @@ export default function Mengen3D({
   }, []);
 
   // Inhalt bei Änderungen neu aufbauen
+  const explodeVorher = useRef(explode);
   useEffect(() => {
     const t = three.current;
     if (!t) return;
@@ -191,10 +206,12 @@ export default function Mengen3D({
       // Raster auf ±0,00 (Gelände), nicht unter dem Keller
       grid.position.set(Math.round(center.x), -0.01, Math.round(center.z));
       t.content.add(grid);
-      if (!t.fitted) {
+      // beim ersten Bild und nach dem Auseinanderziehen bzw. Zusammenschieben neu einpassen
+      if (!t.fitted || explodeVorher.current !== explode) {
         fitCamera(t.camera, t.controls, box);
         t.fitted = true;
       }
+      explodeVorher.current = explode;
     }
   }, [project, nachweis, menge, explode, dunkel]);
 
@@ -217,19 +234,27 @@ export default function Mengen3D({
 
   if (fehler) return <p className="warning">Die 3D-Ansicht steht auf diesem Gerät nicht zur Verfügung (WebGL fehlt). Die Grundrisse und der Rechenweg zeigen dieselben Teile.</p>;
 
+  const teil = aktiv ? menge.teile.find((x) => x.id === aktiv) : undefined;
+  const etikett = teil && `${teil.bezeichnung}: ${teil.wert < 0 ? `Abzug ${format(-teil.wert)}` : format(teil.wert)} ${einheit}${teil.zaehlt === false ? ' – zählt nicht' : ''}`.trim();
+
   return (
     <div className="m3d">
-      <div ref={hostRef} className="m3d-canvas" />
+      <div ref={hostRef} className="m3d-canvas" role="img" aria-label={`3D-Modell der Menge mit ${menge.teile.length} ${menge.teile.length === 1 ? 'Teil' : 'Teilen'} (Maus: drehen, Mausrad: zoomen; an- und abwählen im Rechenweg)`} />
       <div className="m3d-controls">
         <label className="toggle">
           <input type="checkbox" checked={explode} onChange={(e) => setExplode(e.target.checked)} />
           Geschosse auseinanderziehen
         </label>
-        <button className="small" onClick={fit}>
+        <button className="small" onClick={fit} title="Ganzes Modell zeigen">
           ⤢ Alles
         </button>
       </div>
-      <p className="m3d-hilfe muted small-text">Linke Maus: drehen · rechte Maus: verschieben · Rad: zoomen · ±0,00 liegt auf dem Raster</p>
+      {etikett && (
+        <div className="m3d-etikett" aria-live="polite">
+          {etikett}
+        </div>
+      )}
+      <p className="m3d-hilfe muted small-text">Klick auf ein Teil: an- oder abwählen · Linke Maus: drehen · rechte Maus: verschieben · Rad: zoomen · ±0,00 liegt auf dem Raster</p>
     </div>
   );
 }
@@ -239,9 +264,10 @@ function faerben(teile: THREE.Mesh[], aktiv: string | null) {
     const { teil, abzug, aus, kanten } = mesh.userData as { teil: string; abzug: boolean; aus: boolean; kanten: THREE.LineSegments };
     const istAktiv = teil === aktiv;
     const mat = mesh.material as THREE.MeshStandardMaterial;
-    mat.color.setHex(istAktiv ? FARBE_AKTIV : aus ? FARBE_AUS : abzug ? FARBE_ABZUG : FARBE);
-    mat.opacity = istAktiv ? 0.95 : aus ? 0.35 : 0.78;
-    (kanten.material as THREE.LineBasicMaterial).color.setHex(istAktiv ? 0xb35900 : aus ? 0x8a8f99 : abzug ? 0x8e2b20 : 0x1d3f96);
+    // abgewählt bleibt grau, auch unter dem Mauszeiger – dann nur die Kanten orange
+    mat.color.setHex(aus ? FARBE_AUS : istAktiv ? FARBE_AKTIV : abzug ? FARBE_ABZUG : FARBE);
+    mat.opacity = aus ? (istAktiv ? 0.5 : 0.35) : istAktiv ? 0.95 : 0.78;
+    (kanten.material as THREE.LineBasicMaterial).color.setHex(istAktiv ? (aus ? KANTE_AKTIV : 0xb35900) : aus ? 0x8a8f99 : abzug ? 0x8e2b20 : 0x1d3f96);
   }
 }
 
