@@ -263,8 +263,10 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
       className="titlebar-menu"
       ref={ref}
       onBlur={(e) => {
-        // Tab aus dem Menü hinaus schließt es
-        if (open && !ref.current?.contains(e.relatedTarget as Node | null)) setOpen(false);
+        // Tab aus dem Menü hinaus schließt es – nur bei bekanntem Ziel draußen: Safari fokussiert Knöpfe beim Klick nicht
+        // (relatedTarget null), ein Klick auf einen Eintrag käme sonst nicht mehr an; Klicks daneben fängt mousedown ab
+        const nach = e.relatedTarget as Node | null;
+        if (open && nach && !ref.current?.contains(nach)) setOpen(false);
       }}
     >
       <button

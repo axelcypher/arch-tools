@@ -35,7 +35,8 @@ function render(): HTMLElement {
   });
   return host;
 }
-const knopf = (host: ParentNode, text: string | RegExp) => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => (typeof text === 'string' ? b.textContent?.trim() === text : text.test(b.textContent ?? '')));
+const knopf = (host: ParentNode, text: string | RegExp) =>
+  [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => (typeof text === 'string' ? b.textContent?.trim() === text : text.test(b.textContent ?? '')));
 const tippen = (el: HTMLTextAreaElement | HTMLInputElement, wert: string) =>
   act(() => {
     Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')!.set!.call(el, wert);
@@ -248,9 +249,18 @@ describe('Baurecht – Oberfläche', () => {
     const lage = lageKennung(k.ost, k.nord);
     // Schutzgebiete: alle anderen bestätigt „nein“, das Naturschutzgebiet nur als Hinweis eines Geodienstes
     const { auswertungMit, herabstufungen } = await import('./pruefung');
-    const ids = Object.entries(auswertungMit({}).faktDefs).filter(([id, d]) => d.gruppe === 'schutz' && id.startsWith('schutz.')).map(([id]) => id);
+    const ids = Object.entries(auswertungMit({}).faktDefs)
+      .filter(([id, d]) => d.gruppe === 'schutz' && id.startsWith('schutz.'))
+      .map(([id]) => id);
     const geo = Object.fromEntries(ids.map((id) => [id, { wert: false, herkunft: 'geodienst' as const, sicherheit: 'hinweis' as const, quelle: 'LINFOS', grund: 'kein Treffer', lage }]));
-    act(() => useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, fakten: Object.fromEntries(Object.entries(geo).map(([id, f]) => [id, id === 'schutz.nsg' ? f : { ...f, bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Auskunft UNB', lage } }])) } }));
+    act(() =>
+      useBaurecht.setState({
+        pruefung: {
+          ...useBaurecht.getState().pruefung,
+          fakten: Object.fromEntries(Object.entries(geo).map(([id, f]) => [id, id === 'schutz.nsg' ? f : { ...f, bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Auskunft UNB', lage } }])),
+        },
+      }),
+    );
     const host = render();
     act(() => knopf(host, 'alle Angaben')?.click());
     const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Naturschutzgebiet/.test(z.textContent ?? '') && !!knopf(z, 'Bestätigen …'))!;
@@ -1177,7 +1187,19 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const text = (geprueft: string) =>
       act(() =>
         useBaurecht.getState().textSetzen(`${modul}/${norm}`, {
-          fassung: { id: norm, kurz: norm, titel: '', fassung: '', url: '', paragrafen: { [nr]: { titel: 'T', url: '', text: ['(1) …'] } }, gueltigAb: regel.fassung, abgerufen: '', quelle: { art: 'gii', pfad: 'x' }, summen: { ...stand }, kennung: 'x' } as never,
+          fassung: {
+            id: norm,
+            kurz: norm,
+            titel: '',
+            fassung: '',
+            url: '',
+            paragrafen: { [nr]: { titel: 'T', url: '', text: ['(1) …'] } },
+            gueltigAb: regel.fassung,
+            abgerufen: '',
+            quelle: { art: 'gii', pfad: 'x' },
+            summen: { ...stand },
+            kennung: 'x',
+          } as never,
           geprueft,
         }),
       );
@@ -1200,7 +1222,19 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const regel = useBaurecht.getState().paket.regeln.get(`${modul}/${norm}`)!.at(-1)!.regel;
     act(() =>
       useBaurecht.getState().textSetzen(`${modul}/${norm}`, {
-        fassung: { id: norm, kurz: norm, titel: '', fassung: '', url: '', paragrafen: { [nr]: { titel: 'T', url: '', text: ['(1) …'] } }, gueltigAb: regel.fassung, abgerufen: '', quelle: { art: 'gii', pfad: 'x' }, summen: { ...(regel.paragrafen[nr].stand ?? {}) }, kennung: 'x' } as never,
+        fassung: {
+          id: norm,
+          kurz: norm,
+          titel: '',
+          fassung: '',
+          url: '',
+          paragrafen: { [nr]: { titel: 'T', url: '', text: ['(1) …'] } },
+          gueltigAb: regel.fassung,
+          abgerufen: '',
+          quelle: { art: 'gii', pfad: 'x' },
+          summen: { ...(regel.paragrafen[nr].stand ?? {}) },
+          kennung: 'x',
+        } as never,
         geprueft: '2025-01-01T08:00:00Z',
       }),
     );
@@ -1264,4 +1298,3 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(useBaurecht.getState().ansage).toMatch(/von Hand „entfällt“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen$/);
   });
 });
-
