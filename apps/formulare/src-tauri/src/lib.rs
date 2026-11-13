@@ -67,7 +67,7 @@ pub fn run() {
             open_path
         ])
         .setup(|app| {
-            log::info!("Formulare {} gestartet", app.package_info().version);
+            log::info!("{} {} gestartet", app.package_info().name, app.package_info().version);
             Ok(())
         })
         .build(tauri::generate_context!())

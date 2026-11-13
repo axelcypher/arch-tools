@@ -69,14 +69,15 @@ jobs:
               exit 1
             fi
             case "$d" in
-              flaechenrechner) tag="v$v"; name="Flächenrechner"; web="flaechenrechner-web.zip" ;;
-              grz) tag="$d-v$v"; name="GRZ-Nachweis"; web="grz-nachweis-web.zip" ;;
-              kosten) tag="$d-v$v"; name="Kostenermittlung"; web="kostenermittlung-web.zip" ;;
-              ordner) tag="$d-v$v"; name="Projektordner"; web="projektordner-web.zip" ;;
-              entzerrung) tag="$d-v$v"; name="Entzerrung"; web="entzerrung-web.zip" ;;
-              formulare) tag="$d-v$v"; name="Formulare"; web="formulare-web.zip" ;;
-              ava) tag="$d-v$v"; name="AVA"; web="ava-web.zip" ;;
-              suite) tag="$d-v$v"; name="arch-tools"; web="arch-tools-web.zip" ;;
+              # Release-Name = Produktname (packages/core/src/appNamen.ts); Tags bleiben bei der Kennung
+              flaechenrechner) tag="v$v"; name="QUADRIO"; web="quadrio-web.zip" ;;
+              grz) tag="$d-v$v"; name="TERRIO"; web="terrio-web.zip" ;;
+              kosten) tag="$d-v$v"; name="NUMIO"; web="numio-web.zip" ;;
+              ordner) tag="$d-v$v"; name="ATLAS"; web="atlas-web.zip" ;;
+              entzerrung) tag="$d-v$v"; name="RECTIO"; web="rectio-web.zip" ;;
+              formulare) tag="$d-v$v"; name="PERMIO"; web="permio-web.zip" ;;
+              ava) tag="$d-v$v"; name="FABRIO"; web="fabrio-web.zip" ;;
+              suite) tag="$d-v$v"; name="Arkly"; web="arkly-web.zip" ;;
             esac
             if [ "$EVENT" = "workflow_dispatch" ]; then
               if [ "$WAHL" != "alle" ] && [ "$WAHL" != "$d" ]; then continue; fi

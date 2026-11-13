@@ -47,7 +47,7 @@ pub fn run() {
             projekt_datei_umbenennen
         ])
         .setup(|app| {
-            log::info!("Projektordner {} gestartet", app.package_info().version);
+            log::info!("{} {} gestartet", app.package_info().name, app.package_info().version);
             Ok(())
         })
         .run(tauri::generate_context!())

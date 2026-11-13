@@ -32,7 +32,7 @@ pub fn run() {
             write_binary_file
         ])
         .setup(|app| {
-            log::info!("Kostenermittlung {} gestartet", app.package_info().version);
+            log::info!("{} {} gestartet", app.package_info().name, app.package_info().version);
             Ok(())
         })
         .run(tauri::generate_context!())

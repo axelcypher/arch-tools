@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "AVA",
-  "version": "0.4.0",
+  "productName": "FABRIO",
+  "version": "0.5.0",
   "identifier": "de.pendzialek.ava",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "AVA",
+        "title": "FABRIO",
         "width": 1500,
         "height": 950,
         "minWidth": 1000,
@@ -46,10 +46,12 @@
       "nsis": {
         "languages": [
           "German"
-        ]
+        ],
+        "installerHooks": "windows/umbenennung.nsh"
       },
       "wix": {
-        "language": "de-DE"
+        "language": "de-DE",
+        "upgradeCode": "5e086816-30f8-5e95-add0-69fcb29b91c1"
       }
     }
   },

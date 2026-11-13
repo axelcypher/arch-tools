@@ -41,7 +41,7 @@ pub fn run() {
             ava_temp_oeffnen
         ])
         .setup(|app| {
-            log::info!("AVA {} gestartet", app.package_info().version);
+            log::info!("{} {} gestartet", app.package_info().name, app.package_info().version);
             Ok(())
         })
         .run(tauri::generate_context!())
