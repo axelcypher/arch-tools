@@ -23,13 +23,24 @@ export const MENGEN_INFO: Record<MengenBezug, { kurz: string; label: string; ein
   tf: { kurz: 'TF', label: 'Technikfläche', einheit: 'm²', ermittlung: 'DIN 277' },
   vf: { kurz: 'VF', label: 'Verkehrsfläche', einheit: 'm²', ermittlung: 'DIN 277' },
   wofl: { kurz: 'WoFl', label: 'Wohnfläche', einheit: 'm²', ermittlung: 'WoFlV' },
-  grf: { kurz: 'GRF', label: 'Gründungsfläche', einheit: 'm²', ermittlung: 'BGF des untersten Geschosses' },
-  bgi: { kurz: 'BGI', label: 'Baugrubeninhalt', einheit: 'm³', ermittlung: 'grob: Gründungsfläche × Tiefe des untersten Fußbodens unter ±0,00' },
+  grf: {
+    kurz: 'GRF',
+    label: 'Gründungsfläche',
+    einheit: 'm²',
+    ermittlung: 'Fläche der BGF-Umrisse, unter denen kein tieferes Geschoss liegt (unterstes Geschoss, Teile neben einem Teilkeller, Anbauten)',
+  },
+  bgi: {
+    kurz: 'BGI',
+    label: 'Baugrubenrauminhalt',
+    einheit: 'm³',
+    ermittlung:
+      'grob: Fläche des untersten Geschosses × Tiefe seines Fußbodens unter ±0,00 – Kennwertsammlungen beziehen den Baugrubenrauminhalt bis zur Baugrubensohle einschließlich Arbeitsraum und Böschung; für KG 310 Menge ggf. von Hand festlegen',
+  },
   awf: { kurz: 'AWF', label: 'Außenwandfläche', einheit: 'm²', ermittlung: 'grob: senkrechte Außenflächen der BGF-Körper (R) bis zur Dachhaut, einschließlich Öffnungen' },
   iwf: { kurz: 'IWF', label: 'Innenwandfläche', einheit: 'm²', ermittlung: 'Innenwände aus dem IFC-Modell, Länge × Höhe je Wand (Öffnungen übermessen); ohne Modell grob aus den Raumumfängen' },
-  def: { kurz: 'DEF', label: 'Deckenfläche', einheit: 'm²', ermittlung: 'BGF der Geschosse über dem untersten' },
+  def: { kurz: 'DEF', label: 'Deckenfläche', einheit: 'm²', ermittlung: 'Flächen über einem tieferen Geschoss; Geschosse deutlich über dem Gelände ganz, auch auskragend' },
   daf: { kurz: 'DAF', label: 'Dachfläche', einheit: 'm²', ermittlung: 'Oberseiten der BGF-Körper (R), geneigt in wahrer Größe, soweit kein Geschoss darüber liegt' },
-  auf: { kurz: 'AUF', label: 'Außenanlagenfläche', einheit: 'm²', ermittlung: 'Grundstücksfläche − überbaute Fläche' },
+  auf: { kurz: 'AUF', label: 'Außenanlagenfläche', einheit: 'm²', ermittlung: 'Näherung: Grundstücksfläche − überbaute Fläche (Geschoss mit der größten BGF ab Gelände)' },
   fbg: { kurz: 'FBG', label: 'Grundstücksfläche', einheit: 'm²', ermittlung: 'Projektdaten' },
   we: { kurz: 'WE', label: 'Wohneinheiten', einheit: 'Stk', ermittlung: 'Wohnungen im Projekt' },
 };

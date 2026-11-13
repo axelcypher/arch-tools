@@ -151,4 +151,37 @@ describe('Kosten-Excel', () => {
     const back = readProjectFile(writeArchive(p, { app: 'Test' }));
     expect(back.dateien?.map((d) => `${d.art}:${d.name}`).sort()).toEqual(['vorlage-grz:GRZ.xlsx', 'vorlage-kosten:Kosten neu.xlsx', 'vorlage:Flächen.xlsx']);
   });
+
+  it('Kostenrisiken als eigene Zeile im Block, Kostenfeststellung ohne Bandbreite, Hinweis bei späten Stufen', async () => {
+    const p = projektMitKosten();
+    p.kosten!.positionen.push({ id: 'pr', kg: 'risiko', bezeichnung: 'Kostenrisiken', bezug: 'prozent', basis: ['300', '400'], mittel: 5 });
+    const ctx = buildKostenContext(p);
+    const zeilen = ctx.collections.kg.map((r) => [r.kg, r.name, r.mittel]);
+    // 5 % von 972.000 + 324.000 = 64.800 €, nach den Kostengruppen
+    expect(zeilen[zeilen.length - 1]).toEqual(['', 'Kostenrisiken', 64800]);
+    expect(ctx.collections.kg.reduce((a, r) => a + Number(r.mittel), 0)).toBe(ctx.scalars['gesamt.netto']);
+    expect(ctx.scalars.risiko).toBe(64800);
+    const pos = ctx.collections.position.find((r) => r.kg_name === 'Kostenrisiken')!;
+    expect(ctx.belongsTo!('position', pos, 'kg', ctx.collections.kg[ctx.collections.kg.length - 1], ctx)).toBe(true);
+    expect(ctx.belongsTo!('position', pos, 'kg', ctx.collections.kg[0], ctx)).toBe(false);
+    expect(ctx.scalars['stufe.hinweis']).toBe('');
+    // Kostenfeststellung: von = bis = Wert, Hinweis auf die Grundlage
+    const f = buildKostenContext(setKosten(p, { stufe: 'feststellung' }));
+    expect([f.scalars['gesamt.netto.von'], f.scalars['gesamt.netto.bis']]).toEqual([f.scalars['gesamt.netto'], f.scalars['gesamt.netto']]);
+    expect(String(f.scalars['stufe.hinweis'])).toContain('zu belegen');
+    expect(f.scalars['stufe.lph']).toBe('LPh 8');
+    // Gegenprobe Kostenberechnung: Bandbreite bleibt
+    const b = buildKostenContext(setKosten(p, { stufe: 'berechnung' }));
+    expect(b.scalars['gesamt.netto.von']).toBeLessThan(Number(b.scalars['gesamt.netto']));
+    // Standardlayout: Gesamt netto (Summe der Kostengruppen-Zeilen) enthält das Risiko
+    const ws = (await lesen(await exportDefault(p))).getWorksheet('Kosten')!;
+    expect(texte(ws)).toContain('Kostenrisiken');
+    // die Summenformel „Gesamt netto“ reicht bis einschließlich der Zeile „Kostenrisiken“
+    const r = zeileMit(ws, 'Gesamt netto');
+    const rr = zeileMit(ws, 'Kostenrisiken');
+    const bereich = /SUM\(G(\d+):G(\d+)\)/.exec(formel(ws.getCell(`G${r}`)).formula)!;
+    expect(Number(bereich[1])).toBeLessThan(rr);
+    expect(Number(bereich[2])).toBe(rr);
+    expect(ws.getCell(`G${rr}`).value).toBe(64800);
+  });
 });
