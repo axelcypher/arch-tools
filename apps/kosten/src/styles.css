@@ -52,7 +52,7 @@
 @media (min-width: 1800px) {
   .ko-rechts {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+    grid-template-columns: minmax(0, 1fr) minmax(460px, 500px);
     align-items: start;
   }
 }
