@@ -225,7 +225,8 @@ describe('Rahmen-App', () => {
     const menue = () => document.querySelector('.menue');
     expect(menue()?.getAttribute('role')).toBe('menu');
     expect(document.activeElement?.textContent).toContain('Neues Projekt anlegen …');
-    expect([...menue()!.querySelectorAll('[role="menuitem"]')].map((b) => b.textContent?.trim())).toHaveLength(8);
+    // „Neues Projekt anlegen …“ und je App ein Eintrag
+    expect([...menue()!.querySelectorAll('[role="menuitem"]')].map((b) => b.textContent?.trim())).toHaveLength(APPS.length + 1);
     act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
     expect(document.activeElement?.textContent).toContain('ATLAS');
     act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
